@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { choosePlay, contact, judge, LEVELS, ROLLS, shotsOn, type Level } from '../src/games/backgammon/ai';
+import { choosePlay, contact, EXPERT, judge, LEVELS, ROLLS, shotsOn, type Level } from '../src/games/backgammon/ai';
 import {
   allPlays,
   applyStep,
@@ -107,9 +107,10 @@ describe('backgammon: the board and the moves', () => {
     const g: Game = { ...newGame(7), pos: closed, turnStart: closed, turn: 0, phase: 'roll', roll: [4, 2], rolls: 6, lastTurn: { side: 1, roll: [4, 2], steps: [] } };
     expect(mustPass(g)).toBe(true);
     const passed = passTurn(g);
-    expect(passed).toMatchObject({ turn: 1, phase: 'roll', rolls: 6, lastTurn: { side: 0, roll: null, steps: [] } });
+    // the pass uses up the roll it would have had (BG-06): roll n always belongs to the same side
+    expect(passed).toMatchObject({ turn: 1, phase: 'roll', rolls: 7, lastTurn: { side: 0, roll: null, steps: [] } });
     expect(passed.pos).toBe(closed);
-    // pressing Roll anyway passes too, and uses no dice: the seeded rolls stay everyone's
+    // pressing Roll anyway passes too
     expect(roll(g)).toEqual(passed);
     // nothing to pass otherwise
     expect(passTurn(passed)).toBe(passed);
@@ -259,6 +260,42 @@ describe('backgammon: the computer players', () => {
     choosePlay(startPos(), 0, [6, 6, 6, 6], 'expert', rng(2));
     choosePlay(startPos(), 1, [4, 2], 'expert', rng(3));
     expect(performance.now() - t0).toBeLessThan(2000);
+  });
+
+  it('an expert decision is bounded on busy mid-game positions too (BG-09)', () => {
+    // a mid-game position from a hard-vs-hard game, with doubles (the most plays)
+    let p = startPos();
+    let s: Side = 0;
+    const r = rng(11);
+    for (let turn = 0; turn < 12; turn++) {
+      const a = 1 + Math.floor(r() * 6);
+      const b = 1 + Math.floor(r() * 6);
+      p = choosePlay(p, s, a === b ? [a, a, a, a] : [a, b], 'hard', r).reduce((q, st) => applyStep(q, s, st), p);
+      s = (1 - s) as Side;
+    }
+    const t0 = performance.now();
+    const steps = choosePlay(p, s, [1, 1, 1, 1], 'expert', rng(5));
+    const ms = performance.now() - t0;
+    expect(steps.length).toBeGreaterThan(0);
+    expect(ms).toBeLessThan(1500);
+    expect(EXPERT.budget).toBeLessThanOrEqual(3000);
+    // the same position and dice: the same play (the bound is on work, not on the clock)
+    expect(choosePlay(p, s, [1, 1, 1, 1], 'expert', rng(5))).toEqual(steps);
+  });
+});
+
+describe('backgammon: the same dice for everyone (BG-06)', () => {
+  it('a pass uses up its roll: after a shut-out the other side gets the roll it would have had anyway', () => {
+    const pts = Array<number>(25).fill(0);
+    pts[6] = 14;
+    for (const i of [19, 20, 21, 22, 23, 24]) pts[i] = -2;
+    pts[1] = -3;
+    const closed: Pos = { pts, bar: [1, 0], off: [0, 0] };
+    const g: Game = { ...newGame(42), pos: closed, turnStart: closed, turn: 0, phase: 'roll', roll: [4, 2], rolls: 6 };
+    // side 1's next roll after side 0's turn at index 6 is index 7, pass or no pass
+    const afterPass = roll(passTurn(g));
+    expect(afterPass.roll).toEqual(rollAt(42, 7));
+    expect(afterPass.rolls).toBe(8);
   });
 });
 

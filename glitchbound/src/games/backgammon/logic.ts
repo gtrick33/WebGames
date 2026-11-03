@@ -264,10 +264,14 @@ export function shutOut(p: Pos, s: Side): boolean {
 /** The side to roll is shut out: its turn passes without a roll (passTurn). */
 export const mustPass = (g: Game): boolean => g.phase === 'roll' && shutOut(g.pos, g.turn);
 
-/** Passes a shut-out side's turn: no dice, and the other side rolls (refused otherwise). */
+/**
+ * Passes a shut-out side's turn: no dice, and the other side rolls (refused otherwise). The pass uses
+ * up the roll the side would have had, so roll n always belongs to the same side: two players who
+ * play the same seed differently still get the same dice turn for turn.
+ */
 export function passTurn(g: Game): Game {
   if (!mustPass(g)) return g;
-  return { ...g, turn: (1 - g.turn) as Side, left: [], steps: [], turnStart: g.pos, lastTurn: { side: g.turn, roll: null, steps: [] } };
+  return { ...g, rolls: g.rolls + 1, turn: (1 - g.turn) as Side, left: [], steps: [], turnStart: g.pos, lastTurn: { side: g.turn, roll: null, steps: [] } };
 }
 
 /**

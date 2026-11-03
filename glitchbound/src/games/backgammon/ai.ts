@@ -156,12 +156,18 @@ export function choosePlay(p: Pos, s: Side, dice: readonly number[], level: Leve
   return expertPlay(plays, p, s, r);
 }
 
-/** How many candidate plays the expert rolls out, how many times, and how many turns deep. */
-export const EXPERT = { candidates: 6, rollouts: 32, depth: 6 };
+/**
+ * How many candidate plays the expert rolls out, how many times (at most), and how many turns deep.
+ * `budget` bounds the work: once the rollouts so far have judged that many positions (and every
+ * candidate has had at least `minRollouts`), it stops, so a busy position (doubles, many blots) never
+ * freezes the page or the room for long. Deterministic: the same position and dice give the same play.
+ */
+export const EXPERT = { candidates: 6, rollouts: 32, depth: 6, minRollouts: 4, budget: 3000 };
 
-/** The hard player's choice for one roll (used inside the expert's rollouts). */
-function hardPick(p: Pos, s: Side, dice: readonly number[]): Pos {
+/** The hard player's choice for one roll (used inside the expert's rollouts); `work` counts the positions judged. */
+function hardPick(p: Pos, s: Side, dice: readonly number[], work: { n: number }): Pos {
   const plays = allPlays(p, s, dice);
+  work.n += plays.length;
   if (!plays.length) return p;
   return best(plays, (q) => judge(q, s)).pos;
 }
@@ -187,29 +193,34 @@ function expertPlay(plays: { steps: Step[]; pos: Pos }[], p: Pos, s: Side, r: ()
     }
     dice.push(seq);
   }
-  let pick = top[0]!;
-  let pickV = -Infinity;
-  for (const cand of top) {
-    let total = 0;
-    for (const seq of dice) {
+  // one dice sequence at a time for every candidate (so they always share the same luck), until the
+  // rollouts are done or the work budget is spent
+  const totals = top.map(() => 0);
+  const work = { n: 0 };
+  for (let k = 0; k < dice.length && (k < EXPERT.minRollouts || work.n < EXPERT.budget); k++) {
+    top.forEach((cand, c) => {
       let q = cand.pos;
       let mover: Side = o;
       let value: number | null = null;
-      for (const roll of seq) {
-        q = hardPick(q, mover, roll);
+      for (const roll of dice[k]!) {
+        q = hardPick(q, mover, roll, work);
         if (q.off[mover] === 15) {
           value = mover === s ? 1000 : -1000;
           break;
         }
         mover = (1 - mover) as Side;
       }
-      total += value ?? judge(q, s, mover);
-    }
-    if (total > pickV) {
-      pick = cand;
-      pickV = total;
-    }
+      totals[c] = totals[c]! + (value ?? judge(q, s, mover));
+    });
   }
+  let pick = top[0]!;
+  let pickV = -Infinity;
+  top.forEach((cand, c) => {
+    if (totals[c]! > pickV) {
+      pick = cand;
+      pickV = totals[c]!;
+    }
+  });
   return pick.steps;
 }
 
