@@ -87,6 +87,7 @@ export interface Ui {
   judgeLeft: (judge: string) => string;
   invite: string;
   joinTheRoom: string;
+  hostPicks: string;
 }
 
 const EN: Ui = {
@@ -176,6 +177,7 @@ const EN: Ui = {
   judgeLeft: (judge) => `${judge} left, so everyone votes for the winner this round.`,
   invite: 'Invite',
   joinTheRoom: 'Join the room',
+  hostPicks: 'Host’s pick: this wins',
 };
 
 const BG: Ui = {
@@ -265,6 +267,7 @@ const BG: Ui = {
   judgeLeft: (judge) => `${judge} излезе, затова този рунд всички гласуват за победителя.`,
   invite: 'Покани',
   joinTheRoom: 'Влез в стаята',
+  hostPicks: 'Домакинът избира: тази печели',
 };
 
 export const UI: Record<BasicLang, Ui> = { en: EN, bg: BG };

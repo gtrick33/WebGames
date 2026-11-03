@@ -522,8 +522,9 @@ function apply(s: State, me: Seat, a: Action, now: number): string | null {
       return null;
     }
     case 'pick': {
-      if (s.phase !== 'judging' || voting(s)) return null;
-      if (me.n !== s.judge) return 'Only the judge picks.';
+      if (s.phase !== 'judging' || s.settings.vote) return null;
+      // The judge left: the host may settle the vote at once.
+      if (s.judgeLeft ? !isHost : me.n !== s.judge) return s.judgeLeft ? null : 'Only the judge picks.';
       const e = entryAt(s, a.entry);
       if (!e) return null;
       win(s, [e.seat], now);

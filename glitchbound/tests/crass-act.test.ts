@@ -328,10 +328,32 @@ describe('Crass Act rooms survive people coming and going', () => {
     for (const k of left) expect(act(s, k, { t: 'vote', entry: (own(k) + 1) % 3 }, now)).toBeNull();
     expect(s.phase).toBe('reveal');
     // Next round the following player judges, and it is a judge round again.
+    const nextJudge = s.seats.find((x) => x.online && x.n > seatOfKey(s, judgeKey)!.n)?.n ?? s.seats.find((x) => x.online)!.n;
     now += 10_000;
     tick(s, now);
     expect(s.phase).toBe('picking');
     expect(s.judgeLeft).toBe(false);
+    expect(s.judge).toBe(nextJudge);
+  });
+
+  it('when the judge left, the host can settle the vote at once; nobody else can pick', () => {
+    const s = room(4);
+    // The host judges round 1: let another player's turn come up first.
+    playAll(s);
+    act(s, keyOfSeat(s, s.judge), { t: 'pick', entry: 0 }, now);
+    now += 10_000;
+    tick(s, now);
+    const judgeKey = keyOfSeat(s, s.judge);
+    expect(judgeKey).not.toBe(KEYS[0]);
+    act(s, judgeKey, { t: 'leave' }, now);
+    playAll(s);
+    expect(s.judgeLeft).toBe(true);
+    const other = KEYS.find((k) => k !== judgeKey && k !== KEYS[0])!;
+    expect(act(s, other, { t: 'pick', entry: 0 }, now)).toBeNull();
+    expect(s.phase).toBe('judging');
+    expect(act(s, KEYS[0]!, { t: 'pick', entry: 1 }, now)).toBeNull();
+    expect(s.phase).toBe('reveal');
+    expect(s.winners).toEqual([s.entries[1]!.seat]);
   });
 
   it('a judge whose connection drops while judging gets the grace period, then everyone votes', () => {
