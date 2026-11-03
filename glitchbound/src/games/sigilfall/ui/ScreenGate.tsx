@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { iconsReady } from '../render/art/gameIcons';
 
 /** Never kept behind the veil longer than this, whatever hasn't come. */
-const MAX_WAIT = 4500;
+const MAX_WAIT = 3000;
 const FADE = 260;
 /** The first intro stays long enough to be read rather than flicker. */
 const INTRO_MIN = 1200;
@@ -16,15 +16,25 @@ const settle = (p: Promise<unknown>): Promise<void> => p.then(
 );
 const pause = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
-function decodeImages(box: HTMLElement | null): Promise<unknown> {
+/** Every picture on the screen has come in. (Not decode(): that can wait for a frame a background tab never draws.) */
+function picturesIn(box: HTMLElement | null): Promise<unknown> {
   if (!box) return Promise.resolve();
-  return Promise.all([...box.querySelectorAll('img')].map((i) => (i.getAttribute('src') && typeof i.decode === 'function' ? settle(i.decode()) : Promise.resolve())));
+  return Promise.all(
+    [...box.querySelectorAll('img')].map((i) =>
+      !i.getAttribute('src') || i.complete
+        ? Promise.resolve()
+        : new Promise<void>((done) => {
+            i.addEventListener('load', () => done(), { once: true });
+            i.addEventListener('error', () => done(), { once: true });
+          }),
+    ),
+  );
 }
 
 const INTRO_LINES = ['Lighting the sanctum', 'Waking the wardens', 'Sharpening old steel', 'Reading the sigils'];
 
 /**
- * Holds a screen behind a veil until what it shows is really there: the type, the icons, every picture decoded, and
+ * Holds a screen behind a veil until what it shows is really there: the type, the icons, every picture, and
  * anything the screen itself says it's waiting for. The screen is mounted underneath all the while, so it has its
  * real size and nothing moves when the veil lifts. On the first screen of a visit the veil is the game's intro.
  */
@@ -49,9 +59,9 @@ export function ScreenGate({ children, intro = false, hold = false, tasks, label
       }),
     );
     const everything = Promise.all(counted)
-      // (a moment for what those let the screen draw: icons fill in, and their pictures have to decode too)
+      // (a moment for what those let the screen draw: icons fill in, and their pictures have to arrive too)
       .then(() => pause(30))
-      .then(() => decodeImages(box.current));
+      .then(() => picturesIn(box.current));
     void Promise.race([everything, pause(MAX_WAIT)]).then(async () => {
       const left = (full ? INTRO_MIN : 0) - (performance.now() - began);
       if (left > 0) await pause(left);

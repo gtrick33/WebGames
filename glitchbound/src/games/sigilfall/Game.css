@@ -6946,7 +6946,7 @@
   }
 }
 /* too little room for two columns: one page that scrolls */
-@container (max-width: 720px), (max-height: 340px) {
+@container (max-width: 720px) or (max-height: 340px) {
   .rb-ringlobby {
     display: block;
     overflow-y: auto;
