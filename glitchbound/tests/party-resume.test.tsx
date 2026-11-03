@@ -65,7 +65,7 @@ describe('pass-the-phone games survive a refresh', () => {
     first.unmount();
     // Put the secret spot under the untouched needle (50): a bullseye.
     const s = loadSession();
-    const data = s.active!.data as { round: { target: number } };
+    const data = (s.active as { data: unknown }).data as { round: { target: number } };
     saveSession({ ...s, active: { mode: 'dial', data: { ...data, round: { ...data.round, target: 50 } } } });
 
     render(<Host Mode={DialMode} />);
@@ -73,7 +73,7 @@ describe('pass-the-phone games survive a refresh', () => {
     click(/Hide it/);
     click(/Lock in the needle/);
     expect(screen.getByText(/\+4/)).toBeTruthy();
-    const after = loadSession().active!.data as { stage: string; scores: Record<string, number> };
+    const after = (loadSession().active as { data: unknown }).data as { stage: string; scores: Record<string, number> };
     expect(after.stage).toBe('reveal');
     expect(after.scores.p0).toBe(4);
   });
