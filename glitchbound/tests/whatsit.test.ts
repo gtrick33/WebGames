@@ -3,6 +3,40 @@ import { hashString } from '../src/platform/dates';
 import { THEMES, thingById } from '../src/games/whatsit/bank';
 import { answerLine, dailyRound, dayOf, fits, LINEUP, makeRound, scoreOf, stillFitting, validRound } from '../src/games/whatsit/logic';
 
+/** Things one answer apart, reviewed (WH-04): "a/b:question". */
+const REVIEWED_PAIRS = [
+  'theremin/synth:keys', 'eguitar/ukulele:elec', 'violin/gadulka:bg', 'harp/harpsichord:keys',
+  'tambura/ukulele:bg', 'kaval/gaida:bag', 'kaval/didgeridoo:bg', 'gaida/bagpipes:bg', 'bagpipes/didgeridoo:bag',
+  'tapan/xylophone:bg', 'bluewhale/dolphin:blacksea', 'bluewhale/narwhal:tusk', 'bluewhale/dugong:plants',
+  'seahorse/turbot:flat', 'turbot/stingray:sting', 'jellyfish/anemone:stuck', 'hermit/barnacle:stuck',
+  'tarator/shopska:soup', 'shopska/lyutenitsa:dairy', 'sushi/padthai:warm', 'ramen/padthai:soup',
+  'tiramisu/gelato:dairy', 'sun/sirius:far', 'mars/venus:hot', 'mars/saturn:bigger', 'saturn/neptune:eye',
+  'pluto/europa:moon', 'pluto/rover:made', 'halley/meteor:hot', 'gps/rover:earth', 'rover/voyager:far',
+  'rover/parker:hot', 'yoyo/top:string', 'marionette/teddy:string', 'matryoshka/teddy:nest',
+  'chess/backgammon:dice', 'chess/dominoes:board', 'jigsaw/dominoes:paper', 'dominoes/marbles:roll',
+  'axolotl/tortoise:bg', 'platypus/quokka:eggs', 'pangolin/fennec:ants', 'ayeaye/fennec:trees',
+  'okapi/tapir:africa', 'okapi/fennec:heavy', 'tongs/ladle:drink', 'tongs/colander:holes', 'tongs/mortar:crush',
+  'tongs/woodenspoon:wood', 'tongs/cleaver:blade', 'ladle/cezve:heat', 'ladle/corkscrew:spin',
+  'colander/garlicpress:crush', 'colander/grater:blade', 'colander/saladspinner:spin',
+  'mortar/garlicpress:holes', 'rollingpin/woodenspoon:spin', 'cezve/kettle:elec', 'grater/cleaver:holes',
+  'cleaver/pizzacutter:spin', 'kettle/toaster:drink', 'toaster/microwave:spin', 'rainbow/aurora:sun',
+  'aurora/lightning:storm', 'aurora/fog:light', 'hail/iceberg:storm', 'tornado/hurricane:sea',
+  'sandstorm/fog:wind', 'avalanche/iceberg:town', 'avalanche/earthquake:ice', 'glacier/iceberg:map',
+  'iceberg/fog:ice', 'geyser/waterfall:heat', 'earthquake/fog:town', 'curling/pommel:ice',
+  'snowboard/skateboard:ice', 'surfboard/skateboard:water', 'boxglove/golfclub:wear', 'javelin/discus:sharp',
+  'discus/boomerang:back', 'shuttlecock/volleyball:ball', 'shuttlecock/golfclub:net', 'puck/golfclub:ice',
+  'firefly/ladybug:glow', 'ladybug/dragonfly:water', 'ladybug/stickinsect:fly', 'dragonfly/mosquito:blood',
+  'honeybee/ant:fly', 'flea/stickinsect:blood', 'tarantula/scorpion:pincers', 'centipede/millipede:sting',
+  'earthworm/snail:shell', 'sundial/pocketwatch:pocket', 'phonograph/radio:elec', 'radio/tv:screen',
+  'telescope/magnifier:pocket', 'telescope/binoculars:old', 'bamboo/baobab:tree', 'bamboo/sunflower:tall',
+  'baobab/sequoia:eat', 'rose/lavender:thorns', 'edelweiss/mistletoe:poison', 'flyagaric/mistletoe:fungus',
+  'lotus/waterlily:eat', 'lotus/sunflower:water', 'oak/sequoia:bg', 'kalpak/beanie:bg', 'turban/kimono:head',
+  'monocle/kilt:eye', 'bowtie/scarf:warm', 'bowtie/kilt:neck', 'clogs/flipflops:wood', 'tsarvuli/flipflops:bg',
+  'flipflops/kilt:feet', 'kimono/kilt:asia', 'unicycle/tandem:solo', 'tandem/rickshaw:pedal',
+  'tuktuk/rickshaw:engine', 'tuktuk/hoverboard:solo', 'gondola/pedalo:pedal', 'gondola/hovercraft:engine',
+  'hovercraft/submarine:crowd', 'balloon/hangglider:solo', 'tram/funicular:engine', 'dogsled/snowmobile:engine',
+];
+
 describe('Whatsit bank', () => {
   it('has 14 themes of 16 things with unique ids', () => {
     expect(THEMES.length).toBe(14);
@@ -32,6 +66,33 @@ describe('Whatsit bank', () => {
         expect(n, `${t.id}/${q.id}`).toBeLessThanOrEqual(12);
       }
     }
+  });
+
+  it('no two questions in a theme give the same (or the opposite) answers for every thing', () => {
+    for (const t of THEMES) {
+      const cols = t.questions.map((q) => t.things.map((x) => (x.yes.has(q.id) ? 1 : 0)).join(''));
+      const flip = (c: string): string => c.replace(/./g, (d) => (d === '1' ? '0' : '1'));
+      for (let i = 0; i < cols.length; i++)
+        for (let j = i + 1; j < cols.length; j++) {
+          expect(cols[i], `${t.id}: ${t.questions[i]!.id} = ${t.questions[j]!.id}`).not.toBe(cols[j]);
+          expect(cols[i], `${t.id}: ${t.questions[i]!.id} = not ${t.questions[j]!.id}`).not.toBe(flip(cols[j]!));
+        }
+    }
+  });
+
+  // Two things that differ by one answer hang on that answer alone: each pair here was reviewed to be beyond
+  // argument. A bank change that adds a pair fails until it is reviewed and listed.
+  it('every pair of things one answer apart is a reviewed pair', () => {
+    const pairs: string[] = [];
+    for (const t of THEMES)
+      for (let i = 0; i < t.things.length; i++)
+        for (let j = i + 1; j < t.things.length; j++) {
+          const a = t.things[i]!;
+          const b = t.things[j]!;
+          const diff = t.questions.filter((q) => a.yes.has(q.id) !== b.yes.has(q.id));
+          if (diff.length === 1) pairs.push(`${a.id.split(':')[1]}/${b.id.split(':')[1]}:${diff[0]!.id}`);
+        }
+    expect(pairs.sort()).toEqual([...REVIEWED_PAIRS].sort());
   });
 
   it('has every text in English and Bulgarian, short enough for the cards', () => {
