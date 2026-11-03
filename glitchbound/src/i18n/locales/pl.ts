@@ -2133,6 +2133,43 @@ const pl: string[] = [
   'Żaden pokój nie ma tego kodu. Może został już zamknięty.',
   'Wszystkie gry na żywo i otwarte pokoje',
   'Teraz nie ma publicznych pokoi. Otwórz pokój w jednej z gier powyżej, a pojawi się tutaj dla wszystkich.',
+  // Challenge rounds, Launch Control banner, Party Mode rooms and room screens
+  'na razie dzielisz miejsce #{n} z {total}',
+  // 1960
+  'Ta gra się liczy',
+  'Jedna próba: twój pierwszy ukończony wynik trafia do rankingu.',
+  'Nowość · Launch Control',
+  'Zbuduj najszybsze auto na torze.',
+  'Wyścigi równoległe 3D na światłach startowych z Formuły 1: 43 auta do tuningu, 40 rywali do pokonania i wyścigi na żywo ze znajomymi.',
+  'Na tor →',
+  'Otwórz nowy pokój',
+  'Puste kolekcje nie mogą dostawać głosów.',
+  'Twoja karta jest niżej, jedno dotknięcie stąd.',
+  'Runda odwołana',
+  // 1970
+  'Szpieg wyszedł, więc nikt nie mógł go złapać. W tej rundzie bez punktów.',
+  'Zostało za mało graczy, by głosować. W tej rundzie bez punktów.',
+  'Sprawdź kod: pięć liter, np. KQTRA (kody nigdy nie zawierają I, L ani O).',
+  'Druga wskazówka: zgadnij jeszcze raz! Dotknij planszy',
+  'Zatwierdzone. Możesz go jeszcze przesunąć i zatwierdzić ponownie, dopóki wszyscy nie skończą.',
+  'Dopracuj go, potem zatwierdź',
+  'Twój strzał, kolor {n}',
+  'Przesuń swój strzał',
+  'Jaśniej',
+  'W lewo',
+  // 1980
+  'W prawo',
+  'Intensywniej',
+  'Zatwierdzone ✓',
+  'Zatwierdź mój strzał',
+  '{n} z {m} zatwierdziło',
+  'Nie możemy znaleźć pokoju {code}',
+  'Sprawdź kod albo pokój zamknął się po trzech cichych godzinach. Wybierz grę w Trybie imprezowym, by otworzyć nowy pokój lub szybką grę.',
+  'Otwórz nowy pokój lub szybką grę',
+  'Otwórz nowy pokój {game}',
+  'Witaj ponownie, {name}!',
+  // 1990
+  'Dołącz do mojego pokoju Scribble Scramble: jedno z nas rysuje, a wszyscy ścigają się, kto pierwszy zgadnie słowo.',
 ];
 
 export default pl;

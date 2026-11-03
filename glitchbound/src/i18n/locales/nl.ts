@@ -2133,6 +2133,43 @@ const nl: string[] = [
   'Geen kamer heeft die code. Misschien is hij al gesloten.',
   'Alle live spellen en open kamers',
   'Er zijn nu geen openbare kamers. Open er een in een van de spellen hierboven en iedereen ziet hem hier.',
+  // Challenge rounds, Launch Control banner, Party Mode rooms and room screens
+  'je deelt nu plek #{n} van {total}',
+  // 1960
+  'Deze ronde telt',
+  'Eén poging: je eerste afgemaakte score komt op de ranglijst.',
+  'Nieuw · Launch Control',
+  'Bouw de snelste auto op de baan.',
+  '3D-dragraces man tegen man bij Formule 1-startlichten: 43 auto’s om af te stellen, 40 rivalen om te verslaan en live races tegen je vrienden.',
+  'De baan op →',
+  'Nieuwe kamer openen',
+  'Lege collecties kunnen geen stemmen krijgen.',
+  'Je kaart staat hieronder, één tik verderop.',
+  'Ronde afgeblazen',
+  // 1970
+  'De bedrieger is weg, dus niemand kon hem betrappen. Geen punten deze ronde.',
+  'Er waren niet genoeg spelers meer om te stemmen. Geen punten deze ronde.',
+  'Controleer de code: vijf letters, zoals KQTRA (codes gebruiken nooit I, L of O).',
+  'Tweede hint: raad opnieuw! Tik op het bord',
+  'Vastgezet. Je kunt hem nog verplaatsen en opnieuw vastzetten tot iedereen klaar is.',
+  'Stel hem fijn af en zet hem dan vast',
+  'Jouw gok, kleur {n}',
+  'Je gok verplaatsen',
+  'Bleker',
+  'Naar links',
+  // 1980
+  'Naar rechts',
+  'Dieper',
+  'Vastgezet ✓',
+  'Mijn gok vastzetten',
+  '{n} van {m} vastgezet',
+  'We kunnen kamer {code} niet vinden',
+  'Controleer de code, of de kamer is gesloten na drie stille uren. Kies een spel in Feestmodus om een nieuwe kamer of snelle match te openen.',
+  'Nieuwe kamer of snelle match openen',
+  'Nieuwe {game}-kamer openen',
+  'Welkom terug, {name}!',
+  // 1990
+  'Kom in mijn Scribble Scramble-kamer: één van ons tekent, iedereen racet om het woord te raden.',
 ];
 
 export default nl;

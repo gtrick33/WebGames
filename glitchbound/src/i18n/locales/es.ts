@@ -2133,6 +2133,43 @@ const es: string[] = [
   'Ninguna sala tiene ese código. Puede que ya se haya cerrado.',
   'Todos los juegos en vivo y salas abiertas',
   'Ahora mismo no hay salas públicas. Abre una en cualquiera de los juegos de arriba y aparecerá aquí para todos.',
+  // Challenge rounds, Launch Control banner, Party Mode rooms and room screens
+  'vas empatado en el #{n} de {total} por ahora',
+  // 1960
+  'Esta partida cuenta',
+  'Un solo intento: tu primera puntuación terminada va a la clasificación.',
+  'Nuevo · Launch Control',
+  'Construye el coche más rápido de la pista.',
+  'Carreras de aceleración en 3D cara a cara con semáforos de Fórmula 1: 43 coches para ajustar, 40 rivales a los que vencer y carreras en vivo contra tus amigos.',
+  'A la pista →',
+  'Abrir una sala nueva',
+  'Las colecciones vacías no pueden recibir votos.',
+  'Tu carta está a un toque, aquí abajo.',
+  'Ronda anulada',
+  // 1970
+  'El impostor se fue, así que nadie pudo atraparlo. Sin puntos esta ronda.',
+  'No quedaron suficientes jugadores para votar. Sin puntos esta ronda.',
+  'Revisa el código: cinco letras, como KQTRA (los códigos nunca usan I, L ni O).',
+  'Segunda pista: ¡adivina otra vez! Toca el tablero',
+  'Fijado. Aún puedes moverlo y volver a fijarlo hasta que estén todos.',
+  'Ajústalo y luego fíjalo',
+  'Tu intento, color {n}',
+  'Mover tu intento',
+  'Más claro',
+  'Mover a la izquierda',
+  // 1980
+  'Mover a la derecha',
+  'Más intenso',
+  'Fijado ✓',
+  'Fijar mi intento',
+  '{n} de {m} fijados',
+  'No encontramos la sala {code}',
+  'Revisa el código, o se cerró tras tres horas sin actividad. Elige un juego en el Modo fiesta para abrir una sala nueva o una partida rápida.',
+  'Abrir una sala nueva o una partida rápida',
+  'Abrir una sala nueva de {game}',
+  '¡Hola de nuevo, {name}!',
+  // 1990
+  'Únete a mi sala de Scribble Scramble: uno dibuja y todos compiten por adivinar la palabra.',
 ];
 
 export default es;
