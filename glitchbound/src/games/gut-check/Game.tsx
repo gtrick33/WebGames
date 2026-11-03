@@ -7,7 +7,7 @@ import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
 import { NextDaily } from '../../components/NextDaily';
 import { answerIsMore, categoryOf, chain, emojiOf, nameOf, resultLine, valueOf, type Card, type Pair } from './logic';
-import { formatIn, formatValue, unitOf } from './bank';
+import { formatIn, pairUnit, unitOf, type Unit } from './bank';
 import { CHAIN, KEY, pruneRounds, readSave, writeSave, type Save } from './save';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
@@ -21,6 +21,8 @@ type Mode = 'daily' | 'endless' | 'challenge';
 /** A run's cards: endless runs (`day` null) always get the new chain, dated ones by their day. */
 const cardsFor = (seed: number, day: string | null): Pair[] => chain(seed, CHAIN, day !== null && (day === '' || day < NO_REPEATS_FROM) ? 1 : 2);
 const dailyCards = (day: string): Pair[] => cardsFor(hashString(`gut-check:${day}`), day);
+/** A name mid-sentence: "longer or shorter than the Nile?" */
+const mid = (name: string): string => name.replace(/^The /, 'the ');
 const dailyNumber = (day: string): number => Math.max(1, daysBetween(EPOCH, day) + 1);
 const randomSeed = (): number => (Math.random() * 2 ** 32) >>> 0;
 
@@ -107,6 +109,7 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   const [over, setOver] = useState(opened?.over ?? false);
   const [note, setNote] = useState(opened?.note ?? '');
   const [newBest, setNewBest] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const sfxRef = useRef<Sfx | null>(null);
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
@@ -202,7 +205,7 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   };
 
   const call = (c: 'more' | 'less'): void => {
-    if (!run || run.phase !== 'ask') return;
+    if (!run || run.phase !== 'ask' || leaving) return;
     const pair = run.pairs[run.i]!;
     const right = answerIsMore(pair) === (c === 'more');
     setRun({ ...run, phase: right ? 'right' : 'wrong', call: c });
@@ -248,7 +251,7 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  if (!run) return <Menu save={save} today={today} onPlay={begin} onMute={() => commit((cur) => ({ ...cur, muted: !cur.muted }))} />;
+  if (!run) return <Menu save={save} today={today} onPlay={begin} onMute={() => commit((cur) => ({ ...cur, muted: !cur.muted }))} onUnits={() => commit((cur) => ({ ...cur, us: !cur.us }))} />;
 
   const pair = run.pairs[run.i]!;
   const cat = categoryOf(pair.left);
@@ -256,6 +259,20 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   const cleared = run.phase === 'right' && run.i + 1 >= run.pairs.length;
   const daily = run.day ? save.daily[run.day] : undefined;
   const shareDay = run.day ?? today;
+  // ☰ mid-run: an endless streak is not thrown away without a word (leaving counts it as finished).
+  // A daily just waits: it carries on from the same card.
+  const menu = (): void => {
+    if (mode === 'endless' && !over && !cleared && streak > 0 && run.phase !== 'wrong') setLeaving(true);
+    else setRun(null);
+  };
+  const leave = (): void => {
+    setLeaving(false);
+    finish(run, streak, false);
+    setRun(null);
+  };
+  // One unit for both numbers of a comparison (see pairUnit).
+  const leftUnit = unitOf(cat, valueOf(pair.left), save.us);
+  const rightUnit = pairUnit(cat, valueOf(pair.left), valueOf(pair.right), save.us);
 
   return (
     <div className="gc" ref={rootRef}>
@@ -263,7 +280,7 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
         <span className="game-menu-pair">
           {/* A challenge round is one attempt: no way out to the game's own menu mid-round. */}
           {mode !== 'challenge' && (
-            <button className="gc-icon" onClick={() => setRun(null)} aria-label="Menu">
+            <button className="gc-icon" onClick={menu} aria-label="Menu">
               ☰
             </button>
           )}
@@ -276,11 +293,11 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
         <span className="gc-topic">{cat.question}</span>
       </div>
       <div className="gc-stack">
-        <CardView key={`l${run.i}`} card={pair.left} shown />
+        <CardView key={`l${run.i}`} card={pair.left} unit={leftUnit} shown />
         <div className="gc-vs" aria-hidden="true">
           vs
         </div>
-        <CardView key={`r${run.i}`} card={pair.right} shown={run.phase !== 'ask'} verdict={run.phase === 'ask' ? null : run.phase} />
+        <CardView key={`r${run.i}`} card={pair.right} unit={rightUnit} shown={run.phase !== 'ask'} verdict={run.phase === 'ask' ? null : run.phase} />
       </div>
       <div className="gc-calls">
         <button className="gc-call is-more" onClick={() => call('more')} disabled={run.phase !== 'ask'}>
@@ -291,8 +308,27 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
         </button>
       </div>
       <p className="gc-help">
-        <b>{nameOf(pair.right)}</b>: {cat.more.toLowerCase()} or {cat.less.toLowerCase()} than {nameOf(pair.left)}?
+        <b>{nameOf(pair.right)}</b>: {cat.more.toLowerCase()} or {cat.less.toLowerCase()} than {mid(nameOf(pair.left))}?
+        {cat.note && <small className="gc-note"> {cat.note}</small>}
       </p>
+      {/* The verdict in words, for screen readers (the cards say it with color and a mark). */}
+      <p className="sr-only" aria-live="polite">
+        {run.phase === 'ask' ? '' : `${run.phase === 'right' ? 'Right!' : 'Wrong.'} ${nameOf(pair.right)}: ${formatIn(cat, rightUnit, valueOf(pair.right))}.`}
+      </p>
+      {leaving && (
+        <div className="gc-over gc-confirm" role="dialog" aria-modal="true" aria-labelledby="gc-leave">
+          <h2 id="gc-leave">Leave this run?</h2>
+          <p className="gc-muted">Your {streak} in a row will count as finished.</p>
+          <div className="gc-row">
+            <button className="gc-btn gc-btn-go" onClick={() => setLeaving(false)} autoFocus>
+              Keep playing
+            </button>
+            <button className="gc-btn" onClick={leave}>
+              Leave
+            </button>
+          </div>
+        </div>
+      )}
       {over && (
         <div className="gc-over">
           <h2>{cleared ? 'You cleared all 300 cards!' : streak >= 15 ? 'Gut of steel!' : streak >= 7 ? 'Trust that gut!' : 'Gut feeling: wrong'}</h2>
@@ -307,10 +343,10 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
                 </span>
               )}
               <span>
-                {emojiOf(pair.right)} <b>{nameOf(pair.right)}</b> {formatValue(cat, valueOf(pair.right))}
+                {emojiOf(pair.right)} <b>{nameOf(pair.right)}</b> {formatIn(cat, rightUnit, valueOf(pair.right))}
               </span>
               <span>
-                {emojiOf(pair.left)} <b>{nameOf(pair.left)}</b> {formatValue(cat, valueOf(pair.left))}
+                {emojiOf(pair.left)} <b>{nameOf(pair.left)}</b> {formatIn(cat, leftUnit, valueOf(pair.left))}
               </span>
             </div>
           )}
@@ -343,7 +379,7 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
 }
 
 /** One card: the thing, and its number (counting up when it is revealed). */
-function CardView({ card, shown, verdict = null }: { card: Card; shown: boolean; verdict?: 'right' | 'wrong' | null }) {
+function CardView({ card, unit, shown, verdict = null }: { card: Card; unit: Unit; shown: boolean; verdict?: 'right' | 'wrong' | null }) {
   const cat = categoryOf(card);
   const v = valueOf(card);
   return (
@@ -351,8 +387,13 @@ function CardView({ card, shown, verdict = null }: { card: Card; shown: boolean;
       <span className="gc-emoji" aria-hidden="true">
         {emojiOf(card)}
       </span>
+      {verdict && (
+        <span className="gc-mark" aria-hidden="true">
+          {verdict === 'right' ? '✓' : '✗'}
+        </span>
+      )}
       <b className="gc-name">{nameOf(card)}</b>
-      <span className="gc-value">{shown ? <CountUp to={v} format={(x) => formatIn(cat, unitOf(cat, v), x)} instant={!verdict} years={!!cat.years} /> : '?'}</span>
+      <span className="gc-value">{shown ? <CountUp to={v} format={(x) => formatIn(cat, unit, x)} instant={!verdict} years={!!cat.years} /> : '?'}</span>
     </div>
   );
 }
@@ -389,7 +430,7 @@ function ShareButton({ text }: { text: string }) {
   );
 }
 
-function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPlay: (m: Mode) => void; onMute: () => void }) {
+function Menu({ save, today, onPlay, onMute, onUnits }: { save: Save; today: string; onPlay: (m: Mode) => void; onMute: () => void; onUnits: () => void }) {
   const daily = save.daily[today];
   const going = daily?.open && save.progress?.day === today ? save.progress : null;
   return (
@@ -438,10 +479,13 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
           Play endless
         </button>
       </section>
-      <p className="gc-muted">
+      <p className="gc-muted gc-stats">
         Best streak {save.best} · {save.runs} {save.runs === 1 ? 'run' : 'runs'}
+        <button className="gc-units" onClick={onUnits} aria-label={save.us ? 'Numbers in US units. Switch to metric' : 'Numbers in metric units. Switch to US units'}>
+          📏 {save.us ? 'US units' : 'Metric'}
+        </button>
       </p>
-      <p className="gc-muted gc-small">People, places, animals, food and history. Every number is rounded; pairs are always far apart.</p>
+      <p className="gc-muted gc-small">Every number is rounded (populations as of 2024); pairs are always far apart.</p>
     </div>
   );
 }

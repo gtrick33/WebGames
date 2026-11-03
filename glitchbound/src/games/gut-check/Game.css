@@ -111,8 +111,29 @@
     opacity: 0;
   }
 }
+.gc-card {
+  position: relative;
+}
 .gc-card.is-right {
   background: #c8f7d4;
+}
+/* The verdict as a mark too, not only a color. */
+.gc-mark {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 2.5px solid var(--gc-ink);
+  border-radius: 50%;
+  background: #1f9d55;
+  color: #fff;
+  font-weight: 900;
+}
+.is-wrong .gc-mark {
+  background: #d6336c;
 }
 .gc-card.is-wrong {
   background: #ffc6cf;
@@ -166,6 +187,11 @@
 .gc-call:disabled {
   opacity: 0.55;
   cursor: default;
+}
+.gc-note {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.8;
 }
 .gc-help {
   margin: 0;
@@ -361,6 +387,24 @@
   gap: 8px;
 }
 
+/* The menu's units switch (metric or US), beside the bests. */
+.gc-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 10px;
+}
+.gc-units {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 2px solid var(--gc-ink);
+  border-radius: 12px;
+  background: var(--gc-paper);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 /* The pair the run ended on, on the end card (it covers the two cards). */
 .gc-miss {
   display: grid;
@@ -412,7 +456,7 @@
   }
   .gc-card-menu {
     gap: 8px;
-    padding: 10px 14px;
+    padding: 8px 14px;
   }
 }
 /* A phone on its side: the two cards sit side by side, under a one-line HUD. */

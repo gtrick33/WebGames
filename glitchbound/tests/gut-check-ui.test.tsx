@@ -64,6 +64,29 @@ describe('Gut Check play', () => {
     expect(document.querySelector('.gc-big')!.textContent).toBe('0');
   });
 
+  it('asks before the Menu button ends an endless streak, and counts it', () => {
+    vi.useFakeTimers();
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const { events } = mount();
+    press(/Play endless/);
+    fireEvent.click(answerIsMore(chain(2 ** 31, 300)[0]!) ? more() : less());
+    vi.mocked(Math.random).mockRestore();
+    act(() => void vi.advanceTimersByTime(1200));
+    press(/^Menu$/);
+    const dialog = screen.getByRole('dialog', { name: 'Leave this run?' });
+    expect(dialog.textContent).toMatch(/Your 1 in a row will count as finished/);
+    // Keys don't make calls while it asks.
+    fireEvent.keyDown(document.body, { key: 'l' });
+    expect(more().disabled).toBe(false);
+    press(/Keep playing/);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    press(/^Menu$/);
+    press(/^Leave$/);
+    expect(screen.getByRole('button', { name: /Play endless/ })).toBeTruthy();
+    expect(events.filter((e) => e.type === 'end')).toEqual([{ type: 'end', score: 1, stats: {} }]);
+    expect(readSave().best).toBe(1);
+  });
+
   it('ignores keys typed into the page’s text fields and with Ctrl/Cmd', () => {
     const input = document.body.appendChild(document.createElement('input'));
     mount();

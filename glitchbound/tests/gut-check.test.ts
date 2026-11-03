@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getGame } from '../src/catalog/catalog';
-import { CATEGORIES, formatIn, formatValue, unitOf } from '../src/games/gut-check/bank';
+import { CATEGORIES, formatIn, formatValue, pairUnit, unitOf } from '../src/games/gut-check/bank';
 import { answerIsMore, chain, clearlyDifferent, PER_TOPIC, resultLine, valueOf, type Pair } from '../src/games/gut-check/logic';
 import { CHAIN, parseSave } from '../src/games/gut-check/save';
 import { hashString } from '../src/platform/dates';
@@ -97,8 +97,29 @@ describe('Gut Check', () => {
     const tons = unitOf(weight, 1500);
     expect(formatIn(weight, tons, 1500)).toBe('about 1.5 metric tons');
     // Mid-count it stays in metric tons (never "918 kg", then "1.1 metric tons").
-    expect(formatIn(weight, tons, 918)).toBe('about 0.9 metric tons');
+    expect(formatIn(weight, tons, 918)).toBe('about 0.92 metric tons');
     expect(formatValue(weight, 0.8)).toBe('about 800 g');
+  });
+
+  it('says both numbers of a comparison in one unit, metric or US, and big numbers in words', () => {
+    const cat = (id: string) => CATEGORIES.find((c) => c.id === id)!;
+    const weight = cat('weight');
+    const speed = cat('speed');
+    // Hedgehog vs Rabbit: 800 g vs 2,000 g, not 800 g vs 2 kg.
+    expect(formatIn(weight, pairUnit(weight, 0.8, 2), 2)).toBe('about 2,000 g');
+    // Walking person vs Sloth: the slower one has the smaller number.
+    expect(formatIn(speed, pairUnit(speed, 5, 0.25), 0.25)).toBe('about 0.25 km/h');
+    // Too far apart to share one (an elephant in grams): each in its own.
+    expect(formatIn(weight, pairUnit(weight, 6000, 0.0001), 0.0001)).toBe('about 0.1 g');
+    // US units, rounded to three significant digits.
+    expect(formatValue(weight, 1500, true)).toBe('about 1.65 tons');
+    expect(formatValue(weight, 2, true)).toBe('about 4.41 lb');
+    expect(formatValue(speed, 110, true)).toBe('about 68.4 mph');
+    expect(formatValue(cat('mountain'), 8849, true)).toBe('about 29,000 ft high');
+    expect(formatValue(cat('area'), 17.1e6, true)).toBe('about 6.6 million sq mi');
+    expect(formatValue(cat('people'), 1440e6)).toBe('about 1.44 billion people');
+    expect(cat('people').note).toMatch(/as of 2024/);
+    for (const c of CATEGORIES) for (const [, , v] of c.items) expect(formatValue(c, v, true)).not.toMatch(/NaN|undefined|\b0 /);
   });
 
   it('loads a damaged save without throwing, clamped to what a run can reach', () => {

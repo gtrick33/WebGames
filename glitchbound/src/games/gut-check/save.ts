@@ -13,13 +13,23 @@ export interface Save {
   /** Friends' challenge rounds by `${id}:${round}`: the card reached and, once it ended, the result. */
   rounds: Record<string, ChallengeRound>;
   muted: boolean;
+  /** Numbers in US units (mph, lb, ft…) instead of metric. */
+  us: boolean;
 }
 export interface ChallengeRound {
   i: number;
   done?: number;
   missed?: boolean;
 }
-export const emptySave = (): Save => ({ best: 0, runs: 0, daily: {}, rounds: {}, muted: false });
+/** US units by default for a browser set to US English, until the player picks. */
+const usByDefault = (): boolean => {
+  try {
+    return navigator.language === 'en-US';
+  } catch {
+    return false;
+  }
+};
+export const emptySave = (): Save => ({ best: 0, runs: 0, daily: {}, rounds: {}, muted: false, us: usByDefault() });
 
 /** Reads a stored save; anything damaged or out of range is dropped or clamped, never thrown. */
 export function parseSave(raw: string | null): Save {
@@ -31,6 +41,7 @@ export function parseSave(raw: string | null): Save {
     s.best = n(o.best);
     s.runs = n(o.runs, 1e9);
     s.muted = o.muted === true;
+    if (typeof o.us === 'boolean') s.us = o.us;
     if (o.daily && typeof o.daily === 'object')
       for (const [d, v] of Object.entries(o.daily).slice(-60))
         if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object') s.daily[d] = { best: n(v.best), tries: n(v.tries, 9), ...(typeof v.open === 'boolean' ? { open: v.open } : {}) };
