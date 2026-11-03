@@ -70,6 +70,9 @@ export interface Ui {
   askHintChallenge: string;
   /** After an answer in a fresh challenge round: how many line-up cards still fit. */
   stillFit: (n: number, of: number) => string;
+  /** The result's list of the secret's answers to the questions asked. */
+  secretAnswers: string;
+  disagree: string;
   /** The share title's verdict, as a word (the preview picture can't draw emoji). */
   shareVerdict: (solved: boolean) => string;
 }
@@ -137,6 +140,8 @@ const UI_EN: Ui = {
   back: 'Back',
   dailyCounts: 'You already played this daily: your daily result counts here.',
   shareVerdict: (solved) => (solved ? 'Solved' : 'Missed'),
+  secretAnswers: 'Its answers',
+  disagree: 'Disagree with an answer?',
   askHintChallenge: 'Every question costs points here: the fewest questions wins.',
   stillFit: (n, of) => `${n} of ${of} cards still fit.`,
 };
@@ -204,6 +209,8 @@ const UI_BG: Ui = {
   back: 'Назад',
   dailyCounts: 'Вече игра този дневен Whatsit: резултатът ти от него се брои тук.',
   shareVerdict: (solved) => (solved ? 'Познах' : 'Не познах'),
+  secretAnswers: 'Неговите отговори',
+  disagree: 'Не си съгласен с отговор?',
   askHintChallenge: 'Тук всеки въпрос струва точки: печели този с най-малко въпроси.',
   stillFit: (n, of) => `Пасват още ${n} от ${of} карти.`,
 };

@@ -598,6 +598,61 @@
 .whz-reveal p {
   font-size: 13.5px;
 }
+.whz-answers {
+  width: 100%;
+  max-width: 460px;
+}
+.whz-answers h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.whz-answers ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.whz-answers li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 6px 10px;
+  border: 2px solid var(--whz-no);
+  border-radius: 10px;
+  background: #ffe8ea;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-align: left;
+}
+.whz-answers li.is-yes {
+  border-color: var(--whz-yes);
+  background: #e2f8ea;
+}
+.whz-answers b {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--whz-no);
+  color: #fff;
+  font-size: 12.5px;
+}
+.whz-answers li.is-yes b {
+  background: var(--whz-yes);
+}
+.whz-answers small {
+  grid-column: 1 / -1;
+  font-weight: 500;
+  font-size: 12.5px;
+}
+.whz-disagree {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 10px 4px;
+  color: var(--whz-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
 .whz-review {
   display: flex;
   flex-wrap: wrap;

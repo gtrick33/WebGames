@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { hashString } from '../src/platform/dates';
-import { THEMES, thingById } from '../src/games/whatsit/bank';
+import { THEMES, themeById, thingById } from '../src/games/whatsit/bank';
+import { NOTE_KEYS } from '../src/games/whatsit/bank/notes';
 import { answerLine, challengeScoreOf, dailyRound, dayOf, fits, LINEUP, makeRound, scoreOf, stillFitting, validRound } from '../src/games/whatsit/logic';
 
 /** Things one answer apart, reviewed (WH-04): "a/b:question". */
@@ -93,6 +94,14 @@ describe('Whatsit bank', () => {
           if (diff.length === 1) pairs.push(`${a.id.split(':')[1]}/${b.id.split(':')[1]}:${diff[0]!.id}`);
         }
     expect(pairs.sort()).toEqual([...REVIEWED_PAIRS].sort());
+  });
+
+  it('answer notes name a real thing and question', () => {
+    for (const k of NOTE_KEYS) {
+      const [theme, thing, q] = k.split(':');
+      expect(thingById(`${theme}:${thing}`), k).toBeTruthy();
+      expect(themeById(theme!)!.questions.some((x) => x.id === q), k).toBe(true);
+    }
   });
 
   it('has every text in English and Bulgarian, short enough for the cards', () => {

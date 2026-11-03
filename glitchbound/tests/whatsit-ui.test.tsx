@@ -65,6 +65,10 @@ describe('Whatsit challenge rounds', () => {
     render(<Game host={{ report }} restartKey={2} challenge={fresh} />);
     expect(screen.getByText('Got it!')).toBeTruthy();
     expect(report.mock.calls.filter(([e]) => e.type === 'end')).toHaveLength(1);
+    // The result lists the secret's answers to the two questions asked, with a way to dispute one.
+    const answers = screen.getByRole('heading', { name: 'Its answers' }).parentElement!;
+    expect(answers.querySelectorAll('li')).toHaveLength(2);
+    expect(screen.getByRole('link', { name: 'Disagree with an answer?' }).getAttribute('href')).toMatch(/^\/me\/bugs\?game=whatsit&category=bug&title=/);
   });
 
   it('a "Today’s daily" challenge plays the real daily, or counts the daily already played', () => {
@@ -111,6 +115,8 @@ describe('Whatsit line-up', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Yes, pick it' }));
     expect(screen.getByText('Got it!')).toBeTruthy();
     expect(report).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'end', score: 1000, daily: true }));
+    // No questions asked: no answers list. The disagree link only shows with answers.
+    expect(screen.queryByRole('heading', { name: 'Its answers' })).toBeNull();
   });
 });
 

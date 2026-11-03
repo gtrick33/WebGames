@@ -9,6 +9,7 @@ import { Coach, useCoach } from '../../components/Coach';
 import { ResultLine } from '../../components/ResultLine';
 import { THEMES, themeById, thingById, type Theme } from './bank';
 import { Parcel, type Mood } from './art';
+import { noteFor } from './bank/notes';
 import { COACH_BUTTONS, coachSteps } from './coach';
 import { answer, answerLine, challengeScoreOf, dailyRound, EPOCH, LINEUP, makeRound, scoreOf, stillFitting, validRound, type Round } from './logic';
 import { createSfx, type Sfx } from './sound';
@@ -780,6 +781,7 @@ function Result({ play, theme, u, lang, label, newBest, share, challenge, onAgai
         <p>{secret.def[lang]}</p>
       </div>
       {!solved && picked && <p className="whz-muted">{u.youPicked(picked.name[lang])}</p>}
+      {!counted && play.asked.length > 0 && <SecretAnswers play={play} theme={theme} u={u} lang={lang} />}
       {!counted && (
         <ul className="whz-review">
           {play.round.lineup.map((id) => {
@@ -814,6 +816,38 @@ function Result({ play, theme, u, lang, label, newBest, share, challenge, onAgai
       </div>
       {play.mode === 'daily' && <Countdown label={u.nextDaily} />}
     </div>
+  );
+}
+
+/** The secret's answer to each question asked, a reason where players often disagree, and a way to report one. */
+function SecretAnswers({ play, theme, u, lang }: { play: Play; theme: Theme; u: Ui; lang: BasicLang }) {
+  const secret = thingById(play.round.secret)!;
+  const rows = play.asked.map((id) => {
+    const q = theme.questions.find((x) => x.id === id)!;
+    return { id, q, yes: answer(secret, id), note: noteFor(secret.id, id, lang) };
+  });
+  const report = new URLSearchParams({
+    game: 'whatsit',
+    category: 'bug',
+    title: `Whatsit answer: ${secret.name.en}`,
+    description: [`Theme: ${theme.name.en}`, `Thing: ${secret.name.en}`, ...rows.map((r) => `${r.q.text.en} ${r.yes ? 'Yes' : 'No'}`), '', 'The answer I disagree with, and why:'].join('\n'),
+  });
+  return (
+    <section className="whz-answers" aria-labelledby="whz-answers-title">
+      <h2 id="whz-answers-title">{u.secretAnswers}</h2>
+      <ul>
+        {rows.map((r) => (
+          <li key={r.id} className={r.yes ? 'is-yes' : 'is-no'}>
+            <span>{r.q.text[lang]}</span>
+            <b>{r.yes ? `✓ ${u.yes}` : `✗ ${u.no}`}</b>
+            {r.note && <small>{r.note}</small>}
+          </li>
+        ))}
+      </ul>
+      <a className="whz-disagree" href={`/me/bugs?${report.toString()}`}>
+        {u.disagree}
+      </a>
+    </section>
   );
 }
 
