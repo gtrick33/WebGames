@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode, type RefObject } from 'react';
 import type { ChallengeSpec } from '../../platform/challenge';
 import { openChallengeScores } from '../../platform/challenge';
 import { basicLang, type BasicLang } from '../../platform/contentLang';
@@ -9,8 +9,9 @@ import { Coach, useCoach } from '../../components/Coach';
 import { ResultLine } from '../../components/ResultLine';
 import { THEMES, themeById, thingById, type Theme } from './bank';
 import { Parcel, type Mood } from './art';
+import { noteFor } from './bank/notes';
 import { COACH_BUTTONS, coachSteps } from './coach';
-import { answer, answerLine, dailyRound, EPOCH, makeRound, scoreOf, stillFitting, validRound, type Round } from './logic';
+import { answer, answerLine, challengeScoreOf, dailyRound, EPOCH, LINEUP, makeRound, scoreOf, stillFitting, validRound, type Round } from './logic';
 import { createSfx, type Sfx } from './sound';
 import { UI, type Ui } from './words';
 import './Game.css';
@@ -37,39 +38,66 @@ interface Progress {
   phase: 'ask' | 'lineup';
   crossed: string[];
 }
+/** A friends' challenge round, saved as you go: a reload or Restart carries on, a finished one stays finished. */
+interface ChallengeRecord {
+  round: Round;
+  asked: string[];
+  phase: Phase;
+  crossed: string[];
+  pick: string | null;
+  /** A "Today's daily" challenge whose daily was already played: that result is the round's score. */
+  counted?: DailyRecord;
+}
 interface Save {
   best: number;
   rounds: number;
   solved: number;
   daily: Record<string, DailyRecord>;
   progress?: Progress;
+  /** By `${challenge.id}:${challenge.round}`, the newest 30. */
+  challenges: Record<string, ChallengeRecord>;
   muted: boolean;
 }
-const emptySave = (): Save => ({ best: 0, rounds: 0, solved: 0, daily: {}, muted: false });
+const emptySave = (): Save => ({ best: 0, rounds: 0, solved: 0, daily: {}, challenges: {}, muted: false });
 const strings = (v: unknown, max: number): v is string[] => Array.isArray(v) && v.length <= max && v.every((x) => typeof x === 'string');
+const num = (v: unknown, max = 1e7): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.min(max, Math.floor(v)) : 0);
+const dailyRecord = (v: Partial<DailyRecord>): DailyRecord => ({ score: num(v.score, 1000), solved: v.solved === true, questions: num(v.questions, 99), line: typeof v.line === 'string' ? v.line.slice(0, 60) : '', ...(v.open === true ? { open: true } : {}) });
+/** Asked question ids the round's theme still has (a later deploy may have changed a question). */
+const knownQuestions = (round: Round, asked: string[]): string[] => {
+  const qs = new Set(themeById(round.theme)!.questions.map((q) => q.id));
+  return [...new Set(asked)].filter((q) => qs.has(q));
+};
 
-function loadSave(): Save {
+/** The stored save, checked field by field. `fallback` is used when storage can't be read (blocked, empty or damaged). */
+function loadSave(fallback?: Save): Save {
   try {
-    const o = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Save>;
-    const n = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+    const raw = localStorage.getItem(KEY);
+    if (raw === null && fallback) return fallback;
+    const o = JSON.parse(raw ?? '{}') as Partial<Save>;
     const s = emptySave();
-    s.best = n(o.best);
-    s.rounds = n(o.rounds);
-    s.solved = Math.min(s.rounds, n(o.solved));
+    s.best = num(o.best, 1000);
+    s.rounds = num(o.rounds);
+    s.solved = Math.min(s.rounds, num(o.solved));
     s.muted = o.muted === true;
     if (o.daily && typeof o.daily === 'object')
-      for (const [d, v] of Object.entries(o.daily).slice(-60))
-        if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object')
-          s.daily[d] = { score: n(v.score), solved: v.solved === true, questions: n(v.questions), line: typeof v.line === 'string' ? v.line.slice(0, 60) : '', ...(v.open === true ? { open: true } : {}) };
+      for (const [d, v] of Object.entries(o.daily).slice(-60)) if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object') s.daily[d] = dailyRecord(v);
     const p = o.progress;
-    if (p && typeof p.day === 'string' && (p.phase === 'ask' || p.phase === 'lineup') && validRound(p.round) && strings(p.asked, 20) && strings(p.crossed, 12)) {
-      const qs = new Set(themeById(p.round.theme)!.questions.map((q) => q.id));
-      if (p.asked.every((q) => qs.has(q)) && p.crossed.every((id) => p.round.lineup.includes(id)))
-        s.progress = { day: p.day, round: p.round, asked: p.asked.slice(), phase: p.phase, crossed: p.crossed.slice() };
-    }
+    if (p && typeof p.day === 'string' && (p.phase === 'ask' || p.phase === 'lineup') && validRound(p.round) && strings(p.asked, 20) && strings(p.crossed, 12) && p.crossed.every((id) => p.round.lineup.includes(id)))
+      s.progress = { day: p.day, round: p.round, asked: knownQuestions(p.round, p.asked), phase: p.phase, crossed: p.crossed.slice() };
+    if (o.challenges && typeof o.challenges === 'object')
+      for (const [k, c] of Object.entries(o.challenges).slice(-30)) {
+        if (!/^[\w-]{1,64}:\d{1,4}$/.test(k) || !c || typeof c !== 'object' || !validRound(c.round)) continue;
+        if ((c.phase !== 'ask' && c.phase !== 'lineup' && c.phase !== 'done') || !strings(c.asked, 20) || !strings(c.crossed, 12)) continue;
+        const round = c.round;
+        const pick = typeof c.pick === 'string' && round.lineup.includes(c.pick) ? c.pick : null;
+        const counted = c.counted && typeof c.counted === 'object' ? { ...dailyRecord(c.counted), open: undefined } : undefined;
+        // A finished round needs its pick (or the daily result it counted) to show the result.
+        if (c.phase === 'done' && !pick && !counted) continue;
+        s.challenges[k] = { round, asked: knownQuestions(round, c.asked), phase: c.phase, crossed: c.crossed.filter((id) => round.lineup.includes(id)), pick, ...(counted ? { counted } : {}) };
+      }
     return s;
   } catch {
-    return emptySave();
+    return fallback ?? emptySave();
   }
 }
 const writeSave = (s: Save): void => {
@@ -79,38 +107,96 @@ const writeSave = (s: Save): void => {
     /* blocked storage: the game still works, nothing is kept */
   }
 };
+/** Adds or replaces one challenge round, keeping the newest 30. */
+const withChallenge = (all: Record<string, ChallengeRecord>, key: string, rec: ChallengeRecord): Record<string, ChallengeRecord> => {
+  const rest = Object.entries(all).filter(([k]) => k !== key);
+  return Object.fromEntries([...rest.slice(-29), [key, rec]]);
+};
 const dailyNumber = (day: string): number => Math.max(1, daysBetween(EPOCH, day) + 1);
 
 interface Play {
   mode: Mode;
+  /** The daily this round counts as: today's daily, or a "Today's daily" challenge's day. */
+  day: string | null;
   round: Round;
   asked: string[];
   phase: Phase;
   crossed: string[];
   pick: string | null;
+  /** A practice round on a random theme: "Another one" picks a new random theme. */
+  random?: boolean;
+  /** Tells rounds apart, so a round carried on after another one ran reports its start again. */
+  run: number;
+  counted?: DailyRecord;
 }
 
-export default function Game({ host, restartKey, challenge, lang }: GameModuleProps) {
-  return <Whatsit key={restartKey} host={host} challenge={challenge} lang={basicLang(lang)} />;
+/** A fresh challenge round counts every question (it ranks the fewest); the rest use the daily's scoring. */
+const ranksQuestions = (p: Play): boolean => p.mode === 'challenge' && !p.day;
+const scoreFor = (p: Play, solved: boolean): number => (ranksQuestions(p) ? challengeScoreOf : scoreOf)(p.asked.length, solved);
+
+const recordOf = (p: Play): ChallengeRecord => ({ round: p.round, asked: p.asked, phase: p.phase, crossed: p.crossed, pick: p.pick, ...(p.counted ? { counted: p.counted } : {}) });
+
+/** The challenge round to show when the game opens: a saved one carries on, otherwise a new one starts. */
+function challengePlay(challenge: ChallengeSpec, s: Save): Play {
+  const day = challenge.mode === 'daily' && /^\d{4}-\d{2}-\d{2}$/.test(challenge.day) ? challenge.day : null;
+  const rec = s.challenges[`${challenge.id}:${challenge.round}`];
+  const base = { mode: 'challenge' as const, day, run: 1 };
+  if (rec?.phase === 'done') return { ...base, ...rec };
+  if (day) {
+    // "Today's daily": it is that day's daily (one attempt for both). Already played: that result counts.
+    const d = s.daily[day];
+    if (d && !d.open) return { ...base, round: dailyRound(day, hashString), asked: [], phase: 'done', crossed: [], pick: null, counted: d };
+    if (rec) return { ...base, ...rec };
+    const kept = d?.open && s.progress?.day === day ? s.progress : null;
+    return { ...base, round: kept?.round ?? dailyRound(day, hashString), asked: kept?.asked ?? [], phase: kept?.phase ?? 'ask', crossed: kept?.crossed ?? [], pick: null };
+  }
+  if (rec) return { ...base, ...rec };
+  return { ...base, round: makeRound(challenge.seed), asked: [], phase: 'ask', crossed: [], pick: null };
 }
 
-function Whatsit({ host, challenge, lang }: { host: GameHost; challenge?: ChallengeSpec; lang: BasicLang }) {
+/**
+ * Whether a key press is meant for the game: not typed into a field, and pressed with focus inside `root`
+ * (or nowhere in particular), so the site's own dialogs and fields keep their keys.
+ */
+function forGame(e: KeyboardEvent, root: Element | null | undefined): boolean {
+  if (e.ctrlKey || e.altKey || e.metaKey) return false;
+  const t = e.target instanceof Element ? e.target : null;
+  if (!t || t === document.body || t === document.documentElement) return true;
+  if (!root?.contains(t)) return false;
+  return !t.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])');
+}
+
+export default function Game({ host, restartKey, challenge, lang, pauseKey }: GameModuleProps) {
+  return <Whatsit key={restartKey} host={host} challenge={challenge} lang={basicLang(lang)} pauseKey={pauseKey} />;
+}
+
+function Whatsit({ host, challenge, lang, pauseKey }: { host: GameHost; challenge?: ChallengeSpec; lang: BasicLang; pauseKey?: number }) {
   const u = UI[lang];
-  const [today] = useState(() => dayKey());
-  const [save, setSave] = useState<Save>(loadSave);
+  const ckey = challenge ? `${challenge.id}:${challenge.round}` : '';
+  // The day moves on at midnight while the game is open: re-read it on a timer and when the tab comes back.
+  const [today, setToday] = useState(() => dayKey());
+  const [first] = useState(() => {
+    const s = loadSave();
+    return { save: s, play: challenge ? challengePlay(challenge, s) : null };
+  });
+  const [save, setSave] = useState<Save>(first.save);
   const saveRef = useRef(save);
-  const commit = useCallback((s: Save) => {
+  /** Changes the save: always on top of what is stored now (another tab may have written since). */
+  const commit = useCallback((f: (s: Save) => Save) => {
+    const s = f(loadSave(saveRef.current));
     saveRef.current = s;
     setSave(s);
     writeSave(s);
   }, []);
-  const [play, setPlay] = useState<Play | null>(() => (challenge ? { mode: 'challenge', round: makeRound(challenge.seed), asked: [], phase: 'ask', crossed: [], pick: null } : null));
+  const [play, setPlay] = useState<Play | null>(first.play);
   const [newBest, setNewBest] = useState(false);
   // ☰ pauses the round (a sheet over it); "Main menu" parks it, and the menu offers to carry on.
   const [paused, setPaused] = useState(false);
   const [parked, setParked] = useState<Play | null>(null);
   const coach = useCoach('whatsit');
-  const started = useRef(false);
+  const runs = useRef(1);
+  /** The round the arcade was last told started (null once it ended). */
+  const live = useRef<number | null>(null);
   const sfxRef = useRef<Sfx | null>(null);
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
   useEffect(
@@ -121,89 +207,168 @@ function Whatsit({ host, challenge, lang }: { host: GameHost; challenge?: Challe
     [],
   );
 
+  useEffect(() => {
+    const tick = (): void => setToday(dayKey());
+    const t = window.setInterval(tick, 30_000);
+    window.addEventListener('focus', tick);
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      window.clearInterval(t);
+      window.removeEventListener('focus', tick);
+      document.removeEventListener('visibilitychange', tick);
+    };
+  }, []);
+
   // Today's daily was started but its saved round is gone (storage lost or damaged): settle it once, at 0,
-  // so the arcade still counts the day. It never comes back.
+  // so the arcade still counts the day. It never comes back. (A "Today's daily" challenge keeps its own copy.)
   useEffect(() => {
     const cur = saveRef.current;
     const rec = cur.daily[today];
-    if (!rec?.open || cur.progress?.day === today) return;
-    commit({ ...cur, daily: { ...cur.daily, [today]: { ...rec, open: false } } });
+    const secret = dailyRound(today, hashString).secret;
+    if (!rec?.open || cur.progress?.day === today || Object.values(cur.challenges).some((c) => c.phase !== 'done' && c.round.secret === secret)) return;
+    commit((s) => ({ ...s, daily: { ...s.daily, [today]: { ...rec, open: false } } }));
     host.report({ type: 'end', score: 0, stats: {}, daily: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // A challenge round is saved from its first screen, so leaving and coming back never gives a second try.
+  // A "Today's daily" challenge whose daily was already played reports that result at once.
+  useEffect(() => {
+    if (!challenge || !first.play || loadSave(saveRef.current).challenges[ckey]) return;
+    const p = first.play;
+    commit((s) => ({
+      ...s,
+      challenges: withChallenge(s.challenges, ckey, recordOf(p)),
+      daily: p.day && !s.daily[p.day] ? { ...s.daily, [p.day]: { score: 0, solved: false, questions: 0, line: '', open: true } } : s.daily,
+    }));
+    if (p.counted) {
+      const c = p.counted;
+      host.report({ type: 'end', score: c.score, stats: c.solved ? { questions: c.questions } : {}, challenge: { id: challenge.id, round: challenge.round } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Tell the arcade when a round's first screen shows (not at the first question: reading counts too).
+  useEffect(() => {
+    if (!play || play.phase === 'done' || live.current === play.run) return;
+    live.current = play.run;
+    host.report({ type: 'start' });
+  }, [play, host]);
+
+  // Another tab changed the save: take its copy. A daily finished there leaves this tab's stale round.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent): void => {
+      if (e.key !== KEY && e.key !== null) return;
+      const s = loadSave(saveRef.current);
+      saveRef.current = s;
+      setSave(s);
+      setPlay((p) => {
+        if (!p || p.phase === 'done') return p;
+        if (p.mode === 'challenge') {
+          const rec = s.challenges[ckey];
+          return rec ? { ...p, ...rec } : p;
+        }
+        if (!p.day) return p;
+        const d = s.daily[p.day];
+        if (d && !d.open) return null;
+        const g = s.progress;
+        return g?.day === p.day && g.round.secret === p.round.secret ? { ...p, asked: g.asked, phase: g.phase, crossed: g.crossed } : p;
+      });
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [ckey]);
+
+  // The arcade paused the game: show the pause sheet over a round (there is no clock to stop).
+  const [seenPause, setSeenPause] = useState(pauseKey);
+  if (pauseKey !== seenPause) {
+    setSeenPause(pauseKey);
+    if (play && play.phase !== 'done') setPaused(true);
+  }
+
   const begin = (mode: Mode, themeId?: string): void => {
-    const cur = saveRef.current;
-    // A parked practice or challenge round stays on offer while the daily is played (that one lives in the save).
+    const day = dayKey();
+    setToday(day);
+    // A parked practice round stays on offer while the daily is played (that one lives in the save).
     if (mode !== 'daily' || parked?.mode === 'daily') setParked(null);
+    const run = ++runs.current;
     if (mode === 'daily') {
       // One try: starting today's uses it up; leaving halfway (reload, menu) carries on from the save.
-      const kept = cur.daily[today]?.open && cur.progress?.day === today ? cur.progress : null;
-      if (!kept && cur.daily[today]) return;
-      const round = kept?.round ?? dailyRound(today, hashString);
-      if (!kept) commit({ ...cur, daily: { ...cur.daily, [today]: { score: 0, solved: false, questions: 0, line: '', open: true } }, progress: { day: today, round, asked: [], phase: 'ask', crossed: [] } });
-      setPlay({ mode, round, asked: kept?.asked ?? [], phase: kept?.phase ?? 'ask', crossed: kept?.crossed ?? [], pick: null });
+      const cur = loadSave(saveRef.current);
+      const kept = cur.daily[day]?.open && cur.progress?.day === day ? cur.progress : null;
+      if (!kept && cur.daily[day]) {
+        commit((s) => s);
+        return;
+      }
+      const round = kept?.round ?? dailyRound(day, hashString);
+      if (!kept) commit((s) => ({ ...s, daily: { ...s.daily, [day]: { score: 0, solved: false, questions: 0, line: '', open: true } }, progress: { day, round, asked: [], phase: 'ask', crossed: [] } }));
+      setPlay({ mode, day, round, asked: kept?.asked ?? [], phase: kept?.phase ?? 'ask', crossed: kept?.crossed ?? [], pick: null, run });
     } else {
-      setPlay({ mode, round: makeRound((Math.random() * 2 ** 32) >>> 0, themeId), asked: [], phase: 'ask', crossed: [], pick: null });
+      setPlay({ mode, day: null, round: makeRound((Math.random() * 2 ** 32) >>> 0, themeId), asked: [], phase: 'ask', crossed: [], pick: null, random: !themeId, run });
     }
-    started.current = false;
     setNewBest(false);
   };
 
-  /** Keeps today's daily as it goes, so a reload carries on. */
+  /** Keeps a daily or challenge round as it goes, so a reload carries on. */
   const keep = (p: Play): void => {
-    if (p.mode !== 'daily' || p.phase === 'done') return;
-    commit({ ...saveRef.current, progress: { day: today, round: p.round, asked: p.asked, phase: p.phase, crossed: p.crossed } });
+    if (p.phase === 'done') return;
+    const day = p.day;
+    if (!day && p.mode !== 'challenge') return;
+    const phase = p.phase;
+    commit((s) => ({
+      ...s,
+      // Never over another day's daily that is still going.
+      progress: day && (!s.progress || s.progress.day === day || !s.daily[s.progress.day]?.open) ? { day, round: p.round, asked: p.asked, phase, crossed: p.crossed } : s.progress,
+      challenges: p.mode === 'challenge' ? withChallenge(s.challenges, ckey, recordOf(p)) : s.challenges,
+    }));
   };
   const update = (p: Play): void => {
     setPlay(p);
     keep(p);
   };
-  const start = (): void => {
-    if (started.current) return;
-    started.current = true;
-    host.report({ type: 'start' });
-  };
 
   const ask = (q: string): boolean | null => {
     if (!play || play.phase !== 'ask' || play.asked.includes(q)) return null;
-    start();
     update({ ...play, asked: [...play.asked, q] });
     return answer(thingById(play.round.secret)!, q);
   };
 
   const choose = (id: string): void => {
     if (!play || play.phase !== 'lineup') return;
-    start();
     const solved = id === play.round.secret;
     const questions = play.asked.length;
-    const score = scoreOf(questions, solved);
+    const score = scoreFor(play, solved);
     const line = answerLine(play.round, play.asked);
-    const cur = saveRef.current;
-    setNewBest(score > cur.best);
-    commit({
-      ...cur,
-      best: Math.max(cur.best, score),
-      rounds: cur.rounds + 1,
-      solved: cur.solved + (solved ? 1 : 0),
-      daily: play.mode === 'daily' ? { ...cur.daily, [today]: { score, solved, questions, line } } : cur.daily,
-      progress: play.mode === 'daily' ? undefined : cur.progress,
-    });
+    const day = play.day;
+    const done: Play = { ...play, phase: 'done', pick: id };
+    setNewBest(score > saveRef.current.best);
+    commit((s) => ({
+      ...s,
+      best: Math.max(s.best, score),
+      rounds: s.rounds + 1,
+      solved: s.solved + (solved ? 1 : 0),
+      daily: day ? { ...s.daily, [day]: { score, solved, questions, line } } : s.daily,
+      progress: day && s.progress?.day === day ? undefined : s.progress,
+      challenges: play.mode === 'challenge' ? withChallenge(s.challenges, ckey, recordOf(done)) : s.challenges,
+    }));
     if (solved) sfx().win();
     else sfx().lose();
     // "Fewest questions" and "wrong cards crossed out" only count solved rounds.
     const crossed = play.crossed.filter((x) => x !== play.round.secret).length;
     const stats: Record<string, number> = solved ? { questions, crossed } : {};
-    const end = { type: 'end' as const, score, stats };
-    host.report(play.mode === 'daily' ? { ...end, daily: true } : play.mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
-    setPlay({ ...play, phase: 'done', pick: id });
+    // A "Today's daily" challenge played on its day is today's daily too.
+    const daily = play.mode === 'daily' || (!!day && day === dayKey());
+    host.report({ type: 'end', score, stats, ...(daily ? { daily: true } : {}), ...(play.mode === 'challenge' && challenge ? { challenge: { id: challenge.id, round: challenge.round } } : {}) });
+    live.current = null;
+    setPlay(done);
   };
 
-  const mute = (): void => commit({ ...saveRef.current, muted: !saveRef.current.muted });
-  const labelOf = (p: Play): string => (p.mode === 'daily' ? u.daily(dailyNumber(today)) : p.mode === 'challenge' ? u.challengeRound(challenge?.round ?? 1) : u.practice);
+  const mute = (): void => commit((s) => ({ ...s, muted: !s.muted }));
+  const labelOf = (p: Play): string => (p.mode === 'daily' ? u.daily(dailyNumber(p.day ?? today)) : p.mode === 'challenge' ? u.challengeRound(challenge?.round ?? 1) : u.practice);
   const toMenu = (): void => {
     if (play && play.phase !== 'done') setParked(play);
     setPaused(false);
+    setToday(dayKey());
     setPlay(null);
   };
   const overlays = (
@@ -218,7 +383,8 @@ function Whatsit({ host, challenge, lang }: { host: GameHost; challenge?: Challe
             coach.show();
           }}
           onMute={mute}
-          onMenu={toMenu}
+          // A challenge round is one attempt: no way out to the menu from it.
+          onMenu={challenge ? undefined : toMenu}
         />
       )}
       {coach.open && <Coach steps={coachSteps(lang)} onClose={coach.close} {...COACH_BUTTONS[lang]} />}
@@ -257,10 +423,10 @@ function Whatsit({ host, challenge, lang }: { host: GameHost; challenge?: Challe
         lang={lang}
         label={label}
         newBest={newBest}
-        share={play.mode === 'daily' ? shareText(play, theme, today, u) : null}
+        share={play.mode === 'daily' ? shareText(play, theme, u, lang) : null}
         challenge={challenge}
-        onAgain={() => begin('endless', theme.id)}
-        onMenu={() => setPlay(null)}
+        onAgain={() => begin('endless', play.random ? undefined : theme.id)}
+        onMenu={toMenu}
       />
     );
   if (play.phase === 'lineup')
@@ -284,29 +450,17 @@ function Whatsit({ host, challenge, lang }: { host: GameHost; challenge?: Challe
     );
   return (
     <>
-      <Ask
-        play={play}
-        theme={theme}
-        u={u}
-        lang={lang}
-        label={label}
-        sfx={sfx}
-        onAsk={ask}
-        onReady={() => {
-          start();
-          update({ ...play, phase: 'lineup' });
-        }}
-        onMenu={() => setPaused(true)}
-      />
+      <Ask play={play} theme={theme} u={u} lang={lang} label={label} sfx={sfx} onAsk={ask} onReady={() => update({ ...play, phase: 'lineup' })} onMenu={() => setPaused(true)} />
       {overlays}
     </>
   );
 }
 
-function shareText(play: Play, theme: Theme, today: string, u: Ui): string {
+/** The share text. Its first line is the preview's title, so it says the theme and verdict in words. */
+function shareText(play: Play, theme: Theme, u: Ui, lang: BasicLang): string {
   const solved = play.pick === play.round.secret;
   const line = answerLine(play.round, play.asked);
-  return `📦 Whatsit #${dailyNumber(today)} · ${theme.emoji} · ${u.questions(play.asked.length)} · ${solved ? '✅' : '❌'}${line ? `\n${line}` : ''}\n${window.location.origin}/games/whatsit`;
+  return `Whatsit #${dailyNumber(play.day ?? dayKey())} · ${theme.name[lang]} · ${u.questions(play.asked.length)} · ${u.shareVerdict(solved)}${line ? `\n${line}` : ''}\n${window.location.origin}/games/whatsit`;
 }
 
 // ------------------------------------------------------------------ screens
@@ -400,23 +554,73 @@ function Hud({ u, label, questions, onMenu }: { u: Ui; label: string; questions:
   );
 }
 
+/** How many of a scrolling list's items sit below its visible part (for the "↓ N more" hint). */
+function useBelow(asked: number): [RefObject<HTMLUListElement | null>, number, () => void] {
+  const ref = useRef<HTMLUListElement>(null);
+  const [below, setBelow] = useState(0);
+  const measure = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const bottom = el.scrollTop + el.clientHeight;
+    let n = 0;
+    for (const li of Array.from(el.children) as HTMLElement[]) if (li.offsetTop + li.offsetHeight - 2 > bottom) n++;
+    setBelow(n);
+  }, []);
+  useEffect(() => {
+    const el = ref.current;
+    if (typeof ResizeObserver === 'undefined' || !el) return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measure, asked]);
+  return [ref, below, measure];
+}
+
 function Ask({ play, theme, u, lang, label, sfx, onAsk, onReady, onMenu }: { play: Play; theme: Theme; u: Ui; lang: BasicLang; label: string; sfx: () => Sfx; onAsk: (q: string) => boolean | null; onReady: () => void; onMenu: () => void }) {
   const [say, setSay] = useState<{ mood: Mood; text: string }>({ mood: 'idle', text: u.hello });
   const [flash, setFlash] = useState(0);
   const [confirm, setConfirm] = useState(false);
+  const [list, below, measure] = useBelow(play.asked.length);
+  const readyRef = useRef<HTMLButtonElement>(null);
   const secret = thingById(play.round.secret)!;
-  const ask = (q: string): void => {
+  const ask = (q: string, byKey: boolean): void => {
     const yes = onAsk(q);
     if (yes === null) return;
     sfx().ask();
     if (yes) sfx().yep();
     else sfx().nope();
-    setSay({ mood: yes ? 'yes' : 'no', text: yes ? u.yep : u.nope });
+    // A fresh challenge ranks the fewest questions: say how many cards still fit, so stopping early is a visible risk.
+    const fit = ranksQuestions(play) ? ` ${u.stillFit(stillFitting(play.round, [...play.asked, q]).length, LINEUP)}` : '';
+    setSay({ mood: yes ? 'yes' : 'no', text: (yes ? u.yep : u.nope) + fit });
     setFlash((n) => n + 1);
+    // An asked question turns off, which would drop focus to the page: move it to the next question to ask.
+    const ids = theme.questions.map((x) => x.id);
+    const from = ids.indexOf(q);
+    const next = [...ids.slice(from + 1), ...ids.slice(0, from)].find((id) => !play.asked.includes(id));
+    const el = next ? list.current?.querySelector<HTMLButtonElement>(`[data-q="${next}"]`) : readyRef.current;
+    el?.focus({ preventScroll: true });
+    if (byKey) el?.scrollIntoView?.({ block: 'nearest' });
   };
+  // Number keys 1–9 ask the first nine questions (not while a sheet or the walkthrough is open).
+  const rootRef = useRef<HTMLDivElement>(null);
+  const askRef = useRef(ask);
+  useEffect(() => {
+    askRef.current = ask;
+  });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.repeat || !/^[1-9]$/.test(e.key) || !forGame(e, rootRef.current) || document.querySelector('[role=dialog]')) return;
+      const q = theme.questions[Number(e.key) - 1];
+      if (!q) return;
+      e.preventDefault();
+      askRef.current(q.id, true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [theme]);
   return (
     <>
-      <div className="whz whz-ask">
+      <div className="whz whz-ask" ref={rootRef}>
         <Hud u={u} label={label} questions={play.asked.length} onMenu={onMenu} />
         <p className="whz-theme-pill">
           <span>{u.theme}:</span> {theme.emoji} {theme.name[lang]}
@@ -427,22 +631,30 @@ function Ask({ play, theme, u, lang, label, sfx, onAsk, onReady, onMenu }: { pla
             {say.text}
           </p>
         </div>
-        <ul className="whz-qs">
-          {theme.questions.map((q) => {
-            const asked = play.asked.includes(q.id);
-            const yes = answer(secret, q.id);
-            return (
-              <li key={q.id}>
-                <button className={`whz-q${asked ? (yes ? ' is-yes' : ' is-no') : ''}`} onClick={() => ask(q.id)} disabled={asked} aria-label={asked ? `${q.text[lang]} ${yes ? u.yes : u.no}` : q.text[lang]}>
-                  <span>{q.text[lang]}</span>
-                  {asked && <b>{yes ? `✓ ${u.yes}` : `✗ ${u.no}`}</b>}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-        <p className="whz-muted whz-hint">{u.askHint}</p>
-        <button className="whz-btn whz-btn-ready" onClick={() => setConfirm(true)}>
+        <div className={`whz-qs-wrap${below ? ' has-more' : ''}`}>
+          <ul className="whz-qs" ref={list} onScroll={measure}>
+            {theme.questions.map((q, i) => {
+              const asked = play.asked.includes(q.id);
+              const yes = answer(secret, q.id);
+              return (
+                <li key={q.id}>
+                  <button className={`whz-q${asked ? (yes ? ' is-yes' : ' is-no') : ''}`} data-q={q.id} onClick={(e) => ask(q.id, e.detail === 0)} disabled={asked} aria-label={asked ? `${q.text[lang]} ${yes ? u.yes : u.no}` : q.text[lang]} aria-keyshortcuts={i < 9 ? String(i + 1) : undefined}>
+                    {i < 9 && !asked && <kbd className="whz-key">{i + 1}</kbd>}
+                    <span>{q.text[lang]}</span>
+                    {asked && <b>{yes ? `✓ ${u.yes}` : `✗ ${u.no}`}</b>}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {below > 0 && (
+            <span className="whz-more" aria-hidden="true">
+              ↓ {u.more(below)}
+            </span>
+          )}
+        </div>
+        <p className="whz-muted whz-hint">{ranksQuestions(play) ? u.askHintChallenge : u.askHint}</p>
+        <button className="whz-btn whz-btn-ready" ref={readyRef} onClick={() => setConfirm(true)}>
           {u.ready} →
         </button>
       </div>
@@ -483,8 +695,15 @@ function Clues({ play, theme, u, lang }: { play: Play; theme: Theme; u: Ui; lang
 
 function Lineup({ play, theme, u, lang, label, onCross, onPick, onMenu }: { play: Play; theme: Theme; u: Ui; lang: BasicLang; label: string; onCross: (id: string) => void; onPick: (id: string) => void; onMenu: () => void }) {
   const [open, setOpen] = useState<string | null>(null);
+  // The daily and a challenge round are one try: their pick asks once more.
+  const [sure, setSure] = useState(false);
+  const oneTry = play.mode !== 'endless';
   const left = play.round.lineup.filter((id) => !play.crossed.includes(id)).length;
   const card = open ? thingById(open) : undefined;
+  const close = (): void => {
+    setOpen(null);
+    setSure(false);
+  };
   return (
     <>
       <div className="whz whz-lineup">
@@ -501,7 +720,7 @@ function Lineup({ play, theme, u, lang, label, onCross, onPick, onMenu }: { play
             const crossed = play.crossed.includes(id);
             return (
               <li key={id}>
-                <button className={`whz-card${crossed ? ' is-crossed' : ''}`} onClick={() => setOpen(id)} aria-label={`${t.name[lang]}. ${t.def[lang]}`}>
+                <button className={`whz-card${crossed ? ' is-crossed' : ''}`} onClick={() => setOpen(id)} aria-label={`${t.name[lang]}${crossed ? `, ${u.crossedOut}` : ''}. ${t.def[lang]}`}>
                   <b>{t.name[lang]}</b>
                   <span>{t.def[lang]}</span>
                 </button>
@@ -510,26 +729,40 @@ function Lineup({ play, theme, u, lang, label, onCross, onPick, onMenu }: { play
           })}
         </ul>
       </div>
-      {card && open && (
-        <Sheet labelledBy="whz-card-title" onClose={() => setOpen(null)}>
+      {card && open && !sure && (
+        // The sheet opens under the finger: a double-tap on the card must not land on a button in it.
+        <Sheet labelledBy="whz-card-title" onClose={close} guardMs={350}>
           <h2 id="whz-card-title" className="whz-sheet-name">
             {card.name[lang]}
           </h2>
           <p>{card.def[lang]}</p>
-          <button className="whz-btn whz-btn-go whz-btn-big" onClick={() => onPick(open)}>
-            {u.pickThis}
-          </button>
           <button
             className="whz-btn whz-btn-big"
             onClick={() => {
               onCross(open);
-              setOpen(null);
+              close();
             }}
           >
             {play.crossed.includes(open) ? u.bringBack : `✕ ${u.crossOut}`}
           </button>
-          <button className="whz-btn whz-btn-quiet" onClick={() => setOpen(null)} autoFocus>
+          <button className="whz-btn whz-btn-quiet" onClick={close} autoFocus>
             {u.close}
+          </button>
+          <button className="whz-btn whz-btn-go whz-btn-big whz-btn-pick" onClick={() => (oneTry ? setSure(true) : onPick(open))}>
+            {u.pickThis}
+          </button>
+        </Sheet>
+      )}
+      {card && open && sure && (
+        <Sheet key="sure" labelledBy="whz-sure-title" onClose={close} guardMs={350}>
+          <Parcel mood="think" className="whz-parcel-talk" />
+          <h2 id="whz-sure-title">{u.confirmPick(card.name[lang])}</h2>
+          <p className="whz-muted">{u.confirmBody}</p>
+          <button className="whz-btn whz-btn-big" onClick={() => setSure(false)} autoFocus>
+            {u.back}
+          </button>
+          <button className="whz-btn whz-btn-go whz-btn-big whz-btn-pick" onClick={() => onPick(open)}>
+            {u.confirmYes}
           </button>
         </Sheet>
       )}
@@ -539,11 +772,13 @@ function Lineup({ play, theme, u, lang, label, onCross, onPick, onMenu }: { play
 
 function Result({ play, theme, u, lang, label, newBest, share, challenge, onAgain, onMenu }: { play: Play; theme: Theme; u: Ui; lang: BasicLang; label: string; newBest: boolean; share: string | null; challenge?: ChallengeSpec; onAgain: () => void; onMenu: () => void }) {
   const secret = thingById(play.round.secret)!;
-  const solved = play.pick === play.round.secret;
-  const score = scoreOf(play.asked.length, solved);
+  const counted = play.counted;
+  const solved = counted ? counted.solved : play.pick === play.round.secret;
+  const score = counted ? counted.score : scoreFor(play, solved);
+  const questions = counted ? counted.questions : play.asked.length;
   const fitting = new Set(stillFitting(play.round, play.asked));
   const picked = play.pick ? thingById(play.pick) : undefined;
-  const line = answerLine(play.round, play.asked);
+  const line = counted ? counted.line : answerLine(play.round, play.asked);
   return (
     <div className="whz whz-result">
       <p className="whz-eyebrow">
@@ -553,9 +788,10 @@ function Result({ play, theme, u, lang, label, newBest, share, challenge, onAgai
       <p className={`whz-verdict ${solved ? 'is-yes' : 'is-no'}`}>{solved ? u.solved : u.missed}</p>
       <p className="whz-big">{score}</p>
       <p className="whz-muted">
-        {u.outOf(play.asked.length)}
+        {u.outOf(questions)}
         {newBest ? ` · ${u.newBest}` : ''}
       </p>
+      {counted && <p className="whz-muted">{u.dailyCounts}</p>}
       {line && <ResultLine line={line} label={u.yourClues} />}
       <div className="whz-reveal">
         <span>{u.itWas}</span>
@@ -563,19 +799,23 @@ function Result({ play, theme, u, lang, label, newBest, share, challenge, onAgai
         <p>{secret.def[lang]}</p>
       </div>
       {!solved && picked && <p className="whz-muted">{u.youPicked(picked.name[lang])}</p>}
-      <ul className="whz-review">
-        {play.round.lineup.map((id) => {
-          const t = thingById(id)!;
-          return (
-            <li key={id} className={id === play.round.secret ? 'is-secret' : fitting.has(id) ? 'is-fit' : ''} title={fitting.has(id) ? u.fitsClues : undefined}>
-              {fitting.has(id) ? '✓ ' : ''}
-              {t.name[lang]}
-            </li>
-          );
-        })}
-      </ul>
+      {!counted && play.asked.length > 0 && <SecretAnswers play={play} theme={theme} u={u} lang={lang} />}
+      {!counted && (
+        <ul className="whz-review">
+          {play.round.lineup.map((id) => {
+            const t = thingById(id)!;
+            return (
+              <li key={id} className={id === play.round.secret ? 'is-secret' : fitting.has(id) ? 'is-fit' : ''} title={fitting.has(id) ? u.fitsClues : undefined}>
+                {fitting.has(id) ? '✓ ' : ''}
+                {t.name[lang]}
+              </li>
+            );
+          })}
+        </ul>
+      )}
       <div className="whz-row">
         {play.mode === 'challenge' && challenge ? (
+          // A challenge round is one attempt: its way on is the scoreboard, not the menu.
           <a className="whz-btn whz-btn-go" href={`/c/${challenge.id}`} onClick={openChallengeScores} autoFocus>
             {u.scoreboard}
           </a>
@@ -586,37 +826,104 @@ function Result({ play, theme, u, lang, label, newBest, share, challenge, onAgai
             {u.again}
           </button>
         )}
-        <button className="whz-btn" onClick={onMenu}>
-          {u.menu}
-        </button>
+        {play.mode !== 'challenge' && (
+          <button className="whz-btn" onClick={onMenu}>
+            {u.menu}
+          </button>
+        )}
       </div>
       {play.mode === 'daily' && <Countdown label={u.nextDaily} />}
     </div>
   );
 }
 
-// ------------------------------------------------------------------ sheets
-
-/** A dialog over the game; Escape or a tap outside closes it. */
-function Sheet({ labelledBy, onClose, children }: { labelledBy: string; onClose: () => void; children: ReactNode }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key !== 'Escape') return;
-      e.preventDefault();
-      onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+/** The secret's answer to each question asked, a reason where players often disagree, and a way to report one. */
+function SecretAnswers({ play, theme, u, lang }: { play: Play; theme: Theme; u: Ui; lang: BasicLang }) {
+  const secret = thingById(play.round.secret)!;
+  const rows = play.asked.map((id) => {
+    const q = theme.questions.find((x) => x.id === id)!;
+    return { id, q, yes: answer(secret, id), note: noteFor(secret.id, id, lang) };
+  });
+  const report = new URLSearchParams({
+    game: 'whatsit',
+    category: 'bug',
+    title: `Whatsit answer: ${secret.name.en}`,
+    description: [`Theme: ${theme.name.en}`, `Thing: ${secret.name.en}`, ...rows.map((r) => `${r.q.text.en} ${r.yes ? 'Yes' : 'No'}`), '', 'The answer I disagree with, and why:'].join('\n'),
   });
   return (
-    <div className="whz-sheet" role="dialog" aria-modal="true" aria-labelledby={labelledBy} onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <section className="whz-answers" aria-labelledby="whz-answers-title">
+      <h2 id="whz-answers-title">{u.secretAnswers}</h2>
+      <ul>
+        {rows.map((r) => (
+          <li key={r.id} className={r.yes ? 'is-yes' : 'is-no'}>
+            <span>{r.q.text[lang]}</span>
+            <b>{r.yes ? `✓ ${u.yes}` : `✗ ${u.no}`}</b>
+            {r.note && <small>{r.note}</small>}
+          </li>
+        ))}
+      </ul>
+      <a className="whz-disagree" href={`/me/bugs?${report.toString()}`}>
+        {u.disagree}
+      </a>
+    </section>
+  );
+}
+
+// ------------------------------------------------------------------ sheets
+
+const FOCUSABLE = 'button:not(:disabled), a[href], input, [tabindex]:not([tabindex="-1"])';
+
+/**
+ * A dialog over the game; Escape or a tap outside closes it. Tab stays inside it, and closing it gives focus
+ * back to what opened it. `guardMs`: clicks right after it opens are ignored (a double-tap's second tap).
+ */
+function Sheet({ labelledBy, onClose, guardMs = 0, children }: { labelledBy: string; onClose: () => void; guardMs?: number; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [opened] = useState(() => performance.now());
+  // What had focus before the sheet (read before its autoFocus button takes it).
+  const [back] = useState(() => (document.activeElement instanceof HTMLElement ? document.activeElement : null));
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      const el = ref.current;
+      if (!el || !forGame(e, el.parentElement)) return;
+      if (e.key === 'Escape' && !e.repeat) {
+        e.preventDefault();
+        close.current();
+      } else if (e.key === 'Tab') {
+        const all = Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE));
+        if (!all.length) return;
+        const at = all.indexOf(document.activeElement as HTMLElement);
+        const to = at < 0 ? (e.shiftKey ? all.length - 1 : 0) : e.shiftKey ? (at === 0 ? all.length - 1 : -1) : at === all.length - 1 ? 0 : -1;
+        if (to < 0) return;
+        e.preventDefault();
+        all[to]!.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      if (back?.isConnected) back.focus({ preventScroll: true });
+    };
+  }, [back]);
+  const tooSoon = (e: ReactMouseEvent): void => {
+    if (guardMs && performance.now() - opened < guardMs) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+  return (
+    <div className="whz-sheet" ref={ref} role="dialog" aria-modal="true" aria-labelledby={labelledBy} onClickCapture={tooSoon} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="whz-sheet-card">{children}</div>
     </div>
   );
 }
 
 /** The sheet ☰ opens over a round: carry on, the walkthrough, sound, or back to the menu (the round waits there). */
-function Pause({ u, muted, onResume, onHelp, onMute, onMenu }: { u: Ui; muted: boolean; onResume: () => void; onHelp: () => void; onMute: () => void; onMenu: () => void }) {
+function Pause({ u, muted, onResume, onHelp, onMute, onMenu }: { u: Ui; muted: boolean; onResume: () => void; onHelp: () => void; onMute: () => void; onMenu?: () => void }) {
   return (
     <Sheet labelledBy="whz-pause-title" onClose={onResume}>
       <Parcel mood="idle" className="whz-parcel-talk" />
@@ -630,9 +937,11 @@ function Pause({ u, muted, onResume, onHelp, onMute, onMenu }: { u: Ui; muted: b
       <button className="whz-btn whz-btn-big" onClick={onMute}>
         {muted ? `🔇 ${u.soundOn}` : `🔊 ${u.soundOff}`}
       </button>
-      <button className="whz-btn whz-btn-big" onClick={onMenu}>
-        {u.mainMenu}
-      </button>
+      {onMenu && (
+        <button className="whz-btn whz-btn-big" onClick={onMenu}>
+          {u.mainMenu}
+        </button>
+      )}
     </Sheet>
   );
 }

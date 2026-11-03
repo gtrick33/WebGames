@@ -56,6 +56,25 @@ export interface Ui {
   soundOff: string;
   mainMenu: string;
   unfinished: string;
+  /** Read out after a crossed-out card's name. */
+  crossedOut: string;
+  /** Under the question list while some are scrolled out of view. */
+  more: (n: number) => string;
+  confirmPick: (name: string) => string;
+  confirmBody: string;
+  confirmYes: string;
+  back: string;
+  /** A "Today's daily" challenge when that daily was already played. */
+  dailyCounts: string;
+  /** The hint in a fresh challenge round, where every question costs points. */
+  askHintChallenge: string;
+  /** After an answer in a fresh challenge round: how many line-up cards still fit. */
+  stillFit: (n: number, of: number) => string;
+  /** The result's list of the secret's answers to the questions asked. */
+  secretAnswers: string;
+  disagree: string;
+  /** The share title's verdict, as a word (the preview picture can't draw emoji). */
+  shareVerdict: (solved: boolean) => string;
 }
 
 const UI_EN: Ui = {
@@ -113,6 +132,18 @@ const UI_EN: Ui = {
   soundOff: 'Turn sound off',
   mainMenu: 'Main menu',
   unfinished: 'Unfinished round',
+  crossedOut: 'crossed out',
+  more: (n) => `${n} more`,
+  confirmPick: (name) => `Pick ${name}?`,
+  confirmBody: 'This is your one pick for this round.',
+  confirmYes: 'Yes, pick it',
+  back: 'Back',
+  dailyCounts: 'You already played this daily: your daily result counts here.',
+  shareVerdict: (solved) => (solved ? 'Solved' : 'Missed'),
+  secretAnswers: 'Its answers',
+  disagree: 'Disagree with an answer?',
+  askHintChallenge: 'Every question costs points here: the fewest questions wins.',
+  stillFit: (n, of) => `${n} of ${of} cards still fit.`,
 };
 
 const UI_BG: Ui = {
@@ -125,7 +156,7 @@ const UI_BG: Ui = {
   dailyDone: (solved, q) => (solved ? `Днес: познато с ${q} ${q === 1 ? 'въпрос' : 'въпроса'}` : 'Днес: не позна'),
   practice: 'Тренировка',
   practiceBlurb: 'Избери тема',
-  anyTheme: 'Всяка тема',
+  anyTheme: 'Случайна тема',
   totals: (rounds, solved, best) => `${solved} от ${rounds} познати · рекорд ${best}`,
   questions: (n) => `${n} ${n === 1 ? 'въпрос' : 'въпроса'}`,
   theme: 'Тема',
@@ -144,7 +175,7 @@ const UI_BG: Ui = {
   lineupHint: 'Докосни карта, за да я прочетеш, задраскаш или избереш.',
   yourClues: 'Твоите отговори',
   noClues: 'Без въпроси: значи на късмет!',
-  left: (n) => `Остават ${n}`,
+  left: (n) => (n === 1 ? 'Остава 1' : `Остават ${n}`),
   crossOut: 'Задраскай',
   bringBack: 'Върни я',
   pickThis: 'Това е моят Whatsit!',
@@ -170,6 +201,18 @@ const UI_BG: Ui = {
   soundOff: 'Изключи звука',
   mainMenu: 'Главно меню',
   unfinished: 'Недовършен рунд',
+  crossedOut: 'задраскана',
+  more: (n) => `още ${n}`,
+  confirmPick: (name) => `Избираш ли: ${name}?`,
+  confirmBody: 'Това е единственият ти избор в този рунд.',
+  confirmYes: 'Да, избирам',
+  back: 'Назад',
+  dailyCounts: 'Вече игра този дневен Whatsit: резултатът ти от него се брои тук.',
+  shareVerdict: (solved) => (solved ? 'Познах' : 'Не познах'),
+  secretAnswers: 'Неговите отговори',
+  disagree: 'Не си съгласен с отговор?',
+  askHintChallenge: 'Тук всеки въпрос струва точки: печели този с най-малко въпроси.',
+  stillFit: (n, of) => `Пасват още ${n} от ${of} карти.`,
 };
 
 export const UI: Record<BasicLang, Ui> = { en: UI_EN, bg: UI_BG };

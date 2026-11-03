@@ -92,6 +92,16 @@ export function scoreOf(questions: number, solved: boolean): number {
   return Math.max(MIN_WIN_SCORE, MAX_SCORE - PER_QUESTION * Math.max(0, questions - FREE_QUESTIONS));
 }
 
+/**
+ * A friends' challenge (fresh round) ranks the fewest questions, so every question counts from the first:
+ * 1 question beats 3. At least 200 for any solve, 0 for a miss.
+ */
+export const CHALLENGE_PER_QUESTION = 50;
+export function challengeScoreOf(questions: number, solved: boolean): number {
+  if (!solved) return 0;
+  return Math.max(MIN_WIN_SCORE, MAX_SCORE - CHALLENGE_PER_QUESTION * questions);
+}
+
 /** The spoiler-free share line: 🟩 a yes, 🟥 a no, in the order asked. */
 export function answerLine(round: Round, asked: readonly string[]): string {
   const secret = thingById(round.secret)!;
