@@ -3,6 +3,14 @@
 First pass 2026-10-27, fixes the same day. A working record of licenses, names and borrowed material, for the
 owner (and a lawyer, if one is asked). It is **not legal advice** and not a trademark clearance.
 
+## Icons changed (2026-11-03)
+
+The owner replaced the game-icons.net silhouettes with **Nasha's Lumenfall: Skill & Spell Icons Vol. 1**, bought on
+itch.io. Its license allows use inside a game, including a sold one, and forbids resharing the files as assets or
+using them to train AI models, so the pack stays in the ignored `assets/sigilfall/lumenfall/`. **The store page
+discloses AI-assisted graphics.** That was a concern for the Certainity packs too (below): it doesn't break this
+license, but AI output may have weak copyright protection, and some storefronts ask about it.
+
 ## Fixed
 
 ### The licensed art packs and the public repository (was HIGH)

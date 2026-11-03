@@ -1,19 +1,18 @@
-import { HAIRS, SKINS, type Face } from '../progress/character';
-import { heroTitle } from '../progress/wardrobe';
-import { RiftScreen } from './RiftScreen';
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { CLASS_IDS, CLASSES } from '../data/classes';
-import { REGIONS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import { SPEC_LEVEL } from '../data/talents';
-import type { ClassId, RegionId } from '../data/types';
+import type { ClassId } from '../data/types';
 import type { SigilEngine } from '../engine';
-import { cleanName, type Body } from '../progress/character';
+import { cleanName, HAIRS, SKINS, type Body, type Face } from '../progress/character';
 import { heroDollUrl, heroLook } from '../render/sprites';
-import { wornLooks } from '../progress/wardrobe';
-import { Portrait, SkillIcon } from './common';
+import { CharacterSelect } from './CharacterSelect';
+import { SkillIcon } from './common';
+import { RiftScreen } from './RiftScreen';
 import { SettingsPanel } from './Panels';
+
+const VigilScreen = lazy(() => import('./VigilScreen').then((m) => ({ default: m.VigilScreen })));
 
 /** Embers rising from the Rift on the title screen: spread across, each on its own clock. */
 const EMBERS = Array.from({ length: 18 }, (_, i) => ({ x: (i * 53) % 100, delay: (i % 6) * 0.9, dur: 6 + (i % 5) * 1.7, size: 2 + (i % 3) }));
@@ -52,34 +51,24 @@ function EpicSky() {
   );
 }
 
-/** The sigil behind the name: three rune rings drawing themselves, then turning slowly. */
-function Sigil() {
-  return (
-    <svg className="rb-sigil" viewBox="0 0 200 200" aria-hidden="true">
-      <circle className="rb-sigil-ring" cx="100" cy="100" r="92" />
-      <circle className="rb-sigil-runes" cx="100" cy="100" r="80" />
-      <circle className="rb-sigil-ring is-inner" cx="100" cy="100" r="62" />
-      <path className="rb-sigil-star" d="M100 22 L146 163 L26 76 L174 76 L54 163 Z" />
-      <circle className="rb-sigil-core" cx="100" cy="100" r="10" />
-    </svg>
-  );
-}
-
 /**
- * The title screen, as a doorway: first the gate (the world, the crest, and one gold button: begin a
- * legend, or carry on with the last hero), then the roster of heroes (three slots) to pick another, make
- * one or let one go. A friend's invite opens straight on the roster.
+ * The title screen: the Wardens' Sanctum (CharacterSelect), with the Rift Trials and The Vigil off it. A friend's
+ * invite is said here and joined once a hero is chosen.
  */
 export function TitleScreen({ engine }: { engine: SigilEngine }) {
   const heroes = engine.heroes();
   const [settings, setSettings] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
-  const [roster, setRoster] = useState(() => !!engine.invite);
   const [rift, setRift] = useState<number | null>(null);
-  const last = engine.save.last;
-  const lastHero = heroes[last];
-  const any = heroes.some(Boolean);
-  const firstEmpty = Math.max(0, heroes.findIndex((h) => !h));
+  const [vigil, setVigil] = useState(false);
+  const lastHero = heroes[engine.save.last];
+  if (vigil) {
+    return (
+      <Suspense fallback={<div className="rb-title is-epic"><EpicSky /></div>}>
+        <VigilScreen engine={engine} face={lastHero?.face} body={lastHero?.body} onBack={() => setVigil(false)} />
+      </Suspense>
+    );
+  }
   if (rift !== null && heroes[rift]) {
     return (
       <div className="rb-title is-epic is-roster">
@@ -89,111 +78,8 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
     );
   }
   return (
-    <div className={`rb-title is-epic${roster ? ' is-roster' : ''}`}>
-      <EpicSky />
-      <div className="rb-title-top">
-        <button className="rb-iconbtn" onClick={() => setSettings(true)} aria-label="Settings">
-          ⚙
-        </button>
-        <GameMenuButton className="rb-iconbtn" />
-      </div>
-      {!roster ? (
-        <div className="rb-gate">
-          <div className="rb-crest">
-            <Sigil />
-            <span className="rb-logo-kicker">A GlitchBound adventure</span>
-            <h1 className="rb-logo-word" data-text="Sigilfall">
-              Sigilfall
-            </h1>
-            <p className="rb-logo-tag">The bell stopped ringing three weeks ago. Tonight, they come for what sleeps under the chapel.</p>
-          </div>
-          <div className="rb-gate-actions">
-            {lastHero ? (
-              <button className="rb-btn is-gold is-big rb-gate-go" onClick={() => engine.play(last)} autoFocus>
-                <span>Continue as {lastHero.name}</span>
-                <small>
-                  Level {lastHero.level} {CLASSES[lastHero.cls].name} · {farthest(lastHero.unlocked).name}
-                </small>
-              </button>
-            ) : any ? (
-              <button className="rb-btn is-gold is-big rb-gate-go" onClick={() => setRoster(true)} autoFocus>
-                <span>Choose your hero</span>
-              </button>
-            ) : (
-              <button className="rb-btn is-gold is-big rb-gate-go" onClick={() => engine.newHeroScreen(firstEmpty)} autoFocus>
-                <span>Begin your legend</span>
-                <small>Seven heroes · five acts · one Rift</small>
-              </button>
-            )}
-            {lastHero && lastHero.keystone >= 1 && (
-              <button className="rb-btn rb-gate-rift" onClick={() => setRift(last)}>
-                <span>The Rift Trials</span>
-                <small>Riftstone +{lastHero.keystone}</small>
-              </button>
-            )}
-            {lastHero && (
-              <button className="rb-btn is-ghost rb-gate-more" onClick={() => setRoster(true)}>
-                Your heroes
-              </button>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="rb-roster">
-          <div className="rb-roster-head">
-            <button className="rb-btn is-small is-ghost" onClick={() => setRoster(false)}>
-              ← Back
-            </button>
-            <h1>Your heroes</h1>
-          </div>
-          <div className="rb-slots" aria-label="Your heroes">
-            {heroes.map((h, i) =>
-              h ? (
-                <div key={i} className={`rb-slot${i === last ? ' is-last' : ''}`}>
-                  <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} face={h.face} size={52} />
-                  <div className="rb-slot-text">
-                    <strong>{h.name}</strong>
-                    <span>
-                      Level {h.level} {CLASSES[h.cls].name}
-                    </span>
-                    <span className="rb-dim">{heroTitle(h) ?? farthest(h.unlocked).name}</span>
-                  </div>
-                  <div className="rb-slot-actions">
-                    <button className="rb-btn is-small is-gold" onClick={() => engine.play(i)}>
-                      Play
-                    </button>
-                    {h.keystone >= 1 && (
-                      <button className="rb-btn is-small" onClick={() => setRift(i)}>
-                        Rift
-                      </button>
-                    )}
-                    {confirmDelete === i ? (
-                      <button
-                        className="rb-btn is-small is-danger"
-                        onClick={() => {
-                          engine.deleteHero(i);
-                          setConfirmDelete(null);
-                        }}
-                      >
-                        Delete for good?
-                      </button>
-                    ) : (
-                      <button className="rb-btn is-small is-ghost" onClick={() => setConfirmDelete(i)} aria-label={`Delete ${h.name}`}>
-                        Delete
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <button key={i} className="rb-slot is-empty" onClick={() => engine.newHeroScreen(i)}>
-                  <span className="rb-plus">+</span>
-                  <span>New hero</span>
-                </button>
-              ),
-            )}
-          </div>
-        </div>
-      )}
+    <div className="rb-title is-hall">
+      <CharacterSelect engine={engine} onRift={setRift} onVigil={() => setVigil(true)} onSettings={() => setSettings(true)} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} />
       {engine.ui.notice && <p className="rb-notice" role="status">{engine.ui.notice}</p>}
       {engine.party && !engine.invite && <p className="rb-notice" role="status">You’re still in party {engine.party.link.code}. Choose a hero to go back to it.</p>}
       {engine.invite && (
@@ -211,9 +97,6 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
 }
 
 const DIFFICULTY = ['', 'Easy to learn', 'Some practice', 'Takes skill'];
-
-/** How far a hero has come: the highest-level land they have been to. */
-const farthest = (unlocked: RegionId[]) => unlocked.map((id) => REGIONS[id]).reduce((a, b) => (b.levels[1] > a.levels[1] ? b : a), REGIONS.emberwick);
 
 /** Choosing a class and a name. */
 export function CreateScreen({ engine }: { engine: SigilEngine }) {

@@ -206,6 +206,9 @@ export class Renderer {
   /** Canvas pixels per world pixel (at most RES). */
   res = RES;
 
+  /** The land and the hero only, no bars or markers: The Vigil draws its own over it. */
+  landOnly = false;
+
   /** Screen (CSS px relative to the canvas) to world coordinates. */
   toWorld(cx: number, cy: number, dpr: number): { x: number; y: number } {
     const k = dpr / this.scale / this.res;
@@ -509,7 +512,7 @@ export class Renderer {
     if (bz?.boss && bz.boss.collapse > 0) this.drawCollapse(bz.boss.cx, bz.boss.cy, bz.boss.collapse, time);
 
     // (a scene is a clean picture: no bars, markers or arrows over it)
-    const ui = !w.scene;
+    const ui = !w.scene && !this.landOnly;
     if (ui) for (const e of w.enemies) if (inView(e.x, e.y)) this.drawEnemyBar(e, w);
     if (ui) for (const pet of w.pets) if (inView(pet.x, pet.y)) this.drawPetBar(pet);
     for (const t of w.texts) {

@@ -4,13 +4,12 @@ import type { ClassId, TalentNode } from '../../data/types';
 import { canvas, ctx2d, type Cnv } from '../pixel';
 import { SKILL_ICON, TALENT_ICONS } from './iconPicks';
 import { ICON_VERSION } from './iconVersion';
-import { hex, mixRGB, OUTLINE_RGB, ramp, type RGB } from './kit';
+import { hex, mixRGB, OUTLINE_RGB, ramp } from './kit';
 
 /**
- * The skill and talent icons: game-icons.net silhouettes (CC BY 3.0, ICON_CREDITS.md) from the atlas
- * scripts/sigilfall-icons.mjs builds, each laid on a tile of its skill's color (a talent's: its tree's), lit
- * from the top left like the rest of the art. Until the atlas is in, or if it never comes, the UI keeps the
- * painted glyphs (art/icons.ts).
+ * The skill and talent icons: the pack Nasha's Lumenfall (ICON_CREDITS.md), from the atlas
+ * scripts/sigilfall-icons.mjs builds, each in a thin rim of its skill's color (a talent's: its tree's). Until the
+ * atlas is in, or if it never comes, the UI keeps the painted glyphs (art/icons.ts).
  */
 
 /** The size the tiles are drawn at: crisp on a 2× screen at the bar's 36–64 css px. */
@@ -97,28 +96,6 @@ export function talentIcon(cls: ClassId, node: TalentNode): string | undefined {
 
 /* ----------------------------------------------------------------- tiles */
 
-/** The silhouette at `size` px in one flat color (or gradient), as a canvas. */
-function silhouette(at: Atlas, i: number, size: number, fill: string | CanvasGradient): Cnv {
-  const c = canvas(size, size);
-  const g = ctx2d(c);
-  g.imageSmoothingEnabled = true;
-  g.imageSmoothingQuality = 'high';
-  g.drawImage(at.img, (i % at.cols) * at.cell, Math.floor(i / at.cols) * at.cell, at.cell, at.cell, 0, 0, size, size);
-  g.globalCompositeOperation = 'source-in';
-  g.fillStyle = fill;
-  g.fillRect(0, 0, size, size);
-  return c;
-}
-
-/** Only the edge of a silhouette that faces away from (dx, dy): a rim of light or of shade. */
-function rim(at: Atlas, i: number, size: number, color: string, dx: number, dy: number): Cnv {
-  const c = silhouette(at, i, size, color);
-  const g = ctx2d(c);
-  g.globalCompositeOperation = 'destination-out';
-  g.drawImage(silhouette(at, i, size, '#fff'), dx, dy);
-  return c;
-}
-
 function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
   g.beginPath();
   g.moveTo(x + r, y);
@@ -130,63 +107,63 @@ function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number,
 }
 
 /**
- * A named icon on a tile of a color, as a canvas (null while the atlas isn't in): a rounded square for the
- * bar and the talent trees, a disc for the round touch buttons.
+ * A named icon in a tile, as a canvas (null while the atlas isn't in): a rounded square for the bar and the talent
+ * trees, a disc for the round touch buttons. The pack's pixel art is scaled by whole steps so it stays crisp, inside
+ * a thin rim of the skill's color.
  */
 export function iconTile(name: string, color: string, round = false): Cnv | null {
   const at = atlas;
   const i = at?.at.get(name);
   if (!at || i === undefined) return null;
   const S = TILE_PX;
-  const R = ramp(color);
   const c = canvas(S, S);
   const g = ctx2d(c);
-  g.imageSmoothingEnabled = true;
   const shape = (inset: number): void => {
     if (round) {
       g.beginPath();
       g.arc(S / 2, S / 2, S / 2 - inset, 0, Math.PI * 2);
-    } else roundRect(g, inset, inset, S - inset * 2, S - inset * 2, S * 0.1 - inset);
+    } else roundRect(g, inset, inset, S - inset * 2, S - inset * 2, S * 0.1 - inset * 0.6);
   };
-  // the tile: deep at the edges, a soft light in the upper left (as the painted glyphs' tiles)
-  const deep: RGB = mixRGB(R[4], [14, 10, 24], 0.55);
-  const bg = g.createRadialGradient(S * 0.33, S * 0.29, 0, S * 0.33, S * 0.29, S * 0.95);
-  bg.addColorStop(0, hex(mixRGB(deep, R[3], 0.6)));
-  bg.addColorStop(1, hex(deep));
   shape(0);
-  g.fillStyle = bg;
+  g.fillStyle = hex(OUTLINE_RGB);
   g.fill();
-  // the figure: a shadow under it, a dark outline, then lit top to bottom with a rim of light and of shade
-  // (a disc has less room in its corners: the figure is a little smaller there)
-  const G = Math.round(S * (round ? 0.64 : 0.74));
-  const o = (S - G) / 2;
-  g.globalAlpha = 0.6;
-  g.drawImage(silhouette(at, i, G, '#000'), o, o + S * 0.035);
-  g.globalAlpha = 1;
-  const line = silhouette(at, i, G, hex(OUTLINE_RGB));
-  const w = S * 0.022;
-  for (let k = 0; k < 12; k++) g.drawImage(line, o + Math.cos((k * Math.PI) / 6) * w, o + Math.sin((k * Math.PI) / 6) * w);
-  const fig = silhouette(at, i, G, '#fff');
-  const fg = ctx2d(fig);
-  fg.globalCompositeOperation = 'source-in';
-  const local = fg.createLinearGradient(0, 0, 0, G);
-  local.addColorStop(0, hex(R[0]));
-  local.addColorStop(0.5, hex(R[1]));
-  local.addColorStop(1, hex(R[2]));
-  fg.fillStyle = local;
-  fg.fillRect(0, 0, G, G);
-  fg.globalCompositeOperation = 'source-over';
-  const d = Math.max(1, Math.round(S * 0.016));
-  fg.drawImage(rim(at, i, G, hex(mixRGB(R[3], [0, 0, 0], 0.2)), -d, -d), 0, 0);
-  fg.drawImage(rim(at, i, G, '#fffbe8', d, d), 0, 0);
-  g.drawImage(fig, o, o);
-  // a thin frame: the color's own light along the top and left, its shade along the bottom and right
-  g.lineWidth = Math.max(2, S * 0.025);
-  const edge = g.createLinearGradient(0, 0, S, S);
-  edge.addColorStop(0, hex(R[1]));
-  edge.addColorStop(1, hex(R[4]));
-  g.strokeStyle = edge;
-  shape(g.lineWidth / 2);
-  g.stroke();
+  shape(2);
+  g.fillStyle = hex(mixRGB(ramp(color)[1], [255, 240, 200], 0.2));
+  g.fill();
+  g.save();
+  shape(6);
+  g.clip();
+  g.imageSmoothingEnabled = false;
+  g.drawImage(at.img, (i % at.cols) * at.cell, Math.floor(i / at.cols) * at.cell, at.cell, at.cell, 0, 0, S, S);
+  g.restore();
+  // a touch of light across the top, as if under glass
+  g.save();
+  shape(6);
+  g.clip();
+  const sheen = g.createLinearGradient(0, 0, 0, S * 0.5);
+  sheen.addColorStop(0, 'rgba(255,255,255,0.16)');
+  sheen.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = sheen;
+  g.fillRect(0, 0, S, S * 0.5);
+  g.restore();
   return c;
+}
+
+const plain = new Map<string, string>();
+
+/** A named icon on its own, as a data URL: for what isn't a skill (The Vigil's cards). Empty until the atlas is in. */
+export function iconPicture(name: string): string {
+  const hit = plain.get(name);
+  if (hit) return hit;
+  const at = atlas;
+  const i = at?.at.get(name);
+  if (!at || i === undefined) return '';
+  const S = at.cell * 2;
+  const c = canvas(S, S);
+  const g = ctx2d(c);
+  g.imageSmoothingEnabled = false;
+  g.drawImage(at.img, (i % at.cols) * at.cell, Math.floor(i / at.cols) * at.cell, at.cell, at.cell, 0, 0, S, S);
+  const url = c.toDataURL();
+  plain.set(name, url);
+  return url;
 }

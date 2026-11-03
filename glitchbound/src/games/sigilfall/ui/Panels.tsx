@@ -14,7 +14,6 @@ import { SLOT_LEVELS, slotOpen, bagSize, cantEquip, cantLearn, cantSpec, current
 import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, salvageValue } from '../progress/items';
-import { ICON_AUTHORS } from '../render/art/iconVersion';
 import { npcMark, rarityColor } from '../render/renderer';
 import { heroDollUrl, heroLook, itemIconUrl, mountPictureUrl, talentIconUrl } from '../render/sprites';
 import type { HeroLook } from '../render/art/hero';
@@ -1446,13 +1445,13 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
 
 /**
  * The art packs the game is built with (CREDITS_AND_LICENSES.md): credit is optional under each license but
- * game-icons.net's (CC BY 3.0, each icon's author in ICON_CREDITS.md), given anyway.
+ * none of them is required by its license, given anyway.
  */
 const ART_CREDITS = [
   'Royal Keep and Royal Keep Seasons by bubbabba',
   'Magic Spells VFX and Magic Circles VFX by Willosuna',
   'Gloomvault Crypt by Certainity',
-  `Skill and talent icons from game-icons.net by ${ICON_AUTHORS.slice(0, -1).join(', ')} and ${ICON_AUTHORS.at(-1)}, under CC BY 3.0 (laid on colored tiles for the game)`,
+  'Skill and talent icons: Nasha’s Lumenfall, Skill & Spell Icons Vol. 1, by nanasha.',
 ];
 
 /** The hero in everything they wear (and the Wardrobe looks over it); tap to turn them around. */
