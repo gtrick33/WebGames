@@ -88,6 +88,15 @@
   min-height: 48px;
   font-size: 16.5px;
 }
+/* The final pick: set apart below the other choices, with a check mark. */
+.whz-btn-pick {
+  margin-top: 10px;
+  background: var(--whz-yes);
+  color: #fff;
+}
+.whz-btn-pick::before {
+  content: '✓';
+}
 .whz-btn-quiet {
   border-color: transparent;
   background: none;

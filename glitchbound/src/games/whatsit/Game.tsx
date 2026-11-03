@@ -670,9 +670,9 @@ function Clues({ play, theme, u, lang }: { play: Play; theme: Theme; u: Ui; lang
 
 function Lineup({ play, theme, u, lang, label, onCross, onPick, onMenu }: { play: Play; theme: Theme; u: Ui; lang: BasicLang; label: string; onCross: (id: string) => void; onPick: (id: string) => void; onMenu: () => void }) {
   const [open, setOpen] = useState<string | null>(null);
-  // The daily is one try: its pick asks once more.
+  // The daily and a challenge round are one try: their pick asks once more.
   const [sure, setSure] = useState(false);
-  const oneTry = play.mode === 'daily';
+  const oneTry = play.mode !== 'endless';
   const left = play.round.lineup.filter((id) => !play.crossed.includes(id)).length;
   const card = open ? thingById(open) : undefined;
   const close = (): void => {
@@ -723,7 +723,7 @@ function Lineup({ play, theme, u, lang, label, onCross, onPick, onMenu }: { play
           <button className="whz-btn whz-btn-quiet" onClick={close} autoFocus>
             {u.close}
           </button>
-          <button className="whz-btn whz-btn-go whz-btn-big" onClick={() => (oneTry ? setSure(true) : onPick(open))}>
+          <button className="whz-btn whz-btn-go whz-btn-big whz-btn-pick" onClick={() => (oneTry ? setSure(true) : onPick(open))}>
             {u.pickThis}
           </button>
         </Sheet>
@@ -736,7 +736,7 @@ function Lineup({ play, theme, u, lang, label, onCross, onPick, onMenu }: { play
           <button className="whz-btn whz-btn-big" onClick={() => setSure(false)} autoFocus>
             {u.back}
           </button>
-          <button className="whz-btn whz-btn-go whz-btn-big" onClick={() => onPick(open)}>
+          <button className="whz-btn whz-btn-go whz-btn-big whz-btn-pick" onClick={() => onPick(open)}>
             {u.confirmYes}
           </button>
         </Sheet>

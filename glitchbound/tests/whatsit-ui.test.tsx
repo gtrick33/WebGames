@@ -52,6 +52,8 @@ describe('Whatsit challenge rounds', () => {
     openCard(thingById(round.secret)!.name.en);
     wait(400);
     fireEvent.click(screen.getByRole('button', { name: 'This is my Whatsit!' }));
+    wait(400);
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, pick it' }));
     const ends = report.mock.calls.filter(([e]) => e.type === 'end');
     expect(ends).toHaveLength(1);
     expect(ends[0]![0]).toMatchObject({ score: 1000, challenge: { id: 'abc123', round: 1 } });
