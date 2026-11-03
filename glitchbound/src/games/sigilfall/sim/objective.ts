@@ -38,11 +38,11 @@ export interface QuestMark extends Objective {
 export function questWhere(h: World['hero'], q: QuestDef): RegionId | undefined {
   if (questState(h, q.id) === 'ready') {
     const who = turnInNpc(q);
-    return who ? npcRegion(who) : undefined;
+    return who ? npcRegion(who, h) : undefined;
   }
   const o = currentObjective(h, q);
   if (o.kind === 'boss') return bossRegion(o.boss) ?? questRegion(q);
-  if (o.kind === 'talk') return npcRegion(o.npc) ?? questRegion(q);
+  if (o.kind === 'talk') return npcRegion(o.npc, h) ?? questRegion(q);
   if (o.kind === 'explore') return spotRegion(o.spot) ?? questRegion(q);
   if (o.kind === 'event') return EVENTS[o.event]?.region ?? questRegion(q);
   return questRegion(q);
@@ -63,7 +63,7 @@ export function questCounts(h: World['hero']): Map<RegionId, { work: number; off
       const c = at(questWhere(h, q));
       if (c) c.work++;
     } else if (st === 'offered' && q.giver) {
-      const c = at(npcRegion(q.giver));
+      const c = at(npcRegion(q.giver, h));
       if (c) c.offers++;
     }
   }
@@ -150,7 +150,7 @@ export function questTarget(w: World, q: QuestDef, steady = false): Objective | 
   if (questState(h, q.id) === 'ready') {
     const who = turnInNpc(q);
     const t = who
-      ? goTo(npcRegion(who), () => {
+      ? goTo(npcRegion(who, h), () => {
           const n = w.npcs.find((x) => x.id === who);
           return n ? place(n.x, n.y) : null;
         })
@@ -177,7 +177,7 @@ export function questTarget(w: World, q: QuestDef, steady = false): Objective | 
       t = goTo('whisperwood', () => nearest((e) => e.elite.length > 0));
       break;
     case 'talk':
-      t = goTo(npcRegion(o.npc), () => {
+      t = goTo(npcRegion(o.npc, h), () => {
         const n = w.npcs.find((x) => x.id === o.npc);
         return n ? place(n.x, n.y) : null;
       });

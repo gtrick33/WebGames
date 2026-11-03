@@ -549,6 +549,14 @@ export function healPlayer(w: World, pct: number, fromHit: boolean, quiet = fals
 }
 
 /**
+ * Armor's share of a hit taken, at most 75%. The constant grows with the attacker's level (2.5 a level, from 60 at
+ * level 24), so ordinary gear no longer reaches the cap: plate, armor rolls and Toughness keep mattering, and
+ * light armor cuts about what the old 60% cap gave. Up to level 24 the curve is the one it always was.
+ */
+export const ARMOR_CAP = 0.75;
+export const armorReduction = (armor: number, level: number): number => Math.min(ARMOR_CAP, armor / (armor + Math.max(60, 2.5 * level)));
+
+/**
  * The hero takes a hit. Dodging (and other invulnerable moments) avoids it entirely; armor cuts it,
  * a shield soaks it first. Returns whether it landed.
  */
@@ -560,7 +568,7 @@ export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: n
     return false;
   }
   const stats = effStats(w);
-  const reduction = Math.min(0.6, stats.armor / (stats.armor + 60));
+  const reduction = armorReduction(stats.armor, o.source?.level ?? w.hero.level);
   let d = dmg * (1 - reduction);
   if (o.source && hasStatus(o.source, 'weaken')) d *= 1 - statusPower(o.source, 'weaken') / 100;
   // walls and wards: buffs that cut damage taken (at most 75% together)

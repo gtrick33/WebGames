@@ -7,12 +7,14 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { ClassId, Item, PerkId, RegionId, SlotId, StatKey } from '../data/types';
 import { RARITIES, SLOTS } from '../data/types';
 import { STAT_ROLL } from '../data/items';
-import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME, allItems } from './character';
+import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME, allItems, HELD_MAX } from './character';
 import { itemClass, itemSlot, newUid } from './items';
 import { grantMounts, learnLooks, LOOK_SLOTS, tidyWardrobe } from './wardrobe';
 import { MOUNT_DEFS } from '../data/mounts';
 import { KEY_MIN, MAX_IL } from '../data/keystones';
+import { QM_PRICE } from '../data/vendors';
 import { validateParagon } from './paragon';
+import { OPENED_TABLE, QUEST_TABLE } from './saveTables';
 
 /**
  * The save: up to three heroes and the settings, versioned and validated field by field on load.
@@ -32,7 +34,7 @@ const BACKUP_KEY = 'glitchbound.sigilfall.bak';
 const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
 const OLD_SAVE_KEY = 'glitchbound.riftbound';
 const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 export const HERO_SLOTS = 3;
 
 export interface Settings {
@@ -157,6 +159,9 @@ export function validateItem(v: unknown): Item | null {
   if (!authored && typeof o.sm === 'number' && Number.isInteger(o.sm) && MINOR_MODS[o.sm] && r === 'rare') item.sm = o.sm;
   if (!authored && typeof o.n === 'string') item.n = o.n.slice(0, 48);
   if (o.fresh === true) item.fresh = true;
+  if (typeof o.paid === 'number') item.paid = int(o.paid, 0, 1e7, 0);
+  // a quartermaster piece bought before prices were kept on items (vendor stock ids start with v: progress/shop.ts)
+  else if (authored && item.uid.startsWith('v') && (r === 'epic' || r === 'legendary')) item.paid = QM_PRICE[r].gold;
   return item;
 }
 
@@ -248,8 +253,18 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
       if (item) c.bag.push(unique(item));
     }
   }
+  // quest rewards waiting for room in the bag (progress/character.ts giveReward)
+  if (Array.isArray(o.held)) {
+    const held = o.held.slice(0, HELD_MAX).flatMap((raw) => {
+      const item = validateItem(raw);
+      return item ? [unique(item)] : [];
+    });
+    if (held.length) c.held = held;
+  }
   // quests
-  const q = obj(o.quests) ?? {};
+  const q: Raw = { ...obj(o.quests) };
+  // version 12: done quests listed in QUEST_TABLE come as one bitset (saveText)
+  for (const id of unpackBits(o.qd, QUEST_TABLE)) if (!(id in q)) q[id] = 'd';
   for (const [id, entry] of Object.entries(q)) {
     const e = typeof entry === 'string' ? unpackQuest(entry) : obj(entry);
     if (!QUEST_DEFS[id] || !e) continue;
@@ -276,12 +291,14 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   }
   // Riftstone: whoever has cleared Duskspire on Mythic holds a Riftstone
   if (c.quests['postgame-crownfall-mythic']?.state === 'done') c.keystone = Math.max(KEY_MIN, c.keystone);
-  if (Array.isArray(o.opened)) c.opened = [...new Set(o.opened.filter((x): x is string => typeof x === 'string' && /^[a-z0-9:-]{1,48}$/.test(x)))].slice(0, 600);
+  // version 12: the keys listed in OPENED_TABLE come as one bitset, the others by name
+  const opened = [...unpackBits(o.ok, OPENED_TABLE), ...(Array.isArray(o.opened) ? o.opened : [])];
+  c.opened = [...new Set(opened.filter((x): x is string => typeof x === 'string' && /^[a-z0-9:-]{1,48}$/.test(x)))].slice(0, 1200);
   // the Wardrobe: looks of everything worn or carried are owned (the only ownership that can be proven);
   // worn looks stay only where they are owned and fit the class (the item under them is never touched)
   const worn = obj(o.worn) ?? {};
   for (const slot of LOOK_SLOTS) if (typeof worn[slot] === 'string') c.worn[slot] = worn[slot] as string;
-  learnLooks(c, allItems(c));
+  learnLooks(c, [...allItems(c), ...(c.held ?? [])]);
   tidyWardrobe(c);
   // mounts: earned ones are owned (the Gullport Strider for anyone who has its perk); the chosen one must be owned
   grantMounts(c);
@@ -422,6 +439,9 @@ export function migrate(raw: unknown): SaveFile | null {
   // version 11: Riftstone (the Riftstone, the best stones) and Paragon levels; older heroes start with none
   // (validateCharacter gives a stone to whoever cleared Duskspire on Mythic)
   if (o.v === 10) o.v = 11;
+  // version 12: done quests and opened keys stored as bitsets over progress/saveTables.ts, lands seen almost
+  // whole stored whole (saveText); both forms are read
+  if (o.v === 11) o.v = 12;
   if (o.v !== SAVE_VERSION) return null;
   const heroes: (Character | null)[] = [];
   const list = Array.isArray(o.heroes) ? o.heroes : [];
@@ -505,9 +525,81 @@ export function unpackQuest(s: string): Record<string, unknown> | null {
   return { state: 'active', n: Number(m[2] || 0), step };
 }
 
-/** The save as stored: quests packed (packQuest). */
+/** Ids of a table as a base64 bitset: bit i stands for table[i] (progress/saveTables.ts). */
+export function packBits(ids: Iterable<string>, table: readonly string[], index: ReadonlyMap<string, number>): string {
+  const bytes = new Uint8Array(Math.ceil(table.length / 8));
+  let top = 0;
+  for (const id of ids) {
+    const i = index.get(id);
+    if (i === undefined) continue;
+    bytes[i >> 3]! |= 1 << (i & 7);
+    top = Math.max(top, (i >> 3) + 1);
+  }
+  let s = '';
+  for (const b of bytes.subarray(0, top)) s += String.fromCharCode(b);
+  return btoa(s);
+}
+
+/** The ids a packBits bitset holds (none for anything that isn't one). */
+export function unpackBits(v: unknown, table: readonly string[]): string[] {
+  if (typeof v !== 'string' || v.length > 4000) return [];
+  let bytes: string;
+  try {
+    bytes = atob(v);
+  } catch {
+    return [];
+  }
+  const out: string[] = [];
+  for (let i = 0; i < Math.min(table.length, bytes.length * 8); i++) if ((bytes.charCodeAt(i >> 3) >> (i & 7)) & 1) out.push(table[i]!);
+  return out;
+}
+
+const QUEST_INDEX = new Map(QUEST_TABLE.map((id, i) => [id, i]));
+const OPENED_INDEX = new Map(OPENED_TABLE.map((id, i) => [id, i]));
+/** A land's fog with this share of it explored is stored as seen whole: the last corners are mostly walls and water. */
+const FOG_WHOLE = 0.95;
+
+/** A land's stored fog, '*' once it is explored almost whole (progress/fog.ts). */
+function compactFog(v: string): string {
+  if (v === '*') return v;
+  try {
+    const bytes = atob(v);
+    let set = 0;
+    for (let i = 0; i < bytes.length; i++) for (let b = bytes.charCodeAt(i); b; b &= b - 1) set++;
+    return bytes.length && set >= bytes.length * 8 * FOG_WHOLE ? '*' : v;
+  } catch {
+    return v;
+  }
+}
+
+/**
+ * A hero as stored (version 12): quests packed (packQuest) with the done ones of QUEST_TABLE in one bitset
+ * (`qd`), opened keys of OPENED_TABLE in one bitset (`ok`) and the rest by name, fog only for lands not
+ * explored almost whole, and the bag no longer than a load keeps. Three completionist heroes stay well
+ * under the arcade's cloud limit (tests/sigilfall-save-size.test.ts).
+ */
+export function storedHero(c: Character): Raw {
+  const quests: Record<string, string> = {};
+  const done: string[] = [];
+  for (const [id, e] of Object.entries(c.quests)) {
+    const packed = packQuest(e);
+    if (packed === 'd' && QUEST_INDEX.has(id)) done.push(id);
+    else quests[id] = packed;
+  }
+  return {
+    ...c,
+    quests,
+    qd: packBits(done, QUEST_TABLE, QUEST_INDEX),
+    opened: c.opened.filter((k) => !OPENED_INDEX.has(k)),
+    ok: packBits(c.opened, OPENED_TABLE, OPENED_INDEX),
+    seen: Object.fromEntries(Object.entries(c.seen).map(([k, v]) => [k, compactFog(v)])),
+    bag: c.bag.slice(0, bagSize(c) + BAG_OVERFLOW),
+  };
+}
+
+/** The save as stored: each hero as storedHero. */
 export function saveText(save: SaveFile): string {
-  return JSON.stringify(save, (key, value: unknown) => (key === 'quests' && value && typeof value === 'object' && !Array.isArray(value) ? Object.fromEntries(Object.entries(value as Character['quests']).map(([id, e]) => [id, packQuest(e)])) : value));
+  return JSON.stringify({ ...save, heroes: save.heroes.map((h) => (h ? storedHero(h) : null)) });
 }
 
 export function writeSave(save: SaveFile): boolean {

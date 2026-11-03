@@ -146,6 +146,18 @@ const FRAME_SHIFT = 0.1;
 /** How long a toast stays (ms): loot and hints longer, to be read. */
 const toastTime = (tone: Toast['tone']): number => (tone === 'loot' ? 5000 : tone === 'hint' ? 6000 : 3600);
 
+
+/** Shorter than this, with nothing earned, a trip out is not reported as a round (the arcade's shortest is 20 s). */
+const MIN_ROUND = 20;
+
+/** A hero's state without its save stamp, to tell whether anything changed since the last save. */
+const heroSignature = (h: Character): string => JSON.stringify({ ...h, updated: 0 });
+
+/** The Riftstone a world's run finished, for the report (none while it is still under way). */
+function keyResult(w: World): RunSummary['key'] | undefined {
+  const k = w.keyRun;
+  return k?.end ? { key: k.key, time: k.end.time, par: k.par, up: k.end.up, stone: k.end.stone, best: k.end.best, marks: k.end.marks, deaths: k.deaths } : undefined;
+}
 export class SigilEngine {
   save: SaveFile;
   loadStatus: LoadStatus;
@@ -180,7 +192,10 @@ export class SigilEngine {
   /** Title cards waiting for their moment (no one talking, no scene, no panel open). */
   private cards: Omit<TitleCard, 'id'>[] = [];
   /** The expedition under way: where, on which tier, and the stone's level for a Riftstone run (else 0). */
-  private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number } | null = null;
+  /** The expedition under way; `keyEnd`: the Riftstone it finished, kept when the hero walks out of its dungeon. */
+  /** The hero as last stamped (heroSignature): persist() bumps `updated` only when it differs. */
+  private heroSig = '';
+  private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number; keyEnd?: RunSummary['key'] } | null = null;
   private hidden = false;
   /** The co-op party this hero is in, and the run it is fighting (null playing alone). */
   party: PartyState | null = null;
@@ -287,6 +302,8 @@ export class SigilEngine {
     document.removeEventListener('visibilitychange', this.onVisibility);
     window.removeEventListener('pagehide', this.onPageHide);
     this.leaveParty();
+    // loot still on the ground goes with the hero, as on the road (never lost by closing the game)
+    if (this.world) this.collectLeftovers(this.world, true);
     this.endRun(false);
     this.persist();
     this.kbm?.dispose();
@@ -305,7 +322,10 @@ export class SigilEngine {
     this.sound.suspend(document.hidden || this.ui.pause);
   };
 
-  private onPageHide = (): void => this.persist();
+  private onPageHide = (): void => {
+    if (this.world) this.collectLeftovers(this.world, true);
+    this.persist();
+  };
 
   /** The arcade asked for a pause (full screen left, scrolled away). */
   hostPause(): void {
@@ -661,7 +681,12 @@ export class SigilEngine {
     if (this.hero) {
       // whatever the hero carries now, its look is theirs for good
       learnLooks(this.hero, allItems(this.hero));
-      this.hero.updated = Date.now();
+      // stamped only when something changed: opening a hero without playing doesn't make that copy the newest
+      const sig = heroSignature(this.hero);
+      if (sig !== this.heroSig) {
+        this.hero.updated = Date.now();
+        this.heroSig = sig;
+      }
       this.save.heroes[this.slot] = this.hero;
       this.save.last = this.slot;
     }
@@ -717,6 +742,7 @@ export class SigilEngine {
     if (!h) return;
     this.slot = slot;
     this.hero = h;
+    this.heroSig = heroSignature(h);
     this.save.last = slot;
     this.ui = { ...this.ui, screen: 'game', panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], teach: null };
     this.travel(HOME, 0, []);
@@ -746,6 +772,7 @@ export class SigilEngine {
   toTitle(): void {
     this.greetIn = 0;
     this.leaveParty();
+    if (this.world) this.collectLeftovers(this.world, true);
     this.endRun(false);
     this.persist();
     this.world = null;
@@ -781,8 +808,11 @@ export class SigilEngine {
       this.startRun(to, 2, [], key);
     } else if (!this.run) this.startRun(to, tier, mods, 0);
     else {
-      // the stone is for the dungeon it was set in: walking out ends that run
-      if (this.run.key && to !== this.run.region) this.run.key = 0;
+      // the stone is for the dungeon it was set in: walking out ends that run (what it earned stays in the report)
+      if (this.run.key && to !== this.run.region) {
+        this.run.keyEnd = (prev && keyResult(prev)) ?? this.run.keyEnd;
+        this.run.key = 0;
+      }
       this.run.region = to;
     }
     const stone = this.run?.key ?? 0;
@@ -844,8 +874,7 @@ export class SigilEngine {
   private summary(cleared: boolean): RunSummary {
     const w = this.world;
     const r = w?.run ?? { xp: 0, gold: 0, kills: 0, bosses: 0, items: [] };
-    const k = w?.keyRun;
-    const key = k?.end ? { key: k.key, time: k.end.time, par: k.par, up: k.end.up, stone: k.end.stone, best: k.end.best, marks: k.end.marks, deaths: k.deaths } : undefined;
+    const key = (w && keyResult(w)) ?? this.run?.keyEnd;
     return { region: this.run?.region ?? w?.region.id ?? 'emberwick', tier: this.run?.tier ?? 0, xp: r.xp, gold: r.gold, kills: r.kills, bosses: r.bosses, items: r.items, seconds: this.run ? (performance.now() - this.run.start) / 1000 : 0, cleared, ...(key ? { key } : {}) };
   }
 
@@ -856,6 +885,11 @@ export class SigilEngine {
       return;
     }
     const s = this.summary(false);
+    // a step out of the gate and back is not a round: nothing to report (the arcade would only call it too short)
+    if (s.seconds < MIN_ROUND && !s.xp && !s.gold && !s.kills && !s.bosses && !s.items.length && !s.key) {
+      this.run = null;
+      return;
+    }
     // a Riftstone level beaten in time is worth the most: higher stones climb the board
     const score = Math.round(s.xp + s.gold * 2 + s.bosses * 250 + (s.key && s.key.up > 0 ? s.key.key * 1000 : 0));
     this.hero.stats.bestRun = Math.max(this.hero.stats.bestRun, score);

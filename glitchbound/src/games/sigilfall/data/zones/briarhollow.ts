@@ -299,8 +299,9 @@ function plan(): SpreadPlan {
   c.prop('crate', 40, 36, true, CAMPED(is('camp-dwarves', 'done')));
   c.prop('blue-banner', 41, 34, true, CAMPED(is('camp-dwarves', 'done')));
   c.npc('dwarf-tova', 42, 36, all(is('camp-dwarves', 'done'), CALM, not(HOME)));
-  // Fernstead's people under canvas, from the night it falls until it is taken back (Act III)
-  const FERN_CAMP = all(is('fall-of-fernstead', 'done'), not(is('fern-retaken', 'done')));
+  // Fernstead's people under canvas, from the Herald's ambush (the village lost) until it is taken back (Act III):
+  // they are never nowhere while their quests wait
+  const FERN_CAMP = all(is('the-heralds-ambush', 'done'), not(is('fern-retaken', 'done')));
   c.prop('tent', 15, 32, true, FERN_CAMP);
   c.prop('tent', 19, 32, true, FERN_CAMP);
   c.prop('campfire', 17, 33, true, FERN_CAMP);

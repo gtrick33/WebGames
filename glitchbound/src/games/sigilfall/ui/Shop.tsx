@@ -147,7 +147,7 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
             ) : (
               <p className="rb-dim">Your bag is empty. Worn gear isn’t for sale.</p>
             )}
-            {shop === 'quartermaster' && h.level < QM_LEVEL && <p className="rb-small rb-dim">This gear is made for the top level: the quartermaster sells it from level {QM_LEVEL}.</p>}
+            {shop === 'quartermaster' && h.level < QM_LEVEL && <p className="rb-small rb-dim">The quartermaster sells from level {QM_LEVEL}, gear made for a little above your level.</p>}
           </section>
           {shop !== 'inn' && (
             <section className={`rb-detail${chosen || sellItem || inspected ? ' is-open' : ''}`} aria-label="Item details">

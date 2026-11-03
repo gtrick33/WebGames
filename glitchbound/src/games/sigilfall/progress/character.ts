@@ -77,6 +77,8 @@ export interface Character {
   skills: [string | null, string | null, string | null, string | null];
   equip: Partial<Record<SlotId, Item>>;
   bag: Item[];
+  /** Quest rewards waiting for room in the bag (one earned with the bag and its overflow full): they come in by themselves. */
+  held?: Item[];
   potions: number;
   quests: Record<string, { state: 'offered' | 'active' | 'ready' | 'done'; n: number; step?: number }>;
   /** The quest the hero follows (the arrow and the tracker show it first). */
@@ -170,7 +172,7 @@ export const cleanName = (s: string): string =>
 /* ------------------------------------------------------------- experience */
 
 /** Adds experience; returns the levels reached (empty if none). */
-export function addXp(c: Character, n: number): number[] {
+export function addXp(c: Character, n: number, past?: (rest: number) => void): number[] {
   const reached: number[] = [];
   if (c.level >= MAX_LEVEL) return reached;
   c.xp += Math.max(0, Math.round(n));
@@ -180,7 +182,11 @@ export function addXp(c: Character, n: number): number[] {
     reached.push(c.level);
     autoSlotSkills(c);
   }
-  if (c.level >= MAX_LEVEL) c.xp = 0;
+  if (c.level >= MAX_LEVEL) {
+    // what carries past the cap goes on (to Paragon: sim/world.ts giveXp) rather than away
+    if (c.xp > 0) past?.(c.xp);
+    c.xp = 0;
+  }
   return reached;
 }
 
@@ -323,6 +329,38 @@ export function addItem(c: Character, item: Item): boolean {
 
 export const allItems = (c: Character): Item[] => [...Object.values(c.equip).filter((i): i is Item => !!i), ...c.bag];
 
+/** Rewards that can wait for room in the bag (more are sold for their gold). */
+export const HELD_MAX = 10;
+
+/**
+ * A quest reward: into the bag, over-full if need be (its overflow, like loot picked up on leaving), else held
+ * until there is room (Character.held), never left on the ground. 'held' when it waits; 'sold' (for its salvage
+ * gold, added by the caller) only past HELD_MAX waiting.
+ */
+export function giveReward(c: Character, item: Item): 'bag' | 'held' | 'sold' {
+  if (c.bag.length < bagSize(c) + BAG_OVERFLOW) {
+    c.bag.push(item);
+    learnLooks(c, [item]);
+    return 'bag';
+  }
+  if ((c.held?.length ?? 0) >= HELD_MAX) return 'sold';
+  (c.held ??= []).push(item);
+  learnLooks(c, [item]);
+  return 'held';
+}
+
+/** Held rewards that now fit go into the bag; the ones that came in. */
+export function deliverHeld(c: Character): Item[] {
+  const came: Item[] = [];
+  while (c.held?.length && c.bag.length < bagSize(c)) {
+    const item = c.held.shift()!;
+    c.bag.push(item);
+    came.push(item);
+  }
+  if (c.held && !c.held.length) delete c.held;
+  return came;
+}
+
 /** Why an item from the bag can't be worn, or null. */
 export function cantEquip(c: Character, item: Item): string | null {
   const cls = itemClass(item);
@@ -406,6 +444,14 @@ export function startQuests(c: Character): QuestDef[] {
     }
   }
   return started;
+}
+
+/**
+ * Quests that wait only for the hero's level: their land is open and everything before them is done
+ * (startQuests starts them at q.level). The log lists them as "Opens at level N"; lowest level first.
+ */
+export function levelGated(c: Character): QuestDef[] {
+  return QUESTS.filter((q) => !c.quests[q.id] && !!q.level && c.level < q.level && (!q.zone || c.unlocked.includes(q.zone)) && (q.after ?? []).every((id) => questState(c, id) === 'done')).sort((a, b) => a.level! - b.level!);
 }
 
 /** The quests an NPC is offering. */
