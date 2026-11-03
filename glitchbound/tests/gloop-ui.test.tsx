@@ -13,7 +13,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const press = (key: string, extra: Record<string, unknown> = {}, target: EventTarget = window) =>
+const press = (key: string, extra: Record<string, unknown> = {}, target: Element | Window = window) =>
   act(() => {
     fireEvent.keyDown(target, { key, bubbles: true, ...extra });
   });
