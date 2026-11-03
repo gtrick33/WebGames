@@ -176,18 +176,22 @@ describe('sigilfall potions and shops', () => {
 });
 
 describe('sigilfall aiming', () => {
-  it('a tapped spell goes where the hero faces, not at the nearest enemy', () => {
-    const w = newWorld('whisperwood', readyHero('mage', 6));
-    const p = w.player;
-    w.enemies = [];
-    const e = w.addEnemy('moss-slime', p.x + 40, p.y, 3, { room: -1, pack: 0 });
-    e.state = 'chase';
-    p.aim = Math.PI / 2;
-    expect(tryCast(w, { slot: 's1', angle: null, dist: null, assist: 0 })).toBe(true);
-    step(w, 0.05);
-    const shot = w.projectiles.find((x) => !x.hostile)!;
-    expect(Math.atan2(shot.vy, shot.vx)).toBeCloseTo(Math.PI / 2, 1);
-  });
+  // a tap aims at the nearest enemy with "Skills aim at the nearest enemy when tapped" on (the default, owner's
+  // request 2026-10), and where the hero faces with it off
+  for (const auto of [false, true])
+    it(`a tapped spell goes ${auto ? 'at the nearest enemy' : 'where the hero faces'} with skill auto-aim ${auto ? 'on' : 'off'}`, () => {
+      const w = newWorld('whisperwood', readyHero('mage', 6));
+      w.settings = { ...w.settings, autoAimSkills: auto };
+      const p = w.player;
+      w.enemies = [];
+      const e = w.addEnemy('moss-slime', p.x + 40, p.y, 3, { room: -1, pack: 0 });
+      e.state = 'chase';
+      p.aim = Math.PI / 2;
+      expect(tryCast(w, { slot: 's1', angle: null, dist: null, assist: 0 })).toBe(true);
+      step(w, 0.05);
+      const shot = w.projectiles.find((x) => !x.hostile)!;
+      expect(Math.atan2(shot.vy, shot.vx)).toBeCloseTo(auto ? 0 : Math.PI / 2, 1);
+    });
 
   it('dodges have real cooldowns', () => {
     for (const cls of CLASS_IDS) expect(SKILLS[CLASSES[cls].dodge]!.base.cooldown).toBeGreaterThanOrEqual(4.5);
