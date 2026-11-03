@@ -1,4 +1,5 @@
 import type { MountDef } from '../../data/mounts';
+import { drakeLayers } from './drake';
 import type { Piece } from './hero';
 import { mixRGB, OUTLINE_RGB, Painter, ramp, rgb, shadeAt, tone, type Ramp } from './kit';
 
@@ -26,9 +27,9 @@ export interface MountFrame {
 }
 
 export const MOUNT_FRAMES: Record<MountView, MountFrame> = {
-  side: { w: 84, h: 58, gx: 42, gy: 55, seat: { horse: [40, 21], deer: [40, 20], boar: [40, 24] } },
-  down: { w: 46, h: 66, gx: 23, gy: 55, seat: { horse: [23, 25], deer: [23, 25], boar: [23, 29] } },
-  up: { w: 46, h: 66, gx: 23, gy: 55, seat: { horse: [23, 27], deer: [23, 27], boar: [23, 31] } },
+  side: { w: 84, h: 58, gx: 42, gy: 55, seat: { horse: [40, 21], deer: [40, 20], boar: [40, 24], drake: [40, 26] } },
+  down: { w: 46, h: 66, gx: 23, gy: 55, seat: { horse: [23, 25], deer: [23, 25], boar: [23, 29], drake: [23, 27] } },
+  up: { w: 46, h: 66, gx: 23, gy: 55, seat: { horse: [23, 27], deer: [23, 27], boar: [23, 31], drake: [23, 28] } },
 };
 
 /** The row of the hero picture at their hips: the rider is drawn down to here. */
@@ -52,6 +53,7 @@ const BODIES: Record<MountDef['body'], Body> = {
   horse: { len: 19, depth: 8, leg: 17, thick: 4, ride: 26 },
   deer: { len: 17, depth: 7, leg: 19, thick: 3, ride: 27 },
   boar: { len: 18, depth: 10, leg: 9, thick: 4, ride: 20 },
+  drake: { len: 18, depth: 9, leg: 11, thick: 5, ride: 21 },
 };
 
 const HOOF = rgb('#2a2026');
@@ -505,6 +507,7 @@ function antlersFront(p: Painter, cx: number, y: number, kind: 'hart' | 'elk'): 
 
 /** The mount's two layers for a view and frame (0 standing, 1–4 walking); unoutlined to be smoothed first. */
 export function paintMount(m: MountDef, view: MountView, frame: number, outline = true): { back: Painter; front: Painter } {
+  if (m.body === 'drake') return drakeLayers(m, view, frame, outline);
   return view === 'side' ? sideLayers(m, frame, outline) : frontLayers(m, view, frame, outline);
 }
 

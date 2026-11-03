@@ -1,4 +1,5 @@
-import type { PerkId, RegionId } from './types';
+import type { ClassId, PerkId, RegionId } from './types';
+import { WARDENS } from './wardens';
 
 /**
  * Mounts (blueprint §6.4–6.6, COLLECTION_SYSTEM_DESIGN.md §3): ground mounts the hero summons outside fights.
@@ -7,14 +8,18 @@ import type { PerkId, RegionId } from './types';
  * coat, tack and extras, drawn in layers around the rider so the hero's gear and Wardrobe looks show.
  */
 
-export type MountBody = 'horse' | 'deer' | 'boar';
+export type MountBody = 'horse' | 'deer' | 'boar' | 'drake';
 
 /** Where a mount comes from. Every source is deterministic: no mount is a random drop. */
 export type MountSource =
   | { kind: 'quest'; quest: string }
   | { kind: 'perk'; perk: PerkId }
   /** Clear every one of these dungeons on this difficulty tier (or higher). */
-  | { kind: 'clears'; regions: RegionId[]; tier: number };
+  | { kind: 'clears'; regions: RegionId[]; tier: number }
+  /** Finish the whole story as this class. */
+  | { kind: 'campaign'; cls: ClassId }
+  /** This many points on the site's Trophy Shelf. */
+  | { kind: 'shelf'; points: number };
 
 export interface MountDef {
   id: string;
@@ -207,6 +212,34 @@ export const MOUNTS: MountDef[] = [
     glow: { kind: 'stars', color: '#cfe0ff' },
     tier: 'prestige',
   },
+  {
+    id: 'cabinet-courser',
+    name: 'Cabinet Courser',
+    lore: 'Nobody knows who left it tied up behind the arcade. It only answers to people who have played everything.',
+    from: 'The site’s Trophy Shelf: 100 points',
+    source: { kind: 'shelf', points: 100 },
+    body: 'horse',
+    coat: '#3a1d7a',
+    mane: '#f6c453',
+    tack: '#1c1130',
+    blaze: true,
+    tier: 'prestige',
+  },
+  ...Object.values(WARDENS).map(
+    (w): MountDef => ({
+      id: `drake-${w.cls}`,
+      name: w.drake.name,
+      lore: w.drake.lore,
+      from: `Finish the story as a ${w.cls}`,
+      source: { kind: 'campaign', cls: w.cls },
+      body: 'drake',
+      coat: w.drake.coat,
+      mane: w.drake.wings,
+      tack: w.drake.tack,
+      glow: { kind: 'embers', color: w.drake.glow },
+      tier: 'prestige',
+    }),
+  ),
 ];
 
 export const MOUNT_DEFS: Record<string, MountDef> = Object.fromEntries(MOUNTS.map((m) => [m.id, m]));

@@ -1,9 +1,12 @@
+import { campaignDone } from '../progress/wardrobe';
+import { RIFT_CAP_UNFINISHED } from '../data/wardens';
+import { SYNC_BELOW } from '../data/keystones';
 import { dist, dist2, rng, TAU } from '../core/math';
 import { BOSSES } from '../data/bosses';
 import { CLASSES, MAX_LEVEL, xpToNext } from '../data/classes';
 import { ELITE_AFFIXES, ENEMIES, enemyScale } from '../data/enemies';
 import { ITEM_DEFS, ITEMS } from '../data/items';
-import { KEY_DEATH, KEY_LEVEL, KEY_MIN, keyCache, keyLoot, keyMarks, keyPar, keyScale, keyUpgrade, type KeyAffix } from '../data/keystones';
+import { KEY_DEATH, keyLevelFor, KEY_MIN, keyCache, keyLoot, keyMarks, keyPar, keyScale, keyUpgrade, type KeyAffix } from '../data/keystones';
 import { QUEST_DEFS, QUESTS } from '../data/quests';
 import { outlevelled } from '../data/progression';
 import { SPEC_LEVEL } from '../data/talents';
@@ -83,6 +86,8 @@ export interface KeyRun {
   t: number;
   deaths: number;
   end: { time: number; up: number; marks: number; stone: number; best: boolean } | null;
+  /** The hero's level when the run began: below SYNC_BELOW the stone meets them at their own strength. */
+  heroLevel: number;
 }
 
 interface EncounterState {
@@ -310,9 +315,9 @@ export class World {
     // Riftstone: the dungeon at Mythic's top level, the stone's might and the week's affixes
     if (o.key && o.key >= KEY_MIN && this.region.kind === 'dungeon') {
       const affixes = o.affixes ?? [];
-      this.keyRun = { key: o.key, affixes, par: keyPar(this.region), t: 0, deaths: 0, end: null };
+      this.keyRun = { key: o.key, affixes, par: keyPar(this.region), t: 0, deaths: 0, end: null, heroLevel: o.hero.level };
       this.tier = 2;
-      this.level = KEY_LEVEL;
+      this.level = keyLevelFor(o.hero.level);
       this.mods = affixes.filter((a): a is 'volatile' | 'hasted' => a === 'volatile' || a === 'hasted');
     }
     this.hero = o.hero;
@@ -563,7 +568,7 @@ export class World {
   /** A pack marker's enemies, kept track of so they come back (rising out of the ground when the story calls them in). */
   private addPack(pm: TileMap['markers'][number], pos: { x: number; y: number }, rise: boolean): void {
     const m = pm.marker as Extract<Marker, { kind: 'pack' }>;
-    const level = this.keyRun ? KEY_LEVEL : m.level !== undefined ? m.level + TIERS[this.tier]!.levels : this.level;
+    const level = this.keyRun ? this.level : m.level !== undefined ? m.level + TIERS[this.tier]!.levels : this.level;
     const cond = pm.when ?? this.region.when?.[pm.ch];
     const st: PackState = { index: this.packs.length + 1, enemies: m.enemies, x: pos.x, y: pos.y, level, elite: !!m.elite, rare: !!m.rare, ids: [], respawnT: -1, ...(cond ? { cond } : {}) };
     this.packs.push(st);
@@ -694,14 +699,14 @@ export class World {
   private hpMul(boss: boolean): number {
     const k = this.keyRun;
     if (!k) return TIERS[this.tier]!.hp * (this.mods.includes('fortified') ? 1.4 : 1);
-    return keyScale(k.key).hp * (k.affixes.includes(boss ? 'tyrannical' : 'fortified') ? 1.3 : 1);
+    return keyScale(k.key, k.heroLevel).hp * (k.affixes.includes(boss ? 'tyrannical' : 'fortified') ? 1.3 : 1);
   }
 
   /** Damage on top of an enemy's level, likewise. */
   private dmgMul(boss: boolean): number {
     const k = this.keyRun;
     if (!k) return TIERS[this.tier]!.dmg;
-    return keyScale(k.key).dmg * (k.affixes.includes(boss ? 'tyrannical' : 'fortified') ? 1.15 : 1);
+    return keyScale(k.key, k.heroLevel).dmg * (k.affixes.includes(boss ? 'tyrannical' : 'fortified') ? 1.15 : 1);
   }
 
   /** Creates an enemy (scaled to its level, the difficulty tier and rift modifiers). */
@@ -1611,7 +1616,7 @@ export class World {
     const chance = (big ? 1 : 0.075) * tier.loot * bonus;
     if (this.rand() < chance) {
       const r = rollRarity(big ? 'elite' : 'enemy', this.tier, this.rand);
-      this.dropAt('gold', e.x, e.y, salvageValue({ il: this.keyRun ? keyLoot(this.keyRun.key) : e.level, r }));
+      this.dropAt('gold', e.x, e.y, salvageValue({ il: this.keyRun ? keyLoot(this.keyRun.key, this.keyRun.heroLevel) : e.level, r }));
     }
     if (this.rand() < (big ? 0.5 : 0.04)) this.dropAt('potion', e.x, e.y, 1);
     if (this.rand() < (e.elite.length ? 0.4 : 0.07)) this.dropAt('orb', e.x, e.y, 1);
@@ -1689,7 +1694,7 @@ export class World {
     this.giveXp(def.xp * enemyScale(e.level).xp * tier.xp);
     this.dropGold(e.x, e.y, Math.round((def.gold[0] + this.rand() * (def.gold[1] - def.gold[0])) * (1 + 0.2 * (e.level - 1))));
     const cls = h.cls as ClassId;
-    const il = this.keyRun ? keyLoot(this.keyRun.key) : e.level;
+    const il = this.keyRun ? keyLoot(this.keyRun.key, this.keyRun.heroLevel) : e.level;
     if (first) {
       for (const id of [...(def.first[cls] ?? []), ...(def.first.any ?? [])]) {
         const it = makeItem(id, il, this.rand);
@@ -1713,9 +1718,11 @@ export class World {
     if (this.region.kind === 'dungeon' && def.id === last) {
       this.cleared = true;
       this.portal = { x: e.x, y: e.y };
+      // the Rift's memory of a dungeon is not the dungeon: a young hero's trial earns no Mythic clear, and moves no quest on
+      const trial = !!this.keyRun && this.keyRun.heroLevel < SYNC_BELOW;
       const key = `${this.region.id}:${this.tier}`;
-      h.clears[key] = (h.clears[key] ?? 0) + 1;
-      this.questProgress((o) => o.kind === 'clear' && o.region === this.region.id && o.tier <= this.tier);
+      if (!trial) h.clears[key] = (h.clears[key] ?? 0) + 1;
+      if (!trial) this.questProgress((o) => o.kind === 'clear' && o.region === this.region.id && o.tier <= this.tier);
       // a guest's clock stops when the host's does (applyKeyEnd)
       if (this.keyRun && !this.puppet) this.endKeyRun(e.x, e.y);
       this.emit({ t: 'cleared' });
@@ -1898,13 +1905,14 @@ export class World {
     const marks = keyMarks(k.key, up > 0);
     // beaten in time, the levels above it open (as in Diablo's rifts, nothing is lost by being late)
     const before = h.keystone;
-    if (up > 0) h.keystone = Math.max(h.keystone, k.key + up);
+    // past the cap the stones ask for someone who has stood at Duskspire themselves
+    if (up > 0) h.keystone = Math.max(h.keystone, campaignDone(h) ? k.key + up : Math.min(k.key + up, RIFT_CAP_UNFINISHED));
     const best = up > 0 && k.key > (h.bestKeys[this.region.id] ?? 0);
     if (best) h.bestKeys[this.region.id] = k.key;
     k.end = { time, up, marks, stone: h.keystone, best };
     h.marks += marks;
     // the Rift's cache: more the higher the stone, and only in time
-    if (up > 0) for (let i = 0; i < keyCache(k.key); i++) this.dropItem(x, y, this.rollItem('boss', keyLoot(k.key)));
+    if (up > 0) for (let i = 0; i < keyCache(k.key); i++) this.dropItem(x, y, this.rollItem('boss', keyLoot(k.key, k.heroLevel)));
     this.emit({
       t: 'banner',
       text: up > 0 ? `In time: ${clockText(time)}` : `Out of time: ${clockText(time)}`,
