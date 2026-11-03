@@ -62,6 +62,40 @@ interface LastRound {
   server?: RunEndResult | null;
 }
 
+/**
+ * The open leaderboard run of this tab's round, per game (sessionStorage): a round resumed after a
+ * reload keeps the run its first start opened, so the server times the whole round. As long as the
+ * server keeps an unfinished run open (functions/api/runs/start.ts).
+ */
+const RUN_KEEP_MS = 12 * 3600_000;
+const runKey = (slug: string): string => `gb:run:${slug}`;
+function keptRun(slug: string): string | null {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(runKey(slug)) ?? 'null') as { runId?: unknown; startedAt?: unknown } | null;
+    if (v && typeof v.runId === 'string' && typeof v.startedAt === 'number' && Date.now() - v.startedAt < RUN_KEEP_MS) return v.runId;
+  } catch {
+    /* storage blocked: the run lives in this page only */
+  }
+  return null;
+}
+function keepRun(slug: string, runId: string | null): void {
+  try {
+    if (runId) sessionStorage.setItem(runKey(slug), JSON.stringify({ runId, startedAt: Date.now() }));
+    else sessionStorage.removeItem(runKey(slug));
+  } catch {
+    /* storage blocked */
+  }
+}
+
+/** Why the server didn't rank a round, for "This round was not ranked (…)". */
+const NOT_RANKED: Record<string, string> = {
+  too_fast: 'too short to count',
+  implausible_score: 'score too high for the time played',
+  above_max: 'score above the game’s maximum',
+  bad_stats: 'its stats don’t add up',
+  no_run: 'its start wasn’t recorded, e.g. after a reload',
+};
+
 /** Stops pinch/double-tap zoom while a game fills the screen (restored afterwards). */
 function lockZoom(on: boolean): void {
   const meta = document.querySelector('meta[name="viewport"]');
@@ -342,8 +376,10 @@ export function GamePage({ game }: { game: GameEntry }) {
   const player = usePlayerName();
   const chal = useChallengeRun(challengeId, game, player.name);
   const finishChallenge = useRef(chal.finish);
+  const beginChallenge = useRef(chal.begin);
   useEffect(() => {
     finishChallenge.current = chal.finish;
+    beginChallenge.current = chal.begin;
   });
   // The challenge scoreboard on the stage: opens by itself when your score is in, or from the dock.
   const [scoresOpen, setScoresOpen] = useState(false);
@@ -484,12 +520,21 @@ export function GamePage({ game }: { game: GameEntry }) {
       }
       if (e.type === 'start') {
         track('game_start', { game: game.slug });
-        // Members: the server timestamps the start so the finished score can be checked.
-        runRef.current = signedIn
-          ? api<{ runId: string }>('/api/runs/start', { body: { game: game.slug } })
-              .then((r) => r.runId)
-              .catch(() => null)
-          : null;
+        // A friends' challenge round: the server times its score from the first start.
+        if (stageSpecRef.current) beginChallenge.current();
+        // Members: the server timestamps the start so the finished score can be checked. A round resumed
+        // after a reload reports start again and keeps the run its first start opened.
+        const kept = signedIn && !runRef.current ? keptRun(game.slug) : null;
+        runRef.current = !signedIn
+          ? null
+          : kept
+            ? Promise.resolve(kept)
+            : api<{ runId: string }>('/api/runs/start', { body: { game: game.slug } })
+                .then((r) => {
+                  keepRun(game.slug, r.runId);
+                  return r.runId;
+                })
+                .catch(() => null);
         return;
       }
       // the game's menu button is handled by the stage; it is never a round
@@ -500,19 +545,26 @@ export function GamePage({ game }: { game: GameEntry }) {
       const ended = !e.challenge && round && game.runtime.kind === 'embed' ? { ...e, challenge: { id: round.id, round: round.round } } : e;
       if (ended.challenge) finishChallenge.current(ended);
       const result = saveStore.record(game, e);
+      // A round resumed after a reload that didn't report start again still ends the run it opened.
+      const kept = signedIn && !runRef.current ? keptRun(game.slug) : null;
+      const pending = runRef.current ?? (kept ? Promise.resolve(kept) : null);
+      runRef.current = null;
+      keepRun(game.slug, null);
+      const noRun = { ok: false, error: 'no_run' } as RunEndResult;
       let n = 0;
       setLast((prev) => {
         n = (prev?.n ?? 0) + 1;
-        return { event: e, result, n, server: signedIn ? undefined : null };
+        return { event: e, result, n, server: signedIn ? (pending ? undefined : ended.challenge ? null : noRun) : null };
       });
-      const pending = runRef.current;
-      runRef.current = null;
       if (pending) {
         void pending.then(async (runId) => {
-          if (!runId) return;
+          if (!runId) {
+            setLast((prev) => (prev && prev.n === n ? { ...prev, server: noRun } : prev));
+            return;
+          }
           try {
             const day = dayKey();
-            const server = await api<RunEndResult>('/api/runs/end', { body: { runId, score: e.score, stats: e.stats ?? {}, day } });
+            const server = await api<RunEndResult>('/api/runs/end', { body: { runId, score: e.score, stats: e.stats ?? {}, day, daily: !!e.daily, challenge: !!ended.challenge } });
             account.setQuests(server.quests);
             // the streak counts the server's record: a cleared challenge it just stored counts now
             if (server.dailyCompleted) account.addDailyDay(day);
@@ -729,8 +781,9 @@ export function GamePage({ game }: { game: GameEntry }) {
                     {t('Rank #{n}', { n: last.server.rank })}
                   </li>
                 )}
-                {last.result.newBests.includes('score') && <li className="sticker" data-tone="lime">{t('New best')}</li>}
-                {last.result.firstPlay && <li className="sticker">{t('First record')}</li>}
+                {/* a round the server refused gets no record badges */}
+                {!(last.server && !last.server.ok) && last.result.newBests.some((k) => k === 'score' || game.stats.find((s) => s.key === k)?.of === 'score') && <li className="sticker" data-tone="lime">{t('New best')}</li>}
+                {!(last.server && !last.server.ok) && last.result.firstPlay && <li className="sticker">{t('First record')}</li>}
                 {last.result.dailyCompleted && <li className="sticker" data-tone="orange">{t('Daily cleared')}</li>}
                 {last.result.gameDailyCompleted && <li className="sticker" data-tone="orange">{t('{label} done', { label: t(game.ownDaily?.label ?? 'Daily') })}</li>}
               </ul>
@@ -745,7 +798,7 @@ export function GamePage({ game }: { game: GameEntry }) {
                 </button>
               )}
               {me && last.server === undefined && <p className="mono last-saving">{t('Saving to the leaderboard…')}</p>}
-              {me && last.server && !last.server.ok && <p className="mono last-saving">{t('This round was not ranked ({reason}).', { reason: t(last.server.error === 'too_fast' ? 'too short to count' : 'score too high for the time played') })}</p>}
+              {me && last.server && !last.server.ok && <p className="mono last-saving">{t('This round was not ranked ({reason}).', { reason: t(NOT_RANKED[last.server.error ?? ''] ?? 'score too high for the time played') })}</p>}
               <div className="last-actions">
                 <button className="btn btn-primary btn-sm" onClick={() => void challengeFriend()} disabled={challenging}>
                   <Icon name={game.challenge ? 'bolt' : 'link'} size={18} /> {t('Challenge a friend')}
