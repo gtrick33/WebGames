@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getGame } from '../src/catalog/catalog';
-import { canDrop, drop, H, newSim, nextTier, POINTS, RADII, resultLine, setAim, step, STEP, tierAt, TIERS, W, type Sim } from '../src/games/gloop/sim';
+import { canDrop, drop, H, LINE, newSim, nextTier, POINTS, RADII, resultLine, setAim, simFrom, step, STEP, tierAt, TIERS, W, type Blob, type Sim } from '../src/games/gloop/sim';
 
 /** Autopilot: drop on top of a blob of the same size when there is one, else spread along the jar. */
 function autoplay(seed: number, seconds: number): Sim {
@@ -70,6 +70,59 @@ describe('Gloop', () => {
       const s = autoplay(seed, 90);
       expect(s.score / Math.max(1, s.t)).toBeLessThan(limits.scorePerSecond);
     }
-    expect(resultLine(3)).toMatch(/^⚪🟡🟠🔴(▫️){7}$/u);
+    expect(resultLine(3)).toMatch(/^⚪🟡🟠🔴(⚫){7}$/u);
   }, 20_000);
+
+  const blob = (id: number, tier: number, x: number, y: number, more: Partial<Blob> = {}): Blob => ({ id, tier, x, y, vx: 0, vy: 0, r: RADII[tier]!, age: 2, high: 0, pop: 0, ...more });
+
+  it('holds the overflow clock while merges are still going on', () => {
+    const s = newSim(1);
+    s.blobs.push(blob(1, 0, 100, 60, { high: 1.6 - STEP / 2 }));
+    s.sinceMerge = 0;
+    for (let i = 0; i < 0.3 / STEP; i++) step(s);
+    expect(s.over).toBe(false);
+    s.blobs[0]!.y = 60;
+    s.blobs[0]!.vy = 0;
+    for (let i = 0; i < 0.2 / STEP && !s.over; i++) step(s);
+    expect(s.over).toBe(true);
+  });
+
+  it('counts a blob as over the line only past the line’s stroke', () => {
+    const at = (top: number): boolean => {
+      const s = newSim(1);
+      s.blobs.push(blob(1, 0, 100, top + RADII[0]!, { high: 1.6 - STEP / 2 }));
+      step(s);
+      return s.over;
+    };
+    expect(at(LINE - 2)).toBe(false);
+    expect(at(LINE - 6)).toBe(true);
+  });
+
+  it('pushes a small blob crushed in a corner back out from under a big one', () => {
+    // A late jar from a real round: a Drip (third) pinned in the bottom-left corner, deep inside a Glob (fifth).
+    const jar = [[1, 340, 550], [0, 345, 585], [0, 15, 585], [0, 127, 521], [4, 44, 559], [4, 318, 498], [7, 207, 533], [3, 114, 567], [3, 300, 567], [3, 264, 449], [0, 345, 450], [1, 315, 438], [2, 26, 498], [0, 62, 478], [0, 217, 457], [2, 87, 510], [1, 20, 456], [6, 59, 391], [4, 293, 382], [6, 197, 388], [0, 345, 367], [0, 127, 405], [4, 40, 296], [4, 129, 460], [1, 99, 286], [3, 126, 332], [1, 340, 267], [0, 173, 320], [4, 232, 298], [3, 312, 312]] as const;
+    const s = newSim(1);
+    jar.forEach(([tier, x, y], i) => s.blobs.push(blob(i + 1, tier, x, y, { age: 60 })));
+    s.nextId = 99;
+    for (let i = 0; i < 5 / STEP; i++) step(s);
+    const [drip, glob] = [s.blobs.find((b) => b.id === 3)!, s.blobs.find((b) => b.id === 5)!];
+    expect(drip.r + glob.r - Math.hypot(glob.x - drip.x, glob.y - drip.y)).toBeLessThan(3);
+  });
+
+  it('keeps the next blob inside the jar after a drop at the wall', () => {
+    let seed = 1;
+    // A seed whose second blob is bigger than its first.
+    while (RADII[tierAt(seed, 1)]! <= RADII[tierAt(seed, 0)]!) seed++;
+    const s = newSim(seed);
+    setAim(s, 0);
+    drop(s);
+    expect(s.aim).toBe(RADII[nextTier(s)]! + 2);
+  });
+
+  it('loads a jar saved before the merge hold was added', () => {
+    const s = newSim(9);
+    const { sinceMerge: _, ...old } = s;
+    expect(simFrom(JSON.parse(JSON.stringify(old)))?.sinceMerge).toBeGreaterThan(0);
+    expect(simFrom({ ...old, sinceMerge: 'x' })).toBeNull();
+  });
 });

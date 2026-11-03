@@ -13,6 +13,12 @@ export const DROP_Y = 62;
 export const STEP = 1 / 120;
 const GRAVITY = 1500;
 const OVER_AFTER = 1.6;
+/** A blob counts as over the line only past the dashed line's stroke (3 px) and a little margin. */
+const OVER_MARGIN = 3;
+/** While blobs are still merging (a chain reaction clearing the jar), the overflow clocks wait. */
+const MERGE_HOLD = 0.4;
+/** Correction passes per step: enough that a small blob pinned in a corner gets out from under a big one. */
+const PASSES = 6;
 const DROP_COOLDOWN = 0.45;
 
 /** Radius and merge points per size; the biggest two merging pop for a bonus. */
@@ -78,12 +84,14 @@ export interface Sim {
   danger: number;
   nextId: number;
   started: boolean;
+  /** Seconds since the last merge (the overflow clocks hold for MERGE_HOLD after one). */
+  sinceMerge: number;
 }
 
 export type SimEvent = { type: 'drop' } | { type: 'merge'; tier: number; x: number; y: number } | { type: 'top'; x: number; y: number } | { type: 'over' };
 
 export function newSim(seed: number): Sim {
-  return { seed, blobs: [], dealt: 0, aim: W / 2, cooldown: 0, score: 0, merges: 0, biggest: 0, t: 0, over: false, danger: 0, nextId: 1, started: false };
+  return { seed, blobs: [], dealt: 0, aim: W / 2, cooldown: 0, score: 0, merges: 0, biggest: 0, t: 0, over: false, danger: 0, nextId: 1, started: false, sinceMerge: MERGE_HOLD };
 }
 
 export const nextTier = (s: Sim, ahead = 0): number => tierAt(s.seed, s.dealt + ahead);
@@ -99,13 +107,14 @@ export function simFrom(v: unknown): Sim | null {
   if (!v || typeof v !== 'object') return null;
   const o = v as Record<string, unknown>;
   if (!int(o.seed) || !int(o.dealt) || !int(o.nextId) || !int(o.score) || !int(o.merges) || !int(o.biggest, 0, TIERS - 1)) return null;
+  if (o.sinceMerge !== undefined && !num(o.sinceMerge)) return null;
   if (![o.aim, o.cooldown, o.t, o.danger].every(num) || o.over !== false || typeof o.started !== 'boolean' || !Array.isArray(o.blobs) || o.blobs.length > 400) return null;
   const blobs: Blob[] = [];
   for (const b of o.blobs as Record<string, unknown>[]) {
     if (!b || !int(b.id) || !int(b.tier, 0, TIERS - 1) || ![b.x, b.y, b.vx, b.vy, b.age, b.high, b.pop].every(num) || b.r !== RADII[b.tier]) return null;
     blobs.push({ id: b.id, tier: b.tier, x: b.x as number, y: b.y as number, vx: b.vx as number, vy: b.vy as number, r: b.r as number, age: b.age as number, high: b.high as number, pop: b.pop as number });
   }
-  return { seed: o.seed, blobs, dealt: o.dealt, aim: o.aim as number, cooldown: o.cooldown as number, score: o.score, merges: o.merges, biggest: o.biggest, t: o.t as number, over: false, danger: o.danger as number, nextId: o.nextId, started: o.started };
+  return { seed: o.seed, blobs, dealt: o.dealt, aim: o.aim as number, cooldown: o.cooldown as number, score: o.score, merges: o.merges, biggest: o.biggest, t: o.t as number, over: false, danger: o.danger as number, nextId: o.nextId, started: o.started, sinceMerge: num(o.sinceMerge) ? Math.max(0, o.sinceMerge) : MERGE_HOLD };
 }
 export const canDrop = (s: Sim): boolean => !s.over && s.cooldown <= 0;
 
@@ -122,10 +131,18 @@ export function drop(s: Sim): boolean {
   setAim(s, s.aim);
   s.blobs.push({ id: s.nextId++, tier, x: s.aim, y: DROP_Y, vx: 0, vy: 120, r, age: 0, high: 0, pop: 0 });
   s.dealt++;
+  // The next blob may be bigger: keep it (and its guide line) inside the jar.
+  setAim(s, s.aim);
   s.cooldown = DROP_COOLDOWN;
   s.started = true;
   return true;
 }
+
+/** Whether a wall stops this blob moving sideways by px, or the floor stops it moving down by py. */
+const heldX = (b: Blob, px: number): boolean => (px < -0.01 && b.x <= b.r + 0.01) || (px > 0.01 && b.x >= W - b.r - 0.01);
+const heldY = (b: Blob, py: number): boolean => py > 0.01 && b.y >= H - b.r - 0.01;
+/** How a pair splits a correction along one axis: by mass, or all to the one that is free to move. */
+const share = (heldA: boolean, heldB: boolean, ka: number, kb: number): [number, number] => (heldA === heldB ? [ka, kb] : heldA ? [0, 1] : [1, 0]);
 
 /** Advances the world by one STEP. Returns what happened, for sounds and effects. */
 export function step(s: Sim): SimEvent[] {
@@ -133,6 +150,7 @@ export function step(s: Sim): SimEvent[] {
   if (s.over) return events;
   s.t += STEP;
   s.cooldown = Math.max(0, s.cooldown - STEP);
+  s.sinceMerge += STEP;
   const blobs = s.blobs;
   for (const b of blobs) {
     b.age += STEP;
@@ -160,6 +178,7 @@ export function step(s: Sim): SimEvent[] {
       const x = (a.x + b.x) / 2;
       const y = (a.y + b.y) / 2;
       s.merges++;
+      s.sinceMerge = 0;
       if (a.tier === TIERS - 1) {
         s.score += TOP_BONUS;
         events.push({ type: 'top', x, y });
@@ -174,9 +193,11 @@ export function step(s: Sim): SimEvent[] {
     }
   }
   if (gone.size) s.blobs = blobs.filter((b) => !gone.has(b.id)).concat(born);
-  // Push overlapping blobs apart (a few passes keep stacks steady), then the jar walls.
+  // Push overlapping blobs apart (a few passes keep stacks steady), then the jar walls. A blob held
+  // by a wall or the floor can't give way, so the other blob of the pair takes the whole correction:
+  // otherwise a small blob pinned in a corner stays crushed inside a big one.
   const list = s.blobs;
-  for (let pass = 0; pass < 4; pass++) {
+  for (let pass = 0; pass < PASSES; pass++) {
     for (let i = 0; i < list.length; i++) {
       const a = list[i]!;
       for (let j = i + 1; j < list.length; j++) {
@@ -194,10 +215,12 @@ export function step(s: Sim): SimEvent[] {
         const mb = b.r * b.r;
         const ka = mb / (ma + mb);
         const kb = ma / (ma + mb);
-        a.x -= nx * overlap * ka;
-        a.y -= ny * overlap * ka;
-        b.x += nx * overlap * kb;
-        b.y += ny * overlap * kb;
+        const [ax, bx] = share(heldX(a, -nx), heldX(b, nx), ka, kb);
+        const [ay, by] = share(heldY(a, -ny), heldY(b, ny), ka, kb);
+        a.x -= nx * overlap * ax;
+        a.y -= ny * overlap * ay;
+        b.x += nx * overlap * bx;
+        b.y += ny * overlap * by;
         // Kill most of the approaching speed along the contact (soft, jelly-like bounce).
         const rel = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
         if (rel < 0) {
@@ -232,11 +255,13 @@ export function step(s: Sim): SimEvent[] {
       }
     }
   }
-  // Too full: a settled blob poking above the line for a while ends the round.
+  // Too full: a settled blob poking above the line for a while ends the round. While merges are
+  // still going on, the clocks of blobs above the line wait (the jar may be about to sink).
   let danger = 0;
+  const settling = s.sinceMerge < MERGE_HOLD;
   for (const b of list) {
-    const above = b.y - b.r < LINE && b.age > 1;
-    b.high = above ? b.high + STEP : 0;
+    const above = b.y - b.r < LINE - OVER_MARGIN && b.age > 1;
+    b.high = !above ? 0 : settling ? b.high : b.high + STEP;
     danger = Math.max(danger, b.high / OVER_AFTER);
     if (b.high >= OVER_AFTER) {
       s.over = true;
@@ -248,8 +273,8 @@ export function step(s: Sim): SimEvent[] {
   return events;
 }
 
-/** Share line: one circle per size, filled up to the biggest blob made. */
+/** Share line: one circle per size, colored up to the biggest blob made, dark (same size) after it. */
 export const SIZE_EMOJI = ['⚪', '🟡', '🟠', '🔴', '🩷', '🟣', '🔵', '🩵', '🟢', '🟤', '🌈'];
 export function resultLine(biggest: number): string {
-  return SIZE_EMOJI.map((e, i) => (i <= biggest ? e : '▫️')).join('');
+  return SIZE_EMOJI.map((e, i) => (i <= biggest ? e : '⚫')).join('');
 }
