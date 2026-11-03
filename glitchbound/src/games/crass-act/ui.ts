@@ -80,6 +80,14 @@ export interface Ui {
   greatestHits: string;
   playAgain: string;
   waitingAnother: string;
+  yes: string;
+  no: string;
+  leaveAsk: string;
+  removeAsk: (name: string) => string;
+  judgeLeft: (judge: string) => string;
+  invite: string;
+  joinTheRoom: string;
+  hostPicks: string;
 }
 
 const EN: Ui = {
@@ -89,7 +97,7 @@ const EN: Ui = {
   takeMeBack: 'Take me back',
   tag: 'Bad taste, played well.',
   yourName: 'Your name',
-  namePlaceholder: 'Something your mum wouldn’t call you',
+  namePlaceholder: 'Something your mom wouldn’t call you',
   invited: 'You’re invited to room',
   roomCode: 'Room code',
   code: 'CODE',
@@ -162,6 +170,14 @@ const EN: Ui = {
   greatestHits: 'Greatest hits',
   playAgain: 'Play again (new cards)',
   waitingAnother: 'Waiting for the host to start another game…',
+  yes: 'Yes',
+  no: 'No',
+  leaveAsk: 'Leave the game? Your cards stay for when you come back.',
+  removeAsk: (name) => `Remove ${name}?`,
+  judgeLeft: (judge) => `${judge} left, so everyone votes for the winner this round.`,
+  invite: 'Invite',
+  joinTheRoom: 'Join the room',
+  hostPicks: 'Host’s pick: this wins',
 };
 
 const BG: Ui = {
@@ -244,6 +260,14 @@ const BG: Ui = {
   greatestHits: 'Най-доброто от играта',
   playAgain: 'Играй пак (нови карти)',
   waitingAnother: 'Чакаме домакина да започне нова игра…',
+  yes: 'Да',
+  no: 'Не',
+  leaveAsk: 'Излизаш от играта? Картите ти остават, ако се върнеш.',
+  removeAsk: (name) => `Да махнем ли ${name}?`,
+  judgeLeft: (judge) => `${judge} излезе, затова този рунд всички гласуват за победителя.`,
+  invite: 'Покани',
+  joinTheRoom: 'Влез в стаята',
+  hostPicks: 'Домакинът избира: тази печели',
 };
 
 export const UI: Record<BasicLang, Ui> = { en: EN, bg: BG };
