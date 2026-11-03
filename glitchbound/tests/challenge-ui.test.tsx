@@ -34,7 +34,7 @@ const view = (over: Partial<ChallengeView> = {}): ChallengeView => ({
   ...over,
 });
 const spec = { id: 'abc1234', round: 2, seed: 2, mode: 'fresh' as const, day: '' };
-const runOf = (state: ChallengeRunState): ChallengeRun => ({ state, news: null, busy: false, finish: vi.fn(), rematch: vi.fn(async () => {}), close: vi.fn(async () => 'left' as const) });
+const runOf = (state: ChallengeRunState): ChallengeRun => ({ state, news: null, busy: false, begin: vi.fn(), finish: vi.fn(), rematch: vi.fn(async () => {}), close: vi.fn(async () => 'left' as const) });
 const ranks = () => screen.getAllByRole('listitem').map((li) => li.textContent);
 
 describe('challenge ranks', () => {
