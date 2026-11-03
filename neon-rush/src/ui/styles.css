@@ -587,3 +587,18 @@ button.chip { cursor: pointer; }
 .car-hero canvas { width: 100px; height: auto; filter: drop-shadow(0 0 16px var(--glow, #22e4ff)); animation: hover 3s ease-in-out infinite; }
 
 a.link { color: var(--pink); }
+
+/* Friends' challenge round (from the GlitchBound arcade). */
+.challenge-card { width: min(340px, 100%); padding: 12px 16px; border-radius: 16px; border: 1px solid var(--gold); background: rgba(255, 194, 26, 0.1); box-shadow: 0 0 18px rgba(255, 194, 26, 0.2); text-align: center; }
+.challenge-card h2 { margin: 0 0 4px; font-family: var(--display); font-size: 16px; letter-spacing: 0.12em; color: var(--gold); }
+.challenge-card p { margin: 0; font-size: 14px; color: var(--text); }
+.pause-note, .go-challenge { margin: 0; font-size: 14px; color: var(--gold); text-align: center; }
+
+/* Small labels stay readable (11 px and up). */
+.rarity-pip, .skin-card .equipped-badge, .pill, .daily-strip li { font-size: 11px; }
+
+/* Touch: every control is at least 44 px. */
+@media (pointer: coarse) {
+  .tab, .filter-chip, .go-rank .btn, .level-chip { min-height: 44px; }
+  .close-x { width: 44px; height: 44px; }
+}

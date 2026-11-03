@@ -6,11 +6,13 @@ import {
   HAZARD_SIZES,
   LANES,
   LANE_WIDTH,
+  LOOKAHEAD,
   MAGNET_RADIUS,
   PICKUP_RADIUS,
   PLAYER,
   POWERUPS,
   SCORE,
+  SPAWN_ABOVE_HORIZON,
   UNITS_PER_METER,
   difficultyAt,
   laneCenter,
@@ -162,12 +164,25 @@ export class World {
     this.player.y = this.playerY();
     this.speed = difficultyAt(0).speed;
     // Grace period: the first row appears a moment after the start.
-    this.nextRowTop = -260 - this.speed * APPROACH_FACTOR * 1.2;
+    this.nextRowTop = this.spawnLine() - this.speed * APPROACH_FACTOR * 1.2;
     this.powerupTimer = 14;
   }
 
   playerY(): number {
     return this.viewHeight - PLAYER.bottomOffset;
+  }
+
+  /**
+   * The top of the road every player sees, LOOKAHEAD above the car (y = 0 on a VIEW_MIN_HEIGHT
+   * view). Spawning and blinkers are measured from here rather than from the top of the screen, so
+   * a seed plays out the same on every screen shape.
+   */
+  horizon(): number {
+    return this.playerY() - LOOKAHEAD;
+  }
+
+  private spawnLine(): number {
+    return this.horizon() - SPAWN_ABOVE_HORIZON;
   }
 
   setViewHeight(h: number): void {
@@ -283,8 +298,9 @@ export class World {
   // ---------------------------------------------------------------- spawning
 
   private spawnRows(diff: ReturnType<typeof difficultyAt>, approach: number): void {
-    // Spawn rows just above the visible area.
-    while (this.nextRowTop > -260) {
+    // Spawn rows just above the horizon.
+    const line = this.spawnLine();
+    while (this.nextRowTop > line) {
       this.spawnRow(diff, approach);
     }
   }
@@ -438,7 +454,7 @@ export class World {
     this.powerupTimer -= dt;
     if (this.powerupTimer > 0) return;
     const row = this.lastRow;
-    if (!row || row.top > -100) return;
+    if (!row || row.top > this.horizon() - 100) return;
     const free: number[] = [];
     for (let l = 0; l < LANES; l++) if (!(row.mask & (1 << l))) free.push(l);
     if (free.length === 0) return;
@@ -472,7 +488,7 @@ export class World {
       if (h.changeTo >= 0) {
         if (h.telegraph > 0) {
           // Blink once visible, then move. Both lanes are already counted as blocked for fairness.
-          if (h.y > 30) {
+          if (h.y > this.horizon() + 30) {
             if (h.telegraph === 0.55) this.events.push({ type: 'blinker', x: h.x, y: h.y, value: h.changeTo - h.lane });
             h.telegraph -= dt;
           }
@@ -500,7 +516,11 @@ export class World {
       if (overlapX && hBottom < pTop && pTop - hBottom < dangerRange) h.danger = true;
 
       if (overlapX && hBottom > pTop && hTop < pBottom) {
-        if (p.invuln > 0) continue;
+        if (p.invuln > 0) {
+          // Driving straight through a car while the shield's grace lasts is no dodge.
+          h.danger = false;
+          continue;
+        }
         if (this.active.shield > 0) {
           this.active.shield = 0;
           p.invuln = 1;

@@ -26,6 +26,15 @@ export function computeRunRewards(stats: RunStats): RunRewards {
   };
 }
 
+/** A run left from the pause menu counts as played only once it got this far. */
+export const MIN_COUNTED_SECONDS = 10;
+export const MIN_COUNTED_METERS = 200;
+
+/** Whether a run counts toward "runs played" (missions, achievements). Crashed runs always do. */
+export function countsAsPlayed(stats: RunStats, abandoned: boolean): boolean {
+  return !abandoned || stats.time >= MIN_COUNTED_SECONDS || stats.meters >= MIN_COUNTED_METERS;
+}
+
 export interface RunSummary {
   runId: string;
   stats: RunStats;
@@ -40,16 +49,18 @@ export interface RunSummary {
 
 /**
  * Apply a finished run to the profile. Idempotent per runId: calling it twice for the same run
- * (double callbacks, re-renders) returns null the second time and grants nothing.
+ * (double callbacks, re-renders) returns null the second time and grants nothing. An `abandoned`
+ * run (left from the pause menu) still pays what it earned, but a very short one isn't a run played.
  */
-export function finishRun(profile: Profile, runId: string, stats: RunStats, day: string, now = Date.now()): RunSummary | null {
+export function finishRun(profile: Profile, runId: string, stats: RunStats, day: string, now = Date.now(), abandoned = false): RunSummary | null {
   if (!markOnce(profile.processedRunIds, runId, 50)) return null;
   const rewards = computeRunRewards(stats);
   const meters = Math.floor(stats.meters);
   const newBestScore = stats.score > profile.bestScore;
   const newBestDistance = meters > profile.bestDistance;
 
-  profile.gamesPlayed += 1;
+  const played = countsAsPlayed(stats, abandoned);
+  if (played) profile.gamesPlayed += 1;
   profile.lifetimeDistance += meters;
   profile.totalCoins += rewards.coinsCollected;
   profile.totalNearMisses += stats.nearMisses;
@@ -58,7 +69,7 @@ export function finishRun(profile: Profile, runId: string, stats: RunStats, day:
   profile.coins += rewards.coinsEarned;
 
   const levelUps = addXp(profile, rewards.xpEarned);
-  const challenges = applyRunToChallenges(profile, stats, day);
+  const challenges = applyRunToChallenges(profile, stats, day, played);
   const achievements = evaluateAchievements(profile, stats, now);
   const skinsUnlocked = syncSkinUnlocks(profile);
   // Unlocking a skin may complete "own N skins".

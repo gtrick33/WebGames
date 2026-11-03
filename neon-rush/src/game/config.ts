@@ -18,6 +18,15 @@ export const PLAYER = {
   laneChangeTime: 0.14,
 } as const;
 
+/**
+ * How far ahead of the player's center the road is visible, the same on every screen: all of a
+ * VIEW_MIN_HEIGHT view. Taller screens show more road above it, covered by the horizon haze, so a
+ * tall phone never sees traffic earlier than a tablet does.
+ */
+export const LOOKAHEAD = VIEW_MIN_HEIGHT - PLAYER.bottomOffset;
+/** Rows spawn this far above the horizon, out of sight. */
+export const SPAWN_ABOVE_HORIZON = 260;
+
 /** Hazards and pickups approach at this fraction of the player's speed (traffic drives forward too). */
 export const APPROACH_FACTOR = 0.62;
 /** Fixed simulation step. */

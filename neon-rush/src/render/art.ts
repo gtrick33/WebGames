@@ -125,6 +125,8 @@ export class ArtLibrary {
   readonly palms: Texture[];
   readonly signs: Texture[];
   readonly laneGlow: Texture;
+  /** Opaque white at the top fading to clear: the horizon haze, tinted with the sky. */
+  readonly haze: Texture;
   private readonly skinCache = new Map<string, Texture>();
 
   constructor(private readonly renderer: Renderer) {
@@ -193,6 +195,14 @@ export class ArtLibrary {
       g.rect(-2, 0, 16, 3).fill({ color: 0x2b2545 });
       g.circle(14, 1.5, 3).fill({ color: 0xffffff });
     });
+    this.haze = canvasTexture(4, 64, (ctx) => {
+      const g = ctx.createLinearGradient(0, 0, 0, 64);
+      g.addColorStop(0, 'rgba(255,255,255,1)');
+      g.addColorStop(0.55, 'rgba(255,255,255,0.6)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 4, 64);
+    }, 1);
     this.star = canvasTexture(32, 32, (ctx) => {
       const g = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
       g.addColorStop(0, 'rgba(255,255,255,1)');

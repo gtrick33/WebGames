@@ -9,6 +9,9 @@ import { clamp, damp, lerp } from '../core/math';
 
 type Theme = 'city' | 'palms' | 'signs';
 
+/** Height of the fade at the horizon, in logical units. */
+const HAZE = 56;
+
 /** Colour zones that cycle as the run goes on, each with its own roadside scenery. */
 const ZONES: { name: string; edgeA: number; edgeB: number; grid: number; sky: number; theme: Theme }[] = [
   { name: 'NEON CITY', edgeA: 0x22e4ff, edgeB: 0xff3fd2, grid: 0x8a3bff, sky: 0x0a0624, theme: 'city' },
@@ -77,6 +80,9 @@ export class GameRenderer {
   private particles: ParticleSystem;
   private popups: Popup[] = [];
   private flash: Sprite;
+  /** Covers the road above the horizon that only tall screens show (World.horizon). */
+  private hazeFill = new Sprite(Texture.WHITE);
+  private hazeEdge: Sprite;
   private carFx: CarFxFilter | null = null;
   private lasers: Sprite[] = [];
   private laneGlow: TilingSprite;
@@ -139,6 +145,7 @@ export class GameRenderer {
     this.particles = new ParticleSystem(art.spark, settings.lowQuality ? 160 : 400);
     this.flash = new Sprite(Texture.WHITE);
     this.flash.alpha = 0;
+    this.hazeEdge = new Sprite(art.haze);
 
     this.buildScene();
   }
@@ -176,7 +183,7 @@ export class GameRenderer {
     stage.addChild(this.root);
     this.root.addChild(this.worldLayer, this.screenLayer);
     this.worldLayer.addChild(this.ground, ...this.motes, this.propLayer, this.road, this.laneGlow, this.edges, this.edgeGlowL, this.edgeGlowR);
-    this.worldLayer.addChild(this.pickupLayer, this.lightLayer, this.hazardLayer, this.playerLayer, this.particles.container, this.fxLayer);
+    this.worldLayer.addChild(this.pickupLayer, this.lightLayer, this.hazardLayer, this.playerLayer, this.particles.container, this.fxLayer, this.hazeFill, this.hazeEdge);
     this.playerLayer.addChild(...this.trail, ...this.lasers, this.underglow, this.headBeam, this.player, this.shieldRing, this.magnetRing);
     this.screenLayer.addChild(this.flash);
 
@@ -309,6 +316,14 @@ export class GameRenderer {
     this.road.position.set(0, 0);
     this.laneGlow.height = this.viewHeight;
     this.drawEdges();
+    // Every screen sees the same road ahead: LOOKAHEAD above the car, fading in over HAZE units.
+    const horizon = this.viewHeight - VIEW_MIN_HEIGHT;
+    this.hazeFill.position.set(-this.viewWidth / 2 - 64, -64);
+    this.hazeFill.width = this.viewWidth + 128;
+    this.hazeFill.height = horizon + 64;
+    this.hazeEdge.position.set(-this.viewWidth / 2 - 64, horizon);
+    this.hazeEdge.width = this.viewWidth + 128;
+    this.hazeEdge.height = HAZE;
 
     this.flash.width = w;
     this.flash.height = h;
@@ -400,6 +415,7 @@ export class GameRenderer {
     this.edgeGlowR.tint = edgeB;
     this.laneGlow.tint = mix(edgeA, edgeB, 0.5);
     this.app.renderer.background.color = mix(za.sky, zb.sky, zt);
+    this.hazeFill.tint = this.hazeEdge.tint = mix(za.sky, zb.sky, zt);
     // Lights pulse on the music's beat.
     const beat = Math.exp(-((this.time % BEAT) / 0.11));
     this.ground.alpha = 0.5 + beat * 0.15;
