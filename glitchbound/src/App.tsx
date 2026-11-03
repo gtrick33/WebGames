@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { getGame } from './catalog/catalog';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { CrashNotice, ErrorBoundary } from './components/ErrorBoundary';
 import { Header } from './components/Header';
 // The game page's code loads on its own (pages/loadGamePage.ts); its styles stay in the main sheet, in their usual order.
 import './components/Burst.css';
@@ -196,5 +196,14 @@ export function App() {
       </Suspense>
       <SeasonLayer />
     </>
+  );
+}
+
+/** The app with a last line of defense: a crash outside any page (say, storage the browser blocks) shows a notice, not a white page. */
+export function Root() {
+  return (
+    <ErrorBoundary fallback={() => <CrashNotice />}>
+      <App />
+    </ErrorBoundary>
   );
 }

@@ -3,7 +3,7 @@ import './styles/tokens.css';
 import './styles/base.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from './App';
+import { Root } from './App';
 import { installErrorReporting } from './platform/analytics';
 import { onPreloadError } from './platform/freshBuild';
 import { goToMainAddress } from './platform/canonical';
@@ -37,12 +37,15 @@ const pageCode = !leaving && (firstRoute === 'game' || firstRoute === 'section')
 // The sign-in check starts before anything renders: a game page can open its game at once, and the game
 // must wait for a signed-in player's saves (platform/syncGate.ts), which this check leads to.
 if (!leaving) account.start();
+// The guest key's server copy (platform/challenges.ts): restores a key the browser lost or can't keep.
+// Loaded on its own: the challenge code isn't needed to draw the first page.
+if (!leaving) void import('./platform/challenges').then((m) => m.syncGuestKey()).catch(() => undefined);
 void Promise.all([startI18n(), pageCode]).then(() => {
   if (!root || leaving) return;
   // The prerendered HTML inside #root is for crawlers and no-JS visitors; React replaces it.
   createRoot(root).render(
     <StrictMode>
-      <App />
+      <Root />
     </StrictMode>,
   );
 });
