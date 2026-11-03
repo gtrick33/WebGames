@@ -495,6 +495,17 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
     sfx().flap();
   }, [paused, host, sfx, update]);
 
+  /** The pause card's Menu: a daily flight left mid-air ends there and uses up its try. */
+  const leave = (): void => {
+    const s = sim.current;
+    if (s?.started && !s.dead) {
+      if (flightRef.current.mode !== 'endless') endFlight(s, true);
+      s.dead = true;
+    }
+    setPaused(false);
+    toMenu();
+  };
+
   const settled = (): boolean => performance.now() - deadAt.current > RESULT_GUARD_MS;
 
   useEffect(() => {
@@ -557,9 +568,30 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
         </div>
       )}
       {paused && (
-        <button className="wi-overlay" onClick={() => setPaused(false)}>
-          Paused · tap to continue
-        </button>
+        <>
+          {/* A tap anywhere around the card carries on, as before; the corner buttons stay above it. */}
+          <div className="wi-overlay" onClick={() => setPaused(false)} aria-hidden="true" />
+          <section className="wi-over wi-paused" aria-label="Paused">
+            <h2>Paused</h2>
+            <p className="wi-muted">
+              {hud.score + hud.feathers * 3} points · {gapsText(hud.score)}
+            </p>
+            <div className="wi-row">
+              <button className="wi-btn wi-btn-go" onClick={() => setPaused(false)} autoFocus>
+                Resume
+              </button>
+              <button className="wi-btn" onClick={() => update((c) => ({ ...c, muted: !c.muted }))} aria-label={save.muted ? 'Turn sound on' : 'Turn sound off'}>
+                {save.muted ? '🔇' : '🔊'}
+              </button>
+              {mode !== 'challenge' && (
+                <button className="wi-btn" onClick={leave}>
+                  Menu
+                </button>
+              )}
+            </div>
+            {mode === 'daily' && <p className="wi-muted wi-small">Menu ends this flight: it counts as one of today’s.</p>}
+          </section>
+        </>
       )}
       {hud.dead && result && (
         <div className="wi-over">

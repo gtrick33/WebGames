@@ -132,12 +132,31 @@ describe('Wing It: flights', () => {
     act(() => void document.dispatchEvent(new Event('visibilitychange')));
     hidden = false;
     act(() => void document.dispatchEvent(new Event('visibilitychange')));
-    expect(screen.getByText('Paused · tap to continue')).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Paused' })).toBeTruthy();
     c.run(200);
     expect(c.pending()).toBe(0);
-    fireEvent.click(screen.getByRole('button', { name: 'Resume' }));
-    expect(screen.queryByText('Paused · tap to continue')).toBeNull();
+    // Two Resume buttons: the corner one (above the dimmed sky) and the card's.
+    expect(screen.getAllByRole('button', { name: 'Resume' })).toHaveLength(2);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Resume' })[0]!);
+    expect(screen.queryByRole('region', { name: 'Paused' })).toBeNull();
     expect(c.pending()).toBe(1);
+  });
+
+  it('the pause card toggles sound, and its Menu ends a daily flight once', () => {
+    const c = clock();
+    const report = vi.fn();
+    const { unmount } = render(<Game host={{ report }} restartKey={0} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Fly today’s course' }));
+    takeOff();
+    c.run(50);
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Turn sound off' }));
+    expect(stored().muted).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    expect(report).toHaveBeenLastCalledWith({ type: 'end', score: 0, stats: { pillars: 0, feathers: 0 }, daily: true });
+    expect(screen.getByText(/Last flight left unfinished/)).toBeTruthy();
+    unmount();
+    expect(report).toHaveBeenCalledTimes(2);
   });
 
   it('a second tab’s flights are kept: every write merges into the stored save', () => {

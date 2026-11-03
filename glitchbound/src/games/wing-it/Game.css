@@ -88,11 +88,10 @@
   position: absolute;
   z-index: 2;
   inset: 0;
-  border: 0;
   background: rgb(29 18 56 / 0.5);
-  color: #fff;
-  font-size: 22px;
-  font-weight: 900;
+}
+.wi-paused {
+  z-index: 2;
 }
 .wi-over {
   position: absolute;
