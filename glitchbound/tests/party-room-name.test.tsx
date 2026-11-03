@@ -6,6 +6,8 @@ let live = false;
 let closed = false;
 const opened: string[] = [];
 vi.mock('../src/platform/rooms', () => ({
+  GAME_ROOM_PAGE: {},
+  seatedName: () => null,
   roomInfo: () => Promise.resolve(closed ? null : { players: 2, host: 'Ana', full: false, phase: 'talk' }),
   createRoom: (game: string) => {
     opened.push(game);
@@ -93,7 +95,7 @@ describe('room names survive a reload', () => {
   it('offers a new room of the same game when the room has closed', async () => {
     closed = true;
     render(frame('ZZZZZ'));
-    fireEvent.click(await screen.findByRole('button', { name: 'Open a new Dial It In room' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Open a new room' }));
     await waitFor(() => expect(opened).toEqual(['dial']));
     expect(location.search).toBe('?room=NEWRM');
   });

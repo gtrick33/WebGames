@@ -90,6 +90,9 @@ export interface Words {
   room: (code: string) => string;
   invite: string;
   inviteText: (code: string) => string;
+  /** The invite once every place is taken: whoever comes now watches. */
+  inviteWatch: string;
+  inviteWatchText: (code: string) => string;
   shareLink: string;
   sitHere: string;
   empty: string;
@@ -239,6 +242,8 @@ const en: Words = {
   room: (code) => `Table ${code}`,
   invite: 'Send this to your friends',
   inviteText: (code) => `Come play Belot with me! Table ${code}`,
+  inviteWatch: 'Send this to friends who want to watch',
+  inviteWatchText: (code) => `Come watch our Belot game! Table ${code}`,
   shareLink: 'Share the link',
   sitHere: 'Sit here',
   empty: 'Empty place',
@@ -394,6 +399,8 @@ const bg: Words = {
   room: (code) => `Маса ${code}`,
   invite: 'Прати това на приятелите си',
   inviteText: (code) => `Ела да играем белот! Маса ${code}`,
+  inviteWatch: 'Прати това на приятели, които искат да гледат',
+  inviteWatchText: (code) => `Ела да гледаш как играем белот! Маса ${code}`,
   shareLink: 'Сподели линка',
   sitHere: 'Седни тук',
   empty: 'Свободно място',

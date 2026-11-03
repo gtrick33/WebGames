@@ -5,7 +5,8 @@ import { embedHost } from '../../platform/embed';
 import { shareOrCopy } from '../../platform/share';
 import { fill, MAX_PLAYERS, MIN_PLAYERS, TARGETS, TIMERS, type Deck, type RoomView } from './engine';
 import { createRoom, roomInfo, useRoom } from './net';
-import { OnlinePlay, RoomListingBar } from '../../components/OnlinePlay';
+import { OnlinePlay, RoomListingBar, RoomNextStep } from '../../components/OnlinePlay';
+import { seatedName } from '../../platform/rooms';
 import { UI, type Ui } from './ui';
 import './Game.css';
 import { GameMenuButton } from '../../components/GameMenuButton';
@@ -60,7 +61,8 @@ export default function Game({ host, restartKey, playerName, lang: site }: GameM
 function CrassAct({ host, playerName }: { host: GameHost; playerName?: string }) {
   const [adult, setAdult] = useState(() => read(ADULT) === '1');
   // Inside the Discord Activity: the player's Discord name, and straight into the call's room.
-  const [name, setName] = useState(() => (embedHost() && playerName) || read(NAME) || playerName || '');
+  // A reload of a room you sat in (with no name saved here) prefills the name you were seated under.
+  const [name, setName] = useState(() => (embedHost() && playerName) || read(NAME) || seatedName(linkedRoom()) || playerName || '');
   // Inside the Discord call, or back from a reload with a name saved: straight into the room (the seat is kept by key).
   const [code, setCode] = useState<string | null>(() => ((embedHost() || read(NAME)) && linkedRoom()) || null);
   const [invite] = useState(linkedRoom);
@@ -94,12 +96,17 @@ function CrassAct({ host, playerName }: { host: GameHost; playerName?: string })
   if (code)
     return (
       <Room
+        key={code}
         code={code}
         name={name}
         host={host}
         onLeave={() => {
           setRoomInUrl(null);
           setCode(null);
+        }}
+        onRoom={(c) => {
+          setRoomInUrl(c);
+          setCode(c);
         }}
       />
     );
@@ -220,8 +227,8 @@ function useNow(skew: number): number {
   return now;
 }
 
-function Room({ code, name, host, onLeave }: { code: string; name: string; host: GameHost; onLeave: () => void }) {
-  const { view, conn, error, clearError, gone, skew, send, listing, setListed } = useRoom(code, name);
+function Room({ code, name, host, onLeave, onRoom }: { code: string; name: string; host: GameHost; onLeave: () => void; onRoom: (code: string) => void }) {
+  const { view, conn, error, clearError, gone, goneCode, skew, send, listing, setListed } = useRoom(code, name);
   const now = useNow(skew);
   const u = useUi();
   const reported = useRef<{ started: boolean; over: number }>({ started: false, over: -1 });
@@ -259,7 +266,8 @@ function Room({ code, name, host, onLeave }: { code: string; name: string; host:
         <Logo />
         <div className="uh-panel">
           <p className="uh-big">{gone === 'This room is full.' ? u.roomFull(code, MAX_PLAYERS) : gone}</p>
-          <button className="uh-btn uh-btn-go" onClick={onLeave}>
+          <RoomNextStep game="crass-act" room={code} code={goneCode || 'closed'} onRoom={onRoom} />
+          <button className="uh-btn" onClick={onLeave}>
             {u.back}
           </button>
         </div>

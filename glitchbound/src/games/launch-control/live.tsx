@@ -5,7 +5,7 @@
  */
 import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { useRoom } from '../../platform/rooms';
-import { RoomListingBar } from '../../components/OnlinePlay';
+import { RoomListingBar, RoomNextStep } from '../../components/OnlinePlay';
 import { shareOrCopy } from '../../platform/share';
 import { getCar } from './cars';
 import { Icon } from './icons';
@@ -40,6 +40,7 @@ export function LiveRoom({
   sfx,
   onRacing,
   onLeave,
+  onRoom,
 }: {
   code: string;
   name: string;
@@ -51,8 +52,10 @@ export function LiveRoom({
   sfx: () => Sfx;
   onRacing: (on: boolean) => void;
   onLeave: () => void;
+  /** Into another room (quick match or a new one) from the closed screen. */
+  onRoom: (code: string) => void;
 }) {
-  const { view, conn, error, clearError, gone, skew, send, listing, setListed } = useRoom<RoomView, Action>(code, name);
+  const { view, conn, error, clearError, gone, goneCode, skew, send, listing, setListed } = useRoom<RoomView, Action>(code, name);
   const [carId, setCarId] = useState(defaultCar);
   const [shownRound, setShownRound] = useState(0);
   const [copied, setCopied] = useState('');
@@ -124,9 +127,10 @@ export function LiveRoom({
   if (gone || conn === 'gone')
     return (
       <div className="lc-main">
-        <Panel eyebrow={`Room ${code}`} title="Room closed" onBack={onLeave}>
-          <p className="lc-sub">{gone || 'This room has closed.'} Rooms close after three quiet hours; open a new one from the menu.</p>
-          <button className="btn btn-lg lc-cta" onClick={onLeave}>
+        <Panel eyebrow={`Room ${code}`} title={goneCode === 'full' ? 'Room full' : 'Room closed'} onBack={onLeave}>
+          <p className="lc-sub">{gone || 'This room has closed.'} Rooms close after three quiet hours.</p>
+          <RoomNextStep game="drag" room={code} code={goneCode || 'closed'} onRoom={onRoom} />
+          <button className="btn btn-lg" onClick={onLeave}>
             Back to the menu
           </button>
         </Panel>

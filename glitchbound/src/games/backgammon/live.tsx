@@ -5,7 +5,7 @@
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import { useRoom } from '../../platform/rooms';
-import { RoomListingBar } from '../../components/OnlinePlay';
+import { RoomListingBar, RoomNextStep } from '../../components/OnlinePlay';
 import { shareOrCopy } from '../../platform/share';
 import { LEVELS, type Level } from './ai';
 import { Board } from './Board';
@@ -16,8 +16,14 @@ import { serverText, type Words } from './text';
 
 export const inviteLink = (code: string): string => `${location.origin}/r/${code}`;
 
-export function LiveBoard({ w, code, name, sfx, tools, onLeave }: { w: Words; code: string; name: string; sfx: () => Sfx; tools: ReactNode; onLeave: () => void }) {
-  const { view, conn, error, clearError, gone, send, skew, listing, setListed } = useRoom<RoomView, Action>(code, name || w.you);
+/** The lobby's invite: to play while a place is free, to watch once both are taken (a player or the computer). */
+export function inviteWords(w: Words, view: Pick<RoomView, 'places'>, code: string): { label: string; text: string } {
+  const full = view.places.every((p) => p.player || p.bot);
+  return full ? { label: w.inviteWatch, text: w.inviteWatchText(code) } : { label: w.invite, text: w.inviteText(code) };
+}
+
+export function LiveBoard({ w, code, name, sfx, tools, onLeave, onRoom }: { w: Words; code: string; name: string; sfx: () => Sfx; tools: ReactNode; onLeave: () => void; onRoom: (code: string) => void }) {
+  const { view, conn, error, clearError, gone, goneCode, send, skew, listing, setListed } = useRoom<RoomView, Action>(code, name || w.you);
   useEffect(() => {
     if (!error) return;
     const id = window.setTimeout(clearError, 3000);
@@ -39,7 +45,8 @@ export function LiveBoard({ w, code, name, sfx, tools, onLeave }: { w: Words; co
         <div className="tb-menu">
           <h2 className="tb-h">{gone === 'This room is full.' ? w.roomFull : w.roomClosed}</h2>
           <p className="tb-tagline">{serverText(w, gone)}</p>
-          <button className="tb-btn is-go" onClick={onLeave}>
+          <RoomNextStep game="backgammon" room={code} code={goneCode || 'closed'} onRoom={onRoom} />
+          <button className="tb-btn" onClick={onLeave}>
             {w.back}
           </button>
         </div>
@@ -148,6 +155,7 @@ export function LiveBoard({ w, code, name, sfx, tools, onLeave }: { w: Words; co
 function Lobby({ w, view, code, send, tools, onLeave, notice, bar, names }: { w: Words; view: RoomView; code: string; send: (a: Action) => void; tools: ReactNode; onLeave: () => void; notice: string; bar: ReactNode; names: [string, string] }) {
   const [copied, setCopied] = useState('');
   const link = inviteLink(code);
+  const invite = inviteWords(w, view, code);
   const ready = view.places[0]?.player && (view.places[1]?.player || view.places[1]?.bot);
   return (
     <div className="tb-scroll">
@@ -227,10 +235,10 @@ function Lobby({ w, view, code, send, tools, onLeave, notice, bar, names }: { w:
           {w.clock} <span className="tb-knob" aria-hidden="true" />
         </button>
         <div className="tb-invite">
-          <small>{w.invite}</small>
+          <small>{invite.label}</small>
           <b className="mono">{code}</b>
           <span className="mono tb-link-text">{link.replace(/^https?:\/\//, '')}</span>
-          <button className="tb-btn" onClick={() => void shareOrCopy({ title: 'Backgammon', text: w.inviteText(code), url: link }).then((o) => setCopied(o === 'copied' ? w.copied : ''))}>
+          <button className="tb-btn" onClick={() => void shareOrCopy({ title: 'Backgammon', text: invite.text, url: link }).then((o) => setCopied(o === 'copied' ? w.copied : ''))}>
             {copied || w.shareLink}
           </button>
         </div>

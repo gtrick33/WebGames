@@ -3,7 +3,7 @@ import { NextDaily } from '../../components/NextDaily';
 import { ResultLine } from '../../components/ResultLine';
 import { useAccount } from '../../platform/account';
 import { openChallengeScores, type ChallengeSpec } from '../../platform/challenge';
-import { createRoom } from '../../platform/rooms';
+import { createRoom, seatedName } from '../../platform/rooms';
 import { OnlinePlay, OnlineWindow } from '../../components/OnlinePlay';
 import { claimCoins } from '../../platform/coins';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
@@ -1557,7 +1557,7 @@ function LaunchControl({ host, pauseKey, challenge, playerName, openMenu }: { ho
           </Panel>
         )}
       </main>
-      {screen === 'live' && liveCode && <LiveRoom code={liveCode} name={playerName || 'Racer'} env={save.env} owned={Object.keys(save.cars)} carFor={liveCarFor} defaultCar={save.car} stageRef={stageRef} sfx={sfx} onRacing={setLiveRacing} onLeave={leaveLive} />}
+      {screen === 'live' && liveCode && <LiveRoom key={liveCode} code={liveCode} name={seatedName(liveCode) ?? (playerName || 'Racer')} env={save.env} owned={Object.keys(save.cars)} carFor={liveCarFor} defaultCar={save.car} stageRef={stageRef} sfx={sfx} onRacing={setLiveRacing} onLeave={leaveLive} onRoom={enterLive} />}
       {screen === 'rivals' && <RivalsSheet save={save} mySheet={mySheet} mySpec={mySpec} sel={rivalIdx} setPick={setRivalPick} onBack={() => go('hub')} onRace={(o, mode) => setup(mode, o)} viewRef={setViewEl} right={cashPill} />}
 
       {screen === 'parts' && (

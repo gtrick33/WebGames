@@ -10,7 +10,7 @@ import { ResultLine } from '../../components/ResultLine';
 import { openChallengeScores, type ChallengeSpec } from '../../platform/challenge';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { dayKey, daysBetween, hashString } from '../../platform/dates';
-import { createRoom, roomInfo } from '../../platform/rooms';
+import { createRoom, roomInfo, seatedName } from '../../platform/rooms';
 import { shareOrCopy } from '../../platform/share';
 import { CHAR_IDS, CHARS, isCharId, type CharId } from './characters';
 import { Portrait, TerrainThumb, WeaponIcon } from './icons';
@@ -354,8 +354,9 @@ function CraterCrew({ host, pauseKey, challenge, playerName }: { host: GameHost;
     return (
       <div className="cc" onPointerDown={() => sfx()}>
         <LiveRoom
+          key={room}
           code={room}
-          name={name}
+          name={seatedName(room) ?? name}
           sfx={sfx}
           muted={save.muted}
           onMute={() => commit((s) => ({ ...s, muted: !s.muted }))}
@@ -363,6 +364,10 @@ function CraterCrew({ host, pauseKey, challenge, playerName }: { host: GameHost;
           onLeave={() => {
             setRoomInUrl(null);
             setRoom(null);
+          }}
+          onRoom={(code) => {
+            setRoomInUrl(code);
+            setRoom(code);
           }}
         />
       </div>

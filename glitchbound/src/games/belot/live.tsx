@@ -5,7 +5,7 @@
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useRoom } from '../../platform/rooms';
-import { RoomListingBar } from '../../components/OnlinePlay';
+import { RoomListingBar, RoomNextStep } from '../../components/OnlinePlay';
 import { shareOrCopy } from '../../platform/share';
 import { LEVELS, type Level } from './ai';
 import { teamOf, type Seat } from './logic';
@@ -47,8 +47,14 @@ function overTitle(w: Words, view: RoomView, names: string[]): { title: string; 
   return { title: w.teamWon(`${names[team]} & ${names[team + 2]}`), won: false };
 }
 
-export function LiveTable({ w, code, name, sfx, tools, onLeave }: { w: Words; code: string; name: string; sfx: () => Sfx; tools: ReactNode; onLeave: () => void }) {
-  const { view, conn, error, clearError, gone, send, skew, listing, setListed } = useRoom<RoomView, Action>(code, name || w.you);
+/** The lobby's invite: to play while a place is free, to watch once all four are taken (players or computers). */
+export function inviteWords(w: Words, view: Pick<RoomView, 'places'>, code: string): { label: string; text: string } {
+  const full = view.places.every((p) => p.player || p.bot);
+  return full ? { label: w.inviteWatch, text: w.inviteWatchText(code) } : { label: w.invite, text: w.inviteText(code) };
+}
+
+export function LiveTable({ w, code, name, sfx, tools, onLeave, onRoom }: { w: Words; code: string; name: string; sfx: () => Sfx; tools: ReactNode; onLeave: () => void; onRoom: (code: string) => void }) {
+  const { view, conn, error, clearError, gone, goneCode, send, skew, listing, setListed } = useRoom<RoomView, Action>(code, name || w.you);
   useEffect(() => {
     if (!error) return;
     const id = window.setTimeout(clearError, 3000);
@@ -78,7 +84,8 @@ export function LiveTable({ w, code, name, sfx, tools, onLeave }: { w: Words; co
         <div className="bl-menu">
           <h2 className="bl-h">{w.roomClosed}</h2>
           <p className="bl-tagline">{roomText(w, gone)}</p>
-          <button className="bl-btn is-go" onClick={onLeave}>
+          <RoomNextStep game="belot" room={code} code={goneCode || 'closed'} onRoom={onRoom} />
+          <button className="bl-btn" onClick={onLeave}>
             {w.back}
           </button>
         </div>
@@ -187,6 +194,7 @@ function Lobby({
 }) {
   const [copied, setCopied] = useState('');
   const link = inviteLink(code);
+  const invite = inviteWords(w, view, code);
   const filled = view.places.filter((p) => p.player || p.bot).length;
   // places on screen: you (or place 0) at the bottom, counter-clockwise
   const base = view.you >= 0 ? view.you : 0;
@@ -279,10 +287,10 @@ function Lobby({
           })}
         </div>
         <div className="bl-invite">
-          <small>{w.invite}</small>
+          <small>{invite.label}</small>
           <b className="mono">{code}</b>
           <span className="mono bl-link-text">{link.replace(/^https?:\/\//, '')}</span>
-          <button className="bl-btn" onClick={() => void shareOrCopy({ title: 'Belot', text: w.inviteText(code), url: link }).then((o) => setCopied(o === 'copied' ? w.copied : ''))}>
+          <button className="bl-btn" onClick={() => void shareOrCopy({ title: 'Belot', text: invite.text, url: link }).then((o) => setCopied(o === 'copied' ? w.copied : ''))}>
             {copied || w.shareLink}
           </button>
         </div>

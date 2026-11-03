@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { setGuestName, usePlayerName } from '../../../platform/playerName';
-import { createRoom, roomInfo, useRoom, type RoomGame } from '../../../platform/rooms';
+import { GAME_ROOM_PAGE, roomInfo, seatedName, useRoom, type GoneCode, type RoomGame } from '../../../platform/rooms';
 import { navigate } from '../../../router/router';
 import { shareOrCopy } from '../../../platform/share';
 import type { SeatView } from '../../rooms/seats';
 import { ModeBar } from '../shared';
-import { matchedName, RoomListingBar } from '../../../components/OnlinePlay';
+import { matchedName, RoomListingBar, RoomNextStep } from '../../../components/OnlinePlay';
 import { t } from '../../../i18n';
 import { cleanRoomName, forgetRoom, lastRoomName, rememberRoomName, ROOM_NAME_MAX, roomNameFor } from './roomName';
 
@@ -124,35 +124,20 @@ export interface RoomContext<V, A> {
 }
 
 /**
- * A room you can't play in (closed, full, removed): open a new room of the same game right here, or
- * go back to Party Mode.
+ * A room you can't play in (closed, full, removed): a next step right here (quick match, or a new public room
+ * of the same game; see RoomNextStep), or back to Party Mode. `code`: why the room sent you away.
  */
-export function DeadEnd({ game, gameTitle, title, heading, text, onLeave }: { game: RoomGame; gameTitle: string; title: string; heading: string; text?: string; onLeave: () => void }) {
-  const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState('');
-  const open = async (): Promise<void> => {
-    setBusy(true);
-    setProblem('');
-    try {
-      navigate(`/party?room=${await createRoom(game)}`);
-    } catch (e) {
-      setProblem(t(e instanceof Error ? e.message : 'Could not open a room. Try again.'));
-      setBusy(false);
-    }
-  };
+export function DeadEnd({ game, room, code = 'closed', title, heading, text, onLeave }: { game: RoomGame; room: string; code?: GoneCode | ''; title: string; heading: string; text?: string; onLeave: () => void }) {
   return (
     <div className="pt-screen">
       <ModeBar title={title} onExit={onLeave} />
       <section className="pt-panel pt-center">
         <h2>{heading}</h2>
         {text && <p className="pt-muted">{text}</p>}
-        <button className="pt-btn pt-btn-go" onClick={() => void open()} disabled={busy}>
-          {t('Open a new {game} room', { game: t(gameTitle) })}
-        </button>
+        <RoomNextStep game={game} room={room} code={code || 'closed'} onRoom={(next, matched) => navigate(`${GAME_ROOM_PAGE[game] ?? '/party'}?room=${next}${matched ? '&match=1' : ''}`)} />
         <button className="pt-btn" onClick={onLeave}>
           {t('Back to Party Mode')}
         </button>
-        {problem && <p role="alert">{problem}</p>}
       </section>
     </div>
   );
@@ -177,7 +162,7 @@ export function useJoinName(code: string) {
     setNote(error ? t(error) : '');
     setName(n);
   };
-  return { name, back, join, note, prefill: lastRoomName() ?? player.name, forget: () => forgetRoom(code) };
+  return { name, back, join, note, prefill: seatedName(code) ?? lastRoomName() ?? player.name, forget: () => forgetRoom(code) };
 }
 
 /** "Welcome back" for a few seconds after a reload put you straight back in your seat. */
@@ -262,7 +247,7 @@ export function RoomFrame<V extends FrameView, A>({
   }, [code]);
   if (missing)
     return (
-      <DeadEnd game={meta.game} gameTitle={meta.title} title={t('{game} room', { game: t(meta.title) })} heading={t('This room has closed')} text={t('Rooms close after three quiet hours. Open a new one and send the link.')} onLeave={onLeave} />
+      <DeadEnd game={meta.game} room={code} title={t('{game} room', { game: t(meta.title) })} heading={t('This room has closed')} text={t('Rooms close after three quiet hours. Open a new one and send the link.')} onLeave={onLeave} />
     );
   if (name === null) return <JoinForm title={`${t(meta.title)} · ${t('room {code}', { code })}`} emoji={meta.emoji} prefill={prefill} onJoin={join} onLeave={onLeave} />;
   return (
@@ -297,7 +282,7 @@ function Connected<V extends FrameView, A>({
   onRelay?: (data: unknown) => void;
   children: (ctx: RoomContext<V, A>) => ReactNode;
 }) {
-  const { view, conn, error, clearError, gone, skew, send, listing, setListed } = useRoom<V, A>(code, name, onRelay);
+  const { view, conn, error, clearError, gone, goneCode, skew, send, listing, setListed } = useRoom<V, A>(code, name, onRelay);
   const left = useLeft(view?.deadline ?? null, skew);
   const screen = useTopOnPhase(view?.phase);
   useEffect(() => {
@@ -310,7 +295,7 @@ function Connected<V extends FrameView, A>({
   };
 
   const bar = <ModeBar title={`${t(meta.title)} · ${code}`} progress={view && !gone ? progress?.(view) : undefined} onExit={onLeave} />;
-  if (gone) return <DeadEnd game={meta.game} gameTitle={meta.title} title={`${t(meta.title)} · ${code}`} heading={gone} onLeave={onLeave} />;
+  if (gone) return <DeadEnd game={meta.game} room={code} code={goneCode} title={`${t(meta.title)} · ${code}`} heading={gone} onLeave={onLeave} />;
   if (!view)
     return (
       <div className="pt-screen">
