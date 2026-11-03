@@ -44,9 +44,9 @@ describe('the pins', () => {
       expect(pins.map((p) => p.tier)).toEqual(['bronze', 'silver', 'gold', 'rift']);
       for (const p of pins) {
         if ('stat' in p.need) expect(game!.stats.map((s) => s.key), p.id).toContain(p.need.stat);
-        if ('score' in p.need && game!.limits.maxScore) expect(p.need.score, p.id).toBeLessThanOrEqual(game!.limits.maxScore);
+        if ('score' in p.need && game!.limits?.maxScore) expect(p.need.score, p.id).toBeLessThanOrEqual(game!.limits.maxScore);
         if ('stat' in p.need) {
-          const max = game!.limits.stats?.[p.need.stat]?.max;
+          const max = game!.limits?.stats?.[p.need.stat]?.max;
           if (max !== undefined) expect(p.need.min, p.id).toBeLessThanOrEqual(max);
         }
       }

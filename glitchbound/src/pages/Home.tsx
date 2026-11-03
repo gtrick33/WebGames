@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { useAccount } from '../platform/account';
 import { AdSlot } from '../components/AdSlot';
 import { Arcade } from '../components/Arcade';
-import { FlagshipRow } from '../components/FlagshipRow';
 import { FreeBanner } from '../components/FreeBanner';
 import { SigilfallHero, useSigilfall } from '../components/SigilfallHero';
 import { YourArcade } from '../components/Sections';
@@ -13,6 +12,7 @@ import { fresh } from '../platform/freshBuild';
 // Below the fold: their code loads after the first paint (the quests are for members only).
 // The arcade's welcome is under Sigilfall now, so it can wait too: its fallback holds the place, so nothing jumps.
 const Hero = lazy(fresh(() => import('../components/Hero').then((m) => ({ default: m.Hero }))));
+const FlagshipRow = lazy(fresh(() => import('../components/FlagshipRow').then((m) => ({ default: m.FlagshipRow }))));
 const bands = fresh(() => import('../components/HomeBands'));
 const HomeTop = lazy(() => bands().then((m) => ({ default: m.HomeTop })));
 const PlayTogether = lazy(() => bands().then((m) => ({ default: m.PlayTogether })));
@@ -34,9 +34,9 @@ export function Home() {
       <SigilfallHero />
       <Suspense fallback={<div className="hero-holder" />}>
         <Hero first={!sigilfall} />
+        <YourArcade />
+        <FlagshipRow />
       </Suspense>
-      <YourArcade />
-      <FlagshipRow />
       <Suspense fallback={null}>
         <HomeTop />
       </Suspense>
