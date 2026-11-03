@@ -6,7 +6,7 @@ import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
 import { NextDaily } from '../../components/NextDaily';
 import { drawBird, drawFrame, newView, POP_LIFE, type Pop } from './render';
-import { biomeFor, BIRD_R, flap, flightLine, GROUND, MEDAL_ICON, medalFor, newSim, runPoints, step, STEP, type Medal, type Sim } from './sim';
+import { biomeFor, BIRD_R, flap, flightLine, GROUND, MEDAL_ICON, MEDALS, medalFor, newSim, runPoints, step, STEP, type Medal, type Sim } from './sim';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
 import { openChallengeScores } from '../../platform/challenge';
@@ -119,8 +119,19 @@ type DailyRec = Save['daily'][string];
 const DAILY_FLIGHTS = 3;
 const flightsLeft = (d: DailyRec | undefined): number => Math.max(0, DAILY_FLIGHTS - (d?.tries ?? 0));
 const flightsText = (n: number): string => `${n} flight${n === 1 ? '' : 's'} left`;
-/** After a crash the result's buttons (and Space) wait this long, so a player still tapping doesn't fly again by accident. */
-const RESULT_GUARD_MS = 700;
+/** The result card comes up once the crash has landed (the bird falls meanwhile)... */
+const CARD_DELAY_MS = 600;
+/** ...and its buttons (and Space) wait a little longer, so a player still tapping doesn't fly again by accident. */
+const RESULT_GUARD_MS = 1100;
+
+/** The nearest thing a few more gaps would have reached: the next medal or the next world. */
+function nextGoal(pillars: number): string {
+  const medal = [...MEDALS].reverse().find(([, n]) => n > pillars);
+  const worldAt = (Math.floor(pillars / 15) + 1) * 15;
+  const world = `${gapsText(worldAt - pillars)} to the ${biomeFor(worldAt)} world`;
+  if (!medal || worldAt - pillars < medal[1] - pillars) return world;
+  return `${gapsText(medal[1] - pillars)} to ${MEDAL_ICON[medal[0]]} ${medal[0][0]!.toUpperCase()}${medal[0].slice(1)}`;
+}
 
 /** Today's record when a flight ends (the try was counted at take-off): the best flight is kept. */
 function dailyAfter(d: DailyRec | undefined, points: number, pillars: number, feathers: number, left = false): DailyRec {
@@ -208,6 +219,8 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
   const sfxRef = useRef<Sfx | null>(null);
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
   const deadAt = useRef(0);
+  /** A crash's result, waiting for the bird to land before its card shows. */
+  const pending = useRef<Result | null>(null);
   const pops = useRef<Pop[]>([]);
   useEffect(
     () => () => {
@@ -232,6 +245,7 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
     setMode(m);
     sim.current = newSim(m === 'daily' ? courseSeed(day) : (Math.random() * 2 ** 32) >>> 0);
     pops.current = [];
+    pending.current = null;
     setResult(null);
     setPaused(false);
     const fresh = { score: 0, feathers: 0, dead: false, started: false, biome: 'meadow' };
@@ -282,7 +296,12 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
     },
     [update, reportEnd],
   );
-  const finish = useCallback((s: Sim) => setResult(endFlight(s, false)), [endFlight]);
+  const finish = useCallback(
+    (s: Sim) => {
+      pending.current = endFlight(s, false);
+    },
+    [endFlight],
+  );
   const endRef = useRef(endFlight);
   useEffect(() => {
     endRef.current = endFlight;
@@ -395,6 +414,10 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
         }
       }
       if (acc > STEP) acc %= STEP;
+      if (pending.current && now - deadAt.current >= CARD_DELAY_MS) {
+        setResult(pending.current);
+        pending.current = null;
+      }
       if (pops.current.length) pops.current = pops.current.filter((p) => now / 1000 - p.at < POP_LIFE);
       drawFrame(c, view, s, now / 1000, paused ? 1 : acc / STEP, pops.current);
       // React only hears about the HUD when it changes (a score), never once per frame.
@@ -404,7 +427,7 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
         hudRef.current = next;
         setHud(next);
       }
-      running = !paused && !(s.dead && s.y >= GROUND - BIRD_R);
+      running = !paused && !(s.dead && s.y >= GROUND - BIRD_R && !pending.current);
       if (running) raf = requestAnimationFrame(frame);
     };
     running = true;
@@ -543,7 +566,7 @@ function WingIt({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numb
             {gapsText(result.pillars)} · {result.feathers} feather{result.feathers === 1 ? '' : 's'} (+{result.feathers * 3}) {result.newBest ? '· New best!' : `· best ${save.best}`}
           </p>
           <ResultLine line={cardLine(flightLine(result.pillars, result.feathers))} label={`${gapsText(result.pillars)}${result.medal ? `, ${result.medal} medal` : ''}`} />
-          {result.note && <p className="wi-muted">{result.note}</p>}
+          {result.note ? <p className="wi-muted">{result.note}</p> : <p className="wi-goal">Next: {nextGoal(result.pillars)}</p>}
           {mode === 'daily' && daily && (
             <p className="wi-muted">
               {left > 0 ? (

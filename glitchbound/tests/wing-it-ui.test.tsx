@@ -93,14 +93,19 @@ describe('Wing It: the daily course is three flights a day, best counts', () => 
 });
 
 describe('Wing It: flights', () => {
-  it('ignores taps on the result for a moment after a crash, then stops drawing once the bird has landed', () => {
+  it('shows the result once the crash has landed, ignores taps on it for a moment, then stops drawing', () => {
     const c = clock();
-    render(<Game host={{ report: vi.fn() }} restartKey={0} />);
+    const report = vi.fn();
+    render(<Game host={{ report }} restartKey={0} />);
     fireEvent.click(screen.getByRole('button', { name: 'Fly today’s course' }));
     takeOff();
-    c.run(5000, crashed);
+    c.run(5000, () => report.mock.calls.some(([e]) => e.type === 'end'));
+    // The flight has ended, but the card waits while the bird falls.
+    expect(crashed()).toBe(false);
+    c.run(700, crashed);
     expect(crashed()).toBe(true);
     expect(screen.getByText(/^0 gaps ·/)).toBeTruthy();
+    expect(screen.getByText('Next: 10 gaps to 🥉 Bronze')).toBeTruthy();
     // A tap still meant for the bird lands on Fly again: nothing happens yet.
     fireEvent.click(screen.getByRole('button', { name: 'Fly again' }));
     expect(crashed()).toBe(true);
@@ -191,6 +196,13 @@ describe('Wing It: friends’ challenge rounds are one flight', () => {
     expect(report).not.toHaveBeenCalled();
     expect(screen.getByText(/^1 gap · 1 feather/)).toBeTruthy();
     expect(screen.getByRole('img', { name: '1 gap' })).toBeTruthy();
+    expect(screen.getByText('Next: 9 gaps to 🥉 Bronze')).toBeTruthy();
+  });
+
+  it('names the nearer goal: the next world when it comes before the next medal', () => {
+    localStorage.setItem(KEY, JSON.stringify({ challenges: { 'wi1:2': { points: 13, pillars: 13, feathers: 0 } } }));
+    render(<Game host={{ report: vi.fn() }} restartKey={0} challenge={ch} />);
+    expect(screen.getByText('Next: 2 gaps to the sunset world')).toBeTruthy();
   });
 
   it('“Today’s daily” counts as one of that day’s flights, and a finished daily counts as the round', () => {

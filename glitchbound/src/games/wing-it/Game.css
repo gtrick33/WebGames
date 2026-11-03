@@ -137,6 +137,14 @@
   color: #5a4f7a;
   font-size: 14px;
 }
+.wi-goal {
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #fff7d1;
+  font-size: 14px;
+  font-weight: 800;
+}
 .wi-small {
   font-size: 12px;
 }
