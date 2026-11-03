@@ -26,6 +26,10 @@ export interface LevelState {
   spare: boolean;
   /** Precision: moves allowed (par), or null. */
   limit: number | null;
+  /** Every pour counts (Par Challenge, friends' challenges): undo and restart put the colors back, not the moves. */
+  strict: boolean;
+  /** Undos used on this level (shown on the result card). */
+  undos: number;
   /** Mystery levels: which starting layers have been uncovered, per tube. */
   seen: boolean[][];
   status: 'play' | 'won' | 'failed';
@@ -44,13 +48,13 @@ function reveal(board: Board, seen: boolean[][]): boolean[][] {
   });
 }
 
-export function startLevel(level: Level, mode: Mode): LevelState {
+export function startLevel(level: Level, mode: Mode, strict = false): LevelState {
   const board = cloneBoard(level.board);
   const seen = reveal(
     board,
     board.map((t) => t.layers.map(() => !level.mystery)),
   );
-  return { level, board, history: [], moves: 0, hints: 0, spare: false, limit: mode === 'precision' ? level.par : null, seen, status: 'play' };
+  return { level, board, history: [], moves: 0, hints: 0, spare: false, limit: mode === 'precision' ? level.par : null, strict, undos: 0, seen, status: 'play' };
 }
 
 /** Whether a layer is drawn as a mystery "?" (only on mystery levels, before it was uncovered). */
@@ -75,13 +79,13 @@ export function reduceLevel(s: LevelState, a: LevelAction): LevelState {
     case 'undo': {
       const prev = s.history[s.history.length - 1];
       if (!prev) return s;
-      return { ...s, board: prev, history: s.history.slice(0, -1), moves: s.moves - 1 };
+      return { ...s, board: prev, history: s.history.slice(0, -1), moves: s.strict ? s.moves : s.moves - 1, undos: s.undos + 1 };
     }
     case 'restart': {
-      const fresh = startLevel(s.level, s.limit !== null ? 'precision' : 'practice');
-      // Hints and the spare tube stay paid for; what was seen stays seen.
+      const fresh = startLevel(s.level, s.limit !== null ? 'precision' : 'practice', s.strict);
+      // Hints and the spare tube stay paid for; what was seen stays seen; in strict levels so do the moves.
       const board = s.spare ? [...fresh.board, { cap: maxCap(s.level.board), layers: [] }] : fresh.board;
-      return { ...fresh, board, spare: s.spare, hints: s.hints, seen: s.seen };
+      return { ...fresh, board, spare: s.spare, hints: s.hints, seen: s.seen, moves: s.strict ? s.moves : 0, undos: s.undos };
     }
     case 'spare':
       if (s.spare) return s;
@@ -138,12 +142,20 @@ export const totalPoints = (rs: readonly LevelResult[]): number => rs.reduce((n,
 export const totalStars = (rs: readonly LevelResult[]): number => rs.reduce((n, r) => n + r.stars, 0);
 export const underPar = (rs: readonly LevelResult[]): number => rs.filter((r) => r.solved && r.moves <= r.par).length;
 
+/** Friends' challenges: on top of the points, each move under par is worth this much (so fewer moves rank higher). */
+export const UNDER_PAR_BONUS = 2;
+export const underParBonus = (rs: readonly LevelResult[]): number => rs.reduce((n, r) => n + (r.solved ? Math.max(0, r.par - r.moves) * UNDER_PAR_BONUS : 0), 0);
+/** A friends' challenge round's score: the points plus the under-par bonus. */
+export const challengeScore = (rs: readonly LevelResult[]): number => totalPoints(rs) + underParBonus(rs);
+
 /** What the arcade gets at the end of a run. */
-export function endStats(mode: Mode, rs: readonly LevelResult[]): { score: number; stats: Record<string, number> } {
+export function endStats(mode: Mode, rs: readonly LevelResult[], challenge = false): { score: number; stats: Record<string, number> } {
   const stats: Record<string, number> = { stars: totalStars(rs), underPar: underPar(rs) };
-  if (mode === 'endless') stats.levels = rs.filter((r) => r.solved).length;
-  if (mode === 'precision') stats.parLevels = rs.filter((r) => r.solved).length;
-  return { score: totalPoints(rs), stats };
+  const solved = rs.filter((r) => r.solved).length;
+  if (mode === 'endless') stats.levels = solved;
+  if (mode === 'precision') stats.parLevels = solved;
+  const score = challenge ? challengeScore(rs) : totalPoints(rs);
+  return { score, stats };
 }
 
 const STAR_EMOJI = ['⬛', '🟧', '🟨', '🟩'];

@@ -4,7 +4,7 @@
  * sets its par (the move count to beat). Pure, unit tested.
  */
 import { daysBetween, hashString } from '../../platform/dates';
-import { doneTubes, isSolved, solveBest, type Board } from './sort';
+import { doneTubes, isSolved, solveBest, type Board, type Move } from './sort';
 
 export const EPOCH = '2026-10-18';
 export const DAILY_LEVELS = 5;
@@ -13,6 +13,11 @@ export const COLOR_COUNT = 16;
 /** Dailies up to this day were published with the first 12 colors and one fixed recipe; they stay as they were. */
 export const CLASSIC_UNTIL = '2026-10-18';
 const CLASSIC_COLORS = 12;
+/**
+ * From this day on, the harder of the daily's two twist puzzles is always puzzle 5. Earlier dailies
+ * stay exactly as they were published.
+ */
+export const ORDERED_FROM = '2026-11-16';
 
 /** Small, fast, seedable PRNG (mulberry32). Floats in [0, 1). */
 export function rng(seed: number): () => number {
@@ -47,6 +52,10 @@ export interface Level {
   palette: number[];
   /** Mystery level: layers under the top run stay hidden until they are uncovered. */
   mystery: boolean;
+  /** The route the solver found (par moves, or par minus parSlack), reused for hints. */
+  solution?: Move[];
+  /** Extra moves added to the solver's par (mystery levels, see MYSTERY_SLACK). */
+  parSlack?: number;
 }
 
 /** Difficulty ladder; Endless keeps climbing past the end by adding colors. */
@@ -144,7 +153,7 @@ export function makeLevel(r: R, spec: LevelSpec, mystery = false, colorCount = C
     if (boring(board)) continue;
     const sol = solveBest(board, spec.colors <= 4 ? 40_000 : 12_000);
     if (!sol || sol.moves.length < spec.colors) continue;
-    const level = { spec, board, par: sol.moves.length, parOptimal: sol.optimal, palette, mystery };
+    const level: Level = { spec, board, par: sol.moves.length, parOptimal: sol.optimal, palette, mystery, solution: sol.moves };
     // Prefer levels that need a little thought: par comfortably above the color count.
     if (sol.moves.length >= spec.colors + 2) return level;
     fallback ??= level;
@@ -154,22 +163,68 @@ export function makeLevel(r: R, spec: LevelSpec, mystery = false, colorCount = C
   return makeLevel(r, { ...spec, empty: spec.empty + 1, odd: false }, mystery, colorCount);
 }
 
-/** Daily level `index` (0-4). Every third day the last level is a mystery level. */
-export function dailyLevel(day: string, index: number): Level {
+/** The daily level as first published: the recipe for `index`, generated from its own seed. */
+function publishedDaily(day: string, index: number, mystery: boolean): Level {
   const r = rng(hashString(`color-lab:${day}:${index}`));
-  const mystery = index === DAILY_LEVELS - 1 && hashString(`color-lab:${day}`) % 3 === 0;
   if (day <= CLASSIC_UNTIL) return makeLevel(r, specFor([0, 1, 2, 4, 5][index] ?? index, r), mystery, CLASSIC_COLORS);
   const twist = (k: number): LevelSpec => DAILY_TWISTS[(hashString(`color-lab:twist:${day}`) + k * 3) % DAILY_TWISTS.length]!;
   const spec = index >= 3 ? twist(index - 3) : specFor([0, 1, 2][index] ?? index, r);
   return makeLevel(r, spec, mystery);
 }
 
+/** Harder: higher par, then more colors. */
+const harder = (a: Level, b: Level): boolean => a.par > b.par || (a.par === b.par && a.spec.colors > b.spec.colors);
+
+
+/** Levels are pure functions of their inputs and slow to make, so each is made once per page. */
+const levelMemo = new Map<string, Level>();
+function memo(key: string, make: () => Level): Level {
+  let lv = levelMemo.get(key);
+  if (!lv) {
+    if (levelMemo.size > 64) levelMemo.clear();
+    lv = make();
+    levelMemo.set(key, lv);
+  }
+  return lv;
+}
+
+/**
+ * Daily level `index` (0-4). Every third day the last level is a mystery level. From ORDERED_FROM the
+ * two twist puzzles are ordered so puzzle 5 is the harder one.
+ */
+export function dailyLevel(day: string, index: number): Level {
+  return memo(`d:${day}:${index}`, () => {
+    const mystery = index === DAILY_LEVELS - 1 && hashString(`color-lab:${day}`) % 3 === 0;
+    if (day < ORDERED_FROM || index < 3) return publishedDaily(day, index, mystery);
+    const a = publishedDaily(day, 3, false);
+    const b = publishedDaily(day, 4, false);
+    const [easy, hard] = harder(a, b) ? [b, a] : [a, b];
+    return index === 3 ? easy : { ...hard, mystery };
+  });
+}
+
 /** Endless / Precision level at a step of the ladder; from step 6, every fourth level is a mystery. */
 export function ladderLevel(seed: number, step: number): Level {
-  const r = rng(seed);
-  return makeLevel(r, specFor(step, r), step >= 6 && step % 4 === 2);
+  return memo(`l:${seed}:${step}`, () => {
+    const r = rng(seed);
+    return makeLevel(r, specFor(step, r), step >= 6 && step % 4 === 2);
+  });
 }
 
 export function dailyNumber(day: string): number {
   return Math.max(1, daysBetween(EPOCH, day) + 1);
+}
+
+/** Which level to make, as plain data (so a worker can make it). */
+export type LevelReq = { kind: 'daily'; day: string; index: number } | { kind: 'practice'; seed: number; size: number } | { kind: 'ladder'; seed: number; step: number };
+
+export const levelReqKey = (q: LevelReq): string => (q.kind === 'daily' ? `d:${q.day}:${q.index}` : q.kind === 'practice' ? `p:${q.seed}:${q.size}` : `l:${q.seed}:${q.step}`);
+
+export function levelOf(q: LevelReq): Level {
+  if (q.kind === 'daily') return dailyLevel(q.day, q.index);
+  if (q.kind === 'ladder') return ladderLevel(q.seed, q.step);
+  return memo(levelReqKey(q), () => {
+    const r = rng(q.seed);
+    return makeLevel(r, specFor(q.size, r));
+  });
 }
