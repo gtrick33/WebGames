@@ -227,13 +227,80 @@ export function solveBest(b: Board, budget = 40_000): Solution | null {
   return solve(b, { maxNodes: budget }) ?? solve(b, { weight: 1.6, maxNodes: budget * 2 }) ?? solve(b, { weight: 4, maxNodes: budget * 4 });
 }
 
-/** Next move towards a solution from here (for hints), or null when the board is a dead end. */
-export function hint(b: Board): Move | null {
+/** Exact key (tube order matters): moves are tube indices, so a cached move only fits this exact board. */
+const exactKey = (b: Board): string => b.map((t) => `${t.cap}:${t.layers.join('.')}`).join('|');
+
+/** Whether `b` is `path` with only empty tubes added after it (the spare tube). */
+function sameBoard(path: Board, b: Board): boolean {
+  if (b.length < path.length) return false;
+  for (let i = 0; i < b.length; i++) {
+    const t = b[i]!;
+    const p = path[i];
+    if (!p) {
+      if (t.layers.length) return false;
+      continue;
+    }
+    if (t.cap !== p.cap || t.layers.length !== p.layers.length || t.layers.some((c, j) => c !== p.layers[j])) return false;
+  }
+  return true;
+}
+
+/** Hints already worked out, by exact board: a found route is remembered move by move, so following hints is instant. */
+const hintMemo = new Map<string, Move | null>();
+const HINT_MEMO_MAX = 5000;
+
+function remember(b: Board, moves: readonly Move[]): void {
+  if (hintMemo.size > HINT_MEMO_MAX) hintMemo.clear();
+  let cur = b;
+  for (const m of moves) {
+    hintMemo.set(exactKey(cur), m);
+    cur = pour(cur, m.from, m.to);
+  }
+}
+
+/** Above this many tubes the exact search never finishes in its budget, so hints skip straight to the quick one. */
+const EXACT_HINT_TUBES = 10;
+
+/**
+ * Next move towards a solution from here (for hints), or null when the board is a dead end. `level` is
+ * the puzzle's start and the route that set its par: on that route the hint is its next move, for free.
+ */
+export function hint(b: Board, level?: { board: Board; solution?: readonly Move[] }): Move | null {
+  if (level?.solution) {
+    let cur = level.board;
+    for (const m of level.solution) {
+      if (sameBoard(cur, b)) return m;
+      cur = pour(cur, m.from, m.to);
+    }
+  }
+  const key = exactKey(b);
+  const known = hintMemo.get(key);
+  if (known !== undefined) return known;
   // Prefer a move on a shortest route (so following hints reaches par), then settle for any solution.
-  return (
-    solve(b, { maxNodes: 25_000 })?.moves[0] ??
-    solve(b, { weight: 1.6, maxNodes: 40_000 })?.moves[0] ??
-    solve(b, { weight: 6, maxNodes: 80_000 })?.moves[0] ??
-    null
-  );
+  const sol =
+    (b.length <= EXACT_HINT_TUBES ? solve(b, { maxNodes: 25_000 }) : null) ??
+    solve(b, { weight: 1.6, maxNodes: 40_000 }) ??
+    solve(b, { weight: 6, maxNodes: 80_000 });
+  if (sol?.moves.length) remember(b, sol.moves);
+  else hintMemo.set(key, null);
+  return sol?.moves[0] ?? null;
+}
+
+/**
+ * Every color is gathered in one tube, but some sit in a tube taller than their amount (odd-size
+ * puzzles): not solved yet. Returns such a tube and an empty tube of its size to pour it into (-1 when
+ * none is free), or null when the board is not in that state.
+ */
+export function almostSolved(b: Board): { tube: number; target: number } | null {
+  if (isSolved(b)) return null;
+  const seen = new Set<number>();
+  for (const t of b) {
+    if (!t.layers.length) continue;
+    if (!isMono(t) || seen.has(t.layers[0]!)) return null;
+    seen.add(t.layers[0]!);
+  }
+  const tube = b.findIndex((t) => t.layers.length > 0 && t.layers.length < t.cap);
+  if (tube < 0) return null;
+  const n = b[tube]!.layers.length;
+  return { tube, target: b.findIndex((t) => !t.layers.length && t.cap === n) };
 }
