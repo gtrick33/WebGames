@@ -7,51 +7,20 @@ import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
 import { NextDaily } from '../../components/NextDaily';
 import { answerIsMore, categoryOf, chain, emojiOf, nameOf, resultLine, valueOf, type Card, type Pair } from './logic';
+import { formatIn, formatValue, unitOf } from './bank';
+import { CHAIN, KEY, pruneRounds, readSave, writeSave, type Save } from './save';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
 import { GameMenuButton } from '../../components/GameMenuButton';
 
-const KEY = 'glitchbound.gut-check';
 const EPOCH = '2026-10-19';
-const CHAIN = 300;
+/** Dailies and challenges from this day on use the chain that never repeats a pairing; earlier ones keep their cards. */
+const NO_REPEATS_FROM = '2026-11-10';
 type Mode = 'daily' | 'endless' | 'challenge';
 
-interface Save {
-  best: number;
-  runs: number;
-  /** `open` true: started, not finished (it resumes from `progress`); false: left, could not be resumed, settled. */
-  daily: Record<string, { best: number; tries: number; open?: boolean }>;
-  /** Today's run so far: the card it is on (every call before it was right). */
-  progress?: { day: string; i: number };
-  muted: boolean;
-}
-const emptySave = (): Save => ({ best: 0, runs: 0, daily: {}, muted: false });
-
-function loadSave(): Save {
-  try {
-    const o = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<Save>;
-    const n = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
-    const s = emptySave();
-    s.best = n(o.best);
-    s.runs = n(o.runs);
-    s.muted = o.muted === true;
-    if (o.daily && typeof o.daily === 'object')
-      for (const [d, v] of Object.entries(o.daily).slice(-60))
-        if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object') s.daily[d] = { best: n(v.best), tries: n(v.tries), ...(typeof v.open === 'boolean' ? { open: v.open } : {}) };
-    const p = o.progress;
-    if (p && typeof p.day === 'string' && Number.isInteger(p.i) && p.i >= 0 && p.i < CHAIN) s.progress = { day: p.day, i: p.i };
-    return s;
-  } catch {
-    return emptySave();
-  }
-}
-const writeSave = (s: Save): void => {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(s));
-  } catch {
-    /* blocked storage: the game still works, nothing is kept */
-  }
-};
+/** A run's cards: endless runs (`day` null) always get the new chain, dated ones by their day. */
+const cardsFor = (seed: number, day: string | null): Pair[] => chain(seed, CHAIN, day !== null && (day === '' || day < NO_REPEATS_FROM) ? 1 : 2);
+const dailyCards = (day: string): Pair[] => cardsFor(hashString(`gut-check:${day}`), day);
 const dailyNumber = (day: string): number => Math.max(1, daysBetween(EPOCH, day) + 1);
 const randomSeed = (): number => (Math.random() * 2 ** 32) >>> 0;
 
@@ -61,36 +30,84 @@ interface Run {
   phase: 'ask' | 'right' | 'wrong';
   /** The call the player made on the current pair. */
   call: 'more' | 'less' | null;
+  /** The daily this run is (a daily, or a "Today's daily" challenge played as the day's one try): filed under that day. */
+  day?: string;
+}
+
+/** Keys typed into the page (search, a name field, a dialog) or outside the game are not calls. */
+function keyForGame(e: KeyboardEvent, root: HTMLElement | null): boolean {
+  if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return false;
+  const t = e.target;
+  if (!(t instanceof Element) || t === document.body || t === document.documentElement) return true;
+  if (t.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="dialog"], [aria-modal="true"]')) return false;
+  return !root || root.contains(t);
 }
 
 export default function Game({ host, restartKey, pauseKey, challenge }: GameModuleProps) {
   return <GutCheck key={restartKey} host={host} pauseKey={pauseKey} challenge={challenge} />;
 }
 
+/** How a challenge round opens: where it stands in the save (new, under way, or already over). */
+function openRound(save: Save, challenge: ChallengeSpec, today: string): { run: Run; over: boolean; note: string; link: boolean } {
+  const key = `${challenge.id}:${challenge.round}`;
+  const cday = challenge.mode === 'daily' && challenge.day ? challenge.day : null;
+  const pairs = cday ? dailyCards(cday) : cardsFor(challenge.seed, challenge.day ?? '');
+  const ended = (done: number, missed: boolean, note: string): { run: Run; over: boolean; note: string; link: boolean } => {
+    const miss = missed || done < 1;
+    return { run: { pairs, i: Math.min(pairs.length - 1, miss ? done : done - 1), phase: miss ? 'wrong' : 'right', call: null }, over: true, note, link: false };
+  };
+  const rec = save.rounds[key];
+  if (rec?.done !== undefined) return ended(rec.done, rec.missed ?? true, 'You already played this round.');
+  // "Today's daily": the day's own cards, and one try for both.
+  const daily = cday ? save.daily[cday] : undefined;
+  const resumable = cday !== null && daily?.open === true && save.progress?.day === cday;
+  if (daily && !resumable && !rec) return ended(daily.best, true, 'Your daily result counts here.');
+  const link = cday !== null && cday === today && (resumable || !daily);
+  const i = resumable ? save.progress!.i : (rec?.i ?? 0);
+  return { run: { pairs, i, phase: 'ask', call: null, ...(link ? { day: cday } : {}) }, over: false, note: '', link };
+}
+
 function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: number; challenge?: ChallengeSpec }) {
-  const [today] = useState(() => dayKey());
-  const [save, setSave] = useState<Save>(loadSave);
+  // The day is read on use: a tab left open over midnight moves on to the new daily.
+  const [today, setToday] = useState(() => dayKey());
+  useEffect(() => {
+    const check = (): void => setToday(dayKey());
+    const t = window.setInterval(check, 1000);
+    document.addEventListener('visibilitychange', check);
+    window.addEventListener('focus', check);
+    return () => {
+      window.clearInterval(t);
+      document.removeEventListener('visibilitychange', check);
+      window.removeEventListener('focus', check);
+    };
+  }, []);
+  const [save, setSave] = useState<Save>(readSave);
   const saveRef = useRef(save);
-  const commit = useCallback((s: Save) => {
+  /** Every write starts from the stored save, so a second tab's changes are kept. */
+  const commit = useCallback((change: (s: Save) => Save): Save => {
+    const s = change(readSave());
     saveRef.current = s;
     setSave(s);
     writeSave(s);
+    return s;
   }, []);
   // Today's daily was started but its saved round can't be picked up again (storage lost or damaged):
   // settle it once, as it stood (0), so the arcade still counts the day. It never comes back.
   useEffect(() => {
-    const cur = saveRef.current;
-    const rec = cur.daily[today];
-    if (!rec?.open || cur.progress?.day === today) return;
-    commit({ ...cur, daily: { ...cur.daily, [today]: { ...rec, open: false } } });
+    const rec = saveRef.current.daily[today];
+    if (!rec?.open || saveRef.current.progress?.day === today) return;
+    commit((cur) => ({ ...cur, daily: { ...cur.daily, [today]: { ...rec, open: false } } }));
     host.report({ type: 'end', score: rec.best, stats: {}, daily: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [today]);
+  const roundKey = challenge ? `${challenge.id}:${challenge.round}` : '';
+  const [opened] = useState(() => (challenge ? openRound(save, challenge, today) : null));
   const [mode, setMode] = useState<Mode>(challenge ? 'challenge' : 'daily');
-  const [run, setRun] = useState<Run | null>(() => (challenge ? { pairs: chain(challenge.seed, CHAIN), i: 0, phase: 'ask', call: null } : null));
-  const [over, setOver] = useState(false);
+  const [run, setRun] = useState<Run | null>(opened?.run ?? null);
+  const [over, setOver] = useState(opened?.over ?? false);
+  const [note, setNote] = useState(opened?.note ?? '');
   const [newBest, setNewBest] = useState(false);
-  const started = useRef(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const sfxRef = useRef<Sfx | null>(null);
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
   useEffect(
@@ -104,42 +121,88 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   const [pauseSeen, setPauseSeen] = useState(pauseKey);
   if (pauseSeen !== pauseKey) setPauseSeen(pauseKey);
 
+  // A challenge round starts when its first card shows (once per round; a reopened round that is
+  // under way carries on from the card it reached, one that is over just shows its result).
+  useEffect(() => {
+    if (!opened || !challenge) return;
+    const r = opened.run;
+    if (opened.note === 'Your daily result counts here.') {
+      const done = saveRef.current.daily[challenge.day]?.best ?? 0;
+      commit((cur) => ({ ...cur, rounds: pruneRounds({ ...cur.rounds, [roundKey]: { i: r.i, done, missed: true } }) }));
+      host.report({ type: 'start' });
+      host.report({ type: 'end', score: done, stats: {}, challenge: { id: challenge.id, round: challenge.round } });
+      return;
+    }
+    if (opened.over) return;
+    commit((cur) => ({
+      ...cur,
+      rounds: pruneRounds({ ...cur.rounds, [roundKey]: { i: r.i } }),
+      ...(opened.link && r.day && !cur.daily[r.day] ? { daily: { ...cur.daily, [r.day]: { best: 0, tries: 1, open: true } }, progress: { day: r.day, i: r.i } } : {}),
+    }));
+    host.report({ type: 'start' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Another tab changed the save: show it, and leave a daily that tab finished or moved past.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent): void => {
+      if (e.key !== KEY) return;
+      const s = readSave();
+      saveRef.current = s;
+      setSave(s);
+      if (!run || over || !run.day || mode === 'challenge') return;
+      const rec = s.daily[run.day];
+      if (!rec?.open || (s.progress?.day === run.day && s.progress.i > run.i)) setRun(null);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [run, over, mode]);
+
   const begin = (m: Mode): void => {
     // Today's daily is one try: starting it uses the try up. Leaving it halfway (menu, reload) is
     // fine, it carries on from the same card, but it can never be started over.
-    const cur = saveRef.current;
-    const kept = m === 'daily' && cur.daily[today]?.open && cur.progress?.day === today ? cur.progress.i : null;
+    const day = dayKey();
+    setToday(day);
+    const cur = readSave();
+    const kept = m === 'daily' && cur.daily[day]?.open && cur.progress?.day === day ? cur.progress.i : null;
     if (m === 'daily' && kept === null) {
-      if (cur.daily[today]) return;
-      commit({ ...cur, daily: { ...cur.daily, [today]: { best: 0, tries: 1, open: true } }, progress: { day: today, i: 0 } });
+      if (cur.daily[day]) {
+        saveRef.current = cur;
+        return setSave(cur);
+      }
+      commit((s) => ({ ...s, daily: { ...s.daily, [day]: { best: 0, tries: 1, open: true } }, progress: { day, i: 0 } }));
     }
-    started.current = false;
     setMode(m);
     setOver(false);
+    setNote('');
     setNewBest(false);
-    setRun({ pairs: chain(m === 'challenge' && challenge ? challenge.seed : m === 'daily' ? hashString(`gut-check:${today}`) : randomSeed(), CHAIN), i: kept ?? 0, phase: 'ask', call: null });
+    const pairs = m === 'challenge' && challenge ? cardsFor(challenge.seed, challenge.day ?? '') : m === 'daily' ? dailyCards(day) : cardsFor(randomSeed(), null);
+    setRun({ pairs, i: kept ?? 0, phase: 'ask', call: null, ...(m === 'daily' ? { day } : {}) });
+    host.report({ type: 'start' });
   };
 
-  const finish = (streak: number): void => {
-    const cur = saveRef.current;
-    setNewBest(streak > cur.best);
-    commit({
-      ...cur,
-      best: Math.max(cur.best, streak),
-      runs: cur.runs + 1,
-      daily: mode === 'daily' ? { ...cur.daily, [today]: { best: streak, tries: 1 } } : cur.daily,
-      progress: mode === 'daily' ? undefined : cur.progress,
+  const finish = (r: Run, streak: number, missed: boolean): void => {
+    let before = 0;
+    commit((cur) => {
+      before = cur.best;
+      return {
+        ...cur,
+        best: Math.max(cur.best, streak),
+        runs: cur.runs + 1,
+        daily: r.day ? { ...cur.daily, [r.day]: { best: streak, tries: 1 } } : cur.daily,
+        progress: r.day && cur.progress?.day === r.day ? undefined : cur.progress,
+        rounds: mode === 'challenge' ? pruneRounds({ ...cur.rounds, [roundKey]: { i: r.i, done: streak, missed } }) : cur.rounds,
+      };
     });
+    setNewBest(streak > before);
     const end = { type: 'end' as const, score: streak, stats: {} };
-    host.report(mode === 'daily' ? { ...end, daily: true } : mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
+    // A daily started before midnight is kept as its own day's, but it doesn't tick today's daily.
+    const daily = r.day !== undefined && r.day === dayKey();
+    host.report({ ...end, ...(daily ? { daily: true } : {}), ...(mode === 'challenge' && challenge ? { challenge: { id: challenge.id, round: challenge.round } } : {}) });
   };
 
   const call = (c: 'more' | 'less'): void => {
     if (!run || run.phase !== 'ask') return;
-    if (!started.current) {
-      started.current = true;
-      host.report({ type: 'start' });
-    }
     const pair = run.pairs[run.i]!;
     const right = answerIsMore(pair) === (c === 'more');
     setRun({ ...run, phase: right ? 'right' : 'wrong', call: c });
@@ -149,9 +212,14 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
       navigator.vibrate?.(70);
     }
     // A miss (or the last card) ends the run: keep the result now, even if the player leaves during the reveal.
-    if (!right) finish(run.i);
-    else if (run.i + 1 >= run.pairs.length) finish(run.i + 1);
-    else if (mode === 'daily') commit({ ...saveRef.current, progress: { day: today, i: run.i + 1 } });
+    if (!right) finish(run, run.i, true);
+    else if (run.i + 1 >= run.pairs.length) finish(run, run.i + 1, false);
+    else if (run.day || mode === 'challenge')
+      commit((cur) => ({
+        ...cur,
+        ...(run.day ? { progress: { day: run.day, i: run.i + 1 } } : {}),
+        ...(mode === 'challenge' ? { rounds: pruneRounds({ ...cur.rounds, [roundKey]: { i: run.i + 1 } }) } : {}),
+      }));
   };
 
   // After the reveal: the next pair, or the end-of-run screen.
@@ -170,7 +238,7 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   useEffect(() => {
     if (!run || over) return;
     const onKey = (e: KeyboardEvent): void => {
-      if (e.repeat) return;
+      if (!keyForGame(e, rootRef.current)) return;
       if (e.key === 'ArrowUp' || e.key === 'ArrowRight' || e.key === '1' || e.key === 'm' || e.key === 'M') call('more');
       else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === '2' || e.key === 'l' || e.key === 'L') call('less');
       else return;
@@ -180,25 +248,30 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  if (!run) return <Menu save={save} today={today} onPlay={begin} onMute={() => commit({ ...saveRef.current, muted: !saveRef.current.muted })} />;
+  if (!run) return <Menu save={save} today={today} onPlay={begin} onMute={() => commit((cur) => ({ ...cur, muted: !cur.muted }))} />;
 
   const pair = run.pairs[run.i]!;
   const cat = categoryOf(pair.left);
   const streak = run.phase === 'right' ? run.i + 1 : run.i;
-  const daily = save.daily[today];
+  const cleared = run.phase === 'right' && run.i + 1 >= run.pairs.length;
+  const daily = run.day ? save.daily[run.day] : undefined;
+  const shareDay = run.day ?? today;
 
   return (
-    <div className="gc">
+    <div className="gc" ref={rootRef}>
       <div className="gc-hud" aria-live="polite">
         <span className="game-menu-pair">
-          <button className="gc-icon" onClick={() => setRun(null)} aria-label="Menu">
-            ☰
-          </button>
+          {/* A challenge round is one attempt: no way out to the game's own menu mid-round. */}
+          {mode !== 'challenge' && (
+            <button className="gc-icon" onClick={() => setRun(null)} aria-label="Menu">
+              ☰
+            </button>
+          )}
           <GameMenuButton className="gc-icon" />
         </span>
         <div className="gc-score">
           <b>{streak}</b>
-          <span>{mode === 'challenge' ? `⚔️ Challenge · round ${challenge?.round ?? 1}` : mode === 'daily' ? `Daily #${dailyNumber(today)} · streak` : `Best ${save.best} · streak`}</span>
+          <span>{mode === 'challenge' ? `⚔️ Challenge · round ${challenge?.round ?? 1}` : run.day ? `Daily #${dailyNumber(run.day)} · streak` : `Best ${save.best} · streak`}</span>
         </div>
         <span className="gc-topic">{cat.question}</span>
       </div>
@@ -222,11 +295,28 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
       </p>
       {over && (
         <div className="gc-over">
-          <h2>{streak >= 15 ? 'Gut of steel!' : streak >= 7 ? 'Trust that gut!' : 'Gut feeling: wrong'}</h2>
-          <p className="gc-big">{run.i}</p>
+          <h2>{cleared ? 'You cleared all 300 cards!' : streak >= 15 ? 'Gut of steel!' : streak >= 7 ? 'Trust that gut!' : 'Gut feeling: wrong'}</h2>
+          <p className="gc-big">{streak}</p>
           <p className="gc-muted">right in a row {newBest ? '· New best!' : `· best ${save.best}`}</p>
-          <ResultLine line={resultLine(run.i, run.phase === 'wrong')} label={`${run.i} right in a row`} />
-          {mode === 'daily' && daily && (
+          {run.phase === 'wrong' && (
+            // The missed pair stays readable: the end card covers the two cards.
+            <div className="gc-miss" aria-label="The card you missed">
+              {run.call && (
+                <span className="gc-miss-call">
+                  You said <b>{run.call === 'more' ? cat.more : cat.less}</b>
+                </span>
+              )}
+              <span>
+                {emojiOf(pair.right)} <b>{nameOf(pair.right)}</b> {formatValue(cat, valueOf(pair.right))}
+              </span>
+              <span>
+                {emojiOf(pair.left)} <b>{nameOf(pair.left)}</b> {formatValue(cat, valueOf(pair.left))}
+              </span>
+            </div>
+          )}
+          <ResultLine line={resultLine(streak, run.phase === 'wrong')} label={`${streak} right in a row`} />
+          {note && <p className="gc-muted">{note}</p>}
+          {run.day && daily && (
             <p className="gc-muted">
               That was today’s one try. <NextDaily />
             </p>
@@ -241,7 +331,7 @@ function GutCheck({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
                 {mode === 'daily' ? 'Play endless' : 'Play again'}
               </button>
             )}
-            {mode === 'daily' && daily && <ShareButton text={`Gut Check #${dailyNumber(today)} 🎯\n${resultLine(daily.best, true)}\n${daily.best} in a row\n${window.location.origin}/games/gut-check`} />}
+            {mode === 'daily' && daily && <ShareButton text={`Gut Check #${dailyNumber(shareDay)} 🎯\n${resultLine(daily.best, true)}\n${daily.best} in a row\n${window.location.origin}/games/gut-check`} />}
             <button className="gc-btn" onClick={() => setRun(null)}>
               Menu
             </button>
@@ -262,7 +352,7 @@ function CardView({ card, shown, verdict = null }: { card: Card; shown: boolean;
         {emojiOf(card)}
       </span>
       <b className="gc-name">{nameOf(card)}</b>
-      <span className="gc-value">{shown ? <CountUp to={v} format={cat.format} instant={!verdict} years={!!cat.years} /> : '?'}</span>
+      <span className="gc-value">{shown ? <CountUp to={v} format={(x) => formatIn(cat, unitOf(cat, v), x)} instant={!verdict} years={!!cat.years} /> : '?'}</span>
     </div>
   );
 }
@@ -270,12 +360,13 @@ function CardView({ card, shown, verdict = null }: { card: Card; shown: boolean;
 function CountUp({ to, format, instant: still, years }: { to: number; format: (v: number) => string; instant: boolean; years: boolean }) {
   // Tiny numbers (a snail, a bee) just appear: counting up through 0.0 reads wrong.
   const instant = still || to < 10;
-  const [v, setV] = useState(instant ? to : years ? to - 60 : 0);
+  // The count runs in the final number's unit (see CardView), from a fifth of it: never "about 0 g".
+  const [v, setV] = useState(instant ? to : years ? to - 60 : to * 0.2);
   useEffect(() => {
     if (instant) return;
     let raf = 0;
     const t0 = performance.now();
-    const from = years ? to - 60 : 0;
+    const from = years ? to - 60 : to * 0.2;
     const tick = (now: number): void => {
       const k = Math.min(1, (now - t0) / 650);
       const e = 1 - (1 - k) ** 3;
@@ -285,9 +376,8 @@ function CountUp({ to, format, instant: still, years }: { to: number; format: (v
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [to, instant, years]);
-  // Mid-count values are rounded to the same precision the final number uses.
-  const shown = v === to ? v : to >= 100 ? Math.round(v) : Math.round(v * 10) / 10;
-  return <>{format(shown)}</>;
+  // Mid-count values are rounded by the format, in the final number's unit.
+  return <>{format(v)}</>;
 }
 
 function ShareButton({ text }: { text: string }) {

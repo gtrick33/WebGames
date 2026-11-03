@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { getGame } from '../src/catalog/catalog';
-import { CATEGORIES } from '../src/games/gut-check/bank';
-import { answerIsMore, chain, clearlyDifferent, PER_TOPIC, resultLine, valueOf } from '../src/games/gut-check/logic';
+import { CATEGORIES, formatIn, formatValue, unitOf } from '../src/games/gut-check/bank';
+import { answerIsMore, chain, clearlyDifferent, PER_TOPIC, resultLine, valueOf, type Pair } from '../src/games/gut-check/logic';
+import { CHAIN, parseSave } from '../src/games/gut-check/save';
+import { hashString } from '../src/platform/dates';
 
 describe('Gut Check', () => {
   it('has a clean fact bank', () => {
@@ -12,7 +14,8 @@ describe('Gut Check', () => {
         expect(name.length, name).toBeLessThanOrEqual(34);
         expect(emoji.length).toBeGreaterThan(0);
         expect(v, name).toBeGreaterThan(0);
-        expect(c.format(v)).not.toMatch(/NaN|undefined|\b0 /);
+        expect(formatValue(c, v)).not.toMatch(/NaN|undefined|\b0 |tonnes|football/);
+        expect(name).not.toMatch(/football/i);
       }
       expect(c.items.length).toBeGreaterThanOrEqual(10);
     }
@@ -45,6 +48,67 @@ describe('Gut Check', () => {
     expect(resultLine(3, true)).toBe('🟩🟩🟩🟥');
     expect(resultLine(12, false)).toBe('🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩\n🟩🟩');
     expect(resultLine(40, true).endsWith(' …')).toBe(true);
+    // A damaged save can hold a huge streak: only the shown squares are ever built.
+    expect(resultLine(3e8, true)).toBe(resultLine(30, false) + ' …');
+    expect(resultLine(30, true)).toBe(resultLine(30, false) + ' …');
+  });
+
+  it('keeps the cards of dailies and challenges from before the no-repeat chain', () => {
+    // The original chain, byte for byte (hashes taken before version 2 was added).
+    const days = ['2026-10-19', '2026-11-03', '2026-11-09'];
+    const old = days.map((d) => hashString(JSON.stringify(chain(hashString(`gut-check:${d}`), 300, 1))));
+    old.push(hashString(JSON.stringify(chain(12345, 300, 1))));
+    expect(old).toEqual([1497941227, 2249875896, 2829437971, 118466943]);
+  });
+
+  it('never repeats a pairing early in a run, and uses fresh things first', () => {
+    const key = (p: Pair): string => `${p.left.cat}:${Math.min(p.left.item, p.right.item)}:${Math.max(p.left.item, p.right.item)}`;
+    let repeats = 0;
+    for (let seed = 1; seed <= 300; seed++) {
+      const pairs = chain(seed * 2654435761, 90);
+      // (The original chain repeated about two pairings per 90 calls.)
+      repeats += 90 - new Set(pairs.map(key)).size;
+      // Two visits per topic in 90 calls (12 cards): a topic with more things never shows one twice.
+      const shown = pairs.flatMap((p, i) => (i % PER_TOPIC === 0 ? [p.left, p.right] : [p.right])).filter((c) => CATEGORIES[c.cat]!.items.length > 12);
+      const ids = shown.map((c) => `${c.cat}:${c.item}`);
+      expect(new Set(ids).size, `seed ${seed}`).toBe(ids.length);
+    }
+    expect(repeats).toBeLessThanOrEqual(1);
+    // A perfect run of 300: pairings only come back in the two smallest topics, once they run out.
+    for (let seed = 1; seed <= 50; seed++) {
+      const seen = new Set<string>();
+      for (const p of chain(seed * 7919, CHAIN)) {
+        if (seen.has(key(p))) expect(['river', 'mountain']).toContain(CATEGORIES[p.left.cat]!.id);
+        seen.add(key(p));
+      }
+    }
+  });
+
+  it('keeps a wider gap for things whose real number varies a lot', () => {
+    for (let seed = 1; seed <= 200; seed++)
+      for (const p of chain(seed * 40503, 120)) {
+        const c = CATEGORIES[p.left.cat]!;
+        if (c.items[p.left.item]![3] || c.items[p.right.item]![3]) expect(clearlyDifferent(c, valueOf(p.left), valueOf(p.right), 1.4)).toBe(true);
+      }
+  });
+
+  it('counts up in the final unit', () => {
+    const weight = CATEGORIES.find((c) => c.id === 'weight')!;
+    const tons = unitOf(weight, 1500);
+    expect(formatIn(weight, tons, 1500)).toBe('about 1.5 metric tons');
+    // Mid-count it stays in metric tons (never "918 kg", then "1.1 metric tons").
+    expect(formatIn(weight, tons, 918)).toBe('about 0.9 metric tons');
+    expect(formatValue(weight, 0.8)).toBe('about 800 g');
+  });
+
+  it('loads a damaged save without throwing, clamped to what a run can reach', () => {
+    for (const raw of ['garbage', 'null', '[]', '{"best":"x","daily":5}', null]) expect(parseSave(raw).best).toBe(0);
+    const s = parseSave(JSON.stringify({ best: 1e21, runs: 1e9, daily: { '2026-11-03': { best: 1e21, tries: 1, open: true } }, progress: { day: '2026-11-03', i: 299.5 }, rounds: { 'ab12:1': { i: 1e9, done: 1e9, missed: true }, bad: { i: 1 } } }));
+    expect(s.best).toBe(CHAIN);
+    expect(s.daily['2026-11-03']!.best).toBe(CHAIN);
+    expect(s.progress).toBeUndefined();
+    expect(s.rounds).toEqual({ 'ab12:1': { i: CHAIN - 1, done: CHAIN, missed: true } });
+    expect(() => resultLine(s.daily['2026-11-03']!.best, true)).not.toThrow();
   });
 
   it('keeps a quick player inside the score limits', () => {
