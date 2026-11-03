@@ -3,7 +3,7 @@
  * text. The cards themselves have no words.
  */
 import type { BasicLang } from '../../platform/contentLang';
-import type { Attr, Card, Rule } from './logic';
+import { likes, type Attr, type Card, type Rule } from './logic';
 
 interface Lang {
   values: Record<Attr, [string, string, string]>;
@@ -11,6 +11,10 @@ interface Lang {
   and: string;
   or: string;
   xor: (a: string, b: string) => string;
+  /** "neither X nor Y": and(not X, not Y). */
+  neither: (a: string, b: string) => string;
+  /** "not both X and Y": or(not X, not Y). */
+  notBoth: (a: string, b: string) => string;
   atLeast: (n: number) => string;
   odd: string;
 }
@@ -27,6 +31,8 @@ const LANG: Record<BasicLang, Lang> = {
     and: 'and',
     or: 'or',
     xor: (a, b) => `${a} or ${b}, but not both`,
+    neither: (a, b) => `neither ${a} nor ${b}`,
+    notBoth: (a, b) => `not both ${a} and ${b}`,
     atLeast: (n) => `at least ${n} corners in total`,
     odd: 'an odd number of corners in total',
   },
@@ -41,12 +47,18 @@ const LANG: Record<BasicLang, Lang> = {
     and: 'и',
     or: 'или',
     xor: (a, b) => `${a} или ${b}, но не и двете`,
+    neither: (a, b) => `нито ${a}, нито ${b}`,
+    notBoth: (a, b) => `не едновременно ${a} и ${b}`,
     atLeast: (n) => `поне ${n} ъгъла общо`,
     odd: 'нечетен брой ъгли общо',
   },
 };
 
-/** The rule in plain words, e.g. "pink and not striped". */
+/**
+ * The rule in plain words, e.g. "pink and not striped". A "not" never leads an and/or (so "not pink or
+ * circles" can't be read as "neither"): the plain part comes first, and two "not"s say "neither … nor"
+ * or "not both … and".
+ */
 export function describe(rule: Rule, lang: BasicLang): string {
   const L = LANG[lang];
   const go = (x: Rule, top: boolean): string => {
@@ -57,7 +69,12 @@ export function describe(rule: Rule, lang: BasicLang): string {
         return L.not(go(x.r, false));
       case 'and':
       case 'or': {
-        const s = `${go(x.l, false)} ${x.t === 'and' ? L.and : L.or} ${go(x.r, false)}`;
+        const s =
+          x.l.t === 'not' && x.r.t === 'not'
+            ? (x.t === 'and' ? L.neither : L.notBoth)(go(x.l.r, false), go(x.r.r, false))
+            : x.l.t === 'not'
+              ? `${go(x.r, false)} ${x.t === 'and' ? L.and : L.or} ${go(x.l, false)}`
+              : `${go(x.l, false)} ${x.t === 'and' ? L.and : L.or} ${go(x.r, false)}`;
         return top ? s : `(${s})`;
       }
       case 'xor':
@@ -67,6 +84,22 @@ export function describe(rule: Rule, lang: BasicLang): string {
     }
   };
   return go(rule, true);
+}
+
+/**
+ * Why the robot judged a card as it did: each part of the rule, ticked or crossed for that card, e.g.
+ * "two symbols ✓ · not solid ✗".
+ */
+export function explain(rule: Rule, c: Card, lang: BasicLang): string {
+  const leaves: Rule[] = [];
+  const walk = (x: Rule): void => {
+    if (x.t === 'and' || x.t === 'or' || x.t === 'xor') {
+      walk(x.l);
+      walk(x.r);
+    } else leaves.push(x);
+  };
+  walk(rule);
+  return leaves.map((l) => `${describe(l, lang)} ${likes(l, c) ? '✓' : '✗'}`).join(' · ');
 }
 
 /** Names of the attribute values (for screen readers and the pickers). */
@@ -152,6 +185,12 @@ export interface Ui {
   grouped: string;
   close: string;
   inspect: (yes: boolean, name: string) => string;
+  dailyCounts: string;
+  /** The HUD pill: free tests left, then what the extra ones cost. */
+  testsPill: (n: number, cost: number) => string;
+  /** A card tapped on the result: what it is, the robot's verdict and yours. */
+  reviewSay: (name: string, yes: boolean, right: boolean) => string;
+  reviewHint: string;
 }
 
 const UI_EN: Ui = {
@@ -163,7 +202,7 @@ const UI_EN: Ui = {
   oneTry: 'one try',
   playDaily: 'Play today’s Fussbox',
   continueDaily: 'Carry on',
-  dailyDone: (correct, tests) => `Today: ${correct}/8 · ${tests} tests`,
+  dailyDone: (correct, tests) => `Today: ${correct}/8 · ${UI_EN.tests(tests)}`,
   practice: 'Practice',
   practiceBlurb: 'A new secret rule every time',
   play: 'Play',
@@ -215,6 +254,10 @@ const UI_EN: Ui = {
   grouped: 'Alike together',
   close: 'Close',
   inspect: (yes, name) => `${yes ? 'It likes' : 'It hates'} ${name}.`,
+  dailyCounts: 'You already played today’s rule: your daily result counts here.',
+  testsPill: (n, cost) => (cost > 0 ? `${n} tests · −${cost}` : `${n} / 3 free`),
+  reviewSay: (name, yes, right) => `${name}: it ${yes ? 'likes' : 'hates'} it${right ? '' : ` (you said it ${yes ? 'hates' : 'likes'} it)`}.`,
+  reviewHint: 'Tap a card to see why.',
 };
 
 const UI_BG: Ui = {
@@ -226,7 +269,7 @@ const UI_BG: Ui = {
   oneTry: 'един опит',
   playDaily: 'Играй днешния Fussbox',
   continueDaily: 'Продължи',
-  dailyDone: (correct, tests) => `Днес: ${correct}/8 · ${tests} теста`,
+  dailyDone: (correct, tests) => `Днес: ${correct}/8 · ${UI_BG.tests(tests)}`,
   practice: 'Тренировка',
   practiceBlurb: 'Ново тайно правило всеки път',
   play: 'Играй',
@@ -278,6 +321,10 @@ const UI_BG: Ui = {
   grouped: 'Сходните заедно',
   close: 'Затвори',
   inspect: (yes, name) => `${yes ? 'Харесва' : 'Мрази'}: ${name}.`,
+  dailyCounts: 'Вече игра правилото за деня: резултатът ти от дневния се брои тук.',
+  testsPill: (n, cost) => (cost > 0 ? `${n} теста · −${cost}` : `${n} / 3 безплатни`),
+  reviewSay: (name, yes, right) => `${name}: ${yes ? 'харесва я' : 'мрази я'}${right ? '' : ` (ти каза, че ${yes ? 'я мрази' : 'я харесва'})`}.`,
+  reviewHint: 'Докосни карта, за да видиш защо.',
 };
 
 export const UI: Record<BasicLang, Ui> = { en: UI_EN, bg: UI_BG };

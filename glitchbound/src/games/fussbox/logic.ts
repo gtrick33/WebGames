@@ -130,7 +130,77 @@ export interface Round {
 
 export const EXAM_SIZE = 8;
 
-export function makeRound(seed: number, level: Level): Round {
+/**
+ * Rounds from this day on pick near-miss exam cards (`sharpen`). Dailies and friends' challenges from
+ * before it keep the exams they always had.
+ */
+export const NEAR_MISS_FROM = '2026-11-23';
+
+/** Every one-property rule (and its opposite): what a player who found only part of the rule may hold. */
+const SINGLES: Rule[] = [
+  ...ATTRS.flatMap((a) => [0, 1, 2].map((v): Rule => ({ t: 'is', a, v }))),
+  { t: 'corners', op: 'atLeast', n: 6 },
+  { t: 'corners', op: 'atLeast', n: 8 },
+  { t: 'corners', op: 'odd', n: 0 },
+];
+const HALVES: Rule[] = [...SINGLES, ...SINGLES.map((r): Rule => ({ t: 'not', r }))];
+
+/** The rule's own parts (each clause and atom), the same two parts joined another way, then any single property. */
+function rivals(rule: Rule): Rule[] {
+  const parts: Rule[] = [];
+  const walk = (x: Rule): void => {
+    if (x.t === 'not') {
+      parts.push(x.r);
+      walk(x.r);
+    } else if (x.t === 'and' || x.t === 'or' || x.t === 'xor') {
+      parts.push(x.l, x.r);
+      walk(x.l);
+      walk(x.r);
+    }
+  };
+  walk(rule);
+  const joins: Rule[] = rule.t === 'and' || rule.t === 'or' || rule.t === 'xor' ? (['and', 'or', 'xor'] as const).filter((t) => t !== rule.t).map((t) => ({ t, l: rule.l, r: rule.r })) : [];
+  return [...parts, ...joins, ...HALVES];
+}
+
+const distance = (a: number, b: number): number => {
+  const x = cardOf(a);
+  const y = cardOf(b);
+  return ATTRS.filter((k) => x[k] !== y[k]).length;
+};
+
+/**
+ * Makes the exam test the whole rule: every rival rule that fits the four examples but isn't the rule
+ * gets at least one exam card wrong. When none does, a near miss (a card it judges differently, as close
+ * as can be to a card the robot judges the other way) takes the place of an exam card the robot judges
+ * the same, so the exam keeps its mix of liked and hated cards.
+ */
+function sharpen(rule: Rule, liked: number[], hated: number[], exam: number[], spare: number[]): number[] {
+  const ex = exam.slice();
+  const kept = new Set<number>();
+  const yes = (id: number): boolean => likes(rule, cardOf(id));
+  for (const h of rivals(rule)) {
+    if (!liked.every((id) => likes(h, cardOf(id))) || hated.some((id) => likes(h, cardOf(id)))) continue;
+    const differs = (id: number): boolean => likes(h, cardOf(id)) !== yes(id);
+    const hit = ex.find(differs);
+    if (hit !== undefined) {
+      kept.add(hit);
+      continue;
+    }
+    const others = [...liked, ...hated, ...ex];
+    const near = (id: number): number => Math.min(...others.filter((o) => yes(o) !== yes(id)).map((o) => distance(id, o)));
+    const choices = spare.filter((id) => differs(id) && !ex.includes(id));
+    if (choices.length === 0) continue; // the same rule in other words
+    const c = choices.reduce((best, id) => (near(id) < near(best) ? id : best));
+    const i = ex.findIndex((id) => !kept.has(id) && yes(id) === yes(c));
+    if (i < 0) continue;
+    ex[i] = c;
+    kept.add(c);
+  }
+  return ex;
+}
+
+export function makeRound(seed: number, level: Level, nearMiss = true): Round {
   const r = rng(seed);
   let rule = makeRule(level, r);
   for (let tries = 0; !fairRule(rule) && tries < 200; tries++) rule = makeRule(level, r);
@@ -145,12 +215,13 @@ export function makeRound(seed: number, level: Level): Round {
   const liked = yes.slice(0, 2);
   const hated = no.slice(0, 2);
   const inExam = 3 + Math.floor(r() * 3);
-  const exam = shuffle([...yes.slice(2, 2 + inExam), ...no.slice(2, 2 + EXAM_SIZE - inExam)], r);
+  const drawn = shuffle([...yes.slice(2, 2 + inExam), ...no.slice(2, 2 + EXAM_SIZE - inExam)], r);
+  const exam = nearMiss ? sharpen(rule, liked, hated, drawn, [...yes.slice(2 + inExam), ...no.slice(2 + EXAM_SIZE - inExam)]) : drawn;
   return { seed: seed >>> 0, level, rule, liked, hated, exam };
 }
 
 /** Today's round: the same everywhere, harder through the week. */
-export const dailyRound = (day: string, hash: (s: string) => number): Round => makeRound(hash(`fussbox:${day}`), levelFor(day));
+export const dailyRound = (day: string, hash: (s: string) => number): Round => makeRound(hash(`fussbox:${day}`), levelFor(day), day >= NEAR_MISS_FROM);
 
 // ------------------------------------------------------------------ scoring
 
@@ -165,6 +236,8 @@ export function scoreOf(correct: number, tests: number): number {
   return correct * 100 + Math.round(MAX_BONUS * quick * (correct / EXAM_SIZE));
 }
 export const MAX_SCORE = EXAM_SIZE * 100 + MAX_BONUS;
+/** What the tests past the free ones take off a perfect round's bonus (0 while they are free). */
+export const testCost = (tests: number): number => MAX_BONUS - Math.round(MAX_BONUS * Math.max(0, 1 - Math.max(0, tests - BONUS_FREE_TESTS) / 10));
 
 /** Exam answers marked right. `marks[i]`: true = "it likes it". */
 export const correctOf = (round: Round, marks: readonly (boolean | null)[]): number =>
