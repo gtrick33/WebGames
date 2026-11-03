@@ -369,6 +369,7 @@ function SpotTheGlitch({ host, pauseKey, challenge }: { host: GameHost; pauseKey
     setScreen('menu');
   };
   const onMute = (): void => commit((s) => ({ ...s, muted: !s.muted }));
+  const onNewDay = useCallback(() => setToday(dayKey()), []);
 
   return (
     <div className="sg">
@@ -379,7 +380,7 @@ function SpotTheGlitch({ host, pauseKey, challenge }: { host: GameHost; pauseKey
           onStart={start}
           onLevel={(d) => commit((s) => ({ ...s, relax: { ...s.relax, difficulty: d } }))}
           onMute={onMute}
-          onNewDay={() => setToday(dayKey())}
+          onNewDay={onNewDay}
         />
       )}
       {screen === 'play' && run && pic && (
