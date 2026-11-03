@@ -1,7 +1,7 @@
 import type { GameEntry } from '../catalog/types';
 import type { EndEvent } from './contract';
 import { addDays, dayKey } from './dates';
-import { better, challengeForDay, isDone, metricValue } from './daily';
+import { better, challengeForDay, isDone, metricValue, modeStats, roundKind } from './daily';
 import { currentSlug } from '../catalog/catalog';
 
 /**
@@ -80,13 +80,12 @@ export interface RoundResult {
 export function applyRound(save: Save, game: GameEntry, event: EndEvent, games: GameEntry[], now: Date = new Date()): RoundResult {
   const rec = (save.games[game.slug] ??= { plays: 0, best: {}, last: 0 });
   const firstPlay = rec.plays === 0;
-  const values: Record<string, number> = { ...event.stats, score: event.score };
-  const newBests: string[] = [];
   // A per-mode best counts only its kind of round (see StatDef.mode).
-  const kind = event.daily ? 'daily' : event.challenge ? 'challenge' : 'other';
+  const stats = modeStats(game, event.score, event.stats ?? {}, roundKind(event));
+  const values: Record<string, number> = { ...stats, score: event.score };
+  const newBests: string[] = [];
   for (const stat of game.stats) {
-    if (stat.mode && stat.mode !== kind) continue;
-    const v = values[stat.of ?? stat.key];
+    const v = values[stat.key];
     if (v === undefined) continue;
     const prev = rec.best[stat.key];
     const better = prev === undefined || (stat.lowerIsBetter ? v < prev : v > prev);
@@ -102,7 +101,7 @@ export function applyRound(save: Save, game: GameEntry, event: EndEvent, games: 
   const today = dayKey(now);
   const challenge = challengeForDay(today, games);
   if (challenge && challenge.game.slug === game.slug) {
-    const value = metricValue(challenge.metric, event);
+    const value = metricValue(challenge.metric, { ...event, stats });
     const d = (save.daily[today] ??= { best: 0, done: false });
     d.best = better(challenge, d.best, value);
     if (!d.done && isDone(challenge, value)) {

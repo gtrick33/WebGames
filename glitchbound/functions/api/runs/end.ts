@@ -1,7 +1,7 @@
 import { GAMES } from '../../../src/catalog/games';
 import { getGame } from '../../../src/catalog/catalog';
 import type { RunEndResult } from '../../../src/platform/apiTypes';
-import { challengeForDay, isDone, lowerIsBetter, metricValue } from '../../../src/platform/daily';
+import { challengeForDay, isDone, lowerIsBetter, metricValue, modeStats, roundKind } from '../../../src/platform/daily';
 import { liveRules } from '../../../server/catalogSettings';
 import { bad, int, json, readJson, sameOrigin, type Ctx } from '../../../server/http';
 import { clientDay, questViews } from '../../../server/members';
@@ -33,13 +33,15 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   const score = int(body.score);
 
   // Keep only declared stats, as whole non-negative numbers.
-  const stats: Record<string, number> = {};
+  let stats: Record<string, number> = {};
   const rawStats = body.stats && typeof body.stats === 'object' ? (body.stats as Record<string, unknown>) : {};
   for (const s of game.stats) {
     if (s.key === 'score') continue;
     const v = int(rawStats[s.key]);
     if (v >= 0 && v <= MAX) stats[s.key] = v;
   }
+  // Per-mode stats (a daily's best score) from the kind of round the page names.
+  stats = modeStats(game, score, stats, roundKind({ daily: body.daily === true, challenge: body.challenge === true }));
 
   const reason = refusal(game, score, stats, seconds);
   if (reason) {

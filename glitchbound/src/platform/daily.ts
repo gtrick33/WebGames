@@ -81,6 +81,27 @@ export function challengeForDay(day: string, games: GameEntry[], rules: DailyRul
   };
 }
 
+/** The kind of round a per-mode best counts (StatDef.mode). */
+export const roundKind = (e: { daily?: boolean; challenge?: unknown }): 'daily' | 'challenge' | 'other' => (e.daily ? 'daily' : e.challenge ? 'challenge' : 'other');
+
+/**
+ * A round's stats with its per-mode stats settled (StatDef.mode/of): one of the round's kind reads its
+ * `of` stat when the game doesn't report it itself; one of another kind is dropped. So a per-mode stat
+ * works (bests, the Daily Challenge, quests) before and after a game reports it.
+ */
+export function modeStats(game: GameEntry, score: number, stats: Record<string, number>, kind: ReturnType<typeof roundKind>): Record<string, number> {
+  const out = { ...stats };
+  for (const s of game.stats) {
+    if (!s.mode || !s.of) continue;
+    if (s.mode !== kind) delete out[s.key];
+    else if (out[s.key] === undefined) {
+      const v = s.of === 'score' ? score : out[s.of];
+      if (v !== undefined) out[s.key] = v;
+    }
+  }
+  return out;
+}
+
 /** The value a finished round achieved for the challenge's metric. */
 export function metricValue(metric: string, event: EndEvent): number {
   return metric === 'score' ? event.score : (event.stats?.[metric] ?? 0);

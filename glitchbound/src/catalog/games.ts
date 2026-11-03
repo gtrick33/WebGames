@@ -396,8 +396,8 @@ export const GAMES: GameEntry[] = [
       { key: 'found', label: 'Most glitches found' },
       { key: 'clean', label: 'Most flawless pictures' },
       { key: 'pictures', label: 'Most Rush pictures cleared' },
-      { key: 'dailyScore', label: 'Best daily score', of: 'score', mode: 'daily' },
-      { key: 'rushScore', label: 'Best Rush score', of: 'score', mode: 'other' },
+      { key: 'daily', label: 'Best daily score', of: 'score', mode: 'daily' },
+      { key: 'rush', label: 'Best Rush score', of: 'score', mode: 'other' },
     ],
     highlights: [
       'Hand-drawn pictures generated from a seed across 13 themes (beach, farm, kitchen, city night, jungle, campsite, harbor, party and more): a practically endless library',
@@ -409,7 +409,7 @@ export const GAMES: GameEntry[] = [
     ownDaily: { label: 'Today’s 3 pictures' },
     challenge: { label: 'The same three pictures for everyone. Find every difference fast, with few misses.' },
     daily: [
-      { metric: 'score', targets: [2000, 2300, 2500], label: 'Score {n} points in one Spot the Glitch daily' },
+      { metric: 'daily', targets: [2000, 2300, 2500], label: 'Score {n} points in one Spot the Glitch daily' },
       { metric: 'found', targets: [12, 15, 20], label: 'Find {n} glitches in one Spot the Glitch game' },
       { metric: 'clean', targets: [1, 2], label: 'Clear {n} pictures without a miss or hint', one: 'Clear {n} picture without a miss or hint' },
     ],
@@ -908,7 +908,7 @@ export const GAMES: GameEntry[] = [
     stats: [
       { key: 'score', label: 'Best score' },
       { key: 'correct', label: 'Most exam cards right (of 8)' },
-      { key: 'tests', label: 'Fewest tests', lowerIsBetter: true },
+      { key: 'tests', label: 'Fewest tests for 8/8', lowerIsBetter: true },
     ],
     highlights: ['A new secret rule every day', 'Fussier from Monday to Sunday', 'In English and Bulgarian'],
     ownDaily: { label: 'Today’s rule' },
@@ -988,7 +988,7 @@ export const GAMES: GameEntry[] = [
       touch: ['Tap a card to play it', 'Tap a call in the bidding bar'],
     },
     stats: [
-      { key: 'score', label: 'Best score' },
+      { key: 'score', label: 'Best match' },
       { key: 'margin', label: 'Biggest winning margin' },
     ],
     highlights: [

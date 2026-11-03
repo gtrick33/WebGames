@@ -10,7 +10,7 @@ import { getGame } from '../src/catalog/catalog';
 import { GAMES } from '../src/catalog/games';
 import type { RunEndResult } from '../src/platform/apiTypes';
 import type { ChallengeView } from '../src/platform/challenge';
-import { better, challengeForDay, dailyShareText, isDone, progressOf, type DailyChallenge } from '../src/platform/daily';
+import { better, challengeForDay, dailyShareText, isDone, modeStats, progressOf, type DailyChallenge } from '../src/platform/daily';
 import { applyRound, emptySave, mergeSaves } from '../src/platform/save';
 import { BIRD_X, flap, gapCentre, H, HIT_R, newSim, PILLAR_W, runPoints, step, type Sim } from '../src/games/wing-it/sim';
 import { levelPoints, makeLevel } from '../src/games/outta-here/logic';
@@ -169,7 +169,12 @@ describe('per-mode bests', () => {
     const sp = game('spot-the-glitch');
     applyRound(save, sp, { type: 'end', score: 9000, stats: { found: 60, pictures: 12 } }, GAMES);
     applyRound(save, sp, { type: 'end', score: 2500, stats: { found: 15, clean: 2 }, daily: true }, GAMES);
-    expect(save.games['spot-the-glitch']!.best).toMatchObject({ score: 9000, rushScore: 9000, dailyScore: 2500 });
+    expect(save.games['spot-the-glitch']!.best).toMatchObject({ score: 9000, rush: 9000, daily: 2500 });
+    // The daily's own stat feeds the Daily Challenge whether the game reports it or not; Rush never does.
+    expect(modeStats(sp, 9000, { found: 60 }, 'other')).toEqual({ found: 60, rush: 9000 });
+    expect(modeStats(sp, 2500, {}, 'daily')).toEqual({ daily: 2500 });
+    expect(modeStats(sp, 2500, { daily: 2400 }, 'daily')).toEqual({ daily: 2400 });
+    expect(modeStats(sp, 3000, { daily: 3000 }, 'challenge')).toEqual({});
   });
 });
 

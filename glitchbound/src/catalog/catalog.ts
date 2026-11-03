@@ -167,7 +167,6 @@ export function validateCatalog(games: GameEntry[] = GAMES): string[] {
     for (const s of g.stats) {
       if (s.of !== undefined && !g.stats.some((x) => x.key === s.of && !x.of)) errors.push(`${at}: stat "${s.key}" reads "${s.of}", which is not a reported stat`);
       if (s.of !== undefined && !s.mode) errors.push(`${at}: stat "${s.key}" reads another stat, so it needs a mode`);
-      if (s.mode && (g.daily ?? []).some((d) => d.metric === s.key)) errors.push(`${at}: a per-mode best can't be a daily metric`);
     }
     for (const d of g.daily ?? []) {
       const stat = g.stats.find((s) => s.key === d.metric);

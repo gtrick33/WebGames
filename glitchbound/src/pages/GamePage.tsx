@@ -564,7 +564,7 @@ export function GamePage({ game }: { game: GameEntry }) {
           }
           try {
             const day = dayKey();
-            const server = await api<RunEndResult>('/api/runs/end', { body: { runId, score: e.score, stats: e.stats ?? {}, day } });
+            const server = await api<RunEndResult>('/api/runs/end', { body: { runId, score: e.score, stats: e.stats ?? {}, day, daily: !!e.daily, challenge: !!ended.challenge } });
             account.setQuests(server.quests);
             // the streak counts the server's record: a cleared challenge it just stored counts now
             if (server.dailyCompleted) account.addDailyDay(day);
