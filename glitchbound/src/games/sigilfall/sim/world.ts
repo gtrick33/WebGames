@@ -14,7 +14,7 @@ import type { ClassId, EliteAffix, Encounter, Item, Objective, QuestDef, RegionD
 import { ACTION_SLOTS, SKILL_SLOTS } from '../data/types';
 import type { Marker, RegionStateDef, StoryCond } from '../data/types';
 import { holds, regionState, StoryDirector } from './story';
-import { maybeStartScene, revealBoss, updateScene, type ScenePlay } from './scene';
+import { maybeStartScene, revealBoss, scenesPlayHere, updateScene, type ScenePlay } from './scene';
 import { buildHero, type HeroBuild } from '../progress/build';
 import { fogOpen, fogShare, loadFog, revealFog, storeFog, type Fog } from '../progress/fog';
 import { turnInNpc } from '../progress/handin';
@@ -1077,8 +1077,9 @@ export class World {
     this.shakeAmt = Math.max(0, this.shakeAmt - rawDt * 18);
     // the story's staged beats: looked for twice a second, played while the hero stands still
     this.sceneCheck -= rawDt;
-    // a staged scene stops one world while the others play on: none in a co-op party
-    if (!this.scene && !this.coop && this.sceneCheck <= 0) {
+    // a staged scene stops one world while the others play on: in a party only the leader's world plays
+    // them (the others are told, and play on), and never on a Riftstone run's clock
+    if (!this.scene && scenesPlayHere(this) && this.sceneCheck <= 0) {
       this.sceneCheck = 0.5;
       maybeStartScene(this);
     }
