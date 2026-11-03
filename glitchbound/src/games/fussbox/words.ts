@@ -11,6 +11,10 @@ interface Lang {
   and: string;
   or: string;
   xor: (a: string, b: string) => string;
+  /** "neither X nor Y": and(not X, not Y). */
+  neither: (a: string, b: string) => string;
+  /** "not both X and Y": or(not X, not Y). */
+  notBoth: (a: string, b: string) => string;
   atLeast: (n: number) => string;
   odd: string;
 }
@@ -27,6 +31,8 @@ const LANG: Record<BasicLang, Lang> = {
     and: 'and',
     or: 'or',
     xor: (a, b) => `${a} or ${b}, but not both`,
+    neither: (a, b) => `neither ${a} nor ${b}`,
+    notBoth: (a, b) => `not both ${a} and ${b}`,
     atLeast: (n) => `at least ${n} corners in total`,
     odd: 'an odd number of corners in total',
   },
@@ -41,12 +47,18 @@ const LANG: Record<BasicLang, Lang> = {
     and: 'и',
     or: 'или',
     xor: (a, b) => `${a} или ${b}, но не и двете`,
+    neither: (a, b) => `нито ${a}, нито ${b}`,
+    notBoth: (a, b) => `не едновременно ${a} и ${b}`,
     atLeast: (n) => `поне ${n} ъгъла общо`,
     odd: 'нечетен брой ъгли общо',
   },
 };
 
-/** The rule in plain words, e.g. "pink and not striped". */
+/**
+ * The rule in plain words, e.g. "pink and not striped". A "not" never leads an and/or (so "not pink or
+ * circles" can't be read as "neither"): the plain part comes first, and two "not"s say "neither … nor"
+ * or "not both … and".
+ */
 export function describe(rule: Rule, lang: BasicLang): string {
   const L = LANG[lang];
   const go = (x: Rule, top: boolean): string => {
@@ -57,7 +69,12 @@ export function describe(rule: Rule, lang: BasicLang): string {
         return L.not(go(x.r, false));
       case 'and':
       case 'or': {
-        const s = `${go(x.l, false)} ${x.t === 'and' ? L.and : L.or} ${go(x.r, false)}`;
+        const s =
+          x.l.t === 'not' && x.r.t === 'not'
+            ? (x.t === 'and' ? L.neither : L.notBoth)(go(x.l.r, false), go(x.r.r, false))
+            : x.l.t === 'not'
+              ? `${go(x.r, false)} ${x.t === 'and' ? L.and : L.or} ${go(x.l, false)}`
+              : `${go(x.l, false)} ${x.t === 'and' ? L.and : L.or} ${go(x.r, false)}`;
         return top ? s : `(${s})`;
       }
       case 'xor':
@@ -152,6 +169,7 @@ export interface Ui {
   grouped: string;
   close: string;
   inspect: (yes: boolean, name: string) => string;
+  dailyCounts: string;
 }
 
 const UI_EN: Ui = {
@@ -163,7 +181,7 @@ const UI_EN: Ui = {
   oneTry: 'one try',
   playDaily: 'Play today’s Fussbox',
   continueDaily: 'Carry on',
-  dailyDone: (correct, tests) => `Today: ${correct}/8 · ${tests} tests`,
+  dailyDone: (correct, tests) => `Today: ${correct}/8 · ${UI_EN.tests(tests)}`,
   practice: 'Practice',
   practiceBlurb: 'A new secret rule every time',
   play: 'Play',
@@ -215,6 +233,7 @@ const UI_EN: Ui = {
   grouped: 'Alike together',
   close: 'Close',
   inspect: (yes, name) => `${yes ? 'It likes' : 'It hates'} ${name}.`,
+  dailyCounts: 'You already played today’s rule: your daily result counts here.',
 };
 
 const UI_BG: Ui = {
@@ -226,7 +245,7 @@ const UI_BG: Ui = {
   oneTry: 'един опит',
   playDaily: 'Играй днешния Fussbox',
   continueDaily: 'Продължи',
-  dailyDone: (correct, tests) => `Днес: ${correct}/8 · ${tests} теста`,
+  dailyDone: (correct, tests) => `Днес: ${correct}/8 · ${UI_BG.tests(tests)}`,
   practice: 'Тренировка',
   practiceBlurb: 'Ново тайно правило всеки път',
   play: 'Играй',
@@ -278,6 +297,7 @@ const UI_BG: Ui = {
   grouped: 'Сходните заедно',
   close: 'Затвори',
   inspect: (yes, name) => `${yes ? 'Харесва' : 'Мрази'}: ${name}.`,
+  dailyCounts: 'Вече игра правилото за деня: резултатът ти от дневния се брои тук.',
 };
 
 export const UI: Record<BasicLang, Ui> = { en: UI_EN, bg: UI_BG };
