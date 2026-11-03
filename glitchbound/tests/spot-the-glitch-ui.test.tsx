@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Game from '../src/games/spot-the-glitch/Game';
 import { makePuzzle } from '../src/games/spot-the-glitch/diffs';
@@ -97,6 +97,30 @@ describe('Spot the Glitch play', () => {
     expect(hint.disabled).toBe(true);
     fireEvent.click(screen.getByText('Tap to continue'));
     expect(screen.queryByText('Paused')).toBeNull();
+    // The pause button pauses too.
+    fireEvent.click(screen.getByLabelText('Pause'));
+    expect(screen.getByText('Paused')).toBeTruthy();
+  });
+
+  it('charges Rush hints in time, says "Run ended" for an ended run and reports the Rush score apart', () => {
+    vi.useFakeTimers();
+    try {
+      const h = host();
+      render(<Game restartKey={0} host={h} />);
+      fireEvent.click(screen.getByText('Start Rush'));
+      expect(screen.getByLabelText('Time').textContent).toBe('60s');
+      fireEvent.click(screen.getByText('💡 Hint (−5s)'));
+      act(() => {
+        vi.advanceTimersByTime(250);
+      });
+      expect(screen.getByLabelText('Time').textContent).toBe('55s');
+      fireEvent.click(screen.getByText('End run'));
+      fireEvent.click(screen.getByText('Yes, reveal'));
+      expect(screen.getByText('Run ended')).toBeTruthy();
+      expect(ends(h)).toEqual([{ type: 'end', score: 0, stats: { found: 0, pictures: 0, rush: 0 } }]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('reports a finished daily with its total as the daily stat', () => {

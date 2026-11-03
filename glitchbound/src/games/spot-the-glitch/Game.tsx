@@ -23,6 +23,7 @@ import {
   resultOf,
   resumePicture,
   RUSH_BONUS_S,
+  RUSH_HINT_S,
   RUSH_START_S,
   rushDifficulty,
   rushEnd,
@@ -398,6 +399,7 @@ function SpotTheGlitch({ host, pauseKey, challenge }: { host: GameHost; pauseKey
             if (s === pic) return;
             sfx().hint();
             setPic(s);
+            if (run.mode === 'rush') setRun((r) => (r ? { ...r, clock: Math.max(0, r.clock - RUSH_HINT_S * 1000) } : r));
           }}
           onGiveUp={() => {
             if (!active) return;
@@ -662,6 +664,14 @@ function Play(props: {
         <span className={`sg-clock sg-mono${props.rushLeft !== null && props.rushLeft < 10_000 ? ' is-low' : ''}`} aria-label="Time">
           {props.rushLeft !== null ? `${Math.ceil(props.rushLeft / 1000)}s` : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`}
         </span>
+        {!done && (
+          <button className="sg-icon-btn" onClick={props.onPause} aria-label="Pause" disabled={props.paused}>
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+              <rect x="3" y="2" width="3.5" height="12" rx="1" fill="currentColor" />
+              <rect x="9.5" y="2" width="3.5" height="12" rx="1" fill="currentColor" />
+            </svg>
+          </button>
+        )}
         <GameMenuButton className="sg-icon-btn" />
       </div>
       <div className="sg-found">
@@ -671,6 +681,9 @@ function Play(props: {
           ))}
         </span>
         <span className="sg-theme">{THEME_NAMES[pic.puzzle.left.theme]}</span>
+        <button className="sg-icon-btn sg-icon-sm" onClick={props.onMute} aria-label={props.muted ? 'Turn sound on' : 'Turn sound off'} aria-pressed={!props.muted}>
+          {props.muted ? '🔇' : '🔊'}
+        </button>
       </div>
       <div className="sg-pair">
         <Picture scene={pic.puzzle.left} label="Picture A" pic={pic} reveal={pic.gaveUp} onTap={props.onTap} />
@@ -689,8 +702,8 @@ function Play(props: {
       {!done ? (
         <div className="sg-actions">
           <button className="sg-btn" onClick={props.onHint} disabled={pic.hinted !== null || props.paused}>
-            {/* Only the daily (and a challenge) scores hints and misses; Rush counts glitches found. */}
-            💡 Hint{run.mode === 'daily' ? ` (−${HINT_COST})` : ''}
+            {/* The daily (and a challenge) scores hints and misses; in Rush a hint costs clock time. */}
+            💡 Hint{run.mode === 'daily' ? ` (−${HINT_COST})` : run.mode === 'rush' ? ` (−${RUSH_HINT_S}s)` : ''}
           </button>
           {confirm ? (
             <>
@@ -761,7 +774,7 @@ function Summary({ run, save, onMenu, onAgain }: { run: Run; save: SgSave; onMen
   if (run.mode === 'rush') {
     return (
       <div className="sg-menu">
-        <span className="sg-kicker">Time’s up</span>
+        <span className="sg-kicker">{run.endedByPlayer ? 'Run ended' : 'Time’s up'}</span>
         <p className="sg-big sg-mono">{run.rushFound}</p>
         <p>glitches found · {run.results.filter((r) => r.found === DIFFS).length} pictures cleared</p>
         <p className="sg-muted">Best: {save.rush.bestFound}</p>

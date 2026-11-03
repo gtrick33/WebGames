@@ -16,6 +16,8 @@ export const LOCK_MS = 2000;
 /** Glitch Rush clock. */
 export const RUSH_START_S = 60;
 export const RUSH_BONUS_S = 8;
+/** Glitch Rush: a hint costs this much of the clock (Rush is the timed, ranked mode). */
+export const RUSH_HINT_S = 5;
 
 export interface Miss {
   x: number;
