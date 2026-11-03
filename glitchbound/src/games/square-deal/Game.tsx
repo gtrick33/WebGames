@@ -145,8 +145,14 @@ function focusVisible(el: Element): boolean {
   }
 }
 
-/** The top-left that centers a piece on a cell: taps and the key cursor aim the same way. */
-const centeredOn = (p: Piece, row: number, col: number): { row: number; col: number } => ({ row: row - Math.floor((p.h - 1) / 2), col: col - Math.floor((p.w - 1) / 2) });
+/**
+ * The top-left that centers a piece on a cell, kept on the board: taps and the key cursor aim the
+ * same way, and at an edge the piece lines up with it instead of hanging off.
+ */
+const centeredOn = (p: Piece, row: number, col: number): { row: number; col: number } => ({
+  row: Math.max(0, Math.min(SIZE - p.h, row - Math.floor((p.h - 1) / 2))),
+  col: Math.max(0, Math.min(SIZE - p.w, col - Math.floor((p.w - 1) / 2))),
+});
 
 /** Where a dragged or selected piece would land, and whether it fits there. */
 interface Aim {

@@ -159,16 +159,24 @@ describe('Square Deal UI', () => {
     expect(screen.getByText('clear lines')).toBeTruthy();
   });
 
-  it('centers the key cursor piece on the cursor, like a tap', () => {
+  it('centers the key cursor piece on the cursor, like a tap, and keeps it on the board at an edge', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.5);
     const seed = (0.5 * 2 ** 32) >>> 0;
     const p = pieceAt(seed, 0);
     render(<Game host={{ report: vi.fn() }} restartKey={0} />);
     fireEvent.click(screen.getByRole('button', { name: 'Play endless' }));
     placeFirst();
-    const row = 3 - Math.floor((p.h - 1) / 2);
-    const col = 3 - Math.floor((p.w - 1) / 2);
+    const row = Math.min(8 - p.h, 3 - Math.floor((p.h - 1) / 2));
+    const col = Math.min(8 - p.w, 3 - Math.floor((p.w - 1) / 2));
     const filled = [...document.querySelectorAll('.sd-cell')].flatMap((c, i) => (c.classList.contains('is-filled') ? [i] : []));
     expect(filled).toEqual(p.cells.map(([y, x]) => (row + y) * 8 + col + x).sort((a, b) => a - b));
+    // At the bottom-right corner the next piece lines up with the corner and fits.
+    fireEvent.keyDown(document.body, { key: '2' });
+    for (let i = 0; i < 6; i++) {
+      fireEvent.keyDown(document.body, { key: 'ArrowDown' });
+      fireEvent.keyDown(document.body, { key: 'ArrowRight' });
+    }
+    expect(document.querySelectorAll('.sd-cell.is-blocked')).toHaveLength(0);
+    expect(document.querySelectorAll('.sd-cell.is-ghost')).toHaveLength(pieceAt(seed, 1).cells.length);
   });
 });
