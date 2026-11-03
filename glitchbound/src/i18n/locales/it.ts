@@ -2228,6 +2228,7 @@ const it: string[] = [
   'O fai una partita veloce',
   'Un eroe con spada e scudo nel cortile di un castello di notte, tra bracieri e stendardi rossi',
   'Gioco vero, su telefono o computer',
+  'Altri giochi qui sotto',
 ];
 
 export default it;

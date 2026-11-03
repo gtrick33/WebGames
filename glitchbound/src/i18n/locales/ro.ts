@@ -2228,6 +2228,7 @@ const ro: string[] = [
   'Sau joacă ceva rapid',
   'Un erou cu sabie și scut în curtea unui castel noaptea, între mangaluri și steaguri roșii',
   'Joc real, pe telefon sau calculator',
+  'Mai multe jocuri mai jos',
 ];
 
 export default ro;

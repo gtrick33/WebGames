@@ -8,7 +8,7 @@
   }
 }
 
-/* The first screen: Sigilfall's key art, full width, whichever theme the site is in. */
+/* A banner of Sigilfall's key art, full width, whichever theme the site is in: short, so the arcade shows under it. */
 .sfh {
   --gold: #f6c453;
   --gold-2: #ffe39a;
@@ -18,7 +18,7 @@
   overflow: hidden;
   display: grid;
   align-items: center;
-  min-height: min(760px, calc(100svh - var(--header-h) - 40px));
+  min-height: clamp(280px, calc(50svh - var(--header-h) * 0.5), 440px);
   background: #05030b;
   color: var(--parch);
   /* the sanctum falls away into the page below */
@@ -91,12 +91,12 @@
 }
 .sfh-inner {
   display: grid;
-  padding-block: clamp(24px, 4vw, 56px) clamp(70px, 8vw, 110px);
+  padding-block: clamp(16px, 2vw, 28px) clamp(44px, 4vw, 60px);
 }
 .sfh-copy {
   display: grid;
   justify-items: start;
-  gap: 14px;
+  gap: 8px;
   max-width: min(560px, 46vw);
 }
 .sfh-kicker {
@@ -111,7 +111,7 @@
   margin: 0 0 -0.2em;
   padding-bottom: 0.2em;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(64px, 9vw, 144px);
+  font-size: clamp(50px, 5.6vw, 92px);
   font-weight: 700;
   letter-spacing: 0.01em;
   line-height: 0.95;
@@ -127,33 +127,25 @@
   margin: 2px 0 0;
   color: #fff6e0;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(19px, 1.85vw, 27px);
+  font-size: clamp(15.5px, 1.25vw, 19px);
   font-style: italic;
   line-height: 1.32;
   text-shadow: 0 2px 10px #000;
-}
-.sfh-sub {
-  max-width: 44ch;
-  margin: 0;
-  color: var(--parch);
-  font-size: clamp(15.5px, 1.2vw, 17px);
-  line-height: 1.5;
-  text-shadow: 0 1px 6px #000;
 }
 .sfh-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px 22px;
-  margin-top: 10px;
+  margin-top: 6px;
 }
 .sfh-cta {
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  min-height: 62px;
-  padding: 0 34px;
+  min-height: 52px;
+  padding: 0 28px;
   overflow: hidden;
   border: 2px solid #3a2208;
   border-radius: 10px;
@@ -161,7 +153,7 @@
   box-shadow: 0 0 0 2px #15101f, 0 0 0 3px rgb(246 196 83 / 0.55), 0 8px 0 #15101f, 0 0 34px rgb(246 196 83 / 0.28);
   color: #2a1406;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 22px;
+  font-size: 19px;
   font-weight: 700;
   text-decoration: none;
   transition: transform 0.18s var(--out), box-shadow 0.18s var(--out);
@@ -198,7 +190,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px 0;
-  margin: 12px 0 0;
+  margin: 6px 0 0;
   padding: 0;
   list-style: none;
   color: var(--gold-2);
@@ -218,6 +210,47 @@
     animation: none;
   }
 }
+/* There's more below: a cue on the banner's bottom edge. It stays in the page, so it never covers a game. */
+.sfh-more {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: max-content;
+  min-height: 36px;
+  margin: -26px auto 0;
+  padding: 0 14px;
+  border: 1.5px solid #f6c453;
+  border-radius: 999px;
+  background: #15101f;
+  color: #ffe39a;
+  font-weight: 700;
+  font-size: 13.5px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.sfh-more:hover {
+  background: #2a1f40;
+}
+.sfh-more:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+.sfh-more svg {
+  animation: sfh-more 1.5s ease-in-out infinite;
+}
+@keyframes sfh-more {
+  50% {
+    transform: translateY(3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sfh-more svg {
+    animation: none;
+  }
+}
 /* A phone: the picture first, the words under it on the dark. */
 @media (max-width: 700px) {
   .sfh {
@@ -226,7 +259,7 @@
   }
   .sfh-art {
     bottom: auto;
-    height: min(82vw, 400px);
+    height: min(52vw, 250px);
   }
   .sfh-art img {
     object-position: 60% 100%;
@@ -241,14 +274,17 @@
     display: none;
   }
   .sfh-inner {
-    padding-block: min(58vw, 290px) 62px;
+    padding-block: min(30vw, 150px) 40px;
   }
   .sfh-copy {
-    gap: 10px;
+    gap: 6px;
     max-width: none;
   }
   .sfh-title {
-    font-size: clamp(60px, 19vw, 96px);
+    font-size: clamp(44px, 13vw, 66px);
+  }
+  .sfh-hook {
+    display: none;
   }
   .sfh-actions {
     width: 100%;

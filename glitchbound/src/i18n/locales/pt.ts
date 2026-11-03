@@ -2228,6 +2228,7 @@ const pt: string[] = [
   'Ou joga algo rápido',
   'Um herói com espada e escudo no pátio de um castelo à noite, entre braseiros e estandartes vermelhos',
   'Jogo real, no telemóvel ou no computador',
+  'Mais jogos abaixo',
 ];
 
 export default pt;
