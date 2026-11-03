@@ -6823,14 +6823,33 @@
 }
 @container (max-height: 300px) {
   .rb-ringlobby {
-    grid-template: repeat(5, auto) / minmax(0, 1fr);
+    /* every row takes the height it needs, and the whole lobby scrolls */
+    grid-template: repeat(5, max-content) / minmax(0, 1fr);
     grid-template-areas: 'head' 'left' 'mid' 'right' 'foot';
     align-content: start;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .rb-rl-left,
-  .rb-rl-right {
+  .rb-rl-right,
+  .rb-rl-mid {
+    min-height: max-content;
     overflow: visible;
+  }
+  .rb-rl-left {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rb-rl-rank {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 6px;
+    padding: 2px 6px;
+  }
+  .rb-rl-foot {
+    position: sticky;
+    bottom: 0;
+    padding: 3px 0;
+    background: linear-gradient(180deg, transparent, #05030d 40%);
   }
   .rb-ring-prep {
     padding: 3px 10px;
@@ -6843,7 +6862,8 @@
     font-size: 14px;
   }
   .rb-rs {
-    grid-template-rows: auto auto auto auto;
+    grid-template-rows: repeat(4, max-content);
+    min-height: max-content;
   }
   .rb-rs-scroll {
     overflow: visible;
