@@ -413,45 +413,7 @@ function Lobby({ view, send, onLeave }: { view: RoomView; send: Send; onLeave: (
         <Players view={view} send={send} />
         {online < MIN_PLAYERS && <p className="uh-hint">{u.needPlayers(MIN_PLAYERS)}</p>}
       </div>
-      <div className="uh-panel">
-        <p className="uh-label">{u.rulesTitle}</p>
-        <div className="uh-settings">
-          <label>
-            {u.cards}
-            <select disabled={!amHost} value={deck} onChange={(e) => send({ t: 'settings', deck: e.target.value as Deck })}>
-              <option value="en">English</option>
-              <option value="bg">Български</option>
-            </select>
-          </label>
-          <label>
-            {u.pointsToWin}
-            <select disabled={!amHost} value={view.settings.target} onChange={(e) => send({ t: 'settings', target: Number(e.target.value) })}>
-              {TARGETS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            {u.timeToPlay}
-            <select disabled={!amHost} value={view.settings.seconds} onChange={(e) => send({ t: 'settings', seconds: Number(e.target.value) })}>
-              {TIMERS.map((t) => (
-                <option key={t} value={t}>
-                  {t} s
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            {u.whoDecides}
-            <select disabled={!amHost} value={view.settings.vote ? 'vote' : 'judge'} onChange={(e) => send({ t: 'settings', vote: e.target.value === 'vote' })}>
-              <option value="judge">{u.judgeTakesTurns}</option>
-              <option value="vote">{u.everyoneVotes}</option>
-            </select>
-          </label>
-        </div>
-      </div>
+      <Rules view={view} send={send} />
       {amHost ? (
         <button className="uh-btn uh-btn-go uh-btn-wide" disabled={online < MIN_PLAYERS} onClick={() => send({ t: 'start' })}>
           {u.start}
@@ -462,6 +424,54 @@ function Lobby({ view, send, onLeave }: { view: RoomView; send: Send; onLeave: (
       <button className="uh-link" onClick={onLeave}>
         {u.leaveRoom}
       </button>
+    </div>
+  );
+}
+
+/** The room's rules: the host changes them in the lobby and between games (on the Over screen). */
+function Rules({ view, send }: { view: RoomView; send: Send }) {
+  const amHost = view.host === view.you;
+  const u = useUi();
+  const deck: Deck = view.settings.deck ?? 'en';
+  return (
+    <div className="uh-panel">
+      <p className="uh-label">{u.rulesTitle}</p>
+      <div className="uh-settings">
+        <label>
+          {u.cards}
+          <select disabled={!amHost} value={deck} onChange={(e) => send({ t: 'settings', deck: e.target.value as Deck })}>
+            <option value="en">English</option>
+            <option value="bg">Български</option>
+          </select>
+        </label>
+        <label>
+          {u.pointsToWin}
+          <select disabled={!amHost} value={view.settings.target} onChange={(e) => send({ t: 'settings', target: Number(e.target.value) })}>
+            {TARGETS.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          {u.timeToPlay}
+          <select disabled={!amHost} value={view.settings.seconds} onChange={(e) => send({ t: 'settings', seconds: Number(e.target.value) })}>
+            {TIMERS.map((t) => (
+              <option key={t} value={t}>
+                {t} s
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          {u.whoDecides}
+          <select disabled={!amHost} value={view.settings.vote ? 'vote' : 'judge'} onChange={(e) => send({ t: 'settings', vote: e.target.value === 'vote' })}>
+            <option value="judge">{u.judgeTakesTurns}</option>
+            <option value="vote">{u.everyoneVotes}</option>
+          </select>
+        </label>
+      </div>
     </div>
   );
 }
@@ -588,6 +598,11 @@ function Table({ view, send, left, onLeave }: { view: RoomView; send: Send; left
                 <button className="uh-btn uh-btn-go" onClick={() => send(view.voting ? { t: 'vote', entry: pick } : { t: 'pick', entry: pick })}>
                   {view.voting ? u.voteThis : u.thisWins}
                 </button>
+                {view.judgeLeft && view.host === view.you && (
+                  <button className="uh-btn" onClick={() => send({ t: 'pick', entry: pick })}>
+                    {u.hostPicks}
+                  </button>
+                )}
               </div>
             )}
           </>
@@ -668,6 +683,14 @@ function Over({ view, send, onLeave }: { view: RoomView; send: Send; onLeave: ()
           </div>
         </div>
       )}
+      <div className="uh-panel uh-codebox">
+        <span>{u.roomCode}</span>
+        <b className="uh-bigcode">{view.code}</b>
+        <button className="uh-btn uh-btn-go" onClick={() => invite(view.code, u)}>
+          {u.inviteFriends}
+        </button>
+      </div>
+      <Rules view={view} send={send} />
       {view.host === view.you ? (
         <button className="uh-btn uh-btn-go uh-btn-wide" onClick={() => send({ t: 'start' })}>
           {u.playAgain}
