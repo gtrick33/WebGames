@@ -207,11 +207,15 @@ export function place(prev: State, slot: number, row: number, col: number): { st
   return { state, result: { ok: true, cleared: [...clearedSet], lines, points } };
 }
 
-/** Spoiler-free share line: score band squares plus the run's numbers (the best streak as its multiplier). */
+/**
+ * Spoiler-free share line: score band squares plus the run's numbers, in words (share cards drop the
+ * emoji). The best streak is its move count with its multiplier, left out when there was none.
+ */
 export function resultLine(score: number, lines: number, bestStreak: number): string {
   const bands = [100, 300, 600, 1000, 1500, 2500, 4000, 6000];
   const filled = bands.filter((b) => score >= b).length;
-  return `${'🟧'.repeat(filled)}${'⬜'.repeat(bands.length - filled)}\n🧹 ${lines} lines · 🔥 ×${streakMultiplier(bestStreak)}`;
+  const streak = bestStreak > 1 ? ` · 🔥 best streak ${bestStreak} (×${streakMultiplier(bestStreak)})` : '';
+  return `${'🟧'.repeat(filled)}${'⬜'.repeat(bands.length - filled)}\n🧹 ${lines} ${lines === 1 ? 'line' : 'lines'}${streak}`;
 }
 
 /** A round in progress as plain data (to resume today's deal): the tray as piece numbers. */

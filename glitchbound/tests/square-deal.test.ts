@@ -98,3 +98,24 @@ describe('Square Deal', () => {
     }
   });
 });
+
+describe('Square Deal scoring details', () => {
+  it('resets the streak on a move that clears nothing', () => {
+    const s = newGame(1);
+    const dot: Piece = { id: 99, cells: [[0, 0]], w: 1, h: 1, color: 2 };
+    for (let c = 1; c < SIZE; c++) s.board[c] = 1;
+    s.tray = [dot, dot, null];
+    s.streak = 3;
+    const cleared = place(s, 0, 0, 0);
+    expect(cleared.state.streak).toBe(4);
+    expect(cleared.result.points).toBe(1 + Math.round(linePoints(1) * streakMultiplier(4)));
+    const plain = place(cleared.state, 1, 4, 4);
+    expect(plain.state.streak).toBe(0);
+    expect(plain.state.bestStreak).toBe(4);
+  });
+
+  it('writes the share line in words: one line, and the best streak as a count', () => {
+    expect(resultLine(59, 1, 1)).toBe('⬜⬜⬜⬜⬜⬜⬜⬜\n🧹 1 line');
+    expect(resultLine(320, 5, 3)).toBe('🟧🟧⬜⬜⬜⬜⬜⬜\n🧹 5 lines · 🔥 best streak 3 (×2)');
+  });
+});
