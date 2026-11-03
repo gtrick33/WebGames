@@ -96,8 +96,8 @@
 .whz-icon {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: 2px solid var(--whz-ink);
   border-radius: 12px;
   background: #fff;
@@ -337,7 +337,38 @@
 .whz-ask {
   overflow-y: hidden;
 }
+/* A fade and "↓ N more" while questions are scrolled out of view below. */
+.whz-qs-wrap {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+}
+.whz-qs-wrap.has-more::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 34px;
+  background: linear-gradient(transparent, var(--whz-paper));
+  pointer-events: none;
+}
+.whz-more {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  z-index: 1;
+  padding: 2px 10px;
+  border: 2px solid var(--whz-ink);
+  border-radius: 999px;
+  background: var(--whz-sand);
+  font-size: 12.5px;
+  font-weight: 800;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
 .whz-qs {
+  position: relative;
   display: grid;
   align-content: start;
   gap: 6px;
@@ -356,7 +387,8 @@
   justify-content: space-between;
   gap: 8px;
   width: 100%;
-  min-height: 42px;
+  height: 100%;
+  min-height: 44px;
   padding: 6px 11px;
   border: 2px solid var(--whz-ink);
   border-radius: 12px;
@@ -705,6 +737,32 @@
   }
   .whz-parcel-talk {
     width: 44px;
+  }
+}
+/* Wide stages: two columns of questions. Short ones (phone landscape): a slimmer top so the list gets the room. */
+@container (min-width: 640px) {
+  .whz-qs {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@container (max-height: 460px) {
+  .whz-ask .whz-parcel-talk,
+  .whz-ask .whz-hint {
+    display: none;
+  }
+  .whz-ask .whz-bubble {
+    min-height: 0;
+    padding: 3px 10px;
+    font-size: 13.5px;
+  }
+  .whz-ask {
+    gap: 6px;
+    padding-block: 8px;
+  }
+}
+@container (max-height: 460px) and (min-width: 480px) {
+  .whz-qs {
+    grid-template-columns: 1fr 1fr;
   }
 }
 @media (prefers-reduced-motion: reduce) {
