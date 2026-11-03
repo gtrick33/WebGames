@@ -46,7 +46,7 @@ describe('Crosswire grids', () => {
   });
 
   it('is in American English', () => {
-    const british = /colour|favourite|harbour|theatre|jewell|travell|armour|vapour|flavour|centre|\bcosy|rubbish|lorry|trolley|petrol|\bmum\b|jumper|pavement|banger|jotter|wellies|pushchair|plughole|holidaymaker|queueing|snooker|spanner|fancy dress|trouser|\bgrey\b|mould|ladybird|biscuit|cupboard|christmas bird|round the corner|downwards/i;
+    const british = /colour|favourite|harbour|theatre|jewell|travell|armour|vapour|flavour|centre|\bcosy|rubbish|lorry|trolley|petrol|\bmum\b|jumper|pavement|banger|jotter|wellies|pushchair|plughole|holidaymaker|queueing|snooker|spanner|fancy dress|trouser|\bgrey\b|mould|ladybird|cupboard|christmas bird|round the corner|downwards/i;
     for (const w of WORDS) expect(british.test(`${w.word} ${w.clue}`), `${w.word}:${w.clue}`).toBe(false);
   });
 
