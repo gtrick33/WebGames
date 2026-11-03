@@ -495,6 +495,9 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
           <button className="gl-icon" onClick={() => (hud.over ? toMenu() : setPaused((p) => !p))} aria-label={hud.over ? 'Menu' : 'Pause'}>
             {hud.over ? '☰' : 'II'}
           </button>
+          <button className="gl-icon" onClick={toggleMute} aria-label={save.muted ? 'Turn sound on' : 'Turn sound off'}>
+            {save.muted ? '🔇' : '🔊'}
+          </button>
           <GameMenuButton className="gl-icon" />
         </span>
         <div className="gl-score">

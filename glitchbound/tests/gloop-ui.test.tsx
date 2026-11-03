@@ -74,6 +74,15 @@ describe('Gloop in the page', () => {
     expect(types(report)).toEqual(['start']);
   });
 
+  it('turns the sound off and on from the top row during play', () => {
+    render(<Gloop host={{ report: vi.fn() }} restartKey={0} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Play endless' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Turn sound off' }));
+    expect(stored().muted).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Turn sound on' }));
+    expect(stored().muted).toBe(false);
+  });
+
   it('pauses on Shift+P and when the tab is hidden (GL-11, GL-14)', () => {
     render(<Gloop host={{ report: vi.fn() }} restartKey={0} />);
     fireEvent.click(screen.getByRole('button', { name: 'Play endless' }));

@@ -254,6 +254,18 @@
   margin-bottom: auto;
 }
 
+/* Narrow stages: room in the top row for pause, sound and the menu button beside the score. */
+@media (max-width: 400px) {
+  .gl-hud {
+    gap: 6px;
+  }
+  .gl-hud .game-menu-pair {
+    gap: 6px;
+  }
+  .gl-score b {
+    font-size: 30px;
+  }
+}
 /* Narrow stages: the menu starts below the sound and menu buttons, so the blob art never covers them. */
 @media (max-width: 480px) {
   .gl-menu {
