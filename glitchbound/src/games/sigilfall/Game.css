@@ -5970,6 +5970,21 @@
     white-space: nowrap;
   }
 }
+/* a phone held upright, in the page: the words matter more than the pictures */
+@container (max-width: 420px) {
+  .cs-mode {
+    justify-content: center;
+    padding: 2px;
+    text-align: center;
+  }
+  .cs-mode-glyph {
+    display: none;
+  }
+  .cs-mode strong {
+    font-size: 11px;
+    white-space: normal;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .cs-mode::after,
   .rb-veil-word,
