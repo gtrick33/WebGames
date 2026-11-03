@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DAILY_LEVELS, dailyLevel, ladderLevel, makeLevel, ORDERED_FROM, rng, specFor } from '../src/games/color-lab/levels';
+import { DAILY_LEVELS, dailyLevel, ladderLevel, makeLevel, MYSTERY_SLACK, ORDERED_FROM, rng, specFor } from '../src/games/color-lab/levels';
 import { challengeScore, endStats, pointsFor, reduceLevel, resultOf, shareText, starsFor, startLevel, isHidden, MAX_POINTS, UNDER_PAR_BONUS } from '../src/games/color-lab/rules';
 import { almostSolved, usefulMoves, boardKey, canPour, doneTubes, hint, isSolved, lowerBound, pour, solve, type Board } from '../src/games/color-lab/sort';
 import { emptyClSave, loadCl, recordLevel, sanitizeCl, clStats, STORE_KEY, updateCl } from '../src/games/color-lab/store';
@@ -302,6 +302,30 @@ describe('fixes from QA', () => {
     expect(challengeScore([r(8, 10), r(10, 10)])).toBe(2 * MAX_POINTS + 2 * UNDER_PAR_BONUS);
     expect(endStats('daily', [r(8, 10)], true).score).toBe(MAX_POINTS + 2 * UNDER_PAR_BONUS);
     expect(endStats('daily', [r(8, 10)]).score).toBe(MAX_POINTS);
+  });
+
+  it('every pour counts in the Par Challenge: undo and restart put colors back, not moves', () => {
+    const level = { spec: { colors: 2, cap: 2, empty: 1, odd: false }, board: b([2, [1, 0]], [2, [0, 1]], [2, []]), par: 3, parOptimal: true, palette: [0, 1], mystery: false };
+    let p = startLevel(level, 'precision');
+    p = reduceLevel(reduceLevel(p, { type: 'pour', from: 0, to: 2 }), { type: 'undo' });
+    expect(p.board).toEqual(level.board);
+    expect(p.moves).toBe(1);
+    p = reduceLevel(reduceLevel(p, { type: 'pour', from: 0, to: 2 }), { type: 'restart' });
+    expect(p.moves).toBe(2);
+    expect(reduceLevel(p, { type: 'pour', from: 0, to: 2 }).status).toBe('failed');
+    // Elsewhere undo still gives the move back, and counts the undo.
+    const d = reduceLevel(reduceLevel(startLevel(level, 'daily'), { type: 'pour', from: 0, to: 2 }), { type: 'undo' });
+    expect(d).toMatchObject({ moves: 0, undos: 1 });
+  });
+
+  it('Endless and the Par Challenge score the levels solved; mystery pars allow for the hidden layers', () => {
+    expect(endStats('endless', [r(12, 10), r(30, 10)])).toMatchObject({ score: 2, stats: { levels: 2 } });
+    expect(endStats('precision', [r(10, 10)])).toMatchObject({ score: 1, stats: { parLevels: 1 } });
+    const m = ladderLevel(42, 10);
+    expect(m.mystery).toBe(true);
+    expect(m.parSlack).toBe(MYSTERY_SLACK);
+    expect(m.par).toBe(m.solution!.length + MYSTERY_SLACK);
+    expect(shareText({ label: 'Daily #3', results: [r(10, 10)], url: 'u' })).toContain('Color Lab Daily #3');
   });
 
   it('two tabs: a write goes on top of the stored save, and a daily puzzle is recorded once', () => {

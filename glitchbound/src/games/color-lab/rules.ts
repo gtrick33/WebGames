@@ -48,7 +48,7 @@ function reveal(board: Board, seen: boolean[][]): boolean[][] {
   });
 }
 
-export function startLevel(level: Level, mode: Mode, strict = false): LevelState {
+export function startLevel(level: Level, mode: Mode, strict = mode === 'precision'): LevelState {
   const board = cloneBoard(level.board);
   const seen = reveal(
     board,
@@ -148,13 +148,16 @@ export const underParBonus = (rs: readonly LevelResult[]): number => rs.reduce((
 /** A friends' challenge round's score: the points plus the under-par bonus. */
 export const challengeScore = (rs: readonly LevelResult[]): number => totalPoints(rs) + underParBonus(rs);
 
-/** What the arcade gets at the end of a run. */
+/**
+ * What the arcade gets at the end of a run. The daily (and a challenge) scores points; Endless and the
+ * Par Challenge score the levels solved, so a long run doesn't outrank a perfect daily just by lasting.
+ */
 export function endStats(mode: Mode, rs: readonly LevelResult[], challenge = false): { score: number; stats: Record<string, number> } {
   const stats: Record<string, number> = { stars: totalStars(rs), underPar: underPar(rs) };
   const solved = rs.filter((r) => r.solved).length;
   if (mode === 'endless') stats.levels = solved;
   if (mode === 'precision') stats.parLevels = solved;
-  const score = challenge ? challengeScore(rs) : totalPoints(rs);
+  const score = challenge ? challengeScore(rs) : mode === 'endless' || mode === 'precision' ? solved : totalPoints(rs);
   return { score, stats };
 }
 

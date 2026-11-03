@@ -14,10 +14,12 @@ export const COLOR_COUNT = 16;
 export const CLASSIC_UNTIL = '2026-10-18';
 const CLASSIC_COLORS = 12;
 /**
- * From this day on, the harder of the daily's two twist puzzles is always puzzle 5. Earlier dailies
- * stay exactly as they were published.
+ * From this day on, the harder of the daily's two twist puzzles is always puzzle 5, and a mystery
+ * puzzle's par gets MYSTERY_SLACK extra moves (its par is solved with the hidden layers known).
+ * Earlier dailies stay exactly as they were published.
  */
 export const ORDERED_FROM = '2026-11-16';
+export const MYSTERY_SLACK = 2;
 
 /** Small, fast, seedable PRNG (mulberry32). Floats in [0, 1). */
 export function rng(seed: number): () => number {
@@ -175,6 +177,8 @@ function publishedDaily(day: string, index: number, mystery: boolean): Level {
 /** Harder: higher par, then more colors. */
 const harder = (a: Level, b: Level): boolean => a.par > b.par || (a.par === b.par && a.spec.colors > b.spec.colors);
 
+/** A mystery level's par allows for not seeing the hidden layers. */
+const withMysterySlack = (lv: Level): Level => (lv.mystery ? { ...lv, par: lv.par + MYSTERY_SLACK, parSlack: MYSTERY_SLACK } : lv);
 
 /** Levels are pure functions of their inputs and slow to make, so each is made once per page. */
 const levelMemo = new Map<string, Level>();
@@ -199,7 +203,7 @@ export function dailyLevel(day: string, index: number): Level {
     const a = publishedDaily(day, 3, false);
     const b = publishedDaily(day, 4, false);
     const [easy, hard] = harder(a, b) ? [b, a] : [a, b];
-    return index === 3 ? easy : { ...hard, mystery };
+    return index === 3 ? easy : withMysterySlack({ ...hard, mystery });
   });
 }
 
@@ -207,7 +211,7 @@ export function dailyLevel(day: string, index: number): Level {
 export function ladderLevel(seed: number, step: number): Level {
   return memo(`l:${seed}:${step}`, () => {
     const r = rng(seed);
-    return makeLevel(r, specFor(step, r), step >= 6 && step % 4 === 2);
+    return withMysterySlack(makeLevel(r, specFor(step, r), step >= 6 && step % 4 === 2));
   });
 }
 

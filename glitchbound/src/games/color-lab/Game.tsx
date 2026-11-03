@@ -82,8 +82,8 @@ function levelReq(run: Run): LevelReq {
   return { kind: 'ladder', seed, step: run.step };
 }
 
-/** Every pour counts in friends' challenges (undo can't buy a better score). */
-const isStrict = (run: Run): boolean => !!run.challenge;
+/** Every pour counts in the Par Challenge and in friends' challenges (undo can't buy a better score). */
+const isStrict = (run: Run): boolean => run.mode === 'precision' || !!run.challenge;
 
 /** The level a run is on, with the help already paid for on it (left halfway, then resumed). */
 function levelState(run: Run, s: ClSave): LevelState | null {
@@ -344,7 +344,7 @@ function ColorLab({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     }
     // Precision failure: try the same level again.
     if (run.mode === 'precision' && level.status === 'failed') {
-      setLevel(startLevel(level.level, 'precision', false));
+      setLevel(startLevel(level.level, 'precision'));
       return;
     }
     const r = { ...run, step: run.step + 1 };
@@ -496,7 +496,7 @@ function Menu(props: {
               <b className="cl-mono">{totalPoints(todays!)}</b> / {DAILY_LEVELS * MAX_POINTS}
             </p>
             <div className="cl-row">
-              <ShareButton label={`#${dailyNumber(today)}`} results={todays!} streak={stats.streak} />
+              <ShareButton label={`Daily #${dailyNumber(today)}`} results={todays!} streak={stats.streak} />
               <button className="cl-btn cl-btn-ghost" onClick={() => props.onStart('daily')}>
                 Review
               </button>
@@ -526,7 +526,7 @@ function Menu(props: {
         </section>
         <section className="cl-card cl-card-mode">
           <span className="cl-kicker">Par Challenge</span>
-          <p className="cl-card-text">Solve each puzzle in par moves or fewer. Run out of moves three times and you’re done.</p>
+          <p className="cl-card-text">Solve each puzzle in par moves or fewer. Every pour counts: undo won’t give moves back. Run out three times and you’re done.</p>
           {save.precision.bestLevels > 0 && <p className="cl-muted cl-small">Best: {save.precision.bestLevels} levels</p>}
           <button className="cl-btn" onClick={() => props.onStart('precision')}>
             Start challenge
@@ -1106,6 +1106,7 @@ function LevelDone({ run, state, loading, onNext, onEndRun }: { run: Run; state:
           <p className="cl-done-line cl-mono">
             {r.moves} moves · par {r.par}
             {quick && <abbr title="Par found by a quick search: you may beat it">*</abbr>}
+            {state.strict ? '' : state.undos ? ` · ${state.undos} undo${state.undos > 1 ? 's' : ''}` : ' · no undos'}
           </p>
           {quick && <p className="cl-muted cl-small">* Par found by a quick search: you may beat it.</p>}
           {state.level.parSlack ? <p className="cl-muted cl-small">Par includes {state.level.parSlack} extra moves for the hidden layers.</p> : null}
@@ -1193,7 +1194,7 @@ function Summary({ run, save, fromDaily, onMenu, onAgain }: { run: Run; save: Cl
             See the scoreboard
           </a>
         ) : run.mode === 'daily' ? (
-          <ShareButton label={`#${dailyNumber(run.day)}`} results={run.results} streak={streak} />
+          <ShareButton label={`Daily #${dailyNumber(run.day)}`} results={run.results} streak={streak} />
         ) : (
           <button className="cl-btn cl-btn-go" onClick={onAgain}>
             Play again

@@ -52,7 +52,7 @@ describe('Color Lab: Endless and Par Challenge runs are reported (CL-01)', () =>
     solveByTaps(ladderLevel(SEED, 0));
     fireEvent.click(screen.getByRole('button', { name: 'End run' }));
     expect(screen.getByText('Endless run over')).toBeTruthy();
-    expect(ends(events)).toEqual([{ type: 'end', score: 10, stats: { stars: 3, underPar: 1, levels: 1 } }]);
+    expect(ends(events)).toEqual([{ type: 'end', score: 1, stats: { stars: 3, underPar: 1, levels: 1 } }]);
     expect(loadCl().endless).toMatchObject({ runs: 1, bestLevels: 1 });
     cleanup();
     expect(ends(events)).toHaveLength(1);
@@ -63,7 +63,7 @@ describe('Color Lab: Endless and Par Challenge runs are reported (CL-01)', () =>
     fireEvent.click(screen.getByText('Start challenge'));
     solveByTaps(ladderLevel(SEED, 0));
     fireEvent.click(screen.getByRole('button', { name: 'End the run and go back to the menu' }));
-    expect(ends(a.events)).toEqual([{ type: 'end', score: 10, stats: { stars: 3, underPar: 1, parLevels: 1 } }]);
+    expect(ends(a.events)).toEqual([{ type: 'end', score: 1, stats: { stars: 3, underPar: 1, parLevels: 1 } }]);
     expect(screen.getByText('Best: 1 levels')).toBeTruthy();
     cleanup();
 
