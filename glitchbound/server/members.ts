@@ -1,6 +1,6 @@
 import { liveRules } from './catalogSettings';
 import type { Badge, BestView, Me, QuestView } from '../src/platform/apiTypes';
-import { currentStreak } from '../src/platform/daily';
+import { currentStreak, longestStreak } from '../src/platform/daily';
 import { levelForXp, questsForDay, xpForLevel, type QuestDef } from '../src/platform/progression';
 import type { Env } from './http';
 import { isAdmin, roleOf, type UserRow } from './session';
@@ -130,16 +130,4 @@ export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me>
   };
 }
 
-export function longestStreak(days: string[]): number {
-  const sorted = [...new Set(days)].sort();
-  let best = 0;
-  let run = 0;
-  let prev = 0;
-  for (const d of sorted) {
-    const t = Date.parse(`${d}T12:00:00Z`);
-    run = prev && t - prev === 86400_000 ? run + 1 : 1;
-    best = Math.max(best, run);
-    prev = t;
-  }
-  return best;
-}
+export { longestStreak };

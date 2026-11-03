@@ -75,7 +75,41 @@ export interface RunEndResult {
   rank: number | null;
   dailyCompleted: boolean;
   quests: QuestView[];
+  /** Trophy Shelf pins this round earned. */
+  newPins?: string[];
   error?: string;
+}
+
+export interface FriendRow {
+  id: string;
+  nickname: string;
+  level: number;
+  points: number;
+  rank: string;
+  lastGame: string | null;
+  lastAt: number | null;
+}
+
+export interface FriendsView {
+  code: string;
+  friends: FriendRow[];
+  blocked: { id: string; nickname: string }[];
+}
+
+export interface FriendInvite {
+  id: number;
+  game: string;
+  from: string;
+  href: string;
+}
+
+export interface PinsView {
+  pins: { id: string; at: number }[];
+  points: number;
+  rank: string;
+  rarity: { players: number; held: Record<string, number> };
+  /** Whose shelf this is, when it is a friend's. */
+  owner: { nickname: string; level: number } | null;
 }
 
 export interface LeaderRow {

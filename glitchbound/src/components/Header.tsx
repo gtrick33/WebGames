@@ -126,6 +126,12 @@ function AccountMenu() {
         <Link href="/me" className="account-item" onClick={() => setOpen(false)}>
           <Icon name="user" size={18} /> {t('Profile & quests')} {ready > 0 && <span className="pill-count">{ready}</span>}
         </Link>
+        <Link href="/trophies" className="account-item" onClick={() => setOpen(false)}>
+          <Icon name="star" size={18} /> {t('Trophy Shelf')}
+        </Link>
+        <Link href="/me/friends" className="account-item" onClick={() => setOpen(false)}>
+          <Icon name="user" size={18} /> {t('Friends')}
+        </Link>
         <Link href="/leaderboards" className="account-item" onClick={() => setOpen(false)}>
           <Icon name="crown" size={18} /> {t('Leaderboards')}
         </Link>

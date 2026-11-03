@@ -157,3 +157,18 @@ export function dailyShareText(c: DailyChallenge, best: number, streak: number, 
     url,
   ].join('\n');
 }
+
+/** The longest run of consecutive days in a list. */
+export function longestStreak(days: Iterable<string>): number {
+  const sorted = [...new Set(days)].sort();
+  let best = 0;
+  let run = 0;
+  let prev = 0;
+  for (const d of sorted) {
+    const t = Date.parse(`${d}T12:00:00Z`);
+    run = prev && t - prev === 86400_000 ? run + 1 : 1;
+    best = Math.max(best, run);
+    prev = t;
+  }
+  return best;
+}

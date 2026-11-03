@@ -1,10 +1,10 @@
-/* The place of the arcade's welcome, while its code arrives */
+/* The place of the arcade's welcome and the best games, while their code arrives */
 .hero-holder {
-  min-height: 480px;
+  min-height: 1060px;
 }
 @media (max-width: 900px) {
   .hero-holder {
-    min-height: 620px;
+    min-height: 1400px;
   }
 }
 

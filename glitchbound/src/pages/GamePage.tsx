@@ -34,6 +34,8 @@ import '../components/Leaderboard.css';
 // Its code starts loading with the game page's own, so the board is there at the first paint instead of
 // growing into the column a moment later and pushing everything under it down.
 const MiniLeaderboard = lazyPage(() => import('../components/Leaderboard').then((m) => m.MiniLeaderboard));
+const GamePins = lazy(() => import('../components/Pins').then((m) => ({ default: m.GamePins })));
+const PinToast = lazy(() => import('../components/Pins').then((m) => ({ default: m.PinToast })));
 void MiniLeaderboard.preload()?.catch(() => undefined);
 const DailyCompare = lazy(fresh(() => import('../components/DailyCompare').then((m) => ({ default: m.DailyCompare }))));
 import { openSignIn } from '../components/openSignIn';
@@ -588,6 +590,8 @@ export function GamePage({ game }: { game: GameEntry }) {
   };
   const [last, setLast] = useState<LastRound | null>(null);
   const [burst, setBurst] = useState(0);
+  const [newPins, setNewPins] = useState<string[]>([]);
+  const clearPins = useCallback(() => setNewPins([]), []);
   // The round the stage plays. Before Play it follows the challenge; a running game keeps its round
   // (a rematch shows "Play round N" in the dock instead of yanking the game away).
   const liveSpec = challengeSpecOf(chal.state);
@@ -745,6 +749,7 @@ export function GamePage({ game }: { game: GameEntry }) {
             setLast((prev) => (prev && prev.n === n ? { ...prev, server } : prev));
             setBoardKey((k) => k + 1);
             if (server.newBest) setBurst((b) => b + 1);
+            if (server.newPins?.length) setNewPins(server.newPins);
           } catch (err) {
             // A round the server refuses (too short, implausible score) comes back as a 422 with the reason.
             const server = err instanceof ApiError && err.status === 422 ? ({ ok: false, error: err.code } as RunEndResult) : null;
@@ -937,6 +942,11 @@ export function GamePage({ game }: { game: GameEntry }) {
           />
           )}
           {burst > 0 && <Burst key={burst} />}
+          {newPins.length > 0 && (
+            <Suspense fallback={null}>
+              <PinToast ids={newPins} onDone={clearPins} />
+            </Suspense>
+          )}
         </div>
 
         <aside className="game-side" aria-label={t('{game} details', { game: game.title })}>
@@ -1078,6 +1088,9 @@ export function GamePage({ game }: { game: GameEntry }) {
             </Link>
           </div>
 
+          <Suspense fallback={null}>
+            <GamePins game={game} refreshKey={boardKey} />
+          </Suspense>
           <AdSlot placement="game" />
         </aside>
       </div>

@@ -6,6 +6,7 @@ import { liveRules } from '../../../server/catalogSettings';
 import { bad, int, json, readJson, sameOrigin, type Ctx } from '../../../server/http';
 import { clientDay, questViews } from '../../../server/members';
 import { requireUser } from '../../../server/session';
+import { syncPins } from '../../../server/pins';
 import { refusal } from '../../../server/plausible';
 import { listed } from '../../../server/staff';
 
@@ -108,6 +109,7 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
     rank: rankRow ? rankRow.n + 1 : null,
     dailyCompleted,
     quests: await questViews(env, user, day),
+    newPins: await syncPins(env, user),
   };
   return json(result);
 }

@@ -66,7 +66,8 @@ export function questsForDay(userId: string, day: string, games: GameEntry[], ha
   return picked;
 }
 
-const BLOCKED = ['admin', 'moderator', 'glitchbound', 'fuck', 'shit', 'cunt', 'nigg', 'fag', 'rape', 'nazi', 'hitler'];
+/** Words no typed name may carry, here and in live rooms. */
+export const BLOCKED = ['admin', 'moderator', 'glitchbound', 'fuck', 'shit', 'cunt', 'nigg', 'fag', 'rape', 'nazi', 'hitler'];
 
 /** Returns an error message, or null when the nickname is acceptable. */
 export function validateNickname(raw: unknown): string | null {

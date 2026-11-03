@@ -40,7 +40,7 @@ describe('homepage', () => {
     expect(within(screen.getByRole('list', { name: 'The GlitchBound promise' })).getAllByRole('listitem').map((li) => li.textContent?.trim())).toEqual(['Free, always', 'No sign-up', 'Nothing to install', 'Phone or computer']);
     expect(within(hero).queryByRole('button', { name: /Sign in/ })).toBeNull();
     // Start here: the four flagships, each one link.
-    const start = screen.getByRole('region', { name: 'Our best games' });
+    const start = await screen.findByRole('region', { name: 'Our best games' });
     const flagships = within(start).getAllByRole('link').map((a) => a.getAttribute('href'));
     expect(flagships).toHaveLength(4);
     // Their Play starts the game on arrival (#24); Quizbelief lives at its own name.

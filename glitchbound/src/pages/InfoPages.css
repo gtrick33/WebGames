@@ -1,5 +1,6 @@
 .info-page {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 22px;
   padding-top: clamp(28px, 5vw, 64px);
 }
@@ -418,6 +419,7 @@
 /* ---------------------------------------------------------------- profile tabs */
 .profile-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 4px;
 }
@@ -433,6 +435,7 @@
   color: var(--fg-2);
   font-weight: 750;
   text-decoration: none;
+  white-space: nowrap;
 }
 .profile-tab[aria-current='page'] {
   border-color: var(--ink);

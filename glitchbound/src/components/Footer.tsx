@@ -27,6 +27,7 @@ export function Footer() {
               <Link href="/daily">{t('Daily Challenge')}</Link>
               <Link href="/live">{t('Live rooms')}</Link>
               <Link href="/leaderboards">{t('Leaderboards')}</Link>
+              <Link href="/trophies">{t('Trophy Shelf')}</Link>
               {games.slice(0, 4).map((g) => (
                 <Link key={g.slug} href={gameUrl(g.slug)}>
                   {g.title}

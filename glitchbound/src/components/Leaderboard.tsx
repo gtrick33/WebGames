@@ -11,6 +11,7 @@ import { openSignIn } from './openSignIn';
 import './Leaderboard.css';
 
 type Period = 'all' | '24h';
+export type Scope = 'all' | 'friends';
 
 interface BoardState<T> {
   status: 'loading' | 'ok' | 'error';
@@ -49,9 +50,9 @@ function useRequest<T>(path: string, deps: unknown[], pick: (data: unknown) => {
 const BOARD_ROWS = 50;
 
 /** A game's board: the members' best scores, ranked by the server. */
-export function useBoard(game: string, period: Period, refreshKey = 0): BoardState<LeaderRow> {
+export function useBoard(game: string, period: Period, refreshKey = 0, scope: Scope = 'all'): BoardState<LeaderRow> {
   const { me } = useAccount();
-  return useRequest<LeaderRow>(`/api/leaderboard?game=${encodeURIComponent(game)}&period=${period}`, [refreshKey, me?.id], (r) => r as { rows: LeaderRow[]; mine: LeaderRow | null });
+  return useRequest<LeaderRow>(`/api/leaderboard?game=${encodeURIComponent(game)}&period=${period}${scope === 'friends' ? '&scope=friends' : ''}`, [refreshKey, me?.id], (r) => r as { rows: LeaderRow[]; mine: LeaderRow | null });
 }
 
 /** The Hall of Fame: the members with the most crowns, podiums and records across every game. */
@@ -182,21 +183,54 @@ export function BoardEmpty({ text }: { text: string }) {
   );
 }
 
+/** Everyone, or you and your friends (members only: a guest has no friends to look at). */
+export function ScopeSwitch({ scope, onChange }: { scope: Scope; onChange: (s: Scope) => void }) {
+  const t = useT();
+  const { me } = useAccount();
+  if (!me) return null;
+  return (
+    <div className="seg" role="group" aria-label={t('Who to show')}>
+      <button className={scope === 'all' ? 'is-on' : ''} aria-pressed={scope === 'all'} onClick={() => onChange('all')}>
+        {t('Everyone')}
+      </button>
+      <button className={scope === 'friends' ? 'is-on' : ''} aria-pressed={scope === 'friends'} onClick={() => onChange('friends')}>
+        {t('Friends')}
+      </button>
+    </div>
+  );
+}
+
+/** A friends board with nobody on it yet. */
+export function FriendsEmpty() {
+  const t = useT();
+  return (
+    <div className="board-empty">
+      <Icon name="user" size={28} />
+      <p>{t('No friends on this board yet.')}</p>
+      <Link href="/me/friends" className="btn btn-sm">
+        {t('Add a friend')}
+      </Link>
+    </div>
+  );
+}
+
 /** Top 5 for a game page side panel; a guest with a best on this device sees where it would land. */
 export function MiniLeaderboard({ game, refreshKey, embedded = false }: { game: GameEntry; refreshKey: number; embedded?: boolean }) {
   const t = useT();
   const { me } = useAccount();
-  const board = useBoard(game.slug, 'all', refreshKey);
+  const [scope, setScope] = useState<Scope>('all');
+  const board = useBoard(game.slug, 'all', refreshKey, scope);
   const best = useSave().games[game.slug]?.best.score ?? 0;
   const top = board.rows.slice(0, 5);
   const rank = !me && best > 0 && board.status === 'ok' && top.length > 0 ? guestRank(board.rows, best) : null;
   const body = (
     <>
+      <ScopeSwitch scope={scope} onChange={setScope} />
       {board.status === 'loading' && !top.length && <p className="side-muted">{t('Loading…')}</p>}
       {top.length ? (
         <LeaderTable rows={top} mine={top.some((r) => r.you) ? null : (board.rows.find((r) => r.you) ?? board.mine)} compact />
       ) : (
-        board.status === 'ok' && <BoardEmpty text="No ranked scores yet. The first one takes the crown." />
+        board.status === 'ok' && (scope === 'friends' ? <FriendsEmpty /> : <BoardEmpty text="No ranked scores yet. The first one takes the crown." />)
       )}
       {board.status === 'error' && <BoardError text="The leaderboard is offline right now. Your game still works." onRetry={board.retry} />}
       {rank !== null && (
