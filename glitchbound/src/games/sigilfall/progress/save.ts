@@ -1,3 +1,4 @@
+import { HAIRS, SKINS, type Face } from './character';
 import { CLASS_IDS, MAX_LEVEL, xpToNext } from '../data/classes';
 import { BASE_DEFS, ITEM_DEFS, MINOR_MODS } from '../data/items';
 import { QUEST_DEFS } from '../data/quests';
@@ -9,7 +10,7 @@ import { RARITIES, SLOTS } from '../data/types';
 import { STAT_ROLL } from '../data/items';
 import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME, allItems, HELD_MAX } from './character';
 import { itemClass, itemSlot, newUid } from './items';
-import { grantMounts, learnLooks, LOOK_SLOTS, tidyWardrobe } from './wardrobe';
+import { grantMounts, grantWarden, syncRift, learnLooks, LOOK_SLOTS, tidyWardrobe } from './wardrobe';
 import { MOUNT_DEFS } from '../data/mounts';
 import { KEY_MIN, MAX_IL } from '../data/keystones';
 import { QM_PRICE } from '../data/vendors';
@@ -99,6 +100,15 @@ export interface SaveFile {
 }
 
 export type LoadStatus = 'new' | 'ok' | 'recovered' | 'reset' | 'newer' | 'blocked';
+
+/** A hero's chosen looks, field by field; anything else is no choice at all. */
+function parseFace(raw: unknown): Face | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const f = raw as Record<string, unknown>;
+  if (typeof f.skin !== 'number' || typeof f.hair !== 'number' || !SKINS[f.skin] || !HAIRS[f.hair]) return undefined;
+  const style = f.style === 'pony' || f.style === 'long' ? f.style : 'short';
+  return { skin: f.skin, hair: f.hair, style, beard: f.beard === true };
+}
 
 export const emptySave = (): SaveFile => ({ v: SAVE_VERSION, heroes: Array(HERO_SLOTS).fill(null), last: 0, settings: { ...DEFAULT_SETTINGS }, saved: 0 });
 
@@ -200,6 +210,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     looks: Array.isArray(o.looks) ? o.looks.filter((x): x is string => typeof x === 'string' && x.length <= 64).slice(0, 4000) : [],
     worn: {},
     body: o.body === 'f' ? 'f' : 'm',
+    ...(parseFace(o.face) ? { face: parseFace(o.face) } : {}),
     seen: Object.fromEntries(Object.entries(obj(o.seen) ?? {}).filter(([k, v]) => k in REGIONS && typeof v === 'string' && v.length <= 4000 && /^([A-Za-z0-9+/]*={0,2}|\*)$/.test(v))),
     mounts: Array.isArray(o.mounts) ? [...new Set(o.mounts.filter((x): x is string => typeof x === 'string' && !!MOUNT_DEFS[x]))] : [],
     mount: typeof o.mount === 'string' && MOUNT_DEFS[o.mount] ? o.mount : null,
@@ -302,6 +313,8 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   tidyWardrobe(c);
   // mounts: earned ones are owned (the Gullport Strider for anyone who has its perk); the chosen one must be owned
   grantMounts(c);
+  grantWarden(c);
+  syncRift(c);
   if (c.mount && !c.mounts.includes(c.mount)) c.mount = c.mounts[0] ?? null;
   const s = obj(o.stats) ?? {};
   c.stats = { kills: int(s.kills, 0, 1e9, 0), deaths: int(s.deaths, 0, 1e9, 0), time: int(s.time, 0, 1e10, 0), runs: int(s.runs, 0, 1e9, 0), bestRun: int(s.bestRun, 0, 1e9, 0) };

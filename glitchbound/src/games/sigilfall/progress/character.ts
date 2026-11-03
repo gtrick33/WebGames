@@ -106,6 +106,8 @@ export interface Character {
   review?: boolean;
   /** Man or woman, chosen at the start (the hero's face and hair; nothing else changes). */
   body: Body;
+  /** Skin, hair and beard, chosen at the start: only how the hero looks. */
+  face?: Face;
   /** Fog of war: each land's explored parts (progress/fog.ts). */
   seen: Partial<Record<RegionId, string>>;
   /** Mounts owned for good, and the one the mount key summons. */
@@ -117,6 +119,17 @@ export interface Character {
 }
 
 export type Body = 'm' | 'f';
+
+/** How a hero looks under their gear: indexes into SKINS and HAIRS. */
+export interface Face {
+  skin: number;
+  hair: number;
+  style: 'short' | 'pony' | 'long';
+  beard: boolean;
+}
+
+export const SKINS = ['#ffe0c8', '#f6cfae', '#e8b78e', '#c98f62', '#9a6642', '#6e4530', '#4a2f22', '#b9c8c4'];
+export const HAIRS = ['#1c1a20', '#3a2616', '#6a4428', '#a8682c', '#d8b060', '#e8e0d0', '#8a8a94', '#a8262e', '#3a5ad8', '#3a8a5a'];
 
 export function newCharacter(cls: ClassId, name: string, id: string, now = Date.now(), body: Body = 'm'): Character {
   const def = CLASSES[cls];

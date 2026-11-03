@@ -1,4 +1,5 @@
 import { DUNGEONS } from './dungeons';
+import { WARDEN_ITEMS } from './wardens';
 import type { ClassId, ItemBase, ItemDef, Rarity, SkillOp, SlotId, StatKey } from './types';
 import { ZONES } from './zones';
 
@@ -7,6 +8,7 @@ import { ZONES } from './zones';
  * Their stats grow with the item level they drop at (base + per × level, see itemStats in items-logic).
  */
 export const ITEMS: ItemDef[] = [
+  ...WARDEN_ITEMS,
   /* ---------------------------------------------------------------- mage */
   {
     id: 'ember-staff',

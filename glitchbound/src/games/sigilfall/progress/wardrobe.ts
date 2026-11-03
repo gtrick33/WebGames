@@ -1,8 +1,10 @@
 import { BOSSES } from '../data/bosses';
 import { BASE_DEFS, ITEM_DEFS, ITEMS } from '../data/items';
 import { MOUNT_DEFS, MOUNTS, type MountDef } from '../data/mounts';
+import { CAMPAIGN_END, WARDENS, wardenLookId } from '../data/wardens';
 import { QUESTS } from '../data/quests';
-import type { ClassId, Item, ItemIcon, Material, Rarity } from '../data/types';
+import { REGIONS } from '../data/regions';
+import type { ClassId, Item, ItemIcon, Material, RegionId, Rarity } from '../data/types';
 import type { Character } from './character';
 import { itemMat, itemTint } from './items';
 
@@ -166,6 +168,7 @@ function sourceIndex(): Map<string, { quest?: string; boss?: string }> {
 export function lookSource(c: Pick<Character, 'quests'>, id: string): string {
   const def = ITEM_DEFS[id];
   if (!def) return 'Found gear';
+  if (id.startsWith('warden-')) return 'Finish the story with this class';
   const src = sourceIndex().get(id);
   if (src?.boss) {
     const b = BOSSES[src.boss]!;
@@ -188,11 +191,47 @@ export function authoredLooks(cls: ClassId, slot: LookSlot): Look[] {
 /* ------------------------------------------------------------------ mounts */
 
 /** Whether the hero has met a mount's source. */
-export function mountEarned(c: Pick<Character, 'quests' | 'perks' | 'clears'>, m: MountDef): boolean {
+export function mountEarned(c: Pick<Character, 'quests' | 'perks' | 'clears' | 'cls'>, m: MountDef): boolean {
   const s = m.source;
+  if (s.kind === 'campaign') return s.cls === c.cls && c.quests[CAMPAIGN_END]?.state === 'done';
+  if (s.kind === 'shelf') return shelfPoints >= s.points;
   if (s.kind === 'quest') return c.quests[s.quest]?.state === 'done';
   if (s.kind === 'perk') return c.perks.includes(s.perk);
   return s.regions.every((r) => Object.entries(c.clears).some(([k, n]) => n > 0 && k.startsWith(`${r}:`) && Number(k.slice(r.length + 1)) >= s.tier));
+}
+
+/** The player's points on the site's Trophy Shelf, as last heard (0 for a guest or offline). */
+let shelfPoints = 0;
+export const setShelfPoints = (n: number): void => {
+  shelfPoints = n;
+};
+
+/** Whether this hero has seen the whole story through. */
+export const campaignDone = (c: Pick<Character, 'quests'>): boolean => c.quests[CAMPAIGN_END]?.state === 'done';
+
+/** The title a hero carries: a warden's, once the story is done. */
+export const heroTitle = (c: Pick<Character, 'quests' | 'cls'>): string | null => (campaignDone(c) ? WARDENS[c.cls].title : null);
+
+/** The first dungeon a hero clears wins them their first Riftstone. */
+export function syncRift(c: Character): boolean {
+  if (c.keystone >= 1) return false;
+  const cleared = Object.entries(c.clears).some(([k, n]) => n > 0 && REGIONS[k.split(':')[0] as RegionId]?.kind === 'dungeon');
+  if (cleared) c.keystone = 1;
+  return cleared;
+}
+
+/** A hero who has finished the story wears their sigil's armor when they choose to; returns true when it just came. */
+export function grantWarden(c: Character): boolean {
+  if (!campaignDone(c)) return false;
+  let added = false;
+  for (const slot of ['head', 'chest'] as const) {
+    const id = wardenLookId(c.cls, slot);
+    if (!c.looks.includes(id)) {
+      c.looks.push(id);
+      added = true;
+    }
+  }
+  return added;
 }
 
 /** Gives the hero every mount they have earned and don't own yet; returns the new ones. */

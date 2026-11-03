@@ -4,15 +4,16 @@ import { rewardSummary } from './progress/rewards';
 import { ACTS, type ActDef } from './data/acts';
 import { CLASSES } from './data/classes';
 import { keyAffixes, weekOf } from './data/keystones';
+import { WARDENS } from './data/wardens';
 import { NPCS, QUEST_DEFS } from './data/quests';
 import { REGIONS, TIERS, type RiftMod } from './data/regions';
 import { SKILLS } from './data/skills';
 import type { ClassId, Item, RegionId, SkillIndex, SlotId, SlotKey } from './data/types';
 import { KeyboardMouse, TouchState, type UiKey } from './input/input';
 import { holds } from './sim/story';
-import { acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, type Body, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
+import { acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, type Body, type Face, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
-import { chooseMount, grantMounts, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
+import { chooseMount, grantMounts, grantWarden, setShelfPoints, syncRift, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
 import { DEFAULT_SETTINGS, HERO_SLOTS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
 import type { ShopId } from './data/vendors';
@@ -594,6 +595,15 @@ export class SigilEngine {
     }
     // mounts earned by what just happened (a quest's end, a dungeon cleared)
     if (this.hero) {
+      if (syncRift(this.hero)) {
+        this.toast('You found a Riftstone. The Rift Trials are open from the title screen, or at any waystone.', 'good');
+        changed = true;
+      }
+      if (grantWarden(this.hero)) {
+        this.toast(`${WARDENS[this.hero.cls].title}: the armor is in your Wardrobe`, 'good');
+        this.sound.play('epic');
+        changed = true;
+      }
       for (const m of grantMounts(this.hero)) {
         this.toast(`New mount: ${m.name}`, 'good', undefined, this.touchMode ? 'Tap the horseshoe to ride. Choose mounts in the Wardrobe.' : 'Press Y to ride. Choose mounts in the Wardrobe.');
         this.sound.play('epic');
@@ -725,11 +735,18 @@ export class SigilEngine {
     this.setUi({ screen: 'create', createSlot: slot });
   }
 
-  createHero(slot: number, cls: ClassId, name: string, body: Body = 'm'): void {
+  createHero(slot: number, cls: ClassId, name: string, body: Body = 'm', face?: Face): void {
     const c = newCharacter(cls, name || this.defaultName, `hero${slot}`, Date.now(), body);
+    if (face) c.face = face;
     this.save.heroes[slot] = c;
     this.persist();
     this.play(slot);
+  }
+
+  /** Straight into a Rift Trial from the title: from home, and home again afterward. */
+  startRift(slot: number, region: RegionId, stone: number): void {
+    this.play(slot);
+    this.travel(region, 2, [], HOME, stone);
   }
 
   deleteHero(slot: number): void {
@@ -739,9 +756,23 @@ export class SigilEngine {
     this.bump();
   }
 
+  /** What the site's Trophy Shelf has earned in the game: asked once, and only counted if it answers. */
+  private askShelf(): void {
+    if (this.shelfAsked || typeof fetch !== 'function') return;
+    this.shelfAsked = true;
+    void fetch('/api/pins')
+      .then((r) => (r.ok ? (r.json() as Promise<{ points?: number }>) : null))
+      .then((v) => {
+        if (typeof v?.points === 'number') setShelfPoints(v.points);
+      })
+      .catch(() => undefined);
+  }
+  private shelfAsked = false;
+
   play(slot: number): void {
     const h = this.save.heroes[slot];
     if (!h) return;
+    this.askShelf();
     this.slot = slot;
     this.hero = h;
     this.heroSig = heroSignature(h);
@@ -792,7 +823,7 @@ export class SigilEngine {
     if (!h) return false;
     const region = REGIONS[to];
     // a party's run goes where the host chose: a friend who hasn't found the way yet is taken along
-    if (!h.unlocked.includes(to) && !party) return false;
+    if (!h.unlocked.includes(to) && !party && !key) return false;
     // a Riftstone run is a stone the hero holds (never above it; a party runs the host's), in a dungeon
     if (key > 0 && (region.kind !== 'dungeon' || (key > h.keystone && !party))) return false;
     // questing together the party travels as one: the leader's way is everyone's, the others follow
@@ -1243,7 +1274,7 @@ export class SigilEngine {
     if (!h) return null;
     const worn = wornLooks(h);
     const story = Object.entries(h.quests).filter(([id, e]) => e.state === 'done' && isMainQuest(id)).length;
-    return { name: h.name, cls: h.cls, level: h.level, para: h.para.l, keystone: h.keystone, story, look: heroLook(h.cls, h.equip, worn, h.body), weapon: heldWeapon(h.cls, h.equip.weapon, worn.weapon) };
+    return { name: h.name, cls: h.cls, level: h.level, para: h.para.l, keystone: h.keystone, story, look: heroLook(h.cls, h.equip, worn, h.body, h.face), weapon: heldWeapon(h.cls, h.equip.weapon, worn.weapon) };
   }
 
   /** A party's leader was watching a story scene, as last heard (said once each time one starts). */

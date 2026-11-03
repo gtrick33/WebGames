@@ -165,7 +165,7 @@ function Hud({ engine }: { engine: SigilEngine }) {
       <div className="rb-hud-hero">
         <div className="rb-hud-face">
           <span className="rb-hud-pic">
-            <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} size={34} />
+            <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} face={h.face} size={34} />
           </span>
           <span className="rb-lvl" aria-label={`Level ${h.level}`}>
             {h.level}

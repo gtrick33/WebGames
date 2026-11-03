@@ -4397,3 +4397,134 @@
   background: linear-gradient(90deg, rgb(20 14 9 / 0.78), rgb(20 14 9 / 0.5));
   box-shadow: inset 0 0 0 1px rgb(168 130 58 / 0.35);
 }
+
+/* The Rift Trials from the title */
+.rb-gate-rift.rb-btn {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  min-height: 48px;
+  border-color: #8d6bff;
+  background: linear-gradient(180deg, #2b1c55, #170e33);
+  color: #e8dcff;
+}
+.rb-gate-rift small {
+  color: #bfa8ff;
+  font-size: 12px;
+}
+.rb-rift {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  height: 100%;
+  overflow-y: auto;
+  padding: clamp(10px, 2.4cqh, 22px) clamp(12px, 3cqw, 32px);
+}
+.rb-rift-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(12px, 2cqw, 24px);
+}
+.rb-rift-pick,
+.rb-rift-echoes {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #6e5526;
+  border-radius: 6px;
+  background: rgb(12 8 26 / 0.86);
+  color: #e9dfc6;
+}
+.rb-rift-lead {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 15px;
+  font-style: italic;
+  line-height: 1.35;
+  color: #fff6e0;
+}
+.rb-rift-dungeons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rb-rift-dungeons button {
+  display: grid;
+  gap: 1px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid #4a3a1c;
+  border-radius: 4px;
+  background: #1c1430;
+  color: #e9dfc6;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+}
+.rb-rift-dungeons button.is-on {
+  border-color: #f6c453;
+  box-shadow: inset 0 0 0 1px #f6c453;
+  background: #2b1f46;
+}
+.rb-rift-echoes h2 {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 18px;
+  color: #f6c453;
+  text-shadow: none;
+}
+.rb-rift-echoes h3 {
+  margin: 0 0 2px;
+  font-size: 14px;
+  color: #fff6e0;
+  text-shadow: none;
+}
+.rb-rift-echoes p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.rb-rift-warden {
+  padding: 8px 10px;
+  border-left: 2px solid #f6c453;
+  background: rgb(246 196 83 / 0.08);
+}
+@container (max-width: 640px) {
+  .rb-rift-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* Skin, hair and beard when making a hero */
+.rb-looks {
+  display: grid;
+  gap: 7px;
+}
+.rb-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+.rb-swatches > span {
+  min-width: 34px;
+  font-size: 12.5px;
+  color: #cbbfa2;
+}
+.rb-swatches button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 2px solid #3a2a12;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.rb-swatches button.is-on {
+  border-color: #f6c453;
+  box-shadow: 0 0 0 2px #15101f, 0 0 0 3px #f6c453;
+}

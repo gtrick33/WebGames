@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CLASSES, levelPower, MAX_LEVEL, xpToNext } from '../data/classes';
 import { ITEM_DEFS } from '../data/items';
-import { KEY_AFFIXES, KEY_DEATH, KEY_LEVEL, KEY_MIN, keyAffixes, keyLoot, keyPar, keyScale, weekAffixes, weekOf } from '../data/keystones';
+import { KEY_AFFIXES, KEY_DEATH, keyLevelFor, KEY_MIN, keyAffixes, keyLoot, keyPar, keyScale, weekAffixes, weekOf } from '../data/keystones';
 import { NPCS, QUESTS } from '../data/quests';
 import { mapColors } from '../data/themes';
 import { REGION_IDS, REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
@@ -117,7 +117,7 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
     <div className="rb-hero">
       <section className="rb-hero-left" aria-label="Equipment and stats">
         <div className="rb-hero-id">
-          <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} size={48} />
+          <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} face={h.face} size={48} />
           <div>
             <strong>{h.name}</strong>
             <span>
@@ -156,7 +156,7 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
               </button>
             );
           })}
-          <HeroDoll look={heroLook(h.cls, h.equip, wornLooks(h), h.body)} />
+          <HeroDoll look={heroLook(h.cls, h.equip, wornLooks(h), h.body, h.face)} />
         </div>
         <dl className="rb-stats">
           <div>
@@ -834,7 +834,7 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
           <div>
             <strong>
               {open || r.kind === 'town' ? r.name : 'Unknown land'}{' '}
-              <span className="rb-dim rb-small">{r.kind === 'town' ? 'Town' : useKey ? `Dungeon · level ${KEY_LEVEL} · Riftstone +${stone}` : `${r.kind === 'dungeon' ? 'Dungeon' : 'Wilds'} · levels ${r.levels[0] + TIERS[pick]!.levels}-${r.levels[1] + TIERS[pick]!.levels}`}</span>
+              <span className="rb-dim rb-small">{r.kind === 'town' ? 'Town' : useKey ? `Dungeon · level ${keyLevelFor(h.level)} · Riftstone +${stone}` : `${r.kind === 'dungeon' ? 'Dungeon' : 'Wilds'} · levels ${r.levels[0] + TIERS[pick]!.levels}-${r.levels[1] + TIERS[pick]!.levels}`}</span>
             </strong>
             <span className="rb-small rb-dim">{open ? r.blurb : sel === 'whisperwood' ? 'Finish your training with Elder Maren.' : sel === 'crypt' ? 'Defeat Grimtusk in the Whisperwood.' : 'Not discovered yet: walk there to find it.'}</span>
           </div>
@@ -871,7 +871,7 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
             </div>
             {useKey ? (
               <>
-                <KeyPicker region={r} stone={stone} top={h.keystone} best={h.bestKeys[sel] ?? 0} week={week} onPick={setStone} />
+                <KeyPicker heroLevel={h.level} region={r} stone={stone} top={h.keystone} best={h.bestKeys[sel] ?? 0} week={week} onPick={setStone} />
                 <button
                   className="rb-btn is-small"
                   onClick={() => {
@@ -909,8 +909,8 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
 }
 
 /** Riftstone at a waystone: the level (any the Riftstone has opened), what it does, the clock, this week's affixes. */
-function KeyPicker({ region, stone, top, best, week, onPick }: { region: RegionDef; stone: number; top: number; best: number; week: number; onPick: (n: number) => void }) {
-  const sc = keyScale(stone);
+function KeyPicker({ heroLevel, region, stone, top, best, week, onPick }: { heroLevel: number; region: RegionDef; stone: number; top: number; best: number; week: number; onPick: (n: number) => void }) {
+  const sc = keyScale(stone, heroLevel);
   const on = keyAffixes(stone, week);
   return (
     <div className="rb-key">
@@ -929,8 +929,8 @@ function KeyPicker({ region, stone, top, best, week, onPick }: { region: RegionD
         )}
       </div>
       <span className="rb-small">
-        Enemies at level {KEY_LEVEL} with ×{sc.hp.toFixed(1)} health and ×{sc.dmg.toFixed(1)} damage. The clock: <b className="rb-gold">{clockText(keyPar(region))}</b> (each fall costs {KEY_DEATH} s). Beat it to
-        open the next levels (up to three, by how fast); late, nothing is lost. Loot of item level {keyLoot(stone)}
+        Enemies at level {keyLevelFor(heroLevel)} with ×{sc.hp.toFixed(1)} health and ×{sc.dmg.toFixed(1)} damage. The clock: <b className="rb-gold">{clockText(keyPar(region))}</b> (each fall costs {KEY_DEATH} s). Beat it to
+        open the next levels (up to three, by how fast); late, nothing is lost. Loot of item level {keyLoot(stone, heroLevel)}
         {best ? `; your best here is +${best}` : ''}.
       </span>
       <ul className="rb-affixes">
@@ -1501,7 +1501,7 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
   if (slot && pick === 'equipped') delete previewWorn[slot];
   else if (slot && pick === BARE_LOOK && slot !== 'weapon') previewWorn[slot] = 'bare';
   else if (slot && picked) previewWorn[slot] = picked.look;
-  const look = heroLook(h.cls, h.equip, previewWorn, h.body);
+  const look = heroLook(h.cls, h.equip, previewWorn, h.body, h.face);
   const equipped = slot ? h.equip[slot] : undefined;
   const current = slot ? h.worn[slot] : undefined;
   const mount = tab === 'mounts' && pick ? MOUNT_DEFS[pick] : undefined;

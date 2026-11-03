@@ -1,4 +1,6 @@
 import { BOSSES } from './bosses';
+import { REGIONS } from './regions';
+import { riftPoolSize } from './wardens';
 import type { RegionDef, RegionId } from './types';
 
 /**
@@ -20,12 +22,19 @@ export const KEY_DEATH = 10;
 export const MAX_IL = 100;
 
 /** Health and damage on top of an enemy's level at a stone's level: Mythic's, and more with every level. */
-export function keyScale(key: number): { hp: number; dmg: number } {
-  return { hp: 4 * 1.08 ** key, dmg: 2.1 * 1.05 ** key };
+export function keyScale(key: number, heroLevel = 60): { hp: number; dmg: number } {
+  if (heroLevel >= SYNC_BELOW) return { hp: 4 * 1.08 ** key, dmg: 2.1 * 1.05 ** key };
+  return { hp: 1.5 * 1.08 ** key, dmg: 1.25 * 1.05 ** key };
 }
 
+/** Below this level the Rift meets a hero at their own strength (the Rift Trials); from here, at Mythic's top. */
+export const SYNC_BELOW = 60;
+
+/** The enemy level of a run: a level-60 hero's Mythic top, or just above a younger hero's own. */
+export const keyLevelFor = (heroLevel: number): number => (heroLevel >= SYNC_BELOW ? KEY_LEVEL : Math.max(3, heroLevel + 1));
+
 /** The item level a stone's loot is made at. */
-export const keyLoot = (key: number): number => Math.min(MAX_IL, KEY_LEVEL + key);
+export const keyLoot = (key: number, heroLevel = 60): number => (heroLevel >= SYNC_BELOW ? Math.min(MAX_IL, KEY_LEVEL + key) : Math.min(62, heroLevel + 1 + Math.floor(key / 2)));
 
 /** Sigil Marks for finishing (more in time). */
 export const keyMarks = (key: number, inTime: boolean): number => (inTime ? 4 + key : 1 + Math.floor(key / 2));
@@ -107,4 +116,15 @@ export function keyUpgrade(time: number, par: number): number {
   if (time <= par * 0.8) return 2;
   if (time <= par) return 1;
   return -1;
+}
+
+/** The highest stone a hero holds. */
+export const riftTop = (h: { keystone: number }): number => h.keystone;
+
+/** The dungeons a hero's stone reaches, gentlest first: more with every other level. */
+export function riftDungeons(top: number): RegionDef[] {
+  const all = Object.values(REGIONS as unknown as Record<string, RegionDef>)
+    .filter((r) => r.kind === 'dungeon' && !r.interior)
+    .sort((a, b) => a.levels[0] - b.levels[0]);
+  return all.slice(0, riftPoolSize(top));
 }

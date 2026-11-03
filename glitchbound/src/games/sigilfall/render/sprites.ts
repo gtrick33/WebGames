@@ -1,3 +1,4 @@
+import { HAIRS, SKINS, type Face } from '../progress/character';
 import { CLASSES } from '../data/classes';
 import type { Body } from '../progress/character';
 import type { ClassId, Item, ItemIcon, Material, Rarity, SlotId, TalentNode } from '../data/types';
@@ -147,10 +148,14 @@ export type WornLooks = Partial<Record<'head' | 'chest' | 'weapon', Shown | 'bar
  * What a hero looks like in the gear they wear: every armor piece shows. A Wardrobe look worn over the
  * head, chest or weapon is drawn instead of the equipped piece there (stats never see it).
  */
-export function heroLook(cls: ClassId, equip: Partial<Record<SlotId, Item>> = {}, worn: WornLooks = {}, body: Body = 'm'): HeroLook {
+export function heroLook(cls: ClassId, equip: Partial<Record<SlotId, Item>> = {}, worn: WornLooks = {}, body: Body = 'm', face?: Face): HeroLook {
   const base = BARE[cls];
   // a woman wears her hair long (a class that ties it back keeps the ponytail)
-  const bare: HeroLook = body === 'f' ? { ...base, female: true, hairStyle: base.hairStyle === 'short' ? 'long' : base.hairStyle } : base;
+  const shaped: HeroLook = body === 'f' ? { ...base, female: true, hairStyle: base.hairStyle === 'short' ? 'long' : base.hairStyle } : base;
+  // what the player chose at the start (a hero made before the choice keeps their class's look)
+  const bare: HeroLook = face
+    ? { ...shaped, skin: SKINS[face.skin] ?? shaped.skin, hair: HAIRS[face.hair] ?? shaped.hair, hairStyle: face.style, beard: face.beard && body !== 'f' ? (HAIRS[face.hair] ?? shaped.hair) : shaped.beard ?? null }
+    : shaped;
   const { legs, hands, feet, offhand } = equip;
   const pick = (slot: 'head' | 'chest'): Shown | null | 'bare' => {
     const w = worn[slot];

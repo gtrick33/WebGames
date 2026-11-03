@@ -123,7 +123,7 @@ describe('Sigilfall: mounts', () => {
       const s = m.source;
       if (s.kind === 'quest') expect(QUEST_DEFS[s.quest], `${m.id}: ${s.quest}`).toBeDefined();
       else if (s.kind === 'perk') expect(PERKS[s.perk]).toBeDefined();
-      else for (const r of s.regions) expect(REGIONS[r]?.kind, `${m.id}: ${r}`).toBe('dungeon');
+      else if (s.kind === 'clears') for (const r of s.regions) expect(REGIONS[r]?.kind, `${m.id}: ${r}`).toBe('dungeon');
     }
     expect(MOUNT_SPEED).toBeGreaterThan(1);
   });

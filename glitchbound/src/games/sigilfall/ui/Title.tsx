@@ -1,3 +1,6 @@
+import { HAIRS, SKINS, type Face } from '../progress/character';
+import { heroTitle } from '../progress/wardrobe';
+import { RiftScreen } from './RiftScreen';
 import { useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { CLASS_IDS, CLASSES } from '../data/classes';
@@ -72,10 +75,19 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
   const [settings, setSettings] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [roster, setRoster] = useState(() => !!engine.invite);
+  const [rift, setRift] = useState<number | null>(null);
   const last = engine.save.last;
   const lastHero = heroes[last];
   const any = heroes.some(Boolean);
   const firstEmpty = Math.max(0, heroes.findIndex((h) => !h));
+  if (rift !== null && heroes[rift]) {
+    return (
+      <div className="rb-title is-epic is-roster">
+        <EpicSky />
+        <RiftScreen engine={engine} slot={rift} onBack={() => setRift(null)} />
+      </div>
+    );
+  }
   return (
     <div className={`rb-title is-epic${roster ? ' is-roster' : ''}`}>
       <EpicSky />
@@ -113,6 +125,12 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
                 <small>Seven heroes · five acts · one Rift</small>
               </button>
             )}
+            {lastHero && lastHero.keystone >= 1 && (
+              <button className="rb-btn rb-gate-rift" onClick={() => setRift(last)}>
+                <span>The Rift Trials</span>
+                <small>Riftstone +{lastHero.keystone}</small>
+              </button>
+            )}
             {lastHero && (
               <button className="rb-btn is-ghost rb-gate-more" onClick={() => setRoster(true)}>
                 Your heroes
@@ -132,18 +150,23 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
             {heroes.map((h, i) =>
               h ? (
                 <div key={i} className={`rb-slot${i === last ? ' is-last' : ''}`}>
-                  <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} size={52} />
+                  <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} face={h.face} size={52} />
                   <div className="rb-slot-text">
                     <strong>{h.name}</strong>
                     <span>
                       Level {h.level} {CLASSES[h.cls].name}
                     </span>
-                    <span className="rb-dim">{farthest(h.unlocked).name}</span>
+                    <span className="rb-dim">{heroTitle(h) ?? farthest(h.unlocked).name}</span>
                   </div>
                   <div className="rb-slot-actions">
                     <button className="rb-btn is-small is-gold" onClick={() => engine.play(i)}>
                       Play
                     </button>
+                    {h.keystone >= 1 && (
+                      <button className="rb-btn is-small" onClick={() => setRift(i)}>
+                        Rift
+                      </button>
+                    )}
                     {confirmDelete === i ? (
                       <button
                         className="rb-btn is-small is-danger"
@@ -196,6 +219,8 @@ const farthest = (unlocked: RegionId[]) => unlocked.map((id) => REGIONS[id]).red
 export function CreateScreen({ engine }: { engine: SigilEngine }) {
   const [cls, setCls] = useState<ClassId>('mage');
   const [body, setBody] = useState<Body>('m');
+  const [face, setFace] = useState<Face>({ skin: 1, hair: 1, style: 'short', beard: false });
+  const pick = (next: Partial<Face>): void => setFace({ ...face, ...next });
   const [name, setName] = useState(() => cleanName(engine.defaultName));
   const def = CLASSES[cls];
   return (
@@ -212,7 +237,7 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
           const c = CLASSES[id];
           return (
             <button key={id} role="radio" aria-checked={cls === id} className={`rb-class${cls === id ? ' is-on' : ''}`} style={{ ['--cc' as string]: c.colors.main }} onClick={() => setCls(id)}>
-              <img className="rb-class-doll" src={heroDollUrl(heroLook(id, {}, {}, body), 'down', 2)} alt="" draggable={false} />
+              <img className="rb-class-doll" src={heroDollUrl(heroLook(id, {}, {}, body, face), 'down', 2)} alt="" draggable={false} />
               <strong>{c.name}</strong>
               <span className="rb-dim">{c.role}</span>
               <span className="rb-dots" aria-label={DIFFICULTY[c.difficulty]}>
@@ -225,6 +250,32 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
         })}
       </div>
       <div className="rb-create-detail">
+        <div className="rb-looks" aria-label="Your hero’s look">
+          <div className="rb-swatches" role="radiogroup" aria-label="Skin">
+            <span>Skin</span>
+            {SKINS.map((c, i) => (
+              <button key={c} type="button" role="radio" aria-checked={face.skin === i} aria-label={`Skin ${i + 1}`} className={face.skin === i ? 'is-on' : ''} style={{ background: c }} onClick={() => pick({ skin: i })} />
+            ))}
+          </div>
+          <div className="rb-swatches" role="radiogroup" aria-label="Hair color">
+            <span>Hair</span>
+            {HAIRS.map((c, i) => (
+              <button key={c} type="button" role="radio" aria-checked={face.hair === i} aria-label={`Hair color ${i + 1}`} className={face.hair === i ? 'is-on' : ''} style={{ background: c }} onClick={() => pick({ hair: i })} />
+            ))}
+          </div>
+          <div className="rb-seg" role="radiogroup" aria-label="Hair style">
+            {(['short', 'pony', 'long'] as const).map((s) => (
+              <button key={s} type="button" role="radio" aria-checked={face.style === s} className={face.style === s ? 'is-on' : ''} onClick={() => pick({ style: s })}>
+                {s === 'pony' ? 'Tied back' : s === 'long' ? 'Long' : 'Short'}
+              </button>
+            ))}
+            {body === 'm' && (
+              <button type="button" aria-pressed={face.beard} className={face.beard ? 'is-on' : ''} onClick={() => pick({ beard: !face.beard })}>
+                Beard
+              </button>
+            )}
+          </div>
+        </div>
         <p>{def.blurb}</p>
         <div className="rb-create-skills">
           {[def.basic, ...def.skills, def.ult].map((id) => (
@@ -247,7 +298,7 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
           className="rb-create-go"
           onSubmit={(e) => {
             e.preventDefault();
-            engine.createHero(engine.ui.createSlot, cls, cleanName(name), body);
+            engine.createHero(engine.ui.createSlot, cls, cleanName(name), body, face);
           }}
         >
           <div className="rb-seg rb-body" role="radiogroup" aria-label="Hero">

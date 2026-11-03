@@ -231,7 +231,7 @@ export class Renderer {
   setHeroWeapon(cls: ClassId, w: World): void {
     const worn = wornLooks(w.hero);
     this.weapon = heldWeapon(cls, w.hero.equip.weapon, worn.weapon);
-    this.look = heroLook(cls, w.hero.equip, worn, w.hero.body);
+    this.look = heroLook(cls, w.hero.equip, worn, w.hero.body, w.hero.face);
   }
 
   /** The camera's lean toward the aim (and a boss), smoothed (see camera.ts). */

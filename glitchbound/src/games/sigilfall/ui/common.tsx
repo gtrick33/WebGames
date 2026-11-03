@@ -1,3 +1,4 @@
+import type { Face } from '../progress/character';
 import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import type { ClassId, Item, Rarity } from '../data/types';
 import type { Character } from '../progress/character';
@@ -22,8 +23,8 @@ export function SkillIcon({ id, size = 40 }: { id: string; size?: number }) {
 }
 
 /** A portrait; for a hero, pass their gear to show what they wear. */
-export function Portrait({ kind, id, size = 48, equip, worn, body }: { kind: 'hero' | 'creature' | 'npc'; id: string; size?: number; equip?: Character['equip']; worn?: WornLooks; body?: Character['body'] }) {
-  const src = kind === 'hero' && (equip || body) ? heroPortraitUrl(heroLook(id as ClassId, equip ?? {}, worn, body), 3) : portraitUrl(kind, id, 4);
+export function Portrait({ kind, id, size = 48, equip, worn, body, face }: { face?: Face; kind: 'hero' | 'creature' | 'npc'; id: string; size?: number; equip?: Character['equip']; worn?: WornLooks; body?: Character['body'] }) {
+  const src = kind === 'hero' && (equip || body) ? heroPortraitUrl(heroLook(id as ClassId, equip ?? {}, worn, body, face), 3) : portraitUrl(kind, id, 4);
   // people (heroes, townsfolk) are drawn smooth like the world's figures; creatures stay crisp pixel art
   const smooth = kind === 'hero' || (kind === 'npc' && hasPersonLook(id));
   return <img className={`rb-portrait${smooth ? ' is-smooth' : ''}`} src={src} alt="" style={{ height: size }} draggable={false} />;
