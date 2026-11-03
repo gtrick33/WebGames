@@ -82,6 +82,8 @@ export interface View {
 
 export type Action =
   | { t: 'card'; card: Card }
+  /** In the lobby, this player went back to choose another hero: the party shows them as choosing one. */
+  | { t: 'nocard' }
   | { t: 'mode'; mode: Mode }
   | { t: 'plan'; region: string; key: number }
   | { t: 'start'; week: number }
@@ -176,6 +178,11 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       s.cards[me.n] = card;
       break;
     }
+    case 'nocard':
+      // (mid-run a hero stays on the party's screens: changing heroes is for the lobby)
+      if (s.phase !== 'lobby') return 'not_lobby';
+      delete s.cards[me.n];
+      break;
     case 'mode':
       if (!host || s.phase !== 'lobby' || (a.mode !== 'rift' && a.mode !== 'party')) return 'not_host';
       s.mode = a.mode;

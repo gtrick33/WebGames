@@ -107,6 +107,14 @@ function where(w: World, name: string): { x: number; y: number } | null {
 
 const seenKey = (id: string): string => `scene:${id}`;
 
+/**
+ * Whether this world plays the story's staged scenes: playing alone, or leading a party questing together (the
+ * other heroes' games skip them and play on). Not a party's Riftstone run, whose clock is running for everyone.
+ */
+export function scenesPlayHere(w: Pick<World, 'coop' | 'keyRun'>): boolean {
+  return !w.coop || (w.coop.role === 'host' && !w.keyRun);
+}
+
 /** Starts a scene whose moment has come here, if none is playing and nothing is fighting nearby. */
 export function maybeStartScene(w: World): void {
   if (w.scene || w.player.dead || w.story.fighting) return;

@@ -139,6 +139,7 @@ const PARTY_ERRORS: Record<string, string> = {
   in_run: 'That party is in a Riftstone run. Try again when they’re back in town.',
   bad_plan: 'That dungeon or Riftstone level can’t be chosen.',
   not_lead: 'Only the hero leading the party can choose the way.',
+  not_lobby: 'Heroes can be changed in the party’s lobby, between runs.',
 };
 /** On touch screens the hero stands this share of the view's width off the middle (render/renderer.ts frameShift). */
 const FRAME_SHIFT = 0.1;
@@ -408,6 +409,7 @@ export class SigilEngine {
         if (this.greetIn <= 0 && this.hero && questState(this.hero, 'briar-dusk') === 'active' && w.region.id === HOME) this.talk('mara-venn');
       }
       this.coop?.frame(dt * 1000);
+      this.noteLeaderScene();
       if (this.leadAwayAt && performance.now() - this.leadAwayAt > LEAD_WAIT_MS) {
         this.leadAwayAt = 0;
         this.partyNote('Your party leader has been gone a while: the run is over.', 'warn');
@@ -747,6 +749,8 @@ export class SigilEngine {
     this.ui = { ...this.ui, screen: 'game', panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], teach: null };
     this.travel(HOME, 0, []);
     this.sound.unlock();
+    // still in a party's lobby (back from choosing another hero): the party sees the new one
+    if (this.party && !this.invite) this.refreshPartyCard(true);
     // invited by a link: into the friend's party (its panel says if this hero can't run with it)
     if (this.invite) {
       const code = this.invite;
@@ -771,7 +775,7 @@ export class SigilEngine {
 
   toTitle(): void {
     this.greetIn = 0;
-    this.leaveParty();
+    this.standDownFromParty();
     if (this.world) this.collectLeftovers(this.world, true);
     this.endRun(false);
     this.persist();
@@ -1242,6 +1246,16 @@ export class SigilEngine {
     return { name: h.name, cls: h.cls, level: h.level, para: h.para.l, keystone: h.keystone, story, look: heroLook(h.cls, h.equip, worn, h.body), weapon: heldWeapon(h.cls, h.equip.weapon, worn.weapon) };
   }
 
+  /** A party's leader was watching a story scene, as last heard (said once each time one starts). */
+  private leaderWatching = false;
+
+  /** Questing together, the leader stopped for a story scene: the others play on, and are told why (once). */
+  noteLeaderScene(): void {
+    const watching = this.coop?.role === 'guest' && this.coop.leaderScene;
+    if (watching && !this.leaderWatching) this.partyNote('The leader is watching a scene', 'info');
+    this.leaderWatching = watching;
+  }
+
   /** The card the party last got from this game (sent again only when it changes). */
   private cardSent = '';
 
@@ -1286,6 +1300,20 @@ export class SigilEngine {
     this.leaveParty();
     this.partyLeft = null;
     this.party = { link: new Link(c, this.hero.name, this.partyHandlers()), view: null, state: 'connecting', error: '', note: '' };
+    this.bump();
+  }
+
+  /**
+   * Back to the hero list. In a party's lobby the seat stays (a leader too: nobody else takes the party over)
+   * and the party sees this player choosing a hero until the next one's card comes; anywhere else (a run under
+   * way) the hero leaves the party as before.
+   */
+  standDownFromParty(): void {
+    const party = this.party;
+    if (!party) return;
+    if (this.coop || party.view?.phase !== 'lobby') return this.leaveParty();
+    this.cardSent = '';
+    if (party.link.open) party.link.send({ t: 'nocard' });
     this.bump();
   }
 
@@ -1458,6 +1486,15 @@ export class SigilEngine {
       else this.partyNote('The run is over: the party is back in the lobby', 'info');
     }
     if (a.host !== b.host && b.host === b.you && b.phase === 'lobby') this.partyNote('You are the party’s host now', 'info');
+    // in the lobby, a friend changing heroes: choosing one, then the new one
+    if (b.phase === 'lobby')
+      for (const y of b.seats) {
+        const x = a.seats.find((s) => s.n === y.n);
+        if (y.you || !x) continue;
+        if (x.card && !y.card) this.partyNote(`${x.card.name} is choosing another hero`, 'info');
+        else if (y.card && (!x.card || x.card.name !== y.card.name || x.card.cls !== y.card.cls))
+          this.partyNote(`${x.card?.name ?? y.name} now plays ${y.card.name}, level ${y.card.level} ${CLASSES[y.card.cls as ClassId]?.name ?? ''}`.trim(), 'info');
+      }
   }
 
   returnHome(): void {

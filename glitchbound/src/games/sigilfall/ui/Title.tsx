@@ -172,6 +172,7 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
         </div>
       )}
       {engine.ui.notice && <p className="rb-notice" role="status">{engine.ui.notice}</p>}
+      {engine.party && !engine.invite && <p className="rb-notice" role="status">You’re still in party {engine.party.link.code}. Choose a hero to go back to it.</p>}
       {engine.invite && (
         <p className="rb-notice is-invite" role="status">
           A friend invited you to their party (code {engine.invite}). Choose a hero, or make one, to join them.

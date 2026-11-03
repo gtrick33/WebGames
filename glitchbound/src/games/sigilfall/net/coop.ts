@@ -93,6 +93,8 @@ interface FrameMsg {
   en: string;
   k: [number, number] | null;
   ev: Event[];
+  /** The leader is watching a story scene (questing together: only the leader's game plays them). */
+  sc?: 0 | 1;
 }
 
 const r1 = (v: number): number => Math.round(v * 10) / 10;
@@ -329,7 +331,7 @@ export class CoopSession {
     const wv: WaveRow[] = [];
     for (const v of w.waves) if (!v.dead) wv.push([r1(v.x), r1(v.y), r1(v.r), v.speed, v.max, v.width]);
     const k = w.keyRun ? ([r1(w.keyRun.t), w.keyRun.deaths] as [number, number]) : null;
-    const msg: FrameMsg = { t: 's', e, pr, tg, fd, wv, en: w.encounterCode(), k, ev: this.events };
+    const msg: FrameMsg = { t: 's', e, pr, tg, fd, wv, en: w.encounterCode(), k, ev: this.events, sc: w.scene ? 1 : 0 };
     this.events = [];
     this.send(msg);
   }
@@ -406,6 +408,7 @@ export class CoopSession {
 
   /** Guest: the host's frame. */
   private onFrame(w: World, m: FrameMsg): void {
+    this.leaderScene = m.sc === 1;
     // what happened first (a kill needs the enemy still here), then where everything is now
     this.kills = 0;
     for (const ev of list(m.ev, 200)) if (Array.isArray(ev)) this.onEvent(w, ev as Event);
@@ -451,6 +454,9 @@ export class CoopSession {
       w.keyRun.deaths = Math.round(num(m.k[1], 0, 1e4, w.keyRun.deaths));
     }
   }
+
+  /** Guest: the leader is watching a story scene (its last frame said so). */
+  leaderScene = false;
 
   /** Guest: kills taken from the frame being read (a frame claiming more is not believed past it). */
   private kills = 0;
