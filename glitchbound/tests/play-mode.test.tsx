@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FULLSCREEN_WATCHDOG_MS, keepTabInside, usePlayMode } from '../src/pages/GamePage';
@@ -67,36 +68,24 @@ describe('play mode on a touch screen', () => {
     expect(onLeave).not.toHaveBeenCalled();
   });
 
-  it('lets the phone turn again when the player exits, and a turn back in the page resets its zoom', () => {
+  it('lets the phone turn again when the player exits', () => {
     const unlock = vi.fn();
     vi.stubGlobal('screen', { orientation: { unlock } });
-    const meta = document.createElement('meta');
-    meta.setAttribute('name', 'viewport');
-    meta.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
-    document.head.appendChild(meta);
     const { play } = setup(true);
     act(() => play().enter());
     act(() => play().exit());
     expect(unlock).toHaveBeenCalled();
-    expect(meta.getAttribute('content')).not.toContain('maximum-scale');
-    act(() => void window.dispatchEvent(new Event('orientationchange')));
-    expect(meta.getAttribute('content')).toContain('maximum-scale=1');
-    act(() => void vi.advanceTimersByTime(400));
-    expect(meta.getAttribute('content')).not.toContain('maximum-scale');
-    meta.remove();
   });
 
-  it('keeps the zoom locked when a turn comes while a game fills the screen', () => {
-    const meta = document.createElement('meta');
-    meta.setAttribute('name', 'viewport');
-    meta.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
-    document.head.appendChild(meta);
-    const { play } = setup(true);
-    act(() => play().enter());
-    act(() => void window.dispatchEvent(new Event('orientationchange')));
-    act(() => void vi.advanceTimersByTime(400));
-    expect(meta.getAttribute('content')).toContain('maximum-scale=1');
-    meta.remove();
+  // An iPhone turned on its side and back left a stage sized by aspect-ratio with no height at all (only its border
+  // showed), so a stage has to say its height outright: what's inside it is placed absolutely and can't hold it open.
+  it('every shape of stage has a height of its own, and none leans on aspect-ratio', () => {
+    const css = readFileSync('src/components/GameStage.css', 'utf8');
+    for (const shape of ['portrait', 'landscape', 'square']) {
+      const rule = new RegExp(`\\.stage-${shape} \\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+      expect(rule, shape).toMatch(/^\s*height:/m);
+    }
+    expect(css).not.toContain('aspect-ratio:');
   });
 
   it('asks for full screen again on the next tap, and the game stays paused when it lands (PU-05)', () => {
