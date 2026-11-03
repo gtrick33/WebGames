@@ -1,74 +1,10 @@
 import swTemplate from '../scripts/sw-template.js?raw';
 import { describe, expect, it } from 'vitest';
 import { World } from '../src/game/world';
-import { Autopilot } from '../src/game/autopilot';
-import { HAZARD_SIZES, PLAYER, SIM_DT, laneCenter } from '../src/game/config';
-import { checkClaim, maxNearMissBonus, metersAt, racerNameFrom, rowsBy } from '../src/backend/leaderboard-rules';
+import { HAZARD_SIZES, SIM_DT, laneCenter } from '../src/game/config';
 import { MAX_CHALLENGE_ROUNDS, createProfile, mergeChallengeRounds, putChallengeRound, sanitizeProfile } from '../src/progression/profile';
 import { finishRun } from '../src/progression/run';
 import { runStats } from './fixtures';
-
-const claimOf = (w: World) => ({
-  score: w.stats.score,
-  meters: Math.floor(w.stats.meters),
-  coins: w.stats.coins,
-  nearMisses: w.stats.nearMisses,
-  durationMs: Math.round(w.stats.time * 1000),
-});
-
-/** Rows whose front reached the player's bumper (the most rows a near miss can come from). */
-function rowsReached(w: World, seen: Set<object>): void {
-  const pTop = w.player.y - PLAYER.hitH / 2;
-  for (const r of w.rows) if (r.top + r.len >= pTop) seen.add(r);
-}
-
-describe('NEON RUSH leaderboard checks (NR-11)', () => {
-  it('distance follows the real speed curve', () => {
-    const w = new World({ seed: 5, viewHeight: 760 });
-    for (let i = 0; i < 90 / SIM_DT; i++) {
-      w.crashed = false;
-      w.hazards.length = 0;
-      w.update(SIM_DT);
-    }
-    expect(Math.abs(w.meters - metersAt(w.stats.time))).toBeLessThan(1);
-    expect(metersAt(4 * 3600)).toBeGreaterThan(800_000);
-  });
-
-  it('refuses the forged 55,800 in 20 s and other impossible runs', () => {
-    expect(checkClaim({ score: 55_800, meters: 1200, coins: 460, nearMisses: 250, durationMs: 20_000 }, 21_000)).not.toBeNull();
-    const m = Math.floor(metersAt(20));
-    expect(checkClaim({ score: m + 40, meters: m, coins: 4, nearMisses: 0, durationMs: 20_000 }, 21_000)).toBeNull();
-    expect(checkClaim({ score: 1300, meters: 1200, coins: 10, nearMisses: 0, durationMs: 20_000 }, 21_000)).toBe('distance_high');
-    expect(checkClaim({ score: 30 * m, meters: m, coins: 4, nearMisses: 120, durationMs: 20_000 }, 21_000)).toBe('near_misses');
-    const n = rowsBy(m);
-    expect(checkClaim({ score: m + 40 + maxNearMissBonus(n) + 25, meters: m, coins: 4, nearMisses: n, durationMs: 20_000 }, 21_000)).toBe('score');
-    expect(checkClaim({ score: m + 40, meters: m, coins: 4, nearMisses: 3, durationMs: 20_000 }, 21_000)).toBe('score');
-  });
-
-  it('the bonus ceiling climbs the combo to x8', () => {
-    expect(maxNearMissBonus(1)).toBe(25);
-    expect(maxNearMissBonus(8)).toBe(25 * 36);
-    expect(maxNearMissBonus(10)).toBe(25 * 36 + 400);
-  });
-
-  it('accepts genuine runs on every screen shape, and rows never outrun the bound', () => {
-    for (const viewHeight of [760, 924, 1125]) {
-      for (let seed = 1; seed <= 6; seed++) {
-        const w = new World({ seed: seed * 97, viewHeight });
-        const p = new Autopilot(0.04);
-        const seen = new Set<object>();
-        for (let i = 0; i < 120 / SIM_DT && !w.crashed; i++) {
-          p.update(w, SIM_DT);
-          w.update(SIM_DT);
-          rowsReached(w, seen);
-        }
-        const c = claimOf(w);
-        expect(checkClaim(c, c.durationMs), `${viewHeight}/${seed}`).toBeNull();
-        expect(seen.size).toBeLessThanOrEqual(rowsBy(c.meters + 20));
-      }
-    }
-  });
-});
 
 describe('the same run on every screen (NR-03)', () => {
   it('a seed plays out identically on a tablet, a desktop stage and a tall phone', () => {
@@ -118,15 +54,7 @@ describe('runs played (NR-10)', () => {
   });
 });
 
-describe('arcade names (NR-06, NR-07)', () => {
-  it('fits names the board would reject, or gives up on them', () => {
-    expect(racerNameFrom('Zoë')).toBe('Zoe');
-    expect(racerNameFrom('Jo')).toBe('Jo_');
-    expect(racerNameFrom('Neon Night Rider 3000')).toBe('Neon Night Rid');
-    expect(racerNameFrom('Ана')).toBeNull();
-    expect(racerNameFrom('Admin')).toBeNull();
-  });
-
+describe('old saves (NR-06)', () => {
   it('old saves load with no chosen name and no challenge rounds', () => {
     const old = sanitizeProfile({ version: 3, playerName: 'Racer' });
     expect(old.nameChosen).toBe(false);

@@ -1,14 +1,13 @@
 # Backend
 
-**Live:** the online leaderboard runs on Cloudflare Pages Functions (`functions/api/*`) with a D1 database
-(`migrations/0001_leaderboard.sql`, binding `DB` in `wrangler.toml`). Shared validation lives in
-`src/backend/leaderboard-rules.ts`. See [LAUNCH-GUIDE.md](LAUNCH-GUIDE.md#5-online-leaderboard-how-it-works-and-its-limits).
-Everything else (progress, cars, achievements) stays local, and the game works fully offline.
+**Live:** nothing. The game's own online leaderboard is retired; inside GlitchBound, scores go to the arcade's
+leaderboard (see [LAUNCH-GUIDE.md](LAUNCH-GUIDE.md#5-scores-and-leaderboards)). Progress, cars and achievements stay
+local, and the game works fully offline.
 
 ## Future: cloud saves and accounts
 
-The notes below describe an optional Supabase design. The same features could also be built on the existing
-Cloudflare Functions + D1 setup.
+The notes below describe an optional Supabase design. The same features could also be built on Cloudflare Pages
+Functions + D1.
 
 ## Suggested Supabase design
 

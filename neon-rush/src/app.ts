@@ -19,14 +19,11 @@ import { selectProviders } from './monetization/providers';
 import { LocalAnalytics } from './analytics/analytics';
 import { listenToHost, notifyHost, runEndMessage, type HostCommand } from './analytics/embed';
 import { createBackend, type BackendService } from './backend/backend';
-import { LeaderboardClient, type BoardResult } from './backend/leaderboard';
-import { normalizeName, racerNameFrom, validateName } from './backend/leaderboard-rules';
-import { esc } from './ui/ui';
 import { dayKey } from './core/dates';
 import type { AudioEngine, Sfx } from './audio/audio';
 
 type GameState = 'menu' | 'playing' | 'paused' | 'crashing' | 'gameover';
-type Page = 'garage' | 'missions' | 'settings' | 'leaderboard';
+type Page = 'garage' | 'missions' | 'settings';
 
 const POWER_COLORS: Record<PowerUpKind, string> = { magnet: '#ff3fd2', shield: '#22e4ff', double: '#ffc21a' };
 const POWER_LABEL: Record<PowerUpKind, string> = { magnet: 'MAGNET', shield: 'SHIELD', double: '2X COINS' };
@@ -44,9 +41,6 @@ export class App {
   /** The challenge round was found already started when the game loaded, and was ended for it. */
   private staleRound = false;
   private checkpointAt = 0;
-  /** Why the arcade's name isn't the racer name, shown in Ranks. */
-  private hostNameNote = '';
-  private readonly embedded = typeof window !== 'undefined' && window.parent !== window;
   /** Car details popup over the garage. */
   private carOpen = false;
   private world!: World;
@@ -56,10 +50,6 @@ export class App {
   private crashTimer = 0;
   private runId = '';
   private lastSummary: RunSummary | null = null;
-  private readonly leaderboard = new LeaderboardClient();
-  /** Server-issued run token for the current run (null when offline). */
-  private serverRun: string | null = null;
-  private boardPeriod: 'daily' | 'all' = 'daily';
   private profile: Profile;
   private readonly saves: SaveManager;
   private readonly ui = new UI();
@@ -142,7 +132,7 @@ export class App {
       const privacy = document.querySelector('#screen-settings .settings-section:last-of-type p');
       if (privacy) {
         privacy.textContent =
-          'No account needed. Progress is saved on this device. If you have a racer name (one you set, or inside GlitchBound your GlitchBound name), that name, a random player id and your best scores are stored on the leaderboard server. Ads are provided by Google, which may use cookies to serve and measure ads; see policies.google.com/technologies/ads.';
+          'No account needed. Progress is saved on this device. Ads are provided by Google, which may use cookies to serve and measure ads; see policies.google.com/technologies/ads.';
         const link = document.createElement('a');
         link.className = 'link';
         link.href = './privacy.html';
@@ -169,7 +159,6 @@ export class App {
     window.addEventListener('storage', (e) => {
       if (e.key === SAVE_KEY || e.key === null) this.adoptStoredSave();
     });
-    if (this.embedded) this.ui.text('boardTitle', 'NEON RUSH BOARD');
 
     this.renderer.app.ticker.add((t) => {
       this.renderer.trackFrame(t.deltaMS, this.state === 'playing' || this.state === 'menu');
@@ -356,12 +345,6 @@ export class App {
       this.save();
     }
     if (this.reporting) notifyHost({ type: 'start' });
-    // Ask the server for a run token in the background; gameplay never waits for it.
-    this.serverRun = null;
-    const localRun = this.runId;
-    void this.leaderboard.startRun(this.profile.playerId).then((id) => {
-      if (this.runId === localRun) this.serverRun = id;
-    });
   }
 
   private pause(): void {
@@ -415,7 +398,6 @@ export class App {
     this.analytics.track('run_end', { score: summary.stats.score, meters: Math.floor(summary.stats.meters), coins: summary.stats.coins });
     // Practice beside a challenge is never reported, nor is a challenge run left unfinished.
     if (this.reporting && !(wasChallenge && abandoned)) notifyHost(runEndMessage(summary.stats));
-    void this.submitScore(summary, show);
     if (show) {
       this.state = 'gameover';
       renderGameOver(this.ui, summary, this.profile);
@@ -433,70 +415,6 @@ export class App {
       this.updateScreens();
     }
     return summary;
-  }
-
-  /** Send a finished run to the online leaderboard and show the rank on the game-over screen. */
-  private async submitScore(summary: RunSummary, show: boolean): Promise<void> {
-    const rankEl = this.ui.el('goRank');
-    const serverRun = this.serverRun;
-    this.serverRun = null;
-    const showRank = (html: string) => {
-      if (!show) return;
-      rankEl.innerHTML = html;
-      rankEl.hidden = false;
-    };
-    rankEl.hidden = true;
-    if (!serverRun) {
-      showRank('<span class="muted">Online leaderboard unavailable (offline). Your progress is saved.</span>');
-      return;
-    }
-    if (!this.profile.playerName) {
-      showRank('<span>Set a racer name to compete on the online leaderboard.</span><button class="btn btn-ghost" data-action="leaderboard">Set name</button>');
-      return;
-    }
-    showRank('<span class="muted">Submitting to the leaderboard...</span>');
-    const res = await this.leaderboard.submit({
-      runId: serverRun,
-      playerId: this.profile.playerId,
-      name: this.profile.playerName,
-      score: summary.stats.score,
-      meters: Math.floor(summary.stats.meters),
-      coins: summary.stats.coins,
-      nearMisses: summary.stats.nearMisses,
-      durationMs: Math.round(summary.stats.time * 1000),
-      skin: this.profile.equippedSkin,
-    });
-    if (this.lastSummary !== summary) return;
-    if (!res) showRank('<span class="muted">Could not reach the leaderboard.</span>');
-    else if (!res.ok) showRank(`<span class="muted">Score not ranked (${esc(res.message ?? res.error)}).</span>`);
-    else {
-      const d = res.daily;
-      const a = res.allTime;
-      showRank(`<span>${this.embedded ? 'NEON RUSH board: ' : ''}Today <b>#${d?.rank ?? '-'}</b> · All time <b>#${a?.rank ?? '-'}</b></span><button class="btn btn-ghost" data-action="leaderboard">View leaderboard</button>`);
-    }
-  }
-
-  private async loadBoard(): Promise<void> {
-    const period = this.boardPeriod;
-    const status = this.ui.el('boardStatus');
-    status.textContent = 'Loading...';
-    const res: BoardResult | null = await this.leaderboard.board(period, this.profile.playerId);
-    if (this.page !== 'leaderboard' || this.boardPeriod !== period) return;
-    const list = this.ui.el('boardList');
-    const me = this.ui.el('boardMe');
-    if (!res) {
-      status.textContent = 'The leaderboard is offline right now. Try again later.';
-      list.innerHTML = '';
-      me.hidden = true;
-      return;
-    }
-    status.textContent = res.entries.length === 0 ? 'No scores yet. Be the first!' : period === 'daily' ? 'Resets every day at 00:00 UTC.' : '';
-    list.innerHTML = res.entries
-      .map((e) => `<li class="${e.you ? 'you' : ''}"><span class="rk">${e.rank}</span><span class="nm">${esc(e.name)}<small>${fmt(e.meters)} m</small></span><span class="sc">${fmt(e.score)}</span></li>`)
-      .join('');
-    const inTop = res.entries.some((e) => e.you);
-    me.hidden = !res.me || inTop;
-    if (res.me && !inTop) me.innerHTML = `<span class="rk">${res.me.rank}</span><span class="nm">${esc(res.me.name)}<small>You</small></span><span class="sc">${fmt(res.me.score)}</span>`;
   }
 
   /** Leaving a run from the pause menu still pays out what was earned. */
@@ -528,16 +446,6 @@ export class App {
       renderMissions(this.ui, this.profile, this.today(), new Date());
     }
     if (page === 'settings') this.syncSettingsInputs();
-    if (page === 'leaderboard') {
-      (this.ui.el('nameInput') as HTMLInputElement).value = this.profile.playerName;
-      if (this.hostNameNote && !this.profile.nameChosen) {
-        const msg = this.ui.el('nameMsg');
-        msg.classList.remove('err', 'ok');
-        msg.textContent = this.hostNameNote;
-      }
-      this.ui.selectTab(this.ui.screen('leaderboard'), this.boardPeriod);
-      void this.loadBoard();
-    }
     this.refreshChrome();
     this.updateScreens();
   }
@@ -594,32 +502,6 @@ export class App {
     ui.on('hostMenu', () => {
       if (this.state === 'playing') this.pause();
       notifyHost({ type: 'menu' });
-    });
-    ui.on('leaderboard', () => this.openPage('leaderboard'));
-    ui.on('boardTab', (el) => {
-      this.boardPeriod = el.dataset.period === 'all' ? 'all' : 'daily';
-      void this.loadBoard();
-    });
-    this.ui.el('nameForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const input = this.ui.el('nameInput') as HTMLInputElement;
-      const msg = this.ui.el('nameMsg');
-      const error = validateName(input.value);
-      msg.classList.toggle('err', !!error);
-      msg.classList.toggle('ok', !error);
-      if (error) {
-        msg.textContent = error;
-        this.sfx('error');
-        return;
-      }
-      this.profile.playerName = normalizeName(input.value);
-      // The player's own choice: the arcade's name no longer replaces it.
-      this.profile.nameChosen = true;
-      input.value = this.profile.playerName;
-      this.save();
-      this.sfx('click');
-      msg.textContent = 'Saved. Your next run will appear on the leaderboard.';
-      input.blur();
     });
     ui.on('back', () => this.closePage());
     ui.on('daily', () => this.openDaily());
@@ -839,19 +721,7 @@ export class App {
       void this.audio?.suspend();
       return;
     }
-    // The arcade's player name (account nickname or guest name) is the racer name until the player
-    // chooses their own; names the board can't show are made fit (Zoë -> Zoe) or explained in Ranks.
-    const name = racerNameFrom(c.name);
-    this.hostNameNote = !name
-      ? "Your GlitchBound name can't be shown on this board (use A-Z, numbers, spaces, - _ or .). Choose a racer name here."
-      : name !== normalizeName(c.name)
-        ? `Your GlitchBound name is shown here as ${name}.`
-        : '';
-    if (!name || this.profile.nameChosen || name === this.profile.playerName) return;
-    this.profile.playerName = name;
-    const input = this.ui.el('nameInput') as HTMLInputElement | null;
-    if (input) input.value = name;
-    this.save();
+    // ('identity', the arcade's player name: the game has no board of its own to show it on)
   }
 
   /** A friends' challenge round from the arcade (seed), or its end (null). */

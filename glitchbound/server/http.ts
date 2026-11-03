@@ -25,7 +25,7 @@ export interface Env {
   ASSETS?: { fetch: (input: Request | string | URL, init?: RequestInit) => Promise<Response> };
   /** Live Crass Act rooms (Durable Objects in the glitchbound-rooms worker). */
   ROOMS?: RoomNamespace;
-  /** NEON RUSH's own leaderboard database (served under /play/neon-rush/api). */
+  /** NEON RUSH's retired leaderboard database: nothing reads or writes it now (the admin shows its size). */
   NR_DB: D1Database;
   SITE_URL?: string;
   GOOGLE_CLIENT_ID?: string;
