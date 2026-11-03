@@ -9,7 +9,7 @@ import { W, type Ball, type Scene } from './scene';
 const TAU = Math.PI * 2;
 
 /**
- * A photographic tennis ball centerd on (0, 0): soft contact shadow, felt-yellow body with fine
+ * A photographic tennis ball centered on (0, 0): soft contact shadow, felt-yellow body with fine
  * speckle, the curved seam, sphere shading lit from the top left, and a fuzzy rim.
  */
 function drawPhotoBall(ctx: CanvasRenderingContext2D, b: Ball, seed: number): void {
@@ -127,6 +127,67 @@ function surroundings(ctx: CanvasRenderingContext2D, x: number, y: number, r: nu
   return n ? [R / n, G / n, B / n] : [128, 128, 128];
 }
 
+/** Pixels as getImageData gives them (straight, not premultiplied, alpha). */
+export interface Pixels {
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+}
+
+/** Share of the surroundings' color cast that tints the ball. */
+const CAST = 0.22;
+
+/**
+ * Blends the ball sprite into the photo patch under it (both the same size): tinted by the local color
+ * cast and given the photo's grain, weighted by the sprite's own alpha. Pixels the sprite doesn't cover
+ * stay exactly as they were.
+ */
+export function blendBall(patch: Pixels, sprite: Pixels, cast: readonly [number, number, number], seed: number): void {
+  const p = patch.data;
+  const b = sprite.data;
+  const tint = cast.map((c) => 1 - CAST + (CAST * c) / 255);
+  let s = (seed % 9973) + 1;
+  for (let i = 0; i < p.length && i < b.length; i += 4) {
+    s = (s * 16807) % 2147483647;
+    const a = b[i + 3]! / 255;
+    if (a === 0) continue;
+    const n = (s / 2147483647 - 0.5) * 18;
+    for (let c = 0; c < 3; c++) p[i + c] = p[i + c]! * (1 - a) + (b[i + c]! * tint[c]! + n) * a;
+  }
+}
+
+/**
+ * Where to borrow the texture that partly covers the ball: of a few spots beside it (inside the
+ * picture), the one whose average color is closest to the ball's surroundings, so the patch doesn't
+ * show up as a brighter or darker smudge.
+ */
+function coverSource(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  a: number,
+  br: number,
+  size: number,
+  ring: readonly [number, number, number],
+): [number, number] {
+  const { width: w, height: h } = ctx.canvas;
+  let best: [number, number] | null = null;
+  let bestD = Infinity;
+  for (const turn of [Math.PI / 2, -Math.PI / 2, Math.PI * 0.75, -Math.PI * 0.75])
+    for (const d of [3.2, 4.2]) {
+      const x = cx + Math.cos(a + turn) * br * d;
+      const y = cy + Math.sin(a + turn) * br * d;
+      if (x - size / 2 < 0 || y - size / 2 < 0 || x + size / 2 > w || y + size / 2 > h) continue;
+      const [r, g, b] = surroundings(ctx, x, y, size / 2);
+      const dist = Math.abs(r - ring[0]) + Math.abs(g - ring[1]) + Math.abs(b - ring[2]);
+      if (dist < bestD) {
+        bestD = dist;
+        best = [x, y];
+      }
+    }
+  return best ?? [cx + Math.cos(a + Math.PI / 2) * br * 3.2, cy + Math.sin(a + Math.PI / 2) * br * 3.2];
+}
+
 /** The level picture (photo + ball) at the photo's resolution. */
 export function buildComposite(img: HTMLImageElement, scene: Scene): HTMLCanvasElement {
   const ph = scene.photo!;
@@ -164,29 +225,18 @@ export function buildComposite(img: HTMLImageElement, scene: Scene): HTMLCanvasE
   const dim = Math.max(0, Math.min(0.55, (0.62 - lum) * 0.9 + b.shade * 0.6));
   bctx.fillStyle = `rgba(10, 16, 24, ${dim})`;
   bctx.fillRect(0, 0, ballC.width, ballC.height);
-  bctx.globalCompositeOperation = 'multiply';
-  bctx.globalAlpha = 0.22;
-  bctx.fillStyle = `rgb(${sr | 0}, ${sg | 0}, ${sb | 0})`;
-  bctx.fillRect(0, 0, ballC.width, ballC.height);
-  bctx.globalAlpha = 1;
   bctx.globalCompositeOperation = 'source-over';
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(ballC, bx - pad, by - pad, pad * 2, pad * 2);
-
-  // Grain over the ball so it shares the photo's noise.
-  const g0 = Math.max(0, Math.round(bx - br * 1.2));
-  const g1 = Math.max(0, Math.round(by - br * 1.2));
-  const gs = Math.max(1, Math.round(br * 2.4));
-  const patch = ctx.getImageData(g0, g1, gs, gs);
-  let seed = (scene.seed % 9973) + 1;
-  for (let i = 0; i < patch.data.length; i += 4) {
-    seed = (seed * 16807) % 2147483647;
-    const n = ((seed / 2147483647) - 0.5) * 18;
-    patch.data[i] = patch.data[i]! + n;
-    patch.data[i + 1] = patch.data[i + 1]! + n;
-    patch.data[i + 2] = patch.data[i + 2]! + n;
-  }
-  ctx.putImageData(patch, g0, g1);
+  // Scale the softened ball up to the photo's pixels and blend it in by hand, so only the ball (and its
+  // contact shadow) change: the photo around it keeps every pixel, with no box to give it away.
+  const x0 = Math.round(bx - pad);
+  const y0 = Math.round(by - pad);
+  const size = Math.max(1, Math.round(pad * 2));
+  const [, uctx] = canvasOf(size, size);
+  uctx.imageSmoothingQuality = 'high';
+  uctx.drawImage(ballC, bx - pad - x0, by - pad - y0, pad * 2, pad * 2);
+  const patch = ctx.getImageData(x0, y0, size, size);
+  blendBall(patch, uctx.getImageData(0, 0, size, size), [sr, sg, sb], scene.seed);
+  ctx.putImageData(patch, x0, y0);
 
   // Partly tuck the ball under texture borrowed from beside it (leaves, grass, pebbles...).
   if (ph.cover) {
@@ -195,10 +245,8 @@ export function buildComposite(img: HTMLImageElement, scene: Scene): HTMLCanvasE
     const dist = br + rc - 2 * amt * br;
     const cx = bx + Math.cos(a) * dist;
     const cy = by + Math.sin(a) * dist;
-    const side = a + Math.PI / 2;
-    const sx = cx + Math.cos(side) * br * 3.2;
-    const sy = cy + Math.sin(side) * br * 3.2;
     const size = rc * 2.4;
+    const [sx, sy] = coverSource(octx, cx, cy, a, br, size, [sr, sg, sb]);
     const [pc, pctx] = canvasOf(size, size);
     pctx.drawImage(orig, sx - size / 2, sy - size / 2, size, size, 0, 0, size, size);
     pctx.globalCompositeOperation = 'destination-in';

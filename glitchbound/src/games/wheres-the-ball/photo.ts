@@ -159,6 +159,10 @@ const rested: (Variant | null)[][] = [];
 /** Per bucket: how far along its shuffled order the schedule is, and the slots taken out of turn. */
 const cursor: Record<Bucket, number> = { big: 0, mid: 0, small: 0 };
 const taken: Record<Bucket, Set<number>> = { big: new Set(), mid: new Set(), small: new Set() };
+/** From this day number on (2026-12-01; earlier dailies keep their photos), the fallback rests photos too. */
+const RELAX_FROM = 43;
+/** The last day each photo was shown in a daily (days from REST_FROM on). */
+const lastShown = new Map<string, number>();
 
 function dayVariants(day: number): (Variant | null)[] {
   if (day < REST_FROM) return DAILY_BUCKETS.map((_, i) => firstVariant(day, i));
@@ -177,19 +181,28 @@ function dayVariants(day: number): (Variant | null)[] {
       }
       while (taken[bucket].has(cursor[bucket])) taken[bucket].delete(cursor[bucket]++);
       const fresh = (v: Variant | null): boolean => !!v && !today.some((t) => t?.photo.id === v.photo.id);
-      // The next variant in turn whose photo has rested; failing that (a small library), any not shown today.
+      // The next variant in turn whose photo has rested.
       let pick = -1;
       for (let k = 0; k < len && pick < 0; k++) {
         const n = cursor[bucket] + k;
         const v = nth(bucket, n);
         if (!taken[bucket].has(n) && fresh(v) && !recent.has(v!.photo.id)) pick = n;
       }
-      for (let k = 0; k < len && pick < 0; k++) if (!taken[bucket].has(cursor[bucket] + k) && fresh(nth(bucket, cursor[bucket] + k))) pick = cursor[bucket] + k;
+      // Failing that (a small library), the next in turn that rested at least two weeks, then one week
+      // (from RELAX_FROM on), then any not shown today.
+      const rests = d >= RELAX_FROM ? [14, 7, 0] : [0];
+      for (const rest of rests)
+        for (let k = 0; k < len && pick < 0; k++) {
+          const n = cursor[bucket] + k;
+          const v = nth(bucket, n);
+          if (!taken[bucket].has(n) && fresh(v) && (rest === 0 || (lastShown.get(v!.photo.id) ?? -Infinity) <= d - rest)) pick = n;
+        }
       if (pick < 0) pick = cursor[bucket];
       if (pick === cursor[bucket]) cursor[bucket]++;
       else taken[bucket].add(pick);
       today.push(nth(bucket, pick));
     }
+    for (const v of today) if (v) lastShown.set(v.photo.id, d);
     rested.push(today);
   }
   return rested[day - REST_FROM]!;
@@ -203,20 +216,109 @@ export function dailyVariant(day: number, index: number): Variant | null {
 /** Ball size for Endless level `index`: big balls first, then mostly medium and small. */
 export const endlessBucket = (index: number): Bucket => (index < 2 ? 'big' : index < 5 ? 'mid' : index % 3 === 0 ? 'mid' : 'small');
 
-/** The Endless run's photo for level `index`: each bucket walks its own shuffle, so no repeats in a run. */
+/** Each run order's photos so far (a run's order depends only on `runSeed % 997`). */
+const runs = new Map<number, (Variant | null)[]>();
+
+/**
+ * The Endless run's (and a challenge's) photo for level `index`. Each bucket walks its own shuffle; a
+ * photo already shown in the run (at any zoom) is skipped for the next one in that bucket, so a photo
+ * comes back only once the bucket has no new one left. Levels that never met a repeat keep their photo.
+ */
 export function runVariant(runSeed: number, index: number): Variant | null {
-  const bucket = endlessBucket(index);
-  let k = 0;
-  for (let i = 0; i < index; i++) if (endlessBucket(i) === bucket) k++;
-  return nth(bucket, k, 1 + (runSeed % 997));
+  const salt = 1 + (runSeed % 997);
+  let list = runs.get(salt);
+  if (!list) runs.set(salt, (list = []));
+  pools ??= variants();
+  while (list.length <= index) {
+    const i = list.length;
+    const bucket = endlessBucket(i);
+    let k = 0;
+    for (let j = 0; j < i; j++) if (endlessBucket(j) === bucket) k++;
+    const used = new Set(list.map((v) => v?.photo.id));
+    let pick = nth(bucket, k, salt);
+    for (let t = 0; t < pools[bucket].length && pick && used.has(pick.photo.id); t++) {
+      const v = nth(bucket, k + t, salt);
+      if (v && !used.has(v.photo.id)) pick = v;
+    }
+    list.push(pick);
+  }
+  return list[index] ?? null;
 }
 
 export const hasPhotos = (): boolean => PHOTOS.length > 0;
+
+/**
+ * Short English place names for photos whose Commons title is in another language, carries file-name
+ * noise or doesn't describe the picture. Shown in the top bar; the scene keeps the original title.
+ */
+const TITLES: Record<string, string> = {
+  '103768424': 'Towels on shelves',
+  '129127730': 'Moss between paving stones',
+  '132005334': 'Grassland',
+  '144245060': 'Wildflowers in Bahar',
+  '144245061': 'Wildflowers in Bahar',
+  '144245066': 'Wildflowers in Bahar',
+  '148242086': 'Buttercup meadow',
+  '15399221': 'Melon market',
+  '167827431': 'Meadow',
+  '19211487': 'Harvested lemons',
+  '23381076': 'Seashell beach',
+  '27780102': 'Orange bell peppers',
+  '31171848': 'Cones on a path',
+  '31401382': 'Forest floor',
+  '38253301': 'Onion market',
+  '39933530': 'Fallen leaves',
+  '40319468': 'Flower bed',
+  '45607455': 'Cobblestone street, Pompeii',
+  '48818996': 'Pebble beach',
+  '52106516': 'Tulip garden',
+  '57022609': 'Dry leaves',
+  '57350744': 'Jack Nicklaus Park',
+  '57356573': 'Pumpkin patch',
+  '58282353': 'Seedlings in garden soil',
+  '58306535': 'Seedlings in garden soil',
+  '58790422': 'Misty forest path',
+  '58818579': 'Dandelion field',
+  '59046141': 'Melon market',
+  '59046151': 'Melon market',
+  '59046163': 'Melon market',
+  '59842108': 'Seedlings in garden soil',
+  '37686351': 'Seedlings in garden soil',
+  '62013770': 'Buttress roots',
+  '68794263': 'Tall buttercups, Bozeman',
+  '71589942': 'Rocky shore',
+  '77444674': 'Daisy lawn',
+  '78161136': 'Wildflowers on Cape Lisburne',
+  '79608658': 'Wildflower meadow',
+  '79634669': 'Log decks',
+  '89593472': 'Buttercup meadow',
+  '29513238': 'Leaves on a path',
+};
+
+/** The place name shown for a library photo. */
+export const photoTitle = (id: string, title: string): string => TITLES[id] ?? title;
+
+/**
+ * A photo's creator as a credit: Commons creators are clipped at 80 characters, so a clipped one ends at
+ * its last whole sentence; a trailing period and an account handle repeated after the name go.
+ */
+export function creatorName(creator: string): string {
+  let c = creator.trim();
+  if (c.length >= 80) {
+    const end = c.lastIndexOf('. ');
+    c = end > 0 ? c.slice(0, end) : c.slice(0, c.lastIndexOf(' ')).replace(/[,;:]$/, '');
+  }
+  c = c.replace(/\.$/, '');
+  const words = c.split(' ');
+  if (words.length > 2 && /^[a-z0-9_]+$/.test(words[words.length - 1]!)) c = words.slice(0, -1).join(' ');
+  return /^(unknown|anonymous|unknown photographer|free for commercial use)$/i.test(c) ? '' : c;
+}
 
 /** Credit line for a library photo (all are CC0 or public domain; credit is a courtesy). */
 export function photoCredit(id: string): { text: string; source: string } | null {
   const p = PHOTOS.find((x) => x.id === id);
   if (!p) return null;
-  const by = p.creator && !/^(unknown|anonymous)$/i.test(p.creator) ? ` by ${p.creator}` : '';
+  const name = creatorName(p.creator ?? '');
+  const by = name ? ` by ${name}` : '';
   return { text: `Photo${by} · ${p.license === 'cc0' ? 'CC0' : 'Public domain'} · Wikimedia Commons`, source: p.source };
 }
