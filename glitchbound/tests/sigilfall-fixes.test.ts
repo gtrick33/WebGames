@@ -10,7 +10,7 @@ import { xpToNext } from '../src/games/sigilfall/data/classes';
 import { paragonXp } from '../src/games/sigilfall/progress/paragon';
 import { migrate, saveText, emptySave } from '../src/games/sigilfall/progress/save';
 import { rng } from '../src/games/sigilfall/core/math';
-import { armorReduction, hitEnemy } from '../src/games/sigilfall/sim/combat';
+import { ARMOR_CAP, armorReduction, hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { buildHero } from '../src/games/sigilfall/progress/build';
 import { npcRegion } from '../src/games/sigilfall/sim/routes';
 import { TILE } from '../src/games/sigilfall/sim/map';
@@ -166,20 +166,21 @@ describe('Sigilfall systems fixes', () => {
     expect(events).toContain('paragon');
   });
 
-  it('SFS-09: armor keeps mattering past level 20, and early levels feel as before', () => {
-    for (const [lvl, rar] of [[20, 'uncommon'], [30, 'rare'], [45, 'rare'], [60, 'rare'], [60, 'epic']] as const) {
-      const warrior = buildHero(readyHero('warrior', lvl, rar)).stats.armor;
-      const mage = buildHero(readyHero('mage', lvl, rar)).stats.armor;
-      // below the cap: more armor (plate, a roll, a Toughness point) still means less damage
-      expect(armorReduction(warrior, lvl)).toBeLessThan(0.6);
-      expect(armorReduction(warrior + 2, lvl)).toBeGreaterThan(armorReduction(warrior, lvl));
-      expect(armorReduction(warrior, lvl)).toBeGreaterThan(armorReduction(mage, lvl));
-      expect(armorReduction(mage, lvl)).toBeGreaterThan(0.35);
+  it('SFS-09: armor keeps mattering past level 20, and no hero takes more damage than before', () => {
+    const old = (armor: number): number => Math.min(0.6, armor / (armor + 60));
+    for (const cls of ['warrior', 'mage', 'ranger', 'priest'] as const) {
+      for (const [lvl, rar] of [[10, 'uncommon'], [20, 'uncommon'], [30, 'rare'], [45, 'rare'], [60, 'uncommon'], [60, 'epic']] as const) {
+        const armor = buildHero(readyHero(cls, lvl, rar)).stats.armor;
+        // below the cap: more armor (plate, a roll, a Toughness point) still means less damage
+        expect(armorReduction(armor, lvl)).toBeLessThan(ARMOR_CAP);
+        expect(armorReduction(armor + 2, lvl)).toBeGreaterThan(armorReduction(armor, lvl));
+        expect(armorReduction(armor, lvl)).toBeGreaterThan(old(armor) - 0.01);
+        // up to level 20, the curve it always was
+        if (lvl <= 20) expect(armorReduction(armor, lvl)).toBe(Math.min(ARMOR_CAP, armor / (armor + 60)));
+      }
     }
-    for (const lvl of [1, 5, 10, 12]) {
-      const armor = buildHero(readyHero('warrior', lvl, 'uncommon')).stats.armor;
-      expect(armorReduction(armor, lvl)).toBe(Math.min(0.6, armor / (armor + 60)));
-    }
+    // plate over cloth is a real difference at the top
+    expect(armorReduction(buildHero(readyHero('warrior', 60, 'rare')).stats.armor, 60)).toBeGreaterThan(armorReduction(buildHero(readyHero('mage', 60, 'rare')).stats.armor, 60) + 0.04);
   });
 
   it('Design: a quest waiting only for a level is listed with the level it opens at', () => {
