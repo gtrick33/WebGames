@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { GameModuleProps } from '../../platform/contract';
+import type { ChallengeSpec } from '../../platform/challenge';
 import { CARS, getCar, raceCoins, specFor, statBars, unlockText, type CarDef } from './cars';
 import { dailyTrack, RANDOM_ID, randomTrack, todayKey } from './daily';
 import { Engine, type UiKey } from './engine';
 import { drawCarPreview, fmtTime, THEMES } from './render';
-import { AI_PRESETS, type RaceMode, type RaceSim, type Result } from './sim';
+import { AI_PRESETS, COUNTDOWN, type RaceMode, type RaceSim, type Result } from './sim';
 import { sectorTimes } from './sectors';
 import { decodeReplay, encodeReplay } from './ghost';
-import { clearGhost, countDay, DAILY_RACES, KEEP_DAILY, loadGhost, loadSave, saveGhost, writeSave, type Bests, type SaveData } from './storage';
+import { clearGhost, countDay, DAILY_RACES, KEEP_DAILY, loadGhost, parseSave, pruneDailyBests, putResult, putRun, SAVE_KEY, savedText, saveGhost, writeSave, type Bests, type ChallengeRun, type SaveData } from './storage';
 import { lapLine, raceMedal, raceMedalTimes, shareText, type Medal } from './medals';
 import { buildTrack, TRACK_TYPES, type Surface, type Track, type TrackDef } from './track';
 import { TRACKS } from './tracks';
@@ -20,7 +21,8 @@ import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
 import { GameMenuButton } from '../../components/GameMenuButton';
 
-type Screen = 'menu' | 'garage' | 'race' | 'paused' | 'result';
+/** 'finished': over the line, recorded, the car rolling to a stop before the result card. 'done': a challenge round already over when the game opened. */
+type Screen = 'menu' | 'garage' | 'race' | 'paused' | 'finished' | 'result' | 'done';
 
 interface Finish {
   result: Result;
@@ -29,12 +31,21 @@ interface Finish {
   medal: Medal;
   coins: number;
   newCars: CarDef[];
+  /** The day whose daily race this was, if it was one. */
+  day: string | null;
 }
+
+/** The race under way: a free race, one of a day's daily races, or a challenge round (`day`: the daily it also is). */
+interface RaceKind {
+  kind: 'free' | 'daily' | 'challenge';
+  day: string | null;
+}
+const FREE: RaceKind = { kind: 'free', day: null };
 
 const MEDAL_LABEL = { gold: 'Gold', silver: 'Silver', bronze: 'Bronze' } as const;
 
 const SURFACE_LABEL: Record<Surface, string> = {
-  asphalt: 'Tarmac',
+  asphalt: 'Asphalt',
   boost: 'Boost strips',
   dirt: 'Dirt',
   gravel: 'Gravel',
@@ -66,22 +77,38 @@ function surfacesOf(def: TrackDef): Surface[] {
 }
 
 const CHALLENGE_ID = 'challenge';
+const DAILY_PREFIX = 'daily-';
+/** The day of a daily track id ("daily-2026-11-02"), or null. */
+const dayOfTrack = (id: string): string | null => (id.startsWith(DAILY_PREFIX) ? id.slice(DAILY_PREFIX.length) : null);
+/** Where a challenge round is kept in the save. */
+const runKey = (c: ChallengeSpec): string => `${c.id}:${c.round}`;
+/** A "Today's daily" challenge races the game's daily track of its day; other challenges a track from their seed. */
+const challengeDayOf = (c: ChallengeSpec | undefined): string | null => (c && c.mode === 'daily' && /^\d{4}-\d{2}-\d{2}$/.test(c.day) ? c.day : null);
+const formatCoins = (n: number): string => n.toLocaleString('en-US');
 
 export default function Game({ host, restartKey, pauseKey, challenge }: GameModuleProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<Engine | null>(null);
-  const [save, setSave] = useState<SaveData>(() => loadSave());
+  const [initial] = useState(() => {
+    const text = savedText();
+    return { text, save: parseSave(text) };
+  });
+  const [save, setSave] = useState<SaveData>(initial.save);
   const saveRef = useRef(save);
+  /** The stored save as this tab last read or wrote it: a different one was written by another tab. */
+  const savedRef = useRef(initial.text);
   const [screen, setScreen] = useState<Screen>('menu');
   const screenRef = useRef<Screen>('menu');
   const [finish, setFinish] = useState<Finish | null>(null);
-  /** The pause menu is asking whether to leave today's daily race (see leave). */
+  /** The pause menu is asking whether to leave a counted race (today's daily, a challenge round; see leave). */
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [touch, setTouch] = useState(() => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
-  const today = useMemo(() => todayKey(), []);
+  // The day moves on at midnight: it is read again while the menu shows, when the tab comes back and at every start.
+  const [today, setToday] = useState(todayKey);
   /** Today's daily races not yet started. */
   const racesLeft = Math.max(0, DAILY_RACES - countDay(save.dailyRaced, today));
+  // Generated tracks come from this device's cache after their first generation (see dailyTrack).
   const daily = useMemo(() => dailyTrack(today), [today]);
   const random = useMemo(() => randomTrack(save.randomSeed), [save.randomSeed]);
   const allDefs = useMemo(() => [daily, ...TRACKS, random], [daily, random]);
@@ -94,25 +121,77 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
     }
     return t;
   }, []);
-  const defFor = useCallback((id: string) => allDefs.find((d) => d.id === id) ?? allDefs[1]!, [allDefs]);
-  // A friends' challenge: a Time Trial on a track from the challenge's seed, against the best ghost so far.
-  const challengeDef = useMemo<TrackDef | null>(() => (challenge ? { ...dailyTrack(`challenge-${challenge.seed >>> 0}`), id: CHALLENGE_ID, blurb: 'A friends’ challenge track.' } : null), [challenge]);
+  // An older day's daily track in the save stands for today's.
+  const defFor = useCallback((id: string) => (dayOfTrack(id) !== null ? daily : (allDefs.find((d) => d.id === id) ?? allDefs[1]!)), [allDefs, daily]);
+  const challengeDay = challengeDayOf(challenge);
+  // A friends' challenge: a Time Trial against the best ghost so far, on that day's daily track ("Today's daily") or a track from the seed.
+  const challengeDef = useMemo<TrackDef | null>(() => (challenge ? { ...dailyTrack(challengeDay ?? `challenge-${challenge.seed >>> 0}`), id: CHALLENGE_ID, blurb: 'A friends’ challenge track.' } : null), [challenge, challengeDay]);
   const rival = useMemo(() => {
     const r = challenge?.replays?.[0];
     const ghost = decodeReplay(r?.replay);
     return r && ghost ? { name: r.name, ghost } : null;
   }, [challenge]);
   const inChallenge = useRef(!!challenge);
-  const [challengeShown, setChallengeShown] = useState(!!challenge);
+  /** The challenge chip shows through the countdown and the first seconds (it would cover the road later). */
+  const [challengeShown, setChallengeShown] = useState(false);
+  /** The race under way, for its exits and its end. */
+  const raceRef = useRef<RaceKind>(FREE);
+  const [race, setRace] = useState<RaceKind>(FREE);
+  /** The challenge round this mount started (React's dev double mount must not take it for a reload). */
+  const startedHere = useRef<string | null>(null);
+  /** A challenge round that was already over when the game opened. */
+  const [doneRun, setDoneRun] = useState<ChallengeRun | null>(null);
+  /** The menu's track details are unfolded (they fold away on short screens only). */
+  const [info, setInfo] = useState(false);
   const selected = defFor(save.track);
   const car = getCar(save.car);
 
-  const update = useCallback((fn: (s: SaveData) => SaveData) => {
-    const next = fn(saveRef.current);
-    saveRef.current = next;
-    setSave(next);
-    writeSave(next);
+  /** The latest save: picks up what another tab (or a cloud sync) stored meanwhile. */
+  const fresh = useCallback((): SaveData => {
+    const text = savedText();
+    if (text !== null && text !== savedRef.current) {
+      savedRef.current = text;
+      saveRef.current = parseSave(text);
+      setSave(saveRef.current);
+    }
+    return saveRef.current;
   }, []);
+
+  /** Read-modify-write: a change applies to the latest stored save, so another tab's coins, cars and bests stay. */
+  const update = useCallback(
+    (fn: (s: SaveData) => SaveData) => {
+      const next = fn(fresh());
+      saveRef.current = next;
+      setSave(next);
+      const text = writeSave(next);
+      if (text !== null) savedRef.current = text;
+    },
+    [fresh],
+  );
+
+  // Another tab saved: show its coins, cars and bests. Back in the tab: the day may have changed.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent): void => {
+      if (e.key === null || e.key === SAVE_KEY) fresh();
+    };
+    const onBack = (): void => {
+      if (!document.hidden) setToday(todayKey());
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('focus', onBack);
+    document.addEventListener('visibilitychange', onBack);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('focus', onBack);
+      document.removeEventListener('visibilitychange', onBack);
+    };
+  }, [fresh]);
+  // While the menu shows, the daily card follows the clock past midnight.
+  useEffect(() => {
+    if (screen !== 'menu') return;
+    const id = window.setInterval(() => setToday(todayKey()), 1000);
+    return () => window.clearInterval(id);
+  }, [screen]);
 
   // Coins from GlitchBound (QA or an admin) land in the wallet when a signed-in player opens the game.
   const signedIn = useAccount().status === 'member';
@@ -130,6 +209,11 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
     const id = window.setTimeout(() => setGift(0), 8000);
     return () => window.clearTimeout(id);
   }, [gift]);
+  useEffect(() => {
+    if (!challengeShown) return;
+    const id = window.setTimeout(() => setChallengeShown(false), (COUNTDOWN + 3) * 1000);
+    return () => window.clearTimeout(id);
+  }, [challengeShown]);
 
   const go = useCallback((s: Screen) => {
     screenRef.current = s;
@@ -137,17 +221,46 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
     setConfirmLeave(false);
   }, []);
 
-  /** Starts a race on the selected track. Today's daily track is three races a day: false when they are used up. */
+  const setRaceKind = useCallback((r: RaceKind) => {
+    raceRef.current = r;
+    setRace(r);
+  }, []);
+
+  /**
+   * Starts a race on the selected track, or the challenge round. Today's daily track is three races a
+   * day and a challenge round has one attempt: false when there is none left.
+   */
   const startRace = useCallback((): boolean => {
     const engine = engineRef.current;
     if (!engine) return false;
-    const s = saveRef.current;
-    const chal = inChallenge.current && challengeDef;
-    const def = chal ? challengeDef : defFor(s.track);
-    if (!chal && def.id === daily.id) {
-      if (countDay(s.dailyRaced, today) >= DAILY_RACES) return false;
-      update((cur) => ({ ...cur, dailyRaced: [...cur.dailyRaced, today].slice(-KEEP_DAILY) }));
-    }
+    const s = fresh();
+    const day = todayKey();
+    setToday(day);
+    const chal = inChallenge.current && challengeDef ? (challenge ?? null) : null;
+    let kind = FREE;
+    let def: TrackDef;
+    if (chal && challengeDef) {
+      def = challengeDef;
+      const key = runKey(chal);
+      const mine = s.challengeRuns.find((r) => r.key === key);
+      // One attempt: a round that ended (or was started before a reload) is never raced again.
+      if (mine && (mine.ended || startedHere.current !== key)) return false;
+      // "Today's daily" on its day is also one of the day's daily races, while there are any left.
+      const takesDaily = mine ? (mine.daily ?? null) : challengeDay === day && countDay(s.dailyRaced, day) < DAILY_RACES ? day : null;
+      if (!mine) {
+        update((cur) => {
+          const x = putRun(cur, { key, score: 0, race: null, lap: null, ...(takesDaily ? { daily: takesDaily } : {}) });
+          return takesDaily ? { ...x, dailyRaced: [...x.dailyRaced, takesDaily].slice(-KEEP_DAILY) } : x;
+        });
+      }
+      startedHere.current = key;
+      kind = { kind: 'challenge', day: takesDaily };
+    } else if (dayOfTrack(s.track) !== null) {
+      def = dailyTrack(day);
+      if (countDay(s.dailyRaced, day) >= DAILY_RACES) return false;
+      update((cur) => ({ ...cur, dailyRaced: [...cur.dailyRaced, day].slice(-KEEP_DAILY) }));
+      kind = { kind: 'daily', day };
+    } else def = defFor(s.track);
     engine.releaseInput();
     const b: Bests = chal ? {} : (s.bests[def.id] ?? {});
     engine.race(trackFor(def), specFor(getCar(s.car)), chal ? (rival?.ghost ?? null) : loadGhost(def.id), b.lap ?? null, {
@@ -156,68 +269,82 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
       playerCar: s.car,
       bestSplits: b.splits ?? null,
     });
+    setRaceKind(kind);
     setFinish(null);
+    setChallengeShown(!!chal);
     go('race');
     host.report({ type: 'start' });
     return true;
-  }, [defFor, trackFor, go, host, challengeDef, rival, daily, today, update]);
+  }, [defFor, trackFor, go, host, challenge, challengeDef, challengeDay, rival, update, fresh, setRaceKind]);
 
   const toMenu = useCallback(() => {
     const engine = engineRef.current;
     if (!engine) return;
     inChallenge.current = false;
     setChallengeShown(false);
-    engine.attract(trackFor(defFor(saveRef.current.track)));
+    setDoneRun(null);
+    setRaceKind(FREE);
+    const day = todayKey();
+    setToday(day);
+    const id = saveRef.current.track;
+    engine.attract(trackFor(dayOfTrack(id) !== null ? dailyTrack(day) : defFor(id)));
     go('menu');
-  }, [defFor, trackFor, go]);
+  }, [defFor, trackFor, go, setRaceKind]);
 
+  /** The car is over the line: everything is recorded now; the result card follows a moment later (onResult). */
   const onFinish = useCallback(
     (sim: RaceSim) => {
       const result = sim.result();
       const def = sim.track.def;
-      const s0 = saveRef.current;
-      if (def.id === CHALLENGE_ID && challenge) {
-        // Challenge laps don't touch your bests, ghosts or coins; the best lap goes to the others as a ghost.
-        const stats: Record<string, number> = { drift: result.drift, cleanLaps: result.cleanLaps };
-        if (result.best !== null) stats.lapMs = Math.round(result.best * 1000);
-        if (result.raceTime !== null) stats.raceMs = Math.round(result.raceTime * 1000);
-        host.report({ type: 'end', score: result.score, stats, challenge: { id: challenge.id, round: challenge.round, replay: sim.newGhost ? encodeReplay(sim.newGhost) : undefined } });
-        setFinish({ result, track: def, newRecord: false, medal: raceMedal(def.par, result.raceTime), coins: 0, newCars: [] });
-        go('result');
-        return;
-      }
-      const prev: Bests = { ...(s0.bests[def.id] ?? {}) };
-      const next: Bests = { ...prev };
-      let newRecord = false;
-      if (result.best !== null && (!prev.lap || result.best < prev.lap)) next.lap = result.best;
-      // The Time Trial sector reference: the best lap that has splits.
-      const bs = result.bestSplits;
-      if (bs && (!prev.splits || bs[bs.length - 1]! < prev.splits[prev.splits.length - 1]!)) next.splits = bs;
-      if (result.position !== null && result.raceTime !== null && (!prev.position || result.position < prev.position)) next.position = result.position;
-      if (result.position === 1 && result.raceTime !== null && result.aiLevel !== null && (prev.wonLevel === undefined || result.aiLevel > prev.wonLevel)) next.wonLevel = result.aiLevel;
-      if (result.raceTime !== null && (!prev.race || result.raceTime < prev.race)) {
-        next.race = result.raceTime;
-        newRecord = prev.race !== undefined;
-      }
-      const stored = loadGhost(def.id);
-      if (sim.newGhost && (!stored || sim.newGhost.time < stored.time)) saveGhost(def.id, sim.newGhost);
-
-      const isDaily = def.id === daily.id;
+      const chal = def.id === CHALLENGE_ID && challenge ? challenge : null;
+      // The daily this race was, on its own day (a race started before midnight finishes as yesterday's).
+      const day = chal ? raceRef.current.day : dayOfTrack(def.id);
+      // Bests, ghost and coins go to the race's own track, or to the daily a challenge round also was.
+      // Other challenge laps don't touch them; the best lap goes to the others as a ghost.
+      const recordId = chal ? (day ? `${DAILY_PREFIX}${day}` : null) : def.id;
       const medal = raceMedal(def.par, result.raceTime);
-      const firstDaily = isDaily && result.raceTime !== null && !s0.dailyPaid.includes(today);
-      const coins = raceCoins({ validLaps: result.laps.filter((l) => l.valid).length, medal, newBest: newRecord, firstDaily, position: result.raceTime !== null ? result.position : null });
-      const before = medalUnlocks(s0);
-      let after: SaveData = {
-        ...s0,
-        bests: { ...s0.bests, [def.id]: next },
-        coins: s0.coins + coins,
-        earned: s0.earned + coins,
-        dailyPaid: firstDaily ? [...s0.dailyPaid, today].slice(-7) : s0.dailyPaid,
-        dailyEnded: isDaily && countDay(s0.dailyEnded, today) < countDay(s0.dailyRaced, today) ? [...s0.dailyEnded, today].slice(-KEEP_DAILY) : s0.dailyEnded,
-      };
-      const newCars = medalUnlocks(after).filter((c) => !before.includes(c));
-      if (newCars.length) after = { ...after, cars: [...after.cars, ...newCars.map((c) => c.id)] };
-      update(() => after);
+      let newRecord = false;
+      let coins = 0;
+      let newCars: CarDef[] = [];
+      if (recordId) {
+        const stored = loadGhost(recordId);
+        if (sim.newGhost && (!stored || sim.newGhost.time < stored.time)) saveGhost(recordId, sim.newGhost);
+      }
+      update((s0) => {
+        let after = s0;
+        if (recordId) {
+          const prev: Bests = { ...(s0.bests[recordId] ?? {}) };
+          const next: Bests = { ...prev };
+          if (result.best !== null && (!prev.lap || result.best < prev.lap)) next.lap = result.best;
+          // The Time Trial sector reference: the best lap that has splits.
+          const bs = result.bestSplits;
+          if (bs && (!prev.splits || bs[bs.length - 1]! < prev.splits[prev.splits.length - 1]!)) next.splits = bs;
+          if (result.position !== null && (!prev.position || result.position < prev.position)) next.position = result.position;
+          if (result.position === 1 && result.aiLevel !== null && (prev.wonLevel === undefined || result.aiLevel > prev.wonLevel)) next.wonLevel = result.aiLevel;
+          if (result.raceTime !== null && (!prev.race || result.raceTime < prev.race)) {
+            next.race = result.raceTime;
+            newRecord = prev.race !== undefined;
+          }
+          const firstDaily = !!day && result.raceTime !== null && !s0.dailyPaid.includes(day);
+          coins = raceCoins({ validLaps: result.laps.filter((l) => l.valid).length, medal, newBest: newRecord, firstDaily, position: result.position });
+          const before = medalUnlocks(s0);
+          const bests = { ...s0.bests, [recordId]: next };
+          after = {
+            ...s0,
+            // Past days' daily tracks never come back: their bests go.
+            bests: day ? pruneDailyBests(bests, [day, todayKey()]) : bests,
+            coins: s0.coins + coins,
+            earned: s0.earned + coins,
+            dailyPaid: firstDaily && day ? [...s0.dailyPaid, day].slice(-7) : s0.dailyPaid,
+            dailyEnded: day && countDay(s0.dailyEnded, day) < countDay(s0.dailyRaced, day) ? [...s0.dailyEnded, day].slice(-KEEP_DAILY) : s0.dailyEnded,
+          };
+          if (day) after = putResult(after, { day, score: result.score, race: result.raceTime, lap: result.best, finished: true });
+          newCars = medalUnlocks(after).filter((c) => !before.includes(c));
+          if (newCars.length) after = { ...after, cars: [...after.cars, ...newCars.map((c) => c.id)] };
+        }
+        if (chal) after = putRun(after, { key: runKey(chal), ended: 'finished', score: result.score, race: result.raceTime, lap: result.best, ...(day ? { daily: day } : {}) });
+        return after;
+      });
 
       const stats: Record<string, number> = { drift: result.drift, cleanLaps: result.cleanLaps };
       if (result.best !== null) stats.lapMs = Math.round(result.best * 1000);
@@ -225,19 +352,29 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
       if (result.position !== null) stats.position = result.position;
       if (result.aiLevel !== null) stats.aiLevel = result.aiLevel;
       /**
-       * The one place a round's end is reported. `isDaily` is true for rounds on today's generated
-       * track; the arcade counts those as this game's own daily. `score` is the leaderboard value
-       * (race points: higher is better, ~1000 per lap at gold pace, comparable across tracks).
+       * The one place a finished round's end is reported. `daily` marks a race on today's generated
+       * track, finished on its day: the arcade counts those as this game's own daily. `score` is the
+       * leaderboard value (race points: higher is better, ~1000 per lap at gold pace, comparable across tracks).
        */
-      const reportEnd = (isDailyRound: boolean): void => {
-        host.report(isDailyRound ? { type: 'end', score: result.score, stats, daily: true } : { type: 'end', score: result.score, stats });
-      };
-      reportEnd(isDaily);
-      setFinish({ result, track: def, newRecord, medal, coins, newCars });
-      go('result');
+      const countsToday = !!day && day === todayKey();
+      host.report({
+        type: 'end',
+        score: result.score,
+        stats,
+        ...(countsToday ? { daily: true } : {}),
+        ...(chal ? { challenge: { id: chal.id, round: chal.round, replay: sim.newGhost ? encodeReplay(sim.newGhost) : undefined } } : {}),
+      });
+      setFinish({ result, track: def, newRecord, medal, coins, newCars, day });
+      setChallengeShown(false);
+      go('finished');
     },
-    [update, host, go, daily, today, challenge],
+    [update, host, go, challenge],
   );
+
+  /** The finished race's result card, after FINISH! (any key but R shows it at once). */
+  const onResult = useCallback(() => {
+    if (screenRef.current === 'finished') go('result');
+  }, [go]);
 
   const pause = useCallback(() => {
     engineRef.current?.pause();
@@ -250,39 +387,106 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
     go('race');
   }, [go]);
 
-  /** Whether today's daily race is under way (racing or paused). */
-  const onDailyRace = (): boolean => !inChallenge.current && (screenRef.current === 'race' || screenRef.current === 'paused') && saveRef.current.track === daily.id;
-
   /**
    * A daily race that is left (or was left before a reload) can't be resumed. It still ends, once, with
    * whatever was driven so far (nothing after a reload), so the day counts for the arcade streak; the
-   * menu then says it was left unfinished.
+   * menu then says it was left unfinished. A race slot held by a challenge round still open is that round's to end.
    */
   const settleDaily = useCallback(
-    (sim: RaceSim | null) => {
-      const s0 = saveRef.current;
-      if (countDay(s0.dailyEnded, today) >= countDay(s0.dailyRaced, today)) return;
-      const r = sim?.track.def.id === daily.id ? sim.result() : null;
-      host.report({ type: 'end', score: r?.score ?? 0, stats: r ? { drift: r.drift, cleanLaps: r.cleanLaps } : {}, daily: true });
-      update((cur) => ({ ...cur, dailyEnded: [...cur.dailyEnded, today].slice(-KEEP_DAILY), dailyLeft: [...cur.dailyLeft, today].slice(-KEEP_DAILY) }));
+    (day: string, sim: RaceSim | null) => {
+      const s0 = fresh();
+      const held = s0.challengeRuns.filter((r) => !r.ended && r.daily === day).length;
+      if (countDay(s0.dailyEnded, day) + held >= countDay(s0.dailyRaced, day)) return;
+      const r = sim && dayOfTrack(sim.track.def.id) === day ? sim.result() : null;
+      const score = r?.score ?? 0;
+      host.report({ type: 'end', score, stats: r ? { drift: r.drift, cleanLaps: r.cleanLaps } : {}, ...(day === todayKey() ? { daily: true } : {}) });
+      update((cur) => putResult({ ...cur, dailyEnded: [...cur.dailyEnded, day].slice(-KEEP_DAILY), dailyLeft: [...cur.dailyLeft, day].slice(-KEEP_DAILY) }, { day, score, race: null, lap: r?.best ?? null, finished: false }));
     },
-    [host, update, today, daily],
+    [host, update, fresh],
   );
 
-  // Leaving today's daily race from the pause menu asks first: it uses up one of the day's races.
+  /**
+   * A challenge round has one attempt and a race can't be resumed: one that is left mid-race (or was
+   * found started after a reload) ends here, once, with what was driven so far (nothing after a reload).
+   * Returns the ended round, or null if there was nothing to end.
+   */
+  const settleChallenge = useCallback(
+    (sim: RaceSim | null, how: 'left' | 'reload'): ChallengeRun | null => {
+      if (!challenge) return null;
+      const run = fresh().challengeRuns.find((r) => r.key === runKey(challenge));
+      if (!run || run.ended) return null;
+      const r = sim?.track.def.id === CHALLENGE_ID ? sim.result() : null;
+      const ended: ChallengeRun = { ...run, ended: how, score: r?.score ?? 0, race: null, lap: r?.best ?? null };
+      const day = run.daily ?? null;
+      host.report({
+        type: 'end',
+        score: ended.score,
+        stats: r ? { drift: r.drift, cleanLaps: r.cleanLaps } : {},
+        ...(day && day === todayKey() ? { daily: true } : {}),
+        challenge: { id: challenge.id, round: challenge.round, replay: sim?.newGhost ? encodeReplay(sim.newGhost) : undefined },
+      });
+      update((cur) => {
+        const x = putRun(cur, ended);
+        if (!day || countDay(x.dailyEnded, day) >= countDay(x.dailyRaced, day)) return x;
+        return putResult({ ...x, dailyEnded: [...x.dailyEnded, day].slice(-KEEP_DAILY), dailyLeft: [...x.dailyLeft, day].slice(-KEEP_DAILY) }, { day, score: ended.score, race: null, lap: ended.lap, finished: false });
+      });
+      return ended;
+    },
+    [challenge, fresh, host, update],
+  );
+
+  /** Shows a challenge round that is over (it is never raced again), on its track. */
+  const showDone = useCallback(
+    (run: ChallengeRun) => {
+      const engine = engineRef.current;
+      if (!engine || !challengeDef) return;
+      engine.attract(trackFor(challengeDef));
+      setDoneRun(run);
+      go('done');
+    },
+    [challengeDef, trackFor, go],
+  );
+
+  /** Opens the challenge round: raced once, or shown as it ended. */
+  const openChallenge = useCallback(() => {
+    if (!challenge) return;
+    const s = fresh();
+    const key = runKey(challenge);
+    let run = s.challengeRuns.find((r) => r.key === key) ?? null;
+    if (!run && challengeDay) {
+      // "Today's daily" already raced to the line that day: that result is this round's score (one attempt for both).
+      const res = s.dailyResults.find((x) => x.day === challengeDay && x.finished);
+      if (res) {
+        const counted: ChallengeRun = { key, ended: 'daily', score: res.score, race: res.race, lap: res.lap, daily: challengeDay };
+        const stats: Record<string, number> = {};
+        if (res.lap !== null) stats.lapMs = Math.round(res.lap * 1000);
+        if (res.race !== null) stats.raceMs = Math.round(res.race * 1000);
+        host.report({ type: 'start' });
+        host.report({ type: 'end', score: res.score, stats, challenge: { id: challenge.id, round: challenge.round } });
+        update((cur) => putRun(cur, counted));
+        run = counted;
+      }
+    }
+    if (run?.ended) showDone(run);
+    else if (!startRace()) toMenu();
+  }, [challenge, challengeDay, fresh, host, update, showDone, startRace, toMenu]);
+
+  // Leaving a counted race (today's daily, a challenge round) from the pause menu asks first.
   const leave = (): void => {
-    if (onDailyRace() && !confirmLeave) {
+    const kind = raceRef.current;
+    if (kind.kind !== 'free' && !confirmLeave) {
       setConfirmLeave(true);
       return;
     }
     setConfirmLeave(false);
-    if (onDailyRace()) settleDaily(engineRef.current?.sim ?? null);
+    if (kind.kind === 'challenge') settleChallenge(engineRef.current?.sim ?? null, 'left');
+    else if (kind.kind === 'daily' && kind.day) settleDaily(kind.day, engineRef.current?.sim ?? null);
     toMenu();
   };
 
-  const handlers = useRef({ startRace, toMenu, onFinish, pause, resume, onDailyRace, settleDaily });
+  const handlers = useRef({ startRace, toMenu, onFinish, onResult, pause, resume, settleDaily, settleChallenge, openChallenge });
   useEffect(() => {
-    handlers.current = { startRace, toMenu, onFinish, pause, resume, onDailyRace, settleDaily };
+    handlers.current = { startRace, toMenu, onFinish, onResult, pause, resume, settleDaily, settleChallenge, openChallenge };
   });
 
   // Engine lifetime = component lifetime. Everything is released on unmount.
@@ -292,6 +496,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
     if (!canvas || !root) return;
     const engine = new Engine(canvas, root, {
       onFinish: (sim) => handlers.current.onFinish(sim),
+      onResult: () => handlers.current.onResult(),
       onAutoPause: () => {
         if (screenRef.current === 'race') {
           engine.releaseInput();
@@ -299,37 +504,65 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
           setScreen('paused');
         }
       },
-      onUiKey: (key: UiKey) => {
+      onUiKey: (key: UiKey): boolean => {
         const s = screenRef.current;
-        // A challenge is one race: Enter and R don't race it again from the result screen.
-        if (s === 'result' && inChallenge.current && key !== 'pause') return;
-        if (key === 'confirm' && (s === 'menu' || s === 'result')) handlers.current.startRace();
-        else if (key === 'confirm' && s === 'paused') handlers.current.resume();
-        // Today's daily races are counted: R must not throw one away halfway (it has no Restart button either).
-        else if (key === 'restart' && (s === 'race' || s === 'paused') && !inChallenge.current && saveRef.current.track === daily.id) return;
-        else if (key === 'restart' && s !== 'menu' && s !== 'garage' && !handlers.current.startRace()) handlers.current.toMenu();
-        else if (key === 'pause' && s === 'race') handlers.current.pause();
-        else if (key === 'pause' && s === 'paused') handlers.current.resume();
-        else if (key === 'pause' && (s === 'result' || s === 'garage')) handlers.current.toMenu();
+        const h = handlers.current;
+        const chal = inChallenge.current;
+        // Over the line: the race is already recorded. R races again (not a challenge); any other key shows the result.
+        if (s === 'finished') {
+          if (key === 'restart' && !chal) {
+            if (!h.startRace()) h.toMenu();
+          } else h.onResult();
+          return true;
+        }
+        // A challenge round is one race: Enter and R don't race it again from the result.
+        if (chal && (s === 'result' || s === 'done')) {
+          if (key !== 'pause') return false;
+          h.toMenu();
+          return true;
+        }
+        if (key === 'confirm' && (s === 'menu' || s === 'result')) return h.startRace();
+        if (key === 'confirm' && s === 'paused') {
+          h.resume();
+          return true;
+        }
+        // Today's daily races are counted and a challenge round has one attempt: R must not throw one
+        // away halfway (there is no Restart button for them either).
+        if (key === 'restart' && (s === 'race' || s === 'paused') && raceRef.current.kind !== 'free') return false;
+        if (key === 'restart' && (s === 'race' || s === 'paused' || s === 'result')) {
+          if (!h.startRace()) h.toMenu();
+          return true;
+        }
+        if (key === 'pause' && s === 'race') h.pause();
+        else if (key === 'pause' && s === 'paused') h.resume();
+        else if (key === 'pause' && (s === 'result' || s === 'garage')) h.toMenu();
+        else return false;
+        return true;
       },
     });
     engineRef.current = engine;
     engine.touchMode = touch;
     engine.setMuted(saveRef.current.muted);
     engine.setCar(getCar(saveRef.current.car));
+    const day = todayKey();
+    // A challenge round started before a reload can't be resumed: it ends now, with nothing driven.
+    if (challenge) {
+      const run = saveRef.current.challengeRuns.find((r) => r.key === runKey(challenge));
+      if (run && !run.ended && startedHere.current !== run.key) handlers.current.settleChallenge(null, 'reload');
+    }
     // Today's daily race was left before a reload or a closed tab: it ends now, unfinished. (Saves from
     // before races were counted have no end entry for a finished race; its best lap tells.)
     const s0 = saveRef.current;
-    if (countDay(s0.dailyEnded, today) > 0 || !s0.bests[daily.id]?.lap) handlers.current.settleDaily(null);
-    if (inChallenge.current) handlers.current.startRace();
+    if (countDay(s0.dailyEnded, day) > 0 || !s0.bests[`${DAILY_PREFIX}${day}`]?.lap) handlers.current.settleDaily(day, null);
+    if (inChallenge.current) handlers.current.openChallenge();
     else handlers.current.toMenu();
     return () => {
-      // The arcade's Restart or Exit (or leaving the page) during today's daily race ends it here
-      // (a race already over the line but not yet shown is reported as finished).
-      if (handlers.current.onDailyRace()) {
-        if (engine.sim?.finished) handlers.current.onFinish(engine.sim);
-        else handlers.current.settleDaily(engine.sim);
-      }
+      // The arcade's Restart or Exit (or leaving the page) mid-race ends a counted race here, with what
+      // was driven. (React's dev double mount tears down a challenge race that hasn't moved: no goodbye.)
+      const kind = raceRef.current;
+      const live = screenRef.current === 'race' || screenRef.current === 'paused';
+      if (live && kind.kind === 'challenge' && engine.sim && engine.sim.time > -COUNTDOWN) handlers.current.settleChallenge(engine.sim, 'left');
+      else if (live && kind.kind === 'daily' && kind.day) handlers.current.settleDaily(kind.day, engine.sim);
       engine.dispose();
       engineRef.current = null;
     };
@@ -345,10 +578,11 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
     engineRef.current?.setCar(car);
   }, [car]);
 
-  // The arcade's Restart button.
+  // The arcade's Restart button (a challenge round has one attempt).
   const firstRestart = useRef(restartKey);
   useEffect(() => {
-    if (restartKey !== firstRestart.current && !handlers.current.startRace()) handlers.current.toMenu();
+    if (restartKey === firstRestart.current || inChallenge.current) return;
+    if (!handlers.current.startRace()) handlers.current.toMenu();
   }, [restartKey]);
 
   // The arcade asks for a pause (left full screen with Escape, which the browser swallows, or
@@ -417,17 +651,12 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
               Mini <span>Racer</span>
             </h2>
             <div className="mr-head-right">
-              {gift > 0 && (
-                <span className="mr-gift" role="status">
-                  +{gift} from GlitchBound
-                </span>
-              )}
-              <span className="mr-coins mono" aria-label={`${save.coins} coins`}>
+              <span className="mr-coins mono" aria-label={`${formatCoins(save.coins)} coins`}>
                 <i aria-hidden="true" />
-                {save.coins}
+                {formatCoins(save.coins)}
               </span>
               <button
-                className="mr-chip"
+                className="mr-chip mr-sound"
                 onClick={() => {
                   const m = !save.muted;
                   update((s) => ({ ...s, muted: m }));
@@ -435,11 +664,18 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
                 }}
                 aria-pressed={!save.muted}
                 aria-label="Sound"
+                title={save.muted ? 'Muted' : 'Sound'}
               >
-                {save.muted ? 'Muted' : 'Sound'}
+                <SoundIcon muted={save.muted} />
+                <span className="mr-sound-text">{save.muted ? 'Muted' : 'Sound'}</span>
               </button>
               <GameMenuButton className="mr-chip mr-menu-chip" />
             </div>
+            {gift > 0 && (
+              <span className="mr-gift" role="status">
+                +{formatCoins(gift)} from GlitchBound
+              </span>
+            )}
           </div>
 
           <div className="mr-tracks" role="radiogroup" aria-label="Track">
@@ -471,22 +707,32 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
             })}
           </div>
 
-          <p className="mr-blurb">{selected.blurb}</p>
+          {/* On short screens the track's details fold into one row (Track info), so Race! needs less scrolling. */}
+          <div className={`mr-info${info ? ' is-open' : ''}`}>
+            <button className="mr-info-toggle" aria-expanded={info} aria-controls="mr-info-body" onClick={() => setInfo((v) => !v)}>
+              <span className={`mr-type mr-type-${selected.type}`}>{TRACK_TYPES[selected.type].name}</span>
+              <span className="mr-info-label">Track info</span>
+              <span className="mr-info-chev" aria-hidden="true" />
+            </button>
+            <div className="mr-info-body" id="mr-info-body">
+              <p className="mr-blurb">{selected.blurb}</p>
+              <p className="mr-typehint">
+                <span className={`mr-type mr-type-${selected.type}`}>{TRACK_TYPES[selected.type].name}</span> {TRACK_TYPES[selected.type].hint}
+              </p>
+              <div className="mr-surfaces">
+                {surfacesOf(selected).map((s) => (
+                  <span key={s} className={`mr-surface mr-surface-${s}`}>
+                    {SURFACE_LABEL[s]}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
           {selected.id === RANDOM_ID && (
             <button className="mr-chip mr-roll" onClick={rollRandom}>
               🎲 Roll a new random track
             </button>
           )}
-          <p className="mr-typehint">
-            <span className={`mr-type mr-type-${selected.type}`}>{TRACK_TYPES[selected.type].name}</span> {TRACK_TYPES[selected.type].hint}
-          </p>
-          <div className="mr-surfaces">
-            {surfacesOf(selected).map((s) => (
-              <span key={s} className={`mr-surface mr-surface-${s}`}>
-                {SURFACE_LABEL[s]}
-              </span>
-            ))}
-          </div>
 
           <div className="mr-modes" role="radiogroup" aria-label="Mode">
             {(['trial', 'race'] as RaceMode[]).map((m) => (
@@ -580,12 +826,14 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
 
       {screen === 'paused' && (
         <div className="mr-sheet mr-small">
-          <h2 className="mr-title">{confirmLeave ? 'Leave today’s daily?' : 'Paused'}</h2>
+          <h2 className="mr-title">{!confirmLeave ? 'Paused' : race.kind === 'challenge' ? 'Leave the challenge?' : 'Leave today’s daily?'}</h2>
           {confirmLeave && (
             <p className="mr-note">
-              {racesLeft > 0
-                ? `The race ends unfinished and counts as one of today’s ${DAILY_RACES}. You have ${racesLeft} more after it.`
-                : 'This is today’s last race: it ends unfinished, and the daily track opens again tomorrow.'}
+              {race.kind === 'challenge'
+                ? `The round has one attempt: it ends here, with what you’ve driven so far.${race.day ? ' It was one of today’s daily races too.' : ''}`
+                : racesLeft > 0
+                  ? `The race ends unfinished and counts as one of today’s ${DAILY_RACES}. You have ${racesLeft} more after it.`
+                  : 'This is today’s last race: it ends unfinished, and the daily track opens again tomorrow.'}
             </p>
           )}
           <div className="mr-actions">
@@ -599,7 +847,7 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
             >
               {confirmLeave ? 'Keep racing' : 'Resume'}
             </button>
-            {(finish?.track.id ?? save.track) !== daily.id && (
+            {race.kind === 'free' && (
               <button className="mr-btn" onClick={startRace}>
                 Restart
               </button>
@@ -611,12 +859,67 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
         </div>
       )}
 
-      {screen === 'race' && finish === null && challengeShown && (
-        <p className="mr-chal">⚔️ Challenge{rival ? ` · racing ${rival.name}’s ghost` : ' · you set the pace'}</p>
-      )}
+      {screen === 'race' && challengeShown && <p className="mr-chal">⚔️ Challenge{rival ? ` · racing ${rival.name}’s ghost` : ' · you set the pace'}</p>}
       {screen === 'result' && finish && (
-        <ResultCard finish={finish} bests={save.bests[finish.track.id] ?? {}} onAgain={startRace} onMenu={toMenu} touch={touch} challengeId={finish.track.id === CHALLENGE_ID ? challenge?.id : undefined} day={finish.track.id === daily.id ? today : undefined} racesLeft={racesLeft} />
+        <ResultCard
+          finish={finish}
+          bests={save.bests[finish.track.id] ?? {}}
+          onAgain={startRace}
+          onMenu={toMenu}
+          touch={touch}
+          challengeId={finish.track.id === CHALLENGE_ID ? challenge?.id : undefined}
+          day={finish.day ?? undefined}
+          racesLeft={racesLeft}
+        />
       )}
+      {screen === 'done' && doneRun && challenge && <ChallengeDone run={doneRun} challengeId={challenge.id} onMenu={toMenu} />}
+    </div>
+  );
+}
+
+function SoundIcon({ muted }: { muted: boolean }) {
+  return (
+    <svg className="mr-sound-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+      <path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor" />
+      {muted ? <path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /> : <path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" fill="none" />}
+    </svg>
+  );
+}
+
+/** A challenge round that was over before the game opened: shown as it ended, never raced again. */
+function ChallengeDone({ run, challengeId, onMenu }: { run: ChallengeRun; challengeId: string; onMenu: () => void }) {
+  const note =
+    run.ended === 'daily'
+      ? 'Your daily result counts here: the daily track is one attempt for both.'
+      : run.ended === 'reload'
+        ? 'This round was already started. It has one attempt, so it ended there.'
+        : run.ended === 'left'
+          ? 'You left this round before the finish. It has one attempt, so it ended there.'
+          : 'You’ve raced this round: it has one attempt each.';
+  return (
+    <div className="mr-sheet mr-result">
+      <div className="mr-result-top">
+        <span className="mr-kicker mono">⚔️ Challenge · Time Trial</span>
+      </div>
+      <div className="mr-headline">
+        <div>
+          <span className="mr-label mono">Race time</span>
+          <strong className="mono">{run.race !== null ? fmtTime(run.race) : 'Not counted'}</strong>
+        </div>
+      </div>
+      <p className="mr-note-soft">{note}</p>
+      <div className="mr-score mono">
+        <span>{run.score.toLocaleString('en-US')} race points</span>
+        {run.lap !== null && <span>Best lap {fmtTime(run.lap)}</span>}
+      </div>
+      <div className="mr-actions">
+        <a className="mr-go" href={`/c/${challengeId}`} onClick={openChallengeScores} autoFocus>
+          See the scoreboard
+        </a>
+        <button className="mr-btn" onClick={onMenu}>
+          Menu
+        </button>
+      </div>
     </div>
   );
 }
@@ -635,9 +938,9 @@ function Garage({ save, onPick, onBack, golds }: { save: SaveData; onPick: (c: C
       <div className="mr-menu-head">
         <h2 className="mr-title">Garage</h2>
         <div className="mr-head-right">
-          <span className="mr-coins mono" aria-label={`${save.coins} coins`}>
+          <span className="mr-coins mono" aria-label={`${formatCoins(save.coins)} coins`}>
             <i aria-hidden="true" />
-            {save.coins}
+            {formatCoins(save.coins)}
           </span>
           <button className="mr-btn" onClick={onBack}>
             Done
@@ -706,14 +1009,15 @@ function ResultCard({ finish, bests, onAgain, onMenu, touch, challengeId, day, r
         </div>
       </div>
       {result.laps.length > 0 && <ResultLine line={lapLine(track.par, result.laps)} label={`Lap medals: ${result.laps.map((l, i) => (l.valid ? `lap ${i + 1} ${fmtTime(l.time)}` : `lap ${i + 1} missed`)).join(', ')}`} />}
-      {result.position !== null && (
+      {result.mode === 'race' && (
         <ol className="mr-standings mono" aria-label="Finishing order">
-          {result.standings.map((s, i) => (
+          {/* A race that doesn't count has no place for you: the rivals keep theirs, you come last, not ranked. */}
+          {(result.position !== null ? result.standings : [...result.standings.filter((s) => !s.player), ...result.standings.filter((s) => s.player)]).map((s, i) => (
             <li key={s.name} className={s.player ? 'is-me' : ''}>
-              <span className="mr-pos">{ordinal(i + 1)}</span>
+              <span className="mr-pos">{s.player && result.position === null ? '–' : ordinal(i + 1)}</span>
               <i style={{ background: s.look.body }} aria-hidden="true" />
               <span>{s.player ? 'You' : s.name}</span>
-              <span>{s.time !== null ? fmtTime(s.time) : 'racing'}</span>
+              <span>{s.player && result.position === null ? 'not ranked' : s.time !== null ? fmtTime(s.time) : 'racing'}</span>
             </li>
           ))}
         </ol>
@@ -733,15 +1037,24 @@ function ResultCard({ finish, bests, onAgain, onMenu, touch, challengeId, day, r
       )}
       <div className="mr-score mono">
         <span>
-          {result.score} race points{result.levelBonus > 0 ? ` (+${result.levelBonus} AI bonus)` : ''}
+          {result.score.toLocaleString('en-US')} race points{result.levelBonus > 0 ? ` (+${result.levelBonus} AI bonus)` : ''}
         </span>
-        <span className="mr-coins">
-          <i aria-hidden="true" />+{coins}
-        </span>
+        {(!challengeId || coins > 0) && (
+          <span className="mr-coins">
+            <i aria-hidden="true" />+{coins}
+          </span>
+        )}
       </div>
-      <p className="mr-note-soft mono">
-        Best {fmtTime(bests.race ?? null)} · lap {fmtTime(bests.lap ?? null)}
-      </p>
+      {challengeId ? (
+        <p className="mr-note-soft mono">
+          Your best lap this round {fmtTime(result.best)}
+          {day ? ' · it counts as today’s daily race too' : ''}
+        </p>
+      ) : (
+        <p className="mr-note-soft mono">
+          Best {fmtTime(bests.race ?? null)} · lap {fmtTime(bests.lap ?? null)}
+        </p>
+      )}
       {newCars.length > 0 && <p className="mr-unlock">Unlocked: {newCars.map((c) => c.name).join(', ')}!</p>}
       <div className="mr-actions">
         {challengeId ? (

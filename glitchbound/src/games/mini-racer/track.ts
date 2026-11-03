@@ -39,14 +39,16 @@ export interface TrackTypeRules extends Handling {
   hint: string;
   /** Turbo paid for a banked drift chain (x the base payout); 0 = none. */
   turbo: number;
+  /** Drift points paid for a slide (x the base rate): an oval is driven smooth, so its slides pay little. */
+  driftPoints: number;
   /** AI drivers keep the car tidy (no sliding) on this type. */
   noDrift: boolean;
 }
 
 export const TRACK_TYPES: Record<TrackType, TrackTypeRules> = {
-  circuit: { name: 'Circuit', hint: 'Grippy tarmac. Drifting costs speed; clean lines win.', ...GRIP_HANDLING, scrub: 170, turbo: 0, noDrift: true },
-  oval: { name: 'Oval', hint: 'Flat out. Any slide scrubs a lot of speed; keep it smooth.', ...GRIP_HANDLING, scrub: 240, turbo: 0, noDrift: true },
-  snow: { name: 'Snow', hint: 'Low grip and long slides. Drifting is neutral; control is everything.', ...GRIP_HANDLING, scrub: 55, turbo: 0, noDrift: false },
+  circuit: { name: 'Circuit', hint: 'Grippy tarmac. Drifting costs speed; clean lines win.', ...GRIP_HANDLING, scrub: 170, turbo: 0, driftPoints: 1, noDrift: true },
+  oval: { name: 'Oval', hint: 'Flat out. Any slide scrubs a lot of speed and earns few drift points; keep it smooth.', ...GRIP_HANDLING, scrub: 240, turbo: 0, driftPoints: 0.2, noDrift: true },
+  snow: { name: 'Snow', hint: 'Low grip and long slides. Drifting is neutral; control is everything.', ...GRIP_HANDLING, scrub: 55, turbo: 0, driftPoints: 1, noDrift: false },
   // Rally: the tail steps out readily at speed with a sharper turn-in, so drifting is the fun way round.
   rally: {
     name: 'Rally',
@@ -57,6 +59,7 @@ export const TRACK_TYPES: Record<TrackType, TrackTypeRules> = {
     slideRate: 5,
     turnIn: 1.15,
     turbo: 1.25,
+    driftPoints: 1,
     noDrift: false,
   },
 };

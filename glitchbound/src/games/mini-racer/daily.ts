@@ -96,17 +96,16 @@ function parFor(def: TrackDef): number | null {
   return lap?.valid ? Math.round(lap.time * 0.985 * 10) * 100 : null;
 }
 
-export function dailyTrack(day: string): TrackDef {
+/** Layouts tried per day before the safe oval. */
+const ATTEMPTS = 40;
+
+/** The generator's seed for attempt `i` of a day. */
+const attemptSeed = (base: number, i: number): number => (base + Math.imul(i, 0x9e3779b1)) >>> 0;
+
+/** Attempt `i` of a day (-1: the safe oval kept for a day with no drivable attempt), without its gold time. */
+function layout(day: string, i: number): TrackDef {
   const base = hashDay(`mini-racer-${day}`);
-  for (let i = 0; i < 40; i++) {
-    const def = attempt(day, (base + Math.imul(i, 0x9e3779b1)) >>> 0);
-    if (validateTrack(buildTrack(def)).length > 0) continue;
-    const par = parFor(def);
-    if (par === null) continue;
-    def.par = par;
-    return def;
-  }
-  // Practically unreachable; a safe oval keeps the day playable.
+  if (i >= 0) return attempt(day, attemptSeed(base, i));
   const def = attempt(day, base);
   def.points = [
     [400, 600],
@@ -116,7 +115,74 @@ export function dailyTrack(day: string): TrackDef {
     [1200, 1450],
     [300, 1100],
   ];
+  return def;
+}
+
+/** Tries the day's attempts until one is drivable; returns it with its gold time and which attempt it was. */
+function generate(day: string): { def: TrackDef; i: number } {
+  for (let i = 0; i < ATTEMPTS; i++) {
+    const def = layout(day, i);
+    if (validateTrack(buildTrack(def)).length > 0) continue;
+    const par = parFor(def);
+    if (par === null) continue;
+    def.par = par;
+    return { def, i };
+  }
+  // Practically unreachable; a safe oval keeps the day playable.
+  const def = layout(day, -1);
   def.par = parFor(def) ?? Math.round((buildTrack(def).path.length / 330) * 10) * 100;
+  return { def, i: -1 };
+}
+
+/**
+ * Generating a track drives the autopilot round it (thousands of physics steps), so what it settled
+ * on (which attempt, and its gold time) is kept on this device: opening the game again that day, the
+ * random track and a challenge's track cost nothing. Not synced (see platform/syncKeys.ts).
+ */
+const CACHE_KEY = 'gb.mini-racer.tracks';
+/** Bump when the generator changes, so picks made by older code are ignored. */
+const GENERATOR = 1;
+/** Picks kept: today's daily, the random track, a few challenges. */
+const CACHE_SIZE = 6;
+
+interface Pick {
+  k: string;
+  i: number;
+  par: number;
+}
+
+function cachedPicks(): Pick[] {
+  try {
+    const o = JSON.parse(window.localStorage.getItem(CACHE_KEY) ?? 'null') as { v?: unknown; picks?: unknown } | null;
+    if (!o || o.v !== GENERATOR || !Array.isArray(o.picks)) return [];
+    return o.picks.filter(
+      (p): p is Pick =>
+        !!p && typeof p === 'object' && typeof (p as Pick).k === 'string' && Number.isInteger((p as Pick).i) && (p as Pick).i >= -1 && (p as Pick).i < ATTEMPTS && Number.isFinite((p as Pick).par) && (p as Pick).par >= 1000 && (p as Pick).par <= 600_000,
+    );
+  } catch {
+    return [];
+  }
+}
+
+function keepPick(pick: Pick): void {
+  try {
+    const picks = [...cachedPicks().filter((p) => p.k !== pick.k), pick].slice(-CACHE_SIZE);
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify({ v: GENERATOR, picks }));
+  } catch {
+    /* storage full or blocked: it is generated again next time */
+  }
+}
+
+/** The day's track (or any generator key's): from this device's cache when it was generated before. */
+export function dailyTrack(day: string): TrackDef {
+  const hit = cachedPicks().find((p) => p.k === day);
+  if (hit) {
+    const def = layout(day, hit.i);
+    def.par = hit.par;
+    return def;
+  }
+  const { def, i } = generate(day);
+  keepPick({ k: day, i, par: def.par });
   return def;
 }
 
