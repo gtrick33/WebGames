@@ -14,7 +14,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const press = (key: string, extra: Record<string, unknown> = {}, target: EventTarget = window) =>
+const press = (key: string, extra: Record<string, unknown> = {}, target: Element | Window = window) =>
   act(() => {
     fireEvent.keyDown(target, { key, bubbles: true, ...extra });
   });
@@ -100,6 +100,18 @@ describe('Star Grid in the page', () => {
     fireEvent.click(screen.getByText('Paused · tap to continue'));
     wait(1000);
     expect(screen.getByText('0:04')).toBeTruthy();
+  });
+
+  it('tells a mouse and keyboard player to click or press P on the pause card (design: pause copy)', () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(hover: hover)' })) as typeof window.matchMedia;
+    try {
+      render(<StarGrid host={{ report: vi.fn() }} restartKey={0} challenge={spec()} />);
+      press('p');
+      expect(screen.getByText('Paused · click or press P to continue')).toBeTruthy();
+    } finally {
+      window.matchMedia = real;
+    }
   });
 
   it('shows the cursor on the first square with the first arrow press (SR-07)', () => {

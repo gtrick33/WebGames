@@ -272,6 +272,8 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   const started = useRef(false);
   const paint = useRef<{ to: Mark; from: Mark } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  // A mouse and keyboard device is told to click or press P, a touch screen to tap.
+  const [hover] = useState(() => typeof window.matchMedia === 'function' && window.matchMedia('(hover: hover)').matches);
   const [tool, setTool] = useState<Tool>('star');
   const sfxRef = useRef<Sfx | null>(null);
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
@@ -681,7 +683,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
       </div>
       {paused && round.phase === 'play' && (
         <button className="sgd-overlay" onClick={resume}>
-          Paused · tap to continue
+          Paused · {hover ? 'click or press P to continue' : 'tap to continue'}
         </button>
       )}
       {round.phase === 'solved' && (
