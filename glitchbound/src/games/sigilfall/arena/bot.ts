@@ -268,8 +268,9 @@ function control(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter
       if (Math.hypot(on.x - f.x, on.y - f.y) > ab.range) continue;
     } else if (m.blocked(f, ab, on)) continue;
     if (breaks && on.auras.some((x) => x.kind === 'dot')) continue;
-    // alone with them, a hold that breaks only buys time: spend it when time is what's needed
-    if (breaks && enemies.length === 1 && hpShare(f) > 0.5) continue;
+    // alone with them, a hold that breaks only buys time: spend it when time is what's needed (a blade at your
+    // throat, or your life running out)
+    if (breaks && enemies.length === 1 && hpShare(f) > 0.5 && Math.hypot(on.x - f.x, on.y - f.y) > 60) continue;
     // a long hold costs the time to deal damage: use it when it wins something
     if (ab.cast > 0 && m.moving(f)) continue;
     if (ab.aim === 'self') continue;

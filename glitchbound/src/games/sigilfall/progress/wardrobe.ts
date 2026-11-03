@@ -212,12 +212,15 @@ export const campaignDone = (c: Pick<Character, 'quests'>): boolean => c.quests[
 /** The title a hero carries: a warden's, once the story is done. */
 export const heroTitle = (c: Pick<Character, 'quests' | 'cls'>): string | null => (campaignDone(c) ? WARDENS[c.cls].title : null);
 
-/** The first dungeon a hero clears wins them their first Riftstone. */
+/** The level that opens the Rift Trials for a hero who hasn't cleared a dungeon yet. */
+export const RIFT_LEVEL = 20;
+
+/** A hero's first Riftstone comes with the first dungeon they clear, or at level 20, whichever is sooner. */
 export function syncRift(c: Character): boolean {
   if (c.keystone >= 1) return false;
-  const cleared = Object.entries(c.clears).some(([k, n]) => n > 0 && REGIONS[k.split(':')[0] as RegionId]?.kind === 'dungeon');
-  if (cleared) c.keystone = 1;
-  return cleared;
+  const earned = c.level >= RIFT_LEVEL || Object.entries(c.clears).some(([k, n]) => n > 0 && REGIONS[k.split(':')[0] as RegionId]?.kind === 'dungeon');
+  if (earned) c.keystone = 1;
+  return earned;
 }
 
 /** A hero who has finished the story wears their sigil's armor when they choose to; returns true when it just came. */

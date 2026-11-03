@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { CLASSES } from '../data/classes';
 import { REGIONS } from '../data/regions';
 import type { RegionId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import type { Character } from '../progress/character';
-import { heroTitle, wornLooks } from '../progress/wardrobe';
+import { rankOf, topStanding } from '../arena/ranks';
+import { heroTitle, RIFT_LEVEL, wornLooks } from '../progress/wardrobe';
+import { longestNight } from '../vigil/bests';
 import { iconPicture, iconsReady } from '../render/art/gameIcons';
 import { VIGIL_ICON } from '../render/art/iconPicks';
 import { makeMotes, paintSanctumLight, paintSanctumStone, PLINTHS, SANCTUM_H, SANCTUM_W } from '../render/sanctum';
@@ -14,6 +16,8 @@ import { heroDollUrl, heroLook } from '../render/sprites';
 const VIEWS = ['down', 'side', 'up'] as const;
 /** Banners and sigil for the hall before there is a hero to take their color from. */
 const EMPTY_COLOR = '#8d6bff';
+
+const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
 const farthest = (unlocked: RegionId[]) => unlocked.map((id) => REGIONS[id]).reduce((a, b) => (b.levels[1] > a.levels[1] ? b : a), REGIONS.emberwick);
 
@@ -39,6 +43,8 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
     void iconsReady.then(setIcons);
   }, []);
   const hero: Character | null = heroes[at] ?? null;
+  const [night] = useState(longestNight);
+  const [standing] = useState(topStanding);
   const color = hero ? CLASSES[hero.cls].colors.main : EMPTY_COLOR;
 
   /* ------------------------------------------------- the hall, on its canvas */
@@ -101,10 +107,15 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
 
   /* ------------------------------------------------- the stage follows the pointer a little, for depth */
   const boxRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
+  // (before the first paint, and never to nothing: a hall that starts at the wrong size slides into place, and takes
+  // the hero with it)
+  useLayoutEffect(() => {
     // the hall covers the stage, whatever its shape
     const box = boxRef.current!;
-    const fit = (): void => box.style.setProperty('--scale', String(Math.max(box.clientWidth / SANCTUM_W, box.clientHeight / SANCTUM_H)));
+    const fit = (): void => {
+      if (!box.clientWidth || !box.clientHeight) return;
+      box.style.setProperty('--scale', String(Math.max(box.clientWidth / SANCTUM_W, box.clientHeight / SANCTUM_H)));
+    };
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(box);
@@ -238,31 +249,40 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
       </div>
 
       <div className="cs-actions">
-        <div className="cs-mode-stack">
-          <button className="cs-mode is-vigil" onClick={onVigil}>
-            <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.vigil!)} alt="" draggable={false} />
-            <span>
-              <strong>The Vigil</strong>
-              <small>Hold the line</small>
-            </span>
-          </button>
-          <button className="cs-mode is-ring" onClick={onRing}>
-            <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.ring!)} alt="" draggable={false} />
-            <span>
-              <strong>The Ring</strong>
-              <small>Arena, 1v1 to 3v3</small>
-            </span>
-          </button>
-        </div>
+        <button className="cs-mode is-vigil" onClick={onVigil}>
+          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.vigil!)} alt="" draggable={false} />
+          <span>
+            <strong>The Vigil</strong>
+            <small>{night > 0 ? `Longest night ${clock(night)}` : 'Survive the endless horde'}</small>
+          </span>
+        </button>
+        <button className="cs-mode is-ring" onClick={onRing}>
+          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.ring!)} alt="" draggable={false} />
+          <span>
+            <strong>The Ring</strong>
+            <small>
+              Arena · {standing.rating} {rankOf(standing.best).name}
+            </small>
+          </span>
+        </button>
         <button className="cs-enter" onClick={primary} autoFocus>
           {hero ? 'Enter the world' : 'Create your hero'}
         </button>
-        {hero && hero.keystone >= 1 ? (
-          <button className="cs-mode is-rift" onClick={() => onRift(at)}>
-            <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.rift!)} alt="" draggable={false} />
+        <button className={`cs-mode is-rift${hero && hero.keystone >= 1 ? '' : ' is-locked'}`} disabled={!hero || hero.keystone < 1} onClick={() => onRift(at)}>
+          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.rift!)} alt="" draggable={false} />
+          <span>
+            <strong>Rift Trials</strong>
+            <small>{!hero ? 'Make a hero to begin' : hero.keystone >= 1 ? `Riftstone +${hero.keystone}` : `Opens at level ${RIFT_LEVEL} or your first dungeon`}</small>
+          </span>
+        </button>
+        {hero ? (
+          <button className="cs-mode is-danger" onClick={() => setConfirmDelete(at)}>
+            <span className="cs-mode-glyph is-trash" aria-hidden="true">
+              ✕
+            </span>
             <span>
-              <strong>Rift Trials</strong>
-              <small>Riftstone +{hero.keystone}</small>
+              <strong>Delete hero</strong>
+              <small>{hero.name}</small>
             </span>
           </button>
         ) : (
@@ -270,28 +290,28 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
         )}
       </div>
 
-      {hero && (
-        <div className="cs-delete">
-          {confirmDelete === at ? (
-            <>
+      {hero && confirmDelete === at && (
+        <div className="rb-ring-dialog-wrap" role="dialog" aria-label={`Delete ${hero.name}`}>
+          <div className="rb-ring-dialog">
+            <h2>Delete {hero.name}?</h2>
+            <p>
+              Level {hero.level} {CLASSES[hero.cls].name}. This hero, their gear and their story are gone for good.
+            </p>
+            <div className="rb-vigil-actions">
+              <button className="rb-btn" onClick={() => setConfirmDelete(null)} autoFocus>
+                Keep them
+              </button>
               <button
-                className="rb-btn is-small is-danger"
+                className="rb-btn is-danger"
                 onClick={() => {
                   engine.deleteHero(at);
                   setConfirmDelete(null);
                 }}
               >
-                Delete {hero.name} for good?
+                Delete for good
               </button>
-              <button className="rb-btn is-small is-ghost" onClick={() => setConfirmDelete(null)}>
-                Keep
-              </button>
-            </>
-          ) : (
-            <button className="cs-delete-btn" onClick={() => setConfirmDelete(at)} aria-label={`Delete ${hero.name}`}>
-              Delete hero
-            </button>
-          )}
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -39,7 +39,7 @@ export interface RingMap {
   name: string;
   blurb: string;
   /** The ground's look (render/ring.ts). */
-  theme: 'sands' | 'baths' | 'forge';
+  theme: 'sands' | 'frost' | 'forge';
   color: string;
   pillars: Pillar[];
   /** Where each team stands when the gates open: team 0 left, team 1 right. */
@@ -73,17 +73,19 @@ export const MAPS: Record<string, RingMap> = {
     ],
     spawns: [LEFT, RIGHT],
   },
-  baths: {
-    id: 'baths',
-    name: 'The Drowned Baths',
-    blurb: 'A long wall of broken marble down the middle.',
-    theme: 'baths',
-    color: '#5ab0c8',
+  frost: {
+    id: 'frost',
+    name: 'The Frozen Mere',
+    blurb: 'Ice walls set on the slant, and a boulder in the middle.',
+    theme: 'frost',
+    color: '#7fc8ee',
+    // the same turned half a circle, so neither end has the better of it
     pillars: [
-      { x: 260, y: 24, w: 28, h: 56 },
-      { x: 260, y: 170, w: 28, h: 56 },
-      { x: 148, y: 110, w: 26, h: 30 },
-      { x: 374, y: 110, w: 26, h: 30 },
+      { x: 188, y: 26, w: 22, h: 74 },
+      { x: 338, y: 150, w: 22, h: 74 },
+      { x: 261, y: 108, w: 26, h: 34 },
+      { x: 112, y: 176, w: 30, h: 24 },
+      { x: 406, y: 50, w: 30, h: 24 },
       ...ENTRY_WALLS,
     ],
     spawns: [LEFT, RIGHT],

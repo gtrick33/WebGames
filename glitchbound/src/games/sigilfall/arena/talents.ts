@@ -174,5 +174,5 @@ export function cleanTalents(cls: ClassId, ids: readonly string[] | undefined): 
   return out;
 }
 
-/** The icons that aren't an ability's, for the icon build. */
-export const talentIcons = (): string[] => [HP, WILL, MIND];
+/** The icons that aren't an ability's (and the new-rank banner's), for the icon build. */
+export const talentIcons = (): string[] => [HP, WILL, MIND, 'crit_up_status_star_burst_on_gold'];

@@ -11,6 +11,7 @@ import type { ClassId } from '../data/types';
 import { iconPicture } from '../render/art/gameIcons';
 import { MAX_SPELL, MAX_STRENGTH, REST_ICON, SPELLS, STRENGTHS, UNLOCK_HOLD, VIGIL_MAPS, type StrengthId, type VigilMap } from '../vigil/kit';
 import { Vigil, type Card } from '../vigil/sim';
+import { ScreenGate } from './ScreenGate';
 import { toLocal } from './turn';
 import { readBests, saveBest, VigilLobby } from './VigilLobby';
 
@@ -105,6 +106,7 @@ function VigilRun({ engine, face, body, cls, land, onBack }: { engine: SigilEngi
   const [view, setView] = useState<Vigil | null>(null);
   const [best, setBest] = useState(() => readBests()[land.id] ?? 0);
   const [opened, setOpened] = useState<string | null>(null);
+  const [landIn, setLandIn] = useState(false);
   const [paused, setPaused] = useState(false);
   const pausedRef = useRef(false);
   useEffect(() => {
@@ -139,6 +141,9 @@ function VigilRun({ engine, face, body, cls, land, onBack }: { engine: SigilEngi
     world.player.y = (map.h / 2) * TILE;
     const v = new Vigil((Math.random() * 2 ** 32) >>> 0, world.player.x, world.player.y, { cls, map: land, bounds: { x0: TILE, y0: TILE, x1: (map.w - 1) * TILE, y1: (map.h - 1) * TILE } });
     let shown = false;
+    let shownLand = false;
+    // (never kept waiting for a land that doesn't come)
+    const landTimer = window.setTimeout(() => setLandIn(true), 3500);
     let raf = 0;
     let last = performance.now();
     let dpr = 1;
@@ -546,6 +551,10 @@ function VigilRun({ engine, face, body, cls, land, onBack }: { engine: SigilEngi
       }
       p.iframe = v.iframe;
       renderer.draw(world, v.cards || pausedRef.current ? 0 : dt, time);
+      if (!shownLand && renderer.landReady) {
+        shownLand = true;
+        setLandIn(true);
+      }
       draw(v.cards || pausedRef.current ? 0 : dt);
       if (hurtRef.current) hurtRef.current.style.opacity = String(Math.max(v.struck * 0.75, v.hp / v.maxHp < 0.25 ? 0.28 + Math.sin(now / 240) * 0.14 : 0));
       if (flashRef.current) flashRef.current.style.opacity = String(v.levelFlash * 0.55);
@@ -588,6 +597,7 @@ function VigilRun({ engine, face, body, cls, land, onBack }: { engine: SigilEngi
     if (import.meta.env.DEV) (window as unknown as { __vigil?: unknown }).__vigil = { v, frame, keys };
     return () => {
       cancelAnimationFrame(raf);
+      clearTimeout(landTimer);
       ro.disconnect();
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
@@ -604,6 +614,7 @@ function VigilRun({ engine, face, body, cls, land, onBack }: { engine: SigilEngi
   const v = view;
   const newBest = v?.over && Math.floor(v.t) >= best;
   return (
+    <ScreenGate hold={!landIn} label="Finding the land">
     <div className="rb-vigil" ref={boxRef}>
       <div className="rb-vigil-world">
         <canvas ref={baseRef} className="rb-vigil-canvas" />
@@ -730,5 +741,6 @@ function VigilRun({ engine, face, body, cls, land, onBack }: { engine: SigilEngi
         </div>
       )}
     </div>
+    </ScreenGate>
   );
 }

@@ -1,39 +1,15 @@
 import type { ClassId } from '../data/types';
 import { PRESETS } from './abilities';
+import { NEW_STANDING, rankOf, RING_KEY, type Format, type Standing } from './ranks';
 import type { FighterSetup } from './sim';
+
+export { FORMATS, NEW_STANDING, nextRank, rankOf, RANKS, type Format, type Standing } from './ranks';
 
 /**
  * The Ring's standing: a rating for each format, ranks with a name worth earning, and who you're drawn against. It is
  * kept on this device: the ring fights the computer, so this isn't a public ranking and never says it is. The rules
  * for changing a rating are pure so they can be tested.
  */
-
-export type Format = 1 | 2 | 3;
-export const FORMATS: Format[] = [1, 2, 3];
-
-export interface Standing {
-  rating: number;
-  best: number;
-  wins: number;
-  losses: number;
-  streak: number;
-}
-
-export const NEW_STANDING: Standing = { rating: 1000, best: 1000, wins: 0, losses: 0, streak: 0 };
-
-/** Ranks: earned at the rating, kept once reached. */
-export const RANKS: { at: number; name: string; color: string }[] = [
-  { at: 0, name: 'Unblooded', color: '#a8a0b8' },
-  { at: 1150, name: 'Blooded', color: '#c8a868' },
-  { at: 1300, name: 'Sandwalker', color: '#7ad65a' },
-  { at: 1500, name: 'Pit Veteran', color: '#5ab0ff' },
-  { at: 1700, name: 'Bladeward', color: '#b48cff' },
-  { at: 1900, name: 'Warden of the Ring', color: '#ffb45c' },
-  { at: 2100, name: 'Ashbreaker', color: '#ff5a7a' },
-];
-
-export const rankOf = (rating: number): (typeof RANKS)[number] => [...RANKS].reverse().find((r) => rating >= r.at) ?? RANKS[0]!;
-export const nextRank = (rating: number): (typeof RANKS)[number] | null => RANKS.find((r) => r.at > rating) ?? null;
 
 /** The elo rule: what you stood to win against what you were expected to. */
 export function ratingChange(mine: number, theirs: number, won: boolean): number {
@@ -115,8 +91,6 @@ export function drawOpponents(format: Format, seed: number): { comp: Comp; fight
 
 /* ------------------------------------------------------------------ on this device */
 
-const KEY = 'sigilfall.ring.v1';
-
 /** What a hero brings into a match. */
 export interface RingSetup {
   bar: string[];
@@ -155,7 +129,7 @@ export function setsOf(save: RingSave, cls: ClassId): ClassSets {
 
 export function readRing(): RingSave {
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<RingSave> | null;
+    const raw = JSON.parse(localStorage.getItem(RING_KEY) ?? 'null') as Partial<RingSave> | null;
     return { standings: raw?.standings ?? {}, sets: raw?.sets ?? {} };
   } catch {
     return { standings: {}, sets: {} };
@@ -164,7 +138,7 @@ export function readRing(): RingSave {
 
 export function writeRing(s: RingSave): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify(s));
+    localStorage.setItem(RING_KEY, JSON.stringify(s));
   } catch {
     /* a browser that keeps nothing: the match still happened */
   }

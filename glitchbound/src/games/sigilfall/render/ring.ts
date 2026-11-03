@@ -22,7 +22,7 @@ function rng(seed: number): () => number {
 
 const THEME = {
   sands: { dark: '#6a4a2a', mid: '#a87c48', light: '#c89a60', edge: '#3a2616', stone: '#a89a88', stoneDark: '#6c6052', stoneTop: '#cfc2ae', wall: '#4a3626', glow: '#ffb45c' },
-  baths: { dark: '#2a5668', mid: '#7a98a4', light: '#a8c0c8', edge: '#16303c', stone: '#b4c0c8', stoneDark: '#6a7a88', stoneTop: '#dce6ea', wall: '#26404e', glow: '#8fe0ff' },
+  frost: { dark: '#7fa8c4', mid: '#d4e4f0', light: '#f4fafe', edge: '#1a3044', stone: '#9cc8e4', stoneDark: '#4f7ea2', stoneTop: '#e4f4fc', wall: '#1f3a52', glow: '#a8e8ff' },
   forge: { dark: '#2a1a1a', mid: '#4a3430', light: '#604640', edge: '#160c0c', stone: '#5a4a4a', stoneDark: '#2e2222', stoneTop: '#7a6462', wall: '#241414', glow: '#ff7a2a' },
 } as const;
 
@@ -83,27 +83,71 @@ export function paintGround(g: Ctx, map: RingMap): void {
   g.clip();
   g.fillStyle = th.mid;
   g.fillRect(X, Y, ARENA_W, ARENA_H);
-  if (map.theme === 'baths') {
-    // marble squares, cracked, with old water lying in the low places
-    for (let y = 0; y < ARENA_H; y += 24) {
-      for (let x = 0; x < ARENA_W; x += 24) {
-        const v = rand();
-        g.fillStyle = (Math.floor(x / 24) + Math.floor(y / 24)) % 2 ? th.light : th.mid;
-        g.globalAlpha = 0.65 + v * 0.35;
-        g.fillRect(X + x, Y + y, 23, 23);
-      }
+  if (map.theme === 'frost') {
+    // blown snow: speckle, then long soft drifts with a shadow on their lee side
+    for (let i = 0; i < 2200; i++) {
+      g.fillStyle = rand() < 0.6 ? '#ffffff' : '#a8c8de';
+      g.globalAlpha = 0.14 + rand() * 0.32;
+      g.fillRect(X + rand() * ARENA_W, Y + rand() * ARENA_H, 1 + rand() * 2, 1);
     }
     g.globalAlpha = 1;
-    for (let i = 0; i < 11; i++) {
+    for (let i = 0; i < 16; i++) {
       const cx = X + rand() * ARENA_W;
       const cy = Y + rand() * ARENA_H;
-      g.fillStyle = 'rgba(30,110,140,0.5)';
+      const rx = 22 + rand() * 46;
+      const ry = 4 + rand() * 7;
+      g.fillStyle = 'rgba(96,140,176,0.26)';
       g.beginPath();
-      g.ellipse(cx, cy, 16 + rand() * 34, 6 + rand() * 12, 0, 0, Math.PI * 2);
+      g.ellipse(cx + 2, cy + ry * 0.7, rx, ry, 0, 0, Math.PI * 2);
       g.fill();
-      g.fillStyle = 'rgba(190,240,255,0.26)';
-      g.fillRect(cx - 8, cy - 2, 12, 1);
+      g.fillStyle = 'rgba(255,255,255,0.82)';
+      g.beginPath();
+      g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      g.fill();
     }
+    // the mere itself: black water far under clear ice, with the cracks running out from where someone once fell
+    const mere = (cx: number, cy: number, rx: number, ry: number): void => {
+      g.fillStyle = 'rgba(255,255,255,0.9)';
+      g.beginPath();
+      g.ellipse(cx, cy + 2, rx + 5, ry + 4, 0, 0, Math.PI * 2);
+      g.fill();
+      const ice = g.createRadialGradient(cx - rx * 0.25, cy - ry * 0.3, 2, cx, cy, Math.max(rx, ry));
+      ice.addColorStop(0, '#b4e6f8');
+      ice.addColorStop(0.6, '#6fb4d8');
+      ice.addColorStop(1, '#3f80ac');
+      g.fillStyle = ice;
+      g.beginPath();
+      g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      g.fill();
+      g.save();
+      g.clip();
+      g.strokeStyle = 'rgba(240,252,255,0.75)';
+      g.lineWidth = 0.8;
+      for (let i = 0; i < 9; i++) {
+        let x = cx + (rand() - 0.5) * rx * 0.5;
+        let y = cy + (rand() - 0.5) * ry * 0.5;
+        const a = rand() * Math.PI * 2;
+        g.beginPath();
+        g.moveTo(x, y);
+        for (let j = 0; j < 6; j++) {
+          x += Math.cos(a + (rand() - 0.5) * 1.1) * (10 + rand() * 16);
+          y += Math.sin(a + (rand() - 0.5) * 1.1) * (5 + rand() * 9);
+          g.lineTo(x, y);
+        }
+        g.stroke();
+      }
+      // the shine lying across it
+      g.fillStyle = 'rgba(255,255,255,0.24)';
+      g.fillRect(cx - rx, cy - ry * 0.46, rx * 2, ry * 0.16);
+      g.fillRect(cx - rx, cy - ry * 0.16, rx * 2, ry * 0.06);
+      g.restore();
+    };
+    mere(X + ARENA_W / 2, Y + ARENA_H / 2, 96, 46);
+    mere(X + 130, Y + 58, 34, 14);
+    mere(X + ARENA_W - 130, Y + ARENA_H - 58, 34, 14);
+    // old tracks across the snow
+    g.fillStyle = 'rgba(96,136,170,0.34)';
+    for (let i = 0; i < 26; i++) g.fillRect(X + 50 + i * 16, Y + 34 + Math.sin(i * 0.7) * 10 + (i % 2) * 4, 3, 2);
   } else if (map.theme === 'forge') {
     // black stone plates with fire in the seams
     for (let y = 0; y < ARENA_H; y += 34) {
@@ -142,7 +186,7 @@ export function paintGround(g: Ctx, map: RingMap): void {
     }
   }
   // the old sigil in the middle, worn nearly away
-  g.strokeStyle = map.theme === 'forge' ? 'rgba(255,140,60,0.35)' : 'rgba(40,20,10,0.26)';
+  g.strokeStyle = map.theme === 'forge' ? 'rgba(255,140,60,0.35)' : map.theme === 'frost' ? 'rgba(30,70,110,0.2)' : 'rgba(40,20,10,0.26)';
   g.lineWidth = 2;
   for (const r of [58, 44]) {
     g.beginPath();
@@ -203,8 +247,65 @@ function drawWall(g: Ctx, p: Pillar, map: RingMap): void {
   for (let y = p.y - h + 11; y < p.y + p.h - h; y += 11) g.fillRect(p.x, y, p.w, 1);
 }
 
+/** One shard of ice standing out of the snow: a dark side, a lit side and a hard white edge. */
+function shard(g: Ctx, x: number, y: number, w: number, h: number, lean: number): void {
+  const tipX = x + lean;
+  const tipY = y - h;
+  g.fillStyle = '#4f8ebc';
+  g.beginPath();
+  g.moveTo(x - w / 2, y);
+  g.lineTo(tipX, tipY);
+  g.lineTo(x + w * 0.1, y + 1);
+  g.closePath();
+  g.fill();
+  g.fillStyle = '#a8def6';
+  g.beginPath();
+  g.moveTo(x + w * 0.1, y + 1);
+  g.lineTo(tipX, tipY);
+  g.lineTo(x + w / 2, y);
+  g.closePath();
+  g.fill();
+  g.strokeStyle = 'rgba(255,255,255,0.9)';
+  g.lineWidth = 0.8;
+  g.beginPath();
+  g.moveTo(x + w * 0.1, y);
+  g.lineTo(tipX, tipY);
+  g.stroke();
+}
+
+/** Stone on the frozen ground is ice: a thicket of shards the size of the block, tall enough to hide behind. */
+function drawIce(g: Ctx, p: Pillar, time: number): void {
+  const rand = rng(p.x * 31 + p.y * 17 + 5);
+  g.fillStyle = 'rgba(50,90,130,0.3)';
+  g.beginPath();
+  g.ellipse(p.x + p.w / 2 + 3, p.y + p.h, p.w / 2 + 5, 5, 0, 0, Math.PI * 2);
+  g.fill();
+  // a footing of packed snow the shards stand in
+  g.fillStyle = '#eef8fd';
+  g.fillRect(p.x - 1, p.y - 1, p.w + 2, p.h + 2);
+  g.fillStyle = '#c4e0ef';
+  g.fillRect(p.x - 1, p.y + p.h - 2, p.w + 2, 3);
+  const rows = Math.max(1, Math.round(p.h / 13));
+  const across = Math.max(2, Math.round(p.w / 9));
+  for (let r = 0; r < rows; r++) {
+    const y = p.y + ((r + 0.8) / rows) * p.h;
+    for (let i = 0; i < across; i++) {
+      const x = p.x + ((i + 0.5) / across) * p.w + (rand() - 0.5) * 4;
+      shard(g, x, y, 9 + rand() * 7, 18 + rand() * 22, (rand() - 0.5) * 7);
+    }
+  }
+  // a glint walking over it
+  const u = (time * 0.35 + p.x * 0.01) % 1;
+  const gx = p.x + u * p.w;
+  const gy = p.y + p.h * 0.4 - 16;
+  g.fillStyle = 'rgba(255,255,255,0.9)';
+  g.fillRect(gx - 0.5, gy - 3, 1, 6);
+  g.fillRect(gx - 3, gy - 0.5, 6, 1);
+}
+
 function drawPillar(g: Ctx, p: Pillar, map: RingMap, time: number): void {
   if (p.wall) return drawWall(g, p, map);
+  if (map.theme === 'frost') return drawIce(g, p, time);
   const th = THEME[map.theme];
   const x = p.x;
   const y = p.y;
@@ -622,6 +723,17 @@ export function drawRing(g: Ctx, ground: CanvasImageSource, m: Match, looks: Rin
   }
   g.globalAlpha = 1;
   g.restore();
+  // snow coming down over the frozen ground
+  if (map.theme === 'frost') {
+    for (let i = 0; i < 46; i++) {
+      const speed = 12 + (i % 6) * 5;
+      const x = ((i * 83 + Math.sin(time * 0.7 + i) * 14 + time * (5 + (i % 3) * 4)) % RING_VIEW_W + RING_VIEW_W) % RING_VIEW_W;
+      const y = (i * 53 + time * speed) % RING_VIEW_H;
+      g.fillStyle = `rgba(255,255,255,${0.4 + (i % 4) * 0.15})`;
+      const size = 1 + (i % 3) * 0.6;
+      g.fillRect(x, y, size, size);
+    }
+  }
 }
 
 /** Which fighter a point in the view's units is on, if any. */

@@ -85,6 +85,18 @@ describe('who holds a stone, and how far it goes', () => {
     expect(syncRift(c)).toBe(false);
   });
 
+  it('reaching level 20 opens the stones as well, for a hero who hasn’t cleared a dungeon', () => {
+    const young = readyHero('mage', 19);
+    young.keystone = 0;
+    young.clears = {};
+    expect(syncRift(young)).toBe(false);
+    const grown = readyHero('mage', 20);
+    grown.keystone = 0;
+    grown.clears = {};
+    expect(syncRift(grown)).toBe(true);
+    expect(grown.keystone).toBe(1);
+  });
+
   it('stops at the cap until the hero has finished the story', () => {
     const w = trial('crypt', RIFT_CAP_UNFINISHED, 'warrior', 30);
     (w as unknown as { finishKeyRun(t: number, up: number, x: number, y: number): void }).finishKeyRun(10, 3, 0, 0);

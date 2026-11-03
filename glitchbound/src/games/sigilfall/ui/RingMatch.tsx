@@ -1,27 +1,44 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
-import { ABILITIES, TOKEN } from '../arena/abilities';
+import { ABILITIES, TOKEN, type Ability } from '../arena/abilities';
 import { botThink, newBrain } from '../arena/bot';
+import type { ClassSets } from '../arena/ladder';
 import { MAPS } from '../arena/maps';
 import { Match, MATCH_LIMIT, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
 import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
-import type { ClassSets } from '../arena/ladder';
 import type { Face } from '../progress/character';
-import { iconPicture, iconsReady } from '../render/art/gameIcons';
+import { iconPicture } from '../render/art/gameIcons';
 import { drawRing, fighterAt, paintGround, RING_VIEW_H, RING_VIEW_W, RingFx, ringLooks } from '../render/ring';
 import { heroDollUrl } from '../render/sprites';
+import { RingHelp, SetupEditor, timing } from './RingSetup';
+import { ScreenGate } from './ScreenGate';
+import { Stick } from './Stick';
 import { toLocal } from './turn';
-import { SetupEditor } from './RingSetup';
 
 export type Role = { kind: 'solo'; skill: number } | { kind: 'host'; skill: number; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void } | { kind: 'client'; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void };
 
 /** What the room's traffic is handed to (one per match). */
 export type RingInbox = (seat: number, d: unknown) => void;
 
+/** Where the player stands on the ladder going into a match, and what's on the line. */
+export interface MatchStakes {
+  format: number;
+  rating: number;
+  rank: string;
+  color: string;
+  win: number;
+  lose: number;
+  rival: string;
+  blurb: string;
+  rivalRating: number;
+}
+
 const STEP = 1 / 30;
 /** A host speaks ten times a second: plenty for frames that coast between. */
 const SEND_EVERY = 0.1;
+/** The campaign's thumb cluster: the same places, so a phone player's hands already know them. */
+const TOUCH_SLOTS = ['basic', 's1', 's2', 's3', 's4', 'ult', 'dodge'] as const;
 
 const clock = (t: number): string => {
   const left = Math.max(0, MATCH_LIMIT - t);
@@ -32,7 +49,7 @@ const CC_WORD: Record<string, string> = { stun: 'Stunned', fear: 'Feared', incap
 const DR_MARK = ['', '½', '¼', '✕'];
 
 function AuraIcons({ f }: { f: Fighter }) {
-  // what holds them first, then what's left, big ones first
+  // what holds them first, then what's left
   const shown = [...f.auras].sort((a, b) => Number(!!b.cc) - Number(!!a.cc)).slice(0, 6);
   return (
     <span className="rb-ring-auras">
@@ -46,42 +63,44 @@ function AuraIcons({ f }: { f: Fighter }) {
   );
 }
 
-function Frame({ f, m, me, doll, selected, onPick, flip }: { f: Fighter; m: Match; me: Fighter | null; doll: string; selected: boolean; onPick: () => void; flip?: boolean }) {
+function Frame({ f, m, me, doll, tag, onPick, flip }: { f: Fighter; m: Match; me: Fighter | null; doll: string; tag: string | null; onPick: () => void; flip?: boolean }) {
   const hold = f.auras.find((a) => a.cc);
   const c = f.cast;
   const ab = c ? ABILITIES[c.ab] : null;
-  const sees = !me || me === f || m.sees(me, f);
+  const sees = !me || me === f || m.phase !== 'fight' || m.sees(me, f);
   const dr = Object.entries(f.dr).filter(([, d]) => d && d.until > m.clock && d.n > 0);
+  const share = f.hp / f.maxHp;
   return (
-    <button className={`rb-ring-frame${flip ? ' is-flip' : ''}${selected ? ' is-on' : ''}${f.dead ? ' is-dead' : ''}${sees ? '' : ' is-unseen'}`} style={{ ['--c' as string]: CLASSES[f.cls].colors.accent }} onClick={onPick} aria-label={`${f.name}, ${CLASSES[f.cls].name}, ${Math.round((f.hp / f.maxHp) * 100)}% health`}>
+    <button className={`rb-ring-frame${flip ? ' is-flip' : ''}${tag ? ' is-on' : ''}${f.dead ? ' is-dead' : ''}${sees ? '' : ' is-unseen'}`} style={{ ['--c' as string]: CLASSES[f.cls].colors.accent }} onClick={onPick} aria-label={`${f.name}, ${CLASSES[f.cls].name}, ${Math.round(share * 100)}% health`}>
       <span className="rb-ring-face">
         <img src={doll} alt="" draggable={false} />
-        {hold && (
-          <em>
-            {CC_WORD[hold.cc!]} {Math.ceil(hold.t)}
-          </em>
-        )}
       </span>
       <span className="rb-ring-bars">
         <span className="rb-ring-name">
-          {f.name}
-          {!sees && !f.dead && m.phase === 'fight' && <small>out of sight</small>}
+          <b>{f.id === me?.id ? 'You' : f.name}</b>
+          {tag && <em>{tag}</em>}
         </span>
-        <span className="rb-ring-bar">
-          <i style={{ width: `${(f.hp / f.maxHp) * 100}%` }} />
-          <b>{f.dead ? 'Fallen' : `${Math.round((f.hp / f.maxHp) * 100)}%`}</b>
+        <span className={`rb-ring-bar${share < 0.3 ? ' is-low' : ''}`}>
+          <i style={{ width: `${share * 100}%` }} />
+          <b>{f.dead ? 'Fallen' : `${Math.round(share * 100)}%`}</b>
         </span>
         {f.maxMana > 0 && (
           <span className="rb-ring-mana">
             <i style={{ width: `${(f.mana / f.maxMana) * 100}%` }} />
           </span>
         )}
-        {c && ab && (
+        {c && ab ? (
           <span className="rb-ring-cast" style={{ ['--a' as string]: ab.color }}>
             <i style={{ width: `${(c.channel ? 1 - c.t / c.dur : c.t / c.dur) * 100}%` }} />
             <b>{ab.name}</b>
           </span>
-        )}
+        ) : hold ? (
+          <span className="rb-ring-held">
+            {CC_WORD[hold.cc!]} {Math.ceil(hold.t)}s
+          </span>
+        ) : !sees && !f.dead ? (
+          <span className="rb-ring-unseen">Out of sight</span>
+        ) : null}
         <span className="rb-ring-under">
           <AuraIcons f={f} />
           {dr.map(([k, d]) => (
@@ -96,29 +115,59 @@ function Frame({ f, m, me, doll, selected, onPick, flip }: { f: Fighter; m: Matc
   );
 }
 
+/** Who an ability will land on, and whether it can right now. */
+function AimCard({ label, f, note, bad, doll, kind }: { label: string; f: Fighter | null; note: string; bad: boolean; doll: string; kind: 'foe' | 'friend' }) {
+  return (
+    <div className={`rb-ring-aim is-${kind}${f ? '' : ' is-none'}${bad ? ' is-bad' : ''}`}>
+      <small>{label}</small>
+      {f ? (
+        <span className="rb-ring-aim-who">
+          <span className="rb-ring-face is-small" style={{ ['--c' as string]: CLASSES[f.cls].colors.accent }}>
+            <img src={doll} alt="" draggable={false} />
+          </span>
+          <span>
+            <b>{f.name}</b>
+            <em>{note}</em>
+          </span>
+        </span>
+      ) : (
+        <em>{note}</em>
+      )}
+    </div>
+  );
+}
+
 export interface MatchResult {
   won: boolean;
   draw: boolean;
   match: Match;
+  myId: number;
+  dolls: string[];
+}
+
+/** Why an ability can't go right now, if that's something to show on its button. */
+function isOut(m: Match, me: Fighter | null, ab: Ability): boolean {
+  if (!me || m.phase !== 'fight') return false;
+  const why = m.blocked(me, ab);
+  return why === 'Out of sight' || why === 'Too far away' || why === 'Not enough mana' || why === 'Silenced' || (why?.endsWith('is locked') ?? false) || why === 'You can’t do that now' || why === 'Nobody to aim at';
 }
 
 /** A match: The Ring's ground, its frames and a bar of abilities. Solo, the computer plays everyone else. */
-export function RingMatch({ engine, setup, myId, face, body, role, sets, onSets, onDone, onLeave }: { engine: SigilEngine; setup: MatchSetup; myId: number; face?: Face; body?: 'm' | 'f'; role: Role; sets: ClassSets; onSets: (s: ClassSets) => void; onDone: (r: MatchResult) => void; onLeave: () => void }) {
-  const boxRef = useRef<HTMLDivElement>(null);
+export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes, onSets, onDone, onLeave }: { engine: SigilEngine; setup: MatchSetup; myId: number; face?: Face; body?: 'm' | 'f'; role: Role; sets: ClassSets; stakes: MatchStakes | null; onSets: (s: ClassSets) => void; onDone: (r: MatchResult) => void; onLeave: (started: boolean) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [, tick] = useState(0);
   const [m] = useState(() => new Match(setup));
   const [err, setErr] = useState('');
   const [leaving, setLeaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [help, setHelp] = useState(false);
+  const [tip, setTip] = useState<Ability | null>(null);
   const errAt = useRef(0);
-  const [, setIcons] = useState(false);
-  const dolls = useMemo(() => {
-    const looks = ringLooks(m, { face, body }, myId);
-    return looks.map((l) => heroDollUrl(l.look, 'down', 2));
-  }, [m, face, body, myId]);
+  const stick = useRef<MoveInput>({ mx: 0, my: 0 });
+  const dolls = useMemo(() => ringLooks(m, { face, body }, myId).map((l) => heroDollUrl(l.look, 'down', 2)), [m, face, body, myId]);
 
   const me = m.fighters[myId] ?? null;
+  const touch = engine.touchMode;
   const say = (why: string | null): void => {
     if (!why || why === 'Already casting') return;
     setErr(why);
@@ -155,7 +204,6 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, onSets,
   };
 
   useEffect(() => {
-    void iconsReady.then(setIcons);
     const canvas = canvasRef.current!;
     const g = canvas.getContext('2d')!;
     const looks = ringLooks(m, { face, body }, myId);
@@ -207,6 +255,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, onSets,
         if (next !== null) target(next);
       } else if (e.code === 'Escape') {
         setEditing(false);
+        setHelp(false);
         setLeaving((x) => !x);
       }
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
@@ -219,54 +268,18 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, onSets,
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
     window.addEventListener('blur', blur);
-    // a finger on the ground: a tap chooses who's there, a drag walks
-    let touch: { id: number; x: number; y: number; dx: number; dy: number; moved: boolean } | null = null;
-    const toView = (cx: number, cy: number): { x: number; y: number } => {
-      const p = toLocal(canvas, cx, cy);
+    // a click or a tap on the ground chooses who's there (walking is the joystick's job)
+    const pick = (e: PointerEvent): void => {
+      const p = toLocal(canvas, e.clientX, e.clientY);
       const dpr = canvas.width / (canvas.clientWidth || 1);
-      return { x: (p.x * dpr - ox) / scale, y: (p.y * dpr - oy) / scale };
+      const f = fighterAt(m, (p.x * dpr - ox) / scale, (p.y * dpr - oy) / scale);
+      if (f) target(f.id);
     };
-    const pdown = (e: PointerEvent): void => {
-      const v = toView(e.clientX, e.clientY);
-      if (e.pointerType === 'mouse') {
-        const f = fighterAt(m, v.x, v.y);
-        if (f) target(f.id);
-        return;
-      }
-      if (touch) return;
-      touch = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, dy: 0, moved: false };
-    };
-    const pmove = (e: PointerEvent): void => {
-      if (!touch || e.pointerId !== touch.id) return;
-      touch.dx = e.clientX - touch.x;
-      touch.dy = e.clientY - touch.y;
-      if (Math.hypot(touch.dx, touch.dy) > 9) touch.moved = true;
-    };
-    const pup = (e: PointerEvent): void => {
-      if (touch?.id !== e.pointerId) return;
-      if (!touch.moved) {
-        const v = toView(e.clientX, e.clientY);
-        const f = fighterAt(m, v.x, v.y);
-        if (f) target(f.id);
-      }
-      touch = null;
-    };
-    canvas.addEventListener('pointerdown', pdown);
-    canvas.addEventListener('pointermove', pmove);
-    window.addEventListener('pointerup', pup);
-    window.addEventListener('pointercancel', pup);
+    canvas.addEventListener('pointerdown', pick);
     const moveNow = (): MoveInput => {
-      let mx = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
-      let my = (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0);
-      if (touch) {
-        const len = Math.hypot(touch.dx, touch.dy);
-        if (len > 9) {
-          const k = Math.min(1, len / 40) / len;
-          mx = touch.dx * k;
-          my = touch.dy * k;
-        }
-      }
-      return { mx, my };
+      const mx = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
+      const my = (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0);
+      return mx || my ? { mx, my } : stick.current;
     };
 
     /* --------------------------------------------------- the room's traffic */
@@ -304,6 +317,13 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, onSets,
     let raf = 0;
     let wasPhase = m.phase;
     const sound = (id: string, vol?: number): void => engine.sound.play(id, vol);
+    const paint = (time: number): void => {
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.fillStyle = '#05030d';
+      g.fillRect(0, 0, canvas.width, canvas.height);
+      g.setTransform(scale, 0, 0, scale, ox, oy);
+      drawRing(g, ground, m, looks, fx, myId, time);
+    };
     const frame = (now: number): void => {
       raf = requestAnimationFrame(frame);
       const dt = Math.max(0, Math.min(0.1, (now - last) / 1000));
@@ -335,10 +355,10 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, onSets,
       } else {
         m.coast(dt, myId, mine);
         sendT += dt;
-        const say = `${mine.mx.toFixed(2)},${mine.my.toFixed(2)}`;
-        if (sendT >= 1 / 15 && say !== lastSent) {
+        const said = `${mine.mx.toFixed(2)},${mine.my.toFixed(2)}`;
+        if (sendT >= 1 / 15 && said !== lastSent) {
           sendT = 0;
-          lastSent = say;
+          lastSent = said;
           role.send({ mx: mine.mx, my: mine.my });
         }
       }
@@ -346,14 +366,13 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, onSets,
       if (role.kind !== 'host' || sent) fx.take(m, sound, myId);
       fx.age(dt);
       if (m.phase !== wasPhase) {
-        if (m.phase === 'fight') sound('checkpoint');
+        if (m.phase === 'fight') {
+          sound('checkpoint');
+          setEditing(false);
+        }
         wasPhase = m.phase;
       }
-      g.setTransform(1, 0, 0, 1, 0, 0);
-      g.fillStyle = '#05030d';
-      g.fillRect(0, 0, canvas.width, canvas.height);
-      g.setTransform(scale, 0, 0, scale, ox, oy);
-      drawRing(g, ground, m, looks, fx, myId, now / 1000);
+      paint(now / 1000);
       hudT += dt;
       if (hudT > 0.066) {
         hudT = 0;
@@ -369,9 +388,11 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, onSets,
         sound(m.winner === myTeam ? 'victory' : 'playerDie');
         // the last word goes out at once, then a moment to see the last blow land
         if (role.kind === 'host') role.send({ s: m.snapshot(), e: [] });
-        window.setTimeout(() => onDone({ won: m.winner === myTeam, draw: m.draw, match: m }), 1300);
+        window.setTimeout(() => onDone({ won: m.winner === myTeam, draw: m.draw, match: m, myId, dolls: m.fighters.map((f) => heroDollUrl(looks[f.id]!.look, 'down', 3)) }), 1300);
       }
     };
+    // the ground on the first frame, before the veil lifts
+    paint(performance.now() / 1000);
     raf = requestAnimationFrame(frame);
     // review tool on the dev server: a hidden pane runs no animation frames, so a match can be fast-forwarded by hand
     if (import.meta.env.DEV) {
@@ -381,8 +402,10 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, onSets,
           for (const f of m.fighters) moves[f.id] = f.id === myId ? moveNow() : botThink(m, f, brains[f.id]!, skill, STEP);
           m.step(STEP, moves);
         }
+        paint(performance.now() / 1000);
+        tick((x) => x + 1);
       };
-      (window as unknown as { __ring?: unknown }).__ring = { m, keys, press, run, brains, botThink };
+      (window as unknown as { __ring?: unknown }).__ring = { m, keys, press, run, brains, botThink, paint };
     }
     return () => {
       cancelAnimationFrame(raf);
@@ -390,10 +413,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, onSets,
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
       window.removeEventListener('blur', blur);
-      window.removeEventListener('pointerup', pup);
-      window.removeEventListener('pointercancel', pup);
-      canvas.removeEventListener('pointerdown', pdown);
-      canvas.removeEventListener('pointermove', pmove);
+      canvas.removeEventListener('pointerdown', pick);
       if (role.kind !== 'solo') role.listen(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -408,113 +428,203 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, onSets,
   const cast = me?.cast;
   const castAb = cast ? ABILITIES[cast.ab] : null;
   const damp = Math.round(m.dampening * 100);
-  const aimAt = me && me.target !== null ? m.fighters[me.target] : null;
+  const foe = me && me.target !== null ? (m.fighters[me.target] ?? null) : null;
+  const foeAlive = foe && !foe.dead ? foe : null;
+  const friendId = me?.friend ?? me?.id ?? 0;
+  const friend = m.fighters[friendId] ?? null;
+  const helps = bar.some((a) => a.aim === 'friend');
   const held = me && m.held(me);
+  const foeNote = !foeAlive ? (m.phase === 'fight' ? 'Tab or click an enemy. Nearest is used if you don’t.' : 'Tab or click an enemy') : !me || m.phase !== 'fight' ? `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}%` : !m.sees(me, foeAlive) ? 'Out of sight' : `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}% · ${Math.round(Math.hypot(foeAlive.x - me.x, foeAlive.y - me.y))} away`;
+  const foeBad = !!foeAlive && !!me && m.phase === 'fight' && !m.sees(me, foeAlive);
   return (
-    <div className="rb-ring" ref={boxRef}>
-      <div className="rb-ring-stage">
-        <canvas ref={canvasRef} className="rb-ring-canvas" />
-        <div className="rb-ring-top">
-          <div className="rb-ring-team">
-            {left.map((f) => (
-              <Frame key={f.id} f={f} m={m} me={me} doll={dolls[f.id]!} selected={f.id === (me?.friend ?? me?.id)} onPick={() => target(f.id)} />
-            ))}
-          </div>
-          <div className="rb-ring-clock">
-            <b>{clock(m.clock)}</b>
-            {damp > 0 && <small title="Healing fades the longer a match goes">Healing −{damp}%</small>}
-          </div>
-          <div className="rb-ring-team is-foes">
-            {right.map((f) => (
-              <Frame key={f.id} flip f={f} m={m} me={me} doll={dolls[f.id]!} selected={f === aimAt} onPick={() => target(f.id)} />
-            ))}
-          </div>
-          <div className="rb-ring-menu">
-            <button className="rb-iconbtn" onClick={() => setLeaving(true)} aria-label="Leave the match">
-              ⚑
-            </button>
-            <GameMenuButton className="rb-iconbtn" />
-          </div>
-        </div>
-        {m.phase === 'gates' && count <= 5 && (
-          <div className="rb-ring-gates">
-            <b key={count}>{count > 0 ? count : 'Fight!'}</b>
-          </div>
-        )}
-        {m.phase === 'gates' && count > 5 && !editing && (
-          <div className="rb-ring-prep" role="status">
-            <small>{MAPS[m.map]?.name}</small>
-            <strong>The gates lift in {count}</strong>
-            <span>Walk your entry and get ready.</span>
-            <span className="rb-ring-prep-actions">
-              <button className="rb-btn is-gold" onClick={() => setEditing(true)}>
-                Change my set up
-              </button>
-              {role.kind !== 'client' && (
-                <button className="rb-btn is-ghost" onClick={ready}>
-                  Ready
-                </button>
+    <ScreenGate label="Entering the Ring">
+      <div className={`rb-ring${touch ? ' is-touch' : ''}`}>
+        <div className="rb-ring-stage">
+          <canvas ref={canvasRef} className="rb-ring-canvas" />
+          <div className="rb-ring-top">
+            <div className="rb-ring-team">
+              {left.map((f) => (
+                <Frame key={f.id} f={f} m={m} me={me} doll={dolls[f.id]!} tag={helps && f.id === friendId && m.phase === 'fight' ? 'Helping' : null} onPick={() => target(f.id)} />
+              ))}
+            </div>
+            <div className="rb-ring-clock">
+              <b>{clock(m.clock)}</b>
+              {stakes ? (
+                <span className="rb-ring-rating" style={{ ['--r' as string]: stakes.color }} title={`${stakes.rank}. ${stakes.format}v${stakes.format} rating`}>
+                  <i aria-hidden="true">◆</i>
+                  {stakes.rating}
+                  <small>{stakes.rank}</small>
+                </span>
+              ) : (
+                <span className="rb-ring-rating is-friendly">Friendly</span>
               )}
-            </span>
+              {damp > 0 && <small className="rb-ring-damp" title="Healing fades the longer a match goes">Healing −{damp}%</small>}
+            </div>
+            <div className="rb-ring-team is-foes">
+              {right.map((f) => (
+                <Frame key={f.id} flip f={f} m={m} me={me} doll={dolls[f.id]!} tag={f === foeAlive ? 'Target' : null} onPick={() => target(f.id)} />
+              ))}
+            </div>
+            <div className="rb-ring-menu">
+              <button className="rb-iconbtn" onClick={() => setHelp(true)} aria-label="How The Ring works" title="How The Ring works">
+                ?
+              </button>
+              <button className="rb-iconbtn" onClick={() => setLeaving(true)} aria-label="Leave the match" title="Leave the match">
+                ⚑
+              </button>
+              <GameMenuButton className="rb-iconbtn" />
+            </div>
           </div>
-        )}
-        {err && (
-          <div className="rb-ring-err" role="status">
-            {err}
-          </div>
-        )}
-        {cast && castAb && (
-          <div className="rb-ring-mycast" style={{ ['--a' as string]: castAb.color }}>
-            <i style={{ width: `${(cast.channel ? 1 - cast.t / cast.dur : cast.t / cast.dur) * 100}%` }} />
-            <b>{castAb.name}</b>
-          </div>
-        )}
-        {m.phase === 'over' && <div className="rb-ring-gates is-end"><b>{m.draw ? 'Draw' : m.winner === me?.team ? 'Victory' : 'Defeat'}</b></div>}
-      </div>
-      <div className="rb-ring-actions" role="toolbar" aria-label="Abilities">
-        {bar.map((ab, i) => {
-          const cd = me?.cds[ab.id] ?? 0;
-          const gcd = !ab.free ? (me?.gcd ?? 0) : 0;
-          const wait = Math.max(cd, gcd);
-          const full = cd > gcd ? ab.cd : 1;
-          const why = me ? m.blocked(me, ab) : null;
-          const out = why === 'Out of sight' || why === 'Too far away' || why === 'Not enough mana' || why === 'Silenced' || (why?.endsWith('is locked') ?? false) || why === 'You can’t do that now' || why === 'Nobody to aim at';
-          return (
-            <button key={ab.id} className={`rb-ring-ab${out ? ' is-out' : ''}${ab.id === 'token' ? ' is-token' : ''}${held && ab.anyState ? ' is-ready' : ''}`} onPointerDown={(e) => { e.preventDefault(); press(ab.id); }} title={`${ab.name}: ${ab.text}`} aria-label={ab.name}>
-              <img src={iconPicture(ab.icon)} alt="" draggable={false} />
-              {wait > 0 && <i className="rb-ring-cool" style={{ ['--p' as string]: `${Math.min(1, wait / (full || 1)) * 100}%` }} />}
-              {cd > 0.05 && <b>{cd >= 10 ? Math.ceil(cd) : cd.toFixed(1)}</b>}
-              <kbd>{i === 6 ? 'T' : i + 1}</kbd>
-            </button>
-          );
-        })}
-      </div>
-      {editing && m.phase === 'gates' && me && (
-        <div className="rb-ring-editing" role="dialog" aria-label="Change my set up">
-          <header>
-            <strong>Your set up</strong>
-            <b>{count}</b>
-            <button className="rb-btn is-small is-gold" onClick={() => setEditing(false)}>
-              Done
-            </button>
-          </header>
-          <SetupEditor cls={me.cls} sets={sets} onSets={changeSets} />
+          {touch && (
+            <div className="rb-ui rb-ring-thumbs">
+              <Stick
+                settings={engine.settings}
+                onMove={(mx, my) => {
+                  stick.current = { mx, my };
+                }}
+              />
+              <div className="rb-cluster">
+                {bar.map((ab, i) => {
+                  const cd = me?.cds[ab.id] ?? 0;
+                  const gcd = !ab.free ? (me?.gcd ?? 0) : 0;
+                  const wait = Math.max(cd, gcd);
+                  const full = cd > gcd ? ab.cd : 1;
+                  return (
+                    <button
+                      key={ab.id}
+                      className={`rb-sb rb-sb-${TOUCH_SLOTS[i]}${isOut(m, me, ab) ? ' is-nomana' : ''}${wait > 0 ? ' is-cooling' : ''}${held && ab.anyState ? ' is-free-now' : ''}`}
+                      aria-label={`${ab.name}: ${ab.text}`}
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        press(ab.id);
+                      }}
+                      onContextMenu={(e) => e.preventDefault()}
+                    >
+                      <img className="is-disc" src={iconPicture(ab.icon)} alt="" draggable={false} />
+                      <span className="rb-sb-cd" style={{ background: wait > 0 ? `conic-gradient(rgba(10,6,20,0.72) ${Math.min(1, wait / (full || 1)) * 100}%, transparent 0)` : 'transparent' }} />
+                      <span className="rb-sb-num">{cd > 0.95 ? Math.ceil(cd) : ''}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {m.phase === 'gates' && count <= 5 && (
+            <div className="rb-ring-gates">
+              <b key={count}>{count > 0 ? count : 'Fight!'}</b>
+            </div>
+          )}
+          {m.phase === 'gates' && count > 5 && !editing && (
+            <div className="rb-ring-prep" role="status">
+              <small>{MAPS[m.map]?.name}</small>
+              <strong>The gates lift in {count}</strong>
+              {stakes ? (
+                <>
+                  <span className="rb-ring-prep-rival">
+                    Against <b>{stakes.rival}</b> · rated about {stakes.rivalRating}
+                  </span>
+                  <span className="rb-ring-prep-stakes" style={{ ['--r' as string]: stakes.color }}>
+                    <span>
+                      Your rating <b>{stakes.rating}</b> {stakes.rank}
+                    </span>
+                    <em className="is-up">Win +{stakes.win}</em>
+                    <em className="is-down">Lose −{stakes.lose}</em>
+                  </span>
+                </>
+              ) : (
+                <span className="rb-ring-prep-rival">A friendly match: no rating changes hands.</span>
+              )}
+              <span className="rb-ring-prep-actions">
+                <button className="rb-btn is-gold" onClick={() => setEditing(true)}>
+                  Change my setup
+                </button>
+                {role.kind !== 'client' && (
+                  <button className="rb-btn" onClick={ready}>
+                    I’m ready
+                  </button>
+                )}
+              </span>
+              <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. Tap a frame to choose a target.' : 'WASD to move · 1 to 6 for abilities · Tab to choose an enemy'}</span>
+            </div>
+          )}
+          {err && (
+            <div className="rb-ring-err" role="status">
+              {err}
+            </div>
+          )}
+          {cast && castAb && (
+            <div className="rb-ring-mycast" style={{ ['--a' as string]: castAb.color }}>
+              <i style={{ width: `${(cast.channel ? 1 - cast.t / cast.dur : cast.t / cast.dur) * 100}%` }} />
+              <b>{castAb.name}</b>
+            </div>
+          )}
+          {tip && !touch && (
+            <div className="rb-ring-tip" role="tooltip">
+              <strong>{tip.name}</strong>
+              <small>{timing(tip)}</small>
+              <p>{tip.text}</p>
+            </div>
+          )}
+          {m.phase === 'over' && (
+            <div className="rb-ring-gates is-end">
+              <b>{m.draw ? 'Draw' : m.winner === me?.team ? 'Victory' : 'Defeat'}</b>
+            </div>
+          )}
         </div>
-      )}
-      {leaving && m.phase !== 'over' && (
-        <div className="rb-vigil-modal" role="dialog" aria-label="Leave the match">
-          <h2>Leave the Ring?</h2>
-          <p className="rb-dim">{role.kind === 'solo' ? 'Walking out counts as a loss.' : role.kind === 'host' ? 'You’re running this match: leaving ends it for everyone.' : 'Your hero stands where they are until the match ends.'}</p>
-          <div className="rb-vigil-actions">
-            <button className="rb-btn is-gold" onClick={() => setLeaving(false)}>
-              Stay and fight
-            </button>
-            <button className="rb-btn is-ghost" onClick={onLeave}>
-              Leave
-            </button>
+        {!touch && (
+          <div className="rb-ring-dock">
+            <AimCard label="Target" kind="foe" f={foeAlive} note={foeNote} bad={foeBad} doll={foeAlive ? dolls[foeAlive.id]! : ''} />
+            <div className="rb-ring-actions" role="toolbar" aria-label="Abilities">
+              {bar.map((ab, i) => {
+                const cd = me?.cds[ab.id] ?? 0;
+                const gcd = !ab.free ? (me?.gcd ?? 0) : 0;
+                const wait = Math.max(cd, gcd);
+                const full = cd > gcd ? ab.cd : 1;
+                return (
+                  <button key={ab.id} className={`rb-ring-ab${isOut(m, me, ab) ? ' is-out' : ''}${ab.id === 'token' ? ' is-token' : ''}${held && ab.anyState ? ' is-ready' : ''}`} onPointerDown={(e) => { e.preventDefault(); press(ab.id); }} onMouseEnter={() => setTip(ab)} onMouseLeave={() => setTip(null)} aria-label={`${ab.name}: ${ab.text}`}>
+                    <img src={iconPicture(ab.icon)} alt="" draggable={false} />
+                    {wait > 0 && <i className="rb-ring-cool" style={{ ['--p' as string]: `${Math.min(1, wait / (full || 1)) * 100}%` }} />}
+                    {cd > 0.05 && <b>{cd >= 10 ? Math.ceil(cd) : cd.toFixed(1)}</b>}
+                    <kbd>{i === 6 ? 'T' : i + 1}</kbd>
+                  </button>
+                );
+              })}
+            </div>
+            {helps ? <AimCard label="Helping" kind="friend" f={friend} note={friend ? `${Math.round((friend.hp / friend.maxHp) * 100)}%` : ''} bad={false} doll={friend ? dolls[friend.id]! : ''} /> : <span className="rb-ring-aim is-blank" />}
           </div>
-        </div>
-      )}
-    </div>
+        )}
+        {editing && m.phase === 'gates' && me && (
+          <div className="rb-ring-editing" role="dialog" aria-label="Change my setup">
+            <header>
+              <strong>Your setup</strong>
+              <span>
+                Gates lift in <b>{count}</b>
+              </span>
+              <button className="rb-btn is-small is-gold" onClick={() => setEditing(false)}>
+                Done
+              </button>
+            </header>
+            <SetupEditor cls={me.cls} sets={sets} onSets={changeSets} />
+          </div>
+        )}
+        {help && <RingHelp onClose={() => setHelp(false)} />}
+        {leaving && m.phase !== 'over' && (
+          <div className="rb-ring-dialog-wrap" role="dialog" aria-label="Leave the match">
+            <div className="rb-ring-dialog">
+              <h2>Leave the Ring?</h2>
+              <p>{m.phase === 'gates' ? 'The gates haven’t lifted yet, so this costs you nothing.' : role.kind === 'solo' ? `Walking out counts as a loss${stakes ? `: −${stakes.lose} rating` : ''}.` : role.kind === 'host' ? 'You’re running this match, so leaving ends it for everyone.' : 'Your hero stands where they are until the match ends.'}</p>
+              <div className="rb-vigil-actions">
+                <button className="rb-btn is-gold" onClick={() => setLeaving(false)} autoFocus>
+                  Stay
+                </button>
+                <button className="rb-btn is-danger" onClick={() => onLeave(m.phase !== 'gates')}>
+                  Leave
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </ScreenGate>
   );
 }
