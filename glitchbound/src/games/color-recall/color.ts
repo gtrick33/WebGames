@@ -62,7 +62,8 @@ export function rgbToHsb({ r, g, b }: Rgb, fallbackHue = 0): Hsb {
     else h = 60 * ((R - G) / d + 4);
     h = (h + 360) % 360;
   }
-  return { h: Math.round(h), s: Math.round(max === 0 ? 0 : (d / max) * 100), b: Math.round(max * 100) };
+  // 359.5° and up rounds to 360, which is 0 on a 0-359 slider.
+  return { h: Math.round(h) % 360, s: Math.round(max === 0 ? 0 : (d / max) * 100), b: Math.round(max * 100) };
 }
 
 function toLinear(c: number): number {
@@ -84,6 +85,9 @@ export function rgbToLab({ r, g, b }: Rgb): Lab {
   const fz = f(z);
   return { L: 116 * fy - 16, a: 500 * (fx - fy), b: 200 * (fy - fz) };
 }
+
+/** CIE lightness, 0 (black) to 100 (white). */
+export const lightness = (c: Rgb): number => rgbToLab(c).L;
 
 const rad = (d: number): number => (d * Math.PI) / 180;
 const deg = (r: number): number => (r * 180) / Math.PI;
@@ -161,6 +165,12 @@ export const VERDICT_TEXT: Record<Verdict, string> = {
   off: 'Way off',
 };
 
+/** ΔE in plain words, for the reveal. */
+export const dEWords = (dE: number): string => (dE < 1 ? 'invisible' : dE < 2.5 ? 'barely visible' : dE < 5 ? 'slightly different' : dE < 10 ? 'noticeably different' : dE < 25 ? 'clearly different' : 'another color');
+
+/** The verdict's words for a score: "Perfect!" only for a full 1,000, "Near perfect" just below. */
+export const verdictText = (points: number): string => (points >= MAX_POINTS ? VERDICT_TEXT.perfect : verdictFor(points) === 'perfect' ? 'Near perfect' : VERDICT_TEXT[verdictFor(points)]);
+
 /** Emoji square per verdict, for spoiler-free share text. */
 export const VERDICT_EMOJI: Record<Verdict, string> = {
   perfect: '🟪',
@@ -171,6 +181,7 @@ export const VERDICT_EMOJI: Record<Verdict, string> = {
   off: '🟥',
 };
 
+/** Hue families by HSB hue (the slider), from 0°. */
 const HUE_NAMES: [number, string][] = [
   [15, 'red'],
   [40, 'orange'],
@@ -179,51 +190,100 @@ const HUE_NAMES: [number, string][] = [
   [160, 'green'],
   [195, 'teal'],
   [250, 'blue'],
-  [285, 'violet'],
-  [330, 'pink'],
+  [275, 'violet'],
+  [300, 'purple'],
+  [325, 'magenta'],
+  [345, 'pink'],
   [360, 'red'],
 ];
 
+/** The hue family of a hue angle alone (pure, fully vivid colors). */
 export function hueName(h: number): string {
   const x = ((h % 360) + 360) % 360;
   return HUE_NAMES.find(([max]) => x < max)?.[1] ?? 'red';
 }
 
 /**
+ * What most people would call a color: its hue family adjusted for lightness and vividness, so a
+ * light or soft red is pink, a dark orange is brown and a dark or dusty magenta is purple.
+ */
+export function colorName(c: Rgb): string {
+  const { h, s, b } = rgbToHsb(c);
+  if (s < 10) return 'gray';
+  const name = hueName(h);
+  if (name === 'red' && b > 70 && s < 62) return 'pink';
+  if ((name === 'orange' || (name === 'yellow' && h < 50)) && b < 60 && s > 25) return 'brown';
+  if (name === 'magenta' && (b < 60 || s < 40)) return 'purple';
+  return name;
+}
+
+interface Lch {
+  L: number;
+  C: number;
+  h: number;
+}
+
+function rgbToLch(c: Rgb): Lch {
+  const { L, a, b } = rgbToLab(c);
+  return { L, C: Math.hypot(a, b), h: (deg(Math.atan2(b, a)) + 360) % 360 };
+}
+
+/**
  * Up to two short, plain-language tips explaining how the guess differs from the target, biggest
- * difference first. Empty when the guess is already very close.
+ * difference first. They are measured in the same perceptual space as the score (lightness,
+ * chroma and hue, weighted as CIEDE2000 weights them), so a guess that loses points always gets
+ * at least one tip. Empty only when the guess is already very close (ΔE under 2.5).
  */
 export function feedback(target: Rgb, guess: Rgb): string[] {
   if (deltaE(target, guess) < 2.5) return [];
-  const t = rgbToHsb(target);
-  const g = rgbToHsb(guess, t.h);
+  const t = rgbToLch(target);
+  const g = rgbToLch(guess);
+  const Lbar = (t.L + g.L) / 2;
+  const Cbar = (t.C + g.C) / 2;
+  const dL = (g.L - t.L) / (1 + (0.015 * (Lbar - 50) ** 2) / Math.sqrt(20 + (Lbar - 50) ** 2));
+  const dC = (g.C - t.C) / (1 + 0.045 * Cbar);
+  let dh = g.h - t.h;
+  if (dh > 180) dh -= 360;
+  if (dh < -180) dh += 360;
+  const dH = t.C < 1 || g.C < 1 ? 0 : (2 * Math.sqrt(t.C * g.C) * Math.sin(rad(dh / 2))) / (1 + 0.015 * Cbar);
+
   const tips: { weight: number; text: string }[] = [];
+  tips.push({ weight: Math.abs(dL), text: dL > 0 ? (dL > 12 ? 'Much too bright' : 'A little too bright') : dL < -12 ? 'Much too dark' : 'A little too dark' });
 
-  const dB = g.b - t.b;
-  if (Math.abs(dB) >= 6) tips.push({ weight: Math.abs(dB), text: dB > 0 ? (dB > 20 ? 'Much too bright' : 'A little too bright') : dB < -20 ? 'Much too dark' : 'A little too dark' });
-
-  const dS = g.s - t.s;
-  if (Math.abs(dS) >= 8) tips.push({ weight: Math.abs(dS) * 0.8, text: dS > 0 ? (dS > 25 ? 'Far too vivid' : 'Slightly too vivid') : dS < -25 ? 'Far too washed out' : 'Slightly too muted' });
-
-  // Hue only matters when both colors actually have some color in them.
-  if (t.s > 12 && g.s > 12) {
-    let dH = g.h - t.h;
-    if (dH > 180) dH -= 360;
-    if (dH < -180) dH += 360;
-    if (Math.abs(dH) > 50 && hueName(g.h) !== hueName(t.h)) {
-      tips.push({ weight: Math.abs(dH) * 1.2, text: `Wrong hue: that’s ${hueName(g.h)}, not ${hueName(t.h)}` });
-    } else if (Math.abs(dH) >= 6) {
-      // Name the neighboring hue family the guess drifted toward.
-      const own = hueName(t.h);
-      const near = hueName(t.h + Math.sign(dH) * 35);
-      const word = near === own ? hueName(t.h + Math.sign(dH) * 70) : near;
-      tips.push({ weight: Math.abs(dH) * 1.2, text: Math.abs(dH) > 30 ? `Hue is far too ${word}` : `Hue leans a bit too ${word}` });
-    }
+  // A near-gray target: any color in the guess reads as a tint.
+  if (t.C < 6 && g.C >= 6 && dC > 0) {
+    const tint = colorName(guess);
+    tips.push({ weight: Math.abs(dC) + Math.abs(dH), text: `Too colorful: it has a ${tint === 'gray' ? hueName(rgbToHsb(guess).h) : tint} tint` });
+  } else {
+    tips.push({ weight: Math.abs(dC), text: dC > 0 ? (dC > 10 ? 'Far too vivid' : 'Slightly too vivid') : dC < -10 ? 'Far too washed out' : 'Slightly too muted' });
+    if (dH !== 0) tips.push({ weight: Math.abs(dH), text: hueTip(target, guess) });
   }
+  tips.sort((a, b) => b.weight - a.weight);
+  const top = tips[0]!.weight;
   return tips
-    .sort((a, b) => b.weight - a.weight)
+    .filter((x, i) => i === 0 || x.weight >= Math.max(1.5, top * 0.5))
     .slice(0, 2)
-    .map((t) => t.text);
+    .map((x) => x.text);
+}
+
+/** "Wrong hue: that's X, not Y", or which neighboring family the guess drifted toward (on the HSB hue slider). */
+function hueTip(target: Rgb, guess: Rgb): string {
+  const th = rgbToHsb(target);
+  const gh = rgbToHsb(guess, th.h);
+  let dH = gh.h - th.h;
+  if (dH > 180) dH -= 360;
+  if (dH < -180) dH += 360;
+  const own = colorName(target);
+  const theirs = colorName(guess);
+  if (Math.abs(dH) > 50 && theirs !== own) return `Wrong hue: that’s ${theirs}, not ${own}`;
+  // Walk from the target's hue in the direction of the drift to the first family that is neither
+  // the target's hue band nor what the target is called (a light red is "pink": its drift toward
+  // magenta must not read as "too pink").
+  const step = dH >= 0 ? 5 : -5;
+  const base = hueName(th.h);
+  let word = base;
+  for (let x = th.h; (word === base || word === own) && Math.abs(x - th.h) <= 120; x += step) word = hueName(x);
+  return Math.abs(dH) > 30 ? `Hue is far too ${word}` : `Hue leans a bit too ${word}`;
 }
 
 /** Readable text color (ink or white) on top of a color. */
