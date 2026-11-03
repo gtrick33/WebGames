@@ -2224,6 +2224,10 @@ const pl: string[] = [
   '{n} d temu',
   '{n} pkt',
   '{n} pkt do: {rank}',
+  'Dzwon ucichł trzy tygodnie temu. Dziś w nocy przyjdą po to, co śpi pod kaplicą.',
+  'Albo zagraj w coś szybkiego',
+  'Bohater z mieczem i tarczą na dziedzińcu zamku nocą, wśród palenisk i czerwonych sztandarów',
+  'Prawdziwa rozgrywka, na telefonie lub komputerze',
 ];
 
 export default pl;

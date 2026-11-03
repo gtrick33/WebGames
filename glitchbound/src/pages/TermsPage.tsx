@@ -1,6 +1,6 @@
 import { usePageMeta } from '../platform/meta';
 import { Link } from '../router/router';
-import { CONTACT_PATH } from './infoText';
+import { CONTACT_PATH, OWNER_EMAIL } from './infoText';
 import './InfoPages.css';
 
 /** When these terms last changed (shown on the page; update it with every change). */
@@ -21,8 +21,8 @@ export function TermsPage() {
         <section className="panel info-block" aria-labelledby="t-who">
           <h2 id="t-who">Who we are</h2>
           <p>
-            GlitchBound is an independent studio. You can reach us about anything on this page, your account or your data by{' '}
-            <Link href={CONTACT_PATH}>opening a ticket</Link> (no account needed).
+            GlitchBound is an independent studio run by Sava Hristov. You can reach us about anything on this page, your account or your data by{' '}
+            <Link href={CONTACT_PATH}>opening a ticket</Link> (no account needed) or at <a href={`mailto:${OWNER_EMAIL}`}>{OWNER_EMAIL}</a>.
           </p>
         </section>
 

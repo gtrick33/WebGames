@@ -2233,6 +2233,10 @@ export const KEYS: string[] = [
   "{n} d ago",
   "{n} points",
   "{n} points to {rank}",
+  "The bell stopped ringing three weeks ago. Tonight, they come for what sleeps under the chapel.",
+  "Or play a quick game",
+  "A hero with sword and shield on a castle forecourt at night, between braziers and red banners",
+  "Real gameplay, on a phone or a computer",
 ];
 
 export const UI_COUNT = 311;

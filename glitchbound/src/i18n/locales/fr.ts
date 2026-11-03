@@ -2224,6 +2224,10 @@ const fr: string[] = [
   'il y a {n} j',
   '{n} points',
   '{n} points avant {rank}',
+  'La cloche s’est tue il y a trois semaines. Cette nuit, ils viennent pour ce qui dort sous la chapelle.',
+  'Ou joue à un jeu rapide',
+  'Un héros avec épée et bouclier dans la cour d’un château, la nuit, entre braseros et bannières rouges',
+  'Vraie partie, sur téléphone ou ordinateur',
 ];
 
 export default fr;

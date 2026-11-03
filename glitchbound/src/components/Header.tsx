@@ -26,10 +26,10 @@ const SearchDialog = lazy(fresh(() => import('./SearchDialog').then((m) => ({ de
 type Tab = { href: string; label: string; short?: string; icon: IconName; slug?: string };
 
 const TABS: Tab[] = [
+  // The flagship comes first: games with a section of their own (Sigilfall) lead, in their own gold.
+  ...SECTION_GAMES.map((g): Tab => ({ href: g.section!.path, label: g.section!.label, icon: 'sword', slug: g.slug })),
   { href: '/', label: 'Arcade', icon: 'gamepad' },
   { href: '/party', label: 'Party', icon: 'party' },
-  // Games with a section of their own (Sigilfall) get a tab here, after Party.
-  ...SECTION_GAMES.map((g): Tab => ({ href: g.section!.path, label: g.section!.label, icon: 'sword', slug: g.slug })),
   { href: '/daily', label: 'Daily', icon: 'calendar' },
   { href: '/leaderboards', label: 'Leaderboards', short: 'Ranks', icon: 'crown' },
 ];
@@ -209,7 +209,7 @@ export function Header() {
 
           <nav className="tabs" aria-label={t('Main')}>
             {tabs.map((tab) => (
-              <Link key={tab.href} href={tab.href} className="tab" aria-current={active(tab.href) ? 'page' : undefined}>
+              <Link key={tab.href} href={tab.href} className={`tab${tab.slug ? ' is-world' : ''}`} aria-current={active(tab.href) ? 'page' : undefined}>
                 <Icon name={tab.icon} size={18} />
                 <span>{t(tab.label)}</span>
               </Link>
@@ -234,7 +234,7 @@ export function Header() {
       {/* Bottom tab bar on phones: thumb-reachable, always visible. */}
       <nav className="bottom-tabs" aria-label={t('Main (mobile)')}>
         {tabs.map((tab) => (
-          <Link key={tab.href} href={tab.href} className="bottom-tab" aria-current={active(tab.href) ? 'page' : undefined} aria-label={t(tab.label)}>
+          <Link key={tab.href} href={tab.href} className={`bottom-tab${tab.slug ? ' is-world' : ''}`} aria-current={active(tab.href) ? 'page' : undefined} aria-label={t(tab.label)}>
             <Icon name={tab.icon} size={22} />
             <span>{tTab(tab.short ?? tab.label)}</span>
           </Link>

@@ -55,6 +55,21 @@
   text-shadow: none;
 }
 
+.site-header,
+.bottom-tabs {
+  --world-gold: #a8701c;
+}
+:root[data-theme='dark'] .site-header,
+:root[data-theme='dark'] .bottom-tabs {
+  --world-gold: #f6c453;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .site-header,
+  :root:not([data-theme='light']) .bottom-tabs {
+    --world-gold: #f6c453;
+  }
+}
+
 .tabs {
   display: flex;
   align-items: center;
@@ -86,6 +101,16 @@
   color: var(--ink);
   background: var(--cyan);
   box-shadow: var(--hard-sm);
+}
+
+.tab.is-world,
+.bottom-tab.is-world {
+  color: var(--world-gold);
+}
+.tab.is-world[aria-current='page'],
+.bottom-tab.is-world[aria-current='page'] {
+  color: #2a1406;
+  background: linear-gradient(180deg, #ffe39a, #f6c453 55%, #d9962f);
 }
 
 .header-actions {

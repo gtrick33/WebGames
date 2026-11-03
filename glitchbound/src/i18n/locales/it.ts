@@ -2224,6 +2224,10 @@ const it: string[] = [
   '{n} g fa',
   '{n} punti',
   '{n} punti a {rank}',
+  'La campana ha smesso di suonare tre settimane fa. Stanotte vengono per ciò che dorme sotto la cappella.',
+  'O fai una partita veloce',
+  'Un eroe con spada e scudo nel cortile di un castello di notte, tra bracieri e stendardi rossi',
+  'Gioco vero, su telefono o computer',
 ];
 
 export default it;

@@ -604,6 +604,11 @@
   isolation: isolate;
   color: var(--fg);
 }
+/* While a game is pinned over the screen, the page may not hold it in its own stacking order: the stage has to
+   rise above the site's header and bottom tabs, as it does on every other game's page. */
+html.game-focus .game-page[data-world='sigilfall'] {
+  isolation: auto;
+}
 .game-page[data-world='sigilfall']::before {
   content: '';
   position: absolute;

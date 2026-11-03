@@ -40,6 +40,9 @@ const ADULT = 'Adults only (18+)';
  * Site links under every page's readable fallback, so crawlers and visitors without JavaScript can
  * reach the info pages too (the app replaces all of it with its own footer).
  */
+/** Games an admin has hidden for now: their pages stay out of search until they come back. */
+export const UNLISTED_SLUGS = new Set(['square-deal', 'outta-here', 'gloop', 'star-grid', 'whatsit']);
+
 const SSR_FOOTER = `<footer class="ssr ssr-foot"><nav aria-label="Site"><a href="/">Arcade</a> · <a href="/party">Party Mode</a> · ${GAMES.filter((g) => g.section).map((g) => `<a href="${g.section!.path}">${g.section!.label}</a> · `).join('')}<a href="/daily">Daily Challenge</a> · <a href="/live">Live rooms</a> · <a href="/leaderboards">Leaderboards</a> · <a href="/about">About</a> · <a href="/contact">Contact</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></nav><p>© ${new Date().getFullYear()} ${SITE} · Every game is made by GlitchBound.</p></footer>`;
 
 export const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -57,7 +60,7 @@ function gameItem(g: GameEntry): string {
 
 /** The home page's games, grouped by their main category; Party Mode games (Crass Act) get their own group. */
 function homeGames(): string {
-  const arcade = GAMES.filter((g) => !g.partyOnly && !g.section);
+  const arcade = GAMES.filter((g) => !g.partyOnly && !g.section && !UNLISTED_SLUGS.has(g.slug));
   const sections = GAMES.filter((g) => g.section);
   const dailies = arcade.filter((g) => g.ownDaily).length;
   const groups = (Object.keys(CATEGORIES) as CategoryId[])
@@ -137,7 +140,7 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       body: `<section class="ssr"><h1>${SITE}: ${TAGLINE}</h1><p>${esc(HOME_DESC)}</p>${homeGames()}</section>`,
     },
     // A section game (Sigilfall) is indexed at its section; its /games/<slug> address shows the same page.
-    ...GAMES.flatMap((g) => (g.section ? [{ ...gameSpec(g, siteUrl), path: g.section.path, file: `${g.section.path.slice(1)}.html` }, { ...gameSpec(g, siteUrl), noindex: true }] : [gameSpec(g, siteUrl)])),
+    ...GAMES.flatMap((g) => (g.section ? [{ ...gameSpec(g, siteUrl), path: g.section.path, file: `${g.section.path.slice(1)}.html` }, { ...gameSpec(g, siteUrl), noindex: true }] : [{ ...gameSpec(g, siteUrl), noindex: UNLISTED_SLUGS.has(g.slug) }])),
     {
       path: '/daily',
       file: 'daily.html',
@@ -352,7 +355,7 @@ export function sitemap(siteUrl: string): string {
   const latest = GAMES.map((g) => g.released).sort().at(-1) ?? '';
   const urls = [
     { loc: '/', lastmod: latest, priority: '1.0' },
-    ...GAMES.map((g) => ({ loc: pathOf(g), lastmod: g.released, priority: '0.9' })),
+    ...GAMES.filter((g) => !UNLISTED_SLUGS.has(g.slug)).map((g) => ({ loc: pathOf(g), lastmod: g.released, priority: '0.9' })),
     { loc: '/party', lastmod: '', priority: '0.8' },
     { loc: '/daily', lastmod: '', priority: '0.6' },
     { loc: '/live', lastmod: '', priority: '0.6' },

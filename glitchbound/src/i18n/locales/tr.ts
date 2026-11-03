@@ -2224,6 +2224,10 @@ const tr: string[] = [
   '{n} g önce',
   '{n} puan',
   '{rank} için {n} puan',
+  'Çan üç hafta önce susmuştu. Bu gece şapelin altında uyuyan şey için geliyorlar.',
+  'Ya da hızlı bir oyun oyna',
+  'Gece bir kale avlusunda, mangallar ve kırmızı sancaklar arasında kılıç ve kalkanlı bir kahraman',
+  'Gerçek oynanış, telefonda ya da bilgisayarda',
 ];
 
 export default tr;

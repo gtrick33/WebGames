@@ -5,7 +5,7 @@ import { api, useAccount } from '../platform/account';
 import { ADS, ANALYTICS } from '../platform/env';
 import { usePageMeta } from '../platform/meta';
 import { storageKeys } from '../platform/qa';
-import { CONTACT_PATH } from './infoText';
+import { CONTACT_PATH, OWNER_EMAIL } from './infoText';
 import { saveStore, useSave } from '../platform/store';
 import { Link } from '../router/router';
 import './InfoPages.css';
@@ -22,7 +22,8 @@ export function PrivacyPage() {
   const [cleared, setCleared] = useState(false);
   const rounds = Object.values(save.games).reduce((n, g) => n + g.plays, 0);
   const dailies = Object.values(save.daily).filter((d) => d.done).length;
-  const embeds = GAMES.filter((g) => g.runtime.kind === 'embed');
+  // Only games on another site: a game built into GlitchBound (Neon Rush) falls under this page.
+  const embeds = GAMES.filter((g) => g.runtime.kind === 'embed' && /^https?:/.test(g.runtime.url));
 
   return (
     <div className="wrap info-page">
@@ -193,7 +194,8 @@ export function PrivacyPage() {
         <section className="panel info-block" aria-labelledby="p-who">
           <h2 id="p-who">Who is responsible, and who helps</h2>
           <p>
-            GlitchBound is responsible for your data (the &ldquo;controller&rdquo;). A few service providers process it only on our
+            GlitchBound is run by Sava Hristov, who is responsible for your data (the &ldquo;controller&rdquo;). You can write to{' '}
+            <a href={`mailto:${OWNER_EMAIL}`}>{OWNER_EMAIL}</a>. A few service providers process it only on our
             behalf: Cloudflare (hosting, database and live rooms), Google (sign-in, if you choose it), Resend (emails) and GitHub (our bug tracker).
             Some of them are based in the US and protect transfers with the EU&rsquo;s standard contractual clauses or the EU&ndash;US Data Privacy
             Framework. We never sell your data.
@@ -208,7 +210,7 @@ export function PrivacyPage() {
             your account.
           </p>
           <p>
-            You can ask to see, correct, export or delete your data, or object to how we use it, by opening a ticket (see below). You can also complain to
+            You can ask to see, correct, export or delete your data, or object to how we use it, by opening a ticket (see below) or by email. You can also complain to
             the Bulgarian Commission for Personal Data Protection (cpdp.bg) or the data protection authority where you live.
           </p>
         </section>

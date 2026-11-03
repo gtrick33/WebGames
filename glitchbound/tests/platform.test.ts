@@ -83,6 +83,9 @@ describe('build-time SEO', () => {
     expect(sitemap(site)).not.toContain('404');
     expect(sitemap(site)).toContain('<loc>https://example.test/games/neon-rush</loc>');
     expect(sitemap(site)).toContain('<loc>https://example.test/party</loc>');
+    // Hidden games stay out of search: they answer 200 but show the visitor a 404.
+    expect(sitemap(site)).not.toContain('/games/square-deal');
+    expect(renderPage('<!--gb:head--><!--/gb:head--><div id="root"></div><!--/root-->', pageSpecs(site).find((p) => p.path === '/games/square-deal')!, site)).toContain('content="noindex"');
     expect(sitemap(site)).toContain('<loc>https://example.test/terms</loc>');
     expect(robots(site)).toContain('Sitemap: https://example.test/sitemap.xml');
   });

@@ -2224,6 +2224,10 @@ const de: string[] = [
   'vor {n} T.',
   '{n} Punkte',
   '{n} Punkte bis {rank}',
+  'Vor drei Wochen hörte die Glocke auf zu läuten. Heute Nacht kommen sie für das, was unter der Kapelle schläft.',
+  'Oder spiel schnell eine Runde',
+  'Ein Held mit Schwert und Schild nachts auf einem Burghof, zwischen Feuerschalen und roten Bannern',
+  'Echtes Gameplay, auf Handy oder Computer',
 ];
 
 export default de;

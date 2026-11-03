@@ -2,13 +2,12 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { useT } from '../i18n';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { useNow } from '../platform/hooks';
-import { dayKey } from '../platform/dates';
+import { dayKey, hashString } from '../platform/dates';
 import { Link } from '../router/router';
 import { Icon } from './Icon';
-import { Dot, Star, Tri } from './Shapes';
 import { SurpriseButton } from './Surprise';
 import { GamePreview, hasPreview } from './GamePreview';
-import { gamePath, latestGame, playPath, SECTION_GAMES } from '../catalog/catalog';
+import { gamePath, playPath } from '../catalog/catalog';
 import type { GameEntry } from '../catalog/types';
 import { useFlagships } from '../platform/useFlagships';
 import { activeHoliday } from '../platform/seasons';
@@ -76,27 +75,31 @@ function GameWall({ games }: { games: GameEntry[] }) {
 }
 
 /**
- * The first screen says what GlitchBound is in one breath: the line, one sentence, today's pick and
+ * Right under Sigilfall, what GlitchBound is in one breath: the line, one sentence, today's pick and
  * Surprise me, and the promise (free, no sign-up, nothing to install). Beside it the game wall. Today
  * (the day's theme and the daily challenge) is a section of its own further down.
+ *
+ * With Sigilfall hidden this is the first screen again, so `first` makes its line the page's heading.
  */
-export function Hero() {
+export function Hero({ first }: { first: boolean }) {
   const t = useT();
   const live = useLiveCatalog();
   const gameCount = live.games.length;
-  // Today's pick: an admin's spotlight, else the newest game.
-  const pick = live.spotlight ?? latestGame(live.games);
   const glitching = useGlitchPulse();
   const now = useNow(60_000);
   const holiday = activeHoliday(live.raw.season, dayKey(now));
-  // The wall: the best games spread over the columns first, then every other game, then the RPG.
+  // The wall: the best games spread over the columns first, then every other game.
   const best = useFlagships().list.map((f) => f.game);
   const playable = live.games.filter((g) => !live.settings(g.slug).maintenance);
-  const sections = SECTION_GAMES.filter((g) => !live.settings(g.slug).hidden);
-  const wall = [...best, ...sections, ...playable.filter((g) => !best.includes(g))];
+  const wall = [...best, ...playable.filter((g) => !best.includes(g))];
+  // Today's pick: an admin's spotlight, else a different game each day that is fun alone, right away
+  // (a live game opens on a lobby, which is a poor first click while few people are online).
+  const solo = playable.filter((g) => !g.live);
+  const pick = live.spotlight ?? solo[hashString(dayKey(now)) % Math.max(1, solo.length)];
+  const Title = first ? 'h1' : 'h2';
 
   return (
-    <section className="hero wrap" aria-labelledby="hero-title">
+    <section id="quick-games" className="hero wrap" aria-labelledby="hero-title">
       <div className="hero-copy">
         {holiday && (
           <p className="season-greeting">
@@ -106,12 +109,12 @@ export function Hero() {
         <p className="eyebrow">
           <span className="live-dot" /> {t('Free browser arcade')} · {gameCount === 1 ? t('1 game') : t('{n} games', { n: gameCount })}
         </p>
-        <h1 id="hero-title" className="hero-title">
+        <Title id="hero-title" className="hero-title">
           {t('Small games.')}{' '}
           <span className={`glitch hero-hl${glitching ? ' is-glitching' : ''}`} data-text={t('Big obsessions.')}>
             {t('Big obsessions.')}
           </span>
-        </h1>
+        </Title>
         <p className="hero-sub">{t('Quick games that start in a second: trivia, word puzzles, racing, card games and a whole fantasy RPG. Right here in your browser.')}</p>
         <div className="hero-ctas">
           {pick && (
@@ -136,12 +139,6 @@ export function Hero() {
       </div>
 
       <GameWall games={wall} />
-
-      <div className="hero-deco" aria-hidden="true">
-        <Tri className="deco d1" fill="#b6e62c" />
-        <Dot className="deco d2" fill="#ff4fc8" />
-        <Star className="deco d3" fill="#ffc928" />
-      </div>
     </section>
   );
 }

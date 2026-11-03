@@ -2224,6 +2224,10 @@ const pt: string[] = [
   'há {n} d',
   '{n} pontos',
   '{n} pontos para {rank}',
+  'O sino parou de tocar há três semanas. Esta noite vêm buscar o que dorme sob a capela.',
+  'Ou joga algo rápido',
+  'Um herói com espada e escudo no pátio de um castelo à noite, entre braseiros e estandartes vermelhos',
+  'Jogo real, no telemóvel ou no computador',
 ];
 
 export default pt;
