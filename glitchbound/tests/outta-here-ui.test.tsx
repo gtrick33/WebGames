@@ -16,7 +16,7 @@ afterEach(() => {
 });
 
 const host = () => ({ report: vi.fn() });
-const key = (target: EventTarget, k: string, extra: Record<string, unknown> = {}): boolean => {
+const key = (target: Window | Element, k: string, extra: Record<string, unknown> = {}): boolean => {
   let ok = true;
   act(() => {
     ok = fireEvent.keyDown(target, { key: k, ...extra });
