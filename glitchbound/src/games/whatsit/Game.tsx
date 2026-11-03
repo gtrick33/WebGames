@@ -558,7 +558,7 @@ function useBelow(asked: number): [RefObject<HTMLUListElement | null>, number, (
     if (!el) return;
     const bottom = el.scrollTop + el.clientHeight;
     let n = 0;
-    for (const li of Array.from(el.children) as HTMLElement[]) if (li.offsetTop + li.offsetHeight / 2 > bottom) n++;
+    for (const li of Array.from(el.children) as HTMLElement[]) if (li.offsetTop + li.offsetHeight - 2 > bottom) n++;
     setBelow(n);
   }, []);
   useEffect(() => {
