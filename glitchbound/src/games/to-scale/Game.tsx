@@ -7,8 +7,9 @@ import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
 import { NextDaily } from '../../components/NextDaily';
 import { glyph } from './glyphs';
-import { accuracy, LIVES, makeShot, makeShots, mark, MAX_POINTS, MISS_POINTS, pointsFor, ratioText, rng, SHOTS, type Shot } from './logic';
-import { sizeText, THINGS } from './objects';
+import { isBull, LIVES, makeShot, makeShots, mark, MAX_POINTS, MISS_POINTS, percentRight, pointsFor, ratioText, rng, SHOTS, type Shot } from './logic';
+import { artBox, DIM_QUESTION, measured, sizeText, THINGS, usText, type Thing } from './objects';
+import { labelWidth, layoutLabels } from './layout';
 import { createSfx, type Sfx } from './sound';
 import './Game.css';
 import { GameMenuButton } from '../../components/GameMenuButton';
@@ -26,9 +27,22 @@ interface Save {
   daily: Record<string, { best: number; tries: number; line: string; open?: boolean }>;
   /** Today's shots so far, saved at every lock-in. */
   progress?: { day: string; played: Played[] };
+  /** Friends' challenge rounds by `${id}:${round}`: shots so far, and the result once done. */
+  challenges: Record<string, ChallengeRec>;
   muted: boolean;
 }
-const emptySave = (): Save => ({ best: 0, bestEndless: 0, runs: 0, daily: {}, muted: false });
+interface ChallengeRec {
+  played: Played[];
+  done: boolean;
+  score?: number;
+  line?: string;
+  /** The round was a daily challenge already played as that day's daily: its result counts. */
+  fromDaily?: boolean;
+}
+const emptySave = (): Save => ({ best: 0, bestEndless: 0, runs: 0, daily: {}, challenges: {}, muted: false });
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const okPlayed = (x: Played): boolean => !!x && Number.isInteger(x.points) && x.points >= 0 && x.points <= MAX_POINTS && typeof x.guess === 'number' && Number.isFinite(x.guess) && x.guess > 0;
+const cleanPlayed = (list: Played[]): Played[] => list.map((x) => ({ points: x.points, guess: x.guess }));
 
 function loadSave(): Save {
   try {
@@ -41,30 +55,43 @@ function loadSave(): Save {
     s.muted = o.muted === true;
     if (o.daily && typeof o.daily === 'object')
       for (const [d, v] of Object.entries(o.daily).slice(-60))
-        if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object')
+        if (DAY.test(d) && v && typeof v === 'object')
           s.daily[d] = { best: n(v.best), tries: n(v.tries), line: typeof v.line === 'string' ? v.line.slice(0, 40) : '', ...(typeof v.open === 'boolean' ? { open: v.open } : {}) };
     const p = o.progress;
-    const ok = (x: Played): boolean => !!x && Number.isInteger(x.points) && x.points >= 0 && x.points <= MAX_POINTS && typeof x.guess === 'number' && x.guess > 0;
-    if (p && typeof p.day === 'string' && Array.isArray(p.played) && p.played.length < SHOTS && p.played.every(ok)) s.progress = { day: p.day, played: p.played.map((x) => ({ points: x.points, guess: x.guess })) };
+    if (p && typeof p.day === 'string' && Array.isArray(p.played) && p.played.length < SHOTS && p.played.every(okPlayed)) s.progress = { day: p.day, played: cleanPlayed(p.played) };
+    if (o.challenges && typeof o.challenges === 'object')
+      for (const [k, v] of Object.entries(o.challenges).slice(-CHALLENGES_KEPT))
+        if (v && typeof v === 'object' && Array.isArray(v.played) && v.played.length <= SHOTS && v.played.every(okPlayed))
+          s.challenges[k.slice(0, 80)] = {
+            played: cleanPlayed(v.played),
+            done: v.done === true,
+            ...(v.done === true ? { score: Math.min(SHOTS * MAX_POINTS, n(v.score)), line: typeof v.line === 'string' ? v.line.slice(0, 40) : '' } : {}),
+            ...(v.fromDaily === true ? { fromDaily: true } : {}),
+          };
     return s;
   } catch {
     return emptySave();
   }
 }
+const CHALLENGES_KEPT = 30;
 const writeSave = (s: Save): void => {
   try {
-    localStorage.setItem(KEY, JSON.stringify(s));
+    const keys = Object.keys(s.challenges);
+    const challenges = keys.length > CHALLENGES_KEPT ? Object.fromEntries(keys.slice(-CHALLENGES_KEPT).map((k) => [k, s.challenges[k]!])) : s.challenges;
+    localStorage.setItem(KEY, JSON.stringify({ ...s, challenges }));
   } catch {
     /* blocked storage: the game still works, nothing is kept */
   }
 };
 const dailyNumber = (day: string): number => Math.max(1, daysBetween(EPOCH, day) + 1);
 const fmt = (n: number): string => n.toLocaleString('en-US');
-/** "a dice" → "the dice". */
+/** "a die" → "the die". */
 const the = (name: string): string => name.replace(/^(a|an) /, 'the ');
 /** A word for a shot's mark, for CSS. */
-const grade = (points: number): string => ({ '🎯': 'bull', '🟩': 'good', '🟨': 'ok', '🟧': 'far' })[mark(points)] ?? 'off';
-/** "2.4× the dice", "0.7× the dice", "1/3 of the dice". */
+const grade = (points: number, bull?: boolean): string => ({ '🎯': 'bull', '🟩': 'good', '🟨': 'ok', '🟧': 'far' })[mark(points, bull)] ?? 'off';
+/** "Next shot" ignores taps this soon after the reveal (a double tap on "Lock it in"). */
+const REVEAL_HOLD_MS = 500;
+/** "2.4× the die", "0.7× the die", "1/3 of the die". */
 const times = (r: number, name: string): string => `${ratioText(r)}${ratioText(r).startsWith('1/') ? ' of' : ''} ${the(name)}`;
 
 export default function Game({ host, restartKey, challenge }: GameModuleProps) {
@@ -76,28 +103,63 @@ interface Played {
   guess: number;
 }
 
+/** A day's daily shots: the same for everyone, and for that day's daily challenges. */
+const dailyShots = (day: string): Shot[] => makeShots(hashString(`to-scale:${day}`));
+/** The stored save, or null when nothing is stored (or storage is blocked): then the in-memory copy is the save. */
+function storedSave(): Save | null {
+  try {
+    if (localStorage.getItem(KEY) === null) return null;
+  } catch {
+    return null;
+  }
+  return loadSave();
+}
+/** The day's daily went on (or ended) in another tab past this tab's `n` shots. */
+const staleDaily = (s: Save, day: string, n: number): boolean => {
+  const rec = s.daily[day];
+  return !!rec && (!rec.open || (s.progress?.day === day && s.progress.played.length > n));
+};
+/** How a challenge round picks up on mount. */
+type Plan = { kind: 'done'; rec: ChallengeRec } | { kind: 'daily-done'; score: number; line: string } | { kind: 'play'; played: Played[]; claimDaily: boolean };
+function challengePlan(s: Save, key: string, day: string): Plan {
+  const rec = s.challenges[key];
+  if (rec?.done) return { kind: 'done', rec };
+  const kept = rec?.played ?? [];
+  if (!day) return { kind: 'play', played: kept, claimDaily: false };
+  // A daily challenge is that day's daily: one attempt for both.
+  const d = s.daily[day];
+  const going = d?.open && s.progress?.day === day ? s.progress.played : null;
+  if (going) return { kind: 'play', played: going.length >= kept.length ? going : kept, claimDaily: false };
+  if (d && !kept.length) return { kind: 'daily-done', score: d.best, line: d.line };
+  return { kind: 'play', played: kept, claimDaily: !d };
+}
+
 function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpec }) {
-  const [today] = useState(() => dayKey());
+  const [today, setToday] = useState(() => dayKey());
   const [save, setSave] = useState<Save>(loadSave);
   const saveRef = useRef(save);
-  const commit = useCallback((s: Save) => {
+  /** Every write starts from the stored save (another tab may have changed it), never only from memory. */
+  const commit = useCallback((f: (cur: Save) => Save): Save => {
+    const s = f(storedSave() ?? saveRef.current);
     saveRef.current = s;
     setSave(s);
     writeSave(s);
+    return s;
   }, []);
   // Today's daily was started but its saved round can't be picked up again (storage lost or damaged):
   // settle it once, as it stood (0), so the arcade still counts the day. It never comes back.
   useEffect(() => {
-    const cur = saveRef.current;
-    const rec = cur.daily[today];
-    if (!rec?.open || cur.progress?.day === today) return;
-    commit({ ...cur, daily: { ...cur.daily, [today]: { ...rec, open: false } } });
+    const rec = saveRef.current.daily[today];
+    if (!rec?.open || saveRef.current.progress?.day === today || (challenge?.mode === 'daily' && challenge.day === today)) return;
+    commit((cur) => (cur.daily[today] ? { ...cur, daily: { ...cur.daily, [today]: { ...cur.daily[today]!, open: false } } } : cur));
     host.report({ type: 'end', score: rec.best, stats: {}, daily: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const sfxRef = useRef<Sfx | null>(null);
   const sfx = useCallback((): Sfx => (sfxRef.current ??= createSfx(() => saveRef.current.muted)), []);
   const revealTune = useRef(0);
+  const revealAt = useRef(0);
+  const rootRef = useRef<HTMLDivElement>(null);
   useEffect(
     () => () => {
       window.clearTimeout(revealTune.current);
@@ -106,86 +168,171 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
     [],
   );
 
-  const [screen, setScreen] = useState<'menu' | 'play' | 'result'>(challenge ? 'play' : 'menu');
+  // A friends' challenge round is one attempt: it is kept at every lock-in and picks up where it was.
+  const ckey = challenge ? `${challenge.id}:${challenge.round}` : '';
+  const cDay = challenge?.mode === 'daily' && DAY.test(challenge.day ?? '') ? challenge.day : '';
+  const [plan] = useState<Plan | null>(() => (challenge ? challengePlan(save, ckey, cDay) : null));
+  const planPlayed = plan?.kind === 'play' ? plan.played : plan?.kind === 'done' ? plan.rec.played : [];
+  const [screen, setScreen] = useState<'menu' | 'play' | 'result'>(plan ? (plan.kind === 'play' ? 'play' : 'result') : 'menu');
   const [mode, setMode] = useState<Mode>(challenge ? 'challenge' : 'daily');
-  const [shots, setShots] = useState<Shot[]>(() => (challenge ? makeShots(challenge.seed) : []));
+  const [shots, setShots] = useState<Shot[]>(() => (challenge ? (cDay ? dailyShots(cDay) : makeShots(challenge.seed)) : []));
+  /** The day this round belongs to: a daily started before midnight finishes as that day's. */
+  const [roundDay, setRoundDay] = useState(() => cDay || today);
   const endlessRng = useRef<(() => number) | null>(null);
-  const [idx, setIdx] = useState(0);
-  const [guess, setGuess] = useState(() => (challenge ? makeShots(challenge.seed)[0]!.start : 1));
+  const [idx, setIdx] = useState(() => Math.min(planPlayed.length, SHOTS - 1));
+  const [guess, setGuess] = useState(() => (shots[Math.min(planPlayed.length, SHOTS - 1)]?.start ?? 1));
   const [phase, setPhase] = useState<'aim' | 'reveal'>('aim');
-  const [played, setPlayed] = useState<Played[]>([]);
+  const [played, setPlayed] = useState<Played[]>(planPlayed);
   const [lives, setLives] = useState(LIVES);
   const [newBest, setNewBest] = useState(false);
+  /** A result that isn't this screen's shots: a daily challenge already played as the daily. */
+  const [counted, setCounted] = useState<{ score: number; line: string } | null>(() =>
+    plan?.kind === 'daily-done' ? { score: plan.score, line: plan.line } : plan?.kind === 'done' && plan.rec.fromDaily ? { score: plan.rec.score ?? 0, line: plan.rec.line ?? '' } : null,
+  );
   useEffect(() => {
-    if (challenge) host.report({ type: 'start' });
+    if (!challenge || !plan) return;
+    if (plan.kind === 'done') return;
+    if (plan.kind === 'daily-done') {
+      // That day's daily was already played: its result is this round's score, reported once.
+      commit((cur) => ({ ...cur, challenges: { ...cur.challenges, [ckey]: { played: [], done: true, score: plan.score, line: plan.line, fromDaily: true } } }));
+      host.report({ type: 'end', score: plan.score, stats: {}, challenge: { id: challenge.id, round: challenge.round } });
+      return;
+    }
+    if (plan.claimDaily)
+      commit((cur) => ({ ...cur, daily: { ...cur.daily, [cDay]: { best: 0, tries: 1, line: '', open: true } }, progress: { day: cDay, played: plan.played } }));
+    host.report({ type: 'start' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Midnight: the menu always offers the current day's daily.
+  useEffect(() => {
+    const fresh = (): void => setToday(dayKey());
+    const onVisible = (): void => {
+      if (!document.hidden) fresh();
+    };
+    window.addEventListener('focus', fresh);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', fresh);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, []);
 
   const begin = (m: Mode): void => {
     // Today's 5 shots are one try a day: starting uses it up. Leaving halfway (Restart, reload) is
     // fine, it carries on with the next shot, but locked-in shots can never be played again.
-    const cur = saveRef.current;
-    const kept = m === 'daily' && cur.daily[today]?.open && cur.progress?.day === today ? cur.progress.played : null;
+    const day = dayKey();
+    setToday(day);
+    const cur = storedSave() ?? saveRef.current;
+    const kept = m === 'daily' && cur.daily[day]?.open && cur.progress?.day === day ? cur.progress.played : null;
     if (m === 'daily' && !kept) {
-      if (cur.daily[today]) return;
-      commit({ ...cur, daily: { ...cur.daily, [today]: { best: 0, tries: 1, line: '', open: true } }, progress: { day: today, played: [] } });
+      if (cur.daily[day]) return;
+      commit((s) => ({ ...s, daily: { ...s.daily, [day]: { best: 0, tries: 1, line: '', open: true } }, progress: { day, played: [] } }));
     }
     let list: Shot[];
     if (m === 'endless') {
       const r = rng((Math.random() * 2 ** 32) >>> 0);
       endlessRng.current = r;
       list = [makeShot(r)];
-    } else list = makeShots(m === 'challenge' && challenge ? challenge.seed : hashString(`to-scale:${today}`));
+    } else list = dailyShots(day);
     const at = kept?.length ?? 0;
     setMode(m);
+    setRoundDay(day);
     setShots(list);
     setIdx(at);
     setGuess(list[at]!.start);
     setPhase('aim');
     setPlayed(kept ?? []);
     setLives(LIVES);
+    setCounted(null);
     setScreen('play');
     host.report({ type: 'start' });
   };
 
   const shot = shots[idx];
-  const total = played.reduce((a, p) => a + p.points, 0);
+  const total = counted ? counted.score : played.reduce((a, p) => a + p.points, 0);
+  /** The daily this round is (or counts as): the daily itself, or a daily challenge. */
+  const dailyDay = mode === 'daily' ? roundDay : mode === 'challenge' ? cDay : '';
+  const markOf = (p: Played, i: number): string => mark(p.points, shots[i] ? isBull(p.guess, shots[i].ratio) : undefined);
+
+  /** Takes over a challenge round another tab got further with. */
+  const adopt = (rec: ChallengeRec): void => {
+    setPlayed(rec.played);
+    if (rec.done) {
+      if (rec.fromDaily) setCounted({ score: rec.score ?? 0, line: rec.line ?? '' });
+      setScreen('result');
+      return;
+    }
+    const at = Math.min(rec.played.length, shots.length - 1);
+    setIdx(at);
+    setGuess(shots[at]!.start);
+    setPhase('aim');
+  };
+  /** This tab's round fell behind the stored one: leave (daily) or catch up (challenge). True if it did. */
+  const catchUp = (s: Save): boolean => {
+    if (screen !== 'play') return false;
+    if (mode === 'daily' && staleDaily(s, roundDay, played.length)) {
+      setScreen('menu');
+      return true;
+    }
+    const rec = mode === 'challenge' ? s.challenges[ckey] : undefined;
+    if (rec && (rec.done || rec.played.length > played.length)) {
+      adopt(rec);
+      return true;
+    }
+    return false;
+  };
 
   const finish = (list: Played[]): void => {
     const score = list.reduce((a, p) => a + p.points, 0);
-    const bullseyes = list.filter((p) => p.points >= 900).length;
-    const line = list.map((p) => mark(p.points)).join('');
-    const cur = saveRef.current;
-    setNewBest(score > 0 && (mode === 'daily' ? score > cur.best : mode === 'endless' ? score > cur.bestEndless : false));
-    commit({
-      ...cur,
-      best: mode === 'daily' ? Math.max(cur.best, score) : cur.best,
-      bestEndless: mode === 'endless' ? Math.max(cur.bestEndless, score) : cur.bestEndless,
-      runs: cur.runs + 1,
-      daily: mode === 'daily' ? { ...cur.daily, [today]: { best: score, tries: 1, line } } : cur.daily,
-      progress: mode === 'daily' ? undefined : cur.progress,
+    const bullseyes = list.filter((p, i) => isBull(p.guess, shots[i]!.ratio)).length;
+    const line = list.map(markOf).join('');
+    commit((cur) => {
+      setNewBest(score > 0 && (dailyDay ? score > cur.best : mode === 'endless' ? score > cur.bestEndless : false));
+      return {
+        ...cur,
+        best: dailyDay ? Math.max(cur.best, score) : cur.best,
+        bestEndless: mode === 'endless' ? Math.max(cur.bestEndless, score) : cur.bestEndless,
+        runs: cur.runs + 1,
+        daily: dailyDay ? { ...cur.daily, [dailyDay]: { best: score, tries: 1, line } } : cur.daily,
+        progress: dailyDay && cur.progress?.day === dailyDay ? undefined : cur.progress,
+        challenges: mode === 'challenge' ? { ...cur.challenges, [ckey]: { played: list, done: true, score, line } } : cur.challenges,
+      };
     });
     const end = { type: 'end' as const, score, stats: { bullseyes } };
-    host.report(mode === 'daily' ? { ...end, daily: true } : mode === 'challenge' && challenge ? { ...end, challenge: { id: challenge.id, round: challenge.round } } : end);
+    // Only today's daily counts as the arcade's daily today.
+    const daily = dailyDay !== '' && dailyDay === dayKey();
+    host.report(mode === 'challenge' && challenge ? { ...end, ...(daily ? { daily } : {}), challenge: { id: challenge.id, round: challenge.round } } : daily ? { ...end, daily } : end);
   };
 
   const lock = (): void => {
     if (!shot || phase !== 'aim') return;
+    const stored = storedSave();
+    if (stored && catchUp(stored)) return;
     const points = pointsFor(guess, shot.ratio);
     const list = [...played, { points, guess }];
     const left = mode === 'endless' && points < MISS_POINTS ? lives - 1 : lives;
     setPlayed(list);
     setLives(left);
     setPhase('reveal');
+    revealAt.current = performance.now();
     sfx().lock();
     revealTune.current = window.setTimeout(() => sfx().reveal(points), 180);
     // The last shot decides the game: keep the result now, even if the player leaves on its reveal.
     if (mode === 'endless' ? left <= 0 : idx + 1 >= shots.length) finish(list);
-    else if (mode === 'daily') commit({ ...saveRef.current, progress: { day: today, played: list } });
+    else if (mode !== 'endless')
+      commit((cur) => ({
+        ...cur,
+        ...(dailyDay ? { progress: { day: dailyDay, played: list } } : {}),
+        ...(mode === 'challenge' ? { challenges: { ...cur.challenges, [ckey]: { played: list, done: false } } } : {}),
+      }));
   };
 
-  const next = (): void => {
+  /** `tap`: from the button, where "Lock it in" just was (keys are deliberate, and repeats are ignored). */
+  const next = (tap = false): void => {
     if (phase !== 'reveal') return;
+    // A second tap on the spot where "Lock it in" was must not skip the reveal.
+    if (tap && performance.now() - revealAt.current < REVEAL_HOLD_MS) return;
     const over = mode === 'endless' ? lives <= 0 : idx + 1 >= shots.length;
     if (over) {
       // Already kept when the last shot was locked in.
@@ -202,6 +349,23 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
     setPhase('aim');
   };
 
+  // Another tab changed the save: show it, and leave or catch up a round that tab got further with.
+  const onStored = useRef(catchUp);
+  useEffect(() => {
+    onStored.current = catchUp;
+  });
+  useEffect(() => {
+    const onStorage = (e: StorageEvent): void => {
+      if (e.key !== KEY && e.key !== null) return;
+      const s = loadSave();
+      saveRef.current = s;
+      setSave(s);
+      onStored.current(s);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   // Keyboard: arrows resize (Shift for bigger steps), Enter locks in / goes on.
   const keys = useRef({ lock, next, phase, shot });
   useEffect(() => {
@@ -211,7 +375,14 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
     if (screen !== 'play') return;
     const onKey = (e: KeyboardEvent): void => {
       const k = keys.current;
-      if (!k.shot) return;
+      if (!k.shot || e.ctrlKey || e.altKey || e.metaKey) return;
+      // Keys belong to the game only when meant for it: not typing, not in a dialog, not elsewhere on the page.
+      const t = e.target instanceof Element ? e.target : null;
+      if (t && t !== document.body) {
+        if (t.closest('[role="dialog"],[aria-modal="true"]') || !rootRef.current?.contains(t)) return;
+        if (t.matches('input:not([type="range"]),textarea,select,[contenteditable]:not([contenteditable="false"])')) return;
+        if ((e.key === 'Enter' || e.key === ' ') && t.matches('button:focus-visible,a:focus-visible')) return;
+      }
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (e.repeat) return;
@@ -220,10 +391,11 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
         return;
       }
       if (k.phase !== 'aim') return;
-      const step = e.shiftKey ? 1.15 : 1.03;
+      // Shift+arrow for big steps; + and − are always small (a US + carries Shift).
+      const step = e.shiftKey && e.key.startsWith('Arrow') ? 1.15 : 1.03;
       const s = k.shot;
       if (e.key === 'ArrowUp' || e.key === 'ArrowRight' || e.key === '+' || e.key === '=') setGuess((g) => Math.min(s.max, g * step));
-      else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === '-') setGuess((g) => Math.max(s.min, g / step));
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === '-' || e.key === '−') setGuess((g) => Math.max(s.min, g / step));
       else return;
       e.preventDefault();
       sfx().tick();
@@ -235,6 +407,7 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
   if (screen === 'menu') {
     const todays = save.daily[today];
     const going = todays?.open && save.progress?.day === today ? save.progress.played : null;
+    const coarse = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
     return (
       <div className="ts ts-menu">
         <div className="ts-menu-top">
@@ -283,9 +456,9 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
         </section>
         <p className="ts-muted">
           {save.runs ? `Best daily ${fmt(save.best)} / ${fmt(SHOTS * MAX_POINTS)} · best endless ${fmt(save.bestEndless)} · ` : ''}
-          Drag the corner, the slider or use the arrow keys. Enter to lock in.
+          {coarse ? 'Drag the corner or the slider, then Lock it in.' : 'Drag the corner, the slider or use the arrow keys. Enter to lock in.'}
         </p>
-        <button className="ts-mute" onClick={() => commit({ ...save, muted: !save.muted })} aria-pressed={save.muted}>
+        <button className="ts-mute" onClick={() => commit((cur) => ({ ...cur, muted: !cur.muted }))} aria-pressed={save.muted}>
           {save.muted ? '🔇 Sound off' : '🔊 Sound on'}
         </button>
       </div>
@@ -293,18 +466,20 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
   }
 
   if (screen === 'result') {
-    const line = played.map((p) => mark(p.points)).join('');
-    const bullseyes = played.filter((p) => p.points >= 900).length;
-    const shareText = `To Scale #${dailyNumber(today)} 📏\n${line}\n${fmt(total)} / ${fmt(SHOTS * MAX_POINTS)}\n${window.location.origin}/games/to-scale`;
+    const line = counted ? counted.line : played.map(markOf).join('');
+    const bullseyes = counted ? [...line].filter((c) => c === '🎯').length : played.filter((p, i) => shots[i] && isBull(p.guess, shots[i].ratio)).length;
+    const shots_ = counted ? SHOTS : played.length;
+    const shareText = `To Scale #${dailyNumber(roundDay)} 📏\n${line}\n${fmt(total)} / ${fmt(SHOTS * MAX_POINTS)}\n${window.location.origin}/games/to-scale`;
     return (
       <div className="ts ts-result">
-        <p className="ts-kicker">{mode === 'daily' ? `Daily #${dailyNumber(today)}` : mode === 'challenge' ? `Challenge · round ${challenge?.round ?? 1}` : `Endless · ${played.length} shots`}</p>
+        <p className="ts-kicker">{mode === 'daily' ? `Daily #${dailyNumber(roundDay)}` : mode === 'challenge' ? `Challenge · round ${challenge?.round ?? 1}` : `Endless · ${played.length} shots`}</p>
         <p className="ts-total">
           {fmt(total)}
           {mode !== 'endless' && <small> / {fmt(SHOTS * MAX_POINTS)}</small>}
         </p>
         {newBest && <p className="ts-new">New best!</p>}
-        <ResultLine line={line} label={`${bullseyes} bullseyes out of ${played.length}`} />
+        {counted && <p className="ts-muted">You played Daily #{dailyNumber(cDay)} already. Your daily result counts here.</p>}
+        {line && <ResultLine line={line} label={`${bullseyes} bullseyes out of ${shots_}`} />}
         <p className="ts-muted">🎯 within 10% · 🟩 close · 🟨 not bad · 🟧 far · 🟥 way off</p>
         {mode === 'daily' && <NextDaily className="ts-muted" />}
         <div className="ts-row">
@@ -334,11 +509,11 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
   const last = played[played.length - 1];
   const tint = TINTS[(shot.target + idx) % TINTS.length]!;
   return (
-    <div className="ts ts-play">
+    <div className="ts ts-play" ref={rootRef}>
       <header className="ts-hud" aria-live="polite">
-        <span>{mode === 'endless' ? Array.from({ length: LIVES }, (_, i) => (i < lives ? '❤️' : '🖤')).join('') : mode === 'daily' ? `Daily #${dailyNumber(today)}` : `⚔️ Round ${challenge?.round ?? 1}`}</span>
+        <span>{mode === 'endless' ? Array.from({ length: LIVES }, (_, i) => (i < lives ? '❤️' : '🖤')).join('') : mode === 'daily' ? `Daily #${dailyNumber(roundDay)}` : `⚔️ Round ${challenge?.round ?? 1}`}</span>
         <span className="ts-dots">
-          {mode === 'endless' ? `Shot ${idx + 1}` : shots.map((_, i) => <i key={i} className={i < played.length ? `is-${grade(played[i]!.points)}` : i === idx ? 'is-now' : ''} />)}
+          {mode === 'endless' ? `Shot ${idx + 1}` : shots.map((_, i) => <i key={i} className={i < played.length ? `is-${grade(played[i]!.points, isBull(played[i]!.guess, shots[i]!.ratio))}` : i === idx ? 'is-now' : ''} />)}
         </span>
         <span className="ts-hud-end">
           <b>{fmt(total)}</b>
@@ -346,7 +521,7 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
         </span>
       </header>
       <p className="ts-question">
-        How big is <b>{target.name}</b> next to <b>{ref.name}</b>?
+        {DIM_QUESTION[target.dim]} is <b>{target.name}</b> next to <b>{ref.name}</b> ({sizeText(ref.size)} {ref.dim})?
       </p>
       <Stage key={`${idx}:${shot.target}`} shot={shot} guess={guess} reveal={phase === 'reveal'} tint={tint} onGuess={setGuess} onTick={() => sfx().tick()} />
       {phase === 'aim' ? (
@@ -370,6 +545,7 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
                 sfx().tick();
               }}
               aria-label={`Size of ${target.name}`}
+              aria-valuetext={times(guess, ref.name)}
             />
             <button className="ts-round" aria-label="Bigger" onClick={() => setGuess((g) => Math.min(shot.max, g * 1.05))}>
               +
@@ -384,15 +560,15 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
           <div className="ts-reveal" role="status">
             <p className="ts-verdict">
               <span className={`ts-points ${last.points >= 700 ? 'is-good' : last.points >= MISS_POINTS ? 'is-ok' : 'is-bad'}`}>
-                {mark(last.points)} +{fmt(last.points)}
+                {mark(last.points, isBull(last.guess, shot.ratio))} +{fmt(last.points)}
               </span>
-              <span className="ts-acc">{Math.round(accuracy(last.guess, shot.ratio) * 100)}% right</span>
+              <span className="ts-acc">{percentRight(last.guess, shot.ratio)}% right</span>
             </p>
             <p className="ts-truth">
-              Real size: <b>{sizeText(target.size)}</b>, {times(shot.ratio, ref.name)} ({sizeText(ref.size)}). You said {ratioText(last.guess)}.
+              Real size: <b>{sizeText(target.size)} {target.dim}</b> ({usText(target.size)}), {times(shot.ratio, ref.name)} ({sizeText(ref.size)}, {usText(ref.size)}). You said {ratioText(last.guess)}.
             </p>
             <p className="ts-fact">{target.fact}</p>
-            <button className="ts-btn ts-btn-go ts-lock" onClick={next} autoFocus>
+            <button className="ts-btn ts-btn-go ts-lock" onClick={() => next(true)} autoFocus>
               {mode === 'endless' ? (lives <= 0 ? 'See your score' : 'Next shot') : idx + 1 >= shots.length ? 'See your score' : 'Next shot'}
             </button>
           </div>
@@ -402,15 +578,15 @@ function ToScale({ host, challenge }: { host: GameHost; challenge?: ChallengeSpe
   );
 }
 
-/** Real-world sizes of a thing's box, in meters, from its longest side and the picture's shape. */
-function box(size: number, aspect: number): { w: number; h: number } {
-  return aspect >= 1 ? { w: size, h: size / aspect } : { w: size * aspect, h: size };
-}
+/** Room under the floor for the two-line labels, in pixels. */
+const LABEL_ROOM = 42;
 
 /**
  * The blueprint: the reference in color on the left, the target's silhouette on the right at the
- * guessed size, both standing on the floor. The view zooms to keep both in frame (it holds still
- * while you drag the corner handle). On reveal, the real thing appears at its true size.
+ * guessed size, both standing on the floor. Each picture's measured side (its width for a length,
+ * its height for a height) is the thing's real size. The view zooms to keep both in frame (while you
+ * drag the corner handle it only zooms out, when the shape nears the edge). On reveal, the real thing
+ * appears at its true size.
  */
 function Stage({ shot, guess, reveal, tint, onGuess, onTick }: { shot: Shot; guess: number; reveal: boolean; tint: string; onGuess: (g: number) => void; onTick: () => void }) {
   const ref = THINGS[shot.ref]!;
@@ -420,7 +596,7 @@ function Stage({ shot, guess, reveal, tint, onGuess, onTick }: { shot: Shot; gue
   const [dim, setDim] = useState<{ w: number; h: number } | null>(null);
   const [frozen, setFrozen] = useState<number | null>(null);
   const drag = useRef<{ x: number; y: number; w: number; h: number; scale: number } | null>(null);
-  const [glyphs] = useState(() => ({ ref: glyph(ref.emoji, '#ffffff'), target: glyph(target.emoji, tint) }));
+  const [glyphs] = useState(() => ({ ref: glyph(ref, '#ffffff'), target: glyph(target, tint) }));
 
   useLayoutEffect(() => {
     const node = el.current;
@@ -445,7 +621,10 @@ function Stage({ shot, guess, reveal, tint, onGuess, onTick }: { shot: Shot; gue
       const w = wheel.current;
       if (w.reveal) return;
       e.preventDefault();
-      w.onGuess(Math.min(shot.max, Math.max(shot.min, w.guess * Math.exp(-e.deltaY * 0.0015))));
+      const g = Math.min(shot.max, Math.max(shot.min, w.guess * Math.exp(-e.deltaY * 0.0015)));
+      // Kept here too, so quick wheel events build on each other before the next render.
+      w.guess = g;
+      w.onGuess(g);
       w.onTick();
     };
     node.addEventListener('wheel', onWheel, { passive: false });
@@ -454,28 +633,39 @@ function Stage({ shot, guess, reveal, tint, onGuess, onTick }: { shot: Shot; gue
 
   const { w: W, h: H } = dim ?? { w: 1, h: 1 };
   const unit = ref.size;
-  const rb = box(unit, glyphs.ref?.aspect ?? 1);
-  const gb = box(guess * unit, glyphs.target?.aspect ?? 1);
-  const tb = box(shot.ratio * unit, glyphs.target?.aspect ?? 1);
+  const rb = artBox(ref, unit, glyphs.ref?.aspect ?? 1);
+  const gb = artBox(target, guess * unit, glyphs.target?.aspect ?? 1);
+  const tb = artBox(target, shot.ratio * unit, glyphs.target?.aspect ?? 1);
   const tw = reveal ? Math.max(gb.w, tb.w) : gb.w;
   const th = reveal ? Math.max(gb.h, tb.h) : gb.h;
   const gap = W * 0.08;
-  // Room is kept on the right for the corner handle.
+  // Room is kept on the right for the corner handle, and under the floor for the labels.
   const HANDLE = 36;
-  const fit = Math.min((H * 0.66) / Math.max(rb.h, th), (W * 0.9 - gap - HANDLE) / (rb.w + tw));
-  const scale = frozen ?? fit;
-  const floor = H * 0.8;
+  const floor = Math.min(H * 0.8, H - LABEL_ROOM);
+  const fitIn = (hRoom: number, wRoom: number): number => Math.min(hRoom / Math.max(rb.h, th), (wRoom - gap - HANDLE) / (rb.w + tw));
+  const fit = fitIn(Math.min(H * 0.66, floor - 12), W * 0.9);
+  // While dragging the view holds still, until the shape would leave the frame: then it zooms out.
+  const scale = frozen === null ? fit : Math.min(frozen, fitIn(floor - 8, W * 0.98));
   const totalW = rb.w * scale + gap + tw * scale;
   const left = Math.max(W * 0.04, (W - HANDLE - totalW) / 2);
   const refLeft = left;
   const tLeft = left + rb.w * scale + gap;
   const place = (b: { w: number; h: number }, x: number): CSSProperties => ({ left: x, top: floor - b.h * scale, width: b.w * scale, height: b.h * scale });
-  // Labels sit centerd under each thing, never wider than the space between the two centers.
-  const shownW = (reveal ? Math.max(gb.w, tb.w) : gb.w) * scale;
+  /** The dimension line: along the measured side, above a length or right of a height. */
+  const dimLine = (t: Thing, b: { w: number; h: number }, x: number): CSSProperties =>
+    t.axis === 'w' ? { left: x, top: Math.max(2, floor - b.h * scale - 10), width: b.w * scale } : { left: Math.min(W - 4, x + b.w * scale + 6), top: floor - b.h * scale, height: b.h * scale };
+  // The labels sit under each thing, laid out together so they never overlap.
   const refMid = refLeft + (rb.w * scale) / 2;
-  const tMid = tLeft + shownW / 2;
-  const labelW = Math.max(64, Math.min(W * 0.46, tMid - refMid - 8));
-  const label = (mid: number): CSSProperties => ({ left: Math.min(W - labelW / 2 - 4, Math.max(labelW / 2 + 4, mid)), top: floor + 6, maxWidth: labelW });
+  const tMid = tLeft + (tw * scale) / 2;
+  const short = (t: Thing): string => t.name.replace(/^(a|an|the) /, '');
+  // "6.7 cm across", with US units too when the stage is wide enough: "6.7 cm (2.6 in) across".
+  const us = W >= 560;
+  const sizeLine = (t: Thing): string => `${sizeText(t.size)}${us ? ` (${usText(t.size)})` : ''} ${t.dim}`;
+  const refSize = sizeLine(ref);
+  const tSize = reveal ? sizeLine(target) : `? ${target.dim}`;
+  const cap = W * 0.46;
+  const labels = layoutLabels(W, refMid, tMid, Math.min(cap, labelWidth(short(ref), refSize)), Math.min(cap, labelWidth(short(target), tSize)));
+  const label = (b: { mid: number; width: number }): CSSProperties => ({ left: b.mid, top: floor + 6, maxWidth: b.width });
 
   const startDrag = (e: ReactPointerEvent<HTMLButtonElement>): void => {
     if (reveal) return;
@@ -490,9 +680,9 @@ function Stage({ shot, guess, reveal, tint, onGuess, onTick }: { shot: Shot; gue
     // Proportional resize: the movement along the shape's diagonal (up-right grows it) sets the size.
     const long = Math.max(d.w, d.h);
     const px = long + (((e.clientX - d.x) * d.w - (e.clientY - d.y) * d.h) * long) / (d.w * d.w + d.h * d.h);
-    const longest = Math.max(4, px) / d.scale;
-    const g = Math.min(shot.max, Math.max(shot.min, longest / unit));
-    onGuess(g);
+    const k = Math.max(4, px) / long;
+    const side = (measured(target, d) * k) / d.scale;
+    onGuess(Math.min(shot.max, Math.max(shot.min, side / unit)));
     onTick();
   };
   const endDrag = (): void => {
@@ -506,13 +696,15 @@ function Stage({ shot, guess, reveal, tint, onGuess, onTick }: { shot: Shot; gue
         <>
           <div className="ts-floor" style={{ top: floor }} aria-hidden="true" />
           {glyphs.ref && <img className="ts-thing ts-ref" src={glyphs.ref.color} alt={ref.name} style={place(rb, refLeft)} draggable={false} />}
-          <span className="ts-label" style={label(refMid)}>
-            <span>{ref.name.replace(/^(a|an|the) /, '')}</span>
-            <b>{sizeText(ref.size)}</b>
+          <span className="ts-label" style={label(labels.ref)}>
+            <span>{short(ref)}</span>
+            <b>{refSize}</b>
           </span>
           {reveal && glyphs.target && <img className="ts-thing ts-real" src={glyphs.target.color} alt={`${target.name}, real size`} style={place(tb, tLeft)} draggable={false} />}
           {glyphs.target && <img className={`ts-thing ts-target${reveal ? ' is-ghost' : ''}`} src={glyphs.target.silhouette} alt={`${target.name}, your guess`} style={place(gb, tLeft)} draggable={false} />}
           {reveal && <span className="ts-outline" style={place(tb, tLeft)} aria-hidden="true" />}
+          <span className={`ts-dim is-${ref.axis}`} style={dimLine(ref, rb, refLeft)} aria-hidden="true" />
+          {reveal && <span className={`ts-dim is-${target.axis} is-target`} style={dimLine(target, tb, tLeft)} aria-hidden="true" />}
           {!reveal && (
             <button
               className="ts-handle"
@@ -528,9 +720,9 @@ function Stage({ shot, guess, reveal, tint, onGuess, onTick }: { shot: Shot; gue
               </svg>
             </button>
           )}
-          <span className="ts-label is-target" style={label(tMid)}>
-            <span>{target.name.replace(/^(a|an|the) /, '')}</span>
-            <b>{reveal ? sizeText(target.size) : '?'}</b>
+          <span className="ts-label is-target" style={label(labels.target)}>
+            <span>{short(target)}</span>
+            <b>{tSize}</b>
           </span>
         </>
       )}
