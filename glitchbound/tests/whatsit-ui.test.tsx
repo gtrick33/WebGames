@@ -143,6 +143,25 @@ describe('Whatsit keyboard', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(document.activeElement).toBe(card);
   });
+
+  it('number keys ask the first nine questions, but not while typing in the site or with a sheet open', () => {
+    render(
+      <>
+        <input aria-label="site search" />
+        <Game host={{ report: vi.fn() }} restartKey={0} />
+      </>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Any theme/ }));
+    fireEvent.keyDown(screen.getByLabelText('site search'), { key: '2' });
+    expect(screen.getByText('0 questions')).toBeTruthy();
+    fireEvent.keyDown(document.body, { key: '3' });
+    expect(screen.getByText('1 question')).toBeTruthy();
+    expect(questions()[2]!.className).toMatch(/is-(yes|no)/);
+    fireEvent.keyDown(document.body, { key: '4', ctrlKey: true });
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    fireEvent.keyDown(document.body, { key: '1' });
+    expect(screen.getByText('1 question')).toBeTruthy();
+  });
 });
 
 describe('Whatsit saves', () => {

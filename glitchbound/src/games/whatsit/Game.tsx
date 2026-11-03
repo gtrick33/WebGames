@@ -601,9 +601,26 @@ function Ask({ play, theme, u, lang, label, sfx, onAsk, onReady, onMenu }: { pla
     el?.focus({ preventScroll: true });
     if (byKey) el?.scrollIntoView?.({ block: 'nearest' });
   };
+  // Number keys 1–9 ask the first nine questions (not while a sheet or the walkthrough is open).
+  const rootRef = useRef<HTMLDivElement>(null);
+  const askRef = useRef(ask);
+  useEffect(() => {
+    askRef.current = ask;
+  });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.repeat || !/^[1-9]$/.test(e.key) || !forGame(e, rootRef.current) || document.querySelector('[role=dialog]')) return;
+      const q = theme.questions[Number(e.key) - 1];
+      if (!q) return;
+      e.preventDefault();
+      askRef.current(q.id, true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [theme]);
   return (
     <>
-      <div className="whz whz-ask">
+      <div className="whz whz-ask" ref={rootRef}>
         <Hud u={u} label={label} questions={play.asked.length} onMenu={onMenu} />
         <p className="whz-theme-pill">
           <span>{u.theme}:</span> {theme.emoji} {theme.name[lang]}
@@ -616,12 +633,13 @@ function Ask({ play, theme, u, lang, label, sfx, onAsk, onReady, onMenu }: { pla
         </div>
         <div className={`whz-qs-wrap${below ? ' has-more' : ''}`}>
           <ul className="whz-qs" ref={list} onScroll={measure}>
-            {theme.questions.map((q) => {
+            {theme.questions.map((q, i) => {
               const asked = play.asked.includes(q.id);
               const yes = answer(secret, q.id);
               return (
                 <li key={q.id}>
-                  <button className={`whz-q${asked ? (yes ? ' is-yes' : ' is-no') : ''}`} data-q={q.id} onClick={(e) => ask(q.id, e.detail === 0)} disabled={asked} aria-label={asked ? `${q.text[lang]} ${yes ? u.yes : u.no}` : q.text[lang]}>
+                  <button className={`whz-q${asked ? (yes ? ' is-yes' : ' is-no') : ''}`} data-q={q.id} onClick={(e) => ask(q.id, e.detail === 0)} disabled={asked} aria-label={asked ? `${q.text[lang]} ${yes ? u.yes : u.no}` : q.text[lang]} aria-keyshortcuts={i < 9 ? String(i + 1) : undefined}>
+                    {i < 9 && !asked && <kbd className="whz-key">{i + 1}</kbd>}
                     <span>{q.text[lang]}</span>
                     {asked && <b>{yes ? `✓ ${u.yes}` : `✗ ${u.no}`}</b>}
                   </button>

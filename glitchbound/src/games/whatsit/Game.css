@@ -436,6 +436,26 @@
 .whz-q.is-no b {
   background: var(--whz-no);
 }
+/* The number key for a question, only where there is a keyboard and a mouse. */
+.whz-key {
+  display: none;
+  flex: none;
+  min-width: 20px;
+  padding: 0 4px;
+  border: 1.5px solid currentColor;
+  border-radius: 6px;
+  font: 700 11.5px var(--font-mono, monospace);
+  text-align: center;
+  opacity: 0.55;
+}
+@media (hover: hover) and (pointer: fine) {
+  .whz-key {
+    display: inline-block;
+  }
+  .whz-q > span {
+    flex: 1;
+  }
+}
 .whz-hint {
   flex: none;
   font-size: 12.5px;
