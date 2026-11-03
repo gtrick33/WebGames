@@ -308,9 +308,9 @@ export function creatorName(creator: string): string {
     const end = c.lastIndexOf('. ');
     c = end > 0 ? c.slice(0, end) : c.slice(0, c.lastIndexOf(' ')).replace(/[,;:]$/, '');
   }
-  c = c.replace(/\.$/, '');
   const words = c.split(' ');
   if (words.length > 2 && /^[a-z0-9_]+$/.test(words[words.length - 1]!)) c = words.slice(0, -1).join(' ');
+  c = c.replace(/\.$/, '');
   return /^(unknown|anonymous|unknown photographer|free for commercial use)$/i.test(c) ? '' : c;
 }
 

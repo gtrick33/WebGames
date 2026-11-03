@@ -42,9 +42,9 @@ describe("Where's the Ball? photo levels", () => {
     expect(dailyScene('2026-10-18', 0).photo).toBeUndefined();
     if (BALL_PHOTOS.length) {
       expect(dailyScene(BALL_FROM, 0).photo).toBeDefined();
-      // Never the same photo at the same zoom twice in a run, and never the same photo twice in one day.
-      const shots = Array.from({ length: 40 }, (_, i) => endlessScene(1234, i).photo!);
-      expect(new Set(shots.map((p) => `${p.id}@${p.crop.s}`)).size).toBe(shots.length);
+      // Never the same photo (at any zoom) twice in a run, and never the same photo twice in one day.
+      const shots = Array.from({ length: 30 }, (_, i) => endlessScene(1234, i).photo!);
+      expect(new Set(shots.map((p) => p.id)).size).toBe(shots.length);
       const days = Array.from({ length: 10 }, (_, d) => Array.from({ length: 5 }, (_, i) => dailyScene(addDays(BALL_FROM, d), i).photo!.id));
       for (const ids of days) expect(new Set(ids).size).toBe(5);
     }
