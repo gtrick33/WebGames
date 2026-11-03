@@ -1,5 +1,5 @@
 /** Canvas drawing for Gloop. Rendering only; positions come from sim.ts. */
-import { canDrop, culprit, DROP_Y, H, LINE, nextTier, OVER_AFTER, RADII, settling, W, type Sim } from './sim';
+import { canDrop, culprit, DROP_COOLDOWN, DROP_Y, H, LINE, nextTier, OVER_AFTER, RADII, settling, W, type Sim } from './sim';
 
 type C = CanvasRenderingContext2D;
 const INK = '#2a1446';
@@ -118,21 +118,28 @@ export function drawFrame(canvas: HTMLCanvasElement, view: View, s: Sim, t: numb
   ctx.stroke();
   ctx.restore();
 
-  // The next blob, waiting under the dropper, with a guide line.
-  if (canDrop(s)) {
+  // The next blob, waiting under the dropper, with a guide line. Between drops it shows faded and
+  // small, growing back as the dropper gets ready, so a tap too soon reads as "not yet".
+  if (!s.over) {
     const tier = nextTier(s);
     const r = RADII[tier]!;
+    const ready = canDrop(s);
+    if (ready) {
+      ctx.save();
+      ctx.setLineDash([3, 7]);
+      ctx.strokeStyle = 'rgba(42,20,70,0.35)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(s.aim, DROP_Y + r);
+      ctx.lineTo(s.aim, H);
+      ctx.stroke();
+      ctx.restore();
+    }
+    const wait = ready ? 0 : Math.min(1, s.cooldown / DROP_COOLDOWN);
     ctx.save();
-    ctx.setLineDash([3, 7]);
-    ctx.strokeStyle = 'rgba(42,20,70,0.35)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(s.aim, DROP_Y + r);
-    ctx.lineTo(s.aim, H);
-    ctx.stroke();
-    ctx.restore();
-    ctx.save();
+    ctx.globalAlpha = ready ? 1 : 0.3 + 0.3 * (1 - wait);
     ctx.translate(s.aim, DROP_Y + Math.sin(t * 4) * 2);
+    ctx.scale(1 - 0.35 * wait, 1 - 0.35 * wait);
     drawBlob(ctx, tier, r, t);
     ctx.restore();
   }
