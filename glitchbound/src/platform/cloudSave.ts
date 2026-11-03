@@ -1,5 +1,7 @@
+import { GAMES } from '../catalog/games';
 import { api } from './account';
 import { mergeSaveText } from './cloudMerge';
+import type { Side } from './mergeRules';
 import { saveStore } from './store';
 import { isHeld, onRelease, saveArrived } from './syncGate';
 import { ARCADE_SAVE_KEY, isSyncedKey, MAX_SYNCED_SAVE, slugOfKey } from './syncKeys';
@@ -15,9 +17,15 @@ import { ARCADE_SAVE_KEY, isSyncedKey, MAX_SYNCED_SAVE, slugOfKey } from './sync
  * the first), when a game closes and when the tab is hidden or closed. Saves come down once per visit,
  * skipped when /api/me says the account has nothing newer, and again when the player returns to the
  * tab after 5 minutes. When two devices changed the same save, the copies are merged (cloudMerge.ts).
+ * A save too big to sync stays on its device, and the player is told so.
+ *
+ * Signing out sends what is left, then clears that member's saves from the browser: the next person to
+ * sign in there doesn't get them merged into their account. Saves that couldn't be sent wait aside
+ * (STASH_KEY) for that member's next sign-in on this browser.
  */
 
 const STATE_KEY = 'glitchbound.sync';
+const STASH_KEY = 'glitchbound.sync.stash';
 const QUIET_MS = 8_000;
 const MAX_WAIT_MS = 40_000;
 const RECHECK_MS = 5 * 60_000;
@@ -36,6 +44,12 @@ interface SyncState {
   /** Newest server version received so far. */
   pulledAt: number;
   keys: Record<string, Entry>;
+  /** When each save last changed here (this device's clock): tells which copy changed last in a merge. */
+  t?: Record<string, number>;
+}
+interface Stash {
+  state: SyncState;
+  saves: Record<string, string>;
 }
 export interface ServerSave {
   key: string;
@@ -51,12 +65,18 @@ let user: string | null = null;
 let ready = false;
 let store: Storage | null = null;
 let setRaw: Storage['setItem'] = () => undefined;
+let removeRawFn: Storage['removeItem'] = () => undefined;
 let timer = 0;
 let firstChange = 0;
 let pushing = false;
 let pushAgain = false;
 let lastCheck = 0;
 let first: Promise<void> = Promise.resolve();
+let running: Promise<void> = Promise.resolve();
+/** Saves over MAX_SYNCED_SAVE that stay on this device, and the ones the player dismissed the notice for. */
+const tooBig = new Set<string>();
+const dismissed = new Set<string>();
+const lastTouch = new Map<string, number>();
 /** Copies from other devices for games that are running: applied when the game closes. */
 const waiting = new Map<string, ServerSave>();
 
@@ -93,14 +113,23 @@ function writeRaw(key: string, value: string): boolean {
   return true;
 }
 
-function readState(): SyncState {
+const validState = (v: unknown): SyncState | null => {
+  const s = v as SyncState | null;
+  return s && typeof s === 'object' && typeof s.user === 'string' && typeof s.pulledAt === 'number' && s.keys && typeof s.keys === 'object' ? s : null;
+};
+
+function parseState(text: string | null): SyncState | null {
   try {
-    const s = JSON.parse(read(STATE_KEY) ?? 'null') as SyncState | null;
-    if (s && s.user === user && typeof s.pulledAt === 'number' && s.keys && typeof s.keys === 'object') return s;
+    return validState(JSON.parse(text ?? 'null'));
   } catch {
-    /* damaged: start over (every save here is then merged with the account's) */
+    return null; // damaged
   }
-  return { user: user!, pulledAt: 0, keys: {} };
+}
+
+function readState(): SyncState {
+  const s = parseState(read(STATE_KEY));
+  // damaged or another member's: start over (every save here is then merged with the account's)
+  return s && s.user === user ? s : { user: user!, pulledAt: 0, keys: {} };
 }
 
 function writeState(s: SyncState): void {
@@ -110,6 +139,57 @@ function writeState(s: SyncState): void {
     /* full or blocked */
   }
 }
+
+/** Notes when a save changed here (at most once a second per save). */
+function touch(key: string): void {
+  const now = Date.now();
+  if (now - (lastTouch.get(key) ?? 0) < 1000) return;
+  lastTouch.set(key, now);
+  const state = readState();
+  state.t = { ...state.t, [key]: now };
+  writeState(state);
+}
+
+const gameName = (key: string): string => {
+  const slug = slugOfKey(key);
+  return slug ? (GAMES.find((g) => g.slug === slug)?.title ?? slug) : 'arcade';
+};
+
+/** Shows (or updates, or takes down) the notice about saves too big to follow the player. */
+function showTooBig(): void {
+  if (typeof document === 'undefined') return;
+  const keys = [...tooBig].filter((k) => !dismissed.has(k));
+  let el = document.getElementById('gb-sync-notice');
+  if (keys.length === 0) {
+    el?.remove();
+    return;
+  }
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'gb-sync-notice';
+    el.setAttribute('role', 'status');
+    el.style.cssText =
+      'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:1000;box-sizing:border-box;width:min(520px,calc(100% - 32px));display:flex;gap:10px;align-items:center;padding:10px 12px;border:2px solid var(--ink,#1d1238);border-radius:12px;background:#ffd9cf;color:#1d1238;font:700 14px/1.35 var(--font,system-ui,sans-serif);box-shadow:3px 3px 0 var(--ink,#1d1238)';
+    document.body.append(el);
+  }
+  const names = keys.map(gameName).join(', ');
+  const text = document.createElement('p');
+  text.style.cssText = 'flex:1;margin:0';
+  text.textContent = `Your ${names} save is too big to sync to your account. Its newest progress stays on this device only.`;
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.textContent = '×';
+  close.setAttribute('aria-label', 'Dismiss this notice');
+  close.style.cssText = 'flex:none;min-width:44px;min-height:44px;border:0;background:none;color:inherit;font:inherit;font-size:22px;cursor:pointer';
+  close.onclick = () => {
+    for (const k of keys) dismissed.add(k);
+    showTooBig();
+  };
+  el.replaceChildren(text, close);
+}
+
+/** Saves too big to sync (they stay on this device); the player sees a notice for them. */
+export const oversizedSaves = (): string[] => [...tooBig];
 
 /** Saves that changed here since they were last synced (a removed one counts: it is deleted on the server too). */
 function changedKeys(state: SyncState): string[] {
@@ -122,13 +202,24 @@ function changedKeys(state: SyncState): string[] {
   } catch {
     /* blocked */
   }
-  return [...keys].filter((k) => {
+  const before = [...tooBig].join();
+  const out = [...keys].filter((k) => {
     // A copy from another device is waiting for this game to close: send nothing for it until then.
     if (waiting.has(k)) return false;
     const v = read(k);
     const e = state.keys[k];
-    return v === null ? !!e : v.length <= MAX_SYNCED_SAVE && (!e || e.h !== hashText(v));
+    if (v === null) return !!e;
+    const changed = !e || e.h !== hashText(v);
+    // too big for the account: it stays here, and the player is told (SFS-01)
+    if (v.length > MAX_SYNCED_SAVE) {
+      if (changed) tooBig.add(k);
+      return false;
+    }
+    tooBig.delete(k);
+    return changed;
   });
+  if ([...tooBig].join() !== before) showTooBig();
+  return out;
 }
 
 /** Takes in a newer copy from the server: replaces an unchanged local copy, or merges with a changed one. */
@@ -141,7 +232,11 @@ function receive(state: SyncState, s: ServerSave): void {
   }
   const local = read(s.key);
   const unchanged = local === null || (!!e && e.h === hashText(local));
-  const next = unchanged ? s.data : mergeSaveText(s.key, local, s.data);
+  // The copy changed last: this device's when it changed after the account's copy was stored (or when
+  // it isn't known when it changed here).
+  const t = state.t?.[s.key];
+  const newer: Side = t === undefined || t > s.at ? 'local' : 'remote';
+  const next = unchanged ? s.data : mergeSaveText(s.key, local, s.data, undefined, newer);
   // Only remember the version once it is really stored here (storage can be full).
   if (!writeRaw(s.key, next)) return;
   state.keys[s.key] = { at: s.at, h: hashText(s.data) };
@@ -167,12 +262,17 @@ async function pull(): Promise<void> {
 }
 
 /** Sends every changed save; `closing` (the page is going away) sends one request that outlives the page. */
-async function flush(closing = false): Promise<void> {
-  if (!user || !ready) return;
+function flush(closing = false): Promise<void> {
+  if (!user || !ready) return Promise.resolve();
   if (pushing) {
     pushAgain = true;
-    return;
+    return running;
   }
+  running = push(closing);
+  return running;
+}
+
+async function push(closing: boolean): Promise<void> {
   window.clearTimeout(timer);
   timer = 0;
   firstChange = 0;
@@ -217,6 +317,11 @@ async function flush(closing = false): Promise<void> {
   }
 }
 
+function changed(key: string | null): void {
+  if (key) touch(key);
+  schedule();
+}
+
 function schedule(): void {
   if (!user) return;
   const now = Date.now();
@@ -239,16 +344,18 @@ function install(): boolean {
   const set = proto.setItem;
   const remove = proto.removeItem;
   setRaw = set;
+  removeRawFn = remove;
   proto.setItem = function (this: Storage, key: string, value: string): void {
     set.call(this, key, value);
-    if (this === store && user && isSyncedKey(key)) schedule();
+    if (this === store && user && isSyncedKey(key)) changed(key);
   };
   proto.removeItem = function (this: Storage, key: string): void {
     remove.call(this, key);
-    if (this === store && user && isSyncedKey(key)) schedule();
+    if (this === store && user && isSyncedKey(key)) changed(key);
   };
+  // another tab, or an embedded game's frame (NEON RUSH)
   window.addEventListener('storage', (e) => {
-    if (user && e.storageArea === store && (e.key === null || isSyncedKey(e.key))) schedule();
+    if (user && e.storageArea === store && (e.key === null || isSyncedKey(e.key))) changed(e.key);
   });
   document.addEventListener('visibilitychange', () => {
     if (!user || !ready) return;
@@ -287,6 +394,8 @@ export function startCloudSave(id: string, remoteAt = Number.POSITIVE_INFINITY):
   user = id;
   ready = false;
   waiting.clear();
+  tooBig.clear();
+  setAside(id);
   const state = readState();
   writeState(state);
   first = (remoteAt > state.pulledAt ? pull() : Promise.resolve())
@@ -299,6 +408,119 @@ export function startCloudSave(id: string, remoteAt = Number.POSITIVE_INFINITY):
   return first;
 }
 
+/** Every synced save in this browser. */
+function syncedKeys(): string[] {
+  const keys: string[] = [];
+  try {
+    for (let i = 0; i < store!.length; i++) {
+      const k = store!.key(i);
+      if (k && isSyncedKey(k)) keys.push(k);
+    }
+  } catch {
+    /* blocked */
+  }
+  return keys;
+}
+
+/** Removes a save without counting it as a local change. */
+function removeRaw(key: string): void {
+  try {
+    removeRawFn.call(store!, key);
+  } catch {
+    /* blocked */
+  }
+}
+
+/**
+ * Before `id` syncs here: saves another member left behind (they couldn't be sent before signing out, or
+ * the session ran out) go aside instead of into `id`'s account (PS-09); `id`'s own set-aside saves come back.
+ * Call with `user` set to `id`, before anything reads the state.
+ */
+function setAside(id: string): void {
+  const stashes = readStashes();
+  const prev = parseState(read(STATE_KEY));
+  if (prev && prev.user !== id) {
+    const saves: Record<string, string> = { ...stashes[prev.user]?.saves };
+    for (const k of syncedKeys()) saves[k] = read(k)!;
+    if (Object.keys(saves).length) {
+      // full: the saves stay here and are merged as this browser's (the old behavior)
+      if (!writeStashes({ ...stashes, [prev.user]: { state: prev, saves } })) return;
+      for (const k of syncedKeys()) removeRaw(k);
+      stashes[prev.user] = { state: prev, saves };
+      saveStore.reload();
+    }
+    removeRaw(STATE_KEY);
+  }
+  const mine = stashes[id];
+  if (!mine) return;
+  // this member's again: what was left here goes back, with what it grew from, so it merges as a change
+  for (const [k, v] of Object.entries(mine.saves)) {
+    if (!isSyncedKey(k) || typeof v !== 'string') continue;
+    const here = read(k);
+    writeRaw(k, here === null ? v : mergeSaveText(k, v, here));
+  }
+  if (validState(mine.state)?.user === id && !parseState(read(STATE_KEY))) writeState(mine.state);
+  delete stashes[id];
+  writeStashes(stashes);
+}
+
+/** Saves members left behind on this browser, by member. */
+function readStashes(): Record<string, Stash> {
+  try {
+    const v: unknown = JSON.parse(read(STASH_KEY) ?? 'null');
+    if (!isObj(v)) return {};
+    return Object.fromEntries(Object.entries(v).filter((e): e is [string, Stash] => isObj(e[1]) && isObj(e[1].saves)));
+  } catch {
+    return {}; // damaged
+  }
+}
+
+function writeStashes(stashes: Record<string, Stash>): boolean {
+  try {
+    if (Object.keys(stashes).length) store?.setItem(STASH_KEY, JSON.stringify(stashes));
+    else removeRaw(STASH_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+
+/**
+ * The member signs out: sends what changed since the last sync (a few seconds at most), then clears that
+ * member's saves from this browser (they come back at the next sign-in). Saves that couldn't be sent
+ * (offline) are kept aside for that member. Call it while still signed in (the sync needs the session).
+ */
+export async function signOutCloudSave(ms = 4000): Promise<void> {
+  if (!user || !store) return stopCloudSave();
+  const id = user;
+  if (ready) {
+    const sent = (async () => {
+      await running;
+      await flush();
+    })().catch(() => undefined);
+    await Promise.race([sent, new Promise<void>((r) => setTimeout(r, ms))]);
+  }
+  if (user !== id) return;
+  const state = readState();
+  stopCloudSave();
+  const left: Record<string, string> = {};
+  for (const k of syncedKeys()) {
+    const v = read(k)!;
+    const e = state.keys[k];
+    if (!e || e.h !== hashText(v)) left[k] = v;
+    removeRaw(k);
+  }
+  removeRaw(STATE_KEY);
+  if (Object.keys(left).length && !writeStashes({ ...readStashes(), [id]: { state, saves: left } })) {
+    // full: better kept here (and merged into the next account) than lost
+    for (const [k, v] of Object.entries(left)) writeRaw(k, v);
+    writeState(state);
+  }
+  saveStore.reload();
+}
+
 /** Signed out: stop syncing (this device keeps its saves). */
 export function stopCloudSave(): void {
   user = null;
@@ -307,4 +529,6 @@ export function stopCloudSave(): void {
   timer = 0;
   firstChange = 0;
   waiting.clear();
+  tooBig.clear();
+  showTooBig();
 }

@@ -4,7 +4,8 @@ import type { Checkpoint, Gate } from './track';
 /**
  * Lap timing and checkpoint validation. A lap counts only when every checkpoint was crossed in
  * order, in the driving direction, since the last time over the line. Cutting across the infield
- * misses a gate, so that lap is shown but doesn't count.
+ * misses a gate, so that lap is shown but doesn't count. Crossing the line again before half the
+ * checkpoints (a U-turn back over it, or wiggling on it) is no lap at all.
  */
 
 export interface LapRecord {
@@ -39,6 +40,9 @@ export function newLapState(): LapState {
   return { next: 0, started: false, lapStart: 0, laps: [], missed: false, bumped: false };
 }
 
+/** Checkpoints (not counting the line) a car must pass before the line ends a lap: half of them. */
+export const halfway = (count: number): number => Math.ceil((count - 1) / 2);
+
 /** Fraction along p0→p1 where it crosses the gate going forward, or null. */
 export function crossGate(gate: Gate, p0: Vec, p1: Vec): number | null {
   const move = (p1.x - p0.x) * gate.dir.x + (p1.y - p0.y) * gate.dir.y;
@@ -71,8 +75,9 @@ export function advanceLaps(state: LapState, cps: Checkpoint[], p0: Vec, p1: Vec
         state.next = 1;
         continue;
       }
-      // Ignore a re-cross right after the line (wiggling over it) before any checkpoint.
-      if (state.next === 1 && !state.missed) continue;
+      // Ignore the line until the car is at least half way round: wiggling over it, or turning back
+      // over it and round again, doesn't make a lap.
+      if (state.next - 1 < halfway(n)) continue;
       const valid = state.next === n && !state.missed;
       const lap: LapRecord = { time: t - state.lapStart, valid, clean: valid && !state.bumped };
       state.laps.push(lap);

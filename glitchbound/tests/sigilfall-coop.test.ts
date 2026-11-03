@@ -4,7 +4,7 @@
  * runs the enemies; the guest's mirrors them, strikes them through the host, is struck through the host,
  * takes its own experience and loot from every kill, and ends the run on the host's clock.
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { MAX_LEVEL } from '../src/games/sigilfall/data/classes';
 import { KEY_DEATH } from '../src/games/sigilfall/data/keystones';
 import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
@@ -15,9 +15,11 @@ import { rollGear } from '../src/games/sigilfall/progress/items';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
 import { CoopSession } from '../src/games/sigilfall/net/coop';
 import * as room from '../src/games/sigilfall/net/room';
+import { AWAY_MS, dropAway } from '../src/party/rooms/seats';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { TILE } from '../src/games/sigilfall/sim/map';
 import { World } from '../src/games/sigilfall/sim/world';
+import { SigilEngine } from '../src/games/sigilfall/engine';
 import { readyHero } from './sigilfall-bot';
 
 const KEY_A = 'host-key-aaaaaaaaaaaaaaaa';
@@ -65,7 +67,7 @@ function pair(region: RegionId = 'crypt', key = 2, heroes: { host?: Character; g
       }
     }
   };
-  return { hw, gw, step };
+  return { hw, gw, hs, gs, step };
 }
 
 /** The middle of a room's floor. */
@@ -84,6 +86,8 @@ describe('sigilfall: the co-op room', () => {
     for (let i = 0; i < 2; i++) room.join(s, `extra-key-${i}-cccccccccccc`, `P${i}`, 0);
     expect(room.join(s, 'extra-key-9-cccccccccccc', 'Late', 0)).toBe('full');
     for (let i = 0; i < 2; i++) room.leave(s, `extra-key-${i}-cccccccccccc`, 0);
+    // their seats are held for a moment (a dropped connection), then the room's alarm lets them go
+    dropAway(s, AWAY_MS);
     expect(room.act(s, KEY_A, { t: 'card', card: card('Ash', 'warrior') }, 1)).toBeNull();
     expect(room.act(s, KEY_B, { t: 'card', card: { ...card('Bea', 'mage'), look: 'x'.repeat(5000) as unknown } }, 1)).toBe('bad_card');
     expect(room.act(s, KEY_B, { t: 'card', card: { ...card('Bea', 'mage'), level: 52 } }, 1)).toBeNull();
@@ -98,8 +102,8 @@ describe('sigilfall: the co-op room', () => {
     expect(v.run).toBe(1);
     expect(v.week).toBe(4);
     expect(v.seats.map((x) => x.card?.name)).toEqual(['Ash', 'Bea']);
-    // nobody new mid-run; the fight's traffic passes to the others, tagged, and is never stored
-    expect(room.join(s, 'late-key-dddddddddddddddd', 'Late', 3)).toBe('full');
+    // nobody new mid-run (said as such); the fight's traffic passes to the others, tagged, and is never stored
+    expect(room.join(s, 'late-key-dddddddddddddddd', 'Late', 3)).toBe('in_run');
     expect(room.relay(s, KEY_B, { t: 'r', d: { t: 'p', x: 1 } })).toEqual({ others: { n: 2, d: { t: 'p', x: 1 } }, save: false });
     expect(room.relay(s, KEY_B, { t: 'plan', region: 'crypt', key: 1 })).toBeNull();
   });
@@ -278,3 +282,176 @@ describe('sigilfall: questing together', () => {
   });
 });
 
+
+const KEY_C = 'third-key-cccccccccccccccc';
+
+/** A room with two seated heroes and their cards (Ash hosts). */
+function party(mode: room.Mode, stories = [200, 200]) {
+  const s = room.newRoom('PARTY', 0, 1);
+  room.join(s, KEY_A, 'Ash', 0);
+  room.join(s, KEY_B, 'Bea', 0);
+  room.act(s, KEY_A, { t: 'mode', mode }, 1);
+  room.act(s, KEY_A, { t: 'card', card: card('Ash', 'warrior', stories[0]) }, 1);
+  room.act(s, KEY_B, { t: 'card', card: card('Bea', 'mage', stories[1]) }, 1);
+  if (mode === 'rift') room.act(s, KEY_A, { t: 'plan', region: 'crypt', key: 3 }, 1);
+  expect(room.act(s, KEY_A, { t: 'start', week: 1 }, 2)).toBeNull();
+  return s;
+}
+
+describe('sigilfall: a party never gets stuck (SFC-01, SFC-02)', () => {
+  it('a leader whose connection drops mid-run keeps the host role, and can still end the run', () => {
+    const s = party('rift');
+    room.leave(s, KEY_A, 3);
+    expect(s.host).toBe(1);
+    // someone (re)connecting while the leader is away doesn't take it either
+    room.join(s, KEY_B, 'Bea', 4);
+    expect(s.host).toBe(1);
+    expect(s.phase).toBe('run');
+    room.join(s, KEY_A, 'Ash', 5);
+    expect(room.act(s, KEY_A, { t: 'end' }, 6)).toBeNull();
+    expect(s.phase).toBe('lobby');
+    expect(room.viewFor(s, KEY_A)!.host).toBe(1);
+    // and a new run can start
+    expect(room.act(s, KEY_A, { t: 'start', week: 1 }, 7)).toBeNull();
+  });
+
+  it('the run’s lead may end it even when not the host; anyone may once the lead is away for good', () => {
+    const s = party('party', [200, 10]);
+    expect(s.lead).toBe(2);
+    expect(room.act(s, KEY_B, { t: 'end' }, 3)).toBeNull();
+    expect(s.phase).toBe('lobby');
+    room.act(s, KEY_A, { t: 'start', week: 1 }, 4);
+    room.leave(s, KEY_B, 5);
+    // the leader's connection dropped: the friends' games end the run after waiting a while
+    expect(room.act(s, KEY_A, { t: 'end' }, 6)).toBeNull();
+    expect(s.phase).toBe('lobby');
+    // a run that is going, with its lead here, isn't ended by a friend
+    room.join(s, KEY_B, 'Bea', 7);
+    room.act(s, KEY_A, { t: 'start', week: 1 }, 8);
+    room.join(s, KEY_C, 'Cy', 9);
+    expect(room.act(s, KEY_C, { t: 'end' }, 10)).toBe('not_host');
+  });
+
+  it('questing, a friend joins under way and follows the trip; a Riftstone run still takes nobody new', () => {
+    const q = party('party', [200, 10]);
+    room.act(q, KEY_B, { t: 'go', region: 'amberfield', tier: 0 }, 3);
+    expect(room.join(q, KEY_C, 'Cy', 4)).toBeNull();
+    const v = room.viewFor(q, KEY_C)!;
+    expect(v.phase).toBe('run');
+    expect(v.plan).toEqual({ region: 'amberfield', key: 0 });
+    expect(v.lead).toBe(2);
+    const r = party('rift');
+    expect(room.join(r, KEY_C, 'Cy', 4)).toBe('in_run');
+    room.act(r, KEY_A, { t: 'end' }, 5);
+    for (let i = 0; i < 2; i++) {
+      room.join(r, `extra-key-${i}-cccccccccccc`, `P${i}`, 5);
+      room.act(r, `extra-key-${i}-cccccccccccc`, { t: 'card', card: card(`P${i}`, 'mage') }, 5);
+    }
+    expect(room.act(r, KEY_A, { t: 'start', week: 1 }, 6)).toBeNull();
+    expect(room.join(r, KEY_C, 'Cy', 7)).toBe('full');
+  });
+
+  it('a questing leader who leaves hands the lead on (no seat left behind); with nobody to lead, the run ends', () => {
+    const s = party('party', [200, 10]);
+    room.join(s, KEY_C, 'Cy', 3);
+    room.act(s, KEY_C, { t: 'card', card: card('Cy', 'ranger', 50) }, 3);
+    room.act(s, KEY_B, { t: 'go', region: 'amberfield', tier: 0 }, 4);
+    expect(room.act(s, KEY_B, { t: 'bye' }, 5)).toBeNull();
+    expect(s.seats.map((x) => x.n)).toEqual([1, 3]);
+    expect(s.phase).toBe('run');
+    // the next hero furthest behind leads; their game says where the party is
+    expect(s.lead).toBe(3);
+    expect(s.plan).toBeNull();
+    expect(room.act(s, KEY_C, { t: 'go', region: 'amberfield', tier: 0 }, 6)).toBeNull();
+    // the host removes the new leader: the lead goes to the host
+    expect(room.act(s, KEY_A, { t: 'kick', n: 3 }, 7)).toBeNull();
+    expect(s.lead).toBe(1);
+    // a Riftstone leader who leaves ends the run, and the host role passes to someone here
+    const r = party('rift');
+    expect(room.act(r, KEY_A, { t: 'bye' }, 3)).toBeNull();
+    expect(r.phase).toBe('lobby');
+    expect(r.host).toBe(2);
+  });
+
+  it('a plan never goes above the Riftstone the host holds', () => {
+    const s = room.newRoom('PLANS', 0, 1);
+    room.join(s, KEY_A, 'Ash', 0);
+    room.act(s, KEY_A, { t: 'card', card: card('Ash', 'warrior') }, 1);
+    expect(room.act(s, KEY_A, { t: 'plan', region: 'crypt', key: 999 }, 1)).toBe('bad_plan');
+    expect(room.act(s, KEY_A, { t: 'plan', region: 'crypt', key: 5 }, 1)).toBeNull();
+    // a card changed after the plan (a lower hero): the start is refused
+    room.act(s, KEY_A, { t: 'card', card: { ...card('Ash', 'warrior'), keystone: 2 } }, 2);
+    expect(room.act(s, KEY_A, { t: 'start', week: 1 }, 2)).toBe('bad_plan');
+  });
+});
+
+describe('sigilfall: co-op messages are checked (SFC-04)', () => {
+  it('a crafted guest message never one-shots a boss, stalls the clock, sticks a status or throws', () => {
+    const { hw, hs, step } = pair('crypt', 2);
+    step(20);
+    const boss = [...hw.encounters].reverse().find((e) => !!e.def.boss)!;
+    const mid = roomMiddle(hw, boss.index);
+    hw.player.x = mid.x;
+    hw.player.y = mid.y;
+    for (let i = 0; i < 300 && !hw.boss(); i++) step(1);
+    const b = hw.boss()!;
+    for (let i = 0; i < 200 && b.state === 'spawn'; i++) step(1);
+    hw.player.iframe = 99;
+    const hp = b.hp;
+    const deaths = hw.keyRun!.deaths;
+    const t0 = performance.now();
+    hs.receive(2, { t: 'g', h: [[b.id, 1e12, 0, 0], [b.id, 1e12, 0, 0], [b.id, 'x', 0, 0]], st: [[b.id, 'burn', 1e6, 1e9], [b.id, 'stun', 1e6, 1]], died: 1e8 });
+    expect(performance.now() - t0).toBeLessThan(200);
+    expect(b.dead).toBe(false);
+    expect(hp - b.hp).toBeLessThanOrEqual(b.maxHp * 0.04 + 1);
+    expect(hw.keyRun!.deaths - deaths).toBeLessThanOrEqual(3);
+    expect(b.statuses.some((x) => x.id === 'burn')).toBe(false);
+    expect(b.statuses.every((x) => x.t === undefined || x.t <= 12)).toBe(true);
+    // malformed: never thrown, and a hero's place stays a number
+    expect(() => hs.receive(2, { t: 'p', x: 'NaN', y: 1, sh: 7 })).not.toThrow();
+    expect(() => hs.receive(2, { t: 'p', x: 10, y: 10, vx: 0, vy: 0, dir: 0, hp: 1, mh: 1, sh: 7 })).not.toThrow();
+    expect(() => hs.receive(2, { t: 'g', h: 5, st: null })).not.toThrow();
+    const g = hw.coop!.ghosts.find((x) => x.n === 2)!;
+    expect(typeof g.tx).toBe('number');
+    expect(Number.isFinite(g.tx)).toBe(true);
+  });
+
+  it('a crafted leader frame can’t open Riftstone levels or pay out a flood of kills', () => {
+    const { gw, gs, step } = pair('crypt', 2);
+    step(20);
+    const keystone = gw.hero.keystone;
+    const rows = Array.from({ length: 100 }, (_, i) => [90_000 + i, 'skeleton', gw.player.x + 40, gw.player.y, 50, 50, 0, 1e6, 0, 'chase', '', '', -1]);
+    gs.receive(1, { t: 's', e: rows, pr: [], tg: [], fd: [], wv: [], en: '', k: null, ev: [] });
+    const made = gw.enemies.filter((e) => e.id >= 90_000);
+    expect(made.every((e) => e.level <= 100)).toBe(true);
+    const kills = gw.run.kills;
+    gs.receive(1, { t: 's', e: [], pr: [], tg: [], fd: [], wv: [], en: '', k: null, ev: [...rows.map((r) => ['k', r[0]]), ['end', 10, 999], ['k', 'x']] });
+    expect(gw.run.kills - kills).toBeLessThanOrEqual(40);
+    expect(gw.keyRun!.end).toBeFalsy();
+    expect(gw.hero.keystone).toBe(keystone);
+    expect(() => gs.receive(1, { t: 's', e: 3, ev: 'x', tg: [1], pr: {}, wv: 2 })).not.toThrow();
+  });
+});
+
+describe('sigilfall: party heroes arrive beside each other (SFC-12)', () => {
+  it('a guest’s hero starts off the leader’s spot', () => {
+    const { hw, gw } = pair('crypt', 2);
+    expect(Math.hypot(hw.player.x - gw.player.x, hw.player.y - gw.player.y)).toBeGreaterThan(5);
+  });
+});
+
+describe('sigilfall: a friend following a questing party who falls is never left dead (SFC-05)', () => {
+  it('Return isn’t offered to them, and the death screen only closes when travel happened', () => {
+    const following = { coop: { role: 'guest' }, party: { view: { mode: 'party', phase: 'run' } } };
+    const canGoHome = (o: object): boolean => Object.getOwnPropertyDescriptor(SigilEngine.prototype, 'canGoHome')!.get!.call(o);
+    expect(canGoHome(following)).toBe(false);
+    expect(canGoHome({ ...following, coop: { role: 'host' } })).toBe(true);
+    expect(canGoHome({ ...following, party: { view: { mode: 'rift', phase: 'run' } } })).toBe(true);
+    expect(canGoHome({ coop: null, party: null })).toBe(true);
+    const setUi = vi.fn();
+    SigilEngine.prototype.returnHome.call({ travel: () => false, setUi } as unknown as SigilEngine);
+    expect(setUi).not.toHaveBeenCalled();
+    SigilEngine.prototype.returnHome.call({ travel: () => true, setUi } as unknown as SigilEngine);
+    expect(setUi).toHaveBeenCalledWith({ death: false, reward: null });
+  });
+});

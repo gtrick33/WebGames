@@ -19,3 +19,31 @@ export class ErrorBoundary extends Component<{ fallback: (reset: () => void) => 
     return this.state.failed ? this.props.fallback(this.reset) : this.props.children;
   }
 }
+
+/** Whether this browser refuses the site's storage (the getter throws, or a write does). */
+export function storageBlocked(): boolean {
+  try {
+    const ls = window.localStorage;
+    ls.setItem('glitchbound.probe', '1');
+    ls.removeItem('glitchbound.probe');
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+/** What shows instead of a white page when the whole app crashes (see Root in App.tsx). */
+export function CrashNotice() {
+  const blocked = storageBlocked();
+  return (
+    <main id="main" className="wrap info-page" role="alert">
+      <h1 className="info-title">Something glitched.</h1>
+      <p className="info-lead">{blocked ? 'Your browser is blocking storage for this site, so nothing will be saved. Allow site data for GlitchBound and reload.' : 'The arcade hit an unexpected error.'}</p>
+      <div className="nf-actions">
+        <button className="btn btn-primary" onClick={() => location.reload()}>
+          Reload
+        </button>
+      </div>
+    </main>
+  );
+}

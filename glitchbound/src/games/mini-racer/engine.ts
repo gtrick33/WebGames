@@ -11,6 +11,14 @@ import type { Track } from './track';
  * Everything it creates (rAF, listeners, observers, AudioContext, canvases) is released in dispose().
  */
 
+/** Time between crossing the line and the result card (ms). */
+const RESULT_DELAY_MS = 1100;
+
+/** Controls that keep Enter for themselves while focused from the keyboard. */
+const CONTROL = 'button, a[href], summary, [role="button"], [role="radio"], [role="tab"], [role="menuitem"], [role="checkbox"]';
+/** Places where a key is never the game's: fields and dialogs (the arcade's share sheet, scoreboard, menus). */
+const NOT_GAME = 'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="dialog"], [aria-modal="true"], dialog';
+
 /** Lowest render scale (canvas pixels per CSS pixel) the frame-rate guard may drop to. */
 const MIN_QUALITY = 0.75;
 /** Average frame time (ms) above which the render scale steps down (below ~45 fps). */
@@ -21,8 +29,12 @@ const ADAPT_EVERY_MS = 2000;
 export type UiKey = 'confirm' | 'restart' | 'pause';
 
 export interface EngineCallbacks {
+  /** The car crossed the line on its last lap: the race is over and is recorded now. */
   onFinish(sim: RaceSim): void;
-  onUiKey(key: UiKey): void;
+  /** A moment after the finish (FINISH! and the car rolling to a stop): time for the result card. */
+  onResult(): void;
+  /** A shortcut key; returns whether it did something (only then is the key's default stopped). */
+  onUiKey(key: UiKey): boolean;
   /** The game paused itself (tab hidden or scrolled away). */
   onAutoPause(): void;
 }
@@ -144,7 +156,14 @@ export class Engine {
       canvas.removeEventListener('touchend', noGesture);
     });
 
+    // The first report comes straight after observe(), often while the stage is still going full
+    // screen (a challenge race starts at once): only a later change pauses.
+    let firstReport = true;
     const io = new IntersectionObserver(([entry]) => {
+      if (firstReport) {
+        firstReport = false;
+        return;
+      }
       if (entry && entry.intersectionRatio < 0.4) this.autoPause();
     }, { threshold: [0, 0.4] });
     io.observe(root);
@@ -167,24 +186,44 @@ export class Engine {
     this.renderer.resize(r.width, r.height, Math.min(this.quality, window.devicePixelRatio || 1));
   }
 
+  /**
+   * Whether a key press is meant for the game: not typed into a field, not inside a dialog or with a
+   * modal open (the arcade's share sheet, scoreboard, menus), not on the page around the game.
+   */
+  private forGame(e: KeyboardEvent): boolean {
+    if (document.querySelector('dialog[open], [aria-modal="true"]')) return false;
+    const t = e.target instanceof Element ? e.target : null;
+    if (!t || t === document.body || t === document.documentElement) return true;
+    return !t.closest(NOT_GAME) && this.root.contains(t);
+  }
+
   private onKey(e: KeyboardEvent, down: boolean): void {
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
     const k = KEYMAP[e.code];
-    const racing = !this.attractMode && !this.paused;
-    if (k) {
-      this.keys[k] = down;
-      if (racing) e.preventDefault();
-      if (down && racing) this.touchMode = false;
+    // Letting go always counts, wherever focus went meanwhile (no stuck steering).
+    if (k && !down) {
+      this.keys[k] = false;
       return;
     }
-    if (!down || e.repeat) return;
-    const target = e.target as HTMLElement | null;
-    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
-    if (e.code === 'Enter') this.cb.onUiKey('confirm');
-    else if (e.code === 'KeyR') this.cb.onUiKey('restart');
-    else if (e.code === 'Escape' || e.code === 'KeyP') {
-      if (!this.attractMode) e.preventDefault();
-      this.cb.onUiKey('pause');
+    if (e.metaKey || e.ctrlKey || e.altKey || !this.forGame(e)) return;
+    const racing = !this.attractMode && !this.paused;
+    if (k) {
+      this.keys[k] = true;
+      if (racing) {
+        e.preventDefault();
+        this.touchMode = false;
+      }
+      return;
+    }
+    if (e.repeat) return;
+    if (e.code === 'Enter') {
+      // A button focused from the keyboard (Tab) keeps Enter: it presses that button.
+      const control = e.target instanceof Element ? e.target.closest(CONTROL) : null;
+      if (control && focusVisible(control)) return;
+      if (this.cb.onUiKey('confirm')) e.preventDefault();
+    } else if (e.code === 'KeyR') {
+      if (this.cb.onUiKey('restart')) e.preventDefault();
+    } else if (e.code === 'Escape' || e.code === 'KeyP') {
+      if (this.cb.onUiKey('pause')) e.preventDefault();
     }
   }
 
@@ -196,6 +235,7 @@ export class Engine {
   attract(track: Track): void {
     this.attractMode = true;
     this.paused = false;
+    this.finishAt = -1;
     this.renderer.setTrack(track);
     const sim = new RaceSim(track);
     sim.time = 0;
@@ -293,9 +333,9 @@ export class Engine {
           const { side } = localVelocity(sim.car);
           this.audio.update(speedOf(sim.car) / CAR.maxSpeed, sim.drift.active ? Math.min(1, Math.abs(side) / 200) : 0, !sim.finished || speedOf(sim.car) > 20);
         }
-        if (this.finishAt > 0 && sim.time >= 0 && performance.now() >= this.finishAt) {
+        if (this.finishAt > 0 && performance.now() >= this.finishAt) {
           this.finishAt = -1;
-          this.cb.onFinish(sim);
+          this.cb.onResult();
         }
       }
     }
@@ -381,7 +421,9 @@ export class Engine {
         this.audio.blip('boost');
         break;
       case 'finish':
-        this.finishAt = performance.now() + 1100;
+        // Recorded the moment the car is over the line; only the result card waits.
+        this.finishAt = performance.now() + RESULT_DELAY_MS;
+        this.cb.onFinish(sim);
         break;
     }
   }
@@ -400,5 +442,15 @@ export class Engine {
     this.audio.dispose();
     this.renderer.dispose();
     this.sim = null;
+  }
+}
+
+/** Whether an element has keyboard focus (:focus-visible; plain focus where the browser can't tell). */
+function focusVisible(el: Element): boolean {
+  if (el !== document.activeElement) return false;
+  try {
+    return el.matches(':focus-visible');
+  } catch {
+    return true;
   }
 }

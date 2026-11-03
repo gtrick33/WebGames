@@ -382,7 +382,8 @@ function defenceValue(hand: readonly Card[], c: Contract): number {
   return v;
 }
 
-const THRESH: Record<Level, number> = { easy: 70, medium: 52, hard: 48, expert: 48 };
+// Easy bids more readily than its play deserves, so a beginner sees contracts played, not endless re-deals
+const THRESH: Record<Level, number> = { easy: 55, medium: 52, hard: 48, expert: 48 };
 
 function heuristicCall(d: Deal, me: Seat, level: Level, r: () => number): Call {
   const hand = d.hands[me]!;
@@ -411,6 +412,14 @@ function heuristicCall(d: Deal, me: Seat, level: Level, r: () => number): Call {
     }
   }
   if (best.k === 'bid') return best;
+  // Easy opens its longest suit when it holds that suit's jack (three of its five cards or more)
+  if (level === 'easy' && d.contract === null) {
+    for (const call of legal) {
+      if (call.k !== 'bid' || call.c >= NT) continue;
+      const suit = hand.filter((c) => suitOf(c) === call.c);
+      if (suit.length >= 3 && suit.some((c) => rankOf(c) === 4)) return call;
+    }
+  }
   if (level !== 'easy' && d.contract !== null && d.bidder !== null) {
     const ours = teamOf(d.bidder) === teamOf(me);
     if (!ours && legal.some((c) => c.k === 'double') && defenceValue(hand, d.contract) + noise >= (level === 'medium' ? 52 : 46)) return { k: 'double' };

@@ -3,7 +3,7 @@
  * tonal edges, contact shadows, atmospheric backgrounds, film grain). Rendering only; what is drawn
  * comes from scene.ts / diffs.ts.
  */
-import { H, RADIUS, W, rng, type Obj, type Scene } from './scene';
+import { H, RADIUS, W, rng, type Obj, type Scene, type ThemeId } from './scene';
 
 const INK = '#2e2d35';
 type C = CanvasRenderingContext2D;
@@ -565,6 +565,44 @@ function background(ctx: C, s: Scene): void {
 }
 
 /** Photo finish: a touch of warmth, grain and a vignette. */
+/**
+ * The main backdrop color down each theme's picture (sky, water, wall or ground, from background()
+ * above, by y and background variant), for the difference picker's contrast check.
+ */
+const BACKDROP: Record<ThemeId, (bg: number) => [number, string][]> = {
+  meadow: (bg) => [[0, ['#6fa8d6', '#e6a37e', '#7fb0cf'][bg]!], [150, ['#c6dbe8', '#f1cfb0', '#d0e0e6'][bg]!], [151, '#86a86a'], [211, '#6c8f52'], [212, '#77a053'], [300, '#557a3a']],
+  reef: () => [[0, '#3f8fb0'], [180, '#1f5f80'], [254, '#18486a'], [255, '#c9b48a'], [300, '#a8925f']],
+  street: (bg) => [[0, ['#8fb4d4', '#d7a787', '#a7bccb'][bg]!], [204, ['#e3e9ec', '#efe2d2', '#e6eaec'][bg]!], [205, '#c9c3b8'], [239, '#c9c3b8'], [240, '#55545b'], [300, '#3f3e44']],
+  space: (bg) => [[0, ['#141a3a', '#1d1433', '#0f2238'][bg]!], [300, '#06070f']],
+  snow: (bg) => [[0, ['#9fb8cf', '#b4b6cc', '#a6c2d4'][bg]!], [184, '#eef2f5'], [185, '#f7f9fb'], [300, '#d8e3ec']],
+  beach: (bg) => [[0, ['#6fb4e0', '#f0a77e', '#86c3e3'][bg]!], [149, ['#e2f1f8', '#f8dcc0', '#e8f4f8'][bg]!], [150, '#3d8fb8'], [205, '#5fb3c8'], [206, '#ecd7a8'], [300, '#d9bd84']],
+  farm: (bg) => [[0, ['#79b3dc', '#e8a982', '#8cbad8'][bg]!], [167, '#eef3f0'], [168, '#9cc169'], [300, '#6f9a45']],
+  kitchen: (bg) => [[0, ['#f3e6cf', '#e3eef0', '#f2dfd8'][bg]!], [149, ['#f3e6cf', '#e3eef0', '#f2dfd8'][bg]!], [150, '#c08a5a'], [300, '#94643e']],
+  night: (bg) => [[0, ['#0f1638', '#1b1236', '#0c2033'][bg]!], [204, '#33406b'], [205, '#5a5866'], [239, '#5a5866'], [240, '#2f2e38'], [300, '#1f1e26']],
+  jungle: (bg) => [[0, ['#a9d8a0', '#cfe2a0', '#9fd0b8'][bg]!], [180, '#5d9a58'], [235, '#4a8046'], [236, '#4e7f3a'], [300, '#3a5e2a']],
+  camp: (bg) => [[0, ['#2c3a66', '#4a3a6b', '#25456a'][bg]!], [140, '#d98e6a'], [195, '#f2c48e'], [196, '#6a7a3e'], [300, '#4e5a2c']],
+  harbor: (bg) => [[0, ['#78b0d8', '#e9a07a', '#8fb9d2'][bg]!], [139, '#eef3f5'], [140, '#4a9cc0'], [300, '#22607e']],
+  party: (bg) => [[0, ['#f7e4ec', '#e6eefa', '#f5f0d9'][bg]!], [205, ['#f7e4ec', '#e6eefa', '#f5f0d9'][bg]!], [206, '#f6f3ec'], [300, '#e3dccd']],
+};
+
+const hexRgb = (hex: string): [number, number, number] => {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+};
+
+/** The backdrop color at height y of a picture (no objects), as { r, g, b }. */
+export function backdropAt(s: Pick<Scene, 'theme' | 'bg'>, y: number): { r: number; g: number; b: number } {
+  const stops = BACKDROP[s.theme](s.bg);
+  let i = 0;
+  while (i < stops.length - 2 && stops[i + 1]![0] < y) i++;
+  const [y0, c0] = stops[i]!;
+  const [y1, c1] = stops[i + 1]!;
+  const t = Math.min(1, Math.max(0, (y - y0) / Math.max(1, y1 - y0)));
+  const a = hexRgb(c0);
+  const b = hexRgb(c1);
+  return { r: a[0] + (b[0] - a[0]) * t, g: a[1] + (b[1] - a[1]) * t, b: a[2] + (b[2] - a[2]) * t };
+}
+
 function finish(ctx: C, seed: number): void {
   const r = rng(seed);
   ctx.save();
@@ -583,7 +621,8 @@ function finish(ctx: C, seed: number): void {
 
 /* ---------------------------------------------------------------- objects */
 
-function drawObj(ctx: C, o: Obj): void {
+/** Draws one object (exported for trace.ts, which records what it paints). */
+export function drawObj(ctx: C, o: Obj): void {
   ctx.save();
   ctx.translate(o.x, o.y);
   ctx.scale(o.flip ? -o.s : o.s, o.s);

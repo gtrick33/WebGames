@@ -35,6 +35,11 @@ export interface Ui {
   endRun: string;
   paused: string;
   pausedHint: string;
+  /** The pause card in the daily and challenges, where the clock keeps running. */
+  pausedLive: string;
+  /** A daily challenge whose daily this player already finished. */
+  dailyCounts: string;
+  timeEach: string;
   verdictEndless: [string, string, string, string];
   verdictDaily: [string, string, string, string, string];
   shareLine: (right: number, of: number, points: string) => string;
@@ -101,6 +106,9 @@ const EN: Ui = {
   endRun: 'End run',
   paused: 'Paused',
   pausedHint: 'Tap to carry on. The clock is stopped.',
+  pausedLive: 'Tap to carry on. In the daily and challenges the clock keeps running.',
+  dailyCounts: 'You already played this daily, so that result counts here.',
+  timeEach: 'Each question gives you 15 to 30 seconds.',
   verdictEndless: ['Walking encyclopedia', 'Seriously impressive', 'Not bad at all', 'The facts fought back'],
   verdictDaily: ['Genius. Suspiciously so.', 'Big brain energy', 'Respectable', 'Wait, what?', 'The facts won today'],
   shareLine: (right, of, points) => `${right}/${of} right · ${points} points`,
@@ -188,6 +196,9 @@ const BG: Ui = {
   endRun: 'Край на играта',
   paused: 'Пауза',
   pausedHint: 'Докосни, за да продължиш. Часовникът е спрян.',
+  pausedLive: 'Докосни, за да продължиш. В дневния куиз и предизвикателствата часовникът не спира.',
+  dailyCounts: 'Вече игра този дневен куиз, затова резултатът ти важи тук.',
+  timeEach: 'За всеки въпрос имаш от 15 до 30 секунди.',
   verdictEndless: ['Ходеща енциклопедия', 'Сериозно впечатляващо', 'Никак не е зле', 'Фактите отвърнаха на удара'],
   verdictDaily: ['Гений. Подозрително гениален.', 'Голям мозък', 'Прилично', 'Чакай, какво?', 'Днес фактите победиха'],
   shareLine: (right, of, points) => `${right}/${of} верни · ${points} точки`,

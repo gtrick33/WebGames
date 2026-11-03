@@ -87,14 +87,14 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
       {engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}
       {!ui.dialogue && <Toasts engine={engine} />}
       {ui.banner && (
-        <div className="rb-banner" key={ui.banner.id} aria-live="polite">
+        <div className="rb-banner" key={`banner:${ui.banner.id}`} aria-live="polite">
           <strong>{ui.banner.text}</strong>
           {ui.banner.sub && <span>{ui.banner.sub}</span>}
         </div>
       )}
       {ui.levelUp && <LevelUpBanner engine={engine} />}
       {ui.card && (
-        <div className={`rb-tcard${ui.card.act ? ' is-act' : ''}`} key={ui.card.id} aria-live="polite">
+        <div className={`rb-tcard${ui.card.act ? ' is-act' : ''}`} key={`card:${ui.card.id}`} aria-live="polite">
           <div className="rb-tcard-text">
             <span className="rb-tcard-over">{ui.card.over}</span>
             <strong>{ui.card.text}</strong>
@@ -164,8 +164,12 @@ function Hud({ engine }: { engine: SigilEngine }) {
     <>
       <div className="rb-hud-hero">
         <div className="rb-hud-face">
-          <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} size={34} />
-          <span className="rb-lvl">{h.level}</span>
+          <span className="rb-hud-pic">
+            <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} size={34} />
+          </span>
+          <span className="rb-lvl" aria-label={`Level ${h.level}`}>
+            {h.level}
+          </span>
           {h.para.l > 0 && (
             <span className={`rb-para${paragonFree(h.para) > 0 ? ' is-free' : ''}`} title={`Paragon ${h.para.l}`}>
               P{h.para.l}
@@ -196,6 +200,11 @@ function Hud({ engine }: { engine: SigilEngine }) {
             <i ref={xp} />
           </span>
           <span className="rb-region">
+            <b className="rb-region-lv">
+              Lv {h.level}
+              {h.para.l > 0 ? ` P${h.para.l}` : ''}
+            </b>
+            {' · '}
             {region.name}
             {w.keyRun ? <b className="rb-mplus"> · Riftstone +{w.keyRun.key}</b> : w.tier > 0 && <b style={{ color: TIERS[w.tier]!.color }}> · {TIERS[w.tier]!.name}</b>}
           </span>
@@ -380,8 +389,18 @@ function Toasts({ engine }: { engine: SigilEngine }) {
             <div key={t.id} className={`rb-toast is-loot is-${item.r}`} style={{ ['--rc' as string]: rarityColor(item.r) }}>
               <ItemIcon item={item} size={38} />
               <div className="rb-toast-text">
-                <strong>{itemName(item)}</strong>
-                {lines[0] ? <span className="rb-gold">{lines[0]}</span> : <span className="rb-dim">{item.r[0]!.toUpperCase() + item.r.slice(1)} · level {item.il}</span>}
+                {t.text !== itemName(item) ? (
+                  // news about an item (not a drop): its own words first, the item under them
+                  <>
+                    <strong>{t.text}</strong>
+                    <span style={{ color: 'var(--rc)' }}>{itemName(item)}</span>
+                  </>
+                ) : (
+                  <>
+                    <strong>{itemName(item)}</strong>
+                    {lines[0] ? <span className="rb-gold">{lines[0]}</span> : <span className="rb-dim">{item.r[0]!.toUpperCase() + item.r.slice(1)} · level {item.il}</span>}
+                  </>
+                )}
               </div>
               {owned && canWear && (
                 <button
@@ -423,7 +442,7 @@ export function LevelUpBanner({ engine }: { engine: SigilEngine }) {
     (SLOT_LEVELS as readonly number[]).includes(l.level) ? 'New skill slot' : '',
   ].filter(Boolean);
   return (
-    <div className="rb-levelup" key={l.id} aria-live="polite">
+    <div className="rb-levelup" key={`lvl:${l.id}`} aria-live="polite">
       <strong>Level {l.level}</strong>
       <span>{gains.length ? gains.join(' · ') : 'More health'}</span>
     </div>
@@ -513,7 +532,7 @@ function QuestPage({ engine, kind, id, last }: { engine: SigilEngine; kind: 'off
         <div className="rb-qpage-rewards">
           <span className="rb-kicker">{kind === 'offer' ? 'Reward' : 'You receive'}</span>
           {rewards.map((r, i) => (
-            <span key={i} className={`rb-reward is-${r.kind}`} style={r.rarity ? { ['--rc' as string]: rarityColor(r.rarity) } : undefined}>
+            <span key={i} className={`rb-qreward is-${r.kind}`} style={r.rarity ? { ['--rc' as string]: rarityColor(r.rarity) } : undefined}>
               {r.text}
             </span>
           ))}
@@ -580,10 +599,14 @@ function TravelConfirm({ engine }: { engine: SigilEngine }) {
 function PauseMenu({ engine }: { engine: SigilEngine }) {
   const [leaving, setLeaving] = useState(false);
   const w = engine.world!;
+  // in a party the world goes on behind this menu; the leader's leaving ends the run for everyone
+  const party = !!engine.coop;
+  const leads = engine.coop?.role === 'host' && engine.party?.view?.mode === 'rift';
   return (
     <div className="rb-modal">
-      <div className="rb-card rb-pause" role="dialog" aria-modal="true" aria-label="Paused">
-        <h2>Paused</h2>
+      <div className="rb-card rb-pause" role="dialog" aria-modal="true" aria-label={party ? 'Menu' : 'Paused'}>
+        <h2>{party ? 'Menu' : 'Paused'}</h2>
+        {party && <p className="rb-dim rb-small">Not paused: your party fights on.</p>}
         <button className="rb-btn is-gold is-big" onClick={() => engine.togglePause()} autoFocus>
           Resume
         </button>
@@ -591,9 +614,10 @@ function PauseMenu({ engine }: { engine: SigilEngine }) {
           Settings
         </button>
         {!w.safe &&
+          engine.canGoHome &&
           (leaving ? (
             <button className="rb-btn is-danger" onClick={() => engine.returnHome()}>
-              Leave the expedition? You keep everything you found.
+              {leads ? 'End the run for the whole party? You keep everything you found.' : 'Leave the expedition? You keep everything you found.'}
             </button>
           ) : (
             <button className="rb-btn" onClick={() => setLeaving(true)}>
@@ -615,11 +639,11 @@ function DeathScreen({ engine }: { engine: SigilEngine }) {
     <div className="rb-modal is-dark">
       <div className="rb-card rb-death" role="dialog" aria-modal="true" aria-label="You have fallen">
         <h2>You have fallen</h2>
-        <p className="rb-dim">Everything you found is safe. The room you fell in resets.</p>
+        <p className="rb-dim">{engine.coop ? 'Everything you found is safe. Your party fights on: rise beside them.' : 'Everything you found is safe. The room you fell in resets.'}</p>
         <button className="rb-btn is-gold is-big" onClick={() => engine.respawn()} autoFocus>
           Rise again
         </button>
-        {!w.safe && (
+        {!w.safe && engine.canGoHome && (
           <button className="rb-btn" onClick={() => engine.returnHome()}>
             Return to {REGIONS[HOME].name}
           </button>
@@ -691,9 +715,11 @@ function RewardScreen({ engine }: { engine: SigilEngine }) {
               Riftstone +{h.keystone} here
             </button>
           )}
-          <button className="rb-btn is-gold" onClick={() => engine.returnHome()} autoFocus>
-            Return to {REGIONS[HOME].name}
-          </button>
+          {engine.canGoHome && (
+            <button className="rb-btn is-gold" onClick={() => engine.returnHome()} autoFocus>
+              Return to {REGIONS[HOME].name}
+            </button>
+          )}
         </div>
       </div>
     </div>

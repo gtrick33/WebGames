@@ -44,7 +44,10 @@ export interface Pillar {
 export interface Sim {
   seed: number;
   rand: number;
+  /** Flight time: it starts at the first flap, so drifting gaps are in the same place for everyone. */
   t: number;
+  /** Time spent hovering before the first flap (only the bob uses it). */
+  hover: number;
   y: number;
   vy: number;
   started: boolean;
@@ -77,7 +80,7 @@ export const gapFor = (n: number): number => Math.max(132, 178 - n * 0.8);
 export const speedFor = (score: number): number => Math.min(215, 150 + score * 1.3);
 
 export function newSim(seed: number): Sim {
-  const s: Sim = { seed, rand: seed >>> 0, t: 0, y: H * 0.42, vy: 0, started: false, dead: false, score: 0, feathers: 0, pillars: [], dist: 0, spawned: 0, flapT: 0, prevY: H * 0.42, lastDx: 0 };
+  const s: Sim = { seed, rand: seed >>> 0, t: 0, hover: 0, y: H * 0.42, vy: 0, started: false, dead: false, score: 0, feathers: 0, pillars: [], dist: 0, spawned: 0, flapT: 0, prevY: H * 0.42, lastDx: 0 };
   // The first pillar starts a comfortable distance away.
   for (let i = 0; i < 4; i++) spawn(s, W + 140 + i * SPACING);
   return s;
@@ -133,12 +136,13 @@ export function step(s: Sim): SimEvent[] {
     }
     return ev;
   }
-  s.t += STEP;
   s.flapT = Math.max(0, s.flapT - STEP);
   if (!s.started) {
-    s.y = H * 0.42 + Math.sin(s.t * 4) * 8;
+    s.hover += STEP;
+    s.y = H * 0.42 + Math.sin(s.hover * 4) * 8;
     return ev;
   }
+  s.t += STEP;
   const v = speedFor(s.score);
   s.dist += v * STEP;
   s.lastDx = v * STEP;
@@ -203,7 +207,7 @@ export function flightLine(pillars: number, feathers: number): string {
   return `${bar}${medal ? ` ${MEDAL_ICON[medal]}` : ''}${feathers > 0 ? ` 🪶${feathers}` : ''}`;
 }
 
-/** Biome by score: the world changes every 15 points. */
+/** Biome by gaps cleared: the world changes every 15 gaps. */
 export const BIOMES = ['meadow', 'sunset', 'night', 'space'] as const;
 export type Biome = (typeof BIOMES)[number];
 export const biomeFor = (score: number): Biome => BIOMES[Math.floor(score / 15) % BIOMES.length]!;

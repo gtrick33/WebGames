@@ -60,7 +60,7 @@ export const WARRIOR: Kit = {
     // the second half of the kit (PROGRESSION_BALANCE.md Part 2, B): utility and control, one every few levels
     sk('skill', 9, 'Hookchain', 'Hurls a chained hook that drags the first enemy it hits to you.', spec({ id: 'hookchain', cast: 'projectile', range: 150, cooldown: 9, damage: 14, dmgType: 'physical', speed: 280, radius: 4, cost: 10, onHit: [{ kind: 'yank', dist: 90 }], look: 'arrow', tags: ['projectile', 'control'] })),
     sk('skill', 18, 'Rallying Roar', 'A roar that shakes off every harmful effect and shields you for 18% of your health.', spec({ id: 'rallying-roar', cast: 'buff', aim: 'self', cooldown: 18, gen: 20, onCast: [{ kind: 'cleanse' }, { kind: 'shield', pct: 18, dur: 6 }], tags: ['defense', 'buff'] })),
-    sk('skill', 28, 'Ground Breaker', 'Leap at a spot and crash down, stunning everything around the landing.', spec({ id: 'ground-breaker', cast: 'dash', range: 96, cooldown: 10, damage: 16, dmgType: 'physical', duration: 0.32, radius: 6, cost: 15, onImpact: [{ kind: 'nova', radius: 44, mul: 1.5, status: { status: 'stun', dur: 0.8, power: 1 } }], tags: ['movement', 'aoe'] })),
+    sk('skill', 28, 'Ground Breaker', 'Leap at a spot and crash down, stunning everything around the landing.', spec({ id: 'ground-breaker', cast: 'dash', autoAim: 'target', range: 96, cooldown: 10, damage: 16, dmgType: 'physical', duration: 0.32, radius: 6, cost: 15, onImpact: [{ kind: 'nova', radius: 44, mul: 1.5, status: { status: 'stun', dur: 0.8, power: 1 } }], tags: ['movement', 'aoe'] })),
     sk('skill', 36, 'Last Word', 'A finishing blow: far heavier against enemies below 30% health.', spec({ id: 'last-word', cast: 'melee', cooldown: 8, damage: 30, dmgType: 'physical', area: 30, arc: 1.3, cost: 20, bonusVs: [{ status: 'lowHp', pct: 150 }], tags: ['melee', 'execute'] })),
     sk('skill', 46, 'Challenge', 'Bellow a challenge: every enemy around you turns on you for 4 seconds while you take 20% less damage.', spec({ id: 'challenge', cast: 'nova', aim: 'self', cooldown: 20, damage: 10, dmgType: 'physical', area: 70, gen: 30, onCast: [{ kind: 'taunt', radius: 80, dur: 4 }, { kind: 'buff', buff: { id: 'challenge', name: 'Challenge', dur: 4, dr: 20, color: '#ff6a5a' } }], look: 'quake', tags: ['aoe', 'defense', 'control'] })),
     sk('basic', 1, 'Cleave', 'A wide swing that builds Rage. Every third swing in a row hits harder.', spec({ id: 'cleave', cast: 'melee', cooldown: 0.46, damage: 15, area: 27, arc: 1.95, knock: 50, gen: 6, extra: { combo: 3, comboMul: 0.6 }, tags: ['melee', 'basic'] })),
@@ -71,14 +71,14 @@ export const WARRIOR: Kit = {
       4,
       'Shield Bash',
       'Lunge with your shield up, stunning what you hit.',
-      spec({ id: 'shield-bash', cast: 'dash', range: 48, cooldown: 6, damage: 18, duration: 0.18, radius: 12, knock: 110, cost: 15, onHit: [{ kind: 'status', status: 'stun', dur: 1, power: 1 }], tags: ['melee', 'movement'] }),
+      spec({ id: 'shield-bash', cast: 'dash', autoAim: 'target', range: 48, cooldown: 6, damage: 18, duration: 0.18, radius: 12, knock: 110, cost: 15, onHit: [{ kind: 'status', status: 'stun', dur: 1, power: 1 }], tags: ['melee', 'movement'] }),
     ),
     sk(
       'skill',
       6,
       'Charge',
       'Rush far ahead, knocking enemies aside and dazing them. Gives 15 Rage.',
-      spec({ id: 'charge', cast: 'dash', range: 115, cooldown: 9, damage: 24, duration: 0.32, radius: 12, knock: 170, gen: 15, onHit: [{ kind: 'status', status: 'stun', dur: 0.6, power: 1 }], tags: ['melee', 'movement'] }),
+      spec({ id: 'charge', cast: 'dash', autoAim: 'target', range: 115, cooldown: 9, damage: 24, duration: 0.32, radius: 12, knock: 170, gen: 15, onHit: [{ kind: 'status', status: 'stun', dur: 0.6, power: 1 }], tags: ['melee', 'movement'] }),
     ),
     sk(
       'skill',

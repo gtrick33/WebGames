@@ -51,8 +51,9 @@ export const GAMES: GameEntry[] = [
       { metric: 'nearMisses', targets: [5, 7, 9, 12], label: 'Pull off {n} near misses in a single run' },
       { metric: 'score', targets: [1500, 2000, 2500, 3200], label: 'Score {n} points in a single run' },
     ],
-    // Top speed is about 20 m/s plus coins and near-miss combos; this is a generous ceiling.
-    limits: { scorePerSecond: 250, minSeconds: 2 },
+    // Sustained ceiling ~450/s: top speed 58 m/s and a 200-point near miss at x8 on every row
+    // (0.6-1.1 s apart); measured strong runs 265-323/s (NR-01).
+    limits: { scorePerSecond: 500, minSeconds: 2, stats: { meters: { perSecond: 120 }, nearMisses: { perSecond: 5 } } },
   },
   {
     slug: 'memory-grid',
@@ -99,6 +100,8 @@ export const GAMES: GameEntry[] = [
       { metric: 'score', targets: [150, 250, 350], label: 'Score {n} points in one run' },
       { metric: 'patterns', targets: [5, 6, 7, 8], label: 'Clear {n} patterns in one run' },
     ],
+    // Superhuman 60 ms taps never pass ~35 points/s in any mode; Classic and Speed are endless.
+    limits: { scorePerSecond: 50, minSeconds: 3, stats: { accuracy: { max: 100 }, time: { min: 1 } } },
   },
   {
     slug: 'color-recall',
@@ -132,9 +135,9 @@ export const GAMES: GameEntry[] = [
       { key: 'perfects', label: 'Most perfect colors in a game' },
     ],
     highlights: [
-      '150 hand-picked everyday colors with original illustrations, plus one-off wild cards',
+      'Hand-picked everyday colors with original illustrations, plus one-off wild cards',
       'Five daily colors, identical for every player, with streaks and spoiler-free sharing',
-      'Perceptual CIEDE2000 scoring with plain-language tips',
+      'Scoring that matches how your eye sees color, with plain-language tips',
       'HSB or RGB sliders with fine-tune buttons, built for phones',
     ],
     ownDaily: { label: 'Today’s 5 colors' },
@@ -144,6 +147,8 @@ export const GAMES: GameEntry[] = [
       { metric: 'bestColor', targets: [850, 900, 950], label: 'Mix a single color worth {n} points' },
       { metric: 'accuracy', targets: [65, 70, 75], label: 'Finish a 5-color game with {n}% accuracy' },
     ],
+    // Five colors of up to 1,000 points each, with a peek and a mix per color (a fast round takes 15 s+).
+    limits: { scorePerSecond: 600, minSeconds: 6, maxScore: 5000, stats: { accuracy: { max: 100 }, bestColor: { max: 1000 }, perfects: { max: 5 } } },
   },
   {
     slug: 'letter-pinch',
@@ -189,6 +194,9 @@ export const GAMES: GameEntry[] = [
       { metric: 'spare', targets: [1, 2, 2, 3], label: 'Solve a Letter Pinch with {n} or more guesses left' },
       { metric: 'score', targets: [450, 500, 550], label: 'Score {n} points in one Letter Pinch puzzle' },
     ],
+    // One puzzle: 200 + 100 per spare guess + up to 100 for speed = 800. Start is the first guess, so a
+    // lucky first-guess solve ends at once: the cap, not the rate, is what holds.
+    limits: { scorePerSecond: 800, minSeconds: 0, maxScore: 800, slack: 800, stats: { spare: { max: 5 }, guesses: { min: 1, max: 6 }, seconds: { min: 1 } } },
   },
   {
     slug: 'mini-racer',
@@ -303,7 +311,7 @@ export const GAMES: GameEntry[] = [
     challenge: { label: 'One quarter mile in the same loaner car; the others race your ghost. Highest run score wins.' },
     daily: [
       { metric: 'score', targets: [7000, 8500, 10000], label: 'Score {n} in one Launch Control run' },
-      { metric: 'perfect', targets: [2, 3, 4], label: 'Nail {n} perfect shifts in one Launch Control run' },
+      { metric: 'perfect', targets: [1, 2, 3], label: 'Nail {n} perfect shifts in one Launch Control run', one: 'Nail {n} perfect shift in one Launch Control run' },
     ],
     // A run scores at most ~17,000 (20,000 minus a 3.9 s ET, plus perfect shifts) and takes at least ~6 s of real time (staging plus the run).
     limits: { scorePerSecond: 3600, minSeconds: 5 },
@@ -355,6 +363,8 @@ export const GAMES: GameEntry[] = [
       { metric: 'levels', targets: [5, 8, 10], label: 'Reach level {n} in Color Lab Endless' },
       { metric: 'stars', targets: [10, 12, 14], label: 'Collect {n} stars in one Color Lab run' },
     ],
+    // At most 10 points and 3 stars a puzzle, each needing several pours (~3 s at the very fastest).
+    limits: { scorePerSecond: 6, minSeconds: 3, stats: { stars: { perSecond: 2 }, underPar: { perSecond: 1 }, levels: { perSecond: 1 }, parLevels: { perSecond: 1 } } },
   },
   {
     slug: 'spot-the-glitch',
@@ -386,6 +396,8 @@ export const GAMES: GameEntry[] = [
       { key: 'found', label: 'Most glitches found' },
       { key: 'clean', label: 'Most flawless pictures' },
       { key: 'pictures', label: 'Most Rush pictures cleared' },
+      { key: 'daily', label: 'Best daily score', of: 'score', mode: 'daily' },
+      { key: 'rush', label: 'Best Rush score', of: 'score', mode: 'other' },
     ],
     highlights: [
       'Hand-drawn pictures generated from a seed across 13 themes (beach, farm, kitchen, city night, jungle, campsite, harbor, party and more): a practically endless library',
@@ -397,10 +409,12 @@ export const GAMES: GameEntry[] = [
     ownDaily: { label: 'Today’s 3 pictures' },
     challenge: { label: 'The same three pictures for everyone. Find every difference fast, with few misses.' },
     daily: [
-      { metric: 'score', targets: [2000, 2300, 2500], label: 'Score {n} points in one Spot the Glitch daily' },
+      { metric: 'daily', targets: [2000, 2300, 2500], label: 'Score {n} points in one Spot the Glitch daily' },
       { metric: 'found', targets: [12, 15, 20], label: 'Find {n} glitches in one Spot the Glitch game' },
       { metric: 'clean', targets: [1, 2], label: 'Clear {n} pictures without a miss or hint', one: 'Clear {n} picture without a miss or hint' },
     ],
+    // Rush peaks at ~125 points/s; a 3,000 daily then needs 12 s.
+    limits: { scorePerSecond: 250, minSeconds: 5, stats: { found: { perSecond: 3 }, clean: { perSecond: 1 }, pictures: { perSecond: 1 } } },
   },
   {
     slug: 'wheres-the-ball',
@@ -446,13 +460,16 @@ export const GAMES: GameEntry[] = [
       { metric: 'score', targets: [3000, 3500, 4000], label: 'Score {n} points in one Where’s the Ball? daily' },
       { metric: 'found', targets: [5, 8, 12], label: 'Find {n} balls in one Where’s the Ball? game' },
     ],
+    // Up to 1,000 a shot (400 + a speed bonus that runs out in 60 s); a lightning find takes ~1-2 s with
+    // the shot's reveal, so even five instant finds stay under 600/s.
+    limits: { scorePerSecond: 600, minSeconds: 4, stats: { found: { perSecond: 1 }, fastest: { min: 1 }, levels: { perSecond: 1 } } },
   },
   {
     slug: 'wing-it',
     title: 'Wing It',
     tagline: 'One tap to flap. Thread the gaps, grab golden feathers, and see how far you get.',
     description:
-      'Tap to keep a chubby little bird in the air and squeeze through the gaps. The world changes every 15 points, gaps start to drift, and golden feathers pay extra. ' +
+      'Tap to keep a chubby little bird in the air and squeeze through the gaps. The world changes every 15 gaps, gaps start to drift, and golden feathers pay extra. ' +
       'A daily course that is the same for everyone, plus endless random skies.',
     categories: ['arcade'],
     moods: ['action', 'quick'],
@@ -479,7 +496,7 @@ export const GAMES: GameEntry[] = [
     ],
     highlights: [
       'Tap to flap: easy to learn, hard to put down',
-      'Four worlds (meadow, sunset, night, space) that change every 15 points',
+      'Four worlds (meadow, sunset, night, space) that change every 15 gaps',
       'Drifting gaps and golden feathers (+3) as you go further',
       'A daily course that is the same for everyone, plus endless random skies',
       'Bronze, silver, gold and platinum medals',
@@ -490,7 +507,8 @@ export const GAMES: GameEntry[] = [
       { metric: 'pillars', targets: [10, 20, 30], label: 'Clear {n} gaps in one Wing It flight' },
       { metric: 'feathers', targets: [2, 3, 5], label: 'Grab {n} golden feathers in one Wing It flight' },
     ],
-    limits: { scorePerSecond: 4, minSeconds: 2 },
+    // Score is gaps + 3 per feather; at most ~0.94 gaps/s at top speed (1.97 points/s observed).
+    limits: { scorePerSecond: 4, minSeconds: 2, scoreIs: { pillars: 1, feathers: 3 }, stats: { pillars: { perSecond: 1.5 } } },
   },
   {
     slug: 'crosswire',
@@ -533,6 +551,8 @@ export const GAMES: GameEntry[] = [
     ownDaily: { label: 'Today’s grid' },
     challenge: { label: 'The same grid for everyone. A fast solve without hints scores most.' },
     daily: [{ metric: 'score', targets: [900, 1000, 1100], label: 'Score {n} points in one Crosswire grid' }],
+    // 1,000 for a clean solve + 250 for the mystery word; no grid fills in under ~12 s.
+    limits: { scorePerSecond: 100, minSeconds: 8, maxScore: 1250, stats: { clean: { max: 1 }, seconds: { min: 1 } } },
   },
   {
     slug: 'wait-what',
@@ -570,15 +590,16 @@ export const GAMES: GameEntry[] = [
       'Generated questions too: real words that sound fake, words from other languages, "which came first?"',
       'Daily quiz of 10, the same for everyone, with a shareable result grid',
       'Endless mode: three strikes, and no question repeats until you have seen them all',
-      'Challenge up to 5 friends: same 10 questions, 20 seconds each, faster answers score more',
+      'Challenge up to 5 friends: same 10 questions, 15 to 30 seconds each, faster answers score more',
     ],
     ownDaily: { label: 'Today’s quiz' },
-    challenge: { label: '10 questions, 20 seconds each, the same for everyone. Right answers score 100, plus up to 50 for speed.' },
+    challenge: { label: '10 questions, 15 to 30 seconds each, the same for everyone. Right answers score 100, plus up to 50 for speed.' },
     daily: [
       { metric: 'correct', targets: [6, 7, 8], label: 'Get {n} questions right in one Quizbelief quiz' },
       { metric: 'streak', targets: [4, 5, 6], label: 'Answer {n} Quizbelief questions in a row correctly' },
     ],
-    limits: { scorePerSecond: 160, minSeconds: 10 },
+    // 100 per right answer + up to 50 for speed (Endless has no question count, so no maxScore).
+    limits: { scorePerSecond: 160, minSeconds: 10, roundMax: 1500, scoreAtMost: { correct: 150 } },
   },
   {
     slug: 'crass-act',
@@ -590,7 +611,7 @@ export const GAMES: GameEntry[] = [
       'Hundreds of original, brutally rude cards that never repeat in a session, a vote mode with no judge, and rooms you share with a link. Adults only.',
     categories: ['party', 'word'],
     moods: ['friends'],
-    tags: ['18+', 'adult', 'party', 'cards', 'card game', 'multiplayer', 'online', 'friends', 'rude', 'dark humour', 'funny'],
+    tags: ['18+', 'adult', 'party', 'cards', 'card game', 'multiplayer', 'online', 'friends', 'rude', 'dark humor', 'funny'],
     released: '2026-10-19',
     accent: 'coral',
     emoji: '😈',
@@ -659,7 +680,8 @@ export const GAMES: GameEntry[] = [
       { metric: 'score', targets: [2500, 3000, 3500], label: 'Score {n} points in one To Scale game' },
       { metric: 'bullseyes', targets: [1, 2], label: 'Land {n} spot-on guesses (within 10%) in one To Scale game', one: 'Land {n} spot-on guess (within 10%) in one To Scale game' },
     ],
-    limits: { scorePerSecond: 1000, minSeconds: 3 },
+    // Up to 1,000 a shot; Endless has no shot count, so only a challenge's five shots have a maximum.
+    limits: { scorePerSecond: 1000, minSeconds: 3, roundMax: 5000, stats: { bullseyes: { perSecond: 1 } } },
   },
   {
     slug: 'square-deal',
@@ -738,7 +760,9 @@ export const GAMES: GameEntry[] = [
       { metric: 'levels', targets: [3, 4, 5], label: 'Clear {n} levels in one Outta Here game' },
       { metric: 'perfect', targets: [1, 2, 3], label: 'Clear {n} levels without a mistake in Outta Here', one: 'Clear {n} level without a mistake in Outta Here' },
     ],
-    limits: { scorePerSecond: 250, minSeconds: 3 },
+    // The clear bonus grows with the level (50 × n), so long Endless runs speed up: level 100 at 5 taps/s
+    // averages ~480 points/s (OH-02). No level is cleared in under a second.
+    limits: { scorePerSecond: 1000, minSeconds: 3, stats: { levels: { perSecond: 1 }, perfect: { perSecond: 1 } } },
   },
   {
     slug: 'gloop',
@@ -777,7 +801,8 @@ export const GAMES: GameEntry[] = [
       { metric: 'score', targets: [300, 500, 800, 1200], label: 'Score {n} points in one Gloop jar' },
       { metric: 'biggest', targets: [6, 7, 8], label: 'Grow a size-{n} blob in Gloop' },
     ],
-    limits: { scorePerSecond: 200, minSeconds: 3 },
+    // The fastest legit drop-spam scores ~26 points/s (GL-06); human play 9-14. 60 keeps 2× headroom.
+    limits: { scorePerSecond: 60, minSeconds: 3, stats: { biggest: { max: 11 } } },
   },
   {
     slug: 'gut-check',
@@ -809,7 +834,8 @@ export const GAMES: GameEntry[] = [
     ownDaily: { label: 'Today’s cards' },
     challenge: { label: 'The same cards in the same order for everyone. Longest streak wins.' },
     daily: [{ metric: 'score', targets: [5, 7, 10, 12], label: 'Get {n} right in a row in Gut Check' }],
-    limits: { scorePerSecond: 2, minSeconds: 1 },
+    // One card a call: a streak grows at most ~1 a second. A miss on the first card is a real 0-second round.
+    limits: { scorePerSecond: 2, minSeconds: 0, maxScore: 300 },
   },
   {
     slug: 'star-grid',
@@ -840,6 +866,8 @@ export const GAMES: GameEntry[] = [
     stats: [
       { key: 'score', label: 'Best score' },
       { key: 'time', label: 'Fastest daily (all three grids)', unit: 's', lowerIsBetter: true },
+      { key: 'dailyScore', label: 'Best daily score', of: 'score', mode: 'daily' },
+      { key: 'gridScore', label: 'Best single grid', of: 'score', mode: 'other' },
     ],
     highlights: ['Every grid has exactly one solution', 'Three daily grids, 6 by 6 to 8 by 8, the same for everyone', 'Endless grids in four sizes, up to 9 by 9'],
     ownDaily: { label: 'Today’s 3 grids' },
@@ -848,7 +876,8 @@ export const GAMES: GameEntry[] = [
       { metric: 'score', targets: [1200, 1600, 2000], label: 'Score {n} points in one Star Grid daily' },
       { metric: 'time', targets: [300, 240, 180], label: 'Solve all three Star Grid dailies in under {n} seconds' },
     ],
-    limits: { scorePerSecond: 250, minSeconds: 5 },
+    // Scored by solve time: at most 1,200 a grid (9 × 9), three grids in the daily. The cap holds, not the rate.
+    limits: { scorePerSecond: 250, minSeconds: 1, maxScore: 3600, slack: 1200, stats: { time: { min: 10 } } },
   },
   {
     slug: 'fussbox',
@@ -879,7 +908,7 @@ export const GAMES: GameEntry[] = [
     stats: [
       { key: 'score', label: 'Best score' },
       { key: 'correct', label: 'Most exam cards right (of 8)' },
-      { key: 'tests', label: 'Fewest tests', lowerIsBetter: true },
+      { key: 'tests', label: 'Fewest tests for 8/8', lowerIsBetter: true },
     ],
     highlights: ['A new secret rule every day', 'Fussier from Monday to Sunday', 'In English and Bulgarian'],
     ownDaily: { label: 'Today’s rule' },
@@ -888,7 +917,8 @@ export const GAMES: GameEntry[] = [
       { metric: 'correct', targets: [6, 7, 8], label: 'Get {n} of 8 right in one Fussbox exam' },
       { metric: 'score', targets: [600, 800, 950], label: 'Score {n} points in one Fussbox round' },
     ],
-    limits: { scorePerSecond: 250, minSeconds: 5 },
+    // An exam scores at most 1,000.
+    limits: { scorePerSecond: 250, minSeconds: 5, maxScore: 1000, stats: { correct: { max: 8 } } },
   },
   {
     slug: 'whatsit',
@@ -928,7 +958,8 @@ export const GAMES: GameEntry[] = [
       { metric: 'score', targets: [400, 700, 850], label: 'Score {n} in one Whatsit round' },
       { metric: 'crossed', targets: [5, 8, 11], label: 'Cross out {n} wrong cards and solve a Whatsit' },
     ],
-    limits: { scorePerSecond: 250, minSeconds: 4 },
+    // A round scores 200-1,000 whatever the time; a lucky pick is two taps (WH-01): the cap holds, not the rate.
+    limits: { scorePerSecond: 1000, minSeconds: 0, maxScore: 1000, slack: 1000 },
   },
   {
     slug: 'belot',
@@ -957,7 +988,7 @@ export const GAMES: GameEntry[] = [
       touch: ['Tap a card to play it', 'Tap a call in the bidding bar'],
     },
     stats: [
-      { key: 'score', label: 'Best score' },
+      { key: 'score', label: 'Best match' },
       { key: 'margin', label: 'Biggest winning margin' },
     ],
     highlights: [
@@ -968,7 +999,8 @@ export const GAMES: GameEntry[] = [
     ],
     ownDaily: { label: 'Today’s deals' },
     challenge: { label: 'The same four deals for everyone: most points wins.' },
-    limits: { scorePerSecond: 20, minSeconds: 20 },
+    // A match ends past 151, and four daily deals of at most ~280 (a redoubled valat with declarations).
+    limits: { scorePerSecond: 20, minSeconds: 20, maxScore: 3000 },
   },
   {
     slug: 'backgammon',
@@ -1008,7 +1040,8 @@ export const GAMES: GameEntry[] = [
     ],
     ownDaily: { label: 'Today’s game' },
     challenge: { label: 'The same dice for everyone: the best result wins.' },
-    limits: { scorePerSecond: 20, minSeconds: 30 },
+    // A match to 7 ends by 9 points (950 with the win bonus); a daily game at most 300 + the computer's pips.
+    limits: { scorePerSecond: 20, minSeconds: 30, maxScore: 1000, stats: { points: { max: 9 } } },
   },
   {
     slug: 'sigilfall',
@@ -1049,7 +1082,8 @@ export const GAMES: GameEntry[] = [
       'Normal, Heroic and Mythic, then the endless Riftstone climb',
       'Co-op: quest and run Riftstones with up to three friends',
     ],
-    limits: { scorePerSecond: 400, minSeconds: 20 },
+    // Riftstone clears are front-loaded (fixed boss XP and gold): strong ones reach ~430 points/s (SFS-02).
+    limits: { scorePerSecond: 1500, minSeconds: 20 },
   },
   {
     slug: 'crater-crew',
@@ -1095,6 +1129,7 @@ export const GAMES: GameEntry[] = [
       { metric: 'damage', targets: [100, 150, 200], label: 'Deal {n} damage in one Crater Crew battle' },
       { metric: 'kills', targets: [2, 3], label: 'Knock out {n} critters in one Crater Crew battle', one: 'Knock out {n} critter in one Crater Crew battle' },
     ],
-    limits: { scorePerSecond: 80, minSeconds: 15 },
+    // One shot can win a 1v1 (600 points) 2.6-7 s after the start (CC-03).
+    limits: { scorePerSecond: 300, minSeconds: 1 },
   },
 ];

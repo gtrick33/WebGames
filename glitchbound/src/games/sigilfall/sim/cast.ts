@@ -64,16 +64,33 @@ function assistAim(w: World, angle: number, range: number, level: number): numbe
   return best;
 }
 
-interface Aim {
+/**
+ * Does a tapped skill turn at the nearest enemy (with "Skills aim at the nearest enemy when tapped" on)?
+ * Shots, swings, channels and ground spells do; blinks and dashes keep the stick's direction unless the kit
+ * marks them as gap-closers (autoAim: 'target'); spells cast on the hero (novas, buffs, summons, forms) never aim.
+ */
+export function tapAutoAims(spec: SkillSpec): boolean {
+  if (spec.aim === 'self') return false;
+  if (spec.autoAim) return spec.autoAim === 'target';
+  return spec.cast !== 'blink' && spec.cast !== 'dash' && spec.cast !== 'nova' && spec.cast !== 'buff' && spec.cast !== 'summon' && spec.cast !== 'form';
+}
+
+/** How far a skill looks for its target (a swing's reach, a dash's run, a spell's range). */
+export function aimReach(spec: SkillSpec): number {
+  return spec.cast === 'melee' ? spec.area + 30 : spec.cast === 'dash' ? spec.range + 20 : spec.range;
+}
+
+export interface Aim {
   angle: number;
   tx: number;
   ty: number;
   target: Enemy | null;
 }
 
-function resolveAim(w: World, spec: SkillSpec, req: CastRequest): Aim | null {
+/** Where a cast goes: its angle, its point and its target (exported for tests). */
+export function resolveAim(w: World, spec: SkillSpec, req: CastRequest): Aim | null {
   const p = w.player;
-  const reach = spec.cast === 'melee' ? spec.area + 30 : spec.cast === 'dash' ? spec.range + 20 : spec.range;
+  const reach = aimReach(spec);
   const targeted = spec.cast === 'chain' || spec.cast === 'mark' || spec.cast === 'drain';
   // a spell that needs a target (a chain, a mark, a drain), aimed by the mouse or a drag, takes the enemy nearest
   // the aimed line; with none in reach it is not cast at all (no mana or cooldown spent on nothing)
@@ -89,9 +106,12 @@ function resolveAim(w: World, spec: SkillSpec, req: CastRequest): Aim | null {
     const d = spec.aim === 'ground' ? (req.dist ?? 0.7) * spec.range : spec.range;
     return { angle, tx: p.x + Math.cos(angle) * d, ty: p.y + Math.sin(angle) * d, target: null };
   }
-  // a tap: the basic attack finds the nearest enemy (if the setting is on) and spells that need a target
-  // (chains, marks, drains) always do; every other spell goes where the hero faces, shown by the facing marker
-  const target = targeted || (req.slot === 'basic' && w.settings.autoTarget) ? autoTarget(w, reach, p.aim) : null;
+  // a tap: the basic attack finds the nearest enemy (if the setting is on), and so do skills and the ultimate
+  // (with their own setting; see tapAutoAims), using the same picker; spells that need a target (chains, marks,
+  // drains) always do; the rest go where the hero faces, shown by the facing marker. A ground spell lands on
+  // the target (up to its range).
+  const auto = req.slot === 'basic' ? w.settings.autoTarget : w.settings.autoAimSkills !== false && tapAutoAims(spec);
+  const target = targeted || auto ? autoTarget(w, reach, p.aim) : null;
   if (target) {
     const angle = Math.atan2(target.y - p.y, target.x - p.x);
     const d = Math.min(spec.range, dist(p.x, p.y, target.x, target.y));

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent } from 'react';
 import { TIER_MULT, TIER_NAMES, type Tier } from '../../content/scribble';
 import { COLORS, ERASER, H, SIZES, W, type Op } from '../../scribble';
-import { CHAT_MAX, CLOCKS, LAPS, MIN_PLAYERS, type Action, type Msg, type RoomView } from '../../rooms/scribbleRoom';
+import { CHAT_GAP_MS, CHAT_MAX, CLOCKS, LAPS, MIN_PLAYERS, type Action, type Msg, type RoomView } from '../../rooms/scribbleRoom';
 import { InkStore, paint, type Painted } from '../scribbleInk';
 import { Clock, Dot, RoomFrame, Scores, seatColor, useLeft, type RoomContext } from './RoomFrame';
 import { t } from '../../../i18n';
@@ -20,7 +20,7 @@ export function ScribbleRoomPage({ code, onLeave }: { code: string; onLeave: () 
   return (
     <RoomFrame<RoomView, Action>
       code={code}
-      meta={{ title: 'Scribble Scramble', emoji: '🖍️', invite: 'Join my Scribble Scramble room: one of us draws, everyone races to guess the word.', min: MIN_PLAYERS }}
+      meta={{ game: 'scribble', title: 'Scribble Scramble', emoji: '🖍️', invite: 'Join my Scribble Scramble room: one of us draws, everyone races to guess the word.', min: MIN_PLAYERS }}
       onLeave={onLeave}
       kick={(seat) => ({ t: 'kick', seat })}
       progress={(v) => (v.phase === 'lobby' || v.phase === 'result' ? undefined : `${v.count}/${v.total}`)}
@@ -360,6 +360,7 @@ function Reveal({ view, turn, byN }: { view: RoomView; turn: Turn; byN: Ctx['byN
 
 function Chat({ view, send, me, byN, turn }: Ctx & { turn: Turn }) {
   const [draft, setDraft] = useState('');
+  const sentAt = useRef(0);
   const log = useRef<HTMLOListElement>(null);
   const isDrawer = turn.drawer === me.n;
   const gotIt = turn.hits.some((h) => h.n === me.n);
@@ -370,7 +371,9 @@ function Chat({ view, send, me, byN, turn }: Ctx & { turn: Turn }) {
   }, [last]);
   const submit = (): void => {
     const text = draft.trim();
-    if (!text) return;
+    // The room drops messages closer together than CHAT_GAP_MS: keep this one in the box to send again.
+    if (!text || Date.now() - sentAt.current < CHAT_GAP_MS + 100) return;
+    sentAt.current = Date.now();
     send({ t: 'say', text });
     setDraft('');
   };

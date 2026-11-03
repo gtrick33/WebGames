@@ -34,6 +34,13 @@ export interface PartyGame {
 
 const art = (id: PartyGameId): { tile: string; wide: string } => ({ tile: `/party/${id}/tile.webp`, wide: `/party/${id}/wide.webp` });
 
+/** The player counts: one phone and online rooms each have theirs (both shown when they differ). */
+export function playerRange(g: Pick<PartyGame, 'onePhone' | 'players' | 'room' | 'roomPlayers'>): string {
+  if (!g.onePhone) return `👥 ${g.roomPlayers ?? g.players}`;
+  if (!g.room || !g.roomPlayers || g.roomPlayers === g.players) return `👥 ${g.players}`;
+  return `📱 ${g.players} · 🌐 ${g.roomPlayers}`;
+}
+
 export const PARTY_GAMES: PartyGame[] = [
   { id: 'impostor', title: 'Impostor', emoji: '🕵️', blurb: 'Everyone gets the secret word, except one. Say one word each, then vote out the faker.', time: '10–40 min', players: '3–16', color: '#7b4dff', onePhone: true, room: 'impostor', roomPlayers: '3–12', roomBlurb: 'Secret cards on each phone', sticker: 'New', art: art('impostor') },
   { id: 'scribble', title: 'Scribble Scramble', emoji: '🖍️', blurb: 'One player draws, everyone else races to guess the word. Harder words, bigger points.', time: '10–30 min', players: '2–10', color: '#ff8a1f', onePhone: false, room: 'scribble', roomPlayers: '2–10', roomBlurb: 'Draw live, everyone guesses on their phone', art: art('scribble') },

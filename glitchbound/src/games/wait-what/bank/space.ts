@@ -9,7 +9,7 @@ export const SPACE: Raw[] = [
   ['Which is the hottest planet in the solar system?', 'Venus|Mercury|Mars|Jupiter', 'Its thick clouds trap heat. It is hot enough to melt lead.'],
   ['How long could footprints on the Moon last?', 'Millions of years|About 10 years|About 100 years|They are already gone', 'There is no wind or rain to wipe them away.'],
   ['Which planet spins on its side?', 'Uranus|Neptune|Saturn|Venus', 'Something huge probably knocked it over long ago.'],
-  ['A teaspoon of neutron star would weigh about how much?', 'Around a billion tonnes|About 1 kg|About 100 tonnes|As much as Earth', 'A whole neutron star squeezes more than our Sun\'s mass into a city-sized ball.'],
+  ['A teaspoon of neutron star would weigh about how much?', 'Around a billion tons|About 1 kg|About 100 tons|As much as Earth', 'A whole neutron star squeezes more than our Sun\'s mass into a city-sized ball.'],
   ['Much of the drinking water on the space station is made from what?', 'Recycled sweat and urine|Ice from comets|Water from the Moon|Snow from Earth', 'It ends up cleaner than most tap water. "Yesterday’s coffee is tomorrow’s coffee," astronauts joke.'],
   ['What were the first animals sent into space, in 1947?', 'Fruit flies|Dogs|Monkeys|Mice', 'They rode a captured V-2 rocket and came back alive.'],
   ['Olympus Mons on Mars is roughly how many times taller than Everest?', 'About 2.5 times|The same|About 10 times|Half as tall', 'It is around 22 km high and about 600 km wide.'],

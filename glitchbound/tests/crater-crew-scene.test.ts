@@ -69,6 +69,38 @@ describe('Crater Crew battle screen', () => {
     expect(s.stage.k === 'aim' || s.stage.k === 'over').toBe(true);
   });
 
+  it('a paused single-player battle stops the turn clock; a live room keeps the room’s clock', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const m0 = battle();
+      const m1 = playTurn(m0, botTurn(m0, 'easy', 1)).match;
+      const sent: TurnInput[] = [];
+      const hud: number[] = [];
+      const solo = new Scene({ match: m1, mine: (c) => c === m1.crewTurn, onTurn: (_t, i) => sent.push(i), onHud: (h) => hud.push(h.secs), onShown: noop, sfx: () => sfx, botDelay: 0 });
+      for (let i = 0; i < 60 * 5; i++) solo.step(STEP);
+      expect(hud[hud.length - 1]).toBe(25);
+      // paused: the battle doesn't step while 35 s go by
+      vi.setSystemTime(Date.now() + 35_000);
+      solo.step(STEP);
+      expect(solo.myTurn).toBe(true);
+      expect(sent).toHaveLength(0);
+      expect(hud[hud.length - 1]).toBe(25);
+      // and the rest of the turn still runs out on time
+      for (let i = 0; i < 60 * 25 && solo.myTurn; i++) solo.step(STEP);
+      expect(sent).toHaveLength(1);
+
+      const live = new Scene({ match: m1, mine: (c) => c === m1.crewTurn, onTurn: (_t, i) => sent.push(i), onHud: noop, onShown: noop, sfx: () => sfx, botDelay: 0, wallClock: true });
+      live.setClock(m1.turn, Date.now());
+      live.step(STEP);
+      vi.setSystemTime(Date.now() + 31_000);
+      live.step(STEP);
+      expect(live.myTurn).toBe(false);
+      expect(sent).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('after dropping dynamite you still run (walk and jump) while it burns, and the room replays the same run', () => {
     const m0 = battle();
     const m1 = playTurn(m0, botTurn(m0, 'easy', 1)).match;

@@ -3,8 +3,8 @@
  * seeded daily picks, the round state machine, totals and the spoiler-free share text.
  */
 import { addDays, daysBetween, hashString } from '../../platform/dates';
-import { deltaE, hexToRgb, MAX_POINTS, pointsFor, rgbToHex, VERDICT_EMOJI, verdictFor, type Hsb, type Rgb } from './color';
-import { ORIGINAL_TARGETS, randomWild, TARGETS, targetById, type ColorTarget } from './targets';
+import { deltaE, hexToRgb, lightness, MAX_POINTS, pointsFor, rgbToHex, VERDICT_EMOJI, verdictFor, type Hsb, type Rgb } from './color';
+import { ACTIVE_TARGETS, ORIGINAL_TARGETS, randomWild, TARGETS, targetById, type ColorTarget } from './targets';
 
 export const ROUNDS = 5;
 /** Daily puzzle #1. */
@@ -38,7 +38,7 @@ export interface RoundSpec {
  * Picks `count` targets that look clearly different from each other (and use different shapes),
  * plus a starting color for each round, all from `random`.
  */
-export function pickRounds(random: () => number, count = ROUNDS, pool: ColorTarget[] = TARGETS): RoundSpec[] {
+export function pickRounds(random: () => number, count = ROUNDS, pool: ColorTarget[] = TARGETS, fits: (picked: ColorTarget[], t: ColorTarget) => boolean = () => true): RoundSpec[] {
   const order = pool.map((t) => t);
   for (let i = order.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
@@ -48,7 +48,7 @@ export function pickRounds(random: () => number, count = ROUNDS, pool: ColorTarg
   for (const t of order) {
     if (picked.length >= count) break;
     const rgb = hexToRgb(t.hex);
-    if (picked.some((p) => p.glyph === t.glyph || deltaE(hexToRgb(p.hex), rgb) < 15)) continue;
+    if (picked.some((p) => p.glyph === t.glyph || deltaE(hexToRgb(p.hex), rgb) < 15) || !fits(picked, t)) continue;
     picked.push(t);
   }
   // Tiny pools (tests) may not have enough variety; fill up without the variety rule.
@@ -61,6 +61,22 @@ export function pickRounds(random: () => number, count = ROUNDS, pool: ColorTarg
 
 /** First day whose daily mixes in a wild card and avoids last week's colors. */
 export const WILD_FROM = '2026-10-19';
+
+/**
+ * First day built for even difficulty: near-twin colors retired, at most one pale and one dark
+ * color per day, and a mid-tone wild card. Earlier dailies stay exactly as they were published.
+ */
+export const BALANCED_FROM = '2026-11-16';
+
+/** Tone of a color by CIE lightness: pale ones (near white) are much easier to hit than mid-tones. */
+export const toneOf = (hex: string): 'pale' | 'dark' | 'mid' => {
+  const L = lightness(hexToRgb(hex));
+  return L >= 88 ? 'pale' : L <= 32 ? 'dark' : 'mid';
+};
+const balanced = (picked: ColorTarget[], t: ColorTarget): boolean => {
+  const tone = toneOf(t.hex);
+  return tone === 'mid' || !picked.some((p) => toneOf(p.hex) === tone);
+};
 
 const dailyCache = new Map<string, RoundSpec[]>();
 
@@ -84,14 +100,19 @@ function buildDaily(day: string): RoundSpec[] {
   const random = rng(hashString(`color-recall:${day}`));
   const recent = new Set<string>();
   for (let i = 1; i <= 7; i++) for (const r of dailyRounds(addDays(day, -i))) recent.add(r.target.id);
-  const pool = TARGETS.filter((t) => !recent.has(t.id));
-  const rounds = pickRounds(random, ROUNDS - 1, pool.length >= 20 ? pool : TARGETS);
-  return [...rounds, withStart(random, distinctWild(random, rounds))];
+  const even = day >= BALANCED_FROM;
+  const all = even ? ACTIVE_TARGETS : TARGETS;
+  const pool = all.filter((t) => !recent.has(t.id));
+  const rounds = pickRounds(random, ROUNDS - 1, pool.length >= 20 ? pool : all, even ? balanced : undefined);
+  return [...rounds, withStart(random, distinctWild(random, rounds, even))];
 }
 
-/** Practice: three curated colors and two wild cards, in a random order. */
-export function practiceRounds(random: () => number): RoundSpec[] {
-  const rounds = pickRounds(random, ROUNDS - 2);
+/**
+ * Practice: three curated colors and two wild cards, in a random order. Friends' challenge rounds
+ * use it with their seed and the full list, so a round already played by some never changes.
+ */
+export function practiceRounds(random: () => number, pool: ColorTarget[] = TARGETS): RoundSpec[] {
+  const rounds = pickRounds(random, ROUNDS - 2, pool);
   rounds.push(withStart(random, distinctWild(random, rounds)));
   rounds.push(withStart(random, distinctWild(random, rounds)));
   for (let i = rounds.length - 1; i > 0; i--) {
@@ -102,11 +123,11 @@ export function practiceRounds(random: () => number): RoundSpec[] {
 }
 
 /** A wild card with its own shape and a clearly different color from the other rounds. */
-function distinctWild(random: () => number, others: RoundSpec[]): ColorTarget {
+function distinctWild(random: () => number, others: RoundSpec[], midTone = false): ColorTarget {
   let t = randomWild(random);
   for (let i = 0; i < 50; i++) {
     const rgb = hexToRgb(t.hex);
-    if (others.every((o) => o.target.glyph !== t.glyph && deltaE(hexToRgb(o.target.hex), rgb) >= 15)) break;
+    if (others.every((o) => o.target.glyph !== t.glyph && deltaE(hexToRgb(o.target.hex), rgb) >= 15) && (!midTone || toneOf(t.hex) === 'mid')) break;
     t = randomWild(random);
   }
   return t;

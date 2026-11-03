@@ -31,7 +31,7 @@ const OPS_PER_MESSAGE = 80;
 const CHAT_KEEP = 40;
 export const CHAT_MAX = 60;
 /** The least time between one player's messages. */
-const CHAT_GAP_MS = 350;
+export const CHAT_GAP_MS = 350;
 
 export type Phase = 'lobby' | 'choose' | 'draw' | 'reveal' | 'result';
 
@@ -163,8 +163,14 @@ function deal(s: State, now: number): void {
       s.playing.push(x.n);
     }
   const count = s.playing.length;
+  // Someone who isn't here misses their turn (it is used up, not handed to the next player, so
+  // "everyone draws once" stays once each).
   let pick = s.next % count;
-  for (let i = 0; i < count && !isHere(s, s.playing[(s.next + i) % count]!); i++) pick = (s.next + i + 1) % count;
+  while (s.count < s.total && !isHere(s, s.playing[pick]!)) {
+    s.count++;
+    pick = (pick + 1) % count;
+  }
+  if (s.count >= s.total) return finish(s);
   s.next = pick + 1;
   s.turn = { drawer: s.playing[pick]!, offer: offer(s), word: null, tier: null, start: 0, end: 0, hits: [], shown: [], gained: {} };
   s.ink = [];
@@ -285,7 +291,7 @@ export const cleanText = (raw: unknown): string =>
 function guess(s: State, n: number, raw: unknown, now: number): string | null {
   const text = cleanText(raw);
   if (!text) return null;
-  if (now - (s.lastMsg[n] ?? 0) < CHAT_GAP_MS) return null;
+  if (now - (s.lastMsg[n] ?? 0) < CHAT_GAP_MS) return 'Too fast: send that again.';
   s.lastMsg[n] = now;
   const t = s.turn;
   if (s.phase !== 'draw' || !t?.word || t.tier === null) {

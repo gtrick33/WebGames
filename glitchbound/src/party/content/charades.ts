@@ -26,7 +26,7 @@ const RAW: Partial<Record<CharadesCategory, [string, 1 | 2 | 3][]>> = {
   jobs: [
     ['Firefighter', 1], ['Chef', 1], ['Dentist', 1], ['Pilot', 1], ['Hairdresser', 1], ['Teacher', 1], ['Police officer', 1], ['Astronaut', 1], ['Doctor', 1], ['Waiter', 1],
     ['DJ', 2], ['Magician', 2], ['Lifeguard', 2], ['Surgeon', 2], ['Plumber', 2], ['Photographer', 2], ['Referee', 2], ['Window cleaner', 2], ['Yoga teacher', 2], ['Influencer', 2],
-    ['Stuck in traffic', 2], ['First day at a new job', 3], ['Assembling flat-pack furniture', 2], ['Missing the bus', 2], ['Walking a stubborn dog', 2], ['Trying to find the TV remote', 2], ['Parallel parking', 3], ['Losing your keys', 2], ['A job interview gone wrong', 3], ['Waking up late for an exam', 3],
+    ['Stuck in traffic', 2], ['First day at a new job', 3], ['Assembling furniture from a box', 2], ['Missing the bus', 2], ['Walking a stubborn dog', 2], ['Trying to find the TV remote', 2], ['Parallel parking', 3], ['Losing your keys', 2], ['A job interview gone wrong', 3], ['Waking up late for an exam', 3],
   ],
   famous: [
     ['Albert Einstein', 1], ['Michael Jackson', 1], ['Elvis Presley', 1], ['Cleopatra', 2], ['Napoleon', 2], ['Usain Bolt', 1], ['Cristiano Ronaldo', 1], ['Lionel Messi', 1], ['Taylor Swift', 1], ['Beyoncé', 1],
@@ -44,11 +44,11 @@ const RAW: Partial<Record<CharadesCategory, [string, 1 | 2 | 3][]>> = {
   ],
   cartoons: [
     ['Slipping on a banana peel', 1], ['Anvil falling on your head', 1], ['Running off a cliff and looking down', 1], ['Cat chasing a mouse', 1], ['Talking pig', 1], ['Dog chasing its tail', 1], ['Dad asleep on the sofa', 1], ['Eyes popping out', 2], ['Bear waking from hibernation', 1], ['Little explorer with a map', 1],
-    ['Dog walking its owner', 2], ['Lazy cat on a sofa', 2], ['Bird outrunning everyone', 2], ['Caveman cartoon', 2], ['Dizzy stars around your head', 3], ['Ghost chase down a corridor', 2], ['Tiptoeing detective', 2], ['Cheeky kid prankster', 2], ['Cartoon sneeze', 1], ['Puppy playing pretend', 1],
+    ['Dog walking its owner', 2], ['Lazy cat on a sofa', 2], ['Bird outrunning everyone', 2], ['Caveman cartoon', 2], ['Dizzy stars around your head', 3], ['Ghost chase down a corridor', 2], ['Tiptoeing detective', 2], ['Mischievous kid prankster', 2], ['Cartoon sneeze', 1], ['Puppy playing pretend', 1],
   ],
   random: [
     ['Brushing teeth', 1], ['Riding a horse', 1], ['Playing the drums', 1], ['Bowling', 1], ['Surfing', 1], ['Juggling', 2], ['Making a pizza', 1], ['Walking on the moon', 2], ['Escalator', 2], ['Blowing up a balloon', 1],
-    ['Hiccups', 1], ['Ice skating', 1], ['Changing a nappy', 2], ['Building a snowman', 1], ['Painting a wall', 1], ['Washing a car', 1], ['Eating spaghetti', 1], ['A haunted house', 2], ['A volcano', 2], ['Tightrope walking', 2],
+    ['Hiccups', 1], ['Ice skating', 1], ['Changing a diaper', 2], ['Building a snowman', 1], ['Painting a wall', 1], ['Washing a car', 1], ['Eating spaghetti', 1], ['A haunted house', 2], ['A volcano', 2], ['Tightrope walking', 2],
     ['Sneezing in slow motion', 2], ['Opening a jar that won’t open', 2], ['A rollercoaster', 1], ['Fishing', 1], ['Bungee jumping', 2], ['Playing hide and seek', 2], ['A traffic light', 3], ['Hanging a picture on the wall', 2], ['Camping in the rain', 3], ['Getting a haircut', 2],
   ],
 };
@@ -75,9 +75,9 @@ const MORE: Record<CharadesCategory, [string, 1 | 2 | 3][]> = {
     ['Seahorse', 3], ['Moose', 2], ['Wolf', 1], ['Fox', 2], ['Bulldog', 2], ['Mosquito', 2], ['Worm', 1], ['Swan', 2], ['Pelican', 3], ['Armadillo', 3],
   ],
   jobs: [
-    ['Mechanic', 1], ['Farmer', 1], ['Builder', 1], ['Nurse', 1], ['Postman', 1], ['Taxi driver', 1], ['Baker', 1], ['Barista', 2], ['Personal trainer', 2], ['Archaeologist', 3],
+    ['Mechanic', 1], ['Farmer', 1], ['Builder', 1], ['Nurse', 1], ['Mail carrier', 1], ['Taxi driver', 1], ['Baker', 1], ['Barista', 2], ['Personal trainer', 2], ['Archaeologist', 3],
     ['Scientist', 2], ['Judge', 2], ['Lawyer in court', 2], ['Mime artist', 3], ['Clown', 1], ['Ballet dancer', 1], ['Orchestra conductor', 2], ['Bus driver', 1], ['Zookeeper', 2], ['Vet', 2],
-    ['Gardener', 1], ['Detective', 2], ['Spy', 2], ['News reader', 2], ['Weather presenter', 2], ['Tattoo artist', 2], ['Sushi chef', 3], ['Air traffic controller', 3], ['Car salesperson', 3], ['Flight attendant', 2],
+    ['Gardener', 1], ['Detective', 2], ['Spy', 2], ['News anchor', 2], ['Weather forecaster', 2], ['Tattoo artist', 2], ['Sushi chef', 3], ['Air traffic controller', 3], ['Car salesperson', 3], ['Flight attendant', 2],
     ['Security guard', 2], ['Pizza delivery', 1], ['Life coach', 3], ['Bomb disposal expert', 3], ['Getting a parking ticket', 2], ['Burning the toast', 1], ['Locked out in a towel', 2], ['Falling asleep on the train', 2], ['Phone dies mid-call', 2], ['Stepping in gum', 2],
   ],
   famous: [
@@ -109,8 +109,8 @@ const MORE: Record<CharadesCategory, [string, 1 | 2 | 3][]> = {
   ],
   food: [
     ['Spaghetti', 1], ['Pizza', 1], ['Hot dog', 1], ['Ice cream cone', 1], ['Banana', 1], ['Popcorn', 1], ['Sushi', 2], ['Tacos', 2], ['Pancakes', 1], ['Corn on the cob', 2],
-    ['Jelly', 2], ['Chewing gum', 1], ['A very hot chilli', 1], ['Lemon', 1], ['Coconut', 2], ['Watermelon', 1], ['Birthday cake', 1], ['Fondue', 3], ['Burrito', 2], ['Noodles', 1],
-    ['Candy floss', 2], ['Toast', 1], ['Boiled egg', 2], ['Fortune cookie', 3], ['Pretzel', 2], ['Barbecue', 1], ['Milkshake', 1], ['Doughnut', 1], ['Croissant', 2], ['Onion', 1],
+    ['Jell-O', 2], ['Chewing gum', 1], ['A very hot chili', 1], ['Lemon', 1], ['Coconut', 2], ['Watermelon', 1], ['Birthday cake', 1], ['Fondue', 3], ['Burrito', 2], ['Noodles', 1],
+    ['Cotton candy', 2], ['Toast', 1], ['Boiled egg', 2], ['Fortune cookie', 3], ['Pretzel', 2], ['Barbecue', 1], ['Milkshake', 1], ['Doughnut', 1], ['Croissant', 2], ['Onion', 1],
     ['Kebab', 2], ['Smoothie', 2], ['Spring roll', 3], ['Popsicle', 1], ['Bubble tea', 3],
   ],
   sports: [
@@ -131,7 +131,7 @@ const MORE: Record<CharadesCategory, [string, 1 | 2 | 3][]> = {
   ],
   afterdark: [
     ['Walk of shame', 2], ['Lap dance', 1], ['Strip poker', 2], ['Speed dating', 2], ['Skinny-dipping', 1], ['Booty call', 2], ['Hickey', 2], ['The morning after', 3], ['First kiss', 1], ['Bachelorette party', 2],
-    ['Stag do', 2], ['Spin the bottle', 1], ['Seven minutes in heaven', 3], ['Sexting', 2], ['Pole dancing', 1], ['Honeymoon', 2], ['Getting caught', 2], ['Sneaking out', 1], ['Body shots', 2], ['Tied up with a silk scarf', 2],
+    ['Bachelor party', 2], ['Spin the bottle', 1], ['Seven minutes in heaven', 3], ['Sexting', 2], ['Pole dancing', 1], ['Honeymoon', 2], ['Getting caught', 2], ['Sneaking out', 1], ['Body shots', 2], ['Tied up with a silk scarf', 2],
     ['Male stripper', 2], ['Dating-app date', 1], ['Swiping left', 1], ['Handcuffs', 2], ['Blindfold', 1], ['Grinding on the dance floor', 2], ['Friends with benefits', 3], ['Mile-high club', 3], ['Striptease', 1], ['Bedroom eyes', 2],
     ['Pillow talk', 3], ['The O face', 2], ['One-night stand', 2], ['Caught cheating', 3], ['Coming up for “coffee”', 2], ['Love bite', 2], ['Massage oil', 2], ['Hot tub', 1], ['Wrong name in bed', 3], ['Hotel “do not disturb” sign', 3],
   ],
@@ -156,14 +156,14 @@ const EXTRA: Partial<Record<CharadesCategory, [string, 1 | 2 | 3][]>> = {
     ['Polar bear', 1], ['Goat', 1], ['Donkey', 1], ['Llama', 2], ['Rooster crowing', 1], ['Turkey', 1],
     ['Goose', 1], ['Pigeon', 1], ['Vulture', 2], ['Gecko', 2], ['Tortoise', 1], ['Otter', 2],
     ['Badger', 2], ['Hamster', 1], ['Cat stalking a bird', 2], ['Puppy', 1], ['Starfish', 2], ['Whale', 1],
-    ['Grasshopper', 2], ['Caterpillar', 2], ['Ladybird', 2], ['Praying mantis', 3], ['Bull', 1], ['Reindeer', 1],
+    ['Grasshopper', 2], ['Caterpillar', 2], ['Ladybug', 2], ['Praying mantis', 3], ['Bull', 1], ['Reindeer', 1],
     ['Cheetah', 1], ['Hyena', 2], ['Baboon', 2], ['Sea lion', 2], ['Bison', 2], ['Dragonfly', 3],
   ],
   jobs: [
     ['Lumberjack', 1], ['Fisherman', 1], ['Astronomer', 2], ['Beekeeper', 2], ['Chimney sweep', 2], ['Butler', 1],
     ['Fortune teller', 1], ['Puppeteer', 2], ['Ventriloquist', 3], ['Tour guide', 1], ['Stunt double', 2], ['Deep-sea diver', 2],
     ['Street performer', 2], ['Auctioneer', 3], ['School crossing guard', 2], ['Traffic warden', 2], ['Ice cream seller', 1], ['Wedding planner', 2],
-    ['Tailor', 2], ['Bouncer', 1], ['Lighthouse keeper', 3], ['Dog groomer', 2], ['Missing the last train home', 2], ['Getting stuck in a lift', 1],
+    ['Tailor', 2], ['Bouncer', 1], ['Lighthouse keeper', 3], ['Dog groomer', 2], ['Missing the last train home', 2], ['Getting stuck in an elevator', 1],
     ['Spilling coffee on your laptop', 1], ['Sitting on a whoopee cushion', 1], ['Getting lost in a furniture store', 2], ['Accidentally replying to everyone', 3], ['Hiding from the boss', 2], ['Opening a present you hate', 2],
   ],
   famous: [
@@ -177,7 +177,7 @@ const EXTRA: Partial<Record<CharadesCategory, [string, 1 | 2 | 3][]>> = {
   games: [
     ['Pressing pause at the worst moment', 2], ['Respawning after losing a life', 2], ['Collecting coins', 1], ['Grabbing a power-up', 1], ['Finding a save point', 2], ['Levelling up', 1],
     ['Game over screen', 1], ['Boss with three health bars', 3], ['Split-screen racing', 2], ['Online lag', 2], ['Spinning a prize wheel', 1], ['Pinball', 1],
-    ['Air hockey', 1], ['Table football', 1], ['Bingo caller', 1], ['Hopscotch', 1], ['Leapfrog', 1], ['Snakes and ladders', 1],
+    ['Air hockey', 1], ['Foosball', 1], ['Bingo caller', 1], ['Hopscotch', 1], ['Leapfrog', 1], ['Snakes and ladders', 1],
     ['Building a card tower', 2], ['Poker face', 2], ['Chess grandmaster thinking', 2], ['Whack-a-mole', 1], ['A tutorial that never ends', 3],
   ],
   internet: [
@@ -194,17 +194,17 @@ const EXTRA: Partial<Record<CharadesCategory, [string, 1 | 2 | 3][]>> = {
     ['Tongue frozen to a lamppost', 2], ['Snowball growing as it rolls downhill', 2],
   ],
   random: [
-    ['Defrosting a freezer', 2], ['Wrapping a present with far too much tape', 1], ['Peeling off a sticker that won’t come off', 2], ['Losing a sock in the washing machine', 2], ['Opening crisps quietly in a cinema', 2], ['Sneaking into the house late at night', 1],
+    ['Defrosting a freezer', 2], ['Wrapping a present with far too much tape', 1], ['Peeling off a sticker that won’t come off', 2], ['Losing a sock in the washing machine', 2], ['Opening chips quietly in a movie theater', 2], ['Sneaking into the house late at night', 1],
     ['Folding a fitted sheet', 2], ['Squeezing into skinny jeans', 1], ['Shaking the last bit out of a ketchup bottle', 1], ['Finding a spider in the bath', 1], ['Getting dressed in the dark', 2], ['Running for a train', 1],
     ['Slipping on ice', 1], ['Being chased by a wasp', 1], ['Getting into a cold sea', 1], ['Learning to ride a bike', 1], ['Building a sandcastle', 1], ['Tiptoeing past a sleeping baby', 2],
-    ['Sneaking a biscuit from the jar', 1], ['Carrying a sofa up the stairs', 2], ['Bathing a cat', 1], ['Plucking eyebrows', 2], ['Walking into a spider’s web', 1], ['Eating soup that is too hot', 1],
+    ['Sneaking a cookie from the jar', 1], ['Carrying a sofa up the stairs', 2], ['Bathing a cat', 1], ['Plucking eyebrows', 2], ['Walking into a spider’s web', 1], ['Eating soup that is too hot', 1],
     ['Assembling a trampoline', 3], ['Untying a knot with your teeth', 2], ['Reversing into a parking space', 2], ['Trying to sleep on a plane', 2], ['Climbing over a fence in a dress', 2], ['Losing your shoe in the mud', 2],
   ],
   food: [
     ['Eating an artichoke', 3], ['Cracking open a crab', 2], ['Peeling a mango', 2], ['Eating a lobster', 2], ['Using chopsticks for the first time', 1], ['Cutting a cake into equal slices', 2],
-    ['Making pasta from scratch', 2], ['Flipping a pancake too high', 1], ['Chilli-eating contest', 1], ['Taco breaking on the first bite', 2], ['Ice lolly melting down your arm', 1], ['Opening a coconut', 2],
-    ['Popping candy', 2], ['Cheese pull on a pizza slice', 1], ['Sour sweets', 1], ['Peanut butter stuck to the roof of your mouth', 2], ['Slurping oysters', 2], ['Snails in garlic butter', 3],
-    ['Fizzy drink burp', 1], ['Peeling hot chestnuts', 3], ['Building a gingerbread house', 2], ['Fish and chips on the beach', 1], ['Wobbly jelly on a plate', 1], ['Spreading cold butter on soft bread', 2],
+    ['Making pasta from scratch', 2], ['Flipping a pancake too high', 1], ['Chili-eating contest', 1], ['Taco breaking on the first bite', 2], ['Popsicle melting down your arm', 1], ['Opening a coconut', 2],
+    ['Popping candy', 2], ['Cheese pull on a pizza slice', 1], ['Sour candy', 1], ['Peanut butter stuck to the roof of your mouth', 2], ['Slurping oysters', 2], ['Snails in garlic butter', 3],
+    ['Soda burp', 1], ['Peeling hot chestnuts', 3], ['Building a gingerbread house', 2], ['Fish and chips on the beach', 1], ['Wobbly Jell-O on a plate', 1], ['Spreading cold butter on soft bread', 2],
     ['Biting into a hot pizza', 1],
   ],
   sports: [
@@ -222,14 +222,14 @@ const EXTRA: Partial<Record<CharadesCategory, [string, 1 | 2 | 3][]>> = {
   ],
   places: [
     ['Sydney Opera House', 2], ['Taj Mahal', 2], ['Colosseum', 2], ['Machu Picchu', 3], ['Grand Canyon', 2], ['Mount Fuji', 2],
-    ['The Sahara', 2], ['Antarctica', 1], ['Times Square', 3], ['A car wash', 1], ['A laundrette', 2], ['A petrol station at 3 a.m.', 2],
-    ['A bowling alley', 1], ['A ski lift', 1], ['A sauna', 1], ['A cinema', 1], ['A traffic jam', 1], ['A supermarket checkout', 1],
-    ['A stuck lift', 1], ['A cruise ship', 1], ['A campsite', 1], ['A haunted forest', 2], ['A football stadium', 1], ['A sushi conveyor belt', 2],
+    ['The Sahara', 2], ['Antarctica', 1], ['Times Square', 3], ['A car wash', 1], ['A laundromat', 2], ['A gas station at 3 a.m.', 2],
+    ['A bowling alley', 1], ['A ski lift', 1], ['A sauna', 1], ['A movie theater', 1], ['A traffic jam', 1], ['A supermarket checkout', 1],
+    ['A stuck elevator', 1], ['A cruise ship', 1], ['A campground', 1], ['A haunted forest', 2], ['A football stadium', 1], ['A sushi conveyor belt', 2],
     ['A sleeper train', 3], ['A courtroom', 2],
   ],
   afterdark: [
-    ['Struggling with a bra clasp', 2], ['Sexy firefighter calendar', 2], ['Awkward condom purchase', 2], ['Hiding a lover in the wardrobe', 2], ['Climbing out of a bedroom window', 2], ['Sexy nurse costume', 1],
-    ['Shower for two', 2], ['Champagne in a bubble bath', 2], ['Morning-breath kiss', 2], ['Naughty text sent to Mum', 3], ['Speed-dating bell', 2], ['Rose petals on the bed', 1],
+    ['Struggling with a bra clasp', 2], ['Sexy firefighter calendar', 2], ['Awkward condom purchase', 2], ['Hiding a lover in the closet', 2], ['Climbing out of a bedroom window', 2], ['Sexy nurse costume', 1],
+    ['Shower for two', 2], ['Champagne in a bubble bath', 2], ['Morning-breath kiss', 2], ['Naughty text sent to Mom', 3], ['Speed-dating bell', 2], ['Rose petals on the bed', 1],
     ['Candles everywhere', 1], ['Slow striptease with a tie', 2], ['Body paint', 2], ['Rubbing sun cream on a crush', 2], ['Kiss cam at a stadium', 2], ['Edible underwear', 2],
     ['Waterbed', 2], ['Pole-dancing class', 1], ['Flirting in a sauna', 2], ['Hen-night stripper', 2], ['Hiding a love bite with a scarf', 2], ['Valentine’s dinner disaster', 3],
     ['Getting caught by the neighbors', 3],

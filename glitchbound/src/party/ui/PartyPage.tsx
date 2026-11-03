@@ -23,7 +23,7 @@ import { AdultLabel } from '../../components/AdultLabel';
 import type { RoomGame } from '../../platform/rooms';
 import { partySettingsFor } from '../../catalog/settings';
 import { useLiveCatalog } from '../../platform/liveCatalog';
-import { DEFAULT_FEATURED, PARTY_GAMES } from '../catalog';
+import { DEFAULT_FEATURED, PARTY_GAMES, playerRange } from '../catalog';
 import './Party.css';
 import { t, useT } from '../../i18n';
 import { cardImg } from '../../platform/cardImg';
@@ -292,7 +292,7 @@ function Lobby({ focus, session, update, problem, onOpen, onAdult }: { focus: st
               const code = joinCode.trim().toUpperCase();
               // /party?room= opens any room (Crass Act ones go on to their own page). /r/ links only work from outside the app.
               if (ROOM_CODE.test(code)) navigate(`/party?room=${code}`);
-              else setJoinMsg('Check the code: five letters, like KQTRA (codes never use I, L or O).');
+              else setJoinMsg(t('Check the code: five letters, like KQTRA (codes never use I, L or O).'));
             }}
           >
             <h3>{t('Got a code?')}</h3>
@@ -559,7 +559,7 @@ function PartyCard({ g, i, art, found, onPlay, onRoom }: { g: ShownGame; i: numb
         <h3 className="flagship-title">{t(g.title)}</h3>
         <p className="flagship-tag">{t(g.blurb)}</p>
         <p className="flagship-players mono">
-          <span>👥 {g.onePhone ? g.players : g.roomPlayers}</span>
+          <span>{playerRange(g)}</span>
           <span className="pt-card-time"> · ⏱ {g.time}</span>
         </p>
         <div className="pt-card-ctas">

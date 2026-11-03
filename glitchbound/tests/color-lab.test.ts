@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { DAILY_LEVELS, dailyLevel, ladderLevel, makeLevel, rng, specFor } from '../src/games/color-lab/levels';
-import { endStats, pointsFor, reduceLevel, resultOf, shareText, starsFor, startLevel, isHidden, MAX_POINTS } from '../src/games/color-lab/rules';
-import { boardKey, canPour, doneTubes, hint, isSolved, lowerBound, pour, solve, type Board } from '../src/games/color-lab/sort';
-import { emptyClSave, recordLevel, sanitizeCl, clStats } from '../src/games/color-lab/store';
+import { DAILY_LEVELS, dailyLevel, ladderLevel, makeLevel, MYSTERY_SLACK, ORDERED_FROM, rng, specFor } from '../src/games/color-lab/levels';
+import { challengeScore, endStats, pointsFor, reduceLevel, resultOf, shareText, starsFor, startLevel, isHidden, MAX_POINTS, UNDER_PAR_BONUS } from '../src/games/color-lab/rules';
+import { almostSolved, usefulMoves, boardKey, canPour, doneTubes, hint, isSolved, lowerBound, pour, solve, type Board } from '../src/games/color-lab/sort';
+import { emptyClSave, loadCl, recordLevel, sanitizeCl, clStats, STORE_KEY, updateCl } from '../src/games/color-lab/store';
+import { TUBE_KEYS } from '../src/games/color-lab/Game';
+import { COLOR_COUNT } from '../src/games/color-lab/levels';
 
 const b = (...tubes: [number, number[]][]): Board => tubes.map(([cap, layers]) => ({ cap, layers }));
 
@@ -73,7 +75,7 @@ describe('levels', () => {
         const sol = solve(a.board, { weight: 1.6, maxNodes: 200_000 })!;
         expect(sol).not.toBeNull();
         // Par was found by a solver, so it is achievable: a weighted search may need a few more moves, never fewer than optimal.
-        if (a.parOptimal) expect(sol.moves.length).toBeGreaterThanOrEqual(a.par);
+        if (a.parOptimal) expect(sol.moves.length).toBeGreaterThanOrEqual(a.par - (a.parSlack ?? 0));
       }
     }
   });
@@ -245,5 +247,104 @@ describe('more variety', () => {
   it('varies tube height past the ladder in Endless', () => {
     const caps = new Set(Array.from({ length: 10 }, (_, k) => specFor(9 + k, rng(k)).cap));
     expect(caps.size).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('fixes from QA', () => {
+  const r = (moves: number, par: number) => ({ solved: true, moves, par, hints: 0, spare: false, points: pointsFor(true, moves, par, 0, false), stars: starsFor(true, moves, par, 0, false) });
+
+  it('CL-04: notices when every color is gathered but one sits in a tube too tall for it', () => {
+    // 4 purple in a 5-tall tube, the 4-tall tube empty.
+    expect(almostSolved(b([5, [0, 0, 0, 0]], [4, []], [3, [1, 1, 1]]))).toEqual({ tube: 0, target: 1 });
+    expect(almostSolved(b([5, [0, 0, 0, 0, 0]], [3, [1, 1, 1]]))).toBeNull(); // solved
+    expect(almostSolved(b([4, [0, 0]], [4, [0, 0]], [4, []]))).toBeNull(); // a color still split
+    expect(almostSolved(b([4, [0, 1]], [4, []]))).toBeNull();
+  });
+
+  it('CL-05: has a key for every tube a board can have, and none of them is a command key', () => {
+    expect(TUBE_KEYS.length).toBeGreaterThanOrEqual(COLOR_COUNT + 2 + 1);
+    expect(new Set(TUBE_KEYS).size).toBe(TUBE_KEYS.length);
+    for (const k of ['u', 'h', 'z']) expect(TUBE_KEYS).not.toContain(k);
+  });
+
+  it('CL-06: puzzle 5 is the harder twist from ORDERED_FROM, and earlier dailies stay as published', () => {
+    // Pars reported by QA for 2026-10-25: 5/11/14/27/14 (puzzle 5 easier than 4, kept as it was).
+    expect([3, 4].map((i) => dailyLevel('2026-10-25', i).par)).toEqual([27, 14]);
+    for (let d = 0; d < 4; d++) {
+      const day = `2026-12-0${d + 1}`;
+      expect(day >= ORDERED_FROM).toBe(true);
+      const four = dailyLevel(day, 3);
+      const five = dailyLevel(day, 4);
+      expect(five.par - (five.parSlack ?? 0)).toBeGreaterThanOrEqual(four.par);
+    }
+  }, 60_000);
+
+  it('CL-08: hints follow the par route for free and are remembered', () => {
+    const lv = dailyLevel('2026-11-03', 2);
+    expect(lv.solution?.length).toBe(lv.par - (lv.parSlack ?? 0));
+    let board = lv.board;
+    for (const m of lv.solution!) {
+      expect(hint(board, lv)).toEqual(m);
+      board = pour(board, m.from, m.to);
+    }
+    expect(isSolved(board)).toBe(true);
+    // Off the route: searched once, then answered from memory with the same move.
+    const s0 = lv.solution![0]!;
+    const other = usefulMoves(lv.board).find((m) => m.from !== s0.from || m.to !== s0.to)!;
+    const off = pour(lv.board, other.from, other.to);
+    const first = hint(off);
+    expect(first && canPour(off, first.from, first.to)).toBe(true);
+    expect(hint(off)).toEqual(first);
+  });
+
+  it('CL-09: a challenge keeps counting below par', () => {
+    expect(challengeScore([r(10, 10), r(10, 10)])).toBe(2 * MAX_POINTS);
+    expect(challengeScore([r(8, 10), r(10, 10)])).toBe(2 * MAX_POINTS + 2 * UNDER_PAR_BONUS);
+    expect(endStats('daily', [r(8, 10)], true).score).toBe(MAX_POINTS + 2 * UNDER_PAR_BONUS);
+    expect(endStats('daily', [r(8, 10)]).score).toBe(MAX_POINTS);
+  });
+
+  it('every pour counts in the Par Challenge: undo and restart put colors back, not moves', () => {
+    const level = { spec: { colors: 2, cap: 2, empty: 1, odd: false }, board: b([2, [1, 0]], [2, [0, 1]], [2, []]), par: 3, parOptimal: true, palette: [0, 1], mystery: false };
+    let p = startLevel(level, 'precision');
+    p = reduceLevel(reduceLevel(p, { type: 'pour', from: 0, to: 2 }), { type: 'undo' });
+    expect(p.board).toEqual(level.board);
+    expect(p.moves).toBe(1);
+    p = reduceLevel(reduceLevel(p, { type: 'pour', from: 0, to: 2 }), { type: 'restart' });
+    expect(p.moves).toBe(2);
+    expect(reduceLevel(p, { type: 'pour', from: 0, to: 2 }).status).toBe('failed');
+    // Elsewhere undo still gives the move back, and counts the undo.
+    const d = reduceLevel(reduceLevel(startLevel(level, 'daily'), { type: 'pour', from: 0, to: 2 }), { type: 'undo' });
+    expect(d).toMatchObject({ moves: 0, undos: 1 });
+  });
+
+  it('Endless and the Par Challenge score the levels solved; mystery pars allow for the hidden layers', () => {
+    expect(endStats('endless', [r(12, 10), r(30, 10)])).toMatchObject({ score: 2, stats: { levels: 2 } });
+    expect(endStats('precision', [r(10, 10)])).toMatchObject({ score: 1, stats: { parLevels: 1 } });
+    const m = ladderLevel(42, 10);
+    expect(m.mystery).toBe(true);
+    expect(m.parSlack).toBe(MYSTERY_SLACK);
+    expect(m.par).toBe(m.solution!.length + MYSTERY_SLACK);
+    expect(shareText({ label: 'Daily #3', results: [r(10, 10)], url: 'u' })).toContain('Color Lab Daily #3');
+  });
+
+  it('two tabs: a write goes on top of the stored save, and a daily puzzle is recorded once', () => {
+    localStorage.clear();
+    const day = '2026-11-03';
+    const mine = updateCl((s) => s, day);
+    // The other tab records the first daily puzzle and an Endless best.
+    localStorage.setItem(STORE_KEY, JSON.stringify(recordLevel({ ...mine, endless: { runs: 1, bestLevels: 7, bestScore: 70 } }, r(5, 5), day, false, 0)));
+    // This tab (stale) records the same puzzle and toggles mute: nothing of the other tab is lost.
+    const next = updateCl((s) => ({ ...recordLevel(s, r(9, 5), day, false, 0), muted: true }), day);
+    expect(next.endless.bestLevels).toBe(7);
+    expect(next.daily[day]).toHaveLength(1);
+    expect(next.daily[day]![0]!.moves).toBe(5);
+    expect(loadCl()).toMatchObject({ muted: true });
+  });
+
+  it('keeps challenge rounds in the save, cleaned and pruned', () => {
+    const s = sanitizeCl({ v: 2, challenges: { 'abc:1': { day: '2026-11-03', results: [{ solved: true, moves: 3, par: 3, points: 99 }], help: { hints: 1 }, done: false }, 'bad:1': { day: 'x' } } });
+    expect(s.challenges).toEqual({ 'abc:1': { day: '2026-11-03', results: [{ solved: true, moves: 3, par: 3, hints: 0, spare: false, points: MAX_POINTS, stars: 0 }], help: { hints: 1, spare: false }, done: false } });
+    expect(sanitizeCl({ v: 2 }).challenges).toEqual({});
   });
 });

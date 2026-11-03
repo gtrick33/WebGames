@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { getGame } from './catalog/catalog';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { CrashNotice, ErrorBoundary } from './components/ErrorBoundary';
 import { Header } from './components/Header';
 // The game page's code loads on its own (pages/loadGamePage.ts); its styles stay in the main sheet, in their usual order.
 import './components/Burst.css';
@@ -14,7 +14,6 @@ import { gamePageModule, loadGamePage, preloadGamePage } from './pages/loadGameP
 import { Home } from './pages/Home';
 import { NotFound } from './pages/NotFound';
 import { ArcadeEntrance } from './components/Entrance';
-import { MusicControl } from './components/MusicControl';
 import { NoticeBanner } from './components/NoticeBanner';
 import { SeasonLayer } from './components/SeasonLayer';
 import { ShareHost } from './components/ShareHost';
@@ -34,6 +33,8 @@ import { lazyPage } from './platform/lazyPage';
 // Not needed for the first paint: loads right after it (it registers the "Rate this game" opener).
 // The footer sits below every page: it loads right after the page itself.
 const Footer = lazy(fresh(() => import('./components/Footer').then((m) => ({ default: m.Footer }))));
+// The settings button (sound, language, theme): its own chunk, so it doesn't weigh on the first page.
+const MusicControl = lazy(fresh(() => import('./components/MusicControl').then((m) => ({ default: m.MusicControl }))));
 const FeedbackPrompt = lazy(fresh(() => import('./components/FeedbackPrompt').then((m) => ({ default: m.FeedbackPrompt }))));
 // Preloaded wherever it is likely next, so a game page doesn't wait for it (pages/loadGamePage.ts).
 const GamePage = lazy(gamePageModule);
@@ -187,11 +188,22 @@ export function App() {
           <Footer />
         </Suspense>
       )}
-      <MusicControl />
+      <Suspense fallback={null}>
+        <MusicControl />
+      </Suspense>
       <Suspense fallback={null}>
         <FeedbackPrompt />
       </Suspense>
       <SeasonLayer />
     </>
+  );
+}
+
+/** The app with a last line of defense: a crash outside any page (say, storage the browser blocks) shows a notice, not a white page. */
+export function Root() {
+  return (
+    <ErrorBoundary fallback={() => <CrashNotice />}>
+      <App />
+    </ErrorBoundary>
   );
 }

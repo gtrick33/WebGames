@@ -11,15 +11,61 @@ export interface Category {
   /** Buttons: the bigger answer first. */
   more: string;
   less: string;
-  /** How a value reads, e.g. "about 84 million people". */
-  format: (v: number) => string;
+  /** How a value reads, smallest unit first: a value reads in the biggest unit it has at least one of. */
+  units: Unit[];
+  /** The same in US units, when they differ (mph, lb, ft…). */
+  usUnits?: Unit[];
+  /** Small print for the topic, e.g. when its figures are from. */
+  note?: string;
   /** Years compare by distance, not by ratio. */
   years?: boolean;
-  items: [name: string, emoji: string, value: number][];
+  /** Items: `wide` marks one whose real number varies a lot (breeds, kinds), so it needs a wider gap. */
+  items: [name: string, emoji: string, value: number, wide?: boolean][];
 }
 
-const n = (v: number): string => v.toLocaleString('en-US', { maximumFractionDigits: v < 10 ? 1 : 0 });
-const big = (v: number, unit: string): string => (v >= 1e6 ? `${n(v / 1e6)} million ${unit}` : `${n(v)} ${unit}`);
+/** One way to say an amount: `per` is how many of the topic's base unit (kg, km/h, m…) make one. */
+export interface Unit {
+  per: number;
+  say: (amount: string) => string;
+  /** Round to this many significant digits (converted US amounts, billions) instead of whole numbers. */
+  sig?: number;
+}
+
+const n = (v: number): string => v.toLocaleString('en-US', v < 1 ? { maximumSignificantDigits: 2 } : { maximumFractionDigits: v < 10 ? 1 : 0 });
+const unit = (per: number, label: string, sig?: number): Unit => ({ per, say: (s) => `${s} ${label}`, ...(sig ? { sig } : {}) });
+/** A US unit: converted amounts are rounded to 3 significant digits ("about 3,310 lb"). */
+const us = (per: number, label: string): Unit => unit(per, label, 3);
+
+const unitsFor = (cat: Category, usUnits = false): Unit[] => (usUnits && cat.usUnits ? cat.usUnits : cat.units);
+
+/** The unit a value reads in on its own. */
+export function unitOf(cat: Category, v: number, usUnits = false): Unit {
+  const list = unitsFor(cat, usUnits);
+  let u = list[0]!;
+  for (const x of list) if (v >= x.per) u = x;
+  return u;
+}
+
+/**
+ * The unit the right card reads in: the left card's, so both numbers of a comparison share one unit
+ * ("800 g vs 2,000 g", never "800 g vs 2 kg"), unless that reads badly (0.0001 metric tons). The left
+ * card's unit comes from its own value only, so it never gives the hidden one away.
+ */
+export function pairUnit(cat: Category, left: number, right: number, usUnits = false): Unit {
+  const u = unitOf(cat, left, usUnits);
+  const x = right / u.per;
+  return x >= 0.1 && x < 100_000 ? u : unitOf(cat, right, usUnits);
+}
+
+/** A value in a given unit, e.g. "about 1.5 metric tons" (years: "in 1969"). */
+export function formatIn(cat: Category, u: Unit, v: number): string {
+  if (cat.years) return `in ${Math.round(v)}`;
+  const x = v / u.per;
+  return `about ${u.say(u.sig ? x.toLocaleString('en-US', { maximumSignificantDigits: u.sig }) : n(x))}`;
+}
+
+/** A value in its own unit. */
+export const formatValue = (cat: Category, v: number, usUnits = false): string => formatIn(cat, unitOf(cat, v, usUnits), v);
 
 export const CATEGORIES: Category[] = [
   {
@@ -27,7 +73,8 @@ export const CATEGORIES: Category[] = [
     question: 'Which has more people?',
     more: 'More',
     less: 'Fewer',
-    format: (v) => `about ${big(v, 'people')}`,
+    units: [unit(1, 'people'), unit(1e6, 'million people'), unit(1e9, 'billion people', 3)],
+    note: 'Populations as of 2024.',
     items: [
       ['India', '🇮🇳', 1_440e6],
       ['China', '🇨🇳', 1_410e6],
@@ -72,7 +119,8 @@ export const CATEGORIES: Category[] = [
     question: 'Which country is bigger?',
     more: 'Bigger',
     less: 'Smaller',
-    format: (v) => `about ${big(v, 'km²')}`,
+    units: [unit(1, 'km²'), unit(1e6, 'million km²')],
+    usUnits: [us(2.58999, 'sq mi'), us(2.58999e6, 'million sq mi')],
     items: [
       ['Russia', '🇷🇺', 17.1e6],
       ['Canada', '🇨🇦', 10e6],
@@ -107,12 +155,13 @@ export const CATEGORIES: Category[] = [
     question: 'Which is heavier?',
     more: 'Heavier',
     less: 'Lighter',
-    format: (v) => (v >= 1000 ? `about ${n(v / 1000)} tonnes` : v >= 1 ? `about ${n(v)} kg` : `about ${n(v * 1000)} g`),
+    units: [unit(0.001, 'g'), unit(1, 'kg'), unit(1000, 'metric tons')],
+    usUnits: [us(0.0283495, 'oz'), us(0.453592, 'lb'), us(907.185, 'tons')],
     items: [
       ['Blue whale', '🐋', 150_000],
       ['African elephant', '🐘', 6_000],
       ['Hippo', '🦛', 1_500],
-      ['Giraffe', '🦒', 1_200],
+      ['Giraffe', '🦒', 1_200, true],
       ['Great white shark', '🦈', 1_100],
       ['Cow', '🐄', 700],
       ['Horse', '🐎', 500],
@@ -125,8 +174,8 @@ export const CATEGORIES: Category[] = [
       ['Emperor penguin', '🐧', 30],
       ['Koala', '🐨', 9],
       ['House cat', '🐈', 4.5],
-      ['Chicken', '🐔', 2.5],
-      ['Rabbit', '🐇', 2],
+      ['Chicken', '🐔', 2.5, true],
+      ['Rabbit', '🐇', 2, true],
       ['Hedgehog', '🦔', 0.8],
       ['Hamster', '🐹', 0.12],
       ['Mouse', '🐁', 0.02],
@@ -138,7 +187,8 @@ export const CATEGORIES: Category[] = [
     question: 'Which is faster?',
     more: 'Faster',
     less: 'Slower',
-    format: (v) => (v >= 1 ? `about ${n(v)} km/h` : `about ${n(Math.round(v * 1000))} meters an hour`),
+    units: [unit(0.001, 'meters an hour'), unit(1, 'km/h')],
+    usUnits: [us(0.0003048, 'feet an hour'), us(1.609344, 'mph')],
     items: [
       ['Concorde, cruising', '✈️', 2_180],
       ['Passenger jet, cruising', '🛫', 900],
@@ -164,7 +214,8 @@ export const CATEGORIES: Category[] = [
     question: 'Which is taller?',
     more: 'Taller',
     less: 'Shorter',
-    format: (v) => `about ${n(v)} m tall`,
+    units: [unit(1, 'm tall')],
+    usUnits: [us(0.3048, 'ft tall')],
     items: [
       ['Burj Khalifa', '🏙️', 828],
       ['Tokyo Skytree', '🗼', 634],
@@ -181,7 +232,7 @@ export const CATEGORIES: Category[] = [
       ['Taj Mahal', '🕌', 73],
       ['Leaning Tower of Pisa', '🏛️', 56],
       ['Colosseum', '🏟️', 48],
-      ['Giraffe', '🦒', 5.5],
+      ['Giraffe', '🦒', 5.5, true],
       ['Double-decker bus', '🚌', 4.4],
       ['Basketball hoop', '🏀', 3.05],
     ],
@@ -191,7 +242,8 @@ export const CATEGORIES: Category[] = [
     question: 'Which mountain is higher?',
     more: 'Higher',
     less: 'Lower',
-    format: (v) => `about ${n(v)} m high`,
+    units: [unit(1, 'm high')],
+    usUnits: [us(0.3048, 'ft high')],
     items: [
       ['Mount Everest', '🏔️', 8_849],
       ['Aconcagua', '⛰️', 6_961],
@@ -212,7 +264,8 @@ export const CATEGORIES: Category[] = [
     question: 'Which river is longer?',
     more: 'Longer',
     less: 'Shorter',
-    format: (v) => `about ${n(v)} km long`,
+    units: [unit(1, 'km long')],
+    usUnits: [us(1.609344, 'miles long')],
     items: [
       ['The Nile', '🌊', 6_650],
       ['The Congo', '🌊', 4_700],
@@ -231,7 +284,7 @@ export const CATEGORIES: Category[] = [
     question: 'Which has more calories?',
     more: 'More',
     less: 'Fewer',
-    format: (v) => `about ${n(v)} kcal per 100 g`,
+    units: [unit(1, 'kcal per 100 g')],
     items: [
       ['Olive oil', '🫒', 884],
       ['Butter', '🧈', 717],
@@ -243,7 +296,7 @@ export const CATEGORIES: Category[] = [
       ['Honey', '🍯', 304],
       ['Pizza', '🍕', 266],
       ['White bread', '🍞', 265],
-      ['Salmon', '🐟', 208],
+      ['Farmed salmon', '🐟', 208],
       ['Chicken breast, cooked', '🍗', 165],
       ['Avocado', '🥑', 160],
       ['Boiled egg', '🥚', 155],
@@ -262,25 +315,25 @@ export const CATEGORIES: Category[] = [
     more: 'Later',
     less: 'Earlier',
     years: true,
-    format: (v) => `in ${v}`,
+    units: [unit(1, '')],
     items: [
       ['Gutenberg’s printing press', '📜', 1440],
       ['First steam locomotive', '🚂', 1804],
       ['First photograph', '📷', 1826],
-      ['The telephone is patented', '☎️', 1876],
-      ['The Eiffel Tower opens', '🗼', 1889],
+      ['The telephone patent', '☎️', 1876],
+      ['The opening of the Eiffel Tower', '🗼', 1889],
       ['First modern Olympic Games', '🏅', 1896],
       ['First powered airplane flight', '🛩️', 1903],
-      ['The Titanic sinks', '🚢', 1912],
-      ['Penicillin is discovered', '💊', 1928],
-      ['First football World Cup', '⚽', 1930],
-      ['DNA’s double helix is described', '🧬', 1953],
+      ['The sinking of the Titanic', '🚢', 1912],
+      ['The discovery of penicillin', '💊', 1928],
+      ['First FIFA World Cup', '⚽', 1930],
+      ['The DNA double helix', '🧬', 1953],
       ['First human in space', '🧑‍🚀', 1961],
       ['First Moon landing', '🌕', 1969],
       ['First email is sent', '📧', 1971],
-      ['The Berlin Wall falls', '🧱', 1989],
+      ['The fall of the Berlin Wall', '🧱', 1989],
       ['First text message', '💬', 1992],
-      ['The euro coins arrive', '💶', 2002],
+      ['The first euro coins', '💶', 2002],
     ],
   },
 ];

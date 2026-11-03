@@ -6,6 +6,7 @@ import * as auction from '../src/party/rooms/auctionRoom';
 import * as board from '../src/party/rooms/boardRoom';
 import * as nhie from '../src/party/rooms/nhieRoom';
 import * as rps from '../src/party/rooms/rpsRoom';
+import { AWAY_MS } from '../src/party/rooms/seats';
 
 const KEYS = ['aaaaaaaaaaaaaaaa1', 'bbbbbbbbbbbbbbbb2', 'cccccccccccccccc3', 'dddddddddddddddd4'];
 const T0 = 1_800_000_000_000;
@@ -121,17 +122,21 @@ describe('Never Have I Ever room', () => {
 });
 
 describe('room seats', () => {
-  it('frees the seat and the name of someone who leaves the lobby before scoring anything', () => {
+  it('frees the seat and the name of someone who leaves the lobby before scoring anything (after a grace period)', () => {
     const s = rps.newRoom('ABCDE', T0, 1);
     rps.join(s, KEYS[0]!, 'Ann', T0);
     rps.join(s, KEYS[1]!, 'Bo', T0);
     rps.leave(s, KEYS[1]!, T0);
-    expect(s.seats.map((x) => x.name)).toEqual(['Ann']);
-    rps.join(s, KEYS[2]!, 'Bo', T0);
+    // kept for a moment, in case it was only a dropped connection
+    expect(s.seats.map((x) => [x.name, x.online])).toEqual([
+      ['Ann', true],
+      ['Bo', false],
+    ]);
+    rps.join(s, KEYS[2]!, 'Bo', T0 + AWAY_MS);
     expect(s.seats.map((x) => x.name)).toEqual(['Ann', 'Bo']);
     // Someone with points keeps their seat (and their points) while away.
     s.seats[1]!.score = 2;
-    rps.leave(s, KEYS[2]!, T0);
+    rps.leave(s, KEYS[2]!, T0 + 2 * AWAY_MS);
     expect(s.seats.map((x) => [x.name, x.online])).toEqual([
       ['Ann', true],
       ['Bo', false],
@@ -379,7 +384,7 @@ describe('room invite links (/r/CODE)', () => {
   });
 
   it('never sends a closed or mistyped room to the 18+ game', async () => {
-    expect(await open('KQTRA')).toEqual({ title: 'Join my party room', to: '/party?room=KQTRA' });
+    expect(await open('KQTRA')).toEqual({ title: 'We can’t find room KQTRA', to: '/party?room=KQTRA' });
     expect(await open('nope!')).toEqual({ title: 'Join my party room', to: '/party' });
   });
 });

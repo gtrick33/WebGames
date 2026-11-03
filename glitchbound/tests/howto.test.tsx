@@ -95,4 +95,27 @@ describe('How to play: the wizard', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(2);
   });
+
+  it('keeps Tab inside the wizard and gives the focus back when it closes (PU-10)', () => {
+    const opener = document.createElement('button');
+    const behind = document.createElement('button');
+    document.body.append(opener, behind);
+    opener.focus();
+    const { unmount } = render(<HowTo game={bySlug('memory-grid')} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    const skip = screen.getByRole('button', { name: 'Skip' });
+    const next = screen.getByRole('button', { name: 'Next' });
+    next.focus();
+    fireEvent.keyDown(window, { key: 'Tab' });
+    expect(document.activeElement).toBe(skip);
+    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(next);
+    behind.focus();
+    fireEvent.keyDown(window, { key: 'Tab' });
+    expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true);
+    unmount();
+    expect(document.activeElement).toBe(opener);
+    opener.remove();
+    behind.remove();
+  });
 });

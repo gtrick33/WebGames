@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { act, cleanCar, join, leave, liveRace, LEAD_MS, newRoom, replay, settleRace, tick, viewFor, type LiveCar } from '../src/games/launch-control/room';
+import { act, cleanCar, fairTaps, join, leave, liveRace, LEAD_MS, newRoom, replay, settleRace, tick, viewFor, type LiveCar } from '../src/games/launch-control/room';
+import { DT } from '../src/games/launch-control/sim';
 import { ENGINES, isGameId } from '../rooms/engines';
 import { isRoomGame } from '../server/rooms';
+import { AWAY_MS } from '../src/party/rooms/seats';
 
 const KEY_A = 'aaaaaaaaaaaaaaaaaaaa';
 const KEY_B = 'bbbbbbbbbbbbbbbbbbbb';
@@ -50,14 +52,16 @@ describe('Launch Control live: the room', () => {
     // each phone races its taps; the room relays them
     const cars = s.lanes.map((n) => s.players[n]!.car!);
     const tapsA = goodTaps(cars, s.raceSeed, 0);
-    for (const k of tapsA) act(s, KEY_A, { t: 'tap', step: k }, 9000);
+    const at = (k: number): number => s.startAt! + Math.ceil(k * DT * 1000) + 50;
+    for (const k of tapsA) act(s, KEY_A, { t: 'tap', step: k }, at(k));
     expect(viewFor(s, KEY_B)!.taps[s.lanes[0]!]).toEqual(tapsA);
     // a stale (backwards) tap is ignored
-    act(s, KEY_A, { t: 'tap', step: 0 }, 9000);
+    act(s, KEY_A, { t: 'tap', step: 0 }, at(tapsA[tapsA.length - 1]!));
     expect(s.players[s.lanes[0]!]!.taps).toEqual(tapsA);
-    act(s, KEY_A, { t: 'finish', taps: tapsA }, 9500);
+    const end = at(3000);
+    act(s, KEY_A, { t: 'finish', taps: tapsA }, end);
     expect(s.phase).toBe('race');
-    act(s, KEY_B, { t: 'finish', taps: [] }, 9600);
+    act(s, KEY_B, { t: 'finish', taps: [] }, end);
     expect(s.phase).toBe('result');
     // Ana tapped a good run, Bo never tapped (auto launch, limiter all the way): Ana wins and scores
     expect(s.last!.winner).toBe(s.lanes[0]);
@@ -88,8 +92,49 @@ describe('Launch Control live: the room', () => {
     join(lobby, KEY_A, 'Ana', 0);
     join(lobby, KEY_B, 'Bo', 0);
     leave(lobby, KEY_B, 10);
-    expect(lobby.seats).toHaveLength(1);
-    expect(join(lobby, 'cccccccccccccccccccc', 'Cy', 20)).toBeNull();
+    // held for a moment in case it was only a dropped connection, then free
+    expect(join(lobby, 'cccccccccccccccccccc', 'Cy', 20)).toBe('full');
+    expect(join(lobby, 'cccccccccccccccccccc', 'Cy', 10 + AWAY_MS)).toBeNull();
+    expect(lobby.seats).toHaveLength(2);
+  });
+
+  it('refuses taps from the future, early finishes and anticipated launches; settles when a racer drops out', () => {
+    const s = newRoom('ABCDE', 0, 5);
+    join(s, KEY_A, 'Ana', 0);
+    join(s, KEY_B, 'Bo', 0);
+    act(s, KEY_A, { t: 'car', car: car('bumble') }, 0);
+    act(s, KEY_B, { t: 'car', car: car('bumble') }, 0);
+    act(s, KEY_A, { t: 'ready', ready: true }, 0);
+    act(s, KEY_B, { t: 'ready', ready: true }, 0);
+    const cars = s.lanes.map((n) => s.players[n]!.car!);
+    const taps = goodTaps(cars, s.raceSeed, 0);
+    const a = s.lanes[0]!;
+    // before the race clock even starts: a perfect run is refused, tap by tap and as a finish list
+    for (const k of taps) act(s, KEY_A, { t: 'tap', step: k }, s.startAt! - 5000);
+    expect(s.players[a]!.taps.length).toBeLessThan(2);
+    act(s, KEY_A, { t: 'finish', taps }, s.startAt! - 5000);
+    expect(s.players[a]!.finished).toBe(false);
+    // half way down the strip the car can't have crossed yet
+    act(s, KEY_A, { t: 'finish', taps: taps.filter((k) => k < 600) }, s.startAt! + 5000);
+    expect(s.players[a]!.finished).toBe(false);
+    // a launch tap 3 ms after lights out is a guess: the room counts it as a jump start
+    const race = liveRace(cars, s.raceSeed);
+    const out = Math.ceil(race.outAt / DT - 1e-9);
+    expect(fairTaps(race, [out, out + 200])).toEqual([out - 1, out + 200]);
+    expect(fairTaps(race, [out + 30])).toEqual([out + 30]);
+    expect(taps[0]).toBe(out);
+    expect(replay(liveRace(cars, s.raceSeed), [taps, []]).result().racers[0]!.launch).toBe('perfect');
+    expect(replay(liveRace(cars, s.raceSeed), [fairTaps(race, taps), []]).result().racers[0]!.launch).toBe('jump');
+    const settled = settleRace(cars, [taps, []], s.raceSeed, [1, 2]);
+    expect(settled.times[1]!.crossed!).toBeGreaterThan(replay(liveRace(cars, s.raceSeed), [taps, []]).result().racers[0]!.crossed!);
+    // Ana finishes on time; Bo drops out mid-race: the room settles at once instead of at the deadline
+    const done = s.startAt! + 30000;
+    act(s, KEY_A, { t: 'finish', taps }, done);
+    expect(s.players[a]!.finished).toBe(true);
+    expect(s.phase).toBe('race');
+    leave(s, KEY_B, done + 100);
+    expect(s.phase).toBe('result');
+    expect(s.last!.winner).toBe(a);
   });
 
   it('refuses cars that are not in the game or not possible', () => {

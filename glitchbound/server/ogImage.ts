@@ -20,6 +20,12 @@ export interface OgCard {
   game?: { title: string; accent: Accent };
   /** The button at the bottom ("Can you beat it?"). */
   cta?: string;
+  /** Adults-only game: an "18+" sticker beside the game's, as on every listing of it. */
+  adult?: boolean;
+  /** A small line at the panel's foot ("Shared by a player"). */
+  byline?: string;
+  /** A room's code, set as letter tiles in the game's colors under the headline (room invites). */
+  code?: string;
 }
 
 /* ------------------------------------------------------------------ the letters */
@@ -66,8 +72,11 @@ function loadFonts(): Promise<Record<FontName, Font>> {
   return fonts;
 }
 
-/** Emoji have no letters here: result squares (and a few marks) become colored shapes, the rest is left out. */
-const SHAPES: Record<string, { color: string; round?: true }> = {
+/**
+ * Emoji have no letters here: result squares (and a few marks) become colored shapes, the rest is
+ * left out. A verdict (✅ ❌) is a round badge with its mark, so it never reads as an answer square.
+ */
+const SHAPES: Record<string, { color: string; round?: true; mark?: string }> = {
   '🟩': { color: '#22b35e' },
   '🟨': { color: '#ffc928' },
   '🟥': { color: '#ff5a6c' },
@@ -77,8 +86,21 @@ const SHAPES: Record<string, { color: string; round?: true }> = {
   '🟫': { color: '#9b6a3c' },
   '⬛': { color: CARD_INK },
   '⬜': { color: '#ddd6ec' },
-  '✅': { color: '#22b35e' },
-  '❌': { color: '#ff5a6c' },
+  '✅': { color: '#22b35e', round: true, mark: '✓' },
+  '❌': { color: '#ff5a6c', round: true, mark: '✗' },
+  '❎': { color: '#ff5a6c', round: true, mark: '✗' },
+  '🔴': { color: '#ff5a6c', round: true },
+  '🟠': { color: '#ff6a1a', round: true },
+  '🟡': { color: '#ffc928', round: true },
+  '🟢': { color: '#22b35e', round: true },
+  '🔵': { color: '#3d5bff', round: true },
+  '🟣': { color: '#7b4dff', round: true },
+  '🟤': { color: '#9b6a3c', round: true },
+  '⚫': { color: CARD_INK, round: true },
+  '⚪': { color: '#ddd6ec', round: true },
+  '💨': { color: '#b9b4c7', round: true },
+  '⭐': { color: '#ffc928', round: true },
+  '🌟': { color: '#ffc928', round: true },
   '💥': { color: '#ff5a6c', round: true },
   '🥇': { color: '#ffc928', round: true },
   '🥈': { color: '#b9b4c7', round: true },
@@ -91,9 +113,34 @@ const CLUSTER = /\p{Extended_Pictographic}(?:\ufe0f|\p{Emoji_Modifier}|\u200d\p{
 
 type Token = { glyph: Glyph } | { shape: (typeof SHAPES)[string] } | { space: true };
 
+const DROPPED = '\u0000';
+const SEPARATOR = /(\s+[·•|–—/]\s+)/;
+
+/**
+ * The text as it can be drawn: emoji with no letter or shape are left out, and a part between
+ * separators that held only such emoji goes with its separator ("Whatsit #12 · 🌵 · 4 questions"
+ * reads "Whatsit #12 · 4 questions", not "Whatsit #12 ·  · 4 questions").
+ */
+export function drawable(font: Font, text: string): string {
+  let kept = '';
+  for (const [part] of text.replace(/\s+/g, ' ').matchAll(CLUSTER)) {
+    const bare = part.replace(/\ufe0f/g, '');
+    kept += part === ' ' || SHAPES[bare] || font.glyphs.has(AS_TEXT[bare]?.codePointAt(0) ?? part.codePointAt(0)!) ? part : DROPPED;
+  }
+  if (!kept.includes(DROPPED)) return kept;
+  const parts = kept.split(SEPARATOR);
+  const segments: string[] = [];
+  for (let i = 0; i < parts.length; i += 2) {
+    const seg = parts[i]!;
+    if (seg.includes(DROPPED) && !seg.replaceAll(DROPPED, '').trim()) continue;
+    segments.push(segments.length ? `${parts[i - 1] ?? ' '}${seg}` : seg);
+  }
+  return segments.join('').replaceAll(DROPPED, '').replace(/ {2,}/g, ' ').trim();
+}
+
 function tokens(font: Font, text: string): Token[] {
   const out: Token[] = [];
-  for (const [part] of text.replace(/\s+/g, ' ').matchAll(CLUSTER)) {
+  for (const [part] of drawable(font, text).matchAll(CLUSTER)) {
     const cp = part.codePointAt(0)!;
     const bare = part.replace(/\ufe0f/g, '');
     const shape = SHAPES[bare];
@@ -244,7 +291,13 @@ class Picture {
       if ('glyph' in t) this.glyph(scaled(font, t.glyph, size), Math.round(pen), Math.round(base), c);
       else if ('shape' in t) {
         const s = Math.round(size * 0.82);
-        this.roundRect(Math.round(pen + (size * SHAPE_ADV - s) / 2), Math.round(base - size * 0.74), s, s, t.shape.round ? s / 2 : s * 0.2, rgb(t.shape.color));
+        const left = Math.round(pen + (size * SHAPE_ADV - s) / 2);
+        this.roundRect(left, Math.round(base - size * 0.74), s, s, t.shape.round ? s / 2 : s * 0.2, rgb(t.shape.color));
+        const mark = t.shape.mark ? font.glyphs.get(t.shape.mark.codePointAt(0)!) : undefined;
+        if (mark) {
+          const ms = Math.round(size * 0.7);
+          this.glyph(scaled(font, mark, ms), Math.round(left + s / 2 - (mark.adv * ms) / font.size / 2), Math.round(base - size * 0.74 + s / 2 + ms * 0.36), WHITE);
+        }
       }
       pen += advance(font, t, size);
     }
@@ -473,6 +526,7 @@ const CREAM = rgb('#fffaf2');
 const MUTED = rgb('#4a3f66');
 const WHITE = 0xffffff;
 const LIME = rgb('#c4f034');
+const CORAL = rgb('#e8344a');
 
 /** Draws a link-preview card: the game's colors, the brand and game in stickers, the message on a panel, a button. */
 export async function renderOgCard(card: OgCard): Promise<Uint8Array<ArrayBuffer>> {
@@ -481,7 +535,7 @@ export async function renderOgCard(card: OgCard): Promise<Uint8Array<ArrayBuffer
   const [a1, a2] = (card.game ? CARD_ACCENTS[card.game.accent] : CARD_ACCENTS.cyan).map(rgb) as [number, number];
   // The solid colors first, so they keep their own palette entries whatever else is drawn.
   const text = [card.headline, ...(card.lines ?? [])].join(' ');
-  for (const c of [INK, CREAM, MUTED, WHITE, LIME, ...Object.entries(SHAPES).flatMap(([e, sh]) => (text.includes(e) ? [rgb(sh.color)] : []))]) pic.color(c);
+  for (const c of [INK, CREAM, MUTED, WHITE, LIME, CORAL, ...Object.entries(SHAPES).flatMap(([e, sh]) => (text.includes(e) ? [rgb(sh.color)] : []))]) pic.color(c);
 
   // Background: the accent gradient in 24 bands (one palette entry each), a light grain of dots.
   const row = new Uint8Array(OG_W);
@@ -490,16 +544,20 @@ export async function renderOgCard(card: OgCard): Promise<Uint8Array<ArrayBuffer
   for (let y = 18; y < OG_H; y += 36) for (let x = (y / 36) % 2 >= 1 ? 18 : 0; x < OG_W; x += 36) pic.roundRect(x, y, 3, 3, 0, WHITE, 0.12);
 
   // Stickers: GlitchBound on the left, the game on the right.
-  const sticker = (label: string, right: boolean): void => {
+  // (`right`: where a right-hand sticker ends; returns the sticker's width.)
+  const sticker = (label: string, right: number | false, fill = INK): number => {
     const size = 30;
     const w = Math.round(measure(f.bold, label, size) + 44);
-    const x = right ? OG_W - 48 - w : 48;
+    const x = right === false ? 48 : right - w;
     pic.roundRect(x + 4, 34 + 6, w, 56, 28, INK);
-    pic.roundRect(x, 34, w, 56, 28, INK);
+    pic.roundRect(x, 34, w, 56, 28, fill);
     pic.text(f.bold, label, x + 22, 34 + 38, size, WHITE);
+    return w;
   };
   sticker('GlitchBound', false);
-  if (card.game) sticker(wrap(f.bold, card.game.title, 30, 480, 1)[0] ?? '', true);
+  let right = OG_W - 48;
+  if (card.game) right -= sticker(wrap(f.bold, card.game.title, 30, card.adult ? 400 : 480, 1)[0] ?? '', right) + 14;
+  if (card.adult) sticker('18+', right, CORAL);
 
   // The panel, with an ink outline and a hard shadow.
   const px = 48;
@@ -514,14 +572,18 @@ export async function renderOgCard(card: OgCard): Promise<Uint8Array<ArrayBuffer
 
   // The message: the headline as large as fits in three lines, then the details; centred.
   const maxW = pw - 120;
-  const room = ph - 64;
-  type Row = { text: string; font: Font; size: number; color: number; h: number };
+  const room = ph - 64 - (card.byline ? 40 : 0);
+  type Row = { text: string; font: Font; size: number; color: number; h: number; tiles?: string };
   let rows: Row[] = [];
+  // (A room's code tiles take their room first, so the status line under them still fits.)
+  const code = card.code && /^[A-Z0-9]{3,8}$/.test(card.code) ? card.code : '';
+  const tilesH = code ? 90 : 0;
   for (const size of [64, 56, 50, 44, 40]) {
     const head = wrap(f.bold, card.headline, size, maxW, 3);
     rows = head.map((text) => ({ text, font: f.bold, size, color: INK, h: Math.round(size * 1.18) }));
-    if (rows.length * rows[0]!.h <= room * 0.62 || size === 40) break;
+    if (rows.length * rows[0]!.h <= (room - tilesH) * 0.62 || size === 40) break;
   }
+  if (code) rows.push({ text: '', font: f.bold, size: 0, color: INK, h: 10 }, { text: '', font: f.bold, size: 52, color: WHITE, h: tilesH - 10, tiles: code });
   const details = (card.lines ?? []).filter((l) => tokens(f.text, l).some((t) => !('space' in t)));
   if (details.length) rows.push({ text: '', font: f.text, size: 0, color: MUTED, h: 14 });
   for (const line of details) for (const text of wrap(f.text, line, 34, maxW, 2)) rows.push({ text, font: f.text, size: 34, color: MUTED, h: 46 });
@@ -529,8 +591,26 @@ export async function renderOgCard(card: OgCard): Promise<Uint8Array<ArrayBuffer
   while (used > room && rows.length > 1) used -= rows.pop()!.h;
   let y = py + 32 + Math.max(0, (room - used) / 2);
   for (const r of rows) {
+    if (r.tiles) {
+      // The code as tiles: ink outline, the game's color, a white letter.
+      const tw = 68;
+      const gap = 12;
+      let tx = Math.round(OG_W / 2 - (r.tiles.length * tw + (r.tiles.length - 1) * gap) / 2);
+      for (const ch of r.tiles) {
+        pic.roundRect(tx + 4, y + 6, tw, 76, 16, INK);
+        pic.roundRect(tx, y, tw, 76, 16, INK);
+        pic.roundRect(tx + 5, y + 5, tw - 10, 66, 12, a1);
+        pic.text(r.font, ch, tx + tw / 2 - measure(r.font, ch, r.size) / 2, y + 58, r.size, r.color);
+        tx += tw + gap;
+      }
+    }
     if (r.text) pic.text(r.font, r.text, OG_W / 2 - measure(r.font, r.text, r.size) / 2, y + r.size * 0.92, r.size, r.color);
     y += r.h;
+  }
+
+  if (card.byline) {
+    const label = wrap(f.text, card.byline, 26, maxW, 1)[0] ?? '';
+    pic.text(f.text, label, OG_W / 2 - measure(f.text, label, 26) / 2, py + ph - 30, 26, MUTED);
   }
 
   // The button.

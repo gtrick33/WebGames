@@ -86,6 +86,8 @@ export type Action =
   | { t: 'plan'; region: string; key: number }
   | { t: 'start'; week: number }
   | { t: 'end' }
+  /** Leaving the party on purpose (not a dropped connection): the seat goes, and a leader is replaced. */
+  | { t: 'bye' }
   | { t: 'kick'; n: number }
   /** Questing together: the leader goes somewhere (a region, the tier for a dungeon) and the party follows. */
   | { t: 'go'; region: string; tier: number }
@@ -96,16 +98,52 @@ export function newRoom(code: string, now: number, seed: number): State {
 }
 
 export function join(s: State, key: string, name: string, now: number): string | null {
-  // a run under way takes nobody new (the enemies are already out); seats coming back are welcome
-  if (s.phase === 'run' && !seatOf(s, key)) return 'full';
-  return joinSeat(s, key, name, now, MAX_PLAYERS, false);
+  // a Riftstone run under way takes nobody new (the enemies are already out); seats coming back are
+  // welcome, and questing together is open all the way (a newcomer follows the leader's current trip)
+  if (s.phase === 'run' && s.mode === 'rift' && !seatOf(s, key)) return s.seats.length >= MAX_PLAYERS ? 'full' : 'in_run';
+  const host = s.host;
+  const err = joinSeat(s, key, name, now, MAX_PLAYERS, false);
+  // during a run the host role stays with its seat while it is away (it comes back with them)
+  if (!err && s.phase === 'run' && s.seats.some((x) => x.n === host)) s.host = host;
+  return err;
 }
 
 export function leave(s: State, key: string, now: number): void {
+  const host = s.host;
   const seat = leaveSeat(s, key, now);
   if (seat && !s.seats.some((x) => x.n === seat.n)) delete s.cards[seat.n];
+  // a dropped connection mid-run keeps the host role (a blip must not hand the party over for good)
+  if (s.phase === 'run' && s.seats.some((x) => x.n === host)) s.host = host;
   // nobody left to run with: back to the lobby (a leader who drops out for a moment is waited for)
-  if (s.phase === 'run' && !s.seats.some((x) => x.online)) s.phase = 'lobby';
+  if (s.phase === 'run' && !s.seats.some((x) => x.online)) toLobby(s);
+}
+
+/** The run is over: back to the lobby, with a host who is here (the run's lead first). */
+function toLobby(s: State): void {
+  s.phase = 'lobby';
+  if (!s.seats.some((x) => x.n === s.host && x.online)) s.host = (s.seats.find((x) => x.n === s.lead && x.online) ?? s.seats.find((x) => x.online))?.n ?? s.host;
+}
+
+/**
+ * Questing together, the hero furthest behind in the story among those here leads (the host on a tie).
+ * Null when nobody here has a hero.
+ */
+function pickLead(s: State): number | null {
+  const here = s.seats.filter((x) => x.online && s.cards[x.n]);
+  if (!here.length) return null;
+  return here.reduce((best, x) => (s.cards[x.n]!.story < s.cards[best]!.story || (s.cards[x.n]!.story === s.cards[best]!.story && x.n === s.host) ? x.n : best), here[0]!.n);
+}
+
+/** A seat that is gone for good mid-run (left on purpose, removed): a new leader questing, or the run ends. */
+function seatGone(s: State, n: number): void {
+  delete s.cards[n];
+  if (s.host === n) s.host = s.seats.find((x) => x.online)?.n ?? s.seats[0]?.n ?? 0;
+  if (s.phase !== 'run' || n !== s.lead) return;
+  const next = s.mode === 'party' ? pickLead(s) : null;
+  if (next === null) return toLobby(s);
+  s.lead = next;
+  // the new leader's game says where the party is (`go`); until then nobody travels
+  s.plan = null;
 }
 
 export function tick(): void {}
@@ -147,12 +185,15 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       if (!host || s.phase !== 'lobby') return 'not_host';
       const key = int(a.key, 0, 999);
       if (typeof a.region !== 'string' || !ID.test(a.region) || key === null) return 'bad_plan';
+      // never above the Riftstone the host holds (as their own card says)
+      if (key > (s.cards[me.n]?.keystone ?? 0)) return 'bad_plan';
       s.plan = { region: a.region, key };
       break;
     }
     case 'start': {
       if (!host || s.phase !== 'lobby') return 'not_host';
       if (s.mode === 'rift' && !s.plan) return 'no_plan';
+      if (s.mode === 'rift' && s.plan!.key > (s.cards[me.n]?.keystone ?? 0)) return 'bad_plan';
       const here = s.seats.filter((x) => x.online);
       // everyone who is here has a hero chosen; a Riftstone run is for heroes at the level cap
       if (here.some((x) => !s.cards[x.n])) return 'no_hero';
@@ -163,7 +204,7 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       s.week = int(a.week, 0, 1e6) ?? 0;
       // questing together: the hero furthest behind in the story leads (the leader on a tie); their game
       // says where the party starts (`go`)
-      s.lead = s.mode === 'rift' ? s.host : here.reduce((best, x) => (s.cards[x.n]!.story < s.cards[best]!.story || (s.cards[x.n]!.story === s.cards[best]!.story && x.n === s.host) ? x.n : best), here[0]!.n);
+      s.lead = s.mode === 'rift' ? s.host : pickLead(s)!;
       if (s.mode === 'party') {
         s.plan = null;
         s.trip = 0;
@@ -178,13 +219,22 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       s.trip += 1;
       break;
     }
-    case 'end':
-      if (!host) return 'not_host';
-      s.phase = 'lobby';
+    case 'end': {
+      // the run's lead or the host ends it; anyone may once the lead is away (their game held the enemies)
+      const lead = s.seats.find((x) => x.n === s.lead);
+      if (s.phase !== 'run') return null;
+      if (!host && me.n !== s.lead && lead?.online) return 'not_host';
+      toLobby(s);
+      break;
+    }
+    case 'bye':
+      s.seats = s.seats.filter((x) => x !== me);
+      seatGone(s, me.n);
+      if (s.phase === 'run' && !s.seats.some((x) => x.online)) toLobby(s);
       break;
     case 'kick':
       if (!kickSeat(s, me, a.n)) return 'not_host';
-      delete s.cards[a.n];
+      seatGone(s, a.n);
       break;
     default:
       return 'bad_action';

@@ -1,0 +1,84 @@
+/* The shared Paused card (PauseCard.tsx), drawn over a game inside its frame. Same family as the Coach. */
+.pause-card {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(20 12 40 / 0.6);
+  backdrop-filter: blur(3px);
+  animation: pause-card-fade 0.2s ease both;
+}
+@keyframes pause-card-fade {
+  from { opacity: 0; }
+}
+.pause-card-box {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: min(100%, 300px);
+  padding: 18px 18px 16px;
+  border: 2.5px solid #1d1238;
+  border-radius: 20px;
+  background: #fffaf2;
+  color: #1d1238;
+  text-align: center;
+  box-shadow: 0 5px 0 #1d1238;
+}
+.pause-card-icon {
+  display: flex;
+  gap: 7px;
+}
+.pause-card-icon i {
+  width: 10px;
+  height: 30px;
+  border-radius: 4px;
+  background: #1d1238;
+}
+.pause-card-box h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.15;
+}
+.pause-card-line {
+  margin: 0;
+  font-size: 15px;
+  color: #4a3d6b;
+}
+.pause-card-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+/* Games may pass their own buttons: give them this class to match. */
+.pause-card-btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 2px solid #1d1238;
+  border-radius: 12px;
+  background: #fff;
+  color: #1d1238;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #1d1238;
+}
+.pause-card-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+.pause-card-btn:focus-visible {
+  outline: 3px solid #1d1238;
+  outline-offset: 2px;
+}
+.pause-card-go {
+  background: var(--pause-accent, #ffcf3d);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pause-card {
+    animation: none;
+  }
+}

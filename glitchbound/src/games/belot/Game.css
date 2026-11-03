@@ -13,6 +13,11 @@
   --bl-them: #ff6b7d;
   --bl-lime: #c4f034;
   --bl-font: var(--font, system-ui, sans-serif);
+  /* suit colors: red and black; the four-color deck (settings) turns clubs green and diamonds blue */
+  --bl-suit-0: #1d1238;
+  --bl-suit-1: #e8344e;
+  --bl-suit-2: #e8344e;
+  --bl-suit-3: #1d1238;
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -310,11 +315,14 @@
   font-size: 11px;
   opacity: 0.75;
 }
+/* a narrow bar keeps the deal counter (Deal 2 of 4) and drops only the long contract name */
 @container (max-width: 520px) {
   .bl-kfull,
-  .bl-target,
   .bl-roomcode {
     display: none;
+  }
+  .bl-target {
+    font-size: 10px;
   }
   .bl-team {
     min-width: 44px;
@@ -886,7 +894,11 @@
   font-weight: 800;
 }
 .bl-stamp {
+  min-height: 44px;
   padding: 4px 12px;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
   border: 2.5px solid currentColor;
   border-radius: 8px;
   font-size: 15px;
@@ -1052,8 +1064,92 @@
 }
 
 /* ---------------------------------------------------------------- menu */
+.bl.is-four {
+  --bl-suit-0: #13804a;
+  --bl-suit-1: #2a62d4;
+}
+
+/* ---------------------------------------------------------------- live table: turn clock, between matches */
+.bl-clock {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  margin-left: 2px;
+}
+.bl-clock.is-mine {
+  position: absolute;
+  left: calc(50% + 70px);
+  bottom: calc(var(--ch) + 18px);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bl-cream);
+  box-shadow: 0 2px 0 var(--bl-ink);
+}
+.bl-clock svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.bl-clock-bg {
+  fill: none;
+  stroke: rgb(29 18 56 / 0.15);
+  stroke-width: 4;
+}
+.bl-clock-fg {
+  fill: none;
+  stroke: var(--bl-felt-2);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s linear;
+}
+.bl-clock.is-low .bl-clock-fg {
+  stroke: #d62f4b;
+}
+.bl-clock b {
+  position: relative;
+  color: var(--bl-ink);
+  font-size: 11px;
+}
+.bl-over {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  padding: 12px 14px;
+  border: 3px solid var(--bl-ink);
+  border-radius: 18px;
+  background: var(--bl-cream);
+  color: var(--bl-ink);
+  box-shadow: 0 5px 0 var(--bl-ink);
+  text-align: center;
+}
+.bl-over.is-win {
+  background: #fff3c4;
+}
+.bl-over .bl-result-score {
+  margin: 0;
+}
+.bl-over small {
+  font-size: 13px;
+  line-height: 1.35;
+}
+.bl-sheet-help,
+.bl-result-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+/* ---------------------------------------------------------------- menu */
 .bl-menu {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   width: min(540px, 100%);
   margin: 0 auto;
@@ -1112,6 +1208,8 @@
 }
 .bl-mode {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 10px;
   padding: 14px;
   border: 3px solid var(--bl-ink);
@@ -1170,6 +1268,30 @@
 .bl-join {
   display: flex;
   gap: 8px;
+}
+/* the platform's room picker sits on a cream card: its text and edges follow the card's ink, not the
+   site theme (dark theme would put light text on cream), and it fits a 360 px phone */
+.bl-online {
+  --fg: var(--bl-ink);
+  --line: var(--bl-ink);
+  --ink: var(--bl-ink);
+  --card: #fff;
+  --paper-2: #fff2df;
+  min-width: 0;
+  color: var(--bl-ink);
+}
+.bl-online .op-seg button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 8px;
+  white-space: normal;
+  line-height: 1.15;
+}
+.bl-join .bl-btn {
+  flex: none;
+}
+.bl-input::placeholder {
+  letter-spacing: 0.04em;
 }
 .bl-input,
 .bl-select {

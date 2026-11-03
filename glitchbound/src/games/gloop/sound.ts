@@ -1,12 +1,15 @@
 /**
  * Synthesised sounds (no audio files): a soft plop on dropping, a bubbly pop per merge that rises
- * with the blob's size, a fanfare for the biggest pair and a sad slide at the end. The AudioContext
+ * with the blob's size, a fanfare for the biggest pair, a soft tick as the jar is about to overflow
+ * and a sad slide at the end. The AudioContext
  * is created on the first sound (always after a tap) and closed by `dispose()`.
  */
 export interface Sfx {
   drop(): void;
   merge(tier: number): void;
   top(): void;
+  /** A soft tick as a blob's overflow clock runs down. */
+  tick(): void;
   over(): void;
   dispose(): void;
 }
@@ -51,6 +54,7 @@ export function createSfx(isMuted: () => boolean): Sfx {
       tone(f * 1.5, f * 2, 0.05, 0.1, 0.04, 'triangle');
     },
     top: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, f, i * 0.08, 0.2, 0.06, 'square')),
+    tick: () => tone(1200, 1100, 0, 0.05, 0.03, 'sine'),
     over: () => tone(440, 110, 0, 0.9, 0.08, 'triangle'),
     dispose() {
       void ctx?.close().catch(() => undefined);

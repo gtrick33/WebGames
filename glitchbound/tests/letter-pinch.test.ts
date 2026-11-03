@@ -3,6 +3,7 @@ import {
   ANSWER_LIST,
   checkGuess,
   dailySecret,
+  describeGuess,
   EPOCH,
   feedback,
   fits,
@@ -73,6 +74,29 @@ describe('word lists', () => {
   });
 });
 
+describe('guess list', () => {
+  it('accepts common modern words, including irregular and inflected forms', () => {
+    for (const w of 'heard women began using asked owned taxes boxes buses fewer wider safer nicer inbox decor intro retro emoji vegan texts flyer'.split(' '))
+      expect(isAllowed(w), w).toBe(true);
+  });
+
+  it('rejects made-up forms', () => {
+    for (const w of 'onlys verys theys easys uglys lazys busys tinys ageds acmed nined wered haved goned withs froms sexys orgys anals'.split(' '))
+      expect(isAllowed(w), w).toBe(false);
+  });
+
+  it('never accepts slurs or crude words', () => {
+    for (const w of 'negro chink coons pikey mongs poofs fagot dykes homos honky darky spics kikes gooks nigga dagos bitch whore sluts twats cunts dicks cocks boobs pussy dildo porno'.split(' '))
+      expect(isAllowed(w), w).toBe(false);
+  });
+
+  it('answers are American and family-friendly', () => {
+    for (const w of 'lorry spilt dodgy peaky bobby vicar vodka lager tipsy natty sonny'.split(' ')) expect(ANSWER_LIST, w).not.toContain(w);
+    // Still fine to guess.
+    expect(isAllowed('lorry')).toBe(true);
+  });
+});
+
 describe('feedback', () => {
   it('says whether each secret letter is later, earlier or exact', () => {
     expect(feedback('mouse', 'house')).toEqual(['down', 'hit', 'hit', 'hit', 'hit']);
@@ -115,6 +139,9 @@ describe('daily puzzle', () => {
     expect(dailySecret('2026-11-05')).toBe(dailySecret('2026-11-05'));
     // Pinned so a change to the list or shuffle (which would change everyone's daily) is deliberate.
     expect(dailySecret(EPOCH)).toMatchInlineSnapshot(`"aware"`);
+    // Every daily already served (and the next few) stays the same when the list changes.
+    const served = Array.from({ length: 20 }, (_, d) => dailySecret(addDays(EPOCH, d))).join(' ');
+    expect(served).toBe('aware spine trick honor blurt point joust thump venom jewel larva ripen rerun sight nanny spare crook nylon drape share');
   });
 
   it('does not repeat a word until every answer has been used', () => {
@@ -161,6 +188,13 @@ describe('scoring and sharing', () => {
     expect(text).toBe('Letter Pinch #7 2/6\n🔽🔼🔽🔽🟩\n🟩🟩🟩🟩🟩\nhttps://example.com/games/letter-pinch');
     expect(text).not.toMatch(/grape|mouse/i);
     expect(shareText({ rows, solved: false, url: 'u' })).toMatch(/^Letter Pinch practice X\/6/);
+    expect(shareText({ rows, solved: true, challenge: true, url: 'u' })).toMatch(/^Letter Pinch ⚔️ challenge 2\/6/);
+    expect(shareText({ rows, solved: true, challenge: true, daily: 9, url: 'u' })).toMatch(/^Letter Pinch ⚔️ challenge #9 2\/6/);
+  });
+
+  it('describes a guess for screen readers', () => {
+    const r = row('mouse', 'grape');
+    expect(describeGuess(r, windowsFor([r]))).toBe('MOUSE: M earlier, O later, U earlier, S earlier, E exact. Windows: A to L, P to Z, A to T, A to R, E.');
   });
 });
 

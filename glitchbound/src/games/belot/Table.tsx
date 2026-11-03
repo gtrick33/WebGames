@@ -28,6 +28,7 @@ import {
   type Seat,
 } from './logic';
 import type { Sfx } from './sound';
+import { buttonKeepsKey, keyForGame } from './keys';
 import { contractName, type Words } from './text';
 
 /** How long a full trick stays on the table, then how long it takes to slide to its winner. */
@@ -64,6 +65,10 @@ export interface TableProps {
   overlay?: ReactNode;
   /** A line under the score (e.g. "Deal 2 of 4"). */
   note?: string;
+  /** Tells one match from the next (the live room sends no seed); defaults to the match's seed. */
+  matchId?: number;
+  /** When the place to act runs out of time (this device's clock), for the turn ring of a live table. */
+  turnEnds?: number | null;
 }
 
 function useSize(): [React.RefObject<HTMLDivElement | null>, { w: number; h: number }] {
@@ -82,7 +87,7 @@ function useSize(): [React.RefObject<HTMLDivElement | null>, { w: number; h: num
 const callText = (w: Words, c: Call): string => (c.k === 'pass' ? w.pass : c.k === 'double' ? w.contra : c.k === 'redouble' ? w.recontra : contractName(w, c.c));
 const declText = (w: Words, d: Declaration): string => (d.kind === 'carre' ? `${w.decl.carre}` : w.decl[d.kind]);
 
-export function Table({ w, match, me, names, bots, away, onCall, onPlay, sfx, locked, tools, overlay, note }: TableProps) {
+export function Table({ w, match, me, names, bots, away, onCall, onPlay, sfx, locked, tools, overlay, note, matchId, turnEnds }: TableProps) {
   const [rootRef, size] = useSize();
   const view = me < 0 ? 0 : me;
   const d = match.deal;
@@ -94,9 +99,11 @@ export function Table({ w, match, me, names, bots, away, onCall, onPlay, sfx, lo
   const legal = myTurn && playing ? legalCards(d, me as Seat) : [];
   const firstCard = playing && d.tricks.length === 0 && me >= 0 && !d.trick.some((p) => p.seat === me);
   const myDecl = firstCard && k !== null && hand.every((c) => c >= 0) ? declarationsOf(hand, k) : [];
+  // one key per deal: the match (its id, or its seed) and the deal number
+  const dealKey = `${matchId ?? match.seed}:${match.dealNo}`;
   const [declareState, setDeclareState] = useState<{ deal: string; on: boolean }>({ deal: '', on: true });
-  const declareOn = declareState.deal === `${match.seed}:${match.dealNo}` ? declareState.on : true;
-  const setDeclareOn = (f: (x: boolean) => boolean): void => setDeclareState({ deal: `${match.seed}:${match.dealNo}`, on: f(declareOn) });
+  const declareOn = declareState.deal === dealKey ? declareState.on : true;
+  const setDeclareOn = (f: (x: boolean) => boolean): void => setDeclareState({ deal: dealKey, on: f(declareOn) });
   const [focus, setFocus] = useState(0);
   const [peek, setPeek] = useState(false);
 
@@ -123,9 +130,8 @@ export function Table({ w, match, me, names, bots, away, onCall, onPlay, sfx, lo
   const top = k !== null && d.trick.length ? winningPlay(d.trick, k) : null;
 
   // ---- bubbles and sounds: what changed since the last match we drew (compared in an effect)
-  const dealKey = `${match.seed}:${match.dealNo}`;
   const [bubbles, setBubbles] = useState<(Bubble & { deal: string })[]>([]);
-  const prevRef = useRef<Match | null>(null);
+  const prevRef = useRef<{ match: Match; key: string } | null>(null);
   const alive = useRef(true);
   useEffect(() => {
     alive.current = true;
@@ -134,13 +140,13 @@ export function Table({ w, match, me, names, bots, away, onCall, onPlay, sfx, lo
     };
   }, []);
   useEffect(() => {
-    const prev = prevRef.current;
-    prevRef.current = match;
-    if (!prev || prev === match) return;
-    const pd = prev.deal;
+    const before = prevRef.current;
+    prevRef.current = { match, key: dealKey };
+    if (!before || before.match === match) return;
+    const pd = before.match.deal;
     const sounds: ((s: Sfx) => void)[] = [];
     const add: Omit<Bubble, 'id'>[] = [];
-    const sameDeal = prev.seed === match.seed && prev.dealNo === match.dealNo;
+    const sameDeal = before.key === dealKey;
     if (!sameDeal) sounds.push((s) => (s.shuffle(), s.deal(8)));
     else {
       for (const c of d.calls.slice(pd.calls.length)) {
@@ -193,7 +199,8 @@ export function Table({ w, match, me, names, bots, away, onCall, onPlay, sfx, lo
   useEffect(() => {
     if (!myTurn) return;
     const onKey = (e: KeyboardEvent): void => {
-      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      // only keys meant for the table: not typed in a field, not in another dialog, not outside the game
+      if (e.repeat || !keyForGame(e, rootRef.current?.closest('.bl') ?? rootRef.current) || buttonKeepsKey(e)) return;
       if (playing && legal.length) {
         if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
           e.preventDefault();
@@ -242,7 +249,7 @@ export function Table({ w, match, me, names, bots, away, onCall, onPlay, sfx, lo
         </div>
         {k !== null && (
           <div className={`bl-contract${bidderSpot !== null && bidderSpot % 2 === 0 ? ' is-ours' : ' is-theirs'}`} title={contractName(w, k)}>
-            {k < 4 ? <SuitIcon suit={k} size={20} /> : <b className="bl-kname">{k === NT ? 'NT' : 'AT'}</b>}
+            {k < 4 ? <SuitIcon suit={k} size={20} /> : <b className="bl-kname">{k === NT ? w.noTrumpsShort : w.allTrumpsShort}</b>}
             <span className="bl-kfull">{contractName(w, k)}</span>
             <span className="bl-by mono">{d.bidder !== null ? sideName(d.bidder) : ''}</span>
             {d.mult > 1 && <span className="bl-mult mono">×{d.mult}</span>}
@@ -268,6 +275,7 @@ export function Table({ w, match, me, names, bots, away, onCall, onPlay, sfx, lo
                 <small className="mono">{sp === 2 ? w.partner : bots?.[place] ? w.level[bots[place]!] : sp === 1 ? w.right : w.left}</small>
               </span>
               {d.dealer === place && <span className="bl-dealer mono" title={w.dealer}>D</span>}
+              {turn && turnEnds ? <TurnClock key={dealKey + d.calls.length + d.trick.length + d.tricks.length} ends={turnEnds} label={w.timeLeft} /> : null}
             </div>
             <div className="bl-fan" aria-label={`${count}`}>
               {Array.from({ length: count }, (_, i) => (
@@ -297,7 +305,7 @@ export function Table({ w, match, me, names, bots, away, onCall, onPlay, sfx, lo
           const sp = spot(p.seat, view);
           const win = (showHeld ? held.winner : top?.seat) === p.seat && (showHeld || d.trick.length > 1);
           return (
-            <span key={`${p.seat}-${p.card}`} className={`bl-played at-${SPOT_NAME[sp]}${win ? ' is-top' : ''}`} aria-label={`${names[p.seat]}: ${cardLabel(p.card, w.suits)}`}>
+            <span key={`${p.seat}-${p.card}`} className={`bl-played at-${SPOT_NAME[sp]}${win ? ' is-top' : ''}`} aria-label={`${names[p.seat]}: ${cardLabel(p.card, w)}`}>
               <CardFace card={p.card} />
             </span>
           );
@@ -336,6 +344,7 @@ export function Table({ w, match, me, names, bots, away, onCall, onPlay, sfx, lo
           </button>
         )}
         {playing && myTurn && !myDecl.length && <span className="bl-yourturn mono">{w.yourTurn}</span>}
+        {myTurn && turnEnds ? <TurnClock key={dealKey + d.calls.length + d.trick.length + d.tricks.length} ends={turnEnds} label={w.timeLeft} mine /> : null}
         <div className="bl-hand" style={{ '--step': `${step}px`, '--n': n } as CSSProperties} role="group" aria-label={w.cards}>
           {hand.map((c, i) => {
             const ok = legal.includes(c);
@@ -347,7 +356,7 @@ export function Table({ w, match, me, names, bots, away, onCall, onPlay, sfx, lo
                 style={{ '--x': `${off * step}px`, '--r': `${off * 2.6}deg`, '--y': `${Math.abs(off) ** 2 * 1.4}px`, '--d': `${i * 60}ms` } as CSSProperties}
                 onClick={() => play(c)}
                 disabled={!ok}
-                aria-label={c >= 0 ? cardLabel(c, w.suits) : ''}
+                aria-label={c >= 0 ? cardLabel(c, w) : ''}
               >
                 {c >= 0 ? <CardFace card={c} /> : <CardBack />}
               </button>
@@ -357,6 +366,29 @@ export function Table({ w, match, me, names, bots, away, onCall, onPlay, sfx, lo
       </div>
       {overlay}
     </div>
+  );
+}
+
+/** A shrinking ring on the place to act (live tables): the seconds show when few are left. */
+function TurnClock({ ends, label, mine }: { ends: number; label: string; mine?: boolean }) {
+  const [now, setNow] = useState(() => Date.now());
+  const [total] = useState(() => Math.max(1000, ends - Date.now()));
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 500);
+    return () => window.clearInterval(id);
+  }, []);
+  const left = Math.max(0, ends - now);
+  const secs = Math.ceil(left / 1000);
+  const r = 15;
+  const len = 2 * Math.PI * r;
+  return (
+    <span className={`bl-clock${mine ? ' is-mine' : ''}${secs <= 10 ? ' is-low' : ''}`} role="timer" aria-label={`${label}: ${secs}`}>
+      <svg viewBox="0 0 36 36" aria-hidden="true">
+        <circle cx="18" cy="18" r={r} className="bl-clock-bg" />
+        <circle cx="18" cy="18" r={r} className="bl-clock-fg" strokeDasharray={len} strokeDashoffset={len * (1 - left / total)} />
+      </svg>
+      <b className="mono">{secs <= 15 ? secs : ''}</b>
+    </span>
   );
 }
 
@@ -403,6 +435,7 @@ export function DealSheet({ w, score, taken, scores, me, names, children }: { w:
   const k = score.contract;
   // the last trick's 10 (doubled with everything else in no trumps)
   const lastTen = k === NT ? 20 : 10;
+  const [help, setHelp] = useState(false);
   return (
     <div className="bl-sheet-wrap" role="dialog" aria-label={w.gamePoints}>
       <div className={`bl-sheet outcome-${score.outcome}`}>
@@ -411,9 +444,12 @@ export function DealSheet({ w, score, taken, scores, me, names, children }: { w:
             {k < 4 ? <SuitIcon suit={k} size={22} /> : null} {contractName(w, k)}
             {score.mult > 1 ? ` ×${score.mult}` : ''}
           </span>
-          <span className={`bl-stamp tone-${score.outcome}`}>{score.valat !== null ? w.valat : w.outcome[score.outcome]}</span>
+          <button className={`bl-stamp tone-${score.outcome}`} onClick={() => setHelp((x) => !x)} aria-expanded={help}>
+            {score.valat !== null ? w.valat : w.outcome[score.outcome]} <span aria-hidden="true">ⓘ</span>
+          </button>
         </div>
-        <p className="bl-sheet-line">{w.outcomeLine(score.outcome, `${bidders} (${names[score.bidder]})`, score.hang)}</p>
+        <p className="bl-sheet-line">{w.outcomeLine(score.outcome, `${bidders} (${names[score.bidder]})`, score.hang, score.winner === null)}</p>
+        {help && <p className="bl-sheet-help">{w.outcomeHelp[score.outcome]}</p>}
         <table className="bl-sheet-table">
           <thead>
             <tr>

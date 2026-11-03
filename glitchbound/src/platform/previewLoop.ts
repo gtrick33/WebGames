@@ -13,6 +13,11 @@ export interface PreviewScene {
    * renderer) can use `canvas` instead.
    */
   frame(ctx: CanvasRenderingContext2D, w: number, h: number, dt: number, canvas: HTMLCanvasElement): void;
+  /**
+   * Frees what the scene holds (a WebGL renderer and its context, say) when the preview unmounts. Tiles
+   * mount a preview on every hover, so a scene with its own GPU context must give it back here.
+   */
+  dispose?(): void;
 }
 
 const FRAME_MS = 1000 / 31;
@@ -40,7 +45,7 @@ export function usePreviewActive(ref: RefObject<Element | null>, playing: boolea
 
 /**
  * Runs a canvas scene for a preview. Returns the ref for the <canvas>. `make` is called once; the scene
- * keeps its own state between frames.
+ * keeps its own state between frames and is disposed when the preview unmounts.
  */
 export function usePreviewCanvas(playing: boolean, make: () => PreviewScene): RefObject<HTMLCanvasElement | null> {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -74,7 +79,11 @@ export function usePreviewCanvas(playing: boolean, make: () => PreviewScene): Re
       if (ctx && scene.current) draw(canvas, ctx, scene.current, box.current, 0);
     });
     ro.observe(canvas);
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      scene.current?.dispose?.();
+      scene.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

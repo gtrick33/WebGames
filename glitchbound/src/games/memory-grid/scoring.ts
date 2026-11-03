@@ -24,10 +24,12 @@ export interface RunSummary {
 
 /**
  * Stats for host.report({ type: 'end' }). Keys match the registry entry. `time` is only sent for a completed
- * Perfect Recall run, because it is a lower-is-better record and a partial run has no completion time.
+ * Perfect Recall run, because it is a lower-is-better record and a partial run has no completion time;
+ * `accuracy` only once something was tapped.
  */
 export function reportStats(r: RunSummary): Record<string, number> {
-  const stats: Record<string, number> = { longest: r.longest, patterns: r.cleared, accuracy: r.accuracy };
+  // A round with no taps has no accuracy (not 100%).
+  const stats: Record<string, number> = r.taps > 0 ? { longest: r.longest, patterns: r.cleared, accuracy: r.accuracy } : { longest: r.longest, patterns: r.cleared };
   if (r.mode === 'perfect' && r.complete) stats.time = Math.max(1, Math.round(r.inputMs / 1000));
   return stats;
 }
@@ -47,7 +49,8 @@ export function resultLine(r: Pick<RunSummary, 'mode' | 'cleared' | 'complete'>,
 export function shareText(r: RunSummary & { day: string; streak: number; ladder?: number }): string {
   const squares = resultLine(r, r.ladder);
   const head = r.mode === 'daily' ? `Memory Grid · Daily ${r.day}` : `Memory Grid · ${MODE_NAMES[r.mode]}`;
-  const facts = [`${r.score} pts`, `longest ${r.longest}`, `${r.accuracy}% accuracy`];
+  const facts = [`${r.score} pts`, `longest ${r.longest}`];
+  if (r.taps > 0) facts.push(`${r.accuracy}% accuracy`);
   if (r.mode === 'daily' && r.streak > 1) facts.push(`🔥 ${r.streak}-day streak`);
   return `${head}\n${squares}\n${facts.join(' · ')}`;
 }

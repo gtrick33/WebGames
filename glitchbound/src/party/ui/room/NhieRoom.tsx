@@ -11,7 +11,7 @@ export function NhieRoomPage({ code, onLeave }: { code: string; onLeave: () => v
   return (
     <RoomFrame<RoomView, Action>
       code={code}
-      meta={{ title: 'Never Have I Ever', emoji: '🙊', invite: 'Join my Never Have I Ever room: answer in secret, reveal together.', min: MIN_PLAYERS }}
+      meta={{ game: 'nhie', title: 'Never Have I Ever', emoji: '🙊', invite: 'Join my Never Have I Ever room: answer in secret, reveal together.', min: MIN_PLAYERS }}
       onLeave={onLeave}
       kick={(seat) => ({ t: 'kick', seat })}
       progress={(v) => (v.phase === 'lobby' ? undefined : `${v.count}/${v.settings.length}`)}

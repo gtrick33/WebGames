@@ -168,6 +168,7 @@
   color: var(--ts-ink-2);
   font-size: 14px;
   padding: 8px;
+  min-height: 44px;
 }
 
 /* Play */
@@ -315,6 +316,36 @@
     top 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
   z-index: 2;
   animation: ts-nudge 1.6s ease-in-out 0.6s 2;
+}
+/* The dimension a size measures: a line with end ticks along the measured side. */
+.ts-dim {
+  position: absolute;
+  pointer-events: none;
+  border: 0 solid var(--ts-ink-2);
+  opacity: 0.75;
+  transition: inherit;
+}
+.ts-dim.is-w {
+  height: 6px;
+  border-left-width: 2px;
+  border-right-width: 2px;
+  box-sizing: border-box;
+  background: linear-gradient(var(--ts-ink-2), var(--ts-ink-2)) center / 100% 2px no-repeat;
+}
+.ts-dim.is-h {
+  width: 6px;
+  border-top-width: 2px;
+  border-bottom-width: 2px;
+  box-sizing: border-box;
+  background: linear-gradient(var(--ts-ink-2), var(--ts-ink-2)) center / 2px 100% no-repeat;
+}
+.ts-dim.is-target {
+  border-color: var(--ts-go);
+  background-image: linear-gradient(var(--ts-go), var(--ts-go));
+  opacity: 1;
+}
+.ts-stage.is-dragging .ts-dim {
+  transition: none;
 }
 .ts-label {
   position: absolute;

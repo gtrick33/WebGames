@@ -1,6 +1,8 @@
 import { getGame } from '../src/catalog/catalog';
 import { CHALLENGE_IDLE_MS, CHALLENGE_KEEP_MS, CHALLENGE_LOBBY_MS, closesAt, dailySeed, MAX_PLAYERS, roundWinners, type ChallengeHistoryItem, type ChallengeListItem, type ChallengeMode, type ChallengeView } from '../src/platform/challenge';
+import { guestCookieKey, validGuestKey } from './guest';
 import type { Ctx, D1PreparedStatement, Env } from './http';
+import { clientDay } from './members';
 import { currentUser } from './session';
 import { newCode } from './shares';
 
@@ -10,7 +12,8 @@ import { newCode } from './shares';
  */
 export async function playerOf(env: Env, request: Request, body: Record<string, unknown> | null): Promise<string | null> {
   const raw = typeof body?.key === 'string' ? body.key : new URL(request.url).searchParams.get('key');
-  const key = raw && /^[A-Za-z0-9_-]{16,64}$/.test(raw) ? raw : null;
+  // Without a usable key (old clients' shared fallback is refused), the guest cookie's key (server/guest.ts).
+  const key = validGuestKey(raw) ? raw : guestCookieKey(request);
   const user = await currentUser(env, request);
   if (user) {
     if (key) await claimGuest(env, user.id, key);
@@ -39,6 +42,12 @@ export async function claimGuest(env: Env, userId: string, key: string): Promise
     env.DB.prepare(`DELETE FROM challenge_scores WHERE player = ? AND ${scoreIn} AND o.at < challenge_scores.at)`).bind(member, guest),
     env.DB.prepare(`DELETE FROM challenge_scores WHERE player = ? AND ${scoreIn})`).bind(guest, member),
     env.DB.prepare('UPDATE challenge_scores SET player = ? WHERE player = ?').bind(member, guest),
+    // Starts: the earlier start of a round counts.
+    env.DB.prepare(
+      'DELETE FROM challenge_starts WHERE player = ? AND EXISTS (SELECT 1 FROM challenge_starts o WHERE o.challenge_id = challenge_starts.challenge_id AND o.round = challenge_starts.round AND o.player = ? AND o.started_at <= challenge_starts.started_at)',
+    ).bind(member, guest),
+    env.DB.prepare('DELETE FROM challenge_starts WHERE player = ? AND EXISTS (SELECT 1 FROM challenge_starts o WHERE o.challenge_id = challenge_starts.challenge_id AND o.round = challenge_starts.round AND o.player = ?)').bind(guest, member),
+    env.DB.prepare('UPDATE challenge_starts SET player = ? WHERE player = ?').bind(member, guest),
     // Seats: where both sit, the member's seat takes the earlier seat's name and place.
     env.DB.prepare(
       `UPDATE challenge_players SET (name, joined_at) = (SELECT o.name, o.joined_at FROM challenge_players o WHERE o.challenge_id = challenge_players.challenge_id AND o.player = ?)
@@ -82,7 +91,8 @@ export interface NewChallenge {
 
 /** A new challenge's id, day and seed (a daily uses the day's seed, so it matches the game's daily). */
 export function newChallenge(game: string, mode: ChallengeMode, day: unknown, host: string, name: string, now = Date.now()): NewChallenge {
-  const d = typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : new Date(now).toISOString().slice(0, 10);
+  // The player's own date, within a day of the server's (no rehearsing a future daily).
+  const d = clientDay(day, now);
   const seed = mode === 'daily' ? dailySeed(game, d) : crypto.getRandomValues(new Uint32Array(1))[0]!;
   return { id: newCode(7), game, mode, day: d, seed, host, name, now };
 }
@@ -159,6 +169,7 @@ export async function sweep(env: Env, now = Date.now()): Promise<void> {
     env.DB.prepare('DELETE FROM challenges WHERE closed_at < ? OR updated_at < ?').bind(now - CHALLENGE_KEEP_MS, now - CHALLENGE_IDLE_MS - CHALLENGE_KEEP_MS),
     env.DB.prepare('DELETE FROM challenge_players WHERE challenge_id NOT IN (SELECT id FROM challenges)'),
     env.DB.prepare('DELETE FROM challenge_scores WHERE challenge_id NOT IN (SELECT id FROM challenges)'),
+    env.DB.prepare('DELETE FROM challenge_starts WHERE challenge_id NOT IN (SELECT id FROM challenges)'),
   ]);
 }
 

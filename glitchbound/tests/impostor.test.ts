@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { IMPOSTOR_THEMES, pairs } from '../src/party/content/impostor';
 import { dealImpostor, impostorRng, scoreImpostor, votedOut } from '../src/party/impostor';
-import { act, join, leave, newRoom, tick, viewFor, type State } from '../src/party/impostorRoom';
+import { act, AWAY_GRACE_MS, join, leave, newRoom, tick, viewFor, type State } from '../src/party/impostorRoom';
 
 describe('Impostor word bank', () => {
   it('has many themes, each with twenty words and a hint that never gives the word away', () => {
@@ -126,6 +126,68 @@ describe('Impostor live room', () => {
     expect(s.phase).toBe('talk');
     act(s, 'key-eeeeeeeeeeeeeeee5', { t: 'vote_now' }, 1300);
     expect(s.phase).toBe('talk');
+  });
+
+  const toVote = (s: State, ks: string[], now: number): void => {
+    act(s, ks[0]!, { t: 'start' }, now);
+    for (const k of ks) act(s, k, { t: 'seen' }, now);
+    act(s, ks[0]!, { t: 'vote_now' }, now);
+  };
+  const impostorOf = (s: State): number => Number(s.deal!.impostors[0]);
+
+  it('calls the round off, with no points, when fewer than three players are left to vote', () => {
+    const s = newRoom('ABCDE', 1000, 7);
+    const three = keys.slice(0, 3);
+    ['Ana', 'Bo', 'Cy'].forEach((n, i) => join(s, three[i]!, n, 1000));
+    toVote(s, three, 1000);
+    const imp = impostorOf(s);
+    const crewKeys = three.filter((_, i) => i + 1 !== imp);
+    const goneKey = crewKeys[0]!;
+    leave(s, goneKey, 2000);
+    const left = three.filter((k) => k !== goneKey);
+    const seatOfKey = (k: string): number => three.indexOf(k) + 1;
+    act(s, left[0]!, { t: 'vote', seat: seatOfKey(left[1]!) }, 2100);
+    act(s, left[1]!, { t: 'vote', seat: seatOfKey(left[0]!) }, 2100);
+    // They might only be reloading: the vote waits for them...
+    expect(s.phase).toBe('vote');
+    tick(s, 2000 + 76_000);
+    // ...but they never came back: no "impostor got away" from a two-player tie.
+    expect(s.phase).toBe('lobby');
+    expect(s.seats.every((x) => x.score === 0)).toBe(true);
+    expect(viewFor(s, left[0]!)!.calledOff).toBe('players');
+    join(s, goneKey, 'Back', 80_000);
+    act(s, s.seats.find((x) => x.n === s.host)!.key, { t: 'start' }, 80_000);
+    expect(s.phase).toBe('reveal');
+    expect(viewFor(s, three[0]!)!.calledOff).toBeNull();
+  });
+
+  it('a player who reloads mid-vote still votes, and the round counts', () => {
+    const s = room();
+    toVote(s, keys, 1000);
+    const imp = impostorOf(s);
+    const crew = keys.filter((_, i) => i + 1 !== imp);
+    leave(s, crew[0]!, 1500);
+    for (const k of keys.filter((k) => k !== crew[0])) act(s, k, { t: 'vote', seat: keys.indexOf(k) + 1 === imp ? keys.indexOf(crew[1]!) + 1 : imp }, 1600);
+    expect(s.phase).toBe('vote');
+    join(s, crew[0]!, 'Back', 1500 + AWAY_GRACE_MS / 2);
+    act(s, crew[0]!, { t: 'vote', seat: imp }, 1500 + AWAY_GRACE_MS / 2);
+    expect(s.phase).toBe('guess');
+  });
+
+  it('calls the round off when the host removes the impostor', () => {
+    const s = room();
+    toVote(s, keys, 1000);
+    const imp = impostorOf(s);
+    const host = keys[0]!;
+    const target = imp === 1 ? 2 : imp;
+    if (imp === 1) {
+      // The host is the impostor: hand the host role over by leaving and let the new host remove them.
+      leave(s, host, 1100);
+      act(s, keys[1]!, { t: 'kick', seat: 1 }, 1200);
+    } else act(s, host, { t: 'kick', seat: target }, 1200);
+    expect(s.phase).toBe('lobby');
+    expect(s.seats.every((x) => x.score === 0)).toBe(true);
+    expect(viewFor(s, keys[2]!)!.calledOff).toBe('impostor');
   });
 
   it('gives the host role to whoever comes back first when everyone had gone', () => {

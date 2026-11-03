@@ -21,7 +21,7 @@ export const GEO: Raw[] = [
   ['Welches Land hat die meisten Inseln?', 'Schweden|Indonesien|Philippinen|Norwegen', 'Schweden zählt über 260.000, die meisten klein und unbewohnt.'],
   ['In welchem Land liegt die Stadt Batman?', 'Türkei|USA|Australien|Brasilien', 'Batman ist Stadt und Provinz im Südosten der Türkei, benannt nach einem Fluss.'],
   ['Welches Land wird als einziges vom Äquator und vom Wendekreis des Steinbocks gekreuzt?', 'Brasilien|Australien|Indonesien|Kenia', 'Brasilien ist so groß, dass es von der Nordhalbkugel bis weit über den Wendekreis reicht.'],
-  ['Die USA kauften Russland 1867 Alaska ab. Für wie viel pro Hektar ungefähr?', 'Etwa 4 Cent|Etwa 4 Dollar|Etwa 40 Dollar|Für nichts', 'Insgesamt 7,2 Millionen Dollar. Kritiker nannten den Kauf „Sewards Torheit“.'],
+  ['Die USA kauften Russland 1867 Alaska ab. Für wie viel pro Hektar ungefähr?', 'Etwa 5 Cent|Etwa 5 Dollar|Etwa 50 Dollar|Für nichts', 'Insgesamt 7,2 Millionen Dollar. Kritiker nannten den Kauf „Sewards Torheit“.'],
   ['Welches Land hat die älteste noch verwendete Nationalflagge?', 'Dänemark|Großbritannien|Japan|Schweiz', 'Der Dannebrog ist mindestens seit dem 14. Jahrhundert in Gebrauch; der Legende nach seit 1219.'],
   ['Die Sahara ist ungefähr so groß wie welches Land?', 'Die USA|Frankreich|Indien|Mexiko', 'Rund 9 Millionen km², und sie wächst.'],
   ['Auf Weltkarten wirkt Grönland oft so groß wie Afrika. Wie viel größer ist Afrika wirklich?', 'Etwa 14-mal|Etwa 2-mal|Gleich groß|Etwa 50-mal', 'Die übliche Mercator-Karte zieht Gegenden fern vom Äquator in die Länge.'],

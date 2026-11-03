@@ -46,7 +46,7 @@ export function challengeProgress(profile: Profile, c: Challenge): number {
 }
 
 /** Apply a finished run to today's challenges and grant completed rewards once. */
-export function applyRunToChallenges(profile: Profile, run: RunStats, day: string): Challenge[] {
+export function applyRunToChallenges(profile: Profile, run: RunStats, day: string, played = true): Challenge[] {
   ensureChallengeDay(profile, day);
   const done: Challenge[] = [];
   for (const c of challengesForDay(day)) {
@@ -57,7 +57,7 @@ export function applyRunToChallenges(profile: Profile, run: RunStats, day: strin
       case 'dist_run': next = Math.max(prev, Math.floor(run.meters)); break;
       case 'near_run': next = Math.max(prev, run.nearMisses); break;
       case 'dist_total': next = prev + Math.floor(run.meters); break;
-      case 'runs': next = prev + 1; break;
+      case 'runs': next = played ? prev + 1 : prev; break;
       case 'powerups': next = prev + run.powerups; break;
     }
     profile.challenges.progress[c.id] = next;

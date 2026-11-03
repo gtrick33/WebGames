@@ -358,6 +358,20 @@ describe('privacy page', () => {
     expect(localStorage.getItem(SAVE_KEY)).toBeNull();
     expect(screen.getByText(/0 rounds recorded/)).toBeTruthy();
   });
+
+  it('also forgets the guest key cookie, so the old key does not come back', () => {
+    const calls: { url: string; method?: string }[] = [];
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((url, init) => {
+      calls.push({ url: String(url), method: init?.method });
+      return Promise.resolve(new Response('{"ok":true}', { status: 200, headers: { 'content-type': 'application/json' } }));
+    });
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 1, games: { 'neon-rush': { plays: 1, best: { score: 5 }, last: 1 } }, daily: {} }));
+    renderAt('/privacy');
+    fireEvent.click(screen.getByRole('button', { name: 'Delete my GlitchBound data' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, delete everything' }));
+    expect(calls).toContainEqual({ url: '/api/guest', method: 'DELETE' });
+    fetchSpy.mockRestore();
+  });
 });
 
 describe('members features as a guest (API unreachable in tests)', () => {

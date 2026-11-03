@@ -23,6 +23,8 @@ export const CLOCKS = [30, 60, 90] as const;
 export const PICK_SECONDS = 90;
 export const CLUE2_SECONDS = 60;
 export const REVEAL_SECONDS = 15;
+/** A cue giver who drops out while choosing gets this long to come back before the round moves on. */
+export const CUE_GRACE_MS = 15_000;
 const CELLS = COLS * ROWS;
 
 export type Phase = 'lobby' | 'pick' | 'guess' | 'clue2' | 'reveal' | 'result';
@@ -47,6 +49,8 @@ export interface Round {
   marks: Record<string, number>;
   marks2: Record<string, number>;
   gained: Record<string, number>;
+  /** The clock the cue giver had before dropping out (given back if they return in time). */
+  cueBack?: number;
 }
 
 export interface State extends RoomBase {
@@ -92,12 +96,28 @@ const isHere = (s: State, n: number): boolean => s.seats.some((x) => x.n === n &
 const guessers = (s: State): number[] => s.playing.filter((n) => n !== s.round?.cue);
 const current = (r: Round): Record<string, number> => (r.pass === 1 ? r.marks : r.marks2);
 
+const choosing = (s: State): boolean => s.phase === 'pick' || s.phase === 'clue2';
+
 export function join(s: State, key: string, name: string, now: number): string | null {
-  return joinSeat(s, key, name, now, MAX_PLAYERS, inGame(s));
+  const err = joinSeat(s, key, name, now, MAX_PLAYERS, inGame(s));
+  const r = s.round;
+  // The cue giver is back in time: their clock as it was.
+  if (!err && r?.cueBack !== undefined && choosing(s) && seatOf(s, key)?.n === r.cue) {
+    s.deadline = Math.max(s.deadline ?? 0, r.cueBack);
+    delete r.cueBack;
+  }
+  return err;
 }
 
 export function leave(s: State, key: string, now: number): void {
-  if (!leaveSeat(s, key, now)) return;
+  const seat = leaveSeat(s, key, now);
+  if (!seat) return;
+  const r = s.round;
+  // The cue giver left while choosing: the round moves on by itself after a short grace (a reload).
+  if (r && choosing(s) && seat.n === r.cue && s.deadline !== null && s.deadline > now + CUE_GRACE_MS) {
+    r.cueBack = s.deadline;
+    s.deadline = now + CUE_GRACE_MS;
+  }
   advance(s, now);
 }
 
@@ -110,8 +130,13 @@ function deal(s: State, now: number): void {
       s.playing.push(x.n);
     }
   const count = s.playing.length;
+  // Someone who isn't here misses their turn as cue giver (it is used up, not handed on).
   let pick = s.next % count;
-  for (let i = 0; i < count && !isHere(s, s.playing[(s.next + i) % count]!); i++) pick = (s.next + i + 1) % count;
+  while (s.count < s.total && !isHere(s, s.playing[pick]!)) {
+    s.count++;
+    pick = (pick + 1) % count;
+  }
+  if (s.count >= s.total) return finish(s);
   s.next = pick + 1;
   s.round = { cue: s.playing[pick]!, offer: offerColours(rng(nextRandom(s))), target: null, clue: '', clue2: '', pass: 1, marks: {}, marks2: {}, gained: {} };
   s.count++;

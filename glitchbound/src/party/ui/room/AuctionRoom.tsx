@@ -11,7 +11,7 @@ export function AuctionRoomPage({ code, onLeave }: { code: string; onLeave: () =
   return (
     <RoomFrame<RoomView, Action>
       code={code}
-      meta={{ title: 'Name Your Price', emoji: '🔨', invite: 'Join my Name Your Price auction: bid play money, build the best collection.', min: MIN_PLAYERS }}
+      meta={{ game: 'auction', title: 'Name Your Price', emoji: '🔨', invite: 'Join my Name Your Price auction: bid play money, build the best collection.', min: MIN_PLAYERS }}
       onLeave={onLeave}
       kick={(seat) => ({ t: 'kick', seat })}
       progress={(v) => (v.phase === 'auction' && v.sale ? `Item ${Math.min(v.sale.index + 1, v.sale.total)}/${v.sale.total}` : undefined)}
@@ -78,7 +78,7 @@ function Collection({ w, ctx, vote }: { w: Wallet; ctx: Ctx; vote?: boolean }) {
   if (!p) return null;
   const votes = ctx.view.result?.votes[String(w.n)] ?? 0;
   return (
-    <div className={`pt-collection${ctx.view.myVote === w.n ? ' is-voted' : ''}`}>
+    <div className={`pt-collection${ctx.view.myVote === w.n ? ' is-voted' : ''}${!w.items.length && !ctx.view.result ? ' is-empty' : ''}`}>
       <div className="pt-collection-head">
         <Dot p={p} size={30} />
         <b>
@@ -86,7 +86,7 @@ function Collection({ w, ctx, vote }: { w: Wallet; ctx: Ctx; vote?: boolean }) {
           {p.you ? t(' (you)') : ''}
         </b>
         <span className="pt-muted">{t('${n} left', { n: w.budget })}</span>
-        {vote && !p.you && (
+        {vote && !p.you && w.items.length > 0 && (
           <button className={`pt-btn pt-btn-sm${ctx.view.myVote === w.n ? ' pt-btn-go' : ''}`} onClick={() => ctx.send({ t: 'vote', seat: w.n })}>
             {ctx.view.myVote === w.n ? t('👍 Your pick') : t('👍 Best')}
           </button>
@@ -121,6 +121,7 @@ function Game(ctx: Ctx) {
         <h2>{view.phase === 'vote' ? t('Collections are in! Vote for the best one') : t('🔨 The results')}</h2>
         {view.phase === 'vote' && (
           <>
+            <p className="pt-muted">{t('This game: 3 points per vote + 1 per item.')} {t('Empty collections can’t get votes.')}</p>
             <Clock left={left} />
             <Waiting players={view.players.filter((p) => sale.wallets.some((w) => w.n === p.n))} label="Voted" />
           </>

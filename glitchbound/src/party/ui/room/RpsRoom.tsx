@@ -24,7 +24,7 @@ export function RpsRoomPage({ code, onLeave }: { code: string; onLeave: () => vo
   return (
     <RoomFrame<RoomView, Action>
       code={code}
-      meta={{ title: 'Rock Paper Scissors', emoji: '✊', invite: 'Rock Paper Scissors on our own phones: everyone throws at once. Last hand standing wins.', min: MIN_PLAYERS }}
+      meta={{ game: 'rps', title: 'Rock Paper Scissors', emoji: '✊', invite: 'Rock Paper Scissors on our own phones: everyone throws at once. Last hand standing wins.', min: MIN_PLAYERS }}
       onLeave={onLeave}
       kick={(seat) => ({ t: 'kick', seat })}
       progress={(v) => (v.round && v.phase !== 'lobby' ? t('Throw {n}', { n: v.round }) : undefined)}

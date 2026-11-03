@@ -6,7 +6,7 @@ import { signIn } from '../server/signin';
 import { GAMES } from '../src/catalog/games';
 import type { Me } from '../src/platform/apiTypes';
 import { mergeJson, mergeSaveText } from '../src/platform/cloudMerge';
-import { hashText, startCloudSave, stopCloudSave } from '../src/platform/cloudSave';
+import { hashText, oversizedSaves, signOutCloudSave, startCloudSave, stopCloudSave } from '../src/platform/cloudSave';
 import { emptySave, mergeSaves, sanitizeSave, SAVE_KEY } from '../src/platform/save';
 import { holdGame, savesReady, setSavesGate, takeSavesLive } from '../src/platform/syncGate';
 import { isSyncedKey, MAX_SYNCED_SAVE, slugOfKey } from '../src/platform/syncKeys';
@@ -19,8 +19,8 @@ const TODAY = '2026-10-20';
 
 describe('which saves sync', () => {
   it('takes the arcade save and each game’s own save, and nothing else', () => {
-    for (const k of [SAVE_KEY, 'glitchbound.fussbox', 'glitchbound.memory-grid.v1', 'gb.mini-racer.v1', 'glitchbound.star-grid']) expect(isSyncedKey(k)).toBe(true);
-    for (const k of ['glitchbound.sync', 'glitchbound.lastVisit', 'glitchbound.crass-act.adult', 'gb.mini-racer.ghost.sunny-bay', 'glitchbound.not-a-game', 'neonrush.save', 'theme'])
+    for (const k of [SAVE_KEY, 'glitchbound.fussbox', 'glitchbound.memory-grid.v1', 'gb.mini-racer.v1', 'glitchbound.star-grid', 'neonrush.save']) expect(isSyncedKey(k)).toBe(true);
+    for (const k of ['glitchbound.sync', 'glitchbound.lastVisit', 'glitchbound.crass-act.adult', 'gb.mini-racer.ghost.sunny-bay', 'glitchbound.not-a-game', 'neonrush.save.corrupt', 'theme'])
       expect(isSyncedKey(k)).toBe(false);
     expect(slugOfKey('gb.mini-racer.v1')).toBe('mini-racer');
     expect(slugOfKey(SAVE_KEY)).toBeNull();
@@ -72,7 +72,7 @@ describe('merging two copies of a save', () => {
     expect(mergeJson({ seen: ['a', 'b'] }, { seen: ['b', 'c'] })).toEqual({ seen: ['a', 'b', 'c'] });
   });
 
-  it('never loses a car bought on either device: garages join, coins follow the larger copy (issue #44)', () => {
+  it('never loses a car bought on either device: garages join, coins follow the copy changed last (issue #44, LC-04)', () => {
     const [phoneCar, deskCar] = CARS.filter((c) => c.id !== DEFAULT_CAR).map((c) => c.id);
     // Both played from the same start, then each bought a car and some paint.
     const phone = emptyGarage();
@@ -95,7 +95,8 @@ describe('merging two copies of a save', () => {
       expect(m.cars[deskCar!]!.levels.engine).toBe(3);
       expect(m.cars[DEFAULT_CAR]!.levels.tyres).toBe(2);
       expect(m.owned.sort()).toEqual(['p-blue', 'p-red']);
-      expect(m.cash).toBe(4200);
+      // no change times: this device's copy counts as the newer one
+      expect(m.cash).toBe(local!.cash);
       expect(m.runs).toBe(9);
       // the car this device had picked stays picked
       expect(m.car).toBe(local!.car);
@@ -401,6 +402,85 @@ describe('cloud saves', () => {
       expect(localStorage.getItem(GARAGE_KEY)).toContain(deskCar);
       stop();
       release();
+    });
+
+    it('a save too big to sync stays here and the player is told; a smaller one syncs again (SFS-01)', async () => {
+      await startCloudSave(userId, 0);
+      localStorage.setItem('glitchbound.gloop', JSON.stringify({ best: 1, pad: 'x'.repeat(MAX_SYNCED_SAVE) }));
+      localStorage.setItem('glitchbound.fussbox', '{"best":2}');
+      await settle(() => !!row('glitchbound.fussbox'));
+      expect(row('glitchbound.gloop')).toBeUndefined();
+      expect(oversizedSaves()).toEqual(['glitchbound.gloop']);
+      const notice = document.getElementById('gb-sync-notice');
+      expect(notice?.getAttribute('role')).toBe('status');
+      expect(notice?.textContent).toContain('Gloop save is too big to sync');
+      localStorage.setItem('glitchbound.gloop', '{"best":1}');
+      await settle(() => !!row('glitchbound.gloop'));
+      expect(oversizedSaves()).toEqual([]);
+      expect(document.getElementById('gb-sync-notice')).toBeNull();
+    });
+
+    it('a merge takes settings and balances from the copy changed last', async () => {
+      await startCloudSave(userId, 0);
+      localStorage.setItem('glitchbound.gloop', JSON.stringify({ best: 1, settings: { volume: 0.5 } }));
+      await settle(() => !!row('glitchbound.gloop'));
+      await useDevice('B');
+      vi.setSystemTime(Date.now() + 60_000);
+      // B lowers the volume and syncs; A, offline, changed its copy earlier
+      await useDevice('A');
+      stopCloudSave();
+      protoSet.call(localStorage, 'glitchbound.gloop', JSON.stringify({ best: 4, settings: { volume: 0.5 } }));
+      const st = JSON.parse(localStorage.getItem('glitchbound.sync')!) as { t?: Record<string, number> };
+      protoSet.call(localStorage, 'glitchbound.sync', JSON.stringify({ ...st, t: { 'glitchbound.gloop': Date.now() - 30_000 } }));
+      devices.set('A', snapshot());
+      localStorage.clear();
+      for (const [k, v] of Object.entries(devices.get('B')!)) protoSet.call(localStorage, k, v);
+      current = 'B';
+      await startCloudSave(userId, savesAt());
+      localStorage.setItem('glitchbound.gloop', JSON.stringify({ best: 2, settings: { volume: 0.1 } }));
+      await settle(() => !!row('glitchbound.gloop')?.data.includes('0.1'));
+      await useDevice('A');
+      await settle(() => !!row('glitchbound.gloop')?.data.includes('"best":4'));
+      expect(JSON.parse(row('glitchbound.gloop')!.data)).toEqual({ best: 4, settings: { volume: 0.1 } });
+    });
+
+    it('signing out sends the last change, then the next member doesn’t get this member’s saves (PS-09)', async () => {
+      await startCloudSave(userId, 0);
+      localStorage.setItem('glitchbound.gut-check', '{"best":77}');
+      // signed out at once: nothing has gone out yet
+      const out = signOutCloudSave(1e9);
+      await settle(() => !!row('glitchbound.gut-check'));
+      await out;
+      expect(JSON.parse(row('glitchbound.gut-check')!.data)).toEqual({ best: 77 });
+      expect(localStorage.getItem('glitchbound.gut-check')).toBeNull();
+      expect(localStorage.getItem('glitchbound.sync')).toBeNull();
+      // and back: the account's copy comes down again
+      await startCloudSave(userId, savesAt());
+      await settle(() => localStorage.getItem('glitchbound.gut-check') !== null);
+      expect(localStorage.getItem('glitchbound.gut-check')).toBe('{"best":77}');
+    });
+
+    it('saves another member left behind go aside, not into the next account, and come back to their owner', async () => {
+      await startCloudSave(userId, 0);
+      localStorage.setItem('glitchbound.gut-check', '{"best":77}');
+      await settle(() => !!row('glitchbound.gut-check'));
+      // the session ran out with a change not yet sent
+      stopCloudSave();
+      protoSet.call(localStorage, 'glitchbound.gut-check', '{"best":80}');
+      const ana = { cookie, userId };
+      const s = await signIn(env, new Request(ORIGIN), { sub: 'dev:b@example.com', email: 'b@example.com', name: 'b', givenName: '', picture: '', provider: 'email' });
+      cookie = s.cookie.split(';')[0]!;
+      userId = s.user.id;
+      await startCloudSave(userId, 0);
+      await settle();
+      expect(row('glitchbound.gut-check')).toBeUndefined();
+      expect(localStorage.getItem('glitchbound.gut-check')).toBeNull();
+      stopCloudSave();
+      ({ cookie, userId } = ana);
+      await startCloudSave(userId, savesAt());
+      await settle(() => !!row('glitchbound.gut-check')?.data.includes('80'));
+      expect(JSON.parse(row('glitchbound.gut-check')!.data)).toEqual({ best: 80 });
+      expect(localStorage.getItem('glitchbound.sync.stash')).toBeNull();
     });
 
     it('guest progress joins the account at the first sign-in; deleting data in the app deletes the copy', async () => {

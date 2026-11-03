@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { IMPOSTOR_THEMES } from '../content/impostor';
 import { MIN_PLAYERS, TALK_TIMES, type Action, type PlayerView, type RoomView } from '../impostorRoom';
-import { setGuestName, usePlayerName } from '../../platform/playerName';
 import { createRoom, roomInfo, useRoom } from '../../platform/rooms';
 import { shareOrCopy } from '../../platform/share';
 import { navigate } from '../../router/router';
 import { ModeBar } from './shared';
 import { SecretCard } from './Impostor';
-import { RoomNotice, useTopOnPhase } from './room/RoomFrame';
-import { matchedName, RoomListingBar } from '../../components/OnlinePlay';
+import { DeadEnd, JoinForm, RoomNotice, useJoinName, useTopOnPhase, WelcomeBack } from './room/RoomFrame';
+import { RoomListingBar } from '../../components/OnlinePlay';
 import { t } from '../../i18n';
 
 const COLORS = ['#ff5a6c', '#ffb020', '#2fd1a0', '#3d7bff', '#a45cff', '#ff7eb6', '#12c6b3', '#ff8a1f', '#8ad13b', '#5b6cff', '#e64c9a', '#00a6d6'];
@@ -35,9 +34,11 @@ function useLeft(deadline: number | null, skew: number): number | null {
 
 /** /party?room=CODE: asks for a name once, then connects. */
 export function ImpostorRoomPage({ code, onLeave }: { code: string; onLeave: () => void }) {
-  const player = usePlayerName();
-  const [name, setName] = useState<string | null>(() => matchedName(player.name));
-  const [draft, setDraft] = useState(player.name);
+  const { name, back, join, note, prefill, forget } = useJoinName(code);
+  const leave = (): void => {
+    forget();
+    onLeave();
+  };
   const [missing, setMissing] = useState(false);
   useEffect(() => {
     let live = true;
@@ -46,49 +47,12 @@ export function ImpostorRoomPage({ code, onLeave }: { code: string; onLeave: () 
       live = false;
     };
   }, [code]);
-  if (missing)
-    return (
-      <div className="pt-screen">
-        <ModeBar title={t('Impostor room')} onExit={onLeave} />
-        <section className="pt-panel pt-center">
-          <h2>{t('This room has closed')}</h2>
-          <p className="pt-muted">{t('Rooms close after three quiet hours. Open a new one and send the link.')}</p>
-          <button className="pt-btn pt-btn-go" onClick={onLeave}>
-            {t('Back to Party Mode')}
-          </button>
-        </section>
-      </div>
-    );
-  if (name === null)
-    return (
-      <div className="pt-screen">
-        <ModeBar title={`${t('Impostor')} · ${t('room {code}', { code })}`} onExit={onLeave} />
-        <form
-          className="pt-panel pt-imp-join"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const n = draft.trim().slice(0, 20);
-            if (!n) return;
-            if (!player.member) setGuestName(n);
-            setName(n);
-          }}
-        >
-          <p className="pt-imp-badge">🕵️</p>
-          <h2>{t('Join the room')}</h2>
-          <label className="pt-label" htmlFor="pt-imp-name">
-            {t('Your name (so friends know who’s who)')}
-          </label>
-          <input id="pt-imp-name" className="pt-input" value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={20} autoFocus enterKeyHint="go" />
-          <button className="pt-btn pt-btn-go pt-btn-big" disabled={!draft.trim()}>
-            {t('Join')}
-          </button>
-        </form>
-      </div>
-    );
-  return <Room code={code} name={name} onLeave={onLeave} />;
+  if (missing) return <DeadEnd game="impostor" gameTitle="Impostor" title={t('Impostor room')} heading={t('This room has closed')} text={t('Rooms close after three quiet hours. Open a new one and send the link.')} onLeave={onLeave} />;
+  if (name === null) return <JoinForm title={`${t('Impostor')} · ${t('room {code}', { code })}`} emoji="🕵️" prefill={prefill} onJoin={join} onLeave={onLeave} />;
+  return <Room code={code} name={name} back={back} note={note} onLeave={leave} />;
 }
 
-function Room({ code, name, onLeave }: { code: string; name: string; onLeave: () => void }) {
+function Room({ code, name, back, note, onLeave }: { code: string; name: string; back: boolean; note: string; onLeave: () => void }) {
   const { view, conn, error, clearError, gone, skew, send, listing, setListed } = useRoom<RoomView, Action>(code, name);
   const left = useLeft(view?.deadline ?? null, skew);
   const screen = useTopOnPhase(view?.phase);
@@ -102,18 +66,7 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
   }, [error, clearError]);
 
   const bar = <ModeBar title={`${t('Impostor')} · ${code}`} progress={view?.round && !gone ? t('Round {n}', { n: view.round }) : undefined} onExit={onLeave} />;
-  if (gone)
-    return (
-      <div className="pt-screen">
-        {bar}
-        <section className="pt-panel pt-center">
-          <h2>{gone}</h2>
-          <button className="pt-btn pt-btn-go" onClick={onLeave}>
-            {t('Back to Party Mode')}
-          </button>
-        </section>
-      </div>
-    );
+  if (gone) return <DeadEnd game="impostor" gameTitle="Impostor" title={`${t('Impostor')} · ${code}`} heading={gone} onLeave={onLeave} />;
   if (!view)
     return (
       <div className="pt-screen">
@@ -131,9 +84,21 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
     <div className="pt-screen" ref={screen}>
       {bar}
       <RoomNotice error={error} conn={conn} />
+      {back && !error && conn === 'open' && <WelcomeBack name={me.name} extra={view.card && (view.phase === 'talk' || view.phase === 'vote') ? t('Your card is one tap away below.') : ''} />}
+      {note && (
+        <p className="pt-muted pt-center" role="status">
+          {note}
+        </p>
+      )}
 
       {view.phase === 'lobby' && (
         <>
+          {view.calledOff && (
+            <section className="pt-panel pt-center" role="status">
+              <h2>{t('Round called off')}</h2>
+              <p className="pt-muted">{view.calledOff === 'impostor' ? t('The impostor left, so nobody could catch them. No points this round.') : t('Not enough players were left to vote. No points this round.')}</p>
+            </section>
+          )}
           <RoomListingBar listing={listing} host={view.host} players={view.players.filter((p) => p.online).length} min={MIN_PLAYERS} skew={skew} onListed={setListed} />
           <section className="pt-panel">
             <div className="pt-panel-head">
@@ -220,6 +185,12 @@ function Room({ code, name, onLeave }: { code: string; name: string; onLeave: ()
         <section className="pt-panel">
           <h2>{t('Who’s the impostor?')}</h2>
           {left !== null && <p className="pt-imp-clock">⏱ {left}s</p>}
+          {view.card && (
+            <details className="pt-imp-peek">
+              <summary>{t('Peek at my card')}</summary>
+              <SecretCard impostor={view.card.impostor} theme={view.card.theme} word={view.card.word} hint={view.card.hint} />
+            </details>
+          )}
           {view.card ? (
             <div className="pt-imp-vote">
               {inRound

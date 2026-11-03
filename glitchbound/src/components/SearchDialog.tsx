@@ -107,7 +107,7 @@ export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => 
                 <strong>{g.title}</strong>
                 <span>{g.blurb}</span>
               </span>
-              <span className="chip">{tr('Party')}</span>
+              {g.adult ? <AdultLabel text={tr('Adults only')} /> : <span className="chip">{tr('Party')}</span>}
             </>
           ),
         })),

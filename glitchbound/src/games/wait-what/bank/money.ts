@@ -11,7 +11,7 @@ export const MONEY: Raw[] = [
   ['How much did Facebook pay for Instagram in 2012?', '$1 billion|$10 million|$100 million|$50 billion', 'It had just 13 employees at the time.'],
   ['Why do some coins have ridges around the edge?', 'To stop people shaving off precious metal|To help blind people|For grip|Just decoration', 'When coins were real gold and silver, people clipped the edges.'],
   ['Selling chewing gum is mostly banned in which country?', 'Singapore|Japan|Switzerland|Norway', 'Since 1992. Some medical gum is allowed.'],
-  ['The Diners Club card of 1950, an early credit card, was first used to pay where?', 'Restaurants|Petrol stations|Hotels|Department stores', 'The name gives it away.'],
+  ['The Diners Club card of 1950, an early credit card, was first used to pay where?', 'Restaurants|Gas stations|Hotels|Department stores', 'The name gives it away.'],
   ['Which ruler is often called the richest person in history?', 'Mansa Musa of Mali|Julius Caesar|Henry VIII|Louis XIV', 'His wealth came from gold and salt in the 1300s.'],
   ['When Mansa Musa gave away gold on his way through Cairo in 1324, what happened?', 'Gold lost value there for years|Egypt went to war|Cairo built a statue of him|The Nile was renamed', 'He spent and gave away so much that he crashed the local gold price.'],
   ['Which painting sold for a record $450 million in 2017?', 'Salvator Mundi|The Card Players|Interchange|Les Femmes d\'Alger', 'Attributed to Leonardo da Vinci, it set the auction record for any work of art.'],

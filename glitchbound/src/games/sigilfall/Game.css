@@ -49,6 +49,12 @@
   height: var(--turn-w);
   transform-origin: top left;
   transform: translateX(var(--turn-w)) rotate(90deg);
+  /* a quarter turn clockwise: the game's top is the screen's right, its right the bottom (the home bar), its
+     bottom the left and its left the top (the status bar, the island), so each inset pads the edge it is on */
+  --sa-t: env(safe-area-inset-right, 0px);
+  --sa-r: env(safe-area-inset-bottom, 0px);
+  --sa-b: env(safe-area-inset-left, 0px);
+  --sa-l: env(safe-area-inset-top, 0px);
 }
 .rb-canvas {
   position: absolute;
@@ -283,6 +289,9 @@
 }
 .rb-frame-head .rb-x {
   flex: none;
+}
+.rb-frame:focus {
+  outline: none;
 }
 .rb-frame-body {
   flex: 1;
@@ -1095,6 +1104,16 @@
   gap: 10px;
   align-items: end;
 }
+/* where the screen is tall enough, Begin stays in view while the classes scroll under it */
+@container (min-height: 431px) {
+  .rb-create-go {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    padding: 10px 0 4px;
+    background: linear-gradient(rgb(13 8 32 / 0), #0d0820 28%);
+  }
+}
 .rb-create-go label {
   display: grid;
   gap: 4px;
@@ -1290,6 +1309,9 @@
 }
 .rb-mplus {
   color: #ff8a3d;
+}
+.rb-region-lv {
+  color: var(--rb-gold);
 }
 .rb-region {
   font-size: 11.5px;
@@ -1532,6 +1554,12 @@
   display: grid;
   gap: 5px;
   width: min(290px, 40cqw);
+  pointer-events: none;
+  /* news is drawn above panels (a panel is a modal at 20), so nothing said while one is open is lost under it */
+  z-index: 25;
+}
+/* over a panel news never takes a click meant for the panel */
+.rb-ui:has(> .rb-modal) .rb-toast {
   pointer-events: none;
 }
 /* on touch the left thumb owns the bottom-left, the hero the middle and the top row the hero's frame, the
@@ -1900,9 +1928,10 @@
 }
 .rb-sb-potion {
   right: 196px;
-  bottom: 162px;
-  width: 46px;
-  height: 46px;
+  bottom: 160px;
+  /* 44 px or more even in the phone's smaller cluster (scale 0.86): it is the button pressed in a panic */
+  width: 52px;
+  height: 52px;
   background: radial-gradient(circle at 40% 35%, #a04a5a, #6a2434 70%);
   pointer-events: auto;
 }
@@ -2067,14 +2096,35 @@
 .rb-teach.is-touch {
   position: absolute;
   left: auto;
-  right: 18px;
-  bottom: 236px;
+  right: 14px;
+  bottom: 112px;
   transform: none;
-  max-width: 260px;
+  width: max-content;
+  max-width: 220px;
+  font-size: 13px;
 }
 .rb-teach.is-touch::after {
   left: auto;
-  right: 40px;
+  right: 36px;
+}
+/* over the button it teaches: the attack, the first skill, the dodge (data from .rb-sb-* below) */
+.rb-teach.is-touch.is-at-s1 {
+  right: 120px;
+  bottom: 84px;
+}
+.rb-teach.is-touch.is-at-s1::after {
+  right: 24px;
+}
+.rb-teach.is-touch.is-at-dodge {
+  right: 206px;
+  bottom: 76px;
+}
+.rb-teach.is-touch.is-at-dodge::after {
+  right: 22px;
+}
+/* the left-handed cluster is mirrored: the words are not */
+.is-lefty .rb-cluster .rb-teach {
+  transform: scaleX(-1);
 }
 .rb-slot6.is-teach,
 .rb-sb.is-teach {
@@ -2330,26 +2380,26 @@
 .rb-qpage-rewards .rb-kicker {
   margin: 0 4px 0 0;
 }
-.rb-reward {
+.rb-qreward {
   padding: 2px 8px;
   border-radius: 6px;
   background: rgb(255 255 255 / 0.06);
   font-size: 12.5px;
   font-weight: 700;
 }
-.rb-reward.is-xp {
+.rb-qreward.is-xp {
   color: #c9a8ff;
 }
-.rb-reward.is-gold {
+.rb-qreward.is-gold {
   color: var(--rb-gold);
 }
-.rb-reward.is-item {
+.rb-qreward.is-item {
   color: var(--rc, #e8e0d0);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc, #e8e0d0) 50%, transparent);
 }
-.rb-reward.is-perk,
-.rb-reward.is-unlock,
-.rb-reward.is-tier {
+.rb-qreward.is-perk,
+.rb-qreward.is-unlock,
+.rb-qreward.is-tier {
   color: #9cff9c;
 }
 
@@ -2820,15 +2870,67 @@
   font-weight: 700;
   font-size: 13.5px;
 }
-.rb-item-compare p {
-  margin: 0 0 3px;
-  font-size: 12.5px;
-}
 .rb-lore {
   margin: 0;
   font-style: italic;
   font-size: 12.5px;
   color: #c9b8a0;
+}
+/* the inspected item and what is worn in its slot: side by side where there is room, stacked in a phone's sheet */
+.rb-compare {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rb-icard {
+  flex: 1 1 230px;
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+.rb-compare.is-two > .rb-icard {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid rgb(168 130 58 / 0.35);
+  background: rgb(0 0 0 / 0.18);
+}
+.rb-compare.is-two > .rb-icard.is-worn {
+  background: rgb(0 0 0 / 0.32);
+}
+.rb-icard-tag {
+  justify-self: start;
+  font: 700 10.5px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rb-dim);
+}
+.rb-icard.is-worn .rb-icard-tag {
+  color: var(--rb-gold);
+}
+.rb-icard.is-compact .rb-item-name {
+  font-size: 15px;
+}
+.rb-icard.is-compact .rb-lore {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-icard-none {
+  flex-basis: 100%;
+  margin: 0;
+}
+.rb-item-if {
+  margin: 0;
+}
+@container (min-width: 761px) and (min-height: 431px) {
+  /* comparing on a wide stage: the detail column gets room for both cards */
+  .rb-hero:has(.rb-compare.is-two) {
+    grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) minmax(440px, 540px);
+  }
+  .rb-shop-body:has(.rb-compare.is-two) {
+    grid-template-columns: minmax(0, 1fr) minmax(440px, 520px);
+  }
 }
 .rb-skills {
   display: grid;
@@ -3342,6 +3444,23 @@
   font-size: 4.6px;
   fill: #ffe066;
 }
+.rb-world-count,
+.rb-world-offer {
+  text-anchor: middle;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: #120c08;
+  stroke-width: 0.7;
+  pointer-events: none;
+}
+.rb-world-count {
+  font-size: 3.2px;
+  fill: #ffffff;
+}
+.rb-world-offer {
+  font-size: 3.6px;
+  fill: #6cc4ff;
+}
 @keyframes rb-pulse {
   50% {
     opacity: 0.35;
@@ -3462,6 +3581,51 @@
   gap: 8px;
   min-height: 0;
 }
+/* the receipt of a purchase or a sale, in the shop where it was made */
+.rb-receipt {
+  --rc: var(--rb-gold);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 6px 4px 4px;
+  border: 2px solid var(--rc);
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.35);
+  animation: rb-receipt-in 0.2s ease-out;
+}
+.rb-receipt .rb-btn {
+  min-height: 36px;
+}
+.rb-receipt-icon {
+  width: 34px;
+  image-rendering: pixelated;
+}
+.rb-receipt-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+}
+.rb-receipt-text > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-receipt-text strong {
+  color: var(--rc);
+}
+@keyframes rb-receipt-in {
+  from {
+    transform: translateY(-6px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-receipt {
+    animation: none;
+  }
+}
 .rb-shop-top {
   display: flex;
   justify-content: space-between;
@@ -3519,8 +3683,12 @@
   font-size: 12.5px;
   font-weight: 700;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* two lines: the end of a name ("of the Grove") is what tells two pieces apart */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  line-height: 1.2;
 }
 .rb-ware-price {
   font: 700 12px var(--mono);
@@ -3545,11 +3713,34 @@
   image-rendering: pixelated;
 }
 @container (max-width: 760px) or (max-height: 430px) {
+  /* the shop fills the frame, so its item sheet (anchored to the body) is as tall as the panel, not the ware grid */
+  .rb-shop {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  /* (the item sheet covers the whole shop, the receipt and the tabs too: as tall as the panel allows) */
   .rb-shop-body {
+    position: static;
     grid-template-columns: 1fr;
+    flex: 1;
+    min-height: 0;
+  }
+  .rb-shop-list {
+    min-height: 0;
+    overflow: auto;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
   }
   .rb-shop-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  .rb-ware-name {
+    font-size: 12px;
+  }
+  .rb-shop .rb-detail.is-open {
+    min-height: min(260px, 100%);
   }
 }
 
@@ -3730,8 +3921,29 @@
     transform: translateX(80%) scale(-0.8, 0.8);
     transform-origin: bottom left;
   }
-  .rb-tracker {
-    display: none;
+  /* the quest shrinks to one line at the top middle (its icon and objective; a tap opens the map) */
+  .rb-tracker:not(.rb-keyclock) {
+    top: calc(34px + var(--sa-t));
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    max-width: 40cqw;
+    padding: 2px 8px;
+    white-space: nowrap;
+  }
+  .rb-tracker:not(.rb-keyclock) strong {
+    flex: none;
+    font-size: 0;
+  }
+  .rb-tracker:not(.rb-keyclock) > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 11.5px;
   }
   /* the clock moves to a line at the top middle, clear of the thumbs */
   .rb-tracker.rb-keyclock {
@@ -4060,9 +4272,26 @@
     0 0 0 2px #a8823a,
     0 0 0 3px #0d0906,
     0 3px 8px rgb(0 0 0 / 0.55);
+  /* only the picture is clipped round: the level and Paragon badges hang outside it */
+  overflow: visible;
+}
+.rb-hud-pic {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
   overflow: hidden;
 }
+.rb-lvl,
+.rb-para {
+  z-index: 1;
+}
 .rb-lvl {
+  min-width: 22px;
+  height: 22px;
+  font-size: 12px;
+  line-height: 18px;
   border: 1px solid #0d0906;
   border-radius: 50%;
   background: radial-gradient(circle at 40% 35%, #fbe7a8, #c9963e 60%, #8a6224);

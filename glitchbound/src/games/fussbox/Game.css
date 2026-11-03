@@ -35,11 +35,20 @@
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
+/* No specificity, so a button's own class (.fbx-btn's weight, .fbx-btn-big's size) wins. */
+:where(.fbx) :is(button, a) {
+  font: inherit;
+}
 .fbx button,
 .fbx a {
-  font: inherit;
   color: inherit;
   cursor: pointer;
+}
+/* One portrait column, centered on wide stages. */
+.fbx-lab > *,
+.fbx-exam > *,
+.fbx-result > * {
+  max-width: 520px;
 }
 .fbx h1,
 .fbx h2,
@@ -498,7 +507,7 @@
 .fbx-pick {
   display: grid;
   place-items: center;
-  min-height: 38px;
+  min-height: 44px;
   padding: 3px;
   border: 2px solid rgb(29 18 56 / 0.28);
   border-radius: 11px;
@@ -707,6 +716,22 @@
 .fbx-exam-grid li.is-no {
   background: #ffe6e9;
 }
+/* Tapping the card marks it too (unmarked → ✓ → ✗), and says its name above the grid. */
+.fbx-exam-card,
+.fbx-review button {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: 900;
+}
+.fbx-said,
+.fbx-why {
+  min-height: 2.6em;
+}
 .fbx-yn {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -715,7 +740,7 @@
 .fbx-y,
 .fbx-n {
   min-width: 0;
-  min-height: 34px;
+  min-height: 44px;
   padding: 0;
   border: 2px solid var(--fbx-ink);
   border-radius: 9px;
@@ -797,6 +822,41 @@
   }
   .fbx-tag {
     font-size: 14px;
+  }
+}
+/* A low stage (a desktop page): a tighter bench, so "take the exam" stays on screen. */
+@container (max-height: 600px) {
+  .fbx-lab {
+    gap: 5px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .fbx-lab .fbx-robot-talk {
+    width: 36px;
+  }
+  .fbx-lab .fbx-bubble {
+    padding: 6px 12px;
+  }
+  .fbx-builder {
+    padding: 5px 10px;
+  }
+  .fbx-pickers {
+    row-gap: 3px;
+  }
+}
+/* With a mouse the pickers can be shorter there (touch keeps 44 px). */
+@media (pointer: fine) {
+  @container (max-height: 600px) {
+    .fbx-pick {
+      min-height: 36px;
+    }
+  }
+}
+/* A wide, low stage: the eight exam cards in one row, so they and "Hand it in" fit without scrolling. */
+@container (min-aspect-ratio: 5/4) {
+  .fbx-exam > .fbx-exam-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    max-width: min(100%, 860px, 150cqh);
   }
 }
 @media (max-width: 380px) {

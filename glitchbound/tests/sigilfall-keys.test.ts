@@ -40,4 +40,29 @@ describe('Sigilfall: the keyboard', () => {
     press('s', '');
     expect(kbm.move()).toEqual({ x: 0, y: 1 });
   });
+
+  it('Enter or Space on a focused button presses only the button (Farewell, OK), never talk or dodge (SFU-01)', () => {
+    kbm = new KeyboardMouse(document.body);
+    const btn = document.createElement('button');
+    document.body.append(btn);
+    const frame = () => {
+      const f = { mx: 0, my: 0, aim: 0, casts: [] as unknown[], potion: false, interact: false, mount: false } as unknown as Parameters<KeyboardMouse['fill']>[0];
+      kbm!.fill(f, (x, y) => ({ x, y }), 0, 0);
+      return f;
+    };
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }));
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true }));
+    let f = frame();
+    expect(f.interact).toBe(false);
+    expect(f.casts).toEqual([]);
+    // on the game itself Enter still talks
+    press('Enter', 'Enter');
+    expect(frame().interact).toBe(true);
+    // and a menu opening lets go of a talk not yet taken
+    press('Enter', 'Enter');
+    kbm.release();
+    f = frame();
+    expect(f.interact).toBe(false);
+    btn.remove();
+  });
 });

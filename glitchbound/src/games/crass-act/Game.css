@@ -19,6 +19,7 @@
   color: #fff;
   font-family: var(--font);
   -webkit-tap-highlight-color: transparent;
+  container-type: inline-size;
 }
 .uh button,
 .uh select,
@@ -42,7 +43,13 @@
 }
 .uh-center {
   min-height: 100%;
-  justify-content: center;
+}
+/* Centered while it fits; taller than the screen, it scrolls from the logo (plain centering spills over the top). */
+.uh-center > :first-child {
+  margin-top: auto;
+}
+.uh-center > :last-child {
+  margin-bottom: auto;
 }
 .uh-logo {
   position: relative;
@@ -162,12 +169,24 @@
   font-size: 14px;
 }
 .uh-link {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
   border: 0;
   background: none;
   color: inherit;
   font-weight: 700;
   text-decoration: underline;
   cursor: pointer;
+}
+.uh-confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
 }
 .uh-field {
   display: grid;
@@ -298,9 +317,12 @@
   font-size: 18px;
 }
 .uh-x {
+  min-width: 44px;
+  min-height: 44px;
+  margin: -8px -8px -8px 0;
   border: 0;
   background: none;
-  color: #a39ab3;
+  color: #6f6680;
   font-size: 16px;
   cursor: pointer;
 }
@@ -340,7 +362,7 @@
   font-weight: 800;
 }
 .uh-settings select {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 8px;
   border: 2px solid var(--uh-ink);
   border-radius: 10px;
@@ -394,9 +416,56 @@
   gap: 6px;
   width: 100%;
 }
-.uh-top .uh-link {
+.uh-top .uh-link,
+.uh-top .uh-confirm {
   margin-left: auto;
   font-size: 13px;
+}
+.uh-codechip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.uh-codechip .uh-chip {
+  font-family: var(--mono);
+  letter-spacing: 0.08em;
+}
+.uh-play {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+/* The play buttons stay in reach while the hand scrolls. */
+.uh-play .uh-actions {
+  position: sticky;
+  bottom: 10px;
+  z-index: 2;
+}
+/* Wide, short game boxes (desktop): the prompt card on the left, the hand or the entries on the right. */
+@container (min-width: 760px) {
+  .uh-table {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: start;
+    width: min(100%, 1080px);
+  }
+  .uh-table > .uh-top,
+  .uh-table > .uh-players {
+    grid-column: 1 / -1;
+  }
+  .uh-table > .uh-prompt {
+    position: sticky;
+    top: 12px;
+    width: 100%;
+  }
+  .uh-table > .uh-play {
+    grid-column: 2;
+  }
+  .uh-play .uh-entries {
+    width: 100%;
+  }
 }
 .uh-chip {
   padding: 3px 10px;
@@ -506,6 +575,8 @@
   font-weight: 800;
   line-height: 1.25;
   text-align: left;
+  overflow-wrap: anywhere;
+  hyphens: auto;
   cursor: pointer;
   transition: transform 0.12s;
   animation: uh-deal 0.3s ease-out;
@@ -647,6 +718,15 @@ button.uh-entry:not(:disabled) {
   }
 }
 
+/* Online play sits on Crass Act's own white card: its colors follow the card, not the site's dark theme. */
+.uh .uh-online {
+  --fg: var(--uh-ink);
+  --line: var(--uh-ink);
+  --ink: var(--uh-ink);
+  --card: #fff;
+  --paper-2: #f3eee6;
+}
+
 /* The arcade's game menu button (full screen only): see src/components/GameMenuButton.tsx */
 .uh-menu-corner {
   position: absolute;
@@ -657,7 +737,10 @@ button.uh-entry:not(:disabled) {
 .uh-menu-corner:empty {
   display: none;
 }
-/* keep the room header clear of the corner button while it shows */
+/* keep the room header and the lobby's public/private bar clear of the corner button while it shows */
 .stage-module:has(.uh-menu-corner .game-menu-btn) .uh-top {
   padding-inline: 48px;
+}
+.stage-module:has(.uh-menu-corner .game-menu-btn) .uh-room > .op-bar {
+  margin-right: 56px;
 }

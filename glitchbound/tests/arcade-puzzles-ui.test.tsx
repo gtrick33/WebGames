@@ -60,6 +60,10 @@ describe('Outta Here UI', () => {
     for (let i = 0; i < 3; i++) {
       const arrow = document.querySelectorAll('g.oh-arrow')[k]!;
       fireEvent.pointerDown(arrow.querySelector('rect')!);
+      // (a tap on the arrow still bouncing from the last one is the same mistake)
+      act(() => {
+        vi.advanceTimersByTime(700);
+      });
     }
     expect(screen.getByText('Out of hearts')).toBeTruthy();
     expect(report).toHaveBeenLastCalledWith({ type: 'end', score: 0, stats: { levels: 0, perfect: 0 }, challenge: { id: 'abc', round: 1 } });

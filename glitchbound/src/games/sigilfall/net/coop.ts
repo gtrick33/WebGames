@@ -1,4 +1,5 @@
 import { applyStatus, hurtPlayer, remoteHit } from '../sim/combat';
+import { circleHitsWall } from '../sim/map';
 import { QUEST_DEFS } from '../data/quests';
 import type { EliteAffix, StatusId } from '../data/types';
 import type { Character } from '../progress/character';
@@ -96,6 +97,37 @@ interface FrameMsg {
 
 const r1 = (v: number): number => Math.round(v * 10) / 10;
 
+/*
+ * Everything that comes over the relay is checked before it touches a world: another player's game (or
+ * someone typing into the socket) can send anything. Numbers must be finite and are kept in range; lists
+ * are cut short; a message that fails is dropped, never thrown.
+ */
+const num = (v: unknown, lo: number, hi: number, or = 0): number => (typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : or);
+const str = (v: unknown, max = 40): string => (typeof v === 'string' ? v.slice(0, max) : '');
+const list = (v: unknown, max: number): unknown[] => (Array.isArray(v) ? v.slice(0, max) : []);
+/** A place in a land, in pixels (the largest map is far smaller). */
+const POS = 1e5;
+/** The statuses a guest's game may put on the host's enemies (sim/combat SHARED_STATUS), and how long. */
+const GUEST_STATUS = new Set<string>(['chill', 'freeze', 'shock', 'stun', 'root', 'armorBreak', 'mark', 'weaken', 'fear']);
+const STATUS_DUR = 12;
+const STATUS_POWER = 100;
+/** One guest message (50 ms of hits) takes at most this share of a boss's health: never a one-shot. */
+const BOSS_SHARE = 0.04;
+/** A guest's falls per message (one every 50 ms is already more than a hero can die). */
+const DIED_MAX = 3;
+/** A host's frame: at most this many kills, and enemies of at most this level (beyond the game's own). */
+const KILLS_MAX = 40;
+const LEVEL_MAX = 100;
+/** Riftstone levels a run's end can open (sim/world keyUp). */
+const UP_MAX = 3;
+/** Where heroes arrive around the party's spot, by their place in the party (never on top of each other). */
+const SPREAD: [number, number][] = [
+  [0, 0],
+  [30, 0],
+  [-30, 0],
+  [0, 30],
+];
+
 export class CoopSession {
   private world: World | null = null;
   private frameT = 0;
@@ -135,10 +167,28 @@ export class CoopSession {
     this.targets.clear();
     this.events = [];
     this.hits = { t: 'g', h: [], st: [], died: 0 };
+    this.spread(w);
     this.setMembers([...this.members.values()]);
     this.storySent = '';
     // a guest shows the leader's story from the start (the last one heard, until the next comes)
     if (this.role === 'guest' && this.layerQuests) this.applyLayer(w);
+  }
+
+  /** A hero arrives beside the others: offset by their place in the party, where the ground is open. */
+  private spread(w: World): void {
+    const order = [this.me, ...this.members.keys()].sort((a, b) => a - b).indexOf(this.me);
+    const [dx, dy] = SPREAD[order % SPREAD.length]!;
+    if (!dx && !dy) return;
+    const p = w.player;
+    // (the spot itself when the ground beside it is a wall: a narrow way in)
+    for (const k of [1, 0.5]) {
+      const x = p.x + dx * k;
+      const y = p.y + dy * k;
+      if (circleHitsWall(w.map, x, y, p.r + 2)) continue;
+      p.x = x;
+      p.y = y;
+      return;
+    }
   }
 
   /** Questing together: the leader's story was sent when it last changed (packed, as JSON). */
@@ -289,54 +339,91 @@ export class CoopSession {
     const w = this.world;
     if (!w?.coop || !d || typeof d !== 'object') return;
     const m = d as { t?: string };
-    if (m.t === 'p') this.onHero(w, n, m as HeroMsg);
-    else if (m.t === 's' && this.role === 'guest' && n === this.host) this.onFrame(w, m as FrameMsg);
-    else if (m.t === 'g' && this.role === 'host') this.onHits(w, m as GuestMsg);
-    else if (m.t === 'q' && this.role === 'guest' && n === this.host) this.onStory(w, m as StoryMsg);
+    try {
+      if (m.t === 'p') this.onHero(w, n, m as HeroMsg);
+      else if (m.t === 's' && this.role === 'guest' && n === this.host) this.onFrame(w, m as FrameMsg);
+      else if (m.t === 'g' && this.role === 'host' && n !== this.me) this.onHits(w, m as GuestMsg);
+      else if (m.t === 'q' && this.role === 'guest' && n === this.host) this.onStory(w, m as StoryMsg);
+    } catch {
+      /* a malformed message: dropped (the next one carries the state again) */
+    }
   }
 
   private onHero(w: World, n: number, m: HeroMsg): void {
     const g = w.coop!.ghosts.find((x) => x.n === n);
     if (!g) return;
+    if (typeof m.x !== 'number' || typeof m.y !== 'number' || !Number.isFinite(m.x) || !Number.isFinite(m.y)) return;
     const first = g.seen <= 0 || w.time - g.seen > LOST_S;
-    g.tx = m.x;
-    g.ty = m.y;
+    g.tx = num(m.x, -POS, POS);
+    g.ty = num(m.y, -POS, POS);
     // the first word from a hero (or after a long silence) puts them there at once
     if (first) {
-      g.x = m.x;
-      g.y = m.y;
+      g.x = g.tx;
+      g.y = g.ty;
     }
-    g.vx = m.vx;
-    g.vy = m.vy;
-    g.dir = m.dir;
-    g.hp = m.hp;
-    g.maxHp = Math.max(1, m.mh);
+    g.vx = num(m.vx, -5000, 5000);
+    g.vy = num(m.vy, -5000, 5000);
+    g.dir = num(m.dir, -10, 10);
+    g.maxHp = num(m.mh, 1, 1e9, 1);
+    g.hp = num(m.hp, 0, g.maxHp);
     g.dead = m.dead === 1;
     g.untouchable = m.u === 1;
-    g.shots = (m.sh ?? []).map(([x, y, vx, vy, r, color]) => ({ x, y, vx, vy, r, color }));
+    g.shots = [];
+    for (const row of list(m.sh, 24)) {
+      if (!Array.isArray(row)) continue;
+      const [x, y, vx, vy, r, color] = row as unknown[];
+      g.shots.push({ x: num(x, -POS, POS), y: num(y, -POS, POS), vx: num(vx, -5000, 5000), vy: num(vy, -5000, 5000), r: num(r, 1, 60, 4), color: str(color, 16) || '#ffffff' });
+    }
     g.seen = w.time;
   }
 
   /** Host: a guest's hits land on the real enemies; its falls cost the clock. */
   private onHits(w: World, m: GuestMsg): void {
-    for (const [id, dmg, kx, ky] of m.h ?? []) {
-      const e = w.enemyById(id);
-      if (e) remoteHit(w, e, dmg, kx, ky);
+    // a hit never takes more than the enemy has, and one message never more than a share of a boss
+    const boss = new Map<number, number>();
+    for (const row of list(m.h, 64)) {
+      if (!Array.isArray(row)) continue;
+      const [id, dmg, kx, ky] = row as unknown[];
+      const e = typeof id === 'number' ? w.enemyById(id) : undefined;
+      if (!e) continue;
+      let d = num(dmg, 0, Math.max(0, e.maxHp));
+      if (e.boss) {
+        const left = Math.max(0, e.maxHp * BOSS_SHARE - (boss.get(e.id) ?? 0));
+        d = Math.min(d, left);
+        boss.set(e.id, (boss.get(e.id) ?? 0) + d);
+      }
+      if (d > 0) remoteHit(w, e, d, num(kx, -400, 400), num(ky, -400, 400));
     }
-    for (const [id, status, dur, power] of m.st ?? []) {
-      const e = w.enemyById(id);
-      if (e) applyStatus(w, e, { status, dur, power }, 0);
+    for (const row of list(m.st, 16)) {
+      if (!Array.isArray(row)) continue;
+      const [id, status, dur, power] = row as unknown[];
+      const e = typeof id === 'number' ? w.enemyById(id) : undefined;
+      if (e && typeof status === 'string' && GUEST_STATUS.has(status)) applyStatus(w, e, { status: status as StatusId, dur: num(dur, 0, STATUS_DUR), power: num(power, 0, STATUS_POWER) }, 0);
     }
-    for (let i = 0; i < (m.died ?? 0); i++) if (w.keyRun && !w.keyRun.end) w.keyRun.deaths += 1;
+    const died = Math.floor(num(m.died, 0, DIED_MAX));
+    for (let i = 0; i < died; i++) if (w.keyRun && !w.keyRun.end) w.keyRun.deaths += 1;
   }
 
   /** Guest: the host's frame. */
   private onFrame(w: World, m: FrameMsg): void {
     // what happened first (a kill needs the enemy still here), then where everything is now
-    for (const ev of m.ev ?? []) this.onEvent(w, ev);
+    this.kills = 0;
+    for (const ev of list(m.ev, 200)) if (Array.isArray(ev)) this.onEvent(w, ev as Event);
     const seen = new Set<number>();
-    for (const row of m.e ?? []) {
-      const [id, def, x, y, hp, mh, flags, level, face, state, name, elite, room] = row;
+    for (const raw of list(m.e, 600)) {
+      if (!Array.isArray(raw) || typeof raw[0] !== 'number' || typeof raw[1] !== 'string') continue;
+      const [id, def] = raw as [number, string];
+      const x = num(raw[2], -POS, POS);
+      const y = num(raw[3], -POS, POS);
+      const mh = num(raw[5], 1, 1e10, 1);
+      const hp = num(raw[4], 0, mh);
+      const flags = num(raw[6], 0, 7);
+      const level = Math.round(num(raw[7], 1, LEVEL_MAX, 1));
+      const face = num(raw[8], -10, 10);
+      const state = str(raw[9], 16) || 'chase';
+      const name = str(raw[10], 40);
+      const elite = str(raw[11], 120);
+      const room = Math.round(num(raw[12], -1, 999, -1));
       seen.add(id);
       let e: Enemy | undefined | null = w.enemyById(id);
       if (!e) {
@@ -359,21 +446,29 @@ export class CoopSession {
     this.mirrorAttacks(w, m);
     const codes = m.en ?? '';
     for (let i = 0; i < codes.length; i++) w.mirrorEncounter(i, codes[i] === 'a' ? 'active' : codes[i] === 'c' ? 'cleared' : 'idle');
-    if (m.k && w.keyRun && !w.keyRun.end) {
-      w.keyRun.t = m.k[0];
-      w.keyRun.deaths = m.k[1];
+    if (Array.isArray(m.k) && w.keyRun && !w.keyRun.end) {
+      w.keyRun.t = num(m.k[0], 0, 1e6, w.keyRun.t);
+      w.keyRun.deaths = Math.round(num(m.k[1], 0, 1e4, w.keyRun.deaths));
     }
   }
 
+  /** Guest: kills taken from the frame being read (a frame claiming more is not believed past it). */
+  private kills = 0;
+
   private onEvent(w: World, ev: Event): void {
     if (ev[0] === 'h') {
-      const [, n, dmg, fx, fy, knock, status, dur, power, src] = ev;
+      const [, n, rawDmg, fx, fy, knock, status, dur, power, src] = ev;
       if (n !== this.me) return;
-      const source = src >= 0 ? w.enemyById(src) : undefined;
-      hurtPlayer(w, dmg, { ...(Number.isFinite(fx) && Number.isFinite(fy) ? { fromX: fx, fromY: fy } : {}), knock, ...(status ? { status: { status, dur, power } } : {}), ...(source ? { source } : {}) });
+      const dmg = num(rawDmg, 0, 1e9);
+      if (dmg <= 0) return;
+      const source = typeof src === 'number' && src >= 0 ? w.enemyById(src) : undefined;
+      const st = typeof status === 'string' && STATUS_IDS.has(status) ? { status: { status: status as StatusId, dur: num(dur, 0, STATUS_DUR), power: num(power, 0, 1e6) } } : {};
+      hurtPlayer(w, dmg, { ...(Number.isFinite(fx) && Number.isFinite(fy) ? { fromX: fx, fromY: fy } : {}), knock: num(knock, 0, 2000), ...st, ...(source ? { source } : {}) });
     } else if (ev[0] === 'k') {
-      const e = w.enemyById(ev[1]);
-      if (!e || e.dead) return;
+      // only an enemy this game has seen alive, and never more kills than a frame can hold
+      const e = typeof ev[1] === 'number' ? w.enemyById(ev[1]) : undefined;
+      if (!e || e.dead || this.kills >= KILLS_MAX) return;
+      this.kills += 1;
       // the host's kill: this hero's experience, gold and loot, rolled here
       e.hp = 0;
       if (!e.boss) {
@@ -383,12 +478,16 @@ export class CoopSession {
       }
       w.onKill(e);
     } else if (ev[0] === 'b') {
-      const e = w.enemyById(ev[1]);
-      if (e?.boss) w.bossFinished(e);
-    } else if (ev[0] === 'end') w.applyKeyEnd(ev[1], ev[2]);
+      const e = typeof ev[1] === 'number' ? w.enemyById(ev[1]) : undefined;
+      if (e?.boss && !e.dead) w.bossFinished(e);
+    } else if (ev[0] === 'end') {
+      if (!Number.isFinite(ev[1]) || !Number.isInteger(ev[2]) || ev[2] < 0 || ev[2] > UP_MAX) return;
+      w.applyKeyEnd(num(ev[1], 0, 1e6), ev[2]);
+    }
     // a story event the party won: this hero's quest for it counts too
     else if (ev[0] === 'ev') {
       const id = ev[1];
+      if (typeof id !== 'string' || id.length > 60) return;
       w.questProgress((o) => o.kind === 'event' && o.event === id);
     }
   }
@@ -396,15 +495,17 @@ export class CoopSession {
   /** Guest: the host's attacks in the air, as copies that only show (remote). */
   private mirrorAttacks(w: World, m: FrameMsg): void {
     w.telegraphs = w.telegraphs.filter((t) => t.tone === 'player');
-    for (const [id, shape, x, y, r, r2, angle, len, dur, t, tone, linger] of m.tg ?? [])
+    for (const [id, shape, x, y, r, r2, angle, len, dur, t, tone, linger] of list(m.tg, 200) as FrameMsg['tg'])
       w.telegraphs.push({ id, shape, x, y, r, r2, angle, len, t, dur, dmg: 0, knock: 0, tone, owner: -1, linger, remote: true, dead: false });
     w.projectiles = w.projectiles.filter((p) => !p.hostile);
-    for (const [x, y, vx, vy, r, look, color] of m.pr ?? []) w.projectiles.push(remoteShot(x, y, vx, vy, r, look, color));
+    for (const [x, y, vx, vy, r, look, color] of list(m.pr, 400) as FrameMsg['pr']) w.projectiles.push(remoteShot(x, y, vx, vy, r, look, color));
     w.fields = w.fields.filter((f) => !f.hostile);
-    for (const [x, y, r, look, t, dur] of m.fd ?? []) w.fields.push({ id: -1, x, y, r, t, dur, tick: 1, tickT: 1, dmg: 0, type: 'physical', look, hostile: true, depth: 0, spec: null, onHit: false, remote: true });
-    w.waves = (m.wv ?? []).map(([x, y, r, speed, max, width]): Wave => ({ id: -1, x, y, r, speed, max, width, dmg: 0, hitPlayer: true, remote: true, dead: false }));
+    for (const [x, y, r, look, t, dur] of list(m.fd, 100) as FrameMsg['fd']) w.fields.push({ id: -1, x, y, r, t, dur, tick: 1, tickT: 1, dmg: 0, type: 'physical', look, hostile: true, depth: 0, spec: null, onHit: false, remote: true });
+    w.waves = (list(m.wv, 50) as FrameMsg['wv']).map(([x, y, r, speed, max, width]): Wave => ({ id: -1, x, y, r, speed, max, width, dmg: 0, hitPlayer: true, remote: true, dead: false }));
   }
 }
+
+const STATUS_IDS = new Set<string>(['burn', 'poison', 'chill', 'freeze', 'shock', 'stun', 'root', 'armorBreak', 'mark', 'weaken', 'bleed', 'curse', 'fear'] satisfies StatusId[]);
 
 function remoteShot(x: number, y: number, vx: number, vy: number, r: number, look: string, color: string): Projectile {
   return { id: -1, x, y, vx, vy, r, life: 400, hostile: true, dmg: 0, type: 'physical', spec: null, depth: 0, pierce: 0, bounce: 0, hit: [], look, color, child: false, splitDone: true, trailT: 0, homing: 0, age: 0, knock: 0, wide: false, remote: true, dead: false };

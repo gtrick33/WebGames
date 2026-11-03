@@ -198,10 +198,12 @@
 .ww-play {
   display: flex;
   flex-direction: column;
+  container-type: inline-size;
 }
+/* the label and the dots give way first: the score and the game menu button keep their slot */
 .ww-top {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   padding: 12px 14px 8px;
@@ -220,19 +222,43 @@
   z-index: 3;
 }
 .ww-top-mode {
+  min-width: 0;
+  overflow: hidden;
   padding: 4px 10px;
   border: 2px solid var(--ww-ink);
   border-radius: 999px;
   background: #fff;
   font-size: 13px;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ww-dots {
   display: flex;
+  min-width: 0;
   justify-content: center;
   gap: 5px;
 }
+.ww-count {
+  display: none;
+  font-family: var(--mono);
+  text-align: center;
+  white-space: nowrap;
+}
+/* small phones: "3/10" instead of ten dots */
+@container (max-width: 419px) {
+  .ww-top .ww-dots {
+    display: none;
+  }
+  .ww-top .ww-count {
+    display: block;
+  }
+  .ww-top {
+    gap: 6px;
+    padding-inline: 10px;
+  }
+}
 .ww-dots i {
+  flex: none;
   width: 11px;
   height: 11px;
   border: 2px solid var(--ww-ink);
@@ -257,7 +283,7 @@
   letter-spacing: 2px;
 }
 .ww-score {
-  min-width: 64px;
+  min-width: 56px;
   padding: 4px 10px;
   border: 2px solid var(--ww-ink);
   border-radius: 12px;
@@ -339,6 +365,25 @@
   font-size: 13px;
   font-weight: 700;
   opacity: 0.7;
+}
+/* each question opens with its time limit (15 to 30 s) popping in the corner */
+.ww-left.is-new {
+  animation: ww-limit 1.4s ease-out;
+}
+@keyframes ww-limit {
+  0%,
+  45% {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--cat, #3d8bff);
+    color: #fff;
+    opacity: 1;
+    transform: scale(1.35);
+  }
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
 }
 .ww-answers {
   display: grid;
@@ -900,4 +945,14 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+/* the game menu button: the only way out of full screen, so a full 44 px target */
+.game-menu-btn.ww-menu-btn {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--ww-ink);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--ww-ink);
+  box-shadow: 2px 2px 0 var(--ww-ink);
 }

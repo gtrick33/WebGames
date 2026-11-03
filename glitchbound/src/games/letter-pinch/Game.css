@@ -16,11 +16,6 @@
   position: absolute;
   inset: 0;
   container-type: size;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  grid-template-columns: minmax(0, 1fr);
-  gap: clamp(6px, 1.4cqh, 12px);
-  padding: clamp(10px, 2cqh, 16px) clamp(10px, 3cqw, 20px) clamp(10px, 2cqh, 16px);
   background:
     radial-gradient(circle at 1px 1px, rgb(29 16 54 / 0.08) 1px, transparent 1.5px) 0 0 / 18px 18px,
     linear-gradient(170deg, var(--lp-paper) 0%, #ffeccc 60%, #ffd9e4 100%);
@@ -36,6 +31,21 @@
   color: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+/* The layout lives one level in, so it can follow the game's own size (container queries). */
+.lp-in {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(6px, 1.4cqh, 12px);
+  padding: clamp(10px, 2cqh, 16px) clamp(10px, 3cqw, 20px) clamp(10px, 2cqh, 16px);
+}
+/* A challenge round's banner gets its own row: the board keeps the flexible one (it is size-contained, so
+   an auto row would give it zero height). */
+.lp-in:has(> .lp-chal) {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
 }
 .lp button:focus-visible {
   outline: 3px solid var(--lp-violet);
@@ -175,10 +185,10 @@
 .lp-win-label {
   font-family: var(--mono);
   font-weight: 700;
-  font-size: clamp(10px, calc(var(--tile) * 0.22), 14px);
+  font-size: clamp(12px, calc(var(--tile) * 0.26), 15px);
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  color: var(--lp-violet);
+  color: #5b2fd6;
   line-height: 1;
   transition: color 300ms 600ms;
 }
@@ -282,7 +292,7 @@
 }
 .lp-arrow {
   position: absolute;
-  font-size: calc(var(--tile) * 0.17);
+  font-size: max(9px, calc(var(--tile) * 0.17));
   line-height: 1;
   opacity: 0.95;
 }
@@ -658,7 +668,9 @@ a.lp-cta {
   text-decoration: none;
 }
 .lp-chal {
-  margin: 0 auto 6px;
+  justify-self: center;
+  max-width: 100%;
+  margin: 0;
   padding: 4px 12px;
   border: 2px solid var(--lp-ink);
   border-radius: 999px;
@@ -666,4 +678,100 @@ a.lp-cta {
   font-size: 13px;
   font-weight: 800;
   text-align: center;
+}
+
+/* ---------------------------------------------------------------- clock, screen reader */
+.lp-clock {
+  margin-right: 4px;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--lp-ink-2);
+}
+.lp-clock.is-done {
+  color: var(--lp-ink);
+}
+.lp-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- touch targets */
+@media (pointer: coarse) {
+  .lp-icon,
+  .lp-close {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+  }
+  .lp-tab {
+    min-height: 44px;
+  }
+  .lp-tabs {
+    padding: 0;
+  }
+}
+/* A narrow phone fits the tabs, the clock and four 44 px-tall icons in one row: the daily's number moves
+   to the result card, and the streak pill makes way for the clock during a round. */
+@container (max-width: 380px) {
+  .lp-tab-num,
+  .lp-tools:has(.lp-clock) .lp-streak {
+    display: none;
+  }
+  .lp-tab {
+    padding: 6px 8px;
+  }
+  .lp-tabs[data-n='3'] .lp-tab {
+    padding: 6px 6px;
+    font-size: 12px;
+  }
+  .lp-clock {
+    font-size: 12px;
+    margin-right: 2px;
+  }
+}
+@media (pointer: coarse) {
+  @container (max-width: 380px) {
+    .lp-icon {
+      width: 40px;
+      min-width: 40px;
+    }
+  }
+}
+
+/* ---------------------------------------------------------------- phone on its side */
+/* Short and wide: the board on the left, the keyboard on the right, so the tiles get the full height. */
+@container (max-height: 480px) and (min-aspect-ratio: 3/2) {
+  .lp-in {
+    --kb-h: clamp(38px, 14cqh, 54px);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: 'top top' 'board keys';
+    column-gap: clamp(12px, 3cqw, 28px);
+  }
+  .lp-in:has(> .lp-chal) {
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas: 'top top' 'chal chal' 'board keys';
+  }
+  .lp-top {
+    grid-area: top;
+    max-width: none;
+  }
+  .lp-chal {
+    grid-area: chal;
+  }
+  .lp-board {
+    grid-area: board;
+  }
+  .lp-keys,
+  .lp-done {
+    grid-area: keys;
+    align-self: center;
+  }
 }

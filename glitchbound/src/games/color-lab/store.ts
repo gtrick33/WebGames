@@ -29,6 +29,18 @@ export interface ClSave {
   patterns: boolean;
   /** Help paid for on today's unfinished daily puzzle, so leaving and coming back doesn't refund it. */
   help: { day: string; index: number; hints: number; spare: boolean } | null;
+  /** Friends' challenge rounds, by `${id}:${round}`: one attempt each, resumed after a reload. */
+  challenges: Record<string, ChallengeRec>;
+}
+
+export interface ChallengeRec {
+  /** The day the round was started (for pruning). */
+  day: string;
+  results: LevelResult[];
+  /** Help paid for on the puzzle in progress (index = results.length), so a reload doesn't refund it. */
+  help: { hints: number; spare: boolean } | null;
+  /** The round's end was reported: show its result, never replay it. */
+  done: boolean;
 }
 
 export const emptyClSave = (): ClSave => ({
@@ -43,6 +55,7 @@ export const emptyClSave = (): ClSave => ({
   muted: false,
   patterns: true,
   help: null,
+  challenges: {},
 });
 
 const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
@@ -61,6 +74,18 @@ function cleanResult(v: unknown): LevelResult | null {
     points: Math.min(MAX_POINTS, num(r.points)),
     stars: Math.min(3, num(r.stars)),
   };
+}
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_CHALLENGES = 200;
+
+function cleanChallenge(v: unknown): ChallengeRec | null {
+  if (!v || typeof v !== 'object') return null;
+  const o = v as Record<string, unknown>;
+  if (typeof o.day !== 'string' || !DAY.test(o.day)) return null;
+  const results = Array.isArray(o.results) ? o.results.map(cleanResult).filter((r): r is LevelResult => !!r).slice(0, DAILY_LEVELS) : [];
+  const h = o.help as Record<string, unknown> | null | undefined;
+  return { day: o.day, results, help: h && typeof h === 'object' ? { hints: num(h.hints), spare: h.spare === true } : null, done: o.done === true };
 }
 
 export function sanitizeCl(raw: unknown): ClSave {
@@ -88,6 +113,12 @@ export function sanitizeCl(raw: unknown): ClSave {
   s.patterns = o.patterns !== false;
   const h = o.help as Record<string, unknown> | null | undefined;
   if (h && typeof h.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(h.day)) s.help = { day: h.day, index: Math.min(DAILY_LEVELS - 1, num(h.index)), hints: num(h.hints), spare: h.spare === true };
+  if (o.challenges && typeof o.challenges === 'object') {
+    for (const [key, v] of Object.entries(o.challenges as Record<string, unknown>).slice(-MAX_CHALLENGES)) {
+      const c = key.length <= 120 ? cleanChallenge(v) : null;
+      if (c) s.challenges[key] = c;
+    }
+  }
   return s;
 }
 
@@ -103,6 +134,7 @@ export function loadCl(): ClSave {
 export function saveCl(s: ClSave, today: string): void {
   const cutoff = addDays(today, -KEEP_DAYS);
   for (const day of Object.keys(s.daily)) if (day < cutoff) delete s.daily[day];
+  for (const [key, c] of Object.entries(s.challenges)) if (c.day < cutoff) delete s.challenges[key];
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify(s));
   } catch {
@@ -110,8 +142,22 @@ export function saveCl(s: ClSave, today: string): void {
   }
 }
 
-/** Records one finished level (any mode); `daily` is today's date for daily levels. */
-export function recordLevel(s: ClSave, r: LevelResult, daily: string | null, practice = false): ClSave {
+/**
+ * Saves a change on top of what is stored now (not an in-memory copy), so a second open tab never
+ * erases what the other one recorded. Returns the saved save.
+ */
+export function updateCl(change: (s: ClSave) => ClSave, today: string): ClSave {
+  const next = change(loadCl());
+  saveCl(next, today);
+  return next;
+}
+
+/**
+ * Records one finished level (any mode); `daily` is the daily's date for daily levels and `index` the
+ * puzzle's place in it. A daily puzzle that is already recorded (another tab got there first) is kept.
+ */
+export function recordLevel(s: ClSave, r: LevelResult, daily: string | null, practice = false, index?: number): ClSave {
+  if (daily && index !== undefined && (s.daily[daily]?.length ?? 0) !== index) return s;
   const next: ClSave = {
     ...s,
     daily: { ...s.daily },

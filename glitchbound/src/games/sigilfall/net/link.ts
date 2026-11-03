@@ -17,6 +17,9 @@ export interface LinkHandlers {
   onError?(message: string): void;
 }
 
+/** The room's codes for turning a player away (net/room.ts join), passed on for the game to word. */
+const CODES = new Set(['full', 'in_run']);
+
 export class Link {
   state: LinkState = 'connecting';
   view: View | null = null;
@@ -25,6 +28,8 @@ export class Link {
   private tries = 0;
   private retry = 0;
   private ping = 0;
+  /** Why the room sent this player away (its words), until the socket closes with the room's own code. */
+  private goneWhy = '';
 
   constructor(
     readonly code: string,
@@ -56,20 +61,29 @@ export class Link {
       } catch {
         return;
       }
-      if (m.t === 'relay' && m.data) this.h.onRelay(m.data.n, m.data.d);
+      if (m.t === 'relay' && m.data) {
+        // (a bad message from another seat never breaks the connection)
+        try {
+          this.h.onRelay(m.data.n, m.data.d);
+        } catch {
+          /* dropped */
+        }
+      }
       else if (m.t === 'state' && m.state) {
         this.view = m.state;
         this.h.onView(m.state);
       } else if (m.t === 'error' && m.message) this.h.onError?.(m.message);
       else if (m.t === 'gone') {
+        // said once the socket closes: its close reason is the room's own code ('full', 'in_run'), which the
+        // game puts in its words
         this.stopped = true;
-        this.set('gone', m.reason ?? 'The party has closed.');
+        this.goneWhy = m.reason ?? 'The party has closed.';
       }
     };
-    ws.onclose = () => {
+    ws.onclose = (ev) => {
       window.clearInterval(this.ping);
       if (this.stopped) {
-        if (this.state !== 'gone') this.set('gone');
+        if (this.state !== 'gone') this.set('gone', this.goneWhy ? (CODES.has(ev.reason) ? ev.reason : this.goneWhy) : undefined);
         return;
       }
       this.set('reconnecting');

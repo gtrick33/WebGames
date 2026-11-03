@@ -1,7 +1,12 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
-/games/*/*.webp
+# Game tile and wide art (a day: art can be replaced under the same name). One splat per rule is all
+# Cloudflare allows, so these name the files with a :slug placeholder.
+/games/:slug/tile.webp
+  Cache-Control: public, max-age=86400
+
+/games/:slug/wide.webp
   Cache-Control: public, max-age=86400
 
 # Launch Control's car models (a day, like the art: a model can be replaced under the same name).

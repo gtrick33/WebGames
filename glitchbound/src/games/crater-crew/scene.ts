@@ -71,6 +71,11 @@ export interface SceneOpts {
   sfx: () => Sfx;
   /** How long a computer crew seems to think before its shot (the room already waited in live play). */
   botDelay: number;
+  /**
+   * Live rooms: the turn clock is the room's, in wall time (it can't wait for one phone). Otherwise
+   * the scene keeps its own clock, which only runs while the battle steps, so a pause stops it.
+   */
+  wallClock?: boolean;
 }
 
 export interface Keys {
@@ -83,7 +88,6 @@ export interface Keys {
 
 const SWING_MS = 520;
 const SETTLE_MS = 900;
-const now = (): number => Date.now();
 const CREW_COLORS = Object.fromEntries(Object.values(CHARS).map((c) => [c.id, c.color])) as Record<string, string>;
 
 export class Scene {
@@ -105,6 +109,8 @@ export class Scene {
   dir: 1 | -1 = 1;
   power = 0;
   weapon: WeaponId = 'rocket';
+  /** A first battle: label your critter "This is you" while you aim. */
+  youLabel = false;
   /** Meteor Shower's target (world x), -1 for none yet. */
   tx = -1;
   /** The aim and weapon shown while replaying someone else's turn (yours stay as you left them). */
@@ -129,6 +135,9 @@ export class Scene {
   /** Previous positions, for drawing between physics steps. */
   prev = new WeakMap<object, { x: number; y: number }>();
 
+  /** The battle's own clock (ms): it moves only with step(), so it stops while the battle is paused. */
+  private ms = 0;
+
   constructor(private opts: SceneOpts) {
     this.shown = opts.match;
     this.world = worldFor(this.shown);
@@ -136,13 +145,18 @@ export class Scene {
     this.painter.reset(this.world.mask, this.shown.craters);
     this.back = new Backdrop(this.shown.terrain, this.shown.seed);
     this.fx = this.makeFx();
-    this.stage = this.shown.turn === 0 && !this.shown.over ? { k: 'intro', until: now() + 1800 } : { k: 'aim' };
+    this.stage = this.shown.turn === 0 && !this.shown.over ? { k: 'intro', until: this.now() + 1800 } : { k: 'aim' };
     if (this.stage.k === 'aim') this.startTurn();
     const u = this.activeUnit();
     if (u) {
       this.cam.x = u.x;
       this.cam.y = u.y - 60;
     }
+  }
+
+  /** The time the turn clock and the stage timers run on (see SceneOpts.wallClock). */
+  private now(): number {
+    return this.opts.wallClock ? Date.now() : this.ms;
   }
 
   private makeFx(): Fx {
@@ -195,7 +209,7 @@ export class Scene {
     this.painter.reset(this.world.mask, m.craters);
     this.committed = -1;
     this.anim.clear();
-    if (fresh && m.turn === 0) this.stage = { k: 'intro', until: now() + 1800 };
+    if (fresh && m.turn === 0) this.stage = { k: 'intro', until: this.now() + 1800 };
     else this.startTurn();
   }
 
@@ -215,7 +229,7 @@ export class Scene {
     this.tx = -1;
     this.remote = null;
     this.remoteShown = null;
-    this.clockAt = this.clock && this.clock.turn === m.turn ? this.clock.at : now();
+    this.clockAt = this.clock && this.clock.turn === m.turn ? this.clock.at : this.now();
     const u = this.activeUnit();
     if (u) this.dir = u.facing;
     // your weapon stays picked from turn to turn, until it runs out
@@ -283,7 +297,7 @@ export class Scene {
   pan(dx: number, dy: number): void {
     this.cam.x -= dx / this.cam.z;
     this.cam.y -= dy / this.cam.z;
-    this.manualUntil = now() + 3500;
+    this.manualUntil = this.now() + 3500;
     this.clampCam();
   }
 
@@ -299,7 +313,7 @@ export class Scene {
       this.cam.x = wx - (sx - vw / 2) / this.cam.z;
       this.cam.y = wy - (sy - vh / 2) / this.cam.z;
     }
-    this.manualUntil = now() + 3500;
+    this.manualUntil = this.now() + 3500;
     this.clampCam();
   }
 
@@ -340,11 +354,12 @@ export class Scene {
 
   step(dt: number): void {
     this.t += dt;
+    this.ms += dt * 1000;
     for (const u of this.world.units) this.prev.set(u, { x: u.x, y: u.y });
     for (const p of this.world.projs) this.prev.set(p, { x: p.x, y: p.y });
     switch (this.stage.k) {
       case 'intro':
-        if (now() >= this.stage.until) this.startTurn();
+        if (this.now() >= this.stage.until) this.startTurn();
         break;
       case 'aim':
         // a result for this turn already (the room passed it, or it isn't mine): show that
@@ -352,7 +367,7 @@ export class Scene {
         else if (this.myTurn) this.myStep();
         break;
       case 'think':
-        if (now() >= this.stage.until) this.stage = { k: 'swing', t: 0, from: this.shownAim, next: this.stage.next };
+        if (this.now() >= this.stage.until) this.stage = { k: 'swing', t: 0, from: this.shownAim, next: this.stage.next };
         break;
       case 'swing': {
         const s = this.stage;
@@ -373,7 +388,7 @@ export class Scene {
       case 'settle': {
         const s = this.stage;
         s.next ??= this.pending.find((p) => p.last?.turn === this.shown.turn) ?? null;
-        if (s.next && now() >= s.until) this.finish(s.next);
+        if (s.next && this.now() >= s.until) this.finish(s.next);
         break;
       }
       case 'over':
@@ -412,7 +427,7 @@ export class Scene {
       this.opts.sfx().charge(this.power);
       if (this.power >= 100) this.fireQueued = true;
     }
-    const left = this.clockAt + this.shown.turnSecs * 1000 - now();
+    const left = this.clockAt + this.shown.turnSecs * 1000 - this.now();
     if (left <= 0) return this.commit(null);
     if (u.drowned) return this.commit(null);
     if (this.fireQueued && !u.air) {
@@ -462,7 +477,7 @@ export class Scene {
     s.steps++;
     if (u && !air && u.air && bits & IN_JUMP) this.opts.sfx().jump();
     this.drain();
-    const left = this.clockAt + this.shown.turnSecs * 1000 - now();
+    const left = this.clockAt + this.shown.turnSecs * 1000 - this.now();
     // the run is over when its time is, when the turn's clock is (the room won't wait), or when there's nobody left to run
     if (s.steps < s.max && left > 0 && u && !u.drowned && !u.dead && u.hp > 0) return;
     const input: TurnInput = { ...s.input, run: runs(this.runRec) };
@@ -492,7 +507,7 @@ export class Scene {
     if (input.fire && canFire(this.shown, this.world, input.fire)) {
       const bot = !!this.shown.crews[this.shown.crewTurn]?.bot;
       this.shownWeapon = input.fire.w;
-      this.stage = { k: 'think', until: now() + (bot ? this.opts.botDelay : 120), next };
+      this.stage = { k: 'think', until: this.now() + (bot ? this.opts.botDelay : 120), next };
     } else this.stage = { k: 'shot', steps: 0, next, fired: false };
   }
 
@@ -517,7 +532,7 @@ export class Scene {
       return;
     }
     this.world.projs = [];
-    this.stage = { k: 'settle', until: now() + SETTLE_MS, next: s.next ?? this.pending.find((p) => p.last?.turn === this.shown.turn) ?? null };
+    this.stage = { k: 'settle', until: this.now() + SETTLE_MS, next: s.next ?? this.pending.find((p) => p.last?.turn === this.shown.turn) ?? null };
   }
 
   /** The turn has played out: check it against the room's result and move on to the next turn. */
@@ -544,7 +559,7 @@ export class Scene {
           this.fx.boom(e.x, e.y, e.r);
           if (e.r > 10) this.painter.blast(e.x, e.y, e.r);
           sfx.boom(e.r);
-          this.focus = { x: e.x, y: e.y, until: now() + 700 };
+          this.focus = { x: e.x, y: e.y, until: this.now() + 700 };
           break;
         case 'hurt': {
           const u = this.world.units.find((x) => x.id === e.unit);
@@ -641,14 +656,14 @@ export class Scene {
 
   private follow(dt: number): void {
     const c = this.cam;
-    if (now() < this.manualUntil) return;
+    if (this.now() < this.manualUntil) return;
     let tx: number | null = null;
     let ty = 0;
     const p = this.world.projs[0];
     if (p && this.stage.k === 'shot') {
       tx = p.x;
       ty = p.y;
-    } else if (this.focus && now() < this.focus.until) {
+    } else if (this.focus && this.now() < this.focus.until) {
       tx = this.focus.x;
       ty = this.focus.y;
     } else if (this.stage.k === 'shot' || this.stage.k === 'settle') {
@@ -681,7 +696,7 @@ export class Scene {
     const m = this.shown;
     const mine = this.opts.mine(m.crewTurn) && !m.over;
     const running = this.stage.k === 'aim' && !m.over;
-    const secs = running ? Math.max(0, Math.ceil((this.clockAt + m.turnSecs * 1000 - now()) / 1000)) : -1;
+    const secs = running ? Math.max(0, Math.ceil((this.clockAt + m.turnSecs * 1000 - this.now()) / 1000)) : -1;
     if (running && mine && secs <= 5 && secs > 0 && secs !== this.lastTick) {
       this.lastTick = secs;
       this.opts.sfx().tick();
@@ -714,7 +729,7 @@ export class Scene {
   /** The stream of someone else's live walk. */
   onRemote(p: PosMsg & { turn: number; unit: number }): void {
     if (p.turn !== this.shown.turn) return;
-    this.remote = { ...p, at: now() };
+    this.remote = { ...p, at: this.now() };
   }
 
 }

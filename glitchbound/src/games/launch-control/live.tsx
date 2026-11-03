@@ -26,7 +26,8 @@ export const lookOfLive = (c: LiveCar): CarLook => ({
   suit: c.suit,
 });
 
-export const inviteLink = (code: string): string => `${location.origin}/games/launch-control?room=${code}`;
+/** The arcade's room link: it shows the room's invite card and lands on /games/launch-control?room=CODE. */
+export const inviteLink = (code: string): string => `${location.origin}/r/${code}`;
 
 export function LiveRoom({
   code,
@@ -72,6 +73,22 @@ export function LiveRoom({
     onRacing(!!racing);
   }, [racing, onRacing]);
   useEffect(() => () => onRacing(false), [onRacing]);
+  // nothing has focus between races (the race screen took its keys with it): a Space meant as a tap must not scroll the page
+  useEffect(() => {
+    if (racing) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if ((e.key === ' ' || e.code === 'Space') && (e.target === document.body || e.target === document.documentElement)) e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [racing]);
+  // the room settled the round and your car is home (a friend who dropped out can't keep you on the strip)
+  const settledMine = racing && view?.phase === 'result' && view.round === planRound && !!me?.finished;
+  useEffect(() => {
+    if (!settledMine) return;
+    const id = window.setTimeout(() => setShownRound(planRound), 2500);
+    return () => window.clearTimeout(id);
+  }, [settledMine, planRound]);
   useEffect(() => {
     if (error) {
       const id = window.setTimeout(clearError, 3000);
@@ -141,6 +158,7 @@ export function LiveRoom({
       >
         {conn !== 'open' && <p className="lc-warn">{conn === 'connecting' ? 'Connecting to the room…' : 'Reconnecting…'}</p>}
         {error && <p className="lc-warn">{error}</p>}
+        {waiting && friend && !friend.online && <p className="lc-warn">{friend.name} lost connection. Their car runs on from the taps the room has.</p>}
         {!friend && view && <RoomListingBar listing={listing} host={view.host} players={view.players.filter((p) => p.online).length} min={2} skew={skew} onListed={setListed} />}
         {result && mineT && (
           <div className="lc-live-score">
@@ -198,7 +216,7 @@ export function LiveRoom({
           </div>
         )}
         {view?.phase !== 'race' && (
-          <button className={`btn btn-lg${me?.ready ? '' : ' lc-cta'}`} onClick={() => send({ t: 'ready', ready: !me?.ready })} disabled={conn !== 'open' || !me}>
+          <button autoFocus className={`btn btn-lg${me?.ready ? '' : ' lc-cta'}`} onClick={() => send({ t: 'ready', ready: !me?.ready })} disabled={conn !== 'open' || !me}>
             {me?.ready ? (friend ? `Waiting for ${friend.name}…` : 'Waiting for your friend…') : result ? 'Rematch' : 'Ready'}
           </button>
         )}

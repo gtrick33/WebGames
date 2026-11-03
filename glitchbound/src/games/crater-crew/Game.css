@@ -144,6 +144,10 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+/* the results sheet's "Just watch / Join it" choice */
+.cc-next .cc-link {
+  min-height: 44px;
+}
 .cc-icon {
   display: inline-grid;
   place-items: center;
@@ -547,9 +551,16 @@
   flex-wrap: wrap;
 }
 .cc-battle .cc-icon {
+  position: relative;
   flex: none;
   background: var(--hud-bg);
   border-color: var(--hud-line);
+}
+/* the compact HUD's icons look 36 px but take a 44 px touch */
+.cc-battle .cc-icon::after {
+  content: '';
+  position: absolute;
+  inset: -5px -3px;
 }
 .cc-crews {
   display: flex;
@@ -884,15 +895,22 @@
   letter-spacing: 0.08em;
 }
 .cc-btn.is-small {
+  position: relative;
   width: 48px;
   height: 38px;
   font-size: 14px;
   border-radius: 12px;
 }
+/* a 44 px tall touch, without overlapping its neighbor */
+.cc-btn.is-small::after {
+  content: '';
+  position: absolute;
+  inset: -5px -2px;
+}
 .cc-aimpad {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 10px;
 }
 .cc-fire {
   position: relative;
@@ -1070,14 +1088,38 @@
   }
 }
 
-/* first battles: how to aim, fire and move */
+/* your crew is out: skip the computer crews' battle */
+.cc-out {
+  position: absolute;
+  left: 50%;
+  bottom: max(64px, calc(env(safe-area-inset-bottom) + 56px));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100% - 24px);
+  padding: 8px 8px 8px 16px;
+  border-radius: 18px;
+  background: var(--hud-bg);
+  border: 2px solid var(--hud-line);
+  backdrop-filter: blur(6px);
+  font-weight: 900;
+  white-space: nowrap;
+  animation: cc-rise 0.3s ease;
+}
+.cc-out .cc-cta {
+  min-height: 44px;
+}
+
+/* first battles: how to aim, fire and move (up top, clear of your critter: the camera keeps it below the middle) */
 .cc-coach {
   position: absolute;
   left: 50%;
-  bottom: 110px;
+  top: 60px;
   transform: translateX(-50%);
   width: min(430px, calc(100% - 20px));
-  padding: 9px 36px 9px 12px;
+  padding: 9px 42px 9px 12px;
+  pointer-events: none;
   border-radius: 16px;
   background: rgba(255, 250, 240, 0.97);
   color: var(--cc-ink);
@@ -1112,10 +1154,11 @@
 }
 .cc-coach-x {
   position: absolute;
-  top: 3px;
-  right: 4px;
-  width: 30px;
-  height: 30px;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  pointer-events: auto;
   border: 0;
   background: none;
   font-size: 22px;
@@ -1301,7 +1344,7 @@
     height: 34px;
   }
   .cc-aimpad {
-    gap: 7px;
+    gap: 10px;
   }
   .cc-fire {
     width: 72px;
@@ -1315,7 +1358,7 @@
     font-size: 14px;
   }
   .cc-coach {
-    bottom: 96px;
+    top: 52px;
     font-size: 12.5px;
   }
   .cc-tray {
@@ -1372,7 +1415,7 @@
     max-width: 100%;
   }
   .cc-coach {
-    bottom: 162px;
+    top: 100px;
   }
   .cc-tray {
     bottom: 150px;
@@ -1419,8 +1462,7 @@
 /* a phone on its side: room for two lines of tips */
 @container cc-battle (max-height: 380px) {
   .cc-coach {
-    bottom: 88px;
-    padding: 6px 34px 6px 10px;
+    padding: 6px 42px 6px 10px;
     font-size: 12px;
   }
   .cc-coach p:last-child {
@@ -1559,6 +1601,7 @@
   .cc-toast,
   .cc-sheet,
   .cc-coach,
+  .cc-out,
   .cc-tray,
   .cc-run,
   .cc-clock.is-low {

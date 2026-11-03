@@ -81,9 +81,55 @@ export function challengeForDay(day: string, games: GameEntry[], rules: DailyRul
   };
 }
 
+/** The kind of round a per-mode best counts (StatDef.mode). */
+export const roundKind = (e: { daily?: boolean; challenge?: unknown }): 'daily' | 'challenge' | 'other' => (e.daily ? 'daily' : e.challenge ? 'challenge' : 'other');
+
+/**
+ * A round's stats with its per-mode stats settled (StatDef.mode/of): one of the round's kind reads its
+ * `of` stat when the game doesn't report it itself; one of another kind is dropped. So a per-mode stat
+ * works (bests, the Daily Challenge, quests) before and after a game reports it.
+ */
+export function modeStats(game: GameEntry, score: number, stats: Record<string, number>, kind: ReturnType<typeof roundKind>): Record<string, number> {
+  const out = { ...stats };
+  for (const s of game.stats) {
+    if (!s.mode || !s.of) continue;
+    if (s.mode !== kind) delete out[s.key];
+    else if (out[s.key] === undefined) {
+      const v = s.of === 'score' ? score : out[s.of];
+      if (v !== undefined) out[s.key] = v;
+    }
+  }
+  return out;
+}
+
 /** The value a finished round achieved for the challenge's metric. */
 export function metricValue(metric: string, event: EndEvent): number {
   return metric === 'score' ? event.score : (event.stats?.[metric] ?? 0);
+}
+
+/** Whether the challenge's metric is a lower-is-better stat (a time: "in under {n} seconds"). */
+export const lowerIsBetter = (c: Pick<DailyChallenge, 'game' | 'metric'>): boolean => c.game.stats.find((s) => s.key === c.metric)?.lowerIsBetter === true;
+
+/**
+ * Whether a round's value clears the challenge: reaching the target, or for a lower-is-better stat
+ * staying at or under it (0 means the round didn't report it, e.g. no daily time outside the daily).
+ */
+export function isDone(c: Pick<DailyChallenge, 'game' | 'metric' | 'target'>, value: number): boolean {
+  return lowerIsBetter(c) ? value > 0 && value <= c.target : value >= c.target;
+}
+
+/** The better of two of the day's values (for a lower-is-better stat, 0 is "none yet"). */
+export function better(c: Pick<DailyChallenge, 'game' | 'metric'>, a: number, b: number): number {
+  if (!lowerIsBetter(c)) return Math.max(a, b);
+  if (!(a > 0)) return b;
+  if (!(b > 0)) return a;
+  return Math.min(a, b);
+}
+
+/** How far the day's best is toward the target, 0 to 1. */
+export function progressOf(c: Pick<DailyChallenge, 'game' | 'metric' | 'target'>, best: number): number {
+  if (lowerIsBetter(c)) return best > 0 ? Math.min(1, c.target / best) : 0;
+  return Math.min(1, best / c.target);
 }
 
 /**
@@ -106,7 +152,7 @@ export function dailyShareText(c: DailyChallenge, best: number, streak: number, 
   const unit = c.unit ? ` ${c.unit}` : '';
   return [
     `GlitchBound Challenge #${c.number} · ${c.game.title}`,
-    `Cleared: ${fmt(best)}${unit} (target ${fmt(c.target)}${unit})`,
+    `Cleared: ${fmt(best)}${unit} (target ${lowerIsBetter(c) ? 'under ' : ''}${fmt(c.target)}${unit})`,
     `${row}  streak ${streak}`,
     url,
   ].join('\n');

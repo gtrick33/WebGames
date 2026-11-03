@@ -2,6 +2,8 @@
 // The precache list and cache version below are filled in at build time by the Vite plugin in vite.config.ts.
 const VERSION = 'neonrush-__VERSION__';
 const SHELL = ['./', ...__PRECACHE__];
+// The game itself: the only page that may become the offline copy.
+const SHELL_PATHS = [new URL('./', self.location).pathname, new URL('./index.html', self.location).pathname];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -21,16 +23,20 @@ self.addEventListener('fetch', (event) => {
   // Live data (leaderboard API) always goes to the network and is never cached.
   if (url.pathname.includes('/api/')) return;
 
-  // Pages: network first so updates arrive, cached copy when offline.
+  // Pages: network first so updates arrive, cached copy when offline. Only a good copy of the game
+  // is kept: never another page in scope (the privacy policy) or an error page.
   if (req.mode === 'navigate') {
+    const shell = SHELL_PATHS.includes(url.pathname);
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(VERSION).then((c) => c.put('./index.html', copy));
+          if (shell && res.ok && res.type === 'basic' && !res.redirected) {
+            const copy = res.clone();
+            caches.open(VERSION).then((c) => c.put('./index.html', copy));
+          }
           return res;
         })
-        .catch(() => caches.match('./index.html', { ignoreVary: true }).then((r) => r || Response.error())),
+        .catch(() => caches.match(shell ? './index.html' : req, { ignoreVary: true }).then((r) => r || Response.error())),
     );
     return;
   }

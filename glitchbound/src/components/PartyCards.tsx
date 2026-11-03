@@ -5,6 +5,21 @@ import { DEFAULT_FEATURED, PARTY_GAMES } from '../party/catalog';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { AdultLabel } from './AdultLabel';
 
+/** Relative luminance of a #rrggbb color (WCAG). */
+function luminance(hex: string): number {
+  const n = parseInt(hex.replace('#', ''), 16);
+  const lin = (c: number): number => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * lin(((n >> 16) & 255) / 255) + 0.7152 * lin(((n >> 8) & 255) / 255) + 0.0722 * lin((n & 255) / 255);
+}
+
+/** The card's text color: dark ink, or white on a fill too dark for it (Impostor's violet), whichever reads better. */
+export function cardInk(fill: string): string {
+  if (!/^#[0-9a-f]{6}$/i.test(fill)) return '#1d1238';
+  const l = luminance(fill);
+  const ink = luminance('#1d1238');
+  return (l + 0.05) / (ink + 0.05) >= 1.05 / (l + 0.05) ? '#1d1238' : '#ffffff';
+}
+
 /**
  * The two featured party games as cards under the home page's party banner (the admins' featured
  * picks, else Impostor and Crass Act). Loaded after the first paint: it sits below the arcade and
@@ -23,7 +38,7 @@ export function PartyCards() {
         const s = partySettingsFor(live.raw, g.id);
         return (
           <li key={g.id}>
-            <Link href={`/party?play=${g.id}`} className="party-card" style={{ background: g.color }}>
+            <Link href={`/party?play=${g.id}`} className="party-card" style={{ background: g.color, color: cardInk(g.color) }}>
               {g.art ? (
                 <img src={g.art.tile} alt="" width={72} height={72} loading="lazy" />
               ) : (

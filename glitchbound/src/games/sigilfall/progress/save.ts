@@ -53,6 +53,8 @@ export interface Settings {
   aimAssist: number;
   /** Tapping attack (or a skill) aims at the nearest enemy. */
   autoTarget: boolean;
+  /** Tapping a skill or the ultimate aims it at the nearest enemy (a drag still aims by hand). */
+  autoAimSkills: boolean;
   shake: boolean;
   numbers: boolean;
   /** Calmer screen: no shake, lighter weather (a new save starts from the device's own setting). */
@@ -77,6 +79,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sensitivity: 1.15,
   aimAssist: 1,
   autoTarget: true,
+  autoAimSkills: true,
   shake: true,
   numbers: true,
   reducedMotion: false,
@@ -122,6 +125,7 @@ export function validateSettings(v: unknown): Settings {
     sensitivity: num(o.sensitivity, 0.6, 1.8, d.sensitivity),
     aimAssist: int(o.aimAssist, 0, 2, d.aimAssist),
     autoTarget: bool(o.autoTarget, d.autoTarget),
+    autoAimSkills: bool(o.autoAimSkills, d.autoAimSkills),
     shake: bool(o.shake, d.shake),
     numbers: bool(o.numbers, d.numbers),
     reducedMotion: bool(o.reducedMotion, d.reducedMotion),

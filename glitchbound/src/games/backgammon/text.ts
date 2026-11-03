@@ -83,6 +83,29 @@ export interface Words {
   noRoom: string;
   rematch: string;
   host: string;
+  bearOff: string;
+  dismiss: string;
+  roomFull: string;
+  /** A third player in the lobby: both places are taken. */
+  watchingLobby: string;
+  wonMatch: (name: string) => string;
+  /** Someone away on their turn: the computer plays for them in `secs` (null: the match waits for them). */
+  awayFor: (name: string, secs: number | null) => string;
+  coveredYou: (n: number) => string;
+  clock: string;
+  clockLeft: (secs: number) => string;
+  seeScores: string;
+  scoreLabel: (a: number, b: number) => string;
+  shareDaily: (n: number, line: string, score: number) => string;
+  shareMatch: (a: number, b: number, line: string) => string;
+  dailyCounts: string;
+  replaceMatch: string;
+  replaceYes: string;
+  replaceNo: string;
+  /** A point for screen readers, numbered from your side: `d` is your point number. */
+  pointLabel: (d: number, yours: number, theirs: number, them: string) => string;
+  /** The room's messages (sent in English) in this language. */
+  serverMsg: Record<string, string>;
 }
 
 const en: Words = {
@@ -132,7 +155,7 @@ const en: Words = {
   friendsSub: 'A live board: each on their own phone',
   howTo: 'How to play',
   rules: [
-    'You move your light checkers from the top right, round the board, home to the bottom right; your opponent goes the other way. The first to bear all fifteen off wins.',
+    'You move your light checkers from the top right, around the board, home to the bottom right; your opponent goes the other way. The first to bear all fifteen off wins.',
     'Roll two dice and move by each number; a double plays four times. Use both numbers when you can (when only one fits, the larger one).',
     'Land on an empty point, your own, or a single opposing checker (a blot): that one is hit and goes to the bar. Two or more opposing checkers close a point.',
     'A hit checker comes back in through the opponent’s home board before anything else moves.',
@@ -151,7 +174,7 @@ const en: Words = {
   music: 'Music',
   room: (code) => `Board ${code}`,
   invite: 'Send this to a friend',
-  inviteText: (code) => `Fancy a game of backgammon? Board ${code}`,
+  inviteText: (code) => `Up for a game of backgammon? Board ${code}`,
   shareLink: 'Share the link',
   sitHere: 'Sit here',
   empty: 'Empty place',
@@ -173,6 +196,25 @@ const en: Words = {
   noRoom: 'No board with that code.',
   rematch: 'New match',
   host: 'host',
+  bearOff: 'Bear off',
+  dismiss: 'dismiss',
+  roomFull: 'This board is full',
+  watchingLobby: 'Both places are taken: you are watching this match.',
+  wonMatch: (name) => `${name} won the match`,
+  awayFor: (name, secs) => (secs === null ? `${name} is away: waiting for them to come back` : `${name} is away: the computer plays for them in ${clockText(secs)}`),
+  coveredYou: (n) => `The computer played ${n} turn${n === 1 ? '' : 's'} for you while you were away`,
+  clock: 'Turn clock: 60 s a move',
+  clockLeft: (secs) => `${clockText(secs)} left`,
+  seeScores: 'See the scoreboard',
+  scoreLabel: (a, b) => `${a} to ${b}`,
+  shareDaily: (n, line, score) => `🎲 Backgammon #${n}\n${line}\n${score} points`,
+  shareMatch: (a, b, line) => `🎲 Backgammon ${a}–${b}\n${line}`,
+  dailyCounts: 'You already played this daily: your result counts here.',
+  replaceMatch: 'Start a new match? The match you have going will be lost.',
+  replaceYes: 'Start a new one',
+  replaceNo: 'Keep my match',
+  pointLabel: (d, yours, theirs, them) => `Your ${d} point: ${yours ? `${yours} of yours` : theirs ? `${theirs} of ${them}’s` : 'empty'}`,
+  serverMsg: {},
 };
 
 const bg: Words = {
@@ -263,6 +305,44 @@ const bg: Words = {
   noRoom: 'Няма табла с този код.',
   rematch: 'Нов мач',
   host: 'домакин',
+  bearOff: 'Изнеси',
+  dismiss: 'скрий',
+  roomFull: 'Таблата е пълна',
+  watchingLobby: 'И двете места са заети: гледаш мача.',
+  wonMatch: (name) => `${name} спечели мача`,
+  awayFor: (name, secs) => (secs === null ? `${name} излезе: чакаме да се върне` : `${name} излезе: компютърът играе вместо него след ${clockText(secs)}`),
+  coveredYou: (n) => `Компютърът изигра ${n} ${n === 1 ? 'ход' : 'хода'} вместо теб, докато те нямаше`,
+  clock: 'Часовник: 60 с за ход',
+  clockLeft: (secs) => `остават ${clockText(secs)}`,
+  seeScores: 'Виж класирането',
+  scoreLabel: (a, b) => `${a} на ${b}`,
+  shareDaily: (n, line, score) => `🎲 Табла #${n}\n${line}\n${score} точки`,
+  shareMatch: (a, b, line) => `🎲 Табла ${a}–${b}\n${line}`,
+  dailyCounts: 'Вече изигра тази игра за деня: резултатът ти се брои тук.',
+  replaceMatch: 'Нов мач? Мачът, който играеш, ще се загуби.',
+  replaceYes: 'Започни нов',
+  replaceNo: 'Остави мача',
+  pointLabel: (d, yours, theirs, them) => `Твое поле ${d}: ${yours ? `${yours} твои` : theirs ? `${theirs} на ${them}` : 'празно'}`,
+  serverMsg: {
+    'That move isn’t allowed.': 'Този ход не е позволен.',
+    'Two players are needed: invite a friend or seat the computer.': 'Трябват двама играчи: покани приятел или сложи компютъра.',
+    'That place is taken.': 'Мястото е заето.',
+    'Someone sits there.': 'Там седи някой.',
+    'Join the room first.': 'Първо влез в таблата.',
+    'Unknown action.': 'Непознато действие.',
+    'This room is full.': 'Таблата е пълна.',
+    'This room has closed.': 'Таблата е затворена.',
+    'You were removed from the room.': 'Беше премахнат от таблата.',
+  },
 };
 
 export const WORDS: Record<BasicLang, Words> = { en, bg };
+
+/** 42 → '0:42'. */
+function clockText(secs: number): string {
+  const n = Math.max(0, Math.ceil(secs));
+  return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
+}
+
+/** A message from the room in the player's language (English stays as sent). */
+export const serverText = (w: Words, msg: string): string => w.serverMsg[msg] ?? msg;

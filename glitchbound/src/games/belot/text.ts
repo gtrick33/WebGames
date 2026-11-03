@@ -12,6 +12,12 @@ export interface Words {
   suits: [string, string, string, string];
   noTrumps: string;
   allTrumps: string;
+  /** The contract badge on a narrow table. */
+  noTrumpsShort: string;
+  allTrumpsShort: string;
+  /** Card ranks 7 to ace, and a card's name for screen readers. */
+  ranks: [string, string, string, string, string, string, string, string];
+  cardName: (rank: string, suit: number) => string;
   pass: string;
   contra: string;
   recontra: string;
@@ -41,11 +47,16 @@ export interface Words {
   declarations: string;
   total: string;
   outcome: Record<Outcome, string>;
-  outcomeLine: (o: Outcome, bidders: string, n: number) => string;
+  /** The sheet's outcome line; `tie`: nobody is ahead (a contra tie hangs everything). */
+  outcomeLine: (o: Outcome, bidders: string, n: number, tie: boolean) => string;
+  /** What each outcome means, under the stamp when it is tapped. */
+  outcomeHelp: Record<Outcome, string>;
   gamePoints: string;
   hangTaken: (n: number) => string;
   nextDeal: string;
   thrown: string;
+  /** Four passes in today's deals or a challenge: the deal is one of the four, scored 0. */
+  thrownSet: string;
   matchWon: string;
   matchLost: string;
   playAgain: string;
@@ -69,6 +80,7 @@ export interface Words {
   newBest: string;
   best: string;
   paused: string;
+  pause: string;
   tapToContinue: string;
   resumeBtn: string;
   quit: string;
@@ -101,6 +113,23 @@ export interface Words {
   noRoom: string;
   rematch: string;
   wins: string;
+  host: string;
+  scoreboard: string;
+  /** "151 to 98", for screen readers. */
+  scoreLine: (a: number, b: number) => string;
+  /** A watcher's end of match: who won. */
+  teamWon: (names: string) => string;
+  /** The room's answers, by code (room.ts ActError) and the reasons a room goes away. */
+  errors: Record<'join' | 'taken' | 'call' | 'card' | 'unknown' | 'full' | 'removed' | 'closed', string>;
+  timeLeft: string;
+  takePlace: string;
+  standUp: string;
+  matchOver: string;
+  dailyCounts: string;
+  bestMatch: string;
+  bestMatchHint: string;
+  settings: string;
+  fourColor: string;
 }
 
 const en: Words = {
@@ -109,6 +138,10 @@ const en: Words = {
   suits: ['Clubs', 'Diamonds', 'Hearts', 'Spades'],
   noTrumps: 'No trumps',
   allTrumps: 'All trumps',
+  noTrumpsShort: 'NT',
+  allTrumpsShort: 'AT',
+  ranks: ['Seven', 'Eight', 'Nine', 'Ten', 'Jack', 'Queen', 'King', 'Ace'],
+  cardName: (rank, suit) => `${rank} of ${['clubs', 'diamonds', 'hearts', 'spades'][suit]}`,
   pass: 'Pass',
   contra: 'Contra',
   recontra: 'Recontra',
@@ -143,18 +176,26 @@ const en: Words = {
   declarations: 'Declarations',
   total: 'Total',
   outcome: { outside: 'Made it', inside: 'Inside', hanging: 'Hanging', doubled: 'Contra', thrown: 'Thrown in' },
-  outcomeLine: (o, bidders, n) =>
+  outcomeLine: (o, bidders, n, tie) =>
     o === 'outside'
       ? `${bidders} made the contract: each team keeps its points.`
       : o === 'inside'
         ? `${bidders} went inside: the other team takes everything.`
-        : o === 'hanging'
+        : o === 'hanging' || tie
           ? `A tie: ${n} points hang until the next deal.`
           : `Contra: the team ahead takes everything, multiplied.`,
+  outcomeHelp: {
+    outside: 'The bidders scored more than the other team, so each team keeps its own points.',
+    inside: 'The bidders did not score more than the other team, so the other team takes all the points.',
+    hanging: 'Both teams scored the same. The other team keeps its points; the bidders’ wait for whoever wins the next deal.',
+    doubled: 'After a contra the team with more points takes everything, times 2 (times 4 after recontra). A tie hangs it all.',
+    thrown: 'Everyone passed, so the cards were dealt again.',
+  },
   gamePoints: 'Game points',
   hangTaken: (n) => `+${n} hanging points from before`,
   nextDeal: 'Next deal',
   thrown: 'Everyone passed. New deal.',
+  thrownSet: 'Everyone passed: this deal counts as played, 0 points.',
   matchWon: 'You won the match!',
   matchLost: 'They won the match',
   playAgain: 'Play again',
@@ -177,6 +218,10 @@ const en: Words = {
     'Trumps: J 20, 9 14, A 11, 10 10, K 4, Q 3. Other suits: A 11, 10 10, K 4, Q 3, J 2. Last trick +10. All eight tricks (valat) +90.',
     'With your first card declare runs and fours: tierce 20, quarte 50, quint 100, four jacks 200, nines 150, aces, tens, kings or queens 100. K and Q of trumps: belote 20.',
     'The bidding team must score more than the other or go inside: then the other team takes everything. A tie hangs: those points go to the next deal’s winner.',
+    'Four passes throw the cards in: the next player deals again. In Today’s deals a thrown-in deal still counts as one of the four, with 0 points.',
+    'After a contra the team with more points takes all the points of the deal, doubled; after a recontra, times four. A tie hangs them all.',
+    'A card serves only one declaration: a run and a carré that share a card count as whichever is worth more.',
+    'No match is won on a valat: if a deal of all eight tricks takes a team past 151, the match goes on.',
   ],
   pickLevel: 'Choose the table',
   start: 'Deal',
@@ -185,6 +230,7 @@ const en: Words = {
   newBest: 'New best!',
   best: 'Best',
   paused: 'Paused',
+  pause: 'Pause',
   tapToContinue: 'Tap to continue',
   resumeBtn: 'Continue',
   quit: 'Quit to menu',
@@ -216,6 +262,29 @@ const en: Words = {
   noRoom: 'No table with that code.',
   rematch: 'New match',
   wins: 'Matches won',
+  host: 'host',
+  scoreboard: 'See the scoreboard',
+  scoreLine: (a, b) => `${a} to ${b}`,
+  teamWon: (names) => `${names} won the match`,
+  errors: {
+    join: 'Join the table first.',
+    taken: 'That place is taken.',
+    call: 'You can’t call that now.',
+    card: 'You can’t play that card now.',
+    unknown: 'That didn’t work. Try again.',
+    full: 'This table is full.',
+    removed: 'You were removed from the table.',
+    closed: 'This table has closed.',
+  },
+  timeLeft: 'Time left',
+  takePlace: 'Take this place',
+  standUp: 'Stand up',
+  matchOver: 'Places can change now: sit, stand or swap with a computer player before the next match.',
+  dailyCounts: 'You already played this day’s deals: your result counts here.',
+  bestMatch: 'Best match',
+  bestMatchHint: 'A won match scores its table (Easy 100, Medium 200, Hard 300, Expert 400) plus the winning margin.',
+  settings: 'Settings',
+  fourColor: 'Four-color deck',
 };
 
 const bg: Words = {
@@ -224,6 +293,10 @@ const bg: Words = {
   suits: ['Спатия', 'Каро', 'Купа', 'Пика'],
   noTrumps: 'Без коз',
   allTrumps: 'Всичко коз',
+  noTrumpsShort: 'БК',
+  allTrumpsShort: 'ВК',
+  ranks: ['Седмица', 'Осмица', 'Деветка', 'Десетка', 'Вале', 'Дама', 'Поп', 'Асо'],
+  cardName: (rank, suit) => `${rank} ${['спатия', 'каро', 'купа', 'пика'][suit]}`,
   pass: 'Пас',
   contra: 'Контра',
   recontra: 'Реконтра',
@@ -258,24 +331,32 @@ const bg: Words = {
   declarations: 'Анонси',
   total: 'Общо',
   outcome: { outside: 'Изкарана', inside: 'Вътре', hanging: 'Висяща', doubled: 'Контра', thrown: 'Пасове' },
-  outcomeLine: (o, bidders, n) =>
+  outcomeLine: (o, bidders, n, tie) =>
     o === 'outside'
       ? `${bidders} изкараха играта: всеки отбор взима своите точки.`
       : o === 'inside'
         ? `${bidders} са вътре: другият отбор взима всичко.`
-        : o === 'hanging'
+        : o === 'hanging' || tie
           ? `Равенство: ${n} точки висят до следващата игра.`
           : `Контра: отборът с повече точки взима всичко, умножено.`,
+  outcomeHelp: {
+    outside: 'Обявилите имат повече точки от другия отбор, затова всеки отбор взима своите.',
+    inside: 'Обявилите нямат повече точки от другия отбор, затова другият отбор взима всичко.',
+    hanging: 'Двата отбора имат равни точки. Другият отбор взима своите, а точките на обявилите отиват при победителя в следващата игра.',
+    doubled: 'След контра отборът с повече точки взима всичко, по 2 (по 4 след реконтра). При равенство всичко виси.',
+    thrown: 'Всички казаха пас, затова картите се раздават отново.',
+  },
   gamePoints: 'Точки',
   hangTaken: (n) => `+${n} висящи точки от преди`,
   nextDeal: 'Следваща игра',
   thrown: 'Всички казаха пас. Ново раздаване.',
+  thrownSet: 'Всички казаха пас: играта се брои за изиграна, с 0 точки.',
   matchWon: 'Спечелихте партията!',
   matchLost: 'Те спечелиха партията',
   playAgain: 'Нова партия',
   menu: 'Меню',
   daily: 'Игрите за деня',
-  dailySub: (n) => `Белот #${n} · еднаквите четири раздавания за всички`,
+  dailySub: (n) => `Белот #${n} · едни и същи четири раздавания за всички`,
   dailyDeal: (i) => `Игра ${i} от 4`,
   dailyDone: 'Игрите за деня са изиграни',
   dailyScore: 'Твоите точки от четирите игри',
@@ -289,9 +370,13 @@ const bg: Words = {
     'Два отбора: ти и партньорът ти седите един срещу друг. Играе се обратно на часовниковата стрелка. Печели първият отбор до 151.',
     'По пет карти, после обявяване: спатия, каро, купа, пика, без коз, всичко коз (всяко обявяване по-високо). Контра удвоява, реконтра удвоява пак. Три паса след обявяване го приключват.',
     'После още по три карти. Отговаря се на боя. При коз: козът се качва, ако може; ако нямаш от боята, цакаш, когато ръката е на противник, и надцакваш, ако можеш (не е нужно, ако ръката е на партньора). При всичко коз винаги се качва, ако може.',
-    'Коз: вале 20, девятка 14, асо 11, десетка 10, поп 4, дама 3. Другите бои: асо 11, десетка 10, поп 4, дама 3, вале 2. Последна ръка +10. Всичките осем ръце (валат) +90.',
+    'Коз: вале 20, деветка 14, асо 11, десетка 10, поп 4, дама 3. Другите бои: асо 11, десетка 10, поп 4, дама 3, вале 2. Последна ръка +10. Всичките осем ръце (валат) +90.',
     'С първата си карта обявяваш поредни и карета: терца 20, кварта 50, квинта 100, каре валета 200, деветки 150, аса, десетки, попове или дами 100. Поп и дама коз: белот 20.',
     'Обявилият отбор трябва да има повече точки, иначе е вътре и другият отбор взима всичко. При равенство играта е висяща: точките отиват при победителя в следващата игра.',
+    'При четири паса картите се хвърлят и следващият раздава отново. В игрите за деня такова раздаване се брои за едно от четирите, с 0 точки.',
+    'След контра отборът с повече точки взима всички точки от играта, удвоени; след реконтра – по четири. При равенство всичко виси.',
+    'Една карта участва само в един анонс: поредни и каре с обща карта се броят като по-ценното от двете.',
+    'Партия не се печели с валат: ако игра с всичките осем ръце изкара отбор над 151, партията продължава.',
   ],
   pickLevel: 'Избери масата',
   start: 'Раздай',
@@ -300,6 +385,7 @@ const bg: Words = {
   newBest: 'Нов рекорд!',
   best: 'Рекорд',
   paused: 'Пауза',
+  pause: 'Пауза',
   tapToContinue: 'Докосни, за да продължиш',
   resumeBtn: 'Продължи',
   quit: 'Към менюто',
@@ -331,6 +417,29 @@ const bg: Words = {
   noRoom: 'Няма маса с този код.',
   rematch: 'Нова партия',
   wins: 'Спечелени партии',
+  host: 'домакин',
+  scoreboard: 'Към класирането',
+  scoreLine: (a, b) => `${a} на ${b}`,
+  teamWon: (names) => `${names} спечелиха партията`,
+  errors: {
+    join: 'Първо влез на масата.',
+    taken: 'Мястото е заето.',
+    call: 'Сега не можеш да обявиш това.',
+    card: 'Сега не можеш да играеш тази карта.',
+    unknown: 'Не стана. Опитай пак.',
+    full: 'Масата е пълна.',
+    removed: 'Махнаха те от масата.',
+    closed: 'Масата е затворена.',
+  },
+  timeLeft: 'Оставащо време',
+  takePlace: 'Заеми мястото',
+  standUp: 'Стани',
+  matchOver: 'Сега местата могат да се сменят: седни, стани или смени компютъра преди следващата партия.',
+  dailyCounts: 'Вече изигра раздаванията за този ден: резултатът ти се брои тук.',
+  bestMatch: 'Най-добра партия',
+  bestMatchHint: 'Спечелена партия носи точките на масата (Лесно 100, Средно 200, Трудно 300, Експерт 400) плюс разликата.',
+  settings: 'Настройки',
+  fourColor: 'Карти в четири цвята',
 };
 
 export const WORDS: Record<BasicLang, Words> = { en, bg };

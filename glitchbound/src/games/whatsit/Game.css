@@ -88,6 +88,15 @@
   min-height: 48px;
   font-size: 16.5px;
 }
+/* The final pick: set apart below the other choices, with a check mark. */
+.whz-btn-pick {
+  margin-top: 10px;
+  background: var(--whz-yes);
+  color: #fff;
+}
+.whz-btn-pick::before {
+  content: '✓';
+}
 .whz-btn-quiet {
   border-color: transparent;
   background: none;
@@ -96,8 +105,8 @@
 .whz-icon {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: 2px solid var(--whz-ink);
   border-radius: 12px;
   background: #fff;
@@ -337,7 +346,38 @@
 .whz-ask {
   overflow-y: hidden;
 }
+/* A fade and "↓ N more" while questions are scrolled out of view below. */
+.whz-qs-wrap {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+}
+.whz-qs-wrap.has-more::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 34px;
+  background: linear-gradient(transparent, var(--whz-paper));
+  pointer-events: none;
+}
+.whz-more {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  z-index: 1;
+  padding: 2px 10px;
+  border: 2px solid var(--whz-ink);
+  border-radius: 999px;
+  background: var(--whz-sand);
+  font-size: 12.5px;
+  font-weight: 800;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
 .whz-qs {
+  position: relative;
   display: grid;
   align-content: start;
   gap: 6px;
@@ -356,7 +396,8 @@
   justify-content: space-between;
   gap: 8px;
   width: 100%;
-  min-height: 42px;
+  height: 100%;
+  min-height: 44px;
   padding: 6px 11px;
   border: 2px solid var(--whz-ink);
   border-radius: 12px;
@@ -394,6 +435,26 @@
 }
 .whz-q.is-no b {
   background: var(--whz-no);
+}
+/* The number key for a question, only where there is a keyboard and a mouse. */
+.whz-key {
+  display: none;
+  flex: none;
+  min-width: 20px;
+  padding: 0 4px;
+  border: 1.5px solid currentColor;
+  border-radius: 6px;
+  font: 700 11.5px var(--font-mono, monospace);
+  text-align: center;
+  opacity: 0.55;
+}
+@media (hover: hover) and (pointer: fine) {
+  .whz-key {
+    display: inline-block;
+  }
+  .whz-q > span {
+    flex: 1;
+  }
 }
 .whz-hint {
   flex: none;
@@ -557,6 +618,61 @@
 .whz-reveal p {
   font-size: 13.5px;
 }
+.whz-answers {
+  width: 100%;
+  max-width: 460px;
+}
+.whz-answers h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.whz-answers ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.whz-answers li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 6px 10px;
+  border: 2px solid var(--whz-no);
+  border-radius: 10px;
+  background: #ffe8ea;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-align: left;
+}
+.whz-answers li.is-yes {
+  border-color: var(--whz-yes);
+  background: #e2f8ea;
+}
+.whz-answers b {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--whz-no);
+  color: #fff;
+  font-size: 12.5px;
+}
+.whz-answers li.is-yes b {
+  background: var(--whz-yes);
+}
+.whz-answers small {
+  grid-column: 1 / -1;
+  font-weight: 500;
+  font-size: 12.5px;
+}
+.whz-disagree {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 10px 4px;
+  color: var(--whz-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
 .whz-review {
   display: flex;
   flex-wrap: wrap;
@@ -705,6 +821,32 @@
   }
   .whz-parcel-talk {
     width: 44px;
+  }
+}
+/* Wide stages: two columns of questions. Short ones (phone landscape): a slimmer top so the list gets the room. */
+@container (min-width: 640px) {
+  .whz-qs {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@container (max-height: 460px) {
+  .whz-ask .whz-parcel-talk,
+  .whz-ask .whz-hint {
+    display: none;
+  }
+  .whz-ask .whz-bubble {
+    min-height: 0;
+    padding: 3px 10px;
+    font-size: 13.5px;
+  }
+  .whz-ask {
+    gap: 6px;
+    padding-block: 8px;
+  }
+}
+@container (max-height: 460px) and (min-width: 480px) {
+  .whz-qs {
+    grid-template-columns: 1fr 1fr;
   }
 }
 @media (prefers-reduced-motion: reduce) {

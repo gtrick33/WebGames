@@ -161,6 +161,9 @@ class AccountStore {
   }
 
   async signOut(): Promise<void> {
+    // Send the last few seconds of play while still signed in, and leave none of this member's saves
+    // behind for the next person who signs in here (PS-09).
+    await cloud?.then((m) => m.signOutCloudSave()).catch(() => undefined);
     await api('/api/auth/logout', { body: {} }).catch(() => undefined);
     this.set({ me: null, status: 'guest' });
     syncSaves(null);

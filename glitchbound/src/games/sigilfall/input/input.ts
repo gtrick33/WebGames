@@ -81,6 +81,9 @@ export class KeyboardMouse {
     if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     const code = e.code;
+    // Enter and Space on a focused button (Farewell, OK, a panel's tab) press that button only: as "talk" they
+    // would reopen the talk or the road's card the button just closed
+    if ((k === 'Enter' || k === ' ') && t instanceof Element && t.closest('button, a[href], [role="button"], [role="tab"]')) return;
     // a held key is known by its place (its letter only if the keyboard gives none)
     const id = code || k;
     const move = !!(MOVE_CODES[id] ?? MOVE_KEYS[id]);
@@ -114,6 +117,9 @@ export class KeyboardMouse {
     this.keys.clear();
     this.lmb = false;
     this.queued = [];
+    this.potion = false;
+    this.interact = false;
+    this.mount = false;
   }
 
   /** Movement from the keys. */
