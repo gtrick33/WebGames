@@ -109,6 +109,8 @@ export class Scene {
   dir: 1 | -1 = 1;
   power = 0;
   weapon: WeaponId = 'rocket';
+  /** A first battle: label your critter "This is you" while you aim. */
+  youLabel = false;
   /** Meteor Shower's target (world x), -1 for none yet. */
   tx = -1;
   /** The aim and weapon shown while replaying someone else's turn (yours stay as you left them). */

@@ -123,6 +123,10 @@ export function Battle(props: BattleProps) {
   }, [match]);
 
   useEffect(() => {
+    if (sceneBox.current) sceneBox.current.youLabel = coach;
+  }, [coach]);
+
+  useEffect(() => {
     if (props.clock) sceneBox.current?.setClock(props.clock.turn, props.clock.at);
   }, [props.clock]);
 
