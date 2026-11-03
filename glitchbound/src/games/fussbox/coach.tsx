@@ -61,7 +61,7 @@ const TEXT: Record<BasicLang, { title: string; body: string }[]> = {
     },
     {
       title: 'Feed it cards',
-      body: 'Build any card and feed it in. Green and a ding: it likes it. Red and a buzz: it hates it. The fewer tests you need, the more points.',
+      body: 'Build any card and feed it in. Green and a ding: it likes it. Red and a buzz: it hates it. Your first 3 tests are free; after that each one costs a little of your bonus.',
     },
     {
       title: 'Then ace the exam',
@@ -79,7 +79,7 @@ const TEXT: Record<BasicLang, { title: string; body: string }[]> = {
     },
     {
       title: 'Храни го с карти',
-      body: 'Направи която и да е карта и му я дай. Зелено и звън: харесва я. Червено и бръмчене: мрази я. Колкото по-малко тестове, толкова повече точки.',
+      body: 'Направи която и да е карта и му я дай. Зелено и звън: харесва я. Червено и бръмчене: мрази я. Първите 3 теста са безплатни; след това всеки струва малко от бонуса.',
     },
     {
       title: 'После вземи изпита',

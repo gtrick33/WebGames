@@ -3,7 +3,7 @@
  * text. The cards themselves have no words.
  */
 import type { BasicLang } from '../../platform/contentLang';
-import type { Attr, Card, Rule } from './logic';
+import { likes, type Attr, type Card, type Rule } from './logic';
 
 interface Lang {
   values: Record<Attr, [string, string, string]>;
@@ -84,6 +84,22 @@ export function describe(rule: Rule, lang: BasicLang): string {
     }
   };
   return go(rule, true);
+}
+
+/**
+ * Why the robot judged a card as it did: each part of the rule, ticked or crossed for that card, e.g.
+ * "two symbols ✓ · not solid ✗".
+ */
+export function explain(rule: Rule, c: Card, lang: BasicLang): string {
+  const leaves: Rule[] = [];
+  const walk = (x: Rule): void => {
+    if (x.t === 'and' || x.t === 'or' || x.t === 'xor') {
+      walk(x.l);
+      walk(x.r);
+    } else leaves.push(x);
+  };
+  walk(rule);
+  return leaves.map((l) => `${describe(l, lang)} ${likes(l, c) ? '✓' : '✗'}`).join(' · ');
 }
 
 /** Names of the attribute values (for screen readers and the pickers). */
@@ -170,6 +186,11 @@ export interface Ui {
   close: string;
   inspect: (yes: boolean, name: string) => string;
   dailyCounts: string;
+  /** The HUD pill: free tests left, then what the extra ones cost. */
+  testsPill: (n: number, cost: number) => string;
+  /** A card tapped on the result: what it is, the robot's verdict and yours. */
+  reviewSay: (name: string, yes: boolean, right: boolean) => string;
+  reviewHint: string;
 }
 
 const UI_EN: Ui = {
@@ -234,6 +255,9 @@ const UI_EN: Ui = {
   close: 'Close',
   inspect: (yes, name) => `${yes ? 'It likes' : 'It hates'} ${name}.`,
   dailyCounts: 'You already played today’s rule: your daily result counts here.',
+  testsPill: (n, cost) => (cost > 0 ? `${n} tests · −${cost}` : `${n} / 3 free`),
+  reviewSay: (name, yes, right) => `${name}: it ${yes ? 'likes' : 'hates'} it${right ? '' : ` (you said it ${yes ? 'hates' : 'likes'} it)`}.`,
+  reviewHint: 'Tap a card to see why.',
 };
 
 const UI_BG: Ui = {
@@ -298,6 +322,9 @@ const UI_BG: Ui = {
   close: 'Затвори',
   inspect: (yes, name) => `${yes ? 'Харесва' : 'Мрази'}: ${name}.`,
   dailyCounts: 'Вече игра правилото за деня: резултатът ти от дневния се брои тук.',
+  testsPill: (n, cost) => (cost > 0 ? `${n} теста · −${cost}` : `${n} / 3 безплатни`),
+  reviewSay: (name, yes, right) => `${name}: ${yes ? 'харесва я' : 'мрази я'}${right ? '' : ` (ти каза, че ${yes ? 'я мрази' : 'я харесва'})`}.`,
+  reviewHint: 'Докосни карта, за да видиш защо.',
 };
 
 export const UI: Record<BasicLang, Ui> = { en: UI_EN, bg: UI_BG };

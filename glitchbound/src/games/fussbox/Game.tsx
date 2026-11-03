@@ -6,12 +6,12 @@ import type { EndEvent, GameHost, GameModuleProps } from '../../platform/contrac
 import { dayKey, daysBetween, formatCountdown, hashString, msUntilMidnight } from '../../platform/dates';
 import { shareOrCopy } from '../../platform/share';
 import { ResultLine } from '../../components/ResultLine';
-import { cardId, cardOf, correctOf, dailyRound, EXAM_SIZE, likes, makeRound, MAX_TESTS, NEAR_MISS_FROM, resultLine, scoreOf, type Attr, type Card, type Level, type Round } from './logic';
+import { cardId, cardOf, correctOf, dailyRound, EXAM_SIZE, likes, makeRound, MAX_TESTS, NEAR_MISS_FROM, resultLine, scoreOf, testCost, type Attr, type Card, type Level, type Round } from './logic';
 import { Coach, useCoach } from '../../components/Coach';
 import { CardArt, Robot, SymbolIcon, type Mood } from './art';
 import { COACH_BUTTONS, coachSteps } from './coach';
 import { createSfx, type Sfx } from './sound';
-import { cardPhrase, describe, UI, valueName, type Ui } from './words';
+import { cardPhrase, describe, explain, UI, valueName, type Ui } from './words';
 import './Game.css';
 import { GameMenuButton } from '../../components/GameMenuButton';
 
@@ -618,8 +618,8 @@ function Lab({ play, u, lang, label, sfx, active, onFeed, onExam, onMenu }: { pl
             ☰
           </button>
           <span className="fbx-hud-label">{label}</span>
-          <span className="fbx-hud-tests mono" aria-live="polite">
-            {u.tests(tests.length)}
+          <span className="fbx-hud-tests mono" aria-live="polite" aria-label={u.tests(tests.length)}>
+            {u.testsPill(tests.length, testCost(tests.length))}
           </span>
           <GameMenuButton className="fbx-icon" />
         </header>
@@ -776,6 +776,12 @@ function AllCards({ liked, hated, latest, u, lang, onPick, onClose }: { liked: I
 
 function Exam({ play, u, lang, label, onMark, onHandIn, onMenu }: { play: Play; u: Ui; lang: BasicLang; label: string; onMark: (i: number, m: boolean) => void; onHandIn: () => void; onMenu: () => void }) {
   const left = play.marks.filter((m) => m === null).length;
+  // The last card touched, by name: color has a second cue on touch screens (no hover there).
+  const [said, setSaid] = useState<string | null>(null);
+  const mark = (i: number, m: boolean): void => {
+    setSaid(`${i + 1}: ${cardName(play.round.exam[i]!, lang)}`);
+    onMark(i, m);
+  };
   return (
     <div className="fbx fbx-exam">
       <header className="fbx-hud">
@@ -783,20 +789,27 @@ function Exam({ play, u, lang, label, onMark, onHandIn, onMenu }: { play: Play; 
           ☰
         </button>
         <span className="fbx-hud-label">{label}</span>
-        <span className="fbx-hud-tests mono">{u.tests(play.tests.length)}</span>
+        <span className="fbx-hud-tests mono" aria-label={u.tests(play.tests.length)}>
+          {u.testsPill(play.tests.length, testCost(play.tests.length))}
+        </span>
         <GameMenuButton className="fbx-icon" />
       </header>
       <h2 className="fbx-exam-title">{u.examTitle}</h2>
-      <p className="fbx-muted">{u.examHint}</p>
+      <p className="fbx-muted fbx-said" role="status">
+        {said ?? u.examHint}
+      </p>
       <ol className="fbx-exam-grid">
         {play.round.exam.map((id, i) => (
           <li key={id} className={play.marks[i] === true ? 'is-yes' : play.marks[i] === false ? 'is-no' : ''}>
-            <CardArt id={id} title={cardName(id, lang)} />
+            {/* The whole card is a target too: it cycles unmarked → ✓ → ✗ → unmarked. */}
+            <button className="fbx-exam-card" onClick={() => mark(i, play.marks[i] === null ? true : false)} aria-label={`${i + 1}: ${cardName(id, lang)}`} title={cardName(id, lang)}>
+              <CardArt id={id} />
+            </button>
             <div className="fbx-yn">
-              <button className={`fbx-y${play.marks[i] === true ? ' is-on' : ''}`} onClick={() => onMark(i, true)} aria-label={`${i + 1}: ${u.yes}`} aria-pressed={play.marks[i] === true}>
+              <button className={`fbx-y${play.marks[i] === true ? ' is-on' : ''}`} onClick={() => mark(i, true)} aria-label={`${i + 1}: ${u.yes}`} aria-pressed={play.marks[i] === true}>
                 ✓
               </button>
-              <button className={`fbx-n${play.marks[i] === false ? ' is-on' : ''}`} onClick={() => onMark(i, false)} aria-label={`${i + 1}: ${u.no}`} aria-pressed={play.marks[i] === false}>
+              <button className={`fbx-n${play.marks[i] === false ? ' is-on' : ''}`} onClick={() => mark(i, false)} aria-label={`${i + 1}: ${u.no}`} aria-pressed={play.marks[i] === false}>
                 ✗
               </button>
             </div>
@@ -814,6 +827,7 @@ function Result({ play, u, lang, label, newBest, share, challenge, onAgain, onMe
   const correct = correctOf(play.round, play.marks);
   const score = scoreOf(correct, play.tests.length);
   const line = resultLine(play.round, play.marks);
+  const [why, setWhy] = useState<{ say: string; parts: string } | null>(null);
   return (
     <div className="fbx fbx-result">
       <p className="fbx-eyebrow">{label}</p>
@@ -833,12 +847,25 @@ function Result({ play, u, lang, label, newBest, share, challenge, onAgain, onMe
           const yes = likes(play.round.rule, cardOf(id));
           return (
             <li key={id} className={play.marks[i] === yes ? 'is-right' : 'is-wrong'}>
-              <CardArt id={id} title={cardName(id, lang)} />
-              <span>{yes ? '✓' : '✗'}</span>
+              <button onClick={() => setWhy({ say: u.reviewSay(cardName(id, lang), yes, play.marks[i] === yes), parts: explain(play.round.rule, cardOf(id), lang) })} aria-label={cardName(id, lang)} title={cardName(id, lang)}>
+                <CardArt id={id} />
+                <span>{yes ? '✓' : '✗'}</span>
+              </button>
             </li>
           );
         })}
       </ol>
+      <p className="fbx-muted fbx-why" role="status">
+        {why ? (
+          <>
+            {why.say}
+            <br />
+            <b>{why.parts}</b>
+          </>
+        ) : (
+          u.reviewHint
+        )}
+      </p>
       <div className="fbx-row">
         {play.mode === 'challenge' && challenge ? (
           <a className="fbx-btn fbx-btn-go" href={`/c/${challenge.id}`} onClick={openChallengeScores} autoFocus>

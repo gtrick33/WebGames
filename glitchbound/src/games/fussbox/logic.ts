@@ -236,6 +236,8 @@ export function scoreOf(correct: number, tests: number): number {
   return correct * 100 + Math.round(MAX_BONUS * quick * (correct / EXAM_SIZE));
 }
 export const MAX_SCORE = EXAM_SIZE * 100 + MAX_BONUS;
+/** What the tests past the free ones take off a perfect round's bonus (0 while they are free). */
+export const testCost = (tests: number): number => MAX_BONUS - Math.round(MAX_BONUS * Math.max(0, 1 - Math.max(0, tests - BONUS_FREE_TESTS) / 10));
 
 /** Exam answers marked right. `marks[i]`: true = "it likes it". */
 export const correctOf = (round: Round, marks: readonly (boolean | null)[]): number =>

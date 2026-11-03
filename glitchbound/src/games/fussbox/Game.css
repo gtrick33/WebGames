@@ -716,6 +716,22 @@
 .fbx-exam-grid li.is-no {
   background: #ffe6e9;
 }
+/* Tapping the card marks it too (unmarked → ✓ → ✗), and says its name above the grid. */
+.fbx-exam-card,
+.fbx-review button {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: 900;
+}
+.fbx-said,
+.fbx-why {
+  min-height: 2.6em;
+}
 .fbx-yn {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

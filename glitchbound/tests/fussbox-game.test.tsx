@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Fussbox from '../src/games/fussbox/Game';
-import { cardOf, dailyRound, likes } from '../src/games/fussbox/logic';
+import { cardOf, dailyRound, likes, makeRound, NEAR_MISS_FROM } from '../src/games/fussbox/logic';
 import type { ChallengeSpec } from '../src/platform/challenge';
 import type { GameEvent } from '../src/platform/contract';
 import { dayKey, hashString } from '../src/platform/dates';
@@ -30,12 +30,12 @@ describe('Fussbox keys', () => {
     fireEvent.keyDown(field, { key: 'r' });
     const enter = fireEvent.keyDown(field, { key: 'Enter' });
     expect(enter).toBe(true); // not prevented: the field's form still gets its Enter
-    expect(screen.getByText('0 tests')).toBeTruthy();
+    expect(screen.getByText('0 / 3 free')).toBeTruthy();
     expect(events(h, 'start')).toHaveLength(0);
     // On the game itself, Enter still feeds the card.
     field.blur();
     fireEvent.keyDown(document.body, { key: 'Enter' });
-    expect(screen.getByText('1 test')).toBeTruthy();
+    expect(screen.getByText('1 / 3 free')).toBeTruthy();
     field.remove();
   });
 });
@@ -101,7 +101,7 @@ describe('Fussbox challenges keep one attempt (FB-08)', () => {
     view.unmount();
     play(host(), fresh);
     expect(screen.getByRole('heading', { name: 'The exam' })).toBeTruthy();
-    expect(screen.getByText('1 test')).toBeTruthy();
+    expect(screen.getByText('1 / 3 free')).toBeTruthy();
     expect(screen.getByRole('button', { name: '1: Likes it' }).getAttribute('aria-pressed')).toBe('true');
     // No way out of the round from the pause sheet.
     fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
@@ -149,3 +149,43 @@ describe('Fussbox challenges keep one attempt (FB-08)', () => {
     expect(stored().daily[day]).toMatchObject({ score: 1000, correct: 8 });
   });
 });
+
+describe('Fussbox design: free tests, card taps, names and reasons', () => {
+  it('the HUD says the first 3 tests are free, then what the extra ones cost', async () => {
+    const { testCost } = await import('../src/games/fussbox/logic');
+    expect([0, 3, 4, 8, 13, 40].map(testCost)).toEqual([0, 0, 20, 100, 200, 200]);
+    play();
+    fireEvent.click(screen.getByRole('button', { name: 'Play today’s Fussbox' }));
+    for (let i = 0; i < 4; i++) {
+      fireEvent.click(screen.getByRole('button', { name: 'Random card' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Feed it' }));
+    }
+    expect(screen.getByLabelText(/^\d tests?$/).textContent).toMatch(/^(\d \/ 3 free|4 tests · −20)$/);
+  });
+
+  it('tapping an exam card cycles its mark and says its name; the result says why', async () => {
+    const { describe: say, explain } = await import('../src/games/fussbox/words');
+    play(host(), fresh);
+    fireEvent.click(screen.getByRole('button', { name: /take the exam/ }));
+    const r = makeRoundFor(fresh);
+    const card = screen.getByRole('button', { name: new RegExp(`^1: \\d `) });
+    fireEvent.click(card);
+    expect(screen.getByRole('button', { name: '1: Likes it' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('status').textContent).toMatch(/^1: \d (pink|blue|yellow)/);
+    fireEvent.click(card);
+    expect(screen.getByRole('button', { name: '1: Hates it' }).getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(card);
+    expect(screen.getByRole('button', { name: '1: Hates it' }).getAttribute('aria-pressed')).toBe('false');
+    for (let i = 1; i <= 8; i++) fireEvent.click(screen.getByRole('button', { name: `${i}: Likes it` }));
+    fireEvent.click(screen.getByRole('button', { name: 'Hand it in' }));
+    const first = r.exam[0]!;
+    fireEvent.click(screen.getAllByRole('button').find((b) => b.closest('.fbx-review'))!);
+    const why = document.querySelector('.fbx-why')!.textContent!;
+    expect(why).toContain(explain(r.rule, cardOf(first), 'en'));
+    expect(why).toContain(likes(r.rule, cardOf(first)) ? 'it likes it.' : 'it hates it (you said it likes it).');
+    expect(explain({ t: 'and', l: { t: 'is', a: 'count', v: 1 }, r: { t: 'not', r: { t: 'is', a: 'fill', v: 0 } } }, { count: 1, shape: 0, colour: 0, fill: 0 }, 'en')).toBe('two symbols ✓ · not solid ✗');
+    expect(say(r.rule, 'en').length).toBeGreaterThan(0);
+  });
+});
+
+const makeRoundFor = (c: ChallengeSpec) => makeRound(c.seed, 3, c.day >= NEAR_MISS_FROM);
