@@ -3,14 +3,15 @@
  * Pure functions over plain data, unit tested.
  */
 import { daysBetween, hashString } from '../../platform/dates';
-import { makePuzzle, wordCells, type Dir, type Puzzle, type Size } from './grid';
+import { editionFor, makePuzzle, wordCells, type Dir, type Puzzle, type Size } from './grid';
 
 export const EPOCH = '2026-10-19';
 export type Entries = Record<string, string>;
 export const key = (r: number, c: number): string => `${r},${c}`;
 
+/** The day's grid. Days before the word list's second edition keep their original grids. */
 export function dailyPuzzle(day: string): Puzzle {
-  return makePuzzle(hashString(`crosswire:${day}`), 'medium');
+  return makePuzzle(hashString(`crosswire:${day}`), 'medium', editionFor(day));
 }
 export const dailyNumber = (day: string): number => Math.max(1, daysBetween(EPOCH, day) + 1);
 export const practicePuzzle = (size: Size): Puzzle => makePuzzle((Math.random() * 2 ** 32) >>> 0, size);
@@ -56,6 +57,9 @@ export function typeLetter(p: Puzzle, e: Entries, cur: Cursor, ch: string): { en
   // Next empty square in this word after the cursor, else the next unfinished word.
   for (let i = cur.pos + 1; i < cells.length; i++) if (!entries[key(...cells[i]!)]) return { entries, cursor: { word: cur.word, pos: i } };
   if (cur.pos + 1 < cells.length) return { entries, cursor: { word: cur.word, pos: cur.pos + 1 } };
+  // At the end of a word with gaps left earlier on: back to its first empty square.
+  const gap = cells.findIndex(([a, b]) => !entries[key(a, b)]);
+  if (gap >= 0) return { entries, cursor: { word: cur.word, pos: gap } };
   for (let k = 1; k <= p.words.length; k++) {
     const wi = (cur.word + k) % p.words.length;
     const ws = wordCells(p.words[wi]!);
@@ -78,6 +82,20 @@ export function backspace(p: Puzzle, e: Entries, cur: Cursor): { entries: Entrie
   const entries = { ...e };
   delete entries[key(...cells[pos]!)];
   return { entries, cursor: { word: cur.word, pos } };
+}
+
+/** Delete: clear this square and step forward within the word. */
+export function deleteForward(p: Puzzle, e: Entries, cur: Cursor): { entries: Entries; cursor: Cursor } {
+  const cells = wordCells(p.words[cur.word]!);
+  const entries = { ...e };
+  delete entries[key(...cells[cur.pos]!)];
+  return { entries, cursor: { word: cur.word, pos: Math.min(cells.length - 1, cur.pos + 1) } };
+}
+
+/** The next (step 1) or previous (step -1) clue whose answer isn't filled in yet, or -1 when there is none that way. */
+export function nextOpenWord(p: Puzzle, e: Entries, from: number, step: 1 | -1): number {
+  for (let i = from + step; i >= 0 && i < p.words.length; i += step) if (!isFilled(p, e, i)) return i;
+  return -1;
 }
 
 /** Moves the cursor to the same square in the crossing word, if any. */
@@ -121,10 +139,22 @@ export const LETTER_HINT = 30;
 export const WORD_HINT = 100;
 export const MYSTERY_BONUS = 250;
 
+export const CHECK_COST = 10;
+
+/** The score's parts, for the result's breakdown: what time, checks and hints cost, and the bonus. */
+export function scoreParts(t: Tally): { time: number; checks: number; hints: number; floor: number; mystery: number } {
+  const time = Math.max(0, Math.floor((t.seconds - 60) / 3));
+  const checks = t.checks * CHECK_COST;
+  const hints = t.letterHints * LETTER_HINT + t.wordHints * WORD_HINT;
+  // The grid never scores below 100: the floor gives back what the costs took past it.
+  const floor = Math.max(0, 100 - (1000 - time - checks - hints));
+  return { time, checks, hints, floor, mystery: t.mystery ? MYSTERY_BONUS : 0 };
+}
+
 /** 1000 for a clean solve, minus time (1 per 3 s after the first minute), help, plus the mystery bonus. */
 export function score(t: Tally): number {
-  const time = Math.max(0, Math.floor((t.seconds - 60) / 3));
-  return Math.max(100, 1000 - time - t.checks * 10 - t.letterHints * LETTER_HINT - t.wordHints * WORD_HINT) + (t.mystery ? MYSTERY_BONUS : 0);
+  const s = scoreParts(t);
+  return 1000 - s.time - s.checks - s.hints + s.floor + s.mystery;
 }
 
 /** The circled letters of the mystery word, shuffled (never in the answer's order). */

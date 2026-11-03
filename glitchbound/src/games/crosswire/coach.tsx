@@ -6,12 +6,12 @@ const row = (cells: { cls?: string; text?: string }[]) => cells;
 export const COACH: CoachStep[] = [
   {
     title: 'The clues live inside the grid',
-    body: 'Each yellow square is a clue. Its arrow shows where the answer goes: → to the right, ↓ downwards, ↳ ↴ round the corner.',
+    body: 'Each yellow square is a clue. Its arrow shows where the answer goes: → to the right, ↓ downward, ↳ ↴ around the corner.',
     art: <CoachGrid size={5} cells={row([{ cls: 'is-clue', text: 'Big cat →' }, { cls: 'is-word' }, { cls: 'is-word' }, { cls: 'is-word' }, { cls: 'is-word' }])} />,
   },
   {
     title: 'Tap a clue, then type',
-    body: 'The answer fills in along the arrow. Tap the same square again to switch between across and down. On a phone, the keys are under the grid.',
+    body: 'The answer fills in along the arrow. Tap the same square again to switch between across and down. On a phone, use the keys on the screen.',
     art: (
       <CoachGrid
         size={5}
