@@ -40,6 +40,7 @@ export const ROOM_GAME_INFO: Record<RoomGame, { title: string; emoji: string }> 
   belot: { title: 'Belot', emoji: '🃏' },
   backgammon: { title: 'Backgammon', emoji: '🎲' },
   sigilfall: { title: 'Sigilfall', emoji: '⚔️' },
+  'sigilfall-ring': { title: 'Sigilfall: The Ring', emoji: '⚔️' },
   'crater-crew': { title: 'Crater Crew', emoji: '💥' },
 };
 

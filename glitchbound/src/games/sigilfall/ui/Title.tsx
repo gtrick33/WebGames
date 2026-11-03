@@ -13,6 +13,7 @@ import { RiftScreen } from './RiftScreen';
 import { SettingsPanel } from './Panels';
 
 const VigilScreen = lazy(() => import('./VigilScreen').then((m) => ({ default: m.VigilScreen })));
+const RingScreen = lazy(() => import('./RingScreen').then((m) => ({ default: m.RingScreen })));
 
 /** Embers rising from the Rift on the title screen: spread across, each on its own clock. */
 const EMBERS = Array.from({ length: 18 }, (_, i) => ({ x: (i * 53) % 100, delay: (i % 6) * 0.9, dur: 6 + (i % 5) * 1.7, size: 2 + (i % 3) }));
@@ -61,11 +62,19 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [rift, setRift] = useState<number | null>(null);
   const [vigil, setVigil] = useState(false);
+  const [ring, setRing] = useState(false);
   const lastHero = heroes[engine.save.last];
   if (vigil) {
     return (
       <Suspense fallback={<div className="rb-title is-epic"><EpicSky /></div>}>
         <VigilScreen engine={engine} face={lastHero?.face} body={lastHero?.body} cls={lastHero?.cls} onBack={() => setVigil(false)} />
+      </Suspense>
+    );
+  }
+  if (ring) {
+    return (
+      <Suspense fallback={<div className="rb-title is-epic"><EpicSky /></div>}>
+        <RingScreen engine={engine} face={lastHero?.face} body={lastHero?.body} cls={lastHero?.cls} name={lastHero?.name} onBack={() => setRing(false)} />
       </Suspense>
     );
   }
@@ -79,7 +88,7 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
   }
   return (
     <div className="rb-title is-hall">
-      <CharacterSelect engine={engine} onRift={setRift} onVigil={() => setVigil(true)} onSettings={() => setSettings(true)} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} />
+      <CharacterSelect engine={engine} onRift={setRift} onVigil={() => setVigil(true)} onRing={() => setRing(true)} onSettings={() => setSettings(true)} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} />
       {engine.ui.notice && <p className="rb-notice" role="status">{engine.ui.notice}</p>}
       {engine.party && !engine.invite && <p className="rb-notice" role="status">You’re still in party {engine.party.link.code}. Choose a hero to go back to it.</p>}
       {engine.invite && (

@@ -17,9 +17,10 @@ import * as rps from '../src/party/rooms/rpsRoom';
 import * as scribble from '../src/party/rooms/scribbleRoom';
 import * as unique from '../src/party/rooms/uniqueRoom';
 import * as sigilfall from '../src/games/sigilfall/net/room';
+import * as sigilfallRing from '../src/games/sigilfall/net/ringRoom';
 import * as craterCrew from '../src/games/crater-crew/room';
 
-export type GameId = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag' | 'belot' | 'backgammon' | 'scribble' | 'sigilfall' | 'crater-crew';
+export type GameId = 'crass-act' | 'impostor' | 'nhie' | 'auction' | 'board' | 'rps' | 'dial' | 'unique' | 'hues' | 'drag' | 'belot' | 'backgammon' | 'scribble' | 'sigilfall' | 'sigilfall-ring' | 'crater-crew';
 
 /** What every room engine provides (`State` stays opaque to the server). */
 export interface Engine {
@@ -73,6 +74,7 @@ export const ENGINES: Record<GameId, Engine> = {
   backgammon: backgammon as unknown as Engine,
   scribble: scribble as unknown as Engine,
   sigilfall: sigilfall as unknown as Engine,
+  'sigilfall-ring': sigilfallRing as unknown as Engine,
   'crater-crew': craterCrew as unknown as Engine,
 };
 
@@ -99,6 +101,7 @@ export const QUICK: Record<GameId, { min: number; full: number; seats: number; s
   scribble: { min: 2, full: 6, seats: 10 },
   // a party of heroes: never matched with strangers (the game opens private rooms only)
   sigilfall: { min: 2, full: 4, seats: 4, start: false },
+  'sigilfall-ring': { min: 2, full: 6, seats: 6, start: false },
   'crater-crew': { min: 2, full: 4, seats: 8 },
 };
 

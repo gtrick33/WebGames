@@ -1,5 +1,5 @@
 import { playerKey } from '../../../platform/challenges';
-import { createRoom } from '../../../platform/rooms';
+import { createRoom, type RoomGame } from '../../../platform/rooms';
 import type { Action, View } from './room';
 
 /**
@@ -9,8 +9,8 @@ import type { Action, View } from './room';
  */
 export type LinkState = 'connecting' | 'open' | 'reconnecting' | 'gone';
 
-export interface LinkHandlers {
-  onView(v: View): void;
+export interface LinkHandlers<V = View> {
+  onView(v: V): void;
   /** The fight's traffic from another seat (net/coop.ts). */
   onRelay(n: number, d: unknown): void;
   onState(s: LinkState, reason?: string): void;
@@ -20,9 +20,9 @@ export interface LinkHandlers {
 /** The room's codes for turning a player away (net/room.ts join), passed on for the game to word. */
 const CODES = new Set(['full', 'in_run']);
 
-export class Link {
+export class Link<V = View, A = Action> {
   state: LinkState = 'connecting';
-  view: View | null = null;
+  view: V | null = null;
   private ws: WebSocket | null = null;
   private stopped = false;
   private tries = 0;
@@ -34,14 +34,14 @@ export class Link {
   constructor(
     readonly code: string,
     private name: string,
-    private readonly h: LinkHandlers,
+    private readonly h: LinkHandlers<V>,
   ) {
     this.connect();
   }
 
   /** Opens a new party room and connects to it. */
-  static async create(name: string, h: LinkHandlers): Promise<Link> {
-    return new Link(await createRoom('sigilfall'), name, h);
+  static async create<V = View, A = Action>(name: string, h: LinkHandlers<V>, game: RoomGame = 'sigilfall'): Promise<Link<V, A>> {
+    return new Link<V, A>(await createRoom(game), name, h);
   }
 
   private connect(): void {
@@ -55,7 +55,7 @@ export class Link {
     };
     ws.onmessage = (ev) => {
       if (typeof ev.data !== 'string' || ev.data === 'pong') return;
-      let m: { t: string; state?: View; data?: { n: number; d: unknown }; message?: string; reason?: string };
+      let m: { t: string; state?: V; data?: { n: number; d: unknown }; message?: string; reason?: string };
       try {
         m = JSON.parse(ev.data);
       } catch {
@@ -97,13 +97,13 @@ export class Link {
   }
 
   /** An action for the room (a card, the plan, start...). */
-  send(a: Action): void {
+  send(a: A): void {
     if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(a));
   }
 
   /** The fight's traffic to everyone else in the party. */
   relay(d: unknown): void {
-    this.send({ t: 'r', d });
+    this.send({ t: 'r', d } as A);
   }
 
   get open(): boolean {

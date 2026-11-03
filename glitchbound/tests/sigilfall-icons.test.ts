@@ -7,6 +7,8 @@ import type { ClassId } from '../src/games/sigilfall/data/types';
 import { talentIcon } from '../src/games/sigilfall/render/art/gameIcons';
 import { SKILL_ICON, TALENT_ICONS, VIGIL_ICON } from '../src/games/sigilfall/render/art/iconPicks';
 import { vigilIcons } from '../src/games/sigilfall/vigil/kit';
+import { ringIcons } from '../src/games/sigilfall/arena/abilities';
+import { talentIcons } from '../src/games/sigilfall/arena/talents';
 
 /**
  * The skill and talent icons (Nasha's Lumenfall): every skill has its own, no tree shows the same
@@ -40,7 +42,7 @@ describe('Sigilfall: skill and talent icons', () => {
   });
 
   it('the atlas holds what the picks name (rebuild it with scripts/sigilfall-icons.mjs), and the pack is credited', () => {
-    const picked = [...new Set([...Object.values(SKILL_ICON), ...Object.values(TALENT_ICONS).flat(), ...Object.values(VIGIL_ICON), ...vigilIcons()])].sort();
+    const picked = [...new Set([...Object.values(SKILL_ICON), ...Object.values(TALENT_ICONS).flat(), ...Object.values(VIGIL_ICON), ...vigilIcons(), ...ringIcons(), ...talentIcons()])].sort();
     expect(index.names).toEqual(picked);
     expect(credits).toContain('Nasha');
   });
