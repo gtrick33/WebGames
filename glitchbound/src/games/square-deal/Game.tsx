@@ -145,6 +145,9 @@ function focusVisible(el: Element): boolean {
   }
 }
 
+/** The top-left that centers a piece on a cell: taps and the key cursor aim the same way. */
+const centeredOn = (p: Piece, row: number, col: number): { row: number; col: number } => ({ row: row - Math.floor((p.h - 1) / 2), col: col - Math.floor((p.w - 1) / 2) });
+
 /** Where a dragged or selected piece would land, and whether it fits there. */
 interface Aim {
   slot: number;
@@ -165,6 +168,8 @@ interface Drag {
   aim: Aim | null;
 }
 
+/** The streak where the multiplier tops out (×4). */
+const MAX_STREAK = 7;
 const randomSeed = (): number => (Math.random() * 2 ** 32) >>> 0;
 
 export default function Game({ host, restartKey, pauseKey, challenge }: GameModuleProps) {
@@ -207,7 +212,7 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
   const [selected, setSelected] = useState<number | null>(null);
   const [cursor, setCursor] = useState({ row: 3, col: 3 });
   const [drag, setDrag] = useState<Drag | null>(null);
-  const [fx, setFx] = useState<{ cells: Set<number>; text: string; key: number } | null>(null);
+  const [fx, setFx] = useState<{ cells: Set<number>; text: string; key: number; lost?: boolean } | null>(null);
   const [newBest, setNewBest] = useState(false);
   const [leaving, setLeaving] = useState(false);
   /** The player used the keys: the help line shows the key controls. */
@@ -371,7 +376,7 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
       sfx().clear(result.lines, state.streak);
       navigator.vibrate?.(20);
       setFx({ cells: new Set(result.cleared), text: `+${result.points}${state.streak > 1 ? ` · 🔥×${streakMultiplier(state.streak)}` : ''}`, key: state.moves });
-    }
+    } else if (s.streak > 1) setFx({ cells: new Set(), text: 'Streak lost', key: state.moves, lost: true }); // a move that cleared nothing ends it
     setSelected(null);
     show(state);
     if (state.over) finish(state);
@@ -489,13 +494,14 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
     if (selected !== slot) boardRef.current?.querySelector<HTMLElement>('[tabindex="0"]')?.focus();
   };
 
-  // A selected piece goes where the player taps, centered on the tapped cell.
+  // A selected piece goes where the player taps, centered on the tapped cell (as on the key cursor).
   const onCellTap = (i: number): void => {
     const s = gameRef.current;
     if (selected === null || !s) return;
     const piece = s.tray[selected];
     if (!piece) return;
-    tryPlace(selected, Math.floor(i / SIZE) - Math.floor((piece.h - 1) / 2), (i % SIZE) - Math.floor((piece.w - 1) / 2));
+    const at = centeredOn(piece, Math.floor(i / SIZE), i % SIZE);
+    tryPlace(selected, at.row, at.col);
   };
 
   useEffect(() => {
@@ -527,7 +533,9 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
         setCursor((c) => ({ row: Math.max(0, Math.min(SIZE - 1, c.row + dr)), col: Math.max(0, Math.min(SIZE - 1, c.col + dc)) }));
       } else if (act && selected !== null) {
         e.preventDefault();
-        if (!e.repeat) tryPlace(selected, cursor.row, cursor.col);
+        const piece = s.tray[selected];
+        const at = piece ? centeredOn(piece, cursor.row, cursor.col) : cursor;
+        if (!e.repeat) tryPlace(selected, at.row, at.col);
       } else if (e.key === 'Escape' && selected !== null) setSelected(null);
     };
     window.addEventListener('keydown', onKey);
@@ -552,7 +560,8 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
   const s = game;
   // The aim: from a drag, else from the keyboard cursor while a piece is selected.
   const selPiece = selected !== null ? s.tray[selected] : null;
-  const aim: Aim | null = drag ? drag.aim : selected !== null && selPiece ? { slot: selected, row: cursor.row, col: cursor.col, ok: fits(s.board, selPiece, cursor.row, cursor.col) } : null;
+  const keyAt = selPiece ? centeredOn(selPiece, cursor.row, cursor.col) : null;
+  const aim: Aim | null = drag ? drag.aim : selected !== null && selPiece && keyAt ? { slot: selected, ...keyAt, ok: fits(s.board, selPiece, keyAt.row, keyAt.col) } : null;
   const aimPiece = aim ? s.tray[aim.slot] : null;
   const ghost = new Set<number>();
   const blocked = new Set<number>();
@@ -592,8 +601,13 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
             <b>{s.score}</b>
             <span>{mode === 'challenge' ? `⚔️ Challenge · round ${challenge?.round ?? 1}` : mode === 'daily' ? `Daily #${dailyNumber(roundDay.current)}` : `Best ${save.best}`}</span>
           </div>
-          <div className={`sd-streak${s.streak > 1 ? ' is-on' : ''}`} aria-label={`Streak ${s.streak}: line points ×${streakMultiplier(s.streak)}`}>
-            🔥 ×{streakMultiplier(s.streak)}
+          <div className={`sd-streak-box${fx?.lost ? ' is-lost' : ''}`} aria-label={`Streak ${s.streak}: line points ×${streakMultiplier(s.streak)}${s.streak < MAX_STREAK ? `, the next clear ×${streakMultiplier(s.streak + 1)}` : ''}`}>
+            <div className={`sd-streak${s.streak > 1 ? ' is-on' : ''}`}>🔥 ×{streakMultiplier(s.streak)}</div>
+            {/* What the streak is and what the next clear is worth; any move that clears nothing ends it. */}
+            <small aria-hidden="true">
+              <span>{s.streak > 0 ? `${s.streak} in a row` : 'clear lines'}</span>
+              <span>{s.streak === 0 ? 'back to back' : s.streak < MAX_STREAK ? `next ×${streakMultiplier(s.streak + 1)}` : 'max ×4'}</span>
+            </small>
           </div>
         </div>
         <div className="sd-board" ref={boardRef} role="grid" aria-label="Board, 8 by 8">
@@ -624,7 +638,7 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
             </div>
           ))}
           {fx && (
-            <span key={fx.key} className="sd-pop">
+            <span key={fx.key} className={`sd-pop${fx.lost ? ' is-lost' : ''}`}>
               {fx.text}
             </span>
           )}
@@ -644,7 +658,17 @@ function SquareDeal({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: 
             </button>
           ))}
         </div>
-        <p className="sd-help">{keyHints ? (selected !== null ? 'Arrows aim · Enter places · Esc drops it' : '1–3 pick a piece · arrows aim · Enter places') : selected !== null ? 'Tap a square to place it, or drag it on' : 'Drag a piece onto the board'}</p>
+        <p className="sd-help">
+          {keyHints ? (
+            selected !== null ? 'Arrows aim · Enter places · Esc drops it' : '1–3 pick a piece · arrows aim · Enter places'
+          ) : selected !== null ? (
+            'Tap a square to place it, or drag it on'
+          ) : (
+            <>
+              Drag a piece onto the board<span className="sd-keys"> · or press 1–3</span>
+            </>
+          )}
+        </p>
       </div>
       {drag && dragPiece && drag.moved && (
         <div className="sd-float" style={{ left: drag.x - drag.gx * drag.cell, top: drag.y - drag.gy * drag.cell - drag.lift, ['--sd-unit' as string]: `${drag.cell - 3}px` }}>

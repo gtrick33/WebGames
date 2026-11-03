@@ -146,4 +146,29 @@ describe('Square Deal UI', () => {
     render(<Game host={{ report: vi.fn() }} restartKey={1} />);
     expect(screen.getAllByRole('button', { name: 'Play endless' }).length).toBeGreaterThan(0);
   });
+
+  it('shows the streak, what the next clear is worth, and when it is lost', () => {
+    const g = { ...toSaved(newGame(5)), streak: 3, bestStreak: 3, moves: 6, score: 80 };
+    localStorage.setItem(KEY, JSON.stringify({ endless: g }));
+    render(<Game host={{ report: vi.fn() }} restartKey={0} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Continue endless' }));
+    expect(screen.getByText('3 in a row')).toBeTruthy();
+    expect(screen.getByText('next ×2.5')).toBeTruthy();
+    placeFirst(); // the board is empty: nothing clears
+    expect(screen.getByText('Streak lost')).toBeTruthy();
+    expect(screen.getByText('clear lines')).toBeTruthy();
+  });
+
+  it('centers the key cursor piece on the cursor, like a tap', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    const seed = (0.5 * 2 ** 32) >>> 0;
+    const p = pieceAt(seed, 0);
+    render(<Game host={{ report: vi.fn() }} restartKey={0} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Play endless' }));
+    placeFirst();
+    const row = 3 - Math.floor((p.h - 1) / 2);
+    const col = 3 - Math.floor((p.w - 1) / 2);
+    const filled = [...document.querySelectorAll('.sd-cell')].flatMap((c, i) => (c.classList.contains('is-filled') ? [i] : []));
+    expect(filled).toEqual(p.cells.map(([y, x]) => (row + y) * 8 + col + x).sort((a, b) => a - b));
+  });
 });

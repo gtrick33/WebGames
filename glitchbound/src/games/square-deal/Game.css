@@ -84,6 +84,36 @@
   opacity: 1;
   transform: scale(1.08) rotate(-3deg);
 }
+.sd-streak-box {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+}
+.sd-streak-box small {
+  display: grid;
+  justify-items: center;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.15;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+.sd-streak-box.is-lost .sd-streak {
+  animation: sd-shake 0.4s ease-out;
+}
+@keyframes sd-shake {
+  25% {
+    transform: translateX(-4px) rotate(-4deg);
+  }
+  75% {
+    transform: translateX(4px) rotate(4deg);
+  }
+}
+.sd-pop.is-lost {
+  background: var(--sd-paper);
+  color: #6b4a52;
+  font-size: 18px;
+}
 
 .sd-board {
   position: relative;
@@ -254,6 +284,12 @@
   font-weight: 800;
   opacity: 0.8;
 }
+/* Touch screens have no keys to offer. */
+@media (hover: none) {
+  .sd-keys {
+    display: none;
+  }
+}
 
 .sd-over {
   position: absolute;
@@ -418,6 +454,7 @@
   .sd-logo i,
   .sd-cell.is-clear::after,
   .sd-pop,
+  .sd-streak-box.is-lost .sd-streak,
   .sd-over {
     animation: none;
   }
