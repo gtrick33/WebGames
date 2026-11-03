@@ -29,6 +29,29 @@ const spec = (over: Partial<ChallengeSpec> = {}): ChallengeSpec => ({ id: 'abc',
 const cursorCell = () => document.querySelector('.sgd-cell.is-cursor')?.getAttribute('data-cell');
 const stars = () => screen.getAllByRole('gridcell').filter((c) => c.getAttribute('aria-label')?.endsWith(': star')).length;
 
+/** The grid on screen, read back from its region borders and solved (endless grids are random). */
+function endlessShown(): Puzzle {
+  const cells = screen.getAllByRole('gridcell');
+  const size = Math.sqrt(cells.length);
+  const regions = cells.map((c) => Number(/is-r(\d)/.exec(c.className)![1]));
+  // The grid has exactly one solution: find it by the rules.
+  return { size, regions, stars: solve(size, regions)! };
+}
+function solve(size: number, regions: number[]): number[] | null {
+  const cols: number[] = [];
+  const go = (row: number): boolean => {
+    if (row === size) return true;
+    for (let c = 0; c < size; c++) {
+      if (cols.includes(c) || cols.some((k, r) => regions[r * size + k] === regions[row * size + c]) || (row > 0 && Math.abs(c - cols[row - 1]!) < 2)) continue;
+      cols.push(c);
+      if (go(row + 1)) return true;
+      cols.pop();
+    }
+    return false;
+  };
+  return go(0) ? cols : null;
+}
+
 /** Puts the stars of rows `from` to `to - 1` of the solution down with the keyboard (the cursor starts hidden). */
 function placeStars(p: Puzzle, from = 0, to = p.size): void {
   if (!cursorCell()) press('ArrowRight'); // shows the cursor on the first square
@@ -190,6 +213,28 @@ describe('Star Grid in the page', () => {
     press('s');
     press('s', { repeat: true });
     expect(stars()).toBe(1);
+  });
+
+  it('keeps a best per endless size and the daily best apart (design: per-mode bests)', () => {
+    // An older save: one best from a daily, which no endless grid could ever beat.
+    localStorage.setItem(KEY, JSON.stringify({ best: 2300, solved: 3, size: 6, daily: { '2026-10-20': { best: 2300, tries: 1, times: [20, 30, 40] } } }));
+    const first = render(<StarGrid host={{ report: vi.fn() }} restartKey={0} />);
+    expect(screen.getByText(/Best daily 2300/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '6×6' }));
+    // The endless grid is random: solve it from the board's own solution.
+    const p = endlessShown();
+    wait(5200);
+    placeStars(p);
+    expect(screen.getByText(/Solved in 0:05 · New best!/)).toBeTruthy();
+    expect(stored().fastest).toEqual({ 6: 5 });
+    fireEvent.click(screen.getByRole('button', { name: 'Another grid' }));
+    const q = endlessShown();
+    wait(8000);
+    placeStars(q);
+    expect(screen.getByText(/Solved in 0:08 · best 6×6: 0:05/)).toBeTruthy();
+    fireEvent.click(screen.getAllByRole('button', { name: 'Menu' })[1]!);
+    expect(screen.getByRole('button', { name: '6×6, best 0:05' })).toBeTruthy();
+    first.unmount();
   });
 
   it('loads a damaged challenge record without crashing (checklist i)', () => {

@@ -365,7 +365,14 @@
   gap: 6px;
 }
 .sgd-sizes .sgd-btn {
+  flex-direction: column;
   padding: 0 4px;
+  line-height: 1.1;
+}
+/* The fastest solve of that size. */
+.sgd-sizes small {
+  font: 700 11px/1 var(--mono);
+  opacity: 0.7;
 }
 @media (prefers-reduced-motion: reduce) {
   .sgd-star,

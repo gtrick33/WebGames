@@ -46,7 +46,12 @@ interface ChallengeRecord {
   secs: number;
 }
 interface Save {
+  /** The best score of any one round (kept for older saves; the menu and results show the per-mode bests). */
   best: number;
+  /** Best daily total (three grids). */
+  dailyBest: number;
+  /** Fastest endless solve per size, in whole seconds. */
+  fastest: Record<string, number>;
   solved: number;
   size: number;
   daily: Record<string, DailyRecord>;
@@ -55,8 +60,9 @@ interface Save {
   challenges: Record<string, ChallengeRecord>;
   muted: boolean;
 }
-const emptySave = (): Save => ({ best: 0, solved: 0, size: 7, daily: {}, challenges: {}, muted: false });
+const emptySave = (): Save => ({ best: 0, dailyBest: 0, fastest: {}, solved: 0, size: 7, daily: {}, challenges: {}, muted: false });
 const CHALLENGES_KEPT = 20;
+const ENDLESS_SIZES = [6, 7, 8, 9];
 
 function parseSave(raw: string): Save {
   const o = JSON.parse(raw) as Partial<Save>;
@@ -64,13 +70,20 @@ function parseSave(raw: string): Save {
   const s = emptySave();
   s.best = n(o.best);
   s.solved = n(o.solved);
-  s.size = [6, 7, 8, 9].includes(n(o.size)) ? n(o.size) : 7;
+  s.size = ENDLESS_SIZES.includes(n(o.size)) ? n(o.size) : 7;
   s.muted = o.muted === true;
   if (o.daily && typeof o.daily === 'object')
     for (const [d, v] of Object.entries(o.daily).slice(-60))
       if (/^\d{4}-\d{2}-\d{2}$/.test(d) && v && typeof v === 'object')
         s.daily[d] = { best: n(v.best), tries: n(v.tries), times: Array.isArray(v.times) ? v.times.slice(0, 3).map(n) : [], ...(typeof v.open === 'boolean' ? { open: v.open } : {}) };
   if (o.progress && validProgress(o.progress)) s.progress = o.progress;
+  // Older saves kept one best for every mode: the daily best comes from the days played.
+  s.dailyBest = Math.max(n(o.dailyBest), ...Object.values(s.daily).map((d) => d.best));
+  if (o.fastest && typeof o.fastest === 'object')
+    for (const size of ENDLESS_SIZES) {
+      const t = (o.fastest as Record<string, unknown>)[size];
+      if (seconds0(t)) s.fastest[size] = Math.round(t);
+    }
   if (o.challenges && typeof o.challenges === 'object')
     for (const [k, v] of Object.entries(o.challenges).slice(-CHALLENGES_KEPT)) if (validRecord(v)) s.challenges[k] = v;
   return s;
@@ -340,13 +353,20 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
     let best = false;
     let countsAsDaily = false;
     update((cur) => {
-      best = r.points > cur.best;
       let next: Save = { ...cur, best: Math.max(cur.best, r.points), solved: cur.solved + r.puzzles.length };
+      // Each mode has its own best: the fastest endless grid per size, the best daily total.
+      if (!r.day && !r.ch) {
+        const size = r.puzzles[0]!.size;
+        const was = cur.fastest[size];
+        best = was === undefined || r.times[0]! < was;
+        if (best) next = { ...next, fastest: { ...cur.fastest, [size]: r.times[0]! } };
+      }
       const d = r.day ? cur.daily[r.day] : undefined;
       if (r.day && (!d || d.open)) {
         // A daily started before midnight finishes as that day's: it no longer counts as today's.
         countsAsDaily = r.day === dayKey();
-        next = { ...next, daily: { ...cur.daily, [r.day]: { best: r.points, tries: 1, times: r.times } }, progress: cur.progress?.day === r.day ? undefined : cur.progress };
+        best = r.points > cur.dailyBest;
+        next = { ...next, dailyBest: Math.max(cur.dailyBest, r.points), daily: { ...cur.daily, [r.day]: { best: r.points, tries: 1, times: r.times } }, progress: cur.progress?.day === r.day ? undefined : cur.progress };
       }
       if (r.ch) next = withChallenge(next, r.ch, { i: r.i, marks: r.marks, times: r.times, points: r.points, phase: 'done', secs: 0 });
       return next;
@@ -580,6 +600,8 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
   const shown = round.phase === 'play' ? clock : round.times[round.times.length - 1] ?? 0;
   const border = (i: number, j: number): boolean => j < 0 || j >= p.size * p.size || p.regions[i] !== p.regions[j];
   const grids = round.puzzles.length;
+  const fastest = mode === 'endless' ? save.fastest[p.size] : undefined;
+  const bestNote = newBest ? '· New best!' : fastest !== undefined ? `· best ${p.size}×${p.size}: ${fmtTime(fastest)}` : mode === 'daily' && save.dailyBest > 0 ? `· best daily ${save.dailyBest}` : '';
 
   return (
     <div className="sgd sgd-play" ref={rootRef}>
@@ -674,7 +696,7 @@ function StarGrid({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
           {note && <p className="sgd-muted">{note}</p>}
           <p className="sgd-big">{round.points}</p>
           <p className="sgd-muted">
-            {grids > 1 ? `${grids} grids in ${fmtTime(sum(round.times))}` : round.times.length ? `Solved in ${fmtTime(round.times[0]!)}` : 'Not solved'} {newBest ? '· New best!' : `· best ${save.best}`}
+            {grids > 1 ? `${grids} grids in ${fmtTime(sum(round.times))}` : round.times.length ? `Solved in ${fmtTime(round.times[0]!)}` : 'Not solved'} {bestNote}
           </p>
           {round.times.length > 0 && <ResultLine line={resultLine(round.times)} label={`Solved in ${round.times.map(fmtTime).join(', ')}`} />}
           {mode === 'daily' && daily && (
@@ -719,7 +741,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
   const going = daily?.open && save.progress?.day === today ? save.progress : null;
   // While the player reads the menu, the grids they may pick next are made in idle time.
   const toPlay = !daily || !!going;
-  useEffect(() => prepare([save.size, ...[6, 7, 8, 9].filter((s) => s !== save.size)], toPlay ? today : undefined), [save.size, toPlay, today]);
+  useEffect(() => prepare([save.size, ...ENDLESS_SIZES.filter((s) => s !== save.size)], toPlay ? today : undefined), [save.size, toPlay, today]);
   return (
     <div className="sgd sgd-menu">
       <div className="sgd-menu-top">
@@ -772,15 +794,20 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
           <span>A brand-new grid every time. Pick a size:</span>
         </div>
         <div className="sgd-sizes">
-          {[6, 7, 8, 9].map((s) => (
-            <button key={s} className={`sgd-btn${save.size === s ? ' is-on' : ''}`} onClick={() => onPlay('endless', s)}>
-              {s}×{s}
-            </button>
-          ))}
+          {ENDLESS_SIZES.map((s) => {
+            const t = save.fastest[s];
+            return (
+              <button key={s} className={`sgd-btn${save.size === s ? ' is-on' : ''}`} onClick={() => onPlay('endless', s)} aria-label={t === undefined ? `${s}×${s}` : `${s}×${s}, best ${fmtTime(t)}`}>
+                {s}×{s}
+                {t !== undefined && <small>{fmtTime(t)}</small>}
+              </button>
+            );
+          })}
         </div>
       </section>
       <p className="sgd-muted">
-        Best {save.best} · {save.solved} {save.solved === 1 ? 'grid' : 'grids'} solved
+        {save.dailyBest > 0 && `Best daily ${save.dailyBest} · `}
+        {save.solved} {save.solved === 1 ? 'grid' : 'grids'} solved
       </p>
       {coach.open && <Coach steps={COACH} onClose={coach.close} />}
     </div>
