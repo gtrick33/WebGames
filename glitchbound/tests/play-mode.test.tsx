@@ -1,6 +1,6 @@
-import { act, renderHook } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FULLSCREEN_WATCHDOG_MS, usePlayMode } from '../src/pages/GamePage';
+import { FULLSCREEN_WATCHDOG_MS, keepTabInside, usePlayMode } from '../src/pages/GamePage';
 
 // The Fullscreen API as jsdom lacks it: requestFullscreen enters (or not, per test) and fires fullscreenchange.
 let fsEl: Element | null = null;
@@ -166,5 +166,27 @@ describe('play mode on a desktop', () => {
     expect(play().active).toBe(false);
     act(() => void vi.advanceTimersByTime(FULLSCREEN_WATCHDOG_MS + 10));
     expect(play().immersive).toBe(true);
+  });
+});
+
+describe('the full-screen game menu keeps keyboard focus (PU-10)', () => {
+  it('Tab from the last button goes to the first, Shift+Tab from the first to the last', () => {
+    vi.useRealTimers();
+    render(
+      <div>
+        <button>Behind</button>
+        <div role="dialog" onKeyDown={keepTabInside}>
+          <button>Continue</button>
+          <button>Exit game</button>
+        </div>
+      </div>,
+    );
+    const first = screen.getByText('Continue');
+    const last = screen.getByText('Exit game');
+    last.focus();
+    fireEvent.keyDown(last, { key: 'Tab' });
+    expect(document.activeElement).toBe(first);
+    fireEvent.keyDown(first, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(last);
   });
 });

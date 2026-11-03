@@ -343,6 +343,20 @@ function SafariBarsHandle() {
   );
 }
 
+/** Tab and Shift+Tab go round a dialog's buttons instead of leaving it for the page behind (PU-10). */
+export function keepTabInside(e: React.KeyboardEvent<HTMLElement>): void {
+  if (e.key !== 'Tab') return;
+  const items = [...e.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')];
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (!first || !last) return;
+  const at = document.activeElement;
+  if (e.shiftKey ? at === first || !e.currentTarget.contains(at) : at === last || !e.currentTarget.contains(at)) {
+    e.preventDefault();
+    (e.shiftKey ? last : first).focus();
+  }
+}
+
 /**
  * In full screen: a menu button on the left edge (where game HUDs rarely sit) that pauses the game and
  * opens a pop-up with the ways out: continue, how to play, leave full screen, close the game, report a bug. It used
@@ -383,7 +397,7 @@ function StageMenu({ slug, title, placement, open, setOpen, onOpen, onExitFullsc
       )}
       {open && (
         <div className="stage-menu-backdrop" onClick={() => setOpen(false)}>
-          <div className="stage-menu-sheet" role="dialog" aria-modal="true" aria-label={t('Game menu')} onClick={(e) => e.stopPropagation()}>
+          <div className="stage-menu-sheet" role="dialog" aria-modal="true" aria-label={t('Game menu')} onClick={(e) => e.stopPropagation()} onKeyDown={keepTabInside}>
             <p className="stage-menu-title">{title}</p>
             <button className="btn btn-primary" onClick={() => setOpen(false)} autoFocus>
               <Icon name="play" size={18} /> {t('Continue')}
