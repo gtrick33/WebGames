@@ -37,6 +37,8 @@ export interface Level {
 
 export const HEARTS = 3;
 export const DAILY_LEVELS = 5;
+/** A friends' challenge round: a fixed set of levels, no heart back, so it ends and compares fairly. */
+export const CHALLENGE_LEVELS = 8;
 export const COLORS = 6;
 
 /** Board size of level n (1-based): 5x5 at first, 8x8 from level 7. */

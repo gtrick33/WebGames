@@ -27,10 +27,14 @@
 }
 .oh-play {
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
+  /* the board sits in the middle of the free height, nearer the thumb than the top edge */
+  justify-content: center;
   gap: 12px;
   width: 100%;
+  min-height: 0;
 }
 .oh-hud {
   display: grid;
@@ -118,6 +122,35 @@
 .oh-cursor .oh-cursor-in {
   stroke: #fff;
   stroke-width: 0.9;
+}
+.oh-arrow.is-blocker .oh-ink,
+.oh-arrow.is-blocker .oh-ink-tip {
+  stroke: #e8173f;
+  animation: oh-blocker 0.6s;
+}
+.oh-arrow.is-blocker .oh-ink-tip {
+  fill: #e8173f;
+}
+@keyframes oh-blocker {
+  50% {
+    stroke-width: 9;
+  }
+}
+.oh-block-path {
+  stroke: #e8173f;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-dasharray: 2.2 1.6;
+  pointer-events: none;
+  animation: oh-fade 0.6s forwards;
+}
+@keyframes oh-fade {
+  70% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 .oh-arrow.is-target .oh-body,
 .oh-arrow.is-target .oh-tip {

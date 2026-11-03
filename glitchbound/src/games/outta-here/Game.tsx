@@ -7,7 +7,7 @@ import { shareOrCopy } from '../../platform/share';
 import { Coach, useCoach } from '../../components/Coach';
 import { ResultLine } from '../../components/ResultLine';
 import { NextDaily } from '../../components/NextDaily';
-import { arrowAt, canLeave, DAILY_LEVELS, DC, DR, HEARTS, levelPoints, makeLevel, pathAhead, resultLine, type Arrow, type Level } from './logic';
+import { arrowAt, canLeave, CHALLENGE_LEVELS, DAILY_LEVELS, DC, DR, HEARTS, levelPoints, makeLevel, pathAhead, resultLine, sizeFor, type Arrow, type Level } from './logic';
 import { createSfx, type Sfx } from './sound';
 import { COACH } from './coach';
 import './Game.css';
@@ -56,7 +56,7 @@ interface Save {
 }
 const emptySave = (): Save => ({ best: 0, bestLevels: 0, runs: 0, daily: {}, challenges: {}, muted: false });
 const LINE = /^[💨🟡💥]{0,40}$/u;
-/** Challenge rounds follow endless rules: no level cap. */
+/** Challenge rounds saved before they had a fixed length still load (they end at the next cleared level). */
 const OPEN_ENDED = 9999;
 
 function loadSave(): Save {
@@ -193,6 +193,8 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
   const [mode, setMode] = useState<Mode>(challenge ? 'challenge' : 'daily');
   /** A round of today's daily rules: the daily itself, or a challenge on a day's daily. */
   const dayRun = (m: Mode): boolean => m === 'daily' || (m === 'challenge' && !!chDay);
+  /** How many levels the round has: the daily's 5, a challenge's 8, or no end (endless). */
+  const levelsOf = (m: Mode): number => (dayRun(m) ? DAILY_LEVELS : m === 'challenge' ? CHALLENGE_LEVELS : Infinity);
   /** Where a challenge round stands on this device: done (its result), under way (resume) or new. */
   const challengeStart = (s: Save): { run: Run; note: string; secs?: number; settle?: { score: number; line: string } } | null => {
     if (!challenge) return null;
@@ -219,7 +221,8 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
   const [cursor, setCursor] = useState(0);
   // The keyboard cursor only shows once someone uses the keys.
   const [keys, setKeys] = useState(false);
-  const [blocked, setBlocked] = useState<{ arrow: number; cell: number; key: number } | null>(null);
+  /** The last blocked tap: the arrow, the first cell in its way (-1: none) and the arrow sitting there. */
+  const [blocked, setBlocked] = useState<{ arrow: number; cell: number; by: number; key: number } | null>(null);
   /** The last blocked tap: the same arrow tapped again while it still bounces costs nothing more. */
   const lastBump = useRef({ arrow: -1, at: 0 });
   const [newBest, setNewBest] = useState(false);
@@ -358,7 +361,7 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
       // Show what is in the way, and pay a heart.
       const occupied = new Set(r.level.arrows.filter((x) => !r.gone.has(x.id) && x.id !== a.id).flatMap((x) => x.cells));
       const wall = pathAhead(r.level.size, a.cells[a.cells.length - 1]!, a.dir).find((i) => occupied.has(i)) ?? -1;
-      setBlocked({ arrow: a.id, cell: wall, key: (blocked?.key ?? 0) + 1 });
+      setBlocked({ arrow: a.id, cell: wall, by: wall < 0 ? -1 : (arrowAt(r.level, r.gone, wall)?.id ?? -1), key: (blocked?.key ?? 0) + 1 });
       sfx().bump();
       navigator.vibrate?.(50);
       combo.current = 0;
@@ -386,9 +389,10 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
     const secs = (now() - levelStart.current) / 1000;
     const gained = levelPoints(r.level, r.n, r.mistakes, secs);
     const history = [...r.history, { mistakes: r.mistakes, cleared: true }];
-    const done: Run = { ...r, gone, leaving, banked: r.banked + gained, gained, history, phase: 'cleared', hearts: !dayRun(mode) && r.mistakes === 0 ? Math.min(HEARTS, r.hearts + 1) : r.hearts };
+    // Only endless gives a heart back for a flawless level.
+    const done: Run = { ...r, gone, leaving, banked: r.banked + gained, gained, history, phase: 'cleared', hearts: mode === 'endless' && r.mistakes === 0 ? Math.min(HEARTS, r.hearts + 1) : r.hearts };
     sfx().level();
-    if (dayRun(mode) && r.n >= DAILY_LEVELS) {
+    if (r.n >= levelsOf(mode)) {
       const over: Run = { ...done, phase: 'over' };
       show(over);
       finish(over);
@@ -404,7 +408,9 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
     levelStart.current = now();
     combo.current = 0;
     setBlocked(null);
-    setCursor(0);
+    // The cursor stays on the same row and column (boards only grow).
+    const size = sizeFor(r.n + 1);
+    setCursor((c) => Math.min(size - 1, Math.floor(c / r.level.size)) * size + (c % r.level.size));
     const next: Run = { ...r, n: r.n + 1, level: makeLevel(r.seed, r.n + 1), gone: new Set(), leaving: new Set(), mistakes: 0, phase: 'play' };
     show(next);
     keep(next);
@@ -485,7 +491,14 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
         e.preventDefault();
         setKeys(true);
         const d = ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].indexOf(e.key) as 0 | 1 | 2 | 3;
+        // Jump to the next arrow that way (past empty cells and the rest of the arrow it is on); one step when there is none.
         setCursor((c) => {
+          const here = arrowAt(r.level, r.gone, c)?.id;
+          const next = pathAhead(size, c, d).find((i) => {
+            const a = arrowAt(r.level, r.gone, i);
+            return a && a.id !== here;
+          });
+          if (next !== undefined) return next;
           const row = Math.max(0, Math.min(size - 1, Math.floor(c / size) + DR[d]));
           const col = Math.max(0, Math.min(size - 1, (c % size) + DC[d]));
           return row * size + col;
@@ -535,7 +548,7 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
             <b>{score}</b>
             <span>
               {mode === 'challenge' ? `⚔️ Round ${challenge?.round ?? 1} · ` : mode === 'daily' ? `Daily #${dailyNumber(run.day)} · ` : ''}Level {run.n}
-              {dayRun(mode) ? `/${DAILY_LEVELS}` : ''}
+              {mode !== 'endless' ? `/${levelsOf(mode)}` : ''}
             </span>
           </div>
           <div className="oh-hearts" aria-label={`${run.hearts} ${run.hearts === 1 ? 'heart' : 'hearts'} left`}>
@@ -555,8 +568,17 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
               const isGone = run.gone.has(a.id);
               if (isGone && !run.leaving.has(a.id)) return null;
               const shake = blocked?.arrow === a.id ? blocked.key : 0;
-              return <ArrowShape key={`${run.n}:${a.id}:${shake}`} a={a} size={size} gone={isGone} shake={shake} target={target?.id === a.id} onTap={() => tapArrow(a)} />;
+              return <ArrowShape key={`${run.n}:${a.id}:${shake}`} a={a} size={size} gone={isGone} shake={shake} target={target?.id === a.id} blocker={blocked?.by === a.id} onTap={() => tapArrow(a)} />;
             })}
+            {/* What stopped it: a red line from the bounced arrow's head to the arrow in its way. */}
+            {blocked && blocked.cell >= 0 && (() => {
+              const a = level.arrows[blocked.arrow]!;
+              const head = a.cells[a.cells.length - 1]!;
+              const c = (i: number): [number, number] => [(i % size) * U + U / 2, Math.floor(i / size) * U + U / 2];
+              const [x1, y1] = c(head);
+              const [x2, y2] = c(blocked.cell);
+              return <line key={blocked.key} className="oh-block-path" x1={x1 + DC[a.dir] * 4.4} y1={y1 + DR[a.dir] * 4.4} x2={x2 - DC[a.dir] * 3} y2={y2 - DR[a.dir] * 3} />;
+            })()}
             {/* The keyboard cursor, drawn over the arrows so it shows on any color. */}
             {keys && run.phase === 'play' && (
               <g className="oh-cursor">
@@ -576,7 +598,7 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
       </div>
       {run.phase === 'over' && (
         <div className="oh-over">
-          <h2>{dayRun(mode) && levels >= DAILY_LEVELS ? 'All clear!' : 'Out of hearts'}</h2>
+          <h2>{levels >= levelsOf(mode) ? 'All clear!' : 'Out of hearts'}</h2>
           {note && <p className="oh-muted">{note}</p>}
           <p className="oh-big">{run.banked}</p>
           <p className="oh-muted">
@@ -620,7 +642,7 @@ function OuttaHere({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
 }
 
 /** One arrow: an outlined capsule from tail to head with a pointed tip, plus a tap area over its cells. */
-function ArrowShape({ a, size, gone, shake, target, onTap }: { a: Arrow; size: number; gone: boolean; shake: number; target: boolean; onTap: () => void }) {
+function ArrowShape({ a, size, gone, shake, target, blocker, onTap }: { a: Arrow; size: number; gone: boolean; shake: number; target: boolean; blocker: boolean; onTap: () => void }) {
   const U = 10;
   const at = (i: number): [number, number] => [(i % size) * U + U / 2, Math.floor(i / size) * U + U / 2];
   const [tx, ty] = at(a.cells[0]!);
@@ -638,7 +660,7 @@ function ArrowShape({ a, size, gone, shake, target, onTap }: { a: Arrow; size: n
   const fly = size * U + 20;
   return (
     <g
-      className={`oh-arrow${gone ? ' is-gone' : ''}${shake ? ' is-shake' : ''}${target ? ' is-target' : ''}`}
+      className={`oh-arrow${gone ? ' is-gone' : ''}${shake ? ' is-shake' : ''}${target ? ' is-target' : ''}${blocker ? ' is-blocker' : ''}`}
       style={{ ['--c' as string]: PALETTE[a.color], ...(gone ? { transform: `translate(${dx * fly}px, ${dy * fly}px)` } : {}) }}
       onPointerDown={(e) => {
         e.preventDefault();

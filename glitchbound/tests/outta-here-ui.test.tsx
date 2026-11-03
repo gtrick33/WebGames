@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import OuttaHere from '../src/games/outta-here/Game';
-import { canLeave, makeLevel, type Level } from '../src/games/outta-here/logic';
+import { arrowAt, canLeave, DC, DR, makeLevel, pathAhead, type Level } from '../src/games/outta-here/logic';
 import type { ChallengeSpec } from '../src/platform/challenge';
 import { dayKey, hashString } from '../src/platform/dates';
 
@@ -31,10 +31,39 @@ const tap = (id: number) => fireEvent.pointerDown(document.querySelectorAll('g.o
 const hearts = (): string => screen.getByLabelText(/hearts? left$/).getAttribute('aria-label')!;
 const todays = (): Level => makeLevel(hashString(`outta-here:${dayKey()}`), 1);
 const stuck = (level: Level): number => level.arrows.findIndex((a) => !canLeave(level, new Set(), a));
-/** Moves the keyboard cursor from the top-left cell to `cell`. */
+/** Where an arrow key takes the cursor: the next arrow that way, or one step when there is none. */
+function jump(level: Level, gone: Set<number>, c: number, d: 0 | 1 | 2 | 3): number {
+  const here = arrowAt(level, gone, c)?.id;
+  const next = pathAhead(level.size, c, d).find((i) => {
+    const a = arrowAt(level, gone, i);
+    return a && a.id !== here;
+  });
+  if (next !== undefined) return next;
+  const row = Math.max(0, Math.min(level.size - 1, Math.floor(c / level.size) + DR[d]));
+  const col = Math.max(0, Math.min(level.size - 1, (c % level.size) + DC[d]));
+  return row * level.size + col;
+}
+/** Moves the keyboard cursor from the top-left cell to `cell` (the shortest run of arrow keys). */
 function cursorTo(level: Level, cell: number): void {
-  for (let i = 0; i < Math.floor(cell / level.size); i++) key(window, 'ArrowDown');
-  for (let i = 0; i < cell % level.size; i++) key(window, 'ArrowRight');
+  const names = ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'];
+  const goal = new Set(arrowAt(level, new Set(), cell)?.cells ?? [cell]);
+  const prev = new Map<number, [number, number]>([[0, [-1, -1]]]);
+  const queue = [0];
+  let end = goal.has(0) ? 0 : -1;
+  while (queue.length && end < 0) {
+    const c = queue.shift()!;
+    for (const d of [0, 1, 2, 3] as const) {
+      const n = jump(level, new Set(), c, d);
+      if (!prev.has(n)) {
+        prev.set(n, [c, d]);
+        queue.push(n);
+        if (goal.has(n) && end < 0) end = n;
+      }
+    }
+  }
+  const keys: string[] = [];
+  for (let c = end; c !== 0; c = prev.get(c)![0]) keys.unshift(names[prev.get(c)![1]]!);
+  for (const k of keys) key(window, k);
 }
 const chal = (over: Partial<ChallengeSpec> = {}): ChallengeSpec => ({ id: 'abc', round: 1, seed: 4242, mode: 'fresh', day: '2026-10-19', ...over });
 
@@ -242,5 +271,72 @@ describe('Outta Here challenge rounds', () => {
     render(<OuttaHere host={second} restartKey={0} challenge={spec} />);
     expect(document.querySelector('.oh-big')?.textContent).toBe('1234');
     expect(second.report).not.toHaveBeenCalled();
+  });
+});
+
+describe('Outta Here challenge length', () => {
+  it('a challenge round is 8 levels with no heart back, then All clear!', () => {
+    const spec = chal({ seed: 777 });
+    const { report } = host();
+    render(<OuttaHere host={{ report }} restartKey={0} challenge={spec} />);
+    for (let n = 1; n <= 8; n++) {
+      const level = makeLevel(spec.seed, n);
+      // one mistake on level 1, flawless after that
+      if (n === 1) {
+        tap(stuck(level));
+        wait(700);
+      }
+      const gone = new Set<number>();
+      while (gone.size < level.arrows.length) {
+        const a = level.arrows.find((x) => !gone.has(x.id) && canLeave(level, gone, x))!;
+        tap(a.id);
+        gone.add(a.id);
+      }
+      if (n < 8) {
+        expect(screen.getByText(new RegExp(`Level ${n}/8`))).toBeTruthy();
+        expect(hearts()).toBe('2 hearts left');
+        wait(1500);
+      }
+    }
+    expect(screen.getByRole('heading', { name: 'All clear!' })).toBeTruthy();
+    expect(report).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'end', stats: { levels: 8, perfect: 7 }, challenge: { id: 'abc', round: 1 } }));
+  });
+});
+
+describe('Outta Here blocked taps', () => {
+  it('marks the arrow in the way and draws the blocked path', () => {
+    playDaily();
+    const level = todays();
+    const k = stuck(level);
+    tap(k);
+    const blockers = document.querySelectorAll('g.oh-arrow.is-blocker');
+    expect(blockers).toHaveLength(1);
+    expect(blockers[0]).not.toBe(document.querySelectorAll('g.oh-arrow')[k]);
+    expect(document.querySelector('.oh-block-path')).not.toBeNull();
+    wait(700);
+    expect(document.querySelector('g.oh-arrow.is-blocker')).toBeNull();
+  });
+});
+
+describe('Outta Here keyboard cursor', () => {
+  it('arrow keys jump to the next arrow that way, and the cursor keeps its place on the next level', () => {
+    const spec = chal({ seed: 99 });
+    render(<OuttaHere host={host()} restartKey={0} challenge={spec} />);
+    const level = makeLevel(spec.seed, 1);
+    const at = (): [number, number] => {
+      const r = document.querySelector('.oh-cursor rect')!;
+      return [Number(r.getAttribute('y')) / 10, Number(r.getAttribute('x')) / 10];
+    };
+    key(window, 'ArrowRight');
+    const [row, col] = at();
+    expect(jump(level, new Set(), 0, 1)).toBe(row * level.size + col);
+    const gone = new Set<number>();
+    while (gone.size < level.arrows.length) {
+      const a = level.arrows.find((x) => !gone.has(x.id) && canLeave(level, gone, x))!;
+      tap(a.id);
+      gone.add(a.id);
+    }
+    wait(1500);
+    expect(at()).toEqual([row, col]);
   });
 });
