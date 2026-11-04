@@ -34,7 +34,7 @@ export const EMBERDEEP = wildRegion(
     forest: 0.3,
     scatter: { trees: 0.6, bushes: 0.4, rocks: 2.4, flowers: 0.4 },
     water: { kind: 'lakes', amount: 0.4 },
-    hubs: [{ at: [0.38, 0.82], plan: 'court', npcs: ['thane-hroki', 'brewer-asgerd', 'runesmith-dvalin', 'ashwarden-ketla'], houses: 5 }],
+    hubs: [{ at: [0.38, 0.75], plan: 'citadel', npcs: ['thane-hroki', 'brewer-asgerd', 'runesmith-dvalin', 'ashwarden-ketla'], houses: 5 }],
     exits: [
       { side: 's', at: 0.4, to: 'bonefields', label: 'South road to the Bonefields' },
       { side: 'w', at: 0.35, to: 'hollowmere', label: 'West road to Hollowmere', minLevel: 53 },

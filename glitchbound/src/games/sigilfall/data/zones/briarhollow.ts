@@ -99,7 +99,7 @@ function plan(): SpreadPlan {
   c.prop('market-stall', 36, 25, true, CALM);
 
   // the guard yard by the gate: Mara's dummies
-  c.fill(18, 14, 26, 18, 'cobble');
+  c.fill(18, 14, 26, 18, 'path');
   c.marker(20, 15, { kind: 'dummy' });
   c.marker(23, 15, { kind: 'dummy' });
   c.marker(25, 17, { kind: 'dummy', shooter: true });

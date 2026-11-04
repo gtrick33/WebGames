@@ -10,7 +10,7 @@ import { TILE } from '../sim/map';
 import { STORY_FADE } from '../sim/pets';
 import { SUMMON_TIME, type World } from '../sim/world';
 import type { Enemy, Ghost, NpcActor, Pet } from '../sim/types';
-import { heightFromRadius, Motion, PERSON_H, type Cast } from './cast';
+import { heightFromRadius, Motion, PERSON_H, type Cast, type Colossus } from './cast';
 import type { Held } from './dress';
 import { kitOf } from './kits';
 import { coatTint, MOUNT_H, mountSprite, SEAT } from './mountLook';
@@ -27,6 +27,8 @@ const WARDS: Record<string, { m: string; h: number }> = {
   wagon: { m: 'wagon', h: 24 },
   lantern: { m: 'lantern_standing', h: 26 },
 };
+/** How far off a colossus is drawn (world pixels from the hero, past its own height). */
+const COLOSSUS_SEEN = 620;
 /** A hero of old in stone: the same armor everyone knows, in one gray, a sword at their side and a shield on their arm. */
 const STONE = { style: 'plate', mat: 'mail', tint: '#a8a8a8', r: 'rare' } as const;
 const STATUE_LOOK = {
@@ -77,8 +79,9 @@ export class WorldCast {
     this.pets.clear();
   }
 
-  sync(cast: Cast, w: World, dt: number, time: number, o: { look: HeroLook; weapon: Held; folk: number; landOnly: boolean; statues?: readonly { x: number; y: number; h: number; lift: number; tint: readonly [number, number, number] }[] }): void {
+  sync(cast: Cast, w: World, dt: number, time: number, o: { look: HeroLook; weapon: Held; folk: number; landOnly: boolean; statues?: readonly { x: number; y: number; h: number; lift: number; tint: readonly [number, number, number] }[]; colossi?: readonly Colossus[] }): void {
     for (const s of o.statues ?? []) cast.person(STATUE_LOOK, STATUE_SWORD, true, s.x, s.y, 0.2, { clip: 'idle', t: 0.2, loop: false }, { h: s.h, lift: s.lift, tint: s.tint });
+    for (const c of o.colossi ?? []) if (Math.hypot(c.x * TILE - w.player.x, c.z * TILE - w.player.y) < COLOSSUS_SEEN + c.h * TILE) cast.colossus(c);
     this.syncHero(cast, w, dt, time, o.look, o.weapon, o);
     for (const e of w.enemies) this.syncFoe(cast, e, time);
     for (const n of w.npcs) this.syncNpc(cast, n, w, time, Math.min(1, (w.time - (n.since ?? -Infinity)) / 0.8));

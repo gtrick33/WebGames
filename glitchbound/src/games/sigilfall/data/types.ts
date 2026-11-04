@@ -737,6 +737,8 @@ export type Marker =
       scale?: number;
       /** In dark stone, its windows lit and its banners red: a fortress to fear. */
       grim?: boolean;
+      /** The building comes to fill its lot, however big the lot is. */
+      fit?: boolean;
     }
   /** A place to discover (an explore objective, a line in the log): walking within `r` tiles finds it. */
   | { kind: 'spot'; id: string; name: string; r: number }

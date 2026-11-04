@@ -44,7 +44,7 @@ export const HIGHWALL = wildRegion(
     forest: 0.2,
     scatter: { trees: 1, bushes: 1, rocks: 2, flowers: 0.5 },
     water: { kind: 'river', from: 'n', to: 's' },
-    hubs: [{ at: [0.75, 0.65], plan: 'court', npcs: ['lord-commander-varn', 'quartermaster-bess', 'chaplain-ottis'], houses: 6 }],
+    hubs: [{ at: [0.75, 0.65], plan: 'ranks', npcs: ['lord-commander-varn', 'quartermaster-bess', 'chaplain-ottis'], houses: 6 }],
     exits: [
       { side: 'e', at: 0.6, to: 'sablewind', label: 'East road to Sablewind Canyon' },
       { side: 'w', at: 0.5, to: 'shattered-vale', label: 'West road to the Shattered Vale' },

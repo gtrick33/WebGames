@@ -1,6 +1,8 @@
+import { GREAT, GREAT_IN, type GreatPlace } from './greatworks';
 import { clamp, hash2, noise2, rng } from '../core/math';
 import { buildingRows, villageHouses } from './buildingArt';
 import { THEMES } from './themes';
+import { TOWN_FORMS, type LotStyle, type TownKit, type TownLook } from './townforms';
 import type { Marker, PlacedMarkerDef, RegionDef, RegionId, StoryCond, Theme } from './types';
 
 /*
@@ -33,7 +35,7 @@ export interface HubSpec {
 }
 
 /** A crossroads with its square, a cobbled market street, houses round a green, or a walled hold. */
-export type VillagePlan = 'cross' | 'street' | 'green' | 'court';
+export type VillagePlan = 'cross' | 'street' | 'green' | 'court' | 'mill' | 'ring' | 'harbor' | 'boardwalk' | 'crooked' | 'terraces' | 'oasis' | 'glade' | 'hold' | 'ranks' | 'citadel' | 'canyon' | 'drowned';
 
 export interface ExitSpec {
   side: Side;
@@ -114,6 +116,8 @@ export interface ZoneSpec {
   story?: StoryMark[];
   /** What this land is known by: seen from far off, a thing to walk toward. */
   landmarks?: LandmarkSpec[];
+  /** The great things that stand on it (greatworks.ts). */
+  great?: GreatPlace[];
 }
 
 export interface LandmarkSpec {
@@ -253,7 +257,7 @@ interface Square {
   stalls: [number, number, 1 | -1][];
   furniture: [number, number, string][];
 }
-const SQUARES: Record<VillagePlan, Square> = {
+const SQUARES: Record<'cross' | 'street' | 'green' | 'court', Square> = {
   cross: {
     heart: [-2, -2],
     stalls: [
@@ -480,7 +484,8 @@ class ZoneBuilder {
     this.wildPacks(hubs, exits.map((e) => e.inner), pois);
     this.connect(start);
     this.story(hubs, pois, exits.map((e) => e.inner));
-    // (last of all: it goes only where it boxes nothing in)
+    // (last of all: they go only where they box nothing in)
+    (s.great ?? []).forEach((g) => this.greatWork(g, start));
     marks.forEach(({ lm, at }) => this.landmark(at[0], at[1], lm));
     const map: string[] = [];
     for (let y = 0; y < this.h; y++) map.push(String.fromCharCode(...this.g.subarray(y * this.w, (y + 1) * this.w)));
@@ -736,7 +741,11 @@ class ZoneBuilder {
       go(bx, bend);
     }
     go(bx, by);
+    // (a town laid out in a form of its own takes the road in by its own streets, from the edge of it)
+    const inTown = (x: number, y: number): boolean =>
+      this.hubAt.some(([hx, hy], i) => TOWN_FORMS[this.planOf(this.spec.hubs[i]!, hx, hy)] && Math.abs(x - hx) <= VX && Math.abs(y - hy) <= VY);
     for (const [tx0, ty0] of tiles) {
+      if (inTown(tx0, ty0)) continue;
       for (const [dx, dy] of [
         [0, 0],
         [1, 0],
@@ -777,7 +786,7 @@ class ZoneBuilder {
         const d = walled && Math.abs(x - cx) <= sc(19) + 1 && y >= cy + sc(-13) && y <= cy + sc(10) ? 0 : ((x - cx) / VX) ** 4 + ((y - cy) / VY) ** 4 + (hash2(x, y, this.spec.seed + 4) - 0.5) * 0.12;
         if (d > 1) continue;
         const i = this.idx(x, y);
-        if (this.g[i] !== WATER || d < 0.5) this.g[i] = FLOOR;
+        if (this.g[i] !== WATER || d < 0.5 || (TOWN_FORMS[this.planOf(hub, cx, cy)] && this.spec.water?.kind === 'lakes')) this.g[i] = FLOOR;
         this.lock[i] = 1;
       }
     }
@@ -796,11 +805,15 @@ class ZoneBuilder {
     const seed = this.spec.seed;
     const theme = this.theme ?? 'farm';
     const plan = this.planOf(hub, cx, cy);
-    const flip = hash2(cx, cy, seed + 73) < 0.5 ? 1 : -1;
+    const form = TOWN_FORMS[plan];
+    const sea = this.seaOf(cx, cy);
+    const flip = form && plan === 'harbor' && sea !== 's' ? (sea === 'w' ? -1 : 1) : hash2(cx, cy, seed + 73) < 0.5 ? 1 : -1;
     const looks = villageHouses(theme);
-    // plan coordinates: dx east (mirrored, about the middle of the two-wide road north and south), dy south
-    const X = (dx: number): number => (flip > 0 ? cx + sc(dx) : cx + 1 - sc(dx));
-    const Y = (dy: number): number => cy + sc(dy);
+    // plan coordinates: dx east (mirrored, about the middle of the two-wide road north and south), dy south; a form
+    // of its own (townforms.ts) lays out in the map's own tiles
+    const at1 = (v: number): number => (form ? v : sc(v));
+    const X = (dx: number): number => (flip > 0 ? cx + at1(dx) : cx + 1 - at1(dx));
+    const Y = (dy: number): number => cy + at1(dy);
     /** The map columns of plan columns d0 to d1, and the map rows of plan rows d0 to d1, whole. */
     const xs = (d0: number, d1: number): [number, number] => {
       const lo = Math.min(d0, d1);
@@ -828,15 +841,18 @@ class ZoneBuilder {
         }
       }
     };
+    /** The tile before each door: nothing solid goes there, whatever else fits. */
+    const steps = new Set<number>();
     const prop = (dx: number, dy: number, name: string, solid = true): boolean => {
       const x = X(dx);
       const y = Y(dy);
       if (!open(x, y) && !(free(x, y) && (this.at(x, y) === COBBLE || this.at(x, y) === PATH))) return false;
+      if (solid && steps.has(this.idx(x, y))) return false;
       this.put(x, y, { kind: 'prop', prop: name, solid });
       // (a big thing stands on the tiles it covers)
       for (const dx2 of FOOT[name] ?? []) {
         const bx = x + dx2;
-        if (free(bx, y) && (OPEN.has(this.at(bx, y)) || this.at(bx, y) === COBBLE)) this.put(bx, y, { kind: 'prop', prop: 'block', solid: true });
+        if (free(bx, y) && !steps.has(this.idx(bx, y)) && (OPEN.has(this.at(bx, y)) || this.at(bx, y) === COBBLE)) this.put(bx, y, { kind: 'prop', prop: 'block', solid: true });
       }
       return true;
     };
@@ -923,12 +939,107 @@ class ZoneBuilder {
       }
       if (open(gate - 1, y1 + 1)) this.put(gate - 1, y1 + 1, { kind: 'prop', prop: 'lamp', solid: true });
     };
+    /** A building on a lot in map tiles: a footpath of its own from its door to the nearest road, if none is at the step. */
+    const lot = (style: LotStyle, dx: number, front: number, w: number, h: number): boolean => {
+      const y0 = cy + front - h + 1;
+      const fits = (x0: number): boolean => {
+        for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if (!open(x, y)) return false;
+        // (the tile before its door has to be one you can stand on)
+        const step = this.at(x0 + Math.floor(w / 2), y0 + h);
+        return WALKABLE.has(step) || step === WATER;
+      };
+      const shift = [0, 1, -1, 2, -2, 3, -3].find((d) => fits((flip > 0 ? cx + dx : cx + 1 - dx - w) + d));
+      if (shift === undefined) return false;
+      const x0 = (flip > 0 ? cx + dx : cx + 1 - dx - w) + shift;
+      for (let y = y0; y < y0 + h; y++) {
+        for (let x = x0; x < x0 + w; x++) {
+          this.set(x, y, HOUSE);
+          this.lock[this.idx(x, y)] = 1;
+        }
+      }
+      this.put(x0, y0 + h - 1, { kind: 'building', style, w, h, fit: true });
+      if (style === 'house') this.houses.push([x0, y0]);
+      made.push({ style, x0, y0, w, h });
+      this.footpath(x0 + Math.floor(w / 2), y0 + h);
+      steps.add(this.idx(x0 + Math.floor(w / 2), y0 + h));
+      return true;
+    };
+    const kit: TownKit = {
+      theme,
+      seed,
+      sea: sea === 's' ? 's' : sea ? 'x' : null,
+      vx: VX,
+      vy: VY,
+      rand: (dx, dy, salt = 0) => hash2(cx + dx, cy + dy, seed + salt),
+      at: (dx, dy) => this.at(X(dx), Y(dy)),
+      set: (dx, dy, c) => {
+        const x = X(dx);
+        const y = Y(dy);
+        if (!this.inside(x, y, 2) || this.marked.has(this.idx(x, y))) return;
+        this.set(x, y, c);
+        this.lock[this.idx(x, y)] = 1;
+      },
+      open: (dx, dy) => open(X(dx), Y(dy)),
+      rect: (dx0, dy0, dx1, dy1, c) => {
+        for (let dy = Math.min(dy0, dy1); dy <= Math.max(dy0, dy1); dy++) {
+          for (let dx = Math.min(dx0, dx1); dx <= Math.max(dx0, dx1); dx++) {
+            const x = X(dx);
+            const y = Y(dy);
+            if (!this.inside(x, y, 2) || this.marked.has(this.idx(x, y))) continue;
+            const k = this.at(x, y);
+            if (k === HOUSE || k === RAMPART || k === FENCE) continue;
+            // (a dirt road stays stone where it's been paved: nothing paints a street back over its cobbles)
+            if (c === PATH && k === COBBLE) continue;
+            this.set(x, y, c);
+            this.lock[this.idx(x, y)] = 1;
+          }
+        }
+      },
+      clear: (dx0, dy0, dx1, dy1) => {
+        for (let dy = dy0; dy <= dy1; dy++) {
+          for (let dx = dx0; dx <= dx1; dx++) {
+            const x = X(dx);
+            const y = Y(dy);
+            if (!this.inside(x, y, 2) || this.marked.has(this.idx(x, y))) continue;
+            const k = this.at(x, y);
+            if (k === PATH || k === COBBLE || k === BRIDGE || k === TREE || k === BUSH || k === ROCK || k === WATER) this.set(x, y, FLOOR);
+          }
+        }
+      },
+      water: (dx, dy) => {
+        const x = X(dx);
+        const y = Y(dy);
+        if (!this.inside(x, y, 2) || this.marked.has(this.idx(x, y))) return;
+        const k = this.at(x, y);
+        if (k === HOUSE || k === RAMPART || k === FENCE) return;
+        this.set(x, y, k === PATH || k === COBBLE || k === BRIDGE ? BRIDGE : WATER);
+        this.lock[this.idx(x, y)] = 1;
+      },
+      prop: (dx, dy, name, solid = true) => prop(dx, dy, name, solid),
+      lot,
+      tree: (dx, dy) => {
+        if (open(X(dx), Y(dy))) this.set(X(dx), Y(dy), TREE);
+      },
+    };
     // the waystone at the heart of it
     this.put(cx, cy - 1, { kind: 'waystone' });
-    // the roads in (the land's own roads arrive along these lines from the square)
-    pave(0, -PY, 1, PY);
-    pave(-PX, 0, PX + 1, 1);
-    switch (plan) {
+    let look: TownLook | null = null;
+    if (form) {
+      look = form(kit);
+      // (whatever the form did, there's ground round the waystone, and the start stays clear)
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -1; dx <= 2; dx++) {
+          const x = flip > 0 ? cx + dx : cx + 1 - dx;
+          const y = cy + dy;
+          if (!this.marked.has(this.idx(x, y)) && !WALKABLE.has(this.at(x, y))) this.set(x, y, this.at(x, y) === WATER ? BRIDGE : FLOOR);
+        }
+      }
+    } else {
+      // the roads in (the land's own roads arrive along these lines from the square)
+      pave(0, -PY, 1, PY);
+      pave(-PX, 0, PX + 1, 1);
+    }
+    switch (form ? '' : plan) {
       case 'cross': {
         // the square where the roads cross, the inn and the smithy west of it, the stable and a tall shop east
         square(-4, -4, 5, 2);
@@ -1044,19 +1155,20 @@ class ZoneBuilder {
     }
     // the heart: its centerpiece (a pool for an oasis), the market's stalls each with its goods against its side,
     // the square's lamps, benches and notice board
-    const sq = SQUARES[plan];
+    const sq: Square = look ?? SQUARES[plan as keyof typeof SQUARES]!;
     const [hx, hy] = sq.heart;
-    if (heart.pool) for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]] as const) if (free(X(hx + dx), Y(hy + dy))) this.set(X(hx + dx), Y(hy + dy), WATER);
+    if (heart.pool && !form) for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]] as const) if (free(X(hx + dx), Y(hy + dy))) this.set(X(hx + dx), Y(hy + dy), WATER);
     for (const [dx, dy, name] of heart.centre) {
       if (name === 'tree') {
         if (free(X(hx + dx), Y(hy + dy))) this.set(X(hx + dx), Y(hy + dy), TREE);
       } else prop(hx + dx, hy + dy, name);
     }
     const stalls: [number, number][] = [];
+    const goods = look?.goods ?? heart.goods;
     sq.stalls.forEach(([dx, dy, side], i) => {
-      if (!prop(dx, dy, heart.stall)) return;
+      if (!prop(dx, dy, look?.stall ?? heart.stall)) return;
       stalls.push([dx, dy]);
-      prop(dx + side, dy, heart.goods[(i + Math.floor(hash2(cx, cy, seed + 87) * 4)) % heart.goods.length]!);
+      prop(dx + side, dy, goods[(i + Math.floor(hash2(cx, cy, seed + 87) * 4)) % goods.length]!);
     });
     for (const [dx, dy, name] of sq.furniture) prop(dx, dy, name);
     // the people stand where they work: the smith at the smithy, the brewer at the inn, the trader before their
@@ -1081,8 +1193,9 @@ class ZoneBuilder {
       const [tx, ty] = this.free(at ? at[0]! : home[0], at ? at[1]! : home[1], true);
       this.put(tx, ty, { kind: 'npc', npc }, hub.when?.[npc]);
     });
-    this.villageFronts(made, seed);
-    this.villageStreets(cx, cy, seed);
+    this.villageFronts(made, seed, look);
+    this.villageStreets(cx, cy, seed, look);
+    if (look && !look.green) return;
     // the green: flowers in drifts on the open ground, the clearing's edge planted
     for (let y = cy - VY; y <= cy + VY; y++) {
       for (let x = cx - VX; x <= cx + VX; x++) {
@@ -1093,6 +1206,49 @@ class ZoneBuilder {
         const h = hash2(x, y, seed + 67);
         if (d > 0.7 && h < 0.14) this.set(x, y, h < 0.09 ? TREE : BUSH);
         else if (noise2(x / 4, y / 4, seed + 69) > 0.6) this.set(x, y, DECO);
+      }
+    }
+  }
+
+  /** Which way the water is from a town: the land's sea, or else whichever side of it has the most lake on it. */
+  private seaOf(cx: number, cy: number): 'e' | 'w' | 's' | null {
+    const w = this.spec.water;
+    if (w?.kind === 'sea') return w.side === 'n' ? 's' : w.side;
+    let east = 0;
+    let west = 0;
+    for (let y = cy - VY; y <= cy + VY; y++) {
+      for (let x = cx - VX - 12; x <= cx + VX + 12; x++) {
+        if (this.at(x, y) !== WATER) continue;
+        if (x > cx) east++;
+        else west++;
+      }
+    }
+    return east || west ? (east >= west ? 'e' : 'w') : null;
+  }
+
+  /** The way from a door to the nearest road: the shortest over open ground, trodden earth. */
+  private footpath(x0: number, y0: number): void {
+    const road = (k: number): boolean => k === PATH || k === COBBLE || k === BRIDGE;
+    if (!this.inside(x0, y0, 2) || road(this.at(x0, y0))) return;
+    const from = new Map<number, number>([[this.idx(x0, y0), -1]]);
+    const queue = [[x0, y0] as [number, number]];
+    for (let head = 0; head < queue.length && head < 900; head++) {
+      const [x, y] = queue[head]!;
+      for (const [dx, dy] of [[0, 1], [1, 0], [-1, 0], [0, -1]] as const) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (!this.inside(nx, ny, 2) || from.has(this.idx(nx, ny))) continue;
+        const k = this.at(nx, ny);
+        from.set(this.idx(nx, ny), this.idx(x, y));
+        if (road(k)) {
+          for (let i = this.idx(x, y); i >= 0; i = from.get(i) ?? -1) {
+            if (this.marked.has(i)) continue;
+            this.g[i] = PATH;
+            this.lock[i] = 1;
+          }
+          return;
+        }
+        if ((OPEN.has(k) || k === TREE || k === BUSH) && !this.marked.has(this.idx(nx, ny))) queue.push([nx, ny]);
       }
     }
   }
@@ -1108,6 +1264,141 @@ class ZoneBuilder {
       y = clamp(Math.round(y + Math.sin(a) * 2), 7, this.h - 8);
     }
     return [x, y];
+  }
+
+  /**
+   * A great work (greatworks.ts) as near its place as it fits: only the tiles it really stands on block the way, and
+   * those keep off roads, people and whatever the story put down, so everyone can still walk everywhere. In the water
+   * it needs its middle on water. Woods and rocks in its way go, and nothing else, so what's left walks under it.
+   */
+  private greatWork(g: GreatPlace, start: [number, number]): void {
+    const work = GREAT[g.id];
+    if (!work) return;
+    const door = g.door ? this.placed.find((p) => p.marker.kind === 'exit' && p.marker.to === g.door) : null;
+    const spot = g.spot ? this.spec.pois.find((p) => p.spot?.id === g.spot) : null;
+    const place = door ? ([door.tx, door.ty + (g.dy ?? 0)] as [number, number]) : spot ? (((t) => [t[0], t[1] + (g.dy ?? 0)])(this.tileOf(spot.at)) as [number, number]) : this.tileOf(g.at ?? [0.5, 0.5]);
+    const [ax, ay] = g.water || door || spot ? place : this.clearOfTowns(place);
+    /** Whoever stands on the tiles it wants: small dressing makes way; a person, or anything of the story's, doesn't. */
+    const movable = (i: number): boolean => this.placed.every((p) => this.idx(p.tx, p.ty) !== i || ((p.marker.kind === 'prop' || p.marker.kind === 'pack') && !p.when));
+    const eachSolid = (cx: number, cy: number, f: (x: number, y: number) => boolean): boolean => {
+      for (const [x0, y0, x1, y1] of work.solid) for (let y = cy + y0; y <= cy + y1; y++) for (let x = cx + x0; x <= cx + x1; x++) if (!f(x, y)) return false;
+      return true;
+    };
+    const fits = (cx: number, cy: number): boolean => {
+      if (!this.inside(cx, cy, 3) || this.marked.has(this.idx(cx, cy))) return false;
+      if (g.water && !g.spot) return this.at(cx, cy) === WATER;
+      if (this.hubAt.some(([hx, hy]) => ((cx - hx) / (VX + work.room[0] * 0.5)) ** 2 + ((cy - hy) / (VY + work.room[1] * 0.5)) ** 2 < 1)) return false;
+      return eachSolid(cx, cy, (x, y) => {
+        // (past the edge of the map is nobody's road: a great thing can stand at the land's end)
+        if (!this.inside(x, y, 3)) return true;
+        if (this.marked.has(this.idx(x, y)) && !movable(this.idx(x, y))) return false;
+        const k = this.at(x, y);
+        return k === FLOOR || k === DECO || k === SAND || k === TREE || k === BUSH || k === ROCK || k === WALL || k === FENCE || (k === WATER && g.water === true);
+      });
+    };
+    let last = new Uint8Array(0);
+    const reach = (): number => {
+      const seen = new Uint8Array(this.w * this.h);
+      const q = [this.idx(start[0], start[1])];
+      seen[q[0]!] = 1;
+      let n = 0;
+      while (q.length) {
+        const i = q.pop()!;
+        n++;
+        const x = i % this.w;
+        const y = (i - x) / this.w;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+          if (!this.inside(x + dx, y + dy)) continue;
+          const j = this.idx(x + dx, y + dy);
+          if (!seen[j] && (WALKABLE.has(this.g[j]!) || (this.marked.has(j) && this.g[j] !== HOUSE))) {
+            seen[j] = 1;
+            q.push(j);
+          }
+        }
+      }
+      last = seen;
+      return n;
+    };
+    /** Everyone and everything that has to be walked to can still be, from where the last count got to. */
+    const reachesEveryone = (): boolean =>
+      this.placed.every((p) => {
+        // (what nobody has to walk to: scenery, and foes, who are about to move anyway)
+        if (['prop', 'building', 'pack', 'fire', 'hazard', 'wisp', 'place'].includes(p.marker.kind)) return true;
+        return [0, 1, -1, this.w, -this.w].some((d) => last[this.idx(p.tx, p.ty) + d]);
+      });
+    for (let rad = 0; rad < (door ? 10 : 44); rad++) {
+      for (let dy = -rad; dy <= rad; dy++) {
+        for (let dx = -rad; dx <= rad; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== rad || !fits(ax + dx, ay + dy)) continue;
+          const cx = ax + dx;
+          const cy = ay + dy;
+          const was = this.g.slice();
+          const before = reach();
+          let foot = 0;
+          // its own ground: what grows there goes, and what it stands on can't be walked through
+          for (let y = cy - work.room[1]; y <= cy + work.room[1]; y++) {
+            for (let x = cx - work.room[0]; x <= cx + work.room[0]; x++) {
+              if (!this.inside(x, y, 4) || this.marked.has(this.idx(x, y)) || this.lock[this.idx(x, y)]) continue;
+              const k = this.at(x, y);
+              if (k === TREE || k === BUSH || k === ROCK) this.set(x, y, FLOOR);
+            }
+          }
+          eachSolid(cx, cy, (x, y) => {
+            if (this.inside(x, y)) {
+              this.set(x, y, HOUSE);
+              foot++;
+            }
+            return true;
+          });
+          // a wall right across the land, open where a road goes through it
+          if (work.wall !== undefined) {
+            const wy = cy + work.wall;
+            for (let x = 1; x < this.w - 1; x++) {
+              const k = this.at(x, wy);
+              // (a gate every so often, wherever no road happens to go through)
+              if (x % 26 < 3 || this.marked.has(this.idx(x, wy)) || (k !== FLOOR && k !== DECO && k !== SAND && k !== TREE && k !== BUSH && k !== ROCK)) continue;
+              this.set(x, wy, RAMPART);
+              foot++;
+            }
+          }
+          // (it may cut off nobody, and not much of the open floor either)
+          if (reach() < before - foot - 40 || !reachesEveryone()) {
+            this.g.set(was);
+            continue;
+          }
+          // the small dressing that was in the way goes; foes camped there move over to the nearest open ground
+          for (let i = this.placed.length - 1; i >= 0; i--) {
+            const p = this.placed[i]!;
+            if (p.when || eachSolid(cx, cy, (x, y) => x !== p.tx || y !== p.ty)) continue;
+            this.marked.delete(this.idx(p.tx, p.ty));
+            if (p.marker.kind === 'prop') {
+              this.placed.splice(i, 1);
+              this.props.delete(this.idx(p.tx, p.ty));
+            } else if (p.marker.kind === 'pack') {
+              const seen = new Set<number>([this.idx(p.tx, p.ty)]);
+              const q: [number, number][] = [[p.tx, p.ty]];
+              for (let head = 0; head < q.length; head++) {
+                const [x, y] = q[head]!;
+                if (WALKABLE.has(this.at(x, y)) && !this.marked.has(this.idx(x, y)) && last[this.idx(x, y)]) {
+                  p.tx = x;
+                  p.ty = y;
+                  break;
+                }
+                for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+                  if (this.inside(x + dx, y + dy, 2) && !seen.has(this.idx(x + dx, y + dy))) {
+                    seen.add(this.idx(x + dx, y + dy));
+                    q.push([x + dx, y + dy]);
+                  }
+                }
+              }
+              this.marked.add(this.idx(p.tx, p.ty));
+            }
+          }
+          this.put(cx, cy, { kind: 'prop', prop: `great:${g.id}` });
+          return;
+        }
+      }
+    }
   }
 
   /** A land's great thing, on open ground nearest its place, standing on the tiles its model covers. */
@@ -1151,9 +1442,9 @@ class ZoneBuilder {
    * barrels and a bench, the smithy's firewood and weapon rack, the stable's hay and trough, the shop's crates and
    * sacks, the chapel's planters, the keep's flags. On the free tiles beside the front of the lot, never before a door.
    */
-  private villageFronts(made: { style: BuildingStyle; x0: number; y0: number; w: number; h: number }[], seed: number): void {
+  private villageFronts(made: { style: BuildingStyle; x0: number; y0: number; w: number; h: number }[], seed: number, look: TownLook | null): void {
     const FRONTS: Partial<Record<BuildingStyle, [string[], string[]]>> = {
-      house: [
+      house: look?.fronts ?? [
         ['flowerbed', 'planter', 'flowerbed'],
         ['woodpile', 'barrel', 'bucket', 'sacks'],
       ],
@@ -1183,7 +1474,8 @@ class ZoneBuilder {
    * Lamps down a village's streets, one every six tiles or so on the house side, and flowers at the foot of its
    * walls. Never before a door, never against another thing (nothing walls a lane off).
    */
-  private villageStreets(cx: number, cy: number, seed: number): void {
+  private villageStreets(cx: number, cy: number, seed: number, look: TownLook | null): void {
+    const lamp = look ? look.lamp : 'lamp';
     const near = (x: number, y: number, kinds: number[]): boolean => [[0, -1], [1, 0], [0, 1], [-1, 0]].some(([dx, dy]) => kinds.includes(this.at(x + dx!, y + dy!)));
     const crowded = (x: number, y: number): boolean => [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => (dx || dy) && this.marked.has(this.idx(x + dx, y + dy))));
     for (let y = cy - VY; y <= cy + VY; y++) {
@@ -1195,8 +1487,8 @@ class ZoneBuilder {
         if (crowded(x, y)) continue;
         const street = near(x, y, [PATH, COBBLE]);
         const house = near(x, y, [HOUSE]);
-        if (street && house && x - lampAt > 6) {
-          this.put(x, y, { kind: 'prop', prop: 'lamp', solid: true });
+        if (lamp && street && house && x - lampAt > 6) {
+          this.put(x, y, { kind: 'prop', prop: lamp, solid: true });
           lampAt = x;
         } else if (house && !street && hash2(x, y, seed + 91) < 0.12) this.put(x, y, { kind: 'prop', prop: 'flowers' });
       }
@@ -1278,8 +1570,25 @@ class ZoneBuilder {
     }
     if (p.landmark) {
       const { style, w, h, name } = p.landmark;
-      const x0 = cx - Math.floor(w / 2);
-      const y0 = cy - h - 1;
+      // (just north of the place, or as near as it goes: a town may have got there first)
+      const clearLot = (x0: number, y0: number): boolean => {
+        for (let y = y0 - 1; y <= y0 + h; y++) {
+          for (let x = x0 - 1; x <= x0 + w; x++) {
+            const k = this.at(x, y);
+            if (!this.inside(x, y, 2) || this.marked.has(this.idx(x, y)) || k === HOUSE || k === HOUSE_ANCHOR || k === RAMPART || k === PATH || k === COBBLE || k === BRIDGE) return false;
+          }
+        }
+        return true;
+      };
+      let spot: [number, number] | null = null;
+      for (let rad = 0; rad < 16 && !spot; rad++) {
+        for (let dy = -rad; dy <= rad && !spot; dy++) {
+          for (let dx = -rad; dx <= rad && !spot; dx++) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) === rad && clearLot(cx - Math.floor(w / 2) + dx, cy - h - 1 + dy)) spot = [cx - Math.floor(w / 2) + dx, cy - h - 1 + dy];
+          }
+        }
+      }
+      const [x0, y0] = spot ?? [cx - Math.floor(w / 2), cy - h - 1];
       for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) this.set(x, y, HOUSE);
       this.put(x0, y0 + h - 1, { kind: 'building', style, w, h, ...(name ? { name } : {}) });
     }
@@ -1552,11 +1861,44 @@ class ZoneBuilder {
     };
     let seen = flood();
     for (const m of this.placed) {
-      const i = this.idx(m.tx, m.ty);
+      // (a building's marker sits on its own wall: what has to be reached is its door)
+      const mx = m.marker.kind === 'building' ? m.tx + Math.floor(m.marker.w / 2) : m.tx;
+      const my = m.marker.kind === 'building' ? m.ty + 1 : m.ty;
+      const i = this.idx(mx, my);
       if (seen[i]) continue;
+      // the shortest way out to reached ground that doesn't go through a wall or a house
+      const from = new Map<number, number>([[i, -1]]);
+      const queue = [i];
+      let found = -1;
+      for (let head = 0; head < queue.length && found < 0; head++) {
+        const c = queue[head]!;
+        const cx = c % this.w;
+        const cy = (c - cx) / this.w;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+          if (!this.inside(cx + dx, cy + dy, 1)) continue;
+          const j = this.idx(cx + dx, cy + dy);
+          if (from.has(j)) continue;
+          const k = this.g[j]!;
+          if (k === HOUSE || k === HOUSE_ANCHOR || k === RAMPART) continue;
+          from.set(j, c);
+          if (seen[j]) {
+            found = j;
+            break;
+          }
+          queue.push(j);
+        }
+      }
+      if (found >= 0) {
+        for (let c = from.get(found) ?? -1; c >= 0; c = from.get(c) ?? -1) {
+          if (!walk(c)) this.g[c] = this.g[c] === WATER ? BRIDGE : FLOOR;
+          else if (c === i && !WALKABLE.has(this.g[c]!)) this.g[c] = this.g[c] === WATER ? BRIDGE : FLOOR;
+        }
+        seen = flood();
+        continue;
+      }
       // walk toward the start until we meet reached ground, clearing as we go
-      let x = m.tx;
-      let y = m.ty;
+      let x = mx;
+      let y = my;
       for (let guard = 0; guard < this.w + this.h && !seen[this.idx(x, y)]; guard++) {
         const c = this.g[this.idx(x, y)]!;
         if (!walk(this.idx(x, y))) this.g[this.idx(x, y)] = c === WATER ? BRIDGE : FLOOR;
@@ -1594,13 +1936,15 @@ class ZoneBuilder {
       const h = hubs[near === 'hub' ? 0 : Number(near.slice(4))];
       if (h) return h;
     } else if (near.startsWith('house:')) {
-      const h = this.houses[Number(near.slice(6))];
+      // (a town may have fewer houses than the story counted on: then someone else's)
+      const h = this.houses[Number(near.slice(6)) % Math.max(1, this.houses.length)];
       if (h) return [h[0] + 1, h[1]];
     } else if (near.startsWith('exit:')) {
       const i = this.spec.exits.findIndex((e) => e.to === near.slice(5));
       if (i >= 0) return ways[i]!;
     } else if (near === 'gate') {
       if (this.gate) return this.gate;
+      if (hubs[0]) return [hubs[0][0], hubs[0][1] - 8];
     } else if (near.startsWith('shore:')) {
       return this.shore(this.anchor(near.slice(6), hubs, pois, ways));
     } else {
@@ -1668,11 +2012,11 @@ const LANDMARKS: Record<string, LandmarkSpec[]> = {
   greyfen: [{ prop: 'dead-colossus', at: [0.28, 0.72], foot: 2 }, { prop: 'broken-tower', at: [0.72, 0.28], foot: 2 }],
   amberfield: [{ prop: 'windmill', at: [0.75, 0.22], foot: 2 }, { prop: 'lumber-mill', at: [0.22, 0.78], foot: 2 }],
   duskfen: [{ prop: 'dead-colossus', at: [0.68, 0.72], foot: 2 }, { prop: 'crypt-hill', at: [0.28, 0.28], foot: 3 }],
-  ironpeak: [{ prop: 'giant-statue', at: [0.5, 0.2], foot: 2 }, { prop: 'mine-head', at: [0.82, 0.62], foot: 2 }],
+  ironpeak: [{ prop: 'mine-head', at: [0.82, 0.62], foot: 2 }],
   'ashen-barrows': [{ prop: 'crypt-hill', at: [0.72, 0.32], foot: 3 }, { prop: 'broken-tower', at: [0.24, 0.72], foot: 2 }],
-  stormwatch: [{ prop: 'lighthouse', at: [0.18, 0.2], foot: 2 }, { prop: 'sea-rock', at: [0.82, 0.76], foot: 2 }],
+  stormwatch: [{ prop: 'sea-rock', at: [0.82, 0.76], foot: 2 }],
   grimward: [{ prop: 'stone-arch', at: [0.3, 0.25], foot: 1 }, { prop: 'great-obelisk', at: [0.76, 0.7], foot: 1 }],
-  sunscorch: [{ prop: 'sand-spire', at: [0.25, 0.3], foot: 2 }, { prop: 'giant-statue:#d8b880', at: [0.72, 0.66], foot: 2 }],
+  sunscorch: [{ prop: 'sand-spire', at: [0.25, 0.3], foot: 2 }],
   glimmerwood: [{ prop: 'great-mushroom-tree', at: [0.28, 0.62], foot: 1 }, { prop: 'ancient-oak:#c8a8e8', at: [0.72, 0.3], foot: 2 }],
   rimeheld: [{ prop: 'ice-spire', at: [0.25, 0.35], foot: 2 }, { prop: 'giant-skull', at: [0.72, 0.7], foot: 2 }],
   'shattered-vale': [{ prop: 'rift-spire', at: [0.62, 0.28], foot: 2 }, { prop: 'broken-tower', at: [0.24, 0.76], foot: 2 }],
@@ -1680,20 +2024,20 @@ const LANDMARKS: Record<string, LandmarkSpec[]> = {
   vinecoil: [{ prop: 'giant-statue:#8aa878', at: [0.5, 0.28], foot: 2 }, { prop: 'ancient-oak', at: [0.76, 0.72], foot: 2 }],
   highwall: [{ prop: 'broken-tower', at: [0.2, 0.76], foot: 2 }, { prop: 'ruined-hall', at: [0.78, 0.72], foot: 2 }],
   gloamhollow: [{ prop: 'dead-colossus', at: [0.28, 0.28], foot: 2 }, { prop: 'great-obelisk', at: [0.72, 0.72], foot: 1 }],
-  bonefields: [{ prop: 'bone-arch', at: [0.34, 0.34], foot: 2 }, { prop: 'giant-skull', at: [0.72, 0.66], foot: 2 }],
+  bonefields: [{ prop: 'bone-arch', at: [0.22, 0.7], foot: 2 }],
   'weeping-woods': [{ prop: 'dead-colossus', at: [0.62, 0.28], foot: 2 }, { prop: 'crypt-hill', at: [0.28, 0.72], foot: 3 }],
   'sunken-reaches': [{ prop: 'great-wreck', at: [0.3, 0.62], foot: 2 }, { prop: 'lighthouse', at: [0.76, 0.28], foot: 2 }],
   blightwood: [{ prop: 'dead-colossus', at: [0.4, 0.64], foot: 2 }, { prop: 'great-mushroom-tree', at: [0.76, 0.28], foot: 1 }],
   emberdeep: [{ prop: 'lava-spire', at: [0.28, 0.3], foot: 2 }, { prop: 'giant-skull:#b88a70', at: [0.72, 0.7], foot: 2 }],
   hollowmere: [{ prop: 'crypt-hill', at: [0.72, 0.28], foot: 3 }, { prop: 'great-wreck', at: [0.28, 0.72], foot: 2 }],
   riftscar: [{ prop: 'rift-spire', at: [0.28, 0.3], foot: 2 }, { prop: 'rift-spire', at: [0.72, 0.64], foot: 2 }],
-  'pale-reach': [{ prop: 'giant-statue:#c8c8d8', at: [0.5, 0.22], foot: 2 }, { prop: 'bone-arch', at: [0.24, 0.72], foot: 2 }],
+  'pale-reach': [{ prop: 'bone-arch', at: [0.24, 0.72], foot: 2 }],
 };
 
 /** A wild region whose map is generated the first time something looks at it. */
 export function wildRegion(base: Omit<RegionDef, 'kind' | 'map' | 'markers' | 'placed' | 'encounters' | 'level'>, spec: ZoneSpec): RegionDef {
   let made: GeneratedZone | null = null;
-  const get = (): GeneratedZone => (made ??= generateZone({ ...spec, landmarks: LANDMARKS[base.id] ?? [] }, base.theme));
+  const get = (): GeneratedZone => (made ??= generateZone({ ...spec, landmarks: LANDMARKS[base.id] ?? [], great: GREAT_IN[base.id] ?? [] }, base.theme));
   return {
     ...base,
     kind: 'wild',

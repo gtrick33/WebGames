@@ -123,7 +123,7 @@ describe('Sigilfall: the Three Gates (Act IV)', () => {
   });
 
   it('the Gloam Gate: the cells, the way out, the Gatewarden, and Lastlight’s fire after', () => {
-    const held = newWorld('gloamhollow', heroAt('gloam-the-cells', 47));
+    const held = newWorld('gloamhollow', heroAt('gloam-the-cells', 48));
     expect(held.storyState?.id).toBe('gate-held');
     expect(held.enemies.some((e) => e.def.id === 'the-gatewarden' && !e.dead)).toBe(true);
     const w = held;
