@@ -40,7 +40,7 @@ export function TouchControls({ engine }: { engine: SigilEngine }) {
       <Joystick engine={engine} />
       <div className="rb-cluster">
         {/* the lesson sits over the button it teaches (inside the cluster: its size and side follow the cluster's) */}
-        {engine.ui.teach && (
+        {engine.ui.teach && !engine.ui.tip && (
           <div className={`rb-teach is-touch is-at-${engine.ui.teach.slot}`} role="status">
             {engine.ui.teach.text}
           </div>

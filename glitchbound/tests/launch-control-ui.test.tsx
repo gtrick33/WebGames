@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import Game from '../src/games/launch-control/Game';
 import { emptySave, KEY, newCar } from '../src/games/launch-control/storage';
 import { saveArrived } from '../src/platform/syncGate';
@@ -68,6 +68,9 @@ function startLadderRace(): void {
 
 describe('Launch Control: a full ladder race', () => {
   it('goes hub → rival → setup → race → result, pays out and saves', () => {
+    // one race, every time: a ladder race draws a random seed, and on a rare one even a perfect run comes second
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.42);
+    onTestFinished(() => random.mockRestore());
     render(<Game host={host} restartKey={0} pauseKey={0} />);
     expect(screen.getByText('Next: Dizzy Dee · Street')).toBeTruthy();
     startLadderRace();

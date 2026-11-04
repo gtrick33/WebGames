@@ -32,6 +32,8 @@ import { Link, type LinkState } from './net/link';
 import { COOP_LEVEL, MAX_PLAYERS, type Card, type Mode, type View as PartyView } from './net/room';
 import { heldWeapon, heroLook } from './render/sprites';
 import { wornLooks } from './progress/wardrobe';
+import { giveTips, tipDue, tipShown, tipSteps, type TipId, type TipStep } from './progress/tips';
+import { SPEC_LEVEL } from './data/talents';
 
 /**
  * The game around the simulation: heroes and the save, travelling between regions, expeditions
@@ -101,6 +103,8 @@ export interface UiState {
    * the bar, until the hero uses it (`shown` is when it began) or the time runs out.
    */
   teach: { slot: SlotKey; text: string; shown: number; until: number } | null;
+  /** A hint of the first-timer's tutorial on the screen (the game waits for it, as for a menu). */
+  tip: { id: TipId; step: number; spell?: string } | null;
   /** The load went wrong in a way the player should know about. */
   notice: string;
   /**
@@ -214,6 +218,9 @@ export class SigilEngine {
   private toWorldFn: (x: number, y: number) => { x: number; y: number } = (x, y) => ({ x, y });
   touchMode: boolean;
   private pausedDrawAt = 0;
+  /** Hints asked for, waiting for the hero to be free. */
+  private tipQueue: { id: TipId; spell?: string }[] = [];
+  private tipOpenedAt = 0;
   /** The game is turned to landscape on a phone held upright (ui/turn.ts). */
   turned = false;
   dpr = 1;
@@ -246,6 +253,7 @@ export class SigilEngine {
       boss: null,
       levelUp: null,
       teach: null,
+      tip: null,
       card: null,
       notice:
         loaded.status === 'recovered'
@@ -393,7 +401,7 @@ export class SigilEngine {
 
   isPaused(): boolean {
     const u = this.ui;
-    return u.screen !== 'game' || u.pause || !!u.panel || !!u.dialogue || !!u.travel || u.death || !!u.reward || this.hidden;
+    return u.screen !== 'game' || u.pause || !!u.panel || !!u.dialogue || !!u.travel || u.death || !!u.reward || !!u.tip || this.hidden;
   }
 
   /* ------------------------------------------------------------ the frame */
@@ -535,6 +543,7 @@ export class SigilEngine {
     if (card && t - card.id > (card.act ? ACT_CARD_MS : LAND_CARD_MS)) this.setUi({ card: null });
     else if (!card && this.cards.length && !this.ui.dialogue && !this.ui.panel && !this.ui.death && !w.scene) this.setUi({ card: { ...this.cards.shift()!, id: t } });
     if (this.ui.levelUp && t - this.ui.levelUp.id > 3600) this.setUi({ levelUp: null });
+    if (this.tipQueue.length) this.showTip(w);
     const boss = w.boss();
     this.sound.setMusic(boss && !boss.dead ? 'boss' : ((w.storyState?.music ?? REGIONS[w.region.id].music) as MusicId));
   }
@@ -555,6 +564,7 @@ export class SigilEngine {
           break;
         case 'loot':
           this.toast(itemName(ev.item), 'loot', ev.item);
+          this.queueTip('bag');
           if (this.hero && !this.hero.opened.includes('hint:equip') && Object.keys(this.hero.equip).length < 2) this.hint('equip');
           break;
         case 'levelup': {
@@ -564,6 +574,8 @@ export class SigilEngine {
           this.ui = { ...this.ui, levelUp: { level: ev.level, skills, id: performance.now() } };
           changed = true;
           if (skills.includes(CLASSES[h.cls].ult)) this.hint('ult');
+          const spell = skills.find((id) => id !== CLASSES[h.cls].ult);
+          if (spell) this.queueTip('spell', spell);
           break;
         }
         case 'questDone': {
@@ -694,6 +706,9 @@ export class SigilEngine {
     const h = this.hero;
     if (!h || h.opened.includes(`hint:${id}`)) return;
     h.opened.push(`hint:${id}`);
+    // the tutorial says these in full, the game paused: no toast on top of it
+    if (id === 'attack') this.queueTip('combat');
+    if ((id === 'equip' && this.queueTip('bag')) || (id === 'spec' && this.queueTip('talents'))) return;
     const touch = this.touchMode;
     // the Prologue's first fight teaches by fighting (its waves ask for these): on the bar itself, the key lit
     if (id === 'attack' || id === 'skill' || id === 'dodge') {
@@ -721,6 +736,80 @@ export class SigilEngine {
                 : 'Low health! Press 1 to drink a potion.'
               : '';
     if (text) this.toast(text, 'hint');
+  }
+
+  /* ------------------------------------------------- the first-timer's tutorial (progress/tips.ts) */
+
+  /** Asks for a hint: it shows as soon as nothing else is on the screen. True if this hero will see it. */
+  private queueTip(id: TipId, spell?: string): boolean {
+    const h = this.hero;
+    if (!h || !tipDue(h, this.settings.tutorial, id)) return false;
+    if (!this.tipQueue.some((q) => q.id === id)) this.tipQueue.push({ id, spell });
+    return true;
+  }
+
+  /** The next hint, once the hero is free: not over a scene, someone talking, a menu or a land still loading. */
+  private showTip(w: World): void {
+    const h = this.hero;
+    if (!h || this.ui.tip || this.coop || w.keyRun || w.scene || this.ui.card || this.isPaused() || this.renderer.waiting) return;
+    const next = this.tipQueue.shift();
+    if (!next) return;
+    // (turned off since it was asked for, or shown already)
+    if (!tipDue(h, this.settings.tutorial, next.id)) return;
+    tipShown(h, next.id);
+    this.scheduleSave(300);
+    this.kbm?.release();
+    this.touch.release();
+    this.sound.play('open');
+    this.tipOpenedAt = performance.now();
+    this.setUi({ tip: { id: next.id, step: 0, spell: next.spell } });
+  }
+
+  /** The hint on the screen, in steps for this input and this hero. */
+  tipPlan(): { id: TipId; step: number; steps: TipStep[] } | null {
+    const tip = this.ui.tip;
+    const w = this.world;
+    const h = this.hero;
+    if (!tip || !w || !h) return null;
+    const steps = tipSteps(tip.id, { touch: this.touchMode, bar: w.build.bar, resource: w.build.resource ?? null, specChosen: h.spec !== null, spell: tip.spell });
+    return { id: tip.id, step: tip.step, steps };
+  }
+
+  /** On to the hint's next step, opening what it talks about; after the last, back to the game. */
+  tipNext(): void {
+    const plan = this.tipPlan();
+    if (!plan) return;
+    const next = plan.steps[plan.step + 1];
+    if (!next) return this.endTip();
+    this.sound.play('open');
+    this.setUi({ tip: { ...this.ui.tip!, step: plan.step + 1 }, panel: next.panel });
+  }
+
+  /** Back to the game. A control being taught over the bar (the first fight) gets its full time again. */
+  private endTip(): void {
+    this.sound.play('close');
+    const teach = this.ui.teach;
+    const away = performance.now() - this.tipOpenedAt;
+    this.setUi({ tip: null, panel: null, teach: teach ? { ...teach, shown: teach.shown + away, until: teach.until + away } : null });
+  }
+
+  /** "Turn off hints": no more of them, for any hero, until Settings or a new hero turns them back on. */
+  skipTips(): void {
+    this.tipQueue = [];
+    this.endTip();
+    this.setTutorial(false);
+    this.toast('Hints are off. You can turn them back on in Settings.', 'hint');
+  }
+
+  /** The Settings choice. On means on: every hero gets the hints they haven't seen yet, from here on. */
+  setTutorial(on: boolean): void {
+    this.setSettings({ tutorial: on });
+    if (on) for (const h of this.save.heroes) if (h) giveTips(h);
+  }
+
+  /** A new hero asks whether to show the hints when the player has seen them, or has turned them off. */
+  get asksForTips(): boolean {
+    return !this.settings.tutorial || this.save.heroes.some(Boolean);
   }
 
   /** The words over the bar for a control being taught (by input, and by what the skill costs). */
@@ -791,9 +880,12 @@ export class SigilEngine {
     this.setUi({ screen: 'create', createSlot: slot });
   }
 
-  createHero(slot: number, cls: ClassId, name: string, body: Body = 'm', face?: Face): void {
+  createHero(slot: number, cls: ClassId, name: string, body: Body = 'm', face?: Face, tips = this.settings.tutorial): void {
     const c = newCharacter(cls, name || this.defaultName, `hero${slot}`, Date.now(), body);
     if (face) c.face = face;
+    // the first hero gets the tutorial; a later one by the player's answer, which is also the Settings choice
+    if (tips !== this.settings.tutorial) this.setSettings({ tutorial: tips });
+    if (tips) giveTips(c);
     this.save.heroes[slot] = c;
     this.persist();
     this.play(slot);
@@ -833,7 +925,8 @@ export class SigilEngine {
     this.hero = h;
     this.heroSig = heroSignature(h);
     this.save.last = slot;
-    this.ui = { ...this.ui, screen: 'game', panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], teach: null };
+    this.tipQueue = [];
+    this.ui = { ...this.ui, screen: 'game', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], teach: null };
     this.travel(HOME, 0, []);
     this.sound.unlock();
     // still in a party's lobby (back from choosing another hero): the party sees the new one
@@ -857,6 +950,7 @@ export class SigilEngine {
     // a brand-new hero arrives at Briarhollow's gate at dusk, and the guard stops them there: once the gate
     // can be seen (its art in, a moment to look), not over a dark screen
     this.greetIn = questState(h, 'briar-dusk') === 'active' && h.level === 1 && h.stats.time < 1 ? GREET_AFTER : 0;
+    if (h.level >= SPEC_LEVEL) this.queueTip('talents');
     this.bump();
   }
 
@@ -869,7 +963,8 @@ export class SigilEngine {
     this.world = null;
     this.hero = null;
     this.cards = [];
-    this.setUi({ screen: 'title', panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], levelUp: null, banner: null, teach: null, card: null });
+    this.tipQueue = [];
+    this.setUi({ screen: 'title', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], levelUp: null, banner: null, teach: null, card: null });
   }
 
   /* ------------------------------------------------------------- travel */
@@ -1173,7 +1268,7 @@ export class SigilEngine {
   }
 
   togglePause(): void {
-    if (this.ui.screen !== 'game') return;
+    if (this.ui.screen !== 'game' || this.ui.tip) return;
     if (this.ui.panel) return this.closePanel();
     if (this.ui.dialogue) return this.closeDialogue();
     if (this.ui.travel) return this.cancelTravel();
@@ -1185,6 +1280,11 @@ export class SigilEngine {
 
   private uiKey(k: UiKey): void {
     if (this.ui.screen !== 'game' || this.ui.death || this.ui.reward) return;
+    // a hint is answered on its own buttons (Esc puts it away); the keys for the menus wait
+    if (this.ui.tip) {
+      if (k === 'pause') this.endTip();
+      return;
+    }
     if (k === 'pause') return this.togglePause();
     if (this.ui.panel === k) return this.closePanel();
     this.openPanel(k);

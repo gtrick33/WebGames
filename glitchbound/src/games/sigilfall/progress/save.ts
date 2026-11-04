@@ -67,6 +67,8 @@ export interface Settings {
   lefty: boolean;
   /** The rotate-your-phone hint was dismissed. */
   rotateSeen: boolean;
+  /** The first-timer's hints (progress/tips.ts) are on. */
+  tutorial: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -88,6 +90,7 @@ export const DEFAULT_SETTINGS: Settings = {
   skill4Key: 'c',
   lefty: false,
   rotateSeen: false,
+  tutorial: true,
 };
 
 export interface SaveFile {
@@ -142,6 +145,7 @@ export function validateSettings(v: unknown): Settings {
     ultKey: o.ultKey === 't' || o.ultKey === 'shift' || o.ultKey === 'rmb' ? o.ultKey : 'f',
     skill4Key: o.skill4Key === 'v' || o.skill4Key === 'z' || o.skill4Key === 'x' ? o.skill4Key : 'c',
     lefty: bool(o.lefty, d.lefty),
+    tutorial: bool(o.tutorial, d.tutorial),
     rotateSeen: bool(o.rotateSeen, d.rotateSeen),
   };
 }

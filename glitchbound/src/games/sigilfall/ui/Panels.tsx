@@ -54,7 +54,7 @@ export function Panels({ engine }: { engine: SigilEngine }) {
   const title = (
     <span className="rb-tabs" role="tablist">
       {TABS.map((t) => (
-        <button key={t.id} role="tab" aria-selected={p === t.id} className={p === t.id ? 'is-on' : ''} onClick={() => engine.openPanel(t.id)}>
+        <button key={t.id} role="tab" data-tab={t.id} aria-selected={p === t.id} className={p === t.id ? 'is-on' : ''} onClick={() => engine.openPanel(t.id)}>
           {t.label}
           {t.id === 'talents' && freePoints(h) > 0 && <span className="rb-badge">{freePoints(h)}</span>}
           {t.id === 'hero' && h.bag.some((i) => i.fresh) && <span className="rb-badge">{h.bag.filter((i) => i.fresh).length}</span>}
@@ -1397,6 +1397,20 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
             ))}
           </div>
           <span className="rb-small rb-dim">WASD move · mouse aim · left click attack · Q E R {s.skill4Key.toUpperCase()} skills · Space dodge · {s.ultKey === 'rmb' ? 'Right mouse' : s.ultKey === 'shift' ? 'Shift' : s.ultKey.toUpperCase()} ultimate · 1 potion · Y ride · {s.ultKey === 'f' ? 'G' : 'F'} or Enter talk/travel · I bag · K talents · U skills · J quests · M map · O play together · Esc pause</span>
+        </section>
+        <section>
+          <span className="rb-kicker">Tutorial hints</span>
+          <div className="rb-radios" role="radiogroup" aria-label="Tutorial hints">
+            <label className="rb-check">
+              <input type="radio" name="rb-tutorial" checked={s.tutorial} onChange={() => engine.setTutorial(true)} />
+              <span>On</span>
+            </label>
+            <label className="rb-check">
+              <input type="radio" name="rb-tutorial" checked={!s.tutorial} onChange={() => engine.setTutorial(false)} />
+              <span>Off</span>
+            </label>
+          </div>
+          <span className="rb-small rb-dim">Short hints that pause the game to show a new hero the controls, the bag, new skills and talents.</span>
         </section>
         <section>
           <span className="rb-kicker">Display</span>

@@ -37,7 +37,7 @@ export function DesktopBar({ engine }: { engine: SigilEngine }) {
       <div className="rb-prompt" ref={prompt} hidden />
       {!indoors && (
         <div className="rb-bar6" role="toolbar" aria-label="Skills">
-          {engine.ui.teach && (
+          {engine.ui.teach && !engine.ui.tip && (
             // over the key it teaches (each slot 52 px and a 6 px gap, after the bar's 9 px of edge)
             <div className="rb-teach" role="status" style={{ left: `${9 + Math.max(0, slots.findIndex((s) => s.slot === engine.ui.teach!.slot)) * 58 + 26}px` }}>
               {engine.ui.teach.text}
