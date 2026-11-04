@@ -2229,6 +2229,12 @@ const fr: string[] = [
   'Un héros avec épée et bouclier dans la cour d’un château, la nuit, entre braseros et bannières rouges',
   'Vraie partie, sur téléphone ou ordinateur',
   'Plus de jeux plus bas',
+  'RPG de fantasy gratuit dans ton navigateur',
+  'Jouer gratuitement',
+  'Sans téléchargement. Sans inscription.',
+  'GlitchBound est un studio indépendant. Chaque jeu est conçu et réalisé ici. Certains partent d’une idée classique, comme un jeu de cartes ou de mots, et y ajoutent notre propre touche. Une partie des graphismes et du son est sous licence et créditée dans le jeu.',
+  'Personne n’est encore au Panthéon. Joue et établis le premier record.',
+  'Les classements sont encore tout frais, alors une couronne est à portée de main. Établis un record et décroches-en une.',
 ];
 
 export default fr;

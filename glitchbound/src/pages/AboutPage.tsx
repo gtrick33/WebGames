@@ -21,7 +21,7 @@ export function AboutPage() {
       <div className="info-cols">
         <section className="panel info-block" aria-labelledby="a-who">
           <h2 id="a-who">{t('Who makes it')}</h2>
-          <p>{t('GlitchBound is an independent studio. Every game is designed and built here, code and art. Some start from a classic idea, like a card game or a word puzzle, and give it a twist of our own.')}</p>
+          <p>{t('GlitchBound is an independent studio. Every game is designed and built here. Some start from a classic idea, like a card game or a word puzzle, and give it a twist of our own. Some of the art and sound is licensed, and credited in the game.')}</p>
         </section>
 
         <section className="panel info-block" aria-labelledby="a-play">

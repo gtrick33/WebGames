@@ -7,6 +7,7 @@ import { Link } from '../router/router';
 import { Icon } from './Icon';
 import './ThemeStrip.css';
 import { gameUrl } from '../catalog/catalog';
+import { tileImg } from '../platform/cardImg';
 
 /**
  * "Today is Trivia Tuesday": the day's theme, its games, and what to do about it. `embedded` renders
@@ -36,7 +37,7 @@ export function ThemeStrip({ embedded = false, level }: { embedded?: boolean; le
           {games.map((g) => (
             <li key={g.slug}>
               <Link href={gameUrl(g.slug)} title={g.title}>
-                <img src={g.art.tile} alt={g.title} width={52} height={52} loading="lazy" style={{ background: g.art.bg }} />
+                <img {...tileImg(g.art.tile, 52)} alt={g.title} width={52} height={52} loading="lazy" style={{ background: g.art.bg }} />
               </Link>
             </li>
           ))}

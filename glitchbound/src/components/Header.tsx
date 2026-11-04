@@ -96,7 +96,7 @@ function AccountMenu() {
 
   if (!me) {
     return (
-      <button className="btn btn-magenta btn-sm signin-btn" onClick={() => openSignIn()} disabled={status === 'loading'}>
+      <button className="btn btn-magenta btn-sm signin-btn" aria-label={t('Sign in')} onClick={() => openSignIn()} disabled={status === 'loading'}>
         <Icon name="user" size={18} /> <span className="hide-xs">{t('Sign in')}</span>
       </button>
     );

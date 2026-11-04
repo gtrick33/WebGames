@@ -8,27 +8,34 @@
   }
 }
 
-/* A banner of Sigilfall's key art, full width, whichever theme the site is in: short, so the arcade shows under it. */
+/*
+ * A banner of Sigilfall's key art, full width, whichever theme the site is in. The picture's left third is dark for the
+ * words. Its height follows the width (41vw keeps the whole picture across), so the heroes never slide under them, and
+ * the screen's height, so the arcade shows under it on a laptop too.
+ */
 .sfh {
   --gold: #f6c453;
   --gold-2: #ffe39a;
-  --parch: #e9dfc6;
+  --parch: #efe6d0;
+  --sfh-ink: #05030b;
+  --sfh-edge: clamp(20px, 5vw, 96px);
   position: relative;
   isolation: isolate;
   overflow: hidden;
   display: grid;
   align-items: center;
-  min-height: clamp(280px, calc(50svh - var(--header-h) * 0.5), 440px);
-  background: #05030b;
+  min-height: clamp(400px, min(calc(68svh - var(--header-h)), 41vw), 620px);
+  border-bottom: 3px solid var(--gold);
+  background: var(--sfh-ink);
   color: var(--parch);
-  /* the sanctum falls away into the page below */
-  -webkit-mask-image: linear-gradient(#000 calc(100% - 44px), transparent);
-  mask-image: linear-gradient(#000 calc(100% - 44px), transparent);
 }
 .sfh-art {
   position: absolute;
   inset: 0;
   z-index: -1;
+  max-width: 2000px;
+  margin-inline: auto;
+  overflow: hidden;
   pointer-events: none;
 }
 .sfh-art img {
@@ -36,125 +43,110 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 62% 100%;
-  image-rendering: auto;
-  transform-origin: 62% 70%;
-  animation: sfh-drift 26s ease-in-out infinite alternate;
+  object-position: 100% 62%;
+  transform-origin: 64% 45%;
+  animation: sfh-drift 30s ease-in-out infinite alternate;
 }
 @keyframes sfh-drift {
   from {
-    transform: scale(1.015);
+    transform: none;
   }
   to {
-    transform: scale(1.075) translate(-0.8%, -0.6%);
+    transform: scale(1.045);
   }
 }
-/* the moonbeam, breathing a little */
-.sfh-beam {
-  position: absolute;
-  left: 58.3%;
-  top: 8%;
-  width: 34%;
-  height: 74%;
-  background: linear-gradient(180deg, rgb(200 210 255 / 0.2), rgb(200 210 255 / 0));
-  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
-  transform: translateX(-50%);
-  mix-blend-mode: screen;
-  animation: sfh-beam 7s ease-in-out infinite alternate;
-}
-@keyframes sfh-beam {
-  from {
-    opacity: 0.35;
-  }
-  to {
-    opacity: 1;
+/* wider than the picture: its sides fall away into the dark */
+@media (min-width: 2001px) {
+  .sfh-art {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
   }
 }
 .sfh-ember {
   position: absolute;
   left: var(--x);
-  bottom: 4%;
+  bottom: 6%;
   width: 3px;
   height: 3px;
-  background: #ffb45c;
+  border-radius: 50%;
+  background: #ffc26e;
+  box-shadow: 0 0 6px #ff9a3c;
   opacity: 0;
   animation: sfh-rise var(--t) linear var(--d) infinite;
 }
 @keyframes sfh-rise {
   10% {
-    opacity: 0.95;
+    opacity: 0.9;
   }
   to {
     opacity: 0;
-    transform: translate(22px, -56vh);
+    transform: translate(22px, -420px);
   }
 }
 .sfh-inner {
   display: grid;
-  padding-block: clamp(16px, 2vw, 28px) clamp(44px, 4vw, 60px);
+  width: 100%;
+  max-width: 2000px;
+  margin-inline: auto;
+  padding: clamp(18px, 2.2vw, 32px) var(--sfh-edge) clamp(36px, 3.4vw, 52px);
 }
 .sfh-copy {
   display: grid;
   justify-items: start;
-  gap: 8px;
-  max-width: min(560px, 46vw);
+  gap: clamp(8px, 0.9vw, 14px);
+  width: min(460px, 34vw);
 }
 .sfh-kicker {
   margin: 0;
-  color: var(--gold);
-  font: 700 12.5px/1.2 var(--mono);
-  letter-spacing: 0.26em;
+  color: var(--gold-2);
+  font: 700 12.5px/1.35 var(--mono);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-/* The gradient only paints inside the box, so the padding makes room for the g's tail (the margin takes it back). */
 .sfh-title {
-  margin: 0 0 -0.2em;
-  padding-bottom: 0.2em;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(50px, 5.6vw, 92px);
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  line-height: 0.95;
-  text-shadow: none;
-  background: linear-gradient(180deg, #fff9e4 0%, var(--gold) 56%, #b0702a 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 4px 0 #1c0e2e) drop-shadow(0 0 30px rgb(246 196 83 / 0.28));
+  width: 100%;
+  margin: 0;
+  line-height: 0;
+}
+.sfh-title img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 8px 22px rgb(0 0 0 / 0.65));
 }
 .sfh-hook {
-  max-width: 34ch;
-  margin: 2px 0 0;
+  max-width: 36ch;
+  margin: 0;
   color: #fff6e0;
   font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(15.5px, 1.25vw, 19px);
   font-style: italic;
-  line-height: 1.32;
+  line-height: 1.36;
   text-shadow: 0 2px 10px #000;
 }
 .sfh-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px 22px;
-  margin-top: 6px;
+  gap: 10px 18px;
+  margin-top: 4px;
 }
 .sfh-cta {
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  min-height: 52px;
+  min-height: 54px;
   padding: 0 28px;
   overflow: hidden;
   border: 2px solid #3a2208;
   border-radius: 10px;
   background: linear-gradient(180deg, #ffe7a8, var(--gold) 52%, #cf8a2d);
-  box-shadow: 0 0 0 2px #15101f, 0 0 0 3px rgb(246 196 83 / 0.55), 0 8px 0 #15101f, 0 0 34px rgb(246 196 83 / 0.28);
+  box-shadow: 0 0 0 2px #15101f, 0 0 0 3px rgb(246 196 83 / 0.55), 0 7px 0 #15101f, 0 0 34px rgb(246 196 83 / 0.3);
   color: #2a1406;
-  font-family: Georgia, 'Times New Roman', serif;
   font-size: 19px;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   text-decoration: none;
   transition: transform 0.18s var(--out), box-shadow 0.18s var(--out);
 }
@@ -176,38 +168,59 @@
 }
 .sfh-cta:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 0 2px #15101f, 0 0 0 3px var(--gold), 0 10px 0 #15101f, 0 0 48px rgb(246 196 83 / 0.5);
+  box-shadow: 0 0 0 2px #15101f, 0 0 0 3px var(--gold), 0 9px 0 #15101f, 0 0 48px rgb(246 196 83 / 0.55);
 }
 .sfh-cta:active {
   transform: translateY(4px);
-  box-shadow: 0 0 0 2px #15101f, 0 0 0 3px var(--gold), 0 4px 0 #15101f;
+  box-shadow: 0 0 0 2px #15101f, 0 0 0 3px var(--gold), 0 3px 0 #15101f;
 }
 .sfh-cta:focus-visible {
   outline: 3px solid #fff;
   outline-offset: 5px;
 }
+.sfh-note {
+  color: var(--parch);
+  font-size: 13.5px;
+  font-weight: 600;
+}
 .sfh-facts {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 0;
-  margin: 6px 0 0;
+  gap: 6px;
+  margin: 8px 0 0;
   padding: 0;
   list-style: none;
   color: var(--gold-2);
-  font: 700 12.5px/1.3 var(--mono);
-  letter-spacing: 0.03em;
+  font: 700 12px/1.3 var(--mono);
 }
-.sfh-facts li + li::before {
-  content: '·';
-  margin-inline: 10px;
-  color: var(--gold);
+.sfh-facts li {
+  padding: 4px 9px;
+  border: 1px solid rgb(246 196 83 / 0.4);
+  border-radius: 6px;
+  background: rgb(5 3 11 / 0.55);
+  white-space: nowrap;
 }
 @media (prefers-reduced-motion: reduce) {
   .sfh-art img,
-  .sfh-beam,
   .sfh-ember,
   .sfh-cta::after {
     animation: none;
+  }
+}
+/* A short screen (a phone on its side): the same, with less to read. */
+@media (max-height: 520px) and (min-width: 761px) and (min-aspect-ratio: 13/10) {
+  .sfh {
+    min-height: min(300px, calc(100svh - var(--header-h)));
+  }
+  .sfh-hook,
+  .sfh-facts {
+    display: none;
+  }
+  .sfh-inner {
+    padding-block: 14px 30px;
+  }
+  .sfh-cta {
+    min-height: 48px;
   }
 }
 /* There's more below: a cue on the banner's bottom edge. It stays in the page, so it never covers a game. */
@@ -218,10 +231,10 @@
   align-items: center;
   gap: 5px;
   width: max-content;
-  min-height: 36px;
-  margin: -26px auto 0;
-  padding: 0 14px;
-  border: 1.5px solid #f6c453;
+  min-height: 38px;
+  margin: -21px auto 0;
+  padding: 0 16px;
+  border: 2px solid var(--gold, #f6c453);
   border-radius: 999px;
   background: #15101f;
   color: #ffe39a;
@@ -235,7 +248,7 @@
   background: #2a1f40;
 }
 .sfh-more:focus-visible {
-  outline: 3px solid #fff;
+  outline: 3px solid var(--ink, #fff);
   outline-offset: 2px;
 }
 .sfh-more svg {
@@ -251,42 +264,59 @@
     animation: none;
   }
 }
-/* A phone: the picture first, the words under it on the dark. */
-@media (max-width: 700px) {
+/* A phone or anything tall: the picture composed for it first, the words under it on the dark. */
+@media (max-width: 760px), (max-aspect-ratio: 13/10) {
   .sfh {
+    display: block;
     min-height: 0;
-    align-items: end;
   }
   .sfh-art {
-    bottom: auto;
-    height: min(52vw, 250px);
+    position: relative;
+    inset: auto;
+    z-index: auto;
+    max-width: none;
+    aspect-ratio: 5 / 4;
+    max-height: 56svh;
+    width: 100%;
   }
   .sfh-art img {
-    object-position: 60% 100%;
+    object-position: 50% 42%;
+    transform-origin: 50% 40%;
   }
   .sfh-art::after {
     content: '';
     position: absolute;
-    inset: 40% 0 0;
-    background: linear-gradient(transparent, #05030b);
-  }
-  .sfh-beam {
-    display: none;
+    inset: 62% 0 0;
+    background: linear-gradient(transparent, var(--sfh-ink));
   }
   .sfh-inner {
-    padding-block: min(30vw, 150px) 40px;
+    position: relative;
+    margin-top: clamp(-96px, -17vw, -56px);
+    padding: 0 var(--gutter) 40px;
   }
   .sfh-copy {
-    gap: 6px;
-    max-width: none;
+    justify-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 520px;
+    margin-inline: auto;
+    text-align: center;
+  }
+  .sfh-kicker {
+    order: 1;
+    font-size: 12px;
+    letter-spacing: 0.08em;
   }
   .sfh-title {
-    font-size: clamp(44px, 13vw, 66px);
+    width: min(92%, 400px);
   }
   .sfh-hook {
-    display: none;
+    order: 2;
+    font-size: 15.5px;
   }
   .sfh-actions {
+    order: 3;
+    justify-content: center;
     width: 100%;
   }
   .sfh-cta {
@@ -294,14 +324,20 @@
     justify-content: center;
   }
   .sfh-facts {
-    flex-wrap: nowrap;
+    order: 4;
     justify-content: center;
+    gap: 5px;
     width: 100%;
+    margin-top: 2px;
     font-size: 11px;
-    letter-spacing: 0;
-    white-space: nowrap;
   }
-  .sfh-facts li + li::before {
-    margin-inline: 5px;
+  .sfh-facts li {
+    padding: 3px 7px;
+  }
+}
+/* A small phone: the button before the story. */
+@media (max-width: 760px) and (max-height: 640px) {
+  .sfh-hook {
+    display: none;
   }
 }

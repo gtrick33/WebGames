@@ -127,6 +127,27 @@ export interface PartySettings {
 export const DEFAULT_PARTY_SETTINGS: PartySettings = { hidden: false, featured: false, room: true, sticker: '', title: '', blurb: '' };
 
 /** What GET /api/catalog returns. */
+/** The Sigilfall banner's words where an admin has changed them (a line left out uses the translated default). */
+export interface BannerText {
+  kicker?: string;
+  hook?: string;
+  cta?: string;
+}
+export const BANNER_MAX: Record<keyof BannerText, number> = { kicker: 60, hook: 160, cta: 24 };
+
+/** Keeps only real lines of the right length. */
+export function sanitizeBanner(raw: unknown): BannerText {
+  const out: BannerText = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const key of Object.keys(BANNER_MAX) as (keyof BannerText)[]) {
+    const v = (raw as Record<string, unknown>)[key];
+    if (typeof v !== 'string') continue;
+    const text = v.replace(/\s+/g, ' ').trim().slice(0, BANNER_MAX[key]);
+    if (text) out[key] = text;
+  }
+  return out;
+}
+
 export interface PublicCatalog {
   /** Party Mode games by id (older cached copies may not have it). */
   party?: Record<string, Partial<PartySettings>>;
@@ -141,6 +162,8 @@ export interface PublicCatalog {
   flagships?: string[] | null;
   /** The home page's "Live multiplayer games" in order (missing or null = every live game, [] = hidden). */
   multiplayer?: string[] | null;
+  /** The Sigilfall banner's words (missing or null = the defaults). */
+  banner?: BannerText | null;
 }
 
 export const EMPTY_CATALOG: PublicCatalog = { settings: {}, picks: {}, notice: null, layout: null };

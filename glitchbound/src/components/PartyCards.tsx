@@ -4,6 +4,7 @@ import { partySettingsFor } from '../catalog/settings';
 import { DEFAULT_FEATURED, PARTY_GAMES } from '../party/catalog';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { AdultLabel } from './AdultLabel';
+import { tileImg } from '../platform/cardImg';
 
 /** Relative luminance of a #rrggbb color (WCAG). */
 function luminance(hex: string): number {
@@ -40,7 +41,7 @@ export function PartyCards() {
           <li key={g.id}>
             <Link href={`/party?play=${g.id}`} className="party-card" style={{ background: g.color, color: cardInk(g.color) }}>
               {g.art ? (
-                <img src={g.art.tile} alt="" width={72} height={72} loading="lazy" />
+                <img {...tileImg(g.art.tile, 72)} alt="" width={72} height={72} loading="lazy" />
               ) : (
                 <span className="party-card-emoji" aria-hidden="true">
                   {g.emoji}

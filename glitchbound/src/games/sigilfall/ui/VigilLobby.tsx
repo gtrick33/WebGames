@@ -228,7 +228,7 @@ export function VigilLobby({ face, body, cls, map, room, onBack, onBegin }: { fa
             ←
           </button>
           <div>
-            <h1>The Vigil</h1>
+            <h2>The Vigil</h2>
             <p>{friends ? 'Up to four heroes, one night. More friends, more foes.' : 'Hold the line. It always breaks in the end. How long is up to you.'}</p>
           </div>
           {friends && (

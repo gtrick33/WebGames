@@ -453,9 +453,9 @@ function Menu({ save, today, u, parked, onResume, onPlay, onMute, onHelp }: { sa
         <GameMenuButton className="fbx-icon" />
       </div>
       <Robot mood="idle" className="fbx-robot-big" />
-      <h1 className="fbx-title">
+      <h2 className="fbx-title">
         Fuss<span>box</span>
-      </h1>
+      </h2>
       <p className="fbx-tag">{u.tag}</p>
       {parked && (
         <section className="fbx-panel fbx-panel-resume">

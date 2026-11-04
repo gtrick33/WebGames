@@ -12,12 +12,13 @@ import { Link } from '../router/router';
 import { Icon } from './Icon';
 import { openSignIn } from './openSignIn';
 import './Pins.css';
+import { tileImg } from '../platform/cardImg';
 
 /** The picture in a pin: its game's art, or the arcade's mark. */
 function PinFace({ board }: { board: string }) {
   const game = board === ARCADE ? undefined : getGame(board);
   if (!game) return <span className="pin-mark" aria-hidden="true" />;
-  return <img src={game.art.tile} alt="" width={96} height={96} loading="lazy" decoding="async" style={{ background: game.art.bg }} />;
+  return <img {...tileImg(game.art.tile, 96)} alt="" width={96} height={96} loading="lazy" decoding="async" style={{ background: game.art.bg }} />;
 }
 
 /** One enamel pin: struck in its tier's metal when earned, only its pressed outline in the felt until then. */

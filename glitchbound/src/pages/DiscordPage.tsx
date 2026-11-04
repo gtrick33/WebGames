@@ -11,6 +11,7 @@ import { Link, navigate } from '../router/router';
 import { AdultLabel } from '../components/AdultLabel';
 import './InfoPages.css';
 import './DiscordPage.css';
+import { tileImg } from '../platform/cardImg';
 
 /**
  * /discord: the Discord Activity's start page (docs/discord-activity.md). Inside Discord it signs the
@@ -159,7 +160,7 @@ export function Picker({ session }: { session: DiscordSession }) {
           return (
             <li key={slug}>
               <button className="dsc-game panel" data-accent={game.accent} disabled={!!busy} onClick={() => void pick(slug)}>
-                <img src={game.art.tile} alt="" width={96} height={96} style={{ background: game.art.bg }} />
+                <img {...tileImg(game.art.tile, 96)} alt="" width={96} height={96} style={{ background: game.art.bg }} />
                 <span className="dsc-game-main">
                   <b>
                     {game.title} {game.adult && <AdultLabel text={t('Adults only')} />}

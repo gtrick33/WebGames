@@ -686,7 +686,7 @@
   padding: 0 5px;
   border-radius: 999px;
   background: var(--lc-coral);
-  color: #fff;
+  color: var(--lc-ink);
   font-size: 11px;
   font-weight: 800;
   box-shadow: 0 0 0 2px rgb(16 10 40 / 0.9);
@@ -1351,7 +1351,8 @@
     flex: 1;
     width: auto;
     min-height: 68px;
-    font-size: 12px;
+    font-size: clamp(9.5px, 2.4cqw, 12px);
+    letter-spacing: 0;
   }
   .lc-go {
     min-width: 0;
@@ -2456,7 +2457,7 @@
 .lc-sheet-times b {
   color: var(--lc-fg);
 }
-@container (max-width: 480px) {
+@container (max-width: 620px) {
   .lc-sheet {
     grid-template-columns: 1fr;
   }
@@ -2876,7 +2877,7 @@
   justify-items: end;
   gap: 6px;
 }
-@container (max-width: 480px) {
+@container (max-width: 620px) {
   .lc-car {
     grid-template-columns: 96px minmax(0, 1fr);
   }
@@ -4612,9 +4613,17 @@
     max-width: 760px;
   }
   .lc-mode b {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 16px;
+    line-height: 1;
+    white-space: normal;
+  }
+  .lc-mode small {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 12px;
+    line-height: 1.2;
+    white-space: normal;
   }
   .lc-hero {
     gap: 6px;
@@ -4632,5 +4641,12 @@
   }
   .lc-go {
     min-width: 230px;
+  }
+}
+/* a small stage (a narrow desktop column, a small phone): the tile names whole */
+@container (max-width: 620px) {
+  .lc-tile > span:not(.lc-badge) {
+    font-size: 12px;
+    letter-spacing: 0;
   }
 }

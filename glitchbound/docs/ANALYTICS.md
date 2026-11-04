@@ -31,6 +31,7 @@ dashboard (`/admin`) reads it. Nothing is sent to third parties unless you also 
 | `favorite` | Heart toggled | `game`, `on` |
 | `sign_in`, `subscribe` | Account / email list | `method` / `via` |
 | `game_error` | A game did not load | `game` |
+| `web_vitals` | The page is hidden after a load | `page` (route name), `device`, `lcp` and `inp` (ms), `cls` |
 
 The last 100 events are also visible in the browser console as `__glitchbound.events`.
 

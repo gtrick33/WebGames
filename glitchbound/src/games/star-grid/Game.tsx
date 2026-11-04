@@ -766,9 +766,9 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
           </span>
         ))}
       </div>
-      <h1 className="sgd-title">
+      <h2 className="sgd-title">
         Star <span>Grid</span>
-      </h1>
+      </h2>
       <p className="sgd-tag">One star in every row, column and color, and no two stars touching. Pure logic, no guessing needed.</p>
       <section className="sgd-card">
         <div className="sgd-card-head">

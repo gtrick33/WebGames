@@ -30,7 +30,7 @@ export function RiftScreen({ engine, slot, onBack }: { engine: SigilEngine; slot
         <button className="rb-btn is-small is-ghost" onClick={onBack}>
           ← Back
         </button>
-        <h1>The Rift Trials</h1>
+        <h2>The Rift Trials</h2>
         <GameMenuButton className="rb-iconbtn" />
       </div>
       <div className="rb-rift-cols">

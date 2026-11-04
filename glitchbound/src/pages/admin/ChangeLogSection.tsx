@@ -6,7 +6,7 @@ const when = (ts: number): string => new Date(ts).toLocaleString('en-US', { mont
 export function ChangeLog({ log }: { log: AdminCatalog['log'] }) {
   return (
     <section className="panel info-block" aria-labelledby="ag-log">
-      <h2 id="ag-log">Change log</h2>
+      <h2 id="ag-log">Latest changes</h2>
       {log.length === 0 ? (
         <p className="info-small">No changes yet.</p>
       ) : (

@@ -496,7 +496,7 @@ function Menu({
                 <Portrait key={c} char={c} size={i === 2 ? 64 : 48} flip={i > 2} />
               ))}
             </div>
-            <h1 className="cc-title">Crater Crew</h1>
+            <h2 className="cc-title">Crater Crew</h2>
             <p className="cc-tagline">Take turns lobbing rockets, grenades and meteors across ground that breaks. Last crew standing wins.</p>
           </header>
 

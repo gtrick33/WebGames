@@ -57,7 +57,7 @@
 
 .site-header,
 .bottom-tabs {
-  --world-gold: #a8701c;
+  --world-gold: #8f5d12;
 }
 :root[data-theme='dark'] .site-header,
 :root[data-theme='dark'] .bottom-tabs {
@@ -356,6 +356,18 @@
 @media (max-width: 400px) {
   .bottom-tab {
     font-size: 10.5px;
+  }
+}
+/* A phone on its side: icons only, so the bar leaves the page some room */
+@media (orientation: landscape) and (max-height: 480px) {
+  .bottom-tab {
+    padding: 6px 2px;
+  }
+  .bottom-tab span {
+    display: none;
+  }
+  body {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom));
   }
 }
 /* A phone on its side on a game page: the floating tabs, and the settings button docked in them, would sit

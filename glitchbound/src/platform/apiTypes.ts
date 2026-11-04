@@ -140,6 +140,8 @@ export interface AdminStats {
   /** Per UTC day. returning = visitors whose browser had visited before; dailyPlayers = visitors who finished a daily. */
   daily: { day: string; visitors: number; starts: number; rounds: number; returning: number; dailyPlayers: number }[];
   searches: { q: string; n: number; zeroResults: number }[];
+  /** Core Web Vitals of real visits, last 7 days: the 75th percentile (null while there's no data). */
+  vitals: { device: string; visits: number; lcp: number | null; inp: number | null; cls: number | null }[];
   errors: { kinds: { kind: string; n: number }[]; latest: { ts: number; kind: string; game: string; message: string; path: string; browser: string }[] };
   announcements: { game: string; subject: string; sentAt: number; recipients: number }[];
   emailEnabled: boolean;

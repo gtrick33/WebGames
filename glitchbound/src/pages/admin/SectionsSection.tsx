@@ -15,10 +15,10 @@ export function SectionList({ data, send, busy }: { data: AdminCatalog; send: Se
   return (
     <section className="panel info-block" aria-labelledby="ag-sections">
       <div className="admin-row">
-        <h2 id="ag-sections">Sections · {SECTION_GAMES.length}</h2>
+        <h2 id="ag-sections">{SECTION_GAMES.length === 1 ? 'On the site' : `Sections · ${SECTION_GAMES.length}`}</h2>
       </div>
       <p className="info-small">
-        Games big enough to have a tab of their own next to Arcade and Party. Switching one off hides its tab and closes its page to players (admins and QA can still open it to test).
+        It has a tab of its own next to Arcade and Party, and the banner at the top of the home page. Switching it off hides both and closes its page to players (admins and QA can still open it to test).
         Players keep their saved progress either way.
       </p>
       <ul className="ag-games">

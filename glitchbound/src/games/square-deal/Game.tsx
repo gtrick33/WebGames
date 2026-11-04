@@ -769,9 +769,9 @@ function Menu({ save, today, challenge, onPlay, onMute }: { save: Save; today: s
           <i key={i} className={`is-c${[3, 3, 1, 3, 5, 1, 0, 0, 1][i]}`} />
         ))}
       </div>
-      <h1 className="sd-title">
+      <h2 className="sd-title">
         Square <span>Deal</span>
-      </h1>
+      </h2>
       <p className="sd-tag">Drop the blocks, fill a row or a column, watch it clear. Chain clears for a streak.</p>
       <div className="sd-cards">
         {challenge && (

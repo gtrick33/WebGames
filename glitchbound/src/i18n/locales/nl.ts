@@ -2229,6 +2229,12 @@ const nl: string[] = [
   'Een held met zwaard en schild op een kasteelplein bij nacht, tussen vuurschalen en rode banieren',
   'Echte gameplay, op telefoon of computer',
   'Meer spellen hieronder',
+  'Gratis fantasy-RPG in je browser',
+  'Gratis spelen',
+  'Geen download. Geen account.',
+  'GlitchBound is een onafhankelijke studio. Elk spel wordt hier ontworpen en gebouwd. Sommige beginnen bij een klassiek idee, zoals een kaartspel of een woordpuzzel, en geven er onze eigen draai aan. Een deel van het beeld en geluid is in licentie en staat vermeld in het spel.',
+  'Nog niemand in de Eregalerij. Speel een spel en zet het eerste record neer.',
+  'De ranglijsten zijn nog vers, dus een kroon is goed binnen bereik. Zet een record neer en pak er een.',
 ];
 
 export default nl;

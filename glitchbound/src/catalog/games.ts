@@ -1059,8 +1059,8 @@ export const GAMES: GameEntry[] = [
     art: {
       tile: '/games/sigilfall/tile.webp',
       wide: '/games/sigilfall/wide.webp',
-      alt: 'Five cartoon heroes in a torchlit stone hall, a warrior with sword and shield on a dais under a great round window',
-      bg: '#2f6a3a',
+      alt: 'Seven cartoon heroes in sigil armor before a great round window, between a red dragon and a blue dragon',
+      bg: '#0b0714',
     },
     section: { path: '/sigilfall', label: 'Sigilfall' },
     runtime: { kind: 'module' },

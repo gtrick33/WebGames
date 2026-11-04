@@ -53,7 +53,7 @@ export function QaTeam() {
       <section className="panel info-block" aria-labelledby="qt-team">
         <div className="admin-row">
           <h2 id="qt-team">
-            <Icon name="user" /> QA team
+            <Icon name="user" /> Testers
           </h2>
           <span className="mono info-small">{staff ? `${staff.filter((s) => s.status === 'active').length} active` : ''}</span>
         </div>

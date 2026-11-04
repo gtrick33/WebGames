@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react';
-import { cardImg } from '../platform/cardImg';
+import { cardImg, tileImg } from '../platform/cardImg';
 import { tGame, useT } from '../i18n';
 import { isNewLive, useLiveCatalog } from '../platform/liveCatalog';
 import type { TileSize } from '../catalog/settings';
@@ -11,6 +11,9 @@ import { Icon } from './Icon';
 import { LiveBadge } from './LiveBadge';
 import './GameTile.css';
 import { gameUrl } from '../catalog/catalog';
+
+/** How wide a card's picture is: two across on a phone, about three across on a tablet, and on a computer up to its taller shape. */
+const TILE_SIZES = '(max-width: 640px) 170px, (max-width: 1020px) 345px, 420px';
 
 /**
  * A game "cabinet" in the catalogue: its logo artwork, title, categories, favorite heart and play
@@ -39,7 +42,7 @@ export function GameTile({ game, size = 'md', index = 0, best }: { game: GameEnt
         <picture>
           {/* On wide screens a big banner is two rows tall: the square artwork fills it best. */}
           {size === 'xl' && art !== game.art.tile && <source media="(min-width: 1021px)" srcSet={game.art.tile} />}
-          <img src={art} alt={game.art.alt} {...cardImg(false, index < 12)} />
+          <img {...tileImg(art, TILE_SIZES)} alt={game.art.alt} {...cardImg(false, index < 12)} />
         </picture>
         {hover && <GamePreview slug={game.slug} className="tile-preview" />}
         {hover && (

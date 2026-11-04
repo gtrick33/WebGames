@@ -262,7 +262,9 @@
 }
 .tile-md .tile-tagline,
 .tile-tall .tile-tagline {
-  -webkit-line-clamp: 1;
+  font-size: 15px;
+  line-height: 1.4;
+  -webkit-line-clamp: 3;
 }
 .tile-foot {
   padding-top: 2px;

@@ -66,7 +66,7 @@ export function ArcadeEntrance() {
           <i className="ent-coin" />
         </div>
       </div>
-      <span className="ent-skip mono">Click to skip</span>
+      <span className="ent-skip mono">{matchMedia('(pointer: coarse)').matches ? 'Tap to skip' : 'Click to skip'}</span>
     </div>
   );
 }

@@ -445,12 +445,12 @@ function Menu({ today, save, onStart, onMute }: { today: string; save: WbSave; o
         {stats.streak > 0 && <span className="wb-chip">🔥 {stats.streak}-day streak</span>}
         <GameMenuButton className="wb-icon-btn" />
       </div>
-      <h1 className="wb-wordmark">
+      <h2 className="wb-wordmark">
         <span>Where’s the</span>
         <span className="wb-wordmark-ball">
           Ball<BallIcon size={52} />
         </span>
-      </h1>
+      </h2>
       <p className="wb-tagline">One tennis ball is hiding in every shot. Zoom in, aim, and lock it in.</p>
       <section className="wb-card wb-card-daily">
         <div className="wb-card-head">

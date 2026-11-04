@@ -314,7 +314,7 @@ function Wordmark() {
   const letters = 'COLOR'.split('');
   const colors = ['#ff5a6c', '#ffb020', '#12c6b3', '#3d5bff', '#a45cff'];
   return (
-    <h1 className="cr-wordmark" aria-label="Color Recall">
+    <h2 className="cr-wordmark" aria-label="Color Recall">
       <span className="cr-wordmark-chips" aria-hidden="true">
         {letters.map((l, i) => (
           <span key={i} style={{ background: colors[i], transform: `rotate(${[-6, 4, -3, 5, -4][i]}deg)` }}>
@@ -325,7 +325,7 @@ function Wordmark() {
       <span className="cr-wordmark-sub" aria-hidden="true">
         Recall
       </span>
-    </h1>
+    </h2>
   );
 }
 

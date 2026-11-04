@@ -446,9 +446,9 @@ function Menu({ save, today, onPlay, onMute, onUnits }: { save: Save; today: str
         <i>vs</i>
         <span>🦛</span>
       </div>
-      <h1 className="gc-title">
+      <h2 className="gc-title">
         Gut <span>Check</span>
-      </h1>
+      </h2>
       <p className="gc-tag">Two things, one number. Is the next one bigger or smaller? Trust your gut and keep the streak going.</p>
       <section className="gc-card-menu">
         <div className="gc-card-head">

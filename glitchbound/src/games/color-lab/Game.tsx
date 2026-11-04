@@ -428,7 +428,7 @@ function Wordmark() {
     [1, 0, 2],
   ];
   return (
-    <h1 className="cl-wordmark" aria-label="Color Lab">
+    <h2 className="cl-wordmark" aria-label="Color Lab">
       <span aria-hidden="true" className="cl-wordmark-tubes">
         {tubes.map((t, i) => (
           <span key={i} className="cl-mini-tube">
@@ -441,7 +441,7 @@ function Wordmark() {
       <span aria-hidden="true" className="cl-wordmark-text">
         Color <b>Lab</b>
       </span>
-    </h1>
+    </h2>
   );
 }
 

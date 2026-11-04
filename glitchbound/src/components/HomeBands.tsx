@@ -28,6 +28,7 @@ import { LiveBadge } from './LiveBadge';
 import { ThemeStrip } from './ThemeStrip';
 import './HomeBands.css';
 import './PartyBanner.css';
+import { tileImg } from '../platform/cardImg';
 
 const PartyCards = lazy(fresh(() => import('./PartyCards').then((m) => ({ default: m.PartyCards }))));
 
@@ -76,7 +77,7 @@ export function TodayBand() {
                 {quick.map((g) => (
                   <li key={g.slug}>
                     <Link href={gameUrl(g.slug)} className="quick-chip" data-accent={g.accent}>
-                      <img src={g.art.tile} alt="" width={52} height={52} loading="lazy" style={{ background: g.art.bg }} />
+                      <img {...tileImg(g.art.tile, 52)} alt="" width={52} height={52} loading="lazy" style={{ background: g.art.bg }} />
                       <span className="quick-text">
                         <strong>{g.title}</strong>
                         <span>{t(g.ownDaily!.label)}</span>
@@ -105,7 +106,7 @@ function LiveCard({ g }: { g: GameEntry }) {
   const t = useT();
   return (
     <li className="live-card" data-accent={g.accent}>
-      <img src={g.art.tile} alt="" width={84} height={84} loading="lazy" style={{ background: g.art.bg }} />
+      <img {...tileImg(g.art.tile, 84)} alt="" width={84} height={84} loading="lazy" style={{ background: g.art.bg }} />
       <span className="live-card-text">
         <Link href={playPath(g)} className="live-card-link">
           {g.title}

@@ -15,6 +15,7 @@ import { Icon } from './Icon';
 import { openSignIn } from './openSignIn';
 import './SearchDialog.css';
 import { gameUrl } from '../catalog/catalog';
+import { tileImg } from '../platform/cardImg';
 
 /** One row of the results, whatever it is. */
 interface Hit {
@@ -78,7 +79,7 @@ export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => 
           run: () => go(gameUrl(g.slug)),
           view: (
             <>
-              <img src={g.art.tile} alt="" width={56} height={56} style={{ background: g.art.bg }} />
+              <img {...tileImg(g.art.tile, 56)} alt="" width={56} height={56} style={{ background: g.art.bg }} />
               <span className="search-hit-text">
                 <strong>{g.title}</strong>
                 <span>{tGame(g.tagline)}</span>
@@ -97,7 +98,7 @@ export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => 
           view: (
             <>
               {g.art ? (
-                <img src={g.art.tile} alt="" width={56} height={56} style={{ background: g.color }} />
+                <img {...tileImg(g.art.tile, 56)} alt="" width={56} height={56} style={{ background: g.color }} />
               ) : (
                 <span className="search-hit-art" style={{ ['--mc' as string]: g.color }} aria-hidden="true">
                   {g.emoji}

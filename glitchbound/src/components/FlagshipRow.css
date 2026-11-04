@@ -80,10 +80,11 @@
   transform: rotate(-3deg);
   box-shadow: var(--hard-sm);
 }
+/* the words take what's left, so every card's button sits on the same line */
 .flagship-body {
   display: grid;
   flex: 1;
-  align-content: start;
+  grid-template-rows: auto 1fr auto;
   gap: 8px;
   padding: 14px 16px 16px;
 }
@@ -155,7 +156,7 @@
     display: -webkit-box;
     overflow: hidden;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 5;
     font-size: 13px;
   }
   .flagship-sticker {
@@ -187,5 +188,10 @@
   .flagship,
   .flagship-art img {
     transition: none;
+  }
+}
+@media (max-width: 340px) {
+  .flagship-tag {
+    -webkit-line-clamp: 7;
   }
 }

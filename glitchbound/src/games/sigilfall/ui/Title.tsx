@@ -134,7 +134,7 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
         <button className="rb-btn is-small is-ghost" onClick={() => engine.toTitle()}>
           ← Back
         </button>
-        <h1>Choose your hero</h1>
+        <h2>Choose your hero</h2>
         <GameMenuButton className="rb-iconbtn" />
       </div>
       <div className="rb-classes" role="radiogroup" aria-label="Class">

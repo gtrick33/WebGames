@@ -95,6 +95,7 @@
 .today-band .today-all {
   display: inline-flex;
   align-items: center;
+  min-height: 28px;
   justify-self: start;
   gap: 6px;
   margin-top: 4px;
@@ -160,6 +161,7 @@
 .together-more {
   display: inline-flex;
   align-items: center;
+  min-height: 28px;
   gap: 6px;
   justify-self: start;
   margin-top: 4px;

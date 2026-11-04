@@ -40,6 +40,8 @@ if (!leaving) account.start();
 // The guest key's server copy (platform/challenges.ts): restores a key the browser lost or can't keep.
 // Loaded on its own: the challenge code isn't needed to draw the first page.
 if (!leaving) void import('./platform/challenges').then((m) => m.syncGuestKey()).catch(() => undefined);
+// How fast the page really was for this visitor, for the anonymous stats (the browser keeps the numbers until it's asked).
+if (!leaving) void import('./platform/vitals').then((m) => m.watchVitals(firstRoute)).catch(() => undefined);
 void Promise.all([startI18n(), pageCode]).then(() => {
   if (!root || leaving) return;
   // The prerendered HTML inside #root is for crawlers and no-JS visitors; React replaces it.

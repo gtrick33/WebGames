@@ -126,6 +126,15 @@ const FLOATERS: [string, number, number][] = [
 /** `day`: the day the round started on (a daily started before midnight finishes as that day's). */
 type Screen = { kind: 'menu' } | { kind: 'play'; mode: Mode; key: string; day: string };
 
+/** The rules; on a touch screen without the sentence about keys, which is the one with "1–4" in every language. */
+const helpFor = (help: string): string =>
+  typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
+    ? help
+        .split(/(?<=[.!?。])\s+/)
+        .filter((sentence) => !sentence.includes('1–4'))
+        .join(' ')
+    : help;
+
 /** The language the game plays in: its questions (pack) and its own text (ui). */
 const Lang = createContext<{ p: Pack; u: Ui }>({ p: EN, u: UI.en });
 
@@ -219,14 +228,14 @@ function WaitWhat({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
         ))}
       </div>
       {/* The pun: disbelief, with the "dis" struck out for a quiz. */}
-      <h1 className="ww-logo" aria-label="Quizbelief">
+      <h2 className="ww-logo" aria-label="Quizbelief">
         <span className="ww-logo-a">
           <s aria-hidden="true">DIS</s>QUIZ
         </span>
         <span className="ww-logo-b">
           BELIEF<b>?!</b>
         </span>
-      </h1>
+      </h2>
       <p className="ww-tag">{u.tag}</p>
 
       <section className="ww-card ww-card-daily">
@@ -271,7 +280,7 @@ function WaitWhat({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
         {u.seenOf(seen.toLocaleString(p.locale), total.toLocaleString(p.locale))}
       </p>
       <p className="ww-muted ww-small">
-        {u.help} {u.timeEach}
+        {helpFor(u.help)} {u.timeEach}
       </p>
     </div>
   );

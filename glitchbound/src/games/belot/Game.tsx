@@ -766,7 +766,7 @@ function Menu({
             </span>
           ))}
         </div>
-        <h1 className="bl-title">{w.title}</h1>
+        <h2 className="bl-title">{w.title}</h2>
         <p className="bl-tagline">{w.tagline}</p>
 
         <section className="bl-mode is-daily">

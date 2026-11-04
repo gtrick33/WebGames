@@ -197,7 +197,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
       <div className="cs-top">
         <div className="cs-mark">
           <span className="cs-kicker">A GlitchBound adventure</span>
-          <span className="cs-word">Sigilfall</span>
+          <img className="cs-word" src="/games/sigilfall/logo.svg" alt="Sigilfall" width={673} height={168} />
         </div>
         <div className="cs-top-btns">
           <button className="rb-iconbtn" onClick={onSettings} aria-label="Settings">
@@ -217,7 +217,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
       <div className="cs-id" key={at}>
         {hero ? (
           <>
-            <h1 className="cs-name">{hero.name}</h1>
+            <h2 className="cs-name">{hero.name}</h2>
             <p className="cs-line">
               <b style={{ color: CLASSES[hero.cls].colors.accent }}>
                 Level {hero.level} {CLASSES[hero.cls].name}
@@ -227,7 +227,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
           </>
         ) : (
           <>
-            <h1 className="cs-name">A place waits</h1>
+            <h2 className="cs-name">A place waits</h2>
             <p className="cs-line">Seven callings, five acts, one Crown. Who will you be?</p>
           </>
         )}

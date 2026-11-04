@@ -27,7 +27,7 @@ describe('homepage', () => {
     // The flagship leads the page, and its button starts it on arrival.
     const sigilfall = screen.getByRole('region', { name: 'Sigilfall' });
     expect(within(sigilfall).getByRole('heading', { level: 1, name: 'Sigilfall' })).toBeTruthy();
-    expect(within(sigilfall).getByRole('link', { name: /Enter the Rift/ }).getAttribute('href')).toBe('/sigilfall?play=1');
+    expect(within(sigilfall).getByRole('link', { name: /Play free/ }).getAttribute('href')).toBe('/sigilfall?play=1');
     expect(await screen.findByRole('heading', { level: 2, name: /Small games\.\s*Big obsessions\./ }, { timeout: 8000 })).toBeTruthy();
     // Today's pick is fun alone at once: never a live game's lobby.
     const pickHref = screen.getByRole('link', { name: /Today’s pick/ }).getAttribute('href')!;

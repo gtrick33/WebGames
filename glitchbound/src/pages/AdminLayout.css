@@ -94,8 +94,9 @@
   height: 22px;
   padding: 0 5px;
   border-radius: 999px;
-  background: var(--acc);
-  color: var(--ink);
+  background: rgb(20 16 42 / 0.92);
+  box-shadow: 0 0 0 1.5px var(--acc);
+  color: #fff;
   font-size: 11px;
 }
 .al-sticker {
@@ -202,7 +203,12 @@
     grid-auto-rows: 52px;
   }
   .al-name {
-    font-size: 10.5px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 11px;
+    line-height: 1.1;
+    white-space: normal;
   }
 }
 

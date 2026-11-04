@@ -9,6 +9,7 @@ import { useSave } from '../platform/store';
 import { navigate } from '../router/router';
 import './Surprise.css';
 import { gameUrl } from '../catalog/catalog';
+import { tileImg } from '../platform/cardImg';
 
 /** Spins through the games like a slot machine, slowing down, and lands on one. */
 function Spinner({ games, pick, onDone }: { games: GameEntry[]; pick: GameEntry; onDone: () => void }) {
@@ -46,7 +47,7 @@ function Spinner({ games, pick, onDone }: { games: GameEntry[]; pick: GameEntry;
       <div className={`surprise-card${landed ? ' is-landed' : ''}`} data-accent={g.accent}>
         <p className="surprise-kicker mono">🎲 {landed ? t('Your game:') : t('Picking a game…')}</p>
         <div className="surprise-window">
-          <img key={g.slug} src={g.art.tile} alt="" style={{ background: g.art.bg }} />
+          <img key={g.slug} {...tileImg(g.art.tile, '200px')} alt="" style={{ background: g.art.bg }} />
         </div>
         <p className="surprise-title">{g.title}</p>
       </div>

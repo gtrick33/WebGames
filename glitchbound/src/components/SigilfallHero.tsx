@@ -8,7 +8,16 @@ import './SigilfallHero.css';
 
 /** What the game holds, counted from its data. */
 const FACTS = ['7 heroes', '5 acts', '12 dungeons', 'Co-op for 4'];
-const EMBERS = Array.from({ length: 16 }, (_, i) => ({ '--x': `${38 + ((i * 37) % 60)}%`, '--d': `${(i % 7) * 1.3}s`, '--t': `${7 + (i % 5) * 2}s` }) as CSSProperties);
+const EMBERS = Array.from({ length: 10 }, (_, i) => ({ '--x': `${40 + ((i * 37) % 58)}%`, '--d': `${(i % 7) * 1.3}s`, '--t': `${7 + (i % 5) * 2}s` }) as CSSProperties);
+/** A tall screen gets the picture composed for it; the words go under it there (SigilfallHero.css, seo.ts). */
+const TALL = '(max-width: 760px), (max-aspect-ratio: 13/10)';
+
+/** The banner's words unless an admin has changed them (Admin › Home page). */
+export const BANNER_DEFAULTS = {
+  kicker: 'Free fantasy RPG in your browser',
+  hook: 'The bell stopped ringing three weeks ago. Tonight, they come for what sleeps under the chapel.',
+  cta: 'Play free',
+} as const;
 
 /** Sigilfall, unless an admin has hidden it. */
 export function useSigilfall() {
@@ -18,13 +27,14 @@ export function useSigilfall() {
 }
 
 /**
- * The first thing on the site: a banner of Sigilfall's key art (the Wardens' Sanctum, its heroes in their sigil armor
- * and a Sigil Drake, composed from the game's own art), its name in gold and one button. It's kept short so the arcade
- * shows on the first screen too, and a cue on its bottom edge says there's more below.
+ * The first thing on the site: a banner of Sigilfall's key art (the Wardens' Sanctum at night, all seven heroes in their
+ * sigil armor and two Sigil Drakes, composed from the game's own 3D), its name in gold and one button. A cue on its
+ * bottom edge says there's more below.
  */
 export function SigilfallHero() {
   const t = useT();
   const game = useSigilfall();
+  const words = useLiveCatalog().raw.banner;
   const banner = useRef<HTMLElement>(null);
   if (!game) return null;
   const showMore = (): void => {
@@ -37,26 +47,28 @@ export function SigilfallHero() {
     <section className="sfh" ref={banner} aria-labelledby="sfh-title">
       <div className="sfh-art" aria-hidden="true">
         <picture>
-          <source media="(max-width: 700px)" srcSet="/games/sigilfall/key-art-960.webp" />
-          <img src="/games/sigilfall/key-art.webp" alt="" width={1920} height={1000} decoding="sync" fetchPriority="high" />
+          <source media={TALL} type="image/avif" srcSet="/games/sigilfall/key-art-phone.avif" />
+          <source media={TALL} type="image/webp" srcSet="/games/sigilfall/key-art-phone.webp" />
+          <source type="image/avif" srcSet="/games/sigilfall/key-art-1600.avif 1600w, /games/sigilfall/key-art-2400.avif 2400w" sizes="100vw" />
+          <img src="/games/sigilfall/key-art-1600.webp" srcSet="/games/sigilfall/key-art-1600.webp 1600w, /games/sigilfall/key-art-2400.webp 2400w" sizes="100vw" alt="" width={1600} height={660} decoding="sync" fetchPriority="high" />
         </picture>
-        <i className="sfh-beam" />
         {EMBERS.map((style, i) => (
           <i key={i} className="sfh-ember" style={style} />
         ))}
       </div>
 
-      <div className="wrap sfh-inner">
+      <div className="sfh-inner">
         <div className="sfh-copy">
-          <p className="sfh-kicker">{t('A GlitchBound adventure')}</p>
+          <p className="sfh-kicker">{words?.kicker || t(BANNER_DEFAULTS.kicker)}</p>
           <h1 id="sfh-title" className="sfh-title">
-            Sigilfall
+            <img src="/games/sigilfall/logo.svg" alt="Sigilfall" width={673} height={168} decoding="sync" />
           </h1>
-          <p className="sfh-hook">{t('The bell stopped ringing three weeks ago. Tonight, they come for what sleeps under the chapel.')}</p>
+          <p className="sfh-hook">{words?.hook || t(BANNER_DEFAULTS.hook)}</p>
           <div className="sfh-actions">
             <Link href={`${game.section!.path}?play=1`} className="sfh-cta">
-              {t('Enter the Rift')} <Icon name="arrowRight" size={20} />
+              {words?.cta || t(BANNER_DEFAULTS.cta)} <Icon name="arrowRight" size={20} />
             </Link>
+            <span className="sfh-note">{t('No download. No sign-up.')}</span>
           </div>
           <ul className="sfh-facts">
             {FACTS.map((f) => (

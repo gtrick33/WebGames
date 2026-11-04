@@ -6,7 +6,7 @@ import { playPath } from '../catalog/catalog';
 import { Icon } from './Icon';
 import { LiveBadge } from './LiveBadge';
 import './FlagshipRow.css';
-import { cardImg } from '../platform/cardImg';
+import { cardImg, tileImg } from '../platform/cardImg';
 
 /**
  * Four big cards right under the hero: the games we would show a friend first, each with its art,
@@ -33,7 +33,7 @@ export function FlagshipRow() {
         {list.map(({ game: g, themed }, i) => (
           <li key={g.slug} className="flagship pop-in" data-accent={g.accent} style={{ '--i': i } as CSSProperties}>
             <div className="flagship-art" style={{ background: g.art.bg }}>
-              <img src={g.art.tile} alt="" width={512} height={512} {...cardImg(i < 2, true)} />
+              <img {...tileImg(g.art.tile, '(max-width: 1020px) 170px, 310px')} alt="" width={512} height={512} {...cardImg(i < 2, true)} />
               <LiveBadge game={g} className="on-art" />
             </div>
             {themed && (

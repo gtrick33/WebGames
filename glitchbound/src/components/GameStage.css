@@ -91,6 +91,11 @@
   z-index: -1;
   transform: scale(1.05);
 }
+.stage-poster-art.is-clear {
+  opacity: 1;
+  filter: none;
+  transform: none;
+}
 .stage-poster::before {
   content: '';
   position: absolute;

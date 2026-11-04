@@ -11,8 +11,11 @@ import { gamePath, playPath } from '../catalog/catalog';
 import type { GameEntry } from '../catalog/types';
 import { useFlagships } from '../platform/useFlagships';
 import { activeHoliday } from '../platform/seasons';
-import { cardImg } from '../platform/cardImg';
+import { cardImg, tileImg } from '../platform/cardImg';
 import './Hero.css';
+
+/** How wide a tile of the moving wall is. */
+const WALL_SIZES = '(max-width: 1020px) 104px, 240px';
 
 /** Re-triggers the glitch class every few seconds. */
 function useGlitchPulse(): boolean {
@@ -61,7 +64,7 @@ function GameWall({ games }: { games: GameEntry[] }) {
                   onPointerEnter={(e) => e.pointerType === 'mouse' && hasPreview(g.slug) && setHover(`${c}:${i}`)}
                   onPointerLeave={() => setHover(null)}
                 >
-                  <img src={g.art.tile} alt="" width={512} height={512} {...cardImg(i < 3, i < 4)} style={{ background: g.art.bg }} />
+                  <img {...tileImg(g.art.tile, WALL_SIZES)} alt="" width={512} height={512} {...cardImg(i < 3, i < 4)} style={{ background: g.art.bg }} />
                   {hover === `${c}:${i}` && <GamePreview slug={g.slug} className="wall-preview" />}
                   <span className="wall-name">{g.title}</span>
                 </Link>
@@ -119,7 +122,7 @@ export function Hero({ first }: { first: boolean }) {
         <div className="hero-ctas">
           {pick && (
             <Link href={playPath(pick)} className="btn btn-primary btn-lg hero-pick" data-accent={pick.accent}>
-              <img src={pick.art.tile} alt="" width={40} height={40} style={{ background: pick.art.bg }} />
+              <img {...tileImg(pick.art.tile, 40)} alt="" width={40} height={40} style={{ background: pick.art.bg }} />
               <span>
                 <small className="mono">{t('Today’s pick')}</small>
                 {pick.title}
