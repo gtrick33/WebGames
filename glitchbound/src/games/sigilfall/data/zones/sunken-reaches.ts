@@ -38,7 +38,7 @@ export const SUNKEN_REACHES = wildRegion(
     scatter: { trees: 1, bushes: 1.2, rocks: 1.6, flowers: 0.6 },
     water: { kind: 'sea', side: 'e', depth: 0.28 },
     sand: 'shore',
-    hubs: [{ at: [0.24, 0.78], plan: 'street', npcs: ['captain-isolde', 'mother-kelp', 'salvager-finn', 'diver-mabry'], houses: 5 }],
+    hubs: [{ at: [0.3, 0.72], plan: 'drowned', npcs: ['captain-isolde', 'mother-kelp', 'salvager-finn', 'diver-mabry'], houses: 5 }],
     exits: [
       { side: 's', at: 0.3, to: 'sablewind', label: 'South road to Sablewind Canyon' },
       { side: 'w', at: 0.45, to: 'bonefields', label: 'West road to the Bonefields' },

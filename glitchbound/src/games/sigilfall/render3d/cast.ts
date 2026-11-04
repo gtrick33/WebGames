@@ -73,12 +73,30 @@ export class Motion {
 
 const frames = { a: 0, b: 0, k: 0 };
 
+/** A figure from the creature files, frozen and huge (tiles; `h` how tall it would stand, `lift` below 0 is sunk). */
+export interface Colossus {
+  kit: string;
+  x: number;
+  z: number;
+  lift: number;
+  rot: number;
+  h: number;
+  clip: string;
+  t: number;
+  tint: readonly [number, number, number];
+  tipX: number;
+  tipZ: number;
+  /** How far its own colors are washed toward plain stone (0 to 1). */
+  stone: number;
+}
+
 export class Cast {
   readonly root = new THREE.Group();
   wardrobe: Wardrobe | null = null;
   private readonly kits = new Map<string, KitEntry>();
   private readonly people = new Map<string, Crowd>();
   private readonly props = new Map<string, Stand>();
+  private readonly colossi = new Map<string, Crowd>();
   private readonly used = new Set<Crowd | Stand>();
   private readonly shadowMesh: THREE.InstancedMesh;
   private shadowN = 0;
@@ -124,6 +142,7 @@ export class Cast {
     for (const c of this.kits.values()) if (c.crowd) empty(c.crowd);
     for (const c of this.people.values()) empty(c);
     for (const c of this.props.values()) empty(c);
+    for (const c of this.colossi.values()) empty(c);
     for (const c of this.used) c.end();
     this.shadowMesh.count = this.shadowN;
     this.shadowMesh.instanceMatrix.needsUpdate = true;
@@ -179,6 +198,27 @@ export class Cast {
         });
     }
     return e;
+  }
+
+  /**
+   * A figure from the creature files, huge and frozen in a pose (a stone king, a titan's bones): `h` is how tall it
+   * would stand, in tiles. Its own crowd, with no ink line (at this size the line would be as thick as a person) and,
+   * if it stands in the ground, stopping there.
+   */
+  colossus(c: Colossus): void {
+    const e = this.entry(c.kit, { k: c.kit });
+    const { mesh, rig } = e;
+    if (!mesh || !rig) return;
+    let crowd = this.colossi.get(c.kit);
+    if (!crowd) {
+      crowd = new Crowd(mesh, rig, this.root, 4, 0, true);
+      this.colossi.set(c.kit, crowd);
+    }
+    const tall = Math.max(0.05, mesh.max[1] - mesh.min[1]);
+    const s = c.h / tall;
+    const frame = rig.frame(rig.has(c.clip) ? c.clip : 'idle', c.t, false);
+    crowd.put(c.x, c.lift, c.z, c.rot, s, s, frame, 0, 0, 1, c.tint[0], c.tint[1], c.tint[2], c.stone, c.tipX, c.tipZ);
+    this.used.add(crowd);
   }
 
   /** Whether a model is in yet (a land waits for its first few before fading up). */
@@ -343,6 +383,8 @@ export class Cast {
     for (const e of this.kits.values()) e.crowd?.dispose();
     for (const c of this.people.values()) c.dispose();
     for (const c of this.props.values()) c.dispose();
+    for (const c of this.colossi.values()) c.dispose();
+    this.colossi.clear();
     this.kits.clear();
     this.people.clear();
     this.props.clear();

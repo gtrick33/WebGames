@@ -28,6 +28,17 @@ interface Dress {
   core: Piece[][];
   /** Small things underfoot. */
   bits: string[];
+  /**
+   * What makes its great rooms great (the owner: "dungeons don't feel special"): a nave, two rows of tall columns the
+   * length of the room with a carpet down the middle of it.
+   */
+  nave?: { column: string; runner?: string };
+  /** One room in this many has a pool let into its floor, of whatever the place runs with (its theme's water). */
+  pools?: number;
+  /** What stands behind the north wall of the boss's chamber (greatworks.ts). */
+  backdrop?: string;
+  /** The carpet from the boss's door to the foot of it. */
+  carpet?: string;
 }
 
 /** Things nobody bumps into. */
@@ -46,6 +57,9 @@ const DRESS: Record<string, Dress> = {
       [[0, -1, 'statue'], [-1, 1, 'candles'], [1, 1, 'candles']],
     ],
     bits: ['bones', 'skulls', 'rubble', 'candles', 'bone-heap'],
+    carpet: '#3a2a4a',
+    nave: { column: 'tall-column' },
+    backdrop: 'reliquary-wall',
   },
   // a bandit hold in a hill: gibbets, stolen goods and a barracks that stinks
   'gallows-keep': {
@@ -58,6 +72,8 @@ const DRESS: Record<string, Dress> = {
       [[-2, 0, 'weapon-rack'], [2, 0, 'target'], [0, 2, 'campfire']],
     ],
     bits: ['rubble', 'bones', 'sacks', 'skulls'],
+    carpet: '#4a2a1a',
+    backdrop: 'gang-gallows',
   },
   // a sea cave full of someone else's cargo
   'smugglers-grotto': {
@@ -70,6 +86,8 @@ const DRESS: Record<string, Dress> = {
       [[-2, -1, 'crates-stack'], [2, -1, 'crates-stack'], [0, 2, 'gold-chest']],
     ],
     bits: ['sacks', 'rubble', 'log'],
+    pools: 3,
+    backdrop: 'grotto-wreck',
   },
   // a city's drowned drains, and what breeds there
   'rotmother-cistern': {
@@ -83,6 +101,9 @@ const DRESS: Record<string, Dress> = {
       [[0, 0, 'rubble-heap'], [-2, 2, 'spores'], [2, 2, 'spores']],
     ],
     bits: ['eggs', 'spores', 'bones', 'rubble'],
+    nave: { column: 'mossy-column' },
+    pools: 2,
+    backdrop: 'rot-vats',
   },
   // the dwarves' great forge, run now by the dead
   'deepforge-halls': {
@@ -96,6 +117,10 @@ const DRESS: Record<string, Dress> = {
       [[-3, 0, 'anvil'], [3, 0, 'anvil'], [0, -1, 'armor-stand']],
     ],
     bits: ['rubble', 'bones', 'rubble', 'skulls'],
+    carpet: '#3a2a28',
+    nave: { column: 'great-column' },
+    pools: 2,
+    backdrop: 'great-furnace',
   },
   // kings under the hill, their gold still round them
   'barrow-of-kings': {
@@ -109,6 +134,9 @@ const DRESS: Record<string, Dress> = {
       [[-2, 0, 'sarcophagus'], [2, 0, 'sarcophagus'], [0, 2, 'gold-chest']],
     ],
     bits: ['bones', 'skulls', 'candles', 'rubble', 'coin-pile'],
+    carpet: '#6a1a2a',
+    nave: { column: 'great-column', runner: '#6a1a2a' },
+    backdrop: 'seated-kings',
   },
   // a desert king's tomb: obelisks, canopic jars, sand drifted in
   'tomb-of-the-sun-king': {
@@ -122,6 +150,9 @@ const DRESS: Record<string, Dress> = {
       [[0, -1, 'statue'], [-2, 1, 'urn'], [2, 1, 'urn']],
     ],
     bits: ['rubble', 'bones', 'urn', 'skulls'],
+    carpet: '#b08a3a',
+    nave: { column: 'sand-column', runner: '#b08a3a' },
+    backdrop: 'sun-throne',
   },
   // a giants' vault locked in ice
   'rimeheld-vault': {
@@ -135,6 +166,9 @@ const DRESS: Record<string, Dress> = {
       [[0, -1, 'statue'], [-3, 1, 'ice-crystal'], [3, 1, 'ice-crystal']],
     ],
     bits: ['rubble', 'bones', 'skulls'],
+    nave: { column: 'ice-column' },
+    pools: 3,
+    backdrop: 'vault-door',
   },
   // a fortress under siege, every hall a barracks
   'siege-of-highwall': {
@@ -148,6 +182,9 @@ const DRESS: Record<string, Dress> = {
       [[-3, 0, 'weapon-rack'], [3, 0, 'armor-stand'], [0, 1, 'crate']],
     ],
     bits: ['rubble', 'bones', 'sacks'],
+    carpet: '#7a1a1a',
+    nave: { column: 'great-column', runner: '#7a1a1a' },
+    backdrop: 'inner-ward-gate',
   },
   // the rotten heart of the wood: roots for walls
   blightheart: {
@@ -161,6 +198,8 @@ const DRESS: Record<string, Dress> = {
       [[0, -1, 'thorns'], [-2, 1, 'eggs'], [2, 1, 'eggs']],
     ],
     bits: ['spores', 'eggs', 'bones'],
+    pools: 2,
+    backdrop: 'thorn-throne',
   },
   // the Host's throne in a burning mountain
   'molten-throne': {
@@ -174,6 +213,10 @@ const DRESS: Record<string, Dress> = {
       [[0, -1, 'statue'], [-2, 1, 'brazier'], [2, 1, 'brazier']],
     ],
     bits: ['rubble', 'skulls', 'bones', 'bone-heap'],
+    carpet: '#5a1a10',
+    nave: { column: 'black-column' },
+    pools: 2,
+    backdrop: 'ashkar-throne',
   },
   // a tower that is coming apart between worlds
   'spire-of-the-rift': {
@@ -187,6 +230,9 @@ const DRESS: Record<string, Dress> = {
       [[0, -1, 'statue'], [-2, 1, 'broken-column'], [2, 1, 'broken-column']],
     ],
     bits: ['candles', 'rubble', 'skulls'],
+    carpet: '#3a2a6a',
+    nave: { column: 'black-column', runner: '#3a2a6a' },
+    backdrop: 'tear-shards',
   },
   // the Hallow King's own citadel: a dead court, still kept
   duskspire: {
@@ -200,6 +246,9 @@ const DRESS: Record<string, Dress> = {
       [[0, -1, 'statue'], [-2, 1, 'candles'], [2, 1, 'candles']],
     ],
     bits: ['candles', 'skulls', 'bones', 'rubble'],
+    carpet: '#6a1020',
+    nave: { column: 'black-column', runner: '#6a1020' },
+    backdrop: 'hallow-throne',
   },
   // under the Crown City: the old royal dead, and who hides among them
   'crown-catacombs': {
@@ -212,6 +261,7 @@ const DRESS: Record<string, Dress> = {
       [[0, 0, 'altar'], [-2, 1, 'candles'], [2, 1, 'candles']],
     ],
     bits: ['bones', 'skulls', 'candles', 'rubble'],
+    nave: { column: 'tall-column' },
   },
 };
 
@@ -449,6 +499,44 @@ function shape(def: RegionDef, source: readonly string[], given: readonly Placed
     const cx = Math.round((x0 + x1) / 2);
     const cy = Math.round((y0 + y1) / 2);
     const seed = index * 17 + 3;
+    // what stands behind the boss's wall, rising out of the dark over it, and the way up to it
+    if (boss && dress.backdrop) placed.push({ tx: cx, ty: y0 - 1, marker: { kind: 'prop', prop: `great:${dress.backdrop}` } });
+    // (a carpet lies under whatever stands on it, so it has no gaps)
+    if (boss && dress.carpet) for (let y = y0; y <= y1; y++) if (label[y]![cx] === L && !SOLID_TERRAIN.has(at(cx, y))) placed.push({ tx: cx, ty: y, marker: { kind: 'prop', prop: `runner:${dress.carpet}`, solid: false } });
+    // fires down both sides of a boss's chamber (nothing in it stops anyone: its fight is measured to the room)
+    if (boss && rw >= 14) {
+      for (let y = y0 + 2; y <= y1 - 1; y += 4) {
+        for (const x of [x0 + 2, x1 - 2]) if (clearOf(x, y)) put(x, y, dress.corner, false);
+      }
+    }
+    // a pool let into the floor, with room to walk all the way round it
+    if (!boss && dress.pools && index % dress.pools === 0 && rw >= 9 && rh >= 8) {
+      const px = Math.max(2, Math.floor(rw / 4));
+      const py = Math.max(1, Math.floor(rh / 5));
+      const walkable = (x: number, y: number): boolean => at(x, y) === L && !taken.has(id(x, y)) && !hard.has(id(x, y));
+      let room = true;
+      for (let y = cy - py - 2; y <= cy + py + 2 && room; y++) for (let x = cx - px - 2; x <= cx + px + 2 && room; x++) if (!walkable(x, y) && !lanes.has(id(x, y))) room = false;
+      for (let y = cy - py; y <= cy + py && room; y++) for (let x = cx - px; x <= cx + px && room; x++) if (lanes.has(id(x, y))) room = false;
+      if (room) {
+        for (let y = cy - py; y <= cy + py; y++) {
+          for (let x = cx - px; x <= cx + px; x++) {
+            // (its corners rounded off: a pool, not a tank)
+            if ((x === cx - px || x === cx + px) && (y === cy - py || y === cy + py)) continue;
+            g[y]![x] = '~';
+            hard.add(id(x, y));
+          }
+        }
+      }
+    }
+    // a nave: tall columns in two rows the length of a great room, a carpet down the middle
+    const great = !boss && rw >= 12 && rh >= 8;
+    if (great && dress.nave) {
+      const ay = Math.floor(rh / 2) - 2;
+      for (let x = x0 + 2; x <= x1 - 2; x += 3) {
+        for (const py of [cy - ay, cy + ay]) if (clearOf(x, py)) put(x, py, dress.nave.column, true, 1);
+      }
+      if (dress.nave.runner) for (let x = x0 + 1; x <= x1 - 1; x++) put(x, cy, `runner:${dress.nave.runner}`, false);
+    }
     // what the room is for, at its middle
     if (!boss && rw >= 8 && rh >= 6 && dress.core.length) {
       for (const [dx, dy, prop] of dress.core[index % dress.core.length]!) {
@@ -458,7 +546,7 @@ function shape(def: RegionDef, source: readonly string[], given: readonly Placed
       }
     }
     // columns in pairs, standing out from the walls of a room big enough to have aisles
-    if (dress.pillar && !boss && rw >= 11 && rh >= 8) {
+    if (dress.pillar && !boss && rw >= 11 && rh >= 8 && !(great && dress.nave)) {
       const ax = Math.floor(rw / 2) - 3;
       const ay = Math.floor(rh / 2) - 2;
       for (const sx of [-1, 1]) {

@@ -32,7 +32,7 @@ export const GLIMMERWOOD = wildRegion(
     forest: 0.4,
     scatter: { trees: 2.4, bushes: 2, rocks: 0.6, flowers: 6 },
     water: { kind: 'river', from: 'n', to: 's' },
-    hubs: [{ at: [0.7, 0.5], plan: 'green', npcs: ['lady-silvaine', 'pip-thistledown', 'old-root'], houses: 4 }],
+    hubs: [{ at: [0.7, 0.5], plan: 'glade', npcs: ['lady-silvaine', 'pip-thistledown', 'old-root'], houses: 4 }],
     exits: [
       { side: 'e', at: 0.5, to: 'grimward', label: 'East road to the Grimward Moors' },
       { side: 'w', at: 0.4, to: 'rimeheld', label: 'West road to Rimeheld', minLevel: 32 },

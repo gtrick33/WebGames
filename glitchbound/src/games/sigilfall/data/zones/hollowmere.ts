@@ -33,7 +33,7 @@ export const HOLLOWMERE = wildRegion(
     forest: 0.2,
     scatter: { trees: 1.2, bushes: 1, rocks: 1.4, flowers: 0.6 },
     water: { kind: 'lakes', amount: 0.85 },
-    hubs: [{ at: [0.3, 0.84], plan: 'street', npcs: ['the-ferryman', 'old-nan', 'pilgrim-tobiah', 'digger-mott'], houses: 4 }],
+    hubs: [{ at: [0.3, 0.76], plan: 'harbor', npcs: ['the-ferryman', 'old-nan', 'pilgrim-tobiah', 'digger-mott'], houses: 4 }],
     exits: [
       { side: 's', at: 0.4, to: 'weeping-woods', label: 'South road to the Weeping Woods' },
       { side: 'e', at: 0.7, to: 'emberdeep', label: 'East road to Emberdeep Caldera' },

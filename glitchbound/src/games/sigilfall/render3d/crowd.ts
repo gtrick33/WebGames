@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { MeshData } from './pack';
 import { toGeometry } from './pack';
-import { animMaterial, inkMaterial, staticMaterial, xrayMaterial, type RigAnim } from './toon';
+import { animMaterial, colossusMaterial, inkMaterial, staticMaterial, sunkMaterial, xrayMaterial, type RigAnim } from './toon';
 
 /** The reused materials of each skeleton (a program is costly; the driver shares them by source). */
 const fills = new WeakMap<RigAnim, THREE.ShaderMaterial>();
@@ -15,11 +15,13 @@ function xrayOf(a: RigAnim): THREE.ShaderMaterial {
   }
   return m;
 }
-function fillOf(a: RigAnim): THREE.ShaderMaterial {
-  let m = fills.get(a);
+const stones = new WeakMap<RigAnim, THREE.ShaderMaterial>();
+function fillOf(a: RigAnim, colossus = false): THREE.ShaderMaterial {
+  const table = colossus ? stones : fills;
+  let m = table.get(a);
   if (!m) {
-    m = animMaterial(a);
-    fills.set(a, m);
+    m = colossus ? colossusMaterial(a) : animMaterial(a);
+    table.set(a, m);
   }
   return m;
 }
@@ -39,6 +41,7 @@ function inkOf(a: RigAnim, w: number): THREE.ShaderMaterial {
 
 const dummy = new THREE.Matrix4();
 const q = new THREE.Quaternion();
+const turn = new THREE.Euler(0, 0, 0, 'YXZ');
 const up = new THREE.Vector3(0, 1, 0);
 const pos = new THREE.Vector3();
 const size = new THREE.Vector3();
@@ -64,6 +67,7 @@ export class Crowd {
     private readonly parent: THREE.Object3D,
     cap = 8,
     inkWidth = 0.022,
+    colossus = false,
   ) {
     this.cap = cap;
     this.geo = mesh instanceof THREE.BufferGeometry ? mesh : toGeometry(mesh);
@@ -71,7 +75,7 @@ export class Crowd {
     this.anim = new THREE.InstancedBufferAttribute(new Float32Array(cap * 4), 4).setUsage(THREE.DynamicDrawUsage);
     this.geo.setAttribute('iTint', this.tint);
     this.geo.setAttribute('iAnim', this.anim);
-    this.fill = new THREE.InstancedMesh(this.geo, fillOf(rig), cap);
+    this.fill = new THREE.InstancedMesh(this.geo, fillOf(rig, colossus), cap);
     this.fill.frustumCulled = false;
     this.fill.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.fill.count = 0;
@@ -104,10 +108,11 @@ export class Crowd {
   }
 
   /** One figure: `rot` turns it about the vertical (0 faces +z, toward the camera). */
-  put(x: number, y: number, z: number, rot: number, sx: number, sy: number, frameA: number, frameB = 0, blend = 0, alpha = 1, r = 1, g = 1, b = 1, flash = 0): void {
+  put(x: number, y: number, z: number, rot: number, sx: number, sy: number, frameA: number, frameB = 0, blend = 0, alpha = 1, r = 1, g = 1, b = 1, flash = 0, tipX = 0, tipZ = 0): void {
     if (this.n >= this.cap) this.grow();
     const i = this.n++;
-    q.setFromAxisAngle(up, rot);
+    if (tipX || tipZ) q.setFromEuler(turn.set(tipX, rot, tipZ, 'YXZ'));
+    else q.setFromAxisAngle(up, rot);
     pos.set(x, y, z);
     size.set(sx, sy, sx);
     dummy.compose(pos, q, size);
@@ -175,11 +180,12 @@ export class Stand {
     parent: THREE.Object3D,
     private readonly cap: number,
     col?: Uint8Array,
+    sunk = false,
   ) {
     this.geo = toGeometry(mesh, col);
     this.tint = new THREE.InstancedBufferAttribute(new Float32Array(cap * 4), 4).setUsage(THREE.DynamicDrawUsage);
     this.geo.setAttribute('iTint', this.tint);
-    this.mesh = new THREE.InstancedMesh(this.geo, staticMaterial, cap);
+    this.mesh = new THREE.InstancedMesh(this.geo, sunk ? sunkMaterial : staticMaterial, cap);
     this.mesh.frustumCulled = false;
     this.mesh.count = 0;
     parent.add(this.mesh);
@@ -193,10 +199,11 @@ export class Stand {
     return this.n < this.cap;
   }
 
-  put(x: number, y: number, z: number, rot: number, sx: number, sy: number, sz: number, r: number, g: number, b: number, sway: number): void {
+  put(x: number, y: number, z: number, rot: number, sx: number, sy: number, sz: number, r: number, g: number, b: number, sway: number, tipX = 0, tipZ = 0): void {
     if (this.n >= this.cap) return;
     const i = this.n++;
-    q.setFromAxisAngle(up, rot);
+    if (tipX || tipZ) q.setFromEuler(turn.set(tipX, rot, tipZ, 'YXZ'));
+    else q.setFromAxisAngle(up, rot);
     pos.set(x, y, z);
     size.set(sx, sy, sz);
     dummy.compose(pos, q, size);

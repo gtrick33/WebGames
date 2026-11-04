@@ -142,7 +142,8 @@ export function questTarget(w: World, q: QuestDef, steady = false): Objective | 
     if (!region) return null;
     if (region === here) return inside();
     const next = nextRegion(here, region, (q) => questState(h, q) === 'done');
-    const x = next ? w.exits.find((e) => e.to === next) : undefined;
+    // (indoors, whatever it is, it's outside: a building isn't on the roads, it has a door)
+    const x = next ? w.exits.find((e) => e.to === next) : w.region.interior ? w.exits[0] : undefined;
     return x ? { ...place(x.x, x.y), via: x.to as RegionId } : null;
   };
 

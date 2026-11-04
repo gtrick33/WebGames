@@ -243,3 +243,40 @@ place". What the great RPGs do, adapted (rules only, none of their names or art)
   and anvils). Each has its own tileset color and its own color of fire, and its mood is in its lights, placed round
   the room. A boss's chamber keeps its size.
 - **A mood never hides the game.** Night and dark are a tint and a dim edge; everything on screen can be seen.
+
+## Towns: no two alike (2026-11-04)
+
+The owner: "most of the towns look the same, streets, houses and misc items ... the whole vibe of towns need to change."
+The buildings and goods are the same models everywhere, and they stay: what differs is everything else. `data/townforms.ts`
+holds the forms: its layout, what it's paved with, what lights it, what stands at its doors, what its market sells from.
+
+- **mill** (Thornvale): a brook through it, a mill on the bank, fenced fields to the back doors.
+- **ring** (Brackenridge): a round village under one old tree.
+- **harbor** (Saltmarsh, Stormwatch, Hollowmere): a stone quay and piers, houses packed down paved lanes.
+- **boardwalk** (Greyfen, Gloamhollow): no ground, houses on hummocks, boardwalks; Lastlight is one long causeway.
+- **crooked** (Ashen Barrows, Duskfen, Weeping Woods): a wandering lane, big graveyards, candles.
+- **terraces** (Ironpeak): stepped streets, retaining walls, stairs, the hall at the top.
+- **oasis** (Sunscorch): a wide pool under palms, sand for streets, pavilions.
+- **glade** (Glimmerwood, Vinecoil, Blightwood, Shattered Vale): nothing in rows, the land's own wood between the houses.
+- **hold** (Rimeheld, Grimward): a ring of wall, one great hall, a fire before it.
+- **ranks** (Highwall, Bonefields, Pale Reach): a war camp: palisade, muster ground, tents in straight lines.
+- **citadel** (Emberdeep, Riftscar): a keep behind a moat, one bridge.
+- **canyon** (Sablewind): one street between walls of rock.
+- **drowned** (Sunken Reaches): a city's streets gone under, plank walks along them.
+
+Before adding a town, check it side by side with the others from above. A new town gets a new form, or a form no more than
+three others use. A form never needs new art.
+
+## Great things: few, and named by the story (2026-11-04)
+
+`data/greatworks.ts`. The owner: "they could be present only in meaningful to the story zones, not literally everywhere, ...
+not adding giants everywhere", and "we don't need to see them fully on the screen to get immersed". So:
+
+- A great work stands only where the land's own line names it: "the great lighthouse", "a necropolis on an island", "the
+  Gloam Gate", "the dead stand in ranks and Duskspire rises in the north". Most lands have none; a normal land's wonder is its
+  town. Giant figures are rarer still (the Titan, the frozen giant, the Sun King, the first thanes). Nothing ordinary gets
+  scaled up for effect: catapults stay catapult-sized.
+- The camera doesn't pull back for them. You walk past a shin the size of a house and look up.
+- Dungeons get their grandeur from architecture: naves of tall columns, walls and pillars that go up into the dark, pools of
+  what the place runs with (a theme's water: filth, rot, lava, ice), a carpet to the boss, and what stands behind the boss's
+  wall (`backdrop`). A boss's chamber stays walkable: its fight is measured to the room.

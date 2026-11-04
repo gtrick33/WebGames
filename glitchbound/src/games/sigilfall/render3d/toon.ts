@@ -301,6 +301,40 @@ export function animMaterial(anim: RigAnim): THREE.ShaderMaterial {
   });
 }
 
+/**
+ * A great figure, frozen: its colors washed toward plain stone (iTint.a says how far), and whatever of it is under
+ * the ground not drawn.
+ */
+export function colossusMaterial(anim: RigAnim): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    uniforms: { ...LIGHT, uAnim: { value: anim.tex } },
+    vertexShader: /* glsl */ `
+      ${COMMON_VERT}
+      ${SKIN_VERT}
+      void main() {
+        mat4 m = posed();
+        vec4 p = m * vec4(position, 1.0);
+        vec3 n = mat3(m) * normal;
+        vec4 w = modelMatrix * instanceMatrix * p;
+        vW = w.xyz;
+        vN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * n);
+        float lum = dot(aCol, vec3(0.3, 0.59, 0.11));
+        vCol = mix(aCol, vec3(0.45 + lum * 0.65), iTint.a) * iTint.rgb;
+        vFlash = 0.0;
+        vAlpha = 1.0;
+        gl_Position = projectionMatrix * viewMatrix * w;
+      }`,
+    fragmentShader: /* glsl */ `
+      ${FRAG_COMMON}
+      void main() {
+        if (vW.y < 0.0) discard;
+        vec3 n = normalize(vN);
+        vec3 c = toon(vCol, n);
+        gl_FragColor = vec4(finish(c), 1.0);
+      }`,
+  });
+}
+
 /** The ink line round what moves: the same figure, a little bigger, inside out. */
 export function inkMaterial(anim: RigAnim, width: number): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
@@ -408,6 +442,22 @@ export const staticMaterial = new THREE.ShaderMaterial({
     }`,
 });
 
+/**
+ * The same for what stands half in the ground (the ground is a layer of its own under everything that stands, so
+ * what is below it has to stop being drawn). Only great things use it: throwing away pixels costs a phone a little.
+ */
+export const sunkMaterial = new THREE.ShaderMaterial({
+  uniforms: staticMaterial.uniforms,
+  vertexShader: staticMaterial.vertexShader,
+  fragmentShader: /* glsl */ `
+    ${FRAG_COMMON}
+    void main() {
+      if (vW.y < 0.0) discard;
+      vec3 c = toon(vCol, normalize(vN));
+      gl_FragColor = vec4(finish(c), 1.0);
+    }`,
+});
+
 /** Soft round shadows on the ground, one quad each. */
 export const shadowMaterial = new THREE.ShaderMaterial({
   transparent: true,
@@ -423,7 +473,7 @@ export const shadowMaterial = new THREE.ShaderMaterial({
     varying vec2 vUv;
     void main() {
       float d = length(vUv);
-      float a = smoothstep(1.0, 0.55, d) * 0.38;
+      float a = smoothstep(1.0, 0.5, d) * 0.3;
       gl_FragColor = vec4(0.07, 0.05, 0.16, a);
     }`,
 });

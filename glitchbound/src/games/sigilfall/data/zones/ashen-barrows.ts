@@ -32,7 +32,7 @@ export const ASHEN_BARROWS = wildRegion(
     forest: 0.2,
     scatter: { trees: 1.4, bushes: 0.8, rocks: 1.8, flowers: 2 },
     water: { kind: 'lakes', amount: 0.2 },
-    hubs: [{ at: [0.5, 0.25], plan: 'cross', npcs: ['lamplighter-ivo', 'sister-maud', 'gravedigger-kell'], houses: 5 }],
+    hubs: [{ at: [0.5, 0.25], plan: 'crooked', npcs: ['lamplighter-ivo', 'sister-maud', 'gravedigger-kell'], houses: 5 }],
     story: [
       // the great lamp at the top of the hill, and the roads the dead climb to it
       { near: 'hub', dy: -7, marker: { kind: 'place', id: 'lantern-hill' } },

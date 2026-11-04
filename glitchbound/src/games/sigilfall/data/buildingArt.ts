@@ -184,26 +184,27 @@ export interface Lot {
  * (`o.scale`, the Crown City's) is a fortress: between two tall round towers, and further out and set back,
  * two square ones, all of them bigger than the land's own.
  */
-export function placeBuilding(style: Style | 'house', lot: Lot, theme: Theme, town: boolean, art: string | undefined, door: number | null, o: { scale?: number; grim?: boolean } = {}): PlacedPic[] {
+export function placeBuilding(style: Style | 'house', lot: Lot, theme: Theme, town: boolean, art: string | undefined, door: number | null, o: { scale?: number; grim?: boolean; fit?: boolean } = {}): PlacedPic[] {
   const h = hash2(lot.tx, lot.ty + lot.h - 1, 51);
   const own = art?.startsWith('rk:') && PICS[art.slice(3)] ? art.slice(3) : null;
   const list = style === 'house' ? HOUSES[theme] : town ? STYLE[style].town : STYLE[style].wild;
   const id = own ?? list[Math.floor(h * list.length) % list.length]!;
   const pic = buildingPic(id)!;
-  const s = o.scale ?? 1;
+  // (a lot laid out to be this big: the building comes to fill it, however big that is)
+  const s = o.fit ? Math.min((lot.w * 16) / pic.fpw, (lot.h * 16) / Math.max(1, pic.oy)) : (o.scale ?? 1);
   const look = { ...(s !== 1 ? { scale: s } : {}), ...(o.grim ? { grim: true } : {}) };
   const ground = (lot.ty + lot.h) * 16;
   const middle = (lot.tx + lot.w / 2) * 16;
   // the painted door over the lot's door tile (the middle of its front, where a plan paves the step and an
   // interior's way in is); a building with no way in may shift back over its lot, a little past it at most
   let x = Math.round(middle - (pic.ox + pic.fpw / 2) * s);
-  if (pic.door !== undefined) {
+  if (pic.door !== undefined && !o.fit) {
     x = Math.round(((door ?? lot.tx + Math.floor(lot.w / 2)) + 0.5) * 16 - pic.door * s);
     // (never so far its walls stand on a neighbour's lot: a tile is solid where a wall covers 4 px of it)
     if (door === null) x = Math.max(lot.tx * 16 - 3 - pic.ox * s, Math.min((lot.tx + lot.w) * 16 + 3 - (pic.ox + pic.fpw) * s, x));
   }
   const out: PlacedPic[] = [{ id, x, y: ground, ...look }];
-  if (id === 'keep' && s > 1) {
+  if (id === 'keep' && s > 1 && !o.fit) {
     const kc = x + (pic.ox + pic.fpw / 2) * s;
     const inner = buildingPic('tower_round_slate')!;
     const outer = buildingPic('tower_square_roof')!;

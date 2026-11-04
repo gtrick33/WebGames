@@ -87,11 +87,19 @@ const CRYPT_STONE: StoneColors = {
 };
 
 /** An indoor theme: its stone, and ground colors only for the odd outdoor-looking tile. */
-const indoor = (bg: string, stone: StoneColors, ambient?: Ambient): ThemeLook => ({
+/** What pools in a place, when it isn't a clear blue lake. */
+const FILTH: GroundColors['water'] = { deep: '#16301c', mid: '#2a4c26', shallow: '#3f6a30', light: '#7aa84a', foam: '#b4d870', bank: '#2c3a2e', bankDark: '#1c261e' };
+const ROT_WATER: GroundColors['water'] = { deep: '#1e1a0e', mid: '#3a4414', shallow: '#56661c', light: '#a8c83a', foam: '#d8f070', bank: '#3a2a22', bankDark: '#241a14' };
+const MOLTEN: GroundColors['water'] = { deep: '#c8320c', mid: '#f0601a', shallow: '#ff8a2a', light: '#ffc850', foam: '#ffe9a0', bank: '#3a1c12', bankDark: '#241008' };
+const FROZEN: GroundColors['water'] = { deep: '#3a6a94', mid: '#5a90b8', shallow: '#7ab0d0', light: '#c8e8f8', foam: '#eefaff', bank: '#6a90b0', bankDark: '#4a6a88' };
+const SEA_CAVE: GroundColors['water'] = { deep: '#123a44', mid: '#1a5058', shallow: '#266a70', light: '#6ab8b8', foam: '#c8f0e8', bank: '#4a3e34', bankDark: '#342c24' };
+
+const indoor = (bg: string, stone: StoneColors, ambient?: Ambient, water?: GroundColors['water']): ThemeLook => ({
   indoor: true,
   bg,
   stone,
-  ground: THEME_GROUND.village,
+  ground: water ? { ...THEME_GROUND.village, water } : THEME_GROUND.village,
+  ...(water === MOLTEN ? { lava: true } : {}),
   trees: ['dead'],
   leaves: GREEN_LEAVES,
   bark: '#56381e',
@@ -414,7 +422,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
       flowers: ['#ff3fd2', '#22e4ff', '#ffffff', '#c88aff', '#8affff'],
       path: ['#3a3248', '#4a4058', '#5a4e68', '#6a5c78'],
       pebble: '#5a4e68',
-      leaf: ['#1a0e2a', '#2a1844', '#3e2460', '#5a3488', '#8a5ab8', '#c896ff'],
+      leaf: ['#1a0e2a', '#241538', '#2e1c48', '#3a2458', '#4c306e', '#c896ff'],
       water: { deep: '#120a24', mid: '#1e1038', shallow: '#2e1850', light: '#ff3fd2', foam: '#ffb0f0', bank: '#2a2238', bankDark: '#1a1428' },
       sand: ['#3a3248', '#463c56', '#524664', '#5e5072', '#6a5a80'],
       shell: ['#22e4ff', '#ff3fd2'],
@@ -680,7 +688,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     brickMortar: '#2a221c',
     moss: '#5a6a3a',
     crack: '#14100c',
-  }),
+  }, undefined, SEA_CAVE),
   // sewers and cisterns: green-stained stone, slime in the cracks
   cistern: indoor(
     '#08100c',
@@ -697,6 +705,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
       crack: '#0c140e',
     },
     'spores',
+    FILTH,
   ),
   keep: indoor('#101218', {
     slab: ['#5a5e6a', '#626672', '#565a66', '#5e626e'],
@@ -709,7 +718,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     brickMortar: '#2a2e38',
     moss: '#4e6a4a',
     crack: '#14161e',
-  }),
+  }, undefined, MOLTEN),
   icecave: indoor(
     '#0e1a28',
     {
@@ -725,6 +734,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
       crack: '#2a4a68',
     },
     'snow',
+    FROZEN,
   ),
   temple: indoor('#1a140c', {
     slab: ['#a88a5a', '#b0925e', '#a08254', '#a88c5a'],
@@ -742,7 +752,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     '#120a08',
     {
       slab: ['#3a3030', '#423636', '#362c2c', '#3e3434'],
-      mortar: '#ff5a1e',
+      mortar: '#a8401a',
       top: '#120c0c',
       topHi: '#1e1414',
       lip: '#5a2a1a',
@@ -753,6 +763,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
       crack: '#ff5a1e',
     },
     'embers',
+    MOLTEN,
   ),
   citadel: indoor(
     '#08060e',
@@ -786,6 +797,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
       crack: '#c84a8a',
     },
     'spores',
+    ROT_WATER,
   ),
   // the Pale Herald's spire: black glass and rift-crystal, the Veil showing through the seams
   // interiors: limewashed plaster over a timber dado, dark beams above; and a lord's hall of pale ashlar
@@ -817,7 +829,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     '#0a0614',
     {
       slab: ['#2e2440', '#34294a', '#2a203a', '#322646'],
-      mortar: '#22e4ff',
+      mortar: '#3a6a8a',
       top: '#0e0818',
       topHi: '#1a1028',
       lip: '#5a3488',
@@ -836,7 +848,7 @@ export function mapColors(t: Theme): { floor: string; wall: string; path: string
   const look = THEMES[t];
   if (look.indoor && look.stone) {
     const s = look.stone;
-    return { floor: s.slab[0], wall: s.top, path: s.brick[1], cobble: s.brick[1], water: '#24406a', solid: s.lip2, sand: s.slab[1], house: s.lip2 };
+    return { floor: s.slab[0], wall: s.top, path: s.brick[1], cobble: s.brick[1], water: look.ground.water.mid, solid: s.lip2, sand: s.slab[1], house: s.lip2 };
   }
   const g = look.ground;
   return { floor: g.grass[1], wall: g.leaf[1], path: g.path[2], cobble: '#8a8a96', water: g.water.mid, solid: g.leaf[3], sand: g.sand[2], house: '#b04a3a' };

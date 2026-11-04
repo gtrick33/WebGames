@@ -32,7 +32,7 @@ export const RIMEHELD = wildRegion(
     forest: 0.28,
     scatter: { trees: 1.6, bushes: 0.6, rocks: 2, flowers: 0.5 },
     water: { kind: 'lakes', amount: 0.4 },
-    hubs: [{ at: [0.72, 0.55], plan: 'court', npcs: ['jarl-sigrun', 'brewer-olav', 'runecarver-hild', 'huntress-ylva'], houses: 5 }],
+    hubs: [{ at: [0.72, 0.55], plan: 'hold', npcs: ['jarl-sigrun', 'brewer-olav', 'runecarver-hild', 'huntress-ylva'], houses: 5 }],
     exits: [
       { side: 'e', at: 0.5, to: 'glimmerwood', label: 'East road to the Glimmerwood' },
     ],

@@ -1,10 +1,13 @@
 import * as THREE from 'three';
 import { hash2 } from '../core/math';
+import { picBody } from '../data/buildingArt';
 import { REGIONS } from '../data/regions';
+import { GREAT, type GreatPart } from '../data/greatworks';
 import { THEMES, type ThemeLook, type TreeKind } from '../data/themes';
 import type { RegionDef } from '../data/types';
-import { K, TILE, type PlacedMarker, type TileMap } from '../sim/map';
+import { ART_TILE, K, TILE, type PlacedMarker, type TileMap } from '../sim/map';
 import { hexRgb } from './kits';
+import type { Colossus } from './cast';
 import { loadPack, type MeshData, type Pack } from './pack';
 import { LIGHT, shadowMaterial, staticMaterial } from './toon';
 import { Stand } from './crowd';
@@ -21,6 +24,8 @@ export const UNIT = 1 / TILE;
 export const PITCH = (50 * Math.PI) / 180;
 
 export interface LandPacks {
+  /** The people's parts and weapons: a giant's sword is the same sword. */
+  hero: Pack;
   nature: Pack;
   town: Pack;
   indoor: Pack;
@@ -29,7 +34,7 @@ export interface LandPacks {
 let lands: Promise<LandPacks> | null = null;
 export function loadLand(): Promise<LandPacks> {
   if (!lands) {
-    lands = Promise.all([loadPack('nature'), loadPack('town'), loadPack('indoor')]).then(([nature, town, indoor]) => ({ nature, town, indoor }));
+    lands = Promise.all([loadPack('nature'), loadPack('town'), loadPack('indoor'), loadPack('hero')]).then(([nature, town, indoor, hero]) => ({ nature, town, indoor, hero }));
     lands.catch(() => (lands = null));
   }
   return lands;
@@ -59,7 +64,17 @@ interface Placed {
   b: number;
   sway: number;
   shadow: number;
+  /** How deep the shadow is, next to how wide (a long table's isn't round). */
+  shadowD?: number;
   y: number;
+  /** Tipped over (radians, forward and sideways). */
+  tipX?: number;
+  tipZ?: number;
+}
+
+/** A great thing's piece, big enough that its middle going out of view doesn't mean it has. */
+interface Giant extends Placed {
+  reach: number;
 }
 
 /* ------------------------------------------------------------------ what grows where */
@@ -137,6 +152,9 @@ const PROPS: Record<string, PropDef> = {
   flowers: { m: 'flower_redA', w: 16, d: 16, h: 9 },
   topiary: { m: 'Bush_3_A', w: 22, d: 22, h: 22 },
   scarecrow: { m: 'scarecrow', w: 24, d: 14, h: 38 },
+  wheat: { m: 'crops_wheatStageB', w: 20, d: 18, h: 16 },
+  corn: { m: 'crops_cornStageD', w: 14, d: 14, h: 34 },
+  pumpkin: { m: 'pumpkin_orange', w: 14, d: 14, h: 11 },
   notice: { m: 'sign', w: 26, d: 12, h: 32 },
   'danger-sign': { m: 'sign_both', w: 26, d: 12, h: 32 },
   target: { m: 'p_target', w: 24, d: 12, h: 30 },
@@ -188,11 +206,16 @@ const PROPS: Record<string, PropDef> = {
   altar: { m: 'altar-stone', w: 48, d: 26, h: 22, across: true },
   // deep places
   'broken-column': { m: 'column', w: 24, d: 24, h: 36 },
-  'great-column': { m: 'pillar_decorated', w: 32, d: 28, h: 76 },
+  'great-column': { m: 'pillar_decorated', w: 42, d: 38, h: 118, box: true },
+  'tall-column': { m: 'pillar', w: 34, d: 34, h: 104, box: true, tint: '#a8a6b0' },
+  'mossy-column': { m: 'pillar', w: 34, d: 34, h: 96, box: true, tint: '#8aa080' },
+  'sand-column': { m: 'pillar_decorated', w: 42, d: 38, h: 118, box: true, tint: '#e0c088' },
+  'ice-column': { m: 'pillar', w: 36, d: 36, h: 104, box: true, tint: '#b8dcf4' },
+  'black-column': { m: 'pillar_decorated', w: 42, d: 38, h: 124, box: true, tint: '#5a5664' },
   'crates-stack': { m: 'crates_stacked', w: 34, d: 34, h: 34 },
   'big-barrel': { m: 'barrel_large', w: 26, d: 26, h: 30 },
   trunk: { m: 'trunk_large_A', w: 26, d: 22, h: 18 },
-  'coal-heap': { m: 'rocks', w: 34, d: 34, h: 18, tint: '#46424e' },
+  'coal-heap': { m: 'rocks', w: 34, d: 34, h: 18, tint: '#7a7480' },
   'stone-heap': { m: 'p_resource_stone', w: 30, d: 30, h: 20 },
   'lumber-pile': { m: 'p_resource_lumber', w: 44, d: 22, h: 14 },
   'banner-red': { m: 'banner_red', w: 26, d: 10, h: 52 },
@@ -206,7 +229,7 @@ const PROPS: Record<string, PropDef> = {
   'root-tangle': { m: 'Tree_Bare_2_B', w: 40, d: 26, h: 66, tint: '#5a4a3a' },
   'great-mushroom': { m: 'mushroom_redTall', w: 28, d: 28, h: 46 },
   spores: { m: 'mushroom_redGroup', w: 24, d: 24, h: 14 },
-  thorns: { m: 'Bush_4_D', w: 40, d: 30, h: 18, tint: '#6a4a78' },
+  thorns: { m: 'Bush_4_D', w: 40, d: 30, h: 18, tint: '#a07a9a' },
   // what a land is known by, seen from far off
   'ancient-oak': { m: 'Tree_7_B', w: 130, d: 130, h: 250 },
   'ancient-pine': { m: 'tree_pine_orange_large', w: 130, d: 130, h: 220 },
@@ -266,6 +289,8 @@ const PROPS: Record<string, PropDef> = {
   'bell-rope': { m: '' },
   'hall-floor': { m: '' },
   dais: { m: '' },
+  // (a marker for a whole great work: greatworks.ts)
+  great: { m: '' },
   chickens: { m: '' },
 };
 
@@ -531,12 +556,52 @@ const col3 = (hex: string): THREE.Vector3 => {
   return new THREE.Vector3(r, g, b);
 };
 
+/** Tiles something stands on: what is under it is whatever most of the ground round it is. */
+const THINGS = new Set<number>([K.Prop, K.Fence, K.Tree, K.Bush, K.Bramble, K.Rock, K.Pillar, K.Brazier]);
+const PAVED = [K.Path, K.Cobble, K.Sand] as const;
+
+/**
+ * The ground as it is painted: a bench on a square stands on the square's stones, a palm in the desert on sand (a
+ * tile with something on it has no ground of its own, and showed the land's grass in a square patch). A thing at
+ * the edge of a road, with most of its tile's neighbors off the road, keeps its grass, so roads keep their line.
+ */
+function groundUnderThings(map: TileMap): Uint8Array {
+  const W = map.w;
+  const H = map.h;
+  const out = Uint8Array.from(map.kind);
+  // (three times, so the middle of something three tiles wide gets it too)
+  for (let pass = 0; pass < 3; pass++) {
+    const was = Uint8Array.from(out);
+    for (let i = 0; i < W * H; i++) {
+      if (!THINGS.has(was[i]!)) continue;
+      const tx = i % W;
+      const ty = Math.floor(i / W);
+      for (const ground of PAVED) {
+        let n = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const x = tx + dx;
+            const y = ty + dy;
+            if ((dx || dy) && x >= 0 && y >= 0 && x < W && y < H && was[y * W + x] === ground) n++;
+          }
+        }
+        if (n >= 4) {
+          out[i] = ground;
+          break;
+        }
+      }
+    }
+  }
+  return out;
+}
+
 export function buildGround(map: TileMap, look: ThemeLook): THREE.Mesh {
   const W = map.w;
   const H = map.h;
   const mask = new Uint8Array(W * H * 4);
+  const kinds = groundUnderThings(map);
   for (let i = 0; i < W * H; i++) {
-    const k = map.kind[i]!;
+    const k = kinds[i]!;
     const at = i * 4;
     if (k === K.Path) mask[at] = 255;
     if (k === K.Water || (k === K.Bridge && !look.indoor)) mask[at + 1] = 255;
@@ -596,10 +661,13 @@ interface BlockStyle {
   side2: [number, number, number];
 }
 
+/** How tall the walls of a place under a roof stand, in tiles: halls, not cellars. */
+const DUNGEON_WALL = 2.7;
+
 function blockStyles(look: ThemeLook, woody: boolean): { wall: BlockStyle; rampart: BlockStyle } {
   const st = look.stone;
   const wall: BlockStyle = st
-    ? { h: 1.9, top: hexRgb(st.top), top2: hexRgb(st.topHi), side: hexRgb(st.brick[1]), side2: hexRgb(st.brick[0]) }
+    ? { h: DUNGEON_WALL, top: hexRgb(st.top), top2: hexRgb(st.topHi), side: hexRgb(st.brick[1]), side2: hexRgb(st.brick[0]) }
     : woody
       ? { h: 1.0, top: hexRgb(look.ground.leaf[1]), top2: hexRgb(look.ground.leaf[2]), side: hexRgb(look.ground.leaf[0]), side2: hexRgb(look.ground.leaf[0]) }
       : { h: 1.7, top: hexRgb(look.ground.leaf[3]), top2: hexRgb(look.ground.leaf[4]), side: hexRgb(look.ground.leaf[1]), side2: hexRgb(look.ground.leaf[0]) };
@@ -788,6 +856,33 @@ const ROOFS: Record<string, string[]> = {
   jungle: ['#5a7a3f', '#8a6a3f'],
   pale: ['#7a7a8a', '#5a5a6a'],
 };
+/** A waystone's stone and the color of its rune, by land. */
+const WAYSTONES: Record<string, [string, string]> = {
+  default: ['#808798', '#7fd4ff'],
+  autumn: ['#8a7a68', '#ffd27a'],
+  coast: ['#a8a490', '#8ae8e0'],
+  marsh: ['#6a7468', '#b0ff9a'],
+  plague: ['#5c6650', '#baff5a'],
+  mountain: ['#6c6a70', '#ffb060'],
+  barrow: ['#5e5c66', '#c8b8ff'],
+  storm: ['#5c6878', '#9ad8ff'],
+  moor: ['#5c5660', '#d0a0ff'],
+  desert: ['#c0996a', '#ffe08a'],
+  fey: ['#a890c8', '#ff9aea'],
+  snow: ['#8aa8c4', '#c8f0ff'],
+  rift: ['#54407a', '#d090ff'],
+  jungle: ['#6a7a50', '#a8ff70'],
+  warfront: ['#6a625a', '#ff9a6a'],
+  gloam: ['#44504a', '#7affb0'],
+  bonefield: ['#a89c84', '#ffd0a0'],
+  haunted: ['#5c6670', '#ffe0a0'],
+  sunken: ['#4e6a68', '#7affe0'],
+  blight: ['#5a4e5e', '#c8ff6a'],
+  volcanic: ['#3e3634', '#ff7a2a'],
+  deadlake: ['#4a4c54', '#a8c0ff'],
+  pale: ['#8a8e9e', '#d8e4ff'],
+};
+
 /** Nothing flowers here. */
 const BARE_LANDS = new Set<string>(['volcanic', 'snow', 'desert', 'peaks', 'bonefield', 'blight', 'deadlake', 'haunted', 'rift', 'pale', 'barrow', 'plague', 'warfront', 'gloam', 'storm', 'mountain']);
 
@@ -801,6 +896,10 @@ export class Land3D {
   readonly flames: { x: number; z: number; y: number; size: number }[] = [];
   /** The stone heroes on their plinths (the cast draws them, in a pose). */
   readonly statues: { x: number; y: number; h: number; lift: number; tint: readonly [number, number, number] }[] = [];
+  /** Great figures frozen in a pose (the cast draws them). */
+  readonly colossi: Colossus[] = [];
+  /** The pieces of great works, which the view keeps as long as any of them could show. */
+  private readonly giants: Giant[] = [];
   /** Soft lights that aren't fire: the rune on a waymarker. */
   readonly glows: { x: number; z: number; y: number; color: string; size: number }[] = [];
   private readonly look: ThemeLook;
@@ -832,7 +931,7 @@ export class Land3D {
     this.planks = buildPlanks(map, look);
     this.under.add(this.ground, this.planks);
     this.group.add(this.blocks);
-    this.wallH = look.indoor ? 1.9 : woody ? 1 : 1.6;
+    this.wallH = look.indoor ? DUNGEON_WALL : woody ? 1 : 1.6;
     this.placeAll(woody);
     this.placeSlabs();
     // the shadow of what stands, one soft disc each
@@ -859,8 +958,8 @@ export class Land3D {
   }
 
   private pack(id: string): MeshData | null {
-    const base = id.split('#')[0]!;
-    return this.packs.nature.meshes[base] ?? this.packs.town.meshes[base] ?? this.packs.indoor.meshes[base] ?? null;
+    const base = id.replace('~', '').split('#')[0]!;
+    return this.packs.nature.meshes[base] ?? this.packs.town.meshes[base] ?? this.packs.indoor.meshes[base] ?? this.packs.hero.meshes[base] ?? null;
   }
 
   /** A roof color for this land: a village has two or three, a desert's are clay and a dead land's are slate. */
@@ -927,7 +1026,9 @@ export class Land3D {
           const def = TREES[kind] ?? TREES.oak;
           const m = def.m[Math.floor(h * def.m.length) % def.m.length]!;
           const s = this.fitted(m, def.h * (0.85 + hash2(tx, ty, 21) * 0.3), 2.4);
-          if (this.keepIt({ x: wx, y: wy, kind: 'tree', dy: -def.h * TILE })) this.add({ m, x: x + (h - 0.5) * 0.12, z: z + (hash2(tx, ty, 31) - 0.5) * 0.12, rot: h * 6.28, sx: s, sway: kind === 'dead' || kind === 'crystal' || kind === 'cactus' ? 0 : 1, shadow: 1.25 });
+          // (a crystal takes the land's own light: the model itself is plain white)
+          const shard = kind === 'crystal' ? hexRgb(look.leaves[hash2(tx, ty, 93) < 0.3 ? 5 : 4]) : null;
+          if (this.keepIt({ x: wx, y: wy, kind: 'tree', dy: -def.h * TILE })) this.add({ m, x: x + (h - 0.5) * 0.12, z: z + (hash2(tx, ty, 31) - 0.5) * 0.12, rot: h * 6.28, sx: s, sway: kind === 'dead' || kind === 'crystal' || kind === 'cactus' ? 0 : 1, shadow: 1.25, ...(shard ? { r: shard[0], g: shard[1], b: shard[2] } : {}) });
           break;
         }
         case K.Bush:
@@ -954,7 +1055,12 @@ export class Land3D {
         }
         case K.Pillar: {
           const m = look.indoor ? 'pillar' : 'statue_column';
-          if (this.keepIt({ x: wx, y: wy, kind: 'pillar', dy: -40 })) this.add({ m, x, z, rot: 0, sx: this.fitted(m, 2.6, 1), shadow: 0.8, r: look.indoor ? 1 : 0.68, g: look.indoor ? 1 : 0.68, b: look.indoor ? 1 : 0.72 });
+          // (indoors a column goes up into the dark, far over anyone's head)
+          const pw = this.spanOf(m, 0);
+          const ph = this.spanOf(m, 1);
+          if (look.indoor) {
+            if (this.keepIt({ x: wx, y: wy, kind: 'pillar', dy: -96 })) this.add({ m, x, z, rot: 0, sx: 1.25 / pw, sy: 4.4 / ph, sz: 1.25 / pw, shadow: 0.9 });
+          } else if (this.keepIt({ x: wx, y: wy, kind: 'pillar', dy: -40 })) this.add({ m, x, z, rot: 0, sx: this.fitted(m, 2.6, 1), shadow: 0.8, r: 0.68, g: 0.68, b: 0.72 });
           break;
         }
         case K.Brazier: {
@@ -991,7 +1097,7 @@ export class Land3D {
                 this.add({ m: 'torch_mounted', x, z: ty + 1.02, rot: 0, sx: this.sized('torch_mounted', 0.7), y: 0.9 });
                 this.flames.push({ x, z: ty + 1.06, y: 1.4, size: 0.72 });
               } else if (tx % 6 === 3 && look.stone) {
-                this.add({ m: 'pillar', x, z: ty + 1, rot: 0, sx: this.fitted('pillar', 2.2, 0.72), shadow: 0 });
+                this.add({ m: 'pillar', x, z: ty + 1, rot: 0, sx: this.fitted('pillar', 3.1, 0.78), shadow: 0 });
               }
             }
             break;
@@ -1064,15 +1170,25 @@ export class Land3D {
       // its door on the lot's front, toward the street
       const fx = (x1 - x0) / wideX;
       const fz = (y1 - y0) / wideZ;
-      const base = Math.min(fx, fz);
-      const sx = Math.min(fx, base * 1.25) * 1.03;
-      const sz = Math.min(fz, base * 1.25) * 1.03;
-      const sy = base * 1.12;
+      // (the capital's keep rises far over its own gate: the rest of it goes back behind its wall, out of anyone's way)
+      const seat = b.style === 'keep' && b.pics[0]?.grim === true;
+      const base = Math.min(fx, fz) * (seat ? 2.1 : 1);
+      const sx = seat ? base : Math.min(fx, base * 1.25) * 1.03;
+      const sz = seat ? base : Math.min(fz, base * 1.25) * 1.03;
+      const sy = base * (seat ? 1 : 1.12);
       const cx = (x0 + x1) / 2 - ((mesh.min[0] + mesh.max[0]) / 2) * sx;
       const cz = y1 + 0.05 - mesh.max[2] * sz;
       const roof = this.roofOf(b.lot.tx, b.lot.ty);
       if (this.keepIt({ x: ((x0 + x1) / 2) * TILE, y: y1 * TILE - 2, kind: 'building', dy: -(mesh.max[1] * sy) * TILE })) this.add({ m: `${m}#${roof}`, x: cx, z: cz, rot: 0, sx, sy, sz, shadow: 0 });
       for (const y of b.yard) this.placeProp(y.prop, y.tx, y.ty);
+      // its towers, where its plan has them
+      if (seat) {
+        for (const p of b.pics.slice(1)) {
+          const [bx0, , bx1, by1] = picBody(p);
+          const round = p.id.startsWith('tower_round');
+          this.placePart({ m: round ? 'b_tower_B' : 'b_tower_A', h: round ? 19 : 14, x: (bx0 + bx1) / 2 / ART_TILE, z: by1 / ART_TILE - 0.6, shadow: 2.2 }, 0, 0);
+        }
+      }
     }
     for (const pm of map.markers) {
       if (!this.shown(pm)) continue;
@@ -1084,8 +1200,11 @@ export class Land3D {
       if (m.kind === 'prop') this.placeProp(m.prop, pm.tx, pm.ty);
       else if (m.kind === 'waystone') {
         if (this.keepIt({ x: wx, y: wy, kind: 'waystone', dy: -30 })) {
-          this.add({ m: 'statue_obelisk', x, z, rot: 0, sx: this.sized('statue_obelisk', 2.5), shadow: 0.7, r: 0.5, g: 0.53, b: 0.62 });
-          this.glows.push({ x, z, y: 1.5, color: '#7fd4ff', size: 16 });
+          // (of the land's own stone, its rune in the land's own light)
+          const ws = WAYSTONES[region.theme] ?? WAYSTONES.default!;
+          const wc = hexRgb(ws[0]);
+          this.add({ m: 'statue_obelisk', x, z, rot: 0, sx: this.sized('statue_obelisk', 2.5), shadow: 0.7, r: wc[0], g: wc[1], b: wc[2] });
+          this.glows.push({ x, z, y: 1.5, color: ws[1], size: 16 });
         }
       } else if (m.kind === 'shrine') {
         if (this.keepIt({ x: wx, y: wy, kind: 'shrine', dy: -24 })) this.add({ m: 'shrine_candles', x, z, rot: 0, sx: this.sized('shrine_candles', 1.9), shadow: 0.8 });
@@ -1101,9 +1220,15 @@ export class Land3D {
         const door = ENTRANCES[m.to] ?? { m: 'cave_rock', w: 3 };
         const mesh = this.pack(door.m);
         if (mesh) {
-          const k = door.w / Math.max(0.01, mesh.max[0] - mesh.min[0]);
+          // (some gates lie along the model's other axis: turned to face the road, and sized by their real width)
+          const xw = mesh.max[0] - mesh.min[0];
+          const zw = mesh.max[2] - mesh.min[2];
+          const turned = zw > xw;
+          const k = Math.min(door.w / Math.max(0.01, turned ? zw : xw), 4.2 / Math.max(0.01, mesh.max[1] - mesh.min[1]));
+          const mx = ((mesh.min[0] + mesh.max[0]) / 2) * k;
+          const mz = ((mesh.min[2] + mesh.max[2]) / 2) * k;
           const c = door.tint ? hexRgb(door.tint) : ([1, 1, 1] as const);
-          this.add({ m: door.m, x: x - ((mesh.min[0] + mesh.max[0]) / 2) * k, z: z - ((mesh.min[2] + mesh.max[2]) / 2) * k - 0.35, rot: 0, sx: k, r: c[0], g: c[1], b: c[2] });
+          this.add({ m: door.m, x: x - (turned ? mz : mx), z: z - (turned ? -mx : mz) - 0.35, rot: turned ? Math.PI / 2 : 0, sx: k, r: c[0], g: c[1], b: c[2] });
         }
       }
     }
@@ -1113,7 +1238,8 @@ export class Land3D {
   private placeSlabs(): void {
     for (const pm of this.map.markers) {
       if (pm.marker.kind !== 'prop' || pm.marker.prop.split(':')[0] !== 'dais' || !this.shown(pm)) continue;
-      this.add({ m: 'statue_block', x: pm.tx + 0.5, z: pm.ty + 0.5, rot: 0, sx: 11 / Math.max(0.01, this.spanOf('statue_block', 0)), sy: 0.14 / Math.max(0.01, this.spanOf('statue_block', 1)), sz: 4 / Math.max(0.01, this.spanOf('statue_block', 2)) });
+      const stone = hexRgb(this.look.stone?.brick[0] ?? '#8a8698');
+      this.add({ m: 'statue_block', x: pm.tx + 0.5, z: pm.ty + 0.5, rot: 0, sx: 11 / Math.max(0.01, this.spanOf('statue_block', 0)), sy: 0.14 / Math.max(0.01, this.spanOf('statue_block', 1)), sz: 4 / Math.max(0.01, this.spanOf('statue_block', 2)), r: stone[0], g: stone[1], b: stone[2] });
     }
   }
 
@@ -1122,8 +1248,51 @@ export class Land3D {
     return m ? m.max[axis] - m.min[axis] : 1;
   }
 
+  /** One piece of a great work, its foot at (cx + part.x, cz + part.z) in tiles. */
+  placePart(p: GreatPart, cx: number, cz: number): void {
+    const tipX = ((p.tipX ?? 0) * Math.PI) / 180;
+    const tipZ = ((p.tipZ ?? 0) * Math.PI) / 180;
+    const rot = ((p.rot ?? 0) * Math.PI) / 180;
+    const c = p.tint ? hexRgb(p.tint) : ([1, 1, 1] as const);
+    const dim = this.region.kind === 'dungeon' ? 0.86 : 1;
+    if (p.kit) {
+      this.colossi.push({ kit: p.kit, x: cx + p.x, z: cz + p.z, lift: p.y ?? 0, rot, h: p.h ?? 8, clip: p.clip ?? 'idle', t: p.t ?? 0, tint: [c[0] * dim, c[1] * dim, c[2] * dim], tipX, tipZ, stone: p.stone ?? 1 });
+      return;
+    }
+    const mesh = this.pack(p.m!);
+    if (!mesh) return;
+    const w = Math.max(0.01, mesh.max[0] - mesh.min[0]);
+    const t = Math.max(0.01, mesh.max[1] - mesh.min[1]);
+    const d = Math.max(0.01, mesh.max[2] - mesh.min[2]);
+    const k = (p.h ?? 1) / t;
+    const sx = p.box ? p.box[0] / w : k;
+    const sy = p.box ? p.box[1] / t : k;
+    const sz = p.box ? p.box[2] / d : k;
+    // its foot's middle goes on the spot, however it's turned or tipped
+    const foot = new THREE.Vector3(((mesh.min[0] + mesh.max[0]) / 2) * sx, mesh.min[1] * sy, ((mesh.min[2] + mesh.max[2]) / 2) * sz).applyEuler(new THREE.Euler(tipX, rot, tipZ, 'YXZ'));
+    const y = p.y ?? 0;
+    const sunk = y < 0 || tipX !== 0 || tipZ !== 0;
+    const roofed = p.m!.startsWith('b_') && !p.tint && !p.m!.includes('#') ? `${p.m}#${this.roofOf(Math.floor(cx), Math.floor(cz))}` : p.m!;
+    const piece: Giant = { m: `${sunk ? '~' : ''}${roofed}`, x: cx + p.x - foot.x, z: cz + p.z - foot.z, y: y - foot.y, rot, sx, sy, sz, r: c[0] * dim, g: c[1] * dim, b: c[2] * dim, sway: p.sway ?? 0, shadow: p.shadow ?? 0, shadowD: p.shadowD ?? 1, tipX, tipZ, reach: Math.max(w * sx, t * sy, d * sz) + 2 };
+    this.giants.push(piece);
+    if (p.flame) this.flames.push({ x: cx + p.x, z: cz + p.z, y: y + (p.flameY ?? 1), size: p.flame });
+    if (p.glow) this.glows.push({ x: cx + p.x, z: cz + p.z, y: y + (p.glowY ?? t * sy), color: p.glow, size: p.glowSize ?? 16 });
+  }
+
+  /** A great work, by its name in the table. */
+  private placeGreat(id: string, tx: number, ty: number): void {
+    const work = GREAT[id];
+    if (!work) return;
+    this.objects.push({ x: (tx + 0.5) * TILE, y: (ty + 1) * TILE, kind: 'great', name: id, dy: -200 });
+    for (const p of work.parts) this.placePart(p, tx + 0.5, ty + 0.5);
+  }
+
   private placeProp(prop: string, tx: number, ty: number): void {
     const [name, param] = prop.split(':') as [string, string | undefined];
+    if (name === 'great') {
+      this.placeGreat(param!, tx, ty);
+      return;
+    }
     const def = PROPS[name];
     const x = tx + 0.5;
     const z = ty + 0.5;
@@ -1146,7 +1315,8 @@ export class Land3D {
     const big = (def.w ?? 0) > 40;
     const ox = big ? -((mesh.min[0] + mesh.max[0]) / 2) * size.sx : 0;
     const oz = big ? -((mesh.min[2] + mesh.max[2]) / 2) * size.sz : 0;
-    this.add({ m: model, x: x + ox, z: z + oz, rot, sx: size.sx, sy: size.sy, sz: size.sz, shadow: def.flat || (def.h ?? 0) < 12 ? 0 : Math.min(2.4, ((def.w ?? TILE) / TILE) * 0.65), y: def.flat ? 0.02 : 0, r: c[0], g: c[1], b: c[2] });
+    const sw = def.w ?? TILE;
+    this.add({ m: model, x: x + ox, z: z + oz, rot, sx: size.sx, sy: size.sy, sz: size.sz, shadow: def.flat || (def.h ?? 0) < 12 ? 0 : Math.min(2.4, (sw / TILE) * 0.65), shadowD: Math.min(1, (def.d ?? sw) / sw + 0.1), y: def.flat ? 0.02 : 0, r: c[0], g: c[1], b: c[2] });
     if (def.flame) this.flames.push({ x, z, y: (def.flameAt ?? 10) / TILE, size: def.flame });
     if (def.glow) this.glows.push({ x, z, y: ((def.h ?? 10) + 2) / TILE, color: def.glow, size: 9 });
     if (def.hero) this.statues.push({ x: x * TILE, y: z * TILE, h: def.hero, lift: (def.h ?? 0) / TILE, tint: c });
@@ -1157,7 +1327,9 @@ export class Land3D {
     if (!s) {
       const m = this.pack(id);
       if (!m) return null;
-      s = new Stand(m, this.group, Math.max(16, want), colorsFor(m, this.look, id));
+      const plain = id.replace('~', '');
+      // (a person's parts and weapons keep their own colors: bone is bone, gold is gold)
+      s = new Stand(m, this.group, Math.max(16, want), this.packs.hero.meshes[plain] === m ? m.col : colorsFor(m, this.look, plain), id.startsWith('~'));
       this.stands.set(id, s);
     }
     return s;
@@ -1233,11 +1405,26 @@ export class Land3D {
           w.push(p);
           if (p.shadow > 0 && shadow < 600) {
             const size = p.shadow * 1.6;
-            m4.makeScale(size, 1, size);
+            m4.makeScale(size, 1, size * (p.shadowD ?? 1));
             m4.setPosition(p.x, 0, p.z);
             this.shadows.setMatrixAt(shadow++, m4);
           }
         }
+      }
+    }
+    for (const p of this.giants) {
+      if (p.x + p.reach < x0 || p.x - p.reach > x1 || p.z + p.reach < z0 || p.z - p.reach > z1) continue;
+      let w = want.get(p.m);
+      if (!w) {
+        w = [];
+        want.set(p.m, w);
+      }
+      w.push(p);
+      if (p.shadow > 0 && shadow < 600) {
+        const size = p.shadow * 1.6;
+        m4.makeScale(size, 1, size * (p.shadowD ?? 1));
+        m4.setPosition(p.x, 0, p.z);
+        this.shadows.setMatrixAt(shadow++, m4);
       }
     }
     this.shadows.count = shadow;
@@ -1256,7 +1443,7 @@ export class Land3D {
         s = this.standOf(id, list.length * 2)!;
       }
       s.begin();
-      for (const p of list) s.put(p.x, p.y, p.z, p.rot, p.sx, p.sy, p.sz, p.r, p.g, p.b, p.sway);
+      for (const p of list) s.put(p.x, p.y, p.z, p.rot, p.sx, p.sy, p.sz, p.r, p.g, p.b, p.sway, p.tipX ?? 0, p.tipZ ?? 0);
       s.end();
     }
   }

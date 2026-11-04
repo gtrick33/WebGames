@@ -42,7 +42,7 @@ export const BRACKENRIDGE = wildRegion(
     hubs: [
       {
         at: [0.72, 0.42],
-        plan: 'green',
+        plan: 'ring',
         npcs: ['warden-hollis', 'mother-alsa', 'pip-tanner'],
         houses: 5,
         // while Fernstead is the Host's, its people are in Briarhollow's camp
