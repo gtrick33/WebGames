@@ -307,6 +307,12 @@ export function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => 
     // 'none' first, so the fullscreenchange that follows reads as the player's own exit
     apply('none');
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+    // the screen was turned to landscape for the game: the phone is the player's to turn again
+    try {
+      screen.orientation?.unlock?.();
+    } catch {
+      /* nothing was locked */
+    }
   };
 
   const exitRef = useRef(exit);

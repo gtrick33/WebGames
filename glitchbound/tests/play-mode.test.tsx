@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FULLSCREEN_WATCHDOG_MS, keepTabInside, usePlayMode } from '../src/pages/GamePage';
@@ -65,6 +66,26 @@ describe('play mode on a touch screen', () => {
     expect(document.documentElement.classList.contains('game-focus')).toBe(true);
     expect(onPause).toHaveBeenCalledTimes(1);
     expect(onLeave).not.toHaveBeenCalled();
+  });
+
+  it('lets the phone turn again when the player exits', () => {
+    const unlock = vi.fn();
+    vi.stubGlobal('screen', { orientation: { unlock } });
+    const { play } = setup(true);
+    act(() => play().enter());
+    act(() => play().exit());
+    expect(unlock).toHaveBeenCalled();
+  });
+
+  // An iPhone turned on its side and back left a stage sized by aspect-ratio with no height at all (only its border
+  // showed), so a stage has to say its height outright: what's inside it is placed absolutely and can't hold it open.
+  it('every shape of stage has a height of its own, and none leans on aspect-ratio', () => {
+    const css = readFileSync('src/components/GameStage.css', 'utf8');
+    for (const shape of ['portrait', 'landscape', 'square']) {
+      const rule = new RegExp(`\\.stage-${shape} \\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+      expect(rule, shape).toMatch(/^\s*height:/m);
+    }
+    expect(css).not.toContain('aspect-ratio:');
   });
 
   it('asks for full screen again on the next tap, and the game stays paused when it lands (PU-05)', () => {

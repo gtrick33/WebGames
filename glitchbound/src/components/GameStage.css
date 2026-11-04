@@ -25,15 +25,17 @@
   -webkit-user-select: text;
   user-select: text;
 }
-/* Explicit widths (not only aspect-ratio): Safari gives aspect-ratio boxes zero width in auto grid tracks. */
+/* Explicit sizes, never aspect-ratio. Everything in a stage is placed absolutely, so nothing else holds it open.
+   Safari gives aspect-ratio boxes zero width in auto grid tracks, and on an iPhone turned on its side and back, a
+   stage whose ratio the rule below had switched off came back with no height at all. */
 .stage-portrait {
   height: var(--stage-h);
   width: min(100%, calc(var(--stage-h) * 0.625));
 }
 .stage-landscape {
   width: 100%;
-  aspect-ratio: 16 / 9;
-  max-height: calc(100svh - var(--header-h) - 120px);
+  /* 16:9 of the page's width between its gutters, never so tall that it runs past the screen */
+  height: clamp(170px, calc((100vw - 2 * var(--gutter)) * 9 / 16), max(170px, calc(100svh - var(--header-h) - 120px)));
 }
 .stage-square {
   height: var(--stage-h);
@@ -48,15 +50,11 @@
   .stage-landscape {
     width: 100%;
     height: var(--stage-h);
-    max-height: none;
-    aspect-ratio: auto;
   }
 }
 .stage:fullscreen {
   width: 100vw;
   height: 100vh;
-  max-height: none;
-  aspect-ratio: auto;
   border: 0;
   border-radius: 0;
   box-shadow: none;
@@ -251,9 +249,6 @@
   .stage-landscape {
     width: 100%;
     height: calc(100svh - var(--header-h) - 84px - env(safe-area-inset-bottom));
-    min-height: 0;
-    max-height: none;
-    aspect-ratio: auto;
   }
 }
 
@@ -270,7 +265,6 @@
   z-index: 400;
   width: 100vw;
   height: 100dvh;
-  max-height: none;
   border: 0;
   border-radius: 0;
   box-shadow: none;
