@@ -58,6 +58,24 @@ describe('the home page asks for the banner at once', () => {
   });
 });
 
+describe('a game page holds still as it loads', () => {
+  const page = readFileSync(join(process.cwd(), 'src/pages/GamePage.tsx'), 'utf8');
+  const css = readFileSync(join(process.cwd(), 'src/pages/GamePage.css'), 'utf8');
+
+  it('has the board and the pins in its own code, not arriving after the first paint', () => {
+    expect(page).toMatch(/import \{ MiniLeaderboard \} from '\.\.\/components\/Leaderboard'/);
+    expect(page).toMatch(/import \{ GamePins, PinToast \} from '\.\.\/components\/Pins'/);
+    expect(page).not.toMatch(/lazy\w*\(.*components\/(Leaderboard|Pins)/);
+  });
+
+  it('keeps the board’s panel as tall as a full board from the start', () => {
+    const rule = css.slice(css.indexOf('.gi-panels {'));
+    const height = Number(/min-height: (\d+)px/.exec(rule.slice(0, rule.indexOf('}')))?.[1]);
+    // five rows of 50px, four gaps of 6px, the 12px gap and the 26px link
+    expect(height).toBeGreaterThanOrEqual(5 * 50 + 4 * 6 + 12 + 26);
+  });
+});
+
 describe('the online controls on a game’s own panel', () => {
   it('keep dark words on Backgammon’s and Belot’s cream panels in the dark theme', () => {
     for (const [file, cls] of [['backgammon', 'tb-online'], ['belot', 'bl-online']] as const) {

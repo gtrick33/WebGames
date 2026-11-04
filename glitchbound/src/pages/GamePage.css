@@ -453,9 +453,11 @@
   color: var(--fg);
   box-shadow: var(--hard-sm);
 }
+/* As tall as a full board from the start (five rows and the link), so nothing under it moves when the rows
+   arrive. Lighthouse counts that move as layout shift. */
 .gi-panels {
   display: grid;
-  min-height: 120px;
+  min-height: 312px;
 }
 /* both panels in the same cell: the hidden one still holds its height */
 .gi-panel {
@@ -466,6 +468,23 @@
 }
 .gi-panel:not(.is-on) {
   visibility: hidden;
+}
+/* A short board or its message sits in that space on purpose: the link keeps to the bottom. */
+#gi-panel-board {
+  align-content: stretch;
+}
+.gi-panel .mini-board {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gi-panel .mini-board > .board-empty,
+.gi-panel .mini-board > .side-muted {
+  margin-block: auto;
+}
+.gi-panel .mini-board > .quests-link {
+  align-self: flex-start;
+  margin-top: auto;
 }
 .gi-panel.is-on {
   animation: pop-in 0.25s var(--out) both;
