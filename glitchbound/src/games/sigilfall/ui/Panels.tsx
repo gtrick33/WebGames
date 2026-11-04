@@ -1453,6 +1453,7 @@ const ART_CREDITS = [
   'Gloomvault Crypt by Certainity',
   'Skill and talent icons: Nasha’s Lumenfall, Skill & Spell Icons Vol. 1, by nanasha.',
   '3D models: KayKit by Kay Lousberg, Kenney, and Quaternius.',
+  'Sound effects: RPG Sound Pack by artisticdude.',
 ];
 
 /** The hero in everything they wear (and the Wardrobe looks over it); tap to turn them around. */

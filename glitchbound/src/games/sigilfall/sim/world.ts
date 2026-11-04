@@ -27,6 +27,7 @@ import { goldDrop, itemName, makeItem, rollLoot, rollRarity, salvageValue, type 
 import type { Settings } from '../progress/save';
 import { learnLooks } from '../progress/wardrobe';
 import { addParagonXp, paragonXp } from '../progress/paragon';
+import { deathSound } from '../data/voices';
 import { separate, updateEnemy, updatePuppet } from './ai';
 import { refreshPets, summonPet, updatePets } from './pets';
 import { spawnFolk, updateFolk, type Folk } from './folk';
@@ -1578,7 +1579,7 @@ export class World {
     const h = this.hero;
     if (this.coop?.role === 'host') this.coop.out.push({ t: 'kill', id: e.id });
     this.fxBurst(e.x, e.y, e.elite.length ? '#ffd36b' : '#e8e0ff', e.elite.length ? 18 : 9, e.r);
-    this.sfx(e.boss ? 'bossDie' : 'die', 0.6);
+    this.sfx(e.boss ? 'bossDie' : deathSound(e.def), 0.6);
     if (e.boss) {
       e.dead = false;
       e.hp = 1;

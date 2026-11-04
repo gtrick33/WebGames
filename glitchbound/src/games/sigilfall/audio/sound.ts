@@ -1,12 +1,19 @@
+import { SAMPLES, sampleFiles, type SampleDef } from './samples';
 import { Score } from './score';
 import { SONGS, type SongId } from './songs';
 
 /**
- * Sigilfall's sound: synthesized effects (no audio files) and a procedural score, a song for every land
- * (audio/songs.ts, played by audio/score.ts), with a boss theme. The AudioContext is created on the first
- * tap or key (browsers block sound before that), effects are rate-limited so a big fight never turns into
- * noise, and everything follows the master / music / effects volumes and the mute switch.
+ * Sigilfall's sound: effects, some recorded (audio/samples.ts), the rest and the fallback synthesized, and a procedural
+ * score, a song for every land (audio/songs.ts, played by audio/score.ts), with a boss theme. The AudioContext is
+ * created on the first tap or key (browsers block sound before that), effects are rate-limited so a big fight never
+ * turns into noise, and everything follows the master / music / effects volumes and the mute switch.
  */
+
+const AUDIO_BASE = '/games/sigilfall/audio/';
+/** Bump when the built files change, so a browser doesn't keep old ones. */
+const AUDIO_VERSION = '1';
+/** How many recordings sound at once, at most (a phone has its limits, and past this nobody can tell). */
+const MAX_VOICES = 24;
 
 export type MusicId = SongId | null;
 
@@ -25,7 +32,7 @@ interface Voice {
 const hz = (m: number): number => 440 * 2 ** ((m - 69) / 12);
 
 /** Effects: a few tones and noise bursts each. */
-const SFX: Record<string, (s: Sound) => void> = {
+export const SFX: Record<string, (s: Sound) => void> = {
   bolt: (s) => s.tones([{ f: 740, to: 420, dur: 0.09, gain: 0.05, type: 'triangle' }]),
   fireball: (s) => (s.noise(0.18, 0.06, 900, 'lowpass'), s.tones([{ f: 220, to: 110, dur: 0.18, gain: 0.05, type: 'sawtooth' }])),
   bow: (s) => (s.noise(0.06, 0.05, 3000, 'highpass'), s.tones([{ f: 300, to: 180, dur: 0.06, gain: 0.04, type: 'triangle' }])),
@@ -52,7 +59,19 @@ const SFX: Record<string, (s: Sound) => void> = {
   mark: (s) => s.tones([{ f: 1000, dur: 0.06, gain: 0.03, type: 'triangle' }, { f: 1500, dur: 0.08, gain: 0.03, type: 'triangle', at: 0.06 }]),
   hit: (s) => s.tones([{ f: 260, to: 140, dur: 0.05, gain: 0.04, type: 'square' }]),
   crit: (s) => (s.tones([{ f: 520, to: 260, dur: 0.07, gain: 0.05, type: 'square' }]), s.noise(0.06, 0.04, 3000, 'highpass')),
+  // a blade landing (its recording is steel; until that comes in, a hit)
+  clash: (s) => s.tones([{ f: 260, to: 140, dur: 0.05, gain: 0.04, type: 'square' }]),
+  critBlade: (s) => (s.tones([{ f: 520, to: 260, dur: 0.07, gain: 0.05, type: 'square' }]), s.noise(0.06, 0.04, 3000, 'highpass')),
   die: (s) => s.tones([{ f: 300, to: 80, dur: 0.18, gain: 0.04, type: 'triangle' }]),
+  // how each kind falls (data/voices.ts): until its recording comes in, the same fall
+  dieBone: (s) => (s.noise(0.1, 0.03, 2600, 'bandpass'), s.tones([{ f: 300, to: 80, dur: 0.16, gain: 0.03, type: 'triangle' }])),
+  dieGhost: (s) => s.tones([{ f: 500, to: 220, dur: 0.3, gain: 0.03, type: 'sine' }]),
+  dieSlime: (s) => s.tones([{ f: 180, to: 300, dur: 0.08, gain: 0.03, type: 'sine' }]),
+  dieBug: (s) => (s.noise(0.05, 0.03, 3000, 'highpass'), s.tones([{ f: 420, to: 160, dur: 0.1, gain: 0.03, type: 'square' }])),
+  dieOgre: (s) => s.tones([{ f: 180, to: 60, dur: 0.3, gain: 0.05, type: 'sawtooth' }]),
+  dieBeast: (s) => s.tones([{ f: 260, to: 90, dur: 0.22, gain: 0.04, type: 'sawtooth' }]),
+  // (healing had no sound at all)
+  heal: (s) => s.tones([{ f: hz(76), to: hz(83), dur: 0.2, gain: 0.025, type: 'sine' }, { f: hz(83), dur: 0.2, gain: 0.018, type: 'sine', at: 0.08 }]),
   hurt: (s) => (s.tones([{ f: 180, to: 90, dur: 0.15, gain: 0.07, type: 'sawtooth' }]), s.noise(0.08, 0.05, 1000, 'lowpass')),
   shield: (s) => s.tones([{ f: 600, to: 900, dur: 0.15, gain: 0.03, type: 'sine' }]),
   shieldBreak: (s) => s.noise(0.15, 0.05, 2500, 'highpass'),
@@ -150,6 +169,12 @@ export class Sound {
   private musicBus: GainNode | null = null;
   private noiseBuf: AudioBuffer | null = null;
   private last = new Map<string, number>();
+  /** The recordings that have come in, by file. */
+  private readonly recordings = new Map<string, AudioBuffer>();
+  private fetching = false;
+  /** Which file each sound played last (not the same one twice running). */
+  private readonly lastFile = new Map<string, string>();
+  private voices = 0;
   private music: MusicId = null;
   private wanted: MusicId = null;
   private score: Score | null = null;
@@ -170,7 +195,14 @@ export class Sound {
       this.master = this.ctx.createGain();
       this.sfxBus = this.ctx.createGain();
       this.musicBus = this.ctx.createGain();
-      this.sfxBus.connect(this.master);
+      // (so that a hundred blows at once are loud, not broken)
+      const limit = this.ctx.createDynamicsCompressor();
+      limit.threshold.value = -14;
+      limit.knee.value = 10;
+      limit.ratio.value = 5;
+      limit.attack.value = 0.003;
+      limit.release.value = 0.2;
+      this.sfxBus.connect(limit).connect(this.master);
       this.musicBus.connect(this.master);
       this.master.connect(this.ctx.destination);
       const len = this.ctx.sampleRate;
@@ -179,6 +211,7 @@ export class Sound {
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       this.applyVolumes();
       this.timer = window.setInterval(() => this.schedule(), 90);
+      this.fetchRecordings();
     }
     // stopped by the browser rather than by the game (a phone's 'interrupted' after it was put away): a touch
     // or a key starts it again
@@ -225,8 +258,62 @@ export class Sound {
     if (now - prev < 0.045) return;
     this.last.set(id, now);
     this.volScale = vol;
-    SFX[id]?.(this);
+    const def = SAMPLES[id];
+    const played = def ? this.playRecording(id, def, vol) : false;
+    // the recording alone; or with the synth under it for weight; or, until it has come in, the synth
+    if (!played) SFX[id]?.(this);
+    else if (def!.layer) {
+      this.volScale = vol * 0.7;
+      SFX[id]?.(this);
+    }
     this.volScale = 1;
+  }
+
+  /** Brings the recordings in, a few at a time, behind everything else. Any that fail leave their synthesized sound. */
+  private fetchRecordings(): void {
+    const c = this.ctx;
+    if (!c || this.fetching) return;
+    this.fetching = true;
+    const files = sampleFiles();
+    let next = 0;
+    const worker = async (): Promise<void> => {
+      while (next < files.length && this.ctx === c) {
+        const file = files[next++]!;
+        try {
+          const res = await fetch(`${AUDIO_BASE}${file}.mp3?v=${AUDIO_VERSION}`);
+          if (res.ok) this.recordings.set(file, await c.decodeAudioData(await res.arrayBuffer()));
+        } catch {
+          // (its synthesized sound stays)
+        }
+      }
+    };
+    for (let i = 0; i < 3; i++) void worker();
+  }
+
+  private playRecording(id: string, def: SampleDef, vol: number): boolean {
+    const c = this.ctx;
+    if (!c || !this.sfxBus) return false;
+    const ready = def.files.filter((f) => this.recordings.has(f));
+    if (!ready.length) return false;
+    // (full up: it is lost in the din anyway, and the synth shouldn't step in)
+    if (this.voices >= MAX_VOICES) return true;
+    const fresh = ready.length > 1 ? ready.filter((f) => f !== this.lastFile.get(id)) : ready;
+    const file = fresh[Math.floor(Math.random() * fresh.length)]!;
+    this.lastFile.set(id, file);
+    const src = c.createBufferSource();
+    src.buffer = this.recordings.get(file)!;
+    src.playbackRate.value = def.rate[0] + Math.random() * (def.rate[1] - def.rate[0]);
+    const g = c.createGain();
+    g.gain.value = def.gain * vol;
+    src.connect(g).connect(this.sfxBus);
+    this.voices++;
+    src.onended = (): void => {
+      this.voices--;
+      src.disconnect();
+      g.disconnect();
+    };
+    src.start();
+    return true;
   }
 
   private volScale = 1;
