@@ -127,7 +127,7 @@ interface PropDef {
 const PROPS: Record<string, PropDef> = {
   // the road and the yard
   lamp: { m: 'post_lantern', w: 16, d: 16, h: 46 },
-  lantern: { m: 'lantern_standing', w: 12, d: 12, h: 20 },
+  lantern: { m: 'lantern_standing', w: 12, d: 12, h: 20, glow: '#ffc060' },
   torch: { m: 'torch_lit', w: 12, d: 12, h: 32, flame: 0.8, flameAt: 32 },
   'iron-torch': { m: 'torch_lit', w: 12, d: 12, h: 32, flame: 0.8, flameAt: 32 },
   brazier: { m: 'bucket', w: 18, d: 18, h: 20, tint: '#7c7a8a', flame: 1, flameAt: 20 },

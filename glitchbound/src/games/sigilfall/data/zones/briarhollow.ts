@@ -203,7 +203,7 @@ function plan(): SpreadPlan {
     ['briar-road', 32, 3],
     ['briar-courier-falls', 32, 15],
     // the east wall's roofs, where the raiders came over
-    ['briar-east-roofs', 50, 31],
+    ['briar-east-roofs', 47, 32],
     ['briar-east', 56, 26],
     ['briar-west', 5, 26],
     ['briar-south', 31, 49],
@@ -219,7 +219,8 @@ function plan(): SpreadPlan {
     c.marker(x, y, { kind: 'place', id });
 
   // fires on the roofs while the village burns, catching one after another once the bell has rung (seconds
-  // after the burning begins: the chapel's side while the camera is on the bell, the east wall's after);
+  // after the burning begins: the chapel's side while the camera is on the bell, the east wall's as it gets there,
+  // the scene starting three seconds in, once the fight at the gate has died down: data/scenes.ts briar-the-toll);
   // the inn catches when its beat comes
   for (const [x, y, s, delay] of [
     [43, 21, 2, 5],

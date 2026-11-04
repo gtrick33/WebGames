@@ -145,6 +145,9 @@ export const WEEPING_WOODS = wildRegion(
       { near: 'larks-hollow', dx: 0, dy: 2, marker: { kind: 'npc', npc: 'echo-of-ysane' }, when: until('wood-the-children') },
       { near: 'larks-hollow', dx: 0, dy: 3, marker: { kind: 'place', id: 'hollow-door' } },
       { near: 'larks-hollow', dx: -12, dy: 8, marker: { kind: 'place', id: 'hollow-wood' } },
+      // (the lanterns the children took out with them, still burning: what the camera finds in the dark)
+      { near: 'larks-hollow', dx: -13, dy: 7, marker: { kind: 'prop', prop: 'lantern' } },
+      { near: 'larks-hollow', dx: -10, dy: 9, marker: { kind: 'prop', prop: 'lantern' } },
       { near: 'larks-hollow', dx: -4, dy: -9, marker: { kind: 'place', id: 'hollow-n' } },
       { near: 'larks-hollow', dx: 10, dy: 4, marker: { kind: 'place', id: 'hollow-e' } },
       { near: 'larks-hollow', dx: -6, dy: 14, marker: { kind: 'place', id: 'hollow-s' } },

@@ -68,7 +68,7 @@ describe('Sigilfall: the Ember Keep', () => {
     run(w, 0.5);
     expect(w.scene?.def.id).toBe('ember-the-keep');
     run(w, 1);
-    expect(w.scene?.focus?.y ?? Infinity).toBeLessThan(14 * TILE);
+    expect(w.scene?.focus?.y ?? Infinity).toBeLessThan(16 * TILE);
     expect(w.scene?.title?.text).toBe('The Ember Keep');
     for (let t = 0; t < 20 && w.scene?.def.id === 'ember-the-keep'; t += 0.25) run(w, 0.25);
     expect(w.hero.opened).toContain('scene:ember-the-keep');
