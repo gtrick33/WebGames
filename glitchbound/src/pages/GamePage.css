@@ -248,6 +248,11 @@
   gap: 24px;
 }
 
+.ad-retry {
+  display: grid;
+  gap: 6px;
+  margin-block: 10px;
+}
 .ad-slot {
   display: grid;
   gap: 6px;

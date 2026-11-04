@@ -2235,6 +2235,14 @@ const pt: string[] = [
   'A GlitchBound é um estúdio independente. Cada jogo é pensado e feito aqui. Alguns partem de uma ideia clássica, como um jogo de cartas ou de palavras, e dão-lhe um toque nosso. Parte da arte e do som é licenciada e creditada no jogo.',
   'Ainda ninguém está no Hall da Fama. Joga e estabelece o primeiro recorde.',
   'As tabelas ainda são frescas, por isso uma coroa está bem ao teu alcance. Faz um recorde e conquista uma.',
+  'Opções de anúncios',
+  'Mais uma tentativa',
+  'Veja um anúncio curto para mais uma tentativa',
+  'Esta tentativa extra não conta para as classificações.',
+  'Loja',
+  'Um estúdio independente que cria pequenos jogos de navegador e uma grande aventura. Nada para instalar, e você nunca precisa pagar para jogar. Jogue como convidado ou entre para missões e classificações.',
+  'Todos os jogos rodam aqui no seu navegador, em qualquer dispositivo. Sem conta e sem paywalls.',
+  'GlitchBound é um arcade independente no navegador: {n} jogos rápidos que começam em um segundo, um RPG de fantasia e o modo Festa para grupos. Sem instalar, sem conta, e você nunca precisa pagar para jogar.',
 ];
 
 export default pt;

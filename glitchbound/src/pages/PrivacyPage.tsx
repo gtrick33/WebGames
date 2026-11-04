@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { GAMES } from '../catalog/games';
 import { Icon } from '../components/Icon';
 import { api, useAccount } from '../platform/account';
-import { ADS, ANALYTICS } from '../platform/env';
+import { ANALYTICS } from '../platform/env';
+import { openAdChoices } from '../platform/adScript';
+import { bannersOn, rewardedOn, useMoney } from '../platform/money';
 import { usePageMeta } from '../platform/meta';
 import { storageKeys } from '../platform/qa';
 import { CONTACT_PATH, OWNER_EMAIL } from './infoText';
@@ -18,6 +20,8 @@ export function PrivacyPage() {
   usePageMeta({ title: 'Privacy & your data', description: 'What GlitchBound stores, what it does not, and how to delete your data.', path: '/privacy' });
   const save = useSave();
   const { me } = useAccount();
+  const money = useMoney();
+  const adsOn = bannersOn(money) || rewardedOn(money);
   const [confirming, setConfirming] = useState(false);
   const [cleared, setCleared] = useState(false);
   const rounds = Object.values(save.games).reduce((n, g) => n + g.plays, 0);
@@ -89,7 +93,7 @@ export function PrivacyPage() {
             Daily Challenges and the scores of rounds you finish while signed in. We also keep a copy of each game&rsquo;s save (today&rsquo;s dailies,
             a daily you left halfway, your bests), so your progress follows you to every device; a save nobody changed for 180 days is deleted, and
             deleting your GlitchBound data above removes the copies too. Leaderboards show only your nickname and level. We use a single essential
-            cookie to keep you signed in.
+            cookie to keep you signed in{adsOn ? '; the cookies ads may use are covered under Advertising below.' : '.'}
           </p>
           <p>
             The GlitchBound team can look at a signed-in player&rsquo;s Sigilfall save (heroes, gear, quests and progress) to help them, and can fix it, for
@@ -166,19 +170,39 @@ export function PrivacyPage() {
 
         <section className="panel info-block" aria-labelledby="p-ads">
           <h2 id="p-ads">Advertising</h2>
-          {ADS.enabled ? (
-            <p>
-              Some pages show ads from Google AdSense, clearly labelled and never inside a game. Google may use cookies for ads; visitors in the EU, UK
-              and Switzerland are asked for consent first. See{' '}
-              <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">
-                how Google uses data <Icon name="external" size={14} />
-              </a>
-              .
-            </p>
+          {adsOn ? (
+            <>
+              <p>
+                Some pages show ads from Google, clearly labeled and never inside a game or on a page for adults only. Google and its partners may use cookies and
+                similar technology to show and measure ads. If you are in the EU, UK or Switzerland, you are asked first: ads that use your data for personalizing
+                only run if you agree, and saying no never stops you playing. We rely on that consent for these ads, and you can withdraw it at any time.{' '}
+                <button className="link-btn" onClick={openAdChoices}>
+                  Change your ad choices
+                </button>
+                . See{' '}
+                <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">
+                  how Google uses data <Icon name="external" size={14} />
+                </a>
+                .
+              </p>
+              {rewardedOn(money) && <p>If you choose to watch an ad for one more try at a daily, we only learn that it was watched: nothing about you goes to us from Google.</p>}
+              <p>GlitchBound isn&rsquo;t aimed at children, and we don&rsquo;t ask Google to target anyone by age.</p>
+            </>
           ) : (
-            <p>There are no ads on GlitchBound right now.</p>
+            <p>There are no ads on GlitchBound right now. If we start showing ads from Google, this section will say so first, with what they do with your data and how to choose.</p>
           )}
         </section>
+
+        {money.shop && (
+          <section className="panel info-block" aria-labelledby="p-buy">
+            <h2 id="p-buy">Purchases</h2>
+            <p>
+              When you buy something, our payment provider, Stripe, takes your payment and is the seller on the receipt. We never see your card. We keep what you
+              bought, when, what it cost, and your agreement to get it right away, so it stays yours and for our accounts. We keep those records as long as tax and
+              accounting law requires, even if you delete your account, but no longer linked to your profile.
+            </p>
+          </section>
+        )}
 
         {embeds.length > 0 && (
           <section className="panel info-block" aria-labelledby="p-games">
@@ -199,9 +223,9 @@ export function PrivacyPage() {
         <section className="panel info-block" aria-labelledby="p-who">
           <h2 id="p-who">Who is responsible, and who helps</h2>
           <p>
-            GlitchBound is run by Sava Hristov, who is responsible for your data (the &ldquo;controller&rdquo;). You can write to{' '}
+            GlitchBound is run by Sava Hristov{money.address ? `, ${money.address}` : ''}, who is responsible for your data (the &ldquo;controller&rdquo;). You can write to{' '}
             <a href={`mailto:${OWNER_EMAIL}`}>{OWNER_EMAIL}</a>. A few service providers process it only on our
-            behalf: Cloudflare (hosting, database and live rooms), Google (sign-in, if you choose it), Resend (emails) and GitHub (our bug tracker).
+            behalf: Cloudflare (hosting, database and live rooms), Google (sign-in, if you choose it{adsOn ? ', and ads' : ''}), Resend (emails){money.shop ? ', Stripe (payments)' : ''} and GitHub (our bug tracker).
             Some of them are based in the US and protect transfers with the EU&rsquo;s standard contractual clauses or the EU&ndash;US Data Privacy
             Framework. We never sell your data.
           </p>

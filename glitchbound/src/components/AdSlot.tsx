@@ -1,12 +1,16 @@
 import { useEffect, useRef } from 'react';
+import { loadAdSense } from '../platform/adScript';
 import { ADS } from '../platform/env';
 import { embedHost } from '../platform/embed';
+import { useAdFree } from '../platform/adFree';
+import { bannersOn, useMoney } from '../platform/money';
 
 /**
- * Optional display ad (Google AdSense). Renders NOTHING unless VITE_ADSENSE_CLIENT is a valid
- * publisher id, VITE_ADS_ENABLED=on, and a slot id is configured for this placement.
- * Rules: never inside or over a game, always labelled, space reserved to avoid layout shift.
- * See docs/MONETIZATION.md.
+ * A banner ad (Google AdSense). Renders NOTHING unless the build has a publisher id and VITE_ADS_ENABLED=on, a slot id
+ * is set for this placement, and the admins have switched banners on (Admin › Ads & shop).
+ * Rules: never inside or next to a game (Google asks for 150 px at least), never on an adults-only page, none for a
+ * member who bought the ad-free experience, always labeled, space reserved so the page doesn't jump, and Google's
+ * script only loads when a slot is about to be seen. See docs/MONETIZATION.md.
  */
 declare global {
   interface Window {
@@ -14,33 +18,36 @@ declare global {
   }
 }
 
-let scriptAdded = false;
-function loadAdSense(client: string): void {
-  if (scriptAdded) return;
-  scriptAdded = true;
-  const s = document.createElement('script');
-  s.async = true;
-  s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(client)}`;
-  s.crossOrigin = 'anonymous';
-  document.head.appendChild(s);
-}
-
-export function AdSlot({ placement }: { placement: keyof typeof ADS.slots }) {
+export function AdSlot({ placement, adult = false }: { placement: keyof typeof ADS.slots; adult?: boolean }) {
+  const money = useMoney();
+  const adFree = useAdFree();
   // No ads inside the Discord Activity (Discord's sandbox blocks the ad script anyway).
   const slot = embedHost() ? '' : ADS.slots[placement];
+  const shown = placement === 'home' ? money.adsHome : money.adsGame;
+  const on = bannersOn(money) && shown && !!slot && !adult && !adFree;
   const ref = useRef<HTMLModElement>(null);
 
   useEffect(() => {
-    if (!ADS.enabled || !slot || !ref.current) return;
-    loadAdSense(ADS.client);
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch {
-      // An ad failing must never affect the page.
-    }
-  }, [slot]);
+    const el = ref.current;
+    if (!on || !el || typeof IntersectionObserver !== 'function') return;
+    const watch = new IntersectionObserver(
+      (seen) => {
+        if (!seen.some((s) => s.isIntersecting)) return;
+        watch.disconnect();
+        loadAdSense(ADS.client);
+        try {
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+        } catch {
+          // An ad failing must never affect the page.
+        }
+      },
+      { rootMargin: '300px' },
+    );
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, [on]);
 
-  if (!ADS.enabled || !slot) return null;
+  if (!on) return null;
   return (
     <aside className={`ad-slot ad-${placement}`} aria-label="Advertisement">
       <span className="ad-label mono">Advertisement</span>

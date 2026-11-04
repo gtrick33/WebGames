@@ -1,5 +1,6 @@
 import { useGames } from '../platform/liveCatalog';
 import { usePageMeta } from '../platform/meta';
+import { useMoney } from '../platform/money';
 import { ABOUT_DESCRIPTION } from './infoText';
 import { Link } from '../router/router';
 import { useT } from '../i18n';
@@ -9,13 +10,14 @@ export function AboutPage() {
   usePageMeta({ title: 'About', description: ABOUT_DESCRIPTION, path: '/about' });
   const t = useT();
   const games = useGames();
+  const money = useMoney();
 
   return (
     <div className="wrap info-page">
       <p className="eyebrow">{t('About')}</p>
       <h1 className="info-title">{t('Small games. Big obsessions.')}</h1>
       <p className="info-lead">
-        {t('GlitchBound is an independent browser arcade: {n} quick games that start in a second, a fantasy RPG, and Party Mode for groups. No installs, nothing to buy and no account needed.', { n: games.length })}
+        {money.shop ? t('GlitchBound is an independent browser arcade: {n} quick games that start in a second, a fantasy RPG, and Party Mode for groups. No installs, no account needed, and you never have to pay to play.', { n: games.length }) : t('GlitchBound is an independent browser arcade: {n} quick games that start in a second, a fantasy RPG, and Party Mode for groups. No installs, nothing to buy and no account needed.', { n: games.length })}
       </p>
 
       <div className="info-cols">

@@ -1,5 +1,6 @@
+import { sanitizeProducts } from '../src/catalog/shop';
 import { GAMES } from '../src/catalog/games';
-import { applySettings, dailyRules, EMPTY_CATALOG, sanitizeBanner, type DailyPick, type DailyRules, type GameSettings, type HomeLayout, type Notice, type PublicCatalog } from '../src/catalog/settings';
+import { applySettings, dailyRules, EMPTY_CATALOG, sanitizeBanner, sanitizeMoney, type DailyPick, type DailyRules, type GameSettings, type HomeLayout, type Notice, type PublicCatalog } from '../src/catalog/settings';
 import type { GameEntry } from '../src/catalog/types';
 import { isSeasonSetting } from '../src/platform/seasons';
 import { addDays } from '../src/platform/dates';
@@ -12,7 +13,7 @@ import type { Env } from './http';
 
 export async function loadCatalog(env: Env, from: string, to: string): Promise<PublicCatalog> {
   try {
-    const [settings, picks, notice, layout, season, party, flagships, multiplayer, banner] = await Promise.all([
+    const [settings, picks, notice, layout, season, party, flagships, multiplayer, banner, money, shopItems] = await Promise.all([
       env.DB.prepare('SELECT slug, data FROM game_settings').all<{ slug: string; data: string }>(),
       env.DB.prepare('SELECT day, slug, template, target FROM daily_picks WHERE day >= ? AND day <= ?').bind(from, to).all<{ day: string; slug: string; template: number | null; target: number | null }>(),
       env.DB.prepare("SELECT value FROM site_settings WHERE key = 'notice'").first<{ value: string }>(),
@@ -22,6 +23,8 @@ export async function loadCatalog(env: Env, from: string, to: string): Promise<P
       env.DB.prepare("SELECT value FROM site_settings WHERE key = 'flagships'").first<{ value: string }>(),
       env.DB.prepare("SELECT value FROM site_settings WHERE key = 'multiplayer'").first<{ value: string }>(),
       env.DB.prepare("SELECT value FROM site_settings WHERE key = 'banner'").first<{ value: string }>(),
+      env.DB.prepare("SELECT value FROM site_settings WHERE key = 'money'").first<{ value: string }>(),
+      env.DB.prepare("SELECT value FROM site_settings WHERE key = 'shop_items'").first<{ value: string }>(),
     ]);
     const out: PublicCatalog = { settings: {}, picks: {}, notice: null, layout: null };
     if (isSeasonSetting(season?.value)) out.season = season.value;
@@ -69,6 +72,20 @@ export async function loadCatalog(env: Env, from: string, to: string): Promise<P
         if (Array.isArray(list)) out.multiplayer = list.filter((x): x is string => typeof x === 'string');
       } catch {
         /* every live game */
+      }
+    }
+    if (shopItems?.value) {
+      try {
+        out.shopItems = sanitizeProducts(JSON.parse(shopItems.value));
+      } catch {
+        /* the starting list */
+      }
+    }
+    if (money?.value) {
+      try {
+        out.money = sanitizeMoney(JSON.parse(money.value));
+      } catch {
+        /* all off */
       }
     }
     if (banner?.value) {

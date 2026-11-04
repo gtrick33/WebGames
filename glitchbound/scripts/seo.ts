@@ -219,7 +219,7 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       image: '/og.png',
       imageAlt: SITE,
       jsonLd: { '@context': 'https://schema.org', '@type': 'Organization', name: SITE, url: `${siteUrl}/` },
-      body: `<section class="ssr"><h1>About ${SITE}</h1><p>${SITE} is an independent browser arcade: quick games that start in a second, plus Party Mode for groups. No installs, nothing to buy and no account needed.</p><h2>Who makes it</h2><p>${SITE} is an independent studio. Every game is designed and built here, code and art. Some start from a classic idea, like a card game or a word puzzle, and give it a twist of our own.</p><h2>Something new every day</h2><p>Most games have a daily round: the same puzzle for everyone, new at midnight your time.</p><h2>For all ages, with one exception</h2><p>The arcade is made for everyone. Crass Act and the After Dark party cards are for adults only: they carry an 18+ label and ask players to confirm their age before they start.</p><p><a href="/contact">Contact us</a> · <a href="/privacy">Privacy &amp; your data</a></p></section>`,
+      body: `<section class="ssr"><h1>About ${SITE}</h1><p>${SITE} is an independent browser arcade: quick games that start in a second, plus Party Mode for groups. No installs and no account needed.</p><h2>Who makes it</h2><p>${SITE} is an independent studio. Every game is designed and built here. Some of the art and sound is licensed, and credited in the game. Some start from a classic idea, like a card game or a word puzzle, and give it a twist of our own.</p><h2>Something new every day</h2><p>Most games have a daily round: the same puzzle for everyone, new at midnight your time.</p><h2>For all ages, with one exception</h2><p>The arcade is made for everyone. Crass Act and the After Dark party cards are for adults only: they carry an 18+ label and ask players to confirm their age before they start.</p><p><a href="/contact">Contact us</a> · <a href="/privacy">Privacy &amp; your data</a></p></section>`,
     },
     {
       path: '/contact',
@@ -257,6 +257,27 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       imageAlt: 'GlitchBound friends',
       noindex: true,
       body: `<section class="ssr"><h1>Friends</h1><p>Add friends with a code or a link, and compare on the friends boards.</p></section>`,
+    },
+    // (hidden from search, and "not found" for players, until the shop is opened in Admin › Ads & shop)
+    {
+      path: '/shop',
+      file: 'shop.html',
+      title: `Shop · ${SITE}`,
+      description: HOME_DESC,
+      image: '/og.png',
+      imageAlt: SITE,
+      noindex: true,
+      body: `<section class="ssr"><h1>Shop</h1><p>Optional one-time extras. Every game stays free to play.</p></section>`,
+    },
+    {
+      path: '/terms/sale',
+      file: 'terms/sale.html',
+      title: `Terms of sale · ${SITE}`,
+      description: HOME_DESC,
+      image: '/og.png',
+      imageAlt: SITE,
+      noindex: true,
+      body: `<section class="ssr"><h1>Terms of sale</h1><p>Prices, your right to withdraw, and refunds.</p></section>`,
     },
     {
       path: '/me',

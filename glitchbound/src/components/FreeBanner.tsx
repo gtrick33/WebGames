@@ -1,5 +1,6 @@
 import { useT } from '../i18n';
 import { useAccount } from '../platform/account';
+import { bannersOn, rewardedOn, useMoney } from '../platform/money';
 import { Icon } from './Icon';
 import { openSignIn } from './openSignIn';
 import './FreeBanner.css';
@@ -12,6 +13,7 @@ import './FreeBanner.css';
 export function FreeBanner() {
   const t = useT();
   const { me, status } = useAccount();
+  const money = useMoney();
   const perks = [t('Your bests and streaks on every device'), t('Leaderboards and the Hall of Fame'), t('Pins on your Trophy Shelf, friends and friend boards'), t('Daily quests, XP and levels'), t('Favorites that follow you')];
   return (
     <section className={`wrap free-band${me ? ' is-member' : ''}`} aria-labelledby="free-title">
@@ -22,7 +24,7 @@ export function FreeBanner() {
           <span className="free-w free-w3">{t('No downloads.')}</span>
         </h2>
         <p className="free-sub">
-          {t('Every game plays right here in your browser, on any device. No account, no paywalls, no catch.')}
+          {bannersOn(money) || rewardedOn(money) || money.shop ? t('Every game plays right here in your browser, on any device. No account and no paywalls.') : t('Every game plays right here in your browser, on any device. No account, no paywalls, no catch.')}
           {me && <span className="free-member mono"> ✓ {t('You’re a member')}</span>}
         </p>
       </div>

@@ -2235,6 +2235,14 @@ const tr: string[] = [
   'GlitchBound bağımsız bir stüdyo. Her oyun burada tasarlanır ve yapılır. Bazıları bir kart oyunu ya da kelime bulmacası gibi klasik bir fikirden yola çıkar ve ona kendi dokunuşumuzu katar. Görsel ve seslerin bir kısmı lisanslıdır ve oyunda belirtilir.',
   'Şöhretler Salonu’nda henüz kimse yok. Oyna ve ilk rekoru kır.',
   'Tablolar daha çok taze, yani bir taç tam ulaşabileceğin yerde. Bir rekor kır ve bir tane kap.',
+  'Reklam tercihleri',
+  'Bir deneme daha',
+  'Bir deneme daha için kısa bir reklam izle',
+  'Bu ek deneme sıralamalara sayılmaz.',
+  'Mağaza',
+  'Küçük tarayıcı oyunları ve büyük bir macera yapan bağımsız bir stüdyo. Kurulacak bir şey yok ve oynamak için asla ödeme yapman gerekmiyor. Misafir olarak oyna ya da görevler ve sıralamalar için giriş yap.',
+  'Her oyun burada, tarayıcında, her cihazda oynanır. Hesap yok, ödeme duvarı yok.',
+  'GlitchBound bağımsız bir tarayıcı arcade\'idir: bir saniyede başlayan {n} hızlı oyun, bir fantastik RPG ve gruplar için Parti Modu. Kurulum yok, hesap gerekmiyor ve oynamak için asla ödeme yapman gerekmiyor.',
 ];
 
 export default tr;

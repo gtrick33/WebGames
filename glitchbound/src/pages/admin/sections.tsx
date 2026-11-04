@@ -7,6 +7,7 @@ import { DailyPlanner } from './DailySection';
 import { HomeEditor } from './HomeSection';
 import { PartyList } from './PartySection';
 import { SectionList } from './SectionsSection';
+import { MoneySection } from './MoneySection';
 import { SiteSection } from './SiteSection';
 import { useAdminCatalog } from './useAdminCatalog';
 
@@ -14,7 +15,7 @@ import { useAdminCatalog } from './useAdminCatalog';
  * The admin's sections, in the order of its navigation. Each is a file of its own in pages/admin/ (the
  * Overview and QA ones live in AdminPage.tsx and QaPanel). A new section is one entry here and one file.
  */
-export type SectionId = 'dashboard' | 'home' | 'party' | 'sections' | 'daily' | 'site' | 'log' | 'qa' | 'team';
+export type SectionId = 'dashboard' | 'home' | 'party' | 'sections' | 'daily' | 'site' | 'money' | 'log' | 'qa' | 'team';
 
 type IconName = 'chart' | 'star' | 'party' | 'sword' | 'calendar' | 'info' | 'menu' | 'bug' | 'user';
 
@@ -46,6 +47,7 @@ export const SECTIONS: Section[] = [
   },
   { id: 'daily', label: 'Daily challenges', icon: 'calendar', group: 'Site', blurb: 'The next 14 days of Today’s challenge; hand-pick any day.' },
   { id: 'site', label: 'Notice & holidays', icon: 'info', group: 'Site', blurb: 'A banner on every page, and the holiday look: greeting, decorations, scenery and little events.' },
+  { id: 'money', label: 'Ads & shop', icon: 'star', group: 'Site', blurb: 'Ads and the shop: the switches, all off until you open them, and what each one needs first.' },
   { id: 'log', label: 'Change log', icon: 'menu', group: 'Site', blurb: 'Every change made here, newest first.' },
   { id: 'qa', label: 'QA', icon: 'bug', group: 'Quality', blurb: 'Look up a player, give coins, ban, email, and test any game without getting in the way.' },
   { id: 'team', label: 'QA team', icon: 'user', group: 'Quality', blurb: 'Who tests, and invitations.' },
@@ -108,6 +110,8 @@ export function CatalogSection({ id }: { id: SectionId }) {
         <DailyPlanner data={data} send={send} busy={busy} />
       ) : id === 'site' ? (
         <SiteSection data={data} send={send} busy={busy} />
+      ) : id === 'money' ? (
+        <MoneySection data={data} send={send} busy={busy} />
       ) : (
         <ChangeLog log={data.log} />
       )}

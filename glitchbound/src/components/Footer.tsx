@@ -6,10 +6,12 @@ import { Link } from '../router/router';
 import { LogoMark } from './Logo';
 import './Footer.css';
 import { gameUrl } from '../catalog/catalog';
+import { bannersOn, rewardedOn, useMoney } from '../platform/money';
 
 export function Footer() {
   const games = useGames();
   const t = useT();
+  const money = useMoney();
   return (
     <footer className="site-footer">
       <div className="footer-edge" aria-hidden="true" />
@@ -17,7 +19,7 @@ export function Footer() {
         <div className="footer-top">
           <div className="footer-pitch">
             <LogoMark size={56} />
-            <p>{t('An independent studio making small browser games and one big adventure. No installs and nothing to buy. Play as a guest, or sign in for quests and leaderboards.')}</p>
+            <p>{money.shop ? t('An independent studio making small browser games and one big adventure. Nothing to install, and you never have to pay to play. Play as a guest, or sign in for quests and leaderboards.') : t('An independent studio making small browser games and one big adventure. No installs and nothing to buy. Play as a guest, or sign in for quests and leaderboards.')}</p>
             <LangPicker variant="footer" />
           </div>
           <nav className="footer-cols" aria-label="Footer">
@@ -44,6 +46,11 @@ export function Footer() {
               <Link href="/me/bugs">{t('Report a bug')}</Link>
               <Link href="/privacy">{t('Privacy & your data')}</Link>
               <Link href="/terms">{t('Terms of use')}</Link>
+              {(bannersOn(money) || rewardedOn(money)) && (
+                <button className="footer-link-btn" onClick={() => void import('../platform/adScript').then((m) => m.openAdChoices())}>
+                  {t('Ad choices')}
+                </button>
+              )}
               <a href="/sitemap.xml">{t('Sitemap')}</a>
             </div>
           </nav>
