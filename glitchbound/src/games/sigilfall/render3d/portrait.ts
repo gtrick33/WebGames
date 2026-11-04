@@ -64,6 +64,7 @@ function shoot(look: HeroLook, held: Held | null, shield: boolean, turn: number,
   crowd.end();
   LIGHT.uSee.value.set(0, 0, 0, 0);
   LIGHT.uDark.value.set(0, 8, 0, 0);
+  LIGHT.uNight.value.set(1, 1, 1, 0);
   LIGHT.uGrade.value.set(0, 0, 0, 0);
   camera.aspect = w / h;
   if (framing === 'bust') {
@@ -135,6 +136,7 @@ function shootCreature(sprite: string, w: number, h: number, turn: number, tint:
   }
   LIGHT.uSee.value.set(0, 0, 0, 0);
   LIGHT.uDark.value.set(0, 8, 0, 0);
+  LIGHT.uNight.value.set(1, 1, 1, 0);
   LIGHT.uGrade.value.set(0, 0, 0, 0);
   camera.aspect = w / h;
   camera.position.set(0, tall * k * 0.72 + (rider ? 1 : 0.6), 7.6);

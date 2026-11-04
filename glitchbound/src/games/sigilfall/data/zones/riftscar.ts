@@ -39,7 +39,7 @@ export const RIFTSCAR = wildRegion(
     ],
     pois: [
       // the Herald's spire
-      { at: [0.26, 0.2], r: 12, kind: 'cave', level: 56, packs: [['pale-acolyte', 'pale-acolyte', 'veil-weaver'], ['rift-horror', 'void-stalker'], ['shard-golem', 'pale-acolyte', 'pale-acolyte']], entrance: { to: 'spire-of-the-rift', label: 'The Spire of the Tear', minLevel: 55 }, spot: { id: 'spire-foot', name: 'The Spire’s Foot' }, landmark: { style: 'tower', w: 5, h: 6, name: 'The Spire of the Tear' } },
+      { at: [0.26, 0.2], r: 12, kind: 'cave', level: 56, packs: [['pale-acolyte', 'pale-acolyte', 'veil-weaver'], ['rift-horror', 'void-stalker'], ['shard-golem', 'pale-acolyte', 'pale-acolyte']], entrance: { to: 'spire-of-the-rift', label: 'The Spire of the Tear', minLevel: 55 }, spot: { id: 'spire-foot', name: 'The Spire’s Foot' } },
       // Tamsin's chain ends here: the Unmade
       { at: [0.5, 0.42], r: 11, kind: 'ruin', level: 55, packs: [['rift-horror', 'tear-wraith', 'tear-wraith'], ['veil-weaver', 'void-stalker', 'void-stalker'], ['rift-horror', 'rift-horror']], elite: true, rare: 'the-unmade', spot: { id: 'the-first-tear', name: 'The First Tear' }, chest: 'rare' },
       { at: [0.2, 0.62], r: 10, kind: 'camp', level: 55, packs: [['pale-acolyte', 'pale-acolyte', 'pale-acolyte'], ['veil-weaver', 'pale-acolyte'], ['veil-weaver', 'pale-acolyte', 'pale-acolyte']], spot: { id: 'heralds-camp', name: 'The Herald’s Pilgrims' } },

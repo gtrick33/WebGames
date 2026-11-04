@@ -490,7 +490,7 @@ export class World {
       const on = this.shown(pm);
       // a conditional prop blocks only while it stands
       if (pm.body) pm.body.off = !on;
-      if (m.kind === 'prop' && m.solid && (pm.when || this.region.when?.[pm.ch])) {
+      if (m.kind === 'prop' && m.solid && this.map.kind[pm.ty * this.map.w + pm.tx] === K.Prop && (pm.when || this.region.when?.[pm.ch])) {
         const i = pm.ty * this.map.w + pm.tx;
         this.map.solid[i] = on ? 1 : 0;
         this.map.block[i] = on ? 1 : 0;

@@ -173,6 +173,9 @@ function Row({ f, top, mine, doll, awards }: { f: Fighter; top: { dmg: number; h
 /** A match's end: who won, what it did to your standing, and who did what. */
 export function RingResult({ match, myId, won, draw, rating, rival, dolls, againLabel, onAgain, onSetup, onExit }: { match: Match; myId: number; won: boolean; draw: boolean; rating: RatingOutcome | null; rival?: string; dolls: string[]; againLabel: string; onAgain: () => void; onSetup: () => void; onExit: () => void }) {
   const kind = draw ? 'draw' : won ? 'win' : 'loss';
+  // (ready for the keyboard, without scrolling the verdict off the top of a short screen)
+  const again = useRef<HTMLButtonElement>(null);
+  useEffect(() => again.current?.focus({ preventScroll: true }), []);
   const shown = useRollingNumber(rating?.before ?? 0, rating?.after ?? 0);
   const change = rating ? rating.after - rating.before : 0;
   const myTeam = match.fighters[myId]?.team ?? 0;
@@ -244,7 +247,7 @@ export function RingResult({ match, myId, won, draw, rating, rival, dolls, again
           ))}
         </section>
         <footer className="rb-rr-foot">
-          <button className="rb-btn is-gold is-big" onClick={onAgain} autoFocus>
+          <button ref={again} className="rb-btn is-gold is-big" onClick={onAgain}>
             {againLabel}
           </button>
           <button className="rb-btn" onClick={onSetup}>

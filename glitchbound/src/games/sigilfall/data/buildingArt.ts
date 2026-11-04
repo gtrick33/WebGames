@@ -147,15 +147,15 @@ const STYLE: Record<Style, { town: string[]; wild: string[] }> = {
 
 /** What stands in a building's yard, by kind: the first fits first (Royal Keep props). */
 const YARD: Record<Style, string[]> = {
-  house: ['lantern_post', 'barrel', 'planter_red', 'woodpile', 'flowerbed_gold', 'lantern_post', 'crate', 'sacks', 'bench', 'planter_blue', 'barrel_water', 'flowerbed_violet'],
-  tavern: ['barrels', 'keg', 'bench', 'table_food', 'barrel'],
-  inn: ['barrels', 'bench', 'keg', 'table_small', 'barrel'],
-  shop: ['crates', 'sacks', 'barrel_apples', 'crate_cabbage', 'basket_bread'],
-  smithy: ['anvil', 'grindstone', 'woodpile', 'rack_swords', 'barrel_water'],
-  temple: ['statue_queen', 'statue_king', 'planter_gold', 'flowerbed_gold'],
-  keep: ['statue_knight', 'statue_knight', 'planter_red', 'planter_red'],
+  house: ['lantern', 'barrel', 'planter', 'woodpile', 'flowerbed', 'lantern', 'crate', 'sacks', 'bench', 'planter', 'bucket', 'flowerbed'],
+  tavern: ['big-barrel', 'keg', 'bench', 'table', 'barrel'],
+  inn: ['big-barrel', 'bench', 'keg', 'table', 'barrel'],
+  shop: ['crates-stack', 'sacks', 'barrel', 'market-goods', 'basket'],
+  smithy: ['anvil', 'grindstone', 'woodpile', 'weapon-rack', 'bucket'],
+  temple: ['statue', 'statue', 'planter', 'flowerbed'],
+  keep: ['statue', 'statue', 'planter', 'planter'],
   tower: [],
-  hall: ['rack_spears', 'rack_shields', 'crates', 'training_dummy', 'barrel'],
+  hall: ['weapon-rack', 'rack', 'crates-stack', 'target', 'barrel'],
   lighthouse: ['barrel', 'crate'],
 };
 
@@ -232,6 +232,70 @@ export function yardProps(style: Style | 'house', lot: Lot, n: number): string[]
   if (!list.length || n <= 0) return [];
   const start = Math.floor(hash2(lot.tx, lot.ty, 53) * list.length);
   return Array.from({ length: Math.min(n, list.length) }, (_, i) => list[(start + i) % list.length]!);
+}
+
+/** What 3D model each kind of building is. */
+const MODELS: Record<string, string[]> = {
+  house: ['b_home_A', 'b_home_B'],
+  inn: ['b_tavern'],
+  tavern: ['b_tavern'],
+  shop: ['b_workshop'],
+  tower: ['b_tower_A', 'b_tower_B', 'b_watchtower'],
+  temple: ['b_church'],
+  keep: ['b_castle'],
+  hall: ['b_townhall'],
+  lighthouse: ['b_tower_B'],
+  smithy: ['b_blacksmith'],
+};
+
+/** Those models' extents, [min x, min z, max x, max z] as they stand, measured off the pack (sigilfall-props test keeps them honest). */
+export const MODEL_FOOT: Record<string, readonly [number, number, number, number]> = {
+  b_home_A: [-0.396, -0.469, 0.396, 0.385],
+  b_home_B: [-0.439, -0.539, 0.436, 0.56],
+  b_tavern: [-0.595, -0.702, 0.577, 0.63],
+  b_workshop: [-0.836, -0.881, 0.829, 0.786],
+  b_tower_A: [-0.497, -0.574, 0.497, 0.58],
+  b_tower_B: [-0.599, -0.691, 0.599, 0.691],
+  b_watchtower: [-0.522, -0.522, 0.522, 0.522],
+  b_church: [-0.514, -0.56, 0.514, 0.595],
+  b_castle: [-0.988, -1.128, 0.988, 1.128],
+  b_townhall: [-0.719, -0.784, 0.716, 0.78],
+  b_blacksmith: [-0.63, -0.56, 0.658, 0.685],
+};
+
+export interface StandingModel {
+  m: string;
+  /** Where its origin goes (tiles), and how much it's scaled. */
+  x: number;
+  z: number;
+  sx: number;
+  sy: number;
+  sz: number;
+  /** The capital's keep, rising far over its own gate. */
+  seat: boolean;
+}
+
+/**
+ * How a building's model stands on what its picture made solid (x0..x1, y0..y1 in tiles): true to its own shape (no
+ * stretched barns), at most a quarter wider or deeper than the model was made, its door on the lot's front, toward the
+ * street. The land draws this, and the rules bump into it.
+ */
+export function modelOnLot(style: string, lot: Lot, grim: boolean, x0: number, x1: number, y0: number, y1: number, bounds: (m: string) => readonly [number, number, number, number] | undefined = (m) => MODEL_FOOT[m]): StandingModel | null {
+  const list = MODELS[style] ?? MODELS.house!;
+  const m = list[Math.floor(hash2(lot.tx, lot.ty, 7) * list.length)]!;
+  const b = bounds(m);
+  if (!b) return null;
+  const wideX = Math.max(0.01, b[2] - b[0]);
+  const wideZ = Math.max(0.01, b[3] - b[1]);
+  const fx = (x1 - x0) / wideX;
+  const fz = (y1 - y0) / wideZ;
+  // (the capital's keep rises far over its own gate: the rest of it goes back behind its wall, out of anyone's way)
+  const seat = style === 'keep' && grim;
+  const base = Math.min(fx, fz) * (seat ? 2.1 : 1);
+  const sx = seat ? base : Math.min(fx, base * 1.25) * 1.03;
+  const sz = seat ? base : Math.min(fz, base * 1.25) * 1.03;
+  const sy = base * (seat ? 1 : 1.12);
+  return { m, x: (x0 + x1) / 2 - ((b[0] + b[2]) / 2) * sx, z: y1 + 0.05 - b[3] * sz, sx, sy, sz, seat };
 }
 
 /** The ground rectangle a placed picture covers ([x0, y0, x1, y1], world px): its walls and roof, not its shadow. */

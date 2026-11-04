@@ -261,7 +261,7 @@ function landmarkOn(map: readonly string[], placed: readonly PlacedMarkerDef[], 
       for (let x = cx - r; x <= cx + r; x++) {
         if (Math.max(Math.abs(x - cx), Math.abs(y - cy)) !== r || !clear(x, y)) continue;
         const out: PlacedMarkerDef[] = [{ tx: x, ty: y, marker: { kind: 'prop', prop, solid: true } }];
-        for (let dy = -foot; dy <= foot; dy++) for (let dx = -foot; dx <= foot; dx++) if (dx || dy) out.push({ tx: x + dx, ty: y + dy, marker: { kind: 'prop', prop: 'block', solid: true } });
+        for (let dy = -foot; dy <= foot; dy++) for (let dx = -foot; dx <= foot; dx++) if (dx || dy) out.push({ tx: x + dx, ty: y + dy, marker: { kind: 'prop', prop: 'block', solid: false } });
         return out;
       }
     }

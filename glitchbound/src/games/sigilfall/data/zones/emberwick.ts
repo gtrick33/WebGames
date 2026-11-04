@@ -1,3 +1,4 @@
+import { withDoorGround } from '../greatworks';
 import { after, all, during, is, not, until } from '../cond';
 import { CityPlan } from '../citygen';
 import { doorsOf } from '../interiors';
@@ -343,7 +344,8 @@ export const EMBERWICK: RegionDef = {
   music: 'emberwick',
   map: built.map,
   markers: {},
-  placed: built.placed,
+  // (the catacomb stair, a house close behind it)
+  placed: withDoorGround(built.placed, 'crown-catacombs', [[-1, -1, 1, -1]]),
   encounters: [],
   states: [
     { id: 'festival', when: during('festival-the-lanterns'), dusk: true },
