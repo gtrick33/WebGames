@@ -24,7 +24,7 @@ export const SCENES: SceneDef[] = [
       { look: 'elyra' },
       { emote: 'elyra', icon: 'heart' },
       { say: 'elyra', line: 'Thessa says I talk too much when I’m frightened. I’m not frightened anymore. Mostly.' },
-      { look: 'briar-chapel' },
+      { look: 'Chapel of the Bell' },
       { say: 'old-haldor', line: 'She rang three times last night, and no hand on the rope. Quiet again now. But listening. I can feel it.' },
       { look: 'hero' },
       { say: 'maren', line: 'This is a camp now. And a camp needs someone to go and bring the others in.' },
@@ -42,7 +42,7 @@ export const SCENES: SceneDef[] = [
       { wait: 0.6 },
       { sfx: 'bell-toll' },
       { shake: 4 },
-      { look: 'briar-chapel' },
+      { look: 'Chapel of the Bell' },
       { wait: 2.4 },
       { sfx: 'bell-toll' },
       { shake: 3 },
@@ -72,7 +72,7 @@ export const SCENES: SceneDef[] = [
     when: during('briar-the-inn'),
     near: 'briar-gate',
     r: 160,
-    steps: [{ wait: 1.8 }, { look: 'briar-inn' }, { sfx: 'roar' }, { wait: 3 }, { look: 'hero' }],
+    steps: [{ wait: 1.8 }, { look: 'The Bramble & Barrel' }, { sfx: 'roar' }, { wait: 3 }, { look: 'hero' }],
   },
   {
     // the Crown City's keep, the first time the hero comes up the avenue to it: the camera climbs it, a horn
@@ -109,7 +109,7 @@ export const SCENES: SceneDef[] = [
     near: 'regent-elowen',
     r: 120,
     steps: [
-      { look: 'crane-door' },
+      { look: 'The Chancellor’s House' },
       { wait: 0.6 },
       { look: 'regent-elowen' },
       { say: 'regent-elowen', line: 'Nine years at my right hand. I never once asked him where the road money went.' },
@@ -142,7 +142,7 @@ export const SCENES: SceneDef[] = [
     near: 'old-haldor',
     r: 140,
     steps: [
-      { look: 'briar-chapel' },
+      { look: 'Chapel of the Bell' },
       { move: 'old-haldor', to: 'briar-chapel' },
       { emote: 'old-haldor', icon: 'note' },
       { say: 'old-haldor', line: 'Not yet, old girl. Not yet. But soon. I’ll ring you myself when it’s over.' },
@@ -310,7 +310,7 @@ export const SCENES: SceneDef[] = [
     near: 'old-haldor',
     r: 150,
     steps: [
-      { look: 'briar-chapel' },
+      { look: 'Chapel of the Bell' },
       { move: 'old-haldor', to: 'briar-chapel' },
       { say: 'old-haldor', line: 'It’s over, old girl. I said I’d ring you myself.' },
       { sfx: 'bell' },

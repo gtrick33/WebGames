@@ -47,7 +47,8 @@ export const GLOAMHOLLOW = wildRegion(
     ],
     pois: [
       // the second Gate: its garrison goes down to the cells when the hero comes up the causeway
-      { at: [0.5, 0.12], r: 13, kind: 'ruin', level: 48, packs: [['border-reaver', 'border-reaver', 'hollow-sentinel'], ['bog-wight', 'bog-wight', 'hollow-sentinel'], ['mire-horror', 'border-reaver']], spot: { id: 'the-gloam-gate', name: 'The Gloam Gate' }, landmark: { style: 'keep', w: 9, h: 5, name: 'The Gloam Gate' }, chest: 'epic', when: until('gloam-the-gate') },
+      // (in front of the great gate, data/greatworks.ts: whatever stands behind it can't be seen)
+      { at: [0.5, 0.32], r: 13, kind: 'ruin', level: 48, packs: [['border-reaver', 'border-reaver', 'hollow-sentinel'], ['bog-wight', 'bog-wight', 'hollow-sentinel'], ['mire-horror', 'border-reaver']], spot: { id: 'the-gloam-gate', name: 'The Gloam Gate' }, landmark: { style: 'keep', w: 9, h: 5, name: 'The Gloam Gate' }, chest: 'epic', when: until('gloam-the-gate') },
       { at: [0.22, 0.4], r: 11, kind: 'den', level: 46, packs: [['mire-horror', 'gloam-lurker'], ['gloam-lurker', 'gloam-lurker', 'marsh-light']], elite: true, rare: 'the-drowned-mother', spot: { id: 'the-black-pool', name: 'The Black Pool' }, chest: 'rare' },
       { at: [0.78, 0.42], r: 10, kind: 'camp', level: 46, packs: [['border-reaver', 'border-reaver', 'bog-wight'], ['hollow-sentinel', 'border-reaver']], rare: 'sir-morrow', spot: { id: 'reaver-camp', name: 'The Reavers’ Camp' } },
       { at: [0.3, 0.72], r: 10, kind: 'grove', level: 45, packs: [['marsh-light', 'marsh-light', 'marsh-light'], ['gloam-lurker', 'marsh-light', 'marsh-light']], spot: { id: 'will-o-glen', name: 'Wisp Glen' } },

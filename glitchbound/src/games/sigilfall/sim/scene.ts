@@ -3,7 +3,7 @@ import { picBody } from '../data/buildingArt';
 import { PETS } from '../data/pets';
 import { SCENES } from '../data/scenes';
 import type { RegionId, StoryCond } from '../data/types';
-import { castRay, WORLD_K } from './map';
+import { castRay, TILE, WORLD_K } from './map';
 import { placePet } from './pets';
 import { holds } from './story';
 import type { Enemy } from './types';
@@ -99,10 +99,14 @@ function where(w: World, name: string): { x: number; y: number } | null {
   if (n) return { x: n.x, y: n.y };
   const b = w.map.buildings.find((x) => x.name === name);
   if (!b) return null;
+  // (a building's picture is measured on the art's own grid; and it stands up the screen from where its feet are, so
+  // the shot is centered a little north of them)
   const bodies = b.pics.map(picBody);
   const top = Math.min(...bodies.map((r) => r[1]));
   const ground = Math.max(...bodies.map((r) => r[3]));
-  return { x: (Math.min(...bodies.map((r) => r[0])) + Math.max(...bodies.map((r) => r[2]))) / 2, y: (top + ground) / 2 };
+  // (never further in than this from its front: from the middle of a keep there's only roof to see)
+  const y = Math.max(((top + ground) / 2) * WORLD_K - TILE, ground * WORLD_K - 3 * TILE);
+  return { x: ((Math.min(...bodies.map((r) => r[0])) + Math.max(...bodies.map((r) => r[2]))) / 2) * WORLD_K, y };
 }
 
 const seenKey = (id: string): string => `scene:${id}`;

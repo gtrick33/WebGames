@@ -97,7 +97,8 @@ export const IRONPEAK = wildRegion(
       { near: 'deepforge-gate', dx: 0, dy: 5, marker: { kind: 'prop', prop: 'cage' }, when: until('forgemaster-grold') },
       // the postern in the rock, east of the gate, and the ways the garrison comes round to it
       { near: 'deepforge-gate', dx: 8, dy: 2, marker: { kind: 'place', id: 'iron-postern' } },
-      { near: 'deepforge-gate', dx: 8, dy: -6, marker: { kind: 'place', id: 'iron-postern-n' } },
+      // (out from behind the giants, where the camera can't see)
+      { near: 'deepforge-gate', dx: 14, dy: 5, marker: { kind: 'place', id: 'iron-postern-n' } },
       { near: 'deepforge-gate', dx: 1, dy: 2, marker: { kind: 'place', id: 'iron-postern-w' } },
       { near: 'deepforge-gate', dx: 9, dy: 9, marker: { kind: 'place', id: 'iron-postern-s' } },
       // after: the dwarves' banners on their own gate, and over Kragholt
