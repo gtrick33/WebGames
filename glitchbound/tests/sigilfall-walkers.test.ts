@@ -192,7 +192,8 @@ describe('Sigilfall: people going about their day', () => {
         updateFolk(folk, m, rand, DT, []);
         folk.forEach((f, i) => {
           if (before[i]!.r && !f.route) arrived[i] += 1;
-          if (!f.moving) return;
+          // (someone on their way: a moment after they stop they still count as walking, for the look of it)
+          if (!before[i]!.r || !f.route) return;
           moving++;
           const went = Math.hypot(f.x - before[i]!.x, f.y - before[i]!.y);
           if (went < f.speed * DT * 0.2) bumps++;
@@ -208,7 +209,7 @@ describe('Sigilfall: people going about their day', () => {
 
   it('they step round someone standing in their way', () => {
     const m = field(40, 12);
-    const { folk, rand } = { folk: [{ x: 5 * TILE, y: 6 * TILE, hx: 20 * TILE, hy: 6 * TILE, route: findRoute(m, 5 * TILE, 6 * TILE, 30 * TILE, 6 * TILE, { r: 9 }), a: 0, wait: 0, stuck: 0, speed: 24, walkT: 0, moving: false, look: 0 }], rand: () => 0.5 };
+    const { folk, rand } = { folk: [{ x: 5 * TILE, y: 6 * TILE, hx: 20 * TILE, hy: 6 * TILE, route: findRoute(m, 5 * TILE, 6 * TILE, 30 * TILE, 6 * TILE, { r: 9 }), a: 0, wait: 0, stuck: 0, speed: 24, walkT: 0, moving: false, still: 1, look: 0 }], rand: () => 0.5 };
     const stander = { x: 15 * TILE, y: 6 * TILE };
     let closest = Infinity;
     for (let t = 0; t < 40; t += DT) {

@@ -88,6 +88,10 @@ export class Renderer {
   /** The story state the land was built for (World.stateVersion). */
   private landVersion = -1;
   /** How much the townsfolk are out (they go indoors while the story fights in the streets). */
+  /** How far night has come over the land (0-1), and for which world. */
+  private nightK = 0;
+  private nightFor: World | null = null;
+  private wasDusk = false;
   private folkK = 1;
   /** When the last hold for models ended (the land fades up from dark after it). */
   private heldTill = -Infinity;
@@ -368,10 +372,10 @@ export class Renderer {
     if (st?.ready) {
       st.look(cx / TILE, cy / TILE);
       LIGHT.uTime.value = time;
-      this.setMood(w, st);
+      this.setMood(w, st, dt);
       st.heroAt(p.x, p.y);
       st.land?.update(cx / TILE, cy / TILE, st.spanX, st.spanZ);
-      st.land?.lightFlames(cx / TILE, cy / TILE);
+      st.land?.lightFlames(cx / TILE, cy / TILE, time, this.burning(w));
       st.land?.updateDoors(dt);
       this.folkK = damp(this.folkK, w.story.fighting ? 0 : 1, 3, dt);
       st.cast.begin();
@@ -482,27 +486,43 @@ export class Renderer {
   }
 
   /** The light of the land and the moment: a land's own veil, a dusk that never lifts, the dark of a crypt. */
-  private setMood(w: World, st: Stage): void {
+  /** What the story has burning here lights the night too (a roof gives more than a torch). */
+  private burning(w: World): { x: number; z: number; reach: number }[] {
+    const out: { x: number; z: number; reach: number }[] = [];
+    for (const f of w.fires) if (w.fireLit(f)) out.push({ x: f.x / TILE, z: f.y / TILE, reach: 7.5 });
+    return out;
+  }
+
+  private setMood(w: World, st: Stage, dt: number): void {
     const look = THEMES[w.region.theme];
     const grade = LIGHT.uGrade.value;
     const dark = LIGHT.uDark.value;
+    const night = LIGHT.uNight.value;
     const dread = look.dread;
     grade.set(0, 0, 0, 0);
     dark.set(0, 8, 0, 0);
+    // night falling or lifting is a matter of a few seconds; coming into a land it's already what it is
+    const state = w.storyState;
+    const want = state?.night ? 1 : state?.dusk ? 0.7 : 0;
+    this.nightK = w !== this.nightFor ? want : damp(this.nightK, want, 0.9, dt);
+    this.nightFor = w;
+    // (a dusk is warmer than the moon: it goes to violet before it goes to blue)
+    if (want === 0.7 || (want === 0 && this.nightK > 0 && this.wasDusk)) night.set(0.62, 0.52, 0.72, this.nightK);
+    else night.set(0.5, 0.56, 0.84, this.nightK);
+    if (want) this.wasDusk = want === 0.7;
     const paint = (hex: string, a: number): void => {
       const [r, gg, b] = hexRgb(hex);
       grade.set(r, gg, b, a);
     };
     if (look.tint) paint(look.tint, 0.14);
-    if (w.storyState?.dusk) paint('#ff8a4a', 0.14);
     if (w.storyState?.gloom) paint('#3a4468', 0.16);
     if (dread && dread.dark > 0) {
       paint(dread.shade, 0.16);
       dark.set(dread.dark * 0.2, 16, 0, 0);
     }
-    // a night or a crypt sets a mood, never hides the game: the far edge of the view is dim, everything can be seen
-    if (w.storyState?.night) paint('#2f3f70', 0.18);
-    if (w.dark) dark.set(w.region.dark ? 0.36 : 0.26, w.region.dark ? 11 : 15, 0, 0);
+    // a crypt sets a mood, never hides the game: the far edge of the view is dim, everything can be seen. (A night
+    // has no such edge: it's night everywhere, and what's lit is lit.)
+    if (w.region.dark) dark.set(0.36, 11, 0, 0);
     void st;
   }
 
@@ -758,6 +778,17 @@ export class Renderer {
     g.restore();
   }
 
+  /** The size a world pixel is drawn in the middle of the view, on the overlay. */
+  private plainScale(): number {
+    const st = this.stage;
+    if (!st) return this.k;
+    const cx = this.camX + this.vw / 2;
+    const cy = this.camY + this.vh / 2;
+    const a = st.project(cx, cy, PERSON_H);
+    const b = st.project(cx + TILE, cy, PERSON_H);
+    return ((b.x - a.x) / TILE) * this.k;
+  }
+
   /** Lines over people's heads (companions shouting in a fight, villagers crying out). */
   private drawSpeech(w: World): void {
     this.drawEmotes(w);
@@ -791,16 +822,41 @@ export class Renderer {
       this.upright(who.x, who.y, PERSON_H + 3);
       const x = who.x - wdt / 2;
       const y = who.y - 3 - hgt;
+      // ...and always all of it on the screen, clear of the bars along its edges: someone just out of view can still
+      // shout. (Then it has no one to point at, so it goes without its tail.) One size for everyone, near or far: past
+      // the far edge of the view the land's perspective would stretch it, and behind the camera turn it upside down.
+      let t = g.getTransform();
+      const plain = this.plainScale();
+      if (!(t.a >= plain * 0.82 && t.a <= plain * 1.2)) {
+        const s0 = t.a > 0 ? Math.min(plain * 1.2, Math.max(plain * 0.82, t.a)) : plain;
+        const aimed = t.a > 0 && Number.isFinite(t.e) && Number.isFinite(t.f);
+        const ax = aimed ? t.a * who.x + t.e : g.canvas.width / 2;
+        const ay = aimed ? t.d * (who.y - 3 - hgt) + t.f : -9999;
+        g.setTransform(s0, 0, 0, s0, ax - s0 * who.x, ay - s0 * (who.y - 3 - hgt));
+        t = g.getTransform();
+      }
+      const cw = g.canvas.width;
+      const ch = g.canvas.height;
+      const edge = 8 * this.k;
+      const left = t.a * x + t.e;
+      const right = t.a * (x + wdt) + t.e;
+      const up = t.d * y + t.f;
+      const low = t.d * (y + hgt + 3) + t.f;
+      const inX = right - left > cw - edge * 2 ? 0 : left < edge ? edge - left : right > cw - edge ? cw - edge - right : 0;
+      const inY = up < 44 * this.k ? 44 * this.k - up : low > ch - 76 * this.k ? ch - 76 * this.k - low : 0;
+      if (inX || inY) g.setTransform(t.a, t.b, t.c, t.d, t.e + inX, t.f + inY);
       g.globalAlpha = fade * 0.92;
       g.fillStyle = 'rgba(27,20,40,0.88)';
       g.beginPath();
       g.roundRect(x, y, wdt, hgt, 3);
       g.fill();
-      g.beginPath();
-      g.moveTo(who.x - 2, y + hgt);
-      g.lineTo(who.x, y + hgt + 3);
-      g.lineTo(who.x + 2, y + hgt);
-      g.fill();
+      if (!inY) {
+        g.beginPath();
+        g.moveTo(who.x - 2, y + hgt);
+        g.lineTo(who.x, y + hgt + 3);
+        g.lineTo(who.x + 2, y + hgt);
+        g.fill();
+      }
       g.globalAlpha = fade;
       g.fillStyle = '#f8f2e4';
       shown.forEach((l, i) => g.fillText(l, x + 3, y + 2.5 + i * 6.5));
@@ -815,16 +871,28 @@ export class Renderer {
   /**
    * The ways into buildings, and back out: a warm pool of light on the step and a gold chevron pointing through
    * the door (in, under a painted door; out, at a room's door), so a door you can use never looks like one
-   * you can't. Walking onto it goes through.
+   * you can't. Walking onto it goes through. A dungeon's way back out to the land gets the same, on its gap in the wall.
    */
   private drawEntrances(w: World, time: number): void {
     const g = this.g;
-    const inside = !!w.region.interior;
-    for (const x of w.exits) {
-      if (!x.door) continue;
+    const dungeon = w.region.kind === 'dungeon';
+    const inside = !!w.region.interior || dungeon;
+    const seen = new Set<string>();
+    for (const x0 of w.exits) {
+      if (!x0.door && !dungeon) continue;
+      // (a way out two tiles wide is one way out: the chevrons go in the middle of it)
+      let x = x0;
+      if (!x0.door) {
+        if (seen.has(x0.to)) continue;
+        seen.add(x0.to);
+        const twin = w.exits.find((o) => o !== x0 && o.to === x0.to && o.y === x0.y && Math.abs(o.x - x0.x) <= TILE);
+        if (twin) x = { ...x0, x: (x0.x + twin.x) / 2 };
+      }
       const pulse = 0.5 + Math.sin(time * 3 + x.x * 0.1) * 0.5;
       // the step: on the tile in front of a painted door, on the door tile itself indoors
       const cy = inside ? x.y : x.y - 4;
+      // (laid flat where it lies: the view tilts differently here than round the hero, and it would slide as they walk)
+      this.flat(x.x, cy);
       g.save();
       const grd = g.createRadialGradient(x.x, cy, 0, x.x, cy, 14);
       grd.addColorStop(0, rgba('#ffe08a', 0.6 + pulse * 0.2));

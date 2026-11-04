@@ -1,3 +1,4 @@
+import { withDoorGround } from '../greatworks';
 import { SpreadPlan } from '../citygen';
 import { doorsOf } from '../interiors';
 import type { EnemyDef, NpcDef, QuestDef, RegionDef, StoryCond, StoryEventDef } from '../types';
@@ -359,7 +360,8 @@ export const BRIARHOLLOW: RegionDef = {
   music: 'briarhollow',
   map: built.map,
   markers: {},
-  placed: built.placed,
+  // (the stair down to the crypt is cut into the three tiles behind its door)
+  placed: withDoorGround(built.placed, 'crypt', [[-1, -3, 1, -1]]),
   holds: {
     exits: ['whisperwood', 'brackenridge', 'thornvale', 'crypt'],
     npcs: ['mara-venn', 'maren', 'old-haldor', 'herbwife-thessa', 'smith-hollin', 'trader-ilse', 'goodwife-bramble', 'elyra', 'oskar-fell', 'ranger-cole', 'carter-wenna', 'healer-brisa', 'forgewife-runa', 'rider-alder', 'dwarf-tova'],

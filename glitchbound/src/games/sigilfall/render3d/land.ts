@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { hash2 } from '../core/math';
-import { picBody } from '../data/buildingArt';
+import { modelOnLot, picBody } from '../data/buildingArt';
 import { REGIONS } from '../data/regions';
 import { GREAT, type GreatPart } from '../data/greatworks';
 import { THEMES, type ThemeLook, type TreeKind } from '../data/themes';
@@ -12,6 +12,8 @@ import { PROPS, type PropDef } from '../data/props';
 import { loadPack, type MeshData, type Pack } from './pack';
 import { LIGHT, shadowMaterial, staticMaterial } from './toon';
 import { Stand } from './crowd';
+import { DOORWAYS } from './doorways';
+import { builtProp } from './propsBuilt';
 
 /**
  * A land in 3D, from the same tile map the game's rules walk on: a painted ground (one draw call), solid blocks
@@ -101,36 +103,15 @@ const TUFTS = ['Grass_1_A', 'Grass_2_A', 'Grass_1_B', 'Grass_2_B'];
 const FLOWERS = ['flower_redA', 'flower_yellowA', 'flower_purpleA'];
 
 
-/** A dungeon's way in: each its own, so a crypt is a stair in the ground and a mine is a hole in the hill. */
+/** A dungeon's way in that's a model of its own; the ones no model would do (a stair, a hole in a hill) are in doorways.ts. */
 const ENTRANCES: Record<string, { m: string; w: number; tint?: string }> = {
-  crypt: { m: 'crypt-door', w: 2 },
-  'crown-catacombs': { m: 'crypt-door', w: 2 },
   'barrow-of-kings': { m: 'crypt-large-door', w: 3 },
   'gallows-keep': { m: 'gate', w: 3, tint: '#a09a90' },
   'siege-of-highwall': { m: 'gate', w: 3.2 },
   duskspire: { m: 'gate', w: 3.2, tint: '#7a7488' },
-  'smugglers-grotto': { m: 'cave_rock', w: 3 },
-  'deepforge-halls': { m: 'cave_stone', w: 3 },
-  'rimeheld-vault': { m: 'cave_stone', w: 3, tint: '#c0e4ff' },
-  blightheart: { m: 'cave_rock', w: 3, tint: '#a8c088' },
-  'molten-throne': { m: 'cave_rock', w: 3, tint: '#e08a60' },
-  'rotmother-cistern': { m: 'metal-gate', w: 2.4 },
   'tomb-of-the-sun-king': { m: 'arch_gate', w: 3, tint: '#f0d8a0' },
   'spire-of-the-rift': { m: 'arch', w: 3, tint: '#c0a0f0' },
   'vaelmoor-remembered': { m: 'arch', w: 3, tint: '#d8d8f0' },
-};
-
-const BUILDINGS: Record<string, string[]> = {
-  house: ['b_home_A', 'b_home_B'],
-  inn: ['b_tavern'],
-  tavern: ['b_tavern'],
-  shop: ['b_workshop'],
-  tower: ['b_tower_A', 'b_tower_B', 'b_watchtower'],
-  temple: ['b_church'],
-  keep: ['b_castle'],
-  hall: ['b_townhall'],
-  lighthouse: ['b_tower_B'],
-  smithy: ['b_blacksmith'],
 };
 
 /** The size a model takes to keep within a prop's limits. */
@@ -268,8 +249,9 @@ function harmonize(col: Uint8Array, n: number): void {
 /** Green leaves take the land's own leaf colors, dark to light; bark and rock take its bark and stone. */
 function colorsFor(m: MeshData, look: ThemeLook, id: string): Uint8Array {
   const out = new Uint8Array(m.col);
-  // (bone is bone, not timber)
-  if (!/ribcage|skull|bone_/.test(id)) harmonize(out, m.n);
+  if (id.startsWith('built_')) return out;
+  // (bone is bone, not timber, and hay, a pumpkin and a flower aren't timber either)
+  if (!/ribcage|skull|bone_|pumpkin|haybale|flower_|crops_/.test(id)) harmonize(out, m.n);
   const roof = id.split('#')[1];
   if (roof) {
     const [rr, rg, rb] = hexRgb(`#${roof}`);
@@ -292,12 +274,21 @@ function colorsFor(m: MeshData, look: ThemeLook, id: string): Uint8Array {
   });
   const bark = hexRgb(look.bark);
   const leafy = /^(Tree|Bush|Grass|tree_|plant|hanging)/.test(id);
+  // (a flower's stem and a crop's leaves are the land's green; its bloom is its own)
+  const sprout = /^(flower_|crops_)/.test(id);
   const rocky = /^(Rock|rock_|stone_)/.test(id);
   const rock = look.cliffs ? hexRgb(look.ground.leaf[3]) : null;
   for (let v = 0; v < m.n; v++) {
     const i = v * 3;
     const [h, s, l] = hsl(out[i]! / 255, out[i + 1]! / 255, out[i + 2]! / 255);
-    if (leafy && h >= 52 && h <= 280 && s > 0.1) {
+    if (sprout) {
+      if (h >= 62 && h <= 205 && s > 0.1) {
+        const c = leaves[Math.max(0, Math.min(leaves.length - 1, Math.round(l * 1.35 * (leaves.length - 1))))]!;
+        out[i] = c[0] * 255;
+        out[i + 1] = c[1] * 255;
+        out[i + 2] = c[2] * 255;
+      }
+    } else if (leafy && h >= 52 && h <= 280 && s > 0.1) {
       const k = Math.max(0, Math.min(leaves.length - 1, Math.round(l * 1.35 * (leaves.length - 1))));
       const c = leaves[k]!;
       out[i] = c[0] * 255;
@@ -343,7 +334,8 @@ const groundFrag = /* glsl */ `
   uniform vec4 uGrade;
   uniform vec4 uDark;
   uniform vec4 uSee;
-  uniform vec3 uFlames[6];
+  uniform vec3 uFlames[8];
+  uniform vec4 uNight;
   varying vec3 vW;
   float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
   float noise(vec2 p) {
@@ -418,10 +410,24 @@ const groundFrag = /* glsl */ `
     float lum = dot(c, vec3(0.3, 0.59, 0.11));
     c = mix(vec3(lum), c, 0.84) * vec3(0.99, 0.97, 0.91);
     c = mix(c, uGrade.rgb, uGrade.a);
+    if (uNight.a > 0.0) {
+      float fire = 0.0;
+      for (int i = 0; i < 8; i++) {
+        if (uFlames[i].z > 0.0) {
+          float t = 1.0 - clamp(length(vW.xz - uFlames[i].xy) / uFlames[i].z, 0.0, 1.0);
+          fire += t * t * (3.0 - 2.0 * t);
+        }
+      }
+      fire = min(fire, 1.0);
+      float g = dot(c, vec3(0.3, 0.59, 0.11));
+      vec3 moon = mix(vec3(g), c, 0.68) * uNight.rgb;
+      vec3 warm = c * vec3(1.06, 0.9, 0.68);
+      c = mix(c, mix(moon, warm, fire), uNight.a);
+    }
     if (uDark.x > 0.0) {
       float d = length(vW.xz - uSee.xz);
       float k = smoothstep(uDark.y * 0.45, uDark.y, d);
-      for (int i = 0; i < 6; i++) {
+      for (int i = 0; i < 8; i++) {
         if (uFlames[i].z > 0.0) k = min(k, smoothstep(uFlames[i].z * 0.3, uFlames[i].z, length(vW.xz - uFlames[i].xy)));
       }
       c *= mix(1.0, 1.0 - uDark.x, k);
@@ -500,6 +506,7 @@ export function buildGround(map: TileMap, look: ThemeLook): THREE.Mesh {
       uDark: LIGHT.uDark,
       uSee: LIGHT.uSee,
       uFlames: LIGHT.uFlames,
+      uNight: LIGHT.uNight,
       uMask: { value: tex },
       uSize: { value: new THREE.Vector2(W, H) },
       uA: { value: col3(stone ? stone.slab[1] : g.grass[2]) },
@@ -598,7 +605,38 @@ function shade(c: readonly number[], k: number): number[] {
   return [Math.min(1, c[0]! * k), Math.min(1, c[1]! * k), Math.min(1, c[2]! * k)];
 }
 
-function buildBlocks(map: TileMap, look: ThemeLook, woody: boolean): THREE.Mesh {
+const NO_LIGHTS: readonly { x: number; z: number; reach: number }[] = [];
+
+/** How high a wall stands where it's been cut away so the floor behind it shows. */
+const CUT_WALL = 0.3;
+
+/**
+ * Under a roof the camera looks from the south, so the wall along a room's south side would stand between it and the
+ * room: two tiles of floor gone, and anyone on them. Those walls are cut down to a kerb (everything should be visible),
+ * as in any game seen from above, and so is all the solid rock nobody sees. What stays tall is what a room shows us: the
+ * wall at its far side with its torches on it, and the walls down its flanks.
+ */
+function cutAway(map: TileMap): Uint8Array {
+  const W = map.w;
+  const H = map.h;
+  const out = new Uint8Array(W * H);
+  const walled = (x: number, y: number): boolean => {
+    if (x < 0 || y < 0 || x >= W || y >= H) return true;
+    const k = map.kind[y * W + x];
+    return k === K.Wall || k === K.Illusion;
+  };
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (!walled(x, y) || !walled(x, y + 1)) continue;
+      const floorBehind = !walled(x, y - 1) || !walled(x, y - 2) || !walled(x, y - 3);
+      const flank = !walled(x - 1, y) || !walled(x + 1, y);
+      if (floorBehind || !flank) out[y * W + x] = 1;
+    }
+  }
+  return out;
+}
+
+function buildBlocks(map: TileMap, look: ThemeLook, woody: boolean, cut: Uint8Array | null): THREE.Mesh {
   const { wall, rampart } = blockStyles(look, woody);
   const m = new Mesher();
   const W = map.w;
@@ -616,9 +654,19 @@ function buildBlocks(map: TileMap, look: ThemeLook, woody: boolean): THREE.Mesh 
       if (!s) continue;
       const hs = hash2(x, y, 5);
       // (one height: blocks of differing heights leave bright seams, and the trees on them give the skyline)
-      const h = s.h;
+      const lowered = !!cut?.[y * W + x];
+      const h = lowered ? CUT_WALL : s.h;
       const top = shade(s.top, 0.97 + hash2(x, y, 9) * 0.05 + (hs > 0.5 ? 0.02 : 0));
       m.quad([x, h, y + 1], [x + 1, h, y + 1], [x + 1, h, y], [x, h, y], [0, 1, 0], top);
+      // a kerb's cut edge, along the floor it was cut away from
+      if (lowered && look.stone && !styleAt(x, y - 1)) m.quad([x, h + 0.004, y + 0.2], [x + 1, h + 0.004, y + 0.2], [x + 1, h + 0.004, y], [x, h + 0.004, y], [0, 1, 0], hexRgb(look.stone.lip));
+      /** How high the block next door stands (a wall only shows above what's beside it). */
+      const beside = (bx: number, by: number): number => {
+        const b = styleAt(bx, by);
+        if (!b) return 0;
+        if (bx < 0 || by < 0 || bx >= W || by >= H) return cut ? CUT_WALL : b.h;
+        return cut?.[by * W + bx] ? CUT_WALL : b.h;
+      };
       const side = (a: number[], b: number[], c: number[], d: number[], n: number[]): void => {
         const f = 0.92 + hash2(x, y, 13) * 0.14;
         // built walls are laid in courses of stone, each its own shade; a cliff or a wood is one face
@@ -639,10 +687,20 @@ function buildBlocks(map: TileMap, look: ThemeLook, woody: boolean): THREE.Mesh 
           m.quad(lerp(a, d, t0), lerp(b, c, t0), lerp(b, c, t1), lerp(a, d, t1), n, shade(c0, 0.84), c0);
         }
       };
-      if (!styleAt(x, y + 1)) side([x, 0, y + 1], [x + 1, 0, y + 1], [x + 1, h, y + 1], [x, h, y + 1], [0, 0, 1]);
-      if (!styleAt(x + 1, y)) side([x + 1, 0, y + 1], [x + 1, 0, y], [x + 1, h, y], [x + 1, h, y + 1], [1, 0, 0]);
-      if (!styleAt(x - 1, y)) side([x, 0, y], [x, 0, y + 1], [x, h, y + 1], [x, h, y], [-1, 0, 0]);
-      if (!styleAt(x, y - 1)) side([x + 1, 0, y], [x, 0, y], [x, h, y], [x + 1, h, y], [0, 0, -1]);
+      const b0 = beside(x, y + 1);
+      const b1 = beside(x + 1, y);
+      const b2 = beside(x - 1, y);
+      const b3 = beside(x, y - 1);
+      // (a wall's back, seen from out in the solid rock, is the same dark as the rock)
+      const face = (b: number, a0: number[], a1: number[], a2: number[], a3: number[], n: number[]): void => {
+        if (b >= h) return;
+        if (b > 0) m.quad(a0, a1, a2, a3, n, top);
+        else side(a0, a1, a2, a3, n);
+      };
+      face(b0, [x, b0, y + 1], [x + 1, b0, y + 1], [x + 1, h, y + 1], [x, h, y + 1], [0, 0, 1]);
+      face(b1, [x + 1, b1, y + 1], [x + 1, b1, y], [x + 1, h, y], [x + 1, h, y + 1], [1, 0, 0]);
+      face(b2, [x, b2, y], [x, b2, y + 1], [x, h, y + 1], [x, h, y], [-1, 0, 0]);
+      face(b3, [x + 1, b3, y], [x, b3, y], [x, h, y], [x + 1, h, y], [0, 0, -1]);
       // crenels along a city wall
       if (s === rampart) {
         // the parapet: two small merlons a tile, on the wall's outer edges, a walkway between
@@ -667,12 +725,65 @@ function buildBlocks(map: TileMap, look: ThemeLook, woody: boolean): THREE.Mesh 
   }
   // the world past the map's edge: more of the same
   const far = 40;
-  const h = wall.h;
+  // (under a roof it's low too: there's nothing there, and it mustn't stand over the way out)
+  const h = cut ? CUT_WALL : wall.h;
   const t = wall.top;
   m.quad([-far, h, H + far], [0, h, H + far], [0, h, -far], [-far, h, -far], [0, 1, 0], t);
   m.quad([W, h, H + far], [W + far, h, H + far], [W + far, h, -far], [W, h, -far], [0, 1, 0], t);
   m.quad([0, h, 0], [W, h, 0], [W, h, -far], [0, h, -far], [0, 1, 0], t);
   m.quad([0, h, H + far], [W, h, H + far], [W, h, H], [0, h, H], [0, 1, 0], t);
+  return m.build();
+}
+
+/**
+ * The carpets laid down the middle of a great room: a border, the field, a lighter panel down its length and a lozenge
+ * at each pace, so a long run of it reads as something woven and not as a stripe of paint.
+ */
+function buildCarpets(list: readonly { tx: number; ty: number; c: readonly number[] }[], rugs: readonly { tx: number; ty: number; c: readonly number[] }[]): THREE.Mesh {
+  const m = new Mesher();
+  const has = new Set(list.map((p) => `${p.tx},${p.ty}`));
+  const lay = (x0: number, z0: number, x1: number, z1: number, y: number, c: readonly number[]): void => {
+    m.quad([x0, y, z1], [x1, y, z1], [x1, y, z0], [x0, y, z0], [0, 1, 0], c);
+  };
+  for (const { tx, ty, c } of list) {
+    const field = shade(c, 0.95);
+    const panel = shade(c, 1.22);
+    const trim: readonly number[] = [0.5 + c[0]! * 0.28, 0.37 + c[1]! * 0.24, 0.17 + c[2]! * 0.2];
+    const down = has.has(`${tx},${ty - 1}`) || has.has(`${tx},${ty + 1}`);
+    if (down) {
+      // a tile's length of a carpet going north and south, three tiles across
+      const x0 = tx - 1;
+      const x1 = tx + 2;
+      lay(x0 - 0.12, ty - 0.12, x1 + 0.12, ty + 1.12, 0.02, trim);
+      lay(x0, ty, x1, ty + 1, 0.032, field);
+      lay(x0 + 0.3, ty, x0 + 0.38, ty + 1, 0.044, trim);
+      lay(x1 - 0.38, ty, x1 - 0.3, ty + 1, 0.044, trim);
+      lay(x0 + 0.62, ty + 0.1, x1 - 0.62, ty + 0.9, 0.044, panel);
+      const cx = tx + 0.5;
+      const cz = ty + 0.5;
+      m.quad([cx, 0.056, cz + 0.32], [cx + 0.42, 0.056, cz], [cx, 0.056, cz - 0.32], [cx - 0.42, 0.056, cz], [0, 1, 0], trim);
+    } else {
+      // and one going east and west, a tile deep (its pieces overlap: each lays down its own tile's worth)
+      lay(tx - 0.12, ty - 0.12, tx + 1.12, ty + 1.12, 0.02, trim);
+      lay(tx - 0.02, ty, tx + 1.02, ty + 1, 0.032, field);
+      lay(tx + 0.08, ty + 0.2, tx + 0.92, ty + 0.8, 0.044, panel);
+    }
+  }
+  // a rug laid on its own: the same weave, with its border all the way round
+  for (const { tx, ty, c } of rugs) {
+    const field = shade(c, 1.05);
+    const panel = shade(c, 1.35);
+    const trim: readonly number[] = [0.5 + c[0]! * 0.28, 0.37 + c[1]! * 0.24, 0.17 + c[2]! * 0.2];
+    const cx = tx + 0.5;
+    const cz = ty + 0.5;
+    const hw = 1.3;
+    const hd = 0.8;
+    lay(cx - hw, cz - hd, cx + hw, cz + hd, 0.02, trim);
+    lay(cx - hw + 0.08, cz - hd + 0.08, cx + hw - 0.08, cz + hd - 0.08, 0.032, field);
+    lay(cx - hw + 0.3, cz - hd + 0.28, cx + hw - 0.3, cz + hd - 0.28, 0.044, trim);
+    lay(cx - hw + 0.36, cz - hd + 0.34, cx + hw - 0.36, cz + hd - 0.34, 0.056, panel);
+    m.quad([cx, 0.068, cz + 0.3], [cx + 0.46, 0.068, cz], [cx, 0.068, cz - 0.3], [cx - 0.46, 0.068, cz], [0, 1, 0], trim);
+  }
   return m.build();
 }
 
@@ -772,6 +883,8 @@ export class Land3D {
   readonly objects: LandObject[] = [];
   /** The fires burning here: their foot, and how tall the thing holding them is (tiles). */
   readonly flames: { x: number; z: number; y: number; size: number }[] = [];
+  /** What lights the dark without burning (a lantern), and how far. */
+  readonly lamps: { x: number; z: number; reach: number }[] = [];
   /** Each building's model, as it was placed: what a fire on it burns on. */
   private readonly standing: { x0: number; x1: number; z0: number; z1: number; mesh: MeshData; x: number; z: number; sx: number; sy: number; sz: number; roof?: RoofSpot[] }[] = [];
   /** The stone heroes on their plinths (the cast draws them, in a pose). */
@@ -794,6 +907,12 @@ export class Land3D {
   private cz = NaN;
   private readonly doors: { i: number; x: number; y: number; k: number; h: number }[] = [];
   private readonly doorStand: Stand;
+  /** What's built rather than placed: the ways into dungeons (doorways.ts), and the carpets down a hall. */
+  private readonly built: THREE.Mesh[] = [];
+  private readonly carpets: { tx: number; ty: number; c: readonly number[] }[] = [];
+  private readonly rugs: { tx: number; ty: number; c: readonly number[] }[] = [];
+  /** The walls cut down to a kerb, so what's behind them shows (under a roof). */
+  private readonly cut: Uint8Array | null;
 
   constructor(
     private readonly map: TileMap,
@@ -807,13 +926,19 @@ export class Land3D {
     this.look = look;
     const woody = !look.indoor && !look.cliffs && look.trees.filter((t) => t !== 'cactus' && t !== 'crystal').length * 2 > look.trees.length;
     this.ground = buildGround(map, look);
-    this.blocks = buildBlocks(map, look, woody);
+    this.cut = look.indoor ? cutAway(map) : null;
+    this.blocks = buildBlocks(map, look, woody, this.cut);
     this.planks = buildPlanks(map, look);
     this.under.add(this.ground, this.planks);
     this.group.add(this.blocks);
     this.wallH = look.indoor ? DUNGEON_WALL : woody ? 1 : 1.6;
     this.placeAll(woody);
     this.placeSlabs();
+    if (this.carpets.length || this.rugs.length) {
+      const c = buildCarpets(this.carpets, this.rugs);
+      this.under.add(c);
+      this.built.push(c);
+    }
     // the shadow of what stands, one soft disc each
     const quad = new THREE.PlaneGeometry(1, 1);
     quad.rotateX(-Math.PI / 2);
@@ -839,6 +964,7 @@ export class Land3D {
 
   private pack(id: string): MeshData | null {
     const base = id.replace('~', '').split('#')[0]!;
+    if (base.startsWith('built_')) return builtProp(base);
     return this.packs.nature.meshes[base] ?? this.packs.town.meshes[base] ?? this.packs.indoor.meshes[base] ?? this.packs.hero.meshes[base] ?? null;
   }
 
@@ -1031,10 +1157,6 @@ export class Land3D {
     }
     // houses and halls, on the tiles the rules make solid (the rest of a lot is its yard)
     for (const b of map.buildings) {
-      const list = BUILDINGS[b.style] ?? BUILDINGS.house!;
-      const m = list[Math.floor(hash2(b.lot.tx, b.lot.ty, 7) * list.length)]!;
-      const mesh = this.pack(m);
-      if (!mesh) continue;
       let x0 = Infinity;
       let x1 = -Infinity;
       let y0 = Infinity;
@@ -1054,20 +1176,12 @@ export class Land3D {
         y0 = b.lot.ty;
         y1 = b.lot.ty + b.lot.h;
       }
-      const wideX = Math.max(0.01, mesh.max[0] - mesh.min[0]);
-      const wideZ = Math.max(0.01, mesh.max[2] - mesh.min[2]);
-      // true to its own shape (no stretched barns): at most a quarter wider or deeper than the model was made,
-      // its door on the lot's front, toward the street
-      const fx = (x1 - x0) / wideX;
-      const fz = (y1 - y0) / wideZ;
-      // (the capital's keep rises far over its own gate: the rest of it goes back behind its wall, out of anyone's way)
-      const seat = b.style === 'keep' && b.pics[0]?.grim === true;
-      const base = Math.min(fx, fz) * (seat ? 2.1 : 1);
-      const sx = seat ? base : Math.min(fx, base * 1.25) * 1.03;
-      const sz = seat ? base : Math.min(fz, base * 1.25) * 1.03;
-      const sy = base * (seat ? 1 : 1.12);
-      const cx = (x0 + x1) / 2 - ((mesh.min[0] + mesh.max[0]) / 2) * sx;
-      const cz = y1 + 0.05 - mesh.max[2] * sz;
+      const stands = modelOnLot(b.style, b.lot, b.pics[0]?.grim === true, x0, x1, y0, y1, b.door?.[0] ?? null);
+      const mesh = stands ? this.pack(stands.m) : null;
+      if (!stands || !mesh) continue;
+      const { m, sx, sy, sz, seat } = stands;
+      const cx = stands.x;
+      const cz = stands.z;
       const roof = this.roofOf(b.lot.tx, b.lot.ty);
       if (this.keepIt({ x: ((x0 + x1) / 2) * TILE, y: y1 * TILE - 2, kind: 'building', dy: -(mesh.max[1] * sy) * TILE })) {
         this.add({ m: `${m}#${roof}`, x: cx, z: cz, rot: 0, sx, sy, sz, shadow: 0 });
@@ -1112,9 +1226,18 @@ export class Land3D {
           this.add({ m: 'sign_both', x: x - 1.1, z: z + 0.2, rot: 0, sx: this.fitted('sign_both', 1.35, 0.9), shadow: 0.5 });
           continue;
         }
-        const door = ENTRANCES[m.to] ?? { m: 'cave_rock', w: 3 };
-        const mesh = this.pack(door.m);
-        if (mesh) {
+        const built = DOORWAYS[m.to];
+        if (built) {
+          const b = built.build().m.build();
+          b.position.set(x, 0, z);
+          this.group.add(b);
+          this.built.push(b);
+          for (const [fx, fy, fz, size] of built.flames ?? []) this.flames.push({ x: x + fx, z: z + fz, y: fy, size });
+          if (built.glow) this.glows.push({ x: x + built.glow.x, z: z + built.glow.z, y: built.glow.y, color: built.glow.color, size: built.glow.size });
+        }
+        const door = ENTRANCES[m.to];
+        const mesh = door ? this.pack(door.m) : null;
+        if (door && mesh) {
           // (some gates lie along the model's other axis: turned to face the road, and sized by their real width)
           const xw = mesh.max[0] - mesh.min[0];
           const zw = mesh.max[2] - mesh.min[2];
@@ -1195,6 +1318,14 @@ export class Land3D {
     const wy = (ty + 1) * TILE - 3;
     const o: LandObject = { x: wx, y: wy, kind: 'prop', name, dy: -(def?.h ?? TILE) };
     if (!this.keepIt(o) || !def || !def.m) return;
+    if (name === 'runner') {
+      this.carpets.push({ tx, ty, c: hexRgb(param?.startsWith('#') ? param : (def.tint ?? '#7a1a1a')) });
+      return;
+    }
+    if (name === 'rug') {
+      this.rugs.push({ tx, ty, c: hexRgb(param?.startsWith('#') ? param : (def.tint ?? '#6e2a2c')) });
+      return;
+    }
     const mesh = this.pack(def.m);
     if (!mesh) return;
     const size = sizeWithin(mesh, def);
@@ -1206,15 +1337,17 @@ export class Land3D {
     const rot = size.rot + (loose ? (hash2(tx, ty, 3) - 0.5) * 0.5 : 0);
     // (a building-pack model carries the land's own roof color)
     const model = def.m.startsWith('b_') && !tint ? `${def.m}#${this.roofOf(tx, ty)}` : def.m;
-    // (its middle on the tile, whatever the model's own origin)
-    const big = (def.w ?? 0) > 40;
-    const ox = big ? -((mesh.min[0] + mesh.max[0]) / 2) * size.sx : 0;
-    const oz = big ? -((mesh.min[2] + mesh.max[2]) / 2) * size.sz : 0;
+    // (its middle on the tile, whatever the model's own origin and however it's turned)
+    const lx = ((mesh.min[0] + mesh.max[0]) / 2) * size.sx;
+    const lz = ((mesh.min[2] + mesh.max[2]) / 2) * size.sz;
+    const ox = -(lx * Math.cos(rot) + lz * Math.sin(rot));
+    const oz = -(-lx * Math.sin(rot) + lz * Math.cos(rot));
     const sw = def.w ?? TILE;
     this.add({ m: model, x: x + ox, z: z + oz, rot, sx: size.sx, sy: size.sy, sz: size.sz, shadow: def.flat || (def.h ?? 0) < 12 ? 0 : Math.min(2.4, (sw / TILE) * 0.65), shadowD: Math.min(1, (def.d ?? sw) / sw + 0.1), y: def.flat ? 0.02 : 0, r: c[0], g: c[1], b: c[2] });
     // (at the top of the model as it was sized, which may be under the height its table allows)
     if (def.flame) this.flames.push({ x, z, y: size.sy * (mesh.max[1] - mesh.min[1]) * ((def.flameAt ?? 10) / (def.h ?? 10)), size: def.flame });
-    if (def.glow) this.glows.push({ x, z, y: ((def.h ?? 10) + 2) / TILE, color: def.glow, size: 9 });
+    if (def.glow) this.glows.push({ x, z, y: Math.max(0.3, ((def.h ?? 10) - 8) / TILE), color: def.glow, size: 9 });
+    if (def.light) this.lamps.push({ x, z, reach: def.light });
     if (def.hero) this.statues.push({ x: x * TILE, y: z * TILE, h: def.hero, lift: (def.h ?? 0) / TILE, tint: c });
   }
 
@@ -1268,22 +1401,31 @@ export class Land3D {
       const sight = h / TILE + (ty + 1 - y0) * rise;
       if (sight > 3.4) return false;
       const k = m.kind[ty * m.w + tx];
-      const tall = k === K.Wall || k === K.Illusion ? this.wallH : k === K.Rampart ? 2.4 : k === K.House ? 3.2 : 0;
+      const tall = k === K.Wall || k === K.Illusion ? (this.cut?.[ty * m.w + tx] ? CUT_WALL : this.wallH) : k === K.Rampart ? 2.4 : k === K.House ? 3.2 : 0;
       if (tall > sight) return true;
     }
     return false;
   }
 
-  /** The fires nearest the view light the dark round them. */
-  lightFlames(camX: number, camZ: number): void {
+  /**
+   * The fires and lamps nearest the view light the dark round them; `others` are what the story has burning (tiles).
+   * (A fire's light moves a little, as a fire's does. A lantern's doesn't.)
+   */
+  lightFlames(camX: number, camZ: number, time = 0, others: readonly { x: number; z: number; reach: number }[] = NO_LIGHTS): void {
     const list = LIGHT.uFlames.value;
-    const near = this.flames
-      .map((f) => ({ f, d: Math.hypot(f.x - camX, f.z - camZ) }))
-      .sort((a, b) => a.d - b.d)
-      .slice(0, list.length);
+    const all: { x: number; z: number; reach: number; d: number }[] = [];
+    const put = (x: number, z: number, reach: number): void => {
+      all.push({ x, z, reach, d: Math.hypot(x - camX, z - camZ) - reach * 0.5 });
+    };
+    for (const f of this.flames) put(f.x, f.z, (4.4 * f.size + 1) * (1 + Math.sin(time * 7.1 + f.x * 3.1) * 0.022 + Math.sin(time * 11.3 + f.z * 2.3) * 0.016));
+    for (const l of this.lamps) put(l.x, l.z, l.reach);
+    for (const o of others) put(o.x, o.z, o.reach * (1 + Math.sin(time * 6.3 + o.x) * 0.03));
+    all.sort((a, b) => a.d - b.d);
+    // (only so many fit: one about to lose its place to one nearer the view fades out, and doesn't blink)
+    const next = all[list.length]?.d ?? Infinity;
     for (let i = 0; i < list.length; i++) {
-      const n = near[i];
-      if (n) list[i]!.set(n.f.x, n.f.z, 4.4 * n.f.size + 1);
+      const n = all[i];
+      if (n) list[i]!.set(n.x, n.z, n.reach * Math.min(1, (next - n.d) / 2));
       else list[i]!.set(0, 0, 0);
     }
   }
@@ -1392,6 +1534,10 @@ export class Land3D {
     (this.blocks as THREE.InstancedMesh).dispose();
     this.planks.geometry.dispose();
     (this.planks as THREE.InstancedMesh).dispose();
+    for (const b of this.built) {
+      b.geometry.dispose();
+      (b as THREE.InstancedMesh).dispose();
+    }
     this.shadows.geometry.dispose();
     this.shadows.dispose();
     this.group.clear();

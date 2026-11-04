@@ -190,7 +190,12 @@ export const LIGHT = {
   /** The pool of light in a dark place: darkness (0-1), radius in tiles; xyz in uSee. */
   uDark: { value: new THREE.Vector4(0, 8, 0, 0) },
   /** Fires that light the dark: x, z (tiles) and reach (0: none). */
-  uFlames: { value: Array.from({ length: 6 }, () => new THREE.Vector3()) },
+  uFlames: { value: Array.from({ length: 8 }, () => new THREE.Vector3()) },
+  /**
+   * Night over a land (a's how far it has come): the color of the moon's light on things (rgb), which fires and lamps
+   * push back with their own. All of it lit, near and far alike: a night, and not a pool of light with nothing past it.
+   */
+  uNight: { value: new THREE.Vector4(1, 1, 1, 0) },
 };
 
 const COMMON_VERT = /* glsl */ `
@@ -242,7 +247,8 @@ uniform vec3 uShade;
 uniform vec4 uGrade;
 uniform vec4 uDark;
 uniform vec4 uSee;
-uniform vec3 uFlames[6];
+uniform vec3 uFlames[8];
+uniform vec4 uNight;
 varying vec3 vCol;
 varying vec3 vN;
 varying vec3 vW;
@@ -255,17 +261,38 @@ vec3 toon(vec3 base, vec3 n) {
   vec3 c = base * mix(uShade, mix(uMid, uLit, b), a);
   return c;
 }
-vec3 finish(vec3 c) {
+/** The firelight on this spot at night, 0 to 1. */
+float fireHere() {
+  float fire = 0.0;
+  for (int i = 0; i < 8; i++) {
+    if (uFlames[i].z > 0.0) {
+      float t = 1.0 - clamp(length(vW.xz - uFlames[i].xy) / uFlames[i].z, 0.0, 1.0);
+      fire += t * t * (3.0 - 2.0 * t);
+    }
+  }
+  return min(fire, 1.0);
+}
+vec3 nightOver(vec3 c, float amount) {
+  float g = dot(c, vec3(0.3, 0.59, 0.11));
+  vec3 moon = mix(vec3(g), c, 0.68) * uNight.rgb;
+  vec3 warm = c * vec3(1.08, 0.92, 0.72);
+  return mix(c, mix(moon, warm, fireHere()), uNight.a * amount);
+}
+vec3 finishWith(vec3 c, float night) {
   c = mix(c, uGrade.rgb, uGrade.a);
+  if (uNight.a > 0.0) c = nightOver(c, night);
   if (uDark.x > 0.0) {
     float d = length(vW.xz - uSee.xz);
     float k = smoothstep(uDark.y * 0.45, uDark.y, d);
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 8; i++) {
       if (uFlames[i].z > 0.0) k = min(k, smoothstep(uFlames[i].z * 0.3, uFlames[i].z, length(vW.xz - uFlames[i].xy)));
     }
     c *= mix(1.0, 1.0 - uDark.x, k);
   }
   return c;
+}
+vec3 finish(vec3 c) {
+  return finishWith(c, 1.0);
 }
 `;
 
@@ -306,7 +333,9 @@ export function animMaterial(anim: RigAnim): THREE.ShaderMaterial {
         vec3 c = toon(vCol, n);
         // a touch of sky on what faces up, so dark armor keeps its shape
         c += vec3(0.05, 0.06, 0.09) * max(n.y, 0.0);
-        c = finish(c);
+        // at night, whoever's out in it stands out of it: less of the dark on them, and the moon along their edges
+        c = finishWith(c, 0.6);
+        if (uNight.a > 0.0) c += vec3(0.2, 0.28, 0.5) * pow(1.0 - clamp(dot(n, vec3(0.0, 0.766, 0.643)), 0.0, 1.0), 2.6) * uNight.a;
         c = mix(c, vec3(1.0, 0.97, 0.9), vFlash);
         gl_FragColor = vec4(c, 1.0);
       }`,

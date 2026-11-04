@@ -1,4 +1,4 @@
-import { GREAT, GREAT_IN, type GreatPlace } from './greatworks';
+import { DOOR_GROUND, GREAT, GREAT_IN, type GreatPlace } from './greatworks';
 import { clamp, hash2, noise2, rng } from '../core/math';
 import { buildingRows, villageHouses } from './buildingArt';
 import { THEMES } from './themes';
@@ -852,7 +852,7 @@ class ZoneBuilder {
       // (a big thing stands on the tiles it covers)
       for (const dx2 of FOOT[name] ?? []) {
         const bx = x + dx2;
-        if (free(bx, y) && !steps.has(this.idx(bx, y)) && (OPEN.has(this.at(bx, y)) || this.at(bx, y) === COBBLE)) this.put(bx, y, { kind: 'prop', prop: 'block', solid: true });
+        if (free(bx, y) && !steps.has(this.idx(bx, y)) && (OPEN.has(this.at(bx, y)) || this.at(bx, y) === COBBLE)) this.put(bx, y, { kind: 'prop', prop: 'block', solid: false });
       }
       return true;
     };
@@ -1279,7 +1279,7 @@ class ZoneBuilder {
     const place = door ? ([door.tx, door.ty + (g.dy ?? 0)] as [number, number]) : spot ? (((t) => [t[0], t[1] + (g.dy ?? 0)])(this.tileOf(spot.at)) as [number, number]) : this.tileOf(g.at ?? [0.5, 0.5]);
     const [ax, ay] = g.water || door || spot ? place : this.clearOfTowns(place);
     /** Whoever stands on the tiles it wants: small dressing makes way; a person, or anything of the story's, doesn't. */
-    const movable = (i: number): boolean => this.placed.every((p) => this.idx(p.tx, p.ty) !== i || ((p.marker.kind === 'prop' || p.marker.kind === 'pack') && !p.when));
+    const movable = (i: number): boolean => this.placed.every((p) => this.idx(p.tx, p.ty) !== i || p.marker.kind === 'wisp' || ((p.marker.kind === 'prop' || p.marker.kind === 'pack') && !p.when));
     const eachSolid = (cx: number, cy: number, f: (x: number, y: number) => boolean): boolean => {
       for (const [x0, y0, x1, y1] of work.solid) for (let y = cy + y0; y <= cy + y1; y++) for (let x = cx + x0; x <= cx + x1; x++) if (!f(x, y)) return false;
       return true;
@@ -1287,13 +1287,13 @@ class ZoneBuilder {
     const fits = (cx: number, cy: number): boolean => {
       if (!this.inside(cx, cy, 3) || this.marked.has(this.idx(cx, cy))) return false;
       if (g.water && !g.spot) return this.at(cx, cy) === WATER;
-      if (this.hubAt.some(([hx, hy]) => ((cx - hx) / (VX + work.room[0] * 0.5)) ** 2 + ((cy - hy) / (VY + work.room[1] * 0.5)) ** 2 < 1)) return false;
+      if (!g.exact && this.hubAt.some(([hx, hy]) => ((cx - hx) / (VX + work.room[0] * 0.5)) ** 2 + ((cy - hy) / (VY + work.room[1] * 0.5)) ** 2 < 1)) return false;
       return eachSolid(cx, cy, (x, y) => {
         // (past the edge of the map is nobody's road: a great thing can stand at the land's end)
         if (!this.inside(x, y, 3)) return true;
         if (this.marked.has(this.idx(x, y)) && !movable(this.idx(x, y))) return false;
         const k = this.at(x, y);
-        return k === FLOOR || k === DECO || k === SAND || k === TREE || k === BUSH || k === ROCK || k === WALL || k === FENCE || (k === WATER && g.water === true);
+        return k === FLOOR || k === DECO || k === SAND || k === TREE || k === BUSH || k === ROCK || k === WALL || k === FENCE || (k === WATER && g.water === true) || (work.overRoad === true && (k === PATH || k === COBBLE));
       });
     };
     let last = new Uint8Array(0);
@@ -1326,7 +1326,7 @@ class ZoneBuilder {
         if (['prop', 'building', 'pack', 'fire', 'hazard', 'wisp', 'place'].includes(p.marker.kind)) return true;
         return [0, 1, -1, this.w, -this.w].some((d) => last[this.idx(p.tx, p.ty) + d]);
       });
-    for (let rad = 0; rad < (door ? 10 : 44); rad++) {
+    for (let rad = 0; rad < (g.exact ? 1 : door ? 10 : 44); rad++) {
       for (let dy = -rad; dy <= rad; dy++) {
         for (let dx = -rad; dx <= rad; dx++) {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== rad || !fits(ax + dx, ay + dy)) continue;
@@ -1343,13 +1343,24 @@ class ZoneBuilder {
               if (k === TREE || k === BUSH || k === ROCK) this.set(x, y, FLOOR);
             }
           }
+          // (a door the story hasn't opened yet: nothing's there to walk into until it has)
           eachSolid(cx, cy, (x, y) => {
             if (this.inside(x, y)) {
-              this.set(x, y, HOUSE);
+              if (door?.when) this.put(x, y, { kind: 'prop', prop: 'block', solid: true }, door.when);
+              else this.set(x, y, HOUSE);
               foot++;
             }
             return true;
           });
+          if (work.walled) {
+            for (const [x0, y0, x1, y1] of work.solid) {
+              for (let y = cy + y0; y <= cy + y1; y++) {
+                for (let x = cx + x0; x <= cx + x1; x++) {
+                  if (this.inside(x, y) && (x === cx + x0 || x === cx + x1 || y === cy + y0 || y === cy + y1)) this.set(x, y, RAMPART);
+                }
+              }
+            }
+          }
           // a wall right across the land, open where a road goes through it
           if (work.wall !== undefined) {
             const wy = cy + work.wall;
@@ -1369,9 +1380,9 @@ class ZoneBuilder {
           // the small dressing that was in the way goes; foes camped there move over to the nearest open ground
           for (let i = this.placed.length - 1; i >= 0; i--) {
             const p = this.placed[i]!;
-            if (p.when || eachSolid(cx, cy, (x, y) => x !== p.tx || y !== p.ty)) continue;
+            if ((p.when && p.marker.kind !== 'wisp') || eachSolid(cx, cy, (x, y) => x !== p.tx || y !== p.ty)) continue;
             this.marked.delete(this.idx(p.tx, p.ty));
-            if (p.marker.kind === 'prop') {
+            if (p.marker.kind === 'prop' || p.marker.kind === 'wisp') {
               this.placed.splice(i, 1);
               this.props.delete(this.idx(p.tx, p.ty));
             } else if (p.marker.kind === 'pack') {
@@ -1394,7 +1405,7 @@ class ZoneBuilder {
               this.marked.add(this.idx(p.tx, p.ty));
             }
           }
-          this.put(cx, cy, { kind: 'prop', prop: `great:${g.id}` });
+          if (work.parts.length) this.put(cx, cy, { kind: 'prop', prop: `great:${g.id}` }, door?.when);
           return;
         }
       }
@@ -1424,7 +1435,8 @@ class ZoneBuilder {
             const y = cy + dy;
             if (this.hubAt.some(([hx, hy]) => ((x - hx) / VX) ** 2 + ((y - hy) / VY) ** 2 < 1)) continue;
             this.put(x, y, { kind: 'prop', prop: lm.prop, solid: true });
-            for (let by = -r; by <= r; by++) for (let bx = -r; bx <= r; bx++) if (bx || by) this.put(x + bx, y + by, { kind: 'prop', prop: 'block', solid: true });
+            // (its ground kept clear; what's in the way is its own body, and no wall of air beside it)
+            for (let by = -r; by <= r; by++) for (let bx = -r; bx <= r; bx++) if (bx || by) this.put(x + bx, y + by, { kind: 'prop', prop: 'block', solid: false });
             return;
           }
         }
@@ -1590,7 +1602,8 @@ class ZoneBuilder {
       }
       const [x0, y0] = spot ?? [cx - Math.floor(w / 2), cy - h - 1];
       for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) this.set(x, y, HOUSE);
-      this.put(x0, y0 + h - 1, { kind: 'building', style, w, h, ...(name ? { name } : {}) });
+      // (a place the story names fills its lot: a watchtower you could step over is no landmark)
+      this.put(x0, y0 + h - 1, { kind: 'building', style, w, h, fit: true, ...(name ? { name } : {}) });
     }
     if (p.entrance) this.put(cx, cy, { kind: 'exit', to: p.entrance.to, label: p.entrance.label, ...(p.entrance.minLevel ? { minLevel: p.entrance.minLevel } : {}) });
     if (p.spot) this.put(cx, cy + (p.entrance ? 2 : 0), { kind: 'spot', id: p.spot.id, name: p.spot.name, r: Math.max(4, r - 1) });
@@ -2030,14 +2043,14 @@ const LANDMARKS: Record<string, LandmarkSpec[]> = {
   blightwood: [{ prop: 'dead-colossus', at: [0.4, 0.64], foot: 2 }, { prop: 'great-mushroom-tree', at: [0.76, 0.28], foot: 1 }],
   emberdeep: [{ prop: 'lava-spire', at: [0.28, 0.3], foot: 2 }, { prop: 'giant-skull:#b88a70', at: [0.72, 0.7], foot: 2 }],
   hollowmere: [{ prop: 'crypt-hill', at: [0.72, 0.28], foot: 3 }, { prop: 'great-wreck', at: [0.28, 0.72], foot: 2 }],
-  riftscar: [{ prop: 'rift-spire', at: [0.28, 0.3], foot: 2 }, { prop: 'rift-spire', at: [0.72, 0.64], foot: 2 }],
+  riftscar: [{ prop: 'rift-spire', at: [0.15, 0.36], foot: 2 }, { prop: 'rift-spire', at: [0.72, 0.64], foot: 2 }],
   'pale-reach': [{ prop: 'bone-arch', at: [0.24, 0.72], foot: 2 }],
 };
 
 /** A wild region whose map is generated the first time something looks at it. */
 export function wildRegion(base: Omit<RegionDef, 'kind' | 'map' | 'markers' | 'placed' | 'encounters' | 'level'>, spec: ZoneSpec): RegionDef {
   let made: GeneratedZone | null = null;
-  const get = (): GeneratedZone => (made ??= generateZone({ ...spec, landmarks: LANDMARKS[base.id] ?? [], great: GREAT_IN[base.id] ?? [] }, base.theme));
+  const get = (): GeneratedZone => (made ??= generateZone({ ...spec, landmarks: LANDMARKS[base.id] ?? [], great: [...(GREAT_IN[base.id] ?? []), ...(DOOR_GROUND[base.id] ?? [])] }, base.theme));
   return {
     ...base,
     kind: 'wild',

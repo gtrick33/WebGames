@@ -1,3 +1,5 @@
+import type { PlacedMarkerDef } from './types';
+
 /*
  * The great things of the world, and there are few of them: only what the story itself names (a land's own line says
  * "the great lighthouse", "a necropolis on an island", "the Gloam Gate"). The owner: "they could be present only in
@@ -54,6 +56,10 @@ export interface GreatWork {
   room: [number, number];
   /** A city wall from one edge of the land to the other, this many tiles south of its middle, open where a road crosses. */
   wall?: number;
+  /** It may stand across a road: it's at a door a road comes to, and everyone just walks round it. */
+  overRoad?: boolean;
+  /** Its ground has a wall round it: what's in there isn't for walking on, and now you can see why. */
+  walled?: boolean;
 }
 
 /* ------------------------------------------------------------------ what they're made of */
@@ -132,6 +138,9 @@ function castle(h: number, tint: string | undefined, o: { sunk?: number; roof?: 
   ];
 }
 
+/** What a hill with a dungeon's mouth in it stands on (render3d/doorways.ts): the rows behind the door, which is the tile south of the middle. */
+const HILL: [number, number, number, number][] = [[-3, -1, 3, 0], [-2, -2, 2, -2]];
+
 /* ------------------------------------------------------------------ the table */
 
 export const GREAT: Record<string, GreatWork> = {
@@ -143,8 +152,50 @@ export const GREAT: Record<string, GreatWork> = {
       block(6, 1, 5, -8, 0, { tint: DARK_STONE, shadow: 4 }),
       block(6, 1, 5, 8, 0, { tint: DARK_STONE, shadow: 4 }),
     ],
-    solid: [[-10, -1, -9, 1], [-7, -1, -6, 1], [6, -1, 7, 1], [9, -1, 10, 1]],
+    solid: [[-10, -1, -9, 1], [-7, -1, -6, 1], [6, -1, 7, 1], [9, -1, 10, 1], ...HILL],
     room: [13, 6],
+    overRoad: true,
+  },
+
+  // The hills with a dungeon's mouth in them: boulders fallen at the foot of each, of its own stone
+  'mouth-rimeheld': {
+    parts: [thing('stone_tallA', 2.6, -3.5, 0.4, { rot: 20, tint: ICE }), thing('stone_tallA', 3.4, 3.7, -0.2, { rot: 200, tint: '#d0ecff' }), thing('stone_tallA', 1.7, 2.9, 0.6, { rot: 110, tint: ICE })],
+    solid: HILL,
+    room: [5, 4],
+    overRoad: true,
+  },
+  'mouth-blight': {
+    parts: [thing('Rock_3_G', 1.3, -3.4, 0.5, { rot: 40, tint: '#6a6650' }), thing('Rock_1_G', 1.1, 3.5, 0.3, { rot: 130, tint: '#5a5644' })],
+    solid: HILL,
+    room: [5, 4],
+    overRoad: true,
+  },
+  'mouth-molten': {
+    parts: [thing('Rock_3_G', 1.5, -3.6, 0.4, { rot: 70, tint: '#3a2e2c' }), thing('Rock_1_G', 1.3, 3.6, 0.2, { rot: 160, tint: '#42322e' })],
+    solid: [[-3, 0, 3, 0]],
+    room: [5, 2],
+    overRoad: true,
+  },
+  'mouth-grotto': {
+    parts: [thing('Rock_3_G', 1.2, -3.4, 0.5, { rot: 10, tint: '#8a948c' }), thing('Rock_1_G', 1, 3.5, 0.5, { rot: 95, tint: '#7a8680' })],
+    solid: HILL,
+    room: [5, 4],
+    overRoad: true,
+  },
+  // The Rotmother's cistern lets out under a wall of brick
+  'outfall-rotmother': { parts: [], solid: [[-3, 0, 3, 0]], room: [4, 2], overRoad: true },
+
+  // Riftscar: "the Herald's spire", the way to it through a tear in an arch at its foot
+  'herald-spire': {
+    parts: [
+      thing('b_tower_B', 22, 0, 0, { tint: '#5a4c78', shadow: 5, glow: '#c49aff', glowY: 21, glowSize: 70 }),
+      thing('b_tower_A', 11, -4.4, 1.4, { tint: '#4c4066', shadow: 2 }),
+      thing('b_tower_A', 12, 4.6, 1, { tint: '#4c4066', shadow: 2 }),
+      ...ring(7, 7, 4, (x, z, i) => thing('stone_tallA', 2.4 + (i % 3) * 1.1, x, z, { rot: i * 67, tipZ: x * 2.6, tipX: -z * 2.6, y: -0.3, tint: i % 2 ? '#a078e8' : '#7a58c0' })),
+    ],
+    solid: [[-3, -2, 3, 1], [-5, 0, -4, 1], [4, 0, 5, 1]],
+    room: [8, 5],
+    overRoad: true,
   },
 
   // Stormwatch: "the great lighthouse" (it can be seen from the mainland, and from a long way out to sea)
@@ -245,6 +296,7 @@ export const GREAT: Record<string, GreatWork> = {
     ],
     solid: [[-11, -8, 11, 5]],
     room: [20, 13],
+    walled: true,
   },
 
   // The Riftscar: "glass plains under a torn sky": the Tear itself, and the glass turning slowly round it
@@ -253,7 +305,7 @@ export const GREAT: Record<string, GreatWork> = {
       block(2.4, 34, 0.5, 0, 0, { y: 2, tint: '#f0e0ff', tipZ: 6, glow: '#d8a0ff', glowY: 18, glowSize: 140 }),
       ...ring(10, 13, 9, (x, z, i) => thing('stone_tallA', 3 + (i % 4) * 1.4, x, z, { y: 2 + ((i * 7) % 12), rot: i * 47, tipZ: i * 30, tipX: i * 21, tint: i % 3 ? '#a078e8' : '#d0b8ff' })),
     ],
-    solid: [[-2, -1, 2, 2]],
+    solid: [[-1, 0, 1, 0]],
     room: [15, 11],
   },
 
@@ -295,9 +347,9 @@ export const GREAT: Record<string, GreatWork> = {
   // the Rotmother's Cistern: "the Rot-Mother stirs her pot": vats you could drown a street in
   'rot-vats': {
     parts: [
-      thing('barrel_large', 10, -9, -3, { tint: '#7a8a68' }),
-      thing('barrel_large', 12, 0, -4, { tint: '#6a7a5c', glow: '#8aff6a', glowY: 12, glowSize: 30 }),
-      thing('barrel_large', 10, 9, -3, { tint: '#7a8a68' }),
+      thing('barrel_large', 10, -9, -5, { tint: '#7a8a68' }),
+      thing('barrel_large', 12, 0, -5.8, { tint: '#6a7a5c', glow: '#8aff6a', glowY: 12, glowSize: 30 }),
+      thing('barrel_large', 10, 9, -5, { tint: '#7a8a68' }),
     ],
     solid: [],
     room: [0, 0],
@@ -305,7 +357,7 @@ export const GREAT: Record<string, GreatWork> = {
   // the Deepforge: "the master smith who serves the King": the furnace itself, and its stacks
   'great-furnace': {
     parts: [
-      thing('b_blacksmith#3a3038', 13, 0, -4, { tint: '#6a5a58', flame: 1.6, flameY: 6 }),
+      thing('b_blacksmith#3a3038', 13, 0, -8.6, { tint: '#6a5a58', flame: 1.6, flameY: 6 }),
       thing('pillar', 15, -10, -3, { tint: '#4a4048', flame: 1.4, flameY: 15 }),
       thing('pillar', 15, 10, -3, { tint: '#4a4048', flame: 1.4, flameY: 15 }),
     ],
@@ -333,8 +385,8 @@ export const GREAT: Record<string, GreatWork> = {
   'vault-door': {
     parts: [
       thing('arch_gate', 12, 0, -2.2, { tint: '#a8c8e0' }),
-      thing('stone_tallA', 12, -9, -2.6, { tint: ICE, rot: 30 }),
-      thing('stone_tallA', 14, 9, -2.6, { tint: ICE, rot: 140 }),
+      thing('stone_tallA', 12, -9, -4.6, { tint: ICE, rot: 30 }),
+      thing('stone_tallA', 14, 9, -5.2, { tint: ICE, rot: 140 }),
     ],
     solid: [],
     room: [0, 0],
@@ -376,9 +428,9 @@ export const GREAT: Record<string, GreatWork> = {
   // the Spire: "at its crown the Pale Herald": the glass the tower is coming apart into
   'tear-shards': {
     parts: [
-      thing('stone_tallA', 15, -8, -3, { tint: '#a078e8', rot: 30, tipZ: 12, glow: '#c090ff', glowSize: 50 }),
-      thing('stone_tallA', 18, 0, -5, { tint: '#d0b8ff', rot: 200 }),
-      thing('stone_tallA', 13, 9, -3, { tint: '#8a5ad8', rot: 100, tipZ: -14 }),
+      thing('stone_tallA', 15, -8, -5.6, { tint: '#a078e8', rot: 30, tipZ: 12, glow: '#c090ff', glowSize: 50 }),
+      thing('stone_tallA', 18, 0, -6.8, { tint: '#d0b8ff', rot: 200 }),
+      thing('stone_tallA', 13, 9, -5, { tint: '#8a5ad8', rot: 100, tipZ: -14 }),
     ],
     solid: [],
     room: [0, 0],
@@ -425,7 +477,40 @@ export interface GreatPlace {
   spot?: string;
   dy?: number;
   water?: boolean;
+  /** Right there or not at all: it's the door itself. */
+  exact?: boolean;
 }
+
+/**
+ * The hand-laid lands' built doors have their ground here: blocks on the tiles behind the door ([x0, y0, x1, y1] from the
+ * door's own tile), which come and go with the door.
+ */
+export function withDoorGround(placed: PlacedMarkerDef[], to: string, rects: readonly (readonly [number, number, number, number])[]): PlacedMarkerDef[] {
+  const door = placed.find((p) => p.marker.kind === 'exit' && p.marker.to === to);
+  if (!door) return placed;
+  const taken = new Set(placed.map((p) => `${p.tx},${p.ty}`));
+  const out = [...placed];
+  for (const [x0, y0, x1, y1] of rects) {
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const key = `${door.tx + x},${door.ty + y}`;
+        if (taken.has(key)) continue;
+        taken.add(key);
+        out.push({ tx: door.tx + x, ty: door.ty + y, marker: { kind: 'prop', prop: 'block', solid: true }, ...(door.when ? { when: door.when } : {}) });
+      }
+    }
+  }
+  return out;
+}
+
+/** The ground under the dungeons' built doors (render3d/doorways.ts): no wonders, just what stands behind a door tile. */
+export const DOOR_GROUND: Record<string, GreatPlace[]> = {
+  rimeheld: [{ id: 'mouth-rimeheld', door: 'rimeheld-vault', dy: -1, exact: true }],
+  blightwood: [{ id: 'mouth-blight', door: 'blightheart', dy: -1, exact: true }],
+  saltmarsh: [{ id: 'mouth-grotto', door: 'smugglers-grotto', dy: -1, exact: true }],
+  duskfen: [{ id: 'outfall-rotmother', door: 'rotmother-cistern', dy: -1, exact: true }],
+  emberdeep: [{ id: 'mouth-molten', door: 'molten-throne', dy: -1, exact: true }],
+};
 
 export const GREAT_IN: Record<string, GreatPlace[]> = {
   ironpeak: [{ id: 'thanes-gate', door: 'deepforge-halls', dy: -1 }],
@@ -438,6 +523,6 @@ export const GREAT_IN: Record<string, GreatPlace[]> = {
   bonefields: [{ id: 'titan', at: [0.5, 0.38] }],
   emberdeep: [{ id: 'black-mountain', door: 'molten-throne', dy: -8 }],
   hollowmere: [{ id: 'necropolis', spot: 'the-necropolis', dy: -9, water: true }],
-  riftscar: [{ id: 'the-tear', at: [0.35, 0.4] }],
+  riftscar: [{ id: 'the-tear', at: [0.35, 0.4] }, { id: 'herald-spire', door: 'spire-of-the-rift', dy: -5 }],
   'pale-reach': [{ id: 'duskspire', door: 'duskspire' }, { id: 'ranks-of-the-dead', at: [0.5, 0.45] }],
 };

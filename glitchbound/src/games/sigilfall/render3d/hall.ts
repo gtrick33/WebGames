@@ -106,6 +106,7 @@ export class Hall3D {
     LIGHT.uTime.value = time;
     LIGHT.uSun.value.set(SUN[0], SUN[1], SUN[2]).normalize();
     LIGHT.uDark.value.set(0, 8, 0, 0);
+    LIGHT.uNight.value.set(1, 1, 1, 0);
     LIGHT.uGrade.value.set(0, 0, 0, 0);
     for (const f of LIGHT.uFlames.value) f.set(0, 0, 0);
     const c = st.camera;

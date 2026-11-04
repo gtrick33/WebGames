@@ -1656,7 +1656,8 @@
 }
 .rb-banner {
   position: absolute;
-  top: 27%;
+  /* (over everyone's heads: a line someone is shouting comes up to about a quarter of the way down) */
+  top: 13%;
   left: 50%;
   transform: translateX(-50%);
   display: grid;
@@ -7124,7 +7125,7 @@
 .rb-rr-head h2 {
   margin: 0;
   color: #ffe39a;
-  font: 700 clamp(32px, 8cqw, 68px) / 1 Georgia, 'Times New Roman', serif;
+  font: 700 clamp(28px, min(8cqw, 11cqh), 68px) / 1 Georgia, 'Times New Roman', serif;
   letter-spacing: 0.02em;
   text-shadow: 0 3px 0 #2a1406, 0 0 34px rgb(255 200 90 / 0.65);
   animation: rb-rr-stamp 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) both;
@@ -8856,6 +8857,13 @@
   flex-wrap: wrap;
   min-width: 0;
 }
+/* in a tab the count sits beside the word: hung off its corner, the row of tabs cuts it off */
+.rb-tabs .rb-badge {
+  position: static;
+  display: inline-block;
+  margin-left: 6px;
+  vertical-align: 1px;
+}
 .rb-hero-left {
   min-height: 0;
   overflow-y: auto;
@@ -8889,6 +8897,14 @@
   .rb-ring-editing .rb-btn.is-small {
     min-height: 38px;
   }
+  .rb-ring-menu {
+    gap: 4px;
+  }
+  .rb-ring-menu .rb-iconbtn {
+    width: 36px;
+    height: 36px;
+    font-size: 15px;
+  }
 }
 
 /* the kit's six share what width their column has, as big as it lets them, and stay out of the list beside it */
@@ -8916,5 +8932,41 @@
     bottom: 4px;
     z-index: 2;
     box-shadow: 0 -8px 14px rgb(8 4 18 / 0.75);
+  }
+}
+
+/* choosing a hero on a short screen: smaller cards (what each class is reads below them), and Begin stays on screen */
+@container (max-height: 430px) {
+  .rb-class > .rb-dim {
+    display: none;
+  }
+  .rb-create-go {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    padding: 6px 0;
+    background: linear-gradient(transparent, #120c22 28%);
+    box-shadow: 0 16px 0 #120c22;
+  }
+}
+
+/* a phone on its side: the quest's name on one line, so its objective stays clear of the potion under it */
+@container rb-stage (max-height: 400px) {
+  .is-touch .rb-tracker strong {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .is-touch .rb-tracker strong img {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    margin-right: 4px;
+    vertical-align: -3px;
+  }
+  .is-touch .rb-tracker > span {
+    font-size: 13px;
+    line-height: 1.3;
   }
 }

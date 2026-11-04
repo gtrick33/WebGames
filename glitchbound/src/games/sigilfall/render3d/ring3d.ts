@@ -112,6 +112,7 @@ export class RingStage implements RingView {
     if (!this.built) this.build(st.landPacks!);
     LIGHT.uTime.value = time;
     LIGHT.uDark.value.set(0, 8, 0, 0);
+    LIGHT.uNight.value.set(1, 1, 1, 0);
     const grade = SKINS[this.map.theme].grade;
     LIGHT.uGrade.value.set(grade[0], grade[1], grade[2], grade[3]);
     CROWD.uCheer.value = Math.max(0, CROWD.uCheer.value - dt * 0.32);
