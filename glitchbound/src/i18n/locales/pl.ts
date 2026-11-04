@@ -2228,6 +2228,7 @@ const pl: string[] = [
   'Albo zagraj w coś szybkiego',
   'Bohater z mieczem i tarczą na dziedzińcu zamku nocą, wśród palenisk i czerwonych sztandarów',
   'Prawdziwa rozgrywka, na telefonie lub komputerze',
+  'Więcej gier poniżej',
 ];
 
 export default pl;

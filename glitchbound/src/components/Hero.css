@@ -38,8 +38,11 @@
   }
 }
 /* "Big obsessions." in a moving candy gradient, the glitch pulse on top */
+/* (the gradient only paints inside the box, so the padding makes room for the g's tail, and the margin takes it back) */
 .hero-hl {
   display: inline-block;
+  margin-bottom: -0.2em;
+  padding-bottom: 0.2em;
   background: linear-gradient(100deg, var(--orange), var(--magenta) 35%, var(--violet) 60%, var(--cyan) 85%, var(--orange));
   background-size: 220% 100%;
   -webkit-background-clip: text;

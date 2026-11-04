@@ -2228,6 +2228,7 @@ const tr: string[] = [
   'Ya da hızlı bir oyun oyna',
   'Gece bir kale avlusunda, mangallar ve kırmızı sancaklar arasında kılıç ve kalkanlı bir kahraman',
   'Gerçek oynanış, telefonda ya da bilgisayarda',
+  'Aşağıda daha fazla oyun',
 ];
 
 export default tr;

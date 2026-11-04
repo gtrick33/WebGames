@@ -2228,6 +2228,7 @@ const nl: string[] = [
   'Of speel een snel spel',
   'Een held met zwaard en schild op een kasteelplein bij nacht, tussen vuurschalen en rode banieren',
   'Echte gameplay, op telefoon of computer',
+  'Meer spellen hieronder',
 ];
 
 export default nl;

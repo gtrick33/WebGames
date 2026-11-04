@@ -2228,6 +2228,7 @@ const de: string[] = [
   'Oder spiel schnell eine Runde',
   'Ein Held mit Schwert und Schild nachts auf einem Burghof, zwischen Feuerschalen und roten Bannern',
   'Echtes Gameplay, auf Handy oder Computer',
+  'Mehr Spiele weiter unten',
 ];
 
 export default de;
