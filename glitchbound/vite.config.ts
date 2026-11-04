@@ -1,7 +1,7 @@
 import { defineConfig, type Plugin } from 'vitest/config';
 import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
-import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pageSpecs, renderPage, robots, sitemap } from './scripts/seo.ts';
@@ -58,13 +58,15 @@ function seoPages(siteUrl: string, adsenseClient: string): Plugin {
       } catch {
         return; // not a client build (e.g. vitest)
       }
+      // (a chunk of nothing but styles is dropped from the build after the list was made: it has no file to fetch)
+      const pageCode = gamePageCode.filter((f) => existsSync(join(outDir, f)));
       for (const page of pageSpecs(siteUrl)) {
         const file = join(outDir, page.file);
         mkdirSync(dirname(file), { recursive: true });
         const fontLinks = fonts.map((f) => `<link rel="preload" as="font" type="font/woff2" crossorigin href="/${f}">`).join('\n  ');
         const html = renderPage(template, page, siteUrl).replace('</head>', `  ${fontLinks}\n  </head>`);
         // A game page fetches the game page's code alongside the app's, so it renders in one go (src/main.tsx).
-        writeFileSync(file, page.gamePage ? preload(html, gamePageCode) : html);
+        writeFileSync(file, page.gamePage ? preload(html, pageCode) : html);
       }
       writeFileSync(join(outDir, 'sitemap.xml'), sitemap(siteUrl));
       writeFileSync(join(outDir, 'robots.txt'), robots(siteUrl));

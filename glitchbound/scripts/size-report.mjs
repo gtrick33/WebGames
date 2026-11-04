@@ -1,5 +1,6 @@
-// Prints raw and gzip/brotli sizes of the production build and checks the size budget.
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+// Prints raw and gzip/brotli sizes of the production build, checks the size budget, and checks that every page only
+// asks for build files that exist (a page asking for a missing one logs an error for every visitor).
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { gzipSync, brotliCompressSync } from 'node:zlib';
 
@@ -48,5 +49,15 @@ console.log(`  Initial JS (gzip): ${kb(initialJs)}  (budget ${kb(BUDGET_INITIAL_
 console.log(`  All files  (gzip): ${kb(total)}\n`);
 if (initialJs > BUDGET_INITIAL_JS_GZIP) {
   console.error('Initial JS exceeds the size budget!');
+  process.exit(1);
+}
+const missing = new Set();
+for (const page of walk(DIST).filter((f) => f.endsWith('.html'))) {
+  for (const m of readFileSync(page, 'utf8').matchAll(/(?:href|src)="(\/assets\/[^"?#]+)/g)) {
+    if (!existsSync(join(DIST, m[1]))) missing.add(`${relative(DIST, page)} asks for ${m[1]}`);
+  }
+}
+if (missing.size) {
+  console.error(`Pages ask for build files that don't exist:\n  ${[...missing].slice(0, 12).join('\n  ')}`);
   process.exit(1);
 }
