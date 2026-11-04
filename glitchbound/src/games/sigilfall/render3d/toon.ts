@@ -27,8 +27,9 @@ export class RigAnim {
     const J = rig.joints.length;
     this.joints = rig.joints;
     this.ibm = Float32Array.from(rig.ibm);
+    // (each clip has a row more than its frames: its first again, for the blend from its last back round to its start)
     let total = 1;
-    for (const c of Object.values(rig.clips)) total += c.n;
+    for (const c of Object.values(rig.clips)) total += c.n + 1;
     this.total = total;
     const data = new Float32Array(J * 3 * total * 4);
     const world = new Float32Array(J * 16);
@@ -64,7 +65,8 @@ export class RigAnim {
       const q = new Int16Array(bin, c.q, c.n * J * 4);
       const t = c.tj.length ? new Float32Array(bin, c.t, c.n * c.tj.length * 3) : null;
       const s = c.sj.length ? new Float32Array(bin, c.s, c.n * c.sj.length * 3) : null;
-      for (let f = 0; f < c.n; f++) {
+      for (let at = 0; at <= c.n; at++) {
+        const f = at % c.n;
         pose((j) => {
           const ti = c.tj.indexOf(j);
           const si = c.sj.indexOf(j);
@@ -78,10 +80,10 @@ export class RigAnim {
           const sz = s && si >= 0 ? s[(f * c.sj.length + si) * 3 + 2]! : rest[j * 10 + 9]!;
           compose(local, tx, ty, tz, q[qa]! * k, q[qa + 1]! * k, q[qa + 2]! * k, q[qa + 3]! * k, sx, sy, sz);
         });
-        row(next + f);
+        row(next + at);
       }
       this.clips[id] = { start: next, n: c.n, fps: c.fps };
-      next += c.n;
+      next += c.n + 1;
     }
     this.tex = new THREE.DataTexture(data, J * 3, total, THREE.RGBAFormat, THREE.FloatType);
     this.tex.minFilter = this.tex.magFilter = THREE.NearestFilter;
@@ -93,11 +95,14 @@ export class RigAnim {
     return clip in this.clips;
   }
 
-  /** The texture row of a clip at `t` seconds in: looping, or held on its last frame. */
+  /**
+   * Where a clip is at `t` seconds in, as a row of the texture and how far on to the next: looping, or held on its last
+   * frame. The shaders blend the two, so that a clip stored at 15 poses a second still moves at the display's rate.
+   */
   frame(clip: string, t: number, loop = true): number {
     const c = this.clips[clip];
     if (!c) return 0;
-    const f = Math.floor(t * c.fps);
+    const f = t * c.fps;
     return c.start + (loop ? ((f % c.n) + c.n) % c.n : Math.min(Math.max(f, 0), c.n - 1));
   }
 
@@ -215,9 +220,16 @@ mat4 skinAt(int f) {
   if (w < 0.995) m += bone(int(aSkin.y + 0.5), f) * (1.0 - w);
   return m;
 }
+mat4 poseAt(float f) {
+  float row = floor(f);
+  float k = f - row;
+  mat4 m = skinAt(int(row));
+  if (k > 0.004) m = m * (1.0 - k) + skinAt(int(row) + 1) * k;
+  return m;
+}
 mat4 posed() {
-  mat4 m = skinAt(int(iAnim.x + 0.5));
-  if (iAnim.z > 0.002) m = m * (1.0 - iAnim.z) + skinAt(int(iAnim.y + 0.5)) * iAnim.z;
+  mat4 m = poseAt(iAnim.x);
+  if (iAnim.z > 0.002) m = m * (1.0 - iAnim.z) + poseAt(iAnim.y) * iAnim.z;
   return m;
 }
 `;
@@ -440,6 +452,33 @@ export const staticMaterial = new THREE.ShaderMaterial({
       vec3 c = toon(vCol, normalize(vN));
       gl_FragColor = vec4(finish(c), 1.0);
     }`,
+});
+
+/** How worked up The Ring's crowd is (0-1): it bounces when something happens, and settles by itself. */
+export const CROWD = { uCheer: { value: 0 } };
+
+/** The people watching: each bobs at its own pace from where it stands, and jumps when there's something to cheer. */
+export const crowdMaterial = new THREE.ShaderMaterial({
+  uniforms: { ...LIGHT, ...CROWD },
+  vertexShader: /* glsl */ `
+    ${COMMON_VERT}
+    uniform float uTime;
+    uniform float uCheer;
+    void main() {
+      float ph = fract(sin(dot(instanceMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453);
+      vec3 p = position;
+      p.x += sin(uTime * (0.8 + ph) + ph * 6.283) * 0.07 * max(p.y, 0.0);
+      vec4 w = modelMatrix * instanceMatrix * vec4(p, 1.0);
+      float hop = max(0.0, sin(uTime * (3.2 + ph * 3.0) + ph * 6.283));
+      w.y += hop * hop * (0.015 + 0.3 * uCheer);
+      vW = w.xyz;
+      vN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * normal);
+      vCol = aCol * iTint.rgb;
+      vFlash = 0.0;
+      vAlpha = 1.0;
+      gl_Position = projectionMatrix * viewMatrix * w;
+    }`,
+  fragmentShader: staticMaterial.fragmentShader,
 });
 
 /**

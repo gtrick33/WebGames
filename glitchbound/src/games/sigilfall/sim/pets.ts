@@ -3,6 +3,7 @@ import { CLASSES } from '../data/classes';
 import { PETS } from '../data/pets';
 import { effStats, hitEnemy } from './combat';
 import { castRay, circleHitsWall, flowField, flowStep, lineOfSight, moveCircle, pushOut, TILE } from './map';
+import { aimAlong, clearLine, findRoute } from './nav';
 import type { Enemy, Pet } from './types';
 import type { World } from './world';
 
@@ -186,11 +187,43 @@ function keepApart(w: World, dt: number): void {
   }
 }
 
-/** A pet with somewhere to be walks there around walls (a flow field from the goal, made once). */
+/** How much wider than their body people plan for: what keeps them off what they pass. */
+const ROOMY = 3;
+
+/**
+ * The way to go toward a spot from where a pet is: straight if a body can walk it, or along a route round whatever's in
+ * the way, thought over every so often as the spot moves.
+ */
+function headFor(w: World, pet: Pet, tx: number, ty: number): { x: number; y: number } | null {
+  if (clearLine(w.map, pet.x, pet.y, tx, ty, pet.r + 1)) {
+    const d = dist(tx, ty, pet.x, pet.y) || 1;
+    pet.route = undefined;
+    return { x: (tx - pet.x) / d, y: (ty - pet.y) / d };
+  }
+  if (!pet.route || w.time - (pet.routeAt ?? -9) > 0.7) {
+    pet.route = findRoute(w.map, pet.x, pet.y, tx, ty, { r: pet.r + ROOMY, budget: 1800 }) ?? findRoute(w.map, pet.x, pet.y, tx, ty, { r: pet.r, budget: 1800 }) ?? undefined;
+    pet.routeAt = w.time;
+  }
+  return pet.route ? aimAlong(pet.route, pet.x, pet.y) : null;
+}
+
+/** A pet with somewhere to be walks there along a route round what stands, thought out once and again if it's cut off. */
 function walkTo(w: World, pet: Pet, goal: { x: number; y: number }, dt: number, pace = 0.7): void {
-  pet.flow ??= flowField(w.map, Math.floor(goal.x / TILE), Math.floor(goal.y / TILE), 400);
   const d = dist(goal.x, goal.y, pet.x, pet.y);
-  const step = pet.paused ? null : d < 2 * TILE ? (d > 3 ? { x: (goal.x - pet.x) / d, y: (goal.y - pet.y) / d } : null) : flowStep(w.map, pet.flow, pet.x, pet.y);
+  let step: { x: number; y: number } | null = null;
+  if (!pet.paused && d > 3) {
+    if (!pet.route && w.time - (pet.routeAt ?? -9) > 0.5) {
+      pet.routeAt = w.time;
+      pet.route = findRoute(w.map, pet.x, pet.y, goal.x, goal.y, { r: pet.r + ROOMY, budget: 20000, roads: true }) ?? findRoute(w.map, pet.x, pet.y, goal.x, goal.y, { r: pet.r, budget: 20000 }) ?? undefined;
+    }
+    step = pet.route ? aimAlong(pet.route, pet.x, pet.y) : null;
+    // (the route's end, or no route at all: the flow of the land, as far as that will take them)
+    if (!step) {
+      pet.route = undefined;
+      pet.flow ??= flowField(w.map, Math.floor(goal.x / TILE), Math.floor(goal.y / TILE), 400);
+      step = d < 2 * TILE ? { x: (goal.x - pet.x) / d, y: (goal.y - pet.y) / d } : flowStep(w.map, pet.flow, pet.x, pet.y);
+    }
+  }
   const speed = pet.def.speed * pace;
   pet.vx += ((step?.x ?? 0) * speed - pet.vx) * Math.min(1, dt * 8);
   pet.vy += ((step?.y ?? 0) * speed - pet.vy) * Math.min(1, dt * 8);
@@ -239,12 +272,15 @@ export function updatePets(w: World, dt: number): void {
       if (pet.joinT <= 0 || dist(pet.x, pet.y, p.x, p.y) < 2.5 * TILE) {
         pet.goal = undefined;
         pet.flow = undefined;
+        pet.route = undefined;
         pet.joinT = undefined;
       } else {
         // (the hero has moved on: after them)
         if (dist(pet.goal.x, pet.goal.y, p.x, p.y) > 3 * TILE) {
           pet.goal = { x: p.x, y: p.y };
           pet.flow = undefined;
+          pet.route = undefined;
+        pet.route = undefined;
         }
         walkTo(w, pet, pet.goal, dt, 1);
         continue;
@@ -280,8 +316,9 @@ export function updatePets(w: World, dt: number): void {
       const reach = pet.def.ranged ? pet.def.reach : pet.def.reach + e.r + pet.r;
       const see = !pet.def.ranged || lineOfSight(w.map, pet.x, pet.y, e.x, e.y);
       if (d > reach * (pet.def.ranged ? 0.9 : 1) || !see) {
-        mx = Math.cos(a);
-        my = Math.sin(a);
+        const way = headFor(w, pet, e.x, e.y);
+        mx = way?.x ?? 0;
+        my = way?.y ?? 0;
       } else if (pet.atkCd <= 0) {
         pet.atkCd = pet.def.attackCd;
         pet.actT = 0.2;
@@ -302,8 +339,9 @@ export function updatePets(w: World, dt: number): void {
       if (d > loose) {
         const a = Math.atan2(hy - pet.y, hx - pet.x);
         const k = Math.min(1, (d - loose + 6) / 30);
-        mx = Math.cos(a) * k;
-        my = Math.sin(a) * k;
+        const way = headFor(w, pet, hx, hy);
+        mx = (way?.x ?? 0) * k;
+        my = (way?.y ?? 0) * k;
         if (Math.abs(angleDiff(a, 0)) < Math.PI / 2) pet.face = 0;
         else pet.face = Math.PI;
       }

@@ -104,16 +104,20 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
       if (e.t <= 0) {
         e.t = 1.5 + w.rand() * 2.5;
         e.face = w.rand() * TAU;
+        // (a stroll somewhere it can walk: nobody paces against a rock)
+        e.strolls = false;
+        for (let i = 0; i < 4 && !e.strolls; i++) {
+          if (i) e.face = w.rand() * TAU;
+          e.strolls = clearPath(w, e.x, e.y, e.x + Math.cos(e.face) * 34, e.y + Math.sin(e.face) * 34, e.r + 2);
+        }
       }
-      if (e.t > 1.2 && dist(e.x, e.y, e.homeX, e.homeY) < 40) {
+      if (e.t > 1.2 && e.strolls && dist(e.x, e.y, e.homeX, e.homeY) < 40) {
         mx = Math.cos(e.face) * 0.35;
         my = Math.sin(e.face) * 0.35;
-      } else {
-        const a = Math.atan2(e.homeY - e.y, e.homeX - e.x);
-        if (dist(e.x, e.y, e.homeX, e.homeY) > 20) {
-          mx = Math.cos(a) * 0.4;
-          my = Math.sin(a) * 0.4;
-        }
+      } else if (dist(e.x, e.y, e.homeX, e.homeY) > 20) {
+        const way = homeward(w, e);
+        mx = way.x * 0.4;
+        my = way.y * 0.4;
       }
       // (nobody notices a hero standing still in a scene)
       if (!p.dead && !w.scene && d < e.def.aggro && lineOfSight(w.map, e.x, e.y, p.x, p.y)) w.alertPack(e);
@@ -124,9 +128,9 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
       break;
     }
     case 'return': {
-      const a = Math.atan2(e.homeY - e.y, e.homeX - e.x);
-      mx = Math.cos(a);
-      my = Math.sin(a);
+      const way = homeward(w, e);
+      mx = way.x;
+      my = way.y;
       e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.3 * dt);
       if (dist(e.x, e.y, e.homeX, e.homeY) < 12) {
         e.state = 'idle';
@@ -432,6 +436,16 @@ function steer(w: World, e: Enemy, los: boolean): { x: number; y: number } {
     e.huntAt = w.time;
   }
   return flowStep(w.map, e.huntFlow, e.x, e.y) ?? { x: 0, y: 0 };
+}
+
+/** The way home: straight if the way is clear, round what's in the way if it isn't. */
+function homeward(w: World, e: Enemy): { x: number; y: number } {
+  if (clearPath(w, e.x, e.y, e.homeX, e.homeY, e.r)) {
+    const d = dist(e.x, e.y, e.homeX, e.homeY) || 1;
+    return { x: (e.homeX - e.x) / d, y: (e.homeY - e.y) / d };
+  }
+  e.homeFlow ??= flowField(w.map, Math.floor(e.homeX / TILE), Math.floor(e.homeY / TILE), 120);
+  return flowStep(w.map, e.homeFlow, e.x, e.y) ?? { x: 0, y: 0 };
 }
 
 /** Whether a circle of radius r can slide straight from one point to another. */

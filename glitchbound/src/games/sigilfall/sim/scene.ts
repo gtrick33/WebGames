@@ -4,6 +4,7 @@ import { PETS } from '../data/pets';
 import { SCENES } from '../data/scenes';
 import type { RegionId, StoryCond } from '../data/types';
 import { castRay, TILE, WORLD_K } from './map';
+import { aimAlong, findRoute, type Route } from './nav';
 import { placePet } from './pets';
 import { holds } from './story';
 import type { Enemy } from './types';
@@ -69,6 +70,8 @@ export interface ScenePlay {
   seen?: boolean;
   /** The title in the lower bar, if a step has given one. */
   title?: { text: string; sub?: string };
+  /** The way someone in a `move` step is walking. */
+  route?: Route;
   emotes: { who: string; icon: Emote; t: number }[];
 }
 
@@ -240,11 +243,16 @@ export function updateScene(w: World, dt: number): void {
       const tx = step.to === 'hero' || !w.places[step.to] ? to.x + (n.x < to.x ? -26 : 26) : to.x;
       const ty = to.y;
       const d = dist(n.x, n.y, tx, ty);
-      const k = Math.min(1, (WALK * dt) / Math.max(1e-6, d));
-      n.x += (tx - n.x) * k;
-      n.y += (ty - n.y) * k;
-      if (Math.abs(tx - n.x) > 0.5) n.face = tx < n.x ? 1 : 0;
-      done = d < 1.5 || s.t > 6;
+      if (first) s.route = findRoute(w.map, n.x, n.y, tx, ty, { r: 7, budget: 12000, roads: true }) ?? findRoute(w.map, n.x, n.y, tx, ty, { r: 4, budget: 12000 }) ?? undefined;
+      const aim = s.route ? aimAlong(s.route, n.x, n.y) : d > 1 ? { x: (tx - n.x) / d, y: (ty - n.y) / d } : null;
+      if (aim) {
+        const stride = WALK * dt;
+        n.x += aim.x * stride;
+        n.y += aim.y * stride;
+        if (Math.abs(aim.x) > 0.1) n.face = aim.x < 0 ? 1 : 0;
+      }
+      // (time enough for the way there, however it winds)
+      done = !aim || d < 1.5 || s.t > 14;
     }
   } else if ('emote' in step) {
     if (first) s.emotes.push({ who: step.emote, icon: step.icon, t: 0 });
