@@ -469,7 +469,7 @@
   justify-content: space-between;
   align-items: center;
 }
-.rb-create-head h1 {
+.rb-create-head h2 {
   margin: 0;
   font-size: clamp(20px, 3vw, 30px);
   color: var(--rb-gold);
@@ -969,7 +969,7 @@
   align-items: center;
   gap: 12px;
 }
-.rb-roster-head h1 {
+.rb-roster-head h2 {
   margin: 0;
   font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(20px, 3cqw, 28px);
@@ -5370,7 +5370,7 @@
   flex: 1;
   min-width: 0;
 }
-.rb-vlobby-head h1 {
+.rb-vlobby-head h2 {
   margin: 0;
   color: #ffe39a;
   font: 700 clamp(20px, 3.4cqw, 32px) / 1.05 Georgia, 'Times New Roman', serif;
@@ -5692,7 +5692,7 @@
   .rb-vlobby-evolve {
     display: none;
   }
-  .rb-vlobby-head h1 {
+  .rb-vlobby-head h2 {
     font-size: 16px;
   }
   .rb-vlobby-head .rb-iconbtn {
@@ -6174,7 +6174,7 @@
   flex: 1;
   min-width: 0;
 }
-.rb-rp-title h1 {
+.rb-rp-title h2 {
   margin: 0;
   color: #ffe39a;
   font: 700 clamp(19px, 3.2cqw, 30px) / 1.05 Georgia, 'Times New Roman', serif;

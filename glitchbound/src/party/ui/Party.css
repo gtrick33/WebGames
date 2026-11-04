@@ -2441,7 +2441,7 @@ img.pt-feature-art {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   min-height: calc(3 * 1.35em);
 }
 .pt-gamecard .flagship-players {
@@ -2556,8 +2556,8 @@ img.pt-feature-art {
     font-size: 14px;
   }
   .pt-gamecard .flagship-tag {
-    -webkit-line-clamp: 2;
-    min-height: calc(2 * 1.35em);
+    -webkit-line-clamp: 5;
+    min-height: calc(3 * 1.35em);
   }
   /* Narrow cards: the player count fits one line; the time is on the game's own screen. */
   .pt-card-time {

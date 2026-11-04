@@ -1,0 +1,73 @@
+/* Admin › Home page: the Sigilfall banner, small, with its words beside it. */
+.ab-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 12px;
+  align-items: start;
+}
+.ab-preview {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 2.42;
+  border: 2px solid #f6c453;
+  border-radius: 14px;
+  background: #05030b;
+  container-type: inline-size;
+}
+.ab-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ab-copy {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 1.1cqw;
+  width: 37%;
+  padding-left: 4.4cqw;
+  color: #fff6e0;
+}
+.ab-kicker {
+  color: #ffe39a;
+  font: 700 1.5cqw/1.3 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.ab-logo {
+  width: 100%;
+  height: auto;
+}
+.ab-hook {
+  font: italic 2cqw/1.3 Georgia, 'Times New Roman', serif;
+}
+.ab-cta {
+  padding: 1cqw 2.2cqw;
+  border-radius: 1cqw;
+  background: linear-gradient(180deg, #ffe7a8, #f6c453 52%, #cf8a2d);
+  color: #2a1406;
+  font-size: 2.2cqw;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.ab-fields {
+  display: grid;
+  gap: 12px;
+}
+.ab-fields textarea {
+  resize: vertical;
+}
+.ab-fields .info-small {
+  display: block;
+  margin-top: 4px;
+  font-weight: 400;
+}
+@media (max-width: 860px) {
+  .ab-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

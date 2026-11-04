@@ -14,7 +14,8 @@
   min-width: 0;
 }
 .game-heading h1 {
-  font-size: clamp(26px, 3vw, 38px);
+  /* on a phone it shares the line with three buttons: a long name takes two lines rather than being cut off */
+  font-size: clamp(19px, 5.4vw, 26px);
   letter-spacing: -0.04em;
   white-space: nowrap;
   overflow: hidden;
@@ -22,6 +23,20 @@
   /* the overflow would clip the tail of a g or y: room for it below, taken back by the margin */
   padding-bottom: 0.14em;
   margin-bottom: -0.14em;
+}
+@media (min-width: 561px) {
+  .game-heading h1 {
+    font-size: clamp(26px, 3vw, 38px);
+  }
+}
+@media (max-width: 560px) {
+  .game-heading h1 {
+    line-height: 1.05;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    text-wrap: balance;
+  }
 }
 .game-actions {
   display: flex;
@@ -600,6 +615,12 @@
   --cyan-text: #7fe8ff;
   --magenta-text: #ff8be6;
   --yellow-text: #ffcf5a;
+  /* the older names are fixed where they're declared, on :root: without these they keep the paper theme's values here */
+  --paper: var(--bg);
+  --paper-2: var(--surface-2);
+  --card: var(--surface);
+  --ink-2: var(--fg-2);
+  --ink-3: var(--fg-3);
   position: relative;
   isolation: isolate;
   color: var(--fg);

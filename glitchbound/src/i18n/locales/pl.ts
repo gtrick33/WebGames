@@ -2229,6 +2229,12 @@ const pl: string[] = [
   'Bohater z mieczem i tarczą na dziedzińcu zamku nocą, wśród palenisk i czerwonych sztandarów',
   'Prawdziwa rozgrywka, na telefonie lub komputerze',
   'Więcej gier poniżej',
+  'Darmowe fantasy RPG w przeglądarce',
+  'Graj za darmo',
+  'Bez pobierania. Bez rejestracji.',
+  'GlitchBound to niezależne studio. Każdą grę projektujemy i tworzymy tutaj. Niektóre wychodzą od klasycznego pomysłu, jak gra karciana czy słowna, i dodają do niego coś od nas. Część grafiki i dźwięku jest licencjonowana i wymieniona w grze.',
+  'W Galerii sław nikogo jeszcze nie ma. Zagraj i ustanów pierwszy rekord.',
+  'Rankingi są jeszcze świeże, więc korona jest w zasięgu ręki. Ustanów rekord i zgarnij ją.',
 ];
 
 export default pl;

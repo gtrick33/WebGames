@@ -65,10 +65,8 @@
   gap: 2px;
 }
 .daily-chip-text strong {
-  overflow: hidden;
   font-size: 17px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.2;
 }
 .daily-chip-text span {
   font-size: 14px;

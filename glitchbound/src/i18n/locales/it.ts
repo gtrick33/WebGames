@@ -2229,6 +2229,12 @@ const it: string[] = [
   'Un eroe con spada e scudo nel cortile di un castello di notte, tra bracieri e stendardi rossi',
   'Gioco vero, su telefono o computer',
   'Altri giochi qui sotto',
+  'GDR fantasy gratis nel browser',
+  'Gioca gratis',
+  'Niente download. Niente registrazione.',
+  'GlitchBound è uno studio indipendente. Ogni gioco è ideato e realizzato qui. Alcuni partono da un’idea classica, come un gioco di carte o di parole, e ci aggiungono un tocco tutto nostro. Parte della grafica e del sonoro è su licenza e citata nel gioco.',
+  'Nessuno è ancora nell’Albo d’oro. Gioca e stabilisci il primo record.',
+  'Le classifiche sono ancora fresche, quindi una corona è a portata di mano. Fai un record e prenditene una.',
 ];
 
 export default it;

@@ -217,7 +217,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
       <div className="cs-id" key={at}>
         {hero ? (
           <>
-            <h1 className="cs-name">{hero.name}</h1>
+            <h2 className="cs-name">{hero.name}</h2>
             <p className="cs-line">
               <b style={{ color: CLASSES[hero.cls].colors.accent }}>
                 Level {hero.level} {CLASSES[hero.cls].name}
@@ -227,7 +227,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
           </>
         ) : (
           <>
-            <h1 className="cs-name">A place waits</h1>
+            <h2 className="cs-name">A place waits</h2>
             <p className="cs-line">Seven callings, five acts, one Crown. Who will you be?</p>
           </>
         )}

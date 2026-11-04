@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { SECTION_GAMES } from '../../catalog/catalog';
 import { Icon } from '../../components/Icon';
 import { Link } from '../../router/router';
@@ -33,7 +34,7 @@ export const SECTIONS: Section[] = [
     label: 'Home page',
     icon: 'star',
     group: 'Site',
-    blurb: 'Our best games, the live games row and the arcade banners, with every game’s settings. One draft: preview it, then publish.',
+    blurb: 'The Sigilfall banner, Our best games, the live games row and the arcade banners, with every game’s settings. One draft: preview it, then publish.',
   },
   { id: 'party', label: 'Party Mode', icon: 'party', group: 'Site', blurb: 'What the party page shows, game by game. Switches save right away.' },
   {
@@ -46,7 +47,7 @@ export const SECTIONS: Section[] = [
   { id: 'daily', label: 'Daily challenges', icon: 'calendar', group: 'Site', blurb: 'The next 14 days of Today’s challenge; hand-pick any day.' },
   { id: 'site', label: 'Notice & holidays', icon: 'info', group: 'Site', blurb: 'A banner on every page, and the holiday look: greeting, decorations, scenery and little events.' },
   { id: 'log', label: 'Change log', icon: 'menu', group: 'Site', blurb: 'Every change made here, newest first.' },
-  { id: 'qa', label: 'QA', icon: 'bug', group: 'Quality', blurb: 'Bug reports and the QA checklist.' },
+  { id: 'qa', label: 'QA', icon: 'bug', group: 'Quality', blurb: 'Look up a player, give coins, ban, email, and test any game without getting in the way.' },
   { id: 'team', label: 'QA team', icon: 'user', group: 'Quality', blurb: 'Who tests, and invitations.' },
 ];
 
@@ -61,8 +62,16 @@ export const sectionHref = (id: SectionId): string => (id === 'dashboard' ? '/ad
 /** The admin's navigation: a column of sections on wide screens, a row that scrolls on phones. */
 export function AdminNav({ current }: { current: SectionId }) {
   const groups = [...new Set(SECTIONS.map((s) => s.group))];
+  const nav = useRef<HTMLElement>(null);
+  // On a phone it's one row that scrolls: the open section shouldn't be left off the edge.
+  useEffect(() => {
+    const row = nav.current;
+    const link = row?.querySelector<HTMLElement>('.is-on');
+    if (!row || !link || row.scrollWidth <= row.clientWidth) return;
+    row.scrollLeft = link.offsetLeft - (row.clientWidth - link.offsetWidth) / 2;
+  }, [current]);
   return (
-    <nav className="admin-nav" aria-label="Admin sections">
+    <nav className="admin-nav" aria-label="Admin sections" ref={nav}>
       {groups.map((g) => (
         <div key={g} className="admin-nav-group">
           <span className="admin-nav-title mono">{g}</span>

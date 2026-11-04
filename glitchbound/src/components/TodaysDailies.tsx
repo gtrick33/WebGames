@@ -15,6 +15,7 @@ import { useFlagships } from '../platform/useFlagships';
 import { Icon } from './Icon';
 import './TodaysDailies.css';
 import { gameUrl } from '../catalog/catalog';
+import { tileImg } from '../platform/cardImg';
 
 /**
  * Every game's own daily puzzle in one strip, with what this player has finished today, and the streak
@@ -57,7 +58,7 @@ export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full'
       <li key={g.slug}>
         <Link href={gameUrl(g.slug)} className={`today-chip${done ? ' is-done' : ''}`} data-accent={g.accent} title={`${g.title}: ${t(g.ownDaily!.label)}`}>
           <span className="today-icon">
-            <img src={g.art.tile} alt="" width={60} height={60} loading="lazy" style={{ background: g.art.bg }} />
+            <img {...tileImg(g.art.tile, 60)} alt="" width={60} height={60} loading="lazy" style={{ background: g.art.bg }} />
             {done && (
               <span className="today-check" aria-hidden="true">
                 ✓
@@ -208,7 +209,7 @@ export function TodaysDailies({ headingLevel = 2, games: given, variant = 'full'
           return (
             <li key={g.slug}>
               <Link href={gameUrl(g.slug)} className={`daily-chip${done ? ' is-done' : ''}`} data-accent={g.accent}>
-                <img src={g.art.tile} alt="" width={56} height={56} loading="lazy" style={{ background: g.art.bg }} />
+                <img {...tileImg(g.art.tile, 56)} alt="" width={56} height={56} loading="lazy" style={{ background: g.art.bg }} />
                 <span className="daily-chip-text">
                   <strong>{g.title}</strong>
                   <span>{t(g.ownDaily!.label)}</span>

@@ -2229,6 +2229,12 @@ const es: string[] = [
   'Un héroe con espada y escudo en el patio de un castillo de noche, entre braseros y estandartes rojos',
   'Juego real, en el móvil o en el ordenador',
   'Más juegos abajo',
+  'RPG de fantasía gratis en tu navegador',
+  'Juega gratis',
+  'Sin descargas. Sin registro.',
+  'GlitchBound es un estudio independiente. Cada juego se diseña y se construye aquí. Algunos parten de una idea clásica, como un juego de cartas o de palabras, y le dan un giro propio. Parte del arte y el sonido tiene licencia y se acredita en el juego.',
+  'Aún no hay nadie en el Salón de la Fama. Juega y bate el primer récord.',
+  'Las clasificaciones aún están frescas, así que una corona está al alcance. Marca un récord y llévatela.',
 ];
 
 export default es;

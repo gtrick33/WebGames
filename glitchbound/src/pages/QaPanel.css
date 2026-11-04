@@ -127,6 +127,7 @@
   background: var(--well);
 }
 .qa-tool h3 {
+  word-spacing: 0.14em;
   margin: 0;
   font-size: 17px;
 }

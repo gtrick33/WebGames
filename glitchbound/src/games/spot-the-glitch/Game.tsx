@@ -425,14 +425,14 @@ function SpotTheGlitch({ host, pauseKey, challenge }: { host: GameHost; pauseKey
 
 function Wordmark() {
   return (
-    <h1 className="sg-wordmark" aria-label="Spot the Glitch">
+    <h2 className="sg-wordmark" aria-label="Spot the Glitch">
       <span aria-hidden="true" className="sg-wordmark-small">
         Spot the
       </span>
       <span aria-hidden="true" className="sg-glitch" data-text="GLITCH">
         GLITCH
       </span>
-    </h1>
+    </h2>
   );
 }
 

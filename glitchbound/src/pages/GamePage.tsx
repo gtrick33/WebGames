@@ -57,6 +57,7 @@ import { AdultLabel } from '../components/AdultLabel';
 import './GamePage.css';
 import { fresh } from '../platform/freshBuild';
 import { lazyPage } from '../platform/lazyPage';
+import { tileImg } from '../platform/cardImg';
 
 interface LastRound {
   event: EndEvent;
@@ -1021,7 +1022,7 @@ export function GamePage({ game }: { game: GameEntry }) {
                     </button>
                   ) : (
                     <Link href={gameUrl(next.game.slug)} className="next-up-link" data-accent={next.game.accent} onClick={() => track('next_up', { from: game.slug, to: next.game.slug, why: next.kind })}>
-                      <img src={next.game.art.tile} alt="" width={48} height={48} style={{ background: next.game.art.bg }} />
+                      <img {...tileImg(next.game.art.tile, 48)} alt="" width={48} height={48} style={{ background: next.game.art.bg }} />
                       <span className="next-up-text">
                         <strong>{next.game.title}</strong>
                         <span>
@@ -1089,7 +1090,7 @@ export function GamePage({ game }: { game: GameEntry }) {
             <button className="game-help-btn" onClick={() => openFeedback(game.slug)}>
               <Icon name="star" size={16} /> {t('Rate this game')}
             </button>
-            <Link href={`/me/bugs?game=${game.slug}`} className="game-help-btn">
+            <Link href={`/me/bugs?game=${game.slug}`} className="game-help-btn" aria-label={`${t('Report a bug')}: ${game.title}`}>
               <Icon name="bug" size={16} /> {t('Report a bug')}
             </Link>
           </div>

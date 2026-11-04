@@ -1,0 +1,68 @@
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { GAMES } from '../src/catalog/games';
+import { BANNER_MAX, sanitizeBanner } from '../src/catalog/settings';
+import { tileImg, tileSmall } from '../src/platform/cardImg';
+import { pageSpecs, renderPage } from '../scripts/seo';
+
+const PUBLIC = join(process.cwd(), 'public');
+const inPublic = (path: string): string => join(PUBLIC, path.replace(/^\//, ''));
+
+describe('card pictures', () => {
+  it('every game with a square picture has its small copies', () => {
+    for (const g of GAMES) {
+      if (!g.art.tile.endsWith('/tile.webp')) continue;
+      for (const size of [160, 400]) {
+        const copy = inPublic(g.art.tile.replace('/tile.webp', `/tile-${size}.webp`));
+        expect(existsSync(copy), copy).toBe(true);
+        expect(statSync(copy).size).toBeLessThan(statSync(inPublic(g.art.tile)).size + 1);
+      }
+    }
+  });
+
+  it('asks for a small copy, and leaves other pictures alone', () => {
+    const img = tileImg('/games/belot/tile.webp', 84);
+    expect(img.src).toBe('/games/belot/tile.webp');
+    expect(img.srcSet).toContain('/games/belot/tile-160.webp 160w');
+    expect(img.sizes).toBe('84px');
+    expect(tileImg('/photos/x.webp', 84)).toEqual({ src: '/photos/x.webp' });
+    expect(tileSmall('/games/belot/tile.webp')).toBe('/games/belot/tile-400.webp');
+  });
+});
+
+describe('the home page asks for the banner at once', () => {
+  const home = pageSpecs('https://example.test')[0]!;
+  const template = readFileSync(join(process.cwd(), 'index.html'), 'utf8');
+
+  it('preloads the pictures the banner shows, by the same rule, and they exist', () => {
+    const html = renderPage(template, home, 'https://example.test');
+    const banner = readFileSync(join(process.cwd(), 'src/components/SigilfallHero.tsx'), 'utf8');
+    const tall = /const TALL = '([^']+)'/.exec(banner)![1]!;
+    expect(html).toContain(`media="${tall}"`);
+    for (const file of ['key-art-phone.avif', 'key-art-1600.avif', 'key-art-2400.avif', 'logo.svg']) {
+      expect(html).toContain(`/games/sigilfall/${file}`);
+      expect(existsSync(inPublic(`/games/sigilfall/${file}`)), file).toBe(true);
+    }
+    for (const file of ['key-art-phone.webp', 'key-art-1600.webp', 'key-art-2400.webp']) expect(existsSync(inPublic(`/games/sigilfall/${file}`)), file).toBe(true);
+  });
+
+  it('keeps the banner picture light enough to be the first thing to paint', () => {
+    expect(statSync(inPublic('/games/sigilfall/key-art-phone.avif')).size).toBeLessThan(60_000);
+    expect(statSync(inPublic('/games/sigilfall/key-art-1600.avif')).size).toBeLessThan(60_000);
+  });
+
+  it('other pages do not fetch the banner', () => {
+    const daily = pageSpecs('https://example.test').find((p) => p.path === '/daily')!;
+    expect(renderPage(template, daily, 'https://example.test')).not.toContain('key-art');
+  });
+});
+
+describe('the banner’s words from the admin', () => {
+  it('keeps only real lines of the right length', () => {
+    expect(sanitizeBanner(null)).toEqual({});
+    expect(sanitizeBanner({ kicker: '   ', hook: 7, other: 'x' })).toEqual({});
+    expect(sanitizeBanner({ kicker: '  A  free   game ' })).toEqual({ kicker: 'A free game' });
+    expect(sanitizeBanner({ cta: 'x'.repeat(100) }).cta).toHaveLength(BANNER_MAX.cta);
+  });
+});

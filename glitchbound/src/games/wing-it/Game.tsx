@@ -681,9 +681,9 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
         <GameMenuButton className="wi-icon" style={{ marginLeft: 8 }} />
       </div>
       <Mascot />
-      <h1 className="wi-title">
+      <h2 className="wi-title">
         Wing <span>It</span>
-      </h1>
+      </h2>
       <p className="wi-tag">One tap to flap. Thread the gaps. Grab the golden feathers.</p>
       <section className="wi-card">
         <div className="wi-card-head">

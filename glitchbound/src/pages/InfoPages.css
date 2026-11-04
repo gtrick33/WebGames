@@ -495,6 +495,9 @@
   background: color-mix(in srgb, var(--cyan) 22%, var(--surface));
   box-shadow: var(--hard-sm);
 }
+.bug-cat.is-on span {
+  color: var(--fg-2);
+}
 .bug-cat:has(input:focus-visible) {
   outline: 3px solid var(--blue);
   outline-offset: 2px;

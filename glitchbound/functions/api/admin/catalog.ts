@@ -4,7 +4,7 @@ import { requireAdmin } from '../../../server/session';
 import { getGame } from '../../../src/catalog/catalog';
 import { GAMES } from '../../../src/catalog/games';
 import { MULTIPLAYER_MAX } from '../../../src/catalog/multiplayer';
-import { compactParty, compactSettings, isDay, partySettingsFor, sanitizeFlagships, sanitizeLayout, sanitizeNotice, sanitizePartyPatch, sanitizePatch, sanitizePick, settingsFor, type GameSettings, type PartySettings } from '../../../src/catalog/settings';
+import { compactParty, compactSettings, isDay, partySettingsFor, sanitizeBanner, sanitizeFlagships, sanitizeLayout, sanitizeNotice, sanitizePartyPatch, sanitizePatch, sanitizePick, settingsFor, type GameSettings, type PartySettings } from '../../../src/catalog/settings';
 import { isPartyId, PARTY_GAMES } from '../../../src/party/catalog';
 import type { AdminCatalog } from '../../../src/platform/apiTypes';
 import { HOLIDAYS, isSeasonSetting } from '../../../src/platform/seasons';
@@ -39,7 +39,7 @@ const who = (u: { nickname: string; email: string }): string => u.nickname || u.
  *   { action: 'multiplayer', list | null } the home page's live multiplayer games, in order (null = every live game, [] = hidden)
  *   { action: 'season', season }           holiday look: 'auto' (by the calendar), 'off' or a holiday id
  *   { action: 'party', id, patch | null }  a Party Mode game's settings (null = back to the defaults)
- *   { action: 'publish', games?, layout?, flagships?, multiplayer? }
+ *   { action: 'publish', games?, layout?, flagships?, multiplayer?, banner? }
  *                                          Admin › Home page's draft in one go: per-game patches ({ slug: patch }),
  *                                          and the banners, best games and live games row when they changed
  *                                          (each as its own action above: null = back to the default)
@@ -251,6 +251,12 @@ async function publish(env: Env, body: Record<string, unknown>, by: string, now:
     if (body.multiplayer !== null && !list) return bad('invalid_multiplayer');
     statements.push(list ? upsertSetting(env, 'multiplayer', list, now, by) : env.DB.prepare("DELETE FROM site_settings WHERE key = 'multiplayer'"));
     lines.push(!list ? 'Live games row: every live game' : list.length ? `Live games row: ${list.map((slug) => getGame(slug)?.title ?? slug).join(', ')}` : 'Live games row: hidden');
+  }
+  if ('banner' in body) {
+    const words = sanitizeBanner(body.banner);
+    const any = Object.keys(words).length > 0;
+    statements.push(any ? upsertSetting(env, 'banner', words, now, by) : env.DB.prepare("DELETE FROM site_settings WHERE key = 'banner'"));
+    lines.push(any ? `Sigilfall banner: ${Object.values(words).join(' / ')}` : 'Sigilfall banner: back to the default words');
   }
   if (!statements.length) return bad('nothing_to_change');
   await env.DB.batch(statements);

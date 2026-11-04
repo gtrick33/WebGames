@@ -199,7 +199,7 @@ function Crosswire({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
   return (
     <div className="xw xw-menu">
       <div className="xw-menu-top"><GameMenuButton className="xw-icon" /></div>
-      <h1 className="xw-title" aria-label="Crosswire">
+      <h2 className="xw-title" aria-label="Crosswire">
         {/* Two halves that wrap as a whole, never in the middle of WIRE. */}
         <span className="xw-title-word">
           {'CROSS'.split('').map((c, i) => (
@@ -218,7 +218,7 @@ function Crosswire({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: n
             </span>
           ))}
         </span>
-      </h1>
+      </h2>
       <p className="xw-tag">The crossword where clues live inside the grid. Follow the arrows, crack the mystery word.</p>
       <section className="xw-card">
         <div className="xw-card-head">

@@ -686,7 +686,7 @@
   padding: 0 5px;
   border-radius: 999px;
   background: var(--lc-coral);
-  color: #fff;
+  color: var(--lc-ink);
   font-size: 11px;
   font-weight: 800;
   box-shadow: 0 0 0 2px rgb(16 10 40 / 0.9);

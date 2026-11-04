@@ -42,7 +42,10 @@ export function LivePage() {
       <h1 className="info-title">{t('Live rooms')}</h1>
       <p className="info-lead">{t('Play at the same moment as your friends, each on your own phone or computer. Open a room in any game below and send the link, or join one that is waiting.')}</p>
 
-      <section aria-label={t('Games with live rooms')}>
+      <section aria-labelledby="live-games">
+        <h2 id="live-games" className="sr-only">
+          {t('Games with live rooms')}
+        </h2>
         <div className="arcade-grid live-grid">
           {games.map((g, i) => (
             <GameTile key={g.slug} game={g} index={i} size="md" best={save.games[g.slug]?.best.score} />

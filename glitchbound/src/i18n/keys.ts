@@ -2238,6 +2238,12 @@ export const KEYS: string[] = [
   "A hero with sword and shield on a castle forecourt at night, between braziers and red banners",
   "Real gameplay, on a phone or a computer",
   "More games below",
+  "Free fantasy RPG in your browser",
+  "Play free",
+  "No download. No sign-up.",
+  "GlitchBound is an independent studio. Every game is designed and built here. Some start from a classic idea, like a card game or a word puzzle, and give it a twist of our own. Some of the art and sound is licensed, and credited in the game.",
+  "Nobody is in the Hall of Fame yet. Play a game and set the first record.",
+  "The boards are still fresh, so a crown is well within reach. Set a best and claim one.",
 ];
 
 export const UI_COUNT = 311;

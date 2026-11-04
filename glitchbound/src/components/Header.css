@@ -57,7 +57,7 @@
 
 .site-header,
 .bottom-tabs {
-  --world-gold: #a8701c;
+  --world-gold: #8f5d12;
 }
 :root[data-theme='dark'] .site-header,
 :root[data-theme='dark'] .bottom-tabs {

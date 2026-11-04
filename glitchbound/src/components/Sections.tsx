@@ -9,6 +9,7 @@ import { Icon } from './Icon';
 import { Star } from './Shapes';
 import './Sections.css';
 import { gameUrl } from '../catalog/catalog';
+import { tileImg } from '../platform/cardImg';
 
 /** Editorial spread for the most recent release. */
 export function LatestRelease({ game }: { game: GameEntry }) {
@@ -77,7 +78,7 @@ export function YourArcade() {
             const rec = save.games[g.slug]!;
             return (
               <Link key={g.slug} href={gameUrl(g.slug)} className="yours-card" data-accent={g.accent}>
-                <img src={g.art.tile} alt="" width={96} height={96} style={{ background: g.art.bg }} />
+                <img {...tileImg(g.art.tile, 96)} alt="" width={96} height={96} style={{ background: g.art.bg }} />
                 <span className="yours-text">
                   <strong>{g.title}</strong>
                   <span className="mono">

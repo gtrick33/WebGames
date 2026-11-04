@@ -1,9 +1,12 @@
 import { defineConfig, type Plugin } from 'vitest/config';
 import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { pageSpecs, renderPage, robots, sitemap } from './scripts/seo.ts';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 /** Adds modulepreload links for the given build files (paths under the site root) that the page doesn't load yet. */
 function preload(html: string, files: string[]): string {
@@ -19,6 +22,8 @@ function seoPages(siteUrl: string, adsenseClient: string): Plugin {
   let outDir = 'dist';
   // The game page's code is a chunk of its own (src/pages/loadGamePage.ts): its file and the chunks it needs.
   let gamePageCode: string[] = [];
+  // The two fonts every page uses: their built files.
+  let fonts: string[] = [];
   return {
     name: 'glitchbound-seo',
     configResolved(config) {
@@ -36,6 +41,8 @@ function seoPages(siteUrl: string, adsenseClient: string): Plugin {
       if (page) add(page.fileName);
       else this.warn('the game page chunk was not found: game pages will not preload it');
       gamePageCode = [...files];
+      fonts = Object.keys(bundle).filter((f) => /(bricolage-grotesque-latin-wght-normal|space-mono-latin-700-normal)[^/]*\.woff2$/.test(f));
+      if (fonts.length !== 2) this.warn(`expected two fonts to preload, found ${fonts.length}`);
     },
     transformIndexHtml: {
       order: 'post',
@@ -54,7 +61,8 @@ function seoPages(siteUrl: string, adsenseClient: string): Plugin {
       for (const page of pageSpecs(siteUrl)) {
         const file = join(outDir, page.file);
         mkdirSync(dirname(file), { recursive: true });
-        const html = renderPage(template, page, siteUrl);
+        const fontLinks = fonts.map((f) => `<link rel="preload" as="font" type="font/woff2" crossorigin href="/${f}">`).join('\n  ');
+        const html = renderPage(template, page, siteUrl).replace('</head>', `  ${fontLinks}\n  </head>`);
         // A game page fetches the game page's code alongside the app's, so it renders in one go (src/main.tsx).
         writeFileSync(file, page.gamePage ? preload(html, gamePageCode) : html);
       }
@@ -105,7 +113,11 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), seoPages(siteUrl, env.VITE_ADSENSE_CLIENT ?? ''), reviewShots()],
     // `npm run dev` proxies /api (and live-room sockets) to the Pages Functions (`npm run dev:api`,
     // port 8788). GB_API points it at another one, e.g. when several copies run side by side.
-    server: { proxy: { '/api': { target: process.env.GB_API || 'http://127.0.0.1:8788', ws: true } } },
+    server: {
+      // A worktree's node_modules is a link to the main checkout's, where the fonts are: without this they don't load in dev.
+      fs: { allow: [HERE, realpathSync(join(HERE, 'node_modules'))] },
+      proxy: { '/api': { target: process.env.GB_API || 'http://127.0.0.1:8788', ws: true } },
+    },
     build: {
       target: 'es2022',
       outDir: 'dist',

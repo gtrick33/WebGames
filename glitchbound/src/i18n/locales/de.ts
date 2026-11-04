@@ -2229,6 +2229,12 @@ const de: string[] = [
   'Ein Held mit Schwert und Schild nachts auf einem Burghof, zwischen Feuerschalen und roten Bannern',
   'Echtes Gameplay, auf Handy oder Computer',
   'Mehr Spiele weiter unten',
+  'Kostenloses Fantasy-RPG im Browser',
+  'Gratis spielen',
+  'Kein Download. Keine Anmeldung.',
+  'GlitchBound ist ein unabhängiges Studio. Jedes Spiel wird hier entworfen und gebaut. Manche gehen von einer klassischen Idee aus, etwa einem Kartenspiel oder einem Worträtsel, und geben ihr unseren eigenen Dreh. Ein Teil von Grafik und Sound ist lizenziert und im Spiel genannt.',
+  'Noch niemand ist in der Ruhmeshalle. Spiel eine Runde und stell den ersten Rekord auf.',
+  'Die Bestenlisten sind noch frisch, eine Krone ist also gut erreichbar. Stell eine Bestleistung auf und hol sie dir.',
 ];
 
 export default de;

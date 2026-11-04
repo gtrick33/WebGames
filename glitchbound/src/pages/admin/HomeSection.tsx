@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { settingsFor } from '../../catalog/settings';
 import { Icon } from '../../components/Icon';
 import type { AdminCatalog } from '../../platform/apiTypes';
 import { PREVIEW_KEY } from '../../platform/preview';
 import { BestGamesEditor } from '../AdminBest';
 import { LayoutEditor } from '../AdminLayout';
 import { MultiplayerEditor } from '../AdminMultiplayer';
+import { BannerEditor } from './BannerSection';
 import { describeChanges, draftCatalog, draftChanges, savedDraft, type HomeDraft } from './homeDraft';
 import type { Send } from './useAdminCatalog';
 
 /**
- * Admin › Home page: everything the home page shows, edited as one draft (admin/homeDraft.ts): Our best games,
- * the live games row and the arcade banners, each banner with all of its game's settings. The bar at the top
+ * Admin › Home page: everything the home page shows, edited as one draft (admin/homeDraft.ts): the Sigilfall banner's
+ * words, Our best games, the live games row and the arcade banners, each banner with all of its game's settings. The bar at the top
  * counts the unpublished changes; Preview shows the home page with them, Publish sends them all at once,
  * Discard throws them away. Players see nothing until Publish.
  */
@@ -37,6 +39,7 @@ export function HomeEditor({ data, send, busy }: { data: AdminCatalog; send: Sen
     if ('layout' in changes) body.layout = changes.layout;
     if (changes.flagships) body.flagships = changes.flagships;
     if (changes.multiplayer) body.multiplayer = changes.multiplayer;
+    if (changes.banner) body.banner = changes.banner;
     void send(body, `Home page published (${lines.length} change${lines.length === 1 ? '' : 's'})`);
   };
 
@@ -78,6 +81,7 @@ export function HomeEditor({ data, send, busy }: { data: AdminCatalog; send: Sen
         )}
       </div>
 
+      <BannerEditor value={draft.banner} live={data.banner ?? {}} on={!settingsFor(data, 'sigilfall').hidden} onChange={(banner) => setDraft((d) => ({ ...d, banner }))} />
       <BestGamesEditor catalog={catalog} value={draft.flagships} onChange={(flagships) => setDraft((d) => ({ ...d, flagships }))} custom={Array.isArray(data.flagships)} busy={busy} />
       <MultiplayerEditor catalog={catalog} value={draft.multiplayer} onChange={(multiplayer) => setDraft((d) => ({ ...d, multiplayer }))} custom={Array.isArray(data.multiplayer)} busy={busy} />
       <LayoutEditor catalog={catalog} draft={draft} onChange={setDraft} live={data} busy={busy} />

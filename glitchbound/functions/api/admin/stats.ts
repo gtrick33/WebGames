@@ -4,6 +4,34 @@ import { emailEnabled } from '../../../server/email';
 import { json, utcDay, type Ctx } from '../../../server/http';
 import { requireAdmin } from '../../../server/session';
 
+/** The 75th percentile of a list: the figure Google judges a site by. */
+function p75(values: number[]): number | null {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]!;
+}
+
+/** Real visitors' Core Web Vitals (src/platform/vitals.ts), one line per kind of device. */
+function vitalsOf(rows: { props: string }[]): AdminStats['vitals'] {
+  const by = new Map<string, { lcp: number[]; inp: number[]; cls: number[]; visits: number }>();
+  for (const row of rows) {
+    let v: { device?: unknown; lcp?: unknown; inp?: unknown; cls?: unknown };
+    try {
+      v = JSON.parse(row.props) as typeof v;
+    } catch {
+      continue;
+    }
+    const device = v.device === 'phone' ? 'phone' : 'computer';
+    const b = by.get(device) ?? { lcp: [], inp: [], cls: [], visits: 0 };
+    b.visits++;
+    if (typeof v.lcp === 'number') b.lcp.push(v.lcp);
+    if (typeof v.inp === 'number') b.inp.push(v.inp);
+    if (typeof v.cls === 'number') b.cls.push(v.cls);
+    by.set(device, b);
+  }
+  return [...by.entries()].map(([device, b]) => ({ device, visits: b.visits, lcp: p75(b.lcp), inp: p75(b.inp), cls: p75(b.cls) }));
+}
+
 /** GET /api/admin/stats: everything the admin dashboard shows. Admins only (ADMIN_EMAILS). */
 export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
   const admin = await requireAdmin(env, request);
@@ -15,7 +43,7 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
   const q = <T>(sql: string, ...args: unknown[]) => env.DB.prepare(sql).bind(...args).all<T>().then((r) => r.results);
   const one = <T>(sql: string, ...args: unknown[]) => env.DB.prepare(sql).bind(...args).first<T>();
 
-  const [totals, newUsers, active, recent, subs, gameEvents, gameVisitors, gameRuns, gameErrors, daily, dailyRounds, retention, searches, errorKinds, latestErrors, announcements] = await Promise.all([
+  const [totals, newUsers, active, recent, subs, gameEvents, gameVisitors, gameRuns, gameErrors, daily, dailyRounds, retention, searches, errorKinds, latestErrors, announcements, vitalRows] = await Promise.all([
     one<{ n: number }>('SELECT COUNT(*) AS n FROM users'),
     one<{ n: number }>('SELECT COUNT(*) AS n FROM users WHERE created_at > ?', d7),
     one<{ n: number }>('SELECT COUNT(*) AS n FROM users WHERE last_seen > ?', d7),
@@ -48,6 +76,7 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
     q<{ kind: string; n: number }>('SELECT kind, COUNT(*) AS n FROM errors WHERE ts > ? GROUP BY kind ORDER BY n DESC', d7),
     q<{ ts: number; kind: string; game: string; message: string; path: string; browser: string }>('SELECT ts, kind, game, message, path, browser FROM errors ORDER BY ts DESC LIMIT 30'),
     q<{ game: string; subject: string; sent_at: number; recipients: number }>('SELECT game, subject, sent_at, recipients FROM announcements ORDER BY sent_at DESC LIMIT 10'),
+    q<{ props: string }>(`SELECT props FROM events WHERE name = 'web_vitals' AND ts > ? ORDER BY ts DESC LIMIT 4000`, d7),
   ]);
 
   const ev = (slug: string, name: string) => gameEvents.find((e) => e.game === slug && e.name === name)?.n ?? 0;
@@ -87,6 +116,7 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
       };
     }).sort((a, b) => b.starts - a.starts),
     daily: days,
+    vitals: vitalsOf(vitalRows),
     searches: searches.filter((s) => s.q).map((s) => ({ q: s.q, n: s.n, zeroResults: s.zero ?? 0 })),
     errors: { kinds: errorKinds, latest: latestErrors },
     announcements: announcements.map((a) => ({ game: a.game, subject: a.subject, sentAt: a.sent_at, recipients: a.recipients })),

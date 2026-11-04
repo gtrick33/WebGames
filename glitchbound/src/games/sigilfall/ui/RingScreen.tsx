@@ -336,7 +336,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack }: { engine: 
             ←
           </button>
           <div className="rb-rp-title">
-            <h1>{title}</h1>
+            <h2>{title}</h2>
             <p>{sub}</p>
           </div>
           {page !== 'play' && (

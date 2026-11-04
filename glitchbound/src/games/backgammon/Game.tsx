@@ -715,7 +715,7 @@ function Menu({
           <span className="tb-hero-checker side-them" />
           <span className="tb-hero-die is-b">⚂</span>
         </div>
-        <h1 className="tb-title">{w.title}</h1>
+        <h2 className="tb-title">{w.title}</h2>
         <p className="tb-tagline">{w.tagline}</p>
 
         <section className="tb-mode is-daily">

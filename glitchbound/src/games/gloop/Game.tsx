@@ -612,7 +612,7 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
           <BlobIcon key={t} tier={t} size={26 + t * 6} />
         ))}
       </div>
-      <h1 className="gl-title">Gloop</h1>
+      <h2 className="gl-title">Gloop</h2>
       <p className="gl-tag">Drop the jelly blobs. Two of a kind squish into a bigger one. Don’t let the jar overflow.</p>
       <section className="gl-card">
         <div className="gl-card-head">

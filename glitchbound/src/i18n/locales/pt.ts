@@ -2229,6 +2229,12 @@ const pt: string[] = [
   'Um herói com espada e escudo no pátio de um castelo à noite, entre braseiros e estandartes vermelhos',
   'Jogo real, no telemóvel ou no computador',
   'Mais jogos abaixo',
+  'RPG de fantasia grátis no navegador',
+  'Jogar grátis',
+  'Sem downloads. Sem registro.',
+  'A GlitchBound é um estúdio independente. Cada jogo é pensado e feito aqui. Alguns partem de uma ideia clássica, como um jogo de cartas ou de palavras, e dão-lhe um toque nosso. Parte da arte e do som é licenciada e creditada no jogo.',
+  'Ainda ninguém está no Hall da Fama. Joga e estabelece o primeiro recorde.',
+  'As tabelas ainda são frescas, por isso uma coroa está bem ao teu alcance. Faz um recorde e conquista uma.',
 ];
 
 export default pt;

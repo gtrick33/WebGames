@@ -219,14 +219,14 @@ function WaitWhat({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: nu
         ))}
       </div>
       {/* The pun: disbelief, with the "dis" struck out for a quiz. */}
-      <h1 className="ww-logo" aria-label="Quizbelief">
+      <h2 className="ww-logo" aria-label="Quizbelief">
         <span className="ww-logo-a">
           <s aria-hidden="true">DIS</s>QUIZ
         </span>
         <span className="ww-logo-b">
           BELIEF<b>?!</b>
         </span>
-      </h1>
+      </h2>
       <p className="ww-tag">{u.tag}</p>
 
       <section className="ww-card ww-card-daily">

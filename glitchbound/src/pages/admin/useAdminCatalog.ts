@@ -32,7 +32,7 @@ export function useAdminCatalog(): AdminCatalogState {
         .then((d) => {
           setData(d);
           setError('');
-          setCatalog({ settings: d.settings, picks: d.picks, notice: d.notice, layout: d.layout ?? null, season: d.season, party: d.party, flagships: d.flagships ?? null, multiplayer: d.multiplayer ?? null });
+          setCatalog({ settings: d.settings, picks: d.picks, notice: d.notice, layout: d.layout ?? null, season: d.season, party: d.party, flagships: d.flagships ?? null, multiplayer: d.multiplayer ?? null, banner: d.banner ?? null });
         })
         .catch((e: unknown) => setError(e instanceof ApiError && e.status === 403 ? 'Only admins can change the site.' : 'Could not load the site settings.')),
     [],

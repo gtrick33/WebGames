@@ -47,8 +47,9 @@ the site. Google's script shows it automatically, so no code change is needed. D
 
 ## Not built (on purpose)
 
-- **Purchases, subscriptions, "remove ads".** GlitchBound has no accounts, so there is nothing to attach a purchase
-  to. NEON RUSH has its own purchase architecture (see `neon-rush/docs/MONETIZATION.md`); real money there needs app
-  store billing or Stripe plus a server.
+- **Purchases, subscriptions, "remove ads".** GlitchBound has accounts now (sign-in for saves, quests and leaderboards),
+  so a purchase would have something to attach to, but no payment system is chosen or built, and that needs the
+  owner's decision and advice first. NEON RUSH has its own purchase architecture (see `neon-rush/docs/MONETIZATION.md`);
+  real money there needs app store billing or Stripe plus a server.
 - **Sponsorships or "promoted" games.** If ever added, label them clearly in the registry and the UI.
 - **Fake ads or placeholder ad boxes.** None are shown anywhere.

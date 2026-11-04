@@ -5,6 +5,7 @@ import { GAME_MODULES } from '../catalog/modules';
 import type { GameEntry } from '../catalog/types';
 import { parseGameMessage, type GameEvent, type GameModuleProps } from '../platform/contract';
 import { reportError, setActiveGame } from '../platform/analytics';
+import { tileSmall } from '../platform/cardImg';
 import { fresh, isStaleBuildError, reloadForNewBuild } from '../platform/freshBuild';
 import type { ChallengeSpec } from '../platform/challenge';
 import { markPlaying } from '../platform/hooks';
@@ -272,7 +273,11 @@ export function GameStage({ game, autoStart = false, onEvent, onPhase, stageRef,
 
       {phase === 'poster' && (
         <div className="stage-poster">
-          <img src={game.art.tile} alt="" className="stage-poster-art" />
+          {game.section ? (
+            <img src={game.art.wide} alt="" className="stage-poster-art is-clear" fetchPriority="high" />
+          ) : (
+            <img src={tileSmall(game.art.tile)} alt="" className="stage-poster-art" fetchPriority="high" />
+          )}
           <button className="stage-play" onClick={start} autoFocus={false}>
             <span className="stage-play-disc" aria-hidden="true">
               <Icon name="play" size={40} />

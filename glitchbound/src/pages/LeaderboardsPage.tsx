@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAccount } from '../platform/account';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { getGame } from '../catalog/catalog';
 import { BoardEmpty, BoardError, FriendsEmpty, HallTable, LeaderTable, ScopeSwitch, useBoard, useHall, type Scope } from '../components/Leaderboard';
@@ -49,6 +50,7 @@ function GameBoard({ slug }: { slug: string }) {
 function Hall() {
   const t = useT();
   const hall = useHall();
+  const member = !!useAccount().me;
   // a young arcade: few members have a crown yet
   const early = hall.status === 'ok' && hall.rows.length < 10;
   return (
@@ -62,11 +64,11 @@ function Hall() {
         {t('Across every game: crowns are #1 spots, podiums top-3 spots, records the personal bests beaten.')}
       </p>
       {hall.status === 'loading' && <p className="info-small">{t('Loading…')}</p>}
-      {hall.rows.length ? <HallTable rows={hall.rows} /> : hall.status === 'ok' && <BoardEmpty text={t('Nobody is in the Hall of Fame yet. Sign in and set the first record.')} />}
+      {hall.rows.length ? <HallTable rows={hall.rows} /> : hall.status === 'ok' && <BoardEmpty text={member ? t('Nobody is in the Hall of Fame yet. Play a game and set the first record.') : t('Nobody is in the Hall of Fame yet. Sign in and set the first record.')} />}
       {hall.status === 'error' && <BoardError text={t('The Hall of Fame is offline right now.')} onRetry={hall.retry} />}
       {early && (
         <p className="info-small board-early">
-          <b>{t('Early days.')}</b> {t('The boards are still fresh, so a crown is well within reach. Sign in, set a best and claim one.')}
+          <b>{t('Early days.')}</b> {member ? t('The boards are still fresh, so a crown is well within reach. Set a best and claim one.') : t('The boards are still fresh, so a crown is well within reach. Sign in, set a best and claim one.')}
         </p>
       )}
     </div>

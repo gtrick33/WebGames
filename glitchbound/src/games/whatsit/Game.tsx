@@ -481,9 +481,9 @@ function Menu({ save, today, u, lang, parked, onResume, onPlay, onMute, onHelp }
         <GameMenuButton className="whz-icon" />
       </div>
       <Parcel mood="idle" className="whz-parcel-big" />
-      <h1 className="whz-title">
+      <h2 className="whz-title">
         Whatsit<span>?</span>
-      </h1>
+      </h2>
       <p className="whz-tag">{u.tag}</p>
       {parked && (
         <section className="whz-panel">

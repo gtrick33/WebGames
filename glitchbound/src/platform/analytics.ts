@@ -32,7 +32,8 @@ export type AnalyticsEvent =
   | 'daily_share'
   | 'room_open'
   | 'room_join'
-  | 'room_match';
+  | 'room_match'
+  | 'web_vitals';
 
 export type Props = Record<string, string | number | boolean>;
 

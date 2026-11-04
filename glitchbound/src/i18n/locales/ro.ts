@@ -2229,6 +2229,12 @@ const ro: string[] = [
   'Un erou cu sabie și scut în curtea unui castel noaptea, între mangaluri și steaguri roșii',
   'Joc real, pe telefon sau calculator',
   'Mai multe jocuri mai jos',
+  'RPG fantasy gratuit în browser',
+  'Joacă gratis',
+  'Fără descărcare. Fără înregistrare.',
+  'GlitchBound este un studio independent. Fiecare joc e gândit și construit aici. Unele pornesc de la o idee clasică, cum ar fi un joc de cărți sau de cuvinte, și îi dau o notă proprie. O parte din grafică și sunet e licențiată și menționată în joc.',
+  'Nimeni nu e încă în Galeria celebrităților. Joacă și stabilește primul record.',
+  'Clasamentele sunt încă proaspete, așa că o coroană e la îndemână. Fă un record și ia-ți una.',
 ];
 
 export default ro;

@@ -24,6 +24,8 @@ export interface PageSpec {
   adult?: boolean;
   /** A game's page: its HTML preloads the game page's code. */
   gamePage?: boolean;
+  /** Extra tags for the head, such as the picture that's the page's largest paint. */
+  headExtra?: string;
   jsonLd?: object;
   body: string;
 }
@@ -99,6 +101,7 @@ function gameSpec(g: GameEntry, siteUrl: string): PageSpec {
     path: gameUrl(g.slug),
     file: `${gameUrl(g.slug).slice(1)}.html`,
     gamePage: true,
+    headExtra: `<link rel="preload" as="image" type="image/webp" href="${g.section ? g.art.wide : `/games/${g.slug}/tile-400.webp`}" fetchpriority="high" />`,
     title: `Play ${g.title} · ${SITE}`,
     description: `${taglineOf(g)}${g.adult ? ` ${ADULT}.` : ''} Free to play in your browser on ${SITE}.`,
     image: `/games/${g.slug}/og.jpg`,
@@ -125,6 +128,14 @@ function gameSpec(g: GameEntry, siteUrl: string): PageSpec {
   };
 }
 
+/** The Sigilfall banner's picture and name (src/components/SigilfallHero.tsx picks by the same rule). */
+const TALL_SCREEN = '(max-width: 760px), (max-aspect-ratio: 13/10)';
+const HOME_PRELOADS = [
+  `<link rel="preload" as="image" type="image/avif" media="${TALL_SCREEN}" href="/games/sigilfall/key-art-phone.avif" fetchpriority="high" />`,
+  `<link rel="preload" as="image" type="image/avif" media="(min-width: 761px) and (min-aspect-ratio: 13/10)" imagesrcset="/games/sigilfall/key-art-1600.avif 1600w, /games/sigilfall/key-art-2400.avif 2400w" imagesizes="100vw" fetchpriority="high" />`,
+  `<link rel="preload" as="image" type="image/svg+xml" href="/games/sigilfall/logo.svg" />`,
+].join('\n    ');
+
 export function pageSpecs(siteUrl: string): PageSpec[] {
   const errors = validateCatalog(GAMES);
   if (errors.length) throw new Error(`Game registry is invalid:\n- ${errors.join('\n- ')}`);
@@ -137,6 +148,7 @@ export function pageSpecs(siteUrl: string): PageSpec[] {
       image: '/og.png',
       imageAlt: 'GlitchBound: Small Games. Big Obsessions.',
       jsonLd: { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE, url: `${siteUrl}/`, description: HOME_DESC },
+      headExtra: HOME_PRELOADS,
       body: `<section class="ssr"><h1>${SITE}: ${TAGLINE}</h1><p>${esc(HOME_DESC)}</p>${homeGames()}</section>`,
     },
     // A section game (Sigilfall) is indexed at its section; its /games/<slug> address shows the same page.
@@ -338,6 +350,7 @@ export function headTags(p: PageSpec, siteUrl: string): string {
     `<meta property="og:image:alt" content="${esc(p.imageAlt)}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     p.jsonLd ? `<script type="application/ld+json">${JSON.stringify(p.jsonLd).replace(/</g, '\\u003c')}</script>` : '',
+    p.headExtra ?? '',
   ]
     .filter(Boolean)
     .join('\n    ');

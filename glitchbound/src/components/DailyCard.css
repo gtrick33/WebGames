@@ -196,6 +196,7 @@
 /* ---------------------------------------------------------------- hero variant (the home page's Today band) */
 .daily-hero {
   grid-template-columns: minmax(0, 1fr);
+  align-content: space-between;
   gap: 12px;
   padding: 18px 20px 20px;
   border-radius: var(--r-lg);
@@ -213,7 +214,9 @@
 .daily-hero .daily-badge-text b {
   font-size: 22px;
 }
+/* on this small star the word doesn't fit: the card's first line already says what it is */
 .daily-hero .daily-badge-text .mono {
+  display: none;
   font-size: 8px;
 }
 /* the eyebrow and the title flow around the star (a float needs block flow) */

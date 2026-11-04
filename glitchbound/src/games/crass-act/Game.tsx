@@ -129,7 +129,7 @@ function CrassAct({ host, playerName }: { host: GameHost; playerName?: string })
 
 function Logo() {
   return (
-    <h1 className="uh-logo" aria-label="Crass Act">
+    <h2 className="uh-logo" aria-label="Crass Act">
       {['CRASS', 'ACT'].map((word, w) => (
         <span key={word} className="uh-word">
           {word.split('').map((c, i) => (
@@ -140,7 +140,7 @@ function Logo() {
         </span>
       ))}
       <b className="uh-18">18+</b>
-    </h1>
+    </h2>
   );
 }
 

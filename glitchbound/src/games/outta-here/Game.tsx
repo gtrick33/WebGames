@@ -707,9 +707,9 @@ function Menu({ save, today, onPlay, onMute }: { save: Save; today: string; onPl
         <span>➡</span>
         <span>⬅</span>
       </div>
-      <h1 className="oh-title">
+      <h2 className="oh-title">
         Outta <span>Here</span>
-      </h1>
+      </h2>
       <p className="oh-tag">Every arrow wants out. Tap them in the right order: one in the way costs a heart.</p>
       <section className="oh-card">
         <div className="oh-card-head">

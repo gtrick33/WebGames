@@ -6,6 +6,7 @@ import { challengeHistory } from '../platform/challenges';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { Link } from '../router/router';
 import '../pages/ChallengePage.css';
+import { tileImg } from '../platform/cardImg';
 
 const fmt = (n: number): string => n.toLocaleString('en-US');
 
@@ -51,7 +52,7 @@ export function ChallengeHistoryList({ items }: { items: ChallengeHistoryItem[] 
         return (
           <li key={c.id} className="chal-item">
             <Link href={`${gameUrl(c.game)}?challenge=${c.id}`} className="chal-row" data-accent={g?.accent}>
-              {g && <img src={g.art.tile} alt="" width={48} height={48} style={{ background: g.art.bg }} />}
+              {g && <img {...tileImg(g.art.tile, 48)} alt="" width={48} height={48} style={{ background: g.art.bg }} />}
               <span className="chal-row-main">
                 <b>{g?.title ?? c.game}</b>
                 <span className="info-small">

@@ -127,6 +127,49 @@ function Announce({ stats, onSent }: { stats: AdminStats; onSent: () => void }) 
   );
 }
 
+/** Google's lines for the three Core Web Vitals: good up to the first number, poor past the second. */
+const VITALS = [
+  { key: 'lcp', name: 'Largest paint', good: 2500, poor: 4000, show: (v: number) => `${(v / 1000).toFixed(1)} s`, hint: 'How long until the main picture or text is on screen.' },
+  { key: 'inp', name: 'Response to a tap', good: 200, poor: 500, show: (v: number) => `${Math.round(v)} ms`, hint: 'How long until the page reacts.' },
+  { key: 'cls', name: 'Layout shift', good: 0.1, poor: 0.25, show: (v: number) => v.toFixed(2), hint: 'How much the page jumps while it loads.' },
+] as const;
+
+/** How fast the site really is: what visitors' own browsers measured (platform/vitals.ts). */
+function SpeedPanel({ rows }: { rows: AdminStats['vitals'] }) {
+  return (
+    <section className="panel info-block" aria-labelledby="speed-title">
+      <div className="admin-row">
+        <h2 id="speed-title">Speed for real visitors</h2>
+        <span className="mono info-small">last 7 days · 75th percentile</span>
+      </div>
+      {rows.length === 0 ? (
+        <p className="info-small">Nothing measured yet. Each visit reports its numbers when the visitor leaves the page.</p>
+      ) : (
+        <div className="speed-rows">
+          {rows.map((r) => (
+            <div key={r.device} className="speed-row">
+              <b className="speed-device">
+                {r.device === 'phone' ? 'Phones' : 'Computers'}
+                <small className="mono info-small">{fmt(r.visits)} visits</small>
+              </b>
+              {VITALS.map((m) => {
+                const v = r[m.key];
+                const grade = v === null ? '' : v <= m.good ? 'is-good' : v <= m.poor ? 'is-meh' : 'is-poor';
+                return (
+                  <span key={m.key} className={`speed-cell ${grade}`} title={m.hint}>
+                    <small className="mono">{m.name}</small>
+                    <b>{v === null ? 'no data' : m.show(v)}</b>
+                  </span>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 /** The admin's frame: the sections on the side, the current one's title and purpose, then its content. */
 function AdminShell({ section, aside, children }: { section: SectionId; aside?: ReactNode; children: ReactNode }) {
   const current = SECTIONS.find((x) => x.id === section)!;
@@ -251,6 +294,8 @@ export function AdminPage() {
         <Tile label="Finished a daily (7d)" value={fmt(sum('dailyPlayers'))} sub={pct(sum('dailyPlayers'), sum('visitors'))} />
         <Tile label="Errors (7d)" value={fmt(stats.errors.kinds.reduce((n, k) => n + k.n, 0))} />
       </div>
+
+      <SpeedPanel rows={stats.vitals ?? []} />
 
       <div className="info-cols">
         <div className="panel info-block">

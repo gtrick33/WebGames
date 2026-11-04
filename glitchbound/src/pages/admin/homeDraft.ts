@@ -1,7 +1,7 @@
 import { queryGames } from '../../catalog/catalog';
 import { toggleFlagship } from '../../catalog/flagships';
 import { GAMES } from '../../catalog/games';
-import { applySettings, compactSettings, DEFAULT_SETTINGS, orderByLayout, settingsFor, type GameSettings, type HomeLayout, type PublicCatalog } from '../../catalog/settings';
+import { applySettings, compactSettings, DEFAULT_SETTINGS, orderByLayout, settingsFor, type GameSettings, type BannerText, type HomeLayout, type PublicCatalog } from '../../catalog/settings';
 import type { GameEntry } from '../../catalog/types';
 import type { AdminCatalog } from '../../platform/apiTypes';
 import { bestPool, savedBest } from '../AdminBest';
@@ -22,6 +22,8 @@ export interface HomeDraft {
   flagships: string[];
   /** The live games row, in order ([] hides it). */
   multiplayer: string[];
+  /** The Sigilfall banner's words: only the lines that aren't the default. */
+  banner: BannerText;
 }
 
 export const emptyLayout = (): HomeLayout => ({ order: [], sizes: {}, accents: {}, stickers: {} });
@@ -33,7 +35,7 @@ export const editableGames = (cat: PublicCatalog): GameEntry[] => queryGames({ s
 export function savedDraft(data: AdminCatalog): HomeDraft {
   const games: Record<string, GameSettings> = {};
   for (const g of editableGames(data)) games[g.slug] = settingsFor(data, g.slug);
-  return { layout: data.layout ?? null, games, flagships: savedBest(data), multiplayer: savedMultiplayer(data) };
+  return { layout: data.layout ?? null, games, flagships: savedBest(data), multiplayer: savedMultiplayer(data), banner: data.banner ?? {} };
 }
 
 /** The stored form of a layout: the full order of the games shown, and only real choices in the maps. */
@@ -49,7 +51,7 @@ export function draftCatalog(data: AdminCatalog, draft: HomeDraft): PublicCatalo
     if (Object.keys(c).length) settings[slug] = c;
     else delete settings[slug];
   }
-  return { ...cat, settings, layout: draft.layout, flagships: draft.flagships, multiplayer: draft.multiplayer };
+  return { ...cat, settings, layout: draft.layout, flagships: draft.flagships, multiplayer: draft.multiplayer, banner: draft.banner };
 }
 
 export interface HomeChanges {
@@ -59,6 +61,7 @@ export interface HomeChanges {
   layout?: HomeLayout | null;
   flagships?: string[];
   multiplayer?: string[];
+  banner?: BannerText;
 }
 
 const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
@@ -79,6 +82,7 @@ export function draftChanges(data: AdminCatalog, draft: HomeDraft): HomeChanges 
   if (!same(layout, savedLayout)) out.layout = layout;
   if (!same(draft.flagships, saved.flagships)) out.flagships = draft.flagships;
   if (!same(draft.multiplayer, saved.multiplayer)) out.multiplayer = draft.multiplayer;
+  if (!same(draft.banner, saved.banner)) out.banner = draft.banner;
   return out;
 }
 
@@ -101,6 +105,7 @@ export function describeChanges(changes: HomeChanges, data: AdminCatalog): strin
   if ('layout' in changes) lines.push(changes.layout ? 'Banners: order and looks' : 'Banners: back to automatic');
   if (changes.flagships) lines.push(`Our best games: ${changes.flagships.map(title).join(', ')}`);
   if (changes.multiplayer) lines.push(changes.multiplayer.length ? `Live games row: ${changes.multiplayer.map(title).join(', ')}` : 'Live games row: hidden');
+  if (changes.banner) lines.push(Object.keys(changes.banner).length ? 'Sigilfall banner: its words' : 'Sigilfall banner: back to the default words');
   void data;
   return lines;
 }

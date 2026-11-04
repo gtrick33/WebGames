@@ -2229,6 +2229,12 @@ const tr: string[] = [
   'Gece bir kale avlusunda, mangallar ve kırmızı sancaklar arasında kılıç ve kalkanlı bir kahraman',
   'Gerçek oynanış, telefonda ya da bilgisayarda',
   'Aşağıda daha fazla oyun',
+  'Tarayıcında ücretsiz fantastik RPG',
+  'Ücretsiz oyna',
+  'İndirme yok. Kayıt yok.',
+  'GlitchBound bağımsız bir stüdyo. Her oyun burada tasarlanır ve yapılır. Bazıları bir kart oyunu ya da kelime bulmacası gibi klasik bir fikirden yola çıkar ve ona kendi dokunuşumuzu katar. Görsel ve seslerin bir kısmı lisanslıdır ve oyunda belirtilir.',
+  'Şöhretler Salonu’nda henüz kimse yok. Oyna ve ilk rekoru kır.',
+  'Tablolar daha çok taze, yani bir taç tam ulaşabileceğin yerde. Bir rekor kır ve bir tane kap.',
 ];
 
 export default tr;
