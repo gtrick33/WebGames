@@ -43,10 +43,11 @@ to buy. Regulators in the EU have acted on exactly those.
    Stripe's reviewers look at: [/shop](https://glitchboundstudio.com/shop) (what's sold and the price),
    [/terms/sale](https://glitchboundstudio.com/terms/sale) (refunds and disputes), [/contact](https://glitchboundstudio.com/contact),
    [/privacy](https://glitchboundstudio.com/privacy), [/terms](https://glitchboundstudio.com/terms).
-2. **Ask for Managed Payments:** [set-up guide](https://docs.stripe.com/payments/managed-payments/set-up). Ask about Crass Act here.
+2. **Turn on Managed Payments:** [its settings page](https://dashboard.stripe.com/settings/managed-payments) ([guide](https://docs.stripe.com/payments/managed-payments/set-up)). Ask Stripe about Crass Act here.
 3. **Get a test key:** [test API keys](https://dashboard.stripe.com/test/apikeys). A restricted key is safest, with write access to
    Products, Prices and Checkout Sessions, and nothing else. **Don't paste keys in chat.**
-4. **Add the webhook in test mode:** [test webhooks](https://dashboard.stripe.com/test/webhooks). Address:
+4. **Add the webhook in test mode:** [test webhooks](https://dashboard.stripe.com/test/webhooks) > **Create an event destination** >
+   **Your account** > payload **Snapshot** (not Thin: the site reads the snapshot) > the events below > **Webhook endpoint**. Address:
    `https://glitchboundstudio.com/api/shop/webhook`. Events: `checkout.session.completed`,
    `checkout.session.async_payment_succeeded`, `charge.refunded`, `charge.dispute.funds_withdrawn`. Copy its signing secret.
 5. **Give both to the site as secrets:** Cloudflare > **Workers & Pages** > **glitchbound** > **Settings** > **Variables and
