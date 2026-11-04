@@ -220,12 +220,12 @@ function compose(m: Float32Array, tx: number, ty: number, tz: number, x: number,
 
 const rigAnims = new WeakMap<RigData, RigAnim>();
 /** A skeleton's clips as a texture, made once. */
-export function rigAnimOf(pack: Pack, rigName: string): RigAnim {
+export function rigAnimOf(pack: Pack, rigName: string, extras?: readonly ExtraJoint[]): RigAnim {
   const rig = pack.rigs[rigName];
   if (!rig) throw new Error(`no rig ${rigName}`);
   let a = rigAnims.get(rig);
   if (!a) {
-    a = new RigAnim(rig, pack.bin);
+    a = new RigAnim(rig, pack.bin, extras);
     rigAnims.set(rig, a);
   }
   return a;

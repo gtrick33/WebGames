@@ -1,4 +1,4 @@
-import type { Rarity } from '../../data/types';
+import type { ClassId, Rarity } from '../../data/types';
 import { mixRGB, OUTLINE_RGB, Painter, ramp, rgb, tone, type Ramp, type RGB } from './kit';
 
 /**
@@ -21,6 +21,8 @@ export interface Piece<S extends string = string> {
   mat: Mat;
   tint: string;
   r: Rarity;
+  /** Part of a Sigil-warden's armor (the class it was made for): it has its own models. */
+  set?: ClassId;
 }
 
 export interface HeroLook {
@@ -41,6 +43,8 @@ export interface HeroLook {
   /** Townsfolk extras: a beard, an apron (their colors). */
   beard?: string | null;
   apron?: string | null;
+  /** A hero in their gear: what they wear goes by its rarity (townsfolk pick theirs by name, for variety). */
+  ladder?: boolean;
 }
 
 export type View = 'down' | 'up' | 'side';

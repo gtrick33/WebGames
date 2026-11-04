@@ -134,12 +134,13 @@ interface Shown {
   mat: Material;
   tint: string;
   r: Rarity;
+  set?: ClassId;
 }
 
 const shownOf = (it: Item): Shown => ({ icon: itemIcon(it), mat: itemMat(it), tint: itemTint(it), r: it.r });
 
 function piece<S extends string>(it: Shown, style: S): Piece<S> {
-  return { style, mat: it.mat, tint: it.tint, r: it.r };
+  return it.set ? { style, mat: it.mat, tint: it.tint, r: it.r, set: it.set } : { style, mat: it.mat, tint: it.tint, r: it.r };
 }
 
 /** Wardrobe looks worn over the gear (progress/wardrobe.ts wornLooks): a look, or the class's bare look. */
@@ -172,15 +173,18 @@ export function heroLook(cls: ClassId, equip: Partial<Record<SlotId, Item>> = {}
   const legStyle = (it: Shown): LegStyle => (metal(it) ? 'greaves' : 'trousers');
   const handStyle = (it: Shown): HandStyle => (metal(it) ? 'gauntlets' : 'gloves');
   const feetStyle = (it: Shown): FeetStyle => (metal(it) ? 'sabatons' : it.mat === 'cloth' ? 'shoes' : 'boots');
-  const chestPiece = chest && chest !== 'bare' ? piece(chest, chestStyle(chest)) : bare.chest;
-  const caped = chest && chest !== 'bare' && chestPiece.style !== 'robe' && (chest.r === 'epic' || chest.r === 'legendary');
+  // (what a class starts out in is the plainest there is)
+  const plain = <S extends string>(p: Piece<S>): Piece<S> => ({ ...p, r: 'common' });
+  const chestPiece = chest && chest !== 'bare' ? piece(chest, chestStyle(chest)) : plain(bare.chest);
+  const caped = chest && chest !== 'bare' && !chest.set && (chest.r === 'epic' || chest.r === 'legendary');
   return {
     ...bare,
-    head: head && head !== 'bare' ? piece(head, headStyle(head)) : bare.head,
+    ladder: true,
+    head: head && head !== 'bare' ? piece(head, headStyle(head)) : bare.head && plain(bare.head),
     chest: chestPiece,
-    legs: legs ? piece(shownOf(legs), legStyle(shownOf(legs))) : bare.legs,
-    hands: hands ? piece(shownOf(hands), handStyle(shownOf(hands))) : bare.hands,
-    feet: feet ? piece(shownOf(feet), feetStyle(shownOf(feet))) : bare.feet,
+    legs: legs ? piece(shownOf(legs), legStyle(shownOf(legs))) : plain(bare.legs),
+    hands: hands ? piece(shownOf(hands), handStyle(shownOf(hands))) : bare.hands && plain(bare.hands),
+    feet: feet ? piece(shownOf(feet), feetStyle(shownOf(feet))) : plain(bare.feet),
     quiver: offhand && itemIcon(offhand) === 'quiver' ? itemTint(offhand) : bare.quiver,
     // epic and legendary armor comes with a cape
     cape: caped ? (chest.r === 'legendary' ? '#a8262e' : '#5a2a8a') : null,

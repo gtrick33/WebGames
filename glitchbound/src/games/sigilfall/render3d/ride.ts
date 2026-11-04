@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { RigData } from './pack';
+import type { ExtraJoint } from './toon';
 
 /**
  * How someone sits a saddle. The clips from the pack sit on a chair, with the hips far behind where the figure stands
@@ -87,3 +88,58 @@ export function addRideClip(rig: RigData): void {
   }
   rig.clips.ride = { n: FRAMES, fps: FPS, q: 0, tj: [], t: 0, sj: [], s: 0, own };
 }
+
+/* ------------------------------------------------------------------ capes */
+
+/** Where a cape hangs from, and its fold halfway down, on someone at rest. */
+const CAPE_TOP = new THREE.Vector3(0, 1.22, -0.2);
+const CAPE_MID = new THREE.Vector3(0, 0.72, -0.34);
+
+/** How far a cape streams out behind someone (0 hangs straight), at a point of what they're doing. */
+function capeLift(clip: string | null, phase: number): number {
+  const a = phase * Math.PI * 2;
+  switch (clip) {
+    case null:
+      return 0;
+    case 'run':
+    case 'ride':
+      return 0.68 + Math.sin(a * 2) * 0.07;
+    case 'walk':
+      return 0.26 + Math.sin(a * 2) * 0.05;
+    case 'dodge':
+    case 'spin':
+      return 0.9;
+    case 'sit':
+    case 'sitfloor':
+    case 'lie':
+      return 0.5;
+    default:
+      return 0.05 + Math.sin(a) * 0.02;
+  }
+}
+
+const AXIS_X = new THREE.Vector3(1, 0, 0);
+const turned = new THREE.Matrix4();
+const moved = new THREE.Matrix4();
+
+function capeUpper(clip: string | null, phase: number, out: THREE.Matrix4): void {
+  out.makeTranslation(CAPE_TOP.x, CAPE_TOP.y, CAPE_TOP.z);
+  out.multiply(turned.makeRotationAxis(AXIS_X, capeLift(clip, phase)));
+  out.multiply(moved.makeTranslation(-CAPE_TOP.x, -CAPE_TOP.y, -CAPE_TOP.z));
+}
+
+/** Two more joints for a person, so that a cape can move on its own: its upper half, and its hem after it. */
+export const CAPE_JOINTS: ExtraJoint[] = [
+  { name: 'cape1', parent: 'chest', pose: capeUpper },
+  {
+    name: 'cape2',
+    parent: 'chest',
+    pose: (clip, phase, out) => {
+      capeUpper(clip, phase, out);
+      const lag = clip === null ? 0 : capeLift(clip, (phase + 0.92) % 1) * 0.42;
+      out.multiply(moved.makeTranslation(CAPE_MID.x, CAPE_MID.y, CAPE_MID.z));
+      out.multiply(turned.makeRotationAxis(AXIS_X, lag));
+      out.multiply(moved.makeTranslation(-CAPE_MID.x, -CAPE_MID.y, -CAPE_MID.z));
+    },
+  },
+];

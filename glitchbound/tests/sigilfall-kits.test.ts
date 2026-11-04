@@ -6,6 +6,7 @@ import { ENEMIES } from '../src/games/sigilfall/data/enemies';
 import { PETS } from '../src/games/sigilfall/data/pets';
 import { NPCS } from '../src/games/sigilfall/data/quests';
 import { npcLookOf } from '../src/games/sigilfall/render/sprites';
+import { armorParts } from '../src/games/sigilfall/render3d/armorKit';
 import { wardrobeParts } from '../src/games/sigilfall/render3d/dress';
 import { hasKit, kitOf } from '../src/games/sigilfall/render3d/kits';
 
@@ -22,6 +23,7 @@ describe('Sigilfall: who plays whom', () => {
     const bytes = gunzipSync(readFileSync('public/games/sigilfall/3d/hero.pack'));
     const head = JSON.parse(bytes.subarray(4, 4 + bytes.readUInt32LE(0)).toString()) as { meshes: Record<string, unknown> };
     expect(wardrobeParts().filter((id) => !head.meshes[id])).toEqual([]);
+    expect(armorParts().filter((id) => !head.meshes[id])).toEqual([]);
   });
 
   it('every townsperson in the story is a person', () => {

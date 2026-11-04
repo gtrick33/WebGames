@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import type { HeroLook, Piece } from '../render/art/hero';
+import { heroParts } from './armorKit';
 import { hexRgb } from './kits';
 import { loadPack, mergeMeshes, type MeshData, type Pack } from './pack';
-import { addRideClip } from './ride';
+import { painted, paintJoints } from './paint';
+import { addRideClip, CAPE_JOINTS } from './ride';
 import { rigAnimOf, type RigAnim } from './toon';
 
 /**
@@ -25,100 +27,11 @@ export function loadWardrobe(): Promise<Wardrobe> {
   if (!wardrobe) {
     wardrobe = Promise.all([loadPack('hero'), loadPack('rigs')]).then(([hero, rigs]) => {
       addRideClip(rigs.rigs.medium!);
-      return { hero, rigs, medium: rigAnimOf(rigs, 'medium'), large: rigAnimOf(rigs, 'large') };
+      return { hero, rigs, medium: rigAnimOf(rigs, 'medium', CAPE_JOINTS), large: rigAnimOf(rigs, 'large') };
     });
     wardrobe.catch(() => (wardrobe = null));
   }
   return wardrobe;
-}
-
-/* ------------------------------------------------------------------ colors */
-
-function rgbHsl(r: number, g: number, b: number): [number, number, number] {
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  if (max === min) return [0, 0, l];
-  const d = max - min;
-  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-  let h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-  h *= 60;
-  return [h, s, l];
-}
-function hslRgb(h: number, s: number, l: number): [number, number, number] {
-  const f = (n: number): number => {
-    const k = (n + h / 30) % 12;
-    return l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
-  };
-  return [f(0), f(8), f(4)];
-}
-
-/** What a swatch is, by eye. */
-const isSkin = (h: number, s: number, l: number): boolean => h >= 12 && h <= 36 && s > 0.45 && l > 0.62;
-const isDark = (l: number): boolean => l < 0.14;
-const isWhite = (s: number, l: number): boolean => l > 0.88 && s < 0.5;
-const isMetal = (s: number, l: number): boolean => s < 0.16 && l >= 0.14;
-
-/** Moves a color onto `to`, keeping how light or dark it was next to its neighbours (the swatch's own shading). */
-function repaint(col: Uint8Array, i: number, to: [number, number, number], l: number, baseL: number): void {
-  const [h, s, tl] = rgbHsl(to[0], to[1], to[2]);
-  const nl = Math.max(0.03, Math.min(0.97, tl + (l - baseL) * 0.75));
-  const [r, g, b] = hslRgb(h, s, nl);
-  col[i] = r * 255;
-  col[i + 1] = g * 255;
-  col[i + 2] = b * 255;
-}
-
-interface Paint {
-  /** Skin swatches. */
-  skin?: [number, number, number];
-  /** Cloth and leather swatches. */
-  cloth?: [number, number, number];
-  /** Grey metal swatches. */
-  metal?: [number, number, number];
-  /** Anything else colored (a head's hair). */
-  hair?: [number, number, number];
-}
-
-function painted(m: MeshData, paint: Paint): MeshData {
-  const col = new Uint8Array(m.col);
-  // the middle lightness of each swatch family, so a dye lands on its own color rather than a shade of it
-  let clothL = 0;
-  let clothN = 0;
-  for (let v = 0; v < m.n; v++) {
-    const [h, s, l] = rgbHsl(col[v * 3]! / 255, col[v * 3 + 1]! / 255, col[v * 3 + 2]! / 255);
-    if (!isSkin(h, s, l) && !isDark(l) && !isMetal(s, l) && !isWhite(s, l)) {
-      clothL += l;
-      clothN++;
-    }
-  }
-  const midCloth = clothN ? clothL / clothN : 0.5;
-  for (let v = 0; v < m.n; v++) {
-    const i = v * 3;
-    const [h, s, l] = rgbHsl(col[i]! / 255, col[i + 1]! / 255, col[i + 2]! / 255);
-    if (isSkin(h, s, l)) {
-      if (paint.skin) repaint(col, i, paint.skin, l, 0.75);
-    } else if (isDark(l) || isWhite(s, l)) continue;
-    else if (isMetal(s, l)) {
-      if (paint.metal) repaint(col, i, paint.metal, l, 0.5);
-    } else if (paint.cloth) repaint(col, i, paint.cloth, l, midCloth);
-    else if (paint.hair) repaint(col, i, paint.hair, l, midCloth);
-  }
-  return { ...m, col };
-}
-
-/** Paints only the vertices tied to these joints (a pair of gloves on an arm, boots on a leg). */
-function paintJoints(m: MeshData, joints: Set<number>, to: [number, number, number]): MeshData {
-  const col = new Uint8Array(m.col);
-  for (let v = 0; v < m.n; v++) {
-    if (!joints.has(m.skin![v * 3]!)) continue;
-    const i = v * 3;
-    const [h, s, l] = rgbHsl(col[i]! / 255, col[i + 1]! / 255, col[i + 2]! / 255);
-    if (isDark(l) || isWhite(s, l)) continue;
-    void h;
-    repaint(col, i, to, l, 0.55);
-  }
-  return { ...m, col };
 }
 
 function pieceHash(p: { style: string; tint: string; mat: string; r: string }): number {
@@ -215,13 +128,32 @@ export interface Held {
   tint?: string;
 }
 
+/** What is in the hands. */
+function addHeld(w: Wardrobe, parts: MeshData[], look: HeroLook, held: Held | null, shield: boolean, _part: (id: string) => MeshData | null): void {
+  const add = (m: MeshData | null): void => {
+    if (m) parts.push(m);
+  };
+  const chestP = look.chest;
+  const rightHand = w.medium.joints.indexOf('handslot.r');
+  const leftHand = w.medium.joints.indexOf('handslot.l');
+  if (held) {
+    const list = WEAPONS[held.kind] ?? WEAPONS.sword!;
+    const m = w.hero.meshes[pickOf(list, { style: held.kind, tint: held.tint ?? '', mat: '', r: '' })];
+    if (m) add(tiedTo(held.tint ? painted(m, { cloth: hexRgb(held.tint) }) : m, held.kind === 'bow' ? leftHand : rightHand, w.medium));
+  }
+  if (shield) {
+    const m = w.hero.meshes[pickOf(SHIELDS, { style: 'shield', tint: chestP.tint, mat: chestP.mat, r: chestP.r })];
+    if (m) add(tiedTo(painted(m, { cloth: hexRgb(chestP.tint) }), leftHand, w.medium));
+  }
+}
+
 /** The parts of a look, painted and merged into one model. */
 export function dressedMesh(w: Wardrobe, look: HeroLook, held: Held | null, shield = false): MeshData {
   const part = (id: string): MeshData | null => {
     const m = w.hero.meshes[id];
     return m && m.rig !== 'large' ? m : null;
   };
-  const parts: MeshData[] = [];
+  const parts: MeshData[] = look.ladder ? heroParts(w, look) : [];
   const skin = hexRgb(look.skin);
   const hair = hexRgb(look.hair);
   const J = (names: string[]): Set<number> => new Set(names.map((n) => w.medium.joints.indexOf(n)).filter((j) => j >= 0));
@@ -230,6 +162,11 @@ export function dressedMesh(w: Wardrobe, look: HeroLook, held: Held | null, shie
   const add = (m: MeshData | null): void => {
     if (m) parts.push(m);
   };
+
+  if (look.ladder) {
+    addHeld(w, parts, look, held, shield, part);
+    return mergeMeshes(parts);
+  }
 
   // the head: a covering, and what is under it
   const headP = look.head;
@@ -289,18 +226,7 @@ export function dressedMesh(w: Wardrobe, look: HeroLook, held: Held | null, shie
     if (m) add(tiedTo(painted(m, { cloth: hexRgb(look.quiver) }), chestJ, w.medium, new THREE.Matrix4().makeTranslation(0, 0.3, -0.45)));
   }
 
-  // what is in the hands
-  const rightHand = w.medium.joints.indexOf('handslot.r');
-  const leftHand = w.medium.joints.indexOf('handslot.l');
-  if (held) {
-    const list = WEAPONS[held.kind] ?? WEAPONS.sword!;
-    const m = w.hero.meshes[pickOf(list, { style: held.kind, tint: held.tint ?? '', mat: '', r: '' })];
-    if (m) add(tiedTo(held.tint ? painted(m, { cloth: hexRgb(held.tint) }) : m, held.kind === 'bow' ? leftHand : rightHand, w.medium));
-  }
-  if (shield) {
-    const m = w.hero.meshes[pickOf(SHIELDS, { style: 'shield', tint: chestP.tint, mat: chestP.mat, r: chestP.r })];
-    if (m) add(tiedTo(painted(m, { cloth: hexRgb(chestP.tint) }), leftHand, w.medium));
-  }
+  addHeld(w, parts, look, held, shield, part);
   return mergeMeshes(parts);
 }
 
