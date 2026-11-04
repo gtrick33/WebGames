@@ -2,24 +2,22 @@ import { CLASSES } from '../data/classes';
 import type { ClassId } from '../data/types';
 import { newCharacter, type Face } from '../progress/character';
 import { FIELD_ICONS, SPELLS, type Element } from '../vigil/kit';
-import type { Foe, Fx, Hero, Obstacle, Vigil } from '../vigil/sim';
-import { K, type TileMap } from '../sim/map';
-import { fxArt, stripOf, type FxArt } from './art/atlas';
+import type { Fx, Hero, Obstacle, Vigil } from '../vigil/sim';
+import { K, TILE, type TileMap } from '../sim/map';
 import { iconPicture } from './art/gameIcons';
-import { drawCircle } from './art/vfx';
-import { canvas, ctx2d, type Cnv } from './pixel';
+import { screenAngle, shortened, shot, spell, TONES, type Tone } from './effects';
 import type { LandLayer, LandView } from './renderer';
-import { creatureSprite, heldWeapon, heroLook, weaponSprite } from './sprites';
+import { heldWeapon, heroLook } from './sprites';
 import type { HeroLook } from './art/hero';
 import { heightFromRadius, Motion, PERSON_H, type Cast } from '../render3d/cast';
+import { FIELD, FX, WARN, type Fx3D } from '../render3d/fx3d';
 import type { Held } from '../render3d/dress';
 import type { LandObject } from '../render3d/land';
 import { shieldOf, turnOf } from '../render3d/worldCast';
 
 /**
- * The Vigil's night: the Host and the party stand on the 3D land, and the spells go over them on the top canvas. The
- * spells are the Magic Spells VFX pack, each in its element's color; what the pack has no picture for (a swing's
- * crescent, a lightning arc) is drawn in the same chunky, outlined way. All of it is in world pixels.
+ * The Vigil's night: the Host and the party stand on the 3D land, and the spells are the shaders' (render3d/fx3d.ts),
+ * each in its element's color. Numbers and bars go over them on the top canvas. All of it is in world pixels.
  */
 
 const TAU = Math.PI * 2;
@@ -83,77 +81,33 @@ export function trunksOf(objects: LandObject[]): Obstacle[] {
 const MAX_HITS = 30;
 const MAX_FULL_BURSTS = 12;
 
-type Sheet = FxArt['fx'][string];
-
-/** An effect in an element, or in its own colors where the pack has no such version. */
-const sheetOf = (art: FxArt, effect: string, el: Element): Sheet | null => art.fx[`elements/${el}/${effect}_${el}`] ?? art.fx[effect] ?? null;
-
-interface PlayOpts {
-  /** Height, if it isn't square. */
-  h?: number;
-  rot?: number;
-  alpha?: number;
-  /** Stands on (x, y) rather than being centered on it. */
-  feet?: boolean;
-  /** How far along its length it sits off (x, y): a bolt's head is right of the middle of its frame. */
-  ahead?: number;
-}
-
-function frameOf(g: CanvasRenderingContext2D, art: FxArt, s: Sheet, frame: number, x: number, y: number, w: number, o: PlayOpts): void {
-  const F = art.frame;
-  const h = o.h ?? w;
-  const strip = stripOf(art, s);
-  if (o.alpha !== undefined) g.globalAlpha = o.alpha;
-  const cy = o.feet ? y - h * 0.42 : y;
-  if (o.rot) {
-    g.save();
-    g.translate(x, cy);
-    g.rotate(o.rot);
-    g.drawImage(strip, frame * F, 0, F, F, -w / 2 - (o.ahead ?? 0), -h / 2, w, h);
-    g.restore();
-  } else {
-    g.drawImage(strip, frame * F, 0, F, F, x - w / 2 - (o.ahead ?? 0), cy - h / 2, w, h);
-  }
-  if (o.alpha !== undefined) g.globalAlpha = 1;
-}
-
-/** Once through an effect, `u` from 0 to 1. */
-function play(g: CanvasRenderingContext2D, art: FxArt | null, effect: string, el: Element, u: number, x: number, y: number, w: number, o: PlayOpts = {}): void {
-  if (!art || u < 0 || u >= 1) return;
-  const s = sheetOf(art, effect, el);
-  if (s) frameOf(g, art, s, Math.floor(u * s.n), x, y, w, o);
-}
-
-/** Round and round. */
-function loop(g: CanvasRenderingContext2D, art: FxArt | null, effect: string, el: Element, time: number, x: number, y: number, w: number, o: PlayOpts = {}): void {
-  if (!art) return;
-  const s = sheetOf(art, effect, el);
-  if (s) frameOf(g, art, s, Math.floor((time * 1000) / s.ms) % s.n, x, y, w, o);
-}
-
-const glows = new Map<string, Cnv>();
-/** A lit disc in a color, drawn once and stamped. */
-function glow(color: string): Cnv {
-  let c = glows.get(color);
-  if (!c) {
-    c = canvas(48, 48);
-    const g = ctx2d(c);
-    const grad = g.createRadialGradient(24, 24, 0, 24, 24, 24);
-    grad.addColorStop(0, '#fffdf0');
-    grad.addColorStop(0.3, color);
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = grad;
-    g.fillRect(0, 0, 48, 48);
-    glows.set(color, c);
-  }
-  return c;
-}
-
-const stampGlow = (g: CanvasRenderingContext2D, color: string, x: number, y: number, r: number, alpha = 1): void => {
-  g.globalAlpha = alpha;
-  g.drawImage(glow(color), x - r, y - r, r * 2, r * 2);
-  g.globalAlpha = 1;
+const toneOfEl = (el: Element): Tone => EL_TONES[el];
+const EL_TONES: Record<Element, Tone> = {
+  fire: TONES.fire!,
+  ice: TONES.frost!,
+  lightning: TONES.lightning!,
+  arcane: TONES.arcane!,
+  nature: TONES.nature!,
+  poison: TONES.poison!,
+  holy: TONES.holy!,
+  shadow: TONES.shadow!,
+  water: { a: '#1a6ab8', b: '#a8e8ff' },
+  blood: { a: '#a81e2e', b: '#ff9a9a' },
 };
+/** An element's ground. */
+const FIELD_OF: Record<Element, [number, string, string]> = {
+  fire: [FIELD.fire, '#ff5a1e', '#ffc23a'],
+  ice: [FIELD.frost, '#7fd4ff', '#ffffff'],
+  lightning: [FIELD.lightning, '#7ac8ff', '#ffffff'],
+  arcane: [FIELD.rift, '#a05aff', '#f0d8ff'],
+  nature: [FIELD.nature, '#4aa83a', '#b8ff8a'],
+  poison: [FIELD.poison, '#5ab02e', '#c8ff6a'],
+  holy: [FIELD.holy, '#ffd84d', '#fff2a0'],
+  shadow: [FIELD.shadow, '#8a4aff', '#d0a8ff'],
+  water: [FIELD.water, '#1a6ab8', '#7fd8ff'],
+  blood: [FIELD.poison, '#a81e2e', '#ff7a7a'],
+};
+const FOE_SHOT: Tone = { a: '#d81e4a', b: '#ffc0d0' };
 
 const icons = new Map<string, HTMLImageElement>();
 function iconImage(name: string): HTMLImageElement | null {
@@ -168,116 +122,7 @@ function iconImage(name: string): HTMLImageElement | null {
   return im.complete && im.naturalWidth ? im : null;
 }
 
-/** A ring with an inked edge and a bright heart, so it reads against any ground. */
-function ring(g: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, width: number, alpha: number): void {
-  g.globalAlpha = Math.max(0, alpha);
-  g.beginPath();
-  g.ellipse(x, y, r, r, 0, 0, TAU);
-  g.lineWidth = width + 1;
-  g.strokeStyle = INK;
-  g.stroke();
-  g.lineWidth = width;
-  g.strokeStyle = color;
-  g.stroke();
-  g.lineWidth = Math.max(0.4, width * 0.3);
-  g.strokeStyle = '#fffdf0';
-  g.stroke();
-  g.globalAlpha = 1;
-}
-
-/** A big cartoon sword, inked and shining, its point at the origin and its grip straight up: `h` long. */
-function paintSword(g: CanvasRenderingContext2D, h: number): void {
-  const w = h * 0.1;
-  const blade = h * 0.72;
-  const shape = (color: string, outline: boolean): void => {
-    g.fillStyle = color;
-    g.fill();
-    if (outline) {
-      g.lineWidth = 1;
-      g.strokeStyle = INK;
-      g.stroke();
-    }
-  };
-  // the grip and its pommel
-  g.beginPath();
-  g.rect(-w * 0.35, -h, w * 0.7, h - blade);
-  shape('#7a4a26', true);
-  g.beginPath();
-  g.arc(0, -h, w * 0.6, 0, TAU);
-  shape('#ffcf5a', true);
-  // the blade, with a bright side
-  g.beginPath();
-  g.moveTo(0, 0);
-  g.lineTo(w, -h * 0.1);
-  g.lineTo(w, -blade);
-  g.lineTo(-w, -blade);
-  g.lineTo(-w, -h * 0.1);
-  g.closePath();
-  shape('#c8d0e0', true);
-  g.beginPath();
-  g.moveTo(0, -1);
-  g.lineTo(-w + 0.6, -h * 0.1);
-  g.lineTo(-w + 0.6, -blade);
-  g.lineTo(0, -blade);
-  g.closePath();
-  shape('#ffffff', false);
-  // the guard
-  g.beginPath();
-  g.rect(-w * 2.1, -blade - w * 0.55, w * 4.2, w * 1.1);
-  shape('#ffcf5a', true);
-}
-
-/** Light falling from the sky onto (x, y), fading out toward the top so it never ends in a hard edge. */
-function skyBeam(g: CanvasRenderingContext2D, x: number, y: number, w: number, color: string, alpha: number): void {
-  const top = y - 170;
-  const fade = (c: string): CanvasGradient => {
-    const grad = g.createLinearGradient(0, top, 0, y);
-    grad.addColorStop(0, `${c}00`);
-    grad.addColorStop(0.6, `${c}cc`);
-    grad.addColorStop(1, c);
-    return grad;
-  };
-  g.globalAlpha = Math.max(0, alpha);
-  g.fillStyle = fade(color);
-  g.fillRect(x - w / 2, top, w, y - top);
-  g.fillStyle = fade('#ffffff');
-  g.fillRect(x - w * 0.22, top, w * 0.44, y - top);
-  // where it meets the ground
-  g.fillStyle = color;
-  g.beginPath();
-  g.ellipse(x, y, w * 0.7, w * 0.28, 0, 0, TAU);
-  g.fill();
-  g.fillStyle = '#ffffff';
-  g.beginPath();
-  g.ellipse(x, y, w * 0.4, w * 0.15, 0, 0, TAU);
-  g.fill();
-  g.globalAlpha = 1;
-}
-
-/** Where something is about to land: a thin mark, not a ring of its own. */
-function mark(g: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, alpha: number): void {
-  g.globalAlpha = Math.max(0, alpha);
-  g.beginPath();
-  g.ellipse(x, y, r, r, 0, 0, TAU);
-  g.lineWidth = 0.8;
-  g.strokeStyle = color;
-  g.stroke();
-  g.globalAlpha = 1;
-}
-
-function crescent(g: CanvasRenderingContext2D, x: number, y: number, R: number, inner: number, from: number, to: number): void {
-  g.beginPath();
-  g.arc(x, y, R, from, to);
-  g.arc(x, y, inner, to, from, true);
-  g.closePath();
-}
-
 const easeOut = (u: number): number => 1 - (1 - u) * (1 - u);
-const shake = (seed: number): number => {
-  const n = Math.sin(seed * 127.1) * 43758.5453;
-  return n - Math.floor(n) - 0.5;
-};
-
 interface Bit {
   x: number;
   y: number;
@@ -341,149 +186,9 @@ export class VigilPainter implements LandLayer {
     v.falls.length = 0;
   }
 
-  /* -------------------------------------------------------------- flat on the ground */
-
-  under(g: CanvasRenderingContext2D, time: number, view: LandView): void {
-    const v = this.v;
-    const art = fxArt();
-    const near = (x: number, y: number, m: number): boolean => x > view.x - m && x < view.x + view.w + m && y > view.y - m && y < view.y + view.h + m;
-    for (const f of v.fields) {
-      if (!near(f.x, f.y, f.r + 20)) continue;
-      view.flat(f.x, f.y);
-      this.drawField(g, art, f, time);
-    }
-    for (const h of v.heroes) {
-      if (h.down) continue;
-      view.flat(h.x, h.y);
-      this.drawAuras(g, art, h, time);
-    }
-    // where the blows are about to land
-    for (const s of v.slams) {
-      const u = s.t / s.dur;
-      view.flat(s.x, s.y);
-      g.globalAlpha = 0.22 + u * 0.3;
-      g.fillStyle = '#ff3a2a';
-      g.beginPath();
-      g.ellipse(s.x, s.y, s.r, s.r, 0, 0, TAU);
-      g.fill();
-      g.globalAlpha = 1;
-      ring(g, s.x, s.y, s.r, '#ff5a4a', 1.4, 1);
-      ring(g, s.x, s.y, s.r * u, '#ffd257', 1.2, 0.9);
-    }
-    for (const f of v.foes) {
-      if (!near(f.x, f.y, 150)) continue;
-      if (f.mode === 1) {
-        view.flat(f.x, f.y);
-        this.drawChargeLine(g, f);
-      }
-      if (f.elite || f.boss) {
-        view.flat(f.x, f.y);
-        ring(g, f.x, f.y, f.r + (f.boss ? 7 : 3), f.boss ? '#ff5a4a' : '#ffb02e', 1.3, 0.75 + Math.sin(time * 6) * 0.2);
-      }
-      if (f.frozen > 0) {
-        view.flat(f.x, f.y);
-        ring(g, f.x, f.y, f.r + 2, '#bfeaff', 1, 0.9);
-      }
-    }
-    for (const s of v.sparks) {
-      if (!near(s.x, s.y, 10)) continue;
-      const tier = SPARK_TIERS.find(([min]) => s.xp >= min)!;
-      view.up(s.x, s.y, 5);
-      stampGlow(g, tier[1], s.x, s.y - 2 + Math.sin(time * 5 + s.x) * 0.8, tier[2]);
-    }
-    for (const p of v.pickups) {
-      if (!near(p.x, p.y, 20)) continue;
-      view.up(p.x, p.y, 6);
-      this.drawPickup(g, art, p.kind, p.x, p.y, time);
-    }
-  }
-
-  private drawField(g: CanvasRenderingContext2D, art: FxArt | null, f: Vigil['fields'][number], time: number): void {
-    const alpha = Math.min(1, f.life / 0.5, (f.max - f.life) / 0.15 + 0.2);
-    g.globalAlpha = 0.26 * alpha;
-    g.fillStyle = f.color;
-    g.beginPath();
-    g.ellipse(f.x, f.y, f.r, f.r, 0, 0, TAU);
-    g.fill();
-    g.globalAlpha = 1;
-    ring(g, f.x, f.y, f.r, f.color, 0.9, alpha * 0.85);
-    const circle = f.el === 'fire' || f.el === 'ice' || f.el === 'arcane' ? f.el : null;
-    if (!circle || !drawCircle(g, circle, f.x, f.y, f.r * 1.15, time, alpha)) {
-      loop(g, art, 'rune', f.el, time, f.x, f.y, f.r * 2.5, { h: f.r * 1.6, alpha: alpha * 0.9 });
-    }
-    if (f.el === 'poison') loop(g, art, 'poison', 'poison', time + f.x, f.x, f.y - f.r * 0.25, f.r * 1.5, { alpha });
-    if (f.el === 'fire') loop(g, art, 'fire_cast', 'fire', time + f.y, f.x, f.y - f.r * 0.1, f.r * 1.2, { alpha: alpha * 0.8 });
-    if (f.spell === 'blood-banner' || f.spell === 'blessed-ground') {
-      // a blade driven into the middle of it, to mark what it is
-      const sp = weaponSprite('sword', f.color);
-      const w = (sp.width / sp.k) * 1.4;
-      const h = (sp.height / sp.k) * 1.4;
-      g.globalAlpha = alpha;
-      g.save();
-      g.translate(f.x, f.y);
-      g.rotate(Math.PI);
-      g.drawImage(sp.c, -w / 2, -2, w, h);
-      g.restore();
-      g.globalAlpha = 1;
-    }
-  }
-
-  private drawAuras(g: CanvasRenderingContext2D, art: FxArt | null, h: Hero, time: number): void {
-    for (const au of this.v.auras(h)) {
-      const pulse = 1 + Math.sin(time * 7) * 0.04;
-      g.globalAlpha = 0.16;
-      g.fillStyle = au.color;
-      g.beginPath();
-      g.ellipse(h.x, h.y, au.r * pulse, au.r * pulse, 0, 0, TAU);
-      g.fill();
-      g.globalAlpha = 1;
-      ring(g, h.x, h.y, au.r * pulse, au.color, 0.9, 0.8);
-      if (au.el === 'fire') drawCircle(g, 'fire', h.x, h.y, au.r * 1.1, time, 0.8);
-      else loop(g, art, 'wind', au.el, time, h.x, h.y - 3, Math.min(70, au.r * 1.8), { h: Math.min(46, au.r * 1.2), alpha: 0.6 });
-      if (au.spell === 'steel-tempest') {
-        // the blades themselves, flat out and pointing away from the hero
-        for (let i = 0; i < 3; i++) {
-          const a = time * 7 + (i / 3) * TAU;
-          g.save();
-          g.translate(h.x + Math.cos(a) * au.r * 0.9, h.y - 3 + Math.sin(a) * au.r * 0.68);
-          g.rotate(a - Math.PI / 2);
-          g.scale(1, -1);
-          paintSword(g, 18);
-          g.restore();
-        }
-      }
-    }
-    if (h.frenzyT > 0) {
-      loop(g, art, 'buff', 'fire', time, h.x, h.y, 34, { feet: true, alpha: 0.8 });
-      ring(g, h.x, h.y, 13 + Math.sin(time * 12) * 1.5, '#ff9a3d', 1.1, 0.9);
-    }
-  }
-
-  private drawChargeLine(g: CanvasRenderingContext2D, f: Foe): void {
-    const u = 1 - f.modeT / 0.7;
-    const len = 150 * Math.min(1, u * 1.6);
-    g.save();
-    g.translate(f.x, f.y);
-    g.rotate(Math.atan2(f.aimY, f.aimX));
-    g.globalAlpha = 0.18 + u * 0.3;
-    g.fillStyle = '#ff3a2a';
-    g.fillRect(0, -f.r * 0.8, len, f.r * 1.6);
-    g.globalAlpha = 0.85;
-    g.fillStyle = '#ffd257';
-    g.fillRect(len - 2, -f.r * 0.8, 2, f.r * 1.6);
-    g.restore();
-    g.globalAlpha = 1;
-  }
-
-  private drawPickup(g: CanvasRenderingContext2D, art: FxArt | null, kind: keyof typeof FIELD_ICONS, x: number, y: number, time: number): void {
+  private drawPickup(g: CanvasRenderingContext2D, kind: keyof typeof FIELD_ICONS, x: number, y: number, time: number): void {
     const bob = Math.sin(time * 4 + x) * 1.4;
     const r = kind === 'chest' ? 9 : 6.5;
-    g.fillStyle = 'rgba(8,4,16,0.35)';
-    g.beginPath();
-    g.ellipse(x, y, r * 0.9, r * 0.9, 0, 0, TAU);
-    g.fill();
-    stampGlow(g, kind === 'chest' ? '#ffd257' : '#ffffff', x, y - r + bob, r * 2, 0.6);
-    loop(g, art, 'spell_ready', kind === 'chest' ? 'fire' : 'lightning', time, x, y - r + bob, r * 3.2, { alpha: 0.8 });
     const im = iconImage(FIELD_ICONS[kind]);
     if (im) {
       g.save();
@@ -545,59 +250,303 @@ export class VigilPainter implements LandLayer {
     }
   }
 
-  /* -------------------------------------------------------------- in the air, over everything */
+  /* -------------------------------------------------------------- the spells (render3d/fx3d.ts) */
 
-  over(g: CanvasRenderingContext2D, time: number, view: LandView): void {
+  fx(fx: Fx3D, cast: Cast, time: number): void {
     const v = this.v;
-    const art = fxArt();
     const dt = this.dt;
+    for (const f of v.fields) this.field(fx, cast, f);
+    for (const h of v.heroes) {
+      if (h.down) {
+        fx.put({ kind: FX.mark, x: h.x, y: h.y, flat: true, w: REVIVE_DRAW * 2, a: '#ffe39a', alpha: 0.6 + Math.sin(time * 6) * 0.3 });
+        continue;
+      }
+      this.auras(fx, cast, h, time);
+    }
+    // where the blows are about to land
+    for (const s of v.slams) fx.put({ kind: FX.warn, x: s.x, y: s.y, flat: true, w: s.r * 2, a: '#ff3a2a', t: s.t / s.dur, p1: WARN.circle });
+    for (const f of v.foes) {
+      if (f.mode === 1) {
+        const u = 1 - f.modeT / 0.7;
+        const len = 150 * Math.min(1, u * 1.6);
+        const a = Math.atan2(f.aimY, f.aimX);
+        fx.put({ kind: FX.warn, x: f.x + (Math.cos(a) * len) / 2, y: f.y + (Math.sin(a) * len) / 2, flat: true, w: len, h: f.r * 1.6, rot: a, a: '#ff3a2a', t: 0.999, p1: WARN.line });
+      }
+      if (f.elite || f.boss) fx.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: (f.r + (f.boss ? 9 : 5)) * 2, a: f.boss ? '#ff5a4a' : '#ffb02e', alpha: 0.75 + Math.sin(time * 6) * 0.2 });
+      if (f.frozen > 0) fx.put({ kind: FX.field, x: f.x, y: f.y, flat: true, w: (f.r + 5) * 2, a: '#7fd4ff', b: '#ffffff', t: 1, seed: f.id * 0.3, p1: FIELD.frost });
+    }
+    for (const s of v.sparks) {
+      const tier = SPARK_TIERS.find(([min]) => s.xp >= min)!;
+      fx.put({ kind: FX.spark, x: s.x, y: s.y, up: 6 + Math.sin(time * 5 + s.x) * 1.2, w: tier[2] * 3.2, a: tier[1], t: 0.1 });
+    }
+    for (const p of v.pickups) {
+      const r = p.kind === 'chest' ? 9 : 6.5;
+      const color = p.kind === 'chest' ? '#ffd257' : '#9fe8ff';
+      fx.put({ kind: FX.glow, x: p.x, y: p.y, flat: true, w: r * 5, a: color, alpha: 0.7 });
+      fx.put({ kind: FX.shaft, x: p.x, y: p.y, base: true, w: r * 2.6, h: 44, a: color, alpha: 0.7, seed: p.x * 0.1 });
+      fx.put({ kind: FX.rain, x: p.x, y: p.y, base: true, w: r * 3.6, h: 34, a: color, t: -1, seed: p.y * 0.1 });
+    }
     for (const s of v.foeShots) {
-      view.up(s.x, s.y, 12);
-      loop(g, art, 'bolt', 'shadow', time, s.x, s.y, 16, { rot: Math.atan2(s.vy, s.vx) });
-      g.beginPath();
-      g.arc(s.x, s.y, s.r, 0, TAU);
-      g.fillStyle = '#ff3a6a';
-      g.fill();
-      g.lineWidth = 0.9;
-      g.strokeStyle = INK;
-      g.stroke();
-      g.fillStyle = '#fff';
-      g.fillRect(s.x - 0.8, s.y - 1.4, 1.6, 1.6);
+      fx.put({ kind: FX.mark, x: s.x, y: s.y, flat: true, w: s.r * 3.2 + 3, a: '#ff3b3b' });
+      shot(fx, 'blood', s.x, s.y, s.vx, s.vy, 12, s.r, s.x * 0.05 + s.y * 0.03, FOE_SHOT);
     }
-    for (const s of v.shots) {
-      view.up(s.x, s.y, 12);
-      this.drawShot(g, art, s, time);
-    }
+    for (const s of v.shots) this.shot(fx, cast, s);
     for (const h of v.heroes) {
       if (h.down) continue;
-      for (const o of v.orbitPoints(h)) {
-        view.up(o.x, o.y, 12);
-        this.drawOrbiter(g, art, o, time);
-      }
+      for (const o of v.orbitPoints(h)) this.orbiter(fx, cast, h, o, time);
     }
     let hits = 0;
     let bursts = 0;
     for (const f of v.fx) {
       if (f.kind === 'hit' && ++hits > MAX_HITS) continue;
-      view.flat(f.x, f.y);
+      const u = Math.min(0.999, f.t / f.dur);
       // when dozens go off together, past the first few each is only its explosion
       if (f.kind === 'burst' && ++bursts > MAX_FULL_BURSTS) {
-        play(g, art, 'fire_impact', f.el, Math.min(0.999, f.t / f.dur), f.x, f.y, Math.max(26, Math.min(60, (f.r ?? 20) * 2)));
+        const tone = toneOfEl(f.el);
+        fx.put({ kind: FX.blast, x: f.x, y: f.y, up: 10, w: Math.max(26, Math.min(60, (f.r ?? 20) * 2)), a: tone.a, b: tone.b, t: u, seed: f.x * 0.1 });
         continue;
       }
-      this.drawFx(g, art, f, time);
+      this.effect(fx, cast, f, u, time);
     }
     for (const b of this.bits) {
       b.t += dt;
       b.x += b.vx * dt;
       b.y += b.vy * dt;
       b.vy += 140 * dt;
-      view.up(b.x, b.y, 8);
-      g.globalAlpha = Math.max(0, 1 - b.t / b.dur);
-      g.fillStyle = b.c;
-      g.fillRect(b.x, b.y, b.s, b.s);
+      fx.put({ kind: FX.spark, x: b.x, y: b.y, up: 9, w: b.s * 5, a: b.c, t: b.t / b.dur });
     }
     for (let i = this.bits.length - 1; i >= 0; i--) if (this.bits[i]!.t >= this.bits[i]!.dur) this.bits.splice(i, 1);
+  }
+
+  private field(fx: Fx3D, cast: Cast, f: Vigil['fields'][number]): void {
+    const alpha = Math.min(1, f.life / 0.5, (f.max - f.life) / 0.15 + 0.2);
+    const seed = (f.x * 0.13 + f.y * 0.07) % 11;
+    const [look, a, b] = FIELD_OF[f.el];
+    fx.put({ kind: FX.field, x: f.x, y: f.y, flat: true, w: f.r * 2, a: f.el === 'arcane' ? f.color : a, b, t: 1, seed, p1: look, alpha });
+    fx.put({ kind: FX.rune, x: f.x, y: f.y, flat: true, w: f.r * 2.05, a: f.color, b: '#ffffff', t: 0.5, seed, alpha: alpha * 0.8 });
+    fx.put({ kind: FX.rain, x: f.x, y: f.y, base: true, w: f.r * 1.9, h: 38, a: b, t: -1, seed, alpha });
+    if (f.el === 'fire') {
+      const n = Math.min(6, Math.round(f.r / 11));
+      for (let i = 0; i < n; i++) {
+        const ang = spot(i, seed) * TAU;
+        const r = Math.sqrt(spot(seed, i)) * f.r * 0.72;
+        fx.put({ kind: FX.flame, x: f.x + Math.cos(ang) * r, y: f.y + Math.sin(ang) * r, base: true, w: 15, h: 24, a, b, seed: seed + i, alpha });
+      }
+    }
+    // a blade driven into the middle of it, to mark what it is
+    if (f.spell === 'blood-banner' || f.spell === 'blessed-ground') {
+      const k = 34 / TILE / 1.78;
+      cast.thrown('w_sword_A', f.x, f.y, 1.42 * k * 0.9, 0.5, k, Math.PI);
+    }
+  }
+
+  private auras(fx: Fx3D, cast: Cast, h: Hero, time: number): void {
+    for (const au of this.v.auras(h)) {
+      const pulse = 1 + Math.sin(time * 7) * 0.03;
+      const [look, a, b] = FIELD_OF[au.el];
+      const seed = h.id * 1.3;
+      fx.put({ kind: FX.field, x: h.x, y: h.y, flat: true, w: au.r * 2 * pulse, a: au.el === 'arcane' ? au.color : a, b, t: 1, seed, p1: look, alpha: 0.5 });
+      fx.put({ kind: FX.rune, x: h.x, y: h.y, flat: true, w: au.r * 2.05 * pulse, a: au.color, b: '#ffffff', t: 0.5, seed });
+      // the blades themselves, flat out and pointing away from the hero
+      if (au.spell === 'steel-tempest') {
+        const k = 26 / TILE / 1.78;
+        for (let i = 0; i < 3; i++) {
+          const ang = time * 7 + (i / 3) * TAU;
+          cast.thrown('w_sword_A', h.x + Math.cos(ang) * au.r * 0.55, h.y + Math.sin(ang) * au.r * 0.55, 13 / TILE, Math.atan2(Math.cos(ang), Math.sin(ang)), k, Math.PI / 2);
+        }
+      }
+    }
+    if (h.frenzyT > 0) {
+      fx.put({ kind: FX.rain, x: h.x, y: h.y, base: true, w: 36, h: 52, a: '#ff9a3d', t: -1, seed: h.id });
+      fx.put({ kind: FX.flame, x: h.x, y: h.y, base: true, w: 34, h: 40, a: '#ff5a1e', b: '#ffc23a', alpha: 0.55, seed: h.id, behind: true });
+      fx.put({ kind: FX.mark, x: h.x, y: h.y, flat: true, w: 30 + Math.sin(time * 12) * 3, a: '#ff9a3d' });
+    }
+  }
+
+  private shot(fx: Fx3D, cast: Cast, s: Vigil['shots'][number]): void {
+    const seed = (s.x * 0.05 + s.y * 0.03) % 13;
+    if (s.back) {
+      // a thrown axe or hammer, turning end over end, leaving the air streaked behind it
+      const kind = SPELLS[s.spell]?.weapon ?? 'axe';
+      shot(fx, 'trail', s.x, s.y, s.vx, s.vy, 12, s.r * 0.8, seed, { a: s.color, b: '#ffffff' });
+      const k = (s.r * 3.2) / TILE / 1.16;
+      cast.thrown(kind === 'hammer' ? 'w_hammer_A' : 'w_axe_A', s.x, s.y, 12 / TILE, Math.atan2(s.vx, s.vy), k, s.spin);
+      return;
+    }
+    shot(fx, s.el, s.x, s.y, s.vx, s.vy, 12, s.r, seed, toneOfEl(s.el));
+  }
+
+  private orbiter(fx: Fx3D, cast: Cast, h: Hero, o: { x: number; y: number; r: number; color: string; spell: string; el: Element }, time: number): void {
+    const seed = (o.x * 0.05) % 7;
+    if (o.spell === 'hawk-wheel') {
+      fx.put({ kind: FX.glow, x: o.x, y: o.y, up: 14, w: o.r * 5, a: o.color, alpha: 0.5, behind: true });
+      cast.creature('griffon', o.x, o.y, Math.atan2(h.y - o.y, o.x - h.x), o.r * 2.8, 'walk', time * 1.4 + o.y * 0.01, true, { lift: 0.5 });
+      return;
+    }
+    const tone = toneOfEl(o.el);
+    fx.put({ kind: FX.glow, x: o.x, y: o.y, up: 13, w: o.r * 6, a: o.color, alpha: 0.7 });
+    if (o.el === 'holy') fx.put({ kind: FX.holy, x: o.x, y: o.y, up: 13, w: o.r * 5.5, a: tone.a, b: tone.b, seed });
+    else fx.put({ kind: FX.orb, x: o.x, y: o.y, up: 13, w: o.r * 4.4, a: tone.a, b: tone.b, seed });
+  }
+
+  private effect(fx: Fx3D, cast: Cast, f: Fx, u: number, time: number): void {
+    const r = f.r ?? 20;
+    const tone = toneOfEl(f.el);
+    const seed = (f.x * 0.37 + f.y * 0.61) % 13;
+    switch (f.kind) {
+      case 'hit':
+        spell(fx, 'impact', tone, f.x, f.y, u, Math.max(14, r * 1.1), seed);
+        break;
+      case 'burst':
+        spell(fx, 'blast', tone, f.x, f.y, u, r, seed);
+        break;
+      case 'nova': {
+        const R = r * (0.18 + easeOut(u) * 0.82);
+        const band = 11 * (1 - u * 0.6);
+        const out = R + band;
+        fx.put({ kind: FX.shock, x: f.x, y: f.y, flat: true, w: out * 2, a: tone.a, p1: R / out, p2: band / out, seed, alpha: 1 - u * u });
+        fx.put({ kind: FX.glow, x: f.x, y: f.y, flat: true, w: R * 2.4, a: f.color, alpha: (1 - u) * 0.6 });
+        const n = Math.max(6, Math.min(14, Math.round(r / 9)));
+        for (let i = 0; i < n; i++) {
+          const a = (i / n) * TAU + seed;
+          fx.put({ kind: f.freeze ? FX.frost : FX.impact, x: f.x + Math.cos(a) * R, y: f.y + Math.sin(a) * R, up: 8, w: f.freeze ? 16 : 26, h: f.freeze ? 8 : 26, rot: f.freeze ? a : 0, a: tone.a, b: tone.b, t: u, seed: seed + i, alpha: f.freeze ? 1 - u : 1 });
+        }
+        break;
+      }
+      case 'chain': {
+        const pts = f.pts ?? [];
+        const flick = Math.floor(time * 24);
+        for (let i = 1; i < pts.length; i++) {
+          const [px, py] = pts[i - 1]!;
+          const [x, y] = pts[i]!;
+          const dx = x - px;
+          const dy = y - py;
+          fx.put({ kind: FX.bolt, x: (x + px) / 2, y: (y + py) / 2, up: 12, w: Math.max(16, Math.hypot(dx, dy) * shortened(dx, dy) * 1.12), h: 30, rot: screenAngle(dx, dy), a: f.color, alpha: 1 - u * u, seed: flick + i });
+          fx.put({ kind: FX.impact, x, y, up: 12, w: 28, a: tone.a, b: tone.b, t: u, seed: seed + i });
+        }
+        break;
+      }
+      case 'strike':
+        this.strike(fx, cast, f, r, tone, seed);
+        break;
+      case 'drop': {
+        const at = f.at ?? 0.18;
+        const moon = f.el === 'water';
+        if (f.t < at) {
+          const fall = f.t / at;
+          fx.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: r * 2, a: f.color, alpha: fall * 0.8 });
+          if (!moon) fx.put({ kind: FX.orb, x: f.x, y: f.y, up: 160 * (1 - fall), w: 14, a: tone.a, b: tone.b, seed });
+          break;
+        }
+        const v = (f.t - at) / (f.dur - at);
+        fx.put({ kind: FX.ring, x: f.x, y: f.y, flat: true, w: r * 2.4, a: f.color, t: v, seed });
+        if (moon) {
+          fx.put({ kind: FX.shaft, x: f.x, y: f.y, base: true, w: r * 1.8, h: 170, a: f.color, t: v, seed });
+          fx.put({ kind: FX.impact, x: f.x, y: f.y, up: 8, w: r * 1.8, a: tone.a, b: tone.b, t: v, seed });
+        } else if (f.el === 'poison') {
+          fx.put({ kind: FX.poison, x: f.x, y: f.y, up: 6, w: r * 2.2, a: tone.a, b: tone.b, seed, alpha: 1 - v });
+        } else fx.put({ kind: FX.impact, x: f.x, y: f.y, up: 10, w: r * 2.4, a: tone.a, b: tone.b, t: v, seed });
+        break;
+      }
+      case 'cone':
+        fx.put({ kind: FX.slash, x: f.x, y: f.y, up: 10, flat: true, w: (r * 2) / 0.82, rot: f.a ?? 0, a: f.color, t: u, p1: f.arc ?? 1.9, p2: 1 });
+        break;
+      case 'beam': {
+        const a = f.a ?? 0;
+        const len = f.len ?? 200;
+        const ex = f.x + Math.cos(a) * len;
+        const ey = f.y + Math.sin(a) * len;
+        const alpha = u < 0.6 ? 1 : 1 - (u - 0.6) / 0.4;
+        fx.put({ kind: FX.beam, x: (f.x + ex) / 2, y: (f.y + ey) / 2, up: 10, flat: true, w: len, h: (f.w ?? 8) * 2.4 * (1 - u * 0.7), rot: a, a: tone.a, b: tone.b, seed, alpha });
+        spell(fx, 'cast', tone, f.x, f.y, u, 20, seed);
+        fx.put({ kind: FX.impact, x: ex, y: ey, up: 10, w: 40, a: tone.a, b: tone.b, t: u, seed });
+        break;
+      }
+      case 'heal':
+        spell(fx, 'heal', f.el === 'holy' ? TONES.nature! : tone, f.x, f.y, u, 20, seed);
+        break;
+      case 'guard':
+        spell(fx, 'shield', tone, f.x, f.y, Math.min(0.99, f.t / 0.5), 20, seed);
+        if (f.t > 0.5) fx.put({ kind: FX.bubble, x: f.x, y: f.y, up: 16, w: 50, a: tone.a, alpha: 0.55 });
+        break;
+      case 'cast':
+        spell(fx, 'cast', tone, f.x, f.y, u, 20, seed);
+        break;
+      case 'dash': {
+        const a = f.a ?? 0;
+        fx.put({ kind: FX.trail, x: f.x - Math.cos(a) * 16, y: f.y - Math.sin(a) * 16, up: 11, flat: true, w: 46, h: 20, rot: a, a: tone.a, b: tone.b, seed, alpha: 1 - u });
+        fx.put({ kind: FX.smoke, x: f.x, y: f.y, up: 6, w: 22, a: '#c8c0b0', alpha: 0.6, t: u, seed });
+        break;
+      }
+      case 'level':
+        spell(fx, 'summon', tone, f.x, f.y, u, 30, seed);
+        fx.put({ kind: FX.ring, x: f.x, y: f.y, flat: true, w: 150, a: '#ffe39a', t: u, seed });
+        fx.put({ kind: FX.ring, x: f.x, y: f.y, flat: true, w: 96, a: '#8fd8ff', t: u, seed });
+        break;
+      case 'frenzy':
+        spell(fx, 'buff', TONES.fire!, f.x, f.y, u, 30, seed);
+        fx.put({ kind: FX.ring, x: f.x, y: f.y, flat: true, w: r * 2, a: '#ff9a3d', t: u, seed });
+        break;
+      case 'summon':
+        spell(fx, 'summon', tone, f.x, f.y, u, 22, seed);
+        break;
+      case 'slam': {
+        const R = r * (0.5 + easeOut(u) * 0.5);
+        const band = 12 * (1 - u * 0.6);
+        const out = R + band;
+        fx.put({ kind: FX.shock, x: f.x, y: f.y, flat: true, w: out * 2, a: '#ff6a4a', p1: R / out, p2: band / out, seed, alpha: 1 - u });
+        fx.put({ kind: FX.smoke, x: f.x, y: f.y, up: 8 + u * 12, w: r * 1.6, a: '#6a5a50', alpha: 0.6, t: u, seed });
+        break;
+      }
+      case 'bomb':
+        spell(fx, 'blast', tone, f.x, f.y, u, r, seed);
+        break;
+    }
+  }
+
+  /** What falls from above: a star, a shaft of light, a gate, a giant's sword. */
+  private strike(fx: Fx3D, cast: Cast, f: Fx, r: number, tone: Tone, seed: number): void {
+    const at = f.at ?? 0.3;
+    const look = f.look ?? 'star';
+    const bladeK = Math.max(44, Math.min(84, r * 1.5)) / TILE / 3.25;
+    if (f.t < at) {
+      const fall = f.t / at;
+      // the mark on the ground, closing in on where it lands
+      fx.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: r * 2 * (1.3 - fall * 0.3), a: f.color, alpha: 0.4 + fall * 0.6 });
+      if (look === 'star' || look === 'lightning') {
+        const size = Math.max(30, r * 1.1);
+        const sx = f.x + 70 * (1 - fall);
+        const up = 240 * (1 - fall);
+        fx.put({ kind: FX.trail, x: sx + 24, y: f.y, up: up + 62, w: 100, h: size * 0.8, rot: Math.atan2(-122, -70), a: tone.a, b: tone.b, seed });
+        fx.put({ kind: FX.orb, x: sx, y: f.y, up, w: size, a: tone.a, b: tone.b, seed });
+      } else if (look === 'column') {
+        fx.put({ kind: FX.shaft, x: f.x, y: f.y, base: true, w: Math.max(6, Math.min(40, r * 0.8) * fall * 0.7), h: 170, a: f.color, alpha: 0.5 + fall * 0.5, seed });
+      } else if (look === 'portal') {
+        fx.put({ kind: FX.rift, x: f.x, y: f.y, flat: true, w: Math.min(90, r * 2.2) * fall, a: f.color, b: tone.b, seed });
+      } else if (look === 'blade') {
+        cast.thrown('w_sword_E', f.x, f.y, (180 * (1 - fall)) / TILE + 2.82 * bladeK * 0.92, 0.6, bladeK, Math.PI);
+      }
+      return;
+    }
+    const u = (f.t - at) / (f.dur - at);
+    fx.put({ kind: FX.ring, x: f.x, y: f.y, flat: true, w: r * 2.2, a: f.color, t: u, seed });
+    if (look === 'column') fx.put({ kind: FX.shaft, x: f.x, y: f.y, base: true, w: Math.min(40, r * 0.8) * 2 * (1 - u * 0.75), h: 170, a: f.color, t: u * u, seed });
+    else if (look === 'portal') fx.put({ kind: FX.rift, x: f.x, y: f.y, flat: true, w: Math.min(90, r * 2.2), a: f.color, b: tone.b, seed, alpha: 1 - u });
+    else if (look === 'blade') cast.thrown('w_sword_E', f.x, f.y, (2.82 * bladeK * 0.92) * (1 - u * u), 0.6, bladeK, Math.PI);
+    spell(fx, 'blast', tone, f.x, f.y, u, r, seed);
+  }
+
+  /* -------------------------------------------------------------- over everything: what you read */
+
+  over(g: CanvasRenderingContext2D, time: number, view: LandView): void {
+    const v = this.v;
+    const dt = this.dt;
+    const near = (x: number, y: number, m: number): boolean => x > view.x - m && x < view.x + view.w + m && y > view.y - m && y < view.y + view.h + m;
+    for (const p of v.pickups) {
+      if (!near(p.x, p.y, 20)) continue;
+      view.up(p.x, p.y, 6);
+      this.drawPickup(g, p.kind, p.x, p.y, time);
+    }
     g.globalAlpha = 1;
     this.drawPeople(g, view);
     // numbers: the game's only smooth letters, so they can be read at a glance
@@ -624,294 +573,6 @@ export class VigilPainter implements LandLayer {
     g.textAlign = 'start';
   }
 
-  private drawShot(g: CanvasRenderingContext2D, art: FxArt | null, s: Vigil['shots'][number], time: number): void {
-    const a = Math.atan2(s.vy, s.vx);
-    if (s.back) {
-      // a thrown axe or hammer, turning end over end, with the ghosts of where it just was
-      const kind = SPELLS[s.spell]?.weapon ?? 'axe';
-      const sp = weaponSprite(kind, kind === 'hammer' ? s.color : undefined);
-      const k = (s.r * 2.8) / Math.max(sp.width, sp.height) * sp.k;
-      const w = (sp.width / sp.k) * k;
-      const h = (sp.height / sp.k) * k;
-      for (let i = 2; i >= 0; i--) {
-        g.save();
-        g.globalAlpha = i === 0 ? 1 : 0.28 / i;
-        g.translate(s.x - s.vx * 0.025 * i, s.y - s.vy * 0.025 * i);
-        g.rotate(s.spin - i * 0.45);
-        g.drawImage(sp.c, -w / 2, -h / 2, w, h);
-        g.restore();
-      }
-      g.globalAlpha = 1;
-      return;
-    }
-    const size = Math.max(20, s.r * 6.5);
-    stampGlow(g, s.color, s.x, s.y, s.r * 2.4, 0.7);
-    // (the sheet's head sits right of center: it goes on the shot)
-    loop(g, art, 'bolt', s.el, time, s.x, s.y, size, { rot: a, ahead: size * 0.25 });
-  }
-
-  private drawOrbiter(g: CanvasRenderingContext2D, art: FxArt | null, o: { x: number; y: number; r: number; color: string; spell: string; el: Element }, time: number): void {
-    if (o.spell === 'hawk-wheel') {
-      const sp = creatureSprite('griffon', Math.floor(time * 8) % 2);
-      const k = (o.r * 2.6) / (sp.width / sp.k);
-      const w = (sp.width / sp.k) * k;
-      const h = (sp.height / sp.k) * k;
-      stampGlow(g, o.color, o.x, o.y, o.r * 1.6, 0.45);
-      g.drawImage(sp.c, o.x - w / 2, o.y - h / 2, w, h);
-      return;
-    }
-    stampGlow(g, o.color, o.x, o.y, o.r * 1.5, 0.75);
-    loop(g, art, o.spell === 'halo-ring' ? 'enchant' : 'spell_ready', o.spell === 'halo-ring' ? 'fire' : o.el, time + o.x * 0.01, o.x, o.y, o.r * 3.4);
-  }
-
-  private drawFx(g: CanvasRenderingContext2D, art: FxArt | null, f: Fx, time: number): void {
-    const u = Math.min(0.999, f.t / f.dur);
-    const r = f.r ?? 20;
-    switch (f.kind) {
-      case 'hit':
-        play(g, art, 'impact', f.el, u, f.x, f.y, Math.max(18, r * 2.4));
-        break;
-      case 'burst':
-        stampGlow(g, f.color, f.x, f.y, r * 1.2, (1 - u) * 0.5);
-        ring(g, f.x, f.y, r * (0.3 + easeOut(u) * 0.7), f.color, 2 - u * 1.4, 1 - u);
-        this.drawBlast(g, art, f.el, u, f.x, f.y - r * 0.15, r);
-        break;
-      case 'nova':
-        this.drawNova(g, art, f, u, r);
-        break;
-      case 'chain':
-        this.drawChain(g, art, f, u, time);
-        break;
-      case 'strike':
-        this.drawStrike(g, art, f, r);
-        break;
-      case 'drop':
-        this.drawDrop(g, art, f, r);
-        break;
-      case 'cone':
-        this.drawCone(g, f, u, r);
-        break;
-      case 'beam':
-        this.drawBeam(g, art, f, u);
-        break;
-      case 'heal':
-        play(g, art, 'heal', f.el === 'holy' ? 'nature' : f.el, u, f.x, f.y, 34, { feet: true });
-        break;
-      case 'guard':
-        play(g, art, 'shield_up', f.el, Math.min(0.99, f.t / 0.5), f.x, f.y - 6, 40);
-        if (f.t > 0.5) loop(g, art, 'shield_up', f.el, time, f.x, f.y - 6, 40, { alpha: 0.35 });
-        break;
-      case 'cast':
-        play(g, art, 'cast', f.el, u, f.x, f.y, 34, { feet: true });
-        break;
-      case 'dash':
-        play(g, art, 'wind', f.el, u, f.x, f.y - 5, 36, { rot: f.a });
-        break;
-      case 'level':
-        play(g, art, 'summon', f.el, u, f.x, f.y, 60, { feet: true });
-        ring(g, f.x, f.y, 10 + easeOut(u) * 60, '#ffe39a', 2.2 - u * 1.6, 1 - u);
-        ring(g, f.x, f.y, 6 + easeOut(u) * 38, '#8fd8ff', 1.6 - u, 1 - u);
-        break;
-      case 'frenzy':
-        play(g, art, 'buff', f.el, u, f.x, f.y, 60, { feet: true });
-        ring(g, f.x, f.y, r * easeOut(u), '#ff9a3d', 2.4 - u * 1.8, 1 - u);
-        break;
-      case 'summon':
-        play(g, art, 'summon', f.el, u, f.x, f.y, 44, { feet: true });
-        break;
-      case 'slam':
-        ring(g, f.x, f.y, r * (0.5 + easeOut(u) * 0.5), '#ff6a4a', 3 - u * 2.4, 1 - u);
-        play(g, art, 'shield_break', 'shadow', u, f.x, f.y - r * 0.2, r * 2);
-        break;
-      case 'bomb':
-        stampGlow(g, f.color, f.x, f.y, r, (1 - u) * 0.6);
-        ring(g, f.x, f.y, r * easeOut(u), f.color, 4 - u * 3, 1 - u);
-        this.drawBlast(g, art, f.el, u, f.x, f.y - 10, 60);
-        break;
-    }
-  }
-
-  /**
-   * An explosion that fits its radius. The pack's frames are 64 pixels: blown up past about 90 they turn to blocks and
-   * hide the fight, so a bigger blast is a cluster of them going off one after the other.
-   */
-  private drawBlast(g: CanvasRenderingContext2D, art: FxArt | null, el: Element, u: number, x: number, y: number, r: number): void {
-    play(g, art, 'fire_impact', el, u, x, y, Math.max(26, Math.min(90, r * 2.4)));
-    if (r < 36) return;
-    const n = Math.min(6, Math.round(r / 12));
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * TAU + x;
-      play(g, art, 'fire_impact', el, u * 1.5 - 0.3 - (i % 2) * 0.1, x + Math.cos(a) * r * 0.62, y + Math.sin(a) * r * 0.46, 46);
-    }
-  }
-
-  /** A wave rolling out from the hero: a bold ring with bursts of the pack's color riding on it, the ground showing through. */
-  private drawNova(g: CanvasRenderingContext2D, art: FxArt | null, f: Fx, u: number, r: number): void {
-    const R = r * (0.18 + easeOut(u) * 0.82);
-    g.globalAlpha = (1 - u) * 0.2;
-    g.fillStyle = f.color;
-    g.beginPath();
-    g.ellipse(f.x, f.y, R, R, 0, 0, TAU);
-    g.fill();
-    g.globalAlpha = 1;
-    ring(g, f.x, f.y, R, f.color, 3.2 - u * 2.4, 1 - u * u);
-    ring(g, f.x, f.y, R * 0.8, f.color, 1, (1 - u) * 0.6);
-    const n = Math.max(6, Math.min(14, Math.round(r / 9)));
-    const effect = f.freeze ? 'ice_shatter' : 'impact';
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * TAU + f.x;
-      play(g, art, effect, f.freeze ? 'ice' : f.el, u, f.x + Math.cos(a) * R, f.y + Math.sin(a) * R * 0.76, 26);
-    }
-    play(g, art, 'arcane_blast', f.el, Math.min(0.99, u * 1.5), f.x, f.y - 4, Math.min(r, 50), { alpha: 0.7 });
-  }
-
-  private drawChain(g: CanvasRenderingContext2D, art: FxArt | null, f: Fx, u: number, time: number): void {
-    const pts = f.pts ?? [];
-    const seed = Math.floor(time * 30);
-    const path = (): void => {
-      g.beginPath();
-      pts.forEach(([x, y], i) => {
-        if (i === 0) {
-          g.moveTo(x, y);
-          return;
-        }
-        const [px, py] = pts[i - 1]!;
-        // it never takes the straight way there
-        for (let j = 1; j <= 3; j++) {
-          const q = j / 4;
-          const off = shake(seed + i * 7 + j) * 10;
-          g.lineTo(px + (x - px) * q + off, py + (y - py) * q + shake(seed + i * 3 + j * 5) * 10);
-        }
-        g.lineTo(x, y);
-      });
-    };
-    g.lineJoin = 'round';
-    g.lineCap = 'round';
-    g.globalAlpha = 1 - u * u;
-    path();
-    g.lineWidth = 3.4;
-    g.strokeStyle = INK;
-    g.stroke();
-    g.lineWidth = 2.2;
-    g.strokeStyle = f.color;
-    g.stroke();
-    g.lineWidth = 0.9;
-    g.strokeStyle = '#ffffff';
-    g.stroke();
-    g.globalAlpha = 1;
-    g.lineCap = 'butt';
-    for (let i = 1; i < pts.length; i++) play(g, art, 'impact', f.el, u, pts[i]![0], pts[i]![1], 24);
-  }
-
-  private drawStrike(g: CanvasRenderingContext2D, art: FxArt | null, f: Fx, r: number): void {
-    const at = f.at ?? 0.3;
-    const look = f.look ?? 'star';
-    if (f.t < at) {
-      const fall = f.t / at;
-      // the mark on the ground, closing in on where it lands
-      mark(g, f.x, f.y, r * (1.3 - fall * 0.3), f.color, 0.4 + fall * 0.6);
-      if (look === 'star' || look === 'lightning') {
-        const sx = f.x + 70 * (1 - fall);
-        const sy = f.y - 190 * (1 - fall);
-        stampGlow(g, f.color, sx, sy, 16, 0.7);
-        const size = Math.max(40, r * 1.5);
-        loop(g, art, 'bolt', f.el, f.t, sx, sy, size, { rot: Math.atan2(190, -70), ahead: size * 0.25 });
-      } else if (look === 'column') {
-        skyBeam(g, f.x, f.y, Math.max(3, Math.min(40, r * 0.8) * fall * 0.35), f.color, 0.5 + fall * 0.5);
-      } else if (look === 'portal') {
-        play(g, art, 'portal', f.el, fall, f.x, f.y, Math.min(90, r * 2.2), { h: Math.min(62, r * 1.5) });
-      } else if (look === 'blade') {
-        this.drawBlade(g, f, r, f.y - 180 * (1 - fall), 1);
-      }
-      return;
-    }
-    const u = (f.t - at) / (f.dur - at);
-    ring(g, f.x, f.y, r * (0.3 + easeOut(u) * 0.8), f.color, 3 - u * 2.4, 1 - u);
-    stampGlow(g, f.color, f.x, f.y - r * 0.2, r * 1.3, (1 - u) * 0.55);
-    if (look === 'column') skyBeam(g, f.x, f.y, Math.min(40, r * 0.8) * (1 - u * 0.75), f.color, 1 - u * u);
-    else if (look === 'portal') play(g, art, 'arcane_blast', f.el, u, f.x, f.y, Math.min(90, r * 2.2), { h: Math.min(72, r * 1.8) });
-    else if (look === 'blade') this.drawBlade(g, f, r, f.y, 1 - u);
-    this.drawBlast(g, art, f.el, u, f.x, f.y - r * 0.2, r);
-  }
-
-  /** The giant's sword, point down, its tip at (x, y). */
-  private drawBlade(g: CanvasRenderingContext2D, f: Fx, r: number, y: number, alpha: number): void {
-    g.save();
-    g.globalAlpha = Math.max(0, alpha);
-    g.translate(f.x, y);
-    paintSword(g, Math.max(44, Math.min(84, r * 1.5)));
-    g.restore();
-    g.globalAlpha = 1;
-  }
-
-  private drawDrop(g: CanvasRenderingContext2D, art: FxArt | null, f: Fx, r: number): void {
-    const at = f.at ?? 0.18;
-    const moon = f.el === 'water';
-    if (f.t < at) {
-      const fall = f.t / at;
-      mark(g, f.x, f.y, r, f.color, fall * 0.8);
-      if (moon) return;
-      loop(g, art, 'bolt', f.el, f.t, f.x, f.y - 130 * (1 - fall), 24, { rot: Math.PI / 2, ahead: 6 });
-      return;
-    }
-    const u = (f.t - at) / (f.dur - at);
-    ring(g, f.x, f.y, r * (0.4 + easeOut(u) * 0.7), f.color, 1.6 - u * 1.2, 1 - u);
-    if (moon) {
-      skyBeam(g, f.x, f.y, r * 0.9 * (1 - u * 0.7), f.color, 1 - u * u);
-      play(g, art, 'impact', f.el, u, f.x, f.y, r * 1.8);
-    } else if (f.el === 'poison') play(g, art, 'poison', f.el, u, f.x, f.y - r * 0.2, r * 2.2);
-    else play(g, art, 'impact', f.el, u, f.x, f.y, r * 2.4);
-  }
-
-  /** A blade's sweep: a thick crescent that opens across the arc, with a bright edge and an inked outline. */
-  private drawCone(g: CanvasRenderingContext2D, f: Fx, u: number, r: number): void {
-    const arc = f.arc ?? 1.9;
-    const from = (f.a ?? 0) - arc / 2;
-    const to = from + arc * Math.min(1, u * 3);
-    const R = r * (0.8 + 0.2 * Math.min(1, u * 2));
-    g.globalAlpha = u < 0.5 ? 1 : 1 - (u - 0.5) / 0.5;
-    crescent(g, f.x, f.y, R, R * (0.5 + u * 0.3), from, to);
-    g.fillStyle = f.color;
-    g.fill();
-    g.lineWidth = 1;
-    g.strokeStyle = INK;
-    g.stroke();
-    crescent(g, f.x, f.y, R * 0.97, R * (0.78 + u * 0.1), from, to);
-    g.fillStyle = '#ffffff';
-    g.fill();
-    g.globalAlpha = 1;
-  }
-
-  private drawBeam(g: CanvasRenderingContext2D, art: FxArt | null, f: Fx, u: number): void {
-    const a = f.a ?? 0;
-    const len = f.len ?? 200;
-    const w = (f.w ?? 8) * (1 - u * 0.7);
-    const ex = f.x + Math.cos(a) * len;
-    const ey = f.y + Math.sin(a) * len;
-    g.lineCap = 'round';
-    g.globalAlpha = u < 0.6 ? 1 : 1 - (u - 0.6) / 0.4;
-    const line = (width: number, color: string): void => {
-      g.beginPath();
-      g.moveTo(f.x, f.y);
-      g.lineTo(ex, ey);
-      g.lineWidth = width;
-      g.strokeStyle = color;
-      g.stroke();
-    };
-    line(w * 1.4 + 1.6, INK);
-    line(w * 1.4, f.color);
-    line(w * 0.6, '#ffffff');
-    g.globalAlpha = 1;
-    g.lineCap = 'butt';
-    // sparks of the pack's color all along it
-    for (let i = 1; i <= 6; i++) {
-      const q = i / 7;
-      play(g, art, 'impact', f.el, u * 1.3 - q * 0.3, f.x + (ex - f.x) * q, f.y + (ey - f.y) * q, 24);
-    }
-    play(g, art, 'cast', f.el, u, f.x, f.y, 26);
-    play(g, art, 'impact', f.el, u, ex, ey, 34);
-  }
-
   /** Everyone's health, names and, for whoever is out of sight, which way they are. */
   private drawPeople(g: CanvasRenderingContext2D, view: LandView): void {
     const v = this.v;
@@ -920,8 +581,6 @@ export class VigilPainter implements LandLayer {
       const color = CLASSES[h.cls as ClassId].colors.accent;
       const head = view.project(h.x, h.y, PERSON_H + 2);
       if (h.down) {
-        view.flat(h.x, h.y);
-        ring(g, h.x, h.y, REVIVE_DRAW, '#ffe39a', 0.8, 0.6 + Math.sin(view.time * 6) * 0.3);
         if (h.reviveT > 0) {
           view.up(h.x, h.y, 14);
           g.beginPath();

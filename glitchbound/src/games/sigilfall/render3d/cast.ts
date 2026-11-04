@@ -352,17 +352,8 @@ export class Cast {
 
   /** One still thing that comes and goes (a chest, a coin, a potion). */
   prop(id: string, x: number, y: number, h: number, rot = 0, lift = 0, tint?: readonly [number, number, number]): void {
-    let s = this.props.get(id);
-    if (!s) {
-      let mesh: MeshData | undefined;
-      for (const p of this.packs) {
-        mesh = p.meshes[id];
-        if (mesh) break;
-      }
-      if (!mesh) return;
-      s = new Stand(mesh, this.root, 64);
-      this.props.set(id, s);
-    }
+    const s = this.propStand(id);
+    if (!s) return;
     const mesh = (s.mesh.geometry as THREE.BufferGeometry & { _tall?: number })._tall;
     let tall = mesh;
     if (tall === undefined) {
@@ -372,11 +363,32 @@ export class Cast {
       (s.mesh.geometry as THREE.BufferGeometry & { _tall?: number })._tall = tall;
     }
     const k = (h / TILE) / tall;
+    s.put(x * UNIT, lift, y * UNIT, rot, k, k, k, tint?.[0] ?? 1, tint?.[1] ?? 1, tint?.[2] ?? 1, 0);
+  }
+
+  /** A model in flight, `k` times its size, turned any way: an arrow, a skull, a thrown shield. */
+  thrown(id: string, x: number, y: number, lift: number, rot: number, k: number, tipX = 0, tipZ = 0): void {
+    this.propStand(id)?.put(x * UNIT, lift, y * UNIT, rot, k, k, k, 1, 1, 1, 0, tipX, tipZ);
+  }
+
+  /** The instances of a still model, ready for this frame. */
+  private propStand(id: string): Stand | null {
+    let s = this.props.get(id);
+    if (!s) {
+      let mesh: MeshData | undefined;
+      for (const p of this.packs) {
+        mesh = p.meshes[id];
+        if (mesh) break;
+      }
+      if (!mesh) return null;
+      s = new Stand(mesh, this.root, 64);
+      this.props.set(id, s);
+    }
     if (!this.used.has(s)) {
       s.begin();
       this.used.add(s);
     }
-    s.put(x * UNIT, lift, y * UNIT, rot, k, k, k, tint?.[0] ?? 1, tint?.[1] ?? 1, tint?.[2] ?? 1, 0);
+    return s;
   }
 
   dispose(): void {

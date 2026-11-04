@@ -10,8 +10,6 @@
  *                          of every outdoor land; rk-tiles.json names them (the same for every season)
  *   rk-props-<season>-hd.png  its props and animated props, packed and smoothed; rk-props-<season>.json
  *                          holds their 32 px rects, origins, footprints and chimney points (doubled at load)
- *   vfx.png                the Magic Spells effects (64 px frames), one strip per effect; + .json
- *   circles.png            the Magic Circles (96 px frames); + .json
  *   props-gc               the few story pieces Royal Keep lacks (sigilfall-art-world.mjs)
  *
  * Only what the game draws goes in, losslessly recompressed. The art direction and what each pack is
@@ -29,8 +27,6 @@ const SRC = path.join(ROOT, 'assets/sigilfall');
 const OUT = path.join(ROOT, 'public/games/sigilfall/art');
 const RK = path.join(SRC, 'royal_keep_tileset_v1');
 const SEASONS = { summer: RK, autumn: path.join(SRC, 'royal_keep_seasons_v1/autumn'), winter: path.join(SRC, 'royal_keep_seasons_v1/winter') };
-const VFX = path.join(SRC, 'magic-spells-vfx');
-const CIRCLES = path.join(SRC, 'magic-circles-vfx-lite');
 
 const PAD = 1;
 
@@ -172,43 +168,6 @@ for (const [season, dir] of Object.entries(SEASONS)) {
   const anims = {};
   for (const a of animated) anims[a.name] = { r: packed.rects[`anim:${a.name}`], n: a.frames, w: a.w, h: a.h, ms: a.ms, loop: a.loop };
   json(`rk-props-${season}.json`, { props, anims });
-}
-
-/* ------------------------------------------------------------------ VFX */
-
-{
-  const man = JSON.parse(fs.readFileSync(path.join(VFX, 'manifest.json'), 'utf8')).effects_list;
-  const entries = [];
-  const fx = {};
-  for (const [name, e] of Object.entries(man)) {
-    if (name.startsWith('white')) continue;
-    const f = path.join(VFX, e.sheet);
-    if (!fs.existsSync(f)) continue;
-    entries.push(await entry(name, f));
-    fx[name] = { n: e.frames, ms: e.frame_ms, loop: !!e.loop };
-  }
-  const packed = await pack(entries, 2048);
-  write('vfx.png', packed.buf);
-  report.push(['vfx.png', packed.buf.length]);
-  for (const k of Object.keys(fx)) fx[k].r = packed.rects[k];
-  json('vfx.json', { frame: 64, fx });
-}
-
-{
-  const man = JSON.parse(fs.readFileSync(path.join(CIRCLES, 'manifest.json'), 'utf8')).animations;
-  const entries = [];
-  const fx = {};
-  for (const [name, e] of Object.entries(man)) {
-    if (!name.startsWith('color/')) continue;
-    const key = name.slice('color/'.length);
-    entries.push(await entry(key, path.join(CIRCLES, e.sheet)));
-    fx[key] = { n: e.frames, ms: e.frame_ms, loop: !!e.loop };
-  }
-  const packed = await pack(entries, 2048);
-  write('circles.png', packed.buf);
-  report.push(['circles.png', packed.buf.length]);
-  for (const k of Object.keys(fx)) fx[k].r = packed.rects[k];
-  json('circles.json', { frame: 96, fx });
 }
 
 await buildWorld({ SRC, write, json, png, pack, report });

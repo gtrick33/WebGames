@@ -52,7 +52,7 @@ and legendary chests. Never full-body neon; class color reads from the chest and
 | Idle | standing frame, a half-pixel breath |
 | Locomotion | two walking frames per view (down, up, side; left is side mirrored) at 7 per second of travel |
 | Primary attack | the weapon sweeps its arc (swing, heavy, spin); casts and shots point the weapon along the aim |
-| Special / cast | a channel's motes, a wind-up's slowdown, the skill's VFX from render/art/vfx.ts |
+| Special / cast | a channel's motes, a wind-up's slowdown, the skill's effect from render/effects.ts |
 | Hurt | a white silhouette flash (0.18 s) |
 | Dodge | blinking while invulnerable |
 | Death / knockout | the standing frame tips over and fades |
@@ -61,7 +61,7 @@ and legendary chests. Never full-body neon; class color reads from the chest and
 
 ## VFX against the sprite
 
-Player effects use the class's own colors and the Magic Spells pack's cast/impact art; enemy telegraphs use the
+Player effects use their school's colors, drawn by the shaders in render3d/fx3d.ts; enemy telegraphs use the
 danger reds and oranges (render/renderer.ts `drawTelegraph`) so they are never mistaken for the hero's. Effects
 are drawn after the figures but never cover the hero for more than their impact frames.
 

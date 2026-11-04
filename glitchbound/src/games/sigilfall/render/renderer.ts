@@ -1,23 +1,23 @@
-import { clamp, damp, hash2, TAU } from '../core/math';
+import { clamp, damp, TAU } from '../core/math';
 import { currentObjective } from '../progress/character';
 import { drawMapIcon, type MapIcon } from '../ui/mapIcons';
 import { isMainQuest, turnInNpc } from '../progress/handin';
 import { LEAD, leanTarget, LIFT } from './camera';
-import { drawBolt, drawVfx } from './art/vfx';
+import { Effects, headOf } from './effects';
 import { THEMES } from '../data/themes';
 import type { ClassId } from '../data/types';
-import { hasStatus } from '../sim/combat';
 import { TILE } from '../sim/map';
-import type { Enemy, Fx, NpcActor, Pet, Projectile, Telegraph } from '../sim/types';
+import type { Enemy, NpcActor, Pet } from '../sim/types';
 import type { World } from '../sim/world';
 import { ctx2d, rgba } from './pixel';
-import { glowDisc, heldWeapon, itemIconCanvas, heroLook, vendorSign, weaponSprite } from './sprites';
+import { heldWeapon, itemIconCanvas, heroLook, vendorSign } from './sprites';
 import type { HeroLook } from './art/hero';
 import { wornLooks } from '../progress/wardrobe';
 import { objectiveTarget } from '../sim/objective';
 import { aimReach, autoTarget, tapAutoAims } from '../sim/cast';
-import { heightFromRadius, PERSON_H, type Cast } from '../render3d/cast';
-import { hexRgb, kitOf } from '../render3d/kits';
+import { PERSON_H, type Cast } from '../render3d/cast';
+import type { Fx3D } from '../render3d/fx3d';
+import { hexRgb } from '../render3d/kits';
 import { Land3D, type LandObject } from '../render3d/land';
 import { Stage } from '../render3d/stage';
 import { LIGHT } from '../render3d/toon';
@@ -51,9 +51,11 @@ export interface LandView {
 /** Another game's crowd, drawn into the land at the right depths (render/vigil.ts). */
 export interface LandLayer {
   /** On the ground, under everyone (drawn on the top canvas, in world pixels). */
-  under(g: CanvasRenderingContext2D, time: number, view: LandView): void;
+  under?(g: CanvasRenderingContext2D, time: number, view: LandView): void;
   /** Who stands on the land. */
   cast?(cast: Cast, dt: number, time: number): void;
+  /** Its spells (render3d/fx3d.ts). */
+  fx?(fx: Fx3D, cast: Cast, time: number): void;
   /** Over everyone (drawn on the top canvas, in world pixels). */
   over(g: CanvasRenderingContext2D, time: number, view: LandView): void;
 }
@@ -69,60 +71,6 @@ export interface AimPreview {
   cancel: boolean;
 }
 
-const PROJECTILE_COLORS: Record<string, [string, string]> = {
-  'arcane-bolt': ['#d2a8ff', '#ffffff'],
-  lightning: ['#9ad8ff', '#ffffff'],
-  fireball: ['#ff7a3d', '#ffe07a'],
-  ember: ['#ff9a4d', '#ffe07a'],
-  spark: ['#bfe9ff', '#ffffff'],
-  shard: ['#bdf1ff', '#ffffff'],
-  needle: ['#8be36b', '#e8ffd8'],
-  quake: ['#c9a06a', '#f2dcb0'],
-  firebolt: ['#ff7a3d', '#ffe07a'],
-  icelance: ['#9be7ff', '#ffffff'],
-  ball: ['#7fc8ff', '#ffffff'],
-  comet: ['#9be7ff', '#ffffff'],
-  smite: ['#ffd84d', '#fffbe0'],
-  'holy-shock': ['#ffe066', '#ffffff'],
-  holyfire: ['#ff9a3d', '#fff2a0'],
-  judgment: ['#ffd84d', '#fff6c8'],
-  shield: ['#ffd84d', '#ffffff'],
-  shadowbolt: ['#7a3ad0', '#e0c8ff'],
-  chaosbolt: ['#5ad03a', '#eaffa0'],
-  wrath: ['#7bd65a', '#f0ffe0'],
-  vines: ['#4a9a3a', '#9cf07a'],
-  starfire: ['#c9a8ff', '#fff6d0'],
-  starsurge: ['#ff8ad8', '#ffffff'],
-};
-
-/** The beam over an item on the ground. */
-const RARITY_BEAM: Record<string, string> = { common: '#e8e4d8', uncommon: '#7fe06a', rare: '#6fb4ff', epic: '#c58bff', legendary: '#ffae42' };
-
-/** Ground effects by look. */
-const FIELD_COLORS: Record<string, string> = {
-  fire: '#ff7a3d',
-  poison: '#8be36b',
-  frost: '#9be7ff',
-  arrows: '#f5e6c8',
-  lightning: '#9ad8ff',
-  rift: '#ff3fd2',
-  holy: '#ffe066',
-  shadow: '#9a5aff',
-  nature: '#9cf07a',
-};
-
-/** Bolts without their own colors take their damage type's. */
-const TYPE_COLORS: Record<string, [string, string]> = {
-  fire: PROJECTILE_COLORS.fireball!,
-  lightning: PROJECTILE_COLORS.lightning!,
-  poison: PROJECTILE_COLORS.needle!,
-  frost: PROJECTILE_COLORS.shard!,
-  arcane: PROJECTILE_COLORS['arcane-bolt']!,
-  holy: PROJECTILE_COLORS.smite!,
-  shadow: PROJECTILE_COLORS.shadowbolt!,
-  nature: PROJECTILE_COLORS.wrath!,
-};
-
 export class Renderer {
   readonly canvas: HTMLCanvasElement;
   private g: CanvasRenderingContext2D;
@@ -135,6 +83,7 @@ export class Renderer {
   private stage: Stage | null = null;
   private stageFailed = false;
   private readonly people = new WorldCast();
+  private readonly effects = new Effects();
   private landFor: World | null = null;
   /** The story state the land was built for (World.stateVersion). */
   private landVersion = -1;
@@ -428,6 +377,10 @@ export class Renderer {
       st.cast.begin();
       this.people.sync(st.cast, w, dt, time, { look: this.look ?? heroLook(w.hero.cls), weapon: this.weapon, folk: this.folkK, statues: st.land?.statues, colossi: st.land?.colossi, landOnly: this.landOnly });
       this.layer?.cast?.(st.cast, dt, time);
+      st.fx.begin();
+      this.effects.draw(w, { fx: st.fx, cast: st.cast, land: st.land, time, near: (x, y) => Math.abs(x - cx) < this.vw * 0.7 && Math.abs(y - cy) < this.vh * 0.9 });
+      this.layer?.fx?.(st.fx, st.cast, time);
+      st.fx.end();
       st.cast.end();
       st.render(dt);
     }
@@ -448,133 +401,25 @@ export class Renderer {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // ---- what lies on the ground: on its own layer, under whatever stands
+    // ---- what's drawn on the ground for the player: on its own layer, under whatever stands
     const near0 = (x: number, y: number): boolean => Math.abs(x - cx) < this.vw * 0.7 && Math.abs(y - cy) < this.vh * 0.9;
     if (st) this.g = st.beginDecals();
     const dg = this.g;
-    for (const f of w.fields) {
-      this.flat(f.x, f.y);
-      this.drawField(f, time);
-    }
-    for (const t of w.telegraphs) {
-      this.flat(t.x, t.y);
-      this.drawTelegraph(t);
-    }
-    for (const wv of w.waves) {
-      this.flat(wv.x, wv.y);
-      this.drawWave(wv);
-    }
-    this.flat(p.x, p.y);
-    this.drawEnemyWarnings(w);
-    for (const tr of w.traps) {
-      this.flat(tr.x, tr.y);
-      this.drawTrap(tr.x, tr.y, tr.arm > 0, time);
-    }
     this.flat(p.x, p.y);
     if (!w.scene) this.drawAim(w);
     this.drawFacing(w, time);
     if (!this.landOnly) this.drawEntrances(w, time);
-    for (const e of w.enemies) {
-      if (e.dead || !hasStatus(e, 'root') || !near0(e.x, e.y)) continue;
-      this.flat(e.x, e.y);
-      dg.strokeStyle = '#6fb04f';
-      dg.lineWidth = 1.2;
-      dg.beginPath();
-      dg.arc(e.x, e.y, e.r + 2, 0, TAU);
-      dg.stroke();
-    }
-    if (p.channel) {
-      this.flat(p.x, p.y);
-      for (let i = 0; i < 3; i++) {
-        const a = time * 18 + (i * TAU) / 3;
-        dg.fillStyle = 'rgba(255,255,255,0.6)';
-        dg.fillRect(p.x + Math.cos(a) * 16, p.y + Math.sin(a) * 16, 3, 1.5);
-      }
-    }
-    const bz = w.boss();
-    if (bz?.boss && bz.boss.collapse > 0) {
-      this.flat(bz.boss.cx, bz.boss.cy);
-      this.drawCollapse(bz.boss.cx, bz.boss.cy, bz.boss.collapse, time);
-    }
-    for (const f of w.fx) {
-      if (f.kind !== 'ring' || !near0(f.x, f.y)) continue;
-      this.flat(f.x, f.y);
-      this.drawFx(f, w);
-    }
     this.flat(cx, cy);
-    this.layer?.under(dg, time, view);
+    this.layer?.under?.(dg, time, view);
     this.g = g;
 
-    // ---- fires, what floats and what flies
+    // ---- icons over what's on the ground, and another game's own
     const near = near0;
     // (what a wall stands in front of isn't shown over the wall)
     const seen = (x: number, y: number, h: number): boolean => near0(x, y) && !st?.land?.hidden(x, y, h);
-    this.fireColors = FIRE[w.region.theme] ?? FIRE.default!;
-    if (st?.land) {
-      for (const f of st.land.flames) {
-        const x = f.x * TILE;
-        const y = f.z * TILE;
-        if (!near(x, y)) continue;
-        this.upright(x, y, f.y * TILE);
-        this.drawFlame(x, y, time, f.size);
-      }
-    }
-    if (st?.land) {
-      for (const f of st.land.glows) {
-        const x = f.x * TILE;
-        const y = f.z * TILE;
-        if (!near(x, y)) continue;
-        this.upright(x, y, f.y * TILE);
-        const r = f.size * (0.92 + Math.sin(time * 1.8 + x) * 0.08);
-        g.save();
-        g.globalCompositeOperation = 'lighter';
-        g.globalAlpha = 0.55;
-        g.drawImage(glowDisc(f.color, Math.ceil(r)), x - r, y - r, r * 2, r * 2);
-        g.restore();
-      }
-    }
-    for (const f of w.fires) {
-      const lit = w.fireLit(f);
-      if (!lit || !near(f.x, f.y)) continue;
-      this.upright(f.x, f.y, TILE * 2.2);
-      g.globalAlpha = Math.min(1, lit * 1.5);
-      this.drawFlame(f.x, f.y, time, f.size * lit * 0.2);
-      g.globalAlpha = 1;
-    }
     for (const d of w.drops) if (d.kind === 'item' && near(d.x, d.y)) this.drawItemDrop(d, time);
-    for (const e of w.enemies) if (!e.dead && seen(e.x, e.y, 24)) this.drawEnemyMarks(e, time);
-    if (!p.dead) this.drawHeroMarks(w, time);
-    for (const pr of w.projectiles) {
-      if (!seen(pr.x, pr.y, 11)) continue;
-      this.upright(pr.x, pr.y, 13);
-      // (drawn for the old scale of things: half as big again reads against a hero of today's size)
-      g.save();
-      g.translate(pr.x, pr.y);
-      g.scale(SHOT_SCALE, SHOT_SCALE);
-      g.translate(-pr.x, -pr.y);
-      this.drawProjectile(pr, time);
-      g.restore();
-    }
-    for (const f of w.fx) {
-      if (f.kind === 'ring' || !seen(f.x, f.y, 10)) continue;
-      this.flat(f.x, f.y);
-      this.drawFx(f, w);
-    }
-    for (const gh of w.coop?.ghosts ?? []) {
-      for (const sh of gh.shots) {
-        this.upright(sh.x, sh.y, 11);
-        g.fillStyle = sh.color;
-        g.beginPath();
-        g.arc(sh.x, sh.y, Math.max(1.5, sh.r), 0, TAU);
-        g.fill();
-      }
-    }
     this.flat(cx, cy);
     this.layer?.over(g, time, view);
-    if (w.portal) {
-      this.upright(w.portal.x, w.portal.y, 14);
-      this.drawPortal(w.portal.x, w.portal.y, time);
-    }
 
     // ---- names, bars and numbers, sized for the screen
     // (a scene is a clean picture: no bars, markers or arrows over it)
@@ -663,16 +508,11 @@ export class Renderer {
 
   /* ---------------------------------------------------------------- names and marks */
 
-  private headOf(e: Enemy): number {
-    const kit = kitOf(e.def.sprite, e.def.id);
-    return heightFromRadius(e.r, kit.size ?? 1) * 0.92 + (kit.float ?? 0) * 16 + 4;
-  }
-
   private drawEnemyBar(e: Enemy, st: Stage): void {
     if (e.dead || e.boss || e.dummy || e.state === 'spawn') return;
     const named = !!e.def.named;
     if (e.hp >= e.maxHp && !e.elite.length && !named && e.shield <= 0) return;
-    const s = st.project(e.x, e.y, this.headOf(e));
+    const s = st.project(e.x, e.y, headOf(e));
     const wide = e.elite.length || named ? 46 : 30;
     this.bar(s.x, s.y, wide, e.hp / e.maxHp, named ? '#d8b0ff' : e.elite.length ? '#ffcf5a' : '#ff4a5a', e.shield > 0 ? e.shield / (e.maxHp * 0.4) : 0);
     if (named) this.label(`${e.name} ${e.level}`, s.x, s.y - 11, 11, '#e8d0ff');
@@ -715,70 +555,12 @@ export class Renderer {
     }
   }
 
-  /** What is afoot on a foe: frost, flames, stars, a mark. */
-  private drawEnemyMarks(e: Enemy, time: number): void {
-    const g = this.g;
-    const h = this.headOf(e);
-    this.upright(e.x, e.y, h * 0.5);
-    if (hasStatus(e, 'burn') && Math.floor(time * 8 + e.id) % 2 === 0) this.drawFlame(e.x + Math.sin(time * 7 + e.id) * e.r * 0.5, e.y, time, 0.55);
-    if (e.statuses.some((s) => s.id === 'poison')) {
-      const ph = (time * 1.5 + e.id * 0.3) % 1;
-      g.fillStyle = `rgba(139,227,107,${1 - ph})`;
-      g.beginPath();
-      g.arc(e.x - 3 + (e.id % 5), e.y - e.r - ph * 8, 1.4, 0, TAU);
-      g.fill();
-    }
-    if (hasStatus(e, 'shock') && Math.floor(time * 12) % 3 === 0) {
-      g.fillStyle = '#bfe9ff';
-      g.fillRect(e.x + (Math.random() - 0.5) * e.r * 2, e.y - Math.random() * e.r * 2, 1, 2);
-    }
-    if (e.shield > 0) {
-      g.strokeStyle = `rgba(127,216,255,${0.6 + Math.sin(time * 6) * 0.2})`;
-      g.lineWidth = 1;
-      g.beginPath();
-      g.ellipse(e.x, e.y, e.r + 4, e.r + 6, 0, 0, TAU);
-      g.stroke();
-    }
-    this.upright(e.x, e.y, h);
-    if (hasStatus(e, 'stun') || hasStatus(e, 'freeze') || e.boss?.dazed) this.drawStars(e.x, e.y, time);
-    if (hasStatus(e, 'mark')) {
-      const yy = e.y - 6 + Math.sin(time * 4);
-      g.strokeStyle = '#ffe066';
-      g.lineWidth = 1;
-      g.strokeRect(e.x - 3.5, yy - 3.5, 7, 7);
-      g.fillStyle = '#ff4a4a';
-      g.fillRect(e.x - 1, yy - 1, 2, 2);
-    }
-  }
-
-  private drawHeroMarks(w: World, time: number): void {
-    const g = this.g;
-    const p = w.player;
-    if (p.shield > 0) {
-      this.upright(p.x, p.y, 13);
-      g.strokeStyle = `rgba(127,216,255,${0.55 + Math.sin(time * 8) * 0.2})`;
-      g.lineWidth = 1.2;
-      g.beginPath();
-      g.ellipse(p.x, p.y, 13, 15, 0, 0, TAU);
-      g.stroke();
-    }
-    this.upright(p.x, p.y, 2);
-    if (p.buffs.length) this.drawBuffs(w, time);
-    this.upright(p.x, p.y, PERSON_H);
-    if (hasStatus(p, 'stun')) this.drawStars(p.x, p.y, time);
-  }
-
-  /** An item on the ground: its icon over a beam in its rarity's color. */
+  /** An item on the ground: its icon, over its beam (render/effects.ts). */
   private drawItemDrop(d: World['drops'][number], time: number): void {
     const g = this.g;
     const item = d.item;
     if (!item) return;
     this.upright(d.x, d.y, 10 + d.z + Math.sin(time * 3 + d.x) * 1.5);
-    const color = RARITY_BEAM[item.r] ?? '#ffffff';
-    g.fillStyle = color;
-    g.globalAlpha = 0.22;
-    g.fillRect(d.x - 1.5, d.y - 16, 3, 26);
-    g.globalAlpha = 1;
     const icon = itemIconCanvas(item);
     g.imageSmoothingEnabled = true;
     g.drawImage(icon, d.x - 7, d.y - 7, 14, 14);
@@ -832,269 +614,6 @@ export class Renderer {
     g.closePath();
     g.fill();
     g.globalAlpha = 1;
-  }
-
-  /* ---------------------------------------------------------------- ground */
-
-  /** What fire looks like here: most places burn orange, a deep place its own color (its mood is in its light). */
-  private fireColors: readonly [string, string, string] = FIRE.default!;
-
-  private drawFlame(x: number, y: number, time: number, k: number): void {
-    const g = this.g;
-    // a tongue of fire that leans and licks, three shades from its edge to its white-hot heart, in its own glow
-    const s = 0.8 + Math.min(2, k) * 0.75;
-    const t = time * 8 + x * 0.73;
-    const lean = (Math.sin(t) * 1.1 + Math.sin(t * 2.3) * 0.6) * s;
-    const tall = (9 + Math.sin(t * 1.7) * 1.6) * s;
-    const wide = 3.6 * s;
-    const glow = Math.ceil(tall * 1.15);
-    g.save();
-    g.globalCompositeOperation = 'lighter';
-    g.globalAlpha = 0.34 + Math.sin(t * 1.3) * 0.05;
-    g.drawImage(glowDisc(this.fireColors[0], glow), x - glow, y - tall * 0.45 - glow);
-    g.restore();
-    const tongue = (w: number, h: number, color: string): void => {
-      g.fillStyle = color;
-      g.beginPath();
-      g.moveTo(x - w, y);
-      g.quadraticCurveTo(x - w * 0.95, y - h * 0.5, x + lean * (h / tall), y - h);
-      g.quadraticCurveTo(x + w * 0.95, y - h * 0.5, x + w, y);
-      g.quadraticCurveTo(x, y + w * 0.9, x - w, y);
-      g.fill();
-    };
-    const [outer, middle, heart] = this.fireColors;
-    tongue(wide, tall, outer);
-    tongue(wide * 0.66, tall * 0.7, middle);
-    tongue(wide * 0.34, tall * 0.42, heart);
-  }
-
-  private drawField(f: World['fields'][number], time: number): void {
-    const g = this.g;
-    const life = f.t / f.dur;
-    const fade = clamp(life * 3, 0, 1);
-    const color = FIELD_COLORS[f.look] ?? '#ff3fd2';
-    if (f.look === 'arrows') {
-      g.strokeStyle = rgba('#f5e6c8', 0.5 * fade);
-      g.lineWidth = 1;
-      g.beginPath();
-      g.ellipse(Math.round(f.x) + 0.5, Math.round(f.y) + 0.5, f.r, f.r, 0, 0, TAU);
-      g.stroke();
-      g.fillStyle = rgba('#000000', 0.12 * fade);
-      g.beginPath();
-      g.ellipse(f.x, f.y, f.r, f.r, 0, 0, TAU);
-      g.fill();
-      return;
-    }
-    g.fillStyle = rgba(color, (f.hostile ? 0.32 : 0.22) * fade);
-    g.beginPath();
-    g.ellipse(f.x, f.y, f.r, f.r, 0, 0, TAU);
-    g.fill();
-    if (f.hostile) {
-      g.strokeStyle = rgba('#ff4a4a', 0.55 * fade);
-      g.lineWidth = 1;
-      g.stroke();
-    }
-    // bubbles / flames rising in it
-    const n = Math.max(2, Math.round(f.r / 5));
-    for (let i = 0; i < n; i++) {
-      const ph = (time * 1.4 + i * 0.37 + f.id * 0.11) % 1;
-      const a = hash2(i, f.id, 3) * TAU;
-      const r = Math.sqrt(hash2(i, f.id, 4)) * f.r * 0.9;
-      g.fillStyle = rgba(f.look === 'fire' ? (ph < 0.5 ? '#ffd86b' : '#ff7a3d') : color, (1 - ph) * fade);
-      g.fillRect(Math.round(f.x + Math.cos(a) * r), Math.round(f.y + Math.sin(a) * r * 0.75 - ph * 6), 1, f.look === 'fire' || f.look === 'holy' ? 2 : 1);
-    }
-    if (f.look === 'holy' || f.look === 'shadow' || f.look === 'nature') {
-      // a consecrated ring, a pool of shadow, a ring of leaves: the edge turns slowly
-      const k = f.look === 'shadow' ? -0.6 : 0.6;
-      g.fillStyle = rgba(f.look === 'nature' ? '#4a9a3a' : color, 0.6 * fade);
-      const m = Math.max(6, Math.round(f.r / 2.5));
-      for (let i = 0; i < m; i++) {
-        const a = time * k + (i * TAU) / m;
-        g.fillRect(Math.round(f.x + Math.cos(a) * f.r * 0.92), Math.round(f.y + Math.sin(a) * f.r * 0.69), 2, 1);
-      }
-    }
-  }
-
-  /** Enemy warnings: red shapes that fill up as the attack is about to land. */
-  private drawTelegraph(t: Telegraph): void {
-    const g = this.g;
-    if (t.t >= t.dur && t.linger <= 0) return;
-    const k = clamp(t.t / t.dur, 0, 1);
-    const color = t.tone === 'rift' ? '#ff3fd2' : t.tone === 'player' ? '#ffb04d' : '#ff3b3b';
-    const lingering = t.t >= t.dur;
-    g.save();
-    switch (t.shape) {
-      case 'circle':
-      case 'ring':
-      case 'donut': {
-        const ry = 1;
-        if (t.shape === 'circle') {
-          g.fillStyle = rgba(color, lingering ? 0.6 : 0.18);
-          g.beginPath();
-          g.ellipse(t.x, t.y, t.r, t.r * ry, 0, 0, TAU);
-          g.fill();
-          g.fillStyle = rgba(color, 0.35);
-          g.beginPath();
-          g.ellipse(t.x, t.y, t.r * k, t.r * k * ry, 0, 0, TAU);
-          g.fill();
-        } else {
-          g.fillStyle = rgba(color, 0.18 + k * 0.2);
-          g.beginPath();
-          g.ellipse(t.x, t.y, t.r, t.r * ry, 0, 0, TAU);
-          g.ellipse(t.x, t.y, t.r2, t.r2 * ry, 0, 0, TAU, true);
-          g.fill('evenodd');
-          g.strokeStyle = rgba('#ffffff', 0.7);
-          g.lineWidth = 1;
-          g.beginPath();
-          g.ellipse(t.x, t.y, t.r2, t.r2 * ry, 0, 0, TAU);
-          g.stroke();
-        }
-        g.strokeStyle = rgba(color, 0.9);
-        g.lineWidth = 1;
-        g.beginPath();
-        g.ellipse(Math.round(t.x) + 0.5, Math.round(t.y) + 0.5, t.r, t.r * ry, 0, 0, TAU);
-        g.stroke();
-        break;
-      }
-      case 'line': {
-        g.translate(t.x, t.y);
-        g.rotate(t.angle);
-        if (lingering) {
-          g.fillStyle = rgba('#ffffff', 0.9);
-          g.fillRect(0, -t.r2 / 4, t.len, t.r2 / 2);
-          g.fillStyle = rgba(color, 0.8);
-          g.fillRect(0, -t.r2 / 2, t.len, t.r2);
-        } else {
-          g.fillStyle = rgba(color, t.dmg > 0 ? 0.18 : 0.14);
-          g.fillRect(0, -t.r2 / 2, t.len, t.r2);
-          g.fillStyle = rgba(color, 0.32);
-          g.fillRect(0, -t.r2 / 2, t.len * k, t.r2);
-          g.strokeStyle = rgba(color, 0.8);
-          g.lineWidth = 1;
-          g.strokeRect(0, -t.r2 / 2, t.len, t.r2);
-        }
-        break;
-      }
-      case 'cone': {
-        g.fillStyle = rgba(color, 0.2);
-        g.beginPath();
-        g.moveTo(t.x, t.y);
-        g.arc(t.x, t.y, t.r, t.angle - t.r2, t.angle + t.r2);
-        g.closePath();
-        g.fill();
-        g.fillStyle = rgba(color, 0.35);
-        g.beginPath();
-        g.moveTo(t.x, t.y);
-        g.arc(t.x, t.y, t.r * k, t.angle - t.r2, t.angle + t.r2);
-        g.closePath();
-        g.fill();
-        break;
-      }
-    }
-    g.restore();
-  }
-
-  private drawWave(wv: World['waves'][number]): void {
-    const g = this.g;
-    g.strokeStyle = rgba('#ffb07a', 0.85);
-    g.lineWidth = wv.width * 0.5;
-    g.beginPath();
-    g.ellipse(wv.x, wv.y, wv.r, wv.r, 0, 0, TAU);
-    g.stroke();
-    g.strokeStyle = rgba('#ffffff', 0.6);
-    g.lineWidth = 1;
-    g.stroke();
-  }
-
-  /** Wind-ups drawn from enemy state: arcs, slam circles, aim lines, charge lanes. */
-  private drawEnemyWarnings(w: World): void {
-    const g = this.g;
-    for (const e of w.enemies) {
-      if (e.dead || e.state !== 'windup' || e.boss) continue;
-      const k = clamp(1 - e.t / e.def.windup, 0, 1);
-      const red = '#ff3b3b';
-      if (e.mend) {
-        // a healer gathering a heal: a green thread to its friend (stun or kill it to stop it)
-        const ally = w.enemyById(e.mend);
-        if (ally) {
-          g.strokeStyle = rgba('#7bff9a', 0.35 + k * 0.5);
-          g.lineWidth = 1;
-          g.setLineDash([2, 2]);
-          g.beginPath();
-          g.moveTo(e.x, e.y - 4);
-          g.lineTo(ally.x, ally.y - 4);
-          g.stroke();
-          g.setLineDash([]);
-        }
-        continue;
-      }
-      g.save();
-      switch (e.def.ai) {
-        case 'melee':
-        case 'hopper': {
-          const r = e.def.reach + e.r + 4;
-          g.fillStyle = rgba(red, 0.12 + k * 0.2);
-          g.beginPath();
-          g.moveTo(e.x, e.y);
-          g.arc(e.x, e.y, e.def.ai === 'hopper' ? r + 18 : r, e.aimA - 0.9, e.aimA + 0.9);
-          g.closePath();
-          g.fill();
-          break;
-        }
-        case 'armored': {
-          const r = e.def.slam?.radius ?? 30;
-          g.fillStyle = rgba(red, 0.14);
-          g.beginPath();
-          g.ellipse(e.x, e.y, r, r, 0, 0, TAU);
-          g.fill();
-          g.fillStyle = rgba(red, 0.3);
-          g.beginPath();
-          g.ellipse(e.x, e.y, r * k, r * k, 0, 0, TAU);
-          g.fill();
-          g.strokeStyle = rgba(red, 0.8);
-          g.lineWidth = 1;
-          g.beginPath();
-          g.ellipse(e.x, e.y, r, r, 0, 0, TAU);
-          g.stroke();
-          break;
-        }
-        case 'ranged':
-        case 'caster': {
-          if (e.aimX === -1) break; // casters with a ground circle: the telegraph shows it
-          g.translate(e.x, e.y - 3);
-          g.rotate(e.aimA);
-          g.fillStyle = rgba(red, 0.15 + k * 0.25);
-          g.fillRect(4, -1, 120, 2);
-          g.fillStyle = rgba('#ffffff', k * 0.6);
-          g.fillRect(4, 0, 120 * k, 1);
-          break;
-        }
-        case 'charger': {
-          g.translate(e.x, e.y);
-          g.rotate(e.aimA);
-          const wdt = e.r * 2 + 4;
-          g.fillStyle = rgba(red, 0.12);
-          g.fillRect(0, -wdt / 2, e.rushLeft, wdt);
-          g.fillStyle = rgba(red, 0.3);
-          g.fillRect(0, -wdt / 2, e.rushLeft * k, wdt);
-          g.strokeStyle = rgba(red, 0.75);
-          g.lineWidth = 1;
-          g.strokeRect(0, -wdt / 2, e.rushLeft, wdt);
-          break;
-        }
-      }
-      g.restore();
-    }
-  }
-
-  private drawTrap(x: number, y: number, arming: boolean, time: number): void {
-    const g = this.g;
-    g.fillStyle = '#5a5a6a';
-    g.fillRect(x - 5, y - 1, 10, 3);
-    g.fillStyle = '#9aa0b0';
-    for (let i = -4; i <= 4; i += 2) g.fillRect(x + i, y - 3, 1, 2);
-    g.fillStyle = arming ? '#8a8a8a' : Math.floor(time * 3) % 2 ? '#8be36b' : '#4aa83a';
-    g.fillRect(x - 1, y - 1, 2, 2);
   }
 
   /** The touch aim preview: where the dragged skill will go. */
@@ -1207,31 +726,6 @@ export class Renderer {
     g.restore();
   }
 
-  /** Shadows and auras under characters. */
-  /* -------------------------------------------------------------- figures */
-
-  /** Buffs show as motes of their color rising around the hero; damage walls as a ring. */
-  private drawBuffs(w: World, time: number): void {
-    const g = this.g;
-    const p = w.player;
-    p.buffs.forEach((b, i) => {
-      for (let j = 0; j < 2; j++) {
-        const t = time * 0.9 + j * 0.5 + i * 0.27;
-        const ph = t % 1;
-        const a = i * 2.4 + j * 3.1 + Math.floor(t) * 1.7;
-        g.fillStyle = rgba(b.def.color, (1 - ph) * 0.9);
-        g.fillRect(Math.round(p.x + Math.cos(a) * 8), Math.round(p.y + 3 - ph * 18), 1, 2);
-      }
-      if (b.def.dr) {
-        g.strokeStyle = rgba(b.def.color, 0.3 + Math.sin(time * 5) * 0.1);
-        g.lineWidth = 1;
-        g.beginPath();
-        g.ellipse(p.x, p.y, 10, 4, 0, 0, TAU);
-        g.stroke();
-      }
-    });
-  }
-
   /** A scene's signs over heads: surprise, a question, a pause, affection, a tune. */
   private drawEmotes(w: World): void {
     const s = w.scene;
@@ -1314,522 +808,6 @@ export class Renderer {
     g.restore();
   }
 
-  private drawStars(x: number, y: number, time: number): void {
-    const g = this.g;
-    for (let i = 0; i < 3; i++) {
-      const a = time * 5 + (i * TAU) / 3;
-      g.fillStyle = '#ffe066';
-      g.fillRect(Math.round(x + Math.cos(a) * 6), Math.round(y + Math.sin(a) * 2), 2, 2);
-    }
-  }
-
-  private drawProjectile(pr: Projectile, time: number): void {
-    const g = this.g;
-    const x = Math.round(pr.x);
-    const y = Math.round(pr.y);
-    const a = Math.atan2(pr.vy, pr.vx);
-    if (pr.hostile) {
-      // enemy shots: red rim, dark core, unmistakable
-      const r = Math.max(2, Math.round(pr.r));
-      if (pr.look === 'enemyArrow' || pr.look === 'spear') {
-        g.save();
-        g.translate(x, y);
-        g.rotate(a);
-        const L = pr.look === 'spear' ? 12 : 8;
-        g.fillStyle = '#1b1428';
-        g.fillRect(-L, -2, L + 3, 4);
-        g.fillStyle = pr.look === 'spear' ? '#d8d0b8' : '#c9b89a';
-        g.fillRect(-L + 1, -1, L, 2);
-        g.fillStyle = '#ff3f6a';
-        g.fillRect(1, -1, 2, 2);
-        g.restore();
-        return;
-      }
-      if (pr.look === 'web') {
-        // a spray of sticky threads
-        g.save();
-        g.translate(x, y);
-        g.rotate(time * 6);
-        g.fillStyle = '#ff2a4a';
-        g.fillRect(-r - 1, -1, r * 2 + 2, 2);
-        g.fillRect(-1, -r - 1, 2, r * 2 + 2);
-        g.fillStyle = pr.color;
-        g.fillRect(-r, 0, r * 2, 1);
-        g.fillRect(0, -r, 1, r * 2);
-        g.fillRect(-1, -1, 3, 3);
-        g.restore();
-        return;
-      }
-      if (pr.look === 'flame') {
-        // a gout of fire: a flickering head with a tail streaming back
-        const fl = Math.floor(time * 14) % 2;
-        for (let i = 3; i >= 1; i--) pixelDisc(g, Math.round(x - Math.cos(a) * i * 2.5), Math.round(y - Math.sin(a) * i * 2.5), Math.max(1, r - i + 1), i === 3 ? '#a8261e' : '#ff7a3d');
-        pixelDisc(g, x, y, r + 1, '#ff2a4a');
-        pixelDisc(g, x, y, r, fl ? '#ff9a3d' : '#ffb04d');
-        g.fillStyle = '#fff2a0';
-        g.fillRect(x - 1, y - 1, 2, 2);
-        return;
-      }
-      if (pr.look === 'bolt') {
-        // a crackling bolt of lightning, jagged along its flight
-        g.save();
-        g.translate(x, y);
-        g.rotate(a);
-        const j = Math.floor(time * 20) % 2 ? 1 : -1;
-        const pts: [number, number][] = [[-9, 0], [-6, -2 * j], [-3, 1 * j], [0, -2 * j], [3, 0]];
-        for (const [width, color] of [[4, '#ff2a4a'], [2, pr.color], [1, '#ffffff']] as const) {
-          g.fillStyle = color;
-          for (let i = 0; i < pts.length - 1; i++) {
-            const [x0, y0] = pts[i]!;
-            const [x1, y1] = pts[i + 1]!;
-            for (let t = 0; t <= 3; t++) g.fillRect(Math.round(x0 + ((x1 - x0) * t) / 3) - (width >> 1), Math.round(y0 + ((y1 - y0) * t) / 3) - (width >> 1), width, width);
-          }
-        }
-        g.restore();
-        return;
-      }
-      if (pr.look === 'ball') {
-        // a cannonball (or a lump of something heavy): dark iron, a glint, a smoky wake
-        g.fillStyle = 'rgba(90,84,100,0.5)';
-        for (let i = 1; i <= 3; i++) g.fillRect(Math.round(x - Math.cos(a) * i * 3) - 1, Math.round(y - Math.sin(a) * i * 3) - 1, 2, 2);
-        pixelDisc(g, x, y, r + 1, '#ff2a4a');
-        pixelDisc(g, x, y, r, '#2a2630');
-        g.fillStyle = '#8a8698';
-        g.fillRect(x - 1, y - r + 1, 2, 1);
-        return;
-      }
-      const pulse = Math.floor(time * 10) % 2;
-      pixelDisc(g, x, y, r + 1, '#ff2a4a');
-      pixelDisc(g, x, y, r, pr.color);
-      g.fillStyle = pulse ? '#ffffff' : '#1b1428';
-      g.fillRect(x - 1, y - 1, 2, 2);
-      if (pr.look === 'skull') {
-        g.fillStyle = '#1b1428';
-        g.fillRect(x - 2, y - 1, 1, 1);
-        g.fillRect(x + 1, y - 1, 1, 1);
-      }
-      return;
-    }
-    const look = pr.look;
-    const [c1, c2] = PROJECTILE_COLORS[look] ?? TYPE_COLORS[pr.type] ?? ['#e8e0c8', '#ffffff'];
-    if (look === 'shield' || look === 'judgment') {
-      // a thrown shield or a hammer of light, spinning
-      const s = weaponSprite(look === 'shield' ? 'shield' : 'hammer', look === 'shield' ? undefined : '#ffd84d');
-      g.globalAlpha = 0.45;
-      g.drawImage(glowDisc(c1, 9), x - 9, y - 9);
-      g.globalAlpha = 1;
-      g.save();
-      g.translate(x, y);
-      g.rotate(time * 16);
-      g.drawImage(s.c, -s.width / s.k / 2, -s.height / s.k / 2, s.width / s.k, s.height / s.k);
-      g.restore();
-      return;
-    }
-    if (look === 'icelance' || look === 'vines') {
-      // a long spike of ice, or a lashing root
-      g.save();
-      g.translate(x, y);
-      g.rotate(a);
-      if (look === 'icelance') {
-        g.fillStyle = rgba(c1, 0.35);
-        g.fillRect(-16, -1, 8, 2);
-        g.fillStyle = '#1b1428';
-        g.fillRect(-10, -2, 12, 4);
-        g.fillStyle = c1;
-        g.fillRect(-9, -1, 10, 2);
-        g.fillStyle = c2;
-        g.fillRect(-6, -1, 7, 1);
-        g.fillRect(2, -1, 2, 2);
-        g.fillRect(4, 0, 1, 1);
-      } else {
-        for (let i = 0; i < 6; i++) {
-          const wy = Math.round(Math.sin(time * 20 - i * 1.3) * 1.5);
-          g.fillStyle = i % 2 ? c1 : '#2e6a2a';
-          g.fillRect(-i * 2 - 1, wy - 1, 2, 2);
-        }
-        g.fillStyle = c2;
-        g.fillRect(1, -1, 2, 2);
-        g.fillRect(-4, Math.round(Math.sin(time * 20) * 2) - 3, 1, 2);
-      }
-      g.restore();
-      return;
-    }
-    if (look === 'quake') {
-      g.save();
-      g.translate(x, y);
-      g.rotate(a);
-      g.fillStyle = rgba('#5a4428', 0.7);
-      g.fillRect(-8, -pr.r, 12, pr.r * 2);
-      for (let i = 0; i < 6; i++) {
-        g.fillStyle = i % 2 ? c1 : c2;
-        g.fillRect(-6 + ((i * 5) % 10), -pr.r + ((i * 7 + Math.floor(time * 30)) % (pr.r * 2)), 3, 2);
-      }
-      g.restore();
-      return;
-    }
-    if (look === 'arrow' || look === 'piercing-arrow' || look === 'multishot' || (pr.type === 'physical' && look !== 'shard')) {
-      g.save();
-      g.translate(x, y);
-      g.rotate(a);
-      const L = look === 'piercing-arrow' ? 11 : 8;
-      g.fillStyle = look === 'piercing-arrow' ? 'rgba(255,240,180,0.45)' : 'rgba(255,255,255,0.25)';
-      g.fillRect(-L - 6, -1, 6, 2);
-      g.fillStyle = '#8a5a34';
-      g.fillRect(-L, 0, L, 1);
-      g.fillStyle = '#e8e8f0';
-      g.fillRect(0, -1, 2, 3);
-      g.fillStyle = look === 'piercing-arrow' ? '#ffe066' : '#ffffff';
-      g.fillRect(2, 0, 1, 1);
-      g.fillStyle = '#7cc45a';
-      g.fillRect(-L, -1, 2, 1);
-      g.fillRect(-L, 1, 2, 1);
-      g.restore();
-      return;
-    }
-    // bolts, fireballs, embers: a bolt of their element from the spell pack, or a glowing core with a short tail
-    if (drawBolt(g, look, pr.type, pr.x, pr.y, a, pr.age, pr.r)) return;
-    const r = Math.max(1.5, pr.r);
-    g.globalAlpha = 0.5;
-    g.drawImage(glowDisc(c1, Math.ceil(r * 2.5)), x - Math.ceil(r * 2.5), y - Math.ceil(r * 2.5));
-    g.globalAlpha = 1;
-    for (let i = 1; i <= 3; i++) {
-      g.fillStyle = rgba(c1, 0.55 - i * 0.15);
-      const s = Math.max(1, Math.round(r * (1 - i * 0.22)));
-      g.fillRect(Math.round(x - Math.cos(a) * i * 3 - s / 2), Math.round(y - Math.sin(a) * i * 3 - s / 2), s, s);
-    }
-    const R = Math.round(r);
-    pixelDisc(g, x, y, R, c1);
-    pixelDisc(g, x, y, Math.max(1, R - 1), c2);
-    if (look === 'lightning' || look === 'spark' || look === 'ball') {
-      g.fillStyle = '#ffffff';
-      g.fillRect(x + Math.round(Math.random() * 4 - 2), y + Math.round(Math.random() * 4 - 2), 1, 1);
-      if (look === 'ball') {
-        const k = Math.random() * TAU;
-        g.fillStyle = c1;
-        g.fillRect(x + Math.round(Math.cos(k) * (R + 2)), y + Math.round(Math.sin(k) * (R + 2)), 1, 2);
-      }
-    } else if (look === 'starsurge' || look === 'starfire') {
-      // twinkles trail the star
-      for (let i = 0; i < 2; i++) {
-        const ph = (time * 3 + i * 0.5 + pr.x * 0.01) % 1;
-        g.fillStyle = rgba(c2, 1 - ph);
-        g.fillRect(Math.round(x - Math.cos(a) * (4 + ph * 8) + Math.sin(a) * (i ? 3 : -3)), Math.round(y - Math.sin(a) * (4 + ph * 8) - Math.cos(a) * (i ? 3 : -3)), 1, 1);
-      }
-      g.fillStyle = c2;
-      g.fillRect(x - R - 1, y, 1, 1);
-      g.fillRect(x + R, y, 1, 1);
-      g.fillRect(x, y - R - 1, 1, 1);
-      g.fillRect(x, y + R, 1, 1);
-    } else if (look === 'shadowbolt' || look === 'chaosbolt') {
-      // a dark heart and wisps
-      g.fillStyle = look === 'chaosbolt' ? '#1a3a10' : '#1b0e2e';
-      g.fillRect(x - 1, y - 1, 2, 2);
-      g.fillStyle = rgba(c1, 0.7);
-      const k = time * 12 + pr.x;
-      g.fillRect(Math.round(x + Math.cos(k) * (R + 1)), Math.round(y + Math.sin(k) * (R + 1)), 1, 1);
-    }
-  }
-
-  private drawFx(f: Fx, _w: World): void {
-    const g = this.g;
-    // the packed spell effects (an impact, a cast, a blast): only a picture, nothing to fall back to
-    if (f.sprite && f.sprite.includes(':')) {
-      drawVfx(g, f.sprite, f.x, f.y, f.t, f.size);
-      return;
-    }
-    const k = f.t / f.life;
-    const x = Math.round(f.x);
-    const y = Math.round(f.y);
-    switch (f.kind) {
-      case 'spark': {
-        // a hot speck, bright at its heart
-        const r = Math.max(1.4, f.size * 0.9) * (1 - k * 0.5);
-        g.save();
-        g.globalCompositeOperation = 'lighter';
-        g.globalAlpha = clamp(1.4 - k * 1.4, 0, 1);
-        g.fillStyle = f.color;
-        g.beginPath();
-        g.arc(f.x, f.y, r, 0, TAU);
-        g.fill();
-        g.fillStyle = '#ffffff';
-        g.beginPath();
-        g.arc(f.x, f.y, r * 0.45, 0, TAU);
-        g.fill();
-        g.restore();
-        break;
-      }
-      case 'rubble':
-      case 'coin':
-      case 'shard': {
-        // a chip of something, turning as it flies
-        const r = Math.max(1.8, f.size * 1.1);
-        g.save();
-        g.globalAlpha = clamp(1.6 - k * 1.4, 0, 1);
-        g.translate(f.x, f.y);
-        g.rotate(f.a + f.t * 9);
-        g.fillStyle = f.color;
-        g.beginPath();
-        g.moveTo(0, -r);
-        g.lineTo(r * 0.8, 0);
-        g.lineTo(0, r * 0.7);
-        g.lineTo(-r * 0.8, 0);
-        g.closePath();
-        g.fill();
-        g.fillStyle = 'rgba(255,255,255,0.35)';
-        g.beginPath();
-        g.moveTo(0, -r);
-        g.lineTo(r * 0.8, 0);
-        g.lineTo(0, 0);
-        g.closePath();
-        g.fill();
-        g.restore();
-        break;
-      }
-      case 'smoke': {
-        // a soft puff that swells and thins as it rises (three lumps: it stands up from the ground)
-        this.upright(f.x, f.y, 4 + k * 14);
-        const rr = (f.size * (1.3 + k * 1.3)) / 2;
-        g.fillStyle = f.color;
-        g.globalAlpha = clamp(0.5 - k * 0.5, 0, 1);
-        g.beginPath();
-        g.arc(f.x, f.y, rr, 0, TAU);
-        g.arc(f.x + rr * 0.7, f.y + rr * 0.25, rr * 0.7, 0, TAU);
-        g.arc(f.x - rr * 0.7, f.y + rr * 0.3, rr * 0.65, 0, TAU);
-        g.fill();
-        g.globalAlpha = clamp(0.28 - k * 0.28, 0, 1);
-        g.fillStyle = '#ffffff';
-        g.beginPath();
-        g.arc(f.x - rr * 0.2, f.y - rr * 0.3, rr * 0.55, 0, TAU);
-        g.fill();
-        g.globalAlpha = 1;
-        break;
-      }
-      case 'leaf':
-        g.fillStyle = f.color;
-        g.globalAlpha = clamp(1 - k * 1.2, 0, 0.9);
-        g.save();
-        g.translate(f.x, f.y);
-        g.rotate(f.a + f.t * 4);
-        g.fillRect(-2.5, -1, 5, 2);
-        g.restore();
-        g.globalAlpha = 1;
-        f.vx += Math.sin(f.t * 3 + f.a) * 0.6;
-        break;
-      case 'ember':
-        if (f.sprite === 'meteor') {
-          // the falling meteor: burning rock and its long tail
-          this.upright(f.x, f.y, 10);
-          g.save();
-          g.globalCompositeOperation = 'lighter';
-          g.drawImage(glowDisc('#ff7a3d', 20), f.x - 20, f.y - 20);
-          const tail = g.createLinearGradient(f.x - 14, f.y - 42, f.x, f.y);
-          tail.addColorStop(0, 'rgba(255,122,61,0)');
-          tail.addColorStop(1, 'rgba(255,190,90,0.8)');
-          g.fillStyle = tail;
-          g.beginPath();
-          g.moveTo(f.x - 14, f.y - 42);
-          g.lineTo(f.x + 9, f.y - 3);
-          g.lineTo(f.x - 8, f.y + 5);
-          g.closePath();
-          g.fill();
-          g.restore();
-          pixelDisc(g, f.x, f.y, 9, '#4a342c');
-          pixelDisc(g, f.x + 1.5, f.y + 1.5, 6, '#ff9a3d');
-          pixelDisc(g, f.x + 2.5, f.y + 2.5, 3, '#fff2a0');
-        } else {
-          g.save();
-          g.globalCompositeOperation = 'lighter';
-          g.globalAlpha = clamp(1.2 - k, 0, 1);
-          pixelDisc(g, f.x, f.y, 1.6, f.color);
-          g.restore();
-        }
-        break;
-      case 'ring': {
-        const rr = Math.max(1, f.size * (0.3 + k * 0.7));
-        const wide = Math.max(2, Math.min(7, f.size * 0.14)) * (1 - k * 0.6);
-        g.beginPath();
-        g.arc(f.x, f.y, rr, 0, TAU);
-        g.strokeStyle = rgba(f.color, clamp(1 - k, 0, 1) * 0.35);
-        g.lineWidth = wide * 2.2;
-        g.stroke();
-        g.strokeStyle = rgba(f.color, clamp(1.1 - k, 0, 1));
-        g.lineWidth = wide;
-        g.stroke();
-        g.strokeStyle = rgba('#ffffff', clamp(0.8 - k, 0, 1));
-        g.lineWidth = wide * 0.35;
-        g.stroke();
-        break;
-      }
-      case 'burst': {
-        const s0 = Math.ceil(f.size * (1.1 + k * 0.4));
-        g.save();
-        g.globalCompositeOperation = 'lighter';
-        g.globalAlpha = clamp(1 - k, 0, 1);
-        g.drawImage(glowDisc(f.color, s0), x - s0, y - s0);
-        g.restore();
-        break;
-      }
-      case 'glow': {
-        const s0 = Math.ceil(f.size * 1.2);
-        g.save();
-        g.globalCompositeOperation = 'lighter';
-        g.globalAlpha = clamp(Math.sin(k * Math.PI), 0, 1) * 0.85;
-        g.drawImage(glowDisc(f.color, s0), x - s0, y - s0);
-        g.restore();
-        break;
-      }
-      case 'slash': {
-        // the blow's path, laid on the ground round who struck: a thick crescent, pinched at its tips, that
-        // sweeps out and thins, with a white-hot leading edge
-        const sweep = f.a2 * Math.min(1, k * 2.6 + 0.3);
-        const a0 = f.a - f.a2 / 2;
-        const R = f.size + 3;
-        const thick = Math.max(6, R * (f.r2 ? 0.46 : 0.36)) * (1 - k * 0.6);
-        g.save();
-        const fade = clamp(1.15 - k * 1.15, 0, 1);
-        // (bright where the blade is, nothing where it has been)
-        const tail = sweep < TAU - 0.05 && g.createConicGradient ? g.createConicGradient(a0, f.x, f.y) : null;
-        if (tail) {
-          const head = Math.min(0.999, sweep / TAU);
-          tail.addColorStop(0, rgba(f.color, 0));
-          tail.addColorStop(head * 0.55, rgba(f.color, 0.22));
-          tail.addColorStop(head, rgba(f.color, 0.8));
-          tail.addColorStop(Math.min(1, head + 0.001), rgba(f.color, 0));
-          g.fillStyle = tail;
-        } else g.fillStyle = rgba(f.color, 0.45);
-        g.globalAlpha = fade;
-        crescent(g, f.x, f.y, R, thick, a0, sweep);
-        // the hot rim, along the blade's own edge
-        g.globalCompositeOperation = 'lighter';
-        g.globalAlpha = fade;
-        g.strokeStyle = '#ffffff';
-        g.lineCap = 'round';
-        g.lineWidth = f.r2 ? 2.4 : 1.7;
-        g.beginPath();
-        g.arc(f.x, f.y, R - 0.5, a0 + sweep * 0.45, a0 + sweep);
-        g.stroke();
-        g.restore();
-        break;
-      }
-      case 'zap': {
-        g.beginPath();
-        g.moveTo(f.x, f.y);
-        const n = Math.max(5, Math.min(10, Math.round(Math.hypot(f.x2 - f.x, f.y2 - f.y) / 14)));
-        for (let i = 1; i < n; i++) {
-          const t = i / n;
-          g.lineTo(f.x + (f.x2 - f.x) * t + (Math.random() - 0.5) * 12, f.y + (f.y2 - f.y) * t + (Math.random() - 0.5) * 12);
-        }
-        g.lineTo(f.x2, f.y2);
-        g.lineJoin = 'round';
-        g.strokeStyle = rgba(f.color, clamp(1.2 - k, 0, 1) * 0.4);
-        g.lineWidth = 6;
-        g.stroke();
-        g.strokeStyle = rgba(f.color, clamp(1.2 - k, 0, 1));
-        g.lineWidth = 3;
-        g.stroke();
-        g.strokeStyle = rgba('#ffffff', clamp(1 - k, 0, 1));
-        g.lineWidth = 1.2;
-        g.stroke();
-        break;
-      }
-      case 'beam': {
-        if (f.sprite === 'arrow') {
-          // a falling arrow of the volley
-          this.upright(f.x, f.y, 0);
-          const h = 60 * (1 - k);
-          g.fillStyle = '#7a4a2a';
-          g.fillRect(f.x - 1, f.y - h - 16, 2, 14);
-          g.fillStyle = '#e8e8f0';
-          g.beginPath();
-          g.moveTo(f.x - 2.5, f.y - h - 4);
-          g.lineTo(f.x + 2.5, f.y - h - 4);
-          g.lineTo(f.x, f.y - h + 1);
-          g.closePath();
-          g.fill();
-          g.fillStyle = '#d8dce8';
-          g.fillRect(f.x - 2.5, f.y - h - 18, 5, 3);
-        } else {
-          // a shaft of light from the sky, fading toward its top
-          this.upright(f.x, f.y, 0);
-          const wide = Math.max(4, f.size);
-          const shaft = g.createLinearGradient(0, f.y - 170, 0, f.y);
-          shaft.addColorStop(0, rgba(f.color, 0));
-          shaft.addColorStop(1, rgba(f.color, clamp(1 - k, 0, 1)));
-          g.save();
-          g.globalCompositeOperation = 'lighter';
-          g.fillStyle = shaft;
-          g.fillRect(f.x - wide / 2, f.y - 170, wide, 170);
-          const core = g.createLinearGradient(0, f.y - 170, 0, f.y);
-          core.addColorStop(0, 'rgba(255,255,255,0)');
-          core.addColorStop(1, rgba('#ffffff', clamp(1 - k, 0, 1)));
-          g.fillStyle = core;
-          g.fillRect(f.x - wide / 6, f.y - 170, wide / 3, 170);
-          g.restore();
-        }
-        break;
-      }
-      case 'rift': {
-        const s = f.size * Math.sin(Math.min(1, k * 1.5) * Math.PI * 0.5);
-        g.fillStyle = rgba('#120018', 0.85);
-        g.beginPath();
-        g.ellipse(f.x, f.y, s, s, 0, 0, TAU);
-        g.fill();
-        g.strokeStyle = Math.floor(f.t * 20) % 2 ? '#ff3fd2' : '#22e4ff';
-        g.lineWidth = 2.5;
-        g.stroke();
-        break;
-      }
-      case 'ghost': {
-        // what is left of someone, rising
-        this.upright(f.x, f.y, 10 + k * 26);
-        g.globalAlpha = clamp(0.55 - k * 0.55, 0, 1);
-        g.fillStyle = '#dfe8ff';
-        g.beginPath();
-        g.arc(f.x, f.y - 3, 8, Math.PI, 0);
-        g.lineTo(f.x + 8, f.y + 10);
-        g.lineTo(f.x + 3, f.y + 7);
-        g.lineTo(f.x, f.y + 11);
-        g.lineTo(f.x - 3, f.y + 7);
-        g.lineTo(f.x - 8, f.y + 10);
-        g.closePath();
-        g.fill();
-        g.globalAlpha = 1;
-        break;
-      }
-      default:
-        break;
-    }
-  }
-
-  private drawPortal(x: number, y: number, time: number): void {
-    const g = this.g;
-    g.drawImage(glowDisc('rgba(34,228,255,0.6)', 24), x - 24, y - 30);
-    for (let i = 0; i < 3; i++) {
-      const r = 8 + i * 3 + Math.sin(time * 3 + i) * 1.5;
-      g.strokeStyle = i % 2 ? '#22e4ff' : '#ff3fd2';
-      g.lineWidth = 1;
-      g.beginPath();
-      g.ellipse(x, y - 8, r * 0.7, r, 0, 0, TAU);
-      g.stroke();
-    }
-  }
-
-  private drawCollapse(cx: number, cy: number, r: number, time: number): void {
-    const g = this.g;
-    g.save();
-    g.fillStyle = 'rgba(30,0,40,0.5)';
-    g.beginPath();
-    g.rect(cx - 600, cy - 600, 1200, 1200);
-    g.ellipse(cx, cy, r, r, 0, 0, TAU, true);
-    g.fill('evenodd');
-    g.strokeStyle = Math.floor(time * 8) % 2 ? '#ff3fd2' : '#22e4ff';
-    g.lineWidth = 1;
-    g.beginPath();
-    g.ellipse(cx, cy, r, r, 0, 0, TAU);
-    g.stroke();
-    g.restore();
-  }
-
   /* -------------------------------------------------------------- light */
 
   /* ----------------------------------------------------------- overlays */
@@ -1879,47 +857,6 @@ export class Renderer {
     }
   }
 
-}
-
-/** A filled circle. */
-const FIRE: Record<string, readonly [string, string, string]> = {
-  default: ['#f4561f', '#ff9f2e', '#fff0a0'],
-  // the cold dead of a crypt burn pale; a giant's ice burns blue; a rift burns violet; the rot burns sick green
-  crypt: ['#4a7ad8', '#8ac0f0', '#e8f8ff'],
-  icecave: ['#2a8ad8', '#70d0f0', '#e8ffff'],
-  riftspire: ['#a03ae0', '#e070f0', '#ffe8ff'],
-  roots: ['#5a9a2a', '#a8d040', '#f0ffa0'],
-  citadel: ['#7a4ac8', '#b890f0', '#f0e8ff'],
-  lavacave: ['#e0321a', '#ff7a1e', '#ffe080'],
-  cistern: ['#3a9a78', '#70d0a0', '#e0ffe8'],
-};
-
-/** A shot's size next to the rules' circle. */
-const SHOT_SCALE = 1.5;
-
-/** A crescent round (x, y): the outer edge an arc, the inner edge bowing in to `thick` at the middle and pinching at the tips. */
-function crescent(g: CanvasRenderingContext2D, x: number, y: number, r: number, thick: number, a0: number, sweep: number): void {
-  g.beginPath();
-  if (sweep >= TAU - 0.05) {
-    // (all the way round: a band)
-    g.arc(x, y, r, 0, TAU);
-    g.arc(x, y, Math.max(0.5, r - thick), TAU, 0, true);
-    g.fill('evenodd');
-    return;
-  }
-  g.arc(x, y, r, a0, a0 + sweep);
-  const mid = a0 + sweep / 2;
-  const reach = r - thick * 2;
-  g.quadraticCurveTo(x + Math.cos(mid) * reach, y + Math.sin(mid) * reach, x + Math.cos(a0) * r, y + Math.sin(a0) * r);
-  g.closePath();
-  g.fill();
-}
-
-function pixelDisc(g: CanvasRenderingContext2D, x: number, y: number, r: number, color: string): void {
-  g.fillStyle = color;
-  g.beginPath();
-  g.arc(x, y, r, 0, TAU);
-  g.fill();
 }
 
 export const rarityColor = (r: string | undefined): string => (r === 'legendary' ? '#ff9a2a' : r === 'epic' ? '#c58cff' : r === 'rare' ? '#5ab0ff' : r === 'uncommon' ? '#6dff8f' : '#e8e0d0');

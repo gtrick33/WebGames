@@ -9,7 +9,7 @@ import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
 import type { Face } from '../progress/character';
 import { iconPicture } from '../render/art/gameIcons';
-import { drawRing, fighterAt, RingFx, ringLooks } from '../render/ring';
+import { drawRing, fighterAt, RingFx, ringLooks, ringSpells } from '../render/ring';
 import { RingStage, ringMapOf } from '../render3d/ring3d';
 import { heroDollUrl } from '../render/sprites';
 import { RingHelp, SetupEditor, timing } from './RingSetup';
@@ -306,7 +306,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       const dt = lastPaint ? Math.min(0.1, Math.max(0, time - lastPaint)) : 0;
       lastPaint = time;
       for (const e of m.events) if (e.k === 'ab') view.swing(e.id, e.ab);
-      view.frame(m, looks, myId, dt, time);
+      view.frame(m, looks, myId, dt, time, (q) => ringSpells(q, m, fx, myId, time, view.flames));
       drawRing(m, fx, myId, time, view);
     };
     const frame = (now: number): void => {
