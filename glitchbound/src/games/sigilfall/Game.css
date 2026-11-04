@@ -7519,6 +7519,19 @@
   text-align: left;
   background: rgb(8 4 18 / 0.86);
   cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: filter 0.08s, scale 0.08s;
+}
+@media (hover: hover) {
+  .rb-ring-frame:hover {
+    border-color: rgb(255 255 255 / 0.5);
+  }
+}
+.rb-ring-frame:active {
+  filter: brightness(1.25);
+  scale: 0.98;
 }
 .rb-ring-frame.is-flip {
   flex-direction: row-reverse;
@@ -7571,19 +7584,21 @@
 }
 .rb-ring-name {
   display: flex;
-  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: 0 4px;
+  height: 13px;
   min-width: 0;
-  font: 700 11.5px/1.15 Georgia, 'Times New Roman', serif;
+  font: 700 11.5px/13px Georgia, 'Times New Roman', serif;
+  white-space: nowrap;
 }
 .is-flip .rb-ring-name {
   flex-direction: row-reverse;
 }
 .rb-ring-name b {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .rb-ring-name em {
   flex: none;
@@ -7665,13 +7680,28 @@
 }
 .rb-ring-unseen {
   display: block;
+  border-radius: 3px;
   color: #ff9ab0;
   font: 700 9.5px/12px system-ui, sans-serif;
+  background: #1a1030;
+}
+/* a row kept for them, whether they have mana or anything to say: a nameplate never moves under a thumb */
+.rb-ring-tail {
+  position: relative;
+  display: block;
+  height: 12px;
+}
+.rb-ring-tail > .rb-ring-cast,
+.rb-ring-tail > .rb-ring-held,
+.rb-ring-tail > .rb-ring-unseen {
+  position: absolute;
+  inset: 0;
 }
 .rb-ring-under {
   display: flex;
   align-items: center;
   gap: 2px;
+  min-height: 16px;
 }
 .is-flip .rb-ring-under {
   flex-direction: row-reverse;

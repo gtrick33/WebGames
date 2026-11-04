@@ -230,9 +230,9 @@ export function RingHelp({ onClose }: { onClose: () => void }) {
               <dt>Token of Will</dt>
               <dd>T: breaks anything holding you</dd>
               <dt>Choose an enemy</dt>
-              <dd>Tab, or click them or their frame</dd>
+              <dd>Their nameplate on the right, or Tab</dd>
               <dt>Choose who to help</dt>
-              <dd>F, or click them or their frame</dd>
+              <dd>Their nameplate on the left, or F</dd>
             </dl>
           </section>
           <section>

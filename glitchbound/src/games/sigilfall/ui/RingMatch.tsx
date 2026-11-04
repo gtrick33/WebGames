@@ -9,13 +9,12 @@ import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
 import type { Face } from '../progress/character';
 import { iconPicture } from '../render/art/gameIcons';
-import { drawRing, fighterAt, RingFx, ringLooks, ringSpells } from '../render/ring';
+import { drawRing, RingFx, ringLooks, ringSpells } from '../render/ring';
 import { RingStage, ringMapOf } from '../render3d/ring3d';
 import { heroDollUrl } from '../render/sprites';
 import { RingHelp, SetupEditor, timing } from './RingSetup';
 import { ScreenGate } from './ScreenGate';
 import { Stick } from './Stick';
-import { toLocal } from './turn';
 
 export type Role = { kind: 'solo'; skill: number } | { kind: 'host'; skill: number; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void } | { kind: 'client'; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void };
 
@@ -72,7 +71,14 @@ function Frame({ f, m, me, doll, tag, onPick, flip }: { f: Fighter; m: Match; me
   const dr = Object.entries(f.dr).filter(([, d]) => d && d.until > m.clock && d.n > 0);
   const share = f.hp / f.maxHp;
   return (
-    <button className={`rb-ring-frame${flip ? ' is-flip' : ''}${tag ? ' is-on' : ''}${f.dead ? ' is-dead' : ''}${sees ? '' : ' is-unseen'}`} style={{ ['--c' as string]: CLASSES[f.cls].colors.accent }} onClick={onPick} aria-label={`${f.name}, ${CLASSES[f.cls].name}, ${Math.round(share * 100)}% health`}>
+    <button className={`rb-ring-frame${flip ? ' is-flip' : ''}${tag ? ' is-on' : ''}${f.dead ? ' is-dead' : ''}${sees ? '' : ' is-unseen'}`} style={{ ['--c' as string]: CLASSES[f.cls].colors.accent }} 
+      onPointerDown={(e) => {
+        // (at the press, not on a tap: a phone sends no tap while the other thumb is on the stick)
+        e.preventDefault();
+        onPick();
+      }}
+      onClick={onPick}
+      aria-label={`${f.name}, ${CLASSES[f.cls].name}, ${Math.round(share * 100)}% health`}>
       <span className="rb-ring-face">
         <img src={doll} alt="" draggable={false} />
       </span>
@@ -85,23 +91,25 @@ function Frame({ f, m, me, doll, tag, onPick, flip }: { f: Fighter; m: Match; me
           <i style={{ width: `${share * 100}%` }} />
           <b>{f.dead ? 'Fallen' : `${Math.round(share * 100)}%`}</b>
         </span>
-        {f.maxMana > 0 && (
-          <span className="rb-ring-mana">
-            <i style={{ width: `${(f.mana / f.maxMana) * 100}%` }} />
-          </span>
-        )}
-        {c && ab ? (
-          <span className="rb-ring-cast" style={{ ['--a' as string]: ab.color }}>
-            <i style={{ width: `${(c.channel ? 1 - c.t / c.dur : c.t / c.dur) * 100}%` }} />
-            <b>{ab.name}</b>
-          </span>
-        ) : hold ? (
-          <span className="rb-ring-held">
-            {CC_WORD[hold.cc!]} {Math.ceil(hold.t)}s
-          </span>
-        ) : !sees && !f.dead ? (
-          <span className="rb-ring-unseen">Out of sight</span>
-        ) : null}
+        <span className="rb-ring-tail">
+          {f.maxMana > 0 && (
+            <span className="rb-ring-mana">
+              <i style={{ width: `${(f.mana / f.maxMana) * 100}%` }} />
+            </span>
+          )}
+          {c && ab ? (
+            <span className="rb-ring-cast" style={{ ['--a' as string]: ab.color }}>
+              <i style={{ width: `${(c.channel ? 1 - c.t / c.dur : c.t / c.dur) * 100}%` }} />
+              <b>{ab.name}</b>
+            </span>
+          ) : hold ? (
+            <span className="rb-ring-held">
+              {CC_WORD[hold.cc!]} {Math.ceil(hold.t)}s
+            </span>
+          ) : !sees && !f.dead ? (
+            <span className="rb-ring-unseen">Out of sight</span>
+          ) : null}
+        </span>
         <span className="rb-ring-under">
           <AuraIcons f={f} />
           {dr.map(([k, d]) => (
@@ -199,6 +207,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     tick((x) => x + 1);
   };
   const target = (id: number): void => {
+    if (m.fighters[id]?.dead) return;
     if (role.kind === 'client') role.send({ tg: id });
     m.setTarget(myId, id);
     tick((x) => x + 1);
@@ -252,14 +261,6 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
     window.addEventListener('blur', blur);
-    // a click or a tap on the ground chooses who's there (walking is the joystick's job)
-    const pick = (e: PointerEvent): void => {
-      const p = toLocal(canvas, e.clientX, e.clientY);
-      const at = view.toWorld(p.x, p.y);
-      const f = fighterAt(m, at.x, at.y);
-      if (f) target(f.id);
-    };
-    canvas.addEventListener('pointerdown', pick);
     const moveNow = (): MoveInput => {
       const mx = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
       const my = (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0);
@@ -302,11 +303,20 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     let wasPhase = m.phase;
     const sound = (id: string, vol?: number): void => engine.sound.play(id, vol);
     let lastPaint = 0;
+    let wasShown = m.phase;
     const paint = (time: number): void => {
       const dt = lastPaint ? Math.min(0.1, Math.max(0, time - lastPaint)) : 0;
       lastPaint = time;
-      for (const e of m.events) if (e.k === 'ab') view.swing(e.id, e.ab);
-      view.frame(m, looks, myId, dt, time, (q) => ringSpells(q, m, fx, myId, time, view.flames));
+      for (const e of m.events) {
+        if (e.k === 'ab') view.swing(e.id, e.ab);
+        // (somebody's down: the crowd is on its feet)
+        else if (e.k === 'death') view.cheer();
+      }
+      if (m.phase !== wasShown) {
+        wasShown = m.phase;
+        view.cheer(m.phase === 'fight' ? 0.7 : m.phase === 'over' ? 1 : 0);
+      }
+      view.frame(m, looks, myId, dt, time, (q) => ringSpells(q, m, fx, myId, time, view.air));
       drawRing(m, fx, myId, time, view);
     };
     const frame = (now: number): void => {
@@ -398,8 +408,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
       window.removeEventListener('blur', blur);
-      canvas.removeEventListener('pointerdown', pick);
-      if (role.kind !== 'solo') role.listen(null);
+        if (role.kind !== 'solo') role.listen(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [m]);
@@ -419,7 +428,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const friend = m.fighters[friendId] ?? null;
   const helps = bar.some((a) => a.aim === 'friend');
   const held = me && m.held(me);
-  const foeNote = !foeAlive ? (m.phase === 'fight' ? 'Tab or click an enemy. Nearest is used if you don’t.' : 'Tab or click an enemy') : !me || m.phase !== 'fight' ? `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}%` : !m.sees(me, foeAlive) ? 'Out of sight' : `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}% · ${Math.round(Math.hypot(foeAlive.x - me.x, foeAlive.y - me.y))} away`;
+  const foeNote = !foeAlive ? (m.phase === 'fight' ? 'Click a nameplate or press Tab. Nearest is used if you don’t.' : 'Click a nameplate or press Tab') : !me || m.phase !== 'fight' ? `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}%` : !m.sees(me, foeAlive) ? 'Out of sight' : `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}% · ${Math.round(Math.hypot(foeAlive.x - me.x, foeAlive.y - me.y))} away`;
   const foeBad = !!foeAlive && !!me && m.phase === 'fight' && !m.sees(me, foeAlive);
   return (
     <ScreenGate label="Entering the Ring">
@@ -529,7 +538,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   </button>
                 )}
               </span>
-              <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. Tap a frame to choose a target.' : 'WASD to move · 1 to 6 for abilities · Tab to choose an enemy'}</span>
+              <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. Tap a nameplate to choose your target.' : 'WASD to move · 1 to 6 for abilities · Click a nameplate or press Tab to choose your target'}</span>
             </div>
           )}
           {err && (
