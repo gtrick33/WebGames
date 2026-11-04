@@ -10,7 +10,7 @@ import { hexRgb } from './kits';
 import type { Colossus } from './cast';
 import { PROPS, type PropDef } from '../data/props';
 import { loadPack, type MeshData, type Pack } from './pack';
-import { LIGHT, shadowMaterial, staticMaterial } from './toon';
+import { fadingMaterial, LIGHT, shadowMaterial, staticMaterial } from './toon';
 import { Stand } from './crowd';
 import { DOORWAYS } from './doorways';
 import { builtProp } from './propsBuilt';
@@ -610,6 +610,9 @@ const NO_LIGHTS: readonly { x: number; z: number; reach: number }[] = [];
 /** How high a wall stands where it's been cut away so the floor behind it shows. */
 const CUT_WALL = 0.3;
 
+/** How long a way down takes to open, in seconds. */
+const OPEN_TIME = 1.6;
+
 /**
  * Under a roof the camera looks from the south, so the wall along a room's south side would stand between it and the
  * room: two tiles of floor gone, and anyone on them. Those walls are cut down to a kerb (everything should be visible),
@@ -909,6 +912,9 @@ export class Land3D {
   private readonly doorStand: Stand;
   /** What's built rather than placed: the ways into dungeons (doorways.ts), and the carpets down a hall. */
   private readonly built: THREE.Mesh[] = [];
+  /** The ways into dungeons that stand here, by where they go. */
+  readonly ways = new Map<string, { mesh: THREE.Mesh; x: number; z: number; flames: Land3D['flames']; glows: Land3D['glows'] }>();
+  private readonly opening: { way: NonNullable<ReturnType<Land3D['ways']['get']>>; t: number; fade: THREE.ShaderMaterial }[] = [];
   private readonly carpets: { tx: number; ty: number; c: readonly number[] }[] = [];
   private readonly rugs: { tx: number; ty: number; c: readonly number[] }[] = [];
   /** The walls cut down to a kerb, so what's behind them shows (under a roof). */
@@ -1232,8 +1238,11 @@ export class Land3D {
           b.position.set(x, 0, z);
           this.group.add(b);
           this.built.push(b);
-          for (const [fx, fy, fz, size] of built.flames ?? []) this.flames.push({ x: x + fx, z: z + fz, y: fy, size });
-          if (built.glow) this.glows.push({ x: x + built.glow.x, z: z + built.glow.z, y: built.glow.y, color: built.glow.color, size: built.glow.size });
+          const flames = (built.flames ?? []).map(([fx, fy, fz, size]) => ({ x: x + fx, z: z + fz, y: fy, size }));
+          this.flames.push(...flames);
+          const glows = built.glow ? [{ x: x + built.glow.x, z: z + built.glow.z, y: built.glow.y, color: built.glow.color, size: built.glow.size }] : [];
+          this.glows.push(...glows);
+          this.ways.set(m.to, { mesh: b, x, z, flames, glows });
         }
         const door = ENTRANCES[m.to];
         const mesh = door ? this.pack(door.m) : null;
@@ -1248,6 +1257,38 @@ export class Land3D {
           const c = door.tint ? hexRgb(door.tint) : ([1, 1, 1] as const);
           this.add({ m: door.m, x: x - (turned ? mz : mx), z: z - (turned ? -mx : mz) - 0.35, rot: turned ? Math.PI / 2 : 0, sx: k, r: c[0], g: c[1], b: c[2] });
         }
+      }
+    }
+  }
+
+  /** A way down that has just opened: it fades up out of the ground, and its fires catch once it's there. */
+  openWay(to: string): void {
+    const way = this.ways.get(to);
+    if (!way || this.opening.some((o) => o.way === way)) return;
+    const fade = fadingMaterial();
+    way.mesh.material = fade;
+    way.mesh.scale.y = 0.04;
+    const lit = new Set<object>([...way.flames, ...way.glows]);
+    for (const list of [this.flames, this.glows] as object[][]) {
+      for (let i = list.length - 1; i >= 0; i--) if (lit.has(list[i]!)) list.splice(i, 1);
+    }
+    this.opening.push({ way, t: 0, fade });
+  }
+
+  /** How far along the ways that are opening are. */
+  tickOpening(dt: number): void {
+    for (let i = this.opening.length - 1; i >= 0; i--) {
+      const o = this.opening[i]!;
+      o.t = Math.min(1, o.t + dt / OPEN_TIME);
+      const k = o.t * o.t * (3 - 2 * o.t);
+      o.fade.uniforms.uFade!.value = k;
+      o.way.mesh.scale.y = 0.04 + 0.96 * k;
+      if (o.t >= 1) {
+        o.way.mesh.material = staticMaterial;
+        o.fade.dispose();
+        this.flames.push(...o.way.flames);
+        this.glows.push(...o.way.glows);
+        this.opening.splice(i, 1);
       }
     }
   }

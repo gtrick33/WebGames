@@ -540,6 +540,25 @@ export const staticMaterial = new THREE.ShaderMaterial({
     }`,
 });
 
+/** The same, on its way into being: there's a little more of it at each point as `uFade` goes from 0 to 1. */
+export function fadingMaterial(): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    uniforms: { ...LIGHT, uFade: { value: 0 } },
+    vertexShader: staticMaterial.vertexShader,
+    fragmentShader: /* glsl */ `
+      ${FRAG_COMMON}
+      uniform float uFade;
+      void main() {
+        float dx = mod(gl_FragCoord.x, 4.0);
+        float dy = mod(gl_FragCoord.y, 4.0);
+        float th = (mod(dx + dy * 2.0, 4.0) + mod(dx * 2.0 + dy, 2.0) * 0.5 + 0.25) / 4.5;
+        if (uFade < th) discard;
+        vec3 c = toon(vCol, normalize(vN));
+        gl_FragColor = vec4(finish(c), 1.0);
+      }`,
+  });
+}
+
 /** How worked up The Ring's crowd is (0-1): it bounces when something happens, and settles by itself. */
 export const CROWD = { uCheer: { value: 0 } };
 

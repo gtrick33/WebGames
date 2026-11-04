@@ -366,10 +366,13 @@ export class StoryDirector {
     const turn = w.rand() * TAU;
     run.ids = wave.enemies.map((id, i) => {
       const spot = this.spot(wave.from[i % wave.from.length]!);
-      const from = wagon ? castRay(w.map, wagon.x, wagon.y, 6, w.rand() * TAU, 150) : run.def.close && spot ? offscreen(w, Math.atan2(spot.y - w.player.y, spot.x - w.player.x)) : (spot ?? { x: w.player.x, y: w.player.y - 80 });
+      // (the lands are big: a wave named for a far road comes that way from just out of sight, or nobody would be
+      // fighting for the first ten seconds. Only one that's being shown mustering stays where it's shown)
+      const close = !!spot && (run.def.close || (!held && Math.hypot(spot.x - w.player.x, spot.y - w.player.y) > FAR_WALK));
+      const from = wagon ? castRay(w.map, wagon.x, wagon.y, 6, w.rand() * TAU, 150) : close ? offscreen(w, Math.atan2(spot.y - w.player.y, spot.x - w.player.x)) : (spot ?? { x: w.player.x, y: w.player.y - 80 });
       // (a wave that comes in just beyond the hero's view stays close to that edge: each has its own way in already)
       const fan = ROOM * (0.7 + Math.sqrt(i) * 0.8);
-      const to = castRay(w.map, from.x, from.y, 6, turn + i * 2.4, run.def.close ? Math.min(fan, ROOM * 0.9) : fan);
+      const to = castRay(w.map, from.x, from.y, 6, turn + i * 2.4, close ? Math.min(fan, ROOM * 0.9) : fan);
       const e = w.addEnemy(id, to.x, to.y, level, { room: -1, pack: -1, spawn: true });
       e.aggro = !held;
       e.held = held || undefined;
@@ -626,6 +629,9 @@ function join(pet: Pet, to: { x: number; y: number }): void {
  * A point just beyond the hero's view in about this direction (a wave of a `close` event comes from there):
  * of a few rays round it, the one that runs furthest before a wall, so no one appears at the hero's elbow.
  */
+/** How far off a wave may start and still walk in from its own spot (world pixels). */
+const FAR_WALK = 240;
+
 function offscreen(w: World, toward: number): { x: number; y: number } {
   let best = { x: w.player.x, y: w.player.y };
   let far = -1;

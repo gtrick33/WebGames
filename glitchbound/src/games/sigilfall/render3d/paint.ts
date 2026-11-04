@@ -81,6 +81,26 @@ export function painted(m: MeshData, paint: Paint): MeshData {
   return { ...m, col };
 }
 
+/**
+ * The short-haired head in the pack comes with a moustache and a goatee, in the color of its hair. This is the same head
+ * shaved: whatever isn't skin on the front of the face, below the eyes, comes off. Children and anyone not meant to
+ * have a beard wear it.
+ */
+export function shaved(m: MeshData): MeshData {
+  const idx: number[] = [];
+  for (let t = 0; t < m.i; t += 3) {
+    const a = m.idx[t]!;
+    const b = m.idx[t + 1]!;
+    const c = m.idx[t + 2]!;
+    const y = (m.pos[a * 3 + 1]! + m.pos[b * 3 + 1]! + m.pos[c * 3 + 1]!) / 3;
+    const z = (m.pos[a * 3 + 2]! + m.pos[b * 3 + 2]! + m.pos[c * 3 + 2]!) / 3;
+    const [h, s, l] = rgbHsl(m.col[a * 3]! / 255, m.col[a * 3 + 1]! / 255, m.col[a * 3 + 2]! / 255);
+    if (y < 1.53 && z > 0.05 && !isSkin(h, s, l) && !isDark(l)) continue;
+    idx.push(a, b, c);
+  }
+  return { ...m, i: idx.length, idx: Uint16Array.from(idx) };
+}
+
 /** Paints only the vertices tied to these joints (a pair of gloves on an arm, boots on a leg). */
 export function paintJoints(m: MeshData, joints: Set<number>, to: [number, number, number]): MeshData {
   const col = new Uint8Array(m.col);

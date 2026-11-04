@@ -116,14 +116,14 @@ export class Renderer {
   }
 
   /**
-   * Fits the view to the element: about 168 world pixels tall on phones (bigger figures) and 214 on
+   * Fits the view to the element: about 196 world pixels tall on phones (bigger figures) and 240 on
    * desktops, never less than 150 across the short side.
    */
   resize(cssW: number, cssH: number, dpr: number, touch: boolean): void {
     const devW = Math.max(1, Math.round(cssW * dpr));
     const devH = Math.max(1, Math.round(cssH * dpr));
     const landscape = devW >= devH;
-    let total = (landscape ? devH : devW * 1.25) / (touch ? 168 : 214);
+    let total = (landscape ? devH : devW * 1.25) / (touch ? 196 : 240);
     total = Math.min(total, Math.min(devW, devH) / 150);
     total = Math.max(0.5, total);
     this.cssW = Math.max(1, cssW);
@@ -142,7 +142,7 @@ export class Renderer {
     this.canvas.style.height = `${this.cssH}px`;
     this.canvas.style.transform = '';
     this.canvas.style.imageRendering = 'auto';
-    this.stageNow()?.setSize(this.cssW, this.cssH, dpr, total * TILE);
+    this.stageNow()?.setSize(this.cssW, this.cssH, dpr, total * TILE, touch);
   }
 
   private stageNow(): Stage | null {
@@ -322,10 +322,23 @@ export class Renderer {
         st.groundScene.remove(st.land.under);
         st.land.dispose();
       }
+      const hadWays = st.land ? [...st.land.ways.keys()] : [];
       st.land = new Land3D(w.map, w.region, st.landPacks!, (pm) => w.isShown(pm), this.keepObject);
       st.scene.add(st.land.group);
       st.groundScene.add(st.land.under);
       this.landFor = w;
+      // a way down that wasn't there a moment ago comes up out of the ground, with the sound of old stone
+      if (!fresh) {
+        for (const [to, way] of st.land.ways) {
+          if (hadWays.includes(to)) continue;
+          st.land.openWay(to);
+          const x = way.x * TILE;
+          const y = way.z * TILE;
+          w.sfx('doorSlam', 0.8);
+          w.shake(2.5);
+          for (let i = 0; i < 8; i++) w.addFx({ kind: 'smoke', x: x + (i - 3.5) * 8, y: y - 10 - (i % 3) * 14, life: 1.1 + (i % 3) * 0.3, size: 12 + (i % 4) * 3, color: '#8a8494' });
+        }
+      }
       if (fresh) {
         this.setHeroWeapon(w.hero.cls, w);
         this.snap(w);
@@ -333,6 +346,7 @@ export class Renderer {
         st.cast.preload(this.expected(w));
       }
     }
+    st?.land?.tickOpening(dt);
     const p = w.player;
     // camera: on the hero, leaning a little toward where they aim (and toward a boss)
     const lead = p.dead ? 0 : LEAD;

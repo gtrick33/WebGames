@@ -737,6 +737,8 @@ export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
     allies: ['elyra'],
     // Elyra is at the inn, holding its roof up over them
     enter: 'briar-inn',
+    // (the roads they name are the far side of the village: they come in from just out of sight, that way)
+    close: true,
     rescue: { pets: ['briar-child', 'briar-child', 'briar-child'], at: 'briar-inn', to: 'briar-chapel', into: 'briar-chapel-door' },
     start: [
       { who: 'elyra', text: 'I can’t hold the roof much longer! Take them!' },
@@ -762,6 +764,7 @@ export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
     allies: ['mara', 'elyra'],
     // Mara comes up from the square she kept; Elyra is still here from the inn
     enter: 'briar-square',
+    close: true,
     ward: { pet: 'chapel-door', at: 'briar-chapel-door', name: 'the chapel door' },
     start: [
       { who: 'mara', text: 'They want the door. They’re not getting it.' },

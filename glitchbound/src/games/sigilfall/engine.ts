@@ -207,6 +207,7 @@ export class SigilEngine {
   /** Pause asked for by the arcade (left full screen, scrolled away). */
   private toWorldFn: (x: number, y: number) => { x: number; y: number } = (x, y) => ({ x, y });
   touchMode: boolean;
+  private pausedDrawAt = 0;
   /** The game is turned to landscape on a phone held upright (ui/turn.ts). */
   turned = false;
   dpr = 1;
@@ -286,6 +287,8 @@ export class SigilEngine {
     this.last = performance.now();
     const loop = (t: number): void => {
       this.raf = requestAnimationFrame(loop);
+      // (a phone's screen may run at 120: the game looks no better for it, and the heat is real)
+      if (this.touchMode && t - this.last < 1000 / 66) return;
       this.frame(t);
     };
     this.raf = requestAnimationFrame(loop);
@@ -427,7 +430,12 @@ export class SigilEngine {
     this.renderer.touchMode = this.touchMode;
     this.renderer.frameShift = this.touchMode ? (this.settings.lefty ? -FRAME_SHIFT : FRAME_SHIFT) : 0;
     this.renderer.pointer = this.kbm?.view() ?? null;
-    this.renderer.draw(w, paused ? 0 : dt, now / 1000);
+    // (behind a menu the world stands still: a few frames a second is all it needs, and the phone stays cool. A talk
+    // isn't a menu: the camera's on the people in it, and the fires still burn)
+    if (!(this.ui.pause || this.ui.panel) || this.coop || now - this.pausedDrawAt > 150) {
+      this.pausedDrawAt = now;
+      this.renderer.draw(w, paused ? 0 : dt, now / 1000);
+    }
     for (const fn of this.frameHooks) fn(w, this);
     // timers that run in real time
     const t = performance.now();

@@ -3,7 +3,7 @@ import type { HeroLook, Piece } from '../render/art/hero';
 import { heroParts } from './armorKit';
 import { hexRgb } from './kits';
 import { loadPack, mergeMeshes, type MeshData, type Pack } from './pack';
-import { painted, paintJoints } from './paint';
+import { painted, paintJoints, shaved } from './paint';
 import { addRideClip, CAPE_JOINTS } from './ride';
 import { rigAnimOf, type RigAnim } from './toon';
 
@@ -178,7 +178,7 @@ export function dressedMesh(w: Wardrobe, look: HeroLook, held: Held | null, shie
     const bearded = !cover?.bald && !!look.beard;
     const face = cover?.bald ? 'Knight_Head' : bearded ? pickOf(BEARDS, { style: look.skin, tint: look.hair, mat: look.beard ?? '', r: '' }) : look.hairStyle === 'long' ? 'Mage_Head' : look.hairStyle === 'pony' ? 'Rogue_Head' : 'Ranger_Head';
     const m = part(face);
-    if (m) add(painted(m, { skin, cloth: hair, metal: bearded || look.hairStyle === 'long' ? hair : undefined }));
+    if (m) add(painted(face === 'Ranger_Head' ? shaved(m) : m, { skin, cloth: hair, metal: bearded || look.hairStyle === 'long' ? hair : undefined }));
   }
   for (const id of cover?.parts ?? []) {
     const m = part(id);
