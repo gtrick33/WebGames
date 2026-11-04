@@ -193,11 +193,17 @@ export function authoredLooks(cls: ClassId, slot: LookSlot): Look[] {
 
 /* ------------------------------------------------------------------ mounts */
 
+/** Nobody rides before this: Dunmore's riders bring the first horses to the camp (Act I). */
+const FIRST_RIDE = 'camp-riders';
+
+/** Whether a mount that comes from outside the story can be had yet: not by a hero who's still on foot in it. */
+export const ridingOpen = (c: Pick<Character, 'quests'>): boolean => c.quests[FIRST_RIDE]?.state === 'done';
+
 /** Whether the hero has met a mount's source. */
 export function mountEarned(c: Pick<Character, 'quests' | 'perks' | 'clears' | 'cls'>, m: MountDef): boolean {
   const s = m.source;
   if (s.kind === 'campaign') return s.cls === c.cls && c.quests[CAMPAIGN_END]?.state === 'done';
-  if (s.kind === 'shelf') return shelfPoints >= s.points;
+  if (s.kind === 'shelf') return shelfPoints >= s.points && ridingOpen(c);
   if (s.kind === 'quest') return c.quests[s.quest]?.state === 'done';
   if (s.kind === 'perk') return c.perks.includes(s.perk);
   return s.regions.every((r) => Object.entries(c.clears).some(([k, n]) => n > 0 && k.startsWith(`${r}:`) && Number(k.slice(r.length + 1)) >= s.tier));
