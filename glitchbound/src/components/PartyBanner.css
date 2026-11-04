@@ -98,7 +98,6 @@
 }
 .party-card-meta {
   font-size: 12px;
-  opacity: 0.85;
 }
 @media (prefers-reduced-motion: reduce) {
   .party-banner:hover,

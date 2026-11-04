@@ -28,15 +28,12 @@ import { LiveBadge } from '../components/LiveBadge';
 import { nextStep } from '../platform/nextStep';
 import { useFlagships } from '../platform/useFlagships';
 import { recentSlugs } from '../platform/save';
-// The leaderboard tab loads its data from the network anyway, so its code comes with it (its styles stay
-// in the main sheet: admin tables share them).
+// The board and the pins are part of the game page's own code, so they are there at its first paint instead of
+// growing into the column a moment later and pushing everything under them down (Lighthouse counts that as layout
+// shift). Don't make them lazy again. The board's styles stay in the main sheet: admin tables share them.
+import { MiniLeaderboard } from '../components/Leaderboard';
 import '../components/Leaderboard.css';
-// Its code starts loading with the game page's own, so the board is there at the first paint instead of
-// growing into the column a moment later and pushing everything under it down.
-const MiniLeaderboard = lazyPage(() => import('../components/Leaderboard').then((m) => m.MiniLeaderboard));
-const GamePins = lazy(() => import('../components/Pins').then((m) => ({ default: m.GamePins })));
-const PinToast = lazy(() => import('../components/Pins').then((m) => ({ default: m.PinToast })));
-void MiniLeaderboard.preload()?.catch(() => undefined);
+import { GamePins, PinToast } from '../components/Pins';
 const DailyCompare = lazy(fresh(() => import('../components/DailyCompare').then((m) => ({ default: m.DailyCompare }))));
 import { openSignIn } from '../components/openSignIn';
 import { setGuestName, usePlayerName } from '../platform/playerName';
@@ -56,7 +53,6 @@ import { Link, navigate, useLocation } from '../router/router';
 import { AdultLabel } from '../components/AdultLabel';
 import './GamePage.css';
 import { fresh } from '../platform/freshBuild';
-import { lazyPage } from '../platform/lazyPage';
 import { tileImg } from '../platform/cardImg';
 
 interface LastRound {
@@ -949,11 +945,7 @@ export function GamePage({ game }: { game: GameEntry }) {
           />
           )}
           {burst > 0 && <Burst key={burst} />}
-          {newPins.length > 0 && (
-            <Suspense fallback={null}>
-              <PinToast ids={newPins} onDone={clearPins} />
-            </Suspense>
-          )}
+          {newPins.length > 0 && <PinToast ids={newPins} onDone={clearPins} />}
         </div>
 
         <aside className="game-side" aria-label={t('{game} details', { game: game.title })}>
@@ -1095,9 +1087,7 @@ export function GamePage({ game }: { game: GameEntry }) {
             </Link>
           </div>
 
-          <Suspense fallback={null}>
-            <GamePins game={game} refreshKey={boardKey} />
-          </Suspense>
+          <GamePins game={game} refreshKey={boardKey} />
           <AdSlot placement="game" />
         </aside>
       </div>
@@ -1158,11 +1148,9 @@ function GameInfo({ game, record, boardKey }: { game: GameEntry; record: GameRec
       {/* Both panels share one spot, so the box is as tall as the taller one and switching tabs moves nothing under it. */}
       <div className="gi-panels">
         <div id="gi-panel-board" role="tabpanel" aria-labelledby="gi-board" aria-hidden={tab !== 'board'} inert={tab !== 'board'} className={`gi-panel${tab === 'board' ? ' is-on' : ''}`}>
-          {/* If the board's code can't load (offline), only this tab says so: the game keeps running. */}
+          {/* If the board breaks, only this tab says so: the game keeps running. */}
           <ErrorBoundary fallback={() => <p className="side-muted">{t('The leaderboard is offline right now. Your game still works.')}</p>}>
-            <Suspense fallback={<p className="side-muted">{t('Loading…')}</p>}>
-              <MiniLeaderboard game={game} refreshKey={boardKey} embedded />
-            </Suspense>
+            <MiniLeaderboard game={game} refreshKey={boardKey} embedded />
           </ErrorBoundary>
         </div>
         <div id="gi-panel-bests" role="tabpanel" aria-labelledby="gi-bests" aria-hidden={tab !== 'bests'} inert={tab !== 'bests'} className={`gi-panel${tab === 'bests' ? ' is-on' : ''}`}>
