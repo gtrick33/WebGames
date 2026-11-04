@@ -32,6 +32,8 @@ export interface Look {
   r: Rarity;
   /** The class that can wear it (class-only items), or anyone. */
   cls?: ClassId;
+  /** Part of a Sigil-warden's armor (the class it was made for): it has its own models. */
+  set?: ClassId;
   /** A hand-made item's look (with a source), or a found piece's. */
   authored: boolean;
 }
@@ -48,11 +50,11 @@ export function lookId(item: Item): string | null {
   if (def) return isLookSlot(def.slot) ? def.id : null;
   const base = BASE_DEFS[item.base];
   if (!base || !isLookSlot(base.slot)) return null;
-  return `gen:${base.id}:${trimOf(item.r)}:${itemTint(item).slice(1).toLowerCase()}`;
+  return `gen:${base.id}:${item.r}:${itemTint(item).slice(1).toLowerCase()}`;
 }
 
-/** Found gear shows two trims only: plain, or rare (gold trim is for hand-made pieces). */
-const trimOf = (r: Rarity): 'common' | 'rare' => (r === 'common' || r === 'uncommon' ? 'common' : 'rare');
+/** What found gear of each rarity is called in the Wardrobe (it looks different at each). */
+const TRIM_NAME: Record<Rarity, string> = { common: '', uncommon: 'Fine ', rare: 'Trimmed ', epic: 'Royal ', legendary: 'Gilded ' };
 
 const cache = new Map<string, Look | null>();
 
@@ -63,15 +65,16 @@ export function lookOf(id: string): Look | null {
   let look: Look | null = null;
   const def = ITEM_DEFS[id];
   if (def && isLookSlot(def.slot)) {
-    look = { id, slot: def.slot, name: def.name, icon: def.icon, mat: itemMat({ uid: id, base: id, r: def.rarity, il: 1, st: [] }), tint: def.tint, r: def.rarity, cls: def.cls, authored: true };
+    look = { id, slot: def.slot, name: def.name, icon: def.icon, mat: itemMat({ uid: id, base: id, r: def.rarity, il: 1, st: [] }), tint: def.tint, r: def.rarity, cls: def.cls, set: id.startsWith('warden-') ? def.cls : undefined, authored: true };
   } else if (id.startsWith('gen:')) {
     const [, baseId, trim, dye] = id.split(':');
     const base = baseId ? BASE_DEFS[baseId] : undefined;
-    if (base && isLookSlot(base.slot) && (trim === 'common' || trim === 'rare') && dye && HEX.test(dye)) {
-      const mat = itemMat({ uid: id, base: base.id, r: trim, il: 1, st: [] });
+    if (base && isLookSlot(base.slot) && trim && trim in TRIM_NAME && dye && HEX.test(dye)) {
+      const rarity = trim as Rarity;
+      const mat = itemMat({ uid: id, base: base.id, r: rarity, il: 1, st: [] });
       const tint = `#${dye}`;
       const dyed = base.slot !== 'weapon';
-      look = { id, slot: base.slot, name: `${trim === 'rare' ? 'Trimmed ' : ''}${dyed ? `${colorName(tint, mat)} ` : ''}${base.name}`, icon: base.icon, mat, tint, r: trim, cls: base.cls, authored: false };
+      look = { id, slot: base.slot, name: `${TRIM_NAME[rarity]}${dyed ? `${colorName(tint, mat)} ` : ''}${base.name}`, icon: base.icon, mat, tint, r: rarity, cls: base.cls, authored: false };
     }
   }
   cache.set(id, look);

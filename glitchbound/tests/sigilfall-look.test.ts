@@ -54,7 +54,8 @@ describe('sigilfall hero looks', () => {
     expect(heroLook('ranger', { offhand: gen('quiver') }).quiver).toBe(itemTint(gen('quiver')));
     expect(heroLook('warrior', { chest: gen('chain-vest', 'rare') }).cape).toBeNull();
     expect(heroLook('warrior', { chest: gen('chain-vest', 'epic') }).cape).not.toBeNull();
-    expect(heroLook('mage', { chest: gen('silk-robe', 'epic') }).cape).toBeNull();
+    expect(heroLook('mage', { chest: gen('silk-robe', 'rare') }).cape).toBeNull();
+    expect(heroLook('mage', { chest: gen('silk-robe', 'epic') }).cape).not.toBeNull();
   });
 
   it('generated armor is dyed per piece; weapons and hand-made items keep their color', () => {

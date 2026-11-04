@@ -42,8 +42,21 @@ describe('Sigilfall: the Wardrobe', () => {
     expect(lookOf(id)).toMatchObject({ slot: 'chest', r: 'rare', authored: false });
     expect(lookOf(id)!.name).toMatch(/^Trimmed /);
     expect(lookOf('gen:no-such-base:rare:ffffff')).toBeNull();
-    expect(lookOf('gen:silk-robe:legendary:ffffff')).toBeNull();
+    expect(lookOf('gen:silk-robe:mythic:ffffff')).toBeNull();
     expect(lookOf('not-an-item')).toBeNull();
+  });
+
+  it('found gear keeps its rarity in the Wardrobe: each one looks different, and a look from an old save still works', () => {
+    const names = (['common', 'uncommon', 'rare', 'epic', 'legendary'] as const).map((r) => lookOf(lookId(rollGear('mage', 10, r, rng(1), 'chest'))!));
+    expect(names.map((l) => l?.r)).toEqual(['common', 'uncommon', 'rare', 'epic', 'legendary']);
+    expect(lookOf('gen:silk-robe:rare:5a4ab0')).toMatchObject({ r: 'rare' });
+    expect(lookOf('gen:silk-robe:common:5a4ab0')).toMatchObject({ r: 'common' });
+  });
+
+  it('only the wardens wear a set', () => {
+    expect(lookOf('warden-mage-chest')).toMatchObject({ set: 'mage', r: 'legendary' });
+    expect(lookOf('warden-druid-head')).toMatchObject({ set: 'druid' });
+    expect(lookOf('saltbeard-tricorn')?.set).toBeUndefined();
   });
 
   it('owning a piece keeps its look for good: picked up, bought, melted down', () => {

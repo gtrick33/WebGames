@@ -1,5 +1,6 @@
 import { clamp, hash2, TAU } from '../core/math';
 import { MOUNT_DEFS, type MountDef } from '../data/mounts';
+import type { ClassId } from '../data/types';
 import { colorOf, FIELD, FX, WARN, type Fx3D } from '../render3d/fx3d';
 import { heightFromRadius, PERSON_H, type Cast } from '../render3d/cast';
 import { kitOf } from '../render3d/kits';
@@ -207,6 +208,20 @@ export function spell(fx: Fx3D, name: string, tone: Tone, x: number, y: number, 
       break;
   }
 }
+
+/**
+ * The air round a Sigil-warden. `from` and `rise`: how high their motes start and how far they go (below zero they
+ * fall). Small on purpose: the armor is what's looked at.
+ */
+const WARDEN_GLOW: Record<ClassId, { a: string; b: string; n: number; speed: number; spin: number; from: number; rise: number; size: number; halo?: { up: number; w: number; alpha: number } }> = {
+  warrior: { a: '#ff6a4a', b: '#ffc06a', n: 7, speed: 0.4, spin: 0, from: 6, rise: 30, size: 7 },
+  mage: { a: '#d8f0ff', b: '#ffffff', n: 8, speed: 0.22, spin: 0.7, from: 6, rise: -30, size: 7, halo: { up: 34, w: 36, alpha: 0.24 } },
+  ranger: { a: '#7ad8c8', b: '#d8fff4', n: 7, speed: 0.3, spin: 0.4, from: 2, rise: 22, size: 6 },
+  priest: { a: '#fff2c0', b: '#ffd24a', n: 8, speed: 0.26, spin: 0.3, from: 4, rise: 32, size: 7, halo: { up: 30, w: 46, alpha: 0.18 } },
+  paladin: { a: '#ffb040', b: '#ffe08a', n: 9, speed: 0.42, spin: 0, from: 8, rise: 30, size: 7, halo: { up: 16, w: 44, alpha: 0.18 } },
+  warlock: { a: '#a050e0', b: '#8bff6a', n: 8, speed: 0.34, spin: -0.5, from: 8, rise: 26, size: 8 },
+  druid: { a: '#9ae06a', b: '#ffd0e8', n: 7, speed: 0.2, spin: 0.5, from: 6, rise: -30, size: 6 },
+};
 
 /** A shot of an element flying: `tone` colors it, `el` says what it's made of. */
 export function shot(fx: Fx3D, el: string, x: number, y: number, vx: number, vy: number, up: number, r: number, seed: number, tone: Tone): void {
@@ -542,6 +557,23 @@ export class Effects {
     if (hasStatus(p, 'stun')) this.stars(fx, p.x, p.y, PERSON_H + 2, sc.time);
     const ridden = p.riding ? MOUNT_DEFS[p.riding] : undefined;
     if (ridden?.glow) this.mountGlow(fx, p.x, p.y, ridden.glow, ridden.body === 'drake' ? 1.5 : 1, sc.time);
+    const worn = w.hero.worn.chest;
+    if (worn?.startsWith('warden-')) this.wardenGlow(fx, p.x, p.y, ridden ? 24 : 0, w.hero.cls, sc.time);
+  }
+
+  /** What a Sigil-warden's armor does in the air round them: each of the seven sigils its own way. */
+  private wardenGlow(fx: Fx3D, x: number, y: number, up: number, cls: ClassId, time: number): void {
+    const look = WARDEN_GLOW[cls];
+    const n = look.n;
+    for (let i = 0; i < n; i++) {
+      const u = (time * look.speed + i / n) % 1;
+      const round = Math.floor(time * look.speed + i / n);
+      const a = hash2(i, round, 11) * TAU + time * look.spin;
+      const out = 8 + hash2(i, round, 13) * 8;
+      const rise = look.rise >= 0 ? u * look.rise : (1 - u) * -look.rise;
+      fx.put({ kind: FX.spark, x: x + Math.cos(a) * out, y: y + Math.sin(a) * out * 0.6, up: up + look.from + rise, w: look.size * Math.sin(u * Math.PI), a: i % 3 === 2 ? look.b : look.a, t: 0.1 + u * 0.5 });
+    }
+    if (look.halo) fx.put({ kind: FX.glow, x, y, up: up + look.halo.up, w: look.halo.w, a: look.a, alpha: look.halo.alpha + Math.sin(time * 1.7) * 0.05 });
   }
 
   /** A prestige mount's touch, kept small: embers going up off it, or stars round its feet. */
