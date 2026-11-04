@@ -93,9 +93,9 @@ All are build-time and **public** (they end up in the browser bundle). Productio
 | `VITE_ANALYTICS` | `none` (`console` in dev) | `none`, `console` or `umami` ([ANALYTICS.md](ANALYTICS.md)) |
 | `VITE_UMAMI_WEBSITE_ID`, `VITE_UMAMI_SRC` | empty, Umami Cloud script | Umami settings |
 | `VITE_ADSENSE_CLIENT` | `ca-pub-9356777861178613` | Publisher id. Alone, it only writes `ads.txt`. |
-| `VITE_ADS_ENABLED` | empty | `on` shows ads ([MONETIZATION.md](MONETIZATION.md)) |
+| `VITE_ADS_ENABLED` | `on` | Lets the switch in Admin › Ads & shop work. Nothing shows until that switch is on ([MONETIZATION.md](MONETIZATION.md)) |
 | `VITE_ADSENSE_TEST` | empty | `on` uses Google test ads |
-| `VITE_ADSENSE_SLOT_HOME`, `VITE_ADSENSE_SLOT_GAME` | empty | AdSense ad unit ids per placement |
+| `VITE_ADSENSE_SLOT_HOME`, `VITE_ADSENSE_SLOT_GAME` | `4798011937`, `5177285880` | AdSense ad unit ids per placement |
 
 ## Free-tier notes
 
