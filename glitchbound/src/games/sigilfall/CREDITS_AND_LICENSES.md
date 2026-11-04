@@ -17,6 +17,15 @@ packs below into the game's own files in `public/games/sigilfall/3d/` (the packs
 | Nature Kit, Graveyard Kit, Castle Kit | Kenney, https://kenney.nl | CC0 | Palms, pines, cacti, mushrooms, flowers, fences, gravestones, the siege ram, castle walls and gates |
 | Ultimate Animated Animals, Farm Animals, Animated Dinosaurs | Quaternius, https://quaternius.com | The pack pages say CC0; the license page shows QAL v1.0, which allows use inside a game and forbids redistributing the files alone. We ship them only as part of the game. | The real beasts of the world: wolves, boars, bears, deer, horses, sheep, pigs, raptors. Monsters come from one family instead (KayKit, and shapes built in the asset script). |
 
+## Sound (2026-11-04)
+
+| Sounds | Author | Terms | What we use |
+| --- | --- | --- | --- |
+| RPG Sound Pack | artisticdude, https://opengameart.org/content/rpg-sound-pack | CC0 | Sword swings and clashes, spell whooshes, creature voices (giants, ogres, beasts, shades, slimes, beetles), coins, bottles, armor, doors, menu sounds. `scripts/sigilfall-sounds.mjs` builds them into `public/games/sigilfall/audio/`; the pack stays out of the repository. |
+| Orchestral and World Music Pack | Ragnar Random, https://opengameart.org/content/orchestral-and-world-music-pack | CC0 | The soundtrack: 12 pieces (`audio/tracks.ts` says which land plays which), built into `public/games/sigilfall/music/`. |
+
+The rest of the effects are synthesized in code (`audio/`), and so is the procedural score that stands in if a piece can't be loaded.
+
 ## 2D art
 
 | Art (atlases) | Author / source | Paid or free | Commercial use | Attribution | Terms that bind us |

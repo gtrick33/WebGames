@@ -387,7 +387,7 @@ function fireProjectiles(w: World, spec: SkillSpec, angle: number): void {
 function hitAll(w: World, spec: SkillSpec, list: Enemy[], fx: number, fy: number, mul = 1): void {
   const p = w.player;
   for (const e of list) {
-    const d = hitEnemy(w, e, spec.damage * mul, spec.dmgType, { spec, depth: 0, fromX: fx, fromY: fy });
+    const d = hitEnemy(w, e, spec.damage * mul, spec.dmgType, { spec, depth: 0, fromX: fx, fromY: fy, blade: spec.dmgType === 'physical' });
     applyEffects(w, spec.onHit, { x: e.x, y: e.y, angle: Math.atan2(e.y - p.y, e.x - p.x), spec, base: spec.damage * mul, type: spec.dmgType, depth: 0, target: e, hitDmg: d, when: 'hit' });
   }
 }

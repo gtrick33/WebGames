@@ -50,6 +50,8 @@ export interface HitOpts {
   spec?: SkillSpec | null;
   depth: number;
   isDot?: boolean;
+  /** A blade landing: steel on the ear (only a sound). */
+  blade?: boolean;
   knock?: number;
   fromX?: number;
   fromY?: number;
@@ -120,7 +122,7 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
     e.vy += Math.sin(a) * k;
   }
   if (w.settings.numbers || crit) w.text(e.x + (w.rand() - 0.5) * 6, e.y - e.r - 6, String(shown), crit ? '#ffe14d' : o.isDot ? DOT_COLOR[type] : '#ffffff', crit);
-  if (!o.isDot) w.sfx(crit ? 'crit' : 'hit');
+  if (!o.isDot) w.sfx(o.blade ? (crit ? 'critBlade' : 'clash') : crit ? 'crit' : 'hit');
   // ultimate charge: hits worth a typical attack fill about 1/30th, but never faster than the charge budget
   // allows (it refills over seconds), so a hero with great gear doesn't cast the ultimate every few hits.
   // Normalized at the hit (PROGRESSION_BALANCE.md Part 2, E): the first enemy a direct hit strikes in a
