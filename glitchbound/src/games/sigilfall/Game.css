@@ -1794,31 +1794,39 @@
   position: absolute;
   display: grid;
   place-items: center;
+  /* (a button's own padding isn't even across and down: the picture would come out stretched) */
+  padding: 0;
   border: 3px solid var(--rb-ink);
   border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, #4a3a28, #2c2219 70%);
+  background: radial-gradient(circle at 40% 28%, #7d6ca8, #41326a 72%);
   box-shadow:
-    inset 0 -4px 0 rgb(0 0 0 / 0.3),
-    inset 0 3px 0 rgb(255 255 255 / 0.12),
-    0 3px 0 rgb(0 0 0 / 0.45);
+    inset 0 -3px 0 rgb(0 0 0 / 0.28),
+    inset 0 2px 0 rgb(255 255 255 / 0.3),
+    0 3px 0 rgb(0 0 0 / 0.5);
   touch-action: none;
   pointer-events: auto;
   overflow: hidden;
-  opacity: 0.92;
+  opacity: 0.96;
 }
 .rb-sb img {
   width: 62%;
   height: 62%;
+  object-fit: contain;
   pointer-events: none;
 }
-/* a skill's picture is a disc of its own: it fills the button (the ultimate's leaves its charge ring showing) */
+/* a skill's picture: a true circle, never stretched, set into its button with a bright rim left round it */
 .rb-sb img.is-disc {
-  width: 100%;
-  height: 100%;
+  width: 84%;
+  height: 84%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px rgb(10 6 20 / 0.55);
 }
+/* (the ultimate's leaves its charge ring showing) */
 .rb-sb-ult img.is-disc {
-  width: calc(100% - 10px);
-  height: calc(100% - 10px);
+  width: 74%;
+  height: 74%;
 }
 .rb-sb.is-pressed {
   transform: scale(0.93);
@@ -1864,7 +1872,7 @@
   bottom: 14px;
   width: 86px;
   height: 86px;
-  background: radial-gradient(circle at 40% 35%, #7a5ad0, #4a3290 70%);
+  background: radial-gradient(circle at 40% 28%, #ffd061, #ec7a1f 72%);
 }
 .rb-sb-s1 {
   right: 120px;
@@ -1988,7 +1996,7 @@
   bottom: 6px;
   width: 58px;
   height: 58px;
-  background: radial-gradient(circle at 40% 35%, #3a7aa0, #1e4a68 70%);
+  background: radial-gradient(circle at 40% 28%, #7fe0ff, #1f8acd 72%);
 }
 .rb-sb.is-cooling img {
   opacity: 0.55;
@@ -4337,13 +4345,45 @@
     inset 0 0 0 1px rgb(168 130 58 / 0.7),
     0 6px 16px rgb(0 0 0 / 0.5);
 }
-.rb-slot6,
-.rb-sb {
+.rb-slot6 {
   border: 1px solid #0d0906;
   background: radial-gradient(circle at 50% 35%, #3a2d20, #120c08 75%);
   box-shadow:
     inset 0 0 0 1px rgb(168 130 58 / 0.55),
     inset 0 0 10px rgb(0 0 0 / 0.7);
+}
+/* the thumbs' buttons: a chunky round button with a bright rim of its own color round the skill's picture */
+.rb-sb {
+  border: 2px solid #120a1e;
+  background: radial-gradient(circle at 40% 26%, var(--sb-hi, #9a8ad0), var(--sb-lo, #41326a) 74%);
+  box-shadow:
+    inset 0 -2px 0 rgb(0 0 0 / 0.3),
+    inset 0 1.5px 0 rgb(255 255 255 / 0.4),
+    0 3px 0 rgb(0 0 0 / 0.5),
+    0 3px 8px rgb(0 0 0 / 0.35);
+}
+.rb-sb-basic {
+  --sb-hi: #ffd76a;
+  --sb-lo: #ec7a1f;
+}
+.rb-sb-dodge {
+  --sb-hi: #8ae4ff;
+  --sb-lo: #1f8acd;
+}
+.rb-sb-potion {
+  --sb-hi: #ff94ae;
+  --sb-lo: #b02e52;
+}
+.rb-sb-mount {
+  --sb-hi: #b9e87a;
+  --sb-lo: #4d8f2e;
+}
+/* (their rims are their charge, filling as it builds) */
+.rb-sb-ult {
+  background: conic-gradient(from 180deg, #ffcf5a var(--fill, 0%), #3a2c1a 0);
+}
+.rb-sb-mount {
+  background: conic-gradient(from 180deg, #e8d8a8 var(--fill, 0%), #4a3a2a 0);
 }
 .rb-slot6.is-ult {
   background: conic-gradient(from 180deg, #e9c46a var(--fill, 0%), #2a2017 0);
@@ -4436,6 +4476,8 @@
 .rb-rift-pick,
 .rb-rift-echoes {
   display: grid;
+  /* (what's in it wraps to the box, rather than the box's words running off to fit it) */
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   padding: 14px 16px;
   border: 1px solid #6e5526;
@@ -8013,19 +8055,13 @@
   top: 42%;
 }
 .rb-ring-thumbs .rb-sb-ult {
-  background: radial-gradient(circle at 40% 35%, #4a3a28, #2c2219 70%);
+  background: radial-gradient(circle at 40% 26%, #ffd76a, #b9771f 74%);
 }
 .rb-ring-thumbs .rb-sb-ult::before {
   display: none;
 }
-.rb-ring-thumbs .rb-sb-basic {
-  background: radial-gradient(circle at 40% 35%, #7a5ad0, #4a3290 70%);
-}
 .rb-ring-thumbs .rb-sb-dodge {
   border-color: #ffe39a;
-}
-.rb-ring-thumbs .rb-sb img {
-  image-rendering: pixelated;
 }
 .rb-ring-thumbs .rb-sb.is-nomana img {
   filter: grayscale(0.7) brightness(0.68);
@@ -8810,5 +8846,45 @@
   .rb-vlobby-foot {
     padding-top: 14px;
     background: linear-gradient(transparent, #0b0914 14px);
+  }
+}
+
+/* what a thumb has to hit, on a touch screen */
+@media (pointer: coarse) {
+  .rb-zoom .rb-btn.is-small {
+    min-width: 42px;
+    min-height: 42px;
+  }
+  .rb-rp-setup-head .rb-btn.is-small,
+  .rb-ring-editing .rb-btn.is-small {
+    min-height: 38px;
+  }
+}
+
+/* the kit's six share what width their column has, as big as it lets them, and stay out of the list beside it */
+.rb-vlobby-kit,
+.rb-vlobby-spells {
+  min-width: 0;
+}
+@container (max-height: 430px) {
+  .rb-vlobby-spells {
+    gap: 3px;
+  }
+  .rb-vlobby-spell {
+    flex: 0 1 40px;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    aspect-ratio: 1;
+  }
+}
+
+/* a short screen keeps the way in on it: the button stays at the foot of the column while the rest scrolls */
+@container (max-height: 430px) {
+  .rb-rift-pick .rb-gate-go {
+    position: sticky;
+    bottom: 4px;
+    z-index: 2;
+    box-shadow: 0 -8px 14px rgb(8 4 18 / 0.75);
   }
 }

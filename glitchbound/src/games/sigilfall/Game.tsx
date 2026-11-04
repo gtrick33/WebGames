@@ -127,7 +127,12 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
       }
     };
     const onKey = (): void => e.sound.unlock();
+    // (a phone lets sound start only from the end of a touch: its beginning doesn't count)
+    const onTouchEnd = (): void => e.sound.unlock();
     stage.addEventListener('pointerdown', onPointer, true);
+    stage.addEventListener('pointerup', onTouchEnd, true);
+    stage.addEventListener('touchend', onTouchEnd, true);
+    stage.addEventListener('click', onTouchEnd, true);
     window.addEventListener('keydown', onKey);
     return () => {
       ro.disconnect();
@@ -137,6 +142,9 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
       stage.removeEventListener('focusin', onFocusIn);
       stage.removeEventListener('focusout', onFocusOut);
       stage.removeEventListener('pointerdown', onPointer, true);
+      stage.removeEventListener('pointerup', onTouchEnd, true);
+      stage.removeEventListener('touchend', onTouchEnd, true);
+      stage.removeEventListener('click', onTouchEnd, true);
       window.removeEventListener('keydown', onKey);
       e.detach();
       setTurned(null);
