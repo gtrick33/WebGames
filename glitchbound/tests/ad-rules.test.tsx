@@ -2,6 +2,8 @@
  * The ad rules with ads switched on (the build's settings stubbed): where a banner may show, when Google's script loads,
  * and the optional ad for one more try, which only plays from the player's press and only rewards a finished ad.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NO_MONEY } from '../src/catalog/settings';
@@ -62,6 +64,25 @@ describe('a banner', () => {
     rerender(<AdSlot placement="home" />);
     expect(container.querySelector('ins')).not.toBeNull();
     act(() => setCatalog({ settings: {}, picks: {}, notice: null, money: { ...NO_MONEY, ads: false } }));
+    expect(container.innerHTML).toBe('');
+  });
+});
+
+describe('the settings the live site is built with', () => {
+  const built = readFileSync(join(process.cwd(), '.env.production'), 'utf8');
+
+  it('have both ad units, which only work with the publisher id they were made for', () => {
+    expect(built).toMatch(/^VITE_ADSENSE_CLIENT=ca-pub-9356777861178613$/m);
+    expect(built).toMatch(/^VITE_ADSENSE_SLOT_HOME=\d{10}$/m);
+    expect(built).toMatch(/^VITE_ADSENSE_SLOT_GAME=\d{10}$/m);
+  });
+
+  it('never use Google’s test ads, and show nothing until an admin turns banners on', () => {
+    expect(built).not.toMatch(/^VITE_ADSENSE_TEST=on$/m);
+    expect(NO_MONEY.ads).toBe(false);
+    expect(NO_MONEY.rewarded).toBe(false);
+    act(() => setCatalog({ settings: {}, picks: {}, notice: null }));
+    const { container } = render(<AdSlot placement="home" />);
     expect(container.innerHTML).toBe('');
   });
 });

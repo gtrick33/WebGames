@@ -69,16 +69,19 @@ Keys only make the checkout possible: players still can't buy until the shop's s
    [/ads.txt](https://glitchboundstudio.com/ads.txt), so there's nothing to add to the site.
 3. **Finish your account's setup tasks** (payment details and so on), or Google won't review the site, then **Request review**.
    It usually takes days and can take 2 to 4 weeks.
-4. **Create the consent message:** AdSense > **Privacy & messaging** > **European regulations**
-   ([help](https://support.google.com/adsense/answer/14325056)).
-5. **Once it's approved:** create two display ad units and tell me their ids, and I'll put them in the build.
-6. **For optional ads:** apply at [Google's sign-up page](https://developers.google.com/ad-placement/docs/signup).
+4. **Create the consent message:** AdSense > **Privacy & messaging** > **European regulations** > **Create**
+   ([help](https://support.google.com/adsense/answer/10960768)). Turn **Do not consent** on, and give
+   `https://glitchboundstudio.com/privacy` as the privacy policy. It only shows on the site once banners are on.
+5. **The two display ad units are made,** and their ids are in `.env.production`: Home banner `4798011937`, Game page banner
+   `5177285880`. With those in the build, banners are still off until the switch in Admin › Ads & shop.
+6. **Once Sites says Ready and the message is published:** turn banners on in Admin › Ads & shop.
+7. **For optional ads:** apply at [Google's sign-up page](https://developers.google.com/ad-placement/docs/signup).
 
 ## Before turning on banner ads
 You:
 - [ ] Do the AdSense steps above. Google can refuse a site with too little original text, so approval isn't certain.
 - [ ] Create the European regulations message in AdSense › Privacy & messaging, for the EU, UK and Switzerland.
-- [ ] Create two display ad units, then set `VITE_ADSENSE_SLOT_HOME`, `VITE_ADSENSE_SLOT_GAME` and `VITE_ADS_ENABLED=on` in
+- [x] Create two display ad units, and set `VITE_ADSENSE_SLOT_HOME`, `VITE_ADSENSE_SLOT_GAME` and `VITE_ADS_ENABLED=on` in
       `.env.production`.
 - [ ] Fill in AdSense's payment profile and tax forms. Google verifies your address by post.
 - [ ] Enter your postal address in Admin › Ads & shop.
@@ -95,7 +98,7 @@ Accountant:
 You:
 - [ ] Do the Stripe steps above. Bulgaria and video games are on Managed Payments' list, and it runs an eligibility review.
       **Ask Stripe in writing whether Crass Act and the After Dark cards are a problem** on the same site.
-- [ ] Make a test purchase and a refund in Stripe's test mode. **This has not been run against real Stripe yet.** You don't need to
+- [x] Make a test purchase and a refund in Stripe's test mode. Done 2026-11-05: the payment and the refund both reached the site. You don't need to
       create products in Stripe: prices are set in Admin › Ads & shop, and the site creates the matching Stripe product and price at
       the next checkout, with VAT included. An accountant should confirm the tax code in `server/shop.ts` (`txcd_10000000`).
 - [ ] Decide on the currency. The shop shows euros, and Bulgaria uses the euro since 2026.

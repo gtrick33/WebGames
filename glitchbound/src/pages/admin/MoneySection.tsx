@@ -31,9 +31,9 @@ function Switches({ data, send, busy }: { data: AdminCatalog; send: Send; busy: 
     {
       key: 'ads',
       title: 'Banner ads',
-      what: 'Labeled banners. Never in a game, on 18+ pages or for ad-free members.',
+      what: 'Labeled banners. Never in a game, on 18+ pages or for ad-free members. Turn on only when AdSense › Sites says Ready and your European consent message is published: this page can’t check those two.',
       needs: [
-        { ok: ADS.enabled, text: 'AdSense publisher id and VITE_ADS_ENABLED=on in the build, with ad unit ids, after Google approves the site' },
+        { ok: ADS.enabled && !!ADS.slots.home && !!ADS.slots.game, text: 'AdSense publisher id and both ad units in the build' },
         { ok: hasAddress, text: 'Your postal address below (the law asks a site that earns money to show it)' },
       ],
     },

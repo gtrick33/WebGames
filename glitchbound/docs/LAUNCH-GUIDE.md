@@ -125,8 +125,9 @@ Rules** > template "Redirect from WWW to root"). Optional: add the domain in Goo
 ## 5. Ads (later)
 
 Unchanged: see [MONETIZATION.md](MONETIZATION.md). Add `glitchboundstudio.com` as a site in AdSense (the site already
-publishes `/ads.txt`), request review, set up the EU consent message, create two display ad units, then set
-`VITE_ADS_ENABLED=on` and the slot ids. Ads never appear inside or around a game.
+publishes `/ads.txt`), request review and set up the EU consent message. The build already has `VITE_ADS_ENABLED=on` and both
+ad unit ids, so banners go on with the switch in Admin › Ads & shop once Google has approved the site. Ads never appear inside or
+around a game.
 
 ---
 
