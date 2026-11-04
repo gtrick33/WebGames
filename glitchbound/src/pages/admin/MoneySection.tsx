@@ -199,7 +199,7 @@ function Items({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boo
 
 interface Report {
   items: { product: string; paid: number; refunded: number; gifted: number; cents: number; currency: string | null }[];
-  recent: { id: string; product: string; status: string; amount: number | null; at: number; nickname: string | null; gift: boolean }[];
+  recent: { id: string; product: string; status: string; amount: number | null; currency: string | null; at: number; nickname: string | null; gift: boolean }[];
 }
 
 function Sales({ items }: { items: Product[] }) {
@@ -260,7 +260,7 @@ function Sales({ items }: { items: Product[] }) {
       {report?.recent.map((r) => (
         <div key={r.id} className="money-row">
           <span className="info-small">
-            {new Date(r.at).toISOString().slice(0, 10)} · {r.nickname ?? 'Deleted account'} · {nameOf(r.product)} · {r.gift ? 'gift' : priceText(r.amount ?? 0)} · {r.status}
+            {new Date(r.at).toISOString().slice(0, 10)} · {r.nickname ?? 'Deleted account'} · {nameOf(r.product)} · {r.gift ? 'gift' : r.currency === 'test' ? 'test purchase' : priceText(r.amount ?? 0)} · {r.status}
           </span>
           {r.status === 'paid' && (
             <button className="btn btn-sm btn-ghost" onClick={() => act({ action: 'takeBack', id: r.id })}>

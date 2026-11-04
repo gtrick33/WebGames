@@ -189,7 +189,7 @@ export function PrivacyPage() {
               <p>GlitchBound isn&rsquo;t aimed at children, and we don&rsquo;t ask Google to target anyone by age.</p>
             </>
           ) : (
-            <p>There are no ads on GlitchBound right now.</p>
+            <p>There are no ads on GlitchBound right now. If we start showing ads from Google, this section will say so first, with what they do with your data and how to choose.</p>
           )}
         </section>
 

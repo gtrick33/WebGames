@@ -1,7 +1,7 @@
 import { productIn } from '../../../src/catalog/shop';
 import { loadCatalog } from '../../../server/catalogSettings';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../server/http';
-import { requireUser } from '../../../server/session';
+import { isAdmin, requireUser } from '../../../server/session';
 import { canSell, loadItems, ownedBy, startCheckout } from '../../../server/shop';
 
 /** POST /api/shop/checkout { product, agreeNow: true, agreeAge: true }: where to pay. Off until the shop is opened. */
@@ -11,7 +11,8 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (user instanceof Response) return user;
   const day = new Date().toISOString().slice(0, 10);
   const cat = await loadCatalog(env, day, day);
-  if (!cat.money?.shop) return bad('shop_closed', 404);
+  // (an admin can test a purchase while it's closed: docs/LEGAL-READINESS.md)
+  if (!cat.money?.shop && !isAdmin(env, user)) return bad('shop_closed', 404);
   const body = await readJson(request);
   const p = typeof body?.product === 'string' ? productIn(await loadItems(env), body.product) : undefined;
   if (!canSell(env, p)) return bad('not_for_sale', 404);

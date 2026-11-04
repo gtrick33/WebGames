@@ -59,7 +59,10 @@ interface StripeRef {
 /** The Stripe price for this item at its current price, made if it's new or changed. Stored apart from the public catalog. */
 async function stripePriceFor(env: Env, p: Product): Promise<string | null> {
   const row = await env.DB.prepare("SELECT value FROM site_settings WHERE key = 'shop_stripe'").first<{ value: string }>();
-  const refs = (row?.value ? JSON.parse(row.value) : {}) as Record<string, StripeRef>;
+  const all = (row?.value ? JSON.parse(row.value) : {}) as Record<string, Record<string, StripeRef>>;
+  // Stripe's test and live modes share nothing: an id from one doesn't exist in the other
+  const mode = env.STRIPE_SECRET_KEY?.includes('_test_') ? 'test' : 'live';
+  const refs = (all[mode] ??= {});
   const had = refs[p.id];
   if (had && had.cents === p.cents && had.name === p.name) return had.price;
   let product = had?.product;
@@ -77,7 +80,7 @@ async function stripePriceFor(env: Env, p: Product): Promise<string | null> {
   if (!price) return null;
   refs[p.id] = { product, price: price.id, cents: p.cents, name: p.name };
   await env.DB.prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('shop_stripe', ?, ?, 'shop') ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at")
-    .bind(JSON.stringify(refs), Date.now())
+    .bind(JSON.stringify(all), Date.now())
     .run();
   return price.id;
 }
@@ -124,6 +127,8 @@ export async function verifyStripeSignature(body: string, header: string | null,
 
 interface StripeEvent {
   type: string;
+  /** False for a test-mode payment: it gives the item, so a test works, and never counts as money. */
+  livemode?: boolean;
   data: { object: Record<string, unknown> };
 }
 
@@ -133,8 +138,9 @@ export async function applyStripeEvent(env: Env, ev: StripeEvent, now = Date.now
   if (ev.type === 'checkout.session.completed' || ev.type === 'checkout.session.async_payment_succeeded') {
     if (o.payment_status !== 'paid' || typeof o.client_reference_id !== 'string') return;
     const ref = typeof o.payment_intent === 'string' ? o.payment_intent : String(o.id);
+    const test = ev.livemode === false;
     const done = await env.DB.prepare("UPDATE purchases SET status = 'paid', provider_ref = ?, amount = ?, currency = ?, paid_at = ? WHERE id = ? AND status = 'pending'")
-      .bind(ref, typeof o.amount_total === 'number' ? o.amount_total : null, typeof o.currency === 'string' ? o.currency : null, now, o.client_reference_id)
+      .bind(ref, test ? 0 : typeof o.amount_total === 'number' ? o.amount_total : null, test ? 'test' : typeof o.currency === 'string' ? o.currency : null, now, o.client_reference_id)
       .run();
     const r = done as { meta?: { changes?: number }; changes?: number };
     if (r.meta?.changes ?? r.changes) await confirmByEmail(env, o.client_reference_id, now);
@@ -173,7 +179,7 @@ export async function shopReport(env: Env): Promise<ShopReport> {
   const [items, recent] = await Promise.all([
     env.DB.prepare(
       `SELECT product,
-         SUM(CASE WHEN status = 'paid' AND provider_ref NOT LIKE 'gift:%' THEN 1 ELSE 0 END) AS paid,
+         SUM(CASE WHEN status = 'paid' AND provider_ref NOT LIKE 'gift:%' AND COALESCE(currency, '') != 'test' THEN 1 ELSE 0 END) AS paid,
          SUM(CASE WHEN status = 'refunded' THEN 1 ELSE 0 END) AS refunded,
          SUM(CASE WHEN status = 'paid' AND provider_ref LIKE 'gift:%' THEN 1 ELSE 0 END) AS gifted,
          SUM(CASE WHEN status = 'paid' AND provider_ref NOT LIKE 'gift:%' THEN COALESCE(amount, 0) ELSE 0 END) AS cents,

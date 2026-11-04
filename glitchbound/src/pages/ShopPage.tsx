@@ -6,12 +6,13 @@ import { api, ApiError, useAccount } from '../platform/account';
 import { usePageMeta } from '../platform/meta';
 import { useMoney } from '../platform/money';
 import { Link } from '../router/router';
-import { NotFound } from './NotFound';
 import './InfoPages.css';
 
 /**
  * The shop: one-time purchases, in plain words. No countdowns, no "last chance", no pressure, and the full price up
- * front (src/catalog/shop.ts has the rules). Hidden until the shop is opened in Admin › Ads & shop; staff can see it.
+ * front (src/catalog/shop.ts has the rules). Until the shop is opened in Admin › Ads & shop it has no tab and nothing can
+ * be bought, but the page can be read by its address, hidden from search: Stripe's reviewers must be able to see what is
+ * sold and at what price, without a password. An admin can test a purchase here while it's closed.
  * English only for now: translate it before opening (docs/LEGAL-READINESS.md).
  */
 export function ShopPage() {
@@ -20,7 +21,7 @@ export function ShopPage() {
   const items = useLiveCatalog().raw.shopItems ?? PRODUCTS;
   const { me } = useAccount();
   const [buying, setBuying] = useState<Product | null>(null);
-  if (!money.shop && !me?.role) return <NotFound />;
+  const canBuy = money.shop || !!me?.isAdmin;
   const owned = new Set(me?.owned ?? []);
   const bought = new URLSearchParams(window.location.search).get('bought');
   const now = items.filter((p) => !p.later && !p.hidden);
@@ -29,7 +30,11 @@ export function ShopPage() {
     <div className="wrap info-page">
       <h1 className="info-title">Shop</h1>
       <p className="info-lead">Every game stays free to play. These are optional extras, each paid for once: no subscriptions, no game currency and no random boxes. Nothing here helps you win.</p>
-      {!money.shop && <p className="info-small">Staff preview: the shop is closed to players.</p>}
+      {!money.shop && (
+        <p className="info-small" role="status">
+          {me?.isAdmin ? 'Admin test: the shop is closed to players, and you can test a purchase here.' : 'The shop isn’t open yet, so nothing can be bought right now.'}
+        </p>
+      )}
       {bought && <p className="info-small" role="status">Thank you. Your purchase reaches your account as soon as the payment is confirmed, usually within a minute.</p>}
       <div className="info-cols">
         {now.map((p) => (
@@ -41,6 +46,8 @@ export function ShopPage() {
             </p>
             {owned.has(p.id) ? (
               <p className="info-small">This is yours.</p>
+            ) : !canBuy ? (
+              <p className="info-small">Not on sale yet.</p>
             ) : me ? (
               <button className="btn btn-primary" onClick={() => setBuying(p)}>
                 Get {p.name}

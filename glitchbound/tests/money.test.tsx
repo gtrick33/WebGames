@@ -44,18 +44,24 @@ describe('with everything off', () => {
     cleanup();
     const { PrivacyPage } = await import('../src/pages/PrivacyPage');
     render(<PrivacyPage />);
-    expect(screen.getByText('There are no ads on GlitchBound right now.')).toBeTruthy();
+    expect(screen.getByText(/There are no ads on GlitchBound right now/)).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Purchases' })).toBeNull();
   });
 
-  it('hides the shop and its terms from players', async () => {
+  it('the shop and its terms can be read by their address, and nothing can be bought', async () => {
     const { ShopPage } = await import('../src/pages/ShopPage');
     render(<ShopPage />);
-    expect(screen.queryByRole('heading', { name: 'Shop' })).toBeNull();
+    expect(screen.getByText('The shop isn’t open yet, so nothing can be bought right now.')).toBeTruthy();
+    expect(screen.getByText('€1.99')).toBeTruthy();
+    expect(screen.getByText('Not on sale yet.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Get |Sign in first/ })).toBeNull();
     cleanup();
     const { SaleTermsPage } = await import('../src/pages/SaleTermsPage');
     render(<SaleTermsPage />);
-    expect(screen.queryByRole('heading', { name: 'Terms of sale' })).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Terms of sale' })).toBeTruthy();
+    expect(screen.getByText(/These terms apply once it opens/)).toBeTruthy();
+    // what Stripe asks a site to say
+    for (const name of ['Who you buy from', 'What you get', 'Paying safely', 'Your right to withdraw', 'If something is wrong, and refunds']) expect(screen.getByRole('heading', { name })).toBeTruthy();
   });
 });
 
@@ -257,6 +263,30 @@ describe('purchases', () => {
     expect(await loadItems(e)).toEqual(PRODUCTS);
     await e.DB.prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('shop_items', ?, 1, 'qa')").bind(JSON.stringify([{ id: 'look-one', name: 'A look', blurb: 'A nice look.', cents: 150 }])).run();
     expect((await loadItems(e)).map((p) => p.id)).toEqual(['ad-free', 'look-one']);
+  });
+
+  it('keeps Stripe’s test and live modes apart', async () => {
+    const e = env();
+    const calls = fakeStripe();
+    const item = productIn(PRODUCTS, 'ad-free')!;
+    await startCheckout({ ...e, STRIPE_SECRET_KEY: 'rk_test_1' } as Env, USER, item, 'https://site.test', 1000);
+    await startCheckout({ ...e, STRIPE_SECRET_KEY: 'rk_test_1' } as Env, { ...USER, id: 'u2' }, item, 'https://site.test', 1001);
+    expect(calls.filter((c) => c.path === 'products')).toHaveLength(1);
+    await startCheckout({ ...e, STRIPE_SECRET_KEY: 'rk_live_1' } as Env, { ...USER, id: 'u3' }, item, 'https://site.test', 1002);
+    expect(calls.filter((c) => c.path === 'products')).toHaveLength(2);
+    expect(calls.filter((c) => c.path === 'prices')).toHaveLength(2);
+  });
+
+  it('a test-mode payment gives the item, so a test works, and never counts as money', async () => {
+    const e = env();
+    const calls = fakeStripe();
+    await startCheckout(e, USER, productIn(PRODUCTS, 'ad-free')!, 'https://site.test', 1000);
+    const id = calls.find((c) => c.path === 'checkout/sessions')!.form.get('client_reference_id')!;
+    await applyStripeEvent(e, { type: 'checkout.session.completed', livemode: false, data: { object: { id: 'cs_t', client_reference_id: id, payment_status: 'paid', payment_intent: 'pi_t', amount_total: 199, currency: 'eur' } } }, 2000);
+    expect(await ownedBy(e, USER.id)).toEqual(['ad-free']);
+    const report = await shopReport(e);
+    expect(report.items[0]).toMatchObject({ paid: 0, cents: 0 });
+    expect(report.recent[0]).toMatchObject({ currency: 'test', status: 'paid' });
   });
 
   it('gives nothing for an unpaid checkout, or a payment it doesn’t know', async () => {

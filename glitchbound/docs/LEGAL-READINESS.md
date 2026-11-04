@@ -1,8 +1,9 @@
 # Ads and payments: what's ready, and what's left before switching on
 
-Everything for ads and payments is built and **switched off**. Off means no ad script loads, there's no Shop tab, `/shop`
-and `/terms/sale` are "not found" for players, and the Terms and Privacy pages say there are no ads and nothing to buy.
-The switches are in **Admin › Ads & shop**. Turning one on also changes the legal pages to match.
+Everything for ads and payments is built and **switched off**. Off means no ad script loads, there's no Shop tab and nothing
+can be bought, and the Terms and Privacy pages say there are no ads and nothing to buy. `/shop` and `/terms/sale` can be read
+by their address, say the shop isn't open, and are hidden from search and linked from nowhere, because Stripe's reviewers must
+see what's sold without a password. The switches are in **Admin › Ads & shop**. Turning one on changes the legal pages to match.
 
 This is a working checklist, **not legal advice**. Sources are at the end. Have a lawyer and an accountant look at the
 items marked for them before taking money.
@@ -36,10 +37,45 @@ items marked for them before taking money.
 Don't add game currency, random boxes, anything that helps win, countdowns, "last chance" wording, or words telling children
 to buy. Regulators in the EU have acted on exactly those.
 
+## Connecting Stripe, step by step
+1. **Create the account:** [dashboard.stripe.com/register](https://dashboard.stripe.com/register). Website:
+   `https://glitchboundstudio.com`. Say you sell cosmetic items for browser games, and give a support email. These pages are what
+   Stripe's reviewers look at: [/shop](https://glitchboundstudio.com/shop) (what's sold and the price),
+   [/terms/sale](https://glitchboundstudio.com/terms/sale) (refunds and disputes), [/contact](https://glitchboundstudio.com/contact),
+   [/privacy](https://glitchboundstudio.com/privacy), [/terms](https://glitchboundstudio.com/terms).
+2. **Ask for Managed Payments:** [set-up guide](https://docs.stripe.com/payments/managed-payments/set-up). Ask about Crass Act here.
+3. **Get a test key:** [test API keys](https://dashboard.stripe.com/test/apikeys). A restricted key is safest, with write access to
+   Products, Prices and Checkout Sessions, and nothing else. **Don't paste keys in chat.**
+4. **Add the webhook in test mode:** [test webhooks](https://dashboard.stripe.com/test/webhooks). Address:
+   `https://glitchboundstudio.com/api/shop/webhook`. Events: `checkout.session.completed`,
+   `checkout.session.async_payment_succeeded`, `charge.refunded`, `charge.dispute.funds_withdrawn`. Copy its signing secret.
+5. **Give both to the site as secrets:** Cloudflare > **Workers & Pages** > **glitchbound** > **Settings** > **Variables and
+   Secrets** > **Add** > Type **Secret**, for **Production**. Names: `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`. Or, from
+   `glitchbound/`: `npx wrangler pages secret put STRIPE_SECRET_KEY --project-name=glitchbound`.
+6. **Redeploy,** because secrets apply to new deployments: GitHub > Actions > **GlitchBound CI/CD** > **Run workflow** (`pre-release`).
+7. **Test it, signed in as an admin:** open `/shop`, tick both statements, pay with Stripe's test card `4242 4242 4242 4242`. Ad-free
+   should reach your account within a minute, and Admin › Ads & shop lists it as a test purchase. Refund it in Stripe and it should
+   leave your account. Use **Take back** for anything left over.
+8. **Go live:** repeat steps 3 to 6 with the [live keys](https://dashboard.stripe.com/apikeys) and [live webhooks](https://dashboard.stripe.com/webhooks).
+   Test and live are kept apart, so nothing carries over. Stripe prices appear by themselves at the first checkout.
+
+Keys only make the checkout possible: players still can't buy until the shop's switch is on.
+
+## Connecting AdSense, step by step
+1. **Add the site:** [adsense.google.com](https://adsense.google.com) > **Sites** > **Add site** > `glitchboundstudio.com`
+   ([help](https://support.google.com/adsense/answer/12169212)). Your account's publisher id is already the one in `/ads.txt`.
+2. **Connect it with the ads.txt method** ([help](https://support.google.com/adsense/answer/7584263)): the file is already live at
+   [/ads.txt](https://glitchboundstudio.com/ads.txt), so there's nothing to add to the site.
+3. **Finish your account's setup tasks** (payment details and so on), or Google won't review the site, then **Request review**.
+   It usually takes days and can take 2 to 4 weeks.
+4. **Create the consent message:** AdSense > **Privacy & messaging** > **European regulations**
+   ([help](https://support.google.com/adsense/answer/14325056)).
+5. **Once it's approved:** create two display ad units and tell me their ids, and I'll put them in the build.
+6. **For optional ads:** apply at [Google's sign-up page](https://developers.google.com/ad-placement/docs/signup).
+
 ## Before turning on banner ads
 You:
-- [ ] Add `glitchboundstudio.com` as a site in AdSense and wait for approval (`/ads.txt` is already live). Google can refuse a
-      site with too little original text, so this isn't certain.
+- [ ] Do the AdSense steps above. Google can refuse a site with too little original text, so approval isn't certain.
 - [ ] Create the European regulations message in AdSense › Privacy & messaging, for the EU, UK and Switzerland.
 - [ ] Create two display ad units, then set `VITE_ADSENSE_SLOT_HOME`, `VITE_ADSENSE_SLOT_GAME` and `VITE_ADS_ENABLED=on` in
       `.env.production`.
@@ -56,14 +92,11 @@ Accountant:
 
 ## Before opening the shop
 You:
-- [ ] Open a Stripe account and apply for Managed Payments (Bulgaria and video games are on its list, and it runs an
-      eligibility review). **Ask Stripe in writing whether Crass Act and the After Dark cards are a problem** on the same site.
-- [ ] Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` as Cloudflare secrets. You don't need to create products in Stripe:
-      prices are set in Admin › Ads & shop, and the site creates the matching Stripe product and price at the next checkout,
-      with VAT included. An accountant should confirm the tax code in `server/shop.ts` (`txcd_10000000`).
-- [ ] Point a Stripe webhook at `/api/shop/webhook` for `checkout.session.completed`,
-      `checkout.session.async_payment_succeeded`, `charge.refunded` and `charge.dispute.funds_withdrawn`.
-- [ ] Make a test purchase and a refund in Stripe's test mode. **This has not been run against real Stripe yet.**
+- [ ] Do the Stripe steps above. Bulgaria and video games are on Managed Payments' list, and it runs an eligibility review.
+      **Ask Stripe in writing whether Crass Act and the After Dark cards are a problem** on the same site.
+- [ ] Make a test purchase and a refund in Stripe's test mode. **This has not been run against real Stripe yet.** You don't need to
+      create products in Stripe: prices are set in Admin › Ads & shop, and the site creates the matching Stripe product and price at
+      the next checkout, with VAT included. An accountant should confirm the tax code in `server/shop.ts` (`txcd_10000000`).
 - [ ] Decide on the currency. The shop shows euros, and Bulgaria uses the euro since 2026.
 Lawyer:
 - [ ] Read `/terms/sale`, `/terms` and `/privacy` as written for the shop-open state (staff can see them while it's closed),
@@ -88,6 +121,6 @@ Me, when you say so:
 ## Sources
 - AdSense: [Program policies](https://support.google.com/adsense/answer/48182), [consent requirements](https://support.google.com/adsense/answer/13554116), [ads on game pages](https://support.google.com/adsense/answer/2768340), [Publisher Restrictions](https://support.google.com/adsense/answer/9335567)
 - Rewarded ads: [placement types](https://developers.google.com/ad-placement/docs/placement-types), [adBreak](https://developers.google.com/ad-placement/apis/adbreak), [sign-up](https://developers.google.com/ad-placement/docs/signup)
-- Stripe: [Managed Payments eligibility](https://docs.stripe.com/payments/managed-payments/eligibility), [how it works](https://docs.stripe.com/payments/managed-payments/how-it-works), [set-up](https://docs.stripe.com/payments/managed-payments/set-up)
+- Stripe: [what a business website must show](https://support.stripe.com/questions/business-website-for-account-activation-faq), [Managed Payments eligibility](https://docs.stripe.com/payments/managed-payments/eligibility), [how it works](https://docs.stripe.com/payments/managed-payments/how-it-works), [set-up](https://docs.stripe.com/payments/managed-payments/set-up)
 - EU: [Consumer Rights Directive art. 16](https://www.legislation.gov.uk/eudr/2011/83/article/16), [CPC principles on in-game currencies, summary](https://www.reedsmith.com/en/perspectives/2025/03/qas-on-the-eu-consumer-protection-authorities-joint-guidance-paper), [ODR closure](https://www.iubenda.com/en/help/173458-discontinuation-of-the-european-online-dispute-resolution-odr-platform), [Bulgaria's digital consent age](https://gdprlocal.com/digital-age-of-consent-under-the-gdpr/)
 - Bulgaria: [Electronic Commerce Act, English translation](https://www.mtc.government.bg/sites/default/files/electronic_commerce_act-en_kym_26.02.2019.pdf), [art. 97a and AdSense, one view](https://www.innovires.com/blog/oblagane-influenseri-youtube-tiktok-instagram-dac7.html)
