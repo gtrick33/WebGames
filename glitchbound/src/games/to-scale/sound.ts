@@ -16,6 +16,8 @@ export function createSfx(isMuted: () => boolean): Sfx {
   const audio = (): AudioContext | null => {
     if (isMuted()) return null;
     if (!ctx) {
+      // (a sound on a delay can outlive the page that asked for it)
+      if (typeof window === 'undefined') return null;
       const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AC) return null;
       try {
