@@ -34,13 +34,17 @@ const TABS: Tab[] = [
   { href: '/leaderboards', label: 'Leaderboards', short: 'Ranks', icon: 'crown' },
 ];
 
+/** Only once the shop is open (Admin › Ads & shop). */
+const SHOP_TAB: Tab = { href: '/shop', label: 'Shop', icon: 'star' };
+
 const PARTY_ONLY_URLS = GAMES.filter((g) => g.partyOnly).map((g) => gameUrl(g.slug));
 
 /** The tabs players see: a section whose game an admin hid is switched off (staff still see it, to test it). */
 function useTabs(): Tab[] {
   const live = useLiveCatalog();
   const { me } = useAccount();
-  return TABS.filter((tab) => !tab.slug || !live.settings(tab.slug).hidden || !!me?.role);
+  const tabs = TABS.filter((tab) => !tab.slug || !live.settings(tab.slug).hidden || !!me?.role);
+  return live.raw.money?.shop ? [...tabs, SHOP_TAB] : tabs;
 }
 
 /** The daily streak, always in view (like a flame you don't want to go out). Pulses when today is not done yet. */

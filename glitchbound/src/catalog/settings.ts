@@ -1,3 +1,4 @@
+import type { Product } from './shop';
 /**
  * Admin overrides for the catalog: how each game is shown (hidden, NEW badge, pinned, spotlight,
  * text), which games the daily challenge may pick, hand-picked daily challenges and a site notice.
@@ -148,6 +149,37 @@ export function sanitizeBanner(raw: unknown): BannerText {
   return out;
 }
 
+/**
+ * The switches for ads and the shop (Admin › Ads & shop), all off until the owner opens them, and the operator's
+ * postal address, which the legal pages show once it is set. src/platform/money.ts reads them.
+ */
+export interface MoneySettings {
+  /** Banner ads (they also need the AdSense settings in the build). */
+  ads: boolean;
+  /** The optional "watch an ad for one more try" after a daily. */
+  rewarded: boolean;
+  /** The Shop tab, the terms of sale and purchases. */
+  shop: boolean;
+  /** Where banners show, while they are on. */
+  adsHome: boolean;
+  adsGame: boolean;
+  address: string;
+}
+
+export const NO_MONEY: MoneySettings = { ads: false, rewarded: false, shop: false, adsHome: true, adsGame: true, address: '' };
+
+export function sanitizeMoney(v: unknown): MoneySettings {
+  const o = (typeof v === 'object' && v ? v : {}) as Record<string, unknown>;
+  return {
+    ads: o.ads === true,
+    rewarded: o.rewarded === true,
+    shop: o.shop === true,
+    adsHome: o.adsHome !== false,
+    adsGame: o.adsGame !== false,
+    address: typeof o.address === 'string' ? o.address.replace(/\s+/g, ' ').trim().slice(0, 160) : '',
+  };
+}
+
 export interface PublicCatalog {
   /** Party Mode games by id (older cached copies may not have it). */
   party?: Record<string, Partial<PartySettings>>;
@@ -164,6 +196,10 @@ export interface PublicCatalog {
   multiplayer?: string[] | null;
   /** The Sigilfall banner's words (missing or null = the defaults). */
   banner?: BannerText | null;
+  /** Ads and the shop (missing or null = all off). */
+  money?: MoneySettings | null;
+  /** The shop's items as the admins set them (missing = the starting list in src/catalog/shop.ts). */
+  shopItems?: Product[] | null;
 }
 
 export const EMPTY_CATALOG: PublicCatalog = { settings: {}, picks: {}, notice: null, layout: null };

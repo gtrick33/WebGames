@@ -26,6 +26,8 @@ export type Route =
   | { name: 'live' }
   | { name: 'admin' }
   | { name: 'signin' }
+  | { name: 'shop' }
+  | { name: 'sale' }
   | { name: 'challenges' }
   | { name: 'challenge'; id: string }
   | { name: 'discord' }
@@ -48,6 +50,8 @@ export function matchRoute(pathname: string): Route {
   if (path === '/live') return { name: 'live' };
   if (path === '/admin') return { name: 'admin' };
   if (path === '/signin') return { name: 'signin' };
+  if (path === '/shop') return { name: 'shop' };
+  if (path === '/terms/sale') return { name: 'sale' };
   if (path === '/c') return { name: 'challenges' };
   if (path === '/discord') return { name: 'discord' };
   const section = sectionGame(path);

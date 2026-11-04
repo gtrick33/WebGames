@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { useAccount } from '../platform/account';
-import { AdSlot } from '../components/AdSlot';
+import { bannersOn, useMoney } from '../platform/money';
 import { Arcade } from '../components/Arcade';
 import { FreeBanner } from '../components/FreeBanner';
 import { SigilfallHero, useSigilfall } from '../components/SigilfallHero';
@@ -18,6 +18,7 @@ const HomeTop = lazy(() => bands().then((m) => ({ default: m.HomeTop })));
 const PlayTogether = lazy(() => bands().then((m) => ({ default: m.PlayTogether })));
 const QuestBoard = lazy(fresh(() => import('../components/Quests').then((m) => ({ default: m.QuestBoard }))));
 const NotifyForm = lazy(fresh(() => import('../components/Notify').then((m) => ({ default: m.NotifyForm }))));
+const AdSlot = lazy(fresh(() => import('../components/AdSlot').then((m) => ({ default: m.AdSlot }))));
 
 /**
  * One clear path for a newcomer, each thing once: Sigilfall, the site's flagship, then what the arcade is
@@ -29,6 +30,7 @@ export function Home() {
   useInitialHashScroll();
   const { me } = useAccount();
   const sigilfall = useSigilfall();
+  const money = useMoney();
   return (
     <>
       <SigilfallHero />
@@ -54,9 +56,13 @@ export function Home() {
         {me && <FreeBanner />}
         <NotifyForm />
       </Suspense>
-      <div className="wrap">
-        <AdSlot placement="home" />
-      </div>
+      {bannersOn(money) && (
+        <div className="wrap">
+          <Suspense fallback={null}>
+            <AdSlot placement="home" />
+          </Suspense>
+        </div>
+      )}
     </>
   );
 }

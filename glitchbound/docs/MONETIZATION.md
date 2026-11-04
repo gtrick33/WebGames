@@ -1,8 +1,7 @@
 # Monetization architecture
 
-GlitchBound launches with **no ads, no purchases and no paid services**. What exists is a switched-off,
-policy-friendly integration point for display ads, built the same way as NEON RUSH's (a publisher id that only
-writes `ads.txt`, and a separate explicit switch that actually shows ads).
+Ads and one-time purchases are built and **switched off**. The switches are in Admin › Ads & shop, and
+[LEGAL-READINESS.md](LEGAL-READINESS.md) says what must be done before each one goes on, by you, a lawyer and an accountant.
 
 ## Two different kinds of ads
 
@@ -15,18 +14,19 @@ They are configured separately, so you can turn on one without the other.
 
 ## Display ads on GlitchBound (`src/components/AdSlot.tsx`)
 
-`<AdSlot placement="home" />` sits between the marquee and the arcade on the homepage; `<AdSlot placement="game" />`
-sits at the bottom of the game page's side column. An ad renders **only** when all three are true at build time:
+`<AdSlot placement="home" />` sits at the bottom of the homepage; `<AdSlot placement="game" />` sits under the game's own
+text on its page, on no 18+ page. An ad renders **only** when these are all true, and never for a member who bought ad-free:
 
 1. `VITE_ADSENSE_CLIENT` is a valid publisher id (`ca-pub-` + digits),
 2. `VITE_ADS_ENABLED=on`,
-3. a slot id is set for that placement (`VITE_ADSENSE_SLOT_HOME` / `VITE_ADSENSE_SLOT_GAME`).
+3. a slot id is set for that placement (`VITE_ADSENSE_SLOT_HOME` / `VITE_ADSENSE_SLOT_GAME`),
+4. banners are switched on in Admin › Ads & shop.
 
 Otherwise the component renders nothing: no script is loaded, no empty box is shown, no fake ad is drawn.
 
 Rules the code follows:
 
-- Never inside, over or around the game viewport. The game page ad is below the player's stats and controls.
+- Never inside, over or around the game viewport: at least 150 px away, as Google asks. Never on an 18+ page.
 - Always labelled "Advertisement".
 - Space is reserved (min-height) so the page does not jump when an ad loads.
 - The AdSense script is loaded once, lazily, only when an enabled slot is on screen.
@@ -47,9 +47,7 @@ the site. Google's script shows it automatically, so no code change is needed. D
 
 ## Not built (on purpose)
 
-- **Purchases, subscriptions, "remove ads".** GlitchBound has accounts now (sign-in for saves, quests and leaderboards),
-  so a purchase would have something to attach to, but no payment system is chosen or built, and that needs the
-  owner's decision and advice first. NEON RUSH has its own purchase architecture (see `neon-rush/docs/MONETIZATION.md`);
-  real money there needs app store billing or Stripe plus a server.
+- **Subscriptions, game currency, random boxes, anything that helps win.** See `src/catalog/shop.ts`. NEON RUSH has its own
+  purchase architecture (see `neon-rush/docs/MONETIZATION.md`); real money there needs app store billing or Stripe plus a server.
 - **Sponsorships or "promoted" games.** If ever added, label them clearly in the registry and the UI.
 - **Fake ads or placeholder ad boxes.** None are shown anywhere.

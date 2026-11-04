@@ -2235,6 +2235,14 @@ const ro: string[] = [
   'GlitchBound este un studio independent. Fiecare joc e gândit și construit aici. Unele pornesc de la o idee clasică, cum ar fi un joc de cărți sau de cuvinte, și îi dau o notă proprie. O parte din grafică și sunet e licențiată și menționată în joc.',
   'Nimeni nu e încă în Galeria celebrităților. Joacă și stabilește primul record.',
   'Clasamentele sunt încă proaspete, așa că o coroană e la îndemână. Fă un record și ia-ți una.',
+  'Opțiuni pentru reclame',
+  'Încă o încercare',
+  'Urmărește o reclamă scurtă pentru încă o încercare',
+  'Această încercare în plus nu contează pentru clasamente.',
+  'Magazin',
+  'Un studio independent care face jocuri mici de browser și o mare aventură. Nimic de instalat și nu trebuie să plătești niciodată ca să joci. Joacă ca invitat sau conectează-te pentru misiuni și clasamente.',
+  'Fiecare joc se joacă aici, în browser, pe orice dispozitiv. Fără cont și fără plăți obligatorii.',
+  'GlitchBound este o arcadă independentă în browser: {n} jocuri rapide care pornesc într-o secundă, un RPG fantasy și modul Petrecere pentru grupuri. Fără instalare, fără cont necesar și nu trebuie să plătești niciodată ca să joci.',
 ];
 
 export default ro;

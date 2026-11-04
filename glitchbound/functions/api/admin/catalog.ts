@@ -1,10 +1,11 @@
+import { sanitizeProducts } from '../../../src/catalog/shop';
 import { loadCatalog, logAdmin } from '../../../server/catalogSettings';
 import { bad, json, readJson, sameOrigin, type Ctx, type D1PreparedStatement, type Env } from '../../../server/http';
 import { requireAdmin } from '../../../server/session';
 import { getGame } from '../../../src/catalog/catalog';
 import { GAMES } from '../../../src/catalog/games';
 import { MULTIPLAYER_MAX } from '../../../src/catalog/multiplayer';
-import { compactParty, compactSettings, isDay, partySettingsFor, sanitizeBanner, sanitizeFlagships, sanitizeLayout, sanitizeNotice, sanitizePartyPatch, sanitizePatch, sanitizePick, settingsFor, type GameSettings, type PartySettings } from '../../../src/catalog/settings';
+import { compactParty, compactSettings, isDay, partySettingsFor, sanitizeBanner, sanitizeFlagships, sanitizeMoney, sanitizeLayout, sanitizeNotice, sanitizePartyPatch, sanitizePatch, sanitizePick, settingsFor, type GameSettings, type PartySettings } from '../../../src/catalog/settings';
 import { isPartyId, PARTY_GAMES } from '../../../src/party/catalog';
 import type { AdminCatalog } from '../../../src/platform/apiTypes';
 import { HOLIDAYS, isSeasonSetting } from '../../../src/platform/seasons';
@@ -38,6 +39,8 @@ const who = (u: { nickname: string; email: string }): string => u.nickname || u.
  *   { action: 'flagships', list | null }   the home page's best games, in order (null = the house picks)
  *   { action: 'multiplayer', list | null } the home page's live multiplayer games, in order (null = every live game, [] = hidden)
  *   { action: 'season', season }           holiday look: 'auto' (by the calendar), 'off' or a holiday id
+ *   { action: 'money', money }             the switches for ads and the shop, and the operator's address
+ *   { action: 'shopItems', items }         the shop's items and prices
  *   { action: 'party', id, patch | null }  a Party Mode game's settings (null = back to the defaults)
  *   { action: 'publish', games?, layout?, flagships?, multiplayer?, banner? }
  *                                          Admin › Home page's draft in one go: per-game patches ({ slug: patch }),
@@ -164,6 +167,22 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
       ).run();
       await logAdmin(env, by, 'multiplayer', !list ? 'Live multiplayer games: back to every live game' : list.length ? `Live multiplayer games: ${list.map((slug) => getGame(slug)?.title ?? slug).join(', ')}` : 'Live multiplayer games: hidden');
       return json({ ok: true, multiplayer: list });
+    }
+    case 'money': {
+      const money = sanitizeMoney(body.money);
+      await env.DB.prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('money', ?, ?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at, updated_by = excluded.updated_by")
+        .bind(JSON.stringify(money), now, by)
+        .run();
+      await logAdmin(env, by, 'money', `Ads & shop: banners ${money.ads ? 'on' : 'off'}, optional ads ${money.rewarded ? 'on' : 'off'}, shop ${money.shop ? 'on' : 'off'}${money.address ? ', address set' : ''}`);
+      return json({ ok: true, money });
+    }
+    case 'shopItems': {
+      const items = sanitizeProducts(body.items);
+      await env.DB.prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('shop_items', ?, ?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at, updated_by = excluded.updated_by")
+        .bind(JSON.stringify(items), now, by)
+        .run();
+      await logAdmin(env, by, 'shop', `Shop items saved: ${items.map((p) => `${p.name} €${(p.cents / 100).toFixed(2)}${p.hidden ? ' (hidden)' : p.later ? ' (planned)' : ''}`).join(', ').slice(0, 400)}`);
+      return json({ ok: true, shopItems: items });
     }
     case 'season': {
       if (!isSeasonSetting(body.season)) return bad('invalid_season');

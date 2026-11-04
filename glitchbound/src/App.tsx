@@ -41,6 +41,8 @@ const GamePage = lazy(gamePageModule);
 const DailyPage = lazyPage(() => import('./pages/DailyPage').then((m) => m.DailyPage));
 const PrivacyPage = lazyPage(() => import('./pages/PrivacyPage').then((m) => m.PrivacyPage));
 const TermsPage = lazyPage(() => import('./pages/TermsPage').then((m) => m.TermsPage));
+const ShopPage = lazyPage(() => import('./pages/ShopPage').then((m) => m.ShopPage));
+const SaleTermsPage = lazyPage(() => import('./pages/SaleTermsPage').then((m) => m.SaleTermsPage));
 const AboutPage = lazyPage(() => import('./pages/AboutPage').then((m) => m.AboutPage));
 const ContactPage = lazyPage(() => import('./pages/ContactPage').then((m) => m.ContactPage));
 const AdminPage = lazyPage(() => import('./pages/AdminPage').then((m) => m.AdminPage));
@@ -103,6 +105,10 @@ function Page() {
       return <PrivacyPage />;
     case 'terms':
       return <TermsPage />;
+    case 'shop':
+      return <ShopPage />;
+    case 'sale':
+      return <SaleTermsPage />;
     case 'about':
       return <AboutPage />;
     case 'contact':

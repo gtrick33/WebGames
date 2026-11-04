@@ -35,6 +35,10 @@ export interface Env {
   MAIL_REPLY_TO?: string;
   /** Secret. */
   RESEND_API_KEY?: string;
+  /** The shop (server/shop.ts): Stripe's secret key, its webhook secret, and JSON of product id to Stripe price id. */
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
+  STRIPE_PRICES?: string;
   /** Secret: enables POST /api/admin/test-email (admin addresses only). */
   ADMIN_TEST_TOKEN?: string;
   /** Secrets for the admin usage panel: an API token with Account Analytics Read, and the account id. */

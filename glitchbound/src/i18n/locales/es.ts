@@ -2235,6 +2235,14 @@ const es: string[] = [
   'GlitchBound es un estudio independiente. Cada juego se diseña y se construye aquí. Algunos parten de una idea clásica, como un juego de cartas o de palabras, y le dan un giro propio. Parte del arte y el sonido tiene licencia y se acredita en el juego.',
   'Aún no hay nadie en el Salón de la Fama. Juega y bate el primer récord.',
   'Las clasificaciones aún están frescas, así que una corona está al alcance. Marca un récord y llévatela.',
+  'Opciones de anuncios',
+  'Un intento más',
+  'Mira un anuncio corto para un intento más',
+  'Este intento extra no cuenta para las clasificaciones.',
+  'Tienda',
+  'Un estudio independiente que crea pequeños juegos de navegador y una gran aventura. Nada que instalar, y nunca tienes que pagar para jugar. Juega como invitado o inicia sesión para misiones y clasificaciones.',
+  'Todos los juegos se juegan aquí mismo en tu navegador, en cualquier dispositivo. Sin cuenta y sin muros de pago.',
+  'GlitchBound es un arcade independiente en el navegador: {n} juegos rápidos que empiezan en un segundo, un RPG de fantasía y el modo Fiesta para grupos. Sin instalar, sin cuenta, y nunca tienes que pagar para jugar.',
 ];
 
 export default es;

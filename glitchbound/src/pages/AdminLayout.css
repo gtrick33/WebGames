@@ -453,3 +453,51 @@
   padding-top: 10px;
   border-top: 1px dashed var(--line);
 }
+
+/* Admin › Ads & shop */
+.money-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding-block: 10px;
+  border-top: 1px solid var(--line);
+}
+.money-row > div {
+  flex: 1 1 280px;
+  display: grid;
+  gap: 6px;
+}
+.money-row .field,
+.money-item .field {
+  width: 100%;
+}
+.money-checks {
+  display: grid;
+  gap: 4px;
+}
+.money-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px 130px auto;
+  align-items: center;
+  gap: 8px;
+  padding-block: 10px;
+  border-top: 1px solid var(--line);
+}
+.money-item textarea {
+  grid-column: 1 / -1;
+}
+.money-price {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.money-price input {
+  min-width: 0;
+}
+@media (max-width: 560px) {
+  .money-item {
+    grid-template-columns: minmax(0, 1fr) 96px;
+  }
+}

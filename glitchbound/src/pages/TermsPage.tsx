@@ -1,13 +1,15 @@
 import { usePageMeta } from '../platform/meta';
+import { bannersOn, rewardedOn, useMoney } from '../platform/money';
 import { Link } from '../router/router';
 import { CONTACT_PATH, OWNER_EMAIL } from './infoText';
 import './InfoPages.css';
 
 /** When these terms last changed (shown on the page; update it with every change). */
-export const TERMS_UPDATED = '19 October 2026';
+export const TERMS_UPDATED = '4 November 2026';
 
 export function TermsPage() {
   usePageMeta({ title: 'Terms of use', description: 'The rules for playing on GlitchBound: free games, fair play, accounts, Party Mode and coins.', path: '/terms' });
+  const money = useMoney();
 
   return (
     <div className="wrap info-page">
@@ -23,18 +25,19 @@ export function TermsPage() {
           <p>
             GlitchBound is an independent studio run by Sava Hristov. You can reach us about anything on this page, your account or your data by{' '}
             <Link href={CONTACT_PATH}>opening a ticket</Link> (no account needed) or at <a href={`mailto:${OWNER_EMAIL}`}>{OWNER_EMAIL}</a>.
+            {money.address && ` Our address is ${money.address}.`}
           </p>
         </section>
 
         <section className="panel info-block" aria-labelledby="t-play">
           <h2 id="t-play">Playing</h2>
           <p>
-            Every game is free and runs in your browser. There is nothing to buy. You can play as a guest; your progress then stays on your device (see{' '}
+            Every game is free and runs in your browser. {money.shop ? 'You never have to buy anything to play: what the shop sells is optional.' : 'There is nothing to buy.'} You can play as a guest; your progress then stays on your device (see{' '}
             <Link href="/privacy">Privacy &amp; your data</Link>).
           </p>
           <p>
-            An account is optional and free. To create one you must be at least 13, and old enough where you live to agree to these terms yourself, or
-            have a parent or guardian agree for you.
+            An account is optional and free. To create one you must be at least 13, and old enough where you live to agree to these terms yourself (14
+            in Bulgaria, up to 16 elsewhere in the EU), or have a parent or guardian agree for you.
           </p>
         </section>
 
@@ -48,8 +51,8 @@ export function TermsPage() {
             <li>try to break, overload or get into parts of the site that aren&rsquo;t yours.</li>
           </ul>
           <p>
-            If you do, we may remove scores, rename you, or suspend or close your account. Where we can, we tell you why, and you can reply to us if you
-            think we got it wrong.
+            If you do, we may remove scores or text, rename you, or suspend or close your account. We tell you what we did and why, unless the law stops
+            us, and you can reply to us if you think we got it wrong.
           </p>
         </section>
 
@@ -64,6 +67,37 @@ export function TermsPage() {
           </p>
         </section>
 
+        <section className="panel info-block" aria-labelledby="t-report">
+          <h2 id="t-report">Reporting something illegal</h2>
+          <p>
+            If you see something illegal or against these rules (a nickname, text in a room, anything players can put on the site), tell us by{' '}
+            <Link href={CONTACT_PATH}>opening a ticket</Link> or at <a href={`mailto:${OWNER_EMAIL}`}>{OWNER_EMAIL}</a>. Say where it is and why it is a
+            problem, and leave a contact address if you would like to hear back. We look at every report, act on it, and tell you what we decided. That
+            address is also our contact point for authorities. We answer in English or Bulgarian.
+          </p>
+        </section>
+
+        {(bannersOn(money) || rewardedOn(money)) && (
+          <section className="panel info-block" aria-labelledby="t-ads">
+            <h2 id="t-ads">Ads</h2>
+            <p>
+              Ads help keep the games free. They are labeled, and never run inside a game or on a page for adults only.{' '}
+              {rewardedOn(money) && 'After a daily you may choose to watch a short ad for one more try. It is always your choice, the reward has no money value, and that try doesn’t count for the leaderboards. '}
+              <Link href="/privacy">Privacy &amp; your data</Link> says what ads do with your data, and how to change your choice.
+            </p>
+          </section>
+        )}
+
+        {money.shop && (
+          <section className="panel info-block" aria-labelledby="t-buy">
+            <h2 id="t-buy">Purchases</h2>
+            <p>
+              The shop sells one-time items for real money: no subscriptions, no game currency and no random boxes. Nothing in it makes you stronger in a game or
+              higher on a board. The <Link href="/terms/sale">terms of sale</Link> cover prices, your right to withdraw, and refunds.
+            </p>
+          </section>
+        )}
+
         <section className="panel info-block" aria-labelledby="t-coins">
           <h2 id="t-coins">Coins, XP and rewards</h2>
           <p>
@@ -75,7 +109,7 @@ export function TermsPage() {
         <section className="panel info-block" aria-labelledby="t-ours">
           <h2 id="t-ours">Our games, your words</h2>
           <p>
-            The games, art, music, puzzles and text on GlitchBound belong to us. Share links, screenshots, clips and result grids as much as you like;
+            The games, art, music, puzzles and text on GlitchBound belong to us or to the artists who license them to us. Share links, screenshots, clips and result grids as much as you like;
             please don&rsquo;t copy the games or host them elsewhere.
           </p>
           <p>

@@ -26,6 +26,8 @@ import type { RunEndResult } from '../platform/apiTypes';
 import { FavoriteButton } from '../components/FavoriteButton';
 import { LiveBadge } from '../components/LiveBadge';
 import { nextStep } from '../platform/nextStep';
+import { canRetryDaily, retryDaily } from '../platform/dailyRetry';
+import { rewardedOn, useMoney } from '../platform/money';
 import { useFlagships } from '../platform/useFlagships';
 import { recentSlugs } from '../platform/save';
 // The board and the pins are part of the game page's own code, so they are there at its first paint instead of
@@ -35,6 +37,7 @@ import { MiniLeaderboard } from '../components/Leaderboard';
 import '../components/Leaderboard.css';
 import { GamePins, PinToast } from '../components/Pins';
 const DailyCompare = lazy(fresh(() => import('../components/DailyCompare').then((m) => ({ default: m.DailyCompare }))));
+const AdRetry = lazy(fresh(() => import('../components/AdRetry').then((m) => ({ default: m.AdRetry }))));
 import { openSignIn } from '../components/openSignIn';
 import { setGuestName, usePlayerName } from '../platform/playerName';
 import { isIos, isStandalone } from '../platform/install';
@@ -641,6 +644,9 @@ export function GamePage({ game }: { game: GameEntry }) {
   const settings = live.settings(game.slug);
   // An admin paused the game: players see the message instead of the stage (admins and QA can still test it).
   const paused = !!settings.maintenance && !me?.role;
+  /** The round now starting is an extra, unranked try at today's daily. */
+  const extraTry = useRef(false);
+  const money = useMoney();
   const runRef = useRef<Promise<string | null> | null>(null);
   const [boardKey, setBoardKey] = useState(0);
 
@@ -706,7 +712,7 @@ export function GamePage({ game }: { game: GameEntry }) {
         // Members: the server timestamps the start so the finished score can be checked. A round resumed
         // after a reload reports start again and keeps the run its first start opened.
         const kept = signedIn && !runRef.current ? keptRun(game.slug) : null;
-        runRef.current = !signedIn
+        runRef.current = !signedIn || extraTry.current
           ? null
           : kept
             ? Promise.resolve(kept)
@@ -725,17 +731,20 @@ export function GamePage({ game }: { game: GameEntry }) {
       const round = stageSpecRef.current;
       const ended = !e.challenge && round && game.runtime.kind === 'embed' ? { ...e, challenge: { id: round.id, round: round.round } } : e;
       if (ended.challenge) finishChallenge.current(ended);
-      const result = saveStore.record(game, e);
+      // An extra try at a daily (src/platform/dailyRetry.ts) counts for nothing: nobody climbs a board by watching ads.
+      const unranked = extraTry.current;
+      extraTry.current = false;
+      const result = saveStore.record(game, unranked ? { ...e, daily: false } : e);
       // A round resumed after a reload that didn't report start again still ends the run it opened.
-      const kept = signedIn && !runRef.current ? keptRun(game.slug) : null;
-      const pending = runRef.current ?? (kept ? Promise.resolve(kept) : null);
+      const kept = signedIn && !runRef.current && !unranked ? keptRun(game.slug) : null;
+      const pending = unranked ? null : (runRef.current ?? (kept ? Promise.resolve(kept) : null));
       runRef.current = null;
       keepRun(game.slug, null);
       const noRun = { ok: false, error: 'no_run' } as RunEndResult;
       let n = 0;
       setLast((prev) => {
         n = (prev?.n ?? 0) + 1;
-        return { event: e, result, n, server: signedIn ? (pending ? undefined : ended.challenge ? null : noRun) : null };
+        return { event: unranked ? { ...e, daily: false } : e, result, n, server: signedIn && !unranked ? (pending ? undefined : ended.challenge ? null : noRun) : null };
       });
       if (pending) {
         void pending.then(async (runId) => {
@@ -987,6 +996,18 @@ export function GamePage({ game }: { game: GameEntry }) {
                   <DailyCompare game={game.slug} day={dayKey()} score={last.event.score} />
                 </Suspense>
               )}
+              {last.event.daily && rewardedOn(money) && canRetryDaily(game.slug, dayKey()) && (
+                <Suspense fallback={null}>
+                  <AdRetry
+                    name={`daily-retry-${game.slug}`}
+                    onRetry={() => {
+                      if (!retryDaily(game.slug, dayKey())) return;
+                      extraTry.current = true;
+                      restart();
+                    }}
+                  />
+                </Suspense>
+              )}
               {!me && (
                 <button className="last-signin" onClick={() => openSignIn(t('Sign in to put your scores on the leaderboard.'))}>
                   <Icon name="crown" size={16} /> {t('Sign in to put scores like this on the leaderboard')}
@@ -1088,7 +1109,6 @@ export function GamePage({ game }: { game: GameEntry }) {
           </div>
 
           <GamePins game={game} refreshKey={boardKey} />
-          <AdSlot placement="game" />
         </aside>
       </div>
 
@@ -1106,6 +1126,11 @@ export function GamePage({ game }: { game: GameEntry }) {
           </ul>
         )}
       </section>
+
+      {/* (under the game's own text: Google asks for 150 px at least between an ad and a game) */}
+      <div className="wrap">
+        <AdSlot placement="game" adult={game.adult} />
+      </div>
 
       {related.length > 0 && (
         <section className="wrap section" aria-labelledby="related-title">

@@ -1,3 +1,4 @@
+import { ownedBy } from './shop';
 import { liveRules } from './catalogSettings';
 import type { Badge, BestView, Me, QuestView } from '../src/platform/apiTypes';
 import { currentStreak, longestStreak } from '../src/platform/daily';
@@ -68,6 +69,7 @@ function questProgress(q: QuestDef, rounds: DayRound[], dailyDone: boolean, hasF
 }
 
 export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me> {
+  const owned = await ownedBy(env, user.id);
   const [favs, bests, roundCount, dailyDone, claimsCount, crown, quests, saves] = await Promise.all([
     env.DB.prepare('SELECT game FROM favorites WHERE user_id = ? ORDER BY created_at').bind(user.id).all<{ game: string }>(),
     env.DB.prepare(
@@ -106,6 +108,7 @@ export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me>
     { id: 'level5', label: 'Level 5', hint: 'Reach level 5', earned: level >= 5 },
   ];
   return {
+    owned,
     id: user.id,
     nickname: user.nickname,
     email: user.email,

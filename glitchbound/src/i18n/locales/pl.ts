@@ -2235,6 +2235,14 @@ const pl: string[] = [
   'GlitchBound to niezależne studio. Każdą grę projektujemy i tworzymy tutaj. Niektóre wychodzą od klasycznego pomysłu, jak gra karciana czy słowna, i dodają do niego coś od nas. Część grafiki i dźwięku jest licencjonowana i wymieniona w grze.',
   'W Galerii sław nikogo jeszcze nie ma. Zagraj i ustanów pierwszy rekord.',
   'Rankingi są jeszcze świeże, więc korona jest w zasięgu ręki. Ustanów rekord i zgarnij ją.',
+  'Ustawienia reklam',
+  'Jeszcze jedna próba',
+  'Obejrzyj krótką reklamę, by mieć jeszcze jedną próbę',
+  'Ta dodatkowa próba nie liczy się do rankingów.',
+  'Sklep',
+  'Niezależne studio tworzące małe gry przeglądarkowe i jedną wielką przygodę. Nic do instalowania i nigdy nie musisz płacić, żeby grać. Graj jako gość lub zaloguj się, by mieć zadania i rankingi.',
+  'W każdą grę zagrasz tutaj, w przeglądarce, na każdym urządzeniu. Bez konta i bez płatnych blokad.',
+  'GlitchBound to niezależny salon gier w przeglądarce: {n} szybkich gier, które startują w sekundę, fantasy RPG i tryb imprezowy dla grup. Bez instalacji, bez konta i nigdy nie musisz płacić, żeby grać.',
 ];
 
 export default pl;

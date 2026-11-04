@@ -40,6 +40,8 @@ export interface BestView {
 }
 
 export interface Me {
+  /** What this member's one-time purchases unlocked (src/catalog/shop.ts). */
+  owned?: string[];
   id: string;
   nickname: string;
   email: string;
