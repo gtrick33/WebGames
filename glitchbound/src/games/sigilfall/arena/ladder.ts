@@ -79,6 +79,19 @@ const NAMES: Record<ClassId, string[]> = {
 
 export const nameFor = (cls: ClassId, i: number): string => NAMES[cls][i % NAMES[cls].length]!;
 
+/** Nobody in a match shares a name: a nameplate is how you tell who's who. People keep theirs, the bots give way. */
+export function namedApart(fighters: FighterSetup[]): FighterSetup[] {
+  const isPerson = (f: FighterSetup): boolean => !!f.human || f.seat !== undefined;
+  const taken = new Set(fighters.filter(isPerson).map((f) => f.name));
+  return fighters.map((f) => {
+    if (isPerson(f)) return f;
+    let name = f.name;
+    for (let i = 0; taken.has(name) && i < NAMES[f.cls].length; i++) name = nameFor(f.cls, i);
+    taken.add(name);
+    return name === f.name ? f : { ...f, name };
+  });
+}
+
 /** The team you are drawn against, set against your own. */
 export function drawOpponents(format: Format, seed: number): { comp: Comp; fighters: FighterSetup[] } {
   const list = COMPS[format];

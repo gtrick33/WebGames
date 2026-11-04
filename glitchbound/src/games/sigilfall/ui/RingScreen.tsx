@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { ABILITIES, kitOf, PRESETS, SLOTS } from '../arena/abilities';
-import { afterMatch, COMPS, drawOpponents, nameFor, ratingChange, readRing, setsOf, skillAt, standingOf, writeRing, type ClassSets, type Comp, type RingSave } from '../arena/ladder';
+import { afterMatch, COMPS, drawOpponents, namedApart, nameFor, ratingChange, readRing, setsOf, skillAt, standingOf, writeRing, type ClassSets, type Comp, type RingSave } from '../arena/ladder';
 import { MAP_IDS, MAPS } from '../arena/maps';
 import { FORMATS, nextRank, rankOf, type Format } from '../arena/ranks';
 import type { FighterSetup, MatchSetup } from '../arena/sim';
@@ -54,7 +54,7 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
       fighters.push({ team, cls: t.cls, name: nameFor(t.cls, v.runSeed + i + team * 7), bar: PRESETS[t.cls][t.preset]!.bar, talents: PRESETS[t.cls][t.preset]!.talents });
     }
   }
-  return { setup: { seed: v.runSeed, map: MAPS[v.map] ? v.map : 'sands', fighters }, mine: fighters.findIndex((f) => f.seat === v.you) };
+  return { setup: { seed: v.runSeed, map: MAPS[v.map] ? v.map : 'sands', fighters: namedApart(fighters) }, mine: fighters.findIndex((f) => f.seat === v.you) };
 }
 
 type Page = 'play' | 'setup' | 'friends';
@@ -136,7 +136,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack }: { engine: 
     setPage('play');
     setRun((r) => r + 1);
     setFight({
-      setup: { seed, map: map === 'random' ? MAP_IDS[seed % MAP_IDS.length]! : map, fighters: [...team, ...fighters] },
+      setup: { seed, map: map === 'random' ? MAP_IDS[seed % MAP_IDS.length]! : map, fighters: namedApart([...team, ...fighters]) },
       rival: comp,
       skill: skillAt(rivalRating),
       rivalRating,

@@ -1,6 +1,7 @@
 import { ABILITIES } from '../arena/abilities';
 import { ARENA_H, ARENA_W, MAPS } from '../arena/maps';
 import { HERO_R, type Fighter, type Match } from '../arena/sim';
+import type { RingAir } from '../render3d/ringDress';
 import { shot, TONES } from './effects';
 import { CLASSES } from '../data/classes';
 import { heroLook, heldWeapon } from './sprites';
@@ -176,16 +177,35 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
 const HEAD = 30;
 
 /** The spells in flight and what's afoot on the fighters: handed to the shaders before the frame is drawn. */
-export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, time: number, flames: { x: number; y: number; h: number }[]): void {
+export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, time: number, air: RingAir): void {
   const me = myId === null ? null : (m.fighters[myId] ?? null);
   for (const tr of m.traps) {
     const enemy = me && tr.team !== me.team;
     // an enemy's trap is hard to see, but not impossible
     q.put({ kind: FX.trap, x: tr.x, y: tr.y, flat: true, w: 26, a: tr.arm > 0 ? '#a8a0b8' : '#e8c070', t: tr.arm > 0 ? 0 : 1, alpha: enemy ? 0.42 : 1 });
   }
-  for (const f of flames) {
-    q.put({ kind: FX.glow, x: f.x, y: f.y, up: f.h + 5, w: 44, a: '#ff7a2d', alpha: 0.5 });
-    q.put({ kind: FX.flame, x: f.x, y: f.y, up: f.h - 2, base: true, w: 15, h: 22, a: '#f4561f', b: '#ffb02e', seed: f.x * 0.37 });
+  for (const f of air.flames) {
+    const k = f.size ?? 1;
+    q.put({ kind: FX.glow, x: f.x, y: f.y, up: f.h + 5 * k, w: 44 * k, a: '#ff7a2d', alpha: 0.5 });
+    q.put({ kind: FX.flame, x: f.x, y: f.y, up: f.h - 2, base: true, w: 15 * k, h: 22 * k, a: '#f4561f', b: '#ffb02e', seed: f.x * 0.37 });
+  }
+  for (const s of air.smokes) {
+    const k = s.size ?? 1;
+    for (let i = 0; i < 3; i++) {
+      const u = (time * 0.22 + i / 3 + s.x * 0.013) % 1;
+      q.put({ kind: FX.smoke, x: s.x + Math.sin(time * 0.6 + i * 2) * 4 * u + u * 8, y: s.y, up: s.h + u * 44 * k, w: (12 + u * 26) * k, a: s.tone, alpha: 0.44 * Math.sin(u * Math.PI), t: 0.3, seed: s.x + i });
+    }
+  }
+  for (const g of air.glints) {
+    const u = (time * 0.17 + g.x * 0.131 + g.h * 0.37) % 1;
+    if (u < 0.1) q.put({ kind: FX.spark, x: g.x, y: g.y, up: g.h, w: 3 + Math.sin((u / 0.1) * Math.PI) * 11, a: '#ffffff', t: 0.2, alpha: 0.95 });
+  }
+  if (air.embers.length) {
+    for (let i = 0; i < 34; i++) {
+      const e = air.embers[i % air.embers.length]!;
+      const u = (time * (0.16 + (i % 5) * 0.03) + i * 0.137) % 1;
+      q.put({ kind: FX.spark, x: e.x + Math.sin(time * 1.1 + i) * (5 + u * 14) + ((i * 13) % 18) - 9, y: e.y + ((i * 7) % 12) - 6, up: 2 + u * 62, w: 3.4 - u * 1.8, a: u < 0.5 ? '#ffd27a' : '#ff6a2a', t: 0.2, alpha: 1 - u });
+    }
   }
   for (const f of m.fighters) ringMarks(q, f, time);
   for (const b of m.bolts) {
@@ -202,8 +222,15 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
     if (f.ring) q.put({ kind: FX.ring, x: f.x, y: f.y, flat: true, w: f.r * 2, a: f.color, t: u, seed: f.r });
     else q.put({ kind: FX.impact, x: f.x, y: f.y, up: 12, w: f.r * 2.4, a: f.color, b: '#fffdf0', t: u, seed: f.x * 0.2 });
   }
-  // snow coming down over the frozen ground
   const map = MAPS[m.map] ?? Object.values(MAPS)[0]!;
+  // sand on the wind, low over the ground
+  if (map.theme === 'sands') {
+    for (let i = 0; i < 9; i++) {
+      const u = (time * (0.05 + (i % 3) * 0.018) + i * 0.117) % 1;
+      q.put({ kind: FX.smoke, x: u * (ARENA_W + 80) - 40, y: ((i * 67) % ARENA_H) + Math.sin(time * 0.3 + i) * 8, up: 4, w: 44 + (i % 4) * 12, a: '#f2deb2', alpha: 0.13 * Math.sin(u * Math.PI), t: 0.3, seed: i * 3.1 });
+    }
+  }
+  // snow coming down over the frozen ground, and blown along it
   if (map.theme === 'frost') {
     for (let i = 0; i < 46; i++) {
       const speed = 12 + (i % 6) * 5;
@@ -211,6 +238,10 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
       const y = (i * 53 + time * speed * 0.3) % ARENA_H;
       const up = 60 - ((time * speed + i * 17) % 60);
       q.put({ kind: FX.spark, x, y, up, w: 4 + (i % 3) * 1.5, a: '#ffffff', alpha: 0.5 + (i % 4) * 0.12, t: 0.3 });
+    }
+    for (let i = 0; i < 7; i++) {
+      const u = (time * (0.07 + (i % 3) * 0.02) + i * 0.143) % 1;
+      q.put({ kind: FX.smoke, x: u * (ARENA_W + 80) - 40, y: ((i * 83) % ARENA_H) + Math.sin(time * 0.4 + i) * 7, up: 3, w: 40 + (i % 4) * 10, a: '#ffffff', alpha: 0.2 * Math.sin(u * Math.PI), t: 0.3, seed: i * 2.3 });
     }
   }
 }
@@ -283,20 +314,6 @@ export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number
     g.fillText(p.text, p.x, p.y + 30 - u * 14);
   }
   g.globalAlpha = 1;
-}
-
-export function fighterAt(m: Match, x: number, y: number): Fighter | null {
-  let best: Fighter | null = null;
-  let bd = 26;
-  for (const f of m.fighters) {
-    if (f.dead) continue;
-    const d = Math.hypot(f.x - x, f.y - y);
-    if (d < bd) {
-      bd = d;
-      best = f;
-    }
-  }
-  return best;
 }
 
 export const classColor = (cls: Fighter['cls']): string => CLASSES[cls].colors.accent;

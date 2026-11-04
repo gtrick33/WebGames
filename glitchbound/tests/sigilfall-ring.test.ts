@@ -4,7 +4,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, kitOf, OATHS, PRESETS, SLOTS, TOKEN } from '../src/games/sigilfall/arena/abilities';
 import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
-import { afterMatch, COMPS, drawOpponents, NEW_STANDING, nextRank, rankOf, ratingChange, RANKS, SET_COUNT, setsOf, skillAt } from '../src/games/sigilfall/arena/ladder';
+import { afterMatch, COMPS, drawOpponents, namedApart, NEW_STANDING, nextRank, rankOf, ratingChange, RANKS, SET_COUNT, setsOf, skillAt } from '../src/games/sigilfall/arena/ladder';
 import { ARENA_H, ARENA_W, ENTRY_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
 import { cleanTalents, ROW_NAMES, TALENTS } from '../src/games/sigilfall/arena/talents';
 import { clearLine, GATES, HERO_R, Match, MATCH_LIMIT, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
@@ -790,5 +790,26 @@ describe('The Ring: over a room', () => {
     c.restore(snap, 1);
     expect(c.fighters[1]!.x).toBeLessThan(x0);
     expect(c.fighters[1]!.x).toBeGreaterThanOrEqual(before);
+  });
+});
+
+describe('The Ring: who is who', () => {
+  const bot = (team: 0 | 1, cls: ClassId, name: string): FighterSetup => ({ team, cls, name, bar: PRESETS[cls][0]!.bar });
+
+  it('nobody in a match shares a name, and the people keep theirs', () => {
+    const fighters: FighterSetup[] = [{ ...bot(0, 'mage', 'Quill'), human: true }, bot(0, 'mage', 'Quill'), bot(1, 'mage', 'Quill'), bot(1, 'priest', 'Ione'), bot(1, 'priest', 'Ione')];
+    const named = namedApart(fighters);
+    expect(named[0]!.name).toBe('Quill');
+    expect(new Set(named.map((f) => f.name)).size).toBe(named.length);
+  });
+
+  it('every format and seed draws a team with no two the same', () => {
+    for (const format of [1, 2, 3] as const) {
+      for (let seed = 0; seed < 40; seed++) {
+        const { fighters } = drawOpponents(format, seed);
+        const named = namedApart([...fighters, ...fighters.map((f) => ({ ...f, team: 0 as const }))]);
+        expect(new Set(named.map((f) => f.name)).size).toBe(named.length);
+      }
+    }
   });
 });
