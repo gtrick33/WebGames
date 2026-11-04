@@ -92,6 +92,11 @@ export function PrivacyPage() {
             cookie to keep you signed in.
           </p>
           <p>
+            The GlitchBound team can look at a signed-in player&rsquo;s Sigilfall save (heroes, gear, quests and progress) to help them, and can fix it, for
+            example by repairing a stuck quest or bringing back a hero. If you delete a hero, we keep its last copy for 120 days for that reason. Guests&rsquo;
+            heroes stay on their own device and we can&rsquo;t see them.
+          </p>
+          <p>
             {me ? (
               <>
                 You can delete your account and all of this data at any time from <Link href="/me">your profile</Link>.

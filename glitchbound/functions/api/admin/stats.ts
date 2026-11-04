@@ -3,6 +3,7 @@ import type { AdminStats } from '../../../src/platform/apiTypes';
 import { emailEnabled } from '../../../server/email';
 import { json, utcDay, type Ctx } from '../../../server/http';
 import { requireAdmin } from '../../../server/session';
+import { ONLINE_MS, SAVE_KEY as SIGILFALL_SAVE } from '../../../server/sigilfallGm';
 
 /** The 75th percentile of a list: the figure Google judges a site by. */
 function p75(values: number[]): number | null {
@@ -43,7 +44,7 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
   const q = <T>(sql: string, ...args: unknown[]) => env.DB.prepare(sql).bind(...args).all<T>().then((r) => r.results);
   const one = <T>(sql: string, ...args: unknown[]) => env.DB.prepare(sql).bind(...args).first<T>();
 
-  const [totals, newUsers, active, recent, subs, gameEvents, gameVisitors, gameRuns, gameErrors, daily, dailyRounds, retention, searches, errorKinds, latestErrors, announcements, vitalRows] = await Promise.all([
+  const [totals, newUsers, active, recent, subs, gameEvents, gameVisitors, gameRuns, gameErrors, daily, dailyRounds, retention, searches, errorKinds, latestErrors, announcements, vitalRows, sigilfall] = await Promise.all([
     one<{ n: number }>('SELECT COUNT(*) AS n FROM users'),
     one<{ n: number }>('SELECT COUNT(*) AS n FROM users WHERE created_at > ?', d7),
     one<{ n: number }>('SELECT COUNT(*) AS n FROM users WHERE last_seen > ?', d7),
@@ -77,6 +78,7 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
     q<{ ts: number; kind: string; game: string; message: string; path: string; browser: string }>('SELECT ts, kind, game, message, path, browser FROM errors ORDER BY ts DESC LIMIT 30'),
     q<{ game: string; subject: string; sent_at: number; recipients: number }>('SELECT game, subject, sent_at, recipients FROM announcements ORDER BY sent_at DESC LIMIT 10'),
     q<{ props: string }>(`SELECT props FROM events WHERE name = 'web_vitals' AND ts > ? ORDER BY ts DESC LIMIT 4000`, d7),
+    one<{ n: number; online: number | null }>('SELECT COUNT(*) AS n, SUM(updated_at > ?) AS online FROM game_saves WHERE key = ?', now - ONLINE_MS, SIGILFALL_SAVE),
   ]);
 
   const ev = (slug: string, name: string) => gameEvents.find((e) => e.game === slug && e.name === name)?.n ?? 0;
@@ -117,6 +119,7 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
     }).sort((a, b) => b.starts - a.starts),
     daily: days,
     vitals: vitalsOf(vitalRows),
+    sigilfall: { players: sigilfall?.n ?? 0, online: sigilfall?.online ?? 0 },
     searches: searches.filter((s) => s.q).map((s) => ({ q: s.q, n: s.n, zeroResults: s.zero ?? 0 })),
     errors: { kinds: errorKinds, latest: latestErrors },
     announcements: announcements.map((a) => ({ game: a.game, subject: a.subject, sentAt: a.sent_at, recipients: a.recipients })),

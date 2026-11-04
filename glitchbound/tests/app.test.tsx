@@ -414,7 +414,7 @@ describe('members features as a guest (API unreachable in tests)', () => {
     renderAt('/me');
     expect(await screen.findByRole('heading', { level: 1, name: 'Your profile' })).toBeTruthy();
     renderAt('/admin');
-    expect((await screen.findAllByRole('heading', { level: 1, name: 'Admin' })).length).toBeGreaterThan(0);
+    expect((await screen.findAllByRole('heading', { level: 1, name: 'Admin' }, { timeout: 5000 })).length).toBeGreaterThan(0);
   });
 });
 

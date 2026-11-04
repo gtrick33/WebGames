@@ -1,18 +1,26 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { SECTION_GAMES } from '../../catalog/catalog';
 import { settingsFor, type GameSettings, type PublicCatalog } from '../../catalog/settings';
 import type { GameEntry } from '../../catalog/types';
 import type { AdminCatalog } from '../../platform/apiTypes';
 import { Switch } from '../AdminLayout';
+import { useLocation } from '../../router/router';
 import { Chip, GameEditor } from './shared';
 import type { Send } from './useAdminCatalog';
+
+// Sigilfall's data (items, quests, talents...) comes along with it: only an admin who opens this tab downloads that.
+const SigilfallPlayers = lazy(() => import('./SigilfallPlayers').then((m) => ({ default: m.SigilfallPlayers })));
 
 /**
  * Games with a section of their own (Sigilfall): one switch turns the whole section on or off (its tab
  * next to Arcade and Party, and its page), plus the pause message and texts every game has.
  */
 export function SectionList({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boolean }) {
+  const { search } = useLocation();
+  const onePlayer = new URLSearchParams(search).has('player');
   return (
+    <>
+    {!onePlayer && (
     <section className="panel info-block" aria-labelledby="ag-sections">
       <div className="admin-row">
         <h2 id="ag-sections">{SECTION_GAMES.length === 1 ? 'On the site' : `Sections · ${SECTION_GAMES.length}`}</h2>
@@ -27,6 +35,11 @@ export function SectionList({ data, send, busy }: { data: AdminCatalog; send: Se
         ))}
       </ul>
     </section>
+    )}
+    <Suspense fallback={<p className="info-lead">Loading the players…</p>}>
+      <SigilfallPlayers />
+    </Suspense>
+    </>
   );
 }
 

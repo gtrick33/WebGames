@@ -1,4 +1,6 @@
 import type { GameHost } from '../../platform/contract';
+import { reportOrders, waitingOrders } from '../../platform/sigilfallOrders';
+import { applyOrder, orderToast } from './progress/gm';
 import { isMainQuest, turnInNpc } from './progress/handin';
 import { rewardSummary } from './progress/rewards';
 import { ACTS, type ActDef } from './data/acts';
@@ -143,6 +145,10 @@ const PARTY_ERRORS: Record<string, string> = {
 /** On touch screens the hero stands this share of the view's width off the middle (render/renderer.ts frameShift). */
 const FRAME_SHIFT = 0.1;
 
+/** When the game looks for game masters' orders. */
+const GM_FIRST_MS = 6_000;
+const GM_EVERY_MS = 90_000;
+
 /** How long a toast stays (ms): loot and hints longer, to be read. */
 const toastTime = (tone: Toast['tone']): number => (tone === 'loot' ? 5000 : tone === 'hint' ? 6000 : 3600);
 
@@ -279,12 +285,58 @@ export class SigilEngine {
 
   /* ------------------------------------------------------------ lifecycle */
 
+  /* ----------------------------------------------- game masters (Admin › Sigilfall) */
+
+  private gmStart = 0;
+  private gmTimer = 0;
+  private gmBusy = false;
+
+  /** Looks for orders soon after the game opens (the saves have arrived by then) and then every minute and a half. */
+  private startGm(): void {
+    this.gmStart = window.setTimeout(() => void this.checkGm(), GM_FIRST_MS);
+    this.gmTimer = window.setInterval(() => void this.checkGm(), GM_EVERY_MS);
+  }
+
+  /** Carries out what's waiting (progress/gm.ts) and reports how it went. Guests have none; offline, they wait. */
+  async checkGm(): Promise<void> {
+    if (this.gmBusy || this.hidden || !this.canSave) return;
+    this.gmBusy = true;
+    try {
+      const orders = await waitingOrders();
+      if (!orders.length) return;
+      const done: { id: string; result: string }[] = [];
+      let live = false;
+      for (const o of orders) {
+        if (o.kind === 'message') {
+          // a word for the player: it waits for them to be in the world, where they can see it
+          if (!this.world) continue;
+          this.toast(`A Game Master says: ${String(o.payload.text ?? '')}`, 'hint');
+          done.push({ id: o.id, result: '' });
+          continue;
+        }
+        const result = applyOrder(this.save, o, this.hero);
+        done.push({ id: o.id, result });
+        if (result) continue;
+        if (this.hero && this.hero.created === o.created) live = true;
+        const line = orderToast(o);
+        if (line && this.world) this.toast(line, 'good');
+      }
+      if (live && this.world) this.changed();
+      else this.bump();
+      this.persist();
+      await reportOrders(done);
+    } finally {
+      this.gmBusy = false;
+    }
+  }
+
   attach(input: HTMLElement): void {
     this.kbm = new KeyboardMouse(input);
     this.kbm.ultKey = this.settings.ultKey;
     this.kbm.skill4Key = this.settings.skill4Key;
     this.kbm.onUi = (k) => this.uiKey(k);
     this.last = performance.now();
+    this.startGm();
     const loop = (t: number): void => {
       this.raf = requestAnimationFrame(loop);
       // (a phone's screen may run at 120: the game looks no better for it, and the heat is real)
@@ -297,6 +349,8 @@ export class SigilEngine {
   }
 
   detach(): void {
+    window.clearTimeout(this.gmStart);
+    window.clearInterval(this.gmTimer);
     cancelAnimationFrame(this.raf);
     document.removeEventListener('visibilitychange', this.onVisibility);
     window.removeEventListener('pagehide', this.onPageHide);

@@ -42,7 +42,7 @@ export const SECTIONS: Section[] = [
     label: SECTION_GAMES.length === 1 ? SECTION_GAMES[0]!.section!.label : 'Sections',
     icon: 'sword',
     group: 'Site',
-    blurb: 'Games big enough for a tab of their own: switch them on or off, pause them, edit their texts.',
+    blurb: 'Switch it on or off, pause it, edit its texts, and look after every player and hero like a game master.',
   },
   { id: 'daily', label: 'Daily challenges', icon: 'calendar', group: 'Site', blurb: 'The next 14 days of Today’s challenge; hand-pick any day.' },
   { id: 'site', label: 'Notice & holidays', icon: 'info', group: 'Site', blurb: 'A banner on every page, and the holiday look: greeting, decorations, scenery and little events.' },

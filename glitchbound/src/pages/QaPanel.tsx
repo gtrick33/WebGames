@@ -7,7 +7,7 @@ import { fmt } from '../platform/daily';
 import { dayKey } from '../platform/dates';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { clearDeviceAll, clearDeviceGame, debugInfo, deviceKeysFor, logQa } from '../platform/qa';
-import { Link } from '../router/router';
+import { Link, useLocation } from '../router/router';
 import './QaPanel.css';
 import { gameUrl } from '../catalog/catalog';
 
@@ -50,6 +50,24 @@ export function QaPanel({ me }: { me: Me }) {
       setLoading(false);
     }
   }, []);
+
+  // an address can name a player (Admin › Sigilfall links here for bans and email)
+  const asked = new URLSearchParams(useLocation().search).get('player');
+  useEffect(() => {
+    if (!asked) return;
+    let on = true;
+    api<{ player: QaPlayer }>(`/api/qa/players/${encodeURIComponent(asked)}`).then(
+      (r) => {
+        if (!on) return;
+        setPlayer(r.player);
+        window.requestAnimationFrame(() => cardRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
+      },
+      (e: unknown) => on && setToast(errorText(e, 'Could not open that player.')),
+    );
+    return () => {
+      on = false;
+    };
+  }, [asked]);
 
   return (
     <div className="ag qa">
@@ -200,6 +218,11 @@ function PlayerCard({ player, me, onChange, onReload, flash, onClose }: { player
           {player.nickname} {player.role && <span className="qa-pill">{ROLE_LABEL[player.role]}</span>}
           {player.ban && <span className="qa-pill is-bad">Banned</span>}
         </h2>
+        {me.isAdmin && (
+          <Link className="btn btn-sm" href={`/admin?tab=sections&player=${encodeURIComponent(player.id)}`}>
+            <Icon name="sword" size={16} /> Their Sigilfall
+          </Link>
+        )}
         <button className="btn btn-sm btn-ghost" onClick={onClose}>
           <Icon name="close" size={16} /> Close
         </button>

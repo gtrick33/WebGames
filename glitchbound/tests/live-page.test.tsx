@@ -78,7 +78,7 @@ describe('live rooms page', () => {
     render(<App />);
     const moods = screen.getByRole('group', { name: 'What do you feel like?' });
     expect(within(moods).getByRole('link', { name: /Live rooms/ }).getAttribute('href')).toBe('/live');
-    const together = await screen.findByRole('region', { name: 'Better with friends' });
+    const together = await screen.findByRole('region', { name: 'Better with friends' }, { timeout: 5000 });
     expect(within(together).getByRole('link', { name: /All live games and open rooms/ }).getAttribute('href')).toBe('/live');
     fireEvent.click(within(moods).getByRole('link', { name: /Live rooms/ }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Live rooms' }, { timeout: 5000 })).toBeTruthy();

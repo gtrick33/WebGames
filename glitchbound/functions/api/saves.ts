@@ -1,5 +1,6 @@
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../server/http';
 import { requireUser } from '../../server/session';
+import { gravesFor, SAVE_KEY as SIGILFALL_SAVE } from '../../server/sigilfallGm';
 import { isSyncedKey, MAX_SYNCED_SAVE } from '../../src/platform/syncKeys';
 
 /**
@@ -75,6 +76,16 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
           )
           .bind(user.id, it.key, it.data, versions[i], it.base),
   );
+  // Sigilfall: a hero who has just left the save (deleted) keeps a last copy, so a game master can bring them back.
+  const sigilfall = items.find((it) => it.key === SIGILFALL_SAVE);
+  if (sigilfall) {
+    try {
+      const graves = await gravesFor(env, user.id, sigilfall.data, now);
+      if (graves.length) await db.batch(graves);
+    } catch {
+      // A save never fails over this.
+    }
+  }
   // Now and then, clear out saves nobody has changed for half a year (the index keeps this cheap).
   if (Math.random() < 0.02) statements.push(db.prepare('DELETE FROM game_saves WHERE updated_at < ?').bind(now - KEEP_MS));
   const results = await db.batch(statements);

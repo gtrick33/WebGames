@@ -140,6 +140,8 @@ export interface AdminStats {
   /** Per UTC day. returning = visitors whose browser had visited before; dailyPlayers = visitors who finished a daily. */
   daily: { day: string; visitors: number; starts: number; rounds: number; returning: number; dailyPlayers: number }[];
   searches: { q: string; n: number; zeroResults: number }[];
+  /** Signed-in players with a Sigilfall save, and how many are at it right now. */
+  sigilfall: { players: number; online: number };
   /** Core Web Vitals of real visits, last 7 days: the 75th percentile (null while there's no data). */
   vitals: { device: string; visits: number; lcp: number | null; inp: number | null; cls: number | null }[];
   errors: { kinds: { kind: string; n: number }[]; latest: { ts: number; kind: string; game: string; message: string; path: string; browser: string }[] };
@@ -245,6 +247,79 @@ export interface CloudUsage {
 /** GET /api/admin/catalog: the Games tab's data. */
 export interface AdminCatalog extends PublicCatalog {
   log: { ts: number; admin: string; action: string; detail: string }[];
+}
+
+/* ------------------------------------------------------------------ Sigilfall's game masters */
+
+/** One hero, as the player list shows them. */
+export interface GmHeroRow {
+  slot: number;
+  name: string;
+  cls: string;
+  level: number;
+  created: number;
+  updated: number;
+  tier: number;
+  keystone: number;
+  /** Seconds played. */
+  time: number;
+}
+
+export interface GmPlayerRow {
+  id: string;
+  nickname: string;
+  email: string;
+  createdAt: number;
+  lastSeen: number;
+  /** When their save last reached the server. */
+  savedAt: number;
+  online: boolean;
+  banned: boolean;
+  heroes: GmHeroRow[];
+}
+
+export interface GmOverview {
+  players: number;
+  online: number;
+  active7d: number;
+  heroes: number;
+  /** Orders no game has carried out yet. */
+  waiting: number;
+  classes: { cls: string; heroes: number; avgLevel: number; topLevel: number }[];
+}
+
+export interface GmOrderView {
+  id: string;
+  slot: number;
+  created: number;
+  heroName: string;
+  kind: string;
+  summary: string;
+  note: string;
+  by: string;
+  at: number;
+  appliedAt: number | null;
+  /** '' when it went through, otherwise why it couldn't. */
+  result: string;
+  cancelledAt: number | null;
+}
+
+/** One player's Sigilfall, as the server holds it (the save is the game's own, for the game's own code to read). */
+export interface GmPlayerDetail {
+  id: string;
+  nickname: string;
+  email: string;
+  createdAt: number;
+  lastSeen: number;
+  banned: boolean;
+  banReason: string;
+  savedAt: number;
+  online: boolean;
+  save: unknown;
+  ring: unknown;
+  vigil: unknown;
+  orders: GmOrderView[];
+  graves: { id: string; created: number; name: string; cls: string; level: number; deletedAt: number; restoredAt: number | null }[];
 }
 
 /* ------------------------------------------------------------------ QA tools and the QA team */
