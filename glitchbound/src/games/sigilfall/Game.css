@@ -8952,6 +8952,25 @@
   }
 }
 
+/* a phone on its side: the right of the screen is the thumb's, right up to the minimap, and how much of it there is
+   changes as the browser's bars come and go. The quest goes under the hero's bars, where nothing else reaches. */
+@container rb-stage (min-height: 341px) and (max-height: 440px) {
+  .rb-ui.is-touch .rb-tracker:not(.rb-keyclock) {
+    top: calc(62px + var(--sa-t));
+    right: auto;
+    left: calc(8px + var(--sa-l));
+    max-width: min(230px, 30cqw);
+  }
+  .rb-ui.is-touch.is-lefty .rb-tracker:not(.rb-keyclock) {
+    right: calc(8px + var(--sa-r));
+    left: auto;
+  }
+  /* (news comes in under it, not over it) */
+  .rb-ui.is-touch:not(.is-lefty) .rb-toasts {
+    top: calc(138px + var(--sa-t));
+  }
+}
+
 /* a phone on its side: the quest's name on one line, so its objective stays clear of the potion under it */
 @container rb-stage (max-height: 400px) {
   .is-touch .rb-tracker strong {

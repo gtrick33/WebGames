@@ -5,7 +5,7 @@ import type { Wardrobe } from './dress';
 import { hexRgb } from './kits';
 import { above, below, blade, mix, Part, rgb, rod, shell, tied, within, type Corner, type Inside } from './meshKit';
 import type { MeshData } from './pack';
-import { painted, paintJoints, rgbHsl, hslRgb } from './paint';
+import { hslRgb, painted, paintJoints, rgbHsl, shaved } from './paint';
 
 /**
  * What a hero's gear looks like. Everything goes by rarity, so a glance says what someone is wearing:
@@ -137,7 +137,8 @@ function plainHead(w: Wardrobe, look: HeroLook, cover: Cover | null, skin: Rgb, 
   for (const c of `${look.skin}|${look.hair}|${look.beard ?? ''}`) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
   const face = cover?.bald ? 'Knight_Head' : bearded ? BEARDS[(h >>> 0) % BEARDS.length]! : look.hairStyle === 'long' ? 'Mage_Head' : look.hairStyle === 'pony' ? 'Rogue_Head' : 'Ranger_Head';
   const m = w.hero.meshes[face];
-  return m ? painted(m, { skin, cloth: hair, metal: bearded || look.hairStyle === 'long' ? hair : undefined }) : null;
+  // (a hero who chose no beard has none; one from before the choice keeps the face they've always had)
+  return m ? painted(face === 'Ranger_Head' && look.beard === null ? shaved(m) : m, { skin, cloth: hair, metal: bearded || look.hairStyle === 'long' ? hair : undefined }) : null;
 }
 
 /** A pad on a shoulder: `k` how big, with a rim. */

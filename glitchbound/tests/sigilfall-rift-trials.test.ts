@@ -160,8 +160,11 @@ describe('only the story makes a warden', () => {
     expect(lookSource(newCharacter('paladin', 'T', 'h'), look.id)).toMatch(/Finish the story/);
   });
 
-  it('the Trophy Shelf earns its mount at 100 points', () => {
+  it('the Trophy Shelf earns its mount at 100 points, once the story has horses in it', () => {
     const c = newCharacter('mage', 'T', 'h');
+    setShelfPoints(100);
+    expect(grantMounts(c)).toEqual([]);
+    c.quests['camp-riders'] = { state: 'done', n: 1 };
     setShelfPoints(99);
     expect(grantMounts(c).map((m) => m.id)).not.toContain('cabinet-courser');
     setShelfPoints(100);

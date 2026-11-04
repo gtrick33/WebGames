@@ -7,7 +7,7 @@ import { PERKS, addItem, salvage, type Character } from '../src/games/sigilfall/
 import { buildHero } from '../src/games/sigilfall/progress/build';
 import { makeItem, rollGear } from '../src/games/sigilfall/progress/items';
 import { migrate, SAVE_VERSION } from '../src/games/sigilfall/progress/save';
-import { BARE_LOOK, grantMounts, learnLooks, lookId, lookOf, mountEarned, wearLook, wornLooks } from '../src/games/sigilfall/progress/wardrobe';
+import { BARE_LOOK, grantMounts, learnLooks, lookId, lookOf, mountEarned, setShelfPoints, wearLook, wornLooks } from '../src/games/sigilfall/progress/wardrobe';
 import { MOUNT_FRAMES, MOUNT_WALK_FRAMES, paintMount, paintRiderLegs, RIDER_HIP } from '../src/games/sigilfall/render/art/mount';
 import { heldWeapon, heroLook } from '../src/games/sigilfall/render/sprites';
 import { hurtPlayer } from '../src/games/sigilfall/sim/combat';
@@ -183,6 +183,29 @@ describe('Sigilfall: mounts', () => {
     const back = roundTrip(old, { mounts: ['pegasus'], mount: 'pegasus' });
     expect(back.mounts).toEqual(['gullport-strider']);
     expect(back.mount).toBe('gullport-strider');
+  });
+
+  it('nobody starts on a horse: the Trophy Shelf\u2019s mount waits for the first one the story gives', () => {
+    setShelfPoints(150);
+    try {
+      const c = readyHero('ranger', 1);
+      expect(grantMounts(c)).toEqual([]);
+      expect(c.mount).toBeNull();
+      // a hero who was given it before the story had any horses loses it, and has it back when the riders come
+      const early = roundTrip(c, { mounts: ['cabinet-courser'], mount: 'cabinet-courser' });
+      expect(early.mounts).toEqual([]);
+      expect(early.mount).toBeNull();
+      c.quests['camp-riders'] = { state: 'done', n: 1 };
+      expect(grantMounts(c).map((m) => m.id).sort()).toEqual(['briarhollow-chestnut', 'cabinet-courser']);
+      // the first ridden is the story's
+      expect(c.mount).toBe('briarhollow-chestnut');
+    } finally {
+      setShelfPoints(0);
+    }
+    // not enough points: only the story's
+    const d = readyHero('ranger', 20);
+    d.quests['camp-riders'] = { state: 'done', n: 1 };
+    expect(grantMounts(d).map((m) => m.id)).toEqual(['briarhollow-chestnut']);
   });
 
   it('the mount is called standing still; moving cancels the call', () => {

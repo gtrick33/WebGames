@@ -215,7 +215,7 @@ export const MOUNTS: MountDef[] = [
     id: 'cabinet-courser',
     name: 'Cabinet Courser',
     lore: 'Nobody knows who left it tied up behind the arcade. It only answers to people who have played everything.',
-    from: 'The site’s Trophy Shelf: 100 points',
+    from: 'The site’s Trophy Shelf: 100 points, once Dunmore’s riders have joined the camp',
     source: { kind: 'shelf', points: 100 },
     body: 'horse',
     coat: '#3a1d7a',

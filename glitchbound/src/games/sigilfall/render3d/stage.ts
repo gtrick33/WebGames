@@ -21,6 +21,11 @@ import { LIGHT } from './toon';
 const FOV = 28;
 /** Never renders more pixels than this per CSS pixel. */
 const MAX_DPR = 2;
+/**
+ * On a phone, a little less: the screen is small enough that nobody sees the difference, and every pixel is drawn on
+ * two canvases, which is most of what warms it.
+ */
+const MAX_DPR_TOUCH = 1.7;
 
 function layer(className: string): HTMLCanvasElement {
   const c = document.createElement('canvas');
@@ -66,6 +71,7 @@ export class Stage {
   spanZ = 9;
   /** Rendering scale, lowered if the device struggles. */
   private quality = 1;
+  private maxDpr = MAX_DPR;
   private slow = 0;
   private fast = 0;
   private lastDpr = 1;
@@ -109,11 +115,12 @@ export class Stage {
   }
 
   /** `tilePx`: device pixels a tile spans at the middle of the view. */
-  setSize(cssW: number, cssH: number, dpr: number, tilePx: number): void {
+  setSize(cssW: number, cssH: number, dpr: number, tilePx: number, touch = false): void {
     this.cssW = cssW;
     this.cssH = cssH;
     this.lastDpr = dpr;
-    const d = Math.min(dpr, MAX_DPR);
+    this.maxDpr = touch ? MAX_DPR_TOUCH : MAX_DPR;
+    const d = Math.min(dpr, this.maxDpr);
     for (const r of [this.gl, this.groundGl]) {
       r.setPixelRatio(d * this.quality);
       r.setSize(cssW, cssH, false);
@@ -210,7 +217,7 @@ export class Stage {
   }
 
   private applyQuality(): void {
-    const d = Math.min(this.lastDpr, MAX_DPR) * this.quality;
+    const d = Math.min(this.lastDpr, this.maxDpr) * this.quality;
     this.gl.setPixelRatio(d);
     this.groundGl.setPixelRatio(d);
   }

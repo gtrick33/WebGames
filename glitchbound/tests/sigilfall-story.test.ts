@@ -324,6 +324,20 @@ describe('Sigilfall: the story in the world', () => {
     expect(w.pets.filter((p) => p.def.id === 'elyra' && !p.dead)).toHaveLength(1);
   });
 
+  it('nobody walks in from the far side of the village: the fights at the inn and the chapel start at once', () => {
+    for (const [quest, place, event] of [['briar-the-inn', 'briar-inn', 'briar-inn'], ['briar-hold-the-door', 'briar-chapel', 'briar-door']] as const) {
+      const w = newWorld('briarhollow', heroAt(quest));
+      w.hero.level = 30;
+      goTo(w, place);
+      for (let i = 0; i < 600 && !w.story.run?.ids.length; i++) w.step(DT);
+      expect(w.story.run?.def.id, event).toBe(event);
+      const ids = w.story.run!.ids;
+      const nearest = Math.min(...w.enemies.filter((e) => ids.includes(e.id)).map((e) => Math.hypot(e.x - w.player.x, e.y - w.player.y)));
+      // (the far roads these waves are named for are 400 world pixels off and more)
+      expect(nearest, event).toBeLessThan(240);
+    }
+  });
+
   it('the door: if it breaks the defense starts over (and pays nothing); held, it opens the crypt stair', () => {
     const w = newWorld('briarhollow', heroAt('briar-hold-the-door'));
     w.hero.level = 30;
