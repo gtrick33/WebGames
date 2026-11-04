@@ -190,3 +190,8 @@
     transition: none;
   }
 }
+@media (max-width: 340px) {
+  .flagship-tag {
+    -webkit-line-clamp: 7;
+  }
+}
