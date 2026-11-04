@@ -4,7 +4,7 @@ import { CLASSES } from '../data/classes';
 import { REGIONS } from '../data/regions';
 import type { RegionId } from '../data/types';
 import type { SigilEngine } from '../engine';
-import type { Character } from '../progress/character';
+import { SIGILS, type Character } from '../progress/character';
 import { rankOf, topStanding } from '../arena/ranks';
 import { heroTitle, RIFT_LEVEL, wornLooks } from '../progress/wardrobe';
 import { longestNight } from '../vigil/bests';
@@ -47,7 +47,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
 
   /* ------------------------------------------------- the hall, in 3D, with everyone in it */
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const cast = useMemo<(HallHero | null)[]>(() => heroes.map((h) => (h ? { look: heroLook(h.cls, h.equip, wornLooks(h), h.body, h.face), held: heldWeapon(h.cls, h.equip.weapon, wornLooks(h).weapon), shield: shieldOf(h.cls) } : null)), [heroes]);
+  const cast = useMemo<(HallHero | null)[]>(() => heroes.map((h) => (h ? { look: heroLook(h.cls, h.equip, wornLooks(h), h.body, h.face), held: heldWeapon(h.cls, h.equip.weapon, wornLooks(h).weapon), shield: shieldOf(h.cls), color: CLASSES[h.cls].colors.accent, sigils: SIGILS.map((id) => h.perks.includes(id)) } : null)), [heroes]);
   const liveRef = useRef({ cast, at, spin: 0.2 });
   useEffect(() => {
     liveRef.current.cast = cast;
