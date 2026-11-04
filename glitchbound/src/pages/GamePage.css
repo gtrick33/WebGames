@@ -4,6 +4,15 @@
   gap: 14px;
   padding-block: 14px 18px;
 }
+@media (min-width: 561px) and (max-width: 1020px) {
+  .game-toolbar {
+    flex-wrap: wrap;
+    gap: 10px 14px;
+  }
+  .game-toolbar .game-heading {
+    flex: 1 1 calc(100% - 140px);
+  }
+}
 .back-link {
   flex: none;
 }

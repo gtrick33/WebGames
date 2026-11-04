@@ -293,7 +293,7 @@ ol {
   border: 1.5px solid var(--accent, var(--line));
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent, var(--surface-2)) 16%, transparent);
-  color: var(--accent, var(--fg-2));
+  color: color-mix(in srgb, var(--accent, var(--fg-2)) 30%, var(--fg));
   font: 700 12px/1 var(--mono);
   letter-spacing: 0.06em;
   text-transform: uppercase;
