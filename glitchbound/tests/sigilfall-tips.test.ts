@@ -234,12 +234,15 @@ describe('sigilfall hints: they only pause the game', () => {
     expect(off.asksForTips).toBe(true);
   });
 
-  it('turning them on in Settings gives them to the hero being played', () => {
+  it('turning them on in Settings gives them to every hero', () => {
     const e = engine(false);
+    const other = hero();
     e.hero!.opened = [];
+    e.save.heroes = [e.hero, null, other];
     e.setTutorial(true);
     expect(e.settings.tutorial).toBe(true);
     expect(takesTips(e.hero!)).toBe(true);
+    expect(takesTips(other)).toBe(true);
     e.setTutorial(false);
     expect(e.settings.tutorial).toBe(false);
   });

@@ -48,7 +48,7 @@ export interface TipContext {
   resource: ResourceDef | null;
   /** A specialization has been chosen (the talents panel shows its trees, not the choice). */
   specChosen: boolean;
-  /** For the `spell` hint: the skill just learned. */
+  /** For the new-skill hint: the skill just learned. */
   spell?: string;
 }
 
@@ -59,7 +59,7 @@ const panelTab = (id: PanelId): string => `.rb-tabs [data-tab="${id}"]`;
 
 /** One line on what a skill spends, in the words of the HUD's own help. */
 const COSTS: Record<ResourceDef['kind'], string> = {
-  mana: 'Spells cost mana, which comes back fast out of combat.',
+  mana: 'It costs mana, which comes back fast out of combat.',
   rage: 'It costs rage: hitting and being hit build it, so strike first.',
   energy: 'It costs energy, which comes back quickly.',
   focus: 'It costs focus, which comes back quickly.',
@@ -84,7 +84,7 @@ export function tipSteps(id: TipId, c: TipContext): TipStep[] {
         {
           target: barSlot(touch, 's1'),
           panel: null,
-          title: skill ? `Your spell: ${skill}` : 'Your spell',
+          title: skill ? `Your first skill: ${skill}` : 'Your first skill',
           text: (touch ? 'Tap it to cast at the nearest enemy, or drag from it to aim by hand.' : 'Press Q to cast it where your mouse points.') + cost,
         },
         {
@@ -124,20 +124,20 @@ export function tipSteps(id: TipId, c: TipContext): TipStep[] {
         {
           target: slot ? barSlot(touch, slot) : null,
           panel: null,
-          title: name ? `New spell: ${name}` : 'A new spell',
+          title: name ? `New skill: ${name}` : 'A new skill',
           text: slot ? 'You just learned it, and it went on your bar by itself.' : 'You just learned it. Your bar is full, so it waits in your skills until you make room.',
         },
         {
           target: panelTab('skills'),
           panel: 'skills',
           title: 'Find it under Skills',
-          text: touch ? 'Every spell you know is on this tab. To get here, open your bag and tap Skills.' : 'Every spell you know is on this tab. Press U to come here, or open it from any panel.',
+          text: touch ? 'Every skill you know is on this tab. To get here, open your bag and tap Skills.' : 'Every skill you know is on this tab. Press U to come here, or open it from any panel.',
         },
         {
           target: '.rb-skill-slots',
           panel: 'skills',
           title: 'Choose what you carry',
-          text: `${tap} a slot here, then ${touch ? 'tap' : 'click'} a spell in the list to put it in that slot. Change it whenever you like: the bar is your build.`,
+          text: `${tap} a slot here, then ${touch ? 'tap' : 'click'} a skill in the list to put it in that slot. Change it whenever you like: the bar is your build.`,
         },
       ];
     }

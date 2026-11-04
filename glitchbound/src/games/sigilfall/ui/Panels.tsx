@@ -1410,7 +1410,7 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
               <span>Off</span>
             </label>
           </div>
-          <span className="rb-small rb-dim">Short hints that pause the game to show a new hero the controls, the bag, new spells and talents.</span>
+          <span className="rb-small rb-dim">Short hints that pause the game to show a new hero the controls, the bag, new skills and talents.</span>
         </section>
         <section>
           <span className="rb-kicker">Display</span>

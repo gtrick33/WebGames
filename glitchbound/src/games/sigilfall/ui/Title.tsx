@@ -229,7 +229,7 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
         <div className="rb-ring-dialog-wrap rb-tip-ask" role="dialog" aria-modal="true" aria-labelledby="rb-tip-ask-title">
           <div className="rb-ring-dialog">
             <h2 id="rb-tip-ask-title">Show the tutorial hints?</h2>
-            <p>Short hints pause the game to show this hero the controls, the bag, new spells and talents. You can change this any time in Settings.</p>
+            <p>Short hints pause the game to show this hero the controls, the bag, new skills and talents. You can change this any time in Settings.</p>
             <div className="rb-vigil-actions">
               <button className="rb-btn" onClick={() => begin(false)}>
                 No, thanks

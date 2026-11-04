@@ -801,10 +801,10 @@ export class SigilEngine {
     this.toast('Hints are off. You can turn them back on in Settings.', 'hint');
   }
 
-  /** The Settings choice. Turned on while playing, the hero being played gets the hints from here on. */
+  /** The Settings choice. On means on: every hero gets the hints they haven't seen yet, from here on. */
   setTutorial(on: boolean): void {
     this.setSettings({ tutorial: on });
-    if (on && this.hero) giveTips(this.hero);
+    if (on) for (const h of this.save.heroes) if (h) giveTips(h);
   }
 
   /** A new hero asks whether to show the hints when the player has seen them, or has turned them off. */
