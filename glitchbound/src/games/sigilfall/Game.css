@@ -1116,13 +1116,16 @@
 }
 .rb-create-go label {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 4px;
   flex: 1;
-  min-width: 160px;
+  min-width: min(160px, 100%);
   font-size: 13px;
   color: var(--rb-dim);
 }
 .rb-create-go input {
+  width: 100%;
+  min-width: 0;
   min-height: 46px;
   padding: 0 12px;
   border: 2px solid var(--rb-ink);
@@ -5169,13 +5172,11 @@
   text-shadow: 0 1px 2px #000;
 }
 .cs-word {
-  padding-bottom: 0.14em;
-  background: linear-gradient(180deg, #fff6d8, #f6c453 58%, #b9772a);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font: 700 clamp(26px, 5cqw, 44px) / 1 Georgia, 'Times New Roman', serif;
-  filter: drop-shadow(0 2px 0 #1c0e2e);
+  display: block;
+  width: clamp(120px, 24cqw, 230px);
+  height: auto;
+  margin-top: 2px;
+  filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.6));
 }
 .cs-top-btns {
   display: flex;
@@ -5795,13 +5796,10 @@
   text-transform: uppercase;
 }
 .rb-veil-word {
-  padding-bottom: 0.12em;
-  background: linear-gradient(180deg, #fff6d8, #f6c453 58%, #b9772a);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font: 700 clamp(38px, 9cqw, 76px) / 1 Georgia, 'Times New Roman', serif;
-  filter: drop-shadow(0 3px 0 #1c0e2e);
+  display: block;
+  width: clamp(190px, 42cqw, 420px);
+  height: auto;
+  filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.6));
   animation: rb-veil-rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 @keyframes rb-veil-rise {

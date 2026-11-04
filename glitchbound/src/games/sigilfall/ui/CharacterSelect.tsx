@@ -197,7 +197,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
       <div className="cs-top">
         <div className="cs-mark">
           <span className="cs-kicker">A GlitchBound adventure</span>
-          <span className="cs-word">Sigilfall</span>
+          <img className="cs-word" src="/games/sigilfall/logo.svg" alt="Sigilfall" width={673} height={168} />
         </div>
         <div className="cs-top-btns">
           <button className="rb-iconbtn" onClick={onSettings} aria-label="Settings">

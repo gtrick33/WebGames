@@ -358,6 +358,18 @@
     font-size: 10.5px;
   }
 }
+/* A phone on its side: icons only, so the bar leaves the page some room */
+@media (orientation: landscape) and (max-height: 480px) {
+  .bottom-tab {
+    padding: 6px 2px;
+  }
+  .bottom-tab span {
+    display: none;
+  }
+  body {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom));
+  }
+}
 /* A phone on its side on a game page: the floating tabs, and the settings button docked in them, would sit
    over the game (whose own bar has the way back to the arcade, and its menu the settings), so they step aside */
 @media (orientation: landscape) and (max-height: 560px) and (max-width: 900px) {

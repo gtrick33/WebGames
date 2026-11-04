@@ -94,7 +94,7 @@ export function ScreenGate({ children, intro = false, hold = false, tasks, label
             <div className="rb-veil-intro">
               <i className="rb-veil-sigil" aria-hidden="true" />
               <span className="rb-veil-kicker">A GlitchBound adventure</span>
-              <strong className="rb-veil-word">Sigilfall</strong>
+              <img className="rb-veil-word" src="/games/sigilfall/logo.svg" alt="Sigilfall" width={673} height={168} />
               <span className="rb-veil-bar" aria-hidden="true">
                 <i style={{ width: `${Math.round(progress * 100)}%` }} />
               </span>

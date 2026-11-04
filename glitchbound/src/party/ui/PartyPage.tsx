@@ -24,6 +24,7 @@ import type { RoomGame } from '../../platform/rooms';
 import { partySettingsFor } from '../../catalog/settings';
 import { useLiveCatalog } from '../../platform/liveCatalog';
 import { DEFAULT_FEATURED, PARTY_GAMES, playerRange } from '../catalog';
+import '../../components/FlagshipRow.css';
 import './Party.css';
 import { t, useT } from '../../i18n';
 import { cardImg, tileImg } from '../../platform/cardImg';
