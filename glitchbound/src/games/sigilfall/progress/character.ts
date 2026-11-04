@@ -104,6 +104,8 @@ export interface Character {
   worn: Partial<Record<LookSlot, string>>;
   /** Has been jumped to a story beat with a review preset (progress/presets.ts): sends no arcade scores. */
   review?: boolean;
+  /** Game masters' orders already carried out on this hero (progress/gm.ts), so none happens twice. */
+  gm?: string[];
   /** Man or woman, chosen at the start (the hero's face and hair; nothing else changes). */
   body: Body;
   /** Skin, hair and beard, chosen at the start: only how the hero looks. */

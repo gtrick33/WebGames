@@ -1,0 +1,356 @@
+/* Admin › Sigilfall › Players: the game master's pages. */
+.gm {
+  display: grid;
+  gap: 16px;
+}
+.gm-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.gm-tile {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--well);
+}
+.gm-tile small {
+  color: var(--fg-2);
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.gm-tile b {
+  font-size: 21px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.gm-tile.is-on {
+  border-color: #1fa85a;
+}
+.gm-classes,
+.gm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.gm-classes li {
+  padding: 5px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  font-size: 13.5px;
+}
+.gm-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(130px, 200px) auto;
+  gap: 8px;
+  margin-top: 12px;
+}
+.gm-search:not(form) {
+  grid-template-columns: minmax(0, 1fr) minmax(130px, 200px);
+}
+.gm-list {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.gm-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) minmax(0, 2.2fr) auto;
+  gap: 8px 14px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--well);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.12s ease;
+}
+.gm-row:hover,
+.gm-row:focus-visible {
+  border-color: var(--cyan);
+}
+.gm-who {
+  display: grid;
+  min-width: 0;
+}
+.gm-who b,
+.gm-who .info-small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gm-heroes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.gm-hero-chip {
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 13px;
+}
+.gm-when {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+}
+.gm-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #2bd46f;
+  box-shadow: 0 0 0 3px rgb(43 212 111 / 0.25);
+  vertical-align: 1px;
+}
+.gm-pages {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.gm-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  color: var(--cyan-text);
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+}
+.gm-back:hover {
+  text-decoration: underline;
+}
+.gm-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+}
+.gm-head h2 {
+  font-size: clamp(24px, 3vw, 32px);
+}
+.gm-head p {
+  margin: 4px 0 0;
+}
+.gm-inline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+.gm-inline:has(> select + input),
+.gm-inline:has(> select + select) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.panel > .gm-inline {
+  margin-top: 12px;
+}
+.gm-tabs {
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.gm-tabs button {
+  white-space: nowrap;
+}
+.gm-cols {
+  align-items: start;
+}
+.gm-items {
+  display: grid;
+  gap: 5px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.gm-scroll {
+  max-height: 460px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.gm-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--well);
+}
+.gm-item.is-empty {
+  opacity: 0.75;
+  text-transform: capitalize;
+}
+.gm-item-name {
+  display: grid;
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.gm-item-name b {
+  overflow-wrap: anywhere;
+}
+.gm-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.gm-rar {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  background: #b9b4c8;
+}
+.gm-rar.is-uncommon {
+  background: #3ecf6b;
+}
+.gm-rar.is-rare {
+  background: #3d8bff;
+}
+.gm-rar.is-epic {
+  background: #a855f7;
+}
+.gm-rar.is-legendary {
+  background: #ff9a2e;
+}
+.gm-chip {
+  display: inline-block;
+  margin: 0;
+  padding: 3px 9px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.gm-chip.is-on,
+.gm-chip.is-done {
+  border-color: #1fa85a;
+}
+.gm-chip.is-wait {
+  border-color: #d99a12;
+}
+.gm-chip.is-warn {
+  border-color: #e0364a;
+}
+.gm-chip.is-off {
+  opacity: 0.7;
+}
+.gm-note {
+  margin-top: 10px;
+}
+.gm-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.gm-action {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--well);
+}
+.gm-action .admin-h3 {
+  margin: 0;
+}
+.gm-action p {
+  margin: 0;
+}
+.gm-action .field {
+  min-width: 0;
+  width: 100%;
+}
+.gm-table-wrap {
+  overflow-x: auto;
+  margin-top: 10px;
+}
+.gm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.gm-table th,
+.gm-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+.gm-table td {
+  text-align: center;
+}
+.gm-table thead th {
+  color: var(--fg-2);
+  font: 700 11px var(--mono);
+  text-transform: uppercase;
+}
+@media (max-width: 720px) {
+  .gm-search {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .gm-search input {
+    grid-column: 1 / -1;
+  }
+  .gm-search:not(form) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .gm-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .gm-heroes {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+.gm h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+.gm h2 svg {
+  align-self: center;
+}
+.gm-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+.gm-row {
+  width: 100%;
+}
+@media (max-width: 560px) {
+  .gm-tiles {
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+    gap: 6px;
+  }
+  .gm-tile {
+    padding: 8px 9px;
+  }
+  .gm-tile small {
+    font-size: 9.5px;
+  }
+  .gm-tile b {
+    font-size: 17px;
+  }
+}

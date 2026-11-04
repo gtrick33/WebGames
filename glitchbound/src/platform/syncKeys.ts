@@ -14,7 +14,7 @@ export const MAX_SYNCED_SAVE = 96_000;
 
 const SLUGS = new Set(GAMES.map((g) => g.slug));
 /** Saves of games that don't use the arcade's naming (embeds built on their own). */
-const OWN_KEYS: Record<string, string> = { 'neonrush.save': 'neon-rush' };
+const OWN_KEYS: Record<string, string> = { 'neonrush.save': 'neon-rush', 'sigilfall.ring.v1': 'sigilfall', 'sigilfall.vigil.bests': 'sigilfall' };
 const GAME_KEY = /^(?:glitchbound|gb)\.([a-z0-9-]{1,40})(?:\.v\d{1,2})?$/;
 
 /** The game a save belongs to ("glitchbound.fussbox", "gb.mini-racer.v1", "neonrush.save"), or null (the arcade save, other keys). */

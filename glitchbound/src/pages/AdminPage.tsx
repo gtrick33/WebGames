@@ -292,6 +292,7 @@ export function AdminPage() {
         <Tile label="Email list" value={fmt(stats.subscribers.confirmed)} sub={`${stats.subscribers.pending} pending · ${stats.subscribers.unsubscribed} left`} />
         <Tile label="Returning visitors (7d)" value={fmt(sum('returning'))} sub={pct(sum('returning'), sum('visitors'))} />
         <Tile label="Finished a daily (7d)" value={fmt(sum('dailyPlayers'))} sub={pct(sum('dailyPlayers'), sum('visitors'))} />
+        <Tile label="Sigilfall players" value={fmt(stats.sigilfall?.players ?? 0)} sub={`${stats.sigilfall?.online ?? 0} playing now`} />
         <Tile label="Errors (7d)" value={fmt(stats.errors.kinds.reduce((n, k) => n + k.n, 0))} />
       </div>
 

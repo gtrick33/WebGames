@@ -232,6 +232,10 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   if (spent > talentPoints(c) || !talentsLegal(c)) c.talents = {};
   if (o.freeRespec === true) c.freeRespec = true;
   if (o.review === true) c.review = true;
+  if (Array.isArray(o.gm)) {
+    const gm = o.gm.filter((x): x is string => typeof x === 'string' && x.length <= 64).slice(-40);
+    if (gm.length) c.gm = gm;
+  }
   c.potions = Math.min(c.potions, potionCap(c));
   // skills: only learned skills of this class
   const learned = learnedSkills(c);
