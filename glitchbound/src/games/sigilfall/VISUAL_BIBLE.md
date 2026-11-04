@@ -217,3 +217,29 @@ The same moment always sounds the same way:
 | Riding | `whistle` (calling), `mount`, `dismount` | the mount fading in; dust where the hero gets down |
 
 Reduced motion (Settings) turns off screen shake and canopy shimmer and thins the weather to a third.
+
+## The world's rules (2026-11-04, the low-poly world)
+
+The owner's brief after the 3D rebuild: "make the whole world feel real as one, no random objects, everything has its
+place". What the great RPGs do, adapted (rules only, none of their names or art):
+
+- **One scale, measured against the hero** (World of Warcraft's oversized, readable look). A hero is 36 world pixels tall.
+  `PROPS` in `render3d/land.ts` is the chart, in world pixels: a crate to the knee (16), a barrel to the hip (20), a lamp
+  over the head (46), a house four heads tall, a tower over everything (158), a landmark seen from a screen away (170-250).
+  Nothing is sized in tiles. A tile is rules, not looks.
+- **One palette.** `harmonize` in `land.ts` brings every pack's timber to one oak and takes the shout out of anything
+  candy-bright; a land's leaves and ground lean to its own color. "Stylized doesn't mean saturated everywhere."
+- **Strong silhouettes tell you what a thing is:** a building is its own model at its own shape (no stretching past a
+  quarter), a tower is a tower. A stone hero stands on a plinth in the squares.
+- **Plan first, then dress** (the Warcraft III map-makers' rule: sketch the layout, then pathing, then doodads, and don't
+  overcrowd). A town has a plan (`zonegen.ts`, `TOWN_SCALE`): roads, a square with its heart, market stalls, trades on
+  their streets. Things stand beside what they belong to: an anvil by the smithy, barrels by the inn, never loose.
+- **People stand where they work:** at their trade's door or stall, or their own house's door, nobody crowding the
+  waymarker. Only people with a reason to be there (a quest, a shop, a scene) stand in the world.
+- **Every land is known by something** (`LANDMARKS` in `zonegen.ts`): a great oak, a lighthouse, a giant's skull: places to
+  walk toward, history told by ruins.
+- **Dungeons are tight and each its own** (the Diablo games): rooms a little too small for what is in them, short
+  passages between, every wall dressed for what the place is (`data/dungeongen.ts`: a crypt's sarcophagi, a forge's coal
+  and anvils). Each has its own tileset color and its own color of fire, and its mood is in its lights, placed round
+  the room. A boss's chamber keeps its size.
+- **A mood never hides the game.** Night and dark are a tint and a dim edge; everything on screen can be seen.

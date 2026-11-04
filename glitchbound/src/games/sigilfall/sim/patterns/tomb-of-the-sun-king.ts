@@ -131,7 +131,7 @@ function lightShapes(w: World, x: number, y: number, from = 0, to = TAU, piece =
   if (to - from >= TAU - 1e-6) start = Math.max(0, rays.findIndex((r, i) => r.pillar !== rays[(i + n - 1) % n]!.pillar));
   const at = (i: number): Ray => rays[(start + i) % n]!;
   // how far each ray's cone reaches
-  const reach = (r: Ray): number => (r.pillar < 0 ? Math.ceil((r.d + 4) / 16) * 16 : Math.max(16, Math.floor(r.d / 16) * 16));
+  const reach = (r: Ray): number => (r.pillar < 0 ? Math.ceil((r.d + 4) / TILE) * TILE : Math.max(TILE, Math.floor(r.d / TILE) * TILE));
   const wallRun = Math.max(1, Math.round(piece / step));
   const out: Shape[] = [];
   for (let i = 0; i < n; ) {

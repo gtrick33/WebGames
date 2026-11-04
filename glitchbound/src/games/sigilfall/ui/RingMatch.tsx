@@ -9,7 +9,8 @@ import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
 import type { Face } from '../progress/character';
 import { iconPicture } from '../render/art/gameIcons';
-import { drawRing, fighterAt, paintGround, RING_VIEW_H, RING_VIEW_W, RingFx, ringLooks } from '../render/ring';
+import { drawRing, fighterAt, RingFx, ringLooks } from '../render/ring';
+import { RingStage, ringMapOf } from '../render3d/ring3d';
 import { heroDollUrl } from '../render/sprites';
 import { RingHelp, SetupEditor, timing } from './RingSetup';
 import { ScreenGate } from './ScreenGate';
@@ -164,7 +165,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const [tip, setTip] = useState<Ability | null>(null);
   const errAt = useRef(0);
   const stick = useRef<MoveInput>({ mx: 0, my: 0 });
-  const dolls = useMemo(() => ringLooks(m, { face, body }, myId).map((l) => heroDollUrl(l.look, 'down', 2)), [m, face, body, myId]);
+  const dolls = useMemo(() => ringLooks(m, { face, body }, myId).map((l) => heroDollUrl(l.look, 'down', 2, l.held)), [m, face, body, myId]);
 
   const me = m.fighters[myId] ?? null;
   const touch = engine.touchMode;
@@ -205,30 +206,13 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
 
   useEffect(() => {
     const canvas = canvasRef.current!;
-    const g = canvas.getContext('2d')!;
     const looks = ringLooks(m, { face, body }, myId);
     const fx = new RingFx();
-    const ground = document.createElement('canvas');
-    ground.width = RING_VIEW_W * 2;
-    ground.height = RING_VIEW_H * 2;
-    const gg = ground.getContext('2d')!;
-    gg.scale(2, 2);
-    paintGround(gg, MAPS[m.map] ?? Object.values(MAPS)[0]!);
-    let scale = 1;
-    let ox = 0;
-    let oy = 0;
+    const view = new RingStage(canvas, ringMapOf(m.map));
     const fit = (): void => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       const host = canvas.parentElement!;
-      const w = host.clientWidth;
-      const h = host.clientHeight;
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-      scale = Math.min(w / RING_VIEW_W, h / RING_VIEW_H) * dpr;
-      ox = (canvas.width - RING_VIEW_W * scale) / 2;
-      oy = (canvas.height - RING_VIEW_H * scale) / 2;
+      view.fit(host.clientWidth, host.clientHeight, dpr);
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -271,8 +255,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     // a click or a tap on the ground chooses who's there (walking is the joystick's job)
     const pick = (e: PointerEvent): void => {
       const p = toLocal(canvas, e.clientX, e.clientY);
-      const dpr = canvas.width / (canvas.clientWidth || 1);
-      const f = fighterAt(m, (p.x * dpr - ox) / scale, (p.y * dpr - oy) / scale);
+      const at = view.toWorld(p.x, p.y);
+      const f = fighterAt(m, at.x, at.y);
       if (f) target(f.id);
     };
     canvas.addEventListener('pointerdown', pick);
@@ -317,12 +301,13 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     let raf = 0;
     let wasPhase = m.phase;
     const sound = (id: string, vol?: number): void => engine.sound.play(id, vol);
+    let lastPaint = 0;
     const paint = (time: number): void => {
-      g.setTransform(1, 0, 0, 1, 0, 0);
-      g.fillStyle = '#05030d';
-      g.fillRect(0, 0, canvas.width, canvas.height);
-      g.setTransform(scale, 0, 0, scale, ox, oy);
-      drawRing(g, ground, m, looks, fx, myId, time);
+      const dt = lastPaint ? Math.min(0.1, Math.max(0, time - lastPaint)) : 0;
+      lastPaint = time;
+      for (const e of m.events) if (e.k === 'ab') view.swing(e.id, e.ab);
+      view.frame(m, looks, myId, dt, time);
+      drawRing(m, fx, myId, time, view);
     };
     const frame = (now: number): void => {
       raf = requestAnimationFrame(frame);
@@ -388,7 +373,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         sound(m.winner === myTeam ? 'victory' : 'playerDie');
         // the last word goes out at once, then a moment to see the last blow land
         if (role.kind === 'host') role.send({ s: m.snapshot(), e: [] });
-        window.setTimeout(() => onDone({ won: m.winner === myTeam, draw: m.draw, match: m, myId, dolls: m.fighters.map((f) => heroDollUrl(looks[f.id]!.look, 'down', 3)) }), 1300);
+        window.setTimeout(() => onDone({ won: m.winner === myTeam, draw: m.draw, match: m, myId, dolls: m.fighters.map((f) => heroDollUrl(looks[f.id]!.look, 'down', 3, looks[f.id]!.held)) }), 1300);
       }
     };
     // the ground on the first frame, before the veil lifts

@@ -176,7 +176,7 @@ describe('Sigilfall: the Epilogue and the postgame', () => {
     expect(home.storyState?.id).toBe('rebuilt');
     for (const id of ['ranger-cole', 'carter-wenna', 'healer-brisa', 'forgewife-runa', 'rider-alder', 'dwarf-tova']) expect(npcHere(home, id), id).toBe(false);
     expect(home.props.filter((p) => p.prop === 'tent')).toHaveLength(0);
-    expect(home.props.filter((p) => p.prop === 'market-cart').length).toBeGreaterThanOrEqual(2);
+    expect(home.props.filter((p) => p.prop === 'market-stall').length).toBeGreaterThanOrEqual(2);
     expect(npcHere(home, 'elyra')).toBe(true);
   });
 

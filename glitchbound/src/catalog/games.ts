@@ -1046,20 +1046,20 @@ export const GAMES: GameEntry[] = [
   {
     slug: 'sigilfall',
     title: 'Sigilfall',
-    tagline: 'An epic pixel-art fantasy RPG: seven heroes, five acts, a dozen dungeons and friends at your side.',
+    tagline: 'An epic cartoon fantasy RPG: seven heroes, five acts, a dozen dungeons and friends at your side.',
     description:
-      'A top-down pixel-art action RPG made for phones first (a joystick and skill buttons), with WASD and the mouse on a computer. Choose one of seven heroes, from Warrior and Mage to Druid and Warlock, and follow the story through five acts, from the villages of the Vale to the Dead Kingdom, to close the Rift. ' +
+      'A low-poly 3D action RPG made for phones first (a joystick and skill buttons), with WASD and the mouse on a computer. Choose one of seven heroes, from Warrior and Mage to Druid and Warlock, and follow the story through five acts, from the villages of the Vale to the Dead Kingdom, to close the Rift. ' +
       'Gear changes how your skills work: a staff that splits your Fireball, a hammer whose Heavy Strike sends a shockwave. A dozen dungeons wait, with bosses that telegraph their blows. Reach level 60, then climb the endless Riftstone, alone or with up to three friends on their own devices. Your heroes are saved, and follow you to other devices when you sign in.',
     categories: ['arcade', 'strategy'],
     moods: ['action'],
-    tags: ['rpg', 'action rpg', 'pixel art', 'dungeon', 'boss', 'loot', 'mage', 'warrior', 'ranger', 'paladin', 'priest', 'warlock', 'druid', 'fantasy', 'co-op', 'adventure'],
+    tags: ['rpg', 'action rpg', '3d', 'low poly', 'dungeon', 'boss', 'loot', 'mage', 'warrior', 'ranger', 'paladin', 'priest', 'warlock', 'druid', 'fantasy', 'co-op', 'adventure'],
     released: '2026-10-22',
     accent: 'magenta',
     emoji: '⚔️',
     art: {
       tile: '/games/sigilfall/tile.webp',
       wide: '/games/sigilfall/wide.webp',
-      alt: 'A pixel-art mage casting fireballs at a giant boar in a forest clearing, with loot glowing on the grass',
+      alt: 'Five cartoon heroes in a torchlit stone hall, a warrior with sword and shield on a dais under a great round window',
       bg: '#2f6a3a',
     },
     section: { path: '/sigilfall', label: 'Sigilfall' },

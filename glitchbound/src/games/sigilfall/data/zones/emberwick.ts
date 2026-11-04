@@ -92,7 +92,7 @@ function plan(): CityPlan {
     [59, 40],
     [56, 35],
   ] as const)
-    c.prop('market-cart', x, y, true, MARKET);
+    c.prop('market-stall', x, y, true, MARKET);
   for (const [x, y, p] of [
     [45, 35, 'crate'],
     [48, 36, 'sacks'],
@@ -111,7 +111,7 @@ function plan(): CityPlan {
     [50, 34],
     [53, 48],
   ] as const)
-    c.prop('market-cart', x, y, true, MARKET);
+    c.prop('market-stall', x, y, true, MARKET);
   // each stall's goods beside it
   for (const [x, y, p] of [
     [42, 37, 'market-goods'],
@@ -277,7 +277,7 @@ function plan(): CityPlan {
     [44, 43],
     [59, 43],
   ] as const)
-    c.prop('market-cart', x, y, true, all(FESTIVAL, not(after('festival-the-knives'))));
+    c.prop('market-stall', x, y, true, all(FESTIVAL, not(after('festival-the-knives'))));
   // the star-lantern the Regent comes down to light
   c.prop('lantern', 56, 34, false, FESTIVAL);
   for (const y of [26, 34, 56, 64])

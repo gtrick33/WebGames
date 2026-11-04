@@ -230,9 +230,9 @@ export class CityPlan {
 }
 
 /**
- * A plan written at one size and laid out `s` times larger: every position spreads out by `s` (roads and
- * yards grow with it, places keep their places), while buildings, people and props keep their own size, so
- * a cramped village gets room between its houses without redrawing it.
+ * A plan written at one size and laid out `s` times larger: every position spreads out by `s` and buildings grow
+ * with it (roads and yards too, places keep their places), while people and props keep their own size: a village
+ * as big as it should be, without redrawing it.
  */
 export class SpreadPlan {
   readonly plan: CityPlan;
@@ -276,7 +276,14 @@ export class SpreadPlan {
     // its door (the middle of its front, where the street and any interior's way in meet it) is where the
     // old door's tile spreads to
     const half = Math.floor(w / 2);
-    this.plan.building(style, this.m(x + half) - half, this.m(y + h) - h, w, h, o);
+    const W = Math.round(w * this.s);
+    const H = Math.round(h * this.s);
+    this.plan.building(style, this.m(x + half) - Math.floor(W / 2), this.m(y + h) - H, W, H, o);
+    return this;
+  }
+  /** A fence along a line of plan tiles: one tile thick at any scale. */
+  fence(x0: number, y0: number, x1: number, y1: number): this {
+    this.plan.fill(this.m(x0), this.m(y0), this.m(x1), this.m(y1), 'fence');
     return this;
   }
   npc(id: string, x: number, y: number, when?: StoryCond): this {

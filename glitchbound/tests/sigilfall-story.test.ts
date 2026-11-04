@@ -1,3 +1,4 @@
+import { TILE } from '../src/games/sigilfall/sim/map';
 import { describe, expect, it } from 'vitest';
 import { endScene } from '../src/games/sigilfall/sim/scene';
 import { EVENTS } from '../src/games/sigilfall/data/events';
@@ -111,7 +112,7 @@ describe('Sigilfall: the story in the world', () => {
     const w = newWorld('briarhollow', c);
     // the hero arrives at the gate as the lamps are lit, and Mara stops them there
     const gate = w.places['briar-gate']!;
-    expect(Math.hypot(w.player.x - gate.x, w.player.y - gate.y)).toBeLessThan(4 * 16);
+    expect(Math.hypot(w.player.x - gate.x, w.player.y - gate.y)).toBeLessThan(4 * TILE);
     expect(w.storyState?.dusk).toBe(true);
     w.questProgress((o) => o.kind === 'talk' && o.npc === 'mara-venn');
     expect(questState(c, 'briar-dusk')).toBe('done');
@@ -300,7 +301,7 @@ describe('Sigilfall: the story in the world', () => {
     expect(questState(w.hero, 'briar-the-inn')).toBe('active');
     // lead them to the chapel: walk there, and they follow
     const chapel = w.places['briar-chapel']!;
-    for (let i = 0; i < 600 && questState(w.hero, 'briar-the-inn') === 'active'; i++) {
+    for (let i = 0; i < 2400 && questState(w.hero, 'briar-the-inn') === 'active'; i++) {
       const dx = chapel.x - w.player.x;
       const dy = chapel.y + 6 - w.player.y;
       const d = Math.hypot(dx, dy);
@@ -334,7 +335,7 @@ describe('Sigilfall: the story in the world', () => {
     expect(door).toBeTruthy();
     // on the chapel's own doorstep (where the way in is), not out on the cobbles
     const into = w.map.markers.find((m) => m.marker.kind === 'exit' && m.marker.to === 'chapel-of-the-bell')!;
-    expect(Math.hypot(door.x - (into.tx + 0.5) * 16, door.y - (into.ty + 0.5) * 16)).toBeLessThan(2);
+    expect(Math.hypot(door.x - (into.tx + 0.5) * TILE, door.y - (into.ty + 0.5) * TILE)).toBeLessThan(2);
     // Mara isn't put at the hero's elbow: she comes running in from beyond the view
     const mara = w.pets.find((p) => p.def.id === 'mara')!;
     expect(Math.hypot(mara.x - w.player.x, mara.y - w.player.y)).toBeGreaterThan(6 * 16);

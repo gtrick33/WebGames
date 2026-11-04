@@ -3,52 +3,77 @@ import type { ClassId } from '../data/types';
 import { newCharacter, type Face } from '../progress/character';
 import { FIELD_ICONS, SPELLS, type Element } from '../vigil/kit';
 import type { Foe, Fx, Hero, Obstacle, Vigil } from '../vigil/sim';
+import { K, type TileMap } from '../sim/map';
 import { fxArt, stripOf, type FxArt } from './art/atlas';
 import { iconPicture } from './art/gameIcons';
 import { drawCircle } from './art/vfx';
-import { canvas, ctx2d, DETAIL, type Cnv } from './pixel';
+import { canvas, ctx2d, type Cnv } from './pixel';
 import type { LandLayer, LandView } from './renderer';
-import type { StaticObject } from './tiles';
-import { creatureSprite, heroLook, heroSprite, weaponSprite, type HeroDir } from './sprites';
+import { creatureSprite, heldWeapon, heroLook, weaponSprite } from './sprites';
 import type { HeroLook } from './art/hero';
+import { heightFromRadius, Motion, PERSON_H, type Cast } from '../render3d/cast';
+import type { Held } from '../render3d/dress';
+import type { LandObject } from '../render3d/land';
+import { shieldOf, turnOf } from '../render3d/worldCast';
 
 /**
- * The Vigil's night, drawn into the land by the game's own renderer, so a foe behind a tree really is behind it. The
+ * The Vigil's night: the Host and the party stand on the 3D land, and the spells go over them on the top canvas. The
  * spells are the Magic Spells VFX pack, each in its element's color; what the pack has no picture for (a swing's
  * crescent, a lightning arc) is drawn in the same chunky, outlined way. All of it is in world pixels.
  */
 
 const TAU = Math.PI * 2;
+const FROZEN = [0.62, 0.86, 1.25] as const;
+const CHILLED = [0.82, 0.93, 1.12] as const;
 const INK = '#1c0e08';
 
 /* ---------------------------------------------------------------- what the land keeps */
 
 /** What people built: a night's battlefield has none of it. */
 const BUILT = new Set(['building', 'fence', 'gate', 'sign', 'shrine', 'waystone', 'brazier', 'pillar', 'well']);
-const TALL = 26;
-const sizeOf = (o: StaticObject): { w: number; h: number } => ({ w: (o.src ? (o.anim ? o.anim.w : o.src[2]) : o.c.width) / (o.k ?? DETAIL), h: (o.src ? o.src[3] : o.c.height) / (o.k ?? DETAIL) });
+const TALL = 40;
 const spot = (x: number, y: number): number => {
   const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
   return n - Math.floor(n);
 };
 
+/**
+ * The Host comes from everywhere and walks straight at the hero, so a night's battlefield is open ground: its walls,
+ * water and buildings are cleared away, leaving a ring of the land's own wall round the edge. Only what `keepOnLand`
+ * keeps stands on it, and nobody walks through those.
+ */
+export function openBattlefield(map: TileMap): void {
+  const edge = 2;
+  for (let y = 0; y < map.h; y++) {
+    for (let x = 0; x < map.w; x++) {
+      const i = y * map.w + x;
+      if (x < edge || y < edge || x >= map.w - edge || y >= map.h - edge) {
+        map.kind[i] = K.Wall;
+        continue;
+      }
+      const k = map.kind[i]!;
+      if (k === K.Wall || k === K.Water || k === K.Bridge || k === K.House || k === K.HouseAnchor || k === K.Door || k === K.Cracked || k === K.Rampart || k === K.Illusion || k === K.Prop || k === K.Fence || k === K.Pillar || k === K.Brazier) map.kind[i] = K.Floor;
+    }
+  }
+  map.buildings.length = 0;
+  map.markers.length = 0;
+}
+
 /** The land thinned out for a fight: low things stay, and about one tree in five, with room to run between them. */
-export function keepOnLand(o: StaticObject): boolean {
-  if (o.kind === 'edge') return true;
-  if (BUILT.has(o.kind)) return false;
-  const { w, h } = sizeOf(o);
-  if (h <= TALL) return true;
-  return w <= 90 && spot(o.x, o.y) < 0.22;
+export function keepOnLand(o: LandObject): boolean {
+  if (BUILT.has(o.kind) || (o.kind === 'prop' && o.name === 'well')) return false;
+  if (-o.dy <= TALL) return true;
+  return spot(o.x, o.y) < 0.22;
 }
 
 /** The trunks and boulders of what stays: nobody walks through these, hero or Host. */
-export function trunksOf(objects: StaticObject[]): Obstacle[] {
+export function trunksOf(objects: LandObject[]): Obstacle[] {
   const out: Obstacle[] = [];
   for (const o of objects) {
-    if (o.kind === 'edge' || !keepOnLand(o)) continue;
-    const { w, h } = sizeOf(o);
-    if (h > TALL) out.push({ x: o.x, y: o.y, r: Math.max(5, Math.min(9, w * 0.16)) });
-    else if (o.kind === 'rock' && h > 12) out.push({ x: o.x, y: o.y, r: Math.max(3.5, Math.min(7, w * 0.3)) });
+    if (!keepOnLand(o)) continue;
+    // (as wide as what stands there: a foe walks round the leaves, not through them)
+    if (-o.dy > TALL) out.push({ x: o.x, y: o.y, r: 15 });
+    else if (o.kind === 'rock' || o.kind === 'bush') out.push({ x: o.x, y: o.y, r: 11 });
   }
   return out;
 }
@@ -147,7 +172,7 @@ function iconImage(name: string): HTMLImageElement | null {
 function ring(g: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, width: number, alpha: number): void {
   g.globalAlpha = Math.max(0, alpha);
   g.beginPath();
-  g.ellipse(x, y, r, r * 0.76, 0, 0, TAU);
+  g.ellipse(x, y, r, r, 0, 0, TAU);
   g.lineWidth = width + 1;
   g.strokeStyle = INK;
   g.stroke();
@@ -233,7 +258,7 @@ function skyBeam(g: CanvasRenderingContext2D, x: number, y: number, w: number, c
 function mark(g: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, alpha: number): void {
   g.globalAlpha = Math.max(0, alpha);
   g.beginPath();
-  g.ellipse(x, y, r, r * 0.76, 0, 0, TAU);
+  g.ellipse(x, y, r, r, 0, 0, TAU);
   g.lineWidth = 0.8;
   g.strokeStyle = color;
   g.stroke();
@@ -281,7 +306,8 @@ export class VigilPainter implements LandLayer {
   meId: number;
   private readonly v: Vigil;
   private readonly looks = new Map<number, HeroLook>();
-  private readonly walkT = new Map<number, number>();
+  private readonly held = new Map<number, Held>();
+  private readonly motions = new Map<number, { m: Motion; turn: number }>();
   private readonly pops: { x: number; y: number; n: number; big: boolean; crit: boolean; t: number }[] = [];
   private readonly bits: Bit[] = [];
   private dt = 0;
@@ -293,6 +319,7 @@ export class VigilPainter implements LandLayer {
       const c = newCharacter(h.cls as ClassId, h.name, 'vigil');
       const p = party[h.id];
       this.looks.set(h.id, heroLook(h.cls as ClassId, c.equip, {}, p?.body ?? 'm', p?.face));
+      this.held.set(h.id, heldWeapon(h.cls as ClassId, c.equip.weapon));
     }
   }
 
@@ -320,27 +347,55 @@ export class VigilPainter implements LandLayer {
     const v = this.v;
     const art = fxArt();
     const near = (x: number, y: number, m: number): boolean => x > view.x - m && x < view.x + view.w + m && y > view.y - m && y < view.y + view.h + m;
-    for (const f of v.fields) if (near(f.x, f.y, f.r + 20)) this.drawField(g, art, f, time);
-    for (const h of v.heroes) if (!h.down) this.drawAuras(g, art, h, time);
+    for (const f of v.fields) {
+      if (!near(f.x, f.y, f.r + 20)) continue;
+      view.flat(f.x, f.y);
+      this.drawField(g, art, f, time);
+    }
+    for (const h of v.heroes) {
+      if (h.down) continue;
+      view.flat(h.x, h.y);
+      this.drawAuras(g, art, h, time);
+    }
     // where the blows are about to land
     for (const s of v.slams) {
       const u = s.t / s.dur;
+      view.flat(s.x, s.y);
       g.globalAlpha = 0.22 + u * 0.3;
       g.fillStyle = '#ff3a2a';
       g.beginPath();
-      g.ellipse(s.x, s.y, s.r, s.r * 0.76, 0, 0, TAU);
+      g.ellipse(s.x, s.y, s.r, s.r, 0, 0, TAU);
       g.fill();
       g.globalAlpha = 1;
       ring(g, s.x, s.y, s.r, '#ff5a4a', 1.4, 1);
       ring(g, s.x, s.y, s.r * u, '#ffd257', 1.2, 0.9);
     }
-    for (const f of v.foes) if (f.mode === 1 && near(f.x, f.y, 150)) this.drawChargeLine(g, f);
+    for (const f of v.foes) {
+      if (!near(f.x, f.y, 150)) continue;
+      if (f.mode === 1) {
+        view.flat(f.x, f.y);
+        this.drawChargeLine(g, f);
+      }
+      if (f.elite || f.boss) {
+        view.flat(f.x, f.y);
+        ring(g, f.x, f.y, f.r + (f.boss ? 7 : 3), f.boss ? '#ff5a4a' : '#ffb02e', 1.3, 0.75 + Math.sin(time * 6) * 0.2);
+      }
+      if (f.frozen > 0) {
+        view.flat(f.x, f.y);
+        ring(g, f.x, f.y, f.r + 2, '#bfeaff', 1, 0.9);
+      }
+    }
     for (const s of v.sparks) {
       if (!near(s.x, s.y, 10)) continue;
       const tier = SPARK_TIERS.find(([min]) => s.xp >= min)!;
+      view.up(s.x, s.y, 5);
       stampGlow(g, tier[1], s.x, s.y - 2 + Math.sin(time * 5 + s.x) * 0.8, tier[2]);
     }
-    for (const p of v.pickups) if (near(p.x, p.y, 20)) this.drawPickup(g, art, p.kind, p.x, p.y, time);
+    for (const p of v.pickups) {
+      if (!near(p.x, p.y, 20)) continue;
+      view.up(p.x, p.y, 6);
+      this.drawPickup(g, art, p.kind, p.x, p.y, time);
+    }
   }
 
   private drawField(g: CanvasRenderingContext2D, art: FxArt | null, f: Vigil['fields'][number], time: number): void {
@@ -348,7 +403,7 @@ export class VigilPainter implements LandLayer {
     g.globalAlpha = 0.26 * alpha;
     g.fillStyle = f.color;
     g.beginPath();
-    g.ellipse(f.x, f.y, f.r, f.r * 0.72, 0, 0, TAU);
+    g.ellipse(f.x, f.y, f.r, f.r, 0, 0, TAU);
     g.fill();
     g.globalAlpha = 1;
     ring(g, f.x, f.y, f.r, f.color, 0.9, alpha * 0.85);
@@ -379,7 +434,7 @@ export class VigilPainter implements LandLayer {
       g.globalAlpha = 0.16;
       g.fillStyle = au.color;
       g.beginPath();
-      g.ellipse(h.x, h.y, au.r * pulse, au.r * pulse * 0.76, 0, 0, TAU);
+      g.ellipse(h.x, h.y, au.r * pulse, au.r * pulse, 0, 0, TAU);
       g.fill();
       g.globalAlpha = 1;
       ring(g, h.x, h.y, au.r * pulse, au.color, 0.9, 0.8);
@@ -425,7 +480,7 @@ export class VigilPainter implements LandLayer {
     const r = kind === 'chest' ? 9 : 6.5;
     g.fillStyle = 'rgba(8,4,16,0.35)';
     g.beginPath();
-    g.ellipse(x, y + 1, r * 0.9, r * 0.36, 0, 0, TAU);
+    g.ellipse(x, y, r * 0.9, r * 0.9, 0, 0, TAU);
     g.fill();
     stampGlow(g, kind === 'chest' ? '#ffd257' : '#ffffff', x, y - r + bob, r * 2, 0.6);
     loop(g, art, 'spell_ready', kind === 'chest' ? 'fire' : 'lightning', time, x, y - r + bob, r * 3.2, { alpha: 0.8 });
@@ -448,106 +503,46 @@ export class VigilPainter implements LandLayer {
 
   /* -------------------------------------------------------------- everything standing, sorted with the trees */
 
-  standing(add: (y: number, draw: () => void) => void, view: LandView): void {
+  /** Who stands on the land: the Host, the party's pets and the other heroes (the watching player's is the world's). */
+  cast(cast: Cast, dt: number, time: number): void {
     const v = this.v;
-    const g = view.g;
-    const inView = (x: number, y: number): boolean => x > view.x - 60 && x < view.x + view.w + 60 && y > view.y - 60 && y < view.y + view.h + 90;
-    for (const f of v.foes) if (inView(f.x, f.y)) add(f.y, () => this.drawFoe(g, f, view.time));
+    for (const f of v.foes) {
+      const sprite = f.bossSprite ?? f.def.sprite;
+      const size = f.boss ? 2 : f.elite ? 1.35 : 1;
+      let clip = 'walk';
+      let t = f.walk + f.id * 0.31;
+      if (f.frozen > 0) t = f.id * 0.31;
+      else if (f.stun > 0) {
+        clip = 'hit';
+        t = time * 0.4;
+      } else if (f.mode === 1) {
+        clip = 'chop';
+        t = 0.14;
+      } else if (f.mode === 2) clip = 'run';
+      const cold = f.frozen > 0 ? FROZEN : f.slow > 0 ? CHILLED : undefined;
+      cast.shadow(f.x, f.y, f.r * size + 1);
+      cast.creature(sprite, f.x, f.y, turnOf(f.face), heightFromRadius(f.def.r) * size, clip, t, clip !== 'chop', { flash: f.flash > 0 ? 0.8 : 0, tint: cold });
+    }
     for (const p of v.pets) {
-      if (!inView(p.x, p.y)) continue;
-      add(p.y, () => {
-        const sp = creatureSprite(p.sprite, Math.floor(p.walk * 8) % 2);
-        const w = sp.width / sp.k;
-        const h = sp.height / sp.k;
-        g.fillStyle = 'rgba(8,4,16,0.35)';
-        g.beginPath();
-        g.ellipse(p.x, p.y + 1, w * 0.34, w * 0.14, 0, 0, TAU);
-        g.fill();
-        // a friend, not one of the Host: lit from under and looking this way
-        stampGlow(g, SPELLS[p.spell]?.color ?? '#fff', p.x, p.y - h * 0.3, w * 0.75, 0.5);
-        g.drawImage(Math.cos(p.face) < 0 ? sp.f : sp.c, p.x - w / 2, p.y - h + 3, w, h);
-      });
+      cast.shadow(p.x, p.y, 7);
+      cast.creature(p.sprite, p.x, p.y, turnOf(p.face), PERSON_H * 0.8, 'walk', p.walk, true);
     }
     for (const h of v.heroes) {
-      if (h.id === this.meId || !inView(h.x, h.y)) continue;
-      add(h.y + 5, () => this.drawHero(g, h, view));
-    }
-  }
-
-  private drawFoe(g: CanvasRenderingContext2D, f: Foe, time: number): void {
-    const frame = Math.floor(f.walk * 6 + f.id) % 2;
-    const sp = creatureSprite(f.bossSprite ?? f.def.sprite, frame);
-    const scale = f.boss ? 2 : f.elite ? 1.35 : 1;
-    // a little bounce in its walk; a charger winding up gathers itself
-    const moving = f.frozen <= 0 && f.stun <= 0;
-    const bounce = moving ? Math.sin(f.walk * 13 + f.id) * 0.05 : 0;
-    const gather = f.mode === 1 ? 0.14 : 0;
-    const w = (sp.width / sp.k) * scale * (1 + bounce + gather);
-    const h = (sp.height / sp.k) * scale * (1 - bounce - gather);
-    const flip = Math.cos(f.face) < 0;
-    const x = f.x;
-    const y = f.y;
-    g.fillStyle = 'rgba(8,4,16,0.35)';
-    g.beginPath();
-    g.ellipse(x, y + 1, w * 0.34, w * 0.14, 0, 0, TAU);
-    g.fill();
-    if (f.elite || f.boss) stampGlow(g, f.boss ? '#ff5a4a' : '#ffb02e', x, y - h * 0.4, w * 0.85, 0.55 + Math.sin(time * 6) * 0.1);
-    const top = y - h + 3 * scale;
-    g.drawImage(f.flash > 0 ? (flip ? sp.wf : sp.w) : flip ? sp.f : sp.c, x - w / 2, top, w, h);
-    // cold shows as a pale wash and a ring of frost (a canvas filter on each of hundreds of foes would stutter)
-    if (f.frozen > 0 || f.slow > 0) {
-      g.globalAlpha = f.frozen > 0 ? 0.6 : 0.22;
-      g.drawImage(flip ? sp.wf : sp.w, x - w / 2, top, w, h);
-      g.globalAlpha = 1;
-      if (f.frozen > 0) ring(g, x, y + 1, w * 0.42, '#bfeaff', 0.7, 0.9);
-    }
-    if (f.stun > 0) {
-      // stars around its head
-      g.fillStyle = '#ffe39a';
-      for (let i = 0; i < 3; i++) {
-        const a = time * 7 + (i / 3) * TAU;
-        g.fillRect(x + Math.cos(a) * w * 0.4 - 0.7, top - 1 + Math.sin(a) * 1.6 - 0.7, 1.4, 1.4);
+      if (h.id === this.meId) continue;
+      const look = this.looks.get(h.id);
+      if (!look) continue;
+      let s = this.motions.get(h.id);
+      if (!s) {
+        s = { m: new Motion(), turn: 0 };
+        this.motions.set(h.id, s);
       }
+      const moving = Math.hypot(h.vx, h.vy) > 4;
+      s.turn = Math.atan2(h.dirX, h.dirY);
+      s.m.set(h.down ? 'die' : moving ? 'run' : 'idle', !h.down);
+      s.m.advance(dt);
+      cast.shadow(h.x, h.y, 8);
+      cast.person(look, this.held.get(h.id) ?? null, shieldOf(h.cls), h.x, h.y, s.turn, s.m, { alpha: h.iframe > 0 && Math.floor(time * 18) % 2 === 0 ? 0.5 : 1 });
     }
-    if (f.elite && f.hp < f.maxHp) {
-      const bw = w * 0.9;
-      g.fillStyle = '#120a20';
-      g.fillRect(x - bw / 2 - 0.5, top - 3.5, bw + 1, 2.2);
-      g.fillStyle = '#ffb02e';
-      g.fillRect(x - bw / 2, top - 3, bw * Math.max(0, f.hp / f.maxHp), 1.2);
-    }
-  }
-
-  private drawHero(g: CanvasRenderingContext2D, h: Hero, view: LandView): void {
-    const look = this.looks.get(h.id);
-    if (!look) return;
-    const dir: HeroDir = Math.abs(h.dirX) > Math.abs(h.dirY) ? 'side' : h.dirY < 0 ? 'up' : 'down';
-    const moving = Math.hypot(h.vx, h.vy) > 4;
-    const walk = (this.walkT.get(h.id) ?? 0) + (moving ? this.dt : 0);
-    this.walkT.set(h.id, walk);
-    const frame = moving ? (Math.floor(walk * 7) % 2) + 1 : 0;
-    const s = heroSprite(look, h.down ? 'down' : dir, h.down ? 0 : frame);
-    const sw = s.width / s.k;
-    const sh = s.height / s.k;
-    g.fillStyle = 'rgba(8,4,16,0.35)';
-    g.beginPath();
-    g.ellipse(h.x, h.y + 1, sw * 0.3, sw * 0.13, 0, 0, TAU);
-    g.fill();
-    if (h.down) {
-      g.save();
-      g.globalAlpha = 0.6;
-      g.translate(h.x, h.y + 3);
-      g.rotate(1.4);
-      g.drawImage(s.c, -sw / 2, -sh + 3, sw, sh);
-      g.restore();
-      g.globalAlpha = 1;
-      return;
-    }
-    const blink = h.iframe > 0 && Math.floor(view.time * 18) % 2 === 0;
-    g.globalAlpha = blink ? 0.45 : 1;
-    const left = dir === 'side' && h.dirX < 0;
-    g.drawImage(left ? s.f : s.c, h.x - sw / 2, h.y - sh + 3, sw, sh);
-    g.globalAlpha = 1;
   }
 
   /* -------------------------------------------------------------- in the air, over everything */
@@ -557,6 +552,7 @@ export class VigilPainter implements LandLayer {
     const art = fxArt();
     const dt = this.dt;
     for (const s of v.foeShots) {
+      view.up(s.x, s.y, 12);
       loop(g, art, 'bolt', 'shadow', time, s.x, s.y, 16, { rot: Math.atan2(s.vy, s.vx) });
       g.beginPath();
       g.arc(s.x, s.y, s.r, 0, TAU);
@@ -568,15 +564,22 @@ export class VigilPainter implements LandLayer {
       g.fillStyle = '#fff';
       g.fillRect(s.x - 0.8, s.y - 1.4, 1.6, 1.6);
     }
-    for (const s of v.shots) this.drawShot(g, art, s, time);
+    for (const s of v.shots) {
+      view.up(s.x, s.y, 12);
+      this.drawShot(g, art, s, time);
+    }
     for (const h of v.heroes) {
       if (h.down) continue;
-      for (const o of v.orbitPoints(h)) this.drawOrbiter(g, art, o, time);
+      for (const o of v.orbitPoints(h)) {
+        view.up(o.x, o.y, 12);
+        this.drawOrbiter(g, art, o, time);
+      }
     }
     let hits = 0;
     let bursts = 0;
     for (const f of v.fx) {
       if (f.kind === 'hit' && ++hits > MAX_HITS) continue;
+      view.flat(f.x, f.y);
       // when dozens go off together, past the first few each is only its explosion
       if (f.kind === 'burst' && ++bursts > MAX_FULL_BURSTS) {
         play(g, art, 'fire_impact', f.el, Math.min(0.999, f.t / f.dur), f.x, f.y, Math.max(26, Math.min(60, (f.r ?? 20) * 2)));
@@ -589,6 +592,7 @@ export class VigilPainter implements LandLayer {
       b.x += b.vx * dt;
       b.y += b.vy * dt;
       b.vy += 140 * dt;
+      view.up(b.x, b.y, 8);
       g.globalAlpha = Math.max(0, 1 - b.t / b.dur);
       g.fillStyle = b.c;
       g.fillRect(b.x, b.y, b.s, b.s);
@@ -602,6 +606,7 @@ export class VigilPainter implements LandLayer {
     for (const n of this.pops) {
       n.t += dt;
       const u = n.t / 0.62;
+      view.up(n.x, n.y, 18);
       const y = n.y - u * 14;
       const size = (n.crit ? 11 : n.big ? 9 : 6.4) * (u < 0.18 ? 1 + (0.18 - u) * 2.6 : 1);
       g.font = `800 ${size}px Georgia, serif`;
@@ -746,7 +751,7 @@ export class VigilPainter implements LandLayer {
     g.globalAlpha = (1 - u) * 0.2;
     g.fillStyle = f.color;
     g.beginPath();
-    g.ellipse(f.x, f.y, R, R * 0.76, 0, 0, TAU);
+    g.ellipse(f.x, f.y, R, R, 0, 0, TAU);
     g.fill();
     g.globalAlpha = 1;
     ring(g, f.x, f.y, R, f.color, 3.2 - u * 2.4, 1 - u * u);
@@ -913,54 +918,49 @@ export class VigilPainter implements LandLayer {
     for (const h of v.heroes) {
       const mine = h.id === this.meId;
       const color = CLASSES[h.cls as ClassId].colors.accent;
+      const head = view.project(h.x, h.y, PERSON_H + 2);
       if (h.down) {
+        view.flat(h.x, h.y);
         ring(g, h.x, h.y, REVIVE_DRAW, '#ffe39a', 0.8, 0.6 + Math.sin(view.time * 6) * 0.3);
         if (h.reviveT > 0) {
+          view.up(h.x, h.y, 14);
           g.beginPath();
-          g.arc(h.x, h.y - 14, 5, -Math.PI / 2, -Math.PI / 2 + (h.reviveT / 3) * TAU);
+          g.arc(h.x, h.y, 5, -Math.PI / 2, -Math.PI / 2 + (h.reviveT / 3) * TAU);
           g.lineWidth = 2;
           g.strokeStyle = '#7fe06a';
           g.stroke();
         }
       } else {
         const max = v.maxHpOf(h);
-        const bw = 26;
-        g.fillStyle = '#120a20';
-        g.fillRect(h.x - bw / 2 - 0.5, h.y + 8.5, bw + 1, 3);
-        g.fillStyle = h.hp / max < 0.3 ? '#ff4f6a' : mine ? '#7fe06a' : '#6ac8ff';
-        g.fillRect(h.x - bw / 2, h.y + 9, bw * Math.max(0, Math.min(1, h.hp / max)), 2);
+        const k = h.hp / max;
+        view.bar(head.x, head.y, 40, k, k < 0.3 ? '#ff4f6a' : mine ? '#7fe06a' : '#6ac8ff');
       }
       if (mine) continue;
-      g.textAlign = 'center';
-      g.font = '700 5.5px Georgia, serif';
-      g.lineWidth = 1.2;
-      g.strokeStyle = INK;
-      g.strokeText(h.name, h.x, h.y - 19);
-      g.fillStyle = color;
-      g.fillText(h.name, h.x, h.y - 19);
-      g.textAlign = 'start';
+      view.label(h.name, head.x, head.y - 12, 11, color);
       // out of sight: an arrow at the edge of the view
-      const m = 10;
-      const inside = h.x > view.x + m && h.x < view.x + view.w - m && h.y > view.y + m && h.y < view.y + view.h - m;
-      if (inside) continue;
-      const cx = view.x + view.w / 2;
-      const cy = view.y + view.h / 2;
-      const a = Math.atan2(h.y - cy, h.x - cx);
-      const k = Math.min((view.w / 2 - m) / Math.max(0.001, Math.abs(Math.cos(a))), (view.h / 2 - m) / Math.max(0.001, Math.abs(Math.sin(a))));
-      g.save();
-      g.translate(cx + Math.cos(a) * k, cy + Math.sin(a) * k);
+      const m = 22;
+      const W = (view.w / view.h) * 1000;
+      void W;
+      const host = g.canvas;
+      const sw = host.clientWidth || 1;
+      const sh = host.clientHeight || 1;
+      if (head.x > m && head.x < sw - m && head.y > m && head.y < sh - m) continue;
+      const a = Math.atan2(head.y - sh / 2, head.x - sw / 2);
+      const t = Math.min((sw / 2 - m) / Math.max(0.001, Math.abs(Math.cos(a))), (sh / 2 - m) / Math.max(0.001, Math.abs(Math.sin(a))));
+      const k = g.canvas.width / sw;
+      g.setTransform(k, 0, 0, k, 0, 0);
+      g.translate(sw / 2 + Math.cos(a) * t, sh / 2 + Math.sin(a) * t);
       g.rotate(a);
       g.beginPath();
-      g.moveTo(6, 0);
-      g.lineTo(-4, -4.5);
-      g.lineTo(-4, 4.5);
+      g.moveTo(12, 0);
+      g.lineTo(-8, -9);
+      g.lineTo(-8, 9);
       g.closePath();
       g.fillStyle = h.down ? '#ff4f6a' : color;
       g.fill();
-      g.lineWidth = 1;
+      g.lineWidth = 2;
       g.strokeStyle = INK;
       g.stroke();
-      g.restore();
     }
   }
 }

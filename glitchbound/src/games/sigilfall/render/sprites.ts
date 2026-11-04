@@ -1,3 +1,5 @@
+import { bustPicture, creaturePicture, dollPicture, mountPicture, type DollView } from '../render3d/portrait';
+import { coatTint, mountSprite, SEAT } from '../render3d/mountLook';
 import { HAIRS, SKINS, type Face } from '../progress/character';
 import { CLASSES } from '../data/classes';
 import type { Body } from '../progress/character';
@@ -217,16 +219,26 @@ export function heroPortraitUrl(look: HeroLook, scale = 3): string {
   const key = `portrait:hero:${lookKey(look)}:${scale}`;
   const hit = iconCache.get(key);
   if (hit) return hit;
+  const shot = bustPicture(look, Math.max(96, Math.round(scale * 48)));
+  if (shot) {
+    iconCache.set(key, shot);
+    return shot;
+  }
   const url = scaled(heroBust(look), Math.max(1, Math.round(scale / HERO_K))).toDataURL();
   iconCache.set(key, url);
   return url;
 }
 
 /** A whole hero standing, for the character screen (cached). */
-export function heroDollUrl(look: HeroLook, view: HeroDir, scale = 4): string {
-  const key = `doll:${lookKey(look)}:${view}:${scale}`;
+export function heroDollUrl(look: HeroLook, view: HeroDir, scale = 4, held: { kind: string; tint?: string } | null = null, shield = false): string {
+  const key = `doll:${lookKey(look)}:${view}:${scale}:${held?.kind ?? ''}:${held?.tint ?? ''}:${shield ? 1 : 0}`;
   const hit = iconCache.get(key);
   if (hit) return hit;
+  const shot = dollPicture(look, view as DollView, Math.max(240, Math.round(scale * 96)), held, shield);
+  if (shot) {
+    iconCache.set(key, shot);
+    return shot;
+  }
   const url = scaled(heroSprite(look, view, 0).c, Math.max(1, Math.round((scale * DETAIL) / HERO_K))).toDataURL();
   iconCache.set(key, url);
   return url;
@@ -255,6 +267,11 @@ export function mountPictureUrl(m: MountDef, look: HeroLook | null, scale = 3): 
   const key = `mountpic:${m.id}:${look ? lookKey(look) : '-'}:${scale}`;
   const hit = iconCache.get(key);
   if (hit) return hit;
+  const shot = mountPicture(mountSprite(m), coatTint(m.coat), SEAT[m.body] ?? 1.7, Math.max(220, scale * 70), look ? { look, held: null, shield: false } : null);
+  if (shot) {
+    iconCache.set(key, shot);
+    return shot;
+  }
   // composed at the hero's scale (twice the layout's art pixels)
   const f = HERO_K / DETAIL;
   const F = MOUNT_FRAMES.side;
@@ -552,6 +569,8 @@ export function npcSprite(id: string, frame = 0): Sprite {
 /** A hero (in class colors, no gear), creature or NPC portrait for the UI. */
 /** Whether a townsperson is drawn as a paper-doll person (else a pixel sprite). */
 export const hasPersonLook = (id: string): boolean => !!NPC_LOOKS[id];
+/** A townsperson's look, for those drawn as a person. */
+export const npcLookOf = (id: string): HeroLook | null => NPC_LOOKS[id] ?? null;
 
 export function portraitUrl(kind: 'hero' | 'creature' | 'npc', id: string, scale = 4): string {
   if (kind === 'hero') return heroPortraitUrl(heroLook(id as ClassId), Math.max(1, Math.round(scale * 0.75)));
@@ -559,10 +578,14 @@ export function portraitUrl(kind: 'hero' | 'creature' | 'npc', id: string, scale
   const key = `portrait:${kind}:${id}:${scale}`;
   const hit = iconCache.get(key);
   if (hit) return hit;
+  const shot = creaturePicture(kind === 'npc' ? (NPCS[id]?.sprite ?? 'villager') : id, Math.max(96, scale * 32));
+  if (shot) {
+    iconCache.set(key, shot);
+    return shot;
+  }
+  // (the stand-in isn't kept: the 3D picture takes over once its model is in)
   const s = kind === 'npc' ? npcSprite(id) : creatureSprite(id, 0);
-  const url = scaled(s.c, Math.max(1, Math.round(scale / s.k))).toDataURL();
-  iconCache.set(key, url);
-  return url;
+  return scaled(s.c, Math.max(1, Math.round(scale / s.k))).toDataURL();
 }
 
 /** A rendered glow disc (lights, loot beams). */

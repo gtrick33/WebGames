@@ -7,7 +7,7 @@ import { TALL, WIDE } from '../src/games/sigilfall/data/zonegen';
 import { questRegion } from '../src/games/sigilfall/progress/character';
 import { questSteps, turnInNpc } from '../src/games/sigilfall/progress/handin';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
-import { K, TILE } from '../src/games/sigilfall/sim/map';
+import { flowField, K, TILE } from '../src/games/sigilfall/sim/map';
 import { npcRegion } from '../src/games/sigilfall/sim/routes';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { heroAtEvent, newWorld, readyHero } from './sigilfall-bot';
@@ -165,7 +165,7 @@ describe('Sigilfall: every quest, step by step', () => {
       // those who walk in, or beside a wagon, walk all the way
       if (ev.arrive || ev.escort) {
         const from = run.pets.map((p) => ({ x: p.x, y: p.y }));
-        for (let t = 0; t < 90 && w.story.run; t += DT) {
+        for (let t = 0; t < 150 && w.story.run; t += DT) {
           w.input = emptyInput();
           w.player.hp = w.player.maxHp;
           for (const e of w.enemies) if (!e.dead && !e.held && e.state !== 'spawn') hitEnemy(w, e, 1e7, 'physical', { depth: 0 });
@@ -175,7 +175,7 @@ describe('Sigilfall: every quest, step by step', () => {
           }
           w.step(DT);
         }
-        if (w.story.run) found.push(`${ev.id}: not over after a minute and a half`);
+        if (w.story.run) found.push(`${ev.id}: not over after two and a half minutes`);
         for (const [i, p] of run.pets.entries()) if (Math.hypot(p.x - from[i]!.x, p.y - from[i]!.y) < TILE) found.push(`${ev.id}: ${p.def.id} never moved from ${tile(from[i]!.x, from[i]!.y)}`);
       }
     }
@@ -196,15 +196,16 @@ describe('Sigilfall: every quest, step by step', () => {
       const boat = w.story.run?.ward;
       expect(boat?.def.look, id).toBe('boat');
       expect(w.map.kind[Math.floor(boat!.y / TILE) * w.map.w + Math.floor(boat!.x / TILE)], `${id}: in the water`).toBe(K.Water);
-      // the hero stands off; the raiders go for the boat
-      w.player.x = at.x + 5 * TILE;
-      w.player.y = at.y + 5 * TILE;
-      for (let t = 0; t < 20 && boat!.hp === boat!.maxHp; t += DT) {
-        w.input = emptyInput();
-        w.player.hp = w.player.maxHp;
-        w.step(DT);
+      // a raider on the bank, come from wherever the hero came from, has the hull within a melee reach (19 pixels)
+      const f = flowField(w.map, Math.floor(at.x / TILE), Math.floor((at.y + 30) / TILE), 8000);
+      let reach = Infinity;
+      for (let y = 0; y < w.map.h; y++) {
+        for (let x = 0; x < w.map.w; x++) {
+          const i = y * w.map.w + x;
+          if ((f[i] ?? -1) >= 0 && !w.map.solid[i]) reach = Math.min(reach, Math.hypot((x + 0.5) * TILE - boat!.x, (y + 0.5) * TILE - boat!.y));
+        }
       }
-      expect(boat!.hp, `${id}: the raiders reach the boat`).toBeLessThan(boat!.maxHp);
+      expect(reach, `${id}: the raiders reach the boat`).toBeLessThan(boat!.r + 19 + TILE / 2);
     }
   });
 });

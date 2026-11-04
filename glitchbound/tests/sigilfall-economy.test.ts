@@ -1,3 +1,4 @@
+import { TILE } from '../src/games/sigilfall/sim/map';
 import { describe, expect, it } from 'vitest';
 import { CLASS_IDS, CLASSES } from '../src/games/sigilfall/data/classes';
 import { SKILLS } from '../src/games/sigilfall/data/skills';
@@ -151,8 +152,8 @@ describe('sigilfall potions and shops', () => {
       const w = newWorld('crypt', readyHero('mage', 9), 1, tier);
       const enc = w.encounters.findIndex((e) => e.def.boss === 'morgrave');
       const tile = w.map.roomTiles[enc]!.find((i) => !w.map.solid[i])!;
-      w.player.x = ((tile % w.map.w) + 0.5) * 16;
-      w.player.y = (Math.floor(tile / w.map.w) + 0.5) * 16;
+      w.player.x = ((tile % w.map.w) + 0.5) * TILE;
+      w.player.y = (Math.floor(tile / w.map.w) + 0.5) * TILE;
       step(w, 0.2);
       const boss = w.boss()!;
       w.bossFinished(boss);

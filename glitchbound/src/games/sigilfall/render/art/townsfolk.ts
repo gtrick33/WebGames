@@ -3,12 +3,12 @@ import type { HeroLook } from './hero';
 /** How the people of Millbrook and Gullport dress (drawn like heroes, as paper dolls). */
 export const TOWNSFOLK_LOOKS: Record<string, HeroLook> = {
   /* ----------------------------------------------------------- Briarhollow */
-  // Mara Venn: the village guard: a dented mail shirt over green, a leather cap, dark hair in a tail
+  // Mara Venn: the village guard: a dented mail shirt over green, bareheaded, dark hair in a tail
   'mara-venn': {
     skin: '#c88a64',
     hair: '#2a1a14',
     hairStyle: 'pony',
-    head: { style: 'helm', mat: 'leather', tint: '#6a4a2a', r: 'common' },
+    head: null,
     chest: { style: 'plate', mat: 'mail', tint: '#8a929e', r: 'rare' },
     legs: { style: 'trousers', mat: 'leather', tint: '#3a4a2a', r: 'common' },
     hands: { style: 'gloves', mat: 'leather', tint: '#5a3a20', r: 'common' },

@@ -12,7 +12,7 @@ import { Link, type LinkState } from '../net/link';
 import type { Action as RoomAction, Pick as RoomPick, View as RoomView } from '../net/ringRoom';
 import { newCharacter, type Face } from '../progress/character';
 import { iconPicture } from '../render/art/gameIcons';
-import { heroDollUrl, heroLook } from '../render/sprites';
+import { heldWeapon, heroDollUrl, heroLook } from '../render/sprites';
 import { RingMatch, type MatchResult, type MatchStakes, type RingInbox } from './RingMatch';
 import { RingResult, type RatingOutcome } from './RingResult';
 import { BarRow, RingHelp, SetupChips, SetupEditor } from './RingSetup';
@@ -107,7 +107,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack }: { engine: 
   const standing = standingOf(save, format);
   const rank = rankOf(standing.best);
   const next = nextRank(standing.best);
-  const doll = useMemo(() => heroDollUrl(heroLook(pick, newCharacter(pick, 'Ring', 'ring').equip, {}, body ?? 'm', face), 'down', 5), [pick, body, face]);
+  const doll = useMemo(() => heroDollUrl(heroLook(pick, newCharacter(pick, 'Ring', 'ring').equip, {}, body ?? 'm', face), 'down', 5, heldWeapon(pick, newCharacter(pick, 'Ring', 'ring').equip.weapon), pick === 'warrior' || pick === 'paladin'), [pick, body, face]);
   const sets = setsOf(save, pick);
   const setup = sets.list[sets.active]!;
   const { bar, oath, talents } = setup;

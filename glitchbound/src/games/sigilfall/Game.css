@@ -2293,6 +2293,8 @@
   box-shadow:
     inset 0 0 0 2px var(--rb-trim),
     0 6px 0 rgb(0 0 0 / 0.35);
+  max-height: calc(100% - 20px - var(--sa-b));
+  overflow: hidden;
   animation: rb-fade 0.15s;
 }
 .rb-dialogue-face {
@@ -2310,6 +2312,9 @@
   gap: 4px;
   flex: 1;
   min-width: 0;
+  max-height: 100%;
+  overflow: auto;
+  overflow-wrap: anywhere;
 }
 .rb-dialogue-body p {
   margin: 0;
@@ -4969,10 +4974,11 @@
 }
 .cs-hall {
   position: absolute;
-  inset: 0;
-  width: 640px;
-  height: 360px;
-  image-rendering: pixelated;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 .cs-figure {
   position: absolute;
@@ -4988,10 +4994,21 @@
   transform-origin: 0 0;
   transition: transform 0.62s cubic-bezier(0.22, 0.9, 0.24, 1), filter 0.5s ease;
 }
+/* the hero's own 3D body stands here: this is only where to grab them */
+.cs-body {
+  position: absolute;
+  left: -46px;
+  bottom: -6px;
+  width: 92px;
+  height: 142px;
+}
+.cs-figure.is-away .cs-body {
+  height: 150px;
+}
 .cs-figure:focus-visible {
   outline: none;
 }
-.cs-figure:focus-visible .cs-doll {
+.cs-figure:focus-visible .cs-body {
   outline: 2px solid #fff;
   outline-offset: 4px;
 }
@@ -5534,11 +5551,10 @@
   font: 700 14px Georgia, 'Times New Roman', serif;
 }
 .rb-vlobby-land small {
-  overflow: hidden;
   color: #b8afc8;
   font-size: 11.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.15;
+  text-wrap: pretty;
 }
 .rb-vlobby-land:hover:not(:disabled),
 .rb-vlobby-land:focus-visible {
@@ -6121,11 +6137,10 @@
 }
 .rb-rp-title p {
   margin: 1px 0 0;
-  overflow: hidden;
   color: #b8afc8;
   font-size: 12.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.2;
+  text-wrap: pretty;
 }
 .rb-rp-back.rb-btn {
   flex: none;
@@ -6410,12 +6425,10 @@
   font: 700 12.5px/1.15 Georgia, 'Times New Roman', serif;
 }
 .rb-rp-map small {
-  overflow: hidden;
   color: #b8afc8;
   font-size: 10.5px;
   line-height: 1.15;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-wrap: pretty;
 }
 .rb-rp-map:hover,
 .rb-rp-map:focus-visible {
@@ -7516,9 +7529,10 @@
 }
 .rb-ring-name {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 4px;
+  gap: 0 4px;
   min-width: 0;
   font: 700 11.5px/1.15 Georgia, 'Times New Roman', serif;
 }
@@ -7526,9 +7540,8 @@
   flex-direction: row-reverse;
 }
 .rb-ring-name b {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .rb-ring-name em {
   flex: none;
@@ -8709,5 +8722,93 @@
   }
   .rb-vigil-icon {
     width: 48px;
+  }
+}
+
+/* while the models arrive, before the first menu */
+.rb-warm {
+  position: absolute;
+  inset: 0;
+  background: #07050d;
+}
+
+/* a phone held upright: the lobby is one column that scrolls, the Start bar always in reach */
+@container (max-width: 560px) and (min-height: 301px) {
+  .rb-vlobby {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .rb-vlobby-head,
+  .rb-vlobby-hero,
+  .rb-vlobby-lands {
+    flex: none;
+  }
+  .rb-vlobby-hero {
+    overflow: visible;
+    grid-template: auto auto auto / minmax(0, 1fr);
+    grid-template-areas: 'stage' 'classes' 'kit';
+    align-content: start;
+  }
+  .rb-vlobby-foot {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    flex: none;
+    margin-top: auto;
+  }
+  .rb-vlobby-stage {
+    min-height: 150px;
+  }
+  .rb-vlobby-classes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .rb-vlobby-class {
+    flex: 1 1 96px;
+  }
+  .rb-vlobby-about {
+    min-height: 0;
+  }
+  .rb-vlobby-lands {
+    position: static;
+    overflow: visible;
+    max-height: none;
+  }
+}
+/* the Wardrobe's note under a short figure scrolls with the column, not out of it */
+@container (max-height: 520px) {
+  .rb-hero-left {
+    max-height: 100%;
+    overflow: auto;
+  }
+}
+
+/* the panel's tabs: on a narrow panel they wrap rather than run off the edge */
+.rb-tabs {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.rb-hero-left {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* a long land's name wraps under the hero's bars rather than running out from under them */
+.rb-hud-bars {
+  min-width: 0;
+}
+.rb-region {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* an upright phone's Start bar: what scrolls under it fades out rather than peeking round the button */
+@container (max-width: 560px) and (min-height: 301px) {
+  .rb-vlobby-foot {
+    padding-top: 14px;
+    background: linear-gradient(transparent, #0b0914 14px);
   }
 }

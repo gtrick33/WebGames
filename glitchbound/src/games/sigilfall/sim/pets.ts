@@ -130,6 +130,62 @@ function pickTarget(w: World, pet: Pet): Enemy | null {
   return best;
 }
 
+/** How far apart two people stand, on top of their bodies: the models are wider than the rules' circles. */
+const ELBOW_ROOM = 18;
+/** How hard they ease apart, in world pixels a second at full overlap. */
+const EASE_APART = 130;
+/** They part a little sideways too, so three in a line against a wall slide past rather than pin each other. */
+const SLIDE = 0.45;
+
+/**
+ * Nobody stands in anybody else: companions ease apart from each other and out of the hero. (Wards stand where
+ * they were put, and the hero's movement stays in the player's hands.)
+ */
+function keepApart(w: World, dt: number): void {
+  const list = w.pets.filter((pet) => !pet.dead && pet.def.role !== 'ward');
+  const p = w.player;
+  const nudge = (pet: Pet, dx: number, dy: number): void => {
+    const res = moveCircle(w.map, pet.x, pet.y, pet.r, dx, dy);
+    pet.x = res.x;
+    pet.y = res.y;
+  };
+  for (let i = 0; i < list.length; i++) {
+    const a = list[i]!;
+    for (let j = i + 1; j < list.length; j++) {
+      const b = list[j]!;
+      // (nobody is shoved off the last steps of their own walk)
+      if ((a.goal && dist(a.x, a.y, a.goal.x, a.goal.y) < 10) || (b.goal && dist(b.x, b.y, b.goal.x, b.goal.y) < 10)) continue;
+      const min = a.r + b.r + ELBOW_ROOM;
+      let dx = b.x - a.x;
+      let dy = b.y - a.y;
+      let d = Math.hypot(dx, dy);
+      if (d >= min) continue;
+      // (two on the very same spot: part them along a line of their own)
+      if (d < 0.01) {
+        const t = (a.id * 2.4 + b.id) % TAU;
+        dx = Math.cos(t);
+        dy = Math.sin(t);
+        d = 1;
+      }
+      const push = ((min - Math.min(d, min)) / min) * EASE_APART * dt;
+      const ux = ((dx - dy * SLIDE) / d) * push;
+      const uy = ((dy + dx * SLIDE) / d) * push;
+      nudge(a, -ux, -uy);
+      nudge(b, ux, uy);
+    }
+    // (someone on their way somewhere walks round the hero by the rules: the courier must reach the gate)
+    if (p.dead || a.downT || a.goal) continue;
+    const min = a.r + p.r + ELBOW_ROOM;
+    const dx = a.x - p.x;
+    const dy = a.y - p.y;
+    const d = Math.hypot(dx, dy);
+    if (d < min && d > 0.01) {
+      const push = ((min - d) / min) * EASE_APART * dt;
+      nudge(a, ((dx - dy * SLIDE) / d) * push, ((dy + dx * SLIDE) / d) * push);
+    }
+  }
+}
+
 /** A pet with somewhere to be walks there around walls (a flow field from the goal, made once). */
 function walkTo(w: World, pet: Pet, goal: { x: number; y: number }, dt: number, pace = 0.7): void {
   pet.flow ??= flowField(w.map, Math.floor(goal.x / TILE), Math.floor(goal.y / TILE), 400);
@@ -147,6 +203,8 @@ function walkTo(w: World, pet: Pet, goal: { x: number; y: number }, dt: number, 
 
 export function updatePets(w: World, dt: number): void {
   const p = w.player;
+  let company = 0;
+  for (const pet of w.pets) if (!pet.dead && !pet.goal && pet.def.role !== 'ward') company++;
   for (const pet of w.pets) {
     if (pet.dead) {
       pet.deathT += dt;
@@ -236,12 +294,14 @@ export function updatePets(w: World, dt: number): void {
       }
     } else {
       // at heel: a few steps behind the hero
-      const hx = p.x - Math.cos(p.aim) * 16;
-      const hy = p.y - Math.sin(p.aim) * 12;
+      const hx = p.x - Math.cos(p.aim) * 26;
+      const hy = p.y - Math.sin(p.aim) * 20;
       const d = dist(hx, hy, pet.x, pet.y);
-      if (d > 10) {
+      // (a bigger company follows looser: each stops where there is room, rather than all on the one spot)
+      const loose = 10 + company * 7;
+      if (d > loose) {
         const a = Math.atan2(hy - pet.y, hx - pet.x);
-        const k = Math.min(1, d / 30);
+        const k = Math.min(1, (d - loose + 6) / 30);
         mx = Math.cos(a) * k;
         my = Math.sin(a) * k;
         if (Math.abs(angleDiff(a, 0)) < Math.PI / 2) pet.face = 0;
@@ -262,5 +322,6 @@ export function updatePets(w: World, dt: number): void {
     pet.y = res.y;
     if (Math.hypot(pet.vx, pet.vy) > 8) pet.walkT += dt;
   }
+  keepApart(w, dt);
   w.pets = w.pets.filter((pet) => !pet.dead || pet.deathT < (pet.story ? STORY_FADE : 0.5));
 }

@@ -209,8 +209,10 @@ export class StoryDirector {
       const at = this.spot(def.rescue.at);
       if (at) {
         def.rescue.pets.forEach((id, i) => {
-          const a = (TAU * i) / def.rescue!.pets.length;
-          const by = beside(w, at, Math.cos(a) * 10, Math.sin(a) * 8);
+          const n = def.rescue!.pets.length;
+          const a = (TAU * i) / n;
+          const round = n > 1 ? Math.max(ROOM, (n * ROOM) / 3) : 0;
+          const by = beside(w, at, Math.cos(a) * round, Math.sin(a) * round * 0.8);
           const pet = placePet(w, id, by.x, by.y);
           if (pet) {
             run.followers.push(pet);
@@ -224,15 +226,15 @@ export class StoryDirector {
       const to = this.spot(def.arrive.to);
       if (from && to) {
         def.arrive.pets.forEach((id, i) => {
-          // in a loose line down the road, and a loose knot where they stop
-          const by = beside(w, from, ((i % 3) - 1) * 10, -Math.floor(i / 3) * 14);
+          // in a loose line down the road, and a loose ring where they stop, with room between them
+          const by = beside(w, from, ((i % 3) - 1) * ROOM, -Math.floor(i / 3) * ROOM * 1.2);
           const pet = placePet(w, id, by.x, by.y);
           if (!pet) return;
           // (one alone goes to the spot itself: where they stop is where the place's own person stands)
           const n = def.arrive!.pets.length;
           const a = (TAU * i) / n;
-          const k = n > 1 ? 1 : 0;
-          pet.goal = beside(w, to, Math.cos(a) * 14 * k, Math.sin(a) * 10 * k);
+          const round = n > 1 ? Math.max(ROOM * 1.5, (n * ROOM) / 2) : 0;
+          pet.goal = beside(w, to, Math.cos(a) * round, Math.sin(a) * round * 0.8);
           run.followers.push(pet);
           run.pets.push(pet);
         });
@@ -249,10 +251,10 @@ export class StoryDirector {
         }
         (def.escort.walkers ?? []).forEach((id, i) => {
           // the people walk alongside and behind the wagon
-          const by = beside(w, from, ((i % 2) * 2 - 1) * 14, 10 + Math.floor(i / 2) * 12);
+          const by = beside(w, from, ((i % 2) * 2 - 1) * ROOM, 14 + Math.floor(i / 2) * ROOM);
           const pet = placePet(w, id, by.x, by.y);
           if (!pet) return;
-          pet.goal = beside(w, to, ((i % 2) * 2 - 1) * 14, 10 + Math.floor(i / 2) * 10);
+          pet.goal = beside(w, to, ((i % 2) * 2 - 1) * ROOM, 14 + Math.floor(i / 2) * ROOM);
           run.followers.push(pet);
           run.pets.push(pet);
         });
@@ -327,7 +329,7 @@ export class StoryDirector {
     }
     const from = this.spot(def.enter ?? def.at);
     const seen = from && def.enter && dist(from.x, from.y, p.x, p.y) < 10 * TILE;
-    const at = seen ? castRay(w.map, from.x, from.y, 6, w.rand() * TAU, 12) : offscreen(w, from && dist(from.x, from.y, p.x, p.y) > 2 * TILE ? Math.atan2(from.y - p.y, from.x - p.x) : w.rand() * TAU);
+    const at = seen ? castRay(w.map, from.x, from.y, 6, w.rand() * TAU, ROOM + w.rand() * ROOM) : offscreen(w, from && dist(from.x, from.y, p.x, p.y) > 2 * TILE ? Math.atan2(from.y - p.y, from.x - p.x) : w.rand() * TAU);
     const pet = placePet(w, id, at.x, at.y);
     if (pet && !seen) join(pet, p);
     return pet;
@@ -360,11 +362,13 @@ export class StoryDirector {
     const level = run.def.level !== undefined ? run.def.level + TIERS[w.tier]!.levels : w.level;
     // on the road, they come at the wagon from wherever it has got to
     const wagon = run.def.escort ? run.ward : null;
+    const turn = w.rand() * TAU;
     run.ids = wave.enemies.map((id, i) => {
       const spot = this.spot(wave.from[i % wave.from.length]!);
       const from = wagon ? castRay(w.map, wagon.x, wagon.y, 6, w.rand() * TAU, 150) : run.def.close && spot ? offscreen(w, Math.atan2(spot.y - w.player.y, spot.x - w.player.x)) : (spot ?? { x: w.player.x, y: w.player.y - 80 });
-      const a = w.rand() * TAU;
-      const to = castRay(w.map, from.x, from.y, 6, a, 8 + w.rand() * 18);
+      // (a wave that comes in just beyond the hero's view stays close to that edge: each has its own way in already)
+      const fan = ROOM * (0.7 + Math.sqrt(i) * 0.8);
+      const to = castRay(w.map, from.x, from.y, 6, turn + i * 2.4, run.def.close ? Math.min(fan, ROOM * 0.9) : fan);
       const e = w.addEnemy(id, to.x, to.y, level, { room: -1, pack: -1, spawn: true });
       e.aggro = !held;
       e.held = held || undefined;
@@ -555,6 +559,9 @@ export class StoryDirector {
   }
 }
 
+/** The room one person takes in a group the story places, in world pixels: their model's width and a little air. */
+const ROOM = 28;
+
 /**
  * A place a step from a spot, for someone standing in a knot or a line round it: the step as it is if the
  * ground there is open, else the same step the other way or to the other side, else as far as the ground
@@ -565,7 +572,7 @@ function beside(w: World, at: { x: number; y: number }, dx: number, dy: number):
   if (!d) return { x: at.x, y: at.y };
   for (const [x, y] of [[dx, dy], [-dx, -dy], [dx, -dy], [-dx, dy]] as const) {
     const to = castRay(w.map, at.x, at.y, 5, Math.atan2(y, x), d);
-    if (Math.hypot(to.x - at.x, to.y - at.y) > d - 2.5) return { x: at.x + x, y: at.y + y };
+    if (Math.hypot(to.x - at.x, to.y - at.y) > d - 0.25) return { x: at.x + x, y: at.y + y };
   }
   return castRay(w.map, at.x, at.y, 5, Math.atan2(dy, dx), d);
 }
@@ -597,8 +604,8 @@ function moor(w: World, at: { x: number; y: number }): { x: number; y: number } 
       if (d < bd) {
         bd = d;
         // off the bank, into the open water (within its tile: the raiders' way to it is made to its tile)
-        const ox = bank(x - 1, y) || !water(x - 2, y) ? 7 : bank(x + 1, y) || !water(x + 2, y) ? -7 : 0;
-        best = { x: (x + 0.5) * TILE + ox, y: (y + 0.5) * TILE + (north ? 4 : south ? -4 : 0) };
+        const ox = bank(x - 1, y) || !water(x - 2, y) ? 2 : bank(x + 1, y) || !water(x + 2, y) ? -2 : 0;
+        best = { x: (x + 0.5) * TILE + ox, y: (y + 0.5) * TILE + (north ? -2 : south ? 2 : 0) };
       }
     }
   }

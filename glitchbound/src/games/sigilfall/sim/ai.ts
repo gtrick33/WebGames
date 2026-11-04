@@ -15,6 +15,7 @@ import type { World } from './world';
 
 /** How strongly enemies push away from each other. */
 const SEPARATION = 60;
+const ELBOW_ROOM = 6;
 
 /**
  * A co-op guest's copy of one of the host's enemies (net/coop.ts moves it): only what shows here, and its
@@ -676,7 +677,8 @@ export function separate(w: World, dt: number, list: Enemy[] = w.enemies): void 
       if (b.dead || b.dummy) continue;
       const dx = b.x - a.x;
       const dy = b.y - a.y;
-      const min = a.r + b.r;
+      // (the models are wider than the rules' circles: a few pixels more, and they stand side by side)
+      const min = a.r + b.r + ELBOW_ROOM;
       const d2 = dx * dx + dy * dy;
       if (d2 >= min * min || d2 === 0) continue;
       const d = Math.sqrt(d2);

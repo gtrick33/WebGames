@@ -42,7 +42,8 @@ export function spawnFolk(map: TileMap, seed: number, town: boolean, squares: { 
   const lived = (b: TileMap['buildings'][number]): boolean => !squares || squares.some((q) => Math.hypot((b.lot.tx + b.lot.w / 2) * TILE - q.x, (b.lot.ty + b.lot.h) * TILE - q.y) < 30 * TILE);
   const doors = map.buildings.filter((b) => (b.style === 'house' || b.style === 'inn' || b.style === 'tavern' || b.style === 'shop' || b.style === 'smithy' || b.style === 'hall') && lived(b));
   if (doors.length < 3) return { folk: [], rand };
-  const n = Math.min(town ? 26 : 20, Math.round(doors.length * 0.9));
+  // (a few people about their day: a town is lived in, not crowded)
+  const n = Math.min(town ? 8 : 5, Math.round(doors.length * 0.3));
   const folk: Folk[] = [];
   // a third of them about the square and the market (a town's squares: its waystones), the rest by their doors
   const plazas = squares ?? map.markers.filter((pm) => pm.marker.kind === 'waystone').map((pm) => ({ x: (pm.tx + 0.5) * TILE, y: (pm.ty + 2.5) * TILE }));

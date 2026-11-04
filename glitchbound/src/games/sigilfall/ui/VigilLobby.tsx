@@ -6,7 +6,7 @@ import type { LinkState } from '../net/link';
 import type { Action as RoomAction, View as RoomView } from '../net/vigilRoom';
 import { newCharacter, type Face } from '../progress/character';
 import { iconPicture, iconsReady } from '../render/art/gameIcons';
-import { creatureSprite, heroDollUrl, heroLook } from '../render/sprites';
+import { heldWeapon, heroDollUrl, heroLook, portraitUrl } from '../render/sprites';
 import { readBests } from '../vigil/bests';
 import { CLASS_BODY, mapOpen, partyScale, spellsOf, UNLOCK_HOLD, VIGIL_MAPS, type VigilMap } from '../vigil/kit';
 import { ScreenGate } from './ScreenGate';
@@ -15,19 +15,9 @@ export { readBests, saveBest } from '../vigil/bests';
 
 const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
-const champions = new Map<string, string>();
 /** A land's champion, as a picture for its card. */
 function championUrl(sprite: string): string {
-  const hit = champions.get(sprite);
-  if (hit) return hit;
-  const sp = creatureSprite(sprite, 0);
-  const c = document.createElement('canvas');
-  c.width = sp.width;
-  c.height = sp.height;
-  c.getContext('2d')!.drawImage(sp.c as CanvasImageSource, 0, 0);
-  const url = c.toDataURL();
-  champions.set(sprite, url);
-  return url;
+  return portraitUrl('creature', sprite, 4);
 }
 
 export interface VigilRoomControls {
@@ -215,7 +205,7 @@ export function VigilLobby({ face, body, cls, map, room, onBack, onBegin }: { fa
   }, []);
   const doll = useMemo(() => {
     const hero = newCharacter(pick, 'The Watch', 'vigil');
-    return heroDollUrl(heroLook(pick, hero.equip, {}, body ?? 'm', face), 'down', 6);
+    return heroDollUrl(heroLook(pick, hero.equip, {}, body ?? 'm', face), 'down', 6, heldWeapon(pick, hero.equip.weapon), pick === 'warrior' || pick === 'paladin');
   }, [pick, body, face]);
   const kit = spellsOf(pick);
   const shown = kit[spell] ?? kit[0]!;

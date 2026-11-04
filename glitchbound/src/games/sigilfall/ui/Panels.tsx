@@ -15,7 +15,7 @@ import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, salvageValue } from '../progress/items';
 import { npcMark, rarityColor } from '../render/renderer';
-import { heroDollUrl, heroLook, itemIconUrl, mountPictureUrl, talentIconUrl } from '../render/sprites';
+import { heldWeapon, heroDollUrl, heroLook, itemIconUrl, mountPictureUrl, talentIconUrl } from '../render/sprites';
 import type { HeroLook } from '../render/art/hero';
 import { MOUNT_DEFS, MOUNTS } from '../data/mounts';
 import { authoredLooks, BARE_LOOK, LOOK_SLOTS, lookFits, lookOf, lookSource, wornLooks, type Look, type LookSlot } from '../progress/wardrobe';
@@ -155,7 +155,7 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
               </button>
             );
           })}
-          <HeroDoll look={heroLook(h.cls, h.equip, wornLooks(h), h.body, h.face)} />
+          <HeroDoll look={heroLook(h.cls, h.equip, wornLooks(h), h.body, h.face)} held={heldWeapon(h.cls, h.equip.weapon, wornLooks(h).weapon)} shield={h.cls === 'warrior' || h.cls === 'paladin'} />
         </div>
         <dl className="rb-stats">
           <div>
@@ -1452,15 +1452,16 @@ const ART_CREDITS = [
   'Magic Spells VFX and Magic Circles VFX by Willosuna',
   'Gloomvault Crypt by Certainity',
   'Skill and talent icons: Nasha’s Lumenfall, Skill & Spell Icons Vol. 1, by nanasha.',
+  '3D models: KayKit by Kay Lousberg, Kenney, and Quaternius.',
 ];
 
 /** The hero in everything they wear (and the Wardrobe looks over it); tap to turn them around. */
-function HeroDoll({ look, area = 'doll' }: { look: HeroLook; area?: string }) {
+function HeroDoll({ look, held = null, shield = false, area = 'doll' }: { look: HeroLook; held?: { kind: string; tint?: string } | null; shield?: boolean; area?: string }) {
   const [view, setView] = useState(0);
   const views = ['down', 'side', 'up'] as const;
   return (
     <button className="rb-doll" style={{ gridArea: area }} onClick={() => setView((v) => (v + 1) % views.length)} aria-label="Your hero in their gear (tap to turn)">
-      <img src={heroDollUrl(look, views[view]!, 4)} alt="" draggable={false} />
+      <img src={heroDollUrl(look, views[view]!, 4, held, shield)} alt="" draggable={false} />
     </button>
   );
 }
@@ -1511,7 +1512,7 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
         {tab === 'mounts' ? (
           <div className="rb-mount-pic">{(mount ?? ridden) && <img src={mountPictureUrl((mount ?? ridden)!, mount && !h.mounts.includes(mount.id) ? null : heroLook(h.cls, h.equip, worn, h.body), 3)} alt="" className={mount && !h.mounts.includes(mount.id) ? 'is-locked' : ''} draggable={false} />}</div>
         ) : (
-          <HeroDoll look={look} area="auto" />
+          <HeroDoll look={look} held={heldWeapon(h.cls, h.equip.weapon, previewWorn.weapon)} shield={h.cls === 'warrior' || h.cls === 'paladin'} area="auto" />
         )}
         <ul className="rb-worn">
           {LOOK_SLOTS.map((s) => {
