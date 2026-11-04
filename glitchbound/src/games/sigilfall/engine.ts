@@ -18,7 +18,6 @@ import { DEFAULT_SETTINGS, HERO_SLOTS, loadSave, writeSave, type LoadStatus, typ
 import { buyItem, buyPotions, restock } from './progress/shop';
 import type { ShopId } from './data/vendors';
 import { iconsReady } from './render/art/gameIcons';
-import { worldLook } from './render/art/world';
 import { Renderer } from './render/renderer';
 import { Sound, type MusicId } from './audio/sound';
 import type { Interactable } from './sim/types';
@@ -215,10 +214,7 @@ export class SigilEngine {
   constructor(canvas: HTMLCanvasElement, host: GameHost, playerName: string) {
     this.host = host;
     this.renderer = new Renderer(canvas);
-    // start fetching the packed art while the title screen shows: the first lands' looks
-    worldLook('village');
-    worldLook('forest');
-    // and the skill and talent icons: drawn again with their pictures once the atlas is in
+    // the skill and talent icons: drawn again with their pictures once the atlas is in
     void iconsReady.then((ok) => ok && this.bump());
     const loaded = loadSave();
     this.save = loaded.save;
@@ -947,8 +943,6 @@ export class SigilEngine {
     } else if (it.kind === 'exit') {
       this.kbm?.release();
       this.touch.release();
-      // the art of the land ahead starts loading while the road sign is read
-      worldLook(REGIONS[it.to as RegionId].theme);
       this.setUi({ travel: { to: it.to as RegionId, label: it.label, locked: it.locked } });
     }
   }
