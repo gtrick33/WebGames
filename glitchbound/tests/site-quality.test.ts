@@ -58,6 +58,17 @@ describe('the home page asks for the banner at once', () => {
   });
 });
 
+describe('the online controls on a game’s own panel', () => {
+  it('keep dark words on Backgammon’s and Belot’s cream panels in the dark theme', () => {
+    for (const [file, cls] of [['backgammon', 'tb-online'], ['belot', 'bl-online']] as const) {
+      const css = readFileSync(join(process.cwd(), `src/games/${file}/Game.css`), 'utf8');
+      const rule = css.slice(css.indexOf(`.${cls} {`));
+      expect(rule.slice(0, rule.indexOf('}'))).toMatch(/--fg: var\(--\w+-ink\)/);
+      expect(readFileSync(join(process.cwd(), `src/games/${file}/Game.tsx`), 'utf8')).toContain(`className="${cls}"`);
+    }
+  });
+});
+
 describe('the banner’s words from the admin', () => {
   it('keeps only real lines of the right length', () => {
     expect(sanitizeBanner(null)).toEqual({});
