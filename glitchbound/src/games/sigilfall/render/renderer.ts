@@ -34,6 +34,23 @@ import { aimReach, autoTarget, tapAutoAims } from '../sim/cast';
  * depth), projectiles and particles, darkness and lights in the crypt, then numbers and names.
  */
 
+/** The part of the land in view, for whatever draws into it. */
+export interface LandView {
+  g: CanvasRenderingContext2D;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  time: number;
+}
+
+/** Another game's crowd, drawn into the land at the right depths (render/vigil.ts). */
+export interface LandLayer {
+  under(g: CanvasRenderingContext2D, time: number, view: LandView): void;
+  standing(add: (y: number, draw: () => void) => void, view: LandView): void;
+  over(g: CanvasRenderingContext2D, time: number, view: LandView): void;
+}
+
 /** Aim preview the touch controls ask for while a skill button is dragged. */
 export interface AimPreview {
   shape: 'line' | 'circle' | 'cone' | 'ring';
@@ -208,6 +225,14 @@ export class Renderer {
 
   /** The land and the hero only, no bars or markers: The Vigil draws its own over it. */
   landOnly = false;
+  /** What else stands on the land. */
+  layer: LandLayer | null = null;
+  /** Which of the land's scenery stays. */
+  keepObject: ((o: StaticObject) => boolean) | null = null;
+  /** The land's scenery, once it's built. */
+  get objects(): StaticObject[] {
+    return this.scenery?.objects ?? [];
+  }
   /** The land is really there: its art is in and its scenery built. */
   get landReady(): boolean {
     return !this.waiting && this.scenery !== null;
@@ -386,12 +411,15 @@ export class Renderer {
     if (!w.scene) this.drawAim(w);
     this.drawFacing(w, time);
     this.drawRings(w);
-    this.drawEntrances(w, time);
+    if (!this.landOnly) this.drawEntrances(w, time);
+    const landView: LandView = { g, x: ox, y: oy, w: this.vw, h: this.vh, time };
+    this.layer?.under(g, time, landView);
 
     // everything standing, sorted by depth
     const items: { y: number; draw: () => void }[] = [];
     const inView = (x: number, y: number, m = 40): boolean => x > ox - m && x < ox + this.vw + m && y > oy - m && y < oy + this.vh + 60;
     for (const o of sc.objects) {
+      if (this.keepObject && !this.keepObject(o)) continue;
       const ow = (o.src ? (o.anim ? o.anim.w : o.src[2]) : o.c.width) / (o.k ?? DETAIL);
       const oh = (o.src ? o.src[3] : o.c.height) / (o.k ?? DETAIL);
       // (a big picture is in view while any of it is: the Crown City's keep is wider than the margin, and a hall's
@@ -452,11 +480,13 @@ export class Renderer {
       },
     });
     this.drawDoors(w, items);
+    this.layer?.standing((y, draw) => items.push({ y, draw }), landView);
     items.sort((a, b) => a.y - b.y);
     for (const it of items) it.draw();
 
     for (const pr of w.projectiles) this.drawProjectile(pr, time);
     for (const f of w.fx) this.drawFx(f, w);
+    this.layer?.over(g, time, landView);
     if (w.portal) this.drawPortal(w.portal.x, w.portal.y, time);
 
     // the crypt is dark: light comes from the hero, torches and spells

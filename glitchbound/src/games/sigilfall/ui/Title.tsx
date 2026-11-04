@@ -78,7 +78,7 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
   if (vigil) {
     return (
       <Suspense fallback={<LoadingScreen />}>
-        <VigilScreen engine={engine} face={lastHero?.face} body={lastHero?.body} cls={lastHero?.cls} onBack={() => setVigil(false)} />
+        <VigilScreen engine={engine} face={lastHero?.face} body={lastHero?.body} cls={lastHero?.cls} name={lastHero?.name} onBack={() => setVigil(false)} />
       </Suspense>
     );
   }
