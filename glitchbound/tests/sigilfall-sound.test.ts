@@ -3,6 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SAMPLES, sampleFiles } from '../src/games/sigilfall/audio/samples';
 import { SFX } from '../src/games/sigilfall/audio/sound';
+import { SONGS } from '../src/games/sigilfall/audio/songs';
+import { SEAM, TRACKS } from '../src/games/sigilfall/audio/tracks';
 import { ENEMIES } from '../src/games/sigilfall/data/enemies';
 import { deathSound } from '../src/games/sigilfall/data/voices';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
@@ -58,6 +60,17 @@ describe('Sigilfall: its sounds', () => {
     w.events.length = 0;
     hitEnemy(w, foe, 1e8, 'physical', { depth: 0 });
     expect(sounds()).toContain('dieBone');
+  });
+
+  it('every land has a piece of music, every piece has shipped and is played, and the soundtrack stays small', () => {
+    const MUSIC = 'public/games/sigilfall/music';
+    expect(Object.keys(SONGS).filter((id) => !(id in TRACKS))).toEqual([]);
+    const used = new Set(Object.values(TRACKS));
+    for (const t of used) expect(existsSync(join(MUSIC, `${t}.mp3`)), t).toBe(true);
+    expect(readdirSync(MUSIC).map((f) => f.replace(/\.mp3$/, '')).sort()).toEqual(Object.keys(SEAM).sort());
+    expect([...used].sort()).toEqual(Object.keys(SEAM).sort());
+    const total = readdirSync(MUSIC).reduce((a, f) => a + statSync(join(MUSIC, f)).size, 0);
+    expect(total).toBeLessThan(20 * 1024 * 1024);
   });
 
   it('a creature falls with the sound of its kind', () => {

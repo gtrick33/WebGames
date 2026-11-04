@@ -7,6 +7,10 @@
  * Each sound comes out mono and small (MP3, which every browser can decode), starting right on its first
  * moment, cut to length where it needs to be, and no louder on average than the rest, so a table of gains
  * (src/games/sigilfall/audio/samples.ts) can mix them.
+ *
+ * The music comes from the Orchestral and World Music Pack by Ragnar Random, CC0,
+ * https://opengameart.org/content/orchestral-and-world-music-pack, in ~/Downloads/orchestral_world_music (or
+ * SIGILFALL_MUSIC): stereo, 96 kbps, silence off both ends, all at one loudness.
  */
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, rmSync } from 'node:fs';
@@ -14,7 +18,11 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 const PACK = process.env.SIGILFALL_SOUNDS ?? join(homedir(), 'Downloads/rpg_sound_pack/RPG Sound Pack');
+const MUSIC = process.env.SIGILFALL_MUSIC ?? join(homedir(), 'Downloads/orchestral_world_music');
 const OUT = 'public/games/sigilfall/audio';
+const MUSIC_OUT = 'public/games/sigilfall/music';
+/** How loud a piece of music is overall (LUFS). */
+const MUSIC_LOUDNESS = -21;
 const FFMPEG = process.env.FFMPEG ?? '/opt/homebrew/bin/ffmpeg';
 /** How loud a sound is on average, at most (dB). */
 const TARGET = -20;
@@ -92,6 +100,22 @@ const FILES = {
   bite3: ['NPC/beetle/bite-small3.wav'],
 };
 
+/** The soundtrack (src/games/sigilfall/audio/tracks.ts says who plays what). */
+const TRACKS = {
+  adventure: '01_-_it_is_dangerous_to_be_lonely_without_a_sword.ogg',
+  town: '02_-_the_town_where_i_got_the_magic_bottle.ogg',
+  road: '03_-_quest_of_magic_cowboy_dude.ogg',
+  elf: '04_-_youthful_elf_seeking_adventure.ogg',
+  tower: '05_-_tower_of_the_vampire.ogg',
+  battle: '06_-_samurai_eats_ninja_for_breakfast.ogg',
+  'dark-elf': '07_-_youthful_elf_in_the_dark_world.ogg',
+  'sultan-slow': '08_-_poison_the_sultan_with_saltpeter_slower_world_version.ogg',
+  sultan: '08_-_poison_the_sultan_with_saltpeter_world_version.ogg',
+  tribe: '09_-_the_tribe_is_mellow_0.ogg',
+  shaman: '10_-_the_shaman_is_dancing_0.ogg',
+  qetzyl: '11_-_dungeon_of_qetzyl_0.ogg',
+};
+
 function ffmpeg(args) {
   const r = spawnSync(FFMPEG, ['-hide_banner', ...args], { encoding: 'utf8' });
   if (r.status !== 0) throw new Error(`${FFMPEG} ${args.join(' ')}\n${r.stderr}`);
@@ -120,3 +144,16 @@ for (const [name, [file, o = {}]] of Object.entries(FILES)) {
   total++;
 }
 console.log(`${total} sounds in ${OUT}`);
+
+rmSync(MUSIC_OUT, { recursive: true, force: true });
+mkdirSync(MUSIC_OUT, { recursive: true });
+const TRIM = ['silenceremove=start_periods=1:start_threshold=-60dB', 'areverse', 'silenceremove=start_periods=1:start_threshold=-60dB', 'areverse'];
+for (const [name, file] of Object.entries(TRACKS)) {
+  const src = join(MUSIC, file);
+  const text = ffmpeg(['-nostats', '-i', src, '-af', [...TRIM, 'ebur128=framelog=quiet'].join(','), '-f', 'null', '-']);
+  const lufs = Number(/I:\s+(-?[\d.]+) LUFS/.exec(text)[1]);
+  const gain = MUSIC_LOUDNESS - lufs;
+  const chain = [...TRIM, `volume=${gain.toFixed(2)}dB`, 'alimiter=limit=0.89:level=disabled'];
+  ffmpeg(['-y', '-loglevel', 'error', '-i', src, '-af', chain.join(','), '-ar', '44100', '-codec:a', 'libmp3lame', '-b:a', '96k', '-map_metadata', '-1', join(MUSIC_OUT, `${name}.mp3`)]);
+  console.log(`${name}: ${lufs} LUFS, ${gain.toFixed(1)} dB`);
+}

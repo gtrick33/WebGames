@@ -1,12 +1,13 @@
 import { SAMPLES, sampleFiles, type SampleDef } from './samples';
 import { Score } from './score';
 import { SONGS, type SongId } from './songs';
+import { SEAM, TRACKS, type TrackId } from './tracks';
 
 /**
- * Sigilfall's sound: effects, some recorded (audio/samples.ts), the rest and the fallback synthesized, and a procedural
- * score, a song for every land (audio/songs.ts, played by audio/score.ts), with a boss theme. The AudioContext is
- * created on the first tap or key (browsers block sound before that), effects are rate-limited so a big fight never
- * turns into noise, and everything follows the master / music / effects volumes and the mute switch.
+ * Sigilfall's sound: effects, some recorded (audio/samples.ts), the rest and the fallback synthesized, and a soundtrack
+ * of recorded pieces (audio/tracks.ts) with a procedural score standing in (audio/songs.ts, played by audio/score.ts).
+ * The AudioContext is created on the first tap or key (browsers block sound before that), effects are rate-limited so
+ * a big fight never turns into noise, and everything follows the master / music / effects volumes and the mute switch.
  */
 
 const AUDIO_BASE = '/games/sigilfall/audio/';
@@ -14,6 +15,21 @@ const AUDIO_BASE = '/games/sigilfall/audio/';
 const AUDIO_VERSION = '1';
 /** How many recordings sound at once, at most (a phone has its limits, and past this nobody can tell). */
 const MAX_VOICES = 24;
+const MUSIC_BASE = '/games/sigilfall/music/';
+const MUSIC_VERSION = '1';
+/** A piece that comes in at this level sits where the procedural score does. */
+const TRACK_GAIN = 1;
+/** How long one land's music takes to give way to the next, in seconds. */
+const CROSSFADE = 1.5;
+/** A sound of nothing at all: playing it during a tap wins an audio element the right to play later (phones). */
+const SILENCE = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+
+/** One of the two players the soundtrack crossfades between. A piece streams from memory, not held decoded. */
+interface Deck {
+  el: HTMLAudioElement;
+  gain: GainNode;
+  track: TrackId | null;
+}
 
 export type MusicId = SongId | null;
 
@@ -175,6 +191,13 @@ export class Sound {
   /** Which file each sound played last (not the same one twice running). */
   private readonly lastFile = new Map<string, string>();
   private voices = 0;
+  /** The soundtrack's two players, and which of them is live. */
+  private decks: [Deck, Deck] | null = null;
+  private live = 0;
+  /** The pieces fetched so far (a small file each, ready to start at once). */
+  private readonly pieces = new Map<TrackId, Promise<string>>();
+  /** What the music should be playing now (a piece may arrive after the land has changed again). */
+  private wantedTrack: TrackId | null = null;
   private music: MusicId = null;
   private wanted: MusicId = null;
   private score: Score | null = null;
@@ -212,6 +235,7 @@ export class Sound {
       this.applyVolumes();
       this.timer = window.setInterval(() => this.schedule(), 90);
       this.fetchRecordings();
+      this.makeDecks();
     }
     // stopped by the browser rather than by the game (a phone's 'interrupted' after it was put away): a touch
     // or a key starts it again
@@ -246,6 +270,11 @@ export class Sound {
     if (!this.ctx) return;
     if (on) void this.ctx.suspend().catch(() => undefined);
     else void this.ctx.resume().catch(() => undefined);
+    for (const d of this.decks ?? []) {
+      if (!d.track) continue;
+      if (on) d.el.pause();
+      else void d.el.play().catch(() => undefined);
+    }
   }
 
   private retried = 0;
@@ -365,24 +394,150 @@ export class Sound {
     if (!this.ctx || !this.musicBus || !this.noiseBuf) return;
     if (this.music === id) return;
     this.music = id;
-    const t = this.ctx.currentTime;
-    // the last land's song fades out under the new one, then lets go
-    const old = this.score;
-    if (old) {
-      old.stop(t);
-      window.setTimeout(() => old.out.disconnect(), 6000);
+    const track = id ? TRACKS[id] ?? null : null;
+    this.wantedTrack = track;
+    if (track && this.decks) {
+      // (the same piece goes on playing across lands that share it)
+      if (this.decks[this.live]!.track === track) this.stopScore();
+      else this.playPiece(track, id!);
+      return;
     }
+    this.fadeOutDecks();
+    this.startScore(id);
+  }
+
+  /** The procedural score for this song: the last one fades out under it, then lets go. */
+  private startScore(id: MusicId): void {
+    if (!this.ctx || !this.musicBus || !this.noiseBuf) return;
+    const t = this.ctx.currentTime;
+    const old = this.score;
+    this.stopScore();
     this.score = id ? new Score(this.ctx, this.musicBus, this.noiseBuf, SONGS[id], t + (old ? 0.5 : 0.1)) : null;
+  }
+
+  private stopScore(): void {
+    const old = this.score;
+    if (!old || !this.ctx) return;
+    old.stop(this.ctx.currentTime);
+    window.setTimeout(() => old.out.disconnect(), 6000);
+    this.score = null;
+  }
+
+  private makeDecks(): void {
+    const c = this.ctx;
+    if (!c || !this.musicBus || this.decks || typeof Audio === 'undefined' || !c.createMediaElementSource) return;
+    const deck = (): Deck => {
+      const el = new Audio();
+      el.preload = 'auto';
+      const gain = c.createGain();
+      gain.gain.value = 0;
+      c.createMediaElementSource(el).connect(gain).connect(this.musicBus!);
+      // (still inside the tap that made the sound possible: this is what lets it play later on a phone)
+      el.src = SILENCE;
+      void el.play().catch(() => undefined);
+      return { el, gain, track: null };
+    };
+    this.decks = [deck(), deck()];
+  }
+
+  private piece(track: TrackId): Promise<string> {
+    let p = this.pieces.get(track);
+    if (!p) {
+      p = fetch(`${MUSIC_BASE}${track}.mp3?v=${MUSIC_VERSION}`).then(async (res) => {
+        if (!res.ok) throw new Error(track);
+        return URL.createObjectURL(await res.blob());
+      });
+      p.catch(() => this.pieces.delete(track));
+      this.pieces.set(track, p);
+    }
+    return p;
+  }
+
+  /** Brings a piece in, crossfading from whatever is playing; if it can't be had, the song's score plays instead. */
+  private playPiece(track: TrackId, id: MusicId): void {
+    this.piece(track)
+      .then((url) => {
+        if (this.wantedTrack !== track || !this.decks) return;
+        if (this.decks[this.live]!.track === track) return;
+        this.swapTo(track, url, CROSSFADE);
+        this.stopScore();
+      })
+      .catch(() => {
+        if (this.wantedTrack === track && this.music === id) {
+          this.fadeOutDecks();
+          this.startScore(id);
+        }
+      });
+  }
+
+  /** Starts a piece on the idle deck and crossfades to it. */
+  private swapTo(track: TrackId, url: string, fade: number): void {
+    const c = this.ctx;
+    if (!c || !this.decks) return;
+    const from = this.decks[this.live]!;
+    const to = this.decks[1 - this.live]!;
+    const t = c.currentTime;
+    to.track = track;
+    to.el.src = url;
+    to.el.currentTime = 0;
+    to.gain.gain.cancelScheduledValues(t);
+    to.gain.gain.setValueAtTime(0.0001, t);
+    to.gain.gain.linearRampToValueAtTime(TRACK_GAIN, t + fade);
+    void to.el.play().catch(() => {
+      // (refused or broken: the song's score)
+      if (this.wantedTrack === track) {
+        to.track = null;
+        this.startScore(this.music);
+      }
+    });
+    this.fadeOut(from, fade);
+    this.live = 1 - this.live;
+  }
+
+  private fadeOut(d: Deck, fade: number): void {
+    const c = this.ctx;
+    if (!c || !d.track) return;
+    const t = c.currentTime;
+    const was = d.el.src;
+    d.gain.gain.cancelScheduledValues(t);
+    d.gain.gain.setValueAtTime(Math.max(0.0001, d.gain.gain.value), t);
+    d.gain.gain.linearRampToValueAtTime(0.0001, t + fade);
+    d.track = null;
+    // (once it has gone quiet, unless it has been given something new since)
+    window.setTimeout(() => {
+      if (!d.track && d.el.src === was) d.el.pause();
+    }, fade * 1000 + 100);
+  }
+
+  private fadeOutDecks(): void {
+    for (const d of this.decks ?? []) this.fadeOut(d, CROSSFADE);
   }
 
   private schedule(): void {
     const c = this.ctx;
-    if (!c || !this.score || this.suspended) return;
-    this.score.schedule(c.currentTime + 0.4);
+    if (!c || this.suspended) return;
+    this.score?.schedule(c.currentTime + 0.4);
+    // a piece coming to its end overlaps its own beginning, so it goes round without a gap
+    const d = this.decks?.[this.live];
+    if (!d?.track || !Number.isFinite(d.el.duration)) return;
+    // (stopped by the phone rather than by the game, a call or the app put away: back on when it can be)
+    if (d.el.paused && performance.now() - this.retried > 1000) {
+      this.retried = performance.now();
+      void d.el.play().catch(() => undefined);
+    }
+    const seam = SEAM[d.track];
+    if (d.el.duration - d.el.currentTime <= seam) this.swapTo(d.track, d.el.src, seam);
   }
 
   dispose(): void {
     window.clearInterval(this.timer);
+    for (const d of this.decks ?? []) {
+      d.el.pause();
+      d.el.removeAttribute('src');
+    }
+    this.decks = null;
+    for (const p of this.pieces.values()) void p.then((url) => URL.revokeObjectURL(url)).catch(() => undefined);
+    this.pieces.clear();
     void this.ctx?.close().catch(() => undefined);
     this.ctx = null;
   }

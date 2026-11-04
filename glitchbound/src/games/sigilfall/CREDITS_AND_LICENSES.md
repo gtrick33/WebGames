@@ -22,8 +22,9 @@ packs below into the game's own files in `public/games/sigilfall/3d/` (the packs
 | Sounds | Author | Terms | What we use |
 | --- | --- | --- | --- |
 | RPG Sound Pack | artisticdude, https://opengameart.org/content/rpg-sound-pack | CC0 | Sword swings and clashes, spell whooshes, creature voices (giants, ogres, beasts, shades, slimes, beetles), coins, bottles, armor, doors, menu sounds. `scripts/sigilfall-sounds.mjs` builds them into `public/games/sigilfall/audio/`; the pack stays out of the repository. |
+| Orchestral and World Music Pack | Ragnar Random, https://opengameart.org/content/orchestral-and-world-music-pack | CC0 | The soundtrack: 12 pieces (`audio/tracks.ts` says which land plays which), built into `public/games/sigilfall/music/`. |
 
-The music and the rest of the effects are synthesized in code (`audio/`).
+The rest of the effects are synthesized in code (`audio/`), and so is the procedural score that stands in if a piece can't be loaded.
 
 ## 2D art
 
