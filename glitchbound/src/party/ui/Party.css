@@ -2578,3 +2578,9 @@ img.pt-feature-art {
     grid-template-columns: 1fr;
   }
 }
+/* The smallest phones: a game's tagline ends in a whole sentence. */
+@media (max-width: 340px) {
+  .pt-gamecard .flagship-tag {
+    -webkit-line-clamp: 7;
+  }
+}
