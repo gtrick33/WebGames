@@ -39,8 +39,8 @@ to buy. Regulators in the EU have acted on exactly those.
 
 ## Connecting Stripe, step by step
 1. **Create the account:** [dashboard.stripe.com/register](https://dashboard.stripe.com/register). Website:
-   `https://glitchboundstudio.com`. Say you sell cosmetic items for browser games, and give a support email. These pages are what
-   Stripe's reviewers look at: [/shop](https://glitchboundstudio.com/shop) (what's sold and the price),
+   `https://glitchboundstudio.com`. Describe only what's really for sale: right now, an optional one-time €1.99 upgrade that removes
+   ads from a free browser games site, delivered instantly. Give a support email. These pages are what Stripe's reviewers look at: [/shop](https://glitchboundstudio.com/shop) (what's sold and the price),
    [/terms/sale](https://glitchboundstudio.com/terms/sale) (refunds and disputes), [/contact](https://glitchboundstudio.com/contact),
    [/privacy](https://glitchboundstudio.com/privacy), [/terms](https://glitchboundstudio.com/terms).
 2. **Turn on Managed Payments:** [its settings page](https://dashboard.stripe.com/settings/managed-payments) ([guide](https://docs.stripe.com/payments/managed-payments/set-up)). Ask Stripe about Crass Act here.
