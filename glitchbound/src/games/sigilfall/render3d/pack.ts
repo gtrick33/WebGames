@@ -33,6 +33,8 @@ export interface ClipData {
   t: number;
   sj: number[];
   s: number;
+  /** A clip made in the browser keeps its rotations here rather than in the file (a rider's seat). */
+  own?: Int16Array;
 }
 
 export interface RigData {

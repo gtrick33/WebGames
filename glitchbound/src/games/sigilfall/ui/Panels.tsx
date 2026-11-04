@@ -15,7 +15,7 @@ import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, salvageValue } from '../progress/items';
 import { npcMark, rarityColor } from '../render/renderer';
-import { heldWeapon, heroDollUrl, heroLook, itemIconUrl, mountPictureUrl, talentIconUrl } from '../render/sprites';
+import { heldWeapon, heroDollUrl, heroLook, itemIconUrl, mountPictureUrl, talentIconUrl, watchMountPictures } from '../render/sprites';
 import type { HeroLook } from '../render/art/hero';
 import { MOUNT_DEFS, MOUNTS } from '../data/mounts';
 import { authoredLooks, BARE_LOOK, LOOK_SLOTS, lookFits, lookOf, lookSource, wornLooks, type Look, type LookSlot } from '../progress/wardrobe';
@@ -1508,11 +1508,14 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
   const current = slot ? h.worn[slot] : undefined;
   const mount = tab === 'mounts' && pick ? MOUNT_DEFS[pick] : undefined;
   const ridden = h.mount ? MOUNT_DEFS[h.mount] : undefined;
+  // (the mounts' pictures come in one at a time)
+  const [, pictureCame] = useState(0);
+  useEffect(() => (tab === 'mounts' ? watchMountPictures(() => pictureCame((n) => n + 1)) : undefined), [tab]);
   return (
     <div className="rb-hero rb-wardrobe">
       <section className="rb-hero-left" aria-label="Preview">
         {tab === 'mounts' ? (
-          <div className="rb-mount-pic">{(mount ?? ridden) && <img src={mountPictureUrl((mount ?? ridden)!, mount && !h.mounts.includes(mount.id) ? null : heroLook(h.cls, h.equip, worn, h.body), 3)} alt="" className={mount && !h.mounts.includes(mount.id) ? 'is-locked' : ''} draggable={false} />}</div>
+          <div className="rb-mount-pic">{(mount ?? ridden) && <img src={mountPictureUrl((mount ?? ridden)!, mount && !h.mounts.includes(mount.id) ? null : heroLook(h.cls, h.equip, worn, h.body, h.face), 6)} alt="" className={mount && !h.mounts.includes(mount.id) ? 'is-locked' : ''} draggable={false} />}</div>
         ) : (
           <HeroDoll look={look} held={heldWeapon(h.cls, h.equip.weapon, previewWorn.weapon)} shield={h.cls === 'warrior' || h.cls === 'paladin'} area="auto" />
         )}

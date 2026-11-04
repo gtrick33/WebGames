@@ -2737,9 +2737,10 @@
   cursor: pointer;
 }
 .rb-mount-tile img {
-  width: 84px;
-  height: 58px;
-  image-rendering: pixelated;
+  width: 100%;
+  max-width: 116px;
+  height: 92px;
+  object-fit: contain;
 }
 .rb-look-tag.is-story {
   color: #9fd8ff;
@@ -2759,7 +2760,8 @@
 }
 .rb-mount-pic img {
   max-width: 100%;
-  image-rendering: pixelated;
+  max-height: 260px;
+  object-fit: contain;
 }
 .rb-worn {
   display: grid;

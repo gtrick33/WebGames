@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { HeroLook, Piece } from '../render/art/hero';
 import { hexRgb } from './kits';
 import { loadPack, mergeMeshes, type MeshData, type Pack } from './pack';
+import { addRideClip } from './ride';
 import { rigAnimOf, type RigAnim } from './toon';
 
 /**
@@ -22,7 +23,10 @@ export interface Wardrobe {
 let wardrobe: Promise<Wardrobe> | null = null;
 export function loadWardrobe(): Promise<Wardrobe> {
   if (!wardrobe) {
-    wardrobe = Promise.all([loadPack('hero'), loadPack('rigs')]).then(([hero, rigs]) => ({ hero, rigs, medium: rigAnimOf(rigs, 'medium'), large: rigAnimOf(rigs, 'large') }));
+    wardrobe = Promise.all([loadPack('hero'), loadPack('rigs')]).then(([hero, rigs]) => {
+      addRideClip(rigs.rigs.medium!);
+      return { hero, rigs, medium: rigAnimOf(rigs, 'medium'), large: rigAnimOf(rigs, 'large') };
+    });
     wardrobe.catch(() => (wardrobe = null));
   }
   return wardrobe;

@@ -961,7 +961,7 @@ async function fbxKit(id, path, picks) {
   const mixer = new THREE.AnimationMixer(object);
   const all = object.animations;
   for (const [want, re] of picks) {
-    const clean = (a) => a.name.split('|').pop().replace(/^[A-Z][a-z]+_(?=[A-Z])/, '');
+    const clean = (a) => a.name.split('|').pop().replace(/^[A-Z][A-Za-z]+_(?=[A-Z])/, '');
     const clip = all.find((a) => re.test(clean(a)));
     if (!clip) {
       console.log(`  ${id}: no ${want} in ${all.map((a) => a.name.split('|').pop()).join(',')}`);
@@ -1217,10 +1217,48 @@ const INDOOR = {
 
 /* ------------------------------------------------------------------ build */
 
+/** The horses that are ridden (render3d/mountLook.ts says who is which), and the beast a drake is built on. */
+const HORSES = ['02', '04', '05', '10', '11', '12', '13', '16', '17'];
+const DRAKE_CLIPS = [
+  ['idle', /^Idle/i],
+  ['walk', /^Walk/i],
+  ['run', /^Run/i],
+  ['chop', /^(Attack|Bite)/i],
+  ['die', /^Death/i],
+];
+
+async function mountKits(says) {
+  const add = async (id, path) => {
+    const doc = loadGltf(path);
+    const rig = rigFrom(doc);
+    const parts = await partsOf(doc, rig);
+    const pack = new Pack();
+    pack.addMesh('body', joinParts(Object.values(parts)));
+    pack.meshes.body.rig = id;
+    const names = (doc.g.animations ?? []).map((a) => a.name);
+    for (const [want, re] of OWN_CLIPS) {
+      const anim = (doc.g.animations ?? []).find((a) => re.test(a.name));
+      if (anim) bakeClip(pack, id, rig, doc, anim, want, 15);
+      else console.log(`  ${id}: no ${want} in ${names.join(',')}`);
+    }
+    pack.rigs[id] = cleanRig(rig);
+    says(id, pack.write(`k/${id}.pack`));
+  };
+  for (const n of HORSES) await add(`m_horse_${n}`, join(SRC, `PLUS/GLB/horse-${n}.glb`));
+  says('fbx_trex', (await fbxKit('fbx_trex', join(SRC, `${DINO}Trex.fbx`), DRAKE_CLIPS)).write('k/fbx_trex.pack'));
+}
+
 async function main() {
   mkdirSync(OUT, { recursive: true });
   const report = [];
   const says = (name, bytes) => report.push(`${name} ${(bytes / 1024).toFixed(0)}KB`);
+
+  // (only what's ridden, without rebuilding the whole world)
+  if (process.env.SIGILFALL_ONLY === 'mounts') {
+    await mountKits(says);
+    console.log(report.join('\n'));
+    return;
+  }
 
   const knight = loadGltf(join(SRC, CHARS, 'Knight.glb'));
   const bigOne = loadGltf(join(SRC, CHARS, 'Barbarian_Large.glb'));
@@ -1328,6 +1366,7 @@ async function main() {
     says(id, pack.write(`k/${id}.pack`));
   };
   for (const [id, n] of Object.entries(ANIMALS)) await addOwn(id, join(SRC, 'Ultimate Animated Animals - July 2021/glTF', `${n}.gltf`));
+  await mountKits(says);
 
   // the land
   for (const [file, set] of [['nature', NATURE], ['town', TOWN], ['indoor', INDOOR]]) {

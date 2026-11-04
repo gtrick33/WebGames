@@ -1,4 +1,5 @@
 import { clamp, hash2, TAU } from '../core/math';
+import { MOUNT_DEFS, type MountDef } from '../data/mounts';
 import { colorOf, FIELD, FX, WARN, type Fx3D } from '../render3d/fx3d';
 import { heightFromRadius, PERSON_H, type Cast } from '../render3d/cast';
 import { kitOf } from '../render3d/kits';
@@ -539,6 +540,19 @@ export class Effects {
       if (b.def.dr) fx.put({ kind: FX.rune, x: p.x, y: p.y, flat: true, w: 40, a: b.def.color, b: '#ffffff', t: 0.5, seed: i });
     }
     if (hasStatus(p, 'stun')) this.stars(fx, p.x, p.y, PERSON_H + 2, sc.time);
+    const ridden = p.riding ? MOUNT_DEFS[p.riding] : undefined;
+    if (ridden?.glow) this.mountGlow(fx, p.x, p.y, ridden.glow, ridden.body === 'drake' ? 1.5 : 1, sc.time);
+  }
+
+  /** A prestige mount's touch, kept small: embers going up off it, or stars round its feet. */
+  private mountGlow(fx: Fx3D, x: number, y: number, glow: NonNullable<MountDef['glow']>, k: number, time: number): void {
+    const n = 6;
+    for (let i = 0; i < n; i++) {
+      const u = (time * 0.42 + i / n) % 1;
+      const a = hash2(i, Math.floor(time * 0.42 + i / n), 7) * TAU;
+      if (glow.kind === 'embers') fx.put({ kind: FX.spark, x: x + Math.cos(a) * 11 * k, y: y + Math.sin(a) * 6 * k, up: (22 + u * 26) * k, w: 7 * (1 - u * 0.6), a: glow.color, t: 0.1 + u * 0.8 });
+      else fx.put({ kind: FX.spark, x: x + Math.cos(a) * 15, y: y + Math.sin(a) * 9, up: 2 + u * 9, w: 9 * Math.sin(u * Math.PI), a: glow.color, t: 0.1 });
+    }
   }
 
   private stars(fx: Fx3D, x: number, y: number, up: number, time: number): void {
