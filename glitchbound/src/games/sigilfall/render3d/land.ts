@@ -65,16 +65,16 @@ interface Placed {
 /* ------------------------------------------------------------------ what grows where */
 
 const TREES: Record<TreeKind, { m: string[]; h: number }> = {
-  oak: { m: ['Tree_1_A', 'Tree_1_B', 'Tree_2_A', 'Tree_2_B', 'Tree_2_C'], h: 2.5 },
-  pine: { m: ['Tree_4_A', 'Tree_4_B', 'tree_pineDefaultA', 'tree_pineRoundA'], h: 2.8 },
-  snowpine: { m: ['tree_pineDefaultA', 'tree_pineTallA', 'tree_pineRoundA'], h: 2.8 },
-  palm: { m: ['tree_palm', 'tree_palmBend', 'tree_palmTall', 'tree_palmDetailedShort'], h: 2.7 },
-  dead: { m: ['Tree_Bare_1_A', 'Tree_Bare_1_B', 'Tree_Bare_2_A', 'Tree_Bare_2_B', 'tree_dead_large', 'tree_dead_medium'], h: 2.4 },
+  oak: { m: ['Tree_1_A', 'Tree_1_B', 'Tree_2_A', 'Tree_2_B', 'Tree_2_C'], h: 3.5 },
+  pine: { m: ['Tree_4_A', 'Tree_4_B', 'tree_pineDefaultA', 'tree_pineRoundA'], h: 4 },
+  snowpine: { m: ['tree_pineDefaultA', 'tree_pineTallA', 'tree_pineRoundA'], h: 4 },
+  palm: { m: ['tree_palm', 'tree_palmBend', 'tree_palmTall', 'tree_palmDetailedShort'], h: 3.6 },
+  dead: { m: ['Tree_Bare_1_A', 'Tree_Bare_1_B', 'Tree_Bare_2_A', 'Tree_Bare_2_B', 'tree_dead_large', 'tree_dead_medium'], h: 3.2 },
   cactus: { m: ['cactus_tall', 'cactus_short'], h: 1.5 },
   mushroom: { m: ['mushroom_redTall', 'mushroom_tanTall', 'mushroom_red'], h: 1.9 },
   crystal: { m: ['stone_tallA', 'stone_tallE'], h: 2 },
-  willow: { m: ['Tree_5_A', 'Tree_5_B', 'Tree_5_D'], h: 2.6 },
-  jungle: { m: ['Tree_6_A', 'Tree_7_A', 'Tree_7_B', 'Tree_3_A'], h: 2.8 },
+  willow: { m: ['Tree_5_A', 'Tree_5_B', 'Tree_5_D'], h: 3.5 },
+  jungle: { m: ['Tree_6_A', 'Tree_7_A', 'Tree_7_B', 'Tree_3_A'], h: 4 },
 } as Record<TreeKind, { m: string[]; h: number }>;
 
 const BUSHES = ['Bush_1_A', 'Bush_1_B', 'Bush_1_D', 'Bush_2_A', 'Bush_2_C', 'Bush_3_A', 'Bush_4_A', 'Bush_4_C'];
@@ -83,9 +83,10 @@ const TUFTS = ['Grass_1_A', 'Grass_2_A', 'Grass_1_B', 'Grass_2_B'];
 const FLOWERS = ['flower_redA', 'flower_yellowA', 'flower_purpleA'];
 
 /**
- * Each prop in the data: its model, how wide (w, across the view) and deep (d) it may be in tiles, and how tall (h). It
- * takes the largest size that keeps within all three, so what is drawn stays on the tiles the rules make solid. `flat`
- * things lie on the ground; those with no model (`m: ''`) are only a rule: an invisible edge of something wider.
+ * The world's one scale (the way the great RPGs keep theirs: everything is measured against the hero). A hero is 36
+ * world pixels tall, and each prop is sized in world pixels: a crate comes to the knee, a barrel to the hip, a door a
+ * head over, a lamp post over the head, a tower over everything. It takes the largest size that keeps within w (across
+ * the view), d (deep) and h (tall). `flat` things lie on the ground; those with no model (`m: ''`) are only a rule.
  */
 interface PropDef {
   m: string;
@@ -96,111 +97,169 @@ interface PropDef {
   across?: boolean;
   tint?: string;
   flame?: number;
+  /** How high the fire burns, in world pixels. */
   flameAt?: number;
   /** Stretches to fill w and d. */
   flat?: boolean;
+  /** A small warm light over it (a candle). */
+  glow?: string;
+  /** Stretches to fill w, d and h (a plinth). */
+  box?: boolean;
+  /** A stone hero this tall stands on it. */
+  hero?: number;
 }
 
 const PROPS: Record<string, PropDef> = {
   // the road and the yard
-  lamp: { m: 'post_lantern', w: 0.7, d: 0.7, h: 2.2 },
-  lantern: { m: 'lantern_standing', w: 0.6, d: 0.6, h: 1.5 },
-  torch: { m: 'torch_lit', w: 0.6, d: 0.6, h: 1.7, flame: 0.8, flameAt: 1.7 },
-  'iron-torch': { m: 'torch_lit', w: 0.6, d: 0.6, h: 1.7, flame: 0.8, flameAt: 1.7 },
-  brazier: { m: 'bucket', w: 0.9, d: 0.9, h: 0.95, tint: '#7c7a8a', flame: 1, flameAt: 0.95 },
-  campfire: { m: 'campfire_stones', w: 0.95, d: 0.95, h: 0.7, flame: 1.1, flameAt: 0.3 },
-  barrel: { m: 'p_barrel', w: 0.85, d: 0.85, h: 1 },
-  crate: { m: 'p_crate_A_big', w: 0.9, d: 0.9, h: 0.9 },
-  sacks: { m: 'p_sack', w: 0.8, d: 0.8, h: 0.6 },
-  basket: { m: 'p_sack', w: 0.7, d: 0.7, h: 0.5, tint: '#d8b070' },
-  bucket: { m: 'bucket', w: 0.55, d: 0.55, h: 0.55 },
-  'clay-pot': { m: 'barrel_small', w: 0.6, d: 0.6, h: 0.65, tint: '#d98a5c' },
-  pot: { m: 'barrel_small', w: 0.6, d: 0.6, h: 0.65, tint: '#d98a5c' },
-  cauldron: { m: 'bucket', w: 0.9, d: 0.9, h: 0.75, tint: '#55525f' },
-  fish: { m: 'p_trough', w: 0.95, d: 0.7, h: 0.5, tint: '#c8d8d8' },
-  woodpile: { m: 'log_stack', w: 1, d: 0.95, h: 0.8 },
-  log: { m: 'log', w: 1.1, d: 0.5, h: 0.4 },
-  stump: { m: 'stump_round', w: 0.7, d: 0.7, h: 0.5 },
-  'chopping-block': { m: 'stump_round', w: 0.8, d: 0.8, h: 0.55 },
-  hay: { m: 'p_haybale', w: 0.95, d: 0.95, h: 0.85 },
-  planter: { m: 'Bush_1_B', w: 0.95, d: 0.95, h: 0.8 },
-  flowerbed: { m: 'Bush_2_C', w: 0.95, d: 0.95, h: 0.7, tint: '#f0c8d8' },
-  flowers: { m: 'flower_redA', w: 0.8, d: 0.8, h: 0.55 },
-  topiary: { m: 'Bush_3_A', w: 0.95, d: 0.95, h: 1.3 },
-  scarecrow: { m: 'scarecrow', w: 0.95, d: 0.7, h: 1.7 },
-  notice: { m: 'sign', w: 0.9, d: 0.6, h: 1.25 },
-  'danger-sign': { m: 'sign_both', w: 0.9, d: 0.6, h: 1.25 },
-  target: { m: 'p_target', w: 0.95, d: 0.7, h: 1.2 },
-  trough: { m: 'p_trough', w: 1.2, d: 0.8, h: 0.55, across: true },
-  bench: { m: 'bench', w: 1.2, d: 0.65, h: 0.65, across: true },
-  anvil: { m: 'anvil', w: 0.9, d: 0.7, h: 0.75 },
-  'weapon-rack': { m: 'p_weaponrack', w: 1.1, d: 0.6, h: 1.2, across: true },
-  rack: { m: 'p_weaponrack', w: 1, d: 0.6, h: 1.1, across: true },
-  'armor-stand': { m: 'sword_shield', w: 0.9, d: 0.7, h: 1.3 },
+  lamp: { m: 'post_lantern', w: 16, d: 16, h: 46 },
+  lantern: { m: 'lantern_standing', w: 12, d: 12, h: 20 },
+  torch: { m: 'torch_lit', w: 12, d: 12, h: 32, flame: 0.8, flameAt: 32 },
+  'iron-torch': { m: 'torch_lit', w: 12, d: 12, h: 32, flame: 0.8, flameAt: 32 },
+  brazier: { m: 'bucket', w: 18, d: 18, h: 20, tint: '#7c7a8a', flame: 1, flameAt: 20 },
+  campfire: { m: 'campfire_stones', w: 26, d: 26, h: 12, flame: 1.1, flameAt: 6 },
+  barrel: { m: 'p_barrel', w: 16, d: 16, h: 20 },
+  crate: { m: 'p_crate_A_big', w: 18, d: 18, h: 16 },
+  sacks: { m: 'p_sack', w: 16, d: 16, h: 11 },
+  basket: { m: 'p_sack', w: 13, d: 13, h: 9, tint: '#d8b070' },
+  bucket: { m: 'bucket', w: 10, d: 10, h: 9 },
+  'clay-pot': { m: 'barrel_small', w: 11, d: 11, h: 13, tint: '#c88a5c' },
+  pot: { m: 'barrel_small', w: 11, d: 11, h: 13, tint: '#c88a5c' },
+  urn: { m: 'barrel_small', w: 15, d: 15, h: 20, tint: '#c8a060' },
+  cauldron: { m: 'bucket', w: 20, d: 20, h: 15, tint: '#55525f' },
+  fish: { m: 'p_trough', w: 24, d: 16, h: 9, tint: '#c8d8d8' },
+  woodpile: { m: 'log_stack', w: 28, d: 22, h: 18 },
+  log: { m: 'log', w: 30, d: 12, h: 9 },
+  stump: { m: 'stump_round', w: 16, d: 16, h: 10 },
+  'chopping-block': { m: 'stump_round', w: 16, d: 16, h: 11 },
+  hay: { m: 'p_haybale', w: 24, d: 24, h: 18 },
+  planter: { m: 'Bush_1_B', w: 22, d: 16, h: 14 },
+  flowerbed: { m: 'Bush_2_C', w: 26, d: 20, h: 10, tint: '#f0c8d8' },
+  flowers: { m: 'flower_redA', w: 16, d: 16, h: 9 },
+  topiary: { m: 'Bush_3_A', w: 22, d: 22, h: 22 },
+  scarecrow: { m: 'scarecrow', w: 24, d: 14, h: 38 },
+  notice: { m: 'sign', w: 26, d: 12, h: 32 },
+  'danger-sign': { m: 'sign_both', w: 26, d: 12, h: 32 },
+  target: { m: 'p_target', w: 24, d: 12, h: 30 },
+  trough: { m: 'p_trough', w: 32, d: 16, h: 11, across: true },
+  bench: { m: 'bench', w: 30, d: 14, h: 13, across: true },
+  anvil: { m: 'anvil', w: 18, d: 14, h: 14 },
+  'weapon-rack': { m: 'p_weaponrack', w: 30, d: 12, h: 28, across: true },
+  rack: { m: 'p_weaponrack', w: 28, d: 12, h: 26, across: true },
+  'armor-stand': { m: 'sword_shield', w: 22, d: 16, h: 28 },
   block: { m: '' },
-  well: { m: 'b_well', w: 1.5, d: 1.5, h: 1.8 },
-  fountain: { m: 'b_well', w: 2.2, d: 2.2, h: 1.8, tint: '#c8d8e8' },
+  well: { m: 'b_well', w: 46, d: 46, h: 62 },
+  'market-stall': { m: 'b_market', w: 74, d: 56, h: 46 },
+  fountain: { m: 'b_well', w: 56, d: 56, h: 52, tint: '#c8d8e8' },
   // camps and the things of the land
-  tent: { m: 'b_tent', w: 1.15, d: 1.15, h: 1.6 },
-  'camp-tent': { m: 'tent_detailedOpen', w: 1.1, d: 1.1, h: 1.3, tint: '#d8c8a8' },
-  pavilion: { m: 'b_tent', w: 1.5, d: 1.5, h: 2, tint: '#f0dcb4' },
-  bedroll: { m: 'bed_floor', w: 0.85, d: 1.2, h: 0.3 },
-  'market-cart': { m: 'p_cart_merchant', w: 1.25, d: 1, h: 1.5 },
-  'market-goods': { m: 'p_crate_open', w: 0.95, d: 0.95, h: 0.8 },
-  cart: { m: 'wagon', w: 1.3, d: 1, h: 1.2 },
-  wagon: { m: 'wagon_hay', w: 1.3, d: 1, h: 1.3 },
-  boat: { m: 'p_boat', w: 2.2, d: 1, h: 1 },
-  wreck: { m: 'p_boat', w: 2.2, d: 1.1, h: 1, tint: '#88807a' },
-  watchtower: { m: 'b_watchtower', w: 1.5, d: 1.5, h: 4 },
-  windmill: { m: 'b_windmill', w: 2.4, d: 2.4, h: 5 },
-  flag: { m: 'p_flag_red', w: 0.7, d: 0.7, h: 2.3 },
-  'blue-banner': { m: 'p_flag_blue', w: 0.7, d: 0.7, h: 2.3 },
-  'red-banner': { m: 'p_flag_red', w: 0.7, d: 0.7, h: 2.3 },
-  'skull-banner': { m: 'post_skull', w: 0.6, d: 0.6, h: 1.9 },
+  tent: { m: 'b_tent', w: 46, d: 46, h: 42 },
+  'camp-tent': { m: 'tent_detailedOpen', w: 46, d: 46, h: 36, tint: '#d8c8a8' },
+  pavilion: { m: 'b_tent', w: 60, d: 60, h: 52, tint: '#f0dcb4' },
+  bedroll: { m: 'bed_floor', w: 18, d: 30, h: 6 },
+  'market-cart': { m: 'p_cart_merchant', w: 44, d: 34, h: 42 },
+  'market-goods': { m: 'p_crate_open', w: 20, d: 20, h: 14 },
+  cart: { m: 'wagon', w: 44, d: 28, h: 28 },
+  wagon: { m: 'wagon_hay', w: 52, d: 32, h: 34 },
+  boat: { m: 'p_boat', w: 57, d: 26, h: 26 },
+  wreck: { m: 'p_boat', w: 64, d: 30, h: 30, tint: '#88807a' },
+  // towers stand over everything: stone ones on a wall, a wooden lookout in a camp
+  watchtower: { m: 'b_tower_A', w: 74, d: 74, h: 158 },
+  lookout: { m: 'b_watchtower', w: 66, d: 66, h: 110 },
+  windmill: { m: 'b_windmill', w: 96, d: 96, h: 180 },
+  flag: { m: 'p_flag_red', w: 18, d: 18, h: 62 },
+  'blue-banner': { m: 'p_flag_blue', w: 18, d: 18, h: 62 },
+  'red-banner': { m: 'p_flag_red', w: 18, d: 18, h: 62 },
+  'skull-banner': { m: 'post_skull', w: 18, d: 18, h: 46 },
   // the dead
-  gravestone: { m: 'gravestone', w: 0.8, d: 0.6, h: 1.1 },
-  'grave-cross': { m: 'cross', w: 0.75, d: 0.5, h: 1.2 },
-  coffin: { m: 'coffin', w: 0.8, d: 1.3, h: 0.5 },
-  bones: { m: 'bone_A', w: 0.7, d: 0.7, h: 0.25 },
-  'bone-heap': { m: 'ribcage', w: 1, d: 1, h: 0.6 },
-  skulls: { m: 'skull', w: 0.5, d: 0.5, h: 0.4 },
-  debris: { m: 'debris-wood', w: 1, d: 1, h: 0.4 },
-  rubble: { m: 'debris', w: 1, d: 1, h: 0.45 },
-  menhir: { m: 'stone_tallA', w: 0.9, d: 0.9, h: 2 },
-  'standing-stone': { m: 'statue_obelisk', w: 0.9, d: 0.9, h: 2.2 },
-  crystals: { m: 'stone_tallA', w: 0.95, d: 0.95, h: 1.7, tint: '#c8a8ff' },
-  cage: { m: 'iron-fence', w: 1, d: 0.5, h: 1.1 },
-  eggs: { m: 'Rock_1_A', w: 0.6, d: 0.6, h: 0.35, tint: '#f0e8c8' },
-  altar: { m: 'altar-stone', w: 1.8, d: 1, h: 0.95, across: true },
+  gravestone: { m: 'gravestone', w: 18, d: 12, h: 22 },
+  'grave-cross': { m: 'cross', w: 18, d: 10, h: 26 },
+  coffin: { m: 'coffin', w: 18, d: 32, h: 11 },
+  sarcophagus: { m: 'coffin', w: 24, d: 38, h: 18, tint: '#9a96a0' },
+  bones: { m: 'bone_A', w: 16, d: 16, h: 5, tint: '#c8c0a8' },
+  'bone-heap': { m: 'ribcage', w: 24, d: 24, h: 14 },
+  skulls: { m: 'skull', w: 9, d: 9, h: 8, tint: '#c8c0a8' },
+  debris: { m: 'debris-wood', w: 26, d: 26, h: 8, tint: '#8a7660' },
+  rubble: { m: 'debris', w: 26, d: 26, h: 9, tint: '#8c8680' },
+  'rubble-heap': { m: 'rubble_half', w: 44, d: 36, h: 28 },
+  menhir: { m: 'stone_tallA', w: 26, d: 26, h: 62 },
+  'standing-stone': { m: 'statue_obelisk', w: 28, d: 28, h: 78 },
+  crystals: { m: 'stone_tallA', w: 30, d: 30, h: 46, tint: '#c8a8ff' },
+  cage: { m: 'iron-fence', w: 28, d: 14, h: 32 },
+  eggs: { m: 'Rock_1_A', w: 12, d: 12, h: 8, tint: '#f0e8c8' },
+  altar: { m: 'altar-stone', w: 48, d: 26, h: 22, across: true },
+  // deep places
+  'broken-column': { m: 'column', w: 24, d: 24, h: 36 },
+  'great-column': { m: 'pillar_decorated', w: 32, d: 28, h: 76 },
+  'crates-stack': { m: 'crates_stacked', w: 34, d: 34, h: 34 },
+  'big-barrel': { m: 'barrel_large', w: 26, d: 26, h: 30 },
+  trunk: { m: 'trunk_large_A', w: 26, d: 22, h: 18 },
+  'coal-heap': { m: 'rocks', w: 34, d: 34, h: 18, tint: '#46424e' },
+  'stone-heap': { m: 'p_resource_stone', w: 30, d: 30, h: 20 },
+  'lumber-pile': { m: 'p_resource_lumber', w: 44, d: 22, h: 14 },
+  'banner-red': { m: 'banner_red', w: 26, d: 10, h: 52 },
+  'banner-blue': { m: 'banner_blue', w: 26, d: 10, h: 52 },
+  'banner-shield': { m: 'banner_shield_red', w: 32, d: 12, h: 52 },
+  'coin-pile': { m: 'coin_stack_medium', w: 20, d: 20, h: 11 },
+  'gold-chest': { m: 'chest_large_gold', w: 30, d: 24, h: 20 },
+  'ice-crystal': { m: 'stone_tallA', w: 32, d: 32, h: 58, tint: '#a8d8ff' },
+  'rift-crystal': { m: 'stone_tallA', w: 32, d: 32, h: 58, tint: '#b078ff' },
+  'ember-rock': { m: 'Rock_4_C', w: 26, d: 26, h: 58, tint: '#6a3a30' },
+  'root-tangle': { m: 'Tree_Bare_2_B', w: 40, d: 26, h: 66, tint: '#5a4a3a' },
+  'great-mushroom': { m: 'mushroom_redTall', w: 28, d: 28, h: 46 },
+  spores: { m: 'mushroom_redGroup', w: 24, d: 24, h: 14 },
+  thorns: { m: 'Bush_4_D', w: 40, d: 30, h: 18, tint: '#6a4a78' },
+  // what a land is known by, seen from far off
+  'ancient-oak': { m: 'Tree_7_B', w: 130, d: 130, h: 250 },
+  'ancient-pine': { m: 'tree_pine_orange_large', w: 130, d: 130, h: 220 },
+  'dead-colossus': { m: 'tree_dead_large', w: 110, d: 80, h: 230, tint: '#6a5a50' },
+  lighthouse: { m: 'b_tower_B', w: 84, d: 84, h: 200 },
+  'water-mill': { m: 'b_watermill', w: 110, d: 110, h: 130 },
+  'lumber-mill': { m: 'b_lumbermill', w: 120, d: 110, h: 130 },
+  'mine-head': { m: 'b_mine', w: 130, d: 130, h: 100 },
+  docks: { m: 'b_docks', w: 150, d: 50, h: 60 },
+  'broken-tower': { m: 'b_tower_base', w: 96, d: 96, h: 140, tint: '#a8a4a0' },
+  'ruined-hall': { m: 'rubble_large', w: 190, d: 76, h: 76 },
+  'giant-statue': { m: 'statue_block', w: 96, d: 96, h: 34, box: true, tint: '#8a8a90', hero: 170 },
+  'great-obelisk': { m: 'statue_obelisk', w: 70, d: 70, h: 210 },
+  'stone-arch': { m: 'arch', w: 130, d: 30, h: 136 },
+  'crypt-hill': { m: 'crypt', w: 130, d: 150, h: 170 },
+  'bone-arch': { m: 'ribcage', w: 170, d: 150, h: 170, tint: '#d8d0b8' },
+  'giant-skull': { m: 'skull', w: 110, d: 110, h: 104, tint: '#d8d0b8' },
+  'ice-spire': { m: 'stone_tallA', w: 90, d: 80, h: 190, tint: '#b8dcff' },
+  'rift-spire': { m: 'stone_tallA', w: 90, d: 80, h: 190, tint: '#a868f0' },
+  'lava-spire': { m: 'Rock_4_C', w: 70, d: 70, h: 200, tint: '#5a2a24' },
+  'sand-spire': { m: 'Rock_4_C', w: 70, d: 70, h: 180, tint: '#c8a070' },
+  'sea-rock': { m: 'Rock_3_G', w: 120, d: 110, h: 110 },
+  'great-mushroom-tree': { m: 'mushroom_redTall', w: 90, d: 90, h: 190 },
+  'great-wreck': { m: 'p_boat', w: 200, d: 90, h: 70, tint: '#88807a' },
   // indoors
-  table: { m: 'table_medium', w: 1.15, d: 0.95, h: 0.85, across: true },
-  longtable: { m: 'table_long_tablecloth_decorated_A', w: 3, d: 1, h: 0.95, across: true },
-  'war-table': { m: 'table_long_decorated_B', w: 3, d: 1.3, h: 1, across: true },
-  counter: { m: 'bartop_A_large', w: 3, d: 0.95, h: 1.05, across: true },
-  chair: { m: 'chair', w: 0.7, d: 0.7, h: 0.95 },
-  stool: { m: 'stool', w: 0.55, d: 0.55, h: 0.5 },
-  pew: { m: 'bench', w: 3, d: 0.75, h: 0.75, across: true },
-  bed: { m: 'bed_decorated', w: 1, d: 1.7, h: 0.85 },
-  cot: { m: 'bed_floor', w: 0.9, d: 1.5, h: 0.4 },
-  shelf: { m: 'shelves_decorated', w: 1.5, d: 0.55, h: 1.7, across: true },
-  bookshelf: { m: 'bookcase_double_decoratedA', w: 1.4, d: 0.55, h: 1.9, across: true },
-  cupboard: { m: 'cabinet_medium_decorated', w: 1.2, d: 0.6, h: 1.6, across: true },
-  casks: { m: 'keg', w: 1.9, d: 0.95, h: 0.95, across: true },
-  keg: { m: 'keg', w: 0.85, d: 0.85, h: 0.85 },
-  candles: { m: 'candle_triple', w: 0.5, d: 0.5, h: 0.45 },
-  rug: { m: 'rug_rectangle_A', w: 2.6, d: 1.6, flat: true },
-  runner: { m: 'rug_rectangle_A', w: 3, d: 1, flat: true, tint: '#d8504a' },
-  banner: { m: 'banner_white', w: 0.9, d: 0.4, h: 1.9 },
-  'great-banner': { m: 'banner_triple_red', w: 1.4, d: 0.4, h: 2.3 },
-  column: { m: 'pillar', w: 1, d: 1, h: 2.8 },
-  statue: { m: 'statue_head', w: 1, d: 1, h: 2 },
-  lion: { m: 'statue_block', w: 1, d: 1, h: 1.5 },
-  throne: { m: 'armchair', w: 1.1, d: 1, h: 1.5, tint: '#c8a050' },
-  'high-throne': { m: 'armchair', w: 1.6, d: 1.3, h: 2.2, tint: '#d8b050' },
-  hearth: { m: 'campfire_bricks', w: 2.4, d: 1, h: 0.8, across: true, flame: 1.3, flameAt: 0.35 },
-  forge: { m: 'campfire_bricks', w: 1.8, d: 1, h: 0.8, across: true, tint: '#a09aa8', flame: 1.2, flameAt: 0.5 },
-  grindstone: { m: 'grindstone', w: 0.9, d: 0.8, h: 1 },
-  stair: { m: 'stairs', w: 1.2, d: 1.2, h: 1 },
+  table: { m: 'table_medium', w: 32, d: 24, h: 17, across: true },
+  longtable: { m: 'table_long_tablecloth_decorated_A', w: 84, d: 28, h: 20, across: true },
+  'war-table': { m: 'table_long_decorated_B', w: 84, d: 34, h: 22, across: true },
+  counter: { m: 'bartop_A_large', w: 84, d: 26, h: 24, across: true },
+  chair: { m: 'chair', w: 14, d: 14, h: 20 },
+  stool: { m: 'stool', w: 11, d: 11, h: 10 },
+  pew: { m: 'bench', w: 78, d: 18, h: 14, across: true },
+  bed: { m: 'bed_decorated', w: 26, d: 46, h: 18 },
+  cot: { m: 'bed_floor', w: 24, d: 40, h: 9 },
+  shelf: { m: 'shelves_decorated', w: 40, d: 14, h: 40, across: true },
+  bookshelf: { m: 'bookcase_double_decoratedA', w: 38, d: 14, h: 46, across: true },
+  cupboard: { m: 'cabinet_medium_decorated', w: 32, d: 16, h: 38, across: true },
+  casks: { m: 'keg', w: 50, d: 24, h: 24, across: true },
+  keg: { m: 'keg', w: 18, d: 18, h: 18 },
+  candles: { m: 'candle_triple', w: 9, d: 9, h: 9, tint: '#c8b890', glow: '#ffc060' },
+  rug: { m: 'rug_rectangle_A', w: 68, d: 42, flat: true },
+  runner: { m: 'rug_rectangle_A', w: 78, d: 26, flat: true, tint: '#b8504a' },
+  banner: { m: 'banner_white', w: 24, d: 10, h: 46 },
+  'great-banner': { m: 'banner_triple_red', w: 44, d: 12, h: 62 },
+  column: { m: 'pillar', w: 24, d: 24, h: 70 },
+  statue: { m: 'statue_block', w: 30, d: 30, h: 12, box: true, tint: '#8a8a90', hero: 46 },
+  lion: { m: 'statue_block', w: 24, d: 24, h: 9, box: true, tint: '#8a8a90', hero: 30 },
+  throne: { m: 'armchair', w: 28, d: 26, h: 36, tint: '#c8a050' },
+  'high-throne': { m: 'armchair', w: 42, d: 34, h: 52, tint: '#d8b050' },
+  hearth: { m: 'campfire_bricks', w: 62, d: 26, h: 16, across: true, flame: 1.3, flameAt: 8 },
+  forge: { m: 'campfire_bricks', w: 46, d: 26, h: 18, across: true, tint: '#a09aa8', flame: 1.2, flameAt: 12 },
+  grindstone: { m: 'grindstone', w: 20, d: 18, h: 22 },
+  stair: { m: 'stairs', w: 30, d: 30, h: 26 },
   // light and floor: the land's own colors do these
   window: { m: '' },
   sunbeam: { m: '' },
@@ -230,12 +289,14 @@ const ENTRANCES: Record<string, { m: string; w: number; tint?: string }> = {
 };
 
 const BUILDINGS: Record<string, string[]> = {
-  house: ['b_home_A', 'b_home_B', 'b_home_A', 'b_home_B', 'b_workshop', 'b_stables'],
+  house: ['b_home_A', 'b_home_B'],
   inn: ['b_tavern'],
+  tavern: ['b_tavern'],
+  shop: ['b_workshop'],
   tower: ['b_tower_A', 'b_tower_B', 'b_watchtower'],
-  temple: ['b_church', 'b_shrine'],
+  temple: ['b_church'],
   keep: ['b_castle'],
-  hall: ['b_townhall', 'b_barracks'],
+  hall: ['b_townhall'],
   lighthouse: ['b_tower_B'],
   smithy: ['b_blacksmith'],
 };
@@ -247,14 +308,15 @@ function sizeWithin(m: MeshData, def: PropDef): { sx: number; sy: number; sz: nu
   const tall = Math.max(0.01, m.max[1] - m.min[1]);
   const rot = def.across && zw > xw ? Math.PI / 2 : 0;
   if (rot) [xw, zw] = [zw, xw];
-  const w = def.w ?? 1;
-  const d = def.d ?? 1;
+  const w = (def.w ?? TILE) / TILE;
+  const d = (def.d ?? TILE) / TILE;
+  if (def.box) return { sx: w / xw, sy: (def.h ?? TILE) / TILE / tall, sz: d / zw, rot };
   if (def.flat) {
     const fx = w / xw;
     const fz = d / zw;
     return rot ? { sx: fz, sy: 1, sz: fx, rot } : { sx: fx, sy: 1, sz: fz, rot };
   }
-  const k = Math.min(w / xw, d / zw, (def.h ?? 99) / tall);
+  const k = Math.min(w / xw, d / zw, (def.h ?? 9999) / TILE / tall);
   return { sx: k, sy: k, sz: k, rot };
 }
 
@@ -272,9 +334,39 @@ function hsl(r: number, g: number, b: number): [number, number, number] {
   return [h, s, l];
 }
 
+function rgbOf(h: number, s: number, l: number): [number, number, number] {
+  const f = (n: number): number => {
+    const k = (n + h / 30) % 12;
+    return l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+  };
+  return [f(0), f(8), f(4)];
+}
+
+/**
+ * One world's materials, whichever pack a model came from: all timber is the same weathered oak, nothing is
+ * candy-bright, so a crate from one pack and a house from another look made by the same hands.
+ */
+function harmonize(col: Uint8Array, n: number): void {
+  for (let v = 0; v < n; v++) {
+    const i = v * 3;
+    const [h, s, l] = hsl(col[i]! / 255, col[i + 1]! / 255, col[i + 2]! / 255);
+    let to: [number, number, number] | null = null;
+    // timber and thatch, from orange to tan
+    if (h >= 12 && h <= 46 && s > 0.2 && l < 0.88) to = rgbOf(26 + (h - 28) * 0.35, Math.min(0.48, s * 0.7), Math.max(0.09, l > 0.5 ? l * 0.6 : l * 0.8));
+    // anything else that shouts
+    else if (s > 0.62 && l > 0.3) to = rgbOf(h, s * 0.8, l * 0.92);
+    if (!to) continue;
+    col[i] = to[0] * 255;
+    col[i + 1] = to[1] * 255;
+    col[i + 2] = to[2] * 255;
+  }
+}
+
 /** Green leaves take the land's own leaf colors, dark to light; bark and rock take its bark and stone. */
 function colorsFor(m: MeshData, look: ThemeLook, id: string): Uint8Array {
   const out = new Uint8Array(m.col);
+  // (bone is bone, not timber)
+  if (!/ribcage|skull|bone_/.test(id)) harmonize(out, m.n);
   const roof = id.split('#')[1];
   if (roof) {
     const [rr, rg, rb] = hexRgb(`#${roof}`);
@@ -289,7 +381,12 @@ function colorsFor(m: MeshData, look: ThemeLook, id: string): Uint8Array {
     }
     return out;
   }
-  const leaves = look.leaves.map(hexRgb);
+  const leaves = look.leaves.map((c): [number, number, number] => {
+    const [r, g, b] = hexRgb(c);
+    const lum = r * 0.3 + g * 0.59 + b * 0.11;
+    const k = 0.8;
+    return [(lum + (r - lum) * k) * 0.93, (lum + (g - lum) * k) * 0.93, (lum + (b - lum) * k) * 0.88];
+  });
   const bark = hexRgb(look.bark);
   const leafy = /^(Tree|Bush|Grass|tree_|plant|hanging)/.test(id);
   const rocky = /^(Rock|rock_|stone_)/.test(id);
@@ -363,18 +460,22 @@ const groundFrag = /* glsl */ `
     vec3 c;
     float ck = mod(floor(p.x) + floor(p.y), 2.0);
     if (uIndoor > 0.5) {
-      // worn stone slabs
-      vec2 s = p * 1.0;
+      // fitted flagstones, worn unevenly (no grid: the stones lie in courses, each its own shade)
+      vec2 s = p * vec2(1.6, 2.2);
+      s.x += mod(floor(s.y), 2.0) * 0.5;
       vec2 id = floor(s);
       vec2 f = fract(s) - 0.5;
-      float line = smoothstep(0.47, 0.5, max(abs(f.x), abs(f.y)));
-      c = mix(uA, uB, hash(id) * 0.7 + ck * 0.3);
-      c = mix(c, uEdge, line * 0.7);
+      float line = smoothstep(0.43, 0.5, max(abs(f.x), abs(f.y)));
+      c = mix(uA, uB, hash(id));
+      c *= 0.9 + n * 0.2;
+      c = mix(c, uEdge, line * 0.45);
     } else {
       // grass in big soft blotches over a checker a player's eye can measure distance by
-      c = mix(uA, uB, smoothstep(0.32, 0.68, n));
-      c *= 1.0 + (ck - 0.5) * 0.026;
-      c *= 0.97 + n2 * 0.06;
+      c = mix(uA, uB, smoothstep(0.3, 0.7, n));
+      // the land's light and shade in long drifts, and the fine grain of what grows on it
+      c *= 0.86 + noise(p * 0.17 + 7.0) * 0.26;
+      c *= 0.95 + noise(p * 6.0) * 0.1;
+      c *= 1.0 + (ck - 0.5) * 0.01;
     }
     float sand = smoothstep(0.46, 0.54, m.b + wob);
     c = mix(c, mix(uSandA, uSandB, n), sand);
@@ -384,13 +485,14 @@ const groundFrag = /* glsl */ `
     c = mix(c, pc * (1.0 - pathShade * 0.14), path);
     float cob = smoothstep(0.46, 0.54, m.a + wob * 0.4);
     if (cob > 0.0) {
-      vec2 s = p * 2.0;
+      vec2 s = p * vec2(2.7, 3.6);
       s.x += mod(floor(s.y), 2.0) * 0.5;
       vec2 id = floor(s);
       vec2 f = fract(s) - 0.5;
-      float line = smoothstep(0.38, 0.5, max(abs(f.x), abs(f.y)));
-      vec3 st = mix(uCobA, uCobB, hash(id));
-      c = mix(c, mix(st, uCobA * 0.62, line), cob);
+      float line = smoothstep(0.36, 0.5, max(abs(f.x), abs(f.y)));
+      vec3 st = mix(uCobA, uCobB, hash(id) * 0.8);
+      st *= 0.9 + n * 0.2;
+      c = mix(c, mix(st, uCobA * 0.72, line * 0.8), cob);
     }
     // water: dark in the middle, lighter at the bank, with foam where it meets the land
     float w = smoothstep(0.47, 0.53, m.g + wob * 0.55);
@@ -410,6 +512,8 @@ const groundFrag = /* glsl */ `
     // what stands on a solid tile shades its foot
     float foot = smoothstep(0.0, 0.9, far.g) * 0.0;
     c *= 1.0 - foot;
+    float lum = dot(c, vec3(0.3, 0.59, 0.11));
+    c = mix(vec3(lum), c, 0.84) * vec3(0.99, 0.97, 0.91);
     c = mix(c, uGrade.rgb, uGrade.a);
     if (uDark.x > 0.0) {
       float d = length(vW.xz - uSee.xz);
@@ -495,11 +599,11 @@ interface BlockStyle {
 function blockStyles(look: ThemeLook, woody: boolean): { wall: BlockStyle; rampart: BlockStyle } {
   const st = look.stone;
   const wall: BlockStyle = st
-    ? { h: 1.45, top: hexRgb(st.top), top2: hexRgb(st.topHi), side: hexRgb(st.brick[1]), side2: hexRgb(st.brick[0]) }
+    ? { h: 1.9, top: hexRgb(st.top), top2: hexRgb(st.topHi), side: hexRgb(st.brick[1]), side2: hexRgb(st.brick[0]) }
     : woody
       ? { h: 1.0, top: hexRgb(look.ground.leaf[1]), top2: hexRgb(look.ground.leaf[2]), side: hexRgb(look.ground.leaf[0]), side2: hexRgb(look.ground.leaf[0]) }
       : { h: 1.7, top: hexRgb(look.ground.leaf[3]), top2: hexRgb(look.ground.leaf[4]), side: hexRgb(look.ground.leaf[1]), side2: hexRgb(look.ground.leaf[0]) };
-  const rampart: BlockStyle = { h: 2.4, top: [0.67, 0.65, 0.66], top2: [0.74, 0.72, 0.72], side: [0.52, 0.5, 0.54], side2: [0.44, 0.42, 0.47] };
+  const rampart: BlockStyle = { h: 2.5, top: [0.46, 0.44, 0.46], top2: [0.68, 0.65, 0.62], side: [0.62, 0.59, 0.56], side2: [0.42, 0.4, 0.42] };
   return { wall, rampart };
 }
 
@@ -565,26 +669,52 @@ function buildBlocks(map: TileMap, look: ThemeLook, woody: boolean): THREE.Mesh 
       const s = styleAt(x, y);
       if (!s) continue;
       const hs = hash2(x, y, 5);
-      const h = s.h + (woody && s === wall ? (hs - 0.5) * 0.25 : 0);
+      // (one height: blocks of differing heights leave bright seams, and the trees on them give the skyline)
+      const h = s.h;
       const top = shade(s.top, 0.97 + hash2(x, y, 9) * 0.05 + (hs > 0.5 ? 0.02 : 0));
       m.quad([x, h, y + 1], [x + 1, h, y + 1], [x + 1, h, y], [x, h, y], [0, 1, 0], top);
       const side = (a: number[], b: number[], c: number[], d: number[], n: number[]): void => {
         const f = 0.92 + hash2(x, y, 13) * 0.14;
-        m.quad(a, b, c, d, n, shade(s.side2, f), shade(s.side, f));
+        // built walls are laid in courses of stone, each its own shade; a cliff or a wood is one face
+        if (s === wall && !look.indoor) {
+          m.quad(a, b, c, d, n, shade(s.side2, f), shade(s.side, f));
+          return;
+        }
+        const rows = 4;
+        const lerp = (p: number[], q: number[], t: number): number[] => [p[0]! + (q[0]! - p[0]!) * t, p[1]! + (q[1]! - p[1]!) * t, p[2]! + (q[2]! - p[2]!) * t];
+        for (let r = 0; r < rows; r++) {
+          const t0 = r / rows;
+          const t1 = (r + 1) / rows;
+          const lift = shade(s.side2, 0.02 + 1);
+          const up = shade(s.side, 1);
+          const course = f * (0.9 + hash2(x + r * 3, y + r, 17) * 0.2);
+          const c0 = shade([lift[0]! + (up[0]! - lift[0]!) * t0, lift[1]! + (up[1]! - lift[1]!) * t0, lift[2]! + (up[2]! - lift[2]!) * t0], course);
+          // (the bottom of a course in shadow, like the mortar under it)
+          m.quad(lerp(a, d, t0), lerp(b, c, t0), lerp(b, c, t1), lerp(a, d, t1), n, shade(c0, 0.84), c0);
+        }
       };
       if (!styleAt(x, y + 1)) side([x, 0, y + 1], [x + 1, 0, y + 1], [x + 1, h, y + 1], [x, h, y + 1], [0, 0, 1]);
       if (!styleAt(x + 1, y)) side([x + 1, 0, y + 1], [x + 1, 0, y], [x + 1, h, y], [x + 1, h, y + 1], [1, 0, 0]);
       if (!styleAt(x - 1, y)) side([x, 0, y], [x, 0, y + 1], [x, h, y + 1], [x, h, y], [-1, 0, 0]);
       if (!styleAt(x, y - 1)) side([x + 1, 0, y], [x, 0, y], [x, h, y], [x + 1, h, y], [0, 0, -1]);
       // crenels along a city wall
-      if (s === rampart && (x + y) % 2 === 0) {
-        const ch = h + 0.35;
-        const b = 0.2;
-        const c = shade(s.top2, 1.05);
-        m.quad([x + b, ch, y + 1 - b], [x + 1 - b, ch, y + 1 - b], [x + 1 - b, ch, y + b], [x + b, ch, y + b], [0, 1, 0], c);
-        m.quad([x + b, h, y + 1 - b], [x + 1 - b, h, y + 1 - b], [x + 1 - b, ch, y + 1 - b], [x + b, ch, y + 1 - b], [0, 0, 1], s.side, c);
-        m.quad([x + 1 - b, h, y + 1 - b], [x + 1 - b, h, y + b], [x + 1 - b, ch, y + b], [x + 1 - b, ch, y + 1 - b], [1, 0, 0], s.side, c);
-        m.quad([x + b, h, y + b], [x + b, h, y + 1 - b], [x + b, ch, y + 1 - b], [x + b, ch, y + b], [-1, 0, 0], s.side, c);
+      if (s === rampart) {
+        // the parapet: two small merlons a tile, on the wall's outer edges, a walkway between
+        const ch = h + 0.3;
+        const c = shade(s.top2, 1.02);
+        const south = !styleAt(x, y + 1);
+        const north = !styleAt(x, y - 1);
+        const east = !styleAt(x + 1, y);
+        const west = !styleAt(x - 1, y);
+        const merlon = (x0: number, z0: number, x1: number, z1: number): void => {
+          m.quad([x0, ch, z1], [x1, ch, z1], [x1, ch, z0], [x0, ch, z0], [0, 1, 0], c);
+          m.quad([x0, h, z1], [x1, h, z1], [x1, ch, z1], [x0, ch, z1], [0, 0, 1], s.side, c);
+          m.quad([x1, h, z1], [x1, h, z0], [x1, ch, z0], [x1, ch, z1], [1, 0, 0], s.side, c);
+          m.quad([x0, h, z0], [x0, h, z1], [x0, ch, z1], [x0, ch, z0], [-1, 0, 0], s.side, c);
+        };
+        const t = 0.2;
+        if (south || north) for (const u of [0.06, 0.56]) merlon(x + u, south ? y + 1 - t : y, x + u + 0.36, south ? y + 1 : y + t);
+        if (east || west) for (const u of [0.06, 0.56]) merlon(east ? x + 1 - t : x, y + u, east ? x + 1 : x + t, y + u + 0.36);
       }
       if (map.kind[y * W + x] === K.Bridge) continue;
     }
@@ -606,8 +736,8 @@ function buildPlanks(map: TileMap, look: ThemeLook): THREE.Mesh {
   const W = map.w;
   const H = map.h;
   // planks over the water; indoors, a wooden floor (what stands on it stands on planks too)
-  const wood = hexRgb(look.indoor ? '#a2703f' : '#8a6038');
-  const wood2 = hexRgb(look.indoor ? '#8c5f35' : '#6f4b2c');
+  const wood = hexRgb(look.indoor ? '#7f5c3c' : '#7a5a3a');
+  const wood2 = hexRgb(look.indoor ? '#6c4e33' : '#644a30');
   const planked = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < W && y < H && map.kind[y * W + x] === K.Bridge;
   const y0 = 0.02;
   for (let y = 0; y < H; y++) {
@@ -633,6 +763,8 @@ function buildPlanks(map: TileMap, look: ThemeLook): THREE.Mesh {
 /* ------------------------------------------------------------------ the land */
 
 const CELL = 8;
+/** A cell's key, for cells a little past the map's edge too. */
+const cellKey = (r: number, c: number): number => ((r + 64) << 12) | (c + 64);
 /** The hues of a land's roofs (the models are painted blue). */
 const ROOFS: Record<string, string[]> = {
   default: ['#3f6fb0', '#b04a3f', '#c08a3a'],
@@ -667,6 +799,10 @@ export class Land3D {
   readonly objects: LandObject[] = [];
   /** The fires burning here: their foot, and how tall the thing holding them is (tiles). */
   readonly flames: { x: number; z: number; y: number; size: number }[] = [];
+  /** The stone heroes on their plinths (the cast draws them, in a pose). */
+  readonly statues: { x: number; y: number; h: number; lift: number; tint: readonly [number, number, number] }[] = [];
+  /** Soft lights that aren't fire: the rune on a waymarker. */
+  readonly glows: { x: number; z: number; y: number; color: string; size: number }[] = [];
   private readonly look: ThemeLook;
   private readonly ground: THREE.Mesh;
   private readonly blocks: THREE.Mesh;
@@ -696,7 +832,7 @@ export class Land3D {
     this.planks = buildPlanks(map, look);
     this.under.add(this.ground, this.planks);
     this.group.add(this.blocks);
-    this.wallH = look.indoor ? 1.45 : woody ? 1 : 1.6;
+    this.wallH = look.indoor ? 1.9 : woody ? 1 : 1.6;
     this.placeAll(woody);
     this.placeSlabs();
     // the shadow of what stands, one soft disc each
@@ -735,13 +871,19 @@ export class Land3D {
 
   private add(p: Omit<Placed, 'r' | 'g' | 'b' | 'sway' | 'shadow' | 'y' | 'sz' | 'sy'> & Partial<Placed>): void {
     if (!this.pack(p.m)) return;
-    const key = (Math.floor(p.z / CELL) << 12) | Math.floor(p.x / CELL);
+    const key = cellKey(Math.floor(p.z / CELL), Math.floor(p.x / CELL));
     let list = this.cells.get(key);
     if (!list) {
       list = [];
       this.cells.set(key, list);
     }
-    list.push({ r: 1, g: 1, b: 1, sway: 0, shadow: 0, y: 0, sy: p.sx, sz: p.sx, ...p });
+    const placedNow: Placed = { r: 1, g: 1, b: 1, sway: 0, shadow: 0, y: 0, sy: p.sx, sz: p.sx, ...p };
+    if (this.region.kind === 'dungeon') {
+      placedNow.r *= 0.86;
+      placedNow.g *= 0.84;
+      placedNow.b *= 0.86;
+    }
+    list.push(placedNow);
   }
 
   /** Sized to `h` tiles tall, but no wider or deeper than `wide` tiles. */
@@ -784,14 +926,14 @@ export class Land3D {
           const kind = look.trees[Math.floor(hash2(tx, ty, 91) * look.trees.length)] ?? 'oak';
           const def = TREES[kind] ?? TREES.oak;
           const m = def.m[Math.floor(h * def.m.length) % def.m.length]!;
-          const s = this.fitted(m, def.h * (0.85 + hash2(tx, ty, 21) * 0.3), 1.5);
+          const s = this.fitted(m, def.h * (0.85 + hash2(tx, ty, 21) * 0.3), 2.4);
           if (this.keepIt({ x: wx, y: wy, kind: 'tree', dy: -def.h * TILE })) this.add({ m, x: x + (h - 0.5) * 0.12, z: z + (hash2(tx, ty, 31) - 0.5) * 0.12, rot: h * 6.28, sx: s, sway: kind === 'dead' || kind === 'crystal' || kind === 'cactus' ? 0 : 1, shadow: 1.25 });
           break;
         }
         case K.Bush:
         case K.Bramble: {
           const m = BUSHES[Math.floor(h * BUSHES.length)]!;
-          const s = this.fitted(m, 1.1 + hash2(tx, ty, 21) * 0.3, 1.05);
+          const s = this.fitted(m, 0.72 + hash2(tx, ty, 21) * 0.26, 1.05);
           const thorn = k === K.Bramble;
           if (this.keepIt({ x: wx, y: wy, kind: 'bush', dy: -12 })) this.add({ m, x, z, rot: h * 6.28, sx: s, sway: 0.6, shadow: 0.7, r: thorn ? 0.72 : 1, g: thorn ? 0.5 : 1, b: thorn ? 0.72 : 1 });
           break;
@@ -807,12 +949,12 @@ export class Land3D {
           const m = 'fence_simple';
           const size = this.pack(m);
           const sx = size ? 1.02 / Math.max(0.01, size.max[0] - size.min[0]) : 1;
-          if (this.keepIt({ x: wx, y: wy, kind: 'fence', dy: -10 })) this.add({ m, x, z, rot: across ? 0 : Math.PI / 2, sx, sy: sx * 0.9, sz: sx });
+          if (this.keepIt({ x: wx, y: wy, kind: 'fence', dy: -10 })) this.add({ m, x, z, rot: across ? 0 : Math.PI / 2, sx, sy: size ? 15 / TILE / Math.max(0.01, size.max[1] - size.min[1]) : sx, sz: sx });
           break;
         }
         case K.Pillar: {
           const m = look.indoor ? 'pillar' : 'statue_column';
-          if (this.keepIt({ x: wx, y: wy, kind: 'pillar', dy: -40 })) this.add({ m, x, z, rot: 0, sx: this.fitted(m, 2.6, 1), shadow: 0.8 });
+          if (this.keepIt({ x: wx, y: wy, kind: 'pillar', dy: -40 })) this.add({ m, x, z, rot: 0, sx: this.fitted(m, 2.6, 1), shadow: 0.8, r: look.indoor ? 1 : 0.68, g: look.indoor ? 1 : 0.68, b: look.indoor ? 1 : 0.72 });
           break;
         }
         case K.Brazier: {
@@ -843,9 +985,14 @@ export class Land3D {
         case K.Wall: {
           if (look.indoor) {
             const below = kindAt(tx, ty + 1);
-            if (below !== K.Wall && below !== K.Cracked && h < 0.34 && tx % 3 === 0) {
-              this.add({ m: 'torch_mounted', x, z: ty + 1.02, rot: 0, sx: this.sized('torch_mounted', 0.7), y: 0.72 });
-              this.flames.push({ x, z: ty + 1.06, y: 1.22, size: 0.72 });
+            if (below !== K.Wall && below !== K.Cracked && below !== K.Door) {
+              // a hall's wall has a rhythm: a buttress, then a torch, then a buttress
+              if (tx % 6 === 0) {
+                this.add({ m: 'torch_mounted', x, z: ty + 1.02, rot: 0, sx: this.sized('torch_mounted', 0.7), y: 0.9 });
+                this.flames.push({ x, z: ty + 1.06, y: 1.4, size: 0.72 });
+              } else if (tx % 6 === 3 && look.stone) {
+                this.add({ m: 'pillar', x, z: ty + 1, rot: 0, sx: this.fitted('pillar', 2.2, 0.72), shadow: 0 });
+              }
             }
             break;
           }
@@ -863,13 +1010,27 @@ export class Land3D {
             const kind = look.trees[Math.floor(hash2(tx, ty, 91) * look.trees.length)] ?? 'oak';
             const def = TREES[kind] ?? TREES.oak;
             const m = def.m[Math.floor(h * def.m.length) % def.m.length]!;
-            const s = this.fitted(m, def.h * (0.9 + hash2(tx, ty, 21) * 0.3), 1.5);
+            const s = this.fitted(m, def.h * (open ? 0.72 : 0.6) * (0.9 + hash2(tx, ty, 21) * 0.3), 1.9);
             this.add({ m, x: x + (h - 0.5) * 0.2, z: z + (hash2(tx, ty, 31) - 0.5) * 0.2, rot: h * 6.28, sx: s, sway: 0.7 });
           }
           break;
         }
         default:
           break;
+      }
+    }
+    // the wood goes on past the edge of the map: a land doesn't stop at its border
+    if (woody) {
+      for (let ty = -6; ty < H + 6; ty++) {
+        for (let tx = -6; tx < W + 6; tx++) {
+          if (tx >= 0 && ty >= 0 && tx < W && ty < H) continue;
+          if ((tx + ty) % 2 !== 0) continue;
+          const h = hash2(tx + 40, ty + 40, 77);
+          const kind = look.trees[Math.floor(hash2(tx + 40, ty + 40, 91) * look.trees.length)] ?? 'oak';
+          const def = TREES[kind] ?? TREES.oak;
+          const m = def.m[Math.floor(h * def.m.length) % def.m.length]!;
+          this.add({ m, x: tx + 0.5 + (h - 0.5) * 0.2, z: ty + 0.5 + (hash2(tx + 40, ty + 40, 31) - 0.5) * 0.2, rot: h * 6.28, sx: this.fitted(m, def.h * 0.6 * (0.9 + hash2(tx + 40, ty + 40, 21) * 0.3), 1.9), sway: 0.7 });
+        }
       }
     }
     // houses and halls, on the tiles the rules make solid (the rest of a lot is its yard)
@@ -899,11 +1060,16 @@ export class Land3D {
       }
       const wideX = Math.max(0.01, mesh.max[0] - mesh.min[0]);
       const wideZ = Math.max(0.01, mesh.max[2] - mesh.min[2]);
-      const sx = ((x1 - x0) / wideX) * 1.06;
-      const sz = ((y1 - y0) / wideZ) * 1.06;
-      const sy = Math.min(sx, sz) * 1.15;
+      // true to its own shape (no stretched barns): at most a quarter wider or deeper than the model was made,
+      // its door on the lot's front, toward the street
+      const fx = (x1 - x0) / wideX;
+      const fz = (y1 - y0) / wideZ;
+      const base = Math.min(fx, fz);
+      const sx = Math.min(fx, base * 1.25) * 1.03;
+      const sz = Math.min(fz, base * 1.25) * 1.03;
+      const sy = base * 1.12;
       const cx = (x0 + x1) / 2 - ((mesh.min[0] + mesh.max[0]) / 2) * sx;
-      const cz = (y0 + y1) / 2 - ((mesh.min[2] + mesh.max[2]) / 2) * sz;
+      const cz = y1 + 0.05 - mesh.max[2] * sz;
       const roof = this.roofOf(b.lot.tx, b.lot.ty);
       if (this.keepIt({ x: ((x0 + x1) / 2) * TILE, y: y1 * TILE - 2, kind: 'building', dy: -(mesh.max[1] * sy) * TILE })) this.add({ m: `${m}#${roof}`, x: cx, z: cz, rot: 0, sx, sy, sz, shadow: 0 });
       for (const y of b.yard) this.placeProp(y.prop, y.tx, y.ty);
@@ -917,7 +1083,10 @@ export class Land3D {
       const wy = (pm.ty + 1) * TILE - 3;
       if (m.kind === 'prop') this.placeProp(m.prop, pm.tx, pm.ty);
       else if (m.kind === 'waystone') {
-        if (this.keepIt({ x: wx, y: wy, kind: 'waystone', dy: -30 })) this.add({ m: 'statue_obelisk', x, z, rot: 0, sx: this.sized('statue_obelisk', 2.3), shadow: 0.7, r: 0.82, g: 0.93, b: 1.15 });
+        if (this.keepIt({ x: wx, y: wy, kind: 'waystone', dy: -30 })) {
+          this.add({ m: 'statue_obelisk', x, z, rot: 0, sx: this.sized('statue_obelisk', 2.5), shadow: 0.7, r: 0.5, g: 0.53, b: 0.62 });
+          this.glows.push({ x, z, y: 1.5, color: '#7fd4ff', size: 16 });
+        }
       } else if (m.kind === 'shrine') {
         if (this.keepIt({ x: wx, y: wy, kind: 'shrine', dy: -24 })) this.add({ m: 'shrine_candles', x, z, rot: 0, sx: this.sized('shrine_candles', 1.9), shadow: 0.8 });
       } else if (m.kind === 'exit' && !look.indoor && !m.door) {
@@ -960,7 +1129,7 @@ export class Land3D {
     const z = ty + 0.5;
     const wx = x * TILE;
     const wy = (ty + 1) * TILE - 3;
-    const o: LandObject = { x: wx, y: wy, kind: 'prop', name, dy: -((def?.h ?? 1) * TILE) };
+    const o: LandObject = { x: wx, y: wy, kind: 'prop', name, dy: -(def?.h ?? TILE) };
     if (!this.keepIt(o) || !def || !def.m) return;
     const mesh = this.pack(def.m);
     if (!mesh) return;
@@ -969,10 +1138,18 @@ export class Land3D {
     if (param?.startsWith('#')) tint = param;
     const c = tint ? hexRgb(tint) : ([1, 1, 1] as const);
     // (a little turn of its own for loose things; furniture stands square)
-    const loose = !def.across && !def.flat && (def.w ?? 1) < 1.2;
+    const loose = !def.across && !def.flat && (def.w ?? TILE) < 30;
     const rot = size.rot + (loose ? (hash2(tx, ty, 3) - 0.5) * 0.5 : 0);
-    this.add({ m: def.m, x, z, rot, sx: size.sx, sy: size.sy, sz: size.sz, shadow: def.flat || (def.h ?? 0) < 0.45 ? 0 : Math.min(1, (def.w ?? 1) * 0.65), y: def.flat ? 0.02 : 0, r: c[0], g: c[1], b: c[2] });
-    if (def.flame) this.flames.push({ x, z, y: def.flameAt ?? 0.4, size: def.flame });
+    // (a building-pack model carries the land's own roof color)
+    const model = def.m.startsWith('b_') && !tint ? `${def.m}#${this.roofOf(tx, ty)}` : def.m;
+    // (its middle on the tile, whatever the model's own origin)
+    const big = (def.w ?? 0) > 40;
+    const ox = big ? -((mesh.min[0] + mesh.max[0]) / 2) * size.sx : 0;
+    const oz = big ? -((mesh.min[2] + mesh.max[2]) / 2) * size.sz : 0;
+    this.add({ m: model, x: x + ox, z: z + oz, rot, sx: size.sx, sy: size.sy, sz: size.sz, shadow: def.flat || (def.h ?? 0) < 12 ? 0 : Math.min(2.4, ((def.w ?? TILE) / TILE) * 0.65), y: def.flat ? 0.02 : 0, r: c[0], g: c[1], b: c[2] });
+    if (def.flame) this.flames.push({ x, z, y: (def.flameAt ?? 10) / TILE, size: def.flame });
+    if (def.glow) this.glows.push({ x, z, y: ((def.h ?? 10) + 2) / TILE, color: def.glow, size: 9 });
+    if (def.hero) this.statues.push({ x: x * TILE, y: z * TILE, h: def.hero, lift: (def.h ?? 0) / TILE, tint: c });
   }
 
   private standOf(id: string, want: number): Stand | null {
@@ -1044,7 +1221,7 @@ export class Land3D {
     const m4 = new THREE.Matrix4();
     for (let r = r0; r <= r1; r++) {
       for (let c = c0; c <= c1; c++) {
-        const list = this.cells.get((r << 12) | c);
+        const list = this.cells.get(cellKey(r, c));
         if (!list) continue;
         for (const p of list) {
           if (p.x < x0 || p.x > x1 || p.z < z0 || p.z > z1) continue;

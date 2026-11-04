@@ -112,6 +112,16 @@ export interface ZoneSpec {
   wildCount: number;
   /** The story's dressing. */
   story?: StoryMark[];
+  /** What this land is known by: seen from far off, a thing to walk toward. */
+  landmarks?: LandmarkSpec[];
+}
+
+export interface LandmarkSpec {
+  prop: string;
+  /** Where, as fractions of the map. */
+  at: [number, number];
+  /** Tiles from its middle that nothing can walk through (it is a big thing). */
+  foot?: number;
 }
 
 export interface GeneratedZone {
@@ -143,12 +153,24 @@ const WALKABLE = new Set([FLOOR, DECO, PATH, COBBLE, BRIDGE, SAND]);
  * wide enough to hide a person diagonally behind them too: nobody is put there (the owner, of the chapel's
  * people: "most of the npcs can barely be seen"; Gloamhollow's tinker stood wholly behind her own stall).
  */
-export const TALL = new Set(['market-cart', 'pavilion', 'tent', 'camp-tent', 'statue', 'well', 'fountain', 'watchtower', 'menhir', 'standing-stone']);
-export const WIDE = new Set(['market-cart', 'pavilion', 'tent', 'camp-tent']);
+export const TALL = new Set(['market-cart', 'market-stall', 'pavilion', 'tent', 'camp-tent', 'statue', 'well', 'fountain', 'watchtower', 'menhir', 'standing-stone']);
+export const WIDE = new Set(['market-cart', 'market-stall', 'pavilion', 'tent', 'camp-tent']);
 /** A village's reach from its square, in tiles (the half-axes of its clearing). */
 /** How far a village reaches from its square, east and west, north and south (tiles). */
-const VX = 20;
-const VY = 13;
+/**
+ * A village's plan is written in plan tiles and laid out this many times larger: houses, squares and streets all
+ * grow together, so a house is a house next to a hero (its door a head over them) and a town takes a walk to cross.
+ */
+const TOWN_SCALE = 1.4;
+/** The plan's half-size, in plan tiles and on the map. */
+const PX = 20;
+const PY = 13;
+const VX = Math.round(PX * TOWN_SCALE);
+const VY = Math.round(PY * TOWN_SCALE);
+/** The tiles beside it, in a row, that a wide thing on one tile also stands on. */
+const FOOT: Record<string, number[]> = { 'market-stall': [-1, 1], pavilion: [-1, 1], wagon: [1], fountain: [-1, 1] };
+/** Plan tiles to map tiles. */
+const sc = (v: number): number => Math.floor(v * TOWN_SCALE + 1e-6);
 const PLANS: VillagePlan[] = ['cross', 'street', 'green'];
 type BuildingStyle = Extract<Marker, { kind: 'building' }>['style'];
 
@@ -169,18 +191,18 @@ interface Heart {
   goods: string[];
 }
 const HEARTS: Record<string, Heart> = {
-  well: { ground: COBBLE, centre: [[0, 0, 'well'], [-1, 0, 'bucket'], [1, 0, 'bench']], stall: 'market-cart', goods: ['market-goods', 'basket', 'crate', 'sacks'] },
-  harvest: { ground: PATH, centre: [[0, 0, 'tree'], [-1, 1, 'bench'], [1, 1, 'bench'], [1, -1, 'hay']], stall: 'market-cart', goods: ['basket', 'sacks', 'crate', 'hay'] },
-  harbor: { ground: COBBLE, centre: [[0, 0, 'statue'], [-1, 0, 'fish'], [1, 0, 'fish']], stall: 'market-cart', goods: ['fish', 'barrel', 'crate', 'basket'] },
-  healer: { ground: PATH, centre: [[0, 0, 'cauldron'], [-1, 0, 'clay-pot'], [1, 0, 'basket'], [0, -1, 'torch']], stall: 'market-cart', goods: ['pot', 'basket', 'clay-pot', 'sacks'] },
-  forge: { ground: COBBLE, centre: [[0, 0, 'brazier'], [-1, 0, 'anvil'], [1, 0, 'weapon-rack']], stall: 'market-cart', goods: ['crate', 'barrel', 'rack', 'sacks'] },
-  bonfire: { ground: PATH, centre: [[0, 0, 'campfire'], [-1, 1, 'bench'], [1, 1, 'bench'], [1, -1, 'keg']], stall: 'market-cart', goods: ['keg', 'barrel', 'crate', 'sacks'] },
+  well: { ground: COBBLE, centre: [[0, 0, 'well'], [-1, 0, 'bucket'], [1, 0, 'bench']], stall: 'market-stall', goods: ['market-goods', 'basket', 'crate', 'sacks'] },
+  harvest: { ground: PATH, centre: [[0, 0, 'tree'], [-1, 1, 'bench'], [1, 1, 'bench'], [1, -1, 'hay']], stall: 'market-stall', goods: ['basket', 'sacks', 'crate', 'hay'] },
+  harbor: { ground: COBBLE, centre: [[0, 0, 'statue'], [-1, 0, 'fish'], [1, 0, 'fish']], stall: 'market-stall', goods: ['fish', 'barrel', 'crate', 'basket'] },
+  healer: { ground: PATH, centre: [[0, 0, 'cauldron'], [-1, 0, 'clay-pot'], [1, 0, 'basket'], [0, -1, 'torch']], stall: 'market-stall', goods: ['pot', 'basket', 'clay-pot', 'sacks'] },
+  forge: { ground: COBBLE, centre: [[0, 0, 'brazier'], [-1, 0, 'anvil'], [1, 0, 'weapon-rack']], stall: 'market-stall', goods: ['crate', 'barrel', 'rack', 'sacks'] },
+  bonfire: { ground: PATH, centre: [[0, 0, 'campfire'], [-1, 1, 'bench'], [1, 1, 'bench'], [1, -1, 'keg']], stall: 'market-stall', goods: ['keg', 'barrel', 'crate', 'sacks'] },
   oasis: { ground: SAND, centre: [[-1, -1, 'clay-pot'], [2, 0, 'pot'], [-1, 1, 'bench']], pool: true, stall: 'pavilion', goods: ['pot', 'basket', 'clay-pot', 'sacks'] },
-  shrine: { ground: COBBLE, centre: [[0, 0, 'statue'], [-1, 0, 'candles'], [1, 0, 'candles']], stall: 'market-cart', goods: ['pot', 'crate', 'sacks', 'basket'] },
-  muster: { ground: PATH, centre: [[0, 0, 'red-banner'], [-1, 0, 'weapon-rack'], [1, 0, 'armor-stand']], stall: 'market-cart', goods: ['crate', 'barrel', 'rack', 'sacks'] },
-  flowers: { ground: DECO, centre: [[0, 0, 'topiary'], [-1, 0, 'flowerbed'], [1, 0, 'flowerbed'], [0, 1, 'flowerbed']], stall: 'market-cart', goods: ['flowers', 'basket', 'pot'] },
-  totem: { ground: PATH, centre: [[0, 0, 'standing-stone'], [-1, 0, 'torch'], [1, 0, 'torch']], stall: 'market-cart', goods: ['basket', 'pot', 'clay-pot'] },
-  crystal: { ground: COBBLE, centre: [[0, 0, 'crystals'], [-1, 0, 'statue'], [1, 0, 'lamp']], stall: 'market-cart', goods: ['pot', 'crate', 'basket'] },
+  shrine: { ground: COBBLE, centre: [[0, 0, 'statue'], [-1, 0, 'candles'], [1, 0, 'candles']], stall: 'market-stall', goods: ['pot', 'crate', 'sacks', 'basket'] },
+  muster: { ground: PATH, centre: [[0, 0, 'red-banner'], [-1, 0, 'weapon-rack'], [1, 0, 'armor-stand']], stall: 'market-stall', goods: ['crate', 'barrel', 'rack', 'sacks'] },
+  flowers: { ground: DECO, centre: [[0, 0, 'topiary'], [-1, 0, 'flowerbed'], [1, 0, 'flowerbed'], [0, 1, 'flowerbed']], stall: 'market-stall', goods: ['flowers', 'basket', 'pot'] },
+  totem: { ground: PATH, centre: [[0, 0, 'standing-stone'], [-1, 0, 'torch'], [1, 0, 'torch']], stall: 'market-stall', goods: ['basket', 'pot', 'clay-pot'] },
+  crystal: { ground: COBBLE, centre: [[0, 0, 'crystals'], [-1, 0, 'statue'], [1, 0, 'lamp']], stall: 'market-stall', goods: ['pot', 'crate', 'basket'] },
 };
 const HEART_OF: Partial<Record<Theme, string>> = {
   farm: 'well',
@@ -252,11 +274,9 @@ const SQUARES: Record<VillagePlan, Square> = {
   street: {
     heart: [-3, 1],
     stalls: [
-      [-12, 3, 1],
-      [-9, 3, 1],
+      [-11, 3, 1],
       [-5, 3, 1],
-      [3, 3, 1],
-      [6, 3, 1],
+      [4, 3, 1],
       [10, 3, 1],
     ],
     furniture: [
@@ -334,7 +354,7 @@ const SCENES: Record<string, { rows: string[]; key: Record<string, SceneCell> }>
   orchard: { rows: ['T.T.T', '.....', 'T.T.T', '..b..'], key: { T: TREE, b: P('basket') } },
   hunters: { rows: ['.T.r.', '..F..', 'b.L.x'], key: { T: P('camp-tent', true), r: P('rack', true), F: P('campfire', true), b: P('bedroll'), L: P('log'), x: P('crate', true) } },
   quarry: { rows: ['rr.rr', 'r.k.r', '.x.W.'], key: { r: ROCK, k: P('rubble'), x: P('crate', true), W: P('wagon', true) } },
-  outpost: { rows: ['.F.T.', 'w...x', '..O..'], key: { O: P('watchtower', true), T: P('camp-tent', true), F: P('campfire', true), w: P('weapon-rack', true), x: P('barrel', true) } },
+  outpost: { rows: ['.F.T.', 'w...x', '..O..'], key: { O: P('lookout', true), T: P('camp-tent', true), F: P('campfire', true), w: P('weapon-rack', true), x: P('barrel', true) } },
   battlefield: { rows: ['k.d.s', '.r...', 's..k.', '..d.r'], key: { k: P('skulls'), d: P('debris'), s: P('bone-heap'), r: P('rack', true) } },
   witch: { rows: ['.c.c.', 'c.C.c', '.c.c.'], key: { C: P('cauldron', true), c: P('candles') } },
   cairn: { rows: ['.R.', 'RlR', '.R.'], key: { R: P('menhir', true), l: P('torch', true) } },
@@ -443,6 +463,8 @@ class ZoneBuilder {
     hubs.forEach(([x, y], i) => this.clearVillage(x, y, s.hubs[i]!));
     pois.forEach(([x, y], i) => this.clear(x, y, s.pois[i]!.r));
     exits.forEach((e) => this.corridor(e.edge, e.inner));
+    const marks = (s.landmarks ?? []).map((lm) => ({ lm, at: this.clearOfTowns(this.tileOf(lm.at)) }));
+    marks.forEach(({ lm, at }) => this.clear(at[0], at[1], (lm.foot ?? 2) + 4));
     // roads reach the towns, the ways out and every sight (trails to the wilder ones)
     this.roads([...hubs, ...exits.map((e) => e.inner), ...pois]);
     s.hubs.forEach((hb, i) => this.town(hubs[i]![0], hubs[i]![1], hb));
@@ -458,6 +480,8 @@ class ZoneBuilder {
     this.wildPacks(hubs, exits.map((e) => e.inner), pois);
     this.connect(start);
     this.story(hubs, pois, exits.map((e) => e.inner));
+    // (last of all: it goes only where it boxes nothing in)
+    marks.forEach(({ lm, at }) => this.landmark(at[0], at[1], lm));
     const map: string[] = [];
     for (let y = 0; y < this.h; y++) map.push(String.fromCharCode(...this.g.subarray(y * this.w, (y + 1) * this.w)));
     return { map, placed: this.placed };
@@ -750,7 +774,7 @@ class ZoneBuilder {
     for (let y = cy - VY - 1; y <= cy + VY + 1; y++) {
       for (let x = cx - VX - 1; x <= cx + VX + 1; x++) {
         if (!this.inside(x, y, 2)) continue;
-        const d = walled && Math.abs(x - cx) <= 19 && y >= cy - 13 && y <= cy + 10 ? 0 : ((x - cx) / VX) ** 4 + ((y - cy) / VY) ** 4 + (hash2(x, y, this.spec.seed + 4) - 0.5) * 0.12;
+        const d = walled && Math.abs(x - cx) <= sc(19) + 1 && y >= cy + sc(-13) && y <= cy + sc(10) ? 0 : ((x - cx) / VX) ** 4 + ((y - cy) / VY) ** 4 + (hash2(x, y, this.spec.seed + 4) - 0.5) * 0.12;
         if (d > 1) continue;
         const i = this.idx(x, y);
         if (this.g[i] !== WATER || d < 0.5) this.g[i] = FLOOR;
@@ -775,14 +799,25 @@ class ZoneBuilder {
     const flip = hash2(cx, cy, seed + 73) < 0.5 ? 1 : -1;
     const looks = villageHouses(theme);
     // plan coordinates: dx east (mirrored, about the middle of the two-wide road north and south), dy south
-    const X = (dx: number): number => (flip > 0 ? cx + dx : cx + 1 - dx);
-    const Y = (dy: number): number => cy + dy;
-    const xs = (d0: number, d1: number): [number, number] => [Math.min(X(d0), X(d1)), Math.max(X(d0), X(d1))];
+    const X = (dx: number): number => (flip > 0 ? cx + sc(dx) : cx + 1 - sc(dx));
+    const Y = (dy: number): number => cy + sc(dy);
+    /** The map columns of plan columns d0 to d1, and the map rows of plan rows d0 to d1, whole. */
+    const xs = (d0: number, d1: number): [number, number] => {
+      const lo = Math.min(d0, d1);
+      const hi = Math.max(d0, d1);
+      const a = X(lo);
+      const b = flip > 0 ? X(hi + 1) - 1 : X(hi + 1) + 1;
+      return [Math.min(a, b), Math.max(a, b)];
+    };
+    const ys = (d0: number, d1: number): [number, number] => [Y(Math.min(d0, d1)), Y(Math.max(d0, d1) + 1) - 1];
     const free = (x: number, y: number): boolean => this.inside(x, y, 2) && !this.marked.has(this.idx(x, y));
     const open = (x: number, y: number): boolean => free(x, y) && OPEN.has(this.at(x, y));
     const pave = (dx0: number, dy0: number, dx1: number, dy1: number, c = PATH): void => {
       const [x0, x1] = xs(dx0, dx1);
-      for (let y = Y(Math.min(dy0, dy1)); y <= Y(Math.max(dy0, dy1)); y++) {
+      const [y0, y1a] = ys(dy0, dy1);
+      // (a street is never narrower than two tiles: a long thin plan row keeps its width)
+      const y1 = dy0 === dy1 && Math.abs(dx1 - dx0) >= 4 ? Math.max(y1a, y0 + 1) : y1a;
+      for (let y = y0; y <= y1; y++) {
         for (let x = x0; x <= x1; x++) {
           if (!this.inside(x, y, 2) || this.marked.has(this.idx(x, y))) continue;
           const k = this.at(x, y);
@@ -798,14 +833,23 @@ class ZoneBuilder {
       const y = Y(dy);
       if (!open(x, y) && !(free(x, y) && (this.at(x, y) === COBBLE || this.at(x, y) === PATH))) return false;
       this.put(x, y, { kind: 'prop', prop: name, solid });
+      // (a big thing stands on the tiles it covers)
+      for (const dx2 of FOOT[name] ?? []) {
+        const bx = x + dx2;
+        if (free(bx, y) && (OPEN.has(this.at(bx, y)) || this.at(bx, y) === COBBLE)) this.put(bx, y, { kind: 'prop', prop: 'block', solid: true });
+      }
       return true;
     };
     const pick = (list: readonly string[], x: number, y: number, salt: number): string => list[Math.floor(hash2(x, y, seed + salt) * list.length) % list.length]!;
     const made: { style: BuildingStyle; x0: number; y0: number; w: number; h: number }[] = [];
     /** A building on a lot `w` by `h` whose front row is `front`, its door on the street below; false if it won't fit. */
-    const build = (style: BuildingStyle, dx: number, front: number, w: number, h = 3, art?: string): boolean => {
-      const [x0] = xs(dx, dx + w - 1);
-      const y0 = Y(front) - h + 1;
+    const build = (style: BuildingStyle, dx: number, front: number, planW: number, planH = 3, art?: string): boolean => {
+      const [xa, xb] = xs(dx, dx + planW - 1);
+      // a lane's width between neighbors: a town of separate houses, not one long wall
+      const w = Math.max(3, xb - xa);
+      const x0 = flip > 0 ? xa : xb - w + 1;
+      const h = Math.round(planH * TOWN_SCALE);
+      const y0 = Y(front + 1) - h;
       for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) if (!open(x, y)) return false;
       const step = this.at(x0 + Math.floor(w / 2), y0 + h);
       if ((step !== PATH && step !== COBBLE && step !== BRIDGE) || this.marked.has(this.idx(x0 + Math.floor(w / 2), y0 + h))) return false;
@@ -838,7 +882,7 @@ class ZoneBuilder {
     /** A fenced garden in rows of greens, with a scarecrow and a gate in its south side. */
     const garden = (dx0: number, dy0: number, dx1: number, dy1: number): void => {
       const [x0, x1] = xs(dx0, dx1);
-      const [y0, y1] = [Y(dy0), Y(dy1)];
+      const [y0, y1] = ys(dy0, dy1);
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (!open(x, y)) return;
       const gate = Math.round((x0 + x1) / 2);
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) this.set(x, y, x === x0 || x === x1 || y === y0 || y === y1 ? (y === y1 && x === gate ? FLOOR : FENCE) : DECO);
@@ -848,7 +892,7 @@ class ZoneBuilder {
     const pond = (dx0: number, dy0: number, dx1: number, dy1: number): void => {
       if (this.theme === 'volcanic') return;
       const [x0, x1] = xs(dx0, dx1);
-      const [y0, y1] = [Y(dy0), Y(dy1)];
+      const [y0, y1] = ys(dy0, dy1);
       const mx = (x0 + x1) / 2;
       const my = (y0 + y1) / 2;
       const rx = (x1 - x0) / 2 + 0.5;
@@ -867,7 +911,7 @@ class ZoneBuilder {
       if (!build('temple', dir > 0 ? dx : dx - 2, front, 3, 4)) return;
       const gx = dir > 0 ? dx + 4 : dx - 9;
       const [x0, x1] = xs(gx, gx + 5);
-      const [y0, y1] = [Y(front - 5), Y(front)];
+      const [y0, y1] = ys(front - 5, front);
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (!open(x, y)) return;
       const gate = Math.round((x0 + x1) / 2);
       for (let y = y0; y <= y1; y++) {
@@ -882,8 +926,8 @@ class ZoneBuilder {
     // the waystone at the heart of it
     this.put(cx, cy - 1, { kind: 'waystone' });
     // the roads in (the land's own roads arrive along these lines from the square)
-    pave(0, -VY, 1, VY);
-    pave(-VX, 0, VX + 1, 1);
+    pave(0, -PY, 1, PY);
+    pave(-PX, 0, PX + 1, 1);
     switch (plan) {
       case 'cross': {
         // the square where the roads cross, the inn and the smithy west of it, the stable and a tall shop east
@@ -968,7 +1012,7 @@ class ZoneBuilder {
         ] as const)
           if (this.at(x, y) === RAMPART) this.put(x, y, { kind: 'prop', prop: 'watchtower', solid: true });
         if (WALKABLE.has(this.at(cx, wy0))) this.gate = [cx, wy0];
-        for (const x of [cx - 1, cx + 2]) if (this.at(x, wy0) === RAMPART && !this.marked.has(this.idx(x, wy0))) this.put(x, wy0, { kind: 'prop', prop: 'watchtower', solid: true });
+        for (const x of [cx - 2, cx + 3]) if (this.at(x, wy0) === RAMPART && !this.marked.has(this.idx(x, wy0))) this.put(x, wy0, { kind: 'prop', prop: 'watchtower', solid: true });
         pave(-16, -4, 17, -4);
         pave(-16, 6, 17, 6);
         square(-5, -3, 6, 2);
@@ -1016,29 +1060,25 @@ class ZoneBuilder {
     });
     for (const [dx, dy, name] of sq.furniture) prop(dx, dy, name);
     // the people stand where they work: the smith at the smithy, the brewer at the inn, the trader before their
-    // stall (behind it, its awning hid them), the priest at the chapel, the lord at the keep; everyone else about
-    // the waystone
+    // stall (behind it, its awning hid them), the priest at the chapel, the lord at the keep; everyone else at the
+    // door of a house of their own, nearest the square first (no crowd round the waystone)
     const doorOf = (style: BuildingStyle | 'lord'): [number, number] | null => {
       const b = made.find((m) => (style === 'lord' ? m.style === 'keep' || m.style === 'hall' : m.style === style));
       return b ? [b.x0 + Math.floor(b.w / 2) + 1, b.y0 + b.h] : null;
     };
-    const crowd: [number, number][] = [
-      [-1, 2],
-      [2, -2],
-      [-2, 1],
-      [3, 1],
-      [-3, -1],
-      [4, -1],
-    ];
+    const homes = made
+      .filter((m) => m.style === 'house')
+      .sort((a, b) => Math.hypot(a.x0 + a.w / 2 - cx, a.y0 + a.h - cy) - Math.hypot(b.x0 + b.w / 2 - cx, b.y0 + b.h - cy))
+      .map((m): [number, number] => [m.x0 + Math.floor(m.w / 2) + 2, m.y0 + m.h]);
     let k = 0;
     let s = 0;
     hub.npcs.forEach((npc) => {
       const role = ROLES.find(([re]) => re.test(npc))?.[1];
       const stall = role === 'market' ? stalls[s++ % Math.max(1, stalls.length)] : undefined;
       const at = role === 'market' ? (stall ? [X(stall[0]), Y(stall[1] + 1)] : null) : role ? doorOf(role) : null;
-      const [dx, dy] = crowd[k % crowd.length]!;
+      const home = homes[k % Math.max(1, homes.length)] ?? [cx + 3, cy + 3];
       if (!at) k++;
-      const [tx, ty] = this.free(at ? at[0]! : X(dx), at ? at[1]! : Y(dy), true);
+      const [tx, ty] = this.free(at ? at[0]! : home[0], at ? at[1]! : home[1], true);
       this.put(tx, ty, { kind: 'npc', npc }, hub.when?.[npc]);
     });
     this.villageFronts(made, seed);
@@ -1053,6 +1093,50 @@ class ZoneBuilder {
         const h = hash2(x, y, seed + 67);
         if (d > 0.7 && h < 0.14) this.set(x, y, h < 0.09 ? TREE : BUSH);
         else if (noise2(x / 4, y / 4, seed + 69) > 0.6) this.set(x, y, DECO);
+      }
+    }
+  }
+
+  /** A place, or the nearest point out past any town it falls in. */
+  private clearOfTowns(at: [number, number]): [number, number] {
+    let [x, y] = at;
+    for (let step = 0; step < 60; step++) {
+      const hub = this.hubAt.find(([hx, hy]) => ((x - hx) / (VX + 5)) ** 2 + ((y - hy) / (VY + 5)) ** 2 < 1);
+      if (!hub) break;
+      const a = Math.atan2(y - hub[1], x - hub[0] || 1);
+      x = clamp(Math.round(x + Math.cos(a) * 2), 7, this.w - 8);
+      y = clamp(Math.round(y + Math.sin(a) * 2), 7, this.h - 8);
+    }
+    return [x, y];
+  }
+
+  /** A land's great thing, on open ground nearest its place, standing on the tiles its model covers. */
+  private landmark(cx: number, cy: number, lm: LandmarkSpec): void {
+    // the nearest place with nothing and nobody on the ground it covers or just round it, and no road; tight land
+    // gets it on a narrower foot sooner than not at all
+    for (const r of [lm.foot ?? 2, 1, 0]) {
+      const clearAt = (x: number, y: number): boolean => {
+        for (let dy = -r - 1; dy <= r + 1; dy++) {
+          for (let dx = -r - 1; dx <= r + 1; dx++) {
+            if (!this.inside(x + dx, y + dy, 3)) return false;
+            const i = this.idx(x + dx, y + dy);
+            if (this.marked.has(i) || !OPEN.has(this.g[i]!)) return false;
+          }
+        }
+        return true;
+      };
+      for (let rad = 0; rad < 26; rad++) {
+        for (let dy = -rad; dy <= rad; dy++) {
+          for (let dx = -rad; dx <= rad; dx++) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) !== rad || !clearAt(cx + dx, cy + dy)) continue;
+            const x = cx + dx;
+            const y = cy + dy;
+            if (this.hubAt.some(([hx, hy]) => ((x - hx) / VX) ** 2 + ((y - hy) / VY) ** 2 < 1)) continue;
+            this.put(x, y, { kind: 'prop', prop: lm.prop, solid: true });
+            for (let by = -r; by <= r; by++) for (let bx = -r; bx <= r; bx++) if (bx || by) this.put(x + bx, y + by, { kind: 'prop', prop: 'block', solid: true });
+            return;
+          }
+        }
       }
     }
   }
@@ -1114,7 +1198,7 @@ class ZoneBuilder {
         if (street && house && x - lampAt > 6) {
           this.put(x, y, { kind: 'prop', prop: 'lamp', solid: true });
           lampAt = x;
-        } else if (house && !street && hash2(x, y, seed + 91) < 0.35) this.put(x, y, { kind: 'prop', prop: 'flowers' });
+        } else if (house && !street && hash2(x, y, seed + 91) < 0.12) this.put(x, y, { kind: 'prop', prop: 'flowers' });
       }
     }
   }
@@ -1304,7 +1388,7 @@ class ZoneBuilder {
     const rand = rng(this.spec.seed + 913);
     let openTiles = 0;
     for (let i = 0; i < this.g.length; i++) if (OPEN.has(this.g[i]!) && !this.lock[i]) openTiles++;
-    const want = Math.round(openTiles / 120);
+    const want = Math.round(openTiles / 190);
     const done: [number, number][] = [];
     const BUSY = new Set([PATH, BRIDGE, COBBLE, HOUSE, HOUSE_ANCHOR, FENCE, RAMPART]);
     const start = Math.floor(rand() * kinds.length);
@@ -1318,7 +1402,7 @@ class ZoneBuilder {
       const cy = y0 + h / 2;
       if (this.hubAt.some(([hx, hy]) => ((cx - hx) / (VX + 6)) ** 2 + ((cy - hy) / (VY + 5)) ** 2 < 1)) continue;
       if (pois.some(([px, py], k) => Math.hypot(px - cx, py - cy) < this.spec.pois[k]!.r + 5)) continue;
-      if (done.some(([px, py]) => Math.hypot(px - cx, py - cy) < 10)) continue;
+      if (done.some(([px, py]) => Math.hypot(px - cx, py - cy) < 16)) continue;
       let ok = true;
       for (let dy = -2; dy < h + 2 && ok; dy++) {
         for (let dx = -2; dx < w + 2 && ok; dx++) {
@@ -1572,10 +1656,44 @@ class ZoneBuilder {
   }
 }
 
+/**
+ * What each land is known by. Every land the player walks has one or two great things they can see from far off and
+ * remember it by: the great RPGs teach their maps this way ("past the old mill, toward the broken tower").
+ */
+const LANDMARKS: Record<string, LandmarkSpec[]> = {
+  whisperwood: [{ prop: 'ancient-oak', at: [0.5, 0.3], foot: 2 }, { prop: 'stone-arch', at: [0.2, 0.72], foot: 1 }],
+  thornvale: [{ prop: 'windmill', at: [0.2, 0.3], foot: 2 }, { prop: 'water-mill', at: [0.75, 0.75], foot: 2 }],
+  saltmarsh: [{ prop: 'lighthouse', at: [0.86, 0.2], foot: 2 }, { prop: 'great-wreck', at: [0.6, 0.86], foot: 2 }],
+  brackenridge: [{ prop: 'ancient-pine', at: [0.3, 0.25], foot: 2 }, { prop: 'great-obelisk', at: [0.78, 0.65], foot: 1 }],
+  greyfen: [{ prop: 'dead-colossus', at: [0.28, 0.72], foot: 2 }, { prop: 'broken-tower', at: [0.72, 0.28], foot: 2 }],
+  amberfield: [{ prop: 'windmill', at: [0.75, 0.22], foot: 2 }, { prop: 'lumber-mill', at: [0.22, 0.78], foot: 2 }],
+  duskfen: [{ prop: 'dead-colossus', at: [0.68, 0.72], foot: 2 }, { prop: 'crypt-hill', at: [0.28, 0.28], foot: 3 }],
+  ironpeak: [{ prop: 'giant-statue', at: [0.5, 0.2], foot: 2 }, { prop: 'mine-head', at: [0.82, 0.62], foot: 2 }],
+  'ashen-barrows': [{ prop: 'crypt-hill', at: [0.72, 0.32], foot: 3 }, { prop: 'broken-tower', at: [0.24, 0.72], foot: 2 }],
+  stormwatch: [{ prop: 'lighthouse', at: [0.18, 0.2], foot: 2 }, { prop: 'sea-rock', at: [0.82, 0.76], foot: 2 }],
+  grimward: [{ prop: 'stone-arch', at: [0.3, 0.25], foot: 1 }, { prop: 'great-obelisk', at: [0.76, 0.7], foot: 1 }],
+  sunscorch: [{ prop: 'sand-spire', at: [0.25, 0.3], foot: 2 }, { prop: 'giant-statue:#d8b880', at: [0.72, 0.66], foot: 2 }],
+  glimmerwood: [{ prop: 'great-mushroom-tree', at: [0.28, 0.62], foot: 1 }, { prop: 'ancient-oak:#c8a8e8', at: [0.72, 0.3], foot: 2 }],
+  rimeheld: [{ prop: 'ice-spire', at: [0.25, 0.35], foot: 2 }, { prop: 'giant-skull', at: [0.72, 0.7], foot: 2 }],
+  'shattered-vale': [{ prop: 'rift-spire', at: [0.62, 0.28], foot: 2 }, { prop: 'broken-tower', at: [0.24, 0.76], foot: 2 }],
+  sablewind: [{ prop: 'sand-spire', at: [0.72, 0.3], foot: 2 }, { prop: 'stone-arch:#d8b880', at: [0.28, 0.7], foot: 1 }],
+  vinecoil: [{ prop: 'giant-statue:#8aa878', at: [0.5, 0.28], foot: 2 }, { prop: 'ancient-oak', at: [0.76, 0.72], foot: 2 }],
+  highwall: [{ prop: 'broken-tower', at: [0.2, 0.76], foot: 2 }, { prop: 'ruined-hall', at: [0.78, 0.72], foot: 2 }],
+  gloamhollow: [{ prop: 'dead-colossus', at: [0.28, 0.28], foot: 2 }, { prop: 'great-obelisk', at: [0.72, 0.72], foot: 1 }],
+  bonefields: [{ prop: 'bone-arch', at: [0.34, 0.34], foot: 2 }, { prop: 'giant-skull', at: [0.72, 0.66], foot: 2 }],
+  'weeping-woods': [{ prop: 'dead-colossus', at: [0.62, 0.28], foot: 2 }, { prop: 'crypt-hill', at: [0.28, 0.72], foot: 3 }],
+  'sunken-reaches': [{ prop: 'great-wreck', at: [0.3, 0.62], foot: 2 }, { prop: 'lighthouse', at: [0.76, 0.28], foot: 2 }],
+  blightwood: [{ prop: 'dead-colossus', at: [0.4, 0.64], foot: 2 }, { prop: 'great-mushroom-tree', at: [0.76, 0.28], foot: 1 }],
+  emberdeep: [{ prop: 'lava-spire', at: [0.28, 0.3], foot: 2 }, { prop: 'giant-skull:#b88a70', at: [0.72, 0.7], foot: 2 }],
+  hollowmere: [{ prop: 'crypt-hill', at: [0.72, 0.28], foot: 3 }, { prop: 'great-wreck', at: [0.28, 0.72], foot: 2 }],
+  riftscar: [{ prop: 'rift-spire', at: [0.28, 0.3], foot: 2 }, { prop: 'rift-spire', at: [0.72, 0.64], foot: 2 }],
+  'pale-reach': [{ prop: 'giant-statue:#c8c8d8', at: [0.5, 0.22], foot: 2 }, { prop: 'bone-arch', at: [0.24, 0.72], foot: 2 }],
+};
+
 /** A wild region whose map is generated the first time something looks at it. */
 export function wildRegion(base: Omit<RegionDef, 'kind' | 'map' | 'markers' | 'placed' | 'encounters' | 'level'>, spec: ZoneSpec): RegionDef {
   let made: GeneratedZone | null = null;
-  const get = (): GeneratedZone => (made ??= generateZone(spec, base.theme));
+  const get = (): GeneratedZone => (made ??= generateZone({ ...spec, landmarks: LANDMARKS[base.id] ?? [] }, base.theme));
   return {
     ...base,
     kind: 'wild',

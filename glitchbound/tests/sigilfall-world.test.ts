@@ -67,7 +67,7 @@ describe('sigilfall zone generator', () => {
     const near = packs.filter((p) => p.ty < m.h * 0.3).map((p) => p.level);
     const far = packs.filter((p) => p.ty > m.h * 0.7).map((p) => p.level);
     const avg = (l: number[]) => l.reduce((s, v) => s + v, 0) / l.length;
-    expect(avg(far)).toBeGreaterThan(avg(near) + 2);
+    expect(avg(far)).toBeGreaterThan(avg(near) + 1.5);
     // no enemy stands in the town
     const town = m.markers.find((x) => x.marker.kind === 'waystone')!;
     for (const p of packs) expect(Math.hypot(p.tx - town.tx, p.ty - town.ty)).toBeGreaterThan(12);

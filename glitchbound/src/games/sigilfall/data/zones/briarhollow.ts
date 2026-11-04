@@ -34,12 +34,8 @@ const HOME = is('epilogue-the-camp-goes-home', 'done');
 /** The camp while it stands: from the first dawn until it goes home. */
 const CAMPED = (c: StoryCond): StoryCond => all(c, not(HOME));
 
-/** How much roomier the village is than it was first drawn (64 × 54): houses keep their size, the lanes widen. */
-/**
- * The plan's own scale: the village was once laid out 35% roomier, and the owner found it "vast": houses far
- * apart with open grass between. It is built at its plan's size again, with more houses along its roads.
- */
-const SPREAD = 1;
+/** The plan's own scale: its houses, lanes and yards all grow together, so a house is a house next to a hero. */
+const SPREAD = 1.4;
 
 function plan(): SpreadPlan {
   const c = new SpreadPlan(64, 54, 4417, SPREAD);
@@ -99,8 +95,8 @@ function plan(): SpreadPlan {
   // a bucket at the well
   c.prop('bucket', 31, 29, false);
 
-  c.prop('market-cart', 28, 26, true, CALM);
-  c.prop('market-cart', 36, 26, true, CALM);
+  c.prop('market-stall', 28, 25, true, CALM);
+  c.prop('market-stall', 36, 25, true, CALM);
 
   // the guard yard by the gate: Mara's dummies
   c.fill(18, 14, 26, 18, 'cobble');
@@ -171,14 +167,10 @@ function plan(): SpreadPlan {
     c.prop('lamp', x, y);
   // the orchard, the fields and the pond
   c.plant(42, 42, 58, 49, 0.18, 0.12);
-  for (let x = 22; x <= 29; x++) {
-    c.set(x, 41, 'fence');
-    c.set(x, 48, 'fence');
-  }
-  for (let y = 41; y <= 48; y++) {
-    c.set(22, y, 'fence');
-    c.set(29, y, 'fence');
-  }
+  c.fence(22, 41, 29, 41);
+  c.fence(22, 48, 29, 48);
+  c.fence(22, 41, 22, 48);
+  c.fence(29, 41, 29, 48);
   c.fill(23, 42, 28, 47, 'deco');
   c.set(29, 44, 'floor');
   c.pond(13, 45, 4, 2);
@@ -259,7 +251,6 @@ function plan(): SpreadPlan {
   c.npc('elyra', 24, 36, HOME);
   c.npc('mara-venn', 47, 20, NIGHT);
   c.npc('elyra', 43, 20, NIGHT);
-  c.npc('briar-tam', 30, 27, CALM);
   c.npc('briar-oda', 24, 44, CALM);
   // the camp at dawn: tents and a cookfire in the square, the burned inn's guests under canvas
   c.prop('tent', 27, 28, true, CAMPED(CAMP));
@@ -310,8 +301,8 @@ function plan(): SpreadPlan {
   c.npc('mother-alsa', 18, 33, FERN_CAMP);
   c.npc('pip-tanner', 14, 33, FERN_CAMP);
   // rebuilt (the Epilogue): market carts back in the square, lanterns on the lanes, new thatch by the inn
-  c.prop('market-cart', 27, 27, true, HOME);
-  c.prop('market-cart', 37, 27, true, HOME);
+  c.prop('market-stall', 28, 27, true, HOME);
+  c.prop('market-stall', 36, 27, true, HOME);
   c.prop('bench', 30, 30, true, HOME);
   c.prop('lantern', 25, 24, false, HOME);
   c.prop('lantern', 39, 24, false, HOME);
@@ -322,12 +313,9 @@ function plan(): SpreadPlan {
   // the farms outside the palisade, now the village has room: a fenced field with its hay and cart, a farmhouse,
   // the orchard along the north road and the mill beyond it
   c.fill(8, 6, 22, 9, 'deco');
-  for (let x = 7; x <= 23; x++) {
-    c.set(x, 5, 'fence');
-    c.set(x, 10, 'fence');
-  }
-  for (let y = 6; y <= 9; y++) c.set(7, y, 'fence');
-  c.set(23, 7, 'floor');
+  c.fence(7, 5, 23, 5);
+  c.fence(7, 10, 23, 10);
+  c.fence(7, 5, 7, 10);
   c.prop('hay', 11, 7);
   c.prop('hay', 17, 8);
   c.prop('hay', 20, 6);

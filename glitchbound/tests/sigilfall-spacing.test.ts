@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { EVENTS } from '../src/games/sigilfall/data/events';
+import { REGIONS } from '../src/games/sigilfall/data/regions';
 import { placePet } from '../src/games/sigilfall/sim/pets';
 import type { World } from '../src/games/sigilfall/sim/world';
 import { newWorld, readyHero } from './sigilfall-bot';
@@ -63,4 +64,26 @@ describe('sigilfall: people keep their distance', () => {
       expect(closest(w)).toBeGreaterThan(CLOSEST);
     });
   }
+});
+
+describe('sigilfall: one world', () => {
+  const GREAT = /ancient|colossus|lighthouse|giant-|great-|stone-arch|crypt-hill|bone-arch|-spire|mill|mine-head|broken-tower|ruined-hall|sea-rock/;
+  for (const r of Object.values(REGIONS)) {
+    if (r.kind !== 'wild') continue;
+    it(`${r.id} is known by something you can see from far off`, () => {
+      const marks = (r.placed ?? []).filter((p) => p.marker.kind === 'prop' && GREAT.test(p.marker.prop));
+      expect(marks.length).toBeGreaterThanOrEqual(1);
+    });
+  }
+  it('a dungeon room is about a screen, not a plain', () => {
+    for (const id of ['crypt', 'deepforge-halls', 'rotmother-cistern', 'barrow-of-kings'] as const) {
+      const r = REGIONS[id];
+      const bosses = new Set(r.encounters.filter((e) => e.boss).map((e) => e.floor));
+      for (const e of r.encounters) {
+        if (bosses.has(e.floor)) continue;
+        const cells = r.map.join('').split(e.floor).length - 1;
+        expect(cells, `${id} ${e.floor}`).toBeLessThanOrEqual(190);
+      }
+    }
+  });
 });

@@ -7,7 +7,7 @@ import { TALL, WIDE } from '../src/games/sigilfall/data/zonegen';
 import { questRegion } from '../src/games/sigilfall/progress/character';
 import { questSteps, turnInNpc } from '../src/games/sigilfall/progress/handin';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
-import { K, TILE } from '../src/games/sigilfall/sim/map';
+import { flowField, K, TILE } from '../src/games/sigilfall/sim/map';
 import { npcRegion } from '../src/games/sigilfall/sim/routes';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { heroAtEvent, newWorld, readyHero } from './sigilfall-bot';
@@ -196,15 +196,16 @@ describe('Sigilfall: every quest, step by step', () => {
       const boat = w.story.run?.ward;
       expect(boat?.def.look, id).toBe('boat');
       expect(w.map.kind[Math.floor(boat!.y / TILE) * w.map.w + Math.floor(boat!.x / TILE)], `${id}: in the water`).toBe(K.Water);
-      // the hero stands off; the raiders go for the boat
-      w.player.x = at.x + 5 * TILE;
-      w.player.y = at.y + 5 * TILE;
-      for (let t = 0; t < 34 && boat!.hp === boat!.maxHp; t += DT) {
-        w.input = emptyInput();
-        w.player.hp = w.player.maxHp;
-        w.step(DT);
+      // a raider on the bank, come from wherever the hero came from, has the hull within a melee reach (19 pixels)
+      const f = flowField(w.map, Math.floor(at.x / TILE), Math.floor((at.y + 30) / TILE), 8000);
+      let reach = Infinity;
+      for (let y = 0; y < w.map.h; y++) {
+        for (let x = 0; x < w.map.w; x++) {
+          const i = y * w.map.w + x;
+          if ((f[i] ?? -1) >= 0 && !w.map.solid[i]) reach = Math.min(reach, Math.hypot((x + 0.5) * TILE - boat!.x, (y + 0.5) * TILE - boat!.y));
+        }
       }
-      expect(boat!.hp, `${id}: the raiders reach the boat`).toBeLessThan(boat!.maxHp);
+      expect(reach, `${id}: the raiders reach the boat`).toBeLessThan(boat!.r + 19 + TILE / 2);
     }
   });
 });

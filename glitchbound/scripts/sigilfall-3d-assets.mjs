@@ -1168,7 +1168,7 @@ const KITS = {
   plant_warrior: { char: 'PlantWarrior', right: 'PlantWarrior_Spear', left: 'PlantWarrior_Shield' },
   plant_archer: { char: 'PlantWarrior', left: 'PlantWarrior_Bow_withString' },
   // half a body, for what stands on a horse's back or a serpent's coils
-  top_centaur: { char: 'Barbarian', drop: /Leg|BearHat|BearPelt/, right: 'axe_2handed' },
+  top_centaur: { char: 'Barbarian', drop: /Leg/, right: 'axe_2handed' },
   top_naga: { char: 'Tiefling', drop: /Leg|Tail/, right: 'Tiefling_Sword' },
 };
 

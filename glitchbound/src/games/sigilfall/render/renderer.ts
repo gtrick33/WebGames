@@ -426,7 +426,7 @@ export class Renderer {
       st.land?.updateDoors(dt);
       this.folkK = damp(this.folkK, w.story.fighting ? 0 : 1, 3, dt);
       st.cast.begin();
-      this.people.sync(st.cast, w, dt, time, { look: this.look ?? heroLook(w.hero.cls), weapon: this.weapon, folk: this.folkK, landOnly: this.landOnly });
+      this.people.sync(st.cast, w, dt, time, { look: this.look ?? heroLook(w.hero.cls), weapon: this.weapon, folk: this.folkK, statues: st.land?.statues, landOnly: this.landOnly });
       this.layer?.cast?.(st.cast, dt, time);
       st.cast.end();
       st.render(dt);
@@ -509,6 +509,7 @@ export class Renderer {
     const near = near0;
     // (what a wall stands in front of isn't shown over the wall)
     const seen = (x: number, y: number, h: number): boolean => near0(x, y) && !st?.land?.hidden(x, y, h);
+    this.fireColors = FIRE[w.region.theme] ?? FIRE.default!;
     if (st?.land) {
       for (const f of st.land.flames) {
         const x = f.x * TILE;
@@ -516,6 +517,20 @@ export class Renderer {
         if (!near(x, y)) continue;
         this.upright(x, y, f.y * TILE);
         this.drawFlame(x, y, time, f.size);
+      }
+    }
+    if (st?.land) {
+      for (const f of st.land.glows) {
+        const x = f.x * TILE;
+        const y = f.z * TILE;
+        if (!near(x, y)) continue;
+        this.upright(x, y, f.y * TILE);
+        const r = f.size * (0.92 + Math.sin(time * 1.8 + x) * 0.08);
+        g.save();
+        g.globalCompositeOperation = 'lighter';
+        g.globalAlpha = 0.55;
+        g.drawImage(glowDisc(f.color, Math.ceil(r)), x - r, y - r, r * 2, r * 2);
+        g.restore();
       }
     }
     for (const f of w.fires) {
@@ -634,13 +649,15 @@ export class Renderer {
       grade.set(r, gg, b, a);
     };
     if (look.tint) paint(look.tint, 0.14);
-    if (w.storyState?.dusk) paint('#ff8a4a', 0.2);
-    if (w.storyState?.gloom) paint('#3a3458', 0.36);
+    if (w.storyState?.dusk) paint('#ff8a4a', 0.14);
+    if (w.storyState?.gloom) paint('#3a4468', 0.16);
     if (dread && dread.dark > 0) {
-      paint(dread.shade, 0.24);
-      dark.set(dread.dark * 0.45, 12, 0, 0);
+      paint(dread.shade, 0.16);
+      dark.set(dread.dark * 0.2, 16, 0, 0);
     }
-    if (w.dark) dark.set(w.region.dark ? 0.66 : 0.8, w.region.dark ? 8.5 : 6.5, 0, 0);
+    // a night or a crypt sets a mood, never hides the game: the far edge of the view is dim, everything can be seen
+    if (w.storyState?.night) paint('#2f3f70', 0.18);
+    if (w.dark) dark.set(w.region.dark ? 0.36 : 0.26, w.region.dark ? 11 : 15, 0, 0);
     void st;
   }
 
@@ -819,6 +836,9 @@ export class Renderer {
 
   /* ---------------------------------------------------------------- ground */
 
+  /** What fire looks like here: most places burn orange, a deep place its own color (its mood is in its light). */
+  private fireColors: readonly [string, string, string] = FIRE.default!;
+
   private drawFlame(x: number, y: number, time: number, k: number): void {
     const g = this.g;
     // a tongue of fire that leans and licks, three shades from its edge to its white-hot heart, in its own glow
@@ -831,7 +851,7 @@ export class Renderer {
     g.save();
     g.globalCompositeOperation = 'lighter';
     g.globalAlpha = 0.34 + Math.sin(t * 1.3) * 0.05;
-    g.drawImage(glowDisc('#ff8a3d', glow), x - glow, y - tall * 0.45 - glow);
+    g.drawImage(glowDisc(this.fireColors[0], glow), x - glow, y - tall * 0.45 - glow);
     g.restore();
     const tongue = (w: number, h: number, color: string): void => {
       g.fillStyle = color;
@@ -842,9 +862,10 @@ export class Renderer {
       g.quadraticCurveTo(x, y + w * 0.9, x - w, y);
       g.fill();
     };
-    tongue(wide, tall, '#f4561f');
-    tongue(wide * 0.66, tall * 0.7, '#ff9f2e');
-    tongue(wide * 0.34, tall * 0.42, '#fff0a0');
+    const [outer, middle, heart] = this.fireColors;
+    tongue(wide, tall, outer);
+    tongue(wide * 0.66, tall * 0.7, middle);
+    tongue(wide * 0.34, tall * 0.42, heart);
   }
 
   private drawField(f: World['fields'][number], time: number): void {
@@ -1861,6 +1882,18 @@ export class Renderer {
 }
 
 /** A filled circle. */
+const FIRE: Record<string, readonly [string, string, string]> = {
+  default: ['#f4561f', '#ff9f2e', '#fff0a0'],
+  // the cold dead of a crypt burn pale; a giant's ice burns blue; a rift burns violet; the rot burns sick green
+  crypt: ['#4a7ad8', '#8ac0f0', '#e8f8ff'],
+  icecave: ['#2a8ad8', '#70d0f0', '#e8ffff'],
+  riftspire: ['#a03ae0', '#e070f0', '#ffe8ff'],
+  roots: ['#5a9a2a', '#a8d040', '#f0ffa0'],
+  citadel: ['#7a4ac8', '#b890f0', '#f0e8ff'],
+  lavacave: ['#e0321a', '#ff7a1e', '#ffe080'],
+  cistern: ['#3a9a78', '#70d0a0', '#e0ffe8'],
+};
+
 /** A shot's size next to the rules' circle. */
 const SHOT_SCALE = 1.5;
 

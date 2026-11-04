@@ -198,6 +198,8 @@ export function parseRegion(def: RegionDef): TileMap {
     }
   };
   settle();
+  // (what the dressing stood on a room's floor is no place for a foe to appear)
+  for (let r = 0; r < roomTiles.length; r++) roomTiles[r] = roomTiles[r]!.filter((i) => !solid[i]);
   const map: TileMap = { w, h, kind, room, solid, block, markers, doors, roomTiles, buildings };
   // a tall roof over the ground behind its lot is wall only if that cuts nobody off
   const start = markers.find((m) => m.marker.kind === 'start');

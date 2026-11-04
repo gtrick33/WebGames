@@ -27,6 +27,21 @@ const WARDS: Record<string, { m: string; h: number }> = {
   wagon: { m: 'wagon', h: 24 },
   lantern: { m: 'lantern_standing', h: 26 },
 };
+/** A hero of old in stone: the same armor everyone knows, in one gray, a sword at their side and a shield on their arm. */
+const STONE = { style: 'plate', mat: 'mail', tint: '#a8a8a8', r: 'rare' } as const;
+const STATUE_LOOK = {
+  skin: '#b4b4b4',
+  hair: '#a0a0a0',
+  hairStyle: 'short',
+  head: { ...STONE, style: 'helm' },
+  chest: STONE,
+  legs: { ...STONE, style: 'greaves' },
+  hands: { ...STONE, style: 'gauntlets' },
+  feet: { ...STONE, style: 'sabatons' },
+  quiver: null,
+  cape: '#a0a0a0',
+} as unknown as HeroLook;
+const STATUE_SWORD: Held = { kind: 'sword', tint: '#b0b0b0' };
 const ECHOES = new Set(['echo-of-ysane', 'echo-of-ysane-mere', 'echo-of-ysane-quay', 'echo-of-the-children']);
 const ECHO_TINT = [0.74, 0.88, 1.3] as const;
 const WARD_LOOKS = new Set(['door', 'gate', 'stone', 'boat', 'wagon', 'lantern']);
@@ -62,7 +77,8 @@ export class WorldCast {
     this.pets.clear();
   }
 
-  sync(cast: Cast, w: World, dt: number, time: number, o: { look: HeroLook; weapon: Held; folk: number; landOnly: boolean }): void {
+  sync(cast: Cast, w: World, dt: number, time: number, o: { look: HeroLook; weapon: Held; folk: number; landOnly: boolean; statues?: readonly { x: number; y: number; h: number; lift: number; tint: readonly [number, number, number] }[] }): void {
+    for (const s of o.statues ?? []) cast.person(STATUE_LOOK, STATUE_SWORD, true, s.x, s.y, 0.2, { clip: 'idle', t: 0.2, loop: false }, { h: s.h, lift: s.lift, tint: s.tint });
     this.syncHero(cast, w, dt, time, o.look, o.weapon, o);
     for (const e of w.enemies) this.syncFoe(cast, e, time);
     for (const n of w.npcs) this.syncNpc(cast, n, w, time, Math.min(1, (w.time - (n.since ?? -Infinity)) / 0.8));

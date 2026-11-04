@@ -1,4 +1,5 @@
 import { DUNGEONS } from './dungeons';
+import { shapeDungeon } from './dungeongen';
 import { GALLOWS_KEEP } from './dungeons/gallows';
 import { SMUGGLERS_GROTTO } from './dungeons/grotto';
 import type { Marker, RegionDef, RegionId, PlacedMarkerDef } from './types';
@@ -240,6 +241,34 @@ const WHISPERWOOD_MORE = morePacks(
 );
 
 /** The hand-laid regions: the town, the first wood, and the dungeons. */
+/** A great thing on a hand-laid map: on the clear ground nearest a place, standing on the tiles its model covers. */
+function landmarkOn(map: readonly string[], placed: readonly PlacedMarkerDef[], prop: string, fx: number, fy: number, foot: number): PlacedMarkerDef[] {
+  const h = map.length;
+  const w = map[0]!.length;
+  const cx = Math.round(fx * w);
+  const cy = Math.round(fy * h);
+  const clear = (x: number, y: number): boolean => {
+    for (let dy = -foot - 1; dy <= foot + 1; dy++) {
+      for (let dx = -foot - 1; dx <= foot + 1; dx++) {
+        const c = map[y + dy]?.[x + dx];
+        if ((c !== '.' && c !== ',') || placed.some((p) => p.tx === x + dx && p.ty === y + dy)) return false;
+      }
+    }
+    return true;
+  };
+  for (let r = 0; r < 30; r++) {
+    for (let y = cy - r; y <= cy + r; y++) {
+      for (let x = cx - r; x <= cx + r; x++) {
+        if (Math.max(Math.abs(x - cx), Math.abs(y - cy)) !== r || !clear(x, y)) continue;
+        const out: PlacedMarkerDef[] = [{ tx: x, ty: y, marker: { kind: 'prop', prop, solid: true } }];
+        for (let dy = -foot; dy <= foot; dy++) for (let dx = -foot; dx <= foot; dx++) if (dx || dy) out.push({ tx: x + dx, ty: y + dy, marker: { kind: 'prop', prop: 'block', solid: true } });
+        return out;
+      }
+    }
+  }
+  return [];
+}
+
 const HAND_LAID: Record<string, RegionDef> = {
   emberwick: EMBERWICK,
   whisperwood: {
@@ -256,7 +285,7 @@ const HAND_LAID: Record<string, RegionDef> = {
     music: 'whisperwood',
     map: WHISPERWOOD_BIG,
     markers: forestMarkers,
-    placed: WHISPERWOOD_MORE,
+    placed: [...WHISPERWOOD_MORE, ...landmarkOn(WHISPERWOOD_BIG, WHISPERWOOD_MORE, 'ancient-oak', 0.42, 0.4, 1), ...landmarkOn(WHISPERWOOD_BIG, WHISPERWOOD_MORE, 'stone-arch', 0.72, 0.68, 1)],
     encounters: [{ id: 'den', floor: 'g', waves: [], boss: 'grimtusk', title: 'Grimtusk’s Den' }],
     blurb: 'Slimes, goblins, boars and worse, maddened by grieflight. Somewhere in the east, the alpha that leads them.',
   },
@@ -312,6 +341,8 @@ export const REGIONS = {
 } as Record<RegionId, RegionDef>;
 
 /** Every region of the world map, in the order it lists them (interiors are inside their towns, not on it). */
+for (const r of Object.values(REGIONS) as RegionDef[]) if (r.kind === 'dungeon') shapeDungeon(r);
+
 export const REGION_IDS = (Object.keys(REGIONS) as RegionId[]).filter((id) => !REGIONS[id].interior);
 
 /** Difficulty tiers: enemy level bonus, health and damage on top, loot and experience bonus. */

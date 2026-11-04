@@ -112,7 +112,7 @@ describe('Sigilfall: the story in the world', () => {
     const w = newWorld('briarhollow', c);
     // the hero arrives at the gate as the lamps are lit, and Mara stops them there
     const gate = w.places['briar-gate']!;
-    expect(Math.hypot(w.player.x - gate.x, w.player.y - gate.y)).toBeLessThan(4 * 16);
+    expect(Math.hypot(w.player.x - gate.x, w.player.y - gate.y)).toBeLessThan(4 * TILE);
     expect(w.storyState?.dusk).toBe(true);
     w.questProgress((o) => o.kind === 'talk' && o.npc === 'mara-venn');
     expect(questState(c, 'briar-dusk')).toBe('done');
@@ -301,7 +301,7 @@ describe('Sigilfall: the story in the world', () => {
     expect(questState(w.hero, 'briar-the-inn')).toBe('active');
     // lead them to the chapel: walk there, and they follow
     const chapel = w.places['briar-chapel']!;
-    for (let i = 0; i < 600 && questState(w.hero, 'briar-the-inn') === 'active'; i++) {
+    for (let i = 0; i < 2400 && questState(w.hero, 'briar-the-inn') === 'active'; i++) {
       const dx = chapel.x - w.player.x;
       const dy = chapel.y + 6 - w.player.y;
       const d = Math.hypot(dx, dy);
