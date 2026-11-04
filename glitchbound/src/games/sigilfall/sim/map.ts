@@ -1,6 +1,7 @@
 import { hash2 } from '../core/math';
 import { picBody, placeBuilding, yardProps, type PlacedPic } from '../data/buildingArt';
-import type { Marker, RegionDef, StoryCond } from '../data/types';
+import { propBody, propReach, propStandsUp } from '../data/props';
+import type { Marker, PlacedMarkerDef, RegionDef, StoryCond } from '../data/types';
 
 /**
  * A region's tile map at runtime: terrain kinds, which room each floor tile belongs to, what is solid
@@ -82,6 +83,17 @@ export interface PlacedMarker {
   marker: Marker;
   tx: number;
   ty: number;
+  /** What it blocks, if it's a prop with a body. */
+  body?: PropBody;
+}
+
+/** The ground a prop's body covers, in world pixels (`off` while the story has it not standing). */
+export interface PropBody {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  off?: boolean;
 }
 
 export interface TileMap {
@@ -101,6 +113,12 @@ export interface TileMap {
   roomTiles: number[][];
   /** The buildings standing on their lots (data/buildingArt.ts): what is drawn is what is solid. */
   buildings: MapBuilding[];
+  /** By tile, the bodies of the props that reach it: a walker bumps into what's there to see, not a whole tile. */
+  bodies: (PropBody[] | undefined)[];
+  /** 1 = something stands in the middle of it: a walker can stand on what's left of it, but routes go round. */
+  clogged: Uint8Array;
+  /** 1 = only the bodies on it stop a walker, though routes go round it (`solid`). */
+  soft: Uint8Array;
 }
 
 export interface MapBuilding {
@@ -113,6 +131,69 @@ export interface MapBuilding {
   yard: { prop: string; tx: number; ty: number }[];
   /** The tile of its way in (a door into an interior), if it has one. */
   door: [number, number] | null;
+}
+
+/**
+ * No two things stand in each other (a lamp inside a watchtower, a tent in a tower's wall): what a generator set down
+ * where something bigger already reaches moves aside onto the nearest clear ground, or isn't there. Only things that
+ * stand at the same time: what the story brings later may take the place of what it took away.
+ */
+function settled(placed: readonly PlacedMarkerDef[], w: number, h: number): PlacedMarkerDef[] {
+  // (a little overlap is only things standing close)
+  const TOUCH = 12;
+  const reachOf = (pm: PlacedMarkerDef): { w: number; d: number } | null => (pm.marker.kind === 'prop' && propStandsUp(pm.marker.prop) ? propReach(pm.marker.prop) : null);
+  const standing = placed.filter((pm) => reachOf(pm));
+  if (!standing.length) return [...placed];
+  const size = (pm: PlacedMarkerDef): number => {
+    const r = reachOf(pm)!;
+    return r.w * r.d;
+  };
+  const big = [...standing].sort((a, b) => size(b) - size(a));
+  const taken = new Set<number>(placed.map((pm) => pm.ty * w + pm.tx));
+  const fixed: { tx: number; ty: number; r: { w: number; d: number }; when: unknown }[] = [];
+  // (where the story needs someone to stand is no place for a market stall)
+  for (const pm of placed) {
+    if (pm.marker.kind === 'place' || pm.marker.kind === 'spot') fixed.push({ tx: pm.tx, ty: pm.ty, r: { w: 30, d: 30 }, when: pm.when });
+  }
+  const hits = (tx: number, ty: number, r: { w: number; d: number }, when: unknown): boolean =>
+    fixed.some((o) => {
+      if (o.when !== when && o.when && when) return false;
+      const ox = (o.r.w + r.w) / 2 - Math.abs(o.tx - tx) * TILE;
+      const oy = (o.r.d + r.d) / 2 - Math.abs(o.ty - ty) * TILE;
+      return ox > TOUCH && oy > TOUCH;
+    });
+  const moved = new Map<PlacedMarkerDef, PlacedMarkerDef | null>();
+  for (const pm of big) {
+    const r = reachOf(pm)!;
+    let at: [number, number] | null = hits(pm.tx, pm.ty, r, pm.when) ? null : [pm.tx, pm.ty];
+    for (let d = 1; d <= 3 && !at; d++) {
+      for (let dy = -d; dy <= d && !at; dy++) {
+        for (let dx = -d; dx <= d && !at; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== d) continue;
+          const tx = pm.tx + dx;
+          const ty = pm.ty + dy;
+          if (tx < 1 || ty < 1 || tx >= w - 1 || ty >= h - 1 || taken.has(ty * w + tx) || hits(tx, ty, r, pm.when)) continue;
+          at = [tx, ty];
+        }
+      }
+    }
+    if (!at) {
+      moved.set(pm, null);
+      continue;
+    }
+    fixed.push({ tx: at[0], ty: at[1], r, when: pm.when });
+    if (at[0] !== pm.tx || at[1] !== pm.ty) {
+      taken.add(at[1] * w + at[0]);
+      moved.set(pm, { ...pm, tx: at[0], ty: at[1] });
+    }
+  }
+  const out: PlacedMarkerDef[] = [];
+  for (const pm of placed) {
+    const m = moved.get(pm);
+    if (m === null) continue;
+    out.push(m ?? pm);
+  }
+  return out;
 }
 
 export function parseRegion(def: RegionDef): TileMap {
@@ -178,7 +259,7 @@ export function parseRegion(def: RegionDef): TileMap {
     for (const r of near) doors[r]!.push(i);
   }
   // markers a zone generator placed: they stand on the ground already there (sand, a road), or on grass
-  for (const pm of def.placed ?? []) {
+  for (const pm of settled(def.placed ?? [], w, h)) {
     const { tx, ty, marker } = pm;
     if (tx < 0 || ty < 0 || tx >= w || ty >= h) continue;
     const i = ty * w + tx;
@@ -198,9 +279,42 @@ export function parseRegion(def: RegionDef): TileMap {
     }
   };
   settle();
+  inSight(markers, w, h, kind, solid);
   // (what the dressing stood on a room's floor is no place for a foe to appear)
   for (let r = 0; r < roomTiles.length; r++) roomTiles[r] = roomTiles[r]!.filter((i) => !solid[i]);
-  const map: TileMap = { w, h, kind, room, solid, block, markers, doors, roomTiles, buildings };
+  // what stands has a body of its own size: a bucket doesn't fill its tile, and a wagon runs over into the next ones
+  const bodies: TileMap['bodies'] = new Array(w * h);
+  const soft = new Uint8Array(w * h);
+  const clogged = new Uint8Array(w * h);
+  const stand = (size: { w: number; d: number } | null, tx: number, ty: number): PropBody | undefined => {
+    if (!size) return undefined;
+    const cx = (tx + 0.5) * TILE;
+    const cy = (ty + 0.5) * TILE;
+    const body: PropBody = { x0: cx - size.w / 2, y0: cy - size.d / 2, x1: cx + size.w / 2, y1: cy + size.d / 2 };
+    for (let y = Math.max(0, Math.floor(body.y0 / TILE)); y <= Math.min(h - 1, Math.floor(body.y1 / TILE)); y++) {
+      for (let x = Math.max(0, Math.floor(body.x0 / TILE)); x <= Math.min(w - 1, Math.floor(body.x1 / TILE)); x++) {
+        (bodies[y * w + x] ??= []).push(body);
+        const mx = (x + 0.5) * TILE;
+        const my = (y + 0.5) * TILE;
+        const dx = mx - Math.max(body.x0, Math.min(mx, body.x1));
+        const dy = my - Math.max(body.y0, Math.min(my, body.y1));
+        // (a thin post leaves room either side of it, and so does what only clips the edge: a route can go by)
+        const room = Math.max(body.y0 - y * TILE, (y + 1) * TILE - body.y1, body.x0 - x * TILE, (x + 1) * TILE - body.x1);
+        const thin = size.w <= THIN_POST && size.d <= THIN_POST;
+        if (!thin && dx * dx + dy * dy < CLEAR_OF_BODY * CLEAR_OF_BODY && room < WALK_BY) clogged[y * w + x] = 1;
+      }
+    }
+    if (kind[ty * w + tx] === K.Prop) soft[ty * w + tx] = 1;
+    return body;
+  };
+  for (const pm of markers) {
+    const m = pm.marker;
+    if (m.kind === 'prop' && (m.solid || propStandsUp(m.prop))) pm.body = stand(propBody(m.prop), pm.tx, pm.ty);
+    else if (m.kind === 'waystone') pm.body = stand({ w: 20, d: 16 }, pm.tx, pm.ty);
+    else if (m.kind === 'dummy') pm.body = stand({ w: 14, d: 10 }, pm.tx, pm.ty);
+  }
+  for (const b of buildings) for (const y of b.yard) stand(propBody(y.prop), y.tx, y.ty);
+  const map: TileMap = { w, h, kind, room, solid, block, markers, doors, roomTiles, buildings, bodies, soft, clogged };
   // a tall roof over the ground behind its lot is wall only if that cuts nobody off
   const start = markers.find((m) => m.marker.kind === 'start');
   if (over.length && start) {
@@ -213,6 +327,59 @@ export function parseRegion(def: RegionDef): TileMap {
   }
   return map;
 }
+
+/**
+ * What the camera comes in over from the south: someone to talk to or a chest to open standing right behind a house
+ * can't be seen, so they stand round the front, on the nearest ground where they can.
+ */
+function inSight(markers: PlacedMarker[], w: number, h: number, kind: Uint8Array, solid: Uint8Array): void {
+  const RISE = Math.tan((50 * Math.PI) / 180);
+  const tallAt = (i: number): number => {
+    const k = kind[i];
+    return k === K.Wall || k === K.Illusion ? 2.7 : k === K.Rampart ? 2.4 : k === K.House ? 3.2 : 0;
+  };
+  const unseen = (tx: number, ty: number, up: number): boolean => {
+    for (let d = 1; d <= 5; d++) {
+      const y = ty + d;
+      if (y >= h) return false;
+      const sight = up + (y + 0.5 - ty) * RISE;
+      if (sight > 3.4) return false;
+      if (tallAt(y * w + tx) > sight) return true;
+    }
+    return false;
+  };
+  const taken = new Set(markers.map((pm) => pm.ty * w + pm.tx));
+  for (const pm of markers) {
+    if (pm.marker.kind !== 'npc' && pm.marker.kind !== 'chest') continue;
+    const up = pm.marker.kind === 'npc' ? 0.95 : 0.4;
+    if (!unseen(pm.tx, pm.ty, up)) continue;
+    let best: [number, number] | null = null;
+    let bd = Infinity;
+    for (let y = pm.ty - 8; y <= pm.ty + 8; y++) {
+      for (let x = pm.tx - 8; x <= pm.tx + 8; x++) {
+        if (x < 1 || y < 1 || x >= w - 1 || y >= h - 1) continue;
+        const i = y * w + x;
+        if (solid[i] || kind[i] === K.Water || taken.has(i) || unseen(x, y, up)) continue;
+        const d = Math.hypot(x - pm.tx, y - pm.ty);
+        if (d < bd) {
+          bd = d;
+          best = [x, y];
+        }
+      }
+    }
+    if (best) {
+      taken.add(best[1] * w + best[0]);
+      pm.tx = best[0];
+      pm.ty = best[1];
+    }
+  }
+}
+
+/** How far from what stands the middle of a tile has to be for a route to go through it (world pixels). */
+const CLEAR_OF_BODY = 5.5;
+/** How wide a way past something has to be for someone to walk by it, and how thin a post anyone can (world pixels). */
+const WALK_BY = 13;
+const THIN_POST = 6;
 
 /** Markers that are not somewhere to get to (props, scenery, fires on roofs). */
 const PASSIVE = new Set<string>(['prop', 'hazard', 'building', 'fire', 'wisp', 'place']);
@@ -328,7 +495,7 @@ export function blocksAt(m: TileMap, px: number, py: number): boolean {
   return i < 0 || m.block[i] === 1;
 }
 
-/** Whether a circle overlaps any solid tile. */
+/** Whether a circle overlaps any solid tile, or the body of any prop. */
 export function circleHitsWall(m: TileMap, x: number, y: number, r: number): boolean {
   const x0 = Math.floor((x - r) / TILE);
   const x1 = Math.floor((x + r) / TILE);
@@ -337,7 +504,17 @@ export function circleHitsWall(m: TileMap, x: number, y: number, r: number): boo
   for (let ty = y0; ty <= y1; ty++) {
     for (let tx = x0; tx <= x1; tx++) {
       if (tx < 0 || ty < 0 || tx >= m.w || ty >= m.h) return true;
-      if (!m.solid[ty * m.w + tx]) continue;
+      const i = ty * m.w + tx;
+      const list = m.bodies[i];
+      if (list) {
+        for (const b of list) {
+          if (b.off) continue;
+          const nx = Math.max(b.x0, Math.min(x, b.x1));
+          const ny = Math.max(b.y0, Math.min(y, b.y1));
+          if ((nx - x) * (nx - x) + (ny - y) * (ny - y) < r * r) return true;
+        }
+      }
+      if (!m.solid[i] || m.soft[i]) continue;
       // nearest point of the tile to the circle center
       const nx = Math.max(tx * TILE, Math.min(x, tx * TILE + TILE));
       const ny = Math.max(ty * TILE, Math.min(y, ty * TILE + TILE));
@@ -423,7 +600,7 @@ export function flowField(m: TileMap, tx: number, ty: number, max: number, out?:
     if (i >= m.w) visit(i - m.w);
     if (i < m.w * (m.h - 1)) visit(i + m.w);
     function visit(j: number): void {
-      if (f[j] !== -1 || m.solid[j]) return;
+      if (f[j] !== -1 || m.solid[j] || m.clogged[j]) return;
       f[j] = d + 1;
       q[tail++] = j;
     }
@@ -436,8 +613,10 @@ export function flowStep(m: TileMap, f: Int16Array, px: number, py: number): { x
   const tx = Math.floor(px / TILE);
   const ty = Math.floor(py / TILE);
   const here = f[ty * m.w + tx];
-  if (here === undefined || here < 0) return null;
-  let best = here;
+  if (here === undefined) return null;
+  // (someone standing beside a small thing, on a tile routes go round: on to the nearest tile that's on the way)
+  if (here < 0 && !m.soft[ty * m.w + tx] && !m.clogged[ty * m.w + tx]) return null;
+  let best = here < 0 ? 32767 : here;
   let bx = 0;
   let by = 0;
   for (let dy = -1; dy <= 1; dy++) {
@@ -460,7 +639,35 @@ export function flowStep(m: TileMap, f: Int16Array, px: number, py: number): { x
   const cx = (tx + bx + 0.5) * TILE - px;
   const cy = (ty + by + 0.5) * TILE - py;
   const l = Math.hypot(cx, cy) || 1;
-  return { x: cx / l, y: cy / l };
+  const x = cx / l;
+  const y = cy / l;
+  // a brazier can stand in the middle of a tile the route goes through: whoever follows it steps round
+  return m.bodies[ty * m.w + tx] || m.bodies[(ty + by) * m.w + tx + bx] ? roundWhatStands(m, px, py, x, y) : { x, y };
+}
+
+/** How far ahead someone following a route looks for what's in the way, and how wide they take to be. */
+const LOOK_AHEAD = 9;
+const STEP_WIDE = 6;
+const TURNS = [0.6, 1.1, 1.6];
+
+/** The way (dx, dy), or the nearest to it that isn't straight into something, turning away from what's there. */
+function roundWhatStands(m: TileMap, px: number, py: number, dx: number, dy: number): { x: number; y: number } {
+  const free = (x: number, y: number): boolean => !circleHitsWall(m, px + x * LOOK_AHEAD, py + y * LOOK_AHEAD, STEP_WIDE);
+  if (free(dx, dy)) return { x: dx, y: dy };
+  // (the side they're already on, which doesn't flicker from one step to the next; failing that, always the same one)
+  const tile = m.bodies[Math.floor((py + dy * LOOK_AHEAD) / TILE) * m.w + Math.floor((px + dx * LOOK_AHEAD) / TILE)]?.[0];
+  const across = tile ? dx * (py - (tile.y0 + tile.y1) / 2) - dy * (px - (tile.x0 + tile.x1) / 2) : 0;
+  const side = across < 0 ? -1 : 1;
+  for (const a of TURNS) {
+    for (const s of [side, -side]) {
+      const c = Math.cos(a * s);
+      const n = Math.sin(a * s);
+      const x = dx * c - dy * n;
+      const y = dx * n + dy * c;
+      if (free(x, y)) return { x, y };
+    }
+  }
+  return { x: dx, y: dy };
 }
 
 /** Tile-center position of a marker. */

@@ -1,3 +1,4 @@
+import type { Route } from './nav';
 import type { BossDef, PatternUse } from '../data/bosses';
 import type { PetDef } from '../data/pets';
 import type { BuffDef, DmgType, EliteAffix, EnemyDef, GroundSpec, Item, SkillSpec, SlotKey, StatusId } from '../data/types';
@@ -158,6 +159,10 @@ export interface Enemy {
   rushLeft: number;
   rushHit: boolean;
   homeX: number;
+  /** The way back there, once it has had to look for one. */
+  homeFlow?: Int16Array;
+  /** Out for a stroll where it can walk (at its ease, not in a fight). */
+  strolls?: boolean;
   homeY: number;
   aggro: boolean;
   lostT: number;
@@ -219,9 +224,12 @@ export interface Pet {
   deathT: number;
   /** Put there by the story (an event's companion, ward or rescued villager): it leaves with the event. */
   story?: boolean;
-  /** Walks there on its own (people arriving at the camp), along `flow`. */
+  /** Walks there on its own (people arriving at the camp), along `route` (or `flow`, where there's no route). */
   goal?: { x: number; y: number };
   flow?: Int16Array;
+  /** The way they're walking (sim/nav.ts), and when they last thought it out. */
+  route?: Route;
+  routeAt?: number;
   /** Waits where it is for now (a wagon under attack). */
   paused?: boolean;
   /** Walking to join the hero (an ally coming into a fight): beside them, or this many seconds on, it follows. */

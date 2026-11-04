@@ -73,6 +73,14 @@ export class Motion {
 
 const frames = { a: 0, b: 0, k: 0 };
 
+/** The clip someone is coming out of, and how much of it is left (1 to 0). */
+export interface ClipFade {
+  clip: string;
+  t: number;
+  loop: boolean;
+  k: number;
+}
+
 /** A figure from the creature files, frozen and huge (tiles; `h` how tall it would stand, `lift` below 0 is sunk). */
 export interface Colossus {
   kit: string;
@@ -244,12 +252,12 @@ export class Cast {
    * One creature, by the game's name for it. `h` is its height in world pixels, `rot` its facing about the
    * vertical. Returns the kit, so the caller can read how high its head is.
    */
-  creature(sprite: string, x: number, y: number, rot: number, h: number, clip: string, t: number, loop: boolean, opts?: { alpha?: number; flash?: number; rise?: number; tint?: readonly [number, number, number]; sx?: number; sy?: number; motion?: Motion; lift?: number; enemy?: string }): Kit {
+  creature(sprite: string, x: number, y: number, rot: number, h: number, clip: string, t: number, loop: boolean, opts?: { alpha?: number; flash?: number; rise?: number; tint?: readonly [number, number, number]; sx?: number; sy?: number; motion?: Motion; lift?: number; enemy?: string; from?: ClipFade }): Kit {
     const kit = kitOf(sprite, opts?.enemy);
     if (kit.look) {
       const look = npcLookOf(kit.look);
       if (look) {
-        this.person(look, null, false, x, y, rot, { clip: clip === 'chop' ? 'cast' : clip, t, loop }, { alpha: opts?.alpha, flash: opts?.flash, h });
+        this.person(look, null, false, x, y, rot, { clip: clip === 'chop' ? 'cast' : clip, t, loop, from: opts?.from }, { alpha: opts?.alpha, flash: opts?.flash, h });
         return kit;
       }
     }
@@ -265,8 +273,9 @@ export class Cast {
     if (motion) motion.frames(rig, frames);
     else {
       frames.a = rig.frame(rig.has(clip) ? clip : 'idle', t, loop);
-      frames.b = 0;
-      frames.k = 0;
+      const from = opts?.from;
+      frames.b = from ? rig.frame(rig.has(from.clip) ? from.clip : 'idle', from.t, from.loop) : 0;
+      frames.k = from ? from.k : 0;
     }
     let r = 1;
     let g = 1;
@@ -316,7 +325,7 @@ export class Cast {
   }
 
   /** One person in a look: a hero, a villager, anyone who wears the wardrobe. */
-  person(look: HeroLook, held: Held | null, shield: boolean, x: number, y: number, rot: number, motion: Motion | { clip: string; t: number; loop: boolean }, opts?: { alpha?: number; flash?: number; h?: number; lift?: number; tint?: readonly [number, number, number]; xray?: boolean }): void {
+  person(look: HeroLook, held: Held | null, shield: boolean, x: number, y: number, rot: number, motion: Motion | { clip: string; t: number; loop: boolean; from?: ClipFade }, opts?: { alpha?: number; flash?: number; h?: number; lift?: number; tint?: readonly [number, number, number]; xray?: boolean }): void {
     const w = this.wardrobe;
     if (!w) return;
     const { key, mesh } = dressedOf(w, look, held, shield);
@@ -333,8 +342,9 @@ export class Cast {
     if (motion instanceof Motion) motion.frames(w.medium, frames);
     else {
       frames.a = w.medium.frame(motion.clip, motion.t, motion.loop);
-      frames.b = 0;
-      frames.k = 0;
+      const from = motion.from;
+      frames.b = from ? w.medium.frame(from.clip, from.t, from.loop) : 0;
+      frames.k = from ? from.k : 0;
     }
     c.put(x * UNIT, opts?.lift ?? 0, y * UNIT, rot, s, s, frames.a, frames.b, frames.k, opts?.alpha ?? 1, opts?.tint?.[0] ?? 1, opts?.tint?.[1] ?? 1, opts?.tint?.[2] ?? 1, opts?.flash ?? 0);
     this.used.add(c);

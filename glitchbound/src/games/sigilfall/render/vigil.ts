@@ -156,6 +156,7 @@ export class VigilPainter implements LandLayer {
   private readonly pops: { x: number; y: number; n: number; big: boolean; crit: boolean; t: number }[] = [];
   private readonly bits: Bit[] = [];
   private dt = 0;
+  private readonly foeTurn = new Map<number, number>();
 
   constructor(v: Vigil, meId: number, party: Record<number, PartyLook> = {}) {
     this.v = v;
@@ -226,7 +227,12 @@ export class VigilPainter implements LandLayer {
       } else if (f.mode === 2) clip = 'run';
       const cold = f.frozen > 0 ? FROZEN : f.slow > 0 ? CHILLED : undefined;
       cast.shadow(f.x, f.y, f.r * size + 1);
-      cast.creature(sprite, f.x, f.y, turnOf(f.face), heightFromRadius(f.def.r) * size, clip, t, clip !== 'chop', { flash: f.flash > 0 ? 0.8 : 0, tint: cold });
+      // (turning as a body turns, and fading from one clip to the next)
+      const was = this.foeTurn.get(f.id) ?? turnOf(f.face);
+      const d = ((turnOf(f.face) - was + Math.PI * 3) % TAU) - Math.PI;
+      const turn = was + d * (1 - Math.exp(-dt * 10));
+      this.foeTurn.set(f.id, turn);
+      cast.creature(sprite, f.x, f.y, turn, heightFromRadius(f.def.r) * size, clip, t, clip !== 'chop', { flash: f.flash > 0 ? 0.8 : 0, tint: cold });
     }
     for (const p of v.pets) {
       cast.shadow(p.x, p.y, 7);

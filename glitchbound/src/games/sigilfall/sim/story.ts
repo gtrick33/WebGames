@@ -314,6 +314,7 @@ export class StoryDirector {
       stayed.life = Infinity;
       stayed.goal = undefined;
       stayed.flow = undefined;
+      stayed.route = undefined;
       stayed.inside = undefined;
       if (dist(stayed.x, stayed.y, p.x, p.y) > 3 * TILE) join(stayed, p);
       return stayed;
@@ -517,6 +518,7 @@ export class StoryDirector {
           } else if (!run.def.stay && pet.def.role !== 'ward' && !run.followers.includes(pet)) pet.goal = { x: pet.x, y: pet.y };
           else if (!run.followers.includes(pet)) pet.goal = undefined;
           pet.flow = undefined;
+          pet.route = undefined;
         } else pet.dead = true;
       }
     }
@@ -616,6 +618,7 @@ function moor(w: World, at: { x: number; y: number }): { x: number; y: number } 
 function join(pet: Pet, to: { x: number; y: number }): void {
   pet.goal = { x: to.x, y: to.y };
   pet.flow = undefined;
+  pet.route = undefined;
   pet.joinT = 6;
 }
 

@@ -255,6 +255,7 @@ export class World {
   /** The people of the place going about their day (sim/folk.ts): decoration, on their own random numbers. */
   folk: Folk[] = [];
   private folkRand: () => number = () => 0.5;
+  private readonly folkAround: { x: number; y: number }[] = [];
   private readonly folkSeed: number;
   /** This run's tallies (for the report and the reward screen). */
   run = { xp: 0, gold: 0, kills: 0, bosses: 0, items: [] as Item[] };
@@ -488,6 +489,7 @@ export class World {
       const m = pm.marker;
       const on = this.shown(pm);
       // a conditional prop blocks only while it stands
+      if (pm.body) pm.body.off = !on;
       if (m.kind === 'prop' && m.solid && (pm.when || this.region.when?.[pm.ch])) {
         const i = pm.ty * this.map.w + pm.tx;
         this.map.solid[i] = on ? 1 : 0;
@@ -495,7 +497,7 @@ export class World {
       }
       if (!on) continue;
       const pos = markerPos(pm);
-      if (m.kind === 'npc') this.npcs.push({ id: m.npc, x: pos.x, y: pos.y, face: 0, bob: this.rand() * TAU });
+      if (m.kind === 'npc') this.npcs.push({ id: m.npc, ...this.besideThings(pos), face: 0, bob: this.rand() * TAU });
       if (m.kind === 'prop') this.addProp(pm, pos);
       // a stair that opens, a road that comes with the story, a place to find
       if (m.kind === 'spot') this.spots.push({ ...pos, id: m.id, name: m.name, r: m.r });
@@ -583,6 +585,7 @@ export class World {
       const pos = markerPos(pm);
       if (!this.shown(pm)) {
         // a conditional prop that isn't standing doesn't block
+        if (pm.body) pm.body.off = true;
         if (m.kind === 'prop' && m.solid) {
           this.map.solid[pm.ty * this.map.w + pm.tx] = 0;
           this.map.block[pm.ty * this.map.w + pm.tx] = 0;
@@ -591,7 +594,7 @@ export class World {
       }
       switch (m.kind) {
         case 'npc':
-          this.npcs.push({ id: m.npc, x: pos.x, y: pos.y, face: 0, bob: this.rand() * TAU });
+          this.npcs.push({ id: m.npc, ...this.besideThings(pos), face: 0, bob: this.rand() * TAU });
           break;
         case 'chest': {
           const key = `${this.region.id}:${m.id}:${pm.tx}:${pm.ty}`;
@@ -821,6 +824,31 @@ export class World {
   spawnAdd(id: string, x: number, y: number, room: number): void {
     const free = this.freeSpot(x, y, 6);
     this.addEnemy(id, free.x, free.y, this.level, { room, pack: -1, spawn: true });
+  }
+
+  /** Where someone can stand at a spot: there, or just beside whatever stands on it. */
+  private besideThings(pos: { x: number; y: number }): { x: number; y: number } {
+    return pushOut(this.map, pos.x, pos.y, 6) ?? pos;
+  }
+
+  /**
+   * The hero eases round the people who stand in a place rather than through them; never so hard that someone in a
+   * narrow way can stop them getting past.
+   */
+  private keepOffPeople(dt: number): void {
+    const p = this.player;
+    const keep = p.r + 9;
+    for (const n of this.npcs) {
+      const dx = p.x - n.x;
+      const dy = p.y - n.y;
+      if (Math.abs(dx) >= keep || Math.abs(dy) >= keep) continue;
+      const d = Math.hypot(dx, dy);
+      if (d >= keep || d < 0.01) continue;
+      const push = Math.min(keep - d, 75 * dt);
+      const res = moveCircle(this.map, p.x, p.y, p.r, (dx / d) * push, (dy / d) * push);
+      p.x = res.x;
+      p.y = res.y;
+    }
   }
 
   private freeSpot(x: number, y: number, r: number): { x: number; y: number } {
@@ -1297,6 +1325,7 @@ export class World {
       p.x = res.x;
       p.y = res.y;
       if (Math.hypot(p.vx, p.vy) > 8) p.walkT += dt * (Math.hypot(p.vx, p.vy) / 70);
+      this.keepOffPeople(dt);
     }
     // facing for the sprite
     const fa = p.actT > 0 || inp.aim !== null ? p.aim : moving ? Math.atan2(inp.my, inp.mx) : null;
@@ -2193,7 +2222,13 @@ export class World {
 
   private updateAmbient(dt: number): void {
     // villagers keep indoors while the story fights in the streets
-    if (this.folk.length && !this.story.fighting) updateFolk(this.folk, this.map, this.folkRand, dt);
+    if (this.folk.length && !this.story.fighting) {
+      this.folkAround.length = 0;
+      this.folkAround.push(this.player);
+      for (const n of this.npcs) this.folkAround.push(n);
+      for (const q of this.pets) if (!q.dead) this.folkAround.push(q);
+      updateFolk(this.folk, this.map, this.folkRand, dt, this.folkAround);
+    }
     for (const c of this.chickens) {
       c.t -= dt;
       if (c.t <= 0) {
@@ -2481,6 +2516,7 @@ export class World {
 }
 
 function wallNear(m: TileMap, x: number, y: number, r: number): boolean {
+  if (circleHitsWall(m, x, y, r)) return true;
   for (const [dx, dy] of [
     [r, 0],
     [-r, 0],

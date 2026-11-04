@@ -117,6 +117,9 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
   let deadT = 0;
   let lastMove = { x: w.player.x, y: w.player.y, t: 0 };
   let foeHp = Infinity;
+  // something being healed as fast as it's hurt: leave it a while and go for what else is there, as a player would
+  let watching = { id: -1, hp: 0, t: 0 };
+  const leftAlone = new Map<number, number>();
   while (res.time < o.seconds && !o.done(w)) {
     const p = w.player;
     const f = emptyInput();
@@ -135,12 +138,20 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
         target = null;
         let best = Infinity;
         for (const e of w.enemies) {
-          if (e.dead || e.dummy || e.hp <= 0) continue;
+          if (e.dead || e.dummy || e.hp <= 0 || (leftAlone.get(e.id) ?? 0) > res.time) continue;
           const d = fromHero[tileOf(w, e.x, e.y)] ?? -1;
           if (d < 0) continue;
           if (d < best) {
             best = d;
             target = e;
+          }
+        }
+        if (target) {
+          const left = target.hp + target.shield;
+          if (watching.id !== target.id) watching = { id: target.id, hp: left, t: res.time };
+          else if (res.time - watching.t > 30) {
+            if (left >= watching.hp * 0.98) leftAlone.set(target.id, res.time + 25);
+            watching = { id: target.id, hp: left, t: res.time };
           }
         }
         goalPt = target ? { x: target.x, y: target.y } : (o.goal?.(w) ?? null);

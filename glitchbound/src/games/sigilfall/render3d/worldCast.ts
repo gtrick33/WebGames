@@ -10,15 +10,13 @@ import { TILE } from '../sim/map';
 import { STORY_FADE } from '../sim/pets';
 import { SUMMON_TIME, type World } from '../sim/world';
 import type { Enemy, Ghost, NpcActor, Pet } from '../sim/types';
-import { heightFromRadius, Motion, PERSON_H, type Cast, type Colossus } from './cast';
+import { heightFromRadius, Motion, PERSON_H, type Cast, type ClipFade, type Colossus } from './cast';
 import type { Held } from './dress';
 import { kitOf } from './kits';
 import { coatTint, MOUNT_H, mountSprite, SEAT } from './mountLook';
 
 /** A facing in the rules (an angle on the map) as a turn about the vertical. */
 export const turnOf = (a: number): number => Math.atan2(Math.cos(a), Math.sin(a));
-/** Facing down, left, right, up, as the rules count them. */
-const DIR_TURN = [0, -Math.PI / 2, Math.PI / 2, Math.PI];
 
 const WARDS: Record<string, { m: string; h: number }> = {
   gate: { m: 'wooden_gate', h: 26 },
@@ -58,7 +56,34 @@ const shortest = (from: number, to: number): number => {
 interface FoeAnim {
   state: string;
   since: number;
+  /** Where it's drawn, a touch behind where the rules have it: a shove from the crowd is a drift, not a twitch. */
+  x: number;
+  y: number;
+  /** Which way it faces, turning as a body turns. */
+  turn: number;
+  /** How fast it's really going, world pixels a second. */
+  speed: number;
+  /** How far through its walk: its feet keep time with the ground. */
+  walk: number;
+  /** The clip it's in, and the one it's coming out of. */
+  clip: string;
+  t: number;
+  loop: boolean;
+  from: ClipFade | null;
 }
+
+/** How fast a figure of a person's height covers the ground at one times its clip's own rate. */
+const WALKS_AT = 34;
+const RUNS_AT = 84;
+/** How long one clip takes to fade into the next. */
+const CLIP_FADE = 0.14;
+/** Further than this in a frame is a jump (a blink, a pull), not a walk. */
+const SNAP = 40;
+/** The legs keep time with the ground: how fast a clip runs for how fast someone's going, and how big they are. */
+const stride = (clip: string, speed: number, h: number): number => {
+  const natural = (clip === 'run' ? RUNS_AT : WALKS_AT) * (h / PERSON_H);
+  return Math.max(0.55, Math.min(1.7, speed / natural));
+};
 
 const FROZEN = [0.62, 0.86, 1.25] as const;
 const CHILLED = [0.82, 0.93, 1.12] as const;
@@ -71,7 +96,9 @@ export class WorldCast {
   private heroTurn = 0;
   private lastAct: string | null = null;
   private readonly ghosts = new Map<number, { m: Motion; turn: number }>();
-  private readonly pets = new Map<number, { m: Motion; turn: number }>();
+  private readonly pets = new Map<number, { m: Motion; turn: number; x: number; y: number }>();
+  private readonly walkers = new WeakMap<object, Motion>();
+  private readonly turned = new WeakMap<object, number>();
 
   reset(): void {
     this.foes.clear();
@@ -79,24 +106,40 @@ export class WorldCast {
     this.pets.clear();
   }
 
+  /** A turn eased toward where someone should face. */
+  private easeTurn(who: object, want: number, rate: number, dt: number): number {
+    const now = this.turned.get(who) ?? want;
+    const next = damp(now, shortest(now, want), rate, dt);
+    this.turned.set(who, next);
+    return next;
+  }
+
   sync(cast: Cast, w: World, dt: number, time: number, o: { look: HeroLook; weapon: Held; folk: number; landOnly: boolean; statues?: readonly { x: number; y: number; h: number; lift: number; tint: readonly [number, number, number] }[]; colossi?: readonly Colossus[] }): void {
     for (const s of o.statues ?? []) cast.person(STATUE_LOOK, STATUE_SWORD, true, s.x, s.y, 0.2, { clip: 'idle', t: 0.2, loop: false }, { h: s.h, lift: s.lift, tint: s.tint });
     for (const c of o.colossi ?? []) if (Math.hypot(c.x * TILE - w.player.x, c.z * TILE - w.player.y) < COLOSSUS_SEEN + c.h * TILE) cast.colossus(c);
     this.syncHero(cast, w, dt, time, o.look, o.weapon, o);
-    for (const e of w.enemies) this.syncFoe(cast, e, time);
-    for (const n of w.npcs) this.syncNpc(cast, n, w, time, Math.min(1, (w.time - (n.since ?? -Infinity)) / 0.8));
+    for (const e of w.enemies) this.syncFoe(cast, e, w, dt, time);
+    for (const n of w.npcs) this.syncNpc(cast, n, w, dt, time, Math.min(1, (w.time - (n.since ?? -Infinity)) / 0.8));
     for (const n of w.leftNpcs) {
       const a = 1 - (w.time - n.left) / (NPCS[n.id]?.down ? 3.2 : 1.2);
-      if (a > 0) this.syncNpc(cast, n, w, time, a);
+      if (a > 0) this.syncNpc(cast, n, w, dt, time, a);
     }
     for (const c of w.chickens) {
       cast.shadow(c.x, c.y, 5);
-      cast.creature('chicken', c.x, c.y, c.face < 0 ? -Math.PI / 2 : Math.PI / 2, 15, Math.hypot(c.vx, c.vy) > 4 ? 'walk' : 'idle', time + c.x * 0.1, true);
+      cast.creature('chicken', c.x, c.y, this.easeTurn(c, c.face < 0 ? -Math.PI / 2 : Math.PI / 2, 10, dt), 15, Math.hypot(c.vx, c.vy) > 4 ? 'walk' : 'idle', time + c.x * 0.1, true);
     }
     if (o.folk > 0.02) {
       for (const f of w.folk) {
         cast.shadow(f.x, f.y, 7);
-        cast.person(passerbyLook(f.look), null, false, f.x, f.y, DIR_TURN[f.dir] ?? 0, { clip: f.moving ? 'walk' : 'idle', t: f.moving ? f.walkT : time + f.look * 0.37, loop: true }, { alpha: o.folk });
+        let m = this.walkers.get(f);
+        if (!m) {
+          m = new Motion();
+          m.t = f.look * 0.37;
+          this.walkers.set(f, m);
+        }
+        m.set(f.moving ? 'walk' : 'idle', true, 0.2);
+        m.advance(f.moving ? dt * stride('walk', f.speed, PERSON_H) : dt);
+        cast.person(passerbyLook(f.look), null, false, f.x, f.y, turnOf(f.a), m, { alpha: o.folk });
       }
     }
     for (const c of w.chests) {
@@ -146,7 +189,7 @@ export class WorldCast {
     else m.set('idle');
     this.lastAct = acting ? `${p.actKind}` : null;
     this.lastActT = p.actT;
-    m.advance(dt);
+    m.advance(m.clip === 'walk' || m.clip === 'run' ? dt * stride(m.clip, speed, PERSON_H) : dt);
 
     cast.shadow(p.x, p.y, mount ? 13 : 8);
     if (!p.dead && !o0.landOnly) cast.ring(p.x, p.y, 11, '#22e4ff', 0.75);
@@ -172,7 +215,7 @@ export class WorldCast {
 
   private lastActT = 0;
 
-  private syncFoe(cast: Cast, e: Enemy, time: number): void {
+  private syncFoe(cast: Cast, e: Enemy, w: World, dt: number, time: number): void {
     if (e.boss && bossHidden(e)) return;
     if (e.dummy) {
       cast.shadow(e.x, e.y, 7);
@@ -184,13 +227,35 @@ export class WorldCast {
     const h = heightFromRadius(e.r);
     let anim = this.foes.get(e.id);
     if (!anim) {
-      anim = { state: e.state, since: time };
+      anim = { state: e.state, since: time, x: e.x, y: e.y, turn: turnOf(e.face), speed: 0, walk: e.id * 0.37, clip: 'idle', t: 0, loop: true, from: null };
       this.foes.set(e.id, anim);
     } else if (anim.state !== e.state) {
       anim.state = e.state;
       anim.since = time;
     }
     const since = time - anim.since;
+    // where it's drawn eases after where it is, and from that, how it's really moving
+    const gapX = e.x - anim.x;
+    const gapY = e.y - anim.y;
+    const gap = Math.hypot(gapX, gapY);
+    const follow = gap > SNAP ? 1 : 1 - Math.exp(-dt * 26);
+    const stepX = gapX * follow;
+    const stepY = gapY * follow;
+    anim.x += stepX;
+    anim.y += stepY;
+    if (dt > 0) {
+      const now = gap > SNAP ? 0 : Math.hypot(stepX, stepY) / dt;
+      anim.speed = damp(anim.speed, now, 14, dt);
+    }
+    // it faces where it's going; in a fight, standing, whoever it's fighting; never knocked round by a blow
+    const shoved = Math.hypot(e.vx, e.vy) > 25;
+    let want = anim.turn;
+    if (!e.dead && !shoved) {
+      if (e.state === 'windup' || e.state === 'act') want = turnOf(e.aimA);
+      else if (anim.speed > 5 && Math.hypot(stepX, stepY) > 1e-3) want = Math.atan2(stepX, stepY);
+      else if (e.aggro) want = Math.atan2(w.player.x - e.x, w.player.y - e.y);
+    }
+    if (dt > 0) anim.turn = damp(anim.turn, shortest(anim.turn, want), e.boss ? 7 : 10, dt);
     let clip = 'idle';
     let t = time + e.id * 0.37;
     let loop = true;
@@ -222,8 +287,13 @@ export class WorldCast {
           break;
         case 'chase':
         case 'return':
-          clip = kit.walk ?? (Math.hypot(e.vx, e.vy) > 62 ? 'run' : 'walk');
-          t = e.walkT;
+        case 'idle':
+          // (still, it stands; walking, its feet keep time with the ground)
+          if (anim.speed > 5) {
+            clip = kit.walk ?? (anim.speed > 62 ? 'run' : 'walk');
+            anim.walk += dt * stride(clip, anim.speed, h);
+            t = anim.walk;
+          }
           break;
         default:
           break;
@@ -239,21 +309,35 @@ export class WorldCast {
       }
       if (hasStatus(e, 'freeze')) t = anim.since;
     }
+    // one clip fades into the next, rather than the figure jumping to it
+    if (clip !== anim.clip) {
+      anim.from = { clip: anim.clip, t: anim.t, loop: anim.loop, k: 1 };
+      anim.clip = clip;
+    }
+    anim.t = t;
+    anim.loop = loop;
+    if (anim.from) {
+      anim.from.k -= dt / CLIP_FADE;
+      anim.from.t += dt;
+      if (anim.from.k <= 0) anim.from = null;
+    }
+    const x = anim.x;
+    const y = anim.y;
     const frozen = hasStatus(e, 'freeze');
     const chilled = hasStatus(e, 'chill');
     const dying = e.boss && e.boss.dying > 0;
     const windFlash = e.state === 'windup' && Math.floor(time * 14) % 2 === 0 ? 0.32 : 0;
     const flash = e.flash > 0 ? 0.8 : dying ? (Math.floor(time * 16) % 2 ? 0.5 : 0) : windFlash;
-    cast.shadow(e.x, e.y, e.r + 2);
-    if (e.elite.length && !e.dead) cast.ring(e.x, e.y, e.r + 4, '#ffcf5a', 0.6 + Math.sin(time * 5) * 0.2);
-    cast.creature(sprite, e.x, e.y, turnOf(e.face), h, clip, t, loop, { alpha, flash, rise, sx, sy, enemy: e.def.id, tint: frozen ? FROZEN : chilled ? CHILLED : undefined });
+    cast.shadow(x, y, e.r + 2);
+    if (e.elite.length && !e.dead) cast.ring(x, y, e.r + 4, '#ffcf5a', 0.6 + Math.sin(time * 5) * 0.2);
+    cast.creature(sprite, x, y, anim.turn, h, clip, t, loop, { alpha, flash, rise, sx, sy, enemy: e.def.id, tint: frozen ? FROZEN : chilled ? CHILLED : undefined, ...(anim.from ? { from: anim.from } : {}) });
   }
 
-  private syncNpc(cast: Cast, n: NpcActor, w: World, time: number, alpha: number): void {
+  private syncNpc(cast: Cast, n: NpcActor, w: World, dt: number, time: number, alpha: number): void {
     const def = NPCS[n.id];
     const look = npcLookOf(n.id);
     const fallen = def?.down;
-    const turn = n.face < 0 ? -0.55 : 0.55;
+    const turn = this.easeTurn(n, n.face < 0 ? -0.55 : 0.55, 6, dt);
     const clip = fallen ? 'lie' : 'idle';
     cast.shadow(n.x, n.y, 7);
     // (an echo of the dead is not quite here: it hangs a little off the ground, pale and cold)
@@ -275,28 +359,34 @@ export class WorldCast {
     }
     let s = this.pets.get(pet.id);
     if (!s) {
-      s = { m: new Motion(), turn: 0 };
+      s = { m: new Motion(), turn: 0, x: pet.x, y: pet.y };
       this.pets.set(pet.id, s);
     }
-    const moving = Math.hypot(pet.vx, pet.vy) > 8;
-    if (moving) s.turn = damp(s.turn, shortest(s.turn, Math.atan2(pet.vx, pet.vy)), 12, dt);
-    else if (pet.actT > 0) s.turn = turnOf(pet.face);
+    const speed = Math.hypot(pet.vx, pet.vy);
+    const moving = speed > 8;
+    // (drawn a touch behind where the rules have it: elbowing for room is a drift, not a twitch)
+    const gap = Math.hypot(pet.x - s.x, pet.y - s.y);
+    const follow = gap > SNAP ? 1 : 1 - Math.exp(-dt * 26);
+    s.x += (pet.x - s.x) * follow;
+    s.y += (pet.y - s.y) * follow;
+    if (moving) s.turn = damp(s.turn, shortest(s.turn, Math.atan2(pet.vx, pet.vy)), 10, dt);
+    else if (pet.actT > 0) s.turn = damp(s.turn, shortest(s.turn, turnOf(pet.face)), 12, dt);
     const fade = pet.story ? Math.min(1, pet.deathT > 0 ? 1 - pet.deathT / STORY_FADE : 1) : 1;
     const alpha = pet.dead ? Math.max(0, 1 - pet.deathT / 0.6) : fade;
     if (alpha <= 0) return;
     if (pet.dead) s.m.set('die', false);
     else if (pet.actT > 0) s.m.set('chop', false, 0.08);
-    else s.m.set(moving ? 'walk' : 'idle');
-    s.m.advance(dt);
+    else s.m.set(moving ? 'walk' : 'idle', true, 0.18);
+    s.m.advance(s.m.clip === 'walk' ? dt * stride('walk', speed, heightFromRadius(pet.r)) : dt);
     const flash = pet.flash > 0 ? 0.7 : 0;
-    cast.shadow(pet.x, pet.y, pet.r + 1);
+    cast.shadow(s.x, s.y, pet.r + 1);
     const person = look ? npcLookOf(look) : null;
     if (person) {
       const small = /child/.test(look!) ? 0.72 : 1;
-      cast.person(person, null, false, pet.x, pet.y, s.turn, s.m, { alpha, flash, h: PERSON_H * small });
+      cast.person(person, null, false, s.x, s.y, s.turn, s.m, { alpha, flash, h: PERSON_H * small });
     } else {
       const sprite = pet.def.sprite ?? 'wolf';
-      cast.creature(sprite, pet.x, pet.y, s.turn, heightFromRadius(pet.r), s.m.clip, s.m.t, s.m.clip === 'walk' || s.m.clip === 'idle', { alpha, flash });
+      cast.creature(sprite, s.x, s.y, s.turn, heightFromRadius(pet.r), s.m.clip, s.m.t, s.m.clip === 'walk' || s.m.clip === 'idle', { alpha, flash, motion: s.m });
     }
   }
 
