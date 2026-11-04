@@ -659,7 +659,7 @@ function runPattern(w: World, e: Enemy, dt: number): void {
             const x = vx > 0 ? box.x0 + s : vx < 0 ? box.x1 - s : c;
             const y = vy > 0 ? box.y0 + s : vy < 0 ? box.y1 - s : c;
             if (!inArena(w, e, x, y)) continue;
-            w.spawnProjectile({ x, y, vx: 0, vy: 0, r: num(u, 'r', 4.5), life: span - s + 12, dmg: e.dmg * num(u, 'mul', 1), type: 'frost', spec: null, depth: 0, pierce: 0, bounce: 0, hit: [], look: 'orb', color: str(u, 'color', '#5ac8ff'), hostile: true, homing: 0, child: false, knock: 0 });
+            w.spawnProjectile({ x, y, vx: 0, vy: 0, r: num(u, 'r', 4.5), life: span - s + 12, dmg: e.dmg * num(u, 'mul', 1), type: 'frost', spec: null, depth: 0, pierce: 0, bounce: 0, hit: [], look: 'tide', color: str(u, 'color', '#5ac8ff'), hostile: true, homing: 0, child: false, knock: 0 });
             break;
           }
         }

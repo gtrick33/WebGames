@@ -9,6 +9,7 @@ import { Motion } from './cast';
 import { Stand } from './crowd';
 import type { Held } from './dress';
 import { hexRgb } from './kits';
+import type { Fx3D } from './fx3d';
 import { buildGround, Mesher, UNIT, type LandPacks } from './land';
 import { Stage } from './stage';
 import { LIGHT } from './toon';
@@ -150,7 +151,7 @@ export class RingStage implements RingView {
   }
 
   /** Who stands where, and the camera on the watching player. */
-  frame(m: Match, looks: RingFighterLook[], myId: number | null, dt: number, time: number): void {
+  frame(m: Match, looks: RingFighterLook[], myId: number | null, dt: number, time: number, spells?: (fx: Fx3D) => void): void {
     const st = this.stage;
     if (!st.ready) return;
     if (!this.built) this.build(st.landPacks!);
@@ -178,6 +179,9 @@ export class RingStage implements RingView {
       this.fighter(f, l, dt, time);
     }
     cast.end();
+    st.fx.begin();
+    spells?.(st.fx);
+    st.fx.end();
     // the gates
     const lift = m.phase === 'gates' ? 0 : Math.min(1, m.clock / 0.9);
     const s = this.gates[0];

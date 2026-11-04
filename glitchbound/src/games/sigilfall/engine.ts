@@ -17,7 +17,6 @@ import { chooseMount, grantMounts, grantWarden, setShelfPoints, syncRift, learnL
 import { DEFAULT_SETTINGS, HERO_SLOTS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
 import type { ShopId } from './data/vendors';
-import { fxArt } from './render/art/atlas';
 import { iconsReady } from './render/art/gameIcons';
 import { worldLook } from './render/art/world';
 import { Renderer } from './render/renderer';
@@ -216,10 +215,9 @@ export class SigilEngine {
   constructor(canvas: HTMLCanvasElement, host: GameHost, playerName: string) {
     this.host = host;
     this.renderer = new Renderer(canvas);
-    // start fetching the packed art while the title screen shows: the first lands' looks and the spells
+    // start fetching the packed art while the title screen shows: the first lands' looks
     worldLook('village');
     worldLook('forest');
-    fxArt();
     // and the skill and talent icons: drawn again with their pictures once the atlas is in
     void iconsReady.then((ok) => ok && this.bump());
     const loaded = loadSave();

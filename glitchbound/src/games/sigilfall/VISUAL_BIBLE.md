@@ -1,7 +1,7 @@
 # Sigilfall — Visual Bible
 
 The rules that make the kingdom look authored by one team (blueprint §3.3–3.7, §7). The pack and its roles are in
-ASSET_AUDIT.md; the tables that implement this live in `render/art/` (recipes, folk, vfx) and
+ASSET_AUDIT.md; the tables that implement this live in `render/art/` (recipes, folk) and
 `data/buildingArt.ts`.
 
 ## 1. The look
@@ -280,3 +280,20 @@ not adding giants everywhere", and "we don't need to see them fully on the scree
 - Dungeons get their grandeur from architecture: naves of tall columns, walls and pillars that go up into the dark, pools of
   what the place runs with (a theme's water: filth, rot, lava, ice), a carpet to the boss, and what stands behind the boss's
   wall (`backdrop`). A boss's chamber stays walkable: its fight is measured to the room.
+
+## Spells, shots and flames
+
+Everything that glows, flows or burns is a quad with a shader (`render3d/fx3d.ts`), one draw call for all of them, and
+`render/effects.ts` says what each thing in the rules looks like. There are no effect sheets any more. The rules:
+
+- **It stands in the world.** Quads are depth-tested against what stands: a wall hides what's behind it, and what lies on
+  the ground lies under people's feet. What faces the camera is drawn a little toward it, so a spell on someone shows in
+  front of them; a thrown skull's glow is `behind`, so the skull shows in front of its glow.
+- **Each stuff looks like itself.** Water wobbles, with foam and a glint; fire licks upward from its color to a white
+  heart; shadow is a hole in the light with a lit rim; ice is a faceted crystal; poison is slime that won't stay together.
+  A foe's shot takes its stuff from its data's color (`dyeOf`), so a new foe's color needs no new code.
+- **What can be a model is a model.** Arrows, spears, skulls, stones, thrown shields and hammers are the packs' own, in flight.
+- **Danger is always readable.** Every foe's shot has a red ring on the ground under it, where it really is: shots fly at
+  chest height, and that ring is what you dodge. Warnings fill up as the blow comes. A hostile field has a red rim.
+- **A wall of water is one wave.** The shots of a `tide` are drawn back to front with their noise carried across them.
+- **Names, bars and numbers stay on the 2D canvas.** They're for reading, not for looking at.

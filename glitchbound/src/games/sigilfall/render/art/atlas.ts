@@ -65,12 +65,6 @@ export interface WorldArt {
   T: number;
 }
 
-export interface FxArt {
-  img: Cnv;
-  frame: number;
-  fx: Record<string, { r: Rect; n: number; ms: number; loop: boolean }>;
-}
-
 
 const BASE = `${(import.meta.env?.BASE_URL as string | undefined) ?? '/'}games/sigilfall/art/`;
 const url = (f: string): string => `${BASE}${f}?v=${ART_VERSION}`;
@@ -277,36 +271,6 @@ export function worldArt(k: LookKey): WorldArt | null {
     return { tiles: t, props, tile, tileAt: at, prop: pj.props, anim: pj.anims, k: 2 * m, T } satisfies WorldArt;
   });
 }
-
-export function fxArt(): FxArt | null {
-  return once('fx', async () => {
-    const [img, j] = await Promise.all([image('vfx.png'), data<Omit<FxArt, 'img'>>('vfx.json')]);
-    return { img, ...j };
-  });
-}
-
-const strips = new WeakMap<object, Cnv>();
-/**
- * One effect's frames, side by side, cut out of the sheet the first time it plays. Drawing from the whole sheet costs
- * about 10 ms a time (the browser copies all of its 2048 × 5914 pixels), which a screen full of spells can't afford.
- */
-export function stripOf(art: FxArt, s: FxArt['fx'][string]): Cnv {
-  let c = strips.get(s);
-  if (!c) {
-    c = canvas(art.frame * s.n, art.frame);
-    ctx2d(c).drawImage(art.img, s.r[0], s.r[1], art.frame * s.n, art.frame, 0, 0, art.frame * s.n, art.frame);
-    strips.set(s, c);
-  }
-  return c;
-}
-
-export function circleArt(): FxArt | null {
-  return once('circles', async () => {
-    const [img, j] = await Promise.all([image('circles.png'), data<Omit<FxArt, 'img'>>('circles.json')]);
-    return { img, ...j };
-  });
-}
-
 
 /* ------------------------------------------------- story pieces */
 

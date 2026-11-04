@@ -1,15 +1,17 @@
 import { ABILITIES } from '../arena/abilities';
 import { ARENA_H, ARENA_W, MAPS } from '../arena/maps';
 import { HERO_R, type Fighter, type Match } from '../arena/sim';
+import { shot, TONES } from './effects';
 import { CLASSES } from '../data/classes';
 import { heroLook, heldWeapon } from './sprites';
 import type { Held } from '../render3d/dress';
+import { FIELD, FX, type Fx3D } from '../render3d/fx3d';
 import type { RingStage, RingView } from '../render3d/ring3d';
 import { newCharacter, type Face } from '../progress/character';
 
 /**
  * The Ring's top layer: the arena and the fighters are in 3D underneath (render3d/ring3d.ts); here are the rings under
- * their feet, what is afoot on them, their bars, and the spells in flight.
+ * their feet, their bars and numbers. The spells, and what's afoot on people, are the shaders' (`ringSpells`).
  */
 
 type Ctx = CanvasRenderingContext2D;
@@ -116,30 +118,15 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
   const gale = f.auras.some((a) => a.ab === 'l-gale' && a.cc === 'incap');
   const lift = gale ? 10 + Math.sin(time * 6) * 2 : 0;
   if (f.dead) return;
-  // what's on them: `head` is their head's height on the screen, drawn as if on their own spot
+  // what's on them that's a word: `head` is their head's height on the screen, drawn as if on their own spot
   view.up(f.x, f.y, HEAD + lift);
   const head = f.y;
   for (const a of f.auras) {
-    if (a.cc === 'stun') {
-      for (let i = 0; i < 3; i++) {
-        const an = time * 5 + (i * Math.PI * 2) / 3;
-        g.fillStyle = '#ffe39a';
-        g.fillRect(f.x + Math.cos(an) * 8 - 1, head + 1 + Math.sin(an) * 2.5 - 1, 2, 2);
-      }
-    } else if (a.cc === 'fear') {
+    if (a.cc === 'fear') {
       g.fillStyle = '#c88aff';
       g.font = '700 9px Georgia, serif';
       g.textAlign = 'center';
       g.fillText('!', f.x, head - 1 + Math.sin(time * 9) * 1.5);
-    } else if (a.cc === 'root') {
-      view.flat(f.x, f.y);
-      ring(g, f.x, f.y, 9, '#7ad65a', 2);
-      g.fillStyle = '#4a8a3a';
-      for (let i = 0; i < 5; i++) {
-        const an = (i / 5) * Math.PI * 2;
-        g.fillRect(f.x + Math.cos(an) * 8, f.y + Math.sin(an) * 8 - 2, 1.4, 3);
-      }
-      view.up(f.x, f.y, HEAD + lift);
     } else if (a.cc === 'silence') {
       g.fillStyle = '#cfe0ff';
       g.font = '700 8px Georgia, serif';
@@ -150,49 +137,6 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
       g.font = '700 8px Georgia, serif';
       g.textAlign = 'center';
       g.fillText('z', f.x + 5, head - 1 + Math.sin(time * 3) * 1.5);
-    } else if (a.ab === 'l-gale' && a.cc) {
-      view.flat(f.x, f.y);
-      for (let i = 0; i < 4; i++) {
-        const an = time * 11 + i * 1.6;
-        ring(g, f.x + Math.cos(an) * 1.5, f.y, 8 + i * 1.6, 'rgba(232,232,244,0.7)', 1);
-      }
-      view.up(f.x, f.y, HEAD + lift);
-    } else if (a.kind === 'absorb') {
-      view.up(f.x, f.y, 13);
-      g.strokeStyle = 'rgba(160,220,255,0.65)';
-      g.lineWidth = 1;
-      g.beginPath();
-      g.arc(f.x, f.y, 15, 0, Math.PI * 2);
-      g.stroke();
-      view.up(f.x, f.y, HEAD + lift);
-    } else if (a.kind === 'immune') {
-      view.up(f.x, f.y, 13);
-      const ice = a.still;
-      g.fillStyle = ice ? 'rgba(170,225,255,0.42)' : 'rgba(255,226,140,0.24)';
-      g.strokeStyle = ice ? '#dff4ff' : '#ffe39a';
-      g.lineWidth = 1.2;
-      g.beginPath();
-      g.arc(f.x, f.y, 16 + Math.sin(time * 5) * 0.8, 0, Math.PI * 2);
-      g.fill();
-      g.stroke();
-      view.up(f.x, f.y, HEAD + lift);
-    } else if (a.kind === 'reflect') {
-      view.up(f.x, f.y, 13);
-      g.strokeStyle = 'rgba(190,235,255,0.9)';
-      g.lineWidth = 1;
-      g.beginPath();
-      g.arc(f.x, f.y, 13, time * 3, time * 3 + 1.4);
-      g.stroke();
-      view.up(f.x, f.y, HEAD + lift);
-    } else if (a.kind === 'guard') {
-      view.flat(f.x, f.y);
-      ring(g, f.x, f.y, 10, 'rgba(216,220,230,0.8)', 1.5);
-      view.up(f.x, f.y, HEAD + lift);
-    } else if (a.kind === 'fury') {
-      view.up(f.x, f.y, 8);
-      g.fillStyle = 'rgba(255,70,90,0.5)';
-      g.fillRect(f.x - 7 + Math.sin(time * 13) * 5, f.y - ((time * 26) % 22), 1.6, 1.6);
-      view.up(f.x, f.y, HEAD + lift);
     }
   }
   // a bar over the head, in their team's color
@@ -225,20 +169,92 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
     g.fillRect(f.x - barW / 2 - 0.5, by + 3, barW + 1, 2.6);
     g.fillStyle = ab?.color ?? '#fff';
     g.fillRect(f.x - barW / 2, by + 3.5, barW * (c.channel ? 1 - k : k), 1.6);
-    // gathering in the hands
-    view.up(f.x, f.y, 16);
-    const r = 3 + k * 3;
-    const gl = g.createRadialGradient(f.x, f.y, 0, f.x, f.y, r * 2);
-    gl.addColorStop(0, '#fffdf0');
-    gl.addColorStop(0.4, ab?.color ?? '#fff');
-    gl.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = gl;
-    g.fillRect(f.x - r * 2, f.y - r * 2, r * 4, r * 4);
   }
 }
 
 /** How high a fighter's head stands, in world pixels. */
 const HEAD = 30;
+
+/** The spells in flight and what's afoot on the fighters: handed to the shaders before the frame is drawn. */
+export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, time: number, flames: { x: number; y: number; h: number }[]): void {
+  const me = myId === null ? null : (m.fighters[myId] ?? null);
+  for (const tr of m.traps) {
+    const enemy = me && tr.team !== me.team;
+    // an enemy's trap is hard to see, but not impossible
+    q.put({ kind: FX.trap, x: tr.x, y: tr.y, flat: true, w: 26, a: tr.arm > 0 ? '#a8a0b8' : '#e8c070', t: tr.arm > 0 ? 0 : 1, alpha: enemy ? 0.42 : 1 });
+  }
+  for (const f of flames) {
+    q.put({ kind: FX.glow, x: f.x, y: f.y, up: f.h + 5, w: 44, a: '#ff7a2d', alpha: 0.5 });
+    q.put({ kind: FX.flame, x: f.x, y: f.y, up: f.h - 2, base: true, w: 15, h: 22, a: '#f4561f', b: '#ffb02e', seed: f.x * 0.37 });
+  }
+  for (const f of m.fighters) ringMarks(q, f, time);
+  for (const b of m.bolts) {
+    const ab = ABILITIES[b.ab];
+    const c = ab?.color ?? '#ffffff';
+    const t = m.fighters[b.tgt];
+    const a = t ? Math.atan2(t.y - b.y, t.x - b.x) : 0;
+    const el = SCHOOL_EL[ab?.school ?? ''] ?? 'arcane';
+    const tone = el === 'trail' ? { a: c, b: '#ffffff' } : (TONES[el] ?? { a: c, b: '#ffffff' });
+    shot(q, el === 'trail' ? 'orb' : el, b.x, b.y, Math.cos(a) * 100, Math.sin(a) * 100, 14, 3.4, b.x * 0.03 + b.y * 0.05, tone);
+  }
+  for (const f of fx.flashes) {
+    const u = f.t / f.dur;
+    if (f.ring) q.put({ kind: FX.ring, x: f.x, y: f.y, flat: true, w: f.r * 2, a: f.color, t: u, seed: f.r });
+    else q.put({ kind: FX.impact, x: f.x, y: f.y, up: 12, w: f.r * 2.4, a: f.color, b: '#fffdf0', t: u, seed: f.x * 0.2 });
+  }
+  // snow coming down over the frozen ground
+  const map = MAPS[m.map] ?? Object.values(MAPS)[0]!;
+  if (map.theme === 'frost') {
+    for (let i = 0; i < 46; i++) {
+      const speed = 12 + (i % 6) * 5;
+      const x = (((i * 83 + Math.sin(time * 0.7 + i) * 14 + time * (5 + (i % 3) * 4)) % ARENA_W) + ARENA_W) % ARENA_W;
+      const y = (i * 53 + time * speed * 0.3) % ARENA_H;
+      const up = 60 - ((time * speed + i * 17) % 60);
+      q.put({ kind: FX.spark, x, y, up, w: 4 + (i % 3) * 1.5, a: '#ffffff', alpha: 0.5 + (i % 4) * 0.12, t: 0.3 });
+    }
+  }
+}
+
+const SCHOOL_EL: Record<string, string> = { fire: 'fire', frost: 'frost', arcane: 'arcane', shadow: 'shadow', holy: 'holy', nature: 'nature', physical: 'trail' };
+
+/** What's afoot on a fighter. */
+function ringMarks(q: Fx3D, f: Fighter, time: number): void {
+  if (f.dead) return;
+  const gale = f.auras.some((a) => a.ab === 'l-gale' && a.cc === 'incap');
+  const lift = gale ? 10 + Math.sin(time * 6) * 2 : 0;
+  const seed = f.id * 1.7;
+  for (const a of f.auras) {
+    if (a.cc === 'stun') {
+      for (let i = 0; i < 3; i++) {
+        const an = time * 5 + (i * Math.PI * 2) / 3;
+        q.put({ kind: FX.spark, x: f.x + Math.cos(an) * 9, y: f.y + Math.sin(an) * 3, up: HEAD + lift, w: 11, a: '#ffe39a', t: 0.1 });
+      }
+    } else if (a.cc === 'root') {
+      q.put({ kind: FX.field, x: f.x, y: f.y, flat: true, w: 26, a: '#4a9a3a', b: '#b8ff8a', t: 1, seed, p1: FIELD.nature });
+    } else if (a.ab === 'l-gale' && a.cc) {
+      q.put({ kind: FX.smoke, x: f.x, y: f.y, up: 6, w: 34, a: '#e8e8f4', alpha: 0.55, t: 0.2, seed: time * 2 });
+      q.put({ kind: FX.ring, x: f.x, y: f.y, flat: true, w: 34, a: '#e8e8f4', t: (time * 1.6) % 1, seed });
+    } else if (a.kind === 'absorb') {
+      q.put({ kind: FX.bubble, x: f.x, y: f.y, up: 15, w: 44, a: '#7fd8ff' });
+    } else if (a.kind === 'immune') {
+      q.put({ kind: FX.bubble, x: f.x, y: f.y, up: 15, w: 50 + Math.sin(time * 5) * 2, a: a.still ? '#a8e4ff' : '#ffe39a' });
+      if (a.still) q.put({ kind: FX.field, x: f.x, y: f.y, flat: true, w: 34, a: '#7fd4ff', b: '#ffffff', t: 1, seed, p1: FIELD.frost });
+    } else if (a.kind === 'reflect') {
+      q.put({ kind: FX.slash, x: f.x, y: f.y, up: 14, flat: true, w: 36, rot: time * 3, a: '#bee8ff', t: 0.3, p1: 1.4, p2: 0 });
+    } else if (a.kind === 'guard') {
+      q.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: 26, a: '#d8dce6' });
+    } else if (a.kind === 'fury') {
+      q.put({ kind: FX.rain, x: f.x, y: f.y, base: true, w: 28, h: 40, a: '#ff465a', t: -1, seed });
+    }
+  }
+  if (f.cast) {
+    const ab = ABILITIES[f.cast.ab];
+    const k = Math.min(1, f.cast.t / f.cast.dur);
+    const c = ab?.color ?? '#ffffff';
+    q.put({ kind: FX.gather, x: f.x, y: f.y, up: 18, w: 38, a: c, b: '#fffdf0', t: k, seed });
+    q.put({ kind: FX.rune, x: f.x, y: f.y, flat: true, w: 34, a: c, b: '#ffffff', t: 0.5, seed });
+  }
+}
 
 /** The top layer of one frame. */
 export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number, view: RingStage): void {
@@ -250,76 +266,8 @@ export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number
     if (f.id === me?.target) ring(g, f.x, f.y, 13 + Math.sin(time * 5) * 0.8, '#ff5a6a', 1.8);
     else if (f.id === me?.friend && f.id !== myId) ring(g, f.x, f.y, 13, '#7fe06a', 1.6);
   }
-  for (const tr of m.traps) {
-    const enemy = me && tr.team !== me.team;
-    // an enemy's trap is hard to see, but not impossible
-    view.flat(tr.x, tr.y);
-    g.globalAlpha = enemy ? 0.42 : 0.9;
-    ring(g, tr.x, tr.y, 11, tr.arm > 0 ? '#a8a0b8' : '#e8c070', 1.5);
-    g.fillStyle = '#6a5a3a';
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2;
-      g.fillRect(tr.x + Math.cos(a) * 8 - 1, tr.y + Math.sin(a) * 8 - 1, 2, 2);
-    }
-    g.globalAlpha = 1;
-  }
   g = view.upperLayer();
   for (const f of m.fighters) markFighter(g, m, f, myId, time, !me || f === me || m.sees(me, f), view);
-  // the fires round the ring
-  for (const f of view.flames) {
-    view.up(f.x, f.y, f.h);
-    const fl = 1 + Math.sin(time * 9 + f.x) * 0.16;
-    const glow = g.createRadialGradient(f.x, f.y, 0, f.x, f.y, 13 * fl);
-    glow.addColorStop(0, 'rgba(255,190,90,0.85)');
-    glow.addColorStop(1, 'rgba(255,120,40,0)');
-    g.fillStyle = glow;
-    g.fillRect(f.x - 15, f.y - 15, 30, 30);
-    g.fillStyle = '#fff2c0';
-    g.beginPath();
-    g.ellipse(f.x, f.y, 2, 5 * fl, 0, 0, Math.PI * 2);
-    g.fill();
-  }
-  for (const b of m.bolts) {
-    const ab = ABILITIES[b.ab];
-    const c = ab?.color ?? '#fff';
-    const t = m.fighters[b.tgt];
-    const a = t ? Math.atan2(t.y - b.y, t.x - b.x) : 0;
-    view.up(b.x, b.y, 14);
-    g.strokeStyle = c;
-    g.globalAlpha = 0.55;
-    g.lineWidth = 2.6;
-    g.lineCap = 'round';
-    g.beginPath();
-    g.moveTo(b.x, b.y);
-    g.lineTo(b.x - Math.cos(a) * 15, b.y - Math.sin(a) * 15);
-    g.stroke();
-    g.lineCap = 'butt';
-    g.globalAlpha = 1;
-    const gl = g.createRadialGradient(b.x, b.y, 0, b.x, b.y, 7);
-    gl.addColorStop(0, '#fffdf0');
-    gl.addColorStop(0.4, c);
-    gl.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = gl;
-    g.fillRect(b.x - 7, b.y - 7, 14, 14);
-  }
-  for (const f of fx.flashes) {
-    const u = f.t / f.dur;
-    g.globalAlpha = 1 - u;
-    if (f.ring) {
-      view.flat(f.x, f.y);
-      ring(g, f.x, f.y, f.r * (0.3 + u * 0.7), f.color, 3 - u * 2);
-    } else {
-      view.up(f.x, f.y, 6);
-      const r = f.r * (0.5 + u * 0.5);
-      const gl = g.createRadialGradient(f.x, f.y, 0, f.x, f.y, r);
-      gl.addColorStop(0, '#fffdf0');
-      gl.addColorStop(0.35, f.color);
-      gl.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = gl;
-      g.fillRect(f.x - r, f.y - r, r * 2, r * 2);
-    }
-    g.globalAlpha = 1;
-  }
   g.textAlign = 'center';
   for (const p of fx.pops) {
     const u = p.t / 0.9;
@@ -335,19 +283,6 @@ export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number
     g.fillText(p.text, p.x, p.y + 30 - u * 14);
   }
   g.globalAlpha = 1;
-  // snow coming down over the frozen ground
-  const map = MAPS[m.map] ?? Object.values(MAPS)[0]!;
-  if (map.theme === 'frost') {
-    view.flat(ARENA_W / 2, ARENA_H / 2);
-    for (let i = 0; i < 46; i++) {
-      const speed = 12 + (i % 6) * 5;
-      const x = (((i * 83 + Math.sin(time * 0.7 + i) * 14 + time * (5 + (i % 3) * 4)) % ARENA_W) + ARENA_W) % ARENA_W;
-      const y = (i * 53 + time * speed) % ARENA_H;
-      g.fillStyle = `rgba(255,255,255,${0.4 + (i % 4) * 0.15})`;
-      const size = 1 + (i % 3) * 0.6;
-      g.fillRect(x, y, size, size);
-    }
-  }
 }
 
 export function fighterAt(m: Match, x: number, y: number): Fighter | null {

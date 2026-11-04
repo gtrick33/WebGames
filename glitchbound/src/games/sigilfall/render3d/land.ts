@@ -345,6 +345,77 @@ function sizeWithin(m: MeshData, def: PropDef): { sx: number; sy: number; sz: nu
   return { sx: k, sy: k, sz: k, rot };
 }
 
+/* ------------------------------------------------------------------ what a fire burns on */
+
+export interface RoofSpot {
+  x: number;
+  y: number;
+  z: number;
+}
+
+const NO_ROOF: readonly RoofSpot[] = [];
+const roofsOfModels = new WeakMap<MeshData, RoofSpot[]>();
+
+/**
+ * Points scattered over a model's roof, in its own units: the faces high on it that look up and toward the camera,
+ * each getting points by its area (a chimney's little cap hardly any, and what stands over the ridge none).
+ */
+function roofOfModel(m: MeshData): RoofSpot[] {
+  const had = roofsOfModels.get(m);
+  if (had) return had;
+  const p = m.pos;
+  const low = m.min[1] + (m.max[1] - m.min[1]) * 0.42;
+  const found: { a: number; b: number; c: number; size: number }[] = [];
+  for (let i = 0; i + 2 < m.i; i += 3) {
+    const a = m.idx[i]! * 3;
+    const b = m.idx[i + 1]! * 3;
+    const c = m.idx[i + 2]! * 3;
+    const ux = p[b]! - p[a]!;
+    const uy = p[b + 1]! - p[a + 1]!;
+    const uz = p[b + 2]! - p[a + 2]!;
+    const vx = p[c]! - p[a]!;
+    const vy = p[c + 1]! - p[a + 1]!;
+    const vz = p[c + 2]! - p[a + 2]!;
+    const nx = uy * vz - uz * vy;
+    const ny = uz * vx - ux * vz;
+    const nz = ux * vy - uy * vx;
+    const size = Math.hypot(nx, ny, nz);
+    if (size < 1e-7) continue;
+    // (up, and toward the camera: the camera is south of everything and looks down at 50 degrees)
+    if (ny / size < 0.3 || (ny / size) * Math.sin(PITCH) + (nz / size) * Math.cos(PITCH) < 0.25) continue;
+    if ((p[a + 1]! + p[b + 1]! + p[c + 1]!) / 3 < low) continue;
+    found.push({ a, b, c, size });
+  }
+  // (a roof is its big faces; a chimney's cap and a ridge's trim are small ones)
+  const biggest = found.reduce((b, f) => Math.max(b, f.size), 0);
+  const big = found.filter((f) => f.size > biggest * 0.06);
+  const faces: { a: number; b: number; c: number; upTo: number }[] = [];
+  let total = 0;
+  for (const f of big.length >= 2 ? big : found) {
+    total += f.size;
+    faces.push({ a: f.a, b: f.b, c: f.c, upTo: total });
+  }
+  const out: RoofSpot[] = [];
+  for (let i = 0; i < 60 && faces.length; i++) {
+    const at = hash2(i, 91) * total;
+    const f = faces.find((x) => x.upTo >= at) ?? faces[faces.length - 1]!;
+    let r = hash2(i, 92);
+    let q = hash2(i, 93);
+    if (r + q > 1) {
+      r = 1 - r;
+      q = 1 - q;
+    }
+    const w = 1 - r - q;
+    out.push({ x: p[f.a]! * w + p[f.b]! * r + p[f.c]! * q, y: p[f.a + 1]! * w + p[f.b + 1]! * r + p[f.c + 1]! * q, z: p[f.a + 2]! * w + p[f.b + 2]! * r + p[f.c + 2]! * q });
+  }
+  // (nothing over the ridge, which is the height most of the upper points reach)
+  const heights = out.map((q) => q.y).sort((a, b) => a - b);
+  const ridge = heights[Math.floor(heights.length * 0.9)] ?? 0;
+  const roof = out.filter((q) => q.y <= ridge);
+  roofsOfModels.set(m, roof);
+  return roof;
+}
+
 /* ------------------------------------------------------------------ recoloring for a land */
 
 function hsl(r: number, g: number, b: number): [number, number, number] {
@@ -894,6 +965,8 @@ export class Land3D {
   readonly objects: LandObject[] = [];
   /** The fires burning here: their foot, and how tall the thing holding them is (tiles). */
   readonly flames: { x: number; z: number; y: number; size: number }[] = [];
+  /** Each building's model, as it was placed: what a fire on it burns on. */
+  private readonly standing: { x0: number; x1: number; z0: number; z1: number; mesh: MeshData; x: number; z: number; sx: number; sy: number; sz: number; roof?: RoofSpot[] }[] = [];
   /** The stone heroes on their plinths (the cast draws them, in a pose). */
   readonly statues: { x: number; y: number; h: number; lift: number; tint: readonly [number, number, number] }[] = [];
   /** Great figures frozen in a pose (the cast draws them). */
@@ -1179,7 +1252,10 @@ export class Land3D {
       const cx = (x0 + x1) / 2 - ((mesh.min[0] + mesh.max[0]) / 2) * sx;
       const cz = y1 + 0.05 - mesh.max[2] * sz;
       const roof = this.roofOf(b.lot.tx, b.lot.ty);
-      if (this.keepIt({ x: ((x0 + x1) / 2) * TILE, y: y1 * TILE - 2, kind: 'building', dy: -(mesh.max[1] * sy) * TILE })) this.add({ m: `${m}#${roof}`, x: cx, z: cz, rot: 0, sx, sy, sz, shadow: 0 });
+      if (this.keepIt({ x: ((x0 + x1) / 2) * TILE, y: y1 * TILE - 2, kind: 'building', dy: -(mesh.max[1] * sy) * TILE })) {
+        this.add({ m: `${m}#${roof}`, x: cx, z: cz, rot: 0, sx, sy, sz, shadow: 0 });
+        this.standing.push({ x0: cx + mesh.min[0] * sx, x1: cx + mesh.max[0] * sx, z0: cz + mesh.min[2] * sz, z1: cz + mesh.max[2] * sz, mesh, x: cx, z: cz, sx, sy, sz });
+      }
       for (const y of b.yard) this.placeProp(y.prop, y.tx, y.ty);
       // its towers, where its plan has them
       if (seat) {
@@ -1317,7 +1393,8 @@ export class Land3D {
     const oz = big ? -((mesh.min[2] + mesh.max[2]) / 2) * size.sz : 0;
     const sw = def.w ?? TILE;
     this.add({ m: model, x: x + ox, z: z + oz, rot, sx: size.sx, sy: size.sy, sz: size.sz, shadow: def.flat || (def.h ?? 0) < 12 ? 0 : Math.min(2.4, (sw / TILE) * 0.65), shadowD: Math.min(1, (def.d ?? sw) / sw + 0.1), y: def.flat ? 0.02 : 0, r: c[0], g: c[1], b: c[2] });
-    if (def.flame) this.flames.push({ x, z, y: (def.flameAt ?? 10) / TILE, size: def.flame });
+    // (at the top of the model as it was sized, which may be under the height its table allows)
+    if (def.flame) this.flames.push({ x, z, y: size.sy * (mesh.max[1] - mesh.min[1]) * ((def.flameAt ?? 10) / (def.h ?? 10)), size: def.flame });
     if (def.glow) this.glows.push({ x, z, y: ((def.h ?? 10) + 2) / TILE, color: def.glow, size: 9 });
     if (def.hero) this.statues.push({ x: x * TILE, y: z * TILE, h: def.hero, lift: (def.h ?? 0) / TILE, tint: c });
   }
@@ -1333,6 +1410,26 @@ export class Land3D {
       this.stands.set(id, s);
     }
     return s;
+  }
+
+  /**
+   * Points on the roof of the building that stands at a spot (or nearest it, within a tile and a half), in tiles: the
+   * real surface of its model, the part the camera can see. Empty where no building stands.
+   */
+  roofAt(x: number, z: number): readonly RoofSpot[] {
+    let best: Land3D['standing'][number] | null = null;
+    let bd = 1.5;
+    for (const r of this.standing) {
+      const d = Math.hypot(Math.max(r.x0 - x, 0, x - r.x1), Math.max(r.z0 - z, 0, z - r.z1));
+      if (d < bd) {
+        best = r;
+        bd = d;
+      }
+    }
+    if (!best) return NO_ROOF;
+    const r = best;
+    r.roof ??= roofOfModel(r.mesh).map((p) => ({ x: r.x + p.x * r.sx, y: p.y * r.sy, z: r.z + p.z * r.sz }));
+    return r.roof;
   }
 
   /**

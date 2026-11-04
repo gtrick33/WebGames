@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { TILE } from '../sim/map';
 import { Cast } from './cast';
+import { Fx3D } from './fx3d';
 import { loadWardrobe } from './dress';
 import { loadLand, PITCH, type Land3D, type LandPacks } from './land';
 import { LIGHT } from './toon';
@@ -9,10 +10,10 @@ import { LIGHT } from './toon';
  * The 3D view, four layers deep under the player's touches:
  *
  *   ground (WebGL)      the land's floor and the soft shadows on it
- *   decals (2D)         what lies on the ground: warnings, fields, rings of spells
- *   what stands (WebGL) walls, trees, houses, people: it covers the layers below where it stands, so a warning on the
- *                       far side of a wall is behind the wall
- *   the game's canvas   spells in the air, numbers and names
+ *   decals (2D)         what's drawn on the ground for the player: an aim, a way through a door
+ *   what stands (WebGL) walls, trees, houses, people, and every spell and warning (fx3d.ts): it covers the layers below
+ *                       where it stands, so a warning on the far side of a wall is behind the wall
+ *   the game's canvas   numbers and names
  *
  * The camera looks down from the south at a steep angle.
  */
@@ -47,6 +48,8 @@ export class Stage {
   readonly decalCanvas: HTMLCanvasElement;
   readonly decals: CanvasRenderingContext2D;
   readonly cast: Cast;
+  /** Everything that glows, flows or burns. */
+  readonly fx: Fx3D;
   land: Land3D | null = null;
   landPacks: LandPacks | null = null;
   /** The models everyone needs have arrived. */
@@ -92,6 +95,7 @@ export class Stage {
     this.groundGl.setClearColor(0x07050d, 1);
     this.cast = new Cast(this.groundScene);
     this.scene.add(this.cast.root);
+    this.fx = new Fx3D(this.scene);
     void Promise.all([loadWardrobe(), loadLand()])
       .then(([w, l]) => {
         this.cast.wardrobe = w;
@@ -214,6 +218,7 @@ export class Stage {
   dispose(): void {
     this.land?.dispose();
     this.cast.dispose();
+    this.fx.dispose();
     for (const r of [this.gl, this.groundGl]) {
       r.dispose();
       r.forceContextLoss();
