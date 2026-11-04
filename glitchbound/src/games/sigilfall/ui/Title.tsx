@@ -127,6 +127,8 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
   const [face, setFace] = useState<Face>({ skin: 1, hair: 1, style: 'short', beard: false });
   const pick = (next: Partial<Face>): void => setFace({ ...face, ...next });
   const [name, setName] = useState(() => cleanName(engine.defaultName));
+  const [askTips, setAskTips] = useState(false);
+  const begin = (tips?: boolean): void => engine.createHero(engine.ui.createSlot, cls, cleanName(name), body, face, tips);
   const def = CLASSES[cls];
   return (
     <div className="rb-create">
@@ -203,7 +205,8 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
           className="rb-create-go"
           onSubmit={(e) => {
             e.preventDefault();
-            engine.createHero(engine.ui.createSlot, cls, cleanName(name), body, face);
+            if (engine.asksForTips) setAskTips(true);
+            else begin();
           }}
         >
           <div className="rb-seg rb-body" role="radiogroup" aria-label="Hero">
@@ -222,6 +225,22 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
           </button>
         </form>
       </div>
+      {askTips && (
+        <div className="rb-ring-dialog-wrap rb-tip-ask" role="dialog" aria-modal="true" aria-labelledby="rb-tip-ask-title">
+          <div className="rb-ring-dialog">
+            <h2 id="rb-tip-ask-title">Show the tutorial hints?</h2>
+            <p>Short hints pause the game to show this hero the controls, the bag, new spells and talents. You can change this any time in Settings.</p>
+            <div className="rb-vigil-actions">
+              <button className="rb-btn" onClick={() => begin(false)}>
+                No, thanks
+              </button>
+              <button className="rb-btn is-gold" onClick={() => begin(true)} autoFocus>
+                Yes, show me
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

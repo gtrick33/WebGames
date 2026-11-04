@@ -21,6 +21,7 @@ import { fmt, ItemIcon, Portrait } from './common';
 import { DesktopBar } from './DesktopBar';
 import { Panels } from './Panels';
 import { Minimap } from './Minimap';
+import { TipOverlay } from './Tips';
 import { TouchControls } from './Touch';
 import { uiIcon } from './uiIcons';
 import { mapIconUrl } from './mapIcons';
@@ -115,6 +116,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
           <Panels engine={engine} />
         </div>
       )}
+      {ui.tip && <TipOverlay engine={engine} />}
       <RotateHint engine={engine} />
     </div>
   );
