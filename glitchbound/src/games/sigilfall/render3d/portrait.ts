@@ -1,8 +1,11 @@
 import * as THREE from 'three';
+import type { MountDef } from '../data/mounts';
 import type { HeroLook } from '../render/art/hero';
 import { Crowd } from './crowd';
 import { dressedOf, loadWardrobe, type Held, type Wardrobe } from './dress';
 import { hexRgb, kitOf } from './kits';
+import { mountModel } from './mountKit';
+import { shapeOf } from './mountLook';
 import { loadPack, type MeshData, type Pack } from './pack';
 import { LIGHT, rigAnimOf } from './toon';
 
@@ -27,8 +30,6 @@ export function warmPortraits(): Promise<unknown> {
   if (!starting) {
     starting = loadWardrobe().then((w) => {
       wardrobe = w;
-      // the mounts' pictures are on the first panels anyone opens
-      for (const s of ['mount-horse', 'mount-deer', 'mount-boar', 'mount-drake']) kitPack(s);
     });
     starting.catch(() => {
       starting = null;
@@ -154,7 +155,68 @@ export function creaturePicture(sprite: string, size: number): string | null {
   return shootCreature(sprite, size, size, 0.45, null, null);
 }
 
-/** A mount, seen from the side, with its rider if there is one. */
-export function mountPicture(sprite: string, coat: readonly [number, number, number], seat: number, size: number, rider: { look: HeroLook; held: Held | null; shield: boolean } | null): string | null {
-  return shootCreature(sprite, size, Math.round(size * 0.85), Math.PI / 2 - 0.35, coat, rider ? { ...rider, seat } : null);
+const kitFiles = new Map<string, Pack | 'loading'>();
+function kitFile(id: string): Pack | null {
+  const hit = kitFiles.get(id);
+  if (hit === 'loading') return null;
+  if (hit) return hit;
+  kitFiles.set(id, 'loading');
+  loadPack(`k/${id}`).then(
+    (p) => kitFiles.set(id, p),
+    () => kitFiles.delete(id),
+  );
+  return null;
+}
+
+const standing = { x: 0, y: 0, z: 0 };
+
+/** A mount, seen from the side and a little ahead, with its rider if there is one. */
+export function mountPicture(def: MountDef, size: number, rider: { look: HeroLook; held: Held | null; shield: boolean } | null): string | null {
+  if (!wardrobe || !ensure()) return null;
+  const pack = kitFile(shapeOf(def).kit);
+  if (!pack) return null;
+  const { mesh, rig, shape, joint } = mountModel(def, pack);
+  const w = size;
+  const h = Math.round(size * 0.85);
+  const r = renderer!;
+  r.setPixelRatio(1);
+  r.setSize(w, h, false);
+  const turn = Math.PI / 2 - 0.42;
+  const long = Math.max(mesh.max[2] - mesh.min[2], mesh.max[1] - mesh.min[1]);
+  const k = (def.body === 'drake' ? 3.4 : 3.1) / long;
+  const midZ = (mesh.min[2] + mesh.max[2]) / 2;
+  const cos = Math.cos(turn);
+  const sin = Math.sin(turn);
+  const crowd = new Crowd(mesh, rig, scene, 1, 0.012 / k);
+  crowd.begin();
+  // (a drake is shown with its wings up)
+  const idle = def.body === 'drake' ? rig.frame('run', 0.2) : rig.frame('idle', 0.3);
+  crowd.put(-midZ * k * sin, 0, -midZ * k * cos, turn, k, k, idle);
+  crowd.end();
+  let top: Crowd | null = null;
+  if (rider) {
+    const { mesh: body } = dressedOf(wardrobe, rider.look, rider.held, rider.shield);
+    top = new Crowd(body, wardrobe.medium, scene, 1, 0.02);
+    rig.pointAt(idle, 0, 0, joint, 0, shape.seatY, shape.seatZ, standing);
+    // (a person's as big to the animal as they are in the world)
+    const scale = (k / shape.px) * ((36 * shape.rider) / Math.min(2.6, body.max[1] - body.min[1] || 2.3));
+    const dz = (standing.z - midZ) * k;
+    top.begin();
+    top.put(dz * sin, standing.y * k - 0.406 * scale, dz * cos, turn, scale, scale, wardrobe.medium.frame('ride', 0.3));
+    top.end();
+  }
+  LIGHT.uSee.value.set(0, 0, 0, 0);
+  LIGHT.uDark.value.set(0, 8, 0, 0);
+  LIGHT.uNight.value.set(1, 1, 1, 0);
+  LIGHT.uGrade.value.set(0, 0, 0, 0);
+  camera.aspect = w / h;
+  const tall = (mesh.max[1] - mesh.min[1]) * k;
+  camera.position.set(0, tall * 0.72 + (rider ? 1 : 0.6), 7.6);
+  camera.lookAt(0, tall * 0.46 + (rider ? 0.32 : 0), 0);
+  camera.updateProjectionMatrix();
+  r.render(scene, camera);
+  const url = r.domElement.toDataURL('image/png');
+  crowd.dispose();
+  top?.dispose();
+  return url;
 }

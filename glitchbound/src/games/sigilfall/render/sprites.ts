@@ -1,5 +1,4 @@
 import { bustPicture, creaturePicture, dollPicture, mountPicture, type DollView } from '../render3d/portrait';
-import { coatTint, mountSprite, SEAT } from '../render3d/mountLook';
 import { HAIRS, SKINS, type Face } from '../progress/character';
 import { CLASSES } from '../data/classes';
 import type { Body } from '../progress/character';
@@ -259,19 +258,53 @@ export function mountSprites(m: MountDef, view: HeroDir, frame: number): { back:
   return { back: memo(`${key}:b`, () => once().back, HERO_K), front: memo(`${key}:f`, () => once().front, HERO_K) };
 }
 
+/** The mount pictures still to be drawn: one at a time, so that opening the page doesn't stop the game to draw twenty. */
+const toDraw = new Map<string, { draw: () => string | null; tries: number }>();
+const pictureWatchers = new Set<() => void>();
+let drawing = false;
+
+function drawNextPicture(): void {
+  let drew = false;
+  for (const [key, job] of toDraw) {
+    const shot = job.draw();
+    if (shot) {
+      iconCache.set(key, shot);
+      toDraw.delete(key);
+      drew = true;
+      for (const w of pictureWatchers) w();
+      break;
+    }
+    // (its model is still on its way; if it never comes, the stand-in stays)
+    if (++job.tries > 60) toDraw.delete(key);
+  }
+  if (toDraw.size) setTimeout(drawNextPicture, drew ? 16 : 200);
+  else drawing = false;
+}
+
+/** Says whenever a mount's picture has come in. Returns how to stop being told. */
+export function watchMountPictures(fn: () => void): () => void {
+  pictureWatchers.add(fn);
+  return () => pictureWatchers.delete(fn);
+}
+
 /**
- * A mount standing side-on for the collection page, with the hero in the saddle when a look is given
- * (the same layers the game draws), as a data URL (cached).
+ * A mount standing for the collection page, with the hero in the saddle when a look is given, as a data URL. The real
+ * model's picture is drawn soon after it's first asked for (watchMountPictures says when); a painted one stands in.
  */
 export function mountPictureUrl(m: MountDef, look: HeroLook | null, scale = 3): string {
   const key = `mountpic:${m.id}:${look ? lookKey(look) : '-'}:${scale}`;
   const hit = iconCache.get(key);
   if (hit) return hit;
-  const shot = mountPicture(mountSprite(m), coatTint(m.coat), SEAT[m.body] ?? 1.7, Math.max(220, scale * 70), look ? { look, held: null, shield: false } : null);
-  if (shot) {
-    iconCache.set(key, shot);
-    return shot;
+  if (!toDraw.has(key)) {
+    toDraw.set(key, { draw: () => mountPicture(m, Math.max(220, scale * 70), look ? { look, held: null, shield: false } : null), tries: 0 });
+    if (!drawing) {
+      drawing = true;
+      setTimeout(drawNextPicture, 0);
+    }
   }
+  const standIn = `${key}:painted`;
+  const painted = iconCache.get(standIn);
+  if (painted) return painted;
   // composed at the hero's scale (twice the layout's art pixels)
   const f = HERO_K / DETAIL;
   const F = MOUNT_FRAMES.side;
@@ -289,7 +322,7 @@ export function mountPictureUrl(m: MountDef, look: HeroLook | null, scale = 3): 
   g.drawImage(front.c, 0, top);
   if (look) g.drawImage(riderLegsSprite('side', m.body, look).c, 0, top);
   const url = scaled(c, Math.max(1, Math.round(scale / f))).toDataURL();
-  iconCache.set(key, url);
+  iconCache.set(standIn, url);
   return url;
 }
 

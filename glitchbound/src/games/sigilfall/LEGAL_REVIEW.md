@@ -11,6 +11,22 @@ using them to train AI models, so the pack stays in the ignored `assets/sigilfal
 discloses AI-assisted graphics.** That was a concern for the Certainity packs too (below): it doesn't break this
 license, but AI output may have weak copyright protection, and some storefronts ask about it.
 
+## Riding horses (2026-11-04)
+
+Sigilfall's horses come from Amir's Low-Poly Horses Pack on itch.io (https://ahmedamirdev.itch.io/amir-low-poly-horses-pack),
+Plus tier. Identified from the page after the files turned up with no license and no author's name: its tiers (4 and 17
+horses), clips (Idle, Walk, Run) and date (released Nov 23, 2025; the files are dated Nov 22) all match.
+
+- **The terms are one line on the store page:** "Free & Plus tiers: Use in personal and commercial projects. Credit is
+  appreciated but not required." The page tags it "No generative AI was used". It has no fuller license, and says
+  nothing about resale, AI training or NFTs.
+- **To confirm:** the owner's receipt for the Plus tier ($4.99). All nine horses that ship are Plus files.
+- **A small gap:** the game repaints the horses and adds saddles and barding. The Plus line doesn't mention changing them; the
+  Source tier's does ($5.99: "Full rights to modify and redistribute your modified versions"). Buying Source removes the question.
+- **What ships:** only built files in the game's own format (`public/games/sigilfall/3d/k/m_horse_*.pack`), inside the
+  game. The raw `.glb` and `.fbx` files stay on the owner's machine and are not in the repository.
+- Keep the receipt and a dated copy of the page: terms on a store page can change.
+
 ## Fixed
 
 ### The licensed art packs and the public repository (was HIGH)

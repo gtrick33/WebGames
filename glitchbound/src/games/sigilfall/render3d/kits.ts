@@ -237,11 +237,7 @@ put('ashkar-the-bound', { k: 'golem', tint: FIRE, size: 1.3, ...SMASH });
 put('bear', { k: 'werewolf', tint: '#b08560', size: 1.1 });
 put('cat', { k: 'a_fox', tint: '#d9b98c' });
 put('moonkin', { k: 'avian', tint: '#a7a0d6' });
-// mounts and small folk
-put('mount-horse', { k: 'a_horse_white' });
-put('mount-deer', { k: 'a_stag' });
-put('mount-boar', { k: 'fbx_pig' });
-put('mount-drake', { k: 'wyrm', tint: '#c8b8a8' });
+// small folk
 put('chicken', { k: 'bird', size: 0.9 });
 
 /** Those who fight under another's name, set apart from the creature they borrow. */

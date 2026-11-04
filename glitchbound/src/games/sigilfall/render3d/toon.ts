@@ -15,6 +15,16 @@ export interface ClipRange {
   fps: number;
 }
 
+/**
+ * A joint the file doesn't have, hanging from one that it does (a drake's wings): where it has moved from its place
+ * at rest, in the model's own space, at a point of a clip (0 to 1 along it; `clip` null at rest).
+ */
+export interface ExtraJoint {
+  name: string;
+  parent: string;
+  pose(clip: string | null, phase: number, out: THREE.Matrix4): void;
+}
+
 export class RigAnim {
   readonly tex: THREE.DataTexture;
   readonly clips: Record<string, ClipRange> = {};
@@ -22,30 +32,48 @@ export class RigAnim {
   /** Each joint's place in the model at rest (from its inverse bind matrix). */
   readonly ibm: Float32Array;
   private readonly total: number;
+  private readonly data: Float32Array;
+  private readonly rowLength: number;
 
-  constructor(rig: RigData, bin: ArrayBuffer) {
+  constructor(rig: RigData, bin: ArrayBuffer, extras: readonly ExtraJoint[] = []) {
     const J = rig.joints.length;
-    this.joints = rig.joints;
+    const K = extras.length;
+    this.joints = K ? [...rig.joints, ...extras.map((e) => e.name)] : rig.joints;
     this.ibm = Float32Array.from(rig.ibm);
     // (each clip has a row more than its frames: its first again, for the blend from its last back round to its start)
     let total = 1;
     for (const c of Object.values(rig.clips)) total += c.n + 1;
     this.total = total;
-    const data = new Float32Array(J * 3 * total * 4);
+    this.rowLength = (J + K) * 3 * 4;
+    const data = new Float32Array(this.rowLength * total);
+    this.data = data;
     const world = new Float32Array(J * 16);
     const local = new Float32Array(16);
     const tmp = new Float32Array(16);
-    const row = (frame: number): void => {
+    const under = new Float32Array(16);
+    const moved = new THREE.Matrix4();
+    const parents = extras.map((e) => rig.joints.indexOf(e.parent));
+    const write = (frame: number, j: number): void => {
+      const at = frame * this.rowLength + j * 12;
+      for (let r = 0; r < 3; r++) {
+        data[at + r * 4] = tmp[r]!;
+        data[at + r * 4 + 1] = tmp[r + 4]!;
+        data[at + r * 4 + 2] = tmp[r + 8]!;
+        data[at + r * 4 + 3] = tmp[r + 12]!;
+      }
+    };
+    const row = (frame: number, clip: string | null = null, phase = 0): void => {
       for (let j = 0; j < J; j++) {
         // world[j] * ibm[j], top three rows
         mul(tmp, 0, world, j * 16, this.ibm, j * 16);
-        const at = frame * J * 3 * 4 + j * 12;
-        for (let r = 0; r < 3; r++) {
-          data[at + r * 4] = tmp[r]!;
-          data[at + r * 4 + 1] = tmp[r + 4]!;
-          data[at + r * 4 + 2] = tmp[r + 8]!;
-          data[at + r * 4 + 3] = tmp[r + 12]!;
-        }
+        write(frame, j);
+      }
+      for (let k = 0; k < K; k++) {
+        const par = parents[k]!;
+        mul(under, 0, world, par * 16, this.ibm, par * 16);
+        extras[k]!.pose(clip, phase, moved);
+        mul(tmp, 0, under, 0, moved.elements as unknown as Float32Array, 0);
+        write(frame, J + k);
       }
     };
     const rest = rig.rest;
@@ -62,7 +90,7 @@ export class RigAnim {
     row(0);
     let next = 1;
     for (const [id, c] of Object.entries(rig.clips)) {
-      const q = new Int16Array(bin, c.q, c.n * J * 4);
+      const q = c.own ?? new Int16Array(bin, c.q, c.n * J * 4);
       const t = c.tj.length ? new Float32Array(bin, c.t, c.n * c.tj.length * 3) : null;
       const s = c.sj.length ? new Float32Array(bin, c.s, c.n * c.sj.length * 3) : null;
       for (let at = 0; at <= c.n; at++) {
@@ -80,12 +108,12 @@ export class RigAnim {
           const sz = s && si >= 0 ? s[(f * c.sj.length + si) * 3 + 2]! : rest[j * 10 + 9]!;
           compose(local, tx, ty, tz, q[qa]! * k, q[qa + 1]! * k, q[qa + 2]! * k, q[qa + 3]! * k, sx, sy, sz);
         });
-        row(next + at);
+        row(next + at, id, f / c.n);
       }
       this.clips[id] = { start: next, n: c.n, fps: c.fps };
       next += c.n + 1;
     }
-    this.tex = new THREE.DataTexture(data, J * 3, total, THREE.RGBAFormat, THREE.FloatType);
+    this.tex = new THREE.DataTexture(data, (J + K) * 3, total, THREE.RGBAFormat, THREE.FloatType);
     this.tex.minFilter = this.tex.magFilter = THREE.NearestFilter;
     this.tex.generateMipmaps = false;
     this.tex.needsUpdate = true;
@@ -104,6 +132,35 @@ export class RigAnim {
     if (!c) return 0;
     const f = t * c.fps;
     return c.start + (loop ? ((f % c.n) + c.n) % c.n : Math.min(Math.max(f, 0), c.n - 1));
+  }
+
+  /**
+   * Where a point of the model at rest has gone in a pose (`a` and `b` rows as `frame()` says them, `k` how far from
+   * the first to the second), the same way the shaders work it out: what rides on something moves exactly with it.
+   */
+  pointAt(a: number, b: number, k: number, joint: number, x: number, y: number, z: number, out: { x: number; y: number; z: number }): void {
+    this.onRow(a, joint, x, y, z, out);
+    if (k > 0.002) {
+      const ax = out.x;
+      const ay = out.y;
+      const az = out.z;
+      this.onRow(b, joint, x, y, z, out);
+      out.x = ax + (out.x - ax) * k;
+      out.y = ay + (out.y - ay) * k;
+      out.z = az + (out.z - az) * k;
+    }
+  }
+
+  private onRow(f: number, joint: number, x: number, y: number, z: number, out: { x: number; y: number; z: number }): void {
+    const row = Math.floor(f);
+    const k = f - row;
+    const d = this.data;
+    const a = row * this.rowLength + joint * 12;
+    const b = (k > 0.004 ? row + 1 : row) * this.rowLength + joint * 12;
+    const on = (at: number): number => d[at]! * x + d[at + 1]! * y + d[at + 2]! * z + d[at + 3]!;
+    out.x = on(a) + (on(b) - on(a)) * k;
+    out.y = on(a + 4) + (on(b + 4) - on(a + 4)) * k;
+    out.z = on(a + 8) + (on(b + 8) - on(a + 8)) * k;
   }
 
   /** How long a clip runs, in seconds. */

@@ -13,7 +13,7 @@ import type { Enemy, Ghost, NpcActor, Pet } from '../sim/types';
 import { heightFromRadius, Motion, PERSON_H, type Cast, type ClipFade, type Colossus } from './cast';
 import type { Held } from './dress';
 import { kitOf } from './kits';
-import { coatTint, MOUNT_H, mountSprite, SEAT } from './mountLook';
+import { shapeOf } from './mountLook';
 
 /** A facing in the rules (an angle on the map) as a turn about the vertical. */
 export const turnOf = (a: number): number => Math.atan2(Math.cos(a), Math.sin(a));
@@ -93,6 +93,7 @@ const CHILLED = [0.82, 0.93, 1.12] as const;
 export class WorldCast {
   private readonly foes = new Map<number, FoeAnim>();
   private readonly hero = new Motion();
+  private readonly mountMotion = new Motion();
   private heroTurn = 0;
   private lastAct: string | null = null;
   private readonly ghosts = new Map<number, { m: Motion; turn: number }>();
@@ -177,8 +178,9 @@ export class WorldCast {
     const alpha = 1;
     const flash = p.flash > 0 ? 0.75 : blink ? 0.4 : 0;
     const clipOf = (kind: string): string => (kind === 'cast' ? 'cast' : kind === 'shoot' ? 'bow' : kind === 'heavy' ? 'chop2' : kind === 'spin' ? 'spin' : 'chop');
+    const inSaddle = !!mount && cast.mountReady(mount);
     if (p.dead) m.set('die', false);
-    else if (mount) m.set('sit');
+    else if (inSaddle) m.set('ride');
     else if (p.dash) m.set('dodge', false);
     else if (p.channel) m.set(p.channel.target !== undefined ? 'channel' : 'spin');
     else if (acting) {
@@ -191,24 +193,35 @@ export class WorldCast {
     this.lastActT = p.actT;
     m.advance(m.clip === 'walk' || m.clip === 'run' ? dt * stride(m.clip, speed, PERSON_H) : dt);
 
-    cast.shadow(p.x, p.y, mount ? 13 : 8);
+    if (inSaddle) {
+      // long as the animal is long
+      const sh = shapeOf(mount!).shadow;
+      cast.shadow(p.x + Math.sin(this.heroTurn) * sh.ahead, p.y + Math.cos(this.heroTurn) * sh.ahead, sh.r, sh.long, this.heroTurn);
+    } else cast.shadow(p.x, p.y, 8);
     if (!p.dead && !o0.landOnly) cast.ring(p.x, p.y, 11, '#22e4ff', 0.75);
     if (p.form) {
       cast.creature(p.form, p.x, p.y, this.heroTurn, 30, acting ? 'chop' : moving ? 'run' : 'idle', time, !acting, { alpha, flash });
       return;
     }
-    if (mount) {
-      const body = mount.body;
-      const coat = coatTint(mount.coat);
-      cast.creature(mountSprite(mount), p.x, p.y, this.heroTurn, MOUNT_H[body] ?? 34, moving ? 'run' : 'idle', moving ? p.walkT : time, true, { alpha, flash, tint: coat });
-      const bob = moving ? (Math.abs(Math.sin(p.walkT * 7)) * 1.3) / TILE : 0;
-      cast.person(look, held, shieldOf(w.hero.cls), p.x, p.y, this.heroTurn, m, { alpha, flash, h: PERSON_H * 0.86, xray: true, lift: ((SEAT[body] ?? 27) - 9) / TILE + bob });
+    if (inSaddle) {
+      const shape = shapeOf(mount!);
+      const mm = this.mountMotion;
+      mm.set(moving ? (speed > shape.gallop * 0.55 ? 'run' : 'walk') : 'idle', true, 0.14);
+      // (its feet keep to the ground: it runs as fast as it's going)
+      mm.advance(moving ? dt * Math.max(0.6, Math.min(3, speed / (mm.clip === 'run' ? shape.gallop : shape.gallop * 0.3))) : dt);
+      const saddle = cast.mount(mount!, p.x, p.y, this.heroTurn, mm, { alpha, flash });
+      // (weapons put up: both hands on the reins)
+      if (saddle) cast.person(look, null, false, saddle.x, saddle.y, this.heroTurn, m, { alpha, flash, h: PERSON_H * shape.rider, xray: true, hipsAt: saddle.high, tip: saddle.tip * 0.55 });
       return;
     }
     // calling the mount: it fades in beside the hero
     if (p.summon > 0 && w.hero.mount && MOUNT_DEFS[w.hero.mount]) {
-      const md = MOUNT_DEFS[w.hero.mount]!;
-      cast.creature(mountSprite(md), p.x, p.y + 2, this.heroTurn, MOUNT_H[md.body] ?? 34, 'idle', time, true, { alpha: Math.min(1, p.summon / SUMMON_TIME), tint: coatTint(md.coat) });
+      const mm = this.mountMotion;
+      mm.set('idle', true, 0.14);
+      mm.advance(dt);
+      // (not on top of them: at their side, ready to be got onto)
+      const off = shapeOf(MOUNT_DEFS[w.hero.mount]!).backW * shapeOf(MOUNT_DEFS[w.hero.mount]!).px + 11;
+      cast.mount(MOUNT_DEFS[w.hero.mount]!, p.x + Math.cos(this.heroTurn) * off, p.y - Math.sin(this.heroTurn) * off, this.heroTurn, mm, { alpha: Math.min(1, p.summon / SUMMON_TIME) });
     }
     cast.person(look, held, shieldOf(w.hero.cls), p.x, p.y, this.heroTurn, m, { alpha, flash, xray: true });
   }

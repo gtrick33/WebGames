@@ -4,8 +4,11 @@ import { Crowd, Stand } from './crowd';
 import { dressedOf, type Held, type Wardrobe } from './dress';
 import { hexRgb, kitOf, type Kit } from './kits';
 import { UNIT } from './land';
+import { mountModel, type MountModel } from './mountKit';
+import { shapeOf } from './mountLook';
 import { loadPack, type MeshData, type Pack } from './pack';
 import { ringMaterial, rigAnimOf, shadowMaterial, type RigAnim } from './toon';
+import type { MountDef } from '../data/mounts';
 import type { HeroLook } from '../render/art/hero';
 import { npcLookOf } from '../render/sprites';
 
@@ -18,6 +21,20 @@ import { npcLookOf } from '../render/sprites';
 export const heightFromRadius = (r: number, size = 1): number => (r * 2.5 + 16) * size;
 /** A person's height in world pixels. */
 export const PERSON_H = 36;
+/** How high someone's hips are when they stand, in their own model's units. */
+const HIPS_AT = 0.406;
+
+/** Where a mount's saddle is this frame: the rider goes here. */
+export interface Saddle {
+  x: number;
+  y: number;
+  /** Tiles above the ground. */
+  high: number;
+  /** How far the animal's back is tipped, nose up. */
+  tip: number;
+}
+
+const point = { x: 0, y: 0, z: 0 };
 
 interface KitEntry {
   crowd: Crowd | null;
@@ -105,6 +122,7 @@ export class Cast {
   private readonly people = new Map<string, Crowd>();
   private readonly props = new Map<string, Stand>();
   private readonly colossi = new Map<string, Crowd>();
+  private readonly mounts = new Map<string, { crowd: Crowd | null; model: MountModel | null; loading: boolean }>();
   private readonly used = new Set<Crowd | Stand>();
   private readonly shadowMesh: THREE.InstancedMesh;
   private shadowN = 0;
@@ -112,6 +130,7 @@ export class Cast {
   private readonly ringTint: THREE.InstancedBufferAttribute;
   private ringN = 0;
   private readonly m4 = new THREE.Matrix4();
+  private readonly scale = new THREE.Vector3();
   /** Where to look for still things (a chest, a potion). */
   packs: Pack[] = [];
 
@@ -151,6 +170,7 @@ export class Cast {
     for (const c of this.people.values()) empty(c);
     for (const c of this.props.values()) empty(c);
     for (const c of this.colossi.values()) empty(c);
+    for (const c of this.mounts.values()) if (c.crowd) empty(c.crowd);
     for (const c of this.used) c.end();
     this.shadowMesh.count = this.shadowN;
     this.shadowMesh.instanceMatrix.needsUpdate = true;
@@ -171,11 +191,12 @@ export class Cast {
     this.ringTint.setXYZW(i, cr, cg, cb, alpha);
   }
 
-  /** A soft round shadow, `r` world pixels across. */
-  shadow(x: number, y: number, r: number): void {
+  /** A soft round shadow, `r` world pixels across (`long` along its length, when something is long, turned by `rot`). */
+  shadow(x: number, y: number, r: number, long = r, rot = 0): void {
     if (this.shadowN >= 512) return;
     const s = r * UNIT * 2;
-    this.m4.makeScale(s, 1, s);
+    if (long === r) this.m4.makeScale(s, 1, s);
+    else this.m4.makeRotationY(rot).scale(this.scale.set(s, 1, long * UNIT * 2));
     this.m4.setPosition(x * UNIT, 0, y * UNIT);
     this.shadowMesh.setMatrixAt(this.shadowN++, this.m4);
   }
@@ -318,6 +339,65 @@ export class Cast {
     return kit;
   }
 
+  private mountEntry(def: MountDef): { crowd: Crowd | null; model: MountModel | null; loading: boolean } {
+    let e = this.mounts.get(def.id);
+    if (!e) {
+      const entry: { crowd: Crowd | null; model: MountModel | null; loading: boolean } = { crowd: null, model: null, loading: true };
+      e = entry;
+      this.mounts.set(def.id, entry);
+      void loadPack(`k/${shapeOf(def).kit}`)
+        .then((pack) => {
+          const model = mountModel(def, pack);
+          entry.model = model;
+          // (the ink is in the model's units, so it comes out the same width on all of them)
+          entry.crowd = new Crowd(model.mesh, model.rig, this.root, 2, 0.46 / model.shape.px);
+          entry.crowd.seeThrough();
+          entry.loading = false;
+        })
+        .catch(() => {
+          entry.loading = false;
+          this.mounts.delete(def.id);
+        });
+    }
+    return e;
+  }
+
+  /** Whether a mount can be drawn yet. */
+  mountReady(def: MountDef): boolean {
+    return !!this.mountEntry(def).crowd;
+  }
+
+  /**
+   * A mount, its saddle over the spot it's standing on, so that it turns round its rider. Says where the saddle is
+   * right now, by the same sums the animal's own frame is drawn with: what rides on it moves exactly with it.
+   */
+  mount(def: MountDef, x: number, y: number, rot: number, motion: Motion, opts?: { alpha?: number; flash?: number }): Saddle | null {
+    const e = this.mountEntry(def);
+    const crowd = e.crowd;
+    const model = e.model;
+    if (!crowd || !model) return null;
+    const { shape, rig, joint } = model;
+    const s = shape.px / TILE;
+    motion.frames(rig, frames);
+    const cos = Math.cos(rot);
+    const sin = Math.sin(rot);
+    const ox = x * UNIT - shape.seatZ * s * sin;
+    const oz = y * UNIT - shape.seatZ * s * cos;
+    crowd.put(ox, 0, oz, rot, s, s, frames.a, frames.b, frames.k, opts?.alpha ?? 1, 1, 1, 1, opts?.flash ?? 0);
+    this.used.add(crowd);
+    rig.pointAt(frames.a, frames.b, frames.k, joint, 0, shape.seatY, shape.seatZ, point);
+    const sx = point.x;
+    const sy = point.y;
+    const sz = point.z;
+    rig.pointAt(frames.a, frames.b, frames.k, joint, 0, shape.seatY, shape.seatZ + shape.backW, point);
+    return {
+      x: (ox + (sx * cos + sz * sin) * s) / UNIT,
+      y: (oz + (sz * cos - sx * sin) * s) / UNIT,
+      high: sy * s,
+      tip: Math.atan2(point.y - sy, point.z - sz),
+    };
+  }
+
   /** The rig a creature's clips belong to (null until it has loaded). */
   rigOf(sprite: string): RigAnim | null {
     const kit = kitOf(sprite);
@@ -325,7 +405,7 @@ export class Cast {
   }
 
   /** One person in a look: a hero, a villager, anyone who wears the wardrobe. */
-  person(look: HeroLook, held: Held | null, shield: boolean, x: number, y: number, rot: number, motion: Motion | { clip: string; t: number; loop: boolean; from?: ClipFade }, opts?: { alpha?: number; flash?: number; h?: number; lift?: number; tint?: readonly [number, number, number]; xray?: boolean }): void {
+  person(look: HeroLook, held: Held | null, shield: boolean, x: number, y: number, rot: number, motion: Motion | { clip: string; t: number; loop: boolean; from?: ClipFade }, opts?: { alpha?: number; flash?: number; h?: number; lift?: number; tint?: readonly [number, number, number]; xray?: boolean; hipsAt?: number; tip?: number }): void {
     const w = this.wardrobe;
     if (!w) return;
     const { key, mesh } = dressedOf(w, look, held, shield);
@@ -346,7 +426,9 @@ export class Cast {
       frames.b = from ? w.medium.frame(from.clip, from.t, from.loop) : 0;
       frames.k = from ? from.k : 0;
     }
-    c.put(x * UNIT, opts?.lift ?? 0, y * UNIT, rot, s, s, frames.a, frames.b, frames.k, opts?.alpha ?? 1, opts?.tint?.[0] ?? 1, opts?.tint?.[1] ?? 1, opts?.tint?.[2] ?? 1, opts?.flash ?? 0);
+    // (someone in a saddle: their hips go on it, however big they're drawn)
+    const lift = opts?.hipsAt !== undefined ? opts.hipsAt - HIPS_AT * s : opts?.lift ?? 0;
+    c.put(x * UNIT, lift, y * UNIT, rot, s, s, frames.a, frames.b, frames.k, opts?.alpha ?? 1, opts?.tint?.[0] ?? 1, opts?.tint?.[1] ?? 1, opts?.tint?.[2] ?? 1, opts?.flash ?? 0, -(opts?.tip ?? 0));
     this.used.add(c);
   }
 
