@@ -8857,6 +8857,13 @@
   flex-wrap: wrap;
   min-width: 0;
 }
+/* in a tab the count sits beside the word: hung off its corner, the row of tabs cuts it off */
+.rb-tabs .rb-badge {
+  position: static;
+  display: inline-block;
+  margin-left: 6px;
+  vertical-align: 1px;
+}
 .rb-hero-left {
   min-height: 0;
   overflow-y: auto;

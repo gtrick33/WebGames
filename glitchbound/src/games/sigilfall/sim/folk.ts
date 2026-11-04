@@ -1,5 +1,5 @@
 import { rng } from '../core/math';
-import { K, moveCircle, TILE, type TileMap } from './map';
+import { circleHitsWall, K, moveCircle, pushOut, TILE, type TileMap } from './map';
 import { aimAlong, findRoute, turnToward, type Route } from './nav';
 
 /**
@@ -29,6 +29,8 @@ export interface Folk {
   speed: number;
   walkT: number;
   moving: boolean;
+  /** Seconds since they last got anywhere. */
+  still: number;
   /** Which villager's look (render/art/townsfolk.ts, passerby). */
   look: number;
 }
@@ -51,6 +53,8 @@ const TURN = 5.5;
 /** How far off they notice someone in the way, and how far they keep from them. */
 const NOTICE = 30;
 const KEEP = 15;
+/** How long someone has to get nowhere to count as standing: a step that catches on something isn't stopping. */
+const STOPPED = 0.25;
 
 /** Everyone at home in a place: a few for every house, more in a town, none where nobody lives. */
 export function spawnFolk(map: TileMap, seed: number, town: boolean, squares: { x: number; y: number }[] | null): { folk: Folk[]; rand: () => number } {
@@ -69,8 +73,9 @@ export function spawnFolk(map: TileMap, seed: number, town: boolean, squares: { 
     const square = plazas.length && k % 3 === 0 ? plazas[Math.floor(rand() * plazas.length)]! : null;
     const hx = square ? square.x : (b.lot.tx + b.lot.w / 2) * TILE;
     const hy = square ? square.y : (b.lot.ty + b.lot.h + 0.6) * TILE;
-    const at = pickSpot(map, hx, hy, rand) ?? { x: hx, y: hy };
-    folk.push({ x: at.x, y: at.y, hx, hy, route: null, a: Math.PI / 2, wait: rand() * 4, stuck: 0, speed: 15 + rand() * 9, walkT: rand(), moving: false, look: Math.floor(rand() * 64) });
+    // (never inside something: nobody can walk out of a wall)
+    const at = pickSpot(map, hx, hy, rand) ?? pushOut(map, hx, hy, BODY) ?? { x: hx, y: hy };
+    folk.push({ x: at.x, y: at.y, hx, hy, route: null, a: Math.PI / 2, wait: rand() * 4, stuck: 0, speed: 15 + rand() * 9, walkT: rand(), moving: false, still: 1, look: Math.floor(rand() * 64) });
   }
   return { folk, rand };
 }
@@ -87,6 +92,8 @@ function pickSpot(map: TileMap, hx: number, hy: number, rand: () => number): { x
     const i = ty * map.w + tx;
     if (map.solid[i] || !GROUND.has(map.kind[i]!)) continue;
     const spot = { x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE };
+    // (a tile can be open with something's body over its middle: a house wider than its lot, a cart)
+    if (circleHitsWall(map, spot.x, spot.y, BODY)) continue;
     if (STREET.has(map.kind[i]!)) return spot;
     fallback ??= spot;
   }
@@ -97,7 +104,8 @@ export function updateFolk(folk: Folk[], map: TileMap, rand: () => number, dt: n
   // (a walk's worth of thought, once a frame at most: nobody's plan costs a stutter)
   let planned = false;
   for (const f of folk) {
-    f.moving = false;
+    f.still += dt;
+    f.moving = f.still < STOPPED;
     if (f.wait > 0) {
       f.wait -= dt;
       continue;
@@ -152,7 +160,10 @@ export function updateFolk(folk: Folk[], map: TileMap, rand: () => number, dt: n
     f.stuck = moved < pace * dt * 0.3 ? f.stuck + dt : 0;
     f.x = r.x;
     f.y = r.y;
-    f.moving = moved > 0.01;
+    if (moved > 0.01) {
+      f.still = 0;
+      f.moving = true;
+    }
     f.walkT += dt;
     // (something's come to stand in the way: think again)
     if (f.stuck > 0.6) {

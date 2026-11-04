@@ -369,7 +369,7 @@ export function parseRegion(def: RegionDef): TileMap {
       }
     }
     if (!tiles.length) continue;
-    const stands = modelOnLot(b.style, b.lot, b.pics[0]?.grim === true, x0, x1, y0, y1);
+    const stands = modelOnLot(b.style, b.lot, b.pics[0]?.grim === true, x0, x1, y0, y1, b.door?.[0] ?? null);
     const foot = stands ? MODEL_FOOT[stands.m] : undefined;
     if (!stands || !foot || stands.seat) continue;
     // (what's under its eaves and round its chimney isn't wall: a little in from the model's edges, its front at the front)

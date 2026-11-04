@@ -263,6 +263,9 @@ export const MODEL_FOOT: Record<string, readonly [number, number, number, number
   b_blacksmith: [-0.63, -0.56, 0.658, 0.685],
 };
 
+/** Where a model's door and the steps up to it are, across it (where it isn't the middle): a way in opens right there. */
+const MODEL_DOOR: Record<string, number> = { b_tavern: -0.14, b_townhall: -0.185, b_blacksmith: -0.04 };
+
 export interface StandingModel {
   m: string;
   /** Where its origin goes (tiles), and how much it's scaled. */
@@ -280,10 +283,10 @@ export interface StandingModel {
  * stretched barns), at most a quarter wider or deeper than the model was made, its door on the lot's front, toward the
  * street. The land draws this, and the rules bump into it.
  */
-export function modelOnLot(style: string, lot: Lot, grim: boolean, x0: number, x1: number, y0: number, y1: number, bounds: (m: string) => readonly [number, number, number, number] | undefined = (m) => MODEL_FOOT[m]): StandingModel | null {
+export function modelOnLot(style: string, lot: Lot, grim: boolean, x0: number, x1: number, y0: number, y1: number, doorTile: number | null = null): StandingModel | null {
   const list = MODELS[style] ?? MODELS.house!;
   const m = list[Math.floor(hash2(lot.tx, lot.ty, 7) * list.length)]!;
-  const b = bounds(m);
+  const b = MODEL_FOOT[m];
   if (!b) return null;
   const wideX = Math.max(0.01, b[2] - b[0]);
   const wideZ = Math.max(0.01, b[3] - b[1]);
@@ -295,7 +298,9 @@ export function modelOnLot(style: string, lot: Lot, grim: boolean, x0: number, x
   const sx = seat ? base : Math.min(fx, base * 1.25) * 1.03;
   const sz = seat ? base : Math.min(fz, base * 1.25) * 1.03;
   const sy = base * (seat ? 1 : 1.12);
-  return { m, x: (x0 + x1) / 2 - ((b[0] + b[2]) / 2) * sx, z: y1 + 0.05 - b[3] * sz, sx, sy, sz, seat };
+  // (its own steps over the tile that takes you in, if it has one: that's where the arrow is)
+  const x = doorTile !== null && !seat ? doorTile + 0.5 - (MODEL_DOOR[m] ?? 0) * sx : (x0 + x1) / 2 - ((b[0] + b[2]) / 2) * sx;
+  return { m, x, z: y1 + 0.05 - b[3] * sz, sx, sy, sz, seat };
 }
 
 /** The ground rectangle a placed picture covers ([x0, y0, x1, y1], world px): its walls and roof, not its shadow. */

@@ -1176,7 +1176,7 @@ export class Land3D {
         y0 = b.lot.ty;
         y1 = b.lot.ty + b.lot.h;
       }
-      const stands = modelOnLot(b.style, b.lot, b.pics[0]?.grim === true, x0, x1, y0, y1);
+      const stands = modelOnLot(b.style, b.lot, b.pics[0]?.grim === true, x0, x1, y0, y1, b.door?.[0] ?? null);
       const mesh = stands ? this.pack(stands.m) : null;
       if (!stands || !mesh) continue;
       const { m, sx, sy, sz, seat } = stands;

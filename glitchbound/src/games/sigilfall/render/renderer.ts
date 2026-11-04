@@ -891,6 +891,8 @@ export class Renderer {
       const pulse = 0.5 + Math.sin(time * 3 + x.x * 0.1) * 0.5;
       // the step: on the tile in front of a painted door, on the door tile itself indoors
       const cy = inside ? x.y : x.y - 4;
+      // (laid flat where it lies: the view tilts differently here than round the hero, and it would slide as they walk)
+      this.flat(x.x, cy);
       g.save();
       const grd = g.createRadialGradient(x.x, cy, 0, x.x, cy, 14);
       grd.addColorStop(0, rgba('#ffe08a', 0.6 + pulse * 0.2));

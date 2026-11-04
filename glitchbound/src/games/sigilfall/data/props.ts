@@ -222,6 +222,14 @@ const BODIES: Record<string, [number, number]> = {
   gravestone: [15, 5],
   'broken-column': [18, 18],
   column: [16, 16],
+  // what's up in the air isn't in the way: a tree is its trunk, a windmill its tower, a mushroom its stem
+  'ancient-oak': [40, 30],
+  'ancient-pine': [46, 36],
+  'dead-colossus': [34, 26],
+  'great-mushroom-tree': [22, 18],
+  'great-mushroom': [8, 7],
+  'root-tangle': [8, 6],
+  windmill: [54, 46],
 };
 
 /**
@@ -255,7 +263,6 @@ const FILLED: Record<string, [number, number]> = {
   boat: [57, 29],
   wreck: [64, 32],
   watchtower: [64, 74],
-  windmill: [96, 70],
   coffin: [17, 25],
   sarcophagus: [24, 36],
   'rubble-heap': [32, 24],
@@ -269,11 +276,6 @@ const FILLED: Record<string, [number, number]> = {
   'ice-crystal': [32, 22],
   'rift-crystal': [32, 22],
   'ember-rock': [20, 20],
-  'root-tangle': [21, 8],
-  'great-mushroom': [23, 26],
-  'ancient-oak': [125, 116],
-  'ancient-pine': [130, 113],
-  'dead-colossus': [104, 62],
   lighthouse: [73, 84],
   'water-mill': [97, 102],
   'lumber-mill': [104, 91],
@@ -288,7 +290,6 @@ const FILLED: Record<string, [number, number]> = {
   'lava-spire': [68, 68],
   'sand-spire': [61, 61],
   'sea-rock': [102, 95],
-  'great-mushroom-tree': [78, 90],
   'great-wreck': [200, 100],
   table: [24, 24],
   longtable: [42, 22],
