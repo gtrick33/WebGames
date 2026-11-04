@@ -3,7 +3,7 @@ import { colorOf, FIELD, FX, WARN, type Fx3D } from '../render3d/fx3d';
 import { heightFromRadius, PERSON_H, type Cast } from '../render3d/cast';
 import { kitOf } from '../render3d/kits';
 import { PITCH } from '../render3d/land';
-import type { Land3D } from '../render3d/land';
+import type { Land3D, RoofSpot } from '../render3d/land';
 import { hasStatus } from '../sim/combat';
 import { TILE } from '../sim/map';
 import type { Enemy, Fx, Projectile, Telegraph } from '../sim/types';
@@ -338,7 +338,7 @@ export class Effects {
           const ang = hash2(i, f.id, 3) * TAU;
           const r = Math.sqrt(hash2(i, f.id, 4)) * f.r * 0.72;
           const s = 0.75 + hash2(i, f.id, 5) * 0.6;
-          fx.put({ kind: FX.flame, x: f.x + Math.cos(ang) * r, y: f.y + Math.sin(ang) * r, base: true, w: 15 * s, h: 24 * s, a, b, seed: seed + i, alpha: fade });
+          fx.put({ kind: FX.flame, x: f.x + Math.cos(ang) * r, y: f.y + Math.sin(ang) * r, base: true, w: 22 * s, h: 26 * s, a, b, seed: seed + i, alpha: fade });
         }
         break;
       case 'poison':
@@ -447,8 +447,53 @@ export class Effects {
   /** A fire of `size` (a torch is under 1), its foot `up` world pixels over (x, y). */
   private flame(fx: Fx3D, x: number, y: number, up: number, size: number, tone: Tone, alpha = 1): void {
     const s = 0.8 + Math.min(2.4, size) * 0.75;
-    fx.put({ kind: FX.glow, x, y, up: up + 6 * s, w: 40 * s, a: tone.a, alpha: 0.42 * alpha });
-    fx.put({ kind: FX.flame, x, y, up: up - 2 * s, base: true, w: 15 * s, h: 22 * s, a: tone.a, b: tone.b, seed: (x * 0.73 + y * 0.31) % 19, alpha });
+    fx.put({ kind: FX.glow, x, y, up: up + 5 * s, w: 40 * s, a: tone.a, alpha: 0.42 * alpha });
+    fx.put({ kind: FX.flame, x, y, up: up - 3 * s, base: true, w: 17 * s, h: 21 * s, a: tone.a, b: tone.b, seed: (x * 0.73 + y * 0.31) % 19, alpha });
+  }
+
+  /**
+   * A roof on fire: tongues of flame standing on its real surface, a great glow, embers going up, and a column of smoke
+   * leaning away on the wind. A fire with no building under it burns on the ground where it is.
+   */
+  private blaze(fx: Fx3D, f: World['fires'][number], lit: number, roof: readonly RoofSpot[], time: number, tone: Tone): void {
+    const key = Math.round(f.x * 0.7 + f.y * 3.1);
+    const k = clamp(f.size / 2, 0.7, 1.35);
+    const grow = 0.25 + lit * 0.75;
+    // where it burns hottest: the top of the roof, nearest where it caught
+    let top: RoofSpot | null = null;
+    let score = -Infinity;
+    for (const p of roof) {
+      const v = p.y * 2 - Math.abs(p.x * TILE - f.x) / TILE - Math.abs(p.z * TILE - f.y) / TILE;
+      if (v > score) {
+        score = v;
+        top = p;
+      }
+    }
+    const x = top ? top.x * TILE : f.x;
+    const y = top ? top.z * TILE : f.y;
+    const peak = top ? top.y * TILE : 0;
+    fx.put({ kind: FX.glow, x, y, up: peak - 4, w: 190 * k, a: tone.a, alpha: 0.55 * grow, behind: true });
+    fx.put({ kind: FX.glow, x, y: y + 34, flat: true, w: 210 * k, a: tone.a, alpha: 0.34 * grow });
+    // the smoke first, so that the flames burn in front of it
+    for (let i = 0; i < 8; i++) {
+      const ph = (time * 0.13 + i / 8 + hash2(key, i, 1) * 0.07) % 1;
+      const wind = ph * ph * 80 + Math.sin(ph * 5 + key) * 7;
+      fx.put({ kind: FX.smoke, x: x + wind, y, up: peak + 10 + ph * 190, w: (44 + ph * 110) * k, a: i % 2 ? '#2c2829' : '#3e3838', alpha: 0.62 * grow * Math.min(1, ph * 5), t: ph * 0.95, seed: (key % 17) + i * 3.3, behind: true });
+    }
+    // flames all over the roof, overlapping into one fire; it reaches higher near the ridge
+    const n = Math.min(14, 7 + Math.round(f.size * 2));
+    for (let i = 0; i < n; i++) {
+      const p = roof.length ? roof[Math.floor(hash2(key, i, 2) * roof.length)]! : null;
+      const u = hash2(key, i, 3) * TAU;
+      const px = p ? p.x * TILE : f.x + Math.cos(u) * 13 * k;
+      const py = p ? p.z * TILE : f.y + Math.sin(u) * 9 * k;
+      const high = p && peak > 0 ? clamp((p.y * TILE) / peak, 0.5, 1) : 1;
+      const s = (0.75 + hash2(key, i, 4) * 0.6) * k * grow * (0.7 + high * 0.3);
+      fx.put({ kind: FX.flame, x: px, y: py, up: (p ? p.y * TILE : 0) - 7 * s, base: true, over: true, w: 36 * s, h: 48 * s, a: tone.a, b: tone.b, seed: (key % 23) + i * 1.7 });
+    }
+    // sparks going up on the heat
+    fx.put({ kind: FX.rain, x: x + 8, y, up: peak, base: true, w: 90, h: 130, a: '#ffb04d', t: -1, seed: key % 31, p1: 1 });
+    fx.put({ kind: FX.rain, x: x + 14, y, up: peak + 10, base: true, w: 70, h: 100, a: '#ffe08a', t: -1, seed: (key % 31) + 5, p1: 1 });
   }
 
   private fires(w: World, sc: EffectsScene): void {
@@ -470,8 +515,7 @@ export class Effects {
     }
     for (const f of w.fires) {
       const lit = w.fireLit(f);
-      if (!lit || !sc.near(f.x, f.y)) continue;
-      this.flame(fx, f.x, f.y, TILE * 2.2, f.size * lit * 0.2, tone, Math.min(1, lit * 1.5));
+      if (lit && sc.near(f.x, f.y)) this.blaze(fx, f, lit, sc.land?.roofAt(f.x / TILE, f.y / TILE) ?? [], sc.time, tone);
     }
     for (const d of w.drops) {
       if (d.kind !== 'item' || !d.item || !sc.near(d.x, d.y)) continue;

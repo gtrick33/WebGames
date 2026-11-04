@@ -88,9 +88,12 @@ const vertex = /* glsl */ `
   void main() {
     float c = cos(iSize.z);
     float s = sin(iSize.z);
-    // (iSize.w: 0 faces the camera, 1 lies flat, 2 faces the camera standing on its lower edge; 4 more if it's behind)
-    float behind = step(3.5, iSize.w);
-    float mode = iSize.w - behind * 4.0;
+    // (iSize.w: 0 faces the camera, 1 lies flat, 2 faces the camera standing on its lower edge; 4 more if it's behind,
+    // 8 more if it wraps what it stands on)
+    float over = step(7.5, iSize.w);
+    float rest = iSize.w - over * 8.0;
+    float behind = step(3.5, rest);
+    float mode = rest - behind * 4.0;
     vec2 r = vec2(position.x * iSize.x, (position.y + step(1.5, mode) * 0.5) * iSize.y);
     r = vec2(r.x * c - r.y * s, r.x * s + r.y * c);
     vec3 w;
@@ -101,8 +104,9 @@ const vertex = /* glsl */ `
       vec3 right = vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
       vec3 up = vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
       w = iPos + right * r.x + up * r.y;
-      // (a spell on someone shows in front of them, not through their middle; a thrown skull's glow, behind it)
-      w += normalize(cameraPosition - w) * mix(0.75, -0.3, behind);
+      // (a spell on someone shows in front of them, not through their middle; a thrown skull's glow, behind it; a
+      // fire on a roof, in front of the roof's own dormers and trim)
+      w += normalize(cameraPosition - w) * (mix(0.75, -0.3, behind) + over * 2.4);
     }
     gl_Position = projectionMatrix * viewMatrix * vec4(w, 1.0);
     vUv = position.xy * 2.0;
@@ -186,21 +190,40 @@ const fragment = /* glsl */ `
     return vec4(c * a, a);
   }
 
-  // fire: tongues that lick upward, from its edge's color to its white heart
+  // fire: turbulence rising through a soft column, cooling as it climbs. No outline anywhere, so flames that overlap
+  // melt into one mass; from the hot white-yellow of its heart through its own colors to nothing
   vec4 flame(vec2 uv, float seed) {
     float y = (uv.y + 1.0) * 0.5;
-    float n = fbm(vec2(uv.x * 1.7 + seed, uv.y * 1.5 - uTime * 2.6));
-    float n2 = fbm(vec2(uv.x * 3.6 - seed, uv.y * 2.8 - uTime * 4.2));
-    float wide = mix(0.66, 0.02, pow(y, 1.15));
-    float lean = (n - 0.5) * 0.75 * y;
-    float s = 1.0 - abs(uv.x + lean) / max(wide, 0.01);
-    float body = smoothstep(0.0, 0.3, s + (n2 - 0.5) * 0.85 * y) * smoothstep(0.0, 0.1, y);
-    float heat = clamp(s * (1.2 - y * 0.95) + (n2 - 0.5) * 0.25, 0.0, 1.0);
-    vec3 c = mix(vA.rgb, vB.rgb, smoothstep(0.12, 0.55, heat));
-    c = mix(c, vec3(1.0, 0.97, 0.86), smoothstep(0.55, 0.92, heat));
-    float glow = exp(-length(vec2(uv.x * 1.2, uv.y + 0.45)) * 2.4) * 0.5;
-    float a = body * 0.95;
-    return vec4(c * a + vA.rgb * glow * (1.0 - a), a * 0.8);
+    vec2 q = vec2(uv.x * 1.35 + seed, y * 1.9 - uTime * 1.35);
+    float warp = fbm(q * 1.2 + vec2(seed * 0.3, -uTime * 0.35));
+    float n = fbm(q * 2.1 + warp * 1.4);
+    float n2 = noise(q * 4.6 + warp * 2.0);
+    float lean = (warp - 0.5) * 0.7 * y;
+    float across = abs(uv.x + lean) / mix(0.92, 0.14, pow(y, 0.85));
+    float body = max(0.0, 1.0 - across * across);
+    float rise = 1.0 - pow(y, 1.4);
+    float foot = smoothstep(0.0, 0.2, y);
+    float i = body * rise * foot * (0.72 + n * 0.62) + (n - 0.52) * (0.55 + y * 0.9) * foot + (n2 - 0.5) * 0.16 * foot;
+    i = clamp(i * smoothstep(1.0, 0.8, y) * smoothstep(1.0, 0.82, abs(uv.x)), 0.0, 1.0);
+    float a = smoothstep(0.03, 0.5, i);
+    vec3 c = mix(vA.rgb * 0.5, vA.rgb, smoothstep(0.05, 0.32, i));
+    c = mix(c, vB.rgb, smoothstep(0.3, 0.6, i));
+    c = mix(c, vec3(1.0, 0.94, 0.72), smoothstep(0.66, 1.0, i));
+    float glow = exp(-length(vec2(uv.x * 1.1, (y - 0.3) * 2.2)) * 2.8) * 0.3;
+    // (the hot parts add light to what's behind them, rather than covering it)
+    return vec4(c * a + vA.rgb * glow * (1.0 - a), a * (0.9 - smoothstep(0.4, 1.0, i) * 0.45));
+  }
+
+  // smoke: billowing, soft-edged, darker where it's thick, thinning as it goes
+  vec4 puff(vec2 uv, float t, float seed) {
+    float d = length(uv);
+    vec2 q = uv * 1.5 + vec2(seed, seed * 1.7 - uTime * 0.16);
+    float warp = fbm(q * 1.1 + uTime * 0.05);
+    float n = fbm(q * 1.7 + warp * 1.3);
+    float a = smoothstep(1.0, 0.25, d + (0.5 - n) * 1.25);
+    vec3 c = vA.rgb * (0.78 + (n - 0.42) * 1.15 + uv.y * 0.14);
+    a *= clamp(1.0 - t, 0.0, 1.0) * smoothstep(1.0, 0.72, d);
+    return vec4(c * a, a);
   }
 
   // shadow: a hole in the light, turning, with something bright caught at its edge
@@ -504,14 +527,14 @@ const fragment = /* glsl */ `
   }
 
   // specks going up from the ground and winking out: healing, a buff, an ember field
-  vec4 rain(vec2 uv, float t, float seed) {
+  vec4 rain(vec2 uv, float t, float seed, float tiny) {
     vec3 acc = vec3(0.0);
     for (int i = 0; i < 9; i++) {
       float k = float(i);
       float fx = hash(vec2(k, seed)) * 1.7 - 0.85;
       float ph = fract(uTime * (0.45 + hash(vec2(seed, k)) * 0.4) + hash(vec2(k * 1.7, seed)));
       vec2 p = uv - vec2(fx + sin(ph * 6.0 + k) * 0.06, ph * 1.8 - 0.9);
-      float s = exp(-dot(p * vec2(1.0, 0.55), p * vec2(1.0, 0.55)) * 420.0);
+      float s = exp(-dot(p * vec2(1.0, 0.55), p * vec2(1.0, 0.55)) * 420.0 * (1.0 + tiny * 8.0));
       acc += mix(vA.rgb, vec3(1.0), s) * s * (1.0 - ph);
     }
     float life = t < 0.0 ? 1.0 : sin(clamp(t, 0.0, 1.0) * 3.14159);
@@ -658,12 +681,8 @@ const fragment = /* glsl */ `
     if (kind < 0.5) o = orb(vUv, seed);
     else if (kind < 1.5) o = water(vUv, seed, vP.z);
     else if (kind < 2.5) o = flame(vUv, seed);
-    else if (kind < 3.5) {
-      float d = length(vUv);
-      float n = fbm(vUv * 1.5 + vec2(seed, seed - uTime * 0.3));
-      float a = smoothstep(1.0, 0.25, d + (n - 0.5) * 0.7) * clamp(1.0 - t, 0.0, 1.0);
-      o = vec4(vA.rgb * (0.72 + n * 0.5) * a, a);
-    } else if (kind < 4.5) {
+    else if (kind < 3.5) o = puff(vUv, t, seed);
+    else if (kind < 4.5) {
       float d = length(vUv);
       float core = exp(-d * d * 9.0);
       float star = exp(-abs(vUv.x) * 9.0) * exp(-abs(vUv.y) * 2.4) + exp(-abs(vUv.y) * 9.0) * exp(-abs(vUv.x) * 2.4);
@@ -705,7 +724,7 @@ const fragment = /* glsl */ `
     else if (kind < 22.5) o = bubble(vUv, t);
     else if (kind < 23.5) o = chip(vUv);
     else if (kind < 24.5) o = leaf(vUv);
-    else if (kind < 25.5) o = rain(vUv, t, seed);
+    else if (kind < 25.5) o = rain(vUv, t, seed, vP.z);
     else if (kind < 26.5) o = gather(vUv, t, seed);
     else if (kind < 27.5) o = markRing(vUv);
     else if (kind < 28.5) o = shock(vUv, vP.z, vP.w, seed);
@@ -756,6 +775,8 @@ export interface FxQuad {
   base?: boolean;
   /** Stays behind whoever or whatever is at its spot, rather than showing in front. */
   behind?: boolean;
+  /** Wraps the big thing it stands on (a fire on a roof), rather than being cut by its parts. */
+  over?: boolean;
   a: string;
   b?: string;
   alpha?: number;
@@ -821,7 +842,7 @@ export class Fx3D {
     this.size[i * 4] = q.w / TILE;
     this.size[i * 4 + 1] = (q.h ?? q.w) / TILE;
     this.size[i * 4 + 2] = q.rot ?? 0;
-    this.size[i * 4 + 3] = q.flat ? 1 : (q.base ? 2 : 0) + (q.behind ? 4 : 0);
+    this.size[i * 4 + 3] = q.flat ? 1 : (q.base ? 2 : 0) + (q.behind ? 4 : 0) + (q.over ? 8 : 0);
     const a = colorOf(q.a);
     const b = q.b ? colorOf(q.b) : a;
     this.ca[i * 4] = a[0];
