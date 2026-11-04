@@ -5,34 +5,11 @@ import type { ClassId } from '../data/types';
 import { newCharacter, type Face } from '../progress/character';
 import { iconPicture, iconsReady } from '../render/art/gameIcons';
 import { creatureSprite, heroDollUrl, heroLook } from '../render/sprites';
+import { readBests } from '../vigil/bests';
 import { CLASS_BODY, mapOpen, spellsOf, UNLOCK_HOLD, VIGIL_MAPS, type VigilMap } from '../vigil/kit';
+import { ScreenGate } from './ScreenGate';
 
-const BEST_KEY = 'sigilfall.vigil.bests';
-/** Before the lands, one number: the Whisperwood's. */
-const OLD_BEST_KEY = 'sigilfall.vigil.best';
-
-export function readBests(): Record<string, number> {
-  try {
-    const raw = JSON.parse(localStorage.getItem(BEST_KEY) ?? '{}') as unknown;
-    const out: Record<string, number> = {};
-    if (raw && typeof raw === 'object') for (const [k, n] of Object.entries(raw)) if (typeof n === 'number' && n >= 0) out[k] = n;
-    const old = Number(localStorage.getItem(OLD_BEST_KEY)) || 0;
-    if (old > (out.whisperwood ?? 0)) out.whisperwood = old;
-    return out;
-  } catch {
-    return {};
-  }
-}
-
-export function saveBest(map: string, t: number): void {
-  try {
-    const all = readBests();
-    all[map] = Math.max(all[map] ?? 0, Math.floor(t));
-    localStorage.setItem(BEST_KEY, JSON.stringify(all));
-  } catch {
-    /* a browser that keeps nothing: the run still counted */
-  }
-}
+export { readBests, saveBest } from '../vigil/bests';
 
 const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
@@ -78,6 +55,7 @@ export function VigilLobby({ face, body, cls, map, onBack, onBegin }: { face?: F
   const c = CLASSES[pick];
   const stats = CLASS_BODY[pick];
   return (
+    <ScreenGate label="Opening the Vigil">
     <div className="rb-vlobby" style={{ ['--land' as string]: land.color, ['--cls' as string]: c.colors.accent }}>
       <header className="rb-vlobby-head">
         <button className="rb-iconbtn" onClick={onBack} aria-label="Back">
@@ -171,5 +149,6 @@ export function VigilLobby({ face, body, cls, map, onBack, onBegin }: { face?: F
         </button>
       </footer>
     </div>
+    </ScreenGate>
   );
 }

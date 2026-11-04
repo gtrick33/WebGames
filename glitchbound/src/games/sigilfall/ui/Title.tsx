@@ -10,10 +10,21 @@ import { heroDollUrl, heroLook } from '../render/sprites';
 import { CharacterSelect } from './CharacterSelect';
 import { SkillIcon } from './common';
 import { RiftScreen } from './RiftScreen';
+import { ScreenGate } from './ScreenGate';
 import { SettingsPanel } from './Panels';
 
 const VigilScreen = lazy(() => import('./VigilScreen').then((m) => ({ default: m.VigilScreen })));
 const RingScreen = lazy(() => import('./RingScreen').then((m) => ({ default: m.RingScreen })));
+
+/** While a mode's code comes down: the same veil its own screen opens behind. */
+const LoadingScreen = () => (
+  <div className="rb-veil" role="status" aria-label="Loading">
+    <div className="rb-veil-small">
+      <i className="rb-veil-sigil" aria-hidden="true" />
+      <small>Loading</small>
+    </div>
+  </div>
+);
 
 /** Embers rising from the Rift on the title screen: spread across, each on its own clock. */
 const EMBERS = Array.from({ length: 18 }, (_, i) => ({ x: (i * 53) % 100, delay: (i % 6) * 0.9, dur: 6 + (i % 5) * 1.7, size: 2 + (i % 3) }));
@@ -66,14 +77,14 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
   const lastHero = heroes[engine.save.last];
   if (vigil) {
     return (
-      <Suspense fallback={<div className="rb-title is-epic"><EpicSky /></div>}>
+      <Suspense fallback={<LoadingScreen />}>
         <VigilScreen engine={engine} face={lastHero?.face} body={lastHero?.body} cls={lastHero?.cls} onBack={() => setVigil(false)} />
       </Suspense>
     );
   }
   if (ring) {
     return (
-      <Suspense fallback={<div className="rb-title is-epic"><EpicSky /></div>}>
+      <Suspense fallback={<LoadingScreen />}>
         <RingScreen engine={engine} face={lastHero?.face} body={lastHero?.body} cls={lastHero?.cls} name={lastHero?.name} onBack={() => setRing(false)} />
       </Suspense>
     );
@@ -88,7 +99,9 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
   }
   return (
     <div className="rb-title is-hall">
-      <CharacterSelect engine={engine} onRift={setRift} onVigil={() => setVigil(true)} onRing={() => setRing(true)} onSettings={() => setSettings(true)} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} />
+      <ScreenGate intro label="Opening the sanctum">
+        <CharacterSelect engine={engine} onRift={setRift} onVigil={() => setVigil(true)} onRing={() => setRing(true)} onSettings={() => setSettings(true)} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} />
+      </ScreenGate>
       {engine.ui.notice && <p className="rb-notice" role="status">{engine.ui.notice}</p>}
       {engine.party && !engine.invite && <p className="rb-notice" role="status">You’re still in party {engine.party.link.code}. Choose a hero to go back to it.</p>}
       {engine.invite && (

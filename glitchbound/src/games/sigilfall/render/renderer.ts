@@ -208,6 +208,10 @@ export class Renderer {
 
   /** The land and the hero only, no bars or markers: The Vigil draws its own over it. */
   landOnly = false;
+  /** The land is really there: its art is in and its scenery built. */
+  get landReady(): boolean {
+    return !this.waiting && this.scenery !== null;
+  }
 
   /** Screen (CSS px relative to the canvas) to world coordinates. */
   toWorld(cx: number, cy: number, dpr: number): { x: number; y: number } {

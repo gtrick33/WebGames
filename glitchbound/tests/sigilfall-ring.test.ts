@@ -624,7 +624,7 @@ describe('The Ring: computer players', () => {
       const m = play([...COMPS[3][0]!.team.map((t) => fighter(0, t.cls, PRESETS[t.cls][t.preset]!.bar)), ...comp.team.map((t) => fighter(1, t.cls, PRESETS[t.cls][t.preset]!.bar))], 7, 'forge');
       expect(m.phase).toBe('over');
     }
-    const m = new Match({ seed: 9, map: 'baths', fighters: [...COMPS[3][1]!.team.map((t) => fighter(0, t.cls, PRESETS[t.cls][t.preset]!.bar)), ...COMPS[3][2]!.team.map((t) => fighter(1, t.cls, PRESETS[t.cls][t.preset]!.bar))] });
+    const m = new Match({ seed: 9, map: 'frost', fighters: [...COMPS[3][1]!.team.map((t) => fighter(0, t.cls, PRESETS[t.cls][t.preset]!.bar)), ...COMPS[3][2]!.team.map((t) => fighter(1, t.cls, PRESETS[t.cls][t.preset]!.bar))] });
     const brains = m.fighters.map((_, i) => newBrain(i + 1));
     const t0 = performance.now();
     m.step(GATES + 0.01, {});
@@ -696,7 +696,7 @@ describe('The Ring: over a room', () => {
 
   it('seats, sides and the host’s word', () => {
     const s = room();
-    expect(act(s, KEYS[0]!, { t: 'setup', format: 1, map: 'baths' }, 1)).toBeNull();
+    expect(act(s, KEYS[0]!, { t: 'setup', format: 1, map: 'frost' }, 1)).toBeNull();
     expect(s.format).toBe(1);
     expect(act(s, KEYS[1]!, { t: 'setup', format: 3, map: 'sands' }, 1)).toBe('not_host');
     expect(act(s, KEYS[0]!, { t: 'pick', pick: pick(0) }, 1)).toBeNull();
