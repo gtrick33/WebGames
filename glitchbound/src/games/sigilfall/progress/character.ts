@@ -115,6 +115,12 @@ export interface Character {
   /** Mounts owned for good, and the one the mount key summons. */
   mounts: string[];
   mount: string | null;
+  /**
+   * A mount and looks from the site's shop chosen over the hero's own (progress/shopGoods.ts). Only the choice is kept:
+   * whether the account owns them is asked each time, so they show only while the purchase stands.
+   */
+  shopMount?: string;
+  shopWorn?: Partial<Record<LookSlot, string>>;
   stats: { kills: number; deaths: number; time: number; runs: number; bestRun: number };
   created: number;
   updated: number;

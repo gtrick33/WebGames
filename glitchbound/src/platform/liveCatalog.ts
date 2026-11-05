@@ -108,15 +108,14 @@ export function startLiveCatalog(): void {
 
 export const getLiveCatalog = (): LiveCatalog => state;
 
+/** Says whenever the catalog changes. Returns how to stop being told. */
+export function subscribeLiveCatalog(fn: () => void): () => void {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
 export function useLiveCatalog(): LiveCatalog {
-  return useSyncExternalStore(
-    (fn) => {
-      listeners.add(fn);
-      return () => listeners.delete(fn);
-    },
-    () => state,
-    () => state,
-  );
+  return useSyncExternalStore(subscribeLiveCatalog, () => state, () => state);
 }
 
 /** The games players can see, in display order. */

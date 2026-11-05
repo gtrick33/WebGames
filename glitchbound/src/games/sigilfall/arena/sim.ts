@@ -587,6 +587,14 @@ export class Match {
         if (dot) dot.backlash = e.dur;
         return;
       }
+      case 'price': {
+        // the user pays, whoever it is aimed at; it never takes the last of their health
+        const n = Math.round(Math.min(e.n, f.hp - 1));
+        if (n <= 0) return;
+        f.hp -= n;
+        this.events.push({ k: 'num', id: f.id, n, kind: 'dmg', crit: false });
+        return;
+      }
     }
   }
 

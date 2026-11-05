@@ -6,7 +6,7 @@
 
 import type { ShopId } from './vendors';
 
-export type ClassId = 'mage' | 'warrior' | 'ranger' | 'warlock' | 'priest' | 'paladin' | 'druid';
+export type ClassId = 'mage' | 'warrior' | 'ranger' | 'warlock' | 'priest' | 'paladin' | 'druid' | 'gloamknight';
 export type DmgType = 'physical' | 'fire' | 'frost' | 'lightning' | 'poison' | 'arcane' | 'shadow' | 'holy' | 'nature';
 export type StatusId = 'burn' | 'poison' | 'chill' | 'freeze' | 'shock' | 'stun' | 'root' | 'armorBreak' | 'mark' | 'weaken' | 'bleed' | 'curse' | 'fear';
 export type SlotId = 'weapon' | 'offhand' | 'head' | 'chest' | 'legs' | 'hands' | 'feet' | 'amulet' | 'ring' | 'relic';

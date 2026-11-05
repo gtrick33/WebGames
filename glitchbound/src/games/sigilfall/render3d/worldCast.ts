@@ -1,5 +1,5 @@
 import { damp } from '../core/math';
-import { MOUNT_DEFS } from '../data/mounts';
+import { mountDef, riddenMount } from '../progress/wardrobe';
 import { NPCS } from '../data/quests';
 import { passerbyLook } from '../render/art/townsfolk';
 import type { HeroLook } from '../render/art/hero';
@@ -166,7 +166,7 @@ export class WorldCast {
     const speed = Math.hypot(p.vx, p.vy);
     const moving = speed > 10;
     const acting = p.actKind !== null && p.actT > 0;
-    const mount = p.riding ? MOUNT_DEFS[p.riding] : undefined;
+    const mount = p.riding ? mountDef(p.riding) : undefined;
     // which way they face: where the blow goes, else where they walk
     let want = this.heroTurn;
     if (p.casting) want = turnOf(p.casting.angle);
@@ -218,13 +218,14 @@ export class WorldCast {
       return;
     }
     // calling the mount: it fades in beside the hero
-    if (p.summon > 0 && w.hero.mount && MOUNT_DEFS[w.hero.mount]) {
+    const called = p.summon > 0 ? mountDef(riddenMount(w.hero) ?? '') : undefined;
+    if (called) {
       const mm = this.mountMotion;
       mm.set('idle', true, 0.14);
       mm.advance(dt);
       // (not on top of them: at their side, ready to be got onto)
-      const off = shapeOf(MOUNT_DEFS[w.hero.mount]!).backW * shapeOf(MOUNT_DEFS[w.hero.mount]!).px + 11;
-      cast.mount(MOUNT_DEFS[w.hero.mount]!, p.x + Math.cos(this.heroTurn) * off, p.y - Math.sin(this.heroTurn) * off, this.heroTurn, mm, { alpha: Math.min(1, p.summon / SUMMON_TIME) });
+      const off = shapeOf(called).backW * shapeOf(called).px + 11;
+      cast.mount(called, p.x + Math.cos(this.heroTurn) * off, p.y - Math.sin(this.heroTurn) * off, this.heroTurn, mm, { alpha: Math.min(1, p.summon / SUMMON_TIME) });
     }
     cast.person(look, held, shieldOf(w.hero.cls), p.x, p.y, this.heroTurn, m, { alpha, flash, xray: true });
   }

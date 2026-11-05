@@ -1,4 +1,5 @@
 import { DRUID } from './kits/druid';
+import { GLOAMKNIGHT } from './kits/gloamknight';
 import { stats, type Kit } from './kits/kit';
 import { MAGE } from './kits/mage';
 import { PALADIN } from './kits/paladin';
@@ -9,7 +10,7 @@ import { WARRIOR } from './kits/warrior';
 import type { ClassDef, ClassId, Stats } from './types';
 
 /** Every class's kit (definition, skills, talents), in the order the class list shows them. */
-export const KITS: Record<ClassId, Kit> = { warrior: WARRIOR, mage: MAGE, ranger: RANGER, paladin: PALADIN, priest: PRIEST, warlock: WARLOCK, druid: DRUID };
+export const KITS: Record<ClassId, Kit> = { warrior: WARRIOR, mage: MAGE, ranger: RANGER, paladin: PALADIN, priest: PRIEST, warlock: WARLOCK, druid: DRUID, gloamknight: GLOAMKNIGHT };
 
 export const CLASSES: Record<ClassId, ClassDef> = Object.fromEntries(Object.entries(KITS).map(([id, k]) => [id, k.def])) as Record<ClassId, ClassDef>;
 

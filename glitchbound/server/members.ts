@@ -1,4 +1,4 @@
-import { ownedBy } from './shop';
+import { loadItems, ownedBy } from './shop';
 import { wornFrom, type Worn } from '../src/catalog/looks';
 import { liveRules } from './catalogSettings';
 import type { Badge, BestView, Me, QuestView } from '../src/platform/apiTypes';
@@ -71,11 +71,12 @@ function questProgress(q: QuestDef, rounds: DayRound[], dailyDone: boolean, hasF
 
 /** The looks this member wears and still owns. */
 export async function buildLooks(env: Env, user: UserRow): Promise<Worn> {
-  return wornFrom({ border: user.look_border, banner: user.look_banner }, await ownedBy(env, user.id));
+  const [owned, items] = await Promise.all([ownedBy(env, user.id), loadItems(env)]);
+  return wornFrom({ border: user.look_border, banner: user.look_banner, icon: user.look_icon }, owned, items);
 }
 
 export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me> {
-  const owned = await ownedBy(env, user.id);
+  const [owned, items] = await Promise.all([ownedBy(env, user.id), loadItems(env)]);
   const [favs, bests, roundCount, dailyDone, claimsCount, crown, quests, saves] = await Promise.all([
     env.DB.prepare('SELECT game FROM favorites WHERE user_id = ? ORDER BY created_at').bind(user.id).all<{ game: string }>(),
     env.DB.prepare(
@@ -115,7 +116,7 @@ export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me>
   ];
   return {
     owned,
-    looks: wornFrom({ border: user.look_border, banner: user.look_banner }, owned),
+    looks: wornFrom({ border: user.look_border, banner: user.look_banner, icon: user.look_icon }, owned, items),
     id: user.id,
     nickname: user.nickname,
     email: user.email,

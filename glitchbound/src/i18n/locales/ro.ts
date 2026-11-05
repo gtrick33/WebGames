@@ -2097,7 +2097,7 @@ const ro: string[] = [
   'Vezi toate cele {n} zilnice',
   'O aventură GlitchBound',
   'Un întreg RPG fantasy care se joacă direct în browser. Alege-ți eroul, adună-ți echipamentul și închide Ruptura, singur sau cu prietenii.',
-  '7 eroi',
+  '8 eroi',
   '5 acte',
   '12 temnițe',
   'Cooperativ pentru 4',
@@ -2250,6 +2250,8 @@ const ro: string[] = [
   'Fără ramă',
   'Fără banner',
   'Vezi ramele și bannerele în magazin',
+  'Iconiță',
+  'Fără iconiță',
 ];
 
 export default ro;

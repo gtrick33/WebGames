@@ -6,13 +6,14 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { onRequestGet as hall } from '../functions/api/hall';
 import { onRequestGet as leaderboard } from '../functions/api/leaderboard';
+import { onRequestGet as friendsGet } from '../functions/api/friends';
 import { onRequestGet as getMe, onRequestPatch as patchMe } from '../functions/api/me';
-import { isLook, LOOKS, wornFrom } from '../src/catalog/looks';
-import { PRODUCTS, productIn } from '../src/catalog/shop';
+import { isLookIn, lookOf, sanitizeLook, STYLES, wornFrom } from '../src/catalog/looks';
+import { PRODUCTS } from '../src/catalog/shop';
 import { applyStripeEvent, giftItem } from '../server/shop';
 import type { Env } from '../server/http';
 import { signIn } from '../server/signin';
-import type { HallRow, LeaderRow, Me } from '../src/platform/apiTypes';
+import type { FriendRow, HallRow, LeaderRow, Me } from '../src/platform/apiTypes';
 import { memoryD1 } from './d1';
 
 const ORIGIN = 'http://localhost:8788';
@@ -22,25 +23,38 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** The built-in looks sold on their own (the Gloamknight Pack's own come with it, hidden). */
+const LOOKS = PRODUCTS.filter((p) => p.look && !p.hidden);
+
 describe('the looks', () => {
-  it('are each a shop item with a name, and only change how someone looks', () => {
-    expect(LOOKS.filter((l) => l.kind === 'border')).toHaveLength(3);
-    expect(LOOKS.filter((l) => l.kind === 'banner')).toHaveLength(3);
-    for (const l of LOOKS) {
-      const p = productIn(PRODUCTS, l.id)!;
-      expect(p.name).toBeTruthy();
+  it('are each a shop item in one of the site’s styles, and only change how someone looks', () => {
+    for (const kind of ['border', 'banner', 'icon'] as const) {
+      // one built-in item per style
+      expect(LOOKS.filter((p) => p.look!.kind === kind).map((p) => p.look!.style)).toEqual(STYLES[kind].map((s) => s.id));
+      for (const s of STYLES[kind]) expect(s.colors.every((c) => /^#[0-9a-f]{6}$/.test(c))).toBe(true);
+    }
+    for (const p of LOOKS) {
+      expect(p.id).toBe(`${p.look!.kind}-${p.look!.style}`);
       expect(p.later).toBeUndefined();
       expect(`${p.name} ${p.blurb}`).not.toMatch(/\b(win|wins|winning|stronger|faster|boost|score)\b/i);
     }
-    expect(isLook('border-glitch', 'border')).toBe(true);
-    expect(isLook('border-glitch', 'banner')).toBe(false);
-    expect(isLook('ad-free')).toBe(false);
+    expect(isLookIn('border-glitch', 'border', PRODUCTS)).toBe(true);
+    expect(isLookIn('border-glitch', 'banner', PRODUCTS)).toBe(false);
+    expect(lookOf('ad-free', PRODUCTS)).toBeUndefined();
+  });
+
+  it('keep an admin’s look only in a style the site can draw, with real colors', () => {
+    expect(sanitizeLook({ kind: 'border', style: 'frost', colors: ['#AABBCC', '#112233'] })).toEqual({ kind: 'border', style: 'frost', colors: ['#aabbcc', '#112233'] });
+    expect(sanitizeLook({ kind: 'border', style: 'frost', colors: ['red'] })).toEqual({ kind: 'border', style: 'frost' });
+    expect(sanitizeLook({ kind: 'banner', style: 'frost' })).toBeNull();
+    expect(sanitizeLook({ kind: 'hat', style: 'fox' })).toBeNull();
+    expect(sanitizeLook('fox')).toBeNull();
   });
 
   it('show only while owned and of the right kind', () => {
-    expect(wornFrom({ border: 'border-glitch', banner: 'banner-aurora' }, ['border-glitch'])).toEqual({ border: 'border-glitch', banner: '' });
-    expect(wornFrom({ border: 'banner-aurora', banner: 'border-glitch' }, ['banner-aurora', 'border-glitch'])).toEqual({ border: '', banner: '' });
-    expect(wornFrom({ border: null, banner: undefined }, [])).toEqual({ border: '', banner: '' });
+    expect(wornFrom({ border: 'border-glitch', banner: 'banner-aurora', icon: 'icon-fox' }, ['border-glitch', 'icon-fox'], PRODUCTS)).toEqual({ border: 'border-glitch', banner: '', icon: 'icon-fox' });
+    expect(wornFrom({ border: 'banner-aurora', banner: 'border-glitch' }, ['banner-aurora', 'border-glitch'], PRODUCTS)).toEqual({ border: '', banner: '', icon: '' });
+    expect(wornFrom({ border: null, banner: undefined }, [], PRODUCTS)).toEqual({ border: '', banner: '', icon: '' });
   });
 });
 
@@ -76,11 +90,11 @@ describe('wearing a look', () => {
     expect((await ann.wear({ border: 7 })).status).toBe(403);
     const res = await ann.wear({ border: 'border-neon-halo', banner: 'banner-nebula' });
     expect(res.status).toBe(200);
-    expect(((await res.json()) as { user: Me }).user.looks).toEqual({ border: 'border-neon-halo', banner: 'banner-nebula' });
-    expect((await ann.me()).looks).toEqual({ border: 'border-neon-halo', banner: 'banner-nebula' });
+    expect(((await res.json()) as { user: Me }).user.looks).toEqual({ border: 'border-neon-halo', banner: 'banner-nebula', icon: '' });
+    expect((await ann.me()).looks).toEqual({ border: 'border-neon-halo', banner: 'banner-nebula', icon: '' });
     // '' takes one off
     await ann.wear({ banner: '' });
-    expect((await ann.me()).looks).toEqual({ border: 'border-neon-halo', banner: '' });
+    expect((await ann.me()).looks).toEqual({ border: 'border-neon-halo', banner: '', icon: '' });
   });
 
   it('comes off everywhere when the purchase is refunded', async () => {
@@ -93,7 +107,7 @@ describe('wearing a look', () => {
     expect((await bea.wear({ banner: 'banner-aurora' })).status).toBe(200);
     expect((await board()).rows[0]!.banner).toBe('banner-aurora');
     await applyStripeEvent(env, { type: 'charge.refunded', data: { object: { payment_intent: 'pi_1' } } });
-    expect((await bea.me()).looks).toEqual({ border: '', banner: '' });
+    expect((await bea.me()).looks).toEqual({ border: '', banner: '', icon: '' });
     expect((await board()).rows[0]!.banner).toBeUndefined();
     expect((await hallRows())[0]!.banner).toBeUndefined();
   });
@@ -131,6 +145,79 @@ describe('the boards', () => {
     const { mine } = await board(low.jar);
     expect(mine).toMatchObject({ nickname: 'Low', rank: 51, you: true, border: 'border-glitch' });
     expect(mine!.banner).toBeUndefined();
+  });
+});
+
+describe('icons and looks an admin made', () => {
+  it('wear like any look, and the boards carry them', async () => {
+    const { db, env, member, board } = setup();
+    const ann = await member('Ann', 10);
+    // an admin's own look: one of the site's styles, recolored
+    db.sqlite
+      .prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('shop_items', ?, 1, 'qa')")
+      .run(JSON.stringify([{ id: 'border-ember-ring', name: 'Ember Ring border', blurb: 'A warm ring.', cents: 99, look: { kind: 'border', style: 'solar-flare', colors: ['#330000', '#aa2200', '#ff8800', '#ffee88'] } }]));
+    await giftItem(env, ann.id, 'border-ember-ring');
+    await giftItem(env, ann.id, 'icon-owl');
+    expect((await ann.wear({ icon: 'border-ember-ring' })).status).toBe(403);
+    expect((await ann.wear({ border: 'border-ember-ring', icon: 'icon-owl' })).status).toBe(200);
+    expect((await ann.me()).looks).toEqual({ border: 'border-ember-ring', banner: '', icon: 'icon-owl' });
+    expect((await board()).rows[0]).toMatchObject({ nickname: 'Ann', border: 'border-ember-ring', icon: 'icon-owl' });
+  });
+
+  it('a saved list keeps every item someone bought, hidden, even when an admin leaves it out', async () => {
+    const { env, member } = setup();
+    const ann = await member('Ann', 10);
+    const { onRequestPost: adminCatalog } = await import('../functions/api/admin/catalog');
+    const own = { id: 'icon-red-fox', name: 'Red Fox icon', blurb: 'A red fox.', cents: 50, look: { kind: 'icon', style: 'fox', colors: ['#300', '#a00', '#f40', '#fff'] } };
+    const save = async (items: unknown[]): Promise<{ id: string; hidden?: boolean }[]> => {
+      const e = { ...env, ADMIN_EMAILS: 'ann@example.com' } as Env;
+      const res = await adminCatalog({ request: new Request(`${ORIGIN}/api/admin/catalog`, { method: 'POST', headers: { origin: ORIGIN, cookie: ann.jar, 'content-type': 'application/json' }, body: JSON.stringify({ action: 'shopItems', items }) }), env: e, params: {} });
+      expect(res.status).toBe(200);
+      return ((await res.json()) as { shopItems: { id: string; hidden?: boolean }[] }).shopItems;
+    };
+    // colors that aren't #rrggbb are dropped, the style stays
+    expect((await save([own])).find((p) => p.id === 'icon-red-fox')).toMatchObject({ look: { kind: 'icon', style: 'fox' } });
+    await giftItem(env, ann.id, 'icon-red-fox');
+    const after = await save([]);
+    expect(after.find((p) => p.id === 'icon-red-fox')).toMatchObject({ id: 'icon-red-fox', hidden: true });
+  });
+});
+
+describe('the Gloamknight Pack', () => {
+  it('lets its owner wear its own border and banner, and the boards show them, until a refund', async () => {
+    const { db, member, board } = setup();
+    const kay = await member('Kay', 12);
+    // not bought: refused
+    expect((await kay.wear({ border: 'border-gloam' })).status).toBe(403);
+    db.sqlite
+      .prepare(`INSERT INTO purchases (id, user_id, product, status, agreed_at, terms, created_at, provider_ref) VALUES ('pk', ?, 'sigilfall-gloamknight', 'paid', 1, 't', 1, 'pi_pack')`)
+      .run(kay.id);
+    expect((await kay.wear({ border: 'border-gloam', banner: 'banner-gloam' })).status).toBe(200);
+    expect((await kay.me()).owned).toEqual(expect.arrayContaining(['sigilfall-gloamknight', 'border-gloam', 'banner-gloam', 'sigilfall-gloamwing-drake']));
+    expect((await board()).rows[0]).toMatchObject({ nickname: 'Kay', border: 'border-gloam', banner: 'banner-gloam' });
+    db.sqlite.prepare(`UPDATE purchases SET status = 'refunded' WHERE id = 'pk'`).run();
+    expect((await board()).rows[0]!.border).toBeUndefined();
+    expect((await kay.me()).looks).toEqual({ border: '', banner: '', icon: '' });
+  });
+});
+
+describe('your friends list', () => {
+  it('carries each friend’s border and banner, and never their photo', async () => {
+    const { db, env, member } = setup();
+    const me = await member('Me', 5);
+    const pal = await member('Pal', 6);
+    const plain = await member('Plain', 7);
+    for (const f of [pal.id, plain.id]) db.sqlite.prepare('INSERT INTO friends (user_id, friend_id, created_at) VALUES (?, ?, 1)').run(me.id, f);
+    await giftItem(env, pal.id, 'border-glitch');
+    await giftItem(env, pal.id, 'banner-aurora');
+    await pal.wear({ border: 'border-glitch', banner: 'banner-aurora' });
+    const res = await friendsGet({ request: new Request(`${ORIGIN}/api/friends`, { headers: { cookie: me.jar } }), env, params: {} });
+    const { friends } = (await res.json()) as { friends: FriendRow[] };
+    expect(friends.map((f) => [f.nickname, f.border, f.banner])).toEqual([
+      ['Pal', 'border-glitch', 'banner-aurora'],
+      ['Plain', undefined, undefined],
+    ]);
+    expect(JSON.stringify(friends)).not.toContain('photos.example');
   });
 });
 
@@ -202,5 +289,16 @@ describe('on screen', () => {
     expect(container.querySelector('.profile-card.has-banner .profile-banner.look-banner-aurora')).toBeTruthy();
     // the shop is closed, so there's no pointer to it
     expect(screen.queryByText('See borders and banners in the shop')).toBeNull();
+    // the header wears them too: the border on the picture, the banner behind the menu's name card
+    cleanup();
+    const { Header } = await import('../src/components/Header');
+    const header = render(<Header />);
+    await vi.waitFor(() => expect(header.container.querySelector('.account-head.has-banner .look-banner-aurora')).toBeTruthy());
+    expect(header.container.querySelector('.account-btn .avatar-frame')).toBeNull();
+    await act(async () => {
+      await account.update({ border: 'border-glitch' });
+    });
+    await vi.waitFor(() => expect(header.container.querySelector('.account-btn .avatar-frame.look-border-glitch')).toBeTruthy());
+    expect(header.container.querySelector('.account-head .avatar-frame.look-border-glitch')).toBeTruthy();
   });
 });

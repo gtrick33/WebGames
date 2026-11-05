@@ -17,8 +17,9 @@ import { itemClass, itemMods, itemName, itemScore, itemSlot, salvageValue } from
 import { npcMark, rarityColor } from '../render/renderer';
 import { heldWeapon, heroDollUrl, heroLook, itemIconUrl, mountPictureUrl, talentIconUrl, watchMountPictures } from '../render/sprites';
 import type { HeroLook } from '../render/art/hero';
-import { MOUNT_DEFS, MOUNTS } from '../data/mounts';
-import { authoredLooks, BARE_LOOK, LOOK_SLOTS, lookFits, lookOf, lookSource, wornLooks, type Look, type LookSlot } from '../progress/wardrobe';
+import { MOUNTS } from '../data/mounts';
+import { authoredLooks, BARE_LOOK, canRide, LOOK_SLOTS, lookFits, lookOf, lookSource, mountDef, riddenMount, ridingOpen, wornId, wornLooks, type Look, type LookSlot } from '../progress/wardrobe';
+import { ownedShopLooks, ownedShopMounts } from '../progress/shopGoods';
 import { armorReduction } from '../sim/combat';
 import { K, markerPos, parseRegion, TILE, type TileMap } from '../sim/map';
 import { objectiveTarget, objectiveTargets, questCounts } from '../sim/objective';
@@ -1504,6 +1505,8 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
     if (!slot) return [];
     const owned = h.looks.map((id) => lookOf(id)).filter((l): l is Look => !!l && l.slot === slot && lookFits(l, h.cls));
     owned.sort((a, b) => Number(b.authored) - Number(a.authored) || RARITY_RANK[a.r]! - RARITY_RANK[b.r]! || a.name.localeCompare(b.name));
+    // the shop's looks this account owns come first (any class wears them)
+    owned.unshift(...ownedShopLooks().filter((l) => l.slot === slot));
     const have = new Set(owned.map((l) => l.id));
     const locked = authoredLooks(h.cls, slot).filter((l) => !have.has(l.id));
     locked.sort((a, b) => RARITY_RANK[a.r]! - RARITY_RANK[b.r]! || a.name.localeCompare(b.name));
@@ -1520,9 +1523,14 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
   else if (slot && picked) previewWorn[slot] = picked.look;
   const look = heroLook(h.cls, h.equip, previewWorn, h.body, h.face);
   const equipped = slot ? h.equip[slot] : undefined;
-  const current = slot ? h.worn[slot] : undefined;
-  const mount = tab === 'mounts' && pick ? MOUNT_DEFS[pick] : undefined;
-  const ridden = h.mount ? MOUNT_DEFS[h.mount] : undefined;
+  const current = slot ? wornId(h, slot) : undefined;
+  const mount = tab === 'mounts' && pick ? mountDef(pick) : undefined;
+  const riddenId = riddenMount(h);
+  const ridden = riddenId ? mountDef(riddenId) : undefined;
+  // the shop's mounts this account owns, after the game's own (ridden once the story has horses in it)
+  const shopMounts = ownedShopMounts();
+  const allMounts = [...MOUNTS, ...shopMounts];
+  const has = (id: string): boolean => h.mounts.includes(id) || shopMounts.some((m) => m.id === id);
   // (the mounts' pictures come in one at a time)
   const [, pictureCame] = useState(0);
   useEffect(() => (tab === 'mounts' ? watchMountPictures(() => pictureCame((n) => n + 1)) : undefined), [tab]);
@@ -1530,7 +1538,7 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
     <div className="rb-hero rb-wardrobe">
       <section className="rb-hero-left" aria-label="Preview">
         {tab === 'mounts' ? (
-          <div className="rb-mount-pic">{(mount ?? ridden) && <img src={mountPictureUrl((mount ?? ridden)!, mount && !h.mounts.includes(mount.id) ? null : heroLook(h.cls, h.equip, worn, h.body, h.face), 6)} alt="" className={mount && !h.mounts.includes(mount.id) ? 'is-locked' : ''} draggable={false} />}</div>
+          <div className="rb-mount-pic">{(mount ?? ridden) && <img src={mountPictureUrl((mount ?? ridden)!, mount && !has(mount.id) ? null : heroLook(h.cls, h.equip, worn, h.body, h.face), 6)} alt="" className={mount && !has(mount.id) ? 'is-locked' : ''} draggable={false} />}</div>
         ) : (
           <HeroDoll look={look} held={heldWeapon(h.cls, h.equip.weapon, previewWorn.weapon)} shield={h.cls === 'warrior' || h.cls === 'paladin'} area="auto" />
         )}
@@ -1551,7 +1559,7 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
       </section>
       <section className="rb-bag" aria-label="Collection">
         <div className="rb-bag-head">
-          <strong>{tab === 'mounts' ? `Mounts ${h.mounts.length}/${MOUNTS.length}` : `Looks ${authoredOwned}/${authoredAll} · ${found} found`}</strong>
+          <strong>{tab === 'mounts' ? `Mounts ${h.mounts.length + shopMounts.length}/${allMounts.length}` : `Looks ${authoredOwned}/${authoredAll} · ${found} found`}</strong>
           <div className="rb-seg" role="group" aria-label="Slot">
             {(['head', 'chest', 'weapon', 'mounts'] as const).map((t) => (
               <button
@@ -1579,20 +1587,21 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
               </button>
             )}
             {tiles.map(({ look: l, owned }) => (
-              <button key={l.id} className={`rb-bslot rb-look-tile${pick === l.id ? ' is-sel' : ''}${current === l.id ? ' is-worn' : ''}${owned ? '' : ' is-locked'}`} onClick={() => setPick(l.id)} aria-label={owned ? l.name : `Locked: ${l.name}`} style={{ ['--rc' as string]: rarityColor(l.r) }}>
+              <button key={l.id} className={`rb-bslot rb-look-tile${pick === l.id ? ' is-sel' : ''}${current === l.id ? ' is-worn' : ''}${owned ? '' : ' is-locked'}${l.shop ? ' is-shop' : ''}`} onClick={() => setPick(l.id)} aria-label={owned ? l.name : `Locked: ${l.name}`} style={{ ['--rc' as string]: rarityColor(l.r) }}>
                 <img src={itemIconUrl({ icon: l.icon, tint: l.tint }, 4)} alt="" width={40} height={40} draggable={false} />
+                {l.shop && <span className="rb-look-tag is-shop">Shop</span>}
               </button>
             ))}
           </div>
         ) : (
           <div className="rb-mount-grid">
-            {MOUNTS.map((m) => {
-              const owned = h.mounts.includes(m.id);
+            {allMounts.map((m) => {
+              const owned = has(m.id);
               return (
-                <button key={m.id} className={`rb-mount-tile${pick === m.id ? ' is-sel' : ''}${h.mount === m.id ? ' is-worn' : ''}${owned ? '' : ' is-locked'}`} onClick={() => setPick(m.id)} aria-label={owned ? m.name : `Locked: ${m.name}`}>
+                <button key={m.id} className={`rb-mount-tile${pick === m.id ? ' is-sel' : ''}${riddenId === m.id ? ' is-worn' : ''}${owned ? '' : ' is-locked'}`} onClick={() => setPick(m.id)} aria-label={owned ? m.name : `Locked: ${m.name}`}>
                   <img src={mountPictureUrl(m, null, 1)} alt="" draggable={false} />
                   <span>{m.name}</span>
-                  <span className={`rb-look-tag is-${m.tier}`}>{m.tier === 'travel' ? 'Travel' : m.tier === 'story' ? 'Story' : 'Prestige'}</span>
+                  <span className={`rb-look-tag is-${m.tier}`}>{m.tier === 'travel' ? 'Travel' : m.tier === 'story' ? 'Story' : m.tier === 'shop' ? 'Shop' : 'Prestige'}</span>
                 </button>
               );
             })}
@@ -1605,7 +1614,7 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
             <div className="rb-item-head">
               <div>
                 <strong className="rb-item-name">{pick === 'equipped' ? 'Equipped look' : pick === BARE_LOOK ? 'Bare' : picked!.look.name}</strong>
-                <span className="rb-dim rb-small">{pick === 'equipped' ? `Show what you have equipped on your ${LOOK_LABEL[slot].toLowerCase()}.` : pick === BARE_LOOK ? `Show nothing over your ${LOOK_LABEL[slot].toLowerCase()}, whatever you wear there.` : `${RARITY_NAME[picked!.look.r]} ${LOOK_LABEL[slot].toLowerCase()} look${picked!.look.cls ? ` · ${CLASSES[picked!.look.cls].name} only` : ''}`}</span>
+                <span className="rb-dim rb-small">{pick === 'equipped' ? `Show what you have equipped on your ${LOOK_LABEL[slot].toLowerCase()}.` : pick === BARE_LOOK ? `Show nothing over your ${LOOK_LABEL[slot].toLowerCase()}, whatever you wear there.` : picked!.look.shop ? `Shop ${LOOK_LABEL[slot].toLowerCase()} look · any class` : `${RARITY_NAME[picked!.look.r]} ${LOOK_LABEL[slot].toLowerCase()} look${picked!.look.cls ? ` · ${CLASSES[picked!.look.cls].name} only` : ''}`}</span>
               </div>
               <button className="rb-x is-small" onClick={() => setPick(null)} aria-label="Close details">
                 ✕
@@ -1640,7 +1649,7 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
             <div className="rb-item-head">
               <div>
                 <strong className="rb-item-name">{mount.name}</strong>
-                <span className="rb-dim rb-small">{h.mounts.includes(mount.id) ? mount.from : `Not earned yet · ${mount.from}`}</span>
+                <span className="rb-dim rb-small">{has(mount.id) ? mount.from : `Not earned yet · ${mount.from}`}</span>
               </div>
               <button className="rb-x is-small" onClick={() => setPick(null)} aria-label="Close details">
                 ✕
@@ -1648,10 +1657,11 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
             </div>
             <p className="rb-small">{mount.lore}</p>
             <p className="rb-small rb-dim">Every mount runs at the same pace. {engine.touchMode ? 'Tap the horseshoe to ride' : 'Press Y to ride'}; you get down when you fight, and there is no riding in dungeons.</p>
+            {mount.tier === 'shop' && has(mount.id) && !ridingOpen(h) && <p className="rb-small">Yours to ride once Dunmore&rsquo;s riders bring the first horses to the camp.</p>}
             <div className="rb-row">
-              {h.mounts.includes(mount.id) && (
-                <button className="rb-btn" disabled={h.mount === mount.id} onClick={() => engine.chooseMount(mount.id)}>
-                  {h.mount === mount.id ? 'Your mount' : 'Ride this one'}
+              {canRide(h, mount.id) && (
+                <button className="rb-btn" disabled={riddenId === mount.id} onClick={() => engine.chooseMount(mount.id)}>
+                  {riddenId === mount.id ? 'Your mount' : 'Ride this one'}
                 </button>
               )}
             </div>

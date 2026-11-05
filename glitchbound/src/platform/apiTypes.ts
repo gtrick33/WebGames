@@ -85,7 +85,7 @@ export interface RunEndResult {
   error?: string;
 }
 
-export interface FriendRow {
+export interface FriendRow extends RowLooks {
   id: string;
   nickname: string;
   level: number;
@@ -121,6 +121,7 @@ export interface PinsView {
 export interface RowLooks {
   border?: string;
   banner?: string;
+  icon?: string;
 }
 
 export interface LeaderRow extends RowLooks {

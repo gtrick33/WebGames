@@ -86,13 +86,14 @@ function Medal({ rank }: { rank: number }) {
 }
 
 /**
- * A player on a board: their initial in the border they wear (never their photo: boards show only a nickname and a
- * level, as /privacy says). Their banner, if they wear one, is drawn behind the row by the row itself.
+ * A player on a board: their initial, or the icon they wear, in their border (never their photo: boards show only a
+ * nickname, a level and the looks a player chose, as /privacy says). Their banner, if they wear one, is drawn behind
+ * the row by the row itself.
  */
 function BoardName({ row, compact = false, children }: { row: RowLooks & { nickname: string; you: boolean }; compact?: boolean; children?: ReactNode }) {
   return (
     <span className="board-name">
-      <LookAvatar name={row.nickname} size={compact ? 26 : 30} border={row.border} />
+      <LookAvatar name={row.nickname} size={compact ? 26 : 30} border={row.border} icon={row.icon} />
       <span className="board-nick">{row.nickname}</span>
       {children}
       {row.you && <span className="board-you mono">{t('you')}</span>}

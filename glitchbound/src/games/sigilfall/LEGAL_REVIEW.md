@@ -11,6 +11,21 @@ using them to train AI models, so the pack stays in the ignored `assets/sigilfal
 discloses AI-assisted graphics.** That was a concern for the Certainity packs too (below): it doesn't break this
 license, but AI output may have weak copyright protection, and some storefronts ask about it.
 
+## Items sold in the site's shop (2026-11-05)
+
+Five mounts and three armor sets (a helmet and an armor piece each) are sold as cosmetics: `src/catalog/sigilItems.ts`
+and `src/catalog/shop.ts`. What they're made of:
+
+- **Mounts:** only the drake (Quaternius's T-Rex), hart (stag) and boar (bull) bodies, never a horse, since the horse
+  pack's terms don't clearly cover selling changed horses. The admins' item builder can't make a horse either. What's on
+  them (plates, horns, crystals, flames, runes, wing veins) is built in code (`render3d/mountExtras.ts`, `mountKit.ts`).
+  Quaternius's license page shows QAL v1.0 (use inside a game, no handing out the files), and the models ship only
+  inside the game: a lawyer should still confirm selling a cosmetic built on them (docs/LEGAL-READINESS.md).
+- **Armor:** KayKit parts (CC0), recolored, with pieces built in code (`render3d/armorKit.ts`, the shop's sets).
+- **Names:** Crownforged, Galecrest, Runetusk, Cinderhorn, Moonglass, Celestine and Gloamquill were searched on the web
+  on 2026-11-05 and found on no other game's items. "Nightplume", the first name for the feather set, turned out to be
+  a livery in another game, and was dropped. The runes on the mounts are made-up signs, not letters of any alphabet.
+
 ## Riding horses (2026-11-04)
 
 Sigilfall's horses come from Amir's Low-Poly Horses Pack on itch.io (https://ahmedamirdev.itch.io/amir-low-poly-horses-pack),
@@ -26,6 +41,14 @@ horses), clips (Idle, Walk, Run) and date (released Nov 23, 2025; the files are 
 - **What ships:** only built files in the game's own format (`public/games/sigilfall/3d/k/m_horse_*.pack`), inside the
   game. The raw `.glb` and `.fbx` files stay on the owner's machine and are not in the repository.
 - Keep the receipt and a dated copy of the page: terms on a store page can change.
+
+## The Gloamknight (2026-11-05)
+
+The eighth class. The owner asked for a "dark knight", which is a Final Fantasy XIV job name, and chose **Gloamknight**
+instead. Its skills, talents, specializations (Bloodsworn, Ruinblade, Dreadbinder), resource (Umbra), Ring and Vigil
+abilities and warden set are named for this game: none is a Final Fantasy XIV Dark Knight action or a World of Warcraft
+death knight ability, and its signature colors (smoke-dark plate, dusk violet and rose) are its own. The ultimate is
+Duskfall, not "Nightfall" (a World of Warcraft warlock talent).
 
 ## Fixed
 

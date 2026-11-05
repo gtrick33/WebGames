@@ -25,7 +25,7 @@ import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, deliverHe
 import { potionPrice } from '../progress/shop';
 import { goldDrop, itemName, makeItem, rollLoot, rollRarity, salvageValue, type LootSource } from '../progress/items';
 import type { Settings } from '../progress/save';
-import { learnLooks } from '../progress/wardrobe';
+import { learnLooks, riddenMount, shopMountsFor } from '../progress/wardrobe';
 import { addParagonXp, paragonXp } from '../progress/paragon';
 import { deathSound } from '../data/voices';
 import { separate, updateEnemy, updatePuppet } from './ai';
@@ -1284,7 +1284,7 @@ export class World {
         p.summon += dt;
         if (p.summon >= SUMMON_TIME) {
           p.summon = 0;
-          p.riding = this.hero.mount;
+          p.riding = riddenMount(this.hero);
           this.sfx('mount');
           this.addFx({ kind: 'ring', x: p.x, y: p.y + 4, life: 0.35, size: 14, color: 'rgba(232,220,190,0.7)' });
         }
@@ -2470,7 +2470,7 @@ export class World {
   mountRefusal(): string | null {
     const p = this.player;
     const h = this.hero;
-    if (!h.mount || !h.mounts.includes(h.mount)) return h.mounts.length ? 'Choose a mount in the Wardrobe.' : 'You have no mount yet.';
+    if (!riddenMount(h)) return h.mounts.length || shopMountsFor(h).length ? 'Choose a mount in the Wardrobe.' : 'You have no mount yet.';
     if (p.dead || p.channel || p.windup || p.casting || p.dash) return 'Not now.';
     if (this.region.kind === 'dungeon') return 'There is no room to ride down here.';
     if (this.region.interior) return 'Not indoors.';

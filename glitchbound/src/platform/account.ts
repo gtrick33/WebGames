@@ -219,8 +219,8 @@ class AccountStore {
     }
   }
 
-  /** Changes the nickname, the email setting, or the border or banner worn ('' takes it off). */
-  async update(patch: { nickname?: string; notify?: boolean; border?: string; banner?: string }): Promise<Me> {
+  /** Changes the nickname, the email setting, or the border, banner or icon worn ('' takes it off). */
+  async update(patch: { nickname?: string; notify?: boolean; border?: string; banner?: string; icon?: string }): Promise<Me> {
     const res = await api<{ user: Me }>('/api/me', { method: 'PATCH', body: { ...patch, day: dayKey() } });
     this.set({ me: res.user });
     return res.user;

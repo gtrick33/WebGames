@@ -36,16 +36,27 @@ export function SaleTermsPage() {
           <h2>What you get</h2>
           <p>
             A one-time purchase, shown with its full price in euros in the shop, VAT included. There are no subscriptions, so there is nothing to cancel and nothing renews. There&rsquo;s no game currency
-            and no random boxes, and nothing in the shop helps you win a game or climb a board. A purchase belongs to your account, so you need to be signed in. It reaches your account as soon as the
-            payment is confirmed, usually within a minute.
+            and no random boxes. Apart from the Gloamknight class below, nothing in the shop changes how a game plays. A purchase belongs to your account, so you need to be signed in. It reaches
+            your account as soon as the payment is confirmed, usually within a minute.
+          </p>
+          <p>
+            <strong>The Gloamknight Pack</strong> unlocks the Gloamknight, one of Sigilfall&rsquo;s eight classes, for every hero slot on your account, in the campaign, the Vigil and
+            the Ring, and opens two more hero slots. It also gives the Duskborn helm and armor, the Gloamwing Drake and the Gloam border and banner, which come only with the pack. The other
+            seven classes are free. The class is a different way to play, balanced with the free classes, not a stronger one, and we may tune it, as we do every class. If the purchase is
+            refunded, all of it is locked again, and a Gloamknight hero, or a hero in one of the pack&rsquo;s slots, waits, kept, until you buy the pack again. It lasts as long as Sigilfall runs.
           </p>
           <p>
             <strong>Ad-free</strong> removes ad banners on your account and lets you take your extra try at a daily without watching an ad. It lasts as long as GlitchBound runs. It doesn&rsquo;t affect
             games from other sites that have their own ads.
           </p>
           <p>
-            <strong>Borders and banners</strong> change how your picture and your name look on your profile and on the leaderboards, and nothing else. You choose which one to wear, or none, on your
-            profile. Each one lasts as long as GlitchBound runs.
+            <strong>Borders, banners and profile icons</strong> change how your picture and your name look on your profile, in the header, in friends lists and on the leaderboards, and nothing
+            else. You choose which ones to wear, or none, on your profile. Each one lasts as long as GlitchBound runs.
+          </p>
+          <p>
+            <strong>Sigilfall mounts and looks</strong> belong to your account, not to one hero: every hero on it, of any class, finds them in Sigilfall&rsquo;s Wardrobe, on any device you sign in
+            on. They change only how a hero looks. Every mount runs at the same pace as every other, a look never changes a stat, and a mount can be ridden from the point early in the story where riding
+            begins. Each one lasts as long as Sigilfall runs on GlitchBound. If a purchase is refunded, the item leaves the Wardrobe.
           </p>
         </section>
         <section className="panel info-block">

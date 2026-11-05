@@ -159,6 +159,22 @@ export const TALENTS: Record<ClassId, Talent[]> = {
       { name: 'Young Stag', text: 'Stag’s Bound comes back in 15 seconds.', tune: { 'l-bound': { cd: 0.625 } } },
       { name: 'Deep Roots', text: '+10% health.', icon: HP, hp: 0.1 },
     ], 'l'),
+  ],  gloamknight: [
+    ...rowOf('gloamknight', 0, [
+      { name: 'Deep Draught', text: 'Gloam Cleave hits and drinks 25% more.', tune: { 'g-cleave': { power: 1.25 } } },
+      { name: 'Red Harvest', text: 'Night Reaping comes back in 6 seconds.', tune: { 'g-reap': { cd: 2 / 3 } } },
+      { name: 'Thick Gloom', text: 'Clinging Gloom burns 30% more.', tune: { 'g-gloom': { power: 1.3 } } },
+    ], 'g'),
+    ...rowOf('gloamknight', 1, [
+      { name: 'Cold Grip', text: 'Grave Hand comes back in 20 seconds.', tune: { 'g-hand': { cd: 2 / 3 } } },
+      { name: 'Quick Edge', text: 'Severing Edge comes back in 9 seconds.', tune: { 'g-sever': { cd: 9 / 14 } } },
+      { name: 'Long Toll', text: 'Dread Toll’s fear lasts 40% longer.', tune: { 'g-toll': { dur: 1.4 } } },
+    ], 'g'),
+    ...rowOf('gloamknight', 2, [
+      { name: 'Deeper Ward', text: 'Hollow Ward soaks up 40% more.', tune: { 'g-ward': { power: 1.4 } } },
+      { name: 'Iron Dusk', text: '+10% health.', icon: HP, hp: 0.1 },
+      { name: 'Long Night', text: 'Night Mantle comes back in 50 seconds.', tune: { 'g-mantle': { cd: 0.625 } } },
+    ], 'g'),
   ],
 };
 

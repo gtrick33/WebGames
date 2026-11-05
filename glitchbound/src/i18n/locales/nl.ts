@@ -2097,7 +2097,7 @@ const nl: string[] = [
   'Bekijk alle {n} dagelijkse',
   'Een GlitchBound-avontuur',
   'Een complete fantasy-RPG die je gewoon in je browser speelt. Kies je held, verzamel je uitrusting en sluit de Kloof, alleen of met vrienden.',
-  '7 helden',
+  '8 helden',
   '5 aktes',
   '12 kerkers',
   'Co-op met 4',
@@ -2250,6 +2250,8 @@ const nl: string[] = [
   'Geen rand',
   'Geen banner',
   'Bekijk randen en banners in de winkel',
+  'Icoon',
+  'Geen icoon',
 ];
 
 export default nl;

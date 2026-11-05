@@ -1,4 +1,4 @@
-import type { ClassId, Rarity } from '../../data/types';
+import type { Rarity } from '../../data/types';
 import { mixRGB, OUTLINE_RGB, Painter, ramp, rgb, tone, type Ramp, type RGB } from './kit';
 
 /**
@@ -21,8 +21,10 @@ export interface Piece<S extends string = string> {
   mat: Mat;
   tint: string;
   r: Rarity;
-  /** Part of a Sigil-warden's armor (the class it was made for): it has its own models. */
-  set?: ClassId;
+  /** Part of a set with models of its own: a Sigil-warden's armor (the class it was made for) or a shop set's id. */
+  set?: string;
+  /** A shop set's colors (main, trim, cloth, glow). */
+  colors?: string[];
 }
 
 export interface HeroLook {

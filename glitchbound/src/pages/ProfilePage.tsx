@@ -4,9 +4,8 @@ import { GameTile } from '../components/GameTile';
 import { Icon } from '../components/Icon';
 import { NotifyForm } from '../components/Notify';
 import { QuestBoard } from '../components/Quests';
-import { Avatar } from '../components/Avatar';
 import { Banner, LookAvatar } from '../components/Looks';
-import { LOOKS, WEARS_NOTHING, type LookKind } from '../catalog/looks';
+import { WEARS_NOTHING, type LookKind } from '../catalog/looks';
 import { PRODUCTS } from '../catalog/shop';
 import { useMoney } from '../platform/money';
 import { ChallengeHistoryList, useChallengeHistory } from '../components/ChallengeHistory';
@@ -100,7 +99,7 @@ export function ProfilePage() {
       <ProfileTabs current="me" />
       <section className={`profile-card panel${me.looks?.banner ? ' has-banner' : ''}`} aria-label={t('Player card')}>
         {me.looks?.banner && <Banner id={me.looks.banner} className="profile-banner" />}
-        <LookAvatar name={me.nickname} src={me.avatar} size={84} border={me.looks?.border} />
+        <LookAvatar name={me.nickname} src={me.avatar} size={84} border={me.looks?.border} icon={me.looks?.icon} />
         <div className="profile-id">
           {editing ? (
             <form className="nick-form" onSubmit={(e) => void saveNick(e)}>
@@ -213,8 +212,8 @@ export function ProfilePage() {
 }
 
 /**
- * The borders and banners this member owns, to wear one or none. They show on the player card above and on every
- * board. With nothing bought, it's only a pointer to the shop, and only while the shop is open.
+ * The borders, banners and icons this member owns, to wear one of each or none. They show on the player card above, in
+ * the header and on every board. With nothing bought, it's only a pointer to the shop, and only while the shop is open.
  */
 function LooksSection({ me }: { me: Me }) {
   const t = useT();
@@ -222,7 +221,8 @@ function LooksSection({ me }: { me: Me }) {
   const items = useLiveCatalog().raw.shopItems ?? PRODUCTS;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const owned = LOOKS.filter((l) => me.owned?.includes(l.id));
+  // every look the member owns, the built-in ones and those an admin made, as the shop's list says
+  const owned = items.flatMap((p) => (p.look && me.owned?.includes(p.id) ? [{ id: p.id, kind: p.look.kind }] : []));
   const worn = me.looks ?? WEARS_NOTHING;
   const shopOpen = money.shop || me.isAdmin;
   if (!owned.length && !shopOpen) return null;
@@ -246,13 +246,19 @@ function LooksSection({ me }: { me: Me }) {
         <div className="look-picks">
           <button className="look-pick" aria-pressed={!worn[kind]} disabled={busy} onClick={() => wear(kind, '')}>
             <span className={`look-pick-art look-pick-none is-${kind}`}>
-              {kind === 'border' ? <Avatar name={me.nickname} src={me.avatar} size={64} /> : <span className="look-pick-blank" />}
+              {kind === 'banner' ? <span className="look-pick-blank" /> : <LookAvatar name={me.nickname} src={me.avatar} size={64} border={kind === 'icon' ? worn.border : undefined} icon={kind === 'border' ? worn.icon : undefined} />}
             </span>
-            <span className="look-pick-name">{kind === 'border' ? t('No border') : t('No banner')}</span>
+            <span className="look-pick-name">{kind === 'border' ? t('No border') : kind === 'banner' ? t('No banner') : t('No icon')}</span>
           </button>
           {mine.map((l) => (
             <button key={l.id} className="look-pick" aria-pressed={worn[kind] === l.id} disabled={busy} onClick={() => wear(kind, l.id)}>
-              <span className={`look-pick-art is-${kind}`}>{kind === 'border' ? <LookAvatar name={me.nickname} src={me.avatar} size={64} border={l.id} /> : <Banner id={l.id} className="look-pick-banner" />}</span>
+              <span className={`look-pick-art is-${kind}`}>
+                {kind === 'banner' ? (
+                  <Banner id={l.id} className="look-pick-banner" />
+                ) : (
+                  <LookAvatar name={me.nickname} src={me.avatar} size={64} border={kind === 'border' ? l.id : worn.border} icon={kind === 'icon' ? l.id : worn.icon} />
+                )}
+              </span>
               <span className="look-pick-name">{nameOf(l.id)}</span>
             </button>
           ))}
@@ -268,6 +274,7 @@ function LooksSection({ me }: { me: Me }) {
       {owned.length > 0 && <p className="info-small looks-lead">{t('Pick what shows around your picture and behind your name, here and on the leaderboards.')}</p>}
       {group('border', t('Border'))}
       {group('banner', t('Banner'))}
+      {group('icon', t('Icon'))}
       {error && (
         <p className="info-small" role="alert">
           {error}

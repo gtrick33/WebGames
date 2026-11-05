@@ -51,6 +51,7 @@ export const COMPS: Record<Format, Comp[]> = {
     { name: 'The Zealot', blurb: 'A paladin who hits like a door and won’t fall down.', team: [{ cls: 'paladin', preset: 1 }] },
     { name: 'The Starseer', blurb: 'A druid who shuts you out and burns you from afar.', team: [{ cls: 'druid', preset: 1 }] },
     { name: 'The Curse-speaker', blurb: 'A priest who has given up on healing anyone.', team: [{ cls: 'priest', preset: 1 }] },
+    { name: 'The Bloodsworn', blurb: 'A gloamknight who pays in blood and drinks it back.', team: [{ cls: 'gloamknight', preset: 0 }] },
   ],
   2: [
     { name: 'Blade and Dawn', blurb: 'A warrior in your face and a priest behind them. Stop the heals.', team: [{ cls: 'warrior', preset: 0 }, { cls: 'priest', preset: 0 }] },
@@ -75,6 +76,7 @@ const NAMES: Record<ClassId, string[]> = {
   paladin: ['Ser Galen', 'Dame Oriel', 'Ser Hask', 'Maerwen'],
   warlock: ['Nyx Morrow', 'Sorrel', 'Hask the Grey', 'Veska'],
   druid: ['Eirlys', 'Old Fen', 'Bramble', 'Thessaly'],
+  gloamknight: ['Ser Aldane', 'Dame Vesper', 'Corwin Ashgrave', 'Sable'],
 };
 
 export const nameFor = (cls: ClassId, i: number): string => NAMES[cls][i % NAMES[cls].length]!;

@@ -34,7 +34,8 @@ function placeOf(offset: number): { x: number; y: number; scale: number; dim: bo
 export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, confirmDelete, setConfirmDelete }: { engine: SigilEngine; onRift: (slot: number) => void; onVigil: () => void; onRing: () => void; onSettings: () => void; confirmDelete: number | null; setConfirmDelete: (n: number | null) => void }) {
   const heroes = engine.heroes();
   const n = heroes.length;
-  const [at, setAt] = useState(() => Math.max(0, engine.save.last));
+  // (the last hero played may be in a place this account no longer plays: the pack's, after a refund)
+  const [at, setAt] = useState(() => Math.max(0, Math.min(engine.save.last, n - 1)));
   // the modes' icons come with the atlas
   const [, setIcons] = useState(false);
   useEffect(() => {
@@ -228,7 +229,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
         ) : (
           <>
             <h2 className="cs-name">A place waits</h2>
-            <p className="cs-line">Seven callings, five acts, one Crown. Who will you be?</p>
+            <p className="cs-line">Eight callings, five acts, one Crown. Who will you be?</p>
           </>
         )}
         <ol className="cs-dots" aria-label={`Hero ${at + 1} of ${n}`}>

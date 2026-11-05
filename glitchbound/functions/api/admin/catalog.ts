@@ -2,6 +2,7 @@ import { sanitizeProducts } from '../../../src/catalog/shop';
 import { loadCatalog, logAdmin } from '../../../server/catalogSettings';
 import { bad, json, readJson, sameOrigin, type Ctx, type D1PreparedStatement, type Env } from '../../../server/http';
 import { requireAdmin } from '../../../server/session';
+import { keepOwnedItems } from '../../../server/shop';
 import { getGame } from '../../../src/catalog/catalog';
 import { GAMES } from '../../../src/catalog/games';
 import { MULTIPLAYER_MAX } from '../../../src/catalog/multiplayer';
@@ -177,7 +178,7 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
       return json({ ok: true, money });
     }
     case 'shopItems': {
-      const items = sanitizeProducts(body.items);
+      const items = await keepOwnedItems(env, sanitizeProducts(body.items));
       await env.DB.prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('shop_items', ?, ?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at, updated_by = excluded.updated_by")
         .bind(JSON.stringify(items), now, by)
         .run();
