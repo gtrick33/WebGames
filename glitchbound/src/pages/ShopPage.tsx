@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Banner, LookAvatar } from '../components/Looks';
 import { openSignIn } from '../components/openSignIn';
 import { isLook } from '../catalog/looks';
@@ -59,6 +59,8 @@ export function ShopPage() {
               </p>
             ) : !canBuy ? (
               <p className="info-small">Not on sale yet.</p>
+            ) : me && buying?.id === p.id ? (
+              <Checkout product={p} onClose={() => setBuying(null)} />
             ) : me ? (
               <button className="btn btn-primary" onClick={() => setBuying(p)}>
                 Get {p.name}
@@ -86,7 +88,6 @@ export function ShopPage() {
       <p className="info-small">
         See the <Link href="/terms/sale">terms of sale</Link> for your rights, refunds and who you are buying from.
       </p>
-      {buying && <Checkout product={buying} onClose={() => setBuying(null)} />}
     </div>
   );
 }
@@ -107,8 +108,16 @@ function LookPreview({ id, name, src }: { id: string; name: string; src?: string
   );
 }
 
-/** The last step before paying: the two statements, each ticked by hand, and the price again. */
+/**
+ * The last step before paying: the two statements, each ticked by hand, and the price again. It opens inside the item's
+ * own panel, scrolled into view with the focus on it, so it shows up where the button was pressed.
+ */
 function Checkout({ product, onClose }: { product: Product; onClose: () => void }) {
+  const title = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    title.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+    title.current?.focus({ preventScroll: true });
+  }, []);
   const [now, setNow] = useState(false);
   const [age, setAge] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -124,10 +133,10 @@ function Checkout({ product, onClose }: { product: Product; onClose: () => void 
       });
   };
   return (
-    <section className="panel info-block" aria-labelledby="shop-buy">
-      <h2 id="shop-buy">
+    <div className="shop-checkout" role="group" aria-labelledby={`shop-buy-${product.id}`}>
+      <h3 id={`shop-buy-${product.id}`} ref={title} tabIndex={-1}>
         {product.name}: {priceText(product.cents)}
-      </h2>
+      </h3>
       <p className="info-small">VAT included. One payment, no subscription. Our payment provider, Stripe, takes the payment and sends your receipt.</p>
       <label className="info-small">
         <input type="checkbox" checked={now} onChange={(e) => setNow(e.target.checked)} /> {AGREE_NOW}
@@ -144,6 +153,6 @@ function Checkout({ product, onClose }: { product: Product; onClose: () => void 
           Cancel
         </button>
       </div>
-    </section>
+    </div>
   );
 }
