@@ -339,20 +339,20 @@ export function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => 
 function SafariBarsHandle() {
   const t = useT();
   const [open, setOpen] = useState(false);
-  const [dismissed, setDismissed] = useState(() => {
-    try {
-      return sessionStorage.getItem('glitchbound.barsHandle') === '1';
-    } catch {
-      return false;
-    }
-  });
+  // (closed for this time the bar is out only: a game keeps swipes for itself, so when the bar comes out again
+  // mid-game the handle is the one way to tuck it away)
+  const [dismissed, setDismissed] = useState(false);
   useEffect(() => {
     if (!isIos() || isStandalone()) return;
     // the large viewport (bars tucked away) against the visible one tells whether the bar is out
     const probe = document.createElement('div');
     probe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:100lvh;visibility:hidden;pointer-events:none';
     document.body.appendChild(probe);
-    const check = (): void => setOpen(window.innerHeight < probe.offsetHeight - 24);
+    const check = (): void => {
+      const out = window.innerHeight < probe.offsetHeight - 24;
+      setOpen(out);
+      if (!out) setDismissed(false);
+    };
     check();
     window.addEventListener('resize', check);
     window.addEventListener('scroll', check, { passive: true });
@@ -371,14 +371,7 @@ function SafariBarsHandle() {
       <span>{t('Swipe up here to hide Safari’s bar')}</span>
       <button
         className="stage-handle-x"
-        onClick={() => {
-          setDismissed(true);
-          try {
-            sessionStorage.setItem('glitchbound.barsHandle', '1');
-          } catch {
-            /* storage blocked */
-          }
-        }}
+        onClick={() => setDismissed(true)}
         aria-label={t('Close')}
       >
         <Icon name="close" size={14} />
