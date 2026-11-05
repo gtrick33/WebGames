@@ -152,6 +152,16 @@ export function withoutParts(m: MeshData, keys: ReadonlySet<string>): MeshData {
   return { ...m, i: idx.length, idx: Uint16Array.from(idx) };
 }
 
+/**
+ * The same model, glowing: lit by nothing but itself (render3d/toon.ts animMaterial knows it by a normal too short to
+ * light; the smooth normals, which the ink line goes by, stay as they were).
+ */
+export function glowing(m: MeshData): MeshData {
+  const nor = new Int8Array(m.n * 3);
+  for (let v = 0; v < m.n; v++) nor[v * 3] = 1;
+  return { ...m, nor };
+}
+
 /** The colors that cover most of a model: what clothing is cut from. */
 export function coatKeysOf(m: MeshData): string[] {
   const counts = new Map<string, number>();
@@ -161,6 +171,20 @@ export function coatKeysOf(m: MeshData): string[] {
   }
   const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
   return top ? [top] : [];
+}
+
+/** How high a model's top is at a point along it, and who carries that part of it. */
+export function topAt(m: MeshData, z: number, reach: number, w: number): { y: number; j: number } | null {
+  let best = -Infinity;
+  let j = -1;
+  for (let v = 0; v < m.n; v++) {
+    if (Math.abs(m.pos[v * 3 + 2]! - z) > reach || Math.abs(m.pos[v * 3]!) > w) continue;
+    if (m.pos[v * 3 + 1]! > best) {
+      best = m.pos[v * 3 + 1]!;
+      j = m.skin![v * 3]!;
+    }
+  }
+  return j < 0 ? null : { y: best, j };
 }
 
 /* ------------------------------------------------------------------ what is built on */

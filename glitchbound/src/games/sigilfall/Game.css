@@ -2751,6 +2751,22 @@
 .rb-look-tag.is-prestige {
   color: var(--rb-gold);
 }
+/* the shop's mounts and looks: owned by the account, while the purchase stands */
+.rb-look-tag.is-shop {
+  color: #8ff0ff;
+}
+.rb-look-tile.is-shop {
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, #8ff0ff 60%, transparent),
+    0 0 10px -2px color-mix(in srgb, #8ff0ff 55%, transparent);
+}
+.rb-look-tile.is-shop.is-sel {
+  box-shadow: 0 0 0 3px var(--rb-gold);
+}
+.rb-look-tile.is-shop .rb-look-tag {
+  bottom: 0;
+  font-size: 8px;
+}
 .rb-mount-pic {
   display: grid;
   place-items: center;

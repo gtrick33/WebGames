@@ -1,0 +1,34 @@
+/* Sigilfall's items: the game's own models, on a night sky like the game's menus. */
+.sigil-pic {
+  display: grid;
+  place-items: center;
+  height: 230px;
+  border: var(--outline);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 42% 7% at 50% 90%, rgb(0 0 0 / 0.45), transparent 100%),
+    radial-gradient(circle at 50% 40%, rgb(139 92 255 / 0.32), transparent 65%),
+    linear-gradient(180deg, #1c1238, #0b0618);
+}
+.sigil-pic img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+}
+.sigil-pic .info-small {
+  padding: 12px;
+  color: #cfc4e8;
+  text-align: center;
+}
+.money-thumb .sigil-pic {
+  width: 52px;
+  height: 44px;
+  border-radius: 6px;
+}
+.money-new-preview .sigil-pic {
+  width: 100%;
+  height: 260px;
+  border: 0;
+}

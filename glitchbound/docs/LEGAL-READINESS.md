@@ -132,8 +132,14 @@ Me, when you say so:
       people in a language they read is part of the rules. A lawyer should read the Bulgarian.
 - [x] Before selling cosmetics: design them, show them on profiles and boards, and let members choose what they wear. Done for
       borders and banners. Name effects are still planned.
-- [ ] Before selling Sigilfall items: build them from art we may resell in a game. Check each pack's license first. The horse
+- [x] Before selling Sigilfall items: build them from art we may resell in a game. Done for the five shop mounts and three
+      armor sets (2026-11-05): the mounts are built only on the drake (Quaternius T-Rex), hart (stag) and boar (bull) bodies,
+      whose terms allow use inside a sold game, with everything added built in code; the armor is KayKit (CC0) recolored, with
+      pieces built in code. No horse is sold, and the item builder can't make one (`src/catalog/sigilItems.ts`): the horse
       pack's store page says its $5.99 Source tier is the one that mentions modifying models, and you own the $4.99 Plus tier.
+- [ ] Sigilfall items: confirm with a lawyer that Quaternius's QAL v1.0 (its license page; the pack pages say CC0) is fine
+      for selling a changed model as a cosmetic inside the game, since it's shipped only as part of the game, never as a file
+      someone can take away.
 
 ## Sources
 - AdSense: [Program policies](https://support.google.com/adsense/answer/48182), [consent requirements](https://support.google.com/adsense/answer/13554116), [ads on game pages](https://support.google.com/adsense/answer/2768340), [Publisher Restrictions](https://support.google.com/adsense/answer/9335567)

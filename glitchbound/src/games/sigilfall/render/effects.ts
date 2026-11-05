@@ -1,5 +1,6 @@
 import { clamp, hash2, TAU } from '../core/math';
-import { MOUNT_DEFS, type MountDef } from '../data/mounts';
+import type { MountDef } from '../data/mounts';
+import { mountDef, wornLooks } from '../progress/wardrobe';
 import type { ClassId } from '../data/types';
 import { colorOf, FIELD, FX, WARN, type Fx3D } from '../render3d/fx3d';
 import { heightFromRadius, PERSON_H, type Cast } from '../render3d/cast';
@@ -213,7 +214,16 @@ export function spell(fx: Fx3D, name: string, tone: Tone, x: number, y: number, 
  * The air round a Sigil-warden. `from` and `rise`: how high their motes start and how far they go (below zero they
  * fall). Small on purpose: the armor is what's looked at.
  */
-const WARDEN_GLOW: Record<ClassId, { a: string; b: string; n: number; speed: number; spin: number; from: number; rise: number; size: number; halo?: { up: number; w: number; alpha: number } }> = {
+type Aura = { a: string; b: string; n: number; speed: number; spin: number; from: number; rise: number; size: number; halo?: { up: number; w: number; alpha: number } };
+
+/** The shop's armor sets, the same way (their colors are the set's own or an admin's: its glow, then its trim). */
+const SHOP_GLOW: Record<string, Omit<Aura, 'a' | 'b'>> = {
+  crownforged: { n: 8, speed: 0.42, spin: 0, from: 6, rise: 32, size: 7, halo: { up: 18, w: 40, alpha: 0.14 } },
+  celestine: { n: 9, speed: 0.2, spin: 0.6, from: 8, rise: -34, size: 7, halo: { up: 34, w: 42, alpha: 0.2 } },
+  gloamquill: { n: 7, speed: 0.26, spin: -0.45, from: 4, rise: 20, size: 6 },
+};
+
+const WARDEN_GLOW: Record<ClassId, Aura> = {
   warrior: { a: '#ff6a4a', b: '#ffc06a', n: 7, speed: 0.4, spin: 0, from: 6, rise: 30, size: 7 },
   mage: { a: '#d8f0ff', b: '#ffffff', n: 8, speed: 0.22, spin: 0.7, from: 6, rise: -30, size: 7, halo: { up: 34, w: 36, alpha: 0.24 } },
   ranger: { a: '#7ad8c8', b: '#d8fff4', n: 7, speed: 0.3, spin: 0.4, from: 2, rise: 22, size: 6 },
@@ -555,15 +565,18 @@ export class Effects {
       if (b.def.dr) fx.put({ kind: FX.rune, x: p.x, y: p.y, flat: true, w: 40, a: b.def.color, b: '#ffffff', t: 0.5, seed: i });
     }
     if (hasStatus(p, 'stun')) this.stars(fx, p.x, p.y, PERSON_H + 2, sc.time);
-    const ridden = p.riding ? MOUNT_DEFS[p.riding] : undefined;
+    const ridden = p.riding ? mountDef(p.riding) : undefined;
     if (ridden?.glow) this.mountGlow(fx, p.x, p.y, ridden.glow, ridden.body === 'drake' ? 1.5 : 1, sc.time);
     const worn = w.hero.worn.chest;
-    if (worn?.startsWith('warden-')) this.wardenGlow(fx, p.x, p.y, ridden ? 24 : 0, w.hero.cls, sc.time);
+    const shop = wornLooks(w.hero).chest;
+    if (shop && shop !== 'bare' && shop.shop && shop.set && SHOP_GLOW[shop.set]) {
+      const c = shop.colors ?? [];
+      this.aura(fx, p.x, p.y, ridden ? 24 : 0, { ...SHOP_GLOW[shop.set]!, a: c[3] ?? '#ffffff', b: c[1] ?? '#ffffff' }, sc.time);
+    } else if (worn?.startsWith('warden-')) this.aura(fx, p.x, p.y, ridden ? 24 : 0, WARDEN_GLOW[w.hero.cls], sc.time);
   }
 
-  /** What a Sigil-warden's armor does in the air round them: each of the seven sigils its own way. */
-  private wardenGlow(fx: Fx3D, x: number, y: number, up: number, cls: ClassId, time: number): void {
-    const look = WARDEN_GLOW[cls];
+  /** What a Sigil-warden's armor (or a shop set) does in the air round them: each of the seven sigils its own way. */
+  private aura(fx: Fx3D, x: number, y: number, up: number, look: Aura, time: number): void {
     const n = look.n;
     for (let i = 0; i < n; i++) {
       const u = (time * look.speed + i / n) % 1;
@@ -576,13 +589,35 @@ export class Effects {
     if (look.halo) fx.put({ kind: FX.glow, x, y, up: up + look.halo.up, w: look.halo.w, a: look.a, alpha: look.halo.alpha + Math.sin(time * 1.7) * 0.05 });
   }
 
-  /** A prestige mount's touch, kept small: embers going up off it, or stars round its feet. */
+  /**
+   * A prestige mount's touch, kept small: embers going up off it, or stars round its feet. The shop's have more: sparks
+   * crackling over it, motes of light drifting up, flames licking at its feet.
+   */
   private mountGlow(fx: Fx3D, x: number, y: number, glow: NonNullable<MountDef['glow']>, k: number, time: number): void {
-    const n = 6;
+    if (glow.kind === 'sparks') {
+      // each one jumps to a new spot many times a second
+      for (let i = 0; i < 7; i++) {
+        const tick = Math.floor(time * 11 + i * 0.37);
+        const a = hash2(i, tick, 3) * TAU;
+        const r = 6 + hash2(i, tick, 5) * 12;
+        fx.put({ kind: FX.spark, x: x + Math.cos(a) * r * k, y: y + Math.sin(a) * r * 0.6 * k, up: (10 + hash2(i, tick, 9) * 30) * k, w: 4 + hash2(i, tick, 13) * 6, a: hash2(i, tick, 17) > 0.7 ? '#ffffff' : glow.color, t: 0.1 });
+      }
+      return;
+    }
+    if (glow.kind === 'flames') {
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * TAU + 0.6;
+        const flick = Math.sin(time * 9 + i * 1.7) * 0.5 + 0.5;
+        fx.put({ kind: FX.flame, x: x + Math.cos(a) * 10 * k, y: y + Math.sin(a) * 6 * k, base: true, w: 8 * k, h: (9 + flick * 6) * k, a: glow.color, b: '#fff2b0', seed: i * 1.3 });
+      }
+    }
+    const n = glow.kind === 'motes' ? 8 : 6;
+    const speed = glow.kind === 'motes' ? 0.22 : 0.42;
     for (let i = 0; i < n; i++) {
-      const u = (time * 0.42 + i / n) % 1;
-      const a = hash2(i, Math.floor(time * 0.42 + i / n), 7) * TAU;
-      if (glow.kind === 'embers') fx.put({ kind: FX.spark, x: x + Math.cos(a) * 11 * k, y: y + Math.sin(a) * 6 * k, up: (22 + u * 26) * k, w: 7 * (1 - u * 0.6), a: glow.color, t: 0.1 + u * 0.8 });
+      const u = (time * speed + i / n) % 1;
+      const a = hash2(i, Math.floor(time * speed + i / n), 7) * TAU;
+      if (glow.kind === 'embers' || glow.kind === 'flames') fx.put({ kind: FX.spark, x: x + Math.cos(a) * 11 * k, y: y + Math.sin(a) * 6 * k, up: (22 + u * 26) * k, w: 7 * (1 - u * 0.6), a: glow.color, t: 0.1 + u * 0.8 });
+      else if (glow.kind === 'motes') fx.put({ kind: FX.spark, x: x + Math.cos(a + u * 2) * 14 * k, y: y + Math.sin(a + u * 2) * 8 * k, up: (6 + u * 46) * k, w: 8 * Math.sin(u * Math.PI), a: glow.color, t: 0.1 });
       else fx.put({ kind: FX.spark, x: x + Math.cos(a) * 15, y: y + Math.sin(a) * 9, up: 2 + u * 9, w: 9 * Math.sin(u * Math.PI), a: glow.color, t: 0.1 });
     }
   }
