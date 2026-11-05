@@ -3,7 +3,8 @@ import type { HeroLook, Piece } from '../render/art/hero';
 import { heroParts } from './armorKit';
 import { hexRgb } from './kits';
 import { loadPack, mergeMeshes, type MeshData, type Pack } from './pack';
-import { painted, paintJoints, shaved } from './paint';
+import { headOf, hairIsMetal } from './heads';
+import { blondHair, darkHair, painted, paintJoints, shaved } from './paint';
 import { addRideClip, CAPE_JOINTS } from './ride';
 import { rigAnimOf, type RigAnim } from './toon';
 
@@ -65,8 +66,8 @@ const HEADS: Record<string, { parts: string[]; bald?: boolean; own?: boolean; hi
   wizard: [{ parts: ['Mage_Hat'], bald: true }, { parts: ['Witch_Hat'], bald: true }, { parts: ['Skeleton_Mage_Hat'], bald: true }],
 };
 
-/** Faces with a beard (hair and beard share the look's color): people of this world, not goggles. */
-const BEARDS = ['Hiker_Head', 'Farmer_A_Head', 'Engineer_Head', 'Barbarian_Head'];
+/** Every face a hero or a townsperson may wear (render3d/heads.ts picks among them), loaded with the rest. */
+const BEARDS = ['Hiker_Head', 'Farmer_A_Head', 'Engineer_Head', 'Barbarian_Head', 'Witch_Head', 'Helper_A_Head'];
 
 const HAND_JOINTS = ['hand.l', 'hand.r', 'wrist.l', 'wrist.r', 'handslot.l', 'handslot.r'];
 const FOOT_JOINTS = ['foot.l', 'foot.r', 'toes.l', 'toes.r'];
@@ -177,10 +178,10 @@ export function dressedMesh(w: Wardrobe, look: HeroLook, held: Held | null, shie
   const headTint = headP ? hexRgb(headP.tint) : [1, 1, 1] as [number, number, number];
   const metalHead = headP?.style === 'helm' || headP?.style === 'crown';
   if (!cover?.own || !cover.parts.some((id) => part(id))) {
-    const bearded = !cover?.bald && !!look.beard;
-    const face = cover?.bald ? 'Knight_Head' : bearded ? pickOf(BEARDS, { style: look.skin, tint: look.hair, mat: look.beard ?? '', r: '' }) : look.hairStyle === 'long' ? 'Mage_Head' : look.hairStyle === 'pony' ? 'Rogue_Head' : 'Ranger_Head';
+    const face = headOf(look, !!cover?.bald);
     const m = part(face);
-    if (m) add(painted(face === 'Ranger_Head' ? shaved(m) : m, { skin, cloth: hair, metal: bearded || look.hairStyle === 'long' ? hair : undefined }));
+    const painted1 = m && painted(face === 'Ranger_Head' ? shaved(m) : m, { skin, cloth: hair, metal: hairIsMetal(look) ? hair : undefined });
+    if (painted1) add(face === 'Helper_A_Head' ? blondHair(painted1, hair) : face === 'Mage_Head' ? darkHair(painted1, hair) : painted1);
   }
   for (const id of cover?.parts ?? []) {
     const m = part(id);

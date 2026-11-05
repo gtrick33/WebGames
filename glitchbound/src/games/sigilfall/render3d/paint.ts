@@ -114,3 +114,38 @@ export function paintJoints(m: MeshData, joints: Set<number>, to: [number, numbe
   }
   return { ...m, col };
 }
+
+/**
+ * A head whose hair is blond in the pack (the ponytailed one) reads its hair as skin. This paints the skin-colored parts
+ * above the face and behind it in the hero's hair color, so the chosen color shows.
+ */
+export function blondHair(m: MeshData, hair: [number, number, number]): MeshData {
+  const col = new Uint8Array(m.col);
+  for (let v = 0; v < m.n; v++) {
+    const y = m.pos[v * 3 + 1]!;
+    const z = m.pos[v * 3 + 2]!;
+    if (y <= 1.86 && z >= -0.15) continue;
+    const i = v * 3;
+    const [h, s, l] = rgbHsl(col[i]! / 255, col[i + 1]! / 255, col[i + 2]! / 255);
+    if (isSkin(h, s, l)) repaint(col, i, hair, l, 0.75);
+  }
+  return { ...m, col };
+}
+
+/**
+ * The long-haired head's hair is near black in the pack, too dark to take a color. This paints the dark parts above the
+ * face, behind it and at its sides (not the eyes) in the hero's hair color, kept dark-shaded.
+ */
+export function darkHair(m: MeshData, hair: [number, number, number]): MeshData {
+  const col = new Uint8Array(m.col);
+  for (let v = 0; v < m.n; v++) {
+    const x = m.pos[v * 3]!;
+    const y = m.pos[v * 3 + 1]!;
+    const z = m.pos[v * 3 + 2]!;
+    if (y <= 1.86 && z >= -0.15 && Math.abs(x) <= 0.4) continue;
+    const i = v * 3;
+    const [, , l] = rgbHsl(col[i]! / 255, col[i + 1]! / 255, col[i + 2]! / 255);
+    if (isDark(l)) repaint(col, i, hair, l, 0.07);
+  }
+  return { ...m, col };
+}

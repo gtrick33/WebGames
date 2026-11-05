@@ -7,7 +7,8 @@ import type { Wardrobe } from './dress';
 import { hexRgb } from './kits';
 import { above, below, blade, glowing, mix, Part, rgb, rod, shell, tied, within, type Corner, type Inside } from './meshKit';
 import { mergeMeshes, type MeshData } from './pack';
-import { hslRgb, painted, paintJoints, rgbHsl, shaved } from './paint';
+import { headOf, hairIsMetal } from './heads';
+import { blondHair, darkHair, hslRgb, painted, paintJoints, rgbHsl, shaved } from './paint';
 
 /**
  * What a hero's gear looks like. Everything goes by rarity, so a glance says what someone is wearing:
@@ -128,19 +129,19 @@ const HEAD_LADDER: Record<string, Record<Rarity, Cover>> = {
   },
 };
 
-const BEARDS = ['Hiker_Head', 'Farmer_A_Head', 'Engineer_Head', 'Barbarian_Head'];
+/** Every face a hero or a townsperson may wear (render3d/heads.ts picks among them), loaded with the rest. */
+const BEARDS = ['Hiker_Head', 'Farmer_A_Head', 'Engineer_Head', 'Barbarian_Head', 'Witch_Head', 'Helper_A_Head'];
 const HAND_JOINTS = ['hand.l', 'hand.r', 'wrist.l', 'wrist.r', 'handslot.l', 'handslot.r'];
 const FOOT_JOINTS = ['foot.l', 'foot.r', 'toes.l', 'toes.r'];
 
 /** The head under a helmet or a hat, or the hero's own hair and face. */
 function plainHead(w: Wardrobe, look: HeroLook, cover: Cover | null, skin: Rgb, hair: Rgb): MeshData | null {
-  const bearded = !cover?.bald && !!look.beard;
-  let h = 2166136261;
-  for (const c of `${look.skin}|${look.hair}|${look.beard ?? ''}`) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
-  const face = cover?.bald ? 'Knight_Head' : bearded ? BEARDS[(h >>> 0) % BEARDS.length]! : look.hairStyle === 'long' ? 'Mage_Head' : look.hairStyle === 'pony' ? 'Rogue_Head' : 'Ranger_Head';
+  const face = headOf(look, !!cover?.bald);
   const m = w.hero.meshes[face];
+  if (!m) return null;
   // (a hero who chose no beard has none; one from before the choice keeps the face they've always had)
-  return m ? painted(face === 'Ranger_Head' && look.beard === null ? shaved(m) : m, { skin, cloth: hair, metal: bearded || look.hairStyle === 'long' ? hair : undefined }) : null;
+  const done = painted(face === 'Ranger_Head' && look.beard === null ? shaved(m) : m, { skin, cloth: hair, metal: hairIsMetal(look) ? hair : undefined });
+  return face === 'Helper_A_Head' ? blondHair(done, hair) : face === 'Mage_Head' ? darkHair(done, hair) : done;
 }
 
 /** A pad on a shoulder: `k` how big, with a rim. */
