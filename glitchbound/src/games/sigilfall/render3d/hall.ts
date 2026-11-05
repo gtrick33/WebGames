@@ -25,7 +25,8 @@ export interface HallHero {
 
 /** Each Crown Sigil's own light, once it's been won: embers, tides, stone, the sun, frost, thorns, the veil. */
 const SIGIL_LIGHT = ['#ff8a3a', '#4aa8ff', '#d8c8a0', '#ffd24a', '#a8e8ff', '#7fd86a', '#b47aff'];
-const IRON = [0.3, 0.33, 0.48] as const;
+/** An unwon sigil: pale stone, faintly lit (dark iron read as a smudge against the bright window behind it). */
+const IRON = [0.74, 0.76, 0.92] as const;
 
 /** Those not on the dais stand back in the dark. */
 const AWAY: [number, number, number] = [0.5, 0.5, 0.62];
@@ -192,7 +193,7 @@ export class Hall3D {
       for (let i = 0; i < 7; i++) {
         const c = this.crownAt[i];
         if (!c) continue;
-        q.put({ kind: FX.glow, x: c.x * TILE, y: c.z * TILE, up: c.y * TILE, w: c.won ? 34 : 13, a: c.won ? SIGIL_LIGHT[i]! : '#8a9cff', alpha: c.won ? 0.8 : 0.5 });
+        q.put({ kind: FX.glow, x: c.x * TILE, y: c.z * TILE, up: c.y * TILE, w: c.won ? 34 : 18, a: c.won ? SIGIL_LIGHT[i]! : '#b8c4ff', alpha: c.won ? 0.8 : 0.6 });
       }
       for (const e of d.eyes) q.put({ kind: FX.glow, x: e.x * TILE, y: e.z * TILE, up: e.y * TILE, w: 14 + Math.sin(time * 0.7 + e.x) * 2, a: '#9ad8ff', alpha: 0.55 });
       for (const f of d.fires) {
