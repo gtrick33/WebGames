@@ -277,7 +277,10 @@ describe('sigilfall perks', () => {
     const speed = (region: 'emberwick' | 'crypt', perk: boolean, ride: boolean) => {
       const c = readyHero('mage', 8);
       if (perk) c.perks.push('mount');
+      // (riding opens with Dunmore's riders)
+      c.quests['camp-riders'] = { state: 'done', n: 1 };
       grantMounts(c);
+      if (perk) c.mount = 'gullport-strider';
       c.unlocked.push('crypt');
       const w = newWorld(region, c);
       w.enemies = [];

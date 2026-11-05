@@ -10,7 +10,7 @@ import { RARITIES, SLOTS } from '../data/types';
 import { STAT_ROLL } from '../data/items';
 import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME, allItems, HELD_MAX } from './character';
 import { itemClass, itemSlot, newUid } from './items';
-import { grantMounts, grantWarden, ridingOpen, syncRift, learnLooks, LOOK_SLOTS, tidyWardrobe } from './wardrobe';
+import { grantMounts, grantWarden, syncRift, learnLooks, LOOK_SLOTS, tidyWardrobe } from './wardrobe';
 import { MOUNT_DEFS } from '../data/mounts';
 import { KEY_MIN, MAX_IL } from '../data/keystones';
 import { QM_PRICE } from '../data/vendors';
@@ -320,8 +320,8 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   learnLooks(c, [...allItems(c), ...(c.held ?? [])]);
   tidyWardrobe(c);
   // mounts: earned ones are owned (the Gullport Strider for anyone who has its perk); the chosen one must be owned.
-  // (the Trophy Shelf's used to come before the story had any horses in it: it waits now, and comes back with them)
-  if (!ridingOpen(c)) c.mounts = c.mounts.filter((id) => MOUNT_DEFS[id]?.source.kind !== 'shelf');
+  // A mount held from before Dunmore's riders came (older rules gave some early) stays in the save: the hero
+  // just can't ride it until the riders come (wardrobe.ts ridingOpen, world.ts mountRefusal).
   grantMounts(c);
   grantWarden(c);
   syncRift(c);

@@ -193,17 +193,30 @@ export function authoredLooks(cls: ClassId, slot: LookSlot): Look[] {
 
 /* ------------------------------------------------------------------ mounts */
 
-/** Nobody rides before this: Dunmore's riders bring the first horses to the camp (Act I). */
-const FIRST_RIDE = 'camp-riders';
+/** Nobody rides before this: Dunmore's riders bring the first horses to the camp (Act I, level 20). */
+export const FIRST_RIDE = 'camp-riders';
 
-/** Whether a mount that comes from outside the story can be had yet: not by a hero who's still on foot in it. */
+/** Whether the hero rides at all yet: no mount of any source is earned, chosen or called before the riders come. */
 export const ridingOpen = (c: Pick<Character, 'quests'>): boolean => c.quests[FIRST_RIDE]?.state === 'done';
 
-/** Whether the hero has met a mount's source. */
+/** Why riding is still shut, in the player's words ("Riding opens with Riders for Briarhollow (level 20)"). */
+export function ridingLocked(): string {
+  const q = QUESTS.find((x) => x.id === FIRST_RIDE);
+  return q ? `Riding opens with ${q.name}${q.level ? ` (level ${q.level})` : ''}` : 'Riding opens later in the story';
+}
+
+/** Whether the hero can call a mount at all: riding is open and they own one (the mount key and button). */
+export const canRide = (c: Pick<Character, 'quests' | 'mounts'>): boolean => ridingOpen(c) && c.mounts.length > 0;
+
+/**
+ * Whether the hero has met a mount's source. Every source waits for the first ride: a hero still on foot in
+ * the story earns nothing yet, and gets what they have met the moment the riders come.
+ */
 export function mountEarned(c: Pick<Character, 'quests' | 'perks' | 'clears' | 'cls'>, m: MountDef): boolean {
+  if (!ridingOpen(c)) return false;
   const s = m.source;
   if (s.kind === 'campaign') return s.cls === c.cls && c.quests[CAMPAIGN_END]?.state === 'done';
-  if (s.kind === 'shelf') return shelfPoints >= s.points && ridingOpen(c);
+  if (s.kind === 'shelf') return shelfPoints >= s.points;
   if (s.kind === 'quest') return c.quests[s.quest]?.state === 'done';
   if (s.kind === 'perk') return c.perks.includes(s.perk);
   return s.regions.every((r) => Object.entries(c.clears).some(([k, n]) => n > 0 && k.startsWith(`${r}:`) && Number(k.slice(r.length + 1)) >= s.tier));
@@ -255,14 +268,14 @@ export function grantMounts(c: Character): MountDef[] {
       added.push(m);
     }
   }
-  // the first mount is the one ridden
-  if (!c.mount && c.mounts.length) c.mount = c.mounts[0]!;
+  // the first mount is the one ridden (once there is riding: a mount kept from before waits unchosen)
+  if (!c.mount && c.mounts.length && ridingOpen(c)) c.mount = c.mounts[0]!;
   return added;
 }
 
-/** Chooses the mount the mount key summons. */
+/** Chooses the mount the mount key summons (refused before the first ride). */
 export function chooseMount(c: Character, id: string): boolean {
-  if (!c.mounts.includes(id) || !MOUNT_DEFS[id]) return false;
+  if (!ridingOpen(c) || !c.mounts.includes(id) || !MOUNT_DEFS[id]) return false;
   c.mount = id;
   return true;
 }

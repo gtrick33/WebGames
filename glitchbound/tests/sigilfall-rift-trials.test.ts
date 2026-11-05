@@ -143,6 +143,8 @@ describe('only the story makes a warden', () => {
     expect(grantMounts(c).map((m) => m.id)).not.toContain('drake-warlock');
 
     c.quests[CAMPAIGN_END] = { state: 'done', n: 0 };
+    // (the story's end comes long after Dunmore's riders, who open riding)
+    c.quests['camp-riders'] = { state: 'done', n: 1 };
     expect(grantWarden(c)).toBe(true);
     expect(grantWarden(c)).toBe(false);
     expect(c.looks).toContain(wardenLookId('warlock', 'chest'));

@@ -7,7 +7,8 @@ import { PERKS, addItem, salvage, type Character } from '../src/games/sigilfall/
 import { buildHero } from '../src/games/sigilfall/progress/build';
 import { makeItem, rollGear } from '../src/games/sigilfall/progress/items';
 import { migrate, SAVE_VERSION } from '../src/games/sigilfall/progress/save';
-import { BARE_LOOK, grantMounts, learnLooks, lookId, lookOf, mountEarned, setShelfPoints, wearLook, wornLooks } from '../src/games/sigilfall/progress/wardrobe';
+import { BARE_LOOK, canRide, chooseMount, FIRST_RIDE, grantMounts, learnLooks, lookId, lookOf, mountEarned, ridingOpen, setShelfPoints, wearLook, wornLooks } from '../src/games/sigilfall/progress/wardrobe';
+import { CAMPAIGN_END } from '../src/games/sigilfall/data/wardens';
 import { MOUNT_FRAMES, MOUNT_WALK_FRAMES, paintMount, paintRiderLegs, RIDER_HIP } from '../src/games/sigilfall/render/art/mount';
 import { heldWeapon, heroLook } from '../src/games/sigilfall/render/sprites';
 import { hurtPlayer } from '../src/games/sigilfall/sim/combat';
@@ -177,12 +178,74 @@ describe('Sigilfall: mounts', () => {
     expect(mountEarned(c, MOUNT_DEFS['ashen-nightmare']!)).toBe(false);
     c.clears['barrow-of-kings:2'] = 1;
     expect(mountEarned(c, MOUNT_DEFS['ashen-nightmare']!)).toBe(true);
-    // an old save with the perk gets the Strider; a mount id that isn't real is dropped
+    // an old save with the perk gets the Strider (once riding is open); a mount id that isn't real is dropped
     const old = readyHero('ranger', 20);
     old.perks.push('mount');
+    old.quests['camp-riders'] = { state: 'done', n: 1 };
     const back = roundTrip(old, { mounts: ['pegasus'], mount: 'pegasus' });
-    expect(back.mounts).toEqual(['gullport-strider']);
+    expect(back.mounts).toEqual(['briarhollow-chestnut', 'gullport-strider']);
+    expect(back.mount).toBe('briarhollow-chestnut');
+  });
+
+  it('riding opens with Riders for Briarhollow, at level 20: no mount of any source comes before it', () => {
+    expect(FIRST_RIDE).toBe('camp-riders');
+    expect(QUEST_DEFS[FIRST_RIDE]!.level).toBe(20);
+    expect(MOUNT_DEFS['briarhollow-chestnut']!.source).toEqual({ kind: 'quest', quest: FIRST_RIDE });
+    expect(new Set(MOUNTS.map((m) => m.source.kind))).toEqual(new Set(['quest', 'perk', 'clears', 'shelf', 'campaign']));
+    setShelfPoints(1000);
+    try {
+      for (const m of MOUNTS) {
+        const s = m.source;
+        // a hero who has met this mount's source in every other way
+        const c = readyHero(s.kind === 'campaign' ? s.cls : 'ranger', 20);
+        if (s.kind === 'campaign') c.quests[CAMPAIGN_END] = { state: 'done', n: 1 };
+        if (s.kind === 'quest' && s.quest !== FIRST_RIDE) c.quests[s.quest] = { state: 'done', n: 1 };
+        if (s.kind === 'perk') c.perks.push(s.perk);
+        if (s.kind === 'clears') for (const r of s.regions) c.clears[`${r}:${s.tier}`] = 1;
+        expect(ridingOpen(c)).toBe(false);
+        expect(mountEarned(c, m), m.id).toBe(false);
+        expect(grantMounts(c), m.id).toEqual([]);
+        expect(c.mount).toBeNull();
+        c.quests[FIRST_RIDE] = { state: 'done', n: 1 };
+        expect(mountEarned(c, m), m.id).toBe(true);
+        expect(grantMounts(c).map((x) => x.id), m.id).toContain(m.id);
+        expect(canRide(c)).toBe(true);
+      }
+    } finally {
+      setShelfPoints(0);
+    }
+  });
+
+  it('an old save with a mount and the riders not come keeps the mount, and can neither choose it nor ride', () => {
+    const c = readyHero('ranger', 14);
+    c.perks.push('mount');
+    const back = roundTrip(c, { mounts: ['gullport-strider', 'cabinet-courser'], mount: 'gullport-strider' });
+    expect(back.mounts).toEqual(['gullport-strider', 'cabinet-courser']);
     expect(back.mount).toBe('gullport-strider');
+    expect(canRide(back)).toBe(false);
+    expect(chooseMount(back, 'cabinet-courser')).toBe(false);
+    expect(back.mount).toBe('gullport-strider');
+    // the mount key is refused, and says why
+    const w = newWorld('emberwick', back);
+    w.enemies = [];
+    w.player.calm = 10;
+    expect(w.mountRefusal()).toBe('Riding opens with Riders for Briarhollow (level 20).');
+    w.toggleMount();
+    expect(w.player.summon).toBe(0);
+    run(w, SUMMON_TIME + 0.1);
+    expect(w.player.riding).toBeNull();
+    // a call already under way stops too
+    w.player.summon = 0.001;
+    run(w, SUMMON_TIME + 0.1);
+    expect(w.player.riding).toBeNull();
+    // the riders come: the same mounts, and now they ride
+    back.quests[FIRST_RIDE] = { state: 'done', n: 1 };
+    expect(grantMounts(back).map((m) => m.id)).toEqual(['briarhollow-chestnut']);
+    expect(chooseMount(back, 'cabinet-courser')).toBe(true);
+    expect(w.mountRefusal()).toBeNull();
+    w.toggleMount();
+    run(w, SUMMON_TIME + 0.05);
+    expect(w.player.riding).toBe('cabinet-courser');
   });
 
   it('nobody starts on a horse: the Trophy Shelf\u2019s mount waits for the first one the story gives', () => {
@@ -191,10 +254,10 @@ describe('Sigilfall: mounts', () => {
       const c = readyHero('ranger', 1);
       expect(grantMounts(c)).toEqual([]);
       expect(c.mount).toBeNull();
-      // a hero who was given it before the story had any horses loses it, and has it back when the riders come
+      // a hero who was given it before the story had any horses keeps it, but rides only when the riders come
       const early = roundTrip(c, { mounts: ['cabinet-courser'], mount: 'cabinet-courser' });
-      expect(early.mounts).toEqual([]);
-      expect(early.mount).toBeNull();
+      expect(early.mounts).toEqual(['cabinet-courser']);
+      expect(canRide(early)).toBe(false);
       c.quests['camp-riders'] = { state: 'done', n: 1 };
       expect(grantMounts(c).map((m) => m.id).sort()).toEqual(['briarhollow-chestnut', 'cabinet-courser']);
       // the first ridden is the story's
@@ -211,7 +274,9 @@ describe('Sigilfall: mounts', () => {
   it('the mount is called standing still; moving cancels the call', () => {
     const c = readyHero('mage', 20);
     c.perks.push('mount');
+    c.quests['camp-riders'] = { state: 'done', n: 1 };
     grantMounts(c);
+    chooseMount(c, 'gullport-strider');
     const w = newWorld('emberwick', c);
     w.enemies = [];
     w.player.calm = 10;
@@ -232,6 +297,7 @@ describe('Sigilfall: mounts', () => {
   it('a hit or an attack gets the hero down; there is no riding in a fight or a dungeon', () => {
     const c = readyHero('warrior', 20);
     c.perks.push('mount');
+    c.quests['camp-riders'] = { state: 'done', n: 1 };
     grantMounts(c);
     c.unlocked.push('crypt');
     const w = newWorld('emberwick', c);

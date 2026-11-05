@@ -15,7 +15,7 @@ import { KeyboardMouse, TouchState, type UiKey } from './input/input';
 import { holds } from './sim/story';
 import { acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, type Body, type Face, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
-import { chooseMount, grantMounts, grantWarden, setShelfPoints, syncRift, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
+import { canRide, chooseMount, FIRST_RIDE, grantMounts, grantWarden, setShelfPoints, syncRift, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
 import { DEFAULT_SETTINGS, HERO_SLOTS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
 import type { ShopId } from './data/vendors';
@@ -582,6 +582,8 @@ export class SigilEngine {
           const q = QUEST_DEFS[ev.quest];
           if (q && this.hero && !q.quiet) this.toast(`Quest complete: ${q.name}`, 'quest', undefined, rewardSummary(this.hero, q) || q.reward.text);
           this.sound.play('questDone');
+          // the first horses: how to ride, once the mount is in (granted below, shown when the hero is free)
+          if (ev.quest === FIRST_RIDE) this.queueTip('riding');
           break;
         }
         case 'questStep': {
@@ -951,6 +953,8 @@ export class SigilEngine {
     // can be seen (its art in, a moment to look), not over a dark screen
     this.greetIn = questState(h, 'briar-dusk') === 'active' && h.level === 1 && h.stats.time < 1 ? GREET_AFTER : 0;
     if (h.level >= SPEC_LEVEL) this.queueTip('talents');
+    // (as the talents': a hero who already rides and hasn't seen it, with the hints on, sees it as the land opens)
+    if (canRide(h)) this.queueTip('riding');
     this.bump();
   }
 

@@ -92,8 +92,22 @@ describe('sigilfall hints: what they say', () => {
     expect(tipSteps('talents', ctx()).map((s) => s.panel)).toEqual([null, 'talents', 'talents']);
   });
 
+  it('teaches riding after the first mount: the key or the horseshoe, the Wardrobe, one pace, on foot to fight', () => {
+    const mouse = tipSteps('riding', ctx());
+    expect(mouse.map((s) => s.target)).toEqual(['.rb-slot6.is-mount', '.rb-seg [data-look-tab="mounts"]', '.rb-slot6.is-basic']);
+    expect(mouse.map((s) => s.panel)).toEqual([null, 'wardrobe', null]);
+    expect(mouse[0]!.text).toMatch(/Press Y/);
+    expect(mouse[1]!.text).toMatch(/Wardrobe › Mounts/);
+    expect(mouse[1]!.text).toMatch(/same pace/);
+    expect(mouse[2]!.title).toMatch(/fight/);
+    const touch = tipSteps('riding', ctx({ touch: true }));
+    expect(touch.map((s) => s.target)).toEqual(['.rb-sb-mount', '.rb-seg [data-look-tab="mounts"]', '.rb-sb-basic']);
+    expect(touch[0]!.text).toMatch(/Tap the horseshoe/);
+    expect(touch.map((s) => s.text).join(' ')).not.toMatch(/Press |click/);
+  });
+
   it('every hint has real words, and American spelling', () => {
-    for (const id of ['combat', 'bag', 'spell', 'talents'] as TipId[]) {
+    for (const id of ['combat', 'bag', 'spell', 'talents', 'riding'] as TipId[]) {
       for (const s of tipSteps(id, ctx({ spell: CLASSES.mage.skills[1] }))) {
         expect(s.title.length).toBeGreaterThan(3);
         expect(s.text.length).toBeGreaterThan(20);
@@ -150,7 +164,7 @@ describe('sigilfall hints: they only pause the game', () => {
     Object.assign(e, {
       ui,
       hero: h,
-      world: { scene: null, keyRun: null, build: { bar: { s1: CLASSES.mage.skills[0] }, resource: null } },
+      world: { scene: null, keyRun: null, events: [], build: { bar: { s1: CLASSES.mage.skills[0] }, resource: null } },
       save: { settings: { ...DEFAULT_SETTINGS, tutorial }, heroes: [h] },
       sound: { play: vi.fn(), setVolumes: vi.fn(), suspend: vi.fn() },
       renderer: { waiting: false, reducedMotion: false },
@@ -196,6 +210,41 @@ describe('sigilfall hints: they only pause the game', () => {
     expect(e.isPaused()).toBe(false);
     // once
     expect(e.queueTip('bag')).toBe(false);
+  });
+
+  it('teaches riding once, right after Riders for Briarhollow, and only with the hints on', () => {
+    type Events = { handleEvents(w: unknown): void; hero: { quests: Record<string, unknown>; mounts: string[]; opened: string[] } };
+    const done = (e: ReturnType<typeof engine>, quest: string): void => {
+      const w = e.world as { events: unknown[] };
+      e.hero!.quests[quest] = { state: 'done', n: 1 };
+      w.events = [{ t: 'questDone', quest }];
+      (e as unknown as Events).handleEvents(w);
+    };
+    const e = engine();
+    // another quest's end teaches nothing
+    done(e, 'ashby-farm');
+    expect(e.tipQueue).toEqual([]);
+    done(e, 'camp-riders');
+    // the first mount came with it, and the hint waits for the hero to be free
+    expect(e.hero!.mounts).toContain('briarhollow-chestnut');
+    expect(e.tipQueue).toEqual([{ id: 'riding', spell: undefined }]);
+    e.showTip(e.world);
+    expect(e.ui.tip?.id).toBe('riding');
+    e.tipNext();
+    expect(e.ui.panel).toBe('wardrobe');
+    e.tipNext();
+    expect(e.ui.panel).toBeNull();
+    e.tipNext();
+    expect(e.ui.tip).toBeNull();
+    // once
+    expect(e.hero!.opened).toContain(tipKey('riding'));
+    done(e, 'camp-riders');
+    expect(e.tipQueue).toEqual([]);
+    // with the hints off, never
+    const off = engine(false);
+    done(off, 'camp-riders');
+    expect(off.tipQueue).toEqual([]);
+    expect(off.hero!.mounts).toContain('briarhollow-chestnut');
   });
 
   it('never stops a party or a Riftstone run', () => {
