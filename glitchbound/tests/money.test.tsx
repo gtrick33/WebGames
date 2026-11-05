@@ -4,12 +4,12 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, within } from '@testing-library/react';
-import { AGREE_NOW, breaksRules, isBuiltIn, priceText, PRODUCTS, productIn, sanitizeProducts } from '../src/catalog/shop';
+import { AGREE_NOW, breaksRules, GLOAMKNIGHT_ITEM, isBuiltIn, priceText, PRODUCTS, productIn, sanitizeProducts } from '../src/catalog/shop';
 
 /** The built-in borders, banners and icons. */
-const LOOKS = PRODUCTS.filter((p) => p.look);
-/** Every built-in item the code gives a meaning: those, and Sigilfall's mounts and looks. */
-const BUILT = PRODUCTS.filter((p) => p.look || p.sigil);
+const LOOKS = PRODUCTS.filter((p) => p.look && !p.hidden);
+/** Every built-in item the code gives a meaning: those, Sigilfall's mounts and looks, and the Gloamknight class. */
+const BUILT = PRODUCTS.filter((p) => p.look || p.sigil || p.id === GLOAMKNIGHT_ITEM);
 const isLook = (id: string): boolean => BUILT.some((p) => p.id === id);
 /** Ad-free's price, in its own panel (a Sigilfall helm costs the same). */
 const adFreePrice = (): HTMLElement => within(screen.getByRole('heading', { name: 'Ad-free' }).closest('section')!).getByText('€1.99');
@@ -151,7 +151,7 @@ describe('what the shop sells', () => {
   it('keeps only items that follow the rules, and ad-free is always there', () => {
     const good = { id: 'look-one', name: 'A look', blurb: 'A nice look.', cents: 150 };
     // (the borders and banners are always there too: the next test)
-    const ids = (v: unknown): string[] => sanitizeProducts(v).map((p) => p.id).filter((id) => !isLook(id));
+    const ids = (v: unknown): string[] => sanitizeProducts(v).map((p) => p.id).filter((id) => !isLook(id) && id !== GLOAMKNIGHT_ITEM);
     expect(ids([good])).toEqual(['ad-free', 'look-one']);
     expect(sanitizeProducts([good, good]).filter((p) => p.id === 'look-one')).toHaveLength(1);
     expect(ids([{ ...good, cents: 10 }])).toEqual(['ad-free']);

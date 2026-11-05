@@ -1,7 +1,7 @@
 # Sigilfall: design notes
 
 A single-player, top-down pixel-art action RPG, built for phones first (landscape, two thumbs) and fully playable
-with a keyboard and mouse. Seven classes, gear that changes how skills behave, three talent trees and a
+with a keyboard and mouse. Eight classes, gear that changes how skills behave, three talent trees and a
 specialization per class, a capital city and big open zones, dungeons with phased bosses and three difficulty
 tiers. The story, the Hollow King and the plan for all 28 zones and their dungeons are in `WORLD.md`.
 

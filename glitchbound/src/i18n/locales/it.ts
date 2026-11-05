@@ -2097,7 +2097,7 @@ const it: string[] = [
   'Vedi tutti i {n} giornalieri',
   'Un’avventura GlitchBound',
   'Un intero GDR fantasy che si gioca nel browser. Scegli il tuo eroe, raccogli l’equipaggiamento e chiudi la Fenditura, da solo o con gli amici.',
-  '7 eroi',
+  '8 eroi',
   '5 atti',
   '12 dungeon',
   'Cooperativa per 4',

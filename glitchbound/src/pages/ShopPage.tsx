@@ -41,6 +41,7 @@ export function ShopPage() {
     <section key={p.id} className="panel info-block">
       {p.look && <LookPreview spec={p.look} name={me?.nickname ?? 'GlitchBound'} src={me?.avatar} />}
       {p.sigil && <SigilPicture id={p.id} spec={p.sigil} />}
+      {p.includes && <PackContents ids={p.includes} items={items} name={me?.nickname ?? 'GlitchBound'} src={me?.avatar} />}
       <h2>{p.name}</h2>
       <p>{p.blurb}</p>
       <p>
@@ -87,7 +88,7 @@ export function ShopPage() {
   return (
     <div className="wrap info-page">
       <h1 className="info-title">Shop</h1>
-      <p className="info-lead">Every game stays free to play. These are optional extras, each paid for once: no subscriptions, no game currency and no random boxes. Nothing here helps you win.</p>
+      <p className="info-lead">Every game stays free to play. These are optional extras, each paid for once: no subscriptions, no game currency and no random boxes. Most only change how things look; the Gloamknight Pack unlocks a new class to play in Sigilfall.</p>
       {!money.shop && (
         <p className="info-small" role="status">
           {me?.isAdmin ? 'Admin test: the shop is closed to players, and you can test a purchase here.' : 'The shop isn’t open yet, so nothing can be bought right now.'}
@@ -139,6 +140,27 @@ export function ShopPage() {
         See the <Link href="/terms/sale">terms of sale</Link> for your rights, refunds and who you are buying from.
       </p>
     </div>
+  );
+}
+
+/** What a pack gives, each thing as it looks: its own pieces are made for it and not sold on their own. */
+function PackContents({ ids, items, name, src }: { ids: string[]; items: readonly Product[]; name: string; src?: string }) {
+  const parts = ids.map((id) => items.find((p) => p.id === id)).filter((p): p is Product => !!p);
+  return (
+    <ul className="shop-pack" aria-label="In the pack">
+      <li className="shop-pack-class">
+        <strong>The Gloamknight</strong>
+        <span className="info-small">Sigilfall&rsquo;s eighth class, and two more hero slots</span>
+      </li>
+      {parts.map((p) => (
+        <li key={p.id} className={p.sigil?.kind === 'mount' ? 'is-wide' : undefined}>
+          {p.sigil && <SigilPicture id={p.id} spec={p.sigil} size={240} />}
+          {p.look?.kind === 'banner' && <BannerArt spec={p.look} className="shop-pack-banner" />}
+          {p.look && p.look.kind !== 'banner' && <FramedAvatar name={name} src={src} size={64} border={p.look.kind === 'border' ? p.look : undefined} icon={p.look.kind === 'icon' ? p.look : undefined} />}
+          <span className="info-small">{p.name}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 

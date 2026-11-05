@@ -43,9 +43,16 @@ items marked for them before taking money.
   what the player chose to wear (`/privacy` says so). A look shows only
   while its purchase is paid: a refund takes it off everywhere.
 
-**What may be sold** (these rules are in `src/catalog/shop.ts`): cosmetics and ad-free only. Real-money prices shown in full.
-Don't add game currency, random boxes, anything that helps win, countdowns, "last chance" wording, or words telling children
-to buy. Regulators in the EU have acted on exactly those.
+**What may be sold** (these rules are in `src/catalog/shop.ts`): cosmetics and ad-free, plus one class, the **Gloamknight**,
+sold as the **Gloamknight Pack** (€9.99) by the owner's choice (2026-11-05), like a class pack in other action RPGs: the class,
+two more hero slots, and looks that come only with it (the Duskborn helm and armor, the Gloamwing Drake, the Gloam border and
+banner; they're hidden items, and a pack owner owns them through `withIncluded`). It's a different way to play, balanced with
+the seven free classes, and the shop, `/terms/sale` and the admin page say plainly that it's the one item that changes how a
+game plays. Real-money prices shown in full. Don't add game currency, random boxes, anything that makes a player stronger,
+countdowns, "last chance" wording, or words telling children to buy. Regulators in the EU have acted on exactly those.
+- **How the class is locked** (`src/games/sigilfall/progress/paidClasses.ts`): making a Gloamknight, playing one, picking it
+  in the Vigil and the Ring and using the fourth and fifth hero slots all need the pack; admins can always, to test. The game asks the account each time, never
+  the save, so a refund locks it again and the hero waits, kept. Bots in the Ring can still be Gloamknights.
 
 ## Connecting Stripe, step by step
 1. **Create the account:** [dashboard.stripe.com/register](https://dashboard.stripe.com/register). Website:
@@ -115,6 +122,10 @@ You:
       the next checkout, with VAT included. An accountant should confirm the tax code in `server/shop.ts` (`txcd_10000000`).
 - [ ] Decide on the currency. The shop shows euros, and Bulgaria uses the euro since 2026.
 Lawyer:
+- [ ] The paid Gloamknight class: a paid class is playable in the Ring, whose results reach the boards. Check that selling it
+      fits EU consumer rules on in-game purchases (the Unfair Commercial Practices Directive and the CPC network's guidance on
+      in-game purchases) and the wording in `/terms/sale` ("a different way to play, … not a stronger one"), and whether the Ring's
+      ladder should separate or mark it.
 - [ ] Read `/terms/sale`, `/terms` and `/privacy` as written for the shop-open state (staff can see them while it's closed),
       especially the merchant-of-record wording against Stripe's actual contract, the 14-day waiver flow, and "lasts as long as
       GlitchBound runs" for ad-free.

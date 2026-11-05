@@ -2,6 +2,8 @@ import type { GameHost } from '../../platform/contract';
 import { reportOrders, waitingOrders } from '../../platform/sigilfallOrders';
 import { sigilfallShop, watchSigilfallShop } from '../../platform/sigilfallShop';
 import { setShopGoods } from './progress/shopGoods';
+import { account } from '../../platform/account';
+import { classOpen, heroSlots } from './progress/paidClasses';
 import { applyOrder, orderToast } from './progress/gm';
 import { isMainQuest, turnInNpc } from './progress/handin';
 import { rewardSummary } from './progress/rewards';
@@ -18,7 +20,7 @@ import { holds } from './sim/story';
 import { acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, type Body, type Face, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
 import { canRide, chooseMount, grantMounts, grantWarden, setShelfPoints, syncRift, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
-import { DEFAULT_SETTINGS, HERO_SLOTS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
+import { DEFAULT_SETTINGS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
 import type { ShopId } from './data/vendors';
 import { iconsReady } from './render/art/gameIcons';
@@ -337,7 +339,7 @@ export class SigilEngine {
           done.push({ id: o.id, result: '' });
           continue;
         }
-        const result = applyOrder(this.save, o, this.hero);
+        const result = applyOrder(this.save, o, this.hero, Math.random, heroSlots(account.get().me));
         done.push({ id: o.id, result });
         if (result) continue;
         if (this.hero && this.hero.created === o.created) live = true;
@@ -899,6 +901,8 @@ export class SigilEngine {
   }
 
   createHero(slot: number, cls: ClassId, name: string, body: Body = 'm', face?: Face, tips = this.settings.tutorial): void {
+    // a class sold in the shop is made only once it's bought, and in a place this account plays (progress/paidClasses.ts)
+    if (!classOpen(cls, account.get().me) || slot >= heroSlots(account.get().me)) return;
     const c = newCharacter(cls, name || this.defaultName, `hero${slot}`, Date.now(), body);
     if (face) c.face = face;
     // the first hero gets the tutorial; a later one by the player's answer, which is also the Settings choice
@@ -936,6 +940,12 @@ export class SigilEngine {
   private shelfAsked = false;
 
   play(slot: number): void {
+    const locked = this.save.heroes[slot];
+    if (slot >= heroSlots(account.get().me)) return;
+    if (locked && !classOpen(locked.cls, account.get().me)) {
+      this.setUi({ notice: `This hero is a ${CLASSES[locked.cls].name}, a class from the shop. Unlock it in the shop to play them again: they're kept, as they were.` });
+      return;
+    }
     const h = this.save.heroes[slot];
     if (!h) return;
     this.askShelf();
@@ -1739,7 +1749,8 @@ export class SigilEngine {
   /** Heroes in the save, for the title screen. */
   heroes(): (Character | null)[] {
     const out: (Character | null)[] = [];
-    for (let i = 0; i < HERO_SLOTS; i++) out.push(this.save.heroes[i] ?? null);
+    // the places this account plays: three, or all of them with the Gloamknight Pack
+    for (let i = 0; i < heroSlots(account.get().me); i++) out.push(this.save.heroes[i] ?? null);
     return out;
   }
 }

@@ -17,7 +17,7 @@ browser this cycle), **UNVERIFIED** (not checked, with the reason).
 
 | Area | Status | Evidence |
 | --- | --- | --- |
-| All seven classes clear the opening dungeons on every tier (bot) | VERIFIED | `sigilfall-sim`, `sigilfall-dungeon-*` |
+| All eight classes clear the opening dungeons on every tier (bot) | VERIFIED | `sigilfall-sim`, `sigilfall-dungeon-*` |
 | Every zone's quests can be finished; no road to an unregistered region | VERIFIED | `sigilfall-quests-doable`, `sigilfall-ids` |
 | The whole campaign plays from a new save by the quest arrow, all 515 quests, no dead end | VERIFIED | `sigilfall-campaign` |
 | Fog of war on the maps, kept on the save; map icons | VERIFIED | `sigilfall-guidance`; seen in the browser |

@@ -7,7 +7,7 @@ import { Icon } from './Icon';
 import './SigilfallHero.css';
 
 /** What the game holds, counted from its data. */
-const FACTS = ['7 heroes', '5 acts', '12 dungeons', 'Co-op for 4'];
+const FACTS = ['8 heroes', '5 acts', '12 dungeons', 'Co-op for 4'];
 const EMBERS = Array.from({ length: 10 }, (_, i) => ({ '--x': `${40 + ((i * 37) % 58)}%`, '--d': `${(i % 7) * 1.3}s`, '--t': `${7 + (i % 5) * 2}s` }) as CSSProperties);
 /** A tall screen gets the picture composed for it; the words go under it there (SigilfallHero.css, seo.ts). */
 const TALL = '(max-width: 760px), (max-aspect-ratio: 13/10)';

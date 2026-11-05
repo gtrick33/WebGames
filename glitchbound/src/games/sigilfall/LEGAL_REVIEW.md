@@ -42,6 +42,14 @@ horses), clips (Idle, Walk, Run) and date (released Nov 23, 2025; the files are 
   game. The raw `.glb` and `.fbx` files stay on the owner's machine and are not in the repository.
 - Keep the receipt and a dated copy of the page: terms on a store page can change.
 
+## The Gloamknight (2026-11-05)
+
+The eighth class. The owner asked for a "dark knight", which is a Final Fantasy XIV job name, and chose **Gloamknight**
+instead. Its skills, talents, specializations (Bloodsworn, Ruinblade, Dreadbinder), resource (Umbra), Ring and Vigil
+abilities and warden set are named for this game: none is a Final Fantasy XIV Dark Knight action or a World of Warcraft
+death knight ability, and its signature colors (smoke-dark plate, dusk violet and rose) are its own. The ultimate is
+Duskfall, not "Nightfall" (a World of Warcraft warlock talent).
+
 ## Fixed
 
 ### The licensed art packs and the public repository (was HIGH)

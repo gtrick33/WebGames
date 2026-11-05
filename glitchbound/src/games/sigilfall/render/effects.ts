@@ -231,6 +231,7 @@ const WARDEN_GLOW: Record<ClassId, Aura> = {
   paladin: { a: '#ffb040', b: '#ffe08a', n: 9, speed: 0.42, spin: 0, from: 8, rise: 30, size: 7, halo: { up: 16, w: 44, alpha: 0.18 } },
   warlock: { a: '#a050e0', b: '#8bff6a', n: 8, speed: 0.34, spin: -0.5, from: 8, rise: 26, size: 8 },
   druid: { a: '#9ae06a', b: '#ffd0e8', n: 7, speed: 0.2, spin: 0.5, from: 6, rise: -30, size: 6 },
+  gloamknight: { a: '#9a6ae0', b: '#ffb070', n: 8, speed: 0.24, spin: -0.3, from: 30, rise: -26, size: 7, halo: { up: 10, w: 40, alpha: 0.16 } },
 };
 
 /** A shot of an element flying: `tone` colors it, `el` says what it's made of. */

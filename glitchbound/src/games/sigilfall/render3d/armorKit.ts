@@ -834,6 +834,75 @@ const SETS: Record<ClassId, { head(c: Ctx): MeshData[]; chest(c: Ctx): MeshData[
       return parts;
     },
   },
+  // the Gloam: smoke-dark plate under a dusk-colored breast, a great helm crowned like the sun going down, a cape
+  // worn to rags
+  gloamknight: {
+    head(c) {
+      const steel = rgb('#4a4658');
+      const violet = rgb('#7a52b0');
+      const glow = rgb('#c8a8ff');
+      const ember = rgb('#ffb070');
+      const bone = rgb('#24202c');
+      const parts: MeshData[] = [];
+      const helm = c.w.hero.meshes.Paladin_Helmet!;
+      parts.push(painted(helm, { skin: c.skin, metal: tup(steel), cloth: tup(mul(violet, 0.55)), plated: true, white: tup(rgb('#9a94b4')) }));
+      // a band of light across the brow, and the crown of the helm in dusk enamel
+      const ahead: Inside = (_x, _y, z) => z - 0.2;
+      parts.push(shell(helm, [within(0.42), ahead, above(1.84), below(1.9)], 0.014, glow));
+      parts.push(shell(helm, [within(0.4), above(2.08)], 0.012, (_x, y) => mix(rgb('#8a3a5e'), mul(violet, 0.62), Math.min(1, (y - 2.08) / 0.3))));
+      // horns swept back off the temples, their tips lit
+      const sweep = [[0.46, 1.98, 0.02], [0.66, 2.16, -0.24], [0.7, 2.2, -0.6], [0.6, 2.06, -0.92], [0.46, 1.86, -1.08]];
+      parts.push(...horn(c, sweep, [0.14, 0.12, 0.09, 0.05, 0], bone, glow));
+      parts.push(...horn(c, sweep.map(mirror), [0.14, 0.12, 0.09, 0.05, 0], bone, glow));
+      // three rays over the brow, the middle one the last of the sun
+      for (let i = 0; i < 3; i++) {
+        const a = Math.PI * (0.25 + i * 0.25);
+        const tall = 0.3 + 0.2 * Math.sin(a);
+        const x = Math.cos(a) * 0.44;
+        const z = Math.sin(a) * 0.2 - 0.02;
+        parts.push(rod([x, 2.14, z], [x * 1.3, 2.14 + tall, z - 0.08], 0.055, 0, 5, steel, i === 1 ? ember : glow, c.head, M));
+      }
+      // the visor burns violet
+      const slit = new Build();
+      slit.box(-0.3, 0.68, 0.3, 0.76, 1.64, 1.71, glow, glow, glow);
+      parts.push(tied(slit, c.head, 1, [0, 0, 0], M));
+      parts.push(blade(0.06, 2.24, 0.42, 0.62, 0.045, mul(violet, 0.6), glow, c.head, M));
+      return parts;
+    },
+    chest(c) {
+      const steel = rgb('#4a4658');
+      const dark = rgb('#1e1a26');
+      const violet = rgb('#7a52b0');
+      const rose = rgb('#8a3a5e');
+      const glow = rgb('#c8a8ff');
+      const ember = rgb('#ffb070');
+      const parts = setBody(c, 'Paladin', 'Paladin', { metal: tup(steel), cloth: tup(mul(violet, 0.5)), plated: true, white: tup(rgb('#9a94b4')) });
+      const body = c.w.hero.meshes.Paladin_Body!;
+      const front: Inside = (_x, _y, z) => z;
+      // the breast is enamel the colors of a dusk sky, rose low and violet high, with a seam of light down the middle
+      parts.push(shell(body, [above(0.68), below(1.14)], 0.012, (_x, y) => mix(rose, mul(violet, 0.62), (y - 0.68) / 0.46)));
+      parts.push(shell(body, [above(0.68), below(0.72)], 0.018, glow));
+      parts.push(shell(body, [above(1.1), below(1.15)], 0.018, glow));
+      parts.push(shell(body, [within(0.03), front, above(0.72), below(1.1)], 0.02, glow));
+      parts.push(shell(body, [above(0.6), below(0.68)], 0.018, mul(steel, 0.8)));
+      parts.push(tabard(c, dark, violet));
+      parts.push(gemAt(c.chest, 0, 0.98, frontAt(body, 0.98) + 0.03, 0.11, ember));
+      // great pauldrons, each with three blades swept back like folded wings
+      parts.push(
+        ...both((s) => {
+          const out: MeshData[] = [pauldron(c.w, s, 1.46, steel, glow)];
+          for (let i = 0; i < 3; i++) {
+            const up = 0.5 + i * 0.36;
+            const len = 0.5 - i * 0.08;
+            out.push(rod([s * 0.46, 1.3, -0.06 - i * 0.05], [s * (0.56 + Math.cos(up) * len), 1.3 + Math.sin(up) * len, -0.3 - i * 0.1], 0.08, 0, 5, steel, i === 0 ? ember : glow, c.chest, M));
+          }
+          return out;
+        }),
+      );
+      parts.push(capeOf(c.w, rgb('#2a2236'), violet, 'jag', 1.14));
+      return parts;
+    },
+  },
 };
 
 /* ------------------------------------------------------------------ the shop's sets */

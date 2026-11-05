@@ -5,6 +5,10 @@ import type { ClassId, ItemDef } from './types';
  * story through becomes the warden of the sigil closest to their calling: a title, a warden's armor and a Sigil
  * Drake, one set for each class, and only the campaign gives them. A Riftstone shortens the climb; it can't make a
  * warden.
+ *
+ * The songs count seven. There was an eighth warden who carried no sigil: the knight who held the Gloam Gate at dusk
+ * while the seven rode away to hide theirs. A Gloamknight who sees the story through takes up that watch: the same
+ * armor and drake as any warden, and still only seven sigils.
  */
 
 /** The last quest of the story. */
@@ -12,7 +16,8 @@ export const CAMPAIGN_END = 'epilogue-the-camp-goes-home';
 
 export interface WardenDef {
   cls: ClassId;
-  sigil: string;
+  /** The Crown Sigil the warden carried (the Gloam's warden carried none). */
+  sigil: string | null;
   title: string;
   /** Armor: head and chest looks for the Wardrobe. */
   head: Pick<ItemDef, 'name' | 'icon' | 'tint' | 'mat'>;
@@ -85,6 +90,15 @@ export const WARDENS: Record<ClassId, WardenDef> = {
     chest: { name: 'Warden’s Living Bark', icon: 'robe', tint: '#5a4a24', mat: 'leather' },
     lore: 'It was a tree first. It would like you to remember that.',
     drake: { name: 'Thornback Drake', coat: '#5a5a28', wings: '#6aa84a', tack: '#2a1f12', glow: '#c8ff9a', lore: 'Birds nest on its spines. It pretends not to have noticed.' },
+  },
+  gloamknight: {
+    cls: 'gloamknight',
+    sigil: null,
+    title: 'Warden of the Gloam',
+    head: { name: 'Warden’s Duskhelm', icon: 'helm', tint: '#2e2a3a', mat: 'plate' },
+    chest: { name: 'Warden’s Gloamplate', icon: 'plate', tint: '#3a3448', mat: 'plate' },
+    lore: 'Made for the knight who held the Gloam Gate while the seven rode away. Nobody wrote a song about it. The plate remembers anyway.',
+    drake: { name: 'Duskmantle Drake', coat: '#2c2a36', wings: '#7a52b0', tack: '#3a1a26', glow: '#c8a8ff', lore: 'It flies only at the edges of the day, and lands before anyone can say which edge.' },
   },
 };
 

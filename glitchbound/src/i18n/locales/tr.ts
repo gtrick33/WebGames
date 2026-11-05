@@ -2097,7 +2097,7 @@ const tr: string[] = [
   '{n} günlüğün hepsini gör',
   'Bir GlitchBound macerası',
   'Doğrudan tarayıcında oynanan koca bir fantastik RPG. Kahramanını seç, teçhizatını topla ve Yarık’ı kapat; tek başına ya da arkadaşlarınla.',
-  '7 kahraman',
+  '8 kahraman',
   '5 perde',
   '12 zindan',
   '4 kişilik ortak oyun',

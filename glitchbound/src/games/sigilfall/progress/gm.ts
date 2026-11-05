@@ -8,7 +8,7 @@ import { SPEC_LEVEL } from '../data/talents';
 import { RARITIES, SLOTS, type ClassId, type PerkId, type Rarity, type RegionId, type SlotId } from '../data/types';
 import { addXp, autoSlotSkills, cleanName, giveReward, learnedSkills, PERKS, potionCap, spentPoints, talentPoints, type Character } from './character';
 import { makeItem, rollGear } from './items';
-import { validateCharacter, type SaveFile } from './save';
+import { BASE_HERO_SLOTS, validateCharacter, type SaveFile } from './save';
 import { lookOf } from './wardrobe';
 
 /**
@@ -185,13 +185,15 @@ export function heroFor(save: SaveFile, o: Pick<GmOrder, 'slot' | 'created'>): C
 
 /**
  * Carries out one order on a save (`live`: the hero being played right now, who is the same hero as their slot's copy
- * once the game next saves, so they're the one changed). '' when done, or why not. A restored hero takes a free slot.
+ * once the game next saves, so they're the one changed). '' when done, or why not. A restored hero takes a free slot
+ * among the `slots` the player plays (three, or five with the Gloamknight Pack: progress/paidClasses.ts heroSlots).
  */
-export function applyOrder(save: SaveFile, o: GmOrder, live?: Character | null, r: () => number = Math.random): string {
+export function applyOrder(save: SaveFile, o: GmOrder, live?: Character | null, r: () => number = Math.random, slots = BASE_HERO_SLOTS): string {
   if (o.kind === 'restore') {
     const raw = o.payload.hero as { created?: unknown } | undefined;
     if (save.heroes.some((h) => h && raw && h.created === raw.created)) return '';
-    const slot = save.heroes.findIndex((h) => !h);
+    // (never into a place the player can't see)
+    const slot = save.heroes.slice(0, slots).findIndex((h) => !h);
     if (slot < 0) return 'No free hero slot: the player has to make room first.';
     const hero = validateCharacter(raw, slot);
     if (!hero) return 'That hero’s copy can’t be read.';

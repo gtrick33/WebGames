@@ -2097,7 +2097,7 @@ const es: string[] = [
   'Ver los {n} diarios',
   'Una aventura de GlitchBound',
   'Todo un RPG de fantasía que se juega en tu navegador. Elige a tu héroe, reúne tu equipo y cierra la Grieta, en solitario o con amigos.',
-  '7 héroes',
+  '8 héroes',
   '5 actos',
   '12 mazmorras',
   'Cooperativo para 4',

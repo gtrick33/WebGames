@@ -23,7 +23,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const LOOKS = PRODUCTS.filter((p) => p.look);
+/** The built-in looks sold on their own (the Gloamknight Pack's own come with it, hidden). */
+const LOOKS = PRODUCTS.filter((p) => p.look && !p.hidden);
 
 describe('the looks', () => {
   it('are each a shop item in one of the site’s styles, and only change how someone looks', () => {
@@ -179,6 +180,24 @@ describe('icons and looks an admin made', () => {
     await giftItem(env, ann.id, 'icon-red-fox');
     const after = await save([]);
     expect(after.find((p) => p.id === 'icon-red-fox')).toMatchObject({ id: 'icon-red-fox', hidden: true });
+  });
+});
+
+describe('the Gloamknight Pack', () => {
+  it('lets its owner wear its own border and banner, and the boards show them, until a refund', async () => {
+    const { db, member, board } = setup();
+    const kay = await member('Kay', 12);
+    // not bought: refused
+    expect((await kay.wear({ border: 'border-gloam' })).status).toBe(403);
+    db.sqlite
+      .prepare(`INSERT INTO purchases (id, user_id, product, status, agreed_at, terms, created_at, provider_ref) VALUES ('pk', ?, 'sigilfall-gloamknight', 'paid', 1, 't', 1, 'pi_pack')`)
+      .run(kay.id);
+    expect((await kay.wear({ border: 'border-gloam', banner: 'banner-gloam' })).status).toBe(200);
+    expect((await kay.me()).owned).toEqual(expect.arrayContaining(['sigilfall-gloamknight', 'border-gloam', 'banner-gloam', 'sigilfall-gloamwing-drake']));
+    expect((await board()).rows[0]).toMatchObject({ nickname: 'Kay', border: 'border-gloam', banner: 'banner-gloam' });
+    db.sqlite.prepare(`UPDATE purchases SET status = 'refunded' WHERE id = 'pk'`).run();
+    expect((await board()).rows[0]!.border).toBeUndefined();
+    expect((await kay.me()).looks).toEqual({ border: '', banner: '', icon: '' });
   });
 });
 
