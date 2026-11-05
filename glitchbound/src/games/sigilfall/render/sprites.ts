@@ -1,4 +1,5 @@
 import { bustPicture, creaturePicture, dollPicture, mountPicture, type DollView } from '../render3d/portrait';
+import { mountKey } from '../render3d/mountKit';
 import { HAIRS, SKINS, type Face } from '../progress/character';
 import { CLASSES } from '../data/classes';
 import type { Body } from '../progress/character';
@@ -147,13 +148,15 @@ interface Shown {
   mat: Material;
   tint: string;
   r: Rarity;
-  set?: ClassId;
+  set?: string;
+  colors?: string[];
 }
 
 const shownOf = (it: Item): Shown => ({ icon: itemIcon(it), mat: itemMat(it), tint: itemTint(it), r: it.r });
 
 function piece<S extends string>(it: Shown, style: S): Piece<S> {
-  return it.set ? { style, mat: it.mat, tint: it.tint, r: it.r, set: it.set } : { style, mat: it.mat, tint: it.tint, r: it.r };
+  if (!it.set) return { style, mat: it.mat, tint: it.tint, r: it.r };
+  return it.colors ? { style, mat: it.mat, tint: it.tint, r: it.r, set: it.set, colors: it.colors } : { style, mat: it.mat, tint: it.tint, r: it.r, set: it.set };
 }
 
 /** Wardrobe looks worn over the gear (progress/wardrobe.ts wornLooks): a look, or the class's bare look. */
@@ -264,7 +267,7 @@ export { HERO_H, HERO_W };
 
 /** A mount's back and front layers for a view and frame (render/art/mount.ts), at art resolution. */
 export function mountSprites(m: MountDef, view: HeroDir, frame: number): { back: Sprite; front: Sprite } {
-  const key = `mount:${m.id}:${view}:${frame}`;
+  const key = `mount:${mountKey(m)}:${view}:${frame}`;
   // smoothed to the hero's own scale like the paper doll, so rider and mount share one line
   const make = (): { back: Cnv; front: Cnv } => {
     const l = paintMount(m, view, frame, false);
@@ -309,7 +312,7 @@ export function watchMountPictures(fn: () => void): () => void {
  * model's picture is drawn soon after it's first asked for (watchMountPictures says when); a painted one stands in.
  */
 export function mountPictureUrl(m: MountDef, look: HeroLook | null, scale = 3): string {
-  const key = `mountpic:${m.id}:${look ? lookKey(look) : '-'}:${scale}`;
+  const key = `mountpic:${mountKey(m)}:${look ? lookKey(look) : '-'}:${scale}`;
   const hit = iconCache.get(key);
   if (hit) return hit;
   if (!toDraw.has(key)) {

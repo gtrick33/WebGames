@@ -2259,6 +2259,8 @@ export const KEYS: string[] = [
   "No border",
   "No banner",
   "See borders and banners in the shop",
+  "Icon",
+  "No icon",
 ];
 
 export const UI_COUNT = 311;

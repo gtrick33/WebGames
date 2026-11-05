@@ -2250,6 +2250,8 @@ const it: string[] = [
   'Nessuna cornice',
   'Nessun banner',
   'Vedi cornici e banner nel negozio',
+  'Icona',
+  'Nessuna icona',
 ];
 
 export default it;

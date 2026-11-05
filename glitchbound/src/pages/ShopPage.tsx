@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { Banner, LookAvatar } from '../components/Looks';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { BannerArt, FramedAvatar } from '../components/Looks';
 import { openSignIn } from '../components/openSignIn';
-import { isLook } from '../catalog/looks';
+import { gameUrl } from '../catalog/urls';
+import type { LookKind, LookSpec } from '../catalog/looks';
 import { AGREE_AGE, AGREE_NOW, priceText, PRODUCTS, type Product } from '../catalog/shop';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { api, ApiError, useAccount } from '../platform/account';
@@ -9,6 +10,14 @@ import { usePageMeta } from '../platform/meta';
 import { useMoney } from '../platform/money';
 import { Link } from '../router/router';
 import './InfoPages.css';
+
+/** A Sigilfall item's picture, from a file of its own: the site's first load names no extra file for it. */
+const SigilPictureLazy = lazy(() => import('../components/SigilPicture').then((m) => ({ default: m.SigilPicture })));
+const SigilPicture = (props: Parameters<typeof SigilPictureLazy>[0]) => (
+  <Suspense fallback={<div className="sigil-pic" />}>
+    <SigilPictureLazy {...props} />
+  </Suspense>
+);
 
 /**
  * The shop: one-time purchases, in plain words. No countdowns, no "last chance", no pressure, and the full price up
@@ -28,6 +37,53 @@ export function ShopPage() {
   const bought = new URLSearchParams(window.location.search).get('bought');
   const now = items.filter((p) => !p.later && !p.hidden);
   const later = items.filter((p) => p.later && !p.hidden);
+  const card = (p: Product) => (
+    <section key={p.id} className="panel info-block">
+      {p.look && <LookPreview spec={p.look} name={me?.nickname ?? 'GlitchBound'} src={me?.avatar} />}
+      {p.sigil && <SigilPicture id={p.id} spec={p.sigil} />}
+      <h2>{p.name}</h2>
+      <p>{p.blurb}</p>
+      <p>
+        <strong>{priceText(p.cents)}</strong> <span className="info-small">VAT included, paid once</span>
+      </p>
+      {owned.has(p.id) ? (
+        <p className="info-small">
+          This is yours.
+          {p.look && (
+            <>
+              {' '}
+              <Link href="/me#looks">Wear it on your profile</Link>.
+            </>
+          )}
+          {p.sigil && (
+            <>
+              {' '}
+              It&rsquo;s in the Wardrobe of every hero on your account: <Link href={gameUrl('sigilfall')}>open Sigilfall</Link>.
+            </>
+          )}
+        </p>
+      ) : !canBuy ? (
+        <p className="info-small">Not on sale yet.</p>
+      ) : me && buying?.id === p.id ? (
+        <Checkout product={p} onClose={() => setBuying(null)} />
+      ) : me ? (
+        <button className="btn btn-primary" onClick={() => setBuying(p)}>
+          Get {p.name}
+        </button>
+      ) : (
+        <button className="btn" onClick={() => openSignIn('Sign in so a purchase stays with your account.')}>
+          Sign in first
+        </button>
+      )}
+    </section>
+  );
+  const kinds: { kind: LookKind; title: string }[] = [
+    { kind: 'border', title: 'Borders' },
+    { kind: 'banner', title: 'Banners' },
+    { kind: 'icon', title: 'Profile icons' },
+  ];
+  const extras = now.filter((p) => !p.look && !p.sigil);
+  const sigil = (kind: 'mount' | 'look'): Product[] => now.filter((p) => p.sigil?.kind === kind);
   return (
     <div className="wrap info-page">
       <h1 className="info-title">Shop</h1>
@@ -38,40 +94,34 @@ export function ShopPage() {
         </p>
       )}
       {bought && <p className="info-small" role="status">Thank you. Your purchase reaches your account as soon as the payment is confirmed, usually within a minute.</p>}
+      {extras.length > 0 && <div className="info-cols">{extras.map(card)}</div>}
+      {kinds.map(({ kind, title }) => {
+        const list = now.filter((p) => p.look?.kind === kind);
+        return (
+          list.length > 0 && (
+            <section key={kind} className="shop-group" aria-labelledby={`shop-${kind}`}>
+              <h2 id={`shop-${kind}`} className="profile-h2">
+                {title}
+              </h2>
+              <div className="info-cols">{list.map(card)}</div>
+            </section>
+          )
+        );
+      })}
+      {sigil('mount').length + sigil('look').length > 0 && (
+        <section className="shop-group shop-sigilfall" aria-labelledby="shop-sigilfall">
+          <h2 id="shop-sigilfall" className="profile-h2">
+            Sigilfall
+          </h2>
+          <p className="info-small">
+            Mounts and Wardrobe looks for every hero on your account. They change how your hero looks and nothing else: every mount runs at the same pace, and your stats always come from what you
+            equip.
+          </p>
+          {sigil('mount').length > 0 && <div className="info-cols">{sigil('mount').map(card)}</div>}
+          {sigil('look').length > 0 && <div className="info-cols">{sigil('look').map(card)}</div>}
+        </section>
+      )}
       <div className="info-cols">
-        {now.map((p) => (
-          <section key={p.id} className="panel info-block">
-            {isLook(p.id) && <LookPreview id={p.id} name={me?.nickname ?? 'GlitchBound'} src={me?.avatar} />}
-            <h2>{p.name}</h2>
-            <p>{p.blurb}</p>
-            <p>
-              <strong>{priceText(p.cents)}</strong> <span className="info-small">VAT included, paid once</span>
-            </p>
-            {owned.has(p.id) ? (
-              <p className="info-small">
-                This is yours.
-                {isLook(p.id) && (
-                  <>
-                    {' '}
-                    <Link href="/me#looks">Wear it on your profile</Link>.
-                  </>
-                )}
-              </p>
-            ) : !canBuy ? (
-              <p className="info-small">Not on sale yet.</p>
-            ) : me && buying?.id === p.id ? (
-              <Checkout product={p} onClose={() => setBuying(null)} />
-            ) : me ? (
-              <button className="btn btn-primary" onClick={() => setBuying(p)}>
-                Get {p.name}
-              </button>
-            ) : (
-              <button className="btn" onClick={() => openSignIn('Sign in so a purchase stays with your account.')}>
-                Sign in first
-              </button>
-            )}
-          </section>
-        ))}
         {later.length > 0 && (
           <section className="panel info-block">
             <h2>Planned</h2>
@@ -92,18 +142,18 @@ export function ShopPage() {
   );
 }
 
-/** What a border or banner looks like before buying it: on your own picture, or across a profile and a board row. */
-function LookPreview({ id, name, src }: { id: string; name: string; src?: string }) {
-  if (isLook(id, 'border')) {
+/** What a look is like before buying it: a border on your own picture, an icon as your picture, or the banner itself. */
+function LookPreview({ spec, name, src }: { spec: LookSpec; name: string; src?: string }) {
+  if (spec.kind === 'banner') {
     return (
-      <div className="shop-look shop-look-border">
-        <LookAvatar name={name} src={src} size={104} border={id} />
+      <div className="shop-look shop-look-banner">
+        <BannerArt spec={spec} className="shop-look-art" />
       </div>
     );
   }
   return (
-    <div className="shop-look shop-look-banner">
-      <Banner id={id} className="shop-look-art" />
+    <div className="shop-look shop-look-border">
+      <FramedAvatar name={name} src={src} size={104} border={spec.kind === 'border' ? spec : undefined} icon={spec.kind === 'icon' ? spec : undefined} />
     </div>
   );
 }

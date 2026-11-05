@@ -2250,6 +2250,8 @@ const fr: string[] = [
   'Sans cadre',
   'Sans bannière',
   'Voir les cadres et bannières dans la boutique',
+  'Icône',
+  'Sans icône',
 ];
 
 export default fr;

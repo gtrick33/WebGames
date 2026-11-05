@@ -12,7 +12,7 @@ export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
   return json({ user: await buildMe(env, user, clientDay(new URL(request.url).searchParams.get('day'))) });
 }
 
-/** PATCH /api/me { nickname?, notify?, border?, banner?, day? }. A border or banner is a look the member owns, or '' for none. */
+/** PATCH /api/me { nickname?, notify?, border?, banner?, icon?, day? }. A border, banner or icon is a look the member owns, or '' for none. */
 export async function onRequestPatch({ request, env }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return bad('bad_origin', 403);
   const user = await requireUser(env, request);
@@ -20,7 +20,7 @@ export async function onRequestPatch({ request, env }: Ctx): Promise<Response> {
   const body = await readJson(request);
   if (!body) return bad('bad_request');
   // (first, so a look that isn't theirs changes nothing else)
-  for (const kind of ['border', 'banner'] as const) {
+  for (const kind of ['border', 'banner', 'icon'] as const) {
     const id = body[kind];
     if (id === undefined) continue;
     if (typeof id !== 'string' || !(await wearLook(env, user.id, kind, id))) return bad('not_yours', 403);

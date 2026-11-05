@@ -2250,6 +2250,8 @@ const tr: string[] = [
   'Çerçeve yok',
   'Afiş yok',
   'Çerçeveleri ve afişleri mağazada gör',
+  'Simge',
+  'Simge yok',
 ];
 
 export default tr;

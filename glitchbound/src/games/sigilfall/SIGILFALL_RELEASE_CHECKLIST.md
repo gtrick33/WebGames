@@ -10,7 +10,7 @@ browser this cycle), **UNVERIFIED** (not checked, with the reason).
 | Typecheck `npx tsc --noEmit -p .` | VERIFIED (clean) |
 | Lint `npx eslint src/games/sigilfall tests/sigilfall*` | VERIFIED (clean) |
 | Sigilfall tests `npx vitest run --no-fsModuleCache tests/sigilfall*` | VERIFIED (42 files, 1,096 tests, all passing; the whole project: 121 files, 1,988 tests) |
-| Production build `npm run build` | VERIFIED (the arcade's startup JS stays under its 120 KB budget) |
+| Production build `npm run build` | VERIFIED (the arcade's startup JS stays under its 121 KB budget) |
 | `validate:sigilfall` | the registry, quest, art and collection validations run as tests (`sigilfall-ids`, `sigilfall-quests-doable`, `sigilfall-dungeons`, `sigilfall-art`, `sigilfall-collection`, `sigilfall-words`) — VERIFIED |
 
 ## By area

@@ -7,7 +7,7 @@ import { hexRgb, kitOf } from './kits';
 import { mountModel } from './mountKit';
 import { shapeOf } from './mountLook';
 import { loadPack, type MeshData, type Pack } from './pack';
-import { LIGHT, rigAnimOf } from './toon';
+import { LIGHT, rigAnimOf, type RigAnim } from './toon';
 
 /**
  * Pictures of heroes for the menus: the same models as the game, posed and photographed once on a canvas of their
@@ -219,4 +219,73 @@ export function mountPicture(def: MountDef, size: number, rider: { look: HeroLoo
   crowd.dispose();
   top?.dispose();
   return url;
+}
+
+/* ------------------------------------------------------------------ the shop's pictures */
+
+const posed = { x: 0, y: 0, z: 0 };
+
+/**
+ * A model posed on a frame of a clip and turned, photographed whole: the camera finds the box it fills (or the part of
+ * it above `fromY`, for a head and shoulders) and frames that, with a margin.
+ */
+function framed(mesh: MeshData, rig: RigAnim, frame: number, turn: number, w: number, h: number, ink: number, fromY = -Infinity): string | null {
+  const cos = Math.cos(turn);
+  const sin = Math.sin(turn);
+  let x0 = Infinity;
+  let x1 = -Infinity;
+  let y0 = Infinity;
+  let y1 = -Infinity;
+  for (let v = 0; v < mesh.n; v++) {
+    rig.pointAt(frame, frame, 0, mesh.skin?.[v * 3] ?? 0, mesh.pos[v * 3]!, mesh.pos[v * 3 + 1]!, mesh.pos[v * 3 + 2]!, posed);
+    if (posed.y < fromY) continue;
+    const x = posed.x * cos + posed.z * sin;
+    x0 = Math.min(x0, x);
+    x1 = Math.max(x1, x);
+    y0 = Math.min(y0, posed.y);
+    y1 = Math.max(y1, posed.y);
+  }
+  if (!(x1 > x0) || !(y1 > y0)) return null;
+  const r = renderer!;
+  r.setPixelRatio(1);
+  r.setSize(w, h, false);
+  // (a few units across, whatever its own units are)
+  const k = 3 / Math.max(x1 - x0, y1 - y0);
+  const crowd = new Crowd(mesh, rig, scene, 1, ink / k);
+  crowd.begin();
+  crowd.put(0, 0, 0, turn, k, k, frame);
+  crowd.end();
+  LIGHT.uSee.value.set(0, 0, 0, 0);
+  LIGHT.uDark.value.set(0, 8, 0, 0);
+  LIGHT.uNight.value.set(1, 1, 1, 0);
+  LIGHT.uGrade.value.set(0, 0, 0, 0);
+  camera.aspect = w / h;
+  const half = Math.tan((camera.fov * Math.PI) / 360);
+  const cx = ((x0 + x1) / 2) * k;
+  const cy = ((y0 + y1) / 2) * k;
+  const dist = Math.max(((y1 - y0) * k * 0.54) / half, ((x1 - x0) * k * 0.54) / (half * camera.aspect)) + 0.6;
+  camera.position.set(cx, cy + dist * 0.1, dist);
+  camera.lookAt(cx, cy, 0);
+  camera.updateProjectionMatrix();
+  r.render(scene, camera);
+  const url = r.domElement.toDataURL('image/png');
+  crowd.dispose();
+  return url;
+}
+
+/** A mount for the shop: all of it, a drake with its wings up, seen from the side and a little ahead. Null until its model is in. */
+export function shopMountPicture(def: MountDef, w: number, h: number): string | null {
+  if (!wardrobe || !ensure()) return null;
+  const pack = kitFile(shapeOf(def).kit);
+  if (!pack) return null;
+  const { mesh, rig } = mountModel(def, pack);
+  const frame = def.body === 'drake' ? rig.frame('run', 0.2) : rig.frame('idle', 0.3);
+  return framed(mesh, rig, frame, Math.PI / 2 - 0.62, w, h, 0.012);
+}
+
+/** A look for the shop on a hero: a helmet as head and shoulders, a chest piece the whole figure. */
+export function shopLookPicture(look: HeroLook, bust: boolean, w: number, h: number): string | null {
+  if (!wardrobe || !ensure()) return null;
+  const { mesh } = dressedOf(wardrobe, look, null, false);
+  return framed(mesh, wardrobe.medium, wardrobe.medium.frame('idle', 0.3), bust ? 0.42 : 0.62, w, h, 0.022, bust ? 0.95 : -Infinity);
 }

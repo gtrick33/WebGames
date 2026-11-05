@@ -3,9 +3,16 @@
  * which only Stripe's signed word can grant.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { AGREE_NOW, breaksRules, GLOAMKNIGHT_ITEM, isBuiltIn, priceText, PRODUCTS, productIn, sanitizeProducts } from '../src/catalog/shop';
-import { isLook, LOOKS } from '../src/catalog/looks';
+
+/** The built-in borders, banners and icons. */
+const LOOKS = PRODUCTS.filter((p) => p.look);
+/** Every built-in item the code gives a meaning: those, Sigilfall's mounts and looks, and the Gloamknight class. */
+const BUILT = PRODUCTS.filter((p) => p.look || p.sigil || p.id === GLOAMKNIGHT_ITEM);
+const isLook = (id: string): boolean => BUILT.some((p) => p.id === id);
+/** Ad-free's price, in its own panel (a Sigilfall helm costs the same). */
+const adFreePrice = (): HTMLElement => within(screen.getByRole('heading', { name: 'Ad-free' }).closest('section')!).getByText('€1.99');
 import { NO_MONEY, sanitizeMoney } from '../src/catalog/settings';
 import { canRetryDaily, retryDaily } from '../src/platform/dailyRetry';
 import { applyStripeEvent, canSell, giftItem, loadItems, ownedBy, shopReport, startCheckout, takeBack, verifyStripeSignature } from '../server/shop';
@@ -53,7 +60,7 @@ describe('with everything off', () => {
     const { ShopPage } = await import('../src/pages/ShopPage');
     render(<ShopPage />);
     expect(screen.getByText('The shop isn’t open yet, so nothing can be bought right now.')).toBeTruthy();
-    expect(screen.getByText('€1.99')).toBeTruthy();
+    expect(adFreePrice()).toBeTruthy();
     expect(screen.getAllByText('Not on sale yet.')).toHaveLength(PRODUCTS.filter((p) => !p.later && !p.hidden).length);
     expect(screen.queryByRole('button', { name: /Get |Sign in first/ })).toBeNull();
     cleanup();
@@ -96,18 +103,20 @@ describe('with the shop open', () => {
     const { ShopPage } = await import('../src/pages/ShopPage');
     render(<ShopPage />);
     expect(screen.getByRole('heading', { name: 'Ad-free' })).toBeTruthy();
-    expect(screen.getByText('€1.99')).toBeTruthy();
+    expect(adFreePrice()).toBeTruthy();
     expect(screen.getAllByRole('button', { name: 'Sign in first' })).toHaveLength(PRODUCTS.filter((p) => !p.later && !p.hidden).length);
   });
 
-  it('shows each border and banner as it looks, before buying it', async () => {
+  it('shows each border, banner and icon as it looks, before buying it, grouped by kind', async () => {
     const { ShopPage } = await import('../src/pages/ShopPage');
     const { container } = render(<ShopPage />);
-    for (const look of LOOKS) {
-      const panel = screen.getByRole('heading', { name: productIn(PRODUCTS, look.id)!.name }).closest('section')!;
-      expect(panel.querySelector(look.kind === 'border' ? `.avatar-frame.look-${look.id}` : `.look-banner.look-${look.id}`)).toBeTruthy();
+    for (const p of LOOKS) {
+      const panel = screen.getByRole('heading', { name: p.name }).closest('section')!;
+      const drawn = { border: `.avatar-frame.look-${p.id}`, banner: `.look-banner.look-${p.id}`, icon: `.avatar-icon.look-${p.id} svg` }[p.look!.kind];
+      expect(panel.querySelector(drawn), p.id).toBeTruthy();
     }
     expect(container.querySelectorAll('.shop-look')).toHaveLength(LOOKS.length);
+    for (const name of ['Borders', 'Banners', 'Profile icons']) expect(screen.getByRole('heading', { name, level: 2 })).toBeTruthy();
   });
 });
 
@@ -155,10 +164,9 @@ describe('what the shop sells', () => {
     expect(breaksRules('A gold border')).toBe(false);
   });
 
-  it('starts with ad-free at €1.99 and the borders and banners, and everything else is only planned', () => {
+  it('starts with ad-free at €1.99, the borders and banners and Sigilfall’s items, and everything else is only planned', () => {
     const open = PRODUCTS.filter((p) => !p.later);
-    // and the Gloamknight, the one class sold (tests/sigilfall-paid-class.test.ts)
-    expect(open.map((p) => p.id)).toEqual(['ad-free', ...LOOKS.map((l) => l.id), GLOAMKNIGHT_ITEM]);
+    expect(open.map((p) => p.id)).toEqual(['ad-free', ...BUILT.map((l) => l.id)]);
     expect(priceText(productIn(PRODUCTS, 'ad-free')!.cents)).toBe('€1.99');
     // the lowest price Stripe can charge in euros
     for (const l of LOOKS) expect(priceText(productIn(PRODUCTS, l.id)!.cents)).toBe('€0.50');
@@ -171,8 +179,11 @@ describe('what the shop sells', () => {
       { id: 'border-neon-halo', name: 'Halo', blurb: 'Cheaper now.', cents: 79, hidden: true },
       { id: 'sigilfall-mounts', name: 'Mounts', blurb: 'Planned.', cents: 299, later: true },
     ]);
-    expect(saved.map((p) => p.id)).toEqual(['ad-free', 'border-aurora', 'border-neon-halo', ...LOOKS.slice(1).map((l) => l.id), GLOAMKNIGHT_ITEM, 'sigilfall-mounts']);
-    expect(productIn(saved, 'border-neon-halo')).toEqual({ id: 'border-neon-halo', name: 'Halo', blurb: 'Cheaper now.', cents: 79, hidden: true });
+    // (the planned Sigilfall placeholder became real items: it's dropped, and they join the list)
+    expect(saved.map((p) => p.id)).toEqual(['ad-free', 'border-aurora', 'border-neon-halo', ...BUILT.slice(1).map((l) => l.id)]);
+    // the admins' name, text, price and state, and the look the code gives it
+    expect(productIn(saved, 'border-neon-halo')).toEqual({ id: 'border-neon-halo', name: 'Halo', blurb: 'Cheaper now.', cents: 79, hidden: true, look: { kind: 'border', style: 'neon-halo' } });
+    expect(productIn(saved, 'border-aurora')!.look).toBeUndefined();
     expect(isBuiltIn('ad-free') && LOOKS.every((l) => isBuiltIn(l.id))).toBe(true);
     expect(isBuiltIn('border-aurora') || isBuiltIn('sigilfall-mounts')).toBe(false);
   });
@@ -211,7 +222,7 @@ describe('purchases', () => {
   it('sells only what is open', () => {
     const e = env();
     expect(canSell(e, productIn(PRODUCTS, 'ad-free'))).toBe(true);
-    expect(canSell(e, productIn(PRODUCTS, 'sigilfall-mounts'))).toBe(false);
+    expect(canSell(e, productIn(PRODUCTS, 'look-names'))).toBe(false);
     expect(canSell({ ...e, STRIPE_SECRET_KEY: undefined } as Env, productIn(PRODUCTS, 'ad-free'))).toBe(false);
     expect(canSell(e, undefined)).toBe(false);
   });
@@ -291,7 +302,7 @@ describe('purchases', () => {
     const e = env();
     expect(await loadItems(e)).toEqual(PRODUCTS);
     await e.DB.prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('shop_items', ?, 1, 'qa')").bind(JSON.stringify([{ id: 'look-one', name: 'A look', blurb: 'A nice look.', cents: 150 }])).run();
-    expect((await loadItems(e)).map((p) => p.id)).toEqual(['ad-free', ...LOOKS.map((l) => l.id), GLOAMKNIGHT_ITEM, 'look-one']);
+    expect((await loadItems(e)).map((p) => p.id)).toEqual(['ad-free', ...BUILT.map((l) => l.id), 'look-one']);
   });
 
   it('keeps Stripe’s test and live modes apart', async () => {

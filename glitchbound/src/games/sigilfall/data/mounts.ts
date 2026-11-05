@@ -19,7 +19,12 @@ export type MountSource =
   /** Finish the whole story as this class. */
   | { kind: 'campaign'; cls: ClassId }
   /** This many points on the site's Trophy Shelf. */
-  | { kind: 'shelf'; points: number };
+  | { kind: 'shelf'; points: number }
+  /** The site's shop: the account owns this item (progress/shopGoods.ts). Never kept in the save. */
+  | { kind: 'shop'; item: string };
+
+/** Pieces built onto a shop mount's body (render3d/mountKit.ts; src/catalog/sigilItems.ts lists them by body). */
+export type MountExtra = 'plates' | 'crown' | 'veins' | 'crystals' | 'runes' | 'flametail' | 'elk' | 'flame-antlers' | 'crystal-antlers' | 'helm' | 'rune-tusks';
 
 export interface MountDef {
   id: string;
@@ -42,10 +47,13 @@ export interface MountDef {
   tusks?: boolean;
   blaze?: boolean;
   socks?: boolean;
-  /** A prestige mount's touch: embers off the mane, stars round the hooves (kept small). */
-  glow?: { kind: 'embers' | 'stars'; color: string };
-  /** The collection's grouping: an everyday mount, a story mount or a challenge's prize. */
-  tier: 'travel' | 'story' | 'prestige';
+  /** A prestige mount's touch: embers off the mane, stars round the hooves (kept small); the shop's have more kinds. */
+  glow?: { kind: 'embers' | 'stars' | 'sparks' | 'motes' | 'flames'; color: string };
+  /** What's built onto a shop mount, and the color of its plates. */
+  extras?: MountExtra[];
+  plate?: string;
+  /** The collection's grouping: an everyday mount, a story mount, a challenge's prize or one from the shop. */
+  tier: 'travel' | 'story' | 'prestige' | 'shop';
 }
 
 export const MOUNTS: MountDef[] = [

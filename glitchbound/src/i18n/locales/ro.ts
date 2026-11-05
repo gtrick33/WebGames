@@ -2250,6 +2250,8 @@ const ro: string[] = [
   'Fără ramă',
   'Fără banner',
   'Vezi ramele și bannerele în magazin',
+  'Iconiță',
+  'Fără iconiță',
 ];
 
 export default ro;

@@ -7,7 +7,8 @@
  * - no countdowns or "last chance", and no words telling children to buy.
  * docs/LEGAL-READINESS.md has the reasons. Items are edited in Admin › Ads & shop; this list is where they start.
  */
-import { isLook } from './looks';
+import { sanitizeLook, type LookKind, type LookSpec } from './looks';
+import { sanitizeSigil, sigilSetOf, type SigilBody, type SigilGlow, type SigilSet, type SigilSlot, type SigilSpec } from './sigilItems';
 
 export interface Product {
   id: string;
@@ -19,19 +20,48 @@ export interface Product {
   later?: boolean;
   /** Not shown at all. Whoever bought it keeps it. */
   hidden?: boolean;
+  /** A profile look (border, banner or icon) this item gives, and how it's drawn (src/catalog/looks.ts). */
+  look?: LookSpec;
+  /** A Sigilfall mount or Wardrobe look this item gives, and how the game draws it (src/catalog/sigilItems.ts). */
+  sigil?: SigilSpec;
 }
 
 /** What "ad-free" means is built into the site (src/platform/adFree.ts), so that item can be hidden but not removed. */
 export const AD_FREE_ID = 'ad-free';
 
-/** Items whose meaning is built into the site: ad-free and each look (src/catalog/looks.ts). They can be hidden, not removed. */
+/** A built-in profile look: its id is `<kind>-<style>`, drawn in the style's own colors. */
+const builtInLook = (kind: LookKind, style: string, name: string, blurb: string): Product => ({ id: `${kind}-${style}`, name, blurb, cents: 50, look: { kind, style } });
+
 /** The Gloamknight, Sigilfall's eighth class: playing it needs this item (src/games/sigilfall/progress/paidClasses.ts). */
 export const GLOAMKNIGHT_ITEM = 'sigilfall-gloamknight';
 
-export const isBuiltIn = (id: string): boolean => id === AD_FREE_ID || id === GLOAMKNIGHT_ITEM || isLook(id);
+const ON_BOARDS = 'on your profile and on the boards.';
+const ACROSS = 'Across your profile and behind your name on the boards.';
+const IN_PLACE = 'in place of your picture on your profile, in the header and on the boards.';
 
-/** Planned items that became real ones, each look on its own. Dropped from a saved list. */
-const RETIRED = new Set(['look-borders', 'look-banners']);
+const RIDES = 'For every hero on your account. Only a look: it rides at the pace every mount does.';
+const WEARS = 'Any class wears it, over any gear, from the Wardrobe. Only a look: your stats come from what you equip.';
+
+/** A built-in Sigilfall mount (src/games/sigilfall/progress/shopGoods.ts gives it its lore in the game). */
+const sigilMount = (id: string, name: string, cents: number, blurb: string, body: SigilBody, colors: { coat: string; mane: string; tack: string; plate: string }, extras: string[], glow: [SigilGlow, string]): Product => ({
+  id: `sigilfall-${id}`,
+  name,
+  blurb: `${blurb} ${RIDES}`,
+  cents,
+  sigil: { kind: 'mount', body, ...colors, extras, glow: { kind: glow[0], color: glow[1] } },
+});
+
+/** A built-in Sigilfall look: one piece of one of the shop's armor sets, in the set's own colors. */
+const sigilLook = (id: string, name: string, cents: number, blurb: string, set: SigilSet, slot: SigilSlot): Product => ({
+  id: `sigilfall-${id}`,
+  name,
+  blurb: `${blurb} ${WEARS}`,
+  cents,
+  sigil: { kind: 'look', slot, set, colors: [...sigilSetOf(set)!.colors] },
+});
+
+/** Planned items that became real ones, each on its own. Dropped from a saved list. */
+const RETIRED = new Set(['look-borders', 'look-banners', 'sigilfall-mounts', 'sigilfall-looks']);
 
 export const PRODUCTS: Product[] = [
   {
@@ -40,12 +70,81 @@ export const PRODUCTS: Product[] = [
     blurb: 'No ad banners on your account, on any device you sign in on, and your extra try at a daily needs no ad. One payment, no subscription.',
     cents: 199,
   },
-  { id: 'border-neon-halo', name: 'Neon Halo border', blurb: 'A ring of cyan, violet and pink light that slowly turns around your picture, on your profile and on the boards.', cents: 50 },
-  { id: 'border-solar-flare', name: 'Solar Flare border', blurb: 'A blazing gold and orange ring with a flickering corona, around your picture on your profile and on the boards.', cents: 50 },
-  { id: 'border-glitch', name: 'Glitch border', blurb: 'A ring that splits into cyan and pink and jumps out of line now and then, around your picture on your profile and on the boards.', cents: 50 },
-  { id: 'banner-sunset-grid', name: 'Sunset Grid banner', blurb: 'A striped sun sinking behind a glowing grid that rolls toward you. Across your profile and behind your name on the boards.', cents: 50 },
-  { id: 'banner-aurora', name: 'Aurora banner', blurb: 'Northern lights rippling over dark mountains under a starry sky. Across your profile and behind your name on the boards.', cents: 50 },
-  { id: 'banner-nebula', name: 'Nebula banner', blurb: 'Drifting violet clouds, twinkling stars, a ringed planet and the odd shooting star. Across your profile and behind your name on the boards.', cents: 50 },
+  builtInLook('border', 'neon-halo', 'Neon Halo border', `A ring of cyan, violet and pink light that slowly turns around your picture, ${ON_BOARDS}`),
+  builtInLook('border', 'solar-flare', 'Solar Flare border', `A blazing gold and orange ring with a flickering corona, around your picture ${ON_BOARDS}`),
+  builtInLook('border', 'glitch', 'Glitch border', `A ring that splits into cyan and pink and jumps out of line now and then, around your picture ${ON_BOARDS}`),
+  builtInLook('border', 'frost', 'Frost border', `A ring of ice with crystal shards and drifting sparkles, around your picture ${ON_BOARDS}`),
+  builtInLook('border', 'orbit', 'Orbit border', `A fine double ring with two little moons going round your picture, ${ON_BOARDS}`),
+  builtInLook('border', 'crown', 'Crown border', `A gold ring set with jewels and topped with a little crown, around your picture ${ON_BOARDS}`),
+  builtInLook('banner', 'sunset-grid', 'Sunset Grid banner', `A striped sun sinking behind a glowing grid that rolls toward you. ${ACROSS}`),
+  builtInLook('banner', 'aurora', 'Aurora banner', `Northern lights rippling over dark mountains under a starry sky. ${ACROSS}`),
+  builtInLook('banner', 'nebula', 'Nebula banner', `Drifting violet clouds, twinkling stars, a ringed planet and the odd shooting star. ${ACROSS}`),
+  builtInLook('banner', 'neon-city', 'Neon City banner', `A skyline at night, its windows lit, with lights gliding past below. ${ACROSS}`),
+  builtInLook('banner', 'deep-sea', 'Deep Sea banner', `Light rays through deep water, rising bubbles and swaying weed. ${ACROSS}`),
+  builtInLook('banner', 'ember-field', 'Ember Field banner', `Sparks rising off a glowing ground into the night. ${ACROSS}`),
+  builtInLook('icon', 'fox', 'Fox icon', `A sly fox, ${IN_PLACE}`),
+  builtInLook('icon', 'owl', 'Owl icon', `A night owl that blinks now and then, ${IN_PLACE}`),
+  builtInLook('icon', 'skull', 'Skull icon', `A skull with softly glowing eyes, ${IN_PLACE}`),
+  builtInLook('icon', 'rocket', 'Rocket icon', `A rocket with a flickering flame, ${IN_PLACE}`),
+  builtInLook('icon', 'crown', 'Crown icon', `A jeweled crown that catches the light, ${IN_PLACE}`),
+  builtInLook('icon', 'bolt', 'Bolt icon', `A crackling lightning bolt, ${IN_PLACE}`),
+  // Sigilfall: the drake is the one piece of the shop with the most built for it, and costs the most
+  sigilMount(
+    'crownforged-wyrm',
+    'Crownforged Wyrm',
+    599,
+    'A Sigilfall drake in black plate edged with gold, under a crown of horns, its wings veined with molten light, its tail ablaze.',
+    'drake',
+    { coat: '#2a2632', mane: '#5a1a30', tack: '#1a1620', plate: '#5c5870' },
+    ['plates', 'crown', 'veins', 'runes', 'flametail'],
+    ['embers', '#ffb43a'],
+  ),
+  sigilMount(
+    'galecrest-drake',
+    'Galecrest Drake',
+    399,
+    'A storm-blue Sigilfall drake with a crest of horns, crystal spines down its back and lightning in its wings.',
+    'drake',
+    { coat: '#1f3c66', mane: '#a8dcff', tack: '#121c34', plate: '#cfe8ff' },
+    ['crown', 'crystals', 'veins'],
+    ['sparks', '#7af0ff'],
+  ),
+  sigilMount(
+    'runetusk-boar',
+    'Runetusk War-Boar',
+    349,
+    'A Sigilfall war-boar in spiked plate and a horned helm, its tusks banded with runes that glow.',
+    'boar',
+    { coat: '#3a3036', mane: '#161214', tack: '#1c3638', plate: '#5c6474' },
+    ['plates', 'helm', 'rune-tusks', 'runes'],
+    ['motes', '#5affd8'],
+  ),
+  sigilMount(
+    'cinderhorn-hart',
+    'Cinderhorn Hart',
+    299,
+    'A charcoal Sigilfall hart whose antlers are living flame, with ember runes along its flanks.',
+    'deer',
+    { coat: '#262124', mane: '#3a2c28', tack: '#6a1c14', plate: '#3a3034' },
+    ['flame-antlers', 'runes'],
+    ['flames', '#ff8a2a'],
+  ),
+  sigilMount(
+    'moonglass-hart',
+    'Moonglass Hart',
+    299,
+    'A white Sigilfall hart with antlers of glowing crystal, plate edged with light and pale runes, starlight round its hooves.',
+    'deer',
+    { coat: '#e6ecf6', mane: '#b4c4e4', tack: '#28386e', plate: '#5a6ea4' },
+    ['crystal-antlers', 'plates', 'runes'],
+    ['stars', '#bfe4ff'],
+  ),
+  sigilLook('crownforged-helm', 'Crownforged Helm', 199, 'A Sigilfall helm of black steel under a crown of gold, with dragon horns and a burning visor.', 'crownforged', 'head'),
+  sigilLook('crownforged-plate', 'Crownforged Plate', 249, 'Sigilfall armor of black plate seamed with molten gold, with drake-wing pauldrons and a crimson cape.', 'crownforged', 'chest'),
+  sigilLook('celestine-crown', 'Celestine Crown', 199, 'A silver Sigilfall circlet with a crescent moon, under a ring of stars that turns.', 'celestine', 'head'),
+  sigilLook('celestine-mantle', 'Celestine Mantle', 249, 'A white and silver Sigilfall robe with crescent pauldrons and a cape of night full of stars.', 'celestine', 'chest'),
+  sigilLook('gloamquill-cowl', 'Gloamquill Cowl', 199, 'A dark Sigilfall hood with a beaked mask, a crest of feathers and two eyes that glow.', 'gloamquill', 'head'),
+  sigilLook('gloamquill-mantle', 'Gloamquill Mantle', 249, 'Sigilfall leathers under a mantle of black feathers, with a long cape of feathers behind.', 'gloamquill', 'chest'),
   { id: 'look-names', name: 'Name effects', blurb: 'A touch of color and shine on your nickname.', cents: 99, later: true },
   {
     id: GLOAMKNIGHT_ITEM,
@@ -53,11 +152,16 @@ export const PRODUCTS: Product[] = [
     blurb: 'Unlocks the Gloamknight, Sigilfall’s eighth class, for every hero slot on your account: a knight in heavy plate who wields shadow and trades health for power. In the campaign, the Vigil and the Ring.',
     cents: 499,
   },
-  { id: 'sigilfall-mounts', name: 'Sigilfall mounts', blurb: 'Mounts made for the shop. They look different and ride the same as any other.', cents: 299, later: true },
-  { id: 'sigilfall-looks', name: 'Sigilfall wardrobe sets', blurb: 'Looks for your Wardrobe. They change how your hero looks, never what your gear does.', cents: 199, later: true },
 ];
 
 export const productIn = (items: readonly Product[], id: string): Product | undefined => items.find((p) => p.id === id);
+
+/**
+ * Items whose meaning is built into the site: ad-free, the looks and the Sigilfall items above. They can be hidden, not
+ * removed, and keep the look the code gives them. Looks and Sigilfall items an admin makes are ordinary items that
+ * carry one.
+ */
+export const isBuiltIn = (id: string): boolean => id === AD_FREE_ID || id === GLOAMKNIGHT_ITEM || PRODUCTS.some((p) => p.id === id && (!!p.look || !!p.sigil));
 
 export const priceText = (cents: number): string => `€${(cents / 100).toFixed(2)}`;
 
@@ -83,7 +187,11 @@ export function sanitizeProducts(v: unknown): Product[] {
     if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(id) || seen.has(id) || RETIRED.has(id) || !name || !blurb || cents < MIN_CENTS || cents > MAX_CENTS) continue;
     if (breaksRules(`${name} ${blurb}`)) continue;
     seen.add(id);
-    out.push({ id, name, blurb, cents, ...(o.later === true ? { later: true } : {}), ...(o.hidden === true ? { hidden: true } : {}) });
+    // a built-in look is drawn as the code says; an admin's look (or Sigilfall item) must be one the site can draw
+    const builtIn = isBuiltIn(id) ? PRODUCTS.find((p) => p.id === id) : undefined;
+    const look = builtIn ? builtIn.look : sanitizeLook(o.look);
+    const sigil = builtIn ? builtIn.sigil : look ? null : sanitizeSigil(o.sigil);
+    out.push({ id, name, blurb, cents, ...(o.later === true ? { later: true } : {}), ...(o.hidden === true ? { hidden: true } : {}), ...(look ? { look } : {}), ...(sigil ? { sigil } : {}) });
   }
   if (!seen.has(AD_FREE_ID)) out.unshift(PRODUCTS[0]!);
   // a look added to the site after the list was saved joins it, after the looks already there

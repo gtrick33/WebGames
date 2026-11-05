@@ -2250,6 +2250,8 @@ const nl: string[] = [
   'Geen rand',
   'Geen banner',
   'Bekijk randen en banners in de winkel',
+  'Icoon',
+  'Geen icoon',
 ];
 
 export default nl;
