@@ -1,5 +1,5 @@
 import { damp } from '../core/math';
-import { MOUNT_DEFS } from '../data/mounts';
+import { mountDef, riddenMount } from '../progress/wardrobe';
 import { NPCS } from '../data/quests';
 import { passerbyLook } from '../render/art/townsfolk';
 import type { HeroLook } from '../render/art/hero';
@@ -166,7 +166,7 @@ export class WorldCast {
     const speed = Math.hypot(p.vx, p.vy);
     const moving = speed > 10;
     const acting = p.actKind !== null && p.actT > 0;
-    const mount = p.riding ? MOUNT_DEFS[p.riding] : undefined;
+    const mount = p.riding ? mountDef(p.riding) : undefined;
     // which way they face: where the blow goes, else where they walk
     let want = this.heroTurn;
     if (acting) want = turnOf(p.actAngle);
@@ -180,7 +180,8 @@ export class WorldCast {
     const clipOf = (kind: string): string => (kind === 'cast' ? 'cast' : kind === 'shoot' ? 'bow' : kind === 'heavy' ? 'chop2' : kind === 'spin' ? 'spin' : 'chop');
     const inSaddle = !!mount && cast.mountReady(mount);
     // the mount they'd call is fetched ahead, so it's there the moment they're up on it
-    const called = !mount && w.hero.mount ? MOUNT_DEFS[w.hero.mount] : undefined;
+    // (the one riddenMount gives: their own, or one from the shop while it's theirs)
+    const called = !mount ? mountDef(riddenMount(w.hero) ?? '') : undefined;
     if (called) cast.mountReady(called);
     // calling it: a quick summoning cast, no animal beside them (render/effects.ts draws the swirl, the rules the flash)
     const calling = !!called && p.summon > 0 && !p.dead && !p.form;

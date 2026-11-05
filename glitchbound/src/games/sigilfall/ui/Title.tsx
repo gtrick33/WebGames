@@ -1,5 +1,9 @@
 import { Suspense, lazy, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
+import { priceText, productIn, PRODUCTS } from '../../../catalog/shop';
+import { useAccount } from '../../../platform/account';
+import { useLiveCatalog } from '../../../platform/liveCatalog';
+import { classOpen, PAID_CLASSES } from '../progress/paidClasses';
 import { CLASS_IDS, CLASSES } from '../data/classes';
 import { SKILLS } from '../data/skills';
 import { SPEC_LEVEL } from '../data/talents';
@@ -130,6 +134,15 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
   const [askTips, setAskTips] = useState(false);
   const begin = (tips?: boolean): void => engine.createHero(engine.ui.createSlot, cls, cleanName(name), body, face, tips);
   const def = CLASSES[cls];
+  const { me } = useAccount();
+  const items = useLiveCatalog().raw.shopItems ?? PRODUCTS;
+  // a class sold in the shop can be looked at here, and made once it's bought
+  const priceOf = (id: ClassId): string | null => {
+    const item = PAID_CLASSES[id];
+    const p = item ? productIn(items, item) : undefined;
+    return p ? priceText(p.cents) : null;
+  };
+  const open = classOpen(cls, me);
   return (
     <div className="rb-create">
       <div className="rb-create-head">
@@ -147,6 +160,7 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
               <img className="rb-class-doll" src={heroDollUrl(heroLook(id, {}, {}, body, face), 'down', 2, heldWeapon(id, undefined), id === 'warrior' || id === 'paladin')} alt="" draggable={false} />
               <strong>{c.name}</strong>
               <span className="rb-dim">{c.role}</span>
+              {!classOpen(id, me) && <span className="rb-class-lock">Shop · {priceOf(id) ?? 'paid'}</span>}
               <span className="rb-dots" aria-label={DIFFICULTY[c.difficulty]}>
                 {[1, 2, 3].map((n) => (
                   <i key={n} className={n <= c.difficulty ? 'is-on' : ''} />
@@ -205,6 +219,7 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
           className="rb-create-go"
           onSubmit={(e) => {
             e.preventDefault();
+            if (!open) return;
             if (engine.asksForTips) setAskTips(true);
             else begin();
           }}
@@ -220,9 +235,15 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
             <span>Name</span>
             <input value={name} onChange={(e) => setName(e.target.value.slice(0, 16))} maxLength={16} placeholder={def.name} autoComplete="off" spellCheck={false} />
           </label>
-          <button className="rb-btn is-gold is-big" type="submit">
-            Begin as {def.name}
-          </button>
+          {open ? (
+            <button className="rb-btn is-gold is-big" type="submit">
+              Begin as {def.name}
+            </button>
+          ) : (
+            <a className="rb-btn is-gold is-big" href="/shop">
+              {me ? `Unlock the ${def.name} in the shop` : 'Sign in to unlock it in the shop'}
+            </a>
+          )}
         </form>
       </div>
       {askTips && (

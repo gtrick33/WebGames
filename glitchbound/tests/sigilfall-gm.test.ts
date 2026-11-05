@@ -159,6 +159,9 @@ describe('orders on a save', () => {
     expect(s.heroes.filter(Boolean)).toHaveLength(3);
     const other = JSON.parse(JSON.stringify(hero('ranger', 4000))) as Character;
     expect(applyOrder(s, order('restore', { hero: other }, 'r2', -1, 4000))).not.toBe('');
+    // with the Gloamknight Pack's two more places, it fits
+    expect(applyOrder(s, order('restore', { hero: other }, 'r2', -1, 4000), null, Math.random, 5)).toBe('');
+    expect(s.heroes[3]?.cls).toBe('ranger');
   });
 
   it('tells the player in a line', () => {

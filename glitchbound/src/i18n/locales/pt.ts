@@ -2097,7 +2097,7 @@ const pt: string[] = [
   'Ver os {n} diários',
   'Uma aventura GlitchBound',
   'Um RPG de fantasia inteiro que se joga no navegador. Escolhe o teu herói, reúne o teu equipamento e fecha a Fenda, sozinho ou com amigos.',
-  '7 heróis',
+  '8 heróis',
   '5 atos',
   '12 masmorras',
   'Cooperativo para 4',
@@ -2250,6 +2250,8 @@ const pt: string[] = [
   'Sem moldura',
   'Sem banner',
   'Ver molduras e banners na loja',
+  'Ícone',
+  'Sem ícone',
 ];
 
 export default pt;

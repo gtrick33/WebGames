@@ -141,6 +141,24 @@ export const SKILL_ICON: Record<string, string> = {
   ironfur: 'bark_skin_on_brown',
   starfall: 'star_summon_on_navy',
   'wild-dash': 'rabbit_dashing_on_green',
+  // gloamknight
+  'gloam-cleave': 'two_handed_sword_mastery_on_red',
+  'umbral-rend': 'burning_sword_on_black',
+  'grasping-gloom': 'cursed_status_dark_cloud_on_violet',
+  'blood-price': 'burning_heart_on_red',
+  'shadow-lunge': 'shadow_clone_of_two_figures_on_black',
+  'night-mantle': 'shadow_veil_curtain_on_violet',
+  'dread-toll': 'skull_lantern_on_black',
+  'night-tether': 'burning_chain_link_on_black',
+  'cast-off': 'broken_chain_links_snapping_on_grey',
+  'dread-leap': 'bat_swarm_on_violet',
+  evenfall: 'giant_reaper_silhouette_on_black',
+  'black-oath': 'death_mark_target_on_black',
+  'hollow-ward': 'heart_inside_a_shield_on_red',
+  'sundering-dark': 'armour_broken_status_cracked_shield_on_grey',
+  'creeping-dread': 'dark_eye_on_violet',
+  duskfall: 'eclipse_sun_on_black',
+  'shade-step': 'vanish_puff_of_smoke_on_violet',
 };
 
 /** The icons a talent can show, by what it does: a tree takes the next of its pool it has not used yet. */

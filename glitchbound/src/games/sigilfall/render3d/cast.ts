@@ -4,7 +4,7 @@ import { Crowd, Stand } from './crowd';
 import { dressedOf, type Held, type Wardrobe } from './dress';
 import { hexRgb, kitOf, type Kit } from './kits';
 import { UNIT } from './land';
-import { mountModel, type MountModel } from './mountKit';
+import { mountKey, mountModel, type MountModel } from './mountKit';
 import { shapeOf } from './mountLook';
 import { loadPack, type MeshData, type Pack } from './pack';
 import { ringMaterial, rigAnimOf, shadowMaterial, type RigAnim } from './toon';
@@ -340,11 +340,12 @@ export class Cast {
   }
 
   private mountEntry(def: MountDef): { crowd: Crowd | null; model: MountModel | null; loading: boolean } {
-    let e = this.mounts.get(def.id);
+    const key = mountKey(def);
+    let e = this.mounts.get(key);
     if (!e) {
       const entry: { crowd: Crowd | null; model: MountModel | null; loading: boolean } = { crowd: null, model: null, loading: true };
       e = entry;
-      this.mounts.set(def.id, entry);
+      this.mounts.set(key, entry);
       void loadPack(`k/${shapeOf(def).kit}`)
         .then((pack) => {
           const model = mountModel(def, pack);
@@ -356,7 +357,7 @@ export class Cast {
         })
         .catch(() => {
           entry.loading = false;
-          this.mounts.delete(def.id);
+          this.mounts.delete(key);
         });
     }
     return e;

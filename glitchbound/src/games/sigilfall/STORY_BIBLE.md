@@ -40,6 +40,11 @@ The **Sigil-wardens** of Aster broke the Starlight Crown into seven **Crown Sigi
 do the same, and hid them in seven holy places. They sealed Vaelor in the **Duskspire**, his citadel, and buried the
 road to it under three great fortresses: **the Three Gates** (Highwall, the Gloam Gate and the Muster Hall).
 
+The songs count seven wardens. There was an eighth, who carried no sigil: a knight who held the Gloam Gate at dusk
+while the seven rode away to hide theirs, and was left out of every song for it. A **Gloamknight** hero who finishes
+the story takes up that watch (the title *Warden of the Gloam*, the armor and the drake, `data/wardens.ts`). There are
+still seven sigils, and Duskspire still asks for all seven.
+
 ### What the Ash Crown wants
 
 Vaelor is not a dark lord who wants the world for its own sake. He wants **Vaelmoor back**: his queen, his children,
@@ -67,7 +72,7 @@ He is the **Hallow King**: he hallows the dead and calls it mercy.
 
 ### The hero
 
-A traveller who arrives at Briarhollow on the evening the story begins (any of the seven classes). The hero is the
+A traveller who arrives at Briarhollow on the evening the story begins (any of the eight classes). The hero is the
 one person in the story the Ash Crown cannot read: they carry no grief it can use — yet. The finale tests that.
 
 ### Recurring companions (blueprint §4.1)

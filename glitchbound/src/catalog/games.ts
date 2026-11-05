@@ -1046,9 +1046,9 @@ export const GAMES: GameEntry[] = [
   {
     slug: 'sigilfall',
     title: 'Sigilfall',
-    tagline: 'An epic cartoon fantasy RPG: seven heroes, five acts, a dozen dungeons and friends at your side.',
+    tagline: 'An epic cartoon fantasy RPG: eight heroes, five acts, a dozen dungeons and friends at your side.',
     description:
-      'A low-poly 3D action RPG made for phones first (a joystick and skill buttons), with WASD and the mouse on a computer. Choose one of seven heroes, from Warrior and Mage to Druid and Warlock, and follow the story through five acts, from the villages of the Vale to the Dead Kingdom, to close the Rift. ' +
+      'A low-poly 3D action RPG made for phones first (a joystick and skill buttons), with WASD and the mouse on a computer. Choose one of eight heroes, from Warrior and Mage to Druid and Gloamknight, and follow the story through five acts, from the villages of the Vale to the Dead Kingdom, to close the Rift. ' +
       'Gear changes how your skills work: a staff that splits your Fireball, a hammer whose Heavy Strike sends a shockwave. A dozen dungeons wait, with bosses that telegraph their blows. Reach level 60, then climb the endless Riftstone, alone or with up to three friends on their own devices. Your heroes are saved, and follow you to other devices when you sign in.',
     categories: ['arcade', 'strategy'],
     moods: ['action'],
@@ -1076,7 +1076,7 @@ export const GAMES: GameEntry[] = [
       { key: 'kills', label: 'Most foes in one expedition' },
     ],
     highlights: [
-      'Seven classes that play differently, each with its own specializations',
+      'Eight classes that play differently, each with its own specializations',
       'Five acts of story, hundreds of quests and a dozen dungeons with bosses',
       'Gear that changes how skills behave, plus mounts and a wardrobe',
       'Normal, Heroic and Mythic, then the endless Riftstone climb',

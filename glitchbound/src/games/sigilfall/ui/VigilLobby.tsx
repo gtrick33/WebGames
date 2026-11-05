@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { CLASSES, CLASS_IDS } from '../data/classes';
+import { useAccount } from '../../../platform/account';
+import { classOpen } from '../progress/paidClasses';
 import type { ClassId } from '../data/types';
 import type { LinkState } from '../net/link';
 import type { Action as RoomAction, View as RoomView } from '../net/vigilRoom';
@@ -186,7 +188,9 @@ function PartyPanel({ room, pick, body, face, land, lands, onLand }: { room: Vig
 
 /** Choosing who keeps the watch, and where: alone, or with friends. */
 export function VigilLobby({ face, body, cls, map, room, onBack, onBegin }: { face?: Face; body?: 'm' | 'f'; cls: ClassId; map?: VigilMap; room: VigilRoomControls; onBack: () => void; onBegin: (cls: ClassId, map: VigilMap) => void }) {
-  const [pick, setPick] = useState<ClassId>(cls);
+  const { me } = useAccount();
+  // a class from the shop can be played here once it's bought (progress/paidClasses.ts)
+  const [pick, setPick] = useState<ClassId>(classOpen(cls, me) ? cls : 'warrior');
   const bests = useMemo(() => readBests(), []);
   const [land, setLand] = useState<VigilMap>(() => {
     if (map) return map;
@@ -246,9 +250,12 @@ export function VigilLobby({ face, body, cls, map, room, onBack, onBegin }: { fa
                 key={id}
                 role="radio"
                 aria-checked={id === pick}
-                className={`rb-vlobby-class${id === pick ? ' is-on' : ''}`}
+                className={`rb-vlobby-class${id === pick ? ' is-on' : ''}${classOpen(id, me) ? '' : ' is-locked'}`}
                 style={{ ['--c' as string]: CLASSES[id].colors.accent }}
+                aria-disabled={!classOpen(id, me)}
+                title={classOpen(id, me) ? undefined : `${CLASSES[id].name}: unlock it in the shop`}
                 onClick={() => {
+                  if (!classOpen(id, me)) return;
                   setPick(id);
                   setSpell(0);
                 }}

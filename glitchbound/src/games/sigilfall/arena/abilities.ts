@@ -51,7 +51,9 @@ export type Effect =
   /** A snare left on the ground: the first enemy to step on it is caught. */
   | { k: 'trap'; cc: CcKind; dur: number }
   /** If this curse is taken off, whoever took it is silenced. */
-  | { k: 'backlash'; dur: number };
+  | { k: 'backlash'; dur: number }
+  /** Costs its user this much of their own health (never the last of it). */
+  | { k: 'price'; n: number };
 
 export type Aim = 'enemy' | 'friend' | 'self' | 'near';
 /** What the computer players read an ability as. */
@@ -200,6 +202,20 @@ const KITS: Record<ClassId, Ability[]> = {
     a({ id: 'l-moon', cls: 'druid', name: 'Moonburn', text: 'Instant: burns 170 over 10 seconds.', icon: 'moonfire_beam_on_navy', color: '#cfe0ff', school: 'nature', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 5, mana: 3, effects: [{ k: 'dot', n: 170, dur: 10 }] }),
     a({ id: 'l-cure', cls: 'druid', name: 'Forest’s Cure', text: 'Takes one curse, poison or hex off a friend.', icon: 'rejuvenate_leaf_drop_on_green', color: '#e8fff8', school: 'nature', role: 'dispel', aim: 'friend', range: FAR, cast: 0, cd: 6, mana: 3, effects: [{ k: 'dispel' }] }),
   ],
+  gloamknight: [
+    a({ id: 'g-cleave', cls: 'gloamknight', name: 'Gloam Cleave', text: 'A heavy two-handed blow that drinks a little of what it spills.', icon: 'two_handed_sword_mastery_on_red', color: '#c8a8ff', school: 'shadow', role: 'damage', aim: 'enemy', range: MELEE, cast: 0, cd: 0, mana: 0, sticky: true, effects: [{ k: 'dmg', n: 28 }, { k: 'heal', n: 8 }] }),
+    a({ id: 'g-reap', cls: 'gloamknight', name: 'Night Reaping', text: 'A great blow that heals you for half of what it deals.', icon: 'giant_reaper_silhouette_on_black', color: '#9a6ae0', school: 'shadow', role: 'burst', aim: 'enemy', range: MELEE, cast: 0, cd: 9, mana: 0, sticky: true, effects: [{ k: 'dmg', n: 62 }, { k: 'heal', n: 31 }] }),
+    a({ id: 'g-price', cls: 'gloamknight', name: 'Blood Price', text: 'Pay 140 of your own health: deal 35% more damage for 10 seconds.', icon: 'burning_heart_on_red', color: '#c0344e', school: 'shadow', role: 'burst', aim: 'self', range: 0, cast: 0, cd: 45, mana: 0, free: true, effects: [{ k: 'price', n: 140 }, { k: 'fury', pct: 35, dur: 10 }] }),
+    a({ id: 'g-gloom', cls: 'gloamknight', name: 'Clinging Gloom', text: 'Shadow clings to them: 108 over 9 seconds, and slows by 30%.', icon: 'cursed_status_dark_cloud_on_violet', color: '#b48cff', school: 'shadow', role: 'damage', aim: 'enemy', range: MID, cast: 0, cd: 9, mana: 0, effects: [{ k: 'dot', n: 108, dur: 9 }, { k: 'slow', pct: 30, dur: 9 }] }),
+    a({ id: 'g-lunge', cls: 'gloamknight', name: 'Shadow Lunge', text: 'Lunge through the dark to an enemy and slow them by half for 4 seconds.', icon: 'shadow_clone_of_two_figures_on_black', color: '#7a52b0', school: 'shadow', role: 'mobility', aim: 'enemy', range: FAR, cast: 0, cd: 18, mana: 0, free: true, effects: [{ k: 'charge' }, { k: 'slow', pct: 50, dur: 4 }] }),
+    a({ id: 'g-sever', cls: 'gloamknight', name: 'Severing Edge', text: 'Cuts off a cast and locks that school for 4 seconds.', icon: 'burning_sword_on_black', color: '#c8a8ff', school: 'physical', role: 'interrupt', aim: 'enemy', range: MELEE, cast: 0, cd: 14, mana: 0, free: true, effects: [{ k: 'interrupt', lock: 4 }] }),
+    a({ id: 'g-hand', cls: 'gloamknight', name: 'Grave Hand', text: 'A hand of shadow holds them fast: stunned for 3 seconds.', icon: 'raise_dead_grave_with_bones_on_dark_green', color: '#9a6ae0', school: 'shadow', role: 'cc', aim: 'enemy', range: MID, cast: 0, cd: 30, mana: 0, bolt: true, effects: [{ k: 'cc', cc: 'stun', dur: 3 }] }),
+    a({ id: 'g-toll', cls: 'gloamknight', name: 'Dread Toll', text: 'A toll of dusk: every enemy near you flees for 4 seconds.', icon: 'skull_lantern_on_black', color: '#b48cff', school: 'shadow', role: 'cc', aim: 'near', range: 54, cast: 0, cd: 40, mana: 0, effects: [{ k: 'cc', cc: 'fear', dur: 4 }] }),
+    a({ id: 'g-ward', cls: 'gloamknight', name: 'Hollow Ward', text: 'Pay 100 of your own health for a ward that soaks up 260 damage for 10 seconds.', icon: 'heart_inside_a_shield_on_red', color: '#c0344e', school: 'shadow', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 32, mana: 0, free: true, effects: [{ k: 'price', n: 100 }, { k: 'absorb', n: 260, dur: 10 }] }),
+    a({ id: 'g-mantle', cls: 'gloamknight', name: 'Night Mantle', text: 'Take 40% less damage for 8 seconds, even held.', icon: 'shadow_veil_curtain_on_violet', color: '#7a52b0', school: 'shadow', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 80, mana: 0, free: true, anyState: true, effects: [{ k: 'guard', pct: 40, dur: 8 }] }),
+    a({ id: 'g-devour', cls: 'gloamknight', name: 'Devour Light', text: 'Tears one blessing off an enemy, and drinks 40 health from them.', icon: 'eclipse_sun_on_black', color: '#9a6ae0', school: 'shadow', role: 'dispel', aim: 'enemy', range: MID, cast: 0, cd: 12, mana: 0, effects: [{ k: 'dispel' }, { k: 'dmg', n: 40 }, { k: 'heal', n: 40 }] }),
+    a({ id: 'g-slip', cls: 'gloamknight', name: 'Slip the Dark', text: 'Shake off roots and slows, and be free of them for 5 seconds.', icon: 'vanish_puff_of_smoke_on_violet', color: '#c8a8ff', school: 'shadow', role: 'mobility', aim: 'self', range: 0, cast: 0, cd: 28, mana: 0, free: true, effects: [{ k: 'break' }, { k: 'free', dur: 5 }] }),
+  ],
 };
 
 export const ABILITIES: Record<string, Ability> = Object.fromEntries([...Object.values(KITS).flat(), TOKEN].map((x) => [x.id, x]));
@@ -214,6 +230,7 @@ export const BODY: Record<ClassId, { hp: number; mana: number }> = {
   priest: { hp: 1340, mana: 100 },
   warlock: { hp: 1420, mana: 100 },
   mage: { hp: 1700, mana: 100 },
+  gloamknight: { hp: 1540, mana: 0 },
 };
 
 /** Ready-made bars: what a hero brings before their player changes anything, and what the computer plays. */
@@ -224,7 +241,7 @@ export const PRESETS: Record<ClassId, { id: string; name: string; bar: string[];
   priest: [{ id: 'healer', name: 'Lifegiver', bar: ['p-mend', 'p-renew', 'p-ward', 'p-cleanse', 'p-wail', 'p-lance'], talents: ['p-1a', 'p-2c', 'p-3a'] }, { id: 'shadow', name: 'Curse-speaker', bar: ['p-smite', 'p-curse', 'p-lance', 'p-hush', 'p-wail', 'p-ward'], talents: ['p-1c', 'p-2b', 'p-3c'] }],
   paladin: [{ id: 'holy', name: 'Oathkeeper', bar: ['d-flash', 'd-cleanse', 'd-hammer', 'd-shell', 'd-judge', 'd-hands'], talents: ['d-1c', 'd-2a', 'd-3b'] }, { id: 'ret', name: 'Zealot', bar: ['d-blow', 'd-judge', 'd-wrath', 'd-rebuke', 'd-hammer', 'd-shell'], talents: ['d-1a', 'd-2c', 'd-3a'] }],
   warlock: [{ id: 'curses', name: 'Hexer', bar: ['k-agony', 'k-wither', 'k-unstable', 'k-dread', 'k-lock', 'k-pact'], talents: ['k-1a', 'k-2a', 'k-3a'] }, { id: 'ruin', name: 'Doomcaller', bar: ['k-bolt', 'k-chaos', 'k-agony', 'k-lock', 'k-howl', 'k-pact'], talents: ['k-1c', 'k-2c', 'k-3c'] }],
-  druid: [{ id: 'heal', name: 'Grovekeeper', bar: ['l-regrow', 'l-rejuv', 'l-bloom', 'l-cure', 'l-gale', 'l-moon'], talents: ['l-1c', 'l-2a', 'l-3a'] }, { id: 'star', name: 'Starseer', bar: ['l-lash', 'l-moon', 'l-roots', 'l-snap', 'l-gale', 'l-bark'], talents: ['l-1b', 'l-2b', 'l-3b'] }],
+  druid: [{ id: 'heal', name: 'Grovekeeper', bar: ['l-regrow', 'l-rejuv', 'l-bloom', 'l-cure', 'l-gale', 'l-moon'], talents: ['l-1c', 'l-2a', 'l-3a'] }, { id: 'star', name: 'Starseer', bar: ['l-lash', 'l-moon', 'l-roots', 'l-snap', 'l-gale', 'l-bark'], talents: ['l-1b', 'l-2b', 'l-3b'] }],  gloamknight: [{ id: 'reaver', name: 'Bloodsworn', bar: ['g-cleave', 'g-reap', 'g-lunge', 'g-sever', 'g-hand', 'g-ward'], talents: ['g-1a', 'g-2a', 'g-3a'] }, { id: 'dread', name: 'Dreadbinder', bar: ['g-cleave', 'g-gloom', 'g-price', 'g-sever', 'g-toll', 'g-mantle'], talents: ['g-1c', 'g-2c', 'g-3b'] }],
 };
 
 /** One passive taken into the match, on top of the bar. */

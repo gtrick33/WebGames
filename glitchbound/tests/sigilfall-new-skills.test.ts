@@ -24,6 +24,7 @@ const NEW: Record<ClassId, string[]> = {
   priest: ['grasp-of-faith', 'purify', 'chastise', 'shadow-fiend', 'sanctuary'],
   warlock: ['soul-tether', 'blood-pact', 'shadow-snare', 'harvest', 'gate-step'],
   druid: ['gale', 'thornhide', 'vine-vortex', 'bloom', 'stampede'],
+  gloamknight: ['night-tether', 'cast-off', 'dread-leap', 'evenfall', 'black-oath'],
 };
 
 const step = (w: World, seconds: number, each?: (w: World) => void): void => {

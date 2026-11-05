@@ -3,6 +3,7 @@ import type { FriendRow, FriendsView } from '../../src/platform/apiTypes';
 import { levelForXp } from '../../src/platform/progression';
 import { bad, json, readJson, sameOrigin, type Ctx, type Env } from '../../server/http';
 import { INVITE_PATHS } from '../../server/friends';
+import { rowLooks, WORN_SQL } from '../../server/looks';
 import { syncPins } from '../../server/pins';
 import { currentUser, requireUser, type UserRow } from '../../server/session';
 
@@ -34,7 +35,11 @@ async function ownCode(env: Env, user: UserRow & { friend_code?: string | null }
 async function view(env: Env, user: UserRow): Promise<FriendsView> {
   const [code, rows, pins, last, blocked] = await Promise.all([
     ownCode(env, user),
-    env.DB.prepare('SELECT u.id, u.nickname, u.xp FROM friends f JOIN users u ON u.id = f.friend_id WHERE f.user_id = ? AND u.banned_at IS NULL ORDER BY u.nickname COLLATE NOCASE').bind(user.id).all<{ id: string; nickname: string; xp: number }>(),
+    env.DB.prepare(
+      `SELECT u.id, u.nickname, u.xp, ${WORN_SQL} FROM friends f JOIN users u ON u.id = f.friend_id WHERE f.user_id = ? AND u.banned_at IS NULL ORDER BY u.nickname COLLATE NOCASE`,
+    )
+      .bind(user.id)
+      .all<{ id: string; nickname: string; xp: number; border: string; banner: string; icon: string }>(),
     env.DB.prepare('SELECT p.user_id, p.pin FROM pins p JOIN friends f ON f.friend_id = p.user_id WHERE f.user_id = ?').bind(user.id).all<{ user_id: string; pin: string }>(),
     env.DB.prepare(`SELECT r.user_id, r.game, MAX(r.ended_at) AS at FROM runs r JOIN friends f ON f.friend_id = r.user_id WHERE f.user_id = ? AND r.status = 'ok' GROUP BY r.user_id`).bind(user.id).all<{ user_id: string; game: string; at: number }>(),
     env.DB.prepare('SELECT u.id, u.nickname FROM blocks b JOIN users u ON u.id = b.blocked_id WHERE b.user_id = ? ORDER BY u.nickname COLLATE NOCASE').bind(user.id).all<{ id: string; nickname: string }>(),
@@ -45,7 +50,7 @@ async function view(env: Env, user: UserRow): Promise<FriendsView> {
   const friends: FriendRow[] = rows.results.map((u) => {
     const points = pinPoints(held.get(u.id) ?? []);
     const seen = played.get(u.id);
-    return { id: u.id, nickname: u.nickname, level: levelForXp(u.xp), points, rank: shelfRank(points).title, lastGame: seen?.game ?? null, lastAt: seen?.at ?? null };
+    return { id: u.id, nickname: u.nickname, level: levelForXp(u.xp), points, rank: shelfRank(points).title, lastGame: seen?.game ?? null, lastAt: seen?.at ?? null, ...rowLooks(u) };
   });
   return { code, friends, blocked: blocked.results };
 }

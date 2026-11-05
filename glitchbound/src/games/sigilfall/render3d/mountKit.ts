@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import type { MountDef } from '../data/mounts';
 import { Build, mul, type C } from './build';
-import { above, below, between, blade, coatKeysOf, mix, otherSides, Part, rgb, rod, shell, smooth, swatchKey, tied, warped, within, withoutParts, type Corner, type Inside } from './meshKit';
+import { above, below, between, blade, coatKeysOf, glowing, mix, otherSides, Part, rgb, rod, shell, smooth, swatchKey, tied, topAt, warped, within, withoutParts, type Corner, type Inside } from './meshKit';
+import { boarExtras, builtAntlers, deerExtras, drakeExtras, glowOf, hasExtra, withoutAntlers } from './mountExtras';
 import { shapeOf, type MountShape, type Swatch } from './mountLook';
 import { mergeMeshes, type MeshData, type Pack } from './pack';
 import { RigAnim, rigAnimOf, type ExtraJoint } from './toon';
@@ -73,20 +74,6 @@ function strip(out: Part, a: readonly number[], ja: number, b: readonly number[]
   }
 }
 
-/** How high the animal's top is at a point along it, and who carries that part of it. */
-function topAt(m: MeshData, z: number, reach: number, w: number): { y: number; j: number } | null {
-  let best = -Infinity;
-  let j = -1;
-  for (let v = 0; v < m.n; v++) {
-    if (Math.abs(m.pos[v * 3 + 2]! - z) > reach || Math.abs(m.pos[v * 3]!) > w) continue;
-    if (m.pos[v * 3 + 1]! > best) {
-      best = m.pos[v * 3 + 1]!;
-      j = m.skin![v * 3]!;
-    }
-  }
-  return j < 0 ? null : { y: best, j };
-}
-
 /* ------------------------------------------------------------------ horses */
 
 function horseParts(base: MeshData, def: MountDef, shape: MountShape, joint: number, rig: RigAnim): MeshData[] {
@@ -139,7 +126,7 @@ function horseParts(base: MeshData, def: MountDef, shape: MountShape, joint: num
 
 /* ------------------------------------------------------------------ harts */
 
-function deerParts(base: MeshData, def: MountDef, shape: MountShape, joint: number): MeshData[] {
+function deerParts(base: MeshData, def: MountDef, shape: MountShape, joint: number, rig: RigAnim): MeshData[] {
   const parts: MeshData[] = [];
   const hide = new Set([...coatKeysOf(base), '866844', 'b8a993']);
   const { seatZ: sz, seatY: sy, hemY } = shape;
@@ -152,6 +139,7 @@ function deerParts(base: MeshData, def: MountDef, shape: MountShape, joint: numb
   parts.push(shell(base, [above(hemY), ...between(sz + 0.62, sz + 0.72)], 0.07, hemC, hide));
   parts.push(shell(base, [...between(sz + 0.1, sz + 0.25), below(hemY + 0.04)], 0.05, mul(blanket, 0.55), hide));
   parts.push(tied(buildSaddle(def.tack, shape.backW / u, 0.4), joint, u, [0, sy + 0.03, sz], base.rig));
+  if (def.tier === 'shop') parts.push(...deerExtras(base, def, shape, rig));
   return parts;
 }
 
@@ -183,6 +171,7 @@ function boarParts(base: MeshData, def: MountDef, shape: MountShape, joint: numb
   const mane = rgb(def.mane);
   const ivory = rgb('#efe6cc');
   const root = mul(ivory, 0.72);
+  const shop = def.tier === 'shop';
   if (def.barding) {
     const steel = mul(rgb(def.barding), 0.92);
     const edge = mul(rgb(def.tack), 1.15);
@@ -191,8 +180,8 @@ function boarParts(base: MeshData, def: MountDef, shape: MountShape, joint: numb
     parts.push(shell(base, [above(2.75), below(2.9), ...between(0.32, 1.6)], 0.075, edge, hide));
     parts.push(shell(base, [above(3.1), ...between(-1.95, -0.9)], 0.05, rows, hide));
     parts.push(shell(base, [above(3.1), below(3.25), ...between(-1.95, -0.9)], 0.075, edge, hide));
-    // a brow plate with a spike
-    parts.push(rod([0, 3.5, 2.75], [0, 4.25, 2.55], 0.22, 0, 5, steel, mix(steel, [1, 1, 1], 0.5), head, base.rig));
+    // a brow plate with a spike (a shop boar's helm has its own)
+    if (!hasExtra(def, 'helm')) parts.push(rod([0, 3.5, 2.75], [0, 4.25, 2.55], 0.22, 0, 5, steel, mix(steel, [1, 1, 1], 0.5), head, base.rig));
   }
   // the blanket
   parts.push(shell(base, [above(hemY), ...between(sz - 0.7, sz + 0.62)], def.barding ? 0.08 : 0.05, blanket, hide));
@@ -208,15 +197,19 @@ function boarParts(base: MeshData, def: MountDef, shape: MountShape, joint: numb
   const nose = mul(rgb(def.coat), 0.5);
   parts.push(rod([0, 2.86, 3.34], [0, 2.84, 3.86], 0.5, 0.42, 8, nose, mul(nose, 0.7), head, base.rig));
 
-  // bristles from the brow back down the spine, broken by the saddle
+  // bristles from the brow back down the spine, broken by the saddle (and by spiked plates)
   const tip = mix(mane, rgb('#a89878'), 0.35);
+  const spiked = hasExtra(def, 'plates');
   for (let z = 2.3; z > -2.05; z -= 0.27) {
     if (z < sz + 0.75 && z > sz - 0.82) continue;
+    if (spiked && ((z > 0.5 && z < 1.65) || (z > -2.0 && z < -0.85))) continue;
+    if (hasExtra(def, 'helm') && z > 1.95) continue;
     const top = topAt(base, z, 0.2, 0.6);
     if (!top) continue;
     const tall = 0.62 + Math.sin(z * 4.3) * 0.12 + 0.3 * smooth(0.2, 1.2, z) * (1 - smooth(1.8, 2.4, z));
     parts.push(blade(z, top.y - 0.08, tall, 0.5, 0.1, mane, tip, top.j, base.rig));
   }
+  if (shop) parts.push(...boarExtras(base, def, rig));
   return parts;
 }
 
@@ -340,7 +333,7 @@ function wingJoints(side: 1 | -1, parent: string): ExtraJoint[] {
 const DRAKE_JOINTS = [...wingJoints(1, 'Shoulders'), ...wingJoints(-1, 'Shoulders')];
 
 /** One wing: a thin arm and fingers, and a skin between them cut in scallops. Its points are for the left side. */
-function wingPart(side: 1 | -1, jArm: number, jHand: number, skin: C, bone: C, rig?: string): MeshData {
+function wingPart(side: 1 | -1, jArm: number, jHand: number, skin: C, bone: C, rig?: string, veins?: C): MeshData {
   const out = new Part();
   const X = (p: readonly number[]): number[] => [p[0]! * side, p[1]!, p[2]!];
   const S = SHOULDER.toArray();
@@ -389,6 +382,7 @@ function wingPart(side: 1 | -1, jArm: number, jHand: number, skin: C, bone: C, r
   const dim = mul(bone, 0.78);
   const parts = [
     out.data(rig),
+    ...(veins ? [glowing(wingVeins(X, { S, E, W, F1, F2, F3, R, s12, s23, s3R }, A, H, veins, rig))] : []),
     rod(X(S), X(E), 62, 42, 5, dim, bone, jArm, rig),
     rod(X(E), X(W), 40, 28, 5, dim, bone, jHand, rig),
     rod(X(W), X(F1), 27, 5, 5, dim, bone, jHand, rig),
@@ -398,6 +392,63 @@ function wingPart(side: 1 | -1, jArm: number, jHand: number, skin: C, bone: C, r
     rod(X(W), X([W[0]! + 60, W[1]! + 190, W[2]! + 70]), 26, 0, 5, dim, bone, jHand, rig),
   ];
   return mergeMeshes(parts);
+}
+
+/**
+ * Veins of light in a wing's skin (a shop drake's): from the bones out toward the scallops, forking, on both sides of
+ * the skin. Each runs on the joint that carries the skin it lies on.
+ */
+function wingVeins(X: (p: readonly number[]) => number[], P: Record<'S' | 'E' | 'W' | 'F1' | 'F2' | 'F3' | 'R' | 's12' | 's23' | 's3R', number[]>, A: readonly number[], H: readonly number[], color: C, rig?: string): MeshData {
+  const out = new Part();
+  const lerp = (a: number[], b: number[], t: number): number[] => [a[0]! + (b[0]! - a[0]!) * t, a[1]! + (b[1]! - a[1]!) * t, a[2]! + (b[2]! - a[2]!) * t];
+  const v3 = (p: readonly number[]): THREE.Vector3 => new THREE.Vector3(p[0], p[1], p[2]);
+  /** A ribbon along points of one panel (whose corners say which way it faces), narrowing to its end. */
+  const ribbon = (pts: number[][], j: readonly number[], panel: number[][], w0: number, w1: number): void => {
+    const [a, b, c] = panel.map((p) => v3(X(p)));
+    const n = new THREE.Vector3().subVectors(b!, a!).cross(new THREE.Vector3().subVectors(c!, a!)).normalize();
+    const q = pts.map((p) => v3(X(p)));
+    for (let i = 0; i + 1 < q.length; i++) {
+      const seg = new THREE.Vector3().subVectors(q[i + 1]!, q[i]!);
+      const perp = new THREE.Vector3().crossVectors(n, seg).normalize();
+      const wa = w0 + (w1 - w0) * (i / (q.length - 1));
+      const wb = w0 + (w1 - w0) * ((i + 1) / (q.length - 1));
+      for (const flip of [1, -1]) {
+        const lift = n.clone().multiplyScalar(7 * flip);
+        const corner = (p: THREE.Vector3, w: number, s: number): number => {
+          const at = p.clone().addScaledVector(perp, w * s).add(lift);
+          return out.corner([at.x, at.y, at.z, n.x * flip, n.y * flip, n.z * flip, n.x * flip, n.y * flip, n.z * flip, j[0]!, j[1]!, j[2]!], color);
+        };
+        const i0 = corner(q[i]!, wa, 1);
+        const i1 = corner(q[i]!, wa, -1);
+        const i2 = corner(q[i + 1]!, wb, -1);
+        const i3 = corner(q[i + 1]!, wb, 1);
+        out.idx.push(i0, i1, i2, i0, i2, i3, i0, i2, i1, i0, i3, i2);
+      }
+    }
+  };
+  /** A vein from a bone toward a scallop, with a fork off it on each side. */
+  const vein = (from: number[], to: number[], forkA: number[], forkB: number[], j: readonly number[], panel: number[][], w: number): void => {
+    // (a little crooked, as veins are: each point pushed off the straight line toward one side or the other)
+    const bend = (a: number[], b: number[], t: number, k: number): number[] => {
+      const p = lerp(a, b, t);
+      const q = lerp(forkA, forkB, 0.5);
+      return lerp(p, lerp(p, q, 0.5), k);
+    };
+    const mid = bend(from, to, 0.46, 0.08);
+    ribbon([lerp(from, to, 0.04), bend(from, to, 0.24, -0.1), mid, bend(from, to, 0.7, 0.1), lerp(from, to, 0.93)], j, panel, w, w * 0.3);
+    const a1 = bend(mid, forkA, 0.5, 0.12);
+    const b1 = bend(mid, forkB, 0.5, -0.12);
+    ribbon([mid, a1, lerp(mid, forkA, 0.9)], j, panel, w * 0.7, w * 0.25);
+    ribbon([mid, b1, lerp(mid, forkB, 0.9)], j, panel, w * 0.7, w * 0.25);
+    // and a twig off each fork
+    ribbon([a1, lerp(a1, to, 0.55)], j, panel, w * 0.4, w * 0.15);
+    ribbon([b1, lerp(b1, to, 0.55)], j, panel, w * 0.4, w * 0.15);
+  };
+  const { S, E, W, F1, F2, F3, R, s12, s23, s3R } = P;
+  vein(W, s12, lerp(F1, s12, 0.5), lerp(s12, F2, 0.5), H, [W, F1, F2], 40);
+  vein(lerp(E, W, 0.25), s23, lerp(F2, s23, 0.45), lerp(s23, F3, 0.5), H, [E, F2, F3], 40);
+  vein(lerp(S, E, 0.3), s3R, lerp(F3, s3R, 0.4), lerp(s3R, R, 0.5), A, [S, E, F3], 36);
+  return out.data(rig);
 }
 
 /** Up from a lizard's stoop: the neck rises in a curve, the head comes down in size, the waist in. */
@@ -436,22 +487,30 @@ function drakeParts(base: MeshData, def: MountDef, shape: MountShape, joint: num
   parts.push(shell(base, [...between(sz + 60, sz + 110), below(hemY + 20)], 12, mul(tack, 0.7), body));
   parts.push(tied(buildSaddle(def.tack, (shape.backW * 0.72) / u, 0.3), joint, u, [0, sy + 6, sz], base.rig));
 
-  // horns, swept back from the brow, and smaller ones at the jaw
+  // horns, swept back from the brow, and smaller ones at the jaw (a crowned drake's are longer, and tipped with light)
   const top = base.max[1];
   const hz = 1090;
+  const shop = def.tier === 'shop';
+  const crowned = hasExtra(def, 'crown');
+  const k = crowned ? 1.55 : 1;
+  const hornTip = crowned ? mix(glowOf(def), [1, 1, 1], 0.3) : mix(horn, [1, 1, 1], 0.3);
   for (const side of [1, -1]) {
-    parts.push(rod([side * 62, top - 80, hz], [side * 88, top + 30, hz - 110], 40, 25, 6, mul(horn, 0.78), horn, head, base.rig));
-    parts.push(rod([side * 88, top + 30, hz - 110], [side * 112, top + 96, hz - 260], 25, 0, 6, horn, mix(horn, [1, 1, 1], 0.3), head, base.rig));
+    parts.push(rod([side * 62, top - 80, hz], [side * 88 * k, top + 30 * k, hz - 110 * k], 40 * Math.sqrt(k), 25 * Math.sqrt(k), 6, mul(horn, 0.78), horn, head, base.rig));
+    parts.push(rod([side * 88 * k, top + 30 * k, hz - 110 * k], [side * 112 * k, top + 96 * k, hz - 260 * k], 25 * Math.sqrt(k), 0, 6, horn, hornTip, head, base.rig));
     parts.push(rod([side * 96, top - 230, hz + 40], [side * 170, top - 170, hz - 80], 24, 0, 5, mul(horn, 0.82), horn, head, base.rig));
   }
 
-  // blades, from the head down the neck, broken by the saddle, on down to the tail
-  for (let z = 1030; z > -1560; z -= 112) {
+  // blades, from the head down the neck, broken by the saddle, on down to the tail (steel on a plated drake; a crystal
+  // one has shards instead: render3d/mountExtras.ts)
+  const plated = hasExtra(def, 'plates');
+  const bladeA = plated ? mul(rgb(def.plate ?? '#5a5e6a'), 0.9) : mix(coat, wings, 0.45);
+  const bladeB = plated ? mix(glowOf(def), [1, 1, 1], 0.25) : wings;
+  for (let z = 1030; z > -1560 && !hasExtra(def, 'crystals'); z -= 112) {
     if (z < sz + 250 && z > sz - 270) continue;
     const at = topAt(base, z, 80, 90);
     if (!at) continue;
-    const tall = 150 * (0.42 + 0.6 * smooth(-1560, -500, z) * (1 - 0.42 * smooth(560, 1000, z)));
-    parts.push(blade(z, at.y - 12, tall, 150, 22, mix(coat, wings, 0.45), wings, at.j, base.rig));
+    const tall = 150 * (0.42 + 0.6 * smooth(-1560, -500, z) * (1 - 0.42 * smooth(560, 1000, z))) * (plated ? 1.25 : 1);
+    parts.push(blade(z, at.y - 12, tall, 150, 22, bladeA, bladeB, at.j, base.rig));
   }
 
   // a fin at the tail's end
@@ -475,14 +534,17 @@ function drakeParts(base: MeshData, def: MountDef, shape: MountShape, joint: num
   }
 
   // the wings
-  const bone = mul(coat, 0.86);
-  parts.push(wingPart(1, J('wing.l'), J('hand.l'), wings, bone, base.rig));
-  parts.push(wingPart(-1, J('wing.r'), J('hand.r'), wings, bone, base.rig));
+  const bone = plated ? mul(rgb(def.plate ?? '#5a5e6a'), 0.95) : mul(coat, 0.86);
+  const veins = hasExtra(def, 'veins') ? glowOf(def) : undefined;
+  parts.push(wingPart(1, J('wing.l'), J('hand.l'), wings, bone, base.rig, veins));
+  parts.push(wingPart(-1, J('wing.r'), J('hand.r'), wings, bone, base.rig, veins));
 
-  // eyes that burn
+  // eyes that burn (a shop drake's really glow)
   const eyes = new Build();
   for (const side of [1, -1]) eyes.box(side * 84 - 15, hz + 70, side * 84 + 15, hz + 120, top - 165, top - 135, glow, glow, glow);
-  parts.push(tied(eyes, head, 1, [0, 0, 0], base.rig));
+  const eyeMesh = tied(eyes, head, 1, [0, 0, 0], base.rig);
+  parts.push(shop ? glowing(eyeMesh) : eyeMesh);
+  if (shop) parts.push(...drakeExtras(base, def, shape, rig, { top, hz }));
   return parts;
 }
 
@@ -522,9 +584,13 @@ function rigOf(pack: Pack, kit: string, body: MountDef['body']): RigAnim {
 
 const models = new Map<string, MountModel>();
 
+/** What a mount's model is made from: two mounts with the same key look the same (an admin's preview changes it). */
+export const mountKey = (def: MountDef): string => (def.tier === 'shop' ? `${def.id}|${def.body}|${def.coat}|${def.mane}|${def.tack}|${def.plate}|${def.barding}|${def.extras?.join(',')}|${def.glow?.color}` : def.id);
+
 /** A mount's model, made once. */
 export function mountModel(def: MountDef, pack: Pack): MountModel {
-  const hit = models.get(def.id);
+  const key = mountKey(def);
+  const hit = models.get(key);
   if (hit) return hit;
   const shape = shapeOf(def);
   const rig = rigOf(pack, shape.kit, def.body);
@@ -542,8 +608,9 @@ export function mountModel(def: MountDef, pack: Pack): MountModel {
     parts = boarParts(body, def, shape, joint, rig);
     body = repainted(body, def, shape);
   } else if (def.body === 'deer') {
-    parts = deerParts(body, def, shape, joint);
-    body = repainted(body, def, shape, { '352d22': def.antlers === 'elk' ? '#a89878' : def.glow ? '#efe8d0' : '#5a4630' });
+    if (builtAntlers(def)) body = withoutAntlers(body, rig.joints.indexOf('Head'));
+    parts = deerParts(body, def, shape, joint, rig);
+    body = repainted(body, def, shape, { '352d22': builtAntlers(def) ? def.mane : def.antlers === 'elk' ? '#a89878' : def.glow ? '#efe8d0' : '#5a4630' });
   } else {
     parts = horseParts(body, def, shape, joint, rig);
     const sheets = shape.hair?.length ? otherSides(body, new Set(shape.hair)) : null;
@@ -554,6 +621,8 @@ export function mountModel(def: MountDef, pack: Pack): MountModel {
   mesh.min = [body.min[0], body.min[1], body.min[2]];
   mesh.max = [body.max[0], body.max[1], body.max[2]];
   const model: MountModel = { shape, mesh, rig, joint };
-  models.set(def.id, model);
+  // (an admin trying colors makes many: only the last few are kept)
+  if (models.size > 48) models.delete(models.keys().next().value!);
+  models.set(key, model);
   return model;
 }

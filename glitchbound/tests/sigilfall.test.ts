@@ -103,7 +103,7 @@ describe('sigilfall content', () => {
   });
 
   it('classes have their own kits: a basic, six skills, three specializations, an ultimate and a dodge', () => {
-    expect(CLS).toHaveLength(7);
+    expect(CLS).toHaveLength(8);
     const seen = new Set<string>();
     for (const cls of CLS) {
       const d = CLASSES[cls];
