@@ -2252,6 +2252,8 @@ const pl: string[] = [
   'Zobacz ramki i banery w sklepie',
   'Ikona',
   'Bez ikony',
+  'Nowa klasa',
+  'Pakiet Gloamknight',
 ];
 
 export default pl;

@@ -2252,6 +2252,8 @@ const es: string[] = [
   'Ver marcos y banners en la tienda',
   'Icono',
   'Sin icono',
+  'Nueva clase',
+  'Paquete Gloamknight',
 ];
 
 export default es;

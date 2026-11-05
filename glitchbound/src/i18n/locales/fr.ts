@@ -2252,6 +2252,8 @@ const fr: string[] = [
   'Voir les cadres et bannières dans la boutique',
   'Icône',
   'Sans icône',
+  'Nouvelle classe',
+  'Pack Gloamknight',
 ];
 
 export default fr;

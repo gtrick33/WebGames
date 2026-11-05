@@ -2252,6 +2252,8 @@ const de: string[] = [
   'Rahmen und Banner im Shop ansehen',
   'Icon',
   'Kein Icon',
+  'Neue Klasse',
+  'Gloamknight-Paket',
 ];
 
 export default de;

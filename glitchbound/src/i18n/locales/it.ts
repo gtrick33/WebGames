@@ -2252,6 +2252,8 @@ const it: string[] = [
   'Vedi cornici e banner nel negozio',
   'Icona',
   'Nessuna icona',
+  'Nuova classe',
+  'Pacchetto Gloamknight',
 ];
 
 export default it;

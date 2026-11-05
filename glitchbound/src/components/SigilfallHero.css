@@ -341,3 +341,88 @@
     display: none;
   }
 }
+
+/* The Gloamknight, in front of the picture at its right: a link to his pack in the shop, glowing dusk violet */
+.sfh-gk {
+  position: absolute;
+  z-index: 1;
+  right: clamp(6px, 2.4vw, 56px);
+  bottom: 0;
+  display: block;
+  height: min(74%, 420px);
+  aspect-ratio: 415 / 560;
+  text-decoration: none;
+  color: #fff;
+}
+.sfh-gk img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 14px rgb(178 102 255 / 0.75)) drop-shadow(0 10px 18px rgb(0 0 0 / 0.7));
+  transform-origin: 50% 100%;
+  animation: sfh-gk-breathe 3.6s ease-in-out infinite;
+  transition: filter 0.2s;
+}
+.sfh-gk:hover img,
+.sfh-gk:focus-visible img {
+  filter: drop-shadow(0 0 24px rgb(198 132 255 / 0.95)) drop-shadow(0 10px 18px rgb(0 0 0 / 0.7));
+}
+@keyframes sfh-gk-breathe {
+  50% {
+    transform: translateY(-4px) scale(1.012);
+  }
+}
+.sfh-gk-tag {
+  position: absolute;
+  top: 2%;
+  left: 50%;
+  translate: -50% 0;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 6px 12px 7px;
+  border: 1.5px solid #c58cff;
+  border-radius: 12px;
+  background: rgb(26 10 48 / 0.88);
+  box-shadow: 0 0 16px rgb(168 92 255 / 0.55);
+  font: 700 12.5px/1.2 var(--mono);
+  white-space: nowrap;
+  transition: transform 0.15s;
+}
+.sfh-gk-tag b {
+  color: #e2b8ff;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.sfh-gk-tag span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.sfh-gk:hover .sfh-gk-tag,
+.sfh-gk:focus-visible .sfh-gk-tag {
+  transform: translateY(-2px);
+}
+@media (max-width: 760px), (max-aspect-ratio: 13/10) {
+  .sfh-gk {
+    top: 10px;
+    bottom: auto;
+    height: 170px;
+  }
+  .sfh-gk-tag {
+    top: auto;
+    bottom: -6px;
+    left: auto;
+    right: 4px;
+    translate: none;
+    padding: 4px 9px 5px;
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sfh-gk img {
+    animation: none;
+  }
+}

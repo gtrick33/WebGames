@@ -2261,6 +2261,8 @@ export const KEYS: string[] = [
   "See borders and banners in the shop",
   "Icon",
   "No icon",
+  "New class",
+  "Gloamknight Pack",
 ];
 
 export const UI_COUNT = 311;

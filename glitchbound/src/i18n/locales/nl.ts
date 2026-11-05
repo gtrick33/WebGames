@@ -2252,6 +2252,8 @@ const nl: string[] = [
   'Bekijk randen en banners in de winkel',
   'Icoon',
   'Geen icoon',
+  'Nieuwe klasse',
+  'Gloamknight-pakket',
 ];
 
 export default nl;

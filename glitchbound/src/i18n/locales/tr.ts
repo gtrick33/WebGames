@@ -2252,6 +2252,8 @@ const tr: string[] = [
   'Çerçeveleri ve afişleri mağazada gör',
   'Simge',
   'Simge yok',
+  'Yeni sınıf',
+  'Gloamknight Paketi',
 ];
 
 export default tr;

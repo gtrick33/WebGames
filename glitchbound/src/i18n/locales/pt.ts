@@ -2252,6 +2252,8 @@ const pt: string[] = [
   'Ver molduras e banners na loja',
   'Ícone',
   'Sem ícone',
+  'Nova classe',
+  'Pacote Gloamknight',
 ];
 
 export default pt;

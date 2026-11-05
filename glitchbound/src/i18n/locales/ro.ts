@@ -2252,6 +2252,8 @@ const ro: string[] = [
   'Vezi ramele și bannerele în magazin',
   'Iconiță',
   'Fără iconiță',
+  'Clasă nouă',
+  'Pachetul Gloamknight',
 ];
 
 export default ro;

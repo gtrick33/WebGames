@@ -1,7 +1,9 @@
 import { useRef, type CSSProperties } from 'react';
 import { useT } from '../i18n';
 import { SECTION_GAMES } from '../catalog/catalog';
+import { useAccount } from '../platform/account';
 import { useLiveCatalog } from '../platform/liveCatalog';
+import { useMoney } from '../platform/money';
 import { Link } from '../router/router';
 import { Icon } from './Icon';
 import './SigilfallHero.css';
@@ -29,13 +31,18 @@ export function useSigilfall() {
 /**
  * The first thing on the site: a banner of Sigilfall's key art (the Wardens' Sanctum at night, all seven heroes in their
  * sigil armor and two Sigil Drakes, composed from the game's own 3D), its name in gold and one button. A cue on its
- * bottom edge says there's more below.
+ * bottom edge says there's more below. The Gloamknight, the class sold in the shop, stands in front of it: he and his tag
+ * are a link to the Gloamknight Pack.
  */
 export function SigilfallHero() {
   const t = useT();
   const game = useSigilfall();
   const words = useLiveCatalog().raw.banner;
   const banner = useRef<HTMLElement>(null);
+  // the paid class steps out of the picture once the shop is open (an admin sees him while it's closed)
+  const money = useMoney();
+  const { me } = useAccount();
+  const pack = money.shop || !!me?.isAdmin;
   if (!game) return null;
   const showMore = (): void => {
     const bottom = banner.current?.getBoundingClientRect().bottom ?? 400;
@@ -56,6 +63,17 @@ export function SigilfallHero() {
           <i key={i} className="sfh-ember" style={style} />
         ))}
       </div>
+      {pack && (
+        <Link href="/shop" className="sfh-gk" aria-label={`${t('New class')}: ${t('Gloamknight Pack')}`}>
+          <img src="/games/sigilfall/gloamknight.webp" alt="" width={415} height={560} decoding="async" />
+          <span className="sfh-gk-tag">
+            <b>{t('New class')}</b>
+            <span>
+              {t('Gloamknight Pack')} <Icon name="arrowRight" size={14} />
+            </span>
+          </span>
+        </Link>
+      )}
 
       <div className="sfh-inner">
         <div className="sfh-copy">
