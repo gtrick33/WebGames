@@ -1278,9 +1278,11 @@ export class World {
       else {
         p.summon += dt;
         if (p.summon >= SUMMON_TIME) {
+          // the call ends in a flash, and they're up on it (no animal comes trotting: render3d/worldCast.ts)
           p.summon = 0;
           p.riding = this.hero.mount;
           this.sfx('mount');
+          this.addFx({ kind: 'burst', x: p.x, y: p.y, life: 0.3, size: 16, color: '#fff0c8' });
           this.addFx({ kind: 'ring', x: p.x, y: p.y + 4, life: 0.35, size: 14, color: 'rgba(232,220,190,0.7)' });
         }
       }
