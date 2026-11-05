@@ -275,9 +275,6 @@
   background: var(--mr-cream);
   border-top: 2px dashed #d9cbb2;
 }
-.mr-menu .mr-menu-foot ~ .mr-keys {
-  margin-top: 0;
-}
 .mr-go,
 .mr-btn {
   border: 2.5px solid var(--mr-ink);

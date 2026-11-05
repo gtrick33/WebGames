@@ -493,6 +493,13 @@
     margin-top: auto;
   }
 }
+/* Without the logo on a narrow, short stage (a small phone), the title would reach the sound and menu
+   buttons in the corner: it starts below them. */
+@container (max-height: 600px) and (max-width: 520px) {
+  .sd-menu .sd-title {
+    padding-top: 54px;
+  }
+}
 @container (max-height: 480px) {
   .sd-tag {
     display: none;

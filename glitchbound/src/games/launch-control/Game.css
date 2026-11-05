@@ -1495,6 +1495,14 @@
   }
 }
 
+/* phones on their side with the browser's bars showing (under 380px tall): the car's numbers step aside (the
+   garage still shows them), so the shop tiles' names aren't cut off at the bottom */
+@container (min-aspect-ratio: 1/1) and (max-height: 380px) {
+  .lc-hub .lc-specs {
+    display: none;
+  }
+}
+
 /* ================================================================ screens in a panel (setup, result, daily, ladder, help) */
 .lc-main {
   position: absolute;

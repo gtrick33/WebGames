@@ -798,6 +798,11 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
             </div>
           </div>
 
+          {/* The hint sits above the sticky footer: the footer pulls itself down to the sheet's edge, so text after it was hidden. */}
+          <p className="mr-keys">
+            {touch ? 'Hold the left or right side of the screen to steer. Gas is automatic.' : 'Left / Right or A / D to steer · gas is automatic · R restart · Esc pause'}
+          </p>
+
           <div className="mr-menu-foot">
             <button className="mr-carpick" onClick={() => go('garage')}>
               <CarThumb car={car} />
@@ -816,9 +821,6 @@ export default function Game({ host, restartKey, pauseKey, challenge }: GameModu
               </button>
             )}
           </div>
-          <p className="mr-keys">
-            {touch ? 'Hold the left or right side of the screen to steer. Gas is automatic.' : 'Left / Right or A / D to steer · gas is automatic · R restart · Esc pause'}
-          </p>
         </div>
       )}
 
