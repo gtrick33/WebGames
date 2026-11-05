@@ -724,6 +724,8 @@ export class Renderer {
     const t = this.tapTarget(w);
     if (t) {
       const pulse = this.reducedMotion ? 0 : Math.sin(time * 6) * 0.8;
+      // (laid on the ground where the enemy stands: the ground's slant there, not at the hero, so it rings them on any part of the screen)
+      this.flat(t.x, t.y);
       g.save();
       g.lineWidth = 1.5;
       g.setLineDash([3, 2]);
@@ -735,11 +737,16 @@ export class Renderer {
       g.strokeStyle = 'rgba(255,224,102,0.9)';
       g.stroke();
       g.restore();
+      this.flat(p.x, p.y);
       return;
     }
+    // on the ground, straight along the aim (the 3D ground is foreshortened already: no 2D lift or squash on top)
     const d = 17 + Math.sin(time * 5) * 1.2;
+    const ax = p.x + Math.cos(p.aim) * d;
+    const ay = p.y + Math.sin(p.aim) * d;
+    this.flat(ax, ay);
     g.save();
-    g.translate(Math.round(p.x + Math.cos(p.aim) * d), Math.round(p.y - 2 + Math.sin(p.aim) * d * 0.8));
+    g.translate(ax, ay);
     g.rotate(p.aim);
     g.globalAlpha = 0.55;
     g.fillStyle = '#1b1428';
@@ -760,6 +767,7 @@ export class Renderer {
     g.closePath();
     g.fill();
     g.restore();
+    this.flat(p.x, p.y);
   }
 
   /** A scene's signs over heads: surprise, a question, a pause, affection, a tune. */
