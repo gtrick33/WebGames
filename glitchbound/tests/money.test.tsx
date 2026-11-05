@@ -159,7 +159,8 @@ describe('what the shop sells', () => {
     const open = PRODUCTS.filter((p) => !p.later);
     expect(open.map((p) => p.id)).toEqual(['ad-free', ...LOOKS.map((l) => l.id)]);
     expect(priceText(productIn(PRODUCTS, 'ad-free')!.cents)).toBe('€1.99');
-    for (const l of LOOKS) expect(priceText(productIn(PRODUCTS, l.id)!.cents)).toBe(l.kind === 'border' ? '€0.99' : '€1.49');
+    // the lowest price Stripe can charge in euros
+    for (const l of LOOKS) expect(priceText(productIn(PRODUCTS, l.id)!.cents)).toBe('€0.50');
   });
 
   it('keeps every border and banner in a saved list, as the admins set it, and drops the old placeholders', () => {

@@ -31,8 +31,8 @@ items marked for them before taking money.
   refund takes it back. Deleting an account keeps the record for the accounts, no longer linked to the person.
 - Items and prices are edited in **Admin › Ads & shop**: add, remove, hide, mark as planned, change a price, and the shop can be
   closed with one switch. The same page shows sales and can give an item to a player or take one back, all in the change log.
-  `src/catalog/shop.ts` holds the starting list. For sale at the start: **Ad-free (€1.99)**, three **picture borders (€0.99
-  each)** and three **profile banners (€1.49 each)**. The rest are "planned".
+  `src/catalog/shop.ts` holds the starting list. For sale at the start: **Ad-free (€1.99)**, three **picture borders** and
+  three **profile banners** (€0.50 each, the lowest price Stripe can charge in euros). The rest are "planned".
 - **Borders and banners** (`src/catalog/looks.ts`, drawn by `src/components/Looks.css`): a member picks one of each they own, or
   none, under Your looks on their profile. The border goes around their picture and the banner across their player card, and
   both show on every leaderboard and in the Hall of Fame. Boards show the border around the player's initial, never their
