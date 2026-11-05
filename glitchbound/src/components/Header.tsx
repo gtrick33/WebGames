@@ -49,7 +49,7 @@ const TABS: Tab[] = [
   { href: '/leaderboards', label: 'Leaderboards', short: 'Ranks', icon: 'crown' },
 ];
 
-/** Only once the shop is open (Admin › Ads & shop). */
+/** Once the shop is open (Admin › Ads & shop), and always for an admin, who can test a purchase while it's closed. */
 const SHOP_TAB: Tab = { href: '/shop', label: 'Shop', icon: 'star' };
 
 const PARTY_ONLY_URLS = GAMES.filter((g) => g.partyOnly).map((g) => gameUrl(g.slug));
@@ -59,7 +59,7 @@ function useTabs(): Tab[] {
   const live = useLiveCatalog();
   const { me } = useAccount();
   const tabs = TABS.filter((tab) => !tab.slug || !live.settings(tab.slug).hidden || !!me?.role);
-  return live.raw.money?.shop ? [...tabs, SHOP_TAB] : tabs;
+  return live.raw.money?.shop || me?.isAdmin ? [...tabs, SHOP_TAB] : tabs;
 }
 
 /** The daily streak, always in view (like a flame you don't want to go out). Pulses when today is not done yet. */

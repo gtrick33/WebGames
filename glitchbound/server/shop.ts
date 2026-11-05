@@ -1,4 +1,4 @@
-import { AGREE_NOW, PRODUCTS, productIn, priceText, sanitizeProducts, SALE_TERMS_VERSION, type Product, withIncluded } from '../src/catalog/shop';
+import { AGREE_NOW, offered, PRODUCTS, productIn, priceText, sanitizeProducts, SALE_TERMS_VERSION, type Product, withIncluded } from '../src/catalog/shop';
 import { sendBatch } from './email';
 import { randomToken, type Env } from './http';
 
@@ -54,7 +54,7 @@ export async function ownedBy(env: Env, userId: string): Promise<string[]> {
   }
 }
 
-export const canSell = (env: Env, p: Product | undefined): p is Product => !!p && !p.later && !p.hidden && !!env.STRIPE_SECRET_KEY;
+export const canSell = (env: Env, p: Product | undefined, money: { ads: boolean }): p is Product => !!p && !p.later && offered(p, money) && !!env.STRIPE_SECRET_KEY;
 
 async function stripe<T>(env: Env, path: string, body: URLSearchParams): Promise<T | null> {
   const res = await fetch(`${STRIPE_API}/${path}`, {

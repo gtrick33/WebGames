@@ -213,6 +213,12 @@ export const productIn = (items: readonly Product[], id: string): Product | unde
  */
 export const isBuiltIn = (id: string): boolean => id === AD_FREE_ID || id === GLOAMKNIGHT_ITEM || PRODUCTS.some((p) => p.id === id && (!!p.look || !!p.sigil));
 
+/**
+ * Whether the shop shows an item: not hidden, and ad-free only while banner ads are switched on (Admin › Ads & shop):
+ * with no ads to remove there is nothing to sell. Whoever bought it keeps it either way.
+ */
+export const offered = (p: Product, money: { ads: boolean }): boolean => !p.hidden && (p.id !== AD_FREE_ID || money.ads);
+
 export const priceText = (cents: number): string => `€${(cents / 100).toFixed(2)}`;
 
 /** Stripe's lowest card charge in euros, and a sane top. */
