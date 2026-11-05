@@ -1,6 +1,6 @@
 import { clamp, hash2, TAU } from '../core/math';
 import type { MountDef } from '../data/mounts';
-import { mountDef, wornLooks } from '../progress/wardrobe';
+import { mountDef, riddenMount, wornLooks } from '../progress/wardrobe';
 import type { ClassId } from '../data/types';
 import { SKILLS } from '../data/skills';
 import { colorOf, FIELD, FX, WARN, type Fx3D } from '../render3d/fx3d';
@@ -11,7 +11,7 @@ import type { Land3D, RoofSpot } from '../render3d/land';
 import { hasStatus } from '../sim/combat';
 import { TILE } from '../sim/map';
 import type { Enemy, Fx, Projectile, Telegraph } from '../sim/types';
-import type { World } from '../sim/world';
+import { SUMMON_TIME, type World } from '../sim/world';
 
 /**
  * Every spell, shot, flame and warning, handed to the shaders in render3d/fx3d.ts: what each thing in the rules looks
@@ -350,6 +350,7 @@ export class Effects {
       const spell = gh.cast && !gh.dead ? SKILLS[gh.cast.id] : undefined;
       if (spell && sc.near(gh.x, gh.y)) this.gathering(fx, gh.x, gh.y, gh.cast!.angle, spell.base.dmgType, gh.cast!.k);
     }
+    if (p.summon > 0 && !p.riding && !p.dead) this.calling(fx, p.x, p.y, clamp(p.summon / SUMMON_TIME, 0, 1), mountDef(riddenMount(w.hero) ?? '')?.glow?.color ?? '#ffd98a');
     const boss = w.boss();
     if (boss?.boss && boss.boss.collapse > 0) {
       fx.put({ kind: FX.collapse, x: boss.boss.cx, y: boss.boss.cy, flat: true, w: 1600, a: '#ff3fd2', b: '#22e4ff', p1: boss.boss.collapse / 800, seed: 0.5 });
@@ -609,6 +610,22 @@ export class Effects {
       fx.put({ kind: FX.spark, x: x + Math.cos(a) * out, y: y + Math.sin(a) * out * 0.6, up: up + look.from + rise, w: look.size * Math.sin(u * Math.PI), a: i % 3 === 2 ? look.b : look.a, t: 0.1 + u * 0.5 });
     }
     if (look.halo) fx.put({ kind: FX.glow, x, y, up: up + look.halo.up, w: look.halo.w, a: look.a, alpha: look.halo.alpha + Math.sin(time * 1.7) * 0.05 });
+  }
+
+  /**
+   * Calling the mount (`u`, 0 to 1 through the call): a ring drawn on the ground and light swirling in round the hero
+   * as they cast. The rules end it in a flash with them in the saddle (sim/world.ts).
+   */
+  private calling(fx: Fx3D, x: number, y: number, u: number, color: string): void {
+    fx.put({ kind: FX.rune, x, y, flat: true, w: 36 + u * 16, a: color, b: '#ffffff', t: 0.2 + u * 0.4, seed: 0.4 });
+    fx.put({ kind: FX.gather, x, y, up: 16, w: 46, a: color, b: '#ffffff', t: u, seed: 0.4 });
+    const n = 10;
+    for (let i = 0; i < n; i++) {
+      // round and in, and up the body
+      const a = (i / n) * TAU + u * TAU * 1.25;
+      const out = 22 - u * 13;
+      fx.put({ kind: FX.spark, x: x + Math.cos(a) * out, y: y + Math.sin(a) * out * 0.6, up: 3 + (i % 4) * 5 + u * 16, w: 5 + 4 * Math.sin(u * Math.PI), a: i % 2 ? '#ffffff' : color, t: 0.15 + u * 0.5 });
+    }
   }
 
   /**
