@@ -59,6 +59,7 @@ describe('the item builder', () => {
     const { list } = await open();
     const looks = PRODUCTS.filter((p) => p.look || p.sigil);
     expect(list.querySelectorAll('.money-item.has-look .money-thumb')).toHaveLength(looks.length);
-    expect(within(list).queryAllByRole('button', { name: 'Remove' })).toHaveLength(PRODUCTS.length - 1 - looks.length);
+    // everything but ad-free, the looks and Sigilfall items, and the Gloamknight Pack can be removed
+    expect(within(list).queryAllByRole('button', { name: 'Remove' })).toHaveLength(PRODUCTS.length - 2 - looks.length);
   });
 });

@@ -339,7 +339,7 @@ export class SigilEngine {
           done.push({ id: o.id, result: '' });
           continue;
         }
-        const result = applyOrder(this.save, o, this.hero);
+        const result = applyOrder(this.save, o, this.hero, Math.random, heroSlots(account.get().me));
         done.push({ id: o.id, result });
         if (result) continue;
         if (this.hero && this.hero.created === o.created) live = true;
