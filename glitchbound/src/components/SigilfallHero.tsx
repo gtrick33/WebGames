@@ -31,15 +31,15 @@ export function useSigilfall() {
 /**
  * The first thing on the site: a banner of Sigilfall's key art (the Wardens' Sanctum at night, all seven heroes in their
  * sigil armor and two Sigil Drakes, composed from the game's own 3D), its name in gold and one button. A cue on its
- * bottom edge says there's more below. The Gloamknight, the class sold in the shop, stands in front of it: with the shop
- * open he and his tag are a link to the Gloamknight Pack, before that to the game.
+ * bottom edge says there's more below. The Gloamknight, the class sold in the shop, has his own sigil medallion in its top
+ * corner, clear of the heroes: with the shop open it and its tag are a link to the Gloamknight Pack, before that to the game.
  */
 export function SigilfallHero() {
   const t = useT();
   const game = useSigilfall();
   const words = useLiveCatalog().raw.banner;
   const banner = useRef<HTMLElement>(null);
-  // the Gloamknight stands in front of the picture; once the shop is open (or for an admin) he leads to his pack
+  // the Gloamknight's medallion; once the shop is open (or for an admin) it leads to his pack
   const money = useMoney();
   const { me } = useAccount();
   const pack = money.shop || !!me?.isAdmin;
@@ -64,7 +64,7 @@ export function SigilfallHero() {
         ))}
       </div>
       <Link href={pack ? '/shop' : `${game.section!.path}?play=1`} className="sfh-gk" aria-label={pack ? `${t('New class')}: ${t('Gloamknight Pack')}` : 'Sigilfall'}>
-        <img src="/games/sigilfall/gloamknight.webp" alt="" width={415} height={560} decoding="async" />
+        <img src="/games/sigilfall/gloamknight-medal.webp" alt="" width={300} height={300} decoding="async" />
         {pack && (
           <span className="sfh-gk-tag">
             <b>{t('New class')}</b>
