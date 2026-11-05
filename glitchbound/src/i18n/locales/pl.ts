@@ -2097,7 +2097,7 @@ const pl: string[] = [
   'Zobacz wszystkie dzienne ({n})',
   'Przygoda od GlitchBound',
   'Cały RPG fantasy prosto w przeglądarce. Wybierz bohatera, zbierz ekwipunek i zamknij Szczelinę, sam albo z przyjaciółmi.',
-  '7 bohaterów',
+  '8 bohaterów',
   '5 aktów',
   '12 lochów',
   'Kooperacja dla 4',

@@ -2097,7 +2097,7 @@ const fr: string[] = [
   'Voir les {n} défis du jour',
   'Une aventure GlitchBound',
   'Tout un RPG fantasy qui se joue dans ton navigateur. Choisis ton héros, rassemble ton équipement et referme la Faille, seul ou entre amis.',
-  '7 héros',
+  '8 héros',
   '5 actes',
   '12 donjons',
   'Coop à 4',

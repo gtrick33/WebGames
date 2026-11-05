@@ -2097,7 +2097,7 @@ const de: string[] = [
   'Alle {n} Tagesrätsel ansehen',
   'Ein GlitchBound-Abenteuer',
   'Ein ganzes Fantasy-RPG, direkt in deinem Browser. Wähle deinen Helden, sammle deine Ausrüstung und schließe den Riss, allein oder mit Freunden.',
-  '7 Helden',
+  '8 Helden',
   '5 Akte',
   '12 Dungeons',
   'Koop zu viert',
