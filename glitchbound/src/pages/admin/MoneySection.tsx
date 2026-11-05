@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { NO_MONEY, type MoneySettings } from '../../catalog/settings';
-import { AD_FREE_ID, breaksRules, MAX_CENTS, MIN_CENTS, priceText, PRODUCTS, type Product } from '../../catalog/shop';
+import { AD_FREE_ID, breaksRules, isBuiltIn, MAX_CENTS, MIN_CENTS, priceText, PRODUCTS, type Product } from '../../catalog/shop';
 import { api } from '../../platform/account';
 import type { AdminCatalog } from '../../platform/apiTypes';
 import { ADS } from '../../platform/env';
@@ -144,7 +144,8 @@ function Items({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boo
       </h2>
       <p className="info-small">
         Prices are in euros with VAT included, and what&rsquo;s here is what players pay. Cosmetic items and ad-free only: nothing that helps anyone win, no game currency and no random boxes. No
-        countdowns or &ldquo;last chance&rdquo;, and don&rsquo;t show a discount unless the old price really was charged in the last 30 days. Items marked planned can&rsquo;t be bought yet.
+        countdowns or &ldquo;last chance&rdquo;, and don&rsquo;t show a discount unless the old price really was charged in the last 30 days. Items marked planned can&rsquo;t be bought yet. Ad-free
+        and the borders and banners are built into the site, so they can be hidden but not removed, and whoever bought one keeps it.
       </p>
       {items.map((p, i) => (
         <div key={p.id} className="money-item">
@@ -169,7 +170,7 @@ function Items({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boo
               </option>
             ))}
           </select>
-          {p.id !== AD_FREE_ID && (
+          {!isBuiltIn(p.id) && (
             <button className="btn btn-sm btn-ghost" onClick={() => setItems((all) => all.filter((_, n) => n !== i))}>
               Remove
             </button>

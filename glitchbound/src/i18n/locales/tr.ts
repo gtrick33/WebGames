@@ -2243,6 +2243,13 @@ const tr: string[] = [
   'Küçük tarayıcı oyunları ve büyük bir macera yapan bağımsız bir stüdyo. Kurulacak bir şey yok ve oynamak için asla ödeme yapman gerekmiyor. Misafir olarak oyna ya da görevler ve sıralamalar için giriş yap.',
   'Her oyun burada, tarayıcında, her cihazda oynanır. Hesap yok, ödeme duvarı yok.',
   'GlitchBound bağımsız bir tarayıcı arcade\'idir: bir saniyede başlayan {n} hızlı oyun, bir fantastik RPG ve gruplar için Parti Modu. Kurulum yok, hesap gerekmiyor ve oynamak için asla ödeme yapman gerekmiyor.',
+  'Görünümün',
+  'Resminin çevresinde ve adının arkasında ne görüneceğini seç: burada ve sıralamalarda.',
+  'Çerçeve',
+  'Afiş',
+  'Çerçeve yok',
+  'Afiş yok',
+  'Çerçeveleri ve afişleri mağazada gör',
 ];
 
 export default tr;

@@ -2243,6 +2243,13 @@ const nl: string[] = [
   'Een onafhankelijke studio die kleine browsergames en één groot avontuur maakt. Niets te installeren, en je hoeft nooit te betalen om te spelen. Speel als gast of log in voor quests en ranglijsten.',
   'Elke game speel je hier in je browser, op elk apparaat. Geen account en geen betaalmuren.',
   'GlitchBound is een onafhankelijke browser-arcade: {n} snelle games die in een seconde starten, een fantasy-RPG en Partymodus voor groepen. Niets te installeren, geen account nodig, en je hoeft nooit te betalen om te spelen.',
+  'Jouw look',
+  'Kies wat er rond je foto en achter je naam te zien is, hier en op de ranglijsten.',
+  'Rand',
+  'Banner',
+  'Geen rand',
+  'Geen banner',
+  'Bekijk randen en banners in de winkel',
 ];
 
 export default nl;

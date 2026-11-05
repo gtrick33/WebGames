@@ -1,4 +1,5 @@
 import { ownedBy } from './shop';
+import { wornFrom, type Worn } from '../src/catalog/looks';
 import { liveRules } from './catalogSettings';
 import type { Badge, BestView, Me, QuestView } from '../src/platform/apiTypes';
 import { currentStreak, longestStreak } from '../src/platform/daily';
@@ -68,6 +69,11 @@ function questProgress(q: QuestDef, rounds: DayRound[], dailyDone: boolean, hasF
   }
 }
 
+/** The looks this member wears and still owns. */
+export async function buildLooks(env: Env, user: UserRow): Promise<Worn> {
+  return wornFrom({ border: user.look_border, banner: user.look_banner }, await ownedBy(env, user.id));
+}
+
 export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me> {
   const owned = await ownedBy(env, user.id);
   const [favs, bests, roundCount, dailyDone, claimsCount, crown, quests, saves] = await Promise.all([
@@ -109,6 +115,7 @@ export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me>
   ];
   return {
     owned,
+    looks: wornFrom({ border: user.look_border, banner: user.look_banner }, owned),
     id: user.id,
     nickname: user.nickname,
     email: user.email,

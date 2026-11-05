@@ -228,13 +228,100 @@
 
 /* ---------------------------------------------------------------- profile */
 .profile-card {
+  --pad: clamp(20px, 3vw, 30px);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 22px;
-  padding: clamp(20px, 3vw, 30px);
+  padding: var(--pad);
   border-color: var(--magenta);
   box-shadow: var(--glow-magenta), var(--hard);
+}
+/* A banner the member wears runs across the top of the card, edge to edge, with their picture over its lower edge. */
+.profile-card.has-banner {
+  overflow: hidden;
+  padding-top: 0;
+}
+.profile-banner {
+  flex: 0 0 calc(100% + 2 * var(--pad));
+  height: clamp(110px, 16vw, 160px);
+  margin: 0 calc(-1 * var(--pad)) -8px;
+  border-bottom: var(--outline);
+}
+.profile-card.has-banner > .avatar,
+.profile-card.has-banner > .avatar-frame {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+  margin-top: -56px;
+}
+
+/* Your looks: what you own, to wear one or none. */
+.looks-lead {
+  margin-bottom: 14px;
+}
+.look-group {
+  margin-bottom: 18px;
+}
+.look-group-title {
+  margin-bottom: 10px;
+  font: 700 12px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.look-picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.look-pick {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  padding: 12px;
+  border: var(--outline);
+  border-radius: var(--r-md);
+  background: var(--well);
+  color: var(--fg);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.15s var(--out),
+    box-shadow 0.15s var(--out);
+}
+.look-pick:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--hard-sm);
+}
+.look-pick[aria-pressed='true'] {
+  border-color: var(--cyan);
+  background: var(--surface-2);
+  box-shadow: var(--glow-cyan), var(--hard-sm);
+}
+.look-pick:disabled {
+  cursor: progress;
+}
+.look-pick-art {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 72px;
+}
+.look-pick-banner,
+.look-pick-blank {
+  width: 100%;
+  height: 64px;
+  border-radius: 12px;
+}
+.look-pick-blank {
+  border: 2px dashed var(--line);
+  opacity: 0.5;
+}
+.look-pick-name {
+  font-size: 14px;
+  text-align: center;
 }
 .profile-id {
   display: grid;
@@ -694,4 +781,23 @@
 /* The daily page: the day's theme between the challenge and the list of every daily. */
 .daily-theme {
   margin-top: 28px;
+}
+
+/* ---------------------------------------------------------------- shop: a look before you buy it */
+.shop-look {
+  display: grid;
+  place-items: center;
+  border: var(--outline);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.shop-look-border {
+  height: 150px;
+  background:
+    radial-gradient(circle at 50% 50%, rgb(139 92 255 / 0.35), transparent 60%),
+    #0d0522;
+}
+.shop-look-art {
+  width: 100%;
+  height: 150px;
 }

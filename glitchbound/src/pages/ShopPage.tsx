@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Banner, LookAvatar } from '../components/Looks';
 import { openSignIn } from '../components/openSignIn';
+import { isLook } from '../catalog/looks';
 import { AGREE_AGE, AGREE_NOW, priceText, PRODUCTS, type Product } from '../catalog/shop';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { api, ApiError, useAccount } from '../platform/account';
@@ -39,13 +41,22 @@ export function ShopPage() {
       <div className="info-cols">
         {now.map((p) => (
           <section key={p.id} className="panel info-block">
+            {isLook(p.id) && <LookPreview id={p.id} name={me?.nickname ?? 'GlitchBound'} src={me?.avatar} />}
             <h2>{p.name}</h2>
             <p>{p.blurb}</p>
             <p>
               <strong>{priceText(p.cents)}</strong> <span className="info-small">VAT included, paid once</span>
             </p>
             {owned.has(p.id) ? (
-              <p className="info-small">This is yours.</p>
+              <p className="info-small">
+                This is yours.
+                {isLook(p.id) && (
+                  <>
+                    {' '}
+                    <Link href="/me#looks">Wear it on your profile</Link>.
+                  </>
+                )}
+              </p>
             ) : !canBuy ? (
               <p className="info-small">Not on sale yet.</p>
             ) : me ? (
@@ -76,6 +87,22 @@ export function ShopPage() {
         See the <Link href="/terms/sale">terms of sale</Link> for your rights, refunds and who you are buying from.
       </p>
       {buying && <Checkout product={buying} onClose={() => setBuying(null)} />}
+    </div>
+  );
+}
+
+/** What a border or banner looks like before buying it: on your own picture, or across a profile and a board row. */
+function LookPreview({ id, name, src }: { id: string; name: string; src?: string }) {
+  if (isLook(id, 'border')) {
+    return (
+      <div className="shop-look shop-look-border">
+        <LookAvatar name={name} src={src} size={104} border={id} />
+      </div>
+    );
+  }
+  return (
+    <div className="shop-look shop-look-banner">
+      <Banner id={id} className="shop-look-art" />
     </div>
   );
 }

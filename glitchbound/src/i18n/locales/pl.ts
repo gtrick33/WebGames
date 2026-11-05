@@ -2243,6 +2243,13 @@ const pl: string[] = [
   'Niezależne studio tworzące małe gry przeglądarkowe i jedną wielką przygodę. Nic do instalowania i nigdy nie musisz płacić, żeby grać. Graj jako gość lub zaloguj się, by mieć zadania i rankingi.',
   'W każdą grę zagrasz tutaj, w przeglądarce, na każdym urządzeniu. Bez konta i bez płatnych blokad.',
   'GlitchBound to niezależny salon gier w przeglądarce: {n} szybkich gier, które startują w sekundę, fantasy RPG i tryb imprezowy dla grup. Bez instalacji, bez konta i nigdy nie musisz płacić, żeby grać.',
+  'Twój wygląd',
+  'Wybierz, co widać wokół twojego zdjęcia i za twoim imieniem, tutaj i w rankingach.',
+  'Ramka',
+  'Baner',
+  'Bez ramki',
+  'Bez baneru',
+  'Zobacz ramki i banery w sklepie',
 ];
 
 export default pl;

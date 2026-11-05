@@ -1,10 +1,14 @@
 import { useState, type FormEvent } from 'react';
-import { useGames } from '../platform/liveCatalog';
+import { useGames, useLiveCatalog } from '../platform/liveCatalog';
 import { GameTile } from '../components/GameTile';
 import { Icon } from '../components/Icon';
 import { NotifyForm } from '../components/Notify';
 import { QuestBoard } from '../components/Quests';
 import { Avatar } from '../components/Avatar';
+import { Banner, LookAvatar } from '../components/Looks';
+import { LOOKS, WEARS_NOTHING, type LookKind } from '../catalog/looks';
+import { PRODUCTS } from '../catalog/shop';
+import { useMoney } from '../platform/money';
 import { ChallengeHistoryList, useChallengeHistory } from '../components/ChallengeHistory';
 import { openSignIn } from '../components/openSignIn';
 import { account, ApiError, useAccount } from '../platform/account';
@@ -94,8 +98,9 @@ export function ProfilePage() {
   return (
     <div className="wrap info-page profile">
       <ProfileTabs current="me" />
-      <section className="profile-card panel" aria-label={t('Player card')}>
-        <Avatar name={me.nickname} src={me.avatar} size={84} />
+      <section className={`profile-card panel${me.looks?.banner ? ' has-banner' : ''}`} aria-label={t('Player card')}>
+        {me.looks?.banner && <Banner id={me.looks.banner} className="profile-banner" />}
+        <LookAvatar name={me.nickname} src={me.avatar} size={84} border={me.looks?.border} />
         <div className="profile-id">
           {editing ? (
             <form className="nick-form" onSubmit={(e) => void saveNick(e)}>
@@ -122,6 +127,8 @@ export function ProfilePage() {
           </div>
         </div>
       </section>
+
+      <LooksSection me={me} />
 
       <QuestBoard />
 
@@ -202,6 +209,76 @@ export function ProfilePage() {
         )}
       </section>
     </div>
+  );
+}
+
+/**
+ * The borders and banners this member owns, to wear one or none. They show on the player card above and on every
+ * board. With nothing bought, it's only a pointer to the shop, and only while the shop is open.
+ */
+function LooksSection({ me }: { me: Me }) {
+  const t = useT();
+  const money = useMoney();
+  const items = useLiveCatalog().raw.shopItems ?? PRODUCTS;
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const owned = LOOKS.filter((l) => me.owned?.includes(l.id));
+  const worn = me.looks ?? WEARS_NOTHING;
+  const shopOpen = money.shop || me.isAdmin;
+  if (!owned.length && !shopOpen) return null;
+  const nameOf = (id: string): string => items.find((p) => p.id === id)?.name ?? id;
+  const wear = (kind: LookKind, id: string): void => {
+    setBusy(true);
+    setError('');
+    account
+      .update({ [kind]: id })
+      .catch(() => setError(t('Could not save.')))
+      .finally(() => setBusy(false));
+  };
+  const group = (kind: LookKind, title: string) => {
+    const mine = owned.filter((l) => l.kind === kind);
+    if (!mine.length) return null;
+    return (
+      <div className="look-group" role="group" aria-labelledby={`looks-${kind}`}>
+        <h3 id={`looks-${kind}`} className="look-group-title">
+          {title}
+        </h3>
+        <div className="look-picks">
+          <button className="look-pick" aria-pressed={!worn[kind]} disabled={busy} onClick={() => wear(kind, '')}>
+            <span className={`look-pick-art look-pick-none is-${kind}`}>
+              {kind === 'border' ? <Avatar name={me.nickname} src={me.avatar} size={64} /> : <span className="look-pick-blank" />}
+            </span>
+            <span className="look-pick-name">{kind === 'border' ? t('No border') : t('No banner')}</span>
+          </button>
+          {mine.map((l) => (
+            <button key={l.id} className="look-pick" aria-pressed={worn[kind] === l.id} disabled={busy} onClick={() => wear(kind, l.id)}>
+              <span className={`look-pick-art is-${kind}`}>{kind === 'border' ? <LookAvatar name={me.nickname} src={me.avatar} size={64} border={l.id} /> : <Banner id={l.id} className="look-pick-banner" />}</span>
+              <span className="look-pick-name">{nameOf(l.id)}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+  return (
+    <section id="looks" aria-labelledby="looks-title">
+      <h2 id="looks-title" className="profile-h2">
+        {t('Your looks')}
+      </h2>
+      {owned.length > 0 && <p className="info-small looks-lead">{t('Pick what shows around your picture and behind your name, here and on the leaderboards.')}</p>}
+      {group('border', t('Border'))}
+      {group('banner', t('Banner'))}
+      {error && (
+        <p className="info-small" role="alert">
+          {error}
+        </p>
+      )}
+      {shopOpen && (
+        <Link href="/shop" className="quests-link">
+          {t('See borders and banners in the shop')} <Icon name="arrowRight" size={16} />
+        </Link>
+      )}
+    </section>
   );
 }
 

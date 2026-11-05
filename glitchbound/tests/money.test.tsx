@@ -4,7 +4,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-import { AGREE_NOW, breaksRules, priceText, PRODUCTS, productIn, sanitizeProducts } from '../src/catalog/shop';
+import { AGREE_NOW, breaksRules, isBuiltIn, priceText, PRODUCTS, productIn, sanitizeProducts } from '../src/catalog/shop';
+import { isLook, LOOKS } from '../src/catalog/looks';
 import { NO_MONEY, sanitizeMoney } from '../src/catalog/settings';
 import { canRetryDaily, retryDaily } from '../src/platform/dailyRetry';
 import { applyStripeEvent, canSell, giftItem, loadItems, ownedBy, shopReport, startCheckout, takeBack, verifyStripeSignature } from '../server/shop';
@@ -53,7 +54,7 @@ describe('with everything off', () => {
     render(<ShopPage />);
     expect(screen.getByText('The shop isn’t open yet, so nothing can be bought right now.')).toBeTruthy();
     expect(screen.getByText('€1.99')).toBeTruthy();
-    expect(screen.getByText('Not on sale yet.')).toBeTruthy();
+    expect(screen.getAllByText('Not on sale yet.')).toHaveLength(PRODUCTS.filter((p) => !p.later && !p.hidden).length);
     expect(screen.queryByRole('button', { name: /Get |Sign in first/ })).toBeNull();
     cleanup();
     const { SaleTermsPage } = await import('../src/pages/SaleTermsPage');
@@ -96,7 +97,17 @@ describe('with the shop open', () => {
     render(<ShopPage />);
     expect(screen.getByRole('heading', { name: 'Ad-free' })).toBeTruthy();
     expect(screen.getByText('€1.99')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Sign in first' })).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Sign in first' })).toHaveLength(PRODUCTS.filter((p) => !p.later && !p.hidden).length);
+  });
+
+  it('shows each border and banner as it looks, before buying it', async () => {
+    const { ShopPage } = await import('../src/pages/ShopPage');
+    const { container } = render(<ShopPage />);
+    for (const look of LOOKS) {
+      const panel = screen.getByRole('heading', { name: productIn(PRODUCTS, look.id)!.name }).closest('section')!;
+      expect(panel.querySelector(look.kind === 'border' ? `.avatar-frame.look-${look.id}` : `.look-banner.look-${look.id}`)).toBeTruthy();
+    }
+    expect(container.querySelectorAll('.shop-look')).toHaveLength(LOOKS.length);
   });
 });
 
@@ -130,22 +141,39 @@ describe('an extra try at a daily', () => {
 describe('what the shop sells', () => {
   it('keeps only items that follow the rules, and ad-free is always there', () => {
     const good = { id: 'look-one', name: 'A look', blurb: 'A nice look.', cents: 150 };
-    expect(sanitizeProducts([good]).map((p) => p.id)).toEqual(['ad-free', 'look-one']);
+    // (the borders and banners are always there too: the next test)
+    const ids = (v: unknown): string[] => sanitizeProducts(v).map((p) => p.id).filter((id) => !isLook(id));
+    expect(ids([good])).toEqual(['ad-free', 'look-one']);
     expect(sanitizeProducts([good, good]).filter((p) => p.id === 'look-one')).toHaveLength(1);
-    expect(sanitizeProducts([{ ...good, cents: 10 }]).map((p) => p.id)).toEqual(['ad-free']);
-    expect(sanitizeProducts([{ ...good, cents: 100000 }]).map((p) => p.id)).toEqual(['ad-free']);
-    expect(sanitizeProducts([{ ...good, name: '' }]).map((p) => p.id)).toEqual(['ad-free']);
-    expect(sanitizeProducts([{ ...good, id: 'Bad Id!' }]).map((p) => p.id)).toEqual(['ad-free']);
-    expect(sanitizeProducts([{ ...good, blurb: 'Last chance: a loot box!' }]).map((p) => p.id)).toEqual(['ad-free']);
-    expect(sanitizeProducts([{ ...good, hidden: true }])[1]!.hidden).toBe(true);
+    expect(ids([{ ...good, cents: 10 }])).toEqual(['ad-free']);
+    expect(ids([{ ...good, cents: 100000 }])).toEqual(['ad-free']);
+    expect(ids([{ ...good, name: '' }])).toEqual(['ad-free']);
+    expect(ids([{ ...good, id: 'Bad Id!' }])).toEqual(['ad-free']);
+    expect(ids([{ ...good, blurb: 'Last chance: a loot box!' }])).toEqual(['ad-free']);
+    expect(productIn(sanitizeProducts([{ ...good, hidden: true }]), 'look-one')!.hidden).toBe(true);
     expect(breaksRules('100 gems')).toBe(true);
     expect(breaksRules('A gold border')).toBe(false);
   });
 
-  it('starts with ad-free at €1.99, and everything else is only planned', () => {
+  it('starts with ad-free at €1.99 and the borders and banners, and everything else is only planned', () => {
     const open = PRODUCTS.filter((p) => !p.later);
-    expect(open.map((p) => p.id)).toEqual(['ad-free']);
+    expect(open.map((p) => p.id)).toEqual(['ad-free', ...LOOKS.map((l) => l.id)]);
     expect(priceText(productIn(PRODUCTS, 'ad-free')!.cents)).toBe('€1.99');
+    // the lowest price Stripe can charge in euros
+    for (const l of LOOKS) expect(priceText(productIn(PRODUCTS, l.id)!.cents)).toBe('€0.50');
+  });
+
+  it('keeps every border and banner in a saved list, as the admins set it, and drops the old placeholders', () => {
+    const saved = sanitizeProducts([
+      { id: 'look-borders', name: 'Picture borders', blurb: 'A border.', cents: 99, later: true },
+      { id: 'border-aurora', name: 'Not a look', blurb: 'An admin item that only shares a prefix.', cents: 99 },
+      { id: 'border-neon-halo', name: 'Halo', blurb: 'Cheaper now.', cents: 79, hidden: true },
+      { id: 'sigilfall-mounts', name: 'Mounts', blurb: 'Planned.', cents: 299, later: true },
+    ]);
+    expect(saved.map((p) => p.id)).toEqual(['ad-free', 'border-aurora', 'border-neon-halo', ...LOOKS.slice(1).map((l) => l.id), 'sigilfall-mounts']);
+    expect(productIn(saved, 'border-neon-halo')).toEqual({ id: 'border-neon-halo', name: 'Halo', blurb: 'Cheaper now.', cents: 79, hidden: true });
+    expect(isBuiltIn('ad-free') && LOOKS.every((l) => isBuiltIn(l.id))).toBe(true);
+    expect(isBuiltIn('border-aurora') || isBuiltIn('sigilfall-mounts')).toBe(false);
   });
 
   it('has no pressure, currency or chance in its words', () => {
@@ -262,7 +290,7 @@ describe('purchases', () => {
     const e = env();
     expect(await loadItems(e)).toEqual(PRODUCTS);
     await e.DB.prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('shop_items', ?, 1, 'qa')").bind(JSON.stringify([{ id: 'look-one', name: 'A look', blurb: 'A nice look.', cents: 150 }])).run();
-    expect((await loadItems(e)).map((p) => p.id)).toEqual(['ad-free', 'look-one']);
+    expect((await loadItems(e)).map((p) => p.id)).toEqual(['ad-free', ...LOOKS.map((l) => l.id), 'look-one']);
   });
 
   it('keeps Stripe’s test and live modes apart', async () => {
