@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
+import { takeSavesLive } from '../../platform/syncGate';
 import { SigilEngine } from './engine';
 import { GameScreen } from './ui/GameScreen';
 import { isTurned, setTurned } from './ui/turn';
@@ -27,6 +28,9 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
     const e = new SigilEngine(canvas, host, playerName);
     e.attach(stage);
     setEngine(e);
+    // a copy from the player's other device is taken in while the game is open, not only once it closes: the hero
+    // screen shows the account's heroes, never an older copy this browser kept
+    const stopLive = takeSavesLive('sigilfall', () => e.takeArrivedSave());
     // a handle for automated play-testing on the dev server only (never in a build)
     if (import.meta.env.DEV) {
       (window as unknown as { __rb?: SigilEngine }).__rb = e;
@@ -135,6 +139,7 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
     stage.addEventListener('click', onTouchEnd, true);
     window.addEventListener('keydown', onKey);
     return () => {
+      stopLive();
       ro.disconnect();
       cancelAnimationFrame(frame);
       clearTimeout(lift);

@@ -986,6 +986,25 @@ export class SigilEngine {
     this.bump();
   }
 
+  /**
+   * Another device's copy of the save arrived (cloud saves merged it into storage while the game is open:
+   * platform/syncGate.ts takeSavesLive). On the title or hero screens the whole save is taken in, so the heroes
+   * shown are the account's; in play every hero but the one being played, who stays as they are in memory (else
+   * this device's next save would write its older copy of the others back over the account's).
+   */
+  takeArrivedSave(): void {
+    const loaded = loadSave();
+    if (loaded.status === 'newer' || loaded.status === 'blocked') return;
+    const next = loaded.save;
+    if (this.ui.screen === 'game' && this.hero) {
+      next.heroes[this.slot] = this.hero;
+      next.settings = this.save.settings;
+      next.last = this.slot;
+    }
+    this.save = next;
+    this.bump();
+  }
+
   toTitle(): void {
     this.greetIn = 0;
     this.standDownFromParty();

@@ -125,8 +125,11 @@ export class Stage {
       r.setPixelRatio(d * this.quality);
       r.setSize(cssW, cssH, false);
     }
-    this.decalCanvas.width = Math.round(cssW * d);
-    this.decalCanvas.height = Math.round(cssH * d);
+    // (the decals are drawn at the 2D renderer's scale, its own dpr up to 2: render/renderer.ts `k`. A touch screen's
+    // lower cap here made every mark on the ground land ~18% too far from the corner: the aim, the rings, the doors)
+    const dk = Math.min(dpr, 2);
+    this.decalCanvas.width = Math.round(cssW * dk);
+    this.decalCanvas.height = Math.round(cssH * dk);
     this.camera.aspect = cssW / Math.max(1, cssH);
     // distance at which a tile at the view's middle spans tilePx device pixels
     const devH = cssH * dpr;
