@@ -11,6 +11,8 @@ const LOOKS = PRODUCTS.filter((p) => p.look && !p.hidden);
 /** Every built-in item the code gives a meaning: those, Sigilfall's mounts and looks, and the Gloamknight class. */
 const BUILT = PRODUCTS.filter((p) => p.look || p.sigil || p.id === GLOAMKNIGHT_ITEM);
 const isLook = (id: string): boolean => BUILT.some((p) => p.id === id);
+/** What the shop shows while banner ads are off: everything for sale but ad-free. */
+const SHOWN = PRODUCTS.filter((p) => !p.later && !p.hidden && p.id !== 'ad-free');
 /** Ad-free's price, in its own panel (a Sigilfall helm costs the same). */
 const adFreePrice = (): HTMLElement => within(screen.getByRole('heading', { name: 'Ad-free' }).closest('section')!).getByText('€1.99');
 import { NO_MONEY, sanitizeMoney } from '../src/catalog/settings';
@@ -60,8 +62,8 @@ describe('with everything off', () => {
     const { ShopPage } = await import('../src/pages/ShopPage');
     render(<ShopPage />);
     expect(screen.getByText('The shop isn’t open yet, so nothing can be bought right now.')).toBeTruthy();
-    expect(adFreePrice()).toBeTruthy();
-    expect(screen.getAllByText('Not on sale yet.')).toHaveLength(PRODUCTS.filter((p) => !p.later && !p.hidden).length);
+    expect(screen.queryByRole('heading', { name: 'Ad-free' })).toBeNull();
+    expect(screen.getAllByText('Not on sale yet.')).toHaveLength(SHOWN.length);
     expect(screen.queryByRole('button', { name: /Get |Sign in first/ })).toBeNull();
     cleanup();
     const { SaleTermsPage } = await import('../src/pages/SaleTermsPage');
@@ -99,12 +101,17 @@ describe('with the shop open', () => {
     expect(screen.getByRole('heading', { name: 'Purchases' })).toBeTruthy();
   });
 
-  it('the shop shows the full price and asks a guest to sign in', async () => {
+  it('the shop shows the full price and asks a guest to sign in, and offers ad-free only while banner ads are on', async () => {
     const { ShopPage } = await import('../src/pages/ShopPage');
     render(<ShopPage />);
-    expect(screen.getByRole('heading', { name: 'Ad-free' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Ad-free' })).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Sign in first' })).toHaveLength(SHOWN.length);
+    cleanup();
+    const { setCatalog } = await import('../src/platform/liveCatalog');
+    setCatalog({ settings: {}, picks: {}, notice: null, money: { ...NO_MONEY, shop: true, ads: true, address: '1 Test St, Sofia' } });
+    render(<ShopPage />);
     expect(adFreePrice()).toBeTruthy();
-    expect(screen.getAllByRole('button', { name: 'Sign in first' })).toHaveLength(PRODUCTS.filter((p) => !p.later && !p.hidden).length);
+    expect(screen.getAllByRole('button', { name: 'Sign in first' })).toHaveLength(SHOWN.length + 1);
   });
 
   it('shows each border, banner and icon as it looks, before buying it, grouped by kind', async () => {
@@ -221,10 +228,14 @@ describe('purchases', () => {
 
   it('sells only what is open', () => {
     const e = env();
-    expect(canSell(e, productIn(PRODUCTS, 'ad-free'))).toBe(true);
-    expect(canSell(e, productIn(PRODUCTS, 'look-names'))).toBe(false);
-    expect(canSell({ ...e, STRIPE_SECRET_KEY: undefined } as Env, productIn(PRODUCTS, 'ad-free'))).toBe(false);
-    expect(canSell(e, undefined)).toBe(false);
+    const ads = { ads: true };
+    expect(canSell(e, productIn(PRODUCTS, 'ad-free'), ads)).toBe(true);
+    expect(canSell(e, productIn(PRODUCTS, 'look-names'), ads)).toBe(false);
+    expect(canSell({ ...e, STRIPE_SECRET_KEY: undefined } as Env, productIn(PRODUCTS, 'ad-free'), ads)).toBe(false);
+    expect(canSell(e, undefined, ads)).toBe(false);
+    // with banner ads off there is nothing to remove: ad-free isn't sold, everything else is
+    expect(canSell(e, productIn(PRODUCTS, 'ad-free'), { ads: false })).toBe(false);
+    expect(canSell(e, LOOKS[0], { ads: false })).toBe(true);
   });
 
   /** Stripe, answering for products, prices and checkouts. */

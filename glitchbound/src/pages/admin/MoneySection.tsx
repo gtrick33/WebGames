@@ -7,6 +7,7 @@ import { AD_FREE_ID, breaksRules, isBuiltIn, MAX_CENTS, MIN_CENTS, priceText, PR
 import { api } from '../../platform/account';
 import type { AdminCatalog } from '../../platform/apiTypes';
 import { ADS } from '../../platform/env';
+import { Link } from '../../router/router';
 import type { Send } from './useAdminCatalog';
 
 /**
@@ -52,7 +53,7 @@ function Switches({ data, send, busy }: { data: AdminCatalog; send: Send; busy: 
     {
       key: 'shop',
       title: 'The shop',
-      what: 'Opens the Shop tab, the terms of sale and the checkout. Turning it off closes all of them at once. Whoever bought something keeps it.',
+      what: 'Opens the Shop tab, the terms of sale and the checkout to everyone. Turning it off closes all of them at once. Whoever bought something keeps it. You see the Shop tab either way, and can test a purchase while it’s closed.',
       needs: [{ ok: hasAddress, text: 'Your postal address below' }],
     },
   ];
@@ -85,6 +86,11 @@ function Switches({ data, send, busy }: { data: AdminCatalog; send: Send; busy: 
                   </li>
                 ))}
               </ul>
+              {r.key === 'shop' && (
+                <p className="info-small">
+                  <Link href="/shop">Open the shop page</Link>
+                </p>
+              )}
             </div>
             <button className={`btn btn-sm${on ? ' btn-ghost' : ''}`} disabled={busy || (!on && !ready)} onClick={() => save({ [r.key]: !on }, `${r.title}: ${on ? 'off' : 'on'}`)}>
               {on ? 'Turn off' : 'Turn on'}
@@ -157,6 +163,7 @@ function Items({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boo
         Prices are in euros with VAT included, and what&rsquo;s here is what players pay. Cosmetic items and ad-free, plus the Gloamknight class: nothing else that changes how a game plays, no game currency and no random boxes. No
         countdowns or &ldquo;last chance&rdquo;, and don&rsquo;t show a discount unless the old price really was charged in the last 30 days. Items marked planned can&rsquo;t be bought yet. Ad-free
         and the built-in borders, banners, icons and Sigilfall items can be hidden but not removed. An item someone has bought is never lost: if it&rsquo;s left out of the list, saving keeps it, hidden.
+        Ad-free shows in the shop only while banner ads are on.
       </p>
       {items.map((p, i) => (
         <div key={p.id} className={`money-item${p.look || p.sigil ? ' has-look' : ''}`}>

@@ -1,3 +1,4 @@
+import { NO_MONEY } from '../../../src/catalog/settings';
 import { productIn } from '../../../src/catalog/shop';
 import { loadCatalog } from '../../../server/catalogSettings';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../server/http';
@@ -15,7 +16,7 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (!cat.money?.shop && !isAdmin(env, user)) return bad('shop_closed', 404);
   const body = await readJson(request);
   const p = typeof body?.product === 'string' ? productIn(await loadItems(env), body.product) : undefined;
-  if (!canSell(env, p)) return bad('not_for_sale', 404);
+  if (!canSell(env, p, cat.money ?? NO_MONEY)) return bad('not_for_sale', 404);
   // the two statements the law asks for: without them, no checkout
   if (body?.agreeNow !== true || body?.agreeAge !== true) return bad('must_agree');
   if ((await ownedBy(env, user.id)).includes(p.id)) return bad('already_yours', 409);

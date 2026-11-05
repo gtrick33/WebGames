@@ -3,7 +3,7 @@ import { BannerArt, FramedAvatar } from '../components/Looks';
 import { openSignIn } from '../components/openSignIn';
 import { gameUrl } from '../catalog/urls';
 import type { LookKind, LookSpec } from '../catalog/looks';
-import { AGREE_AGE, AGREE_NOW, priceText, PRODUCTS, type Product } from '../catalog/shop';
+import { AGREE_AGE, AGREE_NOW, offered, priceText, PRODUCTS, type Product } from '../catalog/shop';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { api, ApiError, useAccount } from '../platform/account';
 import { usePageMeta } from '../platform/meta';
@@ -35,8 +35,8 @@ export function ShopPage() {
   const canBuy = money.shop || !!me?.isAdmin;
   const owned = new Set(me?.owned ?? []);
   const bought = new URLSearchParams(window.location.search).get('bought');
-  const now = items.filter((p) => !p.later && !p.hidden);
-  const later = items.filter((p) => p.later && !p.hidden);
+  const now = items.filter((p) => !p.later && offered(p, money));
+  const later = items.filter((p) => p.later && offered(p, money));
   const card = (p: Product) => (
     <section key={p.id} className="panel info-block">
       {p.look && <LookPreview spec={p.look} name={me?.nickname ?? 'GlitchBound'} src={me?.avatar} />}
