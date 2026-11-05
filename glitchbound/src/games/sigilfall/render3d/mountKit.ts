@@ -219,56 +219,111 @@ function boarParts(base: MeshData, def: MountDef, shape: MountShape, joint: numb
 const SHOULDER = new THREE.Vector3(175, 1205, 560);
 const ELBOW = new THREE.Vector3(800, 1640, 500);
 
-/** How a wing moves: its beat and how far it's folded, from a clip's point in its loop. */
-function wingAngles(clip: string | null, phase: number): { arm: number; sweep: number; hand: number; fold: number } {
+/** Where the wrist is (the hand's skin runs back from the line elbow to wrist). */
+const WRIST = new THREE.Vector3(1340, 1520, 330);
+
+/**
+ * How a wing moves, from a clip's point in its loop. The arm turns at the shoulder (`arm` lifts it, `pitch` tips it
+ * back, `sweep` swings it), the hand at the elbow (`hand`, `twist`, `fold`); `open` is how far the skin is spread, 1
+ * open, down to a furl along the bones.
+ */
+interface WingPose {
+  arm: number;
+  sweep: number;
+  pitch: number;
+  hand: number;
+  fold: number;
+  twist: number;
+  open: number;
+}
+
+/**
+ * Folded, the way a dragon rests: the arm up from the shoulder and back, the elbow standing over the back beside the
+ * rider's shoulder, out past them, the hand laid back and down over the hips toward the tail, the skin furled to the
+ * bones. Clear of the body, the rider and the other wing as the body moves (tests/sigilfall-mounts.test.ts holds every
+ * clip to it).
+ */
+const FOLDED: WingPose = { arm: 0.8, sweep: -0.26, pitch: -0.35, hand: 0.24, fold: 1.7, twist: 0.1, open: 0.21 };
+
+function wingAngles(clip: string | null, phase: number): WingPose {
   const a = phase * Math.PI * 2;
   switch (clip) {
     case 'run':
-      return { arm: 0.3 + Math.sin(a) * 0.48, sweep: 0.22 + Math.cos(a) * 0.1, hand: -0.28 + Math.sin(a - 0.9) * 0.46, fold: 0.1 };
+      // (beating, never swung back: that sweeps the skin at the wing's root in through the flank)
+      return { arm: 0.3 + Math.sin(a) * 0.48, sweep: -0.04 + Math.cos(a) * 0.04, pitch: 0, hand: -0.28 + Math.sin(a - 0.9) * 0.46, fold: 0.1, twist: 0, open: 1 };
     case 'walk':
-      return { arm: 0.46 + Math.sin(a) * 0.16, sweep: 0.62, hand: -0.7 + Math.sin(a - 0.7) * 0.14, fold: 0.5 };
+      // folded, rocking a little with the stride
+      return { ...FOLDED, arm: FOLDED.arm + Math.sin(a) * 0.04, hand: FOLDED.hand + Math.sin(a - 0.7) * 0.06 };
     case 'chop':
     case 'die':
-      return { arm: 0.5, sweep: 0.3, hand: -0.3, fold: 0.2 };
+      return { arm: 0.5, sweep: 0, pitch: 0, hand: -0.3, fold: 0.2, twist: 0, open: 1 };
     default:
-      // folded along the flanks, breathing
-      return { arm: 0.34 + Math.sin(a) * 0.03, sweep: 1.0, hand: -1.2 + Math.sin(a + 0.6) * 0.03, fold: 1.05 };
+      // folded, breathing
+      return { ...FOLDED, arm: FOLDED.arm + Math.sin(a) * 0.02, hand: FOLDED.hand + Math.sin(a + 0.6) * 0.03 };
   }
 }
 
+const AXIS_X = new THREE.Vector3(1, 0, 0);
 const AXIS_Y = new THREE.Vector3(0, 1, 0);
 const AXIS_Z = new THREE.Vector3(0, 0, 1);
+
+/** Draws everything in toward a line through the origin along `axis`, to `k` of its distance from it (a furl). */
+function furl(out: THREE.Matrix4, axis: THREE.Vector3, k: number): THREE.Matrix4 {
+  const [x, y, z] = [axis.x, axis.y, axis.z];
+  const m = 1 - k;
+  return out.set(k + m * x * x, m * x * y, m * x * z, 0, m * y * x, k + m * y * y, m * y * z, 0, m * z * x, m * z * y, k + m * z * z, 0, 0, 0, 0, 1);
+}
 
 /** The two joints of one wing. */
 function wingJoints(side: 1 | -1, parent: string): ExtraJoint[] {
   const shoulder = new THREE.Vector3(SHOULDER.x * side, SHOULDER.y, SHOULDER.z);
   const elbow = new THREE.Vector3(ELBOW.x * side, ELBOW.y, ELBOW.z);
+  const wrist = new THREE.Vector3(WRIST.x * side, WRIST.y, WRIST.z);
+  // (the arm furls round the bone to the elbow, the hand round the bone to the wrist)
+  const armLine = elbow.clone().sub(shoulder).normalize();
+  const handLine = wrist.clone().sub(elbow).normalize();
   const tmpA = new THREE.Matrix4();
   const tmpB = new THREE.Matrix4();
-  const armOf = (clip: string | null, phase: number, out: THREE.Matrix4): void => {
-    if (clip === null) {
-      out.identity();
-      return;
-    }
-    const w = wingAngles(clip, phase);
+  /** The arm's turn at the shoulder (the hand turns with it; each furls on its own). */
+  const turnOf = (w: WingPose, out: THREE.Matrix4): void => {
     out.makeTranslation(shoulder.x, shoulder.y, shoulder.z);
     out.multiply(tmpA.makeRotationAxis(AXIS_Y, side * w.sweep));
+    out.multiply(tmpA.makeRotationAxis(AXIS_X, w.pitch));
     out.multiply(tmpA.makeRotationAxis(AXIS_Z, side * w.arm));
     out.multiply(tmpA.makeTranslation(-shoulder.x, -shoulder.y, -shoulder.z));
   };
   const name = side > 0 ? 'l' : 'r';
   return [
-    { name: `wing.${name}`, parent, pose: armOf },
+    {
+      name: `wing.${name}`,
+      parent,
+      pose: (clip, phase, out) => {
+        if (clip === null) {
+          out.identity();
+          return;
+        }
+        const w = wingAngles(clip, phase);
+        turnOf(w, out);
+        out.multiply(tmpB.makeTranslation(shoulder.x, shoulder.y, shoulder.z));
+        out.multiply(furl(tmpA, armLine, w.open));
+        out.multiply(tmpB.makeTranslation(-shoulder.x, -shoulder.y, -shoulder.z));
+      },
+    },
     {
       name: `hand.${name}`,
       parent,
       pose: (clip, phase, out) => {
-        armOf(clip, phase, out);
-        if (clip === null) return;
+        if (clip === null) {
+          out.identity();
+          return;
+        }
         const w = wingAngles(clip, phase);
+        turnOf(w, out);
         out.multiply(tmpB.makeTranslation(elbow.x, elbow.y, elbow.z));
         out.multiply(tmpA.makeRotationAxis(AXIS_Y, side * w.fold));
+        out.multiply(tmpA.makeRotationAxis(AXIS_X, w.twist));
         out.multiply(tmpA.makeRotationAxis(AXIS_Z, side * w.hand));
+        out.multiply(furl(tmpA, handLine, w.open));
         out.multiply(tmpB.makeTranslation(-elbow.x, -elbow.y, -elbow.z));
       },
     },
@@ -283,7 +338,7 @@ function wingPart(side: 1 | -1, jArm: number, jHand: number, skin: C, bone: C, r
   const X = (p: readonly number[]): number[] => [p[0]! * side, p[1]!, p[2]!];
   const S = SHOULDER.toArray();
   const E = ELBOW.toArray();
-  const W = [1340, 1520, 330];
+  const W = WRIST.toArray();
   const F1 = [2040, 1120, -60];
   const F2 = [1600, 760, -470];
   const F3 = [1020, 700, -610];
