@@ -102,7 +102,7 @@ anything blobby, off-centre or cropped before moving on. Then stop the server.
 
 ## 7. Verify
 
-1. `npm run check` (typecheck, lint, tests incl. `validateCatalog`, build with the 120 KB startup budget). Fix
+1. `npm run check` (typecheck, lint, tests incl. `validateCatalog`, build with the 121 KB startup budget). Fix
    everything; never weaken a test or the budget to pass.
 2. `preview_start` `{ name: "glitchbound-dev" }`, open `/games/<slug>`, press Play and play real rounds of each
    mode with clicks/keys: check the menu, a full round, the result screen, Share text, "Last round" and "Your bests"

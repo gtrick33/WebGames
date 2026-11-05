@@ -6,13 +6,14 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { onRequestGet as hall } from '../functions/api/hall';
 import { onRequestGet as leaderboard } from '../functions/api/leaderboard';
+import { onRequestGet as friendsGet } from '../functions/api/friends';
 import { onRequestGet as getMe, onRequestPatch as patchMe } from '../functions/api/me';
 import { isLook, LOOKS, wornFrom } from '../src/catalog/looks';
 import { PRODUCTS, productIn } from '../src/catalog/shop';
 import { applyStripeEvent, giftItem } from '../server/shop';
 import type { Env } from '../server/http';
 import { signIn } from '../server/signin';
-import type { HallRow, LeaderRow, Me } from '../src/platform/apiTypes';
+import type { FriendRow, HallRow, LeaderRow, Me } from '../src/platform/apiTypes';
 import { memoryD1 } from './d1';
 
 const ORIGIN = 'http://localhost:8788';
@@ -134,6 +135,26 @@ describe('the boards', () => {
   });
 });
 
+describe('your friends list', () => {
+  it('carries each friend’s border and banner, and never their photo', async () => {
+    const { db, env, member } = setup();
+    const me = await member('Me', 5);
+    const pal = await member('Pal', 6);
+    const plain = await member('Plain', 7);
+    for (const f of [pal.id, plain.id]) db.sqlite.prepare('INSERT INTO friends (user_id, friend_id, created_at) VALUES (?, ?, 1)').run(me.id, f);
+    await giftItem(env, pal.id, 'border-glitch');
+    await giftItem(env, pal.id, 'banner-aurora');
+    await pal.wear({ border: 'border-glitch', banner: 'banner-aurora' });
+    const res = await friendsGet({ request: new Request(`${ORIGIN}/api/friends`, { headers: { cookie: me.jar } }), env, params: {} });
+    const { friends } = (await res.json()) as { friends: FriendRow[] };
+    expect(friends.map((f) => [f.nickname, f.border, f.banner])).toEqual([
+      ['Pal', 'border-glitch', 'banner-aurora'],
+      ['Plain', undefined, undefined],
+    ]);
+    expect(JSON.stringify(friends)).not.toContain('photos.example');
+  });
+});
+
 describe('on screen', () => {
   it('draws a board row with the player’s initial in their border and their banner behind it', async () => {
     const { LeaderTable, HallTable } = await import('../src/components/Leaderboard');
@@ -202,5 +223,16 @@ describe('on screen', () => {
     expect(container.querySelector('.profile-card.has-banner .profile-banner.look-banner-aurora')).toBeTruthy();
     // the shop is closed, so there's no pointer to it
     expect(screen.queryByText('See borders and banners in the shop')).toBeNull();
+    // the header wears them too: the border on the picture, the banner behind the menu's name card
+    cleanup();
+    const { Header } = await import('../src/components/Header');
+    const header = render(<Header />);
+    await vi.waitFor(() => expect(header.container.querySelector('.account-head.has-banner .look-banner-aurora')).toBeTruthy());
+    expect(header.container.querySelector('.account-btn .avatar-frame')).toBeNull();
+    await act(async () => {
+      await account.update({ border: 'border-glitch' });
+    });
+    await vi.waitFor(() => expect(header.container.querySelector('.account-btn .avatar-frame.look-border-glitch')).toBeTruthy());
+    expect(header.container.querySelector('.account-head .avatar-frame.look-border-glitch')).toBeTruthy();
   });
 });

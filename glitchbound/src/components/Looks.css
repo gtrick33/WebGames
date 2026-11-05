@@ -358,6 +358,51 @@
   right: calc(30% - 22cqh);
 }
 
+/* Behind the name card at the top of the header's account menu. */
+.account-head.has-banner {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  margin: -4px -4px 6px;
+  padding: 12px;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  border-radius: 14px;
+  color: #fff;
+}
+.account-head.has-banner > .look-banner {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+.account-head.has-banner strong,
+.account-head.has-banner .mono {
+  color: #fff;
+  text-shadow: 0 1px 3px rgb(7 2 26 / 0.9);
+}
+
+/* A friend's row in your friends list: their banner behind it, light text on top. */
+.friend-row.has-banner {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border-color: rgb(255 255 255 / 0.28);
+  background: none;
+  color: #fff;
+}
+.friend-row.has-banner > .look-banner {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+.friend-row.has-banner .friend-who strong,
+.friend-row.has-banner .friend-who span {
+  color: #fff;
+  text-shadow: 0 1px 3px rgb(7 2 26 / 0.9);
+}
+.friend-row.has-banner .friend-who .board-lvl {
+  color: #c4f034;
+}
+
 /* ------------------------------------------------------------------ motion */
 
 @keyframes look-spin {

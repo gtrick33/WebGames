@@ -22,6 +22,21 @@ import { fresh } from '../platform/freshBuild';
 // The search and sign-in dialogs load the first time they are opened.
 const SignInDialog = lazy(fresh(() => import('./SignIn').then((m) => ({ default: m.SignInDialog }))));
 const SearchDialog = lazy(fresh(() => import('./SearchDialog').then((m) => ({ default: m.SearchDialog }))));
+// The border and banner a member wears (components/Looks.tsx): loaded only for one who wears them, as the header is on
+// every page's first load.
+const LookAvatar = lazy(fresh(() => import('./Looks').then((m) => ({ default: m.LookAvatar }))));
+const Banner = lazy(fresh(() => import('./Looks').then((m) => ({ default: m.Banner }))));
+
+/** The member's picture, in their border once it has loaded (the plain picture until then). */
+function MemberAvatar({ me, size }: { me: { nickname: string; avatar: string; looks?: { border: string } }; size: number }) {
+  const plain = <Avatar name={me.nickname} src={me.avatar} size={size} />;
+  if (!me.looks?.border) return plain;
+  return (
+    <Suspense fallback={plain}>
+      <LookAvatar name={me.nickname} src={me.avatar} size={size} border={me.looks.border} />
+    </Suspense>
+  );
+}
 
 type Tab = { href: string; label: string; short?: string; icon: IconName; slug?: string };
 
@@ -110,13 +125,18 @@ function AccountMenu() {
   return (
     <div className="account" ref={ref}>
       <button className="account-btn" aria-expanded={open} aria-controls="account-menu" onClick={() => setOpen((v) => !v)} aria-label={t('Account menu for {name}', { name: me.nickname })}>
-        <Avatar name={me.nickname} src={me.avatar} size={36} />
+        <MemberAvatar me={me} size={36} />
         <span className="account-lvl mono">LV {me.level}</span>
         {ready > 0 && <span className="account-dot" />}
       </button>
       <div id="account-menu" className="account-menu panel" hidden={!open}>
-        <div className="account-head">
-          <Avatar name={me.nickname} src={me.avatar} size={44} />
+        <div className={`account-head${me.looks?.banner ? ' has-banner' : ''}`}>
+          {me.looks?.banner && (
+            <Suspense fallback={null}>
+              <Banner id={me.looks.banner} row />
+            </Suspense>
+          )}
+          <MemberAvatar me={me} size={44} />
           <div>
             <strong>{me.nickname}</strong>
             <span className="mono">

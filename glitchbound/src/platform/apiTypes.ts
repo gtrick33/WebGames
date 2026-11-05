@@ -85,7 +85,7 @@ export interface RunEndResult {
   error?: string;
 }
 
-export interface FriendRow {
+export interface FriendRow extends RowLooks {
   id: string;
   nickname: string;
   level: number;
