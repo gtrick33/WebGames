@@ -1,7 +1,9 @@
 /**
  * What the shop sells. The rules, which keep it fair and keep it legal:
  * - one-time purchases for real money, the price shown in full: no subscriptions and no game currency;
- * - no random boxes, and nothing that helps anyone win a game or climb a board;
+ * - no random boxes, and nothing that makes a player stronger than another who plays the same way. The one item that
+ *   changes how a game plays is the Gloamknight, a Sigilfall class sold on its own (the owner's choice, 2026-11-05):
+ *   it adds a way to play and is balanced with the free classes;
  * - no countdowns or "last chance", and no words telling children to buy.
  * docs/LEGAL-READINESS.md has the reasons. Items are edited in Admin › Ads & shop; this list is where they start.
  */
@@ -23,7 +25,10 @@ export interface Product {
 export const AD_FREE_ID = 'ad-free';
 
 /** Items whose meaning is built into the site: ad-free and each look (src/catalog/looks.ts). They can be hidden, not removed. */
-export const isBuiltIn = (id: string): boolean => id === AD_FREE_ID || isLook(id);
+/** The Gloamknight, Sigilfall's eighth class: playing it needs this item (src/games/sigilfall/progress/paidClasses.ts). */
+export const GLOAMKNIGHT_ITEM = 'sigilfall-gloamknight';
+
+export const isBuiltIn = (id: string): boolean => id === AD_FREE_ID || id === GLOAMKNIGHT_ITEM || isLook(id);
 
 /** Planned items that became real ones, each look on its own. Dropped from a saved list. */
 const RETIRED = new Set(['look-borders', 'look-banners']);
@@ -42,6 +47,12 @@ export const PRODUCTS: Product[] = [
   { id: 'banner-aurora', name: 'Aurora banner', blurb: 'Northern lights rippling over dark mountains under a starry sky. Across your profile and behind your name on the boards.', cents: 50 },
   { id: 'banner-nebula', name: 'Nebula banner', blurb: 'Drifting violet clouds, twinkling stars, a ringed planet and the odd shooting star. Across your profile and behind your name on the boards.', cents: 50 },
   { id: 'look-names', name: 'Name effects', blurb: 'A touch of color and shine on your nickname.', cents: 99, later: true },
+  {
+    id: GLOAMKNIGHT_ITEM,
+    name: 'Gloamknight class',
+    blurb: 'Unlocks the Gloamknight, Sigilfall’s eighth class, for every hero slot on your account: a knight in heavy plate who wields shadow and trades health for power. In the campaign, the Vigil and the Ring.',
+    cents: 499,
+  },
   { id: 'sigilfall-mounts', name: 'Sigilfall mounts', blurb: 'Mounts made for the shop. They look different and ride the same as any other.', cents: 299, later: true },
   { id: 'sigilfall-looks', name: 'Sigilfall wardrobe sets', blurb: 'Looks for your Wardrobe. They change how your hero looks, never what your gear does.', cents: 199, later: true },
 ];
@@ -76,7 +87,7 @@ export function sanitizeProducts(v: unknown): Product[] {
   }
   if (!seen.has(AD_FREE_ID)) out.unshift(PRODUCTS[0]!);
   // a look added to the site after the list was saved joins it, after the looks already there
-  const missing = PRODUCTS.filter((p) => isLook(p.id) && !seen.has(p.id));
+  const missing = PRODUCTS.filter((p) => p.id !== AD_FREE_ID && isBuiltIn(p.id) && !seen.has(p.id));
   if (missing.length) {
     const at = out.reduce((last, p, i) => (isBuiltIn(p.id) ? i + 1 : last), 0);
     out.splice(at, 0, ...missing);

@@ -6,6 +6,8 @@ import { MAP_IDS, MAPS } from '../arena/maps';
 import { FORMATS, nextRank, rankOf, type Format } from '../arena/ranks';
 import type { FighterSetup, MatchSetup } from '../arena/sim';
 import { CLASS_IDS, CLASSES } from '../data/classes';
+import { useAccount } from '../../../platform/account';
+import { classOpen } from '../progress/paidClasses';
 import type { ClassId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { Link, type LinkState } from '../net/link';
@@ -60,11 +62,23 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
 
 type Page = 'play' | 'setup' | 'friends';
 
+/** The classes to fight as. One from the shop can be picked once it's bought (progress/paidClasses.ts). */
 function ClassRow({ pick, onPick }: { pick: ClassId; onPick: (c: ClassId) => void }) {
+  const { me } = useAccount();
   return (
     <div className="rb-rp-classes" role="radiogroup" aria-label="Class">
       {CLASS_IDS.map((c) => (
-        <button key={c} role="radio" aria-checked={c === pick} aria-label={CLASSES[c].name} title={CLASSES[c].name} className={`rb-rp-class${c === pick ? ' is-on' : ''}`} style={{ ['--c' as string]: CLASSES[c].colors.accent }} onClick={() => onPick(c)}>
+        <button
+          key={c}
+          role="radio"
+          aria-checked={c === pick}
+          aria-disabled={!classOpen(c, me)}
+          aria-label={CLASSES[c].name}
+          title={classOpen(c, me) ? CLASSES[c].name : `${CLASSES[c].name}: unlock it in the shop`}
+          className={`rb-rp-class${c === pick ? ' is-on' : ''}${classOpen(c, me) ? '' : ' is-locked'}`}
+          style={{ ['--c' as string]: CLASSES[c].colors.accent }}
+          onClick={() => classOpen(c, me) && onPick(c)}
+        >
           <img src={iconPicture(kitOf(c)[0]!.icon)} alt="" draggable={false} />
         </button>
       ))}
@@ -88,7 +102,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack }: { engine: 
   const [page, setPage] = useState<Page>('play');
   const [setupFrom, setSetupFrom] = useState<Page>('play');
   const [format, setFormat] = useState<Format>(1);
-  const [pick, setPick] = useState<ClassId>(cls ?? 'warrior');
+  const { me } = useAccount();
+  const [pick, setPick] = useState<ClassId>(cls && classOpen(cls, me) ? cls : 'warrior');
   const [mates, setMates] = useState<Mate[]>(() => DEFAULT_MATES[cls ?? 'warrior']);
   const [map, setMap] = useState<string>('random');
   const [help, setHelp] = useState(false);

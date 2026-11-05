@@ -31,7 +31,7 @@ export function ShopPage() {
   return (
     <div className="wrap info-page">
       <h1 className="info-title">Shop</h1>
-      <p className="info-lead">Every game stays free to play. These are optional extras, each paid for once: no subscriptions, no game currency and no random boxes. Nothing here helps you win.</p>
+      <p className="info-lead">Every game stays free to play. These are optional extras, each paid for once: no subscriptions, no game currency and no random boxes. Most only change how things look; the Gloamknight unlocks a new class to play in Sigilfall.</p>
       {!money.shop && (
         <p className="info-small" role="status">
           {me?.isAdmin ? 'Admin test: the shop is closed to players, and you can test a purchase here.' : 'The shop isn’t open yet, so nothing can be bought right now.'}

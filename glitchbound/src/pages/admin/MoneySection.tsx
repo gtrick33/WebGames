@@ -143,7 +143,7 @@ function Items({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boo
         Shop items
       </h2>
       <p className="info-small">
-        Prices are in euros with VAT included, and what&rsquo;s here is what players pay. Cosmetic items and ad-free only: nothing that helps anyone win, no game currency and no random boxes. No
+        Prices are in euros with VAT included, and what&rsquo;s here is what players pay. Cosmetic items and ad-free, plus the Gloamknight class: nothing else that changes how a game plays, no game currency and no random boxes. No
         countdowns or &ldquo;last chance&rdquo;, and don&rsquo;t show a discount unless the old price really was charged in the last 30 days. Items marked planned can&rsquo;t be bought yet. Ad-free
         and the borders and banners are built into the site, so they can be hidden but not removed, and whoever bought one keeps it.
       </p>

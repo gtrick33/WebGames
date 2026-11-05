@@ -4,7 +4,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-import { AGREE_NOW, breaksRules, isBuiltIn, priceText, PRODUCTS, productIn, sanitizeProducts } from '../src/catalog/shop';
+import { AGREE_NOW, breaksRules, GLOAMKNIGHT_ITEM, isBuiltIn, priceText, PRODUCTS, productIn, sanitizeProducts } from '../src/catalog/shop';
 import { isLook, LOOKS } from '../src/catalog/looks';
 import { NO_MONEY, sanitizeMoney } from '../src/catalog/settings';
 import { canRetryDaily, retryDaily } from '../src/platform/dailyRetry';
@@ -142,7 +142,7 @@ describe('what the shop sells', () => {
   it('keeps only items that follow the rules, and ad-free is always there', () => {
     const good = { id: 'look-one', name: 'A look', blurb: 'A nice look.', cents: 150 };
     // (the borders and banners are always there too: the next test)
-    const ids = (v: unknown): string[] => sanitizeProducts(v).map((p) => p.id).filter((id) => !isLook(id));
+    const ids = (v: unknown): string[] => sanitizeProducts(v).map((p) => p.id).filter((id) => !isLook(id) && id !== GLOAMKNIGHT_ITEM);
     expect(ids([good])).toEqual(['ad-free', 'look-one']);
     expect(sanitizeProducts([good, good]).filter((p) => p.id === 'look-one')).toHaveLength(1);
     expect(ids([{ ...good, cents: 10 }])).toEqual(['ad-free']);
@@ -157,7 +157,8 @@ describe('what the shop sells', () => {
 
   it('starts with ad-free at €1.99 and the borders and banners, and everything else is only planned', () => {
     const open = PRODUCTS.filter((p) => !p.later);
-    expect(open.map((p) => p.id)).toEqual(['ad-free', ...LOOKS.map((l) => l.id)]);
+    // and the Gloamknight, the one class sold (tests/sigilfall-paid-class.test.ts)
+    expect(open.map((p) => p.id)).toEqual(['ad-free', ...LOOKS.map((l) => l.id), GLOAMKNIGHT_ITEM]);
     expect(priceText(productIn(PRODUCTS, 'ad-free')!.cents)).toBe('€1.99');
     // the lowest price Stripe can charge in euros
     for (const l of LOOKS) expect(priceText(productIn(PRODUCTS, l.id)!.cents)).toBe('€0.50');
@@ -170,7 +171,7 @@ describe('what the shop sells', () => {
       { id: 'border-neon-halo', name: 'Halo', blurb: 'Cheaper now.', cents: 79, hidden: true },
       { id: 'sigilfall-mounts', name: 'Mounts', blurb: 'Planned.', cents: 299, later: true },
     ]);
-    expect(saved.map((p) => p.id)).toEqual(['ad-free', 'border-aurora', 'border-neon-halo', ...LOOKS.slice(1).map((l) => l.id), 'sigilfall-mounts']);
+    expect(saved.map((p) => p.id)).toEqual(['ad-free', 'border-aurora', 'border-neon-halo', ...LOOKS.slice(1).map((l) => l.id), GLOAMKNIGHT_ITEM, 'sigilfall-mounts']);
     expect(productIn(saved, 'border-neon-halo')).toEqual({ id: 'border-neon-halo', name: 'Halo', blurb: 'Cheaper now.', cents: 79, hidden: true });
     expect(isBuiltIn('ad-free') && LOOKS.every((l) => isBuiltIn(l.id))).toBe(true);
     expect(isBuiltIn('border-aurora') || isBuiltIn('sigilfall-mounts')).toBe(false);
@@ -290,7 +291,7 @@ describe('purchases', () => {
     const e = env();
     expect(await loadItems(e)).toEqual(PRODUCTS);
     await e.DB.prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('shop_items', ?, 1, 'qa')").bind(JSON.stringify([{ id: 'look-one', name: 'A look', blurb: 'A nice look.', cents: 150 }])).run();
-    expect((await loadItems(e)).map((p) => p.id)).toEqual(['ad-free', ...LOOKS.map((l) => l.id), 'look-one']);
+    expect((await loadItems(e)).map((p) => p.id)).toEqual(['ad-free', ...LOOKS.map((l) => l.id), GLOAMKNIGHT_ITEM, 'look-one']);
   });
 
   it('keeps Stripe’s test and live modes apart', async () => {

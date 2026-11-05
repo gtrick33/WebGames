@@ -36,8 +36,13 @@ export function SaleTermsPage() {
           <h2>What you get</h2>
           <p>
             A one-time purchase, shown with its full price in euros in the shop, VAT included. There are no subscriptions, so there is nothing to cancel and nothing renews. There&rsquo;s no game currency
-            and no random boxes, and nothing in the shop helps you win a game or climb a board. A purchase belongs to your account, so you need to be signed in. It reaches your account as soon as the
-            payment is confirmed, usually within a minute.
+            and no random boxes. Apart from the Gloamknight class below, nothing in the shop changes how a game plays. A purchase belongs to your account, so you need to be signed in. It reaches
+            your account as soon as the payment is confirmed, usually within a minute.
+          </p>
+          <p>
+            <strong>The Gloamknight class</strong> unlocks the Gloamknight, one of Sigilfall&rsquo;s eight classes, for every hero slot on your account, in the campaign, the Vigil and the Ring. The
+            other seven classes are free. It&rsquo;s a different way to play, balanced with the free classes, not a stronger one, and we may tune it, as we do every class. A Gloamknight hero you make
+            stays yours: if the purchase is refunded, the hero waits, locked, until you buy the class again. It lasts as long as Sigilfall runs.
           </p>
           <p>
             <strong>Ad-free</strong> removes ad banners on your account and lets you take your extra try at a daily without watching an ad. It lasts as long as GlitchBound runs. It doesn&rsquo;t affect

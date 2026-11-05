@@ -1,5 +1,7 @@
 import type { GameHost } from '../../platform/contract';
 import { reportOrders, waitingOrders } from '../../platform/sigilfallOrders';
+import { account } from '../../platform/account';
+import { classOpen } from './progress/paidClasses';
 import { applyOrder, orderToast } from './progress/gm';
 import { isMainQuest, turnInNpc } from './progress/handin';
 import { rewardSummary } from './progress/rewards';
@@ -881,6 +883,8 @@ export class SigilEngine {
   }
 
   createHero(slot: number, cls: ClassId, name: string, body: Body = 'm', face?: Face, tips = this.settings.tutorial): void {
+    // a class sold in the shop is made only once it's bought (progress/paidClasses.ts)
+    if (!classOpen(cls, account.get().me)) return;
     const c = newCharacter(cls, name || this.defaultName, `hero${slot}`, Date.now(), body);
     if (face) c.face = face;
     // the first hero gets the tutorial; a later one by the player's answer, which is also the Settings choice
@@ -918,6 +922,11 @@ export class SigilEngine {
   private shelfAsked = false;
 
   play(slot: number): void {
+    const locked = this.save.heroes[slot];
+    if (locked && !classOpen(locked.cls, account.get().me)) {
+      this.setUi({ notice: `This hero is a ${CLASSES[locked.cls].name}, a class from the shop. Unlock it in the shop to play them again: they're kept, as they were.` });
+      return;
+    }
     const h = this.save.heroes[slot];
     if (!h) return;
     this.askShelf();
