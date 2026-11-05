@@ -89,23 +89,26 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
       {ui.boss && <BossBar engine={engine} />}
       {engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}
       {!ui.dialogue && <Toasts engine={engine} />}
-      {ui.banner && (
-        <div className="rb-banner" key={`banner:${ui.banner.id}`} aria-live="polite">
-          <strong>{ui.banner.text}</strong>
-          {ui.banner.sub && <span>{ui.banner.sub}</span>}
-        </div>
-      )}
-      {ui.levelUp && <LevelUpBanner engine={engine} />}
-      {ui.card && (
-        <div className={`rb-tcard${ui.card.act ? ' is-act' : ''}`} key={`card:${ui.card.id}`} aria-live="polite">
-          <div className="rb-tcard-text">
-            <span className="rb-tcard-over">{ui.card.over}</span>
-            <strong>{ui.card.text}</strong>
-            <i className="rb-tcard-rule" />
-            {ui.card.sub && <span className="rb-tcard-sub">{ui.card.sub}</span>}
+      {/* (on touch the announcements stack in a strip along the top, clear of the hero; on a mouse each keeps its place) */}
+      <div className="rb-announce">
+        {ui.banner && (
+          <div className="rb-banner" key={`banner:${ui.banner.id}`} aria-live="polite">
+            <strong>{ui.banner.text}</strong>
+            {ui.banner.sub && <span>{ui.banner.sub}</span>}
           </div>
-        </div>
-      )}
+        )}
+        {ui.levelUp && <LevelUpBanner engine={engine} />}
+        {ui.card && (
+          <div className={`rb-tcard${ui.card.act ? ' is-act' : ''}`} key={`card:${ui.card.id}`} aria-live="polite">
+            <div className="rb-tcard-text">
+              <span className="rb-tcard-over">{ui.card.over}</span>
+              <strong>{ui.card.text}</strong>
+              <i className="rb-tcard-rule" />
+              {ui.card.sub && <span className="rb-tcard-sub">{ui.card.sub}</span>}
+            </div>
+          </div>
+        )}
+      </div>
       {!overlay && (engine.touchMode ? <TouchControls engine={engine} /> : <DesktopBar engine={engine} />)}
       <SceneBars engine={engine} />
       {ui.dialogue && <Dialogue engine={engine} />}
@@ -404,8 +407,19 @@ function KeyClock({ engine }: { engine: SigilEngine }) {
   );
 }
 
+/** Whether the quest tracker is folded on touch (kept while playing; the quest stays marked on the map). */
+const trackerFold = { folded: false };
+const rememberFold = (to: boolean): void => {
+  trackerFold.folded = to;
+};
+
 function Tracker({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
+  const [folded, setFolded] = useState(trackerFold.folded);
+  const fold = (to: boolean): void => {
+    rememberFold(to);
+    setFolded(to);
+  };
   const q = trackedQuest(h, engine.world?.region.id);
   if (engine.ui.boss) return null;
   // the main story waiting for a level: said, so it never just stops (PROGRESSION_BALANCE.md G)
@@ -426,10 +440,18 @@ function Tracker({ engine }: { engine: SigilEngine }) {
   const ready = questState(h, q.id) === 'ready';
   const who = ready ? turnInNpc(q) : null;
   const main = isMainQuest(q.id);
+  const icon = mapIconUrl(ready ? (main ? 'handin' : 'handinSide') : main ? 'offer' : 'offerSide', 2);
+  // on touch a tap folds it to its mark (the quest stays on the map), and a tap opens it again
+  if (engine.touchMode && folded)
+    return (
+      <button className={`rb-tracker is-folded${main ? ' is-main' : ' is-side'}`} onClick={() => fold(false)} aria-label={`Quest: ${q.name}. Tap to show`}>
+        <img src={icon} alt="" />
+      </button>
+    );
   return (
-    <button className={`rb-tracker${main ? ' is-main' : ' is-side'}`} onClick={() => engine.showOnMap(q.id)} title="Show on the map">
+    <button className={`rb-tracker${main ? ' is-main' : ' is-side'}`} onClick={() => (engine.touchMode ? fold(true) : engine.showOnMap(q.id))} title={engine.touchMode ? 'Tap to fold' : 'Show on the map'}>
       <strong>
-        <img src={mapIconUrl(ready ? (main ? 'handin' : 'handinSide') : main ? 'offer' : 'offerSide', 2)} alt="" />
+        <img src={icon} alt="" />
         {q.name}
       </strong>
       <span>
@@ -448,6 +470,8 @@ function Toasts({ engine }: { engine: SigilEngine }) {
       {engine.ui.toasts.map((t) => {
         if (t.tone === 'loot' && t.item) {
           const item = t.item;
+          // (on touch a plain drop isn't a card over the fight: the bag button counts what's new)
+          if (engine.touchMode && t.text === itemName(item) && item.r !== 'legendary') return null;
           const owned = h.bag.some((i) => i.uid === item.uid);
           const lines = modLines(itemMods(item));
           const canWear = usableBy(item, h.cls);
