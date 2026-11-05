@@ -141,10 +141,12 @@ Accountant:
 - [ ] Sole trader, company or freelance income for what Stripe pays you, and the same art. 97a question.
 
 Me, when you say so:
-- [x] Translate the Shop, `/terms/sale`, Terms and Privacy into Bulgarian. Done 2026-11-05: a reader who picks Български sees
-      all four in Bulgarian (the item texts in `src/catalog/shopBg.ts`), ticks the two statements in Bulgarian, pays on Stripe's
-      page in Bulgarian, and gets the confirmation email in Bulgarian; the purchase records `<version> bg`. Other languages read
-      the English. **A lawyer should read the Bulgarian**, which is a translation, not a reviewed text.
+- [x] Translate the Shop, `/terms/sale`, Terms and Privacy into every language the site offers. Done 2026-11-05, in all
+      eleven (Bulgarian, German, Spanish, French, Italian, Dutch, Polish, Portuguese, Romanian, Turkish, Ukrainian): a reader
+      sees all four pages in their language (`src/i18n/shop/<code>.ts`, `src/i18n/legal/<code>.ts`), ticks the two statements
+      in it, pays on Stripe's page in it (Stripe has no Ukrainian: that reader gets Stripe's own choice), and gets the
+      confirmation email in it; the purchase records `<version> <code>`. **A lawyer should read at least the Bulgarian**, and
+      ideally each language you sell in: these are translations, not reviewed texts.
 - [x] Before selling cosmetics: design them, show them on profiles and boards, and let members choose what they wear. Done for
       borders and banners. Name effects are still planned.
 - [x] Before selling Sigilfall items: build them from art we may resell in a game. Done for the five shop mounts and three

@@ -3,9 +3,9 @@ import { BannerArt, FramedAvatar } from '../components/Looks';
 import { openSignIn } from '../components/openSignIn';
 import { gameUrl } from '../catalog/urls';
 import type { LookKind, LookSpec } from '../catalog/looks';
-import { AGREE_AGE, AGREE_AGE_BG, AGREE_NOW, AGREE_NOW_BG, offered, priceText, priceTextBg, PRODUCTS, type Product } from '../catalog/shop';
-import { itemBg } from '../catalog/shopBg';
-import { useLang } from '../i18n';
+import { offered, PRODUCTS, type Product } from '../catalog/shop';
+import { fill, priceIn, rich, useShopText } from '../i18n/shopText';
+import type { ShopText } from '../i18n/shopTypes';
 import { useLiveCatalog } from '../platform/liveCatalog';
 import { api, ApiError, useAccount } from '../platform/account';
 import { usePageMeta } from '../platform/meta';
@@ -21,89 +21,31 @@ const SigilPicture = (props: Parameters<typeof SigilPictureLazy>[0]) => (
   </Suspense>
 );
 
-/** The shop's words, in English and in Bulgarian (the shop, its terms and the checkout are the parts sold in both). */
-const WORDS = {
-  en: {
-    title: 'Shop',
-    meta: 'Optional one-time extras for GlitchBound. Every game stays free to play.',
-    lead: 'Every game stays free to play. These are optional extras, each paid for once: no subscriptions, no game currency and no random boxes. Most only change how things look; the Gloamknight Pack unlocks a new class to play in Sigilfall.',
-    adminTest: 'Admin test: the shop is closed to players, and you can test a purchase here.',
-    closed: 'The shop isn’t open yet, so nothing can be bought right now.',
-    thanks: 'Thank you. Your purchase reaches your account as soon as the payment is confirmed, usually within a minute.',
-    vat: 'VAT included, paid once',
-    yours: 'This is yours.',
-    wear: 'Wear it on your profile',
-    inWardrobe: 'It’s in the Wardrobe of every hero on your account:',
-    openSigilfall: 'open Sigilfall',
-    notYet: 'Not on sale yet.',
-    get: (name: string) => `Get ${name}`,
-    signInFirst: 'Sign in first',
-    signInWhy: 'Sign in so a purchase stays with your account.',
-    kinds: { border: 'Borders', banner: 'Banners', icon: 'Profile icons' } as Record<LookKind, string>,
-    sigilNote: 'Mounts and Wardrobe looks for every hero on your account. They change how your hero looks and nothing else: every mount runs at the same pace, and your stats always come from what you equip.',
-    planned: 'Planned',
-    termsBefore: 'See the ',
-    termsLink: 'terms of sale',
-    termsAfter: ' for your rights, refunds and who you are buying from.',
-    inPack: 'In the pack',
-    packClass: 'The Gloamknight',
-    packClassWhat: 'Sigilfall’s eighth class, and two more hero slots',
-    checkoutNote: 'VAT included. One payment, no subscription. Our payment provider, Stripe, takes the payment and sends your receipt.',
-    already: 'This is already yours.',
-    failed: 'The checkout could not open. Nothing was charged. Please try again.',
-    pay: 'Continue to payment',
-    cancel: 'Cancel',
-    agreeNow: AGREE_NOW,
-    agreeAge: AGREE_AGE,
-  },
-  bg: {
-    title: 'Магазин',
-    meta: 'Незадължителни еднократни покупки в GlitchBound. Всички игри остават безплатни.',
-    lead: 'Всички игри остават безплатни. Това са незадължителни екстри, всяка платена веднъж: без абонаменти, без игрова валута и без случайни кутии. Повечето променят само как изглеждат нещата, а пакетът Gloamknight отключва нов клас в Sigilfall.',
-    adminTest: 'Тест от администратор: магазинът е затворен за играчите, а ти можеш да тестваш покупка тук.',
-    closed: 'Магазинът още не е отворен, затова в момента нищо не може да се купи.',
-    thanks: 'Благодарим! Покупката ти стига до акаунта ти веднага щом плащането бъде потвърдено, обикновено до минута.',
-    vat: 'с ДДС, плаща се веднъж',
-    yours: 'Това е твое.',
-    wear: 'Сложи го в профила си',
-    inWardrobe: 'Намира се в Гардероба (Wardrobe) на всеки герой в акаунта ти:',
-    openSigilfall: 'отвори Sigilfall',
-    notYet: 'Още не се продава.',
-    get: (name: string) => `Вземи ${name}`,
-    signInFirst: 'Първо влез',
-    signInWhy: 'Влез, за да остане покупката в акаунта ти.',
-    kinds: { border: 'Рамки', banner: 'Банери', icon: 'Икони за профила' } as Record<LookKind, string>,
-    sigilNote: 'Ездитни животни и облекла от Гардероба за всеки герой в акаунта ти. Те променят само как изглежда героят ти: всяко ездитно животно се движи с едно и също темпо, а показателите ти винаги идват от това, което екипираш.',
-    planned: 'Предстоящи',
-    termsBefore: 'Виж ',
-    termsLink: 'условията за продажба',
-    termsAfter: ' за правата си, връщането на пари и от кого купуваш.',
-    inPack: 'В пакета',
-    packClass: 'Gloamknight',
-    packClassWhat: 'Осмият клас в Sigilfall и още две места за герои',
-    checkoutNote: 'С ДДС. Едно плащане, без абонамент. Плащането се приема от нашия доставчик на плащания Stripe, който ти изпраща и разписката.',
-    already: 'Това вече е твое.',
-    failed: 'Плащането не можа да се отвори. Нищо не е таксувано. Опитай отново.',
-    pay: 'Към плащането',
-    cancel: 'Отказ',
-    agreeNow: AGREE_NOW_BG,
-    agreeAge: AGREE_AGE_BG,
-  },
-};
-type Words = (typeof WORDS)['en'];
-
 /**
  * The shop: one-time purchases, in plain words. No countdowns, no "last chance", no pressure, and the full price up
  * front (src/catalog/shop.ts has the rules). Until the shop is opened in Admin › Ads & shop it has no tab and nothing can
  * be bought, but the page can be read by its address, hidden from search: Stripe's reviewers must be able to see what is
  * sold and at what price, without a password. An admin can test a purchase here while it's closed.
- * In English, and in Bulgarian for a reader who chose it (with the terms of sale, the terms and privacy); other languages
- * read the English.
+ * In the reader's language: its words, and the built-in items', come from src/i18n/shop/<code>.ts.
  */
 export function ShopPage() {
-  const bg = useLang() === 'bg';
-  const w: Words = bg ? WORDS.bg : WORDS.en;
-  const price = bg ? priceTextBg : priceText;
+  const { lang, words } = useShopText();
+  return words ? <Shop lang={lang} t={words} /> : null;
+}
+
+/** An item's name and description in the reader's language, while it still reads as the code wrote it (an item an admin made or renamed reads as they wrote it). */
+function itemText(t: ShopText, p: Product): { name: string; blurb: string } {
+  const mine = t.items[p.id];
+  const code = PRODUCTS.find((x) => x.id === p.id);
+  if (!mine || !code) return { name: p.name, blurb: p.blurb };
+  return { name: p.name === code.name ? mine.name : p.name, blurb: p.blurb === code.blurb ? mine.blurb : p.blurb };
+}
+
+type W = ShopText['shop'];
+
+function Shop({ lang, t }: { lang: Parameters<typeof priceIn>[0]; t: ShopText }) {
+  const w = t.shop;
+  const price = (cents: number): string => priceIn(lang, cents);
   usePageMeta({ title: w.title, description: w.meta, path: '/shop' });
   const money = useMoney();
   const items = useLiveCatalog().raw.shopItems ?? PRODUCTS;
@@ -114,7 +56,7 @@ export function ShopPage() {
   const bought = new URLSearchParams(window.location.search).get('bought');
   const now = items.filter((p) => !p.later && offered(p, money));
   const later = items.filter((p) => p.later && offered(p, money));
-  const text = (p: Product): { name: string; blurb: string } => (bg ? itemBg(p) : p);
+  const text = (p: Product): { name: string; blurb: string } => itemText(t, p);
   const card = (p: Product) => (
     <section key={p.id} className="panel info-block">
       {p.look && <LookPreview spec={p.look} name={me?.nickname ?? 'GlitchBound'} src={me?.avatar} />}
@@ -131,23 +73,23 @@ export function ShopPage() {
           {p.look && (
             <>
               {' '}
-              <Link href="/me#looks">{w.wear}</Link>.
+              {rich(w.wear, { wear: (x) => <Link href="/me#looks">{x}</Link> })}
             </>
           )}
           {p.sigil && (
             <>
               {' '}
-              {w.inWardrobe} <Link href={gameUrl('sigilfall')}>{w.openSigilfall}</Link>.
+              {rich(w.inWardrobe, { open: (x) => <Link href={gameUrl('sigilfall')}>{x}</Link> })}
             </>
           )}
         </p>
       ) : !canBuy ? (
         <p className="info-small">{w.notYet}</p>
       ) : me && buying?.id === p.id ? (
-        <Checkout product={p} name={text(p).name} price={price(p.cents)} bg={bg} w={w} onClose={() => setBuying(null)} />
+        <Checkout product={p} name={text(p).name} price={price(p.cents)} lang={lang} w={w} onClose={() => setBuying(null)} />
       ) : me ? (
         <button className="btn btn-primary" onClick={() => setBuying(p)}>
-          {w.get(text(p).name)}
+          {fill(w.get, { name: text(p).name })}
         </button>
       ) : (
         <button className="btn" onClick={() => openSignIn(w.signInWhy)}>
@@ -211,17 +153,13 @@ export function ShopPage() {
           </section>
         )}
       </div>
-      <p className="info-small">
-        {w.termsBefore}
-        <Link href="/terms/sale">{w.termsLink}</Link>
-        {w.termsAfter}
-      </p>
+      <p className="info-small">{rich(w.terms, { terms: (x) => <Link href="/terms/sale">{x}</Link> })}</p>
     </div>
   );
 }
 
 /** What a pack gives, each thing as it looks: its own pieces are made for it and not sold on their own. */
-function PackContents({ ids, items, name, src, w, text }: { ids: string[]; items: readonly Product[]; name: string; src?: string; w: Words; text: (p: Product) => { name: string } }) {
+function PackContents({ ids, items, name, src, w, text }: { ids: string[]; items: readonly Product[]; name: string; src?: string; w: W; text: (p: Product) => { name: string } }) {
   const parts = ids.map((id) => items.find((p) => p.id === id)).filter((p): p is Product => !!p);
   return (
     <ul className="shop-pack" aria-label={w.inPack}>
@@ -262,7 +200,7 @@ function LookPreview({ spec, name, src }: { spec: LookSpec; name: string; src?: 
  * own panel, scrolled into view with the focus on it, so it shows up where the button was pressed. The statements are in
  * the language the buyer reads, and the purchase records which (the confirmation email repeats them in it).
  */
-function Checkout({ product, name, price, bg, w, onClose }: { product: Product; name: string; price: string; bg: boolean; w: Words; onClose: () => void }) {
+function Checkout({ product, name, price, lang, w, onClose }: { product: Product; name: string; price: string; lang: string; w: W; onClose: () => void }) {
   const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     title.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
@@ -275,7 +213,7 @@ function Checkout({ product, name, price, bg, w, onClose }: { product: Product; 
   const go = (): void => {
     setBusy(true);
     setError('');
-    api<{ url: string }>('/api/shop/checkout', { body: { product: product.id, agreeNow: now, agreeAge: age, lang: bg ? 'bg' : 'en' } })
+    api<{ url: string }>('/api/shop/checkout', { body: { product: product.id, agreeNow: now, agreeAge: age, lang } })
       .then((r) => window.location.assign(r.url))
       .catch((e: unknown) => {
         setBusy(false);

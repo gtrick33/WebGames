@@ -1,0 +1,93 @@
+import type { ShopText } from '../shopTypes';
+
+/** Română (src/i18n/shopTypes.ts has the rules; English in ./en.ts is the source). */
+const MOUNT = 'Pentru fiecare erou din contul tău. Doar aspect: merge în același ritm ca orice animal de călărie.';
+const LOOK = 'Îl poate purta orice clasă, peste orice echipament, din Garderobă (Wardrobe). Doar aspect: statisticile tale vin din ce echipezi.';
+const ON_BOARDS = 'pe profilul tău și în clasamente.';
+const ACROSS = 'Pe tot profilul tău și în spatele numelui tău în clasamente.';
+const ICON = 'în locul pozei tale: pe profil, în bara de sus și în clasamente.';
+
+const ro: ShopText = {
+  shop: {
+    title: 'Magazin',
+    meta: 'Extra opționale, plătite o singură dată, pentru GlitchBound. Toate jocurile rămân gratuite.',
+    lead: 'Toate jocurile rămân gratuite. Acestea sunt extra opționale, fiecare plătit o singură dată: fără abonamente, fără monedă de joc și fără cutii aleatorii. Majoritatea schimbă doar aspectul; pachetul Gloamknight deblochează o clasă nouă în Sigilfall.',
+    adminTest: 'Test de administrator: magazinul este închis pentru jucători, iar tu poți testa o achiziție aici.',
+    closed: 'Magazinul nu este încă deschis, așa că acum nu se poate cumpăra nimic.',
+    thanks: 'Mulțumim! Achiziția ajunge în contul tău imediat ce plata este confirmată, de obicei în mai puțin de un minut.',
+    vat: 'TVA inclus, plătit o singură dată',
+    yours: 'Este al tău.',
+    wear: '<wear>Poartă-l pe profil</wear>.',
+    inWardrobe: 'Se află în Garderoba (Wardrobe) fiecărui erou din contul tău: <open>deschide Sigilfall</open>.',
+    notYet: 'Încă nu este de vânzare.',
+    get: 'Cumpără {name}',
+    signInFirst: 'Conectează-te mai întâi',
+    signInWhy: 'Conectează-te, ca achiziția să rămână în contul tău.',
+    kinds: { border: 'Rame', banner: 'Bannere', icon: 'Pictograme de profil' },
+    sigilNote: 'Animale de călărie și ținute din Garderobă pentru fiecare erou din contul tău. Ele schimbă doar aspectul eroului tău: fiecare animal de călărie merge în același ritm, iar statisticile tale vin întotdeauna din ce echipezi.',
+    planned: 'Planificate',
+    terms: 'Vezi <terms>condițiile de vânzare</terms> pentru drepturile tale, rambursări și de la cine cumperi.',
+    inPack: 'În pachet',
+    packClass: 'Gloamknight',
+    packClassWhat: 'A opta clasă din Sigilfall și încă două locuri pentru eroi',
+    checkoutNote: 'TVA inclus. O singură plată, fără abonament. Plata este preluată de furnizorul nostru de plăți, Stripe, care îți trimite și chitanța.',
+    already: 'Este deja al tău.',
+    failed: 'Pagina de plată nu s-a putut deschide. Nu s-a încasat nimic. Te rugăm să încerci din nou.',
+    pay: 'Continuă spre plată',
+    cancel: 'Anulează',
+    agreeNow: 'Vreau să îl primesc imediat și înțeleg că, odată ce îl am, îmi pierd dreptul de retragere de 14 zile.',
+    agreeAge: 'Am cel puțin 18 ani sau un părinte ori tutore a fost de acord cu această achiziție.',
+  },
+  email: {
+    subject: 'Achiziția ta GlitchBound: {name}',
+    thanks: 'Mulțumim! {name} ({price}, TVA inclus) este acum în contul tău GlitchBound.',
+    receipt: 'Chitanța îți vine separat de la furnizorul nostru de plăți, Stripe, prin Link.',
+    confirmed: 'La cumpărare ai confirmat: „{statement}”',
+    date: 'Data: {date}. Condiții de vânzare: {url}',
+    help: 'Dacă ceva nu funcționează, răspunde la acest e-mail sau deschide un tichet la {url}.',
+  },
+  items: {
+    'ad-free': { name: 'Fără reclame', blurb: 'Fără bannere publicitare în contul tău, pe orice dispozitiv pe care te conectezi, iar încercarea ta în plus la o provocare zilnică nu mai cere o reclamă. O singură plată, fără abonament.' },
+    'border-neon-halo': { name: 'Ramă „Aură de neon”', blurb: `Un inel de lumină cyan, violet și roz care se rotește încet în jurul pozei tale, ${ON_BOARDS}` },
+    'border-solar-flare': { name: 'Ramă „Erupție solară”', blurb: `Un inel aprins, auriu și portocaliu, cu o coroană care pâlpâie, în jurul pozei tale ${ON_BOARDS}` },
+    'border-glitch': { name: 'Ramă „Glitch”', blurb: `Un inel care se desparte în cyan și roz și mai sare din loc din când în când, în jurul pozei tale ${ON_BOARDS}` },
+    'border-frost': { name: 'Ramă „Ger”', blurb: `Un inel de gheață cu așchii de cristal și sclipiri care plutesc, în jurul pozei tale ${ON_BOARDS}` },
+    'border-orbit': { name: 'Ramă „Orbită”', blurb: `Un inel dublu și fin, cu două luni mici care se învârt în jurul pozei tale, ${ON_BOARDS}` },
+    'border-crown': { name: 'Ramă „Coroană”', blurb: `Un inel de aur bătut cu pietre prețioase și încununat cu o coroniță, în jurul pozei tale ${ON_BOARDS}` },
+    'banner-sunset-grid': { name: 'Banner „Grilă la apus”', blurb: `Un soare în dungi apune în spatele unei grile luminoase care se rostogolește spre tine. ${ACROSS}` },
+    'banner-aurora': { name: 'Banner „Aurora boreală”', blurb: `Aurora boreală unduiește peste munți întunecați, sub un cer înstelat. ${ACROSS}` },
+    'banner-nebula': { name: 'Banner „Nebuloasă”', blurb: `Nori violeți în derivă, stele care sclipesc, o planetă cu inele și din când în când o stea căzătoare. ${ACROSS}` },
+    'banner-neon-city': { name: 'Banner „Oraș de neon”', blurb: `Un orizont urban noaptea, cu ferestre luminate și lumini care alunecă dedesubt. ${ACROSS}` },
+    'banner-deep-sea': { name: 'Banner „Marea adâncă”', blurb: `Raze de lumină prin apă adâncă, bule care urcă și alge care se unduiesc. ${ACROSS}` },
+    'banner-ember-field': { name: 'Banner „Câmp de jar”', blurb: `Scântei care se ridică din pământul încins în noapte. ${ACROSS}` },
+    'banner-gloam': { name: 'Banner „Amurg”', blurb: `Lumină roz și violet care unduiește peste dealuri întunecate la amurg. ${ACROSS}` },
+    'border-gloam': { name: 'Ramă „Amurg”', blurb: `O coroană violet de amurg care pâlpâie în jurul pozei tale, ${ON_BOARDS}` },
+    'icon-fox': { name: 'Pictogramă „Vulpe”', blurb: `O vulpe șireată ${ICON}` },
+    'icon-owl': { name: 'Pictogramă „Bufniță”', blurb: `O bufniță de noapte care mai clipește din când în când, ${ICON}` },
+    'icon-skull': { name: 'Pictogramă „Craniu”', blurb: `Un craniu cu ochi care strălucesc blând, ${ICON}` },
+    'icon-rocket': { name: 'Pictogramă „Rachetă”', blurb: `O rachetă cu o flacără care pâlpâie, ${ICON}` },
+    'icon-crown': { name: 'Pictogramă „Coroană”', blurb: `O coroană cu pietre prețioase care prinde lumina, ${ICON}` },
+    'icon-bolt': { name: 'Pictogramă „Fulger”', blurb: `Un fulger care trosnește, ${ICON}` },
+    'sigilfall-crownforged-wyrm': { name: 'Crownforged Wyrm', blurb: `Un dragon din Sigilfall în armură neagră cu margini aurii, sub o coroană de coarne, cu aripi brăzdate de lumină topită și coada în flăcări. ${MOUNT}` },
+    'sigilfall-galecrest-drake': { name: 'Galecrest Drake', blurb: `Un dragon din Sigilfall albastru ca furtuna, cu o creastă de coarne, țepi de cristal pe spinare și fulgere în aripi. ${MOUNT}` },
+    'sigilfall-runetusk-boar': { name: 'Runetusk War-Boar', blurb: `Un mistreț de război din Sigilfall în armură cu țepi și coif cu coarne, cu colți încinși cu rune care strălucesc. ${MOUNT}` },
+    'sigilfall-cinderhorn-hart': { name: 'Cinderhorn Hart', blurb: `Un cerb din Sigilfall cenușiu ca tăciunele, cu coarne de flacără vie și rune de jar pe flancuri. ${MOUNT}` },
+    'sigilfall-moonglass-hart': { name: 'Moonglass Hart', blurb: `Un cerb alb din Sigilfall cu coarne de cristal luminos, armură tivită cu lumină, rune palide și lumină de stele în jurul copitelor. ${MOUNT}` },
+    'sigilfall-gloamwing-drake': { name: 'Gloamwing Drake', blurb: `Un dragon din Sigilfall în culoarea ultimei lumini, în armură violet de amurg sub o coroană de coarne, cu aripi brăzdate de foc violet pal. ${MOUNT}` },
+    'sigilfall-crownforged-helm': { name: 'Crownforged Helm', blurb: `Un coif din Sigilfall din oțel negru sub o coroană de aur, cu coarne de dragon și o vizieră în flăcări. ${LOOK}` },
+    'sigilfall-crownforged-plate': { name: 'Crownforged Plate', blurb: `O armură din Sigilfall din plăci negre cusute cu aur topit, cu epoleți ca aripi de dragon și o mantie stacojie. ${LOOK}` },
+    'sigilfall-celestine-crown': { name: 'Celestine Crown', blurb: `O diademă de argint din Sigilfall cu o semilună, sub un cerc de stele care se rotește. ${LOOK}` },
+    'sigilfall-celestine-mantle': { name: 'Celestine Mantle', blurb: `O robă albă și argintie din Sigilfall cu epoleți în formă de semilună și o mantie de noapte plină de stele. ${LOOK}` },
+    'sigilfall-gloamquill-cowl': { name: 'Gloamquill Cowl', blurb: `O glugă întunecată din Sigilfall cu o mască cu cioc, o creastă de pene și doi ochi care strălucesc. ${LOOK}` },
+    'sigilfall-gloamquill-mantle': { name: 'Gloamquill Mantle', blurb: `Piele din Sigilfall sub o mantie de pene negre, cu o pelerină lungă de pene în spate. ${LOOK}` },
+    'sigilfall-duskborn-helm': { name: 'Duskborn Helm', blurb: `Un coif din Sigilfall din oțel negru sub o coroană de amurg, cu coarne și o vizieră care arde violet. ${LOOK}` },
+    'sigilfall-duskborn-plate': { name: 'Duskborn Plate', blurb: `O armură din Sigilfall din plăci negre cusute cu lumină violet, cu epoleți ca aripi de dragon și o mantie în culoarea amurgului. ${LOOK}` },
+    'sigilfall-gloamknight': {
+      name: 'Pachetul Gloamknight',
+      blurb: 'A opta clasă din Sigilfall, Gloamknight, pentru contul tău, cu coiful și armura Duskborn, Gloamwing Drake, rama și bannerul „Amurg” și încă două locuri pentru eroi.',
+    },
+    'look-names': { name: 'Efecte pentru nume', blurb: 'Un strop de culoare și strălucire pentru porecla ta.' },
+  },
+};
+
+export default ro;

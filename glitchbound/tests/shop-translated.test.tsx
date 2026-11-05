@@ -1,14 +1,15 @@
 /**
- * The shop, its terms of sale, the terms and privacy in Bulgarian: every built-in item has its words, the pages read in
- * Bulgarian with the same sections as in English, and a buyer who ticks the statements in Bulgarian gets them back, in
- * Bulgarian, in the confirmation email.
+ * The shop, its terms of sale, the terms and privacy in the reader's language (here Bulgarian): the pages read in it with
+ * the same sections as in English, an item an admin changed reads as they wrote it, and a buyer who ticks the statements
+ * in it gets them back, in it, in the confirmation email. tests/shop-languages.test.tsx checks every language's words.
  */
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NO_MONEY } from '../src/catalog/settings';
-import { AGREE_AGE_BG, AGREE_NOW_BG, PRODUCTS, priceTextBg, productIn, SALE_TERMS_VERSION } from '../src/catalog/shop';
-import { ITEMS_BG, itemBg } from '../src/catalog/shopBg';
+import { PRODUCTS, productIn, SALE_TERMS_VERSION } from '../src/catalog/shop';
 import { setLang } from '../src/i18n';
+import { priceIn } from '../src/i18n/shopFormat';
+import bgShop from '../src/i18n/shop/bg';
 import type { Me } from '../src/platform/apiTypes';
 import { applyStripeEvent, startCheckout } from '../server/shop';
 import type { Env } from '../server/http';
@@ -33,23 +34,19 @@ async function inBulgarian(money = OPEN): Promise<void> {
 /** The h2 headings a page shows, in order. */
 const headings = (): string[] => screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent ?? '');
 
-describe('the items in Bulgarian', () => {
-  it('has a name and a description for every built-in item, and nothing else', () => {
-    expect(Object.keys(ITEMS_BG).sort()).toEqual(PRODUCTS.map((p) => p.id).sort());
-    for (const p of PRODUCTS) expect(ITEMS_BG[p.id]!.blurb, p.id).not.toBe(p.blurb);
-  });
+const ITEMS_BG = bgShop.items;
+const AGREE_NOW_BG = bgShop.shop.agreeNow;
+const AGREE_AGE_BG = bgShop.shop.agreeAge;
+/** A price as Bulgarian writes it ("0,50 €", with a no-break space). */
+const bgPrice = (cents: number): string => priceIn('bg', cents);
+/** The same, as Testing Library reads the page (every space a plain one). */
+const seen = (text: string): string => text.replace(/\s/g, ' ');
 
-  it('keeps what an admin wrote: an item they made, or whose English they changed, reads as they wrote it', () => {
-    const aurora = productIn(PRODUCTS, 'banner-aurora')!;
-    expect(itemBg(aurora)).toEqual(ITEMS_BG['banner-aurora']);
-    expect(itemBg({ ...aurora, name: 'Aurora (spring sale)' }).name).toBe('Aurora (spring sale)');
-    expect(itemBg({ ...aurora, name: 'Aurora (spring sale)' }).blurb).toBe(ITEMS_BG['banner-aurora']!.blurb);
-    expect(itemBg({ id: 'look-new', name: 'New', blurb: 'Made by an admin.' })).toEqual({ name: 'New', blurb: 'Made by an admin.' });
-  });
-
-  it('writes prices the Bulgarian way', () => {
-    expect(priceTextBg(50)).toBe('0,50 €');
-    expect(priceTextBg(999)).toBe('9,99 €');
+describe('prices', () => {
+  it('are written the way each language writes them, and English keeps €1.99', () => {
+    expect(priceIn('en', 199)).toBe('€1.99');
+    expect(bgPrice(50).replace(/\s/g, ' ')).toBe('0,50 €');
+    expect(priceIn('de', 999).replace(/\s/g, ' ')).toBe('9,99 €');
   });
 });
 
@@ -58,16 +55,27 @@ describe('the pages in Bulgarian', () => {
     await inBulgarian();
     const { ShopPage } = await import('../src/pages/ShopPage');
     render(<ShopPage />);
-    expect(screen.getByRole('heading', { name: 'Магазин', level: 1 })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Магазин', level: 1 })).toBeTruthy();
     for (const name of ['Рамки', 'Банери', 'Икони за профила']) expect(screen.getByRole('heading', { name, level: 2 })).toBeTruthy();
     const aurora = screen.getByRole('heading', { name: 'Банер „Северно сияние“' }).closest('section')!;
     expect(within(aurora).getByText(ITEMS_BG['banner-aurora']!.blurb)).toBeTruthy();
-    expect(within(aurora).getByText('0,50 €')).toBeTruthy();
+    expect(within(aurora).getByText(seen(bgPrice(50)))).toBeTruthy();
     expect(within(aurora).getByRole('button', { name: 'Първо влез' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'условията за продажба' }).getAttribute('href')).toBe('/terms/sale');
     // Sigilfall's own names stay as the game has them
     expect(screen.getByRole('heading', { name: 'Galecrest Drake' })).toBeTruthy();
     expect(screen.queryByText('Get Aurora banner')).toBeNull();
+  });
+
+  it('an item an admin renamed reads as they wrote it; its description, unchanged, is translated', async () => {
+    await inBulgarian();
+    const aurora = productIn(PRODUCTS, 'banner-aurora')!;
+    const { setCatalog } = await import('../src/platform/liveCatalog');
+    setCatalog({ settings: {}, picks: {}, notice: null, money: OPEN, shopItems: PRODUCTS.map((p) => (p.id === aurora.id ? { ...p, name: 'Aurora (spring)' } : p)) });
+    const { ShopPage } = await import('../src/pages/ShopPage');
+    render(<ShopPage />);
+    const panel = (await screen.findByRole('heading', { name: 'Aurora (spring)' })).closest('section')!;
+    expect(within(panel).getByText(ITEMS_BG['banner-aurora']!.blurb)).toBeTruthy();
   });
 
   it('the checkout: the two statements in Bulgarian, and the language goes with the purchase', async () => {
@@ -89,9 +97,9 @@ describe('the pages in Bulgarian', () => {
     vi.stubGlobal('location', { ...window.location, assign, search: '' });
     const { ShopPage } = await import('../src/pages/ShopPage');
     render(<ShopPage />);
-    const panel = screen.getByRole('heading', { name: 'Банер „Северно сияние“' }).closest('section')!;
+    const panel = (await screen.findByRole('heading', { name: 'Банер „Северно сияние“' })).closest('section')!;
     fireEvent.click(within(panel).getByRole('button', { name: 'Вземи Банер „Северно сияние“' }));
-    const checkout = within(panel).getByRole('group', { name: 'Банер „Северно сияние“: 0,50 €' });
+    const checkout = within(panel).getByRole('group', { name: (n) => seen(n) === seen(`Банер „Северно сияние“: ${bgPrice(50)}`) });
     fireEvent.click(within(checkout).getByLabelText(AGREE_NOW_BG));
     fireEvent.click(within(checkout).getByLabelText(AGREE_AGE_BG));
     await act(async () => {
@@ -112,11 +120,12 @@ describe('the pages in Bulgarian', () => {
       await setLang('en');
       setCatalog({ settings: {}, picks: {}, notice: null, money: OPEN });
       render(<Page />);
+      await screen.findAllByRole('heading', { level: 1 });
       const english = headings();
       cleanup();
       await inBulgarian();
       render(<Page />);
-      expect(screen.getByRole('heading', { name: page.title, level: 1 })).toBeTruthy();
+      expect(await screen.findByRole('heading', { name: page.title, level: 1 })).toBeTruthy();
       expect(headings(), page.title).toHaveLength(english.length);
       expect(headings()).toContain(page.has);
       // nothing left in English but the names (GlitchBound, Stripe, Sigilfall and its classes, the address)
@@ -149,7 +158,7 @@ describe('a purchase in Bulgarian', () => {
     await applyStripeEvent(e, { type: 'checkout.session.completed', data: { object: { id: 'cs_1', client_reference_id: id, payment_status: 'paid', payment_intent: 'pi_1', amount_total: 50, currency: 'eur' } } }, 2000);
     const mail = JSON.parse(calls.find((c) => c.url.includes('resend.com'))!.body)[0] as { subject: string; text: string };
     expect(mail.subject).toBe('Твоята покупка в GlitchBound: Банер „Северно сияние“');
-    expect(mail.text).toContain('0,50 €, с ДДС');
+    expect(mail.text).toContain(`${bgPrice(50)}, с ДДС`);
     expect(mail.text).toContain(`„${AGREE_NOW_BG}“`);
   });
 

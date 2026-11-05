@@ -1,5 +1,7 @@
-import { AGREE_NOW, AGREE_NOW_BG, offered, PRODUCTS, productIn, priceText, priceTextBg, sanitizeProducts, SALE_TERMS_VERSION, type Product, withIncluded } from '../src/catalog/shop';
-import { itemBg } from '../src/catalog/shopBg';
+import { offered, PRODUCTS, productIn, sanitizeProducts, SALE_TERMS_VERSION, type Product, withIncluded } from '../src/catalog/shop';
+import type { Lang } from '../src/i18n';
+import { SHOP_TEXTS } from '../src/i18n/shopAll';
+import { fill, priceIn } from '../src/i18n/shopFormat';
 import { sendBatch } from './email';
 import { randomToken, type Env } from './http';
 
@@ -102,11 +104,18 @@ async function stripePriceFor(env: Env, p: Product): Promise<string | null> {
   return price.id;
 }
 
-/** The terms a purchase records: the version agreed to, and " bg" when the buyer read them, and ticked the statements, in Bulgarian. */
-export const termsOf = (lang: 'en' | 'bg'): string => (lang === 'bg' ? `${SALE_TERMS_VERSION} bg` : SALE_TERMS_VERSION);
+/** A language the site offers, from a request (anything else is English). */
+export const langOf = (v: unknown): Lang => (typeof v === 'string' && v in SHOP_TEXTS ? (v as Lang) : 'en');
+
+/** The terms a purchase records: the version agreed to, and the language the buyer read them and ticked the statements in ("2026-11-04 de"). */
+export const termsOf = (lang: Lang): string => (lang === 'en' ? SALE_TERMS_VERSION : `${SALE_TERMS_VERSION} ${lang}`);
+const langOfTerms = (terms: string | null): Lang => langOf(terms?.split(' ')[1]);
+
+/** Stripe's checkout page in the buyer's language, where Stripe has it (it has no Ukrainian: that reader gets Stripe's own choice). */
+const STRIPE_LOCALES = new Set(['bg', 'de', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'ro', 'tr']);
 
 /** Opens a Stripe Checkout for a one-time payment and records the buyer's agreement. Returns where to send them. */
-export async function startCheckout(env: Env, user: { id: string; email: string }, p: Product, origin: string, now = Date.now(), lang: 'en' | 'bg' = 'en'): Promise<string | null> {
+export async function startCheckout(env: Env, user: { id: string; email: string }, p: Product, origin: string, now = Date.now(), lang: Lang = 'en'): Promise<string | null> {
   const price = await stripePriceFor(env, p);
   if (!price) return null;
   const id = randomToken(16);
@@ -123,7 +132,7 @@ export async function startCheckout(env: Env, user: { id: string; email: string 
       'line_items[0][quantity]': '1',
       client_reference_id: id,
       customer_email: user.email,
-      locale: lang === 'bg' ? 'bg' : 'auto',
+      locale: STRIPE_LOCALES.has(lang) ? lang : 'auto',
       success_url: `${origin}/shop?bought=${encodeURIComponent(p.id)}`,
       cancel_url: `${origin}/shop`,
     }),
@@ -181,24 +190,19 @@ async function confirmByEmail(env: Env, id: string, now: number): Promise<void> 
   const p = row ? productIn(await loadItems(env), row.product) : undefined;
   if (!row || !p) return;
   const day = new Date(now).toISOString().slice(0, 10);
-  const bg = !!row.terms?.endsWith(' bg');
-  const name = bg ? itemBg(p).name : p.name;
-  const lines = bg
-    ? [
-        `Благодарим! ${name} (${priceTextBg(row.amount ?? p.cents)}, с ДДС) вече е в акаунта ти в GlitchBound.`,
-        `Разписката ти идва отделно от нашия доставчик на плащания Stripe, чрез Link.`,
-        `При покупката потвърди: „${AGREE_NOW_BG}“`,
-        `Дата: ${day}. Условия за продажба: https://glitchboundstudio.com/terms/sale`,
-        `Ако нещо не работи, отговори на този имейл или отвори тикет на https://glitchboundstudio.com/contact.`,
-      ]
-    : [
-        `Thank you. ${p.name} (${priceText(row.amount ?? p.cents)}, VAT included) is on your GlitchBound account now.`,
-        `Your receipt comes separately from our payment provider, Stripe, through Link.`,
-        `When you bought it you confirmed: "${AGREE_NOW}"`,
-        `Date: ${day}. Terms of sale: https://glitchboundstudio.com/terms/sale`,
-        `If something isn't working, reply to this email or open a ticket at https://glitchboundstudio.com/contact.`,
-      ];
-  const subject = bg ? `Твоята покупка в GlitchBound: ${name}` : `Your GlitchBound purchase: ${p.name}`;
+  const lang = langOfTerms(row.terms);
+  const t = SHOP_TEXTS[lang] ?? SHOP_TEXTS.en!;
+  // (an item an admin renamed reads as they wrote it)
+  const code = PRODUCTS.find((x) => x.id === p.id);
+  const name = t.items[p.id] && code?.name === p.name ? t.items[p.id]!.name : p.name;
+  const lines = [
+    fill(t.email.thanks, { name, price: priceIn(lang, row.amount ?? p.cents) }),
+    t.email.receipt,
+    fill(t.email.confirmed, { statement: t.shop.agreeNow }),
+    fill(t.email.date, { date: day, url: 'https://glitchboundstudio.com/terms/sale' }),
+    fill(t.email.help, { url: 'https://glitchboundstudio.com/contact' }),
+  ];
+  const subject = fill(t.email.subject, { name });
   await sendBatch(env, [{ to: row.email, subject, text: lines.join('\n\n'), html: lines.map((l) => `<p>${l}</p>`).join('') }]).catch(() => 0);
 }
 

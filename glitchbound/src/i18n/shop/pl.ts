@@ -1,0 +1,93 @@
+import type { ShopText } from '../shopTypes';
+
+/** Polski (src/i18n/shopTypes.ts has the rules; English in ./en.ts is the source). */
+const MOUNT = 'Dla każdego bohatera na twoim koncie. Tylko wygląd: porusza się w tym samym tempie co każdy wierzchowiec.';
+const LOOK = 'Może go nosić każda klasa, na dowolnym wyposażeniu, z Garderoby (Wardrobe). Tylko wygląd: twoje statystyki zależą od tego, co założysz.';
+const ON_BOARDS = 'na twoim profilu i w rankingach.';
+const ACROSS = 'Na całym twoim profilu i za twoją nazwą w rankingach.';
+const ICON = 'zamiast twojego zdjęcia: na profilu, w nagłówku i w rankingach.';
+
+const pl: ShopText = {
+  shop: {
+    title: 'Sklep',
+    meta: 'Opcjonalne jednorazowe dodatki do GlitchBound. Każda gra pozostaje darmowa.',
+    lead: 'Każda gra pozostaje darmowa. To opcjonalne dodatki, każdy płatny raz: bez subskrypcji, bez waluty w grze i bez losowych skrzynek. Większość zmienia tylko wygląd; pakiet Gloamknight odblokowuje nową klasę w Sigilfall.',
+    adminTest: 'Test administratora: sklep jest zamknięty dla graczy, a ty możesz tu przetestować zakup.',
+    closed: 'Sklep nie jest jeszcze otwarty, więc na razie nic nie można kupić.',
+    thanks: 'Dziękujemy! Zakup trafi na twoje konto, gdy tylko płatność zostanie potwierdzona, zwykle w ciągu minuty.',
+    vat: 'z VAT, płatne raz',
+    yours: 'To jest twoje.',
+    wear: '<wear>Załóż to na profilu</wear>.',
+    inWardrobe: 'Jest w Garderobie (Wardrobe) każdego bohatera na twoim koncie: <open>otwórz Sigilfall</open>.',
+    notYet: 'Jeszcze niedostępne w sprzedaży.',
+    get: 'Kup: {name}',
+    signInFirst: 'Najpierw się zaloguj',
+    signInWhy: 'Zaloguj się, żeby zakup został na twoim koncie.',
+    kinds: { border: 'Ramki', banner: 'Banery', icon: 'Ikony profilu' },
+    sigilNote: 'Wierzchowce i stroje z Garderoby dla każdego bohatera na twoim koncie. Zmieniają tylko wygląd bohatera: każdy wierzchowiec porusza się w tym samym tempie, a twoje statystyki zawsze zależą od tego, co założysz.',
+    planned: 'Planowane',
+    terms: 'Zobacz <terms>warunki sprzedaży</terms>, żeby poznać swoje prawa, zasady zwrotów i to, od kogo kupujesz.',
+    inPack: 'W pakiecie',
+    packClass: 'Gloamknight',
+    packClassWhat: 'Ósma klasa w Sigilfall i dwa dodatkowe miejsca na bohaterów',
+    checkoutNote: 'Z VAT. Jedna płatność, bez subskrypcji. Płatność przyjmuje nasz operator płatności Stripe, który wyśle ci potwierdzenie.',
+    already: 'To już jest twoje.',
+    failed: 'Nie udało się otworzyć płatności. Nic nie zostało pobrane. Spróbuj ponownie.',
+    pay: 'Przejdź do płatności',
+    cancel: 'Anuluj',
+    agreeNow: 'Chcę otrzymać to od razu i rozumiem, że gdy to otrzymam, tracę 14-dniowe prawo odstąpienia od umowy.',
+    agreeAge: 'Mam co najmniej 18 lat albo rodzic lub opiekun zgodził się na ten zakup.',
+  },
+  email: {
+    subject: 'Twój zakup w GlitchBound: {name}',
+    thanks: 'Dziękujemy! {name} ({price}, z VAT) jest już na twoim koncie GlitchBound.',
+    receipt: 'Potwierdzenie płatności przyjdzie osobno od naszego operatora płatności Stripe, przez Link.',
+    confirmed: 'Przy zakupie potwierdziłeś/potwierdziłaś: „{statement}”',
+    date: 'Data: {date}. Warunki sprzedaży: {url}',
+    help: 'Jeśli coś nie działa, odpowiedz na tego e-maila albo otwórz zgłoszenie na {url}.',
+  },
+  items: {
+    'ad-free': { name: 'Bez reklam', blurb: 'Żadnych banerów reklamowych na twoim koncie, na każdym urządzeniu, na którym się zalogujesz, a dodatkowa próba w codziennym wyzwaniu nie wymaga oglądania reklamy. Jedna płatność, bez subskrypcji.' },
+    'border-neon-halo': { name: 'Ramka „Neonowa aureola”', blurb: `Pierścień błękitnego, fioletowego i różowego światła, który powoli obraca się wokół twojego zdjęcia, ${ON_BOARDS}` },
+    'border-solar-flare': { name: 'Ramka „Rozbłysk słoneczny”', blurb: `Płonący złoto-pomarańczowy pierścień z migoczącą koroną wokół twojego zdjęcia ${ON_BOARDS}` },
+    'border-glitch': { name: 'Ramka „Glitch”', blurb: `Pierścień, który rozszczepia się na błękit i róż i co jakiś czas wyskakuje z linii, wokół twojego zdjęcia ${ON_BOARDS}` },
+    'border-frost': { name: 'Ramka „Szron”', blurb: `Pierścień z lodu z kryształowymi odłamkami i unoszącymi się iskierkami wokół twojego zdjęcia ${ON_BOARDS}` },
+    'border-orbit': { name: 'Ramka „Orbita”', blurb: `Cienki podwójny pierścień z dwoma małymi księżycami krążącymi wokół twojego zdjęcia, ${ON_BOARDS}` },
+    'border-crown': { name: 'Ramka „Korona”', blurb: `Złoty pierścień wysadzany klejnotami, zwieńczony małą koroną, wokół twojego zdjęcia ${ON_BOARDS}` },
+    'banner-sunset-grid': { name: 'Baner „Siatka o zachodzie”', blurb: `Pasiaste słońce zachodzi za świecącą siatką, która toczy się w twoją stronę. ${ACROSS}` },
+    'banner-aurora': { name: 'Baner „Zorza polarna”', blurb: `Zorza polarna faluje nad ciemnymi górami pod rozgwieżdżonym niebem. ${ACROSS}` },
+    'banner-nebula': { name: 'Baner „Mgławica”', blurb: `Dryfujące fioletowe obłoki, migoczące gwiazdy, planeta z pierścieniami i co jakiś czas spadająca gwiazda. ${ACROSS}` },
+    'banner-neon-city': { name: 'Baner „Neonowe miasto”', blurb: `Panorama miasta nocą, z oświetlonymi oknami i światłami sunącymi w dole. ${ACROSS}` },
+    'banner-deep-sea': { name: 'Baner „Głębia morza”', blurb: `Promienie światła w głębokiej wodzie, unoszące się bąbelki i falujące wodorosty. ${ACROSS}` },
+    'banner-ember-field': { name: 'Baner „Pole żaru”', blurb: `Iskry unoszą się z rozżarzonej ziemi w noc. ${ACROSS}` },
+    'banner-gloam': { name: 'Baner „Zmierzch”', blurb: `Różowe i fioletowe światło faluje nad ciemnymi wzgórzami o zmierzchu. ${ACROSS}` },
+    'border-gloam': { name: 'Ramka „Zmierzch”', blurb: `Korona zmierzchowego fioletu, która migocze wokół twojego zdjęcia, ${ON_BOARDS}` },
+    'icon-fox': { name: 'Ikona „Lis”', blurb: `Sprytny lis ${ICON}` },
+    'icon-owl': { name: 'Ikona „Sowa”', blurb: `Nocna sowa, która co jakiś czas mruga, ${ICON}` },
+    'icon-skull': { name: 'Ikona „Czaszka”', blurb: `Czaszka z delikatnie świecącymi oczami ${ICON}` },
+    'icon-rocket': { name: 'Ikona „Rakieta”', blurb: `Rakieta z migoczącym płomieniem ${ICON}` },
+    'icon-crown': { name: 'Ikona „Korona”', blurb: `Korona wysadzana klejnotami, która łapie światło, ${ICON}` },
+    'icon-bolt': { name: 'Ikona „Błyskawica”', blurb: `Trzaskająca błyskawica ${ICON}` },
+    'sigilfall-crownforged-wyrm': { name: 'Crownforged Wyrm', blurb: `Smok z Sigilfall w czarnej zbroi ze złotymi krawędziami, pod koroną z rogów, ze skrzydłami przeciętymi żyłami roztopionego światła i płonącym ogonem. ${MOUNT}` },
+    'sigilfall-galecrest-drake': { name: 'Galecrest Drake', blurb: `Burzowo-niebieski smok z Sigilfall z grzebieniem z rogów, kryształowymi kolcami na grzbiecie i błyskawicami w skrzydłach. ${MOUNT}` },
+    'sigilfall-runetusk-boar': { name: 'Runetusk War-Boar', blurb: `Bojowy dzik z Sigilfall w kolczastej zbroi i rogatym hełmie, z kłami opasanymi świecącymi runami. ${MOUNT}` },
+    'sigilfall-cinderhorn-hart': { name: 'Cinderhorn Hart', blurb: `Grafitowy jeleń z Sigilfall, którego poroże jest żywym płomieniem, z runami z żaru na bokach. ${MOUNT}` },
+    'sigilfall-moonglass-hart': { name: 'Moonglass Hart', blurb: `Biały jeleń z Sigilfall z porożem ze świecącego kryształu, zbroją obrzeżoną światłem, bladymi runami i blaskiem gwiazd wokół kopyt. ${MOUNT}` },
+    'sigilfall-gloamwing-drake': { name: 'Gloamwing Drake', blurb: `Smok z Sigilfall w kolorze ostatniego światła, w zmierzchowo-fioletowej zbroi pod koroną z rogów, ze skrzydłami przeciętymi żyłami bladofioletowego ognia. ${MOUNT}` },
+    'sigilfall-crownforged-helm': { name: 'Crownforged Helm', blurb: `Hełm z Sigilfall z czarnej stali pod złotą koroną, ze smoczymi rogami i płonącą przyłbicą. ${LOOK}` },
+    'sigilfall-crownforged-plate': { name: 'Crownforged Plate', blurb: `Zbroja z Sigilfall z czarnych płyt łączonych roztopionym złotem, z naramiennikami jak smocze skrzydła i szkarłatną peleryną. ${LOOK}` },
+    'sigilfall-celestine-crown': { name: 'Celestine Crown', blurb: `Srebrny diadem z Sigilfall z sierpem księżyca, pod obracającym się kręgiem gwiazd. ${LOOK}` },
+    'sigilfall-celestine-mantle': { name: 'Celestine Mantle', blurb: `Biało-srebrna szata z Sigilfall z naramiennikami w kształcie półksiężyców i peleryną z nocy pełnej gwiazd. ${LOOK}` },
+    'sigilfall-gloamquill-cowl': { name: 'Gloamquill Cowl', blurb: `Ciemny kaptur z Sigilfall z maską z dziobem, grzebieniem z piór i dwojgiem świecących oczu. ${LOOK}` },
+    'sigilfall-gloamquill-mantle': { name: 'Gloamquill Mantle', blurb: `Skórzany strój z Sigilfall pod płaszczem z czarnych piór, z długą peleryną z piór z tyłu. ${LOOK}` },
+    'sigilfall-duskborn-helm': { name: 'Duskborn Helm', blurb: `Hełm z Sigilfall z czarnej stali pod koroną zmierzchu, z rogami i przyłbicą płonącą fioletem. ${LOOK}` },
+    'sigilfall-duskborn-plate': { name: 'Duskborn Plate', blurb: `Zbroja z Sigilfall z czarnych płyt łączonych fioletowym światłem, z naramiennikami jak smocze skrzydła i peleryną w kolorze zmierzchu. ${LOOK}` },
+    'sigilfall-gloamknight': {
+      name: 'Pakiet Gloamknight',
+      blurb: 'Ósma klasa w Sigilfall, Gloamknight, dla twojego konta, razem z hełmem i zbroją Duskborn, Gloamwing Drake, ramką i banerem „Zmierzch” oraz dwoma dodatkowymi miejscami na bohaterów.',
+    },
+    'look-names': { name: 'Efekty nazwy', blurb: 'Odrobina koloru i blasku dla twojego pseudonimu.' },
+  },
+};
+
+export default pl;

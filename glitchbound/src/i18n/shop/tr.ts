@@ -1,0 +1,93 @@
+import type { ShopText } from '../shopTypes';
+
+/** Türkçe (src/i18n/shopTypes.ts has the rules; English in ./en.ts is the source). */
+const MOUNT = 'Hesabındaki her kahraman için. Yalnızca görünüm: her binek gibi aynı hızda gider.';
+const LOOK = 'Her sınıf, her teçhizatın üzerine, Gardırop’tan (Wardrobe) giyebilir. Yalnızca görünüm: istatistiklerin kuşandığın eşyalardan gelir.';
+const ON_BOARDS = 'profilinde ve sıralamalarda.';
+const ACROSS = 'Profilinin tamamında ve sıralamalarda adının arkasında.';
+const ICON = 'fotoğrafının yerine: profilinde, üst çubukta ve sıralamalarda.';
+
+const tr: ShopText = {
+  shop: {
+    title: 'Mağaza',
+    meta: 'GlitchBound için isteğe bağlı, tek seferlik ekstralar. Tüm oyunlar ücretsiz kalır.',
+    lead: 'Tüm oyunlar ücretsiz kalır. Bunlar isteğe bağlı ekstralardır, her biri bir kez ödenir: abonelik yok, oyun parası yok, rastgele kutu yok. Çoğu yalnızca görünümü değiştirir; Gloamknight Paketi Sigilfall’da oynanacak yeni bir sınıfın kilidini açar.',
+    adminTest: 'Yönetici testi: mağaza oyunculara kapalı, burada bir satın almayı test edebilirsin.',
+    closed: 'Mağaza henüz açık değil, bu yüzden şu an hiçbir şey satın alınamaz.',
+    thanks: 'Teşekkürler! Satın aldığın şey, ödeme onaylanır onaylanmaz hesabına geçer; genellikle bir dakika içinde.',
+    vat: 'KDV dahil, bir kez ödenir',
+    yours: 'Bu senin.',
+    wear: '<wear>Profilinde kullan</wear>.',
+    inWardrobe: 'Hesabındaki her kahramanın Gardırop’unda (Wardrobe) duruyor: <open>Sigilfall’u aç</open>.',
+    notYet: 'Henüz satışta değil.',
+    get: '{name} satın al',
+    signInFirst: 'Önce giriş yap',
+    signInWhy: 'Satın aldığın şey hesabında kalsın diye giriş yap.',
+    kinds: { border: 'Çerçeveler', banner: 'Afişler', icon: 'Profil simgeleri' },
+    sigilNote: 'Hesabındaki her kahraman için binekler ve Gardırop görünümleri. Yalnızca kahramanının görünüşünü değiştirirler: her binek aynı hızda gider ve istatistiklerin her zaman kuşandığın eşyalardan gelir.',
+    planned: 'Planlanan',
+    terms: 'Hakların, iadeler ve kimden satın aldığın için <terms>satış koşullarına</terms> bak.',
+    inPack: 'Pakette',
+    packClass: 'Gloamknight',
+    packClassWhat: 'Sigilfall’un sekizinci sınıfı ve iki ek kahraman yuvası',
+    checkoutNote: 'KDV dahil. Tek ödeme, abonelik yok. Ödemeyi ödeme sağlayıcımız Stripe alır ve makbuzunu gönderir.',
+    already: 'Bu zaten senin.',
+    failed: 'Ödeme sayfası açılamadı. Hiçbir ücret alınmadı. Lütfen tekrar dene.',
+    pay: 'Ödemeye geç',
+    cancel: 'Vazgeç',
+    agreeNow: 'Bunu hemen istiyorum ve bana teslim edildiğinde 14 günlük cayma hakkımı kaybettiğimi anlıyorum.',
+    agreeAge: '18 yaşında veya daha büyüğüm ya da bir ebeveyn veya vasi bu satın almayı onayladı.',
+  },
+  email: {
+    subject: 'GlitchBound satın alman: {name}',
+    thanks: 'Teşekkürler! {name} ({price}, KDV dahil) artık GlitchBound hesabında.',
+    receipt: 'Makbuzun ödeme sağlayıcımız Stripe’tan, Link aracılığıyla ayrıca gelir.',
+    confirmed: 'Satın alırken şunu onayladın: “{statement}”',
+    date: 'Tarih: {date}. Satış koşulları: {url}',
+    help: 'Bir şey çalışmıyorsa bu e-postayı yanıtla ya da {url} adresinde bir talep aç.',
+  },
+  items: {
+    'ad-free': { name: 'Reklamsız', blurb: 'Hesabında, giriş yaptığın her cihazda reklam afişi yok; günlük meydan okumadaki ek denemen için de reklam izlemen gerekmez. Tek ödeme, abonelik yok.' },
+    'border-neon-halo': { name: 'Neon Hale çerçevesi', blurb: `Fotoğrafının etrafında yavaşça dönen camgöbeği, mor ve pembe bir ışık halkası, ${ON_BOARDS}` },
+    'border-solar-flare': { name: 'Güneş Patlaması çerçevesi', blurb: `Titreyen bir taçla parlayan altın ve turuncu bir halka, fotoğrafının etrafında, ${ON_BOARDS}` },
+    'border-glitch': { name: 'Glitch çerçevesi', blurb: `Camgöbeği ve pembeye ayrılan ve arada bir yerinden kayan bir halka, fotoğrafının etrafında, ${ON_BOARDS}` },
+    'border-frost': { name: 'Ayaz çerçevesi', blurb: `Kristal kırıkları ve uçuşan pırıltılarla buzdan bir halka, fotoğrafının etrafında, ${ON_BOARDS}` },
+    'border-orbit': { name: 'Yörünge çerçevesi', blurb: `Fotoğrafının etrafında dönen iki küçük ayla ince bir çift halka, ${ON_BOARDS}` },
+    'border-crown': { name: 'Taç çerçevesi', blurb: `Mücevherlerle süslü, üstünde küçük bir taç olan altın bir halka, fotoğrafının etrafında, ${ON_BOARDS}` },
+    'banner-sunset-grid': { name: 'Gün Batımı Izgarası afişi', blurb: `Sana doğru yuvarlanan parlak bir ızgaranın ardında batan çizgili bir güneş. ${ACROSS}` },
+    'banner-aurora': { name: 'Kutup Işıkları afişi', blurb: `Yıldızlı bir gökyüzü altında karanlık dağların üzerinde dalgalanan kutup ışıkları. ${ACROSS}` },
+    'banner-nebula': { name: 'Bulutsu afişi', blurb: `Sürüklenen mor bulutlar, göz kırpan yıldızlar, halkalı bir gezegen ve arada bir kayan yıldız. ${ACROSS}` },
+    'banner-neon-city': { name: 'Neon Şehir afişi', blurb: `Pencereleri aydınlık bir gece silueti ve altından süzülen ışıklar. ${ACROSS}` },
+    'banner-deep-sea': { name: 'Derin Deniz afişi', blurb: `Derin suda ışık huzmeleri, yükselen kabarcıklar ve salınan yosunlar. ${ACROSS}` },
+    'banner-ember-field': { name: 'Kor Tarlası afişi', blurb: `Parlayan bir topraktan geceye yükselen kıvılcımlar. ${ACROSS}` },
+    'banner-gloam': { name: 'Alacakaranlık afişi', blurb: `Alacakaranlıkta karanlık tepelerin üzerinde dalgalanan pembe ve mor ışık. ${ACROSS}` },
+    'border-gloam': { name: 'Alacakaranlık çerçevesi', blurb: `Fotoğrafının etrafında titreyen, alacakaranlık morundan bir taç, ${ON_BOARDS}` },
+    'icon-fox': { name: 'Tilki simgesi', blurb: `Kurnaz bir tilki, ${ICON}` },
+    'icon-owl': { name: 'Baykuş simgesi', blurb: `Arada bir göz kırpan bir gece baykuşu, ${ICON}` },
+    'icon-skull': { name: 'Kafatası simgesi', blurb: `Gözleri hafifçe parlayan bir kafatası, ${ICON}` },
+    'icon-rocket': { name: 'Roket simgesi', blurb: `Alevi titreyen bir roket, ${ICON}` },
+    'icon-crown': { name: 'Taç simgesi', blurb: `Işığı yakalayan mücevherli bir taç, ${ICON}` },
+    'icon-bolt': { name: 'Şimşek simgesi', blurb: `Çatırdayan bir şimşek, ${ICON}` },
+    'sigilfall-crownforged-wyrm': { name: 'Crownforged Wyrm', blurb: `Altın kenarlı siyah zırh içinde, boynuzdan bir taç altında, kanatlarında erimiş ışık damarları ve alev alev kuyruğuyla bir Sigilfall ejderhası. ${MOUNT}` },
+    'sigilfall-galecrest-drake': { name: 'Galecrest Drake', blurb: `Boynuzdan bir ibiği, sırtında kristal dikenleri ve kanatlarında şimşekleri olan fırtına mavisi bir Sigilfall ejderhası. ${MOUNT}` },
+    'sigilfall-runetusk-boar': { name: 'Runetusk War-Boar', blurb: `Dikenli zırh ve boynuzlu miğfer giymiş, dişleri parlayan rünlerle sarılı bir Sigilfall savaş domuzu. ${MOUNT}` },
+    'sigilfall-cinderhorn-hart': { name: 'Cinderhorn Hart', blurb: `Boynuzları canlı alevden, böğürlerinde kor rünleri olan kömür grisi bir Sigilfall geyiği. ${MOUNT}` },
+    'sigilfall-moonglass-hart': { name: 'Moonglass Hart', blurb: `Parlayan kristalden boynuzları, ışıkla kenarlanmış zırhı, soluk rünleri ve toynaklarının çevresinde yıldız ışığıyla beyaz bir Sigilfall geyiği. ${MOUNT}` },
+    'sigilfall-gloamwing-drake': { name: 'Gloamwing Drake', blurb: `Son ışığın renginde, boynuzdan bir taç altında alacakaranlık moru zırh giymiş, kanatlarında soluk mor ateş damarları olan bir Sigilfall ejderhası. ${MOUNT}` },
+    'sigilfall-crownforged-helm': { name: 'Crownforged Helm', blurb: `Altın bir taç altında siyah çelikten, ejderha boynuzlu ve yanan siperlikli bir Sigilfall miğferi. ${LOOK}` },
+    'sigilfall-crownforged-plate': { name: 'Crownforged Plate', blurb: `Erimiş altınla dikilmiş siyah plakalardan, ejderha kanadı gibi omuzlukları ve kızıl pelerini olan bir Sigilfall zırhı. ${LOOK}` },
+    'sigilfall-celestine-crown': { name: 'Celestine Crown', blurb: `Dönen bir yıldız halkasının altında hilal ayı olan gümüş bir Sigilfall tacı. ${LOOK}` },
+    'sigilfall-celestine-mantle': { name: 'Celestine Mantle', blurb: `Hilal biçimli omuzlukları ve yıldızlarla dolu bir gece pelerini olan beyaz ve gümüş bir Sigilfall cübbesi. ${LOOK}` },
+    'sigilfall-gloamquill-cowl': { name: 'Gloamquill Cowl', blurb: `Gagalı bir maske, tüyden bir ibik ve parlayan iki gözle koyu bir Sigilfall başlığı. ${LOOK}` },
+    'sigilfall-gloamquill-mantle': { name: 'Gloamquill Mantle', blurb: `Siyah tüylerden bir harmaniye altında Sigilfall deri giysisi ve arkada uzun, tüyden bir pelerin. ${LOOK}` },
+    'sigilfall-duskborn-helm': { name: 'Duskborn Helm', blurb: `Alacakaranlıktan bir taç altında siyah çelikten, boynuzlu ve mor yanan siperlikli bir Sigilfall miğferi. ${LOOK}` },
+    'sigilfall-duskborn-plate': { name: 'Duskborn Plate', blurb: `Mor ışıkla dikilmiş siyah plakalardan, ejderha kanadı gibi omuzlukları ve alacakaranlık renginde pelerini olan bir Sigilfall zırhı. ${LOOK}` },
+    'sigilfall-gloamknight': {
+      name: 'Gloamknight Paketi',
+      blurb: 'Sigilfall’un sekizinci sınıfı Gloamknight hesabın için; Duskborn miğferi ve zırhı, Gloamwing Drake, Alacakaranlık çerçevesi ve afişi ve iki ek kahraman yuvasıyla birlikte.',
+    },
+    'look-names': { name: 'İsim efektleri', blurb: 'Takma adına biraz renk ve parıltı.' },
+  },
+};
+
+export default tr;

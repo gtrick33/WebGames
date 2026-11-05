@@ -3,7 +3,7 @@ import { productIn } from '../../../src/catalog/shop';
 import { loadCatalog } from '../../../server/catalogSettings';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../server/http';
 import { isAdmin, requireUser } from '../../../server/session';
-import { canSell, loadItems, ownedBy, startCheckout } from '../../../server/shop';
+import { canSell, langOf, loadItems, ownedBy, startCheckout } from '../../../server/shop';
 
 /** POST /api/shop/checkout { product, agreeNow: true, agreeAge: true, lang? }: where to pay. Off until the shop is opened. */
 export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
@@ -21,6 +21,6 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (body?.agreeNow !== true || body?.agreeAge !== true) return bad('must_agree');
   if ((await ownedBy(env, user.id)).includes(p.id)) return bad('already_yours', 409);
   // (the language the buyer read the terms and ticked the statements in: the purchase records it)
-  const url = await startCheckout(env, user, p, new URL(request.url).origin, Date.now(), body?.lang === 'bg' ? 'bg' : 'en');
+  const url = await startCheckout(env, user, p, new URL(request.url).origin, Date.now(), langOf(body?.lang));
   return url ? json({ url }) : bad('checkout_failed', 502);
 }

@@ -221,9 +221,6 @@ export const offered = (p: Product, money: { ads: boolean }): boolean => !p.hidd
 
 export const priceText = (cents: number): string => `€${(cents / 100).toFixed(2)}`;
 
-/** The same price as Bulgarian writes it ("1,99 €"). */
-export const priceTextBg = (cents: number): string => `${(cents / 100).toFixed(2).replace('.', ',')} €`;
-
 /** Stripe's lowest card charge in euros, and a sane top. */
 export const MIN_CENTS = 50;
 export const MAX_CENTS = 9999;
@@ -268,7 +265,3 @@ export const SALE_TERMS_VERSION = '2026-11-04';
 /** What the buyer ticks before going to checkout. Kept word for word with the purchase and repeated in the confirmation email. */
 export const AGREE_NOW = 'I want this right away, and I understand that once I have it I lose my 14-day right to withdraw.';
 export const AGREE_AGE = 'I am 18 or over, or a parent or guardian has agreed to this purchase.';
-
-/** The two statements in Bulgarian, for a buyer reading the shop in Bulgarian: kept word for word the same way. */
-export const AGREE_NOW_BG = 'Искам да го получа веднага и разбирам, че след като го получа, губя правото си на отказ в 14-дневен срок.';
-export const AGREE_AGE_BG = 'Навършил/а съм 18 години или родител или настойник е съгласен с тази покупка.';

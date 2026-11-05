@@ -1,0 +1,93 @@
+import type { ShopText } from '../shopTypes';
+
+/** Nederlands (src/i18n/shopTypes.ts has the rules; English in ./en.ts is the source). */
+const MOUNT = 'Voor elke held op je account. Alleen een uiterlijk: hij rijdt in hetzelfde tempo als elk rijdier.';
+const LOOK = 'Elke klasse draagt het, over elke uitrusting, via de Garderobe (Wardrobe). Alleen een uiterlijk: je statistieken komen van wat je uitrust.';
+const ON_BOARDS = 'op je profiel en op de ranglijsten.';
+const ACROSS = 'Over je hele profiel en achter je naam op de ranglijsten.';
+const ICON = 'in plaats van je foto op je profiel, in de kopbalk en op de ranglijsten.';
+
+const nl: ShopText = {
+  shop: {
+    title: 'Winkel',
+    meta: 'Optionele eenmalige extra’s voor GlitchBound. Elk spel blijft gratis te spelen.',
+    lead: 'Elk spel blijft gratis te spelen. Dit zijn optionele extra’s, elk één keer betaald: geen abonnementen, geen spelvaluta en geen willekeurige boxen. De meeste veranderen alleen hoe dingen eruitzien; het Gloamknight-pakket ontgrendelt een nieuwe klasse om in Sigilfall te spelen.',
+    adminTest: 'Beheerderstest: de winkel is gesloten voor spelers, en jij kunt hier een aankoop testen.',
+    closed: 'De winkel is nog niet open, dus je kunt nu nog niets kopen.',
+    thanks: 'Bedankt! Je aankoop staat op je account zodra de betaling bevestigd is, meestal binnen een minuut.',
+    vat: 'inclusief btw, één keer betaald',
+    yours: 'Dit is van jou.',
+    wear: '<wear>Draag het op je profiel</wear>.',
+    inWardrobe: 'Het staat in de Garderobe (Wardrobe) van elke held op je account: <open>open Sigilfall</open>.',
+    notYet: 'Nog niet te koop.',
+    get: '{name} kopen',
+    signInFirst: 'Eerst inloggen',
+    signInWhy: 'Log in, zodat een aankoop bij je account blijft.',
+    kinds: { border: 'Randen', banner: 'Banners', icon: 'Profielicoontjes' },
+    sigilNote: 'Rijdieren en uiterlijken uit de Garderobe voor elke held op je account. Ze veranderen alleen hoe je held eruitziet: elk rijdier gaat even snel, en je statistieken komen altijd van wat je uitrust.',
+    planned: 'Gepland',
+    terms: 'Zie de <terms>verkoopvoorwaarden</terms> voor je rechten, terugbetalingen en bij wie je koopt.',
+    inPack: 'In het pakket',
+    packClass: 'De Gloamknight',
+    packClassWhat: 'De achtste klasse van Sigilfall, en twee extra heldenplaatsen',
+    checkoutNote: 'Inclusief btw. Eén betaling, geen abonnement. Onze betaalprovider Stripe neemt de betaling aan en stuurt je bon.',
+    already: 'Dit is al van jou.',
+    failed: 'De betaalpagina kon niet openen. Er is niets afgeschreven. Probeer het opnieuw.',
+    pay: 'Verder naar betalen',
+    cancel: 'Annuleren',
+    agreeNow: 'Ik wil dit meteen, en ik begrijp dat ik mijn herroepingsrecht van 14 dagen verlies zodra ik het heb.',
+    agreeAge: 'Ik ben 18 jaar of ouder, of een ouder of voogd heeft met deze aankoop ingestemd.',
+  },
+  email: {
+    subject: 'Je aankoop bij GlitchBound: {name}',
+    thanks: 'Bedankt! {name} ({price}, inclusief btw) staat nu op je GlitchBound-account.',
+    receipt: 'Je bon komt apart van onze betaalprovider Stripe, via Link.',
+    confirmed: 'Bij je aankoop bevestigde je: ‘{statement}’',
+    date: 'Datum: {date}. Verkoopvoorwaarden: {url}',
+    help: 'Werkt er iets niet? Beantwoord deze e-mail of open een ticket op {url}.',
+  },
+  items: {
+    'ad-free': { name: 'Zonder advertenties', blurb: 'Geen advertentiebanners op je account, op elk apparaat waarop je inlogt, en voor je extra poging bij een dagelijkse uitdaging hoef je geen advertentie te kijken. Eén betaling, geen abonnement.' },
+    'border-neon-halo': { name: 'Rand ‘Neonhalo’', blurb: `Een ring van cyaan, violet en roze licht die langzaam om je foto draait, ${ON_BOARDS}` },
+    'border-solar-flare': { name: 'Rand ‘Zonnevlam’', blurb: `Een vlammende goud-oranje ring met een flakkerende corona, om je foto ${ON_BOARDS}` },
+    'border-glitch': { name: 'Rand ‘Glitch’', blurb: `Een ring die uiteenvalt in cyaan en roze en af en toe uit de lijn springt, om je foto ${ON_BOARDS}` },
+    'border-frost': { name: 'Rand ‘Vorst’', blurb: `Een ring van ijs met kristalscherven en zwevende glinsteringen, om je foto ${ON_BOARDS}` },
+    'border-orbit': { name: 'Rand ‘Baan’', blurb: `Een fijne dubbele ring met twee maantjes die rond je foto draaien, ${ON_BOARDS}` },
+    'border-crown': { name: 'Rand ‘Kroon’', blurb: `Een gouden ring met juwelen en een kroontje erop, om je foto ${ON_BOARDS}` },
+    'banner-sunset-grid': { name: 'Banner ‘Zonsondergangraster’', blurb: `Een gestreepte zon die zakt achter een gloeiend raster dat naar je toe rolt. ${ACROSS}` },
+    'banner-aurora': { name: 'Banner ‘Noorderlicht’', blurb: `Noorderlicht dat golft boven donkere bergen onder een sterrenhemel. ${ACROSS}` },
+    'banner-nebula': { name: 'Banner ‘Nevel’', blurb: `Drijvende violette wolken, twinkelende sterren, een planeet met ringen en af en toe een vallende ster. ${ACROSS}` },
+    'banner-neon-city': { name: 'Banner ‘Neonstad’', blurb: `Een skyline bij nacht met verlichte ramen en lichtjes die eronder voorbijglijden. ${ACROSS}` },
+    'banner-deep-sea': { name: 'Banner ‘Diepzee’', blurb: `Lichtstralen door diep water, opstijgende belletjes en wuivend wier. ${ACROSS}` },
+    'banner-ember-field': { name: 'Banner ‘Gloedveld’', blurb: `Vonken die van een gloeiende grond de nacht in stijgen. ${ACROSS}` },
+    'banner-gloam': { name: 'Banner ‘Schemer’', blurb: `Roze en violet licht dat golft boven donkere heuvels in de schemering. ${ACROSS}` },
+    'border-gloam': { name: 'Rand ‘Schemer’', blurb: `Een corona van schemerviolet die rond je foto flakkert, ${ON_BOARDS}` },
+    'icon-fox': { name: 'Icoon ‘Vos’', blurb: `Een sluwe vos ${ICON}` },
+    'icon-owl': { name: 'Icoon ‘Uil’', blurb: `Een nachtuil die af en toe knippert, ${ICON}` },
+    'icon-skull': { name: 'Icoon ‘Schedel’', blurb: `Een schedel met zacht gloeiende ogen, ${ICON}` },
+    'icon-rocket': { name: 'Icoon ‘Raket’', blurb: `Een raket met een flakkerende vlam, ${ICON}` },
+    'icon-crown': { name: 'Icoon ‘Kroon’', blurb: `Een kroon met juwelen die het licht vangt, ${ICON}` },
+    'icon-bolt': { name: 'Icoon ‘Bliksem’', blurb: `Een knetterende bliksemschicht, ${ICON}` },
+    'sigilfall-crownforged-wyrm': { name: 'Crownforged Wyrm', blurb: `Een Sigilfall-draak in zwart harnas met gouden randen, onder een kroon van hoorns, met vleugels dooraderd met gesmolten licht en een brandende staart. ${MOUNT}` },
+    'sigilfall-galecrest-drake': { name: 'Galecrest Drake', blurb: `Een stormblauwe Sigilfall-draak met een kam van hoorns, kristallen stekels over zijn rug en bliksem in zijn vleugels. ${MOUNT}` },
+    'sigilfall-runetusk-boar': { name: 'Runetusk War-Boar', blurb: `Een Sigilfall-oorlogszwijn in harnas met punten en een gehoornde helm, met slagtanden vol gloeiende runen. ${MOUNT}` },
+    'sigilfall-cinderhorn-hart': { name: 'Cinderhorn Hart', blurb: `Een houtskoolgrijs Sigilfall-hert met een gewei van levende vlammen en gloeiende runen langs zijn flanken. ${MOUNT}` },
+    'sigilfall-moonglass-hart': { name: 'Moonglass Hart', blurb: `Een wit Sigilfall-hert met een gewei van gloeiend kristal, een harnas met randen van licht, bleke runen en sterrenlicht rond zijn hoeven. ${MOUNT}` },
+    'sigilfall-gloamwing-drake': { name: 'Gloamwing Drake', blurb: `Een Sigilfall-draak in de kleur van het laatste licht, in schemerviolet harnas onder een kroon van hoorns, met vleugels dooraderd met bleekviolet vuur. ${MOUNT}` },
+    'sigilfall-crownforged-helm': { name: 'Crownforged Helm', blurb: `Een Sigilfall-helm van zwart staal onder een gouden kroon, met drakenhoorns en een brandend vizier. ${LOOK}` },
+    'sigilfall-crownforged-plate': { name: 'Crownforged Plate', blurb: `Een Sigilfall-harnas van zwarte platen met naden van gesmolten goud, schouderstukken als drakenvleugels en een karmozijnrode cape. ${LOOK}` },
+    'sigilfall-celestine-crown': { name: 'Celestine Crown', blurb: `Een zilveren Sigilfall-diadeem met een maansikkel, onder een draaiende kring van sterren. ${LOOK}` },
+    'sigilfall-celestine-mantle': { name: 'Celestine Mantle', blurb: `Een wit-zilveren Sigilfall-gewaad met sikkelvormige schouderstukken en een cape van nacht vol sterren. ${LOOK}` },
+    'sigilfall-gloamquill-cowl': { name: 'Gloamquill Cowl', blurb: `Een donkere Sigilfall-kap met een snavelmasker, een kuif van veren en twee gloeiende ogen. ${LOOK}` },
+    'sigilfall-gloamquill-mantle': { name: 'Gloamquill Mantle', blurb: `Sigilfall-leer onder een mantel van zwarte veren, met een lange cape van veren erachter. ${LOOK}` },
+    'sigilfall-duskborn-helm': { name: 'Duskborn Helm', blurb: `Een Sigilfall-helm van zwart staal onder een kroon van schemering, met hoorns en een vizier dat violet brandt. ${LOOK}` },
+    'sigilfall-duskborn-plate': { name: 'Duskborn Plate', blurb: `Een Sigilfall-harnas van zwarte platen met naden van violet licht, schouderstukken als drakenvleugels en een cape in de kleur van de schemering. ${LOOK}` },
+    'sigilfall-gloamknight': {
+      name: 'Gloamknight-pakket',
+      blurb: 'De achtste klasse van Sigilfall, de Gloamknight, voor je account, met de Duskborn-helm en -harnas, de Gloamwing Drake, de rand en banner ‘Schemer’ en twee extra heldenplaatsen.',
+    },
+    'look-names': { name: 'Naameffecten', blurb: 'Een vleugje kleur en glans op je bijnaam.' },
+  },
+};
+
+export default nl;
