@@ -25,7 +25,7 @@ import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, deliverHe
 import { potionPrice } from '../progress/shop';
 import { goldDrop, itemName, makeItem, rollLoot, rollRarity, salvageValue, type LootSource } from '../progress/items';
 import type { Settings } from '../progress/save';
-import { learnLooks, riddenMount, shopMountsFor } from '../progress/wardrobe';
+import { learnLooks, riddenMount, ridingLocked, ridingOpen, shopMountsFor } from '../progress/wardrobe';
 import { addParagonXp, paragonXp } from '../progress/paragon';
 import { deathSound } from '../data/voices';
 import { separate, updateEnemy, updatePuppet } from './ai';
@@ -2472,6 +2472,7 @@ export class World {
   mountRefusal(): string | null {
     const p = this.player;
     const h = this.hero;
+    if (!ridingOpen(h)) return `${ridingLocked()}.`;
     if (!riddenMount(h)) return h.mounts.length || shopMountsFor(h).length ? 'Choose a mount in the Wardrobe.' : 'You have no mount yet.';
     if (p.dead || p.channel || p.windup || p.casting || p.dash) return 'Not now.';
     if (this.region.kind === 'dungeon') return 'There is no room to ride down here.';

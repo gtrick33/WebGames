@@ -5,6 +5,7 @@ import { CLASSES } from '../data/classes';
 import { SKILLS } from '../data/skills';
 import type { SlotKey } from '../data/types';
 import type { SigilEngine } from '../engine';
+import { hasMount } from '../progress/wardrobe';
 import { skillIconUrl } from '../render/sprites';
 import { SUMMON_TIME } from '../sim/world';
 import { useFrame } from './GameScreen';
@@ -46,14 +47,14 @@ export function DesktopBar({ engine }: { engine: SigilEngine }) {
           {slots.map((s) => (
             <Slot key={s.slot} engine={engine} slot={s.slot} keyLabel={s.key} />
           ))}
-          {!!engine.hero?.mounts.length && <MountSlot engine={engine} />}
+          {!!engine.hero && hasMount(engine.hero) && <MountSlot engine={engine} />}
         </div>
       )}
     </>
   );
 }
 
-/** Ride or get down (Y), once the hero owns a mount; it fills while the mount is called. */
+/** Ride or get down (Y), once riding is open and the hero owns a mount; it fills while the mount is called. */
 function MountSlot({ engine }: { engine: SigilEngine }) {
   const el = useRef<HTMLButtonElement>(null);
   useFrame(engine, (w) => {

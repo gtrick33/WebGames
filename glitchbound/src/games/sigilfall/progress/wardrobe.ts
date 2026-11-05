@@ -240,19 +240,32 @@ export function authoredLooks(cls: ClassId, slot: LookSlot): Look[] {
 
 /* ------------------------------------------------------------------ mounts */
 
-/** Nobody rides before this: Dunmore's riders bring the first horses to the camp (Act I). */
-const FIRST_RIDE = 'camp-riders';
+/** Nobody rides before this: Dunmore's riders bring the first horses to the camp (Act I, level 20). */
+export const FIRST_RIDE = 'camp-riders';
 
-/** Whether a mount that comes from outside the story can be had yet: not by a hero who's still on foot in it. */
+/** Whether the hero rides at all yet: no mount of any source is earned, chosen or called before the riders come. */
 export const ridingOpen = (c: Pick<Character, 'quests'>): boolean => c.quests[FIRST_RIDE]?.state === 'done';
 
-/** Whether the hero has met a mount's source. */
+/** Why riding is still shut, in the player's words ("Riding opens with Riders for Briarhollow (level 20)"). */
+export function ridingLocked(): string {
+  const q = QUESTS.find((x) => x.id === FIRST_RIDE);
+  return q ? `Riding opens with ${q.name}${q.level ? ` (level ${q.level})` : ''}` : 'Riding opens later in the story';
+}
+
+/** Whether the hero can call a mount at all: riding is open and they have one, earned or the shop's (the mount key and button). */
+export const hasMount = (c: Pick<Character, 'quests' | 'mounts'>): boolean => ridingOpen(c) && (c.mounts.length > 0 || ownedShopMounts().length > 0);
+
+/**
+ * Whether the hero has met a mount's source. Every source waits for the first ride: a hero still on foot in
+ * the story earns nothing yet, and gets what they have met the moment the riders come.
+ */
 export function mountEarned(c: Pick<Character, 'quests' | 'perks' | 'clears' | 'cls'>, m: MountDef): boolean {
+  if (!ridingOpen(c)) return false;
   const s = m.source;
   // (bought, not earned: progress/shopGoods.ts says while the purchase stands, and it never joins the hero's own)
   if (s.kind === 'shop') return false;
   if (s.kind === 'campaign') return s.cls === c.cls && c.quests[CAMPAIGN_END]?.state === 'done';
-  if (s.kind === 'shelf') return shelfPoints >= s.points && ridingOpen(c);
+  if (s.kind === 'shelf') return shelfPoints >= s.points;
   if (s.kind === 'quest') return c.quests[s.quest]?.state === 'done';
   if (s.kind === 'perk') return c.perks.includes(s.perk);
   return s.regions.every((r) => Object.entries(c.clears).some(([k, n]) => n > 0 && k.startsWith(`${r}:`) && Number(k.slice(r.length + 1)) >= s.tier));
@@ -304,8 +317,8 @@ export function grantMounts(c: Character): MountDef[] {
       added.push(m);
     }
   }
-  // the first mount is the one ridden
-  if (!c.mount && c.mounts.length) c.mount = c.mounts[0]!;
+  // the first mount is the one ridden (once there is riding: a mount kept from before waits unchosen)
+  if (!c.mount && c.mounts.length && ridingOpen(c)) c.mount = c.mounts[0]!;
   return added;
 }
 
@@ -315,26 +328,26 @@ export const mountDef = (id: string): MountDef | undefined => MOUNT_DEFS[id] ?? 
 /** The shop's mounts this hero can ride now: owned by the account, once the story has horses in it. */
 export const shopMountsFor = (c: Pick<Character, 'quests'>): MountDef[] => (ridingOpen(c) ? ownedShopMounts() : []);
 
-/** Whether the hero can ride this mount now: earned for good, or the shop's while the account owns it. */
+/** Whether the hero can ride this mount now: riding is open, and it's earned for good or the shop's while the account owns it. */
 export function canRide(c: Pick<Character, 'quests' | 'mounts'>, id: string): boolean {
+  if (!ridingOpen(c)) return false;
   if (MOUNT_DEFS[id]) return c.mounts.includes(id);
-  return !!shopMount(id) && ownsShopItem(id) && ridingOpen(c);
+  return !!shopMount(id) && ownsShopItem(id);
 }
 
-/** The mount the mount key calls: a shop mount chosen while it's owned, else the hero's own choice. */
+/** The mount the mount key calls: a shop mount chosen while it's owned, else the hero's own choice (none before the first ride). */
 export function riddenMount(c: Pick<Character, 'quests' | 'mounts' | 'mount' | 'shopMount'>): string | null {
   if (c.shopMount && canRide(c, c.shopMount)) return c.shopMount;
-  return c.mount && c.mounts.includes(c.mount) ? c.mount : null;
+  return c.mount && canRide(c, c.mount) ? c.mount : null;
 }
 
-/** Chooses the mount the mount key summons. A shop mount is kept apart, so the hero's own choice outlasts a refund. */
+/** Chooses the mount the mount key summons (refused before the first ride). A shop mount is kept apart, so the hero's own choice outlasts a refund. */
 export function chooseMount(c: Character, id: string): boolean {
+  if (!canRide(c, id)) return false;
   if (!MOUNT_DEFS[id]) {
-    if (!canRide(c, id)) return false;
     c.shopMount = id;
     return true;
   }
-  if (!c.mounts.includes(id)) return false;
   c.mount = id;
   delete c.shopMount;
   return true;

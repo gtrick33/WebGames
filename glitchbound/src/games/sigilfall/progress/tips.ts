@@ -11,7 +11,7 @@ import type { ResourceDef, SlotKey } from '../data/types';
 import type { PanelId } from '../engine';
 import type { Character } from './character';
 
-export type TipId = 'combat' | 'bag' | 'spell' | 'talents';
+export type TipId = 'combat' | 'bag' | 'spell' | 'talents' | 'riding';
 
 export const TIPS_MARK = 'tips';
 export const tipKey = (id: TipId): string => `tip:${id}`;
@@ -56,6 +56,8 @@ export interface TipContext {
 const barSlot = (touch: boolean, slot: SlotKey): string => (touch ? `.rb-sb-${slot}` : `.rb-slot6.is-${slot}`);
 const hudButton = (label: string): string => `.rb-hud-menu .rb-hudbtn[aria-label^="${label}"]`;
 const panelTab = (id: PanelId): string => `.rb-tabs [data-tab="${id}"]`;
+/** The mount key on the desktop bar, or the horseshoe on the touch controls (shown once there is riding). */
+const mountButton = (touch: boolean): string => (touch ? '.rb-sb-mount' : '.rb-slot6.is-mount');
 
 /** One line on what a skill spends, in the words of the HUD's own help. */
 const COSTS: Record<ResourceDef['kind'], string> = {
@@ -160,6 +162,30 @@ export function tipSteps(id: TipId, c: TipContext): TipStep[] {
           panel: 'talents',
           title: 'Spend your points',
           text: 'You earn one talent point per level from now on, and you spend them in the tree here. Resetting them is free until level 20.',
+        },
+      ];
+    // (after Riders for Briarhollow, the quest that gives the first mount: wardrobe.ts FIRST_RIDE)
+    case 'riding':
+      return [
+        {
+          target: mountButton(touch),
+          panel: null,
+          title: 'Level 20: you can ride',
+          text: touch
+            ? 'Tap the horseshoe to call your mount. Stand still while it comes, and tap it again to get down.'
+            : 'Press Y, or click the horseshoe, to call your mount. Stand still while it comes, and press Y again to get down.',
+        },
+        {
+          target: '.rb-seg [data-look-tab="mounts"]',
+          panel: 'wardrobe',
+          title: 'Choose your mount',
+          text: `Every mount you earn waits here, under Wardrobe › Mounts. ${tap} one, then Ride this one. They all run at the same pace, so pick the one you like best.`,
+        },
+        {
+          target: barSlot(touch, 'basic'),
+          panel: null,
+          title: 'Get down to fight',
+          text: 'Attack or cast and you get down first, and a hit knocks you off. You can’t call your mount in a fight, indoors or in a dungeon.',
         },
       ];
   }
