@@ -73,6 +73,8 @@ const FOOT_JOINTS = ['foot.l', 'foot.r', 'toes.l', 'toes.r'];
 
 const WEAPONS: Record<string, readonly string[]> = {
   sword: ['w_sword_A', 'w_sword_B', 'w_sword_C', 'w_sword_D', 'w_sword_E', 'w_sword_F', 'w_sword_G'],
+  // two hands on the hilt: only the long blades
+  greatsword: ['w_sword_E', 'w_sword_F'],
   axe: ['w_axe_A', 'w_axe_B', 'w_axe_C', 'w_axe_D'],
   hammer: ['w_hammer_A', 'w_hammer_B', 'w_hammer_C', 'w_hammer_D'],
   staff: ['w_staff_A', 'w_staff_B', 'w_staff_C', 'w_staff_D'],

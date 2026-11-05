@@ -884,6 +884,61 @@ export const ITEMS: ItemDef[] = [
     minLevel: 17,
     special: true,
   },
+  /* --------------------------------------------------------- gloamknight */
+  {
+    id: 'vesper-edge',
+    name: 'Vesper Edge',
+    slot: 'weapon',
+    rarity: 'epic',
+    cls: 'gloamknight',
+    icon: 'sword',
+    tint: '#6a5a8a',
+    stats: [
+      { stat: 'power', base: 6, per: 1.4 },
+      { stat: 'shadow', base: 6, per: 1 },
+    ],
+    mods: [{ t: 'skill', skill: 'umbral-rend', op: { op: 'onHit', effect: { kind: 'status', status: 'curse', dur: 5, power: 0.5 } } }],
+    lore: 'Forged at the hour when the lamps go on. It has been that hour on the blade ever since.',
+    minLevel: 3,
+  },
+  {
+    id: 'lantern-of-the-last-watch',
+    name: 'Lantern of the Last Watch',
+    slot: 'offhand',
+    rarity: 'rare',
+    cls: 'gloamknight',
+    icon: 'orb',
+    tint: '#9a6ae0',
+    stats: [
+      { stat: 'armor', base: 5, per: 1.2 },
+      { stat: 'hp', base: 8, per: 2.5 },
+    ],
+    mods: [
+      { t: 'skill', skill: 'blood-price', op: { op: 'onCast', effect: { kind: 'shield', pct: 10, dur: 6 } } },
+      { t: 'skill', skill: 'grasping-gloom', op: { op: 'area', pct: 25 } },
+    ],
+    lore: 'Hung on a belt, it gives no light. It shows you where the dark is thinnest.',
+    minLevel: 4,
+  },
+  {
+    id: 'gravesong',
+    name: 'Gravesong',
+    slot: 'weapon',
+    rarity: 'legendary',
+    cls: 'gloamknight',
+    icon: 'sword',
+    tint: '#b48cff',
+    stats: [
+      { stat: 'power', base: 8, per: 1.6 },
+      { stat: 'shadow', base: 8, per: 1.2 },
+    ],
+    mods: [
+      { t: 'skill', skill: 'gloam-cleave', op: { op: 'onHit', effect: { kind: 'heal', pct: 0.3 } } },
+      { t: 'skill', skill: 'umbral-rend', op: { op: 'cooldown', pct: 20 } },
+    ],
+    lore: 'It hums under the breath when it is drawn. Nobody has ever caught the tune twice.',
+    minLevel: 10,
+  },
 ];
 
 // each zone's and dungeon's own items
@@ -915,6 +970,9 @@ export const BASES: ItemBase[] = [
   { id: 'tower-shield', name: 'Tower Shield', slot: 'offhand', cls: 'paladin', icon: 'shield', tint: '#e8c050', implicit: { stat: 'armor', base: 4, per: 1 } },
   { id: 'gnarled-staff', name: 'Gnarled Staff', slot: 'weapon', cls: 'druid', icon: 'staff', tint: '#7a5a2a', implicit: { stat: 'power', base: 4, per: 1.1 } },
   { id: 'idol', name: 'Idol', slot: 'offhand', cls: 'druid', icon: 'orb', tint: '#7bd65a', implicit: { stat: 'haste', base: 2, per: 0.4 } },
+  { id: 'greatsword', name: 'Greatsword', slot: 'weapon', cls: 'gloamknight', icon: 'sword', tint: '#8a8698', implicit: { stat: 'power', base: 5, per: 1.2 } },
+  { id: 'claymore', name: 'Claymore', slot: 'weapon', cls: 'gloamknight', icon: 'sword', tint: '#5a5468', implicit: { stat: 'power', base: 5, per: 1.15 } },
+  { id: 'dusk-talisman', name: 'Dusk Talisman', slot: 'offhand', cls: 'gloamknight', icon: 'orb', tint: '#6a4a9a', implicit: { stat: 'armor', base: 4, per: 1 } },
   { id: 'cloth-hood', name: 'Hood', slot: 'head', icon: 'hood', tint: '#5a6aa0' },
   { id: 'iron-helm', name: 'Helm', slot: 'head', icon: 'helm', tint: '#a8aec0', implicit: { stat: 'armor', base: 2, per: 0.6 } },
   { id: 'leather-cap', name: 'Cap', slot: 'head', icon: 'cap', tint: '#8a5a3a' },
@@ -990,6 +1048,7 @@ export const CLASS_ELEMENTS: Record<ClassId, StatKey[]> = {
   priest: ['holy', 'shadow'],
   paladin: ['holy', 'physical'],
   druid: ['nature', 'arcane', 'physical'],
+  gloamknight: ['shadow', 'physical'],
 };
 
 /** Small skill modifiers rare generated gear can roll (one each), by class. Kept modest: hand-made items are the stars. */
@@ -1038,6 +1097,11 @@ export const MINOR_MODS: { cls: ClassId; skill: string; op: SkillOp }[] = [
   { cls: 'druid', skill: 'rejuvenation', op: { op: 'duration', pct: 25 } },
   { cls: 'druid', skill: 'claw', op: { op: 'damage', pct: 15 } },
   { cls: 'druid', skill: 'maul', op: { op: 'damage', pct: 15 } },
+  { cls: 'gloamknight', skill: 'gloam-cleave', op: { op: 'damage', pct: 15 } },
+  { cls: 'gloamknight', skill: 'umbral-rend', op: { op: 'damage', pct: 20 } },
+  { cls: 'gloamknight', skill: 'grasping-gloom', op: { op: 'area', pct: 20 } },
+  { cls: 'gloamknight', skill: 'shadow-lunge', op: { op: 'cooldown', pct: 15 } },
+  { cls: 'gloamknight', skill: 'dread-toll', op: { op: 'damage', pct: 20 } },
 ];
 
 /** Name words for generated gear, by its strongest stat. */

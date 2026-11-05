@@ -1038,9 +1038,10 @@
 }
 .rb-classes {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  /* eight callings: two rows of four */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  max-width: 980px;
+  max-width: 760px;
   margin: 12px auto;
 }
 .rb-class {
@@ -5387,7 +5388,7 @@
   grid-area: hero;
   min-height: 0;
   display: grid;
-  grid-template: minmax(0, 1fr) auto / 118px minmax(0, 1fr);
+  grid-template: minmax(0, 1fr) auto / 132px minmax(0, 1fr);
   grid-template-areas: 'classes stage' 'classes kit';
   gap: 6px 10px;
 }
@@ -6253,7 +6254,7 @@
 }
 .rb-rp-classes {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 3px;
 }
 .rb-rp-class {

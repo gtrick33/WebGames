@@ -176,6 +176,14 @@ const KITS: Record<ClassId, SpellDef[]> = {
     spell({ id: 'living-roots', cls: 'druid', name: 'Living Roots', text: 'Roots rise where you stood, holding and crushing what crosses them.', icon: 'root_grab_from_the_ground_on_brown', kind: 'field', el: 'nature', noun: 'Roots', one: 'root', color: '#7ad65a', dmg: [13, 7], every: [3, 0.28, 1.4], size: [24, 4], slow: true, sig: { name: 'Stranglehold', text: 'Roots hold what crosses them fast', stun: 0.7 } }),
     spell({ id: 'verdant-pulse', cls: 'druid', name: 'Verdant Pulse', text: 'Life wells up in you every so often and closes your wounds.', icon: 'rejuvenate_leaf_drop_on_green', kind: 'pulse', el: 'nature', noun: 'Pulse', one: 'pulse', color: '#b8ffb8', dmg: [0, 0], every: [7, 0.5, 3.6], heal: [7, 1.5], sig: { name: 'Bloom', text: 'It also bursts outward and burns what is near', burst: 60 } }),
   ],
+  gloamknight: [
+    spell({ id: 'gloam-sweep', cls: 'gloamknight', name: 'Gloam Sweep', text: 'A two-handed sweep of shadow through everything in front of you.', icon: 'two_handed_sword_mastery_on_red', kind: 'cone', el: 'shadow', noun: 'Sweep', one: 'sweep', color: '#c8a8ff', dmg: [16, 6], every: [1.2, 0.08, 0.62], size: [46, 6], sig: { name: 'Drinking Edge', text: 'Every foe cut gives back a little of your health', leech: 0.4 }, evolve: { with: 'vigor', name: 'Duskreaver', text: 'The sweep cuts all the way around you and hits half again as hard.', icon: 'giant_reaper_silhouette_on_black', dmg: 0.5, more: 1 } }),
+    spell({ id: 'circling-shades', cls: 'gloamknight', name: 'Circling Shades', text: 'Shades of old knights circle you and cut what they pass through.', icon: 'soul_orb_rising_on_violet', kind: 'orbit', el: 'shadow', noun: 'Shades', one: 'shade', color: '#9a6ae0', dmg: [24, 9], n: [2, 2], sig: { name: 'Cold Touch', text: 'Shades slow whatever they touch', slow: true }, evolve: { with: 'haste', name: 'Host of Shades', text: 'Two more shades, and they cut harder.', icon: 'shadow_wolf_on_violet', more: 2, dmg: 0.3 } }),
+    spell({ id: 'dusk-toll', cls: 'gloamknight', name: 'Dread Toll', text: 'A toll of dusk rings out from you and slows what it touches.', icon: 'skull_lantern_on_black', kind: 'nova', el: 'shadow', noun: 'Toll', one: 'toll', color: '#b48cff', dmg: [11, 4.5], every: [4, 0.38, 1.8], size: [48, 9], slow: true, sig: { name: 'Terror', text: 'Foes it touches stand frozen in dread for a moment', stun: 0.6 } }),
+    spell({ id: 'duskblade', cls: 'gloamknight', name: 'Duskblade', text: 'A black greatsword falls where the Host is thickest.', icon: 'burning_sword_on_black', kind: 'strike', el: 'shadow', look: 'blade', noun: 'Duskblades', one: 'blade', color: '#9a6ae0', dmg: [46, 18], every: [5.2, 0.5, 2.2], size: [32, 6], sig: { name: 'Grave Pull', text: 'It drags everything nearby into the blow', pull: true } }),
+    spell({ id: 'gloom-pool', cls: 'gloamknight', name: 'Grasping Gloom', text: 'Shadow pools where you stood and bites what crosses it.', icon: 'cursed_status_dark_cloud_on_violet', kind: 'field', el: 'shadow', noun: 'Gloom', one: 'pool', color: '#7a52b0', dmg: [13, 7], every: [3, 0.28, 1.4], size: [24, 4], slow: true, sig: { name: 'Feeding Dark', text: 'What it bites heals you', leech: 0.3 } }),
+    spell({ id: 'blood-remembers', cls: 'gloamknight', name: 'Blood Remembers', text: 'Every so often the blood you have spent finds its way home and closes your wounds.', icon: 'heart_inside_a_shield_on_red', kind: 'pulse', el: 'blood', noun: 'Mending', one: 'mending', color: '#c0344e', dmg: [0, 0], every: [7.5, 0.5, 3.8], heal: [7, 1.5], sig: { name: 'Black Mantle', text: 'Nothing can touch you for a moment when it comes', guard: 1.4 } }),
+  ],
 };
 
 const ADJECTIVE: Record<Element, string> = { fire: 'Searing', ice: 'Bitter', lightning: 'Crackling', arcane: 'Arcane', nature: 'Wild', poison: 'Venomous', holy: 'Radiant', shadow: 'Cursed', water: 'Surging', blood: 'Savage' };
@@ -298,6 +306,7 @@ export const CLASS_BODY: Record<ClassId, { hp: number; speed: number }> = {
   mage: { hp: 130, speed: 78 },
   warlock: { hp: 128, speed: 78 },
   ranger: { hp: 112, speed: 84 },
+  gloamknight: { hp: 165, speed: 74 },
 };
 
 export const STRENGTHS: Record<StrengthId, { id: StrengthId; name: string; text: string; icon: string; max?: number }> = {

@@ -32,6 +32,7 @@ const DEFAULT_MATES: Record<ClassId, Mate[]> = {
   paladin: [{ cls: 'ranger', preset: 0 }, { cls: 'warlock', preset: 1 }],
   warlock: [{ cls: 'druid', preset: 0 }, { cls: 'ranger', preset: 0 }],
   druid: [{ cls: 'warlock', preset: 0 }, { cls: 'warrior', preset: 0 }],
+  gloamknight: [{ cls: 'priest', preset: 0 }, { cls: 'mage', preset: 0 }],
 };
 
 const roomErrors: Record<string, string> = { full: 'That room is full.', in_run: 'That room is already in a match.' };

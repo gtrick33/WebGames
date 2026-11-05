@@ -126,6 +126,19 @@ const BARE: Record<ClassId, HeroLook> = {
     quiver: null,
     cape: null,
   },
+  // smoke-dark plate over a dusk-violet gambeson: no shield, both hands on the greatsword
+  gloamknight: {
+    skin: '#e8c4a8',
+    hair: '#3a3440',
+    hairStyle: 'short',
+    head: null,
+    chest: { style: 'plate', mat: 'plate', tint: '#4a4458', r: 'rare' },
+    legs: { style: 'greaves', mat: 'plate', tint: '#3a3646', r: 'common' },
+    hands: { style: 'gauntlets', mat: 'plate', tint: '#4a4458', r: 'common' },
+    feet: { style: 'sabatons', mat: 'plate', tint: '#3a3646', r: 'common' },
+    quiver: null,
+    cape: null,
+  },
 };
 
 /** What shows of a piece: its icon, material, color and rarity (an item's, or a Wardrobe look's). */
@@ -402,6 +415,8 @@ export function heldWeapon(cls: ClassId, weapon: Item | undefined, look?: Shown 
       return { kind: 'bow', tint };
     case 'paladin':
       return { kind: icon === 'sword' ? 'sword' : 'hammer', tint: tint ?? '#ffd84d' };
+    case 'gloamknight':
+      return { kind: 'greatsword', tint: tint ?? '#5a4a80' };
     default:
       return { kind: icon === 'axe' ? 'axe' : icon === 'hammer' ? 'hammer' : 'sword', tint };
   }
