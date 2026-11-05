@@ -355,6 +355,7 @@ const ROT_MOTHER: BossDef = {
       priest: ['choirstaff', 'psalter-of-dawn'],
       warlock: ['blightcaller', 'contagion'],
       druid: ['moonwhisper', 'first-oak-acorn'],
+      gloamknight: ['gravesong', 'vesper-edge'],
       any: ['heart-of-the-brood', 'bilewalker-waders', 'pustule-censer', 'amulet-of-echoes', 'glitch-shard'],
     },
     chance: [0.35, 0.6, 1],

@@ -5,7 +5,8 @@ import { join, relative } from 'node:path';
 import { gzipSync, brotliCompressSync } from 'node:zlib';
 
 const DIST = 'dist';
-const BUDGET_INITIAL_JS_GZIP = 120 * 1024;
+// Raised from 120 KB on 2026-11-05, the owner's choice, so the header can wear a member's border and banner.
+const BUDGET_INITIAL_JS_GZIP = 121 * 1024;
 
 function walk(dir) {
   return readdirSync(dir).flatMap((f) => {

@@ -7,6 +7,7 @@ import { REGIONS } from '../data/regions';
 import type { ClassId, Item, ItemIcon, Material, RegionId, Rarity } from '../data/types';
 import type { Character } from './character';
 import { itemMat, itemTint } from './items';
+import { ownedShopMounts, ownsShopItem, shopLook, shopMount } from './shopGoods';
 
 /**
  * The Wardrobe and the mount collection (blueprint §6, COLLECTION_SYSTEM_DESIGN.md). A look is the
@@ -32,10 +33,14 @@ export interface Look {
   r: Rarity;
   /** The class that can wear it (class-only items), or anyone. */
   cls?: ClassId;
-  /** Part of a Sigil-warden's armor (the class it was made for): it has its own models. */
-  set?: ClassId;
+  /** Part of a set with models of its own: a Sigil-warden's armor (the class it was made for) or a shop set's id. */
+  set?: string;
+  /** A shop set's colors (main, trim, cloth, glow). */
+  colors?: string[];
   /** A hand-made item's look (with a source), or a found piece's. */
   authored: boolean;
+  /** From the site's shop (progress/shopGoods.ts): any class wears it, while the account owns it. */
+  shop?: boolean;
 }
 
 const HEX = /^[0-9a-f]{6}$/;
@@ -84,6 +89,22 @@ export function lookOf(id: string): Look | null {
 /** Whether a hero of this class can wear the look (class-only pieces stay with their class). */
 export const lookFits = (look: Look, cls: ClassId): boolean => !look.cls || look.cls === cls;
 
+/** A look the shop sells (and no hero can earn), or null. */
+const shopOnly = (id: string): Look | null => (lookOf(id) ? null : (shopLook(id) ?? null));
+
+/** Whether the look is the hero's to wear: earned for good, or the shop's while the account owns it. */
+export const hasLook = (c: Pick<Character, 'looks'>, id: string): boolean => c.looks.includes(id) || (!!shopOnly(id) && ownsShopItem(id));
+
+/** A shop look worn over a slot, while it's still owned. */
+function shopWorn(c: Pick<Character, 'shopWorn'>, slot: LookSlot): Look | null {
+  const id = c.shopWorn?.[slot];
+  const look = id ? shopOnly(id) : null;
+  return look && look.slot === slot && ownsShopItem(look.id) ? look : null;
+}
+
+/** The look worn over a slot right now, by its id (a shop look while it's owned, else the hero's own choice). */
+export const wornId = (c: Pick<Character, 'worn' | 'shopWorn'>, slot: LookSlot): string | undefined => shopWorn(c, slot)?.id ?? c.worn[slot];
+
 /** Adds the looks of these items to the hero's Wardrobe; returns the new ones. */
 export function learnLooks(c: Character, items: Iterable<Item>): string[] {
   const added: string[] = [];
@@ -102,25 +123,47 @@ export function learnLooks(c: Character, items: Iterable<Item>): string[] {
  * hero doesn't own, for another slot's look and for another class's.
  */
 export function wearLook(c: Character, slot: LookSlot, id: string | null): boolean {
+  // a shop look is kept apart from the hero's own choice: whatever happens to the purchase, that choice is still there
+  const shop = id && id !== BARE_LOOK ? shopOnly(id) : null;
+  if (shop) {
+    if (shop.slot !== slot || !ownsShopItem(id!)) return false;
+    c.shopWorn = { ...c.shopWorn, [slot]: id! };
+    return true;
+  }
+  const dropShop = (): void => {
+    if (!c.shopWorn?.[slot]) return;
+    const rest = { ...c.shopWorn };
+    delete rest[slot];
+    if (Object.keys(rest).length) c.shopWorn = rest;
+    else delete c.shopWorn;
+  };
   if (id === null) {
     delete c.worn[slot];
+    dropShop();
     return true;
   }
   if (id === BARE_LOOK) {
     if (slot === 'weapon') return false;
     c.worn[slot] = BARE_LOOK;
+    dropShop();
     return true;
   }
   const look = lookOf(id);
   if (!look || look.slot !== slot || !c.looks.includes(id) || !lookFits(look, c.cls)) return false;
   c.worn[slot] = id;
+  dropShop();
   return true;
 }
 
 /** The looks a hero shows over their gear right now: owned, fitting and of the right slot only. */
-export function wornLooks(c: Pick<Character, 'cls' | 'looks' | 'worn'>): Partial<Record<LookSlot, Look | 'bare'>> {
+export function wornLooks(c: Pick<Character, 'cls' | 'looks' | 'worn' | 'shopWorn'>): Partial<Record<LookSlot, Look | 'bare'>> {
   const out: Partial<Record<LookSlot, Look | 'bare'>> = {};
   for (const slot of LOOK_SLOTS) {
+    const shop = shopWorn(c, slot);
+    if (shop) {
+      out[slot] = shop;
+      continue;
+    }
     const id = c.worn[slot];
     if (!id) continue;
     if (id === BARE_LOOK) {
@@ -133,7 +176,10 @@ export function wornLooks(c: Pick<Character, 'cls' | 'looks' | 'worn'>): Partial
   return out;
 }
 
-/** Drops what a save can't back up: unknown looks, and worn looks the hero doesn't own or can't wear. */
+/**
+ * Drops what a save can't back up: unknown looks, and worn looks the hero doesn't own or can't wear. (A shop look is
+ * never among the hero's own: its purchase is on the account, asked each time, and a save can't say it was bought.)
+ */
 export function tidyWardrobe(c: Character): void {
   c.looks = [...new Set(c.looks.filter((id) => !!lookOf(id)))];
   for (const slot of LOOK_SLOTS) {
@@ -170,6 +216,7 @@ function sourceIndex(): Map<string, { quest?: string; boss?: string }> {
  */
 export function lookSource(c: Pick<Character, 'quests'>, id: string): string {
   const def = ITEM_DEFS[id];
+  if (!def && shopOnly(id)) return 'From the shop: yours on every hero of your account, for any class';
   if (!def) return 'Found gear';
   if (id.startsWith('warden-')) return 'Finish the story with this class';
   const src = sourceIndex().get(id);
@@ -205,8 +252,8 @@ export function ridingLocked(): string {
   return q ? `Riding opens with ${q.name}${q.level ? ` (level ${q.level})` : ''}` : 'Riding opens later in the story';
 }
 
-/** Whether the hero can call a mount at all: riding is open and they own one (the mount key and button). */
-export const canRide = (c: Pick<Character, 'quests' | 'mounts'>): boolean => ridingOpen(c) && c.mounts.length > 0;
+/** Whether the hero can call a mount at all: riding is open and they have one, earned or the shop's (the mount key and button). */
+export const hasMount = (c: Pick<Character, 'quests' | 'mounts'>): boolean => ridingOpen(c) && (c.mounts.length > 0 || ownedShopMounts().length > 0);
 
 /**
  * Whether the hero has met a mount's source. Every source waits for the first ride: a hero still on foot in
@@ -215,6 +262,8 @@ export const canRide = (c: Pick<Character, 'quests' | 'mounts'>): boolean => rid
 export function mountEarned(c: Pick<Character, 'quests' | 'perks' | 'clears' | 'cls'>, m: MountDef): boolean {
   if (!ridingOpen(c)) return false;
   const s = m.source;
+  // (bought, not earned: progress/shopGoods.ts says while the purchase stands, and it never joins the hero's own)
+  if (s.kind === 'shop') return false;
   if (s.kind === 'campaign') return s.cls === c.cls && c.quests[CAMPAIGN_END]?.state === 'done';
   if (s.kind === 'shelf') return shelfPoints >= s.points;
   if (s.kind === 'quest') return c.quests[s.quest]?.state === 'done';
@@ -273,10 +322,34 @@ export function grantMounts(c: Character): MountDef[] {
   return added;
 }
 
-/** Chooses the mount the mount key summons (refused before the first ride). */
+/** A mount by its id: one of the game's, or one the shop sells. */
+export const mountDef = (id: string): MountDef | undefined => MOUNT_DEFS[id] ?? shopMount(id);
+
+/** The shop's mounts this hero can ride now: owned by the account, once the story has horses in it. */
+export const shopMountsFor = (c: Pick<Character, 'quests'>): MountDef[] => (ridingOpen(c) ? ownedShopMounts() : []);
+
+/** Whether the hero can ride this mount now: riding is open, and it's earned for good or the shop's while the account owns it. */
+export function canRide(c: Pick<Character, 'quests' | 'mounts'>, id: string): boolean {
+  if (!ridingOpen(c)) return false;
+  if (MOUNT_DEFS[id]) return c.mounts.includes(id);
+  return !!shopMount(id) && ownsShopItem(id);
+}
+
+/** The mount the mount key calls: a shop mount chosen while it's owned, else the hero's own choice (none before the first ride). */
+export function riddenMount(c: Pick<Character, 'quests' | 'mounts' | 'mount' | 'shopMount'>): string | null {
+  if (c.shopMount && canRide(c, c.shopMount)) return c.shopMount;
+  return c.mount && canRide(c, c.mount) ? c.mount : null;
+}
+
+/** Chooses the mount the mount key summons (refused before the first ride). A shop mount is kept apart, so the hero's own choice outlasts a refund. */
 export function chooseMount(c: Character, id: string): boolean {
-  if (!ridingOpen(c) || !c.mounts.includes(id) || !MOUNT_DEFS[id]) return false;
+  if (!canRide(c, id)) return false;
+  if (!MOUNT_DEFS[id]) {
+    c.shopMount = id;
+    return true;
+  }
   c.mount = id;
+  delete c.shopMount;
   return true;
 }
 

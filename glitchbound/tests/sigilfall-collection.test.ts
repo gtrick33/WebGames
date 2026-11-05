@@ -7,12 +7,14 @@ import { PERKS, addItem, salvage, type Character } from '../src/games/sigilfall/
 import { buildHero } from '../src/games/sigilfall/progress/build';
 import { makeItem, rollGear } from '../src/games/sigilfall/progress/items';
 import { migrate, SAVE_VERSION } from '../src/games/sigilfall/progress/save';
-import { BARE_LOOK, canRide, chooseMount, FIRST_RIDE, grantMounts, learnLooks, lookId, lookOf, mountEarned, ridingOpen, setShelfPoints, wearLook, wornLooks } from '../src/games/sigilfall/progress/wardrobe';
+import { BARE_LOOK, chooseMount, FIRST_RIDE, grantMounts, hasMount, learnLooks, lookId, lookOf, mountEarned, ridingOpen, setShelfPoints, wearLook, wornLooks } from '../src/games/sigilfall/progress/wardrobe';
 import { CAMPAIGN_END } from '../src/games/sigilfall/data/wardens';
 import { MOUNT_FRAMES, MOUNT_WALK_FRAMES, paintMount, paintRiderLegs, RIDER_HIP } from '../src/games/sigilfall/render/art/mount';
 import { heldWeapon, heroLook } from '../src/games/sigilfall/render/sprites';
 import { hurtPlayer } from '../src/games/sigilfall/sim/combat';
 import { emptyInput, MOUNT_SPEED, SUMMON_TIME, type World } from '../src/games/sigilfall/sim/world';
+import type { Cast, Motion } from '../src/games/sigilfall/render3d/cast';
+import { WorldCast } from '../src/games/sigilfall/render3d/worldCast';
 import { rng } from '../src/games/sigilfall/core/math';
 import { newWorld, readyHero } from './sigilfall-bot';
 
@@ -209,7 +211,7 @@ describe('Sigilfall: mounts', () => {
         c.quests[FIRST_RIDE] = { state: 'done', n: 1 };
         expect(mountEarned(c, m), m.id).toBe(true);
         expect(grantMounts(c).map((x) => x.id), m.id).toContain(m.id);
-        expect(canRide(c)).toBe(true);
+        expect(hasMount(c)).toBe(true);
       }
     } finally {
       setShelfPoints(0);
@@ -222,7 +224,7 @@ describe('Sigilfall: mounts', () => {
     const back = roundTrip(c, { mounts: ['gullport-strider', 'cabinet-courser'], mount: 'gullport-strider' });
     expect(back.mounts).toEqual(['gullport-strider', 'cabinet-courser']);
     expect(back.mount).toBe('gullport-strider');
-    expect(canRide(back)).toBe(false);
+    expect(hasMount(back)).toBe(false);
     expect(chooseMount(back, 'cabinet-courser')).toBe(false);
     expect(back.mount).toBe('gullport-strider');
     // the mount key is refused, and says why
@@ -257,7 +259,7 @@ describe('Sigilfall: mounts', () => {
       // a hero who was given it before the story had any horses keeps it, but rides only when the riders come
       const early = roundTrip(c, { mounts: ['cabinet-courser'], mount: 'cabinet-courser' });
       expect(early.mounts).toEqual(['cabinet-courser']);
-      expect(canRide(early)).toBe(false);
+      expect(hasMount(early)).toBe(false);
       c.quests['camp-riders'] = { state: 'done', n: 1 };
       expect(grantMounts(c).map((m) => m.id).sort()).toEqual(['briarhollow-chestnut', 'cabinet-courser']);
       // the first ridden is the story's
@@ -292,6 +294,66 @@ describe('Sigilfall: mounts', () => {
     // the key again gets down
     w.toggleMount();
     expect(w.player.riding).toBeNull();
+  });
+
+  it('mounting up: the hero casts with no animal beside them, then is in the saddle at once, on every kind of mount', () => {
+    for (const body of ['horse', 'deer', 'boar', 'drake'] as const) {
+      const def = MOUNTS.find((m) => m.body === body)!;
+      const c = readyHero('mage', 20);
+      c.quests[FIRST_RIDE] = { state: 'done', n: 1 };
+      c.mounts.push(def.id);
+      c.mount = def.id;
+      const w = newWorld('emberwick', c);
+      w.enemies = [];
+      w.player.calm = 10;
+      // what the 3D cast is told to draw, frame by frame (a stand-in: only the hero and the animal are looked at)
+      let drawn: { mounts: { id: string; x: number; y: number }[]; hero: { clip: string; t: number; seated: boolean }[]; fetched: string[] } = { mounts: [], hero: [], fetched: [] };
+      const cast = new Proxy({} as Record<string | symbol, unknown>, {
+        get: (_o, k) => {
+          if (k === 'wardrobe') return { medium: { clips: { cast: { start: 1, n: 14, fps: 15 } } } };
+          if (k === 'mountReady') return (m: { id: string }) => (drawn.fetched.push(m.id), true);
+          if (k === 'mount') return (m: { id: string }, x: number, y: number) => (drawn.mounts.push({ id: m.id, x, y }), { x, y, high: 1, tip: 0 });
+          if (k === 'person') return (_l: unknown, _h: unknown, _s: unknown, x: number, y: number, _r: number, m: Motion, o?: { hipsAt?: number }) => x === w.player.x && y === w.player.y && drawn.hero.push({ clip: m.clip, t: m.t, seated: o?.hipsAt !== undefined });
+          if (k === 'creature') return () => ({});
+          return () => undefined;
+        },
+      }) as unknown as Cast;
+      const wc = new WorldCast();
+      const o = { look: {} as never, weapon: {} as never, folk: 0, landOnly: false };
+      let time = 0;
+      const frame = (s: number): typeof drawn => {
+        drawn = { mounts: [], hero: [], fetched: [] };
+        run(w, s);
+        time += s;
+        wc.sync(cast, w, s, time, o);
+        return drawn;
+      };
+      frame(0.1);
+      w.toggleMount();
+      let castT = 0;
+      for (let t = 0.1; t < SUMMON_TIME - 0.05; t += 0.1) {
+        const f = frame(0.1);
+        expect(w.player.riding, body).toBeNull();
+        // the call: the hero's cast, running on through it, and no animal anywhere
+        expect(f.mounts, body).toEqual([]);
+        expect(f.hero.map((h) => h.clip), body).toEqual(['cast']);
+        expect(f.hero[0]!.t, body).toBeGreaterThan(castT);
+        castT = f.hero[0]!.t;
+        // (its model is fetched while they call)
+        expect(f.fetched, body).toContain(def.id);
+      }
+      // the call's end: in the saddle that frame, the animal under them, and a flash
+      const up = frame(0.1);
+      expect(w.player.riding, body).toBe(def.id);
+      expect(up.mounts, body).toEqual([{ id: def.id, x: w.player.x, y: w.player.y }]);
+      expect(up.hero, body).toEqual([{ clip: 'ride', t: expect.any(Number), seated: true }]);
+      expect(w.fx.some((f) => f.kind === 'burst' && f.x === w.player.x && f.y === w.player.y), body).toBe(true);
+      // and off again: on their feet where they were, no animal left behind
+      w.toggleMount();
+      const down = frame(0.1);
+      expect(down.mounts, body).toEqual([]);
+      expect(down.hero.map((h) => h.seated), body).toEqual([false]);
+    }
   });
 
   it('a hit or an attack gets the hero down; there is no riding in a fight or a dungeon', () => {

@@ -1038,9 +1038,10 @@
 }
 .rb-classes {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  /* eight callings: two rows of four */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  max-width: 980px;
+  max-width: 760px;
   margin: 12px auto;
 }
 .rb-class {
@@ -1549,6 +1550,59 @@
 }
 .rb-boss-fill {
   background: linear-gradient(#ff6ae0, #c01a8a);
+}
+/* the hero's cast bar (ui/GameScreen.tsx CastBar): pinned under the hero, the spell's name over a bar that fills
+   in its element's color (--cast-a, --cast-b); it flashes full when the spell goes and greys out when stopped */
+.rb-castbar {
+  position: absolute;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  width: 136px;
+  pointer-events: none;
+  text-shadow: 2px 2px 0 var(--rb-ink);
+}
+.rb-castbar[hidden] {
+  display: none;
+}
+.rb-castbar-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--rb-text);
+  white-space: nowrap;
+}
+.rb-castbar-track {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 5px;
+  background: rgb(18 12 8 / 0.82);
+  box-shadow: 0 0 0 1px var(--rb-trim);
+  overflow: hidden;
+}
+.rb-castbar-track i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: linear-gradient(var(--cast-b, #fff6c8), var(--cast-a, #ffc23a) 70%);
+  box-shadow: 0 0 8px var(--cast-a, #ffc23a);
+}
+.rb-castbar[data-state='done'] .rb-castbar-track i {
+  background: var(--cast-b, #fff6c8);
+}
+.rb-castbar[data-state='stopped'] .rb-castbar-name {
+  color: var(--rb-red);
+}
+.rb-castbar[data-state='stopped'] .rb-castbar-track i {
+  background: #6a5a4a;
+  box-shadow: none;
+}
+.rb-ui.is-touch .rb-castbar {
+  width: 116px;
 }
 .rb-toasts {
   position: absolute;
@@ -2758,6 +2812,22 @@
 }
 .rb-look-tag.is-prestige {
   color: var(--rb-gold);
+}
+/* the shop's mounts and looks: owned by the account, while the purchase stands */
+.rb-look-tag.is-shop {
+  color: #8ff0ff;
+}
+.rb-look-tile.is-shop {
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, #8ff0ff 60%, transparent),
+    0 0 10px -2px color-mix(in srgb, #8ff0ff 55%, transparent);
+}
+.rb-look-tile.is-shop.is-sel {
+  box-shadow: 0 0 0 3px var(--rb-gold);
+}
+.rb-look-tile.is-shop .rb-look-tag {
+  bottom: 0;
+  font-size: 8px;
 }
 .rb-mount-pic {
   display: grid;
@@ -5395,7 +5465,7 @@
   grid-area: hero;
   min-height: 0;
   display: grid;
-  grid-template: minmax(0, 1fr) auto / 118px minmax(0, 1fr);
+  grid-template: minmax(0, 1fr) auto / 132px minmax(0, 1fr);
   grid-template-areas: 'classes stage' 'classes kit';
   gap: 6px 10px;
 }
@@ -6261,7 +6331,7 @@
 }
 .rb-rp-classes {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 3px;
 }
 .rb-rp-class {
@@ -9073,3 +9143,22 @@
     animation: none;
   }
 }
+
+/* A class from the shop, not bought yet (progress/paidClasses.ts): shown, with its price, and not picked. */
+.rb-class-lock {
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(255 209 46 / 0.16);
+  color: #ffd12e;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.rb-vlobby-class.is-locked,
+.rb-rp-class.is-locked {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+  cursor: not-allowed;
+}
+

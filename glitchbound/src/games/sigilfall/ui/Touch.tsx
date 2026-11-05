@@ -8,7 +8,7 @@ import { SKILLS } from '../data/skills';
 import type { SlotKey } from '../data/types';
 import type { SigilEngine } from '../engine';
 import type { AimPreview } from '../render/renderer';
-import { canRide } from '../progress/wardrobe';
+import { hasMount } from '../progress/wardrobe';
 import { skillHasPicture, skillIconUrl } from '../render/sprites';
 import { SUMMON_TIME, type World } from '../sim/world';
 import { useFrame } from './GameScreen';
@@ -248,7 +248,7 @@ function MountButton({ engine }: { engine: SigilEngine }) {
     b.classList.toggle('is-on', !!p.riding);
     b.style.setProperty('--fill', `${p.riding ? 100 : Math.round((p.summon / SUMMON_TIME) * 100)}%`);
   });
-  if (!engine.hero || !canRide(engine.hero)) return null;
+  if (!engine.hero || !hasMount(engine.hero)) return null;
   return (
     <button
       ref={ref}

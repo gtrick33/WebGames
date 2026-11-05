@@ -1,10 +1,12 @@
+import * as THREE from 'three';
+import { sigilSetOf } from '../../../catalog/sigilItems';
 import type { ClassId, Rarity } from '../data/types';
 import type { HeroLook, Piece } from '../render/art/hero';
 import { Build, mul, type C } from './build';
 import type { Wardrobe } from './dress';
 import { hexRgb } from './kits';
-import { above, below, blade, mix, Part, rgb, rod, shell, tied, within, type Corner, type Inside } from './meshKit';
-import type { MeshData } from './pack';
+import { above, below, blade, glowing, mix, Part, rgb, rod, shell, tied, within, type Corner, type Inside } from './meshKit';
+import { mergeMeshes, type MeshData } from './pack';
 import { hslRgb, painted, paintJoints, rgbHsl, shaved } from './paint';
 
 /**
@@ -832,6 +834,356 @@ const SETS: Record<ClassId, { head(c: Ctx): MeshData[]; chest(c: Ctx): MeshData[
       return parts;
     },
   },
+  // the Gloam: smoke-dark plate under a dusk-colored breast, a great helm crowned like the sun going down, a cape
+  // worn to rags
+  gloamknight: {
+    head(c) {
+      const steel = rgb('#4a4658');
+      const violet = rgb('#7a52b0');
+      const glow = rgb('#c8a8ff');
+      const ember = rgb('#ffb070');
+      const bone = rgb('#24202c');
+      const parts: MeshData[] = [];
+      const helm = c.w.hero.meshes.Paladin_Helmet!;
+      parts.push(painted(helm, { skin: c.skin, metal: tup(steel), cloth: tup(mul(violet, 0.55)), plated: true, white: tup(rgb('#9a94b4')) }));
+      // a band of light across the brow, and the crown of the helm in dusk enamel
+      const ahead: Inside = (_x, _y, z) => z - 0.2;
+      parts.push(shell(helm, [within(0.42), ahead, above(1.84), below(1.9)], 0.014, glow));
+      parts.push(shell(helm, [within(0.4), above(2.08)], 0.012, (_x, y) => mix(rgb('#8a3a5e'), mul(violet, 0.62), Math.min(1, (y - 2.08) / 0.3))));
+      // horns swept back off the temples, their tips lit
+      const sweep = [[0.46, 1.98, 0.02], [0.66, 2.16, -0.24], [0.7, 2.2, -0.6], [0.6, 2.06, -0.92], [0.46, 1.86, -1.08]];
+      parts.push(...horn(c, sweep, [0.14, 0.12, 0.09, 0.05, 0], bone, glow));
+      parts.push(...horn(c, sweep.map(mirror), [0.14, 0.12, 0.09, 0.05, 0], bone, glow));
+      // three rays over the brow, the middle one the last of the sun
+      for (let i = 0; i < 3; i++) {
+        const a = Math.PI * (0.25 + i * 0.25);
+        const tall = 0.3 + 0.2 * Math.sin(a);
+        const x = Math.cos(a) * 0.44;
+        const z = Math.sin(a) * 0.2 - 0.02;
+        parts.push(rod([x, 2.14, z], [x * 1.3, 2.14 + tall, z - 0.08], 0.055, 0, 5, steel, i === 1 ? ember : glow, c.head, M));
+      }
+      // the visor burns violet
+      const slit = new Build();
+      slit.box(-0.3, 0.68, 0.3, 0.76, 1.64, 1.71, glow, glow, glow);
+      parts.push(tied(slit, c.head, 1, [0, 0, 0], M));
+      parts.push(blade(0.06, 2.24, 0.42, 0.62, 0.045, mul(violet, 0.6), glow, c.head, M));
+      return parts;
+    },
+    chest(c) {
+      const steel = rgb('#4a4658');
+      const dark = rgb('#1e1a26');
+      const violet = rgb('#7a52b0');
+      const rose = rgb('#8a3a5e');
+      const glow = rgb('#c8a8ff');
+      const ember = rgb('#ffb070');
+      const parts = setBody(c, 'Paladin', 'Paladin', { metal: tup(steel), cloth: tup(mul(violet, 0.5)), plated: true, white: tup(rgb('#9a94b4')) });
+      const body = c.w.hero.meshes.Paladin_Body!;
+      const front: Inside = (_x, _y, z) => z;
+      // the breast is enamel the colors of a dusk sky, rose low and violet high, with a seam of light down the middle
+      parts.push(shell(body, [above(0.68), below(1.14)], 0.012, (_x, y) => mix(rose, mul(violet, 0.62), (y - 0.68) / 0.46)));
+      parts.push(shell(body, [above(0.68), below(0.72)], 0.018, glow));
+      parts.push(shell(body, [above(1.1), below(1.15)], 0.018, glow));
+      parts.push(shell(body, [within(0.03), front, above(0.72), below(1.1)], 0.02, glow));
+      parts.push(shell(body, [above(0.6), below(0.68)], 0.018, mul(steel, 0.8)));
+      parts.push(tabard(c, dark, violet));
+      parts.push(gemAt(c.chest, 0, 0.98, frontAt(body, 0.98) + 0.03, 0.11, ember));
+      // great pauldrons, each with three blades swept back like folded wings
+      parts.push(
+        ...both((s) => {
+          const out: MeshData[] = [pauldron(c.w, s, 1.46, steel, glow)];
+          for (let i = 0; i < 3; i++) {
+            const up = 0.5 + i * 0.36;
+            const len = 0.5 - i * 0.08;
+            out.push(rod([s * 0.46, 1.3, -0.06 - i * 0.05], [s * (0.56 + Math.cos(up) * len), 1.3 + Math.sin(up) * len, -0.3 - i * 0.1], 0.08, 0, 5, steel, i === 0 ? ember : glow, c.chest, M));
+          }
+          return out;
+        }),
+      );
+      parts.push(capeOf(c.w, rgb('#2a2236'), violet, 'jag', 1.14));
+      return parts;
+    },
+  },
+};
+
+/* ------------------------------------------------------------------ the shop's sets */
+
+/** A flat shape (a feather, a star, a wing's skin), seen from both sides, tied to a joint. */
+function flat(points: readonly (readonly number[])[], colors: readonly C[], joint: number): MeshData {
+  const out = new Part();
+  const a = points[0]!;
+  const b = points[1]!;
+  const c = points[2]!;
+  const n = new THREE.Vector3(b[0]! - a[0]!, b[1]! - a[1]!, b[2]! - a[2]!).cross(new THREE.Vector3(c[0]! - a[0]!, c[1]! - a[1]!, c[2]! - a[2]!)).normalize();
+  for (const flip of [1, -1]) {
+    const ids = points.map((p, i) => out.corner([p[0]!, p[1]!, p[2]!, n.x * flip, n.y * flip, n.z * flip, n.x * flip, n.y * flip, n.z * flip, joint, joint, 255], colors[i % colors.length]!));
+    for (let i = 1; i + 1 < ids.length; i++) {
+      if (flip > 0) out.idx.push(ids[0]!, ids[i]!, ids[i + 1]!);
+      else out.idx.push(ids[0]!, ids[i + 1]!, ids[i]!);
+    }
+  }
+  return out.data(M);
+}
+
+/** A four-pointed star facing `face` (a unit vector), glowing. */
+function star(at: readonly number[], r: number, face: THREE.Vector3, color: C, joint: number, turn = 0): MeshData {
+  const u = new THREE.Vector3(0, 1, 0).cross(face);
+  if (u.lengthSq() < 0.01) u.set(1, 0, 0);
+  u.normalize();
+  const v = new THREE.Vector3().crossVectors(face, u).normalize();
+  const pt = (a: number, k: number): number[] => {
+    const x = Math.cos(a + turn) * r * k;
+    const y = Math.sin(a + turn) * r * k;
+    return [at[0]! + u.x * x + v.x * y, at[1]! + u.y * x + v.y * y, at[2]! + u.z * x + v.z * y];
+  };
+  const pts: number[][] = [];
+  for (let i = 0; i < 8; i++) pts.push(pt((i * Math.PI) / 4, i % 2 ? 0.32 : 1));
+  const centre = [at[0]!, at[1]!, at[2]!];
+  const core = mix(color, [1, 1, 1], 0.6);
+  const parts: MeshData[] = [];
+  for (let i = 0; i < 8; i++) parts.push(flat([centre, pts[i]!, pts[(i + 1) % 8]!], [core, color, color], joint));
+  return glowing(mergeAll(parts));
+}
+
+const mergeAll = (parts: MeshData[]): MeshData => mergeMeshes(parts);
+
+/** A long feather: a flat blade from its root to its tip, its vane widest a third of the way along. */
+function feather(root: readonly number[], tip: readonly number[], w: number, side: THREE.Vector3, c0: C, c1: C, joint: number): MeshData {
+  const at = (t: number, k: number): number[] => [root[0]! + (tip[0]! - root[0]!) * t + side.x * w * k, root[1]! + (tip[1]! - root[1]!) * t + side.y * w * k, root[2]! + (tip[2]! - root[2]!) * t + side.z * w * k];
+  const mid = mix(c0, c1, 0.4);
+  return flat([[...root], at(0.35, 1), at(0.8, 0.55), [...tip], at(0.8, -0.55), at(0.35, -1)], [c0, mid, c1, c1, c1, mid], joint);
+}
+
+/** Where on the cape (capeOf, its full length) a point a height `y` down it is, and the joints that carry it there. */
+function capeAt(w: Wardrobe, x: number, y: number): { p: number[]; j: number } {
+  const z = y > 0.98 ? -0.2 - (1.24 - y) * 0.38 : y > 0.72 ? -0.3 - (0.98 - y) * 0.19 : -0.35 - (0.72 - y) * 0.14;
+  const j = y > 0.98 ? w.medium.joints.indexOf('chest') : y > 0.6 ? w.medium.joints.indexOf('cape1') : w.medium.joints.indexOf('cape2');
+  return { p: [x, y, z - 0.03], j };
+}
+
+type Pal = { main: C; trim: C; cloth: C; glow: C };
+const palOf = (p: Piece | null | undefined, set: string): Pal => {
+  const [main, trim, cloth, glow] = (p?.colors ?? sigilSetOf(set)?.colors ?? ['#888888', '#cccccc', '#444444', '#ffffff']).map(rgb);
+  return { main: main!, trim: trim!, cloth: cloth!, glow: glow! };
+};
+
+/** The shop's armor sets (src/catalog/sigilItems.ts): any class wears them, in their own colors or an admin's. */
+const SHOP_SETS: Record<string, { head(c: Ctx, p: Pal): MeshData[]; chest(c: Ctx, p: Pal): MeshData[] }> = {
+  // black plate and gold: a king's crown fixed to a war helm, a drake's horns, and a visor with a fire behind it
+  crownforged: {
+    head(c, { main, trim, cloth, glow }) {
+      const parts: MeshData[] = [];
+      parts.push(painted(c.w.hero.meshes.Paladin_Helmet!, { skin: c.skin, metal: tup(main), cloth: tup(cloth), plated: true, white: tup(mix(main, trim, 0.35)) }));
+      // the crown: a band, and points round it, the front ones tallest
+      const band = new Build();
+      band.post(0, -0.02, 0.6, 0.62, 2.0, 2.13, 14, mul(trim, 0.8), trim);
+      parts.push(tied(band, c.head, 1, [0, 0, 0], M));
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2 + Math.PI / 2;
+        const front = Math.max(0, Math.sin(a));
+        const tall = (i % 2 ? 0.2 : 0.34) + 0.16 * front;
+        const x = Math.cos(a) * 0.6;
+        const z = Math.sin(a) * 0.6 - 0.02;
+        parts.push(rod([x, 2.1, z], [x * 1.12, 2.1 + tall, z * 1.12], 0.085, 0, 4, trim, mix(trim, [1, 1, 1], 0.45), c.head, M));
+      }
+      parts.push(glowing(gemAt(c.head, 0, 2.06, 0.64, 0.07, glow)));
+      // a drake's horns, sweeping back
+      const root = [0.5, 1.9, -0.12];
+      const curve = [root, [0.74, 2.06, -0.42], [0.86, 2.3, -0.78], [0.8, 2.6, -1.06]];
+      parts.push(...horn(c, curve, [0.15, 0.115, 0.07, 0], mul(main, 1.1), trim));
+      parts.push(...horn(c, curve.map(mirror), [0.15, 0.115, 0.07, 0], mul(main, 1.1), trim));
+      // the visor burns
+      const slit = new Build();
+      slit.box(-0.26, 0.62, 0.26, 0.7, 1.645, 1.7, glow, glow, glow);
+      parts.push(glowing(tied(slit, c.head, 1, [0, 0, 0], M)));
+      return parts;
+    },
+    chest(c, { main, trim, cloth, glow }) {
+      const parts = setBody(c, 'Paladin', 'Paladin', { metal: tup(main), cloth: tup(cloth), plated: true, white: tup(mix(main, trim, 0.3)) });
+      const body = c.w.hero.meshes.Paladin_Body!;
+      const front: Inside = (_x, _y, z) => z;
+      // seams of molten gold between the plates, and gold at the edges
+      parts.push(glowing(shell(body, [within(0.022), front, above(0.66), below(1.1)], 0.016, glow)));
+      parts.push(glowing(shell(body, [above(0.88), below(0.905)], 0.015, glow)));
+      parts.push(shell(body, [above(0.6), below(0.68)], 0.018, trim));
+      parts.push(shell(body, [above(1.08), below(1.13)], 0.018, trim));
+      parts.push(tabard(c, cloth, trim));
+      // a burning heart on the breast, in a crown of gold
+      const f = frontAt(body, 0.98);
+      parts.push(glowing(gemAt(c.chest, 0, 0.98, f + 0.025, 0.11, glow)));
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI * (0.1 + (0.8 * i) / 5);
+        parts.push(rod([Math.cos(a) * 0.12, 1.02 + Math.sin(a) * 0.08, f + 0.02], [Math.cos(a) * 0.2, 1.04 + Math.sin(a) * 0.2, f + 0.01], 0.03, 0, 4, trim, mix(trim, [1, 1, 1], 0.4), c.chest, M));
+      }
+      // pauldrons, and on each a drake's wing, its skin veined with fire
+      parts.push(
+        ...both((s) => {
+          const out: MeshData[] = [pauldron(c.w, s, 1.5, main, trim)];
+          const R0 = [s * 0.46, 1.32, -0.1];
+          const tips = [
+            [s * 0.66, 2.08, -0.3],
+            [s * 0.98, 1.86, -0.36],
+            [s * 1.14, 1.48, -0.3],
+          ];
+          for (const t of tips) out.push(rod(R0, t, 0.05, 0.012, 5, mul(main, 1.2), trim, c.chest, M));
+          const sc = (a: number[], b: number[], k: number): number[] => [(a[0]! + b[0]!) / 2 - s * k * 0.1, (a[1]! + b[1]!) / 2 - k * 0.12, (a[2]! + b[2]!) / 2];
+          const skinC = mul(cloth, 0.9);
+          out.push(flat([R0, tips[0]!, sc(tips[0]!, tips[1]!, 1), tips[1]!], [skinC, mul(cloth, 1.15), skinC, mul(cloth, 1.15)], c.chest));
+          out.push(flat([R0, tips[1]!, sc(tips[1]!, tips[2]!, 1), tips[2]!], [skinC, mul(cloth, 1.15), skinC, mul(cloth, 1.15)], c.chest));
+          out.push(glowing(flat([R0, [R0[0]! + s * 0.36, R0[1]! + 0.5, R0[2]! - 0.21], [R0[0]! + s * 0.38, R0[1]! + 0.46, R0[2]! - 0.215]], [glow], c.chest)));
+          out.push(glowing(flat([R0, [R0[0]! + s * 0.58, R0[1]! + 0.26, R0[2]! - 0.23], [R0[0]! + s * 0.6, R0[1]! + 0.22, R0[2]! - 0.23]], [glow], c.chest)));
+          // and a spike at the front
+          out.push(rod([s * 0.48, 1.34, 0.12], [s * 0.66, 1.66, 0.22], 0.07, 0, 5, main, trim, c.chest, M));
+          return out;
+        }),
+      );
+      parts.push(capeOf(c.w, cloth, trim, 'jag', 1.12));
+      return parts;
+    },
+  },
+  // white and silver: a circlet with a crescent moon, a ring of stars over it, a cape of night full of stars
+  celestine: {
+    head(c, { main, trim, cloth, glow }) {
+      const parts: MeshData[] = [];
+      const face = plainHead(c.w, c.look, null, c.skin, c.hair);
+      if (face) parts.push(face);
+      const band = new Build();
+      band.post(0, 0.02, 0.56, 0.57, 1.95, 2.04, 14, mul(trim, 0.85), trim);
+      parts.push(tied(band, c.head, 1, [0, 0, 0], M));
+      // the crescent on the brow, glowing
+      const moon: number[][] = [];
+      for (let i = 0; i <= 8; i++) {
+        const a = Math.PI * (0.15 + (0.7 * i) / 8);
+        moon.push([Math.cos(a) * 0.17, 2.1 - Math.sin(a) * 0.17 + 0.17, 0.62]);
+      }
+      for (let i = 8; i >= 0; i--) {
+        const a = Math.PI * (0.15 + (0.7 * i) / 8);
+        moon.push([Math.cos(a) * 0.12, 2.1 - Math.sin(a) * 0.1 + 0.17, 0.625]);
+      }
+      const strip: MeshData[] = [];
+      for (let i = 0; i < 8; i++) strip.push(flat([moon[i]!, moon[i + 1]!, moon[17 - i - 1]!, moon[17 - i]!], [glow, mix(glow, [1, 1, 1], 0.4)], c.head));
+      parts.push(glowing(mergeAll(strip)));
+      // little silver wings at the temples
+      parts.push(...both((s) => wing(c, s, [s * 0.55, 1.92, 0.02], trim, mix(main, [1, 1, 1], 0.4), 0.55)));
+      // the ring of stars, tilted, over and behind the head
+      for (let i = 0; i < 9; i++) {
+        const a = (i / 9) * Math.PI * 2;
+        const x = Math.cos(a) * 0.82;
+        const z = Math.sin(a) * 0.62 - 0.12;
+        const y = 2.42 - Math.sin(a) * 0.12;
+        const big = i % 3 === 0;
+        parts.push(star([x, y, z], big ? 0.17 : 0.11, new THREE.Vector3(0, 0, 1), big ? glow : mix(glow, cloth, 0.2), c.head, a));
+      }
+      return parts;
+    },
+    chest(c, { main, trim, cloth, glow }) {
+      const parts = setBody(c, 'Cleric', 'Mage', { cloth: tup(main), metal: tup(trim), white: tup(mix(main, trim, 0.2)) });
+      const body = c.w.hero.meshes.Cleric_Body!;
+      const low = body.min[1];
+      const front: Inside = (_x, _y, z) => z;
+      // a panel of night down the front, edged in silver, with stars in it
+      parts.push(shell(body, [within(0.13), front, above(low), below(1.0)], 0.014, cloth));
+      parts.push(shell(body, [within(0.155), (x) => Math.abs(x) - 0.13, front, above(low), below(1.0)], 0.016, trim));
+      parts.push(shell(body, [above(low), below(low + 0.08)], 0.016, trim));
+      parts.push(shell(body, [above(0.62), below(0.68)], 0.016, trim));
+      for (const [x, y, r] of [[0.03, 0.88, 0.05], [-0.05, 0.72, 0.035], [0.05, 0.56, 0.04], [-0.02, 0.42, 0.03]] as const) parts.push(star([x, y, frontAt(body, y) + 0.03], r, new THREE.Vector3(0, 0, 1), glow, c.chest));
+      parts.push(glowing(gemAt(c.chest, 0, 1.02, frontAt(body, 1.02) + 0.03, 0.09, glow)));
+      // crescent pauldrons, arching over the shoulders
+      parts.push(
+        ...both((s) => {
+          const out: MeshData[] = [pauldron(c.w, s, 1.15, trim, mix(main, [1, 1, 1], 0.4))];
+          const arc: number[][] = [];
+          for (let i = 0; i < 6; i++) {
+            const a = Math.PI * (0.1 + (0.8 * i) / 5);
+            arc.push([s * (0.5 + Math.sin(a) * 0.12), 1.24 + Math.sin(a) * 0.42, Math.cos(a) * 0.34]);
+          }
+          out.push(...horn(c, arc, [0.02, 0.07, 0.095, 0.095, 0.07, 0.02], trim, mix(trim, [1, 1, 1], 0.5), c.chest));
+          return out;
+        }),
+      );
+      // a constellation in an arch behind the shoulders: stars, and lines of light between them
+      const sky: number[][] = [];
+      for (let i = 0; i < 7; i++) {
+        const a = Math.PI * (0.08 + (0.84 * i) / 6);
+        sky.push([Math.cos(a) * 0.78, 1.25 + Math.sin(a) * 0.62 + (i % 2 ? 0.06 : -0.04), -0.46 - Math.sin(a) * 0.08]);
+      }
+      sky.forEach((p, i) => {
+        parts.push(star(p, i % 3 === 0 ? 0.1 : 0.065, new THREE.Vector3(0, 0, 1), glow, c.chest, i));
+        const q = sky[i + 1];
+        if (!q) return;
+        const d = new THREE.Vector3(q[0]! - p[0]!, q[1]! - p[1]!, 0).normalize().multiplyScalar(0.011);
+        parts.push(glowing(flat([[p[0]! - d.y, p[1]! + d.x, p[2]!], [q[0]! - d.y, q[1]! + d.x, q[2]!], [q[0]! + d.y, q[1]! - d.x, q[2]!], [p[0]! + d.y, p[1]! - d.x, p[2]!]], [mix(glow, cloth, 0.3)], c.chest)));
+      });
+      // the cape of night, and its stars
+      parts.push(capeOf(c.w, cloth, trim, 'wave', 1.12));
+      const spots = [[0.12, 1.08, 0.06], [-0.2, 0.96, 0.045], [0.3, 0.78, 0.05], [-0.06, 0.7, 0.07], [-0.34, 0.56, 0.045], [0.18, 0.46, 0.04], [0.02, 0.3, 0.055], [-0.22, 0.22, 0.04], [0.36, 0.22, 0.045]];
+      for (const [x, y, r] of spots) {
+        const at = capeAt(c.w, x!, y!);
+        parts.push(star(at.p, r!, new THREE.Vector3(0, 0, -1), mix(glow, [1, 1, 1], 0.2), at.j));
+      }
+      return parts;
+    },
+  },
+  // black feathers: a hood with a beaked mask and a crest, eyes that glow, a mantle and a cape of feathers
+  gloamquill: {
+    head(c, { main, trim, glow }) {
+      const parts: MeshData[] = [];
+      const face = c.w.hero.meshes.Knight_Head;
+      if (face) parts.push(painted(face, { skin: tup(mul(main, 0.6)), cloth: tup(mul(main, 0.6)), metal: tup(mul(main, 0.6)) }));
+      parts.push(painted(c.w.hero.meshes.Skeleton_Rogue_Hood!, { cloth: tup(mul(main, 1.15)), metal: tup(trim) }));
+      // the beaked mask: a brow over the eyes, and a long hooked beak
+      const beak = mix(main, trim, 0.45);
+      parts.push(rod([0, 1.76, 0.5], [0, 1.58, 0.96], 0.16, 0.05, 4, mix(beak, [1, 1, 1], 0.15), beak, c.head, M));
+      parts.push(rod([0, 1.58, 0.96], [0, 1.42, 1.06], 0.05, 0, 4, beak, mix(trim, [1, 1, 1], 0.45), c.head, M));
+      parts.push(rod([0, 1.5, 0.52], [0, 1.46, 0.8], 0.1, 0.03, 4, mul(beak, 0.75), beak, c.head, M));
+      // eyes like slits of light, slanting up and out
+      for (const s of [1, -1]) parts.push(glowing(flat([[s * 0.1, 1.68, 0.6], [s * 0.3, 1.74, 0.55], [s * 0.31, 1.78, 0.55], [s * 0.1, 1.73, 0.6]], [glow, mix(glow, [1, 1, 1], 0.5)], c.head)));
+      // a crest of feathers, swept back, and tufts at the sides
+      const side = new THREE.Vector3(1, 0, 0);
+      for (const [z, t, k] of [[0.3, 0.5, 0.11], [0.1, 0.68, 0.13], [-0.12, 0.78, 0.14], [-0.34, 0.7, 0.13], [-0.52, 0.52, 0.11]] as const) parts.push(feather([0, 2.08, z], [0, 2.08 + t * 0.62, z - t * 0.8], k, side, mul(main, 1.3), trim, c.head));
+      parts.push(
+        ...both((s) => [
+          feather([s * 0.48, 1.86, -0.08], [s * 0.94, 2.16, -0.42], 0.09, new THREE.Vector3(0, 1, 0), mul(main, 1.2), trim, c.head),
+          feather([s * 0.46, 1.72, -0.12], [s * 0.92, 1.84, -0.52], 0.08, new THREE.Vector3(0, 1, 0), mul(main, 1.2), trim, c.head),
+        ]),
+      );
+      return parts;
+    },
+    chest(c, { main, trim, cloth, glow }) {
+      const parts = setBody(c, 'RogueHooded', 'Rogue', { cloth: tup(cloth), metal: tup(trim) });
+      const body = c.w.hero.meshes.RogueHooded_Body!;
+      const low = body.min[1];
+      // leather straps crossing the chest, and a belt with a clasp that glows
+      const front: Inside = (_x, _y, z) => z;
+      parts.push(shell(body, [front, (x, y) => 0.045 - Math.abs(y - 0.68 - x * 0.9), above(0.66), below(1.12)], 0.016, mul(main, 1.4)));
+      parts.push(shell(body, [front, (x, y) => 0.045 - Math.abs(y - 0.68 + x * 0.9), above(0.66), below(1.12)], 0.016, mul(main, 1.4)));
+      parts.push(shell(body, [above(0.6), below(0.68)], 0.018, mul(main, 1.3)));
+      parts.push(shell(body, [above(low), below(low + 0.07)], 0.014, trim));
+      parts.push(glowing(gemAt(c.chest, 0, 0.64, frontAt(body, 0.64) + 0.03, 0.08, glow)));
+      // the mantle: two rows of feathers round the shoulders, falling outward
+      for (const row of [0, 1]) {
+        const n = 13;
+        for (let i = 0; i < n; i++) {
+          const a = Math.PI * (-0.05 + (1.1 * i) / (n - 1));
+          const out = new THREE.Vector3(Math.cos(a), 0, -Math.sin(a) * 0.9 + 0.12);
+          const r = 0.34 + row * 0.08;
+          const root = [out.x * r * 1.05, 1.32 - row * 0.12, out.z * r];
+          const len = 0.4 + row * 0.14 + (i % 2) * 0.06;
+          const tip = [root[0]! + out.x * len * 0.62, root[1]! - len * 0.78, root[2]! + out.z * len * 0.62];
+          const sideV = new THREE.Vector3(-out.z, 0, out.x).normalize();
+          parts.push(feather(root, tip, 0.075 + row * 0.01, sideV, row ? mul(main, 1.1) : mul(main, 1.4), row ? trim : mix(main, trim, 0.5), c.chest));
+        }
+      }
+      // the cape, and feathers along its hem
+      parts.push(capeOf(c.w, main, null, 'jag', 1.18));
+      for (let i = 0; i < 9; i++) {
+        const x = -0.48 + (i / 8) * 0.96;
+        const top = capeAt(c.w, x, 0.32 + (i % 2) * 0.05);
+        const tip = [top.p[0]! * 1.05, top.p[1]! - 0.34 - (i % 2) * 0.08, top.p[2]! - 0.06];
+        parts.push(feather(top.p, tip, 0.07, new THREE.Vector3(1, 0, 0), mul(main, 1.2), trim, top.j));
+      }
+      return parts;
+    },
+  },
 };
 
 /* ------------------------------------------------------------------ all of it */
@@ -844,9 +1196,14 @@ export function heroParts(w: Wardrobe, look: HeroLook): MeshData[] {
   const parts: MeshData[] = [];
   const ctx: Ctx = { w, skin, hair, look, head: J('head'), chest: J('chest'), hips: J('hips') };
   const headSet = look.head?.set;
-  parts.push(...(headSet ? SETS[headSet].head(ctx) : ladderHead(w, look, skin, hair)));
+  const shopHead = headSet ? SHOP_SETS[headSet] : undefined;
+  const wardenHead = headSet ? SETS[headSet as ClassId] : undefined;
+  parts.push(...(shopHead ? shopHead.head(ctx, palOf(look.head, headSet!)) : wardenHead ? wardenHead.head(ctx) : ladderHead(w, look, skin, hair)));
   const chestSet = look.chest.set;
-  if (chestSet) parts.push(...SETS[chestSet].chest(ctx));
+  const shopChest = chestSet ? SHOP_SETS[chestSet] : undefined;
+  const wardenChest = chestSet ? SETS[chestSet as ClassId] : undefined;
+  if (shopChest) parts.push(...shopChest.chest(ctx, palOf(look.chest, chestSet!)));
+  else if (wardenChest) parts.push(...wardenChest.chest(ctx));
   else {
     parts.push(...ladderChest(w, look, skin).parts);
     parts.push(...ladderLegs(w, look, skin));

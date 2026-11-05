@@ -12,6 +12,7 @@ import { shareOrCopy } from '../platform/share';
 import { Link, useLocation } from '../router/router';
 import { ProfileTabs } from './BugReportPage';
 import './InfoPages.css';
+import { Banner, LookAvatar } from '../components/Looks';
 
 const ERRORS: Record<string, string> = {
   unknown_code: 'That code doesn’t work. Check it with your friend.',
@@ -177,7 +178,9 @@ export function FriendsPage() {
           {view?.friends.map((f) => {
             const game = f.lastGame ? getGame(f.lastGame) : undefined;
             return (
-              <li key={f.id} className="friend-row">
+              <li key={f.id} className={`friend-row${f.banner ? ' has-banner' : ''}`}>
+                {f.banner && <Banner id={f.banner} row />}
+                <LookAvatar name={f.nickname} size={40} border={f.border} icon={f.icon} />
                 <span className="friend-who">
                   <strong>
                     {f.nickname} <span className="board-lvl mono">LV {f.level}</span>

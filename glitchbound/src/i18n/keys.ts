@@ -2105,7 +2105,7 @@ export const KEYS: string[] = [
   "See all {n} dailies",
   "A GlitchBound adventure",
   "A whole fantasy RPG that plays right in your browser. Choose your hero, gather your gear and close the Rift, alone or with friends.",
-  "7 heroes",
+  "8 heroes",
   "5 acts",
   "12 dungeons",
   "Co-op for 4",
@@ -2259,6 +2259,8 @@ export const KEYS: string[] = [
   "No border",
   "No banner",
   "See borders and banners in the shop",
+  "Icon",
+  "No icon",
 ];
 
 export const UI_COUNT = 311;

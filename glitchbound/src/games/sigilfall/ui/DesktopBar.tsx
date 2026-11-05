@@ -5,7 +5,7 @@ import { CLASSES } from '../data/classes';
 import { SKILLS } from '../data/skills';
 import type { SlotKey } from '../data/types';
 import type { SigilEngine } from '../engine';
-import { canRide } from '../progress/wardrobe';
+import { hasMount } from '../progress/wardrobe';
 import { skillIconUrl } from '../render/sprites';
 import { SUMMON_TIME } from '../sim/world';
 import { useFrame } from './GameScreen';
@@ -47,7 +47,7 @@ export function DesktopBar({ engine }: { engine: SigilEngine }) {
           {slots.map((s) => (
             <Slot key={s.slot} engine={engine} slot={s.slot} keyLabel={s.key} />
           ))}
-          {!!engine.hero && canRide(engine.hero) && <MountSlot engine={engine} />}
+          {!!engine.hero && hasMount(engine.hero) && <MountSlot engine={engine} />}
         </div>
       )}
     </>

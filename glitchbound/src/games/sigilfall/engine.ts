@@ -1,5 +1,9 @@
 import type { GameHost } from '../../platform/contract';
 import { reportOrders, waitingOrders } from '../../platform/sigilfallOrders';
+import { sigilfallShop, watchSigilfallShop } from '../../platform/sigilfallShop';
+import { setShopGoods } from './progress/shopGoods';
+import { account } from '../../platform/account';
+import { classOpen, heroSlots } from './progress/paidClasses';
 import { applyOrder, orderToast } from './progress/gm';
 import { isMainQuest, turnInNpc } from './progress/handin';
 import { rewardSummary } from './progress/rewards';
@@ -15,8 +19,8 @@ import { KeyboardMouse, TouchState, type UiKey } from './input/input';
 import { holds } from './sim/story';
 import { acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, type Body, type Face, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
-import { canRide, chooseMount, FIRST_RIDE, grantMounts, grantWarden, setShelfPoints, syncRift, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
-import { DEFAULT_SETTINGS, HERO_SLOTS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
+import { canRide, chooseMount, FIRST_RIDE, grantMounts, grantWarden, hasMount, setShelfPoints, syncRift, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
+import { DEFAULT_SETTINGS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
 import type { ShopId } from './data/vendors';
 import { iconsReady } from './render/art/gameIcons';
@@ -299,6 +303,19 @@ export class SigilEngine {
   private gmTimer = 0;
   private gmBusy = false;
 
+  /* ----------------------------------------------- the site's shop (progress/shopGoods.ts) */
+
+  private stopShop: () => void = () => undefined;
+
+  /** What the shop sells and what the account owns, heard again: a mount or look no longer owned comes off at once. */
+  private syncShop(): void {
+    const { items, owned } = sigilfallShop();
+    setShopGoods(items, owned);
+    const w = this.world;
+    if (w?.player.riding && this.hero && !canRide(this.hero, w.player.riding)) w.dismount();
+    this.bump();
+  }
+
   /** Looks for orders soon after the game opens (the saves have arrived by then) and then every minute and a half. */
   private startGm(): void {
     this.gmStart = window.setTimeout(() => void this.checkGm(), GM_FIRST_MS);
@@ -322,7 +339,7 @@ export class SigilEngine {
           done.push({ id: o.id, result: '' });
           continue;
         }
-        const result = applyOrder(this.save, o, this.hero);
+        const result = applyOrder(this.save, o, this.hero, Math.random, heroSlots(account.get().me));
         done.push({ id: o.id, result });
         if (result) continue;
         if (this.hero && this.hero.created === o.created) live = true;
@@ -345,6 +362,8 @@ export class SigilEngine {
     this.kbm.onUi = (k) => this.uiKey(k);
     this.last = performance.now();
     this.startGm();
+    this.syncShop();
+    this.stopShop = watchSigilfallShop(() => this.syncShop());
     const loop = (t: number): void => {
       this.raf = requestAnimationFrame(loop);
       // (a phone's screen may run at 120: the game looks no better for it, and the heat is real)
@@ -357,6 +376,7 @@ export class SigilEngine {
   }
 
   detach(): void {
+    this.stopShop();
     window.clearTimeout(this.gmStart);
     window.clearInterval(this.gmTimer);
     cancelAnimationFrame(this.raf);
@@ -883,6 +903,8 @@ export class SigilEngine {
   }
 
   createHero(slot: number, cls: ClassId, name: string, body: Body = 'm', face?: Face, tips = this.settings.tutorial): void {
+    // a class sold in the shop is made only once it's bought, and in a place this account plays (progress/paidClasses.ts)
+    if (!classOpen(cls, account.get().me) || slot >= heroSlots(account.get().me)) return;
     const c = newCharacter(cls, name || this.defaultName, `hero${slot}`, Date.now(), body);
     if (face) c.face = face;
     // the first hero gets the tutorial; a later one by the player's answer, which is also the Settings choice
@@ -920,6 +942,12 @@ export class SigilEngine {
   private shelfAsked = false;
 
   play(slot: number): void {
+    const locked = this.save.heroes[slot];
+    if (slot >= heroSlots(account.get().me)) return;
+    if (locked && !classOpen(locked.cls, account.get().me)) {
+      this.setUi({ notice: `This hero is a ${CLASSES[locked.cls].name}, a class from the shop. Unlock it in the shop to play them again: they're kept, as they were.` });
+      return;
+    }
     const h = this.save.heroes[slot];
     if (!h) return;
     this.askShelf();
@@ -954,7 +982,7 @@ export class SigilEngine {
     this.greetIn = questState(h, 'briar-dusk') === 'active' && h.level === 1 && h.stats.time < 1 ? GREET_AFTER : 0;
     if (h.level >= SPEC_LEVEL) this.queueTip('talents');
     // (as the talents': a hero who already rides and hasn't seen it, with the hints on, sees it as the land opens)
-    if (canRide(h)) this.queueTip('riding');
+    if (hasMount(h)) this.queueTip('riding');
     this.bump();
   }
 
@@ -1032,7 +1060,7 @@ export class SigilEngine {
       w.player.ultBudget = prev.player.ultBudget;
     }
     // riding on from one open land to the next (never into a dungeon)
-    if (prev?.player.riding && region.kind !== 'dungeon' && !region.interior && h.mounts.includes(prev.player.riding)) w.player.riding = prev.player.riding;
+    if (prev?.player.riding && region.kind !== 'dungeon' && !region.interior && canRide(h, prev.player.riding)) w.player.riding = prev.player.riding;
     // the quests of a land start when the hero first gets there
     for (const q of startQuests(h)) w.emit({ t: 'questStart', quest: q.id });
     this.world = w;
@@ -1725,7 +1753,8 @@ export class SigilEngine {
   /** Heroes in the save, for the title screen. */
   heroes(): (Character | null)[] {
     const out: (Character | null)[] = [];
-    for (let i = 0; i < HERO_SLOTS; i++) out.push(this.save.heroes[i] ?? null);
+    // the places this account plays: three, or all of them with the Gloamknight Pack
+    for (let i = 0; i < heroSlots(account.get().me); i++) out.push(this.save.heroes[i] ?? null);
     return out;
   }
 }

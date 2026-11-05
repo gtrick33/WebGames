@@ -36,7 +36,14 @@ const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
 const OLD_SAVE_KEY = 'glitchbound.riftbound';
 const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
 export const SAVE_VERSION = 12;
-export const HERO_SLOTS = 3;
+/**
+ * Hero places a save keeps. Every account plays three; the Gloamknight Pack opens two more (progress/paidClasses.ts
+ * `heroSlots`), and a hero in one of those is kept, out of sight, if the pack is refunded.
+ */
+export const HERO_SLOTS = 5;
+export const BASE_HERO_SLOTS = 3;
+/** A shop item's id (src/catalog/shop.ts sanitizeProducts). */
+const SHOP_ID = /^[a-z0-9][a-z0-9-]{1,39}$/;
 
 export interface Settings {
   master: number;
@@ -319,6 +326,12 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   for (const slot of LOOK_SLOTS) if (typeof worn[slot] === 'string') c.worn[slot] = worn[slot] as string;
   learnLooks(c, [...allItems(c), ...(c.held ?? [])]);
   tidyWardrobe(c);
+  // the shop's mount and looks chosen over these: only the choice, by a shop item's id. Whether the account owns them
+  // is asked each time (progress/shopGoods.ts), so a save can choose one but never shows one that isn't owned
+  const shopId = (v: unknown): v is string => typeof v === 'string' && SHOP_ID.test(v);
+  if (shopId(o.shopMount)) c.shopMount = o.shopMount;
+  const shopWorn = obj(o.shopWorn) ?? {};
+  for (const slot of ['head', 'chest'] as const) if (shopId(shopWorn[slot])) c.shopWorn = { ...c.shopWorn, [slot]: shopWorn[slot] };
   // mounts: earned ones are owned (the Gullport Strider for anyone who has its perk); the chosen one must be owned.
   // A mount held from before Dunmore's riders came (older rules gave some early) stays in the save: the hero
   // just can't ride it until the riders come (wardrobe.ts ridingOpen, world.ts mountRefusal).

@@ -1,5 +1,5 @@
 import { damp } from '../core/math';
-import { MOUNT_DEFS } from '../data/mounts';
+import { mountDef, riddenMount } from '../progress/wardrobe';
 import { NPCS } from '../data/quests';
 import { passerbyLook } from '../render/art/townsfolk';
 import type { HeroLook } from '../render/art/hero';
@@ -166,10 +166,11 @@ export class WorldCast {
     const speed = Math.hypot(p.vx, p.vy);
     const moving = speed > 10;
     const acting = p.actKind !== null && p.actT > 0;
-    const mount = p.riding ? MOUNT_DEFS[p.riding] : undefined;
+    const mount = p.riding ? mountDef(p.riding) : undefined;
     // which way they face: where the blow goes, else where they walk
     let want = this.heroTurn;
-    if (acting) want = turnOf(p.actAngle);
+    if (p.casting) want = turnOf(p.casting.angle);
+    else if (acting) want = turnOf(p.actAngle);
     else if (moving) want = Math.atan2(p.vx, p.vy);
     else if (!p.form) want = this.heroTurn;
     this.heroTurn = damp(this.heroTurn, shortest(this.heroTurn, want), 16, dt);
@@ -179,19 +180,31 @@ export class WorldCast {
     const flash = p.flash > 0 ? 0.75 : blink ? 0.4 : 0;
     const clipOf = (kind: string): string => (kind === 'cast' ? 'cast' : kind === 'shoot' ? 'bow' : kind === 'heavy' ? 'chop2' : kind === 'spin' ? 'spin' : 'chop');
     const inSaddle = !!mount && cast.mountReady(mount);
+    // the mount they'd call is fetched ahead, so it's there the moment they're up on it
+    // (the one riddenMount gives: their own, or one from the shop while it's theirs)
+    const called = !mount ? mountDef(riddenMount(w.hero) ?? '') : undefined;
+    if (called) cast.mountReady(called);
+    // calling it: a quick summoning cast, no animal beside them (render/effects.ts draws the swirl, the rules the flash)
+    const calling = !!called && p.summon > 0 && !p.dead && !p.form;
     if (p.dead) m.set('die', false);
     else if (inSaddle) m.set('ride');
     else if (p.dash) m.set('dodge', false);
     else if (p.channel) m.set(p.channel.target !== undefined ? 'channel' : 'spin');
+    // a spell with a cast time: hands up, staff forward, held while the bar fills (the release is the 'cast' below)
+    else if (p.casting) m.set('channel', true, 0.12);
     else if (acting) {
       const key = `${p.actKind}`;
       const fresh = this.lastAct !== key || p.actT > (this.lastActT ?? 0) + 0.01;
       m.set(clipOf(p.actKind!), false, 0.08, fresh);
-    } else if (moving) m.set(speed > 60 ? 'run' : 'walk');
+    } else if (calling) m.set('cast', false, 0.08);
+    else if (moving) m.set(speed > 60 ? 'run' : 'walk');
     else m.set('idle');
     this.lastAct = acting ? `${p.actKind}` : null;
     this.lastActT = p.actT;
     m.advance(m.clip === 'walk' || m.clip === 'run' ? dt * stride(m.clip, speed, PERSON_H) : dt);
+    // (the cast runs the length of the call, so its sweep ends as they land in the saddle)
+    const castClip = cast.wardrobe?.medium.clips.cast;
+    if (calling && m.clip === 'cast' && castClip) m.t = (Math.min(1, p.summon / SUMMON_TIME) * castClip.n) / castClip.fps;
 
     if (inSaddle) {
       // long as the animal is long
@@ -200,7 +213,7 @@ export class WorldCast {
     } else cast.shadow(p.x, p.y, 8);
     if (!p.dead && !o0.landOnly) cast.ring(p.x, p.y, 11, '#22e4ff', 0.75);
     if (p.form) {
-      cast.creature(p.form, p.x, p.y, this.heroTurn, 30, acting ? 'chop' : moving ? 'run' : 'idle', time, !acting, { alpha, flash });
+      cast.creature(p.form, p.x, p.y, this.heroTurn, 30, acting ? 'chop' : moving && !p.casting ? 'run' : 'idle', time, !acting, { alpha, flash });
       return;
     }
     if (inSaddle) {
@@ -214,15 +227,8 @@ export class WorldCast {
       if (saddle) cast.person(look, null, false, saddle.x, saddle.y, this.heroTurn, m, { alpha, flash, h: PERSON_H * shape.rider, xray: true, hipsAt: saddle.high, tip: saddle.tip * 0.55 });
       return;
     }
-    // calling the mount: it fades in beside the hero
-    if (p.summon > 0 && w.hero.mount && MOUNT_DEFS[w.hero.mount]) {
-      const mm = this.mountMotion;
-      mm.set('idle', true, 0.14);
-      mm.advance(dt);
-      // (not on top of them: at their side, ready to be got onto)
-      const off = shapeOf(MOUNT_DEFS[w.hero.mount]!).backW * shapeOf(MOUNT_DEFS[w.hero.mount]!).px + 11;
-      cast.mount(MOUNT_DEFS[w.hero.mount]!, p.x + Math.cos(this.heroTurn) * off, p.y - Math.sin(this.heroTurn) * off, this.heroTurn, mm, { alpha: Math.min(1, p.summon / SUMMON_TIME) });
-    }
+    // (the animal stands from the moment they're on it, not walking up)
+    if (calling) this.mountMotion.set('idle', true, 0);
     cast.person(look, held, shieldOf(w.hero.cls), p.x, p.y, this.heroTurn, m, { alpha, flash, xray: true });
   }
 
@@ -410,8 +416,11 @@ export class WorldCast {
       this.ghosts.set(gh.n, s);
     }
     const moving = Math.hypot(gh.vx, gh.vy) > 10;
-    if (moving) s.turn = damp(s.turn, shortest(s.turn, Math.atan2(gh.vx, gh.vy)), 14, dt);
+    if (gh.cast && !gh.dead) s.turn = damp(s.turn, shortest(s.turn, turnOf(gh.cast.angle)), 14, dt);
+    else if (moving) s.turn = damp(s.turn, shortest(s.turn, Math.atan2(gh.vx, gh.vy)), 14, dt);
     if (gh.dead) s.m.set('die', false);
+    // casting a spell (their cast bar): the same raised hands as the hero's own
+    else if (gh.cast) s.m.set('channel', true, 0.12);
     else s.m.set(moving ? 'run' : 'idle');
     s.m.advance(dt);
     cast.shadow(gh.x, gh.y, 8);

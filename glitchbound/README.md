@@ -161,8 +161,8 @@ address (`canonical.ts`), since each address keeps its own storage and sign-in.
 
 ## Performance budget
 
-`npm run build` fails if the JavaScript loaded at startup exceeds 120 KB gzip. Today: about 109 KB (React is most of
-it); game previews load as separate chunks only when their tile is on screen. The game page is a chunk of its own
+`npm run build` fails if the JavaScript loaded at startup exceeds 121 KB gzip (120 KB until 2026-11-05). Today: about
+120.1 KB (React is most of it); game previews load as separate chunks only when their tile is on screen. The game page is a chunk of its own
 (`src/pages/loadGamePage.ts`): game pages preload it in their HTML, and everywhere else it loads once the page is idle.
 
 ## Credits

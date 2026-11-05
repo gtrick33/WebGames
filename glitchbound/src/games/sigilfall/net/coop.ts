@@ -1,6 +1,7 @@
 import { applyStatus, hurtPlayer, remoteHit } from '../sim/combat';
 import { circleHitsWall } from '../sim/map';
 import { QUEST_DEFS } from '../data/quests';
+import { SKILLS } from '../data/skills';
 import type { EliteAffix, StatusId } from '../data/types';
 import type { Character } from '../progress/character';
 import { packQuest, unpackQuest } from '../progress/save';
@@ -56,6 +57,8 @@ interface HeroMsg {
   dead: 0 | 1;
   u: 0 | 1;
   sh: [number, number, number, number, number, string][];
+  /** The spell being cast, if one is: its skill id, how far along (0 to 1) and where it faces. */
+  c?: [string, number, number];
 }
 
 /** A guest's hits, control and falls since its last message. */
@@ -231,7 +234,7 @@ export class CoopSession {
 
   private ghostFor(m: Member, w: World): Ghost {
     const p = w.player;
-    return { n: m.n, name: m.card.name, cls: m.card.cls, x: p.x, y: p.y, tx: p.x, ty: p.y, vx: 0, vy: 0, dir: 0, walkT: 0, r: p.r, hp: 1, maxHp: 1, dead: false, untouchable: true, look: m.card.look, weapon: m.card.weapon, shots: [], seen: w.time };
+    return { n: m.n, name: m.card.name, cls: m.card.cls, x: p.x, y: p.y, tx: p.x, ty: p.y, vx: 0, vy: 0, dir: 0, walkT: 0, r: p.r, hp: 1, maxHp: 1, dead: false, untouchable: true, look: m.card.look, weapon: m.card.weapon, shots: [], cast: null, seen: w.time };
   }
 
   /** After each step of the world: the drawn places ease, and what is due goes out. */
@@ -308,7 +311,9 @@ export class CoopSession {
     const p = w.player;
     const sh: HeroMsg['sh'] = [];
     for (const pr of w.projectiles) if (!pr.hostile && !pr.dead && sh.length < 24) sh.push([Math.round(pr.x), Math.round(pr.y), Math.round(pr.vx), Math.round(pr.vy), pr.r, pr.color]);
-    return { t: 'p', x: r1(p.x), y: r1(p.y), vx: Math.round(p.vx), vy: Math.round(p.vy), dir: p.dir, hp: Math.round(p.hp), mh: Math.round(p.maxHp), dead: p.dead ? 1 : 0, u: p.iframe > 0 || !!p.dash ? 1 : 0, sh };
+    const msg: HeroMsg = { t: 'p', x: r1(p.x), y: r1(p.y), vx: Math.round(p.vx), vy: Math.round(p.vy), dir: p.dir, hp: Math.round(p.hp), mh: Math.round(p.maxHp), dead: p.dead ? 1 : 0, u: p.iframe > 0 || !!p.dash ? 1 : 0, sh };
+    if (p.casting) msg.c = [p.casting.spec.id, Math.round((p.casting.t / p.casting.total) * 100) / 100, r1(p.casting.angle)];
+    return msg;
   }
 
   private sendFrame(w: World): void {
@@ -376,6 +381,10 @@ export class CoopSession {
       const [x, y, vx, vy, r, color] = row as unknown[];
       g.shots.push({ x: num(x, -POS, POS), y: num(y, -POS, POS), vx: num(vx, -5000, 5000), vy: num(vy, -5000, 5000), r: num(r, 1, 60, 4), color: str(color, 16) || '#ffffff' });
     }
+    // a spell on its way: only a skill this game knows, of a caster's own class
+    const [cid, ck, ca] = list(m.c, 3);
+    const skill = typeof cid === 'string' ? SKILLS[cid] : undefined;
+    g.cast = skill && skill.cls === g.cls && !g.dead ? { id: skill.id, k: num(ck, 0, 1), angle: num(ca, -10, 10) } : null;
     g.seen = w.time;
   }
 
