@@ -185,7 +185,7 @@ describe('icons and looks an admin made', () => {
 
 describe('the Gloamknight Pack', () => {
   it('lets its owner wear its own border and banner, and the boards show them, until a refund', async () => {
-    const { db, env, member, board } = setup();
+    const { db, member, board } = setup();
     const kay = await member('Kay', 12);
     // not bought: refused
     expect((await kay.wear({ border: 'border-gloam' })).status).toBe(403);
