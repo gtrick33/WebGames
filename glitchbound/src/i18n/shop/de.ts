@@ -20,7 +20,7 @@ const de: ShopText = {
     wear: '<wear>In deinem Profil tragen</wear>.',
     inWardrobe: 'Zu finden in der Garderobe (Wardrobe) jedes Helden in deinem Konto: <open>Sigilfall öffnen</open>.',
     notYet: 'Noch nicht im Verkauf.',
-    get: '{name} holen',
+    get: '{name} kaufen',
     signInFirst: 'Erst anmelden',
     signInWhy: 'Melde dich an, damit ein Kauf bei deinem Konto bleibt.',
     kinds: { border: 'Rahmen', banner: 'Banner', icon: 'Profil-Icons' },

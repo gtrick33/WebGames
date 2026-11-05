@@ -191,7 +191,7 @@ async function confirmByEmail(env: Env, id: string, now: number): Promise<void> 
   if (!row || !p) return;
   const day = new Date(now).toISOString().slice(0, 10);
   const lang = langOfTerms(row.terms);
-  const t = SHOP_TEXTS[lang] ?? SHOP_TEXTS.en!;
+  const t = SHOP_TEXTS[lang];
   // (an item an admin renamed reads as they wrote it)
   const code = PRODUCTS.find((x) => x.id === p.id);
   const name = t.items[p.id] && code?.name === p.name ? t.items[p.id]!.name : p.name;

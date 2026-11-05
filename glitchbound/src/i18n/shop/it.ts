@@ -1,0 +1,93 @@
+import type { ShopText } from '../shopTypes';
+
+/** Italiano (src/i18n/shopTypes.ts has the rules; English in ./en.ts is the source). A lawyer should read it. */
+const MOUNT = 'Per ogni eroe del tuo account. Cambia solo l’aspetto: va alla stessa andatura di ogni altra cavalcatura.';
+const LOOK = 'Per ogni classe, sopra qualsiasi equipaggiamento, dal Guardaroba (Wardrobe). Cambia solo l’aspetto: le tue statistiche dipendono da ciò che equipaggi.';
+const ON_BOARDS = 'nel tuo profilo e nelle classifiche.';
+const ACROSS = 'In tutto il tuo profilo e dietro il tuo nome nelle classifiche.';
+const ICON = 'al posto della tua foto: nel profilo, nella barra in alto e nelle classifiche.';
+
+const it: ShopText = {
+  shop: {
+    title: 'Negozio',
+    meta: 'Extra facoltativi per GlitchBound, ciascuno pagato una volta sola. Tutti i giochi restano gratuiti.',
+    lead: 'Tutti i giochi restano gratuiti. Questi sono extra facoltativi, ciascuno pagato una volta sola: niente abbonamenti, niente valuta di gioco e niente scatole casuali. La maggior parte cambia solo l’aspetto delle cose; il pacchetto Gloamknight sblocca una nuova classe giocabile in Sigilfall.',
+    adminTest: 'Test amministratore: il negozio è chiuso ai giocatori e qui puoi provare un acquisto.',
+    closed: 'Il negozio non è ancora aperto, quindi per ora non si può comprare niente.',
+    thanks: 'Grazie! Il tuo acquisto arriva sul tuo account appena il pagamento viene confermato, di solito entro un minuto.',
+    vat: 'IVA inclusa, si paga una volta',
+    yours: 'Questo è tuo.',
+    wear: '<wear>Mostralo nel tuo profilo</wear>.',
+    inWardrobe: 'Si trova nel Guardaroba (Wardrobe) di ogni eroe del tuo account: <open>apri Sigilfall</open>.',
+    notYet: 'Non ancora in vendita.',
+    get: 'Ottieni {name}',
+    signInFirst: 'Prima accedi',
+    signInWhy: 'Accedi perché l’acquisto resti legato al tuo account.',
+    kinds: { border: 'Cornici', banner: 'Banner', icon: 'Icone del profilo' },
+    sigilNote: 'Cavalcature e aspetti del Guardaroba per ogni eroe del tuo account. Cambiano solo l’aspetto del tuo eroe e nient’altro: ogni cavalcatura va alla stessa andatura e le tue statistiche dipendono sempre da ciò che equipaggi.',
+    planned: 'In arrivo',
+    terms: 'Leggi i <terms>termini di vendita</terms> per conoscere i tuoi diritti, i rimborsi e da chi stai comprando.',
+    inPack: 'Nel pacchetto',
+    packClass: 'Il Gloamknight',
+    packClassWhat: 'L’ottava classe di Sigilfall e due slot per eroi in più',
+    checkoutNote: 'IVA inclusa. Un solo pagamento, nessun abbonamento. Il nostro fornitore di pagamenti, Stripe, incassa il pagamento e ti invia la ricevuta.',
+    already: 'Questo è già tuo.',
+    failed: 'Impossibile aprire il pagamento. Non è stato addebitato nulla. Riprova.',
+    pay: 'Continua al pagamento',
+    cancel: 'Annulla',
+    agreeNow: 'Chiedo espressamente di riceverlo subito e prendo atto che, una volta ricevuto, perdo il mio diritto di recesso di 14 giorni.',
+    agreeAge: 'Ho almeno 18 anni, oppure un genitore o tutore ha acconsentito a questo acquisto.',
+  },
+  email: {
+    subject: 'Il tuo acquisto su GlitchBound: {name}',
+    thanks: 'Grazie! {name} ({price}, IVA inclusa) ora è sul tuo account GlitchBound.',
+    receipt: 'La ricevuta ti arriva a parte dal nostro fornitore di pagamenti, Stripe, tramite Link.',
+    confirmed: 'Al momento dell’acquisto hai confermato: «{statement}»',
+    date: 'Data: {date}. Termini di vendita: {url}',
+    help: 'Se qualcosa non funziona, rispondi a questa email o apri un ticket su {url}.',
+  },
+  items: {
+    'ad-free': { name: 'Senza pubblicità', blurb: 'Niente banner pubblicitari sul tuo account, su ogni dispositivo da cui accedi, e il tuo tentativo extra nella sfida giornaliera non richiede annunci. Un solo pagamento, nessun abbonamento.' },
+    'border-neon-halo': { name: 'Cornice «Alone al neon»', blurb: `Un anello di luce ciano, viola e rosa che ruota lentamente intorno alla tua foto, ${ON_BOARDS}` },
+    'border-solar-flare': { name: 'Cornice «Fiammata solare»', blurb: `Un anello fiammeggiante oro e arancio con una corona tremolante, intorno alla tua foto ${ON_BOARDS}` },
+    'border-glitch': { name: 'Cornice «Glitch»', blurb: `Un anello che si sdoppia in ciano e rosa e ogni tanto salta fuori posto, intorno alla tua foto ${ON_BOARDS}` },
+    'border-frost': { name: 'Cornice «Brina»', blurb: `Un anello di ghiaccio con schegge di cristallo e scintille fluttuanti, intorno alla tua foto ${ON_BOARDS}` },
+    'border-orbit': { name: 'Cornice «Orbita»', blurb: `Un sottile anello doppio con due piccole lune che girano intorno alla tua foto, ${ON_BOARDS}` },
+    'border-crown': { name: 'Cornice «Corona»', blurb: `Un anello d’oro tempestato di gemme e sormontato da una piccola corona, intorno alla tua foto ${ON_BOARDS}` },
+    'banner-sunset-grid': { name: 'Banner «Griglia al tramonto»', blurb: `Un sole a strisce tramonta dietro una griglia luminosa che scorre verso di te. ${ACROSS}` },
+    'banner-aurora': { name: 'Banner «Aurora»', blurb: `L’aurora boreale ondeggia su montagne scure sotto un cielo stellato. ${ACROSS}` },
+    'banner-nebula': { name: 'Banner «Nebulosa»', blurb: `Nuvole viola alla deriva, stelle che scintillano, un pianeta con gli anelli e qualche stella cadente. ${ACROSS}` },
+    'banner-neon-city': { name: 'Banner «Città al neon»', blurb: `Lo skyline di una città di notte, con le finestre accese e luci che scorrono in basso. ${ACROSS}` },
+    'banner-deep-sea': { name: 'Banner «Abissi»', blurb: `Raggi di luce nell’acqua profonda, bolle che salgono e alghe che ondeggiano. ${ACROSS}` },
+    'banner-ember-field': { name: 'Banner «Campo di braci»', blurb: `Scintille che si alzano da un terreno incandescente verso la notte. ${ACROSS}` },
+    'banner-gloam': { name: 'Banner «Crepuscolo»', blurb: `Luce rosa e viola che ondeggia su colline scure al crepuscolo. ${ACROSS}` },
+    'border-gloam': { name: 'Cornice «Crepuscolo»', blurb: `Una corona viola crepuscolo che tremola intorno alla tua foto, ${ON_BOARDS}` },
+    'icon-fox': { name: 'Icona «Volpe»', blurb: `Una volpe furba ${ICON}` },
+    'icon-owl': { name: 'Icona «Gufo»', blurb: `Un gufo notturno che ogni tanto sbatte le palpebre, ${ICON}` },
+    'icon-skull': { name: 'Icona «Teschio»', blurb: `Un teschio con gli occhi dalla luce soffusa ${ICON}` },
+    'icon-rocket': { name: 'Icona «Razzo»', blurb: `Un razzo con una fiamma tremolante ${ICON}` },
+    'icon-crown': { name: 'Icona «Corona»', blurb: `Una corona ingioiellata che cattura la luce, ${ICON}` },
+    'icon-bolt': { name: 'Icona «Fulmine»', blurb: `Un fulmine crepitante ${ICON}` },
+    'sigilfall-crownforged-wyrm': { name: 'Crownforged Wyrm', blurb: `Un drago di Sigilfall in armatura a piastre nera bordata d’oro, sotto una corona di corna, con le ali venate di luce fusa e la coda in fiamme. ${MOUNT}` },
+    'sigilfall-galecrest-drake': { name: 'Galecrest Drake', blurb: `Un drago di Sigilfall blu tempesta con una cresta di corna, spine di cristallo lungo la schiena e fulmini nelle ali. ${MOUNT}` },
+    'sigilfall-runetusk-boar': { name: 'Runetusk War-Boar', blurb: `Un cinghiale da guerra di Sigilfall in armatura a piastre chiodata ed elmo cornuto, con le zanne cerchiate di rune luminose. ${MOUNT}` },
+    'sigilfall-cinderhorn-hart': { name: 'Cinderhorn Hart', blurb: `Un cervo di Sigilfall grigio carbone con palchi di fiamma viva e rune di brace sui fianchi. ${MOUNT}` },
+    'sigilfall-moonglass-hart': { name: 'Moonglass Hart', blurb: `Un cervo bianco di Sigilfall con palchi di cristallo luminoso, un’armatura bordata di luce e rune pallide, e luce di stelle intorno agli zoccoli. ${MOUNT}` },
+    'sigilfall-gloamwing-drake': { name: 'Gloamwing Drake', blurb: `Un drago di Sigilfall del colore dell’ultima luce, in armatura a piastre viola crepuscolo sotto una corona di corna, con le ali venate di fuoco viola pallido. ${MOUNT}` },
+    'sigilfall-crownforged-helm': { name: 'Crownforged Helm', blurb: `Un elmo di Sigilfall in acciaio nero sotto una corona d’oro, con corna di drago e una visiera ardente. ${LOOK}` },
+    'sigilfall-crownforged-plate': { name: 'Crownforged Plate', blurb: `Un’armatura di Sigilfall a piastre nere cucite d’oro fuso, con spallacci ad ala di drago e un mantello cremisi. ${LOOK}` },
+    'sigilfall-celestine-crown': { name: 'Celestine Crown', blurb: `Un diadema d’argento di Sigilfall con una falce di luna, sotto un cerchio di stelle che ruota. ${LOOK}` },
+    'sigilfall-celestine-mantle': { name: 'Celestine Mantle', blurb: `Una veste bianca e argento di Sigilfall con spallacci a mezzaluna e un mantello di notte pieno di stelle. ${LOOK}` },
+    'sigilfall-gloamquill-cowl': { name: 'Gloamquill Cowl', blurb: `Un cappuccio scuro di Sigilfall con una maschera a becco, una cresta di piume e due occhi che brillano. ${LOOK}` },
+    'sigilfall-gloamquill-mantle': { name: 'Gloamquill Mantle', blurb: `Un’armatura di cuoio di Sigilfall sotto una mantellina di piume nere, con un lungo mantello di piume dietro. ${LOOK}` },
+    'sigilfall-duskborn-helm': { name: 'Duskborn Helm', blurb: `Un elmo di Sigilfall in acciaio nero sotto una corona di crepuscolo, con corna e una visiera che arde di viola. ${LOOK}` },
+    'sigilfall-duskborn-plate': { name: 'Duskborn Plate', blurb: `Un’armatura di Sigilfall a piastre nere cucite di luce viola, con spallacci ad ala di drago e un mantello color crepuscolo. ${LOOK}` },
+    'sigilfall-gloamknight': {
+      name: 'Pacchetto Gloamknight',
+      blurb: 'L’ottava classe di Sigilfall, il Gloamknight, per il tuo account, con l’elmo e l’armatura Duskborn, il Gloamwing Drake, la cornice e il banner «Crepuscolo» e due slot per eroi in più.',
+    },
+    'look-names': { name: 'Effetti per il nome', blurb: 'Un tocco di colore e di brillantezza per il tuo nickname.' },
+  },
+};
+
+export default it;
