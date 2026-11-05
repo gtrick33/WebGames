@@ -18,7 +18,7 @@ import { npcMark, rarityColor } from '../render/renderer';
 import { heldWeapon, heroDollUrl, heroLook, itemIconUrl, mountPictureUrl, talentIconUrl, watchMountPictures } from '../render/sprites';
 import type { HeroLook } from '../render/art/hero';
 import { MOUNTS } from '../data/mounts';
-import { authoredLooks, BARE_LOOK, canRide, LOOK_SLOTS, lookFits, lookOf, lookSource, mountDef, riddenMount, ridingOpen, wornId, wornLooks, type Look, type LookSlot } from '../progress/wardrobe';
+import { authoredLooks, BARE_LOOK, canRide, LOOK_SLOTS, lookFits, lookOf, lookSource, mountDef, riddenMount, ridingLocked, ridingOpen, wornId, wornLooks, type Look, type LookSlot } from '../progress/wardrobe';
 import { ownedShopLooks, ownedShopMounts } from '../progress/shopGoods';
 import { armorReduction } from '../sim/combat';
 import { K, markerPos, parseRegion, TILE, type TileMap } from '../sim/map';
@@ -1525,6 +1525,7 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
   const equipped = slot ? h.equip[slot] : undefined;
   const current = slot ? wornId(h, slot) : undefined;
   const mount = tab === 'mounts' && pick ? mountDef(pick) : undefined;
+  const rides = ridingOpen(h);
   const riddenId = riddenMount(h);
   const ridden = riddenId ? mountDef(riddenId) : undefined;
   // the shop's mounts this account owns, after the game's own (ridden once the story has horses in it)
@@ -1564,6 +1565,7 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
             {(['head', 'chest', 'weapon', 'mounts'] as const).map((t) => (
               <button
                 key={t}
+                data-look-tab={t}
                 className={tab === t ? 'is-on' : ''}
                 onClick={() => {
                   setTab(t);
@@ -1594,18 +1596,21 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
             ))}
           </div>
         ) : (
-          <div className="rb-mount-grid">
-            {allMounts.map((m) => {
-              const owned = has(m.id);
-              return (
-                <button key={m.id} className={`rb-mount-tile${pick === m.id ? ' is-sel' : ''}${riddenId === m.id ? ' is-worn' : ''}${owned ? '' : ' is-locked'}`} onClick={() => setPick(m.id)} aria-label={owned ? m.name : `Locked: ${m.name}`}>
-                  <img src={mountPictureUrl(m, null, 1)} alt="" draggable={false} />
-                  <span>{m.name}</span>
-                  <span className={`rb-look-tag is-${m.tier}`}>{m.tier === 'travel' ? 'Travel' : m.tier === 'story' ? 'Story' : m.tier === 'shop' ? 'Shop' : 'Prestige'}</span>
-                </button>
-              );
-            })}
-          </div>
+          <>
+            {!rides && <p className="rb-small rb-mount-lock">{ridingLocked()}. Until then no mount can be earned or ridden.</p>}
+            <div className="rb-mount-grid">
+              {allMounts.map((m) => {
+                const owned = has(m.id);
+                return (
+                  <button key={m.id} className={`rb-mount-tile${pick === m.id ? ' is-sel' : ''}${riddenId === m.id ? ' is-worn' : ''}${owned ? '' : ' is-locked'}`} onClick={() => setPick(m.id)} aria-label={owned ? m.name : `Locked: ${m.name}`}>
+                    <img src={mountPictureUrl(m, null, 1)} alt="" draggable={false} />
+                    <span>{m.name}</span>
+                    <span className={`rb-look-tag is-${m.tier}`}>{m.tier === 'travel' ? 'Travel' : m.tier === 'story' ? 'Story' : m.tier === 'shop' ? 'Shop' : 'Prestige'}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
         )}
       </section>
       <section className={`rb-detail${pick ? ' is-open' : ''}`} aria-label="Details">
@@ -1659,15 +1664,15 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
             <p className="rb-small rb-dim">Every mount runs at the same pace. {engine.touchMode ? 'Tap the horseshoe to ride' : 'Press Y to ride'}; you get down when you fight, and there is no riding in dungeons.</p>
             {mount.tier === 'shop' && has(mount.id) && !ridingOpen(h) && <p className="rb-small">Yours to ride once Dunmore&rsquo;s riders bring the first horses to the camp.</p>}
             <div className="rb-row">
-              {canRide(h, mount.id) && (
-                <button className="rb-btn" disabled={riddenId === mount.id} onClick={() => engine.chooseMount(mount.id)}>
-                  {riddenId === mount.id ? 'Your mount' : 'Ride this one'}
+              {has(mount.id) && (
+                <button className="rb-btn" disabled={!canRide(h, mount.id) || riddenId === mount.id} onClick={() => engine.chooseMount(mount.id)}>
+                  {!canRide(h, mount.id) ? 'Not yet' : riddenId === mount.id ? 'Your mount' : 'Ride this one'}
                 </button>
               )}
             </div>
           </div>
         ) : (
-          <p className="rb-dim rb-detail-empty">{tab === 'mounts' ? 'Pick a mount to read about it and choose the one you ride.' : 'Pick a look to try it on. Gold-edged looks are hand-made pieces; dark ones are still out there to be found.'}</p>
+          <p className="rb-dim rb-detail-empty">{tab === 'mounts' ? (rides ? 'Pick a mount to read about it and choose the one you ride.' : `${ridingLocked()}. Pick a mount to read about it.`) : 'Pick a look to try it on. Gold-edged looks are hand-made pieces; dark ones are still out there to be found.'}</p>
         )}
       </section>
     </div>

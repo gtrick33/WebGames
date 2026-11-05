@@ -2778,6 +2778,14 @@
   grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
   gap: 8px;
 }
+/* riding not open yet (before Riders for Briarhollow): why, above the collection */
+.rb-mount-lock {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--rb-gold);
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.22);
+}
 .rb-mount-tile {
   position: relative;
   display: grid;

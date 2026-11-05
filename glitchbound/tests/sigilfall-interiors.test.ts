@@ -133,6 +133,7 @@ describe('Sigilfall: interiors', () => {
   it('nobody rides indoors', () => {
     const c = dawnHero();
     c.perks.push('mount');
+    c.quests['camp-riders'] = { state: 'done', n: 1 };
     grantMounts(c);
     const w = newWorld('bramble-and-barrel', c);
     w.player.calm = 10;
