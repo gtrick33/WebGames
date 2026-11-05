@@ -363,14 +363,19 @@ function dither(): string {
   }`;
 }
 
-/** What moves: skinned from the bone texture, one instance per figure. */
+/**
+ * What moves: skinned from the bone texture, one instance per figure. What glows on it (meshKit.ts glowing: a normal too
+ * short to light) shows its own color, unshaded, by day and by night alike.
+ */
 export function animMaterial(anim: RigAnim): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     uniforms: { ...LIGHT, uAnim: { value: anim.tex } },
     vertexShader: /* glsl */ `
       ${COMMON_VERT}
       ${SKIN_VERT}
+      varying float vGlow;
       void main() {
+        vGlow = step(dot(normal, normal), 0.0008);
         mat4 m = posed();
         vec4 p = m * vec4(position, 1.0);
         vec3 n = mat3(m) * normal;
@@ -384,8 +389,13 @@ export function animMaterial(anim: RigAnim): THREE.ShaderMaterial {
       }`,
     fragmentShader: /* glsl */ `
       ${FRAG_COMMON}
+      varying float vGlow;
       void main() {
         ${dither()}
+        if (vGlow > 0.5) {
+          gl_FragColor = vec4(mix(min(vCol * 1.08 + 0.03, vec3(1.0)), vec3(1.0, 0.97, 0.9), vFlash), 1.0);
+          return;
+        }
         vec3 n = normalize(vN);
         vec3 c = toon(vCol, n);
         // a touch of sky on what faces up, so dark armor keeps its shape
@@ -454,6 +464,8 @@ export function inkMaterial(anim: RigAnim, width: number): THREE.ShaderMaterial 
         vFlash = iTint.a;
         vAlpha = iAnim.w;
         gl_Position = projectionMatrix * viewMatrix * w;
+        // (what glows has no ink round it: it's light, not a thing: past the far plane, so never drawn)
+        if (dot(normal, normal) < 0.0008) gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
       }`,
     fragmentShader: /* glsl */ `
       ${FRAG_COMMON}

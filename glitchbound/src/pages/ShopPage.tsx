@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { BannerArt, FramedAvatar } from '../components/Looks';
 import { openSignIn } from '../components/openSignIn';
+import { gameUrl } from '../catalog/urls';
 import type { LookKind, LookSpec } from '../catalog/looks';
 import { AGREE_AGE, AGREE_NOW, priceText, PRODUCTS, type Product } from '../catalog/shop';
 import { useLiveCatalog } from '../platform/liveCatalog';
@@ -9,6 +10,14 @@ import { usePageMeta } from '../platform/meta';
 import { useMoney } from '../platform/money';
 import { Link } from '../router/router';
 import './InfoPages.css';
+
+/** A Sigilfall item's picture, from a file of its own: the site's first load names no extra file for it. */
+const SigilPictureLazy = lazy(() => import('../components/SigilPicture').then((m) => ({ default: m.SigilPicture })));
+const SigilPicture = (props: Parameters<typeof SigilPictureLazy>[0]) => (
+  <Suspense fallback={<div className="sigil-pic" />}>
+    <SigilPictureLazy {...props} />
+  </Suspense>
+);
 
 /**
  * The shop: one-time purchases, in plain words. No countdowns, no "last chance", no pressure, and the full price up
@@ -31,6 +40,7 @@ export function ShopPage() {
   const card = (p: Product) => (
     <section key={p.id} className="panel info-block">
       {p.look && <LookPreview spec={p.look} name={me?.nickname ?? 'GlitchBound'} src={me?.avatar} />}
+      {p.sigil && <SigilPicture id={p.id} spec={p.sigil} />}
       <h2>{p.name}</h2>
       <p>{p.blurb}</p>
       <p>
@@ -43,6 +53,12 @@ export function ShopPage() {
             <>
               {' '}
               <Link href="/me#looks">Wear it on your profile</Link>.
+            </>
+          )}
+          {p.sigil && (
+            <>
+              {' '}
+              It&rsquo;s in the Wardrobe of every hero on your account: <Link href={gameUrl('sigilfall')}>open Sigilfall</Link>.
             </>
           )}
         </p>
@@ -66,7 +82,8 @@ export function ShopPage() {
     { kind: 'banner', title: 'Banners' },
     { kind: 'icon', title: 'Profile icons' },
   ];
-  const extras = now.filter((p) => !p.look);
+  const extras = now.filter((p) => !p.look && !p.sigil);
+  const sigil = (kind: 'mount' | 'look'): Product[] => now.filter((p) => p.sigil?.kind === kind);
   return (
     <div className="wrap info-page">
       <h1 className="info-title">Shop</h1>
@@ -91,6 +108,19 @@ export function ShopPage() {
           )
         );
       })}
+      {sigil('mount').length + sigil('look').length > 0 && (
+        <section className="shop-group shop-sigilfall" aria-labelledby="shop-sigilfall">
+          <h2 id="shop-sigilfall" className="profile-h2">
+            Sigilfall
+          </h2>
+          <p className="info-small">
+            Mounts and Wardrobe looks for every hero on your account. They change how your hero looks and nothing else: every mount runs at the same pace, and your stats always come from what you
+            equip.
+          </p>
+          {sigil('mount').length > 0 && <div className="info-cols">{sigil('mount').map(card)}</div>}
+          {sigil('look').length > 0 && <div className="info-cols">{sigil('look').map(card)}</div>}
+        </section>
+      )}
       <div className="info-cols">
         {later.length > 0 && (
           <section className="panel info-block">

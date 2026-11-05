@@ -57,7 +57,7 @@ describe('the item builder', () => {
 
   it('shows each look in the list, and the built-in ones can be hidden but not removed', async () => {
     const { list } = await open();
-    const looks = PRODUCTS.filter((p) => p.look);
+    const looks = PRODUCTS.filter((p) => p.look || p.sigil);
     expect(list.querySelectorAll('.money-item.has-look .money-thumb')).toHaveLength(looks.length);
     expect(within(list).queryAllByRole('button', { name: 'Remove' })).toHaveLength(PRODUCTS.length - 1 - looks.length);
   });

@@ -1,5 +1,7 @@
 import type { GameHost } from '../../platform/contract';
 import { reportOrders, waitingOrders } from '../../platform/sigilfallOrders';
+import { sigilfallShop, watchSigilfallShop } from '../../platform/sigilfallShop';
+import { setShopGoods } from './progress/shopGoods';
 import { applyOrder, orderToast } from './progress/gm';
 import { isMainQuest, turnInNpc } from './progress/handin';
 import { rewardSummary } from './progress/rewards';
@@ -15,7 +17,7 @@ import { KeyboardMouse, TouchState, type UiKey } from './input/input';
 import { holds } from './sim/story';
 import { acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, type Body, type Face, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
-import { chooseMount, grantMounts, grantWarden, setShelfPoints, syncRift, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
+import { canRide, chooseMount, grantMounts, grantWarden, setShelfPoints, syncRift, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
 import { DEFAULT_SETTINGS, HERO_SLOTS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
 import type { ShopId } from './data/vendors';
@@ -299,6 +301,19 @@ export class SigilEngine {
   private gmTimer = 0;
   private gmBusy = false;
 
+  /* ----------------------------------------------- the site's shop (progress/shopGoods.ts) */
+
+  private stopShop: () => void = () => undefined;
+
+  /** What the shop sells and what the account owns, heard again: a mount or look no longer owned comes off at once. */
+  private syncShop(): void {
+    const { items, owned } = sigilfallShop();
+    setShopGoods(items, owned);
+    const w = this.world;
+    if (w?.player.riding && this.hero && !canRide(this.hero, w.player.riding)) w.dismount();
+    this.bump();
+  }
+
   /** Looks for orders soon after the game opens (the saves have arrived by then) and then every minute and a half. */
   private startGm(): void {
     this.gmStart = window.setTimeout(() => void this.checkGm(), GM_FIRST_MS);
@@ -345,6 +360,8 @@ export class SigilEngine {
     this.kbm.onUi = (k) => this.uiKey(k);
     this.last = performance.now();
     this.startGm();
+    this.syncShop();
+    this.stopShop = watchSigilfallShop(() => this.syncShop());
     const loop = (t: number): void => {
       this.raf = requestAnimationFrame(loop);
       // (a phone's screen may run at 120: the game looks no better for it, and the heat is real)
@@ -357,6 +374,7 @@ export class SigilEngine {
   }
 
   detach(): void {
+    this.stopShop();
     window.clearTimeout(this.gmStart);
     window.clearInterval(this.gmTimer);
     cancelAnimationFrame(this.raf);
@@ -1028,7 +1046,7 @@ export class SigilEngine {
       w.player.ultBudget = prev.player.ultBudget;
     }
     // riding on from one open land to the next (never into a dungeon)
-    if (prev?.player.riding && region.kind !== 'dungeon' && !region.interior && h.mounts.includes(prev.player.riding)) w.player.riding = prev.player.riding;
+    if (prev?.player.riding && region.kind !== 'dungeon' && !region.interior && canRide(h, prev.player.riding)) w.player.riding = prev.player.riding;
     // the quests of a land start when the hero first gets there
     for (const q of startQuests(h)) w.emit({ t: 'questStart', quest: q.id });
     this.world = w;

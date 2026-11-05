@@ -47,6 +47,11 @@ export function SaleTermsPage() {
             <strong>Borders, banners and profile icons</strong> change how your picture and your name look on your profile, in the header, in friends lists and on the leaderboards, and nothing
             else. You choose which ones to wear, or none, on your profile. Each one lasts as long as GlitchBound runs.
           </p>
+          <p>
+            <strong>Sigilfall mounts and looks</strong> belong to your account, not to one hero: every hero on it, of any class, finds them in Sigilfall&rsquo;s Wardrobe, on any device you sign in
+            on. They change only how a hero looks. Every mount runs at the same pace as every other, a look never changes a stat, and a mount can be ridden from the point early in the story where riding
+            begins. Each one lasts as long as Sigilfall runs on GlitchBound. If a purchase is refunded, the item leaves the Wardrobe.
+          </p>
         </section>
         <section className="panel info-block">
           <h2>Paying safely</h2>

@@ -3,12 +3,16 @@
  * which only Stripe's signed word can grant.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { AGREE_NOW, breaksRules, isBuiltIn, priceText, PRODUCTS, productIn, sanitizeProducts } from '../src/catalog/shop';
 
 /** The built-in borders, banners and icons. */
 const LOOKS = PRODUCTS.filter((p) => p.look);
-const isLook = (id: string): boolean => LOOKS.some((p) => p.id === id);
+/** Every built-in item the code gives a meaning: those, and Sigilfall's mounts and looks. */
+const BUILT = PRODUCTS.filter((p) => p.look || p.sigil);
+const isLook = (id: string): boolean => BUILT.some((p) => p.id === id);
+/** Ad-free's price, in its own panel (a Sigilfall helm costs the same). */
+const adFreePrice = (): HTMLElement => within(screen.getByRole('heading', { name: 'Ad-free' }).closest('section')!).getByText('€1.99');
 import { NO_MONEY, sanitizeMoney } from '../src/catalog/settings';
 import { canRetryDaily, retryDaily } from '../src/platform/dailyRetry';
 import { applyStripeEvent, canSell, giftItem, loadItems, ownedBy, shopReport, startCheckout, takeBack, verifyStripeSignature } from '../server/shop';
@@ -56,7 +60,7 @@ describe('with everything off', () => {
     const { ShopPage } = await import('../src/pages/ShopPage');
     render(<ShopPage />);
     expect(screen.getByText('The shop isn’t open yet, so nothing can be bought right now.')).toBeTruthy();
-    expect(screen.getByText('€1.99')).toBeTruthy();
+    expect(adFreePrice()).toBeTruthy();
     expect(screen.getAllByText('Not on sale yet.')).toHaveLength(PRODUCTS.filter((p) => !p.later && !p.hidden).length);
     expect(screen.queryByRole('button', { name: /Get |Sign in first/ })).toBeNull();
     cleanup();
@@ -99,7 +103,7 @@ describe('with the shop open', () => {
     const { ShopPage } = await import('../src/pages/ShopPage');
     render(<ShopPage />);
     expect(screen.getByRole('heading', { name: 'Ad-free' })).toBeTruthy();
-    expect(screen.getByText('€1.99')).toBeTruthy();
+    expect(adFreePrice()).toBeTruthy();
     expect(screen.getAllByRole('button', { name: 'Sign in first' })).toHaveLength(PRODUCTS.filter((p) => !p.later && !p.hidden).length);
   });
 
@@ -160,9 +164,9 @@ describe('what the shop sells', () => {
     expect(breaksRules('A gold border')).toBe(false);
   });
 
-  it('starts with ad-free at €1.99 and the borders and banners, and everything else is only planned', () => {
+  it('starts with ad-free at €1.99, the borders and banners and Sigilfall’s items, and everything else is only planned', () => {
     const open = PRODUCTS.filter((p) => !p.later);
-    expect(open.map((p) => p.id)).toEqual(['ad-free', ...LOOKS.map((l) => l.id)]);
+    expect(open.map((p) => p.id)).toEqual(['ad-free', ...BUILT.map((l) => l.id)]);
     expect(priceText(productIn(PRODUCTS, 'ad-free')!.cents)).toBe('€1.99');
     // the lowest price Stripe can charge in euros
     for (const l of LOOKS) expect(priceText(productIn(PRODUCTS, l.id)!.cents)).toBe('€0.50');
@@ -175,7 +179,8 @@ describe('what the shop sells', () => {
       { id: 'border-neon-halo', name: 'Halo', blurb: 'Cheaper now.', cents: 79, hidden: true },
       { id: 'sigilfall-mounts', name: 'Mounts', blurb: 'Planned.', cents: 299, later: true },
     ]);
-    expect(saved.map((p) => p.id)).toEqual(['ad-free', 'border-aurora', 'border-neon-halo', ...LOOKS.slice(1).map((l) => l.id), 'sigilfall-mounts']);
+    // (the planned Sigilfall placeholder became real items: it's dropped, and they join the list)
+    expect(saved.map((p) => p.id)).toEqual(['ad-free', 'border-aurora', 'border-neon-halo', ...BUILT.slice(1).map((l) => l.id)]);
     // the admins' name, text, price and state, and the look the code gives it
     expect(productIn(saved, 'border-neon-halo')).toEqual({ id: 'border-neon-halo', name: 'Halo', blurb: 'Cheaper now.', cents: 79, hidden: true, look: { kind: 'border', style: 'neon-halo' } });
     expect(productIn(saved, 'border-aurora')!.look).toBeUndefined();
@@ -217,7 +222,7 @@ describe('purchases', () => {
   it('sells only what is open', () => {
     const e = env();
     expect(canSell(e, productIn(PRODUCTS, 'ad-free'))).toBe(true);
-    expect(canSell(e, productIn(PRODUCTS, 'sigilfall-mounts'))).toBe(false);
+    expect(canSell(e, productIn(PRODUCTS, 'look-names'))).toBe(false);
     expect(canSell({ ...e, STRIPE_SECRET_KEY: undefined } as Env, productIn(PRODUCTS, 'ad-free'))).toBe(false);
     expect(canSell(e, undefined)).toBe(false);
   });
@@ -297,7 +302,7 @@ describe('purchases', () => {
     const e = env();
     expect(await loadItems(e)).toEqual(PRODUCTS);
     await e.DB.prepare("INSERT INTO site_settings (key, value, updated_at, updated_by) VALUES ('shop_items', ?, 1, 'qa')").bind(JSON.stringify([{ id: 'look-one', name: 'A look', blurb: 'A nice look.', cents: 150 }])).run();
-    expect((await loadItems(e)).map((p) => p.id)).toEqual(['ad-free', ...LOOKS.map((l) => l.id), 'look-one']);
+    expect((await loadItems(e)).map((p) => p.id)).toEqual(['ad-free', ...BUILT.map((l) => l.id), 'look-one']);
   });
 
   it('keeps Stripe’s test and live modes apart', async () => {
