@@ -23,7 +23,8 @@ import { readPack } from './sigilfall-packs';
  * account's purchase stands. Never in the save, so a refund takes them away and a save can't bring one in.
  */
 
-const SIGIL = PRODUCTS.filter((p) => p.sigil);
+/** The Sigilfall items sold on their own (the Gloamknight Pack's own come with it, hidden). */
+const SIGIL = PRODUCTS.filter((p) => p.sigil && !p.hidden);
 const MOUNTS = SIGIL.filter((p) => p.sigil!.kind === 'mount');
 const LOOKS = SIGIL.filter((p) => p.sigil!.kind === 'look');
 const WYRM = 'sigilfall-crownforged-wyrm';

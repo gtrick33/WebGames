@@ -3,9 +3,9 @@ import { describe, expect, it, vi } from 'vitest';
 
 // (the class cards' portraits need a canvas, which the test page lacks)
 vi.mock('../src/games/sigilfall/render/sprites', async (original) => ({ ...(await original<typeof import('../src/games/sigilfall/render/sprites')>()), heroDollUrl: () => '' }));
-import { breaksRules, GLOAMKNIGHT_ITEM, isBuiltIn, PRODUCTS, productIn, sanitizeProducts } from '../src/catalog/shop';
+import { breaksRules, GLOAMKNIGHT_ITEM, isBuiltIn, PRODUCTS, productIn, sanitizeProducts, withIncluded } from '../src/catalog/shop';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
-import { classOpen, PAID_CLASSES } from '../src/games/sigilfall/progress/paidClasses';
+import { classOpen, heroSlots, PAID_CLASSES } from '../src/games/sigilfall/progress/paidClasses';
 
 describe('the paid class', () => {
   it('is the Gloamknight alone, and every other class is free to anyone, guests too', () => {
@@ -23,13 +23,37 @@ describe('the paid class', () => {
 
   it('is a built-in shop item at its full price, kept in any saved list, and follows the shop’s word rules', () => {
     const p = productIn(PRODUCTS, GLOAMKNIGHT_ITEM)!;
-    expect(p).toMatchObject({ name: 'Gloamknight class', cents: 499 });
+    expect(p).toMatchObject({ name: 'Gloamknight Pack', cents: 999 });
     expect(p.later).toBeUndefined();
     expect(breaksRules(`${p.name} ${p.blurb}`)).toBe(false);
     expect(isBuiltIn(GLOAMKNIGHT_ITEM)).toBe(true);
     expect(sanitizeProducts([]).map((x) => x.id)).toContain(GLOAMKNIGHT_ITEM);
     // an admin's price and state stay; the item itself can't be dropped
     expect(productIn(sanitizeProducts([{ ...p, cents: 699, hidden: true }]), GLOAMKNIGHT_ITEM)).toMatchObject({ cents: 699, hidden: true });
+  });
+});
+
+describe('the pack', () => {
+  it('gives its own looks, a mount and armor, which aren’t sold on their own', () => {
+    const pack = productIn(PRODUCTS, GLOAMKNIGHT_ITEM)!;
+    expect(pack.includes).toEqual(['sigilfall-duskborn-helm', 'sigilfall-duskborn-plate', 'sigilfall-gloamwing-drake', 'border-gloam', 'banner-gloam']);
+    for (const id of pack.includes!) {
+      const part = productIn(PRODUCTS, id)!;
+      expect(part.hidden, id).toBe(true);
+      expect(part.look ?? part.sigil, id).toBeTruthy();
+      expect(breaksRules(`${part.name} ${part.blurb}`), id).toBe(false);
+    }
+    expect(withIncluded([GLOAMKNIGHT_ITEM]).sort()).toEqual([GLOAMKNIGHT_ITEM, ...pack.includes!].sort());
+    expect(withIncluded(['ad-free'])).toEqual(['ad-free']);
+    // the pack's code says what it gives, whatever a saved list sends
+    expect(productIn(sanitizeProducts([{ ...pack, includes: ['ad-free'] }]), GLOAMKNIGHT_ITEM)!.includes).toEqual(pack.includes);
+  });
+
+  it('opens two more hero slots, for its owner and an admin', () => {
+    expect(heroSlots(null)).toBe(3);
+    expect(heroSlots({ owned: ['ad-free'] })).toBe(3);
+    expect(heroSlots({ owned: [GLOAMKNIGHT_ITEM] })).toBe(5);
+    expect(heroSlots({ isAdmin: true })).toBe(5);
   });
 });
 
@@ -45,7 +69,7 @@ describe('making a hero', () => {
     const made: string[] = [];
     const engine = { ui: { createSlot: 0 }, defaultName: 'Tester', asksForTips: false, toTitle: () => undefined, createHero: (_s: number, cls: string) => made.push(cls) };
     render(createElement(CreateScreen, { engine: engine as never }));
-    expect(screen.getByText('Shop · €4.99')).toBeTruthy();
+    expect(screen.getByText('Shop · €9.99')).toBeTruthy();
     fireEvent.click(screen.getByRole('radio', { name: /Gloamknight/ }));
     expect(screen.queryByRole('button', { name: /Begin as/ })).toBeNull();
     expect(screen.getByRole('link', { name: 'Sign in to unlock it in the shop' }).getAttribute('href')).toBe('/shop');

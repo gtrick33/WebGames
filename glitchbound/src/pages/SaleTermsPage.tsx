@@ -40,9 +40,10 @@ export function SaleTermsPage() {
             your account as soon as the payment is confirmed, usually within a minute.
           </p>
           <p>
-            <strong>The Gloamknight class</strong> unlocks the Gloamknight, one of Sigilfall&rsquo;s eight classes, for every hero slot on your account, in the campaign, the Vigil and the Ring. The
-            other seven classes are free. It&rsquo;s a different way to play, balanced with the free classes, not a stronger one, and we may tune it, as we do every class. A Gloamknight hero you make
-            stays yours: if the purchase is refunded, the hero waits, locked, until you buy the class again. It lasts as long as Sigilfall runs.
+            <strong>The Gloamknight Pack</strong> unlocks the Gloamknight, one of Sigilfall&rsquo;s eight classes, for every hero slot on your account, in the campaign, the Vigil and
+            the Ring, and opens two more hero slots. It also gives the Duskborn helm and armor, the Gloamwing Drake and the Gloam border and banner, which come only with the pack. The other
+            seven classes are free. The class is a different way to play, balanced with the free classes, not a stronger one, and we may tune it, as we do every class. If the purchase is
+            refunded, all of it is locked again, and a Gloamknight hero, or a hero in one of the pack&rsquo;s slots, waits, kept, until you buy the pack again. It lasts as long as Sigilfall runs.
           </p>
           <p>
             <strong>Ad-free</strong> removes ad banners on your account and lets you take your extra try at a daily without watching an ad. It lasts as long as GlitchBound runs. It doesn&rsquo;t affect

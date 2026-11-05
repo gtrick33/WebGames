@@ -24,6 +24,8 @@ export interface Product {
   look?: LookSpec;
   /** A Sigilfall mount or Wardrobe look this item gives, and how the game draws it (src/catalog/sigilItems.ts). */
   sigil?: SigilSpec;
+  /** Items this one gives too: a pack (the Gloamknight Pack). Built-in packs only. */
+  includes?: string[];
 }
 
 /** What "ad-free" means is built into the site (src/platform/adFree.ts), so that item can be hidden but not removed. */
@@ -146,13 +148,61 @@ export const PRODUCTS: Product[] = [
   sigilLook('gloamquill-cowl', 'Gloamquill Cowl', 199, 'A dark Sigilfall hood with a beaked mask, a crest of feathers and two eyes that glow.', 'gloamquill', 'head'),
   sigilLook('gloamquill-mantle', 'Gloamquill Mantle', 249, 'Sigilfall leathers under a mantle of black feathers, with a long cape of feathers behind.', 'gloamquill', 'chest'),
   { id: 'look-names', name: 'Name effects', blurb: 'A touch of color and shine on your nickname.', cents: 99, later: true },
+  // the Gloamknight Pack: the class, and things made for it that come only with it (hidden: not sold on their own)
   {
     id: GLOAMKNIGHT_ITEM,
-    name: 'Gloamknight class',
-    blurb: 'Unlocks the Gloamknight, Sigilfall’s eighth class, for every hero slot on your account: a knight in heavy plate who wields shadow and trades health for power. In the campaign, the Vigil and the Ring.',
-    cents: 499,
+    name: 'Gloamknight Pack',
+    blurb: 'Sigilfall’s eighth class, the Gloamknight, for your account, with the Duskborn helm and armor, the Gloamwing Drake, the Gloam border and banner, and two more hero slots.',
+    cents: 999,
+    includes: ['sigilfall-duskborn-helm', 'sigilfall-duskborn-plate', 'sigilfall-gloamwing-drake', 'border-gloam', 'banner-gloam'],
+  },
+  {
+    ...sigilLook('duskborn-helm', 'Duskborn Helm', 199, 'A Sigilfall helm of black steel under a crown of dusk, with horns and a visor that burns violet.', 'crownforged', 'head'),
+    sigil: { kind: 'look', slot: 'head', set: 'crownforged', colors: ['#1c1826', '#8a5cc8', '#3a1450', '#c86aff'] },
+    hidden: true,
+  },
+  {
+    ...sigilLook('duskborn-plate', 'Duskborn Plate', 249, 'Sigilfall armor of black plate seamed with violet light, with drake-wing pauldrons and a cape the color of dusk.', 'crownforged', 'chest'),
+    sigil: { kind: 'look', slot: 'chest', set: 'crownforged', colors: ['#1c1826', '#8a5cc8', '#3a1450', '#c86aff'] },
+    hidden: true,
+  },
+  {
+    ...sigilMount(
+      'gloamwing-drake',
+      'Gloamwing Drake',
+      599,
+      'A Sigilfall drake the color of the last light, in dusk-violet plate under a crown of horns, its wings veined with pale violet fire.',
+      'drake',
+      { coat: '#1c1426', mane: '#3a1450', tack: '#2a1a36', plate: '#4a3a5e' },
+      ['plates', 'crown', 'veins', 'runes'],
+      ['motes', '#c86aff'],
+    ),
+    hidden: true,
+  },
+  {
+    id: 'border-gloam',
+    name: 'Gloam border',
+    blurb: `A corona of dusk violet that flickers round your picture, ${ON_BOARDS}`,
+    cents: 50,
+    hidden: true,
+    look: { kind: 'border', style: 'solar-flare', colors: ['#2a0a3a', '#6b2a8a', '#c86aff', '#ffd6f5'] },
+  },
+  {
+    id: 'banner-gloam',
+    name: 'Gloam banner',
+    blurb: `Rose and violet light rippling over dark hills at dusk. ${ACROSS}`,
+    cents: 50,
+    hidden: true,
+    look: { kind: 'banner', style: 'aurora', colors: ['#ff6aa8', '#8b5cff', '#1a0b2e', '#2a1446'] },
   },
 ];
+
+/** What a member's purchases give them: each item, and what a pack they bought includes. */
+export function withIncluded(ids: readonly string[], items: readonly Product[] = PRODUCTS): string[] {
+  const out = new Set(ids);
+  for (const id of ids) for (const x of items.find((p) => p.id === id)?.includes ?? []) out.add(x);
+  return [...out];
+}
 
 export const productIn = (items: readonly Product[], id: string): Product | undefined => items.find((p) => p.id === id);
 
@@ -191,7 +241,7 @@ export function sanitizeProducts(v: unknown): Product[] {
     const builtIn = isBuiltIn(id) ? PRODUCTS.find((p) => p.id === id) : undefined;
     const look = builtIn ? builtIn.look : sanitizeLook(o.look);
     const sigil = builtIn ? builtIn.sigil : look ? null : sanitizeSigil(o.sigil);
-    out.push({ id, name, blurb, cents, ...(o.later === true ? { later: true } : {}), ...(o.hidden === true ? { hidden: true } : {}), ...(look ? { look } : {}), ...(sigil ? { sigil } : {}) });
+    out.push({ id, name, blurb, cents, ...(o.later === true ? { later: true } : {}), ...(o.hidden === true ? { hidden: true } : {}), ...(look ? { look } : {}), ...(sigil ? { sigil } : {}), ...(builtIn?.includes ? { includes: builtIn.includes } : {}) });
   }
   if (!seen.has(AD_FREE_ID)) out.unshift(PRODUCTS[0]!);
   // a look added to the site after the list was saved joins it, after the looks already there

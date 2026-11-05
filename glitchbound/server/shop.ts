@@ -1,4 +1,4 @@
-import { AGREE_NOW, PRODUCTS, productIn, priceText, sanitizeProducts, SALE_TERMS_VERSION, type Product } from '../src/catalog/shop';
+import { AGREE_NOW, PRODUCTS, productIn, priceText, sanitizeProducts, SALE_TERMS_VERSION, type Product, withIncluded } from '../src/catalog/shop';
 import { sendBatch } from './email';
 import { randomToken, type Env } from './http';
 
@@ -43,11 +43,11 @@ export async function keepOwnedItems(env: Env, next: Product[]): Promise<Product
   return [...next, ...kept];
 }
 
-/** What this member's paid purchases unlock. Refunded ones don't count. */
+/** What this member's paid purchases unlock, with what the packs among them include. Refunded ones don't count. */
 export async function ownedBy(env: Env, userId: string): Promise<string[]> {
   try {
     const rows = await env.DB.prepare("SELECT DISTINCT product FROM purchases WHERE user_id = ? AND status = 'paid'").bind(userId).all<{ product: string }>();
-    return rows.results.map((r) => r.product);
+    return withIncluded(rows.results.map((r) => r.product));
   } catch {
     // (before the migration has run)
     return [];

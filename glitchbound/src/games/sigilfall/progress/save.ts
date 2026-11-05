@@ -36,7 +36,12 @@ const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
 const OLD_SAVE_KEY = 'glitchbound.riftbound';
 const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
 export const SAVE_VERSION = 12;
-export const HERO_SLOTS = 3;
+/**
+ * Hero places a save keeps. Every account plays three; the Gloamknight Pack opens two more (progress/paidClasses.ts
+ * `heroSlots`), and a hero in one of those is kept, out of sight, if the pack is refunded.
+ */
+export const HERO_SLOTS = 5;
+export const BASE_HERO_SLOTS = 3;
 /** A shop item's id (src/catalog/shop.ts sanitizeProducts). */
 const SHOP_ID = /^[a-z0-9][a-z0-9-]{1,39}$/;
 

@@ -7,7 +7,7 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import { AGREE_NOW, breaksRules, GLOAMKNIGHT_ITEM, isBuiltIn, priceText, PRODUCTS, productIn, sanitizeProducts } from '../src/catalog/shop';
 
 /** The built-in borders, banners and icons. */
-const LOOKS = PRODUCTS.filter((p) => p.look);
+const LOOKS = PRODUCTS.filter((p) => p.look && !p.hidden);
 /** Every built-in item the code gives a meaning: those, Sigilfall's mounts and looks, and the Gloamknight class. */
 const BUILT = PRODUCTS.filter((p) => p.look || p.sigil || p.id === GLOAMKNIGHT_ITEM);
 const isLook = (id: string): boolean => BUILT.some((p) => p.id === id);
