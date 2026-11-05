@@ -1,0 +1,93 @@
+import type { ShopText } from '../shopTypes';
+
+/** Deutsch (src/i18n/shopTypes.ts has the rules; English in ./en.ts is the source). A lawyer should read it. */
+const MOUNT = 'Für jeden Helden in deinem Konto. Rein optisch: Jedes Reittier ist gleich schnell.';
+const LOOK = 'Für jede Klasse, über jeder Ausrüstung, aus der Garderobe (Wardrobe). Rein optisch: Deine Werte kommen von dem, was du ausrüstest.';
+const ON_BOARDS = 'in deinem Profil und in den Bestenlisten.';
+const ACROSS = 'Quer über dein Profil und hinter deinem Namen in den Bestenlisten.';
+const ICON = 'anstelle deines Bildes: in deinem Profil, in der oberen Leiste und in den Bestenlisten.';
+
+const de: ShopText = {
+  shop: {
+    title: 'Shop',
+    meta: 'Optionale Extras für GlitchBound, jeweils einmal bezahlt. Jedes Spiel bleibt kostenlos spielbar.',
+    lead: 'Jedes Spiel bleibt kostenlos spielbar. Das hier sind optionale Extras, jedes nur einmal bezahlt: keine Abos, keine Spielwährung und keine Zufallsboxen. Die meisten ändern nur, wie etwas aussieht; das Gloamknight-Paket schaltet in Sigilfall eine neue spielbare Klasse frei.',
+    adminTest: 'Admin-Test: Der Shop ist für Spieler geschlossen, und du kannst hier einen Kauf testen.',
+    closed: 'Der Shop hat noch nicht geöffnet, deshalb kann gerade nichts gekauft werden.',
+    thanks: 'Danke! Dein Kauf landet in deinem Konto, sobald die Zahlung bestätigt ist, meist innerhalb einer Minute.',
+    vat: 'inkl. MwSt., einmalige Zahlung',
+    yours: 'Das gehört dir.',
+    wear: '<wear>In deinem Profil tragen</wear>.',
+    inWardrobe: 'Zu finden in der Garderobe (Wardrobe) jedes Helden in deinem Konto: <open>Sigilfall öffnen</open>.',
+    notYet: 'Noch nicht im Verkauf.',
+    get: '{name} holen',
+    signInFirst: 'Erst anmelden',
+    signInWhy: 'Melde dich an, damit ein Kauf bei deinem Konto bleibt.',
+    kinds: { border: 'Rahmen', banner: 'Banner', icon: 'Profil-Icons' },
+    sigilNote: 'Reittiere und Looks aus der Garderobe für jeden Helden in deinem Konto. Sie ändern nur, wie dein Held aussieht, sonst nichts: Jedes Reittier ist gleich schnell, und deine Werte kommen immer von dem, was du ausrüstest.',
+    planned: 'Geplant',
+    terms: 'In den <terms>Verkaufsbedingungen</terms> findest du deine Rechte, alles zu Rückerstattungen und von wem du kaufst.',
+    inPack: 'Im Paket',
+    packClass: 'Der Gloamknight',
+    packClassWhat: 'Die achte Klasse von Sigilfall und zwei weitere Helden-Slots',
+    checkoutNote: 'Inkl. MwSt. Eine Zahlung, kein Abo. Unser Zahlungsanbieter Stripe wickelt die Zahlung ab und schickt dir den Beleg.',
+    already: 'Das gehört dir schon.',
+    failed: 'Die Kasse konnte nicht geöffnet werden. Es wurde nichts abgebucht. Bitte versuch es noch einmal.',
+    pay: 'Weiter zur Zahlung',
+    cancel: 'Abbrechen',
+    agreeNow: 'Ich möchte es sofort haben und stimme ausdrücklich zu, dass die Lieferung vor Ablauf der Widerrufsfrist beginnt. Mir ist bekannt, dass ich damit mein 14-tägiges Widerrufsrecht verliere, sobald ich es erhalten habe.',
+    agreeAge: 'Ich bin mindestens 18 Jahre alt, oder ein Elternteil oder Erziehungsberechtigter hat diesem Kauf zugestimmt.',
+  },
+  email: {
+    subject: 'Dein Kauf bei GlitchBound: {name}',
+    thanks: 'Danke! {name} ({price}, inkl. MwSt.) ist jetzt in deinem GlitchBound-Konto.',
+    receipt: 'Deinen Beleg bekommst du separat von unserem Zahlungsanbieter Stripe, über Link.',
+    confirmed: 'Beim Kauf hast du bestätigt: „{statement}“',
+    date: 'Datum: {date}. Verkaufsbedingungen: {url}',
+    help: 'Wenn etwas nicht funktioniert, antworte auf diese E-Mail oder eröffne ein Ticket unter {url}.',
+  },
+  items: {
+    'ad-free': { name: 'Werbefrei', blurb: 'Keine Werbebanner in deinem Konto, auf jedem Gerät, auf dem du dich anmeldest, und für deinen Extraversuch bei einer täglichen Challenge brauchst du keine Werbung. Eine Zahlung, kein Abo.' },
+    'border-neon-halo': { name: 'Rahmen „Neon-Halo“', blurb: `Ein Ring aus cyanfarbenem, violettem und pinkem Licht, der sich langsam um dein Bild dreht, ${ON_BOARDS}` },
+    'border-solar-flare': { name: 'Rahmen „Sonneneruption“', blurb: `Ein lodernder Ring in Gold und Orange mit flackernder Korona, um dein Bild ${ON_BOARDS}` },
+    'border-glitch': { name: 'Rahmen „Glitch“', blurb: `Ein Ring, der sich in Cyan und Pink aufspaltet und ab und zu aus der Reihe springt, um dein Bild ${ON_BOARDS}` },
+    'border-frost': { name: 'Rahmen „Frost“', blurb: `Ein Ring aus Eis mit Kristallsplittern und schwebendem Glitzern, um dein Bild ${ON_BOARDS}` },
+    'border-orbit': { name: 'Rahmen „Orbit“', blurb: `Ein feiner Doppelring mit zwei kleinen Monden, die dein Bild umkreisen, ${ON_BOARDS}` },
+    'border-crown': { name: 'Rahmen „Krone“', blurb: `Ein goldener Ring mit Juwelen und einer kleinen Krone obendrauf, um dein Bild ${ON_BOARDS}` },
+    'banner-sunset-grid': { name: 'Banner „Abendrot-Raster“', blurb: `Eine gestreifte Sonne versinkt hinter einem leuchtenden Raster, das auf dich zurollt. ${ACROSS}` },
+    'banner-aurora': { name: 'Banner „Polarlicht“', blurb: `Polarlichter wogen über dunklen Bergen unter einem Sternenhimmel. ${ACROSS}` },
+    'banner-nebula': { name: 'Banner „Sternennebel“', blurb: `Treibende violette Wolken, funkelnde Sterne, ein Planet mit Ringen und ab und zu eine Sternschnuppe. ${ACROSS}` },
+    'banner-neon-city': { name: 'Banner „Neonstadt“', blurb: `Eine nächtliche Skyline mit erleuchteten Fenstern, unten gleiten Lichter vorbei. ${ACROSS}` },
+    'banner-deep-sea': { name: 'Banner „Tiefsee“', blurb: `Lichtstrahlen im tiefen Wasser, aufsteigende Blasen und wiegender Seetang. ${ACROSS}` },
+    'banner-ember-field': { name: 'Banner „Glutfeld“', blurb: `Funken steigen von glühendem Boden in die Nacht. ${ACROSS}` },
+    'banner-gloam': { name: 'Banner „Dämmerung“', blurb: `Rosa und violettes Licht wogt in der Dämmerung über dunklen Hügeln. ${ACROSS}` },
+    'border-gloam': { name: 'Rahmen „Dämmerung“', blurb: `Eine Korona in Dämmerungsviolett, die um dein Bild flackert, ${ON_BOARDS}` },
+    'icon-fox': { name: 'Icon „Fuchs“', blurb: `Ein schlauer Fuchs ${ICON}` },
+    'icon-owl': { name: 'Icon „Eule“', blurb: `Eine Nachteule, die ab und zu blinzelt, ${ICON}` },
+    'icon-skull': { name: 'Icon „Totenkopf“', blurb: `Ein Totenkopf mit sanft glühenden Augen ${ICON}` },
+    'icon-rocket': { name: 'Icon „Rakete“', blurb: `Eine Rakete mit flackernder Flamme ${ICON}` },
+    'icon-crown': { name: 'Icon „Krone“', blurb: `Eine juwelenbesetzte Krone, die das Licht einfängt, ${ICON}` },
+    'icon-bolt': { name: 'Icon „Blitz“', blurb: `Ein knisternder Blitz ${ICON}` },
+    'sigilfall-crownforged-wyrm': { name: 'Crownforged Wyrm', blurb: `Ein Sigilfall-Drache in schwarzer Plattenrüstung mit goldenen Kanten, unter einer Krone aus Hörnern, die Flügel von geschmolzenem Licht durchzogen, der Schweif in Flammen. ${MOUNT}` },
+    'sigilfall-galecrest-drake': { name: 'Galecrest Drake', blurb: `Ein sturmblauer Sigilfall-Drache mit einem Kamm aus Hörnern, Kristallstacheln den Rücken hinab und Blitzen in den Flügeln. ${MOUNT}` },
+    'sigilfall-runetusk-boar': { name: 'Runetusk War-Boar', blurb: `Ein Sigilfall-Kriegseber in stachelbewehrter Plattenrüstung und gehörntem Helm, die Hauer mit leuchtenden Runen beringt. ${MOUNT}` },
+    'sigilfall-cinderhorn-hart': { name: 'Cinderhorn Hart', blurb: `Ein kohlegrauer Sigilfall-Hirsch, dessen Geweih aus lebendigen Flammen besteht, mit Glutrunen an den Flanken. ${MOUNT}` },
+    'sigilfall-moonglass-hart': { name: 'Moonglass Hart', blurb: `Ein weißer Sigilfall-Hirsch mit einem Geweih aus leuchtendem Kristall, einer Rüstung mit Kanten aus Licht und blassen Runen und Sternenlicht um die Hufe. ${MOUNT}` },
+    'sigilfall-gloamwing-drake': { name: 'Gloamwing Drake', blurb: `Ein Sigilfall-Drache in der Farbe des letzten Lichts, in dämmerungsvioletter Plattenrüstung unter einer Krone aus Hörnern, die Flügel von blassviolettem Feuer durchzogen. ${MOUNT}` },
+    'sigilfall-crownforged-helm': { name: 'Crownforged Helm', blurb: `Ein Sigilfall-Helm aus schwarzem Stahl unter einer goldenen Krone, mit Drachenhörnern und einem brennenden Visier. ${LOOK}` },
+    'sigilfall-crownforged-plate': { name: 'Crownforged Plate', blurb: `Eine Sigilfall-Rüstung aus schwarzen Platten mit Nähten aus geschmolzenem Gold, mit Schulterstücken wie Drachenflügel und einem karmesinroten Umhang. ${LOOK}` },
+    'sigilfall-celestine-crown': { name: 'Celestine Crown', blurb: `Ein silberner Sigilfall-Stirnreif mit einer Mondsichel unter einem sich drehenden Sternenkranz. ${LOOK}` },
+    'sigilfall-celestine-mantle': { name: 'Celestine Mantle', blurb: `Eine weiß-silberne Sigilfall-Robe mit sichelförmigen Schulterstücken und einem Umhang aus sternenvoller Nacht. ${LOOK}` },
+    'sigilfall-gloamquill-cowl': { name: 'Gloamquill Cowl', blurb: `Eine dunkle Sigilfall-Kapuze mit Schnabelmaske, einem Federkamm und zwei leuchtenden Augen. ${LOOK}` },
+    'sigilfall-gloamquill-mantle': { name: 'Gloamquill Mantle', blurb: `Sigilfall-Lederrüstung unter einem Mantel aus schwarzen Federn, mit einem langen Federumhang hinten. ${LOOK}` },
+    'sigilfall-duskborn-helm': { name: 'Duskborn Helm', blurb: `Ein Sigilfall-Helm aus schwarzem Stahl unter einer Krone aus Dämmerung, mit Hörnern und einem violett brennenden Visier. ${LOOK}` },
+    'sigilfall-duskborn-plate': { name: 'Duskborn Plate', blurb: `Eine Sigilfall-Rüstung aus schwarzen Platten mit Nähten aus violettem Licht, mit Schulterstücken wie Drachenflügel und einem Umhang in der Farbe der Dämmerung. ${LOOK}` },
+    'sigilfall-gloamknight': {
+      name: 'Gloamknight-Paket',
+      blurb: 'Die achte Klasse von Sigilfall, der Gloamknight, für dein Konto, dazu Duskborn-Helm und -Rüstung, der Gloamwing Drake, Rahmen und Banner „Dämmerung“ und zwei weitere Helden-Slots.',
+    },
+    'look-names': { name: 'Namenseffekte', blurb: 'Ein bisschen Farbe und Glanz für deinen Spitznamen.' },
+  },
+};
+
+export default de;
