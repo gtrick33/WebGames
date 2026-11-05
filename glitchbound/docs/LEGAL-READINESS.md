@@ -31,12 +31,16 @@ items marked for them before taking money.
   refund takes it back. Deleting an account keeps the record for the accounts, no longer linked to the person.
 - Items and prices are edited in **Admin › Ads & shop**: add, remove, hide, mark as planned, change a price, and the shop can be
   closed with one switch. The same page shows sales and can give an item to a player or take one back, all in the change log.
-  `src/catalog/shop.ts` holds the starting list. For sale at the start: **Ad-free (€1.99)**, three **picture borders** and
-  three **profile banners** (€0.50 each, the lowest price Stripe can charge in euros). The rest are "planned".
-- **Borders and banners** (`src/catalog/looks.ts`, drawn by `src/components/Looks.css`): a member picks one of each they own, or
-  none, under Your looks on their profile. The border goes around their picture and the banner across their player card, and
-  both show on every leaderboard and in the Hall of Fame. Boards show the border around the player's initial, never their
-  photo, so they still show only a nickname, a level and what the player chose to wear (`/privacy` says so). A look shows only
+  `src/catalog/shop.ts` holds the starting list. For sale at the start: **Ad-free (€1.99)**, six **picture borders**, six
+  **profile banners** and six **profile icons** (€0.50 each, the lowest price Stripe can charge in euros). The rest are "planned".
+- **New looks without code:** Admin › Ads & shop › Add an item makes a border, banner or icon from one of the site's styles in
+  colors the admin picks, with a live preview. It's for sale as soon as the list is saved. An item someone has bought can't be
+  lost: if it's left out of a saved list, the save keeps it, hidden.
+- **Borders, banners and icons** (`src/catalog/looks.ts`, drawn by `src/components/Looks.css` and `LookIcons.tsx`): a member picks
+  one of each they own, or none, under Your looks on their profile. The border goes around their picture, the icon replaces
+  it, and the banner runs across their player card. All show in the header, in friends lists, on every leaderboard and in the
+  Hall of Fame. Boards show the player's initial or icon, never their photo, so they still show only a nickname, a level and
+  what the player chose to wear (`/privacy` says so). A look shows only
   while its purchase is paid: a refund takes it off everywhere.
 
 **What may be sold** (these rules are in `src/catalog/shop.ts`): cosmetics and ad-free only. Real-money prices shown in full.

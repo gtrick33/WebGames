@@ -27,6 +27,22 @@ export async function loadItems(env: Env): Promise<Product[]> {
   }
 }
 
+/**
+ * The items an admin wants to save, with every item someone still owns kept: one left out comes back hidden, so a
+ * buyer never loses what they paid for (a look they wear goes on showing).
+ */
+export async function keepOwnedItems(env: Env, next: Product[]): Promise<Product[]> {
+  const [before, sold] = await Promise.all([
+    loadItems(env),
+    env.DB.prepare("SELECT DISTINCT product FROM purchases WHERE status = 'paid'")
+      .all<{ product: string }>()
+      .then((r) => new Set(r.results.map((x) => x.product)))
+      .catch(() => new Set<string>()),
+  ]);
+  const kept = before.filter((p) => sold.has(p.id) && !next.some((n) => n.id === p.id)).map((p) => ({ ...p, hidden: true as const }));
+  return [...next, ...kept];
+}
+
 /** What this member's paid purchases unlock. Refunded ones don't count. */
 export async function ownedBy(env: Env, userId: string): Promise<string[]> {
   try {

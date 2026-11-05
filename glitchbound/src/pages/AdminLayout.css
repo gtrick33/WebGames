@@ -501,3 +501,90 @@
     grid-template-columns: minmax(0, 1fr) 96px;
   }
 }
+/* A look in the list: its thumbnail first, and for one an admin made, its style and colors under the description. */
+.money-item.has-look {
+  grid-template-columns: 52px minmax(0, 1fr) 96px 130px auto;
+}
+.money-thumb {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 44px;
+}
+.money-thumb-banner {
+  width: 52px;
+  height: 30px;
+  border-radius: 6px;
+}
+.money-look {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 14px;
+}
+.money-look .ag-field {
+  flex: 1 1 260px;
+}
+.money-colors {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.money-colors input[type='color'] {
+  width: 40px;
+  height: 36px;
+  padding: 2px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  background: var(--well);
+  cursor: pointer;
+}
+@media (max-width: 560px) {
+  .money-item.has-look {
+    grid-template-columns: 52px minmax(0, 1fr) 96px;
+  }
+}
+/* The new item form, with a live preview beside it. */
+.money-new {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 14px;
+  border: 2px dashed var(--line);
+  border-radius: var(--r-md);
+}
+.money-new-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 300px);
+  gap: 16px;
+  align-items: start;
+}
+.money-new-form {
+  display: grid;
+  gap: 10px;
+}
+.money-new-form .field {
+  width: 100%;
+}
+.money-new-preview {
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  padding: 12px;
+  border-radius: var(--r-md);
+  background:
+    radial-gradient(circle at 50% 50%, rgb(139 92 255 / 0.35), transparent 60%),
+    #0d0522;
+}
+.money-preview-banner {
+  width: 100%;
+  height: 120px;
+  border-radius: 12px;
+}
+@media (max-width: 700px) {
+  .money-new-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

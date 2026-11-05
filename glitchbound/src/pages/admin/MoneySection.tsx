@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { STYLES, styleOf, type LookKind, type LookSpec } from '../../catalog/looks';
+import { BannerArt, FramedAvatar } from '../../components/Looks';
 import { NO_MONEY, type MoneySettings } from '../../catalog/settings';
 import { AD_FREE_ID, breaksRules, isBuiltIn, MAX_CENTS, MIN_CENTS, priceText, PRODUCTS, type Product } from '../../catalog/shop';
 import { api } from '../../platform/account';
@@ -133,8 +135,8 @@ const stateOf = (p: Product): (typeof STATES)[number]['id'] => (p.hidden ? 'hidd
 
 function Items({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boolean }) {
   const [items, setItems] = useState<Product[]>(data.shopItems ?? PRODUCTS);
+  const [adding, setAdding] = useState(false);
   const change = (i: number, patch: Partial<Product>): void => setItems((all) => all.map((p, n) => (n === i ? { ...p, ...patch } : p)));
-  const slug = (name: string): string => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30);
   const bad = items.find((p) => breaksRules(`${p.name} ${p.blurb}`));
   const wrong = items.find((p) => !p.name.trim() || !p.blurb.trim() || p.cents < MIN_CENTS || p.cents > MAX_CENTS);
   return (
@@ -145,10 +147,11 @@ function Items({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boo
       <p className="info-small">
         Prices are in euros with VAT included, and what&rsquo;s here is what players pay. Cosmetic items and ad-free only: nothing that helps anyone win, no game currency and no random boxes. No
         countdowns or &ldquo;last chance&rdquo;, and don&rsquo;t show a discount unless the old price really was charged in the last 30 days. Items marked planned can&rsquo;t be bought yet. Ad-free
-        and the borders and banners are built into the site, so they can be hidden but not removed, and whoever bought one keeps it.
+        and the built-in borders, banners and icons can be hidden but not removed. An item someone has bought is never lost: if it&rsquo;s left out of the list, saving keeps it, hidden.
       </p>
       {items.map((p, i) => (
-        <div key={p.id} className="money-item">
+        <div key={p.id} className={`money-item${p.look ? ' has-look' : ''}`}>
+          {p.look && <LookThumb spec={p.look} />}
           <input className="field" aria-label="Name" value={p.name} maxLength={40} onChange={(e) => change(i, { name: e.target.value })} />
           <label className="info-small money-price">
             €
@@ -164,9 +167,9 @@ function Items({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boo
             />
           </label>
           <select className="field" aria-label={`State of ${p.name}`} value={stateOf(p)} onChange={(e) => change(i, { later: e.target.value === 'later' ? true : undefined, hidden: e.target.value === 'hidden' ? true : undefined })}>
-            {STATES.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.label}
+            {STATES.map((st) => (
+              <option key={st.id} value={st.id}>
+                {st.label}
               </option>
             ))}
           </select>
@@ -176,25 +179,175 @@ function Items({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boo
             </button>
           )}
           <textarea className="field" aria-label={`What ${p.name} is`} value={p.blurb} maxLength={240} rows={3} onChange={(e) => change(i, { blurb: e.target.value })} />
+          {p.look && !isBuiltIn(p.id) && <LookEditor spec={p.look} name={p.name} onChange={(look) => change(i, { look })} />}
         </div>
       ))}
       {bad && <p className="info-small" role="alert">&ldquo;{bad.name}&rdquo; uses words the rules above don&rsquo;t allow, such as pressure, chance or game currency.</p>}
       {wrong && <p className="info-small" role="alert">Each item needs a name, a description and a price from {priceText(MIN_CENTS)} to {priceText(MAX_CENTS)}.</p>}
-      <div className="reset-row">
-        <button
-          className="btn btn-sm"
-          onClick={() => {
-            const name = `New item ${items.length + 1}`;
-            setItems((all) => [...all, { id: `${slug(name)}-${Date.now().toString(36)}`, name, blurb: 'What it is, in plain words.', cents: 99, later: true }]);
+      {adding && (
+        <NewItem
+          taken={items.map((p) => p.id)}
+          onCancel={() => setAdding(false)}
+          onAdd={(p) => {
+            setItems((all) => [...all, p]);
+            setAdding(false);
           }}
-        >
-          Add an item
-        </button>
+        />
+      )}
+      <div className="reset-row">
+        {!adding && (
+          <button className="btn btn-sm" onClick={() => setAdding(true)}>
+            Add an item
+          </button>
+        )}
         <button className="btn btn-sm btn-primary" disabled={busy || !!bad || !!wrong} onClick={() => void send({ action: 'shopItems', items }, 'Shop items saved')}>
           Save the items
         </button>
       </div>
     </section>
+  );
+}
+
+/** A look at the size of a list row. */
+function LookThumb({ spec }: { spec: LookSpec }) {
+  return (
+    <span className="money-thumb" aria-hidden="true">
+      {spec.kind === 'banner' ? <BannerArt spec={spec} className="money-thumb-banner" /> : <FramedAvatar name="G" size={40} border={spec.kind === 'border' ? spec : undefined} icon={spec.kind === 'icon' ? spec : undefined} />}
+    </span>
+  );
+}
+
+/** A look, big, as players will see it. */
+function LookPreview({ spec }: { spec: LookSpec }) {
+  return spec.kind === 'banner' ? (
+    <BannerArt spec={spec} className="money-preview-banner" />
+  ) : (
+    <FramedAvatar name="G" size={104} border={spec.kind === 'border' ? spec : undefined} icon={spec.kind === 'icon' ? spec : undefined} />
+  );
+}
+
+/** The style and colors of a look an admin made. Each color starts as the style's own. */
+function LookEditor({ spec, name, onChange }: { spec: LookSpec; name: string; onChange: (spec: LookSpec) => void }) {
+  const style = styleOf(spec.kind, spec.style);
+  const colors = spec.colors ?? style?.colors ?? [];
+  return (
+    <div className="money-look">
+      <label className="ag-field">
+        Style
+        <select className="field" aria-label={`Style of ${name}`} value={spec.style} onChange={(e) => onChange({ kind: spec.kind, style: e.target.value, colors: styleOf(spec.kind, e.target.value)?.colors })}>
+          {STYLES[spec.kind].map((st) => (
+            <option key={st.id} value={st.id}>
+              {st.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <span className="money-colors" role="group" aria-label={`Colors of ${name}`}>
+        {colors.map((c, n) => (
+          <input key={n} type="color" aria-label={`Color ${n + 1} of ${name}`} value={c} onChange={(e) => onChange({ ...spec, colors: colors.map((x, k) => (k === n ? e.target.value : x)) })} />
+        ))}
+        {style && (
+          <button type="button" className="btn btn-sm btn-ghost" onClick={() => onChange({ kind: spec.kind, style: spec.style })}>
+            Its own colors
+          </button>
+        )}
+      </span>
+    </div>
+  );
+}
+
+const KIND_OPTIONS: { id: LookKind | 'plain'; label: string; blurb: string }[] = [
+  { id: 'border', label: 'A border around a member’s picture', blurb: 'A border around your picture on your profile and on the boards.' },
+  { id: 'banner', label: 'A banner behind a member’s name', blurb: 'Art across your profile and behind your name on the boards.' },
+  { id: 'icon', label: 'A profile icon in place of the picture', blurb: 'An icon in place of your picture on your profile, in the header and on the boards.' },
+  { id: 'plain', label: 'Something else (it does nothing by itself)', blurb: 'What it is, in plain words.' },
+];
+
+const slugOf = (text: string): string => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 28);
+
+/**
+ * A new shop item. A border, banner or icon works the moment the list is saved: it's one of the site's styles in the
+ * colors picked here, so it needs no code. Something else is only a listing until the code gives it a meaning.
+ */
+function NewItem({ taken, onAdd, onCancel }: { taken: string[]; onAdd: (p: Product) => void; onCancel: () => void }) {
+  const [kind, setKind] = useState<LookKind | 'plain'>('border');
+  const [look, setLook] = useState<LookSpec>({ kind: 'border', style: STYLES.border[0]!.id, colors: STYLES.border[0]!.colors });
+  const [name, setName] = useState('');
+  const [blurb, setBlurb] = useState('');
+  const [euros, setEuros] = useState('0.50');
+  const option = KIND_OPTIONS.find((o) => o.id === kind)!;
+  const style = kind === 'plain' ? undefined : styleOf(kind, look.style);
+  const suggested = kind === 'plain' ? 'New item' : `${(style?.label.split(':')[0] ?? 'New').replace(/^\w/, (c) => c.toUpperCase())} ${kind === 'icon' ? 'icon' : kind}`;
+  const title = name.trim() || suggested;
+  const text = blurb.trim() || option.blurb;
+  const cents = Math.round(Number(euros) * 100);
+  const base = `${kind === 'plain' ? 'item' : kind}-${slugOf(title) || 'new'}`;
+  let id = base;
+  for (let n = 2; taken.includes(id); n++) id = `${base}-${n}`;
+  const problem = breaksRules(`${title} ${text}`)
+    ? 'The name or description uses words the shop’s rules don’t allow.'
+    : !(cents >= MIN_CENTS && cents <= MAX_CENTS)
+      ? `The price must be from ${priceText(MIN_CENTS)} to ${priceText(MAX_CENTS)}.`
+      : '';
+  const pickKind = (k: LookKind | 'plain'): void => {
+    setKind(k);
+    if (k !== 'plain') setLook({ kind: k, style: STYLES[k][0]!.id, colors: STYLES[k][0]!.colors });
+  };
+  let preview: ReactNode = <p className="info-small">No preview: this item has no look.</p>;
+  if (kind !== 'plain') preview = <LookPreview spec={look} />;
+  return (
+    <div className="money-new" role="group" aria-labelledby="money-new-title">
+      <h3 id="money-new-title">New item</h3>
+      <div className="money-new-grid">
+        <div className="money-new-form">
+          <label className="ag-field">
+            What it is
+            <select className="field" value={kind} onChange={(e) => pickKind(e.target.value as LookKind | 'plain')}>
+              {KIND_OPTIONS.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {kind !== 'plain' && <LookEditor spec={look} name="the new item" onChange={setLook} />}
+          <label className="ag-field">
+            Name
+            <input className="field" value={name} placeholder={suggested} maxLength={40} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label className="ag-field">
+            What it is, for players
+            <textarea className="field" value={blurb} placeholder={option.blurb} maxLength={240} rows={2} onChange={(e) => setBlurb(e.target.value)} />
+          </label>
+          <label className="ag-field money-price">
+            Price in euros, VAT included
+            <input className="field" type="number" min={MIN_CENTS / 100} max={MAX_CENTS / 100} step="0.01" value={euros} onChange={(e) => setEuros(e.target.value)} />
+          </label>
+        </div>
+        <div className="money-new-preview" aria-label="Preview">
+          {preview}
+        </div>
+      </div>
+      {kind === 'plain' && <p className="info-small">It&rsquo;s added as planned: it unlocks nothing until the site&rsquo;s code gives it a meaning, so it can&rsquo;t be sold before that.</p>}
+      {problem && (
+        <p className="info-small" role="alert">
+          {problem}
+        </p>
+      )}
+      <div className="reset-row">
+        <button
+          className="btn btn-sm btn-primary"
+          disabled={!!problem}
+          onClick={() => onAdd({ id, name: title, blurb: text, cents, ...(kind === 'plain' ? { later: true } : { look }) })}
+        >
+          Add to the list
+        </button>
+        <button className="btn btn-sm btn-ghost" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+      <p className="info-small">Then press Save the items. A new look is for sale as soon as it&rsquo;s saved, unless you set it to planned or hidden.</p>
+    </div>
   );
 }
 

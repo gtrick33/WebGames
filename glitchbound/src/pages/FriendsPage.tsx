@@ -180,7 +180,7 @@ export function FriendsPage() {
             return (
               <li key={f.id} className={`friend-row${f.banner ? ' has-banner' : ''}`}>
                 {f.banner && <Banner id={f.banner} row />}
-                <LookAvatar name={f.nickname} size={40} border={f.border} />
+                <LookAvatar name={f.nickname} size={40} border={f.border} icon={f.icon} />
                 <span className="friend-who">
                   <strong>
                     {f.nickname} <span className="board-lvl mono">LV {f.level}</span>

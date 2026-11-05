@@ -44,8 +44,8 @@ export function SaleTermsPage() {
             games from other sites that have their own ads.
           </p>
           <p>
-            <strong>Borders and banners</strong> change how your picture and your name look on your profile and on the leaderboards, and nothing else. You choose which one to wear, or none, on your
-            profile. Each one lasts as long as GlitchBound runs.
+            <strong>Borders, banners and profile icons</strong> change how your picture and your name look on your profile, in the header, in friends lists and on the leaderboards, and nothing
+            else. You choose which ones to wear, or none, on your profile. Each one lasts as long as GlitchBound runs.
           </p>
         </section>
         <section className="panel info-block">

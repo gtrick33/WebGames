@@ -2250,6 +2250,8 @@ const es: string[] = [
   'Sin marco',
   'Sin banner',
   'Ver marcos y banners en la tienda',
+  'Icono',
+  'Sin icono',
 ];
 
 export default es;
