@@ -2250,6 +2250,8 @@ const de: string[] = [
   'Kein Rahmen',
   'Kein Banner',
   'Rahmen und Banner im Shop ansehen',
+  'Icon',
+  'Kein Icon',
 ];
 
 export default de;

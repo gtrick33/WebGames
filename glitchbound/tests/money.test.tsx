@@ -5,7 +5,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { AGREE_NOW, breaksRules, isBuiltIn, priceText, PRODUCTS, productIn, sanitizeProducts } from '../src/catalog/shop';
-import { isLook, LOOKS } from '../src/catalog/looks';
+
+/** The built-in borders, banners and icons. */
+const LOOKS = PRODUCTS.filter((p) => p.look);
+const isLook = (id: string): boolean => LOOKS.some((p) => p.id === id);
 import { NO_MONEY, sanitizeMoney } from '../src/catalog/settings';
 import { canRetryDaily, retryDaily } from '../src/platform/dailyRetry';
 import { applyStripeEvent, canSell, giftItem, loadItems, ownedBy, shopReport, startCheckout, takeBack, verifyStripeSignature } from '../server/shop';
@@ -100,14 +103,16 @@ describe('with the shop open', () => {
     expect(screen.getAllByRole('button', { name: 'Sign in first' })).toHaveLength(PRODUCTS.filter((p) => !p.later && !p.hidden).length);
   });
 
-  it('shows each border and banner as it looks, before buying it', async () => {
+  it('shows each border, banner and icon as it looks, before buying it, grouped by kind', async () => {
     const { ShopPage } = await import('../src/pages/ShopPage');
     const { container } = render(<ShopPage />);
-    for (const look of LOOKS) {
-      const panel = screen.getByRole('heading', { name: productIn(PRODUCTS, look.id)!.name }).closest('section')!;
-      expect(panel.querySelector(look.kind === 'border' ? `.avatar-frame.look-${look.id}` : `.look-banner.look-${look.id}`)).toBeTruthy();
+    for (const p of LOOKS) {
+      const panel = screen.getByRole('heading', { name: p.name }).closest('section')!;
+      const drawn = { border: `.avatar-frame.look-${p.id}`, banner: `.look-banner.look-${p.id}`, icon: `.avatar-icon.look-${p.id} svg` }[p.look!.kind];
+      expect(panel.querySelector(drawn), p.id).toBeTruthy();
     }
     expect(container.querySelectorAll('.shop-look')).toHaveLength(LOOKS.length);
+    for (const name of ['Borders', 'Banners', 'Profile icons']) expect(screen.getByRole('heading', { name, level: 2 })).toBeTruthy();
   });
 });
 
@@ -171,7 +176,9 @@ describe('what the shop sells', () => {
       { id: 'sigilfall-mounts', name: 'Mounts', blurb: 'Planned.', cents: 299, later: true },
     ]);
     expect(saved.map((p) => p.id)).toEqual(['ad-free', 'border-aurora', 'border-neon-halo', ...LOOKS.slice(1).map((l) => l.id), 'sigilfall-mounts']);
-    expect(productIn(saved, 'border-neon-halo')).toEqual({ id: 'border-neon-halo', name: 'Halo', blurb: 'Cheaper now.', cents: 79, hidden: true });
+    // the admins' name, text, price and state, and the look the code gives it
+    expect(productIn(saved, 'border-neon-halo')).toEqual({ id: 'border-neon-halo', name: 'Halo', blurb: 'Cheaper now.', cents: 79, hidden: true, look: { kind: 'border', style: 'neon-halo' } });
+    expect(productIn(saved, 'border-aurora')!.look).toBeUndefined();
     expect(isBuiltIn('ad-free') && LOOKS.every((l) => isBuiltIn(l.id))).toBe(true);
     expect(isBuiltIn('border-aurora') || isBuiltIn('sigilfall-mounts')).toBe(false);
   });

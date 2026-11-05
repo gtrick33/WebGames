@@ -2250,6 +2250,8 @@ const pt: string[] = [
   'Sem moldura',
   'Sem banner',
   'Ver molduras e banners na loja',
+  'Ícone',
+  'Sem ícone',
 ];
 
 export default pt;

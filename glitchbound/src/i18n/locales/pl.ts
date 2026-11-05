@@ -2250,6 +2250,8 @@ const pl: string[] = [
   'Bez ramki',
   'Bez baneru',
   'Zobacz ramki i banery w sklepie',
+  'Ikona',
+  'Bez ikony',
 ];
 
 export default pl;

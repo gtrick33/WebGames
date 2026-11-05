@@ -23,6 +23,7 @@ export interface UserRow {
   /** The border and banner this member chose (server/looks.ts). */
   look_border?: string;
   look_banner?: string;
+  look_icon?: string;
 }
 
 /** Staff roles. Admins are listed in ADMIN_EMAILS; QA testers are invited by an admin (server/staff.ts). */

@@ -121,6 +121,7 @@ export interface PinsView {
 export interface RowLooks {
   border?: string;
   banner?: string;
+  icon?: string;
 }
 
 export interface LeaderRow extends RowLooks {

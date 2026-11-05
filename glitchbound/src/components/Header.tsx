@@ -27,13 +27,13 @@ const SearchDialog = lazy(fresh(() => import('./SearchDialog').then((m) => ({ de
 const LookAvatar = lazy(fresh(() => import('./Looks').then((m) => ({ default: m.LookAvatar }))));
 const Banner = lazy(fresh(() => import('./Looks').then((m) => ({ default: m.Banner }))));
 
-/** The member's picture, in their border once it has loaded (the plain picture until then). */
-function MemberAvatar({ me, size }: { me: { nickname: string; avatar: string; looks?: { border: string } }; size: number }) {
+/** The member's picture, or their icon, in their border once it has loaded (the plain picture until then). */
+function MemberAvatar({ me, size }: { me: { nickname: string; avatar: string; looks?: { border: string; icon: string } }; size: number }) {
   const plain = <Avatar name={me.nickname} src={me.avatar} size={size} />;
-  if (!me.looks?.border) return plain;
+  if (!me.looks?.border && !me.looks?.icon) return plain;
   return (
     <Suspense fallback={plain}>
-      <LookAvatar name={me.nickname} src={me.avatar} size={size} border={me.looks.border} />
+      <LookAvatar name={me.nickname} src={me.avatar} size={size} border={me.looks.border} icon={me.looks.icon} />
     </Suspense>
   );
 }
