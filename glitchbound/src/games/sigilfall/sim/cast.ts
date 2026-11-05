@@ -136,6 +136,9 @@ export function tryCast(w: World, req: CastRequest): boolean {
   if (req.slot === 'ult') {
     if (p.ult < 100) return false;
   } else if (cd.charges <= 0) return false;
+  // a cast on its way: the basic attack waits for it, the same skill again does nothing (another skill
+  // or a dodge stops it below, once that one is sure to go)
+  if (p.casting && (req.slot === 'basic' || req.slot === p.casting.slot)) return false;
   // busy: a wind-up finishes first; a dodge may cut a channel short; dashes can't be stacked
   if (p.windup) return false;
   if (p.dash && !p.dash.dodge) return false;
@@ -157,17 +160,18 @@ export function tryCast(w: World, req: CastRequest): boolean {
     w.text(p.x, p.y - 20, 'No target', '#c9c3e6', false);
     return false;
   }
-  // pay
-  p.mana -= cost;
-  if (req.slot === 'ult') {
-    p.ult = 0;
-    runProcs(w, 'ult', { x: p.x, y: p.y, base: 0, type: spec.dmgType, depth: 1, hitDmg: 0 });
-  } else {
-    if (cd.charges >= cd.max) cd.t = cd.cd;
-    cd.charges -= 1;
-  }
-  if (req.slot === 'dodge') p.channel = null;
+  if (p.casting) stopCasting(w);
   p.aim = aim.angle;
+  // a spell with a cast time: the cast starts, and nothing is paid until it goes off (updateCasting)
+  const time = castTimeOf(spec);
+  if (time > 0) {
+    p.casting = { slot: req.slot, spec, t: 0, total: time, angle: aim.angle, tx: aim.tx, ty: aim.ty, target: aim.target?.id ?? -1 };
+    p.actAngle = aim.angle;
+    w.sfx('windup', 0.7);
+    return true;
+  }
+  pay(w, spec, req.slot, cost);
+  if (req.slot === 'dodge') p.channel = null;
   if (spec.windup > 0 && spec.cast !== 'ground') {
     p.windup = { slot: req.slot, spec, t: spec.windup, total: spec.windup, angle: aim.angle, tx: aim.tx, ty: aim.ty };
     p.actKind = 'heavy';
@@ -196,6 +200,95 @@ function dodgeAim(w: World, req: CastRequest): Aim {
   const moving = Math.hypot(w.input.mx, w.input.my) > 0.2;
   const angle = moving ? Math.atan2(w.input.my, w.input.mx) : (req.angle ?? p.aim);
   return { angle, tx: p.x, ty: p.y, target: null };
+}
+
+/** Spends a skill's cost and starts its cooldown (or empties the ultimate). */
+function pay(w: World, spec: SkillSpec, slot: SlotKey, cost: number): void {
+  const p = w.player;
+  p.mana -= cost;
+  if (slot === 'ult') {
+    p.ult = 0;
+    runProcs(w, 'ult', { x: p.x, y: p.y, base: 0, type: spec.dmgType, depth: 1, hitDmg: 0 });
+  } else {
+    const cd = p.cds[slot];
+    if (cd.charges >= cd.max) cd.t = cd.cd;
+    cd.charges -= 1;
+  }
+}
+
+/**
+ * How long a skill takes to cast (0: it goes at once). Haste doesn't shorten it: gear brings haste near 100% by
+ * the late levels, and a cast bar of half a second is no cast bar.
+ */
+export function castTimeOf(spec: SkillSpec): number {
+  return Math.max(0, spec.castTime ?? 0);
+}
+
+/** What stops a cast besides moving and other skills: being stunned, frozen or terrified. */
+const BREAKS_CAST = new Set<string>(['stun', 'freeze', 'fear']);
+
+/** Stops a cast with nothing spent (no cost, no cooldown, the ultimate still charged). */
+export function stopCasting(w: World): void {
+  if (!w.player.casting) return;
+  w.player.casting = null;
+  w.castEnd = { at: w.time, fired: false };
+}
+
+/**
+ * A cast on its way: it turns with the enemy it was aimed at, and goes off when full. Moving (`moving`, the
+ * player's own input: a knock-back doesn't count), a stun or death stops it; being hurt does not.
+ */
+export function updateCasting(w: World, dt: number, moving: boolean): void {
+  const p = w.player;
+  const c = p.casting;
+  if (!c) return;
+  if (p.dead || moving || p.statuses.some((s) => BREAKS_CAST.has(s.id))) {
+    stopCasting(w);
+    return;
+  }
+  let target = c.target >= 0 ? (w.enemyById(c.target) ?? null) : null;
+  if (target?.dead) target = null;
+  if (target) {
+    c.angle = Math.atan2(target.y - p.y, target.x - p.x);
+    const d = Math.min(c.spec.range, dist(p.x, p.y, target.x, target.y));
+    c.tx = p.x + Math.cos(c.angle) * d;
+    c.ty = p.y + Math.sin(c.angle) * d;
+  }
+  p.aim = c.angle;
+  p.actAngle = c.angle;
+  c.t += dt;
+  if (c.t < c.total) return;
+  p.casting = null;
+  const end = { at: w.time, fired: false };
+  w.castEnd = end;
+  const spec = c.spec;
+  // what it costs is checked again (nothing was paid at the start)
+  if (c.slot === 'ult' ? p.ult < 100 : p.cds[c.slot].charges <= 0) return;
+  const cost = skillCost(w, spec, c.slot);
+  if (cost > p.mana + 1e-6) {
+    const res = w.build.resource!;
+    w.text(p.x, p.y - 20, `Not enough ${res.name.toLowerCase()}`, res.color, false);
+    w.sfx('nomana', 0.5);
+    return;
+  }
+  // a spell that needs a target whose target fell takes the nearest other in reach, or isn't cast at all
+  if (!target && c.target >= 0 && (spec.cast === 'mark' || spec.cast === 'chain' || spec.cast === 'drain')) {
+    target = autoTarget(w, aimReach(spec), c.angle);
+    if (!target) {
+      w.text(p.x, p.y - 20, 'No target', '#c9c3e6', false);
+      return;
+    }
+    c.angle = Math.atan2(target.y - p.y, target.x - p.x);
+  }
+  pay(w, spec, c.slot, cost);
+  execute(w, c.slot, spec, c.angle, c.tx, c.ty, target);
+  end.fired = true;
+  // the release: the gathered spell thrown (a channel or a dash keeps its own move)
+  if (!p.channel && !p.dash) {
+    p.actKind = 'cast';
+    p.actT = Math.max(p.actT, 0.35);
+    p.actAngle = c.angle;
+  }
 }
 
 /** Finishes a wind-up. */

@@ -160,7 +160,7 @@ export const DRUID: Kit = {
       8,
       'Starfall',
       'Stars rain down on an area for 4 seconds, striking everything beneath them again and again.',
-      spec({ id: 'starfall', cast: 'ground', aim: 'ground', range: 130, cooldown: 0, damage: 9, dmgType: 'arcane', area: 56, duration: 4, tick: 0.25, look: 'rift', tags: ['aoe', 'arcane', 'ultimate'] }),
+      spec({ id: 'starfall', cast: 'ground', aim: 'ground', range: 130, cooldown: 0, damage: 13, castTime: 1.5, dmgType: 'arcane', area: 56, duration: 4, tick: 0.25, look: 'rift', tags: ['aoe', 'arcane', 'ultimate'] }),
     ),
     sk('dodge', 1, 'Wild Dash', 'Bound a few steps out of harm’s way.', spec({ id: 'wild-dash', cast: 'dash', range: 54, cooldown: 5, duration: 0.18, tags: ['movement', 'dodge'] })),
   ],

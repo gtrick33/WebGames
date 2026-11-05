@@ -169,7 +169,8 @@ export class WorldCast {
     const mount = p.riding ? MOUNT_DEFS[p.riding] : undefined;
     // which way they face: where the blow goes, else where they walk
     let want = this.heroTurn;
-    if (acting) want = turnOf(p.actAngle);
+    if (p.casting) want = turnOf(p.casting.angle);
+    else if (acting) want = turnOf(p.actAngle);
     else if (moving) want = Math.atan2(p.vx, p.vy);
     else if (!p.form) want = this.heroTurn;
     this.heroTurn = damp(this.heroTurn, shortest(this.heroTurn, want), 16, dt);
@@ -183,6 +184,8 @@ export class WorldCast {
     else if (inSaddle) m.set('ride');
     else if (p.dash) m.set('dodge', false);
     else if (p.channel) m.set(p.channel.target !== undefined ? 'channel' : 'spin');
+    // a spell with a cast time: hands up, staff forward, held while the bar fills (the release is the 'cast' below)
+    else if (p.casting) m.set('channel', true, 0.12);
     else if (acting) {
       const key = `${p.actKind}`;
       const fresh = this.lastAct !== key || p.actT > (this.lastActT ?? 0) + 0.01;
@@ -200,7 +203,7 @@ export class WorldCast {
     } else cast.shadow(p.x, p.y, 8);
     if (!p.dead && !o0.landOnly) cast.ring(p.x, p.y, 11, '#22e4ff', 0.75);
     if (p.form) {
-      cast.creature(p.form, p.x, p.y, this.heroTurn, 30, acting ? 'chop' : moving ? 'run' : 'idle', time, !acting, { alpha, flash });
+      cast.creature(p.form, p.x, p.y, this.heroTurn, 30, acting ? 'chop' : moving && !p.casting ? 'run' : 'idle', time, !acting, { alpha, flash });
       return;
     }
     if (inSaddle) {
@@ -410,8 +413,11 @@ export class WorldCast {
       this.ghosts.set(gh.n, s);
     }
     const moving = Math.hypot(gh.vx, gh.vy) > 10;
-    if (moving) s.turn = damp(s.turn, shortest(s.turn, Math.atan2(gh.vx, gh.vy)), 14, dt);
+    if (gh.cast && !gh.dead) s.turn = damp(s.turn, shortest(s.turn, turnOf(gh.cast.angle)), 14, dt);
+    else if (moving) s.turn = damp(s.turn, shortest(s.turn, Math.atan2(gh.vx, gh.vy)), 14, dt);
     if (gh.dead) s.m.set('die', false);
+    // casting a spell (their cast bar): the same raised hands as the hero's own
+    else if (gh.cast) s.m.set('channel', true, 0.12);
     else s.m.set(moving ? 'run' : 'idle');
     s.m.advance(dt);
     cast.shadow(gh.x, gh.y, 8);
