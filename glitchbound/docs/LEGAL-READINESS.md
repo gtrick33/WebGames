@@ -122,10 +122,12 @@ You:
       the next checkout, with VAT included. An accountant should confirm the tax code in `server/shop.ts` (`txcd_10000000`).
 - [ ] Decide on the currency. The shop shows euros, and Bulgaria uses the euro since 2026.
 Lawyer:
-- [ ] The paid Gloamknight class: a paid class is playable in the Ring, whose results reach the boards. Check that selling it
-      fits EU consumer rules on in-game purchases (the Unfair Commercial Practices Directive and the CPC network's guidance on
-      in-game purchases) and the wording in `/terms/sale` ("a different way to play, … not a stronger one"), and whether the Ring's
-      ladder should separate or mark it.
+- [ ] The paid Gloamknight class (a low-risk check, not a blocker: the owner's call, 2026-11-05): a paid class is playable in
+      the Ring, whose results reach the boards. Selling a class that can reach the top of a ladder is an established model
+      (Diablo III's Necromancer pack), and the EU rules on in-game purchases (the Unfair Commercial Practices Directive, the CPC
+      network's guidance) aim at hidden prices, pressure, game currencies, random boxes and pushing children to buy, none of which
+      the shop does. What has to stay true is the wording in `/terms/sale` ("a different way to play, … not a stronger one"):
+      keep the class balanced with the free ones, and keep the game's pointer to the shop a plain link.
 - [ ] Read `/terms/sale`, `/terms` and `/privacy` as written for the shop-open state (staff can see them while it's closed),
       especially the merchant-of-record wording against Stripe's actual contract, the 14-day waiver flow, and "lasts as long as
       GlitchBound runs" for ad-free.
@@ -139,8 +141,10 @@ Accountant:
 - [ ] Sole trader, company or freelance income for what Stripe pays you, and the same art. 97a question.
 
 Me, when you say so:
-- [ ] Translate the Shop, `/terms/sale`, Terms and Privacy, at least into Bulgarian. They're English only, and selling to
-      people in a language they read is part of the rules. A lawyer should read the Bulgarian.
+- [x] Translate the Shop, `/terms/sale`, Terms and Privacy into Bulgarian. Done 2026-11-05: a reader who picks Български sees
+      all four in Bulgarian (the item texts in `src/catalog/shopBg.ts`), ticks the two statements in Bulgarian, pays on Stripe's
+      page in Bulgarian, and gets the confirmation email in Bulgarian; the purchase records `<version> bg`. Other languages read
+      the English. **A lawyer should read the Bulgarian**, which is a translation, not a reviewed text.
 - [x] Before selling cosmetics: design them, show them on profiles and boards, and let members choose what they wear. Done for
       borders and banners. Name effects are still planned.
 - [x] Before selling Sigilfall items: build them from art we may resell in a game. Done for the five shop mounts and three
