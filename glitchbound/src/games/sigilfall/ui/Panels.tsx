@@ -368,6 +368,7 @@ function specLine(engine: SigilEngine, spec: SkillSpec): string {
   if (spec.damage > 0) parts.push(`${Math.round(spec.damage * levelPower(engine.hero!.level) * typeBonus(st, spec.dmgType))} ${DMG_NAME[spec.dmgType]} damage${spec.count > 1 ? ` ×${spec.count}` : ''}${spec.cast === 'channel' || spec.tick ? ' per hit' : ''}`);
   if (spec.cost > 0 && w.player.maxMana > 0) parts.push(`${Math.round((spec.cost * w.player.maxMana) / 100)} mana`);
   if (spec.extra.manaOnHit && w.player.maxMana > 0) parts.push(`+${Math.round((spec.extra.manaOnHit * w.player.maxMana) / 100)} mana per hit`);
+  if (spec.castTime) parts.push(`${spec.castTime} s cast (stand still)`);
   if (spec.cooldown > 0) parts.push(`${(spec.cooldown / (1 + st.haste / 100)).toFixed(1)} s cooldown${spec.charges > 1 ? `, ${spec.charges} charges` : ''}`);
   if (spec.cast === 'projectile' && spec.pierce > 0 && spec.pierce < 99) parts.push(`pierces ${spec.pierce}`);
   if (spec.pierce >= 99) parts.push('passes through all');

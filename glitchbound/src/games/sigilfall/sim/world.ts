@@ -31,7 +31,7 @@ import { deathSound } from '../data/voices';
 import { separate, updateEnemy, updatePuppet } from './ai';
 import { refreshPets, summonPet, updatePets } from './pets';
 import { spawnFolk, updateFolk, type Folk } from './folk';
-import { updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
+import { updateCasting, updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
 import { healPlayer, hurtPlayer, playerSlow, playerStunned, tickPlayerStatuses } from './combat';
 import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type PlacedMarker, type TileMap } from './map';
 import type { Chest, CoopSide, Drop, Enemy, Field, FloatText, Fx, Ghost, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent } from './types';
@@ -229,6 +229,10 @@ export class World {
   interactable: Interactable | null = null;
   /** When "Not enough mana" was last said (it isn't repeated every frame). */
   noManaAt = -99;
+  /** When "Stand still to cast" was last said. */
+  castHintAt = -99;
+  /** How the last cast ended, for the cast bar's last moment: when, and whether the spell went off. */
+  castEnd: { at: number; fired: boolean } | null = null;
   private exitInside = -1;
   /** The hero just stepped onto an exit: the engine offers to travel. */
   pendingExit: Interactable | null = null;
@@ -394,6 +398,7 @@ export class World {
       iframe: 0.5,
       dash: null,
       windup: null,
+      casting: null,
       channel: null,
       buffs: [],
       form: null,
@@ -1289,11 +1294,22 @@ export class World {
     }
     if (p.riding && acting) this.dismount();
     // skills
+    let began = false;
     for (const req of peace ? [] : inp.casts) {
+      // a cast begun this frame keeps it: what else was pressed with it doesn't stop it (a dodge still does)
+      if (began && req.slot !== 'dodge') continue;
+      const was = p.casting;
       const r = this.withMouse(req);
       if (tryCast(this, r) && req.slot !== 'basic' && req.slot !== 'dodge') this.tutorialSkillCast();
+      began = !!p.casting && p.casting !== was;
     }
     if (!peace && inp.holdBasic && p.cds.basic.charges > 0) tryCast(this, this.withMouse(inp.holdBasic));
+    // a cast needs the hero to stand: stepping away stops it (said once in a while, for whoever didn't know)
+    if (p.casting && moving && p.casting.t <= 0 && this.time - this.castHintAt > 6) {
+      this.castHintAt = this.time;
+      this.text(p.x, p.y - 20, 'Stand still to cast', '#c9c3e6', false);
+    }
+    updateCasting(this, dt, moving || peace || !!this.scene);
     updateWindup(this, dt);
     updateChannel(this, dt);
     if (inp.potion) this.drinkPotion();
@@ -1967,6 +1983,7 @@ export class World {
     p.dash = null;
     p.channel = null;
     p.windup = null;
+    p.casting = null;
     this.hero.stats.deaths += 1;
     // a guest's fall costs the host's clock (which everyone's shows)
     if (this.puppet) this.coop!.out.push({ t: 'died' });
@@ -2456,7 +2473,7 @@ export class World {
     const p = this.player;
     const h = this.hero;
     if (!riddenMount(h)) return h.mounts.length || shopMountsFor(h).length ? 'Choose a mount in the Wardrobe.' : 'You have no mount yet.';
-    if (p.dead || p.channel || p.windup || p.dash) return 'Not now.';
+    if (p.dead || p.channel || p.windup || p.casting || p.dash) return 'Not now.';
     if (this.region.kind === 'dungeon') return 'There is no room to ride down here.';
     if (this.region.interior) return 'Not indoors.';
     if (p.form) return 'Not in beast form.';

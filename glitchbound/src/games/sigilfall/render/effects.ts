@@ -2,6 +2,7 @@ import { clamp, hash2, TAU } from '../core/math';
 import type { MountDef } from '../data/mounts';
 import { mountDef, riddenMount, wornLooks } from '../progress/wardrobe';
 import type { ClassId } from '../data/types';
+import { SKILLS } from '../data/skills';
 import { colorOf, FIELD, FX, WARN, type Fx3D } from '../render3d/fx3d';
 import { heightFromRadius, PERSON_H, type Cast } from '../render3d/cast';
 import { kitOf } from '../render3d/kits';
@@ -344,11 +345,31 @@ export class Effects {
       const tone = toneOf(p.windup.spec.dmgType);
       fx.put({ kind: FX.gather, x: p.x, y: p.y, up: 18, w: 44, a: tone.a, b: tone.b, t: 1 - clamp(p.windup.t / p.windup.total, 0, 1) });
     }
+    if (p.casting) this.gathering(fx, p.x, p.y, p.casting.angle, p.casting.spec.dmgType, clamp(p.casting.t / p.casting.total, 0, 1));
+    for (const gh of w.coop?.ghosts ?? []) {
+      const spell = gh.cast && !gh.dead ? SKILLS[gh.cast.id] : undefined;
+      if (spell && sc.near(gh.x, gh.y)) this.gathering(fx, gh.x, gh.y, gh.cast!.angle, spell.base.dmgType, gh.cast!.k);
+    }
     if (p.summon > 0 && !p.riding && !p.dead) this.calling(fx, p.x, p.y, clamp(p.summon / SUMMON_TIME, 0, 1), mountDef(riddenMount(w.hero) ?? '')?.glow?.color ?? '#ffd98a');
     const boss = w.boss();
     if (boss?.boss && boss.boss.collapse > 0) {
       fx.put({ kind: FX.collapse, x: boss.boss.cx, y: boss.boss.cy, flat: true, w: 1600, a: '#ff3fd2', b: '#22e4ff', p1: boss.boss.collapse / 800, seed: 0.5 });
     }
+  }
+
+  /**
+   * A spell being cast (the cast bar, sim/cast.ts updateCasting), `k` how far along: a rune under the caster
+   * that widens and brightens in the spell's color, power streaming in, and a light gathering in the raised
+   * hands, a little in front, that grows until the spell is thrown.
+   */
+  private gathering(fx: Fx3D, x: number, y: number, angle: number, type: string, k: number): void {
+    const tone = toneOf(type);
+    fx.put({ kind: FX.rune, x, y, flat: true, w: 28 + 20 * k, a: tone.a, b: tone.b, t: 0.5, alpha: 0.45 + 0.45 * k, seed: 0.7 });
+    fx.put({ kind: FX.gather, x, y, up: 18, w: 38, a: tone.a, b: tone.b, t: 0.2 + 0.5 * k, alpha: 0.6 });
+    const hx = x + Math.cos(angle) * 8;
+    const hy = y + Math.sin(angle) * 8;
+    fx.put({ kind: FX.glow, x: hx, y: hy, up: 26, w: 14 + 20 * k, a: tone.b, alpha: 0.2 + 0.35 * k });
+    fx.put({ kind: FX.orb, x: hx, y: hy, up: 26, w: 3 + 8 * k, a: tone.a, b: tone.b, seed: 0.4 });
   }
 
   private field(f: World['fields'][number], sc: EffectsScene): void {

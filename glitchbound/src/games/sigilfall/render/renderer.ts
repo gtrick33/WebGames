@@ -450,6 +450,8 @@ export class Renderer {
         const s = st.project(gh.x, gh.y, PERSON_H + 2);
         this.label(gh.name, s.x, s.y - 12, 11, '#bfe8ff');
         this.bar(s.x, s.y, 34, gh.hp / gh.maxHp, '#6ad06a');
+        // their cast bar, filling in gold under their health
+        if (gh.cast && !gh.dead) this.bar(s.x, s.y + 8, 34, gh.cast.k, '#ffd36a');
       }
       for (const n of w.npcs) if (near(n.x, n.y)) this.drawNpcSigns(w, n, st);
     }

@@ -15,6 +15,7 @@ import { questRewards } from '../progress/rewards';
 import { wornLooks } from '../progress/wardrobe';
 import { paragonFree, paragonXp } from '../progress/paragon';
 import { itemMods, itemName, usableBy } from '../progress/items';
+import { TONES } from '../render/effects';
 import { rarityColor } from '../render/renderer';
 import { clockText, type World } from '../sim/world';
 import { fmt, ItemIcon, Portrait } from './common';
@@ -84,6 +85,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
   return (
     <div className={`rb-ui${engine.touchMode ? ' is-touch' : ' is-mouse'}${engine.settings.lefty ? ' is-lefty' : ''}${engine.storyTalk() ? ' is-talk' : ''}${ui.card?.act ? ' is-act' : ''}`}>
       <Hud engine={engine} />
+      <CastBar engine={engine} />
       {ui.boss && <BossBar engine={engine} />}
       {engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}
       {!ui.dialogue && <Toasts engine={engine} />}
@@ -302,6 +304,68 @@ function BossBar({ engine }: { engine: SigilEngine }) {
       <span className="rb-boss-track">
         <i ref={lag} className="rb-boss-lag" />
         <i ref={bar} className="rb-boss-fill" />
+      </span>
+    </div>
+  );
+}
+
+/**
+ * The hero's cast bar (a spell with a cast time: sim/cast.ts updateCasting), pinned under the hero where the eye
+ * already is: the spell's name over a bar that fills in its element's color. When the spell goes the bar
+ * flashes full; when the cast is stopped it says so; either way it fades out.
+ */
+function CastBar({ engine }: { engine: SigilEngine }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const name = useRef<HTMLSpanElement>(null);
+  const fill = useRef<HTMLElement>(null);
+  const shown = useRef('');
+  useFrame(engine, (w) => {
+    const el = ref.current;
+    if (!el || !name.current || !fill.current) return;
+    const p = w.player;
+    const c = p.casting;
+    const end = w.castEnd;
+    const ending = !c && !!end && w.time - end.at < 0.5 && shown.current !== '';
+    el.hidden = !c && !ending;
+    if (el.hidden) {
+      shown.current = '';
+      return;
+    }
+    if (c) {
+      if (shown.current !== c.spec.id) {
+        shown.current = c.spec.id;
+        name.current.textContent = SKILLS[c.spec.id]?.name ?? '';
+        const tone = TONES[c.spec.dmgType] ?? TONES.arcane!;
+        el.style.setProperty('--cast-a', tone.a);
+        el.style.setProperty('--cast-b', tone.b);
+      }
+      el.dataset.state = 'casting';
+      fill.current.style.width = `${Math.min(1, c.t / c.total) * 100}%`;
+    } else {
+      el.dataset.state = end!.fired ? 'done' : 'stopped';
+      if (end!.fired) fill.current.style.width = '100%';
+      else if (shown.current !== '-') {
+        // (not a spell's id: casting the same spell again names it again)
+        shown.current = '-';
+        name.current.textContent = 'Interrupted';
+      }
+      el.style.opacity = `${Math.max(0, 1 - (w.time - end!.at) / 0.5)}`;
+    }
+    if (c) el.style.opacity = '';
+    // under the hero's feet, kept inside the view
+    const at = engine.renderer.toScreen(p.x, p.y);
+    const host = el.offsetParent as HTMLElement | null;
+    const bw = el.offsetWidth;
+    const maxX = (host?.clientWidth ?? 800) - bw - 8;
+    const maxY = (host?.clientHeight ?? 400) - el.offsetHeight - 8;
+    el.style.left = `${Math.round(Math.max(8, Math.min(maxX, at.x - bw / 2)))}px`;
+    el.style.top = `${Math.round(Math.max(8, Math.min(maxY, at.y + 40)))}px`;
+  });
+  return (
+    <div className="rb-castbar" ref={ref} hidden role="status" aria-label="Casting">
+      <span className="rb-castbar-name" ref={name} />
+      <span className="rb-castbar-track">
+        <i ref={fill} />
       </span>
     </div>
   );

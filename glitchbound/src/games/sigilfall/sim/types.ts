@@ -31,6 +31,23 @@ export interface Cooldown {
   cd: number;
 }
 
+/**
+ * A spell with a cast time on its way (sim/cast.ts updateCasting): it goes off when `t` reaches `total`, and
+ * only then is its cost paid and its cooldown started.
+ */
+export interface Casting {
+  slot: SlotKey;
+  spec: SkillSpec;
+  /** Seconds cast so far, and how long the whole cast takes (after haste). */
+  t: number;
+  total: number;
+  /** Where it goes: it follows the enemy it was aimed at (`target`, -1 for none) while that one lives. */
+  angle: number;
+  tx: number;
+  ty: number;
+  target: number;
+}
+
 export interface Player {
   x: number;
   y: number;
@@ -51,6 +68,8 @@ export interface Player {
   iframe: number;
   dash: { vx: number; vy: number; t: number; spec: SkillSpec | null; hit: Set<number>; dodge: boolean } | null;
   windup: { slot: SlotKey; spec: SkillSpec; t: number; total: number; angle: number; tx: number; ty: number } | null;
+  /** A spell being cast (SkillSpec.castTime), or null. */
+  casting: Casting | null;
   /** A channel: whirlwinds around the hero, or a drain on one enemy (`target`). */
   channel: { spec: SkillSpec; t: number; tickT: number; target?: number } | null;
   /** Timed buffs (shouts, walls, wings, healing over time). */
@@ -387,6 +406,8 @@ export interface Ghost {
   weapon: unknown;
   /** Their own shots in flight, drawn only. */
   shots: { x: number; y: number; vx: number; vy: number; r: number; color: string }[];
+  /** The spell they are casting (a skill id, data/skills) and how far along (0 to 1), or null: drawn only. */
+  cast: { id: string; k: number; angle: number } | null;
   /** World time of their last message. */
   seen: number;
 }

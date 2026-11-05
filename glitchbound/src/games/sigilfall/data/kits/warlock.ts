@@ -78,7 +78,7 @@ export const WARLOCK: Kit = {
       22,
       'Rain of Fire',
       'Fire rains down on an area for 4 seconds, scorching everything under it.',
-      spec({ id: 'rain-of-fire', cast: 'ground', aim: 'ground', range: 125, cooldown: 10, damage: 7, dmgType: 'fire', area: 44, duration: 4, tick: 0.5, cost: 18, look: 'fire', tags: ['aoe', 'fire'] }),
+      spec({ id: 'rain-of-fire', cast: 'ground', aim: 'ground', range: 125, cooldown: 10, damage: 9, castTime: 1, dmgType: 'fire', area: 44, duration: 4, tick: 0.5, cost: 18, look: 'fire', tags: ['aoe', 'fire'] }),
     ),
     sk(
       'skill',
@@ -110,7 +110,7 @@ export const WARLOCK: Kit = {
       10,
       'Ruin Bolt',
       'A slow, heavy bolt of chaos fire that tears through the first enemy into the next.',
-      spec({ id: 'chaos-bolt', cast: 'projectile', range: 170, cooldown: 8, damage: 60, dmgType: 'fire', windup: 0.4, speed: 190, radius: 6, pierce: 1, knock: 80, cost: 20, look: 'chaosbolt', tags: ['projectile', 'fire'] }),
+      spec({ id: 'chaos-bolt', cast: 'projectile', range: 170, cooldown: 8, damage: 84, castTime: 1.5, dmgType: 'fire', speed: 190, radius: 6, pierce: 1, knock: 80, cost: 20, look: 'chaosbolt', tags: ['projectile', 'fire'] }),
     ),
     sk(
       'ultimate',
@@ -123,7 +123,8 @@ export const WARLOCK: Kit = {
         aim: 'ground',
         range: 125,
         cooldown: 0,
-        damage: 60,
+        damage: 78,
+        castTime: 1.5,
         dmgType: 'fire',
         windup: 0.6,
         area: 40,

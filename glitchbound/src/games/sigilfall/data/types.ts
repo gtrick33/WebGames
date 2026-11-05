@@ -160,6 +160,12 @@ export interface SkillSpec {
   dmgType: DmgType;
   /** Seconds between pressing and the effect (a wind-up the player can see). */
   windup: number;
+  /**
+   * Seconds of casting before the spell goes off (the campaign's cast bar; unset or 0: at once). The hero
+   * stands and gathers it; nothing is spent until it goes off, and moving, another skill, a dodge or a stun
+   * stops it. Only the campaign reads it (the Vigil and the Ring have kits of their own).
+   */
+  castTime?: number;
   speed: number;
   radius: number;
   count: number;

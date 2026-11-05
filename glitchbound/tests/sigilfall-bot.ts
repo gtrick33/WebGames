@@ -116,6 +116,11 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
   let think = 0;
   let deadT = 0;
   let lastMove = { x: w.player.x, y: w.player.y, t: 0 };
+  // walking to a goal into something the map's paths don't know (a prop's body): a second of that, and it
+  // slides along it for a moment, one way and then the other
+  let blockedT = 0;
+  let slideT = 0;
+  let slide = 1;
   let foeHp = Infinity;
   // something being healed as fast as it's hurt: leave it a while and go for what else is there, as a player would
   let watching = { id: -1, hp: 0, t: 0 };
@@ -213,10 +218,21 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
             my = (goalPt.y - p.y) / d;
           }
         }
+        if (slideT > 0) {
+          slideT -= DT;
+          const ax = mx;
+          mx = -my * slide;
+          my = ax * slide;
+        }
+      }
+      // a spell being cast: stand still for it, as a player would (unless something is about to land)
+      if (p.casting && !danger) {
+        mx = 0;
+        my = 0;
       }
       f.mx = mx;
       f.my = my;
-      if (target) {
+      if (target && !p.casting) {
         const d = Math.hypot(target.x - p.x, target.y - p.y);
         const a = Math.atan2(target.y - p.y, target.x - p.x);
         f.aim = a;
@@ -232,8 +248,11 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
           return d < Math.max(60, spec.range * 0.9);
         };
         if (reach('basic')) f.holdBasic = { slot: 'basic', angle: a, dist: null, assist: 0 };
+        // a spell with a cast time means standing still: not while badly hurt (a player would get clear first)
+        const castTime = (slot: SlotKey): number => w.build.skills[w.build.bar[slot] ?? '']?.spec.castTime ?? 0;
+        const standOk = (slot: SlotKey): boolean => castTime(slot) <= 0 || p.hp > p.maxHp * 0.5;
         // the ultimate first: a skill that is always ready would otherwise keep it waiting
-        if (p.ult >= 100 && d < 90) f.casts.push({ slot: 'ult', angle: a, dist: null, assist: 0 });
+        if (p.ult >= 100 && d < 90 && standOk('ult')) f.casts.push({ slot: 'ult', angle: a, dist: null, assist: 0 });
         // the big skills first (the longest cooldown), as a player would: a quick one is always ready
         // again, and would otherwise keep the specialization's skill waiting; channels (which hold
         // everything else back while they last) only when nothing else is ready
@@ -241,13 +260,26 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
           const spec = w.build.skills[w.build.bar[slot] ?? '']?.spec;
           return !spec ? 0 : spec.cast === 'channel' || spec.cast === 'drain' ? -1 : spec.cooldown;
         };
-        for (const slot of [...SKILL_SLOTS].sort((x, y) => cd(y) - cd(x))) if (p.cds[slot].charges > 0 && reach(slot)) f.casts.push({ slot, angle: a, dist: null, assist: 0 });
+        for (const slot of [...SKILL_SLOTS].sort((x, y) => cd(y) - cd(x))) if (p.cds[slot].charges > 0 && reach(slot) && standOk(slot)) f.casts.push({ slot, angle: a, dist: null, assist: 0 });
+        // a spell with a cast time is cast standing: the bot stops for it (moving would stop the cast)
+        if (!danger && f.casts.some((c) => castTime(c.slot) > 0)) {
+          f.mx = 0;
+          f.my = 0;
+        }
       }
       if (p.hp < p.maxHp * 0.4 && w.hero.potions > 0) f.potion = true;
     }
     w.input = f;
-    if (o.trace && Math.round(res.time * 60) % 30 === 0) o.trace(w, JSON.stringify({ t: res.time.toFixed(1), p: [(w.player.x / TILE).toFixed(1), (w.player.y / TILE).toFixed(1)], m: [f.mx.toFixed(2), f.my.toFixed(2)], tg: target ? [target.def.id, (target.x / TILE).toFixed(1), (target.y / TILE).toFixed(1)] : null, st: w.player.statuses.map((x) => x.id), busy: [!!w.player.windup, !!w.player.dash, !!w.player.channel], casts: f.casts.map((c) => c.slot) }));
+    if (o.trace && Math.round(res.time * 60) % 30 === 0) o.trace(w, JSON.stringify({ t: res.time.toFixed(1), p: [(w.player.x / TILE).toFixed(1), (w.player.y / TILE).toFixed(1)], m: [f.mx.toFixed(2), f.my.toFixed(2)], tg: target ? [target.def.id, (target.x / TILE).toFixed(1), (target.y / TILE).toFixed(1)] : null, st: w.player.statuses.map((x) => x.id), busy: [!!w.player.windup, !!w.player.dash, !!w.player.channel, !!w.player.casting], casts: f.casts.map((c) => c.slot) }));
+    const was = { x: w.player.x, y: w.player.y };
     w.step(DT);
+    if (!target && !w.player.dead && Math.hypot(f.mx, f.my) > 0.5 && Math.hypot(w.player.x - was.x, w.player.y - was.y) < 0.05) blockedT += DT;
+    else blockedT = 0;
+    if (blockedT > 1) {
+      blockedT = 0;
+      slideT = 0.6;
+      slide = -slide;
+    }
     res.time += DT;
     for (const ev of w.events) {
       if (ev.t === 'sfx' || ev.t === 'shake') continue;
