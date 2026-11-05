@@ -43,6 +43,10 @@ export function SaleTermsPage() {
             <strong>Ad-free</strong> removes ad banners on your account and lets you take your extra try at a daily without watching an ad. It lasts as long as GlitchBound runs. It doesn&rsquo;t affect
             games from other sites that have their own ads.
           </p>
+          <p>
+            <strong>Borders and banners</strong> change how your picture and your name look on your profile and on the leaderboards, and nothing else. You choose which one to wear, or none, on your
+            profile. Each one lasts as long as GlitchBound runs.
+          </p>
         </section>
         <section className="panel info-block">
           <h2>Paying safely</h2>

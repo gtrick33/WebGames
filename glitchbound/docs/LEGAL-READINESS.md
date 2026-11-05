@@ -31,7 +31,13 @@ items marked for them before taking money.
   refund takes it back. Deleting an account keeps the record for the accounts, no longer linked to the person.
 - Items and prices are edited in **Admin › Ads & shop**: add, remove, hide, mark as planned, change a price, and the shop can be
   closed with one switch. The same page shows sales and can give an item to a player or take one back, all in the change log.
-  `src/catalog/shop.ts` holds the starting list. Only **Ad-free (€1.99)** is for sale at the start; the rest are "planned".
+  `src/catalog/shop.ts` holds the starting list. For sale at the start: **Ad-free (€1.99)**, three **picture borders (€0.99
+  each)** and three **profile banners (€1.49 each)**. The rest are "planned".
+- **Borders and banners** (`src/catalog/looks.ts`, drawn by `src/components/Looks.css`): a member picks one of each they own, or
+  none, under Your looks on their profile. The border goes around their picture and the banner across their player card, and
+  both show on every leaderboard and in the Hall of Fame. Boards show the border around the player's initial, never their
+  photo, so they still show only a nickname, a level and what the player chose to wear (`/privacy` says so). A look shows only
+  while its purchase is paid: a refund takes it off everywhere.
 
 **What may be sold** (these rules are in `src/catalog/shop.ts`): cosmetics and ad-free only. Real-money prices shown in full.
 Don't add game currency, random boxes, anything that helps win, countdowns, "last chance" wording, or words telling children
@@ -39,8 +45,10 @@ to buy. Regulators in the EU have acted on exactly those.
 
 ## Connecting Stripe, step by step
 1. **Create the account:** [dashboard.stripe.com/register](https://dashboard.stripe.com/register). Website:
-   `https://glitchboundstudio.com`. Describe only what's really for sale: right now, an optional one-time €1.99 upgrade that removes
-   ads from a free browser games site, delivered instantly. Give a support email. These pages are what Stripe's reviewers look at: [/shop](https://glitchboundstudio.com/shop) (what's sold and the price),
+   `https://glitchboundstudio.com`. Describe only what's really for sale: right now, optional one-time digital extras for a free
+   browser games site, delivered instantly: a €1.99 upgrade that removes ads, and cosmetic picture borders and profile banners.
+   If the account was opened describing only ad-free, update the business description in Stripe's settings before selling the
+   looks. Give a support email. These pages are what Stripe's reviewers look at: [/shop](https://glitchboundstudio.com/shop) (what's sold and the price),
    [/terms/sale](https://glitchboundstudio.com/terms/sale) (refunds and disputes), [/contact](https://glitchboundstudio.com/contact),
    [/privacy](https://glitchboundstudio.com/privacy), [/terms](https://glitchboundstudio.com/terms).
 2. **Turn on Managed Payments:** [its settings page](https://dashboard.stripe.com/settings/managed-payments) ([guide](https://docs.stripe.com/payments/managed-payments/set-up)). Ask Stripe about Crass Act here.
@@ -118,7 +126,8 @@ Accountant:
 Me, when you say so:
 - [ ] Translate the Shop, `/terms/sale`, Terms and Privacy, at least into Bulgarian. They're English only, and selling to
       people in a language they read is part of the rules. A lawyer should read the Bulgarian.
-- [ ] Before selling cosmetics: design them, show them on profiles and boards, and let members choose what they wear.
+- [x] Before selling cosmetics: design them, show them on profiles and boards, and let members choose what they wear. Done for
+      borders and banners. Name effects are still planned.
 - [ ] Before selling Sigilfall items: build them from art we may resell in a game. Check each pack's license first. The horse
       pack's store page says its $5.99 Source tier is the one that mentions modifying models, and you own the $4.99 Plus tier.
 

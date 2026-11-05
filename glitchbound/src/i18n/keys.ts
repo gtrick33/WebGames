@@ -2252,6 +2252,13 @@ export const KEYS: string[] = [
   "An independent studio making small browser games and one big adventure. Nothing to install, and you never have to pay to play. Play as a guest, or sign in for quests and leaderboards.",
   "Every game plays right here in your browser, on any device. No account and no paywalls.",
   "GlitchBound is an independent browser arcade: {n} quick games that start in a second, a fantasy RPG, and Party Mode for groups. No installs, no account needed, and you never have to pay to play.",
+  "Your looks",
+  "Pick what shows around your picture and behind your name, here and on the leaderboards.",
+  "Border",
+  "Banner",
+  "No border",
+  "No banner",
+  "See borders and banners in the shop",
 ];
 
 export const UI_COUNT = 311;

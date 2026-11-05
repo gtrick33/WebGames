@@ -92,7 +92,8 @@ export function PrivacyPage() {
             profile picture; with a code, only your email address. We store them with your nickname, XP, favorites, bests, quest progress, cleared
             Daily Challenges and the scores of rounds you finish while signed in. We also keep a copy of each game&rsquo;s save (today&rsquo;s dailies,
             a daily you left halfway, your bests), so your progress follows you to every device; a save nobody changed for 180 days is deleted, and
-            deleting your GlitchBound data above removes the copies too. Leaderboards show only your nickname and level. We use a single essential
+            deleting your GlitchBound data above removes the copies too. Leaderboards show only your nickname, your level and the border or banner you
+            chose to wear, never your profile picture. We use a single essential
             cookie to keep you signed in{adsOn ? '; the cookies ads may use are covered under Advertising below.' : '.'}
           </p>
           <p>

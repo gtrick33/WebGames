@@ -1,3 +1,4 @@
+import type { Worn } from '../catalog/looks';
 import type { PublicCatalog } from '../catalog/settings';
 /** Shapes exchanged between the site and /api (Pages Functions). Shared by both sides. */
 
@@ -42,6 +43,8 @@ export interface BestView {
 export interface Me {
   /** What this member's one-time purchases unlocked (src/catalog/shop.ts). */
   owned?: string[];
+  /** The border and banner this member wears, from the ones they own (src/catalog/looks.ts). */
+  looks?: Worn;
   id: string;
   nickname: string;
   email: string;
@@ -114,7 +117,13 @@ export interface PinsView {
   owner: { nickname: string; level: number } | null;
 }
 
-export interface LeaderRow {
+/** The looks a member wears on the boards (src/catalog/looks.ts), set only when they wear one. */
+export interface RowLooks {
+  border?: string;
+  banner?: string;
+}
+
+export interface LeaderRow extends RowLooks {
   rank: number;
   nickname: string;
   level: number;
@@ -123,7 +132,7 @@ export interface LeaderRow {
   you: boolean;
 }
 
-export interface HallRow {
+export interface HallRow extends RowLooks {
   rank: number;
   nickname: string;
   level: number;

@@ -5,6 +5,8 @@
  * - no countdowns or "last chance", and no words telling children to buy.
  * docs/LEGAL-READINESS.md has the reasons. Items are edited in Admin › Ads & shop; this list is where they start.
  */
+import { isLook } from './looks';
+
 export interface Product {
   id: string;
   name: string;
@@ -20,6 +22,12 @@ export interface Product {
 /** What "ad-free" means is built into the site (src/platform/adFree.ts), so that item can be hidden but not removed. */
 export const AD_FREE_ID = 'ad-free';
 
+/** Items whose meaning is built into the site: ad-free and each look (src/catalog/looks.ts). They can be hidden, not removed. */
+export const isBuiltIn = (id: string): boolean => id === AD_FREE_ID || isLook(id);
+
+/** Planned items that became real ones, each look on its own. Dropped from a saved list. */
+const RETIRED = new Set(['look-borders', 'look-banners']);
+
 export const PRODUCTS: Product[] = [
   {
     id: AD_FREE_ID,
@@ -27,9 +35,13 @@ export const PRODUCTS: Product[] = [
     blurb: 'No ad banners on your account, on any device you sign in on, and your extra try at a daily needs no ad. One payment, no subscription.',
     cents: 199,
   },
-  { id: 'look-borders', name: 'Picture borders', blurb: 'A border around your picture on your profile and on the boards.', cents: 99, later: true },
+  { id: 'border-neon-halo', name: 'Neon Halo border', blurb: 'A ring of cyan, violet and pink light that slowly turns around your picture, on your profile and on the boards.', cents: 99 },
+  { id: 'border-solar-flare', name: 'Solar Flare border', blurb: 'A blazing gold and orange ring with a flickering corona, around your picture on your profile and on the boards.', cents: 99 },
+  { id: 'border-glitch', name: 'Glitch border', blurb: 'A ring that splits into cyan and pink and jumps out of line now and then, around your picture on your profile and on the boards.', cents: 99 },
+  { id: 'banner-sunset-grid', name: 'Sunset Grid banner', blurb: 'A striped sun sinking behind a glowing grid that rolls toward you. Across your profile and behind your name on the boards.', cents: 149 },
+  { id: 'banner-aurora', name: 'Aurora banner', blurb: 'Northern lights rippling over dark mountains under a starry sky. Across your profile and behind your name on the boards.', cents: 149 },
+  { id: 'banner-nebula', name: 'Nebula banner', blurb: 'Drifting violet clouds, twinkling stars, a ringed planet and the odd shooting star. Across your profile and behind your name on the boards.', cents: 149 },
   { id: 'look-names', name: 'Name effects', blurb: 'A touch of color and shine on your nickname.', cents: 99, later: true },
-  { id: 'look-banners', name: 'Profile banners', blurb: 'Art across the top of your profile.', cents: 99, later: true },
   { id: 'sigilfall-mounts', name: 'Sigilfall mounts', blurb: 'Mounts made for the shop. They look different and ride the same as any other.', cents: 299, later: true },
   { id: 'sigilfall-looks', name: 'Sigilfall wardrobe sets', blurb: 'Looks for your Wardrobe. They change how your hero looks, never what your gear does.', cents: 199, later: true },
 ];
@@ -47,7 +59,7 @@ const PRESSURE = /last chance|limited time|hurry|don.t miss|only today|ends soon
 
 export const breaksRules = (text: string): boolean => PRESSURE.test(text);
 
-/** What an admin sent, as items the shop can show. Anything broken is dropped, and ad-free is always there. */
+/** What an admin sent, as items the shop can show. Anything broken is dropped, and the built-in items are always there. */
 export function sanitizeProducts(v: unknown): Product[] {
   const seen = new Set<string>();
   const out: Product[] = [];
@@ -57,12 +69,18 @@ export function sanitizeProducts(v: unknown): Product[] {
     const name = typeof o.name === 'string' ? o.name.replace(/\s+/g, ' ').trim().slice(0, 40) : '';
     const blurb = typeof o.blurb === 'string' ? o.blurb.replace(/\s+/g, ' ').trim().slice(0, 240) : '';
     const cents = typeof o.cents === 'number' ? Math.round(o.cents) : 0;
-    if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(id) || seen.has(id) || !name || !blurb || cents < MIN_CENTS || cents > MAX_CENTS) continue;
+    if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(id) || seen.has(id) || RETIRED.has(id) || !name || !blurb || cents < MIN_CENTS || cents > MAX_CENTS) continue;
     if (breaksRules(`${name} ${blurb}`)) continue;
     seen.add(id);
     out.push({ id, name, blurb, cents, ...(o.later === true ? { later: true } : {}), ...(o.hidden === true ? { hidden: true } : {}) });
   }
   if (!seen.has(AD_FREE_ID)) out.unshift(PRODUCTS[0]!);
+  // a look added to the site after the list was saved joins it, after the looks already there
+  const missing = PRODUCTS.filter((p) => isLook(p.id) && !seen.has(p.id));
+  if (missing.length) {
+    const at = out.reduce((last, p, i) => (isBuiltIn(p.id) ? i + 1 : last), 0);
+    out.splice(at, 0, ...missing);
+  }
   return out;
 }
 

@@ -2243,6 +2243,13 @@ const fr: string[] = [
   'Un studio indépendant qui crée de petits jeux par navigateur et une grande aventure. Rien à installer, et tu n’as jamais à payer pour jouer. Joue en invité ou connecte-toi pour les quêtes et les classements.',
   'Tous les jeux se jouent ici, dans ton navigateur, sur n’importe quel appareil. Sans compte et sans paiement obligatoire.',
   'GlitchBound est une arcade indépendante dans le navigateur : {n} jeux rapides qui démarrent en une seconde, un RPG fantasy et le mode Fête pour les groupes. Rien à installer, pas de compte requis, et tu n’as jamais à payer pour jouer.',
+  'Ton style',
+  'Choisis ce qui s’affiche autour de ta photo et derrière ton nom, ici et dans les classements.',
+  'Cadre',
+  'Bannière',
+  'Sans cadre',
+  'Sans bannière',
+  'Voir les cadres et bannières dans la boutique',
 ];
 
 export default fr;

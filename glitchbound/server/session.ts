@@ -20,6 +20,9 @@ export interface UserRow {
   banned_by?: string;
   /** The QA staff row of this account (active or blocked), from currentUser's join; null for everyone else. */
   staff_status?: string | null;
+  /** The border and banner this member chose (server/looks.ts). */
+  look_border?: string;
+  look_banner?: string;
 }
 
 /** Staff roles. Admins are listed in ADMIN_EMAILS; QA testers are invited by an admin (server/staff.ts). */

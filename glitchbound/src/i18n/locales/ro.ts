@@ -2243,6 +2243,13 @@ const ro: string[] = [
   'Un studio independent care face jocuri mici de browser și o mare aventură. Nimic de instalat și nu trebuie să plătești niciodată ca să joci. Joacă ca invitat sau conectează-te pentru misiuni și clasamente.',
   'Fiecare joc se joacă aici, în browser, pe orice dispozitiv. Fără cont și fără plăți obligatorii.',
   'GlitchBound este o arcadă independentă în browser: {n} jocuri rapide care pornesc într-o secundă, un RPG fantasy și modul Petrecere pentru grupuri. Fără instalare, fără cont necesar și nu trebuie să plătești niciodată ca să joci.',
+  'Aspectul tău',
+  'Alege ce apare în jurul pozei tale și în spatele numelui tău, aici și în clasamente.',
+  'Ramă',
+  'Banner',
+  'Fără ramă',
+  'Fără banner',
+  'Vezi ramele și bannerele în magazin',
 ];
 
 export default ro;

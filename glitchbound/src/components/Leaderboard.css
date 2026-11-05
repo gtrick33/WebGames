@@ -174,6 +174,10 @@
     flex: 1 1 calc(100% - 60px);
     min-width: 0;
   }
+  .hall tr td.has-banner {
+    padding: 6px 10px;
+    border-radius: 10px;
+  }
   .hall .hall-stat {
     display: inline-flex;
     align-items: baseline;
@@ -186,6 +190,67 @@
     font-size: 10px;
     letter-spacing: 0.05em;
     text-transform: uppercase;
+  }
+}
+
+/* A player's banner (src/components/Looks.css) fills their row behind everything, with light text on it in either theme. */
+.board-row.has-banner,
+.hall td.has-banner {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  color: #fff;
+}
+.board-row.has-banner > .look-banner,
+.hall td.has-banner > .look-banner {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+.board-row.has-banner:not(.is-you) {
+  border-color: rgb(255 255 255 / 0.28);
+}
+.has-banner .board-nick,
+.has-banner .board-score {
+  color: #fff;
+  text-shadow: 0 1px 3px rgb(7 2 26 / 0.9);
+}
+.has-banner .board-lvl,
+.board-row.has-banner > .board-lvl {
+  color: #c4f034;
+  text-shadow: 0 1px 3px rgb(7 2 26 / 0.9);
+}
+.board-name > .avatar,
+.board-name > .avatar-frame {
+  flex: none;
+}
+.board-name > .avatar {
+  border-width: 1.5px;
+  box-shadow: none;
+}
+
+/* Phones: the level moves under the nickname, so the name keeps its room next to the picture and a long score. */
+@media (max-width: 560px) {
+  .board:not(.board-compact) .board-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'medal name score'
+      'medal lvl score';
+    row-gap: 2px;
+  }
+  .board:not(.board-compact) .board-row > .medal {
+    grid-area: medal;
+  }
+  .board:not(.board-compact) .board-row > .board-name {
+    grid-area: name;
+  }
+  .board:not(.board-compact) .board-row > .board-lvl {
+    grid-area: lvl;
+    padding-left: 38px;
+    line-height: 1;
+  }
+  .board:not(.board-compact) .board-row > .board-score {
+    grid-area: score;
   }
 }
 

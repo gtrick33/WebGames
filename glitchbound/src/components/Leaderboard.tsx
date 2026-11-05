@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { t, useT } from '../i18n';
 import type { GameEntry } from '../catalog/types';
-import type { HallRow, LeaderRow } from '../platform/apiTypes';
+import type { HallRow, LeaderRow, RowLooks } from '../platform/apiTypes';
 import { api, useAccount } from '../platform/account';
 import { fmt } from '../platform/daily';
 import { useSave } from '../platform/store';
 import { Link } from '../router/router';
+import { Banner, LookAvatar } from './Looks';
 import { Icon } from './Icon';
 import { openSignIn } from './openSignIn';
 import './Leaderboard.css';
@@ -84,16 +85,31 @@ function Medal({ rank }: { rank: number }) {
   return <span className={`medal medal-${rank <= 3 ? rank : 'n'}`}>{rank}</span>;
 }
 
+/**
+ * A player on a board: their initial in the border they wear (never their photo: boards show only a nickname and a
+ * level, as /privacy says). Their banner, if they wear one, is drawn behind the row by the row itself.
+ */
+function BoardName({ row, compact = false, children }: { row: RowLooks & { nickname: string; you: boolean }; compact?: boolean; children?: ReactNode }) {
+  return (
+    <span className="board-name">
+      <LookAvatar name={row.nickname} size={compact ? 26 : 30} border={row.border} />
+      <span className="board-nick">{row.nickname}</span>
+      {children}
+      {row.you && <span className="board-you mono">{t('you')}</span>}
+    </span>
+  );
+}
+
+const lookClass = (r: RowLooks): string => (r.banner ? ' has-banner' : '');
+
 export function LeaderTable({ rows, mine, unit = '', compact = false }: { rows: LeaderRow[]; mine: LeaderRow | null; unit?: string; compact?: boolean }) {
   return (
     <ol className={`board${compact ? ' board-compact' : ''}`}>
       {rows.map((r, i) => (
-        <li key={i} className={`board-row${r.you ? ' is-you' : ''}`} style={{ ['--i' as string]: i + 1 }}>
+        <li key={i} className={`board-row${r.you ? ' is-you' : ''}${lookClass(r)}`} style={{ ['--i' as string]: i + 1 }}>
+          {r.banner && <Banner id={r.banner} row />}
           <Medal rank={r.rank} />
-          <span className="board-name">
-            <span className="board-nick">{r.nickname}</span>
-            {r.you && <span className="board-you mono">{t('you')}</span>}
-          </span>
+          <BoardName row={r} compact={compact} />
           {!compact && <span className="board-lvl mono">LV {r.level}</span>}
           <span className="board-score mono">
             {fmt(r.score)}
@@ -102,11 +118,10 @@ export function LeaderTable({ rows, mine, unit = '', compact = false }: { rows: 
         </li>
       ))}
       {mine && (
-        <li className="board-row is-you board-mine">
+        <li className={`board-row is-you board-mine${lookClass(mine)}`}>
+          {mine.banner && <Banner id={mine.banner} row />}
           <Medal rank={mine.rank} />
-          <span className="board-name">
-            <span className="board-nick">{mine.nickname}</span> <span className="board-you mono">{t('you')}</span>
-          </span>
+          <BoardName row={mine} compact={compact} />
           {!compact && <span className="board-lvl mono">LV {mine.level}</span>}
           <span className="board-score mono">{fmt(mine.score)}</span>
         </li>
@@ -141,11 +156,11 @@ export function HallTable({ rows }: { rows: HallRow[] }) {
               <td>
                 <Medal rank={r.rank} />
               </td>
-              <td>
-                <span className="board-name">
-                  <span className="board-nick">{r.nickname}</span> <span className="board-lvl mono">LV {r.level}</span>
-                  {r.you && <span className="board-you mono">{t('you')}</span>}
-                </span>
+              <td className={r.banner ? 'has-banner' : undefined}>
+                {r.banner && <Banner id={r.banner} row />}
+                <BoardName row={r}>
+                  <span className="board-lvl mono">LV {r.level}</span>
+                </BoardName>
               </td>
               <td className="mono hall-crowns hall-stat" data-label={t('Crowns')}>
                 {r.crowns}
