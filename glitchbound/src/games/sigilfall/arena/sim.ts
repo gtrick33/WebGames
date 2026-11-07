@@ -388,11 +388,20 @@ export class Match {
     const ab = abId === 'token' ? TOKEN : ABILITIES[abId];
     if (!f || !ab || (abId !== 'token' && !f.bar.includes(abId))) return 'You don’t have that';
     const why = this.blocked(f, ab);
+    // A new regular spell waits for the current cast; only free abilities may
+    // fire during it. One pending input is kept, and a later press replaces it.
+    if (f.cast && !ab.free && f.cast.ab !== ab.id) {
+      if (why && why !== 'Not ready yet') return why;
+      const remaining = Math.max(0, f.cast.dur - f.cast.t);
+      if ((f.cds[ab.id] ?? 0) > remaining + QUEUE || f.gcd > remaining + QUEUE) return 'Not ready yet';
+      f.queued = { ab: ab.id, t: remaining + QUEUE };
+      return null;
+    }
     if (!why) {
       this.begin(f, ab);
       return null;
     }
-    // a press in the last moments of the global cooldown waits for it, so that a player never feels a dropped key
+    // A press in the last moments of the global cooldown waits for it.
     if (why === 'Not ready yet' && !ab.free && (f.cds[ab.id] ?? 0) <= QUEUE && f.gcd <= QUEUE) {
       f.queued = { ab: ab.id, t: QUEUE };
       return null;
@@ -411,8 +420,10 @@ export class Match {
 
   private begin(f: Fighter, ab: Ability): void {
     const t = this.aimOf(f, ab) ?? f;
-    if (!ab.free) f.gcd = GCD;
-    f.queued = null;
+    if (!ab.free) {
+      f.gcd = GCD;
+      f.queued = null;
+    }
     // starting something else lets go of the last cast (a free ability goes off alongside it)
     if (!ab.free && f.cast) this.endCast(f);
     if (ab.cast > 0 || ab.channel) {
@@ -430,8 +441,10 @@ export class Match {
     if (ab.cd > 0) f.cds[ab.id] = ab.cd * f.mods.cool * (f.tune[ab.id]?.cd ?? 1);
   }
 
-  private endCast(f: Fighter): void {
+  private endCast(f: Fighter, completed = false): void {
     f.cast = null;
+    // An interrupted cast must not trigger the spell that was waiting on it.
+    if (!completed) f.queued = null;
   }
 
   /** A cast (or an instant) goes off. */
@@ -770,8 +783,8 @@ export class Match {
     if (f.queued) {
       f.queued.t -= dt;
       const ab = ABILITIES[f.queued.ab];
-      if (f.queued.t <= 0 || !ab) f.queued = null;
-      else if (f.gcd <= 0 && !this.blocked(f, ab)) this.begin(f, ab);
+      if (!ab || f.queued.t <= 0) f.queued = null;
+      else if (!f.cast && !this.blocked(f, ab)) this.begin(f, ab);
     }
   }
 
@@ -904,11 +917,11 @@ export class Match {
         c.next += ab.tick ?? 1;
         this.land(f, ab, t, false);
       }
-      if (c.t >= c.dur) this.endCast(f);
+      if (c.t >= c.dur) this.endCast(f, true);
       return;
     }
     if (c.t >= c.dur) {
-      this.endCast(f);
+      this.endCast(f, !gone);
       if (gone) {
         this.events.push({ k: 'word', id: f.id, word: 'Lost sight', bad: true });
         return;
