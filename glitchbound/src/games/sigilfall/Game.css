@@ -7719,8 +7719,7 @@
   background: linear-gradient(180deg, #ffb45c, #e0582a);
 }
 .is-flip .rb-ring-bar i,
-.is-flip .rb-ring-mana i,
-.is-flip .rb-ring-cast i {
+.is-flip .rb-ring-mana i {
   inset: 0 0 0 auto;
 }
 .rb-ring-bar b,
