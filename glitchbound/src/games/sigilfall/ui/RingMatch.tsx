@@ -99,7 +99,7 @@ function Frame({ f, m, me, doll, tag, onPick, flip }: { f: Fighter; m: Match; me
           )}
           {c && ab ? (
             <span className="rb-ring-cast" style={{ ['--a' as string]: ab.color }}>
-              <i style={{ width: `${(c.channel ? 1 - c.t / c.dur : c.t / c.dur) * 100}%` }} />
+              <i data-ring-cast-fill={f.id} style={{ transform: `scaleX(${Math.max(0, Math.min(1, c.channel ? 1 - c.t / c.dur : c.t / c.dur))})` }} />
               <b>{ab.name}</b>
             </span>
           ) : hold ? (
@@ -318,6 +318,15 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       }
       view.frame(m, looks, myId, dt, time, (q) => ringSpells(q, m, fx, myId, time, view.air));
       drawRing(m, fx, myId, time, view);
+      // The HUD is reconciled at 15 Hz; fill the current cast bars every render frame so
+      // progress doesn't jump between React updates (including the mirrored enemy frames).
+      canvas.parentElement?.querySelectorAll<HTMLElement>('[data-ring-cast-fill]').forEach((fill) => {
+        const id = Number(fill.dataset.ringCastFill);
+        const active = m.fighters[id]?.cast;
+        if (!active) return;
+        const progress = active.dur > 0 ? active.t / active.dur : 1;
+        fill.style.transform = `scaleX(${Math.max(0, Math.min(1, active.channel ? 1 - progress : progress))})`;
+      });
     };
     const frame = (now: number): void => {
       raf = requestAnimationFrame(frame);
@@ -548,7 +557,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           )}
           {cast && castAb && (
             <div className="rb-ring-mycast" style={{ ['--a' as string]: castAb.color }}>
-              <i style={{ width: `${(cast.channel ? 1 - cast.t / cast.dur : cast.t / cast.dur) * 100}%` }} />
+              <i data-ring-cast-fill={myId} style={{ transform: `scaleX(${Math.max(0, Math.min(1, cast.channel ? 1 - cast.t / cast.dur : cast.t / cast.dur))})` }} />
               <b>{castAb.name}</b>
             </div>
           )}
