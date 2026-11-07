@@ -111,13 +111,13 @@ describe('The Ring: the rules', () => {
   });
 
   it('replaces the pending spell without cancelling the current one', () => {
-    const m = duel('mage', ['m-lash', 'm-burn', 'm-snap'], 'warrior');
+    const m = duel('mage', ['m-lash', 'm-burn', 'm-spear'], 'warrior');
     const me = m.fighters[0]!;
     expect(m.press(0, 'm-lash')).toBeNull();
     expect(m.press(0, 'm-burn')).toBeNull();
-    expect(m.press(0, 'm-snap')).toBeNull();
+    expect(m.press(0, 'm-spear')).toBeNull();
     expect(me.cast?.ab).toBe('m-lash');
-    expect(me.queued?.ab).toBe('m-snap');
+    expect(me.queued?.ab).toBe('m-spear');
   });
 
   it('drops a queued spell when movement interrupts the cast', () => {
