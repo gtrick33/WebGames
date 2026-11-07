@@ -6632,15 +6632,18 @@
   background: rgb(0 0 0 / 0.32);
 }
 .rb-rs-slots {
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  width: 100%;
+  max-width: 332px;
+  margin-inline: auto;
   gap: 4px;
 }
 .rb-rs-slot {
   position: relative;
   display: grid;
   place-items: center;
-  flex: 0 1 44px;
+  width: 100%;
   aspect-ratio: 1;
   min-width: 0;
   padding: 0;
@@ -6661,7 +6664,7 @@
   border-style: dashed;
 }
 .rb-rs-slot.is-token {
-  margin-left: 6px;
+  margin-left: 0;
   border-color: #ffe39a;
   cursor: default;
 }
@@ -7746,8 +7749,13 @@
 }
 .rb-ring-cast i {
   position: absolute;
-  inset: 0 auto 0 0;
+  inset: 0;
   background: var(--a);
+  transform-origin: left center;
+  will-change: transform;
+}
+.is-flip .rb-ring-cast i {
+  transform-origin: right center;
 }
 .rb-ring-held {
   display: block;
@@ -7952,8 +7960,10 @@
 }
 .rb-ring-mycast i {
   position: absolute;
-  inset: 0 auto 0 0;
+  inset: 0;
   background: var(--a);
+  transform-origin: left center;
+  will-change: transform;
 }
 .rb-ring-mycast b {
   position: absolute;
