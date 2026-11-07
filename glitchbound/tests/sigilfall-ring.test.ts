@@ -93,6 +93,53 @@ describe('The Ring: the rules', () => {
     expect(me.cast!.t).toBe(t);
   });
 
+  it('a queued spell does not cancel an active cast, and fires when it finishes', () => {
+    const m = duel('mage', ['m-lash', 'm-burn', 'm-snap'], 'warrior');
+    const me = m.fighters[0]!;
+    const foe = m.fighters[1]!;
+    expect(m.press(0, 'm-lash')).toBeNull();
+    wait(m, 0.4);
+    const elapsed = me.cast!.t;
+    expect(m.press(0, 'm-burn')).toBeNull();
+    expect(me.cast?.ab).toBe('m-lash');
+    expect(me.cast!.t).toBe(elapsed);
+    expect(me.queued?.ab).toBe('m-burn');
+    wait(m, 1.8);
+    expect(me.cast).toBeNull();
+    expect(me.queued).toBeNull();
+    expect(foe.hp).toBeLessThan(foe.maxHp);
+  });
+
+  it('replaces the pending spell without cancelling the current one', () => {
+    const m = duel('mage', ['m-lash', 'm-burn', 'm-snap'], 'warrior');
+    const me = m.fighters[0]!;
+    expect(m.press(0, 'm-lash')).toBeNull();
+    expect(m.press(0, 'm-burn')).toBeNull();
+    expect(m.press(0, 'm-snap')).toBeNull();
+    expect(me.cast?.ab).toBe('m-lash');
+    expect(me.queued?.ab).toBe('m-snap');
+  });
+
+  it('drops a queued spell when movement interrupts the cast', () => {
+    const m = duel('mage', ['m-lash', 'm-burn'], 'warrior');
+    const me = m.fighters[0]!;
+    expect(m.press(0, 'm-lash')).toBeNull();
+    expect(m.press(0, 'm-burn')).toBeNull();
+    wait(m, 0.1, { 0: { mx: 1, my: 0 } });
+    expect(me.cast).toBeNull();
+    expect(me.queued).toBeNull();
+  });
+
+  it('a free ability does not erase the pending post-cast spell', () => {
+    const m = duel('mage', ['m-lash', 'm-burn', 'm-snap'], 'warrior');
+    const me = m.fighters[0]!;
+    expect(m.press(0, 'm-lash')).toBeNull();
+    expect(m.press(0, 'm-burn')).toBeNull();
+    expect(m.press(0, TOKEN.id)).toBeNull();
+    expect(me.cast?.ab).toBe('m-lash');
+    expect(me.queued?.ab).toBe('m-burn');
+  });
+
   it('the global cooldown holds, a press near its end is queued, and free abilities ignore it', () => {
     const m = duel('warrior', ['w-hew', 'w-hamstring', 'w-stand'], 'mage');
     const me = m.fighters[0]!;
