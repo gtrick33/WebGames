@@ -138,6 +138,8 @@ export class RingStage implements RingView {
     st.look(this.cx * UNIT, this.cy * UNIT);
     const cast = st.cast;
     cast.begin();
+    // what stands on the ring's floor throws its shadow too: every pillar and stone, as the fighters do
+    for (const p of this.map.pillars) cast.shadow(p.x + p.w / 2, p.y + p.h / 2, Math.max(p.w, p.h) * 0.58);
     for (const f of m.fighters) {
       const l = looks[f.id];
       if (!l) continue;

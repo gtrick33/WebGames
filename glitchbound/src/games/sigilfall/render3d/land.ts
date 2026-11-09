@@ -1013,7 +1013,7 @@ export class Land3D {
     // the shadow of what stands, one soft disc each
     const quad = new THREE.PlaneGeometry(1, 1);
     quad.rotateX(-Math.PI / 2);
-    this.shadows = new THREE.InstancedMesh(quad, shadowMaterial, 600);
+    this.shadows = new THREE.InstancedMesh(quad, shadowMaterial, 1500);
     this.shadows.frustumCulled = false;
     this.shadows.count = 0;
     this.shadows.position.y = 0.04;
@@ -1084,6 +1084,14 @@ export class Land3D {
       this.cells.set(key, list);
     }
     const placedNow: Placed = { r: 1, g: 1, b: 1, sway: 0, shadow: 0, y: 0, sy: p.sx, sz: p.sx, ...p };
+    // everything that stands on the ground throws a shadow sized to it, unless it was given its own: a crate, a cart, a
+    // bush, a rock, a lamp post (not what lies flat: a rug, a tuft, a flower)
+    if (p.shadow === undefined && placedNow.y < 0.35) {
+      const m = this.pack(p.m)!;
+      const wide = Math.max(m.max[0] - m.min[0], m.max[2] - m.min[2]) * p.sx;
+      const tall = (m.max[1] - m.min[1]) * placedNow.sy;
+      if (tall > 0.28 && wide > 0.15) placedNow.shadow = Math.min(2.4, Math.max(0.32, wide * 0.5 + tall * 0.08));
+    }
     if (this.region.kind === 'dungeon') {
       placedNow.r *= 0.86;
       placedNow.g *= 0.84;
@@ -1637,7 +1645,7 @@ export class Land3D {
             want.set(p.m, w);
           }
           w.push(p);
-          if (p.shadow > 0 && shadow < 600) {
+          if (p.shadow > 0 && shadow < 1500) {
             const size = p.shadow * 1.6;
             m4.makeScale(size, 1, size * (p.shadowD ?? 1));
             m4.setPosition(p.x, 0, p.z);
@@ -1654,7 +1662,7 @@ export class Land3D {
         want.set(p.m, w);
       }
       w.push(p);
-      if (p.shadow > 0 && shadow < 600) {
+      if (p.shadow > 0 && shadow < 1500) {
         const size = p.shadow * 1.6;
         m4.makeScale(size, 1, size * (p.shadowD ?? 1));
         m4.setPosition(p.x, 0, p.z);
