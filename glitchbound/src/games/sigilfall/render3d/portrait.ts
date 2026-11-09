@@ -229,7 +229,7 @@ const posed = { x: 0, y: 0, z: 0 };
  * A model posed on a frame of a clip and turned, photographed whole: the camera finds the box it fills (or the part of
  * it above `fromY`, for a head and shoulders) and frames that, with a margin.
  */
-function framed(mesh: MeshData, rig: RigAnim, frame: number, turn: number, w: number, h: number, ink: number, fromY = -Infinity): string | null {
+function framed(mesh: MeshData, rig: RigAnim, frame: number, turn: number, w: number, h: number, ink: number, fromY = -Infinity, spin = false): string | null {
   const cos = Math.cos(turn);
   const sin = Math.sin(turn);
   let x0 = Infinity;
@@ -239,8 +239,9 @@ function framed(mesh: MeshData, rig: RigAnim, frame: number, turn: number, w: nu
   for (let v = 0; v < mesh.n; v++) {
     rig.pointAt(frame, frame, 0, mesh.skin?.[v * 3] ?? 0, mesh.pos[v * 3]!, mesh.pos[v * 3 + 1]!, mesh.pos[v * 3 + 2]!, posed);
     if (posed.y < fromY) continue;
-    const x = posed.x * cos + posed.z * sin;
-    x0 = Math.min(x0, x);
+    // (turning on a stand: framed for the widest it gets, so it holds still in the picture as it turns)
+    const x = spin ? Math.hypot(posed.x, posed.z) : posed.x * cos + posed.z * sin;
+    x0 = Math.min(x0, spin ? -x : x);
     x1 = Math.max(x1, x);
     y0 = Math.min(y0, posed.y);
     y1 = Math.max(y1, posed.y);
@@ -274,18 +275,18 @@ function framed(mesh: MeshData, rig: RigAnim, frame: number, turn: number, w: nu
 }
 
 /** A mount for the shop: all of it, a drake with its wings up, seen from the side and a little ahead. Null until its model is in. */
-export function shopMountPicture(def: MountDef, w: number, h: number): string | null {
+export function shopMountPicture(def: MountDef, w: number, h: number, turn?: number): string | null {
   if (!wardrobe || !ensure()) return null;
   const pack = kitFile(shapeOf(def).kit);
   if (!pack) return null;
   const { mesh, rig } = mountModel(def, pack);
   const frame = def.body === 'drake' ? rig.frame('run', 0.2) : rig.frame('idle', 0.3);
-  return framed(mesh, rig, frame, Math.PI / 2 - 0.62, w, h, 0.012);
+  return framed(mesh, rig, frame, turn ?? Math.PI / 2 - 0.62, w, h, 0.012, -Infinity, turn !== undefined);
 }
 
 /** A look for the shop on a hero: a helmet as head and shoulders, a chest piece the whole figure. */
-export function shopLookPicture(look: HeroLook, bust: boolean, w: number, h: number): string | null {
+export function shopLookPicture(look: HeroLook, bust: boolean, w: number, h: number, turn?: number): string | null {
   if (!wardrobe || !ensure()) return null;
   const { mesh } = dressedOf(wardrobe, look, null, false);
-  return framed(mesh, wardrobe.medium, wardrobe.medium.frame('idle', 0.3), bust ? 0.42 : 0.62, w, h, 0.022, bust ? 0.95 : -Infinity);
+  return framed(mesh, wardrobe.medium, wardrobe.medium.frame('idle', 0.3), turn ?? (bust ? 0.42 : 0.62), w, h, 0.022, bust ? 0.95 : -Infinity, turn !== undefined);
 }
