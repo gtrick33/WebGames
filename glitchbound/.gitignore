@@ -7,6 +7,8 @@
 .wrangler
 dist
 node_modules
+# typecheck and lint keep what they worked out here between runs (CI keeps it in its cache too)
+.cache
 .dev.vars
 
 # Licensed art packs: kept on this machine only (the licenses forbid sharing the files; see src/games/sigilfall/CREDITS_AND_LICENSES.md)

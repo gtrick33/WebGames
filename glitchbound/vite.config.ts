@@ -107,6 +107,9 @@ function reviewShots(): Plugin {
   };
 }
 
+/** Test files that need a page to themselves (see `test.projects` below). */
+const ISOLATED = ['tests/ad-rules.test.tsx', 'tests/looks.test.tsx', 'tests/no-card-blink.test.ts', 'tests/party-room-name.test.tsx', 'tests/stage.test.tsx'];
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   const siteUrl = (env.VITE_SITE_URL || 'https://glitchboundstudio.com').replace(/\/+$/, '');
@@ -128,8 +131,13 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       environment: 'jsdom',
-      include: ['tests/**/*.test.{ts,tsx}'],
       setupFiles: ['tests/setup.ts'],
+      // Most test files share their workers (a third less time, which is most of the CI bill; tests/setup.ts gives each
+      // file fresh modules). The few that leave the page in a state the next would trip on keep a fresh one.
+      projects: [
+        { extends: true, test: { name: 'shared', isolate: false, include: ['tests/**/*.test.{ts,tsx}'], exclude: ISOLATED } },
+        { extends: true, test: { name: 'isolated', include: ISOLATED } },
+      ],
     },
   };
 });
