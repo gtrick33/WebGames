@@ -9299,7 +9299,7 @@
     0 0 16px rgb(192 40 30 / 0.45),
     inset 0 0 12px rgb(0 0 0 / 0.7);
 }
-/* the inner arc, a quarter round the attack from its left to its top */
+/* the inner arc: three skills a quarter round the attack, from its left to its top (spaced so they never touch) */
 .rb-cluster .rb-sb-s1 {
   right: 140px;
   bottom: 28px;
@@ -9307,45 +9307,45 @@
   height: 58px;
 }
 .rb-cluster .rb-sb-s2 {
-  right: 131px;
-  bottom: 71px;
-  width: 58px;
-  height: 58px;
-}
-.rb-cluster .rb-sb-s3 {
   right: 107px;
   bottom: 107px;
   width: 58px;
   height: 58px;
 }
-.rb-cluster .rb-sb-s4 {
-  right: 71px;
-  bottom: 131px;
+.rb-cluster .rb-sb-s3 {
+  right: 28px;
+  bottom: 140px;
   width: 58px;
   height: 58px;
 }
-.rb-cluster .rb-sb-ult {
-  right: 24px;
-  bottom: 136px;
-  width: 66px;
-  height: 66px;
-}
-/* the outer arc: the dodge low by the thumb, the potion and the mount higher up */
+/* the outer arc: the dodge low by the thumb, then the fourth skill, the ultimate, the potion and the mount at the top */
 .rb-cluster .rb-sb-dodge {
-  right: 213px;
+  right: 216px;
   bottom: 30px;
   width: 54px;
   height: 54px;
 }
+.rb-cluster .rb-sb-s4 {
+  right: 200px;
+  bottom: 99px;
+  width: 58px;
+  height: 58px;
+}
+.rb-cluster .rb-sb-ult {
+  right: 155px;
+  bottom: 155px;
+  width: 66px;
+  height: 66px;
+}
 .rb-cluster .rb-sb-potion {
-  right: 186px;
-  bottom: 128px;
+  right: 103px;
+  bottom: 204px;
   width: 50px;
   height: 50px;
 }
 .rb-cluster .rb-sb-mount {
-  right: 136px;
-  bottom: 186px;
+  right: 36px;
+  bottom: 222px;
   width: 42px;
   height: 42px;
 }
