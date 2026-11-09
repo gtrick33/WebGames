@@ -26,6 +26,10 @@ const QUEUE = 0.35;
 const DAMP_FROM = 90;
 const DAMP_MAX = 0.7;
 const CRIT = 0.1;
+/** Direct damage over its ability's number; a burst ability's over that; a critical hit's. */
+export const HIT_K = 1.12;
+export const BURST_K = 1.25;
+export const CRIT_K = 1.7;
 
 export interface FighterSetup {
   team: 0 | 1;
@@ -667,9 +671,12 @@ export class Match {
     if (t.dead) return;
     if (ab && t.auras.some((a) => a.kind === 'immune' && (!a.phys || ab.school === 'physical'))) return;
     let n = amount * src.mods.dmg;
+    // (fights turn on bursts: a blow hits a little harder than its number, a burst ability harder still, a crit a lot)
+    if (direct) n *= HIT_K;
+    if (direct && ab?.role === 'burst') n *= BURST_K;
     let crit = false;
     if (direct && this.rand() < CRIT) {
-      n *= 1.5;
+      n *= CRIT_K;
       crit = true;
     }
     for (const a of src.auras) if (a.kind === 'fury') n *= 1 + a.n;

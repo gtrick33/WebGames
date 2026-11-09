@@ -161,15 +161,50 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
     g.lineTo(f.x + 4, by - 3);
     g.stroke();
   }
-  // the cast they're holding
+  // what's on them, over the bar: harm in red-edged pips, help in green, each running down as it wears off
+  const shown = f.auras.filter((a) => a.dur > 0 && a.t > 0 && ABILITIES[a.ab]).slice(0, 6);
+  const pip = 4.6;
+  const gap = 1.2;
+  let px = f.x - (shown.length * (pip + gap) - gap) / 2;
+  const py = by - pip - 2.2;
+  for (const a of shown) {
+    const ab = ABILITIES[a.ab]!;
+    g.fillStyle = 'rgba(6,2,14,0.9)';
+    g.fillRect(px - 0.5, py - 0.5, pip + 1, pip + 1);
+    g.fillStyle = ab.color;
+    g.fillRect(px, py, pip, pip);
+    // (the part that's worn off, darkened from the top)
+    const gone = 1 - Math.max(0, Math.min(1, a.t / a.dur));
+    g.fillStyle = 'rgba(6,2,14,0.62)';
+    g.fillRect(px, py, pip, pip * gone);
+    g.strokeStyle = a.harmful ? '#ff4a5a' : '#6ee07a';
+    g.lineWidth = 0.6;
+    g.strokeRect(px - 0.3, py - 0.3, pip + 0.6, pip + 0.6);
+    px += pip + gap;
+  }
+  // the cast they're holding: a bar of its own under the life, with its name, so a cast to stop can be seen and read
   const c = f.cast;
   if (c) {
     const ab = ABILITIES[c.ab];
     const k = Math.min(1, c.t / c.dur);
-    g.fillStyle = 'rgba(6,2,14,0.85)';
-    g.fillRect(f.x - barW / 2 - 0.5, by + 3, barW + 1, 2.6);
+    const cw = 34;
+    const cy = by + 3.6;
+    g.fillStyle = 'rgba(6,2,14,0.88)';
+    g.beginPath();
+    g.roundRect(f.x - cw / 2 - 0.6, cy - 0.6, cw + 1.2, 4.4, 1.2);
+    g.fill();
     g.fillStyle = ab?.color ?? '#fff';
-    g.fillRect(f.x - barW / 2, by + 3.5, barW * (c.channel ? 1 - k : k), 1.6);
+    g.fillRect(f.x - cw / 2, cy, cw * (c.channel ? 1 - k : k), 3.2);
+    if (ab) {
+      g.font = '700 4.6px "Bricolage Grotesque Variable", system-ui, sans-serif';
+      g.textAlign = 'center';
+      g.lineWidth = 1.2;
+      g.lineJoin = 'round';
+      g.strokeStyle = '#120a20';
+      g.strokeText(ab.name, f.x, cy + 9);
+      g.fillStyle = '#fff6e0';
+      g.fillText(ab.name, f.x, cy + 9);
+    }
   }
 }
 

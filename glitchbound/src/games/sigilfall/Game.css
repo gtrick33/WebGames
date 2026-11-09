@@ -9279,3 +9279,64 @@
   height: 18px;
   image-rendering: pixelated;
 }
+
+/* The Ring's keys */
+.rb-ring-dialog.is-keys {
+  width: min(640px, 100%);
+}
+.rb-ring-keys-hint {
+  margin: 0 0 8px;
+  color: #cfc6dc;
+  font-size: 13px;
+}
+.rb-ring-keys {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  max-height: 56vh;
+  overflow: auto;
+}
+.rb-ring-keys h3 {
+  margin: 0 0 4px;
+  color: #ffe39a;
+  font: 700 13px Georgia, 'Times New Roman', serif;
+}
+.rb-ring-key {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 3px;
+  padding: 4px 6px;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 6px;
+  color: #efe8f8;
+  font-size: 12.5px;
+  text-align: left;
+  background: rgb(255 255 255 / 0.04);
+}
+.rb-ring-key:hover,
+.rb-ring-key:focus-visible {
+  border-color: #ffe39a;
+}
+.rb-ring-key kbd {
+  min-width: 34px;
+  padding: 1px 6px;
+  border: 1px solid rgb(255 227 154 / 0.5);
+  border-radius: 4px;
+  color: #ffe9b8;
+  font: 700 12px ui-monospace, monospace;
+  text-align: center;
+  background: rgb(0 0 0 / 0.35);
+}
+.rb-ring-key.is-waiting kbd {
+  border-color: #ff9a7a;
+  color: #ff9a7a;
+}
+.rb-ring-keys-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
