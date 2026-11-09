@@ -84,16 +84,21 @@ interface Giant extends Placed {
 
 const TREES: Record<TreeKind, { m: string[]; h: number }> = {
   oak: { m: ['Tree_1_A', 'Tree_1_B', 'Tree_2_A', 'Tree_2_B', 'Tree_2_C'], h: 3.5 },
-  pine: { m: ['Tree_4_A', 'Tree_4_B', 'tree_pineDefaultA', 'tree_pineRoundA'], h: 4 },
-  snowpine: { m: ['tree_pineDefaultA', 'tree_pineTallA', 'tree_pineRoundA'], h: 4 },
+  // (all of a kind from the one art set as the heroes and the rest of the wood: the plainer low-poly pines and dead
+  // trees of another set stood out among them)
+  pine: { m: ['Tree_4_A', 'Tree_4_B'], h: 4 },
+  snowpine: { m: ['Tree_4_A', 'Tree_4_B'], h: 4 },
   palm: { m: ['tree_palm', 'tree_palmBend', 'tree_palmTall', 'tree_palmDetailedShort'], h: 3.6 },
-  dead: { m: ['Tree_Bare_1_A', 'Tree_Bare_1_B', 'Tree_Bare_2_A', 'Tree_Bare_2_B', 'tree_dead_large', 'tree_dead_medium'], h: 3.2 },
+  dead: { m: ['Tree_Bare_1_A', 'Tree_Bare_1_B', 'Tree_Bare_2_A', 'Tree_Bare_2_B'], h: 3.2 },
   cactus: { m: ['cactus_tall', 'cactus_short'], h: 1.5 },
   mushroom: { m: ['mushroom_redTall', 'mushroom_tanTall', 'mushroom_red'], h: 1.9 },
   crystal: { m: ['stone_tallA', 'stone_tallE'], h: 2 },
   willow: { m: ['Tree_5_A', 'Tree_5_B', 'Tree_5_D'], h: 3.5 },
   jungle: { m: ['Tree_6_A', 'Tree_7_A', 'Tree_7_B', 'Tree_3_A'], h: 4 },
 } as Record<TreeKind, { m: string[]; h: number }>;
+
+/** A pine in a snowy land: frosted pale. */
+const FROST = [0.86, 0.97, 1.08] as const;
 
 const TREE_MODELS = new Set(Object.values(TREES).flatMap((t) => t.m));
 
@@ -289,11 +294,18 @@ function colorsFor(m: MeshData, look: ThemeLook, id: string): Uint8Array {
         out[i + 2] = c[2] * 255;
       }
     } else if (leafy && h >= 52 && h <= 280 && s > 0.1) {
-      const k = Math.max(0, Math.min(leaves.length - 1, Math.round(l * 1.35 * (leaves.length - 1))));
-      const c = leaves[k]!;
-      out[i] = c[0] * 255;
-      out[i + 1] = c[1] * 255;
-      out[i + 2] = c[2] * 255;
+      // a crown's leaves shade by how high they are and how much they face the sky, the same for every face that meets
+      // at a corner: one soft gradient over the crown, rather than every flat facet in its own green
+      const up = (m.pos[i + 1]! - m.min[1]) / Math.max(1e-4, m.max[1] - m.min[1]);
+      const sky = m.sn[i + 1]! / 127;
+      const t = Math.max(0, Math.min(1, 0.2 + up * 0.45 + sky * 0.3 + (l - 0.4) * 0.15));
+      const f = t * (leaves.length - 1);
+      const lo = leaves[Math.floor(f)]!;
+      const hi = leaves[Math.min(leaves.length - 1, Math.floor(f) + 1)]!;
+      const u = f - Math.floor(f);
+      out[i] = (lo[0] + (hi[0] - lo[0]) * u) * 255;
+      out[i + 1] = (lo[1] + (hi[1] - lo[1]) * u) * 255;
+      out[i + 2] = (lo[2] + (hi[2] - lo[2]) * u) * 255;
     } else if (leafy && h > 8 && h < 50) {
       const f = 0.65 + l * 0.7;
       out[i] = Math.min(255, bark[0] * 255 * f);
@@ -1070,7 +1082,7 @@ export class Land3D {
           const m = def.m[Math.floor(h * def.m.length) % def.m.length]!;
           const s = this.fitted(m, def.h * (0.85 + hash2(tx, ty, 21) * 0.3), 2.4);
           // (a crystal takes the land's own light: the model itself is plain white)
-          const shard = kind === 'crystal' ? hexRgb(look.leaves[hash2(tx, ty, 93) < 0.3 ? 5 : 4]) : null;
+          const shard = kind === 'crystal' ? hexRgb(look.leaves[hash2(tx, ty, 93) < 0.3 ? 5 : 4]) : kind === 'snowpine' ? FROST : null;
           if (this.keepIt({ x: wx, y: wy, kind: 'tree', dy: -def.h * TILE })) this.add({ m, x: x + (h - 0.5) * 0.12, z: z + (hash2(tx, ty, 31) - 0.5) * 0.12, rot: h * 6.28, sx: s, sway: kind === 'dead' || kind === 'crystal' || kind === 'cactus' ? 0 : 1, shadow: 1.25, ...(shard ? { r: shard[0], g: shard[1], b: shard[2] } : {}) });
           break;
         }
@@ -1420,7 +1432,10 @@ export class Land3D {
       if (!m) return null;
       const plain = id.replace('~', '');
       // (a person's parts and weapons keep their own colors: bone is bone, gold is gold)
-      s = new Stand(m, this.group, Math.max(16, want), this.packs.hero.meshes[plain] === m ? m.col : colorsFor(m, this.look, plain), id.startsWith('~'));
+      // (a tree's crown and a bush are lit by their smooth normals: soft rounded leaves in the heroes' own toon light,
+      // not every flat facet of the model showing hard from above)
+      const soft = /^(Tree_|Bush_)/.test(plain) ? { ...m, nor: m.sn } : m;
+      s = new Stand(soft, this.group, Math.max(16, want), this.packs.hero.meshes[plain] === m ? m.col : colorsFor(m, this.look, plain), id.startsWith('~'));
       this.stands.set(id, s);
     }
     return s;
