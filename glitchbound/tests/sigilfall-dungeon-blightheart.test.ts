@@ -13,6 +13,7 @@ import { TILE } from '../src/games/sigilfall/sim/map';
 import { EXTRA_PATTERNS } from '../src/games/sigilfall/sim/patterns';
 import type { World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
+import { gearAt, HARD_DEATHS } from './sigilfall-bot';
 
 const REGION = 'blightheart';
 const LEVEL = REGIONS[REGION].level + 1;
@@ -40,13 +41,13 @@ describe('sigilfall: Blightheart', () => {
   for (const cls of CLASS_IDS) {
     it(`${cls}: clears Blightheart at level ${LEVEL}`, { timeout: 180_000 }, () => {
       const { w, r } = clearsWithRetry((seed) => {
-        const w = newWorld(REGION, readyHero(cls as ClassId, LEVEL, 'uncommon'), seed);
+        const w = newWorld(REGION, readyHero(cls as ClassId, LEVEL, gearAt(LEVEL)), seed);
         return { w, r: play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom }) };
       });
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
       expect(r.bossesDown).toEqual(BOSS_ORDER);
-      expect(r.deaths).toBeLessThanOrEqual(2);
+      expect(r.deaths).toBeLessThanOrEqual(HARD_DEATHS);
       // the Queen is a real fight, not a few seconds of burst
       expect(r.bossTimes['the-withered-queen']).toBeGreaterThan(30);
     });

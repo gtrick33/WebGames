@@ -13,6 +13,7 @@ import { TILE } from '../src/games/sigilfall/sim/map';
 import { EXTRA_PATTERNS } from '../src/games/sigilfall/sim/patterns';
 import type { World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
+import { gearAt, HARD_DEATHS } from './sigilfall-bot';
 
 const REGION = 'crown-catacombs';
 const LEVEL = Math.min(MAX_LEVEL, REGIONS[REGION].level + 1);
@@ -40,13 +41,13 @@ describe('sigilfall: the catacombs', () => {
   for (const cls of CLASS_IDS) {
     it(`${cls}: clears the catacombs at level ${LEVEL}`, { timeout: 270_000 }, () => {
       const { w, r } = clearsWithRetry((seed) => {
-        const w = newWorld(REGION, readyHero(cls as ClassId, LEVEL, 'uncommon'), seed);
+        const w = newWorld(REGION, readyHero(cls as ClassId, LEVEL, gearAt(LEVEL)), seed);
         return { w, r: play(w, { seconds: 1500, done: (x) => x.cleared, goal: nextRoom }) };
       });
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
       expect(r.bossesDown).toEqual(BOSS_ORDER);
-      expect(r.deaths).toBeLessThanOrEqual(2);
+      expect(r.deaths).toBeLessThanOrEqual(HARD_DEATHS);
       // Crane is a real fight, not a few seconds of burst
       expect(r.bossTimes['maelis-crane']).toBeGreaterThan(30);
     });

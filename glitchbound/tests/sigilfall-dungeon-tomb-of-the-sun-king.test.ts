@@ -15,6 +15,7 @@ import { inSunlight } from '../src/games/sigilfall/sim/patterns/tomb-of-the-sun-
 import type { Enemy } from '../src/games/sigilfall/sim/types';
 import type { World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
+import { HARD_DEATHS } from './sigilfall-bot';
 
 const LEVEL = 36;
 
@@ -208,7 +209,7 @@ describe('the Tomb of the Sun King', () => {
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
       expect(r.bossesDown).toEqual(['the-sand-warden', 'the-sun-king']);
-      expect(r.deaths).toBeLessThanOrEqual(2);
+      expect(r.deaths).toBeLessThanOrEqual(HARD_DEATHS);
       // the showpiece is a real fight, three phases long
       expect(r.bossTimes['the-sun-king']).toBeGreaterThan(20);
     });

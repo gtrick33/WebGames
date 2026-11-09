@@ -107,6 +107,24 @@ export class StoryDirector {
     this.speech.push({ who: b.who, text: b.text, t: 0, dur });
   }
 
+  /**
+   * A scene skipped while people were walking in (a courier up the road, the camp's newcomers): they are where
+   * they were going at once, so what comes next in the story comes now, not when they would have got there.
+   */
+  hurry(): void {
+    const run = this.run;
+    if (!run || !run.def.arrive) return;
+    for (const f of run.followers) {
+      if (!f.goal) continue;
+      f.x = f.goal.x;
+      f.y = f.goal.y;
+      f.vx = 0;
+      f.vy = 0;
+      f.route = undefined;
+      f.flow = undefined;
+    }
+  }
+
   /** These people stop talking (a skipped scene's lines are not left hanging). */
   hush(who: string[]): void {
     this.speech = this.speech.filter((s) => !who.includes(s.who));

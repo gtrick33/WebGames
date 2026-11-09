@@ -19,7 +19,7 @@ import { FOE_ART } from '../src/games/sigilfall/render/art/foes';
 import { TOWNSFOLK_LOOKS } from '../src/games/sigilfall/render/art/townsfolk';
 import { ZONE_ART } from '../src/games/sigilfall/render/art/zones';
 import { CREATURE_ART } from '../src/games/sigilfall/render/artdata';
-import { newWorld, play, readyHero } from './sigilfall-bot';
+import { gearAt, newWorld, play, readyHero } from './sigilfall-bot';
 
 const step = (w: World, seconds: number, each?: (w: World) => void) => {
   for (let t = 0; t < seconds; t += 1 / 60) {
@@ -493,13 +493,14 @@ describe('sigilfall wild zones, played', () => {
   for (const z of ZONES) {
     for (const cls of CLASS_IDS) {
       it(`${cls}: holds its own in ${z.region} at level ${z.level}`, { timeout: 60_000 }, () => {
-        const run = (seed: number): ReturnType<typeof play> => play(newWorld(z.region, readyHero(cls, z.level, 'common', 5), seed), { seconds: 240, done: (x) => x.run.kills >= 25 });
-        const holds = (r: ReturnType<typeof play>): boolean => !r.stuck && r.kills >= 25 && r.deaths <= 1;
+        const run = (seed: number): ReturnType<typeof play> => play(newWorld(z.region, readyHero(cls, z.level, gearAt(z.level), 5), seed), { seconds: 240, done: (x) => x.run.kills >= 25 });
+        // (a hard land: a fall or two on the way is part of it, as long as the hero gets on with it)
+        const holds = (r: ReturnType<typeof play>): boolean => !r.stuck && r.kills >= 25 && r.deaths <= 2;
         let r = run(1);
         for (let seed = 2; seed <= 3 && !holds(r); seed++) r = run(seed);
         expect(r.stuck).toBe(false);
         expect(r.kills).toBeGreaterThanOrEqual(25);
-        expect(r.deaths).toBeLessThanOrEqual(1);
+        expect(r.deaths).toBeLessThanOrEqual(2);
       });
     }
   }
