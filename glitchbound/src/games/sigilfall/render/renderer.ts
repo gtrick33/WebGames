@@ -218,8 +218,33 @@ export class Renderer {
     const mapH = w.map.h * TILE;
     const x = w.player.x + this.leanX + shift - this.vw / 2;
     const y = w.player.y + this.leanY - this.vh / 2;
-    this.camX = mapW <= this.vw ? (mapW - this.vw) / 2 : clamp(x, 0, mapW - this.vw);
-    this.camY = mapH <= this.vh ? (mapH - this.vh) / 2 : clamp(y, 0, mapH - this.vh);
+    // near a way out at an edge the view may go a little past the edge, so what it goes through (a cave, an arch,
+    // trees) is seen whole: easing in as the hero nears it, so the camera never jumps
+    const peek = this.edgePeek(w);
+    this.camX = mapW <= this.vw ? (mapW - this.vw) / 2 : clamp(x, -peek.l, mapW - this.vw + peek.r);
+    this.camY = mapH <= this.vh ? (mapH - this.vh) / 2 : clamp(y, -peek.t, mapH - this.vh + peek.b);
+  }
+
+  /** How far past each edge the view may go: up to a few tiles, the nearer the hero is to a way out at that edge. */
+  private edgePeek(w: World): { l: number; r: number; t: number; b: number } {
+    const out = { l: 0, r: 0, t: 0, b: 0 };
+    if (w.region.interior || w.region.kind === 'dungeon') return out;
+    const mapW = w.map.w * TILE;
+    const mapH = w.map.h * TILE;
+    const near = TILE * 12;
+    const most = TILE * 4;
+    const p = w.player;
+    for (const x of w.exits) {
+      if (x.door) continue;
+      const d = Math.hypot(x.x - p.x, x.y - p.y);
+      if (d >= near) continue;
+      const k = most * Math.min(1, (1 - d / near) * 1.6);
+      if (x.x < TILE * 4) out.l = Math.max(out.l, k);
+      if (x.x > mapW - TILE * 4) out.r = Math.max(out.r, k);
+      if (x.y < TILE * 4) out.t = Math.max(out.t, k);
+      if (x.y > mapH - TILE * 4) out.b = Math.max(out.b, k);
+    }
+    return out;
   }
 
   /** Lets go of the 3D view. */
