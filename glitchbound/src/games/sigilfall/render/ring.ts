@@ -8,7 +8,8 @@ import { heroLook, heldWeapon } from './sprites';
 import type { Held } from '../render3d/dress';
 import { FIELD, FX, type Fx3D } from '../render3d/fx3d';
 import type { RingStage, RingView } from '../render3d/ring3d';
-import { newCharacter, type Face } from '../progress/character';
+import { newCharacter, type Character, type Face } from '../progress/character';
+import { wornLooks } from '../progress/wardrobe';
 
 /**
  * The Ring's top layer: the arena and the fighters are in 3D underneath (render3d/ring3d.ts); here are the rings under
@@ -25,10 +26,13 @@ export interface RingLook {
 }
 
 /** Every fighter's picture, made once. */
-export function ringLooks(m: Match, mine: { face?: Face; body?: 'm' | 'f' }, myId: number | null): RingLook[] {
+export function ringLooks(m: Match, mine: { face?: Face; body?: 'm' | 'f'; wear?: Character | null }, myId: number | null): RingLook[] {
   return m.fighters.map((f) => {
     const hero = newCharacter(f.cls, f.name, 'ring');
     const isMe = f.id === myId;
+    // (your own campaign hero's gear and Wardrobe, if you chose to fight in them)
+    const w = isMe && mine.wear && mine.wear.cls === f.cls ? mine.wear : null;
+    if (w) return { look: heroLook(f.cls, w.equip, wornLooks(w), w.body, w.face), held: heldWeapon(f.cls, w.equip.weapon, wornLooks(w).weapon) };
     const body: 'm' | 'f' = isMe ? (mine.body ?? 'm') : f.id % 2 ? 'f' : 'm';
     const look = heroLook(f.cls, hero.equip, {}, body, isMe ? mine.face : undefined);
     return { look, held: heldWeapon(f.cls, hero.equip.weapon) };

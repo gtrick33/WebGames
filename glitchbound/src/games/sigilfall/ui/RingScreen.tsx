@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { ABILITIES, kitOf, PRESETS, SLOTS } from '../arena/abilities';
-import { afterMatch, COMPS, drawOpponents, namedApart, nameFor, ratingChange, readRing, setsOf, skillAt, standingOf, writeRing, type ClassSets, type Comp, type RingSave } from '../arena/ladder';
+import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, namedApart, nameFor, ratingChange, readRing, setsOf, skillAt, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave } from '../arena/ladder';
 import { MAP_IDS, MAPS } from '../arena/maps';
 import { FORMATS, nextRank, rankOf, type Format } from '../arena/ranks';
 import type { FighterSetup, MatchSetup } from '../arena/sim';
@@ -18,6 +18,8 @@ import { heldWeapon, heroDollUrl, heroLook } from '../render/sprites';
 import { RingMatch, type MatchResult, type MatchStakes, type RingInbox } from './RingMatch';
 import { RingResult, type RatingOutcome } from './RingResult';
 import { BarRow, RingHelp, SetupChips, SetupEditor } from './RingSetup';
+import { wearOf, WearPicker, wearTitle } from './wear';
+import { wornLooks } from '../progress/wardrobe';
 import { ScreenGate } from './ScreenGate';
 
 /** The computer's teammates: who they are and which of their bars they bring. */
@@ -90,7 +92,7 @@ function ClassRow({ pick, onPick }: { pick: ClassId; onPick: (c: ClassId) => voi
  * The Ring, as three plain pages: Play (who, what kind of fight, go), Setup (what you bring), and With friends. A
  * match and its result lie beyond them, and every page has one way back.
  */
-export function RingScreen({ engine, face, body, cls, name, onBack }: { engine: SigilEngine; face?: Face; body?: 'm' | 'f'; cls?: ClassId; name?: string; onBack: () => void }) {
+export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { engine: SigilEngine; face?: Face; body?: 'm' | 'f'; cls?: ClassId; name?: string; onBack: () => void; resume?: LiveMatch }) {
   const [save, setSave] = useState<RingSave>(readRing);
   const latest = useRef(save);
   const commit = (fn: (s: RingSave) => RingSave): void => {
@@ -107,7 +109,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack }: { engine: 
   const [mates, setMates] = useState<Mate[]>(() => DEFAULT_MATES[cls ?? 'warrior']);
   const [map, setMap] = useState<string>('random');
   const [help, setHelp] = useState(false);
-  const [fight, setFight] = useState<{ setup: MatchSetup; rival: Comp; skill: number; rivalRating: number; stakes: MatchStakes; format: Format } | null>(null);
+  const [fight, setFight] = useState<{ setup: MatchSetup; rival: Comp; skill: number; rivalRating: number; stakes: MatchStakes; format: Format; snap?: LiveMatch['snap'] } | null>(() => (resume ? { ...resume, stakes: resume.stakes } : null));
   const [roomFight, setRoomFight] = useState<{ setup: MatchSetup; mine: number; host: boolean } | null>(null);
   const [run, setRun] = useState(0);
   const [result, setResult] = useState<{ r: MatchResult; rating: RatingOutcome | null; rival?: string; solo: boolean } | null>(null);
@@ -123,7 +125,16 @@ export function RingScreen({ engine, face, body, cls, name, onBack }: { engine: 
   const standing = standingOf(save, format);
   const rank = rankOf(standing.best);
   const next = nextRank(standing.best);
-  const doll = useMemo(() => heroDollUrl(heroLook(pick, newCharacter(pick, 'Ring', 'ring').equip, {}, body ?? 'm', face), 'down', 5, heldWeapon(pick, newCharacter(pick, 'Ring', 'ring').equip.weapon), pick === 'warrior' || pick === 'paladin'), [pick, body, face]);
+  // (a campaign hero of the class, worn: their gear, their Wardrobe and their title)
+  const [wearN, setWearN] = useState(0);
+  const wear = useMemo(() => (wearN >= 0 ? wearOf(engine, pick) : null), [engine, pick, wearN]);
+  const doll = useMemo(() => {
+    const plain = newCharacter(pick, 'Ring', 'ring');
+    const w = wear;
+    const look = w ? heroLook(pick, w.equip, wornLooks(w), w.body, w.face) : heroLook(pick, plain.equip, {}, body ?? 'm', face);
+    const held = w ? heldWeapon(pick, w.equip.weapon, wornLooks(w).weapon) : heldWeapon(pick, plain.equip.weapon);
+    return heroDollUrl(look, 'down', 5, held, pick === 'warrior' || pick === 'paladin');
+  }, [pick, body, face, wear]);
   const sets = setsOf(save, pick);
   const setup = sets.list[sets.active]!;
   const { bar, oath, talents } = setup;
@@ -151,14 +162,17 @@ export function RingScreen({ engine, face, body, cls, name, onBack }: { engine: 
     setResult(null);
     setPage('play');
     setRun((r) => r + 1);
-    setFight({
+    const next = {
       setup: { seed, map: map === 'random' ? MAP_IDS[seed % MAP_IDS.length]! : map, fighters: namedApart([...team, ...fighters]) },
       rival: comp,
       skill: skillAt(rivalRating),
       rivalRating,
       format,
       stakes: { format, rating: standing.rating, rank: rankOf(standing.best).name, color: rankOf(standing.best).color, win: ratingChange(standing.rating, rivalRating, true), lose: -ratingChange(standing.rating, rivalRating, false), rival: comp.name, blurb: comp.blurb, rivalRating },
-    });
+    };
+    // (kept as it goes: a player who leaves it while it's going can come back to it, or lose as a leaver)
+    writeLive({ ...next, at: Date.now() });
+    setFight(next);
   };
 
   /* -------------------------------------------------- the room */
@@ -250,9 +264,10 @@ export function RingScreen({ engine, face, body, cls, name, onBack }: { engine: 
   };
 
   if (fight) {
-    const settle = (won: boolean): RatingOutcome => {
+    const settle = (won: boolean, k = 1): RatingOutcome => {
+      clearLive();
       const was = standingOf(latest.current, fight.format);
-      const out = afterMatch(was, fight.rivalRating, won);
+      const out = afterMatch(was, fight.rivalRating, won, k);
       commit((now) => ({ ...now, standings: { ...now.standings, [fight.format]: out.next } }));
       return { before: was.rating, after: out.next.rating, bestBefore: was.best, bestAfter: out.next.best, rankUp: out.rankUp, streak: out.next.streak };
     };
@@ -263,17 +278,22 @@ export function RingScreen({ engine, face, body, cls, name, onBack }: { engine: 
         setup={fight.setup}
         myId={0}
         face={face}
+        wear={wear}
         body={body}
         role={{ kind: 'solo', skill: fight.skill }}
         sets={sets}
         stakes={fight.stakes}
         onSets={putSets}
+        resume={fight.snap}
+        onSnap={(snap) => writeLive({ ...fight, snap, at: Date.now() })}
         onLeave={(started) => {
-          if (started) settle(false);
+          if (started) settle(false, LEAVER_K);
+          else clearLive();
           setFight(null);
         }}
         onDone={(r) => {
           const was = standingOf(latest.current, fight.format);
+          clearLive();
           const rating: RatingOutcome = r.draw ? { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: 0 } : settle(r.won);
           if (rating.rankUp) engine.sound.play('levelup');
           setResult({ r, rating, rival: fight.rival.name, solo: true });
@@ -294,6 +314,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack }: { engine: 
         setup={roomFight.setup}
         myId={roomFight.mine}
         face={face}
+        wear={wear}
         body={body}
         role={roomFight.host ? { kind: 'host', skill: 0.6, send: relay, listen } : { kind: 'client', send: relay, listen }}
         sets={sets}
@@ -374,9 +395,10 @@ export function RingScreen({ engine, face, body, cls, name, onBack }: { engine: 
                 <img key={pick} className="rb-rp-doll" src={doll} alt={CLASSES[pick].name} draggable={false} />
                 <div className="rb-rp-who">
                   <strong>{CLASSES[pick].name}</strong>
-                  <small>{hero}</small>
+                  <small>{wear ? `${wear.name}${wearTitle(wear) ? `, ${wearTitle(wear)}` : ''}` : hero}</small>
                 </div>
               </div>
+              <WearPicker engine={engine} cls={pick} onChange={() => setWearN((n) => n + 1)} />
               <ClassRow pick={pick} onPick={choose} />
               <div className="rb-rp-setup">
                 <div className="rb-rp-setup-head">

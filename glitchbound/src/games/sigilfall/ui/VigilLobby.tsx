@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { SigilEngine } from '../engine';
+import { wornLooks } from '../progress/wardrobe';
+import { wearOf, WearPicker, wearTitle } from './wear';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { CLASSES, CLASS_IDS } from '../data/classes';
 import { useAccount } from '../../../platform/account';
@@ -187,7 +190,7 @@ function PartyPanel({ room, pick, body, face, land, lands, onLand }: { room: Vig
 }
 
 /** Choosing who keeps the watch, and where: alone, or with friends. */
-export function VigilLobby({ face, body, cls, map, room, onBack, onBegin }: { face?: Face; body?: 'm' | 'f'; cls: ClassId; map?: VigilMap; room: VigilRoomControls; onBack: () => void; onBegin: (cls: ClassId, map: VigilMap) => void }) {
+export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin }: { engine?: SigilEngine; face?: Face; body?: 'm' | 'f'; cls: ClassId; map?: VigilMap; room: VigilRoomControls; onBack: () => void; onBegin: (cls: ClassId, map: VigilMap) => void }) {
   const { me } = useAccount();
   // a class from the shop can be played here once it's bought (progress/paidClasses.ts)
   const [pick, setPick] = useState<ClassId>(classOpen(cls, me) ? cls : 'warrior');
@@ -207,10 +210,14 @@ export function VigilLobby({ face, body, cls, map, room, onBack, onBegin }: { fa
   useEffect(() => {
     void iconsReady.then(setIcons);
   }, []);
+  // (a campaign hero of the class, worn: their gear and their Wardrobe)
+  const [wearN, setWearN] = useState(0);
+  const wear = useMemo(() => (engine && wearN >= 0 ? wearOf(engine, pick) : null), [engine, pick, wearN]);
   const doll = useMemo(() => {
     const hero = newCharacter(pick, 'The Watch', 'vigil');
+    if (wear) return heroDollUrl(heroLook(pick, wear.equip, wornLooks(wear), wear.body, wear.face), 'down', 6, heldWeapon(pick, wear.equip.weapon, wornLooks(wear).weapon), pick === 'warrior' || pick === 'paladin');
     return heroDollUrl(heroLook(pick, hero.equip, {}, body ?? 'm', face), 'down', 6, heldWeapon(pick, hero.equip.weapon), pick === 'warrior' || pick === 'paladin');
-  }, [pick, body, face]);
+  }, [pick, body, face, wear]);
   const kit = spellsOf(pick);
   const shown = kit[spell] ?? kit[0]!;
   const c = CLASSES[pick];
@@ -270,10 +277,12 @@ export function VigilLobby({ face, body, cls, map, room, onBack, onBegin }: { fa
             <img key={pick} className="rb-vlobby-doll" src={doll} alt={c.name} draggable={false} />
             <div className="rb-vlobby-name">
               <strong>{c.name}</strong>
+              {wear && <small className="rb-wear-who">{wear.name}{wearTitle(wear) ? `, ${wearTitle(wear)}` : ''}</small>}
               <small>
                 {stats.hp} health · {stats.speed >= 84 ? 'quick on their feet' : stats.speed <= 74 ? 'heavy but sturdy' : 'steady'}
               </small>
             </div>
+            {engine && <WearPicker engine={engine} cls={pick} onChange={() => setWearN((n) => n + 1)} />}
           </div>
           <div className="rb-vlobby-kit">
             <div className="rb-vlobby-spells">
