@@ -20,6 +20,17 @@ const SigilPicture = (props: Parameters<typeof SigilPictureLazy>[0]) => (
     <SigilPictureLazy {...props} />
   </Suspense>
 );
+const SigilInspect = lazy(() => import('../components/SigilInspect').then((m) => ({ default: m.SigilInspect })));
+
+/** A Sigilfall item's picture that opens it turning on a stand. */
+function Inspectable({ product, label, onLook, size }: { product: Product; label: string; onLook: (p: Product) => void; size?: number }) {
+  if (!product.sigil) return null;
+  return (
+    <button type="button" className="sigil-look" onClick={() => onLook(product)} aria-label={label} title={label}>
+      <SigilPicture id={product.id} spec={product.sigil} size={size} />
+    </button>
+  );
+}
 
 /**
  * The shop: one-time purchases, in plain words. No countdowns, no "last chance", no pressure, and the full price up
@@ -51,6 +62,7 @@ function Shop({ lang, t }: { lang: Parameters<typeof priceIn>[0]; t: ShopText })
   const items = useLiveCatalog().raw.shopItems ?? PRODUCTS;
   const { me } = useAccount();
   const [buying, setBuying] = useState<Product | null>(null);
+  const [looking, setLooking] = useState<Product | null>(null);
   const canBuy = money.shop || !!me?.isAdmin;
   const owned = new Set(me?.owned ?? []);
   const bought = new URLSearchParams(window.location.search).get('bought');
@@ -60,8 +72,8 @@ function Shop({ lang, t }: { lang: Parameters<typeof priceIn>[0]; t: ShopText })
   const card = (p: Product) => (
     <section key={p.id} className="panel info-block">
       {p.look && <LookPreview spec={p.look} name={me?.nickname ?? 'GlitchBound'} src={me?.avatar} />}
-      {p.sigil && <SigilPicture id={p.id} spec={p.sigil} />}
-      {p.includes && <PackContents ids={p.includes} items={items} name={me?.nickname ?? 'GlitchBound'} src={me?.avatar} w={w} text={text} />}
+      {p.sigil && <Inspectable product={p} label={fill(w.inspect, { name: text(p).name })} onLook={setLooking} />}
+      {p.includes && <PackContents ids={p.includes} items={items} name={me?.nickname ?? 'GlitchBound'} src={me?.avatar} w={w} text={text} onLook={setLooking} />}
       <h2>{text(p).name}</h2>
       <p>{text(p).blurb}</p>
       <p>
@@ -116,6 +128,17 @@ function Shop({ lang, t }: { lang: Parameters<typeof priceIn>[0]; t: ShopText })
         </p>
       )}
       {extras.length > 0 && <div className="info-cols">{extras.map(card)}</div>}
+      {/* (what the Gloamknight Pack's pieces sit with: right under it) */}
+      {sigil('mount').length + sigil('look').length > 0 && (
+        <section className="shop-group shop-sigilfall" aria-labelledby="shop-sigilfall">
+          <h2 id="shop-sigilfall" className="profile-h2">
+            Sigilfall
+          </h2>
+          <p className="info-small">{w.sigilNote}</p>
+          {sigil('mount').length > 0 && <div className="info-cols">{sigil('mount').map(card)}</div>}
+          {sigil('look').length > 0 && <div className="info-cols">{sigil('look').map(card)}</div>}
+        </section>
+      )}
       {kinds.map((kind) => {
         const list = now.filter((p) => p.look?.kind === kind);
         return (
@@ -129,16 +152,6 @@ function Shop({ lang, t }: { lang: Parameters<typeof priceIn>[0]; t: ShopText })
           )
         );
       })}
-      {sigil('mount').length + sigil('look').length > 0 && (
-        <section className="shop-group shop-sigilfall" aria-labelledby="shop-sigilfall">
-          <h2 id="shop-sigilfall" className="profile-h2">
-            Sigilfall
-          </h2>
-          <p className="info-small">{w.sigilNote}</p>
-          {sigil('mount').length > 0 && <div className="info-cols">{sigil('mount').map(card)}</div>}
-          {sigil('look').length > 0 && <div className="info-cols">{sigil('look').map(card)}</div>}
-        </section>
-      )}
       <div className="info-cols">
         {later.length > 0 && (
           <section className="panel info-block">
@@ -154,12 +167,17 @@ function Shop({ lang, t }: { lang: Parameters<typeof priceIn>[0]; t: ShopText })
         )}
       </div>
       <p className="info-small">{rich(w.terms, { terms: (x) => <Link href="/terms/sale">{x}</Link> })}</p>
+      {looking?.sigil && (
+        <Suspense fallback={null}>
+          <SigilInspect spec={looking.sigil} name={text(looking).name} hint={w.turnHint} close={w.close} onClose={() => setLooking(null)} />
+        </Suspense>
+      )}
     </div>
   );
 }
 
 /** What a pack gives, each thing as it looks: its own pieces are made for it and not sold on their own. */
-function PackContents({ ids, items, name, src, w, text }: { ids: string[]; items: readonly Product[]; name: string; src?: string; w: W; text: (p: Product) => { name: string } }) {
+function PackContents({ ids, items, name, src, w, text, onLook }: { ids: string[]; items: readonly Product[]; name: string; src?: string; w: W; text: (p: Product) => { name: string }; onLook: (p: Product) => void }) {
   const parts = ids.map((id) => items.find((p) => p.id === id)).filter((p): p is Product => !!p);
   return (
     <ul className="shop-pack" aria-label={w.inPack}>
@@ -169,7 +187,7 @@ function PackContents({ ids, items, name, src, w, text }: { ids: string[]; items
       </li>
       {parts.map((p) => (
         <li key={p.id} className={p.sigil?.kind === 'mount' ? 'is-wide' : undefined}>
-          {p.sigil && <SigilPicture id={p.id} spec={p.sigil} size={240} />}
+          {p.sigil && <Inspectable product={p} label={fill(w.inspect, { name: text(p).name })} onLook={onLook} size={240} />}
           {p.look?.kind === 'banner' && <BannerArt spec={p.look} className="shop-pack-banner" />}
           {p.look && p.look.kind !== 'banner' && <FramedAvatar name={name} src={src} size={64} border={p.look.kind === 'border' ? p.look : undefined} icon={p.look.kind === 'icon' ? p.look : undefined} />}
           <span className="info-small">{text(p).name}</span>

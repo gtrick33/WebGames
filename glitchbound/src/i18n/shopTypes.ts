@@ -45,6 +45,11 @@ export interface ShopText {
     failed: string;
     pay: string;
     cancel: string;
+    /** The button on a Sigilfall item's picture that opens it turning on a stand ({name}). */
+    inspect: string;
+    /** Under it: how to turn it. */
+    turnHint: string;
+    close: string;
     /** The two statements ticked before paying, kept word for word with the purchase and repeated in the email. */
     agreeNow: string;
     agreeAge: string;
