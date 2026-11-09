@@ -105,6 +105,37 @@ describe('Sigilfall: scenes', () => {
     expect(again.scene?.def.id).not.toBe(def.id);
   });
 
+  it('skipping a scene that watches someone walk in puts them there, and the story goes straight on (the courier)', () => {
+    const c = atScene('briar-the-rider-comes');
+    const w = newWorld('briarhollow', c);
+    startAt(w, 'briar-the-rider-comes');
+    expect(w.scene?.def.id).toBe('briar-the-rider-comes');
+    // a moment in: the courier is on the road, far from where he falls
+    run(w, 1);
+    const courier = w.pets.find((p) => p.def.id === 'courier' && !p.dead);
+    expect(courier).toBeDefined();
+    const falls = w.places['briar-courier-falls']!;
+    expect(Math.hypot(courier!.x - falls.x, courier!.y - falls.y)).toBeGreaterThan(40);
+    const quest = Object.keys(w.hero.quests).find((q) => w.hero.quests[q]!.state === 'active' && QUEST_DEFS[q]?.objective?.kind === 'event');
+    endScene(w, true);
+    // not his whole walk later: in a moment, his arrival is over and the quest has moved on
+    run(w, 1.5);
+    expect(w.story.run?.def.id ?? null).not.toBe('briar-courier');
+    if (quest) expect(w.hero.quests[quest]!.state).not.toBe('active');
+  });
+
+  it('skipping any scene leaves no one still walking in: the story is never kept waiting on a skipped walk', { timeout: 60_000 }, () => {
+    for (const def of SCENES.filter((d) => d.when)) {
+      const w = newWorld(def.region, atScene(def.id));
+      startAt(w, def.id);
+      if (w.scene?.def.id !== def.id) continue;
+      run(w, 0.5);
+      endScene(w, true);
+      run(w, 1.5);
+      expect(w.story.run?.def.arrive ? w.story.run.def.id : null, def.id).toBeNull();
+    }
+  });
+
   it('a reload in the middle plays the scene again from the start (nothing was kept of it)', () => {
     const def = SCENES[0]!;
     const c = atScene(def.id);

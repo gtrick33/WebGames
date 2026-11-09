@@ -291,6 +291,8 @@ export function endScene(w: World, skipped: boolean): void {
       }
     }
     w.story.hush(s.def.steps.flatMap((st) => ('say' in st ? [st.say] : [])));
+    // and whoever it was watching walk in is there now: the story goes straight on to its next beat
+    w.story.hurry();
   }
   if (!w.hero.opened.includes(seenKey(s.def.id))) w.hero.opened.push(seenKey(s.def.id));
   w.scene = null;
