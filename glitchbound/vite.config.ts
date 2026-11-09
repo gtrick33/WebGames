@@ -108,7 +108,7 @@ function reviewShots(): Plugin {
 }
 
 /** Test files that need a page to themselves (see `test.projects` below). */
-const ISOLATED = ['tests/ad-rules.test.tsx', 'tests/looks.test.tsx', 'tests/no-card-blink.test.ts', 'tests/party-room-name.test.tsx', 'tests/stage.test.tsx'];
+const ISOLATED = ['tests/ad-rules.test.tsx', 'tests/cloud-save.test.ts', 'tests/looks.test.tsx', 'tests/no-card-blink.test.ts', 'tests/party-room-name.test.tsx', 'tests/stage.test.tsx'];
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
