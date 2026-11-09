@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { MountDef } from '../data/mounts';
 import type { HeroLook } from '../render/art/hero';
+import { npcLookOf } from '../render/sprites';
 import { Crowd } from './crowd';
 import { dressedOf, loadWardrobe, type Held, type Wardrobe } from './dress';
 import { hexRgb, kitOf } from './kits';
@@ -152,6 +153,10 @@ function shootCreature(sprite: string, w: number, h: number, turn: number, tint:
 
 /** A creature standing. Null until its model is in (it is on its way). */
 export function creaturePicture(sprite: string, size: number): string | null {
+  // (someone dressed from the wardrobe is pictured so, with what they hold, not as the set's figure underneath)
+  const kit = kitOf(sprite);
+  const look = kit.look ? npcLookOf(kit.look) : null;
+  if (look) return shoot(look, (kit.held as Held | undefined) ?? null, !!kit.shield, 0.45, size, size, 'idle', 0.3, 'full');
   return shootCreature(sprite, size, size, 0.45, null, null);
 }
 

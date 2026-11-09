@@ -152,8 +152,8 @@ put('cutthroat', { k: 'rogue_hooded', look: 'foe-cutthroat', held: { kind: 'dagg
 put('bandit-archer', { k: 'ranger', tint: '#b0a090', look: 'foe-bandit-archer', held: { kind: 'bow' }, ...BOWMAN });
 put('enforcer', { k: 'barbarian', look: 'foe-enforcer', held: { kind: 'axe' }, atk: 'chop2' });
 put('hangman', { k: 'barbarian', tint: DARK, look: 'foe-hangman', held: { kind: 'greatsword' }, atk: 'chop2' });
-put('varric', { k: 'survivalist', size: 1.12 });
-put('saltbeard', { k: 'survivalist', tint: '#c9b48c', size: 1.14 });
+put('varric', { k: 'survivalist', size: 1.12, look: 'foe-varric', held: { kind: 'axe' } });
+put('saltbeard', { k: 'survivalist', tint: '#c9b48c', size: 1.14, look: 'foe-saltbeard', held: { kind: 'sword' } });
 put('smuggler', { k: 'rogue', look: 'foe-smuggler', held: { kind: 'sword' } });
 put('dune-raider', { k: 'rogue_hooded', tint: SAND, look: 'foe-dune-raider', held: { kind: 'sword' } });
 put('dune-javelineer', { k: 'ranger', tint: SAND, look: 'foe-dune-javelineer', held: { kind: 'spear' }, ...BOWMAN });
@@ -167,10 +167,11 @@ put('goblin', { k: 'ranger', tint: '#9aa878', look: 'foe-briar-poacher', held: {
 put('ridge-kobold kobold-candler', { k: 'caveman', tint: '#d0a070', size: 0.72 });
 put('king-snagtooth', { k: 'orc_brute', tint: '#d0b890', size: 0.9, ...SMASH });
 put('butcher-krogg swamp-troll', { k: 'orc_brute', tint: '#a8c090', ...SMASH });
-put('smith', { k: 'engineer' });
-put('villager', { k: 'farmer_b' });
-put('elder', { k: 'lorekeeper' });
-put('mystic', { k: 'witch', ...CASTER });
+// (the land's people in the heroes' own clothes: the set's farmer, engineer and old scholar wore overalls, goggles and spectacles)
+put('smith', { k: 'engineer', look: 'folk-smith', held: { kind: 'hammer' } });
+put('villager', { k: 'farmer_b', look: 'folk-villager' });
+put('elder', { k: 'lorekeeper', look: 'folk-elder', held: { kind: 'staff' } });
+put('mystic', { k: 'witch', look: 'folk-mystic', held: { kind: 'staff' }, ...CASTER });
 
 /* ------------------------------------------------------------------ giants and things of the land */
 put('frost-giant giant-huscarl giant-hurler jarl-hrimfang', { k: 'barbarian_large', tint: ICE, atk: 'chop2' });
