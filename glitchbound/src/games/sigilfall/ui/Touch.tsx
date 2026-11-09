@@ -190,8 +190,9 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
     else cast(null, null);
   };
 
-  // a slot with nothing in it yet (it opens at a later level) takes no room on the thumbs' side
-  if (locked) return null;
+  // a slot with nothing in it yet (it opens at a later level) is an empty ring on the arc, nothing to press: the shape
+  // of the thumbs' side is there from the start, as a phone RPG shows its empty places
+  if (locked) return <span className={`rb-sb rb-sb-${slot} is-empty`} aria-hidden="true" />;
   const label = slot === 'basic' ? 'Attack' : slot === 'dodge' ? 'Dodge' : slot === 'ult' ? 'Ultimate' : `Skill ${slot.slice(1)}`;
   // a slot not open yet shows the level it opens at; an open one the level of the next skill to learn
   const opens = slotLevel(slot);
