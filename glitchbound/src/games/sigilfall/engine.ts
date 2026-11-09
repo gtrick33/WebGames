@@ -1066,6 +1066,7 @@ export class SigilEngine {
       settings: this.settings,
       seed: party ? party.seed : (Math.random() * 2 ** 32) >>> 0,
       from,
+      beats: true,
       ...(stone ? { key: stone, affixes: keyAffixes(stone, party ? party.week : weekOf(Date.now())) } : {}),
       ...(party ? { coop: party.role } : {}),
     });

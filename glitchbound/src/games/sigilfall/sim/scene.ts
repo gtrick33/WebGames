@@ -2,6 +2,10 @@ import { dist, TAU } from '../core/math';
 import { picBody } from '../data/buildingArt';
 import { PETS } from '../data/pets';
 import { SCENES } from '../data/scenes';
+import { QUESTS } from '../data/quests';
+import { currentObjective } from '../progress/character';
+import { isMainQuest, questSteps } from '../progress/handin';
+import { questTarget, questWhere } from './objective';
 import type { RegionId, StoryCond } from '../data/types';
 import { castRay, TILE, WORLD_K } from './map';
 import { aimAlong, findRoute, type Route } from './nav';
@@ -25,6 +29,8 @@ export type SceneStep =
   | { say: string; line: string }
   /** The camera goes to a named place, a person, a building by its name (to the middle of its picture) or 'hero'. */
   | { look: string }
+  /** The camera goes to a spot (world px): where a quest leads, in a story beat. */
+  | { at: { x: number; y: number } }
   /**
    * The camera keeps on someone walking (a companion, someone arriving) until they are where they were going
    * (become the place's own person there) or `secs` have passed.
@@ -143,6 +149,58 @@ export function maybeStartScene(w: World): void {
     play(w, def);
     return;
   }
+  // no scene of its own: the main story's next step gets a beat (where the quest leads, under its name)
+  if (!w.beats || w.coop || w.keyRun) return;
+  const beat = questBeat(w);
+  if (!beat) return;
+  if (w.player.calm < 3 || w.enemies.some((e) => !e.dead && !e.dummy && (e.aggro || dist(e.x, e.y, w.player.x, w.player.y) < 100))) return;
+  play(w, beat);
+}
+
+/** The main quests the story stages by hand (a scene during them, or a shot opening one of their fights). */
+let staged: Set<string> | null = null;
+function stagedByHand(): Set<string> {
+  if (staged) return staged;
+  staged = new Set();
+  const opened = new Set(SCENES.flatMap((d) => (d.opens ? [d.opens.event] : [])));
+  for (const q of QUESTS) {
+    // (a scene that plays while it's the quest being played; not one that only waits for it to be done)
+    const named = SCENES.some((d) => d.when && JSON.stringify(d.when).includes(JSON.stringify({ quest: q.id, is: 'active' })));
+    const shot = questSteps(q).some((o) => o.kind === 'event' && opened.has(o.event));
+    if (named || shot) staged.add(q.id);
+  }
+  return staged;
+}
+
+/**
+ * A step of the main story that has no scene of its own gets a beat as it begins (or as the hero comes into the
+ * land it's in): its name in the lower bar, a horn, a drum or a roar for what it is, and the camera going out to
+ * where it leads (the person, the place, the den, the way out toward it) and back to the hero. Seen once a step.
+ * The opening night (the Briarhollow chain), staged by hand throughout, has none.
+ */
+export function questBeat(w: World): SceneDef | null {
+  const h = w.hero;
+  for (const q of QUESTS) {
+    const st = h.quests[q.id];
+    if (!st || st.state !== 'active' || !isMainQuest(q.id) || q.id.startsWith('briar-') || stagedByHand().has(q.id)) continue;
+    const id = `beat:${q.id}:${st.step ?? 0}`;
+    if (h.opened.includes(seenKey(id))) continue;
+    if (questWhere(h, q) !== w.region.id) continue;
+    const o = currentObjective(h, q);
+    if (o.kind === 'tutorial') continue;
+    const t = questTarget(w, q, true);
+    const far = t && dist(t.x, t.y, w.player.x, w.player.y) > 5 * TILE;
+    const sound = o.kind === 'boss' ? 'roar' : o.kind === 'kill' || o.kind === 'event' ? 'warhorn' : 'checkpoint';
+    const steps: SceneStep[] = [
+      { title: q.name, sub: 'label' in o ? o.label : undefined },
+      { sfx: sound },
+      ...(o.kind === 'boss' ? [{ shake: 3 }] : []),
+      ...(far && t ? [{ at: { x: t.x, y: t.y } }, { wait: 2.2 }] : [{ wait: 1.8 }]),
+      { look: 'hero' },
+    ];
+    return { id, region: w.region.id, steps };
+  }
+  return null;
 }
 
 function play(w: World, def: SceneDef): void {
@@ -227,6 +285,9 @@ export function updateScene(w: World, dt: number): void {
     const at = where(w, step.look);
     s.focus = step.look === 'hero' ? null : at;
     done = s.t >= 0.9;
+  } else if ('at' in step) {
+    s.focus = step.at;
+    done = s.t >= 1;
   } else if ('follow' in step) {
     const at = where(w, step.follow);
     if (at) {

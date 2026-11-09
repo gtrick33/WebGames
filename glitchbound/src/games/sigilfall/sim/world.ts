@@ -74,6 +74,8 @@ export interface WorldOptions {
   affixes?: KeyAffix[];
   /** In a co-op party (net/coop.ts): the host's world runs the enemies; a guest's mirrors them. */
   coop?: 'host' | 'guest';
+  /** Stages each step of the main story with a beat of its own (sim/scene.ts questBeat): the game; tests leave it off. */
+  beats?: boolean;
 }
 
 /** Seconds as m:ss. */
@@ -260,6 +262,8 @@ export class World {
   packs: PackState[] = [];
   /** Finished quests wait to be handed in (WorldOptions.handIns). */
   readonly handIns: boolean;
+  /** Story beats for the main quests (WorldOptions.beats). */
+  readonly beats: boolean;
   /** The maps' fog of war here (progress/fog.ts), and the cells with ground under them. */
   fog!: Fog;
   private fogOpen!: Uint8Array;
@@ -324,6 +328,7 @@ export class World {
 
   constructor(o: WorldOptions) {
     this.handIns = o.handIns ?? true;
+    this.beats = o.beats ?? false;
     if (o.coop) this.coop = { role: o.coop, ghosts: [], out: [] };
     this.region = REGIONS[o.region];
     this.map = parseRegion(this.region);
