@@ -508,7 +508,12 @@ function melee(w: World, spec: SkillSpec, angle: number): void {
   p.actAngle = angle;
   p.actBig = big;
   const list = w.enemies.filter((e) => !e.dead && e.state !== 'spawn' && inCone(e.x, e.y, p.x, p.y, angle, arc / 2 + 0.15, reach + e.r + p.r));
+  // the blade's arc, white-hot, and behind it a wider trail in the hero's own color (a combo's last blow and a heavy one
+  // leave a bright ring of it too)
+  const tint = CLASSES[w.hero.cls].colors;
+  w.addFx({ kind: 'slash', x: p.x, y: p.y, a: angle, a2: arc * 1.12, life: heavy ? 0.3 : 0.22, size: reach + 10, color: tint.accent, r2: 1 });
   w.addFx({ kind: 'slash', x: p.x, y: p.y, a: angle, a2: arc, life: heavy ? 0.24 : 0.16, size: reach + 4, color: heavy ? '#ffe6b0' : big ? '#fff2c8' : '#ffffff', r2: big || heavy ? 1 : 0 });
+  if (big || heavy) w.addFx({ kind: 'ring', x: p.x + Math.cos(angle) * reach * 0.6, y: p.y + Math.sin(angle) * reach * 0.6, life: 0.3, size: reach * 0.9, color: tint.accent });
   w.sfx(heavy ? 'heavy' : big ? 'swingBig' : 'swing');
   hitAll(w, spec, list, p.x, p.y, mul);
   if (list.length && spec.gen > 0) gainResource(w, spec.gen);
