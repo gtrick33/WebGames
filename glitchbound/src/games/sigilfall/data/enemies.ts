@@ -70,7 +70,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
   },
   'bark-beetle': {
     id: 'bark-beetle',
-    name: 'Barkshell Beetle',
+    name: 'Barkling',
     sprite: 'beetle',
     ai: 'armored',
     hp: 91,

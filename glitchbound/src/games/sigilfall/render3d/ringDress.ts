@@ -654,7 +654,7 @@ function frozenMere(b: Build, place: Placer, people: Watcher[], air: RingAir, ma
     const z = -0.34 - 5 * STEP_D - 0.5 - rand() * 1.2;
     const y = NORTH + 5 * STEP_H + 0.5;
     const h = 2.8 + rand() * 1.8;
-    place.put(rand() < 0.5 ? 'tree_pineDefaultA' : 'tree_pineRoundA', x, z, y, h, { tint: rgb('#d2e8e2'), sway: 0.5 });
+    place.put(rand() < 0.5 ? 'Tree_4_A' : 'Tree_4_B', x, z, y, h, { tint: rgb('#d2e8e2'), sway: 0.5 });
   }
 
   entryDoors(b, s, blue, red);

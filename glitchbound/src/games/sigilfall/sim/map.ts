@@ -196,6 +196,53 @@ function settled(placed: readonly PlacedMarkerDef[], w: number, h: number): Plac
   return out;
 }
 
+/**
+ * Carves a road (path tiles, over grass only) from each way out of the land back to the nearest road, so a way out is
+ * never a gap in the trees at the end of nothing. A way out with no road within reach is left as it was.
+ */
+function roadsOut(w: number, h: number, kind: Uint8Array, markers: { marker: Marker; tx: number; ty: number }[]): void {
+  const open = (k: number): boolean => k === K.Floor || k === K.Deco || k === K.Path;
+  const done = new Set<string>();
+  for (const pm of markers) {
+    if (pm.marker.kind !== 'exit' || pm.marker.door) continue;
+    const key = `${pm.marker.to}`;
+    // (a way out two tiles wide gets one road, in its middle)
+    if (done.has(key)) continue;
+    done.add(key);
+    const start = pm.ty * w + pm.tx;
+    const from = new Int32Array(w * h).fill(-1);
+    from[start] = start;
+    const q = [start];
+    let found = -1;
+    for (let qi = 0; qi < q.length && qi < 6000; qi++) {
+      const i = q[qi]!;
+      if (i !== start && kind[i] === K.Path) {
+        found = i;
+        break;
+      }
+      const x = i % w;
+      const y = (i - x) / w;
+      for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]] as const) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+        const j = ny * w + nx;
+        if (from[j]! >= 0 || !open(kind[j]!)) continue;
+        from[j] = i;
+        q.push(j);
+      }
+    }
+    if (found < 0) continue;
+    // the way back, two tiles wide where the ground allows
+    for (let i = found; i !== start; i = from[i]!) {
+      const x = i % w;
+      const y = (i - x) / w;
+      for (const j of [i, x + 1 < w ? i + 1 : i, y + 1 < h ? i + w : i]) if (kind[j] === K.Floor || kind[j] === K.Deco) kind[j] = K.Path;
+    }
+    if (kind[start] === K.Floor || kind[start] === K.Deco) kind[start] = K.Path;
+  }
+}
+
 export function parseRegion(def: RegionDef): TileMap {
   const h = def.map.length;
   const w = def.map[0]!.length;
@@ -270,6 +317,8 @@ export function parseRegion(def: RegionDef): TileMap {
     solid[i] = SOLID_KINDS.has(kind[i] as K) ? 1 : 0;
     block[i] = BLOCK_KINDS.has(kind[i] as K) ? 1 : 0;
   }
+  // a road runs out to every way out of a land: the shortest way over open ground from the nearest road to its edge
+  if (def.kind !== 'dungeon' && !def.interior) roadsOut(w, h, kind, markers);
   const over: [number, number][] = [];
   const buildings = standBuildings(def, w, h, kind, markers, over);
   const settle = (): void => {

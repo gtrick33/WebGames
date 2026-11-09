@@ -619,17 +619,24 @@ export const shadowMaterial = new THREE.ShaderMaterial({
   transparent: true,
   depthWrite: false,
   uniforms: {},
+  // a dark contact shadow right under what stands, and its longer, softer shadow thrown away from the sun (the sun is
+  // up to the left and in front: shadows fall back and to the right), so a figure sits on the ground and pops off it
   vertexShader: /* glsl */ `
     varying vec2 vUv;
     void main() {
-      vUv = uv * 2.0 - 1.0;
-      gl_Position = projectionMatrix * viewMatrix * modelMatrix * instanceMatrix * vec4(position, 1.0);
+      vUv = (uv * 2.0 - 1.0) * 1.9;
+      gl_Position = projectionMatrix * viewMatrix * modelMatrix * instanceMatrix * vec4(position * 1.9, 1.0);
     }`,
   fragmentShader: /* glsl */ `
     varying vec2 vUv;
     void main() {
-      float d = length(vUv);
-      float a = smoothstep(1.0, 0.5, d) * 0.3;
-      gl_FragColor = vec4(0.07, 0.05, 0.16, a);
+      float contact = smoothstep(0.95, 0.25, length(vUv * vec2(1.0, 1.15))) * 0.5;
+      vec2 dir = normalize(vec2(0.62, 0.5));
+      vec2 q = vUv - dir * 0.72;
+      // (stretched along the way it falls)
+      vec2 r = vec2(dot(q, dir), dot(q, vec2(-dir.y, dir.x)));
+      float thrown = smoothstep(1.0, 0.15, length(r * vec2(0.62, 1.15))) * 0.3;
+      float a = max(contact, thrown) + contact * thrown * 0.4;
+      gl_FragColor = vec4(0.05, 0.035, 0.12, min(a, 0.62));
     }`,
 });

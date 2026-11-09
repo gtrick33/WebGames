@@ -12,7 +12,7 @@ import { PROPS, type PropDef } from '../data/props';
 import { loadPack, type MeshData, type Pack } from './pack';
 import { fadingMaterial, LIGHT, shadowMaterial, staticMaterial } from './toon';
 import { Stand } from './crowd';
-import { DOORWAYS } from './doorways';
+import { caveMouth, DOORWAYS } from './doorways';
 import { builtProp } from './propsBuilt';
 
 /**
@@ -84,10 +84,12 @@ interface Giant extends Placed {
 
 const TREES: Record<TreeKind, { m: string[]; h: number }> = {
   oak: { m: ['Tree_1_A', 'Tree_1_B', 'Tree_2_A', 'Tree_2_B', 'Tree_2_C'], h: 3.5 },
-  pine: { m: ['Tree_4_A', 'Tree_4_B', 'tree_pineDefaultA', 'tree_pineRoundA'], h: 4 },
-  snowpine: { m: ['tree_pineDefaultA', 'tree_pineTallA', 'tree_pineRoundA'], h: 4 },
+  // (all of a kind from the one art set as the heroes and the rest of the wood: the plainer low-poly pines and dead
+  // trees of another set stood out among them)
+  pine: { m: ['Tree_4_A', 'Tree_4_B'], h: 4 },
+  snowpine: { m: ['Tree_4_A', 'Tree_4_B'], h: 4 },
   palm: { m: ['tree_palm', 'tree_palmBend', 'tree_palmTall', 'tree_palmDetailedShort'], h: 3.6 },
-  dead: { m: ['Tree_Bare_1_A', 'Tree_Bare_1_B', 'Tree_Bare_2_A', 'Tree_Bare_2_B', 'tree_dead_large', 'tree_dead_medium'], h: 3.2 },
+  dead: { m: ['Tree_Bare_1_A', 'Tree_Bare_1_B', 'Tree_Bare_2_A', 'Tree_Bare_2_B'], h: 3.2 },
   cactus: { m: ['cactus_tall', 'cactus_short'], h: 1.5 },
   mushroom: { m: ['mushroom_redTall', 'mushroom_tanTall', 'mushroom_red'], h: 1.9 },
   crystal: { m: ['stone_tallA', 'stone_tallE'], h: 2 },
@@ -95,11 +97,23 @@ const TREES: Record<TreeKind, { m: string[]; h: number }> = {
   jungle: { m: ['Tree_6_A', 'Tree_7_A', 'Tree_7_B', 'Tree_3_A'], h: 4 },
 } as Record<TreeKind, { m: string[]; h: number }>;
 
+/** A pine in a snowy land: frosted pale. */
+const FROST = [0.86, 0.97, 1.08] as const;
+
+/** A wood's floor: how high it stands, and its moss (a little darker than the land's grass, so a wood reads as one). */
+const WOOD_FLOOR = 0.03;
+const mossOf = (look: ThemeLook, k = 0.9): [number, number, number] => {
+  const [r, g, b] = hexRgb(look.ground.grass[0]);
+  return [r * k, g * k, b * k];
+};
+
 const TREE_MODELS = new Set(Object.values(TREES).flatMap((t) => t.m));
 
 const BUSHES = ['Bush_1_A', 'Bush_1_B', 'Bush_1_D', 'Bush_2_A', 'Bush_2_C', 'Bush_3_A', 'Bush_4_A', 'Bush_4_C'];
 const ROCKS = ['Rock_1_A', 'Rock_1_D', 'Rock_2_C', 'Rock_3_A', 'Rock_4_C', 'Rock_5_C', 'Rock_6_C'];
 const TUFTS = ['Grass_1_A', 'Grass_2_A', 'Grass_1_B', 'Grass_2_B'];
+/** What grows under a wood's trees (cleared off a road out with the trees). */
+const WOOD_SMALL = new Set([...BUSHES, ...ROCKS, ...TUFTS]);
 const FLOWERS = ['flower_redA', 'flower_yellowA', 'flower_purpleA'];
 
 
@@ -289,11 +303,18 @@ function colorsFor(m: MeshData, look: ThemeLook, id: string): Uint8Array {
         out[i + 2] = c[2] * 255;
       }
     } else if (leafy && h >= 52 && h <= 280 && s > 0.1) {
-      const k = Math.max(0, Math.min(leaves.length - 1, Math.round(l * 1.35 * (leaves.length - 1))));
-      const c = leaves[k]!;
-      out[i] = c[0] * 255;
-      out[i + 1] = c[1] * 255;
-      out[i + 2] = c[2] * 255;
+      // a crown's leaves shade by how high they are and how much they face the sky, the same for every face that meets
+      // at a corner: one soft gradient over the crown, rather than every flat facet in its own green
+      const up = (m.pos[i + 1]! - m.min[1]) / Math.max(1e-4, m.max[1] - m.min[1]);
+      const sky = m.sn[i + 1]! / 127;
+      const t = Math.max(0, Math.min(1, 0.2 + up * 0.45 + sky * 0.3 + (l - 0.4) * 0.15));
+      const f = t * (leaves.length - 1);
+      const lo = leaves[Math.floor(f)]!;
+      const hi = leaves[Math.min(leaves.length - 1, Math.floor(f) + 1)]!;
+      const u = f - Math.floor(f);
+      out[i] = (lo[0] + (hi[0] - lo[0]) * u) * 255;
+      out[i + 1] = (lo[1] + (hi[1] - lo[1]) * u) * 255;
+      out[i + 2] = (lo[2] + (hi[2] - lo[2]) * u) * 255;
     } else if (leafy && h > 8 && h < 50) {
       const f = 0.65 + l * 0.7;
       out[i] = Math.min(255, bark[0] * 255 * f);
@@ -378,16 +399,23 @@ const groundFrag = /* glsl */ `
     vec3 pc = mix(uPathA, uPathB, n * 0.7 + n2 * 0.3);
     float pathShade = smoothstep(0.54, 0.46, m.r + wob + 0.1);
     c = mix(c, pc * (1.0 - pathShade * 0.14), path);
-    float cob = smoothstep(0.46, 0.54, m.a + wob * 0.4);
-    if (cob > 0.0) {
+    // paving: toward its edge it frays stone by stone into the ground around it (a few gone, earth between), with a
+    // wide slow wander, so a square never ends on a ruled line
+    float edgeV = m.a + wob * 1.1 + (noise(p * 0.32 + 3.0) - 0.5) * 0.34;
+    if (edgeV > 0.18) {
       vec2 s = p * vec2(2.7, 3.6);
       s.x += mod(floor(s.y), 2.0) * 0.5;
       vec2 id = floor(s);
       vec2 f = fract(s) - 0.5;
       float line = smoothstep(0.36, 0.5, max(abs(f.x), abs(f.y)));
+      float stone = step(0.3 + hash(id + 7.0) * 0.32, edgeV);
+      float earth = smoothstep(0.18, 0.36, edgeV) * (1.0 - stone);
+      c = mix(c, mix(uPathA, uPathB, n) * 0.92, earth * 0.75);
       vec3 st = mix(uCobA, uCobB, hash(id) * 0.8);
       st *= 0.9 + n * 0.2;
-      c = mix(c, mix(st, uCobA * 0.72, line * 0.8), cob);
+      // (an edge stone sits a little sunk and dark, worn into the ground)
+      st *= mix(0.86, 1.0, smoothstep(0.3, 0.62, edgeV));
+      c = mix(c, mix(st, uCobA * 0.72, line * 0.8), stone);
     }
     // water: dark in the middle, lighter at the bank, with foam where it meets the land
     float w = smoothstep(0.47, 0.53, m.g + wob * 0.55);
@@ -492,6 +520,9 @@ export function buildGround(map: TileMap, look: ThemeLook): THREE.Mesh {
     if (k === K.Sand) mask[at + 2] = 255;
     if (k === K.Cobble) mask[at + 3] = 255;
   }
+  // (softened a little, tile into tile: a square of paving, a road's turn, a shore's corner come out rounded, the way
+  // ground wears, not ruled to the grid)
+  if (!look.indoor) softenMask(mask, W, H, 2);
   const tex = new THREE.DataTexture(mask, W, H, THREE.RGBAFormat);
   tex.magFilter = THREE.LinearFilter;
   tex.minFilter = THREE.LinearFilter;
@@ -554,7 +585,8 @@ function blockStyles(look: ThemeLook, woody: boolean): { wall: BlockStyle; rampa
   const wall: BlockStyle = st
     ? { h: DUNGEON_WALL, top: hexRgb(st.top), top2: hexRgb(st.topHi), side: hexRgb(st.brick[1]), side2: hexRgb(st.brick[0]) }
     : woody
-      ? { h: 1.0, top: hexRgb(look.ground.leaf[1]), top2: hexRgb(look.ground.leaf[2]), side: hexRgb(look.ground.leaf[0]), side2: hexRgb(look.ground.leaf[0]) }
+      ? // a wood is a low mossy floor its trees stand on, as in the art set's own scenes, not a block with crowns poking out
+        { h: WOOD_FLOOR, top: mossOf(look), top2: mossOf(look), side: mossOf(look, 0.6), side2: mossOf(look, 0.5) }
       : { h: 1.7, top: hexRgb(look.ground.leaf[3]), top2: hexRgb(look.ground.leaf[4]), side: hexRgb(look.ground.leaf[1]), side2: hexRgb(look.ground.leaf[0]) };
   const rampart: BlockStyle = { h: 2.5, top: [0.46, 0.44, 0.46], top2: [0.68, 0.65, 0.62], side: [0.62, 0.59, 0.56], side2: [0.42, 0.4, 0.42] };
   return { wall, rampart };
@@ -639,20 +671,52 @@ function cutAway(map: TileMap): Uint8Array {
   return out;
 }
 
+/** Blurs a ground mask (four channels, a byte each) over its neighbours, `passes` times: rounded corners, soft edges. */
+function softenMask(mask: Uint8Array, W: number, H: number, passes: number): void {
+  const tmp = new Uint8Array(mask.length);
+  for (let p = 0; p < passes; p++) {
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        for (let c = 0; c < 4; c++) {
+          let sum = 0;
+          let n = 0;
+          for (let dy = -1; dy <= 1; dy++) {
+            const yy = y + dy;
+            if (yy < 0 || yy >= H) continue;
+            for (let dx = -1; dx <= 1; dx++) {
+              const xx = x + dx;
+              if (xx < 0 || xx >= W) continue;
+              // (the middle counts double: a lane a tile wide keeps its line)
+              const k = dx === 0 && dy === 0 ? 2 : 1;
+              sum += mask[(yy * W + xx) * 4 + c]! * k;
+              n += k;
+            }
+          }
+          tmp[(y * W + x) * 4 + c] = Math.round(sum / n);
+        }
+      }
+    }
+    mask.set(tmp);
+  }
+}
+
 function buildBlocks(map: TileMap, look: ThemeLook, woody: boolean, cut: Uint8Array | null): THREE.Mesh {
   const { wall, rampart } = blockStyles(look, woody);
   const m = new Mesher();
   const W = map.w;
   const H = map.h;
   const styleAt = (x: number, y: number): BlockStyle | null => {
-    if (x < 0 || y < 0 || x >= W || y >= H) return wall;
+    if (x < 0 || y < 0 || x >= W || y >= H) return woody && !look.stone ? null : wall;
     const k = map.kind[y * W + x]!;
-    if (k === K.Wall || k === K.Illusion) return wall;
+    // (a wood has no block at all: its trees stand on the land's own grass, which runs on under them)
+    if (k === K.Wall || k === K.Illusion) return woody && !look.stone ? null : wall;
     if (k === K.Rampart) return rampart;
     return null;
   };
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
+  // (a bare land's cliffs go on past the edge of the map, as a wood's trees do: no black void beyond a way out)
+  const past = !woody && !look.indoor && !look.stone ? 6 : 0;
+  for (let y = -past; y < H + past; y++) {
+    for (let x = -past; x < W + past; x++) {
       const s = styleAt(x, y);
       if (!s) continue;
       const hs = hash2(x, y, 5);
@@ -940,6 +1004,7 @@ export class Land3D {
     this.wallH = look.indoor ? DUNGEON_WALL : woody ? 1 : 1.6;
     this.placeAll(woody);
     this.clearWays();
+    this.passages(woody);
     this.placeSlabs();
     if (this.carpets.length || this.rugs.length) {
       const c = buildCarpets(this.carpets, this.rugs);
@@ -949,7 +1014,7 @@ export class Land3D {
     // the shadow of what stands, one soft disc each
     const quad = new THREE.PlaneGeometry(1, 1);
     quad.rotateX(-Math.PI / 2);
-    this.shadows = new THREE.InstancedMesh(quad, shadowMaterial, 600);
+    this.shadows = new THREE.InstancedMesh(quad, shadowMaterial, 1500);
     this.shadows.frustumCulled = false;
     this.shadows.count = 0;
     this.shadows.position.y = 0.04;
@@ -997,16 +1062,99 @@ export class Land3D {
       if (pm.tx > W - 5) x1 = W + 8;
       if (pm.ty < 4) z0 = -8;
       if (pm.ty > H - 5) z1 = H + 8;
-      this.clearTrees(x0, x1, z0, z1);
+      this.clearTrees(x0, x1, z0, z1, true);
+    }
+  }
+
+  /**
+   * Every road out of a land goes through something of the land itself, so the way on is part of the place and not a
+   * gap at its edge: in a land of rock, a cave mouth in the land's own stone, its throat dark and its light inside; in a
+   * wood, a tunnel of tall trees closing over the road; in the farms, the towns and the open country, an old stone arch
+   * over the road. Each faces into the land from the edge it stands at.
+   */
+  private passages(woody: boolean): void {
+    const { map, look, region } = this;
+    if (look.indoor || region.kind === 'dungeon') return;
+    const W = map.w;
+    const H = map.h;
+    const done: { to: string; x: number; z: number }[] = [];
+    for (const pm of map.markers) {
+      const mk = pm.marker;
+      if (mk.kind !== 'exit' || mk.door || REGIONS[mk.to]?.kind === 'dungeon') continue;
+      if (done.some((d) => d.to === mk.to && Math.abs(d.x - pm.tx) < 4 && Math.abs(d.z - pm.ty) < 4)) continue;
+      // the way out's tiles together: its middle and its width
+      const group = map.markers.filter((o) => o.marker.kind === 'exit' && o.marker.to === mk.to && Math.abs(o.tx - pm.tx) < 4 && Math.abs(o.ty - pm.ty) < 4);
+      const xs = group.map((o) => o.tx);
+      const zs = group.map((o) => o.ty);
+      const cx = (Math.min(...xs) + Math.max(...xs)) / 2 + 0.5;
+      const cz = (Math.min(...zs) + Math.max(...zs)) / 2 + 0.5;
+      done.push({ to: mk.to, x: pm.tx, z: pm.ty });
+      // which edge it's at: the way runs out through it (its facing: the way back into the land)
+      const dTop = cz;
+      const dBottom = H - cz;
+      const dLeft = cx;
+      const dRight = W - cx;
+      const least = Math.min(dTop, dBottom, dLeft, dRight);
+      const edge = least === dTop ? 'n' : least === dBottom ? 's' : least === dLeft ? 'w' : 'e';
+      const across = edge === 'n' || edge === 's';
+      const span = across ? Math.max(...xs) - Math.min(...xs) + 1 : Math.max(...zs) - Math.min(...zs) + 1;
+      // (out: the way it leaves; side: along the edge)
+      const out: [number, number] = edge === 'n' ? [0, -1] : edge === 's' ? [0, 1] : edge === 'w' ? [-1, 0] : [1, 0];
+      const side: [number, number] = [-out[1], out[0]];
+      // (it stands on the road's last tiles, inside the land: the view stops at the map's edge, and what's past it isn't seen)
+      const mx = cx - out[0] * 1.1;
+      const mz = cz - out[1] * 1.1;
+      // (a cave's mouth is on its south side: turned so it opens into the land)
+      const rot = edge === 'n' ? 0 : edge === 's' ? Math.PI : edge === 'w' ? Math.PI / 2 : -Math.PI / 2;
+      // (a town, a farm or open country has its road arched; a wood its trees)
+      const arched = region.kind === 'town' || ['village', 'farm', 'plains', 'coast', 'warfront'].includes(region.theme);
+      if (look.cliffs || arched || !woody) {
+        if (look.cliffs) {
+          // a cave mouth in the land's own rock
+          const L = look.ground.leaf;
+          const b = caveMouth({ top: L[4], face: L[2], foot: L[1], lip: L[5], throat: '#0c0a0a', teeth: L[2], wide: span + 1.4, high: 2.2, seed: pm.tx * 7 + pm.ty }).m.build();
+          b.position.set(mx + out[0] * 0.5, 0, mz + out[1] * 0.5);
+          b.rotation.y = rot;
+          this.group.add(b);
+          this.built.push(b);
+          continue;
+        }
+        // an old stone arch over the road
+        const mesh = this.pack('arch');
+        if (!mesh) continue;
+        const xw = mesh.max[0] - mesh.min[0];
+        const k = Math.min((span + 1.8) / Math.max(0.01, xw), 4 / Math.max(0.01, mesh.max[1] - mesh.min[1]));
+        const tint = look.stone ? hexRgb(look.stone.top) : ([0.92, 0.9, 0.86] as const);
+        this.add({ m: 'arch', x: mx, z: mz, rot: across ? 0 : Math.PI / 2, sx: k, r: tint[0], g: tint[1], b: tint[2], shadow: 1.2, shadowD: 0.4 });
+        continue;
+      }
+      // a tunnel of trees: tall ones either side of the road, taller ones behind them leaning over it, bushes at their feet
+      const half = span / 2;
+      for (const sd of [-1, 1]) {
+        for (const [off, back, k] of [
+          [half + 0.75, -1.2, 1.1],
+          [half + 1.9, -0.1, 1.28],
+          [half + 0.9, 1.0, 1.2],
+        ] as const) {
+          const kind = look.trees[Math.floor(hash2(pm.tx + sd, pm.ty + back, 91) * look.trees.length)] ?? 'oak';
+          const def = TREES[kind] ?? TREES.oak;
+          const m = def.m[Math.floor(hash2(pm.tx + sd * 3, pm.ty, 77) * def.m.length) % def.m.length]!;
+          const x = mx + side[0] * sd * off + out[0] * back;
+          const z = mz + side[1] * sd * off + out[1] * back;
+          this.add({ m, x, z, rot: hash2(pm.tx, sd + back, 71) * 6.28, sx: this.fitted(m, def.h * k, 2.6), sway: kind === 'dead' ? 0 : 0.7, shadow: 1.2 });
+          const bush = BUSHES[Math.floor(hash2(pm.tx + sd, pm.ty + back, 79) * BUSHES.length)]!;
+          this.add({ m: bush, x: x - side[0] * sd * 0.5, z: z - side[1] * sd * 0.5, rot: hash2(sd, back, 81) * 6.28, sx: this.fitted(bush, 0.55, 0.9) });
+        }
+      }
     }
   }
 
   /** Takes away the trees standing inside an area (tiles). */
-  private clearTrees(x0: number, x1: number, z0: number, z1: number): void {
+  private clearTrees(x0: number, x1: number, z0: number, z1: number, all = false): void {
     for (const list of this.cells.values()) {
       for (let i = list.length - 1; i >= 0; i--) {
         const p = list[i]!;
-        if (p.x > x0 && p.x < x1 && p.z > z0 && p.z < z1 && TREE_MODELS.has(p.m)) list.splice(i, 1);
+        if (p.x > x0 && p.x < x1 && p.z > z0 && p.z < z1 && (TREE_MODELS.has(p.m) || (all && WOOD_SMALL.has(p.m)))) list.splice(i, 1);
       }
     }
   }
@@ -1020,6 +1168,14 @@ export class Land3D {
       this.cells.set(key, list);
     }
     const placedNow: Placed = { r: 1, g: 1, b: 1, sway: 0, shadow: 0, y: 0, sy: p.sx, sz: p.sx, ...p };
+    // everything that stands on the ground throws a shadow sized to it, unless it was given its own: a crate, a cart, a
+    // bush, a rock, a lamp post (not what lies flat: a rug, a tuft, a flower)
+    if (p.shadow === undefined && placedNow.y < 0.35) {
+      const m = this.pack(p.m)!;
+      const wide = Math.max(m.max[0] - m.min[0], m.max[2] - m.min[2]) * p.sx;
+      const tall = (m.max[1] - m.min[1]) * placedNow.sy;
+      if (tall > 0.28 && wide > 0.15) placedNow.shadow = Math.min(2.4, Math.max(0.32, wide * 0.5 + tall * 0.08));
+    }
     if (this.region.kind === 'dungeon') {
       placedNow.r *= 0.86;
       placedNow.g *= 0.84;
@@ -1048,6 +1204,43 @@ export class Land3D {
     return !this.keep || this.keep(o);
   }
 
+  /**
+   * One tile of a wood, as the art set lays its own: a tree here and there at its full height, turned and sized each
+   * its own way, with bushes, a rock and tufts of grass between, and the floor showing through; a wood's edge a little
+   * thicker, so it reads as a wood. `y`: the floor it stands on.
+   */
+  private woodland(tx: number, ty: number, edge: boolean, y: number): void {
+    const { look } = this;
+    const r = hash2(tx, ty, 61);
+    const jx = (hash2(tx, ty, 63) - 0.5) * 0.6;
+    const jz = (hash2(tx, ty, 67) - 0.5) * 0.6;
+    const x = tx + 0.5 + jx;
+    const z = ty + 0.5 + jz;
+    const treeAt = edge ? 0.5 : 0.32;
+    if (r < treeAt) {
+      const kind = look.trees[Math.floor(hash2(tx, ty, 91) * look.trees.length)] ?? 'oak';
+      const def = TREES[kind] ?? TREES.oak;
+      const m = def.m[Math.floor(hash2(tx, ty, 77) * def.m.length) % def.m.length]!;
+      const size = def.h * (0.72 + hash2(tx, ty, 21) * 0.34);
+      const frost = kind === 'snowpine' ? FROST : null;
+      this.add({ m, x, z, y, rot: hash2(tx, ty, 71) * 6.28, sx: this.fitted(m, size, 2.1), sway: kind === 'dead' || kind === 'crystal' || kind === 'cactus' ? 0 : 0.8, shadow: 1.1, ...(frost ? { r: frost[0], g: frost[1], b: frost[2] } : {}) });
+      // (a bush at the foot of some trees)
+      if (hash2(tx, ty, 73) < 0.45) {
+        const b = BUSHES[Math.floor(hash2(tx, ty, 79) * BUSHES.length)]!;
+        this.add({ m: b, x: x + 0.45, z: z + 0.3, y, rot: hash2(tx, ty, 81) * 6.28, sx: this.fitted(b, 0.45 + hash2(tx, ty, 83) * 0.2, 0.85) });
+      }
+    } else if (r < treeAt + 0.25) {
+      const b = BUSHES[Math.floor(hash2(tx, ty, 79) * BUSHES.length)]!;
+      this.add({ m: b, x, z, y, rot: hash2(tx, ty, 81) * 6.28, sx: this.fitted(b, 0.5 + hash2(tx, ty, 83) * 0.25, 1) });
+    } else if (r < treeAt + 0.28) {
+      const rock = ROCKS[Math.floor(hash2(tx, ty, 87) * ROCKS.length)]!;
+      this.add({ m: rock, x, z, y, rot: hash2(tx, ty, 89) * 6.28, sx: this.fitted(rock, 0.25 + hash2(tx, ty, 85) * 0.25, 0.8) });
+    } else if (r < treeAt + 0.45) {
+      const t = TUFTS[Math.floor(hash2(tx, ty, 97) * TUFTS.length)]!;
+      this.add({ m: t, x, z, y, rot: hash2(tx, ty, 99) * 6.28, sx: this.fitted(t, 0.3 + hash2(tx, ty, 95) * 0.15, 0.8), sway: 1 });
+    }
+  }
+
   private placeAll(woody: boolean): void {
     const { map, look, region } = this;
     const W = map.w;
@@ -1065,12 +1258,21 @@ export class Land3D {
       const wy = (ty + 1) * TILE - 3;
       switch (k) {
         case K.Tree: {
+          // (a thicket of tree tiles is thinned to the eye: some of its trees are drawn as a bush or a rock, which stand as
+          // solid, so a wood breathes as the art set's own woods do)
+          const near = [kindAt(tx - 1, ty), kindAt(tx + 1, ty), kindAt(tx, ty - 1), kindAt(tx, ty + 1)].filter((n) => n === K.Tree || n === K.Wall).length;
+          if (near >= 3 && hash2(tx, ty, 57) < 0.42) {
+            const under = hash2(tx, ty, 59) < 0.93;
+            const m = under ? BUSHES[Math.floor(hash2(tx, ty, 79) * BUSHES.length)]! : ROCKS[Math.floor(hash2(tx, ty, 87) * ROCKS.length)]!;
+            this.add({ m, x: x + (h - 0.5) * 0.3, z: z + (hash2(tx, ty, 31) - 0.5) * 0.3, rot: h * 6.28, sx: this.fitted(m, under ? 0.62 + hash2(tx, ty, 83) * 0.2 : 0.5 + hash2(tx, ty, 85) * 0.3, 1.05) });
+            break;
+          }
           const kind = look.trees[Math.floor(hash2(tx, ty, 91) * look.trees.length)] ?? 'oak';
           const def = TREES[kind] ?? TREES.oak;
           const m = def.m[Math.floor(h * def.m.length) % def.m.length]!;
-          const s = this.fitted(m, def.h * (0.85 + hash2(tx, ty, 21) * 0.3), 2.4);
+          const s = this.fitted(m, def.h * (0.74 + hash2(tx, ty, 21) * 0.26), 1.9);
           // (a crystal takes the land's own light: the model itself is plain white)
-          const shard = kind === 'crystal' ? hexRgb(look.leaves[hash2(tx, ty, 93) < 0.3 ? 5 : 4]) : null;
+          const shard = kind === 'crystal' ? hexRgb(look.leaves[hash2(tx, ty, 93) < 0.3 ? 5 : 4]) : kind === 'snowpine' ? FROST : null;
           if (this.keepIt({ x: wx, y: wy, kind: 'tree', dy: -def.h * TILE })) this.add({ m, x: x + (h - 0.5) * 0.12, z: z + (hash2(tx, ty, 31) - 0.5) * 0.12, rot: h * 6.28, sx: s, sway: kind === 'dead' || kind === 'crystal' || kind === 'cactus' ? 0 : 1, shadow: 1.25, ...(shard ? { r: shard[0], g: shard[1], b: shard[2] } : {}) });
           break;
         }
@@ -1153,19 +1355,25 @@ export class Land3D {
             }
             break;
           }
-          // the forest wall: its edge is trees, and its depths a bumpy roof of crowns
+          // the wood: its edge and its depths
           const open = kindAt(tx, ty + 1) !== K.Wall || kindAt(tx - 1, ty) !== K.Wall || kindAt(tx + 1, ty) !== K.Wall || kindAt(tx, ty - 1) !== K.Wall;
-          if (open || (tx + ty) % 2 === 0) {
-            const kind = look.trees[Math.floor(hash2(tx, ty, 91) * look.trees.length)] ?? 'oak';
-            const def = TREES[kind] ?? TREES.oak;
-            const m = def.m[Math.floor(h * def.m.length) % def.m.length]!;
-            const s = this.fitted(m, def.h * (open ? 0.72 : 0.6) * (0.9 + hash2(tx, ty, 21) * 0.3), 1.9);
-            this.add({ m, x: x + (h - 0.5) * 0.2, z: z + (hash2(tx, ty, 31) - 0.5) * 0.2, rot: h * 6.28, sx: s, sway: 0.7 });
-          }
+          this.woodland(tx, ty, open, 0);
           break;
         }
         default:
           break;
+      }
+    }
+    // a bare land's cliff tops past the edge carry their broken rock, as inside
+    if (!woody && !look.indoor && !look.stone) {
+      for (let ty = -6; ty < H + 6; ty++) {
+        for (let tx = -6; tx < W + 6; tx++) {
+          if (tx >= 0 && ty >= 0 && tx < W && ty < H) continue;
+          const h = hash2(tx + 40, ty + 40, 71);
+          if (h > 0.5) continue;
+          const rock = ROCKS[Math.floor(hash2(tx + 40, ty + 40, 73) * ROCKS.length)]!;
+          this.add({ m: rock, x: tx + 0.5 + (h - 0.25) * 0.8, z: ty + 0.5 + (hash2(tx, ty, 31) - 0.5) * 0.5, rot: h * 12.5, sx: this.fitted(rock, 0.7 + hash2(tx, ty, 21) * 0.8, 1.5), y: 1.7 });
+        }
       }
     }
     // the wood goes on past the edge of the map: a land doesn't stop at its border
@@ -1173,12 +1381,7 @@ export class Land3D {
       for (let ty = -6; ty < H + 6; ty++) {
         for (let tx = -6; tx < W + 6; tx++) {
           if (tx >= 0 && ty >= 0 && tx < W && ty < H) continue;
-          if ((tx + ty) % 2 !== 0) continue;
-          const h = hash2(tx + 40, ty + 40, 77);
-          const kind = look.trees[Math.floor(hash2(tx + 40, ty + 40, 91) * look.trees.length)] ?? 'oak';
-          const def = TREES[kind] ?? TREES.oak;
-          const m = def.m[Math.floor(h * def.m.length) % def.m.length]!;
-          this.add({ m, x: tx + 0.5 + (h - 0.5) * 0.2, z: ty + 0.5 + (hash2(tx + 40, ty + 40, 31) - 0.5) * 0.2, rot: h * 6.28, sx: this.fitted(m, def.h * 0.6 * (0.9 + hash2(tx + 40, ty + 40, 21) * 0.3), 1.9), sway: 0.7 });
+          this.woodland(tx, ty, false, 0);
         }
       }
     }
@@ -1420,7 +1623,10 @@ export class Land3D {
       if (!m) return null;
       const plain = id.replace('~', '');
       // (a person's parts and weapons keep their own colors: bone is bone, gold is gold)
-      s = new Stand(m, this.group, Math.max(16, want), this.packs.hero.meshes[plain] === m ? m.col : colorsFor(m, this.look, plain), id.startsWith('~'));
+      // (a tree's crown and a bush are lit by their smooth normals: soft rounded leaves in the heroes' own toon light,
+      // not every flat facet of the model showing hard from above)
+      const soft = /^(Tree_|Bush_)/.test(plain) ? { ...m, nor: m.sn } : m;
+      s = new Stand(soft, this.group, Math.max(16, want), this.packs.hero.meshes[plain] === m ? m.col : colorsFor(m, this.look, plain), id.startsWith('~'));
       this.stands.set(id, s);
     }
     return s;
@@ -1523,7 +1729,7 @@ export class Land3D {
             want.set(p.m, w);
           }
           w.push(p);
-          if (p.shadow > 0 && shadow < 600) {
+          if (p.shadow > 0 && shadow < 1500) {
             const size = p.shadow * 1.6;
             m4.makeScale(size, 1, size * (p.shadowD ?? 1));
             m4.setPosition(p.x, 0, p.z);
@@ -1540,7 +1746,7 @@ export class Land3D {
         want.set(p.m, w);
       }
       w.push(p);
-      if (p.shadow > 0 && shadow < 600) {
+      if (p.shadow > 0 && shadow < 1500) {
         const size = p.shadow * 1.6;
         m4.makeScale(size, 1, size * (p.shadowD ?? 1));
         m4.setPosition(p.x, 0, p.z);

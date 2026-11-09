@@ -218,8 +218,33 @@ export class Renderer {
     const mapH = w.map.h * TILE;
     const x = w.player.x + this.leanX + shift - this.vw / 2;
     const y = w.player.y + this.leanY - this.vh / 2;
-    this.camX = mapW <= this.vw ? (mapW - this.vw) / 2 : clamp(x, 0, mapW - this.vw);
-    this.camY = mapH <= this.vh ? (mapH - this.vh) / 2 : clamp(y, 0, mapH - this.vh);
+    // near a way out at an edge the view may go a little past the edge, so what it goes through (a cave, an arch,
+    // trees) is seen whole: easing in as the hero nears it, so the camera never jumps
+    const peek = this.edgePeek(w);
+    this.camX = mapW <= this.vw ? (mapW - this.vw) / 2 : clamp(x, -peek.l, mapW - this.vw + peek.r);
+    this.camY = mapH <= this.vh ? (mapH - this.vh) / 2 : clamp(y, -peek.t, mapH - this.vh + peek.b);
+  }
+
+  /** How far past each edge the view may go: up to a few tiles, the nearer the hero is to a way out at that edge. */
+  private edgePeek(w: World): { l: number; r: number; t: number; b: number } {
+    const out = { l: 0, r: 0, t: 0, b: 0 };
+    if (w.region.interior || w.region.kind === 'dungeon') return out;
+    const mapW = w.map.w * TILE;
+    const mapH = w.map.h * TILE;
+    const near = TILE * 12;
+    const most = TILE * 4;
+    const p = w.player;
+    for (const x of w.exits) {
+      if (x.door) continue;
+      const d = Math.hypot(x.x - p.x, x.y - p.y);
+      if (d >= near) continue;
+      const k = most * Math.min(1, (1 - d / near) * 1.6);
+      if (x.x < TILE * 4) out.l = Math.max(out.l, k);
+      if (x.x > mapW - TILE * 4) out.r = Math.max(out.r, k);
+      if (x.y < TILE * 4) out.t = Math.max(out.t, k);
+      if (x.y > mapH - TILE * 4) out.b = Math.max(out.b, k);
+    }
+    return out;
   }
 
   /** Lets go of the 3D view. */
@@ -904,62 +929,148 @@ export class Renderer {
   /* ----------------------------------------------------------- overlays */
 
   /**
-   * The roads out of a land: a big soft bloom of light standing on each, in the color of the land it leads to,
-   * so a way on reads from afar (one bloom for a way out several tiles wide).
+   * The roads out of a land: a gateway of light standing across the whole way out, in the color of the land it leads
+   * to. A bright pool on the ground fills the road from side to side; over it a veil of light rises, made of pillars
+   * that breathe and drift one after another, with motes going up through it and a crown of sparks along its top, so a
+   * way on reads from afar as the door to somewhere else, not a patch on the road.
    */
   private drawWayBlooms(w: World, time: number): void {
     const g = this.g;
-    const groups: { to: string; xs: number; ys: number; n: number; x: number; y: number }[] = [];
+    const groups: { to: string; pts: { x: number; y: number }[] }[] = [];
     for (const x of w.exits) {
       if (x.door) continue;
-      const near = groups.find((o) => o.to === x.to && Math.abs(o.x - x.x) <= TILE * 1.5 && Math.abs(o.y - x.y) <= TILE * 1.5);
-      if (near) {
-        near.xs += x.x;
-        near.ys += x.y;
-        near.n++;
-        near.x = x.x;
-        near.y = x.y;
-      } else groups.push({ to: x.to, xs: x.x, ys: x.y, n: 1, x: x.x, y: x.y });
+      const near = groups.find((o) => o.to === x.to && o.pts.some((p) => Math.abs(p.x - x.x) <= TILE * 2.5 && Math.abs(p.y - x.y) <= TILE * 2.5));
+      if (near) near.pts.push({ x: x.x, y: x.y });
+      else groups.push({ to: x.to, pts: [{ x: x.x, y: x.y }] });
     }
     for (const o of groups) {
-      const x = o.xs / o.n;
-      const y = o.ys / o.n;
       const col = wayColor(REGIONS[o.to as RegionId]?.theme);
-      const pulse = 0.5 + Math.sin(time * 2.2 + x * 0.05) * 0.5;
-      const r = 26 + o.n * 4;
-      this.flat(x, y);
+      let x0 = Infinity;
+      let x1 = -Infinity;
+      let y0 = Infinity;
+      let y1 = -Infinity;
+      for (const p of o.pts) {
+        x0 = Math.min(x0, p.x);
+        x1 = Math.max(x1, p.x);
+        y0 = Math.min(y0, p.y);
+        y1 = Math.max(y1, p.y);
+      }
+      // (it spans the way out, and a little past each side of it, so no edge of the road is left out of the light)
+      const across = x1 - x0 >= y1 - y0;
+      const pad = TILE * 0.95;
+      const ax0 = across ? x0 - pad : (x0 + x1) / 2;
+      const ax1 = across ? x1 + pad : (x0 + x1) / 2;
+      const ay0 = across ? (y0 + y1) / 2 : y0 - pad;
+      const ay1 = across ? (y0 + y1) / 2 : y1 + pad;
+      const cx = (ax0 + ax1) / 2;
+      const cy = (ay0 + ay1) / 2;
+      const span = Math.max(ax1 - ax0, ay1 - ay0);
+      const breathe = 0.5 + Math.sin(time * 1.6 + cx * 0.03) * 0.5;
+
+      // the pool on the ground, filling the road from side to side
+      this.flat(cx, cy);
       g.save();
-      const pool = g.createRadialGradient(x, y, 0, x, y, r);
-      pool.addColorStop(0, rgba(col, 0.55 + pulse * 0.2));
-      pool.addColorStop(0.5, rgba(col, 0.25 + pulse * 0.1));
+      g.globalCompositeOperation = 'lighter';
+      const rx = (across ? span / 2 : TILE * 1.3) + 14;
+      const ry = (across ? TILE * 1.3 : span / 2) + 14;
+      g.translate(cx, cy);
+      g.scale(rx / ry, 1);
+      const pool = g.createRadialGradient(0, 0, 0, 0, 0, ry);
+      pool.addColorStop(0, rgba('#fffbe8', 0.6));
+      pool.addColorStop(0.35, rgba(col, 0.6 + breathe * 0.15));
+      pool.addColorStop(0.75, rgba(col, 0.22));
       pool.addColorStop(1, rgba(col, 0));
       g.fillStyle = pool;
       g.beginPath();
-      g.arc(x, y, r, 0, Math.PI * 2);
+      g.arc(0, 0, ry, 0, Math.PI * 2);
       g.fill();
       g.restore();
-      // the bloom standing up out of it
-      this.upright(x, y);
+      // a ring of runes turning slowly on the ground at its heart
+      this.flat(cx, cy);
       g.save();
       g.globalCompositeOperation = 'lighter';
-      const hgt = 46 + pulse * 6;
-      const col2 = g.createRadialGradient(x, y - hgt * 0.45, 0, x, y - hgt * 0.45, hgt * 0.62);
-      col2.addColorStop(0, rgba('#fff6d8', 0.5 + pulse * 0.15));
-      col2.addColorStop(0.3, rgba(col, 0.4));
-      col2.addColorStop(1, rgba(col, 0));
-      g.fillStyle = col2;
+      g.strokeStyle = rgba('#fff6d8', 0.35 + breathe * 0.2);
+      g.lineWidth = 1.1;
+      g.setLineDash([5, 4]);
+      g.lineDashOffset = -time * 8;
       g.beginPath();
-      g.ellipse(x, y - hgt * 0.45, r * 0.55, hgt * 0.62, 0, 0, Math.PI * 2);
-      g.fill();
-      // motes rising through it
-      for (let i = 0; i < 6; i++) {
-        const t = (time * 0.35 + i / 6) % 1;
-        const mx = x + Math.sin(i * 2.4 + time * 1.3) * r * 0.35;
-        const my = y - t * hgt;
-        g.fillStyle = rgba('#fff6d8', (1 - t) * 0.8);
+      g.ellipse(cx, cy, rx * 0.62, ry * 0.62, 0, 0, Math.PI * 2);
+      g.stroke();
+      g.setLineDash([]);
+      g.restore();
+
+      // the veil: pillars of light standing all across the way out
+      const n = Math.max(6, Math.round(span / 7));
+      const tall = 96;
+      for (let i = 0; i < n; i++) {
+        const u = n === 1 ? 0.5 : i / (n - 1);
+        const px = ax0 + (ax1 - ax0) * u;
+        const py = ay0 + (ay1 - ay0) * u;
+        // (brightest in the middle, softer to the sides; each pillar breathes on its own beat, and a wave runs across)
+        const edge = Math.sin(u * Math.PI);
+        const wave = 0.5 + Math.sin(time * 2.4 - u * 7 + cx * 0.01) * 0.5;
+        const h = tall * (0.55 + edge * 0.45) * (0.85 + wave * 0.25);
+        const a = (0.11 + edge * 0.16) * (0.7 + wave * 0.5);
+        this.upright(px, py);
+        g.save();
+        g.globalCompositeOperation = 'lighter';
+        const foot = py + 10;
+        const beam = g.createLinearGradient(px, foot, px, py - h);
+        // (the foot fades into the pool rather than ending in a bright bar)
+        beam.addColorStop(0, rgba(col, 0));
+        beam.addColorStop(0.12, rgba('#fffbe8', a * 1.3));
+        beam.addColorStop(0.3, rgba(col, a * 1.2));
+        beam.addColorStop(0.7, rgba(col, a * 0.5));
+        beam.addColorStop(1, rgba(col, 0));
+        g.fillStyle = beam;
+        const bw = 7 + edge * 3;
         g.beginPath();
-        g.arc(mx, my, 1.4, 0, Math.PI * 2);
+        g.moveTo(px - bw, foot);
+        g.quadraticCurveTo(px - bw * 0.7, py - h * 0.6, px, py - h);
+        g.quadraticCurveTo(px + bw * 0.7, py - h * 0.6, px + bw, foot);
+        g.closePath();
         g.fill();
+        g.restore();
+      }
+
+      // a great soft glow behind it all, and motes rising through, and sparks along the top
+      this.upright(cx, cy);
+      g.save();
+      g.globalCompositeOperation = 'lighter';
+      const half = (across ? span : TILE * 2) / 2 + 18;
+      const glow = g.createRadialGradient(cx, cy - tall * 0.42, 0, cx, cy - tall * 0.42, Math.max(half, tall * 0.7));
+      glow.addColorStop(0, rgba('#fff6d8', 0.32 + breathe * 0.12));
+      glow.addColorStop(0.4, rgba(col, 0.24));
+      glow.addColorStop(1, rgba(col, 0));
+      g.fillStyle = glow;
+      g.beginPath();
+      g.ellipse(cx, cy - tall * 0.42, half, tall * 0.72, 0, 0, Math.PI * 2);
+      g.fill();
+      const motes = Math.max(14, Math.round(span / 4));
+      for (let i = 0; i < motes; i++) {
+        const t = (time * (0.22 + (i % 5) * 0.04) + i * 0.137) % 1;
+        const u = ((i * 0.618) % 1) - 0.5;
+        const mx = (across ? cx + u * (half * 1.7) : cx + u * 24) + Math.sin(time * 1.3 + i) * 3;
+        const my = cy - 4 - t * tall * 1.05;
+        const sz = 0.8 + ((i * 7) % 5) * 0.3;
+        g.fillStyle = rgba(i % 3 ? '#fffbe8' : col, Math.sin(t * Math.PI) * 0.95);
+        g.beginPath();
+        g.arc(mx, my, sz, 0, Math.PI * 2);
+        g.fill();
+      }
+      for (let i = 0; i < 5; i++) {
+        const t = (time * 0.5 + i / 5) % 1;
+        const sx = cx + (((i * 0.37) % 1) - 0.5) * half * 1.4;
+        const sy = cy - tall * (0.82 + Math.sin(time + i) * 0.06);
+        const k = Math.sin(t * Math.PI);
+        g.strokeStyle = rgba('#ffffff', k * 0.85);
+        g.lineWidth = 0.9;
+        g.beginPath();
+        g.moveTo(sx - 3 * k, sy);
+        g.lineTo(sx + 3 * k, sy);
+        g.moveTo(sx, sy - 3 * k);
+        g.lineTo(sx, sy + 3 * k);
+        g.stroke();
       }
       g.restore();
     }
