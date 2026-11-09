@@ -92,7 +92,19 @@ export function newWorld(region: RegionId, hero: Character, seed = 1, tier = 0, 
  * falls) of up to three on fresh seeds (a class that loses all three still fails the test). The bot's mage is
  * a coin flip against the late bosses (SIGILFALL_QA.md, known issues): one seed proves little either way.
  */
-export function clearsWithRetry(run: (seed: number) => { w: World; r: BotResult }, deaths = 2): { w: World; r: BotResult } {
+/**
+ * How many falls a dungeon may cost and still count as cleared: the campaign is meant to be hard (sim/world.ts
+ * challenge), and a player dies and goes again from the last checkpoint; what must hold is that it can be done.
+ */
+export const HARD_DEATHS = 6;
+
+/**
+ * The gear a player has on by a dungeon's level, on a hard campaign: what drops in the lands before it (blue past
+ * the middle of the story, purple at its end), not the green of a hero who skipped them.
+ */
+export const gearAt = (level: number): 'uncommon' | 'rare' | 'epic' => (level >= 52 ? 'epic' : level >= 28 ? 'rare' : 'uncommon');
+
+export function clearsWithRetry(run: (seed: number) => { w: World; r: BotResult }, deaths = HARD_DEATHS): { w: World; r: BotResult } {
   let last = run(1);
   for (let seed = 2; seed <= 3 && !(last.w.cleared && !last.r.stuck && last.r.deaths <= deaths); seed++) last = run(seed);
   return last;

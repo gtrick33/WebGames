@@ -13,6 +13,7 @@ import { TILE } from '../src/games/sigilfall/sim/map';
 import type { Enemy } from '../src/games/sigilfall/sim/types';
 import type { World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
+import { gearAt, HARD_DEATHS } from './sigilfall-bot';
 
 const LEVEL = 30;
 
@@ -29,13 +30,13 @@ describe('sigilfall: the Barrow of Kings', () => {
   for (const cls of CLASS_IDS) {
     it(`${cls}: clears the Barrow of Kings at level ${LEVEL}`, { timeout: 90_000 }, () => {
       const { w, r } = clearsWithRetry((seed) => {
-        const w = newWorld('barrow-of-kings', readyHero(cls as ClassId, LEVEL, 'uncommon'), seed);
+        const w = newWorld('barrow-of-kings', readyHero(cls as ClassId, LEVEL, gearAt(LEVEL)), seed);
         return { w, r: play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom }) };
       });
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
       expect(r.bossesDown).toEqual(['king-hrodric', 'sir-corvane']);
-      expect(r.deaths).toBeLessThanOrEqual(2);
+      expect(r.deaths).toBeLessThanOrEqual(HARD_DEATHS);
       // the act's last fight is a real one, three phases long
       expect(r.bossTimes['sir-corvane']).toBeGreaterThan(20);
     });

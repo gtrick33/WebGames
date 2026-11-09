@@ -13,6 +13,7 @@ import { TILE } from '../src/games/sigilfall/sim/map';
 import { EXTRA_PATTERNS } from '../src/games/sigilfall/sim/patterns';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
+import { HARD_DEATHS } from './sigilfall-bot';
 
 const REGION = 'rotmother-cistern';
 const LEVEL = REGIONS[REGION].level + 1;
@@ -103,7 +104,7 @@ describe('sigilfall: the Rotmother’s Cistern', () => {
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
       expect(r.bossesDown).toEqual(BOSS_ORDER);
-      expect(r.deaths).toBeLessThanOrEqual(2);
+      expect(r.deaths).toBeLessThanOrEqual(HARD_DEATHS);
       // the Rot-Mother is a real fight, not a few seconds of burst
       expect(r.bossTimes['the-rot-mother']).toBeGreaterThan(20);
     });

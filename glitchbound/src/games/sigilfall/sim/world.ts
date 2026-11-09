@@ -153,6 +153,18 @@ export const SUMMON_TIME = 0.6;
  */
 const WILD = { hp: 1.8, dmg: 1.15, xp: 0.5 };
 
+/**
+ * The campaign is meant to be hard: a fight can be lost, and done again from the last checkpoint. The first levels
+ * (the night Briarhollow burns, the first wood) stay as they were, to learn in; from level 4 foes grow tougher, to
+ * 30% more health and 40% more damage by level 7 (bosses 40% and 45%). Heroic, Mythic and Riftstone runs, hard by
+ * choice, keep their own measure.
+ */
+export function challenge(level: number, boss: boolean): { hp: number; dmg: number } {
+  const k = Math.max(0, Math.min(1, (level - 3) / 4));
+  return boss ? { hp: 1 + 0.4 * k, dmg: 1 + 0.45 * k } : { hp: 1 + 0.3 * k, dmg: 1 + 0.4 * k };
+}
+const NO_CHALLENGE = { hp: 1, dmg: 1 };
+
 /** A pack in the open: where it stands, what it is, and when it comes back. */
 interface PackState {
   index: number;
@@ -733,7 +745,8 @@ export class World {
     }
     const hasted = this.mods.includes('hasted') ? 1.2 : 1;
     const wild = o.pack >= 0 && !!this.region.holds;
-    const hp = Math.round(def.hp * sc.hp * this.hpMul(false) * (o.elite ? 3.2 : 1) * (wild ? WILD.hp : 1));
+    const ch = this.keyRun || this.tier > 0 ? NO_CHALLENGE : challenge(level, false);
+    const hp = Math.round(def.hp * sc.hp * this.hpMul(false) * ch.hp * (o.elite ? 3.2 : 1) * (wild ? WILD.hp : 1));
     const e: Enemy = {
       id: this.nextId++,
       def,
@@ -745,7 +758,7 @@ export class World {
       r: def.radius * (def.scale ?? 1) * (o.elite ? 1.25 : 1),
       hp,
       maxHp: hp,
-      dmg: def.dmg * sc.dmg * this.dmgMul(false) * (o.elite ? 1.35 : 1) * (wild ? WILD.dmg : 1),
+      dmg: def.dmg * sc.dmg * this.dmgMul(false) * ch.dmg * (o.elite ? 1.35 : 1) * (wild ? WILD.dmg : 1),
       speedMul: hasted * (elite.includes('frenzied') ? 1.35 : 1),
       atkMul: hasted * (elite.includes('frenzied') ? 1.4 : 1),
       shield: elite.includes('shielded') ? hp * 0.4 : 0,
@@ -802,12 +815,13 @@ export class World {
     const def = BOSSES[id]!;
     const level = this.level + 1;
     const sc = enemyScale(level);
-    const hp = Math.round(def.hp * sc.hp * this.hpMul(true));
+    const bch = this.keyRun || this.tier > 0 ? NO_CHALLENGE : challenge(level, true);
+    const hp = Math.round(def.hp * sc.hp * this.hpMul(true) * bch.hp);
     const e = this.addEnemy('skeleton', x, y, level, { room, pack: -1 });
     e.def = { ...ENEMIES.skeleton!, id: def.id, name: def.name, sprite: def.sprite, radius: def.radius, mass: 99, resist: {}, armor: 0, xp: def.xp, gold: def.gold, scale: 1 };
     e.r = def.radius;
     e.hp = e.maxHp = hp;
-    e.dmg = def.dmg * sc.dmg * this.dmgMul(true);
+    e.dmg = def.dmg * sc.dmg * this.dmgMul(true) * bch.dmg;
     e.name = def.name;
     e.scale = 1;
     e.state = 'chase';

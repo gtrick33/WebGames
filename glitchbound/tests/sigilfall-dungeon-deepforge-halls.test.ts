@@ -12,6 +12,7 @@ import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { K, TILE } from '../src/games/sigilfall/sim/map';
 import type { World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
+import { HARD_DEATHS } from './sigilfall-bot';
 
 const LEVEL = 27;
 
@@ -126,7 +127,7 @@ describe('the Deepforge Halls', () => {
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
       expect(r.bossesDown).toEqual(['slag-colossus', 'forgemaster-grold']);
-      expect(r.deaths).toBeLessThanOrEqual(2);
+      expect(r.deaths).toBeLessThanOrEqual(HARD_DEATHS);
       // Grold is a real fight, not a few seconds of burst
       expect(r.bossTimes['forgemaster-grold']).toBeGreaterThan(20);
     });

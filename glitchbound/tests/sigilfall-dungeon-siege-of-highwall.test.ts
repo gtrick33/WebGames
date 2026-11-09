@@ -15,6 +15,7 @@ import { TILE } from '../src/games/sigilfall/sim/map';
 import type { Enemy } from '../src/games/sigilfall/sim/types';
 import type { World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
+import { gearAt, HARD_DEATHS } from './sigilfall-bot';
 
 const LEVEL = 45;
 
@@ -31,13 +32,13 @@ describe('sigilfall: the Siege of Highwall', () => {
   for (const cls of CLASS_IDS) {
     it(`${cls}: clears the Siege of Highwall at level ${LEVEL}`, { timeout: 180_000 }, () => {
       const { w, r } = clearsWithRetry((seed) => {
-        const w = newWorld('siege-of-highwall', readyHero(cls as ClassId, LEVEL, 'uncommon'), seed);
+        const w = newWorld('siege-of-highwall', readyHero(cls as ClassId, LEVEL, gearAt(LEVEL)), seed);
         return { w, r: play(w, { seconds: 1500, done: (x) => x.cleared, goal: nextRoom }) };
       });
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
       expect(r.bossesDown).toEqual(['the-siege-breaker', 'general-morvain']);
-      expect(r.deaths).toBeLessThanOrEqual(2);
+      expect(r.deaths).toBeLessThanOrEqual(HARD_DEATHS);
       // the act's last fight is a real one, three phases long
       expect(r.bossTimes['general-morvain']).toBeGreaterThan(20);
     });

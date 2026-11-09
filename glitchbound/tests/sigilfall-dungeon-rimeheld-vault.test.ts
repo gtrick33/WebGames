@@ -20,6 +20,7 @@ import { EXTRA_PATTERNS } from '../src/games/sigilfall/sim/patterns';
 import type { Enemy } from '../src/games/sigilfall/sim/types';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
+import { gearAt, HARD_DEATHS } from './sigilfall-bot';
 
 const REGION = 'rimeheld-vault';
 const LEVEL = REGIONS[REGION].level + 1;
@@ -89,13 +90,13 @@ describe('sigilfall: the Rimeheld Vault', () => {
   for (const cls of CLASS_IDS) {
     it(`${cls}: clears the Rimeheld Vault at level ${LEVEL}`, { timeout: 90_000 }, () => {
       const { w, r } = clearsWithRetry((seed) => {
-        const w = newWorld(REGION, readyHero(cls as ClassId, LEVEL, 'uncommon'), seed);
+        const w = newWorld(REGION, readyHero(cls as ClassId, LEVEL, gearAt(LEVEL)), seed);
         return { w, r: play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom }) };
       });
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
       expect(r.bossesDown).toEqual(BOSS_ORDER);
-      expect(r.deaths).toBeLessThanOrEqual(2);
+      expect(r.deaths).toBeLessThanOrEqual(HARD_DEATHS);
       // the Act's frozen showpiece is a real fight, three phases and two flights long
       expect(r.bossTimes['the-rime-wyrm']).toBeGreaterThan(20);
     });
