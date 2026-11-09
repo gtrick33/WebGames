@@ -140,7 +140,7 @@ export class WorldCast {
         }
         m.set(f.moving ? 'walk' : 'idle', true, 0.2);
         m.advance(f.moving ? dt * stride('walk', f.speed, PERSON_H) : dt);
-        cast.person(passerbyLook(f.look), null, false, f.x, f.y, turnOf(f.a), m, { alpha: o.folk });
+        cast.person(passerbyLook(f.look, w.region.theme), null, false, f.x, f.y, turnOf(f.a), m, { alpha: o.folk });
       }
     }
     for (const c of w.chests) {

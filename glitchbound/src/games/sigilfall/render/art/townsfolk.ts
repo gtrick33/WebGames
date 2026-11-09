@@ -918,28 +918,60 @@ const LEGS = ['#5a4a3a', '#3a3a4a', '#4a3a2a', '#6a5a4a'];
 const passers = new Map<number, HeroLook>();
 
 /** A villager walking about a town (sim/folk.ts): one of 64 made from homespun colors, the same each time. */
-export function passerbyLook(n: number): HeroLook {
-  const hit = passers.get(n);
+/**
+ * How the people of a land dress for it: the cloth they wear, how often a hood and a cloak, and whether they go in
+ * robes. A snowy hold wraps up in furs, a desert town in pale robes and hoods, a coast in sea blues, a marsh or a
+ * haunted land in drab hooded wool; the farms and villages keep their own warm colors.
+ */
+interface Dress {
+  cloth: string[];
+  legs: string[];
+  hood: number;
+  cloak: number;
+  robe: number;
+}
+const DRESS: Record<string, Dress> = {
+  cold: { cloth: ['#6a5a4a', '#8a7a64', '#4a5260', '#7a4a3a', '#5a6a72'], legs: ['#3a3430', '#4a4038', '#2e343c'], hood: 0.7, cloak: 0.8, robe: 0.2 },
+  sand: { cloth: ['#e8dcc0', '#d8c090', '#c8a070', '#e0c8a0', '#a8784a'], legs: ['#c8b088', '#a88a60', '#e0d4b8'], hood: 0.75, cloak: 0.3, robe: 0.55 },
+  sea: { cloth: ['#3a5a7a', '#5a7a8a', '#d8d4c8', '#2e4a5e', '#8a9aa0'], legs: ['#3a3a42', '#4a4a50', '#2a3440'], hood: 0.3, cloak: 0.2, robe: 0.15 },
+  drab: { cloth: ['#4a4a3e', '#5a5444', '#3e4238', '#504656', '#5a5048'], legs: ['#2e2c28', '#3a3630', '#26282a'], hood: 0.65, cloak: 0.45, robe: 0.3 },
+  green: { cloth: ['#4a6a3a', '#6a8a4a', '#c8b078', '#3a5a3a', '#8a6a4a'], legs: ['#4a3a2a', '#5a4a32', '#3a3a2a'], hood: 0.2, cloak: 0.05, robe: 0.2 },
+  forge: { cloth: ['#5a3a2a', '#4a4040', '#6a4a30', '#3a3436', '#7a3a2a'], legs: ['#2a2422', '#3a302a', '#24201e'], hood: 0.35, cloak: 0.25, robe: 0.1 },
+};
+const DRESS_OF: Record<string, keyof typeof DRESS> = {
+  snow: 'cold', peaks: 'cold', mountain: 'cold', storm: 'sea', coast: 'sea', sunken: 'sea',
+  desert: 'sand', marsh: 'drab', plague: 'drab', gloam: 'drab', haunted: 'drab', blight: 'drab', moor: 'drab',
+  bonefield: 'drab', barrow: 'drab', deadlake: 'drab', rift: 'drab', jungle: 'green', fey: 'green',
+  volcanic: 'forge', warfront: 'forge',
+};
+
+export function passerbyLook(n: number, theme?: string): HeroLook {
+  const dress = theme && DRESS_OF[theme] ? DRESS[DRESS_OF[theme]!]! : null;
+  const key = dress ? n * 64 + Object.keys(DRESS).indexOf(DRESS_OF[theme!]!) + 1 : n;
+  const hit = passers.get(key);
   if (hit) return hit;
   // a small, fixed shuffle of n so neighbouring numbers don't look alike
   const pick = <T>(list: T[], k: number): T => list[Math.abs((n * 2654435761 + k * 40503) >>> 7) % list.length]!;
   const female = pick([true, false], 1);
-  const hat = pick([null, null, 'cap', 'hood'] as const, 2);
+  const roll = (k: number): number => (Math.abs((n * 2654435761 + k * 40503) >>> 9) % 1000) / 1000;
+  const hat = dress ? (roll(21) < dress.hood ? 'hood' : null) : pick([null, null, 'cap', 'hood'] as const, 2);
+  const CL = dress?.cloth ?? CLOTH;
+  const LG = dress?.legs ?? LEGS;
   const look: HeroLook = {
     skin: pick(SKINS, 3),
     hair: pick(HAIRS, 4),
     hairStyle: female ? pick(['long', 'pony'] as const, 5) : 'short',
-    head: hat ? { style: hat, mat: 'cloth', tint: pick(CLOTH, 6), r: 'common' } : null,
-    chest: { style: female && pick([true, false], 7) ? 'robe' : 'tunic', mat: 'cloth', tint: pick(CLOTH, 8), r: 'common' },
-    legs: { style: 'trousers', mat: 'cloth', tint: pick(LEGS, 9), r: 'common' },
+    head: hat ? { style: hat, mat: 'cloth', tint: pick(CL, 6), r: 'common' } : null,
+    chest: { style: (dress ? roll(23) < dress.robe : female && pick([true, false], 7)) ? 'robe' : 'tunic', mat: dress === DRESS.cold ? 'leather' : 'cloth', tint: pick(CL, 8), r: 'common' },
+    legs: { style: 'trousers', mat: 'cloth', tint: pick(LG, 9), r: 'common' },
     hands: null,
-    feet: { style: pick(['shoes', 'boots'] as const, 10), mat: 'leather', tint: '#5a3a24', r: 'common' },
+    feet: { style: dress === DRESS.cold ? 'boots' : pick(['shoes', 'boots'] as const, 10), mat: 'leather', tint: '#5a3a24', r: 'common' },
     quiver: null,
-    cape: null,
+    cape: dress && roll(25) < dress.cloak ? pick(CL, 26) : null,
     female,
     beard: !female && pick([true, false, false], 11) ? pick(HAIRS, 4) : null,
     apron: pick([true, false, false], 12) ? pick(['#e8e0d0', '#c9b896', '#8a6a4a'], 13) : null,
   };
-  passers.set(n, look);
+  passers.set(key, look);
   return look;
 }

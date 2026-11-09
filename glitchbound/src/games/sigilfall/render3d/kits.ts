@@ -183,8 +183,9 @@ put('grimtusk', { k: 'orc_brute', tint: '#8a7a6c', size: 1.4, ...SMASH });
 put('stag', { k: 'a_stag' });
 put('blighted-stag', { k: 'a_stag', tint: ROT });
 put('frost-ram', { k: 'fbx_sheep', tint: ICE });
-put('plains-lion', { k: 'a_fox', tint: '#f2c67c', size: 1.2 });
-put('jungle-panther', { k: 'a_fox', tint: '#57535f', size: 1.15 });
+// (no great cat in the art set: a big hunter's body, its coat tawny, reads truer than a fox grown large)
+put('plains-lion', { k: 'a_wolf', tint: '#f0c27a', size: 1.3 });
+put('jungle-panther', { k: 'a_wolf', tint: '#4a4654', size: 1.2 });
 put('griffon', { k: 'avian', tint: '#e0b868', size: 1.12 });
 put('cliff-roc', { k: 'avian', tint: '#b8895f', size: 1.25 });
 put('harpy storm-harpy', { k: 'avian' });

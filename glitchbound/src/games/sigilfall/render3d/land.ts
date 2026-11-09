@@ -399,16 +399,23 @@ const groundFrag = /* glsl */ `
     vec3 pc = mix(uPathA, uPathB, n * 0.7 + n2 * 0.3);
     float pathShade = smoothstep(0.54, 0.46, m.r + wob + 0.1);
     c = mix(c, pc * (1.0 - pathShade * 0.14), path);
-    float cob = smoothstep(0.46, 0.54, m.a + wob * 0.4);
-    if (cob > 0.0) {
+    // paving: toward its edge it frays stone by stone into the ground around it (a few gone, earth between), with a
+    // wide slow wander, so a square never ends on a ruled line
+    float edgeV = m.a + wob * 1.1 + (noise(p * 0.32 + 3.0) - 0.5) * 0.34;
+    if (edgeV > 0.18) {
       vec2 s = p * vec2(2.7, 3.6);
       s.x += mod(floor(s.y), 2.0) * 0.5;
       vec2 id = floor(s);
       vec2 f = fract(s) - 0.5;
       float line = smoothstep(0.36, 0.5, max(abs(f.x), abs(f.y)));
+      float stone = step(0.3 + hash(id + 7.0) * 0.32, edgeV);
+      float earth = smoothstep(0.18, 0.36, edgeV) * (1.0 - stone);
+      c = mix(c, mix(uPathA, uPathB, n) * 0.92, earth * 0.75);
       vec3 st = mix(uCobA, uCobB, hash(id) * 0.8);
       st *= 0.9 + n * 0.2;
-      c = mix(c, mix(st, uCobA * 0.72, line * 0.8), cob);
+      // (an edge stone sits a little sunk and dark, worn into the ground)
+      st *= mix(0.86, 1.0, smoothstep(0.3, 0.62, edgeV));
+      c = mix(c, mix(st, uCobA * 0.72, line * 0.8), stone);
     }
     // water: dark in the middle, lighter at the bank, with foam where it meets the land
     float w = smoothstep(0.47, 0.53, m.g + wob * 0.55);
@@ -513,6 +520,9 @@ export function buildGround(map: TileMap, look: ThemeLook): THREE.Mesh {
     if (k === K.Sand) mask[at + 2] = 255;
     if (k === K.Cobble) mask[at + 3] = 255;
   }
+  // (softened a little, tile into tile: a square of paving, a road's turn, a shore's corner come out rounded, the way
+  // ground wears, not ruled to the grid)
+  if (!look.indoor) softenMask(mask, W, H, 2);
   const tex = new THREE.DataTexture(mask, W, H, THREE.RGBAFormat);
   tex.magFilter = THREE.LinearFilter;
   tex.minFilter = THREE.LinearFilter;
@@ -661,6 +671,35 @@ function cutAway(map: TileMap): Uint8Array {
   return out;
 }
 
+/** Blurs a ground mask (four channels, a byte each) over its neighbours, `passes` times: rounded corners, soft edges. */
+function softenMask(mask: Uint8Array, W: number, H: number, passes: number): void {
+  const tmp = new Uint8Array(mask.length);
+  for (let p = 0; p < passes; p++) {
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        for (let c = 0; c < 4; c++) {
+          let sum = 0;
+          let n = 0;
+          for (let dy = -1; dy <= 1; dy++) {
+            const yy = y + dy;
+            if (yy < 0 || yy >= H) continue;
+            for (let dx = -1; dx <= 1; dx++) {
+              const xx = x + dx;
+              if (xx < 0 || xx >= W) continue;
+              // (the middle counts double: a lane a tile wide keeps its line)
+              const k = dx === 0 && dy === 0 ? 2 : 1;
+              sum += mask[(yy * W + xx) * 4 + c]! * k;
+              n += k;
+            }
+          }
+          tmp[(y * W + x) * 4 + c] = Math.round(sum / n);
+        }
+      }
+    }
+    mask.set(tmp);
+  }
+}
+
 function buildBlocks(map: TileMap, look: ThemeLook, woody: boolean, cut: Uint8Array | null): THREE.Mesh {
   const { wall, rampart } = blockStyles(look, woody);
   const m = new Mesher();
@@ -674,8 +713,10 @@ function buildBlocks(map: TileMap, look: ThemeLook, woody: boolean, cut: Uint8Ar
     if (k === K.Rampart) return rampart;
     return null;
   };
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
+  // (a bare land's cliffs go on past the edge of the map, as a wood's trees do: no black void beyond a way out)
+  const past = !woody && !look.indoor && !look.stone ? 6 : 0;
+  for (let y = -past; y < H + past; y++) {
+    for (let x = -past; x < W + past; x++) {
       const s = styleAt(x, y);
       if (!s) continue;
       const hs = hash2(x, y, 5);
@@ -1099,9 +1140,9 @@ export class Land3D {
     } else if (r < treeAt + 0.25) {
       const b = BUSHES[Math.floor(hash2(tx, ty, 79) * BUSHES.length)]!;
       this.add({ m: b, x, z, y, rot: hash2(tx, ty, 81) * 6.28, sx: this.fitted(b, 0.5 + hash2(tx, ty, 83) * 0.25, 1) });
-    } else if (r < treeAt + 0.31) {
+    } else if (r < treeAt + 0.28) {
       const rock = ROCKS[Math.floor(hash2(tx, ty, 87) * ROCKS.length)]!;
-      this.add({ m: rock, x, z, y, rot: hash2(tx, ty, 89) * 6.28, sx: this.fitted(rock, 0.35 + hash2(tx, ty, 85) * 0.35, 1) });
+      this.add({ m: rock, x, z, y, rot: hash2(tx, ty, 89) * 6.28, sx: this.fitted(rock, 0.25 + hash2(tx, ty, 85) * 0.25, 0.8) });
     } else if (r < treeAt + 0.45) {
       const t = TUFTS[Math.floor(hash2(tx, ty, 97) * TUFTS.length)]!;
       this.add({ m: t, x, z, y, rot: hash2(tx, ty, 99) * 6.28, sx: this.fitted(t, 0.3 + hash2(tx, ty, 95) * 0.15, 0.8), sway: 1 });
@@ -1129,7 +1170,7 @@ export class Land3D {
           // solid, so a wood breathes as the art set's own woods do)
           const near = [kindAt(tx - 1, ty), kindAt(tx + 1, ty), kindAt(tx, ty - 1), kindAt(tx, ty + 1)].filter((n) => n === K.Tree || n === K.Wall).length;
           if (near >= 3 && hash2(tx, ty, 57) < 0.42) {
-            const under = hash2(tx, ty, 59) < 0.75;
+            const under = hash2(tx, ty, 59) < 0.93;
             const m = under ? BUSHES[Math.floor(hash2(tx, ty, 79) * BUSHES.length)]! : ROCKS[Math.floor(hash2(tx, ty, 87) * ROCKS.length)]!;
             this.add({ m, x: x + (h - 0.5) * 0.3, z: z + (hash2(tx, ty, 31) - 0.5) * 0.3, rot: h * 6.28, sx: this.fitted(m, under ? 0.62 + hash2(tx, ty, 83) * 0.2 : 0.5 + hash2(tx, ty, 85) * 0.3, 1.05) });
             break;
@@ -1229,6 +1270,18 @@ export class Land3D {
         }
         default:
           break;
+      }
+    }
+    // a bare land's cliff tops past the edge carry their broken rock, as inside
+    if (!woody && !look.indoor && !look.stone) {
+      for (let ty = -6; ty < H + 6; ty++) {
+        for (let tx = -6; tx < W + 6; tx++) {
+          if (tx >= 0 && ty >= 0 && tx < W && ty < H) continue;
+          const h = hash2(tx + 40, ty + 40, 71);
+          if (h > 0.5) continue;
+          const rock = ROCKS[Math.floor(hash2(tx + 40, ty + 40, 73) * ROCKS.length)]!;
+          this.add({ m: rock, x: tx + 0.5 + (h - 0.25) * 0.8, z: ty + 0.5 + (hash2(tx, ty, 31) - 0.5) * 0.5, rot: h * 12.5, sx: this.fitted(rock, 0.7 + hash2(tx, ty, 21) * 0.8, 1.5), y: 1.7 });
+        }
       }
     }
     // the wood goes on past the edge of the map: a land doesn't stop at its border

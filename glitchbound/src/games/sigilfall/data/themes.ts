@@ -388,7 +388,8 @@ export const THEMES: Record<Theme, ThemeLook> = {
       shell: ['#ffffff', '#c8a8ff'],
     },
     trees: ['mushroom', 'oak', 'mushroom'],
-    leaves: ['#1a1a3a', '#242a52', '#2e3a6a', '#3a4e84', '#5a72aa', '#8aa8d8'],
+    // (a fey wood glimmers: teal-green leaves going to pale silver-green at the tips)
+    leaves: ['#123432', '#1a4a46', '#246660', '#33847a', '#52a898', '#8ad6c4'],
     bark: '#3a3048',
     ambient: 'motes',
   },
