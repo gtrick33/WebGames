@@ -9459,3 +9459,141 @@
 .rb-rs-combo b {
   color: #ffd257;
 }
+
+/* ------------------------------------------------------------------ the thumbs, laid out as a phone RPG lays them:
+   the attack a great button in the corner with a red ring, the skills on an arc round it and the rest on an outer arc,
+   every button set in a gold rim, empty places shown as rings waiting to be filled */
+.rb-cluster .rb-sb {
+  border: 2px solid #d6aa4a;
+  box-shadow:
+    0 0 0 2px #1a1006,
+    0 0 10px rgb(0 0 0 / 0.55),
+    inset 0 0 0 2px rgb(0 0 0 / 0.35),
+    inset 0 2px 0 rgb(255 255 255 / 0.28);
+}
+.rb-cluster .rb-sb-basic {
+  right: 14px;
+  bottom: 14px;
+  width: 86px;
+  height: 86px;
+  border: 4px solid #c0281e;
+  background: radial-gradient(circle at 50% 40%, #4a1010, #1a0606 75%);
+  box-shadow:
+    0 0 0 3px #d6aa4a,
+    0 0 0 5px #1a1006,
+    0 0 16px rgb(192 40 30 / 0.45),
+    inset 0 0 12px rgb(0 0 0 / 0.7);
+}
+/* the inner arc: three skills a quarter round the attack, from its left to its top (spaced so they never touch) */
+.rb-cluster .rb-sb-s1 {
+  right: 140px;
+  bottom: 28px;
+  width: 58px;
+  height: 58px;
+}
+.rb-cluster .rb-sb-s2 {
+  right: 107px;
+  bottom: 107px;
+  width: 58px;
+  height: 58px;
+}
+.rb-cluster .rb-sb-s3 {
+  right: 28px;
+  bottom: 140px;
+  width: 58px;
+  height: 58px;
+}
+/* the outer arc: the dodge low by the thumb, then the fourth skill, the ultimate, the potion and the mount at the top */
+.rb-cluster .rb-sb-dodge {
+  right: 216px;
+  bottom: 30px;
+  width: 54px;
+  height: 54px;
+}
+.rb-cluster .rb-sb-s4 {
+  right: 200px;
+  bottom: 99px;
+  width: 58px;
+  height: 58px;
+}
+.rb-cluster .rb-sb-ult {
+  right: 155px;
+  bottom: 155px;
+  width: 66px;
+  height: 66px;
+}
+.rb-cluster .rb-sb-potion {
+  right: 103px;
+  bottom: 204px;
+  width: 50px;
+  height: 50px;
+}
+.rb-cluster .rb-sb-mount {
+  right: 36px;
+  bottom: 222px;
+  width: 42px;
+  height: 42px;
+}
+/* a place not filled yet: an empty ring, the level it opens at in it */
+.rb-cluster .rb-sb.is-locked {
+  opacity: 0.75;
+  border-color: rgb(214 170 74 / 0.55);
+  background: rgb(10 6 4 / 0.28);
+  box-shadow: 0 0 0 2px rgb(26 16 6 / 0.6);
+}
+.rb-cluster .rb-sb.is-locked .rb-sb-lock {
+  color: rgb(255 236 190 / 0.75);
+  font-size: 10px;
+}
+/* the stick: a gold ring, the knob a dark stone in it */
+.is-touch .rb-joy {
+  border: 2px solid rgb(214 170 74 / 0.75);
+  background: radial-gradient(circle, rgb(0 0 0 / 0.04) 55%, rgb(0 0 0 / 0.22));
+  box-shadow: 0 0 0 2px rgb(26 16 6 / 0.45);
+  opacity: 0.7;
+}
+.is-touch .rb-joy.is-active {
+  opacity: 1;
+}
+.is-touch .rb-knob {
+  border: 2px solid #d6aa4a;
+  background: radial-gradient(circle at 40% 32%, rgb(120 104 84 / 0.95), rgb(40 30 22 / 0.95) 72%);
+  box-shadow: 0 0 0 2px #1a1006, 0 3px 6px rgb(0 0 0 / 0.5);
+  opacity: 0.9;
+}
+/* the land's name on its plate over the map */
+.rb-minimap-name {
+  display: none;
+}
+.is-touch .rb-minimap-hud {
+  overflow: visible;
+}
+.is-touch .rb-minimap-name {
+  position: absolute;
+  bottom: calc(100% + 1px);
+  left: 50%;
+  display: block;
+  max-width: 150px;
+  padding: 1px 10px;
+  border: 1px solid #d6aa4a;
+  border-radius: 3px;
+  color: #7fe07a;
+  font: 700 11px var(--rb-serif, Georgia, serif);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: linear-gradient(180deg, rgb(60 44 30 / 0.95), rgb(24 16 10 / 0.95));
+  box-shadow: 0 0 0 1px #1a1006;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.is-touch .rb-minimap-hud {
+  top: calc(22px + var(--sa-t));
+}
+.rb-cluster .rb-sb.is-empty {
+  border: 2px solid rgb(214 170 74 / 0.45);
+  background: radial-gradient(circle, rgb(0 0 0 / 0.05) 50%, rgb(0 0 0 / 0.22));
+  box-shadow: 0 0 0 1.5px rgb(26 16 6 / 0.45);
+  opacity: 0.8;
+  pointer-events: none;
+}

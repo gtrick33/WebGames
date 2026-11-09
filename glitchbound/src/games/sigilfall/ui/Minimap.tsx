@@ -98,6 +98,8 @@ export function Minimap({ engine }: { engine: SigilEngine }) {
   });
   return (
     <button className="rb-minimap-hud" onClick={() => engine.openPanel('map')} aria-label="Map (opens the full map)">
+      {/* (the land's name on a plate over the map, as a phone's map wears it) */}
+      {engine.world && <span className="rb-minimap-name">{engine.world.region.name}</span>}
       <canvas ref={ref} width={SIZE * 2} height={SIZE * 2} />
     </button>
   );
