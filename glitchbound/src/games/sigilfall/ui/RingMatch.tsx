@@ -34,7 +34,8 @@ export interface MatchStakes {
   rivalRating: number;
 }
 
-const STEP = 1 / 30;
+// (a step per frame on a 60 Hz screen: at 30 a second, everyone moved on every other frame and the fight looked choppy)
+const STEP = 1 / 60;
 /** A host speaks ten times a second: plenty for frames that coast between. */
 const SEND_EVERY = 0.1;
 /** The campaign's thumb cluster: the same places, so a phone player's hands already know them. */
@@ -62,6 +63,9 @@ function AuraIcons({ f }: { f: Fighter }) {
     </span>
   );
 }
+
+/** How far along a cast is (a channel runs down). */
+const castShare = (c: { t: number; dur: number; channel: boolean }): number => Math.max(0, Math.min(1, c.channel ? 1 - c.t / c.dur : c.t / c.dur));
 
 function Frame({ f, m, me, doll, tag, onPick, flip }: { f: Fighter; m: Match; me: Fighter | null; doll: string; tag: string | null; onPick: () => void; flip?: boolean }) {
   const hold = f.auras.find((a) => a.cc);
@@ -99,7 +103,7 @@ function Frame({ f, m, me, doll, tag, onPick, flip }: { f: Fighter; m: Match; me
           )}
           {c && ab ? (
             <span className="rb-ring-cast" style={{ ['--a' as string]: ab.color }}>
-              <i style={{ width: `${(c.channel ? 1 - c.t / c.dur : c.t / c.dur) * 100}%` }} />
+              <i data-cast={f.id} style={{ width: `${castShare(c) * 100}%` }} />
               <b>{ab.name}</b>
             </span>
           ) : hold ? (
@@ -178,7 +182,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const me = m.fighters[myId] ?? null;
   const touch = engine.touchMode;
   const say = (why: string | null): void => {
-    if (!why || why === 'Already casting') return;
+    if (!why || why === 'Already casting' || why === 'Casting') return;
     setErr(why);
     errAt.current = performance.now();
   };
@@ -321,6 +325,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     };
     const frame = (now: number): void => {
       raf = requestAnimationFrame(frame);
+      // (a phone's screen may run at 120: the fight looks no better for it, and the heat slows it down)
+      if (engine.touchMode && now - last < 1000 / 66) return;
       const dt = Math.max(0, Math.min(0.1, (now - last) / 1000));
       last = now;
       const mine = moveNow();
@@ -328,7 +334,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       if (role.kind !== 'client') {
         acc += dt;
         // catching up, but never so far behind that a stall turns into a jump
-        for (let i = 0; i < 4 && acc >= STEP; i++) {
+        for (let i = 0; i < 8 && acc >= STEP; i++) {
           acc -= STEP;
           const moves: Record<number, MoveInput> = { [myId]: mine };
           for (const f of m.fighters) {
@@ -338,7 +344,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           }
           m.step(STEP, moves);
         }
-        if (acc > STEP * 4) acc = 0;
+        if (acc > STEP * 8) acc = 0;
         if (role.kind === 'host') {
           sendT += dt;
           if (sendT >= SEND_EVERY) {
@@ -368,6 +374,11 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         wasPhase = m.phase;
       }
       paint(now / 1000);
+      // the cast bars move every frame, not with the rest of the HUD
+      for (const el of document.querySelectorAll<HTMLElement>('[data-cast]')) {
+        const c = m.fighters[Number(el.dataset.cast)]?.cast;
+        if (c) el.style.width = `${castShare(c) * 100}%`;
+      }
       hudT += dt;
       if (hudT > 0.066) {
         hudT = 0;
@@ -548,7 +559,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           )}
           {cast && castAb && (
             <div className="rb-ring-mycast" style={{ ['--a' as string]: castAb.color }}>
-              <i style={{ width: `${(cast.channel ? 1 - cast.t / cast.dur : cast.t / cast.dur) * 100}%` }} />
+              <i data-cast={myId} style={{ width: `${castShare(cast) * 100}%` }} />
               <b>{castAb.name}</b>
             </div>
           )}

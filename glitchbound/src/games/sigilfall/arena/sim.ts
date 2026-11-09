@@ -340,6 +340,8 @@ export class Match {
     if (f.dead) return 'You have fallen';
     if (f.auras.some((a) => a.still) && ab.id !== 'token') return 'Sealed in ice';
     if (f.cast?.ab === ab.id) return 'Already casting';
+    // as in the classic arenas: a cast runs to its end, and what's pressed meanwhile waits (a channel can be cut short)
+    if (f.cast && !f.cast.channel && !ab.free && ab.id !== 'token') return 'Casting';
     if (!ab.anyState && this.held(f)) return 'You can’t do that now';
     if (ab.id !== 'token' && ab.school !== 'physical') {
       if (this.silenced(f)) return 'Silenced';
@@ -390,6 +392,11 @@ export class Match {
     const why = this.blocked(f, ab);
     if (!why) {
       this.begin(f, ab);
+      return null;
+    }
+    // a press in the last moments of a cast goes off the moment it lands
+    if (why === 'Casting' && f.cast && f.cast.dur - f.cast.t <= QUEUE) {
+      f.queued = { ab: ab.id, t: f.cast.dur - f.cast.t + QUEUE };
       return null;
     }
     // a press in the last moments of the global cooldown waits for it, so that a player never feels a dropped key

@@ -93,6 +93,22 @@ describe('The Ring: the rules', () => {
     expect(me.cast!.t).toBe(t);
   });
 
+  it('another ability pressed mid-cast doesn’t cut the cast short: it waits, and goes off as the cast lands if pressed at the end', () => {
+    const m = duel('mage', ['m-lash', 'm-burn'], 'warrior');
+    const me = m.fighters[0]!;
+    m.press(0, 'm-lash');
+    wait(m, 0.8);
+    expect(m.press(0, 'm-burn')).toBe('Casting');
+    expect(me.cast?.ab).toBe('m-lash');
+    wait(m, 0.8);
+    // (0.2s left: queued)
+    expect(m.press(0, 'm-burn')).toBeNull();
+    expect(me.cast?.ab).toBe('m-lash');
+    wait(m, 0.5);
+    expect(me.cast).toBeNull();
+    expect(me.cds['m-burn']).toBeGreaterThan(0);
+  });
+
   it('the global cooldown holds, a press near its end is queued, and free abilities ignore it', () => {
     const m = duel('warrior', ['w-hew', 'w-hamstring', 'w-stand'], 'mage');
     const me = m.fighters[0]!;

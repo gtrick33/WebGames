@@ -6626,6 +6626,8 @@
 }
 .rb-rs-barrow {
   display: flex;
+  flex: none;
+  min-height: 52px;
   justify-content: center;
   padding: 4px;
   border-radius: 9px;
@@ -6633,8 +6635,11 @@
 }
 .rb-rs-slots {
   display: flex;
+  /* (the slots take their height from their width: stretched, they took it from a row the panel below could squeeze) */
+  align-items: center;
   justify-content: center;
   gap: 4px;
+  width: 100%;
 }
 .rb-rs-slot {
   position: relative;
