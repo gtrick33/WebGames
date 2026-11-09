@@ -59,7 +59,7 @@ export const QUESTS: QuestDef[] = [
     name: 'The Alpha',
     giver: 'maren',
     auto: true,
-    text: 'The beasts of the wood follow one great boar with grey light in its eyes: Grimtusk. It dens at the east end of the Whisperwood. Kill it and there is one less thing at Briarhollow’s door.',
+    text: 'The beasts of the wood follow one great tusked orc with grey light in its eyes: Grimtusk. It dens at the east end of the Whisperwood. Kill it and there is one less thing at Briarhollow’s door.',
     objective: { kind: 'boss', boss: 'grimtusk', label: 'Defeat Grimtusk' },
     after: ['into-the-wood'],
     reward: { xp: 260, gold: 60, text: 'One less thing at Briarhollow’s door. Mara will pretend not to be pleased.' },

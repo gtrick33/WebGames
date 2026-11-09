@@ -939,6 +939,7 @@ export class Land3D {
     this.group.add(this.blocks);
     this.wallH = look.indoor ? DUNGEON_WALL : woody ? 1 : 1.6;
     this.placeAll(woody);
+    this.clearWays();
     this.placeSlabs();
     if (this.carpets.length || this.rugs.length) {
       const c = buildCarpets(this.carpets, this.rugs);
@@ -978,6 +979,26 @@ export class Land3D {
   private roofOf(tx: number, ty: number): string {
     const list = ROOFS[this.region.theme] ?? ROOFS.default!;
     return list[Math.floor(hash2(tx, ty, 23) * list.length)]!.slice(1);
+  }
+
+  /**
+   * Keeps the roads out of a land open: no tree stands on or beside a way out, and where it is at the map's
+   * edge the wood beyond the edge opens onto it too, so the road is seen running on.
+   */
+  private clearWays(): void {
+    const { w: W, h: H } = this.map;
+    for (const pm of this.map.markers) {
+      if (pm.marker.kind !== 'exit' || pm.marker.door) continue;
+      let x0 = pm.tx - 2;
+      let x1 = pm.tx + 3;
+      let z0 = pm.ty - 2;
+      let z1 = pm.ty + 3;
+      if (pm.tx < 4) x0 = -8;
+      if (pm.tx > W - 5) x1 = W + 8;
+      if (pm.ty < 4) z0 = -8;
+      if (pm.ty > H - 5) z1 = H + 8;
+      this.clearTrees(x0, x1, z0, z1);
+    }
   }
 
   /** Takes away the trees standing inside an area (tiles). */

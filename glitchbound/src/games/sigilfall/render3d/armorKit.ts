@@ -106,9 +106,10 @@ const HEAD_LADDER: Record<string, Record<Rarity, Cover>> = {
     legendary: { parts: ['Cleric_Head'], own: true },
   },
   cap: {
-    common: { parts: ['Farmer_A_Hat'], bald: true },
-    uncommon: { parts: ['Helper_A_Hat'], bald: true },
-    rare: { parts: ['Ninja_Headband'] },
+    // (no modern hats or caps: cloth hoods and headbands)
+    common: { parts: ['Ninja_Headband'] },
+    uncommon: { parts: ['Skeleton_Rogue_Hood'], bald: true },
+    rare: { parts: ['RogueHooded_Head'], own: true },
     // (a bear's head is a trophy, for gear of renown)
     epic: { parts: ['Barbarian_BearHat'], bald: true },
     legendary: { parts: ['Barbarian_BearHat'], bald: true },

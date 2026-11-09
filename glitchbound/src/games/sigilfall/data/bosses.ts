@@ -83,10 +83,10 @@ export const BOSSES: Record<string, BossDef> = {
   grimtusk: {
     id: 'grimtusk',
     name: 'Grimtusk',
-    title: 'Alpha of the Whisperwood',
+    title: 'Warlord of the Whisperwood',
     sprite: 'grimtusk',
-    hp: 640,
-    dmg: 15,
+    hp: 820,
+    dmg: 18,
     radius: 11,
     xp: 220,
     gold: [40, 60],

@@ -612,14 +612,25 @@ export class Renderer {
   }
 
   /** An arrow at the edge of the view toward the current objective. */
+  private arrowLand = '';
+  private arrowSince = 0;
+
   private drawObjectiveArrow(w: World, time: number, st: Stage): void {
     const target = objectiveTarget(w);
     // enemies to hunt show on the minimap; the edge arrow is for places
     if (!target || target.soft) return;
     const g = this.g;
-    const s = st.project(target.x, target.y, PERSON_H);
     const W = this.cssW;
     const H = this.cssH;
+    // right after a change of land the camera can still be on the old one: point nowhere until it is on the hero
+    const me = st.project(w.player.x, w.player.y, PERSON_H);
+    if (Math.abs(me.x - W / 2) > W * 0.3 || Math.abs(me.y - H / 2) > H * 0.3) return;
+    if (this.arrowLand !== w.region.id) {
+      this.arrowLand = w.region.id;
+      this.arrowSince = time;
+    }
+    if (time - this.arrowSince < 0.5) return;
+    const s = st.project(target.x, target.y, PERSON_H);
     const m = 28;
     if (s.x > m && s.x < W - m && s.y > m && s.y < H - m) {
       this.label('▼', s.x, s.y + Math.sin(time * 5) * 3, 15, '#ffe066');
@@ -893,6 +904,68 @@ export class Renderer {
   /* ----------------------------------------------------------- overlays */
 
   /**
+   * The roads out of a land: a big soft bloom of light standing on each, in the color of the land it leads to,
+   * so a way on reads from afar (one bloom for a way out several tiles wide).
+   */
+  private drawWayBlooms(w: World, time: number): void {
+    const g = this.g;
+    const groups: { to: string; xs: number; ys: number; n: number; x: number; y: number }[] = [];
+    for (const x of w.exits) {
+      if (x.door) continue;
+      const near = groups.find((o) => o.to === x.to && Math.abs(o.x - x.x) <= TILE * 1.5 && Math.abs(o.y - x.y) <= TILE * 1.5);
+      if (near) {
+        near.xs += x.x;
+        near.ys += x.y;
+        near.n++;
+        near.x = x.x;
+        near.y = x.y;
+      } else groups.push({ to: x.to, xs: x.x, ys: x.y, n: 1, x: x.x, y: x.y });
+    }
+    for (const o of groups) {
+      const x = o.xs / o.n;
+      const y = o.ys / o.n;
+      const col = wayColor(REGIONS[o.to as RegionId]?.theme);
+      const pulse = 0.5 + Math.sin(time * 2.2 + x * 0.05) * 0.5;
+      const r = 26 + o.n * 4;
+      this.flat(x, y);
+      g.save();
+      const pool = g.createRadialGradient(x, y, 0, x, y, r);
+      pool.addColorStop(0, rgba(col, 0.55 + pulse * 0.2));
+      pool.addColorStop(0.5, rgba(col, 0.25 + pulse * 0.1));
+      pool.addColorStop(1, rgba(col, 0));
+      g.fillStyle = pool;
+      g.beginPath();
+      g.arc(x, y, r, 0, Math.PI * 2);
+      g.fill();
+      g.restore();
+      // the bloom standing up out of it
+      this.upright(x, y);
+      g.save();
+      g.globalCompositeOperation = 'lighter';
+      const hgt = 46 + pulse * 6;
+      const col2 = g.createRadialGradient(x, y - hgt * 0.45, 0, x, y - hgt * 0.45, hgt * 0.62);
+      col2.addColorStop(0, rgba('#fff6d8', 0.5 + pulse * 0.15));
+      col2.addColorStop(0.3, rgba(col, 0.4));
+      col2.addColorStop(1, rgba(col, 0));
+      g.fillStyle = col2;
+      g.beginPath();
+      g.ellipse(x, y - hgt * 0.45, r * 0.55, hgt * 0.62, 0, 0, Math.PI * 2);
+      g.fill();
+      // motes rising through it
+      for (let i = 0; i < 6; i++) {
+        const t = (time * 0.35 + i / 6) % 1;
+        const mx = x + Math.sin(i * 2.4 + time * 1.3) * r * 0.35;
+        const my = y - t * hgt;
+        g.fillStyle = rgba('#fff6d8', (1 - t) * 0.8);
+        g.beginPath();
+        g.arc(mx, my, 1.4, 0, Math.PI * 2);
+        g.fill();
+      }
+      g.restore();
+    }
+  }
+
+  /**
    * The ways into buildings, and back out: a warm pool of light on the step and a gold chevron pointing through
    * the door (in, under a painted door; out, at a room's door), so a door you can use never looks like one
    * you can't. Walking onto it goes through. A dungeon's way back out to the land gets the same, on its gap in the wall.
@@ -902,6 +975,7 @@ export class Renderer {
     const dungeon = w.region.kind === 'dungeon';
     const inside = !!w.region.interior || dungeon;
     const seen = new Set<string>();
+    if (!inside) this.drawWayBlooms(w, time);
     for (const x0 of w.exits) {
       if (!x0.door && !dungeon) continue;
       // (a way out two tiles wide is one way out: the chevrons go in the middle of it)
@@ -972,4 +1046,15 @@ export function npcMark(w: World, id: string): MapIcon | null {
 }
 
 import { NPCS, QUEST_DEFS } from '../data/quests';
+import { REGIONS } from '../data/regions';
+import type { RegionId, Theme } from '../data/types';
+
+/** The bloom on a road out, in the color that suits the land it leads to (gold where nothing says otherwise). */
+const WAY_COLORS: Partial<Record<Theme, string>> = {
+  village: '#ffd66a', forest: '#9cff7a', farm: '#ffe27a', coast: '#7ae8ff', autumn: '#ffa64a', marsh: '#b8e070', plague: '#c8f070',
+  plains: '#ffe08a', mountain: '#d8e4ff', barrow: '#c8b8ff', storm: '#8ab8ff', moor: '#d0a0ff', desert: '#ffc860', fey: '#ff9af0',
+  snow: '#bfe8ff', rift: '#b88aff', jungle: '#7affa0', warfront: '#ff8a5a', blight: '#c0ff6a', haunted: '#a0d8ff', volcanic: '#ff7a3a',
+  deadlake: '#9ad0d0', peaks: '#e0ecff', sunken: '#6ae0d8', bonefield: '#f0e6c8', gloam: '#d08aff',
+};
+const wayColor = (t: Theme | undefined): string => (t && WAY_COLORS[t]) || '#ffd66a';
 

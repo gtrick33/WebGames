@@ -137,11 +137,11 @@ const CRYPT_MAP = [
 const forestMarkers: Record<string, Marker> = {
   P: { kind: 'start' },
   W: { kind: 'waystone' },
-  '1': { kind: 'pack', enemies: ['moss-slime', 'moss-slime', 'moss-slime'] },
+  '1': { kind: 'pack', enemies: ['moss-slime', 'moss-slime', 'moss-slime', 'moss-slime'] },
   '2': { kind: 'pack', enemies: ['goblin-slinger', 'goblin-slinger', 'moss-slime'] },
   '3': { kind: 'pack', enemies: ['goblin-slinger', 'bark-beetle', 'goblin-slinger'] },
   '4': { kind: 'pack', enemies: ['bark-beetle', 'moss-slime', 'moss-slime'], elite: true },
-  '5': { kind: 'pack', enemies: ['tusk-boar', 'tusk-boar'] },
+  '5': { kind: 'pack', enemies: ['tusk-boar', 'tusk-boar', 'tusk-boar'] },
   '6': { kind: 'pack', enemies: ['thorn-sprite', 'thorn-sprite', 'goblin-slinger'] },
   '7': { kind: 'pack', enemies: ['thorn-sprite', 'moss-slime', 'moss-slime', 'moss-slime'] },
   '8': { kind: 'pack', enemies: ['thorn-sprite', 'tusk-boar'], elite: true },
@@ -287,7 +287,7 @@ const HAND_LAID: Record<string, RegionDef> = {
     markers: forestMarkers,
     placed: [...WHISPERWOOD_MORE, ...landmarkOn(WHISPERWOOD_BIG, WHISPERWOOD_MORE, 'ancient-oak', 0.42, 0.4, 1), ...landmarkOn(WHISPERWOOD_BIG, WHISPERWOOD_MORE, 'stone-arch', 0.72, 0.68, 1)],
     encounters: [{ id: 'den', floor: 'g', waves: [], boss: 'grimtusk', title: 'Grimtusk’s Den' }],
-    blurb: 'Slimes, goblins, boars and worse, maddened by grieflight. Somewhere in the east, the alpha that leads them.',
+    blurb: 'Mosslings, poachers, wolves and worse, maddened by grieflight. Somewhere in the east, the alpha that leads them.',
   },
   crypt: {
     id: 'crypt',

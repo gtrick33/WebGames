@@ -61,7 +61,8 @@ const HEADS: Record<string, { parts: string[]; bald?: boolean; own?: boolean; hi
     { parts: ['Barbarian_BearHat'], bald: true, hide: true },
   ],
   hood: [{ parts: ['RogueHooded_Head'], own: true }],
-  cap: [{ parts: ['Farmer_A_Hat'], bald: true }, { parts: ['Hiker_Hat'] }, { parts: ['Ninja_Headband'] }],
+  // (a medieval land: a cloth hood or a headband, never a modern hat or cap)
+  cap: [{ parts: ['Skeleton_Rogue_Hood'], bald: true }, { parts: ['RogueHooded_Head'], own: true }, { parts: ['Ninja_Headband'] }],
   crown: [{ parts: ['Necromancer_Crown'] }],
   wizard: [{ parts: ['Mage_Hat'], bald: true }, { parts: ['Witch_Hat'], bald: true }, { parts: ['Skeleton_Mage_Hat'], bald: true }],
 };
