@@ -31,7 +31,8 @@ The only exception is a change the owner names in chat as one to push directly.
     verified.
   - Add `Closes #<n>` for each GitHub issue it fixes, so merging closes them.
 - **While the PR is open:**
-  - CI checks it but doesn't deploy.
+  - CI doesn't run on it unless it has the `run-ci` label (Actions minutes are limited, and the checks above already
+    ran). A push to `pre-release` is always checked, then deployed.
   - Fixes and the owner's review comments land as new commits on the same branch.
   - One pull request per piece of work. Don't stack unrelated changes.
 - **After the merge,** delete the branch and the worktree.

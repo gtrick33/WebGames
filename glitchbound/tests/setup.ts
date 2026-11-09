@@ -1,9 +1,15 @@
 // jsdom lacks a few browser APIs the site uses; provide minimal stand-ins.
-import { afterEach } from 'vitest';
-import { cleanup } from '@testing-library/react';
+import { afterEach, vi } from 'vitest';
 
-afterEach(() => {
+// (test files share their workers: each starts with its own fresh modules, so no store, cache or room a file before
+// left behind can reach it; the page's own state is reset after every test below)
+vi.resetModules();
+
+afterEach(async () => {
+  // (the testing library this file's tests rendered with, not one from before the modules were reset)
+  const { cleanup } = await import('@testing-library/react');
   cleanup();
+  vi.useRealTimers();
   localStorage.clear();
   sessionStorage.clear();
   window.history.replaceState(null, '', '/');

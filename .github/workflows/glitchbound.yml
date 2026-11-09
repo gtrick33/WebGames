@@ -6,6 +6,7 @@ on:
     paths: ['glitchbound/**', 'neon-rush/**', '.github/workflows/glitchbound.yml']
   pull_request:
     branches: [pre-release]
+    types: [opened, synchronize, reopened, labeled]
     paths: ['glitchbound/**', 'neon-rush/**', '.github/workflows/glitchbound.yml']
   workflow_dispatch:
 
@@ -15,6 +16,10 @@ concurrency:
 
 jobs:
   check-and-deploy:
+    # Actions minutes are limited. A pull request is checked here only on demand: give it the `run-ci` label (every
+    # session runs these same checks before it opens one, CLAUDE.md). A push to pre-release is always checked, then
+    # deployed. A job skipped by this line uses no minutes.
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'run-ci')
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -29,11 +34,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: |
-            glitchbound/package-lock.json
-            neon-rush/package-lock.json
-      - run: npm ci
+      # the installed packages themselves, kept while the lockfile stays the same (npm ci only when it changes)
+      - uses: actions/cache@v4
+        id: deps
+        with:
+          path: glitchbound/node_modules
+          key: deps-${{ runner.os }}-node24-${{ hashFiles('glitchbound/package-lock.json') }}
+      - if: steps.deps.outputs.cache-hit != 'true'
+        run: npm ci
+      # what typecheck and lint worked out last time: they only look again at what changed
+      - uses: actions/cache@v4
+        with:
+          path: glitchbound/.cache
+          key: tools-${{ runner.os }}-${{ hashFiles('glitchbound/package-lock.json') }}-${{ github.sha }}
+          restore-keys: tools-${{ runner.os }}-${{ hashFiles('glitchbound/package-lock.json') }}-
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
