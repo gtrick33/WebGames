@@ -9376,3 +9376,13 @@
   display: inline;
   margin-left: 4px;
 }
+
+/* An ability's combo, under what it does */
+.rb-rs-combo {
+  margin-top: 4px;
+  color: #ffd98a;
+  font-size: 12px;
+}
+.rb-rs-combo b {
+  color: #ffd257;
+}

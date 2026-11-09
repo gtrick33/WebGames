@@ -206,6 +206,11 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
             <em>{ROLE_WORD[shown.role]}</em>
             <small>{timing(shown)}</small>
             <p>{shown.text}</p>
+            {shown.combo && (
+              <p className="rb-rs-combo">
+                <b>Combo · {shown.combo.name}:</b> {shown.combo.text}
+              </p>
+            )}
           </span>
         </div>
       )}

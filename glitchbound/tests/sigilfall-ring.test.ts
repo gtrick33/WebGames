@@ -829,3 +829,46 @@ describe('The Ring: who is who', () => {
     }
   });
 });
+
+describe('The Ring: combos', () => {
+  it('every ready-made build has a combo among its abilities', () => {
+    for (const cls of CLASS_IDS) {
+      for (const p of PRESETS[cls]) expect(p.bar.some((id) => ABILITIES[id]?.combo), `${cls} ${p.name}`).toBe(true);
+    }
+  });
+
+  it('a combo needs its setup: Flashburn on a Kindled target lands harder and uses the Kindling up', () => {
+    const plain = duel('mage', ['m-burn'], 'warrior');
+    const hp0 = plain.fighters[1]!.hp;
+    plain.press(0, 'm-burn');
+    wait(plain, 0.6);
+    const hitPlain = hp0 - plain.fighters[1]!.hp;
+
+    const m = duel('mage', ['m-burn'], 'warrior');
+    const foe = m.fighters[1]!;
+    // (as if an Ember Lash had landed: Kindled)
+    foe.auras.push({ ab: 'm-lash', kind: 'dot', src: 0, t: 6, dur: 6, harmful: true, magic: true, n: 0, next: 99 });
+    const hp1 = foe.hp;
+    m.events.length = 0;
+    m.press(0, 'm-burn');
+    wait(m, 0.6);
+    const hitCombo = hp1 - foe.hp;
+    // (crits aside, a 1.7x hit is well clear of a plain one)
+    expect(hitCombo).toBeGreaterThan(hitPlain * 1.3);
+    expect(foe.auras.some((a) => a.ab === 'm-lash')).toBe(false);
+    expect(m.fighters[0]!.score.combos).toBe(1);
+  });
+
+  it('a hold sets one up too: Rime Spear shatters a rooted target', () => {
+    const m = duel('mage', ['m-spear'], 'warrior');
+    const foe = m.fighters[1]!;
+    foe.auras.push({ ab: 'm-ring', kind: 'cc', cc: 'root', src: 0, t: 5, dur: 5, harmful: true, magic: true, n: 0 });
+    const seen: string[] = [];
+    m.press(0, 'm-spear');
+    for (let i = 0; i < 90; i++) {
+      m.step(STEP, {});
+      for (const e of m.events) if (e.k === 'word' && e.combo) seen.push(e.word);
+    }
+    expect(seen).toContain('Shatter');
+  });
+});

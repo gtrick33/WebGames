@@ -118,7 +118,7 @@ export interface Fighter {
   talents: string[];
   mods: { dmg: number; heal: number; speed: number; tenacity: number; cool: number; regen: number };
   tune: Record<string, Tune>;
-  score: { dmg: number; heal: number; cc: number; kicks: number };
+  score: { dmg: number; heal: number; cc: number; kicks: number; combos?: number };
 }
 
 export interface Bolt {
@@ -144,7 +144,7 @@ export interface Trap {
 /** What happened this frame, for the drawing and the sounds to take. */
 export type MatchEvent =
   | { k: 'num'; id: number; n: number; kind: 'dmg' | 'heal' | 'absorb'; crit: boolean }
-  | { k: 'word'; id: number; word: string; bad?: boolean }
+  | { k: 'word'; id: number; word: string; bad?: boolean; combo?: boolean }
   | { k: 'ab'; id: number; ab: string }
   | { k: 'land'; id: number; ab: string }
   | { k: 'death'; id: number };
@@ -479,10 +479,25 @@ export class Match {
       this.events.push({ k: 'word', id: t.id, word: 'Immune' });
       return;
     }
+    // a combo: what this hero set up on them (or the hold they're in) makes this land harder
+    let boost = 1;
+    let combo: Ability['combo'] | null = null;
+    const c = ab.combo;
+    if (c && !t.dead) {
+      const mine = (a: Aura): boolean => !!c.ab?.includes(a.ab) && a.src === f.id;
+      if (t.auras.some((a) => mine(a) || (!!a.cc && !!c.cc?.includes(a.cc)))) {
+        combo = c;
+        boost = c.mult;
+        if (c.consume) t.auras = t.auras.filter((a) => !mine(a));
+        f.score.combos = (f.score.combos ?? 0) + 1;
+        this.events.push({ k: 'word', id: t.id, word: c.name, combo: true });
+      }
+    }
     for (const e of ab.effects) {
       if (t.dead && e.k !== 'heal') break;
-      if (this.apply(f, ab, t, e) === 'stop') break;
+      if (this.apply(f, ab, t, e, boost) === 'stop') break;
     }
+    if (combo?.extra) for (const e of combo.extra) if (!t.dead || e.k === 'heal') this.apply(f, ab, t, e);
   }
 
   private immuneTo(t: Fighter, ab: Ability): boolean {
@@ -498,10 +513,10 @@ export class Match {
     return aura;
   }
 
-  private apply(f: Fighter, ab: Ability, t: Fighter, e: Effect): 'stop' | void {
+  private apply(f: Fighter, ab: Ability, t: Fighter, e: Effect, boost = 1): 'stop' | void {
     const magic = ab.school !== 'physical' && !ab.sticky;
     const base = { ab: ab.id, src: f.id, dur: 0, magic, n: 0 };
-    const power = f.tune[ab.id]?.power ?? 1;
+    const power = (f.tune[ab.id]?.power ?? 1) * boost;
     switch (e.k) {
       case 'dmg':
         this.damage(f, t, e.n * power, true, ab);

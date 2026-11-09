@@ -365,7 +365,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       const dt = lastPaint ? Math.min(0.1, Math.max(0, time - lastPaint)) : 0;
       lastPaint = time;
       for (const e of m.events) {
-        if (e.k === 'ab') view.swing(e.id, e.ab);
+        if (e.k === 'ab') view.swing(e.id, e.ab, m.fighters[e.id]?.cast?.ab === e.ab);
         // (somebody's down: the crowd is on its feet)
         else if (e.k === 'death') view.cheer();
       }
@@ -632,6 +632,11 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               <strong>{tip.name}</strong>
               <small>{timing(tip)}</small>
               <p>{tip.text}</p>
+              {tip.combo && (
+                <p className="rb-rs-combo">
+                  <b>Combo · {tip.combo.name}:</b> {tip.combo.text}
+                </p>
+              )}
             </div>
           )}
           {m.phase === 'over' && (
