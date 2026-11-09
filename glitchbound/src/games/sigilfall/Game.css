@@ -7580,6 +7580,22 @@
   color: #ff9ab0;
   font-size: 9.5px;
 }
+/* the Gloam: a warning before it comes, and a pulse while it closes */
+.rb-ring-gloam {
+  color: #d8b0ff;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+.rb-ring-gloam.is-on {
+  color: #f0d8ff;
+  text-shadow: 0 0 6px #9a4aff;
+  animation: rb-gloam 1.2s ease-in-out infinite;
+}
+@keyframes rb-gloam {
+  50% {
+    color: #c88aff;
+  }
+}
 .rb-ring-menu {
   display: flex;
   gap: 2px;
@@ -8088,6 +8104,53 @@
   border-color: #fff;
   box-shadow: 0 0 10px #ffe39a;
 }
+/* the Swift Step, and the super with its meter filling round its rim: gold, and alight when full */
+.rb-ring-ab.is-step {
+  margin-left: 7px;
+  border-color: #7fe0ff;
+}
+.rb-ring-ab.is-super {
+  width: clamp(44px, 8.6cqw, 62px);
+  height: clamp(44px, 8.6cqw, 62px);
+  margin-left: 7px;
+  padding: 3px;
+  border: 0;
+  border-radius: 50%;
+  background: conic-gradient(#ffcf5a var(--fill, 0%), #3a2c1c 0);
+}
+.rb-ring-ab.is-super img {
+  border-radius: 50%;
+}
+.rb-ring-ab.is-super kbd {
+  top: auto;
+  bottom: 3px;
+  left: 50%;
+  z-index: 1;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: rgb(10 6 20 / 0.7);
+  transform: translateX(-50%);
+}
+.rb-ring-charge {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: rgb(10 6 20 / 0.55);
+}
+.rb-ring-ab b.is-charge {
+  font-size: 11px;
+  color: #ffe39a;
+}
+.rb-ring-ab.is-super.is-full {
+  animation: rb-super 0.9s ease-in-out infinite;
+}
+@keyframes rb-super {
+  50% {
+    box-shadow:
+      0 0 0 3px rgb(255 207 90 / 0.7),
+      0 0 18px rgb(255 207 90 / 0.9);
+  }
+}
 .rb-ring-ab img {
   display: block;
   width: 100%;
@@ -8176,6 +8239,16 @@
 }
 .rb-ring-thumbs .rb-sb-dodge {
   border-color: #ffe39a;
+}
+/* the super: its meter round the rim, and alight when it's full */
+.rb-ring-thumbs .rb-sb-ult.is-super {
+  background: conic-gradient(from 180deg, #ffcf5a var(--fill, 0%), #2c2219 0);
+}
+.rb-ring-thumbs .rb-sb-ult.is-super::before {
+  display: block;
+}
+.rb-ring-thumbs .rb-sb-ult.is-super:not(.is-ready) img {
+  filter: grayscale(0.5) brightness(0.7);
 }
 .rb-ring-thumbs .rb-sb.is-nomana img {
   filter: grayscale(0.7) brightness(0.68);

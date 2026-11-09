@@ -2,12 +2,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, kitOf, OATHS, PRESETS, SLOTS, TOKEN } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, DASH, kitOf, OATHS, PRESETS, SLOTS, superOf, SUPERS } from '../src/games/sigilfall/arena/abilities';
 import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
 import { afterMatch, COMPS, drawOpponents, namedApart, NEW_STANDING, nextRank, rankOf, ratingChange, RANKS, SET_COUNT, setsOf, skillAt } from '../src/games/sigilfall/arena/ladder';
 import { ARENA_H, ARENA_W, ENTRY_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
 import { cleanTalents, ROW_NAMES, TALENTS } from '../src/games/sigilfall/arena/talents';
-import { clearLine, GATES, HERO_R, Match, MATCH_LIMIT, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
+import { BASE_SPEED, CAST_SLOW, clearLine, CLOSE_FROM, CLOSE_TO, GATES, HERO_R, Match, MATCH_LIMIT, SIGIL_FIRST, ZONE_END, ZONE_START, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { act, cleanPick, join, newRoom, relay, viewFor } from '../src/games/sigilfall/net/ringRoom';
@@ -71,23 +71,28 @@ describe('The Ring: the rules', () => {
     expect(clearLine(p, 95, 95, 95, 130)).toBe(true);
   });
 
-  it('casting takes standing still: moving stops a cast, and refuses to start one', () => {
+  it('a cast goes on while you move, only slower on your feet, and one can be started on the move', () => {
     const m = duel('mage', ['m-lash'], 'warrior');
     const me = m.fighters[0]!;
     m.press(0, 'm-lash');
-    wait(m, 0.5);
-    expect(me.cast?.t).toBeGreaterThan(0.4);
-    wait(m, 0.1, { 0: { mx: 1, my: 0 } });
+    wait(m, 0.3);
+    const x = me.x;
+    wait(m, 0.4, { 0: { mx: -1, my: 0 } });
+    expect(me.cast?.ab).toBe('m-lash');
+    expect(x - me.x).toBeGreaterThan(BASE_SPEED * 0.4 * CAST_SLOW * 0.8);
+    expect(x - me.x).toBeLessThan(BASE_SPEED * 0.4 * CAST_SLOW * 1.2);
+    wait(m, 1, { 0: { mx: -1, my: 0 } });
     expect(me.cast).toBeNull();
+    expect(m.fighters[1]!.hp).toBeLessThan(m.fighters[1]!.maxHp);
     me.gcd = 0;
-    expect(m.press(0, 'm-lash')).toBe('Stand still to cast');
+    expect(m.press(0, 'm-lash')).toBeNull();
   });
 
   it('pressing a cast again doesn’t restart it', () => {
     const m = duel('mage', ['m-lash'], 'warrior');
     const me = m.fighters[0]!;
     m.press(0, 'm-lash');
-    wait(m, 1.2);
+    wait(m, 0.6);
     const t = me.cast!.t;
     expect(m.press(0, 'm-lash')).toBe('Already casting');
     expect(me.cast!.t).toBe(t);
@@ -97,10 +102,10 @@ describe('The Ring: the rules', () => {
     const m = duel('mage', ['m-lash', 'm-burn'], 'warrior');
     const me = m.fighters[0]!;
     m.press(0, 'm-lash');
-    wait(m, 0.8);
+    wait(m, 0.4);
     expect(m.press(0, 'm-burn')).toBe('Casting');
     expect(me.cast?.ab).toBe('m-lash');
-    wait(m, 0.8);
+    wait(m, 0.5);
     // (0.2s left: queued)
     expect(m.press(0, 'm-burn')).toBeNull();
     expect(me.cast?.ab).toBe('m-lash');
@@ -114,10 +119,10 @@ describe('The Ring: the rules', () => {
     const me = m.fighters[0]!;
     const foe = m.fighters[1]!;
     expect(m.press(0, 'w-hew')).toBeNull();
-    expect(me.gcd).toBeGreaterThan(0.9);
+    expect(me.gcd).toBeGreaterThan(0.7);
     expect(m.press(0, 'w-hamstring')).toBe('Not ready yet');
     expect(m.press(0, 'w-stand')).toBeNull();
-    wait(m, 0.8);
+    wait(m, 0.5);
     expect(m.press(0, 'w-hamstring')).toBeNull();
     expect(me.queued?.ab).toBe('w-hamstring');
     wait(m, 0.3);
@@ -139,21 +144,22 @@ describe('The Ring: the rules', () => {
   });
 
   it('crowd control wears off harder each time, then not at all, and the slate wipes clean with time', () => {
-    const m = duel('mage', ['m-chill'], 'warrior');
+    const m = duel('druid', ['l-bash'], 'warrior');
     const foe = m.fighters[1]!;
     const stun = (): number => {
       m.fighters[0]!.cds = {};
       m.fighters[0]!.gcd = 0;
       foe.auras = [];
-      m.press(0, 'm-chill');
+      m.press(0, 'l-bash');
       return foe.auras.find((a) => a.cc === 'stun')?.t ?? 0;
     };
-    expect(stun()).toBeCloseTo(4);
-    expect(stun()).toBeCloseTo(2);
-    expect(stun()).toBeCloseTo(1);
+    // (holds are short in a brawl: a stun is a second and a half at most)
+    expect(stun()).toBeCloseTo(1.5);
+    expect(stun()).toBeCloseTo(0.75);
+    expect(stun()).toBeCloseTo(0.375);
     expect(stun()).toBe(0);
     wait(m, 20);
-    expect(stun()).toBeCloseTo(4);
+    expect(stun()).toBeCloseTo(1.5);
   });
 
   it('a stun holds you; a daze breaks on any hurt; a fear and a root only on enough of it', () => {
@@ -169,7 +175,7 @@ describe('The Ring: the rules', () => {
 
     const n = duel('mage', ['m-toad'], 'warrior');
     n.press(0, 'm-toad');
-    wait(n, 1.6);
+    wait(n, 1.1);
     const held = n.fighters[1]!;
     expect(held.auras.some((a) => a.cc === 'incap')).toBe(true);
     expect(n.press(1, 'w-hew')).toBe('You can’t do that now');
@@ -195,15 +201,19 @@ describe('The Ring: the rules', () => {
     expect(held.x).toBe(at);
   });
 
-  it('the Token breaks anything that holds you, even when you can do nothing else, on a long clock', () => {
-    const m = duel('mage', ['m-chill', 'm-toad'], 'warrior');
+  it('a hold is short and lifts by itself, and what can be used while held still can', () => {
+    const m = duel('mage', ['m-chill'], 'warrior', ['w-hew', 'w-stand']);
     const foe = m.fighters[1]!;
     m.press(0, 'm-chill');
+    wait(m, 0.15);
     expect(m.held(foe)).toBeTruthy();
     expect(m.press(1, 'w-hew')).toBe('You can’t do that now');
-    expect(m.press(1, TOKEN.id)).toBeNull();
+    expect(m.press(1, DASH.id)).toBe('You can’t do that now');
+    expect(m.press(1, 'w-stand')).toBeNull();
+    // (no Token any more: holds are short enough to wait out)
+    expect(m.press(1, 'token')).toMatch(/don’t have/);
+    wait(m, 1.5);
     expect(m.held(foe)).toBeUndefined();
-    expect(m.press(1, TOKEN.id)).toBe('Not ready yet');
   });
 
   it('a dispel takes a hold off a friend, a blessing off an enemy, and a barbed curse bites whoever takes it', () => {
@@ -217,6 +227,7 @@ describe('The Ring: the rules', () => {
     priest.friend = warrior.id;
     mage.target = warrior.id;
     m.press(mage.id, 'm-chill');
+    wait(m, 0.15);
     expect(m.held(warrior)).toBeTruthy();
     expect(m.press(priest.id, 'p-cleanse')).toBeNull();
     expect(m.held(warrior)).toBeUndefined();
@@ -247,6 +258,7 @@ describe('The Ring: the rules', () => {
     const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
     m.press(0, 'w-ward');
     expect(m.press(1, 'm-burn')).toBeNull();
+    wait(m, 0.2);
     expect(foe.hp).toBeLessThan(foe.maxHp);
     expect(me.hp).toBe(me.maxHp);
     expect(me.auras.some((a) => a.kind === 'reflect')).toBe(false);
@@ -263,18 +275,19 @@ describe('The Ring: the rules', () => {
     const n = duel('ranger', ['r-deter'], 'mage', ['m-burn']);
     n.press(0, 'r-deter');
     n.press(1, 'm-burn');
+    wait(n, 0.2);
     expect(n.fighters[0]!.hp).toBeLessThan(n.fighters[0]!.maxHp);
   });
 
   it('a heal fades with the match: dampening starts late and grows, and a deep wound halves it again', () => {
     const m = duel('priest', ['p-mend'], 'warrior');
     expect(m.dampening).toBe(0);
-    m.clock = 90;
+    m.clock = 30;
     expect(m.dampening).toBe(0);
-    m.clock = 200;
+    m.clock = 70;
     expect(m.dampening).toBeGreaterThan(0.25);
     m.clock = MATCH_LIMIT;
-    expect(m.dampening).toBeCloseTo(0.7);
+    expect(m.dampening).toBeCloseTo(0.75);
   });
 
   it('a trap waits for the first enemy across it, and not a friend', () => {
@@ -384,7 +397,7 @@ describe('The Ring: the entries and the wait', () => {
     expect(me.hp).toBe(me.maxHp);
     // nothing that isn't a full bar of their own
     expect(m.equip(0, { bar: ['m-lash'] })).toBe(false);
-    expect(m.equip(0, { bar: [next.bar[0]!, next.bar[0]!, ...next.bar.slice(1, 5)] })).toBe(false);
+    expect(m.equip(0, { bar: [next.bar[0]!, next.bar[0]!, ...next.bar.slice(1, 3)] })).toBe(false);
     m.step(GATES + 0.01, {});
     expect(m.equip(0, { bar: PRESETS.warrior[0]!.bar })).toBe(false);
     expect(me.bar).toEqual(next.bar);
@@ -441,7 +454,7 @@ describe('The Ring: talents and set ups', () => {
     };
     expect(hit(['w-1a'])).toBeGreaterThan(hit([]) * 1.2);
 
-    const m = new Match({ seed: 1, map: 'sands', fighters: [{ ...fighter(0, 'mage', PRESETS.mage[0]!.bar), talents: ['m-1a', 'm-2c', 'm-3b'] }, fighter(1, 'warrior')] });
+    const m = new Match({ seed: 1, map: 'sands', fighters: [{ ...fighter(0, 'mage', ['m-lash', 'm-blink', 'm-snap', 'm-burn']), talents: ['m-1a', 'm-2c', 'm-3b'] }, fighter(1, 'warrior')] });
     m.step(GATES + 0.01, {});
     const [a, b] = [m.fighters[0]!, m.fighters[1]!];
     a.x = 200;
@@ -449,11 +462,11 @@ describe('The Ring: talents and set ups', () => {
     b.x = 225;
     b.y = 125;
     m.press(0, 'm-lash');
-    expect(a.cast!.dur).toBeCloseTo(1.5);
+    expect(a.cast!.dur).toBeCloseTo(ABILITIES['m-lash']!.cast * (1.5 / 1.8));
     m.press(0, 'm-blink');
-    expect(a.cds['m-blink']).toBeCloseTo(10);
+    expect(a.cds['m-blink']).toBeCloseTo(ABILITIES['m-blink']!.cd * 0.625);
     m.press(0, 'm-snap');
-    expect(a.cds['m-snap']).toBeCloseTo(14);
+    expect(a.cds['m-snap']).toBeCloseTo(ABILITIES['m-snap']!.cd * 0.7);
 
     const n = new Match({ seed: 1, map: 'sands', fighters: [{ ...fighter(0, 'ranger', PRESETS.ranger[0]!.bar), talents: ['r-2b'] }, fighter(1, 'warrior')] });
     n.step(GATES + 0.01, {});
@@ -463,7 +476,7 @@ describe('The Ring: talents and set ups', () => {
     n.fighters[1]!.y = 125;
     n.press(0, 'r-hawk');
     wait(n, 0.3);
-    expect(n.held(n.fighters[1]!)!.t).toBeGreaterThan(3.3);
+    expect(n.held(n.fighters[1]!)!.t).toBeGreaterThan(1.6);
   });
 
   it('every ready-made build names real talents, one a row', () => {
@@ -515,7 +528,7 @@ describe('The Ring: the kits', () => {
   it('every ability’s icon is in the atlas', () => {
     const index = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/games/sigilfall/icons/icons.json'), 'utf8')) as { names: string[] };
     for (const a of Object.values(ABILITIES)) expect(index.names, a.id).toContain(a.icon);
-    expect(index.names).toContain(TOKEN.icon);
+    expect(index.names).toContain(DASH.icon);
   });
 
   it('a spell’s text matches its numbers', () => {
@@ -577,9 +590,9 @@ describe('The Ring: computer players', () => {
         n++;
       }
     }
-    // short enough to want another, long enough for something to happen
+    // short enough to want another (a brawl, not a siege), long enough for something to happen
     expect(spent / n).toBeGreaterThan(25);
-    expect(spent / n).toBeLessThan(240);
+    expect(spent / n).toBeLessThan(85);
   }, 120_000);
 
   it('a melee fighter reaches their target past the stone on every ground', () => {
@@ -870,5 +883,173 @@ describe('The Ring: combos', () => {
       for (const e of m.events) if (e.k === 'word' && e.combo) seen.push(e.word);
     }
     expect(seen).toContain('Shatter');
+  });
+});
+
+describe('The Ring: a brawl', () => {
+  it('a shot flies where they were going: it lands on someone who keeps on, and misses someone who steps aside', () => {
+    const shoot = (dodge: boolean): number => {
+      const m = duel('mage', ['m-burn'], 'warrior');
+      const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
+      // (in the open between the sands' pillars, in reach)
+      me.x = 150;
+      foe.x = 270;
+      // walking up the ground when it's thrown
+      m.step(STEP, { 1: { mx: 0, my: -1 } });
+      expect(m.press(0, 'm-burn')).toBeNull();
+      expect(m.bolts).toHaveLength(1);
+      for (let i = 0; i < 30; i++) m.step(STEP, { 1: { mx: 0, my: dodge && i > 3 ? 1 : -1 } });
+      return foe.maxHp - foe.hp;
+    };
+    expect(shoot(false)).toBeGreaterThan(0);
+    expect(shoot(true)).toBe(0);
+  });
+
+  it('a shot hits the first enemy in its way, and stone stops it', () => {
+    const m = new Match({ seed: 2, map: 'sands', fighters: [fighter(0, 'mage', ['m-burn']), fighter(1, 'warrior'), fighter(1, 'ranger')] });
+    m.step(GATES + 0.01, {});
+    const [me, far, near] = m.fighters as [typeof m.fighters[0], typeof m.fighters[0], typeof m.fighters[0]];
+    me.x = 100;
+    me.y = 125;
+    far.x = 220;
+    far.y = 125;
+    near.x = 170;
+    near.y = 126;
+    me.target = far.id;
+    m.press(0, 'm-burn');
+    wait(m, 0.6);
+    expect(near.hp).toBeLessThan(near.maxHp);
+    expect(far.hp).toBe(far.maxHp);
+
+    const n = duel('mage', ['m-burn'], 'warrior');
+    const p = n.pillars[0]!;
+    const [a, b] = [n.fighters[0]!, n.fighters[1]!];
+    a.x = p.x - 30;
+    a.y = p.y + p.h / 2;
+    b.x = p.x + p.w + 30;
+    b.y = p.y + p.h / 2;
+    // (a shot already in the air, straight at them through the stone)
+    n.bolts.push({ ab: 'm-burn', src: 0, tgt: 1, x: a.x, y: a.y - 8, vx: 300, vy: 0, left: 200 });
+    const seen: string[] = [];
+    for (let i = 0; i < 40; i++) {
+      n.step(STEP, {});
+      for (const e of n.events) seen.push(e.k);
+    }
+    expect(b.hp).toBe(b.maxHp);
+    expect(seen).toContain('miss');
+  });
+
+  it('a Swift Step is quick, on its own clock, off the global one, and not while rooted', () => {
+    const m = duel('warrior', ['w-hew'], 'mage');
+    const me = m.fighters[0]!;
+    me.dirX = -1;
+    me.dirY = 0;
+    const x = me.x;
+    m.press(0, 'w-hew');
+    expect(m.press(0, DASH.id)).toBeNull();
+    wait(m, 0.3);
+    expect(x - me.x).toBeGreaterThan(50);
+    expect(m.press(0, DASH.id)).toBe('Not ready yet');
+    wait(m, DASH.cd);
+    me.auras.push({ ab: 'm-ring', kind: 'cc', cc: 'root', src: 1, t: 2, dur: 2, harmful: true, magic: true, n: 0 });
+    expect(m.press(0, DASH.id)).toBe('Rooted');
+  });
+
+  it('the super fills by fighting, waits for a full meter, empties when used, and isn’t refilled by its own blow', () => {
+    for (const cls of CLASS_IDS) {
+      expect(superOf(cls).super, cls).toBe(true);
+      expect(superOf(cls).cls).toBe(cls);
+    }
+    expect(Object.keys(SUPERS).sort()).toEqual([...CLASS_IDS].sort());
+    const m = duel('warrior', ['w-hew'], 'mage');
+    const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
+    expect(m.press(0, 'w-super')).toMatch(/isn’t charged/);
+    // nobody else's super, and none on a bar
+    expect(m.press(0, 'm-super')).toMatch(/don’t have/);
+    expect(new Match({ seed: 1, map: 'sands', fighters: [fighter(0, 'warrior', ['w-super', 'w-hew'])] }).fighters[0]!.bar).toEqual(['w-hew']);
+    m.press(0, 'w-hew');
+    expect(me.charge).toBeGreaterThan(0);
+    expect(foe.charge).toBeGreaterThan(0);
+    expect(foe.charge).toBeLessThan(me.charge);
+    me.charge = 1;
+    const hp = foe.hp;
+    expect(m.press(0, 'w-super')).toBeNull();
+    expect(foe.hp).toBeLessThan(hp - 100);
+    expect(me.charge).toBe(0);
+    expect(me.score.supers).toBe(1);
+    // thrown back
+    wait(m, 0.3);
+    expect(Math.hypot(foe.x - me.x, foe.y - me.y)).toBeGreaterThan(60);
+  });
+
+  it('a knock throws them back and cuts off what they were casting', () => {
+    const m = duel('paladin', ['d-wrath'], 'mage', ['m-lash']);
+    const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
+    m.press(1, 'm-lash');
+    wait(m, 0.2);
+    expect(foe.cast).not.toBeNull();
+    const d = Math.hypot(foe.x - me.x, foe.y - me.y);
+    m.press(0, 'd-wrath');
+    expect(foe.cast).toBeNull();
+    wait(m, 0.3);
+    expect(Math.hypot(foe.x - me.x, foe.y - me.y)).toBeGreaterThan(d + 30);
+  });
+
+  it('the sigil rises in the middle, and whoever reaches it first is healed, charged and quickened', () => {
+    for (const id of MAP_IDS) {
+      const m = new Match({ seed: 1, map: id, fighters: [fighter(0, 'warrior')] });
+      const s = m.sigilSpot();
+      expect(m.pillars.some((p) => s.x > p.x - HERO_R && s.x < p.x + p.w + HERO_R && s.y > p.y - HERO_R && s.y < p.y + p.h + HERO_R), id).toBe(false);
+    }
+    const m = duel('warrior', ['w-hew'], 'mage');
+    const me = m.fighters[0]!;
+    m.fighters[1]!.x = 40;
+    me.x = 60;
+    wait(m, SIGIL_FIRST - 0.5);
+    expect(m.sigil).toBeNull();
+    wait(m, 1);
+    expect(m.sigil).not.toBeNull();
+    me.hp = me.maxHp / 2;
+    me.x = m.sigil!.x;
+    me.y = m.sigil!.y;
+    wait(m, 0.1);
+    expect(m.sigil).toBeNull();
+    expect(me.hp).toBeGreaterThan(me.maxHp * 0.65);
+    expect(me.charge).toBeGreaterThan(0.3);
+    expect(me.auras.some((a) => a.kind === 'speed')).toBe(true);
+  });
+
+  it('the Gloam closes from past the corners to the middle and then to nothing, burning whoever is out in it', () => {
+    const m = duel('warrior', ['w-hew'], 'mage');
+    const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
+    // to begin with, the whole ground is safe, corners and entries too
+    expect(m.zone).toBe(ZONE_START);
+    for (const [x, y] of [[0, 0], [ARENA_W, ARENA_H], [10, ARENA_H / 2]] as const) expect(m.zoneAt(x, y)).toBeLessThan(1);
+    m.clock = (CLOSE_FROM + CLOSE_TO) / 2;
+    expect(m.zone).toBeLessThan(ZONE_START);
+    expect(m.zone).toBeGreaterThan(ZONE_END);
+    m.clock = CLOSE_TO;
+    expect(m.zone).toBeCloseTo(ZONE_END);
+    me.x = 30;
+    me.y = 30;
+    foe.x = ARENA_W / 2;
+    foe.y = ARENA_H / 2;
+    expect(m.inGloam(me)).toBe(true);
+    expect(m.inGloam(foe)).toBe(false);
+    wait(m, 2);
+    expect(me.hp).toBeLessThan(me.maxHp * 0.92);
+    expect(foe.hp).toBe(foe.maxHp);
+    // sudden death: nowhere is safe in the end (but the very middle), so nothing lasts to the clock
+    m.clock = MATCH_LIMIT - 5;
+    foe.x += 8;
+    expect(m.inGloam(foe)).toBe(true);
+  });
+
+  it('holds are short and cooldowns quick: nobody stands helpless or waits long', () => {
+    for (const a of Object.values(ABILITIES)) {
+      for (const e of a.effects) if (e.k === 'cc' || e.k === 'trap') expect(e.dur, a.id).toBeLessThanOrEqual(3);
+      expect(a.cd, a.id).toBeLessThanOrEqual(45);
+      expect(a.cast, a.id).toBeLessThanOrEqual(1.5);
+    }
   });
 });

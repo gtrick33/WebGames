@@ -12,9 +12,8 @@ export type RingAction =
   | 'ab2'
   | 'ab3'
   | 'ab4'
-  | 'ab5'
-  | 'ab6'
-  | 'token'
+  | 'dash'
+  | 'super'
   | 'nextFoe'
   | 'nextFriend'
   | 'self'
@@ -33,9 +32,8 @@ export const RING_ACTIONS: { id: RingAction; name: string; group: 'Move' | 'Abil
   { id: 'ab2', name: 'Ability 2', group: 'Abilities' },
   { id: 'ab3', name: 'Ability 3', group: 'Abilities' },
   { id: 'ab4', name: 'Ability 4', group: 'Abilities' },
-  { id: 'ab5', name: 'Ability 5', group: 'Abilities' },
-  { id: 'ab6', name: 'Ability 6', group: 'Abilities' },
-  { id: 'token', name: 'Token of Will', group: 'Abilities' },
+  { id: 'dash', name: 'Swift Step', group: 'Abilities' },
+  { id: 'super', name: 'Super', group: 'Abilities' },
   { id: 'nextFoe', name: 'Next enemy', group: 'Targets' },
   { id: 'nextFriend', name: 'Next ally', group: 'Targets' },
   { id: 'self', name: 'Help yourself', group: 'Targets' },
@@ -57,9 +55,8 @@ export const DEFAULT_KEYS: RingKeys = {
   ab2: 'Digit2',
   ab3: 'Digit3',
   ab4: 'Digit4',
-  ab5: 'Digit5',
-  ab6: 'Digit6',
-  token: 'KeyT',
+  dash: 'Space',
+  super: 'KeyQ',
   nextFoe: 'Tab',
   nextFriend: 'KeyF',
   self: 'F1',
@@ -77,6 +74,11 @@ export function readKeys(): RingKeys {
     const raw = JSON.parse(localStorage.getItem(STORE) ?? '{}') as Partial<Record<string, unknown>>;
     const out = { ...DEFAULT_KEYS };
     for (const a of RING_ACTIONS) if (typeof raw[a.id] === 'string' && raw[a.id]) out[a.id] = raw[a.id] as string;
+    // an action newer than the saved keys gets its default only if the player hasn't put that key to another use
+    for (const a of RING_ACTIONS) {
+      if (typeof raw[a.id] === 'string') continue;
+      if (RING_ACTIONS.some((b) => b.id !== a.id && typeof raw[b.id] === 'string' && raw[b.id] === out[a.id])) out[a.id] = '';
+    }
     return out;
   } catch {
     return { ...DEFAULT_KEYS };
@@ -105,12 +107,14 @@ export function bind(k: RingKeys, action: RingAction, code: string): RingKeys {
 
 /** The action a key does, if any. */
 export function actionOf(k: RingKeys, code: string): RingAction | null {
+  if (!code) return null;
   for (const a of RING_ACTIONS) if (k[a.id] === code) return a.id;
   return null;
 }
 
 /** A key's name as it's printed on it. */
 export function keyName(code: string): string {
+  if (!code) return '—';
   if (code.startsWith('Key')) return code.slice(3);
   if (code.startsWith('Digit')) return code.slice(5);
   if (code.startsWith('Numpad')) return `Num ${code.slice(6)}`;

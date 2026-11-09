@@ -49,7 +49,8 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
     for (const s of on) {
       const known = CLASS_IDS.includes(s.pick!.cls as ClassId);
       const cls = (known ? s.pick!.cls : 'warrior') as ClassId;
-      const bar = s.pick!.bar.filter((id) => ABILITIES[id]?.cls === cls);
+      // (a bar of six from a player whose game is from before bars held four keeps its first four)
+      const bar = s.pick!.bar.filter((id) => ABILITIES[id]?.cls === cls && !ABILITIES[id]!.super).slice(0, SLOTS);
       fighters.push({ team, cls, name: s.name, bar: bar.length === SLOTS ? bar : PRESETS[cls][0]!.bar, oath: s.pick!.oath, talents: s.pick!.talents, seat: s.n });
     }
     const list = COMPS[v.format];
@@ -407,7 +408,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
                     Change abilities & talents
                   </button>
                 </div>
-                <BarRow bar={bar} />
+                <BarRow bar={bar} cls={pick} />
                 <SetupChips cls={pick} setup={setup} />
                 {!ready && <p className="rb-rp-warn">Your bar needs {SLOTS - bar.length} more.</p>}
               </div>
@@ -617,7 +618,7 @@ function FriendsPage({ view, state, err, ready, codeIn, setCodeIn, onOpen, onJoi
         <div className="rb-rp-block">
           <h3>You bring</h3>
           <ClassRow pick={pick} onPick={onPick} />
-          <BarRow bar={bar} />
+          <BarRow bar={bar} cls={pick} />
           <button className="rb-btn is-small" onClick={onSetup}>
             Change abilities & talents
           </button>

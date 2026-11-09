@@ -224,7 +224,8 @@ export class RingStage implements RingView {
   swing(id: number, abId: string, starting = false): void {
     const ab = ABILITIES[abId];
     const s = this.motions.get(id);
-    if (!s || !ab || starting) return;
+    // (a Swift Step is its own streak, not a swing)
+    if (!s || !ab || starting || ab.id === 'dash') return;
     const melee = ab.range > 0 && ab.range <= 40;
     const archer = ab.cls === 'ranger' && (ab.school === 'physical' || ab.school === 'nature') && ab.aim === 'enemy' && !melee;
     let clip = 'cast';
@@ -255,6 +256,12 @@ export class RingStage implements RingView {
     const cx = (c.x - a.x) * k;
     const cy = (c.y - a.y) * k;
     this.g.setTransform(ax, ay, cx, cy, a.x * this.k - ax * x - cx * y, a.y * this.k - ay * x - cy * y);
+  }
+
+  /** Where a spot on the ground falls on the layer being drawn, in its own pixels. */
+  spot(x: number, y: number, h = 0): { x: number; y: number } {
+    const a = this.stage.project(x, y, h);
+    return { x: a.x * this.k, y: a.y * this.k };
   }
 
   up(x: number, y: number, h = 0): void {

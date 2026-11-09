@@ -1,6 +1,6 @@
 import { ABILITIES } from '../arena/abilities';
 import { ARENA_H, ARENA_W, MAPS } from '../arena/maps';
-import { HERO_R, type Fighter, type Match } from '../arena/sim';
+import { HERO_R, ZONE_START, type Fighter, type Match } from '../arena/sim';
 import type { RingAir } from '../render3d/ringDress';
 import { shot, TONES } from './effects';
 import { CLASSES } from '../data/classes';
@@ -76,6 +76,8 @@ export class RingFx {
   flashes: Flash[] = [];
   pops: Pop[] = [];
   bursts: Burst[] = [];
+  /** Who just let a super go: a column of light on them for a moment. */
+  supers: { id: number; t: number }[] = [];
   private spread = 0;
 
   /** Takes the match's events. Returns what's worth a sound. */
@@ -100,7 +102,7 @@ export class RingFx {
         if (!ab || !f) continue;
         if (ab.aim === 'near') this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.42, r: ab.range + HERO_R, color: ab.color, ring: true });
         else if (ab.cast === 0 && ab.range <= 40) this.flashes.push({ x: f.x + f.dirX * 12, y: f.y - 8 + f.dirY * 8, t: 0, dur: 0.16, r: 16, color: ab.color, ring: false });
-        sound(ab.school === 'physical' ? 'enemySwing' : 'click', 0.5);
+        sound(ab.id === 'dash' ? 'dodge' : ab.school === 'physical' ? 'enemySwing' : 'click', 0.5);
       } else if (e.k === 'land') {
         const ab = ABILITIES[e.ab];
         const f = m.fighters[e.id];
@@ -114,6 +116,23 @@ export class RingFx {
         if (!f) continue;
         this.flashes.push({ x: f.x, y: f.y - 10, t: 0, dur: 0.8, r: 60, color: '#ff5a5a', ring: true });
         sound('playerDie', 0.8);
+      } else if (e.k === 'miss') {
+        // a shot that hit stone or flew out: a puff where it fell
+        const ab = ABILITIES[e.ab];
+        this.flashes.push({ x: e.x, y: e.y, t: 0, dur: 0.22, r: 9, color: ab?.color ?? '#ffffff', ring: false });
+      } else if (e.k === 'super') {
+        // a super: a great ring of its color, a crowd that roars, and its name called out
+        const ab = ABILITIES[e.ab];
+        const f = m.fighters[e.id];
+        if (!ab || !f) continue;
+        this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.7, r: Math.max(46, ab.aim === 'near' ? ab.range + HERO_R : 46), color: ab.color, ring: true });
+        this.flashes.push({ x: f.x, y: f.y - 14, t: 0, dur: 0.45, r: 34, color: '#fff6d8', ring: false });
+        this.pops.push({ x: f.x, y: f.y - 54, t: 0, text: ab.name, color: '#ffd257', big: true });
+        this.supers.push({ id: f.id, t: 0 });
+        sound('nova', 0.6);
+      } else if (e.k === 'sigil') {
+        this.flashes.push({ x: e.x, y: e.y, t: 0, dur: 0.6, r: e.id < 0 ? 22 : 34, color: '#ffe27a', ring: true });
+        sound(e.id >= 0 ? 'pickupBig' : 'orb', e.id >= 0 ? 0.7 : 0.4);
       }
     }
     m.events.length = 0;
@@ -124,6 +143,8 @@ export class RingFx {
     for (const f of this.flashes) f.t += dt;
     for (const p of this.pops) p.t += dt;
     for (const b of this.bursts) b.t += dt;
+    for (const s of this.supers) s.t += dt;
+    this.supers = this.supers.filter((s) => s.t < 0.8);
     this.bursts = this.bursts.filter((b) => b.t < b.dur);
     this.flashes = this.flashes.filter((f) => f.t < f.dur);
     this.pops = this.pops.filter((p) => p.t < 0.9);
@@ -270,11 +291,55 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
   for (const b of m.bolts) {
     const ab = ABILITIES[b.ab];
     const c = ab?.color ?? '#ffffff';
-    const t = m.fighters[b.tgt];
-    const a = t ? Math.atan2(t.y - b.y, t.x - b.x) : 0;
+    const a = Math.atan2(b.vy, b.vx);
     const el = SCHOOL_EL[ab?.school ?? ''] ?? 'arcane';
     const tone = el === 'trail' ? { a: c, b: '#ffffff' } : (TONES[el] ?? { a: c, b: '#ffffff' });
-    shot(q, el === 'trail' ? 'orb' : el, b.x, b.y, Math.cos(a) * 100, Math.sin(a) * 100, 14, 3.4, b.x * 0.03 + b.y * 0.05, tone);
+    const k = ab?.super ? 1.7 : 1;
+    shot(q, el === 'trail' ? 'orb' : el, b.x, b.y, Math.cos(a) * 100, Math.sin(a) * 100, 14 * k, 3.4 * k, b.x * 0.03 + b.y * 0.05, tone);
+  }
+  // a Swift Step: a streak of light behind
+  for (const f of m.fighters) {
+    if (!f.dash || f.dead) continue;
+    for (let i = 1; i <= 4; i++) {
+      const dx = f.dash.x - f.x;
+      const dy = f.dash.y - f.y;
+      const d = Math.hypot(dx, dy) || 1;
+      q.put({ kind: FX.spark, x: f.x - (dx / d) * i * 5, y: f.y - (dy / d) * i * 5, up: 10 + i, w: 7 - i, a: '#bff4ff', t: 0.2, alpha: 1 - i * 0.2 });
+    }
+  }
+  // a super: a column of light on whoever let it go
+  for (const s of fx.supers) {
+    const f = m.fighters[s.id];
+    if (!f) continue;
+    const u = s.t / 0.8;
+    q.put({ kind: FX.shaft, x: f.x, y: f.y, base: true, w: 34, h: 90, a: classColor(f.cls), b: '#ffffff', t: u, alpha: 1 - u });
+  }
+  // the sigil in the middle, turning and shining, worth the run
+  if (m.sigil) {
+    const s = m.sigil;
+    const bob = Math.sin(time * 3) * 2;
+    q.put({ kind: FX.glow, x: s.x, y: s.y, up: 12 + bob, w: 50, a: '#ffd76a', alpha: 0.75 });
+    q.put({ kind: FX.ring, x: s.x, y: s.y, flat: true, w: 30, a: '#ffe27a', t: (time * 0.6) % 1, seed: 3 });
+    q.put({ kind: FX.orb, x: s.x, y: s.y, up: 12 + bob, w: 13, a: '#ffe27a', b: '#ffffff', t: 0.3, seed: time });
+    for (let i = 0; i < 5; i++) {
+      const ang = time * 1.8 + (i / 5) * Math.PI * 2;
+      q.put({ kind: FX.spark, x: s.x + Math.cos(ang) * 11, y: s.y + Math.sin(ang) * 5, up: 12 + bob + Math.sin(ang * 2) * 3, w: 4, a: '#fff6c8', t: 0.2, alpha: 0.9 });
+    }
+  }
+  // the Gloam: smoke along its edge, where it burns
+  const z = m.zone;
+  if (m.phase === 'fight' && z < ZONE_START - 0.01) {
+    const cx = ARENA_W / 2;
+    const cy = ARENA_H / 2;
+    for (let i = 0; i < 64; i++) {
+      const ang = (i / 64) * Math.PI * 2;
+      const x = cx + Math.cos(ang) * cx * z;
+      const y = cy + Math.sin(ang) * cy * z;
+      if (x < -10 || y < -10 || x > ARENA_W + 10 || y > ARENA_H + 10) continue;
+      const u = (time * 0.35 + i * 0.37) % 1;
+      q.put({ kind: FX.smoke, x, y, up: 4 + u * 26, w: 26 + u * 18, a: '#3a1460', alpha: 0.55 * Math.sin(u * Math.PI), t: 0.3, seed: i });
+      if (i % 3 === 0) q.put({ kind: FX.flame, x, y, up: -2, base: true, w: 10, h: 16 + Math.sin(time * 4 + i) * 4, a: '#7a3cff', b: '#d8a8ff', seed: i * 0.71 });
+    }
   }
   for (const f of fx.flashes) {
     const u = f.t / f.dur;
@@ -456,6 +521,28 @@ function lingering(q: Fx3D, f: Fighter, a: Fighter['auras'][number], time: numbe
 export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number, view: RingStage): void {
   const me = myId === null ? null : (m.fighters[myId] ?? null);
   let g = view.groundLayer();
+  if (m.phase === 'fight' && m.zone < ZONE_START - 0.01) gloamGround(g, m, view, time);
+  // a shot is a thing to dodge: a fading line on the ground ahead of it, where it's going
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.lineCap = 'round';
+  for (const b of m.bolts) {
+    const sp = Math.hypot(b.vx, b.vy) || 1;
+    const reach = Math.min(70, b.left);
+    const from = view.spot(b.x, b.y + 8);
+    const to = view.spot(b.x + (b.vx / sp) * reach, b.y + 8 + (b.vy / sp) * reach);
+    const line = g.createLinearGradient(from.x, from.y, to.x, to.y);
+    const c = ABILITIES[b.ab]?.color ?? '#ffffff';
+    line.addColorStop(0, `${c}88`);
+    line.addColorStop(1, `${c}00`);
+    g.strokeStyle = line;
+    g.lineWidth = 4;
+    g.beginPath();
+    g.moveTo(from.x, from.y);
+    g.lineTo(to.x, to.y);
+    g.stroke();
+  }
+  g.restore();
   for (const f of m.fighters) {
     view.flat(f.x, f.y);
     if (f.id === myId) ring(g, f.x, f.y, 11, '#ffe39a', 1.4);
@@ -482,3 +569,37 @@ export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number
 }
 
 export const classColor = (cls: Fighter['cls']): string => CLASSES[cls].colors.accent;
+
+/** The Gloam on the ground: everything outside the safe oval darkened, and its edge glowing. */
+function gloamGround(g: Ctx, m: Match, view: RingStage, time: number): void {
+  const z = m.zone;
+  const cx = ARENA_W / 2;
+  const cy = ARENA_H / 2;
+  const pts: { x: number; y: number }[] = [];
+  for (let i = 0; i < 96; i++) {
+    const a = (i / 96) * Math.PI * 2;
+    pts.push(view.spot(cx + Math.cos(a) * cx * z, cy + Math.sin(a) * cy * z));
+  }
+  const trace = (): void => {
+    g.moveTo(pts[0]!.x, pts[0]!.y);
+    for (const p of pts) g.lineTo(p.x, p.y);
+    g.closePath();
+  };
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.beginPath();
+  g.rect(0, 0, g.canvas.width, g.canvas.height);
+  trace();
+  g.fillStyle = 'rgba(24,6,44,0.55)';
+  g.fill('evenodd');
+  g.beginPath();
+  trace();
+  const pulse = 0.65 + Math.sin(time * 4) * 0.2;
+  g.strokeStyle = `rgba(190,130,255,${pulse})`;
+  g.lineWidth = 5;
+  g.stroke();
+  g.strokeStyle = 'rgba(255,236,255,0.8)';
+  g.lineWidth = 1.5;
+  g.stroke();
+  g.restore();
+}
