@@ -3,6 +3,7 @@ import type { MountDef } from '../data/mounts';
 import { mountDef, riddenMount, wornLooks } from '../progress/wardrobe';
 import type { ClassId } from '../data/types';
 import { SKILLS } from '../data/skills';
+import { CLASSES } from '../data/classes';
 import { colorOf, FIELD, FX, WARN, type Fx3D } from '../render3d/fx3d';
 import { heightFromRadius, PERSON_H, type Cast } from '../render3d/cast';
 import { kitOf } from '../render3d/kits';
@@ -296,6 +297,7 @@ export class Effects {
     this.fires(w, sc);
     this.marks(w, sc);
     this.shots(w, sc);
+    this.throwing(w, sc);
     for (const f of w.fx) if (sc.near(f.x, f.y)) this.particle(f, sc);
     for (const gh of w.coop?.ghosts ?? []) {
       for (const sh of gh.shots) {
@@ -362,6 +364,22 @@ export class Effects {
    * that widens and brightens in the spell's color, power streaming in, and a light gathering in the raised
    * hands, a little in front, that grows until the spell is thrown.
    */
+  /**
+   * A spell thrown out of the hand: a flash where it leaves (its light flaring and a rune turning at the hero's feet),
+   * in the hero's own color, so a caster's every cast is seen as a blow is.
+   */
+  private throwing(w: World, sc: EffectsScene): void {
+    const p = w.player;
+    if (p.dead || p.actT <= 0 || (p.actKind !== 'cast' && p.actKind !== 'shoot')) return;
+    const c = CLASSES[w.hero.cls].colors;
+    const u = clamp(1 - p.actT / 0.3, 0, 1);
+    const hx = p.x + Math.cos(p.actAngle) * 10;
+    const hy = p.y + Math.sin(p.actAngle) * 10;
+    sc.fx.put({ kind: FX.glow, x: hx, y: hy, up: 22, w: 34 * (1 - u * 0.5), a: c.accent, alpha: 0.75 * (1 - u) });
+    sc.fx.put({ kind: FX.impact, x: hx, y: hy, up: 22, w: 26, a: c.accent, b: '#ffffff', t: u, seed: p.x * 0.1 });
+    if (p.actKind === 'cast') sc.fx.put({ kind: FX.rune, x: p.x, y: p.y, flat: true, w: 34, a: c.main, b: c.accent, t: 0.5, alpha: 0.7 * (1 - u), seed: 0.3 });
+  }
+
   private gathering(fx: Fx3D, x: number, y: number, angle: number, type: string, k: number): void {
     const tone = toneOf(type);
     fx.put({ kind: FX.rune, x, y, flat: true, w: 28 + 20 * k, a: tone.a, b: tone.b, t: 0.5, alpha: 0.45 + 0.45 * k, seed: 0.7 });

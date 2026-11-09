@@ -123,6 +123,7 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
   }
   if (w.settings.numbers || crit) w.text(e.x + (w.rand() - 0.5) * 6, e.y - e.r - 6, String(shown), crit ? '#ffe14d' : o.isDot ? DOT_COLOR[type] : '#ffffff', crit);
   if (!o.isDot) w.sfx(o.blade ? (crit ? 'critBlade' : 'clash') : crit ? 'crit' : 'hit');
+  hitJuice(w, e, type, crit, !!o.isDot);
   // ultimate charge: hits worth a typical attack fill about 1/30th, but never faster than the charge budget
   // allows (it refills over seconds), so a hero with great gear doesn't cast the ultimate every few hits.
   // Normalized at the hit (PROGRESSION_BALANCE.md Part 2, E): the first enemy a direct hit strikes in a
@@ -514,6 +515,15 @@ export function killEnemy(w: World, e: Enemy, type: DmgType, depth: number, spec
   e.deathT = 0;
   e.hp = 0;
   w.onKill(e);
+  // (it goes out in a burst of its killer's color: light flung out, a ring along the ground, motes rising)
+  const kc = DOT_COLOR[type] === '#ffffff' ? '#ffe6c0' : DOT_COLOR[type];
+  const big = e.boss || e.elite.length ? 1.6 : 1;
+  w.vfx(`blast:${type}`, e.x, e.y, Math.max(14, e.r * 2) * big, 0.55);
+  w.addFx({ kind: 'ring', x: e.x, y: e.y, life: 0.45, size: e.r * 3 * big, color: kc });
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * TAU + e.id * 0.7;
+    w.addFx({ kind: 'spark', x: e.x, y: e.y - 6, vx: Math.cos(a) * 70 * big, vy: Math.sin(a) * 40 - 40, life: 0.45 + (i % 3) * 0.1, size: 1 + (i % 2), color: i % 3 ? kc : '#ffffff' });
+  }
   if (spec && depth === 0) applyEffects(w, spec.onKill, { x: e.x, y: e.y, angle: Math.atan2(e.y - w.player.y, e.x - w.player.x), spec, base: spec.damage, type, depth, target: e, hitDmg: 0, when: 'kill' });
   runProcs(w, 'kill', { x: e.x, y: e.y, target: e, base: 0, type, depth, hitDmg: 0, killType: type, statuses, skill: spec?.id });
 }
@@ -645,3 +655,33 @@ export const playerSlow = (w: World): number => {
   return c ? clamp(1 - c.power, 0.3, 1) : 1;
 };
 export const playerStunned = (w: World): boolean => w.player.statuses.some((s) => s.id === 'stun');
+
+/**
+ * What a hit looks like, beyond its number: an impact in the hit's own color where it lands, sparks flung from it, and
+ * for a critical hit a blast, a ring along the ground and a jolt of the view; a wound that burns or bleeds sends up
+ * motes of its color with each tick. (Laid out from the foe and the moment, never from the world's dice, so what
+ * happens in a fight is the same with or without it.)
+ */
+function hitJuice(w: World, e: Enemy, type: DmgType, crit: boolean, dot: boolean): void {
+  const c = DOT_COLOR[type] === '#ffffff' ? '#ffe6c0' : DOT_COLOR[type];
+  const spin = e.id * 1.37 + w.time * 5.3;
+  if (dot) {
+    for (let i = 0; i < 2; i++) {
+      const a = spin + i * 2.4;
+      w.addFx({ kind: 'ember', x: e.x + Math.cos(a) * e.r * 0.6, y: e.y - 4 + Math.sin(a) * 3, vx: Math.cos(a) * 6, vy: -26 - i * 8, life: 0.7, size: 1 + i, color: c });
+    }
+    return;
+  }
+  w.vfx(`impact:${type}`, e.x, e.y - 4, Math.max(16, e.r * (crit ? 2.4 : 1.6)), crit ? 0.45 : 0.32);
+  const n = crit ? 10 : 5;
+  const speed = crit ? 110 : 70;
+  for (let i = 0; i < n; i++) {
+    const a = spin + (i / n) * TAU;
+    w.addFx({ kind: 'spark', x: e.x, y: e.y - 6, vx: Math.cos(a) * speed * (0.6 + (i % 3) * 0.2), vy: Math.sin(a) * speed * 0.6 - 18, life: 0.22 + (i % 3) * 0.06, size: 1 + (i % 2), color: i % 2 ? c : '#ffffff' });
+  }
+  if (crit) {
+    w.vfx(`blast:${type}`, e.x, e.y, Math.max(12, e.r * 1.8), 0.4);
+    w.addFx({ kind: 'ring', x: e.x, y: e.y, life: 0.32, size: e.r * 2.6, color: c });
+    w.shake(1.6);
+  }
+}
