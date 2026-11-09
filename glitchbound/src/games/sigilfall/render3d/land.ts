@@ -12,7 +12,7 @@ import { PROPS, type PropDef } from '../data/props';
 import { loadPack, type MeshData, type Pack } from './pack';
 import { fadingMaterial, LIGHT, shadowMaterial, staticMaterial } from './toon';
 import { Stand } from './crowd';
-import { DOORWAYS } from './doorways';
+import { caveMouth, DOORWAYS } from './doorways';
 import { builtProp } from './propsBuilt';
 
 /**
@@ -1004,6 +1004,7 @@ export class Land3D {
     this.wallH = look.indoor ? DUNGEON_WALL : woody ? 1 : 1.6;
     this.placeAll(woody);
     this.clearWays();
+    this.passages(woody);
     this.placeSlabs();
     if (this.carpets.length || this.rugs.length) {
       const c = buildCarpets(this.carpets, this.rugs);
@@ -1062,6 +1063,89 @@ export class Land3D {
       if (pm.ty < 4) z0 = -8;
       if (pm.ty > H - 5) z1 = H + 8;
       this.clearTrees(x0, x1, z0, z1, true);
+    }
+  }
+
+  /**
+   * Every road out of a land goes through something of the land itself, so the way on is part of the place and not a
+   * gap at its edge: in a land of rock, a cave mouth in the land's own stone, its throat dark and its light inside; in a
+   * wood, a tunnel of tall trees closing over the road; in the farms, the towns and the open country, an old stone arch
+   * over the road. Each faces into the land from the edge it stands at.
+   */
+  private passages(woody: boolean): void {
+    const { map, look, region } = this;
+    if (look.indoor || region.kind === 'dungeon') return;
+    const W = map.w;
+    const H = map.h;
+    const done: { to: string; x: number; z: number }[] = [];
+    for (const pm of map.markers) {
+      const mk = pm.marker;
+      if (mk.kind !== 'exit' || mk.door || REGIONS[mk.to]?.kind === 'dungeon') continue;
+      if (done.some((d) => d.to === mk.to && Math.abs(d.x - pm.tx) < 4 && Math.abs(d.z - pm.ty) < 4)) continue;
+      // the way out's tiles together: its middle and its width
+      const group = map.markers.filter((o) => o.marker.kind === 'exit' && o.marker.to === mk.to && Math.abs(o.tx - pm.tx) < 4 && Math.abs(o.ty - pm.ty) < 4);
+      const xs = group.map((o) => o.tx);
+      const zs = group.map((o) => o.ty);
+      const cx = (Math.min(...xs) + Math.max(...xs)) / 2 + 0.5;
+      const cz = (Math.min(...zs) + Math.max(...zs)) / 2 + 0.5;
+      done.push({ to: mk.to, x: pm.tx, z: pm.ty });
+      // which edge it's at: the way runs out through it (its facing: the way back into the land)
+      const dTop = cz;
+      const dBottom = H - cz;
+      const dLeft = cx;
+      const dRight = W - cx;
+      const least = Math.min(dTop, dBottom, dLeft, dRight);
+      const edge = least === dTop ? 'n' : least === dBottom ? 's' : least === dLeft ? 'w' : 'e';
+      const across = edge === 'n' || edge === 's';
+      const span = across ? Math.max(...xs) - Math.min(...xs) + 1 : Math.max(...zs) - Math.min(...zs) + 1;
+      // (out: the way it leaves; side: along the edge)
+      const out: [number, number] = edge === 'n' ? [0, -1] : edge === 's' ? [0, 1] : edge === 'w' ? [-1, 0] : [1, 0];
+      const side: [number, number] = [-out[1], out[0]];
+      // (it stands on the road's last tiles, inside the land: the view stops at the map's edge, and what's past it isn't seen)
+      const mx = cx - out[0] * 1.1;
+      const mz = cz - out[1] * 1.1;
+      // (a cave's mouth is on its south side: turned so it opens into the land)
+      const rot = edge === 'n' ? 0 : edge === 's' ? Math.PI : edge === 'w' ? Math.PI / 2 : -Math.PI / 2;
+      // (a town, a farm or open country has its road arched; a wood its trees)
+      const arched = region.kind === 'town' || ['village', 'farm', 'plains', 'coast', 'warfront'].includes(region.theme);
+      if (look.cliffs || arched || !woody) {
+        if (look.cliffs) {
+          // a cave mouth in the land's own rock
+          const L = look.ground.leaf;
+          const b = caveMouth({ top: L[4], face: L[2], foot: L[1], lip: L[5], throat: '#0c0a0a', teeth: L[2], wide: span + 1.4, high: 2.2, seed: pm.tx * 7 + pm.ty }).m.build();
+          b.position.set(mx + out[0] * 0.5, 0, mz + out[1] * 0.5);
+          b.rotation.y = rot;
+          this.group.add(b);
+          this.built.push(b);
+          continue;
+        }
+        // an old stone arch over the road
+        const mesh = this.pack('arch');
+        if (!mesh) continue;
+        const xw = mesh.max[0] - mesh.min[0];
+        const k = Math.min((span + 1.8) / Math.max(0.01, xw), 4 / Math.max(0.01, mesh.max[1] - mesh.min[1]));
+        const tint = look.stone ? hexRgb(look.stone.top) : ([0.92, 0.9, 0.86] as const);
+        this.add({ m: 'arch', x: mx, z: mz, rot: across ? 0 : Math.PI / 2, sx: k, r: tint[0], g: tint[1], b: tint[2], shadow: 1.2, shadowD: 0.4 });
+        continue;
+      }
+      // a tunnel of trees: tall ones either side of the road, taller ones behind them leaning over it, bushes at their feet
+      const half = span / 2;
+      for (const sd of [-1, 1]) {
+        for (const [off, back, k] of [
+          [half + 0.75, -1.2, 1.1],
+          [half + 1.9, -0.1, 1.28],
+          [half + 0.9, 1.0, 1.2],
+        ] as const) {
+          const kind = look.trees[Math.floor(hash2(pm.tx + sd, pm.ty + back, 91) * look.trees.length)] ?? 'oak';
+          const def = TREES[kind] ?? TREES.oak;
+          const m = def.m[Math.floor(hash2(pm.tx + sd * 3, pm.ty, 77) * def.m.length) % def.m.length]!;
+          const x = mx + side[0] * sd * off + out[0] * back;
+          const z = mz + side[1] * sd * off + out[1] * back;
+          this.add({ m, x, z, rot: hash2(pm.tx, sd + back, 71) * 6.28, sx: this.fitted(m, def.h * k, 2.6), sway: kind === 'dead' ? 0 : 0.7, shadow: 1.2 });
+          const bush = BUSHES[Math.floor(hash2(pm.tx + sd, pm.ty + back, 79) * BUSHES.length)]!;
+          this.add({ m: bush, x: x - side[0] * sd * 0.5, z: z - side[1] * sd * 0.5, rot: hash2(sd, back, 81) * 6.28, sx: this.fitted(bush, 0.55, 0.9) });
+        }
+      }
     }
   }
 
