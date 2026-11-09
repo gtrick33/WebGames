@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
-import { ABILITIES, TOKEN, type Ability } from '../arena/abilities';
+import { ABILITIES, DASH, SLOTS, superOf, type Ability } from '../arena/abilities';
 import { botThink, newBrain } from '../arena/bot';
-import type { ClassSets } from '../arena/ladder';
+import { LEAVER_K, type ClassSets } from '../arena/ladder';
 import { MAPS } from '../arena/maps';
-import { Match, MATCH_LIMIT, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
+import { CLOSE_FROM, Match, MATCH_LIMIT, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
 import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
-import type { Face } from '../progress/character';
+import type { Character, Face } from '../progress/character';
+import { wearTitle } from './wear';
 import { iconPicture } from '../render/art/gameIcons';
 import { drawRing, RingFx, ringLooks, ringSpells } from '../render/ring';
 import { RingStage, ringMapOf } from '../render3d/ring3d';
@@ -15,6 +16,8 @@ import { heroDollUrl } from '../render/sprites';
 import { RingHelp, SetupEditor, timing } from './RingSetup';
 import { ScreenGate } from './ScreenGate';
 import { Stick } from './Stick';
+import { actionOf, keyName, readKeys, saveKeys, type RingKeys } from './ringKeys';
+import { KeysDialog } from './RingKeysDialog';
 
 export type Role = { kind: 'solo'; skill: number } | { kind: 'host'; skill: number; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void } | { kind: 'client'; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void };
 
@@ -34,11 +37,13 @@ export interface MatchStakes {
   rivalRating: number;
 }
 
-const STEP = 1 / 30;
+// (a step per frame on a 60 Hz screen: at 30 a second, everyone moved on every other frame and the fight looked choppy)
+const STEP = 1 / 60;
 /** A host speaks ten times a second: plenty for frames that coast between. */
 const SEND_EVERY = 0.1;
-/** The campaign's thumb cluster: the same places, so a phone player's hands already know them. */
-const TOUCH_SLOTS = ['basic', 's1', 's2', 's3', 's4', 'ult', 'dodge'] as const;
+/** The campaign's thumb cluster: the same places, so a phone player's hands already know them (the four abilities,
+ * then the Swift Step where the dodge is, and the super where the ultimate is). */
+const TOUCH_SLOTS = ['basic', 's1', 's2', 's3', 'dodge', 'ult'] as const;
 
 const clock = (t: number): string => {
   const left = Math.max(0, MATCH_LIMIT - t);
@@ -63,7 +68,10 @@ function AuraIcons({ f }: { f: Fighter }) {
   );
 }
 
-function Frame({ f, m, me, doll, tag, onPick, flip }: { f: Fighter; m: Match; me: Fighter | null; doll: string; tag: string | null; onPick: () => void; flip?: boolean }) {
+/** How far along a cast is (a channel runs down). */
+const castShare = (c: { t: number; dur: number; channel: boolean }): number => Math.max(0, Math.min(1, c.channel ? 1 - c.t / c.dur : c.t / c.dur));
+
+function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Match; me: Fighter | null; doll: string; tag: string | null; onPick: () => void; flip?: boolean; title?: string | null }) {
   const hold = f.auras.find((a) => a.cc);
   const c = f.cast;
   const ab = c ? ABILITIES[c.ab] : null;
@@ -85,6 +93,7 @@ function Frame({ f, m, me, doll, tag, onPick, flip }: { f: Fighter; m: Match; me
       <span className="rb-ring-bars">
         <span className="rb-ring-name">
           <b>{f.id === me?.id ? 'You' : f.name}</b>
+          {title && <small className="rb-ring-title">{title}</small>}
           {tag && <em>{tag}</em>}
         </span>
         <span className={`rb-ring-bar${share < 0.3 ? ' is-low' : ''}`}>
@@ -99,7 +108,7 @@ function Frame({ f, m, me, doll, tag, onPick, flip }: { f: Fighter; m: Match; me
           )}
           {c && ab ? (
             <span className="rb-ring-cast" style={{ ['--a' as string]: ab.color }}>
-              <i style={{ width: `${(c.channel ? 1 - c.t / c.dur : c.t / c.dur) * 100}%` }} />
+              <i data-cast={f.id} style={{ width: `${castShare(c) * 100}%` }} />
               <b>{ab.name}</b>
             </span>
           ) : hold ? (
@@ -162,10 +171,19 @@ function isOut(m: Match, me: Fighter | null, ab: Ability): boolean {
 }
 
 /** A match: The Ring's ground, its frames and a bar of abilities. Solo, the computer plays everyone else. */
-export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes, onSets, onDone, onLeave }: { engine: SigilEngine; setup: MatchSetup; myId: number; face?: Face; body?: 'm' | 'f'; role: Role; sets: ClassSets; stakes: MatchStakes | null; onSets: (s: ClassSets) => void; onDone: (r: MatchResult) => void; onLeave: (started: boolean) => void }) {
+export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes, onSets, onDone, onLeave, resume, onSnap, wear }: { engine: SigilEngine; setup: MatchSetup; myId: number; face?: Face; body?: 'm' | 'f'; wear?: Character | null; role: Role; sets: ClassSets; stakes: MatchStakes | null; onSets: (s: ClassSets) => void; onDone: (r: MatchResult) => void; onLeave: (started: boolean) => void; resume?: Snapshot; onSnap?: (s: Snapshot) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [ringKeys, setRingKeys] = useState<RingKeys>(readKeys);
+  const keysRef = useRef(ringKeys);
+  const binding = useRef(false);
+  const [keysOpen, setKeysOpen] = useState(false);
   const [, tick] = useState(0);
-  const [m] = useState(() => new Match(setup));
+  const [m] = useState(() => {
+    const out = new Match(setup);
+    // (coming back to a match left while it was going: where it stood)
+    if (resume) out.restore(resume, null);
+    return out;
+  });
   const [err, setErr] = useState('');
   const [leaving, setLeaving] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -173,19 +191,19 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const [tip, setTip] = useState<Ability | null>(null);
   const errAt = useRef(0);
   const stick = useRef<MoveInput>({ mx: 0, my: 0 });
-  const dolls = useMemo(() => ringLooks(m, { face, body }, myId).map((l) => heroDollUrl(l.look, 'down', 2, l.held)), [m, face, body, myId]);
+  const dolls = useMemo(() => ringLooks(m, { face, body, wear }, myId).map((l) => heroDollUrl(l.look, 'down', 2, l.held)), [m, face, body, myId, wear]);
 
   const me = m.fighters[myId] ?? null;
   const touch = engine.touchMode;
   const say = (why: string | null): void => {
-    if (!why || why === 'Already casting') return;
+    if (!why || why === 'Already casting' || why === 'Casting') return;
     setErr(why);
     errAt.current = performance.now();
   };
   const press = (id: string): void => {
     if (!me) return;
     if (role.kind === 'client') {
-      const ab = id === 'token' ? TOKEN : ABILITIES[id];
+      const ab = ABILITIES[id];
       const why = ab ? m.blocked(me, ab) : null;
       if (why && why !== 'Not ready yet') say(why);
       else role.send({ p: id });
@@ -215,7 +233,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
 
   useEffect(() => {
     const canvas = canvasRef.current!;
-    const looks = ringLooks(m, { face, body }, myId);
+    const looks = ringLooks(m, { face, body, wear }, myId);
     const fx = new RingFx();
     const view = new RingStage(canvas, ringMapOf(m.map));
     const fit = (): void => {
@@ -236,16 +254,29 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     };
     const down = (e: KeyboardEvent): void => {
       if (e.target instanceof HTMLInputElement) return;
-      const n = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6'].indexOf(e.code);
+      // (while a key is being set, the keys are the dialog's)
+      if (binding.current) return;
+      const act = actionOf(keysRef.current, e.code);
+      const n = act && act.startsWith('ab') ? Number(act.slice(2)) - 1 : -1;
+      const foes = me ? m.fighters.filter((f) => f.team !== me.team) : [];
+      const pals = me ? m.fighters.filter((f) => f.team === me.team && f.id !== me.id) : [];
+      if (act && act !== 'up' && act !== 'down' && act !== 'left' && act !== 'right') e.preventDefault();
       if (n >= 0 && me?.bar[n]) press(me.bar[n]!);
-      else if (e.code === 'Digit7' || e.code === 'KeyT') press(TOKEN.id);
-      else if (e.code === 'Tab' && me) {
-        e.preventDefault();
+      else if (act === 'dash') press(DASH.id);
+      else if (act === 'super' && me) press(superOf(me.cls).id);
+      else if (act === 'nextFoe' && me) {
         const next = cycle(m.enemiesOf(me), me.target);
         if (next !== null) target(next);
-      } else if (e.code === 'KeyF' && me) {
+      } else if (act === 'nextFriend' && me) {
         const next = cycle(m.friendsOf(me), me.friend ?? me.id);
         if (next !== null) target(next);
+      } else if (act === 'self' && me) target(me.id);
+      else if ((act === 'foe1' || act === 'foe2' || act === 'foe3') && me) {
+        const f = foes[Number(act.slice(3)) - 1];
+        if (f && !f.dead) target(f.id);
+      } else if ((act === 'friend1' || act === 'friend2') && me) {
+        const f = pals[Number(act.slice(6)) - 1];
+        if (f && !f.dead) target(f.id);
       } else if (e.code === 'Escape') {
         setEditing(false);
         setHelp(false);
@@ -258,12 +289,38 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       keys.delete(e.code);
     };
     const blur = (): void => keys.clear();
+    // a click or a tap on a fighter in the ring chooses them (an enemy to hit, an ally to help)
+    const pick = (e: PointerEvent): void => {
+      const el = e.target as HTMLElement | null;
+      if (!el || el.closest('button, .rb-ring-top, .rb-ring-bar, .rb-cluster, [role="dialog"]')) return;
+      const r = canvas.getBoundingClientRect();
+      const px = e.clientX - r.left;
+      const py = e.clientY - r.top;
+      let best: Fighter | null = null;
+      let bd = e.pointerType === 'touch' ? 44 : 30;
+      for (const f of m.fighters) {
+        if (f.dead) continue;
+        // (anywhere on them, feet to head)
+        for (const h of [4, 16, 28]) {
+          const s = view.stage.project(f.x, f.y, h);
+          const d = Math.hypot(s.x - px, s.y - py);
+          if (d < bd) {
+            bd = d;
+            best = f;
+          }
+        }
+      }
+      if (best) target(best.id);
+    };
+    const host = canvas.parentElement!;
+    host.addEventListener('pointerdown', pick, true);
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
     window.addEventListener('blur', blur);
     const moveNow = (): MoveInput => {
-      const mx = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
-      const my = (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0);
+      const k = keysRef.current;
+      const mx = (keys.has(k.right) || keys.has('ArrowRight') ? 1 : 0) - (keys.has(k.left) || keys.has('ArrowLeft') ? 1 : 0);
+      const my = (keys.has(k.down) || keys.has('ArrowDown') ? 1 : 0) - (keys.has(k.up) || keys.has('ArrowUp') ? 1 : 0);
       return mx || my ? { mx, my } : stick.current;
     };
 
@@ -298,6 +355,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     let sendT = 0;
     let lastSent = '';
     let hudT = 0;
+    let snapT = 0;
     let done = false;
     let raf = 0;
     let wasPhase = m.phase;
@@ -308,7 +366,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       const dt = lastPaint ? Math.min(0.1, Math.max(0, time - lastPaint)) : 0;
       lastPaint = time;
       for (const e of m.events) {
-        if (e.k === 'ab') view.swing(e.id, e.ab);
+        if (e.k === 'ab') view.swing(e.id, e.ab, m.fighters[e.id]?.cast?.ab === e.ab);
         // (somebody's down: the crowd is on its feet)
         else if (e.k === 'death') view.cheer();
       }
@@ -321,6 +379,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     };
     const frame = (now: number): void => {
       raf = requestAnimationFrame(frame);
+      // (a phone's screen may run at 120: the fight looks no better for it, and the heat slows it down)
+      if (engine.touchMode && now - last < 1000 / 66) return;
       const dt = Math.max(0, Math.min(0.1, (now - last) / 1000));
       last = now;
       const mine = moveNow();
@@ -328,7 +388,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       if (role.kind !== 'client') {
         acc += dt;
         // catching up, but never so far behind that a stall turns into a jump
-        for (let i = 0; i < 4 && acc >= STEP; i++) {
+        for (let i = 0; i < 8 && acc >= STEP; i++) {
           acc -= STEP;
           const moves: Record<number, MoveInput> = { [myId]: mine };
           for (const f of m.fighters) {
@@ -338,7 +398,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           }
           m.step(STEP, moves);
         }
-        if (acc > STEP * 4) acc = 0;
+        if (acc > STEP * 8) acc = 0;
         if (role.kind === 'host') {
           sendT += dt;
           if (sendT >= SEND_EVERY) {
@@ -368,7 +428,17 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         wasPhase = m.phase;
       }
       paint(now / 1000);
+      // the cast bars move every frame, not with the rest of the HUD
+      for (const el of document.querySelectorAll<HTMLElement>('[data-cast]')) {
+        const c = m.fighters[Number(el.dataset.cast)]?.cast;
+        if (c) el.style.width = `${castShare(c) * 100}%`;
+      }
       hudT += dt;
+      snapT += dt;
+      if (onSnap && snapT > 2 && m.phase !== 'over') {
+        snapT = 0;
+        onSnap(m.snapshot());
+      }
       if (hudT > 0.066) {
         hudT = 0;
         if (errAt.current && now - errAt.current > 1400) {
@@ -400,12 +470,13 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         paint(performance.now() / 1000);
         tick((x) => x + 1);
       };
-      (window as unknown as { __ring?: unknown }).__ring = { m, keys, press, run, brains, botThink, paint };
+      (window as unknown as { __ring?: unknown }).__ring = { m, keys, press, run, brains, botThink, paint, view };
     }
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
       window.removeEventListener('keydown', down);
+      host.removeEventListener('pointerdown', pick, true);
       window.removeEventListener('keyup', up);
       window.removeEventListener('blur', blur);
         if (role.kind !== 'solo') role.listen(null);
@@ -417,7 +488,10 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const mine = me?.team ?? 0;
   const left = teamOf(mine);
   const right = teamOf(mine === 0 ? 1 : 0);
-  const bar = me ? [...me.bar.map((id) => ABILITIES[id]!), TOKEN] : [];
+  const bar = me ? [...me.bar.map((id) => ABILITIES[id]!), DASH, superOf(me.cls)] : [];
+  const keyOf = (i: number): string => keyName(i < SLOTS ? ringKeys[`ab${i + 1}` as 'ab1'] : i === SLOTS ? ringKeys.dash : ringKeys.super);
+  const charge = me?.charge ?? 0;
+  const gloamIn = Math.ceil(CLOSE_FROM - m.clock);
   const count = Math.ceil(m.gateAt - m.t);
   const cast = me?.cast;
   const castAb = cast ? ABILITIES[cast.ab] : null;
@@ -428,7 +502,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const friend = m.fighters[friendId] ?? null;
   const helps = bar.some((a) => a.aim === 'friend');
   const held = me && m.held(me);
-  const foeNote = !foeAlive ? (m.phase === 'fight' ? 'Click a nameplate or press Tab. Nearest is used if you don’t.' : 'Click a nameplate or press Tab') : !me || m.phase !== 'fight' ? `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}%` : !m.sees(me, foeAlive) ? 'Out of sight' : `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}% · ${Math.round(Math.hypot(foeAlive.x - me.x, foeAlive.y - me.y))} away`;
+  const foeNote = !foeAlive ? (m.phase === 'fight' ? `Click someone or press ${keyName(ringKeys.nextFoe)}. Nearest is used if you don’t.` : `Click someone or press ${keyName(ringKeys.nextFoe)}`) : !me || m.phase !== 'fight' ? `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}%` : !m.sees(me, foeAlive) ? 'Out of sight' : `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}% · ${Math.round(Math.hypot(foeAlive.x - me.x, foeAlive.y - me.y))} away`;
   const foeBad = !!foeAlive && !!me && m.phase === 'fight' && !m.sees(me, foeAlive);
   return (
     <ScreenGate label="Entering the Ring">
@@ -438,7 +512,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           <div className="rb-ring-top">
             <div className="rb-ring-team">
               {left.map((f) => (
-                <Frame key={f.id} f={f} m={m} me={me} doll={dolls[f.id]!} tag={helps && f.id === friendId && m.phase === 'fight' ? 'Helping' : null} onPick={() => target(f.id)} />
+                <Frame key={f.id} f={f} m={m} me={me} doll={dolls[f.id]!} title={f.id === myId ? wearTitle(wear ?? null) : null} tag={helps && f.id === friendId && m.phase === 'fight' ? 'Helping' : null} onPick={() => target(f.id)} />
               ))}
             </div>
             <div className="rb-ring-clock">
@@ -452,6 +526,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               ) : (
                 <span className="rb-ring-rating is-friendly">Friendly</span>
               )}
+              {m.phase === 'fight' && (gloamIn > 0 ? gloamIn <= 15 && <small className="rb-ring-gloam">The Gloam in {gloamIn}</small> : <small className="rb-ring-gloam is-on">The Gloam is closing</small>)}
               {damp > 0 && <small className="rb-ring-damp" title="Healing fades the longer a match goes">Healing −{damp}%</small>}
             </div>
             <div className="rb-ring-team is-foes">
@@ -460,6 +535,11 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               ))}
             </div>
             <div className="rb-ring-menu">
+              {!touch && (
+                <button className="rb-iconbtn" onClick={() => setKeysOpen(true)} aria-label="Keys" title="Keys">
+                  ⌨
+                </button>
+              )}
               <button className="rb-iconbtn" onClick={() => setHelp(true)} aria-label="How The Ring works" title="How The Ring works">
                 ?
               </button>
@@ -483,11 +563,13 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   const gcd = !ab.free ? (me?.gcd ?? 0) : 0;
                   const wait = Math.max(cd, gcd);
                   const full = cd > gcd ? ab.cd : 1;
+                  const sup = !!ab.super;
                   return (
                     <button
                       key={ab.id}
-                      className={`rb-sb rb-sb-${TOUCH_SLOTS[i]}${isOut(m, me, ab) ? ' is-nomana' : ''}${wait > 0 ? ' is-cooling' : ''}${held && ab.anyState ? ' is-free-now' : ''}`}
-                      aria-label={`${ab.name}: ${ab.text}`}
+                      className={`rb-sb rb-sb-${TOUCH_SLOTS[i]}${sup ? ` is-super${charge >= 1 ? ' is-ready' : ''}` : ''}${isOut(m, me, ab) ? ' is-nomana' : ''}${wait > 0 ? ' is-cooling' : ''}${held && ab.anyState ? ' is-free-now' : ''}`}
+                      style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined}
+                      aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}
                       onPointerDown={(e) => {
                         e.preventDefault();
                         press(ab.id);
@@ -538,7 +620,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   </button>
                 )}
               </span>
-              <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. Tap a nameplate to choose your target.' : 'WASD to move · 1 to 6 for abilities · Click a nameplate or press Tab to choose your target'}</span>
+              <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. The blue button steps aside; the gold one is your super, once it’s full. Keep moving: shots can be dodged.' : `${[ringKeys.up, ringKeys.left, ringKeys.down, ringKeys.right].map(keyName).join('')} to move · ${keyName(ringKeys.ab1)} to ${keyName(ringKeys.ab4)} for abilities · ${keyName(ringKeys.dash)} to step aside · ${keyName(ringKeys.super)} for your super · Keep moving: shots can be dodged`}</span>
             </div>
           )}
           {err && (
@@ -548,7 +630,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           )}
           {cast && castAb && (
             <div className="rb-ring-mycast" style={{ ['--a' as string]: castAb.color }}>
-              <i style={{ width: `${(cast.channel ? 1 - cast.t / cast.dur : cast.t / cast.dur) * 100}%` }} />
+              <i data-cast={myId} style={{ width: `${castShare(cast) * 100}%` }} />
               <b>{castAb.name}</b>
             </div>
           )}
@@ -557,6 +639,11 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               <strong>{tip.name}</strong>
               <small>{timing(tip)}</small>
               <p>{tip.text}</p>
+              {tip.combo && (
+                <p className="rb-rs-combo">
+                  <b>Combo · {tip.combo.name}:</b> {tip.combo.text}
+                </p>
+              )}
             </div>
           )}
           {m.phase === 'over' && (
@@ -574,12 +661,15 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 const gcd = !ab.free ? (me?.gcd ?? 0) : 0;
                 const wait = Math.max(cd, gcd);
                 const full = cd > gcd ? ab.cd : 1;
+                const sup = !!ab.super;
                 return (
-                  <button key={ab.id} className={`rb-ring-ab${isOut(m, me, ab) ? ' is-out' : ''}${ab.id === 'token' ? ' is-token' : ''}${held && ab.anyState ? ' is-ready' : ''}`} onPointerDown={(e) => { e.preventDefault(); press(ab.id); }} onMouseEnter={() => setTip(ab)} onMouseLeave={() => setTip(null)} aria-label={`${ab.name}: ${ab.text}`}>
+                  <button key={ab.id} className={`rb-ring-ab${isOut(m, me, ab) ? ' is-out' : ''}${ab.id === 'dash' ? ' is-step' : ''}${sup ? ` is-super${charge >= 1 ? ' is-full' : ''}` : ''}${held && ab.anyState ? ' is-ready' : ''}`} style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined} onPointerDown={(e) => { e.preventDefault(); press(ab.id); }} onMouseEnter={() => setTip(ab)} onMouseLeave={() => setTip(null)} aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}>
                     <img src={iconPicture(ab.icon)} alt="" draggable={false} />
+                    {sup && charge < 1 && <i className="rb-ring-charge" />}
                     {wait > 0 && <i className="rb-ring-cool" style={{ ['--p' as string]: `${Math.min(1, wait / (full || 1)) * 100}%` }} />}
                     {cd > 0.05 && <b>{cd >= 10 ? Math.ceil(cd) : cd.toFixed(1)}</b>}
-                    <kbd>{i === 6 ? 'T' : i + 1}</kbd>
+                    {sup && charge < 1 && <b className="is-charge">{Math.floor(charge * 100)}%</b>}
+                    <kbd>{keyOf(i)}</kbd>
                   </button>
                 );
               })}
@@ -602,11 +692,25 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           </div>
         )}
         {help && <RingHelp onClose={() => setHelp(false)} />}
+        {keysOpen && (
+          <KeysDialog
+            keys={ringKeys}
+            onKeys={(k) => {
+              keysRef.current = k;
+              setRingKeys(k);
+              saveKeys(k);
+            }}
+            onBinding={(b) => {
+              binding.current = b;
+            }}
+            onClose={() => setKeysOpen(false)}
+          />
+        )}
         {leaving && m.phase !== 'over' && (
           <div className="rb-ring-dialog-wrap" role="dialog" aria-label="Leave the match">
             <div className="rb-ring-dialog">
               <h2>Leave the Ring?</h2>
-              <p>{m.phase === 'gates' ? 'The gates haven’t lifted yet, so this costs you nothing.' : role.kind === 'solo' ? `Walking out counts as a loss${stakes ? `: −${stakes.lose} rating` : ''}.` : role.kind === 'host' ? 'You’re running this match, so leaving ends it for everyone.' : 'Your hero stands where they are until the match ends.'}</p>
+              <p>{m.phase === 'gates' ? 'The gates haven’t lifted yet, so this costs you nothing.' : role.kind === 'solo' ? `Walking out counts as a leaver’s loss${stakes ? `: −${Math.round(stakes.lose * LEAVER_K)} rating, half again a loss` : ''}.` : role.kind === 'host' ? 'You’re running this match, so leaving ends it for everyone.' : 'Your hero stands where they are until the match ends.'}</p>
               <div className="rb-vigil-actions">
                 <button className="rb-btn is-gold" onClick={() => setLeaving(false)} autoFocus>
                   Stay

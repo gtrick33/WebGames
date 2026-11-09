@@ -6626,6 +6626,8 @@
 }
 .rb-rs-barrow {
   display: flex;
+  flex: none;
+  min-height: 52px;
   justify-content: center;
   padding: 4px;
   border-radius: 9px;
@@ -6633,8 +6635,11 @@
 }
 .rb-rs-slots {
   display: flex;
+  /* (the slots take their height from their width: stretched, they took it from a row the panel below could squeeze) */
+  align-items: center;
   justify-content: center;
   gap: 4px;
+  width: 100%;
 }
 .rb-rs-slot {
   position: relative;
@@ -7575,6 +7580,22 @@
   color: #ff9ab0;
   font-size: 9.5px;
 }
+/* the Gloam: a warning before it comes, and a pulse while it closes */
+.rb-ring-gloam {
+  color: #d8b0ff;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+.rb-ring-gloam.is-on {
+  color: #f0d8ff;
+  text-shadow: 0 0 6px #9a4aff;
+  animation: rb-gloam 1.2s ease-in-out infinite;
+}
+@keyframes rb-gloam {
+  50% {
+    color: #c88aff;
+  }
+}
 .rb-ring-menu {
   display: flex;
   gap: 2px;
@@ -8083,6 +8104,53 @@
   border-color: #fff;
   box-shadow: 0 0 10px #ffe39a;
 }
+/* the Swift Step, and the super with its meter filling round its rim: gold, and alight when full */
+.rb-ring-ab.is-step {
+  margin-left: 7px;
+  border-color: #7fe0ff;
+}
+.rb-ring-ab.is-super {
+  width: clamp(44px, 8.6cqw, 62px);
+  height: clamp(44px, 8.6cqw, 62px);
+  margin-left: 7px;
+  padding: 3px;
+  border: 0;
+  border-radius: 50%;
+  background: conic-gradient(#ffcf5a var(--fill, 0%), #3a2c1c 0);
+}
+.rb-ring-ab.is-super img {
+  border-radius: 50%;
+}
+.rb-ring-ab.is-super kbd {
+  top: auto;
+  bottom: 3px;
+  left: 50%;
+  z-index: 1;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: rgb(10 6 20 / 0.7);
+  transform: translateX(-50%);
+}
+.rb-ring-charge {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: rgb(10 6 20 / 0.55);
+}
+.rb-ring-ab b.is-charge {
+  font-size: 11px;
+  color: #ffe39a;
+}
+.rb-ring-ab.is-super.is-full {
+  animation: rb-super 0.9s ease-in-out infinite;
+}
+@keyframes rb-super {
+  50% {
+    box-shadow:
+      0 0 0 3px rgb(255 207 90 / 0.7),
+      0 0 18px rgb(255 207 90 / 0.9);
+  }
+}
 .rb-ring-ab img {
   display: block;
   width: 100%;
@@ -8171,6 +8239,16 @@
 }
 .rb-ring-thumbs .rb-sb-dodge {
   border-color: #ffe39a;
+}
+/* the super: its meter round the rim, and alight when it's full */
+.rb-ring-thumbs .rb-sb-ult.is-super {
+  background: conic-gradient(from 180deg, #ffcf5a var(--fill, 0%), #2c2219 0);
+}
+.rb-ring-thumbs .rb-sb-ult.is-super::before {
+  display: block;
+}
+.rb-ring-thumbs .rb-sb-ult.is-super:not(.is-ready) img {
+  filter: grayscale(0.5) brightness(0.7);
 }
 .rb-ring-thumbs .rb-sb.is-nomana img {
   filter: grayscale(0.7) brightness(0.68);
@@ -9273,4 +9351,111 @@
 .rb-tracker.is-folded img {
   height: 18px;
   image-rendering: pixelated;
+}
+
+/* The Ring's keys */
+.rb-ring-dialog.is-keys {
+  width: min(640px, 100%);
+}
+.rb-ring-keys-hint {
+  margin: 0 0 8px;
+  color: #cfc6dc;
+  font-size: 13px;
+}
+.rb-ring-keys {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  max-height: 56vh;
+  overflow: auto;
+}
+.rb-ring-keys h3 {
+  margin: 0 0 4px;
+  color: #ffe39a;
+  font: 700 13px Georgia, 'Times New Roman', serif;
+}
+.rb-ring-key {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 3px;
+  padding: 4px 6px;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 6px;
+  color: #efe8f8;
+  font-size: 12.5px;
+  text-align: left;
+  background: rgb(255 255 255 / 0.04);
+}
+.rb-ring-key:hover,
+.rb-ring-key:focus-visible {
+  border-color: #ffe39a;
+}
+.rb-ring-key kbd {
+  min-width: 34px;
+  padding: 1px 6px;
+  border: 1px solid rgb(255 227 154 / 0.5);
+  border-radius: 4px;
+  color: #ffe9b8;
+  font: 700 12px ui-monospace, monospace;
+  text-align: center;
+  background: rgb(0 0 0 / 0.35);
+}
+.rb-ring-key.is-waiting kbd {
+  border-color: #ff9a7a;
+  color: #ff9a7a;
+}
+.rb-ring-keys-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* A Ring match left while it was going: nothing else on the screen until it's answered. */
+.rb-ring-dialog-wrap.is-blocking {
+  position: fixed;
+  z-index: 9999;
+}
+
+/* Fighting in a campaign hero's looks (The Ring, The Vigil) */
+.rb-wear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 4px 0;
+  color: #cfc6dc;
+  font-size: 12px;
+}
+.rb-wear select {
+  max-width: 240px;
+  padding: 3px 6px;
+  border: 1px solid rgb(255 227 154 / 0.4);
+  border-radius: 6px;
+  color: #fff4d8;
+  font: 600 12.5px Georgia, 'Times New Roman', serif;
+  background: rgb(20 12 36 / 0.9);
+}
+.rb-ring-title,
+.rb-wear-who {
+  display: block;
+  color: #ffd98a;
+  font: italic 600 10.5px Georgia, 'Times New Roman', serif;
+}
+.rb-ring-name .rb-ring-title {
+  display: inline;
+  margin-left: 4px;
+}
+
+/* An ability's combo, under what it does */
+.rb-rs-combo {
+  margin-top: 4px;
+  color: #ffd98a;
+  font-size: 12px;
+}
+.rb-rs-combo b {
+  color: #ffd257;
 }

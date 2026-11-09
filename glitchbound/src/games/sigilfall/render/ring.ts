@@ -1,6 +1,6 @@
 import { ABILITIES } from '../arena/abilities';
 import { ARENA_H, ARENA_W, MAPS } from '../arena/maps';
-import { HERO_R, type Fighter, type Match } from '../arena/sim';
+import { HERO_R, ZONE_START, type Fighter, type Match } from '../arena/sim';
 import type { RingAir } from '../render3d/ringDress';
 import { shot, TONES } from './effects';
 import { CLASSES } from '../data/classes';
@@ -8,7 +8,8 @@ import { heroLook, heldWeapon } from './sprites';
 import type { Held } from '../render3d/dress';
 import { FIELD, FX, type Fx3D } from '../render3d/fx3d';
 import type { RingStage, RingView } from '../render3d/ring3d';
-import { newCharacter, type Face } from '../progress/character';
+import { newCharacter, type Character, type Face } from '../progress/character';
+import { wornLooks } from '../progress/wardrobe';
 
 /**
  * The Ring's top layer: the arena and the fighters are in 3D underneath (render3d/ring3d.ts); here are the rings under
@@ -25,10 +26,13 @@ export interface RingLook {
 }
 
 /** Every fighter's picture, made once. */
-export function ringLooks(m: Match, mine: { face?: Face; body?: 'm' | 'f' }, myId: number | null): RingLook[] {
+export function ringLooks(m: Match, mine: { face?: Face; body?: 'm' | 'f'; wear?: Character | null }, myId: number | null): RingLook[] {
   return m.fighters.map((f) => {
     const hero = newCharacter(f.cls, f.name, 'ring');
     const isMe = f.id === myId;
+    // (your own campaign hero's gear and Wardrobe, if you chose to fight in them)
+    const w = isMe && mine.wear && mine.wear.cls === f.cls ? mine.wear : null;
+    if (w) return { look: heroLook(f.cls, w.equip, wornLooks(w), w.body, w.face), held: heldWeapon(f.cls, w.equip.weapon, wornLooks(w).weapon) };
     const body: 'm' | 'f' = isMe ? (mine.body ?? 'm') : f.id % 2 ? 'f' : 'm';
     const look = heroLook(f.cls, hero.equip, {}, body, isMe ? mine.face : undefined);
     return { look, held: heldWeapon(f.cls, hero.equip.weapon) };
@@ -55,9 +59,25 @@ interface Pop {
 }
 
 /** What's on screen for a moment: kept here, out of the simulation. */
+/** A spell landing: a burst in its school's own manner, bigger for a burst ability. */
+interface Burst {
+  x: number;
+  y: number;
+  t: number;
+  dur: number;
+  school: string;
+  color: string;
+  big: boolean;
+  heal: boolean;
+  seed: number;
+}
+
 export class RingFx {
   flashes: Flash[] = [];
   pops: Pop[] = [];
+  bursts: Burst[] = [];
+  /** Who just let a super go: a column of light on them for a moment. */
+  supers: { id: number; t: number }[] = [];
   private spread = 0;
 
   /** Takes the match's events. Returns what's worth a sound. */
@@ -73,25 +93,46 @@ export class RingFx {
       } else if (e.k === 'word') {
         const f = m.fighters[e.id];
         if (!f) continue;
-        this.pops.push({ x: f.x, y: f.y - 42, t: 0, text: e.word, color: e.bad ? '#ff9ab0' : '#e0d0ff', big: false });
+        // (a combo is called out big, in gold, with a burst of light on them)
+        this.pops.push({ x: f.x, y: f.y - (e.combo ? 50 : 42), t: 0, text: e.combo ? `${e.word}!` : e.word, color: e.combo ? '#ffd257' : e.bad ? '#ff9ab0' : '#e0d0ff', big: !!e.combo });
+        if (e.combo) this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.5, r: 26, color: '#ffd257', ring: true });
       } else if (e.k === 'ab') {
         const ab = ABILITIES[e.ab];
         const f = m.fighters[e.id];
         if (!ab || !f) continue;
         if (ab.aim === 'near') this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.42, r: ab.range + HERO_R, color: ab.color, ring: true });
         else if (ab.cast === 0 && ab.range <= 40) this.flashes.push({ x: f.x + f.dirX * 12, y: f.y - 8 + f.dirY * 8, t: 0, dur: 0.16, r: 16, color: ab.color, ring: false });
-        sound(ab.school === 'physical' ? 'enemySwing' : 'click', 0.5);
+        sound(ab.id === 'dash' ? 'dodge' : ab.school === 'physical' ? 'enemySwing' : 'click', 0.5);
       } else if (e.k === 'land') {
         const ab = ABILITIES[e.ab];
         const f = m.fighters[e.id];
         if (!ab || !f) continue;
-        this.flashes.push({ x: f.x, y: f.y - 12, t: 0, dur: 0.28, r: 20, color: ab.color, ring: false });
+        this.flashes.push({ x: f.x, y: f.y - 12, t: 0, dur: 0.32, r: ab.role === 'burst' ? 30 : 22, color: ab.color, ring: false });
         if (ab.role === 'heal') this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.5, r: 18, color: ab.color, ring: true });
+        this.bursts.push({ x: f.x, y: f.y, t: 0, dur: ab.role === 'burst' ? 0.75 : 0.55, school: ab.school, color: ab.color, big: ab.role === 'burst', heal: ab.role === 'heal' || ab.aim === 'friend', seed: (f.x * 7 + f.y * 3 + this.bursts.length) % 97 });
+        if (this.bursts.length > 24) this.bursts.shift();
       } else if (e.k === 'death') {
         const f = m.fighters[e.id];
         if (!f) continue;
         this.flashes.push({ x: f.x, y: f.y - 10, t: 0, dur: 0.8, r: 60, color: '#ff5a5a', ring: true });
         sound('playerDie', 0.8);
+      } else if (e.k === 'miss') {
+        // a shot that hit stone or flew out: a puff where it fell
+        const ab = ABILITIES[e.ab];
+        this.flashes.push({ x: e.x, y: e.y, t: 0, dur: 0.22, r: 9, color: ab?.color ?? '#ffffff', ring: false });
+      } else if (e.k === 'super') {
+        // a super: a great ring of its color, a crowd that roars, and its name called out
+        const ab = ABILITIES[e.ab];
+        const f = m.fighters[e.id];
+        if (!ab || !f) continue;
+        this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.7, r: Math.max(46, ab.aim === 'near' ? ab.range + HERO_R : 46), color: ab.color, ring: true });
+        this.flashes.push({ x: f.x, y: f.y - 14, t: 0, dur: 0.45, r: 34, color: '#fff6d8', ring: false });
+        this.pops.push({ x: f.x, y: f.y - 54, t: 0, text: ab.name, color: '#ffd257', big: true });
+        this.supers.push({ id: f.id, t: 0 });
+        sound('nova', 0.6);
+      } else if (e.k === 'sigil') {
+        this.flashes.push({ x: e.x, y: e.y, t: 0, dur: 0.6, r: e.id < 0 ? 22 : 34, color: '#ffe27a', ring: true });
+        sound(e.id >= 0 ? 'pickupBig' : 'orb', e.id >= 0 ? 0.7 : 0.4);
       }
     }
     m.events.length = 0;
@@ -101,6 +142,10 @@ export class RingFx {
   age(dt: number): void {
     for (const f of this.flashes) f.t += dt;
     for (const p of this.pops) p.t += dt;
+    for (const b of this.bursts) b.t += dt;
+    for (const s of this.supers) s.t += dt;
+    this.supers = this.supers.filter((s) => s.t < 0.8);
+    this.bursts = this.bursts.filter((b) => b.t < b.dur);
     this.flashes = this.flashes.filter((f) => f.t < f.dur);
     this.pops = this.pops.filter((p) => p.t < 0.9);
   }
@@ -161,15 +206,50 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
     g.lineTo(f.x + 4, by - 3);
     g.stroke();
   }
-  // the cast they're holding
+  // what's on them, over the bar: harm in red-edged pips, help in green, each running down as it wears off
+  const shown = f.auras.filter((a) => a.dur > 0 && a.t > 0 && ABILITIES[a.ab]).slice(0, 6);
+  const pip = 4.6;
+  const gap = 1.2;
+  let px = f.x - (shown.length * (pip + gap) - gap) / 2;
+  const py = by - pip - 2.2;
+  for (const a of shown) {
+    const ab = ABILITIES[a.ab]!;
+    g.fillStyle = 'rgba(6,2,14,0.9)';
+    g.fillRect(px - 0.5, py - 0.5, pip + 1, pip + 1);
+    g.fillStyle = ab.color;
+    g.fillRect(px, py, pip, pip);
+    // (the part that's worn off, darkened from the top)
+    const gone = 1 - Math.max(0, Math.min(1, a.t / a.dur));
+    g.fillStyle = 'rgba(6,2,14,0.62)';
+    g.fillRect(px, py, pip, pip * gone);
+    g.strokeStyle = a.harmful ? '#ff4a5a' : '#6ee07a';
+    g.lineWidth = 0.6;
+    g.strokeRect(px - 0.3, py - 0.3, pip + 0.6, pip + 0.6);
+    px += pip + gap;
+  }
+  // the cast they're holding: a bar of its own under the life, with its name, so a cast to stop can be seen and read
   const c = f.cast;
   if (c) {
     const ab = ABILITIES[c.ab];
     const k = Math.min(1, c.t / c.dur);
-    g.fillStyle = 'rgba(6,2,14,0.85)';
-    g.fillRect(f.x - barW / 2 - 0.5, by + 3, barW + 1, 2.6);
+    const cw = 34;
+    const cy = by + 3.6;
+    g.fillStyle = 'rgba(6,2,14,0.88)';
+    g.beginPath();
+    g.roundRect(f.x - cw / 2 - 0.6, cy - 0.6, cw + 1.2, 4.4, 1.2);
+    g.fill();
     g.fillStyle = ab?.color ?? '#fff';
-    g.fillRect(f.x - barW / 2, by + 3.5, barW * (c.channel ? 1 - k : k), 1.6);
+    g.fillRect(f.x - cw / 2, cy, cw * (c.channel ? 1 - k : k), 3.2);
+    if (ab) {
+      g.font = '700 4.6px "Bricolage Grotesque Variable", system-ui, sans-serif';
+      g.textAlign = 'center';
+      g.lineWidth = 1.2;
+      g.lineJoin = 'round';
+      g.strokeStyle = '#120a20';
+      g.strokeText(ab.name, f.x, cy + 9);
+      g.fillStyle = '#fff6e0';
+      g.fillText(ab.name, f.x, cy + 9);
+    }
   }
 }
 
@@ -211,17 +291,62 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
   for (const b of m.bolts) {
     const ab = ABILITIES[b.ab];
     const c = ab?.color ?? '#ffffff';
-    const t = m.fighters[b.tgt];
-    const a = t ? Math.atan2(t.y - b.y, t.x - b.x) : 0;
+    const a = Math.atan2(b.vy, b.vx);
     const el = SCHOOL_EL[ab?.school ?? ''] ?? 'arcane';
     const tone = el === 'trail' ? { a: c, b: '#ffffff' } : (TONES[el] ?? { a: c, b: '#ffffff' });
-    shot(q, el === 'trail' ? 'orb' : el, b.x, b.y, Math.cos(a) * 100, Math.sin(a) * 100, 14, 3.4, b.x * 0.03 + b.y * 0.05, tone);
+    const k = ab?.super ? 1.7 : 1;
+    shot(q, el === 'trail' ? 'orb' : el, b.x, b.y, Math.cos(a) * 100, Math.sin(a) * 100, 14 * k, 3.4 * k, b.x * 0.03 + b.y * 0.05, tone);
+  }
+  // a Swift Step: a streak of light behind
+  for (const f of m.fighters) {
+    if (!f.dash || f.dead) continue;
+    for (let i = 1; i <= 4; i++) {
+      const dx = f.dash.x - f.x;
+      const dy = f.dash.y - f.y;
+      const d = Math.hypot(dx, dy) || 1;
+      q.put({ kind: FX.spark, x: f.x - (dx / d) * i * 5, y: f.y - (dy / d) * i * 5, up: 10 + i, w: 7 - i, a: '#bff4ff', t: 0.2, alpha: 1 - i * 0.2 });
+    }
+  }
+  // a super: a column of light on whoever let it go
+  for (const s of fx.supers) {
+    const f = m.fighters[s.id];
+    if (!f) continue;
+    const u = s.t / 0.8;
+    q.put({ kind: FX.shaft, x: f.x, y: f.y, base: true, w: 34, h: 90, a: classColor(f.cls), b: '#ffffff', t: u, alpha: 1 - u });
+  }
+  // the sigil in the middle, turning and shining, worth the run
+  if (m.sigil) {
+    const s = m.sigil;
+    const bob = Math.sin(time * 3) * 2;
+    q.put({ kind: FX.glow, x: s.x, y: s.y, up: 12 + bob, w: 50, a: '#ffd76a', alpha: 0.75 });
+    q.put({ kind: FX.ring, x: s.x, y: s.y, flat: true, w: 30, a: '#ffe27a', t: (time * 0.6) % 1, seed: 3 });
+    q.put({ kind: FX.orb, x: s.x, y: s.y, up: 12 + bob, w: 13, a: '#ffe27a', b: '#ffffff', t: 0.3, seed: time });
+    for (let i = 0; i < 5; i++) {
+      const ang = time * 1.8 + (i / 5) * Math.PI * 2;
+      q.put({ kind: FX.spark, x: s.x + Math.cos(ang) * 11, y: s.y + Math.sin(ang) * 5, up: 12 + bob + Math.sin(ang * 2) * 3, w: 4, a: '#fff6c8', t: 0.2, alpha: 0.9 });
+    }
+  }
+  // the Gloam: smoke along its edge, where it burns
+  const z = m.zone;
+  if (m.phase === 'fight' && z < ZONE_START - 0.01) {
+    const cx = ARENA_W / 2;
+    const cy = ARENA_H / 2;
+    for (let i = 0; i < 64; i++) {
+      const ang = (i / 64) * Math.PI * 2;
+      const x = cx + Math.cos(ang) * cx * z;
+      const y = cy + Math.sin(ang) * cy * z;
+      if (x < -10 || y < -10 || x > ARENA_W + 10 || y > ARENA_H + 10) continue;
+      const u = (time * 0.35 + i * 0.37) % 1;
+      q.put({ kind: FX.smoke, x, y, up: 4 + u * 26, w: 26 + u * 18, a: '#3a1460', alpha: 0.55 * Math.sin(u * Math.PI), t: 0.3, seed: i });
+      if (i % 3 === 0) q.put({ kind: FX.flame, x, y, up: -2, base: true, w: 10, h: 16 + Math.sin(time * 4 + i) * 4, a: '#7a3cff', b: '#d8a8ff', seed: i * 0.71 });
+    }
   }
   for (const f of fx.flashes) {
     const u = f.t / f.dur;
     if (f.ring) q.put({ kind: FX.ring, x: f.x, y: f.y, flat: true, w: f.r * 2, a: f.color, t: u, seed: f.r });
     else q.put({ kind: FX.impact, x: f.x, y: f.y, up: 12, w: f.r * 2.4, a: f.color, b: '#fffdf0', t: u, seed: f.x * 0.2 });
   }
+  for (const b of fx.bursts) landing(q, b);
   const map = MAPS[m.map] ?? Object.values(MAPS)[0]!;
   // sand on the wind, low over the ground
   if (map.theme === 'sands') {
@@ -244,6 +369,58 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
       q.put({ kind: FX.smoke, x: u * (ARENA_W + 80) - 40, y: ((i * 83) % ARENA_H) + Math.sin(time * 0.4 + i) * 7, up: 3, w: 40 + (i % 4) * 10, a: '#ffffff', alpha: 0.2 * Math.sin(u * Math.PI), t: 0.3, seed: i * 2.3 });
     }
   }
+}
+
+/** A spell landing, in its school's manner. */
+function landing(q: Fx3D, b: Burst): void {
+  const u = b.t / b.dur;
+  const k = b.big ? 1.5 : 1;
+  const out = 1 - (1 - u) * (1 - u);
+  const fade = Math.max(0, 1 - u * 1.1);
+  const c = b.color;
+  const spray = (kind: number, count: number, reach: number, w: number, extra: Partial<Parameters<Fx3D['put']>[0]> = {}): void => {
+    for (let i = 0; i < count; i++) {
+      const ang = (i / count) * Math.PI * 2 + b.seed;
+      q.put({ kind: kind as Parameters<Fx3D['put']>[0]['kind'], x: b.x + Math.cos(ang) * reach * out * k, y: b.y + Math.sin(ang) * reach * 0.6 * out * k, up: 10 + Math.sin(u * Math.PI) * 12 * k, w: w * k, a: c, b: '#ffffff', alpha: fade, t: u, seed: b.seed + i, ...extra });
+    }
+  };
+  if (b.heal) {
+    // rising light
+    q.put({ kind: FX.shaft, x: b.x, y: b.y, base: true, w: 22 * k, h: 60 * k, a: c, b: '#ffffff', t: u, alpha: fade });
+    spray(FX.spark, 6, 14, 6, { up: 6 + u * 30 });
+    return;
+  }
+  switch (b.school) {
+    case 'fire':
+      q.put({ kind: FX.blast, x: b.x, y: b.y, up: 10, w: 40 * k * (0.5 + out), a: c, b: '#ffe08a', t: u, seed: b.seed });
+      spray(FX.spark, b.big ? 12 : 8, 26, 6);
+      break;
+    case 'frost':
+      spray(FX.frost, b.big ? 10 : 7, 24, 10, { h: 5, rot: b.seed });
+      q.put({ kind: FX.ring, x: b.x, y: b.y, flat: true, w: 44 * k * out, a: '#d8f4ff', t: u, seed: b.seed });
+      break;
+    case 'shadow':
+      q.put({ kind: FX.collapse, x: b.x, y: b.y, up: 12, w: 46 * k, a: c, b: '#120a20', t: u, seed: b.seed });
+      spray(FX.shadow, 6, 18, 12);
+      break;
+    case 'holy':
+      q.put({ kind: FX.shaft, x: b.x, y: b.y, base: true, w: 20 * k, h: 70 * k, a: c, b: '#ffffff', t: u, alpha: fade });
+      spray(FX.holy, 6, 20, 10);
+      break;
+    case 'nature':
+      spray(FX.leaf, b.big ? 12 : 8, 26, 7, { h: 4, rot: b.seed + u * 6 });
+      q.put({ kind: FX.poison, x: b.x, y: b.y, up: 8, w: 26 * k, a: c, b: '#e8ffb0', seed: b.seed });
+      break;
+    case 'arcane':
+      q.put({ kind: FX.rune, x: b.x, y: b.y, flat: true, w: 40 * k, a: c, b: '#ffffff', t: u, seed: b.seed });
+      spray(FX.spark, b.big ? 12 : 8, 24, 7);
+      break;
+    default:
+      // a blow: a slash across them, and chips flying
+      q.put({ kind: FX.slash, x: b.x, y: b.y, up: 14, flat: true, w: 40 * k, rot: b.seed, a: '#fff4e0', t: u, p1: 1.2, p2: 0 });
+      spray(FX.chip, 6, 22, 5);
+  }
+  if (b.big) q.put({ kind: FX.shock, x: b.x, y: b.y, flat: true, w: 70 * out, a: c, t: u, seed: b.seed });
 }
 
 const SCHOOL_EL: Record<string, string> = { fire: 'fire', frost: 'frost', arcane: 'arcane', shadow: 'shadow', holy: 'holy', nature: 'nature', physical: 'trail' };
@@ -276,6 +453,8 @@ function ringMarks(q: Fx3D, f: Fighter, time: number): void {
       q.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: 26, a: '#d8dce6' });
     } else if (a.kind === 'fury') {
       q.put({ kind: FX.rain, x: f.x, y: f.y, base: true, w: 28, h: 40, a: '#ff465a', t: -1, seed });
+    } else if (a.kind === 'dot' || a.kind === 'hot') {
+      lingering(q, f, a, time, lift);
     }
   }
   if (f.cast) {
@@ -287,10 +466,83 @@ function ringMarks(q: Fx3D, f: Fighter, time: number): void {
   }
 }
 
+/**
+ * What lingers on someone, burning or mending, in its own spell's color: a poison bubbles, a curse wisps black, fire
+ * licks and throws embers, a bleed drips, light and growth rise in motes. Several at once, each on its own clock.
+ */
+function lingering(q: Fx3D, f: Fighter, a: Fighter['auras'][number], time: number, lift: number): void {
+  const ab = ABILITIES[a.ab];
+  if (!ab) return;
+  const c = ab.color;
+  const seed = f.id * 3.1 + a.ab.length;
+  const n = 5;
+  for (let i = 0; i < n; i++) {
+    // each mote rises and fades on its own phase, round the body
+    const ph = (time * (a.kind === 'hot' ? 0.55 : 0.8) + i / n + seed * 0.13) % 1;
+    const ang = i * 2.39 + seed + time * 0.6;
+    const r = 6 + (i % 3) * 2;
+    const x = f.x + Math.cos(ang) * r;
+    const y = f.y + Math.sin(ang) * r * 0.5;
+    const up = 4 + ph * 26 + lift;
+    const fade = Math.max(0, Math.min(1, (1 - ph) * 1.6));
+    if (a.kind === 'hot') {
+      if (ab.school === 'nature') q.put({ kind: FX.leaf, x, y, up, w: 7, h: 4, rot: ph * 7 + i, a: i % 2 ? c : '#d8ffb0', alpha: fade });
+      else q.put({ kind: FX.spark, x, y, up, w: 7 + (1 - ph) * 5, a: i % 2 ? c : '#fff6d0', t: ph * 0.6, seed: seed + i });
+      continue;
+    }
+    switch (ab.school) {
+      case 'fire':
+        q.put({ kind: FX.flame, x, y, up: up * 0.5, base: true, w: 9, h: 12 + (1 - ph) * 6, rot: Math.PI / 2, a: c, b: '#ffe08a', seed: seed + i });
+        if (i % 2) q.put({ kind: FX.spark, x, y, up: up + 6, w: 5, a: '#ffd36a', t: ph, seed: seed + i });
+        break;
+      case 'shadow':
+        q.put({ kind: FX.shadow, x, y, up, w: 10 + (1 - ph) * 6, a: c, b: '#120a20', seed: seed + i });
+        break;
+      case 'nature':
+        q.put({ kind: FX.poison, x, y, up: up * 0.7, w: 8 + (1 - ph) * 4, a: c, b: '#e8ffb0', seed: seed + i });
+        break;
+      case 'holy':
+        q.put({ kind: FX.holy, x, y, up, w: 10, a: c, b: '#ffffff', seed: seed + i });
+        break;
+      case 'frost':
+        q.put({ kind: FX.frost, x, y, up, w: 8, h: 4, rot: ang, a: c, b: '#ffffff', alpha: fade });
+        break;
+      case 'physical':
+        // a bleed: drops falling from the wound
+        q.put({ kind: FX.spark, x, y, up: 22 - ph * 18 + lift, w: 5, a: '#d0283c', t: ph * 0.5, seed: seed + i });
+        break;
+      default:
+        q.put({ kind: FX.spark, x, y, up, w: 8, a: c, t: ph * 0.6, seed: seed + i });
+    }
+  }
+}
+
 /** The top layer of one frame. */
 export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number, view: RingStage): void {
   const me = myId === null ? null : (m.fighters[myId] ?? null);
   let g = view.groundLayer();
+  if (m.phase === 'fight' && m.zone < ZONE_START - 0.01) gloamGround(g, m, view, time);
+  // a shot is a thing to dodge: a fading line on the ground ahead of it, where it's going
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.lineCap = 'round';
+  for (const b of m.bolts) {
+    const sp = Math.hypot(b.vx, b.vy) || 1;
+    const reach = Math.min(70, b.left);
+    const from = view.spot(b.x, b.y + 8);
+    const to = view.spot(b.x + (b.vx / sp) * reach, b.y + 8 + (b.vy / sp) * reach);
+    const line = g.createLinearGradient(from.x, from.y, to.x, to.y);
+    const c = ABILITIES[b.ab]?.color ?? '#ffffff';
+    line.addColorStop(0, `${c}88`);
+    line.addColorStop(1, `${c}00`);
+    g.strokeStyle = line;
+    g.lineWidth = 4;
+    g.beginPath();
+    g.moveTo(from.x, from.y);
+    g.lineTo(to.x, to.y);
+    g.stroke();
+  }
+  g.restore();
   for (const f of m.fighters) {
     view.flat(f.x, f.y);
     if (f.id === myId) ring(g, f.x, f.y, 11, '#ffe39a', 1.4);
@@ -317,3 +569,37 @@ export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number
 }
 
 export const classColor = (cls: Fighter['cls']): string => CLASSES[cls].colors.accent;
+
+/** The Gloam on the ground: everything outside the safe oval darkened, and its edge glowing. */
+function gloamGround(g: Ctx, m: Match, view: RingStage, time: number): void {
+  const z = m.zone;
+  const cx = ARENA_W / 2;
+  const cy = ARENA_H / 2;
+  const pts: { x: number; y: number }[] = [];
+  for (let i = 0; i < 96; i++) {
+    const a = (i / 96) * Math.PI * 2;
+    pts.push(view.spot(cx + Math.cos(a) * cx * z, cy + Math.sin(a) * cy * z));
+  }
+  const trace = (): void => {
+    g.moveTo(pts[0]!.x, pts[0]!.y);
+    for (const p of pts) g.lineTo(p.x, p.y);
+    g.closePath();
+  };
+  g.save();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.beginPath();
+  g.rect(0, 0, g.canvas.width, g.canvas.height);
+  trace();
+  g.fillStyle = 'rgba(24,6,44,0.55)';
+  g.fill('evenodd');
+  g.beginPath();
+  trace();
+  const pulse = 0.65 + Math.sin(time * 4) * 0.2;
+  g.strokeStyle = `rgba(190,130,255,${pulse})`;
+  g.lineWidth = 5;
+  g.stroke();
+  g.strokeStyle = 'rgba(255,236,255,0.8)';
+  g.lineWidth = 1.5;
+  g.stroke();
+  g.restore();
+}

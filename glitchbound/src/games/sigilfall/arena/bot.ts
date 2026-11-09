@@ -1,12 +1,12 @@
-import { ABILITIES, TOKEN, type Ability } from './abilities';
+import { ABILITIES, DASH, superOf, type Ability } from './abilities';
 import { ARENA_H, ARENA_W } from './maps';
-import { HERO_R, type Fighter, type Match, type MoveInput } from './sim';
+import { BOLT_R, BOLT_SPEED, HERO_R, type Bolt, type Fighter, type Match, type MoveInput } from './sim';
 
 /**
  * A computer player for The Ring. It plays by the player's rules: it sees what a player sees, and presses the same
  * buttons through Match.press. `skill` from 0 to 1 is how quickly it reacts and how much of the game it plays: a low
- * one rarely interrupts and forgets its Token; a high one chains crowd control, stays out of sight of long casts and
- * kicks heals.
+ * one walks into shots, rarely interrupts and sits on its super; a high one sidesteps what's flying at it, strafes
+ * while it casts, races for the sigil, saves its super for the kill and kicks heals.
  */
 export interface Brain {
   /** Time to the next thought. */
@@ -17,6 +17,11 @@ export interface Brain {
   /** Reaction: how long a cast must have been seen before it moves on it. */
   seen: Map<number, number>;
   rand: () => number;
+  /** Which way it circles its target, and when it turns the other way. */
+  side: number;
+  turnAt: number;
+  /** Shots it has already made up its mind about (to step aside or not). */
+  shots: WeakMap<Bolt, boolean>;
 }
 
 export function newBrain(seed: number): Brain {
@@ -30,6 +35,9 @@ export function newBrain(seed: number): Brain {
       s = (s * 1664525 + 1013904223) >>> 0;
       return s / 4294967296;
     },
+    side: seed % 2 ? 1 : -1,
+    turnAt: 0,
+    shots: new WeakMap(),
   };
 }
 
@@ -42,6 +50,13 @@ const hpShare = (f: Fighter): number => f.hp / f.maxHp;
 /** One more moment of a computer player's mind. It returns where it wants to walk. */
 export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: number): MoveInput {
   if (f.dead || m.phase !== 'fight') return { mx: 0, my: 0 };
+  // a reflex, every frame: a shot about to land is stepped away from
+  const away = dodge(m, f, b, skill);
+  if (away) {
+    b.move = away;
+    b.wait = Math.max(b.wait, 0.22);
+    return away;
+  }
   b.wait -= dt;
   if (b.wait > 0) return b.move;
   // a sharp player thinks several times a second; a dull one twice
@@ -53,8 +68,8 @@ export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: numb
   const target = pickTarget(m, f, enemies);
   f.target = target.id;
 
-  spendToken(m, f, b, skill, enemies);
   if (!m.held(f)) {
+    unleash(m, f, b, skill, enemies, target, friends);
     defend(m, f, b, skill, enemies);
     kick(m, f, b, skill, enemies, dt);
     mobilize(m, f, b, skill, enemies, target);
@@ -85,14 +100,6 @@ function pickTarget(m: Match, f: Fighter, enemies: Fighter[]): Fighter {
     return s;
   };
   return enemies.reduce((a, c) => (score(c) < score(a) ? c : a));
-}
-
-function spendToken(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[]): void {
-  const hold = m.held(f);
-  if (!hold || hold.still || (f.cds.token ?? 0) > 0 || hold.t < 1.2) return;
-  // a good player spends it when it matters: when low, or when a big stun lands with enemies on them
-  if (b.rand() > skill * 0.9 + 0.1) return;
-  if (hpShare(f) < 0.55 || (hold.cc === 'stun' && enemies.some((e) => e.target === f.id) && hpShare(f) < 0.8)) m.press(f.id, TOKEN.id);
 }
 
 function defend(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[]): void {
@@ -126,6 +133,8 @@ function defend(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[
 /** Feet in a tight spot: rush at the target, spring from a blade, shake off a hold. */
 function mobilize(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[], target: Fighter): void {
   if (b.rand() > 0.2 + skill * 0.8) return;
+  // a flicker or a leap throws away the cast in hand: not unless it's life or death
+  if (f.cast && hpShare(f) > 0.35) return;
   const blades = enemies.some((e) => Math.hypot(e.x - f.x, e.y - f.y) < 44 && !m.held(e) && !m.rooted(e));
   const stuck = m.rooted(f) || f.auras.some((a) => a.kind === 'slow' && a.n >= 0.4);
   for (const id of f.bar) {
@@ -217,25 +226,10 @@ function healFriends(m: Match, f: Fighter, _b: Brain, _skill: number, friends: F
     }
   }
   if (!onMe || share < 0.5) {
-    // standing still is the price of the real heals, so the walking stops for them
-    const cast = pick((a) => a.cast > 0 && a.effects.some((e) => e.k === 'heal')) ?? (m.moving(f) ? heals.find((a) => a.cast > 0 && a.effects.some((e) => e.k === 'heal') && !blockedButMoving(m, f, a, low)) : undefined);
-    if (cast) {
-      f.vx = 0;
-      f.vy = 0;
-      m.press(f.id, cast.id);
-    }
+    const cast = pick((a) => a.cast > 0 && a.effects.some((e) => e.k === 'heal'));
+    if (cast) m.press(f.id, cast.id);
   }
 }
-
-const blockedButMoving = (m: Match, f: Fighter, a: Ability, t: Fighter): string | null => {
-  const { vx, vy } = f;
-  f.vx = 0;
-  f.vy = 0;
-  const why = m.blocked(f, a, t);
-  f.vx = vx;
-  f.vy = vy;
-  return why;
-};
 
 function dispelFriends(m: Match, f: Fighter, b: Brain, skill: number, friends: Fighter[]): void {
   const ab = f.bar.map((x) => ABILITIES[x]!).find((a) => a.role === 'dispel' && a.aim === 'friend');
@@ -271,8 +265,6 @@ function control(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter
     // alone with them, a hold that breaks only buys time: spend it when time is what's needed (a blade at your
     // throat, or your life running out)
     if (breaks && enemies.length === 1 && hpShare(f) > 0.5 && Math.hypot(on.x - f.x, on.y - f.y) > 60) continue;
-    // a long hold costs the time to deal damage: use it when it wins something
-    if (ab.cast > 0 && m.moving(f)) continue;
     if (ab.aim === 'self') continue;
     const before = f.target;
     f.target = on.id;
@@ -288,6 +280,8 @@ function control(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter
 function attack(m: Match, f: Fighter, b: Brain, skill: number, target: Fighter): void {
   if (f.gcd > 0 || f.cast) return;
   const near = f.bar.map((x) => ABILITIES[x]!);
+  // a blade at your throat: no time for anything slow
+  const pressed = m.enemiesOf(f).some((e) => Math.hypot(e.x - f.x, e.y - f.y) < 50 && !m.held(e) && !m.rooted(e));
   // chance to throw burst when they're low or they have no help
   const burst = near.filter((a) => a.role === 'burst');
   for (const a of burst) {
@@ -302,28 +296,95 @@ function attack(m: Match, f: Fighter, b: Brain, skill: number, target: Fighter):
       }
       continue;
     }
-    if (a.aim === 'enemy' && !m.blocked(f, a, target) && !m.moving(f)) {
+    if (a.aim === 'enemy' && !(a.cast > 0 && pressed) && !m.blocked(f, a, target)) {
       m.press(f.id, a.id);
       return;
     }
   }
-  // curses and poisons kept up, then the best hit on hand
+  // curses and poisons kept up, then the best hit on hand (casting slows you, so a blade close by wants instants)
   const options = near.filter((a) => a.role === 'damage' && a.aim === 'enemy');
   const fresh = options.filter((a) => a.effects.some((e) => e.k === 'dmg') || !target.auras.some((x) => x.ab === a.id && x.t > 1));
   const instant = fresh.filter((a) => a.cast === 0).sort((x, y) => worth(y) - worth(x));
   const cast = fresh.filter((a) => a.cast > 0).sort((x, y) => worth(y) - worth(x));
-  // on a target held and busy, a real cast; otherwise on the move
-  const wantsCast = cast.length > 0 && (skill < 0.4 || !m.enemiesOf(f).some((e) => e.target === f.id && Math.hypot(e.x - f.x, e.y - f.y) < 50));
-  const order = wantsCast ? [...instant.filter((a) => a.effects.some((e) => e.k === 'dot')), ...cast, ...instant] : instant;
+  const order = pressed && skill >= 0.25 ? instant : [...instant.filter((a) => a.effects.some((e) => e.k === 'dot')), ...cast, ...instant];
   for (const a of order) {
-    if (blockedButMoving(m, f, a, target)) continue;
-    if (a.cast > 0) {
-      f.vx = 0;
-      f.vy = 0;
-    }
+    if (m.blocked(f, a, target)) continue;
     if (!m.press(f.id, a.id)) return;
   }
   void b;
+}
+
+/** The super, when it's full: on a kill, on a crowd, or to save a friend. */
+function unleash(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[], target: Fighter, friends: Fighter[]): void {
+  const sup = superOf(f.cls);
+  if (f.charge < 1 || b.rand() > 0.35 + skill * 0.65) return;
+  if (sup.aim === 'friend') {
+    const low = [...friends].sort((a, c) => hpShare(a) - hpShare(c))[0];
+    if (!low || hpShare(low) > 0.6) return;
+    f.friend = low.id;
+    if (!m.blocked(f, sup, low)) m.press(f.id, sup.id);
+    return;
+  }
+  if (sup.aim === 'near') {
+    const caught = enemies.filter((e) => Math.hypot(e.x - f.x, e.y - f.y) <= sup.range + HERO_R - 6);
+    if (caught.length && !m.blocked(f, sup)) m.press(f.id, sup.id);
+    return;
+  }
+  // a shot: best close in, or on someone who can't step aside
+  const d = Math.hypot(target.x - f.x, target.y - f.y);
+  const sure = !sup.bolt || d < 90 || !!m.held(target) || m.rooted(target);
+  if (sure && !m.blocked(f, sup, target)) m.press(f.id, sup.id);
+}
+
+/** A shot coming that will land: which way to step to make it miss (and a Swift Step when it's close). */
+function dodge(m: Match, f: Fighter, b: Brain, skill: number): MoveInput | null {
+  if (m.held(f) || m.rooted(f) || f.dash) return null;
+  let best: { bolt: Bolt; at: number; sx: number; sy: number } | null = null;
+  for (const bolt of m.bolts) {
+    const src = m.fighters[bolt.src];
+    if (!src || src.team === f.team) continue;
+    const ab = ABILITIES[bolt.ab];
+    // a sharp eye sees it leave sooner
+    const flown = ((ab?.range ?? 0) + HERO_R + 40 - bolt.left) / BOLT_SPEED;
+    if (flown < 0.3 - skill * 0.22) continue;
+    let will = b.shots.get(bolt);
+    if (will === undefined) {
+      will = b.rand() < 0.04 + skill * skill * 0.66;
+      b.shots.set(bolt, will);
+    }
+    if (!will) continue;
+    // where it passes closest to where they stand
+    const gx = bolt.x;
+    const gy = bolt.y + 8;
+    const sp = Math.hypot(bolt.vx, bolt.vy) || 1;
+    const ux = bolt.vx / sp;
+    const uy = bolt.vy / sp;
+    const along = (f.x - gx) * ux + (f.y - gy) * uy;
+    if (along < -HERO_R) continue;
+    const side = (f.x - gx) * -uy + (f.y - gy) * ux;
+    if (Math.abs(side) > HERO_R + BOLT_R + 4) continue;
+    const at = along / sp;
+    if (at > 0.65 || (best && at > best.at)) continue;
+    // out to whichever side it's already further from
+    const dir = side >= 0 ? 1 : -1;
+    best = { bolt, at, sx: -uy * dir, sy: ux * dir };
+  }
+  if (!best) return null;
+  // too close to walk clear: a Swift Step, if it's ready (and not at the price of a cast nearly done)
+  if (best.at < 0.28 && skill > 0.35 && !(f.cast && f.cast.dur - f.cast.t < 0.6) && !m.blocked(f, DASH)) {
+    f.dirX = best.sx;
+    f.dirY = best.sy;
+    m.press(f.id, DASH.id);
+  }
+  return keepIn(m, f, best.sx, best.sy);
+}
+
+/** A way to step that doesn't run into the wall, stone or the Gloam: turned about if it would. */
+function keepIn(m: Match, f: Fighter, mx: number, my: number): MoveInput {
+  const x = f.x + mx * 24;
+  const y = f.y + my * 24;
+  const bad = x < HERO_R + 4 || y < HERO_R + 8 || x > ARENA_W - HERO_R - 4 || y > ARENA_H - HERO_R - 4 || m.zoneAt(x, y) > 0.98 || m.pillars.some((p) => x > p.x - HERO_R && x < p.x + p.w + HERO_R && y > p.y - HERO_R && y < p.y + p.h + HERO_R);
+  return bad ? { mx: -mx, my: -my } : { mx, my };
 }
 
 function worth(a: Ability): number {
@@ -345,15 +406,33 @@ function healSelf(m: Match, f: Fighter): void {
 /* ------------------------------------------------------------------ feet */
 
 function walk(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[], target: Fighter, friends: Fighter[], healer: boolean): MoveInput {
-  // holding still for a cast is what a cast costs
-  if (f.cast) {
-    // a long cast at them when they can't get to you... unless it's nearly over and you're dying
-    return { mx: 0, my: 0 };
-  }
   const bar = f.bar.map((x) => ABILITIES[x]!);
   const melee = bar.some((a) => a.aim === 'enemy' && a.range <= 40 && a.role === 'damage');
   const near = enemies.reduce((a, c) => (Math.hypot(c.x - f.x, c.y - f.y) < Math.hypot(a.x - f.x, a.y - f.y) ? c : a));
   const nearD = Math.hypot(near.x - f.x, near.y - f.y);
+  // out of the Gloam (and away from its edge) before anything else
+  if (m.zoneAt(f.x, f.y) > 0.9 && m.zone < 1.4) {
+    const s = m.sigilSpot();
+    return steer(m, f, b, s.x, s.y);
+  }
+  // the sigil: worth a run when nobody's nearer to it, or when it's needed
+  const sg = m.sigil;
+  if (sg && b.rand() < 0.3 + skill * 0.7) {
+    const mine = Math.hypot(sg.x - f.x, sg.y - f.y);
+    const theirs = Math.min(...enemies.map((e) => Math.hypot(sg.x - e.x, sg.y - e.y)));
+    if (mine < theirs + 20 || (hpShare(f) < 0.5 && mine < 160)) {
+      if (mine > 70 && skill > 0.5 && !m.blocked(f, DASH)) {
+        f.dirX = sg.x - f.x;
+        f.dirY = sg.y - f.y;
+        m.press(f.id, DASH.id);
+      }
+      return steer(m, f, b, sg.x, sg.y);
+    }
+  }
+  if (m.clock >= b.turnAt) {
+    b.side = b.rand() < 0.5 ? 1 : -1;
+    b.turnAt = m.clock + 1.3 + b.rand() * 1.8;
+  }
   // someone is casting something long at them, and a pillar is close: break line of sight
   const incoming = enemies.find((e) => e.cast && e.cast.target === f.id && !e.cast.channel && e.cast.dur > 1.2);
   if (incoming && skill > 0.5 && (hpShare(f) < 0.65 || (ABILITIES[incoming.cast!.ab]?.cast ?? 0) > 2.2) && b.rand() < skill) {
@@ -361,26 +440,81 @@ function walk(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[],
     if (hide) return steer(m, f, b, hide.x, hide.y);
   }
   if (melee) {
-    if (Math.hypot(target.x - f.x, target.y - f.y) > 22) return steer(m, f, b, target.x, target.y);
+    const d = Math.hypot(target.x - f.x, target.y - f.y);
+    // a Swift Step closes the gap on someone running
+    if (d > 70 && d < 140 && skill > 0.45 && m.sees(f, target) && !m.blocked(f, DASH) && b.rand() < skill) {
+      f.dirX = target.x - f.x;
+      f.dirY = target.y - f.y;
+      m.press(f.id, DASH.id);
+    }
+    if (d > 22) return steer(m, f, b, target.x, target.y);
     return { mx: 0, my: 0 };
   }
   if (healer) {
     // stay in sight of the one who needs you, and away from what's on you
     const hurt = [...friends].sort((a, c) => hpShare(a) - hpShare(c))[0]!;
-    if (hurt !== f && (!m.sees(f, hurt) || Math.hypot(hurt.x - f.x, hurt.y - f.y) > 150)) return steer(m, f, b, hurt.x, hurt.y);
-    if (nearD < 60 && hpShare(f) < 0.8 && !m.held(near) && !m.rooted(near)) return flee(m, f, b, near);
-    if (hpShare(hurt) < 0.9) return { mx: 0, my: 0 };
-    return roam(m, f, b, near);
+    if (hurt !== f && (!m.sees(f, hurt) || Math.hypot(hurt.x - f.x, hurt.y - f.y) > 150)) return peek(m, f, b, hurt);
+    if (nearD < 60 && hpShare(f) < 0.8 && !m.held(near) && !m.rooted(near)) return flee(m, f, b, near, skill);
+    return strafe(m, f, b, near, 120);
   }
-  // a caster or an archer: in sight, at range, and away from blades (unless the blade is held: then it's time to cast)
-  if (nearD < 56 && !m.held(near) && !m.rooted(near)) return flee(m, f, b, near);
-  if (!m.sees(f, target) || Math.hypot(target.x - f.x, target.y - f.y) > 165) return steer(m, f, b, target.x, target.y);
-  // an archer never needs to stop; a caster does
-  if (!bar.some((a) => a.cast > 0 && a.role !== 'cc')) return nearD < 100 ? flee(m, f, b, near) : { mx: 0, my: 0 };
-  return { mx: 0, my: 0 };
+  // a caster or an archer: in sight, at range, away from blades (unless the blade is held), and never standing still
+  if (nearD < 56 && !m.held(near) && !m.rooted(near)) return flee(m, f, b, near, skill);
+  if (!m.sees(f, target) || Math.hypot(target.x - f.x, target.y - f.y) > 165) return peek(m, f, b, target);
+  return strafe(m, f, b, target, 125);
 }
 
-function flee(m: Match, f: Fighter, b: Brain, from: Fighter): MoveInput {
+/** Out of sight or reach: the nearest step that sees them (round the stone), rather than walking at them. */
+function peek(m: Match, f: Fighter, b: Brain, t: Fighter): MoveInput {
+  const d = Math.hypot(t.x - f.x, t.y - f.y);
+  if (d > 165) return steer(m, f, b, t.x, t.y);
+  let best: { x: number; y: number } | null = null;
+  let bd = Infinity;
+  for (const reach of [26, 48, 72]) {
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      const x = f.x + Math.cos(a) * reach;
+      const y = f.y + Math.sin(a) * reach;
+      if (x < 20 || y < 16 || x > ARENA_W - 20 || y > ARENA_H - 16 || m.zoneAt(x, y) > 0.95) continue;
+      if (m.pillars.some((p) => x > p.x - HERO_R - 2 && x < p.x + p.w + HERO_R + 2 && y > p.y - HERO_R - 2 && y < p.y + p.h + HERO_R + 2)) continue;
+      if (!m.sees({ x, y }, t)) continue;
+      // nearer is better, and so is not too close to them
+      const cost = reach + Math.max(0, 70 - Math.hypot(t.x - x, t.y - y));
+      if (cost < bd) {
+        bd = cost;
+        best = { x, y };
+      }
+    }
+    if (best) break;
+  }
+  return best ? steer(m, f, b, best.x, best.y) : steer(m, f, b, t.x, t.y);
+}
+
+/** Circling a foe at a distance, turning now and then, so that a shot at them has to be a good one. */
+function strafe(m: Match, f: Fighter, b: Brain, from: Fighter, want: number): MoveInput {
+  const dx = f.x - from.x;
+  const dy = f.y - from.y;
+  const d = Math.hypot(dx, dy) || 1;
+  const rx = dx / d;
+  const ry = dy / d;
+  // round them, drifting in or out to the distance wanted
+  const out = Math.max(-0.7, Math.min(0.7, (want - d) / 50));
+  let mx = -ry * b.side + rx * out;
+  let my = rx * b.side + ry * out;
+  const len = Math.hypot(mx, my) || 1;
+  mx /= len;
+  my /= len;
+  const step = keepIn(m, f, mx, my);
+  if (step.mx !== mx) b.side = -b.side;
+  return step;
+}
+
+function flee(m: Match, f: Fighter, b: Brain, from: Fighter, skill = 0.5): MoveInput {
+  // a Swift Step out from under a blade
+  if (skill > 0.5 && !f.cast && Math.hypot(from.x - f.x, from.y - f.y) < 34 && !m.blocked(f, DASH) && b.rand() < skill * 0.5) {
+    f.dirX = f.x - from.x || 1;
+    f.dirY = f.y - from.y;
+    m.press(f.id, DASH.id);
+  }
   // away, unless that's into a wall: then round along it
   const dx = f.x - from.x;
   const dy = f.y - from.y;
@@ -391,14 +525,6 @@ function flee(m: Match, f: Fighter, b: Brain, from: Fighter): MoveInput {
     return steer(m, f, b, ARENA_W / 2, ARENA_H / 2);
   }
   return steer(m, f, b, tx, ty);
-}
-
-function roam(m: Match, f: Fighter, b: Brain, from: Fighter): MoveInput {
-  if (!b.go || b.go.t < m.clock) {
-    const a = b.rand() * Math.PI * 2;
-    b.go = { x: Math.max(64, Math.min(ARENA_W - 64, from.x + Math.cos(a) * 105)), y: Math.max(40, Math.min(ARENA_H - 40, from.y + Math.sin(a) * 70)), t: m.clock + 3 };
-  }
-  return steer(m, f, b, b.go.x, b.go.y);
 }
 
 /** The nearest spot behind stone from someone. */

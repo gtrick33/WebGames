@@ -1,13 +1,14 @@
 import type { ClassId } from '../data/types';
-import { ABILITIES, BODY, GCD, OATHS, TOKEN, type Ability, type CcKind, type Effect } from './abilities';
+import { ABILITIES, BODY, DASH, GCD, OATHS, SIGIL, SLOTS, superOf, type Ability, type CcKind, type Effect } from './abilities';
 import { ARENA_H, ARENA_W, ENTRY_GATES, MAPS, type Pillar } from './maps';
 import { cleanTalents, type Tune } from './talents';
 
 /**
  * The Ring's simulation: everything about a match but the drawing, so it can be tested, run by a bot at speed, and run
- * by a host for a room of players. A classic arena: stand still to cast, a global cooldown, line of sight (pillars
- * break casts and block new ones), crowd control that wears off harder each time, interrupts that lock a school,
- * dispels, and healing that fades the longer a match goes (dampening), so that no match lasts forever.
+ * by a host for a room of players. A brawl: always on the move (casting only slows you), shots that fly where the
+ * target is going and can be dodged with a step, short holds that wear off harder each time, a super filled by
+ * fighting, a sigil in the middle worth running for, and the Gloam closing in from the edges so that no match drags.
+ * Line of sight still matters (pillars block shots and new casts), and healing fades the longer a match goes.
  */
 
 export const HERO_R = 7;
@@ -16,16 +17,44 @@ export const BASE_SPEED = 66;
 export const GATES = 30;
 /** Everyone's ready: this long and they lift. */
 const GATES_READY = 3;
-export const MATCH_LIMIT = 300;
+export const MATCH_LIMIT = 150;
 /** How long crowd control's returns stay diminished after one wears off. */
 const DR_RESET = 18;
 const DR_STEPS = [1, 0.5, 0.25];
-const BOLT_SPEED = 360;
+/** Shots fly this fast, aimed at where the target will be if they keep on, and land on the first enemy they touch. */
+export const BOLT_SPEED = 300;
+export const BOLT_R = 6;
+/** How much of the target's stride a shot allows for: nearly all, so only a change of step (or a Swift Step) dodges it. */
+const LEAD = 0.9;
 const QUEUE = 0.35;
-/** Dampening: none for this long, then healing fades to this share gone by the end. */
-const DAMP_FROM = 90;
-const DAMP_MAX = 0.7;
+/** Casting doesn't stop you, but it slows you to this. */
+export const CAST_SLOW = 0.55;
+/** Dampening: none for this long, then healing fades, to this share gone at DAMP_FULL. */
+const DAMP_FROM = 35;
+const DAMP_FULL = 95;
+const DAMP_MAX = 0.75;
+/** The Gloam: from CLOSE_FROM to CLOSE_TO it closes from past the corners to a small oval in the middle (the oval's
+ * size over the ground's half-width and half-height), then over CLOSE_LAST more seconds to nothing; it burns this share
+ * of a life a second out in it, and more the longer it goes. */
+export const CLOSE_FROM = 40;
+export const CLOSE_TO = 80;
+const CLOSE_LAST = 30;
+export const ZONE_START = 1.45;
+export const ZONE_END = 0.32;
+const ZONE_BURN = 0.06;
+/** The sigil in the middle: first at this, then this long after it's taken. */
+export const SIGIL_FIRST = 15;
+const SIGIL_EVERY = 22;
+/** The super meter fills by this much dealt (healing counts the same), and a little by what's taken. */
+const SUPER_DEALT = 900;
+const SUPER_TAKEN = 2600;
 const CRIT = 0.1;
+/** Direct damage over its ability's number; a burst ability's over that; a critical hit's. */
+export const HIT_K = 1.12;
+export const BURST_K = 1.25;
+export const CRIT_K = 1.7;
+/** Healing over its ability's number: a little under, so that a healer slows a kill rather than stopping it. */
+export const HEAL_K = 0.85;
 
 export interface FighterSetup {
   team: 0 | 1;
@@ -114,13 +143,26 @@ export interface Fighter {
   talents: string[];
   mods: { dmg: number; heal: number; speed: number; tenacity: number; cool: number; regen: number };
   tune: Record<string, Tune>;
-  score: { dmg: number; heal: number; cc: number; kicks: number };
+  score: { dmg: number; heal: number; cc: number; kicks: number; combos?: number; supers?: number };
+  /** The super meter, 0 to 1. */
+  charge: number;
 }
 
 export interface Bolt {
   ab: string;
   src: number;
+  /** Who it was aimed at (it lands on whichever enemy it touches first). */
   tgt: number;
+  /** Where it is: `y` is its height in the air over the ground, 8 up. */
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  /** How much further it flies before it falls. */
+  left: number;
+}
+
+export interface SigilStone {
   x: number;
   y: number;
 }
@@ -140,10 +182,16 @@ export interface Trap {
 /** What happened this frame, for the drawing and the sounds to take. */
 export type MatchEvent =
   | { k: 'num'; id: number; n: number; kind: 'dmg' | 'heal' | 'absorb'; crit: boolean }
-  | { k: 'word'; id: number; word: string; bad?: boolean }
+  | { k: 'word'; id: number; word: string; bad?: boolean; combo?: boolean }
   | { k: 'ab'; id: number; ab: string }
   | { k: 'land'; id: number; ab: string }
-  | { k: 'death'; id: number };
+  | { k: 'death'; id: number }
+  /** A shot that hit nothing (stone, or the air past its reach). */
+  | { k: 'miss'; x: number; y: number; ab: string }
+  /** The sigil rises (id -1), or someone takes it. */
+  | { k: 'sigil'; id: number; x: number; y: number }
+  /** A super goes off. */
+  | { k: 'super'; id: number; ab: string };
 
 export type Phase = 'gates' | 'fight' | 'over';
 
@@ -229,8 +277,13 @@ export class Match {
   fighters: Fighter[];
   bolts: Bolt[] = [];
   traps: Trap[] = [];
+  /** The sigil, while it stands waiting to be taken, and when the next one rises. */
+  sigil: SigilStone | null = null;
+  sigilAt = SIGIL_FIRST;
   events: MatchEvent[] = [];
   private rand: () => number;
+  private burnT = 0;
+  private warned = false;
 
   constructor(setup: MatchSetup) {
     this.rand = rng(setup.seed);
@@ -248,7 +301,7 @@ export class Match {
         team: s.team,
         cls: s.cls,
         name: s.name,
-        bar: s.bar.filter((b) => ABILITIES[b]?.cls === s.cls).slice(0, 6),
+        bar: s.bar.filter((b) => ABILITIES[b]?.cls === s.cls && !ABILITIES[b]!.super).slice(0, SLOTS),
         seat: s.seat ?? null,
         human: !!s.human,
         x: spot[0],
@@ -276,6 +329,7 @@ export class Match {
         fearX: 0,
         fearY: 0,
         score: { dmg: 0, heal: 0, cc: 0, kicks: 0 },
+        charge: 0,
       };
     });
   }
@@ -284,7 +338,32 @@ export class Match {
 
   /** A share of healing gone. Grows through the match so that healers can't hold forever. */
   get dampening(): number {
-    return Math.max(0, Math.min(DAMP_MAX, ((this.clock - DAMP_FROM) / (MATCH_LIMIT - DAMP_FROM)) * DAMP_MAX));
+    return Math.max(0, Math.min(DAMP_MAX, ((this.clock - DAMP_FROM) / (DAMP_FULL - DAMP_FROM)) * DAMP_MAX));
+  }
+
+  /** How far the Gloam has closed: the safe oval's size over the ground's half-width and half-height. */
+  get zone(): number {
+    if (this.clock <= CLOSE_FROM) return ZONE_START;
+    if (this.clock <= CLOSE_TO) return ZONE_START + (ZONE_END - ZONE_START) * ((this.clock - CLOSE_FROM) / (CLOSE_TO - CLOSE_FROM));
+    // sudden death: on to nothing
+    return Math.max(0.001, ZONE_END * (1 - (this.clock - CLOSE_TO) / CLOSE_LAST));
+  }
+
+  /** How far out a point is: under 1 is inside the safe oval, over 1 is in the Gloam. */
+  zoneAt(x: number, y: number, k = this.zone): number {
+    const cx = ARENA_W / 2;
+    const cy = ARENA_H / 2;
+    return Math.hypot((x - cx) / (cx * k), (y - cy) / (cy * k));
+  }
+
+  /** Is this fighter out in the Gloam? */
+  inGloam(f: { x: number; y: number }): boolean {
+    return this.phase === 'fight' && this.zoneAt(f.x, f.y) > 1;
+  }
+
+  /** The abilities everyone has besides their bar: the Swift Step and their class's super. */
+  extras(f: Fighter): Ability[] {
+    return [DASH, superOf(f.cls)];
   }
 
   /** Everything solid right now: the stone, and the gates until they lift. */
@@ -300,8 +379,8 @@ export class Match {
   equip(id: number, s: { bar: string[]; oath?: string; talents?: string[] }): boolean {
     const f = this.fighters[id];
     if (!f || this.phase !== 'gates') return false;
-    const bar = s.bar.filter((b, i) => ABILITIES[b]?.cls === f.cls && s.bar.indexOf(b) === i).slice(0, 6);
-    if (bar.length < 6) return false;
+    const bar = s.bar.filter((b, i) => ABILITIES[b]?.cls === f.cls && !ABILITIES[b]!.super && s.bar.indexOf(b) === i).slice(0, SLOTS);
+    if (bar.length < SLOTS) return false;
     const made = built(f.cls, s.oath, s.talents);
     Object.assign(f, made);
     f.bar = bar;
@@ -338,17 +417,20 @@ export class Match {
   blocked(f: Fighter, ab: Ability, target?: Fighter | null): string | null {
     if (this.phase !== 'fight') return 'Wait for the gates';
     if (f.dead) return 'You have fallen';
-    if (f.auras.some((a) => a.still) && ab.id !== 'token') return 'Sealed in ice';
+    if (f.auras.some((a) => a.still)) return 'Sealed in ice';
     if (f.cast?.ab === ab.id) return 'Already casting';
+    // as in the classic arenas: a cast runs to its end, and what's pressed meanwhile waits (a channel can be cut short)
+    if (f.cast && !f.cast.channel && !ab.free) return 'Casting';
     if (!ab.anyState && this.held(f)) return 'You can’t do that now';
-    if (ab.id !== 'token' && ab.school !== 'physical') {
+    if (ab.school !== 'physical') {
       if (this.silenced(f)) return 'Silenced';
       if ((f.locks[ab.school] ?? 0) > 0) return `${ab.school[0]!.toUpperCase()}${ab.school.slice(1)} is locked`;
     }
+    if (ab.super && f.charge < 1) return 'Your super isn’t charged';
+    if (ab.effects.some((e) => e.k === 'dash') && this.rooted(f)) return 'Rooted';
     if ((f.cds[ab.id] ?? 0) > 0) return 'Not ready yet';
     if (!ab.free && f.gcd > 0) return 'Not ready yet';
     if (ab.mana > f.mana) return 'Not enough mana';
-    if ((ab.cast > 0 || ab.channel) && this.moving(f)) return 'Stand still to cast';
     if (ab.aim === 'enemy' || ab.aim === 'friend') {
       const t = target === undefined ? this.aimOf(f, ab) : target;
       if (!t) return ab.aim === 'enemy' ? 'Nobody to aim at' : 'Nobody to help';
@@ -385,15 +467,20 @@ export class Match {
   /** A player presses an ability. Null if it went off (or was queued); otherwise why not, in words. */
   press(id: number, abId: string): string | null {
     const f = this.fighters[id];
-    const ab = abId === 'token' ? TOKEN : ABILITIES[abId];
-    if (!f || !ab || (abId !== 'token' && !f.bar.includes(abId))) return 'You don’t have that';
+    const ab = ABILITIES[abId];
+    if (!f || !ab || (!f.bar.includes(abId) && !this.extras(f).includes(ab))) return 'You don’t have that';
     const why = this.blocked(f, ab);
     if (!why) {
       this.begin(f, ab);
       return null;
     }
+    // a press in the last moments of a cast goes off the moment it lands
+    if (why === 'Casting' && f.cast && f.cast.dur - f.cast.t <= QUEUE) {
+      f.queued = { ab: ab.id, t: f.cast.dur - f.cast.t + QUEUE };
+      return null;
+    }
     // a press in the last moments of the global cooldown waits for it, so that a player never feels a dropped key
-    if (why === 'Not ready yet' && !ab.free && (f.cds[ab.id] ?? 0) <= QUEUE && f.gcd <= QUEUE) {
+    if (why === 'Not ready yet' && !ab.free && !ab.super && (f.cds[ab.id] ?? 0) <= QUEUE && f.gcd <= QUEUE) {
       f.queued = { ab: ab.id, t: QUEUE };
       return null;
     }
@@ -427,6 +514,11 @@ export class Match {
 
   private spend(f: Fighter, ab: Ability): void {
     f.mana = Math.max(0, f.mana - ab.mana);
+    if (ab.super) {
+      f.charge = 0;
+      f.score.supers = (f.score.supers ?? 0) + 1;
+      this.events.push({ k: 'super', id: f.id, ab: ab.id });
+    }
     if (ab.cd > 0) f.cds[ab.id] = ab.cd * f.mods.cool * (f.tune[ab.id]?.cd ?? 1);
   }
 
@@ -444,10 +536,23 @@ export class Match {
       return;
     }
     if (ab.bolt && t !== f) {
-      this.bolts.push({ ab: ab.id, src: f.id, tgt: t.id, x: f.x, y: f.y - 8 });
+      this.bolts.push(this.aim(f, ab, t));
       return;
     }
     this.land(f, ab, t, false);
+  }
+
+  /** A shot leaves: at where they'll be when it gets there, if they keep going the way they are. */
+  private aim(f: Fighter, ab: Ability, t: Fighter): Bolt {
+    let ax = t.x;
+    let ay = t.y;
+    for (let i = 0; i < 2; i++) {
+      const time = Math.hypot(ax - f.x, ay - f.y) / BOLT_SPEED;
+      ax = t.x + t.vx * time * LEAD;
+      ay = t.y + t.vy * time * LEAD;
+    }
+    const d = Math.hypot(ax - f.x, ay - f.y) || 1;
+    return { ab: ab.id, src: f.id, tgt: t.id, x: f.x, y: f.y - 8, vx: ((ax - f.x) / d) * BOLT_SPEED, vy: ((ay - f.y) / d) * BOLT_SPEED, left: ab.range + HERO_R + 40 };
   }
 
   /** It reaches them. A blow already in the air lands whatever has come between: the time to dodge was before it left. */
@@ -468,10 +573,25 @@ export class Match {
       this.events.push({ k: 'word', id: t.id, word: 'Immune' });
       return;
     }
+    // a combo: what this hero set up on them (or the hold they're in) makes this land harder
+    let boost = 1;
+    let combo: Ability['combo'] | null = null;
+    const c = ab.combo;
+    if (c && !t.dead) {
+      const mine = (a: Aura): boolean => !!c.ab?.includes(a.ab) && a.src === f.id;
+      if (t.auras.some((a) => mine(a) || (!!a.cc && !!c.cc?.includes(a.cc)))) {
+        combo = c;
+        boost = c.mult;
+        if (c.consume) t.auras = t.auras.filter((a) => !mine(a));
+        f.score.combos = (f.score.combos ?? 0) + 1;
+        this.events.push({ k: 'word', id: t.id, word: c.name, combo: true });
+      }
+    }
     for (const e of ab.effects) {
       if (t.dead && e.k !== 'heal') break;
-      if (this.apply(f, ab, t, e) === 'stop') break;
+      if (this.apply(f, ab, t, e, boost) === 'stop') break;
     }
+    if (combo?.extra) for (const e of combo.extra) if (!t.dead || e.k === 'heal') this.apply(f, ab, t, e);
   }
 
   private immuneTo(t: Fighter, ab: Ability): boolean {
@@ -487,10 +607,10 @@ export class Match {
     return aura;
   }
 
-  private apply(f: Fighter, ab: Ability, t: Fighter, e: Effect): 'stop' | void {
+  private apply(f: Fighter, ab: Ability, t: Fighter, e: Effect, boost = 1): 'stop' | void {
     const magic = ab.school !== 'physical' && !ab.sticky;
     const base = { ab: ab.id, src: f.id, dur: 0, magic, n: 0 };
-    const power = f.tune[ab.id]?.power ?? 1;
+    const power = (f.tune[ab.id]?.power ?? 1) * boost;
     switch (e.k) {
       case 'dmg':
         this.damage(f, t, e.n * power, true, ab);
@@ -595,6 +715,22 @@ export class Match {
         this.events.push({ k: 'num', id: f.id, n, kind: 'dmg', crit: false });
         return;
       }
+      case 'knock': {
+        if (t === f || t.dead) return;
+        const dx = t.x - f.x;
+        const dy = t.y - f.y;
+        const d = Math.hypot(dx, dy) || 1;
+        t.dash = { x: t.x + (dx / d) * e.dist, y: t.y + (dy / d) * e.dist, speed: 380 };
+        if (t.cast) this.endCast(t);
+        this.events.push({ k: 'word', id: t.id, word: 'Knocked back', bad: true });
+        return;
+      }
+      case 'dash': {
+        const d = Math.hypot(f.dirX, f.dirY) || 1;
+        f.dash = { x: f.x + (f.dirX / d) * e.dist, y: f.y + (f.dirY / d) * e.dist, speed: 430 };
+        this.endCast(f);
+        return;
+      }
     }
   }
 
@@ -660,15 +796,23 @@ export class Match {
     if (t.dead) return;
     if (ab && t.auras.some((a) => a.kind === 'immune' && (!a.phys || ab.school === 'physical'))) return;
     let n = amount * src.mods.dmg;
+    // (fights turn on bursts: a blow hits a little harder than its number, a burst ability harder still, a crit a lot)
+    if (direct) n *= HIT_K;
+    if (direct && ab?.role === 'burst') n *= BURST_K;
     let crit = false;
     if (direct && this.rand() < CRIT) {
-      n *= 1.5;
+      n *= CRIT_K;
       crit = true;
     }
     for (const a of src.auras) if (a.kind === 'fury') n *= 1 + a.n;
     for (const a of t.auras) if (a.kind === 'guard') n *= 1 - a.n;
     n = Math.round(n);
     src.score.dmg += n;
+    if (src !== t) {
+      // (a super's own blow doesn't fill the meter it just emptied)
+      if (!ab?.super) src.charge = Math.min(1, src.charge + n / SUPER_DEALT);
+      t.charge = Math.min(1, t.charge + n / SUPER_TAKEN);
+    }
     for (const a of t.auras) {
       if (a.kind !== 'absorb' || n <= 0) continue;
       const soak = Math.min(a.n, n);
@@ -678,8 +822,8 @@ export class Match {
     }
     t.auras = t.auras.filter((a) => a.kind !== 'absorb' || a.n > 0);
     if (n <= 0) return;
-    t.hp -= n;
-    this.events.push({ k: 'num', id: t.id, n, kind: 'dmg', crit });
+    this.wound(t, n, crit);
+    if (t.dead) return;
     // what holds you breaks with hurt: at once when dazed, after a while when feared or rooted
     for (let i = t.auras.length - 1; i >= 0; i--) {
       const a = t.auras[i]!;
@@ -696,32 +840,38 @@ export class Match {
       t.cast.pushed++;
       t.cast.t = Math.max(0, t.cast.t - 0.25);
     }
-    if (t.hp <= 0) {
-      const grace = t.auras.find((a) => a.kind === 'lastgrace');
-      if (grace) {
-        t.auras.splice(t.auras.indexOf(grace), 1);
-        t.hp = Math.round(t.maxHp * grace.n);
-        this.events.push({ k: 'word', id: t.id, word: 'Saved by grace' });
-        return;
-      }
-      t.hp = 0;
-      t.dead = true;
-      t.cast = null;
-      t.auras = [];
-      t.dash = null;
-      this.events.push({ k: 'death', id: t.id });
+  }
+
+  /** Life lost, and maybe the end of them. */
+  private wound(t: Fighter, n: number, crit: boolean): void {
+    t.hp -= n;
+    this.events.push({ k: 'num', id: t.id, n, kind: 'dmg', crit });
+    if (t.hp > 0) return;
+    const grace = t.auras.find((a) => a.kind === 'lastgrace');
+    if (grace) {
+      t.auras.splice(t.auras.indexOf(grace), 1);
+      t.hp = Math.round(t.maxHp * grace.n);
+      this.events.push({ k: 'word', id: t.id, word: 'Saved by grace' });
+      return;
     }
+    t.hp = 0;
+    t.dead = true;
+    t.cast = null;
+    t.auras = [];
+    t.dash = null;
+    this.events.push({ k: 'death', id: t.id });
   }
 
   private heal(src: Fighter, t: Fighter, amount: number): void {
     if (t.dead) return;
-    let n = amount * src.mods.heal * (1 - this.dampening);
+    let n = amount * HEAL_K * src.mods.heal * (1 - this.dampening);
     if (this.rand() < CRIT) n *= 1.5;
     for (const a of t.auras) if (a.kind === 'antiheal') n *= 1 - a.n;
     n = Math.round(Math.min(n, t.maxHp - t.hp));
     if (n <= 0) return;
     t.hp += n;
     src.score.heal += n;
+    src.charge = Math.min(1, src.charge + n / SUPER_DEALT);
     this.events.push({ k: 'num', id: t.id, n, kind: 'heal', crit: false });
   }
 
@@ -747,7 +897,67 @@ export class Match {
     }
     this.moveBolts(dt);
     this.tripTraps(dt);
+    this.tendSigil();
+    this.closeIn(dt);
     this.judge();
+  }
+
+  /** The sigil rises in the middle now and then; the first to reach it takes it. */
+  private tendSigil(): void {
+    if (!this.sigil) {
+      if (this.clock < this.sigilAt) return;
+      this.sigil = this.sigilSpot();
+      this.events.push({ k: 'sigil', id: -1, x: this.sigil.x, y: this.sigil.y });
+      this.events.push({ k: 'word', id: -1, word: 'A sigil rises' });
+      return;
+    }
+    const s = this.sigil;
+    const by = this.fighters.find((f) => !f.dead && Math.hypot(f.x - s.x, f.y - s.y) < HERO_R + 8);
+    if (!by) return;
+    this.sigil = null;
+    this.sigilAt = this.clock + SIGIL_EVERY;
+    const n = Math.round(Math.min(by.maxHp * 0.2, by.maxHp - by.hp));
+    if (n > 0) {
+      by.hp += n;
+      this.events.push({ k: 'num', id: by.id, n, kind: 'heal', crit: false });
+    }
+    by.charge = Math.min(1, by.charge + 0.34);
+    this.addAura(by, { ab: SIGIL.id, src: by.id, dur: 4, magic: false, n: 0.3, kind: 'speed', harmful: false });
+    this.events.push({ k: 'sigil', id: by.id, x: s.x, y: s.y });
+    this.events.push({ k: 'word', id: by.id, word: 'Sigil of Might' });
+  }
+
+  /** The middle of the ground, or beside the stone that stands there. */
+  sigilSpot(): SigilStone {
+    const cx = ARENA_W / 2;
+    const cy = ARENA_H / 2;
+    for (const [x, y] of [
+      [cx, cy],
+      [cx, cy - 46],
+      [cx, cy + 46],
+      [cx - 70, cy],
+    ] as const) {
+      if (!this.pillars.some((p) => x > p.x - 12 && x < p.x + p.w + 12 && y > p.y - 12 && y < p.y + p.h + 12)) return { x, y };
+    }
+    return { x: cx, y: cy };
+  }
+
+  /** The Gloam: a warning, then it closes, burning whoever is out in it. */
+  private closeIn(dt: number): void {
+    if (!this.warned && this.clock >= CLOSE_FROM - 5) {
+      this.warned = true;
+      this.events.push({ k: 'word', id: -1, word: 'The Gloam closes in' });
+    }
+    if (this.clock <= CLOSE_FROM) return;
+    this.burnT += dt;
+    if (this.burnT < 0.5) return;
+    this.burnT -= 0.5;
+    // it bites harder the longer the match goes past its closing
+    const k = 1 + Math.max(0, this.clock - CLOSE_TO) / 20;
+    for (const f of this.fighters) {
+      if (f.dead || !this.inGloam(f)) continue;
+      this.wound(f, Math.round(f.maxHp * ZONE_BURN * 0.5 * k), false);
+    }
   }
 
   private tickFighter(f: Fighter, dt: number, m: MoveInput | undefined): void {
@@ -794,6 +1004,7 @@ export class Match {
 
   private speedOf(f: Fighter): number {
     let k = f.mods.speed;
+    if (f.cast) k *= CAST_SLOW;
     for (const a of f.auras) if (a.kind === 'speed') k *= 1 + a.n;
     if (!f.auras.some((a) => a.kind === 'free')) {
       let slow = 0;
@@ -867,11 +1078,6 @@ export class Match {
         f.fearX = Math.cos(a);
         f.fearY = Math.sin(a);
       }
-      // moving ends a cast
-      if (f.cast) {
-        this.endCast(f);
-        f.gcd = Math.min(f.gcd, 0.2);
-      }
     }
   }
 
@@ -918,21 +1124,31 @@ export class Match {
     }
   }
 
+  /** Shots fly straight: into the first enemy they touch, into stone, or on until they fall. */
   private moveBolts(dt: number): void {
     for (let i = this.bolts.length - 1; i >= 0; i--) {
       const b = this.bolts[i]!;
-      const t = this.fighters[b.tgt]!;
-      const dx = t.x - b.x;
-      const dy = t.y - 8 - b.y;
-      const d = Math.hypot(dx, dy);
-      const step = BOLT_SPEED * dt;
-      if (d <= step) {
-        this.bolts.splice(i, 1);
-        if (!t.dead) this.land(this.fighters[b.src]!, ABILITIES[b.ab]!, t, false);
-      } else {
-        b.x += (dx / d) * step;
-        b.y += (dy / d) * step;
+      const src = this.fighters[b.src]!;
+      const ab = ABILITIES[b.ab]!;
+      // in two halves, so that nothing slips between frames
+      let end: 'hit' | 'miss' | null = null;
+      for (let k = 0; k < 2 && !end; k++) {
+        b.x += b.vx * dt * 0.5;
+        b.y += b.vy * dt * 0.5;
+        b.left -= Math.hypot(b.vx, b.vy) * dt * 0.5;
+        const gx = b.x;
+        const gy = b.y + 8;
+        const hit = this.fighters.find((o) => !o.dead && o.team !== src.team && Math.hypot(o.x - gx, o.y - gy) <= HERO_R + BOLT_R);
+        if (hit) {
+          this.land(src, ab, hit, false);
+          end = 'hit';
+        } else if (this.solid.some((p) => gx > p.x && gx < p.x + p.w && gy > p.y && gy < p.y + p.h) || b.left <= 0 || gx < 0 || gy < 0 || gx > ARENA_W || gy > ARENA_H) {
+          end = 'miss';
+        }
       }
+      if (!end) continue;
+      this.bolts.splice(i, 1);
+      if (end === 'miss') this.events.push({ k: 'miss', x: b.x, y: b.y, ab: b.ab });
     }
   }
 
@@ -1008,9 +1224,12 @@ export class Match {
         a: f.auras,
         l: f.locks,
         sc: f.score,
+        ch: Math.round(f.charge * 1000) / 1000,
       })),
       b: this.bolts,
       tr: this.traps,
+      sg: this.sigil,
+      sa: this.sigilAt,
     };
   }
 
@@ -1024,6 +1243,8 @@ export class Match {
     this.draw = s.dr;
     this.bolts = s.b;
     this.traps = s.tr;
+    this.sigil = s.sg ?? null;
+    this.sigilAt = s.sa ?? this.sigilAt;
     s.f.forEach((n, i) => {
       const f = this.fighters[i];
       if (!f) return;
@@ -1054,6 +1275,7 @@ export class Match {
       f.auras = n.a;
       f.locks = n.l;
       f.score = n.sc;
+      f.charge = n.ch ?? 0;
     });
   }
 
@@ -1078,6 +1300,11 @@ export class Match {
       f.gcd = Math.max(0, f.gcd - dt);
       for (const k of Object.keys(f.cds)) f.cds[k] = Math.max(0, (f.cds[k] ?? 0) - dt);
       for (const a of f.auras) a.t = Math.max(0, a.t - dt);
+    }
+    // shots fly on in their straight lines
+    for (const b of this.bolts) {
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
     }
   }
 }
@@ -1108,7 +1335,10 @@ export interface Snapshot {
     a: Aura[];
     l: Partial<Record<string, number>>;
     sc: Fighter['score'];
+    ch?: number;
   }[];
   b: Bolt[];
   tr: Trap[];
+  sg?: SigilStone | null;
+  sa?: number;
 }

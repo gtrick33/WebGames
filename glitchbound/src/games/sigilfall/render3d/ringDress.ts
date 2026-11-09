@@ -725,7 +725,12 @@ const flowMaterial = new THREE.ShaderMaterial({
   fragmentShader: /* glsl */ `
     uniform float uTime;
     varying vec2 vUv;
-    float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    // (no sin in the hash, and time kept small: on a phone's GPU both lost their precision and the flows jittered)
+    float hash(vec2 p) {
+      vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
+    }
     float noise(vec2 p) {
       vec2 i = floor(p);
       vec2 f = fract(p);
@@ -733,7 +738,7 @@ const flowMaterial = new THREE.ShaderMaterial({
       return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
     }
     void main() {
-      vec2 p = vec2(vUv.x * 3.0, vUv.y * 1.1 + uTime * 0.85);
+      vec2 p = vec2(vUv.x * 3.0, vUv.y * 1.1 + mod(uTime, 1000.0) * 0.85);
       float n = noise(p * 2.2) * 0.6 + noise(p * 5.0 + 4.0) * 0.4;
       float edge = abs(vUv.x - 0.5) * 2.0;
       float hot = smoothstep(0.32, 0.72, n) * (1.0 - edge * 0.7);

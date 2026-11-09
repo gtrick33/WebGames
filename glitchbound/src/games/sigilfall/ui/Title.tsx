@@ -1,4 +1,5 @@
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
+import { LEAVER_K, liveGoing, readLive, type LiveMatch } from '../arena/live';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { priceText, productIn, PRODUCTS } from '../../../catalog/shop';
 import { useAccount } from '../../../platform/account';
@@ -78,6 +79,20 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
   const [rift, setRift] = useState<number | null>(null);
   const [vigil, setVigil] = useState(false);
   const [ring, setRing] = useState(false);
+  // a rated Ring match left while it was going: back to it, or a leaver's loss
+  const [left, setLeft] = useState<LiveMatch | null>(() => readLive());
+  const [resume, setResume] = useState<LiveMatch | null>(null);
+  const [lost, setLost] = useState<number | null>(null);
+  const forfeit = (l: LiveMatch): void => {
+    void import('../arena/ladder').then((m) => {
+      setLeft(null);
+      setLost(m.forfeitLive(l));
+    });
+  };
+  useEffect(() => {
+    // (too long gone: the match is lost, and the screen says so)
+    if (left && !liveGoing(left)) forfeit(left);
+  }, [left]);
   const lastHero = heroes[engine.save.last];
   if (vigil) {
     return (
@@ -89,7 +104,18 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
   if (ring) {
     return (
       <Suspense fallback={<LoadingScreen />}>
-        <RingScreen engine={engine} face={lastHero?.face} body={lastHero?.body} cls={lastHero?.cls} name={lastHero?.name} onBack={() => setRing(false)} />
+        <RingScreen
+          engine={engine}
+          face={lastHero?.face}
+          body={lastHero?.body}
+          cls={lastHero?.cls}
+          name={lastHero?.name}
+          resume={resume ?? undefined}
+          onBack={() => {
+            setResume(null);
+            setRing(false);
+          }}
+        />
       </Suspense>
     );
   }
@@ -107,6 +133,45 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
         <CharacterSelect engine={engine} onRift={setRift} onVigil={() => setVigil(true)} onRing={() => setRing(true)} onSettings={() => setSettings(true)} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} />
       </ScreenGate>
       {engine.ui.notice && <p className="rb-notice" role="status">{engine.ui.notice}</p>}
+      {left && liveGoing(left) && (
+        <div className="rb-ring-dialog-wrap is-blocking" role="alertdialog" aria-modal="true" aria-label="Your Ring match is still going">
+          <div className="rb-ring-dialog">
+            <h2>Your Ring match is still going</h2>
+            <p>
+              You left a rated {left.format}v{left.format} against {left.stakes.rival} before it ended. {!left.snap || left.snap.p === 'gates' ? 'Its gates hadn’t lifted yet, so giving it up costs nothing.' : `Go back to it now, or it counts as a leaver’s loss: −${Math.round(left.stakes.lose * LEAVER_K)} rating, half again a loss.`}
+            </p>
+            <div className="rb-vigil-actions">
+              <button
+                className="rb-btn is-gold"
+                autoFocus
+                onClick={() => {
+                  setResume(left);
+                  setLeft(null);
+                  setRing(true);
+                }}
+              >
+                Go back to the match
+              </button>
+              <button className="rb-btn is-danger" onClick={() => forfeit(left)}>
+                Give it up
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {lost !== null && (
+        <div className="rb-ring-dialog-wrap is-blocking" role="alertdialog" aria-modal="true" aria-label="Ring match lost">
+          <div className="rb-ring-dialog">
+            <h2>Ring match lost</h2>
+            <p>{lost < 0 ? `You left a rated match and didn’t come back to it: a leaver’s loss, ${lost} rating.` : 'You left a match before its gates lifted: that costs nothing.'}</p>
+            <div className="rb-vigil-actions">
+              <button className="rb-btn is-gold" autoFocus onClick={() => setLost(null)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {engine.party && !engine.invite && <p className="rb-notice" role="status">You’re still in party {engine.party.link.code}. Choose a hero to go back to it.</p>}
       {engine.invite && (
         <p className="rb-notice is-invite" role="status">

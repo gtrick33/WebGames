@@ -18,6 +18,7 @@ import { CARD_SECONDS, EVOLVE_AT, topLevel, Vigil, type Card, type Fx, type Hero
 import { applySnap, SnapWriter, type Snap } from '../vigil/snapshot';
 import { ScreenGate } from './ScreenGate';
 import { Stick } from './Stick';
+import { wearOf } from './wear';
 import { readBests, saveBest, VigilLobby } from './VigilLobby';
 
 const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
@@ -203,6 +204,7 @@ export function VigilScreen({ engine, face, body, cls, name, onBack }: { engine:
   }
   return (
     <VigilLobby
+      engine={engine}
       face={face}
       body={body}
       cls={from?.cls ?? cls ?? 'mage'}
@@ -267,6 +269,16 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
     const hero = newCharacter(mine.cls, 'The Watch', 'vigil');
     if (mine.face) hero.face = mine.face;
     if (mine.body) hero.body = mine.body;
+    // (your campaign hero's gear and Wardrobe, if you chose to keep watch in them: only how they look, not their power)
+    const wear = wearOf(engine, mine.cls);
+    if (wear) {
+      hero.equip = structuredClone(wear.equip);
+      hero.looks = structuredClone(wear.looks);
+      hero.worn = structuredClone(wear.worn);
+      hero.shopWorn = structuredClone(wear.shopWorn);
+      hero.face = wear.face;
+      hero.body = wear.body;
+    }
     // the land: a real region of the game, emptied of everything but the land itself
     const world = new World({ region: land.region, tier: 0, mods: [], hero, settings: { ...DEFAULT_SETTINGS }, seed: 7, handIns: false });
     world.enemies.length = 0;

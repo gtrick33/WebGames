@@ -644,7 +644,12 @@ const floorFrag = /* glsl */ `
   uniform float uKind;
   varying vec2 vUv;
   varying vec3 vW;
-  float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+  // (no sin in the hash: on a phone's GPU sin of a big number loses its precision and the molten iron crawled in jitters)
+  float hash(vec2 p) {
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+  }
   float noise(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
@@ -653,19 +658,21 @@ const floorFrag = /* glsl */ `
   }
   void main() {
     vec3 c = texture2D(uMap, vUv).rgb;
+    // (time kept small, for the same reason)
+    float t = mod(uTime, 400.0);
     if (uKind > 1.5) {
       // molten iron, crawling along its gutters
       float h = texture2D(uGlow, vUv).r;
       if (h > 0.01) {
-        float n = noise(vW.xz * 3.2 + vec2(uTime * 0.5, -uTime * 0.38));
-        float m = noise(vW.xz * 7.0 - vec2(uTime * 0.7, uTime * 0.2));
+        float n = noise(vW.xz * 2.4 + vec2(t * 0.32, -t * 0.24));
+        float m = noise(vW.xz * 4.6 - vec2(t * 0.4, t * 0.12));
         float k = n * 0.65 + m * 0.35;
         vec3 hot = mix(vec3(0.95, 0.24, 0.03), vec3(1.0, 0.82, 0.32), smoothstep(0.35, 0.8, k));
-        c = mix(c, hot * (0.82 + 0.18 * sin(uTime * 2.1 + k * 8.0)), h);
+        c = mix(c, hot * (0.86 + 0.14 * sin(t * 1.2 + k * 3.0)), h);
       }
     } else if (uKind > 0.5) {
       // the low sun going slowly across the ice
-      float s = sin(dot(vW.xz, vec2(0.62, 0.24)) * 1.5 - uTime * 0.3 + noise(vW.xz * 0.6) * 2.0);
+      float s = sin(dot(vW.xz, vec2(0.62, 0.24)) * 1.5 - t * 0.3 + noise(vW.xz * 0.6) * 2.0);
       c += vec3(0.16, 0.2, 0.22) * pow(max(s, 0.0), 14.0);
     }
     gl_FragColor = vec4(c, 1.0);

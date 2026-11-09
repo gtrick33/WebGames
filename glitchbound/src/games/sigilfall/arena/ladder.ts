@@ -1,7 +1,9 @@
 import type { ClassId } from '../data/types';
-import { PRESETS } from './abilities';
+import { PRESETS, SLOTS } from './abilities';
 import { NEW_STANDING, rankOf, RING_KEY, type Format, type Standing } from './ranks';
 import type { FighterSetup } from './sim';
+import { clearLive, LEAVER_K, type LiveMatch } from './live';
+export { clearLive, LEAVER_K, liveGoing, LIVE_WAIT, readLive, writeLive, type LiveMatch } from './live';
 
 export { FORMATS, NEW_STANDING, nextRank, rankOf, RANKS, type Format, type Standing } from './ranks';
 
@@ -17,8 +19,9 @@ export function ratingChange(mine: number, theirs: number, won: boolean): number
   return Math.round(32 * ((won ? 1 : 0) - expected));
 }
 
-export function afterMatch(s: Standing, theirs: number, won: boolean): { next: Standing; change: number; rankUp: string | null } {
-  const change = ratingChange(s.rating, theirs, won);
+/** `k`: a loss counts this many times over (a leaver's: LEAVER_K). */
+export function afterMatch(s: Standing, theirs: number, won: boolean, k = 1): { next: Standing; change: number; rankUp: string | null } {
+  const change = Math.round(ratingChange(s.rating, theirs, won) * (won ? 1 : k));
   // never below the floor: a bad night doesn't dig a hole that takes a week to climb out of
   const rating = Math.max(800, s.rating + change);
   const before = rankOf(s.best);
@@ -136,7 +139,8 @@ export function setsOf(save: RingSave, cls: ClassId): ClassSets {
   const kept = save.sets[cls];
   const list = Array.from({ length: SET_COUNT }, (_, i) => {
     const k = kept?.list[i];
-    return k && Array.isArray(k.bar) && Array.isArray(k.talents) && typeof k.oath === 'string' ? k : presetSetup(cls, i);
+    // (a setup kept from when a bar held six keeps its first four)
+    return k && Array.isArray(k.bar) && Array.isArray(k.talents) && typeof k.oath === 'string' ? { ...k, bar: k.bar.slice(0, SLOTS) } : presetSetup(cls, i);
   });
   const active = kept && kept.active >= 0 && kept.active < SET_COUNT ? kept.active : 0;
   return { active, list };
@@ -160,3 +164,18 @@ export function writeRing(s: RingSave): void {
 }
 
 export const standingOf = (s: RingSave, f: Format): Standing => s.standings[f] ?? NEW_STANDING;
+
+/** What not going back costs: a leaver's loss, taken now. Returns the rating change (negative). */
+export function forfeitLive(l: LiveMatch): number {
+  // (left before the gates lifted: that costs nothing, as walking out then does)
+  if (!l.snap || l.snap.p === 'gates') {
+    clearLive();
+    return 0;
+  }
+  const save = readRing();
+  const was = standingOf(save, l.format);
+  const out = afterMatch(was, l.rivalRating, false, LEAVER_K);
+  writeRing({ ...save, standings: { ...save.standings, [l.format]: out.next } });
+  clearLive();
+  return out.change;
+}

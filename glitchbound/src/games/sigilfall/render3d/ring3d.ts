@@ -44,7 +44,7 @@ export interface RingView {
 export class RingStage implements RingView {
   readonly stage: Stage;
   private built = false;
-  private readonly motions = new Map<number, { m: Motion; turn: number; swing: number }>();
+  private readonly motions = new Map<number, { m: Motion; turn: number; swing: number; clip: string }>();
   private readonly gates: Stand[] = [];
   private k = 1;
   private cx = ARENA_W / 2;
@@ -180,7 +180,7 @@ export class RingStage implements RingView {
     const cast = this.stage.cast;
     let s = this.motions.get(f.id);
     if (!s) {
-      s = { m: new Motion(), turn: turnOf(Math.atan2(f.dirY, f.dirX)), swing: 0 };
+      s = { m: new Motion(), turn: turnOf(Math.atan2(f.dirY, f.dirX)), swing: 0, clip: 'chop' };
       this.motions.set(f.id, s);
     }
     const moving = Math.hypot(f.vx, f.vy) > 1;
@@ -196,7 +196,7 @@ export class RingStage implements RingView {
     const frozen = f.auras.some((a) => a.kind === 'immune' && a.still);
     if (f.dead) s.m.set('die', false);
     else if (f.cast) s.m.set(f.cast.channel ? 'channel' : 'cast');
-    else if (s.swing > 0) s.m.set('chop', false, 0.06);
+    else if (s.swing > 0) s.m.set(s.clip, false, 0.06);
     else if (stunned) s.m.set('hit');
     else if (moving) s.m.set('run');
     else s.m.set('idle');
@@ -216,11 +216,33 @@ export class RingStage implements RingView {
     CROWD.uCheer.value = Math.max(CROWD.uCheer.value, k);
   }
 
-  /** A fighter lands an instant blow (the 'ab' event): they swing. */
-  swing(id: number, abId: string): void {
+  /**
+   * A fighter uses an ability (the 'ab' event): a move that fits it. A blow is a slash, a burst blow an overhead
+   * smash, what strikes all round a spin, an arrow a draw of the bow, a spell a cast thrown out; a long cast, when it
+   * goes off, is thrown out too. (`starting`: the start of a cast, which its own casting pose shows instead.)
+   */
+  swing(id: number, abId: string, starting = false): void {
     const ab = ABILITIES[abId];
     const s = this.motions.get(id);
-    if (s && ab && ab.cast === 0) s.swing = 0.42;
+    // (a Swift Step is its own streak, not a swing)
+    if (!s || !ab || starting || ab.id === 'dash') return;
+    const melee = ab.range > 0 && ab.range <= 40;
+    const archer = ab.cls === 'ranger' && (ab.school === 'physical' || ab.school === 'nature') && ab.aim === 'enemy' && !melee;
+    let clip = 'cast';
+    let time = 0.42;
+    if (ab.aim === 'near') {
+      clip = 'spin';
+      time = 0.55;
+    } else if (archer) {
+      clip = 'bow';
+      time = 0.5;
+    } else if (melee || (ab.school === 'physical' && ab.aim === 'enemy')) {
+      // (blow after blow, the arm changes: a slash, then a heavier one)
+      clip = ab.role === 'burst' || s.clip === 'chop' ? 'chop2' : 'chop';
+      time = clip === 'chop2' ? 0.55 : 0.42;
+    } else if (ab.cast > 0) time = 0.36;
+    s.clip = clip;
+    s.swing = time;
   }
 
   flat(x: number, y: number): void {
@@ -234,6 +256,12 @@ export class RingStage implements RingView {
     const cx = (c.x - a.x) * k;
     const cy = (c.y - a.y) * k;
     this.g.setTransform(ax, ay, cx, cy, a.x * this.k - ax * x - cx * y, a.y * this.k - ay * x - cy * y);
+  }
+
+  /** Where a spot on the ground falls on the layer being drawn, in its own pixels. */
+  spot(x: number, y: number, h = 0): { x: number; y: number } {
+    const a = this.stage.project(x, y, h);
+    return { x: a.x * this.k, y: a.y * this.k };
   }
 
   up(x: number, y: number, h = 0): void {

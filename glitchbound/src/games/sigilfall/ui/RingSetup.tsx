@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ABILITIES, kitOf, OATHS, PRESETS, SLOTS, TOKEN, type Ability } from '../arena/abilities';
+import { ABILITIES, DASH, kitOf, OATHS, PRESETS, SLOTS, superOf, type Ability } from '../arena/abilities';
 import type { ClassSets, RingSetup } from '../arena/ladder';
 import { cleanTalents, ROW_NAMES, TALENTS, type Talent } from '../arena/talents';
 import type { ClassId } from '../data/types';
@@ -22,8 +22,8 @@ export const talentIcon = (t: Talent): string => iconPicture(t.icon ?? ABILITIES
 
 type Tab = 'abilities' | 'talents' | 'oath';
 
-/** The bar as it stands: six places and the Token. */
-export function BarRow({ bar, onPick, onHover }: { bar: string[]; onPick?: (ab: Ability) => void; onHover?: (ab: Ability) => void }) {
+/** The bar as it stands: four places, then what every hero has besides (the Swift Step, and their class's super). */
+export function BarRow({ bar, cls, onPick, onHover }: { bar: string[]; cls: ClassId; onPick?: (ab: Ability) => void; onHover?: (ab: Ability) => void }) {
   return (
     <div className="rb-rs-slots">
       {Array.from({ length: SLOTS }, (_, i) => {
@@ -34,9 +34,11 @@ export function BarRow({ bar, onPick, onHover }: { bar: string[]; onPick?: (ab: 
           </button>
         );
       })}
-      <span className="rb-rs-slot is-token" title={`${TOKEN.name}: ${TOKEN.text}`} onMouseEnter={() => onHover?.(TOKEN)}>
-        <img src={iconPicture(TOKEN.icon)} alt={TOKEN.name} draggable={false} />
-      </span>
+      {[DASH, superOf(cls)].map((ab) => (
+        <span key={ab.id} className={`rb-rs-slot is-token${ab.super ? ' is-super' : ''}`} title={`${ab.super ? 'Super' : ab.name}: ${ab.text}`} onMouseEnter={() => onHover?.(ab)}>
+          <img src={iconPicture(ab.icon)} alt={ab.name} draggable={false} />
+        </span>
+      ))}
     </div>
   );
 }
@@ -64,7 +66,7 @@ export function SetupChips({ cls, setup }: { cls: ClassId; setup: RingSetup }) {
 }
 
 /**
- * Changing what a class brings: three saved setups, each a bar of six abilities, three talents and an oath. One thing
+ * Changing what a class brings: three saved setups, each a bar of four abilities, three talents and an oath. One thing
  * at a time, on tabs, with what everything does written where it can be read.
  */
 export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSets; onSets: (s: ClassSets) => void }) {
@@ -91,7 +93,7 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
     const others = cur.talents.filter((id) => TALENTS[cls].find((x) => x.id === id)?.row !== t.row);
     put({ ...cur, talents: cur.talents.includes(t.id) ? others : [...others, t.id] });
   };
-  const shown = info ?? ABILITIES[cur.bar[0] ?? ''] ?? TOKEN;
+  const shown = info ?? ABILITIES[cur.bar[0] ?? ''] ?? superOf(cls);
   const talentCount = cleanTalents(cls, cur.talents).length;
   return (
     <div className="rb-rs">
@@ -114,7 +116,7 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
       </div>
 
       <div className="rb-rs-barrow">
-        <BarRow bar={cur.bar} onPick={toggle} onHover={setInfo} />
+        <BarRow bar={cur.bar} cls={cls} onPick={toggle} onHover={setInfo} />
       </div>
 
       <div className="rb-rs-tabs" role="tablist" aria-label="What to change">
@@ -132,7 +134,7 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
       <div className="rb-rs-panel" role="tabpanel">
         {tab === 'abilities' && (
           <>
-            <p className={`rb-rs-hint${fullNote ? ' is-warn' : ''}`}>{fullNote ? 'Your bar is full. Click one that’s on it to take it off first.' : 'Choose six to bring. Click to add or remove.'}</p>
+            <p className={`rb-rs-hint${fullNote ? ' is-warn' : ''}`}>{fullNote ? 'Your bar is full. Click one that’s on it to take it off first.' : 'Choose four to bring. Click to add or remove.'}</p>
             <div className="rb-rs-kit">
               {kitOf(cls).map((ab) => {
                 const on = cur.bar.includes(ab.id);
@@ -206,6 +208,11 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
             <em>{ROLE_WORD[shown.role]}</em>
             <small>{timing(shown)}</small>
             <p>{shown.text}</p>
+            {shown.combo && (
+              <p className="rb-rs-combo">
+                <b>Combo · {shown.combo.name}:</b> {shown.combo.text}
+              </p>
+            )}
           </span>
         </div>
       )}
@@ -226,9 +233,11 @@ export function RingHelp({ onClose }: { onClose: () => void }) {
               <dt>Move</dt>
               <dd>WASD, the arrows, or drag on a touch screen</dd>
               <dt>Abilities</dt>
-              <dd>1 to 6, or click them</dd>
-              <dt>Token of Will</dt>
-              <dd>T: breaks anything holding you</dd>
+              <dd>1 to 4, or click them. They aim themselves at your target</dd>
+              <dt>Swift Step</dt>
+              <dd>Space: a quick step the way you’re going, out of the way of a shot</dd>
+              <dt>Super</dt>
+              <dd>Q, once your meter is full: your class’s big one</dd>
               <dt>Choose an enemy</dt>
               <dd>Their nameplate on the right, or Tab</dd>
               <dt>Choose who to help</dt>
@@ -239,19 +248,22 @@ export function RingHelp({ onClose }: { onClose: () => void }) {
             <h3>The rules</h3>
             <ul>
               <li>
-                <b>Stand still to cast.</b> Moving stops a cast. Instant abilities work on the move.
+                <b>Keep moving.</b> You can cast on the move: casting only slows you down.
               </li>
               <li>
-                <b>Pillars block sight.</b> Step behind one to dodge a cast, or to stop a healer reaching someone.
+                <b>Shots fly, and can be dodged.</b> Most ranged spells fly at where your target is heading. Change direction or take a Swift Step to make them miss.
               </li>
               <li>
-                <b>Holds wear off.</b> Each stun, fear or root of the same kind lasts half as long, then does nothing.
+                <b>Fill your super.</b> Dealing damage and healing fill the meter (taking hits fills it a little). When it’s full, let it go.
               </li>
               <li>
-                <b>Interrupt casts.</b> It stops the spell and locks that school of magic for a few seconds.
+                <b>Take the sigil.</b> A sigil rises in the middle now and then: it heals, fills your super by a third and speeds you up.
               </li>
               <li>
-                <b>Healing fades.</b> After 1:30 it weakens. At 5:00 the team with more life left wins.
+                <b>The Gloam closes in.</b> Forty seconds in, it starts closing in from the edges and burns whoever is out in it, until there’s nowhere left to stand.
+              </li>
+              <li>
+                <b>Pillars block sight.</b> Step behind one to dodge a cast, or to stop a healer reaching someone. Interrupt a cast to lock that school of magic for a few seconds. Holds are short and wear off faster each time.
               </li>
             </ul>
           </section>
