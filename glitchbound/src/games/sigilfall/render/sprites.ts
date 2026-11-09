@@ -1,3 +1,4 @@
+import { FOE_LOOKS } from './art/foeLooks';
 import { bustPicture, creaturePicture, dollPicture, mountPicture, type DollView } from '../render3d/portrait';
 import { mountKey } from '../render3d/mountKit';
 import { HAIRS, SKINS, type Face } from '../progress/character';
@@ -609,6 +610,7 @@ const NPC_LOOKS: Record<string, HeroLook> = {
     cape: null,
   },
   ...TOWNSFOLK_LOOKS,
+  ...FOE_LOOKS,
   ...Object.assign({}, ...ZONE_ART.map((z) => z.looks)),
 };
 

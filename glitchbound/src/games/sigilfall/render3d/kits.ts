@@ -25,6 +25,9 @@ export interface Kit {
   top?: { k: string; tint?: string; clip: string; y: number; size: number };
   /** Worn as a person from the wardrobe instead (the story's own people, when they fight). */
   look?: string;
+  /** What a person from the wardrobe holds (render3d/dress.ts WEAPONS), and a shield. */
+  held?: { kind: string; tint?: string };
+  shield?: boolean;
 }
 
 const ASH = '#b9b4bf';
@@ -145,22 +148,22 @@ put('shard-golem', { k: 'golem', tint: '#d6c6ff', ...SMASH });
 put('veil-sentinel', { k: 'golem', tint: VOID, ...SMASH });
 
 /* ------------------------------------------------------------------ the living */
-put('cutthroat', { k: 'rogue_hooded' });
-put('bandit-archer', { k: 'ranger', tint: '#b0a090', ...BOWMAN });
-put('enforcer', { k: 'barbarian', atk: 'chop2' });
-put('hangman', { k: 'barbarian', tint: DARK, atk: 'chop2' });
+put('cutthroat', { k: 'rogue_hooded', look: 'foe-cutthroat', held: { kind: 'dagger' } });
+put('bandit-archer', { k: 'ranger', tint: '#b0a090', look: 'foe-bandit-archer', held: { kind: 'bow' }, ...BOWMAN });
+put('enforcer', { k: 'barbarian', look: 'foe-enforcer', held: { kind: 'axe' }, atk: 'chop2' });
+put('hangman', { k: 'barbarian', tint: DARK, look: 'foe-hangman', held: { kind: 'greatsword' }, atk: 'chop2' });
 put('varric', { k: 'survivalist', size: 1.12 });
 put('saltbeard', { k: 'survivalist', tint: '#c9b48c', size: 1.14 });
-put('smuggler', { k: 'rogue' });
-put('dune-raider', { k: 'rogue_hooded', tint: SAND });
-put('dune-javelineer', { k: 'ranger', tint: SAND, ...BOWMAN });
-put('serpent-cultist', { k: 'rogue_hooded', tint: '#8fc78a', ...CASTER });
-put('hedge-witch bog-hag rotbloom-matron', { k: 'witch', ...CASTER });
-put('rot-sister blight-witch', { k: 'witch', tint: ROT, ...CASTER });
+put('smuggler', { k: 'rogue', look: 'foe-smuggler', held: { kind: 'sword' } });
+put('dune-raider', { k: 'rogue_hooded', tint: SAND, look: 'foe-dune-raider', held: { kind: 'sword' } });
+put('dune-javelineer', { k: 'ranger', tint: SAND, look: 'foe-dune-javelineer', held: { kind: 'spear' }, ...BOWMAN });
+put('serpent-cultist', { k: 'rogue_hooded', tint: '#8fc78a', look: 'foe-serpent-cultist', held: { kind: 'staff' }, ...CASTER });
+put('hedge-witch bog-hag rotbloom-matron', { k: 'witch', look: 'foe-hedge-witch', held: { kind: 'staff' }, ...CASTER });
+put('rot-sister blight-witch', { k: 'witch', tint: ROT, look: 'foe-blight-witch', held: { kind: 'staff' }, ...CASTER });
 put('the-withered-queen', { k: 'vampire', tint: ROT, size: 1.12, ...CASTER });
-put('brother-pustule', { k: 'cleric', tint: ROT, ...CASTER });
+put('brother-pustule', { k: 'cleric', tint: ROT, look: 'foe-brother-pustule', held: { kind: 'staff' }, ...CASTER });
 put('maelis-crane', { k: 'cleric', look: 'chancellor-crane', ...CASTER });
-put('goblin', { k: 'ranger', tint: '#9aa878', ...BOWMAN });
+put('goblin', { k: 'ranger', tint: '#9aa878', look: 'foe-briar-poacher', held: { kind: 'bow' }, ...BOWMAN });
 put('ridge-kobold kobold-candler', { k: 'caveman', tint: '#d0a070', size: 0.72 });
 put('king-snagtooth', { k: 'orc_brute', tint: '#d0b890', size: 0.9, ...SMASH });
 put('butcher-krogg swamp-troll', { k: 'orc_brute', tint: '#a8c090', ...SMASH });
@@ -174,7 +177,7 @@ put('frost-giant giant-huscarl giant-hurler jarl-hrimfang', { k: 'barbarian_larg
 put('yeti', { k: 'golem', tint: '#eef4ff', ...SMASH });
 put('wolf', { k: 'a_wolf' });
 put('werewolf werewolf-howler moonfang', { k: 'werewolf' });
-put('boar', { k: 'a_wolf', tint: '#9a929e' });
+put('boar', { k: 'a_wolf', tint: '#c8b8a8' });
 put('russet-boar', { k: 'fbx_pig', tint: '#b5683f', size: 0.86 });
 put('grimtusk', { k: 'orc_brute', tint: '#8a7a6c', size: 1.4, ...SMASH });
 put('stag', { k: 'a_stag' });
@@ -195,7 +198,8 @@ put('gloam-lurker', { k: 'spider', tint: '#7a7a9a', size: 0.86 });
 put('tide-lurker', { k: 'crab', tint: SEA, size: 0.86 });
 put('crab', { k: 'crab', size: 0.8 });
 put('sand-scorpion', { k: 'scorpion' });
-put('beetle', { k: 'beetle' });
+// (a barkling: a knot of living wood with bark for a shell, not a beetle of another art set)
+put('beetle', { k: 'treant', tint: BARK, size: 0.6, ...SMASH });
 put('scarab-swarm tomb-scarab', { k: 'scarab', size: 0.72 });
 put('marsh-strider', { k: 'strider' });
 put('blood-mosquito glimmer-moth rotwood-pod', { k: 'moth', size: 0.8, float: 0.4 });

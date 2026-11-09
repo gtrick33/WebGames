@@ -912,7 +912,7 @@ export class Renderer {
     const groups: { to: string; xs: number; ys: number; n: number; x: number; y: number }[] = [];
     for (const x of w.exits) {
       if (x.door) continue;
-      const near = groups.find((o) => o.to === x.to && Math.abs(o.x - x.x) <= TILE * 1.5 && Math.abs(o.y - x.y) <= TILE * 1.5);
+      const near = groups.find((o) => o.to === x.to && Math.abs(o.x - x.x) <= TILE * 2.5 && Math.abs(o.y - x.y) <= TILE * 2.5);
       if (near) {
         near.xs += x.x;
         near.ys += x.y;

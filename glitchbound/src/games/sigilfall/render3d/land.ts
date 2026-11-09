@@ -100,11 +100,20 @@ const TREES: Record<TreeKind, { m: string[]; h: number }> = {
 /** A pine in a snowy land: frosted pale. */
 const FROST = [0.86, 0.97, 1.08] as const;
 
+/** A wood's floor: how high it stands, and its moss (a little darker than the land's grass, so a wood reads as one). */
+const WOOD_FLOOR = 0.03;
+const mossOf = (look: ThemeLook, k = 0.9): [number, number, number] => {
+  const [r, g, b] = hexRgb(look.ground.grass[0]);
+  return [r * k, g * k, b * k];
+};
+
 const TREE_MODELS = new Set(Object.values(TREES).flatMap((t) => t.m));
 
 const BUSHES = ['Bush_1_A', 'Bush_1_B', 'Bush_1_D', 'Bush_2_A', 'Bush_2_C', 'Bush_3_A', 'Bush_4_A', 'Bush_4_C'];
 const ROCKS = ['Rock_1_A', 'Rock_1_D', 'Rock_2_C', 'Rock_3_A', 'Rock_4_C', 'Rock_5_C', 'Rock_6_C'];
 const TUFTS = ['Grass_1_A', 'Grass_2_A', 'Grass_1_B', 'Grass_2_B'];
+/** What grows under a wood's trees (cleared off a road out with the trees). */
+const WOOD_SMALL = new Set([...BUSHES, ...ROCKS, ...TUFTS]);
 const FLOWERS = ['flower_redA', 'flower_yellowA', 'flower_purpleA'];
 
 
@@ -566,7 +575,8 @@ function blockStyles(look: ThemeLook, woody: boolean): { wall: BlockStyle; rampa
   const wall: BlockStyle = st
     ? { h: DUNGEON_WALL, top: hexRgb(st.top), top2: hexRgb(st.topHi), side: hexRgb(st.brick[1]), side2: hexRgb(st.brick[0]) }
     : woody
-      ? { h: 1.0, top: hexRgb(look.ground.leaf[1]), top2: hexRgb(look.ground.leaf[2]), side: hexRgb(look.ground.leaf[0]), side2: hexRgb(look.ground.leaf[0]) }
+      ? // a wood is a low mossy floor its trees stand on, as in the art set's own scenes, not a block with crowns poking out
+        { h: WOOD_FLOOR, top: mossOf(look), top2: mossOf(look), side: mossOf(look, 0.6), side2: mossOf(look, 0.5) }
       : { h: 1.7, top: hexRgb(look.ground.leaf[3]), top2: hexRgb(look.ground.leaf[4]), side: hexRgb(look.ground.leaf[1]), side2: hexRgb(look.ground.leaf[0]) };
   const rampart: BlockStyle = { h: 2.5, top: [0.46, 0.44, 0.46], top2: [0.68, 0.65, 0.62], side: [0.62, 0.59, 0.56], side2: [0.42, 0.4, 0.42] };
   return { wall, rampart };
@@ -657,9 +667,10 @@ function buildBlocks(map: TileMap, look: ThemeLook, woody: boolean, cut: Uint8Ar
   const W = map.w;
   const H = map.h;
   const styleAt = (x: number, y: number): BlockStyle | null => {
-    if (x < 0 || y < 0 || x >= W || y >= H) return wall;
+    if (x < 0 || y < 0 || x >= W || y >= H) return woody && !look.stone ? null : wall;
     const k = map.kind[y * W + x]!;
-    if (k === K.Wall || k === K.Illusion) return wall;
+    // (a wood has no block at all: its trees stand on the land's own grass, which runs on under them)
+    if (k === K.Wall || k === K.Illusion) return woody && !look.stone ? null : wall;
     if (k === K.Rampart) return rampart;
     return null;
   };
@@ -1009,16 +1020,16 @@ export class Land3D {
       if (pm.tx > W - 5) x1 = W + 8;
       if (pm.ty < 4) z0 = -8;
       if (pm.ty > H - 5) z1 = H + 8;
-      this.clearTrees(x0, x1, z0, z1);
+      this.clearTrees(x0, x1, z0, z1, true);
     }
   }
 
   /** Takes away the trees standing inside an area (tiles). */
-  private clearTrees(x0: number, x1: number, z0: number, z1: number): void {
+  private clearTrees(x0: number, x1: number, z0: number, z1: number, all = false): void {
     for (const list of this.cells.values()) {
       for (let i = list.length - 1; i >= 0; i--) {
         const p = list[i]!;
-        if (p.x > x0 && p.x < x1 && p.z > z0 && p.z < z1 && TREE_MODELS.has(p.m)) list.splice(i, 1);
+        if (p.x > x0 && p.x < x1 && p.z > z0 && p.z < z1 && (TREE_MODELS.has(p.m) || (all && WOOD_SMALL.has(p.m)))) list.splice(i, 1);
       }
     }
   }
@@ -1060,6 +1071,43 @@ export class Land3D {
     return !this.keep || this.keep(o);
   }
 
+  /**
+   * One tile of a wood, as the art set lays its own: a tree here and there at its full height, turned and sized each
+   * its own way, with bushes, a rock and tufts of grass between, and the floor showing through; a wood's edge a little
+   * thicker, so it reads as a wood. `y`: the floor it stands on.
+   */
+  private woodland(tx: number, ty: number, edge: boolean, y: number): void {
+    const { look } = this;
+    const r = hash2(tx, ty, 61);
+    const jx = (hash2(tx, ty, 63) - 0.5) * 0.6;
+    const jz = (hash2(tx, ty, 67) - 0.5) * 0.6;
+    const x = tx + 0.5 + jx;
+    const z = ty + 0.5 + jz;
+    const treeAt = edge ? 0.5 : 0.32;
+    if (r < treeAt) {
+      const kind = look.trees[Math.floor(hash2(tx, ty, 91) * look.trees.length)] ?? 'oak';
+      const def = TREES[kind] ?? TREES.oak;
+      const m = def.m[Math.floor(hash2(tx, ty, 77) * def.m.length) % def.m.length]!;
+      const size = def.h * (0.72 + hash2(tx, ty, 21) * 0.34);
+      const frost = kind === 'snowpine' ? FROST : null;
+      this.add({ m, x, z, y, rot: hash2(tx, ty, 71) * 6.28, sx: this.fitted(m, size, 2.1), sway: kind === 'dead' || kind === 'crystal' || kind === 'cactus' ? 0 : 0.8, shadow: 1.1, ...(frost ? { r: frost[0], g: frost[1], b: frost[2] } : {}) });
+      // (a bush at the foot of some trees)
+      if (hash2(tx, ty, 73) < 0.45) {
+        const b = BUSHES[Math.floor(hash2(tx, ty, 79) * BUSHES.length)]!;
+        this.add({ m: b, x: x + 0.45, z: z + 0.3, y, rot: hash2(tx, ty, 81) * 6.28, sx: this.fitted(b, 0.45 + hash2(tx, ty, 83) * 0.2, 0.85) });
+      }
+    } else if (r < treeAt + 0.25) {
+      const b = BUSHES[Math.floor(hash2(tx, ty, 79) * BUSHES.length)]!;
+      this.add({ m: b, x, z, y, rot: hash2(tx, ty, 81) * 6.28, sx: this.fitted(b, 0.5 + hash2(tx, ty, 83) * 0.25, 1) });
+    } else if (r < treeAt + 0.31) {
+      const rock = ROCKS[Math.floor(hash2(tx, ty, 87) * ROCKS.length)]!;
+      this.add({ m: rock, x, z, y, rot: hash2(tx, ty, 89) * 6.28, sx: this.fitted(rock, 0.35 + hash2(tx, ty, 85) * 0.35, 1) });
+    } else if (r < treeAt + 0.45) {
+      const t = TUFTS[Math.floor(hash2(tx, ty, 97) * TUFTS.length)]!;
+      this.add({ m: t, x, z, y, rot: hash2(tx, ty, 99) * 6.28, sx: this.fitted(t, 0.3 + hash2(tx, ty, 95) * 0.15, 0.8), sway: 1 });
+    }
+  }
+
   private placeAll(woody: boolean): void {
     const { map, look, region } = this;
     const W = map.w;
@@ -1077,10 +1125,19 @@ export class Land3D {
       const wy = (ty + 1) * TILE - 3;
       switch (k) {
         case K.Tree: {
+          // (a thicket of tree tiles is thinned to the eye: some of its trees are drawn as a bush or a rock, which stand as
+          // solid, so a wood breathes as the art set's own woods do)
+          const near = [kindAt(tx - 1, ty), kindAt(tx + 1, ty), kindAt(tx, ty - 1), kindAt(tx, ty + 1)].filter((n) => n === K.Tree || n === K.Wall).length;
+          if (near >= 3 && hash2(tx, ty, 57) < 0.42) {
+            const under = hash2(tx, ty, 59) < 0.75;
+            const m = under ? BUSHES[Math.floor(hash2(tx, ty, 79) * BUSHES.length)]! : ROCKS[Math.floor(hash2(tx, ty, 87) * ROCKS.length)]!;
+            this.add({ m, x: x + (h - 0.5) * 0.3, z: z + (hash2(tx, ty, 31) - 0.5) * 0.3, rot: h * 6.28, sx: this.fitted(m, under ? 0.62 + hash2(tx, ty, 83) * 0.2 : 0.5 + hash2(tx, ty, 85) * 0.3, 1.05) });
+            break;
+          }
           const kind = look.trees[Math.floor(hash2(tx, ty, 91) * look.trees.length)] ?? 'oak';
           const def = TREES[kind] ?? TREES.oak;
           const m = def.m[Math.floor(h * def.m.length) % def.m.length]!;
-          const s = this.fitted(m, def.h * (0.85 + hash2(tx, ty, 21) * 0.3), 2.4);
+          const s = this.fitted(m, def.h * (0.74 + hash2(tx, ty, 21) * 0.26), 1.9);
           // (a crystal takes the land's own light: the model itself is plain white)
           const shard = kind === 'crystal' ? hexRgb(look.leaves[hash2(tx, ty, 93) < 0.3 ? 5 : 4]) : kind === 'snowpine' ? FROST : null;
           if (this.keepIt({ x: wx, y: wy, kind: 'tree', dy: -def.h * TILE })) this.add({ m, x: x + (h - 0.5) * 0.12, z: z + (hash2(tx, ty, 31) - 0.5) * 0.12, rot: h * 6.28, sx: s, sway: kind === 'dead' || kind === 'crystal' || kind === 'cactus' ? 0 : 1, shadow: 1.25, ...(shard ? { r: shard[0], g: shard[1], b: shard[2] } : {}) });
@@ -1165,15 +1222,9 @@ export class Land3D {
             }
             break;
           }
-          // the forest wall: its edge is trees, and its depths a bumpy roof of crowns
+          // the wood: its edge and its depths
           const open = kindAt(tx, ty + 1) !== K.Wall || kindAt(tx - 1, ty) !== K.Wall || kindAt(tx + 1, ty) !== K.Wall || kindAt(tx, ty - 1) !== K.Wall;
-          if (open || (tx + ty) % 2 === 0) {
-            const kind = look.trees[Math.floor(hash2(tx, ty, 91) * look.trees.length)] ?? 'oak';
-            const def = TREES[kind] ?? TREES.oak;
-            const m = def.m[Math.floor(h * def.m.length) % def.m.length]!;
-            const s = this.fitted(m, def.h * (open ? 0.72 : 0.6) * (0.9 + hash2(tx, ty, 21) * 0.3), 1.9);
-            this.add({ m, x: x + (h - 0.5) * 0.2, z: z + (hash2(tx, ty, 31) - 0.5) * 0.2, rot: h * 6.28, sx: s, sway: 0.7 });
-          }
+          this.woodland(tx, ty, open, 0);
           break;
         }
         default:
@@ -1185,12 +1236,7 @@ export class Land3D {
       for (let ty = -6; ty < H + 6; ty++) {
         for (let tx = -6; tx < W + 6; tx++) {
           if (tx >= 0 && ty >= 0 && tx < W && ty < H) continue;
-          if ((tx + ty) % 2 !== 0) continue;
-          const h = hash2(tx + 40, ty + 40, 77);
-          const kind = look.trees[Math.floor(hash2(tx + 40, ty + 40, 91) * look.trees.length)] ?? 'oak';
-          const def = TREES[kind] ?? TREES.oak;
-          const m = def.m[Math.floor(h * def.m.length) % def.m.length]!;
-          this.add({ m, x: tx + 0.5 + (h - 0.5) * 0.2, z: ty + 0.5 + (hash2(tx + 40, ty + 40, 31) - 0.5) * 0.2, rot: h * 6.28, sx: this.fitted(m, def.h * 0.6 * (0.9 + hash2(tx + 40, ty + 40, 21) * 0.3), 1.9), sway: 0.7 });
+          this.woodland(tx, ty, false, 0);
         }
       }
     }

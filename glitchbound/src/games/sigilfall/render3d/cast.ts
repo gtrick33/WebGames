@@ -219,7 +219,9 @@ export class Cast {
           const rig = mesh.rig === 'medium' ? w.medium : mesh.rig === 'large' ? w.large : rigAnimOf(pack, mesh.rig!);
           entry.rig = rig;
           entry.mesh = mesh;
-          entry.crowd = new Crowd(mesh, rig, this.root, 16, 0.022);
+          // (the animals of their set are flat-faceted and flat-colored: lit by their smooth normals they read rounded, as
+          // the heroes do, and their colors run soft over the body instead of a patchwork of facets)
+          entry.crowd = new Crowd(/^(a_|fbx_)/.test(id) ? softBody(mesh) : mesh, rig, this.root, 16, 0.022);
           entry.loading = false;
         })
         .catch(() => {
@@ -278,7 +280,10 @@ export class Cast {
     if (kit.look) {
       const look = npcLookOf(kit.look);
       if (look) {
-        this.person(look, null, false, x, y, rot, { clip: clip === 'chop' ? 'cast' : clip, t, loop, from: opts?.from }, { alpha: opts?.alpha, flash: opts?.flash, h });
+        // (a person's attack as their kind fights: a caster casts, an archer draws, a fighter swings or hews)
+        const atk = kit.atk === 'stab' || kit.atk === 'punch' ? 'chop' : kit.atk === 'smash' ? 'chop2' : kit.atk;
+        const personClip = clip === 'chop' || clip === kit.atk ? (atk ?? (kit.held ? 'chop' : 'cast')) : clip;
+        this.person(look, kit.held ?? null, !!kit.shield, x, y, rot, { clip: personClip, t, loop, from: opts?.from }, { alpha: opts?.alpha, flash: opts?.flash, h });
         return kit;
       }
     }
@@ -504,3 +509,26 @@ export class Cast {
 }
 
 export type { Held };
+
+/** A model lit by its smooth normals, its colors averaged where its faces meet (an animal of the flat-faceted set). */
+function softBody(m: MeshData): MeshData {
+  const col = new Uint8Array(m.col);
+  const sum = new Map<string, [number, number, number, number]>();
+  const key = (v: number): string => `${Math.round(m.pos[v * 3]! * 500)},${Math.round(m.pos[v * 3 + 1]! * 500)},${Math.round(m.pos[v * 3 + 2]! * 500)}`;
+  for (let v = 0; v < m.n; v++) {
+    const k = key(v);
+    const s = sum.get(k) ?? [0, 0, 0, 0];
+    s[0] += m.col[v * 3]!;
+    s[1] += m.col[v * 3 + 1]!;
+    s[2] += m.col[v * 3 + 2]!;
+    s[3]++;
+    sum.set(k, s);
+  }
+  for (let v = 0; v < m.n; v++) {
+    const s = sum.get(key(v))!;
+    col[v * 3] = s[0] / s[3];
+    col[v * 3 + 1] = s[1] / s[3];
+    col[v * 3 + 2] = s[2] / s[3];
+  }
+  return { ...m, nor: m.sn, col };
+}
