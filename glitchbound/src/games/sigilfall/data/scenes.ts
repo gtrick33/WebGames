@@ -1,5 +1,9 @@
 import { after, all, during, is, not, until } from './cond';
+import { EVENTS } from './events';
+import { QUEST_DEFS } from './quests';
+import { isRetired } from './retired';
 import type { SceneDef } from '../sim/scene';
+import { STORY_SCENES } from './scenes-story';
 
 /**
  * The story's staged beats (sim/scene.ts): a few seconds each, in the world, at the moments the story
@@ -607,3 +611,13 @@ export const SCENES: SceneDef[] = [
     steps: [{ title: 'The Camp Goes Home' }, { follow: 'fern-ranger', secs: 6 }, { look: 'hero' }],
   },
 ];
+
+// the main story's own staging, land by land (data/scenes-story.ts)
+SCENES.push(...STORY_SCENES);
+
+// a retired land's scenes go with it, and so does a scene about a quest or a story event that is gone
+const named = (c: unknown): string[] => JSON.stringify(c ?? null).match(/"quest":"[^"]+"/g)?.map((m) => m.slice(9, -1)) ?? [];
+for (let i = SCENES.length - 1; i >= 0; i--) {
+  const d = SCENES[i]!;
+  if (isRetired(d.region) || (d.opens && !EVENTS[d.opens.event]) || named(d.when).some((q) => !QUEST_DEFS[q])) SCENES.splice(i, 1);
+}

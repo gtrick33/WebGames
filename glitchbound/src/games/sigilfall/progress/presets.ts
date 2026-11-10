@@ -1,4 +1,5 @@
 import { xpToNext } from '../data/classes';
+import { isRetired } from '../data/retired';
 import { QUEST_DEFS } from '../data/quests';
 import { REGIONS } from '../data/regions';
 import type { RegionId } from '../data/types';
@@ -60,7 +61,31 @@ export const PRESETS: Preset[] = [
   { id: 'crownfall-ash-crown', label: 'Crownfall: the Ash Crown', region: 'vaelmoor-remembered', active: 'crownfall-the-ash-crown', done: ['crownfall-break-it'], level: 60 },
   { id: 'the-bell', label: 'Epilogue: the bell (scene)', region: 'briarhollow', active: 'epilogue-the-bell', level: 60 },
   { id: 'mythic-plus', label: 'Postgame: the Riftstone (+1)', region: 'briarhollow', done: ['postgame-crownfall-mythic'], level: 60 },
+  { id: 'v3-embers', label: 'Prologue: the first vision, the star (scene)', region: 'briarhollow', active: 'the-empty-tomb', level: 6 },
+  { id: 'v3-wood', label: 'Prologue: the Whisperwood trail (scene)', region: 'whisperwood', active: 'into-the-wood', level: 5 },
+  { id: 'v3-fern-candles', label: 'Act I: Fernstead’s candles (scene)', region: 'brackenridge', active: 'west-road', level: 6 },
+  { id: 'v3-fern-barrows', label: 'Act I: the Old Barrows wake (scene)', region: 'brackenridge', active: 'the-old-barrows', level: 7 },
+  { id: 'v3-fern-lady', label: 'Act I: the Grey Lady’s song (scene)', region: 'brackenridge', active: 'lay-the-grey-lady', level: 8 },
+  { id: 'v3-fern-stones', label: 'Act I: the Grey Lady at rest (scene)', region: 'brackenridge', active: 'the-harvest-stones', level: 8 },
+  { id: 'v3-fern-scouts', label: 'Act I: the Harvest Stones lit (scene)', region: 'brackenridge', active: 'camp-scouts', level: 9 },
+  { id: 'v3-mill', label: 'Act I: Millbrook’s bridge (scene)', region: 'thornvale', active: 'south-road', level: 8 },
+  { id: 'v3-mill-kettle', label: 'Act I: Kettle Farm (scene)', region: 'thornvale', active: 'kettle-farm', level: 9 },
+  { id: 'v3-mill-nyx', label: 'Act I: Nyx reads the orders (scene)', region: 'thornvale', active: 'thieves-cant', level: 10 },
+  { id: 'v3-mill-bridge', label: 'Act I: the mill, after Harlan (scene)', region: 'thornvale', active: 'mill-the-bridge', level: 12 },
+  { id: 'v3-mill-wheel', label: 'Act I: the mill wheel turns (scene)', region: 'thornvale', active: 'hollow-gold', level: 13 },
+  { id: 'v3-hearth', label: 'Act I: Hearthstead (scene)', region: 'amberfield', active: 'refugees-on-the-road', level: 16 },
+  { id: 'v3-hearth-caravan', label: 'Act I: the broken caravan (scene)', region: 'amberfield', active: 'the-broken-caravan', level: 16 },
+  { id: 'v3-hearth-captain', label: 'Act I: the captain on the ridge (scene)', region: 'amberfield', active: 'riders-in-the-grass', level: 17 },
+  { id: 'v3-hearth-stones', label: 'Act I: the Clan Stones remember (scene)', region: 'amberfield', active: 'the-clan-stones', level: 18 },
+  { id: 'v3-hearth-sigil', label: 'Act I: the Sigil of Stone taken (scene)', region: 'amberfield', active: 'hearth-the-shrine', level: 21 },
+  { id: 'v3-hearth-orders', label: 'Act I: Vosk’s orders read (scene)', region: 'amberfield', active: 'camp-riders', level: 21 },
 ];
+
+// (a retired land's beats, and a beat whose quest is gone, are gone from the list)
+for (let i = PRESETS.length - 1; i >= 0; i--) {
+  const p = PRESETS[i]!;
+  if (isRetired(p.region) || (p.active && !QUEST_DEFS[p.active]) || (p.done ?? []).some((q) => !QUEST_DEFS[q])) PRESETS.splice(i, 1);
+}
 
 /** Puts a hero at a preset's beat: its story done, the beat under way, raised to its level, its lands open. */
 export function applyPreset(c: Character, p: Preset): void {

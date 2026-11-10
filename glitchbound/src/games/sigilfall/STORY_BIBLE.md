@@ -33,7 +33,7 @@ Principles:
 
 ### The star
 
-Three hundred years ago a star fell on the border of two sister kingdoms: **Aster** of the river valleys, and
+A thousand years ago a star fell on the border of two sister kingdoms: **Aster** of the river valleys, and
 **Vaelmoor** of the northern lakes. It broke in two as it fell. Each kingdom forged its half into a crown.
 
 - Aster's became the **Starlight Crown**, seven points of star-iron. While it was whole and worn, *the dead stayed
@@ -43,7 +43,7 @@ Three hundred years ago a star fell on the border of two sister kingdoms: **Aste
 
 ### The plague winter
 
-Forty years ago **King Vaelor** of Vaelmoor lost his queen **Ysane** and their two children, **Lark** and **Edda**,
+Three hundred years ago **King Vaelor** of Vaelmoor lost his queen **Ysane** and their two children, **Lark** and **Edda**,
 in one winter of plague. The plague came in on a ship his brother **Aurel**, Master of the Harbor, let into port
 against the quarantine, for gold and because the ship's captain was his friend.
 
@@ -56,18 +56,19 @@ smelling of cold hearths, asking each other if it is supper yet.
 
 Aster's queen of the time knew what the Ash Crown would want next: the other half of the star. She sent eight
 **Sigil-wardens** to the border. Seven of them broke the Starlight Crown into seven **Crown Sigils** and rode away
-to hide one each in a holy place. The eighth, **Ser Edmar**, held the Gloam Gate against the Host at dusk while
-the seven rode, and died there. The songs count seven wardens; Edmar was left out of them because his part was
-done in the dark. A **Gloamknight** hero who finishes the story takes up his watch (*Warden of the Gloam*,
+to hide one each in a holy place. The eighth, **Ser Edric** of the Brackenridge Hills, held the Gloam Gate against the Host at dusk while
+the seven rode, and died there. The songs count seven wardens; Edric was left out of them because his part was
+done in the dark. His widow carried him home and sang at his barrow until she died: she is Act I's Grey Lady.
+A **Gloamknight** hero who finishes the story takes up his watch (*Warden of the Gloam*,
 `data/wardens.ts`).
 
 The wardens sealed Vaelor in **Duskspire**, his citadel, and built the **Three Gates** (Highwall, the Gloam Gate,
-the Muster Hall) on the road to it. For forty years the seal held because nobody in Aster knew where the sigils
+the Muster Hall) on the road to it. For three hundred years the seal held because nobody in Aster knew where the sigils
 were.
 
 ### Now
 
-**Aurel** has spent those forty years as **the Pale Herald**, Vaelor's voice in the living world. He believes, as
+**Aurel** has spent those three hundred years as **the Pale Herald**, Vaelor's voice in the living world. He believes, as
 Vaelor does, that the Ash Crown relit with all seven sigils (the **Crown of Ash and Starlight**) can make the
 resurrection last: Vaelmoor whole again, the plague undone, his own guilt erased. The price is Aster: a kingdom's
 grief is what the Ash Crown would build Vaelmoor out of.
@@ -88,7 +89,7 @@ hallows the dead and calls it mercy.
 | Crown Sigil | one of the seven star-iron points of the Starlight Crown (perk ids `sigil-*`) |
 | Grieflight | the violet glow the Ash Crown leaves in what it touches |
 | The Pale Herald | Aurel, Vaelor's brother and voice |
-| The Gloam | the dusk-land between Aster and Vaelmoor; the fen where Edmar held the gate |
+| The Gloam | the dusk-land between Aster and Vaelmoor; the fen where Edric held the gate |
 
 ---
 
@@ -105,7 +106,7 @@ it saw (the player sees it with her: `vision` scenes).
 | **Sun** | the Tomb of the Sun King (Sunscorch) | Queen Ammuret, who had herself buried with it | the plague ship coming into Vaelmoor's harbor, and the man who let it in | the color of Briarhollow's orchard in spring |
 | **Thorns** | the Thorn Court (Glimmerwood) | the first Thistlemourn | Vaelor at his children's bedside, the night he broke his crown | Thessa's face (she knows the name) |
 | **Frost** | the Vault of Rime (Rimeheld) | Jarl Ingrith the Unthawed, frozen in the vault with it | the eight wardens at the border; seven ride away and one stays | her own birthday |
-| **Veil** | the Tear (the Shattered Vale) | Magister Orla, who sealed the Tear with it | Ser Edmar holding the Gloam Gate alone at dusk | — (taken with her by the Herald; won back at the Gloam Gate) |
+| **Veil** | the Tear (the Shattered Vale) | Magister Orla, who sealed the Tear with it | Ser Edric holding the Gloam Gate alone at dusk | — (taken with her by the Herald; won back at the Gloam Gate) |
 | **Tides** | the drowned altar of Hollowmere | Queen Ysane's own maid, Bettany, who stayed | Ysane, dying, asking Vaelor to let her go | the hero's name |
 
 At the Duskspire Gate the hero carries all seven (`the-seventh-sigil`): the last door opens only for seven.
@@ -155,15 +156,15 @@ The Host is testing the border. Every village saved sends something to Briarholl
 **Brackenridge Hills: Fernstead** (5–10) — a hill village of russet orchards, where the barrow dead have started to
 sing.
 
-1. `fern-candles` **Fernstead's Candles** — Warden Hollis meets the hero at dusk; every window has a candle in it
+1. `west-road` **Fernstead's Candles** — Warden Hollis meets the hero at dusk; every window has a candle in it
    for someone the barrows took. *Scene: the hill road at sunset, the candles coming on one by one.* **"We light them
    so they can find the way home. Lately they've been finding it."**
-2. `fern-the-dead-walk` **The Restless Dead** — *defend*: the barrow dead walk into the lanes at night; Hollis's
-   rangers and Mara hold the well.
-3. `fern-the-widows-song` **The Widow's Song** — follow the singing to the old barrows. The **Grey Lady** is a
-   widow, Wenna Ashe, who sang at her husband's barrow every night for a year: the Ash Crown has been feeding on her.
-   *Scene: grieflight rising out of the mound like smoke.* Orren isn't here yet; Elyra explains what Thessa taught
-   her: **"Grief's the strongest thing in the world. Somebody's learned to spend it."**
+2. `the-old-barrows` **The Old Barrows** — the dead walk out of the barrows the kobolds broke into; put them down
+   with Hollis's rangers. *Scene: grieflight rising out of the mounds like smoke.*
+3. `the-widows-song` **The Widow's Song** — Mother Alsa knows the song: a lament for **Ser Edric**, a warden who
+   held "a gate in the dark" three hundred years ago. His widow sang it at his barrow until she died, and the Ash
+   Crown woke her grief and feeds on it. Elyra explains what Thessa taught her: **"Grief's the strongest thing in
+   the world. Somebody's learned to spend it."**
 4. `lay-the-grey-lady` **Lay the Grey Lady** — *boss*. Elyra's ember-light breaks the grieflight; the Lady sings
    her husband's name once more and is gone.
 5. `the-harvest-stones` **The Harvest Stones** — cleanse the shrine; Hollis's rangers march to Briarhollow
@@ -263,11 +264,11 @@ sing.
 **The Shattered Vale: Shardwatch** (35–41) — the low point.
 
 1. `vale-shardwatch` **Shardwatch** — Magister Quell's watchtowers around the **Tear**, a wound in the sky the
-   Sigil of the Veil has kept shut for forty years.
+   Sigil of the Veil has kept shut for three hundred years.
 2. `vale-the-cipher` **The Herald's Cipher** — Nyx goes quiet; a grey-ink letter about **Wren**.
 3. `the-heralds-ambush` **The Tear** — the hero takes the **Sigil of the Veil** from the Tear, and the **Pale
    Herald** is waiting: Nyx sold him the road for her brother. A fight that cannot be won (`ends`); **Elyra is
-   taken**, and the sigils with her. **"Forty years I have carried my brother's grief. Tonight I set it down."**
+   taken**, and the sigils with her. **"Three hundred years I have carried my brother's grief. Tonight I set it down."**
    The Herald keeps neither promise: Wren stays a prisoner. Nyx is gone.
 4. `the-heart-of-the-tear` **The Heart of the Tear** — aftermath: Quell seals the Tear with what's left; the same
    night **Fernstead falls**; at the camp Thessa finds Elyra's satchel packed for three days.
@@ -288,8 +289,8 @@ sing.
 
 1. `gloam-the-unlit-mile` **The Unlit Mile** — Lastlight's lamp-keepers; the road dark for a mile.
 2. `gloam-the-eighth-warden` **The Eighth Warden** — at a cairn by the gate, Elyra's absence is a hole the
-   **vision** comes through anyway, from the Veil sigil kept in the gate: **Ser Edmar holding the gate alone at
-   dusk**. **"Till the last light. Then a little after."**
+   **vision** comes through anyway, from the Veil sigil kept in the gate: **Ser Edric holding the gate alone at
+   dusk**: the man the Grey Lady sang for. **"Till the last light. Then a little after."**
 3. `gloam-the-cells` **The Cells** — *rescue*: Nyx's map, the cells, Elyra. She knows the hero's face; she can't
    find Thessa's.
 4. `the-gatewarden` **The Gatewarden** — *boss*; the sigils (all five Elyra carried) are taken back from the gate's

@@ -139,8 +139,8 @@ function where(w: World, name: string): { x: number; y: number } | null {
     const b = w.boss();
     return b && !b.dead ? { x: b.x, y: b.y } : null;
   }
-  const place = w.places[name];
-  if (place) return place;
+  const place = w.places[name] ?? w.spots.find((sp) => sp.id === name);
+  if (place) return { x: place.x, y: place.y };
   const n = w.npcs.find((x) => x.id === name) ?? w.pets.find((p) => !p.dead && p.def.id === name) ?? w.enemies.find((e) => !e.dead && e.def.id === name);
   if (n) return { x: n.x, y: n.y };
   const b = w.map.buildings.find((x) => x.name === name);

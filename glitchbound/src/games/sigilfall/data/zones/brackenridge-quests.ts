@@ -1,118 +1,68 @@
 import type { NpcDef, QuestDef, StoryEventDef } from '../types';
 
 /**
- * Fernstead's people and Brackenridge's quests (Act I, STORY_BIBLE.md §3). Kobolds tunnelling the
- * ridge for barrow gold broke into the Old Barrows just as the Ash Crown began to stir, and now the
- * barrow dead walk at night. The Grey Lady, widow of the Sigil-warden Edric who held these hills against
- * the Ashen Host three hundred years ago, has risen and calls the dead to her: her grief is exactly the
- * kind the Ash Crown feeds on. Pip Tanner wants the old boar of the hills; Mother Alsa wants the Harvest
- * Stones lit the old way, and they have gone grey. When the Grey Lady rests, Warden Hollis sends her
- * rangers to Briarhollow. The main chain comes first, so it is the quest the hero follows by default.
+ * Fernstead's people and Brackenridge's quests (Act I, STORY_BIBLE.md v3 §4): the first village of the Vale.
+ * Kobolds digging for barrow gold broke into the Old Barrows as the Ash Crown stirred, and the dead walk. The
+ * Grey Lady is the widow of Ser Edric, the eighth Sigil-warden, who held the Gloam Gate alone three hundred years
+ * ago and was left out of the songs: the Ash Crown has woken her grief and feeds on it. Five beats: Fernstead's
+ * candles, the barrows, the song, the Lady, the Harvest Stones; then Hollis's rangers go to the camp. Pip's boar
+ * and Alsa's orchard are the hills' own small stories.
  */
 export const BRACKENRIDGE_QUESTS: QuestDef[] = [
   /* ---------------------------------------------------------- the way in */
   {
     id: 'west-road',
-    name: 'The West Road',
+    name: 'Fernstead’s Candles',
     giver: 'maren',
-    text: 'A shepherd from Fernstead came to Briarhollow’s gate with a story nobody would have believed a month ago: lights moving on the hills at night, graves that won’t stay shut, and the Harvest Stones gone grey. Elder Maren believes him. Take the west road into the Brackenridge Hills and find Warden Hollis in Fernstead. If her rangers join the camp, Briarhollow will see the Host coming.',
-    objective: { kind: 'talk', npc: 'warden-hollis', label: 'Talk to Warden Hollis in Fernstead' },
+    text: 'A shepherd from Fernstead came to Briarhollow’s gate with a story nobody would have believed a month ago: graves on the hills that won’t stay shut, and a woman in grey who sings on the barrows at night. Take the west road into the Brackenridge Hills and find Warden Hollis in Fernstead before dark. If her rangers join the camp, Briarhollow will see the Host coming.',
+    offer: ['Fernstead’s shepherd says their dead have started singing. Before last night I’d have laughed at him.', 'Go west, to Warden Hollis. Be there before they light the candles.'],
+    objective: { kind: 'talk', npc: 'warden-hollis', label: 'Find Warden Hollis in Fernstead before dark' },
     // the Vale after the north road is safe: dawn, then the Whisperwood and Grimtusk (the Prologue's own order)
     after: ['the-empty-tomb', 'alpha'],
     level: 5,
-    reward: { xp: 55, gold: 25 },
+    reward: { xp: 55, gold: 25, text: 'Every window in Fernstead has a candle in it. Hollis says they light them so the taken can find their way home. Lately, she says, they’ve been finding it.' },
   },
   /* ------------------------------------------------- the kobolds' dig */
-  {
-    id: 'lights-on-the-ridge',
-    name: 'Lights on the Ridge',
-    giver: 'warden-hollis',
-    text: 'Every night for a month, lights have crawled over the ridge north-west of Fernstead, and every morning something is missing: a spade, a lamp, a sheep. Warden Hollis thinks it’s kobolds. Go and look at the diggings on the ridge.',
-    objective: { kind: 'explore', spot: 'kobold-diggings', label: 'Look over the Kobold Diggings' },
-    after: ['west-road'],
-    zone: 'brackenridge',
-    reward: { xp: 60, gold: 30 },
-  },
-  {
-    id: 'snuff-the-candles',
-    name: 'Snuff the Candles',
-    giver: 'warden-hollis',
-    text: 'Kobolds, dozens of them, dug into the ridge like ticks. The candlers, the ones with a candle on their heads, keep the diggers digging and patch them up when you hit them. Hollis wants the diggings thinned out, candlers first.',
-    objective: { kind: 'kill', region: 'brackenridge', count: 10, enemies: ['ridge-kobold', 'kobold-candler'], label: 'Defeat kobolds' },
-    after: ['lights-on-the-ridge'],
-    zone: 'brackenridge',
-    level: 6,
-    reward: { xp: 75, gold: 35 },
-  },
-  {
-    id: 'barrow-gold',
-    name: 'Barrow Gold',
-    giver: 'warden-hollis',
-    text: 'Fernstead’s children have been finding coins in the kobolds’ spoil heaps: thin gold stamped with a sigil. Funeral coins, Hollis says, the kind laid on a dead man’s eyes. She wants more of them, from the kobolds themselves, to know whose eyes they came off.',
-    objective: { kind: 'loot', region: 'brackenridge', item: 'Barrow Coin', from: ['ridge-kobold', 'kobold-candler'], chance: 0.5, count: 5, label: 'Take Barrow Coins from kobolds' },
-    after: ['snuff-the-candles'],
-    zone: 'brackenridge',
-    level: 6,
-    reward: { xp: 80, gold: 35 },
-  },
-  {
-    id: 'king-snagtooth',
-    name: 'King Snagtooth',
-    giver: 'warden-hollis',
-    text: 'Barrow coin, every one: the kobolds have tunnelled into the Old Barrows. Their chief calls himself King Snagtooth now, and wears a dead king’s crown and a breastplate three sizes too big. He holds court in the Kobold Diggings, north-west of Fernstead. Hollis wants him off his throne.',
-    objective: { kind: 'kill', region: 'brackenridge', count: 1, enemies: ['king-snagtooth'], label: 'Defeat King Snagtooth in the Kobold Diggings' },
-    after: ['barrow-gold'],
-    zone: 'brackenridge',
-    level: 7,
-    reward: { xp: 120, gold: 50, item: 'snagtooths-crown', text: 'Snagtooth’s crown rolls to your feet. Hollis says it suits you better.' },
-  },
   /* ------------------------------------------------------ the barrow dead */
   {
     id: 'the-old-barrows',
     name: 'The Old Barrows',
     giver: 'warden-hollis',
-    text: 'Snagtooth’s tunnels run south-west, under the Old Barrows. Since the kobolds broke in, Fernstead’s dogs howl all night at nothing anyone can see. Go to the barrows, south-west of the hamlet, and see what the kobolds let out.',
-    objective: { kind: 'explore', spot: 'old-barrows', label: 'Go to the Old Barrows' },
-    after: ['king-snagtooth'],
+    auto: true,
+    text: 'The kobolds of the ridge dug for barrow gold and broke into the Old Barrows, south-west of Fernstead, the week the bell stopped in Briarhollow. Since then the dead get up at dusk and walk toward the lights. Go to the barrows with Hollis’s rangers and put down what has climbed out.',
+    objective: { kind: 'explore', spot: 'old-barrows', label: 'Go to the Old Barrows, south-west of Fernstead' },
+    then: [{ kind: 'kill', region: 'brackenridge', count: 6, enemies: ['restless-shade', 'barrow-skeleton'], label: 'Put down the dead that rise from the barrows' }],
+    after: ['west-road'],
     zone: 'brackenridge',
-    level: 7,
-    reward: { xp: 90, gold: 40 },
-  },
-  {
-    id: 'restless-dead',
-    name: 'The Restless Dead',
-    giver: 'warden-hollis',
-    text: 'The barrow dead are walking: grey shades that slip away from a blade, and skeletons that put themselves back together. Hollis’s grandmother is buried up there. She was a terror alive, and Hollis would like her to stay where they put her. Lay the dead down again.',
-    objective: { kind: 'kill', region: 'brackenridge', count: 10, enemies: ['restless-shade', 'barrow-skeleton'], label: 'Lay restless dead to rest' },
-    after: ['the-old-barrows'],
-    zone: 'brackenridge',
-    level: 8,
-    reward: { xp: 105, gold: 45 },
+    level: 6,
+    reward: { xp: 140, gold: 50, text: 'They go down easily. Too easily: each one turns its head to the north-west as it falls, as if someone had called its name.' },
   },
   {
     id: 'the-widows-song',
     name: 'The Widow’s Song',
     giver: 'warden-hollis',
-    text: 'Every night a woman in grey walks the barrows, singing, and the dead get up to listen. Hollis doesn’t know the song. Mother Alsa, at the inn in Fernstead, knows every song in the hills. Ask her about this one.',
-    objective: { kind: 'talk', npc: 'mother-alsa', label: 'Ask Mother Alsa about the song' },
-    after: ['restless-dead'],
+    auto: true,
+    text: 'Every night a woman in grey walks the barrows singing, and the dead get up to listen. Hollis doesn’t know the song. Mother Alsa, at the inn in Fernstead, knows every song in the hills. Ask her about this one.',
+    objective: { kind: 'talk', npc: 'mother-alsa', label: 'Ask Mother Alsa about the grey woman’s song' },
+    after: ['the-old-barrows'],
     zone: 'brackenridge',
-    reward: { xp: 100, gold: 40 },
+    reward: { xp: 120, gold: 40, text: 'It is a lament for Ser Edric of these hills, who went north three hundred years ago to hold “a gate in the dark” and came home on a cart. His widow sang it at his barrow every night until she died. Somebody has woken her.' },
   },
   {
     id: 'lay-the-grey-lady',
     name: 'Lay the Grey Lady',
     giver: 'warden-hollis',
-    text: 'The song is a lament for Sigil-warden Edric, who held these hills against the Ashen Host three hundred years ago, the winter Vaelmoor died. His widow sang it by his mound until she died, and they buried her beside him. Something has woken her grief and fed on it, and now the Grey Lady calls the dead to her. Find her in the Old Barrows, south-west of Fernstead, and give her rest.',
+    auto: true,
+    text: 'The Grey Lady is Edric’s widow, three hundred years dead, and something is feeding on her grief: every note of her song pulls the dead out of the ground. Elyra thinks the warm iron in her can break whatever has hold of the Lady. Find her at the Old Barrows, south-west of Fernstead, and give her rest.',
     objective: { kind: 'kill', region: 'brackenridge', count: 1, enemies: ['the-grey-lady'], label: 'Lay the Grey Lady to rest in the Old Barrows' },
     after: ['the-widows-song'],
     zone: 'brackenridge',
-    level: 9,
+    level: 8,
     reward: {
       xp: 450,
       gold: 120,
       item: 'widows-locket',
-      text: 'As she fades she whispers: “He calls them all. He calls, and they go. He promised me Edric.” Her locket stays behind in the grass.',
+      text: 'As she fades she says her husband’s name, once, the way you say it to someone in the next room. “He calls them all,” she says. “He calls, and they go. He promised me Edric.” Her locket stays behind in the grass.',
     },
   },
   {
@@ -133,7 +83,7 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     auto: true,
     text: 'The barrows are quiet, and Hollis keeps her word: six of Fernstead’s rangers are on the road to Briarhollow, to keep a watchfire at the camp’s gate. Meet them in Briarhollow.',
     objective: { kind: 'event', event: 'camp-scouts', label: 'Meet Fernstead’s rangers in Briarhollow' },
-    after: ['lay-the-grey-lady'],
+    after: ['the-harvest-stones'],
     zone: 'briarhollow',
     reward: { xp: 180, gold: 60, text: 'A watchfire burns by Briarhollow’s gate. The camp will see the Host coming now.' },
   },
@@ -184,26 +134,16 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     reward: { xp: 65, gold: 30 },
   },
   {
-    id: 'stolen-light',
-    name: 'Stolen Light',
-    giver: 'mother-alsa',
-    text: 'The candlers on the ridge wear candles from Fernstead’s chapel: good beeswax, the only kind Alsa will use to seal her cordial. She wants four of them back, preferably blown out.',
-    objective: { kind: 'loot', region: 'brackenridge', item: 'Chapel Candle', from: ['kobold-candler'], chance: 0.5, count: 4, label: 'Take Chapel Candles from kobold candlers' },
-    after: ['appleby-apples'],
-    zone: 'brackenridge',
-    level: 7,
-    reward: { xp: 85, gold: 35 },
-  },
-  {
     id: 'the-harvest-stones',
     name: 'The Harvest Stones',
     giver: 'mother-alsa',
-    text: 'The Harvest Stones, north of Fernstead, have gone grey: violet light creeps in their cracks, and the dead gather round them at night like moths at a lamp. Alsa’s old way still works, she says. Light the chapel candles at the stones and keep the dead off them while the light takes. Hollis will send two rangers. Alsa’s knees won’t take her up there this year. Yours will.',
+    auto: true,
+    text: 'The Lady is at rest, but the Harvest Stones north of Fernstead are still grey, violet light creeping in their cracks, and the dead gather round them at night like moths at a lamp. Alsa’s old way still works, she says: light the chapel candles at the stones and keep the dead off them while the light takes. Hollis will send two rangers. Alsa’s knees won’t take her up there this year. Yours will.',
     objective: { kind: 'event', event: 'fern-stones', label: 'Hold the Harvest Stones while the candles burn' },
-    after: ['stolen-light'],
+    after: ['lay-the-grey-lady'],
     zone: 'brackenridge',
-    level: 7,
-    reward: { xp: 190, gold: 70, item: 'corn-dolly', text: 'The grey goes out of the stones like frost off a window. Alsa ties you a corn dolly from the last sheaf of the harvest.' },
+    level: 8,
+    reward: { xp: 260, gold: 80, item: 'corn-dolly', text: 'The grey goes out of the stones like frost off a window. Hollis keeps her word: six of her rangers are on the road to Briarhollow tonight.' },
   },
 ];
 

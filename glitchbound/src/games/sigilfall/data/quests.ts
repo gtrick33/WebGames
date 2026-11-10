@@ -33,7 +33,7 @@ export const QUESTS: QuestDef[] = [
     giver: 'maren',
     auto: true,
     text: 'The arrow in Oskar Fell’s back came out of the Whisperwood, and so did the Ashen Host. The north road is open: go up it while it is light and thin out what hunts on the trails.',
-    objective: { kind: 'kill', region: 'whisperwood', count: 15, label: 'Defeat creatures in the Whisperwood' },
+    objective: { kind: 'kill', region: 'whisperwood', count: 6, label: 'Thin out the maddened beasts on the trails' },
     after: ['the-empty-tomb'],
     reward: { xp: 140, gold: 40 },
   },
@@ -115,6 +115,10 @@ export const QUESTS: QuestDef[] = [
 QUESTS.push(...STORY_QUESTS, ...ZONES.filter((z) => !isRetired(z.region.id)).flatMap((z) => z.quests));
 
 export const QUEST_DEFS: Record<string, QuestDef> = Object.fromEntries(QUESTS.map((q) => [q.id, q]));
+
+// (a story event no quest plays any more, its quest gone with a retired land, is gone with it)
+const PLAYED = new Set(QUESTS.flatMap((q) => [q.objective, ...(q.then ?? [])].flatMap((o) => (o.kind === 'event' ? [o.event] : []))));
+for (const id of Object.keys(EVENTS)) if (!PLAYED.has(id)) delete EVENTS[id];
 
 // the rebalance (PROGRESSION_BALANCE.md Part 2, A): main-story rewards by region, side quests less, and
 // each quest's level for the out-levelled falloff (QUESTS and QUEST_DEFS hold the same objects)

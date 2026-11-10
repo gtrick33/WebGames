@@ -44,9 +44,9 @@ export const STORY_QUESTS: QuestDef[] = [
     id: 'the-regents-council',
     name: 'The Courier’s Letter',
     giver: 'maren',
-    text: 'Millbrook’s grain and Reedwater’s healers have reached the camp, and the square is full of people who were strangers a month ago. Maren has dried Oskar Fell’s letter by the fire at last and wants you to hear it.',
+    text: 'Fernstead’s rangers and Millbrook’s grain have reached the camp, and the square is full of people who were strangers a month ago. Maren has dried Oskar Fell’s letter by the fire at last and wants you to hear it.',
     objective: { kind: 'talk', npc: 'maren', label: 'Hear the courier’s letter at Briarhollow' },
-    after: ['camp-grain', 'camp-healers'],
+    after: ['camp-grain'],
     reward: {
       xp: 2600,
       gold: 300,

@@ -4,6 +4,7 @@ import { EVENTS } from '../src/games/sigilfall/data/events';
 import { SCENES } from '../src/games/sigilfall/data/scenes';
 import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { applyPreset, PRESETS } from '../src/games/sigilfall/progress/presets';
+import { npcLookOf } from '../src/games/sigilfall/render/sprites';
 import { migrate, SAVE_VERSION } from '../src/games/sigilfall/progress/save';
 import { endScene } from '../src/games/sigilfall/sim/scene';
 import { holds } from '../src/games/sigilfall/sim/story';
@@ -47,7 +48,7 @@ function startAt(w: World, id: string): void {
   const def = SCENES.find((s) => s.id === id)!;
   for (const s of SCENES) if (s.id !== id && s.region === def.region && !w.hero.opened.includes(`scene:${s.id}`)) w.hero.opened.push(`scene:${s.id}`);
   w.enemies = [];
-  const at = def.near ? (w.places[def.near] ?? w.npcs.find((n) => n.id === def.near)) : null;
+  const at = def.near ? (w.places[def.near] ?? w.spots.find((sp) => sp.id === def.near) ?? w.npcs.find((n) => n.id === def.near)) : null;
   if (at) {
     w.player.x = at.x;
     w.player.y = at.y + 20;
@@ -74,10 +75,20 @@ describe('Sigilfall: scenes', () => {
       const w = newWorld(def.region, atScene(def.id));
       startAt(w, def.id);
       expect(w.scene?.def.id, def.id).toBe(def.id);
-      const named = new Set(def.steps.flatMap((s) => ('say' in s ? [s.say] : 'move' in s ? [s.move] : 'emote' in s ? [s.emote] : [])));
+      // (a vision's ghosts come with the scene: they are named by its own steps)
+      const ghosts = new Set(def.steps.flatMap((s) => ('ghost' in s ? [s.ghost] : [])));
+      const named = new Set(def.steps.flatMap((s) => ('say' in s ? [s.say] : 'move' in s ? [s.move] : 'emote' in s ? [s.emote] : [])).filter((who) => !ghosts.has(who)));
       // a villager of the place, the hero, or a companion of the story at their side
       for (const who of named) expect(w.npcs.some((n) => n.id === who) || w.pets.some((p) => !p.dead && p.def.id === who) || who === 'hero', `${def.id}: ${who}`).toBe(true);
-      for (const s of def.steps) if ('look' in s && s.look !== 'hero') expect(!!w.places[s.look] || w.npcs.some((n) => n.id === s.look) || w.map.buildings.some((b) => b.name === s.look), `${def.id}: ${s.look}`).toBe(true);
+      for (const s of def.steps) if ('look' in s && s.look !== 'hero') expect(!!w.places[s.look] || w.spots.some((sp) => sp.id === s.look) || w.npcs.some((n) => n.id === s.look) || w.map.buildings.some((b) => b.name === s.look), `${def.id}: ${s.look}`).toBe(true);
+      // a ghost stands somewhere there, in the look of somebody real; an effect goes off somewhere there
+      for (const s of def.steps) {
+        if ('ghost' in s) {
+          expect(!!w.places[s.at] || w.spots.some((sp) => sp.id === s.at) || w.npcs.some((n) => n.id === s.at), `${def.id}: ghost at ${s.at}`).toBe(true);
+          expect(npcLookOf(s.as), `${def.id}: ghost as ${s.as}`).not.toBeNull();
+        }
+        if ('fx' in s) expect(!!w.places[s.at] || w.spots.some((sp) => sp.id === s.at) || w.npcs.some((n) => n.id === s.at), `${def.id}: fx at ${s.at}`).toBe(true);
+      }
       run(w, 60);
       expect(w.scene, def.id).toBeNull();
       expect(w.hero.opened).toContain(`scene:${def.id}`);
