@@ -299,24 +299,25 @@ put('gloam-lurker', { k: 'spider', tint: '#7a7a9a', size: 0.86 });
 put('tide-lurker', { k: 'crab', tint: SEA, size: 0.86 });
 put('crab', { k: 'crab', size: 0.8 });
 // the shore crabs' matriarch, shell crusted with barnacles
+// Mother Clatterclaw: a matriarch the size of a boat, her shell gone blood-black with age, a crown of bleached bone
+// spikes splayed round its rim and barnacles crusted on it
 put('clatterclaw', {
   k: 'crab',
-  tint: '#a8402e',
-  gain: 1.1,
-  size: 1.9,
+  tint: '#3e1410',
+  gain: 1.05,
+  size: 2.15,
   gear: [
-    // (the crab stands 1 tall and is three times as wide)
-    // the bones of a leviathan grown into her shell: its ribs arched over her back, its skull behind, sockets up,
-    // crusted with barnacles and crowned with coral, kelp hanging from the ribs
-    { m: 'ribcage', y: 0.3, z: -0.15, h: 1.35, tint: '#e0d6c0' },
-    { m: 'skull', y: 0.25, z: -0.75, h: 0.85, turn: Math.PI, tipX: -0.6, tint: '#d8ccb0' },
-    { m: 'mushroom_redTall', x: 0.3, y: 1, z: -0.3, h: 0.55, tint: '#ff7a5a' },
-    { m: 'mushroom_redTall', x: -0.35, y: 0.95, z: -0.05, h: 0.45, tint: '#ff9a7a' },
-    { m: 'mushroom_redTall', x: 0.05, y: 1.1, z: 0.05, h: 0.4, tint: '#ff6a4a' },
-    { m: 'Rock_1_A', x: -0.25, y: 0.9, z: -0.45, h: 0.32, tint: '#8a9a98' },
-    { m: 'Rock_1_A', x: 0.4, y: 0.75, z: 0.1, h: 0.26, tint: '#7a8a88' },
-    { m: 'hanging_moss', x: 0.55, y: 0.3, z: -0.1, h: 0.9, tint: '#3a8a5a' },
-    { m: 'hanging_moss', x: -0.55, y: 0.3, z: -0.25, h: 0.85, tint: '#3a8a5a' },
+    { m: 'stone_tallA', x: 0.44, y: 0.5, z: 0.16, h: 0.38, tipX: -0.27, tipZ: 0.65, tint: '#ece0cc' },
+    { m: 'stone_tallA', x: 0.18, y: 0.5, z: 0.39, h: 0.38, tipX: -0.65, tipZ: 0.27, tint: '#ece0cc' },
+    { m: 'stone_tallA', x: -0.18, y: 0.5, z: 0.39, h: 0.38, tipX: -0.65, tipZ: -0.27, tint: '#ece0cc' },
+    { m: 'stone_tallA', x: -0.44, y: 0.5, z: 0.16, h: 0.38, tipX: -0.27, tipZ: -0.65, tint: '#ece0cc' },
+    { m: 'stone_tallA', x: -0.44, y: 0.5, z: -0.16, h: 0.38, tipX: 0.27, tipZ: -0.65, tint: '#ece0cc' },
+    { m: 'stone_tallA', x: -0.18, y: 0.5, z: -0.39, h: 0.38, tipX: 0.65, tipZ: -0.27, tint: '#ece0cc' },
+    { m: 'stone_tallA', x: 0.18, y: 0.5, z: -0.39, h: 0.38, tipX: 0.65, tipZ: 0.27, tint: '#ece0cc' },
+    { m: 'stone_tallA', x: 0.44, y: 0.5, z: -0.16, h: 0.38, tipX: 0.27, tipZ: 0.65, tint: '#ece0cc' },
+    { m: 'stone_tallA', x: 0, y: 0.62, z: -0.1, h: 0.53, tint: '#ece0cc' },
+    { m: 'rocks', x: 0.3, y: 0.58, z: -0.25, h: 0.2, tint: '#c8c0b0' },
+    { m: 'rocks', x: -0.28, y: 0.6, z: 0.2, h: 0.18, tint: '#c8c0b0' },
   ],
 });
 put('sand-scorpion', { k: 'scorpion' });
