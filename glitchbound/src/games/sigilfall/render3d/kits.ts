@@ -1,3 +1,5 @@
+import type { MountDef } from '../data/mounts';
+
 /**
  * Who plays whom. Every creature name in the game's data has a line here, chosen against the story: the Ashen Host are
  * the dead of Vaelmoor, so its soldiers, smiths and casters are skeletons in the Host's ash-grey; the Gallows Gang and
@@ -35,6 +37,11 @@ export interface Kit {
    * `turn` turns it about its own upright (radians), `tipX`/`tipZ` tip it forward and sideways.
    */
   gear?: { m: string; x?: number; y: number; z?: number; h: number; tint?: string; turn?: number; tipX?: number; tipZ?: number }[];
+  /**
+   * Built as a mount is (render3d/mountKit.ts): a great beast made the way the drakes are made, with their horns,
+   * blades, wings, plates and light, sized and moved as a creature (it walks, strikes and falls as one).
+   */
+  steed?: MountDef;
 }
 
 const ASH = '#b9b4bf';
@@ -287,14 +294,26 @@ put('beetle', { k: 'treant', tint: BARK, size: 0.6, ...SMASH });
 put('scarab-swarm tomb-scarab', { k: 'scarab', size: 0.72 });
 put('marsh-strider', { k: 'strider' });
 put('blood-mosquito glimmer-moth rotwood-pod', { k: 'moth', size: 0.8, float: 0.4 });
-// the Barrow's Lamp-Eater: the kings' great barrow-raven, black with a violet sheen, a dead king's gold crown on its head
+// the Barrow's Lamp-Eater: a drake built as the great drake mounts are, blacked out by a thousand years of devoured
+// lamplight: black plate, a crown of horns, wings veined with the pale fire of the lamps it has eaten
 put('gloomwing', {
-  k: 'bird',
-  tint: '#2e2838',
-  gain: 1.25,
-  size: 2,
-  float: 0.6,
-  gear: [{ m: 'Necromancer_Crown', y: 0.56, z: 0.5, h: 0.4, tint: '#ffd27a' }],
+  k: 'fbx_trex',
+  size: 1.75,
+  steed: {
+    id: 'boss-gloomwing',
+    name: 'Gloomwing',
+    lore: '',
+    from: '',
+    source: { kind: 'clears', regions: ['barrow-of-kings'], tier: 0 },
+    body: 'drake',
+    coat: '#18141e',
+    mane: '#221a2c',
+    tack: '#0e0c12',
+    plate: '#2a2434',
+    extras: ['plates', 'crown', 'veins', 'runes'],
+    glow: { kind: 'motes', color: '#b8a8ff' },
+    tier: 'shop',
+  },
 });
 put('cistern-rat', { k: 'a_fox', tint: '#8a8880', size: 0.5 });
 put('slime', { k: 'plant_warrior', tint: MOSS, size: 0.78 });

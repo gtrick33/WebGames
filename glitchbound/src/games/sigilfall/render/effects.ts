@@ -9,6 +9,7 @@ import { heightFromRadius, PERSON_H, type Cast } from '../render3d/cast';
 import { kitOf } from '../render3d/kits';
 import { PITCH } from '../render3d/land';
 import type { Land3D, RoofSpot } from '../render3d/land';
+import { bossHidden } from '../sim/boss';
 import { hasStatus } from '../sim/combat';
 import { TILE } from '../sim/map';
 import type { Enemy, Fx, Projectile, Telegraph } from '../sim/types';
@@ -219,6 +220,81 @@ export function spell(fx: Fx3D, name: string, tone: Tone, x: number, y: number, 
 type Aura = { a: string; b: string; n: number; speed: number; spin: number; from: number; rise: number; size: number; halo?: { up: number; w: number; alpha: number } };
 
 /** The shop's armor sets, the same way (their colors are the set's own or an admin's: its glow, then its trim). */
+/**
+ * What hangs in the air round a boss (render/effects.ts bossPresence): `kind` of particle, `n` of them (more each
+ * phase), how fast they go round (`speed`, `spin`), from how high (`from`) and how far they rise or fall (`rise`), how
+ * big (`size`), and its two colors (`a` the sigil and halo, `b` the light it turns and falls in).
+ */
+interface BossAura {
+  kind: 'spark' | 'smoke' | 'rain' | 'bubble';
+  n: number;
+  speed: number;
+  spin: number;
+  from: number;
+  rise: number;
+  size: number;
+  a: string;
+  b: string;
+}
+const EMBERS = (a: string, b: string): BossAura => ({ kind: 'spark', n: 10, speed: 0.45, spin: 0.2, from: 8, rise: 46, size: 7, a, b });
+const MOTES = (a: string, b: string): BossAura => ({ kind: 'spark', n: 9, speed: 0.2, spin: 0.6, from: 6, rise: 40, size: 8, a, b });
+const FALLING = (a: string, b: string): BossAura => ({ kind: 'spark', n: 9, speed: 0.25, spin: 0.15, from: 10, rise: -48, size: 6, a, b });
+const GLOOM = (a: string, b: string): BossAura => ({ kind: 'smoke', n: 6, speed: 0.3, spin: 0.25, from: 4, rise: 30, size: 16, a, b });
+const BUBBLES = (a: string, b: string): BossAura => ({ kind: 'bubble', n: 7, speed: 0.35, spin: 0.3, from: 2, rise: 44, size: 6, a, b });
+/** By the land a boss is fought in. */
+const THEME_AURA: Record<string, BossAura> = {
+  crypt: MOTES('#7af0c8', '#d8fff0'),
+  cave: MOTES('#d8c8a0', '#fff2d0'),
+  cistern: { kind: 'rain', n: 1, speed: 0.3, spin: 0, from: 0, rise: 0, size: 0, a: '#9ad84a', b: '#e0ff9a' },
+  keep: EMBERS('#ff8a3a', '#ffd27a'),
+  icecave: FALLING('#bfe8ff', '#ffffff'),
+  lavacave: EMBERS('#ff5a1e', '#ffc23a'),
+  riftspire: MOTES('#b07aff', '#f0d8ff'),
+  roots: MOTES('#a8d84a', '#f0ffb0'),
+  forest: MOTES('#a8d84a', '#f0ffb0'),
+  temple: MOTES('#ffd27a', '#fff6d0'),
+  citadel: MOTES('#ffe08a', '#ffffff'),
+  village: EMBERS('#ff8a3a', '#ffd27a'),
+};
+/** A boss with an air of its own. */
+const BOSS_AURA: Record<string, BossAura> = {
+  'coffin-matron': MOTES('#9cff9c', '#e0ffe0'),
+  ossric: EMBERS('#ffd88a', '#fff2c0'),
+  morgrave: MOTES('#ff3fd2', '#ffd0f6'),
+  hangman: GLOOM('#4a3a3a', '#c9b89a'),
+  gnasher: EMBERS('#ff4a2a', '#ffb070'),
+  varric: EMBERS('#ffb04d', '#ffe8b0'),
+  'the-drowned': BUBBLES('#7ad8ff', '#d8f6ff'),
+  clatterclaw: BUBBLES('#87cfc4', '#e0fff8'),
+  saltbeard: MOTES('#e0d0f0', '#ffffff'),
+  'brother-pustule': { kind: 'rain', n: 1, speed: 0.3, spin: 0, from: 0, rise: 0, size: 0, a: '#b8d84a', b: '#f0ffb0' },
+  'old-sluicegut': GLOOM('#5a7a3a', '#c8e0a0'),
+  'the-rot-mother': { kind: 'rain', n: 1, speed: 0.3, spin: 0, from: 0, rise: 0, size: 0, a: '#a8d04a', b: '#e8ff9a' },
+  'slag-colossus': EMBERS('#ff5a1e', '#ffc23a'),
+  'the-runewarden': MOTES('#ffd27a', '#fff2c0'),
+  'forgemaster-grold': EMBERS('#ff7a2a', '#ffe08a'),
+  'king-hrodric': FALLING('#bfe8ff', '#ffffff'),
+  gloomwing: GLOOM('#2a1e3a', '#b8a8ff'),
+  'sir-corvane': FALLING('#a8c8ff', '#e8f0ff'),
+  grimtusk: MOTES('#c86aff', '#f0d0ff'),
+  'the-sand-warden': FALLING('#e8cf95', '#fff2d0'),
+  'the-sun-king': EMBERS('#ffd27a', '#fffbe0'),
+  'jarl-hrimfang': FALLING('#bfe8ff', '#ffffff'),
+  'the-rime-wyrm': FALLING('#a9dcff', '#ffffff'),
+  'the-siege-breaker': EMBERS('#ff8a3a', '#ffd27a'),
+  'general-morvain': MOTES('#ffd27a', '#ffffff'),
+  'rotwood-colossus': MOTES('#a8d84a', '#f0ffb0'),
+  'the-withered-queen': GLOOM('#4a6a2a', '#d8f0a0'),
+  'magma-warden': EMBERS('#ff5a1e', '#ffc23a'),
+  'ashkar-the-bound': EMBERS('#ff3a1a', '#ffe08a'),
+  'veil-sentinel': MOTES('#a48bdc', '#f0e0ff'),
+  'herald-in-the-spire': MOTES('#d8d0f0', '#ffffff'),
+  'hollow-guard': GLOOM('#3a3448', '#c8c0e0'),
+  vaelor: GLOOM('#2a2238', '#c8a8ff'),
+  'the-ash-crown': FALLING('#b9b4bf', '#ffe8c0'),
+  'maelis-crane': MOTES('#ffd98a', '#ffffff'),
+};
+
 const SHOP_GLOW: Record<string, Omit<Aura, 'a' | 'b'>> = {
   crownforged: { n: 8, speed: 0.42, spin: 0, from: 6, rise: 32, size: 7, halo: { up: 18, w: 40, alpha: 0.14 } },
   celestine: { n: 9, speed: 0.2, spin: 0.6, from: 8, rise: -34, size: 7, halo: { up: 34, w: 42, alpha: 0.2 } },
@@ -599,6 +675,8 @@ export class Effects {
   private marks(w: World, sc: EffectsScene): void {
     const fx = sc.fx;
     for (const e of w.enemies) if (!e.dead && sc.near(e.x, e.y)) this.enemyMarks(e, fx, sc.time);
+    // a boss's presence: its sigil, its halo and what hangs in the air round it, and the light of its turns and its fall
+    for (const e of w.enemies) if (e.boss && sc.near(e.x, e.y) && !bossHidden(e)) this.bossPresence(e, fx, sc.time, w.region.theme);
     const p = w.player;
     if (p.dead) return;
     if (p.shield > 0) fx.put({ kind: FX.bubble, x: p.x, y: p.y, up: 16, w: 50, a: '#7fd8ff' });
@@ -685,6 +763,58 @@ export class Effects {
     for (let i = 0; i < 3; i++) {
       const a = time * 5 + (i * TAU) / 3;
       fx.put({ kind: FX.spark, x: x + Math.cos(a) * 9, y: y + Math.sin(a) * 3, up, w: 11, a: '#ffe066', t: 0.1 });
+    }
+  }
+
+  /**
+   * A boss's presence, so that it looks the fight it is: a rune turning on the floor under it in its own color, a halo
+   * behind it, and what hangs in the air round it (embers off a forge's master, frost off a wyrm, souls off a crypt's
+   * dead, gloom off a lamp-eater...), thicker with every phase. As it turns to its next phase, light gathers into it
+   * and flares; as it falls, a column of light and a spiral of sparks go up from it.
+   */
+  private bossPresence(e: Enemy, fx: Fx3D, time: number, theme: string): void {
+    const b = e.boss!;
+    const look = BOSS_AURA[b.def.id] ?? THEME_AURA[theme] ?? THEME_AURA.cave!;
+    const h = headOf(e);
+    const seed = e.id * 0.37;
+    const phase = b.phase;
+    const dying = b.dying > 0 ? 1 - b.dying / 1.8 : 0;
+    const pulse = Math.sin(time * 2.2 + seed) * 0.5 + 0.5;
+    // the sigil under it, and its halo
+    fx.put({ kind: FX.rune, x: e.x, y: e.y, flat: true, w: (e.r + 16 + phase * 4) * 2, a: look.a, b: look.b, t: 0.32 + pulse * 0.12 + dying * 0.4, seed });
+    fx.put({ kind: FX.glow, x: e.x, y: e.y, up: h * 0.55, w: e.r * 4 + 34 + phase * 8, a: look.a, alpha: 0.16 + pulse * 0.08 + phase * 0.04, behind: true });
+    // what hangs in the air round it
+    const n = Math.round(look.n * (1 + phase * 0.5));
+    for (let i = 0; i < n; i++) {
+      const u = (time * look.speed + i / n) % 1;
+      const round = Math.floor(time * look.speed + i / n);
+      const a = hash2(i, round, 7 + e.id) * TAU + time * look.spin;
+      const out = e.r * 0.6 + 6 + hash2(i, round, 11) * (e.r + 10);
+      const rise = look.rise >= 0 ? u * look.rise : (1 - u) * -look.rise;
+      const color = i % 3 === 2 ? look.b : look.a;
+      if (look.kind === 'rain') fx.put({ kind: FX.rain, x: e.x, y: e.y, base: true, w: e.r * 3 + 16, h: h + 14, a: color, t: -1, seed: seed + i });
+      else if (look.kind === 'smoke') fx.put({ kind: FX.smoke, x: e.x + Math.cos(a) * out, y: e.y + Math.sin(a) * out * 0.6, up: look.from + rise, w: look.size * (0.6 + u), a: color, alpha: 0.5 * Math.sin(u * Math.PI), t: u, seed: seed + i });
+      else if (look.kind === 'bubble') fx.put({ kind: FX.bubble, x: e.x + Math.cos(a) * out, y: e.y + Math.sin(a) * out * 0.6, up: look.from + rise, w: look.size * Math.sin(u * Math.PI) + 1, a: color });
+      else fx.put({ kind: FX.spark, x: e.x + Math.cos(a) * out, y: e.y + Math.sin(a) * out * 0.6, up: look.from + rise, w: look.size * Math.sin(u * Math.PI), a: color, t: 0.1 + u * 0.6 });
+    }
+    // in its last phase it burns brighter: a second, wider sigil turning the other way
+    if (phase >= 1 && phase === b.def.phases.length - 1) fx.put({ kind: FX.rune, x: e.x, y: e.y, flat: true, w: (e.r + 30) * 2, a: look.b, b: look.a, t: 0.22 + pulse * 0.1, seed: seed + 0.5 });
+    // turning to its next phase: the light gathers into it and flares
+    if (b.shift > 0) {
+      const u = 1 - b.shift / 1.4;
+      fx.put({ kind: FX.gather, x: e.x, y: e.y, up: h * 0.5, w: e.r * 5 + 50, a: look.a, b: '#ffffff', t: u, seed });
+      fx.put({ kind: FX.glow, x: e.x, y: e.y, up: h * 0.5, w: (e.r * 4 + 40) * (0.6 + u), a: look.b, alpha: 0.35 * Math.sin(u * Math.PI) + 0.1 });
+    }
+    // falling: a column of light, and sparks spiraling up out of it
+    if (dying > 0) {
+      fx.put({ kind: FX.shaft, x: e.x, y: e.y, base: true, w: e.r * 3 + 26, h: 150, a: look.b, alpha: 0.5 + 0.45 * dying, t: dying, seed });
+      fx.put({ kind: FX.glow, x: e.x, y: e.y, flat: true, w: (e.r * 4 + 40) * (1 + dying), a: look.b, alpha: 0.5 * (1 - dying * 0.5) });
+      fx.put({ kind: FX.glow, x: e.x, y: e.y, up: headOf(e) * 0.6, w: e.r * 5 + 40, a: '#ffffff', alpha: 0.3 * dying });
+      for (let i = 0; i < 14; i++) {
+        const u = (dying * 1.6 + i / 14) % 1;
+        const a = (i / 14) * TAU + dying * 9;
+        fx.put({ kind: FX.spark, x: e.x + Math.cos(a) * (e.r + 6) * (1 - u * 0.5), y: e.y + Math.sin(a) * (e.r + 6) * 0.6 * (1 - u * 0.5), up: u * 90, w: 9 * (1 - u), a: i % 2 ? '#ffffff' : look.a, t: 0.1 + u * 0.5 });
+      }
     }
   }
 

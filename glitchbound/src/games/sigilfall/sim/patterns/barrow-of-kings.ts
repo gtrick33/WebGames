@@ -451,8 +451,8 @@ const FIRST_PATTERNS: Record<string, PatternFn> = {
 /* ------------------------------------------------------------ Gloomwing, the Lamp-Eater */
 
 /**
- * Gloomwing, the Lamp-Eater (the Oathsworn Gallery), the kings' great barrow-raven, grown huge on the barrow's light and
- * wearing a dead king's crown. The gallery is lit
+ * Gloomwing, the Lamp-Eater (the Oathsworn Gallery), a drake blacked out by a thousand years of the barrow's devoured
+ * lamplight. The gallery is lit
  * by four grave-lamps, each lighting the quarter of the hall nearest it (`dark`). She dives on a lamp and devours its
  * flame (`feast`), and that quarter goes dark: the dark gnaws at whoever stands in it, and she shelters there, a
  * blow mostly lost in the gloom. Stand at a dark lamp to rekindle it; left alone, it kindles again in time.

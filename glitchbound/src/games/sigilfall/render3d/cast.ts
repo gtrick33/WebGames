@@ -288,6 +288,10 @@ export class Cast {
         return kit;
       }
     }
+    if (kit.steed) {
+      this.steedCreature(kit, kit.steed, x, y, rot, h, clip, t, loop, opts);
+      return kit;
+    }
     const e = this.entry(kit.k, kit);
     const crowd = e.crowd;
     const rig = e.rig;
@@ -373,6 +377,28 @@ export class Cast {
         });
     }
     return e;
+  }
+
+  /** A creature built as a mount is (Kit.steed): the mount's own model, sized to the creature and moved by its clips. */
+  private steedCreature(kit: Kit, def: MountDef, x: number, y: number, rot: number, h: number, clip: string, t: number, loop: boolean, opts?: { alpha?: number; flash?: number; rise?: number; tint?: readonly [number, number, number]; sx?: number; sy?: number; motion?: Motion; lift?: number; from?: ClipFade }): void {
+    const e = this.mountEntry(def);
+    const crowd = e.crowd;
+    const model = e.model;
+    if (!crowd || !model) return;
+    const { mesh, rig } = model;
+    const s = ((h * (kit.size ?? 1)) / TILE) / Math.max(0.05, mesh.max[1] - mesh.min[1]);
+    const motion = opts?.motion;
+    if (motion) motion.frames(rig, frames);
+    else {
+      frames.a = rig.frame(rig.has(clip) ? clip : 'idle', t, loop);
+      const from = opts?.from;
+      frames.b = from ? rig.frame(rig.has(from.clip) ? from.clip : 'idle', from.t, from.loop) : 0;
+      frames.k = from ? from.k : 0;
+    }
+    const c = opts?.tint ?? ([1, 1, 1] as const);
+    const lift = (kit.float ?? 0) * (ART_TILE / TILE) + (opts?.lift ?? 0) - (opts?.rise ?? 0) * (h / TILE);
+    crowd.put(x * UNIT, lift, y * UNIT, rot, s * (opts?.sx ?? 1), s * (opts?.sy ?? 1), frames.a, frames.b, frames.k, Math.min(opts?.alpha ?? 1, kit.ghost ?? 1), c[0], c[1], c[2], opts?.flash ?? 0);
+    this.used.add(crowd);
   }
 
   /** Whether a mount can be drawn yet. */

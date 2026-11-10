@@ -212,8 +212,8 @@ const foes: Record<string, EnemyDef> = {
 /* ------------------------------------------------------------------ bosses */
 
 const bosses: Record<string, BossDef> = {
-  // the kings' barrow-raven, grown huge on the barrow's light, a dead king's crown on its head: it devours the gallery's
-  // lamps and shelters in the dark they leave
+  // a drake blacked out by a thousand years of the barrow's devoured lamplight: it devours the gallery's lamps and
+  // shelters in the dark they leave
   gloomwing: {
     id: 'gloomwing',
     name: 'Gloomwing',
@@ -233,7 +233,7 @@ const bosses: Record<string, BossDef> = {
         // (sim/patterns/barrow-of-kings.ts) the gallery's lamps, and her feast on them
         enter: [{ id: 'barrow:dark', w: 1, cd: 0, p: { cut: 0.6 } }, { id: 'barrow:feast', w: 1, cd: 0, p: { count: 1, dark: 16 } }],
         patterns: [
-          // grave-dust shaken from her wings, and her dive on the hero
+          // gloom shaken from her wings, and her dive on the hero
           { id: 'orbs', w: 3, cd: 3.5, p: { count: 5, speed: 60, homing: 0.6, mul: 0.8, color: '#c8b8ff', r: 4 } },
           { id: 'charge', w: 2, cd: 5, p: { stun: 0.6 } },
           { id: 'barrow:feast', w: 3, cd: 10, p: { count: 1, dark: 16 } },
