@@ -317,6 +317,9 @@ function BossBar({ engine }: { engine: SigilEngine }) {
   const order = useRef<HTMLSpanElement>(null);
   const orderSay = useRef<HTMLElement>(null);
   const orderFill = useRef<HTMLElement>(null);
+  const ward = useRef<HTMLElement>(null);
+  const wardFill = useRef<HTMLElement>(null);
+  const wardTop = useRef(0);
   const shown = useRef(1);
   useFrame(engine, (w) => {
     const b = w.boss();
@@ -324,6 +327,11 @@ function BossBar({ engine }: { engine: SigilEngine }) {
     shown.current = Math.max(share, shown.current - 0.004);
     if (bar.current) bar.current.style.width = `${share * 100}%`;
     if (lag.current) lag.current.style.width = `${shown.current * 100}%`;
+    // a ward over the boss (Prior Vessant's will while he sings): its own bar, emptying as it is broken
+    const sh = b && b.shield > 0 ? b.shield : 0;
+    wardTop.current = sh > 0 ? Math.max(wardTop.current, sh) : 0;
+    if (ward.current) ward.current.hidden = sh <= 0;
+    if (wardFill.current && sh > 0) wardFill.current.style.width = `${(sh / wardTop.current) * 100}%`;
     // the order: called (it pulses until it holds), then holding (its time running out)
     const o = w.order;
     const el = order.current;
@@ -344,6 +352,9 @@ function BossBar({ engine }: { engine: SigilEngine }) {
       <span className="rb-boss-track">
         <i ref={lag} className="rb-boss-lag" />
         <i ref={bar} className="rb-boss-fill" />
+      </span>
+      <span ref={ward} className="rb-boss-ward" hidden>
+        <i ref={wardFill} />
       </span>
       <span ref={order} className="rb-boss-order" hidden>
         <b ref={orderSay} />

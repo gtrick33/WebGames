@@ -3,6 +3,7 @@ import { hurtPlayer } from '../combat';
 import { castRay, circleHitsWall, moveCircle, TILE, tileAt } from '../map';
 import type { Enemy, Field } from '../types';
 import type { World } from '../world';
+import { exposed, removeThing, spawnThing } from './arena';
 import type { PatternFn, PatternKit } from './kit';
 
 /**
@@ -871,6 +872,184 @@ const guard: PatternFn = (w, e, dt, k) => {
   } else if (pt.step === 3 && pt.t >= pt.data.t1! + pt.data.wind! + 0.35) k.end();
 };
 
+/* ------------------------------------------------------------ Prior Vessant, Chaplain of the Host */
+
+/**
+ * Prior Vessant (the Chapel of the Wardens, a field hospital until the Host broke in) sings the dead up again. Every
+ * one of his followers who falls in the chapel leaves a corpse on its floor, and Highwall's own fallen already lie
+ * there. Then he chants his dirge (`dirge`): his will gathers round him, a ward to break with blows while he sings,
+ * and if it holds to the dirge's end every corpse in the chapel stands up to fight for the Host, and he drinks a
+ * little life from each. Break his will first and the dirge chokes in his throat: he reels, open to every blow.
+ * And a corpse burned before he sings (struck until it crumbles) never rises.
+ *
+ * The corpses, and the dirge's will, outlive the pattern that sings it, so they are kept per boss here and run by a
+ * small ticker (World.after, once a step) for as long as the fight lasts.
+ */
+
+const DIRGE = '#9cff9c';
+const CORPSE = 'chapel-corpse';
+const RISEN = 'risen-defender';
+/** Never more than this many corpses at once (the oldest crumbles). */
+const MAX_CORPSES = 9;
+
+interface Chapel {
+  last: number;
+  corpses: Enemy[];
+  /** His followers in the chapel, as last seen (where each one falls is where its corpse lies). */
+  seen: Map<number, Enemy>;
+  /** The dirge: when it ends, his will when it began (and whether it has broken). */
+  until: number;
+  will: number;
+  heal: number;
+  fxT: number;
+  tick: number;
+}
+
+const CHAPELS = new WeakMap<Enemy, Chapel>();
+
+function chapelOf(w: World, e: Enemy): Chapel {
+  let s = CHAPELS.get(e);
+  if (!s) {
+    s = { last: w.time, corpses: [], seen: new Map(), until: 0, will: 0, heal: 0.03, fxT: 0, tick: 0 };
+    CHAPELS.set(e, s);
+    w.after(0, () => chapelTick(w, e));
+  }
+  return s;
+}
+
+/** A corpse laid on the chapel floor at (x, y) (the oldest crumbles past the limit). */
+function layCorpse(w: World, e: Enemy, s: Chapel, x: number, y: number): void {
+  if (!onFloor(w, e, x, y, 4)) return;
+  const c = spawnThing(w, e, CORPSE, x, y);
+  if (!c) return;
+  s.corpses.push(c);
+  s.corpses = s.corpses.filter((o) => standing(w, o));
+  while (s.corpses.length > MAX_CORPSES) removeThing(w, s.corpses.shift());
+}
+
+function chapelTick(w: World, e: Enemy): void {
+  const s = CHAPELS.get(e);
+  if (!s) return;
+  if (!fighting(w, e)) {
+    for (const c of s.corpses) removeThing(w, c);
+    CHAPELS.delete(e);
+    return;
+  }
+  const dt = Math.max(0, w.time - s.last);
+  s.last = w.time;
+  // every follower who falls in the chapel leaves a corpse (the risen crumble to ash: the dead don't rise twice)
+  for (const o of w.enemies) {
+    if (o.dead || o.boss || o.def.prop || o.room !== e.room || o.def.id === RISEN || s.seen.has(o.id)) continue;
+    s.seen.set(o.id, o);
+  }
+  for (const [id, o] of s.seen) {
+    if (!o.dead && w.enemies.includes(o)) continue;
+    s.seen.delete(id);
+    if (o.dead) layCorpse(w, e, s, o.x, o.y);
+  }
+  // a corpse burned: a wisp of holy fire where it lay
+  for (const c of s.corpses) if (c.dead) w.fxBurst(c.x, c.y - 4, '#ffe8a0', 12, 12);
+  s.corpses = s.corpses.filter((c) => standing(w, c));
+  if (s.until > 0) {
+    if (e.shield <= 0) {
+      // his will broken: the dirge chokes
+      s.until = 0;
+      w.text(e.x, e.y - e.r - 30, 'The dirge breaks!', '#fff2c0', true);
+      exposed(w, e, 3.2, 'Nngh... the song... the song is gone...', DIRGE);
+    } else if (w.time >= s.until) {
+      // sung to its end: the chapel's dead stand up
+      s.until = 0;
+      e.shield = 0;
+      let raised = 0;
+      for (const c of s.corpses) {
+        if (!standing(w, c)) continue;
+        const x = c.x;
+        const y = c.y;
+        removeThing(w, c);
+        const r = spawnThing(w, e, RISEN, x, y);
+        if (!r) continue;
+        raised++;
+        w.addFx({ kind: 'beam', x, y: y - 40, x2: x, y2: y, life: 0.4, size: 3, color: DIRGE });
+        w.fxBurst(x, y - 6, DIRGE, 14, 14);
+      }
+      s.corpses = [];
+      if (raised) {
+        const healed = Math.min(e.maxHp - e.hp, e.maxHp * s.heal * raised);
+        e.hp += healed;
+        if (healed > 0) w.text(e.x, e.y - e.r - 14, `+${Math.round(healed)}`, DIRGE, true);
+      }
+      w.text(e.x, e.y - e.r - 30, raised ? 'Rise, and serve the Host!' : 'Rise... rise! Why do you not rise?', DIRGE, true);
+      w.sfx('summon');
+      w.shake(3);
+    } else {
+      // the song: his will about him, green fire running to every corpse, the count
+      s.fxT -= dt;
+      if (s.fxT <= 0) {
+        s.fxT = 0.2;
+        w.addFx({ kind: 'ring', x: e.x, y: e.y, life: 0.3, size: e.r + 10 + (e.shield / Math.max(1, s.will)) * 12, color: DIRGE });
+        w.addFx({ kind: 'spark', x: e.x + (w.rand() - 0.5) * 18, y: e.y - 24 - w.rand() * 12, vx: 0, vy: -30, life: 0.5, size: 2, color: DIRGE });
+        for (const c of s.corpses) {
+          w.addFx({ kind: 'glow', x: c.x, y: c.y - 4, life: 0.25, size: 10, color: DIRGE });
+          if (w.rand() < 0.35) w.addFx({ kind: 'beam', x: e.x, y: e.y - 20, x2: c.x, y2: c.y - 4, life: 0.15, size: 1, color: DIRGE });
+        }
+      }
+      const left = Math.ceil(s.until - w.time);
+      if (left !== s.tick) {
+        s.tick = left;
+        w.text(e.x, e.y - e.r - 34, `${left}`, DIRGE, true);
+      }
+    }
+  }
+  w.after(0, () => chapelTick(w, e));
+}
+
+/**
+ * Highwall's fallen laid out on the chapel floor as the fight begins: `count` corpses, spread round the room. (Once a
+ * fight: entering it again lays nothing more.)
+ */
+const fallen: PatternFn = (w, e, _dt, k) => {
+  const s = chapelOf(w, e);
+  const box = roomBox(w, e);
+  const n = k.num('count', 4);
+  for (let i = 0; i < n * 4 && s.corpses.length < n; i++) {
+    const x = box.x0 + 30 + w.rand() * (box.x1 - box.x0 - 60);
+    const y = box.y0 + 30 + w.rand() * (box.y1 - box.y0 - 60);
+    if (dist(x, y, e.x, e.y) > 60 && dist(x, y, w.player.x, w.player.y) > 50 && s.corpses.every((c) => dist(c.x, c.y, x, y) > 50)) layCorpse(w, e, s, x, y);
+  }
+  k.end();
+};
+
+/**
+ * The dirge: for `time` s he sings, standing, behind a ward of will worth `will` of his health (broken, the dirge
+ * fails and he reels); sung to its end, every corpse in the chapel rises, and he takes back `heal` of his health for
+ * each.
+ */
+const dirge: PatternFn = (w, e, _dt, k) => {
+  const { pt } = k;
+  const s = chapelOf(w, e);
+  if (pt.step === 0) {
+    s.will = Math.round(e.maxHp * k.num('will', 0.06));
+    s.heal = k.num('heal', 0.03);
+    e.shield = s.will;
+    s.until = w.time + k.num('time', 5);
+    s.tick = 0;
+    w.text(e.x, e.y - e.r - 18, 'Hear me, you who have fallen...', DIRGE, true);
+    w.text(w.player.x, w.player.y - 30, s.corpses.length ? 'Break his dirge, or burn the dead!' : 'Break his dirge!', '#e0ffe0', false);
+    w.sfx('soul', 0.8);
+    w.addFx({ kind: 'glow', x: e.x, y: e.y - 10, life: 0.8, size: 28, color: DIRGE });
+    pt.step = 1;
+    return;
+  }
+  // he sings until it ends, one way or the other
+  if (s.until <= 0) k.end();
+};
+
+/** Prior Vessant's corpses and his dirge (for tests). */
+export const chapelOfPrior = (e: Enemy): { corpses: Enemy[]; singing: boolean } | null => {
+  const s = CHAPELS.get(e);
+  return s ? { corpses: s.corpses.filter((c) => !c.dead), singing: s.until > 0 } : null;
+};
+
 export const SIEGE_OF_HIGHWALL_PATTERNS: Record<string, PatternFn> = {
   'siege:ram': ram,
   'siege:pitch': pitch,
@@ -881,4 +1060,6 @@ export const SIEGE_OF_HIGHWALL_PATTERNS: Record<string, PatternFn> = {
   'siege:last-volley': lastVolley,
   'siege:deathcharge': deathcharge,
   'siege:guard': guard,
+  'siege:fallen': fallen,
+  'siege:dirge': dirge,
 };

@@ -47,6 +47,8 @@ export const FOE_LOOKS: Record<string, HeroLook> = {
   // Vizier Khepset of the Tomb: the dead king's crown of office in gold, a bone-white robe, a mantle of the sun's gold
   // Hallvor the Unthawed, first of the Sigil-wardens: frost on her skin and hair, rime-white plate, a cape the blue of deep ice
   'foe-hallvor': foe('#c4d8e4', '#f0f8ff', 'long', piece('helm', '#d4ecff', 'plate', 'rare'), piece('plate', '#8ab8dc', 'plate', 'rare'), piece('greaves', '#6a98c0', 'plate', 'rare'), { female: true, cape: '#2a5a8a', hands: piece('gloves', '#8ab8dc', 'plate'), feet: piece('boots', '#6a98c0', 'plate') }),
+  // Prior Vessant, once a prior of the Wardens, now the Host's chaplain: ash-grey skin, a grey beard, a prior's robe gone dark with the Host's dust
+  'foe-prior-vessant': foe('#a8a49c', '#c8c4bc', 'short', piece('hood', '#2a2a24'), piece('robe', '#4a4a3a', 'cloth', 'rare'), piece('trousers', '#2a2a22'), { cape: '#1e2a1e', beard: '#c8c4bc', hands: piece('gloves', '#3a3a2e', 'cloth'), feet: piece('shoes', '#2a2420', 'leather') }),
   'foe-vizier-khepset': foe('#b89870', '#1a1410', 'short', piece('crown', '#ffd27a', 'plate', 'epic'), piece('robe', '#efe4c8', 'cloth', 'epic'), piece('trousers', '#c8b890'), { cape: '#d8a830', beard: '#1a1410', hands: piece('gloves', '#d8a830', 'cloth'), feet: piece('shoes', '#c8a050', 'leather') }),
   // a brother of the plague: a stained cleric's robe
   'foe-brother-pustule': foe('#c8b890', '#5a5a3a', 'short', piece('hood', '#6a6a3a'), piece('robe', '#7a7a4a', 'cloth', 'rare'), piece('trousers', '#4a4a2a')),

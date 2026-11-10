@@ -284,6 +284,7 @@ const BOSS_AURA: Record<string, BossAura> = {
   'hallvor-the-unthawed': MOTES('#9ad8ff', '#ffffff'),
   'the-rime-wyrm': FALLING('#a9dcff', '#ffffff'),
   'the-siege-breaker': EMBERS('#ff8a3a', '#ffd27a'),
+  'prior-vessant': GLOOM('#2a3a2a', '#9cff9c'),
   'general-morvain': MOTES('#ffd27a', '#ffffff'),
   'rotwood-colossus': MOTES('#a8d84a', '#f0ffb0'),
   'the-withered-queen': GLOOM('#4a6a2a', '#d8f0a0'),

@@ -135,6 +135,10 @@ put('weeping-specter tear-wraith', { k: 'ghost', tint: '#bfd8f0', float: 0.45, g
 // the Chapel Crypt's boss fights (sim/patterns/crypt.ts): the Matron of the Ossuary, a pale old witch of the dead, and Morgrave's soul-shards
 // the first of the Sigil-wardens, frozen at her post: rime-white plate, a helm of ice, the halberd of the watch
 put('hallvor-the-unthawed', { k: 'paladin', look: 'foe-hallvor', held: { kind: 'halberd', tint: '#d8f2ff' }, size: 1.38, atk: 'chop2' });
+// the Host's chaplain in Highwall's chapel: a prior's grey robe and hood, the censer-staff glowing with his dirge
+put('prior-vessant', { k: 'sk_necro', look: 'foe-prior-vessant', held: { kind: 'staff', tint: '#9cff9c' }, size: 1.3, ...CASTER });
+// Highwall's own dead, sung up again: grey-green, in what is left of their mail
+put('risen-defender', { k: 'sk_guard', tint: '#a8c0a0' });
 put('coffin-matron', { k: 'witch', look: 'foe-coffin-matron', held: { kind: 'staff' }, size: 1.2, float: 0.15, ...CASTER });
 put('morgrave-soul', { k: 'ghost', tint: '#9cff9c', float: 0.6, size: 0.7, ghost: 0.7, walk: 'skelidle' });
 put('the-weeping-lord the-tearborn', { k: 'ghost', tint: '#bfd8f0', float: 0.45, size: 1.25, ghost: 0.82, walk: 'skelidle' });

@@ -1551,6 +1551,25 @@
 .rb-boss-fill {
   background: linear-gradient(#ff6ae0, #c01a8a);
 }
+/* a ward over the boss (ui/GameScreen.tsx BossBar: its shield), a silver bar under its health that empties as it breaks */
+.rb-boss-ward {
+  position: relative;
+  width: 70%;
+  height: 8px;
+  margin-top: 3px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 4px;
+  background: #1a1a22;
+  overflow: hidden;
+}
+.rb-boss-ward[hidden] {
+  display: none;
+}
+.rb-boss-ward i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(#f4f8ff, #a8b4c8);
+}
 /* a boss's standing order (ui/GameScreen.tsx BossBar, World.order): pulsing while it is called, its time running out
    while it holds; ice blue to hold still, frost white to keep moving */
 .rb-boss-order {

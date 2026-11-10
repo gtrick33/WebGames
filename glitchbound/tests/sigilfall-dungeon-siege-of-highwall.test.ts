@@ -1,7 +1,9 @@
 /**
  * The Siege of Highwall (levels 43-46), played through by the bot (tests/sigilfall-bot.ts): every class
  * clears it a level above the dungeon's with the gear a player would have by then, the Siege-Breaker
- * first and General Morvain last, without getting stuck. And the bosses' own mechanics: the ram brings
+ * first, Prior Vessant in the chapel and General Morvain last, without getting stuck. And the bosses'
+ * own mechanics: the Prior's dirge raises the chapel's corpses unless his will is broken (or the dead
+ * burned first), the ram brings
  * a wall down and sticks in it, the crew's torches set the pitch alight, Morvain's banner wards his
  * troops until it is broken, his squads come through the far gate, his guard answers a wound, the last
  * volley spares only the ground by his banner (or by him), and what the fights leave goes with them.
@@ -12,6 +14,7 @@ import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { TILE } from '../src/games/sigilfall/sim/map';
+import { chapelOfPrior } from '../src/games/sigilfall/sim/patterns/siege-of-highwall';
 import type { Enemy } from '../src/games/sigilfall/sim/types';
 import type { World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
@@ -30,14 +33,14 @@ function nextRoom(w: World): { x: number; y: number } | null {
 
 describe('sigilfall: the Siege of Highwall', () => {
   for (const cls of CLASS_IDS) {
-    it(`${cls}: clears the Siege of Highwall at level ${LEVEL}`, { timeout: 180_000 }, () => {
+    it(`${cls}: clears the Siege of Highwall at level ${LEVEL}, three bosses in turn`, { timeout: 240_000 }, () => {
       const { w, r } = clearsWithRetry((seed) => {
         const w = newWorld('siege-of-highwall', readyHero(cls as ClassId, LEVEL, gearAt(LEVEL)), seed);
         return { w, r: play(w, { seconds: 1500, done: (x) => x.cleared, goal: nextRoom }) };
       });
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
-      expect(r.bossesDown).toEqual(['the-siege-breaker', 'general-morvain']);
+      expect(r.bossesDown).toEqual(['the-siege-breaker', 'prior-vessant', 'general-morvain']);
       expect(r.deaths).toBeLessThanOrEqual(HARD_DEATHS);
       // the act's last fight is a real one, three phases long
       expect(r.bossTimes['general-morvain']).toBeGreaterThan(20);
@@ -78,6 +81,68 @@ describe('sigilfall: the Siege of Highwall', () => {
     b.boss!.queue = [{ id: id as PatternUse['id'], w: 1, cd: 0, p }];
     b.boss!.rest = 0;
   };
+
+  const risen = (w: World): Enemy[] => w.enemies.filter((e) => !e.dead && e.def.id === 'risen-defender');
+
+  it('Prior Vessant’s dirge raises every corpse in the chapel and mends him, unless his will is broken first', () => {
+    const { w, b, hold } = arena('prior-vessant');
+    order(b, 'siege:fallen', { count: 3 });
+    run(w, 0.3, hold);
+    expect(chapelOfPrior(b)!.corpses).toHaveLength(3);
+    // sung to its end: three risen, and a little of his health back for each
+    b.hp = b.maxHp * 0.8;
+    order(b, 'siege:dirge', { time: 2, will: 0.06, heal: 0.03 });
+    run(w, 0.3, hold);
+    expect(chapelOfPrior(b)!.singing).toBe(true);
+    expect(b.shield).toBeCloseTo(b.maxHp * 0.06, -1);
+    run(w, 2, hold);
+    expect(chapelOfPrior(b)!.singing).toBe(false);
+    expect(chapelOfPrior(b)!.corpses).toHaveLength(0);
+    expect(risen(w)).toHaveLength(3);
+    expect(b.hp).toBeGreaterThan(b.maxHp * 0.86);
+    // again, and his will broken while he sings: he reels, and the dead stay down
+    // (once they are up: nothing can be struck while it is still rising)
+    run(w, 1, hold);
+    for (const r of risen(w)) hitEnemy(w, r, 99999, 'physical', { depth: 1 });
+    run(w, 1, hold);
+    order(b, 'siege:fallen', { count: 2 });
+    run(w, 0.3, hold);
+    order(b, 'siege:dirge', { time: 3, will: 0.06 });
+    run(w, 0.3, hold);
+    // (a ward nearly gone, and a blow)
+    b.shield = 5;
+    hitEnemy(w, b, 10, 'physical', { depth: 1 });
+    run(w, 0.2, hold);
+    expect(chapelOfPrior(b)!.singing).toBe(false);
+    expect(b.boss!.dazed).toBeGreaterThan(2);
+    run(w, 3, hold);
+    expect(chapelOfPrior(b)!.corpses).toHaveLength(2);
+    expect(risen(w)).toHaveLength(0);
+  });
+
+  it('the Prior’s followers who fall in the chapel leave corpses, and a corpse burned before he sings never rises', () => {
+    const { w, b, hold } = arena('prior-vessant');
+    // (the fight begins as it always does: the chapel's dead laid out, none this time)
+    order(b, 'siege:fallen', { count: 0 });
+    run(w, 0.1, hold);
+    // (one of his ghouls, struck down on the chapel floor beside him)
+    w.spawnAdd('carrion-ghoul', b.x - 40, b.y, b.room);
+    const ghoul = w.enemies[w.enemies.length - 1]!;
+    run(w, 0.7, hold);
+    hitEnemy(w, ghoul, 99999, 'physical', { depth: 1 });
+    run(w, 0.3, hold);
+    const corpses = chapelOfPrior(b)!.corpses;
+    expect(corpses).toHaveLength(1);
+    expect(Math.hypot(corpses[0]!.x - ghoul.x, corpses[0]!.y - ghoul.y)).toBeLessThan(4);
+    // burned
+    run(w, 1, hold);
+    hitEnemy(w, corpses[0]!, 99999, 'fire', { depth: 1 });
+    run(w, 0.3, hold);
+    expect(chapelOfPrior(b)!.corpses).toHaveLength(0);
+    order(b, 'siege:dirge', { time: 1 });
+    run(w, 1.6, hold);
+    expect(risen(w)).toHaveLength(0);
+  });
 
   it('the Siege-Breaker’s ram brings the wall down where it strikes, and sticks there', () => {
     const { w, b, hold, at } = arena('the-siege-breaker');
