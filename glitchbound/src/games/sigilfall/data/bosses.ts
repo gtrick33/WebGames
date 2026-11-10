@@ -466,7 +466,7 @@ export const BOSSES: Record<string, BossDef> = {
     sprite: 'clatterclaw',
     hp: 3600,
     dmg: 27,
-    radius: 16,
+    radius: 18,
     xp: 700,
     gold: [110, 160],
     phases: [

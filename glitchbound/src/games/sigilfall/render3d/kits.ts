@@ -28,6 +28,13 @@ export interface Kit {
   /** What a person from the wardrobe holds (render3d/dress.ts WEAPONS), and a shield. */
   held?: { kind: string; tint?: string };
   shield?: boolean;
+  /**
+   * What a great beast wears or carries (a boss's barding, trophies, a shell): props fixed to it, turned with it. Each
+   * is placed `x` to its right, `y` up and `z` forward and sized `h` long (its longest side), all as shares of the
+   * beast's own height;
+   * `turn` turns it about its own upright (radians), `tipX`/`tipZ` tip it forward and sideways.
+   */
+  gear?: { m: string; x?: number; y: number; z?: number; h: number; tint?: string; turn?: number; tipX?: number; tipZ?: number }[];
 }
 
 const ASH = '#b9b4bf';
@@ -133,7 +140,23 @@ put('hound grave-hound barrow-hound pale-hound grave-wolf', { k: 'a_wolf', tint:
 put('blight-wolf', { k: 'a_wolf', tint: ROT, gain: 1.4 });
 put('magma-hound', { k: 'a_wolf', tint: FIRE, gain: 1.4 });
 // Gallows Keep's war-hound: a scarred brute twice a wolf's size
-put('gnasher', { k: 'a_wolf', tint: '#6a5442', size: 1.8, gain: 1.6 });
+put('gnasher', {
+  k: 'a_wolf',
+  tint: '#e4e0e8',
+  gain: 1.1,
+  size: 2.3,
+  gear: [
+    // (the wolf stands 1 tall and runs from 1.1 behind to 0.95 ahead: its neck about 0.5 ahead, 0.7 up)
+    // a great ash-pale war-wolf in the gang's black iron: a spiked collar, pauldrons, the gang's triple banner
+    // raised from his back, trophies hung at his flanks
+    { m: 'banner_triple_red', y: 0.5, z: -0.3, h: 0.85 },
+    { m: 'w_shield_spikes', y: 0.42, z: 0.6, h: 0.4, tint: '#5a5660' },
+    { m: 'BlackKnight_ShoulderLeft', x: 0.19, y: 0.46, z: 0.32, h: 0.32, tint: '#5a5660' },
+    { m: 'BlackKnight_ShoulderRight', x: -0.19, y: 0.46, z: 0.32, h: 0.32, tint: '#5a5660' },
+    { m: 'skull', x: 0.24, y: 0.28, z: 0.05, h: 0.17, turn: Math.PI / 2, tint: BONE },
+    { m: 'skull', x: -0.24, y: 0.28, z: -0.05, h: 0.17, turn: -Math.PI / 2, tint: BONE },
+  ],
+});
 put('rime-hound ice-wolf', { k: 'a_husky', tint: ICE });
 put('bone-drake', { k: 'wyrm', tint: BONE, float: 0.5, size: 1.15 });
 put('ash-drake', { k: 'wyrm', tint: ASH, float: 0.5 });
@@ -205,7 +228,26 @@ put('gloam-lurker', { k: 'spider', tint: '#7a7a9a', size: 0.86 });
 put('tide-lurker', { k: 'crab', tint: SEA, size: 0.86 });
 put('crab', { k: 'crab', size: 0.8 });
 // the shore crabs' matriarch, shell crusted with barnacles
-put('clatterclaw', { k: 'crab', tint: '#c8704a', size: 1.6 });
+put('clatterclaw', {
+  k: 'crab',
+  tint: '#a8402e',
+  gain: 1.1,
+  size: 1.9,
+  gear: [
+    // (the crab stands 1 tall and is three times as wide)
+    // the bones of a leviathan grown into her shell: its ribs arched over her back, its skull behind, sockets up,
+    // crusted with barnacles and crowned with coral, kelp hanging from the ribs
+    { m: 'ribcage', y: 0.3, z: -0.15, h: 1.35, tint: '#e0d6c0' },
+    { m: 'skull', y: 0.25, z: -0.75, h: 0.85, turn: Math.PI, tipX: -0.6, tint: '#d8ccb0' },
+    { m: 'mushroom_redTall', x: 0.3, y: 1, z: -0.3, h: 0.55, tint: '#ff7a5a' },
+    { m: 'mushroom_redTall', x: -0.35, y: 0.95, z: -0.05, h: 0.45, tint: '#ff9a7a' },
+    { m: 'mushroom_redTall', x: 0.05, y: 1.1, z: 0.05, h: 0.4, tint: '#ff6a4a' },
+    { m: 'Rock_1_A', x: -0.25, y: 0.9, z: -0.45, h: 0.32, tint: '#8a9a98' },
+    { m: 'Rock_1_A', x: 0.4, y: 0.75, z: 0.1, h: 0.26, tint: '#7a8a88' },
+    { m: 'hanging_moss', x: 0.55, y: 0.3, z: -0.1, h: 0.9, tint: '#3a8a5a' },
+    { m: 'hanging_moss', x: -0.55, y: 0.3, z: -0.25, h: 0.85, tint: '#3a8a5a' },
+  ],
+});
 put('sand-scorpion', { k: 'scorpion' });
 // (a barkling: a knot of living wood with bark for a shell, not a beetle of another art set)
 put('beetle', { k: 'treant', tint: BARK, size: 0.6, ...SMASH });

@@ -811,7 +811,7 @@ export const FOE_ART: Record<string, Art> = {
   },
   /* Gallows Keep's fights (sim/patterns/gallows.ts): Gnasher the war-hound, and a captive's cage over the fire */
   gnasher: {
-    pal: { d: '#3a2a1e', G: '#6a5442', l: '#a08060', e: '#ff5a3a', k: '#1a1226', w: '#f2ead8', s: '#8a8a96', S: '#4a4a58' },
+    pal: { d: '#6a6670', G: '#d8d4dc', l: '#f4f2f8', e: '#ff3a2a', k: '#1a1226', w: '#f2ead8', s: '#4a4650', S: '#2a2830' },
     frames: [
       [
         '...................d.d....',

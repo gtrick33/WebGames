@@ -331,6 +331,12 @@ export class Cast {
     const sin = Math.sin(rot);
     crowd.put(x * UNIT - (mx * cos + mz * sin), lift - (opts?.rise ?? 0) * (h / TILE), y * UNIT - (mz * cos - mx * sin), rot, s * (opts?.sx ?? 1), s * (opts?.sy ?? 1), frames.a, frames.b, frames.k, Math.min(opts?.alpha ?? 1, kit.ghost ?? 1), r, g, b, opts?.flash ?? 0);
     this.used.add(crowd);
+    // what it wears (not while it fades out, or as it rises from the ground)
+    if (kit.gear && (opts?.alpha ?? 1) > 0.6 && !(opts?.rise ?? 0)) {
+      // (shares of its real height: a long beast is sized by its length, but its gear by how tall it stands)
+      const H = (mesh.max[1] - mesh.min[1]) * s;
+      for (const g of kit.gear) this.worn(g, x * UNIT, lift, y * UNIT, rot, H, opts?.flash ?? 0);
+    }
     if (kit.top) {
       const e2 = this.entry(kit.top.k, { k: kit.top.k });
       if (e2.crowd && e2.rig && e2.mesh) {
@@ -463,6 +469,33 @@ export class Cast {
     }
     const k = (h / TILE) / tall;
     s.put(x * UNIT, lift, y * UNIT, rot, k, k, k, tint?.[0] ?? 1, tint?.[1] ?? 1, tint?.[2] ?? 1, 0);
+  }
+
+  /** A piece of a beast's gear (Kit.gear), at the beast at (`x`, `z`) facing `rot`, `H` tall, in scene units. */
+  private worn(g: NonNullable<Kit['gear']>[number], x: number, lift: number, z: number, rot: number, H: number, flash: number): void {
+    const s = this.propStand(g.m);
+    if (!s) return;
+    // (a piece is fitted by its longest side, a bone lying flat as long as it is said to be; and it stands on its own
+    // middle, whatever its origin: a knight's pauldron is modeled where a knight's shoulder would be)
+    const geo = s.mesh.geometry as THREE.BufferGeometry & { _long?: number; _foot?: [number, number, number] };
+    if (geo._long === undefined) {
+      geo.computeBoundingBox();
+      const b = geo.boundingBox!;
+      geo._long = Math.max(0.01, b.max.x - b.min.x, b.max.y - b.min.y, b.max.z - b.min.z);
+      geo._foot = [(b.min.x + b.max.x) / 2, b.min.y, (b.min.z + b.max.z) / 2];
+    }
+    const k = (g.h * H) / geo._long;
+    const [fx, fy, fz] = geo._foot!;
+    const turn = rot + (g.turn ?? 0);
+    const tc = Math.cos(turn);
+    const ts = Math.sin(turn);
+    const side = (g.x ?? 0) * H;
+    const fwd = (g.z ?? 0) * H;
+    const cos = Math.cos(rot);
+    const sin = Math.sin(rot);
+    const c = g.tint ? hexRgb(g.tint) : ([1, 1, 1] as const);
+    const lit = 1 + flash * 0.6;
+    s.put(x + side * cos + fwd * sin - (fx * tc + fz * ts) * k, lift + g.y * H - fy * k, z - side * sin + fwd * cos - (fz * tc - fx * ts) * k, turn, k, k, k, c[0] * lit, c[1] * lit, c[2] * lit, 0, g.tipX ?? 0, g.tipZ ?? 0);
   }
 
   /** A model in flight, `k` times its size, turned any way: an arrow, a skull, a thrown shield. */
