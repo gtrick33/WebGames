@@ -43,7 +43,7 @@ export const K = {
 } as const;
 export type K = (typeof K)[keyof typeof K];
 
-const TERRAIN: Record<string, K> = {
+export const TERRAIN: Record<string, K> = {
   '.': K.Floor,
   ',': K.Deco,
   '=': K.Path,

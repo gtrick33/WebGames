@@ -14,7 +14,7 @@ import type { RegionId } from '../src/games/sigilfall/data/types';
 import { questRegion } from '../src/games/sigilfall/progress/character';
 import { questSteps } from '../src/games/sigilfall/progress/handin';
 import { applyPreset, PRESETS } from '../src/games/sigilfall/progress/presets';
-import { K, TILE } from '../src/games/sigilfall/sim/map';
+import { K, TERRAIN, TILE } from '../src/games/sigilfall/sim/map';
 import { npcRegion } from '../src/games/sigilfall/sim/routes';
 import { holds } from '../src/games/sigilfall/sim/story';
 import type { World } from '../src/games/sigilfall/sim/world';
@@ -131,6 +131,21 @@ describe('Sigilfall: the polish pass', () => {
         // (from two rows behind the wall, where it rises)
         for (let y = ty - 11; y <= ty - 2; y++) for (let x = tx - 6; x <= tx + 6; x++) if (y >= 0 && x >= 0 && x < w.map.w && !w.map.solid[y * w.map.w + x]) open++;
         if (open) faults.push(`${r.id}: ${p.prop} at ${tx},${ty} rises over ${open} open tiles`);
+      }
+    }
+    expect(faults).toEqual([]);
+  });
+
+  it('a dungeon’s marker letters never stand for ground as well (a cracked wall, a door), and each boss is placed once', () => {
+    const faults: string[] = [];
+    for (const r of Object.values(REGIONS)) {
+      if (r.kind !== 'dungeon' || isRetired(r.id)) continue;
+      const counts = new Map<string, number>();
+      for (const row of r.map) for (const c of row) counts.set(c, (counts.get(c) ?? 0) + 1);
+      for (const [c, m] of Object.entries(r.markers)) {
+        // (a marker wins over the ground its letter would be: a cracked wall drawn with it is gone)
+        if (TERRAIN[c] !== undefined) faults.push(`${r.id}: the marker '${c}' is also ground`);
+        if (m.kind === 'boss' && counts.get(c) !== 1) faults.push(`${r.id}: ${m.boss} is placed ${counts.get(c) ?? 0} times`);
       }
     }
     expect(faults).toEqual([]);

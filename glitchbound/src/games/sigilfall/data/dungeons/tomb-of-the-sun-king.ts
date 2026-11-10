@@ -27,7 +27,7 @@ const MAP = [
   '###nnnnnnnnnnnnnnnnnn#####mmymmmmmmmmmmmmmmmmmmmmmmmmmmymm####################',
   '###nnnnnnnnnnnnnnnnnnD...Dmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm####################',
   '###nnynnnnnnnnnnnnnnnD...Dmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm####################',
-  '###nnnnnnnnZnnnnnnnnnD...Dmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm####################',
+  '###nnnnnnnnVnnnnnnnnnD...Dmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm####################',
   '###nnnnnnnnnnnnnnnnnn#####mmmmmmjmmmmmjmmmmmmjmmmmmjmmmmmm####################',
   '###nnnnnnnnnnnnnnnynn#####QmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmQ####################',
   '###nnnnnnnnnnnnnnnnnn#####mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm####################',
@@ -87,7 +87,7 @@ const markers: Record<string, Marker> = {
   W: { kind: 'boss', boss: 'the-sand-warden' },
   K: { kind: 'boss', boss: 'the-sun-king' },
   // the Hall of the Sun-Disc: Vizier Khepset and his sand-glass (sim/patterns/tomb-of-the-sun-king.ts)
-  Z: { kind: 'boss', boss: 'vizier-khepset' },
+  V: { kind: 'boss', boss: 'vizier-khepset' },
   x: { kind: 'prop', prop: 'crate', solid: true },
   o: { kind: 'prop', prop: 'barrel', solid: true },
   y: { kind: 'prop', prop: 'bones' },
