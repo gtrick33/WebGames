@@ -59,6 +59,8 @@ export function summonPet(w: World, id: string, count: number, dur: number, skil
 
 /** Seconds one of the story's people takes to fade out as they go (a summon goes in a puff instead). */
 export const STORY_FADE = 1.2;
+/** Seconds one of the story's people takes to come in where they are set down (render: a fade). */
+export const STORY_ARRIVE = 0.6;
 
 /**
  * Puts a story pet (a companion, a door to hold, a villager to lead out) at a place; it stays until the

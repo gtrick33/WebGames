@@ -42,7 +42,8 @@ export const HOLLOWMERE = wildRegion(
     ],
     pois: [
       // the necropolis on the water, where the Lich makes the Hallow King's dead
-      { at: [0.6, 0.3], r: 14, kind: 'ruin', level: 55, packs: [['necropolis-guard', 'necropolis-guard', 'lich-acolyte'], ['bone-weaver', 'necropolis-guard'], ['lich-acolyte', 'lich-acolyte', 'drowned-dead']], rare: 'the-lich-of-hollowmere', spot: { id: 'the-necropolis', name: 'The Necropolis' }, landmark: { style: 'temple', w: 8, h: 6, name: 'The Necropolis' }, chest: 'epic' },
+      // the necropolis falls quiet when its Lich falls: his acolytes go with him
+      { at: [0.6, 0.3], r: 14, kind: 'ruin', level: 55, packs: [['necropolis-guard', 'necropolis-guard', 'lich-acolyte'], ['bone-weaver', 'necropolis-guard'], ['lich-acolyte', 'lich-acolyte', 'drowned-dead']], rare: 'the-lich-of-hollowmere', spot: { id: 'the-necropolis', name: 'The Necropolis' }, landmark: { style: 'temple', w: 8, h: 6, name: 'The Necropolis' }, chest: 'epic', when: until('the-necropolis') },
       // the drowned town, its bell tower still standing in the water
       { at: [0.18, 0.4], r: 11, kind: 'ruin', level: 54, packs: [['drowned-dead', 'drowned-dead', 'lake-wraith'], ['lake-wraith', 'lake-wraith', 'drowned-dead'], ['mere-serpent', 'drowned-dead']], elite: true, rare: 'the-bell-ringer', spot: { id: 'drowned-town', name: 'Drowned Elsmere' }, landmark: { style: 'tower', w: 4, h: 5, name: 'Elsmere Bell Tower' }, chest: 'rare' },
       // where the black barges land the dead for the weavers

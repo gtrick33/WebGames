@@ -7,7 +7,7 @@ import { npcLookOf } from '../render/sprites';
 import { bossHidden } from '../sim/boss';
 import { hasStatus } from '../sim/combat';
 import { TILE } from '../sim/map';
-import { STORY_FADE } from '../sim/pets';
+import { STORY_ARRIVE, STORY_FADE } from '../sim/pets';
 import { SUMMON_TIME, type World } from '../sim/world';
 import type { Enemy, Ghost, NpcActor, Pet } from '../sim/types';
 import { heightFromRadius, Motion, PERSON_H, type Cast, type ClipFade, type Colossus } from './cast';
@@ -156,7 +156,7 @@ export class WorldCast {
       else if (d.kind === 'orb') cast.prop('w_potion_small_red', d.x, d.y, 8, time, hop);
       else if (d.kind === 'shard') cast.prop('stone_tallA', d.x, d.y, 11, time * 1.5, hop, [1.2, 0.5, 1.2]);
     }
-    for (const pet of w.pets) this.syncPet(cast, pet, dt, time);
+    for (const pet of w.pets) this.syncPet(cast, pet, w, dt, time);
     for (const gh of w.coop?.ghosts ?? []) if (gh.seen > 0) this.syncGhost(cast, gh, dt, time);
   }
 
@@ -366,7 +366,7 @@ export class WorldCast {
     void w;
   }
 
-  private syncPet(cast: Cast, pet: Pet, dt: number, time: number): void {
+  private syncPet(cast: Cast, pet: Pet, w: World, dt: number, time: number): void {
     const look = pet.def.look;
     if (pet.def.role === 'ward' && WARD_LOOKS.has(look ?? 'door')) {
       const ward = WARDS[look ?? 'door'];
@@ -390,7 +390,9 @@ export class WorldCast {
     s.y += (pet.y - s.y) * follow;
     if (moving) s.turn = damp(s.turn, shortest(s.turn, Math.atan2(pet.vx, pet.vy)), 10, dt);
     else if (pet.actT > 0) s.turn = damp(s.turn, shortest(s.turn, turnOf(pet.face)), 12, dt);
-    const fade = pet.story ? Math.min(1, pet.deathT > 0 ? 1 - pet.deathT / STORY_FADE : 1) : 1;
+    // the story's people come in as they go out, with a fade (a companion stepping up to speak, the led, the arriving)
+    const arrive = pet.story && pet.born !== undefined ? Math.min(1, Math.max(0, (w.time - pet.born) / STORY_ARRIVE)) : 1;
+    const fade = pet.story ? Math.min(arrive, pet.deathT > 0 ? 1 - pet.deathT / STORY_FADE : 1) : 1;
     const alpha = pet.dead ? Math.max(0, 1 - pet.deathT / 0.6) : fade;
     if (alpha <= 0) return;
     if (pet.dead) s.m.set('die', false);

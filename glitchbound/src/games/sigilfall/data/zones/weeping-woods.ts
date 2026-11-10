@@ -1,4 +1,4 @@
-import { after, until } from '../cond';
+import { after, all, until } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
@@ -116,7 +116,8 @@ export const WEEPING_WOODS = wildRegion(
         chest: 'common',
       },
       // Lark's Hollow: Queen Ysane's lodge, frozen in the night Vaelmoor died
-      { at: [0.62, 0.42], r: 9, kind: 'ruin', level: 49, packs: [['weeping-specter', 'weeping-specter'], ['mourning-willow', 'weeping-specter']], spot: { id: 'larks-hollow', name: 'Lark’s Hollow' }, landmark: { style: 'hall', w: 5, h: 4, name: 'The Queen’s Lodge' }, when: until('wood-the-children') },
+      // the specters keep the hollow until the hero is sent into it; then it is still, frozen in its hour
+      { at: [0.62, 0.42], r: 9, kind: 'ruin', level: 49, packs: [['weeping-specter', 'weeping-specter'], ['mourning-willow', 'weeping-specter']], spot: { id: 'larks-hollow', name: 'Lark’s Hollow' }, landmark: { style: 'hall', w: 5, h: 4, name: 'The Queen’s Lodge' }, when: until('the-wardens-rest') },
       // the wolfhounds' barrow north of town, and the Lord's empty grave
       {
         at: [0.75, 0.22],
@@ -141,7 +142,7 @@ export const WEEPING_WOODS = wildRegion(
       // Orren in Candlewick's square, from the day he comes through the Gate
       { near: 'hub', dx: -3, dy: 3, marker: { kind: 'npc', npc: 'orren-in-vaelmoor' }, when: after('the-gloam-gate') },
       // Lark's Hollow: the queen at the lodge door, the children out in the frozen wood
-      { near: 'larks-hollow', dx: 0, dy: 2, marker: { kind: 'npc', npc: 'echo-of-ysane' }, when: until('wood-the-children') },
+      { near: 'larks-hollow', dx: 0, dy: 2, marker: { kind: 'npc', npc: 'echo-of-ysane' }, when: all(after('the-wardens-rest'), until('wood-the-children')) },
       { near: 'larks-hollow', dx: 0, dy: 3, marker: { kind: 'place', id: 'hollow-door' } },
       { near: 'larks-hollow', dx: -12, dy: 8, marker: { kind: 'place', id: 'hollow-wood' } },
       // (the lanterns the children took out with them, still burning: what the camera finds in the dark)
