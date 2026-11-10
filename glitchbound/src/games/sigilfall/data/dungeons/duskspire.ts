@@ -312,12 +312,14 @@ const LADY_CENDRE: BossDef = {
       // the hall's dead rise to keep her vigil as the hero comes in
       enter: [{ id: 'dusk:vigil', w: 1, cd: 14, p: { count: 4, creep: 44, mul: 1.2 } }],
       patterns: [
-        // the souls she has mourned, sent seeking the hero, and grave-hands from the floor
-        { id: 'soulVolley', w: 3, cd: 5, p: { count: 5, waves: 2 } },
-        { id: 'graveGrasp', w: 2, cd: 6, p: { count: 4 } },
+        // her wail rolling out through the hall, a gap in it to slip through
+        { id: 'spell:ring', w: 3, cd: 5, p: { look: 'shadow', color: '#c08aff', type: 'shadow', count: 14, gap: 3, waves: 2, speed: 85, mul: 0.8 } },
+        // black mourning-veils lobbed round the hero: the floor under them grieves
+        { id: 'spell:pools', w: 2, cd: 6, p: { pool: 'shadow', color: '#c08aff', type: 'shadow', st: 'chill', stDur: 1.2, stPow: 0.3, count: 3, rr: 22, life: 5, mul: 0.8 } },
         // her mourning-staff swung
         { id: 'cleave', w: 2, cd: 3.5, p: { r: 50, arc: 1.05, wind: 0.7, lunge: 18, mul: 1.35 } },
-        { id: 'teleport', w: 1, cd: 9 },
+        // she is gone in ash, and back
+        { id: 'spell:blink', w: 1, cd: 9, p: { color: '#c08aff', rr: 30 } },
         { id: 'dusk:vigil', w: 3, cd: 14, p: { count: 3, creep: 44, mul: 1.2 } },
       ],
     },
@@ -331,11 +333,13 @@ const LADY_CENDRE: BossDef = {
         { id: 'dusk:vigil', w: 1, cd: 12, p: { count: 6, creep: 52, mul: 1.25 } },
       ],
       patterns: [
-        { id: 'soulVolley', w: 3, cd: 4.5, p: { count: 7, waves: 3 } },
-        { id: 'graveGrasp', w: 2, cd: 5, p: { count: 6 } },
+        // her wail rolling out through the hall, a gap in it to slip through
+        { id: 'spell:ring', w: 3, cd: 4.5, p: { look: 'shadow', color: '#c08aff', type: 'shadow', count: 18, gap: 3, waves: 3, speed: 90, mul: 0.8 } },
+        // black mourning-veils lobbed round the hero: the floor under them grieves
+        { id: 'spell:pools', w: 2, cd: 5, p: { pool: 'shadow', color: '#c08aff', type: 'shadow', st: 'chill', stDur: 1.2, stPow: 0.3, count: 3, rr: 22, life: 5, mul: 0.8 } },
         { id: 'cleave', w: 2, cd: 3, p: { swings: 2, r: 50, arc: 1.05, wind: 0.6, gap: 0.14, lunge: 20, mul: 1.3 } },
-        // and she is behind you before you know it
-        { id: 'teleport', w: 2, cd: 7 },
+        // she is gone in ash, and back behind you
+        { id: 'spell:blink', w: 2, cd: 7, p: { color: '#c08aff', behind: 1, rr: 30 } },
         { id: 'dusk:vigil', w: 3, cd: 12, p: { count: 4, creep: 52, mul: 1.25 } },
       ],
     },
@@ -409,12 +413,14 @@ const VAELOR: BossDef = {
       // the Hollowing begins the moment you stand before him
       enter: [{ id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.005 } }],
       patterns: [
-        // blade waves sweep the hall from his throne: find the gap
-        { id: 'tide', w: 3, cd: 6, p: { speed: 95, gap: 3, form: 1, waves: 2, gapT: 1.1, mul: 1.1, color: '#b07aff' } },
+        // a wall of grave-frost marching across the throne room
+        { id: 'spell:wall', w: 3, cd: 6, p: { look: 'frost', color: '#a8e0ff', type: 'frost', speed: 70, gaps: 2, mul: 0.9 } },
         // chains of souls bind you to a pillar until you break them
         { id: 'dusk:chains', w: 2, cd: 14, p: { count: 1, r: 50, time: 9 } },
-        { id: 'orbs', w: 3, cd: 4.5, p: { count: 6, speed: 70, homing: 0.8, mul: 0.8, color: '#c8a8ff' } },
-        { id: 'graveGrasp', w: 2, cd: 4, p: { count: 4 } },
+        // souls torn loose, hunting the hero
+        { id: 'spell:seekers', w: 3, cd: 4.5, p: { look: 'skull', color: '#b07aff', type: 'shadow', count: 5, speed: 58, homing: 1.3, mul: 0.85 } },
+        // soul-chains turning round the throne
+        { id: 'spell:vortex', w: 2, cd: 4, p: { color: '#b07aff', type: 'shadow', arms: 3, time: 3, spin: 1 } },
         { id: 'summon', w: 1, cd: 20, p: { enemies: ['hollow-guardsman', 'hollow-guardsman'] } },
         // he tears pieces of your soul loose; they drift home to mend him
         { id: 'dusk:harvest', w: 2, cd: 15, p: { count: 3, heal: 0.025, speed: 22 } },
@@ -434,7 +440,8 @@ const VAELOR: BossDef = {
         { id: 'dusk:rot', w: 2, cd: 9, p: { count: 3 } },
         { id: 'dusk:ghouls', w: 2, cd: 16, p: { count: 4 } },
         { id: 'tripleCharge', w: 1, cd: 9, p: { count: 2, wind: 0.5, speed: 340, len: 180, stun: 0, mul: 1.2 } },
-        { id: 'tide', w: 1, cd: 10, p: { speed: 100, gap: 3, form: 1, waves: 1, mul: 1.1, color: '#b07aff' } },
+        // a wall of grave-frost marching across the throne room
+        { id: 'spell:wall', w: 1, cd: 10, p: { look: 'frost', color: '#a8e0ff', type: 'frost', speed: 70, gaps: 2, mul: 0.9 } },
         // the toll fills the hall: dodge through it as it lands
         { id: 'dusk:toll', w: 2, cd: 16, p: { wind: 1.8, mul: 2 } },
       ],
@@ -445,9 +452,11 @@ const VAELOR: BossDef = {
       banner: 'The throne breaks',
       speed: 50,
       rest: [0.6, 1],
-      enter: [{ id: 'collapse', w: 1, cd: 0 }, { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.009, cut: 0.4 } }, { id: 'dusk:frost-ring', w: 1, cd: 0, p: { steps: 4, from: 150, to: 70 } }],
+      enter: [// the citadel’s ceiling coming down in ash
+{ id: 'spell:rain', w: 1, cd: 0, p: { color: '#b9b4bf', type: 'shadow', count: 12, onHero: 3, time: 2.4, rr: 20, mul: 1 } }, { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.009, cut: 0.4 } }, { id: 'dusk:frost-ring', w: 1, cd: 0, p: { steps: 4, from: 150, to: 70 } }],
       patterns: [
-        { id: 'orbs', w: 3, cd: 5, p: { count: 8, speed: 75, homing: 1.2, mul: 0.8, color: '#c8a8ff' } },
+        // souls torn loose, hunting the hero
+        { id: 'spell:seekers', w: 3, cd: 5, p: { look: 'skull', color: '#b07aff', type: 'shadow', count: 5, speed: 58, homing: 1.3, mul: 0.85 } },
         { id: 'dusk:frost-ring', w: 2, cd: 12, p: { steps: 4, from: 150, to: 70, spikes: 3 } },
         { id: 'chop', w: 3, cd: 4.5, p: { lines: 4, spread: 0.45, len: 170, width: 20, wind: 0.9, mul: 1.5 } },
         { id: 'cleave', w: 2, cd: 3, p: { swings: 2, r: 52, arc: 1, wind: 0.5, gap: 0.08, lunge: 30, mul: 1.3 } },
@@ -467,9 +476,11 @@ const VAELOR: BossDef = {
       patterns: [
         { id: 'cleave', w: 3, cd: 2.5, p: { swings: 3, r: 52, arc: 1, wind: 0.45, gap: 0.06, lunge: 30, mul: 1.3 } },
         { id: 'chop', w: 3, cd: 4, p: { lines: 5, spread: 0.4, len: 170, width: 20, wind: 0.85, mul: 1.5 } },
-        { id: 'orbs', w: 2, cd: 4.5, p: { count: 10, speed: 80, homing: 1.3, mul: 0.8, color: '#c8a8ff' } },
+        // souls torn loose, hunting the hero
+        { id: 'spell:seekers', w: 2, cd: 4.5, p: { look: 'skull', color: '#b07aff', type: 'shadow', count: 5, speed: 58, homing: 1.3, mul: 0.85 } },
         { id: 'dusk:frost-ring', w: 2, cd: 10, p: { steps: 3, from: 130, to: 70, spikes: 4, step: 1.1 } },
-        { id: 'tide', w: 1, cd: 8, p: { speed: 110, gap: 3, form: 0.9, waves: 2, gapT: 0.9, mul: 1.1, color: '#b07aff' } },
+        // a wall of grave-frost marching across the throne room
+        { id: 'spell:wall', w: 1, cd: 8, p: { look: 'frost', color: '#a8e0ff', type: 'frost', speed: 70, gaps: 2, mul: 0.9 } },
         { id: 'tripleCharge', w: 1, cd: 7, p: { count: 3, wind: 0.45, speed: 360, len: 180, stun: 0, mul: 1.2 } },
         { id: 'dusk:toll', w: 2, cd: 11, p: { wind: 1.4, mul: 2.4 } },
       ],

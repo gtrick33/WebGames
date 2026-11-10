@@ -299,6 +299,8 @@ const BOSS_AURA: Record<string, BossAura> = {
   'hollow-guard': GLOOM('#3a3448', '#c8c0e0'),
   vaelor: GLOOM('#2a2238', '#c8a8ff'),
   'the-ash-crown': FALLING('#b9b4bf', '#ffe8c0'),
+  'silas-vey': GLOOM('#2a2430', '#e8d07a'),
+  'the-royal-auditor': MOTES('#f0e0a0', '#ffffff'),
   'maelis-crane': MOTES('#ffd98a', '#ffffff'),
 };
 

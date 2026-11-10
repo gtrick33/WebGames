@@ -867,6 +867,16 @@ export function updateProjectiles(w: World, dt: number): void {
       pr.y += (pr.vy * dt) / sub;
       pr.life -= step / sub;
       if (blocksAt(w.map, pr.x, pr.y) && !(pr.wide && pr.age < 0.05)) {
+        // a boss's shot with bounces left glances off the wall (sim/patterns/spells.ts bouncers)
+        if (pr.hostile && pr.bounce > 0) {
+          pr.x -= (pr.vx * dt) / sub;
+          pr.y -= (pr.vy * dt) / sub;
+          if (blocksAt(w.map, pr.x + (pr.vx * dt) / sub, pr.y)) pr.vx = -pr.vx;
+          else pr.vy = -pr.vy;
+          pr.bounce -= 1;
+          w.addFx({ kind: 'spark', x: pr.x, y: pr.y, life: 0.2, size: 2, color: pr.color });
+          continue;
+        }
         if (!pr.hostile) {
           w.breakWalls(pr.x, pr.y, 6);
           impact(w, pr, null);

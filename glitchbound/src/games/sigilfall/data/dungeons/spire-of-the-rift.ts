@@ -303,8 +303,10 @@ const bosses: Record<string, BossDef> = {
           { id: 'cleave', w: 2, cd: 3, p: { swings: 2, r: 58, arc: 0.9, wind: 0.65, gap: 0.14, lunge: 16, mul: 1.3 } },
           // and the crush sends a shockwave rolling out across the stair
           { id: 'spire:gravity', w: 2, cd: 10, p: { time: 2.2, pull: 40, reach: 260, r: 70, mul: 1.9, wave: 1.2 } },
-          { id: 'riftNova', w: 2, cd: 8 },
-          { id: 'slamRings', w: 1, cd: 9 },
+          // rings of grieflight bursting out from its core, every other one
+          { id: 'spell:pulse', w: 2, cd: 8, p: { color: '#c58cff', type: 'arcane', rings: 5, band: 30, mul: 1 } },
+          // prism lines cut across the stair through the hero
+          { id: 'spell:crossfire', w: 1, cd: 9, p: { color: '#9affff', type: 'arcane', lines: 3, twice: 0, width: 14, mul: 1.05 } },
           { id: 'charge', w: 1, cd: 7, p: { count: 2, wind: 0.8, speed: 300, len: 300, mul: 1.4, stun: 1.4 } },
           { id: 'summon', w: 1, cd: 18, p: { enemies: ['spire-mote', 'spire-mote', 'rift-shardling'] } },
         ],
@@ -343,12 +345,14 @@ const bosses: Record<string, BossDef> = {
         speed: 40,
         rest: [0.7, 1.05],
         patterns: [
-          // motes of starlight, and a spiral of them
-          { id: 'orbs', w: 3, cd: 5, p: { color: '#c8b8ff' } },
-          { id: 'riftSpiral', w: 2, cd: 8 },
+          // falling stars, one after another toward the hero
+          { id: 'spell:meteors', w: 3, cd: 5, p: { color: '#c8b8ff', type: 'arcane', count: 7, gap: 0.18, rr: 18, mul: 0.95 } },
+          // a wheel of stars turning round her and flung outward
+          { id: 'spell:orbit', w: 2, cd: 8, p: { look: 'holy', color: '#c8b8ff', type: 'arcane', count: 8, time: 3, grow: 30, mul: 0.85 } },
           // the astrolabe-staff swung
           { id: 'cleave', w: 2, cd: 3.5, p: { r: 52, arc: 1.05, wind: 0.7, lunge: 18, mul: 1.35 } },
-          { id: 'teleport', w: 1, cd: 8 },
+          // she drifts out of the world and back in
+          { id: 'spell:blink', w: 1, cd: 8, p: { color: '#c8b8ff', rr: 30 } },
           // the gallery lets go of the floor
           { id: 'spire:unmoor', w: 3, cd: 13, p: { time: 6, stones: 7, warn: 1.1, mul: 1.1 } },
         ],
@@ -363,11 +367,15 @@ const bosses: Record<string, BossDef> = {
           { id: 'spire:unmoor', w: 1, cd: 11, p: { time: 7, stones: 10, warn: 1, mul: 1.15, fling: 1.3 } },
         ],
         patterns: [
-          { id: 'orbs', w: 3, cd: 4.5, p: { color: '#c8b8ff' } },
-          { id: 'riftSpiral', w: 2, cd: 7 },
-          { id: 'riftBeams', w: 2, cd: 8 },
+          // falling stars, one after another toward the hero
+          { id: 'spell:meteors', w: 3, cd: 4.5, p: { color: '#c8b8ff', type: 'arcane', count: 7, gap: 0.18, rr: 18, mul: 0.95 } },
+          // a wheel of stars turning round her and flung outward
+          { id: 'spell:orbit', w: 2, cd: 7, p: { look: 'holy', color: '#c8b8ff', type: 'arcane', count: 8, time: 3, grow: 30, mul: 0.85 } },
+          // the spokes of her star-chart, turning
+          { id: 'spell:vortex', w: 2, cd: 8, p: { color: '#c8b8ff', type: 'arcane', arms: 3, time: 2.6, spin: 1 } },
           { id: 'cleave', w: 2, cd: 3, p: { swings: 2, r: 52, arc: 1.05, wind: 0.6, gap: 0.14, lunge: 20, mul: 1.3 } },
-          { id: 'teleport', w: 1, cd: 7 },
+          // she drifts out of the world and back in
+          { id: 'spell:blink', w: 1, cd: 7, p: { color: '#c8b8ff', rr: 30 } },
           // now she flings the drifting stones at the hero while they float
           { id: 'spire:unmoor', w: 3, cd: 11, p: { time: 7, stones: 10, warn: 1, mul: 1.15, fling: 1.3 } },
         ],
@@ -410,11 +418,14 @@ const bosses: Record<string, BossDef> = {
           { id: 'volley', w: 3, cd: 4, p: { ...LANCES, shots: 2 } },
           // tears in the Veil: each pulls you toward it, spits grieflight, and bursts as it closes
           { id: 'spire:tear', w: 3, cd: 9, p: { count: 2, life: 7, pull: 20, reach: 120 } },
-          { id: 'riftSpiral', w: 2, cd: 9, p: { arms: 3, time: 2.6 } },
-          // hands of the Veil reach up through the floor
-          { id: 'graveGrasp', w: 2, cd: 7, p: { count: 4 } },
-          { id: 'teleport', w: 1, cd: 8 },
-          { id: 'riftBeams', w: 1, cd: 10, p: { beams: 3 } },
+          // two arms of the Tear turning about him
+          { id: 'spell:vortex', w: 2, cd: 9, p: { color: '#ff3fd2', type: 'arcane', arms: 2, time: 3, spin: 1.2 } },
+          // small tears in the Veil set round the hero: they open when you come near
+          { id: 'spell:mines', w: 2, cd: 7, p: { color: '#22e4ff', type: 'arcane', count: 5, spread: 72, fuse: 3, blast: 34, mul: 1.05 } },
+          // he steps out of the world and back in behind you
+          { id: 'spell:blink', w: 1, cd: 8, p: { color: '#e8d8ff', behind: 1, rr: 32 } },
+          // lances of grieflight from the edges of the Crown
+          { id: 'spell:lances', w: 1, cd: 10, p: { color: '#ff3fd2', type: 'arcane', count: 5, width: 14, mul: 1.05 } },
         ],
       },
       {
@@ -428,9 +439,12 @@ const bosses: Record<string, BossDef> = {
           { id: 'spire:echoes', w: 2, cd: 18, p: { count: 3, time: 9 } },
           { id: 'spire:tear', w: 3, cd: 9, p: { count: 2, life: 7, pull: 22, reach: 120 } },
           { id: 'volley', w: 2, cd: 4, p: { ...LANCES, shots: 3 } },
-          { id: 'orbs', w: 2, cd: 7, p: { count: 6, ring: 1, speed: 50, color: RIFT, homing: 0.8, mul: 0.8 } },
-          { id: 'riftNova', w: 1, cd: 9 },
-          { id: 'teleport', w: 1, cd: 8 },
+          // a pane of glass flung at the hero, shattering
+          { id: 'spell:split', w: 2, cd: 7, p: { look: 'rift', color: '#e8d8ff', type: 'arcane', count: 12, small: 115, mul: 0.75 } },
+          // rings of the Tear rolling out from him, a gap in each
+          { id: 'spell:ring', w: 1, cd: 9, p: { look: 'rift', color: '#ff3fd2', type: 'arcane', count: 18, gap: 3, waves: 3, speed: 95, mul: 0.8 } },
+          // he steps out of the world and back in behind you
+          { id: 'spell:blink', w: 1, cd: 8, p: { color: '#e8d8ff', behind: 1, rr: 32 } },
         ],
       },
       {
@@ -444,9 +458,11 @@ const bosses: Record<string, BossDef> = {
           { id: 'spire:sunder', w: 3, cd: 8, p: { count: 3, wind: 1.6, life: 7 } },
           { id: 'spire:tear', w: 2, cd: 9, p: { count: 2, life: 6, pull: 32, reach: 130 } },
           { id: 'spire:echoes', w: 1, cd: 20, p: { count: 3, time: 8 } },
-          { id: 'riftSpiral', w: 2, cd: 9, p: { arms: 4, time: 2.4 } },
+          // two arms of the Tear turning about him
+          { id: 'spell:vortex', w: 2, cd: 9, p: { color: '#ff3fd2', type: 'arcane', arms: 2, time: 3, spin: 1.2 } },
           { id: 'volley', w: 2, cd: 4, p: { ...LANCES, shots: 3 } },
-          { id: 'riftBeams', w: 1, cd: 10, p: { beams: 4 } },
+          // lances of grieflight from the edges of the Crown
+          { id: 'spell:lances', w: 1, cd: 10, p: { color: '#ff3fd2', type: 'arcane', count: 5, width: 14, mul: 1.05 } },
         ],
       },
       {
@@ -462,9 +478,11 @@ const bosses: Record<string, BossDef> = {
         patterns: [
           { id: 'spire:sunder', w: 3, cd: 6, p: { count: 4, wind: 1.5, life: 5 } },
           { id: 'spire:tear', w: 2, cd: 8, p: { count: 2, life: 5, pull: 28, reach: 120 } },
-          { id: 'riftSpiral', w: 2, cd: 8, p: { arms: 5, time: 2.2 } },
+          // two arms of the Tear turning about him
+          { id: 'spell:vortex', w: 2, cd: 8, p: { color: '#ff3fd2', type: 'arcane', arms: 2, time: 3, spin: 1.2 } },
           { id: 'volley', w: 2, cd: 3.5, p: { ...LANCES, shots: 3, wind: 0.6 } },
-          { id: 'riftNova', w: 1, cd: 8 },
+          // rings of the Tear rolling out from him, a gap in each
+          { id: 'spell:ring', w: 1, cd: 8, p: { look: 'rift', color: '#ff3fd2', type: 'arcane', count: 18, gap: 3, waves: 3, speed: 95, mul: 0.8 } },
         ],
       },
     ],

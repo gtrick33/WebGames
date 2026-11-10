@@ -256,10 +256,12 @@ const bosses: Record<string, BossDef> = {
         // the sand-glass and its hour (sim/patterns/tomb-of-the-sun-king.ts)
         enter: [{ id: 'tomb:hourglass', w: 1, cd: 0, p: { time: 7 } }],
         patterns: [
-          // shards of gold flung in a fan, scarab-light that seeks the hero, a step between moments
-          { id: 'spearFan', w: 3, cd: 3.5, p: { count: 5 } },
-          { id: 'orbs', w: 3, cd: 4, p: { count: 5, speed: 60, homing: 0.8, mul: 0.85, color: '#ffd27a', r: 4 } },
-          { id: 'teleport', w: 1, cd: 7 },
+          // rings of golden sand blown out from him, a gap in each
+          { id: 'spell:ring', w: 3, cd: 3.5, p: { look: 'holy', color: '#ffd27a', type: 'holy', count: 14, gap: 3, waves: 2, speed: 90, mul: 0.8 } },
+          // sun-stones falling one after another toward the hero
+          { id: 'spell:meteors', w: 3, cd: 4, p: { color: '#ffb04d', type: 'fire', count: 6, gap: 0.2, rr: 20, mul: 1 } },
+          // a swirl of sand, and he is elsewhere
+          { id: 'spell:blink', w: 1, cd: 7, p: { color: '#ffd27a', rr: 30 } },
           { id: 'tomb:hourglass', w: 2, cd: 15, p: { time: 7 } },
         ],
       },
@@ -270,10 +272,14 @@ const bosses: Record<string, BossDef> = {
         rest: [0.6, 1],
         enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['wrapped-dead', 'wrapped-dead'] } }, { id: 'tomb:hourglass', w: 1, cd: 0, p: { time: 6 } }],
         patterns: [
-          { id: 'spearFan', w: 3, cd: 3, p: { count: 7 } },
-          { id: 'orbs', w: 3, cd: 3.5, p: { count: 7, speed: 64, homing: 0.9, mul: 0.85, color: '#ffd27a', r: 4 } },
-          { id: 'riftBeams', w: 2, cd: 6, p: { beams: 4 } },
-          { id: 'teleport', w: 1, cd: 6 },
+          // rings of golden sand blown out from him, a gap in each
+          { id: 'spell:ring', w: 3, cd: 3, p: { look: 'holy', color: '#ffd27a', type: 'holy', count: 14, gap: 3, waves: 2, speed: 90, mul: 0.8 } },
+          // sun-stones falling one after another toward the hero
+          { id: 'spell:meteors', w: 3, cd: 3.5, p: { color: '#ffb04d', type: 'fire', count: 6, gap: 0.2, rr: 20, mul: 1 } },
+          // beams of the noon sun turning about him
+          { id: 'spell:vortex', w: 2, cd: 6, p: { color: '#ffd27a', type: 'holy', arms: 3, time: 2.5, spin: 1 } },
+          // a swirl of sand, and he is elsewhere
+          { id: 'spell:blink', w: 1, cd: 6, p: { color: '#ffd27a', rr: 30 } },
           { id: 'tomb:hourglass', w: 3, cd: 12, p: { time: 6 } },
         ],
       },
@@ -380,8 +386,8 @@ const bosses: Record<string, BossDef> = {
           // the sun crosses the chamber while he fights on beneath it
           { id: 'tomb:sun-disc', w: 2, cd: 15, p: { at: 'arc', flares: 2, wind: 2.6, wind2: 2.3, blaze: 0.9, mul: 1.4, step: 1.3 } },
           { id: 'tomb:scarabs', w: 1, cd: 14, p: { count: 3 } },
-          // motes of sun-fire that seek you out
-          { id: 'orbs', w: 1, cd: 8, p: { count: 5, ring: 0, speed: 60, homing: 0.9, mul: 0.8, color: '#ffd86b' } },
+          // sun-discs wheeling round him, then flung away
+          { id: 'spell:orbit', w: 1, cd: 8, p: { look: 'fire', color: '#ffd27a', type: 'fire', count: 6, time: 2.6, grow: 38, mul: 0.9 } },
         ],
       },
       {
@@ -395,8 +401,8 @@ const bosses: Record<string, BossDef> = {
           // three beams turning like the spokes of the sun
           { id: 'tomb:sunbeam', w: 3, cd: 6, p: { beams: 3, sweep: 1.4, time: 1.4, wind: 0.85, width: 14, mul: 1.2 } },
           { id: 'tomb:sun-disc', w: 2, cd: 13, p: { at: 'arc', flares: 2, wind: 2.4, wind2: 2.1, blaze: 0.9, mul: 1.4, step: 1.4 } },
-          // the ceiling's gold runs molten: sun-fire falls across the chamber
-          { id: 'barrage', w: 1, cd: 9, p: { salvos: 3, count: 4, r: 22, dur: 1.1, gap: 0.5, mul: 1.1 } },
+          // the sun’s own rings, bursting out from him in turn
+          { id: 'spell:pulse', w: 1, cd: 9, p: { color: '#ffe08a', type: 'holy', rings: 4, band: 36, mul: 1 } },
           { id: 'tomb:scarabs', w: 1, cd: 16, p: { count: 3 } },
         ],
       },

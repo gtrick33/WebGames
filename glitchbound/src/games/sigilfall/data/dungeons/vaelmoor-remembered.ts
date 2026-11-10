@@ -101,10 +101,14 @@ const THE_ASH_CROWN: BossDef = {
       speed: 36,
       rest: [0.7, 1.1],
       patterns: [
-        { id: 'orbs', w: 3, cd: 4.5, p: { count: 7, speed: 70, homing: 0.8, mul: 0.8, color: '#c8c0d8' } },
-        { id: 'riftSpiral', w: 2, cd: 9, p: { arms: 3, time: 2.6 } },
-        { id: 'graveGrasp', w: 2, cd: 6, p: { count: 4 } },
-        { id: 'teleport', w: 1, cd: 9 },
+        // crowns of ash-gold wheeling round it, flung away
+        { id: 'spell:orbit', w: 3, cd: 4.5, p: { look: 'ball', color: '#e8c070', type: 'arcane', count: 7, time: 2.8, grow: 34, mul: 0.9 } },
+        // four arms of ash turning about it
+        { id: 'spell:vortex', w: 2, cd: 9, p: { color: '#b9b4bf', type: 'shadow', arms: 4, time: 3, spin: 0.9 } },
+        // the memory of the plague crawling after the hero
+        { id: 'spell:fissure', w: 2, cd: 6, p: { color: '#b9b4bf', type: 'shadow', count: 8, step: 0.18, stride: 22, rr: 16, mul: 0.9 } },
+        // it unremembers where it stood, and stands behind you
+        { id: 'spell:blink', w: 1, cd: 9, p: { color: '#ffe8c0', behind: 1, rr: 34 } },
       ],
     },
     {
@@ -115,10 +119,14 @@ const THE_ASH_CROWN: BossDef = {
       enter: [{ id: 'roar', w: 1, cd: 0 }],
       patterns: [
         { id: 'summon', w: 1, cd: 18, p: { enemies: ['wailing-soul', 'wailing-soul', 'kneeling-dead'] } },
-        { id: 'tide', w: 3, cd: 7, p: { speed: 95, gap: 3, form: 1, waves: 2, gapT: 1.1, mul: 1.1, color: '#c8c0d8' } },
-        { id: 'riftBeams', w: 2, cd: 10, p: { beams: 3 } },
-        { id: 'orbs', w: 2, cd: 5, p: { count: 8, speed: 75, homing: 1, mul: 0.8, color: '#e8d8a8' } },
-        { id: 'teleport', w: 1, cd: 8 },
+        // a wall of ash rolling across the garden
+        { id: 'spell:wall', w: 3, cd: 7, p: { look: 'shadow', color: '#b9b4bf', type: 'shadow', speed: 72, gaps: 2, mul: 0.9 } },
+        // lines of summer light crossing on the hero
+        { id: 'spell:crossfire', w: 2, cd: 10, p: { color: '#ffe8c0', type: 'holy', lines: 4, twice: 1, width: 14, mul: 1 } },
+        // crowns of ash-gold wheeling round it, flung away
+        { id: 'spell:orbit', w: 2, cd: 5, p: { look: 'ball', color: '#e8c070', type: 'arcane', count: 7, time: 2.8, grow: 34, mul: 0.9 } },
+        // it unremembers where it stood, and stands behind you
+        { id: 'spell:blink', w: 1, cd: 8, p: { color: '#ffe8c0', behind: 1, rr: 34 } },
       ],
     },
     {
@@ -126,12 +134,16 @@ const THE_ASH_CROWN: BossDef = {
       banner: 'Only ash is left, and it will not go quietly',
       speed: 46,
       rest: [0.45, 0.8],
-      enter: [{ id: 'collapse', w: 1, cd: 0 }],
+      enter: [{ id: 'spell:meteors', w: 1, cd: 0, p: { color: '#ffb070', type: 'fire', count: 8, gap: 0.16, rr: 20, mul: 1 } }],
       patterns: [
-        { id: 'riftNova', w: 2, cd: 8 },
-        { id: 'orbs', w: 3, cd: 4, p: { count: 10, speed: 80, homing: 1.1, mul: 0.8, color: '#e8d8a8' } },
-        { id: 'riftSpiral', w: 2, cd: 8, p: { arms: 4, time: 2.3 } },
-        { id: 'tide', w: 2, cd: 8, p: { speed: 105, gap: 3, form: 0.9, waves: 2, gapT: 0.95, mul: 1.1, color: '#c8c0d8' } },
+        // rings of ash bursting out from it, every other one
+        { id: 'spell:pulse', w: 2, cd: 8, p: { color: '#b9b4bf', type: 'shadow', rings: 5, band: 32, mul: 1 } },
+        // crowns of ash-gold wheeling round it, flung away
+        { id: 'spell:orbit', w: 3, cd: 4, p: { look: 'ball', color: '#e8c070', type: 'arcane', count: 7, time: 2.8, grow: 34, mul: 0.9 } },
+        // four arms of ash turning about it
+        { id: 'spell:vortex', w: 2, cd: 8, p: { color: '#b9b4bf', type: 'shadow', arms: 4, time: 3, spin: 0.9 } },
+        // a wall of ash rolling across the garden
+        { id: 'spell:wall', w: 2, cd: 8, p: { look: 'shadow', color: '#b9b4bf', type: 'shadow', speed: 72, gaps: 2, mul: 0.9 } },
       ],
     },
   ],

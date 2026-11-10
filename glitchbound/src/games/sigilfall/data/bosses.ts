@@ -138,8 +138,10 @@ export const BOSSES: Record<string, BossDef> = {
         enter: [{ id: 'crypt:coffins', w: 1, cd: 0, p: { n: 4, swaps: 3, swap: 0.95, wait: 11 } }],
         patterns: [
           { id: 'crypt:coffins', w: 3, cd: 16, p: { n: 4, swaps: 3, swap: 0.95, wait: 11 } },
-          { id: 'soulVolley', w: 3, cd: 3, p: { count: 4, waves: 1 } },
-          { id: 'graveGrasp', w: 2, cd: 4, p: { count: 3 } },
+          // grave-candle wisps that drift after the hero
+          { id: 'spell:seekers', w: 3, cd: 3, p: { count: 3, speed: 50, homing: 1.2, look: 'shadow', color: '#9cff9c', type: 'shadow', mul: 0.8 } },
+          // the roots of the graves crawling after the hero
+          { id: 'spell:fissure', w: 2, cd: 4, p: { count: 7, step: 0.2, stride: 22, rr: 15, color: '#9cff9c', type: 'shadow', mul: 0.85 } },
         ],
       },
       {
@@ -150,8 +152,10 @@ export const BOSSES: Record<string, BossDef> = {
         enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['skeleton', 'skeleton'] } }, { id: 'crypt:coffins', w: 1, cd: 0, p: { n: 5, swaps: 5, swap: 0.75, wait: 9 } }],
         patterns: [
           { id: 'crypt:coffins', w: 3, cd: 14, p: { n: 5, swaps: 5, swap: 0.75, wait: 9 } },
-          { id: 'soulVolley', w: 2, cd: 3, p: { count: 6, waves: 2 } },
-          { id: 'graveGrasp', w: 2, cd: 3.5, p: { count: 4 } },
+          // grave-candle wisps that drift after the hero
+          { id: 'spell:seekers', w: 2, cd: 3, p: { count: 3, speed: 50, homing: 1.2, look: 'shadow', color: '#9cff9c', type: 'shadow', mul: 0.8 } },
+          // the roots of the graves crawling after the hero
+          { id: 'spell:fissure', w: 2, cd: 3.5, p: { count: 7, step: 0.2, stride: 22, rr: 15, color: '#9cff9c', type: 'shadow', mul: 0.85 } },
         ],
       },
     ],
@@ -429,10 +433,10 @@ export const BOSSES: Record<string, BossDef> = {
         speed: 30,
         rest: [0.8, 1.3],
         patterns: [
-          // slow water orbs that seek you out
-          { id: 'orbs', w: 3, cd: 4, p: { count: 4, speed: 55, homing: 1, mul: 0.9, color: '#7ad8ff' } },
-          // whirlpools open under you
-          { id: 'graveGrasp', w: 3, cd: 3.5, p: { count: 4 } },
+          // a wave of brine rolling across the shrine, a gap or two in it
+          { id: 'spell:wall', w: 3, cd: 4, p: { look: 'water', color: '#7ad8ff', type: 'frost', speed: 65, gaps: 2, mul: 0.8 } },
+          // cold brine slopped round the hero: it chills
+          { id: 'spell:pools', w: 3, cd: 3.5, p: { pool: 'frost', color: '#7ad8ff', type: 'frost', st: 'chill', stDur: 1.5, stPow: 0.4, count: 3, rr: 24, life: 6 } },
           // a wall of water rolls across the shrine: find the gap
           { id: 'tide', w: 2, cd: 7, p: { speed: 70, gap: 3, form: 1.1 } },
           // the shrine goes under the sea: breathe at the vents (sim/patterns/grotto.ts)
@@ -448,9 +452,12 @@ export const BOSSES: Record<string, BossDef> = {
         patterns: [
           { id: 'grotto:flood', w: 2, cd: 15, p: { time: 9, air: 5, vents: 3 } },
           { id: 'tide', w: 3, cd: 6, p: { speed: 75, gap: 3, form: 1, waves: 2, gapT: 1.3 } },
-          { id: 'orbs', w: 3, cd: 4, p: { count: 6, speed: 58, homing: 1.1, mul: 0.9, color: '#7ad8ff' } },
-          { id: 'graveGrasp', w: 2, cd: 3.5, p: { count: 5 } },
-          { id: 'teleport', w: 1, cd: 8 },
+          // a wave of brine rolling across the shrine, a gap or two in it
+          { id: 'spell:wall', w: 3, cd: 4, p: { look: 'water', color: '#7ad8ff', type: 'frost', speed: 65, gaps: 2, mul: 0.8 } },
+          // cold brine slopped round the hero: it chills
+          { id: 'spell:pools', w: 2, cd: 3.5, p: { pool: 'frost', color: '#7ad8ff', type: 'frost', st: 'chill', stDur: 1.5, stPow: 0.4, count: 3, rr: 24, life: 6 } },
+          // gone in a burst of foam, back in another
+          { id: 'spell:blink', w: 1, cd: 8, p: { color: '#7ad8ff', rr: 32, mul: 1.1 } },
           { id: 'summon', w: 1, cd: 18, p: { enemies: ['mirefin-skirmisher', 'mirefin-oracle'] } },
         ],
       },

@@ -56,6 +56,9 @@ export const FOE_LOOKS: Record<string, HeroLook> = {
   'foe-ilvane': foe('#e0dcf0', '#e8e4ff', 'long', piece('wizard', '#3a3060', 'cloth', 'rare'), piece('robe', '#2e2850', 'cloth', 'rare'), piece('trousers', '#24203e'), { female: true, cape: '#c8b8ff', hands: piece('gloves', '#3a3060', 'cloth'), feet: piece('shoes', '#24203e', 'leather') }),
   // Lady Cendre, the Last Mourner: ash-grey skin and hair, a black hood for a veil, a mourning robe
   'foe-cendre': foe('#c8c4d0', '#e8e4ec', 'long', piece('hood', '#16121c'), piece('robe', '#2a2430', 'cloth', 'rare'), piece('trousers', '#24202e'), { female: true, cape: '#16121c', hands: piece('gloves', '#2a2430', 'cloth'), feet: piece('shoes', '#16121c', 'leather') }),
+  // the catacombs: Silas Vey, the Herald's spymaster, hooded in black over oiled leathers; the Royal Auditor, an old clerk in ink-black and gold
+  'foe-silas-vey': foe('#d0b8a0', '#1a1418', 'short', piece('hood', '#1a1820'), piece('tunic', '#2a2430', 'leather', 'rare'), piece('trousers', '#1e1a22'), { cape: '#3a2a3a', beard: '#1a1418', hands: piece('gloves', '#2a2228', 'leather'), feet: piece('boots', '#1e1a20', 'leather') }),
+  'foe-royal-auditor': foe('#cfc8b8', '#e8e4dc', 'short', piece('hood', '#2a2420'), piece('robe', '#1e1a1c', 'cloth', 'rare'), piece('trousers', '#1e1a1c'), { beard: '#e8e4dc', cape: '#c8a860', hands: piece('gloves', '#2a2420', 'cloth'), feet: piece('shoes', '#1e1a18', 'leather') }),
   'foe-vizier-khepset': foe('#b89870', '#1a1410', 'short', piece('crown', '#ffd27a', 'plate', 'epic'), piece('robe', '#efe4c8', 'cloth', 'epic'), piece('trousers', '#c8b890'), { cape: '#d8a830', beard: '#1a1410', hands: piece('gloves', '#d8a830', 'cloth'), feet: piece('shoes', '#c8a050', 'leather') }),
   // a brother of the plague: a stained cleric's robe
   'foe-brother-pustule': foe('#c8b890', '#5a5a3a', 'short', piece('hood', '#6a6a3a'), piece('robe', '#7a7a4a', 'cloth', 'rare'), piece('trousers', '#4a4a2a')),

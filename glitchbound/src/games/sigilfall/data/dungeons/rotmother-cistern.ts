@@ -295,13 +295,14 @@ const PUSTULE: BossDef = {
       banner: 'Brother Pustule bursts his boils!',
       speed: 36,
       rest: [0.6, 1],
-      enter: [{ id: 'orbs', w: 1, cd: 0, p: { count: 10, ring: 1, speed: 48, homing: 0.5, mul: 0.8, color: '#b8d84a', r: 4 } }, { id: 'summon', w: 1, cd: 0, p: { enemies: ['cistern-bloat', 'cistern-bloat', 'cistern-bloat'] } }],
+      enter: [// a swollen boil flung at the hero, bursting into spatters
+{ id: 'spell:split', w: 1, cd: 0, p: { look: 'poison', color: '#b8d84a', type: 'poison', count: 10, small: 100, bigMul: 1.2, mul: 0.7 } }, { id: 'summon', w: 1, cd: 0, p: { enemies: ['cistern-bloat', 'cistern-bloat', 'cistern-bloat'] } }],
       patterns: [
         { id: 'cleave', w: 3, cd: 3.5, p: { swings: 2, r: 48, arc: 1.05, wind: 0.6, gap: 0.12, lunge: 20, mul: 1.4 } },
         { id: 'rot:miasma', w: 3, cd: 4.5, p: { count: 6, r: 26, wind: 0.95, gap: 0.18, mul: 0.9, cloud: 6 } },
         { id: 'rot:leeches', w: 3, cd: 5.5, p: { n: 3, wind: 0.7, arc: 0.6 } },
-        // the boils again: a ring of slow plague that drifts after you
-        { id: 'orbs', w: 2, cd: 6, p: { count: 8, ring: 1, waves: 2, gap: 0.8, speed: 50, homing: 0.6, mul: 0.8, color: '#b8d84a', r: 4 } },
+        // a swollen boil flung at the hero, bursting into spatters
+        { id: 'spell:split', w: 2, cd: 6, p: { look: 'poison', color: '#b8d84a', type: 'poison', count: 10, small: 100, bigMul: 1.2, mul: 0.7 } },
         { id: 'hook', w: 2, cd: 6, p: { len: 160, width: 12, wind: 0.8, fmul: 1.3 } },
         { id: 'summon', w: 1, cd: 14, p: { enemies: ['cistern-bloat', 'cistern-bloat'] } },
       ],
@@ -379,7 +380,8 @@ const ROT_MOTHER: BossDef = {
         { id: 'rot:breath', w: 2, cd: 6, p: { r: 112, arc: 0.5, wind: 1.1, mul: 1.4 } },
         // a vat tips: a stream across the pit, leaving a line of bile
         { id: 'rot:pour', w: 2, cd: 8, p: { vats: 1, wind: 1.3, width: 26, mul: 1.5 } },
-        { id: 'orbs', w: 1, cd: 7, p: { count: 5, ring: 0, speed: 50, homing: 0.8, mul: 0.8, color: '#a8d04a', r: 4 } },
+        // gobbets of rot that skip off the cistern walls
+        { id: 'spell:bouncers', w: 1, cd: 7, p: { look: 'poison', color: '#a8d04a', type: 'poison', count: 5, spread: 1, speed: 110, bounces: 2, mul: 0.8 } },
       ],
     },
     {

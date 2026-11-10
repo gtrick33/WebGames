@@ -233,8 +233,8 @@ const bosses: Record<string, BossDef> = {
         // (sim/patterns/barrow-of-kings.ts) the gallery's lamps, and her feast on them
         enter: [{ id: 'barrow:dark', w: 1, cd: 0, p: { cut: 0.6 } }, { id: 'barrow:feast', w: 1, cd: 0, p: { count: 1, dark: 16 } }],
         patterns: [
-          // gloom shaken from her wings, and her dive on the hero
-          { id: 'orbs', w: 3, cd: 3.5, p: { count: 5, speed: 60, homing: 0.6, mul: 0.8, color: '#c8b8ff', r: 4 } },
+          // dark feathers falling from its wings about the hall
+          { id: 'spell:rain', w: 3, cd: 3.5, p: { color: '#b8a8ff', type: 'shadow', count: 10, onHero: 3, time: 2.2, rr: 18, mul: 0.9 } },
           { id: 'charge', w: 2, cd: 5, p: { stun: 0.6 } },
           { id: 'barrow:feast', w: 3, cd: 10, p: { count: 1, dark: 16 } },
         ],
@@ -246,7 +246,8 @@ const bosses: Record<string, BossDef> = {
         rest: [0.55, 0.9],
         enter: [{ id: 'barrow:feast', w: 1, cd: 0, p: { count: 2, dark: 18, wind: 0.65 } }],
         patterns: [
-          { id: 'orbs', w: 3, cd: 3, p: { count: 7, speed: 64, homing: 0.7, mul: 0.8, color: '#c8b8ff', r: 4 } },
+          // dark feathers falling from its wings about the hall
+          { id: 'spell:rain', w: 3, cd: 3, p: { color: '#b8a8ff', type: 'shadow', count: 10, onHero: 3, time: 2.2, rr: 18, mul: 0.9 } },
           { id: 'tripleCharge', w: 2, cd: 6, p: { count: 2, wind: 0.6, speed: 330, len: 150, stun: 0, mul: 1.2 } },
           { id: 'barrow:feast', w: 3, cd: 8, p: { count: 2, dark: 18, wind: 0.65, pick: 1 } },
         ],
@@ -335,10 +336,10 @@ const bosses: Record<string, BossDef> = {
           { id: 'barrow:steed-charge', w: 3, cd: 6, p: { passes: 3, wind: 0.75, wind2: 0.55, speed: 300, len: 300, mul: 1.4, trail: 3.5, trailMul: 0.12 } },
           // the runeblade from the saddle, in a wide sweep
           { id: 'cleave', w: 3, cd: 3, p: { r: 52, arc: 1.05, wind: 0.6, lunge: 30, mul: 1.35 } },
-          // the dead reach up out of the floor
-          { id: 'graveGrasp', w: 2, cd: 5, p: { count: 4 } },
-          // grave-frost bolts that seek you out
-          { id: 'orbs', w: 2, cd: 6, p: { count: 5, ring: 0, speed: 62, homing: 0.9, mul: 0.8, color: '#9ad8ff' } },
+          // spectral lances thrust from the barrow walls
+          { id: 'spell:lances', w: 2, cd: 5, p: { color: '#a8c8ff', type: 'frost', count: 4, width: 14, mul: 1.05 } },
+          // lines of grave-frost crossing on the hero
+          { id: 'spell:crossfire', w: 2, cd: 6, p: { color: '#a8c8ff', type: 'frost', lines: 2, twice: 1, width: 16, mul: 1 } },
           { id: 'summon', w: 1, cd: 20, p: { enemies: ['oathsworn-guard', 'crypt-stalker'] } },
         ],
       },
@@ -355,7 +356,8 @@ const bosses: Record<string, BossDef> = {
           // the runeblade in the floor: ice bursts up and spreads
           { id: 'barrow:rime', w: 2, cd: 8, p: { count: 4, r: 22, wind: 1, mul: 1.1, grow: 5, max: 36, life: 12 } },
           { id: 'chop', w: 2, cd: 5, p: { lines: 3, spread: 0.45, len: 160, width: 16, wind: 0.8, mul: 1.5 } },
-          { id: 'graveGrasp', w: 1, cd: 6, p: { count: 5 } },
+          // spectral lances thrust from the barrow walls
+          { id: 'spell:lances', w: 1, cd: 6, p: { color: '#a8c8ff', type: 'frost', count: 4, width: 14, mul: 1.05 } },
           { id: 'summon', w: 1, cd: 22, p: { enemies: ['crypt-stalker', 'crypt-stalker'] } },
         ],
       },

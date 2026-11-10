@@ -229,4 +229,10 @@ export const OPENED_TABLE: readonly string[] = [
   'scene:hearth-the-bone-case', 'scene:reach-seven-locks',
   // the Gloam's story in the Riftscar Wastes
   'spot:riftscar:the-gloam-gate', 'spot:riftscar:will-o-glen', 'spot:riftscar:the-black-pool',
+  // the dungeons' boss events, each harder than the last (their cards, once seen)
+  'scene:boss-coffin-matron', 'scene:boss-gnasher', 'scene:boss-clatterclaw', 'scene:boss-old-sluicegut',
+  'scene:boss-the-runewarden', 'scene:boss-gloomwing', 'scene:boss-vizier-khepset',
+  'scene:boss-hallvor-the-unthawed', 'scene:boss-prior-vessant', 'scene:boss-elowen-of-the-dawn',
+  'scene:boss-ossa-the-founder', 'scene:boss-ilvane-the-unmoored', 'scene:boss-lady-cendre', 'scene:boss-silas-vey',
+  'scene:boss-the-royal-auditor',
 ];
