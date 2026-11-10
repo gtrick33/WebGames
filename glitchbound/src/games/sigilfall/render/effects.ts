@@ -290,6 +290,7 @@ const BOSS_AURA: Record<string, BossAura> = {
   'elowen-of-the-dawn': MOTES('#ffe08a', '#ffffff'),
   'the-withered-queen': GLOOM('#4a6a2a', '#d8f0a0'),
   'magma-warden': EMBERS('#ff5a1e', '#ffc23a'),
+  'ossa-the-founder': EMBERS('#ffb060', '#fff2d0'),
   'ashkar-the-bound': EMBERS('#ff3a1a', '#ffe08a'),
   'veil-sentinel': MOTES('#a48bdc', '#f0e0ff'),
   'herald-in-the-spire': MOTES('#d8d0f0', '#ffffff'),

@@ -1,4 +1,5 @@
 import { dist, TAU } from '../../core/math';
+import { hurtPlayer } from '../combat';
 import { castRay, circleHitsWall, moveCircle, TILE, tileAt } from '../map';
 import type { Enemy, Field } from '../types';
 import type { World } from '../world';
@@ -982,6 +983,178 @@ export function throneState(e: Enemy): { chains: string[]; heat: number; leash: 
   return s ? { chains: s.chains.map((c) => c.state), heat: s.heat, leash: s.leash, crown: s.crownState, lasting: s.lasting.length, throne: { x: s.tx, y: s.ty } } : null;
 }
 
+/* ------------------------------------------------------------ Ossa the Founder */
+
+/**
+ * Ossa the Founder (the Bone-Steel Foundry) pours the Host's bone-steel, and she has taken the hero's measure. She casts
+ * their likeness (`likeness`): a figure of white-hot bone-steel, the hero to the life, that walks exactly where the hero
+ * walked, a few seconds behind, until it cools. It burns whatever it touches, and no blow can touch it. Stand still and
+ * it catches up; walk in circles and it cuts across your path: keep making new ground. Below half health she pours two
+ * at once, a little apart, and a cooling likeness cracks and spits molten metal round it.
+ *
+ * The hero's path and the likenesses outlive the pattern that casts them, so they are kept per boss here and run by a
+ * small ticker (World.after, once a step) for as long as the fight lasts.
+ */
+
+const MOLTEN = '#ffb060';
+/** How far back the hero's path is kept (s): no likeness walks further behind than this. */
+const TRAIL = 9;
+/** A likeness walks no faster than this (px/s): across a blink's gap, or over to where the path begins. */
+const STRIDE = 150;
+
+interface Likeness {
+  lag: number;
+  until: number;
+  hitT: number;
+  fxT: number;
+  mul: number;
+  burst: number;
+  at: { x: number; y: number; vx: number; vy: number; face: number };
+}
+interface Foundry {
+  last: number;
+  trail: { x: number; y: number; t: number }[];
+  casts: Likeness[];
+}
+
+const FOUNDRIES = new WeakMap<Enemy, Foundry>();
+
+function foundryOf(w: World, e: Enemy): Foundry {
+  let s = FOUNDRIES.get(e);
+  if (!s) {
+    s = { last: w.time, trail: [], casts: [] };
+    FOUNDRIES.set(e, s);
+    w.after(0, () => foundryTick(w, e));
+  }
+  return s;
+}
+
+/** Where the hero stood at time `t` (or null if the path doesn't reach back that far). */
+function trailAt(s: Foundry, t: number): { x: number; y: number } | null {
+  const tr = s.trail;
+  if (!tr.length || tr[0]!.t > t) return null;
+  let lo = 0;
+  let hi = tr.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (tr[mid]!.t <= t) lo = mid;
+    else hi = mid - 1;
+  }
+  const a = tr[lo]!;
+  const b = tr[Math.min(tr.length - 1, lo + 1)]!;
+  const k = b.t > a.t ? Math.min(1, (t - a.t) / (b.t - a.t)) : 0;
+  return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+}
+
+function coolLikeness(w: World, e: Enemy, c: Likeness): void {
+  const { x, y } = c.at;
+  w.fxBurst(x, y - 10, '#8a8290', 16, 14);
+  w.addFx({ kind: 'smoke', x, y: y - 12, vx: 0, vy: -20, life: 0.9, size: 8, color: '#5a5258' });
+  if (c.burst > 0) {
+    // it cracks as it cools, and spits molten metal round it
+    w.addTelegraph({ shape: 'circle', x, y, r: c.burst, r2: 0, angle: 0, len: 0, dur: 0.7, dmg: e.dmg * 0.9, status: burn(e, 3), knock: 80, tone: 'enemy', owner: -1, linger: 0 });
+    w.after(0.7, () => {
+      if (!fighting(w, e)) return;
+      for (let j = 0; j < 10; j++) {
+        const a = (TAU * j) / 10;
+        w.addFx({ kind: 'ember', x, y: y - 6, vx: Math.cos(a) * 70, vy: Math.sin(a) * 50 - 30, life: 0.5, size: 2, color: j % 2 ? MOLTEN : FIRE });
+      }
+      w.sfx('slam', 0.5);
+    });
+  }
+}
+
+function foundryTick(w: World, e: Enemy): void {
+  const s = FOUNDRIES.get(e);
+  if (!s) return;
+  if (!fighting(w, e)) {
+    const mine = new Set(s.casts.map((c) => c.at));
+    w.likenesses = w.likenesses.filter((l) => !mine.has(l));
+    FOUNDRIES.delete(e);
+    return;
+  }
+  const dt = Math.max(0, w.time - s.last);
+  s.last = w.time;
+  const p = w.player;
+  if (!p.dead) s.trail.push({ x: p.x, y: p.y, t: w.time });
+  while (s.trail.length > 2 && s.trail[1]!.t < w.time - TRAIL) s.trail.shift();
+  for (const c of s.casts) {
+    // to where the hero stood `lag` seconds ago (or toward where their path begins), at a walk
+    const want = trailAt(s, w.time - c.lag) ?? s.trail[0] ?? { x: c.at.x, y: c.at.y };
+    const dx = want.x - c.at.x;
+    const dy = want.y - c.at.y;
+    const d = Math.hypot(dx, dy);
+    const step = Math.min(d, STRIDE * dt);
+    const nx = d > 0 ? c.at.x + (dx / d) * step : c.at.x;
+    const ny = d > 0 ? c.at.y + (dy / d) * step : c.at.y;
+    c.at.vx = dt > 0 ? (nx - c.at.x) / dt : 0;
+    c.at.vy = dt > 0 ? (ny - c.at.y) / dt : 0;
+    if (Math.hypot(c.at.vx, c.at.vy) > 8) c.at.face = Math.atan2(c.at.vx, c.at.vy);
+    c.at.x = nx;
+    c.at.y = ny;
+    // white-hot: the floor glows under it (a warning to step off), and it burns what it touches
+    c.fxT -= dt;
+    if (c.fxT <= 0) {
+      c.fxT = 0.2;
+      w.addTelegraph({ shape: 'circle', x: c.at.x, y: c.at.y, r: 13, r2: 0, angle: 0, len: 0, dur: 0.25, dmg: 0, knock: 0, tone: 'enemy', owner: -1, linger: 0 });
+      w.addFx({ kind: 'ember', x: c.at.x + (w.rand() - 0.5) * 10, y: c.at.y - 6 - w.rand() * 16, vx: 0, vy: -30, life: 0.5, size: 2, color: w.rand() < 0.5 ? MOLTEN : FIRE });
+      w.addFx({ kind: 'glow', x: c.at.x, y: c.at.y - 8, life: 0.25, size: 12, color: FIRE });
+    }
+    c.hitT -= dt;
+    if (!p.dead && c.hitT <= 0 && dist(p.x, p.y, c.at.x, c.at.y) < 12 + p.r) {
+      c.hitT = 0.9;
+      if (hurtPlayer(w, e.dmg * c.mul, { fromX: c.at.x, fromY: c.at.y, knock: 120, status: burn(e, 3), source: e })) w.text(p.x, p.y - 30, 'Burned by your own likeness!', '#ffd0a0', false);
+    }
+  }
+  const cooled = s.casts.filter((c) => w.time >= c.until);
+  if (cooled.length) {
+    for (const c of cooled) coolLikeness(w, e, c);
+    const gone = new Set(cooled.map((c) => c.at));
+    w.likenesses = w.likenesses.filter((l) => !gone.has(l));
+    s.casts = s.casts.filter((c) => w.time < c.until);
+  }
+  w.after(0, () => foundryTick(w, e));
+}
+
+/**
+ * The likeness: `count` figures of the hero in white-hot bone-steel, `lag` s behind them (each next one `gap` s
+ * further), cooling after `life` s; their touch burns for `mul` of her blow, and with `burst` a cooling one spits
+ * molten metal `burst` px round it. She takes `wind` s to pour.
+ */
+const likeness: PatternFn = (w, e, _dt, k) => {
+  const { pt } = k;
+  const s = foundryOf(w, e);
+  if (pt.step === 0) {
+    faceTo(e, k.aimAt());
+    w.text(e.x, e.y - e.r - 18, 'Hold still. Let me take your measure.', MOLTEN, true);
+    w.addFx({ kind: 'glow', x: e.x, y: e.y - 14, life: 0.9, size: 26, color: FIRE });
+    w.sfx('summon', 0.6);
+    pt.data.t1 = pt.t;
+    pt.step = 1;
+  } else if (pt.step === 1 && pt.t >= pt.data.t1! + k.num('wind', 0.9)) {
+    const n = k.num('count', 1);
+    const lag = k.num('lag', 2.4);
+    const gap = k.num('gap', 1.4);
+    for (let i = 0; i < n; i++) {
+      const lg = lag + i * gap;
+      // poured from her crucible, it walks to the hero's path
+      const at = { x: e.x + Math.cos(k.aimAt()) * (e.r + 8), y: e.y + Math.sin(k.aimAt()) * (e.r + 8), vx: 0, vy: 0, face: 0 };
+      s.casts.push({ lag: lg, until: w.time + k.num('life', 9), hitT: 0.6, fxT: 0, mul: k.num('mul', 0.6), burst: k.num('burst', 0), at });
+      w.likenesses.push(at);
+      w.fxBurst(at.x, at.y - 10, MOLTEN, 22, 16);
+      w.addFx({ kind: 'ring', x: at.x, y: at.y, life: 0.5, size: 20, color: MOLTEN });
+    }
+    w.text(w.player.x, w.player.y - 30, 'Your likeness walks your path: keep ahead of it!', '#ffe0c0', false);
+    w.sfx('slam', 0.6);
+    w.shake(2);
+    pt.data.t2 = pt.t;
+    pt.step = 2;
+  } else if (pt.step === 2 && pt.t >= pt.data.t2! + 0.5) k.end();
+};
+
+/** Ossa's likenesses as they stand (for tests). */
+export const likenessesOf = (e: Enemy): { x: number; y: number; lag: number }[] => (FOUNDRIES.get(e)?.casts ?? []).map((c) => ({ x: c.at.x, y: c.at.y, lag: c.lag }));
+
 export const MOLTEN_THRONE_PATTERNS: Record<string, PatternFn> = {
   'throne:eruption': eruption,
   'throne:pour': pour,
@@ -994,4 +1167,5 @@ export const MOLTEN_THRONE_PATTERNS: Record<string, PatternFn> = {
   'throne:crown': crown,
   'throne:lake': lake,
   'throne:inferno': inferno,
+  'throne:likeness': likeness,
 };

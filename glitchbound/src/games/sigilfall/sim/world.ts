@@ -227,6 +227,11 @@ export class World {
    * 'march' (no standing still). Hallvor's watch (sim/patterns/rimeheld-vault.ts); shown under the boss bar.
    */
   order: { kind: 'hold' | 'march'; from: number; until: number } | null = null;
+  /**
+   * What a boss fight casts of the hero, walking where the hero walked a moment ago (Ossa's likenesses,
+   * sim/patterns/molten-throne.ts): drawn as the hero in white-hot bone-steel.
+   */
+  likenesses: { x: number; y: number; vx: number; vy: number; face: number }[] = [];
   events: WorldEvent[] = [];
   procCd: Record<string, number> = {};
   flow: Int16Array;

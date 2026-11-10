@@ -7,8 +7,9 @@ import type { DungeonModule } from '.';
  * fire lord, taken by the Ashen Host. The hero comes down the Throne's Stair and fights through the
  * Ember Gate, the Slave Forges where the Host's overseers drive Ashkar's own fire-folk in chains, the
  * Warden's Crucible where the Magma Warden keeps the forges, the Chain Gallery where the chains are
- * forged, the Bone-Steel Foundry and the Ashen Court of Ashkar's maddened guard, to the throne room
- * over the lake of fire. There Ashkar sits chained to his throne, made to forge the Pale Crown on an
+ * forged, the Bone-Steel Foundry where Ossa the Founder pours the Host's bone-steel, and the Ashen
+ * Court of Ashkar's maddened guard, to the throne room over the lake of fire. There Ashkar sits
+ * chained to his throne, made to forge the Pale Crown on an
  * anvil before him: four chains run from his shackles to anchors in the floor (break them and he burns
  * hotter, but every chain he tears out himself rips a burning furrow through the floor), and when the
  * Crown rises onto his brow it wards him until it is broken. The rooms seal while you fight in them
@@ -77,7 +78,7 @@ const MAP = [
   '#########..............###############iiiiiiiiiiiiiiiiiiiiiiii############lllllllllllllllllllllllll#############',
   '########.Q............Q.##############iiiiiiiiiiiiiiiiiiiiiiiiD..........Dlllllllllllllllylllllllll#############',
   '#######..................#############iiiiiiiiiiiiiiiiiiiiiiiiD..........DlllQlllllllllllllllllQlll#############',
-  '#######..................#############iiiiiiiiiiiiyiiiiiiiiiiiD..........Dlllllllllllllllllllllllll#############',
+  '#######..................#############iiiiiiiiiiiiyiWiiiiiiiiiD..........Dlllllllllllllllllllllllll#############',
   '#######........P.........#############ixiiiiiiiiiiiiiiiiiiiiii############lllllllllllllllllllllllll#############',
   '#######....y.............#############ixiiiiiiiiiiiiiiiiiiiiii############lllllljllllllllllljllllll#############',
   '########............oo..##############iiiiiiiiiiiiiiiiiiiiiixi############lllllllllllllllllllllllll#############',
@@ -95,6 +96,8 @@ const markers: Record<string, Marker> = {
   S: { kind: 'chest', id: 'mt-strongbox', tier: 'epic', once: true },
   O: { kind: 'boss', boss: 'magma-warden' },
   V: { kind: 'boss', boss: 'ashkar-the-bound' },
+  // the Bone-Steel Foundry: Ossa the Founder and her likenesses of the hero (sim/patterns/molten-throne.ts)
+  W: { kind: 'boss', boss: 'ossa-the-founder' },
   x: { kind: 'prop', prop: 'crate', solid: true },
   o: { kind: 'prop', prop: 'barrel', solid: true },
   y: { kind: 'prop', prop: 'bones' },
@@ -270,7 +273,7 @@ const bosses: Record<string, BossDef> = {
     name: 'The Magma Warden',
     title: 'Keeper of the Host’s Forges',
     sprite: 'magma-warden',
-    hp: 4000,
+    hp: 4600,
     dmg: 40,
     radius: 14,
     xp: 860,
@@ -333,12 +336,76 @@ const bosses: Record<string, BossDef> = {
     },
     intro: 'Bone-steel for a frame and the mountain’s own fire for a heart. The Host built it to keep Ashkar’s forges burning, and it has never once let them go out.',
   },
+  'ossa-the-founder': {
+    id: 'ossa-the-founder',
+    name: 'Ossa the Founder',
+    title: 'Mistress of the Bone-Steel Foundry',
+    sprite: 'ossa-the-founder',
+    hp: 6200,
+    dmg: 40,
+    radius: 14,
+    xp: 1400,
+    gold: [200, 280],
+    phases: [
+      {
+        at: 1,
+        speed: 34,
+        rest: [0.7, 1.05],
+        // she takes the hero's measure as they come in: the first likeness walks from the start
+        enter: [{ id: 'throne:likeness', w: 1, cd: 13, p: { count: 1, lag: 2.6, life: 9, wind: 1.2, mul: 0.6 } }],
+        patterns: [
+          // the founder's hammer, swung and brought down along a seam
+          { id: 'cleave', w: 3, cd: 3.5, p: { r: 58, arc: 1.1, wind: 0.8, lunge: 20, mul: 1.4 } },
+          { id: 'chop', w: 2, cd: 5, p: { len: 170, width: 26, wind: 0.85, mul: 1.6 } },
+          // white-hot rivets flung from the crucible
+          { id: 'spearFan', w: 2, cd: 5.5, p: { count: 5 } },
+          // the anvil stamped down: the floor rings out in waves
+          { id: 'slamRings', w: 2, cd: 8 },
+          { id: 'throne:likeness', w: 3, cd: 13, p: { count: 1, lag: 2.4, life: 9, mul: 0.6 } },
+        ],
+      },
+      {
+        at: 0.5,
+        banner: 'Ossa tips the great crucible: “One of you is not enough. Let me pour you twice.”',
+        speed: 40,
+        rest: [0.5, 0.85],
+        enter: [
+          { id: 'roar', w: 1, cd: 0 },
+          { id: 'throne:likeness', w: 1, cd: 12, p: { count: 2, lag: 2.2, gap: 1.6, life: 10, mul: 0.65, burst: 30 } },
+        ],
+        patterns: [
+          { id: 'cleave', w: 3, cd: 3, p: { swings: 2, r: 58, arc: 1.1, wind: 0.65, gap: 0.14, lunge: 22, mul: 1.35 } },
+          { id: 'chop', w: 2, cd: 4.5, p: { lines: 3, spread: 0.45, len: 170, width: 20, wind: 0.8, mul: 1.5 } },
+          { id: 'spearFan', w: 2, cd: 5, p: { count: 7 } },
+          { id: 'slamRings', w: 2, cd: 7 },
+          { id: 'throne:likeness', w: 3, cd: 12, p: { count: 2, lag: 2.2, gap: 1.6, life: 10, mul: 0.65, burst: 30 } },
+          { id: 'summon', w: 1, cd: 22, p: { enemies: ['bone-steel-sentinel', 'magma-sentry'] } },
+        ],
+      },
+    ],
+    first: { any: ['slagplate-legguards'] },
+    drops: {
+      items: {
+        any: ['slagplate-legguards', 'wardens-crucible', 'pale-crown-shard', 'static-band', 'second-wind-ring'],
+        warrior: ['bulwark-of-dawn'],
+        mage: ['twin-flame-circlet'],
+        ranger: ['huntmasters-hood'],
+        paladin: ['sunward-shield'],
+        priest: ['psalter-of-dawn'],
+        warlock: ['codex-of-hunger'],
+        druid: ['thicket-idol'],
+        gloamknight: ['lantern-of-the-last-watch'],
+      },
+      chance: [0.3, 0.5, 0.7],
+    },
+    intro: 'She poured the bone-steel for the Host’s every blade and every chain in Emberdeep. She looks at you the way a smith looks at ore.',
+  },
   'ashkar-the-bound': {
     id: 'ashkar-the-bound',
     name: 'Ashkar the Bound',
     title: 'Fire Lord of Emberdeep',
     sprite: 'ashkar-the-bound',
-    hp: 8000,
+    hp: 9400,
     dmg: 38,
     radius: 15,
     xp: 1725,
@@ -649,17 +716,7 @@ export const MOLTEN_THRONE: DungeonModule = {
           { enemies: ['legion-overseer', 'death-knight-squire', 'legion-arbalester'], elite: true },
         ],
       },
-      {
-        id: 'foundry',
-        floor: 'i',
-        title: 'The Bone-Steel Foundry',
-        checkpoint: true,
-        waves: [
-          { enemies: ['magma-sentry', 'legion-smith', 'legion-pyrebinder'] },
-          { enemies: ['bone-steel-sentinel', 'bone-steel-sentinel', 'legion-overseer'] },
-          { enemies: ['magma-sentry', 'ashkar-cinderguard', 'legion-pyrebinder'], elite: true },
-        ],
-      },
+      { id: 'foundry', floor: 'i', waves: [], boss: 'ossa-the-founder', checkpoint: true, title: 'The Bone-Steel Foundry' },
       {
         id: 'ashen-court',
         floor: 'l',

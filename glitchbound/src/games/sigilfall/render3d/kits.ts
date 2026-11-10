@@ -204,6 +204,20 @@ put('the-runewarden', {
     { m: 'Rock_1_A', x: -0.3, y: 0.74, z: 0, h: 0.13, tint: '#ffd27a' },
   ],
 });
+// the Host's founder in the Bone-Steel Foundry: a giant of fused bone, her anvil slung on her back, the founder's hammer
+// and her crucible white-hot
+put('ossa-the-founder', {
+  k: 'sk_golem',
+  tint: '#e8dcc8',
+  gain: 1.05,
+  size: 1.55,
+  ...SMASH,
+  gear: [
+    { m: 'anvil', y: 0.6, z: -0.3, h: 0.36, tint: '#6a6670' },
+    { m: 'w_hammer_C', x: 0.36, y: 0.28, z: 0.1, h: 0.6, tipZ: 0.35, tint: '#ffb070' },
+    { m: 'bucket', x: -0.36, y: 0.38, z: 0.14, h: 0.2, tint: '#ff8a3a' },
+  ],
+});
 put('veil-sentinel', { k: 'golem', tint: VOID, ...SMASH });
 
 /* ------------------------------------------------------------------ the living */
