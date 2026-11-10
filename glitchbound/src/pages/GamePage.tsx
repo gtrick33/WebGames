@@ -41,6 +41,7 @@ const AdRetry = lazy(fresh(() => import('../components/AdRetry').then((m) => ({ 
 import { openSignIn } from '../components/openSignIn';
 import { setGuestName, usePlayerName } from '../platform/playerName';
 import { isIos, isStandalone } from '../platform/install';
+import { shouldGoToTop } from '../platform/safariBars';
 import { music } from '../platform/music';
 import { openFeedback } from '../platform/feedback';
 import type { EndEvent, GameEvent } from '../platform/contract';
@@ -186,6 +187,9 @@ export function usePlayMode(ref: RefObject<HTMLElement | null>, onLeave?: () => 
       // The page may have moved under the pinned stage (iPhone Safari): come back to the top, where
       // the game's toolbar and the way back to the arcade are (issue #21).
       if (was === 'immersive' && next === 'none') window.scrollTo(0, 0);
+      // And into it from part of the way down the page: from the top too, or the room under the stage is used up
+      // before the first swipe and Safari's bar can't be tucked away (platform/safariBars.ts).
+      if (next === 'immersive' && was !== 'immersive') window.scrollTo(0, 0);
     },
     [ref],
   );
@@ -348,19 +352,45 @@ function SafariBarsHandle() {
     const probe = document.createElement('div');
     probe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:100lvh;visibility:hidden;pointer-events:none';
     document.body.appendChild(probe);
-    const check = (): void => {
-      const out = window.innerHeight < probe.offsetHeight - 24;
+    let wasOut = false;
+    let touching = false;
+    const isOut = (): boolean => window.innerHeight < probe.offsetHeight - 24;
+    // (the page back at its top whenever the bar is out and nobody is mid-swipe: the next swipe always has room)
+    const check = (because: 'bar' | 'lift' | 'scroll'): void => {
+      const out = isOut();
       setOpen(out);
       if (!out) setDismissed(false);
+      if (because !== 'scroll' && shouldGoToTop({ out, wasOut, touching, scrollY: window.scrollY }, because)) window.scrollTo(0, 0);
+      wasOut = out;
     };
-    check();
-    window.addEventListener('resize', check);
-    window.addEventListener('scroll', check, { passive: true });
-    window.visualViewport?.addEventListener('resize', check);
+    const onBar = (): void => check('bar');
+    const onScroll = (): void => check('scroll');
+    const onTouch = (): void => {
+      touching = true;
+    };
+    let lifted = 0;
+    const onLift = (e: TouchEvent): void => {
+      touching = e.touches.length > 0;
+      if (touching) return;
+      // (once Safari has finished moving its bar after the swipe)
+      window.clearTimeout(lifted);
+      lifted = window.setTimeout(() => check('lift'), 450);
+    };
+    check('bar');
+    window.addEventListener('resize', onBar);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.visualViewport?.addEventListener('resize', onBar);
+    window.addEventListener('touchstart', onTouch, { passive: true });
+    window.addEventListener('touchend', onLift, { passive: true });
+    window.addEventListener('touchcancel', onLift, { passive: true });
     return () => {
-      window.removeEventListener('resize', check);
-      window.removeEventListener('scroll', check);
-      window.visualViewport?.removeEventListener('resize', check);
+      window.clearTimeout(lifted);
+      window.removeEventListener('resize', onBar);
+      window.removeEventListener('scroll', onScroll);
+      window.visualViewport?.removeEventListener('resize', onBar);
+      window.removeEventListener('touchstart', onTouch);
+      window.removeEventListener('touchend', onLift);
+      window.removeEventListener('touchcancel', onLift);
       probe.remove();
     };
   }, []);

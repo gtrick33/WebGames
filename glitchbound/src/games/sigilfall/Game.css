@@ -6542,9 +6542,47 @@
 .cs-mode.is-rift {
   --m: #b48cff;
 }
-.cs-mode.is-danger {
-  --m: #d8404f;
-  background: linear-gradient(155deg, rgb(70 12 22 / 0.94), #120610 82%);
+.cs-mode.is-party {
+  --m: #5ad6c8;
+}
+.cs-mode-glyph.is-party {
+  background: rgb(8 34 38 / 0.9);
+  color: #9ff2e8;
+  font: 700 clamp(13px, 3.4cqh, 20px) system-ui, sans-serif;
+}
+/* the way into the story says where it leads */
+.cs .cs-enter {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 1px;
+}
+.cs .cs-enter small {
+  overflow: hidden;
+  max-width: 100%;
+  color: #5a3410;
+  font: 600 clamp(10px, 1.5cqw, 12.5px) / 1.1 system-ui, sans-serif;
+  text-overflow: ellipsis;
+  text-shadow: none;
+  white-space: nowrap;
+}
+/* deleting a hero is not one of the ways in: a small button by the settings */
+.cs-delete {
+  opacity: 0.72;
+}
+.cs-delete:hover,
+.cs-delete:focus-visible {
+  opacity: 1;
+  color: #ff9a9a;
+}
+/* who stands here reads over anything the hall puts behind the words (the rose window is bright) */
+.cs-id::before {
+  content: '';
+  position: absolute;
+  inset: -14% -18% -22%;
+  z-index: -1;
+  background: radial-gradient(ellipse at 50% 42%, rgb(6 3 16 / 0.72), rgb(6 3 16 / 0.4) 48%, transparent 72%);
+  pointer-events: none;
 }
 .cs-mode.is-locked {
   --m: #6d6580;
@@ -6568,20 +6606,32 @@
     min-height: clamp(30px, 8cqh, 44px);
   }
 }
-@container (max-width: 620px) {
+/* a stage of middling width: the cards stand up, picture over words, so no name is ever cut short */
+@container (max-width: 1000px) {
   .cs-mode {
     flex-direction: column;
     justify-content: center;
+    gap: 3px;
+    padding: 5px 4px;
+    text-align: center;
+  }
+  .cs-mode strong {
+    white-space: normal;
+  }
+  .cs-mode small {
+    -webkit-line-clamp: 3;
+  }
+}
+@container (max-width: 620px) {
+  .cs-mode {
     gap: 2px;
     padding: 3px;
-    text-align: center;
   }
   .cs-mode small {
     display: none;
   }
   .cs-mode strong {
     font-size: 11px;
-    white-space: normal;
   }
 }
 @container (max-height: 300px) {

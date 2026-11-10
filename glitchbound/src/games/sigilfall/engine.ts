@@ -951,6 +951,14 @@ export class SigilEngine {
   }
   private shelfAsked = false;
 
+  /** Into the world with this hero, and straight to the party page: the title's "Play together". */
+  playTogether(slot: number): void {
+    this.play(slot);
+    if (this.ui.screen !== 'game' || this.slot !== slot) return;
+    this.ui = { ...this.ui, panel: 'party' };
+    this.bump();
+  }
+
   play(slot: number): void {
     const locked = this.save.heroes[slot];
     if (slot >= heroSlots(account.get().me)) return;
