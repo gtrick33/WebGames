@@ -1,4 +1,5 @@
 import type { MountDef } from '../data/mounts';
+import type { Paint, Wear } from './repaint';
 
 /**
  * Who plays whom. Every creature name in the game's data has a line here, chosen against the story: the Ashen Host are
@@ -44,6 +45,14 @@ export interface Kit {
    * blades, wings, plates and light, sized and moved as a creature (it walks, strikes and falls as one).
    */
   steed?: MountDef;
+  /**
+   * Its model painted part by part (render3d/repaint.ts): each part found by its color in the file or the bone it hangs
+   * from, and recolored, cut away or set alight. A model so painted needs a file of its own (`k`), since a file is
+   * loaded once.
+   */
+  paint?: readonly Paint[];
+  /** What is built onto it, on its head: a crown, eyes alight. They move with the head, as its own. */
+  wears?: readonly Wear[];
 }
 
 const ASH = '#b9b4bf';
@@ -86,24 +95,32 @@ put('legion-scout', { k: 'a_horse_white', tint: '#58545f', top: { k: 'sk_warrior
 put('legion-lancer', { k: 'a_horse_white', tint: '#6c6470', top: { k: 'sk_spear', tint: ASH, clip: 'sit', y: 0.62, size: 0.74 } });
 put('border-reaver', { k: 'a_horse_white', tint: '#47505a', top: { k: 'sk_warrior', tint: COLD, clip: 'sit', y: 0.62, size: 0.74 } });
 put('death-knight death-knight-initiate death-knight-squire pale-knight revenant-knight hollow-sentinel the-gatewarden the-headless-lord sir-corvane sir-corvane-foot general-morvain hollow-guard', { k: 'black_knight', tint: '#8a8698', atk: 'chop2' });
-// Vaelor, the Hallow King, last holder of the last sigil: plate gone rime-blue with three hundred winters, a crimson
-// royal cowl, an ice greatsword; and the Ash Crown on his brow, his old circlet grown into nine points of ice
+// Vaelor, the Hallow King, last holder of the last sigil: black plate rimed over with three hundred winters, its old
+// gilding gone to pale silver, an ice greatsword alight in his hand; and the Ash Crown on his brow, his old circlet grown
+// into nine points of ice, his eyes two cold lights under it. No plume: nothing of his has had color for three centuries.
 put('vaelor', {
   k: 'vaelor',
-  tint: '#9cb8ea',
-  gain: 1.3,
   size: 1.6,
   atk: 'chop2',
-  gear: [
-    { m: 'w_dagger_A', x: 0.0, y: 0.88, z: -0.055, h: 0.11, tipX: -0.3, tipZ: 0.0, tint: '#eaf8ff' },
-    { m: 'w_dagger_A', x: 0.042, y: 0.88, z: -0.07, h: 0.095, tipX: -0.23, tipZ: 0.19, tint: '#eaf8ff' },
-    { m: 'w_dagger_A', x: 0.064, y: 0.88, z: -0.109, h: 0.095, tipX: -0.05, tipZ: 0.3, tint: '#eaf8ff' },
-    { m: 'w_dagger_A', x: 0.056, y: 0.88, z: -0.152, h: 0.095, tipX: 0.15, tipZ: 0.26, tint: '#eaf8ff' },
-    { m: 'w_dagger_A', x: 0.022, y: 0.88, z: -0.181, h: 0.095, tipX: 0.28, tipZ: 0.1, tint: '#eaf8ff' },
-    { m: 'w_dagger_A', x: -0.022, y: 0.88, z: -0.181, h: 0.095, tipX: 0.28, tipZ: -0.1, tint: '#eaf8ff' },
-    { m: 'w_dagger_A', x: -0.056, y: 0.88, z: -0.153, h: 0.095, tipX: 0.15, tipZ: -0.26, tint: '#eaf8ff' },
-    { m: 'w_dagger_A', x: -0.064, y: 0.88, z: -0.109, h: 0.095, tipX: -0.05, tipZ: -0.3, tint: '#eaf8ff' },
-    { m: 'w_dagger_A', x: -0.042, y: 0.88, z: -0.07, h: 0.095, tipX: -0.23, tipZ: -0.19, tint: '#eaf8ff' },
+  paint: [
+    // the plume and the old bone crown come off the helm
+    { joint: 'head', hue: [320, 20], sat: [0.5, 1], cut: true },
+    { joint: 'head', hue: [20, 60], lum: [0.7, 1], cut: true },
+    // the greatsword: ice, alight along its length
+    { joint: 'handslot.r', lum: [0.42, 1], to: '#bfe6ff' },
+    { joint: 'handslot.r', to: '#4a78c4' },
+    // the red of his arms: what's left of the royal gilding
+    { hue: [320, 20], sat: [0.5, 1], to: '#c2cee4' },
+    // leather and cloth: frozen stiff, the blue-black of the citadel
+    { hue: [10, 50], to: '#3c4668', keep: 0.8 },
+    // the plate: its dark as it was, its lit faces frosted
+    { hue: [190, 270], lum: [0.5, 1], to: '#9db6da' },
+    { hue: [190, 270], lum: [0.24, 0.5], to: '#34446e', keep: 0.9 },
+    { hue: [190, 270], to: '#141b34', keep: 0.6 },
+  ],
+  wears: [
+    { piece: 'ice-crown', a: '#5d9ae6', b: '#f2fcff', size: 1.12 },
+    { piece: 'eyes', b: '#dff6ff', lift: 0.3 },
   ],
 });
 put('captain-hollowbane captain-gloam', { k: 'sk_guard', tint: COLD, size: 1.12 });

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { dressed, repaint } from './repaint';
 import { ART_TILE, TILE } from '../sim/map';
 import { Crowd, Stand } from './crowd';
 import { dressedOf, type Held, type Wardrobe } from './dress';
@@ -210,7 +211,7 @@ export class Cast {
       const entry = e;
       void loadPack(`k/${id}`)
         .then((pack) => {
-          const mesh = pack.meshes.body!;
+          let mesh = pack.meshes.body!;
           const w = this.wardrobe;
           if (!w) {
             entry.loading = false;
@@ -218,6 +219,9 @@ export class Cast {
             return;
           }
           const rig = mesh.rig === 'medium' ? w.medium : mesh.rig === 'large' ? w.large : rigAnimOf(pack, mesh.rig!);
+          // a boss painted part by part, and what's built onto it (kits.ts paint, wears)
+          if (kit.paint) mesh = repaint(mesh, rig.joints, kit.paint);
+          if (kit.wears) mesh = dressed(mesh, rig.joints, kit.wears);
           entry.rig = rig;
           entry.mesh = mesh;
           // (the animals of their set are flat-faceted and flat-colored: lit by their smooth normals they read rounded, as

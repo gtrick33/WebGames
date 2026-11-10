@@ -14,7 +14,7 @@ const MAP = [
   '############################################################',
   '##########ggQgggggggQggggg########gggggQgggggggQgg##########',
   '##########gggggggggggggggggggnnggggggggggggggggggg##########',
-  '##########gggggggggggggggggggggggggggggggggggggggg##########',
+  '##########ggggggggggggggggggggTggggggggggggggggggg##########',
   '##########ggggggggggggggggggggVggggggggggggggggggg##########',
   '##########gggggggggggggggggggggggggggggggggggggggg##########',
   '##########gggggggggggggggggggggggggggggggggggggggg##########',
@@ -129,6 +129,8 @@ const markers: Record<string, Marker> = {
   // the Hall of Kneeling Dead: Lady Cendre and her vigil (sim/patterns/duskspire.ts)
   W: { kind: 'boss', boss: 'lady-cendre' },
   n: { kind: 'prop', prop: 'bones' },
+  // his throne, at the head of the room behind him (seen, not bumped into: his fight is measured to an open floor)
+  T: { kind: 'prop', prop: 'frozen-throne', through: true },
 };
 
 /* ------------------------------------------------------------ enemies */

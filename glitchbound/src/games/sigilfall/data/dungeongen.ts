@@ -135,7 +135,8 @@ export const ARENAS: Record<string, Arena> = {
   // Duskspire
   'lady-cendre': { wall: ['coffin', 'candles', 'gravestone', 'coffin'], side: ['coffin', 'candles'], fires: 'grave-lamp', corners: 'grave-lamp', carpet: '#2a2238', ring: { prop: 'candles', n: 14, at: 0.5 }, bits: ['bones', 'skulls', 'candles'], litter: 1.5, carpetStyle: 'twin', floor: { kind: 'mosaic', a: '#4e4c5c', b: '#3a3848' } },
   'hollow-guard': { wall: ['weapon-rack', 'banner-blue', 'armor-stand'], side: ['armor-stand', 'weapon-rack'], fires: 'iron-torch', corners: 'ice-column', carpet: '#2a3a6a', rows: { prop: 'armor-stand', inset: 2, step: 4 }, carpetStyle: 'border', floor: { kind: 'marble', a: '#9eb0d0', b: '#7a8cac' } },
-  vaelor: { fires: 'iron-torch', corners: 'ice-crystal', ring: { prop: 'ice-crystal', n: 12, at: 0.9 }, carpetStyle: 'cross', floor: { kind: 'marble', a: '#ccdef4', b: '#a8bcd8' } },
+  // the throne room: black ice-stone polished to a mirror, the house's banners gone white on the wall behind the throne
+  vaelor: { wall: ['royal-banner', 'armor-stand', 'royal-banner'], fires: 'iron-torch', corners: 'ice-crystal', ring: { prop: 'ice-crystal', n: 12, at: 0.9 }, carpet: '#1c2a5e', carpetStyle: 'runner', floor: { kind: 'marble', a: '#3b4a72', b: '#2a3658' } },
   // the Crown Catacombs
   'silas-vey': { wall: ['bone-heap', 'coin-pile', 'bone-heap'], side: ['bone-heap', 'skulls'], fires: 'iron-torch', corners: 'gold-chest', carpet: null, ring: { prop: 'skulls', n: 12, at: 0.7 }, bits: ['coin-pile', 'bones', 'skulls'], litter: 2, floor: { kind: 'rough', a: '#5e5442', b: '#4a4234' } },
   'the-royal-auditor': { wall: ['bookshelf', 'counter', 'bookshelf'], side: ['coin-pile', 'candles'], fires: 'lantern', corners: 'iron-torch', carpet: '#2a3a5a', rows: { prop: 'table', inset: 2, step: 4 }, bits: ['coin-pile', 'candles'], carpetStyle: 'border', floor: { kind: 'plank', a: '#6e5238', b: '#5a4430' } },

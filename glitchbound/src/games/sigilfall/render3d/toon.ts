@@ -256,6 +256,15 @@ export const LIGHT = {
    * push back with their own. All of it lit, near and far alike: a night, and not a pool of light with nothing past it.
    */
   uNight: { value: new THREE.Vector4(1, 1, 1, 0) },
+  /**
+   * Under a roof: the room's own dim light (rgb), and how much of it holds (a; 0 out of doors). Its fires push it back
+   * in their own color (uFlameCol), and the hero carries a little light with them, so a deep place is dark and what
+   * matters in it is lit.
+   */
+  uAmb: { value: new THREE.Vector4(1, 1, 1, 0) },
+  uFlameCol: { value: new THREE.Vector3(1, 0.72, 0.42) },
+  /** The light along the edge of whoever moves, turned away from the camera: it lifts them off what's behind them. */
+  uRim: { value: new THREE.Vector3(0.5, 0.47, 0.4) },
 };
 
 const COMMON_VERT = /* glsl */ `
@@ -309,6 +318,9 @@ uniform vec4 uDark;
 uniform vec4 uSee;
 uniform vec3 uFlames[8];
 uniform vec4 uNight;
+uniform vec4 uAmb;
+uniform vec3 uFlameCol;
+uniform vec3 uRim;
 varying vec3 vCol;
 varying vec3 vN;
 varying vec3 vW;
@@ -360,8 +372,30 @@ vec3 nightOver(vec3 c, float amount) {
   vec3 warm = c * vec3(1.08, 0.92, 0.72);
   return mix(c, mix(moon, warm, fireHere()), uNight.a * amount);
 }
+/**
+ * The light of a room under a roof on this spot: its own dimness, each fire's pool in the fire's color (brightest at
+ * its foot, never ruled off at an edge), and the light the hero carries. spare is how much of the dark this is spared
+ * (who moves is spared some of it, so a figure never muddies into the floor).
+ */
+vec3 roomLight(float spare) {
+  float fire = 0.0;
+  for (int i = 0; i < 8; i++) {
+    if (uFlames[i].z > 0.0) {
+      float t = 1.0 - clamp(length(vW.xz - uFlames[i].xy) / (uFlames[i].z * 1.3), 0.0, 1.0);
+      fire += t * t;
+    }
+  }
+  float hero = 1.0 - smoothstep(1.5, 9.5, length(vW.xz - uSee.xz));
+  // (toward full light in the fire's color, never past it: a pool of light, not a white hole)
+  float f = 1.0 - exp(-fire * 1.5);
+  vec3 l = mix(uAmb.rgb, uFlameCol * 1.12, f * 0.78);
+  l += (vec3(1.0) - l) * hero * 0.5;
+  l = mix(l, max(l, vec3(0.96)), spare);
+  return mix(vec3(1.0), l, uAmb.a);
+}
 vec3 finishWith(vec3 c, float night) {
   c = mix(c, uGrade.rgb, uGrade.a);
+  if (uAmb.a > 0.0) c *= roomLight((1.0 - night) * 0.9);
   if (uNight.a > 0.0) c = nightOver(c, night);
   if (uDark.x > 0.0) {
     float d = length(vW.xz - uSee.xz);
@@ -425,6 +459,10 @@ export function animMaterial(anim: RigAnim): THREE.ShaderMaterial {
         vec3 c = toon(vCol, n);
         // a touch of sky on what faces up, so dark armor keeps its shape
         c += vec3(0.05, 0.06, 0.09) * max(n.y, 0.0);
+        // and a light along the edge turned from the camera, strongest up top: a figure reads against any floor
+        vec3 toEye = normalize(cameraPosition - vW);
+        float rim = pow(1.0 - clamp(dot(n, toEye), 0.0, 1.0), 2.6) * smoothstep(-0.35, 0.5, n.y);
+        c += uRim * rim * (0.55 + 0.45 * vCol);
         // at night, whoever's out in it stands out of it: less of the dark on them, and the moon along their edges
         c = finishWith(c, 0.6);
         if (uNight.a > 0.0) c += vec3(0.2, 0.28, 0.5) * pow(1.0 - clamp(dot(n, vec3(0.0, 0.766, 0.643)), 0.0, 1.0), 2.6) * uNight.a;
@@ -573,7 +611,13 @@ export const staticMaterial = new THREE.ShaderMaterial({
     ${FRAG_COMMON}
     void main() {
       seeThrough();
-      vec3 c = toon(vCol, normalize(vN));
+      vec3 n = normalize(vN);
+      vec3 c = toon(vCol, n);
+      // what stands is darker at its foot, where it meets the ground and the light doesn't reach (not what lies flat),
+      // and under a roof a wall goes on darkening down its whole height
+      float up = max(n.y, 0.0);
+      c *= mix(0.68, 1.0, clamp(smoothstep(0.0, 0.62, vW.y) + up, 0.0, 1.0));
+      if (uAmb.a > 0.0) c *= mix(0.86, 1.04, clamp(smoothstep(0.0, 2.4, vW.y) + up, 0.0, 1.0));
       gl_FragColor = vec4(finish(c), 1.0);
     }`,
 });

@@ -5,6 +5,7 @@ import { isMainQuest, turnInNpc } from '../progress/handin';
 import { LEAD, leanTarget, LIFT } from './camera';
 import { Effects, headOf } from './effects';
 import { THEMES } from '../data/themes';
+import { ROOM } from './rooms';
 import type { ClassId } from '../data/types';
 import { TILE } from '../sim/map';
 import type { Enemy, NpcActor, Pet } from '../sim/types';
@@ -444,6 +445,9 @@ export class Renderer {
 
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    g.setTransform(this.k, 0, 0, this.k, 0, 0);
+    this.vignette(g, w);
+    g.setTransform(1, 0, 0, 1, 0, 0);
 
     // ---- what's drawn on the ground for the player: on its own layer, under whatever stands
     const near0 = (x: number, y: number): boolean => Math.abs(x - cx) < this.vw * 0.7 && Math.abs(y - cy) < this.vh * 0.9;
@@ -535,6 +539,20 @@ export class Renderer {
     return out;
   }
 
+  /** The dim edge of a deep place: drawn under the names and bars, over the world. */
+  private vignette(g: CanvasRenderingContext2D, w: World): void {
+    if (!w.region.dark) return;
+    const W = this.cssW;
+    const H = this.cssH;
+    const room = ROOM[w.region.theme] ?? ROOM.default!;
+    const grd = g.createRadialGradient(W / 2, H * 0.52, Math.min(W, H) * 0.42, W / 2, H * 0.52, Math.hypot(W, H) * 0.62);
+    grd.addColorStop(0, `rgba(${room.edge},0)`);
+    grd.addColorStop(0.6, `rgba(${room.edge},0.22)`);
+    grd.addColorStop(1, `rgba(${room.edge},0.62)`);
+    g.fillStyle = grd;
+    g.fillRect(0, 0, W, H);
+  }
+
   private setMood(w: World, st: Stage, dt: number): void {
     const look = THEMES[w.region.theme];
     const grade = LIGHT.uGrade.value;
@@ -543,6 +561,16 @@ export class Renderer {
     const dread = look.dread;
     grade.set(0, 0, 0, 0);
     dark.set(0, 8, 0, 0);
+    // a deep place has its own dim light, which its fires push back in their own color (render3d/toon.ts roomLight)
+    const room = w.region.dark ? (ROOM[w.region.theme] ?? ROOM.default!) : null;
+    if (room) {
+      LIGHT.uAmb.value.set(room.amb[0], room.amb[1], room.amb[2], 1);
+      LIGHT.uFlameCol.value.set(room.fire[0], room.fire[1], room.fire[2]);
+      LIGHT.uRim.value.set(room.rim[0], room.rim[1], room.rim[2]);
+    } else {
+      LIGHT.uAmb.value.set(1, 1, 1, 0);
+      LIGHT.uRim.value.set(0.5, 0.47, 0.4);
+    }
     // night falling or lifting is a matter of a few seconds; coming into a land it's already what it is
     const state = w.storyState;
     const want = state?.night ? 1 : state?.dusk ? 0.7 : 0;

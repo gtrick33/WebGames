@@ -184,6 +184,10 @@ export const PROPS: Record<string, PropDef> = {
   lion: { m: 'statue_block', w: 24, d: 24, h: 9, box: true, tint: '#8a8a90', hero: 30 },
   throne: { m: 'built_throne', w: 28, d: 26, h: 36 },
   'high-throne': { m: 'built_throne', w: 42, d: 34, h: 52 },
+  // the Hallow King's seat on its dais (render3d/propsBuilt.ts frozenThrone)
+  'frozen-throne': { m: 'built_frozen_throne', w: 132, d: 60, h: 150, glow: '#bfe4ff' },
+  // the banner of the house of Vaelmoor, as it stands in Duskspire still: white, the color gone out of it
+  'royal-banner': { m: 'built_flag_royal', w: 30, d: 12, h: 70 },
   hearth: { m: 'campfire_bricks', w: 62, d: 26, h: 16, across: true, tint: '#9a8e80', flame: 1.3, flameAt: 8 },
   forge: { m: 'campfire_bricks', w: 46, d: 26, h: 18, across: true, tint: '#a09aa8', flame: 1.2, flameAt: 12 },
   grindstone: { m: 'grindstone', w: 20, d: 18, h: 22 },
@@ -210,6 +214,8 @@ const BODIES: Record<string, [number, number]> = {
   'blue-banner': [4, 4],
   'red-banner': [4, 4],
   'skull-banner': [4, 4],
+  'royal-banner': [4, 4],
+  'frozen-throne': [112, 43],
   'banner-red': [16, 5],
   'banner-blue': [16, 5],
   'banner-shield': [18, 6],

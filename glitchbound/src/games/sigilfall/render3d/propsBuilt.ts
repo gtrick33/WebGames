@@ -415,7 +415,51 @@ function scarecrow(): Build {
   return b;
 }
 
+/**
+ * The Hallow King's seat: a dais of three steps in the citadel's blue-black stone, a great chair of it rimed white, and
+ * a back that rises in seven spires of ice, the middle one tallest, their tips alight. It is as wide as three men.
+ */
+function frozenThrone(): Build {
+  const b = new Build();
+  const m = b.m;
+  const stone = rgb('#3c4a70');
+  const dark = rgb('#1e2744');
+  const rime = rgb('#a8c4ea');
+  const ice = rgb('#6aa4ea');
+  const lit = rgb('#eefaff');
+  // (it stands against the wall behind it: its back is just in front of its own middle, its steps come forward)
+  // the dais: three steps, each rimed along its edge
+  for (let i = 0; i < 3; i++) {
+    const w = 1.5 - i * 0.2;
+    b.box(-w, -0.3, w, 0.86 - i * 0.16, i * 0.12, (i + 1) * 0.12, mul(stone, 0.9), dark, i === 2 ? stone : mul(rime, 0.74));
+  }
+  const y = 0.36;
+  // the seat between two great arms
+  b.box(-0.5, -0.1, 0.5, 0.42, y, y + 0.46, stone, dark, mul(rime, 0.8));
+  for (const side of [-1, 1] as const) {
+    const x0 = side < 0 ? -0.78 : 0.5;
+    b.box(x0, -0.1, x0 + 0.28, 0.46, y, y + 0.82, stone, dark, rime);
+    // a shard of ice standing from the front of each arm
+    b.post(x0 + 0.14, 0.36, 0.1, 0.0, y + 0.82, y + 1.3, 4, ice, lit, 0, 0.04, Math.PI / 4);
+  }
+  // the back: a wall of stone, and the spires rising from it
+  b.box(-0.82, -0.28, 0.82, -0.08, y, y + 1.9, stone, dark, rime);
+  b.faceS(-0.42, 0.42, -0.075, y + 0.5, y + 1.8, dark, mul(stone, 0.7));
+  const spires: readonly (readonly [number, number, number])[] = [[0, 1.75, 0.17], [-0.3, 1.25, 0.14], [0.3, 1.25, 0.14], [-0.56, 0.9, 0.12], [0.56, 0.9, 0.12], [-0.76, 0.56, 0.1], [0.76, 0.56, 0.1]];
+  for (const [x, tall, r] of spires) {
+    const y0 = y + 1.9;
+    b.post(x, -0.18, r, r * 0.6, y0, y0 + tall * 0.5, 4, ice, mul(ice, 1.15), 0, 0, Math.PI / 4);
+    // (its upper half gives its own light: a normal too short to shade, as meshKit's glowing parts have)
+    const from = m.nor.length;
+    b.post(x, -0.18, r * 0.6, 0.0, y0 + tall * 0.5, y0 + tall, 4, mul(ice, 1.3), lit, 0, 0, Math.PI / 4);
+    for (let i = from; i < m.nor.length; i++) m.nor[i] = 0;
+  }
+  return b;
+}
+
 const BUILDERS: Record<string, () => Build> = {
+  built_frozen_throne: frozenThrone,
+  built_flag_royal: () => standard(rgb('#cfdcf2'), rgb('#8a9cc4'), rgb('#3f62b4')),
   built_lamp: lamp,
   built_lantern: lantern,
   built_torch: () => poleTorch(WOOD, WOOD_DARK),

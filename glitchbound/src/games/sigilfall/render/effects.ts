@@ -666,6 +666,8 @@ export class Effects {
         if (!sc.near(x, y)) continue;
         const r = f.size * (0.92 + Math.sin(sc.time * 1.8 + x) * 0.08);
         fx.put({ kind: FX.glow, x, y, up: f.y * TILE, w: r * 2.6, a: f.color, alpha: 0.6 });
+        // in a deep place its light lies on the floor round it too: a small warm pool in the room's cold
+        if (w.region.dark) fx.put({ kind: FX.glow, x, y, flat: true, w: r * 9, a: f.color, alpha: 0.2 + Math.sin(sc.time * 5.3 + x * 0.7) * 0.02 });
       }
     }
     for (const f of w.fires) {
