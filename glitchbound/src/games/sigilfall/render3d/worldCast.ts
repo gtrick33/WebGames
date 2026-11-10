@@ -282,6 +282,8 @@ export class WorldCast {
     const body = beast ?? m;
     if (p.dead) body.set('die', false);
     else if (inSaddle) m.set('ride');
+    // a guard, not a step (the Gloamknight's Stand Fast): the blade and the arm up, feet planted
+    else if (p.guard > 0 && !beast) m.set('block', false, 0.06);
     else if (p.dash?.dodge) body.set(beast ? 'run' : 'dodge', !!beast);
     else if (whirling && !beast) {
       // a whirlwind: the blade held out at arm's length, and all of them going round

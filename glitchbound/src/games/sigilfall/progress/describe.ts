@@ -162,7 +162,7 @@ export function buffText(b: BuffDef): string {
   const m = b.empower;
   if (m) {
     const how = [m.pct ? `+${m.pct}% damage${b.max ? ' a stack' : ''}` : '', m.free ? 'free' : '', m.instant ? 'no cast time' : '', m.ready ? 'ready at once' : ''].filter(Boolean);
-    parts.push(`your next ${m.casts && m.casts > 1 ? `${m.casts} casts of ` : ''}${SKILLS[m.skill]?.name ?? m.skill}: ${how.join(', ')}`);
+    parts.push(`your next ${m.casts && m.casts > 1 ? `${m.casts} casts of ` : ''}${m.type ? `${DMG_NAME[m.type].toLowerCase()} skill` : (SKILLS[m.skill]?.name ?? m.skill)}: ${how.join(', ')}`);
   }
   if (b.max && !m) parts.push(`stacks to ${b.max}`);
   return `${b.name} for ${secs(b.dur)}: ${parts.join(', ')}`;
@@ -209,7 +209,7 @@ export function opText(skill: string, op: SkillOp): string {
     case 'trail':
       return `${s} ${groundText(op.ground)} along its path.`;
     case 'bonusVs':
-      return `${s} deals +${op.pct}% damage to ${op.status === 'lowHp' ? 'enemies below 30% health' : `${STATUS_NAME[op.status]} enemies`}.`;
+      return `${s} deals +${op.pct}% damage to ${op.status === 'lowHp' ? 'enemies below 30% health' : op.status === 'far' ? 'enemies a long way off' : `${STATUS_NAME[op.status]} enemies`}.`;
     case 'afterDodge':
       return `${s} deals +${op.pct}% damage within ${secs(op.window)} after a dodge.`;
     case 'gen':

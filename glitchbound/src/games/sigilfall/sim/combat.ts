@@ -43,6 +43,9 @@ export function gainResource(w: World, n: number, mana: 'points' | 'pct' = 'poin
   p.mana = Math.max(0, Math.min(p.maxMana, p.mana + add));
 }
 
+/** How far off an enemy is 'far' (world px: about four tiles and a half). */
+export const FAR = 118;
+
 export const hasStatus = (e: { statuses: { id: StatusId }[] }, id: StatusId): boolean => e.statuses.some((s) => s.id === id);
 const statusPower = (e: Enemy, id: StatusId): number => e.statuses.reduce((m, s) => (s.id === id ? Math.max(m, s.power) : m), 0);
 
@@ -72,7 +75,7 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
   let bonus = 0;
   if (spec) {
     for (const b of spec.bonusVs) {
-      if (b.status === 'lowHp' ? e.hp < e.maxHp * 0.3 : hasStatus(e, b.status)) bonus += b.pct;
+      if (b.status === 'lowHp' ? e.hp < e.maxHp * 0.3 : b.status === 'far' ? dist2(w.player.x, w.player.y, e.x, e.y) >= FAR * FAR : hasStatus(e, b.status)) bonus += b.pct;
     }
     if (spec.afterDodge && w.time - w.player.lastDodge <= spec.afterDodge.window) bonus += spec.afterDodge.pct;
   }
@@ -363,7 +366,7 @@ export function applyEffect(w: World, e: Effect, c: EffectCtx): void {
       w.addFx({ kind: 'ring', x: c.x, y: c.y, life: 0.35, size: e.radius, color: e.dmgType === 'frost' ? '#9be7ff' : e.dmgType === 'lightning' ? '#bfe9ff' : '#ffffff' });
       w.vfx(e.dmgType === 'frost' ? 'shatter:frost' : e.dmgType === 'lightning' ? 'thunder:lightning' : `blast:${e.dmgType}`, c.x, c.y, e.radius);
       if (e.dmgType === 'lightning') for (let i = 0; i < 5; i++) w.addFx({ kind: 'zap', x: c.x, y: c.y, x2: c.x + Math.cos((TAU * i) / 5) * e.radius, y2: c.y + Math.sin((TAU * i) / 5) * e.radius, life: 0.2, size: 1, color: '#bfe9ff' });
-      damageArea(w, c.x, c.y, e.radius, c.base * e.mul, e.dmgType ?? c.type, c.depth + 1, null, e.status ? [e.status] : []);
+      damageArea(w, c.x, c.y, e.radius, (e.ref ? CLASSES[w.hero.cls].refDamage : c.base) * e.mul, e.dmgType ?? c.type, c.depth + 1, null, e.status ? [e.status] : []);
       break;
     }
     case 'shockwave':
@@ -548,8 +551,18 @@ export function killEnemy(w: World, e: Enemy, type: DmgType, depth: number, spec
 
 /** The combo waiting on a skill, if one is (data/types.ts Empower), and how many stacks or casts of it there are. */
 export function empowerOf(w: World, skill: string): { def: BuffDef; n: number } | null {
-  for (const b of w.player.buffs) if (b.def.empower?.skill === skill) return { def: b.def, n: b.n ?? 1 };
+  for (const b of w.player.buffs) if (waitsOn(w, b.def, skill)) return { def: b.def, n: b.n ?? 1 };
   return null;
+}
+
+/** Whether a combo waits on this skill: its own, or (one that waits on a kind of damage) any skill of that kind but the basic attack. */
+function waitsOn(w: World, def: BuffDef, skill: string): boolean {
+  const m = def.empower;
+  if (!m) return false;
+  if (m.skill === skill) return true;
+  if (!m.type || w.build.bar.basic === skill) return false;
+  const spec = w.build.skills[skill]?.spec;
+  return !!spec && spec.dmgType === m.type && spec.damage > 0 && spec.cast !== 'buff' && spec.cast !== 'summon' && spec.cast !== 'form';
 }
 
 /** Whether a combo on a skill is all there (a stacking one only at full stacks). */
@@ -558,7 +571,7 @@ export const empowerFull = (e: { def: BuffDef; n: number }): boolean => !e.def.m
 /** A cast has used the combo that waited on its skill: a stacking one goes whole, the other loses a cast. */
 export function spendEmpower(w: World, skill: string): void {
   const p = w.player;
-  const b = p.buffs.find((x) => x.def.empower?.skill === skill);
+  const b = p.buffs.find((x) => waitsOn(w, x.def, skill));
   if (!b) return;
   b.n = b.def.max ? 0 : (b.n ?? 1) - 1;
   if (b.n <= 0) p.buffs = p.buffs.filter((x) => x !== b);
@@ -586,7 +599,11 @@ export function addBuff(w: World, def: BuffDef, skill?: string): void {
   const now = p.buffs.find((b) => b.def.id === def.id)!;
   const full = !def.max || (now.n ?? 1) >= def.max;
   if (def.empower) {
-    if (def.empower.ready && full && (said || !cur)) w.resetCooldown(def.empower.skill);
+    if (def.empower.ready && full && (said || !cur)) {
+      if (def.empower.type) {
+        for (const id of Object.values(w.build.bar)) if (id && waitsOn(w, def, id)) w.resetCooldown(id);
+      } else w.resetCooldown(def.empower.skill);
+    }
     if (full && (said || !cur) && def.max !== 1) {
       w.text(p.x, p.y - 34, def.name.toUpperCase(), def.color, true);
       w.addFx({ kind: 'ring', x: p.x, y: p.y, life: 0.4, size: 26, color: def.color });
@@ -641,10 +658,31 @@ export const armorReduction = (armor: number, level: number): number => Math.min
  * Hurts the hero (armor, then damage-cutting buffs, then a shield). `pierce`: armor doesn't count (a curse or the sea
  * takes a share of the hero's health, however they are dressed); a dodge, a shield and a ward still do.
  */
+/** Umbra for a blow taken on a Gloamknight's guard. */
+const GUARD_UMBRA = 14;
+
+/**
+ * A blow lands on a guard (the Gloamknight's Stand Fast): nothing gets through, the Umbra comes anyway, and whoever
+ * struck is paid back in shadow, the guard's strength times the class's reference damage.
+ */
+function guarded(w: World, source?: Enemy): void {
+  const p = w.player;
+  gainResource(w, GUARD_UMBRA);
+  w.addFx({ kind: 'ring', x: p.x, y: p.y, life: 0.25, size: 16, color: '#b89aff' });
+  w.sfx('shieldBreak', 0.6);
+  w.hitstop(0.04);
+  if (source && !source.dead) {
+    w.addFx({ kind: 'zap', x: p.x, y: p.y - 4, x2: source.x, y2: source.y - 4, life: 0.18, size: 1.2, color: '#b89aff' });
+    hitEnemy(w, source, CLASSES[w.hero.cls].refDamage * p.guardPow, 'shadow', { depth: 1, fromX: p.x, fromY: p.y, knock: 90 });
+  }
+  runProcs(w, 'block', { x: p.x, y: p.y, base: CLASSES[w.hero.cls].refDamage, type: 'shadow', depth: 1, hitDmg: 0, target: source && !source.dead ? source : undefined });
+}
+
 export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: number; knock?: number; status?: { status: StatusId; dur: number; power: number }; source?: Enemy; pierce?: boolean } = {}): boolean {
   const p = w.player;
   if (p.dead || dmg <= 0) return false;
   if (p.iframe > 0) {
+    if (p.guard > 0) guarded(w, o.source);
     w.dodgedSomething();
     return false;
   }

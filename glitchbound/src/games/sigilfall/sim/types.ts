@@ -68,6 +68,9 @@ export interface Player {
   shield: number;
   shieldT: number;
   iframe: number;
+  /** A guard held up (the Gloamknight's Stand Fast): seconds left, and how hard it pays a blow back. */
+  guard: number;
+  guardPow: number;
   dash: { vx: number; vy: number; t: number; spec: SkillSpec | null; hit: Set<number>; dodge: boolean } | null;
   windup: { slot: SlotKey; spec: SkillSpec; t: number; total: number; angle: number; tx: number; ty: number } | null;
   /** A spell being cast (SkillSpec.castTime), or null. */

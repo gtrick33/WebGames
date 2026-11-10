@@ -25,7 +25,7 @@ export const PALADIN: Kit = {
         color: '#fff2b0',
         role: 'Healing light and radiance',
         skill: 'holy-shock',
-        combo: combo('Answered Prayer', 'A critical Sun Spark is a prayer answered: your next Mending Vow is ready at once and costs no Zeal.', when('answered', 'crit', { kind: 'buff', buff: next('answered', 'Answered Prayer', '#ffe08a', 'word-of-glory', 10, { free: true, ready: true }) }, 'A critical Sun Spark makes Mending Vow free.', { skill: 'holy-shock' })),
+        combo: combo('Answered Prayer', 'Zeal spent is a prayer answered: every skill that spends Zeal mends you for 3% of your health, and a critical Sun Spark gives 2 Zeal back.', K('divine-storm', { op: 'onCast', effect: { kind: 'heal', pct: 3 } }), K('word-of-glory', { op: 'onCast', effect: { kind: 'heal', pct: 3 } }), K('sentence', { op: 'onCast', effect: { kind: 'heal', pct: 3 } }), K('cleansing-light', { op: 'onCast', effect: { kind: 'heal', pct: 3 } }), when('answered-prayer', 'crit', { kind: 'resource', n: 2 }, 'A critical Sun Spark gives 2 Zeal.', { skill: 'holy-shock', icd: 1 })),
         passive: { name: 'Light’s Grace', text: '+20% healing and +5% holy damage.', mods: [S('healing', 20), S('holy', 5)] },
       },
       {
@@ -34,7 +34,7 @@ export const PALADIN: Kit = {
         color: '#4fb0ff',
         role: 'Tank: shields and armor',
         skill: 'shield-of-the-righteous',
-        combo: combo('Unbroken', 'Each Bastion Strike that lands leaves you Unbroken: +6 armor and +3% damage a time, up to 5, for 8 s.', when('unbroken', 'hit', { kind: 'buff', buff: stack('unbroken', 'Unbroken', '#8ab8ff', 8, 5, { armor: 6, power: 3 }) }, 'Bastion Strike builds Unbroken.', { skill: 'shield-of-the-righteous', icd: 0.5 })),
+        combo: combo('Unbroken', 'Every time you spend Zeal you stand a little firmer: +6 armor and +3% damage a time, up to 5, for 8 s.', K('divine-storm', { op: 'onCast', effect: { kind: 'buff', buff: stack('unbroken', 'Unbroken', '#ffd84d', 8, 5, { armor: 6, power: 3 }) } }), K('word-of-glory', { op: 'onCast', effect: { kind: 'buff', buff: stack('unbroken', 'Unbroken', '#ffd84d', 8, 5, { armor: 6, power: 3 }) } }), K('shield-of-the-righteous', { op: 'onCast', effect: { kind: 'buff', buff: stack('unbroken', 'Unbroken', '#ffd84d', 8, 5, { armor: 6, power: 3 }) } }), K('sentence', { op: 'onCast', effect: { kind: 'buff', buff: stack('unbroken', 'Unbroken', '#ffd84d', 8, 5, { armor: 6, power: 3 }) } }), K('cleansing-light', { op: 'onCast', effect: { kind: 'buff', buff: stack('unbroken', 'Unbroken', '#ffd84d', 8, 5, { armor: 6, power: 3 }) } })),
         passive: { name: 'Bulwark of Light', text: '+20 armor and +10% max health.', mods: [S('armor', 20), S('hpPct', 10)] },
       },
       {
@@ -43,7 +43,7 @@ export const PALADIN: Kit = {
         color: '#ff9a3d',
         role: 'Holy burst damage',
         skill: 'templars-verdict',
-        combo: combo('Branded', 'Sunbrand marks its target for sentence: your next Twin Edict hits 40% harder.', when('branded', 'hit', { kind: 'buff', buff: next('branded', 'Branded', '#ffc23a', 'templars-verdict', 6, { pct: 40 }) }, 'Sunbrand sets up a stronger Twin Edict.', { skill: 'judgment' })),
+        combo: combo('Verdict Owed', 'Zeal spent on a blow is owed one more: after Radiant Sweep, Twin Edict or Sentence, your next Oath Strike hits more than twice as hard.', K('divine-storm', { op: 'onCast', effect: { kind: 'buff', buff: next('branded', 'Verdict Owed', '#ffc23a', 'crusader-strike', 6, { pct: 120 }) } }), K('templars-verdict', { op: 'onCast', effect: { kind: 'buff', buff: next('branded', 'Verdict Owed', '#ffc23a', 'crusader-strike', 6, { pct: 120 }) } }), K('sentence', { op: 'onCast', effect: { kind: 'buff', buff: next('branded', 'Verdict Owed', '#ffc23a', 'crusader-strike', 6, { pct: 120 }) } })),
         passive: { name: 'Zealotry', text: '+10% holy damage and +3% critical hit chance.', mods: [S('holy', 10), S('crit', 3)] },
       },
     ],
@@ -163,7 +163,7 @@ export const PALADIN: Kit = {
         tags: ['aoe', 'holy', 'ultimate'],
       }),
     ),
-    sk('dodge', 1, 'Sunlit Charge', 'A charger of light carries you a few strides out of harm’s way.', spec({ id: 'divine-steed', cast: 'dash', range: 64, cooldown: 5, duration: 0.2, tags: ['movement', 'dodge'] })),
+    sk('dodge', 1, 'Sunlit Charge', 'A charger of light carries you a few strides out of harm’s way, and sets you down behind a ward of light (6% of your health, for 3 s).', spec({ id: 'divine-steed', cast: 'dash', range: 64, cooldown: 5, duration: 0.2, onCast: [{ kind: 'shield', pct: 6, dur: 3 }], tags: ['movement', 'dodge'] })),
   ],
   talents: [
     /* --------------------------------------------------------------- Holy */
@@ -197,10 +197,10 @@ export const PALADIN: Kit = {
       'Critical holy hits give 1 Zeal (once every 2 s).',
       [P({ id: 'daybreak', on: 'crit', dmgType: 'holy', chance: 1, icd: 2, effect: { kind: 'resource', n: 1 }, text: 'Critical holy hits give Zeal.' })],
     ),
-    T(0, 3, 1, 'illumination', 'Illumination', 3, 'crit', '+2% critical hit chance per rank.', [S('crit', 2)]),
+    T(0, 3, 1, 'illumination', 'Lit Path', 3, 'crit', 'Sunlit Charge mends you for 1.5% of your health per rank as it sets you down.', [K('divine-steed', { op: 'onCast', effect: { kind: 'heal', pct: 1.5 } })]),
     T(0, 3, 2, 'judgment-of-light', 'Merciful Sunbrand', 2, 'heal', 'Sunbrand heals you for 2% of your health per rank when it hits.', [onHit('judgment', { kind: 'heal', pct: 2 })]),
     T(0, 4, 0, 'selfless-healer', 'Selfless Hands', 1, 'heal', 'Mending Vow costs 34% less Zeal: 2 points instead of 3.', [K('word-of-glory', { op: 'cost', pct: 34 })]),
-    T(0, 4, 1, 'sanctity', 'Sanctity', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
+    T(0, 4, 1, 'sanctity', 'Sanctity', 3, 'power', 'Every Oath Strike that lands mends you for 0.3% of your health per rank.', [onHit('crusader-strike', { kind: 'heal', pct: 0.3 })]),
     T(0, 4, 2, 'light-of-dawn', 'First Light', 1, 'heal', 'Radiant Sweep heals you for 10% of your health instead of 5%.', [K('divine-storm', { op: 'onCast', effect: { kind: 'heal', pct: 10 } })]),
     T(0, 5, 0, 'awakening', 'Awakening', 2, 'wings', 'Mending Vow charges Dawn’s Fury by 5% per rank.', [K('word-of-glory', { op: 'onCast', effect: { kind: 'charge', pct: 5 } })]),
     T(0, 5, 2, 'tower-of-radiance', 'Pillar of Radiance', 3, 'holy', '+4% holy damage per rank.', [S('holy', 4)]),
@@ -251,7 +251,7 @@ export const PALADIN: Kit = {
     ),
     T(1, 2, 3, 'consecrated-ground', 'Blessed Earth', 2, 'holy', 'Blessed Circle lasts 25% longer per rank.', [K('consecration', { op: 'duration', pct: 25 })]),
     T(1, 3, 0, 'soaring-shield', 'Ricochet Aegis', 1, 'chain', 'Thrown Aegis bounces to 1 more enemy.', [K('avengers-shield', { op: 'bounce', n: 1 })]),
-    T(1, 3, 1, 'faith-in-the-light', 'Faith in Dawn', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
+    T(1, 3, 1, 'faith-in-the-light', 'Charger’s Wake', 3, 'power', 'Sunlit Charge leaves a burst of light where you stood, harder per rank: what it catches is weakened for 3 s and deals 15% less.', [K('divine-steed', { op: 'onCast', effect: { kind: 'nova', radius: 36, mul: 0.5, ref: true, dmgType: 'holy', status: { status: 'weaken', dur: 3, power: 15 } } })]),
     T(
       1,
       3,
@@ -295,7 +295,7 @@ export const PALADIN: Kit = {
       [P({ id: 'art-of-war', on: 'hit', skill: 'crusader-strike', chance: 0.3, icd: 0.3, effect: { kind: 'resource', n: 1 }, text: 'Oath Strike can give an extra Zeal.' })],
     ),
     T(2, 1, 0, 'greater-judgment', 'Greater Sunbrand', 1, 'mark', 'Sunbrand marks the enemy: it takes 15% more damage for 4 s.', [onHit('judgment', { kind: 'status', status: 'mark', dur: 4, power: 15 })]),
-    T(2, 1, 1, 'fervor', 'Fervor', 3, 'crit', '+2% critical hit chance per rank.', [S('crit', 2)]),
+    T(2, 1, 1, 'fervor', 'Fervor', 3, 'crit', 'Oath Strike deals +8% damage per rank to enemies that are weakened or Stunned.', [K('crusader-strike', { op: 'bonusVs', status: 'weaken', pct: 8 }), K('crusader-strike', { op: 'bonusVs', status: 'stun', pct: 8 })]),
     T(2, 1, 2, 'sanctified-strikes', 'Sanctified Strikes', 1, 'sword', 'Oath Strike turns to holy light.', [K('crusader-strike', { op: 'convert', dmgType: 'holy' })]),
     T(
       2,
@@ -312,7 +312,7 @@ export const PALADIN: Kit = {
     T(2, 2, 2, 'execution-sentence', 'Death Sentence', 1, 'skull', 'Twin Edict deals +50% damage to enemies below 30% health.', [K('templars-verdict', { op: 'bonusVs', status: 'lowHp', pct: 50 })]),
     T(2, 2, 3, 'vanguards-momentum', 'Vanguard’s Drive', 2, 'speed', '+4% move speed per rank.', [S('speed', 4)]),
     T(2, 3, 0, 'empyrean-power', 'Empyreal Might', 1, 'storm', 'Radiant Sweep costs 34% less Zeal: 2 points instead of 3.', [K('divine-storm', { op: 'cost', pct: 34 })]),
-    T(2, 3, 1, 'sword-of-light', 'Sunlit Blade', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
+    T(2, 3, 1, 'sword-of-light', 'Sunlit Blade', 3, 'power', 'Oath Strike sweeps 12% wider per rank.', [K('crusader-strike', { op: 'arc', pct: 12 })]),
     T(2, 3, 2, 'righteous-verdict', 'Just Verdict', 2, 'crit', '+10% critical damage per rank.', [S('critDmg', 10)]),
     T(
       2,

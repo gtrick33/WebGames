@@ -1,4 +1,4 @@
-import { cdr, combo, dmg, K, next, onHit, P, S, skill, spec, stats, T, when, type Kit } from './kit';
+import { cdr, combo, dmg, K, onHit, P, S, skill, spec, stats, T, when, type Kit } from './kit';
 
 /** The Mage: fragile, far-reaching and explosive, on mana. Fire, lightning or frost. */
 
@@ -25,7 +25,7 @@ export const MAGE: Kit = {
         color: '#ff7a3d',
         role: 'Area damage over time',
         skill: 'flamestrike',
-        combo: combo('Tinder', 'Fireball on a Burning enemy sets the fire off: all the burning still to come lands at once on everything near it, half again as hard.', when('flashpoint', 'hit', { kind: 'detonate', status: 'burn', mul: 1.5, radius: 30 }, 'Fireball sets off a burn.', { skill: 'fireball', status: 'burn' })),
+        combo: combo('Thermal Shock', 'Fire on a Chilled or Frozen enemy breaks the cold in a burst of steam: everything near it is scalded for most of the hit (once a second).', when('thermal-chill', 'hit', { kind: 'explode', radius: 38, mul: 0.9, dmgType: 'fire', status: { status: 'burn', dur: 3, power: 0.2 } }, 'Fire on a Chilled enemy bursts.', { dmgType: 'fire', status: 'chill', icd: 1 }), when('thermal-freeze', 'hit', { kind: 'explode', radius: 44, mul: 1.3, dmgType: 'fire', status: { status: 'burn', dur: 3, power: 0.2 } }, 'Fire on a Frozen enemy bursts harder.', { dmgType: 'fire', status: 'freeze', icd: 1 })),
         passive: { name: 'Searing Heat', text: '+10% fire damage, and every skill deals +10% damage to Burning enemies.', mods: [S('fire', 10), K('*', { op: 'bonusVs', status: 'burn', pct: 10 })] },
       },
       {
@@ -34,7 +34,7 @@ export const MAGE: Kit = {
         color: '#5ad1ff',
         role: 'Bouncing burst damage',
         skill: 'ball-lightning',
-        combo: combo('Building Charge', 'Arcane Bolt hits build Charge, up to 5. Your next Chain Lightning spends all of it: 15% more damage a charge.', when('charge', 'hit', { kind: 'buff', buff: next('charge', 'Building Charge', '#5ad1ff', 'chain-lightning', 10, { pct: 15 }, 5) }, 'Arcane Bolt builds Charge for Chain Lightning.', { skill: 'arcane-bolt' })),
+        combo: combo('Conduction', 'Lightning finds what the frost has soaked: striking a Chilled or Frozen enemy, it arcs on to 3 more, and every one of them is Shocked (once a second).', when('conduction-chill', 'hit', { kind: 'chain', jumps: 3, range: 74, mul: 0.6, dmgType: 'lightning' }, 'Lightning on a Chilled enemy arcs on.', { dmgType: 'lightning', status: 'chill', icd: 1 }), when('conduction-freeze', 'hit', { kind: 'chain', jumps: 3, range: 74, mul: 0.6, dmgType: 'lightning' }, 'Lightning on a Frozen enemy arcs on.', { dmgType: 'lightning', status: 'freeze', icd: 1 }), when('conduction-shock', 'hit', { kind: 'status', status: 'shock', dur: 4, power: 15 }, 'Lightning leaves its mark.', { dmgType: 'lightning', icd: 0.2 })),
         passive: {
           name: 'Static Charge',
           text: '+10% lightning damage; critical lightning hits leap to another enemy for 40% damage.',
@@ -47,7 +47,7 @@ export const MAGE: Kit = {
         color: '#9be7ff',
         role: 'Control and single-target burst',
         skill: 'blizzard',
-        combo: combo('Deep Cold', 'Frost hits on a Chilled enemy can freeze it solid for 1.5 s (one hit in four). Frozen enemies take your Shatter in full.', when('deep-cold', 'hit', { kind: 'status', status: 'freeze', dur: 1.5, power: 1 }, 'Frost hits can freeze a Chilled enemy.', { dmgType: 'frost', status: 'chill', chance: 0.25, icd: 3 })),
+        combo: combo('Flash Freeze', 'Frost on a Burning or Shocked enemy takes all the heat out of it at once: it freezes solid for 2 s (once every 4 s for each). Frozen enemies take your Shatter in full.', when('flash-burn', 'hit', { kind: 'status', status: 'freeze', dur: 2, power: 1 }, 'Frost on a Burning enemy freezes it solid.', { dmgType: 'frost', status: 'burn', icd: 4 }), when('flash-shock', 'hit', { kind: 'status', status: 'freeze', dur: 2, power: 1 }, 'Frost on a Shocked enemy freezes it solid.', { dmgType: 'frost', status: 'shock', icd: 4 })),
         passive: { name: 'Shatter', text: '+10% frost damage; every skill deals +40% damage to Frozen and +20% to Chilled enemies.', mods: [S('frost', 10), K('*', { op: 'bonusVs', status: 'freeze', pct: 40 }), K('*', { op: 'bonusVs', status: 'chill', pct: 20 })] },
       },
     ],
@@ -62,8 +62,8 @@ export const MAGE: Kit = {
     sk('skill', 28, 'Mirror Self', 'Leaves a mirror image of you that enemies attack instead, for 6 seconds.', spec({ id: 'mirror-self', cast: 'summon', aim: 'self', cooldown: 18, cost: 12, onCast: [{ kind: 'summon', pet: 'mirror-image', count: 1, dur: 6 }], tags: ['summon', 'defense'] })),
     sk('skill', 36, 'Frost Ring', 'A ring of ice that roots everything standing in it for 3 seconds.', spec({ id: 'frost-ring', cast: 'ground', aim: 'ground', range: 120, cooldown: 14, damage: 6, dmgType: 'frost', area: 40, duration: 3, tick: 0.5, cost: 14, onHit: [{ kind: 'status', status: 'root', dur: 1, power: 1 }], look: 'frost', tags: ['aoe', 'frost', 'control'] })),
     sk('skill', 46, 'Starfall Lance', 'A lance of starlight through every enemy in a line, far heavier against the badly wounded.', spec({ id: 'starfall-lance', cast: 'projectile', range: 230, cooldown: 10, damage: 48, castTime: 1.25, dmgType: 'arcane', speed: 420, radius: 4, pierce: 99, cost: 16, bonusVs: [{ status: 'lowHp', pct: 100 }], look: 'arcane-bolt', tags: ['projectile', 'arcane', 'execute'] })),
-    sk('basic', 1, 'Arcane Bolt', 'A quick bolt of raw arcana. Each hit gives back a little mana.', spec({ id: 'arcane-bolt', cast: 'projectile', range: 150, cooldown: 0.42, damage: 10, dmgType: 'arcane', speed: 235, radius: 3, extra: { manaOnHit: 2 }, tags: ['projectile', 'basic'] })),
-    sk('skill', 1, 'Fireball', 'Hurls a ball of fire that bursts on the first enemy it hits.', spec({ id: 'fireball', cast: 'projectile', range: 160, cooldown: 3.2, damage: 28, dmgType: 'fire', speed: 165, radius: 5, knock: 40, cost: 12, tags: ['projectile', 'fire'] })),
+    sk('basic', 1, 'Arcane Bolt', 'A quick bolt of raw arcana. Every fourth in a row is an Arcane Lance: bigger, 60% harder, and through everything in its way. Each hit gives back a little mana.', spec({ id: 'arcane-bolt', cast: 'projectile', range: 150, cooldown: 0.42, damage: 9, dmgType: 'arcane', speed: 235, radius: 3, extra: { manaOnHit: 2, lanceEvery: 4 }, tags: ['projectile', 'basic'] })),
+    sk('skill', 1, 'Fireball', 'Hurls a ball of fire that bursts on the first enemy it hits and leaves it Burning for 3 s.', spec({ id: 'fireball', cast: 'projectile', range: 160, cooldown: 3.2, damage: 28, dmgType: 'fire', speed: 165, radius: 5, knock: 40, cost: 12, onHit: [{ kind: 'status', status: 'burn', dur: 3, power: 0.1 }], tags: ['projectile', 'fire'] })),
     sk(
       'skill',
       2,
@@ -71,7 +71,7 @@ export const MAGE: Kit = {
       'A ring of ice around you that chills every enemy it touches.',
       spec({ id: 'frost-nova', cast: 'nova', aim: 'self', cooldown: 7, damage: 14, dmgType: 'frost', area: 46, knock: 30, cost: 15, onHit: [{ kind: 'status', status: 'chill', dur: 2.5, power: 0.45 }], tags: ['aoe', 'frost'] }),
     ),
-    sk('skill', 4, 'Chain Lightning', 'A bolt that leaps from enemy to enemy.', spec({ id: 'chain-lightning', cast: 'chain', range: 125, cooldown: 5, damage: 19, dmgType: 'lightning', cost: 14, extra: { jumps: 3, chainRange: 64, falloff: 0.85 }, tags: ['lightning'] })),
+    sk('skill', 4, 'Chain Lightning', 'A bolt that leaps from enemy to enemy and leaves each one Shocked for 3 s (it takes 8% more damage).', spec({ id: 'chain-lightning', cast: 'chain', range: 125, cooldown: 5, damage: 19, dmgType: 'lightning', cost: 14, extra: { jumps: 3, chainRange: 64, falloff: 0.85 }, onHit: [{ kind: 'status', status: 'shock', dur: 3, power: 8 }], tags: ['lightning'] })),
     sk('skill', 6, 'Blink', 'Teleport a short way in the aimed direction.', spec({ id: 'blink', cast: 'blink', range: 74, cooldown: 7.5, damage: 20, dmgType: 'arcane', cost: 8, tags: ['movement'] })),
     sk(
       'skill',
@@ -140,7 +140,7 @@ export const MAGE: Kit = {
         tags: ['aoe', 'fire', 'ultimate'],
       }),
     ),
-    sk('dodge', 1, 'Phase Step', 'Slip a few steps away, untouchable for a moment.', spec({ id: 'phase-step', cast: 'dash', range: 50, cooldown: 5, duration: 0.16, tags: ['movement', 'dodge'] })),
+    sk('dodge', 1, 'Phase Step', 'You are simply somewhere else: a blink too quick to follow, and further than anyone runs.', spec({ id: 'phase-step', cast: 'dash', range: 72, cooldown: 5, duration: 0.08, extra: { safe: 0.32 }, tags: ['movement', 'dodge'] })),
   ],
   talents: [
     /* --------------------------------------------------------- Pyromancer */
@@ -179,9 +179,9 @@ export const MAGE: Kit = {
     T(0, 3, 2, 'scorch', 'Scorch', 1, 'fire', 'Arcane Bolt turns to fire.', [K('arcane-bolt', { op: 'convert', dmgType: 'fire', look: 'ember' })]),
     T(0, 3, 3, 'fire-ward', 'Fire Ward', 2, 'shield', '+8 armor per rank.', [S('armor', 8)]),
     T(0, 4, 0, 'dragons-breath', 'Flame Gout', 1, 'fire', 'Rime Burst turns to fire and sets everything it hits Burning.', [K('frost-nova', { op: 'convert', dmgType: 'fire', look: 'fire' }), onHit('frost-nova', { kind: 'status', status: 'burn', dur: 3, power: 0.3 })]),
-    T(0, 4, 1, 'inferno', 'Inferno', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
+    T(0, 4, 1, 'inferno', 'Fed by Fire', 3, 'power', 'Arcane Bolt deals +8% damage per rank to Burning enemies.', [K('arcane-bolt', { op: 'bonusVs', status: 'burn', pct: 8 })]),
     T(0, 4, 2, 'blazing-speed', 'Blazing Stride', 2, 'speed', '+4% move speed per rank.', [S('speed', 4)]),
-    T(0, 5, 0, 'critical-mass', 'Critical Mass', 3, 'crit', '+2% critical hit chance per rank.', [S('crit', 2)]),
+    T(0, 5, 0, 'critical-mass', 'Scorched Step', 3, 'crit', 'Phase Step leaves a burst of flame where you stood, harder per rank, and what it catches Burns for 3 s.', [K('phase-step', { op: 'onCast', effect: { kind: 'nova', radius: 36, mul: 0.5, ref: true, dmgType: 'fire', status: { status: 'burn', dur: 3, power: 0.15 } } })]),
     T(0, 5, 2, 'phoenix-flames', 'Rising Ember', 2, 'meteor', 'Meteor deals +20% damage per rank.', [dmg('meteor', 20)]),
     T(0, 6, 1, 'phoenix', 'Rain of Fire', 1, 'meteor', 'Meteor falls as three meteors around the target.', [K('meteor', { op: 'extra', key: 'meteors', n: 2, label: 'extra meteors' })]),
 
@@ -206,10 +206,10 @@ export const MAGE: Kit = {
     T(1, 2, 1, 'galvanize', 'Galvanize', 2, 'bolt', 'Ball Lightning rolls 15% farther per rank.', [K('ball-lightning', { op: 'range', pct: 15 })]),
     T(1, 2, 2, 'thunder-blink', 'Thunderstep', 1, 'blink', 'Blink lands with a thunderclap: 120% lightning damage around you.', [K('blink', { op: 'onImpact', effect: { kind: 'nova', radius: 40, mul: 1.2, dmgType: 'lightning' } })]),
     T(1, 3, 0, 'capacitor', 'Capacitor', 1, 'chain', 'Chain Lightning holds 2 charges.', [K('chain-lightning', { op: 'charges', n: 1 })]),
-    T(1, 3, 1, 'arc-surge', 'Arc Surge', 3, 'crit', '+2% critical hit chance per rank.', [S('crit', 2)]),
+    T(1, 3, 1, 'arc-surge', 'Static Step', 3, 'crit', 'Phase Step leaves a crackle where you stood, harder per rank: what it catches is Shocked for 4 s and takes 8% more damage.', [K('phase-step', { op: 'onCast', effect: { kind: 'nova', radius: 36, mul: 0.4, ref: true, dmgType: 'lightning', status: { status: 'shock', dur: 4, power: 8 } } })]),
     T(1, 3, 2, 'lightning-rod', 'Lightning Rod', 2, 'shock', 'Every skill deals +8% damage per rank to Shocked enemies.', [K('*', { op: 'bonusVs', status: 'shock', pct: 8 })]),
     T(1, 4, 0, 'storm-shield', 'Storm Shield', 1, 'shield', 'Arcane Ward also releases a lightning burst around you (80% damage).', [K('arcane-barrier', { op: 'onCast', effect: { kind: 'nova', radius: 38, mul: 0.8, dmgType: 'lightning' } })]),
-    T(1, 4, 1, 'amplify', 'Amplify', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
+    T(1, 4, 1, 'amplify', 'Charged Lance', 3, 'power', 'Your Arcane Lance hits a further 25% harder per rank.', [K('arcane-bolt', { op: 'extra', key: 'lanceMul', n: 0.25, label: 'Arcane Lance damage' })]),
     T(
       1,
       4,
@@ -246,10 +246,10 @@ export const MAGE: Kit = {
     ),
     T(2, 2, 2, 'ice-armor', 'Ice Armor', 2, 'shield', '+10 armor per rank.', [S('armor', 10)]),
     T(2, 3, 0, 'shattering', 'Deep Freeze', 1, 'freeze', 'Rime Burst freezes enemies solid for 1.2 s.', [onHit('frost-nova', { kind: 'status', status: 'freeze', dur: 1.2, power: 1 })]),
-    T(2, 3, 1, 'winters-chill', 'Winter’s Bite', 3, 'crit', '+2% critical hit chance per rank.', [S('crit', 2)]),
+    T(2, 3, 1, 'winters-chill', 'Rime Step', 3, 'crit', 'Phase Step leaves frost where you stood, harder per rank: what it catches is Chilled for 3 s.', [K('phase-step', { op: 'onCast', effect: { kind: 'nova', radius: 36, mul: 0.4, ref: true, dmgType: 'frost', status: { status: 'chill', dur: 3, power: 0.4 } } })]),
     T(2, 3, 2, 'icy-veins', 'Frost-Blooded', 2, 'clock', '+5% haste per rank.', [S('haste', 5)]),
     T(2, 4, 0, 'splitting-ice', 'Shattering Ice', 1, 'split', 'Ice Javelin shatters on impact into 3 shards (40% damage each).', [K('ice-lance', { op: 'onImpact', effect: { kind: 'split', count: 3, mul: 0.4 } })]),
-    T(2, 4, 1, 'frost-mastery', 'Frost Mastery', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
+    T(2, 4, 1, 'frost-mastery', 'Fed by Frost', 3, 'power', 'Arcane Bolt deals +8% damage per rank to Chilled and Frozen enemies.', [K('arcane-bolt', { op: 'bonusVs', status: 'chill', pct: 8 }), K('arcane-bolt', { op: 'bonusVs', status: 'freeze', pct: 8 })]),
     T(2, 4, 2, 'cryo-shield', 'Cryo Shield', 2, 'shield', 'Arcane Ward recharges 15% faster per rank.', [cdr('arcane-barrier', 15)]),
     T(2, 5, 0, 'hailstorm', 'Hailstorm', 2, 'frost', 'Ice Storm deals +20% damage per rank.', [dmg('blizzard', 20)]),
     T(2, 5, 2, 'glacial-heart', 'Glacial Heart', 3, 'heart', '+5% max health per rank.', [S('hpPct', 5)]),

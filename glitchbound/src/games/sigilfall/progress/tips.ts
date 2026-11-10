@@ -90,6 +90,7 @@ export function tipSteps(id: TipId, c: TipContext): TipStep[] {
   switch (id) {
     case 'combat': {
       const skill = c.bar.s1 ? SKILLS[c.bar.s1]?.name : undefined;
+      const dodge = c.bar.dodge ? SKILLS[c.bar.dodge] : undefined;
       const cost = c.resource ? ` ${COSTS[c.resource.kind]}` : '';
       return [
         {
@@ -107,8 +108,9 @@ export function tipSteps(id: TipId, c: TipContext): TipStep[] {
         {
           target: barSlot(touch, 'dodge'),
           panel: null,
-          title: 'Your dodge',
-          text: touch ? 'Tap Dodge to dash. You pass through arrows and blows as you go, so use it when an enemy draws back to hit.' : 'Press Space to dash. You pass through arrows and blows as you go, so use it when an enemy draws back to hit.',
+          // (every class's is its own: a barge, a blink, a guard; the skill's own words say which)
+          title: dodge ? `Your dodge: ${dodge.name}` : 'Your dodge',
+          text: `${touch ? 'Tap Dodge' : 'Press Space'}. ${dodge?.blurb ?? 'A quick dash out of harm’s way.'} Nothing can hurt you while it lasts, so use it when an enemy draws back to hit.`,
         },
       ];
     }

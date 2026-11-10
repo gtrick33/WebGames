@@ -47,7 +47,7 @@ export const WARRIOR: Kit = {
         color: '#c9a35a',
         role: 'Heavy single-target strikes',
         skill: 'mortal-strike',
-        combo: combo('Open the Wound', 'Heavy Strike on a Bleeding enemy tears the wound open: all the bleeding still to come lands at once.', when('open-wound', 'hit', { kind: 'detonate', status: 'bleed', mul: 1 }, 'Heavy Strike sets off a bleed.', { skill: 'heavy-strike', status: 'bleed' })),
+        combo: combo('Open the Wound', 'Heavy Strike on a Bleeding enemy opens the wound: your next Grievous Strike is ready at once and costs nothing.', when('open-wound', 'hit', { kind: 'buff', buff: next('open-wound', 'Open the Wound', '#ff5a4a', 'mortal-strike', 8, { free: true, ready: true }) }, 'Heavy Strike on a Bleeding enemy readies Grievous Strike.', { skill: 'heavy-strike', status: 'bleed', icd: 3 })),
         passive: {
           name: 'Deep Wounds',
           text: '+10% physical damage; critical hits make the enemy Bleed (20% of the hit per second for 4 s).',
@@ -125,7 +125,7 @@ export const WARRIOR: Kit = {
       'Split the ground: a quake rolls forward and stuns everything in its path.',
       spec({ id: 'earthsplitter', cast: 'projectile', range: 165, cooldown: 0, damage: 90, windup: 0.25, speed: 230, radius: 13, pierce: 99, knock: 60, look: 'quake', onHit: [{ kind: 'status', status: 'stun', dur: 1.2, power: 1 }], tags: ['aoe', 'ultimate', 'melee'] }),
     ),
-    sk('dodge', 1, 'Sidestep', 'A quick lunge out of harm’s way.', spec({ id: 'sidestep', cast: 'dash', range: 48, cooldown: 5.5, duration: 0.18, tags: ['movement', 'dodge'] })),
+    sk('dodge', 1, 'Shoulder Barge', 'You don’t go round them. Drive a shoulder through whatever is in the way: enemies in your path are struck, thrown back, and feed your Rage.', spec({ id: 'sidestep', cast: 'dash', range: 54, cooldown: 5.5, duration: 0.18, damage: 8, radius: 7, knock: 160, onHit: [{ kind: 'resource', n: 6 }], tags: ['movement', 'dodge'] })),
   ],
   talents: [
     /* ---------------------------------------------------------- Berserker */
@@ -139,13 +139,13 @@ export const WARRIOR: Kit = {
     T(0, 2, 1, 'thirst', 'Thirst', 2, 'heal', 'Blood Hunger deals +10% damage per rank.', [dmg('bloodthirst', 10)]),
     T(0, 2, 2, 'execute', 'Execute', 1, 'skull', 'Heavy Strike deals +60% damage to enemies below 30% health.', [K('heavy-strike', { op: 'bonusVs', status: 'lowHp', pct: 60 })]),
     T(0, 3, 0, 'raging-blow', 'Furious Blow', 1, 'clock', 'Blood Hunger recharges 20% faster.', [cdr('bloodthirst', 20)]),
-    T(0, 3, 1, 'fury', 'Fury', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
+    T(0, 3, 1, 'fury', 'Third Blood', 3, 'power', 'The third swing of Cleave hits 20% harder per rank.', [K('cleave', { op: 'extra', key: 'comboMul', n: 0.2, label: 'third-swing damage' })]),
     T(0, 3, 2, 'death-wish', 'Reckless Oath', 2, 'crit', '+10% critical damage per rank.', [S('critDmg', 10)]),
     T(0, 4, 0, 'unending-rage', 'Unending Rage', 1, 'rage', 'Whirlwind costs 30% less Rage.', [K('whirlwind', { op: 'cost', pct: 30 })]),
     T(0, 4, 1, 'meat-cleaver', 'Carver', 2, 'aoe', 'Whirlwind covers 15% more area per rank.', [K('whirlwind', { op: 'area', pct: 15 })]),
     T(0, 4, 2, 'bloodbath', 'Bloodbath', 2, 'heal', 'Every kill heals you for 1% of your health per rank.', [K('*', { op: 'onKill', effect: { kind: 'heal', pct: 1 } })]),
     T(0, 5, 0, 'titans-grip', 'Giant’s Grip', 2, 'power', '+4% damage per rank.', [S('power', 4)]),
-    T(0, 5, 2, 'battle-trance', 'Battle Haze', 3, 'crit', '+2% critical hit chance per rank.', [S('crit', 2)]),
+    T(0, 5, 2, 'battle-trance', 'Running Start', 3, 'crit', 'Shoulder Barge hits 60% harder per rank, and every enemy it goes through gives 2 more Rage per rank.', [dmg('sidestep', 60), onHit('sidestep', { kind: 'resource', n: 2 })]),
     T(0, 6, 1, 'bloodstorm', 'Bloodstorm', 1, 'storm', 'Whirlwind lasts 50% longer and heals you 1% of your health for every enemy it hits.', [K('whirlwind', { op: 'duration', pct: 50 }), onHit('whirlwind', { kind: 'heal', pct: 1 })]),
 
     /* ----------------------------------------------------------- Guardian */
@@ -177,7 +177,7 @@ export const WARRIOR: Kit = {
     T(1, 4, 2, 'gag-order', 'Silencing Bash', 2, 'clock', 'Shield Bash recharges 15% faster per rank.', [cdr('shield-bash', 15)]),
     T(1, 5, 0, 'resolve', 'Resolve', 2, 'heal', '+1 health regen per second per rank.', [S('regen', 1)]),
     T(1, 5, 1, 'bastion-of-steel', 'Bastion of Steel', 2, 'shield', '+6 armor per rank.', [S('armor', 6)]),
-    T(1, 5, 2, 'brace', 'Brace', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
+    T(1, 5, 2, 'brace', 'Set Shoulder', 3, 'power', 'Shoulder Barge leaves you braced: 6% less damage taken per rank for 3 s.', [K('sidestep', { op: 'onCast', effect: { kind: 'buff', buff: { id: 'set-shoulder', name: 'Braced', dur: 3, dr: 6, color: '#9aa3b8' } } })]),
     T(1, 6, 1, 'avalanche', 'Avalanche', 1, 'quake', 'Earthsplitter rolls out twice.', [K('earthsplitter', { op: 'extra', key: 'echo', n: 1, label: 'extra quakes' })]),
 
     /* ------------------------------------------------------- Weaponmaster */
@@ -201,10 +201,10 @@ export const WARRIOR: Kit = {
     T(2, 2, 1, 'weapon-mastery', 'Weapon Mastery', 2, 'power', 'Grievous Strike deals +10% damage per rank.', [dmg('mortal-strike', 10)]),
     T(2, 2, 2, 'anger-management', 'Simmering Anger', 2, 'clock', 'Whirlwind recharges 10% faster per rank.', [cdr('whirlwind', 10)]),
     T(2, 3, 0, 'hamstring', 'Hamstring', 1, 'root', 'Charge roots the enemies it hits for 1.5 s.', [onHit('charge', { kind: 'status', status: 'root', dur: 1.5, power: 1 })]),
-    T(2, 3, 1, 'precision', 'Precision', 3, 'crit', '+2% critical hit chance per rank.', [S('crit', 2)]),
+    T(2, 3, 1, 'precision', 'Measured Cuts', 3, 'crit', 'Every cut of Cleave leaves the enemy Bleeding for 8% of the hit a second per rank, for 3 s.', [onHit('cleave', { kind: 'status', status: 'bleed', dur: 3, power: 0.08 })]),
     T(2, 3, 2, 'collateral', 'Collateral Damage', 2, 'aoe', 'Grievous Strike reaches 15% farther and wider per rank.', [K('mortal-strike', { op: 'area', pct: 15 })]),
     T(2, 4, 0, 'colossus-smash', 'Armor Crusher', 1, 'stun', 'Grievous Strike breaks armor: enemies take 20% more damage for 5 s.', [onHit('mortal-strike', { kind: 'status', status: 'armorBreak', dur: 5, power: 20 })]),
-    T(2, 4, 1, 'strength-of-arms', 'Arms Drill', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
+    T(2, 4, 1, 'strength-of-arms', 'Split Guard', 3, 'power', 'Whatever Shoulder Barge goes through has its guard broken: it takes 5% more damage per rank for 4 s.', [onHit('sidestep', { kind: 'status', status: 'armorBreak', dur: 4, power: 5 })]),
     T(2, 4, 2, 'battle-rhythm', 'Battle Rhythm', 2, 'clock', '+4% haste per rank.', [S('haste', 4)]),
     T(2, 5, 0, 'executioner-w', 'Executioner', 2, 'skull', 'Every skill deals +12% damage per rank to enemies below 30% health.', [K('*', { op: 'bonusVs', status: 'lowHp', pct: 12 })]),
     T(2, 5, 2, 'skull-splitter', 'Skull Splitter', 3, 'power', 'Heavy Strike deals +8% damage per rank.', [dmg('heavy-strike', 8)]),

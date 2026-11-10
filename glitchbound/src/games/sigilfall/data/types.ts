@@ -90,7 +90,7 @@ export type Effect =
   /** A shield absorbing `pct`% of max health, for `dur` seconds. */
   | { kind: 'shield'; pct: number; dur: number }
   /** A burst around the caster. */
-  | { kind: 'nova'; radius: number; mul: number; dmgType?: DmgType; status?: { status: StatusId; dur: number; power: number } }
+  | { kind: 'nova'; radius: number; mul: number; dmgType?: DmgType; status?: { status: StatusId; dur: number; power: number }; /** Of the class's reference damage, not the skill's (a skill that deals none itself: a dodge). */ ref?: boolean }
   /** A wave that rolls forward from the impact along the aim, through every enemy. */
   | { kind: 'shockwave'; length: number; width: number; mul: number }
   /** Leaves a field on the ground. */
@@ -152,7 +152,9 @@ export interface BuffDef {
  * `ready` hold only at full stacks; the cast takes every stack. Where it doesn't, it lasts `casts` casts.
  */
 export interface Empower {
+  /** The skill it waits for; '*' with `type`: the next skill of that damage type that isn't the basic attack. */
   skill: string;
+  type?: DmgType;
   /** +% damage. */
   pct?: number;
   /** It costs nothing. */
@@ -214,8 +216,8 @@ export interface SkillSpec {
   onKill: Effect[];
   onCast: Effect[];
   trail?: GroundSpec;
-  /** Extra damage against enemies with a status, or below 30% health ('lowHp'). */
-  bonusVs: { status: StatusId | 'lowHp'; pct: number }[];
+  /** Extra damage against enemies with a status, below 30% health ('lowHp'), or a long way off ('far': a ranger's eye). */
+  bonusVs: { status: StatusId | 'lowHp' | 'far'; pct: number }[];
   /** Extra damage when cast soon after a dodge. */
   afterDodge?: { window: number; pct: number };
   /** Skill-specific knobs: chain jumps and range, trap limit, echo waves, pull, mana per hit, etc. */
@@ -260,7 +262,7 @@ export type SkillOp =
   | { op: 'convert'; dmgType: DmgType; look?: string }
   | { op: 'onHit' | 'onImpact' | 'onKill' | 'onCast'; effect: Effect }
   | { op: 'trail'; ground: GroundSpec }
-  | { op: 'bonusVs'; status: StatusId | 'lowHp'; pct: number }
+  | { op: 'bonusVs'; status: StatusId | 'lowHp' | 'far'; pct: number }
   | { op: 'afterDodge'; window: number; pct: number }
   /** More of the resource gained when used. */
   | { op: 'gen'; n: number }
@@ -271,7 +273,7 @@ export type SkillOp =
 export interface ProcDef {
   /** Unique id: the internal cooldown is tracked per proc. */
   id: string;
-  on: 'hit' | 'crit' | 'kill' | 'dodge' | 'hurt' | 'ult';
+  on: 'hit' | 'crit' | 'kill' | 'dodge' | 'hurt' | 'ult' | 'block';
   /** Only hits of this damage type / from this skill / against enemies with this status count. */
   dmgType?: DmgType;
   skill?: string;

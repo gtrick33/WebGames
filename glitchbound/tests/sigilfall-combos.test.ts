@@ -12,7 +12,7 @@ import { SKILLS } from '../src/games/sigilfall/data/skills';
 import type { ClassId, Mod } from '../src/games/sigilfall/data/types';
 import { setSkill, type Character } from '../src/games/sigilfall/progress/character';
 import { castTimeOf, skillCost, tryCast } from '../src/games/sigilfall/sim/cast';
-import { addBuff, applyEffect, applyStatus, effStats, empowerFull, empowerOf } from '../src/games/sigilfall/sim/combat';
+import { addBuff, applyEffect, applyStatus, effStats, empowerFull, empowerOf, hurtPlayer } from '../src/games/sigilfall/sim/combat';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { comboNow } from '../src/games/sigilfall/ui/comboMark';
 import { newWorld, readyHero } from './sigilfall-bot';
@@ -57,13 +57,18 @@ describe('Sigilfall: every specialization has a combo', () => {
         n++;
         expect(c!.name.length, `${cls} ${tree.name}`).toBeGreaterThan(2);
         expect(c!.text.length, `${cls} ${tree.name}`).toBeGreaterThan(30);
+        expect(c!.mods.length, `${cls} ${tree.name}`).toBeGreaterThan(0);
         const procs = c!.mods.filter((m): m is Extract<Mod, { t: 'proc' }> => m.t === 'proc').map((m) => m.proc);
-        expect(procs.length, `${cls} ${tree.name}`).toBeGreaterThan(0);
+        // (a combo is a trigger, or something a skill of the class's own now does)
+        for (const m of c!.mods) if (m.t === 'skill' && m.skill !== '*') expect(mine.has(m.skill), `${cls} ${tree.name}: ${m.skill}`).toBe(true);
+        const effects = [...procs.map((p) => p.effect), ...c!.mods.flatMap((m) => (m.t === 'skill' && 'effect' in m.op ? [m.op.effect] : []))];
         for (const p of procs) {
           expect(p.id.startsWith('combo-'), p.id).toBe(true);
           if (p.skill) expect(mine.has(p.skill), `${cls} ${tree.name}: ${p.skill}`).toBe(true);
-          const e = p.effect;
-          if (e.kind === 'buff' && e.buff.empower) expect(mine.has(e.buff.empower.skill), `${cls} ${tree.name}: ${e.buff.empower.skill}`).toBe(true);
+        }
+        for (const e of effects) {
+          // (one that waits on a kind of damage names no skill)
+          if (e.kind === 'buff' && e.buff.empower && !e.buff.empower.type) expect(mine.has(e.buff.empower.skill), `${cls} ${tree.name}: ${e.buff.empower.skill}`).toBe(true);
           if (e.kind === 'summon') expect(PETS[e.pet], e.pet).toBeTruthy();
         }
       }
@@ -190,27 +195,148 @@ describe('Sigilfall: what combos are made of', () => {
 });
 
 describe('Sigilfall: the combos in play', () => {
-  it('Pyromancer: a Fireball into a Burning enemy sets the fire off', () => {
+  it('Pyromancer: fire on a Chilled enemy breaks the cold in a burst that reaches the ones beside it', () => {
     const w = heroWith('mage', 'fireball', 0);
+    w.build.stats.crit = 0;
     const e = target(w, 60);
-    applyStatus(w, e, { status: 'burn', dur: 4, power: 1 }, 200);
-    step(w, 0.1);
+    const beside = w.addEnemy('moss-slime', e.x + 4, e.y + 26, 30, { room: -1, pack: 0 });
+    beside.hp = beside.maxHp = 1e6;
+    applyStatus(w, e, { status: 'chill', dur: 6, power: 0.4 }, 10);
     expect(cast(w)).toBe(true);
     step(w, 1);
-    // (the old burn is gone; a talent may have lit a new one, which is younger)
-    expect(e.statuses.filter((s) => s.id === 'burn' && (s.born ?? 0) < 1).length).toBe(0);
+    expect(w.procCd['combo-thermal-chill'] ?? 0).toBeGreaterThan(0);
+    expect(beside.hp).toBeLessThan(1e6);
+    // (and nothing of the kind on an enemy the frost never touched)
+    const dry = heroWith('mage', 'fireball', 0);
+    target(dry, 60);
+    cast(dry);
+    step(dry, 1);
+    expect(dry.procCd['combo-thermal-chill'] ?? 0).toBe(0);
   });
 
-  it('Stormcaller: Arcane Bolts build Charge for Chain Lightning', () => {
+  it('Stormcaller: lightning on a Chilled enemy arcs on, and whatever lightning strikes is Shocked', () => {
     const w = heroWith('mage', 'chain-lightning', 1);
-    target(w, 60);
-    for (let i = 0; i < 8; i++) {
-      tryCast(w, { slot: 'basic', angle: 0, dist: 0.5, assist: 0 });
-      step(w, 0.5);
-    }
-    const c = empowerOf(w, 'chain-lightning');
-    expect(c).not.toBeNull();
-    expect(c!.n).toBeGreaterThanOrEqual(3);
+    const e = target(w, 60);
+    applyStatus(w, e, { status: 'chill', dur: 6, power: 0.4 }, 10);
+    expect(cast(w)).toBe(true);
+    step(w, 0.3);
+    expect(w.procCd['combo-conduction-chill'] ?? 0).toBeGreaterThan(0);
+    expect(e.statuses.some((x) => x.id === 'shock')).toBe(true);
+  });
+
+  it('Cryomancer: frost on a Burning enemy freezes it solid', () => {
+    const w = heroWith('mage', 'ice-lance', 2);
+    const e = target(w, 60);
+    applyStatus(w, e, { status: 'burn', dur: 6, power: 0.2 }, 10);
+    expect(cast(w)).toBe(true);
+    step(w, 0.6);
+    expect(e.statuses.some((x) => x.id === 'freeze')).toBe(true);
+  });
+
+  it('Deadeye: the same arrow hits a third harder on an enemy a long way off', () => {
+    const hit = (dx: number): number => {
+      const w = heroWith('ranger', 'piercing-arrow', 0);
+      w.build.stats.crit = 0;
+      const e = target(w, dx);
+      // (held where it stands, so the distance is the distance)
+      e.state = 'idle';
+      e.aggro = false;
+      const before = e.hp;
+      expect(tryCast(w, { slot: 'basic', angle: 0, dist: 0.5, assist: 0 })).toBe(true);
+      step(w, 0.9);
+      return before - e.hp;
+    };
+    const near = hit(50);
+    const far = hit(150);
+    expect(near).toBeGreaterThan(0);
+    // (35% from the combo, and this hero's three ranks of Far Mark on top)
+    expect(far / near).toBeGreaterThan(1.3);
+    expect(far / near).toBeLessThan(1.6);
+  });
+
+  it('Dawnkeeper and Shieldbearer: spending Zeal mends the one and steadies the other', () => {
+    const dawn = heroWith('paladin', 'divine-storm', 0);
+    dawn.player.hp = dawn.player.maxHp * 0.5;
+    const before = dawn.player.hp;
+    target(dawn, 24);
+    expect(cast(dawn)).toBe(true);
+    step(dawn, 0.1);
+    expect(dawn.player.hp).toBeGreaterThan(before);
+    const wall = heroWith('paladin', 'divine-storm', 1);
+    const armor = effStats(wall).armor;
+    target(wall, 24);
+    expect(cast(wall)).toBe(true);
+    step(wall, 0.1);
+    expect(effStats(wall).armor).toBe(armor + 6);
+  });
+
+  it('Zealot: Zeal spent on a blow sets up the next Oath Strike', () => {
+    const w = heroWith('paladin', 'templars-verdict', 2);
+    target(w, 24);
+    expect(cast(w)).toBe(true);
+    step(w, 0.4);
+    expect(empowerOf(w, 'crusader-strike')).not.toBeNull();
+    expect(tryCast(w, { slot: 'basic', angle: 0, dist: 0.5, assist: 0 })).toBe(true);
+    step(w, 0.3);
+    expect(empowerOf(w, 'crusader-strike')).toBeNull();
+  });
+
+  it('Priest: a holy hit strengthens the next shadow skill, which strengthens the next holy one; Smite never spends either', () => {
+    const c: Character = readyHero('priest', 50, 'uncommon', 7, 2);
+    expect(setSkill(c, 0, 'mind-blast')).toBe(true);
+    expect(setSkill(c, 1, 'holy-nova')).toBe(true);
+    const w = newWorld('whisperwood', c);
+    w.enemies = [];
+    step(w, 0.8);
+    w.enemies = [];
+    w.player.mana = w.player.maxMana;
+    target(w, 30);
+    expect(empowerOf(w, 'mind-blast')).toBeNull();
+    // Smite is holy: Dusk
+    expect(tryCast(w, { slot: 'basic', angle: 0, dist: 0.5, assist: 0 })).toBe(true);
+    step(w, 0.2);
+    expect(empowerOf(w, 'mind-blast')?.def.name).toBe('Dusk');
+    expect(empowerOf(w, 'smite')).toBeNull();
+    // the shadow skill spends Dusk and leaves Dawn for the holy one
+    expect(tryCast(w, { slot: 's1', angle: 0, dist: 0.5, assist: 0 })).toBe(true);
+    step(w, 0.2);
+    expect(empowerOf(w, 'holy-nova')?.def.name).toBe('Dawn');
+    // (Smite, cast again, has renewed Dusk but not taken Dawn)
+    step(w, 0.6);
+    tryCast(w, { slot: 'basic', angle: 0, dist: 0.5, assist: 0 });
+    step(w, 0.2);
+    expect(empowerOf(w, 'holy-nova')?.def.name).toBe('Dawn');
+    expect(tryCast(w, { slot: 's2', angle: 0, dist: 0.5, assist: 0 })).toBe(true);
+    step(w, 0.2);
+    expect(empowerOf(w, 'holy-nova')).toBeNull();
+  });
+
+  it('Doomcaller: what dies cursed goes up in fire, and the pyre readies an instant Ruin Bolt', () => {
+    const w = heroWith('warlock', 'chaos-bolt', 2);
+    const e = target(w, 40, 5);
+    const beside = target(w, 60, 1e6);
+    applyStatus(w, e, { status: 'curse', dur: 6, power: 0.2 }, 10);
+    expect(tryCast(w, { slot: 'basic', angle: 0, dist: 0.5, assist: 0 })).toBe(true);
+    step(w, 0.8);
+    expect(e.dead).toBe(true);
+    expect(beside.hp).toBeLessThan(1e6);
+    expect(empowerOf(w, 'chaos-bolt')).not.toBeNull();
+    expect(cast(w)).toBe(true);
+    expect(w.player.casting).toBeFalsy();
+  });
+
+  it('Gloamknight: a blow taken on the guard readies Umbral Rend', () => {
+    const w = heroWith('gloamknight', 'umbral-rend', 0);
+    const e = target(w, 24);
+    expect(tryCast(w, { slot: 'dodge', angle: 0, dist: null, assist: 0 })).toBe(true);
+    expect(w.player.guard).toBeGreaterThan(0);
+    const hp = w.player.hp;
+    const foe = e.hp;
+    expect(hurtPlayer(w, 50, { fromX: e.x, fromY: e.y, source: e })).toBe(false);
+    expect(w.player.hp).toBe(hp);
+    // paid back, and the debt called in
+    expect(e.hp).toBeLessThan(foe);
+    expect(empowerOf(w, 'umbral-rend')).not.toBeNull();
   });
 
   it('Guardian: Shield Bash sets up a Heavy Strike', () => {

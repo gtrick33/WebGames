@@ -318,6 +318,9 @@ export function updateWindup(w: World, dt: number): void {
   }
 }
 
+/** A mage's every-fourth bolt: how much harder, through how many more, how much bigger. */
+const LANCE = { damage: 1.6, pierce: 4, size: 1.7 };
+
 /** The skill happens. */
 export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number, tx: number, ty: number, target: Enemy | null): void {
   const p = w.player;
@@ -337,15 +340,27 @@ export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number,
   // the resource some skills give (a melee swing only when it connects: see melee)
   if (spec.gen > 0 && spec.cast !== 'melee') gainResource(w, spec.gen);
   switch (spec.cast) {
-    case 'projectile':
-      fireProjectiles(w, spec, angle);
+    case 'projectile': {
+      // every so many casts in a row, a lance: bigger, harder, and through everything (the mage's Arcane Bolt)
+      let fan = false;
+      if (spec.extra.lanceEvery && slot === 'basic') {
+        p.combo = p.comboT > 0 ? p.combo + 1 : 1;
+        p.comboT = 1.2;
+        if (p.combo >= spec.extra.lanceEvery) {
+          p.combo = 0;
+          fan = true;
+        }
+      }
+      fireProjectiles(w, fan ? { ...spec, damage: spec.damage * (LANCE.damage + (spec.extra.lanceMul ?? 0)), pierce: spec.pierce + LANCE.pierce, radius: spec.radius * LANCE.size, speed: spec.speed * 1.2 } : spec, angle);
       if (spec.extra.echo) for (let i = 1; i <= spec.extra.echo; i++) w.after(0.28 * i, () => !w.player.dead && fireProjectiles(w, spec, w.player.aim));
       p.actKind = spec.tags.includes('melee') ? 'heavy' : slot === 'basic' ? 'shoot' : 'cast';
       p.actT = 0.22;
       p.actAngle = angle;
       w.sfx(spec.look === 'quake' ? 'quake' : (CAST_SOUND[spec.dmgType] ?? (spec.look === 'lightning' ? 'zap' : w.hero.cls === 'ranger' ? 'bow' : 'bolt')));
       if (spec.look === 'quake') w.shake(3);
+      p.actBig = fan;
       break;
+    }
     case 'melee':
       melee(w, spec, angle);
       break;
@@ -402,7 +417,12 @@ export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number,
       const dodge = slot === 'dodge';
       p.dash = { vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, t, spec, hit: new Set(), dodge };
       if (dodge) {
-        p.iframe = Math.max(p.iframe, t + 0.08);
+        // (a blink is over in an instant: it is safe a little longer than it lasts; a guard holds while it stands)
+        p.iframe = Math.max(p.iframe, t + 0.08, spec.extra.safe ?? 0);
+        if (spec.extra.guard) {
+          p.guard = t + 0.08;
+          p.guardPow = spec.extra.guard;
+        }
         p.lastDodge = w.time;
         w.sfx('dodge');
         runProcs(w, 'dodge', { x: p.x, y: p.y, base: 0, type: 'physical', depth: 1, hitDmg: 0 });
@@ -455,13 +475,18 @@ export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number,
       // aimed by hand: the enemy nearest the aimed line
       target ??= autoTarget(w, spec.range, angle);
       if (target) {
-        w.addFx({ kind: 'zap', x: p.x, y: p.y, x2: target.x, y2: target.y, life: 0.2, size: 1, color: '#ffe066' });
+        // (a priest's Smite comes down on them from above; anyone else's mark is a line drawn to them)
+        if (spec.look === 'smite') {
+          w.addFx({ kind: 'zap', x: target.x, y: target.y - 70, x2: target.x, y2: target.y, life: 0.22, size: 2.2, color: spec.dmgType === 'shadow' ? '#b07aff' : '#fff2b0' });
+          w.addFx({ kind: 'glow', x: target.x, y: target.y - 3, life: 0.3, size: 13, color: spec.dmgType === 'shadow' ? '#b07aff' : '#ffe9a0' });
+        } else w.addFx({ kind: 'zap', x: p.x, y: p.y, x2: target.x, y2: target.y, life: 0.2, size: 1, color: '#ffe066' });
         const d = hitEnemy(w, target, spec.damage, spec.dmgType, { spec, depth: 0, fromX: p.x, fromY: p.y });
         applyEffects(w, spec.onHit, { ...ctx, x: target.x, y: target.y, target, hitDmg: d, when: 'hit' });
-        w.sfx('mark');
+        w.sfx(spec.look === 'smite' ? 'bolt' : 'mark');
       }
-      p.actKind = 'shoot';
+      p.actKind = w.hero.cls === 'ranger' ? 'shoot' : 'cast';
       p.actT = 0.2;
+      p.actAngle = target ? Math.atan2(target.y - p.y, target.x - p.x) : angle;
       break;
   }
 }
@@ -570,9 +595,11 @@ function chain(w: World, spec: SkillSpec, angle: number, first: Enemy | null): v
   p.actKind = 'cast';
   p.actT = 0.22;
   p.actAngle = angle;
-  w.sfx('zap');
+  // (lightning cracks; a druid's lash of thorns and the like are their own color and make a bolt's sound)
+  const tint = spec.dmgType === 'nature' ? '#a8e86a' : spec.dmgType === 'shadow' ? '#b07aff' : spec.dmgType === 'holy' ? '#fff2b0' : spec.dmgType === 'fire' ? '#ffb070' : '#d8f2ff';
+  w.sfx(spec.dmgType === 'lightning' ? 'zap' : 'bolt');
   if (!target) {
-    w.addFx({ kind: 'zap', x: p.x, y: p.y, x2: p.x + Math.cos(angle) * spec.range * 0.7, y2: p.y + Math.sin(angle) * spec.range * 0.7, life: 0.15, size: 1, color: '#bfe9ff' });
+    w.addFx({ kind: 'zap', x: p.x, y: p.y, x2: p.x + Math.cos(angle) * spec.range * 0.7, y2: p.y + Math.sin(angle) * spec.range * 0.7, life: 0.15, size: 1, color: tint });
     return;
   }
   const jumps = spec.extra.jumps ?? 0;
@@ -584,7 +611,7 @@ function chain(w: World, spec: SkillSpec, angle: number, first: Enemy | null): v
   let mul = 1;
   for (let j = 0; j <= jumps && cur; j++) {
     hit.add(cur.id);
-    w.addFx({ kind: 'zap', x: from.x, y: from.y, x2: cur.x, y2: cur.y, life: 0.22, size: 1.4, color: '#d8f2ff' });
+    w.addFx({ kind: 'zap', x: from.x, y: from.y, x2: cur.x, y2: cur.y, life: 0.22, size: 1.4, color: tint });
     const d = hitEnemy(w, cur, spec.damage * mul, spec.dmgType, { spec, depth: 0, fromX: from.x, fromY: from.y });
     applyEffects(w, spec.onHit, { x: cur.x, y: cur.y, angle, spec, base: spec.damage * mul, type: spec.dmgType, depth: 0, target: cur, hitDmg: d, when: 'hit' });
     from = cur;

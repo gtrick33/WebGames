@@ -451,6 +451,8 @@ export class World {
       shield: 0,
       shieldT: 0,
       iframe: 0.5,
+      guard: 0,
+      guardPow: 0,
       dash: null,
       windup: null,
       casting: null,
@@ -1290,6 +1292,7 @@ export class World {
     }
     const stats = this.build.stats;
     p.iframe = Math.max(0, p.iframe - dt);
+    p.guard = Math.max(0, p.guard - dt);
     p.flash = Math.max(0, p.flash - dt);
     p.potionT = Math.max(0, p.potionT - dt);
     p.actT = Math.max(0, p.actT - dt);
