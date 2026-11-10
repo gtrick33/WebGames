@@ -364,6 +364,7 @@ const groundFrag = /* glsl */ `
   uniform vec4 uAmb;
   uniform vec3 uFlameCol;
   uniform sampler2D uAo;
+  uniform float uTrim;
   varying vec3 vW;
   float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
   float noise(vec2 p) {
@@ -405,23 +406,24 @@ const groundFrag = /* glsl */ `
         vec2 id = floor(s);
         vec2 f = fract(s) - 0.5;
         c = mix(A, B, mod(id.x + id.y, 2.0));
-        // (a vein here and there, thin: a few to a square, not a scribble over all of it)
-        float vein = smoothstep(0.972, 1.0, sin((p.x + p.y * 0.6) * 1.5 + noise(p * 0.8 + id) * 6.0));
-        c = mix(c, c * 1.4 + 0.05, vein * 0.55);
-        c *= 0.94 + noise(p * 0.7 + 2.0) * 0.12;
+        // (no veins drawn as lines: at this size they read as scribbles; the stone clouds from square to square instead)
+        c *= 0.9 + noise(p * 0.45 + id * 3.1) * 0.2;
         c += vec3(0.04) * smoothstep(0.35, 0.95, noise(p * 0.22 + 5.0));
         // a band inlaid a little inside each square's edge, and the joint between squares
         float e = max(abs(f.x), abs(f.y));
-        float inlay = smoothstep(0.405, 0.415, e) - smoothstep(0.435, 0.445, e);
-        c = mix(c, c * 1.3 + 0.03, inlay * 0.5);
-        float line = smoothstep(0.485, 0.5, e);
-        c = mix(c, c * 0.45, line);
+        // (both wide and soft-edged: a line a pixel wide crawls as the view moves)
+        float inlay = smoothstep(0.375, 0.405, e) - smoothstep(0.43, 0.46, e);
+        c = mix(c, c * 1.22 + 0.02, inlay * 0.45);
+        float line = smoothstep(0.465, 0.5, e);
+        c = mix(c, c * 0.5, line);
       } else if (ra.a < 0.8) {
         // rough ground: earth, rock or ice, mottled, a crack wandering through it
         c = mix(A, B, smoothstep(0.25, 0.75, noise(p * 0.7)));
         c *= 0.9 + noise(p * 1.9 + 4.0) * 0.14;
-        float crack = smoothstep(0.035, 0.0, abs(noise(p * 0.85 + 11.0) - 0.5));
-        c = mix(c, c * 0.62, crack * 0.55);
+        // (a crack here and there, faint, only where the ground is at its darkest: not an outline round every patch)
+        float crack = smoothstep(0.03, 0.0, abs(noise(p * 0.85 + 11.0) - 0.5)) * smoothstep(0.55, 0.3, noise(p * 0.3 + 2.0));
+        c = mix(c, c * 0.7, crack * 0.4);
+        c *= 0.94 + noise(p * 4.5) * 0.1;
       } else if (ra.a < 0.95) {
         // boards, their seams staggered, the grain running along them
         vec2 s = vec2(p.x * 0.8, p.y * 2.6);
@@ -532,6 +534,13 @@ const groundFrag = /* glsl */ `
     c = mix(vec3(lum), c, 0.84) * vec3(0.99, 0.97, 0.91);
     // the ground is darker along the foot of what's built on it: a wall, a cliff, a column (the light doesn't get in there)
     float ao = texture2D(uAo, uv).r;
+    // a built place's floor is finished where it meets its walls: a course of stone set along them and round each
+    // column's foot, a lighter line inside it (not on a boss's rough ground, nor in a cave)
+    if (uTrim > 0.5 && !(ra.a >= 0.6 && ra.a < 0.8) && m.g < 0.3) {
+      float line = smoothstep(0.17, 0.22, ao) - smoothstep(0.26, 0.31, ao);
+      c = mix(c, c * 0.8, smoothstep(0.26, 0.32, ao) * 0.6);
+      c = mix(c, c * 1.26 + 0.02, line * 0.5);
+    }
     c *= 1.0 - smoothstep(0.02, 0.75, ao) * (uIndoor > 0.5 ? 0.5 : 0.2);
     c = mix(c, uGrade.rgb, uGrade.a);
     if (uAmb.a > 0.0) {
@@ -666,7 +675,7 @@ function footShade(map: TileMap): THREE.DataTexture {
   return t;
 }
 
-export function buildGround(map: TileMap, look: ThemeLook, floors: readonly (Floor | null | undefined)[] = []): THREE.Mesh {
+export function buildGround(map: TileMap, look: ThemeLook, floors: readonly (Floor | null | undefined)[] = [], trim = false): THREE.Mesh {
   const W = map.w;
   const H = map.h;
   const roomA = new Uint8Array(W * H * 4);
@@ -724,6 +733,7 @@ export function buildGround(map: TileMap, look: ThemeLook, floors: readonly (Flo
       uAmb: LIGHT.uAmb,
       uFlameCol: LIGHT.uFlameCol,
       uAo: { value: footShade(map) },
+      uTrim: { value: trim ? 1 : 0 },
       uMask: { value: tex },
       uSize: { value: new THREE.Vector2(W, H) },
       uA: { value: col3(stone ? stone.slab[1] : g.grass[2]) },
@@ -1220,7 +1230,7 @@ export class Land3D {
     const look = THEMES[theme];
     this.look = look;
     const woody = !look.indoor && !look.cliffs && look.trees.filter((t) => t !== 'cactus' && t !== 'crystal').length * 2 > look.trees.length;
-    this.ground = buildGround(map, look, region.kind === 'dungeon' ? region.encounters.map((e) => (e.boss ? ARENAS[e.boss]?.floor : null)) : []);
+    this.ground = buildGround(map, look, region.kind === 'dungeon' ? region.encounters.map((e) => (e.boss ? ARENAS[e.boss]?.floor : null)) : [], look.indoor && region.kind === 'dungeon' && !!CLADDING[theme]);
     this.cut = look.indoor ? cutAway(map) : null;
     this.blocks = buildBlocks(map, look, woody, this.cut);
     this.planks = buildPlanks(map, look);
@@ -1496,14 +1506,16 @@ export class Land3D {
       return k !== K.Wall && k !== K.Illusion && k !== K.Cracked && k !== K.Door;
     };
     const tint = clad.tint;
-    const sy = DUNGEON_WALL / 4;
+    // (a hair taller than the wall it faces: its cap lies over the wall's top, not in the same plane, where the two
+    // would flicker through each other)
+    const syFar = (DUNGEON_WALL + 0.035) / 4;
     const pick = (a: number, b: number, long: boolean): string => {
       // (the odd piece only on a long run, and never two alike side by side: a wall is mostly wall)
       const h = hash2(a, b, 131);
       if (!long || h > clad.odd) return hash2(a, b, 133) < clad.cracked ? 'wall_cracked' : 'wall';
       return clad.pieces[Math.floor(hash2(a, b, 137) * clad.pieces.length) % clad.pieces.length]!;
     };
-    const lay = (len: number, at: (u: number) => { x: number; z: number }, rot: number, seedA: number, seedB: number): void => {
+    const lay = (len: number, at: (u: number) => { x: number; z: number }, rot: number, seedA: number, seedB: number, sy = syFar): void => {
       if (len === 1) {
         const p = at(0);
         // (the half piece runs from its own corner, not its middle)
@@ -1543,7 +1555,8 @@ export class Land3D {
           const mid = y + len / 2;
           const fx = dx > 0 ? x + 1 - CLAD_DEEP / 2 + CLAD_OUT : x + CLAD_DEEP / 2 - CLAD_OUT;
           // (turned a quarter: the piece's length runs down the wall, and its face is to the room)
-          lay(len, (u) => ({ x: fx, z: mid - u * dx }), (dx * Math.PI) / 2, x + 500, y);
+          // (and a flank's cap a hair over the far wall's, where the two meet in a corner)
+          lay(len, (u) => ({ x: fx, z: mid - u * dx }), (dx * Math.PI) / 2, x + 500, y, syFar + 0.004);
         }
       }
     }

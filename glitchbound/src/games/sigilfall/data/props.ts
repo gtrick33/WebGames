@@ -111,11 +111,11 @@ export const PROPS: Record<string, PropDef> = {
   altar: { m: 'altar-stone', w: 48, d: 26, h: 22, across: true, tint: '#b4b0a4' },
   // deep places
   'broken-column': { m: 'column', w: 24, d: 24, h: 36 },
-  'great-column': { m: 'built_great_column', w: 42, d: 38, h: 118, box: true },
-  'tall-column': { m: 'pillar', w: 34, d: 34, h: 104, box: true, tint: '#a8a6b0' },
+  'great-column': { m: 'built_great_column', w: 40, d: 38, h: 92, box: true },
+  'tall-column': { m: 'pillar', w: 32, d: 32, h: 86, box: true, tint: '#a8a6b0' },
   'mossy-column': { m: 'pillar', w: 34, d: 34, h: 96, box: true, tint: '#8aa080' },
-  'sand-column': { m: 'built_great_column', w: 42, d: 38, h: 118, box: true, tint: '#e0c088' },
-  'ice-column': { m: 'pillar', w: 36, d: 36, h: 104, box: true, tint: '#b8dcf4' },
+  'sand-column': { m: 'built_great_column', w: 40, d: 38, h: 92, box: true, tint: '#e0c088' },
+  'ice-column': { m: 'pillar', w: 34, d: 34, h: 86, box: true, tint: '#b8dcf4' },
   'black-column': { m: 'built_great_column', w: 42, d: 38, h: 124, box: true, tint: '#5a5664' },
   'crates-stack': { m: 'crates_stacked', w: 34, d: 34, h: 34 },
   'big-barrel': { m: 'barrel_large', w: 26, d: 26, h: 30 },
@@ -185,7 +185,7 @@ export const PROPS: Record<string, PropDef> = {
   throne: { m: 'built_throne', w: 28, d: 26, h: 36 },
   'high-throne': { m: 'built_throne', w: 42, d: 34, h: 52 },
   // the Hallow King's seat on its dais (render3d/propsBuilt.ts frozenThrone)
-  'frozen-throne': { m: 'built_frozen_throne', w: 132, d: 60, h: 150, glow: '#bfe4ff' },
+  'frozen-throne': { m: 'built_frozen_throne', w: 132, d: 44, h: 150, glow: '#bfe4ff' },
   // the banner of the house of Vaelmoor, as it stands in Duskspire still: white, the color gone out of it
   'royal-banner': { m: 'built_flag_royal', w: 30, d: 12, h: 70 },
   hearth: { m: 'campfire_bricks', w: 62, d: 26, h: 16, across: true, tint: '#9a8e80', flame: 1.3, flameAt: 8 },
@@ -215,7 +215,7 @@ const BODIES: Record<string, [number, number]> = {
   'red-banner': [4, 4],
   'skull-banner': [4, 4],
   'royal-banner': [4, 4],
-  'frozen-throne': [112, 43],
+  'frozen-throne': [112, 30],
   'banner-red': [16, 5],
   'banner-blue': [16, 5],
   'banner-shield': [18, 6],

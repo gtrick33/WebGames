@@ -203,13 +203,15 @@ export class Cast {
     this.shadowMesh.setMatrixAt(this.shadowN++, this.m4);
   }
 
-  private entry(id: string, kit: Kit): KitEntry {
+  private entry(file: string, kit: Kit): KitEntry {
+    // (a model painted or dressed for one creature is its own: the plain one stays as its file has it)
+    const id = kit.paint || kit.wears ? `${file}@${ownKey(kit)}` : file;
     let e = this.kits.get(id);
     if (!e) {
       e = { crowd: null, rig: null, mesh: null, kit, loading: true };
       this.kits.set(id, e);
       const entry = e;
-      void loadPack(`k/${id}`)
+      void loadPack(`k/${file}`)
         .then((pack) => {
           let mesh = pack.meshes.body!;
           const w = this.wardrobe;
@@ -226,7 +228,7 @@ export class Cast {
           entry.mesh = mesh;
           // (the animals of their set are flat-faceted and flat-colored: lit by their smooth normals they read rounded, as
           // the heroes do, and their colors run soft over the body instead of a patchwork of facets)
-          entry.crowd = new Crowd(/^(a_|fbx_)/.test(id) ? softBody(mesh) : mesh, rig, this.root, 16, 0.022);
+          entry.crowd = new Crowd(/^(a_|fbx_)/.test(file) ? softBody(mesh) : mesh, rig, this.root, 16, 0.022);
           entry.loading = false;
         })
         .catch(() => {
@@ -572,6 +574,17 @@ export class Cast {
     this.rings.dispose();
     this.root.clear();
   }
+}
+
+const ownKeys = new WeakMap<Kit, string>();
+/** A name for a kit's own paint and dress, the same for the same kit. */
+function ownKey(kit: Kit): string {
+  let k = ownKeys.get(kit);
+  if (!k) {
+    k = JSON.stringify([kit.paint ?? null, kit.wears ?? null]);
+    ownKeys.set(kit, k);
+  }
+  return k;
 }
 
 export type { Held };

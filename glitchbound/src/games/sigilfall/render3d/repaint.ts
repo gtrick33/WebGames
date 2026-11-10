@@ -27,7 +27,7 @@ export interface Paint {
 
 /** What is built onto a creature, on one of its bones (bossParts below). */
 export interface Wear {
-  piece: 'ice-crown' | 'eyes' | 'horns' | 'mantle';
+  piece: 'ice-crown' | 'eyes' | 'horns' | 'halo';
   /** Its colors: the body of it, and its light. */
   a?: string;
   b?: string;
@@ -35,6 +35,8 @@ export interface Wear {
   size?: number;
   /** Higher or lower on the head, as a share of the head's height. */
   lift?: number;
+  /** A crown's band, where it isn't silver. */
+  band?: string;
 }
 
 const hexOf = (hex: string): [number, number, number] => {
@@ -215,8 +217,8 @@ function iceCrown(b: Bits, box: { min: number[]; max: number[] }, w: Wear): void
   const band = hh * 0.1;
   const ice = hexOf(w.a ?? '#6fa8e8');
   const light = hexOf(w.b ?? '#f0fbff');
-  const metal = [176, 190, 214];
-  const dark = [92, 104, 136];
+  const metal: number[] = w.band ? hexOf(w.band) : [176, 190, 214];
+  const dark = metal.map((v) => v * 0.55);
   const N = 18;
   const at = (i: number, r: number, y: number): number[] => {
     const a = (i / N) * Math.PI * 2;
@@ -281,6 +283,87 @@ function eyes(b: Bits, box: { min: number[]; max: number[] }, w: Wear): void {
   }
 }
 
+/** A length of horn or thorn from `p0` to `p1`, four-sided, `r0` thick at its foot and `r1` at its end. */
+function prism(b: Bits, p0: readonly number[], p1: readonly number[], r0: number, r1: number, c0: readonly number[], c1: readonly number[], lit = false): void {
+  const d = [p1[0]! - p0[0]!, p1[1]! - p0[1]!, p1[2]! - p0[2]!];
+  const l = Math.hypot(d[0]!, d[1]!, d[2]!) || 1;
+  // two directions square to it
+  const up = Math.abs(d[1]! / l) > 0.9 ? [1, 0, 0] : [0, 1, 0];
+  const u = [d[1]! * up[2]! - d[2]! * up[1]!, d[2]! * up[0]! - d[0]! * up[2]!, d[0]! * up[1]! - d[1]! * up[0]!];
+  const ul = Math.hypot(u[0]!, u[1]!, u[2]!) || 1;
+  for (let i = 0; i < 3; i++) u[i] = u[i]! / ul;
+  const v = [(d[1]! * u[2]! - d[2]! * u[1]!) / l, (d[2]! * u[0]! - d[0]! * u[2]!) / l, (d[0]! * u[1]! - d[1]! * u[0]!) / l];
+  const ring = (p: readonly number[], r: number): number[][] => [0, 1, 2, 3].map((k) => {
+    const a = (k / 4) * Math.PI * 2;
+    return [0, 1, 2].map((i) => p[i]! + (u[i]! * Math.cos(a) + v[i]! * Math.sin(a)) * r);
+  });
+  const a = ring(p0, r0);
+  const z = ring(p1, r1);
+  for (let k = 0; k < 4; k++) {
+    const n = (k + 1) % 4;
+    b.tri(a[k]!, z[n]!, a[n]!, c0, c1, c0, [false, lit, false]);
+    b.tri(a[k]!, z[k]!, z[n]!, c0, c1, c1, [false, lit, lit]);
+  }
+}
+
+/** Two horns from the sides of a head, sweeping out, up and a little forward to a point. */
+function horns(b: Bits, box: { min: number[]; max: number[] }, w: Wear): void {
+  const cx = (box.min[0]! + box.max[0]!) / 2;
+  const cz = (box.min[2]! + box.max[2]!) / 2;
+  const hh = box.max[1]! - box.min[1]!;
+  const wide = box.max[0]! - box.min[0]!;
+  const k = w.size ?? 1;
+  const c0 = hexOf(w.a ?? '#4a4038');
+  const c1 = hexOf(w.b ?? '#d8cdb8');
+  const y0 = box.min[1]! + hh * (0.66 + (w.lift ?? 0));
+  for (const s of [-1, 1]) {
+    let p = [cx + s * wide * 0.36, y0, cz];
+    const steps = 5;
+    for (let i = 0; i < steps; i++) {
+      const t = (i + 1) / steps;
+      // (out first, then up: a quarter turn)
+      const a = t * Math.PI * 0.56;
+      const q = [cx + s * (wide * 0.36 + Math.sin(a) * wide * 0.42 * k), y0 + (1 - Math.cos(a)) * hh * 0.62 * k, cz + t * t * wide * 0.14];
+      const r0 = hh * 0.11 * k * (1 - i / steps);
+      const r1 = hh * 0.11 * k * (1 - (i + 1) / steps);
+      prism(b, p, q, r0, Math.max(r1, 0.001), mixc(c0, c1, i / steps), mixc(c0, c1, t));
+      p = q;
+    }
+  }
+}
+
+/** A disc of rays standing behind a head, alight: what crowns a thing that was worshipped. */
+function halo(b: Bits, box: { min: number[]; max: number[] }, w: Wear): void {
+  const cx = (box.min[0]! + box.max[0]!) / 2;
+  const hh = box.max[1]! - box.min[1]!;
+  const wide = box.max[0]! - box.min[0]!;
+  const k = w.size ?? 1;
+  const z = box.min[2]! - wide * 0.08;
+  const cy = box.min[1]! + hh * (0.62 + (w.lift ?? 0));
+  const c0 = hexOf(w.a ?? '#e8a838');
+  const c1 = hexOf(w.b ?? '#fff4c0');
+  const N = 14;
+  const r0 = wide * 0.5 * k;
+  for (let i = 0; i < N; i++) {
+    const a0 = ((i - 0.34) / N) * Math.PI * 2;
+    const a1 = ((i + 0.34) / N) * Math.PI * 2;
+    const am = (i / N) * Math.PI * 2;
+    const r1 = wide * (i % 2 ? 0.78 : 0.98) * k;
+    const p0 = [cx + Math.sin(a0) * r0, cy + Math.cos(a0) * r0, z];
+    const p1 = [cx + Math.sin(a1) * r0, cy + Math.cos(a1) * r0, z];
+    const tip = [cx + Math.sin(am) * r1, cy + Math.cos(am) * r1, z];
+    b.tri(p1, p0, tip, c0, c0, c1, [true, true, true]);
+  }
+  // the ring they stand from
+  for (let i = 0; i < N * 2; i++) {
+    const a0 = (i / (N * 2)) * Math.PI * 2;
+    const a1 = ((i + 1) / (N * 2)) * Math.PI * 2;
+    const at = (a: number, r: number): number[] => [cx + Math.sin(a) * r, cy + Math.cos(a) * r, z + 0.004];
+    b.tri(at(a1, r0 * 0.86), at(a0, r0 * 0.86), at(a0, r0 * 1.02), c1, c1, c1, [true, true, true]);
+    b.tri(at(a1, r0 * 0.86), at(a0, r0 * 1.02), at(a1, r0 * 1.02), c1, c1, c1, [true, true, true]);
+  }
+}
+
 /** The model with what it wears built onto its head. */
 export function dressed(m: MeshData, joints: readonly string[], wears: readonly Wear[]): MeshData {
   const head = joints.indexOf('head');
@@ -291,6 +374,8 @@ export function dressed(m: MeshData, joints: readonly string[], wears: readonly 
   for (const w of wears) {
     if (w.piece === 'ice-crown') iceCrown(bits, box, w);
     else if (w.piece === 'eyes') eyes(bits, box, w);
+    else if (w.piece === 'horns') horns(bits, box, w);
+    else if (w.piece === 'halo') halo(bits, box, w);
   }
   return bits.pos.length ? withBits(m, bits, head) : m;
 }

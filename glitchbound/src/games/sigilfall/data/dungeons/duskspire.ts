@@ -13,8 +13,8 @@ const MAP = [
   '############################################################',
   '############################################################',
   '##########ggQgggggggQggggg########gggggQgggggggQgg##########',
-  '##########gggggggggggggggggggnnggggggggggggggggggg##########',
-  '##########ggggggggggggggggggggTggggggggggggggggggg##########',
+  '##########gggggggggggggggggggnKngggggggggggggggggg##########',
+  '##########gggggggggggggggggggggggggggggggggggggggg##########',
   '##########ggggggggggggggggggggVggggggggggggggggggg##########',
   '##########gggggggggggggggggggggggggggggggggggggggg##########',
   '##########gggggggggggggggggggggggggggggggggggggggg##########',
@@ -130,7 +130,7 @@ const markers: Record<string, Marker> = {
   W: { kind: 'boss', boss: 'lady-cendre' },
   n: { kind: 'prop', prop: 'bones' },
   // his throne, at the head of the room behind him (seen, not bumped into: his fight is measured to an open floor)
-  T: { kind: 'prop', prop: 'frozen-throne', through: true },
+  K: { kind: 'prop', prop: 'frozen-throne', through: true },
 };
 
 /* ------------------------------------------------------------ enemies */

@@ -390,8 +390,9 @@ function greatColumn(): Build {
   b.post(0, 0, 0.58, 0.46, 0.24, 0.46, 8, dim, c, 0, 0, Math.PI / 8);
   b.post(0, 0, 0.42, 0.37, 0.46, 3.74, 8, mul(c, 0.66), c, 0, 0, Math.PI / 8);
   for (const y of [1.4, 2.6]) b.post(0, 0, 0.44, 0.43, y, y + 0.12, 8, dim, hi, 0, 0, Math.PI / 8);
-  b.post(0, 0, 0.37, 0.6, 3.74, 4.12, 8, dim, hi, 0, 0, Math.PI / 8);
-  b.box(-0.68, -0.68, 0.68, 0.68, 4.12, 4.32, c, dim, hi);
+  // (its capital is eight-sided like the shaft and dark on top: from above a square slab on it reads as a sheet of paper)
+  b.post(0, 0, 0.37, 0.56, 3.74, 4.12, 8, dim, hi, 0, 0, Math.PI / 8);
+  b.post(0, 0, 0.56, 0.56, 4.12, 4.26, 8, c, mul(c, 0.5), 0, 0, Math.PI / 8);
   return b;
 }
 
@@ -431,16 +432,16 @@ function frozenThrone(): Build {
   // the dais: three steps, each rimed along its edge
   for (let i = 0; i < 3; i++) {
     const w = 1.5 - i * 0.2;
-    b.box(-w, -0.3, w, 0.86 - i * 0.16, i * 0.12, (i + 1) * 0.12, mul(stone, 0.9), dark, i === 2 ? stone : mul(rime, 0.74));
+    b.box(-w, -0.3, w, 0.52 - i * 0.1, i * 0.12, (i + 1) * 0.12, mul(stone, 0.9), dark, i === 2 ? stone : mul(rime, 0.74));
   }
   const y = 0.36;
   // the seat between two great arms
-  b.box(-0.5, -0.1, 0.5, 0.42, y, y + 0.46, stone, dark, mul(rime, 0.8));
+  b.box(-0.5, -0.1, 0.5, 0.24, y, y + 0.46, stone, dark, mul(rime, 0.8));
   for (const side of [-1, 1] as const) {
     const x0 = side < 0 ? -0.78 : 0.5;
-    b.box(x0, -0.1, x0 + 0.28, 0.46, y, y + 0.82, stone, dark, rime);
+    b.box(x0, -0.1, x0 + 0.28, 0.28, y, y + 0.82, stone, dark, rime);
     // a shard of ice standing from the front of each arm
-    b.post(x0 + 0.14, 0.36, 0.1, 0.0, y + 0.82, y + 1.3, 4, ice, lit, 0, 0.04, Math.PI / 4);
+    b.post(x0 + 0.14, 0.2, 0.1, 0.0, y + 0.82, y + 1.3, 4, ice, lit, 0, 0.04, Math.PI / 4);
   }
   // the back: a wall of stone, and the spires rising from it
   b.box(-0.82, -0.28, 0.82, -0.08, y, y + 1.9, stone, dark, rime);

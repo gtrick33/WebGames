@@ -449,6 +449,44 @@ const BY_ENEMY: Record<string, Kit> = {
   'court-of-the-dead': { k: 'sk_warrior', tint: '#b4aed0', rest: 'sit' },
 };
 
+/*
+ * The bosses: each is its soldiers' model only in its bones. It stands taller than they do, its eyes are alight, and it
+ * wears what its story gives it (a crown, horns, a disc of rays), built onto its head so it moves as its own; where its
+ * model was one flat tint it is painted in two (render3d/repaint.ts).
+ */
+const boss = (id: string, more: Partial<Kit>): void => {
+  TABLE[id] = { ...(TABLE[id] ?? { k: 'sk_minion' }), ...more };
+};
+/** Rock gone dark, the cracks in it alight from within: a thing of the forge, or of the rift. */
+const molten = (rock: string, hot: string): Kit['paint'] => [
+  { lum: [0, 0.36], to: hot, glow: true, keep: 0 },
+  { to: rock, keep: 0.8 },
+];
+boss('grimtusk', { size: 1.5, wears: [{ piece: 'horns', a: '#5a4a3a', b: '#e8dcc0', size: 0.9 }, { piece: 'eyes', b: '#ffb04d' }] });
+boss('ossric', { size: 1.4, wears: [{ piece: 'eyes', b: '#ffe08a' }, { piece: 'halo', a: '#c89a3a', b: '#fff2c0', size: 0.8 }] });
+boss('morgrave', { size: 1.35, wears: [{ piece: 'ice-crown', a: '#7a2ab8', b: '#ff9af0', band: '#4a3a5c' }, { piece: 'eyes', b: '#ff7ae8' }] });
+boss('the-drowned', { size: 1.35, wears: [{ piece: 'eyes', b: '#9afff0' }] });
+boss('the-rot-mother', { size: 1.5, wears: [{ piece: 'horns', a: '#3a4a22', b: '#c8e070' }, { piece: 'eyes', b: '#e8ff70' }] });
+boss('slag-colossus', { size: 1.6, tint: undefined, paint: molten('#4a3a36', '#ff9a3a'), wears: [{ piece: 'eyes', b: '#fff0a0' }] });
+boss('magma-warden', { size: 1.5, tint: undefined, paint: molten('#3c2c2c', '#ff6a2a'), wears: [{ piece: 'horns', a: '#2a2020', b: '#ff8a3a', size: 0.8 }, { piece: 'eyes', b: '#ffe08a' }] });
+boss('ashkar-the-bound', { size: 1.65, tint: undefined, paint: molten('#2e2428', '#ff5a1e'), wears: [{ piece: 'horns', a: '#1e181a', b: '#ff9a3a', size: 1.15 }, { piece: 'eyes', b: '#fff0a0' }] });
+boss('veil-sentinel', { size: 1.5, tint: undefined, paint: molten('#3a2e58', '#d8a8ff'), wears: [{ piece: 'eyes', b: '#f4e0ff' }, { piece: 'halo', a: '#8a4ae0', b: '#f0d8ff', size: 0.85 }] });
+boss('the-runewarden', { tint: undefined, paint: molten('#6a5c44', '#ffd27a'), wears: [{ piece: 'eyes', b: '#fff2c0' }] });
+boss('forgemaster-grold', { size: 1.45, wears: [{ piece: 'horns', a: '#3a2a22', b: '#ff9a4a', size: 0.9 }, { piece: 'eyes', b: '#ffd27a' }] });
+boss('king-hrodric', { size: 1.35, wears: [{ piece: 'eyes', b: '#bfe8ff' }] });
+boss('the-sand-warden', { size: 1.45, wears: [{ piece: 'eyes', b: '#ffe08a' }] });
+boss('the-sun-king', { size: 1.4, wears: [{ piece: 'halo', a: '#e8a030', b: '#fff4c0', size: 1.1 }, { piece: 'ice-crown', a: '#d89a2a', b: '#fff6c8', band: '#b8862a' }, { piece: 'eyes', b: '#fff2a0' }] });
+boss('jarl-hrimfang', { size: 1.3, wears: [{ piece: 'horns', a: '#5a86b8', b: '#eefaff', size: 1.1 }, { piece: 'eyes', b: '#bfe8ff' }] });
+boss('rotwood-colossus', { size: 1.35, wears: [{ piece: 'horns', a: '#4a3a22', b: '#8ab04a', size: 1.2 }, { piece: 'eyes', b: '#c8ff70' }] });
+boss('the-withered-queen', { size: 1.35, wears: [{ piece: 'ice-crown', a: '#4a6a2a', b: '#d8ff8a', band: '#3a3a2a' }, { piece: 'eyes', b: '#e0ff9a' }] });
+boss('herald-in-the-spire', { size: 1.35, wears: [{ piece: 'halo', a: '#a03ae0', b: '#ffd0ff', size: 0.9 }, { piece: 'eyes', b: '#ff9af0' }] });
+boss('ossa-the-founder', { wears: [{ piece: 'eyes', b: '#fff6e0' }] });
+// the Host's knights: black plate, each with their own color where the pack's knight wears red
+boss('sir-corvane', { size: 1.3, tint: undefined, paint: [{ hue: [320, 20], sat: [0.5, 1], to: '#5a7ad8' }, { hue: [190, 270], lum: [0.5, 1], to: '#8a8ea8' }, { hue: [190, 270], to: '#2c2c3c', keep: 0.9 }], wears: [{ piece: 'eyes', b: '#a8c8ff' }] });
+boss('sir-corvane-foot', { size: 1.3, tint: undefined, paint: [{ hue: [320, 20], sat: [0.5, 1], to: '#5a7ad8' }, { hue: [190, 270], lum: [0.5, 1], to: '#8a8ea8' }, { hue: [190, 270], to: '#2c2c3c', keep: 0.9 }], wears: [{ piece: 'eyes', b: '#a8c8ff' }] });
+boss('general-morvain', { size: 1.4, tint: undefined, paint: [{ hue: [320, 20], sat: [0.5, 1], to: '#c8242c' }, { hue: [190, 270], lum: [0.5, 1], to: '#7a7480' }, { hue: [190, 270], to: '#1e1c24', keep: 0.9 }], wears: [{ piece: 'horns', a: '#1a181c', b: '#8a8490', size: 0.8 }, { piece: 'eyes', b: '#ff6a3a' }] });
+boss('hollow-guard', { size: 1.35, tint: undefined, paint: [{ hue: [320, 20], sat: [0.5, 1], to: '#e4ecfa' }, { hue: [190, 270], lum: [0.5, 1], to: '#a4b8d8' }, { hue: [190, 270], to: '#3a4a70', keep: 0.9 }], wears: [{ piece: 'eyes', b: '#dff6ff' }] });
+
 const FALLBACK: Kit = { k: 'sk_minion', tint: ASH };
 
 export function kitOf(sprite: string, enemy?: string): Kit {

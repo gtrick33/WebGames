@@ -766,7 +766,8 @@ function shape(def: RegionDef, source: readonly string[], given: readonly Placed
     // (in a boss's chamber only what lies flat is scattered over the floor: what stands up has a body, and a fight's
     // charges, rams and dodges are measured to an open floor)
     const bits = boss ? ((arena.bits ?? dress.bits).filter((b) => !propStandsUp(b)).length ? (arena.bits ?? dress.bits).filter((b) => !propStandsUp(b)) : ['rubble']) : dress.bits;
-    const want = Math.round((cells.length / 17) * (boss ? (arena.litter ?? 1) : 1));
+    // (sparingly: a floor strewn evenly with the same rubble reads as noise, not as a place)
+    const want = Math.round((cells.length / 26) * (boss ? (arena.litter ?? 1) : 1));
     let done = 0;
     for (let k = 0; k < cells.length * 2 && done < want; k++) {
       const [x, y] = cells[Math.floor(hash2(k, seed, 7) * cells.length)]!;
