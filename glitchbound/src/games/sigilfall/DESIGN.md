@@ -39,8 +39,10 @@ touch run exactly the same game.
 `requestAnimationFrame` measures real time, clamped to 0.1 s (a suspended tab never simulates a jump), and the
 world steps in fixed 1/60 s slices. Heavy hits apply a short hit-stop. The world pauses when a menu, dialogue,
 death or reward screen is open, when the tab is hidden, and when the arcade asks for a pause (`pauseKey`).
-Sound is synthesized with Web Audio (effects, and a procedural score with a song for every land and a boss
-theme: audio/songs.ts), starts on the first tap or key, and has master, music and effects volumes and a mute switch.
+Sound is recorded (audio/samples.ts for effects, audio/tracks.ts for the soundtrack, audio/ambience.ts for the air
+of each land; who made them is in CREDITS_AND_LICENSES.md), played with Web Audio; a procedural score (audio/songs.ts)
+stands in if a piece can't be loaded. It starts on the first tap or key, and has master, music and effects volumes
+and a mute switch.
 
 ## Controls
 
@@ -314,7 +316,8 @@ cloud saves (up to 96 KB); the backup stays on the device.
 - Tested in desktop Chromium and in Chromium's phone emulation with real multitouch events, not on physical
   phones.
 - Balance is tuned against the bot; real players will find Normal easier or harder depending on skill.
-- Sound is synthesized; there is no recorded audio.
+- The sounds and music were chosen by description and measured loudness, not by ear: `audio/samples.ts` and
+  `audio/tracks.ts` are the places to change what plays.
 - The level cap is 60, but the zones so far reach level 46 (Mythic crypt aside). Act IV in `WORLD.md`, with
   Duskspire and the Hollow King, is the next stage.
 - Measured with the bot at level 60 in rare gear, the damage specializations deal about 20-44k a second

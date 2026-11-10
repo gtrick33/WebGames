@@ -33,6 +33,7 @@ import { questRewards } from '../progress/rewards';
 import { FOG_CELL, fogSeen, loadFog, type Fog } from '../progress/fog';
 import { RiftGuide } from './RiftGuide';
 import { ShopPanel } from './Shop';
+import { MUSIC_CREDITS } from '../audio/tracks';
 import { earnedTitles, titled, titleName, TITLES, wornTitle } from '../progress/titles';
 import { WARDENS } from '../data/wardens';
 import { compareWith, linesOnlyIn, statRows } from './compare';
@@ -1521,9 +1522,11 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
         </section>
         <section>
           <span className="rb-kicker">Art credits</span>
-          <span className="rb-small rb-dim">
-            {ART_CREDITS.join(' · ')}. Heroes, monsters, bosses, item icons, sound and music are made for the game.
-          </span>
+          <span className="rb-small rb-dim">{ART_CREDITS.join(' · ')}. Item icons and the interface are made for the game.</span>
+        </section>
+        <section>
+          <span className="rb-kicker">Music and sound credits</span>
+          <span className="rb-small rb-dim">{SOUND_CREDITS.join(' ')}</span>
         </section>
         {engine.reviewTools && engine.hero && (
           <section>
@@ -1553,8 +1556,13 @@ const ART_CREDITS = [
   'Gloomvault Crypt by Certainity',
   'Skill and talent icons: Nasha’s Lumenfall, Skill & Spell Icons Vol. 1, by nanasha.',
   '3D models: KayKit by Kay Lousberg, Kenney, and Quaternius.',
-  'Sound effects: RPG Sound Pack by artisticdude.',
-  'Music: Orchestral and World Music Pack by Ragnar Random.',
+];
+
+/** Who made what is heard. The music and one sound library ask to be credited (CC BY), with their link and license. */
+const SOUND_CREDITS = [
+  `Music by Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution 4.0 (creativecommons.org/licenses/by/4.0), each piece cut to length: ${MUSIC_CREDITS.join(', ')}.`,
+  'Sound effects from the Fantasy Sound Effects Library by Little Robot Sound Factory (www.littlerobotsoundfactory.com), licensed under Creative Commons: By Attribution 3.0 (creativecommons.org/licenses/by/3.0), cut and leveled.',
+  'More sound effects, given to the public domain (CC0) on opengameart.org, by artisticdude, rubberduck, Vehicle, StarNinjas, Kenney, Someoneman, Ogrebane, qubodup, TinyWorlds, Kresiek The Furry and SketchMan3.',
 ];
 
 /** The hero in everything they wear (and the Wardrobe looks over it); tap to turn them around. */

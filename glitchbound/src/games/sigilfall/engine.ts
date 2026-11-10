@@ -1,3 +1,4 @@
+import { ambienceOf } from './audio/ambience';
 import type { GameHost } from '../../platform/contract';
 import { isRetired } from './data/retired';
 import { reportOrders, waitingOrders } from '../../platform/sigilfallOrders';
@@ -423,6 +424,9 @@ export class SigilEngine {
     this.toWorldFn = fn;
   }
 
+  /** What plays outside the story (the Ring, the Vigil: each sets its own while it is up; null: the title's). */
+  modeMusic: MusicId = null;
+
   isPaused(): boolean {
     const u = this.ui;
     return u.screen !== 'game' || u.pause || !!u.panel || !!u.dialogue || !!u.travel || u.death || !!u.reward || !!u.tip || this.hidden;
@@ -438,7 +442,10 @@ export class SigilEngine {
     this.sound.suspend(this.hidden || (this.ui.screen === 'game' && this.ui.pause));
     const w = this.world;
     if (!w || this.ui.screen !== 'game') {
-      if (this.ui.screen !== 'game') this.sound.setMusic('title');
+      if (this.ui.screen !== 'game') {
+        this.sound.setMusic(this.modeMusic ?? 'title');
+        this.sound.setAmbience(null);
+      }
       return;
     }
     // in a co-op run the world never stops for a menu: the others are still fighting (the hero stands)
@@ -570,6 +577,8 @@ export class SigilEngine {
     if (this.tipQueue.length) this.showTip(w);
     const boss = w.boss();
     this.sound.setMusic(boss && !boss.dead ? 'boss' : ((w.scene?.music ?? w.storyState?.music ?? REGIONS[w.region.id].music) as MusicId));
+    // (the air is the land's own, whatever the story plays over it; a town under siege has none)
+    this.sound.setAmbience(ambienceOf(w.storyState?.music ?? REGIONS[w.region.id].music));
   }
 
   private handleEvents(w: World): void {

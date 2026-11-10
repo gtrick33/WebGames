@@ -157,8 +157,9 @@ table is RENAMES.md; highlights:
 - **Quizbelief's "name that tune":** every melody is public domain (classical or traditional, plus Happy
   Birthday, whose copyright was ruled invalid in the US in 2015 and expired in the EU in 2016).
 - **Music and sound** across the site and the marketing kit are synthesized in code, except Sigilfall's recorded
-  sound effects and soundtrack (RPG Sound Pack by artisticdude, Orchestral and World Music Pack by Ragnar Random, both
-  CC0: see CREDITS_AND_LICENSES.md); the marketing emoji are Noto (OFL).
+  sound effects and soundtrack (since 2026-11-11: music by Kevin MacLeod, CC BY 4.0, and the Fantasy Sound Effects
+  Library by Little Robot Sound Factory, CC BY 3.0, both of which must be and are credited in the game's Settings;
+  the rest CC0: see CREDITS_AND_LICENSES.md); the marketing emoji are Noto (OFL).
 - **Trivia** that names brands, films or people does so as facts, which is fine.
 - **Sigilfall's original art:** heroes, monsters, bosses, icons and interface are drawn in code.
 - **Verified sellers:** Royal Keep (bubbabba) and Magic Spells VFX (Willosuna) store pages exist and say

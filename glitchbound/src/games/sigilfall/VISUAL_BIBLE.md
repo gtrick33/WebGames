@@ -187,8 +187,9 @@ Every visual phase saves desktop, phone and tablet screenshots in `docs/review/p
 
 ## Feedback conventions: sound and effects (blueprint Prompt 15)
 
-Every sound is synthesized (audio/sound.ts), on one bus per kind, under the master, music and effects volumes
-(Settings, saved).
+Every sound is a recording (audio/samples.ts; two with none are synthesized in audio/sound.ts), on one bus per kind,
+under the master, music and effects volumes (Settings, saved). The air of each land (audio/ambience.ts) plays under
+the effects and follows their volume.
 
 **A song for every land** (audio/songs.ts, played by audio/score.ts): each land has its own tune, key, meter and
 band. Briarhollow is a waltz on a soft flute with birds in the hedges; Emberwick a march; Brackenridge and the inns
