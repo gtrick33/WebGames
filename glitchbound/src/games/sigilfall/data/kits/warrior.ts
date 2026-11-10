@@ -1,4 +1,4 @@
-import { cdr, dmg, K, onHit, P, S, skill, spec, stats, T, type Kit } from './kit';
+import { cdr, combo, dmg, K, next, onHit, P, S, skill, spec, stats, T, when, type Kit } from './kit';
 
 /** The Warrior: sword and shield in the thick of it, on Rage earned by hitting and being hit. */
 
@@ -25,6 +25,7 @@ export const WARRIOR: Kit = {
         color: '#ff4f4f',
         role: 'Relentless melee damage',
         skill: 'bloodthirst',
+        combo: combo('Blood on the Air', 'A critical hit gives you the scent: your next Blood Hunger is ready at once, costs nothing and hits 50% harder.', when('bloodscent', 'crit', { kind: 'buff', buff: next('bloodscent', 'Blood on the Air', '#ff5a4a', 'bloodthirst', 8, { pct: 50, free: true, ready: true }) }, 'A critical hit readies Blood Hunger, free and 50% stronger.', { icd: 4 })),
         passive: {
           name: 'Enrage',
           text: '+4% critical hit chance; critical hits give 4 Rage.',
@@ -37,6 +38,7 @@ export const WARRIOR: Kit = {
         color: '#ffd34d',
         role: 'Tank: holds the line',
         skill: 'shield-wall',
+        combo: combo('Break the Guard', 'Stunning an enemy with Shield Bash or Charge opens it up: your next Heavy Strike is ready at once and hits twice as hard.', when('guardbreak-bash', 'hit', { kind: 'buff', buff: next('guardbreak', 'Break the Guard', '#8ab8ff', 'heavy-strike', 6, { pct: 100, ready: true }) }, 'Shield Bash sets up a Heavy Strike twice as hard.', { skill: 'shield-bash' }), when('guardbreak-charge', 'hit', { kind: 'buff', buff: next('guardbreak', 'Break the Guard', '#8ab8ff', 'heavy-strike', 6, { pct: 100, ready: true }) }, 'Charge sets up a Heavy Strike twice as hard.', { skill: 'charge' })),
         passive: { name: 'Bastion', text: '+20 armor and +10% max health.', mods: [S('armor', 20), S('hpPct', 10)] },
       },
       {
@@ -45,10 +47,11 @@ export const WARRIOR: Kit = {
         color: '#c9a35a',
         role: 'Heavy single-target strikes',
         skill: 'mortal-strike',
+        combo: combo('Open the Wound', 'Heavy Strike on a Bleeding enemy tears the wound open: all the bleeding still to come lands at once.', when('open-wound', 'hit', { kind: 'detonate', status: 'bleed', mul: 1 }, 'Heavy Strike sets off a bleed.', { skill: 'heavy-strike', status: 'bleed' })),
         passive: {
           name: 'Deep Wounds',
-          text: '+10% physical damage; critical hits make the enemy Bleed (30% of the hit per second for 4 s).',
-          mods: [S('physical', 10), P({ id: 'deep-wounds', on: 'crit', chance: 1, icd: 0.4, effect: { kind: 'status', status: 'bleed', dur: 4, power: 0.3 }, text: 'Critical hits make the enemy Bleed.' })],
+          text: '+10% physical damage; critical hits make the enemy Bleed (20% of the hit per second for 4 s).',
+          mods: [S('physical', 10), P({ id: 'deep-wounds', on: 'crit', chance: 1, icd: 0.4, effect: { kind: 'status', status: 'bleed', dur: 4, power: 0.2 }, text: 'Critical hits make the enemy Bleed.' })],
         },
       },
     ],

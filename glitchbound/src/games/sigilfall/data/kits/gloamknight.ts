@@ -1,4 +1,4 @@
-import { cdr, dmg, K, onHit, P, S, skill, spec, stats, T, type Kit } from './kit';
+import { cdr, combo, dmg, K, next, onHit, P, S, skill, spec, stats, T, when, type Kit } from './kit';
 
 /**
  * The Gloamknight: heavy plate, a two-handed greatsword and a shadow that clings. It spends its own blood for strength
@@ -29,6 +29,7 @@ export const GLOAMKNIGHT: Kit = {
         color: '#c0344e',
         role: 'Tank: shadow wards and stolen life',
         skill: 'hollow-ward',
+        combo: combo('Debt Repaid', 'A blow taken is a debt: your next Umbral Rend is ready at once and hits 60% harder (once every 5 s).', when('debt', 'hurt', { kind: 'buff', buff: next('debt', 'Debt Repaid', '#d05a7a', 'umbral-rend', 8, { pct: 60, ready: true }) }, 'Being hit readies a stronger Umbral Rend.', { icd: 5 })),
         passive: {
           name: 'Blood Remembers',
           text: '+20 armor and +10% max health; your hits heal you for 1% of your health (once every 0.6 s).',
@@ -41,6 +42,7 @@ export const GLOAMKNIGHT: Kit = {
         color: '#9a6ae0',
         role: 'Heavy two-handed damage',
         skill: 'sundering-dark',
+        combo: combo('Gathering Weight', 'Gloam Cleave hits gather weight, up to 4. Your next Sundering Dark spends it: 20% more damage each.', when('weight', 'hit', { kind: 'buff', buff: next('weight', 'Gathering Weight', '#9a7ae0', 'sundering-dark', 8, { pct: 20 }, 4) }, 'Gloam Cleave builds toward a heavier Sundering Dark.', { skill: 'gloam-cleave', icd: 0.3 })),
         passive: { name: 'Weight of the Blade', text: '+10% shadow and physical damage, and +15% critical damage.', mods: [S('shadow', 10), S('physical', 10), S('critDmg', 15)] },
       },
       {
@@ -49,6 +51,7 @@ export const GLOAMKNIGHT: Kit = {
         color: '#5aa8c8',
         role: 'Curses that feed you',
         skill: 'creeping-dread',
+        combo: combo('Dread Harvest', 'When a Cursed enemy dies, the dread comes back to you: your next Creeping Dread is ready at once and costs nothing.', when('dread-harvest', 'kill', { kind: 'buff', buff: next('dread-harvest', 'Dread Harvest', '#8a5ad8', 'creeping-dread', 8, { free: true, ready: true }) }, 'A Cursed enemy dying readies Creeping Dread.', { status: 'curse', icd: 2 })),
         passive: {
           name: 'Feast of Dread',
           text: '+15% shadow damage; your hits on Cursed enemies heal you for 1% of your health (twice a second at most).',

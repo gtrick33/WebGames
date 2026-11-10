@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { NPCS } from '../data/quests';
 import { QM_LEVEL, SHOPS, type ShopId } from '../data/vendors';
 import type { SigilEngine } from '../engine';
+import { keyLoot } from '../data/keystones';
 import type { Item } from '../data/types';
 import { bagSize, cantEquip, potionCap } from '../progress/character';
 import { itemName, itemSlot, salvageValue } from '../progress/items';
 import { rarityColor } from '../render/renderer';
+import { cantWager, FORGED_LEVEL, WAGER_PRICE, WAGER_SLOTS, wagerOdds } from '../progress/rift';
 import { cantBuy, potionPrice, stockFor, type ShopItem } from '../progress/shop';
 import { fmt, Frame, ItemIcon, Portrait } from './common';
-import { isUpgrade, ItemDetail } from './Panels';
+import { isUpgrade, ItemDetail, SLOT_LABEL } from './Panels';
 import { uiIcon } from './uiIcons';
 
 /** A vendor: buy their stock (or potions at the inn), sell what is in your bag. */
@@ -17,7 +19,9 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
   const def = SHOPS[shop];
   // the vendor you are trading with (else the first who keeps this kind of shop)
   const npc = (engine.ui.shopNpc ? NPCS[engine.ui.shopNpc] : undefined) ?? Object.values(NPCS).find((n) => n.shop === shop);
-  const [tab, setTab] = useState<'buy' | 'sell'>('buy');
+  const [tab, setTab] = useState<'buy' | 'sell' | 'wager'>('buy');
+  // the quartermaster is also the Riftbroker, for a hero the Rift has anything for
+  const tabs: ('buy' | 'sell' | 'wager')[] = shop === 'quartermaster' && h.level >= FORGED_LEVEL ? ['buy', 'wager', 'sell'] : ['buy', 'sell'];
   const [sel, setSel] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
   // what was just bought or sold (a receipt in the shop: the toasts are for the world outside it)
@@ -95,7 +99,7 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
         </div>
         {shop !== 'inn' && (
           <div className="rb-seg" role="tablist" aria-label="Buy or sell">
-            {(['buy', 'sell'] as const).map((t) => (
+            {tabs.map((t) => (
               <button
                 key={t}
                 role="tab"
@@ -108,7 +112,7 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
                   setConfirm(null);
                 }}
               >
-                {t === 'buy' ? 'Buy' : `Sell (${h.bag.length}/${bagSize(h)})`}
+                {t === 'buy' ? 'Buy' : t === 'wager' ? 'Rift wagers' : `Sell (${h.bag.length}/${bagSize(h)})`}
               </button>
             ))}
           </div>
@@ -117,6 +121,15 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
           <section className="rb-shop-list" aria-label={tab === 'buy' ? 'For sale' : 'Your bag'}>
             {shop === 'inn' ? (
               <PotionCounter engine={engine} onBought={(n) => show({ text: `Bought ${n} potion${n === 1 ? '' : 's'}`, sub: `${h.potions} of ${potionCap(h)}` })} />
+            ) : tab === 'wager' ? (
+              <Wagers
+                engine={engine}
+                onWon={(it) => {
+                  setSel(null);
+                  setInspect(it.uid);
+                  show({ text: `The broker turns over: ${itemName(it)}`, sub: `${WAGER_PRICE} Sigil Marks`, item: it });
+                }}
+              />
             ) : tab === 'buy' ? (
               stock.length ? (
                 <div className="rb-shop-grid">
@@ -233,6 +246,44 @@ export function ShopPanel({ engine, shop }: { engine: SigilEngine; shop: ShopId 
         </div>
       </div>
     </Frame>
+  );
+}
+
+/**
+ * The Riftbroker's table: Sigil Marks on a slot, and an unseen piece for it comes back, made at the item level of the
+ * hero's highest stone. The odds are on the table, and so is what the Rift has opened for this hero.
+ */
+function Wagers({ engine, onWon }: { engine: SigilEngine; onWon: (item: Item) => void }) {
+  const h = engine.hero!;
+  const why = cantWager(h);
+  const odds = wagerOdds(h.keystone);
+  const pct = (v: number): string => `${Math.round(v * 100)}%`;
+  return (
+    <div className="rb-wagers">
+      <p className="rb-small">
+        Lay <b className="rb-marks">{WAGER_PRICE} Sigil Marks</b> on a slot and the broker turns over one piece for it, made at item level <b>{keyLoot(h.keystone, h.level)}</b> (your Riftstone +{h.keystone}). Legendary{' '}
+        <b className="rb-gold">{pct(odds.legendary)}</b>, epic {pct(odds.epic)}, rare {pct(odds.rare)}. Rift-forged pieces your stone has opened are among the legendaries.
+      </p>
+      <div className="rb-wager-grid">
+        {WAGER_SLOTS.map((slot) => (
+          <button
+            key={slot}
+            className="rb-ware rb-wager"
+            disabled={!!why}
+            onClick={() => {
+              const it = engine.wager(slot);
+              if (it) onWon(it);
+            }}
+            aria-label={`Wager on ${SLOT_LABEL[slot]}, ${WAGER_PRICE} Sigil Marks`}
+          >
+            <span className="rb-ware-name">{SLOT_LABEL[slot]}</span>
+            <span className="rb-ware-price">{WAGER_PRICE} marks</span>
+          </button>
+        ))}
+      </div>
+      {why && <p className="rb-small rb-warn">{why}.</p>}
+      <p className="rb-small rb-dim">Marks come from bosses and from every Rift run: more for a higher stone, and more for beating the clock.</p>
+    </div>
   );
 }
 

@@ -1750,6 +1750,95 @@
     background: #2a5a8a;
   }
 }
+/* a skill a combo waits on (ui/comboMark.ts): its button is lit in the combo's color; one still building is fainter,
+   a whole one pulses, so the next thing to press is the thing that shines */
+.rb-slot6[data-combo],
+.rb-sb[data-combo] {
+  box-shadow:
+    0 0 0 2px var(--combo, #ffd27a),
+    0 0 10px 2px color-mix(in srgb, var(--combo, #ffd27a) 55%, transparent);
+}
+.rb-slot6[data-combo='full'],
+.rb-sb[data-combo='full'] {
+  animation: rb-combo 0.7s ease-in-out infinite;
+}
+.rb-slot6[data-combo='full'] img,
+.rb-sb[data-combo='full'] img {
+  filter: brightness(1.25) saturate(1.15);
+}
+@keyframes rb-combo {
+  50% {
+    box-shadow:
+      0 0 0 4px var(--combo, #ffd27a),
+      0 0 22px 7px color-mix(in srgb, var(--combo, #ffd27a) 75%, transparent);
+  }
+}
+/* the combo's own chip (ui/GameScreen.tsx ComboChip): its name, a pip a stack, its time running down */
+.rb-combo {
+  position: absolute;
+  top: calc(86px + var(--sa-t));
+  left: calc(10px + var(--sa-l, 0px));
+  display: grid;
+  gap: 3px;
+  min-width: 108px;
+  padding: 4px 9px 5px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 9px;
+  background: rgb(18 12 28 / 0.84);
+  box-shadow: 0 0 0 1px var(--combo, #ffd27a);
+  pointer-events: none;
+}
+.rb-combo[hidden] {
+  display: none;
+}
+.rb-combo b {
+  font-size: 12px;
+  line-height: 1.1;
+  color: var(--combo, #ffd27a);
+  white-space: nowrap;
+}
+.rb-combo[data-full='1'] {
+  box-shadow:
+    0 0 0 2px var(--combo, #ffd27a),
+    0 0 12px 2px color-mix(in srgb, var(--combo, #ffd27a) 60%, transparent);
+}
+.rb-combo-pips {
+  display: flex;
+  gap: 3px;
+}
+.rb-combo-pips:empty {
+  display: none;
+}
+.rb-combo-pips i {
+  width: 12px;
+  height: 6px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.16);
+}
+.rb-combo-pips i[data-on='1'] {
+  background: var(--combo, #ffd27a);
+}
+.rb-combo-time {
+  position: relative;
+  height: 3px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.14);
+  overflow: hidden;
+}
+.rb-combo-time i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--combo, #ffd27a);
+}
+.rb-combo-line {
+  margin-top: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-slot6[data-combo='full'],
+  .rb-sb[data-combo='full'] {
+    animation: none;
+  }
+}
 /* the hero's cast bar (ui/GameScreen.tsx CastBar): pinned under the hero, the spell's name over a bar that fills
    in its element's color (--cast-a, --cast-b); it flashes full when the spell goes and greys out when stopped */
 .rb-castbar {
@@ -4033,6 +4122,116 @@
 }
 .rb-ware-price {
   font: 700 12px var(--mono);
+  color: var(--rb-gold);
+}
+/* the Riftbroker's table: a button a slot */
+.rb-wagers {
+  display: grid;
+  gap: 10px;
+}
+.rb-wager-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 6px;
+}
+.rb-wager {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 48px;
+  padding: 6px 10px;
+  border-color: #6a3ab0;
+  background: linear-gradient(180deg, rgb(120 70 200 / 0.22), rgb(0 0 0 / 0.26));
+}
+.rb-wager:disabled {
+  opacity: 0.5;
+}
+.rb-wager:not(:disabled):hover {
+  box-shadow: 0 0 0 2px #c58cff;
+}
+/* a set piece's card: its fellows, and what wearing them gives */
+.rb-item-set {
+  display: grid;
+  gap: 3px;
+  padding-top: 6px;
+  border-top: 1px solid rgb(255 255 255 / 0.12);
+}
+.rb-item-set p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+.rb-set-pieces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin: 0 0 2px;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--rb-dim, #9a94b8);
+}
+.rb-set-pieces li.is-on {
+  color: #7bff9a;
+}
+.rb-set-pieces li.is-on::before {
+  content: '✓ ';
+}
+.rb-rift-tag {
+  margin: 4px 0 0;
+  color: #c58cff;
+}
+/* How the Rift works: folded under the Riftstone choice, opened by whoever wants it */
+.rb-rift-guide {
+  border: 1px solid #6a3ab0;
+  border-radius: 8px;
+  background: rgb(60 30 110 / 0.2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.rb-rift-guide > summary {
+  min-height: 44px;
+  padding: 11px 12px;
+  font-weight: 700;
+  color: #e3c8ff;
+  cursor: pointer;
+}
+.rb-rift-guide-body {
+  display: grid;
+  gap: 12px;
+  padding: 0 12px 12px;
+}
+.rb-rift-guide h3 {
+  margin: 0 0 3px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--rb-gold);
+}
+.rb-rift-guide p {
+  margin: 0 0 4px;
+}
+.rb-rift-rows {
+  display: grid;
+  gap: 5px;
+  margin: 2px 0 6px;
+  padding: 0;
+  list-style: none;
+}
+.rb-rift-rows li {
+  display: grid;
+  grid-template-columns: 3.2em minmax(0, 1fr);
+  column-gap: 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+}
+.rb-rift-rows b {
+  color: #c58cff;
+}
+.rb-rift-rows li.is-open b {
+  color: #7bff9a;
+}
+.rb-rift-rows em {
+  grid-column: 2;
+  font-style: normal;
   color: var(--rb-gold);
 }
 .rb-inn {

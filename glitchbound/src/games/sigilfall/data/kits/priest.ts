@@ -1,4 +1,4 @@
-import { cdr, dmg, K, onHit, P, S, skill, spec, stats, T, type Kit } from './kit';
+import { cdr, combo, dmg, K, next, onHit, P, S, skill, spec, stats, T, when, type Kit } from './kit';
 
 /** The Priest: holy light and shadow on mana, kept alive by shields and the healing woven into every spell. */
 
@@ -25,6 +25,7 @@ export const PRIEST: Kit = {
         color: '#ffe9a0',
         role: 'Shields and atonement',
         skill: 'penance',
+        combo: combo('Litany', 'Smite hits build Litany, up to 5. Your next Atoning Light spends all of it: 15% more damage each.', when('devotion', 'hit', { kind: 'buff', buff: next('devotion', 'Litany', '#ffe9b0', 'penance', 10, { pct: 15 }, 5) }, 'Smite builds Litany for Atoning Light.', { skill: 'smite' })),
         passive: {
           name: 'Atonement',
           text: 'Your hits heal you for 1.5% of your health (at most twice a second), and Ward of Grace absorbs 40% of your health.',
@@ -40,6 +41,7 @@ export const PRIEST: Kit = {
         color: '#fff2b0',
         role: 'Radiant damage and healing',
         skill: 'holy-fire',
+        combo: combo('Kindled Hymn', 'Radiant Burst sets off the fire of Searing Hymn on everything it touches: all the burning still to come lands at once, half again as hard.', when('kindled-hymn', 'hit', { kind: 'detonate', status: 'curse', mul: 1.5 }, 'Radiant Burst sets off Searing Hymn.', { skill: 'holy-nova', status: 'curse', icd: 0 })),
         passive: { name: 'Dawnlight', text: '+10% holy damage and +20% healing.', mods: [S('holy', 10), S('healing', 20)] },
       },
       {
@@ -48,6 +50,7 @@ export const PRIEST: Kit = {
         color: '#8a5aff',
         role: 'Shadow damage over time',
         skill: 'vampiric-touch',
+        combo: combo('The Waking Hunger', 'Smite hits on Cursed enemies can wake the hunger (one hit in four): your next Leeching Touch is ready at once, costs nothing and hits 50% harder.', when('dark-hunger', 'hit', { kind: 'buff', buff: next('dark-hunger', 'The Waking Hunger', '#b07aff', 'vampiric-touch', 8, { pct: 50, free: true, ready: true }) }, 'Smite on a Cursed enemy can ready Leeching Touch.', { skill: 'smite', status: 'curse', chance: 0.25, icd: 3 })),
         passive: { name: 'Shadowform', text: '+15% shadow damage and +5% max health.', mods: [S('shadow', 15), S('hpPct', 5)] },
       },
     ],

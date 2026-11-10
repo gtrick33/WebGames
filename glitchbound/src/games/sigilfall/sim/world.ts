@@ -24,6 +24,7 @@ import { turnInNpc } from '../progress/handin';
 import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, deliverHeld, giveReward, PERKS, potionCap, questEvent, sigilCount, SIGILS, startQuests, type Character, questState, HOME, currentObjective } from '../progress/character';
 import { potionPrice } from '../progress/shop';
 import { goldDrop, itemName, makeItem, rollLoot, rollRarity, salvageValue, type LootSource } from '../progress/items';
+import { riftFirsts } from '../progress/rift';
 import type { Settings } from '../progress/save';
 import { learnLooks, riddenMount, ridingLocked, ridingOpen, shopMountsFor } from '../progress/wardrobe';
 import { addParagonXp, paragonXp } from '../progress/paragon';
@@ -88,7 +89,7 @@ export interface KeyRun {
   par: number;
   t: number;
   deaths: number;
-  end: { time: number; up: number; marks: number; stone: number; best: boolean } | null;
+  end: { time: number; up: number; marks: number; stone: number; best: boolean; forged?: string[] } | null;
   /** The hero's level when the run began: below SYNC_BELOW the stone meets them at their own strength. */
   heroLevel: number;
 }
@@ -476,6 +477,8 @@ export class World {
       actAngle: 0,
       actKind: null,
       actBig: false,
+      actN: 0,
+      actSkill: null,
       flash: 0,
       riding: null,
       summon: 0,
@@ -1562,8 +1565,10 @@ export class World {
   private rollItem(source: LootSource, level: number): Item {
     const h = this.hero;
     const have = new Set([...h.bag, ...Object.values(h.equip)].flatMap((i) => (i ? [itemName(i)] : [])));
-    let item = rollLoot(h.cls as ClassId, level, source, this.tier, this.rand);
-    for (let i = 0; i < 2 && have.has(itemName(item)); i++) item = rollLoot(h.cls as ClassId, level, source, this.tier, this.rand);
+    // (Rift-forged pieces come only out of the Rift, by the highest stone the hero has opened)
+    const stone = this.keyRun ? h.keystone : 0;
+    let item = rollLoot(h.cls as ClassId, level, source, this.tier, this.rand, stone);
+    for (let i = 0; i < 2 && have.has(itemName(item)); i++) item = rollLoot(h.cls as ClassId, level, source, this.tier, this.rand, stone);
     return item;
   }
 
@@ -2057,6 +2062,13 @@ export class World {
     h.marks += marks;
     // the Rift's cache: more the higher the stone, and only in time
     if (up > 0) for (let i = 0; i < keyCache(k.key); i++) this.dropItem(x, y, this.rollItem('boss', keyLoot(k.key, k.heroLevel)));
+    // every new stone opened gives one Rift-forged piece the hero doesn't have yet (sets first, as the stones open them)
+    const firsts = riftFirsts(h, h.keystone, h.keystone - before);
+    for (const d of firsts) {
+      const it = makeItem(d.id, keyLoot(k.key, k.heroLevel), this.rand);
+      if (it) this.dropItem(x, y, it);
+    }
+    k.end.forged = firsts.map((d) => d.name);
     this.emit({
       t: 'banner',
       text: up > 0 ? `In time: ${clockText(time)}` : `Out of time: ${clockText(time)}`,

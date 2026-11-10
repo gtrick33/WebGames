@@ -1,4 +1,4 @@
-import { cdr, dmg, K, onHit, P, S, skill, spec, stats, T, type Kit } from './kit';
+import { cdr, combo, dmg, K, next, onHit, P, S, skill, spec, stats, T, when, type Kit } from './kit';
 
 /** The Ranger: light on the feet and deadly at range, on Focus that comes back quickly. */
 
@@ -25,6 +25,7 @@ export const RANGER: Kit = {
         color: '#ffe066',
         role: 'Long-range burst',
         skill: 'aimed-shot',
+        combo: combo('Steady Hand', 'Arrow hits steady your hand, up to 4. Your next Long Draw spends it: 20% more damage each, and at 4 it is ready at once.', when('steady', 'hit', { kind: 'buff', buff: next('steady', 'Steady Hand', '#ffd27a', 'aimed-shot', 8, { pct: 20, ready: true }, 4) }, 'Arrow hits build toward a stronger Long Draw.', { skill: 'arrow' })),
         passive: { name: 'Sniper Training', text: '+3% critical hit chance and +15% critical damage.', mods: [S('crit', 3), S('critDmg', 15)] },
       },
       {
@@ -33,6 +34,7 @@ export const RANGER: Kit = {
         color: '#7be37b',
         role: 'Control and damage over time',
         skill: 'bear-trap',
+        combo: combo('Sprung', 'When one of your traps catches an enemy, your next Multishot is ready at once, costs nothing and hits 80% harder.', when('sprung-poison', 'hit', { kind: 'buff', buff: next('sprung', 'Sprung', '#b8e070', 'multishot', 8, { pct: 80, free: true, ready: true }) }, 'A Poison Trap going off readies Multishot.', { skill: 'poison-trap', icd: 1 }), when('sprung-bear', 'hit', { kind: 'buff', buff: next('sprung', 'Sprung', '#b8e070', 'multishot', 8, { pct: 80, free: true, ready: true }) }, 'A Bear Trap going off readies Multishot.', { skill: 'bear-trap', icd: 1 })),
         passive: { name: 'Survivalist', text: '+10% poison damage, and you can set one more Poison Trap at once.', mods: [S('poison', 10), K('poison-trap', { op: 'extra', key: 'maxTraps', n: 1, label: 'traps at once' })] },
       },
       {
@@ -41,6 +43,7 @@ export const RANGER: Kit = {
         color: '#c98a4a',
         role: 'Hunting with a companion',
         skill: 'call-wolf',
+        combo: combo('The Pack Answers', 'When you kill an enemy, a wolf comes to hunt beside you for 8 s (once every 8 s).', when('pack-answers', 'kill', { kind: 'summon', pet: 'wolf', count: 1, dur: 8 }, 'A kill calls a wolf for 8 s.', { icd: 8 })),
         passive: { name: 'Pack Leader', text: '+25% companion damage and health, +5% physical damage.', mods: [S('pet', 25), S('physical', 5)] },
       },
     ],

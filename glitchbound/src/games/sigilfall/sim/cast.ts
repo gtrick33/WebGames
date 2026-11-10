@@ -1,8 +1,8 @@
 import { angleDiff, dist, dist2, inCone, TAU } from '../core/math';
 import { CLASSES } from '../data/classes';
-import type { GroundSpec, SkillSpec, SlotKey } from '../data/types';
+import type { GroundSpec, SkillSpec, SlotKey, BuffDef } from '../data/types';
 import { bossHidden } from './boss';
-import { applyEffects, applyStatus, enemiesIn, gainResource, healPlayer, hitEnemy, hurtPlayer, playerStunned, runProcs } from './combat';
+import { applyEffects, applyStatus, enemiesIn, gainResource, healPlayer, hitEnemy, hurtPlayer, playerStunned, runProcs, empowerFull, empowerOf, spendEmpower } from './combat';
 import { hurtPet } from './pets';
 import { blocksAt, castRay, lineOfSight, moveCircle } from './map';
 import type { Enemy, Projectile } from './types';
@@ -131,8 +131,11 @@ export function tryCast(w: World, req: CastRequest): boolean {
   if (p.dead || playerStunned(w)) return false;
   const id = w.build.bar[req.slot];
   if (!id) return false;
-  const spec = w.build.skills[id]?.spec;
-  if (!spec) return false;
+  const plain = w.build.skills[id]?.spec;
+  if (!plain) return false;
+  // a combo waiting on this skill makes this cast more than it is (data/types.ts Empower)
+  const emp = empowerOf(w, id);
+  const spec = emp ? empowered(plain, emp) : plain;
   const cd = p.cds[req.slot];
   if (req.slot === 'ult') {
     if (p.ult < 100) return false;
@@ -163,6 +166,7 @@ export function tryCast(w: World, req: CastRequest): boolean {
   }
   if (p.casting) stopCasting(w);
   p.aim = aim.angle;
+  if (emp) spendEmpower(w, id);
   // a spell with a cast time: the cast starts, and nothing is paid until it goes off (updateCasting)
   const time = castTimeOf(spec);
   if (time > 0) {
@@ -185,10 +189,20 @@ export function tryCast(w: World, req: CastRequest): boolean {
   return true;
 }
 
+/** A skill as a combo makes it: stronger a stack at a time, free, and with no cast time once the combo is whole. */
+function empowered(spec: SkillSpec, e: { def: BuffDef; n: number }): SkillSpec {
+  const m = e.def.empower!;
+  const stacks = e.def.max ? e.n : 1;
+  const whole = empowerFull(e);
+  return { ...spec, damage: spec.damage * (1 + ((m.pct ?? 0) * stacks) / 100), cost: m.free ? 0 : spec.cost, ...(m.instant && whole ? { castTime: 0 } : {}) };
+}
+
 /** What a skill costs right now, in the resource's own units (0 for the ultimate and for shapes' skills). */
 export function skillCost(w: World, spec: SkillSpec, slot: SlotKey): number {
   const p = w.player;
   if (slot === 'ult' || spec.cost <= 0 || p.maxMana <= 0) return 0;
+  // (a combo that makes it free: the bar shows it as affordable too)
+  if (empowerOf(w, spec.id)?.def.empower?.free) return 0;
   const kind = w.build.resource?.kind;
   if (kind === 'mana') return (spec.cost * p.maxMana) / 100;
   // Zeal comes in whole points
@@ -308,6 +322,13 @@ export function updateWindup(w: World, dt: number): void {
 export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number, tx: number, ty: number, target: Enemy | null): void {
   const p = w.player;
   p.aim = angle;
+  // which skill this is, for whoever draws the body making it (render3d/moves.ts); the move the last one left is
+  // over, and a skill with no move of its own (a dodge, a change of shape) leaves none
+  p.actN++;
+  p.actSkill = spec.id;
+  p.actKind = null;
+  p.actT = 0;
+  p.actBig = false;
   const ctx = { x: p.x, y: p.y, angle, spec, base: spec.damage, type: spec.dmgType, depth: 0, hitDmg: 0, when: 'cast' as const };
   applyEffects(w, spec.onCast, ctx);
   // a spell's glow at the caster's feet (the ultimate charges a bigger one)

@@ -7,7 +7,8 @@ import { mapColors } from '../data/themes';
 import { REGION_IDS, REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENT_ROWS, TALENTS } from '../data/talents';
-import type { Item, QuestDef, RegionDef, RegionId, SkillIndex, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
+import { setOf } from '../data/riftgear';
+import type { Item, ItemDef, QuestDef, RegionDef, RegionId, SkillIndex, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
 import { SLOT_LEVELS, slotOpen, bagSize, cantEquip, cantLearn, cantSpec, currentObjective, freePoints, learnedSkills, levelGated, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
@@ -30,6 +31,7 @@ import { usePanZoom, type PanZoom } from './panZoom';
 import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
 import { questRewards } from '../progress/rewards';
 import { FOG_CELL, fogSeen, loadFog, type Fog } from '../progress/fog';
+import { RiftGuide } from './RiftGuide';
 import { ShopPanel } from './Shop';
 import { compareWith, linesOnlyIn, statRows } from './compare';
 import { PartyPanel } from './Party';
@@ -77,7 +79,7 @@ export function Panels({ engine }: { engine: SigilEngine }) {
 
 /* --------------------------------------------------------------- hero */
 
-const SLOT_LABEL: Record<SlotId, string> = { weapon: 'Weapon', offhand: 'Off-hand', head: 'Head', chest: 'Chest', legs: 'Legs', hands: 'Hands', feet: 'Feet', amulet: 'Amulet', ring: 'Ring', relic: 'Relic' };
+export const SLOT_LABEL: Record<SlotId, string> = { weapon: 'Weapon', offhand: 'Off-hand', head: 'Head', chest: 'Chest', legs: 'Legs', hands: 'Hands', feet: 'Feet', amulet: 'Amulet', ring: 'Ring', relic: 'Relic' };
 const SHOWN_STATS: StatKey[] = ['power', 'crit', 'critDmg', 'haste', 'armor', 'speed', 'regen', 'ultCharge', 'fire', 'frost', 'lightning', 'poison', 'physical', 'arcane', 'potion'];
 
 /** Each sigil's color on the hero sheet. */
@@ -243,7 +245,7 @@ export function isUpgrade(cur: Item | undefined, it: Item): boolean {
 }
 
 /** One item's card: header, stats (with their change against `compareTo`), what it changes, lore. */
-export function ItemCard({ item, compareTo, label, compact, against, onClose }: { item: Item; compareTo?: Item; label?: 'Equipped' | 'In your bag' | 'For sale'; compact?: boolean; against?: Item; onClose?: () => void }) {
+export function ItemCard({ item, compareTo, label, compact, against, onClose, wornIds }: { item: Item; compareTo?: Item; label?: 'Equipped' | 'In your bag' | 'For sale'; compact?: boolean; against?: Item; onClose?: () => void; wornIds?: ReadonlySet<string> }) {
   const slot = itemSlot(item);
   const def = ITEM_DEFS[item.base];
   const cls = itemClass(item);
@@ -284,7 +286,7 @@ export function ItemCard({ item, compareTo, label, compact, against, onClose }: 
       </ul>
       {lines.length > 0 && (
         <div className="rb-item-mods">
-          <span className="rb-kicker">Changes how you fight</span>
+          <span className="rb-kicker">{def?.forSpec !== undefined && cls ? `Made for the ${CLASSES[cls].trees[def.forSpec]?.name ?? ''}` : 'Changes how you fight'}</span>
           {lines.map((l) => (
             <p key={l} className={gone?.has(l) ? 'rb-down-t' : 'rb-gold'}>
               {gone?.has(l) ? 'You would lose: ' : ''}
@@ -293,7 +295,35 @@ export function ItemCard({ item, compareTo, label, compact, against, onClose }: 
           ))}
         </div>
       )}
+      {def?.set && !compact && <SetLines item={def} wornIds={wornIds} />}
+      {def?.rift !== undefined && <p className="rb-small rb-rift-tag">Rift-forged: found only in the Rift, from Riftstone +{def.rift}.</p>}
       {def && <p className="rb-lore">“{def.lore}”</p>}
+    </div>
+  );
+}
+
+/** A set piece's set: its pieces (the ones worn marked) and what each count of them gives (what counts now, lit). */
+function SetLines({ item, wornIds }: { item: ItemDef; wornIds?: ReadonlySet<string> }) {
+  const set = setOf(item);
+  if (!set) return null;
+  const worn = set.pieces.filter((id) => wornIds?.has(id)).length;
+  return (
+    <div className="rb-item-set">
+      <span className="rb-kicker">
+        {set.name} ({worn}/{set.pieces.length} worn)
+      </span>
+      <ul className="rb-set-pieces">
+        {set.pieces.map((id) => (
+          <li key={id} className={wornIds?.has(id) ? 'is-on' : ''}>
+            {ITEM_DEFS[id]?.name ?? id}
+          </li>
+        ))}
+      </ul>
+      {set.bonuses.map((b) => (
+        <p key={b.need} className={worn >= b.need ? 'rb-gold' : 'rb-dim'}>
+          <b>({b.need})</b> {b.text}
+        </p>
+      ))}
     </div>
   );
 }
@@ -316,7 +346,7 @@ export function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone, act
   return (
     <div className="rb-item" style={{ ['--rc' as string]: rarityColor(item.r) }}>
       <div className={`rb-compare${compare ? ' is-two' : ''}`}>
-        <ItemCard item={item} compareTo={compare} label={worn ? 'Equipped' : compare ? (label ?? 'In your bag') : label} onClose={onDone} />
+        <ItemCard item={item} compareTo={compare} label={worn ? 'Equipped' : compare ? (label ?? 'In your bag') : label} onClose={onDone} wornIds={new Set(Object.values(h.equip).flatMap((i) => (i ? [i.base] : [])))} />
         {compare && <ItemCard item={compare} label="Equipped" compact against={item} />}
         {!worn && !compare && !reason && <p className="rb-small rb-dim rb-icard-none">Nothing equipped in this slot.</p>}
       </div>
@@ -552,6 +582,11 @@ function TalentsPanel({ engine }: { engine: SigilEngine }) {
               <p className="rb-small">
                 <b style={{ color: cls.trees[h.spec].color }}>{cls.trees[h.spec].passive.name}</b> ({cls.trees[h.spec].name}): {cls.trees[h.spec].passive.text}
               </p>
+              {cls.trees[h.spec].combo && (
+                <p className="rb-small rb-combo-line">
+                  <b style={{ color: cls.trees[h.spec].color }}>Combo · {cls.trees[h.spec].combo!.name}:</b> {cls.trees[h.spec].combo!.text}
+                </p>
+              )}
               <p className="rb-dim rb-small">
                 Pick a talent to read it. Each row opens after {ROW_COST} more points in its tree; the last row is the tree’s capstone. Your specialization’s tree comes first: the other two open after {SPEC_FOCUS} points in it.
               </p>
@@ -601,6 +636,11 @@ function SpecChoice({ engine, onDone }: { engine: SigilEngine; onDone: () => voi
               <p className="rb-small">
                 <b>{t.passive.name}:</b> {t.passive.text}
               </p>
+              {t.combo && (
+                <p className="rb-small rb-combo-line">
+                  <b style={{ color: t.color }}>Combo · {t.combo.name}:</b> {t.combo.text}
+                </p>
+              )}
               <button className="rb-btn is-gold" disabled={!!why} onClick={() => engine.chooseSpec(i as 0 | 1 | 2) && onDone()}>
                 {why ?? (h.spec === null ? `Become ${t.name}` : `Switch${cost ? ` · ${cost} gold` : ''}`)}
               </button>
@@ -873,6 +913,7 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
             {useKey ? (
               <>
                 <KeyPicker heroLevel={h.level} region={r} stone={stone} top={h.keystone} best={h.bestKeys[sel] ?? 0} week={week} onPick={setStone} />
+                <RiftGuide hero={h} />
                 <button
                   className="rb-btn is-small"
                   onClick={() => {

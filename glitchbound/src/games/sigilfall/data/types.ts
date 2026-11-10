@@ -120,7 +120,12 @@ export type Effect =
   /** Enemies within `radius` turn on the hero for `dur` seconds, whatever else they wanted. */
   | { kind: 'taunt'; radius: number; dur: number }
   /** Drags the enemy hit `dist` toward the caster (elites half as far, bosses not at all). */
-  | { kind: 'yank'; dist: number };
+  | { kind: 'yank'; dist: number }
+  /**
+   * Sets off a damage-over-time status on the enemy hit: everything it still had to deal lands at once, times `mul`,
+   * and the status is gone. With `radius`, every enemy that near takes it too.
+   */
+  | { kind: 'detonate'; status: StatusId; mul: number; radius?: number };
 
 /** A timed buff on the hero. The same id refreshes instead of stacking. */
 export interface BuffDef {
@@ -136,6 +141,28 @@ export interface BuffDef {
   /** Strikes back at whatever hits the hero for this share of the class's reference damage. */
   thorns?: number;
   color: string;
+  /** It stacks this high: gaining it again adds one and renews its time, and its stats count once a stack. */
+  max?: number;
+  /** It makes the hero's next cast of one skill more than it is (a specialization's combo): that cast uses it up. */
+  empower?: Empower;
+}
+
+/**
+ * What a combo does to the cast it waits for. Where its buff stacks, the damage counts once a stack and `instant` and
+ * `ready` hold only at full stacks; the cast takes every stack. Where it doesn't, it lasts `casts` casts.
+ */
+export interface Empower {
+  skill: string;
+  /** +% damage. */
+  pct?: number;
+  /** It costs nothing. */
+  free?: boolean;
+  /** It has no cast time. */
+  instant?: boolean;
+  /** Gaining it makes the skill ready at once, whatever its cooldown. */
+  ready?: boolean;
+  /** How many casts it lasts (1 where not said). */
+  casts?: number;
 }
 
 /**
@@ -314,6 +341,12 @@ export interface ItemDef {
   minLevel: number;
   /** Only from a quest or a boss (never random drops). */
   special?: boolean;
+  /** One of a set (data/riftgear.ts SETS): worn with its fellows it does more. */
+  set?: string;
+  /** Rift-forged: it comes only out of the Rift, to a hero whose Riftstone has opened this level. */
+  rift?: number;
+  /** Made for one of its class's three specializations: what it changes is that one's own skill. */
+  forSpec?: 0 | 1 | 2;
 }
 
 /** A base type for generated gear: a slot, a look and the stats it can roll. */
@@ -383,6 +416,11 @@ export interface SpecDef {
   skill: string;
   /** Always on while this is your specialization. */
   passive: { name: string; text: string; mods: Mod[] };
+  /**
+   * Its combo: the one thing its skills do together that no other specialization's do (one skill setting up
+   * another, charges built and spent, a status set off). Its mods are always on, as the passive's are.
+   */
+  combo?: { name: string; text: string; mods: Mod[] };
   /** The ability belongs to a druid shape: it is used there, not put on the normal bar. */
   formOnly?: boolean;
 }

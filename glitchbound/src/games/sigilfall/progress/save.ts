@@ -8,7 +8,7 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { ClassId, Item, PerkId, RegionId, SlotId, StatKey } from '../data/types';
 import { RARITIES, SLOTS } from '../data/types';
 import { STAT_ROLL } from '../data/items';
-import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME, allItems, HELD_MAX } from './character';
+import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, seatSpecSkill, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME, allItems, HELD_MAX } from './character';
 import { itemClass, itemSlot, newUid } from './items';
 import { grantMounts, grantWarden, syncRift, learnLooks, LOOK_SLOTS, tidyWardrobe } from './wardrobe';
 import { MOUNT_DEFS } from '../data/mounts';
@@ -338,6 +338,8 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   grantMounts(c);
   grantWarden(c);
   syncRift(c);
+  // (a hero who chose a specialization before its fourth slot opened: its ability comes onto the bar they have)
+  seatSpecSkill(c);
   if (c.mount && !c.mounts.includes(c.mount)) c.mount = c.mounts[0] ?? null;
   const s = obj(o.stats) ?? {};
   c.stats = { kills: int(s.kills, 0, 1e9, 0), deaths: int(s.deaths, 0, 1e9, 0), time: int(s.time, 0, 1e10, 0), runs: int(s.runs, 0, 1e9, 0), bestRun: int(s.bestRun, 0, 1e9, 0) };

@@ -63,8 +63,9 @@ describe('sigilfall content', () => {
         if (it.cls) expect(skill!.cls).toBe(it.cls);
       }
     }
-    // epics and legendaries do something besides numbers (a warden's armor is a look in the Wardrobe, never worn as an item)
-    for (const it of ITEMS.filter((i) => (i.rarity === 'epic' || i.rarity === 'legendary') && !i.id.startsWith('warden-'))) expect(it.mods.some((m) => m.t !== 'stat' || !!m.when), it.id).toBe(true);
+    // epics and legendaries do something besides numbers (a warden's armor is a look in the Wardrobe, never worn as an
+    // item; a set's piece does it through its set: tests/sigilfall-riftgear.test.ts)
+    for (const it of ITEMS.filter((i) => (i.rarity === 'epic' || i.rarity === 'legendary') && !i.id.startsWith('warden-') && !i.set)) expect(it.mods.some((m) => m.t !== 'stat' || !!m.when), it.id).toBe(true);
   });
 
   it('every talent and rolled modifier points at a skill of its class', () => {

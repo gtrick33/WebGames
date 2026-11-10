@@ -1,4 +1,4 @@
-import { cdr, dmg, K, onHit, P, S, skill, spec, stats, T, type Kit } from './kit';
+import { cdr, combo, dmg, K, next, onHit, P, S, skill, spec, stats, T, when, type Kit } from './kit';
 
 /** The Mage: fragile, far-reaching and explosive, on mana. Fire, lightning or frost. */
 
@@ -25,6 +25,7 @@ export const MAGE: Kit = {
         color: '#ff7a3d',
         role: 'Area damage over time',
         skill: 'flamestrike',
+        combo: combo('Tinder', 'Fireball on a Burning enemy sets the fire off: all the burning still to come lands at once on everything near it, half again as hard.', when('flashpoint', 'hit', { kind: 'detonate', status: 'burn', mul: 1.5, radius: 30 }, 'Fireball sets off a burn.', { skill: 'fireball', status: 'burn' })),
         passive: { name: 'Searing Heat', text: '+10% fire damage, and every skill deals +10% damage to Burning enemies.', mods: [S('fire', 10), K('*', { op: 'bonusVs', status: 'burn', pct: 10 })] },
       },
       {
@@ -33,6 +34,7 @@ export const MAGE: Kit = {
         color: '#5ad1ff',
         role: 'Bouncing burst damage',
         skill: 'ball-lightning',
+        combo: combo('Building Charge', 'Arcane Bolt hits build Charge, up to 5. Your next Chain Lightning spends all of it: 15% more damage a charge.', when('charge', 'hit', { kind: 'buff', buff: next('charge', 'Building Charge', '#5ad1ff', 'chain-lightning', 10, { pct: 15 }, 5) }, 'Arcane Bolt builds Charge for Chain Lightning.', { skill: 'arcane-bolt' })),
         passive: {
           name: 'Static Charge',
           text: '+10% lightning damage; critical lightning hits leap to another enemy for 40% damage.',
@@ -45,7 +47,8 @@ export const MAGE: Kit = {
         color: '#9be7ff',
         role: 'Control and single-target burst',
         skill: 'blizzard',
-        passive: { name: 'Shatter', text: '+10% frost damage; every skill deals +25% damage to Frozen and +10% to Chilled enemies.', mods: [S('frost', 10), K('*', { op: 'bonusVs', status: 'freeze', pct: 25 }), K('*', { op: 'bonusVs', status: 'chill', pct: 10 })] },
+        combo: combo('Deep Cold', 'Frost hits on a Chilled enemy can freeze it solid for 1.5 s (one hit in four). Frozen enemies take your Shatter in full.', when('deep-cold', 'hit', { kind: 'status', status: 'freeze', dur: 1.5, power: 1 }, 'Frost hits can freeze a Chilled enemy.', { dmgType: 'frost', status: 'chill', chance: 0.25, icd: 3 })),
+        passive: { name: 'Shatter', text: '+10% frost damage; every skill deals +40% damage to Frozen and +20% to Chilled enemies.', mods: [S('frost', 10), K('*', { op: 'bonusVs', status: 'freeze', pct: 40 }), K('*', { op: 'bonusVs', status: 'chill', pct: 20 })] },
       },
     ],
     refDamage: 20,
@@ -75,7 +78,7 @@ export const MAGE: Kit = {
       14,
       'Ice Javelin',
       'A fast shard of ice. It hits Frozen enemies much harder, and Chilled ones a little harder.',
-      spec({ id: 'ice-lance', cast: 'projectile', range: 175, cooldown: 2.4, damage: 20, dmgType: 'frost', speed: 310, radius: 3, cost: 8, bonusVs: [{ status: 'freeze', pct: 80 }, { status: 'chill', pct: 30 }], look: 'icelance', tags: ['projectile', 'frost'] }),
+      spec({ id: 'ice-lance', cast: 'projectile', range: 175, cooldown: 2.4, damage: 28, dmgType: 'frost', speed: 310, radius: 3, cost: 8, bonusVs: [{ status: 'freeze', pct: 80 }, { status: 'chill', pct: 30 }], look: 'icelance', tags: ['projectile', 'frost'] }),
     ),
     sk('skill', 22, 'Arcane Ward', 'Wrap yourself in arcana: a shield that absorbs 25% of your health for 6 seconds.', spec({ id: 'arcane-barrier', cast: 'buff', aim: 'self', cooldown: 15, cost: 10, damage: 18, dmgType: 'arcane', onCast: [{ kind: 'shield', pct: 25, dur: 6 }], tags: ['defense'] })),
     sk(
@@ -114,7 +117,7 @@ export const MAGE: Kit = {
       10,
       'Ice Storm',
       'Ice storms down on an area for a few seconds, chilling everything under it.',
-      spec({ id: 'blizzard', cast: 'ground', aim: 'ground', range: 120, cooldown: 12, damage: 6, dmgType: 'frost', area: 46, duration: 4, tick: 0.5, cost: 18, onHit: [{ kind: 'status', status: 'chill', dur: 1.5, power: 0.5 }], look: 'frost', tags: ['aoe', 'frost'] }),
+      spec({ id: 'blizzard', cast: 'ground', aim: 'ground', range: 120, cooldown: 12, damage: 9, dmgType: 'frost', area: 46, duration: 4, tick: 0.5, cost: 18, onHit: [{ kind: 'status', status: 'chill', dur: 1.5, power: 0.5 }], look: 'frost', tags: ['aoe', 'frost'] }),
     ),
     sk(
       'ultimate',

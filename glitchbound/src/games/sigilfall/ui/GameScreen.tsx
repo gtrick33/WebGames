@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { comboNow } from './comboMark';
 import { bossPips, phaseTicks, sixWords, windingUp } from './bossbar';
 import { mechanicDue, mechanicShown } from '../progress/tips';
 import type { Callout } from '../sim/types';
@@ -109,6 +110,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
     <div className={`rb-ui${engine.touchMode ? ' is-touch' : ' is-mouse'}${engine.settings.lefty ? ' is-lefty' : ''}${engine.storyTalk() ? ' is-talk' : ''}${ui.card?.act ? ' is-act' : ''}`}>
       <Hud engine={engine} />
       <CastBar engine={engine} />
+      <ComboChip engine={engine} />
       {ui.boss && <BossBar engine={engine} />}
       {engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}
       {!ui.dialogue && <Toasts engine={engine} />}
@@ -464,6 +466,54 @@ function BossBar({ engine }: { engine: SigilEngine }) {
  * already is: the spell's name over a bar that fills in its element's color. When the spell goes the bar
  * flashes full; when the cast is stopped it says so; either way it fades out.
  */
+/**
+ * The specialization's combo while it is going (data/types.ts SpecDef.combo): its name, a pip for each stack or cast,
+ * and its time running down, in a chip over the hero's cast bar. Nothing shows when no combo is up.
+ */
+function ComboChip({ engine }: { engine: SigilEngine }) {
+  const el = useRef<HTMLDivElement>(null);
+  const name = useRef<HTMLElement>(null);
+  const pips = useRef<HTMLSpanElement>(null);
+  const fill = useRef<HTMLElement>(null);
+  const said = useRef('');
+  useFrame(engine, (w) => {
+    const d = el.current;
+    if (!d) return;
+    const c = comboNow(w);
+    d.hidden = !c;
+    if (!c) {
+      said.current = '';
+      return;
+    }
+    const key = `${c.name}|${c.n}|${c.of}`;
+    if (key !== said.current) {
+      said.current = key;
+      d.style.setProperty('--combo', c.color);
+      d.dataset.full = c.n >= c.of ? '1' : '0';
+      if (name.current) name.current.textContent = c.name;
+      if (pips.current) {
+        pips.current.replaceChildren(
+          ...Array.from({ length: c.of > 1 ? c.of : 0 }, (_, i) => {
+            const p = document.createElement('i');
+            p.dataset.on = i < c.n ? '1' : '0';
+            return p;
+          }),
+        );
+      }
+    }
+    if (fill.current) fill.current.style.width = `${c.left * 100}%`;
+  });
+  return (
+    <div ref={el} className="rb-combo" hidden role="status">
+      <b ref={name} />
+      <span ref={pips} className="rb-combo-pips" />
+      <i className="rb-combo-time">
+        <i ref={fill} />
+      </i>
+    </div>
+  );
+}
+
 function CastBar({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLDivElement>(null);
   const name = useRef<HTMLSpanElement>(null);

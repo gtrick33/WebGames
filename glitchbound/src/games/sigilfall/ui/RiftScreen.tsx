@@ -4,6 +4,7 @@ import { keyLevelFor, keyLoot, keyPar, keyScale, riftDungeons, riftTop } from '.
 import { ECHOES, RIFT_CAP_UNFINISHED, WARDENS } from '../data/wardens';
 import type { SigilEngine } from '../engine';
 import { campaignDone } from '../progress/wardrobe';
+import { RiftGuide } from './RiftGuide';
 import { clockText } from '../sim/world';
 
 /**
@@ -66,6 +67,7 @@ export function RiftScreen({ engine, slot, onBack }: { engine: SigilEngine; slot
           </button>
         </section>
         <section className="rb-rift-echoes" aria-label="What the stones remember">
+          <RiftGuide hero={h} open={top <= 1} />
           <h2>What the stones remember</h2>
           {seen.map((e) => (
             <article key={e.at}>

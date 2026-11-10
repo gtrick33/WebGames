@@ -183,17 +183,20 @@ export function rollGear(cls: ClassId, il: number, rarity: Rarity, r: () => numb
   return item;
 }
 
-/** Hand-made items that can drop at this level for this class (never quest or boss specials). */
-export function droppable(cls: ClassId, il: number, rarity: Rarity): ItemDef[] {
-  return ITEMS.filter((d) => d.rarity === rarity && !d.special && d.minLevel <= il && (!d.cls || d.cls === cls));
+/**
+ * Hand-made items that can drop at this level for this class (never quest or boss specials). Rift-forged pieces
+ * only where `stone` says the hero's Riftstone has opened them: nowhere outside the Rift (0).
+ */
+export function droppable(cls: ClassId, il: number, rarity: Rarity, stone = 0): ItemDef[] {
+  return ITEMS.filter((d) => d.rarity === rarity && !d.special && d.minLevel <= il && (!d.cls || d.cls === cls) && (d.rift === undefined || stone >= d.rift));
 }
 
-/** One random item for a class: generated gear up to rare, hand-made items at epic and legendary. */
-export function rollLoot(cls: ClassId, il: number, source: LootSource, tier: number, r: () => number): Item {
+/** One random item for a class: generated gear up to rare, hand-made items at epic and legendary (`stone`: in the Rift, the hero's highest). */
+export function rollLoot(cls: ClassId, il: number, source: LootSource, tier: number, r: () => number, stone = 0): Item {
   let rarity = rollRarity(source, tier, r);
   if (rarity === 'epic' || rarity === 'legendary' || rarity === 'uncommon') {
     // Uncommon can also be a hand-made helper item (Mender's Charm); epic/legendary always are.
-    const pool = droppable(cls, il, rarity);
+    const pool = droppable(cls, il, rarity, stone);
     if (pool.length && (rarity !== 'uncommon' || r() < 0.08)) return makeItem(pool[Math.floor(r() * pool.length)]!.id, il, r)!;
     if (rarity === 'legendary') {
       const epics = droppable(cls, il, 'epic');

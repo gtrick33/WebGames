@@ -16,6 +16,8 @@ export interface Status {
   stack?: number;
   /** Damage over time came from the player. */
   fromPlayer?: boolean;
+  /** When it was laid (the world's clock): a blow can't set off the fire it has only just lit. */
+  born?: number;
   /** A curse's damage type. */
   dtype?: DmgType;
   /** The skill a curse came from (each skill's curse is its own). */
@@ -74,7 +76,8 @@ export interface Player {
   channel: { spec: SkillSpec; t: number; tickT: number; target?: number } | null;
   /** Timed buffs (shouts, walls, wings, healing over time). */
   /** Timed buffs; `skill` is the skill whose cast gave it (it ends when that skill leaves the bar). */
-  buffs: { def: BuffDef; t: number; skill?: string }[];
+  /** (`n`: its stacks, or the casts it has left) */
+  buffs: { def: BuffDef; t: number; skill?: string; n?: number }[];
   /** A druid's shape (a FormDef id), or null. */
   form: string | null;
   cds: Record<SlotKey, Cooldown>;
@@ -101,6 +104,9 @@ export interface Player {
   actKind: 'swing' | 'cast' | 'shoot' | 'heavy' | 'spin' | null;
   /** Bigger swing for the combo finisher. */
   actBig: boolean;
+  /** How many skills they have made, and the last one: by these the picture knows a new blow from the one before. */
+  actN: number;
+  actSkill: string | null;
   /** Seconds left on the hit flash. */
   flash: number;
   /** The mount ridden (a MountDef id), or null on foot. */
@@ -429,6 +435,8 @@ export interface Ghost {
   shots: { x: number; y: number; vx: number; vy: number; r: number; color: string }[];
   /** The spell they are casting (a skill id, data/skills) and how far along (0 to 1), or null: drawn only. */
   cast: { id: string; k: number; angle: number } | null;
+  /** The last skill they made (their count of them, which, where it went, what kind, a big swing), drawn only. */
+  act: { n: number; skill: string; angle: number; kind: 'swing' | 'cast' | 'shoot' | 'heavy' | 'spin'; big: boolean } | null;
   /** World time of their last message. */
   seen: number;
 }

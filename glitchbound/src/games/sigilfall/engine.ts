@@ -9,7 +9,7 @@ import { applyOrder, orderToast } from './progress/gm';
 import { isMainQuest, turnInNpc } from './progress/handin';
 import { rewardSummary } from './progress/rewards';
 import { ACTS, type ActDef } from './data/acts';
-import { CLASSES } from './data/classes';
+import { CLASSES, MAX_LEVEL } from './data/classes';
 import { keyAffixes, weekOf } from './data/keystones';
 import { WARDENS } from './data/wardens';
 import { NPCS, QUEST_DEFS } from './data/quests';
@@ -23,6 +23,7 @@ import { itemName } from './progress/items';
 import { canRide, chooseMount, FIRST_RIDE, grantMounts, grantWarden, hasMount, setShelfPoints, syncRift, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
 import { DEFAULT_SETTINGS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
+import { wager } from './progress/rift';
 import type { ShopId } from './data/vendors';
 import { iconsReady } from './render/art/gameIcons';
 import { Renderer } from './render/renderer';
@@ -597,6 +598,7 @@ export class SigilEngine {
           if (skills.includes(CLASSES[h.cls].ult)) this.hint('ult');
           const spell = skills.find((id) => id !== CLASSES[h.cls].ult);
           if (spell) this.queueTip('spell', spell);
+          if (ev.level >= MAX_LEVEL && h.keystone >= 1) this.queueTip('rift');
           break;
         }
         case 'questDone': {
@@ -984,6 +986,8 @@ export class SigilEngine {
     if (h.level >= SPEC_LEVEL) this.queueTip('talents');
     // (as the talents': a hero who already rides and hasn't seen it, with the hints on, sees it as the land opens)
     if (hasMount(h)) this.queueTip('riding');
+    // (and the endgame, for a hero at the top with a stone)
+    if (h.level >= MAX_LEVEL && h.keystone >= 1) this.queueTip('rift');
     this.bump();
   }
 
@@ -1300,6 +1304,17 @@ export class SigilEngine {
     const item = buyItem(this.hero, shop, uid);
     if (!item) return null;
     this.sound.play('buy');
+    this.persist();
+    this.bump();
+    return item;
+  }
+
+  /** A wager with the Riftbroker: Sigil Marks for an unseen piece for one slot (progress/rift.ts). */
+  wager(slot: SlotId): Item | null {
+    if (!this.hero) return null;
+    const item = wager(this.hero, slot);
+    if (!item) return null;
+    this.sound.play(item.r === 'legendary' ? 'epic' : 'buy');
     this.persist();
     this.bump();
     return item;

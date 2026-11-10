@@ -1,4 +1,4 @@
-import { cdr, dmg, K, onHit, P, S, skill, spec, stats, T, type Kit } from './kit';
+import { cdr, combo, dmg, K, next, onHit, P, S, skill, spec, stack, stats, T, when, type Kit } from './kit';
 
 /** The Warlock: curses, demons and stolen life, on mana. Affliction, Demonology or Destruction. */
 
@@ -25,6 +25,7 @@ export const WARLOCK: Kit = {
         color: '#8bff6a',
         role: 'Damage over time',
         skill: 'unstable-affliction',
+        combo: combo('Spite', 'Each curse you lay (Rotting Curse, Wild Hex) feeds your Spite: +6% shadow damage a time, up to 4, for 10 s.', when('malice-rot', 'hit', { kind: 'buff', buff: stack('malice', 'Spite', '#b07aff', 10, 4, { shadow: 6 }) }, 'Rotting Curse builds Spite.', { skill: 'corruption' }), when('malice-hex', 'hit', { kind: 'buff', buff: stack('malice', 'Spite', '#b07aff', 10, 4, { shadow: 6 }) }, 'Wild Hex builds Spite.', { skill: 'unstable-affliction' })),
         passive: { name: 'Malefic Grasp', text: '+25% shadow damage, and every skill deals +20% damage to Cursed enemies.', mods: [S('shadow', 25), K('*', { op: 'bonusVs', status: 'curse', pct: 20 })] },
       },
       {
@@ -33,6 +34,7 @@ export const WARLOCK: Kit = {
         color: '#ff8a3d',
         role: 'Demons fight for you',
         skill: 'summon-felguard',
+        combo: combo('Soul Thrall', 'An enemy you kill rises as an imp and fights for you for 8 s (once every 6 s).', when('soul-thrall', 'kill', { kind: 'summon', pet: 'imp', count: 1, dur: 8 }, 'A kill raises an imp for 8 s.', { icd: 6 })),
         passive: { name: 'Master Demonologist', text: 'Your demons deal 25% more damage and have 25% more health.', mods: [S('pet', 25)] },
       },
       {
@@ -41,6 +43,7 @@ export const WARLOCK: Kit = {
         color: '#ff4f2a',
         role: 'Fire and explosive burst',
         skill: 'chaos-bolt',
+        combo: combo('Cinders', 'Shadow Bolt hits gather Cinders, up to 5. Your next Ruin Bolt spends them: 10% more damage each, and at 5 it has no cast time.', when('cinders', 'hit', { kind: 'buff', buff: next('cinders', 'Cinders', '#ff7a3d', 'chaos-bolt', 10, { pct: 10, instant: true }, 5) }, 'Shadow Bolt gathers Cinders for Ruin Bolt.', { skill: 'shadow-bolt' })),
         passive: { name: 'Ruin', text: '+10% fire damage and +20% critical damage.', mods: [S('fire', 10), S('critDmg', 20)] },
       },
     ],
@@ -110,7 +113,7 @@ export const WARLOCK: Kit = {
       10,
       'Ruin Bolt',
       'A slow, heavy bolt of chaos fire that tears through the first enemy into the next.',
-      spec({ id: 'chaos-bolt', cast: 'projectile', range: 170, cooldown: 8, damage: 84, castTime: 1.5, dmgType: 'fire', speed: 190, radius: 6, pierce: 1, knock: 80, cost: 20, look: 'chaosbolt', tags: ['projectile', 'fire'] }),
+      spec({ id: 'chaos-bolt', cast: 'projectile', range: 170, cooldown: 8, damage: 84, castTime: 1.1, dmgType: 'fire', speed: 190, radius: 6, pierce: 1, knock: 80, cost: 20, look: 'chaosbolt', tags: ['projectile', 'fire'] }),
     ),
     sk(
       'ultimate',

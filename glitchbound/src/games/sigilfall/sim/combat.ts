@@ -31,7 +31,7 @@ export function effStats(w: World): Stats {
   const s = { ...b.stats };
   if (lowHp) for (const [k, v] of Object.entries(b.lowHp)) s[k as StatKey] += v ?? 0;
   if (afterDodge) for (const [k, v] of Object.entries(b.afterDodge)) s[k as StatKey] += v ?? 0;
-  for (const x of p.buffs) for (const [k, v] of Object.entries(x.def.stats ?? {})) s[k as StatKey] += v ?? 0;
+  for (const x of p.buffs) for (const [k, v] of Object.entries(x.def.stats ?? {})) s[k as StatKey] += (v ?? 0) * (x.def.max ? (x.n ?? 1) : 1);
   return s;
 }
 
@@ -204,7 +204,7 @@ export function applyStatus(w: World, e: Enemy, s: { status: StatusId; dur: numb
       const weakest = stacks.reduce((a, b) => (a.power < b.power ? a : b));
       weakest.power = Math.max(weakest.power, power);
       weakest.t = Math.max(weakest.t, dur);
-    } else e.statuses.push({ id, t: dur, power, tick: 0.5, fromPlayer: true });
+    } else e.statuses.push({ id, t: dur, power, tick: 0.5, fromPlayer: true, born: w.time });
     return;
   }
   // curses of different kinds (shadow, arcane, holy) or from different skills (Rotting Curse and Unstable
@@ -215,7 +215,7 @@ export function applyStatus(w: World, e: Enemy, s: { status: StatusId; dur: numb
   if (cur) {
     cur.t = Math.max(cur.t, dur);
     cur.power = Math.max(cur.power, power);
-  } else e.statuses.push({ id, t: dur, power, tick: 0.5, fromPlayer: true, ...(dtype ? { dtype } : {}), ...(from ? { src: from } : {}) });
+  } else e.statuses.push({ id, t: dur, power, tick: 0.5, fromPlayer: true, born: w.time, ...(dtype ? { dtype } : {}), ...(from ? { src: from } : {}) });
   if (id === 'freeze') w.sfx('freeze');
   if (id === 'fear') {
     e.state = e.state === 'windup' || e.state === 'act' ? 'recover' : e.state;
@@ -436,6 +436,24 @@ export function applyEffect(w: World, e: Effect, c: EffectCtx): void {
     case 'resetCd':
       w.resetCooldown(e.skill);
       break;
+    case 'detonate': {
+      const t = c.target;
+      if (!t || t.dead) break;
+      // (not what this very blow has just laid: it sets off what was already there)
+      const lit = t.statuses.filter((s) => s.id === e.status && s.t > 0 && s.born !== w.time);
+      if (!lit.length) break;
+      // everything it still had to deal, at once (its power was sized from a finished hit: back to a base, as a tick is)
+      const type = lit[0]!.dtype ?? STATUS_DMG[e.status] ?? c.type;
+      const left = lit.reduce((a, s) => a + s.power * s.t, 0) * e.mul;
+      const base = left / Math.max(0.01, levelPower(w.hero.level) * typeBonus(effStats(w), type));
+      t.statuses = t.statuses.filter((s) => !lit.includes(s));
+      w.vfx(`blast:${type}`, t.x, t.y, Math.max(18, (e.radius ?? t.r * 2)), 0.5);
+      w.addFx({ kind: 'ring', x: t.x, y: t.y, life: 0.35, size: (e.radius ?? 16) * 1.6, color: DOT_COLOR[type] });
+      w.shake(2);
+      if (e.radius) damageArea(w, t.x, t.y, e.radius, base, type, c.depth + 1, null);
+      else hitEnemy(w, t, base, type, { depth: c.depth + 1 });
+      break;
+    }
     case 'cdr':
       w.reduceCooldowns(e.s);
       break;
@@ -528,15 +546,62 @@ export function killEnemy(w: World, e: Enemy, type: DmgType, depth: number, spec
   runProcs(w, 'kill', { x: e.x, y: e.y, target: e, base: 0, type, depth, hitDmg: 0, killType: type, statuses, skill: spec?.id });
 }
 
-/** A buff on the hero: the same buff refreshes (the longer time, the stronger numbers). */
+/** The combo waiting on a skill, if one is (data/types.ts Empower), and how many stacks or casts of it there are. */
+export function empowerOf(w: World, skill: string): { def: BuffDef; n: number } | null {
+  for (const b of w.player.buffs) if (b.def.empower?.skill === skill) return { def: b.def, n: b.n ?? 1 };
+  return null;
+}
+
+/** Whether a combo on a skill is all there (a stacking one only at full stacks). */
+export const empowerFull = (e: { def: BuffDef; n: number }): boolean => !e.def.max || e.n >= e.def.max;
+
+/** A cast has used the combo that waited on its skill: a stacking one goes whole, the other loses a cast. */
+export function spendEmpower(w: World, skill: string): void {
+  const p = w.player;
+  const b = p.buffs.find((x) => x.def.empower?.skill === skill);
+  if (!b) return;
+  b.n = b.def.max ? 0 : (b.n ?? 1) - 1;
+  if (b.n <= 0) p.buffs = p.buffs.filter((x) => x !== b);
+}
+
+/**
+ * A buff on the hero: the same buff refreshes (the longer time, the stronger numbers); one that stacks gains a stack.
+ * A combo coming ready says so: its name over the hero, its skill made ready where it does that, and the skill's button
+ * lit for as long as it waits (ui/DesktopBar.tsx, ui/Touch.tsx).
+ */
 export function addBuff(w: World, def: BuffDef, skill?: string): void {
   const p = w.player;
   const cur = p.buffs.find((b) => b.def.id === def.id);
+  const fresh = def.max ? 1 : (def.empower?.casts ?? 1);
+  let said = !cur;
   if (cur) {
+    const was = cur.n ?? 1;
     cur.t = Math.max(cur.t, def.dur);
     cur.def = def;
     cur.skill = skill;
-  } else p.buffs.push({ def, t: def.dur, skill });
+    cur.n = def.max ? Math.min(def.max, was + 1) : fresh;
+    // (a stacking one speaks again only as it fills)
+    said = !!def.max && was < def.max && cur.n >= def.max;
+  } else p.buffs.push({ def, t: def.dur, skill, n: fresh });
+  const now = p.buffs.find((b) => b.def.id === def.id)!;
+  const full = !def.max || (now.n ?? 1) >= def.max;
+  if (def.empower) {
+    if (def.empower.ready && full && (said || !cur)) w.resetCooldown(def.empower.skill);
+    if (full && (said || !cur) && def.max !== 1) {
+      w.text(p.x, p.y - 34, def.name.toUpperCase(), def.color, true);
+      w.addFx({ kind: 'ring', x: p.x, y: p.y, life: 0.4, size: 26, color: def.color });
+      w.sfx('reset', 0.9);
+      return;
+    }
+    // (a stack on the way up is quiet: a small glow, no sound over the blow that gave it)
+    if (def.max && !full) {
+      w.addFx({ kind: 'glow', x: p.x, y: p.y - 6, life: 0.3, size: 9, color: def.color });
+      return;
+    }
+  } else if (def.max && cur) {
+    w.addFx({ kind: 'glow', x: p.x, y: p.y - 6, life: 0.3, size: 9, color: def.color });
+    return;
+  }
   w.addFx({ kind: 'glow', x: p.x, y: p.y - 6, life: 0.5, size: 14, color: def.color });
   w.sfx('buff', 0.6);
 }

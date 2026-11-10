@@ -9,6 +9,7 @@ import { mountKey, mountModel, type MountModel } from './mountKit';
 import { shapeOf } from './mountLook';
 import { loadPack, type MeshData, type Pack } from './pack';
 import { builtProp } from './propsBuilt';
+import { strikeOf, UNMEASURED, type Strike } from './strike';
 import { ringMaterial, rigAnimOf, shadowMaterial, type RigAnim } from './toon';
 import type { MountDef } from '../data/mounts';
 import type { HeroLook } from '../render/art/hero';
@@ -44,6 +45,12 @@ interface KitEntry {
   mesh: MeshData | null;
   kit: Kit;
   loading: boolean;
+}
+
+/** A person's attack as their kind fights: a caster casts, an archer draws, a fighter swings or hews. */
+function personClip(kit: Kit, clip: string): string {
+  const atk = kit.atk === 'stab' || kit.atk === 'punch' ? 'chop' : kit.atk === 'smash' ? 'chop2' : kit.atk;
+  return clip === 'chop' || clip === kit.atk ? (atk ?? (kit.held ? 'chop' : 'cast')) : clip;
 }
 
 /** A clip fading into another, for anyone whose moves must read clearly (heroes, bosses, Ring fighters). */
@@ -287,10 +294,7 @@ export class Cast {
     if (kit.look) {
       const look = npcLookOf(kit.look);
       if (look) {
-        // (a person's attack as their kind fights: a caster casts, an archer draws, a fighter swings or hews)
-        const atk = kit.atk === 'stab' || kit.atk === 'punch' ? 'chop' : kit.atk === 'smash' ? 'chop2' : kit.atk;
-        const personClip = clip === 'chop' || clip === kit.atk ? (atk ?? (kit.held ? 'chop' : 'cast')) : clip;
-        this.person(look, kit.held ?? null, !!kit.shield, x, y, rot, { clip: personClip, t, loop, from: opts?.from }, { alpha: opts?.alpha, flash: opts?.flash, h });
+        this.person(look, kit.held ?? null, !!kit.shield, x, y, rot, { clip: personClip(kit, clip), t, loop, from: opts?.from }, { alpha: opts?.alpha, flash: opts?.flash, h });
         return kit;
       }
     }
@@ -447,6 +451,14 @@ export class Cast {
   rigOf(sprite: string): RigAnim | null {
     const kit = kitOf(sprite);
     return this.entry(kit.k, kit).rig;
+  }
+
+  /** Where the blow is in the clip this creature plays for `clip` (a person plays their own kind of attack). */
+  strike(sprite: string, clip: string, enemy?: string): Strike {
+    const kit = kitOf(sprite, enemy);
+    if (kit.look && npcLookOf(kit.look)) return strikeOf(this.wardrobe?.medium, personClip(kit, clip));
+    if (kit.steed) return UNMEASURED;
+    return strikeOf(this.entry(kit.k, kit).rig, clip);
   }
 
   /** One person in a look: a hero, a villager, anyone who wears the wardrobe. */

@@ -1,4 +1,4 @@
-import { cdr, dmg, K, onHit, P, S, skill, spec, stats, T, type Kit } from './kit';
+import { cdr, combo, dmg, K, next, onHit, P, S, skill, spec, stack, stats, T, when, type Kit } from './kit';
 
 /** The Druid: a shapeshifter on mana. Moon and nature magic at range, or a cat or a bear up close. */
 
@@ -25,6 +25,7 @@ export const DRUID: Kit = {
         color: '#7ab8ff',
         role: 'Nature and arcane magic',
         skill: 'starsurge',
+        combo: combo('Falling Light', 'Starbreak leaves starlight on your hands: your next 3 Wraths hit 40% harder.', when('falling-light', 'hit', { kind: 'buff', buff: next('falling-light', 'Falling Light', '#b8a8ff', 'wrath', 8, { pct: 40, casts: 3 }) }, 'Starbreak strengthens your next 3 Wraths.', { skill: 'starsurge', icd: 1 })),
         passive: { name: 'Eclipse', text: '+10% arcane and +10% nature damage.', mods: [S('arcane', 10), S('nature', 10)] },
       },
       {
@@ -33,6 +34,7 @@ export const DRUID: Kit = {
         color: '#ffb04d',
         role: 'Cat: fast bleeding strikes',
         skill: 'rip',
+        combo: combo('Tear It Wider', 'Savage Bite on a Bleeding enemy tears every wound open: all the bleeding still to come lands at once, half again as hard.', when('rend-tear', 'hit', { kind: 'detonate', status: 'bleed', mul: 1.5 }, 'Savage Bite sets off a bleed.', { skill: 'ferocious-bite', status: 'bleed' })),
         formOnly: true,
         passive: { name: 'Predatory Instincts', text: '+15% physical damage and +5% critical hit chance.', mods: [S('physical', 15), S('crit', 5)] },
       },
@@ -42,6 +44,7 @@ export const DRUID: Kit = {
         color: '#a0703f',
         role: 'Bear: the toughest shape',
         skill: 'ironfur',
+        combo: combo('Roused', 'Being hit rouses the bear in you: +4% damage and +5 armor a time, up to 5, for 8 s.', when('roused', 'hurt', { kind: 'buff', buff: stack('roused', 'Roused', '#c8a060', 8, 5, { power: 4, armor: 5 }) }, 'Being hit builds Roused.', { icd: 0.8 })),
         formOnly: true,
         passive: { name: 'Thick Hide', text: '+20 armor and +10% max health.', mods: [S('armor', 20), S('hpPct', 10)] },
       },

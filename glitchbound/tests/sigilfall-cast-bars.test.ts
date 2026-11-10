@@ -200,7 +200,8 @@ describe('Sigilfall cast bars', () => {
   it('being hurt doesn’t stop a cast; a stun, another skill or a dodge does', () => {
     const hurt = caster('warlock', 'chaos-bolt');
     expect(press(hurt.w, hurt.slot)).toBe(true);
-    for (let i = 0; i < 4; i++) {
+    // (three blows inside Ruin Bolt's 1.1 s)
+    for (let i = 0; i < 3; i++) {
       step(hurt.w, 0.3);
       hurt.p.iframe = 0;
       const hp = hurt.p.hp + hurt.p.shield;

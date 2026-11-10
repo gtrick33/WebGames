@@ -7,6 +7,7 @@ import type { ClassId } from '../data/types';
 import type { HeroLook } from '../render/art/hero';
 import { K, TILE, type TileMap } from '../sim/map';
 import { Motion } from './cast';
+import { strikeOf } from './strike';
 import { Stand } from './crowd';
 import type { Held } from './dress';
 import { hexRgb } from './kits';
@@ -44,7 +45,7 @@ export interface RingView {
 export class RingStage implements RingView {
   readonly stage: Stage;
   private built = false;
-  private readonly motions = new Map<number, { m: Motion; turn: number; swing: number; clip: string }>();
+  private readonly motions = new Map<number, { m: Motion; turn: number; swing: number; clip: string; fresh: boolean }>();
   private readonly gates: Stand[] = [];
   private k = 1;
   private cx = ARENA_W / 2;
@@ -182,7 +183,7 @@ export class RingStage implements RingView {
     const cast = this.stage.cast;
     let s = this.motions.get(f.id);
     if (!s) {
-      s = { m: new Motion(), turn: turnOf(Math.atan2(f.dirY, f.dirX)), swing: 0, clip: 'chop' };
+      s = { m: new Motion(), turn: turnOf(Math.atan2(f.dirY, f.dirX)), swing: 0, clip: 'chop', fresh: false };
       this.motions.set(f.id, s);
     }
     const moving = Math.hypot(f.vx, f.vy) > 1;
@@ -198,7 +199,12 @@ export class RingStage implements RingView {
     const frozen = f.auras.some((a) => a.kind === 'immune' && a.still);
     if (f.dead) s.m.set('die', false);
     else if (f.cast) s.m.set(f.cast.channel ? 'channel' : 'cast');
-    else if (s.swing > 0) s.m.set(s.clip, false, 0.06);
+    else if (s.swing > 0) {
+      // (from where the blow is in its clip, not the lift before it: strike.ts)
+      s.m.set(s.clip, false, 0.06, s.fresh);
+      if (s.fresh) s.m.t = strikeOf(cast.wardrobe?.medium, s.clip).from;
+      s.fresh = false;
+    }
     else if (stunned) s.m.set('hit');
     else if (moving) s.m.set('run');
     else s.m.set('idle');
@@ -245,6 +251,7 @@ export class RingStage implements RingView {
     } else if (ab.cast > 0) time = 0.36;
     s.clip = clip;
     s.swing = time;
+    s.fresh = true;
   }
 
   flat(x: number, y: number): void {

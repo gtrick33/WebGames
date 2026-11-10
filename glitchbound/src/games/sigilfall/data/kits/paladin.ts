@@ -1,4 +1,4 @@
-import { cdr, dmg, K, onHit, P, S, skill, spec, stats, T, type Kit } from './kit';
+import { cdr, combo, dmg, K, next, onHit, P, S, skill, spec, stack, stats, T, when, type Kit } from './kit';
 
 /** The Paladin: a holy warrior in plate, on Zeal built by strikes and spent on big blows and heals. */
 
@@ -25,6 +25,7 @@ export const PALADIN: Kit = {
         color: '#fff2b0',
         role: 'Healing light and radiance',
         skill: 'holy-shock',
+        combo: combo('Answered Prayer', 'A critical Sun Spark is a prayer answered: your next Mending Vow is ready at once and costs no Zeal.', when('answered', 'crit', { kind: 'buff', buff: next('answered', 'Answered Prayer', '#ffe08a', 'word-of-glory', 10, { free: true, ready: true }) }, 'A critical Sun Spark makes Mending Vow free.', { skill: 'holy-shock' })),
         passive: { name: 'Light’s Grace', text: '+20% healing and +5% holy damage.', mods: [S('healing', 20), S('holy', 5)] },
       },
       {
@@ -33,6 +34,7 @@ export const PALADIN: Kit = {
         color: '#4fb0ff',
         role: 'Tank: shields and armor',
         skill: 'shield-of-the-righteous',
+        combo: combo('Unbroken', 'Each Bastion Strike that lands leaves you Unbroken: +6 armor and +3% damage a time, up to 5, for 8 s.', when('unbroken', 'hit', { kind: 'buff', buff: stack('unbroken', 'Unbroken', '#8ab8ff', 8, 5, { armor: 6, power: 3 }) }, 'Bastion Strike builds Unbroken.', { skill: 'shield-of-the-righteous', icd: 0.5 })),
         passive: { name: 'Bulwark of Light', text: '+20 armor and +10% max health.', mods: [S('armor', 20), S('hpPct', 10)] },
       },
       {
@@ -41,6 +43,7 @@ export const PALADIN: Kit = {
         color: '#ff9a3d',
         role: 'Holy burst damage',
         skill: 'templars-verdict',
+        combo: combo('Branded', 'Sunbrand marks its target for sentence: your next Twin Edict hits 40% harder.', when('branded', 'hit', { kind: 'buff', buff: next('branded', 'Branded', '#ffc23a', 'templars-verdict', 6, { pct: 40 }) }, 'Sunbrand sets up a stronger Twin Edict.', { skill: 'judgment' })),
         passive: { name: 'Zealotry', text: '+10% holy damage and +3% critical hit chance.', mods: [S('holy', 10), S('crit', 3)] },
       },
     ],
@@ -139,7 +142,7 @@ export const PALADIN: Kit = {
       10,
       'Twin Edict',
       'Costs 3 Zeal. One mighty blow of holy light on the enemies in front of you.',
-      spec({ id: 'templars-verdict', cast: 'melee', cooldown: 1, damage: 40, dmgType: 'holy', windup: 0.1, area: 30, arc: 1.2, knock: 120, cost: 3, tags: ['melee', 'holy'] }),
+      spec({ id: 'templars-verdict', cast: 'melee', cooldown: 1, damage: 34, dmgType: 'holy', windup: 0.1, area: 30, arc: 1.2, knock: 120, cost: 3, tags: ['melee', 'holy'] }),
     ),
     sk(
       'ultimate',

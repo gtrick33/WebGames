@@ -1,4 +1,4 @@
-import type { ClassDef, Effect, Mod, ProcDef, SkillDef, SkillOp, SkillSpec, StatKey, Stats, TalentNode } from '../types';
+import type { BuffDef, ClassDef, Effect, Empower, Mod, ProcDef, SkillDef, SkillOp, SkillSpec, StatKey, Stats, TalentNode } from '../types';
 
 /**
  * Helpers for writing a class's kit (its definition, skills and talents) compactly. Every class lives
@@ -95,3 +95,19 @@ export const onHit = (skill: string, effect: Effect): Mod => K(skill, { op: 'onH
 export function T(tree: 0 | 1 | 2, row: number, col: number, id: string, name: string, ranks: number, icon: string, text: string, mods: Mod[], requires?: string): TalentNode {
   return { id, name, tree, row, col, ranks, icon, text, mods, ...(requires ? { requires } : {}) };
 }
+
+/* ------------------------------------------------------------- combos */
+
+/**
+ * A specialization's combo (types.ts SpecDef.combo): the one thing its skills do together. Three kinds are written
+ * with these: one skill setting up the next cast of another (`next`), charges built by small hits and spent by a
+ * great one (`next` with a `max`), and a state that builds on the hero (`stack`). A fourth, a blow that sets off a
+ * burn, a bleed or a curse, is the `detonate` effect.
+ */
+export const combo = (name: string, text: string, ...mods: Mod[]): { name: string; text: string; mods: Mod[] } => ({ name, text, mods });
+/** The hero's next cast of `skill` is more than it is; with `max`, it builds a stack at a time and the cast takes them all. */
+export const next = (id: string, name: string, color: string, skill: string, dur: number, how: Omit<Empower, 'skill'>, max?: number): BuffDef => ({ id: `combo-${id}`, name, dur, color, empower: { skill, ...how }, ...(max ? { max } : {}) });
+/** A state on the hero that builds a stack at a time. */
+export const stack = (id: string, name: string, color: string, dur: number, max: number, stats: Partial<Record<StatKey, number>>): BuffDef => ({ id: `combo-${id}`, name, dur, color, max, stats });
+/** A combo's trigger. */
+export const when = (id: string, on: ProcDef['on'], effect: Effect, text: string, o: Partial<Pick<ProcDef, 'skill' | 'status' | 'dmgType' | 'chance' | 'icd'>> = {}): Mod => P({ id: `combo-${id}`, on, chance: 1, icd: 0.15, ...o, effect, text });
