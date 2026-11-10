@@ -35,19 +35,21 @@ function SceneBars({ engine }: { engine: SigilEngine }) {
   const title = useRef<HTMLDivElement>(null);
   const black = useRef<HTMLDivElement>(null);
   const memory = useRef<HTMLDivElement>(null);
+  const caption = useRef<HTMLElement>(null);
   const shown = useRef('');
   const told = useRef('');
   useFrame(engine, (w) => {
     if (!ref.current) return;
-    // a fade to black, and a memory: the picture pale and tinted, its caption over it
+    // a fade to black, and a memory: the picture pale and tinted, its caption in the upper bar (clear of anyone's lines)
     if (black.current) black.current.style.opacity = String(sceneDark(w.scene));
     const v = w.scene?.vision;
     if (memory.current) {
       memory.current.classList.toggle('is-on', !!v);
+      caption.current?.classList.toggle('is-on', !!v);
       if (v && v.text !== told.current) {
         told.current = v.text;
         memory.current.style.setProperty('--tint', v.tint);
-        memory.current.firstElementChild!.textContent = v.text;
+        if (caption.current) caption.current.textContent = v.text;
       }
     }
     ref.current.classList.toggle('is-on', !!w.scene);
@@ -64,12 +66,11 @@ function SceneBars({ engine }: { engine: SigilEngine }) {
   });
   return (
     <div className="rb-scene" ref={ref} aria-hidden={!engine.world?.scene}>
-      <div className="rb-scene-vision" ref={memory}>
-        <em />
-      </div>
+      <div className="rb-scene-vision" ref={memory} />
       <div className="rb-scene-black" ref={black} />
       <div className="rb-scene-bar" />
       <div className="rb-scene-bar is-low" />
+      <em className="rb-scene-caption" ref={caption} />
       <div className="rb-scene-title" ref={title}>
         <strong />
         <span />
