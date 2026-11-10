@@ -92,8 +92,9 @@ export interface ScenePlay {
   seen?: boolean;
   /** The title in the lower bar, if a step has given one. */
   title?: { text: string; sub?: string };
-  /** The way someone in a `move` step is walking. */
+  /** The way someone in a `move` step is walking, and how fast (world px a second). */
   route?: Route;
+  pace?: number;
   emotes: { who: string; icon: Emote; t: number }[];
   /** How black the picture is (0 to 1), and where it is going. */
   dark?: { from: number; to: number; t: number; secs: number };
@@ -121,6 +122,10 @@ const TINTS: Record<string, string> = { memory: '#c8a8ff', ember: '#ffb070', fro
 const SPEAK = 2.6;
 const lineTime = (line: string): number => SPEAK + line.length * 0.025;
 const WALK = 42;
+/** The longest a scene waits on someone walking to their mark, in seconds, before they pick up their feet. */
+const LONGEST_WALK = 4.5;
+/** How far from their mark someone out of the picture starts their walk in (world px: a little past the screen's edge). */
+const ENTERS_FROM = 8 * TILE;
 
 /**
  * A named place, a person (or a foe, by kind), or the hero, in world px (null when nothing by that name is
@@ -156,6 +161,42 @@ function where(w: World, name: string): { x: number; y: number } | null {
 }
 
 const seenKey = (id: string): string => `scene:${id}`;
+
+/** What the camera shows round where it looks, in tiles: a little less than the screen, so a speaker is never at its very edge. */
+const SIGHT = { side: 6.2, up: 4, down: 3.2 };
+/** Whether someone is in the picture when the camera looks at `cam`. */
+export function inSight(cam: { x: number; y: number }, who: { x: number; y: number }): boolean {
+  const dx = (who.x - cam.x) / TILE;
+  const dy = (who.y - cam.y) / TILE;
+  return Math.abs(dx) <= SIGHT.side && dy <= SIGHT.down && dy >= -SIGHT.up;
+}
+
+/** The middle of the nearest tile to (x, y) that can be stood on (the spot itself, when it can). */
+function openGround(w: World, x: number, y: number): { x: number; y: number } {
+  const m = w.map;
+  const tx = Math.floor(x / TILE);
+  const ty = Math.floor(y / TILE);
+  const open = (cx: number, cy: number): boolean => cx >= 0 && cy >= 0 && cx < m.w && cy < m.h && !m.solid[cy * m.w + cx];
+  if (open(tx, ty)) return { x, y };
+  for (let r = 1; r <= 4; r++) {
+    let best: { x: number; y: number } | null = null;
+    let bd = Infinity;
+    for (let cy = ty - r; cy <= ty + r; cy++) {
+      for (let cx = tx - r; cx <= tx + r; cx++) {
+        if (Math.max(Math.abs(cx - tx), Math.abs(cy - ty)) !== r || !open(cx, cy)) continue;
+        const px = (cx + 0.5) * TILE;
+        const py = (cy + 0.5) * TILE;
+        const d = (px - x) ** 2 + (py - y) ** 2;
+        if (d < bd) {
+          bd = d;
+          best = { x: px, y: py };
+        }
+      }
+    }
+    if (best) return best;
+  }
+  return { x, y };
+}
 
 /**
  * Whether this world plays the story's staged scenes: playing alone, or leading a party questing together (the
@@ -317,14 +358,22 @@ export function updateScene(w: World, dt: number): void {
   s.begun = true;
   let done: boolean;
   if ('say' in step) {
-    if (first) w.story.speakNow({ who: step.say, text: step.line }, lineTime(step.line));
+    if (first) {
+      w.story.speakNow({ who: step.say, text: step.line }, lineTime(step.line));
+      // the camera finds whoever speaks, if the scene has left them out of its sight: nobody talks from off the screen
+      const who = where(w, step.say);
+      const cam = s.focus ?? w.player;
+      if (who && !inSight(cam, who)) s.focus = step.say === 'hero' ? null : { x: who.x, y: who.y };
+    }
     done = s.t >= lineTime(step.line) + 0.15;
   } else if ('ghost' in step) {
     if (first) {
       const at = where(w, step.at);
       if (at) {
+        // (never in a wall or a tree: the nearest open ground to where the scene put them)
+        const to = openGround(w, at.x + (step.dx ?? 0) * TILE, at.y + (step.dy ?? 0) * TILE);
         w.npcs = w.npcs.filter((n) => n.id !== step.ghost);
-        w.npcs.push({ id: step.ghost, x: at.x + (step.dx ?? 0) * TILE, y: at.y + (step.dy ?? 0) * TILE, face: step.face ?? 1, bob: 0, since: w.time, ghost: step.as });
+        w.npcs.push({ id: step.ghost, x: to.x, y: to.y, face: step.face ?? 1, bob: 0, since: w.time, ghost: step.as });
         (s.ghosts ??= []).push(step.ghost);
       }
     }
@@ -359,10 +408,28 @@ export function updateScene(w: World, dt: number): void {
       const tx = step.to === 'hero' || !w.places[step.to] ? to.x + (n.x < to.x ? -26 : 26) : to.x;
       const ty = to.y;
       const d = dist(n.x, n.y, tx, ty);
-      if (first) s.route = findRoute(w.map, n.x, n.y, tx, ty, { r: 7, budget: 12000, roads: true }) ?? findRoute(w.map, n.x, n.y, tx, ty, { r: 4, budget: 12000 }) ?? undefined;
+      if (first) {
+        s.route = findRoute(w.map, n.x, n.y, tx, ty, { r: 7, budget: 12000, roads: true }) ?? findRoute(w.map, n.x, n.y, tx, ty, { r: 4, budget: 12000 }) ?? undefined;
+        // someone a long way off and out of the picture is cut to, as a film would: they come in from just beyond its
+        // edge, on the way they would have walked
+        if (s.route && !inSight(s.focus ?? w.player, n)) {
+          let back = 0;
+          for (let i = s.route.pts.length - 1; i > 0; i--) {
+            back += dist(s.route.pts[i]!.x, s.route.pts[i]!.y, s.route.pts[i - 1]!.x, s.route.pts[i - 1]!.y);
+            if (back >= ENTERS_FROM) {
+              n.x = s.route.pts[i - 1]!.x;
+              n.y = s.route.pts[i - 1]!.y;
+              s.route = { pts: s.route.pts.slice(i - 1), at: 0 };
+              break;
+            }
+          }
+        }
+        // (and whoever still has a long way to come hurries: nobody watches a ten-second walk)
+        s.pace = Math.min(WALK * 3, Math.max(WALK, (dist(n.x, n.y, tx, ty) * 1.25) / LONGEST_WALK));
+      }
       const aim = s.route ? aimAlong(s.route, n.x, n.y) : d > 1 ? { x: (tx - n.x) / d, y: (ty - n.y) / d } : null;
       if (aim) {
-        const stride = WALK * dt;
+        const stride = (s.pace ?? WALK) * dt;
         n.x += aim.x * stride;
         n.y += aim.y * stride;
         if (Math.abs(aim.x) > 0.1) n.face = aim.x < 0 ? 1 : 0;

@@ -122,6 +122,8 @@ export interface Character {
   shopMount?: string;
   shopWorn?: Partial<Record<LookSlot, string>>;
   stats: { kills: number; deaths: number; time: number; runs: number; bestRun: number };
+  /** The title worn (a progress/titles.ts id; '' for none on purpose; unset: the warden's, once earned). */
+  title?: string;
   created: number;
   updated: number;
 }

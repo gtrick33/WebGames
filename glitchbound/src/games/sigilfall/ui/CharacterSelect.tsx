@@ -6,7 +6,8 @@ import type { RegionId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { SIGILS, type Character } from '../progress/character';
 import { rankOf, topStanding } from '../arena/ranks';
-import { heroTitle, RIFT_LEVEL, wornLooks } from '../progress/wardrobe';
+import { RIFT_LEVEL, wornLooks } from '../progress/wardrobe';
+import { wornTitle } from '../progress/titles';
 import { longestNight } from '../vigil/bests';
 import { iconPicture, iconsReady } from '../render/art/gameIcons';
 import { VIGIL_ICON } from '../render/art/iconPicks';
@@ -223,7 +224,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
               <b style={{ color: CLASSES[hero.cls].colors.accent }}>
                 Level {hero.level} {CLASSES[hero.cls].name}
               </b>
-              <span> · {heroTitle(hero) ?? farthest(hero.unlocked).name}</span>
+              <span> · {wornTitle(hero, engine.ringRating()) ?? farthest(hero.unlocked).name}</span>
             </p>
           </>
         ) : (

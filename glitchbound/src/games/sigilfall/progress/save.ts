@@ -330,6 +330,8 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   // is asked each time (progress/shopGoods.ts), so a save can choose one but never shows one that isn't owned
   const shopId = (v: unknown): v is string => typeof v === 'string' && SHOP_ID.test(v);
   if (shopId(o.shopMount)) c.shopMount = o.shopMount;
+  // (the title worn: only the choice; whether it is earned is asked of the record each time)
+  if (typeof o.title === 'string' && /^[a-z0-9-]{0,24}$/.test(o.title)) c.title = o.title;
   const shopWorn = obj(o.shopWorn) ?? {};
   for (const slot of ['head', 'chest'] as const) if (shopId(shopWorn[slot])) c.shopWorn = { ...c.shopWorn, [slot]: shopWorn[slot] };
   // mounts: earned ones are owned (the Millbrook Cob for anyone who has the old riding perk); the chosen one must be owned.

@@ -4147,6 +4147,59 @@
 .rb-wager:not(:disabled):hover {
   box-shadow: 0 0 0 2px #c58cff;
 }
+/* the hero's titles, folded under their name */
+.rb-titles {
+  font-size: 12.5px;
+}
+.rb-titles > summary {
+  min-height: 28px;
+  padding: 4px 0;
+  color: var(--rb-gold);
+  cursor: pointer;
+}
+.rb-titles-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 6px;
+}
+.rb-titles-pick select {
+  min-height: 36px;
+  flex: 1;
+  min-width: 0;
+  padding: 3px 6px;
+  border: 1px solid rgb(255 227 154 / 0.4);
+  border-radius: 6px;
+  color: #fff4d8;
+  font: inherit;
+  background: rgb(20 12 36 / 0.9);
+}
+.rb-titles ul {
+  display: grid;
+  gap: 3px;
+  max-height: 180px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.rb-titles li {
+  display: grid;
+  opacity: 0.55;
+}
+.rb-titles li.is-on {
+  opacity: 1;
+}
+.rb-titles li.is-on b::before {
+  content: '✓ ';
+  color: #7bff9a;
+}
+.rb-titles li span {
+  color: var(--rb-dim);
+}
+.rb-title-rare {
+  color: #c58cff;
+}
 /* a set piece's card: its fellows, and what wearing them gives */
 .rb-item-set {
   display: grid;

@@ -33,6 +33,8 @@ import { questRewards } from '../progress/rewards';
 import { FOG_CELL, fogSeen, loadFog, type Fog } from '../progress/fog';
 import { RiftGuide } from './RiftGuide';
 import { ShopPanel } from './Shop';
+import { earnedTitles, titled, titleName, TITLES, wornTitle } from '../progress/titles';
+import { WARDENS } from '../data/wardens';
 import { compareWith, linesOnlyIn, statRows } from './compare';
 import { PartyPanel } from './Party';
 import { PRESETS } from '../progress/presets';
@@ -121,7 +123,8 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
         <div className="rb-hero-id">
           <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} face={h.face} size={48} />
           <div>
-            <strong>{h.name}</strong>
+            <strong>{titled(h.name, wornTitle(h, engine.ringRating()))}</strong>
+            <TitlePicker engine={engine} />
             <span>
               Level {h.level} {CLASSES[h.cls].name}
               {h.para.l > 0 && <b className="rb-para-name"> · Paragon {h.para.l}</b>}
@@ -242,6 +245,46 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
 export function isUpgrade(cur: Item | undefined, it: Item): boolean {
   if (!cur) return true;
   return itemScore(it) > itemScore(cur) + 5;
+}
+
+/** The hero's titles: the one worn (chosen here), and every one there is with how it is earned. */
+function TitlePicker({ engine }: { engine: SigilEngine }) {
+  const h = engine.hero!;
+  const rating = engine.ringRating();
+  const mine = earnedTitles(h, rating);
+  const worn = wornTitle(h, rating);
+  const value = h.title === '' ? '' : (mine.find((t) => titleName(t, h) === worn)?.id ?? '');
+  return (
+    <details className="rb-titles">
+      <summary>
+        Titles <span className="rb-dim">{mine.length} of {TITLES.length}</span>
+      </summary>
+      {mine.length > 0 && (
+        <label className="rb-titles-pick">
+          <span>Wear</span>
+          <select value={value} onChange={(e) => engine.chooseTitle(e.target.value)} aria-label="Title to wear">
+            <option value="">No title</option>
+            {mine.map((t) => (
+              <option key={t.id} value={t.id}>
+                {titleName(t, h)}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <ul>
+        {TITLES.map((t) => {
+          const has = mine.includes(t);
+          return (
+            <li key={t.id} className={has ? 'is-on' : ''}>
+              <b className={t.rare ? 'rb-title-rare' : ''}>{t.id === 'warden' ? WARDENS[h.cls].title : t.name}</b>
+              <span>{t.how}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </details>
+  );
 }
 
 /** One item's card: header, stats (with their change against `compareTo`), what it changes, lore. */

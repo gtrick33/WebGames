@@ -24,6 +24,8 @@ import { canRide, chooseMount, FIRST_RIDE, grantMounts, grantWarden, hasMount, s
 import { DEFAULT_SETTINGS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
 import { wager } from './progress/rift';
+import { chooseTitle, newTitles, titled, titleName } from './progress/titles';
+import { topStanding } from './arena/ranks';
 import type { ShopId } from './data/vendors';
 import { iconsReady } from './render/art/gameIcons';
 import { Renderer } from './render/renderer';
@@ -697,6 +699,11 @@ export class SigilEngine {
         this.sound.play('epic');
         changed = true;
       }
+      for (const t of newTitles(this.hero, this.ringRating())) {
+        this.toast(`New title: ${titled(this.hero.name, titleName(t, this.hero))}`, 'good', undefined, 'Wear it from the Hero page, under your name.');
+        this.sound.play('epic');
+        changed = true;
+      }
       for (const m of grantMounts(this.hero)) {
         this.toast(`New mount: ${m.name}`, 'good', undefined, this.touchMode ? 'Tap the horseshoe to ride. Choose mounts in the Wardrobe.' : 'Press Y to ride. Choose mounts in the Wardrobe.');
         this.sound.play('epic');
@@ -988,6 +995,10 @@ export class SigilEngine {
     if (hasMount(h)) this.queueTip('riding');
     // (and the endgame, for a hero at the top with a stone)
     if (h.level >= MAX_LEVEL && h.keystone >= 1) this.queueTip('rift');
+    // (titles earned before this land was entered are simply theirs: one line, not one for each)
+    const owed = newTitles(h, this.ringRating());
+    if (owed.length > 1) this.toast(`${owed.length} titles are yours`, 'good', undefined, 'Choose one to wear on the Hero page, under your name.');
+    else if (owed.length === 1) this.toast(`New title: ${titled(h.name, titleName(owed[0]!, h))}`, 'good', undefined, 'Wear it from the Hero page, under your name.');
     this.bump();
   }
 
@@ -1472,6 +1483,22 @@ export class SigilEngine {
   }
 
   /** Chooses the mount the mount key calls (and swaps it at once if riding). */
+  /** Wears a title ('' for none). */
+  chooseTitle(id: string): boolean {
+    const h = this.hero;
+    if (!h || !chooseTitle(h, id, this.ringRating())) return false;
+    this.refreshPartyCard();
+    this.sound.play('click');
+    this.scheduleSave(300);
+    this.bump();
+    return true;
+  }
+
+  /** The best rating the player has reached in The Ring, as this device remembers it (the Ring's titles ask). */
+  ringRating(): number {
+    return topStanding().best;
+  }
+
   chooseMount(id: string): boolean {
     const h = this.hero;
     if (!h || !chooseMount(h, id)) return false;
