@@ -26,8 +26,9 @@ effects are Willosuna's. Nothing else enters without approval.
   tile by tile reads as a staircase); squares are paved rectangles with their corners cut.
 - **Buildings stand where they are drawn** (`data/buildingArt.ts`, `sim/map.ts`): the tiles the painted walls and
   roof cover are solid, nothing else on the lot is; the rest of the lot is a yard with a few things in it. A
-  building with a way in stands with its painted door over the step, and the step is marked: a warm pool of
-  light and two gold chevrons pointing through the door (and back out, indoors). Walking onto it goes through.
+  building with a way in stands with its painted door over the step, and the step is marked by light, not by an
+  arrow (since 2026-11-10): lamplight falls out of the door onto the step, and from inside daylight comes in at the
+  door (`render/effects.ts` wayLights). Walking onto it goes through.
 - **Indoors is peaceful**: no spells or blows in an inn or a chapel, and the skill bar is put away, so nothing
   covers a room's door.
 

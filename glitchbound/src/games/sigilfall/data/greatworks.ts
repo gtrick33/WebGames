@@ -182,6 +182,14 @@ export const GREAT: Record<string, GreatWork> = {
     room: [5, 4],
     overRoad: true,
   },
+  // The Kings' Mound and the Gallows Gang's hill (render3d/doorways.ts): the ground they stand on
+  'mouth-barrow': { parts: [], solid: [[-3, -5, 3, 0]], room: [5, 6], overRoad: true },
+  'mouth-gallows': {
+    parts: [thing('built_skull_banner', 2.6, -3.9, 1.3, { rot: 8 }), thing('built_skull_banner', 2.6, 3.9, 1.3, { rot: -8 }), thing('built_cage', 1.3, 4.6, 2.2, { rot: 20 })],
+    solid: HILL,
+    room: [5, 4],
+    overRoad: true,
+  },
   // The Rotmother's cistern lets out under a wall of brick
   'outfall-rotmother': { parts: [], solid: [[-3, 0, 3, 0]], room: [4, 2], overRoad: true },
 
@@ -258,7 +266,8 @@ export const GREAT: Record<string, GreatWork> = {
       thing('arch_gate', 24, 0, 0, { tint: BLACK, shadow: 7, shadowD: 0.35 }),
       thing('statue_obelisk', 16, -14, 2, { tint: BLACK, flame: 1.5, flameY: 15.5, shadow: 2 }),
       thing('statue_obelisk', 16, 14, 2, { tint: BLACK, flame: 1.5, flameY: 15.5, shadow: 2 }),
-      block(14, 18, 0.5, 0, -0.4, { tint: '#7affb0', y: 0.2, glow: '#7affb0', glowY: 10, glowSize: 90 }),
+      // (the gloam behind its bars: the rift's own violet, not a green the land has nowhere else)
+      block(14, 18, 0.5, 0, -0.4, { tint: '#8a5ad8', y: 0.2, glow: '#c49aff', glowY: 10, glowSize: 90 }),
     ],
     solid: [[-12, -1, -8, 1], [8, -1, 12, 1], [-7, 0, 7, 0], [-14, 2, -14, 2], [14, 2, 14, 2]],
     room: [17, 7],
@@ -533,6 +542,18 @@ export const DOOR_GROUND: Record<string, GreatPlace[]> = {
   saltmarsh: [{ id: 'mouth-grotto', door: 'smugglers-grotto', dy: -1, exact: true }],
   duskfen: [{ id: 'outfall-rotmother', door: 'rotmother-cistern', dy: -1, exact: true }],
   emberdeep: [{ id: 'mouth-molten', door: 'molten-throne', dy: -1, exact: true }],
+  'ashen-barrows': [{ id: 'mouth-barrow', door: 'barrow-of-kings', dy: -1, exact: true }],
+  thornvale: [{ id: 'mouth-gallows', door: 'gallows-keep', dy: -1, exact: true }],
+};
+
+/**
+ * A generated land's built door that stands hard against something already there (Highwall's sally port, the keep close
+ * behind it): its ground as the hand-laid lands' is (withDoorGround), tiles from the door's own.
+ */
+export const DOOR_BLOCKS: Record<string, { to: string; rects: readonly (readonly [number, number, number, number])[] }> = {
+  highwall: { to: 'siege-of-highwall', rects: [[-8, -1, 8, -1], [-8, -2, -5, -2], [2, -2, 2, -2], [5, -2, 8, -2]] },
+  // (Duskspire's gate: the citadel is behind its west half)
+  'pale-reach': { to: 'duskspire', rects: [[-7, -2, 7, -1]] },
 };
 
 export const GREAT_IN: Record<string, GreatPlace[]> = {

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { zoneLight } from '../render/zoneLight';
 import { stoneGate, timberGate, type GateBuilt } from './gateways';
 import { hash2 } from '../core/math';
 import { modelOnLot, picBody } from '../data/buildingArt';
@@ -121,10 +122,6 @@ const FLOWERS = ['flower_redA', 'flower_yellowA', 'flower_purpleA'];
 
 /** A dungeon's way in that's a model of its own; the ones no model would do (a stair, a hole in a hill) are in doorways.ts. */
 const ENTRANCES: Record<string, { m: string; w: number; tint?: string }> = {
-  'barrow-of-kings': { m: 'crypt-large-door', w: 3 },
-  'gallows-keep': { m: 'gate', w: 3, tint: '#a09a90' },
-  'siege-of-highwall': { m: 'gate', w: 3.2 },
-  duskspire: { m: 'gate', w: 3.2, tint: '#7a7488' },
   'tomb-of-the-sun-king': { m: 'arch_gate', w: 3, tint: '#f0d8a0' },
   'spire-of-the-rift': { m: 'arch', w: 3, tint: '#c0a0f0' },
   'vaelmoor-remembered': { m: 'arch', w: 3, tint: '#d8d8f0' },
@@ -269,6 +266,28 @@ function colorsFor(m: MeshData, look: ThemeLook, id: string): Uint8Array {
   // (bone is bone, not timber, and hay, a pumpkin and a flower aren't timber either)
   if (!/ribcage|skull|bone_|pumpkin|haybale|flower_|crops_/.test(id)) harmonize(out, m.n);
   const roof = id.split('#')[1];
+  if (roof === 'evergreen') {
+    // an old pine keeps its needles whatever the land's leaves have turned to: its foliage a deep green, dark at the
+    // heart of each bough and lighter at its tip; its wood stays wood
+    const bark = hexRgb(look.bark);
+    for (let v = 0; v < m.n; v++) {
+      const i = v * 3;
+      // (by the model's own colors, before they were toned down: its needles are its strongest color)
+      const [h, s, l] = hsl(m.col[i]! / 255, m.col[i + 1]! / 255, m.col[i + 2]! / 255);
+      if (s > 0.45 && l > 0.3) {
+        const k = 0.62 + l * 0.9;
+        out[i] = Math.min(255, 38 * k);
+        out[i + 1] = Math.min(255, 92 * k);
+        out[i + 2] = Math.min(255, 58 * k);
+      } else if (h > 5 && h < 60) {
+        const f = 0.6 + l * 0.7;
+        out[i] = Math.min(255, bark[0] * 255 * f);
+        out[i + 1] = Math.min(255, bark[1] * 255 * f);
+        out[i + 2] = Math.min(255, bark[2] * 255 * f);
+      }
+    }
+    return out;
+  }
   if (roof) {
     const [rr, rg, rb] = hexRgb(`#${roof}`);
     for (let v = 0; v < m.n; v++) {
@@ -289,7 +308,8 @@ function colorsFor(m: MeshData, look: ThemeLook, id: string): Uint8Array {
     return [(lum + (r - lum) * k) * 0.93, (lum + (g - lum) * k) * 0.93, (lum + (b - lum) * k) * 0.88];
   });
   const bark = hexRgb(look.bark);
-  const leafy = /^(Tree|Bush|Grass|tree_|plant|hanging)/.test(id);
+  // (a cactus too: the pack's own is a turquoise no desert grows)
+  const leafy = /^(Tree|Bush|Grass|tree_|plant|hanging|cactus)/.test(id);
   // (a flower's stem and a crop's leaves are the land's green; its bloom is its own)
   const sprout = /^(flower_|crops_)/.test(id);
   const rocky = /^(Rock|rock_|stone_)/.test(id);
@@ -802,7 +822,7 @@ interface BlockStyle {
 /** How tall the walls of a place under a roof stand, in tiles: halls, not cellars. */
 const DUNGEON_WALL = 2.7;
 
-function blockStyles(look: ThemeLook, woody: boolean): { wall: BlockStyle; rampart: BlockStyle } {
+function blockStyles(look: ThemeLook, woody: boolean, stone?: string): { wall: BlockStyle; rampart: BlockStyle } {
   const st = look.stone;
   const wall: BlockStyle = st
     ? { h: DUNGEON_WALL, top: hexRgb(st.top), top2: hexRgb(st.topHi), side: hexRgb(st.brick[1]), side2: hexRgb(st.brick[0]) }
@@ -810,7 +830,15 @@ function blockStyles(look: ThemeLook, woody: boolean): { wall: BlockStyle; rampa
       ? // a wood is a low mossy floor its trees stand on, as in the art set's own scenes, not a block with crowns poking out
         { h: WOOD_FLOOR, top: mossOf(look), top2: mossOf(look), side: mossOf(look, 0.6), side2: mossOf(look, 0.5) }
       : { h: 1.7, top: hexRgb(look.ground.leaf[3]), top2: hexRgb(look.ground.leaf[4]), side: hexRgb(look.ground.leaf[1]), side2: hexRgb(look.ground.leaf[0]) };
-  const rampart: BlockStyle = { h: 2.5, top: [0.46, 0.44, 0.46], top2: [0.68, 0.65, 0.62], side: [0.62, 0.59, 0.56], side2: [0.42, 0.4, 0.42] };
+  let rampart: BlockStyle = { h: 2.5, top: [0.46, 0.44, 0.46], top2: [0.68, 0.65, 0.62], side: [0.62, 0.59, 0.56], side2: [0.42, 0.4, 0.42] };
+  // (in a dark land or a strange one, a wall is of that land's own stone: a pale grey one stands out of it like chalk)
+  if (stone) {
+    const c = hexRgb(stone);
+    if (c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11 < 0.52) {
+      const tone = (k: number): [number, number, number] => [Math.min(1, c[0] * k), Math.min(1, c[1] * k), Math.min(1, c[2] * k)];
+      rampart = { h: 2.5, top: tone(0.72), top2: tone(1.12), side: tone(1), side2: tone(0.66) };
+    }
+  }
   return { wall, rampart };
 }
 
@@ -865,15 +893,6 @@ const GATE_STONE: Partial<Record<string, string>> = {
   marsh: '#8a9078', moor: '#8e8898', deadlake: '#7c8a8c', pale: '#b8c4d8', gloam: '#7a6c8c', storm: '#8690a4',
   rift: '#6e5e8e', haunted: '#6c7484', volcanic: '#5c4c4a', fey: '#8a7ca8', bonefield: '#b4ac98', blight: '#6c7658', autumn: '#a89a86', forest: '#9aa08e',
 };
-/** The color of the light of the land a way leads to. */
-const WAY_LIGHT: Partial<Record<string, string>> = {
-  village: '#ffd66a', forest: '#9cff7a', farm: '#ffe27a', coast: '#7ae8ff', autumn: '#ffa64a', marsh: '#b8e070', plague: '#c8f070', plains: '#ffe08a',
-  mountain: '#d8e4ff', barrow: '#c8b8ff', storm: '#8ab8ff', moor: '#d0a0ff', desert: '#ffc860', fey: '#ff9af0', snow: '#bfe8ff', rift: '#b88aff',
-  jungle: '#7affa0', warfront: '#ff8a5a', blight: '#c0ff6a', haunted: '#a0d8ff', volcanic: '#ff7a3a', deadlake: '#9ad0d0', peaks: '#e0ecff',
-  sunken: '#6ae0d8', bonefield: '#f0e6c8', gloam: '#d08aff',
-};
-export const wayLight = (to: string): string => WAY_LIGHT[REGIONS[to as keyof typeof REGIONS]?.theme ?? ''] ?? '#ffd66a';
-
 /** How a built place's walls are faced with the dungeon pack's pieces (Land3D.cladWalls). */
 interface Cladding {
   /** Multiplied into the pack's grey stone: the place's own. */
@@ -970,8 +989,8 @@ function softenMask(mask: Uint8Array, W: number, H: number, passes: number): voi
   }
 }
 
-function buildBlocks(map: TileMap, look: ThemeLook, woody: boolean, cut: Uint8Array | null): THREE.Mesh {
-  const { wall, rampart } = blockStyles(look, woody);
+function buildBlocks(map: TileMap, look: ThemeLook, woody: boolean, cut: Uint8Array | null, stone?: string): THREE.Mesh {
+  const { wall, rampart } = blockStyles(look, woody, stone);
   const m = new Mesher();
   const W = map.w;
   const H = map.h;
@@ -1275,7 +1294,7 @@ export class Land3D {
     const woody = !look.indoor && !look.cliffs && look.trees.filter((t) => t !== 'cactus' && t !== 'crystal').length * 2 > look.trees.length;
     this.ground = buildGround(map, look, region.kind === 'dungeon' ? region.encounters.map((e) => (e.boss ? ARENAS[e.boss]?.floor : null)) : [], look.indoor && (region.kind === 'dungeon' || !!region.interior) && !!CLADDING[theme]);
     this.cut = look.indoor ? cutAway(map) : null;
-    this.blocks = buildBlocks(map, look, woody, this.cut);
+    this.blocks = buildBlocks(map, look, woody, this.cut, GATE_STONE[theme]);
     this.planks = buildPlanks(map, look);
     this.under.add(this.ground, this.planks);
     this.group.add(this.blocks);
@@ -1400,11 +1419,11 @@ export class Land3D {
           this.built.push(b);
           continue;
         }
-        this.gateway(stoneGate({ span: span + 2, body: GATE_STONE[region.theme] ?? '#a69e94', trim: '#d8c8a0', light: wayLight(mk.to), seed: pm.tx * 7 + pm.ty }), mx, mz, rot, side, span);
+        this.gateway(stoneGate({ span: span + 2, body: GATE_STONE[region.theme] ?? '#a69e94', trim: '#d8c8a0', light: zoneLight(mk.to), seed: pm.tx * 7 + pm.ty }), mx, mz, rot, side, span);
         continue;
       }
       // a wood's gate: two great trunks and a third across them, a palisade going off into the trees
-      this.gateway(timberGate({ span: span + 2, body: `#${look.bark.replace('#', '')}`, trim: '#c8a878', light: wayLight(mk.to), seed: pm.tx * 7 + pm.ty }), mx, mz, rot, side, span);
+      this.gateway(timberGate({ span: span + 2, body: `#${look.bark.replace('#', '')}`, trim: '#c8a878', light: zoneLight(mk.to), seed: pm.tx * 7 + pm.ty }), mx, mz, rot, side, span);
     }
   }
 
@@ -1688,7 +1707,11 @@ export class Land3D {
           if (look.indoor) {
             // (drawn each frame, so one between the camera and the hero can sink out of the way: updateColumns)
             if (this.keepIt({ x: wx, y: wy, kind: 'pillar', dy: -96 }) && this.pack(m)) this.columns.push({ m, x, z, rot: 0, sx: 1.1 / pw, sy: 3.2 / ph, sz: 1.1 / pw, r: 0.86, g: 0.84, b: 0.86, cut: 1 });
-          } else if (this.keepIt({ x: wx, y: wy, kind: 'pillar', dy: -40 })) this.add({ m, x, z, rot: 0, sx: this.fitted(m, 2.6, 1), shadow: 0.8, r: 0.68, g: 0.68, b: 0.72 });
+          } else if (this.keepIt({ x: wx, y: wy, kind: 'pillar', dy: -40 })) {
+            // (an old column out in the land is of the land's own stone, weathered: not the pack's clean blue-grey)
+            const sc = hexRgb(GATE_STONE[region.theme] ?? '#a69e94');
+            this.add({ m, x, z, rot: 0, sx: this.fitted(m, 2.6, 1), shadow: 0.8, r: Math.min(1.2, sc[0] * 1.12), g: Math.min(1.2, sc[1] * 1.12), b: Math.min(1.2, sc[2] * 1.12) });
+          }
           break;
         }
         case K.Brazier: {
@@ -1847,7 +1870,7 @@ export class Land3D {
         }
         const built = DOORWAYS[m.to];
         if (built) {
-          const b = built.build().m.build();
+          const b = built.build(look).m.build();
           b.position.set(x, 0, z);
           this.group.add(b);
           this.built.push(b);
@@ -1990,7 +2013,7 @@ export class Land3D {
     const loose = !def.across && !def.flat && (def.w ?? TILE) < 30;
     const rot = size.rot + (loose ? (hash2(tx, ty, 3) - 0.5) * 0.5 : 0);
     // (a building-pack model carries the land's own roof color)
-    const model = def.m.startsWith('b_') && !tint ? `${def.m}#${this.roofOf(tx, ty)}` : def.m;
+    const model = def.evergreen ? `${def.m}#evergreen` : def.m.startsWith('b_') && !tint ? `${def.m}#${this.roofOf(tx, ty)}` : def.m;
     // (its middle on the tile, whatever the model's own origin and however it's turned)
     const lx = ((mesh.min[0] + mesh.max[0]) / 2) * size.sx;
     const lz = ((mesh.min[2] + mesh.max[2]) / 2) * size.sz;

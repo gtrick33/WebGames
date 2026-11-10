@@ -667,8 +667,9 @@ export const THEMES: Record<Theme, ThemeLook> = {
       blade: '#a8b2c4',
       bladeHi: '#f4f7fc',
       flowers: ['#8a6ad8', '#c8d0e0', '#ffffff', '#a888e8', '#e0e8ff'],
-      path: ['#5a5e6a', '#686c78', '#767a86', '#848894'],
-      pebble: '#6a6e7a',
+      // (a road through snow is trodden snow, a little greyer than the drifts: dark slate lay on the white like a shadow)
+      path: ['#bcc4d2', '#c6cdda', '#ced5e0', '#d6dce6'],
+      pebble: '#9aa0b0',
       leaf: ['#1a1c26', '#262a36', '#343846', '#464a5a', '#9ea4b4', '#d8dce6'],
       water: { deep: '#6a84a6', mid: '#86a0c0', shallow: '#a4bcd8', light: '#dceaf8', foam: '#f4f8ff', bank: '#9aa6b8', bankDark: '#7a8698' },
       sand: ['#c8d0dc', '#d0d7e2', '#d8dee8', '#e0e5ee', '#e8ecf3'],

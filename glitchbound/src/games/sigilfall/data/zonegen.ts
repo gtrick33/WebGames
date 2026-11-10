@@ -1,4 +1,4 @@
-import { DOOR_GROUND, GREAT, GREAT_IN, type GreatPlace } from './greatworks';
+import { DOOR_BLOCKS, DOOR_GROUND, GREAT, GREAT_IN, withDoorGround, type GreatPlace } from './greatworks';
 import { isRetired, liveExits } from './retired';
 import { clamp, hash2, noise2, rng } from '../core/math';
 import { buildingRows, villageHouses } from './buildingArt';
@@ -343,7 +343,8 @@ const SCENES: Record<string, { rows: string[]; key: Record<string, SceneCell> }>
   woodcut: { rows: ['s..L.', '.Wc..', 'L..s.', '..s..'], key: { s: P('stump'), L: P('log'), W: P('woodpile', true), c: P('chopping-block', true) } },
   camp: { rows: ['.T...T.', '.......', '.b.F.p.', '...x...'], key: { T: P('camp-tent', true), F: P('campfire', true), b: P('bedroll'), p: P('cauldron', true), x: P('crate', true) } },
   pen: { rows: ['ffffff', 'f.h..f', 'f...hf', 'ft...f', 'ff..ff'], key: { f: FENCE, h: P('hay', true), t: P('trough', true) } },
-  field: { rows: ['fffffff', 'f,,,,,f', 'f,,S,,f', 'f,,,,,f', 'fff.fff'], key: { f: FENCE, ',': DECO, S: P('scarecrow', true) } },
+  // (a fenced field has something growing in it: wheat here, corn at a farmstead)
+  field: { rows: ['fffffff', 'f,,,,,f', 'f,,S,,f', 'f,,,,,f', 'fff.fff'], key: { f: FENCE, ',': P('wheat'), S: P('scarecrow', true) } },
   shrine: { rows: ['b.S.b', '.....', 'l.n.l'], key: { S: P('statue', true), b: P('flowerbed', true), l: P('torch', true), n: P('bench', true) } },
   graves: { rows: ['g.c.g', '.....', 'c.g.c', '..l..'], key: { g: P('gravestone', true), c: P('grave-cross', true), l: P('torch', true) } },
   graveyard: { rows: ['fffffff', 'fg.c.gf', 'f.....f', 'fc.g.cf', 'f.....f', 'fff.fff', '.l...l.'], key: { f: FENCE, g: P('gravestone', true), c: P('grave-cross', true), l: P('lamp', true) } },
@@ -355,7 +356,7 @@ const SCENES: Record<string, { rows: string[]; key: Record<string, SceneCell> }>
   bones: { rows: ['k...s', '..d..', 's.k..'], key: { k: P('skulls'), s: P('bone-heap'), d: P('debris') } },
   warcamp: { rows: ['T...T', '..F..', 'r.R.x'], key: { T: P('camp-tent', true), F: P('campfire', true), r: P('weapon-rack', true), R: P('red-banner', true), x: P('crate', true) } },
   well: { rows: ['.b.', 'xWx'], key: { W: P('well', true), b: P('bucket'), x: P('barrel', true) } },
-  farmstead: { rows: ['ffffff..', 'f,,,,f.h', 'f,S,,f..', 'f,,,,f.W', 'ff.fff..'], key: { f: FENCE, ',': DECO, S: P('scarecrow', true), h: P('hay', true), W: P('wagon', true) } },
+  farmstead: { rows: ['ffffff..', 'f,,,,f.h', 'f,S,,f..', 'f,,,,f.W', 'ff.fff..'], key: { f: FENCE, ',': P('corn'), S: P('scarecrow', true), h: P('hay', true), W: P('wagon', true) } },
   orchard: { rows: ['T.T.T', '.....', 'T.T.T', '..b..'], key: { T: TREE, b: P('basket') } },
   hunters: { rows: ['.T.r.', '..F..', 'b.L.x'], key: { T: P('camp-tent', true), r: P('rack', true), F: P('campfire', true), b: P('bedroll'), L: P('log'), x: P('crate', true) } },
   quarry: { rows: ['rr.rr', 'r.k.r', '.x.W.'], key: { r: ROCK, k: P('rubble'), x: P('crate', true), W: P('wagon', true) } },
@@ -2053,6 +2054,7 @@ export function wildRegion(base: Omit<RegionDef, 'kind' | 'map' | 'markers' | 'p
   // (a land the story still goes through has no road into a retired one: data/retired.ts)
   const spec: ZoneSpec = isRetired(base.id) ? given : { ...given, exits: liveExits(base.id, given.exits) };
   let made: GeneratedZone | null = null;
+  let walled: GeneratedZone['placed'] | null = null;
   const get = (): GeneratedZone => (made ??= generateZone({ ...spec, landmarks: LANDMARKS[base.id] ?? [], great: [...(GREAT_IN[base.id] ?? []), ...(DOOR_GROUND[base.id] ?? [])] }, base.theme));
   return {
     ...base,
@@ -2074,7 +2076,8 @@ export function wildRegion(base: Omit<RegionDef, 'kind' | 'map' | 'markers' | 'p
       return get().map;
     },
     get placed() {
-      return get().placed;
+      const blocks = DOOR_BLOCKS[base.id];
+      return blocks ? (walled ??= withDoorGround(get().placed, blocks.to, blocks.rects)) : get().placed;
     },
   };
 }

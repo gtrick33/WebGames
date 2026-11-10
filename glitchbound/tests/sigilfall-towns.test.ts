@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { builtProp } from '../src/games/sigilfall/render3d/propsBuilt';
 import { gunzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { GREAT, GREAT_IN } from '../src/games/sigilfall/data/greatworks';
@@ -68,7 +69,8 @@ describe('Sigilfall great works', () => {
     const meshes = { ...modelsOf('nature'), ...modelsOf('town'), ...modelsOf('indoor'), ...modelsOf('hero') };
     for (const [id, work] of Object.entries(GREAT)) {
       for (const p of work.parts) {
-        if (p.m) expect(meshes[p.m.split('#')[0]!], `${id}: ${p.m}`).toBeTruthy();
+        // (a model from a pack, or one built in code: render3d/propsBuilt.ts)
+        if (p.m) expect(p.m.startsWith('built_') ? builtProp(p.m) : meshes[p.m.split('#')[0]!], `${id}: ${p.m}`).toBeTruthy();
         if (p.kit) expect(existsSync(`public/games/sigilfall/3d/k/${p.kit}.pack`), `${id}: ${p.kit}`).toBe(true);
       }
     }

@@ -16,6 +16,10 @@ export interface GateLook {
   /** The color of the land beyond (its banners and its lamps). */
   light: string;
   seed: number;
+  /** How far its wall runs off from each tower, in tiles (9 where it's not said). */
+  wings?: number;
+  /** A way down, not a way through: its arch is full of dark. */
+  shut?: boolean;
 }
 
 export interface GateBuilt {
@@ -71,8 +75,9 @@ export function stoneGate(look: GateLook): GateBuilt {
     b.brazier((x0 + x1) / 2, 0, tall + 0.34, 1.5);
     flames.push({ x: (x0 + x1) / 2, z: 0, y: tall + 0.95, size: 1.15 });
     // the wall running off from it
-    const w0 = s < 0 ? x0 - 9 : x1;
-    const w1 = s < 0 ? x0 : x1 + 9;
+    const wings = look.wings ?? 9;
+    const w0 = s < 0 ? x0 - wings : x1;
+    const w1 = s < 0 ? x0 : x1 + wings;
     b.box(w0, -0.5, w1, 0.5, 0, 3.0, mul(stone, 0.94), dark, mul(stone, 0.58));
     b.merlons(w0, 0.5, w1, 0.5, 3.0, 0.3, 0.22, stone, dark, hi);
     for (const y of [1.0, 2.0]) b.faceS(w0, w1, 0.505, y, y + 0.08, dark);
@@ -84,13 +89,21 @@ export function stoneGate(look: GateLook): GateBuilt {
     b.box(s < 0 ? -half : half - 0.5, -0.7, s < 0 ? -half + 0.5 : half, 0.7, 2.9, 3.5, stone, dark, stone);
     b.box(s < 0 ? -half : half - 0.22, -0.7, s < 0 ? -half + 0.22 : half, 0.7, 2.3, 2.9, stone, dark, stone);
   }
-  b.box(-0.3, -0.76, 0.3, 0.76, 3.3, 4.62, trim, mul(trim, 0.7), mul(trim, 1.1));
+  // (a keystone a little proud of the arch, of its own stone: not a pale post standing up out of it)
+  b.box(-0.34, -0.76, 0.34, 0.76, 3.5, 4.5, mul(stone, 1.1), stone, mul(stone, 0.6));
+  b.faceS(-0.34, 0.34, 0.765, 3.5, 3.58, trim);
+  // (a way down: the dark behind the arch, going back into it)
+  if (look.shut) {
+    const black: C = [0.02, 0.016, 0.026];
+    b.faceS(-half, half, -0.5, 0, 3.5, black, mul(stone, 0.16));
+    b.flat(-half, -0.5, half, 0.7, 0.02, mul(stone, 0.2));
+  }
   // the portcullis drawn up: its teeth showing under the arch
   const iron: C = [0.16, 0.15, 0.18];
   for (let x = -half + 0.7; x <= half - 0.7; x += 0.42) b.post(x, 0, 0.05, 0.0, 3.5, 3.05, 4, iron, iron);
   // a great lamp of the next land's light hung in the crown of the arch
   const from = b.m.nor.length;
-  b.box(-0.2, 0.77, 0.2, 0.8, 3.72, 4.2, cloth, cloth, cloth);
+  b.box(-0.16, 0.77, 0.16, 0.8, 3.78, 4.14, cloth, cloth, cloth);
   alight(b, from);
   glows.push({ x: 0, z: 0.9, y: 3.9, color: look.light, size: 26 });
   return { b, flames, glows };

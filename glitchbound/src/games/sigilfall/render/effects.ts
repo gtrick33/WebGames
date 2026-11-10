@@ -1,5 +1,5 @@
 import { clamp, hash2, TAU } from '../core/math';
-import { wayLight } from '../render3d/land';
+import { DAY_LIGHT, DOOR_LIGHT, zoneLight } from './zoneLight';
 import type { MountDef } from '../data/mounts';
 import { mountDef, riddenMount, wornLooks } from '../progress/wardrobe';
 import type { ClassId } from '../data/types';
@@ -695,40 +695,64 @@ export class Effects {
   }
 
   /**
-   * Over each road out of a land (not a door, not in a dungeon): great beams of the next land's light thrown up out of
-   * its gate, fanned and slowly sweeping, as over a stage, and a bloom of it round the gate's crown. The way on is seen
-   * from far across the land, over its own gatehouse, and looks like somewhere worth going.
+   * The light at the ways through: out of each road's gate the next land's own light spills along the ground in that
+   * land's color, soft on every side (it lies on the ground in the world, so a tree or a wall stands in it and hides it
+   * as it would, and it has no edge to be cut off at); a way down in the middle of a land has its deep place's light at
+   * its mouth; and a house that can be gone into has lamplight falling out of its door onto the step (no arrow painted
+   * on the ground: a door you can use is the one with a light in it). From inside, daylight comes in at the door.
    */
   private wayLights(w: World, sc: EffectsScene): void {
-    if (w.region.kind === 'dungeon' || w.region.interior) return;
     const fx = sc.fx;
-    const groups: { to: string; x: number; y: number; n: number }[] = [];
+    const time = sc.time;
+    const dungeon = w.region.kind === 'dungeon';
+    const inside = !!w.region.interior || dungeon;
+    const mw = w.map.w * TILE;
+    const mh = w.map.h * TILE;
+    /** Light from a source at (x, y) spilling toward `into` (radians: 0 east, a quarter turn south), `long` px. */
+    const spill = (x: number, y: number, into: number, long: number, wide: number, color: string, alpha: number, seed: number): void => {
+      // (the source is a quarter of the way in from the quad's near edge: fx3d.ts spill)
+      fx.put({ kind: FX.spill, x: x + Math.cos(into) * long * 0.25, y: y + Math.sin(into) * long * 0.25, up: 2, flat: true, w: wide, h: long, rot: into - Math.PI / 2, a: color, alpha, seed });
+    };
+    const groups: { to: string; door: boolean; x: number; y: number; n: number }[] = [];
     for (const x of w.exits) {
-      if (x.door) continue;
-      const g = groups.find((o) => o.to === x.to && Math.abs(o.x / o.n - x.x) < TILE * 4 && Math.abs(o.y / o.n - x.y) < TILE * 4);
+      const g = groups.find((o) => o.to === x.to && o.door === !!x.door && Math.abs(o.x / o.n - x.x) < TILE * 4 && Math.abs(o.y / o.n - x.y) < TILE * 4);
       if (g) {
         g.x += x.x;
         g.y += x.y;
         g.n++;
-      } else groups.push({ to: x.to, x: x.x, y: x.y, n: 1 });
+      } else groups.push({ to: x.to, door: !!x.door, x: x.x, y: x.y, n: 1 });
     }
     for (const g of groups) {
       const x = g.x / g.n;
       const y = g.y / g.n;
-      if (!sc.near(x, y) && !sc.near(x, y + 200) && !sc.near(x, y - 200)) continue;
-      // (only a gate at the land's edge)
-      if (Math.min(x, y, w.map.w * TILE - x, w.map.h * TILE - y) > TILE * 8) continue;
-      const col = wayLight(g.to);
-      const time = sc.time;
-      const breathe = 0.5 + Math.sin(time * 1.4 + x * 0.02) * 0.5;
-      fx.put({ kind: FX.glow, x, y, up: 96, w: 300, a: col, alpha: 0.3 + breathe * 0.08, over: true });
-      fx.put({ kind: FX.glow, x, y, up: 96, w: 110, a: '#fffbe8', alpha: 0.28, over: true });
-      for (let i = 0; i < 3; i++) {
-        const u = i / 2 - 0.5;
-        const lean = u * 0.8 + Math.sin(time * 0.5 + i * 1.7 + x * 0.01) * 0.16;
-        const long = 170 + Math.sin(time * 0.8 + i * 2.3) * 18;
-        // (a beam standing on its foot at the gate's crown, leaned by `lean`)
-        fx.put({ kind: FX.shaft, x: x + Math.sin(lean) * long * 0.5, y, up: 100 + Math.cos(lean) * long * 0.5, w: 46 + Math.abs(u) * 14, h: long, rot: -lean, a: col, alpha: 0.2 + breathe * 0.07, t: 0.4, seed: i * 0.37 + x * 0.01, over: true });
+      if (!sc.near(x, y) && !sc.near(x, y + 220) && !sc.near(x, y - 220) && !sc.near(x + 220, y) && !sc.near(x - 220, y)) continue;
+      const breathe = 0.5 + Math.sin(time * 1.3 + x * 0.02) * 0.5;
+      const seed = (x * 0.013 + y * 0.007) % 1;
+      if (inside) {
+        // the way back out: daylight on the floor at the door
+        if (g.door) spill(x, y + 6, -Math.PI / 2, 120, 96, DAY_LIGHT, 0.5 + breathe * 0.08, seed);
+        else fx.put({ kind: FX.glow, x, y, up: 2, flat: true, w: 110, a: DAY_LIGHT, alpha: 0.42 + breathe * 0.08 });
+        continue;
+      }
+      if (g.door) {
+        // a house: its lamplight out of the door and down the step, and the door itself lit
+        spill(x, y - 12, Math.PI / 2, 132, 104, DOOR_LIGHT, 0.62 + breathe * 0.1, seed);
+        fx.put({ kind: FX.glow, x, y: y - 14, up: 15, w: 40, a: DOOR_LIGHT, alpha: 0.3 + breathe * 0.06, over: true });
+        continue;
+      }
+      const col = zoneLight(g.to);
+      const least = Math.min(x, y, mw - x, mh - y);
+      if (least < TILE * 8) {
+        // a gate at the land's edge: into the land, away from that edge
+        const into = least === y ? Math.PI / 2 : least === mh - y ? -Math.PI / 2 : least === x ? 0 : Math.PI;
+        // (its source under the gate's arch, which stands a tile in from the edge: not out past the land's end)
+        const gx = x + Math.cos(into) * TILE * 1.1;
+        const gy = y + Math.sin(into) * TILE * 1.1;
+        spill(gx, gy, into, 620, 600, col, 0.42 + breathe * 0.06, seed);
+        fx.put({ kind: FX.glow, x: gx, y: gy, up: 70, w: 230, a: col, alpha: 0.13 + breathe * 0.04, over: true });
+      } else {
+        // a way down in the middle of the land: its doors face south
+        spill(x, y - 10, Math.PI / 2, 330, 320, col, 0.42 + breathe * 0.06, seed);
       }
     }
   }

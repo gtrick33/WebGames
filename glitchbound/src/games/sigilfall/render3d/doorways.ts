@@ -1,4 +1,6 @@
 import { hash2 } from '../core/math';
+import type { ThemeLook } from '../data/themes';
+import { stoneGate } from './gateways';
 import { Build, mul, type C } from './build';
 import { hexRgb } from './kits';
 import type { Mesher } from './land';
@@ -311,10 +313,87 @@ export function tear(color: string, a: number, h: number, zf: number): Build {
   return b;
 }
 
+/* ------------------------------------------------------------------ a king's barrow */
+
+export interface MoundLook {
+  /** Its turf: in shade at its foot, on its sides, in the light on top. */
+  turf: readonly [string, string, string];
+  stone: string;
+  /** The light in its door. */
+  light: string;
+  seed: number;
+}
+
+/**
+ * A king's barrow: a great round mound of turf with its door in a front of dressed stone let into its south side,
+ * wing walls stepping down from it to hold the earth back, and kerbstones round its foot. The door is the dark between
+ * two leaning jambs under one great lintel, as the old tombs are; a door standing by itself in a field is not a tomb.
+ */
+export function barrow(look: MoundLook): Build {
+  const b = new Build();
+  const dark = rgb(look.turf[0]);
+  const mid = rgb(look.turf[1]);
+  const lit = rgb(look.turf[2]);
+  const stone = rgb(look.stone);
+  const stoneDark = mul(stone, 0.6);
+  const cz = -3.0;
+  const R = 3.7;
+  // the mound, in bands from its foot to its crown
+  const bands: readonly (readonly [number, number])[] = [[R, 0], [R * 0.95, 0.55], [R * 0.82, 1.3], [R * 0.6, 2.1], [R * 0.32, 2.65], [0.02, 2.9]];
+  for (let i = 0; i + 1 < bands.length; i++) {
+    const [r0, y0] = bands[i]!;
+    const [r1, y1] = bands[i + 1]!;
+    const t = i / (bands.length - 2);
+    const c0 = [0, 1, 2].map((c) => dark[c]! + (lit[c]! - dark[c]!) * t * 0.9);
+    const c1 = [0, 1, 2].map((c) => mid[c]! + (lit[c]! - mid[c]!) * Math.min(1, t * 1.2));
+    b.post(0, cz, r0, r1, y0, y1, 16, c0, c1, 0, 0, Math.PI / 16);
+  }
+  // the stone front: a wall let into the slope, the doorway in it
+  b.box(-2.0, -1.5, 2.0, -0.42, 0, 2.75, stone, stoneDark, mul(stone, 0.7));
+  for (const y of [0.9, 1.8]) b.faceS(-2.0, 2.0, -0.415, y, y + 0.07, stoneDark);
+  const black: C = [0.016, 0.014, 0.024];
+  b.faceS(-0.8, 0.8, -0.41, 0, 2.0, black, mul(rgb(look.light), 0.2));
+  // its jambs, leaning in, and the lintel across them
+  for (const s of [-1, 1] as const) b.post(s * 0.98, -0.3, 0.2, 0.17, 0, 2.05, 4, stoneDark, stone, s * -0.1, 0, Math.PI / 4);
+  b.box(-1.35, -0.52, 1.35, -0.1, 2.05, 2.5, mul(stone, 1.08), stoneDark, mul(stone, 0.8));
+  // wing walls stepping down each side
+  for (const s of [-1, 1] as const) {
+    for (let i = 0; i < 3; i++) {
+      const x0 = 2.0 + i * 0.75;
+      const h = 2.0 - i * 0.62;
+      b.box(s < 0 ? -x0 - 0.75 : x0, -1.3 + i * 0.12, s < 0 ? -x0 : x0 + 0.75, -0.5 + i * 0.12, 0, h, stone, stoneDark, mul(stone, 0.72));
+    }
+  }
+  // kerbstones round its foot (not across its front)
+  const N = 16;
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2 + 0.2;
+    const x = Math.cos(a) * (R + 0.2);
+    const z = cz + Math.sin(a) * (R + 0.2);
+    if (z > -1.6 && Math.abs(x) < 4.6) continue;
+    const h = 0.55 + hash2(i, look.seed, 5) * 0.5;
+    b.post(x, z, 0.24, 0.16, 0, h, 5, stoneDark, stone, (hash2(i, look.seed, 7) - 0.5) * 0.12, 0, hash2(i, look.seed, 9) * 3);
+  }
+  return b;
+}
+
+/** A hill with a hole in it, the hole framed in timber: somebody lives in there, and props the roof. */
+function timbered(b: Build, wide: number, high: number): Build {
+  const wood = rgb('#6e5236');
+  const dark = rgb('#40301e');
+  const hw = wide / 2;
+  for (const s of [-1, 1] as const) b.post(s * (hw - 0.08), -0.32, 0.2, 0.17, 0, high - 0.2, 6, dark, wood, s * -0.06, 0);
+  b.box(-hw - 0.3, -0.52, hw + 0.3, -0.14, high - 0.42, high - 0.06, wood, dark, mul(wood, 0.8));
+  // (the ends of the roof-beams showing over it)
+  for (let x = -hw + 0.3; x <= hw - 0.3; x += 0.62) b.box(x - 0.1, -0.5, x + 0.1, -0.06, high - 0.06, high + 0.12, mul(wood, 0.9), dark, wood);
+  return b;
+}
+
 /* ------------------------------------------------------------------ which dungeon has which */
 
 export interface Doorway {
-  build: () => Build;
+  /** Built in the colors of the land it stands in, where it is of that land's own ground. */
+  build: (land: ThemeLook) => Build;
   /** Fires by it (east, up, south of the door, in tiles; how strong). */
   flames?: readonly [number, number, number, number][];
   /** A glow in it. */
@@ -356,6 +435,40 @@ export const DOORWAYS: Record<string, Doorway> = {
     build: () => withBowls(caveMouth({ ...CAVE, top: '#9aa49c', face: '#6a7674', foot: '#3e4a4c', lip: '#aab4aa', throat: '#10282e', teeth: '#5e6a68', seed: 27 }), [[1.7, 0.35]], 1.4),
     flames: [[1.7, 0.66, 0.35, 0.46]],
     glow: { color: '#60b0b8', x: 0, y: 0.4, z: -1.4, size: 16 },
+  },
+  // the Kings' Mound: turf of the barrow-land's own grey grass, the old kings' cold light in its door
+  'barrow-of-kings': {
+    build: (land) => withBowls(barrow({ turf: [land.ground.grass[0], land.ground.grass[2], land.ground.grass[4]], stone: '#8c869c', light: '#8ab4ff', seed: 4 }), [[-1.7, 0.3], [1.7, 0.3]], 1.5),
+    flames: [[-1.7, 0.72, 0.3, 0.5], [1.7, 0.72, 0.3, 0.5]],
+    glow: { color: '#8ab4ff', x: 0, y: 1.0, z: -0.5, size: 20 },
+  },
+  // the Gallows Gang's hold: a hole dug into a green hill and propped with stolen timber, fires at its mouth
+  'gallows-keep': {
+    build: (land) => withBowls(timbered(caveMouth({ wide: 3.0, high: 2.5, top: land.ground.grass[3], face: land.ground.grass[1], foot: '#4a3e2c', lip: '#7a6a4c', throat: '#1c1408', teeth: '#5a4c36', seed: 31 }), 3.0, 2.5), [[-2.3, 0.35], [2.3, 0.35]], 1.6),
+    flames: [[-2.3, 0.76, 0.35, 0.58], [2.3, 0.76, 0.35, 0.58]],
+    glow: { color: '#ffb466', x: 0, y: 0.6, z: -1.4, size: 22 },
+  },
+  // Highwall's sally port: a gatehouse of the fortress's own stone with a length of its wall either side, the way in
+  // under its arch
+  'siege-of-highwall': {
+    build: () => {
+      const g = stoneGate({ span: 2.4, body: '#8a8078', trim: '#b8a888', light: '#c8442c', seed: 7, wings: 5, shut: true }).b;
+      // (it stands north of the door's tile, its arch over the step)
+      for (let i = 2; i < g.m.pos.length; i += 3) g.m.pos[i] = g.m.pos[i]! - 1.0;
+      return g;
+    },
+    flames: [[-2.3, 6.15, -1.0, 1.15], [2.3, 6.15, -1.0, 1.15]],
+    glow: { color: '#ffb070', x: 0, y: 1.6, z: -0.6, size: 22 },
+  },
+  // Duskspire's gate: the citadel's own pale stone, a length of its curtain wall either side, and the dark under its arch
+  duskspire: {
+    build: () => {
+      const g = stoneGate({ span: 2.4, body: '#8a86a0', trim: '#c0c8e0', light: '#8f9cff', seed: 11, wings: 4, shut: true }).b;
+      for (let i = 2; i < g.m.pos.length; i += 3) g.m.pos[i] = g.m.pos[i]! - 1.0;
+      return g;
+    },
+    flames: [[-2.3, 6.15, -1.0, 1.15], [2.3, 6.15, -1.0, 1.15]],
+    glow: { color: '#b4acff', x: 0, y: 1.6, z: -0.6, size: 22 },
   },
   crypt: {
     build: () => cryptStair({ stone: '#8a8680', cap: '#a4a098', deep: 2.3, seed: 2 }),

@@ -49,6 +49,7 @@ export const FX = {
   ball: 34,
   rune: 35,
   flake: 36,
+  spill: 37,
 } as const;
 export type FxKind = (typeof FX)[keyof typeof FX];
 
@@ -529,6 +530,25 @@ const fragment = /* glsl */ `
     return vec4(c * a, a);
   }
 
+  // light spilling along the ground out of a gateway or a door: its source a quarter of the way in from the quad's
+  // near edge, a soft fan ahead of it, a little of it round the source on every side (so it never ends on a line behind
+  // the gate), faint slow streaks in it as through dust, and all of it gone well before the quad's edges
+  vec4 spill(vec2 uv, float seed) {
+    vec2 p = vec2(uv.x, uv.y + 0.5);
+    float d = length(p);
+    float ang = atan(p.x, p.y);
+    float cone = smoothstep(1.35, 0.15, abs(ang));
+    float fall = pow(max(0.0, 1.0 - d / 1.45), 2.0);
+    float streak = 0.74 + 0.26 * fbm(vec2(ang * 4.0 + seed * 7.0, uTime * 0.1 + seed * 3.0));
+    // (the fan fades in a little way out from its source: at the source itself a fan is a hard-edged point, so there
+    // the light is only the round glow)
+    float fan = cone * fall * streak * smoothstep(0.02, 0.4, d);
+    float halo = exp(-d * d * 6.0) * 0.42;
+    float edge = smoothstep(1.0, 0.72, abs(uv.x)) * smoothstep(1.0, 0.8, abs(uv.y));
+    float k = (fan + halo) * edge;
+    return vec4(vA.rgb * k, k * 0.06);
+  }
+
   // a shaft of light from high up, fading toward its top
   vec4 shaft(vec2 uv, float t, float seed) {
     float x = abs(uv.x);
@@ -748,7 +768,8 @@ const fragment = /* glsl */ `
     else if (kind < 33.5) o = trapJaws(vUv, t);
     else if (kind < 34.5) o = ironBall(vUv);
     else if (kind < 35.5) o = rune(vUv, t, seed);
-    else o = flake(vUv, seed);
+    else if (kind < 36.5) o = flake(vUv, seed);
+    else o = spill(vUv, seed);
     if (o.a <= 0.002 && dot(o.rgb, o.rgb) < 0.0001) discard;
     gl_FragColor = o * vA.a;
   }`;

@@ -389,7 +389,10 @@ export class World {
     // arriving through an exit: appear just inside the exit that leads back where we came from
     if (o.from) {
       const back = this.map.markers.find((m) => m.marker.kind === 'exit' && m.marker.to === o.from);
-      if (back) spawn = this.insideOf(markerPos(back), back.marker.kind === 'exit' && back.marker.door ? (this.region.interior ? [0, -1] : [0, 1]) : undefined);
+      // (out of a house, or up out of a deep place: in front of its door, which faces south. Beside it, the way on can
+      // lie straight back across the door's own tile, and the hero walks in again)
+      const south = back?.marker.kind === 'exit' && (back.marker.door ? !this.region.interior : this.region.kind !== 'dungeon' && REGIONS[o.from]?.kind === 'dungeon');
+      if (back) spawn = this.insideOf(markerPos(back), south ? [0, 1] : back.marker.kind === 'exit' && back.marker.door ? [0, -1] : undefined);
     }
     this.checkpoint = { ...spawn };
     this.storyState = regionState(this.region, this.storyHero);

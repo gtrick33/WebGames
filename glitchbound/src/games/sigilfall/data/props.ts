@@ -25,6 +25,8 @@ export interface PropDef {
   box?: boolean;
   /** A stone hero this tall stands on it. */
   hero?: number;
+  /** A pine that keeps its green whatever the land's leaves have turned to (render3d/land.ts colorsFor). */
+  evergreen?: boolean;
 }
 
 export const PROPS: Record<string, PropDef> = {
@@ -136,8 +138,9 @@ export const PROPS: Record<string, PropDef> = {
   spores: { m: 'mushroom_redGroup', w: 24, d: 24, h: 14 },
   thorns: { m: 'Bush_4_D', w: 40, d: 30, h: 18, tint: '#a07a9a' },
   // what a land is known by, seen from far off
-  'ancient-oak': { m: 'Tree_7_B', w: 130, d: 130, h: 250 },
-  'ancient-pine': { m: 'tree_pine_orange_large', w: 130, d: 130, h: 220 },
+  // (an oak old enough to be a landmark is broad before it is tall: the widest-crowned tree of the set, not its tallest)
+  'ancient-oak': { m: 'Tree_3_A', w: 190, d: 190, h: 200 },
+  'ancient-pine': { m: 'tree_pine_orange_large', w: 130, d: 130, h: 220, evergreen: true },
   'dead-colossus': { m: 'tree_dead_large', w: 110, d: 80, h: 230, tint: '#6a5a50' },
   lighthouse: { m: 'b_tower_B', w: 84, d: 84, h: 200 },
   'water-mill': { m: 'b_watermill', w: 110, d: 110, h: 130 },
