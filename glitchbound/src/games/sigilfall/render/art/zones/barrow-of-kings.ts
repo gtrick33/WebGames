@@ -7,6 +7,44 @@ import type { ZoneArt } from '.';
  */
 export const BARROW_OF_KINGS_ART: ZoneArt = {
   foes: {
+    // Gloomwing, the Lamp-Eater: the kings' crowned barrow-raven (sim/patterns/barrow-of-kings.ts)
+    gloomwing: {
+      pal: { c: '#d8a830', C: '#ffd27a', k: '#2e2838', e: '#e8e0ff', b: '#4a4048', w: '#1e1a28', W: '#4a4058', v: '#6a5a8a' },
+      frames: [
+        [
+          '.........ccc.......',
+          '........cCCCc......',
+          '.........kkk.......',
+          '........kkkkkbb....',
+          '.......kkekkkbbb...',
+          'ww....kkkkkkk......',
+          'wWww.kkkkkkkk......',
+          '.wWWwkkkvkkkkw.....',
+          '..wWWWkkkkkkWWww...',
+          '...wWWWkkkkWWWWWw..',
+          '....wwWkkkkWWwwww..',
+          '......kkkkkk.......',
+          '.......k..k........',
+          '......kk..kk.......',
+        ],
+        [
+          '.........ccc.......',
+          '........cCCCc......',
+          '.........kkk.......',
+          '........kkkkkbb....',
+          '.......kkekkkbbb...',
+          '.....kkkkkkkk......',
+          'ww..kkkkkkkkkw.....',
+          'wWWwkkkvkkkkWWw....',
+          '.wWWWkkkkkkWWWWw...',
+          '..wwWWkkkkWWwwww...',
+          '.....wkkkkkw.......',
+          '......kkkkkk.......',
+          '.......k..k........',
+          '......kk..kk.......',
+        ],
+      ],
+    },
     'oathsworn-guard': {
       pal: { m: '#a8b0c4', M: '#6e7690', n: '#3e445a', e: '#8fe0ff', b: '#e2dac4', B: '#a89e86', c: '#3a4a72', C: '#232c48', y: '#d8b450', s: '#8a6a3a', S: '#5a4224', k: '#c8a050', w: '#d8dce6', W: '#8a90a6' },
       frames: [

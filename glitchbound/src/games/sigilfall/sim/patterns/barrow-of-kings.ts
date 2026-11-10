@@ -3,6 +3,7 @@ import { hurtPlayer } from '../combat';
 import { castRay, circleHitsWall, moveCircle, tileAt } from '../map';
 import type { Enemy, Field, Telegraph } from '../types';
 import type { World } from '../world';
+import { fighting, roomBox } from './arena';
 import type { PatternFn } from './kit';
 
 /**
@@ -209,7 +210,7 @@ function tickRime(w: World, s: Fight, dt: number): void {
 
 /* ------------------------------------------------------------------ the patterns */
 
-export const BARROW_OF_KINGS_PATTERNS: Record<string, PatternFn> = {
+const FIRST_PATTERNS: Record<string, PatternFn> = {
   /**
    * Hrodric's crown pulses: rings of grave-frost roll out from where he stands, one after another
    * (`rings` of `width`, each shown for `wind` s, `gap` s apart). Step into a ring that has already
@@ -446,3 +447,192 @@ export const BARROW_OF_KINGS_PATTERNS: Record<string, PatternFn> = {
     } else if (pt.t >= wind + 0.3) k.end();
   },
 };
+
+/* ------------------------------------------------------------ Gloomwing, the Lamp-Eater */
+
+/**
+ * Gloomwing, the Lamp-Eater (the Oathsworn Gallery), the kings' great barrow-raven, grown huge on the barrow's light and
+ * wearing a dead king's crown. The gallery is lit
+ * by four grave-lamps, each lighting the quarter of the hall nearest it (`dark`). She dives on a lamp and devours its
+ * flame (`feast`), and that quarter goes dark: the dark gnaws at whoever stands in it, and she shelters there, a
+ * blow mostly lost in the gloom. Stand at a dark lamp to rekindle it; left alone, it kindles again in time.
+ *
+ * The lamps outlive the pattern that darkens them, so they are kept per boss here and run by a small ticker
+ * (World.after, once a step) for as long as the fight lasts.
+ */
+
+const FLAME = '#ffc870';
+const GLOOM = '#4a3a6a';
+
+interface Lamp {
+  x: number;
+  y: number;
+  lit: boolean;
+  /** When it kindles again on its own, and how far the hero has rekindled it. */
+  back: number;
+  kindle: number;
+}
+
+interface Gloom {
+  last: number;
+  lamps: Lamp[];
+  /** The share of a blow lost in the dark; how long the dark has gnawed at the hero; when it last did. */
+  cut: number;
+  gnaw: number;
+  gnawT: number;
+  lastHp: number;
+  sayT: number;
+  fxT: number;
+}
+
+const GLOOMS = new WeakMap<Enemy, Gloom>();
+
+function gloom(w: World, e: Enemy): Gloom {
+  let s = GLOOMS.get(e);
+  if (!s) {
+    const box = roomBox(w, e);
+    const lamps: Lamp[] = w.props
+      .filter((pr) => pr.prop === 'grave-lamp' && pr.x > box.x0 && pr.x < box.x1 && pr.y > box.y0 && pr.y < box.y1 && w.map.room[tileAt(w.map, pr.x, pr.y)] === e.room + 1)
+      .map((pr) => ({ x: pr.x, y: pr.y, lit: true, back: 0, kindle: 0 }));
+    s = { last: w.time, lamps, cut: 0.6, gnaw: 0, gnawT: 0, lastHp: e.hp, sayT: 0, fxT: 0 };
+    GLOOMS.set(e, s);
+    w.after(0, () => gloomTick(w, e));
+  }
+  return s;
+}
+
+/** The lamp whose quarter of the hall a point is in (the nearest one). */
+const quarterOf = (s: Gloom, x: number, y: number): Lamp | undefined => {
+  let best: Lamp | undefined;
+  let bd = Infinity;
+  for (const l of s.lamps) {
+    const d = dist(l.x, l.y, x, y);
+    if (d < bd) {
+      bd = d;
+      best = l;
+    }
+  }
+  return best;
+};
+const inDark = (s: Gloom, x: number, y: number): boolean => quarterOf(s, x, y)?.lit === false;
+
+function gloomTick(w: World, e: Enemy): void {
+  const s = GLOOMS.get(e);
+  if (!s) return;
+  if (!fighting(w, e)) {
+    w.dimmed = 0;
+    GLOOMS.delete(e);
+    return;
+  }
+  const dt = Math.max(0, w.time - s.last);
+  s.last = w.time;
+  const p = w.player;
+  // the lamps: their light, a dark one's gloom, and one kindling again
+  s.fxT -= dt;
+  const show = s.fxT <= 0;
+  if (show) s.fxT = 0.3;
+  for (const l of s.lamps) {
+    if (!l.lit) {
+      const near = !p.dead && dist(l.x, l.y, p.x, p.y) < 30;
+      l.kindle = near ? l.kindle + dt : Math.max(0, l.kindle - dt);
+      if (near && show) w.text(l.x, l.y - 34, `Kindling... ${Math.min(100, Math.round((l.kindle / 1.4) * 100))}%`, FLAME, false);
+      if (l.kindle >= 1.4 || w.time >= l.back) {
+        l.lit = true;
+        l.kindle = 0;
+        w.fxBurst(l.x, l.y - 30, FLAME, 16, 14);
+        w.text(l.x, l.y - 40, 'The lamp burns again!', FLAME, false);
+      }
+    }
+    if (show) {
+      if (l.lit) w.addFx({ kind: 'glow', x: l.x, y: l.y - 30, life: 0.34, size: 26, color: FLAME });
+      else w.addFx({ kind: 'smoke', x: l.x, y: l.y - 24, vx: 0, vy: -12, life: 0.6, size: 6, color: GLOOM });
+    }
+  }
+  // in a dark quarter, the dark gnaws, more the longer the hero stays in it
+  const dark = !p.dead && inDark(s, p.x, p.y);
+  w.dimmed = Math.max(0, Math.min(1, w.dimmed + (dark ? dt * 2 : -dt * 2)));
+  if (dark) {
+    s.gnaw += dt;
+    s.gnawT -= dt;
+    if (s.gnawT <= 0) {
+      s.gnawT = 0.5;
+      const k = Math.min(2.5, 1 + Math.floor(s.gnaw / 2) * 0.5);
+      if (hurtPlayer(w, p.maxHp * 0.015 * k, { pierce: true }) && (s.sayT -= 0.5) <= 0) {
+        s.sayT = 3;
+        w.text(p.x, p.y - 30, 'The dark gnaws at you! Find the light!', '#c8b8ff', false);
+      }
+    }
+  } else s.gnaw = 0;
+  // she shelters in the dark: a blow there is mostly lost
+  const lost = s.lastHp - e.hp;
+  if (lost > 0 && e.boss!.dying <= 0 && e.hp > 0 && inDark(s, e.x, e.y)) e.hp = Math.min(e.maxHp, e.hp + lost * s.cut);
+  s.lastHp = e.hp;
+  w.after(0, () => gloomTick(w, e));
+}
+
+/** The dark: the lamps found and lit (the fight's start); `cut` of a blow is lost while she shelters in the dark. */
+const dark: PatternFn = (w, e, _dt, k) => {
+  const s = gloom(w, e);
+  s.cut = k.num('cut', 0.6);
+  k.end();
+};
+
+/**
+ * The feast: she dives on the lit lamp `pick` (0 nearest her, 1 nearest the hero), shown for `wind` s, devours its
+ * flame (a burst of gloom round it, `r`), and its quarter is dark for `dark` s unless rekindled; `count` lamps in turn.
+ */
+const feast: PatternFn = (w, e, dt, k) => {
+  const { pt } = k;
+  const p = w.player;
+  const s = gloom(w, e);
+  const wind = k.num('wind', 0.8);
+  if (pt.step === 0) {
+    const lit = s.lamps.filter((l) => l.lit);
+    if (!lit.length) {
+      k.end();
+      return;
+    }
+    const by = k.num('pick', 0) ? p : e;
+    const l = lit.reduce((a, b) => (dist(a.x, a.y, by.x, by.y) <= dist(b.x, b.y, by.x, by.y) ? a : b));
+    pt.data.lx = l.x;
+    pt.data.ly = l.y;
+    pt.data.done = pt.data.done ?? 0;
+    const a = Math.atan2(l.y - e.y, l.x - e.x);
+    const len = Math.max(10, dist(e.x, e.y, l.x, l.y) - 18);
+    pt.data.a = a;
+    pt.data.left = len;
+    w.addTelegraph({ shape: 'line', x: e.x, y: e.y, r: 0, r2: e.r * 2 + 8, angle: a, len, dur: wind, dmg: 0, knock: 0, tone: 'enemy', owner: -1, linger: 0 });
+    w.addTelegraph({ shape: 'circle', x: l.x, y: l.y, r: k.num('r', 54), r2: 0, angle: 0, len: 0, dur: wind + len / 360, dmg: e.dmg * k.num('mul', 1.3), knock: 140, tone: 'rift', owner: -1, linger: 0 });
+    w.text(e.x, e.y - e.r - 16, 'The light... I hunger for the light!', '#c8b8ff', true);
+    w.sfx('windup', 0.6);
+    pt.data.t1 = pt.t;
+    pt.step = 1;
+  } else if (pt.step === 1 && pt.t >= pt.data.t1! + wind) {
+    // the dive
+    const a = pt.data.a!;
+    const step = 360 * dt;
+    const m = moveCircle(w.map, e.x, e.y, e.r, Math.cos(a) * step, Math.sin(a) * step);
+    e.x = m.x;
+    e.y = m.y;
+    pt.data.left! -= step;
+    if (pt.data.left! <= 0 || m.bx || m.by) {
+      const l = s.lamps.find((x) => x.x === pt.data.lx && x.y === pt.data.ly);
+      if (l && l.lit) {
+        l.lit = false;
+        l.kindle = 0;
+        l.back = w.time + k.num('dark', 16);
+        w.fxBurst(l.x, l.y - 28, GLOOM, 22, 18);
+        w.text(l.x, l.y - 40, 'The flame is devoured!', '#c8b8ff', true);
+        w.sfx('shadow', 0.7);
+      }
+      pt.data.done! += 1;
+      pt.data.t1 = pt.t;
+      pt.step = pt.data.done! >= k.num('count', 1) ? 9 : 0;
+    }
+  } else if (pt.step === 9 && pt.t >= pt.data.t1! + 0.4) k.end();
+};
+
+/** Gloomwing's lamps (for tests): where each stands and whether it burns. */
+export const lampsOf = (e: Enemy): readonly { x: number; y: number; lit: boolean }[] => GLOOMS.get(e)?.lamps ?? [];
+
+export const BARROW_OF_KINGS_PATTERNS: Record<string, PatternFn> = { ...FIRST_PATTERNS, 'barrow:dark': dark, 'barrow:feast': feast };

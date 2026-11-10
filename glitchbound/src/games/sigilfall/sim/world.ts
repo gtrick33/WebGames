@@ -220,6 +220,8 @@ export class World {
   delayed: { t: number; fn: () => void }[] = [];
   /** How far a boss fight has the room under water (0 dry, 1 flooded): the Drowned Priestess's flood, drawn as a sea-green wash. */
   flooded = 0;
+  /** How dark a boss fight has the hero's corner of the room (0 lit, 1 dark): Gloomwing's devoured lamps, drawn as a gloom. */
+  dimmed = 0;
   events: WorldEvent[] = [];
   procCd: Record<string, number> = {};
   flow: Int16Array;

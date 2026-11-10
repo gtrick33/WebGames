@@ -567,6 +567,11 @@ export class Renderer {
     // a crypt sets a mood, never hides the game: the far edge of the view is dim, everything can be seen. (A night
     // has no such edge: it's night everywhere, and what's lit is lit.)
     if (w.region.dark) dark.set(0.36, 11, 0, 0);
+    // a quarter of a hall whose lamp was devoured (sim/patterns/barrow-of-kings.ts): the gloom closes in
+    if (w.dimmed > 0) {
+      paint('#1a1030', 0.32 * w.dimmed);
+      dark.set(0.36 + 0.3 * w.dimmed, 11 - 4 * w.dimmed, 0, 0);
+    }
     void st;
   }
 

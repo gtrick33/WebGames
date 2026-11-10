@@ -31,6 +31,8 @@ export const PROPS: Record<string, PropDef> = {
   // the road and the yard
   lamp: { m: 'built_lamp', w: 18, d: 18, h: 50, glow: '#ffc060', light: 5 },
   lantern: { m: 'built_lantern', w: 12, d: 12, h: 18, glow: '#ffc060', light: 3 },
+  // a barrow's grave-lamp: no light of its own, a fight's effects light it (sim/patterns/barrow-of-kings.ts)
+  'grave-lamp': { m: 'post_lantern', w: 14, d: 14, h: 40, tint: '#a8a4b0' },
   torch: { m: 'built_torch', w: 12, d: 12, h: 32, flame: 0.62, flameAt: 32 },
   'iron-torch': { m: 'built_iron_torch', w: 12, d: 12, h: 32, flame: 0.62, flameAt: 32 },
   brazier: { m: 'bucket', w: 18, d: 18, h: 20, tint: '#7c7a8a', flame: 1, flameAt: 20 },
@@ -201,6 +203,7 @@ export const PROPS: Record<string, PropDef> = {
 const BODIES: Record<string, [number, number]> = {
   lamp: [4, 4],
   lantern: [4, 4],
+  'grave-lamp': [6, 6],
   torch: [4, 4],
   'iron-torch': [4, 4],
   flag: [4, 4],

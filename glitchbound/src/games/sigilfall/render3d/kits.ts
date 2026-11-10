@@ -287,6 +287,15 @@ put('beetle', { k: 'treant', tint: BARK, size: 0.6, ...SMASH });
 put('scarab-swarm tomb-scarab', { k: 'scarab', size: 0.72 });
 put('marsh-strider', { k: 'strider' });
 put('blood-mosquito glimmer-moth rotwood-pod', { k: 'moth', size: 0.8, float: 0.4 });
+// the Barrow's Lamp-Eater: the kings' great barrow-raven, black with a violet sheen, a dead king's gold crown on its head
+put('gloomwing', {
+  k: 'bird',
+  tint: '#2e2838',
+  gain: 1.25,
+  size: 2,
+  float: 0.6,
+  gear: [{ m: 'Necromancer_Crown', y: 0.56, z: 0.5, h: 0.4, tint: '#ffd27a' }],
+});
 put('cistern-rat', { k: 'a_fox', tint: '#8a8880', size: 0.5 });
 put('slime', { k: 'plant_warrior', tint: MOSS, size: 0.78 });
 put('slag-lump', { k: 'slime', tint: FIRE });

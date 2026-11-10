@@ -1,7 +1,8 @@
 /**
  * The Barrow of Kings (levels 28-31), played through by the bot (tests/sigilfall-bot.ts): every class
- * clears it a level above the dungeon's with the gear a player would have by then, King Hrodric first
- * and Sir Corvane last, without getting stuck. And Corvane's own mechanics: he goes on foot with a
+ * clears it a level above the dungeon's with the gear a player would have by then, King Hrodric first,
+ * Gloomwing the Lamp-Eater next and Sir Corvane last, without getting stuck. Gloomwing's lamps: she devours
+ * them, the dark gnaws at the hero and shelters her, and a lamp stood by burns again. And Corvane's own mechanics: he goes on foot with a
  * chilling aura, his doom raises the dead from the graves it falls on (and from none when carried away),
  * and what his fight leaves on the floor goes with him.
  */
@@ -14,6 +15,8 @@ import type { Enemy } from '../src/games/sigilfall/sim/types';
 import type { World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
 import { gearAt, HARD_DEATHS } from './sigilfall-bot';
+import type { PatternUse } from '../src/games/sigilfall/data/bosses';
+import { lampsOf } from '../src/games/sigilfall/sim/patterns/barrow-of-kings';
 
 const LEVEL = 30;
 
@@ -28,19 +31,80 @@ function nextRoom(w: World): { x: number; y: number } | null {
 
 describe('sigilfall: the Barrow of Kings', () => {
   for (const cls of CLASS_IDS) {
-    it(`${cls}: clears the Barrow of Kings at level ${LEVEL}`, { timeout: 90_000 }, () => {
+    it(`${cls}: clears the Barrow of Kings at level ${LEVEL}`, { timeout: 240_000 }, () => {
       const { w, r } = clearsWithRetry((seed) => {
         const w = newWorld('barrow-of-kings', readyHero(cls as ClassId, LEVEL, gearAt(LEVEL)), seed);
-        return { w, r: play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom }) };
+        return { w, r: play(w, { seconds: 1500, done: (x) => x.cleared, goal: nextRoom }) };
       });
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
-      expect(r.bossesDown).toEqual(['king-hrodric', 'sir-corvane']);
+      expect(r.bossesDown).toEqual(['king-hrodric', 'gloomwing', 'sir-corvane']);
       expect(r.deaths).toBeLessThanOrEqual(HARD_DEATHS);
       // the act's last fight is a real one, three phases long
       expect(r.bossTimes['sir-corvane']).toBeGreaterThan(20);
     });
   }
+
+  it('Gloomwing devours a lamp: its quarter goes dark, gnaws at the hero and shelters her, and stood by it burns again', () => {
+    const w = newWorld('barrow-of-kings', readyHero('warrior', LEVEL, 'uncommon'));
+    const enc = w.encounters.find((e) => e.def.boss === 'gloomwing')!;
+    for (const e of w.encounters) if (e.index < enc.index) e.state = 'cleared';
+    const tiles = w.map.roomTiles[enc.index]!.filter((i) => !w.map.solid[i]);
+    const i = tiles[Math.floor(tiles.length / 2)]!;
+    w.player.x = ((i % w.map.w) + 0.5) * TILE;
+    w.player.y = (Math.floor(i / w.map.w) + 0.5) * TILE;
+    for (let k = 0; k < 5; k++) w.step(1 / 60);
+    const b = w.boss()!;
+    expect(b.def.id).toBe('gloomwing');
+    const idle = (): void => {
+      if (!b.boss!.pattern && !b.boss!.queue.length) b.boss!.rest = 99;
+    };
+    const run = (s: number): void => {
+      for (let k = 0; k < s * 60; k++) {
+        idle();
+        w.step(1 / 60);
+      }
+    };
+    const order = (id: string, p: PatternUse['p'] = {}): void => {
+      b.boss!.pattern = null;
+      b.boss!.queue = [{ id: id as PatternUse['id'], w: 1, cd: 0, p }];
+      b.boss!.rest = 0;
+    };
+    order('barrow:dark', { cut: 0.6 });
+    run(0.2);
+    expect(lampsOf(b)).toHaveLength(4);
+    expect(lampsOf(b).every((l) => l.lit)).toBe(true);
+    // she dives on the lamp nearest her and devours it
+    w.player.iframe = 99;
+    order('barrow:feast', { count: 1, dark: 30, wind: 0.4 });
+    run(2.5);
+    const out = lampsOf(b).find((l) => !l.lit)!;
+    expect(out).toBeTruthy();
+    // its quarter: the dark gnaws at the hero standing in it (but not right by the lamp)
+    w.player.iframe = 0;
+    w.player.hp = w.player.maxHp;
+    const others = lampsOf(b).filter((l) => l !== out);
+    const away = others.reduce((m, l) => Math.min(m, Math.hypot(l.x - out.x, l.y - out.y)), Infinity);
+    const dir = Math.atan2(out.y - b.y, out.x - b.x);
+    w.player.x = out.x - Math.cos(dir) * Math.min(40, away * 0.3);
+    w.player.y = out.y - Math.sin(dir) * Math.min(40, away * 0.3);
+    run(1.2);
+    expect(w.player.hp).toBeLessThan(w.player.maxHp);
+    expect(w.dimmed).toBeGreaterThan(0);
+    // and shelters her: a wound there mostly closes
+    b.x = w.player.x;
+    b.y = w.player.y;
+    const hp = b.hp;
+    b.hp -= 1000;
+    run(0.05);
+    expect(hp - b.hp).toBeCloseTo(400, 0);
+    // stood by, it burns again
+    w.player.iframe = 99;
+    w.player.x = out.x;
+    w.player.y = out.y + 16;
+    run(1.8);
+    expect(lampsOf(b).every((l) => l.lit)).toBe(true);
+  });
 
   /** Into the chapel: Corvane rises, the hero can't be hurt, and he does only what he is told. */
   function chapel(): { w: World; boss: Enemy; hold: () => void } {
