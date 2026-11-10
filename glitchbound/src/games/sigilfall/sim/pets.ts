@@ -1,6 +1,7 @@
 import { angleDiff, dist, dist2, TAU } from '../core/math';
 import { CLASSES } from '../data/classes';
 import { PETS } from '../data/pets';
+import { bossHidden } from './boss';
 import { effStats, hitEnemy } from './combat';
 import { castRay, circleHitsWall, flowField, flowStep, lineOfSight, moveCircle, pushOut, TILE } from './map';
 import { aimAlong, clearLine, findRoute } from './nav';
@@ -115,12 +116,13 @@ export function refreshPets(w: World): void {
 
 function pickTarget(w: World, pet: Pet): Enemy | null {
   const p = w.player;
-  const cur = pet.target !== null ? w.enemies.find((e) => e.id === pet.target && !e.dead) : undefined;
+  // (a boss gone from sight, in a coffin or torn into shards, can't be fought: the pet turns to what can)
+  const cur = pet.target !== null ? w.enemies.find((e) => e.id === pet.target && !e.dead && !bossHidden(e)) : undefined;
   if (cur && dist(cur.x, cur.y, p.x, p.y) < 190) return cur;
   let best: Enemy | null = null;
   let bd = Infinity;
   for (const e of w.enemies) {
-    if (e.dead || e.dummy || e.held || e.state === 'spawn') continue;
+    if (e.dead || e.dummy || e.held || e.state === 'spawn' || bossHidden(e)) continue;
     // only what is already fighting, or close to the hero
     const dh = dist(e.x, e.y, p.x, p.y);
     if (dh > 150 || (!e.aggro && dh > 90)) continue;

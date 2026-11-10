@@ -15,6 +15,7 @@ import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
 import { SPEC_LEVEL, TALENTS } from '../src/games/sigilfall/data/talents';
 import { rng } from '../src/games/sigilfall/core/math';
 import { flowField, flowStep, lineOfSight, TILE } from '../src/games/sigilfall/sim/map';
+import { bossHidden } from '../src/games/sigilfall/sim/boss';
 import type { Enemy, WorldEvent } from '../src/games/sigilfall/sim/types';
 import { emptyInput, inside, World } from '../src/games/sigilfall/sim/world';
 
@@ -155,7 +156,8 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
         target = null;
         let best = Infinity;
         for (const e of w.enemies) {
-          if (e.dead || e.dummy || e.hp <= 0 || (leftAlone.get(e.id) ?? 0) > res.time) continue;
+          // (a boss gone from sight, hiding in a coffin or torn into shards, is no target: a player goes for what is there)
+          if (e.dead || e.dummy || e.hp <= 0 || bossHidden(e) || (leftAlone.get(e.id) ?? 0) > res.time) continue;
           const d = fromHero[tileOf(w, e.x, e.y)] ?? -1;
           if (d < 0) continue;
           if (d < best) {

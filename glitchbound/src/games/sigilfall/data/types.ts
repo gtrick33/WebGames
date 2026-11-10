@@ -472,6 +472,11 @@ export interface EnemyDef {
   id: string;
   name: string;
   sprite: string;
+  /**
+   * A thing, not a creature: drawn as this prop (`m`, `h` px tall) and standing still, like a boss fight's
+   * candles, coffins or posts (data/bosses.ts): it shakes and flashes when struck.
+   */
+  prop?: { m: string; h: number; tint?: [number, number, number] };
   ai: EnemyAi;
   hp: number;
   dmg: number;

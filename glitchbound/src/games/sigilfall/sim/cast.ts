@@ -1,6 +1,7 @@
 import { angleDiff, dist, dist2, inCone, TAU } from '../core/math';
 import { CLASSES } from '../data/classes';
 import type { GroundSpec, SkillSpec, SlotKey } from '../data/types';
+import { bossHidden } from './boss';
 import { applyEffects, applyStatus, enemiesIn, gainResource, healPlayer, hitEnemy, hurtPlayer, playerStunned, runProcs } from './combat';
 import { hurtPet } from './pets';
 import { blocksAt, castRay, lineOfSight, moveCircle } from './map';
@@ -29,7 +30,7 @@ export function autoTarget(w: World, range: number, prefer: number): Enemy | nul
   let best: Enemy | null = null;
   let bestScore = Infinity;
   for (const e of w.enemies) {
-    if (e.dead || e.state === 'spawn' || e.dummy === 2) continue;
+    if (e.dead || e.state === 'spawn' || e.dummy === 2 || bossHidden(e)) continue;
     const d = dist(p.x, p.y, e.x, e.y);
     if (d > range + e.r + 6) continue;
     if (!lineOfSight(w.map, p.x, p.y, e.x, e.y)) continue;
@@ -52,7 +53,7 @@ function assistAim(w: World, angle: number, range: number, level: number): numbe
   let best = angle;
   let bestOff = max;
   for (const e of w.enemies) {
-    if (e.dead || e.state === 'spawn' || e.dummy === 2) continue;
+    if (e.dead || e.state === 'spawn' || e.dummy === 2 || bossHidden(e)) continue;
     if (dist(p.x, p.y, e.x, e.y) > range + e.r) continue;
     const a = Math.atan2(e.y - p.y, e.x - p.x);
     const off = Math.abs(angleDiff(angle, a));

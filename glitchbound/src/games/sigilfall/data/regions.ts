@@ -111,7 +111,7 @@ const CRYPT_MAP = [
   '####aaaaaaaaaaaaaaaaaa############bbbbbbbbbbbbbbbbbb####',
   '####aaaajaaaaaaaajaaaa############bbbbjbbbbbbbbjbbbb####',
   '####aaaaaaaaaaaaaaaaaaD..........Dbbbbbbbbbbbbbbbbbb####',
-  '####aaaaaaaaaaaaaaaaaaD..........Dbbbbbbbbbbbbbbbbbb####',
+  '####aaaaaaaaaaaaaaaaaaD..........DbbbbbbbbbNbbbbbbbb####',
   '####aaaaaaaaaaaaaaaaaaD..........Dbbbbbbbbbbbbbbbbbb####',
   '####aaaaaaaaaaaaaaaaaa############bbbbbbbbbbbbbbbbbb####',
   '####aaaajaaaaaaaajaaaa############bbbbjbbbbbbbbjbbbb####',
@@ -163,6 +163,7 @@ const cryptMarkers: Record<string, Marker> = {
   S: { kind: 'chest', id: 'hc-vault', tier: 'epic', once: true },
   O: { kind: 'boss', boss: 'ossric' },
   M: { kind: 'boss', boss: 'morgrave' },
+  N: { kind: 'boss', boss: 'coffin-matron' },
 };
 
 /**
@@ -312,12 +313,8 @@ const HAND_LAID: Record<string, RegionDef> = {
         title: 'The Bone Hall',
         waves: [{ enemies: ['skeleton', 'skeleton', 'skeleton'] }, { enemies: ['skeleton', 'skeleton', 'skeleton-archer', 'skeleton-archer'] }],
       },
-      {
-        id: 'ossuary',
-        floor: 'b',
-        title: 'The Ossuary',
-        waves: [{ enemies: ['bone-hound', 'bone-hound', 'skeleton-archer', 'skeleton-archer'] }, { enemies: ['crypt-guardian', 'skeleton', 'skeleton'] }, { enemies: ['crypt-guardian'], elite: true }],
-      },
+      // the Matron of the Ossuary and her shell game of coffins (sim/patterns/crypt.ts)
+      { id: 'ossuary', floor: 'b', waves: [], boss: 'coffin-matron', checkpoint: true, title: 'The Ossuary' },
       { id: 'gate', floor: 'c', waves: [], boss: 'ossric', checkpoint: true, title: 'The Crypt Gate' },
       {
         id: 'chapel',

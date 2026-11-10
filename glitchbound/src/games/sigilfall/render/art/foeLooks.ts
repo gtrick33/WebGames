@@ -42,6 +42,8 @@ export const FOE_LOOKS: Record<string, HeroLook> = {
   'foe-hedge-witch': foe('#d8b098', '#8a8a7a', 'long', piece('wizard', '#4a3a2a'), piece('robe', '#5a4a34', 'cloth', 'uncommon'), piece('trousers', '#3a3024'), { female: true }),
   // a witch of the blight: rot-green
   'foe-blight-witch': foe('#b8c0a0', '#3a3a2a', 'long', piece('wizard', '#3a4a2a'), piece('robe', '#4a5a2a', 'cloth', 'rare'), piece('trousers', '#2a3218'), { female: true, cape: '#2a3218' }),
+  // the Coffin Matron of the Chapel Crypt: a widow's black veil over a bone-white burial shroud, grave-pale skin
+  'foe-coffin-matron': foe('#c8c4b8', '#e8e4dc', 'long', piece('hood', '#16121c'), piece('robe', '#d8d2c0', 'cloth', 'rare'), piece('trousers', '#8a8474'), { female: true, cape: '#16121c', hands: null, feet: piece('shoes', '#2a2430', 'leather') }),
   // a brother of the plague: a stained cleric's robe
   'foe-brother-pustule': foe('#c8b890', '#5a5a3a', 'short', piece('hood', '#6a6a3a'), piece('robe', '#7a7a4a', 'cloth', 'rare'), piece('trousers', '#4a4a2a')),
   // a poacher of the Whisperwood: green and brown, a bow

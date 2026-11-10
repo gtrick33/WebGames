@@ -663,8 +663,12 @@ describe('sigilfall combat', () => {
     expect(events).toContain('bossPhase');
     expect(boss.boss!.shift).toBeGreaterThan(0);
     expect(hitEnemy(w, boss, 100, 'fire', { depth: 0 })).toBe(0);
-    // finish it: the death plays out, then the rewards and the way home
+    // he tears his soul into shards as the phase begins (sim/patterns/crypt.ts): break them, and he is whole and
+    // can be struck again
     step(300);
+    for (const s of w.enemies.filter((e) => e.def.id === 'morgrave-soul' && !e.dead)) hitEnemy(w, s, 10_000, 'fire', { depth: 0 });
+    step(30);
+    // finish it: the death plays out, then the rewards and the way home
     boss.hp = 1;
     hitEnemy(w, boss, 10_000, 'fire', { depth: 0 });
     step(240);

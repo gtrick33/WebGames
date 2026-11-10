@@ -241,6 +241,16 @@ export class WorldCast {
       cast.prop('scarecrow', e.x, e.y, 26);
       return;
     }
+    // a thing in a boss fight (a candle, a coffin, a post): its prop, shaking and flashing when struck, fading as it breaks
+    const thing = e.def.prop;
+    if (thing) {
+      if (e.dead && e.deathT > 0.5) return;
+      const shake = e.flash > 0 ? Math.sin(time * 70) * 1.5 : 0;
+      const lit: [number, number, number] | undefined = e.flash > 0 ? [1.7, 1.6, 1.5] : thing.tint;
+      cast.shadow(e.x, e.y, e.r + 1);
+      cast.prop(thing.m, e.x + shake, e.y, thing.h * (e.dead ? Math.max(0.2, 1 - e.deathT * 1.6) : 1), 0, 0, lit);
+      return;
+    }
     const sprite = e.boss?.def.sprite ?? e.def.sprite;
     const kit = kitOf(sprite, e.def.id);
     const h = heightFromRadius(e.r);
