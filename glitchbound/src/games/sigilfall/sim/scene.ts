@@ -413,6 +413,8 @@ export function updateScene(w: World, dt: number): void {
 function clearGhosts(w: World, s: ScenePlay): void {
   if (!s.ghosts?.length) return;
   const gone = new Set(s.ghosts);
+  // the figures of a memory fade out where they stood, as the people of a place do when they leave
+  w.leftNpcs.push(...w.npcs.filter((n) => gone.has(n.id)).map((n) => ({ ...n, left: w.time })));
   w.npcs = w.npcs.filter((n) => !gone.has(n.id));
   s.ghosts = [];
 }
