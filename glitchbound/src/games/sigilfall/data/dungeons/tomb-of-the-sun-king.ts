@@ -27,7 +27,7 @@ const MAP = [
   '###nnnnnnnnnnnnnnnnnn#####mmymmmmmmmmmmmmmmmmmmmmmmmmmmymm####################',
   '###nnnnnnnnnnnnnnnnnnD...Dmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm####################',
   '###nnynnnnnnnnnnnnnnnD...Dmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm####################',
-  '###nnnnnnnnnnnnnnnnnnD...Dmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm####################',
+  '###nnnnnnnnZnnnnnnnnnD...Dmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm####################',
   '###nnnnnnnnnnnnnnnnnn#####mmmmmmjmmmmmjmmmmmmjmmmmmjmmmmmm####################',
   '###nnnnnnnnnnnnnnnynn#####QmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmQ####################',
   '###nnnnnnnnnnnnnnnnnn#####mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm####################',
@@ -86,6 +86,8 @@ const markers: Record<string, Marker> = {
   S: { kind: 'chest', id: 'tsk-offerings', tier: 'epic', once: true },
   W: { kind: 'boss', boss: 'the-sand-warden' },
   K: { kind: 'boss', boss: 'the-sun-king' },
+  // the Hall of the Sun-Disc: Vizier Khepset and his sand-glass (sim/patterns/tomb-of-the-sun-king.ts)
+  Z: { kind: 'boss', boss: 'vizier-khepset' },
   x: { kind: 'prop', prop: 'crate', solid: true },
   o: { kind: 'prop', prop: 'barrel', solid: true },
   y: { kind: 'prop', prop: 'bones' },
@@ -95,6 +97,27 @@ const markers: Record<string, Marker> = {
 /* ------------------------------------------------------------------ enemies */
 
 const foes: Record<string, EnemyDef> = {
+  // Vizier Khepset's sand-glass: shattered, the hour he turns fails (sim/patterns/tomb-of-the-sun-king.ts)
+  'sand-glass': {
+    id: 'sand-glass',
+    name: 'The Last Hour',
+    sprite: 'sand-glass',
+    prop: { m: 'w_potion_large_red', h: 30, tint: [1.6, 1.35, 0.55] },
+    ai: 'caster',
+    hp: 110,
+    dmg: 1,
+    speed: 0,
+    radius: 9,
+    mass: 99,
+    xp: 0,
+    gold: [0, 0],
+    aggro: 400,
+    reach: 0,
+    windup: 1,
+    recover: 1,
+    attackCd: 999,
+    blurb: 'Gold sand running out of the top. Something about it makes you want to break it.',
+  },
   'ushabti-guardian': {
     id: 'ushabti-guardian',
     name: 'Ushabti Guardian',
@@ -213,12 +236,58 @@ const foes: Record<string, EnemyDef> = {
 /* ------------------------------------------------------------------ bosses */
 
 const bosses: Record<string, BossDef> = {
+  // the dead king's vizier, who keeps his last hour: shatter the sand-glass before the hour turns back
+  'vizier-khepset': {
+    id: 'vizier-khepset',
+    name: 'Vizier Khepset',
+    title: 'Keeper of the Last Hour',
+    sprite: 'vizier-khepset',
+    hp: 5000,
+    dmg: 33,
+    radius: 11,
+    xp: 1000,
+    gold: [160, 220],
+    floats: true,
+    phases: [
+      {
+        at: 1,
+        speed: 34,
+        rest: [0.8, 1.2],
+        // the sand-glass and its hour (sim/patterns/tomb-of-the-sun-king.ts)
+        enter: [{ id: 'tomb:hourglass', w: 1, cd: 0, p: { time: 7 } }],
+        patterns: [
+          // shards of gold flung in a fan, scarab-light that seeks the hero, a step between moments
+          { id: 'spearFan', w: 3, cd: 3.5, p: { count: 5 } },
+          { id: 'orbs', w: 3, cd: 4, p: { count: 5, speed: 60, homing: 0.8, mul: 0.85, color: '#ffd27a', r: 4 } },
+          { id: 'teleport', w: 1, cd: 7 },
+          { id: 'tomb:hourglass', w: 2, cd: 15, p: { time: 7 } },
+        ],
+      },
+      {
+        at: 0.5,
+        banner: 'The last hour runs short!',
+        speed: 38,
+        rest: [0.6, 1],
+        enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['wrapped-dead', 'wrapped-dead'] } }, { id: 'tomb:hourglass', w: 1, cd: 0, p: { time: 6 } }],
+        patterns: [
+          { id: 'spearFan', w: 3, cd: 3, p: { count: 7 } },
+          { id: 'orbs', w: 3, cd: 3.5, p: { count: 7, speed: 64, homing: 0.9, mul: 0.85, color: '#ffd27a', r: 4 } },
+          { id: 'riftBeams', w: 2, cd: 6, p: { beams: 4 } },
+          { id: 'teleport', w: 1, cd: 6 },
+          { id: 'tomb:hourglass', w: 3, cd: 12, p: { time: 6 } },
+        ],
+      },
+    ],
+    first: { any: ['static-band'] },
+    drops: { items: { any: ['static-band', 'second-wind-ring', 'thornmail'] }, chance: [0.3, 0.45, 0.65] },
+    intro: 'He kept the king’s hours in life. In death he keeps the last one, and he turns it back whenever it goes badly.',
+  },
   'the-sand-warden': {
     id: 'the-sand-warden',
     name: 'The Sand Warden',
     title: 'Guardian of the Sun King’s Tomb',
     sprite: 'the-sand-warden',
-    hp: 3200,
+    hp: 3800,
     dmg: 34,
     radius: 13,
     xp: 640,
@@ -276,7 +345,7 @@ const bosses: Record<string, BossDef> = {
     name: 'The Sun King',
     title: 'Risen Lord of the Old Kingdom',
     sprite: 'the-sun-king',
-    hp: 7400,
+    hp: 8800,
     dmg: 31,
     radius: 13,
     xp: 1270,
@@ -571,17 +640,7 @@ export const TOMB_OF_THE_SUN_KING: DungeonModule = {
           { enemies: ['sand-wraith', 'crypt-stalker', 'crypt-stalker', 'scarab-swarm'], elite: true },
         ],
       },
-      {
-        id: 'sun-disc-hall',
-        floor: 'n',
-        title: 'The Hall of the Sun-Disc',
-        checkpoint: true,
-        waves: [
-          { enemies: ['ushabti-guardian', 'ushabti-guardian', 'embalmer-priest'] },
-          { enemies: ['sand-wraith', 'scarab-swarm', 'scarab-swarm', 'wrapped-dead'] },
-          { enemies: ['ushabti-guardian', 'embalmer-priest', 'sand-wraith'], elite: true },
-        ],
-      },
+      { id: 'sun-disc-hall', floor: 'n', waves: [], boss: 'vizier-khepset', checkpoint: true, title: 'The Hall of the Sun-Disc' },
       { id: 'burial-chamber', floor: 'm', waves: [], boss: 'the-sun-king', checkpoint: true, title: 'The King’s Burial Chamber' },
     ],
     blurb: 'The old desert king’s tomb: the Sand Warden at his door, and the Sun King himself in his burning burial chamber, where only the pillars’ shadows are safe.',

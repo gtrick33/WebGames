@@ -279,6 +279,7 @@ const BOSS_AURA: Record<string, BossAura> = {
   grimtusk: MOTES('#c86aff', '#f0d0ff'),
   'the-sand-warden': FALLING('#e8cf95', '#fff2d0'),
   'the-sun-king': EMBERS('#ffd27a', '#fffbe0'),
+  'vizier-khepset': FALLING('#ffd27a', '#fff6d0'),
   'jarl-hrimfang': FALLING('#bfe8ff', '#ffffff'),
   'the-rime-wyrm': FALLING('#a9dcff', '#ffffff'),
   'the-siege-breaker': EMBERS('#ff8a3a', '#ffd27a'),

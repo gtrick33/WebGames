@@ -11,11 +11,11 @@ import type { PatternUse } from '../src/games/sigilfall/data/bosses';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { K, TILE } from '../src/games/sigilfall/sim/map';
-import { inSunlight } from '../src/games/sigilfall/sim/patterns/tomb-of-the-sun-king';
+import { hourOfVizier, inSunlight } from '../src/games/sigilfall/sim/patterns/tomb-of-the-sun-king';
 import type { Enemy } from '../src/games/sigilfall/sim/types';
 import type { World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
-import { HARD_DEATHS } from './sigilfall-bot';
+import { gearAt, HARD_DEATHS } from './sigilfall-bot';
 
 const LEVEL = 36;
 
@@ -185,6 +185,36 @@ describe('the Tomb of the Sun King', () => {
     expect(p.x - x0).toBeLessThan(10);
   });
 
+  it('Vizier Khepset’s hour turns back his wounds and the hero, unless the sand-glass is shattered first', () => {
+    const { w, b } = arena('vizier-khepset');
+    w.player.iframe = 999;
+    const at = { x: w.player.x, y: w.player.y };
+    start(b, { id: 'tomb:hourglass', p: { time: 2 } });
+    run(w, b, 0.7);
+    const h = hourOfVizier(b)!;
+    expect(h.glass).toBeTruthy();
+    expect(Math.hypot(h.mx - at.x, h.my - at.y)).toBeLessThan(2);
+    // wounded in the hour, and the hero gone elsewhere: the hour turns both back
+    const hp = b.hp;
+    b.hp -= 1000;
+    w.player.x = at.x + 60;
+    run(w, b, 1.6);
+    expect(hourOfVizier(b)!.glass).toBeNull();
+    expect(b.hp).toBeCloseTo(hp, 0);
+    expect(Math.hypot(w.player.x - at.x, w.player.y - at.y)).toBeLessThan(3);
+    // shattered first: he reels, and the wound stays
+    start(b, { id: 'tomb:hourglass', p: { time: 4 } });
+    run(w, b, 0.7);
+    const glass = hourOfVizier(b)!.glass!;
+    b.hp -= 1000;
+    const wounded = b.hp;
+    hitEnemy(w, glass, glass.hp + 999, 'physical', { depth: 1 });
+    run(w, b, 0.2);
+    expect(b.boss!.dazed).toBeGreaterThan(2);
+    run(w, b, 4);
+    expect(b.hp).toBeLessThanOrEqual(wounded);
+  });
+
   it('the burial chamber burns in from the walls in the last phase, and the fire goes out with the king', () => {
     const { w, b } = arena('the-sun-king');
     w.player.iframe = 999;
@@ -201,14 +231,14 @@ describe('the Tomb of the Sun King', () => {
   });
 
   for (const cls of CLASS_IDS) {
-    it(`${cls}: clears the Tomb of the Sun King at level ${LEVEL}`, { timeout: 90_000 }, () => {
+    it(`${cls}: clears the Tomb of the Sun King at level ${LEVEL}`, { timeout: 240_000 }, () => {
       const { w, r } = clearsWithRetry((seed) => {
-        const w = newWorld('tomb-of-the-sun-king', readyHero(cls, LEVEL, 'uncommon'), seed);
-        return { w, r: play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom }) };
+        const w = newWorld('tomb-of-the-sun-king', readyHero(cls, LEVEL, gearAt(LEVEL)), seed);
+        return { w, r: play(w, { seconds: 1500, done: (x) => x.cleared, goal: nextRoom }) };
       });
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
-      expect(r.bossesDown).toEqual(['the-sand-warden', 'the-sun-king']);
+      expect(r.bossesDown).toEqual(['the-sand-warden', 'vizier-khepset', 'the-sun-king']);
       expect(r.deaths).toBeLessThanOrEqual(HARD_DEATHS);
       // the showpiece is a real fight, three phases long
       expect(r.bossTimes['the-sun-king']).toBeGreaterThan(20);

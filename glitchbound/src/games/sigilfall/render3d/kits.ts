@@ -294,6 +294,8 @@ put('beetle', { k: 'treant', tint: BARK, size: 0.6, ...SMASH });
 put('scarab-swarm tomb-scarab', { k: 'scarab', size: 0.72 });
 put('marsh-strider', { k: 'strider' });
 put('blood-mosquito glimmer-moth rotwood-pod', { k: 'moth', size: 0.8, float: 0.4 });
+// the Tomb's Vizier Khepset: the dead king's vizier in the sun's gold, his crown of office on his brow, a gold staff
+put('vizier-khepset', { k: 'witch', look: 'foe-vizier-khepset', held: { kind: 'staff', tint: '#ffd27a' }, size: 1.35, float: 0.25, ...CASTER });
 // the Barrow's Lamp-Eater: a drake built as the great drake mounts are, blacked out by a thousand years of devoured
 // lamplight: black plate, a crown of horns, wings veined with the pale fire of the lamps it has eaten
 put('gloomwing', {
