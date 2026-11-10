@@ -121,6 +121,11 @@ export class WorldCast {
     for (const s of o.statues ?? []) cast.person(STATUE_LOOK, STATUE_SWORD, true, s.x, s.y, 0.2, { clip: 'idle', t: 0.2, loop: false }, { h: s.h, lift: s.lift, tint: s.tint });
     for (const c of o.colossi ?? []) if (Math.hypot(c.x * TILE - w.player.x, c.z * TILE - w.player.y) < COLOSSUS_SEEN + c.h * TILE) cast.colossus(c);
     this.syncHero(cast, w, dt, time, o.look, o.weapon, o);
+    // what a boss fight floats in the air (Ilvane's stones), a shadow under each
+    for (const f of w.floaters) {
+      cast.shadow(f.x, f.y, f.h * 0.5);
+      cast.prop(f.m, f.x, f.y, f.h, f.rot, f.lift / TILE, f.tint);
+    }
     // what a boss fight casts of the hero (Ossa's likenesses): the hero in white-hot bone-steel, walking where they walked
     for (const [i, l] of w.likenesses.entries()) {
       cast.shadow(l.x, l.y, 8);
@@ -236,7 +241,9 @@ export class WorldCast {
     }
     // (the animal stands from the moment they're on it, not walking up)
     if (calling) this.mountMotion.set('idle', true, 0);
-    cast.person(look, held, shieldOf(w.hero.cls), p.x, p.y, this.heroTurn, m, { alpha, flash, xray: true });
+    // (adrift in a weightless gallery: off the floor, bobbing)
+    const adrift = w.unmoored > 0 ? w.unmoored * (0.22 + Math.sin(time * 2.4) * 0.05) : undefined;
+    cast.person(look, held, shieldOf(w.hero.cls), p.x, p.y, this.heroTurn, m, { alpha, flash, xray: true, lift: adrift });
   }
 
   private lastActT = 0;

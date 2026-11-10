@@ -232,6 +232,13 @@ export class World {
    * sim/patterns/molten-throne.ts): drawn as the hero in white-hot bone-steel.
    */
   likenesses: { x: number; y: number; vx: number; vy: number; face: number }[] = [];
+  /**
+   * How weightless a boss fight has made the hero (0 not at all, 1 adrift): Ilvane's gallery (sim/patterns/spire-of-the-rift.ts).
+   * Adrift, the hero is slow to start and slow to stop (a dodge still pushes off the air at once).
+   */
+  unmoored = 0;
+  /** Things a boss fight floats in the air (Ilvane's stones): drawn as props off the ground. */
+  floaters: { m: string; x: number; y: number; lift: number; h: number; rot: number; tint?: readonly [number, number, number] }[] = [];
   events: WorldEvent[] = [];
   procCd: Record<string, number> = {};
   flow: Int16Array;
@@ -1358,7 +1365,8 @@ export class World {
       if (stunned) speed = 0;
       const tx = inp.mx * speed;
       const ty = inp.my * speed;
-      const accel = moving ? 16 : 20;
+      // (adrift in a weightless gallery, slow to start and slow to stop)
+      const accel = (moving ? 16 : 20) * (1 - this.unmoored * 0.86);
       const k = 1 - Math.exp(-accel * dt);
       p.vx += (tx - p.vx) * k;
       p.vy += (ty - p.vy) * k;

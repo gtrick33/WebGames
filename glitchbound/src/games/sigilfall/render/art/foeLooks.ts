@@ -52,6 +52,8 @@ export const FOE_LOOKS: Record<string, HeroLook> = {
   // the sisters of the Faded Lights: Elowen of the Dawn in faded gold and white, Merrin of the Dusk in violet
   'foe-elowen': foe('#ecdcc8', '#f8e0a0', 'long', piece('crown', '#ffe08a', 'plate', 'rare'), piece('robe', '#f0e6cc', 'cloth', 'rare'), piece('trousers', '#d8c8a0'), { female: true, cape: '#e8c060', hands: piece('gloves', '#f0e6cc', 'cloth'), feet: piece('shoes', '#c8a860', 'leather') }),
   'foe-merrin': foe('#c8c0d8', '#3a2a5a', 'long', piece('hood', '#4a3a6a'), piece('robe', '#5a4a7a', 'cloth', 'rare'), piece('trousers', '#3a2e4e'), { female: true, cape: '#2a1e3e', hands: piece('gloves', '#4a3a6a', 'cloth'), feet: piece('shoes', '#2a2238', 'leather') }),
+  // Ilvane the Unmoored, the Spire's astronomer: pale as starlight, silver hair, a robe of deep night under a star-crowned hat
+  'foe-ilvane': foe('#e0dcf0', '#e8e4ff', 'long', piece('wizard', '#3a3060', 'cloth', 'rare'), piece('robe', '#2e2850', 'cloth', 'rare'), piece('trousers', '#24203e'), { female: true, cape: '#c8b8ff', hands: piece('gloves', '#3a3060', 'cloth'), feet: piece('shoes', '#24203e', 'leather') }),
   'foe-vizier-khepset': foe('#b89870', '#1a1410', 'short', piece('crown', '#ffd27a', 'plate', 'epic'), piece('robe', '#efe4c8', 'cloth', 'epic'), piece('trousers', '#c8b890'), { cape: '#d8a830', beard: '#1a1410', hands: piece('gloves', '#d8a830', 'cloth'), feet: piece('shoes', '#c8a050', 'leather') }),
   // a brother of the plague: a stained cleric's robe
   'foe-brother-pustule': foe('#c8b890', '#5a5a3a', 'short', piece('hood', '#6a6a3a'), piece('robe', '#7a7a4a', 'cloth', 'rare'), piece('trousers', '#4a4a2a')),

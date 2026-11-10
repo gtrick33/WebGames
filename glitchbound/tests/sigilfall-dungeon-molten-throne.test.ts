@@ -11,6 +11,7 @@ import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { TILE } from '../src/games/sigilfall/sim/map';
+import { endScene } from '../src/games/sigilfall/sim/scene';
 import type { Enemy } from '../src/games/sigilfall/sim/types';
 import { EXTRA_PATTERNS } from '../src/games/sigilfall/sim/patterns';
 // (after the patterns' index: a boss's own file imported first would meet itself half-loaded through combat)
@@ -67,6 +68,8 @@ describe('sigilfall: the Molten Throne', () => {
     w.player.x = ((i % w.map.w) + 0.5) * TILE;
     w.player.y = (Math.floor(i / w.map.w) + 0.5) * TILE;
     for (let k = 0; k < 5; k++) w.step(1 / 60);
+    // (past the boss's card: nobody moves while a scene plays)
+    if (w.scene) endScene(w, true);
     const b = w.boss()!;
     expect(b.def.id).toBe('ossa-the-founder');
     b.boss!.queue = [];

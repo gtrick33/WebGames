@@ -293,6 +293,7 @@ const BOSS_AURA: Record<string, BossAura> = {
   'ossa-the-founder': EMBERS('#ffb060', '#fff2d0'),
   'ashkar-the-bound': EMBERS('#ff3a1a', '#ffe08a'),
   'veil-sentinel': MOTES('#a48bdc', '#f0e0ff'),
+  'ilvane-the-unmoored': MOTES('#c8b8ff', '#ffffff'),
   'herald-in-the-spire': MOTES('#d8d0f0', '#ffffff'),
   'hollow-guard': GLOOM('#3a3448', '#c8c0e0'),
   vaelor: GLOOM('#2a2238', '#c8a8ff'),
