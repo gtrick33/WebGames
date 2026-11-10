@@ -22,7 +22,7 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     name: 'The Fading Lights',
     giver: 'oasis-keeper-sefu',
     auto: true,
-    text: 'The fey of the Glimmerwood keep to themselves and like it that way. So when a moth the size of your hand comes down out of the sand-haze with a letter from Lady Silvaine of Lumen Glade, asking for help, Sefu reads it twice before he hands it over. No songs have come out of the wood since spring, and the lights under its trees are going out one by one. Somewhere under them sleeps the Sigil of Thorns. Take the north road out of the Sunscorch into the Glimmerwood and find Lady Silvaine in Lumen Glade.',
+    text: 'The fey of the Glimmerwood keep to themselves and like it that way. So when a moth the size of your hand comes down out of the sand-haze with a letter from Lady Silvaine of Lumen Glade, asking for help, Sefu reads it twice before she hands it over. No songs have come out of the wood since spring, and the lights under its trees are going out one by one. Somewhere under them sleeps the Sigil of Thorns. Take the north road out of the Sunscorch into the Glimmerwood and find Lady Silvaine in Lumen Glade.',
     objective: { kind: 'talk', npc: 'lady-silvaine', label: 'Talk to Lady Silvaine in Lumen Glade' },
     after: ['the-sun-king'],
     level: 31,

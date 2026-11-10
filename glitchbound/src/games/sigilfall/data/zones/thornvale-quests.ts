@@ -57,7 +57,7 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     after: ['thieves-cant'],
     zone: 'thornvale',
     level: 11,
-    reward: { xp: 900, gold: 320, item: 'blackhand-coat', perk: 'satchel', text: 'Harlan laughs at the end, coughing. “Gold that weighs nothing. You don’t know what you’re for till somebody pays you in it.” Behind his throne, a strongbox of grey coins, cold as a well. And Millbrook’s thanks: his coat, and a satchel with room for six more things.' },
+    reward: { xp: 900, gold: 320, item: 'blackhand-coat', perk: 'satchel', text: 'Harlan laughs at the end, coughing. “Gold that weighs nothing. You don’t know what you’re for till somebody pays you in it.” Behind his throne, a strongbox of grey coins, cold as a well. And Millbrook’s thanks: his coat, and a satchel with room for six more things. Nyx turns one of the grey coins over and over in her fingers. “Somebody who pays in this wants your chapel’s iron,” she says. “I want to know who. I’m coming with you.”' },
   },
   {
     id: 'mill-the-bridge',

@@ -58,7 +58,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     name: 'The Rider at the Head of the Host',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'With the Standard down a rider has taken the Host’s head, and Dunmore’s scouts know the horse before they know the man: Rider-Captain Vosk, who burned Hearthstead and carried its fragment north. The Ash Crown kept him. There is not much left of him to keep. Ride him down at the King’s Host, and the Host has no one left to follow.',
+    text: 'The banners are in, and across the snow the King’s Host has drawn up in its ranks with a rider at its head. Dunmore’s scouts know the horse before they know the man: Rider-Captain Vosk, who burned Hearthstead and carried its fragment north. The Ash Crown kept him. There is not much left of him to keep. Ride him down at the King’s Host, and the Host has no one left to follow.',
     objective: { kind: 'kill', region: 'pale-reach', count: 1, enemies: ['vosk-the-hollowed'], label: 'Bring down Vosk at the head of the Host' },
     after: ['the-last-road'],
     zone: 'pale-reach',
@@ -70,7 +70,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     name: 'The Siege Mages',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'Duskspire’s outer wall is older than Aster and has never been breached. Veilwatch’s siege mages say they can bring it down, given time: they need to stand in the open before it and sing for as long as it takes, and the Host will come for them the moment they start. Every banner at Dawn’s Rest is on the field. Hold it around the mages until the wall comes down.',
+    text: 'Duskspire’s outer wall is older than Aster and has never been breached. Shardwatch’s siege mages, Quell’s scholars with their brass rods, say they can bring it down, given time: they need to stand in the open before it and sing for as long as it takes, and the Host will come for them the moment they start. Every banner at Dawn’s Rest is on the field. Hold it around the mages until the wall comes down.',
     objective: { kind: 'event', event: 'reach-the-mages', label: 'Hold the field around the siege mages' },
     after: ['the-seventh-sigil'],
     zone: 'pale-reach',
@@ -94,7 +94,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     name: 'The Voice in the Gate',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'In the Duskspire Gate, where the Spire of the Tear should have finished him, stands a shape of grey light with no face, speaking in the Herald’s voice without hurry, the way it always has. It says your name. It says Elyra’s. It says it will open the gate for you if you ask nicely. Don’t ask.',
+    text: 'In the Duskspire Gate stands a shape of grey light with no face, speaking in the Herald’s voice without hurry, the way it always has. It says your name. It says Elyra’s. It says it will open the gate for you if you ask nicely. Don’t ask.',
     objective: { kind: 'kill', region: 'pale-reach', count: 1, enemies: ['the-heralds-voice'], label: 'Silence the Herald’s voice in the Duskspire Gate' },
     after: ['march-the-breach'],
     zone: 'pale-reach',
@@ -488,7 +488,7 @@ export const PALE_REACH_STORY_FOES: Record<string, EnemyDef> = {
     named: true,
     scale: 1.4,
     resist: { shadow: 0.6, arcane: 0.4 },
-    blurb: 'What the Spire of the Tear could not kill: the Pale Herald’s voice, a shape of grey light in the Duskspire Gate, speaking without hurry. It steps through the air when you close in.',
+    blurb: 'What is left of the Pale Herald in the living world: his voice, a shape of grey light in the Duskspire Gate, speaking without hurry. It steps through the air when you close in.',
   },
 };
 
@@ -546,7 +546,7 @@ export const PALE_REACH_EVENTS: Record<string, StoryEventDef> = {
     // bounded: Mara and Cael, and one of each faction the hero helped (up to eight more)
     allies: ['mara', 'cael'],
     alliesIf: FACTIONS,
-    ward: { pet: 'siege-mages', at: 'wall-field', name: 'Veilwatch’s siege mages' },
+    ward: { pet: 'siege-mages', at: 'wall-field', name: 'Shardwatch’s siege mages' },
     banner: 'The Last March!',
     start: [
       { who: 'mara', text: 'Every banner on the field! Nothing reaches the mages! Nothing!' },

@@ -19,7 +19,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     objective: { kind: 'talk', npc: 'oasis-keeper-sefu', label: 'Talk to Oasis-keeper Sefu at the Oasis of Ras' },
     after: ['festival-the-champion'],
     level: 30,
-    reward: { xp: 850, gold: 260, text: 'Sefu is not alone at the wells. A smuggler with quick hands and a familiar grin is selling her water she already owns: Nyx, of Millbrook. “Your map’s my map now,” she says. “I know every road the Host pays for.”' },
+    reward: { xp: 850, gold: 260, text: 'Sefu meets you at the wells with a waterskin in one hand and a knife in the other, and puts away only the knife. Nyx is already haggling with the oasis smugglers, who turn out to owe her money. “Every road the Host pays for out here goes through people who owe me,” she says. “That makes them our roads.”' },
   },
   /* ------------------------------------------------------- the Sun King */
   {

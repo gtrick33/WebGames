@@ -19,7 +19,7 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     id: 'the-pale-crown',
     name: 'The Pale Crown',
     giver: 'candlewife-hesper',
-    text: 'Edric’s last words were for Hollowmere, but his sword had something else to say. Under the Weeping Tree, Hesper found a forge-order pinned to its blade, taken off a Host courier Edric cut down on the road east: wagons of pale ore bound for Emberdeep Caldera, in the Herald’s grey hand. “Seven points. Leave them empty. They will be filled.” A crown for the seven sigils: the setting the Ash Crown needs to be relit as a Crown of Ash and Starlight. Emberdeep is a ring of black mountains round a lake of fire, and the dwarves of Cinderhold have watched it from the southern rim for a thousand years. Take the east road out of the wood to Cinderhold and find Thane Hroki.',
+    text: 'Halvard’s last words were for Hollowmere, but his sword had something else to say. Under the Weeping Tree, Hesper found a forge-order pinned to its blade, taken off a Host courier Halvard cut down on the road east: wagons of pale ore bound for Emberdeep Caldera, in the Herald’s grey hand. “Seven points. Leave them empty. They will be filled.” A crown for the seven sigils: the setting the Ash Crown needs to be relit as a Crown of Ash and Starlight. Emberdeep is a ring of black mountains round a lake of fire, and the dwarves of Cinderhold have watched it from the southern rim for a thousand years. Take the east road out of the wood to Cinderhold and find Thane Hroki.',
     objective: { kind: 'talk', npc: 'thane-hroki', label: 'Talk to Thane Hroki in Cinderhold' },
     after: ['the-weeping-lord'],
     // the hand-off that sends the hero to emberdeep: it starts when the last chapter ends, not on arrival
@@ -172,7 +172,7 @@ export const EMBERDEEP_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'the-pale-crown', state: 'active' },
-        lines: ['Hesper sent you? Then Edric is at rest. Good. Nothing in my caldera is.', 'Hroki. Cinderhold has kept the fire-ward on this rim for a thousand years, and kept faith with the lord of the fire for as long. Now listen to him.', 'That screaming, under the lake. That is Ashkar. A month, now.'],
+        lines: ['Hesper sent you? Then Halvard is at rest. Good. Nothing in my caldera is.', 'Hroki. Cinderhold has kept the fire-ward on this rim for a thousand years, and kept faith with the lord of the fire for as long. Now listen to him.', 'That screaming, under the lake. That is Ashkar. A month, now.'],
       },
       {
         when: { quest: 'forges-on-the-rim', state: 'active' },

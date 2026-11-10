@@ -64,7 +64,7 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
     name: 'The Starfall Festival',
     giver: 'regent-elowen',
     auto: true,
-    text: 'The ledgers say it plainly, and the Regent will have Crane arrested at dawn, quietly, when the festival is over. Tonight Emberwick celebrates the star that fell three hundred years ago: lanterns in the square, music, the parade down the south avenue. The whole city is in the streets. Walk the parade and watch the crowd.',
+    text: 'The ledgers say it plainly, and the Regent will have Crane arrested at dawn, quietly, when the festival is over. Tonight Emberwick celebrates the star that fell a thousand years ago: lanterns in the square, music, the parade down the south avenue. The whole city is in the streets. Walk the parade and watch the crowd.',
     objective: { kind: 'explore', spot: 'festival-parade', label: 'Watch the Starfall Parade on the south avenue' },
     after: ['city-the-cellar'],
     zone: 'emberwick',

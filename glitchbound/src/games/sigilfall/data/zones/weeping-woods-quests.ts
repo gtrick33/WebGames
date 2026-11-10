@@ -9,10 +9,10 @@ import type { NpcDef, QuestDef, StoryEventDef } from '../types';
  * Queen Ysane took her children in the plague winter, frozen in the moment it died: the first of her echoes. Candlewife Hesper keeps the candles and the Roll of the Wood, the names of the
  * dead: read a warden's name by candlelight and he lies down. The main chain runs from the restless
  * dead around Candlewick through the Wardens' Rest, where the Hallow King's call has turned the knights'
- * eyes violet, to the Weeping Tree, where Lord Edric, the Weeping Lord, still holds the wood to his
+ * eyes violet, to the Weeping Tree, where Lord Halvard, the Weeping Lord, still holds the wood to his
  * oath and is losing it; beaten and named, he tells how Vaelor was beaten the first time, and the road
  * goes north to Gloamhollow. Sexton Abel cuts down the hanged deserters, Chandler Miro wants the
- * candle-snuffer of the Drowned Bell Chapel hushed, and Woodward Fenn lays Edric's old hound to rest; Brother Orren, who came through the Gate
+ * candle-snuffer of the Drowned Bell Chapel hushed, and Woodward Fenn lays Halvard's old hound to rest; Brother Orren, who came through the Gate
  * first, sits in Candlewick's square. Main chain first.
  */
 export const WEEPING_WOODS_QUESTS: QuestDef[] = [
@@ -35,7 +35,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     name: 'The Wardens’ Rest',
     auto: true,
     giver: 'candlewife-hesper',
-    text: 'Every plate you brought bears the same badge: a star over a weeping tree, the mark of Lord Edric’s own company. Edric held this wood against Vaelor in the first war, and his company garrisoned the Wardens’ Rest, the old hall in the middle of the wood, north-west of Candlewick. Those knights never left their posts in three hundred years. Hesper wants to know what has called them off. Go and look.',
+    text: 'Every plate you brought bears the same badge: a star over a weeping tree, the mark of Lord Halvard’s own company. Halvard held this wood against Vaelor in the first war, and his company garrisoned the Wardens’ Rest, the old hall in the middle of the wood, north-west of Candlewick. Those knights never left their posts in three hundred years. Hesper wants to know what has called them off. Go and look.',
     objective: { kind: 'explore', spot: 'wardens-rest', label: 'Go to the Wardens’ Rest north-west of town' },
     after: ['the-candle-road'],
     zone: 'weeping-woods',
@@ -76,7 +76,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     name: 'The Weeping Tree',
     auto: true,
     giver: 'candlewife-hesper',
-    text: 'Miro’s candle burns blue and will not go out; he tried, quite hard. Hesper would carry it herself if she were forty years younger and owned a sword. You will carry it. Find the Weeping Tree in the far north-west of the wood, where Lord Edric waits, and see how far the Hallow King’s call has got into him.',
+    text: 'Miro’s candle burns blue and will not go out; he tried, quite hard. Hesper would carry it herself if she were forty years younger and owned a sword. You will carry it. Find the Weeping Tree in the far north-west of the wood, where Lord Halvard waits, and see how far the Hallow King’s call has got into him.',
     objective: { kind: 'explore', spot: 'the-weeping-tree', label: 'Find the Weeping Tree in the far north-west' },
     after: ['wood-the-children'],
     zone: 'weeping-woods',
@@ -88,7 +88,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     name: 'The Weeping Lord',
     auto: true,
     giver: 'candlewife-hesper',
-    text: 'Under the Weeping Tree stands Lord Edric of the Sigil-wardens, who swore to hold the wood until Vaelor fell and has held it for three hundred years, with his tears frozen on his helm. The Hallow King’s violet is in his eyes now. He is fighting it, and losing, and he will not hear his name while he stands. Beat him down at the Weeping Tree in the far north-west, and let Hesper read his name over him by Miro’s candle.',
+    text: 'Under the Weeping Tree stands Lord Halvard of the Wardens’ Watch, who swore to hold the wood until Vaelor fell and has held it for three hundred years, with his tears frozen on his helm. The Hallow King’s violet is in his eyes now. He is fighting it, and losing, and he will not hear his name while he stands. Beat him down at the Weeping Tree in the far north-west, and let Hesper read his name over him by Miro’s candle.',
     objective: { kind: 'kill', region: 'weeping-woods', count: 1, enemies: ['the-weeping-lord'], label: 'Bring down the Weeping Lord at the Weeping Tree' },
     after: ['the-weeping-tree'],
     zone: 'weeping-woods',
@@ -97,7 +97,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
       xp: 8100,
       gold: 2000,
       item: 'the-wardens-oath',
-      text: 'Edric goes down on one knee in the candlelight, and Hesper reads his name, and the violet goes out of his eyes. “We did not beat him with swords,” he says. “We beat him when the seven sigils were raised against him together. Not one. Not six. All seven.” He lays his sword under the tree, and all through the wood the dead lie down with him. Then, more quietly: “His queen is under the lake at Hollowmere. He goes there. He still goes there.” Hesper gives you his oath, engraved in a silver star.',
+      text: 'Halvard goes down on one knee in the candlelight, and Hesper reads his name, and the violet goes out of his eyes. “We did not beat him with swords,” he says. “We beat him when the seven sigils were raised against him together. Not one. Not six. All seven.” He lays his sword under the tree, and all through the wood the dead lie down with him. Then, more quietly: “His queen is under the lake at Hollowmere. He goes there. He still goes there.” Hesper gives you his oath, engraved in a silver star.',
     },
   },
   /* ---------------------------------------------- Sexton Abel's hanged men */
@@ -105,7 +105,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     id: 'the-hanging-oaks',
     name: 'The Hanging Oaks',
     giver: 'sexton-abel',
-    text: 'Sexton Abel has dug every grave in Candlewick for forty years, as his father did, and his. Every grave but thirty: the deserters Lord Edric hanged from the oaks on the night before the last battle, who have hung there ever since because no sexton would cut them down. Abel would now, he says, if they’d stop kicking. Go and see the Hanging Oaks, due west of Candlewick.',
+    text: 'Sexton Abel has dug every grave in Candlewick for forty years, as his father did, and his. Every grave but thirty: the deserters Lord Halvard hanged from the oaks on the night before the last battle, who have hung there ever since because no sexton would cut them down. Abel would now, he says, if they’d stop kicking. Go and see the Hanging Oaks, due west of Candlewick.',
     objective: { kind: 'explore', spot: 'the-hanging-oaks', label: 'Find the Hanging Oaks west of town' },
     after: ['the-candle-road'],
     zone: 'weeping-woods',
@@ -151,7 +151,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     id: 'old-vigil',
     name: 'Old Vigil',
     giver: 'woodward-fenn',
-    text: 'Fenn found his dog alive, up a tree, and very cross. He also found what put it there: Old Vigil, Lord Edric’s own wolfhound, as big as a pony, who has kept watch over his master’s empty grave in the Wolf Barrow for three hundred years. Edric never came home to fill it, and lately Vigil takes everyone on the road for the men who kept him away. Lay the old hound to rest at the Wolf Barrow, north of town.',
+    text: 'Fenn found his dog alive, up a tree, and very cross. He also found what put it there: Old Vigil, Lord Halvard’s own wolfhound, as big as a pony, who has kept watch over his master’s empty grave in the Wolf Barrow for three hundred years. Halvard never came home to fill it, and lately Vigil takes everyone on the road for the men who kept him away. Lay the old hound to rest at the Wolf Barrow, north of town.',
     objective: { kind: 'kill', region: 'weeping-woods', count: 1, enemies: ['old-vigil'], label: 'Lay Old Vigil to rest at the Wolf Barrow' },
     after: ['hounds-of-the-wolf-barrow'],
     zone: 'weeping-woods',
@@ -171,7 +171,7 @@ export const WEEPING_WOODS_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'the-frozen-hamlet', state: 'active' }, lines: ['There is a house in the wood that the knights all face. I went as far as the trees. There is a bonfire there that is burning and not burning.', 'I don’t want to go in alone. Not because of the dead. I have spent my life with the dead. Because of the fire.'] },
       { when: { quest: 'wood-the-children', state: 'active' }, lines: ['The dead must stay dead. I have said it at every graveside for forty years. Those two children aren’t dead. They’re remembered. I don’t know what we owe that.', 'Bring them to her door. That much I know.'] },
       { when: { quest: 'wood-the-children', state: 'done' }, lines: ['She said, tell him we waited and it was all right. She was talking to him. Through us.', 'He did all of this, the Host, the Crown, the Tear, to hear her say that. And she has been saying it for three hundred years in a hollow in the snow.'] },
-      { when: { quest: 'the-weeping-lord', state: 'done' }, lines: ['Edric said his queen is under the lake at Hollowmere. I knew a lake like that once. Everyone has one.', 'We should go. I would rather not. We should go.'] },
+      { when: { quest: 'the-weeping-lord', state: 'done' }, lines: ['Halvard said his queen is under the lake at Hollowmere. I knew a lake like that once. Everyone has one.', 'We should go. I would rather not. We should go.'] },
       { lines: ['Candlewick has a chapel with no priest. I have been ringing its bell at dusk. They say thank you every time.', 'The dead must stay dead. I still believe it. I’d just like it to be easier to believe.'] },
     ],
   },
@@ -197,7 +197,7 @@ export const WEEPING_WOODS_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'the-wardens-rest', state: 'active' },
-        lines: ['Every plate has the same badge: a star over a weeping tree. Lord Edric’s company. They held the Wardens’ Rest, the old hall north-west of here, in the middle of the wood.', 'They never leave their posts. Something has called them off. Go and see what.'],
+        lines: ['Every plate has the same badge: a star over a weeping tree. Lord Halvard’s company. They held the Wardens’ Rest, the old hall north-west of here, in the middle of the wood.', 'They never leave their posts. Something has called them off. Go and see what.'],
       },
       {
         when: { quest: 'the-weeping-tree', state: 'active' },
@@ -273,9 +273,9 @@ export const WEEPING_WOODS_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'old-vigil', state: 'active' },
-        lines: ['Found Bramble. Up a tree, alive, and very cross with me. Found what put him there, too.', 'Old Vigil: Lord Edric’s own hound, big as a pony, keeping watch on his master’s empty grave in the barrow. Three hundred years waiting for a man who never came home. Let the old dog rest.'],
+        lines: ['Found Bramble. Up a tree, alive, and very cross with me. Found what put him there, too.', 'Old Vigil: Lord Halvard’s own hound, big as a pony, keeping watch on his master’s empty grave in the barrow. Three hundred years waiting for a man who never came home. Let the old dog rest.'],
       },
-      { when: { quest: 'old-vigil', state: 'done' }, lines: ['I buried him in Edric’s grave. Somebody ought to be in it, and he’d waited long enough.', 'Bramble sleeps on my feet now. He won’t say what he saw. Neither will I.'] },
+      { when: { quest: 'old-vigil', state: 'done' }, lines: ['I buried him in Halvard’s grave. Somebody ought to be in it, and he’d waited long enough.', 'Bramble sleeps on my feet now. He won’t say what he saw. Neither will I.'] },
       { lines: ['Woodward Fenn. I keep the paths open and the wood out of the village. Mostly.', 'If you hear a hound behind you on the road, don’t run. They like it when you run.'] },
     ],
   },

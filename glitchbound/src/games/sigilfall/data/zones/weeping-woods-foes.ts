@@ -225,7 +225,7 @@ export const WEEPING_WOODS_FOES: Record<string, EnemyDef> = {
     named: true,
     scale: 1.3,
     resist: { poison: 0.5, shadow: 0.4, frost: 0.3 },
-    blurb: 'Lord Edric of the Sigil-wardens, who swore to hold the wood until Vaelor fell, and has held it for three hundred years with tears frozen on his helm. He throws the ghosts of his company’s swords in a fan, brings the Weeping Tree’s branches down where you stand, and calls his oath-sworn knights up out of the roots.',
+    blurb: 'Lord Halvard of the Wardens’ Watch, who swore to hold the wood until Vaelor fell, and has held it for three hundred years with tears frozen on his helm. He throws the ghosts of his company’s swords in a fan, brings the Weeping Tree’s branches down where you stand, and calls his oath-sworn knights up out of the roots.',
   },
 };
 
@@ -256,7 +256,7 @@ export const WEEPING_WOODS_ITEMS: ItemDef[] = [
         },
       },
     ],
-    lore: 'Lord Edric’s oath, sworn three hundred years ago and engraved in a silver star. He held the wood with it. Hesper says it is yours to hold now, and does not say what.',
+    lore: 'Lord Halvard’s oath, sworn three hundred years ago and engraved in a silver star. He held the wood with it. Hesper says it is yours to hold now, and does not say what.',
     minLevel: 50,
     special: true,
   },

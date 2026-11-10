@@ -154,7 +154,7 @@ export const WEEPING_WOODS = wildRegion(
       { near: 'larks-hollow', dx: 3, dy: 5, marker: { kind: 'prop', prop: 'campfire' }, when: until('wood-the-children') },
       { near: 'larks-hollow', dx: 3, dy: 4, marker: { kind: 'wisp', color: '#c8c4dc', size: 2 }, when: until('wood-the-children') },
       { near: 'larks-hollow', dx: 3, dy: 5, marker: { kind: 'prop', prop: 'debris' }, when: after('wood-the-children') },
-      // the Weeping Tree after Edric: his sword under it, and lanterns on the wardens' graves
+      // the Weeping Tree after Halvard: his sword under it, and lanterns on the wardens' graves
       { near: 'the-weeping-tree', dx: 0, dy: 3, marker: { kind: 'prop', prop: 'lantern' }, when: after('the-weeping-lord') },
       { near: 'wardens-rest', dx: -3, dy: 4, marker: { kind: 'prop', prop: 'lantern' }, when: after('the-weeping-lord') },
       { near: 'wardens-rest', dx: 3, dy: 4, marker: { kind: 'prop', prop: 'lantern' }, when: after('the-weeping-lord') },

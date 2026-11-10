@@ -12,7 +12,8 @@ the main story by hand**, the way the opening night is staged.
   the Saltmarsh, Duskfen, Ironpeak, Stormwatch, the Grimward Moors, Sablewind, Vinecoil, the Bonefields, the
   Blightwood, the Sunken Reaches and the Riftscar. Their dungeons stay open as Riftstone runs.
 - Quest ids stay where a save depends on them; a hero part-way through the old story is moved onto the new one
-  (`progress/storyMigration.ts`). Everything a player reads is new or rewritten.
+  (save version 13, `progress/save.ts` keepPlace: every main quest before the furthest one started counts as
+  played, with its sigil). Everything a player reads is new or rewritten.
 
 Principles:
 
@@ -62,8 +63,8 @@ done in the dark. His widow carried him home and sang at his barrow until she di
 A **Gloamknight** hero who finishes the story takes up his watch (*Warden of the Gloam*,
 `data/wardens.ts`).
 
-The wardens sealed Vaelor in **Duskspire**, his citadel, and built the **Three Gates** (Highwall, the Gloam Gate,
-the Muster Hall) on the road to it. For three hundred years the seal held because nobody in Aster knew where the sigils
+The wardens sealed Vaelor in **Duskspire**, his citadel, and built the **Three Gates** on the road to it: Highwall,
+the Gloam Gate, and the Duskspire Gate itself, whose seven locks open only for all seven sigils. For three hundred years the seal held because nobody in Aster knew where the sigils
 were.
 
 ### Now
@@ -103,7 +104,7 @@ it saw (the player sees it with her: `vision` scenes).
 | --- | --- | --- | --- | --- |
 | **Embers** | under Briarhollow's chapel (Prologue) | Brother Hale, who became Briarhollow's first priest | the star falling and breaking over two kingdoms | the words of her mother's lullaby (she still hums it) |
 | **Stone** | the shrine under Hearthstead's hall (Amberfield) | Marshal Teodric | two crowns forged; two kings who shared a sky | — (Vosk takes it before she can touch it; won back at the Pale Reach) |
-| **Sun** | the Tomb of the Sun King (Sunscorch) | Queen Ammuret, who had herself buried with it | the plague ship coming into Vaelmoor's harbor, and the man who let it in | the color of Briarhollow's orchard in spring |
+| **Sun** | the Tomb of the Sun King (Sunscorch) | the Sun King, a warden-king of the desert sealed in his tomb with it | the plague ship coming into Vaelmoor's harbor, and the man who let it in | the color of Briarhollow's orchard in spring |
 | **Thorns** | the Thorn Court (Glimmerwood) | the first Thistlemourn | Vaelor at his children's bedside, the night he broke his crown | Thessa's face (she knows the name) |
 | **Frost** | the Vault of Rime (Rimeheld) | Jarl Ingrith the Unthawed, frozen in the vault with it | the eight wardens at the border; seven ride away and one stays | her own birthday |
 | **Veil** | the Tear (the Shattered Vale) | Magister Orla, who sealed the Tear with it | Ser Edric holding the Gloam Gate alone at dusk | — (taken with her by the Herald; won back at the Gloam Gate) |
@@ -120,7 +121,7 @@ At the Duskspire Gate the hero carries all seven (`the-seventh-sigil`): the last
 | **Mara Venn**, Briarhollow's guard | Prologue, at the gate | Holds the gate alone at the start; learns to lead; commands the relief of Highwall and the Last March. Distrusts magic, trusts Elyra. |
 | **Elyra**, hedge-mage, Thessa's apprentice | Prologue, the burning inn | Bonds the sigils; gains light, loses memories; taken by the Herald at the Tear; rescued at the Gloam Gate; in the finale she holds all seven and the choice. |
 | **Cael Varrow**, disgraced knight of the Ninefold Watch | Act II, Lantern Hill ("a man called Wat") | Blamed for the Watch's fall ten years ago (the relief never came: Crane countermanded it). Redeemed through Corvane, his mentor; leads the sortie at Highwall. |
-| **Nyx**, scout and thief | Act I cameo (Thornvale), joins in the Sunscorch | Funny, quick, loyal to one person: her brother **Wren**, held by the Host. Sells the party's road to the Herald for him at the Tear; comes back with the Herald's prison map. |
+| **Nyx**, scout and thief | Act I, Thornvale: reads the gang's orders, comes along after the Bandit King | Funny, quick, loyal to one person: her brother **Wren**, held by the Host. Sells the party's road to the Herald for him at the Tear; comes back with the Herald's prison map. |
 | **Brother Orren**, last of the Lantern priests | Act II, Lantern Hill | Knows what the Ash Crown is; argues every time it matters that the dead must stay dead; meets his own dead at Hollowmere and holds. |
 
 Story figures: **Elder Maren** (the camp's voice), **Herbwife Thessa**, **Old Haldor** the bell-ringer, **Regent
@@ -172,15 +173,17 @@ sing.
 
 **Thornvale: Millbrook** (8–14) — farms, the mill bridge, and a gang paid in coin that weighs nothing.
 
-1. `mill-the-bridge` **The Mill Road** — the bridge is barricaded by the Gallows Gang; Reeve Aldous's grain can't
-   cross. *Scene: the barricade, the gang's banner, a cart turned back.*
-2. `kettle-farm` **Ashes at Kettle Farm** — Tobin's farm burned by Red Caps; *rescue* Tobin's family from the barn.
-3. `thieves-cant` **Thieves' Cant** — the gang's orders are in a cant nobody can read; Pim knows someone who can:
+1. `south-road` **Millbrook** — Reeve Aldous; the bridge barricaded by the Gallows Gang, a cart turned back.
+2. `kettle-farm` **Ashes at Kettle Farm** — Tobin's farm burned by Red Caps; the gang's orders in the ashes.
+3. `thieves-cant` **Thieves' Cant** — the orders are in a cant nobody can read; Pim knows someone who can:
    **Nyx**. *Scene: Nyx on the inn's roof, reading by moonlight.* **"'Hunt the bell-chapels. Bring me the warm
    iron.' Signed with no name. Grey ink. You lot are in trouble."** First sign that the Host hunts the sigils.
-4. `the-bandit-king` **The Bandit King** — *boss*: Varric at Gallows Hill. **"Gold that weighs nothing. You don't
-   know what you're for till someone pays you in it."**
-5. `camp-grain` **Grain for Briarhollow** — *escort*: the carts cross the free bridge to the camp.
+4. `the-bandit-king` **The Bandit King** — *boss*: Harlan Blackglove at Gallows Keep. **"Gold that weighs nothing.
+   You don't know what you're for till somebody pays you in it."** Nyx turns a grey coin over: **"I want to know
+   who. I'm coming with you."**
+5. `mill-the-bridge` **The Mill Road** — break the blockade with Sefa's lads and burn the barricade; then
+   `hollow-gold` (the ash-gold to Maren) and `camp-grain` (*escort*: the carts cross the free bridge to the camp),
+   and `the-regents-council`: Maren reads the courier's dried letter, his ninth, never answered.
 
 **The Amberfield: Hearthstead** (16–22) — the steppe, the centaur clans, and the walled village the Host wants.
 
@@ -203,13 +206,14 @@ sing.
 
 **The Ashen Barrows: Lantern Hill** (23–29) — the downs of the old kings' barrows, where the lamps go out one a night.
 
-1. `candle-thieves` **The Lamps Go Out** — Lamplighter Ivo; **Brother Orren** keeps the last chapel lit. *Scene:
+1. `the-lanterns-dim` / `orren-the-last-chapel` / `the-last-lamp` **The Lamps Go Out** — Lamplighter Ivo; **Brother
+   Orren** keeps the last chapel lit, and the vigil relights the great lamp. *Scene:
    lamps going out across the downs, one by one, toward the chapel.* **"The dead don't fear the dark. They fear being
    seen. Keep the lamps lit."**
 2. `cael-the-hostel` **A Man Called Wat** — a drunk knight in the hostel who knows too much about the barrows:
    Cael Varrow, Captain of the Ninefold Watch that died here ten years ago waiting for relief that never came.
-3. `the-kings-mound` **The Kings' Mound** — *defend* the chapel as the barrow kings' dead march, Orren's lanterns
-   holding them, Cael fighting beside the hero.
+3. `the-kings-mound` / `the-barrow-king` **The Kings' Mound** — the mound where Corvane rode in alone; Hrodric, the
+   first barrow king, woken to keep his door.
 4. `sir-corvane` **Sir Corvane the Fallen** — *boss* in the Barrow of Kings. Corvane was Cael's mentor and is the
    Host's first knight now. Dying, he gives Cael the relief order for the Ninefold Watch, **countermanded in the
    Chancellor's hand.** **"I waited for you to hate me, boy. Hate him instead. It's quicker."**
@@ -232,18 +236,19 @@ sing.
 
 **The Sunscorch: the Oasis of Ras** (30–36) — sand to the horizon, and a dig the Host has been at for a month.
 
-1. `hollow-coin` **The Oasis of Ras** — ash-coin in the oasis wells; **Nyx** is here, smuggling, and joins:
-   **"Your map's my map now. I know every road the Host pays for."**
-2. `the-sandscribe` **The Sandscribe** — Ibbi reads the fallen obelisk: a warden queen, Ammuret, had herself buried
-   alive with something warm.
-3. `the-hollow-dig` **The Ashen Dig** — *raid* on the Host's dig site before it breaks through.
-4. `the-sun-king` **The Sun Queen** — *boss* in the tomb: Ammuret's echo, who tests rather than hates. She gives
+1. `the-sun-kings-tomb` **The Oasis of Ras** — ash-coin in the oasis wells; Nyx's smuggler friends owe her money:
+   **"Every road the Host pays for out here goes through people who owe me. That makes them our roads."**
+2. `the-sandscribe` / `the-fallen-obelisk` **The Sandscribe** — Ibbi reads the riddle copied from the Fallen
+   Obelisk: the Sun King sleeps "with his warm thing" where the sun first touches the sand.
+3. `the-hollow-dig` / `the-sunken-gate` / `the-sand-warden` **The Ashen Dig** — the Host's dig, the door it broke,
+   and the tomb's keeper that broke the Host.
+4. `the-sun-king` **The Sun King** — *boss* in the tomb: the warden-king, woken by the Host's picks. She gives
    up the **Sigil of the Sun**. **Vision:** the plague ship in Vaelmoor's harbor, and a young man in harbor-master's
    blue waving it in. Elyra forgets the color of the orchard.
 
 **The Glimmerwood: Lumen Glade** (31–37) — a fey wood gone sour, thorns where the songs were.
 
-1. `the-withered-ring` **The Withered Ring** — Lady Silvaine; the court's prince Thistlemourn has sworn to the Host.
+1. `the-fading-lights` / `the-withered-ring` **The Withered Ring** — Lady Silvaine; the court's prince Thistlemourn has sworn to the Host.
 2. `the-pale-pavilion` **The Pale Pavilion** — the Herald's bargain, found in the prince's tent: his court's blight
    lifted in exchange for the Sigil of Thorns. *Scene: the pavilion's grey silk, a letter in grey ink.*
 3. `the-thorn-court` **The Thorn Court** — *raid* through the thorn knights to the court.
@@ -253,42 +258,44 @@ sing.
 
 **Rimeheld: Frostgate** (33–39) — snow, giants, and a jarl who sold his kin.
 
-1. `rime-frostgate` **The Last Sledges** — Jarl Sigrun's sledges come in under giant raids; *escort*.
-2. `rime-the-traitor-jarl` **The Traitor Jarl** — Jarl Hrimfang sold the vault's runes for ash-gold. Sigrun must
-   choose between his life and a civil war; the hero brings him in.
-3. `rime-the-vault-door` **The Vault Door** — the runes, and the frozen warden behind the door.
+1. `the-frozen-road` / `the-last-sledges` **The Last Sledges** — Jarl Sigrun's sledges come in under giant raids; *escort*.
+2. `the-giants-hearth` **The Giants' Hearth** — Jarl Hrimfang of the giants sold the wardens' vault for ash-gold.
+3. `the-vault-door` / `the-traitor-jarl` **The Vault Door** — opened this week; Hrimfang digging below.
 4. `the-vault-of-rime` **The Vault of Rime** — the dungeon; Jarl Ingrith the Unthawed hands over the **Sigil of
    Frost** and is allowed to thaw. **Vision:** the eight wardens on the border; seven ride away; one stays.
    Elyra forgets her birthday.
 
 **The Shattered Vale: Shardwatch** (35–41) — the low point.
 
-1. `vale-shardwatch` **Shardwatch** — Magister Quell's watchtowers around the **Tear**, a wound in the sky the
+1. `where-the-rift-bleeds` / `the-breach-camp` **Shardwatch** — Magister Quell's watchtowers around the **Tear**, a wound in the sky the
    Sigil of the Veil has kept shut for three hundred years.
-2. `vale-the-cipher` **The Herald's Cipher** — Nyx goes quiet; a grey-ink letter about **Wren**.
+2. `the-heralds-cipher` **The Herald's Cipher** — Nyx goes quiet; a grey-ink letter about **Wren**.
 3. `the-heralds-ambush` **The Tear** — the hero takes the **Sigil of the Veil** from the Tear, and the **Pale
    Herald** is waiting: Nyx sold him the road for her brother. A fight that cannot be won (`ends`); **Elyra is
    taken**, and the sigils with her. **"Three hundred years I have carried my brother's grief. Tonight I set it down."**
    The Herald keeps neither promise: Wren stays a prisoner. Nyx is gone.
-4. `the-heart-of-the-tear` **The Heart of the Tear** — aftermath: Quell seals the Tear with what's left; the same
-   night **Fernstead falls**; at the camp Thessa finds Elyra's satchel packed for three days.
+4. `the-heart-of-the-tear` **The Heart of the Tear** — the Tearborn; the Tear shrinks to a crack. The same night
+   **Fernstead fell** (`fall-of-fernstead`): its people at the camp, and Thessa, who finds Elyra's satchel packed
+   for three days. Then `fern-retaken` **Fernstead Again**: Mara and Hollis take it back, and the Regent's rider
+   names Mara commander of the relief of Highwall.
 
 ### Act IV — The Gates · 40–48
 
 **Highwall March** (40–46) — the first of the Three Gates, under siege.
 
-1. `the-long-night-ends` **The First Gate** — Mara commands the relief; Lord-Commander Varn. *Scene: the wall
-   from the trenches, the bone batteries firing.*
-2. `cael-the-sortie` **The Sortie** — *raid*: Cael leads the riders out of the sally port.
-3. `gate-nyx-returns` **Under a White Rag** — Nyx comes in with a white rag on a stick and the Herald's prison
-   map. **"Hit me after. Elyra's in the Gloam Gate's cells. I can get you in."**
-4. `the-siege-breaker` **The Breach** — *boss*: the Siege-Breaker in the breach.
-5. `general-morvain` **General Morvain** — *boss*; the first gate is ours.
+1. `the-wall-burns` / `mara-commands` **The First Gate** — the relief camp under the bone batteries; Lord-Commander
+   Varn, and Mara moving every tent. *Scene: the camp ducking as the batteries fire on the hour.*
+2. `ashes-of-ashby` **Ashes of Ashby** — a burned village with no bodies: the dead walked into the smoke.
+3. `cael-the-sortie` **The Sortie** — *raid*: Cael leads the riders out at the Host's lines.
+4. `gate-nyx-returns` / `gate-the-prison-map` **Under a White Rag** — Nyx comes in with a white rag on a stick and the
+   Herald's prison map. **"Hit me after. Elyra's in the Gloam Gate's cells. I can get you in."**
+5. `the-breach` / `the-siege-breaker` / `general-morvain` **The Breach** — *bosses* in the siege; then
+   `the-long-night-ends`: the first gate is ours. **"…One gate."**
 
 **Gloamhollow: Lastlight** (44–48) — the black fen, the lamps of Lastlight, the Gloam Gate.
 
 1. `gloam-the-unlit-mile` **The Unlit Mile** — Lastlight's lamp-keepers; the road dark for a mile.
-2. `gloam-the-eighth-warden` **The Eighth Warden** — at a cairn by the gate, Elyra's absence is a hole the
+2. `gloam-nyx-confesses` / `gloam-the-gate` **The Eighth Warden** — at a cairn by the gate, Elyra's absence is a hole the
    **vision** comes through anyway, from the Veil sigil kept in the gate: **Ser Edric holding the gate alone at
    dusk**: the man the Grey Lady sang for. **"Till the last light. Then a little after."**
 3. `gloam-the-cells` **The Cells** — *rescue*: Nyx's map, the cells, Elyra. She knows the hero's face; she can't
@@ -305,7 +312,10 @@ sing.
 2. `the-frozen-hamlet` **Lark's Hollow** — a village frozen in the hour it died.
 3. `wood-the-children` **Two Names in the Snow** — *event*: the echoes of **Lark and Edda** playing in the snow;
    the Host comes for them because Vaelor calls them. **"Papa says we're going home soon."**
-4. `the-weeping-lord` **The Weeping Lord** — *boss*: the grief of the wood given a body.
+4. `the-weeping-tree` / `the-weeping-lord` **The Weeping Lord** — *boss*: Lord Halvard of the Wardens' Watch, who
+   would not kneel to the Ash Crown and has held the wood against his own king for three hundred years, losing to
+   the violet at last. Laid to rest, he says the seven sigils must be raised together, and that Vaelor still goes
+   to Hollowmere.
 
 **Emberdeep Caldera: Cinderhold** (51–55) — a ring of black mountains round a lake of fire.
 
@@ -353,8 +363,10 @@ remembers the lullaby's words.
 - **fx**: a spell or blast at a place (a sigil waking, a wall breaking, the Tear opening).
 - **music**: a track change for the scene.
 
-Every main quest has a scene that opens it (`when: during(id)`), boss quests also open on their boss, and every
-land's last quest has an aftermath scene.
+Every main quest has a scene that opens it (`when: during(id)`, or a shot that opens its story fight), boss
+quests open on their boss, and every land's chain closes on one (`data/scenes-story.ts`, with the older staging in
+`data/scenes.ts`). The Prologue keeps its own sixteen scenes; the Alpha keeps a beat. Each scene has a
+"(scene)" preset (`progress/presets.ts`) that puts a hero at its moment.
 
 ---
 

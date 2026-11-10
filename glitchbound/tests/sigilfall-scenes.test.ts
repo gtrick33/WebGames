@@ -84,10 +84,11 @@ describe('Sigilfall: scenes', () => {
       // a ghost stands somewhere there, in the look of somebody real; an effect goes off somewhere there
       for (const s of def.steps) {
         if ('ghost' in s) {
-          expect(!!w.places[s.at] || w.spots.some((sp) => sp.id === s.at) || w.npcs.some((n) => n.id === s.at), `${def.id}: ghost at ${s.at}`).toBe(true);
+          expect(s.at === 'hero' || !!w.places[s.at] || w.spots.some((sp) => sp.id === s.at) || w.npcs.some((n) => n.id === s.at), `${def.id}: ghost at ${s.at}`).toBe(true);
           expect(npcLookOf(s.as), `${def.id}: ghost as ${s.as}`).not.toBeNull();
         }
-        if ('fx' in s) expect(!!w.places[s.at] || w.spots.some((sp) => sp.id === s.at) || w.npcs.some((n) => n.id === s.at), `${def.id}: fx at ${s.at}`).toBe(true);
+        // (in a dungeon, which names no places, a vision stands round the hero)
+        if ('fx' in s) expect(s.at === 'hero' || !!w.places[s.at] || w.spots.some((sp) => sp.id === s.at) || w.npcs.some((n) => n.id === s.at), `${def.id}: fx at ${s.at}`).toBe(true);
       }
       run(w, 60);
       expect(w.scene, def.id).toBeNull();

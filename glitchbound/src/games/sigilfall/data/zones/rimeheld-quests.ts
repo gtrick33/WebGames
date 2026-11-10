@@ -14,7 +14,8 @@ export const RIMEHELD_QUESTS: QuestDef[] = [
   {
     id: 'the-frozen-road',
     name: 'The Frozen Road',
-    giver: 'regent-elowen',
+    giver: 'lady-silvaine',
+    auto: true,
     text: 'The third place on the wardens’ map is the Vault of Rime, far in the frozen north beyond the Glimmerwood, where a warden-jarl had herself frozen into the ice with the Sigil of Frost three hundred years ago. Jarl Sigrun of Frostgate keeps the tundra. Take the cold road west out of the Glimmerwood and find her before the Host finds the vault.',
     objective: { kind: 'talk', npc: 'jarl-sigrun', label: 'Talk to Jarl Sigrun in Frostgate' },
     after: ['the-clans-decide'],

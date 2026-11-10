@@ -21,7 +21,7 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     id: 'the-dead-lake',
     name: 'The Dead Lake',
     giver: 'thane-hroki',
-    text: 'Edric said it with the violet going out of his eyes: Vaelor’s queen is under the lake at Hollowmere, and he still goes there. North of the Weeping Woods the road runs out to a black lake so still it shows a sky that isn’t there. On its southern shore a ferryman keeps a landing; Hesper’s grandmother bought eels from him, she says, and so did hers. Take the north road out of the wood and find the Ferryman.',
+    text: 'Halvard said it with the violet going out of his eyes: Vaelor’s queen is under the lake at Hollowmere, and he still goes there. West of the caldera the road runs down to a black lake so still it shows a sky that isn’t there. On its southern shore a ferryman keeps a landing; Hroki’s grandfather sold him the nails for his boat, he says, and so did his. Take the west road out of Emberdeep and find the Ferryman.',
     objective: { kind: 'talk', npc: 'the-ferryman', label: 'Find the Ferryman at his landing on Hollowmere’s southern shore' },
     after: ['ashkar-the-bound'],
     // the hand-off that sends the hero to hollowmere: it starts when the last chapter ends, not on arrival
