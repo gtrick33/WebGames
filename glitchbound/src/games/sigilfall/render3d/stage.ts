@@ -182,7 +182,7 @@ export class Stage {
 
   /** Where the hero stands, for the pool of light round them in a dark place. */
   heroAt(x: number, y: number): void {
-    LIGHT.uSee.value.set(x / TILE, 0.6, y / TILE, 0);
+    LIGHT.uSee.value.set(x / TILE, 0.6, y / TILE, 1);
   }
 
   /** Clears the ground's drawing layer for this frame and hands it over. */

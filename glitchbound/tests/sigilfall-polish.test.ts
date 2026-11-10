@@ -1,6 +1,8 @@
 import { gunzipSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { ARENAS } from '../src/games/sigilfall/data/dungeongen';
+import { PROPS } from '../src/games/sigilfall/data/props';
 import { ENEMIES } from '../src/games/sigilfall/data/enemies';
 import { BOSSES } from '../src/games/sigilfall/data/bosses';
 import { kitOf } from '../src/games/sigilfall/render3d/kits';
@@ -114,6 +116,19 @@ describe('Sigilfall: the polish pass', () => {
         if (!p) faults.push(`${ev.id}: no place ${from}`);
         else if (!open(w, p.x, p.y)) faults.push(`${ev.id}: foes come in from ${from}, which is not open ground (${at(p.x, p.y)})`);
       }
+    }
+    expect(faults).toEqual([]);
+  });
+
+  it('every boss’s chamber is dressed as its own place, out of things that exist', () => {
+    const faults: string[] = [];
+    for (const r of Object.values(REGIONS)) {
+      if (r.kind !== 'dungeon' || isRetired(r.id)) continue;
+      for (const e of r.encounters) if (e.boss && !ARENAS[e.boss]) faults.push(`${r.id}: ${e.boss} has no chamber of its own`);
+    }
+    for (const [id, a] of Object.entries(ARENAS)) {
+      const names = [...(a.wall ?? []), ...(a.side ?? []), ...(a.bits ?? []), a.fires ?? '', a.corners ?? '', a.ring?.prop ?? '', a.rows?.prop ?? ''].filter(Boolean);
+      for (const n of names) if (!PROPS[n]) faults.push(`${id}: no prop ${n}`);
     }
     expect(faults).toEqual([]);
   });

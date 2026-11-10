@@ -1,4 +1,5 @@
 import { hash2 } from '../core/math';
+import { propStandsUp } from './props';
 import type { Marker, PlacedMarkerDef, RegionDef } from './types';
 
 /*
@@ -40,6 +41,106 @@ interface Dress {
   /** The carpet from the boss's door to the foot of it. */
   carpet?: string;
 }
+
+/**
+ * A boss's chamber dressed as the place it is, not as every other room of its dungeon (the owner: "the interior of
+ * the bosses' rooms is quite similar, I want a different vibe"): what lines its walls, the light down its sides, a
+ * ring of things round the middle, rows down the length of it, what stands in its corners and lies underfoot, its
+ * floor and how its carpet is laid. What is not said is the dungeon's own. Its fight is measured to the room, and what
+ * stands up has a body to walk round: so what stands up keeps to the walls (rows against them, a ring of tall things
+ * out at the edge), and only what lies low goes in the middle. A fight's own things (Gloomwing's lamps) are not dressing.
+ */
+export interface Arena {
+  wall?: string[];
+  side?: string[];
+  /** The lights down both sides of the chamber (null: none, the dark is the point). */
+  fires?: string | null;
+  /** What stands in its far corners. */
+  corners?: string;
+  carpet?: string | null;
+  /**
+   * How the carpet is laid: a runner from the door to the boss (the default), a cross, a T across the head of the hall,
+   * twin aisles down its sides, a border framing the floor, or a procession of rugs.
+   */
+  carpetStyle?: 'runner' | 'cross' | 'T' | 'twin' | 'border' | 'rugs';
+  /** `n` things in a ring round the middle, `at` of the way out to the walls. */
+  ring?: { prop: string; n: number; at: number };
+  /** Things in two rows down the length of the chamber, `inset` tiles in from its sides, `step` tiles apart. */
+  rows?: { prop: string; inset?: number; step?: number };
+  bits?: string[];
+  /** How much more lies underfoot than usual. */
+  litter?: number;
+  /**
+   * Its floor, in its own stone: fitted flagstones, great polished squares of marble, rough earth or rock or ice, boards,
+   * or a mosaic of small tiles; in two colors (render3d/land.ts draws it).
+   */
+  floor?: Floor;
+}
+
+export interface Floor {
+  kind: 'flag' | 'marble' | 'rough' | 'plank' | 'mosaic';
+  a: string;
+  b: string;
+}
+
+export const ARENAS: Record<string, Arena> = {
+  // the Chapel Crypt
+  'coffin-matron': { wall: ['coffin', 'candles', 'coffin', 'grave-cross'], side: ['coffin'], fires: 'grave-lamp', corners: 'sarcophagus', carpet: null, ring: { prop: 'candles', n: 12, at: 0.55 }, bits: ['bones', 'candles', 'skulls'], floor: { kind: 'rough', a: '#5e5c50', b: '#4c4a40' } },
+  ossric: { wall: ['statue', 'great-column', 'statue'], side: ['broken-column', 'sarcophagus'], fires: 'iron-torch', corners: 'tall-column', ring: { prop: 'skulls', n: 10, at: 0.62 }, bits: ['rubble', 'bones'], carpetStyle: 'twin', floor: { kind: 'flag', a: '#74747e', b: '#62626e' } },
+  morgrave: { wall: ['candles', 'altar', 'candles', 'gravestone'], side: ['gravestone', 'candles'], fires: 'grave-lamp', corners: 'crystals', carpet: '#4a1a4a', ring: { prop: 'candles', n: 16, at: 0.42 }, bits: ['candles', 'skulls', 'bones'], carpetStyle: 'cross', floor: { kind: 'mosaic', a: '#4e3e5e', b: '#3a2e4a' } },
+  // Gallows Keep
+  hangman: { wall: ['cage', 'skull-banner', 'cage'], side: ['cage', 'big-barrel'], fires: 'torch', corners: 'cage', carpet: null, ring: { prop: 'skulls', n: 6, at: 0.7 }, bits: ['rubble', 'sacks', 'bones'], floor: { kind: 'plank', a: '#6e5238', b: '#5a4430' } },
+  gnasher: { wall: ['cage', 'trough', 'cage', 'hay'], side: ['cage', 'trough', 'hay'], fires: 'brazier', corners: 'cage', carpet: null, bits: ['bones', 'bone-heap', 'sacks', 'log'], litter: 2, floor: { kind: 'rough', a: '#5e4c3a', b: '#4a3c2e' } },
+  varric: { wall: ['great-banner', 'weapon-rack', 'great-banner', 'skull-banner'], side: ['keg', 'big-barrel', 'casks'], fires: 'brazier', corners: 'armor-stand', carpet: '#6a2a1a', rows: { prop: 'longtable', inset: 2, step: 4 }, bits: ['bones', 'sacks'], carpetStyle: 'rugs', floor: { kind: 'plank', a: '#7e5c3c', b: '#6a4c30' } },
+  // the Smugglers' Grotto
+  'the-drowned': { wall: ['altar', 'candles', 'urn'], side: ['clay-pot', 'urn'], fires: 'lantern', corners: 'broken-column', carpet: null, ring: { prop: 'candles', n: 10, at: 0.5 }, bits: ['rubble', 'sacks'], floor: { kind: 'mosaic', a: '#3e6262', b: '#2e4c4c' } },
+  clatterclaw: { wall: ['boat', 'crates-stack', 'big-barrel'], side: ['barrel', 'sacks'], fires: 'lantern', corners: 'big-barrel', carpet: null, ring: { prop: 'bone-heap', n: 6, at: 0.88 }, bits: ['sacks', 'log', 'rubble'], litter: 1.5, floor: { kind: 'rough', a: '#8e7e5e', b: '#76684c' } },
+  saltbeard: { wall: ['boat', 'crates-stack', 'casks', 'trunk'], side: ['crates-stack', 'keg', 'trunk'], fires: 'lantern', corners: 'big-barrel', carpet: null, rows: { prop: 'crate', inset: 2, step: 4 }, bits: ['coin-pile', 'sacks', 'log'], floor: { kind: 'plank', a: '#6e5036', b: '#5a422c' } },
+  // the Rotmother's Cistern
+  'brother-pustule': { wall: ['cauldron', 'big-barrel', 'cauldron'], side: ['big-barrel', 'clay-pot'], fires: 'lantern', corners: 'cauldron', carpet: null, ring: { prop: 'spores', n: 10, at: 0.5 }, bits: ['spores', 'eggs'], floor: { kind: 'flag', a: '#525e46', b: '#44503a' } },
+  'old-sluicegut': { wall: ['stone-heap', 'bone-heap', 'stone-heap'], side: ['bone-heap', 'rubble-heap'], fires: 'lantern', corners: 'rubble-heap', carpet: null, bits: ['bones', 'skulls', 'rubble'], litter: 2, floor: { kind: 'rough', a: '#42503c', b: '#36422e' } },
+  'the-rot-mother': { wall: ['cauldron', 'eggs', 'thorns'], side: ['great-mushroom', 'cauldron'], fires: 'lantern', corners: 'great-mushroom', carpet: null, ring: { prop: 'eggs', n: 12, at: 0.6 }, bits: ['spores', 'eggs', 'bones'], floor: { kind: 'rough', a: '#4e5e36', b: '#3e4e2c' } },
+  // the Deepforge Halls
+  'slag-colossus': { wall: ['coal-heap', 'ember-rock', 'coal-heap'], side: ['coal-heap', 'stone-heap'], fires: 'brazier', corners: 'ember-rock', carpet: null, ring: { prop: 'rubble', n: 8, at: 0.6 }, bits: ['rubble'], floor: { kind: 'rough', a: '#3e3434', b: '#2e2626' } },
+  'the-runewarden': { wall: ['standing-stone', 'forge', 'standing-stone'], side: ['grindstone', 'anvil'], fires: 'brazier', corners: 'standing-stone', carpet: '#3a2a28', ring: { prop: 'candles', n: 8, at: 0.45 }, bits: ['rubble', 'candles'], carpetStyle: 'border', floor: { kind: 'marble', a: '#6e5e52', b: '#5a4a42' } },
+  'forgemaster-grold': { wall: ['forge', 'anvil', 'forge', 'weapon-rack'], side: ['anvil', 'armor-stand', 'weapon-rack'], fires: 'brazier', corners: 'great-column', carpet: null, rows: { prop: 'anvil', inset: 2, step: 4 }, bits: ['rubble'], floor: { kind: 'flag', a: '#4e4444', b: '#3e3636' } },
+  // the Barrow of Kings
+  'king-hrodric': { wall: ['throne', 'great-banner', 'throne'], side: ['sarcophagus', 'lion'], fires: 'iron-torch', corners: 'statue', carpet: '#6a1a2a', rows: { prop: 'lion', inset: 2, step: 4 }, bits: ['coin-pile', 'candles'], carpetStyle: 'T', floor: { kind: 'marble', a: '#6e5e42', b: '#584a34' } },
+  gloomwing: { wall: ['statue', 'great-banner', 'statue'], side: ['statue', 'lion'], fires: 'iron-torch', corners: 'statue', carpet: null, rows: { prop: 'statue', inset: 2, step: 5 }, bits: ['bones', 'rubble'], floor: { kind: 'flag', a: '#3e3e4a', b: '#30303c' } },
+  'sir-corvane': { wall: ['altar', 'candles', 'grave-cross'], side: ['candles'], fires: 'grave-lamp', corners: 'candles', carpet: '#1a1a22', rows: { prop: 'pew', inset: 3, step: 3 }, ring: { prop: 'candles', n: 14, at: 0.32 }, bits: ['candles'], floor: { kind: 'mosaic', a: '#2c2c34', b: '#40404a' } },
+  // the Tomb of the Sun King
+  'the-sand-warden': { wall: ['sand-column', 'urn', 'statue'], side: ['urn', 'standing-stone'], fires: 'brazier', corners: 'sand-column', carpet: '#b08a3a', bits: ['rubble', 'urn'], litter: 1.5, carpetStyle: 'twin', floor: { kind: 'rough', a: '#bc9c62', b: '#a8884e' } },
+  'vizier-khepset': { wall: ['standing-stone', 'brazier', 'standing-stone'], side: ['urn'], fires: null, corners: 'brazier', carpet: '#d8a83a', ring: { prop: 'brazier', n: 8, at: 0.88 }, bits: ['urn', 'coin-pile'], carpetStyle: 'cross', floor: { kind: 'marble', a: '#ccac64', b: '#a88848' } },
+  'the-sun-king': { wall: ['gold-chest', 'sarcophagus', 'gold-chest'], side: ['urn', 'gold-chest', 'lion'], fires: 'brazier', corners: 'statue', carpet: '#b08a3a', ring: { prop: 'coin-pile', n: 12, at: 0.6 }, bits: ['coin-pile', 'urn'], carpetStyle: 'border', floor: { kind: 'marble', a: '#8e6e3e', b: '#6a5028' } },
+  // the Rimeheld Vault
+  'jarl-hrimfang': { wall: ['great-banner', 'weapon-rack', 'banner-shield'], side: ['keg', 'weapon-rack'], fires: 'brazier', corners: 'hearth', carpet: '#4a3a2a', rows: { prop: 'longtable', inset: 2, step: 4 }, bits: ['bones', 'log'], carpetStyle: 'rugs', floor: { kind: 'plank', a: '#6e5238', b: '#5a4430' } },
+  'hallvor-the-unthawed': { wall: ['sarcophagus', 'ice-crystal', 'sarcophagus'], side: ['sarcophagus', 'ice-crystal'], fires: 'iron-torch', corners: 'ice-column', carpet: null, rows: { prop: 'sarcophagus', inset: 2, step: 4 }, bits: ['skulls', 'rubble'], floor: { kind: 'marble', a: '#8eaccc', b: '#6a88a8' } },
+  'the-rime-wyrm': { wall: ['ice-crystal', 'rubble-heap', 'ice-crystal'], side: ['ice-crystal', 'stone-heap'], fires: 'iron-torch', corners: 'ice-crystal', carpet: null, ring: { prop: 'ice-crystal', n: 10, at: 0.9 }, bits: ['bones', 'rubble', 'skulls'], litter: 2, floor: { kind: 'rough', a: '#acc4dc', b: '#88a0b8' } },
+  // the Siege of Highwall
+  'the-siege-breaker': { wall: ['banner-red', 'weapon-rack', 'crates-stack'], side: ['cot'], fires: 'brazier', corners: 'banner-red', carpet: null, rows: { prop: 'cot', inset: 2, step: 4 }, bits: ['rubble', 'sacks'], floor: { kind: 'rough', a: '#6e5e4a', b: '#5a4a3a' } },
+  'prior-vessant': { wall: ['altar', 'candles', 'banner-shield'], side: ['candles'], fires: 'iron-torch', corners: 'tall-column', carpet: '#3a2a4a', rows: { prop: 'pew', inset: 3, step: 3 }, ring: { prop: 'candles', n: 12, at: 0.36 }, bits: ['candles'], carpetStyle: 'cross', floor: { kind: 'mosaic', a: '#6e6474', b: '#5a5060' } },
+  'general-morvain': { wall: ['banner-red', 'armor-stand', 'war-table'], side: ['armor-stand', 'weapon-rack'], fires: 'brazier', corners: 'great-banner', carpet: '#7a1a1a', rows: { prop: 'armor-stand', inset: 2, step: 4 }, carpetStyle: 'T', floor: { kind: 'marble', a: '#7e7e88', b: '#5e5e68' } },
+  // Blightheart
+  'rotwood-colossus': { wall: ['root-tangle', 'great-mushroom', 'root-tangle'], side: ['root-tangle', 'thorns'], fires: 'lantern', corners: 'great-mushroom', carpet: null, ring: { prop: 'spores', n: 12, at: 0.6 }, bits: ['spores', 'eggs'], litter: 2, floor: { kind: 'rough', a: '#4e3e30', b: '#3a2c22' } },
+  'elowen-of-the-dawn': { wall: ['lantern', 'flowers', 'lantern'], side: ['lantern', 'flowers'], fires: 'lantern', corners: 'grave-lamp', carpet: '#4a3a5a', ring: { prop: 'flowers', n: 12, at: 0.55 }, bits: ['flowers', 'candles'], carpetStyle: 'rugs', floor: { kind: 'mosaic', a: '#5e4e6e', b: '#4a3a5a' } },
+  'the-withered-queen': { wall: ['thorns', 'root-tangle', 'thorns'], side: ['thorns'], fires: 'lantern', corners: 'root-tangle', carpet: '#3a1a2a', ring: { prop: 'thorns', n: 10, at: 0.9 }, bits: ['spores', 'bones'], floor: { kind: 'rough', a: '#3e2e34', b: '#2e2026' } },
+  // the Molten Throne
+  'magma-warden': { wall: ['ember-rock', 'coal-heap', 'ember-rock'], side: ['ember-rock'], fires: 'brazier', corners: 'ember-rock', carpet: null, ring: { prop: 'ember-rock', n: 8, at: 0.9 }, bits: ['rubble', 'skulls'], floor: { kind: 'rough', a: '#3e2e26', b: '#2a1e1a' } },
+  'ossa-the-founder': { wall: ['forge', 'bone-heap', 'anvil', 'forge'], side: ['anvil', 'bone-heap'], fires: 'brazier', corners: 'forge', carpet: null, rows: { prop: 'anvil', inset: 2, step: 4 }, bits: ['bone-heap', 'bones', 'rubble'], floor: { kind: 'flag', a: '#5e4e44', b: '#4a3c34' } },
+  'ashkar-the-bound': { wall: ['skull-banner', 'ember-rock', 'skull-banner'], side: ['ember-rock', 'skull-banner'], fires: 'brazier', corners: 'black-column', carpet: '#5a1a10', ring: { prop: 'skulls', n: 12, at: 0.7 }, carpetStyle: 'T', floor: { kind: 'marble', a: '#32282c', b: '#4e302a' } },
+  // the Spire of the Rift
+  'veil-sentinel': { wall: ['rift-crystal', 'broken-column', 'rift-crystal'], side: ['broken-column'], fires: 'lantern', corners: 'rift-crystal', carpet: '#3a2a6a', bits: ['rubble'], floor: { kind: 'flag', a: '#3e3854', b: '#2e2a42' } },
+  'ilvane-the-unmoored': { wall: ['bookshelf', 'rift-crystal', 'bookshelf'], side: ['bookshelf'], fires: 'lantern', corners: 'great-column', carpet: null, ring: { prop: 'crystals', n: 8, at: 0.88 }, bits: ['candles', 'rubble'], floor: { kind: 'marble', a: '#4e446c', b: '#3a3258' } },
+  'herald-in-the-spire': { wall: ['rift-crystal', 'altar', 'rift-crystal'], side: ['rift-crystal'], fires: 'lantern', corners: 'black-column', carpet: '#3a2a6a', ring: { prop: 'rift-crystal', n: 12, at: 0.9 }, carpetStyle: 'cross', floor: { kind: 'mosaic', a: '#2e2644', b: '#4e3e6e' } },
+  // Duskspire
+  'lady-cendre': { wall: ['coffin', 'candles', 'gravestone', 'coffin'], side: ['coffin', 'candles'], fires: 'grave-lamp', corners: 'grave-lamp', carpet: '#2a2238', ring: { prop: 'candles', n: 14, at: 0.5 }, bits: ['bones', 'skulls', 'candles'], litter: 1.5, carpetStyle: 'twin', floor: { kind: 'mosaic', a: '#4e4c5c', b: '#3a3848' } },
+  'hollow-guard': { wall: ['weapon-rack', 'banner-blue', 'armor-stand'], side: ['armor-stand', 'weapon-rack'], fires: 'iron-torch', corners: 'ice-column', carpet: '#2a3a6a', rows: { prop: 'armor-stand', inset: 2, step: 4 }, carpetStyle: 'border', floor: { kind: 'marble', a: '#9eb0d0', b: '#7a8cac' } },
+  vaelor: { fires: 'iron-torch', corners: 'ice-crystal', ring: { prop: 'ice-crystal', n: 12, at: 0.9 }, carpetStyle: 'cross', floor: { kind: 'marble', a: '#ccdef4', b: '#a8bcd8' } },
+  // the Crown Catacombs
+  'silas-vey': { wall: ['bone-heap', 'coin-pile', 'bone-heap'], side: ['bone-heap', 'skulls'], fires: 'iron-torch', corners: 'gold-chest', carpet: null, ring: { prop: 'skulls', n: 12, at: 0.7 }, bits: ['coin-pile', 'bones', 'skulls'], litter: 2, floor: { kind: 'rough', a: '#5e5442', b: '#4a4234' } },
+  'the-royal-auditor': { wall: ['bookshelf', 'counter', 'bookshelf'], side: ['coin-pile', 'candles'], fires: 'lantern', corners: 'iron-torch', carpet: '#2a3a5a', rows: { prop: 'table', inset: 2, step: 4 }, bits: ['coin-pile', 'candles'], carpetStyle: 'border', floor: { kind: 'plank', a: '#6e5238', b: '#5a4430' } },
+  'maelis-crane': { wall: ['gold-chest', 'statue', 'gold-chest', 'great-banner'], side: ['gold-chest', 'sarcophagus'], fires: 'brazier', corners: 'statue', carpet: '#5a1a3a', ring: { prop: 'coin-pile', n: 12, at: 0.6 }, bits: ['coin-pile'], carpetStyle: 'rugs', floor: { kind: 'marble', a: '#5e2e3e', b: '#7a6a50' } },
+};
 
 /** Things nobody bumps into. */
 const SOFT = new Set(['bones', 'skulls', 'rubble', 'debris', 'candles', 'coin-pile', 'spores', 'eggs', 'runner', 'rug', 'flowers', 'sacks', 'bone-heap', 'log']);
@@ -459,9 +560,12 @@ function shape(def: RegionDef, source: readonly string[], given: readonly Placed
     for (let dy = -room; dy <= room; dy++) for (let dx = -room; dx <= room; dx++) if (hard.has(id(x + dx, y + dy))) return true;
     return false;
   };
-  const put = (x: number, y: number, prop: string, solid: boolean, room = 2): boolean => {
+  /** Floor a carpet lies on: nothing that stands up goes on it (a candle or a coin may). */
+  const carpeted = new Set<number>();
+  const put = (x: number, y: number, prop: string, solid: boolean, room = 2, through = false): boolean => {
     const i = id(x, y);
     if (taken.has(i) || lanes.has(i)) return false;
+    if (carpeted.has(i) && !SOFT.has(prop.split(':')[0]!) && !prop.startsWith('runner') && !prop.startsWith('rug')) return false;
     const c = at(x, y);
     if (!floors.has(c) && c !== '.') return false;
     if (solid) {
@@ -469,7 +573,7 @@ function shape(def: RegionDef, source: readonly string[], given: readonly Placed
       hard.add(i);
     }
     taken.add(i);
-    placed.push({ tx: x, ty: y, marker: { kind: 'prop', prop, solid } });
+    placed.push({ tx: x, ty: y, marker: { kind: 'prop', prop, solid, ...(through ? { through } : {}) } });
     return true;
   };
   const solidOf = (name: string, boss: boolean): boolean => !boss && !SOFT.has(name) && name !== 'lantern';
@@ -481,10 +585,15 @@ function shape(def: RegionDef, source: readonly string[], given: readonly Placed
     let y0 = H;
     let y1 = 0;
     let boss = false;
+    let arena: Arena = {};
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
         if (label[y]![x] !== L) continue;
-        if (legend[at(x, y)]?.kind === 'boss') boss = true;
+        const mk = legend[at(x, y)];
+        if (mk?.kind === 'boss') {
+          boss = true;
+          arena = ARENAS[mk.boss] ?? {};
+        }
         if (at(x, y) !== L) continue;
         cells.push([x, y]);
         x0 = Math.min(x0, x);
@@ -510,12 +619,75 @@ function shape(def: RegionDef, source: readonly string[], given: readonly Placed
       return true;
     };
     if (boss && dress.backdrop && rockBehind()) placed.push({ tx: cx, ty: y0 - 1, marker: { kind: 'prop', prop: `great:${dress.backdrop}` } });
-    // (a carpet lies under whatever stands on it, so it has no gaps)
-    if (boss && dress.carpet) for (let y = y0; y <= y1; y++) if (label[y]![cx] === L && !SOLID_TERRAIN.has(at(cx, y))) placed.push({ tx: cx, ty: y, marker: { kind: 'prop', prop: `runner:${dress.carpet}`, solid: false } });
+    // (a carpet lies under whatever stands on it, so it has no gaps), laid the chamber's own way, and never under a
+    // pillar: each of its lines goes where its whole width is open floor (a little to one side if need be), or not at all
+    const carpet = arena.carpet === undefined ? dress.carpet : arena.carpet;
+    if (boss && carpet) {
+      const open = (x: number, y: number): boolean => label[y]?.[x] === L && !SOLID_TERRAIN.has(at(x, y));
+      // (a runner going north and south is three tiles across; one going east and west, a tile deep)
+      const wide = (x: number, y: number): boolean => open(x - 1, y) && open(x, y) && open(x + 1, y);
+      const lay = (x: number, y: number, kind = 'runner', across = 1): void => {
+        placed.push({ tx: x, ty: y, marker: { kind: 'prop', prop: `${kind}:${carpet}`, solid: false } });
+        for (let dx = -across; dx <= across; dx++) carpeted.add(id(x + dx, y));
+      };
+      const rows = (x: number): number[] => {
+        const out: number[] = [];
+        for (let y = y0; y <= y1; y++) if (label[y]?.[x] === L) out.push(y);
+        return out;
+      };
+      /** The first of `xs` a runner can go the chamber's whole length down, and lays it. */
+      const down = (xs: number[]): number | null => {
+        const x = xs.find((c) => rows(c).length > rh * 0.6 && rows(c).every((y) => wide(c, y)));
+        if (x === undefined) return null;
+        for (const y of rows(x)) lay(x, y);
+        return x;
+      };
+      /** The first of `ys` a runner can go across from `a` to `b` on (round what is already carpeted), and lays it. */
+      const across = (ys: number[], a: number, b: number): void => {
+        const y = ys.find((r) => {
+          for (let x = a; x <= b; x++) if (!carpeted.has(id(x, r)) && !open(x, r)) return false;
+          return true;
+        });
+        if (y === undefined) return;
+        for (let x = a; x <= b; x++) if (!carpeted.has(id(x, y))) lay(x, y, 'runner', 0);
+      };
+      const style = arena.carpetStyle ?? 'runner';
+      const near = (v: number, k: number): number[] => [v, v + 1, v - 1, v + 2, v - 2].slice(0, k);
+      if (style === 'runner' || style === 'cross' || style === 'T') down(near(cx, 3));
+      if (style === 'cross') across([cy, cy + 1, cy - 1, cy + 2, cy - 2, cy + 3, cy - 3], x0 + 2, x1 - 2);
+      if (style === 'T') across([y0 + 3, y0 + 4, y0 + 2, y0 + 5, y0 + 6], x0 + 3, x1 - 3);
+      if (style === 'twin') for (const sgn of [-1, 1]) down([5, 4, 6, 3, 7].map((d) => cx + sgn * d));
+      if (style === 'border') {
+        const left = down([x0 + 3, x0 + 2, x0 + 4]);
+        const right = down([x1 - 3, x1 - 2, x1 - 4]);
+        const a = (left ?? x0 + 1) + 2;
+        const b = (right ?? x1 - 1) - 2;
+        across([y0 + 2, y0 + 3, y0 + 1, y0 + 4], a, b);
+        across([y1 - 1, y1 - 2, y1, y1 - 3], a, b);
+      }
+      if (style === 'rugs') for (let y = y0 + 2; y <= y1 - 1; y += 3) if (wide(cx, y) && wide(cx, y - 1) && wide(cx, y + 1)) lay(cx, y, 'rug');
+    }
     // fires down both sides of a boss's chamber (nothing in it stops anyone: its fight is measured to the room)
-    if (boss && rw >= 14) {
+    const fires = arena.fires === undefined ? dress.corner : arena.fires;
+    if (boss && fires && rw >= 14) {
       for (let y = y0 + 2; y <= y1 - 1; y += 4) {
-        for (const x of [x0 + 2, x1 - 2]) if (clearOf(x, y)) put(x, y, dress.corner, false);
+        for (const x of [x0 + 2, x1 - 2]) if (clearOf(x, y)) put(x, y, fires, false, 2, true);
+      }
+    }
+    // the chamber's own: rows down its length, and a ring round its middle
+    if (boss && arena.rows && rw >= 12) {
+      const inset = arena.rows.inset ?? 3;
+      for (let y = y0 + 3; y <= y1 - 2; y += arena.rows.step ?? 4) {
+        for (const x of [x0 + inset, x1 - inset]) if (Math.abs(x - cx) > 2 && clearOf(x, y)) put(x, y, arena.rows.prop, false, 2, true);
+      }
+    }
+    if (boss && arena.ring) {
+      const { prop, n, at: k } = arena.ring;
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2 + Math.PI / n;
+        const x = Math.round(cx + Math.cos(a) * k * (rw / 2 - 1));
+        const y = Math.round(cy + Math.sin(a) * k * (rh / 2 - 1));
+        if (label[y]?.[x] === L && clearOf(x, y)) put(x, y, prop, false, 2, true);
       }
     }
     // a pool let into the floor, with room to walk all the way round it
@@ -571,7 +743,8 @@ function shape(def: RegionDef, source: readonly string[], given: readonly Placed
     let n = seed;
     for (const [x, y] of [...cells].sort((a, b) => a[0] - b[0] || a[1] - b[1])) {
       if (x < next || at(x, y - 1) !== '#' || !clearOf(x, y)) continue;
-      const prop = dress.wall[n++ % dress.wall.length]!;
+      const wall = (boss && arena.wall) || dress.wall;
+      const prop = wall[n++ % wall.length]!;
       if (put(x, y, prop, solidOf(prop, boss))) next = x + 3 + Math.floor(hash2(x, y, seed) * 2);
     }
     // along the sides, sparer; never crowding a corner
@@ -579,21 +752,26 @@ function shape(def: RegionDef, source: readonly string[], given: readonly Placed
       const west = at(x - 1, y) === '#';
       const east = at(x + 1, y) === '#';
       if ((!west && !east) || at(x, y - 1) === '#' || at(x, y + 1) === '#' || !clearOf(x, y) || (y - y0) % 4 !== 1) continue;
-      const prop = dress.side[(y + (west ? 0 : 1) + seed) % dress.side.length]!;
+      const side = (boss && arena.side) || dress.side;
+      const prop = side[(y + (west ? 0 : 1) + seed) % side.length]!;
       put(x, y, prop, solidOf(prop, boss));
     }
-    // a fire in each far corner
+    // a fire in each far corner (or what the chamber keeps there)
+    const corner = (boss && (arena.corners ?? arena.fires)) || dress.corner;
     for (const [x, y] of cells) {
-      if (at(x, y - 1) === '#' && (at(x - 1, y) === '#' || at(x + 1, y) === '#') && clearOf(x, y)) put(x, y, dress.corner, solidOf(dress.corner, boss));
+      if (at(x, y - 1) === '#' && (at(x - 1, y) === '#' || at(x + 1, y) === '#') && clearOf(x, y)) put(x, y, corner, solidOf(corner, boss));
     }
     // small things underfoot, drifting along the walls more than the middle
-    const want = Math.round(cells.length / 17);
+    // (in a boss's chamber only what lies flat is scattered over the floor: what stands up has a body, and a fight's
+    // charges, rams and dodges are measured to an open floor)
+    const bits = boss ? ((arena.bits ?? dress.bits).filter((b) => !propStandsUp(b)).length ? (arena.bits ?? dress.bits).filter((b) => !propStandsUp(b)) : ['rubble']) : dress.bits;
+    const want = Math.round((cells.length / 17) * (boss ? (arena.litter ?? 1) : 1));
     let done = 0;
     for (let k = 0; k < cells.length * 2 && done < want; k++) {
       const [x, y] = cells[Math.floor(hash2(k, seed, 7) * cells.length)]!;
       const edge = Math.min(x - x0, x1 - x, y - y0, y1 - y);
       if (edge > 2 && hash2(x, y, seed + 1) > 0.25) continue;
-      if (put(x, y, dress.bits[(k + seed) % dress.bits.length]!, false)) done++;
+      if (put(x, y, bits[(k + seed) % bits.length]!, false)) done++;
     }
   });
 

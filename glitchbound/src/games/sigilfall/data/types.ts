@@ -732,7 +732,7 @@ export type Marker =
   | { kind: 'secret'; id: string }
   | { kind: 'shrine'; id: string }
   | { kind: 'dummy'; shooter?: boolean }
-  | { kind: 'prop'; prop: string; solid?: boolean }
+  | { kind: 'prop'; prop: string; solid?: boolean; /** Only seen: nobody bumps into it (a boss chamber's dressing out on its floor, where its fight is). */ through?: boolean }
   | { kind: 'torch' }
   | { kind: 'checkpoint' }
   | { kind: 'hazard'; hazard: 'bramble' | 'spore' }

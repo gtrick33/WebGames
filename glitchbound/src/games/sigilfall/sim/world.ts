@@ -2379,7 +2379,13 @@ export class World {
         if (this.rand() < dt * 2.4) this.addFx({ kind: 'leaf', x: p.x + 200 - this.rand() * 80, y: sy, vx: -40 - this.rand() * 25, vy: 4 + this.rand() * 4, life: 6, size: 1, color: pick(['#f0fbff', '#e8d4a0']), a });
         break;
       case 'snow':
-        if (this.rand() < dt * 9) this.addFx({ kind: 'leaf', x: sx, y: p.y - 130, vx: -8 + this.rand() * 6, vy: 22 + this.rand() * 14, life: 8, size: 1, color: pick(['#ffffff', '#e8f0ff']), a });
+        // flakes of every size: a few big near ones coming down faster, many small far ones drifting (never so many
+        // that a fight's own effects are crowded out)
+        for (let n = 0; n < 2 && this.fx.length < 260; n++) {
+          if (this.rand() >= dt * 13) continue;
+          const big = this.rand() < 0.2;
+          this.addFx({ kind: 'flake', x: p.x + (this.rand() - 0.5) * 420, y: p.y - 130 - this.rand() * 50, vx: -9 + this.rand() * 7, vy: (big ? 30 : 19) + this.rand() * 12, life: 7.5, size: big ? 1.7 + this.rand() * 0.9 : 0.6 + this.rand() * 0.6, color: pick(['#ffffff', '#f0f6ff', '#e2ecff']), a: this.rand() });
+        }
         break;
       case 'ash':
         if (this.rand() < dt * 3) this.addFx({ kind: 'leaf', x: sx, y: p.y - 130, vx: 6 + this.rand() * 8, vy: 12 + this.rand() * 8, life: 9, size: 1, color: pick(['#8a8a8a', '#b8b0a8', '#5a5a5a']), a });

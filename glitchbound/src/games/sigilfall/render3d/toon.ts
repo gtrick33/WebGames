@@ -240,7 +240,10 @@ export const LIGHT = {
   uMid: { value: new THREE.Color(0.86, 0.84, 0.88) },
   uShade: { value: new THREE.Color(0.58, 0.56, 0.72) },
   uTime: { value: 0 },
-  /** Where the hero stands (xyz), for the pool of light round them in a dark place. */
+  /**
+   * Where the hero stands (xyz), for the pool of light round them in a dark place; w 1 where what stands between the
+   * camera and them thins away to show them (the world), 0 where nothing does (a portrait, the hall).
+   */
   uSee: { value: new THREE.Vector4(0, 0, 0, 0) },
   /** A color laid over everything (a's its strength): dusk, gloom, a land's own veil. */
   uGrade: { value: new THREE.Vector4(0, 0, 0, 0) },
@@ -311,6 +314,28 @@ varying vec3 vN;
 varying vec3 vW;
 varying float vFlash;
 varying float vAlpha;
+/**
+ * What stands between the camera and the hero (a wall, a column, a roof's edge, a tree) thins away round the line from
+ * the one to the other: a fine dither, more of it the nearer that line, never all of it, so the hero is always seen and
+ * nothing pops in or out (it moves as smoothly as the hero does). The floor and what lies on it are never touched. Off
+ * where uSee.w is 0 (a portrait, the hall).
+ */
+void seeThrough() {
+  if (uSee.w <= 0.0 || vW.y < 0.32) return;
+  vec3 hc = cameraPosition - uSee.xyz;
+  float len = length(hc);
+  vec3 dir = hc / len;
+  float s = dot(vW - uSee.xyz, dir);
+  if (s <= 0.2) return;
+  float d = length(vW - (uSee.xyz + dir * s));
+  float R = 1.05 + s * 0.11;
+  float k = smoothstep(R, R * 0.35, d) * smoothstep(0.2, 1.1, s) * 0.82;
+  if (k <= 0.0) return;
+  float dx = mod(gl_FragCoord.x, 4.0);
+  float dy = mod(gl_FragCoord.y, 4.0);
+  float th = (mod(dx + dy * 2.0, 4.0) + mod(dx * 2.0 + dy, 2.0) * 0.5 + 0.25) / 4.5;
+  if (k > th) discard;
+}
 vec3 toon(vec3 base, vec3 n) {
   float d = dot(n, uSun);
   float a = smoothstep(-0.04, 0.04, d);
@@ -547,6 +572,7 @@ export const staticMaterial = new THREE.ShaderMaterial({
   fragmentShader: /* glsl */ `
     ${FRAG_COMMON}
     void main() {
+      seeThrough();
       vec3 c = toon(vCol, normalize(vN));
       gl_FragColor = vec4(finish(c), 1.0);
     }`,

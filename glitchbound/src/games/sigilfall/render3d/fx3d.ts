@@ -48,6 +48,7 @@ export const FX = {
   trap: 33,
   ball: 34,
   rune: 35,
+  flake: 36,
 } as const;
 export type FxKind = (typeof FX)[keyof typeof FX];
 
@@ -508,6 +509,18 @@ const fragment = /* glsl */ `
   }
 
   // a leaf: a curve down its middle
+  // a snowflake: a soft round flake with a bright heart; the bigger ones a six-armed crystal, turning as it falls
+  vec4 flake(vec2 uv, float seed) {
+    float d = length(uv);
+    float soft = smoothstep(1.0, 0.0, d);
+    float core = exp(-d * d * 12.0);
+    float ang = atan(uv.y, uv.x) + seed * 6.2832 + uTime * (0.3 + fract(seed * 7.13) * 0.7);
+    float arms = pow(abs(cos(ang * 3.0)), 24.0) * smoothstep(0.95, 0.15, d) * step(0.45, fract(seed * 3.71));
+    float k = core * 0.95 + arms * 0.6 + soft * 0.16;
+    vec3 c = mix(vA.rgb, vec3(1.0), core * 0.7);
+    return vec4(c * k, min(1.0, k));
+  }
+
   vec4 leaf(vec2 uv) {
     float w = (1.0 - uv.x * uv.x) * 0.55;
     float a = smoothstep(w, w * 0.8, abs(uv.y));
@@ -734,7 +747,8 @@ const fragment = /* glsl */ `
     else if (kind < 32.5) o = beam(vUv, seed);
     else if (kind < 33.5) o = trapJaws(vUv, t);
     else if (kind < 34.5) o = ironBall(vUv);
-    else o = rune(vUv, t, seed);
+    else if (kind < 35.5) o = rune(vUv, t, seed);
+    else o = flake(vUv, seed);
     if (o.a <= 0.002 && dot(o.rgb, o.rgb) < 0.0001) discard;
     gl_FragColor = o * vA.a;
   }`;

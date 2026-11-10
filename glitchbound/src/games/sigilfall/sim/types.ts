@@ -501,7 +501,7 @@ export interface FloatText {
 
 /** Visual-only particles and flashes (never affect play). */
 export interface Fx {
-  kind: 'spark' | 'smoke' | 'ring' | 'slash' | 'bolt' | 'burst' | 'ember' | 'shard' | 'rubble' | 'ghost' | 'coin' | 'beam' | 'text' | 'rift' | 'leaf' | 'zap' | 'glow';
+  kind: 'spark' | 'smoke' | 'ring' | 'slash' | 'bolt' | 'burst' | 'ember' | 'shard' | 'rubble' | 'ghost' | 'coin' | 'beam' | 'text' | 'rift' | 'leaf' | 'flake' | 'zap' | 'glow';
   x: number;
   y: number;
   vx: number;

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { hash2 } from '../core/math';
 import { modelOnLot, picBody } from '../data/buildingArt';
+import { ARENAS, type Floor } from '../data/dungeongen';
 import { REGIONS } from '../data/regions';
 import { GREAT, type GreatPart } from '../data/greatworks';
 import { THEMES, type ThemeLook, type TreeKind } from '../data/themes';
@@ -351,6 +352,9 @@ const groundFrag = /* glsl */ `
   uniform vec3 uEdge;
   uniform float uIndoor;
   uniform float uLava;
+  uniform float uSnow;
+  uniform sampler2D uRoomA;
+  uniform sampler2D uRoomB;
   uniform float uTime;
   uniform vec4 uGrade;
   uniform vec4 uDark;
@@ -375,7 +379,64 @@ const groundFrag = /* glsl */ `
     float wob = (n - 0.5) * 0.22 + (n2 - 0.5) * 0.1;
     vec3 c;
     float ck = mod(floor(p.x) + floor(p.y), 2.0);
-    if (uIndoor > 0.5) {
+    vec2 rt = (floor(p) + 0.5) / uSize;
+    vec4 ra = texture2D(uRoomA, rt);
+    vec4 rb = texture2D(uRoomB, rt);
+    if (uIndoor > 0.5 && ra.a > 0.05) {
+      // a boss's chamber, floored in its own stone (data/dungeongen.ts ARENAS)
+      vec3 A = ra.rgb;
+      vec3 B = rb.rgb;
+      if (ra.a < 0.35) {
+        // flagstones in courses
+        vec2 s = p * vec2(1.6, 2.2);
+        s.x += mod(floor(s.y), 2.0) * 0.5;
+        vec2 id = floor(s);
+        vec2 f = fract(s) - 0.5;
+        float line = smoothstep(0.43, 0.5, max(abs(f.x), abs(f.y)));
+        c = mix(A, B, hash(id));
+        c *= 0.92 + n * 0.16;
+        c = mix(c, c * 0.62, line * 0.7);
+      } else if (ra.a < 0.6) {
+        // great polished squares of marble in two stones, veined, a sheen drifting over them
+        vec2 s = p * 0.5;
+        vec2 id = floor(s);
+        vec2 f = fract(s) - 0.5;
+        c = mix(A, B, mod(id.x + id.y, 2.0));
+        float vein = smoothstep(0.9, 1.0, sin((p.x + p.y * 0.6) * 2.6 + noise(p * 1.2 + id) * 5.0));
+        c = mix(c, c * 1.22 + 0.03, vein * 0.4);
+        c *= 0.95 + noise(p * 0.7 + 2.0) * 0.1;
+        c += vec3(0.05) * smoothstep(0.35, 0.95, noise(p * 0.22 + 5.0));
+        float line = smoothstep(0.475, 0.5, max(abs(f.x), abs(f.y)));
+        c = mix(c, c * 0.55, line);
+      } else if (ra.a < 0.8) {
+        // rough ground: earth, rock or ice, mottled, a crack wandering through it
+        c = mix(A, B, smoothstep(0.25, 0.75, noise(p * 0.7)));
+        c *= 0.9 + noise(p * 1.9 + 4.0) * 0.14;
+        float crack = smoothstep(0.035, 0.0, abs(noise(p * 0.85 + 11.0) - 0.5));
+        c = mix(c, c * 0.62, crack * 0.55);
+      } else if (ra.a < 0.95) {
+        // boards, their seams staggered, the grain running along them
+        vec2 s = vec2(p.x * 0.8, p.y * 2.6);
+        float row = floor(s.y);
+        s.x += hash(vec2(row, 3.0)) * 4.0;
+        vec2 id = vec2(floor(s.x), row);
+        vec2 f = fract(s);
+        c = mix(A, B, hash(id));
+        c *= 0.93 + noise(vec2(p.x * 5.0, row * 3.0)) * 0.1;
+        float seam = max(smoothstep(0.07, 0.0, f.y), smoothstep(0.975, 1.0, f.x));
+        c = mix(c, c * 0.55, seam);
+      } else {
+        // a mosaic: small tiles laid in diamonds of two colors (a pattern, not a scatter: a scatter reads as noise)
+        vec2 s = p * 2.0;
+        vec2 id = floor(s);
+        vec2 f = fract(s) - 0.5;
+        float diamond = mod(floor((id.x + id.y) / 3.0) + floor((id.x - id.y) / 3.0), 2.0);
+        c = mix(A, B, diamond);
+        c *= 0.96 + hash(id + 3.0) * 0.07;
+        float line = smoothstep(0.42, 0.5, max(abs(f.x), abs(f.y)));
+        c = mix(c, c * 0.66, line * 0.6);
+      }
+    } else if (uIndoor > 0.5) {
       // fitted flagstones, worn unevenly (no grid: the stones lie in courses, each its own shade)
       vec2 s = p * vec2(1.6, 2.2);
       s.x += mod(floor(s.y), 2.0) * 0.5;
@@ -385,6 +446,26 @@ const groundFrag = /* glsl */ `
       c = mix(uA, uB, hash(id));
       c *= 0.9 + n * 0.2;
       c = mix(c, uEdge, line * 0.45);
+    } else if (uSnow > 0.5) {
+      // snow (no grain: grain on white reads as pixels): soft drifts, the hollows between them holding a cool blue
+      // shade, ripples the wind has carved bending round the drifts, and a few crystals catching the light
+      float drift = noise(p * 0.21 + 3.0) * 0.65 + noise(p * 0.55 + 1.7) * 0.35;
+      c = mix(uA, uB, smoothstep(0.25, 0.8, drift));
+      float hollow = smoothstep(0.46, 0.14, drift);
+      c = mix(c, c * vec3(0.82, 0.89, 1.05), hollow * 0.6);
+      c *= 0.95 + noise(p * 0.17 + 7.0) * 0.1;
+      vec2 q = p + vec2(noise(p * 0.3) * 2.4, noise(p * 0.3 + 9.0) * 2.4);
+      float rip = sin(q.x * 2.6 + q.y * 1.1);
+      float crest = smoothstep(0.55, 1.0, rip) * (0.55 + 0.45 * noise(p * 0.8 + 4.0));
+      float lee = smoothstep(-0.25, -0.95, rip) * (0.55 + 0.45 * noise(p * 0.8 + 4.0));
+      c *= 1.0 + crest * 0.055 - lee * 0.045;
+      c = mix(c, c * vec3(0.9, 0.95, 1.06), lee * 0.5);
+      vec2 gl = p * 9.0;
+      vec2 gi = floor(gl);
+      float h = hash(gi);
+      float glint = step(0.982, h) * smoothstep(0.34, 0.0, length(fract(gl) - 0.5));
+      glint *= 0.45 + 0.55 * sin(uTime * 2.3 + h * 60.0);
+      c += vec3(0.85, 0.92, 1.0) * max(glint, 0.0) * 0.7;
     } else {
       // grass in big soft blotches over a checker a player's eye can measure distance by
       c = mix(uA, uB, smoothstep(0.3, 0.7, n));
@@ -507,9 +588,39 @@ function groundUnderThings(map: TileMap): Uint8Array {
   return out;
 }
 
-export function buildGround(map: TileMap, look: ThemeLook): THREE.Mesh {
+const FLOOR_KIND: Record<Floor['kind'], number> = { flag: 51, marble: 128, rough: 179, plank: 230, mosaic: 255 };
+
+/**
+ * The ground. `floors`, by room (a dungeon's encounters, in order): a room that has its own floor (a boss's chamber,
+ * data/dungeongen.ts ARENAS) is drawn in it.
+ */
+export function buildGround(map: TileMap, look: ThemeLook, floors: readonly (Floor | null | undefined)[] = []): THREE.Mesh {
   const W = map.w;
   const H = map.h;
+  const roomA = new Uint8Array(W * H * 4);
+  const roomB = new Uint8Array(W * H * 4);
+  if (look.indoor && floors.some(Boolean)) {
+    for (let i = 0; i < W * H; i++) {
+      const f = map.room[i] ? floors[map.room[i]! - 1] : null;
+      if (!f) continue;
+      const a = hexRgb(f.a);
+      const b = hexRgb(f.b);
+      for (let k = 0; k < 3; k++) {
+        roomA[i * 4 + k] = Math.round(a[k]! * 255);
+        roomB[i * 4 + k] = Math.round(b[k]! * 255);
+      }
+      roomA[i * 4 + 3] = FLOOR_KIND[f.kind];
+      roomB[i * 4 + 3] = 255;
+    }
+  }
+  const roomTex = (data: Uint8Array): THREE.DataTexture => {
+    const t = new THREE.DataTexture(data, W, H, THREE.RGBAFormat);
+    t.magFilter = THREE.NearestFilter;
+    t.minFilter = THREE.NearestFilter;
+    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+    t.needsUpdate = true;
+    return t;
+  };
   const mask = new Uint8Array(W * H * 4);
   const kinds = groundUnderThings(map);
   for (let i = 0; i < W * H; i++) {
@@ -555,6 +666,9 @@ export function buildGround(map: TileMap, look: ThemeLook): THREE.Mesh {
       uFoam: { value: col3(g.water.foam) },
       uIndoor: { value: look.indoor ? 1 : 0 },
       uLava: { value: look.lava ? 1 : 0 },
+      uSnow: { value: look.snowy ? 1 : 0 },
+      uRoomA: { value: roomTex(roomA) },
+      uRoomB: { value: roomTex(roomB) },
     },
     vertexShader: groundVert,
     fragmentShader: groundFrag,
@@ -1001,7 +1115,7 @@ export class Land3D {
     const look = THEMES[theme];
     this.look = look;
     const woody = !look.indoor && !look.cliffs && look.trees.filter((t) => t !== 'cactus' && t !== 'crystal').length * 2 > look.trees.length;
-    this.ground = buildGround(map, look);
+    this.ground = buildGround(map, look, region.kind === 'dungeon' ? region.encounters.map((e) => (e.boss ? ARENAS[e.boss]?.floor : null)) : []);
     this.cut = look.indoor ? cutAway(map) : null;
     this.blocks = buildBlocks(map, look, woody, this.cut);
     this.planks = buildPlanks(map, look);
@@ -1325,7 +1439,8 @@ export class Land3D {
         case K.Floor: {
           if (look.indoor) break;
           const d = hash2(tx, ty, 41);
-          if (d < (k === K.Deco ? 0.8 : 0.26)) {
+          // (under snow only the odd tuft shows through)
+          if (d < (k === K.Deco ? 0.8 : look.snowy ? 0.05 : 0.26)) {
             const flower = hash2(tx, ty, 43) < 0.18 && !BARE_LANDS.has(region.theme);
             const m = flower ? FLOWERS[Math.floor(hash2(tx, ty, 47) * FLOWERS.length)]! : TUFTS[Math.floor(hash2(tx, ty, 47) * TUFTS.length)]!;
             this.add({ m, x: x + (hash2(tx, ty, 51) - 0.5) * 0.8, z: z + (hash2(tx, ty, 53) - 0.5) * 0.8, rot: d * 40, sx: this.sized(m, flower ? 0.42 : 0.34 + d * 0.2), sway: flower ? 0 : 1.2 });
@@ -1809,9 +1924,11 @@ export class Land3D {
         s.begin();
         this.columnStands.set(c.m, s);
       }
-      const dz = c.z - hz;
-      const inFront = dz > -0.4 && dz < 4.6 && Math.abs(c.x - hx) < 1.7;
-      c.cut += ((inFront ? 0.24 : 1) - c.cut) * k;
+      // (it no longer sinks out of the way in front of the hero: it thins to a dither there, as every wall does: toon.ts
+      // seeThrough; what was sunk when that came in rises back)
+      c.cut += (1 - c.cut) * k;
+      void hx;
+      void hz;
       s.put(c.x, 0, c.z, c.rot, c.sx, c.sy * c.cut, c.sz, c.r, c.g, c.b, 0);
     }
     for (const s of this.columnStands.values()) s.end();

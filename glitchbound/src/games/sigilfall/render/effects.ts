@@ -1148,6 +1148,11 @@ export class Effects {
       case 'smoke':
         fx.put({ kind: FX.smoke, x: f.x, y: f.y, up: 4 + k * 15, w: f.size * (3.2 + k * 3.4), a: f.color, alpha: 0.85, t: k * 0.9, seed: f.life * 11 });
         break;
+      case 'flake':
+        // a snowflake coming down out of the sky, swaying on the wind, fading as it settles
+        fx.put({ kind: FX.flake, x: f.x, y: f.y, up: 3 + (1 - k) * 36, w: 3 + f.size * 2.8, a: f.color, alpha: clamp(Math.min(k * 6, (1 - k) * 3.5), 0, 0.95), seed: f.a, t: k });
+        f.vx += Math.sin(f.t * 1.6 + f.a) * 0.32;
+        break;
       case 'leaf':
         fx.put({ kind: FX.leaf, x: f.x, y: f.y, up: 6 + (1 - k) * 14, w: 7, h: 4, rot: f.a + f.t * 4, a: f.color, alpha: clamp(1 - k * 1.2, 0, 0.95) });
         f.vx += Math.sin(f.t * 3 + f.a) * 0.6;
