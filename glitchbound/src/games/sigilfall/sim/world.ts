@@ -222,6 +222,11 @@ export class World {
   flooded = 0;
   /** How dark a boss fight has the hero's corner of the room (0 lit, 1 dark): Gloomwing's devoured lamps, drawn as a gloom. */
   dimmed = 0;
+  /**
+   * A boss's standing order to the hero, while it is called and while it holds: 'hold' (not a step until it ends) or
+   * 'march' (no standing still). Hallvor's watch (sim/patterns/rimeheld-vault.ts); shown under the boss bar.
+   */
+  order: { kind: 'hold' | 'march'; from: number; until: number } | null = null;
   events: WorldEvent[] = [];
   procCd: Record<string, number> = {};
   flow: Int16Array;

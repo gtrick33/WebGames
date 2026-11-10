@@ -45,6 +45,8 @@ export const FOE_LOOKS: Record<string, HeroLook> = {
   // the Coffin Matron of the Chapel Crypt: a widow's black veil over a bone-white burial shroud, grave-pale skin
   'foe-coffin-matron': foe('#c8c4b8', '#e8e4dc', 'long', piece('hood', '#16121c'), piece('robe', '#d8d2c0', 'cloth', 'rare'), piece('trousers', '#8a8474'), { female: true, cape: '#16121c', hands: null, feet: piece('shoes', '#2a2430', 'leather') }),
   // Vizier Khepset of the Tomb: the dead king's crown of office in gold, a bone-white robe, a mantle of the sun's gold
+  // Hallvor the Unthawed, first of the Sigil-wardens: frost on her skin and hair, rime-white plate, a cape the blue of deep ice
+  'foe-hallvor': foe('#c4d8e4', '#f0f8ff', 'long', piece('helm', '#d4ecff', 'plate', 'rare'), piece('plate', '#8ab8dc', 'plate', 'rare'), piece('greaves', '#6a98c0', 'plate', 'rare'), { female: true, cape: '#2a5a8a', hands: piece('gloves', '#8ab8dc', 'plate'), feet: piece('boots', '#6a98c0', 'plate') }),
   'foe-vizier-khepset': foe('#b89870', '#1a1410', 'short', piece('crown', '#ffd27a', 'plate', 'epic'), piece('robe', '#efe4c8', 'cloth', 'epic'), piece('trousers', '#c8b890'), { cape: '#d8a830', beard: '#1a1410', hands: piece('gloves', '#d8a830', 'cloth'), feet: piece('shoes', '#c8a050', 'leather') }),
   // a brother of the plague: a stained cleric's robe
   'foe-brother-pustule': foe('#c8b890', '#5a5a3a', 'short', piece('hood', '#6a6a3a'), piece('robe', '#7a7a4a', 'cloth', 'rare'), piece('trousers', '#4a4a2a')),

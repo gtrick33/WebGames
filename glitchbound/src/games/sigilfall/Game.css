@@ -1551,6 +1551,49 @@
 .rb-boss-fill {
   background: linear-gradient(#ff6ae0, #c01a8a);
 }
+/* a boss's standing order (ui/GameScreen.tsx BossBar, World.order): pulsing while it is called, its time running out
+   while it holds; ice blue to hold still, frost white to keep moving */
+.rb-boss-order {
+  position: relative;
+  margin-top: 6px;
+  padding: 3px 12px 6px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 6px;
+  background: #0e2238;
+  color: #bfe4ff;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  overflow: hidden;
+}
+.rb-boss-order[hidden] {
+  display: none;
+}
+.rb-boss-order[data-kind='march'] {
+  background: #1c2a3a;
+  color: #f4fbff;
+}
+.rb-boss-order[data-on='0'] {
+  animation: rb-order-call 0.4s ease-in-out infinite alternate;
+}
+.rb-boss-order i {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: #9ad8ff;
+}
+@keyframes rb-order-call {
+  to {
+    background: #2a5a8a;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-boss-order[data-on='0'] {
+    animation: none;
+    background: #2a5a8a;
+  }
+}
 /* the hero's cast bar (ui/GameScreen.tsx CastBar): pinned under the hero, the spell's name over a bar that fills
    in its element's color (--cast-a, --cast-b); it flashes full when the spell goes and greys out when stopped */
 .rb-castbar {

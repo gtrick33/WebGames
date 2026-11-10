@@ -8,9 +8,10 @@ import type { DungeonModule } from '.';
  * jarl, has sold the way in to the Host; his giants and the Host's dead fight their way through.
  * From the tundra: the Frozen Gate, the Ice Galleries, the giants' camp, the Jarl's Longfire where
  * Hrimfang holds his hall, the Drowned Halls (frozen water, broken open in places), the Wardens' Crypt
- * (a sealed tomb behind a cracked wall), the Hoard Bridge over black water, and the Wyrm's Cavern. The
- * rooms seal while you fight in them (the letters below are their floors); the cavern's four columns
- * of ice stop the wyrm's breath and its wind.
+ * (a sealed tomb behind a cracked wall) where Hallvor, first of the wardens, still keeps the watch,
+ * the Hoard Bridge over black water, and the Wyrm's Cavern. The rooms seal while you fight in them
+ * (the letters below are their floors); the cavern's four columns of ice stop the wyrm's breath and
+ * its wind.
  */
 const MAP = [
   '############################################################################################',
@@ -44,7 +45,7 @@ const MAP = [
   '###llllllllllllllllllllD.....DiiiiiiiiiiiiiiiiiiiiiiiiD......Dggggggggvggggggggggvgggggggg##',
   '###lQllllllllllllllllQlD.....Diiiiiiiiiiiiii~~~~~iiiii########gggggggggggggggggggggggggggg##',
   '###lllllllllyllllllllll#######iiiiiiiiiiiii~~~~~~~iiii########gggggggggggggggggggggggggggg##',
-  '###llllllllllllllllllll#######iiiiiiiiiiiiii~~~~~iiiii########gggggggggggggggggggggggggggg##',
+  '###llllllllllWlllllllll#######iiiiiiiiiiiiii~~~~~iiiii########gggggggggggggggggggggggggggg##',
   '###llllllllllllllllllll#######iiiiiii~~~iiiiiiiiiiiiii########ggggggjggggggggggggggjgggggg##',
   '###lllljlllllllllljllll#######iiiiii~~~~~iiiiiiiiiiiii########gggggggggggggggggggggggggggg##',
   '###lllllllyllllylllllll#######iiiiiii~~~iiiiiiiiiiiiii########ggggggggggyggggggggggggggggg##',
@@ -96,6 +97,8 @@ const markers: Record<string, Marker> = {
   S: { kind: 'chest', id: 'rv-warden-tomb', tier: 'epic', once: true },
   O: { kind: 'boss', boss: 'jarl-hrimfang' },
   V: { kind: 'boss', boss: 'the-rime-wyrm' },
+  // the Wardens' Crypt: Hallvor the Unthawed keeps the watch (sim/patterns/rimeheld-vault.ts)
+  W: { kind: 'boss', boss: 'hallvor-the-unthawed' },
   x: { kind: 'prop', prop: 'crate', solid: true },
   o: { kind: 'prop', prop: 'barrel', solid: true },
   y: { kind: 'prop', prop: 'bones' },
@@ -231,8 +234,8 @@ const bosses: Record<string, BossDef> = {
     name: 'Jarl Hrimfang',
     title: 'Jarl of the Rime Giants',
     sprite: 'jarl-hrimfang',
-    hp: 3500,
-    dmg: 33,
+    hp: 4000,
+    dmg: 35,
     radius: 12,
     xp: 685,
     gold: [110, 160],
@@ -288,12 +291,78 @@ const bosses: Record<string, BossDef> = {
     },
     intro: 'He held the Vault Door for his people a hundred years. Then the Pale Herald came with ash-gold, and he opened it.',
   },
+  'hallvor-the-unthawed': {
+    id: 'hallvor-the-unthawed',
+    name: 'Hallvor the Unthawed',
+    title: 'First of the Sigil-Wardens',
+    sprite: 'hallvor-the-unthawed',
+    hp: 7600,
+    dmg: 40,
+    radius: 12,
+    xp: 1000,
+    gold: [150, 220],
+    phases: [
+      {
+        at: 1,
+        speed: 38,
+        rest: [0.75, 1.1],
+        // the first order is a hold, called slowly: the floor marked, the hero shown what she wants
+        enter: [{ id: 'rime:orders', w: 1, cd: 11, p: { order: 'hold', warn: 1.8, time: 2.6, cost: 0.15, spikes: 9 } }],
+        patterns: [
+          // the halberd in a wide sweep, and brought straight down along a line
+          { id: 'cleave', w: 3, cd: 3.5, p: { r: 58, arc: 1.2, wind: 0.8, lunge: 24, mul: 1.4 } },
+          { id: 'chop', w: 2, cd: 5, p: { len: 160, width: 24, wind: 0.85, mul: 1.6 } },
+          // the wardens' javelins of ice
+          { id: 'spearFan', w: 2, cd: 6, p: { count: 3 } },
+          // "Hold your post!" or "Walk the round!", by turns
+          { id: 'rime:orders', w: 3, cd: 11, p: { warn: 1.4, time: 3, cost: 0.15, spikes: 11 } },
+        ],
+      },
+      {
+        at: 0.5,
+        banner: 'Hallvor calls the old watch out of the ice: "Wardens, to your posts!"',
+        speed: 44,
+        rest: [0.55, 0.9],
+        enter: [
+          { id: 'summon', w: 1, cd: 0, p: { enemies: ['icebound-warden', 'icebound-warden'] } },
+          { id: 'rime:orders', w: 1, cd: 9.5, p: { order: 'hold', then: 1, warn: 1.4, time: 2.6, thenTime: 3, cost: 0.18, judge: 1, spikes: 13 } },
+        ],
+        patterns: [
+          { id: 'cleave', w: 3, cd: 3.5, p: { swings: 2, r: 58, arc: 1.2, wind: 0.7, gap: 0.15, lunge: 26, mul: 1.35 } },
+          { id: 'chop', w: 2, cd: 4.5, p: { len: 170, width: 24, wind: 0.8, mul: 1.6 } },
+          { id: 'spearFan', w: 2, cd: 5.5, p: { count: 5 } },
+          // down the length of the crypt, halberd levelled
+          { id: 'tripleCharge', w: 2, cd: 8, p: { count: 2, wind: 0.7, speed: 280, len: 230, mul: 1.3, stun: 1.2 } },
+          // now a hold and the round straight after it, and a broken order brings the roof down on the hero
+          { id: 'rime:orders', w: 3, cd: 9.5, p: { order: 'hold', then: 1, warn: 1.25, time: 2.6, thenTime: 3, cost: 0.18, judge: 1, spikes: 14 } },
+          { id: 'rime:orders', w: 2, cd: 9.5, p: { order: 'march', warn: 1.1, time: 3.5, cost: 0.18, judge: 1 } },
+          { id: 'summon', w: 1, cd: 24, p: { enemies: ['icebound-warden'] } },
+        ],
+      },
+    ],
+    first: { any: ['wardens-frost-seal'] },
+    drops: {
+      items: {
+        any: ['wardens-frost-seal', 'rimewalkers', 'hrimfangs-torc', 'oathsworn-signet', 'second-wind-ring'],
+        warrior: ['bulwark-of-dawn'],
+        mage: ['twin-flame-circlet'],
+        ranger: ['huntmasters-hood'],
+        paladin: ['sunward-shield'],
+        priest: ['psalter-of-dawn'],
+        warlock: ['codex-of-hunger'],
+        druid: ['thicket-idol'],
+        gloamknight: ['lantern-of-the-last-watch'],
+      },
+      chance: [0.3, 0.5, 0.7],
+    },
+    intro: 'The first of the Sigil-wardens froze at her post rather than leave it. The Legion’s bonecallers woke her, and she knows nothing now but the watch.',
+  },
   'the-rime-wyrm': {
     id: 'the-rime-wyrm',
     name: 'The Rime Wyrm',
     title: 'Guardian of the Sigil of Frost',
     sprite: 'the-rime-wyrm',
-    hp: 6800,
+    hp: 8400,
     dmg: 38,
     radius: 15,
     xp: 1370,
@@ -601,17 +670,7 @@ export const RIMEHELD_VAULT: DungeonModule = {
           { enemies: ['wight-knight', 'rime-elemental', 'icebound-warden'], elite: true },
         ],
       },
-      {
-        id: 'wardens-crypt',
-        floor: 'l',
-        title: 'The Wardens’ Crypt',
-        checkpoint: true,
-        waves: [
-          { enemies: ['icebound-warden', 'icebound-warden', 'rime-elemental'] },
-          { enemies: ['legion-bonecaller', 'wight-knight', 'rime-archer', 'rime-archer'] },
-          { enemies: ['icebound-warden', 'giant-huscarl', 'rime-elemental'], elite: true },
-        ],
-      },
+      { id: 'wardens-crypt', floor: 'l', waves: [], boss: 'hallvor-the-unthawed', checkpoint: true, title: 'The Wardens’ Crypt' },
       {
         id: 'hoard-bridge',
         floor: 'm',

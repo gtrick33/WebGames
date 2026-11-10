@@ -133,6 +133,8 @@ put('sand-wraith khamsin', { k: 'ghost', tint: SAND, float: 0.45, ghost: 0.78, w
 put('soul-reaver', { k: 'ghost', tint: VOID, float: 0.45, ghost: 0.82, walk: 'skelidle' });
 put('weeping-specter tear-wraith', { k: 'ghost', tint: '#bfd8f0', float: 0.45, ghost: 0.78, walk: 'skelidle' });
 // the Chapel Crypt's boss fights (sim/patterns/crypt.ts): the Matron of the Ossuary, a pale old witch of the dead, and Morgrave's soul-shards
+// the first of the Sigil-wardens, frozen at her post: rime-white plate, a helm of ice, the halberd of the watch
+put('hallvor-the-unthawed', { k: 'paladin', look: 'foe-hallvor', held: { kind: 'halberd', tint: '#d8f2ff' }, size: 1.38, atk: 'chop2' });
 put('coffin-matron', { k: 'witch', look: 'foe-coffin-matron', held: { kind: 'staff' }, size: 1.2, float: 0.15, ...CASTER });
 put('morgrave-soul', { k: 'ghost', tint: '#9cff9c', float: 0.6, size: 0.7, ghost: 0.7, walk: 'skelidle' });
 put('the-weeping-lord the-tearborn', { k: 'ghost', tint: '#bfd8f0', float: 0.45, size: 1.25, ghost: 0.82, walk: 'skelidle' });

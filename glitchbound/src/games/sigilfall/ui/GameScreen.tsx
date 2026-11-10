@@ -308,9 +308,15 @@ function HudButton({ icon, label, badge, onClick, kbd, engine, spare }: { icon: 
   );
 }
 
+/** What a boss's standing order says (World.order: Hallvor's watch), under its bar. */
+const ORDER_SAY = { hold: 'Hold your post: don’t move', march: 'Walk the round: keep moving' } as const;
+
 function BossBar({ engine }: { engine: SigilEngine }) {
   const bar = useRef<HTMLElement>(null);
   const lag = useRef<HTMLElement>(null);
+  const order = useRef<HTMLSpanElement>(null);
+  const orderSay = useRef<HTMLElement>(null);
+  const orderFill = useRef<HTMLElement>(null);
   const shown = useRef(1);
   useFrame(engine, (w) => {
     const b = w.boss();
@@ -318,6 +324,17 @@ function BossBar({ engine }: { engine: SigilEngine }) {
     shown.current = Math.max(share, shown.current - 0.004);
     if (bar.current) bar.current.style.width = `${share * 100}%`;
     if (lag.current) lag.current.style.width = `${shown.current * 100}%`;
+    // the order: called (it pulses until it holds), then holding (its time running out)
+    const o = w.order;
+    const el = order.current;
+    if (!el || !orderSay.current || !orderFill.current) return;
+    el.hidden = !o;
+    if (!o) return;
+    const on = w.time >= o.from;
+    el.dataset.kind = o.kind;
+    el.dataset.on = on ? '1' : '0';
+    orderSay.current.textContent = ORDER_SAY[o.kind];
+    orderFill.current.style.width = `${on ? Math.max(0, (o.until - w.time) / (o.until - o.from)) * 100 : 100}%`;
   });
   const boss = engine.ui.boss!;
   return (
@@ -327,6 +344,10 @@ function BossBar({ engine }: { engine: SigilEngine }) {
       <span className="rb-boss-track">
         <i ref={lag} className="rb-boss-lag" />
         <i ref={bar} className="rb-boss-fill" />
+      </span>
+      <span ref={order} className="rb-boss-order" hidden>
+        <b ref={orderSay} />
+        <i ref={orderFill} />
       </span>
     </div>
   );

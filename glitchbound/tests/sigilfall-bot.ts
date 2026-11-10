@@ -281,6 +281,25 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
           f.my = 0;
         }
       }
+      // a boss's order to the hero (Hallvor's watch), read off the screen as a player would: told to hold, not a
+      // step (no dodge, no dash, no blink); told to walk the round, never still (and no spell that needs standing)
+      const order = w.order;
+      if (order && w.time >= order.from - 0.05 && w.time < order.until) {
+        const spec = (slot: SlotKey) => w.build.skills[w.build.bar[slot] ?? '']?.spec;
+        if (order.kind === 'hold') {
+          f.mx = 0;
+          f.my = 0;
+          f.casts = f.casts.filter((c) => c.slot !== 'dodge' && spec(c.slot)?.cast !== 'dash' && spec(c.slot)?.cast !== 'blink');
+        } else {
+          f.casts = f.casts.filter((c) => (spec(c.slot)?.castTime ?? 0) <= 0);
+          if (Math.hypot(f.mx, f.my) < 0.5) {
+            // round and round what it fights
+            const a = Math.atan2(p.y - (target?.y ?? p.y), p.x - (target?.x ?? p.x - 1)) + Math.PI / 2;
+            f.mx = Math.cos(a);
+            f.my = Math.sin(a);
+          }
+        }
+      }
       if (p.hp < p.maxHp * 0.4 && w.hero.potions > 0) f.potion = true;
     }
     w.input = f;

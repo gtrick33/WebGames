@@ -1,7 +1,8 @@
 /**
  * The Rimeheld Vault (levels 38-41), played through by the bot (tests/sigilfall-bot.ts): every class
  * clears it a level above its own with the gear a player would have by then, room by room, Jarl
- * Hrimfang and then the Rime Wyrm, without getting stuck. And its bosses' own mechanics: the wyrm's
+ * Hrimfang, Hallvor the Unthawed and then the Rime Wyrm, without getting stuck. And its bosses' own
+ * mechanics: Hallvor's orders (hold still, or keep moving, or freeze where you stand), the wyrm's
  * ice freezes a hero who stands on it too long (not one who keeps moving), its flight takes it out of
  * reach until it dives onto the hero, its breath lands once a sweep and the cavern's columns stop it,
  * its wings drive the hero back (the columns shelter from them too), and the Jarl's war cry calls his
@@ -17,6 +18,7 @@ import { bossHidden } from '../src/games/sigilfall/sim/boss';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { K, TILE } from '../src/games/sigilfall/sim/map';
 import { EXTRA_PATTERNS } from '../src/games/sigilfall/sim/patterns';
+import { orderOf } from '../src/games/sigilfall/sim/patterns/rimeheld-vault';
 import type { Enemy } from '../src/games/sigilfall/sim/types';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
@@ -24,7 +26,7 @@ import { gearAt, HARD_DEATHS } from './sigilfall-bot';
 
 const REGION = 'rimeheld-vault';
 const LEVEL = REGIONS[REGION].level + 1;
-const BOSS_ORDER = ['jarl-hrimfang', 'the-rime-wyrm'];
+const BOSS_ORDER = ['jarl-hrimfang', 'hallvor-the-unthawed', 'the-rime-wyrm'];
 
 /** The middle of the first room not fought yet (the bot's route through a dungeon). */
 function nextRoom(w: World): { x: number; y: number } | null {
@@ -75,10 +77,11 @@ const idle = (b: Enemy) => (): void => {
 const iceOn = (w: World): World['fields'] => w.fields.filter((f) => f.hostile && f.look === 'frost');
 
 describe('sigilfall: the Rimeheld Vault', () => {
-  it('has its two bosses in order, and every attack they use exists', () => {
+  it('has its three bosses in order, and every attack they use exists', () => {
     const bosses = REGIONS[REGION].encounters.filter((e) => e.boss).map((e) => e.boss);
     expect(bosses).toEqual(BOSS_ORDER);
     expect(BOSSES['jarl-hrimfang']!.phases).toHaveLength(2);
+    expect(BOSSES['hallvor-the-unthawed']!.phases).toHaveLength(2);
     expect(BOSSES['the-rime-wyrm']!.phases).toHaveLength(3);
     for (const id of BOSS_ORDER) {
       for (const ph of BOSSES[id]!.phases) {
@@ -88,10 +91,10 @@ describe('sigilfall: the Rimeheld Vault', () => {
   });
 
   for (const cls of CLASS_IDS) {
-    it(`${cls}: clears the Rimeheld Vault at level ${LEVEL}`, { timeout: 90_000 }, () => {
+    it(`${cls}: clears the Rimeheld Vault at level ${LEVEL}, three bosses in turn`, { timeout: 240_000 }, () => {
       const { w, r } = clearsWithRetry((seed) => {
         const w = newWorld(REGION, readyHero(cls as ClassId, LEVEL, gearAt(LEVEL)), seed);
-        return { w, r: play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom }) };
+        return { w, r: play(w, { seconds: 1500, done: (x) => x.cleared, goal: nextRoom }) };
       });
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
@@ -101,6 +104,91 @@ describe('sigilfall: the Rimeheld Vault', () => {
       expect(r.bossTimes['the-rime-wyrm']).toBeGreaterThan(20);
     });
   }
+
+  /** Steps the world for `s` seconds, the hero walking in circles (and `each` run before every step). */
+  const walk = (w: World, s: number, each: () => void = () => undefined): void => {
+    for (let i = 0; i < s * 60; i++) {
+      each();
+      const a = (i / 60) * 3;
+      w.input = { ...emptyInput(), mx: Math.cos(a), my: Math.sin(a) };
+      w.step(1 / 60);
+    }
+  };
+  const frozen = (w: World): boolean => w.player.statuses.some((x) => x.id === 'stun');
+
+  it('Hallvor’s “Hold your post!”: a step while it holds freezes the hero where they stand; held to the end, her guard drops', () => {
+    const { w, b } = arena('hallvor-the-unthawed');
+    const p = w.player;
+    use(b, { id: 'rime:orders', p: { order: 'hold', warn: 0.5, time: 1.5, spikes: 0 } });
+    run(w, 0.2, idle(b));
+    expect(orderOf(b)?.kind).toBe('hold');
+    expect(w.order?.kind).toBe('hold');
+    // she stands her own watch: nothing else from her while it holds
+    run(w, 1, idle(b));
+    expect(b.boss!.pattern?.use.id).toBe('rime:orders');
+    const hp = p.hp;
+    run(w, 1.2, idle(b));
+    expect(w.order).toBeNull();
+    expect(frozen(w)).toBe(false);
+    expect(p.hp).toBeGreaterThanOrEqual(hp);
+    expect(b.boss!.dazed).toBeGreaterThan(1);
+    // again, and a step taken while it holds
+    b.boss!.dazed = 0;
+    use(b, { id: 'rime:orders', p: { order: 'hold', warn: 0.5, time: 2, spikes: 0, cost: 0.15 } });
+    run(w, 0.8, idle(b));
+    const before = p.hp;
+    walk(w, 0.1, idle(b));
+    expect(w.order).toBeNull();
+    expect(frozen(w)).toBe(true);
+    expect(before - p.hp).toBeGreaterThan(p.maxHp * 0.13);
+    expect(b.boss!.dazed).toBe(0);
+  });
+
+  it('a dodge breaks a hold too: the cold takes the hero as soon as its grace runs out', () => {
+    const { w, b } = arena('hallvor-the-unthawed');
+    use(b, { id: 'rime:orders', p: { order: 'hold', warn: 0.4, time: 2, spikes: 0 } });
+    run(w, 0.7, idle(b));
+    w.input = { ...emptyInput(), casts: [{ slot: 'dodge', angle: 0, dist: null, assist: 0 }] };
+    w.step(1 / 60);
+    run(w, 0.05, idle(b));
+    expect(orderOf(b)?.owed).toBe(true);
+    expect(frozen(w)).toBe(false);
+    run(w, 0.6, idle(b));
+    expect(orderOf(b)?.owed).toBe(false);
+    expect(frozen(w)).toBe(true);
+  });
+
+  it('Hallvor’s “Walk the round!”: standing still freezes the hero, frost bursts where they stood; walked to the end, her guard drops', () => {
+    const { w, b } = arena('hallvor-the-unthawed');
+    const p = w.player;
+    use(b, { id: 'rime:orders', p: { order: 'march', warn: 0.4, time: 2.5 } });
+    let bursts = 0;
+    walk(w, 3.2, () => {
+      idle(b)();
+      bursts = Math.max(bursts, w.telegraphs.filter((t) => t.r === 16 && Math.hypot(t.x - p.x, t.y - p.y) < 60).length);
+    });
+    expect(bursts).toBeGreaterThan(0);
+    expect(w.order).toBeNull();
+    expect(frozen(w)).toBe(false);
+    expect(b.boss!.dazed).toBeGreaterThan(0.5);
+    // again, and the hero stops
+    b.boss!.dazed = 0;
+    use(b, { id: 'rime:orders', p: { order: 'march', warn: 0.4, time: 3, cost: 0.15 } });
+    run(w, 1.6, idle(b));
+    expect(w.order).toBeNull();
+    expect(frozen(w)).toBe(true);
+  });
+
+  it('in her second phase a hold runs straight into the round, and a broken order brings the roof down on the frozen hero', () => {
+    const { w, b } = arena('hallvor-the-unthawed');
+    use(b, { id: 'rime:orders', p: { order: 'hold', then: 1, warn: 0.4, time: 1, thenTime: 2, thenWarn: 0.6, spikes: 0, judge: 1 } });
+    run(w, 1.6, idle(b));
+    expect(w.order?.kind).toBe('march');
+    // standing still on the round: frozen, and an icicle marked on them
+    run(w, 1.8, idle(b));
+    expect(frozen(w)).toBe(true);
+    expect(w.telegraphs.some((t) => t.r === 20 && Math.hypot(t.x - w.player.x, t.y - w.player.y) < 4)).toBe(true);
+  });
 
   it('the wyrm’s ice freezes a hero who stands on it too long, not one who keeps moving, and goes when it falls', () => {
     const stuck = (w: World): boolean => w.player.statuses.some((s) => s.id === 'stun');

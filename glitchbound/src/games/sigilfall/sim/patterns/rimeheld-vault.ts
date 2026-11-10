@@ -1,8 +1,9 @@
 import { dist, dist2, inCone, TAU } from '../../core/math';
-import { hurtPlayer } from '../combat';
+import { hurtPlayer, playerStunned } from '../combat';
 import { castRay, circleHitsWall, K, lineOfSight, moveCircle, pushOut, TILE, tileAt } from '../map';
 import type { Enemy, Field } from '../types';
 import type { World } from '../world';
+import { exposed } from './arena';
 import type { PatternFn } from './kit';
 
 /**
@@ -226,10 +227,15 @@ function tickCold(w: World, e: Enemy, s: Fight, dt: number): void {
   // frozen in, and the ice under the hero cracks away as they break free (no freezing twice in a row)
   for (const i of s.ices) if (under(i)) i.f.t = Math.min(i.f.t, dur);
   w.text(p.x, p.y - 30, 'FROZEN SOLID!', ICE, true);
+  iceShell(w, dur);
+}
+
+/** The hero frozen in: a shell of ice around them while it holds (`dur` s), then it cracks away. */
+function iceShell(w: World, dur: number): void {
+  const p = w.player;
   w.sfx('freeze');
   w.shake(3);
   w.fxBurst(p.x, p.y - 6, ICE, 16, 14);
-  // a shell of ice around the hero while it holds, then it cracks
   for (let k = 0; k * 0.12 < dur; k++) {
     w.after(k * 0.12, () => {
       if (p.dead) return;
@@ -982,6 +988,285 @@ const flight: PatternFn = (w, e, dt, k) => {
   if (pt.step === 4 && pt.t >= pt.data.t9! + 0.8) k.end();
 };
 
+/* ------------------------------------------------------------ Hallvor the Unthawed, First of the Sigil-Wardens */
+
+/**
+ * Hallvor the Unthawed (the Wardens' Crypt) was the first of the Sigil-wardens, and froze at her post rather than leave
+ * it. The Legion's bonecallers woke her, and she knows nothing now but the watch. She calls its old orders (`orders`):
+ * "Hold your post!", and the hero must not take a step (a dodge, a dash, a blink: nothing but standing and fighting)
+ * until the order is done; "Walk the round!", and they must not stop. Disobey and the cold takes the hero where they
+ * stand: frozen at their post, a heavy wound, and (from her second phase) an icicle from the vault's roof on them
+ * while they cannot move. Keep an order to its end and she salutes the warden she takes the hero for: her guard drops.
+ *
+ * Each order comes on the heels of a danger. Ice is marked to burst from the floor as she calls a hold (one patch on
+ * the hero): find a clear spot before the hold begins, because once it does you stand or you freeze. And while the
+ * round is walked, the frost bursts up wherever the hero stood a moment before. In a hold she stands her own watch
+ * and does nothing else; on the round she fights on.
+ *
+ * The order and its watching outlive the pattern that calls it, so they are kept per boss here and run by a small
+ * ticker (World.after, once a step) for as long as the fight lasts.
+ */
+
+const WATCH = '#bfe4ff';
+const SAY: Record<'hold' | 'march', string> = { hold: 'HOLD YOUR POST!', march: 'WALK THE ROUND!' };
+/** "Walk the round": at least this far (px) over every `PACE` s, or the hero has stopped. */
+const ROUND = 28;
+const PACE = 0.9;
+/** A moment's grace when an order begins (a key let go a little late). */
+const SLACK = 0.12;
+
+type Order = 'hold' | 'march';
+interface Watch {
+  last: number;
+  kind: Order | null;
+  /** The order holds from `from` to `until` (it is called a little before `from`). */
+  from: number;
+  until: number;
+  /** A second order straight after this one (her second phase: "Hold!... Walk the round!"). */
+  then: { kind: Order; time: number; warn: number } | null;
+  /** The last order called (they take turns). */
+  prev: Order;
+  /** The hero's way over the last moments, for "Walk the round!". */
+  path: { x: number; y: number; t: number }[];
+  /** Seconds to the next burst of frost under a hero walking the round. */
+  burst: number;
+  /** Disobeyed while a dodge's grace lasted: the cold takes them when it runs out. */
+  owed: boolean;
+  /** The share of the hero's health a broken order costs, and whether the roof's icicle follows it. */
+  cost: number;
+  judge: boolean;
+  fxT: number;
+  said: number;
+  /** Where the hero stood a step ago (a blink is a step too). */
+  px: number;
+  py: number;
+}
+
+const WATCHES = new WeakMap<Enemy, Watch>();
+
+function watchOf(w: World, e: Enemy): Watch {
+  let s = WATCHES.get(e);
+  if (!s) {
+    s = { last: w.time, kind: null, from: 0, until: 0, then: null, prev: 'march', path: [], burst: 0, owed: false, cost: 0.12, judge: false, fxT: 0, said: 0, px: w.player.x, py: w.player.y };
+    WATCHES.set(e, s);
+    w.after(0, () => watchTick(w, e));
+  }
+  return s;
+}
+
+/** An order called: said over her and over the hero, and put up for the hero to see (World.order). */
+function callOrder(w: World, e: Enemy, s: Watch, kind: Order, warn: number, time: number): void {
+  s.kind = kind;
+  s.prev = kind;
+  s.from = w.time + warn;
+  s.until = s.from + time;
+  s.path = [];
+  s.burst = 0.3;
+  s.said = 0;
+  w.order = { kind, from: s.from, until: s.until };
+  const p = w.player;
+  w.text(e.x, e.y - e.r - 18, SAY[kind], WATCH, true);
+  w.text(p.x, p.y - 30, kind === 'hold' ? 'Stand still!' : 'Keep moving!', '#e8f6ff', false);
+  w.sfx('bell-toll', 0.45);
+  w.addFx({ kind: 'ring', x: e.x, y: e.y, life: 0.6, size: 40, color: WATCH });
+  w.addFx({ kind: 'glow', x: e.x, y: e.y - 10, life: 0.6, size: 22, color: WATCH });
+}
+
+function dropOrder(w: World, s: Watch): void {
+  s.kind = null;
+  s.then = null;
+  s.path = [];
+  w.order = null;
+}
+
+/** The order broken: the cold takes the hero at their post (once any dodge's grace has run out). */
+function disobey(w: World, e: Enemy, s: Watch): void {
+  const p = w.player;
+  w.text(p.x, p.y - 30, s.kind === 'hold' ? 'You left your post!' : 'You stopped!', '#ff9a9a', true);
+  dropOrder(w, s);
+  if (p.iframe > 0 || p.dash) s.owed = true;
+  else frozenAtPost(w, e, s);
+}
+
+function frozenAtPost(w: World, e: Enemy, s: Watch): void {
+  const p = w.player;
+  const dur = 1.3;
+  if (!hurtPlayer(w, p.maxHp * s.cost, { pierce: true, status: { status: 'stun', dur, power: 1 } })) return;
+  w.text(p.x, p.y - 42, 'FROZEN AT YOUR POST!', ICE, true);
+  w.text(e.x, e.y - e.r - 18, 'The watch has no room for deserters.', WATCH, true);
+  iceShell(w, dur);
+  // and the vault's roof gives its judgment on whoever cannot move
+  if (s.judge) icicle(w, e, p.x, p.y, 20, 1, 1.25, false);
+}
+
+/** Ice marked to burst from the floor at (x, y) after `dur` s, `r` across: a ring of spikes thrust up. */
+function spike(w: World, e: Enemy, x: number, y: number, r: number, dur: number, mul: number): void {
+  const id = w.nextId;
+  w.addTelegraph({ shape: 'circle', x, y, r, r2: 0, angle: 0, len: 0, dur, dmg: e.dmg * mul, status: CHILL, knock: 40, tone: 'enemy', owner: -1, linger: 0 });
+  const tg = w.telegraphs.find((t) => t.id === id);
+  w.after(dur, () => {
+    if (!tg || tg.t < tg.dur - 0.05 || !alive(w, e)) return;
+    for (let j = 0; j < 9; j++) {
+      const a = (TAU * j) / 9 + w.rand() * 0.3;
+      const d = r * (0.3 + w.rand() * 0.6);
+      w.addFx({ kind: 'shard', x: x + Math.cos(a) * d, y: y + Math.sin(a) * d * 0.8, vx: Math.cos(a) * 12, vy: -90 - w.rand() * 50, life: 0.4, size: 2 + (j % 2), color: j % 3 ? ICE : FROST });
+    }
+    w.addFx({ kind: 'ring', x, y, life: 0.3, size: r + 3, color: ICE });
+    w.addFx({ kind: 'glow', x, y: y - 6, life: 0.3, size: r * 0.8, color: FROST });
+    w.sfx('shard', 0.35);
+  });
+}
+
+function watchTick(w: World, e: Enemy): void {
+  const s = WATCHES.get(e);
+  if (!s) return;
+  if (!alive(w, e)) {
+    if (w.order && s.kind) w.order = null;
+    WATCHES.delete(e);
+    return;
+  }
+  const dt = Math.max(0, w.time - s.last);
+  s.last = w.time;
+  const p = w.player;
+  if (s.owed && !p.dead && p.iframe <= 0 && !p.dash) {
+    s.owed = false;
+    frozenAtPost(w, e, s);
+  }
+  if (s.kind && (p.dead || e.boss!.shift > 0)) dropOrder(w, s);
+  if (s.kind) {
+    if (w.time >= s.until) {
+      // kept to the end: the next order straight after, or her salute
+      const next = s.then;
+      if (next) {
+        s.then = null;
+        callOrder(w, e, s, next.kind, next.warn, next.time);
+      } else {
+        dropOrder(w, s);
+        w.text(p.x, p.y - 30, 'The watch is kept!', '#e8f6ff', false);
+        exposed(w, e, 2.2, 'Well kept, warden...', WATCH);
+      }
+    } else {
+      const on = w.time >= s.from;
+      const left = Math.ceil((on ? s.until : s.from) - w.time);
+      // the order's sign at the hero's feet: a still ring to hold, frost swirling round them to walk; and the count
+      s.fxT -= dt;
+      if (s.fxT <= 0) {
+        s.fxT = on ? 0.2 : 0.3;
+        if (s.kind === 'hold') {
+          w.addFx({ kind: 'ring', x: p.x, y: p.y, life: 0.25, size: on ? 13 : 18, color: WATCH });
+          if (on) w.addFx({ kind: 'glow', x: p.x, y: p.y, life: 0.25, size: 9, color: WATCH });
+        } else {
+          const a = w.time * 7;
+          w.addFx({ kind: 'spark', x: p.x + Math.cos(a) * 12, y: p.y + Math.sin(a) * 8, vx: -Math.sin(a) * 30, vy: Math.cos(a) * 20, life: 0.35, size: 2, color: WATCH });
+          w.addFx({ kind: 'spark', x: p.x - Math.cos(a) * 12, y: p.y - Math.sin(a) * 8, vx: Math.sin(a) * 30, vy: -Math.cos(a) * 20, life: 0.35, size: 2, color: ICE });
+        }
+      }
+      if (left !== s.said) {
+        s.said = left;
+        if (on) w.text(p.x, p.y - 24, String(left), WATCH, false);
+      }
+      if (on && !p.dead) {
+        if (s.kind === 'hold') {
+          // not a step: a key pressed to move, a dodge, a dash, a blink (a jump from one step to the next)
+          const stepped = Math.hypot(w.input.mx, w.input.my) > 0.15 || !!p.dash || dist(p.x, p.y, s.px, s.py) > 18;
+          if (stepped && w.time - s.from > SLACK && !playerStunned(w)) disobey(w, e, s);
+        } else {
+          // the round: so far over the last moments (a hero held fast by something else is let off)
+          if (playerStunned(w)) s.path = [];
+          s.path.push({ x: p.x, y: p.y, t: w.time });
+          while (s.path.length > 2 && s.path[1]!.t <= w.time - PACE) s.path.shift();
+          let walked = 0;
+          for (let i = 1; i < s.path.length; i++) walked += dist(s.path[i - 1]!.x, s.path[i - 1]!.y, s.path[i]!.x, s.path[i]!.y);
+          const span = s.path.length ? w.time - s.path[0]!.t : 0;
+          if (span >= PACE - 0.02 && walked < ROUND) disobey(w, e, s);
+          // and the frost bursts up where they stood
+          s.burst -= dt;
+          if (s.kind && s.burst <= 0) {
+            s.burst = 0.55;
+            if (onFloor(w, e, p.x, p.y, 2)) spike(w, e, p.x, p.y, 16, 0.8, 0.5);
+          }
+        }
+      }
+    }
+  }
+  s.px = p.x;
+  s.py = p.y;
+  // standing her own watch while the hero holds theirs: nothing from her until it ends
+  const b = e.boss!;
+  if (s.kind === 'hold' && !b.pattern) b.rest = Math.max(b.rest, s.until - w.time + 0.2);
+  w.after(0, () => watchTick(w, e));
+}
+
+/**
+ * An order of the watch: `order` 'hold', 'march' or (the default) the other one from last time; called `warn` s ahead,
+ * holding for `time` s. Breaking it costs `cost` of the hero's health (`judge` 1: and an icicle on them as they stand
+ * frozen). With `then` 1 the other order follows straight after (`thenTime` s, called `thenWarn` s ahead). A hold
+ * comes with `spikes` patches of ice marked to burst as it begins, one on the hero (and again `bursts` times while
+ * it lasts); she stands through a hold, and goes back to fighting a moment after calling a march.
+ */
+const orders: PatternFn = (w, e, _dt, k) => {
+  const { pt } = k;
+  const s = watchOf(w, e);
+  const p = w.player;
+  if (pt.step === 0) {
+    if (s.kind || p.dead) {
+      k.end();
+      return;
+    }
+    const want = k.str('order', 'either');
+    const kind: Order = want === 'hold' || want === 'march' ? want : s.prev === 'hold' ? 'march' : 'hold';
+    const warn = k.num('warn', 1.4);
+    const time = k.num('time', 3);
+    s.cost = k.num('cost', 0.12);
+    s.judge = k.num('judge', 0) > 0;
+    s.then = k.num('then', 0) > 0 ? { kind: kind === 'hold' ? 'march' : 'hold', time: k.num('thenTime', 3), warn: k.num('thenWarn', 0.9) } : null;
+    callOrder(w, e, s, kind, warn, time);
+    if (kind === 'hold') {
+      // the floor marked as she calls it: find a clear spot before the hold begins
+      const spots: { x: number; y: number }[] = [];
+      const n = k.num('spikes', 10);
+      if (n > 0 && onFloor(w, e, p.x, p.y, 2)) spots.push({ x: p.x, y: p.y });
+      for (let i = 0; spots.length < n && i < n * 3; i++) {
+        const at = i % 2 ? nearHero(w, e, 34, 110, 6) : anySpot(w, e, 6);
+        if (at && spots.every((o) => dist(o.x, o.y, at.x, at.y) > 30)) spots.push(at);
+      }
+      const r = k.num('r', 22);
+      const bursts = k.num('bursts', 2);
+      for (const sp of spots) spike(w, e, sp.x, sp.y, r, warn + 0.3, 0.9);
+      // and again while the hold lasts, in the same places: a clear spot stays clear
+      for (let j = 1; j < bursts; j++) {
+        const at = warn + 0.3 + (j * (time - 0.3)) / bursts;
+        w.after(at - 1, () => {
+          if (!alive(w, e) || s.kind !== 'hold') return;
+          for (const sp of spots) spike(w, e, sp.x, sp.y, r, 1, 0.9);
+        });
+      }
+    }
+    pt.data.hold = kind === 'hold' ? 1 : 0;
+    pt.data.t1 = pt.t;
+    pt.step = 1;
+    return;
+  }
+  // a hold: she stands her own watch, halberd planted, until it ends; a march: back to the blade
+  if (pt.data.hold) {
+    if (s.kind !== 'hold') k.end();
+    else {
+      pt.data.fx = (pt.data.fx ?? 0) - _dt;
+      if (pt.data.fx <= 0) {
+        pt.data.fx = 0.3;
+        w.addFx({ kind: 'ring', x: e.x, y: e.y, life: 0.35, size: e.r + 8, color: WATCH });
+        w.addFx({ kind: 'spark', x: e.x + (w.rand() - 0.5) * 16, y: e.y - 20 - w.rand() * 10, vx: 0, vy: -20, life: 0.5, size: 2, color: ICE });
+      }
+    }
+  } else if (pt.t >= pt.data.t1! + 0.8) k.end();
+};
+
+/** Hallvor's order while one is called or holding (for tests). */
+export const orderOf = (e: Enemy): { kind: Order | null; from: number; until: number; owed: boolean } | null => {
+  const s = WATCHES.get(e);
+  return s ? { kind: s.kind, from: s.from, until: s.until, owed: s.owed } : null;
+};
+
 export const RIMEHELD_VAULT_PATTERNS: Record<string, PatternFn> = {
   'rime:shatter': shatter,
   'rime:boulder': boulder,
@@ -992,4 +1277,5 @@ export const RIMEHELD_VAULT_PATTERNS: Record<string, PatternFn> = {
   'rime:frost': frost,
   'rime:storm': storm,
   'rime:flight': flight,
+  'rime:orders': orders,
 };

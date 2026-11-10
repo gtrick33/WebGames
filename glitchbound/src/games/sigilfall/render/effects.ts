@@ -281,6 +281,7 @@ const BOSS_AURA: Record<string, BossAura> = {
   'the-sun-king': EMBERS('#ffd27a', '#fffbe0'),
   'vizier-khepset': FALLING('#ffd27a', '#fff6d0'),
   'jarl-hrimfang': FALLING('#bfe8ff', '#ffffff'),
+  'hallvor-the-unthawed': MOTES('#9ad8ff', '#ffffff'),
   'the-rime-wyrm': FALLING('#a9dcff', '#ffffff'),
   'the-siege-breaker': EMBERS('#ff8a3a', '#ffd27a'),
   'general-morvain': MOTES('#ffd27a', '#ffffff'),
