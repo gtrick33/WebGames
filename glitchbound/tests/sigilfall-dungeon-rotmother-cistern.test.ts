@@ -1,8 +1,9 @@
 /**
  * The Rotmother's Cistern, played through by the bot (tests/sigilfall-bot.ts): every class clears it
- * a level above its own with the gear a player would have by then, room by room, Brother Pustule and
- * then the Rot-Mother, without getting stuck. Also: her bile stays on the floor as pools, and the
- * pools dry up when she falls.
+ * a level above its own with the gear a player would have by then, room by room, Brother Pustule, Old
+ * Sluicegut and then the Rot-Mother, without getting stuck. Also: her bile stays on the floor as pools,
+ * and the pools dry up when she falls; Pustule's leeches drink until a dodge shakes them off; Sluicegut's
+ * sluices drag the hero along until their levers are struck.
  */
 import { describe, expect, it } from 'vitest';
 import { BOSSES } from '../src/games/sigilfall/data/bosses';
@@ -11,13 +12,17 @@ import { REGIONS } from '../src/games/sigilfall/data/regions';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { TILE } from '../src/games/sigilfall/sim/map';
 import { EXTRA_PATTERNS } from '../src/games/sigilfall/sim/patterns';
+import { leechCount, openSluices } from '../src/games/sigilfall/sim/patterns/rotmother-cistern';
+import type { Enemy } from '../src/games/sigilfall/sim/types';
+import type { PatternUse } from '../src/games/sigilfall/data/bosses';
+import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
 import { HARD_DEATHS } from './sigilfall-bot';
 
 const REGION = 'rotmother-cistern';
 const LEVEL = REGIONS[REGION].level + 1;
-const BOSS_ORDER = ['brother-pustule', 'the-rot-mother'];
+const BOSS_ORDER = ['brother-pustule', 'old-sluicegut', 'the-rot-mother'];
 
 /** The middle of the first room not fought yet (the bot's route through a dungeon). */
 function nextRoom(w: World): { x: number; y: number } | null {
@@ -31,13 +36,13 @@ function nextRoom(w: World): { x: number; y: number } | null {
 function runDungeon(cls: ClassId) {
   const { w, r } = clearsWithRetry((seed) => {
     const w = newWorld(REGION, readyHero(cls, LEVEL, 'uncommon'), seed);
-    return { w, r: play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom }) };
+    return { w, r: play(w, { seconds: 1500, done: (x) => x.cleared, goal: nextRoom }) };
   });
   return { w, r };
 }
 
 describe('sigilfall: the Rotmother’s Cistern', () => {
-  it('has its two bosses in order, and every attack they use exists', () => {
+  it('has its three bosses in order, and every attack they use exists', () => {
     const bosses = REGIONS[REGION].encounters.filter((e) => e.boss).map((e) => e.boss);
     expect(bosses).toEqual(BOSS_ORDER);
     expect(BOSSES['the-rot-mother']!.phases).toHaveLength(3);
@@ -98,8 +103,85 @@ describe('sigilfall: the Rotmother’s Cistern', () => {
     expect(pools()).toBe(0);
   });
 
+  /** A hero in a boss's room (the rooms before it cleared), the boss up and doing only what it is told. */
+  function arena(boss: string): { w: World; b: Enemy; idle: () => void } {
+    const w = newWorld(REGION, readyHero('warrior', LEVEL, 'uncommon'));
+    const enc = w.encounters.find((e) => e.def.boss === boss)!;
+    for (const e of w.encounters) if (e.index < enc.index) e.state = 'cleared';
+    const tiles = w.map.roomTiles[enc.index]!.filter((i) => !w.map.solid[i]);
+    const i = tiles[Math.floor(tiles.length / 2)]!;
+    w.player.x = ((i % w.map.w) + 0.5) * TILE;
+    w.player.y = (Math.floor(i / w.map.w) + 0.5) * TILE + 40;
+    for (let k = 0; k < 5; k++) w.step(1 / 60);
+    const b = w.boss()!;
+    expect(b.def.id).toBe(boss);
+    b.boss!.queue = [];
+    b.boss!.pattern = null;
+    const idle = (): void => {
+      if (!b.boss!.pattern && !b.boss!.queue.length) b.boss!.rest = 99;
+    };
+    return { w, b, idle };
+  }
+  const run = (w: World, s: number, each: () => void): void => {
+    for (let i = 0; i < s * 60; i++) {
+      each();
+      w.input = emptyInput();
+      w.step(1 / 60);
+    }
+  };
+  const order = (b: Enemy, id: string, p: PatternUse['p'] = {}): void => {
+    b.boss!.pattern = null;
+    b.boss!.queue = [{ id: id as PatternUse['id'], w: 1, cd: 0, p }];
+    b.boss!.rest = 0;
+  };
+
+  it('Brother Pustule’s leeches cling and drink, feeding him, until a dodge shakes them off', () => {
+    const { w, b, idle } = arena('brother-pustule');
+    b.hp = b.maxHp * 0.8;
+    w.player.x = b.x + 40;
+    w.player.y = b.y;
+    order(b, 'rot:leeches', { n: 4, wind: 0.5 });
+    run(w, 0.7, idle);
+    expect(leechCount(b)).toBe(4);
+    const hp = w.player.hp;
+    run(w, 2.1, idle);
+    expect(w.player.hp).toBeLessThan(hp);
+    expect(b.hp).toBeGreaterThan(b.maxHp * 0.8);
+    // a dodge shakes two off, another the rest
+    w.player.lastDodge = w.time;
+    run(w, 0.1, idle);
+    expect(leechCount(b)).toBe(2);
+    w.player.lastDodge = w.time;
+    run(w, 0.1, idle);
+    expect(leechCount(b)).toBe(0);
+  });
+
+  it('Old Sluicegut’s sluices drag the hero along their lanes until the lever is struck', () => {
+    const { w, b, idle } = arena('old-sluicegut');
+    order(b, 'rot:sluices', { lanes: 3, time: 8, push: 100 });
+    run(w, 0.9, idle);
+    const lanes = openSluices(b);
+    expect(lanes).toHaveLength(3);
+    expect(w.enemies.filter((e) => e.def.id === 'sluice-lever' && !e.dead)).toHaveLength(3);
+    // into a lane, halfway along it: dragged toward its grate
+    const lane = lanes[0]!;
+    w.player.x = (lane.x0 + lane.x1) / 2;
+    w.player.y = lane.y;
+    w.player.iframe = 99;
+    const x = w.player.x;
+    run(w, 0.5, idle);
+    expect((w.player.x - x) * lane.dir).toBeGreaterThan(25);
+    // its lever struck: that sluice shuts
+    hitEnemy(w, lane.lever!, lane.lever!.hp + 999, 'physical', { depth: 1 });
+    run(w, 0.2, idle);
+    expect(openSluices(b)).toHaveLength(2);
+    const still = w.player.x;
+    run(w, 0.5, idle);
+    expect(Math.abs(w.player.x - still)).toBeLessThan(2);
+  });
+
   for (const cls of CLASS_IDS) {
-    it(`${cls}: clears it at level ${LEVEL}`, { timeout: 90_000 }, () => {
+    it(`${cls}: clears it at level ${LEVEL}`, { timeout: 240_000 }, () => {
       const { w, r } = runDungeon(cls);
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);

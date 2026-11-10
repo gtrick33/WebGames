@@ -45,7 +45,7 @@ const MAP = [
   '##gggggggggggggggggggg#####iiiijiiiiiiiiiiiiijiiii####################',
   '####ggg#########gggggg#####iiiiiiiiiiiiipiiiiiiiii####################',
   '####ggg#########ggggggD...Diiiiiiniiiiiiiiiiiiiiii####################',
-  '##ggggggggggggggggggggD...Diiiiiiiiiiiiiiiiiiiiiii####################',
+  '##ggggggggggggggggggggD...DiiiiiiiiiiiWiiiiiiiiiii####################',
   '##ggggggggggggggggggggD...Diiiiiiiiiiiiiiiiiiiiiii####################',
   '##gggggggggggggggggggg#####iiiiiiiiiiiiiiiiiiiiiii####################',
   '##gggggg########ggg########iiiijiiiiiiiiiiiiijiiii####################',
@@ -116,6 +116,8 @@ const markers: Record<string, Marker> = {
   S: { kind: 'chest', id: 'rc-tithe', tier: 'epic', once: true },
   O: { kind: 'boss', boss: 'brother-pustule' },
   M: { kind: 'boss', boss: 'the-rot-mother' },
+  // the Charnel Drain's warden, and his sluices (sim/patterns/rotmother-cistern.ts)
+  W: { kind: 'boss', boss: 'old-sluicegut' },
   o: { kind: 'prop', prop: 'barrel', solid: true },
   x: { kind: 'prop', prop: 'crate', solid: true },
   n: { kind: 'prop', prop: 'bones' },
@@ -126,6 +128,27 @@ const markers: Record<string, Marker> = {
 
 /** The cistern's own: vermin, the cult, and what the vats grow. */
 const FOES: Record<string, EnemyDef> = {
+  // a sluice gate's lever on the Charnel Drain's wall: struck, that sluice shuts (sim/patterns/rotmother-cistern.ts)
+  'sluice-lever': {
+    id: 'sluice-lever',
+    name: 'Sluice Lever',
+    sprite: 'sluice-lever',
+    prop: { m: 'built_iron_torch', h: 24, tint: [0.75, 1.1, 0.85] },
+    ai: 'caster',
+    hp: 80,
+    dmg: 1,
+    speed: 0,
+    radius: 7,
+    mass: 99,
+    xp: 0,
+    gold: [0, 0],
+    aggro: 400,
+    reach: 0,
+    windup: 1,
+    recover: 1,
+    attackCd: 999,
+    blurb: 'Rusted stiff. One good blow would throw it.',
+  },
   'cistern-rat': {
     id: 'cistern-rat',
     name: 'Cistern Rat',
@@ -244,8 +267,8 @@ const PUSTULE: BossDef = {
   name: 'Brother Pustule',
   title: 'Keeper of the Vats',
   sprite: 'brother-pustule',
-  hp: 2100,
-  dmg: 23,
+  hp: 3600,
+  dmg: 27,
   radius: 10,
   xp: 470,
   gold: [75, 110],
@@ -259,6 +282,8 @@ const PUSTULE: BossDef = {
         { id: 'cleave', w: 3, cd: 3.5, p: { r: 48, arc: 1.05, wind: 0.75, lunge: 20, mul: 1.4 } },
         // he swings it high and the clouds come down on you (and stay a while)
         { id: 'rot:miasma', w: 3, cd: 5, p: { count: 4, r: 26, wind: 1, mul: 0.9, cloud: 5 } },
+        // leeches down a cone: they cling and drink, and only a dodge shakes them off (sim/patterns/rotmother-cistern.ts)
+        { id: 'rot:leeches', w: 3, cd: 7, p: { n: 2, wind: 0.8 } },
         // the censer on its chain: caught in the line, dragged in for a blow
         { id: 'hook', w: 2, cd: 7, p: { len: 150, width: 12, wind: 0.85, fmul: 1.3 } },
         // the vats give up their dead: bloated corpses that walk to you and burst
@@ -274,6 +299,7 @@ const PUSTULE: BossDef = {
       patterns: [
         { id: 'cleave', w: 3, cd: 3.5, p: { swings: 2, r: 48, arc: 1.05, wind: 0.6, gap: 0.12, lunge: 20, mul: 1.4 } },
         { id: 'rot:miasma', w: 3, cd: 4.5, p: { count: 6, r: 26, wind: 0.95, gap: 0.18, mul: 0.9, cloud: 6 } },
+        { id: 'rot:leeches', w: 3, cd: 5.5, p: { n: 3, wind: 0.7, arc: 0.6 } },
         // the boils again: a ring of slow plague that drifts after you
         { id: 'orbs', w: 2, cd: 6, p: { count: 8, ring: 1, waves: 2, gap: 0.8, speed: 50, homing: 0.6, mul: 0.8, color: '#b8d84a', r: 4 } },
         { id: 'hook', w: 2, cd: 6, p: { len: 160, width: 12, wind: 0.8, fmul: 1.3 } },
@@ -284,6 +310,50 @@ const PUSTULE: BossDef = {
   first: { any: ['pustule-censer'] },
   drops: { items: { any: ['pustule-censer', 'corpse-tender-mitts', 'bilewalker-waders', 'second-wind-ring', 'thornmail'], warrior: ['sunder-band'], mage: ['piercing-catalyst'], ranger: ['viper-quiver'] }, chance: [0.3, 0.45, 0.65] },
   intro: 'He tends her vats and blesses every barrel that goes out with the water. The censer is the worst of it. No, the smell is.',
+};
+
+/** Old Sluicegut: the city's drain-warden, carved from the cistern's stone, the Rot-Mother's brew grown through him. */
+const SLUICEGUT: BossDef = {
+  id: 'old-sluicegut',
+  name: 'Old Sluicegut',
+  title: 'Warden of the Charnel Drain',
+  sprite: 'old-sluicegut',
+  hp: 4600,
+  dmg: 28,
+  radius: 14,
+  xp: 800,
+  gold: [120, 170],
+  phases: [
+    {
+      at: 1,
+      speed: 30,
+      rest: [0.8, 1.2],
+      // the sluices: currents across the drain toward its grates; strike a lever to shut one
+      enter: [{ id: 'rot:sluices', w: 1, cd: 0, p: { lanes: 1, time: 12, push: 75 } }],
+      patterns: [
+        { id: 'slam', w: 3, cd: 4 },
+        { id: 'chop', w: 3, cd: 4, p: { len: 140, width: 22, wind: 0.9, mul: 1.6 } },
+        { id: 'rot:sluices', w: 2, cd: 14, p: { lanes: 1, time: 11, push: 75 } },
+        { id: 'summon', w: 1, cd: 18, p: { enemies: ['cistern-rat', 'cistern-rat', 'cistern-rat'] } },
+      ],
+    },
+    {
+      at: 0.5,
+      banner: 'Old Sluicegut throws every gate open!',
+      speed: 34,
+      rest: [0.6, 1],
+      enter: [{ id: 'rot:sluices', w: 1, cd: 0, p: { lanes: 3, time: 12, push: 95 } }],
+      patterns: [
+        { id: 'slamRings', w: 3, cd: 5 },
+        { id: 'chop', w: 3, cd: 4, p: { lines: 3, spread: 0.5, len: 150, width: 20, wind: 0.85, mul: 1.6 } },
+        { id: 'rot:sluices', w: 3, cd: 11, p: { lanes: 2, time: 11, push: 95 } },
+        { id: 'summon', w: 1, cd: 16, p: { enemies: ['cistern-rat', 'cistern-rat', 'cistern-bloat'] } },
+      ],
+    },
+  ],
+  first: { any: ['bilewalker-waders'] },
+  drops: { items: { any: ['bilewalker-waders', 'corpse-tender-mitts', 'thornmail', 'second-wind-ring'] }, chance: [0.3, 0.45, 0.65] },
+  intro: 'The city carved him from the cistern’s own stone to keep the drains running. Her brew has grown into every crack of him.',
 };
 
 const ROT_MOTHER: BossDef = {
@@ -541,22 +611,12 @@ export const ROTMOTHER_CISTERN: DungeonModule = {
           { enemies: ['cistern-broodling', 'cistern-rat', 'cistern-rat', 'cistern-acolyte'], elite: true },
         ],
       },
-      {
-        id: 'drain',
-        floor: 'i',
-        title: 'The Charnel Drain',
-        checkpoint: true,
-        waves: [
-          { enemies: ['cistern-vatborn', 'cistern-vatborn', 'cistern-acolyte'] },
-          { enemies: ['cistern-bloat', 'cistern-bloat', 'cistern-bloat', 'cistern-broodling', 'cistern-broodling', 'cistern-broodling'] },
-          { enemies: ['cistern-vatborn', 'cistern-acolyte', 'cistern-acolyte'], elite: true },
-        ],
-      },
+      { id: 'drain', floor: 'i', waves: [], boss: 'old-sluicegut', checkpoint: true, title: 'The Charnel Drain' },
       { id: 'pit', floor: 'l', waves: [], boss: 'the-rot-mother', checkpoint: true, title: 'The Brewing Pit' },
     ],
     blurb: 'Rats, plague priests and things grown in the vats. At the bottom, the Rot-Mother stirs her pot.',
   },
-  bosses: { 'brother-pustule': PUSTULE, 'the-rot-mother': ROT_MOTHER },
+  bosses: { 'brother-pustule': PUSTULE, 'old-sluicegut': SLUICEGUT, 'the-rot-mother': ROT_MOTHER },
   foes: FOES,
   items: ITEMS,
 };

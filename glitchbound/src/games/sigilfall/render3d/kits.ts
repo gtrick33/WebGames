@@ -189,6 +189,24 @@ put('serpent-cultist', { k: 'rogue_hooded', tint: '#8fc78a', look: 'foe-serpent-
 put('hedge-witch bog-hag rotbloom-matron', { k: 'witch', look: 'foe-hedge-witch', held: { kind: 'staff' }, ...CASTER });
 put('rot-sister blight-witch', { k: 'witch', tint: ROT, look: 'foe-blight-witch', held: { kind: 'staff' }, ...CASTER });
 put('the-withered-queen', { k: 'vampire', tint: ROT, size: 1.12, ...CASTER });
+// the Charnel Drain's warden: the cistern's own stone, the brew grown into every crack of him, the drain's valve-wheel on
+// his back
+put('old-sluicegut', {
+  k: 'frost_golem',
+  tint: '#8ab07a',
+  gain: 1.1,
+  size: 1.7,
+  ...SMASH,
+  gear: [
+    { m: 'w_shield_round', y: 0.42, z: -0.3, h: 0.5, turn: Math.PI, tint: '#9a6a4a' },
+    { m: 'mushroom_tanTall', x: 0.3, y: 0.72, z: -0.05, h: 0.2, tint: '#d8e0a0' },
+    { m: 'mushroom_tanTall', x: -0.32, y: 0.7, z: 0, h: 0.17, tint: '#c8d890' },
+    { m: 'mushroom_tanTall', x: 0.12, y: 0.82, z: -0.2, h: 0.14, tint: '#e0e8b0' },
+    { m: 'hanging_moss', x: 0.38, y: 0.35, z: 0, h: 0.42, tint: '#6a9a3a' },
+    { m: 'hanging_moss', x: -0.4, y: 0.32, z: -0.05, h: 0.4, tint: '#6a9a3a' },
+    { m: 'hanging_moss', x: 0.05, y: 0.5, z: -0.32, h: 0.35, tint: '#5a8a3a' },
+  ],
+});
 put('brother-pustule', { k: 'cleric', tint: ROT, look: 'foe-brother-pustule', held: { kind: 'staff' }, ...CASTER });
 put('maelis-crane', { k: 'cleric', look: 'chancellor-crane', ...CASTER });
 put('goblin', { k: 'ranger', tint: '#9aa878', look: 'foe-briar-poacher', held: { kind: 'bow' }, ...BOWMAN });
