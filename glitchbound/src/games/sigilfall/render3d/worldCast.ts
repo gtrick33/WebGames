@@ -44,6 +44,8 @@ const STATUE_LOOK = {
 const STATUE_SWORD: Held = { kind: 'sword', tint: '#b0b0b0' };
 const ECHOES = new Set(['echo-of-ysane', 'echo-of-ysane-mere', 'echo-of-ysane-quay', 'echo-of-the-children']);
 const ECHO_TINT = [0.74, 0.88, 1.3] as const;
+/** A memory of summer: the Hallow King's family, coming to him in his last hour (World.kin). */
+const SUMMER = [1.35, 1.15, 0.8] as const;
 /** Bone-steel poured white-hot: Ossa's likenesses of the hero (sim/patterns/molten-throne.ts). */
 const MOLTEN = [1.85, 0.95, 0.48] as const;
 const WARD_LOOKS = new Set(['door', 'gate', 'stone', 'boat', 'wagon', 'lantern']);
@@ -130,6 +132,13 @@ export class WorldCast {
     for (const [i, l] of w.likenesses.entries()) {
       cast.shadow(l.x, l.y, 8);
       cast.person(o.look, o.weapon, shieldOf(w.hero.cls), l.x, l.y, l.face, { clip: Math.hypot(l.vx, l.vy) > 8 ? 'run' : 'idle', t: time + i * 0.37, loop: true }, { alpha: 0.92, tint: MOLTEN });
+    }
+    // the people of a memory walking the hall (the Hallow King's queen and children, in his summer hour): echoes lit gold
+    for (const k of w.kin) {
+      const look = npcLookOf(k.look);
+      if (!look) continue;
+      cast.shadow(k.x, k.y, 7);
+      cast.person(look, null, false, k.x, k.y, turnOf(k.face), { clip: 'walk', t: time + k.x * 0.1, loop: true }, { alpha: Math.min(1, (w.time - k.since) / 0.8) * 0.92, lift: 0.12 + Math.sin(time * 1.6 + k.x) * 0.04, tint: SUMMER });
     }
     for (const e of w.enemies) this.syncFoe(cast, e, w, dt, time);
     for (const n of w.npcs) this.syncNpc(cast, n, w, dt, time, Math.min(1, (w.time - (n.since ?? -Infinity)) / 0.8));
@@ -262,7 +271,8 @@ export class WorldCast {
       const shake = e.flash > 0 ? Math.sin(time * 70) * 1.5 : 0;
       const lit: [number, number, number] | undefined = e.flash > 0 ? [1.7, 1.6, 1.5] : thing.tint;
       cast.shadow(e.x, e.y, e.r + 1);
-      cast.prop(thing.m, e.x + shake, e.y, thing.h * (e.dead ? Math.max(0.2, 1 - e.deathT * 1.6) : 1), 0, 0, lit);
+      const lift = thing.lift ? thing.lift + Math.sin(time * 2.2 + e.id) * 0.12 : 0;
+      cast.prop(thing.m, e.x + shake, e.y, thing.h * (e.dead ? Math.max(0.2, 1 - e.deathT * 1.6) : 1), thing.lift ? time * 1.8 + e.id : 0, lift, lit);
       return;
     }
     const sprite = e.boss?.def.sprite ?? e.def.sprite;
@@ -336,7 +346,7 @@ export class WorldCast {
             clip = kit.walk ?? (anim.speed > 62 ? 'run' : 'walk');
             anim.walk += dt * stride(clip, anim.speed, h);
             t = anim.walk;
-          }
+          } else if (kit.rest) clip = kit.rest;
           break;
         default:
           break;

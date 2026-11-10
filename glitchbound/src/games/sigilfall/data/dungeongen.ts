@@ -234,20 +234,20 @@ const DRESS: Record<string, Dress> = {
     nave: { column: 'black-column', runner: '#3a2a6a' },
     backdrop: 'tear-shards',
   },
-  // the Hallow King's own citadel: a dead court, still kept
+  // the Hallow King's own citadel, three hundred winters deep: a dead court kept in rime, ice grown up the walls
   duskspire: {
-    wall: ['great-banner', 'statue', 'banner-red', 'great-column', 'banner-red'],
-    side: ['lion', 'banner-shield', 'statue'],
+    wall: ['ice-crystal', 'banner-blue', 'statue', 'ice-column', 'banner-blue', 'ice-crystal'],
+    side: ['ice-crystal', 'lion', 'statue', 'coffin'],
     corner: 'iron-torch',
-    pillar: 'great-column',
+    pillar: 'ice-column',
     core: [
-      [[0, 0, 'runner'], [-3, -1, 'lion'], [3, -1, 'lion']],
-      [[0, 0, 'longtable'], [-3, 2, 'chair'], [3, 2, 'chair']],
-      [[0, -1, 'statue'], [-2, 1, 'candles'], [2, 1, 'candles']],
+      [[0, 0, 'ice-crystal'], [-3, -1, 'lion'], [3, -1, 'lion'], [-2, 2, 'bones'], [2, 2, 'bones']],
+      [[0, 0, 'longtable'], [-3, 2, 'chair'], [3, 2, 'chair'], [0, -2, 'ice-crystal']],
+      [[0, -1, 'statue'], [-2, 1, 'ice-crystal'], [2, 1, 'ice-crystal']],
     ],
-    bits: ['candles', 'skulls', 'bones', 'rubble'],
-    carpet: '#6a1020',
-    nave: { column: 'black-column', runner: '#6a1020' },
+    bits: ['bones', 'skulls', 'rubble', 'candles'],
+    carpet: '#2a3a6a',
+    nave: { column: 'ice-column', runner: '#2a3a6a' },
     backdrop: 'hallow-throne',
   },
   // under the Crown City: the old royal dead, and who hides among them

@@ -53,7 +53,8 @@ const FIRE: Record<string, Tone> = {
   icecave: { a: '#2a8ad8', b: '#90e0f8' },
   riftspire: { a: '#a03ae0', b: '#f090f8' },
   roots: { a: '#5a9a2a', b: '#c0e050' },
-  citadel: { a: '#7a4ac8', b: '#c8a0f8' },
+  // Duskspire, the Hallow King's frozen citadel: grieflight burning cold, violet at the heart and ice-white at the tips
+  citadel: { a: '#6a5ad8', b: '#d0e4ff' },
   lavacave: { a: '#e0321a', b: '#ff8a1e' },
   cistern: { a: '#3a9a78', b: '#80e0b0' },
 };
@@ -253,7 +254,7 @@ const THEME_AURA: Record<string, BossAura> = {
   roots: MOTES('#a8d84a', '#f0ffb0'),
   forest: MOTES('#a8d84a', '#f0ffb0'),
   temple: MOTES('#ffd27a', '#fff6d0'),
-  citadel: MOTES('#ffe08a', '#ffffff'),
+  citadel: FALLING('#d8e8ff', '#ffffff'),
   village: EMBERS('#ff8a3a', '#ffd27a'),
 };
 /** A boss with an air of its own. */
@@ -297,8 +298,8 @@ const BOSS_AURA: Record<string, BossAura> = {
   'herald-in-the-spire': MOTES('#d8d0f0', '#ffffff'),
   'lady-cendre': GLOOM('#2a2430', '#c08aff'),
   'hollow-guard': GLOOM('#3a3448', '#c8c0e0'),
-  vaelor: GLOOM('#2a2238', '#c8a8ff'),
-  'the-ash-crown': FALLING('#b9b4bf', '#ffe8c0'),
+  // the Hallow King: rime falling round him in a slow crown, grieflight in it
+  vaelor: { kind: 'spark', n: 14, speed: 0.22, spin: 0.35, from: 14, rise: -56, size: 7, a: '#c8a8ff', b: '#e8f6ff' },
   'silas-vey': GLOOM('#2a2430', '#e8d07a'),
   'the-royal-auditor': MOTES('#f0e0a0', '#ffffff'),
   'maelis-crane': MOTES('#ffd98a', '#ffffff'),

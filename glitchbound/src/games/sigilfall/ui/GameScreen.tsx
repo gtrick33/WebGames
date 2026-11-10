@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { MAX_LEVEL, xpToNext } from '../data/classes';
 import { KEY_AFFIXES, KEY_DEATH } from '../data/keystones';
@@ -308,6 +308,17 @@ function HudButton({ icon, label, badge, onClick, kbd, engine, spare }: { icon: 
   );
 }
 
+/** The seven points of the Hallow King's crown (World.crown), in the order the bar shows them, and their colors. */
+const CROWN_POINTS: [string, string, string][] = [
+  ['stone', 'Stone', '#c8b898'],
+  ['embers', 'Embers', '#ff7a3d'],
+  ['sun', 'the Sun', '#ffd84d'],
+  ['thorns', 'Thorns', '#6ad05a'],
+  ['frost', 'Frost', '#bfe8ff'],
+  ['veil', 'the Veil', '#c58cff'],
+  ['tides', 'Tides', '#4ab8ff'],
+];
+
 /** What a boss's standing order says (World.order: Hallvor's watch), under its bar. */
 const ORDER_SAY = { hold: 'Hold your post: don’t move', march: 'Walk the round: keep moving' } as const;
 
@@ -320,6 +331,8 @@ function BossBar({ engine }: { engine: SigilEngine }) {
   const ward = useRef<HTMLElement>(null);
   const wardFill = useRef<HTMLElement>(null);
   const wardTop = useRef(0);
+  const crown = useRef<HTMLSpanElement>(null);
+  const crownSaid = useRef('');
   const shown = useRef(1);
   useFrame(engine, (w) => {
     const b = w.boss();
@@ -332,6 +345,17 @@ function BossBar({ engine }: { engine: SigilEngine }) {
     wardTop.current = sh > 0 ? Math.max(wardTop.current, sh) : 0;
     if (ward.current) ward.current.hidden = sh <= 0;
     if (wardFill.current && sh > 0) wardFill.current.style.width = `${(sh / wardTop.current) * 100}%`;
+    // the Hallow King's crown: a point lit for each sigil it holds
+    const c = crown.current;
+    if (c) {
+      const said = w.crown ? w.crown.join(',') : '';
+      if (said !== crownSaid.current) {
+        crownSaid.current = said;
+        c.hidden = !w.crown;
+        for (const [i, el] of [...c.querySelectorAll('i')].entries()) el.dataset.on = w.crown?.includes(CROWN_POINTS[i]![0]) ? '1' : '0';
+        c.title = w.crown ? `The Crown holds: ${w.crown.map((id) => `the Sigil of ${CROWN_POINTS.find((x) => x[0] === id)?.[1] ?? id}`).join(', ')}` : '';
+      }
+    }
     // the order: called (it pulses until it holds), then holding (its time running out)
     const o = w.order;
     const el = order.current;
@@ -355,6 +379,11 @@ function BossBar({ engine }: { engine: SigilEngine }) {
       </span>
       <span ref={ward} className="rb-boss-ward" hidden>
         <i ref={wardFill} />
+      </span>
+      <span ref={crown} className="rb-boss-crown" hidden aria-label="The sigils in the Hallow King’s crown">
+        {CROWN_POINTS.map(([id, , color]) => (
+          <i key={id} style={{ '--pt': color } as CSSProperties} data-on="0" />
+        ))}
       </span>
       <span ref={order} className="rb-boss-order" hidden>
         <b ref={orderSay} />

@@ -23,6 +23,8 @@ export interface Kit {
   ghost?: number;
   /** Clip to walk with, where a figure has its own way of moving. */
   walk?: string;
+  /** The pose it holds while it stands still, where that is not just standing (the Hallow King's court, on its knees). */
+  rest?: string;
   /** Someone on its back (a rider, a centaur's or naga's upper half). */
   top?: { k: string; tint?: string; clip: string; y: number; size: number };
   /** Worn as a person from the wardrobe instead (the story's own people, when they fight). */
@@ -84,7 +86,26 @@ put('legion-scout', { k: 'a_horse_white', tint: '#58545f', top: { k: 'sk_warrior
 put('legion-lancer', { k: 'a_horse_white', tint: '#6c6470', top: { k: 'sk_spear', tint: ASH, clip: 'sit', y: 0.62, size: 0.74 } });
 put('border-reaver', { k: 'a_horse_white', tint: '#47505a', top: { k: 'sk_warrior', tint: COLD, clip: 'sit', y: 0.62, size: 0.74 } });
 put('death-knight death-knight-initiate death-knight-squire pale-knight revenant-knight hollow-sentinel the-gatewarden the-headless-lord sir-corvane sir-corvane-foot general-morvain hollow-guard', { k: 'black_knight', tint: '#8a8698', atk: 'chop2' });
-put('vaelor', { k: 'vaelor', tint: '#6e6a7c', size: 1.1, atk: 'chop2' });
+// Vaelor, the Hallow King, last holder of the last sigil: plate gone rime-blue with three hundred winters, a crimson
+// royal cowl, an ice greatsword; and the Ash Crown on his brow, his old circlet grown into nine points of ice
+put('vaelor', {
+  k: 'vaelor',
+  tint: '#9cb8ea',
+  gain: 1.3,
+  size: 1.6,
+  atk: 'chop2',
+  gear: [
+    { m: 'w_dagger_A', x: 0.0, y: 0.88, z: -0.055, h: 0.11, tipX: -0.3, tipZ: 0.0, tint: '#eaf8ff' },
+    { m: 'w_dagger_A', x: 0.042, y: 0.88, z: -0.07, h: 0.095, tipX: -0.23, tipZ: 0.19, tint: '#eaf8ff' },
+    { m: 'w_dagger_A', x: 0.064, y: 0.88, z: -0.109, h: 0.095, tipX: -0.05, tipZ: 0.3, tint: '#eaf8ff' },
+    { m: 'w_dagger_A', x: 0.056, y: 0.88, z: -0.152, h: 0.095, tipX: 0.15, tipZ: 0.26, tint: '#eaf8ff' },
+    { m: 'w_dagger_A', x: 0.022, y: 0.88, z: -0.181, h: 0.095, tipX: 0.28, tipZ: 0.1, tint: '#eaf8ff' },
+    { m: 'w_dagger_A', x: -0.022, y: 0.88, z: -0.181, h: 0.095, tipX: 0.28, tipZ: -0.1, tint: '#eaf8ff' },
+    { m: 'w_dagger_A', x: -0.056, y: 0.88, z: -0.153, h: 0.095, tipX: 0.15, tipZ: -0.26, tint: '#eaf8ff' },
+    { m: 'w_dagger_A', x: -0.064, y: 0.88, z: -0.109, h: 0.095, tipX: -0.05, tipZ: -0.3, tint: '#eaf8ff' },
+    { m: 'w_dagger_A', x: -0.042, y: 0.88, z: -0.07, h: 0.095, tipX: -0.23, tipZ: -0.19, tint: '#eaf8ff' },
+  ],
+});
 put('captain-hollowbane captain-gloam', { k: 'sk_guard', tint: COLD, size: 1.12 });
 put('quartermaster-vane', { k: 'paladin', tint: DARK, ...CASTER });
 
@@ -104,7 +125,6 @@ put('lich-acolyte morgrave', { k: 'sk_necro', ...CASTER });
 put('the-lich-of-hollowmere', { k: 'sk_necro', size: 1.18, ...CASTER });
 put('the-sun-king', { k: 'sk_necro', tint: GOLD, size: 1.16, ...CASTER });
 put('the-pale-crown', { k: 'sk_necro', tint: VOID, float: 0.45, ...CASTER });
-put('the-ash-crown', { k: 'sk_necro', tint: ASH, size: 1.35, float: 0.35, ...CASTER });
 put('king-hrodric', { k: 'sk_king' });
 put('bone-golem bone-hauler', { k: 'sk_golem' });
 put('the-sand-warden', { k: 'sk_golem', tint: SAND });
@@ -299,25 +319,21 @@ put('gloam-lurker', { k: 'spider', tint: '#7a7a9a', size: 0.86 });
 put('tide-lurker', { k: 'crab', tint: SEA, size: 0.86 });
 put('crab', { k: 'crab', size: 0.8 });
 // the shore crabs' matriarch, shell crusted with barnacles
-// Mother Clatterclaw: a matriarch the size of a boat, her shell gone blood-black with age, a crown of bleached bone
-// spikes splayed round its rim and barnacles crusted on it
+// Mother Clatterclaw: a matriarch the size of a boat, her shell gone blood-dark with age, the bones of a leviathan grown
+// into it (its ribs arched over her back, its skull behind, sockets up), crusted with barnacles, kelp hanging from the ribs
 put('clatterclaw', {
   k: 'crab',
-  tint: '#3e1410',
-  gain: 1.05,
-  size: 2.15,
+  tint: '#6a1c14',
+  gain: 1.15,
+  size: 2.1,
   gear: [
-    { m: 'stone_tallA', x: 0.44, y: 0.5, z: 0.16, h: 0.38, tipX: -0.27, tipZ: 0.65, tint: '#ece0cc' },
-    { m: 'stone_tallA', x: 0.18, y: 0.5, z: 0.39, h: 0.38, tipX: -0.65, tipZ: 0.27, tint: '#ece0cc' },
-    { m: 'stone_tallA', x: -0.18, y: 0.5, z: 0.39, h: 0.38, tipX: -0.65, tipZ: -0.27, tint: '#ece0cc' },
-    { m: 'stone_tallA', x: -0.44, y: 0.5, z: 0.16, h: 0.38, tipX: -0.27, tipZ: -0.65, tint: '#ece0cc' },
-    { m: 'stone_tallA', x: -0.44, y: 0.5, z: -0.16, h: 0.38, tipX: 0.27, tipZ: -0.65, tint: '#ece0cc' },
-    { m: 'stone_tallA', x: -0.18, y: 0.5, z: -0.39, h: 0.38, tipX: 0.65, tipZ: -0.27, tint: '#ece0cc' },
-    { m: 'stone_tallA', x: 0.18, y: 0.5, z: -0.39, h: 0.38, tipX: 0.65, tipZ: 0.27, tint: '#ece0cc' },
-    { m: 'stone_tallA', x: 0.44, y: 0.5, z: -0.16, h: 0.38, tipX: 0.27, tipZ: 0.65, tint: '#ece0cc' },
-    { m: 'stone_tallA', x: 0, y: 0.62, z: -0.1, h: 0.53, tint: '#ece0cc' },
-    { m: 'rocks', x: 0.3, y: 0.58, z: -0.25, h: 0.2, tint: '#c8c0b0' },
-    { m: 'rocks', x: -0.28, y: 0.6, z: 0.2, h: 0.18, tint: '#c8c0b0' },
+    { m: 'ribcage', y: 0.3, z: -0.15, h: 1.35, tint: '#e0d6c0' },
+    { m: 'skull', y: 0.25, z: -0.75, h: 0.85, turn: Math.PI, tipX: -0.6, tint: '#d8ccb0' },
+    { m: 'Rock_1_A', x: -0.25, y: 0.9, z: -0.45, h: 0.32, tint: '#8a9a98' },
+    { m: 'Rock_1_A', x: 0.4, y: 0.75, z: 0.1, h: 0.26, tint: '#7a8a88' },
+    { m: 'Rock_1_A', x: 0.1, y: 1.05, z: -0.1, h: 0.2, tint: '#9aaaa8' },
+    { m: 'hanging_moss', x: 0.55, y: 0.3, z: -0.1, h: 0.9, tint: '#2e6e4a' },
+    { m: 'hanging_moss', x: -0.55, y: 0.3, z: -0.25, h: 0.85, tint: '#2e6e4a' },
   ],
 });
 put('sand-scorpion', { k: 'scorpion' });
@@ -404,6 +420,16 @@ const BY_ENEMY: Record<string, Kit> = {
   barghest: { k: 'a_wolf', tint: DARK, size: 1.15 },
   'obsidian-golem': { k: 'golem', tint: '#5c5868', ...SMASH },
   'the-drowned-mother': { k: 'ghost', tint: SEA, float: 0.45, ghost: 0.82, size: 1.15, walk: 'skelidle' },
+  // the Hallow King's remembered (sim/patterns/hallow-king.ts): the hero's own beaten foes as the Ash Crown keeps them,
+  // ash-grey and not quite here
+  'echo-of-corvane': { k: 'black_knight', tint: '#a8a4b4', ghost: 0.74, atk: 'chop2' },
+  'echo-of-morvain': { k: 'black_knight', tint: '#b4b0bc', ghost: 0.74, size: 1.08, atk: 'chop2' },
+  'echo-of-the-gatewarden': { k: 'black_knight', tint: '#9c98a8', ghost: 0.74, size: 1.15, atk: 'chop2' },
+  'echo-of-the-weeping-lord': { k: 'ghost', tint: '#c8c4d4', float: 0.45, ghost: 0.7, size: 1.2, walk: 'skelidle' },
+  'echo-of-ashkar': { k: 'golem', tint: '#a8a4ac', ghost: 0.74, size: 1.2, ...SMASH },
+  'echo-of-vosk': { k: 'a_horse_white', tint: '#8e8a98', ghost: 0.74, top: { k: 'sk_warrior', tint: ASH, clip: 'sit', y: 0.62, size: 0.74 } },
+  // his court, kneeling below the throne: the lords of Vaelmoor in their grave-silks
+  'court-of-the-dead': { k: 'sk_warrior', tint: '#b4aed0', rest: 'sit' },
 };
 
 const FALLBACK: Kit = { k: 'sk_minion', tint: ASH };

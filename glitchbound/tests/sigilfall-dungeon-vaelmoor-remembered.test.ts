@@ -1,55 +1,59 @@
 /**
- * Vaelmoor Remembered (level 60), the finale’s last stage: the Crown’s memory of Vaelmoor whole, and the Ash Crown’s final form in the palace garden,
- * played through by the bot (tests/sigilfall-bot.ts): every class clears it at the level cap with the gear a
- * player would have by then, room by room, without getting stuck, and the last boss is a real fight. Its
- * bosses' attacks all exist and its rooms are registered.
+ * Vaelmoor Remembered (level 60), the finale's last stage: the Crown's memory of Vaelmoor whole. Nothing is fought here
+ * (the Hallow King was the last fight): the square where Elyra's choice is made, and the palace garden where the Ash
+ * Crown hangs until she unmakes it. Every class walks from the way in to the garden without getting stuck, the Crown
+ * hangs there until its quest is done, and when it is, the way home opens.
  */
 import { describe, expect, it } from 'vitest';
-import { BOSSES } from '../src/games/sigilfall/data/bosses';
 import { CLASS_IDS, MAX_LEVEL } from '../src/games/sigilfall/data/classes';
+import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
-import type { ClassId } from '../src/games/sigilfall/data/types';
-import { TILE } from '../src/games/sigilfall/sim/map';
-import { EXTRA_PATTERNS } from '../src/games/sigilfall/sim/patterns';
-import type { World } from '../src/games/sigilfall/sim/world';
-import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
-import { gearAt, HARD_DEATHS } from './sigilfall-bot';
+import type { ClassId, RegionId } from '../src/games/sigilfall/data/types';
+import type { Character } from '../src/games/sigilfall/progress/character';
+import { questState } from '../src/games/sigilfall/progress/character';
+import { newWorld, play, readyHero } from './sigilfall-bot';
+import { gearAt } from './sigilfall-bot';
 
 const REGION = 'vaelmoor-remembered';
 const LEVEL = Math.min(MAX_LEVEL, REGIONS[REGION].level + 1);
-const BOSS_ORDER = ['the-ash-crown'];
 
-/** The middle of the first room not fought yet (the bot's route through a dungeon). */
-function nextRoom(w: World): { x: number; y: number } | null {
-  const enc = w.encounters.find((e) => e.state === 'idle');
-  if (!enc) return null;
-  const tiles = (w.map.roomTiles[enc.index] ?? []).filter((i) => !w.map.solid[i]);
-  const i = tiles[Math.floor(tiles.length / 2)];
-  return i === undefined ? null : { x: ((i % w.map.w) + 0.5) * TILE, y: (Math.floor(i / w.map.w) + 0.5) * TILE };
+/** A hero whose answer is given and who has come up into the memory to see the Crown unmade. */
+function atTheEnd(cls: ClassId): Character {
+  const c = readyHero(cls, LEVEL, gearAt(LEVEL));
+  const done = (id: string): void => {
+    if (c.quests[id]) return;
+    c.quests[id] = { state: 'done', n: 1 };
+    for (const a of QUEST_DEFS[id]?.after ?? []) if (a !== 'crownfall-one-hour') done(a);
+  };
+  done('crownfall-break-it');
+  c.quests['crownfall-one-hour'] = { state: 'done', n: -1 };
+  c.quests['crownfall-the-ash-crown'] = { state: 'active', n: 0 };
+  for (const r of Object.keys(REGIONS) as RegionId[]) if (!c.unlocked.includes(r)) c.unlocked.push(r);
+  return c;
 }
 
 describe('sigilfall: Vaelmoor Remembered', () => {
-  it('has its bosses in order, each in phases, and every attack they use exists', () => {
-    const bosses = REGIONS[REGION].encounters.filter((e) => e.boss).map((e) => e.boss);
-    expect(bosses).toEqual(BOSS_ORDER);
-    for (const id of BOSS_ORDER) {
-      expect(BOSSES[id]!.phases.length, id).toBeGreaterThanOrEqual(2);
-      for (const ph of BOSSES[id]!.phases) for (const u of [...ph.patterns, ...(ph.enter ?? [])]) if (u.id.includes(':')) expect(EXTRA_PATTERNS[u.id], u.id).toBeTruthy();
-    }
+  it('has no fight in it: the King was the last, and the way home opens with the Crown unmade', () => {
+    expect(REGIONS[REGION].encounters.filter((e) => e.boss)).toEqual([]);
+    expect(REGIONS[REGION].homeAfter).toBe('crownfall-the-ash-crown');
+    expect(QUEST_DEFS['crownfall-the-ash-crown']!.objective).toMatchObject({ kind: 'explore', spot: 'memory-garden' });
   });
 
   for (const cls of CLASS_IDS) {
-    it(`${cls}: clears Vaelmoor Remembered at level ${LEVEL}`, { timeout: 270_000 }, () => {
-      const { w, r } = clearsWithRetry((seed) => {
-        const w = newWorld(REGION, readyHero(cls as ClassId, LEVEL, gearAt(LEVEL)), seed);
-        return { w, r: play(w, { seconds: 1500, done: (x) => x.cleared, goal: nextRoom }) };
+    it(`${cls}: walks up from the square to the garden, and the Crown is unmade`, { timeout: 120_000 }, () => {
+      const w = newWorld(REGION, atTheEnd(cls as ClassId));
+      expect(w.props.some((p) => p.prop === 'great:ash-crown')).toBe(true);
+      const garden = w.spots.find((s) => s.id === 'memory-garden')!;
+      expect(garden).toBeTruthy();
+      const r = play(w, {
+        seconds: 240,
+        done: (x) => questState(x.hero, 'crownfall-the-ash-crown') === 'done',
+        goal: () => ({ x: garden.x, y: garden.y }),
       });
       expect(r.stuck).toBe(false);
-      expect(w.cleared).toBe(true);
-      expect(r.bossesDown).toEqual(BOSS_ORDER);
-      expect(r.deaths).toBeLessThanOrEqual(HARD_DEATHS);
-      // the Ash Crown is a real fight, not a few seconds of burst
-      expect(r.bossTimes['the-ash-crown']).toBeGreaterThan(30);
+      expect(questState(w.hero, 'crownfall-the-ash-crown')).toBe('done');
+      expect(w.portal).not.toBeNull();
+      expect(r.deaths).toBe(0);
     });
   }
 });

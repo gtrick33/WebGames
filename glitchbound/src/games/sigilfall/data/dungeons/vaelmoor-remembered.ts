@@ -1,34 +1,34 @@
 import type { DungeonModule } from '.';
-import type { BossDef } from '../bosses';
 import { is, not, until } from '../cond';
 import type { Marker, PlacedMarkerDef } from '../types';
 
 /*
- * Vaelmoor Remembered (level 60): the finale's second and fourth stages (STORY_BIBLE.md §3, Crownfall). When
- * Vaelor falls the Ash Crown pulls the throne room into the only thing it has left: its memory of Vaelmoor the
- * summer before the plague, whole and beautiful. A road of warm stone comes up into the palace square, where
- * Elyra waits with the seven sigils lit and the King's family stands as he remembers them; there the hero
- * makes Elyra's choice. North of the square, through the palace garden gate, the Crown gathers itself into its
- * last form. The square is no room (nothing seals or spawns there); the garden is the boss's.
+ * Vaelmoor Remembered (level 60): the finale's last stage (STORY_BIBLE.md §4, Crownfall). When the Hallow King falls
+ * and the Sigil of Stone comes back out of his crown, the Ash Crown, robbed of its only star, pulls the throne room into
+ * the only thing it has left: its memory of Vaelmoor the summer before the plague, whole and beautiful. A road of warm
+ * stone comes up into the palace square, where Elyra waits with all seven sigils lit and the King's family stands as
+ * he remembers them; there the hero makes Elyra's choice. North of the square, over the palace garden, the Crown hangs
+ * turning, with nothing left to hold it up but grief: there Elyra unmakes it, and the way home opens. No room here
+ * seals and nothing is fought: the last fight was the King's.
  */
 const MAP = [
   '##################################################',
   '##################################################',
-  '##########aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa##########',
-  '##########aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa##########',
-  '##########aaQaaaaaaaaaaaaaaaaaaaaaaaaQaa##########',
-  '##########aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa##########',
-  '##########aaaaaaaaaaaaaaVaaaaaaaaaaaaaaa##########',
-  '##########aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa##########',
-  '##########aaaaajaaaaaaaaaaaaaaaaaajaaaaa##########',
-  '##########aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa##########',
-  '##########aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa##########',
-  '##########aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa##########',
-  '##########aaaaajaaaaaaaaaaaaaaaaaajaaaaa##########',
-  '##########aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa##########',
-  '##########aaQaaaaaaaaaaaaaaaaaaaaaaaaQaa##########',
-  '##########aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa##########',
-  '#######################DDDD#######################',
+  '##########T,..,.T..,...,::::,...,..T.,.,##########',
+  '##########.,..Q.......,.::::.,.......Q,.##########',
+  '##########,..........,..::::..,.........##########',
+  '##########..,....,......::::......,...,.##########',
+  '##########....,.......,.::::.,.......,..##########',
+  '##########.,...j.....,..::::..,.....j..,##########',
+  '##########..,..........,::::,..........,##########',
+  '##########,.....,.......::::.......,....##########',
+  '##########..,...........::::..,.......,.##########',
+  '##########.,...j.,......::::......,.j..,##########',
+  '##########...,......,...::::...,......,.##########',
+  '##########,.....,.......::::.......,....##########',
+  '##########.,..Q...,.....::::.....,...Q,.##########',
+  '##########T..,..,T..,...::::...,..T..,.T##########',
+  '#######################::::#######################',
   '#######################::::#######################',
   '#######################::::#######################',
   '######...,..,.,.,..........,...........,,...######',
@@ -52,7 +52,6 @@ const MAP = [
 const markers: Record<string, Marker> = {
   P: { kind: 'start' },
   X: { kind: 'exit', to: 'pale-reach', label: 'Out through the tear, to the Pale Reach' },
-  V: { kind: 'boss', boss: 'the-ash-crown' },
 };
 
 /** The palace square: who stands in the memory, and what the hour changes (Elyra's choice). */
@@ -77,66 +76,15 @@ const placed: PlacedMarkerDef[] = [
   // where the scenes look
   { tx: 25, ty: 22, marker: { kind: 'place', id: 'memory-square' } },
   { tx: 25, ty: 17, marker: { kind: 'place', id: 'memory-gate' } },
+  { tx: 25, ty: 7, marker: { kind: 'place', id: 'memory-crown' } },
+  // the Ash Crown over the garden, turning, until Elyra unmakes it
+  { tx: 25, ty: 2, marker: { kind: 'prop', prop: 'great:ash-crown' }, when: until('crownfall-the-ash-crown') },
+  { tx: 25, ty: 9, marker: { kind: 'spot', id: 'memory-garden', name: 'The Palace Garden', r: 3 } },
   // the hour taken: four of them at the fountain, once he has had it
   { tx: 27, ty: 21, marker: { kind: 'prop', prop: 'flag' }, when: is('crownfall-one-hour', 'taken') },
   // the Crown broken at once: where he stood, only ash
   { tx: 34, ty: 22, marker: { kind: 'prop', prop: 'debris' }, when: is('crownfall-break-it', 'taken') },
 ];
-
-const THE_ASH_CROWN: BossDef = {
-  id: 'the-ash-crown',
-  name: 'The Ash Crown',
-  title: 'What the King wore',
-  sprite: 'the-ash-crown',
-  hp: 12000,
-  dmg: 34,
-  radius: 14,
-  xp: 9000,
-  gold: [2000, 3000],
-  floats: true,
-  phases: [
-    {
-      // a kingdom's grief, thrown at you a handful at a time
-      at: 1,
-      speed: 36,
-      rest: [0.7, 1.1],
-      patterns: [
-        // the summer goes out but for one drifting circle of light: outside it, the ash burns
-        { id: 'spell:eclipse', w: 3, cd: 4.5, p: { color: '#fff2c0', type: 'holy', time: 6, rr: 48, mul: 0.3 } },
-        // the memory of the plague crawling after the hero
-        { id: 'spell:fissure', w: 2, cd: 6, p: { color: '#b9b4bf', type: 'shadow', count: 8, step: 0.18, stride: 22, rr: 16, mul: 0.9 } },
-      ],
-    },
-    {
-      at: 0.6,
-      banner: 'The Crown remembers every grief it ever ate',
-      speed: 40,
-      rest: [0.6, 1],
-      enter: [{ id: 'roar', w: 1, cd: 0 }],
-      patterns: [
-        { id: 'summon', w: 1, cd: 18, p: { enemies: ['wailing-soul', 'wailing-soul', 'kneeling-dead'] } },
-        // the summer goes out but for one drifting circle of light: outside it, the ash burns
-        { id: 'spell:eclipse', w: 2, cd: 5, p: { color: '#fff2c0', type: 'holy', time: 6, rr: 48, mul: 0.3 } },
-      ],
-    },
-    {
-      at: 0.25,
-      banner: 'Only ash is left, and it will not go quietly',
-      speed: 46,
-      rest: [0.45, 0.8],
-      enter: [],
-      patterns: [
-        // rings of ash bursting out from it, every other one
-        { id: 'spell:pulse', w: 2, cd: 8, p: { color: '#b9b4bf', type: 'shadow', rings: 5, band: 32, mul: 1 } },
-        // the summer goes out but for one drifting circle of light: outside it, the ash burns
-        { id: 'spell:eclipse', w: 3, cd: 4, p: { color: '#fff2c0', type: 'holy', time: 6, rr: 48, mul: 0.3 } },
-      ],
-    },
-  ],
-  first: { any: ['vaelors-heartstone'] },
-  drops: { items: { any: ['vaelors-heartstone', 'shroud-of-duskspire', 'hollowbrand-shard'] }, chance: [0.4, 0.6, 1] },
-  intro: 'Not a crown any more: a shape of grey ash and borrowed summer, as tall as the garden wall, with seven empty points where the stars should be.',
-};
 
 export const VAELMOOR_REMEMBERED: DungeonModule = {
   region: {
@@ -156,8 +104,10 @@ export const VAELMOOR_REMEMBERED: DungeonModule = {
     markers,
     placed,
     states: [{ id: 'summer', when: until('crownfall-the-ash-crown'), dusk: true }],
-    encounters: [{ id: 'garden', floor: 'a', waves: [], boss: 'the-ash-crown', checkpoint: true, title: 'The Palace Garden' }],
+    encounters: [],
+    // the Crown unmade: the way home opens in the garden
+    homeAfter: 'crownfall-the-ash-crown',
     blurb: 'The Ash Crown’s memory of Vaelmoor whole: warm stone, banners and a market square, the summer before the plague.',
   },
-  bosses: { 'the-ash-crown': THE_ASH_CROWN },
+  bosses: {},
 };

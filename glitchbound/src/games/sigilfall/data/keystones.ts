@@ -124,7 +124,8 @@ export const riftTop = (h: { keystone: number }): number => h.keystone;
 /** The dungeons a hero's stone reaches, gentlest first: more with every other level. */
 export function riftDungeons(top: number): RegionDef[] {
   const all = Object.values(REGIONS as unknown as Record<string, RegionDef>)
-    .filter((r) => r.kind === 'dungeon' && !r.interior)
+    // (a dungeon with no last boss, the Crown's memory, has no clock to beat)
+    .filter((r) => r.kind === 'dungeon' && !r.interior && r.encounters.some((e) => !!e.boss))
     .sort((a, b) => a.levels[0] - b.levels[0]);
   return all.slice(0, riftPoolSize(top));
 }

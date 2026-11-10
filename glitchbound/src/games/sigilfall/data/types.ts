@@ -476,7 +476,7 @@ export interface EnemyDef {
    * A thing, not a creature: drawn as this prop (`m`, `h` px tall) and standing still, like a boss fight's
    * candles, coffins or posts (data/bosses.ts): it shakes and flashes when struck.
    */
-  prop?: { m: string; h: number; tint?: [number, number, number] };
+  prop?: { m: string; h: number; tint?: [number, number, number]; /** It hangs this far off the ground (tiles), bobbing: a thing that floats (a sigil torn loose). */ lift?: number };
   ai: EnemyAi;
   hp: number;
   dmg: number;
@@ -815,6 +815,11 @@ export interface RegionDef {
   kind: 'town' | 'wild' | 'dungeon';
   /** Inside a building of a town (safe, entered by its door, never on the world map; no riding). */
   interior?: boolean;
+  /**
+   * A dungeon whose story ends in a deed rather than a fight (the Ash Crown unmade in its own memory): when this
+   * quest is done here, the way home opens where the hero stands, as it does when a last boss falls.
+   */
+  homeAfter?: string;
   /** Enemy level on Normal (in the wilds, at the way in; packs carry their own). */
   level: number;
   /** The levels the region is for, shown on the world map. */

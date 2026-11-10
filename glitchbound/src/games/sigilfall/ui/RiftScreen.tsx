@@ -78,7 +78,7 @@ export function RiftScreen({ engine, slot, onBack }: { engine: SigilEngine; slot
           {next && <p className="rb-small rb-dim">The next memory waits at Riftstone +{next.at}.</p>}
           {!done && (
             <p className="rb-rift-warden">
-              <b>{warden.title}.</b> Stones go no higher than +{RIFT_CAP_UNFINISHED} until you have stood before the Ash Crown yourself. Finish the story as a {h.cls} to {warden.sigil ? `become a warden of the ${warden.sigil} Sigil` : 'take up the watch the songs left out, at the Gloam Gate'}: the title, the armor and the {warden.drake.name}.
+              <b>{warden.title}.</b> Stones go no higher than +{RIFT_CAP_UNFINISHED} until you have stood before the Hallow King yourself. Finish the story as a {h.cls} to {warden.sigil ? `become a warden of the ${warden.sigil} Sigil` : 'take up the watch the songs left out, at the Gloam Gate'}: the title, the armor and the {warden.drake.name}.
             </p>
           )}
         </section>

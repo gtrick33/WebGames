@@ -68,8 +68,9 @@ done in the dark. His widow carried him home and sang at his barrow until she di
 A **Gloamknight** hero who finishes the story takes up his watch (*Warden of the Gloam*,
 `data/wardens.ts`).
 
-The wardens sealed Vaelor in **Duskspire**, his citadel, and built the **Three Gates** on the road to it: Highwall,
-the Gloam Gate, and the Duskspire Gate itself, whose seven locks open only for all seven sigils. For three hundred years the seal held because nobody in Aster knew where the sigils
+The wardens sealed Vaelor in **Duskspire**, his citadel at the top of the snowfields of the Pale Reach, and built the
+**Three Gates** on the road to it: Highwall, the Gloam Gate, and the Duskspire Gate itself, whose seven locks open
+only for all seven sigils (or from the inside, for the King's own blood). For three hundred years the seal held because nobody in Aster knew where the sigils
 were.
 
 ### Now
@@ -108,14 +109,19 @@ it saw (the player sees it with her: `vision` scenes).
 | Sigil | Where (land) | Its warden | The vision it shows | What Elyra forgets |
 | --- | --- | --- | --- | --- |
 | **Embers** | under Briarhollow's chapel (Prologue) | Brother Hale, who became Briarhollow's first priest | the star falling and breaking over two kingdoms | the words of her mother's lullaby (she still hums it) |
-| **Stone** | the shrine under Hearthstead's hall (Amberfield) | Marshal Teodric | two crowns forged; two kings who shared a sky | — (Vosk takes it before she can touch it; won back at the Pale Reach) |
+| **Stone** | the shrine under Hearthstead's hall (Amberfield) | Marshal Teodric | two crowns forged; two kings who shared a sky | — (Vosk takes it before she can touch it and carries it north to his king; Vaelor wears it in the Ash Crown, and it is won back only when he falls) |
 | **Sun** | the Tomb of the Sun King (Sunscorch) | the Sun King, a warden-king of the desert sealed in his tomb with it | the plague ship coming into Vaelmoor's harbor, and the man who let it in | the color of Briarhollow's orchard in spring |
 | **Thorns** | the Thorn Court (Glimmerwood) | the first Thistlemourn | Vaelor at his children's bedside, the night he broke his crown | Thessa's face (she knows the name) |
 | **Frost** | the Vault of Rime (Rimeheld) | Jarl Ingrith the Unthawed, frozen in the vault with it | the eight wardens at the border; seven ride away and one stays | her own birthday |
 | **Veil** | the Tear (the Shattered Vale) | Magister Orla, who sealed the Tear with it | Ser Edric holding the Gloam Gate alone at dusk | — (taken with her by the Herald; won back at the Gloam Gate) |
 | **Tides** | the drowned altar of Hollowmere | Queen Ysane's own maid, Bettany, who stayed | Ysane, dying, asking Vaelor to let her go | the hero's name |
 
-At the Duskspire Gate the hero carries all seven (`the-seventh-sigil`): the last door opens only for seven.
+**The last sigil is the King's.** Vosk carried the Sigil of Stone north and laid it at Vaelor's feet, and Vaelor set
+it in the Ash Crown: the first star of the Crown of Ash and Starlight, lit. At the Pale Reach the hero finds Vosk's
+saddlebag empty (`the-seventh-sigil`, **The Empty Scarf**: a refugee child's scarf, folded round nothing), and Elyra
+feels the seventh on the King's brow. The hero comes to the Duskspire Gate with six: six of its locks turn for them,
+and the seventh, the Stone's, is opened from the inside by Aurel, whose voice in the gate is silenced. The Stone is
+won back from the Crown when Vaelor falls (`the-hollow-king`), and its vision is the last: two kings under one sky.
 
 ---
 
@@ -131,7 +137,7 @@ At the Duskspire Gate the hero carries all seven (`the-seventh-sigil`): the last
 
 Story figures: **Elder Maren** (the camp's voice), **Herbwife Thessa**, **Old Haldor** the bell-ringer, **Regent
 Elowen** of Aster, **Chancellor Crane** (the traitor), **Rider-Captain Vosk** (the Host's cavalry; takes the Sigil of
-Stone), **Sir Corvane** (the Host's first knight, Cael's mentor), **the Pale Herald / Aurel**, **Queen Ysane** (her
+Stone and carries it to his king), **Sir Corvane** (the Host's first knight, Cael's mentor), **the Pale Herald / Aurel**, **Queen Ysane** (her
 echoes), **Lark and Edda** (the children's echoes), **Vaelor**. The townspeople of each land are the people the hero
 saves, and they come back to the camp.
 
@@ -339,20 +345,36 @@ Herald's spire in the west, the lamps of Lastlight, and the Gloam Gate at the ro
    come in. He holds. **"I loved you. That is why I won't."**
 3. `across-the-mere` **Across the Mere** — the necropolis on the island.
 4. `ysanes-last-echo` **Let Me Go** — Queen Ysane's last echo gives the **Sigil of Tides** and begs the hero to let
-   her husband go. **Vision:** Ysane dying, asking Vaelor to let her go. Elyra forgets the hero's name. (`the-
-   seventh-sigil` then waits on the Sigil of Stone.)
+   her husband go. **Vision:** Ysane dying, asking Vaelor to let her go. Elyra forgets the hero's name. (The Sigil of
+   Stone is still out there: Vosk has it, the camp believes.)
 
 ### The Last March · Pale Reach, Duskspire, Vaelmoor Remembered · 56–60
 
+The Pale Reach is a snowfield; Duskspire stands white at the top of it, frozen with three hundred winters, the Hallow
+King's palace and the last fight of the story.
+
 1. `the-last-road` **Every Banner** — every faction the hero helped arrives with its troops: Hollis's rangers,
    Dunmore's riders, the forest clans (as chosen), Sigrun's huscarls, Ras's lancers, Lastlight's lamp-keepers.
-2. `march-vosk` **The Rider at the Head of the Host** — Vosk, hollowed, and the **Sigil of Stone**. **Vision:**
-   two crowns forged; two kings shaking hands under one sky. Seven of seven (`the-seventh-sigil`).
+2. `march-vosk` **The Rider at the Head of the Host** — Vosk, hollowed. His saddlebag holds a child's scarf and
+   nothing in it: `the-seventh-sigil` **The Empty Scarf**. Elyra feels the Stone on Vaelor's brow. Six of seven.
 3. `march-the-breach` **The Breach** — *raid* on Duskspire's outer wall with the siege mages.
 4. `march-the-voice` **The Voice in the Gate** — the Pale Herald, at last: Aurel. **"I let the ship in. Everything
-   since has been me trying to let it out."**
-5. `the-hollow-king` **Crownfall: The Throne** — Vaelor. Then Vaelmoor Remembered: **One Hour** or **Break It Now**
-   (the choice), and **The Ash Crown**.
+   since has been me trying to let it out."** His last words are his own: the seventh lock is his brother's and knows
+   his voice. `the-duskspire-gate`: six locks turn for six lights, and the seventh from the inside, ash in its keyhole.
+5. `the-hollow-guard` **The Ashen Guard**, then `the-hollow-king` **Crownfall: The Hallow King** — the final boss:
+   Vaelor on his throne of ice, the Sigil of Stone in the Ash Crown on his brow. The hardest fight of the story, in
+   five phases, every one its own trial (`sim/patterns/hallow-king.ts`): his court of dead knights kneeling below the
+   throne and rising at his word; the Crown's call, tearing Elyra's six out of her one by one (strike each back to
+   her, or he has its power: the Stone's falling floor, the Embers' burning charges, the Sun's glare that spares only
+   his shadow, the Thorns' hedges, the Frost's pen of ice, the Veil's exchange of places, the Tides raising the
+   fight's dead) while the Crown casts on its own over his blade; the throne broken and the hero's own beaten foes
+   remembered as ash; **one summer's hour**, his queen and children walking up the hall to him through the Host
+   while the summer's light is all that is safe, each laying a hand on him so that he lets go a little; and the Last
+   King's doom. When he falls the Stone comes loose: seven of seven, and the Crown tears the sky over the tower.
+6. Vaelmoor Remembered: the Stone's vision (two crowns forged, two kings under one sky), then **One Hour** or **Break
+   It Now** (the choice), and `crownfall-the-ash-crown` **The Crown Unmade**: no fight. The Ash Crown hangs over the
+   palace garden with nothing to hold it up but grief, and Elyra lifts the seven sigils and lets everything it ate
+   go home. The way home opens.
 
 Epilogue: **The Camp Goes Home**, and **The Bell**: Old Haldor rings it, and Elyra, who has forgotten so much,
 remembers the lullaby's words.

@@ -646,7 +646,7 @@ const undertow: PatternFn = (w, e, _dt, k) =>
     return time;
   });
 
-/** The Ash Crown: the light goes out but for one drifting circle of summer; outside it, the ash burns. */
+/** The Hallow King's Ash Crown, in his summer hour: the light goes out but for one drifting circle of summer; outside it, the ash burns. */
 const eclipse: PatternFn = (w, e, _dt, k) =>
   windThen(w, e, k, () => {
     const box = roomBox(w, e);

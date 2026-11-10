@@ -243,6 +243,13 @@ export class World {
   private snagT = 0;
   /** Things a boss fight floats in the air (Ilvane's stones): drawn as props off the ground. */
   floaters: { m: string; x: number; y: number; lift: number; h: number; rot: number; tint?: readonly [number, number, number] }[] = [];
+  /**
+   * The people of a memory a boss fight walks through the hall (the Hallow King's queen and children, coming to him in
+   * his summer hour: sim/patterns/hallow-king.ts), wearing the looks of the NPCs named: drawn pale, as echoes are.
+   */
+  kin: { look: string; x: number; y: number; /** Which way they walk (radians, as an enemy faces). */ face: number; since: number }[] = [];
+  /** The sigils set in a boss's crown while it holds them (the Hallow King's: sigil ids), shown under its bar. */
+  crown: string[] | null = null;
   events: WorldEvent[] = [];
   procCd: Record<string, number> = {};
   flow: Int16Array;
@@ -2439,8 +2446,14 @@ export class World {
     if ((x.to === 'whisperwood' || x.to === 'crypt') && !h.unlocked.includes(x.to)) return x.to === 'crypt' ? 'The crypt stair is sealed under the chapel floor.' : 'Not open yet.';
     // roads the story opens (the King’s Road to the Crown City)
     if (x.needs && questState(h, x.needs) !== 'done') return `The way is shut: ${QUEST_DEFS[x.needs]?.name ?? 'the story'} first.`;
-    // Duskspire's last door: seven locks, one for each sigil
-    if (x.to === 'duskspire' && sigilCount(h) < SIGILS.length) return `Seven locks bar the gate, one for each sigil. You carry ${sigilCount(h)} of ${SIGILS.length}.`;
+    // Duskspire's last door: seven locks, one for each sigil. Six turn for the six Elyra carries; the seventh is the
+    // Stone's, and the Stone is on the King's brow (Vosk brought it him), so it answers only to his own blood: his
+    // brother Aurel, the Herald, opens it from the inside once his voice in the gate is silenced
+    if (x.to === 'duskspire' && sigilCount(h) < SIGILS.length) {
+      const six = SIGILS.filter((id) => id !== 'sigil-stone' && h.perks.includes(id)).length;
+      if (six < SIGILS.length - 1) return `Seven locks bar the gate, one for each sigil. You carry ${six} of the six Elyra can bring.`;
+      if (questState(h, 'march-the-voice') !== 'done') return 'Seven locks bar the gate. Six would turn for the sigils Elyra carries; the seventh is the Stone’s, and the Stone is on the King’s brow. It answers only to his own blood.';
+    }
     if (x.minLevel && h.level < x.minLevel) {
       const r = REGIONS[x.to];
       return `Too dangerous before level ${x.minLevel}: ${r.name} is for levels ${r.levels[0]}-${r.levels[1]}.`;
@@ -2506,6 +2519,12 @@ export class World {
       }
       // a quest the hero has long out-grown pays less (data/progression.ts)
       this.giveXp(Math.round(r.xp * outlevelled(h.level, q.xpLevel ?? h.level, 1)));
+      // a land whose story ends in a deed, not a fight (the Ash Crown unmade in its own memory): the way home opens
+      if (this.region.homeAfter === q.id && !this.portal) {
+        this.cleared = true;
+        this.portal = { x: this.player.x, y: this.player.y - TILE * 1.5 };
+        this.fxBurst(this.portal.x, this.portal.y, '#ffe9b0', 30, 24);
+      }
       if (q.id === 'rift-shards') h.shards = Math.max(0, h.shards - 3);
     }
     const started = startQuests(h);

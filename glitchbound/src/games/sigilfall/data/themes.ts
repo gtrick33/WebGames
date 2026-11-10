@@ -766,21 +766,25 @@ export const THEMES: Record<Theme, ThemeLook> = {
     'embers',
     MOLTEN,
   ),
+  // Duskspire, the Hallow King's citadel on the top of the Pale Reach: pale marble gone white-blue with three hundred
+  // winters of rime, frost in every joint, black iron, and the Crown's violet grieflight in the cracks; snow sifting in
+  // through the broken vaults, and its pools frozen solid
   citadel: indoor(
-    '#08060e',
+    '#0a1018',
     {
-      slab: ['#2a2834', '#302e3a', '#26242e', '#2c2a36'],
-      mortar: '#4a3a6a',
-      top: '#0c0a14',
-      topHi: '#16121e',
-      lip: '#6a4aa8',
-      lip2: '#3a2a5a',
-      brick: ['#3a3848', '#34323e', '#403e4e'],
-      brickMortar: '#1a1626',
-      moss: '#a8c8ff',
-      crack: '#8a5ad8',
+      slab: ['#a6bcd6', '#b0c6de', '#9cb2cc', '#aac0da'],
+      mortar: '#e4f2fc',
+      top: '#141c2a',
+      topHi: '#1e283a',
+      lip: '#b8d0ea',
+      lip2: '#5a6c88',
+      brick: ['#aebccf', '#a2b2c6', '#bac8da'],
+      brickMortar: '#5a6a84',
+      moss: '#eef8ff',
+      crack: '#9a6ae8',
     },
-    'motes',
+    'snow',
+    FROZEN,
   ),
   // under a rotten tree: packed earth and root-walls, blight-pink rot in the cracks
   roots: indoor(

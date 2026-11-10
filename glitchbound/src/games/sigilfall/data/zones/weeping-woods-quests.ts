@@ -182,7 +182,7 @@ export const WEEPING_WOODS_NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'wood-the-children', state: 'done' }, lines: ['He went to get the star. For the fever. He said he would be back by morning.', 'Tell him we waited. Tell him it was all right.'] },
-      { lines: ['Aldis! Wenna! Come in now, it’s snowing. Your father will be home soon.', 'Have you seen my children? Two of them. This high. They went out to find their father.'] },
+      { lines: ['Lark! Edda! Come in now, it’s snowing. Your father will be home soon.', 'Have you seen my children? Two of them. This high. They went out to find their father.'] },
     ],
   },
   'candlewife-hesper': {

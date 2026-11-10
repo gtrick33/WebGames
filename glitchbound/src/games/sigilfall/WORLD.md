@@ -125,7 +125,7 @@ The Act III dungeons and their bosses:
 Highwall holds, and the road north is open. Act IV goes into the Hollow King's own lands: the Withered Queen
 holds the Sigil of Thorns in the Blightwood, the Pale Herald the Sigil of the Veil in the Riftscar, and at
 Emberdeep the fire lord Ashkar is chained to forge the Pale Crown, which would make the King's hold on the dead
-unbreakable. With all seven sigils the hero crosses the Pale Reach to Duskspire. Ids are fixed, as above.
+unbreakable. With six sigils the hero crosses the Pale Reach to Duskspire; the seventh is on the Hallow King's brow (STORY_BIBLE.md). Ids are fixed, as above.
 
 | Zone | First quest of its chain | Last quest of its chain |
 | --- | --- | --- |
@@ -138,7 +138,7 @@ unbreakable. With all seven sigils the hero crosses the Pale Reach to Duskspire.
 | The Riftscar Wastes | `the-veil-torn`: after `the-heart-of-the-tear`, from Magister Quell, level 53 (talk to Archmage Orrin in Veilwatch) | `the-pale-herald`: defeat the Pale Herald in the Spire of the Rift (the Sigil of the Veil) |
 | Gloamhollow | `the-kings-border`: after `the-weeping-lord`, from Candlewife Hesper, level 54 (talk to Lamp-keeper Ada in Lastlight) | `the-gloam-gate`: kill the Gatewarden who keeps the King's border |
 | Hollowmere | `the-dead-lake`: after `the-gloam-gate`, from Lamp-keeper Ada, level 56 (talk to the Ferryman) | `the-necropolis`: kill the Lich of Hollowmere in the necropolis on the water |
-| The Pale Reach | `the-last-road`: after `the-necropolis`, from the Ferryman, level 57 (talk to Commander Aldric at Dawn's Rest) | `the-hollow-king`: defeat Vaelor in Duskspire (its last door opens only for all seven sigils) |
+| The Pale Reach | `the-last-road`: after `the-necropolis`, from the Ferryman, level 57 (talk to Commander Aldric at Dawn's Rest) | `the-hollow-king`: defeat Vaelor in Duskspire, the final boss (its gate opens for six sigils and the Herald's last word) |
 | **The end** | `the-dawn` (story): after `the-hollow-king`: the Regent, the city, the sigils | the epilogue |
 
 The Act IV dungeons:
@@ -148,7 +148,7 @@ The Act IV dungeons:
 | Blightheart (`blightheart`) | 47-50 | the Blightwood, the Heartroot (level 46) | the Rotwood Colossus (`rotwood-colossus`), the Withered Queen (`the-withered-queen`) |
 | The Molten Throne (`molten-throne`) | 54-57 | Emberdeep, the Throne's Gate (level 53) | the Magma Warden (`magma-warden`), Ashkar the Bound (`ashkar-the-bound`) |
 | The Spire of the Rift (`spire-of-the-rift`) | 56-59 | the Riftscar, the Spire's foot (level 55) | the Veil Sentinel (`veil-sentinel`), the Pale Herald (`the-pale-herald`) |
-| Duskspire (`duskspire`) | 60 | the Pale Reach, the Duskspire Gate (level 58, all seven sigils) | the Hollow Guard (`hollow-guard`), Vaelor, the Hollow King (`vaelor`) |
+| Duskspire (`duskspire`) | 60 | the Pale Reach, the Duskspire Gate (level 58, six sigils and the Herald silenced) | the Hollow Guard (`hollow-guard`), Vaelor, the Hollow King (`vaelor`) |
 
 ### What Acts I and II hold (built)
 

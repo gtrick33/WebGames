@@ -235,4 +235,6 @@ export const OPENED_TABLE: readonly string[] = [
   'scene:boss-hallvor-the-unthawed', 'scene:boss-prior-vessant', 'scene:boss-elowen-of-the-dawn',
   'scene:boss-ossa-the-founder', 'scene:boss-ilvane-the-unmoored', 'scene:boss-lady-cendre', 'scene:boss-silas-vey',
   'scene:boss-the-royal-auditor',
+  // the Hallow King as the last fight: Vosk's empty scarf, and the garden where the Crown is unmade
+  'scene:reach-the-empty-scarf', 'spot:vaelmoor-remembered:memory-garden',
 ];
