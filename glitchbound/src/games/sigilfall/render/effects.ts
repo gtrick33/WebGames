@@ -295,6 +295,7 @@ const BOSS_AURA: Record<string, BossAura> = {
   'veil-sentinel': MOTES('#a48bdc', '#f0e0ff'),
   'ilvane-the-unmoored': MOTES('#c8b8ff', '#ffffff'),
   'herald-in-the-spire': MOTES('#d8d0f0', '#ffffff'),
+  'lady-cendre': GLOOM('#2a2430', '#c08aff'),
   'hollow-guard': GLOOM('#3a3448', '#c8c0e0'),
   vaelor: GLOOM('#2a2238', '#c8a8ff'),
   'the-ash-crown': FALLING('#b9b4bf', '#ffe8c0'),

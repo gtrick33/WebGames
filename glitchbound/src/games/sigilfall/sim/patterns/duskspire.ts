@@ -1,6 +1,6 @@
 import { dist, TAU } from '../../core/math';
 import { hurtPlayer } from '../combat';
-import { castRay, K, TILE } from '../map';
+import { castRay, flowStep, K, moveCircle, TILE } from '../map';
 import type { Enemy, Field } from '../types';
 import type { World } from '../world';
 import type { PatternFn } from './kit';
@@ -209,6 +209,155 @@ function wallSpot(w: World, e: Enemy): { x: number; y: number } | null {
   const i = tiles[Math.floor(w.rand() * tiles.length)]!;
   return { x: ((i % w.map.w) + 0.5) * TILE, y: (Math.floor(i / w.map.w) + 0.5) * TILE };
 }
+
+/* ------------------------------------------------------------ Lady Cendre, the Last Mourner */
+
+/**
+ * Lady Cendre (the Hall of Kneeling Dead) has mourned the Hallow King's dead for three hundred years, and they still do
+ * as she asks. She bids them keep vigil (`vigil`): the kneeling dead rise about the hall, and while the hero's back is
+ * turned they creep after them; faced, they go still as stone (and can be struck down). One that reaches the hero
+ * seizes them, a heavy blow, and crumbles. Keep turning: what you are not looking at is coming.
+ *
+ * The vigil outlives the pattern that calls it, so it is kept per boss here and run by a small ticker (World.after,
+ * once a step) for as long as the fight lasts.
+ */
+
+const ASH = '#c8c4d0';
+const MOURNER = 'mourning-dead';
+/** Faced within this angle either side (radians), the dead go still. */
+const SEEN = 1.15;
+/** Never more of them keeping vigil than this. */
+const MOST_DEAD = 8;
+
+interface Vigil {
+  last: number;
+  dead: Enemy[];
+  /** Which way the hero last faced. */
+  face: number;
+  creep: number;
+  mul: number;
+  fxT: number;
+}
+
+const VIGILS = new WeakMap<Enemy, Vigil>();
+
+function vigilOf(w: World, e: Enemy): Vigil {
+  let s = VIGILS.get(e);
+  if (!s) {
+    s = { last: w.time, dead: [], face: 0, creep: 44, mul: 1.2, fxT: 0 };
+    VIGILS.set(e, s);
+    w.after(0, () => vigilTick(w, e));
+  }
+  return s;
+}
+
+/** Which way the hero faces: where they aim, else where they walk, else where they last faced. */
+function heroFacing(w: World, s: Vigil): number {
+  const inp = w.input;
+  if (inp.aim !== null) s.face = inp.aim;
+  else if (Math.hypot(inp.mx, inp.my) > 0.15) s.face = Math.atan2(inp.my, inp.mx);
+  return s.face;
+}
+
+/** Whether the hero is looking toward (x, y). */
+function watched(w: World, s: Vigil, x: number, y: number): boolean {
+  const p = w.player;
+  let off = Math.abs(Math.atan2(y - p.y, x - p.x) - s.face) % TAU;
+  if (off > Math.PI) off = TAU - off;
+  return off < SEEN;
+}
+
+const crumble = (w: World, d: Enemy): void => {
+  d.hp = 0;
+  d.dead = true;
+  d.deathT = 0;
+  w.fxBurst(d.x, d.y - 6, ASH, 12, 12);
+};
+
+function vigilTick(w: World, e: Enemy): void {
+  const s = VIGILS.get(e);
+  if (!s) return;
+  if (!alive(w, e)) {
+    // her vigil ends with her
+    for (const d of s.dead) if (!d.dead) crumble(w, d);
+    VIGILS.delete(e);
+    return;
+  }
+  const dt = Math.max(0, w.time - s.last);
+  s.last = w.time;
+  const p = w.player;
+  s.dead = s.dead.filter((d) => !d.dead && w.enemies.includes(d));
+  heroFacing(w, s);
+  s.fxT -= dt;
+  const fx = s.fxT <= 0;
+  if (fx) s.fxT = 0.25;
+  for (const d of s.dead) {
+    if (d.state === 'spawn' || p.dead) continue;
+    if (watched(w, s, d.x, d.y)) {
+      // faced: still as stone
+      if (fx) w.addFx({ kind: 'ring', x: d.x, y: d.y, life: 0.3, size: 10, color: ASH });
+      continue;
+    }
+    const dd = dist(d.x, d.y, p.x, p.y);
+    if (dd < d.r + p.r + 4) {
+      // it reaches the hero: seizes them, and crumbles
+      if (hurtPlayer(w, e.dmg * s.mul, { fromX: d.x, fromY: d.y, knock: 60, status: { status: 'stun', dur: 0.7, power: 1 }, source: e })) w.text(p.x, p.y - 30, 'Seized from behind!', '#d8c8ff', true);
+      crumble(w, d);
+      w.sfx('soul', 0.6);
+      continue;
+    }
+    // the hero's back is turned: it creeps after them (round whatever stands in the way)
+    const step = Math.min(dd, s.creep * dt);
+    let m = moveCircle(w.map, d.x, d.y, d.r, ((p.x - d.x) / dd) * step, ((p.y - d.y) / dd) * step);
+    if (Math.hypot(m.x - d.x, m.y - d.y) < step * 0.5) {
+      const round = flowStep(w.map, w.flow, d.x, d.y);
+      if (round) m = moveCircle(w.map, d.x, d.y, d.r, round.x * step, round.y * step);
+    }
+    d.x = m.x;
+    d.y = m.y;
+    d.face = Math.atan2(p.y - d.y, p.x - d.x);
+    if (fx) w.addFx({ kind: 'spark', x: d.x + (w.rand() - 0.5) * 8, y: d.y - 10, vx: 0, vy: -18, life: 0.45, size: 2, color: VIOLET });
+  }
+  w.after(0, () => vigilTick(w, e));
+}
+
+/**
+ * The vigil: `count` of the kneeling dead rise about the hall, well away from the hero; while the hero's back is
+ * turned they creep after them at `creep` px/s, and one that reaches them strikes for `mul` of her blow.
+ */
+const vigil: PatternFn = (w, e, _dt, k) => {
+  const { pt } = k;
+  const s = vigilOf(w, e);
+  if (pt.step === 0) {
+    s.creep = k.num('creep', 44);
+    s.mul = k.num('mul', 1.2);
+    const n = Math.min(k.num('count', 4), MOST_DEAD - s.dead.length);
+    const p = w.player;
+    const tiles = w.map.roomTiles[e.room] ?? [];
+    let placed = 0;
+    for (let tries = 0; tries < n * 14 && placed < n && tiles.length; tries++) {
+      const t = tiles[Math.floor(w.rand() * tiles.length)]!;
+      const x = ((t % w.map.w) + 0.5) * TILE;
+      const y = (Math.floor(t / w.map.w) + 0.5) * TILE;
+      if (w.map.solid[t] || dist(x, y, p.x, p.y) < 110 || s.dead.some((d) => dist(d.x, d.y, x, y) < 40)) continue;
+      const before = w.enemies.length;
+      w.spawnAdd(MOURNER, x, y, e.room);
+      const d = w.enemies.length > before ? w.enemies[w.enemies.length - 1]! : null;
+      if (d && d.def.id === MOURNER) {
+        s.dead.push(d);
+        placed++;
+      }
+    }
+    w.text(e.x, e.y - e.r - 18, 'Keep your vigil, my dead. Watch him when he does not watch you.', ASH, true);
+    w.text(p.x, p.y - 30, 'They move only while your back is turned!', '#e8e0ff', false);
+    w.sfx('soul', 0.7);
+    pt.data.t1 = pt.t;
+    pt.step = 1;
+  } else if (pt.t >= pt.data.t1! + 0.8) k.end();
+};
+
+/** Lady Cendre's dead keeping vigil (for tests). */
+export const vigilOfCendre = (e: Enemy): Enemy[] => (VIGILS.get(e)?.dead ?? []).filter((d) => !d.dead);
 
 export const DUSKSPIRE_PATTERNS: Record<string, PatternFn> = {
   /**
@@ -424,4 +573,5 @@ export const DUSKSPIRE_PATTERNS: Record<string, PatternFn> = {
       k.pt.step = 1;
     } else if (k.pt.t >= 1) k.end();
   },
+  'dusk:vigil': vigil,
 };

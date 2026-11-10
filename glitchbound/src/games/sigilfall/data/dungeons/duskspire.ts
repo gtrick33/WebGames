@@ -4,8 +4,8 @@ import type { EnemyDef, ItemDef, Marker } from '../types';
 
 /*
  * Duskspire (level 60): see WORLD.md. The Hallow King's citadel at the top of the Pale Reach, and the end
- * of the story. From the gate hall over the Bone Bridge, through the Hall of Kneeling Dead (a cracked wall
- * on its west side hides a vault), past the Ashen Guard's court and up the Stair of Ash to the throne
+ * of the story. From the gate hall over the Bone Bridge, through the Hall of Kneeling Dead (where Lady
+ * Cendre mourns them still; a cracked wall on its west side hides a vault), past the Ashen Guard's court and up the Stair of Ash to the throne
  * room, where Vaelor waits on his throne between six pillars. The rooms seal while you fight in them
  * (their floors are the letters below); bones (n) mark the dead who kneel here.
  */
@@ -84,7 +84,7 @@ const MAP = [
   '########ccccccjcccccccccjccccccccccjcccccccccjcccccc########',
   '###....#cccccccccccccccccccccccccccccccccccccccccccc########',
   '###....#cccccccccccccccccccccccccccccccccccccccccccc########',
-  '###.S..Zcccccccccccccccccccccccccccccccccccccccccccc########',
+  '###.S..ZccccccccccccccccccccccWccccccccccccccccccccc########',
   '###....#cccccccccccccccccccccccccccccccccccccccccccc########',
   '###....#ccccccjcccccccccjccccccccccjcccccccccjcccccc########',
   '########cccncccccccnccccccccccccccccccccncccccccnccc########',
@@ -126,6 +126,8 @@ const markers: Record<string, Marker> = {
   S: { kind: 'chest', id: 'ds-vault', tier: 'epic', once: true },
   O: { kind: 'boss', boss: 'hollow-guard' },
   V: { kind: 'boss', boss: 'vaelor' },
+  // the Hall of Kneeling Dead: Lady Cendre and her vigil (sim/patterns/duskspire.ts)
+  W: { kind: 'boss', boss: 'lady-cendre' },
   n: { kind: 'prop', prop: 'bones' },
 };
 
@@ -174,6 +176,27 @@ const FOES: Record<string, EnemyDef> = {
     flank: true,
     resist: { poison: 0.6 },
     blurb: 'They knelt to Vaelor for three hundred years. They get up quickly when he asks.',
+  },
+  // the Hall of Kneeling Dead (sim/patterns/duskspire.ts): what Lady Cendre bids keep vigil, moving only while the hero's back is turned
+  'mourning-dead': {
+    id: 'mourning-dead',
+    name: 'Mourning Dead',
+    sprite: 'mourning-dead',
+    ai: 'melee',
+    hp: 60,
+    dmg: 14,
+    speed: 0,
+    radius: 7,
+    mass: 99,
+    xp: 0,
+    gold: [0, 0],
+    aggro: 400,
+    reach: 0,
+    windup: 1,
+    recover: 1,
+    attackCd: 999,
+    resist: { poison: 0.6 },
+    blurb: 'It keeps Lady Cendre’s vigil. Look at it and it is still as stone. Look away and it is closer.',
   },
   'wailing-soul': {
     id: 'wailing-soul',
@@ -271,12 +294,63 @@ const FOES: Record<string, EnemyDef> = {
 
 /* ------------------------------------------------------------ bosses */
 
+const LADY_CENDRE: BossDef = {
+  id: 'lady-cendre',
+  name: 'Lady Cendre',
+  title: 'The Last Mourner',
+  sprite: 'lady-cendre',
+  hp: 5800,
+  dmg: 30,
+  radius: 11,
+  xp: 2000,
+  gold: [500, 750],
+  phases: [
+    {
+      at: 1,
+      speed: 40,
+      rest: [0.7, 1.05],
+      // the hall's dead rise to keep her vigil as the hero comes in
+      enter: [{ id: 'dusk:vigil', w: 1, cd: 14, p: { count: 4, creep: 44, mul: 1.2 } }],
+      patterns: [
+        // the souls she has mourned, sent seeking the hero, and grave-hands from the floor
+        { id: 'soulVolley', w: 3, cd: 5, p: { count: 5, waves: 2 } },
+        { id: 'graveGrasp', w: 2, cd: 6, p: { count: 4 } },
+        // her mourning-staff swung
+        { id: 'cleave', w: 2, cd: 3.5, p: { r: 50, arc: 1.05, wind: 0.7, lunge: 18, mul: 1.35 } },
+        { id: 'teleport', w: 1, cd: 9 },
+        { id: 'dusk:vigil', w: 3, cd: 14, p: { count: 3, creep: 44, mul: 1.2 } },
+      ],
+    },
+    {
+      at: 0.5,
+      banner: 'Lady Cendre lifts her veil: “All of you. Rise, and never let him look away.”',
+      speed: 46,
+      rest: [0.5, 0.85],
+      enter: [
+        { id: 'roar', w: 1, cd: 0 },
+        { id: 'dusk:vigil', w: 1, cd: 12, p: { count: 6, creep: 52, mul: 1.25 } },
+      ],
+      patterns: [
+        { id: 'soulVolley', w: 3, cd: 4.5, p: { count: 7, waves: 3 } },
+        { id: 'graveGrasp', w: 2, cd: 5, p: { count: 6 } },
+        { id: 'cleave', w: 2, cd: 3, p: { swings: 2, r: 50, arc: 1.05, wind: 0.6, gap: 0.14, lunge: 20, mul: 1.3 } },
+        // and she is behind you before you know it
+        { id: 'teleport', w: 2, cd: 7 },
+        { id: 'dusk:vigil', w: 3, cd: 12, p: { count: 4, creep: 52, mul: 1.25 } },
+      ],
+    },
+  ],
+  first: { any: ['shroud-of-duskspire'] },
+  drops: { items: { any: ['shroud-of-duskspire', 'amulet-of-echoes', 'oath-of-the-hollow-guard', 'glitch-shard'] }, chance: [0.3, 0.5, 0.75] },
+  intro: 'She has mourned the Hallow King’s dead in this hall for three hundred years. They still do what she asks of them.',
+};
+
 const HOLLOW_GUARD: BossDef = {
   id: 'hollow-guard',
   name: 'Captain Ser Maltheus',
   title: 'First of the Ashen Guard',
   sprite: 'hollow-guard',
-  hp: 6500,
+  hp: 7200,
   dmg: 29,
   radius: 11,
   xp: 2400,
@@ -321,7 +395,7 @@ const VAELOR: BossDef = {
   name: 'Vaelor',
   title: 'The Hallow King',
   sprite: 'vaelor',
-  hp: 8300,
+  hp: 9800,
   dmg: 32,
   radius: 14,
   xp: 9000,
@@ -555,17 +629,7 @@ export const DUSKSPIRE: DungeonModule = {
           { enemies: ['hollow-guardsman', 'hollow-guardsman', 'skeleton-archer', 'skeleton-archer'], elite: true },
         ],
       },
-      {
-        id: 'kneeling',
-        floor: 'c',
-        title: 'The Hall of Kneeling Dead',
-        checkpoint: true,
-        waves: [
-          { enemies: ['kneeling-dead', 'kneeling-dead', 'kneeling-dead', 'kneeling-dead', 'wailing-soul'] },
-          { enemies: ['hollow-guardsman', 'kneeling-dead', 'kneeling-dead', 'wailing-soul', 'wailing-soul'] },
-          { enemies: ['hollow-guardsman', 'hollow-guardsman', 'kneeling-dead', 'kneeling-dead'], elite: true },
-        ],
-      },
+      { id: 'kneeling', floor: 'c', waves: [], boss: 'lady-cendre', checkpoint: true, title: 'The Hall of Kneeling Dead' },
       { id: 'court', floor: 'd', waves: [], boss: 'hollow-guard', checkpoint: true, title: 'The Court of the Ashen Guard' },
       {
         id: 'stair',
@@ -582,7 +646,7 @@ export const DUSKSPIRE: DungeonModule = {
     ],
     blurb: 'The Hallow King’s citadel. Everything that ever knelt to him is here, and he is waiting.',
   },
-  bosses: { 'hollow-guard': HOLLOW_GUARD, vaelor: VAELOR },
+  bosses: { 'lady-cendre': LADY_CENDRE, 'hollow-guard': HOLLOW_GUARD, vaelor: VAELOR },
   foes: FOES,
   items: ITEMS,
 };
