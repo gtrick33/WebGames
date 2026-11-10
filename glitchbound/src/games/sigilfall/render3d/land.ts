@@ -973,6 +973,12 @@ export class Land3D {
   private cx = NaN;
   private cz = NaN;
   private readonly doors: { i: number; x: number; y: number; k: number; h: number }[] = [];
+  /**
+   * A hall's columns (the map's pillars and a nave's tall columns), in tiles, each with how much of its height stands
+   * now (1 whole, less while cut away).
+   */
+  private readonly columns: { m: string; x: number; z: number; rot: number; sx: number; sy: number; sz: number; r: number; g: number; b: number; cut: number }[] = [];
+  private readonly columnStands = new Map<string, Stand>();
   private readonly doorStand: Stand;
   /** What's built rather than placed: the ways into dungeons (doorways.ts), and the carpets down a hall. */
   private readonly built: THREE.Mesh[] = [];
@@ -1304,7 +1310,8 @@ export class Land3D {
           const pw = this.spanOf(m, 0);
           const ph = this.spanOf(m, 1);
           if (look.indoor) {
-            if (this.keepIt({ x: wx, y: wy, kind: 'pillar', dy: -96 })) this.add({ m, x, z, rot: 0, sx: 1.25 / pw, sy: 4.4 / ph, sz: 1.25 / pw, shadow: 0.9 });
+            // (drawn each frame, so one between the camera and the hero can sink out of the way: updateColumns)
+            if (this.keepIt({ x: wx, y: wy, kind: 'pillar', dy: -96 }) && this.pack(m)) this.columns.push({ m, x, z, rot: 0, sx: 1.25 / pw, sy: 4.4 / ph, sz: 1.25 / pw, r: 0.86, g: 0.84, b: 0.86, cut: 1 });
           } else if (this.keepIt({ x: wx, y: wy, kind: 'pillar', dy: -40 })) this.add({ m, x, z, rot: 0, sx: this.fitted(m, 2.6, 1), shadow: 0.8, r: 0.68, g: 0.68, b: 0.72 });
           break;
         }
@@ -1608,6 +1615,11 @@ export class Land3D {
     const ox = -(lx * Math.cos(rot) + lz * Math.sin(rot));
     const oz = -(-lx * Math.sin(rot) + lz * Math.cos(rot));
     const sw = def.w ?? TILE;
+    // a nave's tall column: drawn each frame, to sink out of the way in front of the hero (updateColumns)
+    if (this.look.indoor && name.endsWith('column') && (def.h ?? 0) >= 60) {
+      this.columns.push({ m: model, x: x + ox, z: z + oz, rot, sx: size.sx, sy: size.sy, sz: size.sz, r: c[0] * 0.86, g: c[1] * 0.84, b: c[2] * 0.86, cut: 1 });
+      return;
+    }
     this.add({ m: model, x: x + ox, z: z + oz, rot, sx: size.sx, sy: size.sy, sz: size.sz, shadow: def.flat || (def.h ?? 0) < 12 ? 0 : Math.min(2.4, (sw / TILE) * 0.65), shadowD: Math.min(1, (def.d ?? sw) / sw + 0.1), y: def.flat ? 0.02 : 0, r: c[0], g: c[1], b: c[2] });
     // (at the top of the model as it was sized, which may be under the height its table allows)
     if (def.flame) this.flames.push({ x, z, y: size.sy * (mesh.max[1] - mesh.min[1]) * ((def.flameAt ?? 10) / (def.h ?? 10)), size: def.flame });
@@ -1753,6 +1765,12 @@ export class Land3D {
         this.shadows.setMatrixAt(shadow++, m4);
       }
     }
+    for (const c of this.columns) {
+      if (c.x < x0 || c.x > x1 || c.z < z0 || c.z > z1 || shadow >= 1500) continue;
+      m4.makeScale(0.9 * 1.6, 1, 0.9 * 1.6);
+      m4.setPosition(c.x, 0, c.z);
+      this.shadows.setMatrixAt(shadow++, m4);
+    }
     this.shadows.count = shadow;
     this.shadows.instanceMatrix.needsUpdate = true;
     for (const [id, s] of this.stands) {
@@ -1772,6 +1790,31 @@ export class Land3D {
       for (const p of list) s.put(p.x, p.y, p.z, p.rot, p.sx, p.sy, p.sz, p.r, p.g, p.b, p.sway, p.tipX ?? 0, p.tipZ ?? 0);
       s.end();
     }
+  }
+
+  /**
+   * A hall's columns go up into the dark, far over anyone's head: one that stands between the camera and the hero
+   * (just below the hero on the screen, where its height would hide them and the fight) sinks to a stump while it
+   * does, and rises again once the hero has gone by. `hx`, `hz`: the hero, in tiles.
+   */
+  updateColumns(dt: number, hx: number, hz: number): void {
+    if (!this.columns.length) return;
+    const k = Math.min(1, dt * 7);
+    for (const s of this.columnStands.values()) s.begin();
+    for (const c of this.columns) {
+      let s = this.columnStands.get(c.m);
+      if (!s) {
+        const m = this.pack(c.m)!;
+        s = new Stand(m, this.group, this.columns.filter((o) => o.m === c.m).length, colorsFor(m, this.look, c.m.split('#')[0]!), false);
+        s.begin();
+        this.columnStands.set(c.m, s);
+      }
+      const dz = c.z - hz;
+      const inFront = dz > -0.4 && dz < 4.6 && Math.abs(c.x - hx) < 1.7;
+      c.cut += ((inFront ? 0.24 : 1) - c.cut) * k;
+      s.put(c.x, 0, c.z, c.rot, c.sx, c.sy * c.cut, c.sz, c.r, c.g, c.b, 0);
+    }
+    for (const s of this.columnStands.values()) s.end();
   }
 
   /** Doors rise and sink as the rules open and shut them; a cracked wall is there until it is broken. */
@@ -1794,6 +1837,7 @@ export class Land3D {
     for (const s of this.stands.values()) s.dispose();
     this.stands.clear();
     this.doorStand.dispose();
+    for (const s of this.columnStands.values()) s.dispose();
     this.ground.geometry.dispose();
     const mat = this.ground.material as THREE.ShaderMaterial;
     (mat.uniforms.uMask!.value as THREE.Texture).dispose();

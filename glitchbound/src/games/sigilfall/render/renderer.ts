@@ -416,6 +416,7 @@ export class Renderer {
       st.land?.update(cx / TILE, cy / TILE, st.spanX, st.spanZ);
       st.land?.lightFlames(cx / TILE, cy / TILE, time, this.burning(w));
       st.land?.updateDoors(dt);
+      st.land?.updateColumns(dt, p.x / TILE, p.y / TILE);
       this.folkK = damp(this.folkK, w.story.fighting ? 0 : 1, 3, dt);
       st.cast.begin();
       this.people.sync(st.cast, w, dt, time, { look: this.look ?? heroLook(w.hero.cls), weapon: this.weapon, folk: this.folkK, statues: st.land?.statues, colossi: st.land?.colossi, landOnly: this.landOnly });

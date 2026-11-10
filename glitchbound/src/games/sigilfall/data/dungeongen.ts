@@ -499,8 +499,17 @@ function shape(def: RegionDef, source: readonly string[], given: readonly Placed
     const cx = Math.round((x0 + x1) / 2);
     const cy = Math.round((y0 + y1) / 2);
     const seed = index * 17 + 3;
-    // what stands behind the boss's wall, rising out of the dark over it, and the way up to it
-    if (boss && dress.backdrop) placed.push({ tx: cx, ty: y0 - 1, marker: { kind: 'prop', prop: `great:${dress.backdrop}` } });
+    // what stands behind the boss's wall, rising out of the dark over it, and the way up to it: only where nothing but
+    // rock lies behind that wall (a dungeon with a boss in more than one room may have another room or a passage up
+    // there, and a thing that tall in it would stand in front of whoever fights in it)
+    const rockBehind = (): boolean => {
+      // (from two rows behind the wall, where it rises: a nook between the wall and it is in front of it, not hidden)
+      for (let y = y0 - 13; y <= y0 - 3; y++) {
+        for (let x = cx - 7; x <= cx + 7; x++) if (y >= 0 && x >= 0 && x < W && !SOLID_TERRAIN.has(at(x, y))) return false;
+      }
+      return true;
+    };
+    if (boss && dress.backdrop && rockBehind()) placed.push({ tx: cx, ty: y0 - 1, marker: { kind: 'prop', prop: `great:${dress.backdrop}` } });
     // (a carpet lies under whatever stands on it, so it has no gaps)
     if (boss && dress.carpet) for (let y = y0; y <= y1; y++) if (label[y]![cx] === L && !SOLID_TERRAIN.has(at(cx, y))) placed.push({ tx: cx, ty: y, marker: { kind: 'prop', prop: `runner:${dress.carpet}`, solid: false } });
     // fires down both sides of a boss's chamber (nothing in it stops anyone: its fight is measured to the room)

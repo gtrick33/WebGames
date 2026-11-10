@@ -112,6 +112,24 @@ describe('Sigilfall: the polish pass', () => {
     expect(faults).toEqual([]);
   });
 
+  it('what rises behind a dungeon boss’s wall stands in the rock, never in another room in front of a fight', () => {
+    const faults: string[] = [];
+    for (const r of Object.values(REGIONS)) {
+      if (r.kind !== 'dungeon' || isRetired(r.id)) continue;
+      const w = newWorld(r.id, readyHero('warrior', 60));
+      for (const p of w.props) {
+        if (!p.prop.startsWith('great:')) continue;
+        const tx = Math.floor(p.x / TILE);
+        const ty = Math.floor(p.y / TILE);
+        let open = 0;
+        // (from two rows behind the wall, where it rises)
+        for (let y = ty - 11; y <= ty - 2; y++) for (let x = tx - 6; x <= tx + 6; x++) if (y >= 0 && x >= 0 && x < w.map.w && !w.map.solid[y * w.map.w + x]) open++;
+        if (open) faults.push(`${r.id}: ${p.prop} at ${tx},${ty} rises over ${open} open tiles`);
+      }
+    }
+    expect(faults).toEqual([]);
+  });
+
   it('every vision’s people, and every effect, stand on open ground', () => {
     const faults: string[] = [];
     for (const def of SCENES) {
