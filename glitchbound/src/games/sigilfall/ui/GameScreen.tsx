@@ -18,6 +18,7 @@ import { itemMods, itemName, usableBy } from '../progress/items';
 import { TONES } from '../render/effects';
 import { rarityColor } from '../render/renderer';
 import { clockText, type World } from '../sim/world';
+import { sceneDark } from '../sim/scene';
 import { fmt, ItemIcon, Portrait } from './common';
 import { DesktopBar } from './DesktopBar';
 import { Panels } from './Panels';
@@ -32,9 +33,23 @@ import { mapIconUrl } from './mapIcons';
 function SceneBars({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLDivElement>(null);
   const title = useRef<HTMLDivElement>(null);
+  const black = useRef<HTMLDivElement>(null);
+  const memory = useRef<HTMLDivElement>(null);
   const shown = useRef('');
+  const told = useRef('');
   useFrame(engine, (w) => {
     if (!ref.current) return;
+    // a fade to black, and a memory: the picture pale and tinted, its caption over it
+    if (black.current) black.current.style.opacity = String(sceneDark(w.scene));
+    const v = w.scene?.vision;
+    if (memory.current) {
+      memory.current.classList.toggle('is-on', !!v);
+      if (v && v.text !== told.current) {
+        told.current = v.text;
+        memory.current.style.setProperty('--tint', v.tint);
+        memory.current.firstElementChild!.textContent = v.text;
+      }
+    }
     ref.current.classList.toggle('is-on', !!w.scene);
     ref.current.parentElement?.classList.toggle('is-scene', !!w.scene);
     // a battle's or a boss's name, over the lower bar (it fades out with the bars)
@@ -49,6 +64,10 @@ function SceneBars({ engine }: { engine: SigilEngine }) {
   });
   return (
     <div className="rb-scene" ref={ref} aria-hidden={!engine.world?.scene}>
+      <div className="rb-scene-vision" ref={memory}>
+        <em />
+      </div>
+      <div className="rb-scene-black" ref={black} />
       <div className="rb-scene-bar" />
       <div className="rb-scene-bar is-low" />
       <div className="rb-scene-title" ref={title}>

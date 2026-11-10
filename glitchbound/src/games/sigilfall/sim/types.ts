@@ -485,6 +485,8 @@ export interface NpcActor {
   since?: number;
   /** When they fell (World.time), if they fell in sight (a `down` NPC's collapse). */
   fell?: number;
+  /** A figure of a memory (a scene's vision), wearing the look of the NPC named: pale, cold, not quite here. */
+  ghost?: string;
 }
 
 export interface FloatText {

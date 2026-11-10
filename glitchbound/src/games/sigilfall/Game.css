@@ -2665,6 +2665,40 @@
   inset: 0;
   pointer-events: none;
 }
+.rb-scene-black {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+}
+/* a memory: the world pale and cold under its tint, a vignette, and its caption over it in the old hand */
+.rb-scene-vision {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.9s ease;
+  background:
+    radial-gradient(ellipse at center, transparent 42%, rgb(10 6 20 / 0.62) 100%),
+    color-mix(in srgb, var(--tint, #c8a8ff) 22%, transparent);
+  backdrop-filter: saturate(0.35) sepia(0.35) brightness(1.06);
+  mix-blend-mode: normal;
+}
+.rb-scene-vision.is-on {
+  opacity: 1;
+}
+.rb-scene-vision em {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  max-width: min(640px, 86%);
+  color: #fff6e6;
+  font: italic 600 clamp(14px, 2.2cqw, 22px) / 1.35 Georgia, 'Times New Roman', serif;
+  text-align: center;
+  text-shadow: 0 0 10px rgb(0 0 0 / 0.8), 0 0 2px #000;
+  transform: translateX(-50%);
+}
 .rb-scene-bar {
   position: absolute;
   left: 0;

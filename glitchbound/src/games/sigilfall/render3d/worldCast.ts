@@ -353,14 +353,14 @@ export class WorldCast {
   }
 
   private syncNpc(cast: Cast, n: NpcActor, w: World, dt: number, time: number, alpha: number): void {
-    const def = NPCS[n.id];
-    const look = npcLookOf(n.id);
+    const def = NPCS[n.ghost ?? n.id];
+    const look = npcLookOf(n.ghost ?? n.id);
     const fallen = def?.down;
     const turn = this.easeTurn(n, n.face < 0 ? -0.55 : 0.55, 6, dt);
     const clip = fallen ? 'lie' : 'idle';
     cast.shadow(n.x, n.y, 7);
     // (an echo of the dead is not quite here: it hangs a little off the ground, pale and cold)
-    const echo = ECHOES.has(n.id);
+    const echo = ECHOES.has(n.id) || !!n.ghost;
     if (look) cast.person(look, null, false, n.x, n.y, turn, { clip, t: time + n.x * 0.1, loop: true }, echo ? { alpha, lift: 0.14 + Math.sin(time * 1.6 + n.x) * 0.04, tint: ECHO_TINT } : { alpha });
     else cast.creature(def?.sprite ?? 'villager', n.x, n.y, turn, PERSON_H, fallen ? 'die' : 'idle', fallen ? 9 : time + n.x * 0.1, !fallen, { alpha });
     void w;

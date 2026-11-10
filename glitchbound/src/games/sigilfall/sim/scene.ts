@@ -6,7 +6,7 @@ import { QUESTS } from '../data/quests';
 import { currentObjective } from '../progress/character';
 import { isMainQuest, questSteps } from '../progress/handin';
 import { questTarget, questWhere } from './objective';
-import type { RegionId, StoryCond } from '../data/types';
+import type { MusicTrack, RegionId, StoryCond } from '../data/types';
 import { castRay, TILE, WORLD_K } from './map';
 import { aimAlong, findRoute, type Route } from './nav';
 import { placePet } from './pets';
@@ -46,7 +46,23 @@ export type SceneStep =
   | { shake: number }
   /** A title in the lower bar (a battle's, a boss's name): it stays till the scene ends; the scene goes straight on. */
   | { title: string; sub?: string }
-  | { wait: number };
+  | { wait: number }
+  /** The picture goes to black (`out`) or comes back from it (`in`) over `secs`; the scene waits for it. */
+  | { fade: 'out' | 'in'; secs?: number }
+  /**
+   * A memory (a sigil's vision): the picture goes pale and tinted, with a caption over it, until a `vision: ''`
+   * ends it. Ghosts placed meanwhile are the people of the memory.
+   */
+  | { vision: string; tint?: string }
+  /**
+   * A figure of a memory, standing at a place (or `dx`, `dy` tiles from it), with the look of an NPC (`as`): it can
+   * be spoken for and walked like a person by its `ghost` id, and it is gone when the vision ends.
+   */
+  | { ghost: string; as: string; at: string; dx?: number; dy?: number; face?: number }
+  /** A spell's effect at a place or a person (render/effects.ts `spell` names: blast, summon, shatter, thunder…). */
+  | { fx: string; at: string; color?: string; size?: number }
+  /** The music for the rest of the scene. */
+  | { music: MusicTrack };
 
 export interface SceneDef {
   id: string;
@@ -79,7 +95,28 @@ export interface ScenePlay {
   /** The way someone in a `move` step is walking. */
   route?: Route;
   emotes: { who: string; icon: Emote; t: number }[];
+  /** How black the picture is (0 to 1), and where it is going. */
+  dark?: { from: number; to: number; t: number; secs: number };
+  /** A memory playing: its caption and tint. */
+  vision?: { text: string; tint: string };
+  /** The figures of the memory (NPC actors, by id). */
+  ghosts?: string[];
+  /** Effects playing (render/effects.ts draws them). */
+  fx?: { name: string; x: number; y: number; t: number; color: string; size: number; seed: number }[];
+  /** The music a step asked for. */
+  music?: MusicTrack;
 }
+
+/** How black the scene's picture is now. */
+export const sceneDark = (s: ScenePlay | null): number => {
+  const d = s?.dark;
+  if (!d) return 0;
+  const u = d.secs > 0 ? Math.min(1, d.t / d.secs) : 1;
+  return d.from + (d.to - d.from) * u;
+};
+
+/** A vision's tint by name (or a color). */
+const TINTS: Record<string, string> = { memory: '#c8a8ff', ember: '#ffb070', frost: '#a8e0ff', sun: '#ffd88a', grief: '#9a8ab8', blood: '#ff8a8a' };
 
 const SPEAK = 2.6;
 const lineTime = (line: string): number => SPEAK + line.length * 0.025;
@@ -262,6 +299,7 @@ export function updateScene(w: World, dt: number): void {
   // something attacks: the scene stops (it plays again another time) and the fight is the hero's
   if (w.enemies.some((e) => !e.dead && !e.dummy && e.aggro)) {
     w.story.hush(s.def.steps.flatMap((st) => ('say' in st ? [st.say] : [])));
+    clearGhosts(w, s);
     w.scene = null;
     letGo(w);
     w.emit({ t: 'scene', id: s.def.id, playing: false });
@@ -281,6 +319,23 @@ export function updateScene(w: World, dt: number): void {
   if ('say' in step) {
     if (first) w.story.speakNow({ who: step.say, text: step.line }, lineTime(step.line));
     done = s.t >= lineTime(step.line) + 0.15;
+  } else if ('ghost' in step) {
+    if (first) {
+      const at = where(w, step.at);
+      if (at) {
+        w.npcs = w.npcs.filter((n) => n.id !== step.ghost);
+        w.npcs.push({ id: step.ghost, x: at.x + (step.dx ?? 0) * TILE, y: at.y + (step.dy ?? 0) * TILE, face: step.face ?? 1, bob: 0, since: w.time, ghost: step.as });
+        (s.ghosts ??= []).push(step.ghost);
+      }
+    }
+    done = true;
+  } else if ('fx' in step) {
+    if (first) {
+      const at = where(w, step.at);
+      if (at) (s.fx ??= []).push({ name: step.fx, x: at.x, y: at.y, t: 0, color: step.color ?? '#c8a8ff', size: step.size ?? 30, seed: w.rand() * 10 });
+      if (step.fx === 'blast' || step.fx === 'thunder' || step.fx === 'shatter') w.shake(3);
+    }
+    done = true;
   } else if ('look' in step) {
     const at = where(w, step.look);
     s.focus = step.look === 'hero' ? null : at;
@@ -327,13 +382,39 @@ export function updateScene(w: World, dt: number): void {
   } else if ('title' in step) {
     s.title = { text: step.title, sub: step.sub };
     done = true;
+  } else if ('fade' in step) {
+    const secs = step.secs ?? 0.8;
+    if (first) s.dark = { from: sceneDark(s), to: step.fade === 'out' ? 1 : 0, t: 0, secs };
+    done = s.t >= secs;
+  } else if ('vision' in step) {
+    if (!step.vision) {
+      s.vision = undefined;
+      clearGhosts(w, s);
+    } else s.vision = { text: step.vision, tint: TINTS[step.tint ?? 'memory'] ?? step.tint ?? TINTS.memory! };
+    done = true;
+  } else if ('music' in step) {
+    s.music = step.music;
+    done = true;
   } else done = s.t >= step.wait;
+  if (s.dark) s.dark.t += dt;
+  if (s.fx) {
+    for (const f of s.fx) f.t += dt;
+    s.fx = s.fx.filter((f) => f.t < 1.6);
+  }
   if (done) {
     s.step += 1;
     s.t = 0;
     s.begun = false;
     s.seen = false;
   }
+}
+
+/** A memory's figures go (its vision is over, or the scene). */
+function clearGhosts(w: World, s: ScenePlay): void {
+  if (!s.ghosts?.length) return;
+  const gone = new Set(s.ghosts);
+  w.npcs = w.npcs.filter((n) => !gone.has(n.id));
+  s.ghosts = [];
 }
 
 /** Ends the scene (played through, or skipped): it has been seen, and the camera goes back to the hero. */
@@ -356,6 +437,7 @@ export function endScene(w: World, skipped: boolean): void {
     w.story.hurry();
   }
   if (!w.hero.opened.includes(seenKey(s.def.id))) w.hero.opened.push(seenKey(s.def.id));
+  clearGhosts(w, s);
   w.scene = null;
   letGo(w);
   w.emit({ t: 'scene', id: s.def.id, playing: false });

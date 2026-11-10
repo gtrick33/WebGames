@@ -1,4 +1,5 @@
 import { DUNGEONS } from './dungeons';
+import { isRetired } from './retired';
 import { shapeDungeon } from './dungeongen';
 import { GALLOWS_KEEP } from './dungeons/gallows';
 import { SMUGGLERS_GROTTO } from './dungeons/grotto';
@@ -343,7 +344,7 @@ export const REGIONS = {
 /** Every region of the world map, in the order it lists them (interiors are inside their towns, not on it). */
 for (const r of Object.values(REGIONS) as RegionDef[]) if (r.kind === 'dungeon') shapeDungeon(r);
 
-export const REGION_IDS = (Object.keys(REGIONS) as RegionId[]).filter((id) => !REGIONS[id].interior);
+export const REGION_IDS = (Object.keys(REGIONS) as RegionId[]).filter((id) => !REGIONS[id].interior && !isRetired(id));
 
 /** Difficulty tiers: enemy level bonus, health and damage on top, loot and experience bonus. */
 export const TIERS = [

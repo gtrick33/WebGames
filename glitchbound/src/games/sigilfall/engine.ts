@@ -1,4 +1,5 @@
 import type { GameHost } from '../../platform/contract';
+import { isRetired } from './data/retired';
 import { reportOrders, waitingOrders } from '../../platform/sigilfallOrders';
 import { sigilfallShop, watchSigilfallShop } from '../../platform/sigilfallShop';
 import { setShopGoods } from './progress/shopGoods';
@@ -565,7 +566,7 @@ export class SigilEngine {
     if (this.ui.levelUp && t - this.ui.levelUp.id > 3600) this.setUi({ levelUp: null });
     if (this.tipQueue.length) this.showTip(w);
     const boss = w.boss();
-    this.sound.setMusic(boss && !boss.dead ? 'boss' : ((w.storyState?.music ?? REGIONS[w.region.id].music) as MusicId));
+    this.sound.setMusic(boss && !boss.dead ? 'boss' : ((w.scene?.music ?? w.storyState?.music ?? REGIONS[w.region.id].music) as MusicId));
   }
 
   private handleEvents(w: World): void {
@@ -1024,6 +1025,8 @@ export class SigilEngine {
     const h = this.hero;
     if (!h) return false;
     const region = REGIONS[to];
+    // a land the story no longer goes through (data/retired.ts) can't be reached
+    if (isRetired(to)) return false;
     // a party's run goes where the host chose: a friend who hasn't found the way yet is taken along
     if (!h.unlocked.includes(to) && !party && !key) return false;
     // a Riftstone run is a stone the hero holds (never above it; a party runs the host's), in a dungeon

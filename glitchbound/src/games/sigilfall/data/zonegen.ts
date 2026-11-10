@@ -1,4 +1,5 @@
 import { DOOR_GROUND, GREAT, GREAT_IN, type GreatPlace } from './greatworks';
+import { isRetired, liveExits } from './retired';
 import { clamp, hash2, noise2, rng } from '../core/math';
 import { buildingRows, villageHouses } from './buildingArt';
 import { THEMES } from './themes';
@@ -2048,7 +2049,9 @@ const LANDMARKS: Record<string, LandmarkSpec[]> = {
 };
 
 /** A wild region whose map is generated the first time something looks at it. */
-export function wildRegion(base: Omit<RegionDef, 'kind' | 'map' | 'markers' | 'placed' | 'encounters' | 'level'>, spec: ZoneSpec): RegionDef {
+export function wildRegion(base: Omit<RegionDef, 'kind' | 'map' | 'markers' | 'placed' | 'encounters' | 'level'>, given: ZoneSpec): RegionDef {
+  // (a land the story still goes through has no road into a retired one: data/retired.ts)
+  const spec: ZoneSpec = isRetired(base.id) ? given : { ...given, exits: liveExits(base.id, given.exits) };
   let made: GeneratedZone | null = null;
   const get = (): GeneratedZone => (made ??= generateZone({ ...spec, landmarks: LANDMARKS[base.id] ?? [], great: [...(GREAT_IN[base.id] ?? []), ...(DOOR_GROUND[base.id] ?? [])] }, base.theme));
   return {

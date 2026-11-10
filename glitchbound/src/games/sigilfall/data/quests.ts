@@ -1,4 +1,5 @@
 import { EVENTS } from './events';
+import { isRetired } from './retired';
 import { balanceQuestXp } from './progression';
 import { REGIONS } from './regions';
 import { STORY_QUESTS } from './story';
@@ -111,7 +112,7 @@ export const QUESTS: QuestDef[] = [
     reward: { xp: 4000, gold: 1000, item: 'glitch-shard' },
   },
 ];
-QUESTS.push(...STORY_QUESTS, ...ZONES.flatMap((z) => z.quests));
+QUESTS.push(...STORY_QUESTS, ...ZONES.filter((z) => !isRetired(z.region.id)).flatMap((z) => z.quests));
 
 export const QUEST_DEFS: Record<string, QuestDef> = Object.fromEntries(QUESTS.map((q) => [q.id, q]));
 

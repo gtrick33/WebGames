@@ -299,6 +299,8 @@ export class Effects {
     this.shots(w, sc);
     this.throwing(w, sc);
     for (const f of w.fx) if (sc.near(f.x, f.y)) this.particle(f, sc);
+    // a scene's own effects (a sigil waking, a wall going): render/effects' spells, by name
+    for (const f of w.scene?.fx ?? []) spell(sc.fx, f.name, { a: f.color, b: '#ffffff' }, f.x, f.y, Math.min(1, f.t / 1.4), f.size, f.seed);
     for (const gh of w.coop?.ghosts ?? []) {
       for (const sh of gh.shots) {
         const d = dyeOf(sh.color);

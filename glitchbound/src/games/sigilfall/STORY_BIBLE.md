@@ -1,277 +1,382 @@
-# Sigilfall — Story Bible: *The Crown of Ash and Starlight*
+# Sigilfall — Story Bible: *The Crown of Ash and Starlight* (v3)
 
-Blueprint V2.9, Section 4. This replaces the old "Hollow King and the seven sigils" telling (WORLD.md keeps the
-geography). Structure is fixed by the blueprint: **intimate opening → gathering allies → regional liberation →
-kingdom-scale war → supernatural endgame.** Quest ids stay where saves depend on them (QUEST_REWRITE_MAP.md);
-everything a player reads is new.
+This is the one canon. It replaces the old "Hollow King and the Rift" telling (WORLD.md now only keeps the geography)
+and the v2 outline. v3 tells the story through **fifteen lands** instead of twenty-seven, and stages **every step of
+the main story by hand**, the way the opening night is staged.
 
-Principles (blueprint §2.2, §4.2):
+- The fifteen lands, in story order: the Whisperwood, Brackenridge Hills, Thornvale, the Amberfield, the Ashen
+  Barrows, the Sunscorch, the Glimmerwood, Rimeheld, the Shattered Vale, Highwall March, Gloamhollow, the Weeping
+  Woods, Emberdeep, Hollowmere and the Pale Reach. With them: Briarhollow (the camp), Emberwick (the Crown City), the
+  dungeons the story goes through, Duskspire and Vaelmoor Remembered.
+- **Retired** (built, kept in the code, but off the map and out of the story — `data/retired.ts`): Greyfen,
+  the Saltmarsh, Duskfen, Ironpeak, Stormwatch, the Grimward Moors, Sablewind, Vinecoil, the Bonefields, the
+  Blightwood, the Sunken Reaches and the Riftscar. Their dungeons stay open as Riftstone runs.
+- Quest ids stay where a save depends on them; a hero part-way through the old story is moved onto the new one
+  (`progress/storyMigration.ts`). Everything a player reads is new or rewritten.
 
-- Stakes grow from one village to the realm. The player always knows **whom** they are saving.
-- Every major chain has a **cold open, a complication, a midpoint turn, a climax and an aftermath** — and the
-  aftermath is visible in the world (WORLD EVENTS below), not only in a reward window.
-- Companions travel, argue, fail, recover and fight. They speak at curated beats, never constantly.
-- Saved people come back. Repaired places stay repaired. Occupied places look occupied until freed.
+Principles:
+
+- Stakes grow from one village to two kingdoms. The player always knows **whom** they are saving and **why the
+  enemy wants what it wants**.
+- Every land is a short story of its own: a **cold open**, a **set piece** played with allies on screen, a **turn**
+  (something learned that changes what the hero thought), a **climax** with a named foe, and an **aftermath** the
+  world shows.
+- Every main quest opens with a staged scene and every chain closes with one. Nothing in the main story is a bare
+  "kill fifteen" or "bring back six".
+- The past is told by **visions**: when a sigil wakes it shows Elyra (and the player) what it saw. Seven sigils,
+  seven visions, and together they are the whole history.
+- Companions are few and they matter: they arrive, argue, fail, come back.
 
 ---
 
-## 1. The world
+## 1. The canon
 
-### The Kingdom of Aster
+### The star
 
-A small, warm kingdom of river valleys, hill farms and walled towns, ruled from **Emberwick, the Crown City**
-(the Ember City of the old map). Its crown is the **Starlight Crown**: seven points of star-iron from a star that
-fell three hundred years ago. While the crown is whole and worn, the dead stay dead and grief stays grief.
+Three hundred years ago a star fell on the border of two sister kingdoms: **Aster** of the river valleys, and
+**Vaelmoor** of the northern lakes. It broke in two as it fell. Each kingdom forged its half into a crown.
 
-- **King Aldric III** — old, ill, rarely seen. The court says he is "resting".
-- **Regent Elowen** — his niece, thirty, sharp, tired; rules in his name from the Ember Keep.
-- **Lord Chancellor Maelis Crane** — the Regent's oldest counsellor, keeper of the treasury and the roads. Charming,
-  patient, and the traitor of Act II.
+- Aster's became the **Starlight Crown**, seven points of star-iron. While it was whole and worn, *the dead stayed
+  dead and grief stayed grief*: the star-iron keeps what is lost, lost.
+- Vaelmoor's became the **Moon Crown** of its kings: the same star-iron, the same promise, kept by the same kind of
+  oath.
 
-### The Dead Kingdom of Vaelmoor
+### The plague winter
 
-North of Aster, beyond the Pale Reach, lay its sister kingdom, **Vaelmoor**, which shared the fallen star. Its king,
-**Vaelor**, lost his queen Ysane and their two children in a single winter of plague. He broke his half of the star
-and drank its light to call them back. The light burned out, the crown turned to ash, and the **Ash Crown** was
-born: a crown that **feeds on grief and turns memory into soldiers**. Vaelmoor died in a night, and its people woke
-as the **Ashen Host** — memories with weapons, grey and soft-edged, smelling of cold hearths.
+Forty years ago **King Vaelor** of Vaelmoor lost his queen **Ysane** and their two children, **Lark** and **Edda**,
+in one winter of plague. The plague came in on a ship his brother **Aurel**, Master of the Harbor, let into port
+against the quarantine, for gold and because the ship's captain was his friend.
 
-The **Sigil-wardens** of Aster broke the Starlight Crown into seven **Crown Sigils** so no one could ever use it to
-do the same, and hid them in seven holy places. They sealed Vaelor in the **Duskspire**, his citadel, and buried the
-road to it under three great fortresses: **the Three Gates** (Highwall, the Gloam Gate and the Muster Hall).
+Vaelor broke the Moon Crown and drank its light to call his family back. He did: for one night. Then the light
+went out, the crown turned to ash, and the **Ash Crown** was born: a crown that **feeds on grief and makes
+memories into soldiers**. Vaelmoor died in that night, and its people woke as the **Ashen Host**: grey, soft-edged,
+smelling of cold hearths, asking each other if it is supper yet.
 
-The songs count seven wardens. There was an eighth, who carried no sigil: a knight who held the Gloam Gate at dusk
-while the seven rode away to hide theirs, and was left out of every song for it. A **Gloamknight** hero who finishes
-the story takes up that watch (the title *Warden of the Gloam*, the armor and the drake, `data/wardens.ts`). There are
-still seven sigils, and Duskspire still asks for all seven.
+### The wardens
 
-### What the Ash Crown wants
+Aster's queen of the time knew what the Ash Crown would want next: the other half of the star. She sent eight
+**Sigil-wardens** to the border. Seven of them broke the Starlight Crown into seven **Crown Sigils** and rode away
+to hide one each in a holy place. The eighth, **Ser Edmar**, held the Gloam Gate against the Host at dusk while
+the seven rode, and died there. The songs count seven wardens; Edmar was left out of them because his part was
+done in the dark. A **Gloamknight** hero who finishes the story takes up his watch (*Warden of the Gloam*,
+`data/wardens.ts`).
 
-Vaelor is not a dark lord who wants the world for its own sake. He wants **Vaelmoor back**: his queen, his children,
-his people, exactly as they were. The Ash Crown can rebuild them, but only out of the grief of the living — a
-village's sorrow becomes a street of Vaelmoor, a kingdom's sorrow becomes the whole realm. With the seven Crown
-Sigils he could relight the Ash Crown as a **Crown of Ash and Starlight** and make the resurrection permanent:
-Vaelmoor would live again, and Aster would become the ash it is built from.
+The wardens sealed Vaelor in **Duskspire**, his citadel, and built the **Three Gates** (Highwall, the Gloam Gate,
+the Muster Hall) on the road to it. For forty years the seal held because nobody in Aster knew where the sigils
+were.
 
-He is the **Hallow King**: he hallows the dead and calls it mercy.
+### Now
+
+**Aurel** has spent those forty years as **the Pale Herald**, Vaelor's voice in the living world. He believes, as
+Vaelor does, that the Ash Crown relit with all seven sigils (the **Crown of Ash and Starlight**) can make the
+resurrection last: Vaelmoor whole again, the plague undone, his own guilt erased. The price is Aster: a kingdom's
+grief is what the Ash Crown would build Vaelmoor out of.
+
+The Herald found a buyer for the secret of where the sigils are: **Lord Chancellor Maelis Crane** of Aster, who
+keeps the treasury and the roads, and who sold the wardens' old map for ash-gold and a promise. The Host has begun
+to dig.
+
+**Vaelor, the Hallow King**, is not a dark lord. He wants his wife and children back, exactly as they were. He
+hallows the dead and calls it mercy.
 
 ### Words players learn
 
 | Word | Meaning |
 | --- | --- |
-| Ashen Host | Vaelor's army: memories given shape (the old data calls them the Hollow Legion; ids `legion-*` stay) |
-| Ash-gold | grey coin the Host pays traitors with; it weighs nothing and is always cold (old "Hollow gold") |
-| Crown Sigil | one of the seven star-iron points of the Starlight Crown (perk ids `sigil-*` stay) |
-| Crown fragment | a sliver of a sigil; Elyra can feel them and pays for it |
-| The Pale Herald | Vaelor's voice in the living world; buys traitors, carries orders, takes Elyra |
-| Grieflight | the violet glow the Ash Crown leaves in things it has touched (the old "Rift" glow) |
+| Ashen Host | Vaelor's army: memories given shape (data ids `legion-*` stay) |
+| Ash-gold | the Herald's grey coin: it weighs nothing and is always cold |
+| Crown Sigil | one of the seven star-iron points of the Starlight Crown (perk ids `sigil-*`) |
+| Grieflight | the violet glow the Ash Crown leaves in what it touches |
+| The Pale Herald | Aurel, Vaelor's brother and voice |
+| The Gloam | the dusk-land between Aster and Vaelmoor; the fen where Edmar held the gate |
 
 ---
 
-## 2. The cast
+## 2. The seven sigils
 
-### The hero
+Each sigil was hidden by one warden in one holy place. When the hero wins one, **Elyra bonds it**: she can feel
+them, and each makes her light stronger. Each also **takes a memory** from her, and shows her a **vision** of what
+it saw (the player sees it with her: `vision` scenes).
 
-A traveller who arrives at Briarhollow on the evening the story begins (any of the eight classes). The hero is the
-one person in the story the Ash Crown cannot read: they carry no grief it can use — yet. The finale tests that.
-
-### Recurring companions (blueprint §4.1)
-
-| Companion | Role | First met | Arc | In combat |
+| Sigil | Where (land) | Its warden | The vision it shows | What Elyra forgets |
 | --- | --- | --- | --- | --- |
-| **Mara Venn** | Briarhollow's village guard; grounded, brave, distrusts magic | Prologue, at the gate | Holds the village alone at the start; learns to lead; **battlefield captain** of the coalition by Act IV; refuses to let Briarhollow become a camp forever | Shield-and-spear; holds a line, taunts nearby foes off the hero; leads allied squads |
-| **Elyra** | Young hedge-mage, apprentice to Briarhollow's herbwife | Prologue, in the burning inn | The first fragment bonds to her in the chapel crypt; each sigil gives her power and **takes a memory** (she forgets small things first: a song, a name). Captured by the Pale Herald (Act III low point), rescued at the Gloam Gate (Act IV). In the finale she is the "rescue/choice" | Ranged spells of light; shields the hero; at story beats channels sigil-light that breaks Ashen shields |
-| **Cael Varrow** | Disgraced royal knight, Captain of the Ninefold Watch | Act II, Lantern Hill (Ashen Barrows) | Blamed for the fall of the Ninefold Watch ten years ago (relief never came: the Chancellor diverted it). Redemption through Corvane (his old mentor, now the Host's first knight) and the Three Gates | Heavy knight; charges, breaks shields; leads cavalry in the Last March |
-| **Nyx** | Scout, thief, ex-member of the Gallows Gang | Act I cameo (Thornvale), joins in Act II (Duskfen) | Funny, opportunistic. Her brother **Wren** is held by the Host; in Act III she sells the party's route to the Pale Herald to buy him back (**betrayal**), then turns the trade into the rescue of Elyra (**redemption**) | Fast blades, traps, opens locked doors and secret paths during infiltration quests |
-| **Brother Orren** | Death-priest of the Lantern order, last of the old royal chaplains | Act II, Lantern Hill | Knows what the Ash Crown is and argues, every time it matters, that the dead must stay dead. His faith breaks when he meets his own dead in Act V and holds anyway | Wards: cleanses grieflight, blesses allies, holds the dead back with lanterns |
+| **Embers** | under Briarhollow's chapel (Prologue) | Brother Hale, who became Briarhollow's first priest | the star falling and breaking over two kingdoms | the words of her mother's lullaby (she still hums it) |
+| **Stone** | the shrine under Hearthstead's hall (Amberfield) | Marshal Teodric | two crowns forged; two kings who shared a sky | — (Vosk takes it before she can touch it; won back at the Pale Reach) |
+| **Sun** | the Tomb of the Sun King (Sunscorch) | Queen Ammuret, who had herself buried with it | the plague ship coming into Vaelmoor's harbor, and the man who let it in | the color of Briarhollow's orchard in spring |
+| **Thorns** | the Thorn Court (Glimmerwood) | the first Thistlemourn | Vaelor at his children's bedside, the night he broke his crown | Thessa's face (she knows the name) |
+| **Frost** | the Vault of Rime (Rimeheld) | Jarl Ingrith the Unthawed, frozen in the vault with it | the eight wardens at the border; seven ride away and one stays | her own birthday |
+| **Veil** | the Tear (the Shattered Vale) | Magister Orla, who sealed the Tear with it | Ser Edmar holding the Gloam Gate alone at dusk | — (taken with her by the Herald; won back at the Gloam Gate) |
+| **Tides** | the drowned altar of Hollowmere | Queen Ysane's own maid, Bettany, who stayed | Ysane, dying, asking Vaelor to let her go | the hero's name |
 
-Companions are **light**: they appear at scripted beats (travel conversations, rescues, defences, sieges, bosses),
-never as permanent followers. Each has a portrait, a figure that no townsperson shares, and 3–8 curated barks per
-act.
-
-### Story figures (non-companion)
-
-| Figure | Where | Purpose |
-| --- | --- | --- |
-| **Old Haldor** | Briarhollow | The bell-ringer. The bell stopped when his grandson vanished; he rings it again at the very end |
-| **Herbwife Thessa** | Briarhollow | Elyra's teacher; runs the camp's infirmary once the refugees come |
-| **Ranger Oskar Fell** | Briarhollow gate | Collapses at the gate in the Prologue with the **broken royal seal**; a king's courier who rode from the north; dies telling the hero "the Crown City must know" |
-| **Elder Maren** | Briarhollow (moved from Emberwick) | Briarhollow's elder; becomes the voice of the resistance camp |
-| **Regent Elowen** | Emberwick | The kingdom's ruler; target of the festival assassination |
-| **Lord Chancellor Maelis Crane** | Emberwick | The traitor: diverted the relief that would have saved the Ninefold Watch, sold the roads to the Host, plans the festival murder |
-| **The Pale Herald** | everywhere, briefly | Vaelor's voice; speaks through grieflight in Act I–II, appears in person in Act III |
-| **Rider-Captain Vosk** | Amberfield | The Host commander who leads the attack on Hearthstead and **escapes with the second fragment** (Act I finale) |
-| **Sir Corvane** | Barrow of Kings | The Host's first knight; Cael's mentor; dies asking Cael's forgiveness |
-| **Queen Ysane** | Act V echoes | Vaelor's dead queen; the player meets her memory, who begs them to let her go |
-
-The townspeople of the old quests stay (Warden Hollis, Reeve Aldous, Tobin, Hanna, Sefa, Marshwarden Tilde,
-Harbormaster Quill, Marshal Dunmore, Healer Osk, Thane Borrik, Lamplighter Ivo, Sister Maud…): they are the
-people the hero saves, and they come back.
+At the Duskspire Gate the hero carries all seven (`the-seventh-sigil`): the last door opens only for seven.
 
 ---
 
-## 3. The campaign
+## 3. The cast
 
-Levels follow PROGRESSION_BALANCE.md. **Built** = playable today; **future** = mapped but not yet built (the old
-Act IV zones on the `sigilfall-4b-wip` branch).
-
-### Prologue — The Night the Bells Stopped (levels 1–6) · built in the vertical slice
-
-Briarhollow is a border village of thatch, orchards and a chapel with a bell that has not rung in three weeks.
-People vanish after sunset. The hero arrives as the lamps are lit, with the Host on the road behind them: the story
-opens on the night, and the quiet beats (the Whisperwood, the courier's letter) come after it.
-
-| Beat | What happens | World event |
+| Who | First met | Arc |
 | --- | --- | --- |
-| Cold open | The north gate as the lamps are lit; half the shutters nailed closed. **Mara Venn** stops the hero there, then sees grey shapes on the road behind them: "Turn around. Here they come." | Village in **dusk** state: evening, lamps lit |
-| First fight | The hero holds the gate beside Mara. The fight teaches the controls as it goes: each wave lights the key it asks for on the action bar (strike, the skill, the dodge), with a line over it | **Raid** event at the gate; the village switches to **gate** state: night, nothing burning yet |
-| The bell | The gate holds, and the chapel bell nobody has rung in three weeks tolls by itself. The roofs catch, the chapel's side first, then the east wall's: "Nobody has touched that rope in three weeks." | A staged scene: the camera on the chapel, then the east roofs; the village switches to **raid** state, its roofs catching one by one |
-| Escalation | They came over the east wall while the gate held. Fire in the thatch, raiders in the lanes | Raid at the square: they come out of the smoke at the edge of sight, Mara fighting beside the hero |
-| The courier | Hooves on the north road, then none. **Ranger Oskar Fell** walks the last of it out of the dark, carrying his light, with an arrow of grey glass in his back, and dies in the gateway, pressing a **broken royal seal** into the hero's hand: "The Crown City must know" | An arrival, watched from the gate: the camera looks up the road as he comes |
-| Rescue | Help villagers to the chapel; break into the burning **Bramble & Barrel inn**: three children trapped upstairs. Elyra is already inside, holding a ward over them with shaking hands | Timed **rescue** objective; children follow the hero to the chapel |
-| Defend | Hold the chapel door with Mara and Elyra while the raiders try to break in | **Defend** objective with two allies on screen |
-| Complication | The raiders stop attacking and start **digging** under the chapel: they want what is below | Raiders retreat into the crypt stair |
-| Climax | Down into **the Chapel Crypt** (the old Hollow Crypt): the crypt warden (Ossric) and the Ash-scholar **Morgrave**, who opens the reliquary | Dungeon |
-| Reveal | In the reliquary: a **fragment of an ancient crown**, star-iron, warm. When Elyra touches it, it bonds to her. On the wall, painted fresh: **the mark of the Ashen Host** — a crown made of grey hands | Elyra gains her light |
-| Aftermath | Dawn. Half the village burned. Mara counts the missing. Maren takes the seal and dries the soaked letter by the fire, and decides: Briarhollow will not run, it will **gather the Vale**. The north road opens: the hero first clears the Whisperwood the Host came out of (Grimtusk, Hollin's shards), then is sent to warn the villages. | Village switches to **aftermath** state (burned roofs, a refugee tent, the crater at the chapel); it becomes **the resistance camp** |
+| **Mara Venn**, Briarhollow's guard | Prologue, at the gate | Holds the gate alone at the start; learns to lead; commands the relief of Highwall and the Last March. Distrusts magic, trusts Elyra. |
+| **Elyra**, hedge-mage, Thessa's apprentice | Prologue, the burning inn | Bonds the sigils; gains light, loses memories; taken by the Herald at the Tear; rescued at the Gloam Gate; in the finale she holds all seven and the choice. |
+| **Cael Varrow**, disgraced knight of the Ninefold Watch | Act II, Lantern Hill ("a man called Wat") | Blamed for the Watch's fall ten years ago (the relief never came: Crane countermanded it). Redeemed through Corvane, his mentor; leads the sortie at Highwall. |
+| **Nyx**, scout and thief | Act I cameo (Thornvale), joins in the Sunscorch | Funny, quick, loyal to one person: her brother **Wren**, held by the Host. Sells the party's road to the Herald for him at the Tear; comes back with the Herald's prison map. |
+| **Brother Orren**, last of the Lantern priests | Act II, Lantern Hill | Knows what the Ash Crown is; argues every time it matters that the dead must stay dead; meets his own dead at Hollowmere and holds. |
 
-### Act I — The Villages of the Vale (levels 5–20) · built zones, story rewritten
-
-The Ashen Host is testing the border. Every village has its own crisis, and every village that is saved **sends
-something to Briarhollow**. The player sees those people arrive in the camp.
-
-| Settlement (zone) | Crisis | Contribution to the camp | World event on success |
-| --- | --- | --- | --- |
-| **Fernstead** (Brackenridge Hills) | The barrow dead walk; the Harvest Stones shrine is **corrupted by grieflight**; the Grey Lady sings the dead awake | **Scouts**: Warden Hollis's rangers | The Harvest Stones are cleansed (shrine lit); Hollis's rangers appear at Briarhollow's watchfire |
-| **Millbrook** (Thornvale) | The **mill bridge is held by mercenaries** (the Gallows Gang, paid in ash-gold); a farmstead besieged by wolves (Tobin) | **Food**: Reeve Aldous's grain carts | Bridge barricade burns, the gang's banner comes down; grain carts and Tobin's sheep pen in the camp |
-| **Reedwater** (Greyfen Marsh) | **Villagers abducted** into the drowned hamlet by Mother Mire; wells poisoned with marsh-rot | **Healers**: Marshwarden Tilde and the Reedwater herb-boats | Wells clean (water glints again); a healers' tent at the camp |
-| **Gullport** (the Saltmarsh) | Smugglers selling grieflight powder; the drowned chapel | **Smiths and ships**: Ines the shipwright, Gullport's forge | Smugglers' cove abandoned; a forge and a cart of powder kegs at the camp |
-| **Hearthstead** (the Amberfield) | Refugees on every road; Host riders burning caravans | **Troops**: Marshal Dunmore's riders | Hearthstead's wall repaired |
-
-**Nyx cameo.** In Millbrook the thieves'-cant orders lead to Pim, whose "friend who reads everything" is Nyx. She
-reads the gang's orders for a fee, winks, and is gone.
-
-**Act I finale — The Defense of Hearthstead.** Vosk's Ashen riders strike the fortified village with everything:
-three waves, then a battering ram at the gate. **Mara commands the wall**, Dunmore's riders fight on screen, the
-Fernstead scouts shoot from the towers, and Elyra's light breaks the ram. Hearthstead holds — but in the smoke
-**Vosk takes the second Crown fragment** from the shrine under the hall and rides north. The Act ends with Maren
-reading the broken royal seal aloud: the King's courier was riding to warn the Crown City that the sigils are
-being hunted. Someone in the city has been hiding the letters.
-
-### Act II — Road to the Crown City (levels 18–30) · built zones, story rewritten
-
-The Vale is safe for now; the road north is not. Refugees stream toward Emberwick and the party goes with them.
-
-| Chapter (zone) | Beats | New companion | World event |
-| --- | --- | --- | --- |
-| **Escort the refugees** (the Amberfield → Duskfen) | The caravan out of Hearthstead; the plague villages of Duskfen; the Rot-Mother brewing grief into sickness | **Nyx** joins at Stilt Hollow: she knows the smugglers' paths around the plague | Refugee caravan visible on the road; Low Wick burns its plague houses after the cure |
-| **The mountain pass** (Ironpeak) | The dwarves' Deepforge has been seized and turned into the Host's **occupied toll fortress** on the only pass north. Infiltrate with Nyx, open the gate from inside, defeat Grold | — | The pass gate opens; dwarven banners return to Kragholt; Brenna forges for the camp |
-| **Lantern Hill** (the Ashen Barrows) | The lamps go out one a night. Brother Orren keeps the last chapel. Cael Varrow drinks in the hostel under a false name | **Brother Orren**, **Cael Varrow** | Lamps relit across the downs; the Ninefold Watch flag raised again |
-| **The first knight** (Barrow of Kings) | Cael's mentor, Sir Corvane, leads the barrow dead. Corvane dies asking forgiveness and gives Cael the proof: the relief order for the Ninefold Watch, **countermanded in the Chancellor's hand** | — | Corvane's banner laid on the King's Mound |
-| **The lighthouse** (Stormwatch) | Optional in the Act's order: the drowned fleet strikes the coast; the Stormwatch Light | — | The Light burns again |
-| **The traitor** (Emberwick) | In the city: follow the countermanded order through the treasury, the roads office and the Chancellor's cellar. Every clue is a short quest in a different district | — | Districts open one by one |
-| **Act II finale — The Starfall Festival** | Emberwick celebrates the star that fell three hundred years ago: lanterns, music, a parade. At the height of it the Chancellor's hired knives and Ashen assassins strike the Regent's balcony. Running battle through the festival streets; Cael holds the keep stair; the Chancellor flees into the catacombs; **the Regent survives** and names the hero her champion | — | Festival lanterns, then **smoke and broken stalls**; the city locks down; Crane's house sealed |
-
-### Act III — The Broken Alliance (levels 29–42) · built zones, story rewritten
-
-The Regent needs an army. The realm's factions will not march together: each has an old grudge and a real dilemma.
-
-| Faction (zone) | Dilemma | Signature dungeon | What they send later (Act VI) |
-| --- | --- | --- | --- |
-| **The forest clans** (the Glimmerwood) | Their prince, Thistlemourn, has sworn to the Host to save his court from the blight. Kill him, or let Lady Silvaine try to bring him back (both paths reach the same next quest; the choice changes who rides in the Last March) | (the Thorn Court boss) | Thorn archers and dryads |
-| **The mountain houses** (Rimeheld; Ironpeak's dwarves) | Jarl Hrimfang sold the vault of the Frost Sigil for ash-gold; Jarl Sigrun must choose between a civil war and letting him live | **The Rimeheld Vault** | Huscarls and giants |
-| **The sun houses** (the Sunscorch; Sablewind) | The oasis lords want the Sun Sigil kept in its tomb forever | **The Tomb of the Sun King** | Desert lancers |
-| **The marsh settlements** (Vinecoil, Greyfen) | Vinehold sold the Coiled Queen's venom to the Host to survive; Warden Kesh asks the hero to hide it from the Regent | (the Coiled Temple) | Marsh-folk skirmishers and herb-boats |
-
-Running through the Act: the Host begins **raising fallen soldiers** — Highwall's own buried knights march against
-it (the old Highwall chain). The moors' curse (Grimward) and the Shattered Vale's tear are the grieflight spreading.
-
-**The low point (the Shattered Vale).** At the Tear, the **Pale Herald** appears in person. Nyx has sold him the
-party's road in exchange for her brother — and the Herald keeps neither promise. The party is beaten for the first
-time; **Elyra is taken**, and in the same night **Fernstead falls** (the first village the hero saved). The camp at
-Briarhollow fills with Fernstead's people. Nyx disappears.
-
-### Act IV — War of the Three Gates (levels 40–50) · built
-
-The hero stops reacting and starts leading. Three fortresses guard the road to Vaelmoor.
-
-| Gate | State | Chain |
-| --- | --- | --- |
-| **Highwall** (Highwall March, Siege of Highwall) | built | Scouting, the bone batteries, the Breach, the Siege-Breaker, General Morvain. Mara commands the relief; Cael leads the sortie |
-| **The Gloam Gate** (Gloamhollow) | built | Nyx returns with the Herald's prison map: **rescue Elyra** from the gate's cells (her redemption) |
-| **The Muster Hall** (the Bonefields) | built | The field battle: allied squads, artillery, the Bone Colossus |
-
-Between sieges **Emberwick visibly changes**: the market becomes a muster ground, smiths work through the night,
-the festival lanterns are replaced by war banners, refugees are housed in the outer district.
-
-### Act V — The Dead Kingdom (levels 48–57) · built
-
-Beyond the gates lies Vaelmoor, warped: **villages frozen in the moment of their destruction** (the Weeping Woods,
-the Sunken Reaches, Hollowmere's drowned town). The party learns Vaelor's story from echoes: Queen Ysane, the two
-children, the winter of plague. Major dungeons each hold a Crown Sigil (Blightheart, the Molten Throne, the Spire
-of the Rift). Brother Orren meets his own dead and holds. Elyra, with most sigils bonded to her, starts forgetting
-the hero's name.
-
-### Act VI — The Last March (levels 56–59) · built
-
-With enough sigils the coalition marches. Every faction the hero helped **arrives with its own troops**: Hollis's
-scouts, Dunmore's riders, the dwarves, the forest clans (as chosen), the jarls, the desert lancers, the marsh
-boats. The battlefield of the Pale Reach: protect the siege mages, break the outer wall, descend into Duskspire,
-face corrupted champions met earlier (Vosk, the Pale Herald). Companion lines change with completed side arcs.
-
-### Finale — Crownfall (level 60) · built
-
-1. **The throne room duel** with Vaelor.
-2. **The shattered realm**: the Ash Crown pulls the battle into a memory of Vaelmoor whole and beautiful.
-3. **The rescue and the choice**: Elyra, holding the relit sigils, can give Vaelor his family back for one hour
-   before the end, or break the crown at once. Both end the Ash Crown; the first changes what the epilogue shows.
-4. **The final form**: the Ash Crown itself.
-
-**As built.** Stage 1 is Duskspire's throne room; stage 2 is a second arena, *Vaelmoor Remembered*, reached through a
-tear over Duskspire once Vaelor falls; stage 3 is the `crownfall` choice (go to Vaelor to give him the hour, or tell
-Elyra to break it: the hour costs Elyra the last of her memory of the hero, breaking it at once keeps her name for
-him); stage 4 is the Ash Crown in the memory's palace garden. Act VI's corrupted champions are Vosk (hollowed, at the
-head of the Host) and the Herald's voice in the Duskspire Gate; the Herald was Vaelor's brother Aurel, who carried the
-order to open the harbor (told in Act VI, met in the postgame).
-
-**Epilogue.** Concrete consequences across the saved villages and allies; the camp packs up; the hero walks back
-into **rebuilt Briarhollow**, and Old Haldor **rings the bell**. Postgame: Heroic and Mythic remixes and the
-unresolved threads (Wren's fate, the Chancellor in the catacombs, what was under the Tear).
+Story figures: **Elder Maren** (the camp's voice), **Herbwife Thessa**, **Old Haldor** the bell-ringer, **Regent
+Elowen** of Aster, **Chancellor Crane** (the traitor), **Rider-Captain Vosk** (the Host's cavalry; takes the Sigil of
+Stone), **Sir Corvane** (the Host's first knight, Cael's mentor), **the Pale Herald / Aurel**, **Queen Ysane** (her
+echoes), **Lark and Edda** (the children's echoes), **Vaelor**. The townspeople of each land are the people the hero
+saves, and they come back to the camp.
 
 ---
 
-## 4. World events — the world reacts to the story
+## 4. The campaign
 
-Every major quest changes something the player can **see**. Implemented as a world-state layer (EXECUTION_PLAN.md,
-Phase W): each region can have **states** chosen by quest progress, and each state swaps props, NPCs, ambient
-effects, music and spawns. Scripted **events** (raids, ambushes, defences, rescues, arrivals) run when a quest
-step starts and are recoverable after a reload.
+Levels follow PROGRESSION_BALANCE.md (the main story alone takes a hero from 1 to 60). Each land below lists its
+main quests in order: **id** (kept from the old story where it says the same thing), name, what is played, and the
+scene that stages it. *Bold lines are spoken in the scenes.*
 
-| Place | States (quest that switches it) |
+### Prologue — The Night the Bells Stopped · Briarhollow, the Chapel Crypt, the Whisperwood · 1–6
+
+As built (sixteen scenes; the standard every other land is measured against): the gate with Mara, the bell that
+rings itself, the courier and the broken royal seal, the burning inn and Elyra, the chapel door, the crypt, Morgrave.
+
+New:
+- **The reliquary** (`briar-the-reliquary`): Elyra touches the warm iron and the first **vision** plays: the star
+  falling and breaking in two over two kingdoms. **"Half of it fell on us. I felt it land."**
+- **Into the Whisperwood** (`into-the-wood`): no longer a count of kills: Mara and the hero track the beasts the
+  grieflight maddened to their alpha, Grimtusk, and kill it (`alpha`). Scene: the wood at dawn, the trail of
+  violet-eyed wolves, Grimtusk's roar from the east.
+
+### Act I — The Villages of the Vale · 5–22
+
+The Host is testing the border. Every village saved sends something to Briarhollow.
+
+**Brackenridge Hills: Fernstead** (5–10) — a hill village of russet orchards, where the barrow dead have started to
+sing.
+
+1. `fern-candles` **Fernstead's Candles** — Warden Hollis meets the hero at dusk; every window has a candle in it
+   for someone the barrows took. *Scene: the hill road at sunset, the candles coming on one by one.* **"We light them
+   so they can find the way home. Lately they've been finding it."**
+2. `fern-the-dead-walk` **The Restless Dead** — *defend*: the barrow dead walk into the lanes at night; Hollis's
+   rangers and Mara hold the well.
+3. `fern-the-widows-song` **The Widow's Song** — follow the singing to the old barrows. The **Grey Lady** is a
+   widow, Wenna Ashe, who sang at her husband's barrow every night for a year: the Ash Crown has been feeding on her.
+   *Scene: grieflight rising out of the mound like smoke.* Orren isn't here yet; Elyra explains what Thessa taught
+   her: **"Grief's the strongest thing in the world. Somebody's learned to spend it."**
+4. `lay-the-grey-lady` **Lay the Grey Lady** — *boss*. Elyra's ember-light breaks the grieflight; the Lady sings
+   her husband's name once more and is gone.
+5. `the-harvest-stones` **The Harvest Stones** — cleanse the shrine; Hollis's rangers march to Briarhollow
+   (`camp-scouts`: *arrival* at the camp's watchfire).
+
+**Thornvale: Millbrook** (8–14) — farms, the mill bridge, and a gang paid in coin that weighs nothing.
+
+1. `mill-the-bridge` **The Mill Road** — the bridge is barricaded by the Gallows Gang; Reeve Aldous's grain can't
+   cross. *Scene: the barricade, the gang's banner, a cart turned back.*
+2. `kettle-farm` **Ashes at Kettle Farm** — Tobin's farm burned by Red Caps; *rescue* Tobin's family from the barn.
+3. `thieves-cant` **Thieves' Cant** — the gang's orders are in a cant nobody can read; Pim knows someone who can:
+   **Nyx**. *Scene: Nyx on the inn's roof, reading by moonlight.* **"'Hunt the bell-chapels. Bring me the warm
+   iron.' Signed with no name. Grey ink. You lot are in trouble."** First sign that the Host hunts the sigils.
+4. `the-bandit-king` **The Bandit King** — *boss*: Varric at Gallows Hill. **"Gold that weighs nothing. You don't
+   know what you're for till someone pays you in it."**
+5. `camp-grain` **Grain for Briarhollow** — *escort*: the carts cross the free bridge to the camp.
+
+**The Amberfield: Hearthstead** (16–22) — the steppe, the centaur clans, and the walled village the Host wants.
+
+1. `the-broken-caravan` **Refugees on the Road** — a caravan burned in the grass; eight-year-old Marit and her
+   wheelwright uncle Hale. *escort* them to Hearthstead.
+2. `riders-in-the-grass` **Riders in the Grass** — *ambush*: Ashen riders out of the grass; **Rider-Captain Vosk**
+   watches from a ridge and rides away. **"Count their walls, not their swords."**
+3. `the-clan-stones` **The Clan Stones** — the centaur clans' standing stones remember the star's fall; Marshal
+   Dunmore admits Hearthstead's hall was built over a shrine **"older than the town."** The sigil under it wakes:
+   Elyra feels it from a mile off.
+4. `hearth-hold-the-wall` **The Defense of Hearthstead** — *defend*, three waves on the wall with Mara commanding,
+   Dunmore's riders on screen; then `hearth-the-ram` **The Ram**: Elyra's light breaks it.
+5. `hearth-the-shrine` **The Empty Shrine** — in the smoke Vosk took the **Sigil of Stone** from under the hall.
+   *Scene: the empty niche, a vision fragment (two crowns forged) cut off as the sigil leaves.* Then
+   `orders-from-the-north` **Orders from the North**: Maren reads the courier's soaked letter aloud: the King's
+   courier was riding to warn the Crown City the sigils were being hunted, **and someone in the city has been hiding
+   the letters.**
+
+### Act II — The Crown City · 22–30
+
+**The Ashen Barrows: Lantern Hill** (23–29) — the downs of the old kings' barrows, where the lamps go out one a night.
+
+1. `candle-thieves` **The Lamps Go Out** — Lamplighter Ivo; **Brother Orren** keeps the last chapel lit. *Scene:
+   lamps going out across the downs, one by one, toward the chapel.* **"The dead don't fear the dark. They fear being
+   seen. Keep the lamps lit."**
+2. `cael-the-hostel` **A Man Called Wat** — a drunk knight in the hostel who knows too much about the barrows:
+   Cael Varrow, Captain of the Ninefold Watch that died here ten years ago waiting for relief that never came.
+3. `the-kings-mound` **The Kings' Mound** — *defend* the chapel as the barrow kings' dead march, Orren's lanterns
+   holding them, Cael fighting beside the hero.
+4. `sir-corvane` **Sir Corvane the Fallen** — *boss* in the Barrow of Kings. Corvane was Cael's mentor and is the
+   Host's first knight now. Dying, he gives Cael the relief order for the Ninefold Watch, **countermanded in the
+   Chancellor's hand.** **"I waited for you to hate me, boy. Hate him instead. It's quicker."**
+5. `the-kings-design` **The Countermanded Order** — Cael and Orren come with the hero to the Crown City.
+
+**Emberwick: the Crown City** — the Regent's keep, the market, the festival.
+
+1. `city-the-treasury` **Follow the Money** — the order leads through the treasury, the roads office and the
+   Chancellor's cellar (three steps, `then`): road money spent on nothing, and a cellar full of ash-gold.
+2. `festival-the-lanterns` **The Starfall Festival** — the city celebrates the star. *Scene: a puppet play in the
+   square tells the star's fall (the player's first full telling of the legend), lanterns going up.*
+3. `festival-the-knives` **The Night of Knives** — *raid*: the Chancellor's hired knives and Ashen assassins strike
+   the Regent's balcony; Cael holds the keep stair.
+4. `festival-the-catacombs` **Down Among the Dead** — Crane flees into the catacombs; his strongroom holds the
+   wardens' old map — **with four of the seven holy places marked in grey ink.** Sun, Thorns, Frost, Veil.
+5. `festival-the-champion` **Champion of Aster** — the Regent names the hero her champion and gives them the
+   map. **"Four places. He has a head start on all of them. Go."**
+
+### Act III — The Race for the Sigils · 30–41
+
+**The Sunscorch: the Oasis of Ras** (30–36) — sand to the horizon, and a dig the Host has been at for a month.
+
+1. `hollow-coin` **The Oasis of Ras** — ash-coin in the oasis wells; **Nyx** is here, smuggling, and joins:
+   **"Your map's my map now. I know every road the Host pays for."**
+2. `the-sandscribe` **The Sandscribe** — Ibbi reads the fallen obelisk: a warden queen, Ammuret, had herself buried
+   alive with something warm.
+3. `the-hollow-dig` **The Ashen Dig** — *raid* on the Host's dig site before it breaks through.
+4. `the-sun-king` **The Sun Queen** — *boss* in the tomb: Ammuret's echo, who tests rather than hates. She gives
+   up the **Sigil of the Sun**. **Vision:** the plague ship in Vaelmoor's harbor, and a young man in harbor-master's
+   blue waving it in. Elyra forgets the color of the orchard.
+
+**The Glimmerwood: Lumen Glade** (31–37) — a fey wood gone sour, thorns where the songs were.
+
+1. `the-withered-ring` **The Withered Ring** — Lady Silvaine; the court's prince Thistlemourn has sworn to the Host.
+2. `the-pale-pavilion` **The Pale Pavilion** — the Herald's bargain, found in the prince's tent: his court's blight
+   lifted in exchange for the Sigil of Thorns. *Scene: the pavilion's grey silk, a letter in grey ink.*
+3. `the-thorn-court` **The Thorn Court** — *raid* through the thorn knights to the court.
+4. `silvaines-song` **Silvaine's Song** — the prince, and a choice (`choice`): end him, or let Silvaine sing him
+   back. Either way the **Sigil of Thorns**. **Vision:** Vaelor at his children's bedside, the night he broke his
+   crown. **"He just wanted them to wake up."** Elyra forgets Thessa's face.
+
+**Rimeheld: Frostgate** (33–39) — snow, giants, and a jarl who sold his kin.
+
+1. `rime-frostgate` **The Last Sledges** — Jarl Sigrun's sledges come in under giant raids; *escort*.
+2. `rime-the-traitor-jarl` **The Traitor Jarl** — Jarl Hrimfang sold the vault's runes for ash-gold. Sigrun must
+   choose between his life and a civil war; the hero brings him in.
+3. `rime-the-vault-door` **The Vault Door** — the runes, and the frozen warden behind the door.
+4. `the-vault-of-rime` **The Vault of Rime** — the dungeon; Jarl Ingrith the Unthawed hands over the **Sigil of
+   Frost** and is allowed to thaw. **Vision:** the eight wardens on the border; seven ride away; one stays.
+   Elyra forgets her birthday.
+
+**The Shattered Vale: Shardwatch** (35–41) — the low point.
+
+1. `vale-shardwatch` **Shardwatch** — Magister Quell's watchtowers around the **Tear**, a wound in the sky the
+   Sigil of the Veil has kept shut for forty years.
+2. `vale-the-cipher` **The Herald's Cipher** — Nyx goes quiet; a grey-ink letter about **Wren**.
+3. `the-heralds-ambush` **The Tear** — the hero takes the **Sigil of the Veil** from the Tear, and the **Pale
+   Herald** is waiting: Nyx sold him the road for her brother. A fight that cannot be won (`ends`); **Elyra is
+   taken**, and the sigils with her. **"Forty years I have carried my brother's grief. Tonight I set it down."**
+   The Herald keeps neither promise: Wren stays a prisoner. Nyx is gone.
+4. `the-heart-of-the-tear` **The Heart of the Tear** — aftermath: Quell seals the Tear with what's left; the same
+   night **Fernstead falls**; at the camp Thessa finds Elyra's satchel packed for three days.
+
+### Act IV — The Gates · 40–48
+
+**Highwall March** (40–46) — the first of the Three Gates, under siege.
+
+1. `the-long-night-ends` **The First Gate** — Mara commands the relief; Lord-Commander Varn. *Scene: the wall
+   from the trenches, the bone batteries firing.*
+2. `cael-the-sortie` **The Sortie** — *raid*: Cael leads the riders out of the sally port.
+3. `gate-nyx-returns` **Under a White Rag** — Nyx comes in with a white rag on a stick and the Herald's prison
+   map. **"Hit me after. Elyra's in the Gloam Gate's cells. I can get you in."**
+4. `the-siege-breaker` **The Breach** — *boss*: the Siege-Breaker in the breach.
+5. `general-morvain` **General Morvain** — *boss*; the first gate is ours.
+
+**Gloamhollow: Lastlight** (44–48) — the black fen, the lamps of Lastlight, the Gloam Gate.
+
+1. `gloam-the-unlit-mile` **The Unlit Mile** — Lastlight's lamp-keepers; the road dark for a mile.
+2. `gloam-the-eighth-warden` **The Eighth Warden** — at a cairn by the gate, Elyra's absence is a hole the
+   **vision** comes through anyway, from the Veil sigil kept in the gate: **Ser Edmar holding the gate alone at
+   dusk**. **"Till the last light. Then a little after."**
+3. `gloam-the-cells` **The Cells** — *rescue*: Nyx's map, the cells, Elyra. She knows the hero's face; she can't
+   find Thessa's.
+4. `the-gatewarden` **The Gatewarden** — *boss*; the sigils (all five Elyra carried) are taken back from the gate's
+   vault.
+5. `the-gloam-gate` **The Second Gate** — the road into Vaelmoor opens; Wren is found among the prisoners.
+
+### Act V — The Dead Kingdom · 48–56
+
+**The Weeping Woods: Candlewick** (48–51) — a grey wood where the plague winter never ended.
+
+1. `the-candle-road` **The Candle Road** — Candlewick, every window a candle for the dead; Orren goes quiet.
+2. `the-frozen-hamlet` **Lark's Hollow** — a village frozen in the hour it died.
+3. `wood-the-children` **Two Names in the Snow** — *event*: the echoes of **Lark and Edda** playing in the snow;
+   the Host comes for them because Vaelor calls them. **"Papa says we're going home soon."**
+4. `the-weeping-lord` **The Weeping Lord** — *boss*: the grief of the wood given a body.
+
+**Emberdeep Caldera: Cinderhold** (51–55) — a ring of black mountains round a lake of fire.
+
+1. `forges-on-the-rim` **Forges on the Rim** — Thane Hroki's dwarves; the Host forging something in the caldera.
+2. `dvalins-reading` **Dvalin's Reading** — the runesmith reads the Host's moulds: the **Pale Crown**, made to
+   hold seven sigils **and a living heart that remembers them** — Elyra.
+3. `break-the-chains` **Break the Chains** — *rescue* the chained fire-spirits who are made to work the forges.
+4. `ashkar-the-bound` **Ashkar the Bound** — *boss*: the fire lord chained to the crown's anvil; the Pale Crown
+   breaks. The Herald's voice out of the fire: **"He will make another."**
+
+**Hollowmere** (53–56) — the black lake at the heart of Vaelmoor.
+
+1. `the-restless-shore` **The Restless Shore** — the Ferryman wants a penny for every passenger.
+2. `orren-on-the-shore` **The Answering Water** — *event*: Orren's own dead come out of the water asking him to
+   come in. He holds. **"I loved you. That is why I won't."**
+3. `across-the-mere` **Across the Mere** — the necropolis on the island.
+4. `ysanes-last-echo` **Let Me Go** — Queen Ysane's last echo gives the **Sigil of Tides** and begs the hero to let
+   her husband go. **Vision:** Ysane dying, asking Vaelor to let her go. Elyra forgets the hero's name. (`the-
+   seventh-sigil` then waits on the Sigil of Stone.)
+
+### The Last March · Pale Reach, Duskspire, Vaelmoor Remembered · 56–60
+
+1. `the-last-road` **Every Banner** — every faction the hero helped arrives with its troops: Hollis's rangers,
+   Dunmore's riders, the forest clans (as chosen), Sigrun's huscarls, Ras's lancers, Lastlight's lamp-keepers.
+2. `march-vosk` **The Rider at the Head of the Host** — Vosk, hollowed, and the **Sigil of Stone**. **Vision:**
+   two crowns forged; two kings shaking hands under one sky. Seven of seven (`the-seventh-sigil`).
+3. `march-the-breach` **The Breach** — *raid* on Duskspire's outer wall with the siege mages.
+4. `march-the-voice` **The Voice in the Gate** — the Pale Herald, at last: Aurel. **"I let the ship in. Everything
+   since has been me trying to let it out."**
+5. `the-hollow-king` **Crownfall: The Throne** — Vaelor. Then Vaelmoor Remembered: **One Hour** or **Break It Now**
+   (the choice), and **The Ash Crown**.
+
+Epilogue: **The Camp Goes Home**, and **The Bell**: Old Haldor rings it, and Elyra, who has forgotten so much,
+remembers the lullaby's words.
+
+---
+
+## 5. Staging (the tools: `sim/scene.ts`)
+
+- **look / at / follow / move / say / emote / sfx / shake / title / wait** (as before).
+- **bars**: letterbox bars slide in for the scene (every main-story scene has them).
+- **fade**: to and from black (a time-skip, a vision's start and end).
+- **vision**: the screen goes to a tinted memory: a caption, figures (people and the Host) placed in the world as
+  ghosts, lines spoken by them, then back. Each sigil's vision is one.
+- **fx**: a spell or blast at a place (a sigil waking, a wall breaking, the Tear opening).
+- **music**: a track change for the scene.
+
+Every main quest has a scene that opens it (`when: during(id)`), boss quests also open on their boss, and every
+land's last quest has an aftermath scene.
+
+---
+
+## 6. World events
+
+| Place | States |
 | --- | --- |
-| Briarhollow | dusk (start) → raid (`briar-nightfall`) → aftermath (`briar-the-reliquary` done) → camp, growing with each village saved (Act I) → Fernstead's refugees (Act III low point) → rebuilt and the bell rings (epilogue) |
-| Fernstead | haunted (start) → shrine cleansed (`the-harvest-stones`) → fallen (Act III low point) → retaken (Act IV) |
-| Millbrook / Thornvale | bridge blockade (start) → bridge free (`the-bandit-king`) |
-| Reedwater / Greyfen | poisoned wells → clean wells (`the-ghoul-mother`) |
-| Hearthstead / Amberfield | refugee roads → siege (Act I finale) → wall repaired |
-| Low Wick / Duskfen | plague → burned and cured (`the-rot-mother`) |
-| Kragholt / Ironpeak | the pass held by the Host → pass open (`forgemaster-grold`) |
-| Lantern Hill | lamps dark → lamps lit (`candle-thieves`, `sir-corvane`) |
-| Emberwick | locked to the player until Act II → festival → after the festival (locked down) → war footing (Act IV) |
-| Highwall March | besieged → relieved (`general-morvain`) |
-
-**Event kinds** (built on the existing simulation, no fake cutscenes): `raid` (waves from map edges into a
-village), `defend` (hold a point or a gate against waves, allies on screen), `rescue` (reach people in time; they
-follow the hero to safety), `escort` (a cart or a group walks a road; ambushes on the way), `ambush` (packs appear
-when the hero reaches a spot), `arrival` (people walk into the camp), `bark` (a companion line at a moment).
+| Briarhollow | dusk → raid → aftermath → the camp, growing with each village saved → Fernstead's refugees (after the Tear) → rebuilt; the bell rings (epilogue) |
+| Fernstead | haunted → shrine cleansed → fallen (the Tear) → retaken (Highwall) |
+| Millbrook | bridge barricaded → bridge free |
+| Hearthstead | refugee roads → siege → wall repaired |
+| Lantern Hill | lamps dark → lamps lit |
+| Emberwick | before the festival → festival → locked down → war footing |
+| Highwall March | besieged → relieved |
 
 ---
 
-## 5. Tone and writing rules
+## 7. Tone and writing
 
-- Short lines. A beat is two to four lines of dialogue, then play.
-- Warm before dark: every village gets one line of ordinary life before its crisis.
+- Short lines. A beat is two to four lines, then play.
+- Warm before dark: every land gets a line of ordinary life before its trouble.
 - The Host is sad, not cackling. Its soldiers say what they remember ("Is it supper yet?").
-- Humour from people (Tobin, Nyx, Brewer Olav), never from the threat.
-- The hero has no voice lines of their own; companions react to what the hero did.
-- American spelling in player-facing text (project rule); straight apostrophes in ids, typographic in text.
+- Humor from people (Tobin, Nyx, Brewer Olav), never from the threat.
+- The hero has no lines; companions react to what the hero did.
+- American spelling for player-facing text; typographic apostrophes in text.
+- Our names only (LEGAL_REVIEW.md): the villain is the **Hallow King**, never anything like another game's knight.
