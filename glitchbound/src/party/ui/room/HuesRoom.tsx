@@ -3,7 +3,7 @@ import { tNodes } from '../shared';
 import { cellHex, COLS, cueBonus, explainHues, ROWS } from '../../hues';
 import { CLOCKS, LAPS, MIN_PLAYERS, type Action, type RoomView } from '../../rooms/huesRoom';
 import { Board, HueLegend, type BoardMark } from '../Hues';
-import { Clock, Dot, RoomFrame, Scores, seatColor, Waiting, type RoomContext } from './RoomFrame';
+import { Clock, Dot, RealLifeSwitch, RoomFrame, Scores, seatColor, Waiting, type RoomContext } from './RoomFrame';
 import { t } from '../../../i18n';
 
 type Ctx = RoomContext<RoomView, Action>;
@@ -40,6 +40,7 @@ function Settings({ view, send }: Ctx) {
           <b>{t('Second clue')}</b>{' '}{t('· after the first guesses, the cue giver adds up to two more words and everyone guesses again')}
         </span>
       </label>
+      <RealLifeSwitch on={!!s.real} set={(real) => set({ real })} />
       <div className="pt-picker" role="group" aria-label={t('Rounds')}>
         {LAPS.map((k) => (
           <button key={k} className={`pt-chip${s.laps === k ? ' is-on' : ''}`} aria-pressed={s.laps === k} onClick={() => set({ laps: k })}>
@@ -109,10 +110,12 @@ function Game(ctx: Ctx) {
       <Dot p={cue} size={30} /> {isCue ? t('You’re the cue giver') : t('{name} is the cue giver', { name: cue.name })}
     </p>
   );
-  const clues = round.clue && (
+  const clues = round.clue ? (
     <p className="pt-room-clue" aria-label={t('The clue')}>
       “{round.clue}”{round.clue2 && <> + “{round.clue2}”</>}
     </p>
+  ) : (
+    round.said && <p className="pt-room-clue">{t('🗣️ Clue said out loud')}</p>
   );
 
   if (view.phase === 'pick') {
@@ -191,9 +194,9 @@ function Game(ctx: Ctx) {
       {who}
       {clues}
       <section className="pt-panel">
-        <p className="pt-kicker">{round.clue ? t('The color was…') : t('⏱ No clue in time: no points this round')}</p>
+        <p className="pt-kicker">{round.clue || round.said ? t('The color was…') : t('⏱ No clue in time: no points this round')}</p>
         <Board target={round.target} marks={[...toMarks(round.marks), ...toMarks(round.marks2)]} highlight />
-        {round.clue && round.target !== null && <HueLegend />}
+        {(round.clue || round.said) && round.target !== null && <HueLegend />}
         <ul className="pt-hk-gains">
           {players.map((p) => {
             const cells = [round.marks?.[String(p.n)], round.marks2?.[String(p.n)]].filter((c): c is number => c !== undefined);
@@ -204,7 +207,7 @@ function Game(ctx: Ctx) {
                   <Dot p={p} size={24} /> {p.name} <b>+{round.gained?.[String(p.n)] ?? 0}</b>
                   {p.n === round.cue ? t(' (cue giver)') : ''}
                 </span>
-                {round.clue && round.target !== null && <small>{explainHues(round.target, cells, p.n === round.cue ? cueBonus(round.target, all) : null)}</small>}
+                {(round.clue || round.said) && round.target !== null && <small>{explainHues(round.target, cells, p.n === round.cue ? cueBonus(round.target, all) : null)}</small>}
               </li>
             );
           })}
@@ -220,11 +223,12 @@ function Game(ctx: Ctx) {
   );
 }
 
-function PickColour({ send, round }: Ctx & { round: Round }) {
+function PickColour({ view, send, round }: Ctx & { round: Round }) {
   const [draft, setDraft] = useState('');
+  const real = view.settings.real;
   const offer = round.offer ?? [];
   const submit = (): void => {
-    if (round.target !== null && draft.trim()) send({ t: 'clue', text: draft });
+    if (round.target !== null && (real || draft.trim())) send({ t: 'clue', text: draft });
   };
   return (
     <section className="pt-panel">
@@ -237,22 +241,26 @@ function PickColour({ send, round }: Ctx & { round: Round }) {
       {round.target !== null && (
         <>
           <Board target={round.target} marks={[]} highlight />
-          <input
-            className="pt-input"
-            value={draft}
-            maxLength={24}
-            autoComplete="off"
-            autoCapitalize="none"
-            enterKeyHint="send"
-            onChange={(e) => setDraft(e.target.value.replace(/\s/g, ''))}
-            onKeyDown={(e) => e.key === 'Enter' && submit()}
-            placeholder={t('One word, no color names')}
-            aria-label={t('Your one-word clue')}
-          />
+          {real ? (
+            <p className="pt-muted">{t('One word, no color names. Say it out loud, then tap below.')}</p>
+          ) : (
+            <input
+              className="pt-input"
+              value={draft}
+              maxLength={24}
+              autoComplete="off"
+              autoCapitalize="none"
+              enterKeyHint="send"
+              onChange={(e) => setDraft(e.target.value.replace(/\s/g, ''))}
+              onKeyDown={(e) => e.key === 'Enter' && submit()}
+              placeholder={t('One word, no color names')}
+              aria-label={t('Your one-word clue')}
+            />
+          )}
         </>
       )}
-      <button className="pt-btn pt-btn-go pt-btn-big" disabled={round.target === null || !draft.trim()} onClick={submit}>
-        {round.target === null ? t('Tap a color') : t('Send my clue')}
+      <button className="pt-btn pt-btn-go pt-btn-big" disabled={round.target === null || (!real && !draft.trim())} onClick={submit}>
+        {round.target === null ? t('Tap a color') : real ? t('I’ve said my clue') : t('Send my clue')}
       </button>
     </section>
   );
@@ -314,8 +322,22 @@ function PlaceGuess({ view, send, me, round, earlier, left }: Ctx & { round: Rou
   );
 }
 
-function SecondClue({ send, round, marks }: Ctx & { round: Round; marks: BoardMark[] }) {
+function SecondClue({ view, send, round, marks }: Ctx & { round: Round; marks: BoardMark[] }) {
   const [draft, setDraft] = useState('');
+  if (view.settings.real)
+    return (
+      <section className="pt-panel">
+        <p className="pt-kicker">{t('Here are the first guesses. Add a second clue?')}</p>
+        <Board target={round.target} marks={marks} highlight />
+        <p className="pt-muted">{t('Up to two words. Say it out loud, then tap below.')}</p>
+        <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'clue', text: '' })}>
+          {t('I’ve said my clue')}
+        </button>
+        <button className="pt-btn pt-btn-ghost" onClick={() => send({ t: 'done' })}>
+          {t('No second clue · show the color')}
+        </button>
+      </section>
+    );
   const submit = (): void => {
     if (draft.trim()) send({ t: 'clue', text: draft });
   };

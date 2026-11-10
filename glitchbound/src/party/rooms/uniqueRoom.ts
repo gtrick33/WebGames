@@ -1,7 +1,9 @@
 /**
  * One of a Kind in a live room: the same co-op rules as the one-phone game (../unique.ts), with every
  * clue giver typing their clue on their own phone at the same time. The guesser's phone only ever
- * shows the clues that survived; everyone else sees which ones cancelled out. 13 cards, right +1,
+ * shows the clues that survived; everyone else sees which ones cancelled out. With Real life on, nobody
+ * types: the clue givers compare quietly and say the clues that are left out loud, as on one phone,
+ * and each taps “said” (the game then has no clues to show or check). 13 cards, right +1,
  * pass loses the card, wrong loses that card and the next.
  *
  * Phases: lobby → write → guess → verdict → write … → result. Writing ends when every clue giver has
@@ -28,6 +30,8 @@ export type Outcome = 'right' | 'wrong' | 'pass';
 
 export interface Settings {
   clock: (typeof CLOCKS)[number];
+  /** Real life: everyone is in the same room, so the clues are said out loud instead of typed. */
+  real: boolean;
 }
 
 export interface Clue {
@@ -47,7 +51,7 @@ export interface State extends RoomBase {
   next: number;
   guesser: number;
   word: string;
-  /** Seat → their clue while writing (secret until writing ends). */
+  /** Seat → their clue while writing (secret until writing ends; empty when said out loud). */
   clues: Record<string, string>;
   checked: Clue[];
   outcome: Outcome | null;
@@ -71,7 +75,7 @@ export function newRoom(code: string, now: number, seed: number): State {
     host: 0,
     deadline: null,
     seed,
-    settings: { clock: 90 },
+    settings: { clock: 90, real: false },
     playing: [],
     card: 0,
     next: 0,
@@ -133,7 +137,7 @@ function newWord(s: State): void {
 
 /** Writing is over: the clues are checked against each other and the guesser gets the survivors. */
 function check(s: State, now: number): void {
-  const from = givers(s).filter((n) => n in s.clues || isHere(s, n));
+  const from = s.settings.real ? [] : givers(s).filter((n) => n in s.clues || isHere(s, n));
   const marked = checkClues(
     s.word,
     from.map((n) => s.clues[n] ?? ''),
@@ -201,6 +205,7 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       if (inGame(s)) return 'Change settings between games.';
       const clock = a.settings?.clock;
       if ((CLOCKS as readonly unknown[]).includes(clock)) s.settings.clock = clock as Settings['clock'];
+      if (typeof a.settings?.real === 'boolean') s.settings.real = a.settings.real;
       return null;
     }
     case 'start': {
@@ -221,8 +226,8 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
     }
     case 'clue': {
       if (s.phase !== 'write' || !giving) return null;
-      const clue = cleanClue(String(a.text ?? ''));
-      if (!clue) return 'Type a one-word clue.';
+      const clue = s.settings.real ? '' : cleanClue(String(a.text ?? ''));
+      if (!clue && !s.settings.real) return 'Type a one-word clue.';
       s.clues[me.n] = clue;
       advance(s, now);
       return null;
@@ -283,6 +288,7 @@ export interface RoomView {
   guesser: number | null;
   /** The secret word: never on the guesser's phone until the card is over. */
   word: string | null;
+  /** Your clue while writing (empty once you've said it out loud in Real life), or null before it's in. */
   myClue: string | null;
   /** May you swap the word for another (no clues in yet)? */
   canSwap: boolean;

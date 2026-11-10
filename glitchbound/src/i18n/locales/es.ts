@@ -2254,6 +2254,19 @@ const es: string[] = [
   'Sin icono',
   'Nueva clase',
   'Paquete Gloamknight',
+  // Real life switch (live party rooms)
+  'Vida real',
+  '· ¿todos en la misma sala? Sin escribir pistas: decidlas en voz alta y luego pulsad un botón para seguir',
+  '🗣️ Pista dicha en voz alta',
+  'Ya he dicho mi pista',
+  'Solo tú ves el punto. Piensa {clue} para él entre {a} y {b}: una cosa, una persona, un dicho. ¡Dila en voz alta, sin números!',
+  'Una palabra, sin nombres de colores. Dila en voz alta y pulsa abajo.',
+  'Hasta dos palabras. Dilas en voz alta y pulsa abajo.',
+  'Primero comparad vuestras pistas en silencio (susurrando o apuntándolas): las que coinciden quedan fuera. Luego decid las que quedan en voz alta.',
+  'Listo ✓ Esperando a los demás…',
+  'Escucha: tus amigos dirán sus pistas en voz alta.',
+  'Escucha las pistas y luego escribe tu respuesta.',
+  '¡Ninguna ayuda aparte de las pistas! {name} está adivinando.',
 ];
 
 export default es;

@@ -2254,6 +2254,19 @@ const ro: string[] = [
   'Fără iconiță',
   'Clasă nouă',
   'Pachetul Gloamknight',
+  // Real life switch (live party rooms)
+  'Viața reală',
+  '· toți în aceeași cameră? Fără indicii tastate: spuneți-le cu voce tare, apoi apăsați un buton ca să continuați',
+  '🗣️ Indiciu spus cu voce tare',
+  'Mi-am spus indiciul',
+  'Doar tu vezi locul. Gândește-te la {clue} pentru el între {a} și {b}: un lucru, o persoană, o zicală. Spune-l cu voce tare, fără numere!',
+  'Un cuvânt, fără nume de culori. Spune-l cu voce tare, apoi apasă mai jos.',
+  'Până la două cuvinte. Spune-le cu voce tare, apoi apasă mai jos.',
+  'Comparați mai întâi indiciile în liniște (în șoaptă sau notate): cele la fel ies. Apoi spuneți-le cu voce tare pe cele rămase.',
+  'Gata ✓ Îi așteptăm pe ceilalți…',
+  'Ascultă: prietenii tăi își vor spune indiciile cu voce tare.',
+  'Ascultă indiciile, apoi scrie răspunsul.',
+  'Niciun ajutor în afară de indicii! {name} ghicește.',
 ];
 
 export default ro;

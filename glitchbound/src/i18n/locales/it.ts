@@ -2254,6 +2254,19 @@ const it: string[] = [
   'Nessuna icona',
   'Nuova classe',
   'Pacchetto Gloamknight',
+  // Real life switch (live party rooms)
+  'Dal vivo',
+  '· tutti nella stessa stanza? Niente indizi da scrivere: diteli ad alta voce, poi toccate un pulsante per andare avanti',
+  '🗣️ Indizio detto ad alta voce',
+  'Ho detto il mio indizio',
+  'Solo tu vedi il punto. Pensa a {clue} tra {a} e {b}: una cosa, una persona, un modo di dire. Dillo ad alta voce, niente numeri!',
+  'Una parola, niente nomi di colori. Dilla ad alta voce, poi tocca sotto.',
+  'Fino a due parole. Dille ad alta voce, poi tocca sotto.',
+  'Prima confrontate gli indizi in silenzio (sussurrando o scrivendoli): quelli uguali sono fuori. Poi dite ad alta voce quelli rimasti.',
+  'Pronto ✓ In attesa degli altri…',
+  'Ascolta: i tuoi amici diranno i loro indizi ad alta voce.',
+  'Ascolta gli indizi, poi scrivi la tua risposta.',
+  'Nessun aiuto oltre agli indizi! {name} sta indovinando.',
 ];
 
 export default it;
