@@ -248,6 +248,8 @@ const bosses: Record<string, BossDef> = {
         patterns: [
           // dark feathers falling from its wings about the hall
           { id: 'spell:rain', w: 3, cd: 3, p: { color: '#b8a8ff', type: 'shadow', count: 10, onHero: 3, time: 2.2, rr: 18, mul: 0.9 } },
+          // a buffet of its wings flings whoever stands before it across the hall
+          { id: 'spell:hurl', w: 3, cd: 3, p: { color: '#b8a8ff', type: 'shadow', reach: 90, dur: 0.7, mul: 0.6 } },
           { id: 'tripleCharge', w: 2, cd: 6, p: { count: 2, wind: 0.6, speed: 330, len: 150, stun: 0, mul: 1.2 } },
           { id: 'barrow:feast', w: 3, cd: 8, p: { count: 2, dark: 18, wind: 0.65, pick: 1 } },
         ],
@@ -338,8 +340,8 @@ const bosses: Record<string, BossDef> = {
           { id: 'cleave', w: 3, cd: 3, p: { r: 52, arc: 1.05, wind: 0.6, lunge: 30, mul: 1.35 } },
           // spectral lances thrust from the barrow walls
           { id: 'spell:lances', w: 2, cd: 5, p: { color: '#a8c8ff', type: 'frost', count: 4, width: 14, mul: 1.05 } },
-          // lines of grave-frost crossing on the hero
-          { id: 'spell:crossfire', w: 2, cd: 6, p: { color: '#a8c8ff', type: 'frost', lines: 2, twice: 1, width: 16, mul: 1 } },
+          // the barrow’s judgment, on the half of the hall the hero stands in
+          { id: 'spell:halves', w: 2, cd: 6, p: { color: '#a8c8ff', type: 'frost', dur: 1.5, mul: 1.3 } },
           { id: 'summon', w: 1, cd: 20, p: { enemies: ['oathsworn-guard', 'crypt-stalker'] } },
         ],
       },

@@ -1,16 +1,16 @@
 import { dist, TAU } from '../../core/math';
 import type { DmgType, StatusId } from '../../data/types';
-import { circleHitsWall } from '../map';
+import { circleHitsWall, moveCircle } from '../map';
 import type { Enemy, Projectile, Telegraph } from '../types';
 import type { World } from '../world';
 import { onFloor, roomBox } from './arena';
 import type { PatternFn, PatternKit } from './kit';
 
 /**
- * Boss spells: ids start with 'spell:'. Shapes of attack a boss casts in its own colors, so that no two bosses fight
- * alike: each boss takes a few of these with its own look (`look`, the shot's drawing: 'frost', 'holy', 'shadow',
- * 'water', 'poison', 'fire', 'rift', 'skull', 'spear', 'bolt', 'ball', 'web', 'flame'), `color`, damage type (`type`),
- * blow (`mul` of its own) and what the hit leaves on the hero (`st`, `stDur`, `stPow`).
+ * Boss spells: ids start with 'spell:'. Every spell here is one boss's own (tests/sigilfall-boss-spells.test.ts keeps
+ * it so): no two bosses fight alike. Each is cast in its boss's look (`look`, the shot's drawing: 'frost', 'holy',
+ * 'shadow', 'water', 'poison', 'fire', 'rift', 'skull', 'spear', 'bolt', 'ball', 'web', 'flame'), `color`, damage type
+ * (`type`), blow (`mul` of its own) and what the hit leaves on the hero (`st`, `stDur`, `stPow`).
  *
  * - `ring`: rings of shots out from the boss, each with a gap to slip through, the next ring's gap elsewhere.
  * - `wall`: a wall of shots marching across the room at the hero, with a gap or two in it.
@@ -29,6 +29,22 @@ import type { PatternFn, PatternKit } from './kit';
  * - `blink`: the boss vanishes and strikes where it comes back (behind the hero, with `behind`).
  * - `bouncers`: shots that glance off the walls.
  * - `pools`: globs lobbed round the hero that leave the floor burning, freezing or rotting a while.
+ * - `sinkhole`: quicksand under the hero (slow to wade out of) that erupts.
+ * - `pin`: a javelin that pins whoever it hits, and a blow on the pinned.
+ * - `tether`: a chain from the boss to the hero that burns the harder the farther they stand.
+ * - `constellation`: stars set round the hero, joined one to the next, line by line.
+ * - `undertow`: the hero dragged toward the boss while it brings the sea down round itself.
+ * - `eclipse`: everywhere burns but one circle of light drifting across the room.
+ * - `gild`: coins that gild whoever they hit, a little more each time, until they are turned to gold.
+ * - `sunspot`: a spot of sun that hunts the hero across the floor.
+ * - `quills`: quills hung in the air round the hero that fly at them all at once.
+ * - `cage`: a coffin closing round the hero, one side left open.
+ * - `sequence`: vats boiling over one after another, in the order counted out.
+ * - `hurl`: a buffet that flings whoever stands before the boss across the hall.
+ * - `halves`: judgment on the half of the hall the hero stands in.
+ * - `drain`: the boss drinks the hero's life while they stay in reach.
+ * - `grief`: a keening that turns the hero around (their movement goes the other way).
+ * - `pendulum`: a scythe swinging from the wall, back and forth across the room.
  */
 
 /* ------------------------------------------------------------ the boss's own colors */
@@ -502,6 +518,427 @@ const pools: PatternFn = (w, e, _dt, k) =>
     return 0.9;
   });
 
+/* ------------------------------------------------------------ one boss's own */
+
+/** Vizier Khepset: quicksand opens under the hero (they wade through it, slow), and erupts. */
+const sinkhole: PatternFn = (w, e, _dt, k) =>
+  windThen(w, e, k, () => {
+    const p = w.player;
+    const at = { x: p.x, y: p.y };
+    const r = k.num('rr', 42);
+    const time = k.num('time', 2.6);
+    const c = color(k);
+    mark(w, e, k, { shape: 'circle', x: at.x, y: at.y, r }, time, k.num('mul', 1.3));
+    const t0 = w.time;
+    const sink = (): void => {
+      if (!fighting(w, e) || w.time - t0 >= time) return;
+      if (!p.dead && dist(p.x, p.y, at.x, at.y) < r) {
+        const chill = p.statuses.find((x) => x.id === 'chill');
+        if (chill) {
+          chill.power = Math.max(chill.power, 0.6);
+          chill.t = Math.max(chill.t, 0.15);
+        } else p.statuses.push({ id: 'chill', t: 0.15, power: 0.6, tick: 0 });
+      }
+      if (Math.floor(w.time * 8) !== Math.floor((w.time - 1 / 60) * 8)) {
+        const a = w.rand() * TAU;
+        w.addFx({ kind: 'spark', x: at.x + Math.cos(a) * r * 0.9, y: at.y + Math.sin(a) * r * 0.7, vx: -Math.cos(a) * 30, vy: -Math.sin(a) * 22, life: 0.6, size: 2, color: c });
+      }
+      w.after(0, sink);
+    };
+    w.after(0, sink);
+    w.text(p.x, p.y - 30, 'Quicksand! Wade out!', '#fff2c0', false);
+    return 0.5;
+  });
+
+/** Hallvor: a javelin that pins whoever it hits, and her halberd falls on the pinned. */
+const pin: PatternFn = (w, e, _dt, k) =>
+  windThen(w, e, k, () => {
+    const p = w.player;
+    const n = k.num('count', 1);
+    for (let i = 0; i < n; i++) {
+      const a = Math.atan2(p.y - e.y, p.x - e.x) + (i - (n - 1) / 2) * 0.35;
+      const q = shot(w, e, k, e.x, e.y - 6, a, k.num('speed', 230), { r: 4, life: 360, look: 'spear', status: { status: 'stun', dur: 0.8, power: 1 } });
+      if (!q) continue;
+      const watch = (): void => {
+        if (!fighting(w, e)) return;
+        if (!q.dead) {
+          w.after(0, watch);
+          return;
+        }
+        if (!p.dead && dist(q.x, q.y, p.x, p.y) < q.r + p.r + 6 && p.statuses.some((x) => x.id === 'stun')) {
+          w.text(p.x, p.y - 30, 'Pinned!', '#e8f6ff', true);
+          mark(w, e, k, { shape: 'circle', x: p.x, y: p.y, r: 22 }, 1, k.num('blow', 1.4));
+        }
+      };
+      w.after(0, watch);
+    }
+    w.sfx('spear', 0.7);
+    return 0.4;
+  });
+
+/** Elowen: a chain of dawn-light from her to the hero that burns the harder the farther they stand. */
+const tether: PatternFn = (w, e, _dt, k) =>
+  windThen(w, e, k, () => {
+    const p = w.player;
+    const time = k.num('time', 4);
+    const beats = Math.round(time / 0.5);
+    for (let j = 0; j < beats; j++) {
+      w.after(j * 0.5, () => {
+        if (!fighting(w, e) || p.dead) return;
+        const d = dist(e.x, e.y, p.x, p.y);
+        const a = Math.atan2(p.y - e.y, p.x - e.x);
+        mark(w, e, k, { shape: 'line', x: e.x, y: e.y, r2: 10, angle: a, len: d + 12 }, 0.5, k.num('mul', 0.18) * Math.min(3, Math.max(0.4, d / 60)));
+        w.addFx({ kind: 'beam', x: e.x, y: e.y - 14, x2: p.x, y2: p.y - 10, life: 0.5, size: 1 + Math.min(3, d / 60), color: color(k) });
+      });
+    }
+    w.text(p.x, p.y - 30, 'Chained to the dawn: the farther, the hotter!', '#fff2c0', false);
+    return 0.5;
+  });
+
+/** Ilvane: stars set about the hero, then joined one to the next, line by line. */
+const constellation: PatternFn = (w, e, _dt, k) =>
+  windThen(w, e, k, () => {
+    const p = w.player;
+    const n = k.num('count', 5);
+    const stars: { x: number; y: number }[] = [];
+    const a0 = w.rand() * TAU;
+    for (let i = 0; i < n; i++) {
+      const a = a0 + (TAU * i * 2) / n;
+      const d = 50 + w.rand() * 60;
+      const x = p.x + Math.cos(a) * d;
+      const y = p.y + Math.sin(a) * d * 0.8;
+      if (onFloor(w, e, x, y, 2)) stars.push({ x, y });
+    }
+    for (const st of stars) w.addFx({ kind: 'glow', x: st.x, y: st.y - 4, life: 0.8 + stars.length * k.num('step', 0.35), size: 8, color: color(k) });
+    stars.forEach((st, i) => {
+      const nx = stars[(i + 1) % stars.length]!;
+      w.after(0.4 + i * k.num('step', 0.35), () => {
+        if (!fighting(w, e)) return;
+        const a = Math.atan2(nx.y - st.y, nx.x - st.x);
+        mark(w, e, k, { shape: 'line', x: st.x, y: st.y, r2: 14, angle: a, len: dist(st.x, st.y, nx.x, nx.y) }, k.num('dur', 0.8), k.num('mul', 1));
+      });
+    });
+    return 0.4 + stars.length * k.num('step', 0.35) + 0.4;
+  });
+
+/** The Drowned Priestess: the undertow drags the hero toward her, and she brings the sea down round her. */
+const undertow: PatternFn = (w, e, _dt, k) =>
+  windThen(w, e, k, () => {
+    const p = w.player;
+    const time = k.num('time', 2.4);
+    const pull = k.num('pull', 46);
+    const r = k.num('rr', 58);
+    mark(w, e, k, { shape: 'circle', x: e.x, y: e.y, r }, time, k.num('mul', 1.4));
+    const t0 = w.time;
+    const drag = (): void => {
+      if (!fighting(w, e) || w.time - t0 >= time || p.dead) return;
+      if (!p.dash) {
+        const d = dist(p.x, p.y, e.x, e.y) || 1;
+        const m = moveCircle(w.map, p.x, p.y, p.r, ((e.x - p.x) / d) * pull / 60, ((e.y - p.y) / d) * pull / 60);
+        p.x = m.x;
+        p.y = m.y;
+      }
+      if (Math.floor(w.time * 10) !== Math.floor((w.time - 1 / 60) * 10)) w.addFx({ kind: 'spark', x: p.x, y: p.y, vx: (e.x - p.x) * 0.6, vy: (e.y - p.y) * 0.6, life: 0.5, size: 2, color: color(k) });
+      w.after(0, drag);
+    };
+    w.after(0, drag);
+    w.text(p.x, p.y - 30, 'The undertow! Swim against it!', '#d8f6ff', false);
+    return time;
+  });
+
+/** The Ash Crown: the light goes out but for one drifting circle of summer; outside it, the ash burns. */
+const eclipse: PatternFn = (w, e, _dt, k) =>
+  windThen(w, e, k, () => {
+    const box = roomBox(w, e);
+    const time = k.num('time', 6);
+    const r = k.num('rr', 48);
+    // the light drifts from one side of the room to the other, past where the hero stands
+    const p = w.player;
+    const across = box.x1 - box.x0 > box.y1 - box.y0;
+    const from = across ? { x: box.x0 + 40, y: p.y } : { x: p.x, y: box.y0 + 40 };
+    const to = across ? { x: box.x1 - 40, y: p.y } : { x: p.x, y: box.y1 - 40 };
+    if (w.rand() < 0.5) [from.x, from.y, to.x, to.y] = [to.x, to.y, from.x, from.y];
+    const beats = Math.round(time / 0.5);
+    for (let j = 0; j < beats; j++) {
+      w.after(0.6 + j * 0.5, () => {
+        if (!fighting(w, e)) return;
+        const t = j / Math.max(1, beats - 1);
+        const x = from.x + (to.x - from.x) * t;
+        const y = from.y + (to.y - from.y) * t;
+        mark(w, e, k, { shape: 'donut', x, y, r: 900, r2: r }, 0.5, k.num('mul', 0.3));
+        w.addFx({ kind: 'glow', x, y, life: 0.5, size: r * 0.8, color: '#fff2c0' });
+        w.addFx({ kind: 'ring', x, y, life: 0.5, size: r, color: '#fff2c0' });
+      });
+    }
+    w.text(p.x, p.y - 30, 'Eclipse! Keep to the light!', '#fff2c0', true);
+    return 0.6 + time;
+  });
+
+const GILD = new WeakMap<Enemy, number[]>();
+/** Maelis Crane: coins of cold ash-gold; every one that hits gilds the hero a little more, and four turn them to gold. */
+const gild: PatternFn = (w, e, _dt, k) =>
+  windThen(w, e, k, () => {
+    const p = w.player;
+    const n = k.num('count', 5);
+    const spread = k.num('spread', 0.9);
+    const a0 = Math.atan2(p.y - e.y, p.x - e.x);
+    const coins: Projectile[] = [];
+    for (let i = 0; i < n; i++) {
+      const q = shot(w, e, k, e.x, e.y - 6, a0 - spread / 2 + (spread * i) / Math.max(1, n - 1), k.num('speed', 115), { look: 'ball' });
+      if (q) coins.push(q);
+    }
+    const watch = (): void => {
+      if (!fighting(w, e)) return;
+      for (const q of [...coins]) {
+        if (!q.dead) continue;
+        coins.splice(coins.indexOf(q), 1);
+        if (p.dead || dist(q.x, q.y, p.x, p.y) > q.r + p.r + 6 || p.iframe > 0) continue;
+        const stacks = (GILD.get(e) ?? []).filter((t) => t > w.time);
+        stacks.push(w.time + k.num('last', 6));
+        if (stacks.length >= k.num('gold', 4)) {
+          GILD.set(e, []);
+          if (hurtPlayerShare(w, e, k.num('share', 0.2))) w.text(p.x, p.y - 30, 'Turned to gold!', color(k), true);
+          p.statuses.push({ id: 'stun', t: 1.4, power: 1, tick: 0 });
+          w.fxBurst(p.x, p.y - 8, color(k), 20, 14);
+        } else {
+          GILD.set(e, stacks);
+          w.text(p.x, p.y - 28, `Gilded ×${stacks.length}`, color(k), false);
+        }
+      }
+      if (coins.length) w.after(0, watch);
+    };
+    w.after(0, watch);
+    w.sfx('coin', 0.7);
+    return 0.5;
+  });
+const hurtPlayerShare = (w: World, e: Enemy, share: number): boolean => {
+  const p = w.player;
+  const d = Math.min(p.hp - 1, p.maxHp * share);
+  if (d <= 0) return false;
+  p.hp -= d;
+  p.flash = 0.15;
+  w.text(p.x, p.y - 18, `-${Math.round(d)}`, '#ff9a9a', false);
+  void e;
+  return true;
+};
+
+/** The Sun King: a spot of the noon sun that hunts the hero across the floor, burning where it stands. */
+const sunspot: PatternFn = (w, e, _dt, k) =>
+  windThen(w, e, k, () => {
+    const p = w.player;
+    const time = k.num('time', 3.5);
+    const r = k.num('rr', 26);
+    const speed = k.num('chase', 55);
+    const at = { x: e.x, y: e.y };
+    const beats = Math.round(time / 0.35);
+    for (let j = 0; j < beats; j++) {
+      w.after(j * 0.35, () => {
+        if (!fighting(w, e)) return;
+        const d = dist(at.x, at.y, p.x, p.y);
+        if (d > 1) {
+          const step = Math.min(d, speed * 0.35);
+          at.x += ((p.x - at.x) / d) * step;
+          at.y += ((p.y - at.y) / d) * step;
+        }
+        mark(w, e, k, { shape: 'circle', x: at.x, y: at.y, r }, 0.6, k.num('mul', 0.6));
+        w.addFx({ kind: 'beam', x: at.x, y: at.y - 120, x2: at.x, y2: at.y, life: 0.35, size: 3, color: color(k) });
+      });
+    }
+    return time + 0.4;
+  });
+
+/** The Royal Auditor: quills of red ink hang in the air round the hero, then all fly at once. */
+const quills: PatternFn = (w, e, _dt, k) =>
+  windThen(w, e, k, () => {
+    const p = w.player;
+    const n = k.num('count', 8);
+    const ring0 = k.num('spread', 95);
+    const hang = k.num('hang', 1.1);
+    const held: Projectile[] = [];
+    const a0 = w.rand() * TAU;
+    for (let i = 0; i < n; i++) {
+      const a = a0 + (TAU * i) / n;
+      const x = p.x + Math.cos(a) * ring0;
+      const y = p.y + Math.sin(a) * ring0 * 0.85;
+      if (!onFloor(w, e, x, y, 2)) continue;
+      const q = shot(w, e, k, x, y, 0, 0, { life: 9999, look: 'spear', r: 3.5 });
+      if (q) held.push(q);
+    }
+    w.after(hang, () => {
+      if (!fighting(w, e)) return;
+      for (const q of held) {
+        if (q.dead) continue;
+        const a = Math.atan2(p.y - q.y, p.x - q.x);
+        q.vx = Math.cos(a) * k.num('speed', 170);
+        q.vy = Math.sin(a) * k.num('speed', 170);
+        q.life = 320;
+      }
+      w.sfx('spear', 0.7);
+    });
+    return hang + 0.3;
+  });
+
+/** The Coffin Matron: a coffin closes round the hero, three walls and a lid, one side left open. */
+const cage: PatternFn = (w, e, _dt, k) =>
+  windThen(w, e, k, () => {
+    const p = w.player;
+    const h = k.num('size', 36);
+    const open = Math.floor(w.rand() * 4);
+    const sides = [
+      { x: p.x - h, y: p.y - h, a: 0 },
+      { x: p.x + h, y: p.y - h, a: Math.PI / 2 },
+      { x: p.x + h, y: p.y + h, a: Math.PI },
+      { x: p.x - h, y: p.y + h, a: -Math.PI / 2 },
+    ];
+    sides.forEach((sd, i) => {
+      if (i === open) return;
+      mark(w, e, k, { shape: 'line', x: sd.x, y: sd.y, r2: 14, angle: sd.a, len: h * 2 }, k.num('dur', 1.1), k.num('mul', 1));
+    });
+    // and the lid
+    mark(w, e, k, { shape: 'circle', x: p.x, y: p.y, r: h * 0.7 }, k.num('dur', 1.1) + 0.5, k.num('mul', 1));
+    w.text(p.x, p.y - 34, 'The coffin closes: out the open side!', '#e0ffe0', false);
+    return k.num('dur', 1.1) + 0.6;
+  });
+
+/** Brother Pustule: the vats boil over one after another, in an order he counts out. */
+const sequence: PatternFn = (w, e, _dt, k) =>
+  windThen(w, e, k, () => {
+    const p = w.player;
+    const n = k.num('count', 6);
+    const step = k.num('step', 0.45);
+    const r = k.num('rr', 24);
+    const spots: { x: number; y: number }[] = [];
+    for (let tries = 0; tries < n * 8 && spots.length < n; tries++) {
+      const a = w.rand() * TAU;
+      const d = spots.length === 0 ? 0 : 30 + w.rand() * 80;
+      const x = p.x + Math.cos(a) * d;
+      const y = p.y + Math.sin(a) * d * 0.8;
+      if (onFloor(w, e, x, y, 4) && spots.every((o) => dist(o.x, o.y, x, y) > r * 1.4)) spots.push({ x, y });
+    }
+    spots.forEach((sp, i) => {
+      mark(w, e, k, { shape: 'circle', x: sp.x, y: sp.y, r }, 1 + i * step, k.num('mul', 0.95));
+      w.text(sp.x, sp.y - 10, String(i + 1), color(k), true);
+    });
+    return 1 + n * step;
+  });
+
+/** Gloomwing: a buffet of its wings flings whoever stands before it across the hall. */
+const hurl: PatternFn = (w, e, _dt, k) =>
+  windThen(w, e, k, () => {
+    const p = w.player;
+    const a = Math.atan2(p.y - e.y, p.x - e.x);
+    const reach = k.num('reach', 90);
+    const dur = k.num('dur', 0.7);
+    mark(w, e, k, { shape: 'cone', x: e.x, y: e.y, r: reach, r2: 0.9, angle: a }, dur, k.num('mul', 0.6));
+    w.after(dur, () => {
+      if (!fighting(w, e) || p.dead || p.iframe > 0 || p.dash) return;
+      const d = dist(e.x, e.y, p.x, p.y);
+      let off = Math.abs(Math.atan2(p.y - e.y, p.x - e.x) - a) % TAU;
+      if (off > Math.PI) off = TAU - off;
+      if (d > reach + p.r || off > 0.9) return;
+      // flung, in a few strides, until a wall stops them
+      const fa = Math.atan2(p.y - e.y, p.x - e.x);
+      for (let i = 0; i < 8; i++) {
+        const m = moveCircle(w.map, p.x, p.y, p.r, Math.cos(fa) * 18, Math.sin(fa) * 18);
+        p.x = m.x;
+        p.y = m.y;
+      }
+      p.statuses.push({ id: 'stun', t: 0.5, power: 1, tick: 0 });
+      w.text(p.x, p.y - 30, 'Flung!', color(k), true);
+      w.shake(4);
+    });
+    w.sfx('rush', 0.7);
+    return dur + 0.3;
+  });
+
+/** Sir Corvane: the barrow's judgment falls on one half of the hall: the half the hero stands in. */
+const halves: PatternFn = (w, e, _dt, k) =>
+  windThen(w, e, k, () => {
+    const p = w.player;
+    const box = roomBox(w, e);
+    const across = w.rand() < 0.5;
+    const cx = (box.x0 + box.x1) / 2;
+    const cy = (box.y0 + box.y1) / 2;
+    const wide = Math.max(box.x1 - box.x0, box.y1 - box.y0) + 40;
+    const dur = k.num('dur', 1.5);
+    // the line through the middle, and the hero's side of it struck
+    if (across) {
+      const right = p.x > cx;
+      mark(w, e, k, { shape: 'line', x: cx, y: cy, r2: wide, angle: right ? 0 : Math.PI, len: (box.x1 - box.x0) / 2 + 20 }, dur, k.num('mul', 1.3));
+    } else {
+      const down = p.y > cy;
+      mark(w, e, k, { shape: 'line', x: cx, y: cy, r2: wide, angle: down ? Math.PI / 2 : -Math.PI / 2, len: (box.y1 - box.y0) / 2 + 20 }, dur, k.num('mul', 1.3));
+    }
+    w.text(p.x, p.y - 30, 'Judgment on this half of the hall!', '#d8e8ff', true);
+    return dur + 0.2;
+  });
+
+/** Prior Vessant: his censer drinks the hero's life while they stay within its reach. */
+const drain: PatternFn = (w, e, _dt, k) => {
+  const { pt } = k;
+  const p = w.player;
+  const reach = k.num('reach', 150);
+  if (pt.step === 0) {
+    cast(w, e, k);
+    w.text(p.x, p.y - 30, 'His censer drinks: get out of its reach!', '#e0ffe0', false);
+    pt.data.next = 0.4;
+    pt.step = 1;
+  } else if (pt.t >= k.num('time', 3)) k.end();
+  else if (pt.t >= pt.data.next!) {
+    pt.data.next! += 0.5;
+    const d = dist(e.x, e.y, p.x, p.y);
+    if (!p.dead && d < reach) {
+      const a = Math.atan2(p.y - e.y, p.x - e.x);
+      mark(w, e, k, { shape: 'line', x: e.x, y: e.y, r2: 12, angle: a, len: d + 12 }, 0.45, k.num('mul', 0.3));
+      w.addFx({ kind: 'beam', x: p.x, y: p.y - 10, x2: e.x, y2: e.y - 16, life: 0.45, size: 2, color: color(k) });
+      e.hp = Math.min(e.maxHp, e.hp + e.maxHp * k.num('heal', 0.004));
+    }
+  }
+};
+
+/** Lady Cendre: her keening rolls out from her; caught in it, grief turns the hero around (left is right, up is down). */
+const grief: PatternFn = (w, e, _dt, k) =>
+  windThen(w, e, k, () => {
+    const p = w.player;
+    const r0 = k.num('inner', 40);
+    const r1 = k.num('outer', 140);
+    const dur = k.num('dur', 1);
+    mark(w, e, k, { shape: 'donut', x: e.x, y: e.y, r: r1, r2: r0 }, dur, k.num('mul', 0.6));
+    w.after(dur, () => {
+      if (!fighting(w, e) || p.dead || p.iframe > 0) return;
+      const d = dist(e.x, e.y, p.x, p.y);
+      if (d < r0 - p.r || d > r1 + p.r) return;
+      w.inverted = Math.max(w.inverted, k.num('time', 3.5));
+      w.text(p.x, p.y - 30, 'Grief turns you around!', color(k), true);
+    });
+    return dur + 0.2;
+  });
+
+/** Vaelor: a scythe of souls swinging from the wall behind his throne, back and forth across the room. */
+const pendulum: PatternFn = (w, e, _dt, k) =>
+  windThen(w, e, k, () => {
+    const box = roomBox(w, e);
+    const top = w.player.y > e.y;
+    const pivot = { x: (box.x0 + box.x1) / 2, y: top ? box.y0 + 6 : box.y1 - 6 };
+    const down = top ? Math.PI / 2 : -Math.PI / 2;
+    const len = (box.y1 - box.y0) * k.num('reach', 0.95);
+    const amp = k.num('amp', 1);
+    const time = k.num('time', 3.2);
+    const period = k.num('period', 2);
+    const width = k.num('width', 16);
+    mark(w, e, k, { shape: 'line', x: pivot.x, y: pivot.y, r2: width, angle: down - amp, len }, 0.8, 0);
+    const beats = Math.round(time / 0.15);
+    for (let j = 0; j < beats; j++) {
+      w.after(0.8 + j * 0.15, () => {
+        if (!fighting(w, e)) return;
+        const a = down - amp * Math.cos((TAU * j * 0.15) / period);
+        mark(w, e, k, { shape: 'line', x: pivot.x, y: pivot.y, r2: width, angle: a, len }, 0.22, k.num('mul', 0.5));
+        w.addFx({ kind: 'beam', x: pivot.x, y: pivot.y - 10, x2: pivot.x + Math.cos(a) * len, y2: pivot.y - 10 + Math.sin(a) * len, life: 0.18, size: 2, color: color(k) });
+      });
+    }
+    return 0.8 + time;
+  });
+
 export const SPELL_PATTERNS: Record<string, PatternFn> = {
   'spell:ring': ring,
   'spell:wall': wall,
@@ -520,4 +957,20 @@ export const SPELL_PATTERNS: Record<string, PatternFn> = {
   'spell:blink': blink,
   'spell:bouncers': bouncers,
   'spell:pools': pools,
+  'spell:sinkhole': sinkhole,
+  'spell:pin': pin,
+  'spell:tether': tether,
+  'spell:constellation': constellation,
+  'spell:undertow': undertow,
+  'spell:eclipse': eclipse,
+  'spell:gild': gild,
+  'spell:sunspot': sunspot,
+  'spell:quills': quills,
+  'spell:cage': cage,
+  'spell:sequence': sequence,
+  'spell:hurl': hurl,
+  'spell:halves': halves,
+  'spell:drain': drain,
+  'spell:grief': grief,
+  'spell:pendulum': pendulum,
 };

@@ -312,8 +312,8 @@ const bosses: Record<string, BossDef> = {
           // the halberd in a wide sweep, and brought straight down along a line
           { id: 'cleave', w: 3, cd: 3.5, p: { r: 58, arc: 1.2, wind: 0.8, lunge: 24, mul: 1.4 } },
           { id: 'chop', w: 2, cd: 5, p: { len: 160, width: 24, wind: 0.85, mul: 1.6 } },
-          // the wardens’ javelins of ice, skipping off the crypt walls
-          { id: 'spell:bouncers', w: 2, cd: 6, p: { look: 'frost', color: '#bfe4ff', type: 'frost', st: 'chill', stDur: 1.2, stPow: 0.35, count: 3, spread: 0.7, speed: 140, bounces: 2, mul: 0.85 } },
+          // a javelin of ice that pins whoever it hits, and her halberd on the pinned
+          { id: 'spell:pin', w: 2, cd: 6, p: { color: '#bfe4ff', type: 'frost', count: 1, speed: 230, blow: 1.4, mul: 0.8 } },
           // "Hold your post!" or "Walk the round!", by turns
           { id: 'rime:orders', w: 3, cd: 11, p: { warn: 1.4, time: 3, cost: 0.15, spikes: 11 } },
         ],
@@ -330,8 +330,8 @@ const bosses: Record<string, BossDef> = {
         patterns: [
           { id: 'cleave', w: 3, cd: 3.5, p: { swings: 2, r: 58, arc: 1.2, wind: 0.7, gap: 0.15, lunge: 26, mul: 1.35 } },
           { id: 'chop', w: 2, cd: 4.5, p: { len: 170, width: 24, wind: 0.8, mul: 1.6 } },
-          // the wardens’ javelins of ice, skipping off the crypt walls
-          { id: 'spell:bouncers', w: 2, cd: 5.5, p: { look: 'frost', color: '#bfe4ff', type: 'frost', st: 'chill', stDur: 1.2, stPow: 0.35, count: 5, spread: 0.9, speed: 145, bounces: 2, mul: 0.85 } },
+          // javelins of ice that pin whoever they hit, and her halberd on the pinned
+          { id: 'spell:pin', w: 2, cd: 5.5, p: { color: '#bfe4ff', type: 'frost', count: 2, speed: 235, blow: 1.4, mul: 0.8 } },
           // down the length of the crypt, halberd levelled
           { id: 'tripleCharge', w: 2, cd: 8, p: { count: 2, wind: 0.7, speed: 280, len: 230, mul: 1.3, stun: 1.2 } },
           // now a hold and the round straight after it, and a broken order brings the roof down on the hero

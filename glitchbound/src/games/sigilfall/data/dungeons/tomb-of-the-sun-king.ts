@@ -256,12 +256,8 @@ const bosses: Record<string, BossDef> = {
         // the sand-glass and its hour (sim/patterns/tomb-of-the-sun-king.ts)
         enter: [{ id: 'tomb:hourglass', w: 1, cd: 0, p: { time: 7 } }],
         patterns: [
-          // rings of golden sand blown out from him, a gap in each
-          { id: 'spell:ring', w: 3, cd: 3.5, p: { look: 'holy', color: '#ffd27a', type: 'holy', count: 14, gap: 3, waves: 2, speed: 90, mul: 0.8 } },
-          // sun-stones falling one after another toward the hero
-          { id: 'spell:meteors', w: 3, cd: 4, p: { color: '#ffb04d', type: 'fire', count: 6, gap: 0.2, rr: 20, mul: 1 } },
-          // a swirl of sand, and he is elsewhere
-          { id: 'spell:blink', w: 1, cd: 7, p: { color: '#ffd27a', rr: 30 } },
+          // quicksand opening under the hero: slow to wade out of before it erupts
+          { id: 'spell:sinkhole', w: 3, cd: 3.5, p: { color: '#e8cf95', type: 'holy', rr: 42, time: 2.6, mul: 1.3 } },
           { id: 'tomb:hourglass', w: 2, cd: 15, p: { time: 7 } },
         ],
       },
@@ -272,14 +268,8 @@ const bosses: Record<string, BossDef> = {
         rest: [0.6, 1],
         enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['wrapped-dead', 'wrapped-dead'] } }, { id: 'tomb:hourglass', w: 1, cd: 0, p: { time: 6 } }],
         patterns: [
-          // rings of golden sand blown out from him, a gap in each
-          { id: 'spell:ring', w: 3, cd: 3, p: { look: 'holy', color: '#ffd27a', type: 'holy', count: 14, gap: 3, waves: 2, speed: 90, mul: 0.8 } },
-          // sun-stones falling one after another toward the hero
-          { id: 'spell:meteors', w: 3, cd: 3.5, p: { color: '#ffb04d', type: 'fire', count: 6, gap: 0.2, rr: 20, mul: 1 } },
-          // beams of the noon sun turning about him
-          { id: 'spell:vortex', w: 2, cd: 6, p: { color: '#ffd27a', type: 'holy', arms: 3, time: 2.5, spin: 1 } },
-          // a swirl of sand, and he is elsewhere
-          { id: 'spell:blink', w: 1, cd: 6, p: { color: '#ffd27a', rr: 30 } },
+          // quicksand opening under the hero: slow to wade out of before it erupts
+          { id: 'spell:sinkhole', w: 3, cd: 3, p: { color: '#e8cf95', type: 'holy', rr: 42, time: 2.6, mul: 1.3 } },
           { id: 'tomb:hourglass', w: 3, cd: 12, p: { time: 6 } },
         ],
       },
@@ -401,8 +391,8 @@ const bosses: Record<string, BossDef> = {
           // three beams turning like the spokes of the sun
           { id: 'tomb:sunbeam', w: 3, cd: 6, p: { beams: 3, sweep: 1.4, time: 1.4, wind: 0.85, width: 14, mul: 1.2 } },
           { id: 'tomb:sun-disc', w: 2, cd: 13, p: { at: 'arc', flares: 2, wind: 2.4, wind2: 2.1, blaze: 0.9, mul: 1.4, step: 1.4 } },
-          // the sun’s own rings, bursting out from him in turn
-          { id: 'spell:pulse', w: 1, cd: 9, p: { color: '#ffe08a', type: 'holy', rings: 4, band: 36, mul: 1 } },
+          // a spot of the noon sun hunting the hero across the floor
+          { id: 'spell:sunspot', w: 1, cd: 9, p: { color: '#ffe08a', type: 'fire', time: 3.5, rr: 26, chase: 55, mul: 0.6 } },
           { id: 'tomb:scarabs', w: 1, cd: 16, p: { count: 3 } },
         ],
       },

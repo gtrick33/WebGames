@@ -90,11 +90,7 @@ const SILAS_VEY: BossDef = {
       patterns: [
         // knives thrown on wires, and pulled back to his hand
         { id: 'spell:boomerang', w: 3, cd: 4.5, p: { look: 'spear', color: '#d8d4e0', type: 'physical', count: 3, spread: 0.7, speed: 160, out: 0.65, mul: 0.8 } },
-        // a smoke-bomb that bursts into knives
-        { id: 'spell:split', w: 2, cd: 6, p: { look: 'shadow', color: '#8a8498', type: 'shadow', count: 10, small: 120, bigMul: 1.1, mul: 0.7 } },
         { id: 'cleave', w: 2, cd: 3.5, p: { r: 44, arc: 1.1, wind: 0.6, lunge: 30, mul: 1.3 } },
-        // out of the shadows behind the hero
-        { id: 'spell:blink', w: 1, cd: 8, p: { color: '#6a6478', behind: 1, rr: 28, mul: 1.2 } },
         { id: 'crown:scatter', w: 3, cd: 14, p: { coins: 10, spend: 7, per: 3 } },
       ],
     },
@@ -106,9 +102,7 @@ const SILAS_VEY: BossDef = {
       enter: [{ id: 'crown:scatter', w: 1, cd: 12, p: { coins: 14, spend: 6.5, per: 3 } }],
       patterns: [
         { id: 'spell:boomerang', w: 3, cd: 4, p: { look: 'spear', color: '#d8d4e0', type: 'physical', count: 5, spread: 1, speed: 165, out: 0.65, mul: 0.8 } },
-        { id: 'spell:split', w: 2, cd: 5.5, p: { look: 'shadow', color: '#8a8498', type: 'shadow', count: 12, small: 125, bigMul: 1.1, mul: 0.7 } },
         { id: 'cleave', w: 2, cd: 3, p: { swings: 2, r: 44, arc: 1.1, wind: 0.5, gap: 0.12, lunge: 30, mul: 1.25 } },
-        { id: 'spell:blink', w: 2, cd: 6.5, p: { color: '#6a6478', behind: 1, rr: 28, mul: 1.2 } },
         { id: 'crown:scatter', w: 3, cd: 12, p: { coins: 14, spend: 6.5, per: 3 } },
       ],
     },
@@ -136,10 +130,8 @@ const ROYAL_AUDITOR: BossDef = {
       // his book opened as the hero comes in: every blow from then on is written down
       enter: [{ id: 'crown:ledger', w: 1, cd: 0 }],
       patterns: [
-        // the lines of the ledger marching across the hall
-        { id: 'spell:wall', w: 3, cd: 5, p: { look: 'holy', color: '#f0e0a0', type: 'holy', speed: 68, gaps: 2, mul: 0.85 } },
-        // quills of light from the walls of the hall
-        { id: 'spell:lances', w: 2, cd: 6, p: { color: '#f0e0a0', type: 'holy', count: 3, width: 12, mul: 1 } },
+        // quills of red ink hung in the air round the hero, then all flying at once
+        { id: 'spell:quills', w: 3, cd: 5, p: { color: '#f0e0a0', type: 'holy', count: 8, spread: 95, hang: 1.1, speed: 170, mul: 0.8 } },
         { id: 'cleave', w: 2, cd: 3.5, p: { r: 48, arc: 1, wind: 0.75, lunge: 16, mul: 1.3 } },
         // every blow written down, and then the reckoning
         { id: 'crown:settle', w: 3, cd: 12, p: { warn: 2.6, share: 0.35, cap: 0.4, rr: 36 } },
@@ -152,8 +144,8 @@ const ROYAL_AUDITOR: BossDef = {
       rest: [0.5, 0.85],
       enter: [{ id: 'crown:settle', w: 1, cd: 10, p: { warn: 2.2, share: 0.45, cap: 0.45, rr: 32 } }],
       patterns: [
-        { id: 'spell:wall', w: 3, cd: 4.5, p: { look: 'holy', color: '#f0e0a0', type: 'holy', speed: 74, gaps: 2, mul: 0.85 } },
-        { id: 'spell:lances', w: 2, cd: 5.5, p: { color: '#f0e0a0', type: 'holy', count: 5, width: 12, mul: 1 } },
+        // quills of red ink hung in the air round the hero, then all flying at once
+        { id: 'spell:quills', w: 3, cd: 4.5, p: { color: '#f0e0a0', type: 'holy', count: 8, spread: 95, hang: 1.1, speed: 170, mul: 0.8 } },
         { id: 'cleave', w: 2, cd: 3, p: { swings: 2, r: 48, arc: 1, wind: 0.6, gap: 0.14, lunge: 18, mul: 1.25 } },
         { id: 'crown:settle', w: 3, cd: 10, p: { warn: 2.2, share: 0.45, cap: 0.45, rr: 32 } },
       ],
@@ -181,13 +173,9 @@ const MAELIS_CRANE: BossDef = {
       speed: 38,
       rest: [0.7, 1.1],
       patterns: [
-        // ash-gold coins flung to skip off the vault walls
-        { id: 'spell:bouncers', w: 3, cd: 4, p: { look: 'ball', color: '#e8d07a', type: 'arcane', count: 5, spread: 0.9, speed: 120, bounces: 3, mul: 0.8 } },
-        // cold coin raining from the vault’s roof
-        { id: 'spell:rain', w: 2, cd: 6, p: { color: '#e8d07a', type: 'arcane', count: 12, onHero: 3, time: 2.4, rr: 18, mul: 0.9 } },
+        // coins of cold ash-gold: each that hits gilds the hero more, and four turn them to gold
+        { id: 'spell:gild', w: 3, cd: 4, p: { color: '#e8d07a', type: 'arcane', count: 5, spread: 0.9, speed: 115, gold: 4, share: 0.2, mul: 0.6 } },
         { id: 'summon', w: 1, cd: 16, p: { enemies: ['hired-knife', 'hired-knife'] } },
-        // he slips into the dark between the coin-heaps
-        { id: 'spell:blink', w: 1, cd: 9, p: { color: '#e8d07a', rr: 30 } },
       ],
     },
     {
@@ -197,15 +185,7 @@ const MAELIS_CRANE: BossDef = {
       rest: [0.5, 0.9],
       enter: [{ id: 'roar', w: 1, cd: 0 }],
       patterns: [
-        // a wheel of coins turning round him
-        { id: 'spell:orbit', w: 2, cd: 8, p: { look: 'ball', color: '#e8d07a', type: 'arcane', count: 8, time: 2.8, grow: 32, mul: 0.85 } },
-        // cold coin underfoot round the hero: it bites when you step near
-        { id: 'spell:mines', w: 2, cd: 6, p: { color: '#e8d07a', type: 'arcane', count: 5, spread: 70, fuse: 3.2, blast: 32, mul: 1 } },
-        // cold coin raining from the vault’s roof
-        { id: 'spell:rain', w: 3, cd: 4.5, p: { color: '#e8d07a', type: 'arcane', count: 12, onHero: 3, time: 2.4, rr: 18, mul: 0.9 } },
         { id: 'summon', w: 1, cd: 18, p: { enemies: ['ashen-assassin', 'hired-knife'] } },
-        // he slips into the dark between the coin-heaps
-        { id: 'spell:blink', w: 1, cd: 8, p: { color: '#e8d07a', rr: 30 } },
       ],
     },
   ],

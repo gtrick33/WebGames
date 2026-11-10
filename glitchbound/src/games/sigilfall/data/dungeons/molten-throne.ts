@@ -357,8 +357,6 @@ const bosses: Record<string, BossDef> = {
           // the founder's hammer, swung and brought down along a seam
           { id: 'cleave', w: 3, cd: 3.5, p: { r: 58, arc: 1.1, wind: 0.8, lunge: 20, mul: 1.4 } },
           { id: 'chop', w: 2, cd: 5, p: { len: 170, width: 26, wind: 0.85, mul: 1.6 } },
-          // her hammer thrown, and it comes back to her hand
-          { id: 'spell:boomerang', w: 2, cd: 5.5, p: { look: 'ball', color: '#ffb060', type: 'fire', count: 1, speed: 160, out: 0.8, r: 7, mul: 1.2 } },
           // molten bone-steel slopped from the crucible: the floor burns
           { id: 'spell:pools', w: 2, cd: 8, p: { pool: 'fire', color: '#ff8a3a', type: 'fire', count: 3, rr: 26, life: 6, mul: 0.9 } },
           { id: 'throne:likeness', w: 3, cd: 13, p: { count: 1, lag: 2.4, life: 9, mul: 0.6 } },
@@ -376,8 +374,6 @@ const bosses: Record<string, BossDef> = {
         patterns: [
           { id: 'cleave', w: 3, cd: 3, p: { swings: 2, r: 58, arc: 1.1, wind: 0.65, gap: 0.14, lunge: 22, mul: 1.35 } },
           { id: 'chop', w: 2, cd: 4.5, p: { lines: 3, spread: 0.45, len: 170, width: 20, wind: 0.8, mul: 1.5 } },
-          // her hammer thrown, and it comes back to her hand
-          { id: 'spell:boomerang', w: 2, cd: 5, p: { look: 'ball', color: '#ffb060', type: 'fire', count: 2, spread: 0.6, speed: 165, out: 0.8, r: 7, mul: 1.2 } },
           // molten bone-steel slopped from the crucible: the floor burns
           { id: 'spell:pools', w: 2, cd: 7, p: { pool: 'fire', color: '#ff8a3a', type: 'fire', count: 3, rr: 26, life: 6, mul: 0.9 } },
           { id: 'throne:likeness', w: 3, cd: 12, p: { count: 2, lag: 2.2, gap: 1.6, life: 10, mul: 0.65, burst: 30 } },

@@ -221,7 +221,26 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
           my = (p.y - target.y) / d;
         }
       } else if (goalPt) {
-        const step = flowStep(w.map, toTarget, p.x, p.y);
+        let step = flowStep(w.map, toTarget, p.x, p.y);
+        // standing on a tile the map counts as taken (beside a crate, inside its tile but clear of its body): no path
+        // starts there, so first a step onto the nearest open tile, as a player would just walk off
+        const here = tileOf(w, p.x, p.y);
+        if (!step && w.map.solid[here]) {
+          const tx = here % w.map.w;
+          const ty = Math.floor(here / w.map.w);
+          let best: { x: number; y: number } | null = null;
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]] as const) {
+            const i = (ty + dy) * w.map.w + tx + dx;
+            if (w.map.solid[i] || (toTarget[i] ?? -1) < 0) continue;
+            const x = (tx + dx + 0.5) * TILE;
+            const y = (ty + dy + 0.5) * TILE;
+            if (!best || Math.hypot(x - p.x, y - p.y) < Math.hypot(best.x - p.x, best.y - p.y)) best = { x, y };
+          }
+          if (best) {
+            const d = Math.hypot(best.x - p.x, best.y - p.y) || 1;
+            step = { x: (best.x - p.x) / d, y: (best.y - p.y) / d };
+          }
+        }
         if (step) {
           mx = step.x;
           my = step.y;
@@ -299,6 +318,11 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
             f.my = Math.sin(a);
           }
         }
+      }
+      // turned around by grief (it says so over the hero): the bot steers the other way, as a player learns to
+      if (w.inverted > 0) {
+        f.mx = -f.mx;
+        f.my = -f.my;
       }
       if (p.hp < p.maxHp * 0.4 && w.hero.potions > 0) f.potion = true;
     }

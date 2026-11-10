@@ -295,14 +295,15 @@ const PUSTULE: BossDef = {
       banner: 'Brother Pustule bursts his boils!',
       speed: 36,
       rest: [0.6, 1],
-      enter: [// a swollen boil flung at the hero, bursting into spatters
-{ id: 'spell:split', w: 1, cd: 0, p: { look: 'poison', color: '#b8d84a', type: 'poison', count: 10, small: 100, bigMul: 1.2, mul: 0.7 } }, { id: 'summon', w: 1, cd: 0, p: { enemies: ['cistern-bloat', 'cistern-bloat', 'cistern-bloat'] } }],
+      enter: [{ id: 'spell:split', w: 1, cd: 0, p: { look: 'poison', color: '#b8d84a', type: 'poison', count: 10, small: 100, bigMul: 1.2, mul: 0.7 } }, { id: 'summon', w: 1, cd: 0, p: { enemies: ['cistern-bloat', 'cistern-bloat', 'cistern-bloat'] } }],
       patterns: [
         { id: 'cleave', w: 3, cd: 3.5, p: { swings: 2, r: 48, arc: 1.05, wind: 0.6, gap: 0.12, lunge: 20, mul: 1.4 } },
         { id: 'rot:miasma', w: 3, cd: 4.5, p: { count: 6, r: 26, wind: 0.95, gap: 0.18, mul: 0.9, cloud: 6 } },
         { id: 'rot:leeches', w: 3, cd: 5.5, p: { n: 3, wind: 0.7, arc: 0.6 } },
         // a swollen boil flung at the hero, bursting into spatters
         { id: 'spell:split', w: 2, cd: 6, p: { look: 'poison', color: '#b8d84a', type: 'poison', count: 10, small: 100, bigMul: 1.2, mul: 0.7 } },
+        // the brewery's vats boiling over one after another, as he counts them out
+        { id: 'spell:sequence', w: 2, cd: 7, p: { color: '#b8d84a', type: 'poison', count: 6, step: 0.45, rr: 24, mul: 0.95 } },
         { id: 'hook', w: 2, cd: 6, p: { len: 160, width: 12, wind: 0.8, fmul: 1.3 } },
         { id: 'summon', w: 1, cd: 14, p: { enemies: ['cistern-bloat', 'cistern-bloat'] } },
       ],

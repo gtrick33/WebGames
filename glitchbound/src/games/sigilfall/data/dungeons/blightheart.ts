@@ -372,14 +372,10 @@ const bosses: Record<string, BossDef> = {
         // her sister wakes beside her
         enter: [{ id: 'blight:twins', w: 1, cd: 0 }],
         patterns: [
-          // motes of dawn that seek the hero out
-          { id: 'spell:seekers', w: 3, cd: 5, p: { look: 'holy', color: '#ffc8a0', type: 'holy', count: 4, speed: 60, homing: 1.2, mul: 0.8 } },
-          // lances of morning light crossing on the hero
-          { id: 'spell:crossfire', w: 2, cd: 5.5, p: { color: '#ffc8a0', type: 'holy', lines: 2, twice: 0, width: 16, mul: 1 } },
+          // a chain of dawn-light to the hero: the farther they stand, the hotter it burns
+          { id: 'spell:tether', w: 3, cd: 5, p: { color: '#ffc8a0', type: 'holy', time: 4, mul: 0.18 } },
           // the lamp-staff swung
           { id: 'cleave', w: 3, cd: 3.5, p: { r: 52, arc: 1.05, wind: 0.7, lunge: 20, mul: 1.35 } },
-          // roots of the old hall crawling after the hero
-          { id: 'spell:fissure', w: 2, cd: 7, p: { color: '#c8e070', type: 'nature', count: 7, step: 0.2, stride: 22, rr: 15, mul: 0.85 } },
         ],
       },
       {
@@ -389,17 +385,9 @@ const bosses: Record<string, BossDef> = {
         rest: [0.5, 0.85],
         enter: [{ id: 'roar', w: 1, cd: 0 }],
         patterns: [
-          // motes of dawn that seek the hero out
-          { id: 'spell:seekers', w: 3, cd: 4.5, p: { look: 'holy', color: '#ffc8a0', type: 'holy', count: 4, speed: 60, homing: 1.2, mul: 0.8 } },
-          // lances of morning light crossing on the hero
-          { id: 'spell:crossfire', w: 2, cd: 5, p: { color: '#ffc8a0', type: 'holy', lines: 3, twice: 1, width: 16, mul: 1 } },
+          // a chain of dawn-light to the hero: the farther they stand, the hotter it burns
+          { id: 'spell:tether', w: 3, cd: 4.5, p: { color: '#ffc8a0', type: 'holy', time: 4, mul: 0.18 } },
           { id: 'cleave', w: 3, cd: 3, p: { swings: 2, r: 52, arc: 1.05, wind: 0.6, gap: 0.14, lunge: 22, mul: 1.3 } },
-          // roots of the old hall crawling after the hero
-          { id: 'spell:fissure', w: 2, cd: 6, p: { color: '#c8e070', type: 'nature', count: 7, step: 0.2, stride: 22, rr: 15, mul: 0.85 } },
-          // a step of light to her sister’s side
-          { id: 'spell:blink', w: 2, cd: 8, p: { color: '#ffc8a0', rr: 30 } },
-          // dawn-light falling through the broken roof
-          { id: 'spell:rain', w: 1, cd: 10, p: { color: '#ffc8a0', type: 'holy', count: 10, onHero: 3, time: 2, rr: 18, mul: 0.9 } },
         ],
       },
     ],

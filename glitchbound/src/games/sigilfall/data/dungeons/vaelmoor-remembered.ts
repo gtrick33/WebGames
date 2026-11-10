@@ -101,14 +101,10 @@ const THE_ASH_CROWN: BossDef = {
       speed: 36,
       rest: [0.7, 1.1],
       patterns: [
-        // crowns of ash-gold wheeling round it, flung away
-        { id: 'spell:orbit', w: 3, cd: 4.5, p: { look: 'ball', color: '#e8c070', type: 'arcane', count: 7, time: 2.8, grow: 34, mul: 0.9 } },
-        // four arms of ash turning about it
-        { id: 'spell:vortex', w: 2, cd: 9, p: { color: '#b9b4bf', type: 'shadow', arms: 4, time: 3, spin: 0.9 } },
+        // the summer goes out but for one drifting circle of light: outside it, the ash burns
+        { id: 'spell:eclipse', w: 3, cd: 4.5, p: { color: '#fff2c0', type: 'holy', time: 6, rr: 48, mul: 0.3 } },
         // the memory of the plague crawling after the hero
         { id: 'spell:fissure', w: 2, cd: 6, p: { color: '#b9b4bf', type: 'shadow', count: 8, step: 0.18, stride: 22, rr: 16, mul: 0.9 } },
-        // it unremembers where it stood, and stands behind you
-        { id: 'spell:blink', w: 1, cd: 9, p: { color: '#ffe8c0', behind: 1, rr: 34 } },
       ],
     },
     {
@@ -119,14 +115,8 @@ const THE_ASH_CROWN: BossDef = {
       enter: [{ id: 'roar', w: 1, cd: 0 }],
       patterns: [
         { id: 'summon', w: 1, cd: 18, p: { enemies: ['wailing-soul', 'wailing-soul', 'kneeling-dead'] } },
-        // a wall of ash rolling across the garden
-        { id: 'spell:wall', w: 3, cd: 7, p: { look: 'shadow', color: '#b9b4bf', type: 'shadow', speed: 72, gaps: 2, mul: 0.9 } },
-        // lines of summer light crossing on the hero
-        { id: 'spell:crossfire', w: 2, cd: 10, p: { color: '#ffe8c0', type: 'holy', lines: 4, twice: 1, width: 14, mul: 1 } },
-        // crowns of ash-gold wheeling round it, flung away
-        { id: 'spell:orbit', w: 2, cd: 5, p: { look: 'ball', color: '#e8c070', type: 'arcane', count: 7, time: 2.8, grow: 34, mul: 0.9 } },
-        // it unremembers where it stood, and stands behind you
-        { id: 'spell:blink', w: 1, cd: 8, p: { color: '#ffe8c0', behind: 1, rr: 34 } },
+        // the summer goes out but for one drifting circle of light: outside it, the ash burns
+        { id: 'spell:eclipse', w: 2, cd: 5, p: { color: '#fff2c0', type: 'holy', time: 6, rr: 48, mul: 0.3 } },
       ],
     },
     {
@@ -134,16 +124,12 @@ const THE_ASH_CROWN: BossDef = {
       banner: 'Only ash is left, and it will not go quietly',
       speed: 46,
       rest: [0.45, 0.8],
-      enter: [{ id: 'spell:meteors', w: 1, cd: 0, p: { color: '#ffb070', type: 'fire', count: 8, gap: 0.16, rr: 20, mul: 1 } }],
+      enter: [],
       patterns: [
         // rings of ash bursting out from it, every other one
         { id: 'spell:pulse', w: 2, cd: 8, p: { color: '#b9b4bf', type: 'shadow', rings: 5, band: 32, mul: 1 } },
-        // crowns of ash-gold wheeling round it, flung away
-        { id: 'spell:orbit', w: 3, cd: 4, p: { look: 'ball', color: '#e8c070', type: 'arcane', count: 7, time: 2.8, grow: 34, mul: 0.9 } },
-        // four arms of ash turning about it
-        { id: 'spell:vortex', w: 2, cd: 8, p: { color: '#b9b4bf', type: 'shadow', arms: 4, time: 3, spin: 0.9 } },
-        // a wall of ash rolling across the garden
-        { id: 'spell:wall', w: 2, cd: 8, p: { look: 'shadow', color: '#b9b4bf', type: 'shadow', speed: 72, gaps: 2, mul: 0.9 } },
+        // the summer goes out but for one drifting circle of light: outside it, the ash burns
+        { id: 'spell:eclipse', w: 3, cd: 4, p: { color: '#fff2c0', type: 'holy', time: 6, rr: 48, mul: 0.3 } },
       ],
     },
   ],

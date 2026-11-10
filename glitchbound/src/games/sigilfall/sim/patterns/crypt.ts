@@ -252,7 +252,7 @@ const candles: PatternFn = (w, e, _dt, k) => {
   } else if (pt.step === 2 && pt.t >= pt.data.t1! + 0.3) k.end();
 };
 
-/** While any candle burns: a ward on Ossric (8% of his health a candle, growing back 2% a candle a second). */
+/** While any candle burns: a ward on Ossric (6% of his health a candle, growing back 1% a candle a second). */
 function tickCandles(w: World, e: Enemy, s: Crypt, dt: number): void {
   if (!s.candles.length) return;
   let burning = 0;
@@ -281,7 +281,7 @@ function tickCandles(w: World, e: Enemy, s: Crypt, dt: number): void {
   s.wardT -= dt;
   if (s.wardT <= 0) {
     s.wardT = 0.5;
-    e.shield = Math.min(e.maxHp * 0.08 * burning, e.shield + e.maxHp * 0.02 * burning * 0.5);
+    e.shield = Math.min(e.maxHp * 0.06 * burning, e.shield + e.maxHp * 0.01 * burning * 0.5);
   }
   // each one burns: a flicker of gold over its wicks, so it reads as something to put out
   s.glowT -= dt;

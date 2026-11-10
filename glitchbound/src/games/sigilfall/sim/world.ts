@@ -237,6 +237,10 @@ export class World {
    * Adrift, the hero is slow to start and slow to stop (a dodge still pushes off the air at once).
    */
   unmoored = 0;
+  /** Seconds left of grief turning the hero around (Lady Cendre's keening): their movement goes the other way. */
+  inverted = 0;
+  /** Seconds the hero has pushed to move and been held fast on every side (see updatePlayer). */
+  private snagT = 0;
   /** Things a boss fight floats in the air (Ilvane's stones): drawn as props off the ground. */
   floaters: { m: string; x: number; y: number; lift: number; h: number; rot: number; tint?: readonly [number, number, number] }[] = [];
   events: WorldEvent[] = [];
@@ -871,6 +875,19 @@ export class World {
     this.addEnemy(id, free.x, free.y, this.level, { room, pack: -1, spawn: true });
   }
 
+  /** The nearest spot (within a tile or so) where a circle of radius r stands clear of everything, with room to spare. */
+  private openNear(x: number, y: number, r: number): { x: number; y: number } | null {
+    for (let d = 2; d <= 26; d += 2) {
+      for (let i = 0; i < 16; i++) {
+        const a = (Math.PI * 2 * i) / 16;
+        const nx = x + Math.cos(a) * d;
+        const ny = y + Math.sin(a) * d;
+        if (!circleHitsWall(this.map, nx, ny, r + 2)) return { x: nx, y: ny };
+      }
+    }
+    return null;
+  }
+
   /** Where someone can stand at a spot: there, or just beside whatever stands on it. */
   private besideThings(pos: { x: number; y: number }): { x: number; y: number } {
     return pushOut(this.map, pos.x, pos.y, 6) ?? pos;
@@ -1235,7 +1252,10 @@ export class World {
   private updatePlayer(dt: number): void {
     const p = this.player;
     // nobody acts while a scene plays
-    const inp = this.scene ? emptyInput() : this.input;
+    const raw = this.scene ? emptyInput() : this.input;
+    // (grief turns the hero around: left is right, up is down)
+    this.inverted = Math.max(0, this.inverted - dt);
+    const inp = this.inverted > 0 ? { ...raw, mx: -raw.mx, my: -raw.my } : raw;
     // the ultimate's charge budget refills at one full bar per ultFloor seconds, and banks at most ULT_BANK of
     // a bar: after a lull, a stream of fast hits fills that much at once and earns the rest at the usual pace
     const ultRate = 100 / ultFloor(this.hero.level);
@@ -1379,6 +1399,19 @@ export class World {
         }
       }
       const res = moveCircle(this.map, p.x, p.y, p.r, p.vx * dt, p.vy * dt);
+      // snagged: pressing to move but held fast on every side (wedged between the bodies of a crate and a cask):
+      // eased out onto the nearest open ground
+      if (moving && !stunned && res.bx && res.by) {
+        this.snagT += dt;
+        if (this.snagT > 0.4) {
+          this.snagT = 0;
+          const free = this.openNear(p.x, p.y, p.r);
+          if (free) {
+            res.x = free.x;
+            res.y = free.y;
+          }
+        }
+      } else this.snagT = 0;
       if (res.bx) p.vx = 0;
       if (res.by) p.vy = 0;
       p.x = res.x;

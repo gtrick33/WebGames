@@ -379,8 +379,8 @@ const bosses: Record<string, BossDef> = {
           { id: 'summon', w: 1, cd: 0, p: { enemies: ['carrion-ghoul', 'carrion-ghoul'] } },
         ],
         patterns: [
-          // skulls of censer-smoke swung out on the chain, and back
-          { id: 'spell:boomerang', w: 3, cd: 5, p: { look: 'skull', color: '#9cff9c', type: 'shadow', count: 3, spread: 0.7, speed: 140, out: 0.7, mul: 0.8 } },
+          // his censer drinks the hero’s life while they stay in its reach
+          { id: 'spell:drain', w: 3, cd: 5, p: { color: '#9cff9c', type: 'shadow', time: 3, reach: 150, mul: 0.3, heal: 0.004 } },
           // grave-candles set round the hero: they flare when you come near
           { id: 'spell:mines', w: 2, cd: 6, p: { color: '#9cff9c', type: 'shadow', count: 4, spread: 70, fuse: 3.5, blast: 32, mul: 1 } },
           // the censer swung on its chain
@@ -400,13 +400,11 @@ const bosses: Record<string, BossDef> = {
           { id: 'siege:dirge', w: 1, cd: 12, p: { time: 4.5, will: 0.07, heal: 0.035 } },
         ],
         patterns: [
-          // skulls of censer-smoke swung out on the chain, and back
-          { id: 'spell:boomerang', w: 3, cd: 4.5, p: { look: 'skull', color: '#9cff9c', type: 'shadow', count: 5, spread: 1, speed: 145, out: 0.7, mul: 0.8 } },
+          // his censer drinks the hero’s life while they stay in its reach
+          { id: 'spell:drain', w: 3, cd: 4.5, p: { color: '#9cff9c', type: 'shadow', time: 3, reach: 150, mul: 0.3, heal: 0.004 } },
           // grave-candles set round the hero: they flare when you come near
           { id: 'spell:mines', w: 2, cd: 5, p: { color: '#9cff9c', type: 'shadow', count: 6, spread: 75, fuse: 3.2, blast: 32, mul: 1 } },
           { id: 'cleave', w: 2, cd: 3.5, p: { swings: 2, r: 50, arc: 1, wind: 0.65, gap: 0.15, lunge: 18, mul: 1.3 } },
-          // a step through the smoke of his censer
-          { id: 'spell:blink', w: 1, cd: 9, p: { color: '#9cff9c', rr: 30 } },
           { id: 'summon', w: 2, cd: 10, p: { enemies: ['carrion-ghoul', 'plague-ghoul'] } },
           { id: 'siege:dirge', w: 3, cd: 12, p: { time: 4.5, will: 0.07, heal: 0.035 } },
         ],
