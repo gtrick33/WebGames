@@ -1,6 +1,6 @@
 /**
  * Hue Knew? in a live room: the cue giver picks the secret color on their own phone and types a
- * one-word clue; everyone else taps their guess on their own color board. Guesses stay hidden until
+ * one-word clue (or, with Real life on, says it out loud and taps a button); everyone else taps their guess on their own color board. Guesses stay hidden until
  * everyone has placed one, then show together. With the second clue on, the cue giver then adds up
  * to two more words and everyone guesses again. Scored by how alike the colors look (../hues.ts):
  * guessers by closeness, the cue giver one point per close guess.
@@ -34,6 +34,8 @@ export interface Settings {
   second: boolean;
   laps: (typeof LAPS)[number];
   clock: (typeof CLOCKS)[number];
+  /** Real life: everyone is in the same room, so the cue giver says the clues out loud instead of typing them. */
+  real: boolean;
 }
 
 export interface Round {
@@ -41,9 +43,11 @@ export interface Round {
   /** The four colors the cue giver chooses from. */
   offer: number[];
   target: number | null;
-  /** Empty when the cue giver ran out of time. */
+  /** Empty when the cue giver ran out of time (or said it out loud). */
   clue: string;
   clue2: string;
+  /** Real life: the cue giver said the first clue out loud. */
+  said?: boolean;
   pass: 1 | 2;
   /** Seat → board cell, for the first and the second clue. */
   marks: Record<string, number>;
@@ -80,7 +84,7 @@ export function newRoom(code: string, now: number, seed: number): State {
     host: 0,
     deadline: null,
     seed,
-    settings: { second: true, laps: 1, clock: 60 },
+    settings: { second: true, laps: 1, clock: 60, real: false },
     playing: [],
     next: 0,
     count: 0,
@@ -156,7 +160,7 @@ function endGuess(s: State, now: number): void {
 function reveal(s: State, now: number): void {
   const r = s.round!;
   const g: Record<string, number> = {};
-  if (r.target !== null && r.clue) {
+  if (r.target !== null && (r.clue || r.said)) {
     let cuePoints = 0;
     for (const marks of [r.marks, r.marks2])
       for (const [n, cell] of Object.entries(marks)) {
@@ -231,6 +235,7 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       if (inGame(s)) return 'Change settings between games.';
       const p = a.settings ?? {};
       if (typeof p.second === 'boolean') s.settings.second = p.second;
+      if (typeof p.real === 'boolean') s.settings.real = p.real;
       s.settings.laps = choose(LAPS, p.laps) ?? s.settings.laps;
       s.settings.clock = choose(CLOCKS, p.clock) ?? s.settings.clock;
       return null;
@@ -258,13 +263,18 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       if (!isCue) return null;
       if (s.phase === 'pick') {
         if (r!.target === null) return 'Pick your color first.';
-        const clue = cleanClue(String(a.text ?? ''));
-        if (!clue) return 'Type a one-word clue.';
-        r!.clue = clue;
+        if (s.settings.real) r!.said = true;
+        else {
+          const clue = cleanClue(String(a.text ?? ''));
+          if (!clue) return 'Type a one-word clue.';
+          r!.clue = clue;
+        }
       } else if (s.phase === 'clue2') {
-        const clue = cleanClue2(String(a.text ?? ''));
-        if (!clue) return 'Type your second clue.';
-        r!.clue2 = clue;
+        if (!s.settings.real) {
+          const clue = cleanClue2(String(a.text ?? ''));
+          if (!clue) return 'Type your second clue.';
+          r!.clue2 = clue;
+        }
         r!.pass = 2;
       } else return null;
       s.phase = 'guess';
@@ -327,6 +337,8 @@ export interface RoomView {
     target: number | null;
     clue: string;
     clue2: string;
+    /** Real life: the cue giver said the clue out loud. */
+    said: boolean;
     pass: 1 | 2;
     guessers: number[];
     /** Your own guess for the clue being guessed. */
@@ -366,6 +378,7 @@ export function viewFor(s: State, key: string): RoomView | null {
             target: shown || me.n === r.cue ? r.target : null,
             clue: r.clue,
             clue2: r.clue2,
+            said: !!r.said,
             pass: r.pass,
             guessers: guessers(s),
             myMark: s.phase === 'guess' ? (current(r)[me.n] ?? null) : null,

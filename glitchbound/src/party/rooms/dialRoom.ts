@@ -1,6 +1,6 @@
 /**
  * Dial It In in a live room: only the reader's phone shows the secret spot on the tuner. They type
- * one clue, and everyone guessing drags the same needle on their own phone (whoever moved it last
+ * one clue (or, with Real life on, says it out loud and taps a button), and everyone guessing drags the same needle on their own phone (whoever moved it last
  * decides) until their captain locks it in or the clock runs out. With two teams the other side's
  * captain then calls left or right for a steal point. Scoring as in the one-phone game (../dial.ts).
  *
@@ -36,14 +36,18 @@ export interface Settings {
   teams: boolean;
   laps: (typeof LAPS)[number];
   clock: (typeof CLOCKS)[number];
+  /** Real life: everyone is in the same room, so the reader says the clue out loud instead of typing it. */
+  real: boolean;
 }
 
 export interface Round {
   reader: number;
   scale: [string, string];
   target: number;
-  /** Empty when the reader ran out of time. */
+  /** Empty when the reader ran out of time (or said it out loud). */
   clue: string;
+  /** Real life: the reader said the clue out loud. */
+  said?: boolean;
   needle: number;
   movedBy: number | null;
   call: Side | null;
@@ -85,7 +89,7 @@ export function newRoom(code: string, now: number, seed: number): State {
     host: 0,
     deadline: null,
     seed,
-    settings: { teams: true, laps: 1, clock: 90 },
+    settings: { teams: true, laps: 1, clock: 90, real: false },
     playing: [],
     sides: [[], []],
     next: 0,
@@ -99,6 +103,8 @@ export function newRoom(code: string, now: number, seed: number): State {
   };
 }
 
+/** The reader gave a clue: typed, or said out loud. */
+const given = (r: Round): boolean => !!r.clue || !!r.said;
 const inGame = (s: State): boolean => s.phase === 'clue' || s.phase === 'guess' || s.phase === 'steal' || s.phase === 'reveal';
 const isHere = (s: State, n: number): boolean => s.seats.some((x) => x.n === n && x.online);
 export const teamsOn = (s: Pick<State, 'sides'>): boolean => s.sides[0].length > 0;
@@ -158,7 +164,7 @@ function deal(s: State, now: number): void {
 
 /** The needle is in: the other team gets to steal, or straight to the reveal. */
 function lockIn(s: State, now: number): void {
-  if (teamsOn(s) && s.round?.clue && rivals(s).some((n) => isHere(s, n))) {
+  if (teamsOn(s) && s.round && given(s.round) && rivals(s).some((n) => isHere(s, n))) {
     s.phase = 'steal';
     s.deadline = now + STEAL_SECONDS * 1000;
   } else reveal(s, now);
@@ -167,7 +173,7 @@ function lockIn(s: State, now: number): void {
 /** `guessed` false: nobody was left to turn the needle, so the round scores nothing. */
 function reveal(s: State, now: number, guessed = true): void {
   const round = s.round!;
-  const pts = round.clue && guessed ? dialPoints(round.target, round.needle) : 0;
+  const pts = given(round) && guessed ? dialPoints(round.target, round.needle) : 0;
   round.points = pts;
   round.steal = !!round.call && stealRight(round.target, round.needle, round.call);
   s.points[round.reader] = (s.points[round.reader] ?? 0) + pts;
@@ -257,6 +263,7 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       if (inGame(s)) return 'Change settings between games.';
       const p = a.settings ?? {};
       if (typeof p.teams === 'boolean') s.settings.teams = p.teams;
+      if (typeof p.real === 'boolean') s.settings.real = p.real;
       s.settings.laps = pick(LAPS, p.laps) ?? s.settings.laps;
       s.settings.clock = pick(CLOCKS, p.clock) ?? s.settings.clock;
       return null;
@@ -280,9 +287,12 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
     }
     case 'clue': {
       if (s.phase !== 'clue' || !round || me.n !== round.reader) return null;
-      const clue = cleanDialClue(a.text);
-      if (!clue) return 'Type a clue.';
-      round.clue = clue;
+      if (s.settings.real) round.said = true;
+      else {
+        const clue = cleanDialClue(a.text);
+        if (!clue) return 'Type a clue.';
+        round.clue = clue;
+      }
       s.phase = 'guess';
       s.deadline = now + s.settings.clock * 1000;
       advance(s, now);
@@ -350,6 +360,8 @@ export interface RoomView {
     reader: number;
     scale: [string, string];
     clue: string;
+    /** Real life: the reader said the clue out loud. */
+    said: boolean;
     needle: number;
     movedBy: number | null;
     /** The secret spot: only on the reader's phone until the reveal. */
@@ -391,6 +403,7 @@ export function viewFor(s: State, key: string): RoomView | null {
             reader: round.reader,
             scale: round.scale,
             clue: round.clue,
+            said: !!round.said,
             needle: round.needle,
             movedBy: round.movedBy,
             target: shown || me.n === round.reader ? round.target : null,

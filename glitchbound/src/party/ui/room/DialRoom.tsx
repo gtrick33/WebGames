@@ -3,7 +3,7 @@ import { tNodes } from '../shared';
 import { dialVerdict, splitTeams } from '../../dial';
 import { CLOCKS, CLUE_MAX, LAPS, MIN_PLAYERS, TEAM_MIN, type Action, type RoomView } from '../../rooms/dialRoom';
 import { Tuner } from '../Dial';
-import { Clock, Dot, RoomFrame, Scores, type RoomContext } from './RoomFrame';
+import { Clock, Dot, RealLifeSwitch, RoomFrame, Scores, type RoomContext } from './RoomFrame';
 import { t } from '../../../i18n';
 
 type Ctx = RoomContext<RoomView, Action>;
@@ -56,6 +56,7 @@ function Settings({ view, send }: Ctx) {
           ))}
         </div>
       )}
+      <RealLifeSwitch on={!!s.real} set={(real) => set({ real })} />
       <div className="pt-picker" role="group" aria-label={t('Rounds')}>
         {LAPS.map((k) => (
           <button key={k} className={`pt-chip${s.laps === k ? ' is-on' : ''}`} aria-pressed={s.laps === k} onClick={() => set({ laps: k })}>
@@ -179,10 +180,12 @@ function Game({ view, send, left, me, byN }: Ctx) {
           {readerTeam !== null && ` · ${t(TEAM[readerTeam])}`}
         </p>
       )}
-      {round.clue && (
+      {round.clue ? (
         <p className="pt-room-clue" aria-label={t('The clue')}>
           “{round.clue}”
         </p>
+      ) : (
+        round.said && <p className="pt-room-clue">{t('🗣️ Clue said out loud')}</p>
       )}
       <Tuner
         scale={round.scale}
@@ -195,7 +198,16 @@ function Game({ view, send, left, me, byN }: Ctx) {
       />
 
       {view.phase === 'clue' &&
-        (isReader ? (
+        (isReader && view.settings.real ? (
+          <section className="pt-actions">
+            <p className="pt-muted">
+              {tNodes('Only you can see the spot. Think of {clue} for it between {a} and {b}: a thing, a person, a saying. Say it out loud, no numbers!', {}, { clue: <b>{t('one clue')}</b>, a: <b>{round.scale[0]}</b>, b: <b>{round.scale[1]}</b> })}
+            </p>
+            <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'clue', text: '' })}>
+              {t('I’ve said my clue')}
+            </button>
+          </section>
+        ) : isReader ? (
           <section className="pt-actions">
             <p className="pt-muted">
               {tNodes('Only you can see the spot. Type {clue} for it between {a} and {b}: a thing, a person, a saying. No numbers!', {}, { clue: <b>{t('one clue')}</b>, a: <b>{round.scale[0]}</b>, b: <b>{round.scale[1]}</b> })}
@@ -273,7 +285,7 @@ function Game({ view, send, left, me, byN }: Ctx) {
       {view.phase === 'reveal' && (
         <section className="pt-actions">
           <p className="pt-dl-verdict">
-            {round.clue ? (
+            {round.clue || round.said ? (
               <>
                 {dialVerdict(round.points ?? 0)} <b>+{round.points ?? 0}</b>
               </>

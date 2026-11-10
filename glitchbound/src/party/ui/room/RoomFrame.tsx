@@ -73,6 +73,21 @@ export function Waiting({ players, label }: { players: SeatView[]; label: string
   );
 }
 
+/**
+ * The host's “Real life” switch, in every live party game where players type clues for the others:
+ * when everyone is in the same room, the clue giver says the clue out loud and taps a button instead.
+ */
+export function RealLifeSwitch({ on, set }: { on: boolean; set: (on: boolean) => void }) {
+  return (
+    <label className="pt-switch">
+      <input type="checkbox" checked={on} onChange={(e) => set(e.target.checked)} />
+      <span>
+        <b>{t('Real life')}</b>{' '}{t('· all in the same room? Skip typing clues: say them out loud instead, then tap a button to carry on')}
+      </span>
+    </label>
+  );
+}
+
 /** Room scores, best first, with what each player just gained. */
 export function Scores({ players, gained }: { players: SeatView[]; gained?: Record<string, number> }) {
   return (

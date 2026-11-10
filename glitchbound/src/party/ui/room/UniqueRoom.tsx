@@ -3,7 +3,7 @@ import { tNodes } from '../shared';
 import { CLOCKS, MIN_PLAYERS, type Action, type Clue, type RoomView } from '../../rooms/uniqueRoom';
 import { rating } from '../../unique';
 import { OUT_TEXT } from '../Unique';
-import { Clock, Dot, RoomFrame, Scores, Waiting, type RoomContext } from './RoomFrame';
+import { Clock, Dot, RealLifeSwitch, RoomFrame, Scores, Waiting, type RoomContext } from './RoomFrame';
 import { t } from '../../../i18n';
 
 type Ctx = RoomContext<RoomView, Action>;
@@ -35,6 +35,7 @@ function Settings({ view, send }: Ctx) {
           { word: <b>{t('one word')}</b>, cancel: <b>{t('Matching clues cancel out')}</b> },
         )}
       </p>
+      <RealLifeSwitch on={!!view.settings.real} set={(real) => send({ t: 'settings', settings: { real } })} />
       <p className="pt-label">{t('Time to write a clue')}</p>
       <div className="pt-seg" role="radiogroup">
         {CLOCKS.map((c) => (
@@ -114,7 +115,7 @@ function Game(ctx: Ctx) {
         {iGuess ? (
           <section className="pt-panel pt-center">
             <h2>{t('Your friends are writing clues')}</h2>
-            <p className="pt-muted">{t('Matching clues cancel out, so you only see the ones nobody else thought of.')}</p>
+            <p className="pt-muted">{view.settings.real ? t('Listen: your friends will say their clues out loud.') : t('Matching clues cancel out, so you only see the ones nobody else thought of.')}</p>
           </section>
         ) : (
           <WriteClue key={`${view.card}:${view.word}`} {...ctx} />
@@ -140,8 +141,14 @@ function Game(ctx: Ctx) {
           <section className="pt-panel">
             <p className="pt-kicker">{t('The word is')}</p>
             <p className="pt-ok-word">{view.word}</p>
-            {view.clues && <ClueList clues={view.clues} byN={byN} />}
-            <p className="pt-muted">{view.clues?.every((c) => c.out) ? t('Every clue cancelled out! {name} gets nothing to go on.', { name: guesser?.name ?? t('The guesser') }) : t('Crossed-out clues are hidden from {name}. No hints out loud!', { name: guesser?.name ?? t('the guesser') })}</p>
+            {view.settings.real ? (
+              <p className="pt-muted">{t('No hints beyond the clues! {name} is guessing.', { name: guesser?.name ?? t('The guesser') })}</p>
+            ) : (
+              <>
+                {view.clues && <ClueList clues={view.clues} byN={byN} />}
+                <p className="pt-muted">{view.clues?.every((c) => c.out) ? t('Every clue cancelled out! {name} gets nothing to go on.', { name: guesser?.name ?? t('The guesser') }) : t('Crossed-out clues are hidden from {name}. No hints out loud!', { name: guesser?.name ?? t('the guesser') })}</p>
+              </>
+            )}
             {view.host && guesser && !guesser.online && (
               <button className="pt-btn pt-btn-sm pt-btn-ghost" onClick={() => send({ t: 'next' })}>
                 {t('{name} has gone: skip this card', { name: guesser.name })}
@@ -197,6 +204,26 @@ function WriteClue({ view, send, byN }: Ctx) {
     send({ t: 'clue', text: draft });
     setDraft('');
   };
+  if (view.settings.real)
+    return (
+      <section className="pt-panel">
+        <p className="pt-kicker">{t('The word for {name} is', { name: guesser?.name ?? t('the guesser') })}</p>
+        <p className="pt-ok-word">{view.word}</p>
+        <p className="pt-muted">{t('Compare your clues quietly first (whisper, or jot them down): matching clues are out. Then say the ones left out loud.')}</p>
+        {view.myClue !== null ? (
+          <p className="pt-ok-verdict">{t('Ready ✓ Waiting for the others…')}</p>
+        ) : (
+          <button className="pt-btn pt-btn-go pt-btn-big" onClick={() => send({ t: 'clue', text: '' })}>
+            {t('I’ve said my clue')}
+          </button>
+        )}
+        {view.canSwap && (
+          <button className="pt-btn pt-btn-ghost" onClick={() => send({ t: 'swap' })}>
+            {t('Don’t know this word? Another one')}
+          </button>
+        )}
+      </section>
+    );
   return (
     <section className="pt-panel">
       <p className="pt-kicker">{t('The word for {name} is', { name: guesser?.name ?? t('the guesser') })}</p>
@@ -245,22 +272,28 @@ function MakeGuess({ view, send }: Ctx) {
   };
   return (
     <section className="pt-panel">
-      <p className="pt-kicker">{t('Your clues:')}</p>
-      {shown.length ? (
-        <ul className="pt-ok-shown">
-          {shown.map((c) => (
-            <li key={c.n}>{c.clue}</li>
-          ))}
-        </ul>
+      {view.settings.real ? (
+        <p className="pt-kicker">{t('Listen to the clues, then type your guess.')}</p>
       ) : (
-        <p className="pt-muted">{t('No clues survived. Take a wild guess, or pass.')}</p>
-      )}
-      {(twins > 0 || other > 0) && (
-        <p className="pt-muted">
-          {twins > 0 && (twins === 1 ? t('1 matching clue cancelled out.') : t('{n} matching clues cancelled out.', { n: twins }))}
-          {twins > 0 && other > 0 && ' '}
-          {other > 0 && (other === 1 ? t('1 was removed (empty, or too close to the word).') : t('{n} were removed (empty, or too close to the word).', { n: other }))}
-        </p>
+        <>
+          <p className="pt-kicker">{t('Your clues:')}</p>
+          {shown.length ? (
+            <ul className="pt-ok-shown">
+              {shown.map((c) => (
+                <li key={c.n}>{c.clue}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="pt-muted">{t('No clues survived. Take a wild guess, or pass.')}</p>
+          )}
+          {(twins > 0 || other > 0) && (
+            <p className="pt-muted">
+              {twins > 0 && (twins === 1 ? t('1 matching clue cancelled out.') : t('{n} matching clues cancelled out.', { n: twins }))}
+              {twins > 0 && other > 0 && ' '}
+              {other > 0 && (other === 1 ? t('1 was removed (empty, or too close to the word).') : t('{n} were removed (empty, or too close to the word).', { n: other }))}
+            </p>
+          )}
+        </>
       )}
       <input
         className="pt-input"

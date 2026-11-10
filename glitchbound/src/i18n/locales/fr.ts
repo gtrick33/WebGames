@@ -2254,6 +2254,19 @@ const fr: string[] = [
   'Sans icône',
   'Nouvelle classe',
   'Pack Gloamknight',
+  // Real life switch (live party rooms)
+  'Vraie vie',
+  '· tous dans la même pièce ? Pas d’indices à taper : dites-les à voix haute, puis touchez un bouton pour continuer',
+  '🗣️ Indice dit à voix haute',
+  'J’ai dit mon indice',
+  'Toi seul vois l’endroit. Trouve {clue} pour lui entre {a} et {b} : une chose, une personne, une expression. Dis-le à voix haute, pas de chiffres !',
+  'Un mot, pas de nom de couleur. Dis-le à voix haute, puis touche en bas.',
+  'Jusqu’à deux mots. Dis-les à voix haute, puis touche en bas.',
+  'Comparez d’abord vos indices en silence (chuchotez ou notez-les) : ceux qui sont identiques sont éliminés. Puis dites ceux qui restent à voix haute.',
+  'Prêt ✓ On attend les autres…',
+  'Écoute : tes amis vont dire leurs indices à voix haute.',
+  'Écoute les indices, puis tape ta réponse.',
+  'Aucune aide en dehors des indices ! {name} devine.',
 ];
 
 export default fr;

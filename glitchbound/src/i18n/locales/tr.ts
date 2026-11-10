@@ -2254,6 +2254,19 @@ const tr: string[] = [
   'Simge yok',
   'Yeni sınıf',
   'Gloamknight Paketi',
+  // Real life switch (live party rooms)
+  'Gerçek hayat',
+  '· hepiniz aynı odada mısınız? İpucu yazmak yok: sesli söyleyin, sonra devam etmek için bir düğmeye dokunun',
+  '🗣️ İpucu sesli söylendi',
+  'İpucumu söyledim',
+  'Noktayı sadece sen görüyorsun. {a} ile {b} arasında onun için {clue} düşün: bir şey, bir kişi, bir söz. Sesli söyle, sayı yok!',
+  'Tek kelime, renk adı yok. Sesli söyle, sonra aşağıya dokun.',
+  'En fazla iki kelime. Sesli söyle, sonra aşağıya dokun.',
+  'Önce ipuçlarınızı sessizce karşılaştırın (fısıldayın ya da not alın): aynı olanlar elenir. Sonra kalanları sesli söyleyin.',
+  'Hazır ✓ Diğerleri bekleniyor…',
+  'Dinle: arkadaşların ipuçlarını sesli söyleyecek.',
+  'İpuçlarını dinle, sonra tahminini yaz.',
+  'İpuçları dışında yardım yok! {name} tahmin ediyor.',
 ];
 
 export default tr;

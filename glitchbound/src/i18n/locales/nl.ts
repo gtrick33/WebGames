@@ -2254,6 +2254,19 @@ const nl: string[] = [
   'Geen icoon',
   'Nieuwe klasse',
   'Gloamknight-pakket',
+  // Real life switch (live party rooms)
+  'Echt leven',
+  '· allemaal in dezelfde ruimte? Geen hints typen: zeg ze hardop en tik dan op een knop om verder te gaan',
+  '🗣️ Hint hardop gezegd',
+  'Ik heb mijn hint gezegd',
+  'Alleen jij ziet de plek. Bedenk {clue} ervoor tussen {a} en {b}: een ding, een persoon, een gezegde. Zeg het hardop, geen getallen!',
+  'Eén woord, geen kleurnamen. Zeg het hardop en tik dan hieronder.',
+  'Hooguit twee woorden. Zeg ze hardop en tik dan hieronder.',
+  'Vergelijk eerst stil jullie hints (fluister of schrijf ze op): dezelfde vallen af. Zeg daarna de rest hardop.',
+  'Klaar ✓ Wachten op de anderen…',
+  'Luister: je vrienden zeggen hun hints hardop.',
+  'Luister naar de hints en typ dan je gok.',
+  'Geen tips behalve de hints! {name} raadt.',
 ];
 
 export default nl;
