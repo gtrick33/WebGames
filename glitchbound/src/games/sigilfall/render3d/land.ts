@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { stoneGate, timberGate, type GateBuilt } from './gateways';
 import { hash2 } from '../core/math';
 import { modelOnLot, picBody } from '../data/buildingArt';
 import { ARENAS, type Floor } from '../data/dungeongen';
@@ -487,9 +488,30 @@ const groundFrag = /* glsl */ `
       c *= 0.86 + noise(p * 0.17 + 7.0) * 0.26;
       c *= 0.95 + noise(p * 6.0) * 0.1;
       c *= 1.0 + (ck - 0.5) * 0.01;
+      // open ground isn't one lawn: wide patches where it grows lush and dark, others worn dry and pale, and a scatter
+      // of small flowers and clover through it (soft-edged specks, a few to a tile, more where it's lush)
+      float lay = noise(p * 0.085 + 13.0) * 0.7 + noise(p * 0.23 + 4.0) * 0.3;
+      float lush = smoothstep(0.54, 0.74, lay);
+      float dry = smoothstep(0.44, 0.24, lay);
+      c = mix(c, c * vec3(0.84, 0.93, 0.8), lush * 0.75);
+      c = mix(c, c * vec3(1.1, 1.05, 0.84) + vec3(0.02, 0.015, 0.0), dry * 0.6);
+      vec2 sg = p * 3.2;
+      vec2 si = floor(sg);
+      float sh = hash(si + 21.0);
+      vec2 so = vec2(hash(si + 3.0), hash(si + 7.0)) * 0.6 + 0.2;
+      float speck = step(0.9 - lush * 0.07, sh) * smoothstep(0.2, 0.06, length(fract(sg) - so));
+      vec3 bloom = sh > 0.965 ? vec3(1.0, 0.95, 0.7) : sh > 0.93 ? vec3(0.95, 0.97, 1.0) : c * 1.22;
+      c = mix(c, bloom, speck * (sh > 0.93 ? 0.55 : 0.5));
     }
     float sand = smoothstep(0.46, 0.54, m.b + wob);
-    c = mix(c, mix(uSandA, uSandB, n), sand);
+    // (sand and bare earth in drifts, rippled a little by the wind, with pebbles in it: not one flat color)
+    vec3 sc = mix(uSandA, uSandB, n);
+    sc *= 0.9 + noise(p * 0.11 + 5.0) * 0.2;
+    sc *= 1.0 + sin(p.x * 1.1 + p.y * 2.3 + noise(p * 0.35 + 2.0) * 5.0) * 0.022;
+    vec2 pg = p * 4.0;
+    float ph = hash(floor(pg) + 31.0);
+    sc = mix(sc, sc * 0.72, step(0.95, ph) * smoothstep(0.22, 0.08, length(fract(pg) - 0.5)));
+    c = mix(c, sc, sand);
     float path = smoothstep(0.46, 0.54, m.r + wob);
     vec3 pc = mix(uPathA, uPathB, n * 0.7 + n2 * 0.3);
     float pathShade = smoothstep(0.54, 0.46, m.r + wob + 0.1);
@@ -542,7 +564,7 @@ const groundFrag = /* glsl */ `
       c = mix(c, c * 0.82, smoothstep(0.43, 0.5, ao) * 0.6);
       c = mix(c, c * 1.16 + 0.012, line * 0.4);
     }
-    c *= 1.0 - smoothstep(0.02, 0.75, ao) * (uIndoor > 0.5 ? 0.5 : 0.2);
+    c *= 1.0 - smoothstep(0.02, 0.75, ao) * (uIndoor > 0.5 ? 0.5 : 0.3);
     c = mix(c, uGrade.rgb, uGrade.a);
     if (uAmb.a > 0.0) {
       // a room under a roof: its own dimness, each fire's pool in the fire's color, and the light the hero carries
@@ -836,6 +858,21 @@ export class Mesher {
 function shade(c: readonly number[], k: number): number[] {
   return [Math.min(1, c[0]! * k), Math.min(1, c[1]! * k), Math.min(1, c[2]! * k)];
 }
+
+/** The stone a land builds its gates of (gateways.ts), where that isn't plain grey. */
+const GATE_STONE: Partial<Record<string, string>> = {
+  village: '#b0a698', farm: '#b4aa98', plains: '#bcae94', coast: '#b8b4a8', warfront: '#8a8078', snow: '#c4d0de', desert: '#d8b888', barrow: '#8c869c',
+  marsh: '#8a9078', moor: '#8e8898', deadlake: '#7c8a8c', pale: '#b8c4d8', gloam: '#7a6c8c', storm: '#8690a4',
+  rift: '#6e5e8e', haunted: '#6c7484', volcanic: '#5c4c4a', fey: '#8a7ca8', bonefield: '#b4ac98', blight: '#6c7658', autumn: '#a89a86', forest: '#9aa08e',
+};
+/** The color of the light of the land a way leads to. */
+const WAY_LIGHT: Partial<Record<string, string>> = {
+  village: '#ffd66a', forest: '#9cff7a', farm: '#ffe27a', coast: '#7ae8ff', autumn: '#ffa64a', marsh: '#b8e070', plague: '#c8f070', plains: '#ffe08a',
+  mountain: '#d8e4ff', barrow: '#c8b8ff', storm: '#8ab8ff', moor: '#d0a0ff', desert: '#ffc860', fey: '#ff9af0', snow: '#bfe8ff', rift: '#b88aff',
+  jungle: '#7affa0', warfront: '#ff8a5a', blight: '#c0ff6a', haunted: '#a0d8ff', volcanic: '#ff7a3a', deadlake: '#9ad0d0', peaks: '#e0ecff',
+  sunken: '#6ae0d8', bonefield: '#f0e6c8', gloam: '#d08aff',
+};
+export const wayLight = (to: string): string => WAY_LIGHT[REGIONS[to as keyof typeof REGIONS]?.theme ?? ''] ?? '#ffd66a';
 
 /** How a built place's walls are faced with the dungeon pack's pieces (Land3D.cladWalls). */
 interface Cladding {
@@ -1245,6 +1282,7 @@ export class Land3D {
     this.wallH = look.indoor ? DUNGEON_WALL : woody ? 1 : 1.6;
     this.clad = look.indoor && (region.kind === 'dungeon' || region.interior) ? (CLADDING[theme] ?? null) : null;
     this.placeAll(woody);
+    if (woody && !look.stone && !look.indoor) this.woodsBeyond();
     this.cladWalls();
     this.clearWays();
     this.passages(woody);
@@ -1355,39 +1393,56 @@ export class Land3D {
         if (look.cliffs) {
           // a cave mouth in the land's own rock
           const L = look.ground.leaf;
-          const b = caveMouth({ top: L[4], face: L[2], foot: L[1], lip: L[5], throat: '#0c0a0a', teeth: L[2], wide: span + 1.4, high: 2.2, seed: pm.tx * 7 + pm.ty }).m.build();
+          const b = caveMouth({ top: L[4], face: L[2], foot: L[1], lip: L[5], throat: '#0c0a0a', teeth: L[2], wide: span + 3.2, high: 3.4, seed: pm.tx * 7 + pm.ty }).m.build();
           b.position.set(mx + out[0] * 0.5, 0, mz + out[1] * 0.5);
           b.rotation.y = rot;
           this.group.add(b);
           this.built.push(b);
           continue;
         }
-        // an old stone arch over the road
-        const mesh = this.pack('arch');
-        if (!mesh) continue;
-        const xw = mesh.max[0] - mesh.min[0];
-        const k = Math.min((span + 1.8) / Math.max(0.01, xw), 4 / Math.max(0.01, mesh.max[1] - mesh.min[1]));
-        const tint = look.stone ? hexRgb(look.stone.top) : ([0.92, 0.9, 0.86] as const);
-        this.add({ m: 'arch', x: mx, z: mz, rot: across ? 0 : Math.PI / 2, sx: k, r: tint[0], g: tint[1], b: tint[2], shadow: 1.2, shadowD: 0.4 });
+        this.gateway(stoneGate({ span: span + 2, body: GATE_STONE[region.theme] ?? '#a69e94', trim: '#d8c8a0', light: wayLight(mk.to), seed: pm.tx * 7 + pm.ty }), mx, mz, rot, side, span);
         continue;
       }
-      // a tunnel of trees: tall ones either side of the road, taller ones behind them leaning over it, bushes at their feet
-      const half = span / 2;
-      for (const sd of [-1, 1]) {
-        for (const [off, back, k] of [
-          [half + 0.75, -1.2, 1.1],
-          [half + 1.9, -0.1, 1.28],
-          [half + 0.9, 1.0, 1.2],
-        ] as const) {
-          const kind = look.trees[Math.floor(hash2(pm.tx + sd, pm.ty + back, 91) * look.trees.length)] ?? 'oak';
-          const def = TREES[kind] ?? TREES.oak;
-          const m = def.m[Math.floor(hash2(pm.tx + sd * 3, pm.ty, 77) * def.m.length) % def.m.length]!;
-          const x = mx + side[0] * sd * off + out[0] * back;
-          const z = mz + side[1] * sd * off + out[1] * back;
-          this.add({ m, x, z, rot: hash2(pm.tx, sd + back, 71) * 6.28, sx: this.fitted(m, def.h * k, 2.6), sway: kind === 'dead' ? 0 : 0.7, shadow: 1.2 });
-          const bush = BUSHES[Math.floor(hash2(pm.tx + sd, pm.ty + back, 79) * BUSHES.length)]!;
-          this.add({ m: bush, x: x - side[0] * sd * 0.5, z: z - side[1] * sd * 0.5, rot: hash2(sd, back, 81) * 6.28, sx: this.fitted(bush, 0.55, 0.9) });
-        }
+      // a wood's gate: two great trunks and a third across them, a palisade going off into the trees
+      this.gateway(timberGate({ span: span + 2, body: `#${look.bark.replace('#', '')}`, trim: '#c8a878', light: wayLight(mk.to), seed: pm.tx * 7 + pm.ty }), mx, mz, rot, side, span);
+    }
+  }
+
+  /** Stands a great gate (gateways.ts) across a road out, clears the trees from where it and its walls stand, and lights it. */
+  private gateway(g: GateBuilt, mx: number, mz: number, rot: number, side: readonly [number, number], span: number): void {
+    const mesh = g.b.m.build();
+    mesh.position.set(mx, 0, mz);
+    mesh.rotation.y = rot;
+    this.group.add(mesh);
+    this.built.push(mesh);
+    const cos = Math.cos(rot);
+    const sin = Math.sin(rot);
+    const at = (x: number, z: number): [number, number] => [mx + x * cos + z * sin, mz - x * sin + z * cos];
+    for (const f of g.flames) {
+      const [x, z] = at(f.x, f.z);
+      this.flames.push({ x, z, y: f.y, size: f.size });
+    }
+    for (const o of g.glows) {
+      const [x, z] = at(o.x, o.z);
+      this.glows.push({ x, z, y: o.y, color: o.color, size: o.size });
+    }
+    // (no tree grows through its towers or its wall)
+    const reach = span / 2 + 12;
+    const ax = Math.abs(side[0]);
+    this.clearTrees(mx - (ax ? reach : 1.6), mx + (ax ? reach : 1.6), mz - (ax ? 1.6 : reach), mz + (ax ? 1.6 : reach), true);
+  }
+
+  /**
+   * A wood goes on past the edge of its map (the view shows a few tiles of what's beyond a way out, and bare moss there
+   * reads as a land left unfinished): the same trees, bushes and tufts, eight tiles out on every side.
+   */
+  private woodsBeyond(): void {
+    const { w: W, h: H } = this.map;
+    const out = 8;
+    for (let ty = -out; ty < H + out; ty++) {
+      for (let tx = -out; tx < W + out; tx++) {
+        if (tx >= 0 && ty >= 0 && tx < W && ty < H) continue;
+        this.woodland(tx, ty, false, 0);
       }
     }
   }

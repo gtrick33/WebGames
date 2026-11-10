@@ -1007,6 +1007,57 @@ export class Renderer {
       const span = Math.max(ax1 - ax0, ay1 - ay0);
       const breathe = 0.5 + Math.sin(time * 1.6 + cx * 0.03) * 0.5;
 
+      // the next land's light pouring out of its gate along the ground, in long rays fanned into this land and slowly
+      // sweeping, as the lights over a stage do: from this high the eye is on the ground, so that is where the show is
+      {
+        const mw = w.map.w * TILE;
+        const mh = w.map.h * TILE;
+        const dl = cx;
+        const dr = mw - cx;
+        const dt = cy;
+        const db = mh - cy;
+        const least = Math.min(dl, dr, dt, db);
+        // (into the land: away from the edge the way out is at)
+        const into = least === dt ? Math.PI / 2 : least === db ? -Math.PI / 2 : least === dl ? 0 : Math.PI;
+        this.flat(cx, cy);
+        g.save();
+        g.globalCompositeOperation = 'lighter';
+        // (only a gate at the land's edge throws them: a way down in the middle of a land has its own doorway and light)
+        const rays = least < TILE * 8 ? 7 : 0;
+        for (let i = 0; i < rays; i++) {
+          const u = i / (rays - 1) - 0.5;
+          const a = into + u * 1.7 + Math.sin(time * 0.45 + i * 1.9 + cx * 0.01) * 0.13;
+          const long = (i % 2 ? 250 : 330) + Math.sin(time * 0.7 + i * 2.1) * 26;
+          const wide = 34 + Math.abs(u) * 12;
+          const fx0 = cx + Math.cos(into + Math.PI / 2) * u * span * 0.6;
+          const fy0 = cy + Math.sin(into + Math.PI / 2) * u * span * 0.6;
+          const tx = fx0 + Math.cos(a) * long;
+          const ty = fy0 + Math.sin(a) * long;
+          const ray = g.createLinearGradient(fx0, fy0, tx, ty);
+          ray.addColorStop(0, rgba('#fffbe8', 0.2));
+          ray.addColorStop(0.16, rgba(col, 0.26 + breathe * 0.08));
+          ray.addColorStop(0.6, rgba(col, 0.1));
+          ray.addColorStop(1, rgba(col, 0));
+          g.fillStyle = ray;
+          g.beginPath();
+          g.moveTo(fx0 - Math.sin(a) * 4, fy0 + Math.cos(a) * 4);
+          g.lineTo(fx0 + Math.sin(a) * 4, fy0 - Math.cos(a) * 4);
+          g.lineTo(tx + Math.sin(a) * wide, ty - Math.cos(a) * wide);
+          g.lineTo(tx - Math.sin(a) * wide, ty + Math.cos(a) * wide);
+          g.closePath();
+          g.fill();
+        }
+        // and a wide wash of it over the ground before the gate
+        const wash = g.createRadialGradient(cx, cy, 0, cx, cy, span + 190);
+        wash.addColorStop(0, rgba(col, rays ? 0.2 + breathe * 0.06 : 0));
+        wash.addColorStop(0.5, rgba(col, 0.1));
+        wash.addColorStop(1, rgba(col, 0));
+        g.fillStyle = wash;
+        g.beginPath();
+        g.arc(cx, cy, span + 190, 0, Math.PI * 2);
+        g.fill();
+        g.restore();
+      }
       // the pool on the ground, filling the road from side to side
       this.flat(cx, cy);
       g.save();
@@ -1041,7 +1092,7 @@ export class Renderer {
 
       // the veil: pillars of light standing all across the way out
       const n = Math.max(6, Math.round(span / 7));
-      const tall = 96;
+      const tall = 132;
       for (let i = 0; i < n; i++) {
         const u = n === 1 ? 0.5 : i / (n - 1);
         const px = ax0 + (ax1 - ax0) * u;

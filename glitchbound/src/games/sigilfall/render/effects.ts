@@ -1,4 +1,5 @@
 import { clamp, hash2, TAU } from '../core/math';
+import { wayLight } from '../render3d/land';
 import type { MountDef } from '../data/mounts';
 import { mountDef, riddenMount, wornLooks } from '../progress/wardrobe';
 import type { ClassId } from '../data/types';
@@ -693,6 +694,45 @@ export class Effects {
     fx.put({ kind: FX.rain, x: x + 14, y, up: peak + 10, base: true, w: 70, h: 100, a: '#ffe08a', t: -1, seed: (key % 31) + 5, p1: 1 });
   }
 
+  /**
+   * Over each road out of a land (not a door, not in a dungeon): great beams of the next land's light thrown up out of
+   * its gate, fanned and slowly sweeping, as over a stage, and a bloom of it round the gate's crown. The way on is seen
+   * from far across the land, over its own gatehouse, and looks like somewhere worth going.
+   */
+  private wayLights(w: World, sc: EffectsScene): void {
+    if (w.region.kind === 'dungeon' || w.region.interior) return;
+    const fx = sc.fx;
+    const groups: { to: string; x: number; y: number; n: number }[] = [];
+    for (const x of w.exits) {
+      if (x.door) continue;
+      const g = groups.find((o) => o.to === x.to && Math.abs(o.x / o.n - x.x) < TILE * 4 && Math.abs(o.y / o.n - x.y) < TILE * 4);
+      if (g) {
+        g.x += x.x;
+        g.y += x.y;
+        g.n++;
+      } else groups.push({ to: x.to, x: x.x, y: x.y, n: 1 });
+    }
+    for (const g of groups) {
+      const x = g.x / g.n;
+      const y = g.y / g.n;
+      if (!sc.near(x, y) && !sc.near(x, y + 200) && !sc.near(x, y - 200)) continue;
+      // (only a gate at the land's edge)
+      if (Math.min(x, y, w.map.w * TILE - x, w.map.h * TILE - y) > TILE * 8) continue;
+      const col = wayLight(g.to);
+      const time = sc.time;
+      const breathe = 0.5 + Math.sin(time * 1.4 + x * 0.02) * 0.5;
+      fx.put({ kind: FX.glow, x, y, up: 96, w: 300, a: col, alpha: 0.3 + breathe * 0.08, over: true });
+      fx.put({ kind: FX.glow, x, y, up: 96, w: 110, a: '#fffbe8', alpha: 0.28, over: true });
+      for (let i = 0; i < 3; i++) {
+        const u = i / 2 - 0.5;
+        const lean = u * 0.8 + Math.sin(time * 0.5 + i * 1.7 + x * 0.01) * 0.16;
+        const long = 170 + Math.sin(time * 0.8 + i * 2.3) * 18;
+        // (a beam standing on its foot at the gate's crown, leaned by `lean`)
+        fx.put({ kind: FX.shaft, x: x + Math.sin(lean) * long * 0.5, y, up: 100 + Math.cos(lean) * long * 0.5, w: 46 + Math.abs(u) * 14, h: long, rot: -lean, a: col, alpha: 0.2 + breathe * 0.07, t: 0.4, seed: i * 0.37 + x * 0.01, over: true });
+      }
+    }
+  }
+
   private fires(w: World, sc: EffectsScene): void {
     const fx = sc.fx;
     const tone = FIRE[w.region.theme] ?? FIRE.default!;
@@ -712,6 +752,7 @@ export class Effects {
         if (w.region.dark) fx.put({ kind: FX.glow, x, y, flat: true, w: r * 9, a: f.color, alpha: 0.2 + Math.sin(sc.time * 5.3 + x * 0.7) * 0.02 });
       }
     }
+    this.wayLights(w, sc);
     for (const f of w.fires) {
       const lit = w.fireLit(f);
       if (lit && sc.near(f.x, f.y)) this.blaze(fx, f, lit, sc.land?.roofAt(f.x / TILE, f.y / TILE) ?? [], sc.time, tone);
