@@ -83,7 +83,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'brackenridge',
     when: during('the-old-barrows'),
     near: 'old-barrows',
-    r: 170,
+    r: 320,
     steps: [
       { look: 'old-barrows' },
       { music: 'crypt' },
@@ -176,7 +176,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'thornvale',
     when: during('kettle-farm'),
     near: 'east-farm',
-    r: 150,
+    r: 280,
     steps: [
       { look: 'east-farm' },
       { wait: 1 },
@@ -262,7 +262,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'amberfield',
     when: during('the-broken-caravan'),
     near: 'broken-caravan',
-    r: 150,
+    r: 310,
     steps: [{ look: 'broken-caravan' }, { wait: 1.2 }, { say: 'elyra', line: 'Listen. Somebody’s under that wagon. Small, and being very quiet.' }, { look: 'hero' }],
   },
   {
@@ -288,7 +288,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'amberfield',
     when: during('the-clan-stones'),
     near: 'clan-stones',
-    r: 160,
+    r: 340,
     steps: [
       { look: 'clan-stones' },
       { music: 'chapel' },
@@ -405,7 +405,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'ashen-barrows',
     when: during('the-kings-mound'),
     near: 'kings-mound',
-    r: 200,
+    r: 310,
     steps: [
       { look: 'kings-mound' },
       { music: 'tomb' },
@@ -601,7 +601,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'sunscorch',
     when: during('the-fallen-obelisk'),
     near: 'fallen-obelisk',
-    r: 180,
+    r: 290,
     steps: [
       { look: 'fallen-obelisk' },
       { fx: 'holy', at: 'fallen-obelisk', color: '#ffd88a', size: 30 },
@@ -634,7 +634,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'sunscorch',
     when: during('the-sunken-gate'),
     near: 'sunken-gate',
-    r: 200,
+    r: 320,
     steps: [
       { look: 'sunken-gate' },
       { fx: 'rubble', at: 'sunken-gate', color: '#c8a060', size: 30 },
@@ -726,7 +726,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'glimmerwood',
     when: during('the-withered-ring'),
     near: 'withered-ring',
-    r: 180,
+    r: 310,
     steps: [
       { look: 'withered-ring' },
       { fx: 'vines', at: 'withered-ring', color: '#8a6aa8', size: 32 },
@@ -742,7 +742,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'glimmerwood',
     when: during('the-pale-pavilion'),
     near: 'pale-pavilion',
-    r: 180,
+    r: 310,
     steps: [
       { look: 'pale-pavilion' },
       { say: 'nyx', line: 'White silk gone grey. Somebody paid for this tent in coin that weighs nothing.' },
@@ -838,7 +838,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'rimeheld',
     when: during('the-giants-hearth'),
     near: 'giants-hearth',
-    r: 200,
+    r: 310,
     steps: [
       { look: 'giants-hearth' },
       { sfx: 'quake' },
@@ -855,7 +855,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'rimeheld',
     when: during('the-vault-door'),
     near: 'vault-door',
-    r: 200,
+    r: 320,
     steps: [
       { look: 'vault-door' },
       { music: 'frost-vault' },
@@ -953,7 +953,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'shattered-vale',
     when: during('the-breach-camp'),
     near: 'breach-camp',
-    r: 200,
+    r: 310,
     steps: [
       { look: 'breach-camp' },
       { fx: 'summon', at: 'breach-camp', color: '#b48cff', size: 36 },
@@ -990,7 +990,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'shattered-vale',
     when: during('the-tear'),
     near: 'the-tear',
-    r: 220,
+    r: 340,
     steps: [
       { look: 'the-tear' },
       { fx: 'rift', at: 'the-tear', color: '#c8a8ff', size: 40 },
@@ -1116,7 +1116,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'highwall',
     when: during('ashes-of-ashby'),
     near: 'burned-village',
-    r: 200,
+    r: 310,
     steps: [
       { look: 'burned-village' },
       { fx: 'smoke', at: 'burned-village', color: '#5a5a62', size: 34 },
@@ -1147,7 +1147,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'highwall',
     when: during('the-breach'),
     near: 'the-breach',
-    r: 220,
+    r: 340,
     steps: [
       { look: 'the-breach' },
       { fx: 'blast', at: 'the-breach', color: '#ffb070', size: 34 },
@@ -1255,7 +1255,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'riftscar',
     when: during('gloam-the-gate'),
     near: 'the-gloam-gate',
-    r: 220,
+    r: 360,
     steps: [
       { look: 'the-gloam-gate' },
       { wait: 0.8 },
@@ -1354,7 +1354,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'weeping-woods',
     when: during('the-wardens-rest'),
     near: 'wardens-rest',
-    r: 200,
+    r: 320,
     steps: [
       { look: 'wardens-rest' },
       { music: 'crypt' },
@@ -1372,7 +1372,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'weeping-woods',
     when: during('the-frozen-hamlet'),
     near: 'larks-hollow',
-    r: 220,
+    r: 290,
     steps: [
       { look: 'larks-hollow' },
       { music: 'chapel' },
@@ -1389,7 +1389,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'weeping-woods',
     when: during('the-weeping-tree'),
     near: 'the-weeping-tree',
-    r: 220,
+    r: 360,
     steps: [
       { look: 'the-weeping-tree' },
       { fx: 'holy', at: 'the-weeping-tree', color: '#8ab0ff', size: 30 },
@@ -1460,7 +1460,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'emberdeep',
     when: during('forges-on-the-rim'),
     near: 'slave-forges',
-    r: 220,
+    r: 320,
     steps: [
       { look: 'slave-forges' },
       { fx: 'fire', at: 'slave-forges', color: '#ff8a3a', size: 32 },
@@ -1509,7 +1509,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'emberdeep',
     when: during('the-throne-gate'),
     near: 'throne-gate',
-    r: 220,
+    r: 340,
     steps: [
       { look: 'throne-gate' },
       { music: 'molten' },
@@ -1605,7 +1605,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'hollowmere',
     when: during('across-the-mere'),
     near: 'the-necropolis',
-    r: 220,
+    r: 370,
     steps: [
       { look: 'the-necropolis' },
       { music: 'tomb' },
@@ -1860,7 +1860,7 @@ export const STORY_SCENES: SceneDef[] = [
     region: 'pale-reach',
     when: during('the-duskspire-gate'),
     near: 'duskspire-gate',
-    r: 240,
+    r: 340,
     steps: [
       { look: 'duskspire-gate' },
       { music: 'chapel' },

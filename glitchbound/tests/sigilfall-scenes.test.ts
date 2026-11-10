@@ -10,7 +10,7 @@ import { endScene } from '../src/games/sigilfall/sim/scene';
 import { holds } from '../src/games/sigilfall/sim/story';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
-import { TILE } from '../src/games/sigilfall/sim/map';
+import { TILE, WORLD_K } from '../src/games/sigilfall/sim/map';
 import { heroAtEvent, newWorld, readyHero } from './sigilfall-bot';
 
 /**
@@ -94,6 +94,24 @@ describe('Sigilfall: scenes', () => {
       expect(w.scene, def.id).toBeNull();
       expect(w.hero.opened).toContain(`scene:${def.id}`);
     }
+  });
+
+  it('a scene that opens a walk to somewhere plays well before the hero gets there (not after the walk is done)', () => {
+    // a place is found (its quest step done) inside its radius; the scene must come into play some tiles further out,
+    // while the hero can still be calm: otherwise a fight at a guarded place lets the step finish first and the scene
+    // never plays
+    let checked = 0;
+    for (const def of SCENES) {
+      const m = def.when && def.near ? /\{"quest":"([a-z0-9-]+)","is":"active"\}/.exec(JSON.stringify(def.when)) : null;
+      const q = m ? QUEST_DEFS[m[1]!] : undefined;
+      const walk = q && [q.objective, ...(q.then ?? [])].find((o) => o.kind === 'explore');
+      if (!walk || walk.kind !== 'explore' || walk.spot !== def.near) continue;
+      const sp = newWorld(def.region, readyHero('mage', q!.level ?? 30)).spots.find((x) => x.id === def.near);
+      if (!sp) continue;
+      checked++;
+      expect(((def.r ?? 90) * WORLD_K - sp.r * TILE) / TILE, `${def.id}: plays only ${(((def.r ?? 90) * WORLD_K - sp.r * TILE) / TILE).toFixed(1)} tiles before ${sp.id} is found`).toBeGreaterThanOrEqual(8);
+    }
+    expect(checked).toBeGreaterThan(15);
   });
 
   it('the hero stands still while a scene plays; skipping ends it and it never plays again', () => {
