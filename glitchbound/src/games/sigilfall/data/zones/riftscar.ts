@@ -5,7 +5,7 @@ import { wildRegion } from '../zonegen';
  * The Riftscar Wastes (44-48), Act IV (STORY_BIBLE.md v3): the torn dusk-land between Aster and Vaelmoor, north of
  * the Shattered Vale, where the Tear first tore the world open in the old war. Glass plains under a violet sky,
  * floating stones, things half come through the Veil, and the Pale Herald's spire in the far north-west, from
- * which he feeds the Tear. Lastlight, a walled village of lamp-keepers, keeps the road lit through the glass to the
+ * which he feeds the Tear. Lastlight, a village of lamp-keepers on boardwalks over a glass lake, keeps the road lit through the glass to the
  * Gloam Gate in the north: the second of the Three Gates, the Host's for thirty years, where the Herald keeps Elyra
  * in the cells under the gatehouse, and where Ser Edric held the gate alone three hundred years ago.
  *
@@ -40,7 +40,7 @@ export const RIFTSCAR = wildRegion(
     forest: 0.26,
     scatter: { trees: 1, bushes: 0.6, rocks: 2, flowers: 1 },
     water: { kind: 'lakes', amount: 0.3 },
-    hubs: [{ at: [0.76, 0.75], plan: 'citadel', npcs: ['lamp-keeper-brin', 'widow-marrow', 'tinker-gale'], houses: 5 }],
+    hubs: [{ at: [0.76, 0.75], plan: 'boardwalk', npcs: ['lamp-keeper-brin', 'widow-marrow', 'tinker-gale'], houses: 5 }],
     exits: [
       { side: 's', at: 0.75, to: 'shattered-vale', label: 'South causeway to Shardwatch and the Shattered Vale' },
       // through the Gate into Vaelmoor, once it is taken (Act V)

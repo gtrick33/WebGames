@@ -129,7 +129,7 @@ export const PRESETS: Preset[] = [
   { id: 'v3-highwall-relieved', label: 'Act IV: the first gate (scene)', region: 'highwall', active: 'the-long-night-ends', level: 44 },
   { id: 'v3-gloam-lastlight', label: 'Act IV: Lastlight (scene)', region: 'riftscar', active: 'gloam-the-lamp-road', level: 44 },
   { id: 'v3-gloam-the-dark-mile', label: 'Act IV: the unlit mile (scene)', region: 'riftscar', active: 'gloam-the-unlit-mile', level: 44 },
-  { id: 'v3-gloam-the-jetty', label: 'Act IV: Nyx on the wall (scene)', region: 'riftscar', active: 'gloam-nyx-confesses', level: 46 },
+  { id: 'v3-gloam-the-jetty', label: 'Act IV: Nyx on the jetty (scene)', region: 'riftscar', active: 'gloam-nyx-confesses', level: 46 },
   { id: 'v3-vision-veil', label: 'Act IV: the Veil’s vision, the eighth warden (scene)', region: 'riftscar', active: 'gloam-the-gate', level: 46 },
   { id: 'v3-gloam-the-gatewarden', label: 'Act IV: the Gatewarden (scene)', region: 'riftscar', active: 'the-gatewarden', level: 48 },
   { id: 'v3-gloam-the-fire', label: 'Act IV: by Brin’s fire (scene)', region: 'riftscar', active: 'the-gloam-gate', level: 48 },

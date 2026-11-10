@@ -227,4 +227,6 @@ export const OPENED_TABLE: readonly string[] = [
   'scene:dusk-the-king', 'scene:memory-the-crown',
   'scene:fern-alsa-hums', 'scene:gallows-harlan', 'scene:briar-ash-gold', 'scene:briar-the-letter',
   'scene:hearth-the-bone-case', 'scene:reach-seven-locks',
+  // the Gloam's story in the Riftscar Wastes
+  'spot:riftscar:the-gloam-gate', 'spot:riftscar:will-o-glen', 'spot:riftscar:the-black-pool',
 ];

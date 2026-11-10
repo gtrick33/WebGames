@@ -1235,7 +1235,7 @@ export const STORY_SCENES: SceneDef[] = [
     ],
   },
   {
-    // Nyx on the end of Lastlight's wall with her lamp out
+    // Nyx on the end of Lastlight's jetty with her lamp out
     id: 'gloam-the-jetty',
     region: 'riftscar',
     when: during('gloam-nyx-confesses'),

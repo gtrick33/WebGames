@@ -4,7 +4,7 @@ import type { NpcDef, QuestDef, StoryEventDef } from '../types';
  * The Gloam Gate, the second of the Three Gates (STORY_BIBLE.md v3, Act IV), played in the Riftscar Wastes
  * (data/zones/riftscar.ts; written for Gloamhollow, whose ids they keep). Nyx came back to Highwall's camp with the
  * Pale Herald's prison map; it leads north from the Shattered Vale across the Riftscar's glass to Lastlight, the
- * lamp-keepers' walled village, and on up the road to the Gloam Gate, where the Herald keeps Elyra in the cells
+ * lamp-keepers' village on the water, and on up the road to the Gloam Gate, where the Herald keeps Elyra in the cells
  * under the gatehouse. The main chain: the lamps on the road, Nyx's confession (the map was the Herald's bait), the
  * Gate and the eighth warden's vision, the cells (hold the stair while Nyx picks the lock), the way out (Elyra and
  * Wren follow you down the road), the Gatewarden, and the morning after at Lastlight's fire. Widow Marrow wants her
@@ -41,8 +41,8 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     name: 'The Price of the Map',
     giver: 'lamp-keeper-brin',
     auto: true,
-    text: 'Cell ten: the thief’s brother. Promised. Nyx has not said a word since she read it. She is sitting on the end of Lastlight’s wall with her feet over the glass and her lamp out. Go and talk to her before the two of you walk up to that Gate.',
-    objective: { kind: 'talk', npc: 'nyx-lastlight', label: 'Talk to Nyx on Lastlight’s wall' },
+    text: 'Cell ten: the thief’s brother. Promised. Nyx has not said a word since she read it. She is sitting on the end of Lastlight’s jetty with her feet over the dark water and her lamp out. Go and talk to her before the two of you walk up to that Gate.',
+    objective: { kind: 'talk', npc: 'nyx-lastlight', label: 'Talk to Nyx on Lastlight’s jetty' },
     after: ['gloam-the-unlit-mile'],
     zone: 'riftscar',
     level: 46,
@@ -178,7 +178,7 @@ export const GLOAMHOLLOW_NPCS: Record<string, NpcDef> = {
     talk: [
       { when: { quest: 'gloam-the-lamp-road', state: 'active' }, lines: ['You came up the causeway in the dark. Don’t. Nobody walks it in the dark. That is the whole point of us.', 'Brin. I keep the lamps. Your thief keeps looking at the Gate. Everyone who comes here does that once.'] },
       { when: { quest: 'gloam-the-unlit-mile', state: 'active' }, lines: ['One lamp every fifty paces, from my door to the Gate. Three hundred years. My grandmother lit them, and hers.', 'The marsh-lights lean on them till they gutter. Snuff the lights. Ten. I’ll do the relighting; I like the relighting.'] },
-      { when: { quest: 'gloam-nyx-confesses', state: 'active' }, lines: ['Your thief is on my wall with her lamp out. Nobody sits on my wall with their lamp out.', 'Go and talk to her. And bring the lamp back lit, one way or another.'] },
+      { when: { quest: 'gloam-nyx-confesses', state: 'active' }, lines: ['Your thief is on my jetty with her lamp out. Nobody sits on my jetty with their lamp out.', 'Go and talk to her. And bring the lamp back lit, one way or another.'] },
       { when: { quest: 'the-gatewarden', state: 'active' }, lines: ['They’re out. Both of them. I’ve got the girl by my fire and the brother is eating everything in the house.', 'But the Gate is still standing across the road, and its keeper in it. Bring him down, and I’ll hang my lamps on his hooks.'] },
       { when: { quest: 'the-gloam-gate', state: 'active' }, lines: ['She keeps asking me my name. I keep telling her. She says thank you every time, like it’s new.', 'Go and sit with her. Sit on the side she can see.'] },
       { when: { quest: 'the-gloam-gate', state: 'done' }, lines: ['The Gate’s lit. All the way. I walked to the end of the causeway this morning and looked north, and there was a road there, and I’d never seen it.', 'Whatever’s at the end of it, you’ll need light. Take some.'] },
