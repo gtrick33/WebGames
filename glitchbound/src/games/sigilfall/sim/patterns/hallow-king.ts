@@ -327,7 +327,7 @@ const court: PatternFn = (w, e, _dt, k) => {
       made++;
     }
     if (made) {
-      w.text(e.x, e.y - e.r - 18, 'Kneel, all of you. We have a guest.', ASH, true);
+      w.callout('Kneel, all of you. We have a guest.', ASH);
       w.sfx('summon', 0.5);
     }
     k.pt.step = 1;
@@ -357,7 +357,7 @@ const rise: PatternFn = (w, e, _dt, k) => {
       const at = castRay(w.map, p.x, p.y, 8, a, 90);
       w.spawnAdd(k.str('instead', 'hollow-ghoul'), at.x, at.y, e.room);
     }
-    w.text(e.x, e.y - e.r - 18, 'Rise.', VIOLET, true);
+    w.callout('Rise.', VIOLET);
     w.sfx('summon', 0.6);
     k.pt.step = 1;
   } else if (k.pt.t >= 1) k.end();
@@ -384,7 +384,7 @@ const call: PatternFn = (w, e, _dt, k) => {
       s.adrift.push({ sigil: sig, foe: f, speed: k.num('speed', 40) });
       w.addFx({ kind: 'beam', x: e.x, y: e.y - 22, x2: f.x, y2: f.y - 16, life: 0.5, size: 1.4, color: SIGIL[sig].color });
     }
-    w.text(e.x, e.y - e.r - 18, 'Six. She carries six. Bring them to me.', VIOLET, true);
+    w.callout('Six. She carries six. Bring them to me.', VIOLET);
     w.text(at.x, at.y - 34, 'The Crown is pulling the sigils out of Elyra: strike them back to her', '#fff0d0', false);
     w.shake(3);
     w.sfx('summon', 0.7);
@@ -423,7 +423,7 @@ const stone: Power = (w, e, k) => {
     w.after(k.num('wind', 1.2), () => {
       if (fighting(w, e)) strike(1 - first, k.num('then', 1.1));
     });
-    w.text(e.x, e.y - e.r - 18, 'THE WEIGHT OF STONE', SIGIL.stone.color, true);
+    w.callout('THE WEIGHT OF STONE', SIGIL.stone.color);
     w.sfx('enemyWindup', 0.6);
     pt.data.end = k.num('wind', 1.2) + k.num('then', 1.1) + 0.3;
     pt.step = 1;
@@ -438,7 +438,7 @@ const embers: Power = (w, e, k) => {
   if (pt.step === 0) {
     pt.data.n = 0;
     pt.step = 1;
-    w.text(e.x, e.y - e.r - 18, 'THE EMBERS WAKE', SIGIL.embers.color, true);
+    w.callout('THE EMBERS WAKE', SIGIL.embers.color);
   }
   if (pt.step === 1) {
     // aim: a line at the hero
@@ -499,8 +499,9 @@ const sun: Power = (w, e, k) => {
     if (left > 4) w.addTelegraph({ ...glare, shape: 'line', x: box.x0 + left / 2, y: box.y0, angle: Math.PI / 2, len: tall, r2: left });
     if (right > 4) w.addTelegraph({ ...glare, shape: 'line', x: box.x1 - right / 2, y: box.y0, angle: Math.PI / 2, len: tall, r2: right });
     if (e.y - box.y0 > 4) w.addTelegraph({ ...glare, shape: 'line', x: e.x, y: box.y0, angle: Math.PI / 2, len: e.y - box.y0 - e.r, r2: W });
-    w.text(e.x, e.y - e.r - 18, 'THE SUN SIGIL BLAZES', SIGIL.sun.color, true);
-    w.text(p.x, p.y - 30, 'Stand in his shadow', '#fff6c0', false);
+    // his shadow, down the hall from him: the one place the glare doesn't reach, drawn as the safe place it is
+    if (box.y1 - e.y > e.r) w.addTelegraph({ ...glare, kind: 'safe', shape: 'line', x: e.x, y: e.y + e.r * 0.5, angle: Math.PI / 2, len: box.y1 - e.y - e.r * 0.5, r2: W });
+    w.callout('THE SUN SIGIL BLAZES', SIGIL.sun.color, 'Stand in his shadow');
     w.addFx({ kind: 'glow', x: e.x, y: e.y - 30, life: wind, size: 40, color: SIGIL.sun.color });
     w.sfx('enemyWindup', 0.7);
     pt.data.x = e.x;
@@ -551,7 +552,7 @@ const thorns: Power = (w, e, k) => {
         });
       }
     }
-    w.text(e.x, e.y - e.r - 18, 'THE BRIARS RISE', SIGIL.thorns.color, true);
+    w.callout('THE BRIARS RISE', SIGIL.thorns.color);
     w.sfx('enemyWindup', 0.6);
     pt.step = 1;
   } else if (pt.step === 1 && pt.t >= wind + 0.4) k.end();
@@ -580,8 +581,7 @@ const frost: Power = (w, e, k) => {
     w.after(wind + k.num('melt', 3), () => {
       for (const b of made) if (standing(w, b)) removeThing(w, b);
     });
-    w.text(e.x, e.y - e.r - 18, 'THE RIME CLOSES', FROST, true);
-    w.text(p.x, p.y - 30, 'Break the ice and get out', '#e0f4ff', false);
+    w.callout('THE RIME CLOSES', FROST, 'Break the ice and get out');
     w.sfx('freeze', 0.7);
     pt.step = 1;
   } else if (pt.step === 1 && pt.t >= wind + 0.4) k.end();
@@ -596,7 +596,7 @@ const veil: Power = (w, e, k) => {
   if (pt.step === 0) {
     w.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r: e.r + 6, r2: 0, angle: 0, len: 0, dur: wind, dmg: 0, knock: 0, tone: 'rift', owner: e.id, linger: 0 });
     w.addTelegraph({ shape: 'circle', x: p.x, y: p.y, r: p.r + 6, r2: 0, angle: 0, len: 0, dur: wind, dmg: 0, knock: 0, tone: 'rift', owner: -1, linger: 0 });
-    w.text(e.x, e.y - e.r - 18, 'THE VEIL TURNS', SIGIL.veil.color, true);
+    w.callout('THE VEIL TURNS', SIGIL.veil.color);
     w.sfx('enemyWindup', 0.6);
     pt.step = 1;
   } else if (pt.step === 1 && pt.t >= wind) {
@@ -638,7 +638,7 @@ const tides: Power = (w, e, k) => {
       });
     }
     w.spawnWave(e.x, e.y, k.num('wave', 95), 300, 10, e.dmg * 0.7);
-    w.text(e.x, e.y - e.r - 18, 'THE TIDE BRINGS THEM BACK', SIGIL.tides.color, true);
+    w.callout('THE TIDE BRINGS THEM BACK', SIGIL.tides.color);
     w.sfx('summon', 0.7);
     pt.step = 1;
   } else if (pt.step === 1 && pt.t >= 1.2) k.end();
@@ -700,7 +700,7 @@ const remembered: PatternFn = (w, e, _dt, k) => {
       });
       names.push(id);
     }
-    w.text(e.x, e.y - e.r - 18, 'You remember them? So do I. I remember everything.', ASH, true);
+    w.callout('You remember them? So do I. I remember everything.', ASH);
     w.sfx('summon', 0.7);
     k.pt.step = 1;
   } else if (k.pt.t >= 1.3) k.end();
@@ -735,7 +735,7 @@ const summer: PatternFn = (w, e, _dt, k) => {
       if (h) s.hunters.set(h.id, { x: h.x, y: h.y });
     }
     w.emit({ t: 'banner', text: 'One Summer’s Hour', sub: 'His queen and children are coming to him: clear their way' });
-    w.text(e.x, e.y - e.r - 18, 'Ysane? …No. Not now. Not like this.', GOLD, true);
+    w.callout('Ysane? …No. Not now. Not like this.', GOLD);
     for (let i = 0; i < 14; i++) w.addFx({ kind: 'spark', x: at.x + (w.rand() - 0.5) * 120, y: at.y - w.rand() * 80, vx: 0, vy: -10, life: 1.4, size: 2.5, color: GOLD });
     w.sfx('bell', 0.6);
     k.pt.step = 1;

@@ -87,7 +87,7 @@ const coffins: PatternFn = (w, e, dt, k) => {
   const list = s.coffins;
   if (pt.step === 0) {
     const n = Math.round(k.num('n', 4));
-    w.text(e.x, e.y - e.r - 16, 'Which grave, dear?', GREEN, true);
+    w.callout('Which grave, dear?', GREEN);
     w.sfx('soul');
     w.fxBurst(e.x, e.y - 6, GREEN, 16, 14);
     pt.data.hide = 1;
@@ -213,7 +213,7 @@ const coffins: PatternFn = (w, e, dt, k) => {
       removeThing(w, c);
     }
     s.coffins = [];
-    w.text(e.x, e.y - e.r - 16, 'TOO SLOW!', '#ff8a8a', true);
+    w.callout('TOO SLOW!', '#ff8a8a');
     w.sfx('roar', 0.6);
     pt.data.hide = 0;
     k.end();
@@ -229,7 +229,7 @@ const candles: PatternFn = (w, e, _dt, k) => {
   if (pt.step === 0) {
     const n = Math.round(k.num('n', 3));
     if (s.spots.length !== n) s.spots = ringSpots(w, e, n, 96, Math.PI / 2);
-    w.text(e.x, e.y - e.r - 16, 'Burn, grave-lights!', CANDLE_GOLD, true);
+    w.callout('Burn, grave-lights!', CANDLE_GOLD);
     w.addFx({ kind: 'glow', x: e.x, y: e.y - 14, life: 0.8, size: 18, color: CANDLE_GOLD });
     w.sfx('summon', 0.6);
     pt.step = 1;
@@ -273,7 +273,7 @@ function tickCandles(w: World, e: Enemy, s: Crypt, dt: number): void {
   if (!burning) {
     if (e.shield > 0) {
       w.fxBurst(e.x, e.y - 6, CANDLE_GOLD, 14, 14);
-      w.text(e.x, e.y - e.r - 16, 'His ward breaks!', CANDLE_GOLD, true);
+      w.callout('His ward breaks!', CANDLE_GOLD);
     }
     e.shield = 0;
     return;
@@ -309,7 +309,7 @@ const soulSplit: PatternFn = (w, e, dt, k) => {
   const st = fight(w, e);
   if (pt.step === 0) {
     const n = Math.round(k.num('n', 3));
-    w.text(e.x, e.y - e.r - 16, 'You cannot kill what the crypt keeps!', GREEN, true);
+    w.callout('You cannot kill what the crypt keeps!', GREEN);
     w.sfx('rift');
     w.shake(4);
     w.fxBurst(e.x, e.y - 10, GREEN, 30, 22);
@@ -380,7 +380,7 @@ const soulSplit: PatternFn = (w, e, dt, k) => {
       removeThing(w, s);
     }
     st.souls = [];
-    w.text(e.x, e.y - e.r - 16, 'WHOLE AGAIN!', '#ff8a8a', true);
+    w.callout('WHOLE AGAIN!', '#ff8a8a');
     w.sfx('roar', 0.6);
     w.shake(5);
     pt.data.hide = 0;

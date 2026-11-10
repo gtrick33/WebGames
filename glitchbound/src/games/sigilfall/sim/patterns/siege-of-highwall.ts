@@ -349,7 +349,7 @@ const ram: PatternFn = (w, e, dt, k) => {
     pt.data.wind = (pt.data.n ?? 0) === 0 ? k.num('wind', 1) : k.num('wind2', 0.6);
     w.addTelegraph({ shape: 'line', x: e.x, y: e.y, r: 0, r2: (e.r + w.player.r + 3) * 2, angle: a, len: pt.data.left + e.r, dur: pt.data.wind, dmg: 0, knock: 0, tone: 'enemy', owner: -1, linger: 0 });
     faceTo(e, a);
-    if (!pt.data.n) w.text(e.x, e.y - e.r - 18, 'RAMMING SPEED!', '#ffb04d', true);
+    if (!pt.data.n) w.callout('RAMMING SPEED!', '#ffb04d');
     w.sfx('snort', 0.9);
     w.sfx('windup', 0.6);
     pt.step = 1;
@@ -384,7 +384,7 @@ const ram: PatternFn = (w, e, dt, k) => {
         k.end();
         if (wall && daze > 0) {
           e.boss!.dazed = daze;
-          w.text(e.x, e.y - e.r - 12, 'STUCK!', '#ffe066', true);
+          w.callout('STUCK!', '#ffe066');
         }
         return;
       }
@@ -410,7 +410,7 @@ const pitch: PatternFn = (w, e, _dt, k) => {
     pt.data.a = a;
     w.addTelegraph({ shape: 'cone', x: e.x, y: e.y, r, r2: arc, angle: a, len: 0, dur: wind, dmg: e.dmg * k.num('mul', 1), status: burn(e), knock: 80, tone: 'enemy', owner: -1, linger: 0 });
     faceTo(e, a);
-    w.text(e.x, e.y - e.r - 18, 'BOILING PITCH!', '#ffb04d', true);
+    w.callout('BOILING PITCH!', '#ffb04d');
     w.sfx('windup', 0.6);
     pt.step = 1;
   } else if (pt.step === 1) {
@@ -428,7 +428,7 @@ const pitch: PatternFn = (w, e, _dt, k) => {
       w.shake(2);
       if (k.num('drip', 0) > 0) {
         fight(w, e).drip = k.num('drip', 0);
-        w.text(e.x, e.y - e.r - 28, 'THE CAULDRON BOILS OVER!', '#ffb04d', true);
+        w.callout('THE CAULDRON BOILS OVER!', '#ffb04d');
       }
       const n = k.num('pools', 4);
       for (let i = 0; i < n; i++) {
@@ -489,7 +489,7 @@ const torch: PatternFn = (w, e, _dt, k) => {
         }
       });
     });
-    w.text(e.x, e.y - e.r - 18, 'TORCHES!', '#ffb04d', true);
+    w.callout('TORCHES!', '#ffb04d');
     w.sfx('sling', 0.7);
     pt.step = 1;
   } else if (pt.t >= 0.8) k.end();
@@ -580,7 +580,7 @@ const arrows: PatternFn = (w, e, _dt, k) => {
         volleyBands(w, e, vertical, parity, band, wind, mul, k.num('fire', 0), k.num('fireLife', 5));
       });
     }
-    w.text(e.x, e.y - e.r - 18, 'ARCHERS, LOOSE!', '#ff9a8a', true);
+    w.callout('ARCHERS, LOOSE!', '#ff9a8a');
     w.addFx({ kind: 'glow', x: e.x + Math.cos(e.face) * 8, y: e.y - 20, life: 0.6, size: 12, color: '#e8e0c8' });
     w.sfx('volley', 0.8);
     pt.step = 1;
@@ -600,7 +600,7 @@ const banner: PatternFn = (w, e, _dt, k) => {
   if (pt.step === 0) {
     s.ward = { r: k.num('r', 110), boss: k.num('ward', 0.06), rate: k.num('rate', 0.004), adds: k.num('adds', 0.3), rally: k.num('rally', 1.3) };
     if (standing(w, s.banner)) {
-      w.text(e.x, e.y - e.r - 18, 'RALLY TO THE COLORS!', GOLD, true);
+      w.callout('RALLY TO THE COLORS!', GOLD);
       w.addFx({ kind: 'ring', x: s.banner.x, y: s.banner.y, life: 0.7, size: s.ward.r, color: GOLD });
       w.sfx('roar', 0.5);
       s.wardT = 0;
@@ -608,7 +608,7 @@ const banner: PatternFn = (w, e, _dt, k) => {
       pt.step = 9;
       return;
     }
-    w.text(e.x, e.y - e.r - 18, 'TO THE COLORS!', GOLD, true);
+    w.callout('TO THE COLORS!', GOLD);
     w.addFx({ kind: 'glow', x: e.x, y: e.y - 16, life: k.num('wind', 0.8), size: 18, color: GOLD });
     w.sfx('summon', 0.7);
     pt.step = 1;
@@ -715,7 +715,9 @@ const lastVolley: PatternFn = (w, e, _dt, k) => {
     pt.data.said = 99;
     pt.data.ringT = 0;
     w.addTelegraph({ shape: 'donut', x: cx, y: cy, r: far, r2: safe, angle: 0, len: 0, dur: wind, dmg: e.dmg * k.num('mul', 2.2), knock: 60, tone: 'enemy', owner: -1, linger: 0 });
-    w.text(e.x, e.y - e.r - 18, 'LOOSE EVERYTHING!', '#ff6a5a', true);
+    // (the ground the volley spares, marked as the safe place it is)
+    w.addTelegraph({ shape: 'circle', kind: 'safe', x: cx, y: cy, r: safe, r2: 0, angle: 0, len: 0, dur: wind, dmg: 0, knock: 0, tone: 'enemy', owner: -1, linger: 0 });
+    w.callout('LOOSE EVERYTHING!', '#ff6a5a');
     w.text(cx, cy - 34, flag ? 'TO THE BANNER! They won’t shoot their colors' : 'TO THE GENERAL! They won’t shoot him', GOLD, true);
     w.sfx('roar', 0.8);
     w.sfx('beamCharge', 0.7);
@@ -776,7 +778,7 @@ const deathcharge: PatternFn = (w, e, dt, k) => {
     pt.data.wind = (pt.data.n ?? 0) === 0 ? k.num('wind', 0.8) : k.num('wind2', 0.55);
     w.addTelegraph({ shape: 'line', x: e.x, y: e.y, r: 0, r2: (e.r + w.player.r + 3) * 2, angle: a, len: pt.data.left + e.r, dur: pt.data.wind, dmg: 0, knock: 0, tone: 'enemy', owner: -1, linger: 0 });
     faceTo(e, a);
-    if (!pt.data.n) w.text(e.x, e.y - e.r - 18, 'FOR THE KING!', '#ff9a8a', true);
+    if (!pt.data.n) w.callout('FOR THE KING!', '#ff9a8a');
     w.sfx('windup', 0.7);
     pt.step = 1;
   } else if (pt.step === 1 && pt.t >= pt.data.t0! + pt.data.wind!) {
@@ -834,7 +836,7 @@ const guard: PatternFn = (w, e, dt, k) => {
     e.hurtT = 99;
     pt.data.hp = e.hp + e.shield;
     faceTo(e, k.aimAt());
-    w.text(e.x, e.y - e.r - 18, 'GUARD!', '#d8e0ff', true);
+    w.callout('GUARD!', '#d8e0ff');
     w.sfx('shield', 0.8);
     pt.step = 1;
   } else if (pt.step === 1) {
@@ -851,7 +853,7 @@ const guard: PatternFn = (w, e, dt, k) => {
         pt.data.wind = k.num('wind', 0.45);
         pt.data.c = 1;
         w.addTelegraph({ shape: 'cone', x: e.x, y: e.y, r: k.num('r', 62), r2: k.num('arc', 1.15), angle: a, len: 0, dur: pt.data.wind, dmg: e.dmg * k.num('mul', 2), knock: 190, tone: 'enemy', owner: e.id, linger: 0 });
-        w.text(e.x, e.y - e.r - 18, 'RIPOSTE!', '#ff6a5a', true);
+        w.callout('RIPOSTE!', '#ff6a5a');
         w.sfx('windup', 0.8);
       } else {
         pt.data.wind = 0.6;
@@ -954,7 +956,7 @@ function chapelTick(w: World, e: Enemy): void {
     if (e.shield <= 0) {
       // his will broken: the dirge chokes
       s.until = 0;
-      w.text(e.x, e.y - e.r - 30, 'The dirge breaks!', '#fff2c0', true);
+      w.callout('The dirge breaks!', '#fff2c0');
       exposed(w, e, 3.2, 'Nngh... the song... the song is gone...', DIRGE);
     } else if (w.time >= s.until) {
       // sung to its end: the chapel's dead stand up
@@ -1033,7 +1035,7 @@ const dirge: PatternFn = (w, e, _dt, k) => {
     e.shield = s.will;
     s.until = w.time + k.num('time', 5);
     s.tick = 0;
-    w.text(e.x, e.y - e.r - 18, 'Hear me, you who have fallen...', DIRGE, true);
+    w.callout('Hear me, you who have fallen...', DIRGE);
     w.text(w.player.x, w.player.y - 30, s.corpses.length ? 'Break his dirge, or burn the dead!' : 'Break his dirge!', '#e0ffe0', false);
     w.sfx('soul', 0.8);
     w.addFx({ kind: 'glow', x: e.x, y: e.y - 10, life: 0.8, size: 28, color: DIRGE });

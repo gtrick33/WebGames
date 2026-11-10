@@ -227,7 +227,7 @@ const FIRST_PATTERNS: Record<string, PatternFn> = {
       pt.data.y = e.y;
       pt.data.n = 0;
       w.addFx({ kind: 'glow', x: e.x, y: e.y - 18, life: 0.6, size: 14, color: FROST });
-      w.text(e.x, e.y - e.r - 16, 'GRAVE-FROST!', '#c8f0ff', true);
+      w.callout('GRAVE-FROST!', '#c8f0ff');
       w.sfx('freeze', 0.7);
       pt.step = 1;
     }
@@ -603,7 +603,7 @@ const feast: PatternFn = (w, e, dt, k) => {
     pt.data.left = len;
     w.addTelegraph({ shape: 'line', x: e.x, y: e.y, r: 0, r2: e.r * 2 + 8, angle: a, len, dur: wind, dmg: 0, knock: 0, tone: 'enemy', owner: -1, linger: 0 });
     w.addTelegraph({ shape: 'circle', x: l.x, y: l.y, r: k.num('r', 54), r2: 0, angle: 0, len: 0, dur: wind + len / 360, dmg: e.dmg * k.num('mul', 1.3), knock: 140, tone: 'rift', owner: -1, linger: 0 });
-    w.text(e.x, e.y - e.r - 16, 'The light... I hunger for the light!', '#c8b8ff', true);
+    w.callout('The light... I hunger for the light!', '#c8b8ff');
     w.sfx('windup', 0.6);
     pt.data.t1 = pt.t;
     pt.step = 1;

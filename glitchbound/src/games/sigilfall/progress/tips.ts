@@ -32,6 +32,17 @@ export function tipShown(h: Character, id: TipId): void {
   if (!h.opened.includes(key)) h.opened.push(key);
 }
 
+/**
+ * A boss's mechanic, explained under its callout the first time a hero meets it (ui/GameScreen.tsx BossBar), kept on the
+ * hero like a hint seen. It pauses nothing, so every hero gets it, old or new, while the Settings choice is on.
+ */
+export const mechanicKey = (text: string): string => `hint:${text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40)}`;
+export const mechanicDue = (h: Character, on: boolean, text: string): boolean => on && !h.opened.includes(mechanicKey(text));
+export function mechanicShown(h: Character, text: string): void {
+  const key = mechanicKey(text);
+  if (!h.opened.includes(key)) h.opened.push(key);
+}
+
 export interface TipStep {
   /** What lights up (a CSS selector inside the game's UI). None, or not on the screen: the card alone, in the middle. */
   target: string | null;

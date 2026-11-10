@@ -150,7 +150,7 @@ const scatter: PatternFn = (w, e, _dt, k) => {
       w.floaters.push(f);
       w.addFx({ kind: 'beam', x: e.x, y: e.y - 16, x2: x, y2: y, life: 0.3, size: 1, color: GOLD });
     }
-    w.text(e.x, e.y - e.r - 18, 'Take it. Everyone else did.', GOLD, true);
+    w.callout('Take it. Everyone else did.', GOLD);
     w.text(w.player.x, w.player.y - 30, 'Pick up the ash-gold before he spends it (it is heavy)', '#fff0c0', false);
     w.sfx('coin', 0.7);
     pt.data.t1 = pt.t;
@@ -220,7 +220,7 @@ function ledgerTick(w: World, e: Enemy): void {
         // the ledger's ink turns on its keeper
         wound(w, e, 0.02, INK);
         w.text(p.x, p.y - 30, 'Paid in full, by the ledger!', INK, true);
-        w.text(e.x, e.y - e.r - 18, 'Irregular. Most irregular.', INK, true);
+        w.callout('Irregular. Most irregular.', INK);
       } else if (!p.dead) {
         const owed = Math.min(p.maxHp * wd.cap, s.tally * wd.share);
         if (owed > 0 && hurtPlayer(w, owed, { pierce: true, source: e })) w.text(p.x, p.y - 30, `The account is settled: -${Math.round(owed)}`, '#ff9a9a', true);
@@ -261,8 +261,7 @@ const settle: PatternFn = (w, e, _dt, k) => {
     s.ward = { x: at.x, y: at.y, r, at: w.time + warn, share: k.num('share', 0.35), cap: k.num('cap', 0.4) };
     // the whole hall marked, but for the ward
     w.addTelegraph({ shape: 'donut', x: at.x, y: at.y, r: 900, r2: r, angle: 0, len: 0, dur: warn, dmg: 0, knock: 0, tone: 'enemy', owner: -1, linger: 0 });
-    w.text(e.x, e.y - e.r - 18, 'And now, the reckoning.', INK, true);
-    w.text(p.x, p.y - 30, 'Into the ward before the account is settled!', '#fff0c0', false);
+    w.callout('And now, the reckoning.', INK, 'Into the ward before the account is settled!');
     w.sfx('bell-toll', 0.5);
     pt.data.t1 = pt.t;
     pt.step = 1;
@@ -272,7 +271,7 @@ const settle: PatternFn = (w, e, _dt, k) => {
 /** He opens his book as the fight begins: from now on every blow is written down. */
 const ledger: PatternFn = (w, e, _dt, k) => {
   ledgerOf(w, e);
-  w.text(e.x, e.y - e.r - 18, 'Name, and business? Never mind. I shall write it all down.', INK, true);
+  w.callout('Name, and business? Never mind. I shall write it all down.', INK);
   k.end();
 };
 

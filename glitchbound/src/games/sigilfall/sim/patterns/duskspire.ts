@@ -348,8 +348,7 @@ const vigil: PatternFn = (w, e, _dt, k) => {
         placed++;
       }
     }
-    w.text(e.x, e.y - e.r - 18, 'Keep your vigil, my dead. Watch him when he does not watch you.', ASH, true);
-    w.text(p.x, p.y - 30, 'They move only while your back is turned!', '#e8e0ff', false);
+    w.callout('Keep your vigil, my dead. Watch him when he does not watch you.', ASH, 'They move only while your back is turned!');
     w.sfx('soul', 0.7);
     pt.data.t1 = pt.t;
     pt.step = 1;
@@ -375,7 +374,7 @@ export const DUSKSPIRE_PATTERNS: Record<string, PatternFn> = {
         w.spawnAdd(id, to.x, to.y, e.room);
       }
       s.oath = { max: e.maxHp * k.num('shield', 0.12), regen: e.maxHp * k.num('regen', 0.004), guards: id };
-      w.text(e.x, e.y - e.r - 14, 'THE OATH HOLDS', '#d8c8ff', true);
+      w.callout('THE OATH HOLDS', '#d8c8ff');
       w.sfx('summon', 0.6);
       k.pt.step = 1;
     } else if (k.pt.t >= 0.9) k.end();
@@ -401,7 +400,7 @@ export const DUSKSPIRE_PATTERNS: Record<string, PatternFn> = {
           s.shackles.push({ id: m.id, r: k.num('r', 50), until: w.time + k.num('time', 9) });
         });
       }
-      w.text(e.x, e.y - e.r - 14, 'KNEEL', VIOLET, true);
+      w.callout('KNEEL', VIOLET);
       w.sfx('summon', 0.5);
       k.pt.step = 1;
     } else if (k.pt.t >= 1) k.end();
@@ -460,7 +459,7 @@ export const DUSKSPIRE_PATTERNS: Record<string, PatternFn> = {
       const wind = k.num('wind', 1.8);
       // the shape only shows it coming: whether it lands is decided below
       w.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r: 640, r2: 0, angle: 0, len: 0, dur: wind, dmg: 0, knock: 0, tone: 'enemy', owner: -1, linger: 0 });
-      w.text(e.x, e.y - e.r - 14, 'THE KING’S TOLL', '#ff4a8a', true);
+      w.callout('THE KING’S TOLL', '#ff4a8a');
       w.sfx('windup', 0.7);
       k.pt.data.wind = wind;
       k.pt.data.safe = 0;
@@ -512,7 +511,7 @@ export const DUSKSPIRE_PATTERNS: Record<string, PatternFn> = {
         const at = wallSpot(w, e);
         if (at) w.spawnAdd(id, at.x, at.y, e.room);
       }
-      w.text(e.x, e.y - e.r - 14, 'RISE', VIOLET, true);
+      w.callout('RISE', VIOLET);
       w.sfx('summon', 0.6);
       k.pt.step = 1;
     } else if (k.pt.t >= 0.8) k.end();
@@ -529,7 +528,7 @@ export const DUSKSPIRE_PATTERNS: Record<string, PatternFn> = {
     if (k.pt.step === 0) {
       k.pt.data.n = 0;
       k.pt.data.t0 = k.pt.t;
-      w.text(e.x, e.y - e.r - 14, 'THE FROST CLOSES', FROST, true);
+      w.callout('THE FROST CLOSES', FROST);
       k.pt.step = 1;
     }
     if (k.pt.step === 1 && k.pt.t >= k.pt.data.t0! + (k.pt.data.n! === 0 ? 0 : each)) {

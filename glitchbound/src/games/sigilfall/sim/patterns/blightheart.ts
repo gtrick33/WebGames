@@ -308,7 +308,7 @@ function tickHeart(w: World, e: Enemy, s: Fight, dt: number): void {
       w.addFx({ kind: 'glow', x: e.x, y: e.y - 12, life: wind, size: 16, color: PINK });
       if (!s.said) {
         s.said = 1;
-        w.text(e.x, e.y - e.r - 26, 'THE SIGIL OF THORNS BEATS', PINK, true);
+        w.callout('THE SIGIL OF THORNS BEATS', PINK);
       }
       w.sfx('beamCharge', 0.45);
       w.after(wind, () => {
@@ -347,7 +347,7 @@ const topple: PatternFn = (w, e, _dt, k) => {
     pt.data.len = len;
     w.addTelegraph({ shape: 'line', x: e.x, y: e.y, r: 0, r2: k.num('width', 44), angle: a, len, dur: wind, dmg: e.dmg * k.num('mul', 2), status: { status: 'stun', dur: 0.6, power: 1 }, knock: 160, tone: 'enemy', owner: -1, linger: 0 });
     faceTo(e, a);
-    w.text(e.x, e.y - e.r - 20, 'TIMBER!', '#e8c890', true);
+    w.callout('TIMBER!', '#e8c890');
     w.sfx('windup', 0.8);
     pt.step = 1;
   } else if (pt.step === 1) {
@@ -374,7 +374,7 @@ const topple: PatternFn = (w, e, _dt, k) => {
     }
     k.end();
     e.boss!.dazed = k.num('down', 2.2);
-    w.text(e.x, e.y - e.r - 12, 'IT’S DOWN!', '#ffe066', true);
+    w.callout('IT’S DOWN!', '#ffe066');
   }
 };
 
@@ -405,7 +405,7 @@ const pods: PatternFn = (w, e, _dt, k) => {
       w.addFx({ kind: 'ember', x: pod.x, y: pod.y - 90, vx: 0, vy: 90 / 0.6, life: 0.6, size: 3, color: SPORE });
     }
     for (let i = 0; i < 14; i++) w.addFx({ kind: 'leaf', x: e.x + (w.rand() - 0.5) * 36, y: e.y - 26 - w.rand() * 10, vx: (w.rand() - 0.5) * 30, vy: 16, life: 1.1, size: 1, color: w.rand() < 0.5 ? '#8a9a3a' : SPORE, a: w.rand() * TAU });
-    w.text(e.x, e.y - e.r - 20, 'SPORE PODS! Pop them!', SPORE, true);
+    w.callout('SPORE PODS! Pop them!', SPORE);
     w.sfx('summon', 0.6);
     w.shake(2);
     pt.step = 1;
@@ -423,7 +423,7 @@ const taproot: PatternFn = (w, e, _dt, k) => {
   const every = k.num('every', 0.5);
   const wind = k.num('wind', 0.85);
   if (pt.step === 0) {
-    w.text(e.x, e.y - e.r - 20, 'ROOTS!', '#e8c890', true);
+    w.callout('ROOTS!', '#e8c890');
     w.sfx('quake', 0.7);
     w.shake(3);
     w.fxBurst(e.x, e.y + e.r * 0.6, BARK, 14, e.r);
@@ -548,7 +548,7 @@ const garden: PatternFn = (w, e, _dt, k) => {
         w.fxBurst(at.x, at.y - 2, THORN, 8, r * 0.6);
       });
     }
-    w.text(e.x, e.y - e.r - 20, 'MY GARDEN GROWS!', PINK, true);
+    w.callout('MY GARDEN GROWS!', PINK);
     for (let i = 0; i < 10; i++) w.addFx({ kind: 'leaf', x: e.x + (w.rand() - 0.5) * 24, y: e.y - 22, vx: (w.rand() - 0.5) * 40, vy: 10, life: 1, size: 1, color: PETAL, a: w.rand() * TAU });
     w.sfx('summon', 0.6);
     pt.step = 1;
@@ -582,7 +582,7 @@ const spores: PatternFn = (w, e, _dt, k) => {
         addCloud(w, e, at.x, at.y, r * 0.85, k.num('cloud', 5), k.num('drift', 16));
       });
     }
-    w.text(e.x, e.y - e.r - 20, 'SPORES!', SPORE, true);
+    w.callout('SPORES!', SPORE);
     w.sfx('puff', 0.8);
     pt.step = 1;
   } else if (pt.t >= 0.7) k.end();
@@ -605,7 +605,7 @@ const kiss: PatternFn = (w, e, dt, k) => {
     pt.data.a = a;
     w.addTelegraph({ shape: 'cone', x: e.x, y: e.y, r: len, r2: arc, angle: a, len: 0, dur: wind, dmg: 0, knock: 0, tone: 'rift', owner: -1, linger: 0 });
     faceTo(e, a);
-    w.text(e.x, e.y - e.r - 20, '“Come. Kneel.”', PETAL, true);
+    w.callout('“Come. Kneel.”', PETAL);
     w.addFx({ kind: 'glow', x: e.x + Math.cos(a) * 6, y: e.y - 16, life: wind, size: 10, color: PINK });
     w.sfx('beamCharge', 0.5);
     pt.step = 1;
@@ -657,7 +657,7 @@ const kiss: PatternFn = (w, e, dt, k) => {
     } else {
       // her embrace: thorns close round her
       w.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r: k.num('er', 46), r2: 0, angle: 0, len: 0, dur: k.num('ewind', 0.6), dmg: e.dmg * k.num('emul', 1.8), status: bleed(e, 4), knock: 170, tone: 'enemy', owner: e.id, linger: 0 });
-      w.text(e.x, e.y - e.r - 20, '“Stay.”', PETAL, true);
+      w.callout('“Stay.”', PETAL);
       w.sfx('windup', 0.7);
       pt.data.t1 = pt.t;
       pt.step = 3;
@@ -803,7 +803,7 @@ function twinTick(w: World, e: Enemy): void {
     s.until = w.time + SING;
     s.sister = null;
     s.tick = 0;
-    w.text(e.x, e.y - e.r - 20, 'Merrin! Hold on, I will sing you back!', DAWN, true);
+    w.callout('Merrin! Hold on, I will sing you back!', DAWN);
     w.text(w.player.x, w.player.y - 30, 'Now Elowen, before Merrin rises!', '#fff2c0', false);
   } else if (m && s.down === null && e.hp < e.maxHp * FADE_AT) {
     // Elowen falls first: she fades to a mote of dawn, out of reach, while her sister sings
@@ -814,7 +814,7 @@ function twinTick(w: World, e: Enemy): void {
     s.tick = 0;
     b.queue = [];
     b.pattern = { use: { id: 'blight:fade', w: 1, cd: 0 }, t: 0, step: 0, data: { hide: 1 } };
-    w.text(e.x, e.y - e.r - 20, 'Merrin... sing for me...', DAWN, true);
+    w.callout('Merrin... sing for me...', DAWN);
     w.text(w.player.x, w.player.y - 30, 'Now Merrin, before Elowen rises!', '#fff2c0', false);
     w.fxBurst(e.x, e.y - 10, DAWN, 24, 18);
     w.sfx('soul', 0.7);
@@ -848,7 +848,7 @@ function twinTick(w: World, e: Enemy): void {
         b.pattern = null;
         e.hp = Math.max(e.hp, e.maxHp * RISE);
         s.hpE = e.hp;
-        w.text(e.x, e.y - e.r - 20, 'The dusk sings the dawn back!', DAWN, true);
+        w.callout('The dusk sings the dawn back!', DAWN);
         w.fxBurst(e.x, e.y - 10, DAWN, 24, 20);
       } else {
         wakeSister(w, e, s, s.dx, s.dy, RISE);
@@ -907,7 +907,7 @@ const twins: PatternFn = (w, e, _dt, k) => {
     }
     at ??= { x: e.x + 40, y: e.y };
     wakeSister(w, e, s, at.x, at.y, 1);
-    w.text(e.x, e.y - e.r - 20, 'Sister, wake! Someone has come to put out the last light.', DAWN, true);
+    w.callout('Sister, wake! Someone has come to put out the last light.', DAWN);
     w.fxBurst(at.x, at.y - 10, DUSK, 20, 16);
   }
   k.end();

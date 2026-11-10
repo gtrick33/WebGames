@@ -1551,6 +1551,120 @@
 .rb-boss-fill {
   background: linear-gradient(#ff6ae0, #c01a8a);
 }
+/* where its later phases begin, marked on the bar */
+.rb-boss-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--rb-ink);
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.35);
+  text-decoration: none;
+}
+/* its state, in words: which phase, a ward, dazed, what afflicts it */
+.rb-boss-pips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 3px;
+  min-height: 0;
+}
+.rb-boss-pips i {
+  font-style: normal;
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 6px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 8px;
+  background: #2a2438;
+  color: #e8e0f4;
+  text-shadow: none;
+}
+.rb-boss-pips i[data-tone='good'] {
+  background: #1f4a34;
+  color: #c8ffd8;
+}
+.rb-boss-pips i[data-tone='bad'] {
+  background: #3a4a6a;
+  color: #e0ecff;
+}
+/* what it is winding up, when that takes a second or more: a bar that fills until the blow lands */
+.rb-boss-cast {
+  position: relative;
+  width: 56%;
+  height: 7px;
+  margin-top: 4px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 5px;
+  background: #2a1408;
+  overflow: hidden;
+}
+.rb-boss-cast[hidden],
+.rb-boss-call[hidden],
+.rb-boss-call small[hidden] {
+  display: none;
+}
+.rb-boss-cast i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(#ffd27a, #ff8a2a);
+}
+/* what it is doing, called out in one place: a mark, a few words, a bar running down, and for a first meeting what to do */
+.rb-boss-call {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  margin-top: 6px;
+  padding: 5px 12px 6px;
+  max-width: 100%;
+  border: 3px solid var(--rb-ink);
+  border-radius: 10px;
+  background: rgba(18, 12, 28, 0.86);
+  text-shadow: none;
+}
+.rb-boss-call-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.rb-boss-call em {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--call, #ffd27a);
+  color: #14101c;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 13px;
+}
+.rb-boss-call b {
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--call, #ffd27a);
+}
+.rb-boss-call-time {
+  position: relative;
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+.rb-boss-call-time i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--call, #ffd27a);
+}
+.rb-boss-call small {
+  font-size: 12px;
+  color: #f4ecdc;
+  text-align: center;
+}
 /* a ward over the boss (ui/GameScreen.tsx BossBar: its shield), a silver bar under its health that empties as it breaks */
 .rb-boss-ward {
   position: relative;

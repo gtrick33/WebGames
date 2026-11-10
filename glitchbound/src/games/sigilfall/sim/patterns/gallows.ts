@@ -77,7 +77,7 @@ const trapdoors: PatternFn = (w, e, _dt, k) => {
   const waves = Math.round(k.num('waves', 2));
   const wind = k.num('wind', 1.5);
   if (pt.step === 0) {
-    w.text(e.x, e.y - e.r - 16, 'Drop the boards!', ROPE, true);
+    w.callout('Drop the boards!', ROPE);
     w.sfx('doorSlam', 0.6);
     pt.data.wave = 0;
     pt.data.next = pt.t + 0.3;
@@ -125,7 +125,7 @@ const hookDrop: PatternFn = (w, e, dt, k) => {
     pt.data.len = Math.max(20, dist(e.x, e.y, end.x, end.y));
     w.addTelegraph({ shape: 'line', x: e.x, y: e.y, r: 0, r2: width, angle: a, len: pt.data.len, dur: wind, dmg: 0, knock: 0, tone: 'enemy', owner: -1, linger: 0 });
     e.face = Math.cos(a) < 0 ? Math.PI : 0;
-    w.text(e.x, e.y - e.r - 16, 'Your turn on the boards!', ROPE, true);
+    w.callout('Your turn on the boards!', ROPE);
     w.sfx('windup', 0.6);
     pt.step = 1;
   } else if (pt.step === 1 && pt.t >= wind) {
@@ -195,7 +195,7 @@ const burrow: PatternFn = (w, e, dt, k) => {
   const s = fight(w, e);
   const erupt = k.num('erupt', 0.65);
   if (pt.step === 0) {
-    w.text(e.x, e.y - e.r - 16, 'Gnasher digs in!', DIRT, true);
+    w.callout('Gnasher digs in!', DIRT);
     w.sfx('crumble', 0.7);
     w.shake(3);
     w.fxBurst(e.x, e.y, DIRT, 24, 18);
@@ -314,7 +314,7 @@ function tickCages(w: World, e: Enemy, s: Gallows, dt: number): void {
       removeThing(w, c);
       e.atkMul *= 1.1;
       e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.04);
-      w.text(e.x, e.y - e.r - 16, 'The gang roars for their king!', '#ff8a8a', true);
+      w.callout('The gang roars for their king!', '#ff8a8a');
       w.sfx('roar', 0.6);
     }
   }

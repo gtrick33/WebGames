@@ -96,7 +96,7 @@ const flood: PatternFn = (w, e, _dt, k) => {
       fxT: 0,
       sayT: 0,
     };
-    w.text(e.x, e.y - e.r - 16, 'Come down to the deep with me!', SEA, true);
+    w.callout('Come down to the deep with me!', SEA);
     w.text(w.player.x, w.player.y - 30, 'Find the air!', FOAM, false);
     w.sfx('rift', 0.6);
     w.shake(3);
@@ -157,7 +157,7 @@ const molt: PatternFn = (w, e, _dt, k) => {
   if (pt.step === 0) {
     s.shell = 0;
     s.turn = k.num('turn', 3.2);
-    w.text(e.x, e.y - e.r - 18, 'She sheds her shell!', SHELL, true);
+    w.callout('She sheds her shell!', SHELL);
     for (let i = 0; i < 8; i++) {
       const a = (i / 8) * TAU;
       w.addFx({ kind: 'spark', x: e.x, y: e.y - 6, vx: Math.cos(a) * 80, vy: Math.sin(a) * 50 - 30, life: 0.6, size: 3, color: SHELL });
@@ -300,8 +300,7 @@ const blackSpot: PatternFn = (w, e, _dt, k) => {
     s.spot = { on: null, at: w.time + k.num('time', 8), grace: w.time + 0.8, tick: 0, fxT: 0, mul: k.num('mul', 0.4) };
     s.flashes.clear();
     for (const o of w.enemies) s.flashes.set(o, o.flash);
-    w.text(e.x, e.y - e.r - 16, 'The Black Spot! You’re a dead man walking!', '#ff8a8a', true);
-    w.text(p.x, p.y - 30, 'Pass it on: strike someone!', BONE, false);
+    w.callout('The Black Spot! You’re a dead man walking!', '#ff8a8a', 'Pass it on: strike someone!');
     w.addFx({ kind: 'beam', x: e.x, y: e.y - 8, x2: p.x, y2: p.y - 8, life: 0.4, size: 2, color: SPOT });
     w.sfx('shadow', 0.7);
     pt.data.t1 = pt.t;

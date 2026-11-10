@@ -327,6 +327,20 @@ export interface Field {
 }
 
 /** A warning shape on the ground that deals its damage when it fills up. */
+export type TelegraphKind = 'danger' | 'safe' | 'stand' | 'warn';
+
+/**
+ * What a boss is doing, said once in one place (the slot under its health bar, ui/GameScreen.tsx): a few words, a
+ * bar that runs down while it lasts, and what to do about it, which the banner shows a hero the first time they meet it.
+ */
+export interface Callout {
+  text: string;
+  color: string;
+  t: number;
+  dur: number;
+  hint?: string;
+}
+
 export interface Telegraph {
   id: number;
   shape: 'circle' | 'ring' | 'line' | 'cone' | 'donut';
@@ -345,6 +359,13 @@ export interface Telegraph {
   knock: number;
   /** Visual: enemy attacks are red; the rift is magenta. */
   tone: 'enemy' | 'rift' | 'player';
+  /**
+   * What it asks of the hero, each drawn its own way (render/effects.ts): `danger` (the default: get out, red or the
+   * rift's magenta), `safe` (the one place the blow won't land: gold, outlined, get in), `stand` (somewhere to stand
+   * for the fight's sake: blue, with a mark at its middle), `warn` (it shows what is coming and hurts nobody: grey).
+   * Only a `danger` ever strikes.
+   */
+  kind?: TelegraphKind;
   /** For a moving owner: the shape follows it (slams). */
   owner: number;
   /** Friendly telegraphs (meteor) hit enemies instead, via `then`. */

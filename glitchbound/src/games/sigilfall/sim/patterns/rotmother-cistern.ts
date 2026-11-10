@@ -290,7 +290,7 @@ const FIRST_PATTERNS: Record<string, PatternFn> = {
       }
       if (!e.boss!.misc.risen) {
         e.boss!.misc.risen = 1;
-        w.text(e.x, e.y - e.r - 16, 'THE BREW RISES!', '#c8f07a', true);
+        w.callout('THE BREW RISES!', '#c8f07a');
       }
       w.sfx('quake', 0.6);
       w.shake(2);
@@ -347,7 +347,7 @@ const FIRST_PATTERNS: Record<string, PatternFn> = {
           }
         });
       }
-      w.text(e.x, e.y - e.r - 16, 'THE VATS!', '#c8f07a', true);
+      w.callout('THE VATS!', '#c8f07a');
       w.sfx('windup', 0.7);
       pt.step = 1;
     } else if (pt.t >= 0.8) k.end();
@@ -535,7 +535,7 @@ const leeches: PatternFn = (w, e, _dt, k) => {
     const a = k.aimAt();
     pt.data.a = a;
     w.addTelegraph({ shape: 'cone', x: e.x, y: e.y, r, r2: arc, angle: a, len: 0, dur: wind, dmg: e.dmg * k.num('mul', 0.6), knock: 0, tone: 'enemy', owner: e.id, linger: 0 });
-    w.text(e.x, e.y - e.r - 16, 'Drink, my little ones!', '#b8d84a', true);
+    w.callout('Drink, my little ones!', '#b8d84a');
     w.sfx('squish', 0.6);
     pt.step = 1;
   } else if (pt.step === 1 && pt.t >= wind) {
@@ -608,7 +608,7 @@ const sluices: PatternFn = (w, e, _dt, k) => {
       const lever = spawnThing(w, e, LEVER, lx, b.y);
       s.lanes.push({ y: b.y, x0: b.x0, x1: b.x1, dir, lever, until: w.time + k.num('time', 12), fxT: 0, markT: 0, hurtT: 0 });
     }
-    w.text(e.x, e.y - e.r - 16, 'Open the sluices!', '#c8d890', true);
+    w.callout('Open the sluices!', '#c8d890');
     w.text(w.player.x, w.player.y - 30, 'Strike the levers to shut them!', '#e8f0c0', false);
     w.sfx('doorSlam', 0.7);
     w.shake(4);

@@ -467,7 +467,7 @@ const warcry: PatternFn = (w, e, _dt, k) => {
   const { pt } = k;
   const wind = k.num('wind', 0.7);
   if (pt.step === 0) {
-    w.text(e.x, e.y - e.r - 18, 'WAR CRY!', '#ffd27a', true);
+    w.callout('WAR CRY!', '#ffd27a');
     w.addFx({ kind: 'glow', x: e.x, y: e.y - e.r, life: wind, size: 18, color: FROST });
     w.sfx('enemyWindup', 0.6);
     pt.step = 1;
@@ -598,7 +598,7 @@ const breath: PatternFn = (w, e, _dt, k) => {
     }
     faceTo(e, a0 - (dir * arc) / 2);
     w.addFx({ kind: 'glow', x: e.x + Math.cos(a0) * e.r, y: e.y - 8, life: wind, size: 14, color: FROST });
-    if (n === 0) w.text(e.x, e.y - e.r - 16, 'FROST BREATH!', '#c8f0ff', true);
+    if (n === 0) w.callout('FROST BREATH!', '#c8f0ff');
     w.sfx('beamCharge', 0.8);
     pt.data.t1 = pt.t + wind + (beams - 1) * step;
     pt.data.n = n + 1;
@@ -632,7 +632,7 @@ const gust: PatternFn = (w, e, dt, k) => {
     pt.data.a = a;
     w.addTelegraph({ shape: 'cone', x: e.x, y: e.y, r: len, r2: arc, angle: a, len: 0, dur: wind, dmg: 0, knock: 0, tone: 'enemy', owner: -1, linger: 0 });
     faceTo(e, a);
-    w.text(e.x, e.y - e.r - 16, 'WINGS!', '#c8f0ff', true);
+    w.callout('WINGS!', '#c8f0ff');
     w.sfx('whirl', 0.7);
     // where the wind will throw the hero: the roof shakes loose over it
     const n = k.num('icicles', 0);
@@ -684,7 +684,7 @@ const icicles: PatternFn = (w, e, _dt, k) => {
   const fired = pt.data.f ?? 0;
   if (!pt.data.said) {
     pt.data.said = 1;
-    w.text(e.x, e.y - e.r - 16, 'THE ROOF!', '#c8f0ff', true);
+    w.callout('THE ROOF!', '#c8f0ff');
     w.sfx('roar', 0.6);
     w.shake(4);
     for (let i = 0; i < 10; i++) w.addFx({ kind: 'spark', x: e.x + (w.rand() - 0.5) * 200, y: e.y - 80 - w.rand() * 40, vx: 0, vy: 30, life: 0.8, size: 1, color: ICE });
@@ -732,7 +732,7 @@ const frost: PatternFn = (w, e, _dt, k) => {
         addIce(w, e, at.x, at.y, 10, k.num('max', 38), k.num('grow', 4), k.num('life', 14));
       });
     }
-    w.text(e.x, e.y - e.r - 16, 'THE RIME SPREADS!', '#c8f0ff', true);
+    w.callout('THE RIME SPREADS!', '#c8f0ff');
     w.sfx('freeze', 0.8);
     pt.step = 1;
   } else if (pt.t >= wind + 0.3) k.end();
@@ -809,7 +809,7 @@ const flight: PatternFn = (w, e, dt, k) => {
   const rx = (box.x1 - box.x0) * 0.3;
   const ry = (box.y1 - box.y0) * 0.28;
   if (pt.step === 0) {
-    w.text(e.x, e.y - e.r - 18, 'IT TAKES WING!', '#c8f0ff', true);
+    w.callout('IT TAKES WING!', '#c8f0ff');
     w.sfx('roar');
     w.sfx('whirl');
     w.shake(6);
@@ -1093,7 +1093,7 @@ function frozenAtPost(w: World, e: Enemy, s: Watch): void {
   const dur = 1.3;
   if (!hurtPlayer(w, p.maxHp * s.cost, { pierce: true, status: { status: 'stun', dur, power: 1 } })) return;
   w.text(p.x, p.y - 42, 'FROZEN AT YOUR POST!', ICE, true);
-  w.text(e.x, e.y - e.r - 18, 'The watch has no room for deserters.', WATCH, true);
+  w.callout('The watch has no room for deserters.', WATCH);
   iceShell(w, dur);
   // and the vault's roof gives its judgment on whoever cannot move
   if (s.judge) icicle(w, e, p.x, p.y, 20, 1, 1.25, false);

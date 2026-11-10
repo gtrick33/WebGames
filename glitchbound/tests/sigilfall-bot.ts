@@ -177,7 +177,7 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
         if (goalPt) toTarget = flowField(w.map, Math.floor(goalPt.x / TILE), Math.floor(goalPt.y / TILE), 4000, toTarget);
       }
       // danger first: step out of anything about to land
-      const danger = w.telegraphs.find((t) => t.tone !== 'player' && !t.dead && inside(t, p.x, p.y, p.r));
+      const danger = w.telegraphs.find((t) => t.tone !== 'player' && (t.kind ?? 'danger') === 'danger' && !t.dead && inside(t, p.x, p.y, p.r));
       let mx = 0;
       let my = 0;
       if (danger) {

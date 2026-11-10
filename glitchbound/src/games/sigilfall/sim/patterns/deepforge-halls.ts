@@ -131,7 +131,7 @@ const shed: PatternFn = (w, e, _dt, k) => {
       }
     }
     for (let i = 0; i < 12; i++) w.addFx({ kind: 'rubble', x: e.x + (w.rand() - 0.5) * 20, y: e.y - 10 - w.rand() * 12, vx: (w.rand() - 0.5) * 120, vy: -60 - w.rand() * 60, life: 0.7, size: 2, color: w.rand() < 0.5 ? '#4a3a34' : '#ff7a2a' });
-    w.text(e.x, e.y - e.r - 16, 'CRACK!', '#ffb04d', true);
+    w.callout('CRACK!', '#ffb04d');
     w.sfx('crumble');
     w.shake(3);
     pt.step = 1;
@@ -142,7 +142,7 @@ const shed: PatternFn = (w, e, _dt, k) => {
 function crack(w: World, e: Enemy, k: PatternKit): void {
   const daze = k.num('daze', 2.5);
   e.def.sprite = 'slag-colossus';
-  w.text(e.x, e.y - e.r - 16, 'CRACKED!', '#ffd04a', true);
+  w.callout('CRACKED!', '#ffd04a');
   w.sfx('crumble');
   w.shake(5);
   w.fxBurst(e.x, e.y - 10, '#ff8a2a', 24, 22);
@@ -167,7 +167,7 @@ const harden: PatternFn = (w, e, dt, k) => {
     pt.data.full = e.shield;
     pt.data.next = 1.4;
     e.def.sprite = 'slag-colossus-cooled';
-    w.text(e.x, e.y - e.r - 16, 'HARDENED!', '#c8ccd4', true);
+    w.callout('HARDENED!', '#c8ccd4');
     w.sfx('freeze');
     w.shake(3);
     for (let i = 0; i < 16; i++) w.addFx({ kind: 'smoke', x: e.x + (w.rand() - 0.5) * 26, y: e.y - w.rand() * 24, vx: (w.rand() - 0.5) * 30, vy: -14 - w.rand() * 16, life: 0.9, size: 4, color: '#b8bcc8' });
@@ -210,7 +210,7 @@ const harden: PatternFn = (w, e, dt, k) => {
       // not cracked in time: the heat inside breaks out
       w.telegraphs = w.telegraphs.filter((t) => t.owner !== e.id);
       w.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r: 72, r2: 0, angle: 0, len: 0, dur: 1.3, dmg: e.dmg * 1.8, status: burn(e, 3), knock: 180, tone: 'enemy', owner: e.id, linger: 0 });
-      w.text(e.x, e.y - e.r - 16, 'ERUPTION!', '#ff6a3d', true);
+      w.callout('ERUPTION!', '#ff6a3d');
       w.sfx('beamCharge');
       pt.data.t1 = pt.t;
       pt.step = 2;
@@ -331,7 +331,7 @@ const pourPattern: PatternFn = (w, e, _dt, k) => {
       const pick = [order[0]!, ...rest].slice(0, k.num('count', 1));
       pick.forEach((l, i) => pour(w, e, l, k.num('wind', 1.4) + i * 0.3, k.num('open', 3), phase));
     }
-    w.text(e.x, e.y - e.r - 14, 'MOLTEN STEEL!', '#ffb04d', true);
+    w.callout('MOLTEN STEEL!', '#ffb04d');
     w.sfx('windup', 0.7);
     pt.step = 1;
   } else if (pt.t >= 0.9) k.end();
@@ -673,7 +673,7 @@ const runes: PatternFn = (w, e, _dt, k) => {
     s.got = 0;
     s.open = 0;
     s.on = s.plates.findIndex((pl) => dist(pl.x, pl.y, w.player.x, w.player.y) < 18);
-    w.text(e.x, e.y - e.r - 16, 'The runes remember. Do you?', RUNE, true);
+    w.callout('The runes remember. Do you?', RUNE);
     w.sfx('rift', 0.5);
     pt.data.n = 0;
     pt.data.next = pt.t + 0.6;

@@ -320,7 +320,7 @@ const gravity: PatternFn = (w, e, dt, k) => {
   const reach = k.num('reach', 240);
   if (pt.step === 0) {
     w.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r: k.num('r', 66), r2: 0, angle: 0, len: 0, dur: time, dmg: e.dmg * k.num('mul', 1.8), knock: 170, tone: 'rift', owner: e.id, linger: 0 });
-    w.text(e.x, e.y - e.r - 18, 'THE RIFT TURNS INWARD!', '#ff9af0', true);
+    w.callout('THE RIFT TURNS INWARD!', '#ff9af0');
     w.addFx({ kind: 'rift', x: e.x, y: e.y, life: time, size: 20, color: RIFT });
     w.sfx('beamCharge', 0.9);
     w.sfx('rift', 0.5);
@@ -532,7 +532,7 @@ const echoes: PatternFn = (w, e, dt, k) => {
     pt.data.hide = 1;
     w.addFx({ kind: 'rift', x: e.x, y: e.y, life: 0.6, size: 16, color: RIFT });
     w.fxBurst(e.x, e.y - 8, PALE, 16, 16);
-    w.text(e.x, e.y - e.r - 18, 'WHICH OF US?', PALE, true);
+    w.callout('WHICH OF US?', PALE);
     w.sfx('blink');
     pt.step = 1;
   } else if (pt.step === 1 && pt.t >= k.num('hide', 0.7)) {
@@ -569,7 +569,7 @@ const echoes: PatternFn = (w, e, dt, k) => {
         fade(w, x);
       }
       s.echoes = [];
-      w.text(e.x, e.y - e.r - 18, 'FOUND!', '#ffffff', true);
+      w.callout('FOUND!', '#ffffff');
       w.sfx('shieldBreak');
       w.shake(4);
       w.fxBurst(e.x, e.y - 8, VEIL, 20, 18);
@@ -587,7 +587,7 @@ const echoes: PatternFn = (w, e, dt, k) => {
     if (pt.t >= pt.data.t1! + k.num('time', 9)) {
       // out of time: all of them at once
       for (const c of casters) lance(w, e, c, k.num('fwind', 1.3), k.num('width', 14), e.dmg * k.num('fmul', 1.4));
-      w.text(e.x, e.y - e.r - 18, 'HEAR US!', '#ff9af0', true);
+      w.callout('HEAR US!', '#ff9af0');
       w.sfx('beamCharge');
       pt.data.t2 = pt.t;
       pt.step = 3;
@@ -724,7 +724,7 @@ const sunder: PatternFn = (w, e, _dt, k) => {
       }
       w.after(wind, () => fall(w, e, q, phase, life, vmul));
     }
-    w.text(e.x, e.y - e.r - 18, 'THE FLOOR FALLS!', '#ff9af0', true);
+    w.callout('THE FLOOR FALLS!', '#ff9af0');
     w.addFx({ kind: 'glow', x: e.x, y: e.y - 10, life: 0.6, size: 18, color: VEIL });
     w.sfx('crumble', 0.5);
     w.sfx('beamCharge', 0.6);
@@ -897,7 +897,7 @@ const unmoor: PatternFn = (w, e, _dt, k) => {
       w.floaters.push(f);
       w.fxBurst(at.x, at.y, '#9a92b0', 8, 10);
     }
-    w.text(e.x, e.y - e.r - 18, 'Let go of the floor. It was never holding you.', STAR, true);
+    w.callout('Let go of the floor. It was never holding you.', STAR);
     w.text(w.player.x, w.player.y - 30, 'Weightless! You drift: a dodge still pushes off.', '#e8e0ff', false);
     w.sfx('rift', 0.6);
     w.addFx({ kind: 'ring', x: e.x, y: e.y, life: 0.8, size: 60, color: STAR });

@@ -12,7 +12,7 @@ import type { Land3D, RoofSpot } from '../render3d/land';
 import { bossHidden } from '../sim/boss';
 import { hasStatus } from '../sim/combat';
 import { TILE } from '../sim/map';
-import type { Enemy, Fx, Projectile, Telegraph } from '../sim/types';
+import type { Enemy, Fx, Projectile, Telegraph, TelegraphKind } from '../sim/types';
 import { SUMMON_TIME, type World } from '../sim/world';
 
 /**
@@ -43,6 +43,10 @@ export const TONES: Record<string, Tone> = {
   nature: { a: '#58c848', b: '#e4ffc8' },
   physical: { a: '#e0d8c8', b: '#ffffff' },
 };
+/** What a mark on the ground asks of the hero (sim/types.ts TelegraphKind): absent, it is an attack. */
+export const telegraphKind = (t: { kind?: TelegraphKind }): TelegraphKind => t.kind ?? 'danger';
+/** The colors of the marks that aren't attacks: gold for safety, blue for a place to stand, grey for a plain warning. */
+export const KIND_COLOR: Record<Exclude<TelegraphKind, 'danger'>, string> = { safe: '#ffd24a', stand: '#4aa8ff', warn: '#b8b4c4' };
 const toneOf = (type: string): Tone => TONES[type] ?? TONES.physical!;
 
 /** What fire looks like in a place: most burn orange, a deep place its own color. */
@@ -532,8 +536,13 @@ export class Effects {
   private telegraph(t: Telegraph, fx: Fx3D): void {
     if (t.t >= t.dur && t.linger <= 0) return;
     const k = clamp(t.t / t.dur, 0, 1);
-    const a = t.tone === 'rift' ? '#ff3fd2' : t.tone === 'player' ? '#ffb04d' : '#ff3b3b';
+    const kind = telegraphKind(t);
+    const a = kind === 'danger' ? (t.tone === 'rift' ? '#ff3fd2' : t.tone === 'player' ? '#ffb04d' : '#ff3b3b') : KIND_COLOR[kind];
     const lingering = t.t >= t.dur;
+    if (kind !== 'danger') {
+      this.quietTelegraph(t, kind, a, fx);
+      return;
+    }
     switch (t.shape) {
       case 'circle':
         fx.put({ kind: FX.warn, x: t.x, y: t.y, flat: true, w: t.r * 2, a, t: lingering ? 1 : k, p1: WARN.circle, seed: lingering ? 0.7 : 0 });
@@ -553,6 +562,39 @@ export class Effects {
         fx.put({ kind: FX.warn, x: t.x, y: t.y, flat: true, w: t.r * 2, rot: t.angle, a, t: k, p1: WARN.cone, p2: t.r2 });
         break;
     }
+  }
+
+  /**
+   * A place on the ground that isn't an attack, each kind its own look so it is never read as one: a safe place is
+   * gold, steady (it doesn't fill like a blow about to land) and outlined; a place to stand is blue with a mark turning
+   * at its middle; a plain warning is grey and faint.
+   */
+  private quietTelegraph(t: Telegraph, kind: Exclude<TelegraphKind, 'danger'>, a: string, fx: Fx3D): void {
+    if (t.t >= t.dur) return;
+    const pulse = 0.5 + Math.sin(t.t * 5) * 0.08;
+    const fill = kind === 'warn' ? 0.2 : pulse;
+    const alpha = kind === 'warn' ? 0.45 : 1;
+    let cx = t.x;
+    let cy = t.y;
+    switch (t.shape) {
+      case 'circle':
+        fx.put({ kind: FX.warn, x: t.x, y: t.y, flat: true, w: t.r * 2, a, t: fill, p1: WARN.circle, alpha });
+        if (kind === 'safe') fx.put({ kind: FX.mark, x: t.x, y: t.y, flat: true, w: t.r * 2 + 4, a });
+        break;
+      case 'ring':
+      case 'donut':
+        fx.put({ kind: FX.warn, x: t.x, y: t.y, flat: true, w: t.r * 2, a, t: fill, p1: WARN.donut, p2: t.r2 / t.r, alpha });
+        break;
+      case 'line':
+        cx = t.x + (Math.cos(t.angle) * t.len) / 2;
+        cy = t.y + (Math.sin(t.angle) * t.len) / 2;
+        fx.put({ kind: FX.warn, x: cx, y: cy, flat: true, w: t.len, h: t.r2, rot: t.angle, a, t: fill, p1: WARN.line, alpha });
+        break;
+      case 'cone':
+        fx.put({ kind: FX.warn, x: t.x, y: t.y, flat: true, w: t.r * 2, rot: t.angle, a, t: fill, p1: WARN.cone, p2: t.r2, alpha });
+        break;
+    }
+    if (kind === 'stand') fx.put({ kind: FX.rune, x: cx, y: cy, flat: true, w: Math.min(40, Math.max(18, t.r)), a, b: '#ffffff', t: 0.6, seed: t.id * 0.37 });
   }
 
   /** The wind-ups of ordinary foes, read from their state: arcs, slam circles, aim lines, charge lanes. */

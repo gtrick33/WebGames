@@ -34,7 +34,7 @@ import { spawnFolk, updateFolk, type Folk } from './folk';
 import { updateCasting, updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
 import { healPlayer, hurtPlayer, playerSlow, playerStunned, tickPlayerStatuses } from './combat';
 import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type PlacedMarker, type TileMap } from './map';
-import type { Chest, CoopSide, Drop, Enemy, Field, FloatText, Fx, Ghost, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent } from './types';
+import type { Chest, CoopSide, Drop, Enemy, Field, FloatText, Fx, Ghost, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent, Callout } from './types';
 import { inCone, inLine } from '../core/math';
 
 /** What the input adapters hand the world every frame. */
@@ -215,6 +215,8 @@ export class World {
   leftNpcs: (NpcActor & { left: number })[] = [];
   spores: Spore[] = [];
   texts: FloatText[] = [];
+  /** What the boss is doing, as its bar says it (callout below). */
+  shout: Callout | null = null;
   fx: Fx[] = [];
   encounters: EncounterState[] = [];
   delayed: { t: number; fn: () => void }[] = [];
@@ -1007,6 +1009,13 @@ export class World {
     this.fields.push(field);
     return field;
   }
+  /**
+   * A boss's mechanic, called out in the slot under its bar and not over its head (where it sat on the fight and
+   * was gone in a second): up to six words, held `dur` seconds, with what to do about it for a hero's first meeting.
+   */
+  callout(text: string, color: string, hint?: string, dur = 3): void {
+    this.shout = { text, color, t: 0, dur, ...(hint ? { hint } : {}) };
+  }
   /** Shows an attack on the ground and returns it. */
   addTelegraph(t: Omit<Telegraph, 'id' | 't' | 'dead'>): Telegraph {
     const tg: Telegraph = { ...t, id: this.nextId++, t: 0, dead: false };
@@ -1235,6 +1244,7 @@ export class World {
     }
     // corpses fade, effects age
     this.enemies = this.enemies.filter((e) => !e.dead || e.deathT < 0.6);
+    if (this.shout && (this.shout.t += rawDt) >= this.shout.dur) this.shout = null;
     for (const t of this.texts) {
       t.t += rawDt;
       t.y += t.vy * rawDt;
@@ -1481,13 +1491,13 @@ export class World {
       }
       if (t.t < t.dur) continue;
       // the host's attacks strike the other heroes too (their games take the hit)
-      if (this.coop?.role === 'host' && t.tone !== 'player' && t.dmg > 0 && (t.t - dt < t.dur || t.linger > 0) && !t.dead)
+      if (this.coop?.role === 'host' && t.tone !== 'player' && t.dmg > 0 && (t.kind ?? 'danger') === 'danger' && (t.t - dt < t.dur || t.linger > 0) && !t.dead)
         for (const g of this.coop.ghosts) {
           if (g.dead || t.struck?.includes(g.n) || !inside(t, g.x, g.y, g.r)) continue;
           (t.struck ??= []).push(g.n);
           this.ghostHit(g, t.dmg, { fromX: t.x, fromY: t.y, knock: t.knock, ...(t.status ? { status: t.status } : {}), ...(t.owner >= 0 ? { src: t.owner } : {}) });
         }
-      if (t.tone !== 'player' && !t.remote && t.dmg > 0 && !p.dead && (t.t - dt < t.dur || t.linger > 0) && !t.dead) {
+      if (t.tone !== 'player' && !t.remote && t.dmg > 0 && (t.kind ?? 'danger') === 'danger' && !p.dead && (t.t - dt < t.dur || t.linger > 0) && !t.dead) {
         if (inside(t, p.x, p.y, p.r)) {
           if (hurtPlayer(this, t.dmg, { fromX: t.x, fromY: t.y, knock: t.knock, status: t.status, source: t.owner >= 0 ? this.enemyById(t.owner) : undefined })) t.dmg = 0;
         }

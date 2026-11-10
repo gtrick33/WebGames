@@ -217,8 +217,8 @@ function finish(w: World, e: Enemy, s: Fight): void {
   if (standing(w, s.crown)) quietly(s.crown);
   // freed: the fire lord's last words (only when he fell, not when the hero did)
   if (s.chains.length && e.boss && (e.boss.dying > 0 || e.dead)) {
-    w.text(e.x, e.y - e.r - 22, '“The chains... they are gone.”', GOLD, true);
-    w.after(1, () => w.text(e.x, e.y - e.r - 22, '“Thank you. Take my fire, and break their crown.”', GOLD, true));
+    w.callout('“The chains... they are gone.”', GOLD);
+    w.after(1, () => w.callout('“Thank you. Take my fire, and break their crown.”', GOLD, undefined, 4));
     w.emit({ t: 'banner', text: 'Ashkar is free', sub: '“Thank you, Sigil-bearer. Take my fire with you.”' });
     w.fxBurst(e.x, e.y - 10, GOLD, 30, 30);
   }
@@ -391,7 +391,7 @@ const shackles: PatternFn = (w, e, _dt, k) => {
       s.chains.push({ anchor: a, state: a ? 'whole' : 'broken' });
       if (a) w.fxBurst(a.x, a.y - 4, '#8a8290', 10, 10);
     }
-    w.text(e.x, e.y - e.r - 20, 'CHAINED TO HIS THRONE', '#c8c0d0', true);
+    w.callout('CHAINED TO HIS THRONE', '#c8c0d0');
     w.emit({ t: 'banner', text: 'Ashkar is chained to his throne', sub: 'Break the anchors to loosen him: he burns hotter for every chain' });
     w.sfx('doorSlam', 0.6);
     w.shake(3);
@@ -432,7 +432,7 @@ const taut: PatternFn = (w, e, _dt, k) => {
       });
     }
     s.tautT = wind + 0.3;
-    w.text(e.x, e.y - e.r - 20, 'HE STRAINS AT HIS CHAINS!', FIRE, true);
+    w.callout('HE STRAINS AT HIS CHAINS!', FIRE);
     w.sfx('roar', 0.6);
     w.sfx('windup', 0.6);
     pt.data.wind = wind;
@@ -456,7 +456,7 @@ const tear: PatternFn = (w, e, _dt, k) => {
     const live = s.chains.filter((c) => c.state === 'whole' && standing(w, c.anchor));
     s.leash = 0;
     if (!live.length) {
-      if (s.chains.length) w.text(e.x, e.y - e.r - 20, 'NOTHING HOLDS HIM NOW!', FIRE, true);
+      if (s.chains.length) w.callout('NOTHING HOLDS HIM NOW!', FIRE);
       k.end();
       return;
     }
@@ -478,7 +478,7 @@ const tear: PatternFn = (w, e, _dt, k) => {
         for (let j = 0; j < 12; j++) w.addFx({ kind: 'rubble', x: x0 + Math.cos(a) * fl * (j / 12), y: y0 + Math.sin(a) * fl * (j / 12), vx: (w.rand() - 0.5) * 60, vy: -40 - w.rand() * 50, life: 0.6, size: 2, color: j % 2 ? '#3a3030' : FIRE });
       });
     }
-    w.text(e.x, e.y - e.r - 20, 'HE TEARS OUT HIS CHAINS!', FIRE, true);
+    w.callout('HE TEARS OUT HIS CHAINS!', FIRE);
     w.sfx('roar');
     w.sfx('windup', 0.7);
     pt.data.wind = wind;
@@ -525,7 +525,7 @@ const flail: PatternFn = (w, e, _dt, k) => {
       });
     }
     faceTo(e, mid);
-    if (n === 0) w.text(e.x, e.y - e.r - 20, 'THE CHAIN!', FIRE, true);
+    if (n === 0) w.callout('THE CHAIN!', FIRE);
     w.sfx('windup', 0.6);
     pt.data.t1 = pt.t + wind + (beams - 1) * step;
     pt.step = 1;
@@ -566,7 +566,7 @@ const forge: PatternFn = (w, e, dt, k) => {
       return;
     }
     pt.data.blow = 0;
-    w.text(e.x, e.y - e.r - 20, 'THE CROWN COMMANDS!', PALE, true);
+    w.callout('THE CROWN COMMANDS!', PALE);
     w.sfx('summon', 0.6);
     pt.step = 1;
   }
@@ -631,7 +631,7 @@ const crown: PatternFn = (w, e, _dt, k) => {
     s.crownT = 2.5;
     w.addFx({ kind: 'glow', x: s.ax, y: s.ay - 10, life: 1, size: 26, color: PALE });
     w.fxBurst(s.ax, s.ay - 10, PALE, 20, 20);
-    w.text(e.x, e.y - e.r - 20, 'THE PALE CROWN RISES!', PALE, true);
+    w.callout('THE PALE CROWN RISES!', PALE);
     w.sfx('summon');
     w.sfx('beamCharge', 0.6);
     pt.data.t1 = pt.t;
@@ -723,7 +723,7 @@ function crownBreaks(w: World, e: Enemy, s: Fight): void {
   }
   w.addFx({ kind: 'ring', x, y, life: 0.7, size: 50, color: PALE });
   w.text(x, y - 24, 'THE PALE CROWN SHATTERS!', PALE, true);
-  w.text(e.x, e.y - e.r - 34, '“My own fire... at last.”', GOLD, true);
+  w.callout('“My own fire... at last.”', GOLD);
   w.emit({ t: 'banner', text: 'The Pale Crown is broken', sub: 'Ashkar reels: the Host’s will is gone from him' });
   w.sfx('shieldBreak');
   w.sfx('crumble', 0.6);
@@ -773,7 +773,7 @@ const eruption: PatternFn = (w, e, _dt, k) => {
       }
     }
     faceTo(e, a0);
-    w.text(e.x, e.y - e.r - 20, 'THE MAGMA RISES!', FIRE, true);
+    w.callout('THE MAGMA RISES!', FIRE);
     w.sfx('slam', 0.8);
     w.shake(4);
     w.fxBurst(e.x + Math.cos(a0) * e.r, e.y + 4, FIRE, 12, 12);
@@ -813,7 +813,7 @@ const pour: PatternFn = (w, e, _dt, k) => {
       pt.data[`l${i}`] = l.len;
     });
     faceTo(e, a0);
-    w.text(e.x, e.y - e.r - 20, 'THE CRUCIBLE POURS!', FIRE, true);
+    w.callout('THE CRUCIBLE POURS!', FIRE);
     w.sfx('windup', 0.6);
     pt.step = 1;
   } else if (pt.step === 1) {
@@ -853,7 +853,7 @@ const core: PatternFn = (w, e, _dt, k) => {
     pt.data.n = 0;
     pt.data.x = e.x;
     pt.data.y = e.y;
-    w.text(e.x, e.y - e.r - 20, 'ITS CORE FLARES!', GOLD, true);
+    w.callout('ITS CORE FLARES!', GOLD);
     w.sfx('beamCharge', 0.7);
     pt.step = 1;
   }
@@ -922,7 +922,7 @@ const lake: PatternFn = (w, e, _dt, k) => {
         if (fighting(w, e, phase)) addLasting(w, e, sp.x, sp.y, r);
       });
     }
-    w.text(e.x, e.y - e.r - 20, 'THE LAKE OF FIRE RISES!', FIRE, true);
+    w.callout('THE LAKE OF FIRE RISES!', FIRE);
     w.sfx('quake', 0.8);
     w.shake(5);
     pt.data.t1 = pt.t;
@@ -944,7 +944,7 @@ const inferno: PatternFn = (w, e, _dt, k) => {
     pt.data.y = e.y;
     pt.data.t1 = pt.t + wind;
     w.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r, r2: 0, angle: 0, len: 0, dur: wind, dmg: e.dmg * k.num('mul', 1.6), status: burn(e), knock: 160, tone: 'enemy', owner: -1, linger: 0 });
-    w.text(e.x, e.y - e.r - 20, 'GET AWAY!', GOLD, true);
+    w.callout('GET AWAY!', GOLD);
     w.addFx({ kind: 'glow', x: e.x, y: e.y - 8, life: wind, size: 24, color: GOLD });
     w.sfx('beamCharge', 0.8);
     pt.step = 1;
@@ -959,7 +959,7 @@ const inferno: PatternFn = (w, e, _dt, k) => {
     const b = roomBox(w, e);
     const far = Math.max(dist(x, y, b.x0, b.y0), dist(x, y, b.x1, b.y0), dist(x, y, b.x0, b.y1), dist(x, y, b.x1, b.y1)) + 16;
     w.addTelegraph({ shape: 'donut', x, y, r: far, r2: r, angle: 0, len: 0, dur: wind, dmg: e.dmg * k.num('mul', 1.6), status: burn(e), knock: 60, tone: 'enemy', owner: -1, linger: 0 });
-    w.text(e.x, e.y - e.r - 20, 'GET CLOSE!', GOLD, true);
+    w.callout('GET CLOSE!', GOLD);
     w.sfx('beamCharge', 0.8);
     pt.data.t1 = pt.t + wind;
     pt.step = 2;
@@ -1126,7 +1126,7 @@ const likeness: PatternFn = (w, e, _dt, k) => {
   const s = foundryOf(w, e);
   if (pt.step === 0) {
     faceTo(e, k.aimAt());
-    w.text(e.x, e.y - e.r - 18, 'Hold still. Let me take your measure.', MOLTEN, true);
+    w.callout('Hold still. Let me take your measure.', MOLTEN);
     w.addFx({ kind: 'glow', x: e.x, y: e.y - 14, life: 0.9, size: 26, color: FIRE });
     w.sfx('summon', 0.6);
     pt.data.t1 = pt.t;

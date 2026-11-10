@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { bossPips, phaseTicks, sixWords, windingUp } from './bossbar';
+import { mechanicDue, mechanicShown } from '../progress/tips';
+import type { Callout } from '../sim/types';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { MAX_LEVEL, xpToNext } from '../data/classes';
 import { KEY_AFFIXES, KEY_DEATH } from '../data/keystones';
@@ -334,6 +337,15 @@ function BossBar({ engine }: { engine: SigilEngine }) {
   const crown = useRef<HTMLSpanElement>(null);
   const crownSaid = useRef('');
   const shown = useRef(1);
+  const cast = useRef<HTMLSpanElement>(null);
+  const castFill = useRef<HTMLElement>(null);
+  const pips = useRef<HTMLSpanElement>(null);
+  const pipsSaid = useRef('');
+  const call = useRef<HTMLSpanElement>(null);
+  const callSay = useRef<HTMLElement>(null);
+  const callFill = useRef<HTMLElement>(null);
+  const callHint = useRef<HTMLElement>(null);
+  const shoutSeen = useRef<Callout | null>(null);
   useFrame(engine, (w) => {
     const b = w.boss();
     const share = b ? Math.max(0, b.hp / b.maxHp) : 0;
@@ -356,6 +368,41 @@ function BossBar({ engine }: { engine: SigilEngine }) {
         c.title = w.crown ? `The Crown holds: ${w.crown.map((id) => `the Sigil of ${CROWN_POINTS.find((x) => x[0] === id)?.[1] ?? id}`).join(', ')}` : '';
       }
     }
+    // what it is winding up, if that takes a second or more
+    const wind = b ? windingUp(w) : null;
+    if (cast.current) cast.current.hidden = !wind;
+    if (wind && castFill.current) castFill.current.style.width = `${wind.k * 100}%`;
+    // its state, in words (rebuilt only when it changes)
+    const list = b ? bossPips(b) : [];
+    const key = list.map((p) => p.id + p.label).join('|');
+    if (pips.current && key !== pipsSaid.current) {
+      pipsSaid.current = key;
+      pips.current.replaceChildren(
+        ...list.map((p) => {
+          const el = document.createElement('i');
+          el.dataset.tone = p.tone;
+          el.textContent = p.label;
+          return el;
+        }),
+      );
+    }
+    // what it is doing, called out: a few words, a bar running down, and what to do about it the first time
+    const s = w.shout;
+    if (call.current && callSay.current && callFill.current && callHint.current) {
+      call.current.hidden = !s;
+      if (s) {
+        if (s !== shoutSeen.current) {
+          shoutSeen.current = s;
+          callSay.current.textContent = sixWords(s.text);
+          call.current.style.setProperty('--call', s.color);
+          const due = !!s.hint && mechanicDue(w.hero, engine.settings.tutorial, s.text);
+          callHint.current.hidden = !due;
+          callHint.current.textContent = due ? s.hint! : '';
+          if (due) mechanicShown(w.hero, s.text);
+        }
+        callFill.current.style.width = `${Math.max(0, 1 - s.t / s.dur) * 100}%`;
+      } else shoutSeen.current = null;
+    }
     // the order: called (it pulses until it holds), then holding (its time running out)
     const o = w.order;
     const el = order.current;
@@ -369,6 +416,8 @@ function BossBar({ engine }: { engine: SigilEngine }) {
     orderFill.current.style.width = `${on ? Math.max(0, (o.until - w.time) / (o.until - o.from)) * 100 : 100}%`;
   });
   const boss = engine.ui.boss!;
+  const def = engine.world?.boss()?.boss?.def;
+  const ticks = def ? phaseTicks(def) : [];
   return (
     <div className="rb-bossbar" role="status">
       <strong>{boss.name}</strong>
@@ -376,6 +425,13 @@ function BossBar({ engine }: { engine: SigilEngine }) {
       <span className="rb-boss-track">
         <i ref={lag} className="rb-boss-lag" />
         <i ref={bar} className="rb-boss-fill" />
+        {ticks.map((at) => (
+          <u key={at} className="rb-boss-tick" style={{ left: `${at * 100}%` }} />
+        ))}
+      </span>
+      <span ref={pips} className="rb-boss-pips" />
+      <span ref={cast} className="rb-boss-cast" hidden aria-label="Winding up">
+        <i ref={castFill} />
       </span>
       <span ref={ward} className="rb-boss-ward" hidden>
         <i ref={wardFill} />
@@ -388,6 +444,16 @@ function BossBar({ engine }: { engine: SigilEngine }) {
       <span ref={order} className="rb-boss-order" hidden>
         <b ref={orderSay} />
         <i ref={orderFill} />
+      </span>
+      <span ref={call} className="rb-boss-call" hidden>
+        <span className="rb-boss-call-line">
+          <em aria-hidden="true">!</em>
+          <b ref={callSay} />
+        </span>
+        <i className="rb-boss-call-time">
+          <i ref={callFill} />
+        </i>
+        <small ref={callHint} hidden />
       </span>
     </div>
   );

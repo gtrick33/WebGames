@@ -425,7 +425,7 @@ const sunDisc: PatternFn = (w, e, _dt, k) => {
     s.sun = sun;
     raiseLight(w, sun, sun.wind);
     faceTo(e, k.aimAt());
-    w.text(e.x, e.y - e.r - 18, 'THE SUN RISES!', SUN, true);
+    w.callout('THE SUN RISES!', SUN);
     w.text(w.player.x, w.player.y - 30, 'Hide in a pillar’s shadow!', SUNCORE, true);
     w.addFx({ kind: 'zap', x: e.x, y: e.y - 16, x2: sun.x, y2: sun.y - SUN_HIGH, life: 0.4, size: 1, color: SUN });
     w.sfx('summon', 0.6);
@@ -538,7 +538,7 @@ const scarabs: PatternFn = (w, e, _dt, k) => {
         break;
       }
     }
-    if (used.length) w.text(e.x, e.y - e.r - 16, 'SCARABS!', '#7ae0c8', true);
+    if (used.length) w.callout('SCARABS!', '#7ae0c8');
     w.sfx('summon', 0.5);
     pt.step = 1;
   } else if (pt.t >= Math.min(wind, 0.9)) k.end();
@@ -694,7 +694,7 @@ const sandsweep: PatternFn = (w, e, dt, k) => {
     const along = dir === 0 ? 0 : dir === 1 ? Math.PI / 2 : dir === 2 ? Math.PI : -Math.PI / 2;
     for (const [s0, s1] of parts) w.addTelegraph({ shape: 'line', x: horiz ? pos : (s0 + s1) / 2, y: horiz ? (s0 + s1) / 2 : pos, r: 0, r2: s1 - s0, angle: along, len: Math.abs(pt.data.end - pos), dur: form + travel + 0.3, dmg: 0, knock: 0, tone: 'enemy', owner: -1, linger: 0 });
     pt.data.id2 = w.nextId;
-    if (n === 0) w.text(e.x, e.y - e.r - 16, 'THE SANDS RISE!', '#e8d0a0', true);
+    if (n === 0) w.callout('THE SANDS RISE!', '#e8d0a0');
     faceTo(e, k.aimAt());
     w.sfx('quake', 0.6);
     pt.step = 1;
@@ -779,7 +779,7 @@ const quicksand: PatternFn = (w, e, _dt, k) => {
         w.sfx('crumble', 0.4);
       });
     }
-    w.text(e.x, e.y - e.r - 16, 'QUICKSAND!', '#e8d0a0', true);
+    w.callout('QUICKSAND!', '#e8d0a0');
     w.sfx('quake', 0.5);
     w.shake(2);
     pt.step = 1;
@@ -830,7 +830,7 @@ const crumble: PatternFn = (w, e, _dt, k) => {
     const sprite = e.def.sprite;
     e.def.sprite = k.str('sprite', 'the-sand-warden-heap');
     for (let i = 0; i < 26; i++) w.addFx({ kind: i % 2 ? 'rubble' : 'smoke', x: e.x + (w.rand() - 0.5) * 26, y: e.y - 6 - w.rand() * 22, vx: (w.rand() - 0.5) * 140, vy: -40 - w.rand() * 70, life: 0.8, size: i % 2 ? 2 : 4, color: SAND[i % 4]! });
-    w.text(e.x, e.y - e.r - 18, 'IT FALLS INTO SAND!', '#e8d0a0', true);
+    w.callout('IT FALLS INTO SAND!', '#e8d0a0');
     w.sfx('crumble');
     w.shake(6);
     // the wraiths rise from the spilled sand
@@ -881,7 +881,7 @@ function tickHeap(w: World, e: Enemy, s: Fight): void {
     b.dazed = h.daze;
     e.statuses.push({ id: 'stun', t: h.daze, power: 1, tick: 0 });
     e.statuses.push({ id: 'armorBreak', t: h.daze + 4, power: 30, tick: 0 });
-    w.text(e.x, e.y - e.r - 18, 'IT REFORMS, CRACKED!', '#ffe066', true);
+    w.callout('IT REFORMS, CRACKED!', '#ffe066');
     return;
   }
   // every wraith still walking flows back into it
@@ -983,7 +983,7 @@ function hourTick(w: World, e: Enemy): void {
         p.vy = 0;
         w.fxBurst(p.x, p.y - 8, HOURGOLD, 16, 14);
       }
-      w.text(e.x, e.y - e.r - 26, 'The hour turns back!', HOURGOLD, true);
+      w.callout('The hour turns back!', HOURGOLD);
       w.sfx('rift', 0.7);
       w.shake(4);
     } else {
@@ -1023,8 +1023,7 @@ const hourglass: PatternFn = (w, e, _dt, k) => {
     s.hp = e.hp;
     s.until = w.time + k.num('time', 7);
     s.tick = 0;
-    w.text(e.x, e.y - e.r - 16, 'I turn the glass. This hour is mine.', HOURGOLD, true);
-    w.text(p.x, p.y - 30, 'Shatter the sand-glass!', '#fff2c0', false);
+    w.callout('I turn the glass. This hour is mine.', HOURGOLD, 'Shatter the sand-glass!');
     w.sfx('bell-toll', 0.5);
     pt.data.t1 = pt.t;
     pt.step = 1;
