@@ -1,6 +1,6 @@
 import { dist, dist2, inCone, TAU, turnToward } from '../../core/math';
 import type { StatusId } from '../../data/types';
-import { hurtPlayer } from '../combat';
+import { hurtPlayer, killEnemy } from '../combat';
 import { castRay, circleHitsWall, moveCircle, TILE, tileAt } from '../map';
 import type { Enemy, Field, Telegraph } from '../types';
 import type { World } from '../world';
@@ -714,6 +714,218 @@ const wither: PatternFn = (w, e, _dt, k) => {
   } else if (pt.t >= 1.2) k.end();
 };
 
+/* ------------------------------------------------------------ the Faded Lamps: Elowen of the Dawn and Merrin of the Dusk */
+
+/**
+ * Elowen of the Dawn and her sister Merrin of the Dusk lit the elven halls' lamps, morning and evening, for a thousand
+ * years. The blight put both lights out, and now they keep each other instead (`twins`). Whichever sister falls first,
+ * the other sings her back: in a few seconds she rises again (with a third of her strength), unless the singer falls
+ * in the meantime. Fallen, Elowen is a mote of dawn-light over where she stood, that no blow can touch; Merrin, a wisp
+ * of dusk. While the sisters stand close, their bond turns half of every wound aside: pull them apart (Elowen comes
+ * after the hero, Merrin keeps her distance). And from Elowen's second phase the bond itself burns, a beam from one
+ * sister to the other: never stand between them.
+ *
+ * The sisters' bond outlives the pattern that wakes it, so it is kept per boss here and run by a small ticker
+ * (World.after, once a step) for as long as the fight lasts.
+ */
+
+const DAWN = '#ffe08a';
+const DUSK = '#b48aff';
+const SISTER = 'merrin-of-the-dusk';
+/** Closer than this (px), the sisters' bond turns half of every wound aside. */
+const BOND = 90;
+/** Seconds before a fallen sister is sung back up. */
+const SING = 12;
+/** The share of her health a sister rises with. */
+const RISE = 0.3;
+/** Below this share of her health (while Merrin stands) Elowen fades instead of falling. */
+const FADE_AT = 0.06;
+
+interface Twins {
+  last: number;
+  sister: Enemy | null;
+  /** The sisters' health a step ago (for what the bond turns aside). */
+  hpE: number;
+  hpS: number;
+  /** A sister fallen: which, where, and when she rises again. */
+  down: 'dawn' | 'dusk' | null;
+  dx: number;
+  dy: number;
+  until: number;
+  /** Seconds to the burning bond's next beat. */
+  burn: number;
+  fxT: number;
+  tick: number;
+  said: number;
+}
+
+const TWINS = new WeakMap<Enemy, Twins>();
+
+function twinsOf(w: World, e: Enemy): Twins {
+  let s = TWINS.get(e);
+  if (!s) {
+    s = { last: w.time, sister: null, hpE: e.hp, hpS: 0, down: null, dx: 0, dy: 0, until: 0, burn: 0, fxT: 0, tick: 0, said: -99 };
+    TWINS.set(e, s);
+    w.after(0, () => twinTick(w, e));
+  }
+  return s;
+}
+
+/** Merrin up at (x, y) with `share` of her health. */
+function wakeSister(w: World, e: Enemy, s: Twins, x: number, y: number, share: number): void {
+  const before = w.enemies.length;
+  w.spawnAdd(SISTER, x, y, e.room);
+  const m = w.enemies.length > before ? w.enemies[w.enemies.length - 1]! : null;
+  if (!m || m.def.id !== SISTER) return;
+  m.hp = Math.max(1, Math.round(m.maxHp * share));
+  s.sister = m;
+  s.hpS = m.hp;
+}
+
+function twinTick(w: World, e: Enemy): void {
+  const s = TWINS.get(e);
+  if (!s) return;
+  if (!fighting(w, e)) {
+    // Elowen gone (or the room reset): her sister goes with her
+    if (s.sister && standing(w, s.sister)) quietly(s.sister);
+    TWINS.delete(e);
+    return;
+  }
+  const dt = Math.max(0, w.time - s.last);
+  s.last = w.time;
+  const b = e.boss!;
+  const m = s.sister && standing(w, s.sister) ? s.sister : null;
+  if (s.sister && !m && s.down === null) {
+    // Merrin falls first: her sister will sing her back
+    s.down = 'dusk';
+    s.dx = s.sister.x;
+    s.dy = s.sister.y;
+    s.until = w.time + SING;
+    s.sister = null;
+    s.tick = 0;
+    w.text(e.x, e.y - e.r - 20, 'Merrin! Hold on, I will sing you back!', DAWN, true);
+    w.text(w.player.x, w.player.y - 30, 'Now Elowen, before Merrin rises!', '#fff2c0', false);
+  } else if (m && s.down === null && e.hp < e.maxHp * FADE_AT) {
+    // Elowen falls first: she fades to a mote of dawn, out of reach, while her sister sings
+    s.down = 'dawn';
+    s.dx = e.x;
+    s.dy = e.y;
+    s.until = w.time + SING;
+    s.tick = 0;
+    b.queue = [];
+    b.pattern = { use: { id: 'blight:fade', w: 1, cd: 0 }, t: 0, step: 0, data: { hide: 1 } };
+    w.text(e.x, e.y - e.r - 20, 'Merrin... sing for me...', DAWN, true);
+    w.text(w.player.x, w.player.y - 30, 'Now Merrin, before Elowen rises!', '#fff2c0', false);
+    w.fxBurst(e.x, e.y - 10, DAWN, 24, 18);
+    w.sfx('soul', 0.7);
+  }
+  if (s.down) {
+    // the fallen sister's light, and the count to her rising
+    s.fxT -= dt;
+    if (s.fxT <= 0) {
+      s.fxT = 0.15;
+      const c = s.down === 'dawn' ? DAWN : DUSK;
+      const bob = Math.sin(w.time * 4) * 3;
+      w.addFx({ kind: 'glow', x: s.dx, y: s.dy - 18 + bob, life: 0.2, size: 12, color: c });
+      w.addFx({ kind: 'spark', x: s.dx + (w.rand() - 0.5) * 10, y: s.dy - 18 + bob, vx: 0, vy: -24, life: 0.45, size: 2, color: c });
+      const singer = s.down === 'dawn' ? m : e;
+      if (singer && w.rand() < 0.5) w.addFx({ kind: 'beam', x: singer.x, y: singer.y - 16, x2: s.dx, y2: s.dy - 18, life: 0.15, size: 1, color: s.down === 'dawn' ? DUSK : DAWN });
+    }
+    const left = Math.ceil(s.until - w.time);
+    if (left !== s.tick && left <= 6) {
+      s.tick = left;
+      w.text(s.dx, s.dy - 34, String(left), s.down === 'dawn' ? DAWN : DUSK, true);
+    }
+    if (s.down === 'dawn' && !m) {
+      // the singer fell: the dawn goes out with her
+      s.down = null;
+      b.pattern = null;
+      e.hp = 0;
+      w.text(s.dx, s.dy - 30, 'Merrin... the light...', DAWN, true);
+      killEnemy(w, e, 'arcane', 1, null);
+    } else if (w.time >= s.until) {
+      if (s.down === 'dawn') {
+        b.pattern = null;
+        e.hp = Math.max(e.hp, e.maxHp * RISE);
+        s.hpE = e.hp;
+        w.text(e.x, e.y - e.r - 20, 'The dusk sings the dawn back!', DAWN, true);
+        w.fxBurst(e.x, e.y - 10, DAWN, 24, 20);
+      } else {
+        wakeSister(w, e, s, s.dx, s.dy, RISE);
+        w.text(s.dx, s.dy - 30, 'Rise, sister!', DUSK, true);
+        w.fxBurst(s.dx, s.dy - 10, DUSK, 24, 20);
+      }
+      s.down = null;
+      w.sfx('summon');
+    }
+  }
+  const sis = s.sister && standing(w, s.sister) ? s.sister : null;
+  if (sis && !s.down) {
+    const d = dist(e.x, e.y, sis.x, sis.y);
+    // close together, their bond turns half of every wound aside
+    if (d < BOND) {
+      const lostE = s.hpE - e.hp;
+      const lostS = s.hpS - sis.hp;
+      if (lostE > 0) e.hp = Math.min(e.maxHp, e.hp + lostE * 0.5);
+      if (lostS > 0) sis.hp = Math.min(sis.maxHp, sis.hp + lostS * 0.5);
+      s.fxT -= dt;
+      if (s.fxT <= 0) {
+        s.fxT = 0.15;
+        w.addFx({ kind: 'beam', x: e.x, y: e.y - 16, x2: sis.x, y2: sis.y - 14, life: 0.18, size: 1.5, color: w.rand() < 0.5 ? DAWN : DUSK });
+      }
+      if ((lostE > 0 || lostS > 0) && w.time - s.said > 8) {
+        s.said = w.time;
+        w.text(w.player.x, w.player.y - 30, 'Bound together, they turn half aside: pull them apart!', '#fff2c0', false);
+      }
+    }
+    // from her second phase the bond burns: a beam from one sister to the other
+    if (b.phase >= 1 && b.shift <= 0) {
+      s.burn -= dt;
+      if (s.burn <= 0) {
+        s.burn = 0.5;
+        const a = Math.atan2(sis.y - e.y, sis.x - e.x);
+        w.addTelegraph({ shape: 'line', x: e.x, y: e.y, r: 0, r2: 12, angle: a, len: d, dur: 0.5, dmg: e.dmg * 0.45, status: { status: 'burn', dur: 2, power: Math.max(2, Math.round(e.dmg * 0.1)) }, knock: 0, tone: 'enemy', owner: -1, linger: 0 });
+        w.addFx({ kind: 'beam', x: e.x, y: e.y - 14, x2: sis.x, y2: sis.y - 14, life: 0.5, size: 3, color: '#ffb070' });
+      }
+    }
+  }
+  s.hpE = e.hp;
+  s.hpS = sis ? sis.hp : 0;
+  w.after(0, () => twinTick(w, e));
+}
+
+/** Merrin of the Dusk wakes beside her sister (within the bond's reach). Once a fight. */
+const twins: PatternFn = (w, e, _dt, k) => {
+  const s = twinsOf(w, e);
+  if (!s.sister && !s.down) {
+    let at: { x: number; y: number } | null = null;
+    for (let i = 0; i < 12 && !at; i++) {
+      const a = w.rand() * TAU;
+      const x = e.x + Math.cos(a) * 60;
+      const y = e.y + Math.sin(a) * 50;
+      if (onFloor(w, e, x, y, 8) && dist(x, y, w.player.x, w.player.y) > 40) at = { x, y };
+    }
+    at ??= { x: e.x + 40, y: e.y };
+    wakeSister(w, e, s, at.x, at.y, 1);
+    w.text(e.x, e.y - e.r - 20, 'Sister, wake! Someone has come to put out the last light.', DAWN, true);
+    w.fxBurst(at.x, at.y - 10, DUSK, 20, 16);
+  }
+  k.end();
+};
+
+/** Elowen faded to a mote of dawn: out of sight and reach while her sister sings (the bond's ticker ends it). */
+const fade: PatternFn = (_w, e, _dt, k) => {
+  const s = TWINS.get(e);
+  if (!s || s.down !== 'dawn') k.end();
+  else k.pt.data.hide = 1;
+};
+
+/** The sisters: Merrin, and which of them is fallen (for tests). */
+export const twinsOfElowen = (e: Enemy): { sister: Enemy | null; down: 'dawn' | 'dusk' | null } | null => {
+  const s = TWINS.get(e);
+  return s ? { sister: s.sister && !s.sister.dead ? s.sister : null, down: s.down } : null;
+};
+
 export const BLIGHTHEART_PATTERNS: Record<string, PatternFn> = {
   'blight:topple': topple,
   'blight:pods': pods,
@@ -723,4 +935,6 @@ export const BLIGHTHEART_PATTERNS: Record<string, PatternFn> = {
   'blight:spores': spores,
   'blight:kiss': kiss,
   'blight:wither': wither,
+  'blight:twins': twins,
+  'blight:fade': fade,
 };
