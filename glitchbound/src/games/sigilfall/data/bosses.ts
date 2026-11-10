@@ -417,8 +417,8 @@ export const BOSSES: Record<string, BossDef> = {
     name: 'The Drowned Priestess',
     title: 'Voice of the Deep Tide',
     sprite: 'the-drowned',
-    hp: 1120,
-    dmg: 20,
+    hp: 3400,
+    dmg: 25,
     radius: 10,
     xp: 420,
     gold: [70, 100],
@@ -435,6 +435,8 @@ export const BOSSES: Record<string, BossDef> = {
           { id: 'graveGrasp', w: 3, cd: 3.5, p: { count: 4 } },
           // a wall of water rolls across the shrine: find the gap
           { id: 'tide', w: 2, cd: 7, p: { speed: 70, gap: 3, form: 1.1 } },
+          // the shrine goes under the sea: breathe at the vents (sim/patterns/grotto.ts)
+          { id: 'grotto:flood', w: 2, cd: 16, p: { time: 8, air: 6, vents: 3 } },
         ],
       },
       {
@@ -442,8 +444,9 @@ export const BOSSES: Record<string, BossDef> = {
         banner: 'The Drowned calls her children from the deep!',
         speed: 34,
         rest: [0.6, 1.1],
-        enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['mirefin-skirmisher', 'mirefin-skirmisher', 'mirefin-spearthrower'] } }],
+        enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['mirefin-skirmisher', 'mirefin-skirmisher', 'mirefin-spearthrower'] } }, { id: 'grotto:flood', w: 1, cd: 0, p: { time: 10, air: 5, vents: 3 } }],
         patterns: [
+          { id: 'grotto:flood', w: 2, cd: 15, p: { time: 9, air: 5, vents: 3 } },
           { id: 'tide', w: 3, cd: 6, p: { speed: 75, gap: 3, form: 1, waves: 2, gapT: 1.3 } },
           { id: 'orbs', w: 3, cd: 4, p: { count: 6, speed: 58, homing: 1.1, mul: 0.9, color: '#7ad8ff' } },
           { id: 'graveGrasp', w: 2, cd: 3.5, p: { count: 5 } },
@@ -456,13 +459,54 @@ export const BOSSES: Record<string, BossDef> = {
     drops: { items: { any: ['menders-charm', 'second-wind-ring', 'static-band', 'amulet-of-echoes'], mage: ['glacier-staff'], warrior: ['bulwark-of-dawn'], ranger: ['viper-quiver'] }, chance: [0.3, 0.45, 0.65] },
     intro: 'The mirefins pray to her. The smugglers pay her. Nobody remembers what she was before the sea.',
   },
+  clatterclaw: {
+    id: 'clatterclaw',
+    name: 'Mother Clatterclaw',
+    title: 'Matriarch of the Shore Crabs',
+    sprite: 'clatterclaw',
+    hp: 3600,
+    dmg: 27,
+    radius: 16,
+    xp: 700,
+    gold: [110, 160],
+    phases: [
+      {
+        at: 1,
+        speed: 30,
+        rest: [0.7, 1.1],
+        // her shell turns blows to her face: get round her (sim/patterns/grotto.ts)
+        enter: [{ id: 'grotto:shell', w: 1, cd: 0, p: { cut: 0.7, turn: 1.4 } }],
+        patterns: [
+          { id: 'grotto:pincers', w: 3, cd: 3, p: { snaps: 2, wind: 0.6 } },
+          { id: 'grotto:scuttle', w: 2, cd: 6, p: { len: 150, wind: 0.7 } },
+          { id: 'grotto:froth', w: 2, cd: 5, p: { count: 5 } },
+        ],
+      },
+      {
+        at: 0.5,
+        banner: 'Mother Clatterclaw molts!',
+        speed: 46,
+        rest: [0.5, 0.85],
+        enter: [{ id: 'grotto:molt', w: 1, cd: 0, p: { turn: 3.2 } }, { id: 'summon', w: 1, cd: 0, p: { enemies: ['shore-crab', 'shore-crab'] } }],
+        patterns: [
+          { id: 'grotto:pincers', w: 3, cd: 2.2, p: { snaps: 3, wind: 0.5, mul: 1.4 } },
+          { id: 'grotto:scuttle', w: 3, cd: 4.5, p: { len: 170, wind: 0.55, speed: 320 } },
+          { id: 'grotto:froth', w: 2, cd: 4, p: { count: 7 } },
+          { id: 'summon', w: 1, cd: 20, p: { enemies: ['shore-crab'] } },
+        ],
+      },
+    ],
+    first: { any: ['amulet-of-echoes'] },
+    drops: { items: { any: ['amulet-of-echoes', 'thornmail', 'menders-charm'], warrior: ['bulwark-of-dawn'] }, chance: [0.3, 0.45, 0.65] },
+    intro: 'The smugglers built their powder store on her pools. She has been waiting for them to leave.',
+  },
   saltbeard: {
     id: 'saltbeard',
     name: 'Captain Saltbeard',
     title: 'Master of the Smugglers’ Grotto',
     sprite: 'saltbeard',
-    hp: 2170,
-    dmg: 22,
+    hp: 5600,
+    dmg: 27,
     radius: 10,
     xp: 900,
     gold: [150, 220],
@@ -480,6 +524,8 @@ export const BOSSES: Record<string, BossDef> = {
           { id: 'kegs', w: 2, cd: 7, p: { count: 3, fuse: 2.2, r: 34, mul: 1.6 } },
           // the cannons on the cliff: shells across the cove, salvo after salvo
           { id: 'barrage', w: 2, cd: 8, p: { salvos: 3, count: 5, r: 24, dur: 1.1, gap: 0.5, mul: 1.2 } },
+          // the Black Spot: pass it on with a blow (sim/patterns/grotto.ts)
+          { id: 'grotto:black-spot', w: 2, cd: 18, p: { time: 8, mul: 0.4 } },
         ],
       },
       {
@@ -487,8 +533,9 @@ export const BOSSES: Record<string, BossDef> = {
         banner: 'All hands! Repel boarders!',
         speed: 44,
         rest: [0.6, 1],
-        enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['smuggler-cutlass', 'smuggler-cutlass', 'smuggler-bomber'] } }, { id: 'barrage', w: 1, cd: 0, p: { salvos: 3, count: 6, r: 24, dur: 1.1, gap: 0.5, mul: 1.2 } }],
+        enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['smuggler-cutlass', 'smuggler-cutlass', 'smuggler-bomber'] } }, { id: 'grotto:black-spot', w: 1, cd: 0, p: { time: 7, mul: 0.4 } }, { id: 'barrage', w: 1, cd: 0, p: { salvos: 3, count: 6, r: 24, dur: 1.1, gap: 0.5, mul: 1.2 } }],
         patterns: [
+          { id: 'grotto:black-spot', w: 2, cd: 15, p: { time: 7, mul: 0.4 } },
           { id: 'cleave', w: 3, cd: 3, p: { swings: 3, r: 42, arc: 0.95, wind: 0.48, gap: 0.08, lunge: 24, mul: 1.15 } },
           { id: 'volley', w: 3, cd: 4.5, p: { shots: 2, interval: 0.3, wind: 0.8, speed: 330, lead: 1, r: 3, mul: 1.7, color: '#ffd27a', len: 240, width: 6, sfx: 'thunder' } },
           { id: 'kegs', w: 2, cd: 7, p: { count: 4, fuse: 2.2, r: 34, mul: 1.6 } },
@@ -503,6 +550,7 @@ export const BOSSES: Record<string, BossDef> = {
         rest: [0.5, 0.9],
         enter: [{ id: 'kegs', w: 1, cd: 0, p: { count: 6, fuse: 2.4, r: 32, spread: 50, mul: 1.6 } }],
         patterns: [
+          { id: 'grotto:black-spot', w: 2, cd: 12, p: { time: 6, mul: 0.45 } },
           { id: 'barrage', w: 3, cd: 6, p: { salvos: 4, count: 7, r: 24, dur: 1, gap: 0.45, mul: 1.2 } },
           { id: 'volley', w: 3, cd: 4, p: { shots: 3, interval: 0.25, wind: 0.75, speed: 340, lead: 1, r: 3, mul: 1.7, color: '#ffd27a', len: 240, width: 6, sfx: 'thunder' } },
           { id: 'kegs', w: 2, cd: 6, p: { count: 5, fuse: 2.2, r: 32, spread: 50, mul: 1.6 } },

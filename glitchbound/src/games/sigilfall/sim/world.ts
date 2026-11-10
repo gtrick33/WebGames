@@ -218,6 +218,8 @@ export class World {
   fx: Fx[] = [];
   encounters: EncounterState[] = [];
   delayed: { t: number; fn: () => void }[] = [];
+  /** How far a boss fight has the room under water (0 dry, 1 flooded): the Drowned Priestess's flood, drawn as a sea-green wash. */
+  flooded = 0;
   events: WorldEvent[] = [];
   procCd: Record<string, number> = {};
   flow: Int16Array;

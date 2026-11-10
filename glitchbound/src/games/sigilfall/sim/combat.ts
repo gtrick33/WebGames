@@ -572,7 +572,11 @@ export const armorReduction = (armor: number, level: number): number => Math.min
  * The hero takes a hit. Dodging (and other invulnerable moments) avoids it entirely; armor cuts it,
  * a shield soaks it first. Returns whether it landed.
  */
-export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: number; knock?: number; status?: { status: StatusId; dur: number; power: number }; source?: Enemy } = {}): boolean {
+/**
+ * Hurts the hero (armor, then damage-cutting buffs, then a shield). `pierce`: armor doesn't count (a curse or the sea
+ * takes a share of the hero's health, however they are dressed); a dodge, a shield and a ward still do.
+ */
+export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: number; knock?: number; status?: { status: StatusId; dur: number; power: number }; source?: Enemy; pierce?: boolean } = {}): boolean {
   const p = w.player;
   if (p.dead || dmg <= 0) return false;
   if (p.iframe > 0) {
@@ -580,7 +584,7 @@ export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: n
     return false;
   }
   const stats = effStats(w);
-  const reduction = armorReduction(stats.armor, o.source?.level ?? w.hero.level);
+  const reduction = o.pierce ? 0 : armorReduction(stats.armor, o.source?.level ?? w.hero.level);
   let d = dmg * (1 - reduction);
   if (o.source && hasStatus(o.source, 'weaken')) d *= 1 - statusPower(o.source, 'weaken') / 100;
   // walls and wards: buffs that cut damage taken (at most 75% together)

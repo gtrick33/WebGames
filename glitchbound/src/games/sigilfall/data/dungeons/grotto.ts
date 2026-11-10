@@ -35,7 +35,7 @@ const GROTTO_MAP = [
   '###eexeeeeeeeeeeeeeeeee#########ddddddddddOdddddddddd###',
   '###eeeeeeeeeeeeeeeeeeee###~~####ddddddddddddddddddddd###',
   '###eeeeeeeeeeeeeeeeeeeeD..bb...Dddddddddddddddddddddd###',
-  '###eeeeeeeeeeeeeeeeeeeeD..bb...Dddddddddddddddddddddd###',
+  '###eeeeeeeeeeMeeeeeeeeeD..bb...Dddddddddddddddddddddd###',
   '###eeeeeeeeeeeeeeeeeeeeD..bb...Dddddddddddddddddddddd###',
   '###eeeeeeeeeeeeeeeeeeee###~~####ddddddddddddddddddddd###',
   '###eeeeeeeeeeeeeeeeeeee#########ddddddddddddddddddddd###',
@@ -77,6 +77,8 @@ const markers: Record<string, Marker> = {
   S: { kind: 'chest', id: 'sg-hoard', tier: 'epic', once: true },
   O: { kind: 'boss', boss: 'the-drowned' },
   G: { kind: 'boss', boss: 'saltbeard' },
+  // the brine pools under the powder store: Mother Clatterclaw (sim/patterns/grotto.ts)
+  M: { kind: 'boss', boss: 'clatterclaw' },
   x: { kind: 'prop', prop: 'crate', solid: true },
   o: { kind: 'prop', prop: 'barrel', solid: true },
 };
@@ -117,17 +119,7 @@ export const SMUGGLERS_GROTTO: RegionDef = {
       ],
     },
     { id: 'shrine', floor: 'd', waves: [], boss: 'the-drowned', checkpoint: true, title: 'The Drowned Shrine' },
-    {
-      id: 'powder',
-      floor: 'e',
-      title: 'The Powder Store',
-      checkpoint: true,
-      waves: [
-        { enemies: ['smuggler-bomber', 'smuggler-bomber', 'smuggler-cutlass', 'smuggler-cutlass'] },
-        { enemies: ['shore-crab', 'mirefin-skirmisher', 'mirefin-skirmisher', 'smuggler-bomber'] },
-        { enemies: ['shore-crab', 'smuggler-cutlass', 'mirefin-oracle'], elite: true },
-      ],
-    },
+    { id: 'powder', floor: 'e', waves: [], boss: 'clatterclaw', checkpoint: true, title: 'The Brine Pools' },
     { id: 'cove', floor: 'g', waves: [], boss: 'saltbeard', checkpoint: true, title: 'Saltbeard’s Cove' },
   ],
   blurb: 'Powder, plunder and something older in the water.',

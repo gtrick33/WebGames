@@ -558,6 +558,8 @@ export class Renderer {
     };
     if (look.tint) paint(look.tint, 0.14);
     if (w.storyState?.gloom) paint('#3a4468', 0.16);
+    // a room under the sea (sim/patterns/grotto.ts): green and deep
+    if (w.flooded > 0) paint('#1a7a96', 0.3 * w.flooded);
     if (dread && dread.dark > 0) {
       paint(dread.shade, 0.16);
       dark.set(dread.dark * 0.2, 16, 0, 0);

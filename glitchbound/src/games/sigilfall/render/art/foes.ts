@@ -882,4 +882,38 @@ export const FOE_ART: Record<string, Art> = {
       ],
     ],
   },
+  /* the Smugglers' Grotto (sim/patterns/grotto.ts): Mother Clatterclaw, the crabs' matriarch */
+  clatterclaw: {
+    pal: { o: '#ee381f', O: '#a02117', h: '#ff7d54', u: '#ff9a65', d: '#50150e', k: '#2f0c14', w: '#ffaa7f' },
+    frames: [
+      [
+        '.............d..d.',
+        'd..d...w..w..o..o.',
+        'o..o...k..k.oho.oO',
+        'oooO...O..O.oooooO',
+        'ooOO...O..O..ooOO.',
+        '.oO...hhhoooo.oO..',
+        '...oohooooooooo...',
+        '...oooooooooooo...',
+        '...OOooooooooOO...',
+        '...OOOOOOOOOOOO...',
+        '..O..OOuuuuOO..O..',
+        '..d.d........d.d..',
+      ],
+      [
+        '..............dd..',
+        '.dd....w..w..oooo.',
+        'oooo...k..k.ohooOO',
+        'oooO...O..O.oooooO',
+        'ooOO...O..O..ooOO.',
+        '.oO...hhhoooo.oO..',
+        '...oohooooooooo...',
+        '...oooooooooooo...',
+        '...OOooooooooOO...',
+        '...OOOOOOOOOOOO...',
+        '...O.OOuuuuOO.O...',
+        '...d.d......d.d...',
+      ],
+    ],
+  },
 };

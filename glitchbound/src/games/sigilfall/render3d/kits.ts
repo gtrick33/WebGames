@@ -204,6 +204,8 @@ put('spider cistern-broodling', { k: 'spider', size: 0.74 });
 put('gloam-lurker', { k: 'spider', tint: '#7a7a9a', size: 0.86 });
 put('tide-lurker', { k: 'crab', tint: SEA, size: 0.86 });
 put('crab', { k: 'crab', size: 0.8 });
+// the shore crabs' matriarch, shell crusted with barnacles
+put('clatterclaw', { k: 'crab', tint: '#c8704a', size: 1.6 });
 put('sand-scorpion', { k: 'scorpion' });
 // (a barkling: a knot of living wood with bark for a shell, not a beetle of another art set)
 put('beetle', { k: 'treant', tint: BARK, size: 0.6, ...SMASH });

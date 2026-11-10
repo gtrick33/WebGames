@@ -121,3 +121,15 @@ export function inLine(px: number, py: number, pr: number, x: number, y: number,
   const across = Math.abs(-dx * Math.sin(a) + dy * Math.cos(a));
   return along >= -pr && along <= len + pr && across <= width / 2 + pr;
 }
+
+/**
+ * A wound of a set share of a boss's health, whoever the hero is (a fight's mechanic paying out: a hit through
+ * hitEnemy would be scaled by the hero's power). Never the killing blow.
+ */
+export function wound(w: World, e: Enemy, share: number, color: string): void {
+  const d = Math.min(e.hp - 1, e.maxHp * share);
+  if (d <= 0) return;
+  e.hp -= d;
+  e.flash = 0.15;
+  w.text(e.x, e.y - e.r - 4, `-${Math.round(d)}`, color, true);
+}
