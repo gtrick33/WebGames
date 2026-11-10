@@ -173,6 +173,21 @@ put('rift-stalker void-stalker', { k: 'tiefling', tint: '#6c5c9c' });
 put('rift-horror the-unmade', { k: 'monstrosity', tint: VOID, ...SMASH });
 put('rift-shardling spire-anchor', { k: 'golem', tint: VOID, size: 0.62 });
 put('shard-golem', { k: 'golem', tint: '#d6c6ff', ...SMASH });
+// the Deepforge's Runewarden: dwarven stone, the Host's pale binding-crown on its brow, the dwarves' great hammer on its
+// back, rune-stones glowing gold in its shoulders
+put('the-runewarden', {
+  k: 'golem',
+  tint: '#c8b48a',
+  gain: 1.1,
+  size: 1.6,
+  ...SMASH,
+  gear: [
+    { m: 'Necromancer_Crown', y: 0.93, z: 0.02, h: 0.2, tint: '#d8d0f0' },
+    { m: 'w_hammer_D', y: 0.25, z: -0.3, h: 0.75, tipZ: 0.5, tint: '#b8a888' },
+    { m: 'Rock_1_A', x: 0.3, y: 0.74, z: 0, h: 0.13, tint: '#ffd27a' },
+    { m: 'Rock_1_A', x: -0.3, y: 0.74, z: 0, h: 0.13, tint: '#ffd27a' },
+  ],
+});
 put('veil-sentinel', { k: 'golem', tint: VOID, ...SMASH });
 
 /* ------------------------------------------------------------------ the living */

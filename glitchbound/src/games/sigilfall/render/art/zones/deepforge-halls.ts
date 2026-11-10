@@ -73,6 +73,44 @@ const COLOSSUS_FRAMES: Art['frames'] = [
 
 export const DEEPFORGE_HALLS_ART: ZoneArt = {
   foes: {
+    // the Runewarden of the Bellows Hall (sim/patterns/deepforge-halls.ts)
+    'the-runewarden': {
+      pal: { a: '#d8d0f0', A: '#f4f0ff', S: '#c8b48a', s: '#8a7a5a', e: '#ffd27a', g: '#8a7a5a', G: '#b8a47a', r: '#ffd27a', u: '#e8c060' },
+      frames: [
+        [
+          '.....aAAAa........',
+          '....aSSSSSa.......',
+          '....SSeSeSS.......',
+          '....SSSSSSS.......',
+          '.gggSSsSsSSggg....',
+          'gGGGSSSSSSSGGGg...',
+          'GGrGGSSSSSGGrGG...',
+          'GGGGSSuSuSSGGGG...',
+          'GG.GSSSSSSSG.GG...',
+          'GG.GSSuSuSSG.GG...',
+          '.GG.SSSSSSS.GG....',
+          '....SSS.SSS.......',
+          '...SSS...SSS......',
+          '..sss.....sss.....',
+        ],
+        [
+          '.....aAAAa........',
+          '....aSSSSSa.......',
+          '....SSeSeSS.......',
+          '....SSSSSSS.......',
+          '.gggSSsSsSSggg....',
+          'gGGGSSSSSSSGGGg...',
+          'GGrGGSSSSSGGrGG...',
+          'GGGGSSuSuSSGGGG...',
+          'GG.GSSSSSSSG.GG...',
+          'GG.GSSuSuSSG.GG...',
+          '.GG.SSSSSSS.GG....',
+          '....SSS.SSS.......',
+          '....SSS.SSS.......',
+          '...sss...sss......',
+        ],
+      ],
+    },
     'slag-colossus': {
       pal: { k: '#241a18', s: '#3e302a', S: '#5a4638', l: '#7a6450', r: '#b8361a', o: '#ff7a1e', y: '#ffd24a', b: '#e6dcc2', B: '#a89a7c', i: '#8a909c', I: '#545a66', e: '#fff4b0' },
       frames: COLOSSUS_FRAMES,

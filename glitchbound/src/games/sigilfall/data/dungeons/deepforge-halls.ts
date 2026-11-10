@@ -48,7 +48,7 @@ const MAP = [
   '####gggg~~~~ggggg~~~~gggg#########iiiiiiiiiiiiiiiiiiiiii####',
   '####gggg~~~~ggggg~~~~gggg#########iiiiiiiiiiiiiiiiiiiiii####',
   '####gggg~~~~ggggg~~~~gggg#########iiiiiiijiiiiiijiiiiiii####',
-  '####ggggggggggggggggggggD.........Diiiiiiiiiiiiiiiiiiixi####',
+  '####ggggggggggggggggggggD.........DiiiiiiiiiiRiiiiiiiixi####',
   '####ggggggggggggggggggggD.........Diiiiiiiiiiiiiiiiiiioi####',
   '####ggggggggggggggggggggD.........Diiiiiiiiiiiiiiiiiiiii####',
   '####gggg~~~~ggggg~~~~gggg#########iiiiiiijiiiiiijiiiiiii####',
@@ -115,6 +115,8 @@ const markers: Record<string, Marker> = {
   S: { kind: 'chest', id: 'df-strongbox', tier: 'epic', once: true },
   O: { kind: 'boss', boss: 'slag-colossus' },
   G: { kind: 'boss', boss: 'forgemaster-grold' },
+  // the Bellows Hall: the dwarves' Runewarden, bound by the Host (sim/patterns/deepforge-halls.ts)
+  R: { kind: 'boss', boss: 'the-runewarden' },
   x: { kind: 'prop', prop: 'crate', solid: true },
   o: { kind: 'prop', prop: 'barrel', solid: true },
   n: { kind: 'prop', prop: 'anvil', solid: true },
@@ -243,6 +245,50 @@ const FOES: Record<string, EnemyDef> = {
 const LANES = ['7L', '11R', '15L', '19R'];
 
 const BOSSES: Record<string, BossDef> = {
+  // the dwarves' rune-guardian, bound by the Host with its own runes: break the runes in the order it shows them
+  'the-runewarden': {
+    id: 'the-runewarden',
+    name: 'The Runewarden',
+    title: 'Bound Guardian of the Deepforge',
+    sprite: 'the-runewarden',
+    hp: 4600,
+    dmg: 32,
+    radius: 13,
+    xp: 900,
+    gold: [140, 200],
+    phases: [
+      {
+        at: 1,
+        speed: 32,
+        rest: [0.8, 1.2],
+        enter: [{ id: 'forge:bound', w: 1, cd: 0, p: { cut: 0.55 } }, { id: 'forge:runes', w: 1, cd: 0, p: { len: 3, beat: 0.8, time: 9 } }],
+        patterns: [
+          { id: 'slam', w: 3, cd: 4 },
+          // rune-shards flung in a fan
+          { id: 'spearFan', w: 2, cd: 3.5, p: { count: 5 } },
+          { id: 'charge', w: 2, cd: 5, p: { stun: 1 } },
+          { id: 'forge:runes', w: 2, cd: 16, p: { len: 3, beat: 0.8, time: 9 } },
+        ],
+      },
+      {
+        at: 0.5,
+        banner: 'The Runewarden carves deeper runes!',
+        speed: 36,
+        rest: [0.6, 1],
+        enter: [{ id: 'roar', w: 1, cd: 0 }, { id: 'forge:runes', w: 1, cd: 0, p: { len: 4, beat: 0.7, time: 10 } }],
+        patterns: [
+          { id: 'slamRings', w: 3, cd: 5 },
+          { id: 'spearFan', w: 2, cd: 3.5, p: { count: 7 } },
+          { id: 'charge', w: 2, cd: 4.5, p: { stun: 1 } },
+          { id: 'forge:runes', w: 3, cd: 13, p: { len: 5, beat: 0.65, time: 11 } },
+          { id: 'summon', w: 1, cd: 20, p: { enemies: ['legion-smith'] } },
+        ],
+      },
+    ],
+    first: { any: ['thornmail'] },
+    drops: { items: { any: ['thornmail', 'second-wind-ring', 'static-band', 'zephyr-boots'] }, chance: [0.3, 0.45, 0.65] },
+    intro: 'The dwarves carved it to guard the Sigil of Stone. The Host bound it with its own runes, and now it guards the Host.',
+  },
   'slag-colossus': {
     id: 'slag-colossus',
     name: 'The Slag Colossus',
@@ -563,17 +609,7 @@ export const DEEPFORGE_HALLS: DungeonModule = {
           { enemies: ['bone-steel-sentinel', 'furnace-warden', 'slag-imp'], elite: true },
         ],
       },
-      {
-        id: 'bellows',
-        floor: 'i',
-        title: 'The Bellows Hall',
-        checkpoint: true,
-        waves: [
-          { enemies: ['furnace-warden', 'furnace-warden', 'legion-smith', 'legion-smith'] },
-          { enemies: ['bone-steel-sentinel', 'slag-imp', 'slag-imp', 'slag-imp'] },
-          { enemies: ['legion-smith', 'bone-steel-sentinel', 'furnace-warden'], elite: true },
-        ],
-      },
+      { id: 'bellows', floor: 'i', waves: [], boss: 'the-runewarden', checkpoint: true, title: 'The Bellows Hall' },
       { id: 'forge', floor: 'm', waves: [], boss: 'forgemaster-grold', checkpoint: true, title: 'The Great Forge' },
     ],
     blurb: 'The Host’s bone-steel works under the mountain, the thing it poured in the slag pit, and the master smith who serves the King.',

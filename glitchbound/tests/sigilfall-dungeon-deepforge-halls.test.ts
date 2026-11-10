@@ -13,6 +13,7 @@ import { K, TILE } from '../src/games/sigilfall/sim/map';
 import type { World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero, clearsWithRetry } from './sigilfall-bot';
 import { HARD_DEATHS } from './sigilfall-bot';
+import { runesOf } from '../src/games/sigilfall/sim/patterns/deepforge-halls';
 
 const LEVEL = 27;
 
@@ -118,15 +119,77 @@ describe('the Deepforge Halls', () => {
     expect(b.statuses.some((s) => s.id === 'armorBreak')).toBe(true);
   });
 
+  it('the Runewarden is bound until its runes are stepped in the order it shows, and a wrong rune bursts', () => {
+    const { w, b } = arena('the-runewarden');
+    const idle = (): void => {
+      if (!b.boss!.pattern && !b.boss!.queue.length) b.boss!.rest = 99;
+    };
+    const run = (s: number, each: () => void = idle): void => {
+      for (let i = 0; i < s * 60; i++) {
+        each();
+        w.step(1 / 60);
+      }
+    };
+    const order = (id: string, p: PatternUse['p'] = {}): void => {
+      b.boss!.pattern = null;
+      b.boss!.queue = [{ id: id as PatternUse['id'], w: 1, cd: 0, p }];
+      b.boss!.rest = 0;
+    };
+    order('forge:bound', { cut: 0.55 });
+    run(0.2);
+    expect(runesOf(w, b).bound).toBe(true);
+    expect(runesOf(w, b).plates).toHaveLength(4);
+    // bound: a wound mostly closes again
+    let hp = b.hp;
+    b.hp -= 1000;
+    run(0.05);
+    expect(hp - b.hp).toBeCloseTo(450, 0);
+    // the sequence shown, then stepped in order
+    w.player.x = b.x;
+    w.player.y = b.y + 60;
+    order('forge:runes', { len: 3, beat: 0.3, time: 9 });
+    run(2);
+    const { plates, seq } = runesOf(w, b);
+    expect(seq).toHaveLength(3);
+    for (const n of seq) {
+      w.player.x = plates[n]!.x;
+      w.player.y = plates[n]!.y;
+      run(0.1);
+      // (off the plates between steps)
+      w.player.x = b.x;
+      w.player.y = b.y + 30;
+      run(0.1);
+    }
+    expect(runesOf(w, b).bound).toBe(false);
+    expect(b.boss!.dazed).toBeGreaterThan(2);
+    hp = b.hp;
+    b.hp -= 1000;
+    run(0.05);
+    expect(hp - b.hp).toBe(1000);
+    // a wrong rune bursts under the hero
+    b.boss!.dazed = 0;
+    order('forge:runes', { len: 3, beat: 0.3, time: 9 });
+    run(2);
+    const s2 = runesOf(w, b);
+    const wrong = [0, 1, 2, 3].find((n) => n !== s2.seq[0])!;
+    w.player.iframe = 0;
+    w.player.hp = w.player.maxHp;
+    w.player.x = s2.plates[wrong]!.x;
+    w.player.y = s2.plates[wrong]!.y;
+    run(0.1);
+    expect(w.player.hp).toBeLessThan(w.player.maxHp * 0.9);
+    expect(runesOf(w, b).seq).toHaveLength(0);
+  });
+
   for (const cls of CLASS_IDS) {
-    it(`${cls}: clears the Deepforge Halls at level ${LEVEL}`, { timeout: 90_000 }, () => {
+    it(`${cls}: clears the Deepforge Halls at level ${LEVEL}`, { timeout: 240_000 }, () => {
       const { w, r } = clearsWithRetry((seed) => {
         const w = newWorld('deepforge-halls', readyHero(cls, LEVEL, 'uncommon'), seed);
-        return { w, r: play(w, { seconds: 1200, done: (x) => x.cleared, goal: nextRoom }) };
+        return { w, r: play(w, { seconds: 1500, done: (x) => x.cleared, goal: nextRoom }) };
       });
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
-      expect(r.bossesDown).toEqual(['slag-colossus', 'forgemaster-grold']);
+      expect(r.bossesDown).toEqual(['slag-colossus', 'the-runewarden', 'forgemaster-grold']);
       expect(r.deaths).toBeLessThanOrEqual(HARD_DEATHS);
       // Grold is a real fight, not a few seconds of burst
       expect(r.bossTimes['forgemaster-grold']).toBeGreaterThan(20);
