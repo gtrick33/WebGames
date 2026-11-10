@@ -1,3 +1,4 @@
+import { applyStatus } from '../combat';
 import { circleHitsWall, TILE, tileAt } from '../map';
 import type { Enemy } from '../types';
 import type { World } from '../world';
@@ -100,4 +101,23 @@ export function removeThing(w: World, x: Enemy | null | undefined): void {
   x.dead = true;
   x.deathT = 0;
   w.fxBurst(x.x, x.y - 6, '#9a9aa8', 8, 10);
+}
+
+/** A stunned boss, open to every blow for a while (the reward for playing a fight's mechanic right). */
+export function exposed(w: World, e: Enemy, secs: number, text: string, color: string): void {
+  e.boss!.dazed = Math.max(e.boss!.dazed, secs);
+  applyStatus(w, e, { status: 'mark', dur: secs + 1, power: 40 }, 0);
+  w.text(e.x, e.y - e.r - 16, text, color, true);
+  w.sfx('shieldBreak');
+  w.shake(4);
+  w.fxBurst(e.x, e.y - 8, color, 22, 18);
+}
+
+/** Whether a circle at (px, py) of radius pr touches a line `len` long and `width` wide from (x, y) along `a`. */
+export function inLine(px: number, py: number, pr: number, x: number, y: number, a: number, len: number, width: number): boolean {
+  const dx = px - x;
+  const dy = py - y;
+  const along = dx * Math.cos(a) + dy * Math.sin(a);
+  const across = Math.abs(-dx * Math.sin(a) + dy * Math.cos(a));
+  return along >= -pr && along <= len + pr && across <= width / 2 + pr;
 }

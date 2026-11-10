@@ -1664,6 +1664,8 @@ export class World {
       for (const o of this.enemies) if (!o.boss && o.hp <= 0) o.dead = true;
       return;
     }
+    // a fight's thing (a candle snuffed, a coffin or a cage broken open) is part of the fight, not a foe: no kill, no loot
+    if (e.def.prop) return;
     h.stats.kills += 1;
     this.run.kills += 1;
     if (this.keyRun && !e.master) this.keyOnKill(e);

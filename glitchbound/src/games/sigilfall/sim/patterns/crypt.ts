@@ -1,8 +1,7 @@
 import { dist, TAU } from '../../core/math';
-import { applyStatus } from '../combat';
 import type { Enemy } from '../types';
 import type { World } from '../world';
-import { fighting, removeThing, ringSpots, roomBox, spawnThing, standing, up } from './arena';
+import { exposed as expose, fighting, removeThing, ringSpots, roomBox, spawnThing, standing, up } from './arena';
 import type { PatternFn } from './kit';
 
 /**
@@ -72,14 +71,7 @@ function tick(w: World, e: Enemy): void {
 }
 
 /** A stunned boss, open to every blow for a while (the reward for playing the mechanic). */
-function exposed(w: World, e: Enemy, secs: number, text: string): void {
-  e.boss!.dazed = Math.max(e.boss!.dazed, secs);
-  applyStatus(w, e, { status: 'mark', dur: secs + 1, power: 40 }, 0);
-  w.text(e.x, e.y - e.r - 16, text, GREEN, true);
-  w.sfx('shieldBreak');
-  w.shake(4);
-  w.fxBurst(e.x, e.y - 8, GREEN, 22, 18);
-}
+const exposed = (w: World, e: Enemy, secs: number, text: string): void => expose(w, e, secs, text, GREEN);
 
 /* ------------------------------------------------------------ the Coffin Matron */
 

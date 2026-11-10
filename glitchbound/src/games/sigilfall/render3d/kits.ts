@@ -132,6 +132,8 @@ put('the-grey-lady', { k: 'witch', tint: PALE, ghost: 0.72, float: 0.3, ...CASTE
 put('hound grave-hound barrow-hound pale-hound grave-wolf', { k: 'a_wolf', tint: BONE, gain: 1.5 });
 put('blight-wolf', { k: 'a_wolf', tint: ROT, gain: 1.4 });
 put('magma-hound', { k: 'a_wolf', tint: FIRE, gain: 1.4 });
+// Gallows Keep's war-hound: a scarred brute twice a wolf's size
+put('gnasher', { k: 'a_wolf', tint: '#6a5442', size: 1.8, gain: 1.6 });
 put('rime-hound ice-wolf', { k: 'a_husky', tint: ICE });
 put('bone-drake', { k: 'wyrm', tint: BONE, float: 0.5, size: 1.15 });
 put('ash-drake', { k: 'wyrm', tint: ASH, float: 0.5 });

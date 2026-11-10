@@ -1,7 +1,7 @@
 /**
  * Sigilfall's newer dungeons, played through by the bot (tests/sigilfall-bot.ts): every class clears
- * Gallows Keep and the Smugglers' Grotto at their level with the gear a player would have by then,
- * room by room and boss by boss, without getting stuck.
+ * the Smugglers' Grotto at its level with the gear a player would have by then,
+ * room by room and boss by boss, without getting stuck. (Gallows Keep has its own: sigilfall-dungeon-gallows-keep.)
  */
 import { describe, expect, it } from 'vitest';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
@@ -26,7 +26,6 @@ function runDungeon(region: RegionId, cls: ClassId, level: number) {
 }
 
 const DUNGEONS: { region: RegionId; level: number; bosses: string[] }[] = [
-  { region: 'gallows-keep', level: 15, bosses: ['hangman', 'varric'] },
   { region: 'smugglers-grotto', level: 21, bosses: ['the-drowned', 'saltbeard'] },
 ];
 

@@ -1,4 +1,8 @@
+import { gunzipSync } from 'node:zlib';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { ENEMIES } from '../src/games/sigilfall/data/enemies';
+import { builtProp } from '../src/games/sigilfall/render3d/propsBuilt';
 import { EVENTS } from '../src/games/sigilfall/data/events';
 import { QUEST_DEFS, QUESTS } from '../src/games/sigilfall/data/quests';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
@@ -128,6 +132,18 @@ describe('Sigilfall: the polish pass', () => {
       }
     }
     expect(faults).toEqual([]);
+  });
+
+  it('every boss fight’s things (a coffin, a candle, a cage) are drawn with a model that exists', () => {
+    // the models the 3D cast draws a fight's things from: the art packs it loads, and the ones built in code
+    const names = new Set<string>();
+    for (const pack of ['indoor', 'town', 'nature', 'hero']) {
+      const bytes = gunzipSync(readFileSync(`public/games/sigilfall/3d/${pack}.pack`));
+      const len = bytes.readUInt32LE(0);
+      for (const id of Object.keys((JSON.parse(bytes.subarray(4, 4 + len).toString('utf8')) as { meshes: Record<string, unknown> }).meshes)) names.add(id);
+    }
+    const missing = Object.values(ENEMIES).filter((e) => e.prop && !names.has(e.prop.m) && !(e.prop.m.startsWith('built_') && builtProp(e.prop.m)));
+    expect(missing.map((e) => `${e.id}: ${e.prop!.m}`)).toEqual([]);
   });
 
   it('every vision’s people, and every effect, stand on open ground', () => {

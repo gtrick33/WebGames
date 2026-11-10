@@ -697,8 +697,9 @@ export function separate(w: World, dt: number, list: Enemy[] = w.enemies): void 
       if (d2 >= min * min || d2 === 0) continue;
       const d = Math.sqrt(d2);
       const push = ((min - d) / min) * SEPARATION * dt;
-      const ma = a.boss ? 0 : 1 / a.def.mass;
-      const mb = b.boss ? 0 : 1 / b.def.mass;
+      // (a boss, and a fight's thing standing where the fight put it: a candle, a coffin, a cage, push and aren't pushed)
+      const ma = a.boss || a.def.prop ? 0 : 1 / a.def.mass;
+      const mb = b.boss || b.def.prop ? 0 : 1 / b.def.mass;
       const sum = ma + mb || 1;
       const ra = moveCircle(w.map, a.x, a.y, a.r, (-dx / d) * push * (ma / sum) * 2, (-dy / d) * push * (ma / sum) * 2);
       a.x = ra.x;
@@ -713,7 +714,7 @@ export function separate(w: World, dt: number, list: Enemy[] = w.enemies): void 
       const dy = a.y - p.y;
       const min = a.r + p.r;
       const d2 = dx * dx + dy * dy;
-      if (d2 < min * min && d2 > 0 && !a.boss) {
+      if (d2 < min * min && d2 > 0 && !a.boss && !a.def.prop) {
         const d = Math.sqrt(d2);
         const r = moveCircle(w.map, a.x, a.y, a.r, (dx / d) * (min - d), (dy / d) * (min - d));
         a.x = r.x;

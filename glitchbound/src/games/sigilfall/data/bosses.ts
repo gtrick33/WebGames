@@ -264,8 +264,8 @@ export const BOSSES: Record<string, BossDef> = {
     name: 'The Hangman',
     title: 'Headsman of the Gallows Gang',
     sprite: 'hangman',
-    hp: 1500,
-    dmg: 20,
+    hp: 3000,
+    dmg: 28,
     radius: 10,
     xp: 420,
     gold: [70, 100],
@@ -274,12 +274,15 @@ export const BOSSES: Record<string, BossDef> = {
         at: 1,
         speed: 34,
         rest: [0.8, 1.2],
+        // the gallows floor: its boards drop, half and then the other half (sim/patterns/gallows.ts)
+        enter: [{ id: 'gallows:trapdoors', w: 1, cd: 0, p: { waves: 2, wind: 1.5 } }],
         patterns: [
           // the axe in a wide arc in front of him, then straight down along a line
           { id: 'cleave', w: 3, cd: 3.5, p: { r: 54, arc: 1, wind: 0.8, mul: 1.4 } },
           { id: 'chop', w: 3, cd: 4, p: { len: 130, width: 20, wind: 0.9, mul: 1.6 } },
           // the noose: caught in its line, you are dragged in for the axe
           { id: 'hook', w: 2, cd: 7, p: { len: 150, width: 12, wind: 0.85 } },
+          { id: 'gallows:trapdoors', w: 3, cd: 10, p: { waves: 3, wind: 1.3 } },
         ],
       },
       {
@@ -287,13 +290,15 @@ export const BOSSES: Record<string, BossDef> = {
         banner: 'The Hangman takes up a second axe!',
         speed: 40,
         rest: [0.6, 1],
-        enter: [{ id: 'roar', w: 1, cd: 0 }],
+        enter: [{ id: 'roar', w: 1, cd: 0 }, { id: 'gallows:trapdoors', w: 1, cd: 0, p: { waves: 4, wind: 1.15 } }],
         patterns: [
           { id: 'chop', w: 3, cd: 5, p: { lines: 3, spread: 0.55, len: 140, width: 18, wind: 0.95, mul: 1.6 } },
           // a chain of thrown axes, each one shown before it flies
           { id: 'volley', w: 3, cd: 6, p: { shots: 3, wind: 0.5, interval: 0.15, speed: 200, r: 5, mul: 1.2, color: '#c8ccd8', range: 320 } },
           { id: 'cleave', w: 2, cd: 4, p: { swings: 2, r: 54, arc: 1, wind: 0.65, lunge: 30, mul: 1.4 } },
-          { id: 'hook', w: 2, cd: 6, p: { len: 160, width: 12, wind: 0.8 } },
+          // the hook drags whoever it catches onto the boards in front of him, and they drop
+          { id: 'gallows:hook-drop', w: 3, cd: 7, p: { len: 170, width: 13, wind: 0.8, drop: 0.9 } },
+          { id: 'gallows:trapdoors', w: 3, cd: 9, p: { waves: 4, wind: 1.1 } },
         ],
       },
     ],
@@ -301,13 +306,54 @@ export const BOSSES: Record<string, BossDef> = {
     drops: { items: { any: ['second-wind-ring', 'thornmail', 'static-band', 'zephyr-boots'], warrior: ['sunder-band'], mage: ['piercing-catalyst'], ranger: ['ricochet-longbow'] }, chance: [0.3, 0.45, 0.65] },
     intro: 'The gang’s executioner. He has never needed a second swing, but he brought a second axe.',
   },
+  gnasher: {
+    id: 'gnasher',
+    name: 'Gnasher',
+    title: 'War-Hound of the Gallows Gang',
+    sprite: 'gnasher',
+    hp: 3800,
+    dmg: 29,
+    radius: 11,
+    xp: 600,
+    gold: [90, 140],
+    phases: [
+      {
+        at: 1,
+        speed: 52,
+        rest: [0.7, 1.1],
+        patterns: [
+          // two bites, a lunge with each
+          { id: 'cleave', w: 3, cd: 2.6, p: { swings: 2, r: 36, arc: 0.8, wind: 0.5, gap: 0.12, lunge: 30, mul: 1 } },
+          { id: 'charge', w: 2, cd: 5, p: { stun: 0.8 } },
+          // under the floor after the hero (bone heaps in the kennels draw him up: sim/patterns/gallows.ts)
+          { id: 'gallows:burrow', w: 3, cd: 11, p: { time: 4.5, speed: 92, erupt: 0.6 } },
+        ],
+      },
+      {
+        at: 0.5,
+        banner: 'Gnasher howls for the pack!',
+        speed: 58,
+        rest: [0.55, 0.9],
+        enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['hill-wolf', 'hill-wolf'] } }, { id: 'gallows:burrow', w: 1, cd: 0, p: { time: 5, speed: 100, erupt: 0.55 } }],
+        patterns: [
+          { id: 'cleave', w: 3, cd: 2.2, p: { swings: 3, r: 36, arc: 0.8, wind: 0.45, gap: 0.1, lunge: 30, mul: 1 } },
+          { id: 'tripleCharge', w: 2, cd: 6, p: { count: 2, wind: 0.6, speed: 320, len: 150, stun: 0, mul: 1.2 } },
+          { id: 'gallows:burrow', w: 3, cd: 9, p: { time: 4.5, speed: 102, r: 46, erupt: 0.55 } },
+          { id: 'summon', w: 1, cd: 22, p: { enemies: ['hill-wolf'] } },
+        ],
+      },
+    ],
+    first: { any: ['zephyr-boots'] },
+    drops: { items: { any: ['zephyr-boots', 'thornmail', 'second-wind-ring'] }, chance: [0.3, 0.45, 0.65] },
+    intro: 'The gang feeds him what the Hangman leaves. He has gone hungry all week.',
+  },
   varric: {
     id: 'varric',
     name: 'Harlan Blackglove',
     title: 'King of the Gallows Gang',
     sprite: 'varric',
-    hp: 3000,
-    dmg: 21,
+    hp: 5000,
+    dmg: 27,
     radius: 10,
     xp: 900,
     gold: [150, 220],
@@ -320,7 +366,7 @@ export const BOSSES: Record<string, BossDef> = {
           // two long knives: he steps in and cuts twice
           { id: 'cleave', w: 3, cd: 2.5, p: { swings: 2, r: 38, arc: 0.85, wind: 0.45, gap: 0.08, lunge: 26, mul: 1 } },
           // fans of thrown knives
-          { id: 'volley', w: 3, cd: 4, p: { shots: 2, fan: 5, spread: 1, wind: 0.55, interval: 0.3, speed: 170, r: 3, mul: 0.8, look: 'enemyArrow', color: '#d8dce6', len: 110 } },
+          { id: 'volley', w: 3, cd: 4, p: { shots: 2, fan: 5, spread: 1, wind: 0.55, interval: 0.3, speed: 170, r: 3, mul: 0.7, look: 'enemyArrow', color: '#d8dce6', len: 110 } },
           // quick dashes along a lane: no wall stops him for long
           { id: 'tripleCharge', w: 2, cd: 5, p: { count: 2, wind: 0.5, speed: 330, len: 160, stun: 0, mul: 1.1 } },
         ],
@@ -330,12 +376,14 @@ export const BOSSES: Record<string, BossDef> = {
         banner: 'Blackglove whistles for his cutthroats!',
         speed: 50,
         rest: [0.5, 0.9],
-        enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['bandit-cutthroat', 'bandit-cutthroat'] } }, { id: 'vanish', w: 1, cd: 0, p: { r: 44, arc: 1, wind: 0.6, mul: 1.3 } }],
+        enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['bandit-cutthroat', 'bandit-cutthroat'] } }, { id: 'gallows:hostages', w: 1, cd: 0, p: { n: 1, time: 9 } }, { id: 'vanish', w: 1, cd: 0, p: { r: 44, arc: 1, wind: 0.6, mul: 1.3 } }],
         patterns: [
+          // captives in cages over the fire pits: break them out in time (sim/patterns/gallows.ts)
+          { id: 'gallows:hostages', w: 2, cd: 16, p: { n: 1, time: 9 } },
           // a smoke bomb: gone, then behind you with both knives
           { id: 'vanish', w: 3, cd: 6, p: { r: 44, arc: 1, wind: 0.6, mul: 1.3 } },
           { id: 'cleave', w: 3, cd: 2.5, p: { swings: 2, r: 38, arc: 0.85, wind: 0.45, gap: 0.08, lunge: 26, mul: 1 } },
-          { id: 'volley', w: 2, cd: 4, p: { shots: 2, fan: 7, spread: 1.3, wind: 0.55, interval: 0.3, speed: 170, r: 3, mul: 0.8, look: 'enemyArrow', color: '#d8dce6', len: 110 } },
+          { id: 'volley', w: 2, cd: 4, p: { shots: 2, fan: 7, spread: 1.3, wind: 0.55, interval: 0.3, speed: 170, r: 3, mul: 0.7, look: 'enemyArrow', color: '#d8dce6', len: 110 } },
           { id: 'tripleCharge', w: 2, cd: 5, p: { count: 3, wind: 0.45, speed: 340, len: 160, stun: 0, mul: 1.1 } },
           { id: 'summon', w: 1, cd: 16, p: { enemies: ['bandit-cutthroat', 'bandit-cutthroat'] } },
         ],
@@ -345,10 +393,11 @@ export const BOSSES: Record<string, BossDef> = {
         banner: 'Nobody takes the Gallows from me!',
         speed: 54,
         rest: [0.45, 0.8],
-        enter: [{ id: 'vanish', w: 1, cd: 0, p: { r: 46, arc: 1.1, wind: 0.55, mul: 1.3 } }],
+        enter: [{ id: 'gallows:hostages', w: 1, cd: 0, p: { n: 2, time: 8.5 } }, { id: 'vanish', w: 1, cd: 0, p: { r: 46, arc: 1.1, wind: 0.55, mul: 1.3 } }],
         patterns: [
+          { id: 'gallows:hostages', w: 2, cd: 14, p: { n: 2, time: 8.5 } },
           { id: 'vanish', w: 3, cd: 5, p: { r: 46, arc: 1.1, wind: 0.55, mul: 1.3 } },
-          { id: 'volley', w: 3, cd: 4, p: { shots: 3, fan: 5, spread: 1, wind: 0.5, interval: 0.25, speed: 180, r: 3, mul: 0.8, look: 'enemyArrow', color: '#d8dce6', len: 110 } },
+          { id: 'volley', w: 3, cd: 4, p: { shots: 3, fan: 5, spread: 1, wind: 0.5, interval: 0.25, speed: 180, r: 3, mul: 0.7, look: 'enemyArrow', color: '#d8dce6', len: 110 } },
           { id: 'tripleCharge', w: 2, cd: 5, p: { count: 3, wind: 0.42, speed: 350, len: 170, stun: 0, mul: 1.1 } },
           { id: 'cleave', w: 2, cd: 2.5, p: { swings: 3, r: 38, arc: 0.85, wind: 0.42, gap: 0.06, lunge: 24, mul: 1 } },
           { id: 'summon', w: 1, cd: 18, p: { enemies: ['bandit-cutthroat', 'hill-wolf'] } },

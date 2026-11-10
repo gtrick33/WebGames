@@ -7,6 +7,7 @@ import { UNIT } from './land';
 import { mountKey, mountModel, type MountModel } from './mountKit';
 import { shapeOf } from './mountLook';
 import { loadPack, type MeshData, type Pack } from './pack';
+import { builtProp } from './propsBuilt';
 import { ringMaterial, rigAnimOf, shadowMaterial, type RigAnim } from './toon';
 import type { MountDef } from '../data/mounts';
 import type { HeroLook } from '../render/art/hero';
@@ -478,6 +479,8 @@ export class Cast {
         mesh = p.meshes[id];
         if (mesh) break;
       }
+      // (a model built in code, not in a pack: a cage, a flag, a great column)
+      if (!mesh && id.startsWith('built_')) mesh = builtProp(id) ?? undefined;
       if (!mesh) return null;
       s = new Stand(mesh, this.root, 64);
       this.props.set(id, s);
