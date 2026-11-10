@@ -18,10 +18,19 @@ export const RETIRED: ReadonlySet<RegionId> = new Set<RegionId>([
   'bonefields',
   'blightwood',
   'sunken-reaches',
-  'riftscar',
+  // the Gloam's story is played in the Riftscar Wastes now (data/zones/riftscar.ts): its quests keep their ids
+  'gloamhollow',
 ]);
 
 export const isRetired = (id: RegionId | undefined): boolean => !!id && RETIRED.has(id);
+
+/** A land back on the map whose own old story stays retired: the Riftscar holds the Gloam's story now. */
+const OLD_STORY: ReadonlySet<RegionId> = new Set<RegionId>(['riftscar']);
+/** A land's story whose quests are played somewhere else now (data/zones/index.ts: by the module they were written in). */
+const STORY_MOVED: ReadonlySet<RegionId> = new Set<RegionId>(['gloamhollow']);
+
+/** Whether the quests written for a land are in the story: a live land's, unless its old story stays retired; a moved one's. */
+export const storyLive = (id: RegionId): boolean => STORY_MOVED.has(id) || (!RETIRED.has(id) && !OLD_STORY.has(id));
 
 /**
  * Where a road that led into a retired land leads now, by the land it leaves from: to the next land of the story
@@ -51,18 +60,20 @@ const REROUTE: Partial<Record<RegionId, Partial<Record<RegionId, { to: RegionId;
     grimward: { to: 'sunscorch', label: 'South: the Sunscorch' },
     blightwood: null,
   },
-  'shattered-vale': { grimward: { to: 'rimeheld', label: 'South road: Frostgate and Rimeheld' } },
-  highwall: { sablewind: null, bonefields: { to: 'gloamhollow', label: 'North: the Gloam and Lastlight', minLevel: 43 } },
-  gloamhollow: { bonefields: { to: 'highwall', label: 'South: Highwall March' } },
+  'shattered-vale': {
+    grimward: { to: 'rimeheld', label: 'South road: Frostgate and Rimeheld' },
+    gloamhollow: { to: 'riftscar', label: 'North causeway into the Riftscar Wastes', minLevel: 44 },
+  },
+  highwall: { sablewind: null, bonefields: { to: 'riftscar', label: 'West along the gate line: the Riftscar and the Gloam Gate', minLevel: 43 } },
   'weeping-woods': {
+    gloamhollow: { to: 'riftscar', label: 'South through the Gloam Gate to the Riftscar Wastes' },
     bonefields: { to: 'emberdeep', label: 'East: the fires of Emberdeep', minLevel: 50 },
     blightwood: null,
-    riftscar: null,
   },
   emberdeep: { bonefields: { to: 'weeping-woods', label: 'South: the Weeping Woods' } },
 };
 
-/** Roads the story needs that no land had (the way on from Rimeheld to the Tear). */
+/** Roads the story needs that no land had (the way on from Rimeheld to the Tear, the Crown City's west gate). */
 const ADDED: Partial<Record<RegionId, ExitSpec[]>> = {
   rimeheld: [{ side: 's', at: 0.5, to: 'shattered-vale', label: 'South: Shardwatch and the Shattered Vale', minLevel: 34 }],
   // the Crown City's west gate opens on the long road to the sands, and the sands have the road back

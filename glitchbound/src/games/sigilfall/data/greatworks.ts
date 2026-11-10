@@ -519,10 +519,9 @@ export const GREAT_IN: Record<string, GreatPlace[]> = {
   rimeheld: [{ id: 'frozen-giant', at: [0.25, 0.65] }],
   vinecoil: [{ id: 'serpent-temple', at: [0.68, 0.3] }],
   highwall: [{ id: 'the-highwall', at: [0.42, 0.1] }],
-  gloamhollow: [{ id: 'gloam-gate', at: [0.5, 0.22] }],
   bonefields: [{ id: 'titan', at: [0.5, 0.38] }],
   emberdeep: [{ id: 'black-mountain', door: 'molten-throne', dy: -8 }],
   hollowmere: [{ id: 'necropolis', spot: 'the-necropolis', dy: -9, water: true }],
-  riftscar: [{ id: 'the-tear', at: [0.35, 0.4] }, { id: 'herald-spire', door: 'spire-of-the-rift', dy: -5 }],
+  riftscar: [{ id: 'the-tear', at: [0.35, 0.4] }, { id: 'herald-spire', door: 'spire-of-the-rift', dy: -5 }, { id: 'gloam-gate', at: [0.6, 0.2] }],
   'pale-reach': [{ id: 'duskspire', door: 'duskspire' }, { id: 'ranks-of-the-dead', at: [0.5, 0.45] }],
 };

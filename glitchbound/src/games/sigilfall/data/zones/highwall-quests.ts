@@ -61,7 +61,7 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     reward: {
       xp: 1800,
       gold: 400,
-      text: 'The map is the Pale Herald’s own: north from the Shattered Vale, over a black fen, to the Gloam Gate, the second of the Three Gates. A gatehouse marked KEPT. “That’s where she is,” Nyx says. “Elyra. I know because he told me, and he told me because he wants you to go.” Mara: “Then we go. And if this is another sale, I will finish what the Herald started.”',
+      text: 'The map is the Pale Herald’s own: north from the Shattered Vale, across the Riftscar’s glass, to the Gloam Gate, the second of the Three Gates. A gatehouse marked KEPT. “That’s where she is,” Nyx says. “Elyra. I know because he told me, and he told me because he wants you to go.” Mara: “Then we go. And if this is another sale, I will finish what the Herald started.”',
     },
   },
 
@@ -276,7 +276,7 @@ export const HIGHWALL_NPCS: Record<string, NpcDef> = {
           'This is his map. Where he keeps her. I want you to look at it before you decide anything about me.',
         ],
       },
-      { when: { quest: 'gloam-the-lamp-road', state: 'active' }, lines: ['North from the Vale, over the fen. There’s a village of people who light lamps. They’re going to hate me. Everybody does that eventually; it saves time if it’s early.'] },
+      { when: { quest: 'gloam-the-lamp-road', state: 'active' }, lines: ['North from the Vale, over the glass. There’s a village of people who light lamps. They’re going to hate me. Everybody does that eventually; it saves time if it’s early.'] },
       { lines: ['Mara says I can have a tent and a guard and soup. I said I’d take the soup. I haven’t taken the soup.'] },
     ],
   },

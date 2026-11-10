@@ -1202,14 +1202,14 @@ export const STORY_SCENES: SceneDef[] = [
 
   /* ================================================================ Act IV: Gloamhollow */
   {
-    // Lastlight: three hundred years of lamps on a causeway over the black fen
+    // Lastlight: three hundred years of lamps on a road across the Riftscar's glass
     id: 'gloam-lastlight',
-    region: 'gloamhollow',
+    region: 'riftscar',
     when: during('gloam-the-lamp-road'),
     near: 'lamp-keeper-brin',
     r: 320,
     steps: [
-      { title: 'Gloamhollow', sub: 'Lastlight, on the black fen' },
+      { title: 'The Riftscar Wastes', sub: 'Lastlight, where the Veil is torn' },
       { look: 'lamp-keeper-brin' },
       { say: 'lamp-keeper-brin', line: 'Living folk, on the causeway, after dark. Either you’re lost or you’re brave. Out here they look the same.' },
       { say: 'lamp-keeper-brin', line: 'Three hundred years we’ve lit the road to the Gate, one lamp every fifty paces. This month something’s putting them out.' },
@@ -1220,7 +1220,7 @@ export const STORY_SCENES: SceneDef[] = [
   {
     // the unlit mile: little fires that lean on the lamps until they go out
     id: 'gloam-the-dark-mile',
-    region: 'gloamhollow',
+    region: 'riftscar',
     when: during('gloam-the-unlit-mile'),
     near: 'lamp-keeper-brin',
     r: 260,
@@ -1229,21 +1229,21 @@ export const STORY_SCENES: SceneDef[] = [
       { fx: 'ghost', at: 'lamp-keeper-brin', color: '#8ad0ff', size: 26 },
       { sfx: 'soul' },
       { wait: 1 },
-      { say: 'lamp-keeper-brin', line: 'Marsh-lights. Little drifting fires. They lean on a lamp like a drunk on a door until it goes out.' },
+      { say: 'lamp-keeper-brin', line: 'Wisps out of the glass. Little drifting fires. They lean on a lamp like a drunk on a door until it goes out.' },
       { say: 'lamp-keeper-brin', line: 'Put them out before they put us out. I’ll follow you with the taper.' },
       { look: 'hero' },
     ],
   },
   {
-    // Nyx on the end of the jetty with her lamp out
+    // Nyx on the end of Lastlight's wall with her lamp out
     id: 'gloam-the-jetty',
-    region: 'gloamhollow',
+    region: 'riftscar',
     when: during('gloam-nyx-confesses'),
     near: 'nyx-lastlight',
     r: 180,
     steps: [
       { look: 'nyx-lastlight' },
-      { music: 'gloamhollow' },
+      { music: 'riftscar' },
       { say: 'nyx-lastlight', line: '“Cell ten. The thief’s brother. Promised.” He wrote it on the map. Like a receipt.' },
       { say: 'nyx-lastlight', line: 'I sold you to him. You and her. And he wrote it down like a receipt.' },
       { look: 'hero' },
@@ -1252,7 +1252,7 @@ export const STORY_SCENES: SceneDef[] = [
   {
     // the Gloam Gate: with Elyra gone, the Veil sigil in the gate remembers the eighth warden anyway
     id: 'vision-veil',
-    region: 'gloamhollow',
+    region: 'riftscar',
     when: during('gloam-the-gate'),
     near: 'the-gloam-gate',
     r: 220,
@@ -1285,7 +1285,7 @@ export const STORY_SCENES: SceneDef[] = [
   {
     // the Gatewarden in the gateway, the portcullis for a shield
     id: 'gloam-the-gatewarden',
-    region: 'gloamhollow',
+    region: 'riftscar',
     when: during('the-gatewarden'),
     near: 'the-gloam-gate',
     r: 280,
@@ -1302,7 +1302,7 @@ export const STORY_SCENES: SceneDef[] = [
   {
     // by Brin's fire: Elyra knows the hero's face, and can't find Thessa's
     id: 'gloam-the-fire',
-    region: 'gloamhollow',
+    region: 'riftscar',
     when: during('the-gloam-gate'),
     near: 'elyra-lastlight',
     r: 200,

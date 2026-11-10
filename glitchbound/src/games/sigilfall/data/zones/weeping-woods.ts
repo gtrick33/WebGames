@@ -43,7 +43,6 @@ export const WEEPING_WOODS = wildRegion(
       { side: 'e', at: 0.6, to: 'bonefields', label: 'East road to the Bonefields' },
       { side: 'w', at: 0.7, to: 'blightwood', label: 'West road to the Blightwood', minLevel: 50 },
       { side: 'n', at: 0.55, to: 'hollowmere', label: 'North road to Hollowmere', minLevel: 53 },
-      { side: 'n', at: 0.15, to: 'riftscar', label: 'North-west track to the Riftscar Wastes', minLevel: 54 },
     ],
     pois: [
       // the great tree where the Weeping Lord waits, far in the north-west

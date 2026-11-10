@@ -48,7 +48,7 @@ export const MAIN_XP: Partial<Record<RegionId, number>> = {
   rimeheld: 1.44,
   'shattered-vale': 3.34,
   highwall: 0.97,
-  gloamhollow: 2.92,
+  riftscar: 2.92,
   'weeping-woods': 2.24,
   emberdeep: 1.72,
   hollowmere: 2.53,

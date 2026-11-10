@@ -71,7 +71,7 @@ const npcHere = (w: World, id: string): boolean => w.npcs.some((n) => n.id === i
 const exitTo = (w: World, to: RegionId): World['exits'][number] | undefined => w.exits.find((x) => x.to === to);
 
 /** The zones Acts IV and V added. */
-const NEW_ZONES = ['gloamhollow', 'weeping-woods', 'emberdeep', 'hollowmere'];
+const NEW_ZONES = ['riftscar', 'weeping-woods', 'emberdeep', 'hollowmere'];
 
 describe('Sigilfall: the Three Gates (Act IV)', () => {
   it('every quest of the two Acts opens in turn from a new hero’s start: no loops, nothing out of reach', () => {
@@ -118,12 +118,12 @@ describe('Sigilfall: the Three Gates (Act IV)', () => {
     expect(questState(w.hero, 'gate-the-prison-map')).toBe('active');
     run(w, 0.6);
     expect(npcHere(w, 'nyx-returned')).toBe(true);
-    // the Gloam road opens from the Vale only once the map is read
-    expect(exitTo(newWorld('gloamhollow', heroAt('gloam-the-lamp-road', 44)), 'shattered-vale')).toBeTruthy();
+    // the road into the Riftscar opens from the Vale only once the map is read
+    expect(exitTo(newWorld('riftscar', heroAt('gloam-the-lamp-road', 44)), 'shattered-vale')).toBeTruthy();
   });
 
   it('the Gloam Gate: the cells, the way out, the Gatewarden, and Lastlight’s fire after', () => {
-    const held = newWorld('gloamhollow', heroAt('gloam-the-cells', 48));
+    const held = newWorld('riftscar', heroAt('gloam-the-cells', 48));
     expect(held.storyState?.id).toBe('gate-held');
     expect(held.enemies.some((e) => e.def.id === 'the-gatewarden' && !e.dead)).toBe(true);
     const w = held;
@@ -133,7 +133,7 @@ describe('Sigilfall: the Three Gates (Act IV)', () => {
     expect(w.pets.some((p) => p.def.id === 'nyx-at-the-lock')).toBe(true);
     expect(w.pets.some((p) => p.def.id === 'cael')).toBe(true);
     // a reload in the middle starts the cells over from the quest's step: nothing is lost, nothing paid
-    const mid = newWorld('gloamhollow', w.hero);
+    const mid = newWorld('riftscar', w.hero);
     expect(questState(mid.hero, 'gloam-the-cells')).toBe('active');
     beat(w, 'gloam-the-cells');
     expect(questState(w.hero, 'gloam-the-cells')).toBe('done');
@@ -147,14 +147,14 @@ describe('Sigilfall: the Three Gates (Act IV)', () => {
     expect(questState(w.hero, 'gloam-out-of-the-cells')).toBe('done');
     expect(questState(w.hero, 'the-gatewarden')).toBe('active');
     // coming back after the cells: the event does not play again
-    const again = newWorld('gloamhollow', w.hero);
+    const again = newWorld('riftscar', w.hero);
     goTo(again, 'gate-cells');
     run(again, 0.5);
     expect(again.story.run).toBeNull();
     expect(npcHere(again, 'elyra-lastlight')).toBe(true);
     expect(npcHere(again, 'wren')).toBe(true);
     // the Gate taken: lamps on its hooks, the gloom gone
-    const lit = newWorld('gloamhollow', heroAt('the-gloam-gate', 48));
+    const lit = newWorld('riftscar', heroAt('the-gloam-gate', 48));
     expect(lit.storyState).toBeNull();
     expect(lit.props.filter((p) => p.prop === 'lantern').length).toBeGreaterThanOrEqual(2);
     expect(lit.enemies.some((e) => e.def.id === 'the-gatewarden' && !e.dead)).toBe(false);

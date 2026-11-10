@@ -1,14 +1,14 @@
 import type { NpcDef, QuestDef, StoryEventDef } from '../types';
 
 /**
- * Gloamhollow and the Gloam Gate, the second of the Three Gates (STORY_BIBLE.md §3, Act IV). Nyx came back
- * to Highwall's camp with the Pale Herald's prison map; it leads north from the Shattered Vale to Lastlight,
- * the lamp-keepers' village on the black fen, and on up the causeway to the Gloam Gate, where the Herald
- * keeps Elyra in the cells under the gatehouse. The main chain: the lamps on the causeway, the reavers'
- * ford and Sir Morrow's roster (Wren is in the next cell), Nyx's confession (the map was the Herald's bait),
- * the cells (hold the stair while Nyx picks the lock), the way out (Elyra and Wren follow you down the
- * causeway), the Gatewarden, and the morning after at Lastlight's fire. Widow Marrow wants her son's lamp
- * back from the Black Pool; Tinker Gale wants the bog-wights out of the peat cuttings. Main chain first.
+ * The Gloam Gate, the second of the Three Gates (STORY_BIBLE.md v3, Act IV), played in the Riftscar Wastes
+ * (data/zones/riftscar.ts; written for Gloamhollow, whose ids they keep). Nyx came back to Highwall's camp with the
+ * Pale Herald's prison map; it leads north from the Shattered Vale across the Riftscar's glass to Lastlight, the
+ * lamp-keepers' walled village, and on up the road to the Gloam Gate, where the Herald keeps Elyra in the cells
+ * under the gatehouse. The main chain: the lamps on the road, Nyx's confession (the map was the Herald's bait), the
+ * Gate and the eighth warden's vision, the cells (hold the stair while Nyx picks the lock), the way out (Elyra and
+ * Wren follow you down the road), the Gatewarden, and the morning after at Lastlight's fire. Widow Marrow wants her
+ * son's lamp back from the Black Pool. Main chain first.
  */
 export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
   /* ------------------------------------------------------- the lamp road */
@@ -17,7 +17,7 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     name: 'The Lamp Road',
     giver: 'nyx-returned',
     auto: true,
-    text: 'The Herald’s map shows a causeway north from the Shattered Vale across a black fen, and at the end of it a gatehouse marked with one word in a neat grey hand: KEPT. The fen is Gloamhollow, and the only people who still live on it are the lamp-keepers of Lastlight, who keep the causeway lit. Nyx says they will not like her. Take the north road out of the Shattered Vale and find their head keeper.',
+    text: 'The Herald’s map shows a causeway north from the Shattered Vale across the Riftscar Wastes, glass and violet light where the Tear first tore the world open, and at the end of it a gatehouse marked with one word in a neat grey hand: KEPT. The only people who still live on it are the lamp-keepers of Lastlight, who keep the causeway lit. Nyx says they will not like her. Take the north road out of the Shattered Vale and find their head keeper.',
     objective: { kind: 'talk', npc: 'lamp-keeper-brin', label: 'Find the head lamp-keeper at Lastlight' },
     after: ['the-long-night-ends'],
     // it is how the hero hears of Gloamhollow: it starts with the map in hand, not on arrival
@@ -30,9 +30,9 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     giver: 'lamp-keeper-brin',
     auto: true,
     text: 'Every night for three hundred years Lastlight has lit the lamps from the village to the Gate, one every fifty paces, so nobody who walks the causeway walks it in the dark. For a month the marsh-lights have been putting them out: little drifting fires that lean on a lamp until it gutters and then lead whoever is lost off the stones and into the water. Brin wants her mile back. Snuff the marsh-lights on the causeway and in Wisp Glen.',
-    objective: { kind: 'kill', region: 'gloamhollow', count: 6, enemies: ['marsh-light'], label: 'Snuff out the marsh-lights on the unlit mile' },
+    objective: { kind: 'kill', region: 'riftscar', count: 6, enemies: ['marsh-light'], label: 'Snuff out the marsh-lights on the unlit mile' },
     after: ['gloam-the-lamp-road'],
-    zone: 'gloamhollow',
+    zone: 'riftscar',
     level: 44,
     reward: { xp: 1600, gold: 430, text: 'Brin lights the mile behind you, lamp by lamp, humming. You can see the Gate from the last one: a black tooth on the horizon, and one window in it lit violet.' },
   },
@@ -41,10 +41,10 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     name: 'The Price of the Map',
     giver: 'lamp-keeper-brin',
     auto: true,
-    text: 'Cell ten: the thief’s brother. Promised. Nyx has not said a word since she read it. She is sitting on the end of Lastlight’s jetty with her feet over the black water and her lamp out. Go and talk to her before the two of you walk up to that Gate.',
-    objective: { kind: 'talk', npc: 'nyx-lastlight', label: 'Talk to Nyx on Lastlight’s jetty' },
+    text: 'Cell ten: the thief’s brother. Promised. Nyx has not said a word since she read it. She is sitting on the end of Lastlight’s wall with her feet over the glass and her lamp out. Go and talk to her before the two of you walk up to that Gate.',
+    objective: { kind: 'talk', npc: 'nyx-lastlight', label: 'Talk to Nyx on Lastlight’s wall' },
     after: ['gloam-the-unlit-mile'],
-    zone: 'gloamhollow',
+    zone: 'riftscar',
     level: 46,
     reward: { xp: 1500, gold: 300, text: 'The map was the Herald’s price. He gave it to her so she would bring you to the Gate, and he promised her Wren back for it. She took the map, and then she came and told Mara everything, and she has been waiting a week for you to ask why. “He wants you at that Gate,” she says. “So do I. Only one of us is lying about why.”' },
   },
@@ -56,7 +56,7 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     text: 'Nyx has lit her lamp again. The Gloam Gate stands at the north end of the causeway: the second of the Three Gates the Sigil-wardens built across the road to Vaelmoor, three hundred years old, the Host’s for thirty. The Herald keeps Elyra in its cells, and the sigils in its vault. There is a cairn by the causeway that nobody in Lastlight will touch. Go up with Nyx and find a way under the gatehouse.',
     objective: { kind: 'explore', spot: 'the-gloam-gate', label: 'Reach the Gloam Gate' },
     after: ['gloam-nyx-confesses'],
-    zone: 'gloamhollow',
+    zone: 'riftscar',
     level: 46,
     reward: { xp: 1700, gold: 460, text: 'Nyx finds the drain where the Herald’s map says there is no drain, and under the gatehouse a stair, and at the bottom of the stair a door with a lock she has seen before. “Brennick’s work,” she says. “He taught me on one of these. Give me a minute. Give me a long minute.”' },
   },
@@ -68,7 +68,7 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     text: 'The cell stair runs down under the gatehouse, and the lock at the bottom is the best Nyx has ever seen. She needs time, and the Gate’s sentinels are already coming down the stair. Cael and Orren came up the causeway behind you. Hold the stair while Nyx works the lock.',
     objective: { kind: 'event', event: 'gloam-cells', label: 'Hold the cell stair while Nyx picks the lock' },
     after: ['gloam-the-gate'],
-    zone: 'gloamhollow',
+    zone: 'riftscar',
     level: 47,
     reward: { xp: 2400, gold: 560, text: 'The lock gives with a sound like a held breath let go. Behind it, a corridor of doors, and at the ninth a girl in a moss-green robe sitting very straight on a stone bench, with violet light leaking out of her fingertips.' },
   },
@@ -80,7 +80,7 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     text: 'Elyra can walk, just. Wren, Nyx’s brother, can walk and will not stop talking. The Gate has woken: every sentinel in it is coming down to the cells. Get them both out through the drain and down the causeway to the first lit lamp, where Brin’s keepers are waiting.',
     objective: { kind: 'event', event: 'gloam-out', label: 'Lead Elyra and Wren down the causeway to the lamps' },
     after: ['gloam-the-cells'],
-    zone: 'gloamhollow',
+    zone: 'riftscar',
     level: 47,
     reward: { xp: 2600, gold: 600, text: 'At the first lamp Elyra stops, and puts her hand flat on the glass as if it were warm, and laughs, and then cries, and then asks Brin very politely what her name is, twice.' },
   },
@@ -90,9 +90,9 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     giver: 'lamp-keeper-brin',
     auto: true,
     text: 'The prisoners are out, but the Gloam Gate still stands across the road north, and its keeper stands in it: the Gatewarden, a giant in blackened plate with the portcullis for a shield and the Gate’s own key for a mace. While he stands in the gateway, the Gate’s runes mend him. Go back up the causeway and bring him down, and the second Gate is ours.',
-    objective: { kind: 'kill', region: 'gloamhollow', count: 1, enemies: ['the-gatewarden'], label: 'Defeat the Gatewarden at the Gloam Gate' },
+    objective: { kind: 'kill', region: 'riftscar', count: 1, enemies: ['the-gatewarden'], label: 'Defeat the Gatewarden at the Gloam Gate' },
     after: ['gloam-out-of-the-cells'],
-    zone: 'gloamhollow',
+    zone: 'riftscar',
     level: 48,
     reward: {
       xp: 5600,
@@ -109,7 +109,7 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     text: 'The Gloam Gate is lit and held, and Lastlight has turned its square into an infirmary for one: Elyra, wrapped in three blankets by Brin’s fire, with Nyx and Wren on either side of her like bookends. Go and sit with her.',
     objective: { kind: 'talk', npc: 'elyra-lastlight', label: 'Sit with Elyra by Lastlight’s fire' },
     after: ['the-gatewarden'],
-    zone: 'gloamhollow',
+    zone: 'riftscar',
     level: 48,
     reward: {
       xp: 3200,
@@ -126,9 +126,9 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     name: 'Wren’s First Night',
     giver: 'wren',
     text: 'Wren has asked Brin for a lamp-keeper’s hook, and Nyx has said over her dead body, and Brin has said that can be arranged. Tonight is his first night on the causeway. The marsh-lights know it. Walk the unlit mile with him and snuff whatever leans on his lamps.',
-    objective: { kind: 'kill', region: 'gloamhollow', count: 12, enemies: ['marsh-light'], label: 'Keep Wren’s lamps lit: snuff marsh-lights' },
+    objective: { kind: 'kill', region: 'riftscar', count: 12, enemies: ['marsh-light'], label: 'Keep Wren’s lamps lit: snuff marsh-lights' },
     after: ['epilogue-the-bell'],
-    zone: 'gloamhollow',
+    zone: 'riftscar',
     level: 60,
     reward: { xp: 4000, gold: 1200, item: { rarity: 'epic' }, text: 'Every lamp is lit at dawn, and Wren is asleep against the last one with his hook across his knees. Nyx carries him home over her shoulder like a sack of flour and does not say anything at all, which Brin says is the nicest thing she has ever seen her do.' },
   },
@@ -140,18 +140,18 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     text: 'Widow Marrow keeps the lamp-oil, the potions and the oldest grudge in Lastlight. Her son Tam was a lamp-keeper; a year ago he walked the causeway at dusk with his lamp and walked off the stones toward the Black Pool, west of the village, singing. She wants to know where he went. She thinks she knows.',
     objective: { kind: 'explore', spot: 'the-black-pool', label: 'Search the Black Pool west of Lastlight' },
     after: ['gloam-the-lamp-road'],
-    zone: 'gloamhollow',
+    zone: 'riftscar',
     level: 45,
-    reward: { xp: 700, gold: 430, text: 'At the edge of the pool, a lamp-hook driven into the peat, and on it a lamp that is still warm. Things move in the reeds: gloam lurkers, long and patient, and something under the water that sings in a woman’s voice.' },
+    reward: { xp: 700, gold: 430, text: 'At the edge of the pool, a lamp-hook driven into the glass, and on it a lamp that is still warm. Things move in the reeds: gloam lurkers, long and patient, and something under the water that sings in a woman’s voice.' },
   },
   {
     id: 'gloam-lurkers',
     name: 'Lurkers in the Reeds',
     giver: 'widow-marrow',
     text: 'The lurkers lie in the reeds at the Black Pool’s edge and take whatever the marsh-lights lead to them. Marrow wants a path cleared to the water so she can go and say something to it. Thin out the gloam lurkers around the Black Pool and on the western fen.',
-    objective: { kind: 'kill', region: 'gloamhollow', count: 8, enemies: ['gloam-lurker'], label: 'Defeat gloam lurkers' },
+    objective: { kind: 'kill', region: 'riftscar', count: 8, enemies: ['gloam-lurker'], label: 'Defeat gloam lurkers' },
     after: ['the-black-pool'],
-    zone: 'gloamhollow',
+    zone: 'riftscar',
     level: 45,
     reward: { xp: 750, gold: 450 },
   },
@@ -160,47 +160,13 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     name: 'The Drowned Mother',
     giver: 'widow-marrow',
     text: 'The voice in the pool is the Drowned Mother: Lastlight’s first lamp-keeper, who walked into the Black Pool after her own lost child three hundred years ago and never came out. The grieflight found her there and made her a mother again, of marsh-lights. She has been calling children home ever since, and Tam was somebody’s child. Go to the Black Pool and let her rest.',
-    objective: { kind: 'kill', region: 'gloamhollow', count: 1, enemies: ['the-drowned-mother'], label: 'Lay the Drowned Mother to rest at the Black Pool' },
+    objective: { kind: 'kill', region: 'riftscar', count: 1, enemies: ['the-drowned-mother'], label: 'Lay the Drowned Mother to rest at the Black Pool' },
     after: ['gloam-lurkers'],
-    zone: 'gloamhollow',
+    zone: 'riftscar',
     level: 46,
     reward: { xp: 1100, gold: 620, item: 'tams-lamp', text: 'Marrow cleans Tam’s lamp and fills it and lights it in her window for a night. In the morning she sends every jar of lamp-oil in her cellar up to the Gate. “Light the whole road,” she says. “All the way to whatever is at the end of it.”' },
   },
 
-  /* ---------------------------------------------------- Tinker Gale's peat */
-  {
-    id: 'peat-and-pitch',
-    name: 'Peat and Pitch',
-    giver: 'tinker-gale',
-    text: 'Tinker Gale mends everything in Lastlight that can be mended, and makes the lamps, and the lamps burn peat-pitch from the cuttings south-east of the village. Nobody has cut peat for a fortnight: the bog-wights rose out of the cuttings, and Gale’s apprentice came back without his spade. Go and see what is in the cuttings.',
-    objective: { kind: 'explore', spot: 'peat-cuttings', label: 'Visit the Peat Cuttings' },
-    after: ['gloam-the-lamp-road'],
-    zone: 'gloamhollow',
-    level: 44,
-    reward: { xp: 700, gold: 420, text: 'The cuttings are full of the dead: not Vaelmoor’s, Lastlight’s own, buried in the peat for three centuries and kept perfectly by it, with the grieflight in them now. One of them is still holding the apprentice’s spade.' },
-  },
-  {
-    id: 'bog-wights',
-    name: 'Bog-Wights',
-    giver: 'tinker-gale',
-    text: 'Gale needs the pitch, and the pitch is under the bog-wights. Put them back down, at the cuttings and wherever they walk on the fen. Gale will make you something for your hands while you’re at it, because the mire gets into everything.',
-    objective: { kind: 'kill', region: 'gloamhollow', count: 8, enemies: ['bog-wight'], label: 'Put down bog-wights' },
-    after: ['peat-and-pitch'],
-    zone: 'gloamhollow',
-    level: 45,
-    reward: { xp: 1050, gold: 600, item: 'mire-proof-gauntlets', text: 'The cuttings are quiet and Lastlight has pitch again. Gale sends two carts of lamps north to the Gate and a third to Highwall “for whoever needs to see in the dark,” and fits you with a pair of gauntlets that Gale swears do not smell.' },
-  },
-  {
-    id: 'mire-horrors',
-    name: 'Mire Horrors',
-    giver: 'tinker-gale',
-    text: 'The biggest things on the fen are the mire horrors: drowned cattle, mostly, and the peat they drowned in, rolled together and walking. Their oil is the best lamp-oil there is, if you can get it out of them. Gale would like six horrors’ worth. Gale would also like you to come back.',
-    objective: { kind: 'kill', region: 'gloamhollow', count: 6, enemies: ['mire-horror'], label: 'Defeat mire horrors' },
-    after: ['bog-wights'],
-    zone: 'gloamhollow',
-    level: 46,
-    reward: { xp: 1050, gold: 610, item: { rarity: 'rare' } },
-  },
 ];
 
 export const GLOAMHOLLOW_NPCS: Record<string, NpcDef> = {
@@ -212,11 +178,11 @@ export const GLOAMHOLLOW_NPCS: Record<string, NpcDef> = {
     talk: [
       { when: { quest: 'gloam-the-lamp-road', state: 'active' }, lines: ['You came up the causeway in the dark. Don’t. Nobody walks it in the dark. That is the whole point of us.', 'Brin. I keep the lamps. Your thief keeps looking at the Gate. Everyone who comes here does that once.'] },
       { when: { quest: 'gloam-the-unlit-mile', state: 'active' }, lines: ['One lamp every fifty paces, from my door to the Gate. Three hundred years. My grandmother lit them, and hers.', 'The marsh-lights lean on them till they gutter. Snuff the lights. Ten. I’ll do the relighting; I like the relighting.'] },
-      { when: { quest: 'gloam-nyx-confesses', state: 'active' }, lines: ['Your thief is on my jetty with her lamp out. Nobody sits on my jetty with their lamp out.', 'Go and talk to her. And bring the lamp back lit, one way or another.'] },
+      { when: { quest: 'gloam-nyx-confesses', state: 'active' }, lines: ['Your thief is on my wall with her lamp out. Nobody sits on my wall with their lamp out.', 'Go and talk to her. And bring the lamp back lit, one way or another.'] },
       { when: { quest: 'the-gatewarden', state: 'active' }, lines: ['They’re out. Both of them. I’ve got the girl by my fire and the brother is eating everything in the house.', 'But the Gate is still standing across the road, and its keeper in it. Bring him down, and I’ll hang my lamps on his hooks.'] },
       { when: { quest: 'the-gloam-gate', state: 'active' }, lines: ['She keeps asking me my name. I keep telling her. She says thank you every time, like it’s new.', 'Go and sit with her. Sit on the side she can see.'] },
       { when: { quest: 'the-gloam-gate', state: 'done' }, lines: ['The Gate’s lit. All the way. I walked to the end of the causeway this morning and looked north, and there was a road there, and I’d never seen it.', 'Whatever’s at the end of it, you’ll need light. Take some.'] },
-      { lines: ['Lastlight. Last light before the Hallow King’s country. We keep the causeway lit so nobody walks it in the dark.', 'Carry a lamp on the fen. Everybody does. Even the dead carry lamps here, they just carry them out.'] },
+      { lines: ['Lastlight. Last light before the Hallow King’s country. We keep the causeway lit so nobody walks it in the dark.', 'Carry a lamp on the glass. Everybody does. Even the dead carry lamps here, they just carry them out.'] },
     ],
   },
   'widow-marrow': {
@@ -242,10 +208,6 @@ export const GLOAMHOLLOW_NPCS: Record<string, NpcDef> = {
     shop: 'armor',
     shopName: 'Gale’s Mending',
     talk: [
-      { when: { quest: 'peat-and-pitch', state: 'active' }, lines: ['The lamps burn pitch. The pitch comes out of the peat cuttings, south-east. The cuttings have grown a crop of dead men.', 'My apprentice came back without his spade. Go and see who has it.'] },
-      { when: { quest: 'bog-wights', state: 'active' }, lines: ['Our own dead. Kept in the peat three hundred years. Perfect. Not a mark on them. I liked it better when they were rude about it.', 'Put them down, eight, and I’ll make you something for your hands. The mire gets in everything.'] },
-      { when: { quest: 'mire-horrors', state: 'active' }, lines: ['Mire horrors: drowned cows and the bog that drowned them, rolled up together. The best lamp-oil in the world is in them.', 'Six. And come back. I mean that more than the oil.'] },
-      { when: { quest: 'bog-wights', state: 'done' }, lines: ['Two carts of lamps to the Gate, one to Highwall. For whoever needs to see in the dark. Everyone, I expect.'] },
       { lines: ['Gale’s Mending. Mail, plate, lamps, buckles, hinges, hearts. Not the last one. I tried.', 'If it’s broken, bring it. If it’s haunted, bring it anyway; I charge extra.'] },
     ],
   },
@@ -256,7 +218,7 @@ export const GLOAMHOLLOW_NPCS: Record<string, NpcDef> = {
     title: 'Come back',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'gloam-the-lamp-road', state: 'active' }, lines: ['North from the Vale, over the fen. There’s a village of people who light lamps. They’re going to hate me. Everybody does that eventually; it saves time if it’s early.'] },
+      { when: { quest: 'gloam-the-lamp-road', state: 'active' }, lines: ['North from the Vale, over the glass. There’s a village of people who light lamps. They’re going to hate me. Everybody does that eventually; it saves time if it’s early.'] },
       {
         when: { quest: 'gloam-nyx-confesses', state: 'active' },
         lines: [
@@ -312,7 +274,7 @@ export const GLOAMHOLLOW_NPCS: Record<string, NpcDef> = {
 export const GLOAMHOLLOW_EVENTS: Record<string, StoryEventDef> = {
   'gloam-cells': {
     id: 'gloam-cells',
-    region: 'gloamhollow',
+    region: 'riftscar',
     kind: 'defend',
     at: 'gate-cells',
     radius: 10,
@@ -326,15 +288,15 @@ export const GLOAMHOLLOW_EVENTS: Record<string, StoryEventDef> = {
     ],
     waves: [
       { enemies: ['hollow-sentinel', 'border-reaver', 'border-reaver'], from: ['gate-n', 'gate-w'] },
-      { enemies: ['hollow-sentinel', 'hollow-sentinel', 'bog-wight', 'bog-wight', 'marsh-light'], from: ['gate-n', 'gate-e'], barks: [{ who: 'orren', text: 'They’re Vaelmoor’s gate-guards. They don’t know the Gate fell. Lantern up, Cael, let them see it.' }] },
-      { enemies: ['hollow-sentinel', 'hollow-sentinel', 'border-reaver', 'border-reaver', 'mire-horror'], from: ['gate-n', 'gate-w', 'gate-e'], barks: [{ who: 'nyx-at-the-lock', text: 'Almost. Almost — don’t look at me, it makes my hands shake —' }] },
+      { enemies: ['hollow-sentinel', 'hollow-sentinel', 'pale-acolyte', 'pale-acolyte', 'marsh-light'], from: ['gate-n', 'gate-e'], barks: [{ who: 'orren', text: 'They’re Vaelmoor’s gate-guards. They don’t know the Gate fell. Lantern up, Cael, let them see it.' }] },
+      { enemies: ['hollow-sentinel', 'hollow-sentinel', 'border-reaver', 'border-reaver', 'tear-wraith'], from: ['gate-n', 'gate-w', 'gate-e'], barks: [{ who: 'nyx-at-the-lock', text: 'Almost. Almost — don’t look at me, it makes my hands shake —' }] },
     ],
     end: [{ who: 'nyx-at-the-lock', text: 'Got it. Got it. Oh, Brennick, you old bastard, I got it.' }],
     retry: [{ who: 'nyx-at-the-lock', text: 'I lost the pins. Start again. I can start again. I’m good at starting again.' }],
   },
   'gloam-out': {
     id: 'gloam-out',
-    region: 'gloamhollow',
+    region: 'riftscar',
     kind: 'rescue',
     at: 'gate-cells',
     radius: 8,

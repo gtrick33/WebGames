@@ -5,12 +5,17 @@ and the v2 outline. v3 tells the story through **fifteen lands** instead of twen
 the main story by hand**, the way the opening night is staged.
 
 - The fifteen lands, in story order: the Whisperwood, Brackenridge Hills, Thornvale, the Amberfield, the Ashen
-  Barrows, the Sunscorch, the Glimmerwood, Rimeheld, the Shattered Vale, Highwall March, Gloamhollow, the Weeping
+  Barrows, the Sunscorch, the Glimmerwood, Rimeheld, the Shattered Vale, Highwall March, the Riftscar Wastes, the Weeping
   Woods, Emberdeep, Hollowmere and the Pale Reach. With them: Briarhollow (the camp), Emberwick (the Crown City), the
   dungeons the story goes through, Duskspire and Vaelmoor Remembered.
 - **Retired** (built, kept in the code, but off the map and out of the story — `data/retired.ts`): Greyfen,
   the Saltmarsh, Duskfen, Ironpeak, Stormwatch, the Grimward Moors, Sablewind, Vinecoil, the Bonefields, the
-  Blightwood, the Sunken Reaches and the Riftscar. Their dungeons stay open as Riftstone runs.
+  Blightwood, the Sunken Reaches and Gloamhollow. Their dungeons stay open as Riftstone runs.
+- The fifteen are chosen to look different from each other, not only to tell the story: green wood, autumn hills,
+  farmland and golden steppe at home; then grey barrow downs, desert, a teal fey wood, snow and ice, purple crystal,
+  a siege plain, the purple glass of the Riftscar, a blue-grey winter wood, a lava caldera, a black lake and a
+  snowfield. Gloamhollow's dark fen gave its story (Lastlight, the Gloam Gate) to the Riftscar, whose own old
+  chain (the Herald's end) stays retired.
 - Quest ids stay where a save depends on them; a hero part-way through the old story is moved onto the new one
   (save version 13, `progress/save.ts` keepPlace: every main quest before the furthest one started counts as
   played, with its sigil). Everything a player reads is new or rewritten.
@@ -90,7 +95,7 @@ hallows the dead and calls it mercy.
 | Crown Sigil | one of the seven star-iron points of the Starlight Crown (perk ids `sigil-*`) |
 | Grieflight | the violet glow the Ash Crown leaves in what it touches |
 | The Pale Herald | Aurel, Vaelor's brother and voice |
-| The Gloam | the dusk-land between Aster and Vaelmoor; the fen where Edric held the gate |
+| The Gloam | the dusk-land between Aster and Vaelmoor, the torn glass of the Riftscar Wastes, where Edric held the gate |
 
 ---
 
@@ -292,7 +297,8 @@ sing.
 5. `the-breach` / `the-siege-breaker` / `general-morvain` **The Breach** — *bosses* in the siege; then
    `the-long-night-ends`: the first gate is ours. **"…One gate."**
 
-**Gloamhollow: Lastlight** (44–48) — the black fen, the lamps of Lastlight, the Gloam Gate.
+**The Riftscar Wastes: Lastlight** (44–48) — glass plains under a torn violet sky, where the Tear first opened; the
+Herald's spire in the west, the lamps of Lastlight, and the Gloam Gate at the road's end.
 
 1. `gloam-the-unlit-mile` **The Unlit Mile** — Lastlight's lamp-keepers; the road dark for a mile.
 2. `gloam-nyx-confesses` / `gloam-the-gate` **The Eighth Warden** — at a cairn by the gate, Elyra's absence is a hole the

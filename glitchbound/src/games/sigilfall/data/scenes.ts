@@ -220,7 +220,7 @@ export const SCENES: SceneDef[] = [
   {
     // Act IV: Elyra out of the Gloam Gate's cells, by Lastlight's fire
     id: 'gloam-elyra-free',
-    region: 'gloamhollow',
+    region: 'riftscar',
     when: all(after('gloam-out-of-the-cells'), until('the-gloam-gate')),
     near: 'elyra-lastlight',
     r: 140,
@@ -568,14 +568,14 @@ export const SCENES: SceneDef[] = [
   {
     // Act IV: Nyx at the Gloam Gate's cells, and the gate-guards on the stair
     id: 'gloam-the-stair',
-    region: 'gloamhollow',
+    region: 'riftscar',
     opens: { event: 'gloam-cells' },
     steps: [{ look: 'nyx-at-the-lock' }, { title: 'The Cells' }, { wait: 0.8 }, { look: 'foes' }, { wait: 1.4 }, { look: 'hero' }],
   },
   {
     // Act IV: Elyra on her feet in the open cell
     id: 'gloam-out-of-the-dark',
-    region: 'gloamhollow',
+    region: 'riftscar',
     opens: { event: 'gloam-out' },
     steps: [
       { look: 'elyra-freed' },

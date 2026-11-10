@@ -492,7 +492,7 @@ describe('sigilfall wild zones, played', () => {
     { region: 'blightwood', level: 51 },
     { region: 'emberdeep', level: 52 },
     { region: 'hollowmere', level: 54 },
-    { region: 'riftscar', level: 55 },
+    { region: 'riftscar', level: 46 },
   ] as const;
   for (const z of ZONES) {
     for (const cls of CLASS_IDS) {

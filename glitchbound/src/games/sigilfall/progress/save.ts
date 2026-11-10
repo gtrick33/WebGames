@@ -416,6 +416,8 @@ function keepPlace(hero: Raw): void {
   }
   const perks = Array.isArray(hero.perks) ? (hero.perks as unknown[]) : [];
   const unlocked = Array.isArray(hero.unlocked) ? (hero.unlocked as unknown[]) : [];
+  // the Gloam's story is played in the Riftscar Wastes now: whoever knew the fen knows the way there
+  if (unlocked.includes('gloamhollow') && !unlocked.includes('riftscar')) unlocked.push('riftscar');
   for (const id of played) {
     const r = QUEST_DEFS[id]!.reward;
     if (r.perk && !perks.includes(r.perk)) perks.push(r.perk);

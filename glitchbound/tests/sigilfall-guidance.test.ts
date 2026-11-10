@@ -94,8 +94,8 @@ describe('Sigilfall: the quest arrow and the story’s fights', () => {
   it('routes walk round roads the story still keeps shut, and every road between lands goes both ways', () => {
     // the Herald's map in hand, the Gloam Gate not yet taken: Highwall's north road is shut, the Vale's causeway open
     const mapInHand = (q: string): boolean => q === 'gate-the-prison-map';
-    expect(nextRegion('highwall', 'gloamhollow', mapInHand)).toBe('shattered-vale');
-    expect(nextRegion('highwall', 'gloamhollow', () => false)).toBe(null);
+    expect(nextRegion('highwall', 'riftscar', mapInHand)).toBe('shattered-vale');
+    expect(nextRegion('highwall', 'riftscar', () => false)).toBe(null);
     const ways = new Map<RegionId, Set<RegionId>>();
     for (const id of REGION_IDS) {
       const r = REGIONS[id];
