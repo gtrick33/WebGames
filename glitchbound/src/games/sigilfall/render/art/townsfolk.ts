@@ -867,7 +867,8 @@ TOWNSFOLK_LOOKS['vaelor-remembered'] = { ...TOWNSFOLK_LOOKS['queen-ysane']!, hai
 TOWNSFOLK_LOOKS['echo-of-ysane-whole'] = TOWNSFOLK_LOOKS['queen-ysane']!;
 TOWNSFOLK_LOOKS['echo-of-the-children'] = TOWNSFOLK_LOOKS['vaelmoor-child']!;
 TOWNSFOLK_LOOKS['vaelmoor-baker'] = TOWNSFOLK_LOOKS['vaelmoor-echo']!;
-TOWNSFOLK_LOOKS['vaelmoor-herald-boy'] = TOWNSFOLK_LOOKS['vaelmoor-child']!;
+// the crier boy of Vaelmoor's market: his own sandy hair and the town's blue tabard (not the prince's and princess's look)
+TOWNSFOLK_LOOKS['vaelmoor-herald-boy'] = { ...TOWNSFOLK_LOOKS['vaelmoor-child']!, hair: '#c8a878', chest: { style: 'tunic', mat: 'cloth', tint: '#5a78b8', r: 'uncommon' }, legs: { style: 'trousers', mat: 'cloth', tint: '#5a4e40', r: 'common' }, cape: '#3a5a98' };
 // Queen Ysane's echoes, one at each of the frozen places
 for (const id of ['echo-of-ysane', 'echo-of-ysane-quay', 'echo-of-ysane-mere']) TOWNSFOLK_LOOKS[id] = TOWNSFOLK_LOOKS['queen-ysane']!;
 
