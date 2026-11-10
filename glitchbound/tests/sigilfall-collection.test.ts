@@ -180,7 +180,7 @@ describe('Sigilfall: mounts', () => {
     expect(mountEarned(c, MOUNT_DEFS['ashen-nightmare']!)).toBe(false);
     c.clears['barrow-of-kings:2'] = 1;
     expect(mountEarned(c, MOUNT_DEFS['ashen-nightmare']!)).toBe(true);
-    // an old save with the perk gets the Strider (once riding is open); a mount id that isn't real is dropped
+    // an old save with the perk gets the Cob (once riding is open); a mount id that isn't real is dropped
     const old = readyHero('ranger', 20);
     old.perks.push('mount');
     old.quests['camp-riders'] = { state: 'done', n: 1 };
@@ -193,7 +193,9 @@ describe('Sigilfall: mounts', () => {
     expect(FIRST_RIDE).toBe('camp-riders');
     expect(QUEST_DEFS[FIRST_RIDE]!.level).toBe(20);
     expect(MOUNT_DEFS['briarhollow-chestnut']!.source).toEqual({ kind: 'quest', quest: FIRST_RIDE });
-    expect(new Set(MOUNTS.map((m) => m.source.kind))).toEqual(new Set(['quest', 'perk', 'clears', 'shelf', 'campaign']));
+    // (the old riding perk's quest left the story: the Cob comes from Millbrook's bridge, or with the perk of an older hero)
+    expect(new Set(MOUNTS.map((m) => m.source.kind))).toEqual(new Set(['quest', 'clears', 'shelf', 'campaign']));
+    expect(MOUNT_DEFS['gullport-strider']!.source).toEqual({ kind: 'quest', quest: 'mill-the-bridge', perk: 'mount' });
     setShelfPoints(1000);
     try {
       for (const m of MOUNTS) {

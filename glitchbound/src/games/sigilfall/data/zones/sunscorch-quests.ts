@@ -13,32 +13,23 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
   /* ---------------------------------------------------------- the way in */
   {
     id: 'the-sun-kings-tomb',
-    name: 'The Sun King’s Tomb',
+    name: 'The Oasis of Ras',
     giver: 'regent-elowen',
-    text: 'Far to the east, in the Sunscorch Expanse, the Sigil of the Sun lies buried with the Sun King, greatest of the old desert kings, in a tomb nobody has found in a thousand years. The sun houses have sworn it stays buried forever. The Regent needs it, and the Host is already digging for it. Take the east road down out of Ironpeak into the sands and find Oasis-keeper Sefu at the Oasis of Ras, who keeps the oath and may be persuaded to break it.',
+    text: 'The first place on the wardens’ map: the Sunscorch Expanse, where the Sigil of the Sun lies buried with the Sun King, a warden-king of the desert who had himself sealed in his tomb with it three hundred years ago. The sun houses have sworn it stays buried forever. The Host is already digging. Take the long road west out of the Crown City into the sands and find Oasis-keeper Sefu at the Oasis of Ras.',
     objective: { kind: 'talk', npc: 'oasis-keeper-sefu', label: 'Talk to Oasis-keeper Sefu at the Oasis of Ras' },
     after: ['festival-the-champion'],
     level: 30,
-    reward: { xp: 850, gold: 260 },
+    reward: { xp: 850, gold: 260, text: 'Sefu is not alone at the wells. A smuggler with quick hands and a familiar grin is selling her water she already owns: Nyx, of Millbrook. “Your map’s my map now,” she says. “I know every road the Host pays for.”' },
   },
   /* ------------------------------------------------------- the Sun King */
   {
-    id: 'hollow-coin',
-    name: 'Ash Coin',
-    giver: 'oasis-keeper-sefu',
-    text: 'Sefu keeps the Oasis of Ras: its wells, its palms and its peace. The peace is going. The dune raiders, who used to steal goats, now hit the water caravans in packs, and they pay for everything in cold grey coin. Sefu wants to know who is buying the desert. Take the raiders’ purses off them in the sands around the oasis.',
-    objective: { kind: 'loot', region: 'sunscorch', item: 'Raider’s Purse', from: ['dune-raider', 'dune-javelineer'], chance: 0.4, count: 5, label: 'Take Raiders’ Purses from dune raiders' },
-    after: ['the-sun-kings-tomb'],
-    zone: 'sunscorch',
-    reward: { xp: 1000, gold: 270 },
-  },
-  {
     id: 'the-sandscribe',
     name: 'The Sandscribe',
+    auto: true,
     giver: 'oasis-keeper-sefu',
-    text: 'ash-gold, as Sefu feared, and in every purse a scrap of linen inked with a sun and a line of the old kingdom’s script. Somebody is paying raiders to find something. Sandscribe Ibbi reads the old script better than anyone alive, and will tell you so. She works in the shade by the wells, in the oasis.',
+    text: 'The raiders who prey on the oasis carry ash-gold now, and in every purse a scrap of linen inked with a sun and a line of the old kingdom’s script: somebody is paying them to find something. Sandscribe Ibbi reads the old script better than anyone alive, and will tell you so. She works in the shade by the wells.',
     objective: { kind: 'talk', npc: 'sandscribe-ibbi', label: 'Show the linen scraps to Sandscribe Ibbi' },
-    after: ['hollow-coin'],
+    after: ['the-sun-kings-tomb'],
     zone: 'sunscorch',
     level: 31,
     reward: { xp: 900, gold: 270 },
@@ -46,6 +37,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
   {
     id: 'the-fallen-obelisk',
     name: 'The Fallen Obelisk',
+    auto: true,
     giver: 'sandscribe-ibbi',
     text: 'Ibbi knows the line: it is copied from the Fallen Obelisk, south-east of the oasis, where the old kings carved the way to the Sun King’s tomb as a riddle for the worthy. The Host is copying it for the unworthy. Go and read the obelisk before they have finished, and bring Ibbi the end of the riddle.',
     objective: { kind: 'explore', spot: 'fallen-obelisk', label: 'Read the Fallen Obelisk' },
@@ -57,21 +49,11 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
   {
     id: 'the-hollow-dig',
     name: 'The Ashen Dig',
+    auto: true,
     giver: 'oasis-keeper-sefu',
-    text: 'From the obelisk you could see the Host’s dust, east of the oasis: dead miners shovelling sand day and night, bonecallers keeping time, a golem hauling the spoil. They are digging toward the Sun King. Break the Ashen Dig, and the Host’s diggers wherever they wander in the sands.',
-    objective: { kind: 'kill', region: 'sunscorch', count: 10, enemies: ['legion-miner', 'legion-bonecaller', 'bone-golem'], label: 'Break the Host’s diggers' },
+    text: 'From the obelisk you could see the Host’s dust, east of the oasis: dead miners shovelling sand day and night, bonecallers keeping time, a golem hauling the spoil. They are digging toward the Sun King, and they are close. Break the Ashen Dig before it breaks through.',
+    objective: { kind: 'kill', region: 'sunscorch', count: 6, enemies: ['legion-miner', 'legion-bonecaller', 'bone-golem'], label: 'Break the Ashen Dig east of the oasis' },
     after: ['the-fallen-obelisk'],
-    zone: 'sunscorch',
-    level: 32,
-    reward: { xp: 1200, gold: 290 },
-  },
-  {
-    id: 'the-waking-dead',
-    name: 'The Waking Court',
-    giver: 'sandscribe-ibbi',
-    text: 'The digging has woken the Sun King’s court. His courtiers walk out of the sand in their wrappings with scarabs pouring out of them, and they do not care whose side anyone is on. Ibbi would like them back in their graves before they walk into the oasis. Lay the old kingdom’s dead to rest in the sands east of the oasis.',
-    objective: { kind: 'kill', region: 'sunscorch', count: 15, enemies: ['sun-mummy', 'tomb-scarab'], label: 'Lay sun mummies and tomb scarabs to rest' },
-    after: ['the-hollow-dig'],
     zone: 'sunscorch',
     level: 32,
     reward: { xp: 1200, gold: 290 },
@@ -82,7 +64,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     giver: 'oasis-keeper-sefu',
     text: 'The raiders guide the Host’s diggers through the deep desert, and their chief sold them the way: Khamsin, named for the wind that strips the paint off wagons. He keeps his camp at the Raiders’ Rest, north-east of the oasis, with the best of his riders and all of his gold. Sefu wants him gone, and the desert’s roads back.',
     objective: { kind: 'kill', region: 'sunscorch', count: 1, enemies: ['khamsin'], label: 'Defeat Khamsin at the Raiders’ Rest' },
-    after: ['the-waking-dead'],
+    after: ['the-hollow-dig'],
     zone: 'sunscorch',
     level: 33,
     reward: { xp: 1700, gold: 450, item: { rarity: 'rare' }, text: 'Khamsin’s riders scatter into the dunes. In his tent you find the Host’s map of the deep desert, and the way east.' },
@@ -90,10 +72,11 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
   {
     id: 'the-sunken-gate',
     name: 'The Sunken Gate',
+    auto: true,
     giver: 'oasis-keeper-sefu',
-    text: 'Khamsin’s map shows the way the riddle pointed: far to the east, where the sun first touches the sand, a door half buried in a dune, and the Host’s tunnel running down to it. Find the Sunken Gate. The Host got there first; see what it found.',
+    text: 'The riddle pointed east, where the sun first touches the sand: a door half buried in a dune, and the Host’s tunnel running down to it. Find the Sunken Gate. The Host got there first; see what it found.',
     objective: { kind: 'explore', spot: 'sunken-gate', label: 'Find the Sunken Gate' },
-    after: ['khamsin'],
+    after: ['the-hollow-dig'],
     zone: 'sunscorch',
     level: 33,
     reward: { xp: 1150, gold: 300 },
@@ -101,6 +84,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
   {
     id: 'the-sand-warden',
     name: 'The Sand Warden',
+    auto: true,
     giver: 'sandscribe-ibbi',
     text: 'The Host broke the Sunken Gate open, and something inside broke the Host: the Sand Warden, made by the old kings to keep thieves out of the Sun King’s halls. It cannot tell a thief from a hero, and Ibbi doubts it would care. Go down into the Tomb of the Sun King, through the gate in the far east, and get past it.',
     objective: { kind: 'boss', boss: 'the-sand-warden', label: 'Defeat the Sand Warden in the Tomb of the Sun King' },
@@ -112,6 +96,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
   {
     id: 'the-sun-king',
     name: 'The Sun King',
+    auto: true,
     giver: 'oasis-keeper-sefu',
     text: 'Beyond the Warden lies the Sun King’s burial hall, and the Sun King is not lying in it. The Host’s digging has woken him with the Sigil of the Sun in his hands. He was a great king once, and he does not mean to give up anything that is his. Sefu has made her choice: better in the Regent’s hands than the Hallow King’s. Take the sigil from him before the Host does.',
     objective: { kind: 'boss', boss: 'the-sun-king', label: 'Defeat the Sun King and take the Sigil of the Sun' },
@@ -123,7 +108,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
       gold: 1100,
       item: 'oasis-heart',
       perk: 'sigil-sun',
-      text: 'You take the Sigil of the Sun from the Sun King’s hands, still warm as noon, and he lies down again at last. Sefu breaks a thousand-year oath with a face like stone, and fills a glass heart from the oldest well of Ras so that something of the oasis goes with it. When the Regent marches, she says, the desert lancers will ride beside it.',
+      text: 'You take the Sigil of the Sun from the Sun King’s hands, still warm as noon, and he lies down again at last. Elyra holds it and goes quiet: it showed her a ship coming into a harbor, she says, and a young man in blue waving it in. Then she asks what color Briarhollow’s orchard is in spring, because she can’t remember. When the Regent marches, Sefu says, the desert lancers will ride beside it.',
     },
   },
   /* ----------------------------------------------------- Kasim's scorpions */
@@ -200,7 +185,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     giver: 'sandscribe-ibbi',
     text: 'Tomb scarabs eat the grave goods of the dead they nest in, gold and all, and never digest the gold. Each of the Sun King’s courtiers was buried with a seal bearing their name, so the scarabs are walking about with a list of who has woken. Ibbi wants six seals, from the scarabs in the sands east of the oasis.',
     objective: { kind: 'loot', region: 'sunscorch', item: 'Sun Seal', from: ['tomb-scarab'], chance: 0.3, count: 6, label: 'Take Sun Seals from tomb scarabs' },
-    after: ['the-waking-dead'],
+    after: ['the-hollow-dig'],
     zone: 'sunscorch',
     level: 33,
     reward: { xp: 1000, gold: 300 },
@@ -230,10 +215,6 @@ export const SUNSCORCH_NPCS: Record<string, NpcDef> = {
         lines: ['The Regent sent you? Then the dead men in the dunes are not my imagination. I hoped they were. I am old enough to be allowed some imagination.', 'Sit. Drink. Water first, always, in Ras. Then we talk about the Sun King.'],
       },
       {
-        when: { quest: 'hollow-coin', state: 'active' },
-        lines: ['The dune raiders used to steal goats. Now they hit the water caravans in packs of ten, and pay for their dates in grey coin.', 'Somebody is buying my desert. Bring me their purses and let us see whose face is on the money.'],
-      },
-      {
         when: { quest: 'the-sandscribe', state: 'active' },
         lines: ['An empty crown on every coin. And these scraps of linen, with a sun on each, and writing older than my wells.', 'Ibbi will read them. She works in the shade by the water. Bring her something old and she will forgive you anything.'],
       },
@@ -252,10 +233,6 @@ export const SUNSCORCH_NPCS: Record<string, NpcDef> = {
       {
         when: { quest: 'the-sun-king', state: 'active' },
         lines: ['The Sun King gave Ras its wells, the stories say. He dug the first one with his own hands.', 'If he has risen, he will not be the man in the stories. Take the sigil anyway. Kindly, if he lets you.'],
-      },
-      {
-        when: { quest: 'the-supply-road', state: 'active' },
-        lines: ['The Host’s diggers did not walk here from nowhere. They came down the canyon road from the north, and the caravans from Sablewind say Host wagons roll west along it every night.', 'Take the north road into Sablewind Canyon. Foreman Garrick in Dustcrown will know what goes up and down his canyon.'],
       },
       {
         when: { quest: 'the-sun-king', state: 'done' },
@@ -301,10 +278,6 @@ export const SUNSCORCH_NPCS: Record<string, NpcDef> = {
       {
         when: { quest: 'the-fallen-obelisk', state: 'active' },
         lines: ['The Fallen Obelisk, south-east of the oasis. Read the end of the riddle before the Host does. Read it carefully.', 'And do not lean on it. It has fallen once already.'],
-      },
-      {
-        when: { quest: 'the-waking-dead', state: 'active' },
-        lines: ['The Sun King’s court, walking about in the sand! Chamberlains, cupbearers, the royal astronomer, probably. I would give my eyes to talk to one.', 'Unfortunately they would take them. Lay them down again, gently, before they reach the oasis.'],
       },
       {
         when: { quest: 'the-sand-warden', state: 'active' },

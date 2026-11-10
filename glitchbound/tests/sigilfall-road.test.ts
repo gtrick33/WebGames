@@ -47,58 +47,6 @@ function beat(w: World, quest: string, rounds = 40): void {
 }
 
 describe('Sigilfall: the road to the Crown City (Act II)', () => {
-  it('the refugee wagon rolls through the fen, stops when attacked, and Nyx is waiting at Stilt Hollow', () => {
-    const w = newWorld('duskfen', heroAt('the-sick-villages'));
-    goTo(w, 'dusk-causeway');
-    run(w, 0.3);
-    expect(w.story.run?.def.id).toBe('dusk-caravan');
-    const wagon = w.pets.find((p) => p.def.id === 'refugee-wagon')!;
-    expect(wagon.goal).toBeTruthy();
-    expect(w.pets.filter((p) => p.def.id === 'refugee')).toHaveLength(4);
-    // it moves along the road while nothing threatens it
-    for (const e of w.enemies) e.dead = true;
-    const start = { x: wagon.x, y: wagon.y };
-    run(w, 1.2);
-    expect(Math.hypot(wagon.x - start.x, wagon.y - start.y)).toBeGreaterThan(8);
-    // an ambush stops it
-    run(w, 1);
-    const foe = w.enemies.find((e) => !e.dead && e.state !== 'spawn');
-    if (foe) {
-      foe.x = wagon.x + 30;
-      foe.y = wagon.y;
-      run(w, 0.2);
-      expect(wagon.paused).toBe(true);
-    }
-    // keep with it and keep it clear until it is in
-    for (let i = 0; i < 200 && questState(w.hero, 'the-sick-villages') === 'active'; i++) {
-      w.player.x = wagon.x + 10;
-      w.player.y = wagon.y + 20;
-      run(w, 0.5);
-      smite(w);
-    }
-    expect(questState(w.hero, 'the-sick-villages')).toBe('done');
-    expect(questState(w.hero, 'nyx-joins')).toBe('active');
-    run(w, 0.6);
-    expect(w.npcs.some((n) => n.id === 'nyx')).toBe(true);
-    expect(QUEST_DEFS['the-dwarves-plea']!.giver).toBe('nyx');
-  });
-
-  it('the Deepforge: the toll-garrison holds the gate, Nyx opens the postern, and the dwarves’ banners go back up', () => {
-    const held = newWorld('ironpeak', heroAt('nyx-the-back-door'));
-    const gate = held.spots.find((s) => s.id === 'deepforge-gate')!;
-    expect(held.enemies.some((e) => !e.dead && Math.hypot(e.x - gate.x, e.y - gate.y) < 10 * 16)).toBe(true);
-    goTo(held, 'iron-postern');
-    run(held, 0.3);
-    expect(held.story.run?.def.id).toBe('iron-postern');
-    const nyx = held.pets.find((p) => p.def.id === 'nyx-at-the-lock')!;
-    expect(nyx.def.role).toBe('ward');
-    beat(held, 'nyx-the-back-door');
-    // Borrik offers the way down
-    expect(questState(held.hero, 'the-slag-colossus')).not.toBe('locked');
-    const free = newWorld('ironpeak', heroAt('camp-dwarves'));
-    expect(free.enemies.some((e) => !e.dead && Math.hypot(e.x - gate.x, e.y - gate.y) < 6 * 16)).toBe(false);
-    expect(free.props.filter((p) => p.prop === 'blue-banner').length).toBeGreaterThanOrEqual(4);
-  });
 
   it('Lantern Hill lies in gloom until Orren’s vigil relights the great lamp; Cael waits in the hostel', () => {
     const w = newWorld('ashen-barrows', heroAt('the-last-lamp'));
@@ -139,13 +87,19 @@ describe('Sigilfall: the road to the Crown City (Act II)', () => {
     expect(w.npcs.some((n) => n.id === 'chancellor-crane')).toBe(false);
     expect(w.npcs.some((n) => n.id === 'regent-elowen')).toBe(true);
     expect(w.spots.some((s) => s.id === 'crane-catacombs')).toBe(true);
-    // Act III opens from the Regent's champion
-    for (const id of ['the-sun-kings-tomb', 'the-frozen-road', 'the-fading-lights']) expect(QUEST_DEFS[id]!.after, id).toEqual(['festival-the-champion']);
+    // Act III opens from the Regent's champion, and runs from sigil to sigil: the sands, the forest, the ice
+    expect(QUEST_DEFS['the-sun-kings-tomb']!.after).toEqual(['festival-the-champion']);
+    expect(QUEST_DEFS['the-fading-lights']!.after).toEqual(['the-sun-king']);
+    expect(QUEST_DEFS['the-frozen-road']!.after).toEqual(['the-clans-decide']);
   });
 
-  it('an old save already in Act III has played the Crown City’s new beats', () => {
+  it('an old save already in Act III has played the Crown City’s new beats, and the story before it in one line', () => {
     const save = migrate({ v: 4, heroes: [{ cls: 'mage', level: 33, quests: { 'the-frozen-road': { state: 'active', n: 0 }, 'the-dwarves-plea': { state: 'done', n: 1 }, 'the-kings-mound': { state: 'done', n: 1 } }, unlocked: ['emberwick'] }], last: 0 })!;
     const h = save.heroes[0] as Character;
-    for (const id of ['festival-the-champion', 'festival-the-knives', 'city-the-treasury', 'nyx-joins', 'cael-the-hostel']) expect(questState(h, id), id).toBe('done');
+    for (const id of ['festival-the-champion', 'festival-the-knives', 'city-the-treasury', 'cael-the-hostel', 'the-sun-king', 'the-clans-decide']) expect(questState(h, id), id).toBe('done');
+    expect(questState(h, 'the-frozen-road')).toBe('active');
+    // with the sigils those give, and the quests of the lands that left the story dropped
+    expect(h.perks).toEqual(expect.arrayContaining(['sigil-embers', 'sigil-sun', 'sigil-thorns']));
+    expect(h.quests['the-dwarves-plea']).toBeUndefined();
   });
 });

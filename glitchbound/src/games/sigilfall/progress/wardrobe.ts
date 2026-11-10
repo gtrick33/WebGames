@@ -266,7 +266,7 @@ export function mountEarned(c: Pick<Character, 'quests' | 'perks' | 'clears' | '
   if (s.kind === 'shop') return false;
   if (s.kind === 'campaign') return s.cls === c.cls && c.quests[CAMPAIGN_END]?.state === 'done';
   if (s.kind === 'shelf') return shelfPoints >= s.points;
-  if (s.kind === 'quest') return c.quests[s.quest]?.state === 'done';
+  if (s.kind === 'quest') return c.quests[s.quest]?.state === 'done' || (!!s.perk && c.perks.includes(s.perk));
   if (s.kind === 'perk') return c.perks.includes(s.perk);
   return s.regions.every((r) => Object.entries(c.clears).some(([k, n]) => n > 0 && k.startsWith(`${r}:`) && Number(k.slice(r.length + 1)) >= s.tier));
 }

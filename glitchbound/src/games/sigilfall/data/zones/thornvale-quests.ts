@@ -146,13 +146,6 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
         when: { quest: 'the-bandit-king', state: 'active' },
         lines: ['The Hangman is dead? Then only Harlan is left. Harlan Blackglove, the bandit king. Never beaten. Never tried.', 'End him, and I’ll give you the best thing Millbrook has. It’s a satchel. You’d be amazed what fits in it.'],
       },
-      {
-        when: { quest: 'east-to-gullport', state: 'active' },
-        lines: ['Harlan has been buying powder from the coast. Gullport’s harbormaster ought to know who’s selling it.', 'Take the coast road east. Quill’s the name. Sharp woman. Don’t let her charge you a toll.'],
-      },
-      { when: { quest: 'redcap-camp', state: 'active' }, lines: ['Sefa’s going after the camp. Help her. I’d help too, but someone has to stay here and be nervous.'] },
-      { when: { quest: 'hunt-black-bess', state: 'active' }, lines: ['Black Bess! She stopped my cart on the Millbrook road, years ago. Very polite about it. She took my hat.', 'It was a good hat. Bring it back if you see it. No? No.'] },
-      { when: { quest: 'the-hangman', state: 'active' }, lines: ['Gallows Keep. I can see the hill from my window. I’ve moved my bed.'] },
       { when: { quest: 'mill-the-bridge', state: 'active' }, lines: ['Harlan’s strongbox was full of coins no mint ever struck. Grey. Cold. They weigh nothing. Somebody was paying him to keep us hungry.', 'His blades still hold the mill. Sefa has the lads. Go with them, and burn that barricade high.'] },
       { when: { quest: 'mill-the-bridge', state: 'done' }, lines: ['Millbrook sleeps with its doors unlocked again. Well, most doors. I’ve kept a lock on the treasury. Old habits.', 'The grain goes north to Maren’s camp. Show her those grey coins. She’ll know what they are. I don’t want to.'] },
       { lines: ['Welcome to Millbrook. We grow wheat, barley and worry.', 'Mind the Gallows Gang if you go out. Red caps. You’ll hear them before you see them, because they sing.'] },
@@ -170,16 +163,6 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
         when: { quest: 'tobins-letter', state: 'active' },
         lines: ['A letter? From Tobin? Is it about my pies? It’s about my pies.', '…It isn’t only about my pies. Oh. Tell him… No. I’ll tell him myself. Tell him there are pies on Tuesday.'],
       },
-      {
-        when: { quest: 'witch-herbs', state: 'active' },
-        lines: ['The hedge witches pick the best herbs in Thornvale. They pick them, and then they hit people with them.', 'Four bundles. I’ll make you something that keeps you on your feet.'],
-      },
-      { when: { quest: 'pond-water', state: 'active' }, lines: ['The spring at Miller’s Pond, south of the village. Clean water makes clean tonic.', 'Dirty water makes the Reeve’s speeches.'] },
-      {
-        when: { quest: 'silk-strainers', state: 'active' },
-        lines: ['My strainers are worn through. Spider silk is best: fine, strong, and it comes with spiders.', 'Webwood Hollow, out in the far east of the vale. Six lengths, please. No spiders.'],
-      },
-      { when: { quest: 'witch-herbs', state: 'done' }, lines: ['Keep that charm on you. It mends you when you’re hurt and smells of thornberry.', 'The smell doesn’t wash out. I call that a feature.'] },
       { lines: ['Welcome to the Millwheel. Potions on the shelf, stew in the pot.', 'Catch your breath between fights out there. Potions are for when something is still hitting you.'] },
     ],
   },
@@ -213,26 +196,6 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
     title: 'Warden',
     sprite: 'villager',
     talk: [
-      {
-        when: { quest: 'redcap-camp', state: 'active' },
-        lines: ['Tracks at the Kettles’ gate. Red caps, heavy boots, no shame. They lead to Redcap Camp, south-east of here.', 'Hit the hedge witches first. They patch the others up faster than I can knock them down.'],
-      },
-      {
-        when: { quest: 'blackhand-orders', state: 'active' },
-        lines: ['The enforcers carry Harlan’s orders, sealed with a black glove. Subtle man.', 'Bring me three. The hedge witches carry them too. They pass them round like gossip.'],
-      },
-      {
-        when: { quest: 'hunt-black-bess', state: 'active' },
-        lines: ['Black Bess. Ten years on the Millbrook road and never caught. I tried. Twice.', 'The Old Watchtower, in the south. She shoots from the walls. Don’t stand still.'],
-      },
-      {
-        when: { quest: 'the-hangman', state: 'active' },
-        lines: ['The gang’s gone to ground in Gallows Keep, under the hill in the south-east. The Hangman keeps its gate.', 'When he swings that rope, move. When he stops swinging it, move faster.'],
-      },
-      {
-        when: { quest: 'wanted-posters', state: 'active' },
-        lines: ['I nail up wanted posters. They tear them down and keep them, like trophies.', 'Get them back. The cutthroats and archers carry them. And yes, I drew them myself.'],
-      },
       { when: { quest: 'mill-the-bridge', state: 'active' }, lines: ['The lads are ready. Six of them, two pitchforks, one sword between them, and me.', 'Their blades don’t know Harlan’s dead. Let’s tell them.'] },
       { when: { quest: 'mill-the-bridge', state: 'done' }, lines: ['Thornvale is quiet. I don’t know what to do with quiet. I’ll learn.'] },
       { lines: ['I’m the warden. One warden, one bow, one very large gang. I’ve done the sums.'] },
@@ -254,10 +217,6 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
           '…She read it standing up. “Takings to Bess at the old tower. Powder from the coast. Hold the mill till the grey man says. Paid in the cold coin.” The rest is rude about the Reeve.',
         ],
       },
-      {
-        when: { quest: 'hunt-black-bess', state: 'active' },
-        lines: ['Bess keeps the gang’s takings at the Old Watchtower. That’s what the orders said. Also that the Reeve has a face like a wet loaf.', 'I didn’t write it. I only read it. Aloud. Twice.'],
-      },
       { when: { quest: 'the-bandit-king', state: 'done' }, lines: ['No gang, no tolls. My prices are coming down. Not far. A little.'] },
       { when: { quest: 'thieves-cant', state: 'done' }, lines: ['My friend? Gone already. She does that. She left a note: “Tell your hero they owe me a drink. Two drinks.”'] },
       { lines: ['Rings, charms, amulets, and a spoon that might be silver. Have a look.', 'I pay the gang’s toll like everyone else. I just pay it in gossip.'] },
@@ -270,18 +229,6 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
     title: 'Reads everything, for a fee',
     sprite: 'villager',
     talk: [
-      {
-        when: { quest: 'nyx-joins', state: 'active' },
-        lines: [
-          'Hello again. You owe me a favor, if you remember. I’m calling it in: I’m coming with you.',
-          'Why? You keep going places the Host goes. I’m looking for somebody the Host has. My little brother. Wren.',
-          'I know the smugglers’ paths round every plague village from here to the mountains, I can open any door that was made by a person, and I’m funny. That’s three things more than most people bring.',
-        ],
-      },
-      {
-        when: { quest: 'the-dwarves-plea', state: 'active' },
-        lines: ['The dwarves’ forge under Ironpeak is a toll fortress now. The Host takes a cut of everything going north, and lets nothing go north it doesn’t like.', 'Thane Borrik in Kragholt wants it back. So do I, for reasons. Let’s go and be useful.'],
-      },
       {
         lines: [
           'You’re Pim’s hero? Huh. Taller in the story. Give it here.',

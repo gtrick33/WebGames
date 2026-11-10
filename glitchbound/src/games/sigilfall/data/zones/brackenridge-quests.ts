@@ -163,28 +163,8 @@ export const BRACKENRIDGE_NPCS: Record<string, NpcDef> = {
         ],
       },
       {
-        when: { quest: 'lights-on-the-ridge', state: 'active' },
-        lines: ['The lights come from the ridge, north-west of Fernstead. Kobolds, I’d bet my pension.', 'I don’t have a pension. That’s how sure I am.'],
-      },
-      {
-        when: { quest: 'snuff-the-candles', state: 'active' },
-        lines: ['Kobolds, then. Dozens. The ones with candles on their heads keep the rest digging, and patch them up when you hit them.', 'Snuff the candles first. The diggers swing high and slow; step out from under the pick.'],
-      },
-      {
-        when: { quest: 'barrow-gold', state: 'active' },
-        lines: ['The children found these in the kobolds’ spoil heaps. Thin gold, a sigil on it. Funeral coin: you lay one on a dead man’s eyes so he stays put.', 'Bring me more, off the kobolds. I want to know whose eyes they came off.'],
-      },
-      {
-        when: { quest: 'king-snagtooth', state: 'active' },
-        lines: ['Barrow coin, every one. They’ve dug into the Old Barrows. Their chief calls himself King Snagtooth now, and wears a dead king’s crown.', 'He’s in the diggings. His armor turns a blade; break it, or cook him in it.'],
-      },
-      {
         when: { quest: 'the-old-barrows', state: 'active' },
         lines: ['Snagtooth’s tunnels run south-west, under the Old Barrows. Since they broke in, the dogs howl all night at nothing.', 'Go and see what they let out. Take a light. Not my lamp. They have my lamp.'],
-      },
-      {
-        when: { quest: 'restless-dead', state: 'active' },
-        lines: ['The dead are walking. My gran is up there. She was a terror alive. I’d rather she stayed where we put her.', 'The shades slip away from a blade. The skeletons put themselves back together if you dawdle. Don’t dawdle.'],
       },
       {
         when: { quest: 'the-widows-song', state: 'active' },
@@ -223,7 +203,6 @@ export const BRACKENRIDGE_NPCS: Record<string, NpcDef> = {
         when: { quest: 'appleby-apples', state: 'active' },
         lines: ['The Applebys left their orchard when the kobolds came, south-east of here. The last cider apples are rotting on the trees.', 'Fill me a sack? Kobolds don’t eat apples. They throw them. Duck.'],
       },
-      { when: { quest: 'stolen-light', state: 'active' }, lines: ['Those candlers wear my chapel candles on their heads. Good beeswax, wasted on kobolds.', 'Four, please. Blow them out first.'] },
       {
         when: { quest: 'the-harvest-stones', state: 'active' },
         lines: ['Apples, candles… and the old way. Light the candles at the Harvest Stones, north of Fernstead, and pour a cup for the hills.', 'They’ve gone grey, the stones. Grey and cold, with a light in them like a bruise. The dead sit round them at night.', 'Light the candles and keep the dead off till the wax takes. Silly? Maybe. It worked for my gran.'],

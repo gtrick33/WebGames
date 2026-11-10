@@ -53,7 +53,7 @@ export const PRESETS: Preset[] = [
   { id: 'fireships', label: 'Act V: the fireships', region: 'sunken-reaches', active: 'the-fireships', level: 51 },
   { id: 'orren-shore', label: 'Act V: the lake answers Orren', region: 'hollowmere', active: 'orren-on-the-shore', level: 55 },
   { id: 'every-banner', label: 'Act VI: every banner comes in', region: 'pale-reach', active: 'the-last-road', level: 56 },
-  { id: 'last-march', label: 'Act VI: every banner (scene)', region: 'pale-reach', active: 'the-kings-kennels', level: 56 },
+  { id: 'last-march', label: 'Act VI: every banner (scene)', region: 'pale-reach', active: 'march-vosk', level: 58 },
   { id: 'siege-mages', label: 'Act VI: the siege mages before the wall', region: 'pale-reach', active: 'march-the-siege-mages', level: 58 },
   { id: 'keep-the-door', label: 'Act VI: Mara keeps the door (scene)', region: 'pale-reach', active: 'the-duskspire-gate', level: 59 },
   { id: 'crownfall-throne', label: 'Crownfall: the throne', region: 'duskspire', active: 'the-hollow-king', level: 60 },

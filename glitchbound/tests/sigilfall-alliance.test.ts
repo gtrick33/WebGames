@@ -77,14 +77,6 @@ describe('Sigilfall: the broken alliance (Act III)', () => {
     expect(newWorld('glimmerwood', k).npcs.some((n) => n.id === 'thistlemourn')).toBe(false);
   });
 
-  it('Vinehold’s barges: hide them or tell the Regent, not both', () => {
-    const c = heroBefore('kesh-the-secret');
-    expect(questState(c, 'kesh-the-truth')).toBe('offered');
-    acceptQuests(c, 'trader-mabel');
-    expect(questState(c, 'kesh-the-truth')).toBe('active');
-    expect(declined(c, 'kesh-the-secret')).toBe(true);
-  });
-
   it('the Tear: a fight that is not won; Nyx walks into the grey, the Herald takes Elyra, and Fernstead falls', () => {
     const w = newWorld('shattered-vale', heroAt('the-heralds-ambush'));
     goTo(w, 'tear-top');
@@ -107,7 +99,9 @@ describe('Sigilfall: the broken alliance (Act III)', () => {
     expect(questState(w.hero, 'the-heralds-ambush')).toBe('done');
     // Elyra is gone at once; the others stay to say their piece
     expect(w.pets.some((p) => p.def.id === 'elyra' && !p.dead)).toBe(false);
-    expect(questState(w.hero, 'fall-of-fernstead')).toBe('active');
+    // the Tear still bleeds: the hero closes its heart before the news from the hills reaches them
+    expect(questState(w.hero, 'the-heart-of-the-tear')).toBe('active');
+    expect(questState(w.hero, 'fall-of-fernstead')).toBe('locked');
     // Fernstead: burning, the Host in the square, its people in Briarhollow
     const after = heroAt('fall-of-fernstead');
     after.quests['the-heralds-ambush'] = { state: 'done', n: 1 };
@@ -141,7 +135,7 @@ describe('Sigilfall: the broken alliance (Act III)', () => {
     expect(newWorld('briarhollow', c).npcs.some((n) => n.id === 'warden-hollis')).toBe(false);
   });
 
-  it('Highwall: Mara commands the relief and Cael’s sortie opens the way to the Breach', () => {
+  it('Highwall: Mara commands the relief and Cael’s sortie brings the relief camp its white rag', () => {
     const w = newWorld('highwall', heroAt('cael-the-sortie', 44));
     expect(w.npcs.some((n) => n.id === 'captain-mara')).toBe(true);
     goTo(w, 'sortie-ground');
@@ -153,7 +147,9 @@ describe('Sigilfall: the broken alliance (Act III)', () => {
       smite(w);
     }
     expect(questState(w.hero, 'cael-the-sortie')).toBe('done');
-    expect(questState(w.hero, 'the-breach')).not.toBe('locked');
+    // Nyx walks into the camp next, with the Herald's prison map; the Breach waits for her
+    expect(questState(w.hero, 'gate-nyx-returns')).not.toBe('locked');
+    expect(questState(w.hero, 'the-breach')).toBe('locked');
   });
 
   it('an old save that already ended the prince keeps that answer, and has met the Herald if past the Tear', () => {

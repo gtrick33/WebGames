@@ -57,12 +57,12 @@ function beat(w: World, quest: string, rounds = 40): void {
   }
 }
 const npcHere = (w: World, id: string): boolean => w.npcs.some((n) => n.id === id);
-const FACTION_PETS = ['fern-ranger', 'hearth-rider', 'kragholt-axe', 'clan-archer', 'thorn-knight', 'jarl-huscarl', 'sun-lancer', 'marsh-skirmisher'];
+const FACTION_PETS = ['fern-ranger', 'hearth-rider', 'kragholt-axe', 'clan-archer', 'thorn-knight', 'jarl-huscarl', 'sun-lancer'];
 
 describe('Sigilfall: the Last March (Act VI)', () => {
   it('only the factions the hero helped come to the field, the forest’s knights only if the prince was sung back', () => {
     const alone = heroAt('march-the-siege-mages');
-    for (const id of ['fern-retaken', 'camp-riders', 'camp-dwarves', 'the-clans-decide', 'the-vault-of-rime', 'the-sun-king', 'kesh-the-secret', 'kesh-the-truth', 'silvaines-song', 'the-thorn-court']) delete alone.quests[id];
+    for (const id of ['fern-retaken', 'camp-riders', 'break-the-chains', 'the-clans-decide', 'the-vault-of-rime', 'the-sun-king', 'silvaines-song', 'the-thorn-court']) delete alone.quests[id];
     const w = newWorld('pale-reach', alone);
     goTo(w, 'wall-field');
     run(w, 0.3);
@@ -70,11 +70,9 @@ describe('Sigilfall: the Last March (Act VI)', () => {
     expect(w.pets.filter((p) => FACTION_PETS.includes(p.def.id))).toHaveLength(0);
     expect(w.pets.some((p) => p.def.id === 'siege-mages')).toBe(true);
 
-    const all = heroAt('march-the-siege-mages', 58, ['fern-retaken', 'camp-riders', 'camp-dwarves', 'the-clans-decide', 'the-vault-of-rime', 'the-sun-king']);
+    const all = heroAt('march-the-siege-mages', 58, ['fern-retaken', 'camp-riders', 'break-the-chains', 'the-clans-decide', 'the-vault-of-rime', 'the-sun-king']);
     all.quests['silvaines-song'] = { state: 'done', n: 1 };
     all.quests['the-thorn-court'] = { state: 'done', n: -1 };
-    all.quests['kesh-the-secret'] = { state: 'done', n: 1 };
-    all.quests['kesh-the-truth'] = { state: 'done', n: -1 };
     const full = newWorld('pale-reach', all);
     goTo(full, 'wall-field');
     run(full, 0.3);
@@ -164,7 +162,7 @@ describe('Sigilfall: Crownfall', () => {
 
 describe('Sigilfall: the Epilogue and the postgame', () => {
   it('the camp goes home down the south road, and Briarhollow is a village again', () => {
-    const w = newWorld('briarhollow', heroAt('epilogue-the-camp-goes-home', 60, ['camp-scouts', 'camp-grain', 'camp-healers', 'camp-smiths', 'camp-riders', 'camp-dwarves']));
+    const w = newWorld('briarhollow', heroAt('epilogue-the-camp-goes-home', 60, ['camp-scouts', 'camp-grain', 'camp-riders']));
     expect(npcHere(w, 'ranger-cole')).toBe(true);
     expect(w.props.filter((p) => p.prop === 'tent').length).toBeGreaterThan(0);
     goTo(w, 'briar-square');
@@ -174,7 +172,7 @@ describe('Sigilfall: the Epilogue and the postgame', () => {
     expect(questState(w.hero, 'epilogue-the-camp-goes-home')).toBe('done');
     const home = newWorld('briarhollow', w.hero);
     expect(home.storyState?.id).toBe('rebuilt');
-    for (const id of ['ranger-cole', 'carter-wenna', 'healer-brisa', 'forgewife-runa', 'rider-alder', 'dwarf-tova']) expect(npcHere(home, id), id).toBe(false);
+    for (const id of ['ranger-cole', 'carter-wenna', 'rider-alder']) expect(npcHere(home, id), id).toBe(false);
     expect(home.props.filter((p) => p.prop === 'tent')).toHaveLength(0);
     expect(home.props.filter((p) => p.prop === 'market-stall').length).toBeGreaterThanOrEqual(2);
     expect(npcHere(home, 'elyra')).toBe(true);
@@ -224,7 +222,7 @@ describe('Sigilfall: the Epilogue and the postgame', () => {
       }
     }
     const late = QUESTS.filter((q) => ['pale-reach', 'vaelmoor-remembered'].includes(q.zone ?? '') || q.id.startsWith('epilogue-') || q.id.startsWith('postgame-') || q.id.startsWith('thread-'));
-    expect(late.length).toBeGreaterThan(25);
+    expect(late.length).toBeGreaterThan(20);
     expect(late.filter((q) => !done.has(q.id)).map((q) => q.id)).toEqual([]);
   });
 });

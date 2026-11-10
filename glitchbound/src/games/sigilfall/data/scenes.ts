@@ -257,7 +257,7 @@ export const SCENES: SceneDef[] = [
     // Act VI: every banner the hero earned, coming into Dawn's Rest
     id: 'reach-the-banners',
     region: 'pale-reach',
-    when: all(after('the-last-road'), until('the-kings-kennels')),
+    when: all(after('the-last-road'), until('march-vosk')),
     near: 'mara-at-the-reach',
     r: 150,
     steps: [

@@ -140,7 +140,7 @@ export const WEEPING_WOODS = wildRegion(
     wildCount: 56,
     story: [
       // Orren in Candlewick's square, from the day he comes through the Gate
-      { near: 'hub', dx: -3, dy: 3, marker: { kind: 'npc', npc: 'orren-in-vaelmoor' }, when: after('the-third-gate') },
+      { near: 'hub', dx: -3, dy: 3, marker: { kind: 'npc', npc: 'orren-in-vaelmoor' }, when: after('the-gloam-gate') },
       // Lark's Hollow: the queen at the lodge door, the children out in the frozen wood
       { near: 'larks-hollow', dx: 0, dy: 2, marker: { kind: 'npc', npc: 'echo-of-ysane' }, when: until('wood-the-children') },
       { near: 'larks-hollow', dx: 0, dy: 3, marker: { kind: 'place', id: 'hollow-door' } },

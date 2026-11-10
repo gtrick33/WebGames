@@ -93,19 +93,19 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
     after: ['festival-the-knives'],
     zone: 'emberwick',
     level: 30,
-    reward: { xp: 800, gold: 200, text: 'A stair, a barred door older than the city, and a smell of cold hearths coming under it. Crane is down there with the dead, and whatever he made his bargain with.' },
+    reward: { xp: 800, gold: 200, text: 'A stair, a barred door older than the city, and on Crane’s desk at its top, left in his hurry: the Sigil-wardens’ own map of the seven holy places, three hundred years old. Four of them are marked in fresh grey ink. Sun, Thorns, Frost, Veil.' },
   },
   {
     id: 'festival-the-champion',
     name: 'Champion of Aster',
     giver: 'regent-elowen',
     auto: true,
-    text: 'The city is locked down, Crane’s house is sealed, and the Regent wants to see you in her courtyard. She has not slept. She says she has decided something.',
+    text: 'The city is locked down, Crane’s house is sealed, and the wardens’ map is on the Regent’s table with four places marked in grey ink: the Sun King’s tomb in the Sunscorch, the Thorn Court in the Glimmerwood, the Vault of Rime in the north, and the Tear in the Shattered Vale. She has not slept. She says she has decided something.',
     objective: { kind: 'talk', npc: 'regent-elowen', label: 'Go to the Regent in her courtyard' },
     after: ['festival-the-catacombs'],
     zone: 'emberwick',
     level: 30,
-    reward: { xp: 2600, gold: 600, item: { rarity: 'epic' }, text: 'Champion of Aster. The Regent needs an army, and the realm’s factions will not march together on her say-so. Each of them has an old grudge and a real choice to make. She is sending you to them.' },
+    reward: { xp: 2600, gold: 600, item: { rarity: 'epic' }, text: 'Champion of Aster. “Four places,” the Regent says, and puts the map in your hands. “He sold the Herald all four, and the Herald has a head start on every one of them. Get there first.” The west gate is open, on the long road to the Sunscorch.' },
   },
 ];
 

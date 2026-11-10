@@ -54,7 +54,8 @@ describe('sigilfall zone generator', () => {
     expect(kinds.filter((k) => k === 'waystone')).toHaveLength(1);
     for (const npc of ['reeve-aldous', 'hanna', 'tobin', 'sefa', 'pim']) expect(m.markers.some((x) => x.marker.kind === 'npc' && x.marker.npc === npc), npc).toBe(true);
     const exits = m.markers.filter((x) => x.marker.kind === 'exit');
-    expect(exits.map((x) => (x.marker as { to: string }).to).sort()).toEqual(['briarhollow', 'gallows-keep', 'greyfen', 'saltmarsh']);
+    // (the roads to the Greyfen and the coast lead to Fernstead and Hearthstead now: data/retired.ts)
+    expect(exits.map((x) => (x.marker as { to: string }).to).sort()).toEqual(['amberfield', 'brackenridge', 'briarhollow', 'gallows-keep']);
     // ways out to other zones sit on the edge of the map
     for (const x of exits) if ((x.marker as { to: string }).to !== 'gallows-keep') expect(x.tx === 0 || x.ty === 0 || x.tx === m.w - 1 || x.ty === m.h - 1).toBe(true);
     const packs = m.markers.filter((x) => x.marker.kind === 'pack').map((x) => ({ ...x, level: (x.marker as { level: number }).level }));
@@ -96,15 +97,18 @@ describe('sigilfall zone generator', () => {
 
 describe('sigilfall routes between regions', () => {
   it('knows the way across the world and where people and places are', () => {
-    expect(nextRegion('briarhollow', 'saltmarsh')).toBe('thornvale');
-    expect(nextRegion('thornvale', 'saltmarsh')).toBe('saltmarsh');
-    expect(nextRegion('saltmarsh', 'crypt')).toBe('thornvale');
+    expect(nextRegion('briarhollow', 'amberfield')).toBe('thornvale');
+    expect(nextRegion('thornvale', 'amberfield')).toBe('amberfield');
+    expect(nextRegion('amberfield', 'crypt')).toBe('thornvale');
+    // no road leads into a land that left the story
+    expect(nextRegion('thornvale', 'saltmarsh')).toBeNull();
     expect(nextRegion('briarhollow', 'briarhollow')).toBeNull();
     // the Crown City is reached by the King's Road in Act II
     expect(nextRegion('ashen-barrows', 'emberwick')).toBe('emberwick');
     expect(npcRegion('reeve-aldous')).toBe('thornvale');
     expect(npcRegion('maren')).toBe('briarhollow');
-    expect(spotRegion('gull-cliffs')).toBe('saltmarsh');
+    expect(spotRegion('millers-pond')).toBe('thornvale');
+    expect(spotRegion('gull-cliffs')).toBeUndefined();
     // secrets are not on the map
     expect(spotRegion('hidden-grove')).toBeUndefined();
   });

@@ -12,7 +12,8 @@ export type MountBody = 'horse' | 'deer' | 'boar' | 'drake';
 
 /** Where a mount comes from. Every source is deterministic: no mount is a random drop. */
 export type MountSource =
-  | { kind: 'quest'; quest: string }
+  /** This quest done (or, for a hero of an older story, this perk held: the quest that gave it left the story). */
+  | { kind: 'quest'; quest: string; perk?: PerkId }
   | { kind: 'perk'; perk: PerkId }
   /** Clear every one of these dungeons on this difficulty tier (or higher). */
   | { kind: 'clears'; regions: RegionId[]; tier: number }
@@ -72,10 +73,10 @@ export const MOUNTS: MountDef[] = [
   },
   {
     id: 'gullport-strider',
-    name: 'Gullport Strider',
-    lore: 'A grey cob that grew up on the quay and is afraid of nothing except gulls.',
-    from: 'Gullport: the harbor’s gift after Captain Saltbeard',
-    source: { kind: 'perk', perk: 'mount' },
+    name: 'Millbrook Cob',
+    lore: 'A grey cob that grew up pulling grain carts over the mill bridge and is afraid of nothing except the mill wheel.',
+    from: 'Act I: Millbrook’s thanks, once the bridge is free',
+    source: { kind: 'quest', quest: 'mill-the-bridge', perk: 'mount' },
     body: 'horse',
     coat: '#9a9aa4',
     mane: '#e8e6e0',
@@ -98,10 +99,10 @@ export const MOUNTS: MountDef[] = [
   },
   {
     id: 'mirefen-boar',
-    name: 'Mirefen Boar',
-    lore: 'The Low Wick folk ride them through mud no horse would cross. This one bites, but only people it dislikes.',
-    from: 'Act II: Low Wick, once the plague is burned out',
-    source: { kind: 'quest', quest: 'low-wick-fires' },
+    name: 'Russet Boar',
+    lore: 'Fernstead’s swineherds ride them up hill paths no horse would take, through the orchards in the fall. This one bites, but only people it dislikes.',
+    from: 'Act I: Fernstead’s thanks, once the Harvest Stones are lit',
+    source: { kind: 'quest', quest: 'the-harvest-stones' },
     body: 'boar',
     coat: '#5a4636',
     mane: '#2a2018',
@@ -137,10 +138,10 @@ export const MOUNTS: MountDef[] = [
   },
   {
     id: 'deepforge-war-boar',
-    name: 'Deepforge War-Boar',
-    lore: 'Kragholt’s dwarves ride boars into the deep roads, in iron as thick as a door. This one has been to the bottom and back.',
-    from: 'Act II: the dwarves of the Deepforge, once their forge is theirs again',
-    source: { kind: 'quest', quest: 'forgemaster-grold' },
+    name: 'Highwall War-Boar',
+    lore: 'Highwall’s sappers ride boars down the tunnels under the wall, in iron as thick as a door. This one has been under the Breach and back.',
+    from: 'Act IV: Highwall’s thanks, once General Morvain falls',
+    source: { kind: 'quest', quest: 'general-morvain' },
     body: 'boar',
     coat: '#4a3a30',
     mane: '#1e1814',
@@ -210,8 +211,8 @@ export const MOUNTS: MountDef[] = [
     id: 'starlit-charger',
     name: 'Starlit Charger',
     lore: 'They say the first king of Aster rode it out of the night sky. They say a lot of things about the first king.',
-    from: 'Challenge: clear every dungeon of Acts II and III on Mythic',
-    source: { kind: 'clears', regions: ['rotmother-cistern', 'deepforge-halls', 'barrow-of-kings', 'tomb-of-the-sun-king', 'rimeheld-vault', 'siege-of-highwall'], tier: 2 },
+    from: 'Challenge: clear every dungeon of Acts II to IV on Mythic',
+    source: { kind: 'clears', regions: ['barrow-of-kings', 'tomb-of-the-sun-king', 'rimeheld-vault', 'siege-of-highwall'], tier: 2 },
     body: 'horse',
     coat: '#2b3a6e',
     mane: '#8ad0ff',

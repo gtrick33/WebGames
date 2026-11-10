@@ -1025,8 +1025,9 @@ export class SigilEngine {
     const h = this.hero;
     if (!h) return false;
     const region = REGIONS[to];
-    // a land the story no longer goes through (data/retired.ts) can't be reached
-    if (isRetired(to)) return false;
+    // a land the story no longer goes through (data/retired.ts) can't be reached: the way out of one of its
+    // dungeons (a Riftstone run) comes out in Briarhollow
+    if (isRetired(to)) return this.world?.region.kind === 'dungeon' && !party ? this.travel(HOME, 0, []) : false;
     // a party's run goes where the host chose: a friend who hasn't found the way yet is taken along
     if (!h.unlocked.includes(to) && !party && !key) return false;
     // a Riftstone run is a stone the hero holds (never above it; a party runs the host's), in a dungeon

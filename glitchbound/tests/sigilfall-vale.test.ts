@@ -110,36 +110,7 @@ describe('Sigilfall: the Vale (Act I)', () => {
     expect(held.fires.length).toBeGreaterThanOrEqual(2);
     // Nyx is in Millbrook only while she reads the cipher
     expect(newWorld('thornvale', heroAt('thieves-cant')).npcs.some((n) => n.id === 'nyx')).toBe(true);
-    expect(newWorld('thornvale', heroAt('hunt-black-bess')).npcs.some((n) => n.id === 'nyx')).toBe(false);
-  });
-
-  it('Reedwater: the wells reek until Mire falls, and the abducted are led home across the marsh', () => {
-    expect(newWorld('greyfen', heroAt('the-ghoul-mother')).wisps.length).toBeGreaterThan(0);
-    const w = newWorld('greyfen', heroAt('reed-bring-them-home'));
-    expect(w.wisps).toHaveLength(0);
-    goTo(w, 'reed-cage');
-    run(w, 0.3);
-    expect(w.pets.filter((p) => p.def.id === 'reed-villager')).toHaveLength(3);
-    beat(w, 'reed-bring-them-home', 8);
-    // home is far: walk there (the bot is not the point), and they keep up
-    const home = w.places['reed-square']!;
-    for (let i = 0; i < 40 && questState(w.hero, 'reed-bring-them-home') === 'active'; i++) {
-      const dx = home.x - w.player.x;
-      const dy = home.y - w.player.y;
-      const d = Math.hypot(dx, dy);
-      const step = Math.min(d, 60);
-      if (d > 4) {
-        w.player.x += (dx / d) * step;
-        w.player.y += (dy / d) * step;
-      }
-      for (const f of w.pets) if (f.def.id === 'reed-villager') Object.assign(f, { x: w.player.x + 6, y: w.player.y + 4 });
-      run(w, 0.5);
-      smite(w);
-    }
-    expect(questState(w.hero, 'reed-bring-them-home')).toBe('done');
-    expect(questState(w.hero, 'camp-healers')).toBe('active');
-    run(w, 0.6);
-    expect(w.npcs.some((n) => n.id === 'reed-agna')).toBe(true);
+    expect(newWorld('thornvale', heroAt('the-bandit-king', 11)).npcs.some((n) => n.id === 'nyx')).toBe(false);
   });
 
   it('the camp: people walk in from the road, settle, and stay', () => {
@@ -164,15 +135,15 @@ describe('Sigilfall: the Vale (Act I)', () => {
     expect(w.pets.some((p) => p.def.id === 'fern-ranger')).toBe(false);
     expect(w.npcs.some((n) => n.id === 'ranger-cole')).toBe(true);
     // everyone the Vale sends, in their places
-    const all = heroAt('the-dwarves-plea');
-    for (const id of ['camp-scouts', 'camp-grain', 'camp-healers', 'camp-smiths', 'camp-riders']) all.quests[id] = { state: 'done', n: 1 };
+    const all = heroAt('the-lanterns-dim');
+    for (const id of ['camp-scouts', 'camp-grain', 'camp-riders']) all.quests[id] = { state: 'done', n: 1 };
     const camp = newWorld('briarhollow', all);
-    for (const id of ['ranger-cole', 'carter-wenna', 'healer-brisa', 'forgewife-runa', 'rider-alder']) expect(camp.npcs.some((n) => n.id === id), id).toBe(true);
+    for (const id of ['ranger-cole', 'carter-wenna', 'rider-alder']) expect(camp.npcs.some((n) => n.id === id), id).toBe(true);
   });
 
   it('the Defense of Hearthstead: the raid, the wall, the ram, and the shrine found empty', () => {
-    // the picket empties the day the hero finds it
-    const scout = newWorld('amberfield', heroAt('the-legion-picket'));
+    // the Legion's picket on the north road empties the night its riders come down on Hearthstead
+    const scout = newWorld('amberfield', heroAt('the-clan-stones'));
     const picket = scout.spots.find((s) => s.id === 'legion-picket')!;
     const guards = (w: World): number => w.enemies.filter((e) => !e.dead && Math.hypot(e.x - picket.x, e.y - picket.y) < 10 * 16).length;
     expect(guards(scout)).toBeGreaterThan(0);

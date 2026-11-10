@@ -1,4 +1,4 @@
-import { after, all, any, is, until } from '../cond';
+import { after, all, until } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
@@ -74,14 +74,14 @@ export const PALE_REACH = wildRegion(
       { near: 'hub', dx: -8, dy: -3, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('the-last-road') },
       { near: 'hub', dx: -6, dy: -5, marker: { kind: 'prop', prop: 'flag' }, when: all(after('the-last-road'), after('fern-retaken')) },
       { near: 'hub', dx: -3, dy: -6, marker: { kind: 'prop', prop: 'red-banner' }, when: all(after('the-last-road'), after('camp-riders')) },
-      { near: 'hub', dx: 0, dy: -7, marker: { kind: 'prop', prop: 'blue-banner' }, when: all(after('the-last-road'), after('camp-dwarves')) },
+      { near: 'hub', dx: 0, dy: -7, marker: { kind: 'prop', prop: 'blue-banner' }, when: all(after('the-last-road'), after('break-the-chains')) },
       { near: 'hub', dx: 3, dy: -6, marker: { kind: 'prop', prop: 'flag' }, when: all(after('the-last-road'), after('the-clans-decide')) },
       { near: 'hub', dx: 6, dy: -5, marker: { kind: 'prop', prop: 'red-banner' }, when: all(after('the-last-road'), after('the-vault-of-rime')) },
       { near: 'hub', dx: 8, dy: -3, marker: { kind: 'prop', prop: 'flag' }, when: all(after('the-last-road'), after('the-sun-king')) },
-      { near: 'hub', dx: 9, dy: 0, marker: { kind: 'prop', prop: 'blue-banner' }, when: all(after('the-last-road'), any(is('kesh-the-secret', 'taken'), is('kesh-the-truth', 'taken'))) },
+      { near: 'hub', dx: 9, dy: 0, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('the-last-road') },
       ...[-10, -7, 7, 10].map((dx, i) => ({ near: 'hub', dx, dy: 2 + (i % 2) * 3, marker: { kind: 'prop' as const, prop: 'tent' }, when: after('the-last-road') })),
       // the champions the Crown kept: Vosk at the head of the Host, the Herald's voice in the gate
-      { near: 'the-kings-host', dx: 5, dy: 2, marker: { kind: 'pack', enemies: ['vosk-the-hollowed'], level: 58, rare: true }, when: all(after('the-pale-standard'), until('march-vosk')) },
+      { near: 'the-kings-host', dx: 5, dy: 2, marker: { kind: 'pack', enemies: ['vosk-the-hollowed'], level: 58, rare: true }, when: all(after('the-last-road'), until('march-vosk')) },
       { near: 'duskspire-gate', dy: 5, marker: { kind: 'pack', enemies: ['the-heralds-voice'], level: 59, rare: true }, when: all(after('march-the-breach'), until('march-the-voice')) },
       // the field before the outer wall, where the mages sing; the breach after
       { near: 'outer-wall', dy: 12, marker: { kind: 'place', id: 'wall-field' } },

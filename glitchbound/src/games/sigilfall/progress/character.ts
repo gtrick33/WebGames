@@ -30,7 +30,7 @@ export const potionCap = (c: Pick<Character, 'perks'>): number => POTION_CAP + (
 export const PERKS: Record<PerkId, { name: string; text: string }> = {
   satchel: { name: 'Millbrook Satchel', text: '6 more bag slots' },
   flask: { name: 'Tobin’s Flask', text: 'carry one more potion' },
-  mount: { name: 'Gullport Strider', text: 'a horse to ride outside fights (30% faster)' },
+  mount: { name: 'Millbrook Cob', text: 'a horse to ride outside fights (30% faster)' },
   hearth: { name: 'Homestone', text: 'return to the last waystone from anywhere' },
   'sigil-embers': { name: 'Sigil of Embers', text: '+4% health and power' },
   'sigil-tides': { name: 'Sigil of Tides', text: '+4% health and power' },

@@ -17,7 +17,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     id: 'refugees-on-the-road',
     name: 'Refugees on the Road',
     giver: 'maren',
-    text: 'The Crown City has said nothing, and the roads north of the Saltmarsh are full of carts going the wrong way: whole villages fleeing the east with their grandmothers and their goats. They gather at Hearthstead, a walled camp town on the Amberfield Steppes, and Marshal Dunmore has sent to Briarhollow for help. Take the north road out of the Saltmarsh and find him.',
+    text: 'The Crown City has said nothing, and the roads east of Millbrook are full of carts going the wrong way: whole villages fleeing the east with their grandmothers and their goats. They gather at Hearthstead, a walled camp town on the Amberfield Steppes, and Marshal Dunmore has sent to Briarhollow for help. Take the east road out of Thornvale and find him.',
     objective: { kind: 'talk', npc: 'marshal-dunmore', label: 'Talk to Marshal Dunmore in Hearthstead' },
     after: ['the-regents-council'],
     level: 16,
@@ -222,14 +222,6 @@ export const AMBERFIELD_NPCS: Record<string, NpcDef> = {
         ],
       },
       {
-        when: { quest: 'a-lancers-farewell', state: 'active' },
-        lines: [
-          'Gaius sent you? With… those.',
-          'Amber badges. I wore one. I was nineteen. Gaius carried me off the field at Redgrass with an arrow in my leg, and the rest of the company stayed there.',
-          'Leave them with me. I’ll bury them properly this time, somewhere nobody will dig. Thank you. Now go away for a bit.',
-        ],
-      },
-      {
         when: { quest: 'the-broken-caravan', state: 'active' },
         lines: ['A wagon train from the east was due three days ago. My riders found smoke on the road and turned back. I don’t blame them. I’d like to.', 'South-east of the camp. Tell me what happened. Then tell me it won’t happen again. One of those I’ll believe.'],
       },
@@ -237,8 +229,6 @@ export const AMBERFIELD_NPCS: Record<string, NpcDef> = {
         when: { quest: 'riders-in-the-grass', state: 'active' },
         lines: ['Riders on dead horses, and hounds that don’t bleed. That’s the Ashen Host’s vanguard, and it’s on my roads.', 'One of them called out a name as it died. A woman’s name. I’d rather they didn’t do that.', 'Thin them out. They don’t sleep, so do it before they start not sleeping near us.'],
       },
-      { when: { quest: 'dead-letters', state: 'active' }, lines: ['The riders carry bone cases with grey seals. Dead men writing letters. I’d laugh, if I could read them.', 'Bring me four.'] },
-      { when: { quest: 'the-old-script', state: 'active' }, lines: ['None of my clerks can read this. Old Gaius can. He’ll tell you so himself, at length.', 'His cart’s by the fire. Bring the letters, and patience.'] },
       {
         when: { quest: 'the-clan-stones', state: 'active' },
         lines: ['The Host rides under clan feathers, and the clans think it’s us. Of course they do. It’s clever. I hate clever.', 'The clans meet at the Clan Stones, east of here. Go and tell them. Keep your hands where they can see them.'],
@@ -247,22 +237,13 @@ export const AMBERFIELD_NPCS: Record<string, NpcDef> = {
         when: { quest: 'stormhoof', state: 'active' },
         lines: ['They won’t talk? Then they’ll fight, and then they’ll talk. I’ve known centaurs forty years. They’re very consistent.', 'Stormhoof is their war-chief. Beat him in front of his clan and the steppe will listen.'],
       },
-      { when: { quest: 'the-legion-picket', state: 'active' }, lines: ['A picket on the north road. So that’s where they come from: down the pass from Ironpeak.', 'Find it. Count them. Don’t let them count you.'] },
       { when: { quest: 'hearth-the-shrine', state: 'active' }, lines: ['The gate held. The wall held. And while we were holding them, they were never trying to take the town.', 'Go and look at the shrine. I can’t.'] },
       {
         when: { quest: 'orders-from-the-north', state: 'active' },
         lines: ['Forty years I’ve kept that stone by the well. My mother kept it before me. “Keep it warm,” she said, and I thought she meant the fire.', 'Take Vosk’s orders to Gaius. If the dead have plans for it, I want to know them.'],
       },
       { when: { quest: 'camp-riders', state: 'active' }, lines: ['Twenty riders to Briarhollow. The best I have left, and the youngest. Tell Maren they eat a great deal.'] },
-      {
-        when: { quest: 'the-dwarves-plea', state: 'active' },
-        lines: [
-          'The Deepforge. The Host is carrying a piece of the Crown into the dwarves’ own forge, on the only road north. Nothing good is made like that.',
-          'Thane Borrik has written for help. I can’t spare a single rider. I can spare you.',
-          'His father and I held the Kragholt road one winter, him with an axe and me with a lance and both of us with frostbite. Take the north road, and give Borrik my regards.',
-        ],
-      },
-      { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['The wagons come in whole now. Not many of them, but whole. We’re mending the wall with what’s left of the ram.', 'If you see the dwarves, tell them Hearthstead remembers the Kragholt road.'] },
+      { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['The wagons come in whole now. Not many of them, but whole. We’re mending the wall with what’s left of the ram.', 'Tell Briarhollow that Hearthstead remembers who came when we called.'] },
       { lines: ['Hearthstead. It was a crossroads with a well. Now it’s a camp with a marshal. I’m the marshal.', 'If you’re here to help, there’s work. If you’re here to eat, there’s a queue.'] },
     ],
   },
@@ -298,28 +279,14 @@ export const AMBERFIELD_NPCS: Record<string, NpcDef> = {
     shop: 'armor',
     shopName: 'Gaius’s Cart',
     talk: [
-      {
-        when: { quest: 'the-old-script', state: 'active' },
-        lines: [
-          'Letters? Give them here. Grave-script. The old kingdom carved it on every barrow in the east, and I stood guard over a lot of barrows.',
-          '“Count the wagons. Count the horse-folk. Ride under their feathers when you strike, so the living blame the clans and the clans blame the living.” Clever, for a corpse.',
-        ],
-      },
       { when: { quest: 'the-clan-stones', state: 'active' }, lines: ['Going to see the horse-folk? Take a shield. They’re polite people, but they shoot first and are polite after.'] },
       {
         when: { quest: 'orders-from-the-north', state: 'active' },
         lines: [
-          'Vosk’s own hand. Neat, for a dead man. “Carry the stone to the Deepforge. The pass is ours. The Herald will meet you under the mountain.”',
-          'The Herald. I don’t know who that is, and I don’t want to. The Deepforge is the dwarves’ great forge under Ironpeak. If the Host holds it, it holds the only road north.',
+          'Vosk’s own hand. Neat, for a dead man. “Carry the stone north by the King’s Road. The barrow-king’s knight will see it on.”',
+          'The barrow-king. That’s the Ashen Barrows, north of the steppe, where Lantern Hill keeps its lamps lit. If the Host holds the King’s Road, it holds the way to the Crown City.',
         ],
       },
-      {
-        when: { quest: 'lancers-rest', state: 'active' },
-        lines: ['Amber under the grey. I saw it from the wall. That’s my company, the Amber Lancers.', 'We buried them at Lancers’ Rest, north of the camp, forty years ago. Go and look at the stones. My knees can’t, and the rest of me doesn’t want to.'],
-      },
-      { when: { quest: 'the-amber-lancers', state: 'active' }, lines: ['Dug up from below. Of course they were.', 'Bring me their badges. Five. I’ll know them by the dents.'] },
-      { when: { quest: 'a-lancers-farewell', state: 'active' }, lines: ['Take them to Dunmore. Don’t look at me like that. He was a Lancer too, the youngest. I carried him off the field at Redgrass.', 'He’ll pretend he’s fine. Let him.'] },
-      { when: { quest: 'a-lancers-farewell', state: 'done' }, lines: ['He told you, then. Good. He’s a better marshal than he ever was a lancer. He was a terrible lancer.'] },
       { lines: ['Gaius. Thirty years in the Amber Lancers, ten more selling what’s left of them. Helmets, mail, boots that only leak a little.', 'Everything on this cart has been to a war. Most of it came back.'] },
     ],
   },

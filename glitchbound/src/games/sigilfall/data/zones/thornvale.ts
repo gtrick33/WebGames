@@ -44,7 +44,7 @@ export const THORNVALE = wildRegion(
       { at: [0.62, 0.5], r: 11, kind: 'camp', packs: [['bandit-cutthroat', 'bandit-archer', 'bandit-cutthroat'], ['hedge-witch', 'bandit-enforcer'], ['bandit-archer', 'bandit-archer']], elite: true, chest: 'common', spot: { id: 'bandit-camp', name: 'Redcap Camp' } },
       { at: [0.8, 0.22], r: 10, kind: 'nest', packs: [['thornback-spider', 'thornback-spider'], ['thornback-spider', 'thornback-spider', 'thornback-spider']], spot: { id: 'webwood', name: 'Webwood Hollow' } },
       { at: [0.52, 0.82], r: 10, kind: 'ruin', packs: [['bandit-cutthroat', 'bandit-enforcer'], ['bandit-archer', 'hedge-witch', 'bandit-cutthroat']], rare: 'black-bess', chest: 'rare', spot: { id: 'old-watchtower', name: 'The Old Watchtower' } },
-      { at: [0.84, 0.8], r: 8, kind: 'cave', packs: [['bandit-enforcer', 'bandit-archer']], entrance: { to: 'gallows-keep', label: 'Gallows Keep', minLevel: 12 }, spot: { id: 'thornvale-gallows-hill', name: 'Gallows Hill' } },
+      { at: [0.84, 0.8], r: 8, kind: 'cave', packs: [['bandit-enforcer', 'bandit-archer']], entrance: { to: 'gallows-keep', label: 'Gallows Keep', minLevel: 11 }, spot: { id: 'thornvale-gallows-hill', name: 'Gallows Hill' } },
       // the mill on Miller's Pond: the gang's hired blades hold it and tax every cart, until the hero breaks them
       { at: [0.36, 0.64], r: 8, kind: 'grove', packs: [['bandit-cutthroat', 'bandit-archer'], ['bandit-enforcer', 'bandit-cutthroat']], spot: { id: 'millers-pond', name: 'Miller’s Pond' }, when: until('mill-the-bridge') },
       { at: [0.6, 0.15], r: 8, kind: 'farm', packs: [['bandit-cutthroat', 'bandit-cutthroat']], spot: { id: 'east-farm', name: 'Burnt Farm' } },

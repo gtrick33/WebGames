@@ -184,21 +184,21 @@ describe('Sigilfall systems fixes', () => {
   });
 
   it('Design: a quest waiting only for a level is listed with the level it opens at', () => {
-    const h = storyHero(['break-the-giants']);
+    const h = storyHero(['thieves-cant']);
     h.unlocked = [...REGION_IDS];
-    h.level = 49;
+    h.level = 10;
     startQuests(h);
-    expect(h.quests['muster-the-field']).toBeUndefined();
-    const gate = levelGated(h).find((q) => q.id === 'muster-the-field');
-    expect(gate?.level).toBe(50);
+    expect(h.quests['the-bandit-king']).toBeUndefined();
+    const gate = levelGated(h).find((q) => q.id === 'the-bandit-king');
+    expect(gate?.level).toBe(11);
     // lowest level first, and none that the hero could already start
     const levels = levelGated(h).map((q) => q.level!);
     expect([...levels].sort((a, b) => a - b)).toEqual(levels);
     expect(levels.every((l) => l > h.level)).toBe(true);
-    h.level = 50;
+    h.level = 11;
     startQuests(h);
-    expect(h.quests['muster-the-field']?.state).toBe('active');
-    expect(levelGated(h).some((q) => q.id === 'muster-the-field')).toBe(false);
+    expect(h.quests['the-bandit-king']?.state).toBe('active');
+    expect(levelGated(h).some((q) => q.id === 'the-bandit-king')).toBe(false);
   });
 
   it('Design: quartermaster gear is made for a little above the hero, not the top level', () => {

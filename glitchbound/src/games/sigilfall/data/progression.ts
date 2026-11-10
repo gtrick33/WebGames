@@ -6,7 +6,8 @@ import type { QuestDef, RegionDef, RegionId, StoryEventDef } from './types';
  * hero who does everything stays within the region's band instead of out-levelling the world:
  *
  * - the main story's quests are scaled per region (MAIN_XP, fitted by the campaign model in
- *   tests/sigilfall-progression.test.ts) so each region's chain carries the hero to the next one's floor;
+ *   tests/sigilfall-progression.test.ts, refitted for the fifteen lands of story v3) so each region's chain carries the
+ *   hero to the next one's floor;
  * - side quests pay SIDE_XP of what they say;
  * - quests and kills well below the hero's level pay less (outlevelled), so a completionist settles
  *   back toward the content instead of running away from it.
@@ -15,19 +16,19 @@ import type { QuestDef, RegionDef, RegionId, StoryEventDef } from './types';
 /** The ends of the main story's chains: everything they need is the main story. */
 export const MAIN_STORY_ENDS = [
   'camp-scouts',
-  'camp-smiths',
+  'camp-grain',
   'orders-from-the-north',
-  'forgemaster-grold',
+  'camp-riders',
   'sir-corvane',
   'festival-the-champion',
+  'the-sun-king',
   'the-clans-decide',
   'the-vault-of-rime',
-  'the-sun-king',
-  'the-coiled-queen',
   'the-heart-of-the-tear',
+  'fall-of-fernstead',
   'fern-retaken',
   'the-long-night-ends',
-  'the-third-gate',
+  'the-gloam-gate',
   'the-seventh-sigil',
   'epilogue-the-bell',
 ];
@@ -37,32 +38,21 @@ export const SIDE_XP = 0.6;
 
 /** The main story's quests, scaled by the region whose band they belong to (fitted; see above). */
 export const MAIN_XP: Partial<Record<RegionId, number>> = {
-  whisperwood: 0.3,
-  brackenridge: 0.5,
-  thornvale: 0.6,
-  greyfen: 1,
-  saltmarsh: 0.5,
-  amberfield: 0.5,
-  duskfen: 2,
-  ironpeak: 1.85,
-  'ashen-barrows': 1.1,
-  grimward: 0.5,
-  sunscorch: 0.4,
-  glimmerwood: 0.7,
-  rimeheld: 1.05,
-  'shattered-vale': 0.8,
-  sablewind: 1.1,
-  vinecoil: 0.45,
-  highwall: 1,
-  gloamhollow: 0.7,
-  bonefields: 0.5,
-  'weeping-woods': 0.55,
-  'sunken-reaches': 0.55,
-  blightwood: 0.6,
-  emberdeep: 0.6,
-  hollowmere: 0.6,
-  riftscar: 0.5,
-  'pale-reach': 1.8,
+  whisperwood: 0.15,
+  brackenridge: 1.58,
+  thornvale: 4.67,
+  amberfield: 3.53,
+  'ashen-barrows': 1.51,
+  sunscorch: 0.58,
+  glimmerwood: 1.22,
+  rimeheld: 1.44,
+  'shattered-vale': 3.34,
+  highwall: 0.97,
+  gloamhollow: 2.92,
+  'weeping-woods': 2.24,
+  emberdeep: 1.72,
+  hollowmere: 2.53,
+  'pale-reach': 4,
 };
 
 /** How much less content pays for every level the hero is past it (beyond a grace), down to a fifth. */

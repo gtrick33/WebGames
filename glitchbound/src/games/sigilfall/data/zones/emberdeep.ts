@@ -59,8 +59,8 @@ export const EMBERDEEP = wildRegion(
       // the Slave Forges go cold once the chains are broken; the fire-ward lit again
       { near: 'slave-forges', dx: 0, dy: -2, marker: { kind: 'prop', prop: 'skull-banner' }, when: until('break-the-chains') },
       { near: 'slave-forges', dx: 2, dy: 2, marker: { kind: 'prop', prop: 'cage' }, when: until('break-the-chains') },
-      { near: 'fire-ward', dx: -2, dy: 3, marker: { kind: 'prop', prop: 'iron-torch' }, when: after('the-old-fire-ward') },
-      { near: 'fire-ward', dx: 2, dy: 3, marker: { kind: 'prop', prop: 'iron-torch' }, when: after('the-old-fire-ward') },
+      { near: 'fire-ward', dx: -2, dy: 3, marker: { kind: 'prop', prop: 'iron-torch' } },
+      { near: 'fire-ward', dx: 2, dy: 3, marker: { kind: 'prop', prop: 'iron-torch' } },
       { near: 'throne-gate', dx: 0, dy: -2, marker: { kind: 'wisp', color: '#e8e0f0', size: 3 }, when: until('ashkar-the-bound') },
       { near: 'hub', dx: 0, dy: -5, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('ashkar-the-bound') },
     ],

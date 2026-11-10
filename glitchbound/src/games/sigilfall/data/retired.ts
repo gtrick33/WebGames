@@ -65,6 +65,8 @@ const REROUTE: Partial<Record<RegionId, Partial<Record<RegionId, { to: RegionId;
 /** Roads the story needs that no land had (the way on from Rimeheld to the Tear). */
 const ADDED: Partial<Record<RegionId, ExitSpec[]>> = {
   rimeheld: [{ side: 's', at: 0.5, to: 'shattered-vale', label: 'South: Shardwatch and the Shattered Vale', minLevel: 34 }],
+  // the Crown City's west gate opens on the long road to the sands, and the sands have the road back
+  sunscorch: [{ side: 'e', at: 0.45, to: 'emberwick', label: 'East: the long road to the Crown City' }],
 };
 
 /** A land's roads as the story has them now: none into a retired land, and the added ones. */

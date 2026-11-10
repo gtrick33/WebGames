@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { REGION_IDS, REGIONS } from '../src/games/sigilfall/data/regions';
+import { isRetired } from '../src/games/sigilfall/data/retired';
 import type { RegionId } from '../src/games/sigilfall/data/types';
 import { acceptQuest, handInQuest, handInsFor, newCharacter, offeredBy, questState, startQuests, trackQuest, type Character } from '../src/games/sigilfall/progress/character';
 import { turnInNpc } from '../src/games/sigilfall/progress/handin';
 import { FOG_CELL, fogSeen, loadFog, revealFog, SEEN_ALL, storeFog } from '../src/games/sigilfall/progress/fog';
 import { migrate, packQuest, SAVE_VERSION, saveText, unpackQuest } from '../src/games/sigilfall/progress/save';
 import { mergeSaveText } from '../src/platform/cloudMerge';
-import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { parseRegion, TILE } from '../src/games/sigilfall/sim/map';
 import { objectiveTarget } from '../src/games/sigilfall/sim/objective';
 import { nextRegion } from '../src/games/sigilfall/sim/routes';
@@ -81,10 +81,10 @@ describe('Sigilfall: the quest arrow and the story’s fights', () => {
   });
 
   it('a foe the story sends into a land the hero is already in arrives, and the arrow finds it', () => {
-    const w = newWorld('pale-reach', heroAt('the-pale-standard', 58));
+    // the banners come into Dawn's Rest: Vosk rides out at the head of the Host
+    const w = newWorld('pale-reach', heroAt('the-last-road', 58));
     expect(w.enemies.some((e) => e.def.id === 'vosk-the-hollowed')).toBe(false);
-    const std = w.enemies.find((e) => e.def.id === 'the-pale-standard' && !e.dead)!;
-    hitEnemy(w, std, 1e9, 'physical', { depth: 0 });
+    w.questProgress((o) => o.kind === 'event' && o.event === 'reach-the-banners');
     run(w, 2);
     expect(questState(w.hero, 'march-vosk')).toBe('active');
     expect(w.enemies.some((e) => e.def.id === 'vosk-the-hollowed' && !e.dead)).toBe(true);
@@ -102,7 +102,8 @@ describe('Sigilfall: the quest arrow and the story’s fights', () => {
       const out = r.holds ? r.holds.exits : [...Object.values(r.markers), ...(r.placed ?? []).map((p) => p.marker)].flatMap((m) => (m.kind === 'exit' ? [m.to] : []));
       ways.set(id, new Set(out));
     }
-    for (const [a, outs] of ways) for (const b of outs) if (!REGIONS[b].interior) expect(ways.get(b)?.has(a), `${a} has a road to ${b} but ${b} has none back`).toBe(true);
+    // (a dungeon of a land that left the story keeps its way out: it comes out in Briarhollow)
+    for (const [a, outs] of ways) for (const b of outs) if (!REGIONS[b].interior && !isRetired(b)) expect(ways.get(b)?.has(a), `${a} has a road to ${b} but ${b} has none back`).toBe(true);
   });
 });
 

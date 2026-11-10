@@ -264,9 +264,9 @@ export const STORY_SCENES: SceneDef[] = [
     r: 240,
     steps: [
       { sfx: 'warhorn' },
-      { look: 'hearth-north' },
+      { look: 'hearth-gate' },
       { wait: 1 },
-      { say: 'marshal-dunmore', line: 'Their captain sits up on the ridges and watches. Vosk, the refugees call him.' },
+      { say: 'marshal-dunmore', line: 'Their captain sits up on the ridges past my gate and watches. Vosk, the refugees call him.' },
       { say: 'marshal-dunmore', line: 'He counts our walls, not our swords. That’s a man planning a siege.' },
       { look: 'hero' },
     ],

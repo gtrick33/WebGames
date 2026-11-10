@@ -85,7 +85,7 @@ export const PETS: Record<string, PetDef> = {
   // summoned by the new class skills (PROGRESSION_BALANCE.md Part 2, B)
   // Acts IV and V: Highwall's garrison, Kragholt's axes, the prisoners of the Gloam Gate, Orren at the bell
   'highwall-soldier': { id: 'highwall-soldier', name: 'Highwall soldier', sprite: 'villager', look: 'highwall-soldier', hp: 0.9, dmg: 0.4, dmgType: 'physical', speed: 82, radius: 6, reach: 20, ranged: false, attackCd: 1.1, taunt: true },
-  'kragholt-axe': { id: 'kragholt-axe', name: 'Kragholt axeman', sprite: 'villager', look: 'dwarf-carter', hp: 1, dmg: 0.45, dmgType: 'physical', speed: 70, radius: 6, reach: 20, ranged: false, attackCd: 1.2, taunt: true },
+  'kragholt-axe': { id: 'kragholt-axe', name: 'Cinderhold axeman', sprite: 'villager', look: 'dwarf-carter', hp: 1, dmg: 0.45, dmgType: 'physical', speed: 70, radius: 6, reach: 20, ranged: false, attackCd: 1.2, taunt: true },
   'elyra-freed': { id: 'elyra-freed', name: 'Elyra', sprite: 'villager', look: 'elyra', hp: 1, dmg: 0, dmgType: 'physical', speed: 70, radius: 5, reach: 0, ranged: false, attackCd: 9, taunt: false, role: 'follower', unhurt: true },
   wren: { id: 'wren', name: 'Wren', sprite: 'villager', look: 'wren', hp: 1, dmg: 0, dmgType: 'physical', speed: 86, radius: 5, reach: 0, ranged: false, attackCd: 9, taunt: false, role: 'follower', unhurt: true },
   'orren-praying': { id: 'orren-praying', name: 'Brother Orren', sprite: 'villager', look: 'brother-orren', hp: 2.2, dmg: 0, dmgType: 'physical', speed: 0, radius: 5, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },

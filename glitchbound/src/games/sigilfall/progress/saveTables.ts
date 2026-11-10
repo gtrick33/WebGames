@@ -197,4 +197,10 @@ export const OPENED_TABLE: readonly string[] = [
   'land:molten-throne', 'molten-throne:mt-strongbox:33:40', 'land:spire-of-the-rift',
   'spire-of-the-rift:spire-strongbox:17:1', 'land:duskspire', 'duskspire:ds-vault:4:74', 'land:vaelmoor-remembered',
   'land:crown-catacombs',
+  // the story's v3 scenes (data/scenes-story.ts)
+  'scene:vision-embers', 'scene:wood-the-trail', 'scene:fern-candles', 'scene:fern-the-barrows',
+  'scene:fern-the-song', 'scene:fern-the-lady-sings', 'scene:fern-at-rest', 'scene:fern-the-stones-lit',
+  'scene:mill-arrival', 'scene:mill-kettle', 'scene:mill-nyx', 'scene:mill-after-harlan', 'scene:mill-the-wheel',
+  'scene:hearth-arrival', 'scene:hearth-the-caravan', 'scene:hearth-the-captain', 'scene:hearth-the-stones',
+  'scene:hearth-the-sigil-gone', 'scene:hearth-the-orders',
 ];

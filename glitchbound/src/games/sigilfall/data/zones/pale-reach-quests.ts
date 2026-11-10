@@ -1,4 +1,4 @@
-import { after, any, is } from '../cond';
+import { after, is } from '../cond';
 import type { EnemyDef, NpcDef, QuestDef, StoryEventDef } from '../types';
 
 /**
@@ -18,14 +18,13 @@ import type { EnemyDef, NpcDef, QuestDef, StoryEventDef } from '../types';
 const FACTIONS: { pet: string; when: ReturnType<typeof after> }[] = [
   { pet: 'fern-ranger', when: after('fern-retaken') },
   { pet: 'hearth-rider', when: after('camp-riders') },
-  { pet: 'kragholt-axe', when: after('camp-dwarves') },
+  // the dwarves of Cinderhold, freed from the Slave Forges
+  { pet: 'kragholt-axe', when: after('break-the-chains') },
   { pet: 'clan-archer', when: after('the-clans-decide') },
   // the forest's knights ride only if Silvaine sang her brother back from the thorns
   { pet: 'thorn-knight', when: is('silvaines-song', 'taken') },
   { pet: 'jarl-huscarl', when: after('the-vault-of-rime') },
   { pet: 'sun-lancer', when: after('the-sun-king') },
-  // Vinehold's boats come either way: hidden by Kesh or forgiven by the Regent
-  { pet: 'marsh-skirmisher', when: any(is('kesh-the-secret', 'taken'), is('kesh-the-truth', 'taken')) },
 ];
 
 export const PALE_REACH_QUESTS: QuestDef[] = [
@@ -33,11 +32,11 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
   {
     id: 'the-last-march',
     name: 'The Last March',
-    giver: 'elyra-lastlight',
+    giver: 'orren-at-the-mere',
     auto: true,
     text: 'Seven of seven. The Regent’s riders went out the same night with one word for every banner that ever owed the hero a favor: north. The coalition gathers at Dawn’s Rest, a ruined waystation at the southern edge of the Pale Reach, beyond Hollowmere, and Mara has gone ahead to command it. Take the north road out of Hollowmere and find her.',
     objective: { kind: 'talk', npc: 'mara-at-the-reach', label: 'Find Mara at Dawn’s Rest' },
-    after: ['the-seventh-sigil'],
+    after: ['ysanes-last-echo'],
     // the hand-off that sends the hero to pale-reach: it starts when the last chapter ends, not on arrival
     level: 56,
     reward: { xp: 2000, gold: 700, text: 'Dawn’s Rest is a roofless waystation full of tents, and the tents are full of people you know.' },
@@ -55,57 +54,13 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     reward: { xp: 1800, gold: 600, text: 'Banner after banner comes up out of the snow. Mara counts them out loud, and when she runs out of fingers she stops counting and just watches.' },
   },
   {
-    id: 'the-kings-kennels',
-    name: 'The King’s Kennels',
-    giver: 'mara-at-the-reach',
-    text: 'The Hallow King keeps hounds: pale, hairless things that hunt by the warmth of you and run down anyone who leaves the fires. They have taken six of the coalition’s foragers in two days. Mara wants the camp’s edges safe before she moves anyone north. Kill the pale hounds on the snow around Dawn’s Rest and the Kennels to the east.',
-    objective: { kind: 'kill', region: 'pale-reach', count: 10, enemies: ['pale-hound'], label: 'Kill pale hounds' },
-    after: ['the-last-road'],
-    zone: 'pale-reach',
-    level: 56,
-    reward: { xp: 1900, gold: 640 },
-  },
-  {
-    id: 'the-drake-graves',
-    name: 'The Drake Graves',
-    giver: 'mara-at-the-reach',
-    text: 'At dusk the drakes fly over Dawn’s Rest: dead drakes, nothing left of them but bone and the memory of wings, and they stoop on the sentries like hawks on mice. Hollis’s scouts, if they came, followed them home to the Drake Graves north-east of camp; if not, Mara’s own did, and fewer came back. Break the bone drakes at their graves.',
-    objective: { kind: 'kill', region: 'pale-reach', count: 6, enemies: ['bone-drake'], label: 'Break bone drakes' },
-    after: ['the-kings-kennels'],
-    zone: 'pale-reach',
-    level: 57,
-    reward: { xp: 2000, gold: 660 },
-  },
-  {
-    id: 'the-kings-host',
-    name: 'The King’s Host',
-    giver: 'mara-at-the-reach',
-    text: 'North-west of Dawn’s Rest the Host stands in the snow: rank on rank of the dead in blackened plate, not moving, not breathing, waiting for their king’s word. They are Vaelmoor’s own, the first memories the Ash Crown ever made. When the word comes they march south, and Dawn’s Rest is in the way. Thin the ranks before they move.',
-    objective: { kind: 'kill', region: 'pale-reach', count: 12, enemies: ['hollow-legionnaire', 'pale-knight'], label: 'Thin the Host’s ranks' },
-    after: ['the-drake-graves'],
-    zone: 'pale-reach',
-    level: 57,
-    reward: { xp: 2100, gold: 680, text: 'One of the legionnaires, falling, says: “Tell the baker I paid him.” They are all like that, Mara says. Every one of them is somebody’s Tuesday.' },
-  },
-  {
-    id: 'the-pale-standard',
-    name: 'The Pale Standard',
-    giver: 'mara-at-the-reach',
-    text: 'The ranks you broke had closed again by morning, and Mara knows why: in the middle of the Host stands its standard, the Hallow King’s colors on a pole of black iron, carried by a dead giant of his old guard. While the Standard stands, the Host stands. Bring it down at the King’s Host north-west of camp.',
-    objective: { kind: 'kill', region: 'pale-reach', count: 1, enemies: ['the-pale-standard'], label: 'Bring down the Pale Standard' },
-    after: ['the-kings-host'],
-    zone: 'pale-reach',
-    level: 57,
-    reward: { xp: 3000, gold: 900, item: { rarity: 'epic' } },
-  },
-  {
     id: 'march-vosk',
     name: 'The Rider at the Head of the Host',
     giver: 'mara-at-the-reach',
     auto: true,
     text: 'With the Standard down a rider has taken the Host’s head, and Dunmore’s scouts know the horse before they know the man: Rider-Captain Vosk, who burned Hearthstead and carried its fragment north. The Ash Crown kept him. There is not much left of him to keep. Ride him down at the King’s Host, and the Host has no one left to follow.',
     objective: { kind: 'kill', region: 'pale-reach', count: 1, enemies: ['vosk-the-hollowed'], label: 'Bring down Vosk at the head of the Host' },
-    after: ['the-pale-standard'],
+    after: ['the-last-road'],
     zone: 'pale-reach',
     level: 58,
     reward: { xp: 3600, gold: 1000, text: 'Vosk goes down in the snow and looks up at you as if he is trying to remember where he has seen you. “Hearthstead,” he says at last. “I’m sorry. There was a well. I was thirsty.” Then the grey goes out of him.' },
@@ -117,7 +72,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     auto: true,
     text: 'Duskspire’s outer wall is older than Aster and has never been breached. Veilwatch’s siege mages say they can bring it down, given time: they need to stand in the open before it and sing for as long as it takes, and the Host will come for them the moment they start. Every banner at Dawn’s Rest is on the field. Hold it around the mages until the wall comes down.',
     objective: { kind: 'event', event: 'reach-the-mages', label: 'Hold the field around the siege mages' },
-    after: ['march-vosk'],
+    after: ['the-seventh-sigil'],
     zone: 'pale-reach',
     level: 58,
     reward: { xp: 4000, gold: 1100, item: { rarity: 'epic' }, text: 'The wall does not fall so much as remember it is stone. It goes down in a long slide of black blocks, and through the dust you can see the Duskspire Gate.' },
@@ -337,7 +292,6 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'march-the-siege-mages', state: 'active' }, lines: ['The mages stand in the open and sing, and we stand around the mages and don’t let anything reach them. That’s the whole plan.', 'It’s a good plan. It’s a wall. I know about walls.'] },
       { when: { quest: 'the-duskspire-gate', state: 'active' }, lines: ['I’ll keep the door. Someone always has to keep the door. I’ve been keeping doors since Briarhollow.', 'Bring her back out. Bring yourself back out. In that order, if you have to choose. Don’t tell her I said so.'] },
       // side arcs change what she says: Haldren's dead laid to rest at the Muster Hall
-      { when: { quest: 'laid-to-rest', state: 'done' }, lines: ['Haldren wrote. He plowed his field. He says the soil’s good. He says he cried the whole time and the furrows are straight anyway.', 'I keep his letter in my glove. Don’t tell anyone.'] },
       { when: { quest: 'crownfall-the-ash-crown', state: 'done' }, lines: ['It’s over. I keep saying it and it keeps not sounding like anything.', 'I want to go home and fix the gate. Briarhollow’s gate. It sticks in the wet.'] },
       { lines: ['Shields together. Weight forward. Never step back first.', 'Every one of those banners is somebody you went back for. Remember that when it gets loud.'] },
     ],

@@ -272,29 +272,13 @@ function plan(): SpreadPlan {
   c.prop('hay', 12, 16, true, CAMPED(is('camp-grain', 'done')));
   c.prop('chickens', 9, 21, false, CAMPED(is('camp-grain', 'done')));
   c.npc('carter-wenna', 11, 18, all(is('camp-grain', 'done'), CALM, not(HOME)));
-  // Reedwater's healers under canvas by Thessa's cottage
-  c.prop('tent', 14, 29, true, CAMPED(is('camp-healers', 'done')));
-  c.prop('tent', 18, 29, true, CAMPED(is('camp-healers', 'done')));
-  c.prop('clay-pot', 16, 28, true, CAMPED(is('camp-healers', 'done')));
-  c.npc('healer-brisa', 16, 30, all(is('camp-healers', 'done'), CALM, not(HOME)));
-  // Gullport's forge and a cart of powder kegs, east of Hollin's
-  c.prop('anvil', 57, 27, true, CAMPED(is('camp-smiths', 'done')));
-  c.prop('barrel', 55, 29, true, CAMPED(is('camp-smiths', 'done')));
-  c.prop('barrel', 56, 29, true, CAMPED(is('camp-smiths', 'done')));
-  c.prop('cart', 55, 25, true, CAMPED(is('camp-smiths', 'done')));
-  c.npc('forgewife-runa', 56, 27, all(is('camp-smiths', 'done'), CALM, not(HOME)));
   // Hearthstead's riders and their banners south-east of the square
   c.prop('flag', 41, 28, true, CAMPED(is('camp-riders', 'done')));
   c.prop('blue-banner', 44, 28, true, CAMPED(is('camp-riders', 'done')));
   c.npc('rider-alder', 42, 29, all(is('camp-riders', 'done'), CALM, not(HOME)));
-  // Kragholt's dwarf-steel and Brenna's apprentice, beside the Elder's hall (Act II)
-  c.prop('anvil', 44, 36, true, CAMPED(is('camp-dwarves', 'done')));
-  c.prop('crate', 40, 36, true, CAMPED(is('camp-dwarves', 'done')));
-  c.prop('blue-banner', 41, 34, true, CAMPED(is('camp-dwarves', 'done')));
-  c.npc('dwarf-tova', 42, 36, all(is('camp-dwarves', 'done'), CALM, not(HOME)));
   // Fernstead's people under canvas, from the Herald's ambush (the village lost) until it is taken back (Act III):
   // they are never nowhere while their quests wait
-  const FERN_CAMP = all(is('the-heralds-ambush', 'done'), not(is('fern-retaken', 'done')));
+  const FERN_CAMP = all(is('the-heralds-ambush', 'done'), not(is('fern-retaken', 'done')), not(is('epilogue-the-camp-goes-home', 'done')));
   c.prop('tent', 15, 32, true, FERN_CAMP);
   c.prop('tent', 19, 32, true, FERN_CAMP);
   c.prop('campfire', 17, 33, true, FERN_CAMP);
@@ -500,10 +484,9 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'alpha', state: 'active' }, lines: ['The beasts of the wood have gone mad together, following one great boar with grey light in its eyes. Grimtusk, the woodcutters called it, before they stopped coming back.', 'It dens at the east end of the wood. Kill it and the wood calms, and we have one less thing at the door tonight.'] },
       { when: { quest: 'the-warden', state: 'active' }, lines: ['The crypt under the chapel is older than the village. Older than the chapel. The old warden still keeps it, they say, though he’s been dead three hundred years.', 'If the raiders went down there, they went for something. Bring it back before they do.'] },
       { when: { quest: 'close-the-rift', state: 'active' }, lines: ['Past the warden is the reliquary. I was told, as a girl, what it holds, and told never to say. I’ll say it now: a piece of the Starlight Crown.', 'Whoever leads those raiders is down there with it. Stop them.'] },
-      { when: { quest: 'the-empty-tomb', state: 'active' }, lines: ['A fragment of the Starlight Crown, bonded to a hedge-witch’s apprentice. And the mark of the Ashen Host painted fresh on a crypt wall.', 'And a king’s seal, broken, from a man who rode all that way to die at our gate. His letter is soaked through. I’ll dry it by the fire.', 'Three hundred years ago the Sigil-wardens broke that crown so no king could use it again. Someone is putting it back together.', 'Then we don’t run. We gather the Vale: Fernstead, Millbrook, Reedwater, Gullport. Every village that holds is one more wall.'] },
+      { when: { quest: 'the-empty-tomb', state: 'active' }, lines: ['A fragment of the Starlight Crown, bonded to a hedge-witch’s apprentice. And the mark of the Ashen Host painted fresh on a crypt wall.', 'And a king’s seal, broken, from a man who rode all that way to die at our gate. His letter is soaked through. I’ll dry it by the fire.', 'Three hundred years ago the Sigil-wardens broke that crown so no king could use it again. Someone is putting it back together.', 'Then we don’t run. We gather the Vale: Fernstead, Millbrook, Hearthstead. Every village that holds is one more wall.'] },
       { when: { quest: 'west-road', state: 'active' }, lines: ['West, in the Brackenridge Hills: Fernstead. Their shrine at the Harvest Stones has gone grey, and the barrow dead walk.', 'Find Warden Hollis. If her scouts join us, we’ll see the Host coming.'] },
       { when: { quest: 'south-road', state: 'active' }, lines: ['South, Millbrook: a gang holds the mill bridge and taxes every cart. Paid in grey coin, the carters say.', 'Find Reeve Aldous. Free that bridge and Millbrook’s grain comes to us instead of to them.'] },
-      { when: { quest: 'the-digging-dead', state: 'active' }, lines: ['Reedwater, out in the Greyfen marsh: their graves emptied from below, villagers taken into the reeds, the wells gone foul.', 'Find Marshwarden Tilde. Reedwater has the best healers in the Vale. We’ll need them.'] },
       { when: { quest: 'hollow-gold', state: 'active' }, lines: ['Ash-gold. It weighs nothing and it’s always cold. The Host pays its traitors with it.', 'Millbrook’s grain carts are already on the road to us. You did that. Look at the square tomorrow and you’ll see what it means.'] },
       { when: { quest: 'the-regents-council', state: 'active' }, lines: ['Sit. I’ve read Oskar Fell’s letter at last: I had to dry it by the fire first.', 'The king’s couriers have been warning the Crown City for months that the crown is being hunted. Every letter, lost. Someone in the city has been burying them.', 'We will have to go there ourselves, in the end. Not yet. First the Vale must hold.'] },
       { when: { quest: 'fall-of-fernstead', state: 'active' }, lines: ['Fernstead is burning. Its people are on the west road with whatever they could carry.', 'Go and meet them. Let them see a face they know.'] },
@@ -603,7 +586,6 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
     title: 'Carter, from Millbrook',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'the-drowned-fleet', state: 'done' }, lines: ['A smith from Gullport tried to buy my second cart for powder kegs. I said it carries bread. She said bread doesn’t explode. I said that’s the point.'] },
       { lines: ['Twelve carts of Millbrook grain, and Tobin’s hens, which nobody asked for.', 'The mill turns again. You burned that barricade so high we saw it from the road. Aldous wants the smoke back, he says. Joking. Mostly.'] },
     ],
   },
@@ -663,7 +645,7 @@ export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
     radius: 16,
     arrive: { pets: ['fern-ranger', 'mill-carter', 'reed-healer', 'gull-smith', 'hearth-rider', 'dwarf-carter'], from: 'briar-square', to: 'briar-south' },
     banner: 'Going home',
-    start: [{ who: 'maren', text: 'Fernstead, Millbrook, Reedwater, Gullport, Hearthstead, Kragholt. Go home. Go home and be ordinary. That’s an order.' }],
+    start: [{ who: 'maren', text: 'Fernstead, Millbrook, Hearthstead. Go home. Go home and be ordinary. That’s an order.' }],
     waves: [],
     end: [{ who: 'mara-venn', text: 'That’s the last of them. The gate’s still sticking. I’m going to fix the gate.' }],
   },
