@@ -1215,7 +1215,7 @@ const INDOOR = {
   ...list(DUN, ['bartop_A_large', 'banner_white', 'table_long_decorated_B', 'table_round_large', 'candle', 'torch']),
   // the dungeon pack's own walls, laid over a built place's walls (render3d/land.ts cladWalls), and more of what stands
   // and lies in its rooms
-  ...list(DUN, ['wall', 'wall_half', 'wall_cracked', 'wall_arched', 'wall_archedwindow_gated', 'wall_gated', 'wall_pillar', 'wall_shelves', 'wall_window_closed', 'wall_broken', 'wall_endcap']),
+  ...list(DUN, ['wall', 'wall_half', 'wall_cracked', 'wall_arched', 'wall_archedwindow_gated', 'wall_gated', 'wall_pillar', 'wall_shelves', 'wall_window_closed', 'wall_broken', 'wall_endcap', 'wall_scaffold', 'wall_window_closed_scaffold', 'wall_window_open_scaffold']),
   ...list(DUN, ['barrel_large_decorated', 'barrel_small_stack', 'box_small', 'box_small_decorated', 'box_stacked', 'candle_melted', 'candle_thin_lit', 'coin_stack_large', 'coin_stack_small', 'keg_decorated', 'shelf_small_candles', 'shelf_large', 'sword_shield_gold', 'sword_shield_broken', 'table_long_broken', 'table_medium_broken', 'table_small', 'trunk_medium_B', 'trunk_small_C', 'bottle_A_green', 'bottle_B_brown', 'bottle_C_green', 'plate_stack', 'plate_food_A', 'keyring_hanging', 'key', 'barrier', 'barrier_column', 'bed_frame', 'floor_tile_big_grate', 'floor_tile_small_broken_A', 'floor_tile_small_broken_B', 'floor_tile_small_weeds_A', 'stairs_wide', 'banner_shield_blue', 'banner_shield_white', 'banner_shield_green', 'banner_shield_yellow', 'banner_patternB_red', 'banner_patternC_white', 'banner_triple_blue', 'banner_thin_white', 'banner_green', 'banner_yellow', 'banner_brown']),
 };
 

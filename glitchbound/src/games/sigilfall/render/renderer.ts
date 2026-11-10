@@ -5,7 +5,10 @@ import { isMainQuest, turnInNpc } from '../progress/handin';
 import { LEAD, leanTarget, LIFT } from './camera';
 import { Effects, headOf } from './effects';
 import { THEMES } from '../data/themes';
-import { ROOM } from './rooms';
+import { ROOM, type RoomLight } from './rooms';
+
+/** The light of the place the hero is in, where it's under a roof: a deep place, or a house in a town. */
+const roomOf = (w: World): RoomLight | null => (w.region.dark ? (ROOM[w.region.theme] ?? ROOM.default!) : w.region.interior ? (ROOM[w.region.theme] ?? null) : null);
 import type { ClassId } from '../data/types';
 import { TILE } from '../sim/map';
 import type { Enemy, NpcActor, Pet } from '../sim/types';
@@ -541,14 +544,15 @@ export class Renderer {
 
   /** The dim edge of a deep place: drawn under the names and bars, over the world. */
   private vignette(g: CanvasRenderingContext2D, w: World): void {
-    if (!w.region.dark) return;
+    const room = roomOf(w);
+    if (!room) return;
     const W = this.cssW;
     const H = this.cssH;
-    const room = ROOM[w.region.theme] ?? ROOM.default!;
     const grd = g.createRadialGradient(W / 2, H * 0.52, Math.min(W, H) * 0.42, W / 2, H * 0.52, Math.hypot(W, H) * 0.62);
     grd.addColorStop(0, `rgba(${room.edge},0)`);
-    grd.addColorStop(0.6, `rgba(${room.edge},0.22)`);
-    grd.addColorStop(1, `rgba(${room.edge},0.62)`);
+    const k = room.edgeK ?? 1;
+    grd.addColorStop(0.6, `rgba(${room.edge},${0.22 * k})`);
+    grd.addColorStop(1, `rgba(${room.edge},${0.62 * k})`);
     g.fillStyle = grd;
     g.fillRect(0, 0, W, H);
   }
@@ -562,7 +566,7 @@ export class Renderer {
     grade.set(0, 0, 0, 0);
     dark.set(0, 8, 0, 0);
     // a deep place has its own dim light, which its fires push back in their own color (render3d/toon.ts roomLight)
-    const room = w.region.dark ? (ROOM[w.region.theme] ?? ROOM.default!) : null;
+    const room = roomOf(w);
     if (room) {
       LIGHT.uAmb.value.set(room.amb[0], room.amb[1], room.amb[2], 1);
       LIGHT.uFlameCol.value.set(room.fire[0], room.fire[1], room.fire[2]);

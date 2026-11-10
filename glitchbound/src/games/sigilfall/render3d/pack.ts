@@ -7,7 +7,7 @@ import * as THREE from 'three';
 
 const BASE = '/games/sigilfall/3d/';
 /** Bump when the built files change, so a browser doesn't keep old ones. */
-const VERSION = '5';
+const VERSION = '6';
 
 export interface MeshData {
   n: number;

@@ -537,9 +537,10 @@ const groundFrag = /* glsl */ `
     // a built place's floor is finished where it meets its walls: a course of stone set along them and round each
     // column's foot, a lighter line inside it (not on a boss's rough ground, nor in a cave)
     if (uTrim > 0.5 && !(ra.a >= 0.6 && ra.a < 0.8) && m.g < 0.3) {
-      float line = smoothstep(0.17, 0.22, ao) - smoothstep(0.26, 0.31, ao);
-      c = mix(c, c * 0.8, smoothstep(0.26, 0.32, ao) * 0.6);
-      c = mix(c, c * 1.26 + 0.02, line * 0.5);
+      // (close in against the wall, and quiet: out on the floor it reads as a ring drawn round the room)
+      float line = smoothstep(0.34, 0.39, ao) - smoothstep(0.43, 0.48, ao);
+      c = mix(c, c * 0.82, smoothstep(0.43, 0.5, ao) * 0.6);
+      c = mix(c, c * 1.16 + 0.012, line * 0.4);
     }
     c *= 1.0 - smoothstep(0.02, 0.75, ao) * (uIndoor > 0.5 ? 0.5 : 0.2);
     c = mix(c, uGrade.rgb, uGrade.a);
@@ -845,6 +846,8 @@ interface Cladding {
   /** The share of a long run's inner pieces that are something else, and what. */
   odd: number;
   pieces: readonly string[];
+  /** Its everyday piece, where that isn't bare masonry. */
+  plain?: string;
 }
 /** How deep a facing piece is, in tiles, and how far it stands out of the wall it faces. */
 const CLAD_DEEP = 0.3;
@@ -860,6 +863,9 @@ const CLADDING: Partial<Record<string, Cladding>> = {
   temple: { tint: [1.16, 1.0, 0.76], cracked: 0.16, odd: 0.5, pieces: ['wall_arched', 'wall_pillar', 'wall_arched'] },
   // the cistern under the city: wet green-grey stone, drains behind bars
   cistern: { tint: [0.8, 0.98, 0.88], cracked: 0.26, odd: 0.5, pieces: ['wall_gated', 'wall_archedwindow_gated', 'wall_pillar', 'wall_arched'] },
+  // a town's houses: timber framing over the stone, shuttered windows, a shelf here and there
+  tavern: { tint: [1.16, 1.06, 0.92], cracked: 0, odd: 0.6, pieces: ['wall_window_closed_scaffold', 'wall_scaffold', 'wall_shelves', 'wall_window_open_scaffold'], plain: 'wall_scaffold' },
+  greathall: { tint: [1.02, 1.0, 1.04], cracked: 0, odd: 0.55, pieces: ['wall_pillar', 'wall_archedwindow_gated', 'wall_pillar', 'wall_arched'] },
   // the spire in the rift: violet stone, coming apart
   riftspire: { tint: [0.96, 0.8, 1.12], cracked: 0.34, odd: 0.4, pieces: ['wall_pillar', 'wall_arched', 'wall_broken'] },
 };
@@ -1230,14 +1236,14 @@ export class Land3D {
     const look = THEMES[theme];
     this.look = look;
     const woody = !look.indoor && !look.cliffs && look.trees.filter((t) => t !== 'cactus' && t !== 'crystal').length * 2 > look.trees.length;
-    this.ground = buildGround(map, look, region.kind === 'dungeon' ? region.encounters.map((e) => (e.boss ? ARENAS[e.boss]?.floor : null)) : [], look.indoor && region.kind === 'dungeon' && !!CLADDING[theme]);
+    this.ground = buildGround(map, look, region.kind === 'dungeon' ? region.encounters.map((e) => (e.boss ? ARENAS[e.boss]?.floor : null)) : [], look.indoor && (region.kind === 'dungeon' || !!region.interior) && !!CLADDING[theme]);
     this.cut = look.indoor ? cutAway(map) : null;
     this.blocks = buildBlocks(map, look, woody, this.cut);
     this.planks = buildPlanks(map, look);
     this.under.add(this.ground, this.planks);
     this.group.add(this.blocks);
     this.wallH = look.indoor ? DUNGEON_WALL : woody ? 1 : 1.6;
-    this.clad = look.indoor && region.kind === 'dungeon' ? (CLADDING[theme] ?? null) : null;
+    this.clad = look.indoor && (region.kind === 'dungeon' || region.interior) ? (CLADDING[theme] ?? null) : null;
     this.placeAll(woody);
     this.cladWalls();
     this.clearWays();
@@ -1512,7 +1518,7 @@ export class Land3D {
     const pick = (a: number, b: number, long: boolean): string => {
       // (the odd piece only on a long run, and never two alike side by side: a wall is mostly wall)
       const h = hash2(a, b, 131);
-      if (!long || h > clad.odd) return hash2(a, b, 133) < clad.cracked ? 'wall_cracked' : 'wall';
+      if (!long || h > clad.odd) return hash2(a, b, 133) < clad.cracked ? 'wall_cracked' : (clad.plain && hash2(a, b, 139) < 0.5 ? clad.plain : 'wall');
       return clad.pieces[Math.floor(hash2(a, b, 137) * clad.pieces.length) % clad.pieces.length]!;
     };
     const lay = (len: number, at: (u: number) => { x: number; z: number }, rot: number, seedA: number, seedB: number, sy = syFar): void => {
@@ -1675,7 +1681,11 @@ export class Land3D {
             // bare land: broken rock along the top of the cliff, not a flat table
             if (hash2(tx, ty, 71) < 0.62) {
               const rock = ROCKS[Math.floor(hash2(tx, ty, 73) * ROCKS.length)]!;
-              this.add({ m: rock, x: x + (h - 0.5) * 0.5, z: z + (hash2(tx, ty, 31) - 0.5) * 0.5, rot: h * 6.28, sx: this.fitted(rock, 0.7 + hash2(tx, ty, 21) * 0.8, 1.5), y: 1.5 });
+              // (the rock is the cliff's own: where the land doesn't recolor its rocks, they take the cliff top's color,
+              // not the pack's grey, which sits on a violet or a black cliff like gravel tipped on it)
+              const top = look.cliffs ? null : hexRgb(look.ground.leaf[3]);
+              const tone = top ? ([Math.min(1.5, Math.max(0.4, top[0] / 0.52)), Math.min(1.5, Math.max(0.4, top[1] / 0.52)), Math.min(1.5, Math.max(0.4, top[2] / 0.52))] as const) : ([1, 1, 1] as const);
+              this.add({ m: rock, x: x + (h - 0.5) * 0.5, z: z + (hash2(tx, ty, 31) - 0.5) * 0.5, rot: h * 6.28, sx: this.fitted(rock, 0.7 + hash2(tx, ty, 21) * 0.8, 1.5), y: 1.5, r: tone[0], g: tone[1], b: tone[2] });
             }
             break;
           }

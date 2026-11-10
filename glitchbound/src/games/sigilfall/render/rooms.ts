@@ -11,6 +11,8 @@ export interface RoomLight {
   fire: readonly [number, number, number];
   rim: readonly [number, number, number];
   edge: string;
+  /** How strong the dark at the edge of the view is (1 where it's not said). */
+  edgeK?: number;
 }
 
 export const ROOM: Partial<Record<Theme, RoomLight>> & { default: RoomLight } = {
@@ -24,5 +26,8 @@ export const ROOM: Partial<Record<Theme, RoomLight>> & { default: RoomLight } = 
   lavacave: { amb: [0.5, 0.42, 0.44], fire: [1.0, 0.48, 0.2], rim: [0.76, 0.42, 0.24], edge: '14,4,2' },
   citadel: { amb: [0.5, 0.56, 0.78], fire: [0.72, 0.68, 1.0], rim: [0.52, 0.6, 0.9], edge: '6,7,22' },
   roots: { amb: [0.5, 0.56, 0.46], fire: [0.74, 0.92, 0.4], rim: [0.52, 0.64, 0.36], edge: '6,10,4' },
+  // under a town's roofs: lamplight and the hearth, warm, with only a little shade in the corners
+  tavern: { amb: [0.8, 0.72, 0.62], fire: [1.0, 0.74, 0.42], rim: [0.6, 0.5, 0.36], edge: '24,12,4', edgeK: 0.55 },
+  greathall: { amb: [0.74, 0.72, 0.74], fire: [1.0, 0.78, 0.5], rim: [0.56, 0.5, 0.42], edge: '10,8,14', edgeK: 0.6 },
   riftspire: { amb: [0.54, 0.48, 0.7], fire: [0.86, 0.5, 1.0], rim: [0.64, 0.46, 0.84], edge: '12,5,20' },
 };

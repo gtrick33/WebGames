@@ -184,6 +184,17 @@ export const PROPS: Record<string, PropDef> = {
   lion: { m: 'statue_block', w: 24, d: 24, h: 9, box: true, tint: '#8a8a90', hero: 30 },
   throne: { m: 'built_throne', w: 28, d: 26, h: 36 },
   'high-throne': { m: 'built_throne', w: 42, d: 34, h: 52 },
+  // the dungeon pack's own stores and wreckage: what a place men have used has standing about in it
+  'barrel-stack': { m: 'barrel_small_stack', w: 28, d: 24, h: 26 },
+  'crate-pile': { m: 'box_stacked', w: 30, d: 28, h: 30 },
+  'small-crates': { m: 'box_small_decorated', w: 16, d: 16, h: 13 },
+  'fine-keg': { m: 'keg_decorated', w: 24, d: 22, h: 22 },
+  'fine-barrel': { m: 'barrel_large_decorated', w: 24, d: 24, h: 28 },
+  'broken-table': { m: 'table_long_broken', w: 46, d: 24, h: 14, across: true },
+  'small-trunk': { m: 'trunk_small_C', w: 18, d: 14, h: 12 },
+  'low-wall': { m: 'barrier', w: 50, d: 10, h: 15, across: true },
+  'bed-frame': { m: 'bed_frame', w: 24, d: 44, h: 12 },
+  'candle-stub': { m: 'candle_melted', w: 7, d: 7, h: 9, tint: '#d8c8a0', glow: '#ffc060' },
   // the Hallow King's seat on its dais (render3d/propsBuilt.ts frozenThrone)
   'frozen-throne': { m: 'built_frozen_throne', w: 132, d: 44, h: 150, glow: '#bfe4ff' },
   // the banner of the house of Vaelmoor, as it stands in Duskspire still: white, the color gone out of it
@@ -215,6 +226,10 @@ const BODIES: Record<string, [number, number]> = {
   'red-banner': [4, 4],
   'skull-banner': [4, 4],
   'royal-banner': [4, 4],
+  'barrel-stack': [27, 15],
+  'fine-keg': [24, 14],
+  'low-wall': [50, 6],
+  'bed-frame': [17, 34],
   'frozen-throne': [112, 30],
   'banner-red': [16, 5],
   'banner-blue': [16, 5],
@@ -327,7 +342,7 @@ export const FEET: Record<string, readonly (readonly [number, number, number, nu
 };
 
 /** Things you walk through or over: they lie on the ground, or bend. */
-const UNDERFOOT = new Set(['flowers', 'wheat', 'corn', 'bones', 'skulls', 'debris', 'rubble', 'eggs', 'candles', 'rug', 'runner', 'spores', 'bedroll', 'coin-pile', 'planter', 'flowerbed', 'bone-heap', 'thorns']);
+const UNDERFOOT = new Set(['candle-stub', 'flowers', 'wheat', 'corn', 'bones', 'skulls', 'debris', 'rubble', 'eggs', 'candles', 'rug', 'runner', 'spores', 'bedroll', 'coin-pile', 'planter', 'flowerbed', 'bone-heap', 'thorns']);
 
 /** Share of what a model may fill that its body takes up: it's rarely square to its box, and never to its corners. */
 const FILLS = 0.84;

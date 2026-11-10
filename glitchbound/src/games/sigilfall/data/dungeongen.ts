@@ -144,7 +144,7 @@ export const ARENAS: Record<string, Arena> = {
 };
 
 /** Things nobody bumps into. */
-const SOFT = new Set(['bones', 'skulls', 'rubble', 'debris', 'candles', 'coin-pile', 'spores', 'eggs', 'runner', 'rug', 'flowers', 'sacks', 'bone-heap', 'log']);
+const SOFT = new Set(['candle-stub', 'bones', 'skulls', 'rubble', 'debris', 'candles', 'coin-pile', 'spores', 'eggs', 'runner', 'rug', 'flowers', 'sacks', 'bone-heap', 'log']);
 
 const DRESS: Record<string, Dress> = {
   // under the chapel: the village's old dead, and something older
@@ -158,15 +158,15 @@ const DRESS: Record<string, Dress> = {
       [[-2, -1, 'sarcophagus'], [2, -1, 'sarcophagus'], [-2, 2, 'sarcophagus'], [2, 2, 'sarcophagus']],
       [[0, -1, 'statue'], [-1, 1, 'candles'], [1, 1, 'candles']],
     ],
-    bits: ['bones', 'skulls', 'rubble', 'candles', 'bone-heap'],
+    bits: ['bones', 'skulls', 'rubble', 'candles', 'bone-heap', 'candle-stub'],
     carpet: '#3a2a4a',
     nave: { column: 'tall-column' },
     backdrop: 'reliquary-wall',
   },
   // a bandit hold in a hill: gibbets, stolen goods and a barracks that stinks
   'gallows-keep': {
-    wall: ['skull-banner', 'weapon-rack', 'cage', 'crates-stack', 'big-barrel'],
-    side: ['cage', 'big-barrel', 'crates-stack', 'trunk'],
+    wall: ['skull-banner', 'weapon-rack', 'cage', 'crate-pile', 'fine-barrel', 'barrel-stack'],
+    side: ['cage', 'barrel-stack', 'crates-stack', 'small-trunk', 'broken-table'],
     corner: 'brazier',
     core: [
       [[0, -1, 'skull-banner'], [-2, 1, 'cage'], [2, 1, 'cage']],
@@ -179,8 +179,8 @@ const DRESS: Record<string, Dress> = {
   },
   // a sea cave full of someone else's cargo
   'smugglers-grotto': {
-    wall: ['crates-stack', 'big-barrel', 'casks', 'trunk', 'lumber-pile'],
-    side: ['crates-stack', 'big-barrel', 'trunk', 'keg'],
+    wall: ['crate-pile', 'fine-barrel', 'casks', 'trunk', 'lumber-pile', 'barrel-stack'],
+    side: ['crates-stack', 'barrel-stack', 'small-trunk', 'fine-keg'],
     corner: 'lantern',
     core: [
       [[0, 0, 'boat'], [-3, 2, 'crate'], [3, 2, 'barrel']],
@@ -194,7 +194,7 @@ const DRESS: Record<string, Dress> = {
   // a city's drowned drains, and what breeds there
   'rotmother-cistern': {
     wall: ['big-barrel', 'cauldron', 'stone-heap', 'thorns'],
-    side: ['big-barrel', 'stone-heap', 'cauldron'],
+    side: ['barrel-stack', 'stone-heap', 'cauldron'],
     corner: 'lantern',
     pillar: 'broken-column',
     core: [
@@ -210,7 +210,7 @@ const DRESS: Record<string, Dress> = {
   // the dwarves' great forge, run now by the dead
   'deepforge-halls': {
     wall: ['weapon-rack', 'coal-heap', 'forge', 'crates-stack', 'anvil', 'great-banner'],
-    side: ['coal-heap', 'stone-heap', 'big-barrel', 'weapon-rack'],
+    side: ['coal-heap', 'stone-heap', 'barrel-stack', 'weapon-rack', 'crate-pile'],
     corner: 'brazier',
     pillar: 'great-column',
     core: [
@@ -274,8 +274,8 @@ const DRESS: Record<string, Dress> = {
   },
   // a fortress under siege, every hall a barracks
   'siege-of-highwall': {
-    wall: ['banner-red', 'weapon-rack', 'crates-stack', 'armor-stand', 'banner-shield'],
-    side: ['big-barrel', 'weapon-rack', 'crates-stack', 'cot'],
+    wall: ['banner-red', 'weapon-rack', 'crate-pile', 'armor-stand', 'banner-shield', 'low-wall'],
+    side: ['barrel-stack', 'weapon-rack', 'crates-stack', 'bed-frame', 'broken-table'],
     corner: 'brazier',
     pillar: 'great-column',
     core: [
@@ -362,7 +362,7 @@ const DRESS: Record<string, Dress> = {
       [[-2, 0, 'sarcophagus'], [2, 0, 'sarcophagus'], [0, 2, 'candles']],
       [[0, 0, 'altar'], [-2, 1, 'candles'], [2, 1, 'candles']],
     ],
-    bits: ['bones', 'skulls', 'candles', 'rubble'],
+    bits: ['bones', 'skulls', 'candles', 'rubble', 'candle-stub'],
     nave: { column: 'tall-column' },
   },
 };
