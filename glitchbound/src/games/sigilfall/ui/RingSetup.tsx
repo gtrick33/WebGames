@@ -380,7 +380,9 @@ export function RingHelp({ onClose }: { onClose: () => void }) {
               <dt>Move</dt>
               <dd>WASD, the arrows, or drag on a touch screen</dd>
               <dt>Abilities</dt>
-              <dd>1 to 4, or click them. They aim themselves at your target, all but a placed one (a comet, a volley, a pyre): hold its key and point with the mouse, or hold its button and push the circle out with your thumb, then let go</dd>
+              <dd>1 to 4, or click them. They aim themselves at your target</dd>
+              <dt>Placed abilities</dt>
+              <dd>A comet, a volley, a pyre. With a mouse: press its key, then click where it should land (Esc puts the circle away; the key again drops it on your target). On a touch screen: tap to drop it on your target, or hold the button and push the circle where you want it</dd>
               <dt>Swift Step</dt>
               <dd>Space: a quick step the way you’re going, out from under what is about to land on you</dd>
               <dt>Super</dt>

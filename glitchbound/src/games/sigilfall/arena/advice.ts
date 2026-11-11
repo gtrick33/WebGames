@@ -19,7 +19,7 @@ export function usesOf(ab: Ability, ranged: boolean): string[] {
   if (ab.super) {
     say('It has no cooldown: it is ready when your meter is full, and combos fill the meter fastest.');
     say(ab.aim === 'friend' ? 'Keep it for the moment a friend is about to fall.' : 'Keep it for the moment that decides the fight: an enemy low on health, or their healer caught and unable to act.');
-    if (ab.aim === 'ground') say('You aim it yourself: hold, put the circle where you want it, let go. Best on someone who is stunned, rooted or slowed, or where it catches two.');
+    if (ab.aim === 'ground') say('You place it: put its circle on someone who is stunned, rooted or slowed, or where it catches two.');
     return out;
   }
   if (ab.id === 'dash') {
@@ -29,7 +29,7 @@ export function usesOf(ab: Ability, ranged: boolean): string[] {
   }
 
   if (ab.aim === 'ground') {
-    say('You aim it yourself: hold its button and push the circle out, or hold its key and point with the mouse, then let go.');
+    say('You place it: with a mouse, press its key and click the ground; on a touch screen, tap for your target or hold and push the circle.');
     say(ab.cast > 0 ? 'It lands where you aimed when the cast began, so cast it on someone who is stunned, rooted or busy casting.' : 'It hits everyone on its patch, and it takes a moment to land: a Swift Step gets them out, a slow or a hold keeps them in.');
   }
   const stop = has('interrupt');

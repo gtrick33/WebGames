@@ -214,8 +214,9 @@ interface AimApi {
   cancel: (e: ReactPointerEvent<HTMLButtonElement>) => void;
 }
 const NO_AIM: AimApi = { down: () => {}, move: () => {}, up: () => {}, cancel: () => {} };
-/** How far a thumb pushes a placed ability's circle to its full reach, in screen points. */
+/** How far a thumb pushes a placed ability's circle to its full reach, in screen points; and how little is no push at all. */
 const AIM_THROW = 78;
+const AIM_SLACK = 8;
 
 /** A match: The Ring's ground, its frames and a bar of abilities. Solo, the computer plays everyone else. */
 export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes, onSets, onDone, onLeave, resume, onSnap, wear, worn, title }: { engine: SigilEngine; setup: MatchSetup; myId: number; face?: Face; body?: 'm' | 'f'; wear?: Character | null; worn?: WornLooks; title?: string | null; role: Role; sets: ClassSets; stakes: MatchStakes | null; onSets: (s: ClassSets) => void; onDone: (r: MatchResult) => void; onLeave: (started: boolean) => void; resume?: Snapshot; onSnap?: (s: Snapshot) => void }) {
@@ -259,12 +260,16 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     say(m.press(myId, id, at));
   };
   /*
-   * A placed ability (a comet, a volley, a pyre) goes where its user puts it, and nowhere by itself (the owner: "by
-   * targeted i mean not auto aimed, like me aiming the circle"). Holding its button shows the circle at the hero's
-   * feet and the thumb pushes it out, any way, to the ability's full reach; holding its key shows it under the mouse.
-   * Letting go drops it there. The match's own loop keeps the circle, so these only pass the touches on.
+   * A placed ability (a comet, a volley, a pyre) goes where its user puts it (the owner: "by targeted i mean not
+   * auto aimed, like me aiming the circle"). On a touch screen, holding its button shows the circle at the hero's
+   * feet and the thumb pushes it out, any way, to the ability's full reach; letting go drops it, and a plain tap
+   * drops it on the target ("you can add auto aim yes"). With a mouse it is as in the old arenas ("for desktop it
+   * should be similar to wow where u place it with mouse"): the key brings the circle up under the pointer, a click
+   * drops it, Escape or the other button puts it away, and the key a second time drops it on the target. The
+   * match's own loop keeps the circle, so these only pass the touches on.
    */
   const aimApi = useRef<AimApi>(NO_AIM);
+  const [placing, setPlacing] = useState(false);
   // changing what you brought, while the gates are down
   const changeSets = (next: ClassSets): void => {
     onSets(next);
@@ -307,53 +312,79 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     ro.observe(canvas.parentElement!);
 
     /* --------------------------------------------------- input */
-    // where a point of the screen falls on the ground (the camera looks down at a fixed slant, so the ground is flat to it)
+    // where a point of the screen falls on the ground. The camera has depth to it, so there is no one rule for the
+    // whole picture: from a first guess under the hero, the ground point is walked to the one that draws at that spot
     const toWorld = (cx: number, cy: number): { x: number; y: number } => {
       const r = canvas.getBoundingClientRect();
-      const a = view.stage.project(0, 0);
-      const b = view.stage.project(100, 0);
-      const c = view.stage.project(0, 100);
-      const ux = (b.x - a.x) / 100;
-      const uy = (b.y - a.y) / 100;
-      const vx = (c.x - a.x) / 100;
-      const vy = (c.y - a.y) / 100;
-      const det = ux * vy - vx * uy || 1;
-      const dx = cx - r.left - a.x;
-      const dy = cy - r.top - a.y;
-      return { x: (dx * vy - vx * dy) / det, y: (ux * dy - dx * uy) / det };
+      const px = cx - r.left;
+      const py = cy - r.top;
+      let gx = me?.x ?? 0;
+      let gy = me?.y ?? 0;
+      for (let i = 0; i < 6; i++) {
+        const a = view.stage.project(gx, gy);
+        const b = view.stage.project(gx + 20, gy);
+        const c = view.stage.project(gx, gy + 20);
+        const ux = (b.x - a.x) / 20;
+        const uy = (b.y - a.y) / 20;
+        const vx = (c.x - a.x) / 20;
+        const vy = (c.y - a.y) / 20;
+        const det = ux * vy - vx * uy;
+        if (Math.abs(det) < 1e-9) break;
+        const dx = px - a.x;
+        const dy = py - a.y;
+        const sx = (dx * vy - vx * dy) / det;
+        const sy = (ux * dy - dx * uy) / det;
+        gx += sx;
+        gy += sy;
+        if (Math.abs(sx) + Math.abs(sy) < 0.05) break;
+      }
+      return { x: gx, y: gy };
     };
-    // a placed ability being aimed: by a button (`pid`, pushed `ox, oy` out from the hero) or by a key (under the mouse)
-    let aim: (RingAim & { pid: number | null; key: string | null; sx: number; sy: number; ox: number; oy: number }) | null = null;
+    // a placed ability being aimed. On a touch screen its button is held (`pid`) and the thumb pushes the circle
+    // `ox, oy` out from the hero; with a mouse (`point`) the circle is under the pointer until a click drops it.
+    let aim: (RingAim & { pid: number | null; point: boolean; pushed: boolean; sx: number; sy: number; ox: number; oy: number }) | null = null;
     const mouse = { x: 0, y: 0, seen: false };
     /** Where the circle is this moment: it goes with the hero, or with the pointer. */
     const placeAim = (): void => {
       if (!aim || !me) return;
-      const w = aim.key && mouse.seen ? toWorld(mouse.x, mouse.y) : { x: me.x + aim.ox, y: me.y + aim.oy };
+      const w = aim.point && mouse.seen ? toWorld(mouse.x, mouse.y) : { x: me.x + aim.ox, y: me.y + aim.oy };
       aim.x = w.x;
       aim.y = w.y;
     };
-    const startAim = (ab: Ability, sx: number, sy: number, pid: number | null, key: string | null): void => {
-      if (!me || aim) return;
+    const startAim = (ab: Ability, sx: number, sy: number, pid: number | null, point: boolean): void => {
+      if (!me) return;
       // (not ready, held, out of mana: said at once, with nothing to place)
       const why = m.blocked(me, ab, undefined, { x: me.x, y: me.y });
       if (why) {
+        aim = null;
+        setPlacing(false);
         say(why);
         return;
       }
-      aim = { ab: ab.id, x: me.x, y: me.y, pid, key, sx, sy, ox: 0, oy: 0 };
+      aim = { ab: ab.id, x: me.x, y: me.y, pid, point, pushed: false, sx, sy, ox: 0, oy: 0 };
+      setPlacing(point);
       placeAim();
     };
-    const endAim = (fire: boolean): void => {
+    /** The circle is let go: dropped where it is, dropped on the target (`auto`), or put away. */
+    const endAim = (how: 'place' | 'auto' | 'cancel'): void => {
       placeAim();
       const a = aim;
       aim = null;
-      if (a && fire) press(a.ab, { x: a.x, y: a.y });
+      setPlacing(false);
+      if (!a || how === 'cancel') return;
+      press(a.ab, how === 'place' ? { x: a.x, y: a.y } : undefined);
     };
     aimApi.current = {
       down: (e, ab) => {
         e.preventDefault();
         if (ab.aim !== 'ground') {
+          if (aim) endAim('cancel');
           press(ab.id);
+          return;
+        }
+        // with a mouse, as with its key: the circle comes up, and a click on the ground drops it
+        if (e.pointerType === 'mouse') {
+          placedKey(ab);
           return;
         }
         try {
@@ -361,7 +392,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         } catch {
           /* (no capture: the drag still works while the finger stays on the button) */
         }
-        startAim(ab, e.clientX, e.clientY, e.pointerId, null);
+        startAim(ab, e.clientX, e.clientY, e.pointerId, false);
       },
       move: (e) => {
         if (!aim || aim.pid !== e.pointerId) return;
@@ -369,11 +400,12 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         const dx = e.clientX - aim.sx;
         const dy = e.clientY - aim.sy;
         const len = Math.hypot(dx, dy);
-        if (!ab || len < 5) {
+        if (!ab || len < AIM_SLACK) {
           aim.ox = 0;
           aim.oy = 0;
           return;
         }
+        aim.pushed = true;
         // the way the thumb went, on the ground; as far as the thumb went, of the ability's reach
         const w0 = toWorld(aim.sx, aim.sy);
         const w1 = toWorld(e.clientX, e.clientY);
@@ -383,10 +415,11 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         aim.oy = ((w1.y - w0.y) / wl) * far;
       },
       up: (e) => {
-        if (aim?.pid === e.pointerId) endAim(true);
+        // (a tap, the thumb never having pushed it anywhere: it goes on the target, as everything else does)
+        if (aim?.pid === e.pointerId) endAim(aim.pushed ? 'place' : 'auto');
       },
       cancel: (e) => {
-        if (aim?.pid === e.pointerId) endAim(false);
+        if (aim?.pid === e.pointerId) endAim('cancel');
       },
     };
     const mouseMove = (e: PointerEvent): void => {
@@ -396,15 +429,21 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       mouse.seen = true;
     };
     window.addEventListener('pointermove', mouseMove);
-    /** An ability's key goes down: a placed one shows its circle until the key comes up, anything else goes at once. */
+    /** A placed ability is called for with a mouse to hand: its circle comes up; called for again, it goes on the target. */
+    const placedKey = (ab: Ability): void => {
+      if (aim?.point && aim.ab === ab.id) endAim('auto');
+      else startAim(ab, mouse.x, mouse.y, null, true);
+    };
+    /** An ability's key goes down: a placed one shows its circle for a click to drop, anything else goes at once. */
     const keyPress = (id: string, e: KeyboardEvent): void => {
       const ab = ABILITIES[id];
       if (ab?.aim !== 'ground') {
+        // (as in the old arenas: calling for something else puts the circle away)
+        if (aim) endAim('cancel');
         press(id);
         return;
       }
-      if (e.repeat) return;
-      startAim(ab, mouse.x, mouse.y, null, e.code);
+      if (!e.repeat) placedKey(ab);
     };
     const keys = new Set<string>();
     const cycle = (list: Fighter[], cur: number | null): number | null => {
@@ -440,6 +479,9 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       } else if ((act === 'friend1' || act === 'friend2') && me) {
         const f = pals[Number(act.slice(6)) - 1];
         if (f && !f.dead) target(f.id);
+      } else if (e.code === 'Escape' && aim) {
+        // (a circle up: Escape puts it away, and nothing else)
+        endAim('cancel');
       } else if (e.code === 'Escape') {
         setEditing(false);
         setHelp(false);
@@ -450,16 +492,24 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     };
     const up = (e: KeyboardEvent): void => {
       keys.delete(e.code);
-      if (aim?.key === e.code) endAim(true);
     };
     const blur = (): void => {
       keys.clear();
-      aim = null;
+      if (aim) endAim('cancel');
     };
     // a click or a tap on a fighter in the ring chooses them (an enemy to hit, an ally to help)
     const pick = (e: PointerEvent): void => {
       const el = e.target as HTMLElement | null;
       if (!el || el.closest('button, .rb-ring-top, .rb-ring-bar, .rb-cluster, [role="dialog"]')) return;
+      // a circle under the mouse: the click drops it there (the other button puts it away), and chooses nobody
+      if (aim?.point) {
+        e.preventDefault();
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+        mouse.seen = true;
+        endAim(e.button === 0 ? 'place' : 'cancel');
+        return;
+      }
       const r = canvas.getBoundingClientRect();
       const px = e.clientX - r.left;
       const py = e.clientY - r.top;
@@ -481,6 +531,11 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     };
     const host = canvas.parentElement!;
     host.addEventListener('pointerdown', pick, true);
+    // (the other mouse button puts a circle away: no menu over the ground for it)
+    const noMenu = (e: MouseEvent): void => {
+      if (!(e.target as HTMLElement | null)?.closest('button, [role="dialog"]')) e.preventDefault();
+    };
+    host.addEventListener('contextmenu', noMenu);
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
     window.addEventListener('blur', blur);
@@ -656,6 +711,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       window.removeEventListener('pointermove', mouseMove);
       aimApi.current = NO_AIM;
       host.removeEventListener('pointerdown', pick, true);
+      host.removeEventListener('contextmenu', noMenu);
       window.removeEventListener('keyup', up);
       window.removeEventListener('blur', blur);
         if (role.kind !== 'solo') role.listen(null);
@@ -809,12 +865,17 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   Change my setup
                 </button>
               </span>
-              <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. The blue button steps aside; the gold one is your super, once it’s full. Step out of a red circle before it lands. A placed ability is aimed: hold its button, push the circle where you want it, let go.' : `${[ringKeys.up, ringKeys.left, ringKeys.down, ringKeys.right].map(keyName).join('')} to move · ${keyName(ringKeys.ab1)} to ${keyName(ringKeys.ab4)} for abilities · ${keyName(ringKeys.dash)} to step aside · ${keyName(ringKeys.super)} for your super · Step out of a red circle before it lands · A placed ability is aimed: hold its key, point with the mouse, let go`}</span>
+              <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. The blue button steps aside; the gold one is your super, once it’s full. Step out of a red circle before it lands. A placed ability: tap it to drop it on your target, or hold it and push the circle where you want it.' : `${[ringKeys.up, ringKeys.left, ringKeys.down, ringKeys.right].map(keyName).join('')} to move · ${keyName(ringKeys.ab1)} to ${keyName(ringKeys.ab4)} for abilities · ${keyName(ringKeys.dash)} to step aside · ${keyName(ringKeys.super)} for your super · Step out of a red circle before it lands · A placed ability: press its key, then click where it should land`}</span>
             </div>
           )}
           {err && (
             <div className="rb-ring-err" role="status">
               {err}
+            </div>
+          )}
+          {placing && !err && (
+            <div className="rb-ring-err is-note" role="status">
+              Click where it should land · Esc to put it away
             </div>
           )}
           {me && me.streak > 0 && m.phase === 'fight' && (

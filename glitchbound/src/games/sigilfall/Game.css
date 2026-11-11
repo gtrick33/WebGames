@@ -8899,6 +8899,9 @@
   pointer-events: none;
   background: rgb(5 3 13 / 0.78);
 }
+.rb-ring-err.is-note {
+  color: #ffe9b0;
+}
 .rb-ring-mycast {
   position: absolute;
   left: 50%;

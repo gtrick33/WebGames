@@ -89,6 +89,8 @@ describe('The Ring: what is placed', () => {
       expect(ab.area, ab.id).toBeGreaterThan(20);
       expect(ab.fall, ab.id).toBeGreaterThan(0.2);
       expect(ab.fall, ab.id).toBeLessThanOrEqual(1);
+      // (the owner: "reduce cast time for targeted spells to max 1s for every class")
+      expect(ab.cast, ab.id).toBeLessThanOrEqual(1);
       expect(ab.range, ab.id).toBeGreaterThan(100);
       expect(ab.bolt, ab.id).toBeFalsy();
       expect(ab.text, ab.id).toMatch(/patch of ground|where you choose/);
@@ -172,7 +174,7 @@ describe('The Ring: what is placed', () => {
   it('one with a cast is aimed when the cast begins: it comes down there, wherever they have gone', () => {
     const ab = ABILITIES['m-pyre']!;
     expect(ab.aim).toBe('ground');
-    expect(ab.cast).toBeGreaterThan(1);
+    expect(ab.cast).toBeGreaterThan(0.5);
     const fate = (walks: boolean): number => {
       const m = open('mage', ['m-pyre']);
       const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
