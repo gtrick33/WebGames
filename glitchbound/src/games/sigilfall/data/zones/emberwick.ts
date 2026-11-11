@@ -245,7 +245,8 @@ function plan(): CityPlan {
   c.fill(10, 70, 30, 70, 'path').row(10, 30, 70);
   c.fill(61, 22, 72, 22, 'cobble').row(61, 72, 22);
   c.fill(59, 72, 92, 72, 'path').row(59, 92, 72);
-  c.building('house', 39, 17, 4, 3);
+  // (five tiles clear of the keep's west tower: at 39 its east wall stood inside the tower's foot)
+  c.building('house', 34, 17, 4, 3);
 
   // where the story happens in the city (silent places)
   for (const [id, x, y] of [

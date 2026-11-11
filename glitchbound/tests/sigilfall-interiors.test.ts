@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { endScene } from '../src/games/sigilfall/sim/scene';
 import { INTERIOR_DOORS, INTERIORS } from '../src/games/sigilfall/data/interiors';
+import { PROPS } from '../src/games/sigilfall/data/props';
 import { NPCS, QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { REGION_IDS, REGIONS } from '../src/games/sigilfall/data/regions';
 import type { RegionId } from '../src/games/sigilfall/data/types';
@@ -66,7 +67,8 @@ describe('Sigilfall: interiors', () => {
     for (const z of INTERIORS)
       for (const p of z.region.placed!) {
         if (p.marker.kind !== 'prop' || p.marker.prop === 'block') continue;
-        const known = ['crate', 'barrel', 'anvil', 'lamp', 'well', 'tent', 'campfire'].includes(p.marker.prop) || isFurniture(p.marker.prop);
+        // (a picture in the old flat set, or a model of its own in the world's one table, which is what the game draws)
+        const known = ['crate', 'barrel', 'anvil', 'lamp', 'well', 'tent', 'campfire'].includes(p.marker.prop) || isFurniture(p.marker.prop) || !!PROPS[p.marker.prop.split(':')[0]!]?.m;
         expect(known, `${z.region.id}: ${p.marker.prop}`).toBe(true);
       }
   });
