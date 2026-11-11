@@ -13,6 +13,7 @@ import type { ClassId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { Link, type LinkState } from '../net/link';
 import { Seek, type SeekLook } from '../net/ringSeek';
+import { rivalsOf } from '../arena/queue';
 import type { Action as RoomAction, Pick as RoomPick, View as RoomView } from '../net/ringRoom';
 import { newCharacter, type Face } from '../progress/character';
 import { iconPicture } from '../render/art/gameIcons';
@@ -126,8 +127,9 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const [rewardsOpen, setRewardsOpen] = useState(false);
   const [looksOpen, setLooksOpen] = useState(false);
   const [fight, setFight] = useState<{ setup: MatchSetup; rival: Comp; skill: number; rivalRating: number; stakes: MatchStakes; format: Format; snap?: LiveMatch['snap'] } | null>(() => (resume ? { ...resume, stakes: resume.stakes } : null));
-  // (`matched`: found by a search, not a room of friends: there is no room to go back to when it ends)
-  const [roomFight, setRoomFight] = useState<{ setup: MatchSetup; mine: number; host: boolean; matched?: boolean } | null>(null);
+  // (`matched`: found by a search, not a room of friends: there is no room to go back to when it ends, and it is
+  // rated, `live` being what is kept of it while it goes, as for a match against the computer's teams)
+  const [roomFight, setRoomFight] = useState<{ setup: MatchSetup; mine: number; host: boolean; matched?: boolean; live?: LiveMatch } | null>(null);
   const [run, setRun] = useState(0);
   const [result, setResult] = useState<{ r: MatchResult; rating: RatingOutcome | null; rival?: string; kind: 'solo' | 'matched' | 'room' } | null>(null);
   // a search for other players (net/ringSeek.ts): what its waiting screen shows, and a word left by one that ended badly
@@ -208,6 +210,17 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     setFight(next);
   };
 
+  /** A rated match is settled: the standing moves, and what the climb has earned is worked out. */
+  const settleFor = (f: Format, rivalRating: number, won: boolean, k = 1): RatingOutcome => {
+    clearLive();
+    const was = standingOf(latest.current, f);
+    const out = afterMatch(was, rivalRating, won, k);
+    // (what the climb has earned: the best of all three formats counts, so a reward is given once)
+    const bestWas = bestRating();
+    commit((now) => ({ ...now, standings: { ...now.standings, [f]: out.next } }));
+    return { before: was.rating, after: out.next.rating, bestBefore: was.best, bestAfter: out.next.best, rankUp: out.rankUp, streak: out.next.streak, rewards: rewardsBetween(bestWas, bestRating()) };
+  };
+
   /** Out of a search, or of the match it found (`soon`: this end ran the match, and lets its last word arrive first). */
   const endSeek = (soon = false): void => {
     if (soon) seekRef.current?.stopSoon();
@@ -232,7 +245,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     seekRef.current?.stop();
     const ground = map === 'random' ? MAP_IDS[Math.floor(Math.random() * MAP_IDS.length)]! : map;
     seekRef.current = new Seek(
-      { format, map: ground, name: shownAs, pick: { cls: pick, bar, oath, talents } },
+      { format, map: ground, name: shownAs, pick: { cls: pick, bar, oath, talents, rating: standing.rating } },
       {
         onLook: setLook,
         onRun: (v, link) => {
@@ -242,10 +255,29 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
             enter();
             return;
           }
+          // rated as a match against the computer's teams is, against the other side's own rating (the owner: "same
+          // logic as the leaver penalty"): kept while it goes, so that walking out of it, or closing it, is a
+          // leaver's loss
+          const st = standingOf(latest.current, v.format);
+          const them = rivalsOf(v);
+          const rivalRating = them.rating ?? st.rating;
+          const rival = listed(them.names) || 'the other team';
+          const rk = rankOf(st.best);
+          const live: LiveMatch = {
+            setup: s,
+            rival: { name: rival, blurb: '', team: [] },
+            skill: 0,
+            rivalRating,
+            format: v.format,
+            stakes: { format: v.format, rating: st.rating, rank: rk.name, color: rk.color, win: ratingChange(st.rating, rivalRating, true), lose: -ratingChange(st.rating, rivalRating, false), rival, blurb: '', rivalRating },
+            at: Date.now(),
+            people: true,
+          };
+          writeLive(live);
           linkRef.current = link;
           setLook(null);
           setRun((r) => r + 1);
-          setRoomFight({ setup: s, mine, host: v.host === v.you, matched: true });
+          setRoomFight({ setup: s, mine, host: v.host === v.you, matched: true, live });
         },
         onBots: () => {
           seekRef.current = null;
@@ -256,8 +288,9 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         onGone: () => {
           seekRef.current = null;
           linkRef.current = null;
+          clearLive();
           setRoomFight(null);
-          setSeekNote('That match ended because a player left it. Nothing changed for you.');
+          setSeekNote('That match ended because a player left it. Your rating is as it was.');
         },
       },
     );
@@ -352,15 +385,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   };
 
   if (fight) {
-    const settle = (won: boolean, k = 1): RatingOutcome => {
-      clearLive();
-      const was = standingOf(latest.current, fight.format);
-      const out = afterMatch(was, fight.rivalRating, won, k);
-      // (what the climb has earned: the best of all three formats counts, so a reward is given once)
-      const bestWas = bestRating();
-      commit((now) => ({ ...now, standings: { ...now.standings, [fight.format]: out.next } }));
-      return { before: was.rating, after: out.next.rating, bestBefore: was.best, bestAfter: out.next.best, rankUp: out.rankUp, streak: out.next.streak, rewards: rewardsBetween(bestWas, bestRating()) };
-    };
+    const settle = (won: boolean, k = 1): RatingOutcome => settleFor(fight.format, fight.rivalRating, won, k);
     return (
       <RingMatch
         key={run}
@@ -396,6 +421,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   }
   if (roomFight) {
     const relay = (d: unknown): void => linkRef.current?.relay(d);
+    const live = roomFight.live;
     const listen = (fn: RingInbox | null): void => {
       inbox.current = fn;
     };
@@ -412,15 +438,26 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         body={body}
         role={roomFight.host ? { kind: 'host', skill: 0.6, send: relay, listen } : { kind: 'client', send: relay, listen }}
         sets={sets}
-        stakes={null}
+        stakes={live?.stakes ?? null}
         onSets={putSets}
-        onLeave={() => {
+        onSnap={live ? (snap) => writeLive({ ...live, snap, at: Date.now() }) : undefined}
+        onLeave={(started) => {
+          // (walking out of a match against people: a leaver's loss, and the match ends for the others)
+          if (live && started) settleFor(live.format, live.rivalRating, false, LEAVER_K);
+          else if (live) clearLive();
           if (roomFight.matched) endSeek();
           else if (roomFight.host) linkRef.current?.send({ t: 'end' });
           setRoomFight(null);
         }}
         onDone={(r) => {
-          setResult({ r, rating: null, kind: roomFight.matched ? 'matched' : 'room' });
+          let rating: RatingOutcome | null = null;
+          if (live) {
+            const was = standingOf(latest.current, live.format);
+            clearLive();
+            rating = r.draw ? { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: 0 } : settleFor(live.format, live.rivalRating, r.won);
+            if (rating.rankUp) engine.sound.play('levelup');
+          }
+          setResult({ r, rating, rival: live?.rival.name, kind: roomFight.matched ? 'matched' : 'room' });
           if (roomFight.matched) endSeek(roomFight.host);
           else if (roomFight.host) linkRef.current?.send({ t: 'end' });
           setRoomFight(null);

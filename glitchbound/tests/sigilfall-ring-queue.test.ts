@@ -6,9 +6,11 @@
  */
 import { describe, expect, it } from 'vitest';
 import { match, put, reserve, list, type Lobby } from '../rooms/lobby';
-import { FOUND_MS, SEEK_GRACE_MS, SEEK_MS, seekFacts, seekStep, WRONG_MS } from '../src/games/sigilfall/arena/queue';
+import { afterMatch, forfeitLive, LEAVER_K, liveGoing, ratingChange, readRing, standingOf, writeLive, type LiveMatch } from '../src/games/sigilfall/arena/ladder';
+import { DROP_MS, FOUND_MS, leftBehind, rivalsOf, SEEK_GRACE_MS, SEEK_MS, seekFacts, seekStep, WRONG_MS } from '../src/games/sigilfall/arena/queue';
+import { NEW_STANDING } from '../src/games/sigilfall/arena/ranks';
 import type { Format } from '../src/games/sigilfall/arena/ranks';
-import { act, join, leave, newRoom, summary, viewFor, type State } from '../src/games/sigilfall/net/ringRoom';
+import { act, cleanPick, join, leave, newRoom, summary, viewFor, type State } from '../src/games/sigilfall/net/ringRoom';
 
 const KEY = (i: number): string => String.fromCharCode(97 + i).repeat(20);
 const PICK = { cls: 'warrior', bar: ['w-strike', 'w-rend', 'w-charge', 'w-shout'], oath: 'iron', talents: [] };
@@ -209,5 +211,83 @@ describe('Sigilfall: each format has its own queue', () => {
     // once it has started nobody else is sent there
     put(l, { code: 'TWOVS', game: 'sigilfall-ring', phase: 'run', players: 2, max: 4, host: 'Ana', full: false, matched: true, at: T0 + 900 }, T0 + 900);
     expect(match(l, 'sigilfall-ring', T0 + 1000, [], '2')).toBeNull();
+  });
+});
+
+describe('Sigilfall: a match against people is rated, and a leaver pays for it alone', () => {
+  /** A 2v2 that has begun: seats 1 and 3 against 2 and 4, each with the rating they came with. */
+  const begun = (): State => {
+    const s = newRoom('ABCDE', 0, 7);
+    for (let i = 0; i < 4; i++) join(s, KEY(i), `P${i}`, 0);
+    act(s, KEY(0), { t: 'setup', format: 2, map: 'frost' }, 0);
+    [1000, 1400, 1100, 1200].forEach((rating, i) => expect(act(s, KEY(i), { t: 'pick', pick: { ...PICK, team: (i % 2) as 0 | 1, rating } }, 0)).toBeNull());
+    expect(act(s, KEY(0), { t: 'start' }, 0)).toBeNull();
+    return s;
+  };
+
+  it('a rating travels with a player’s choices, whole and in bounds, and is not asked of a room of friends', () => {
+    expect(cleanPick({ ...PICK, team: 0, rating: 1234.6 })?.rating).toBe(1235);
+    expect(cleanPick({ ...PICK, team: 0, rating: 1e9 })?.rating).toBe(9999);
+    expect(cleanPick({ ...PICK, team: 0, rating: 'high' })).toEqual({ ...PICK, team: 0 });
+    expect(cleanPick({ ...PICK, team: 0 })).toEqual({ ...PICK, team: 0 });
+  });
+
+  it('each side is up against the other side’s own rating', () => {
+    const s = begun();
+    expect(rivalsOf(viewFor(s, KEY(0))!)).toEqual({ names: ['P1', 'P3'], rating: 1300 });
+    expect(rivalsOf(viewFor(s, KEY(1))!)).toEqual({ names: ['P0', 'P2'], rating: 1050 });
+    // (so the same result moves the two sides the same way an even match against the computer would)
+    expect(ratingChange(1000, 1300, true)).toBeGreaterThan(ratingChange(1400, 1050, true));
+  });
+
+  it('someone walking out ends the match for everyone else, at once', () => {
+    const s = begun();
+    const seats = s.seats.map((x) => x.n);
+    const away = new Map<number, number>();
+    expect(leftBehind(viewFor(s, KEY(0))!, seats, away, 1000)).toBe(false);
+    act(s, KEY(3), { t: 'bye' }, 2000);
+    for (const i of [0, 1, 2]) expect(leftBehind(viewFor(s, KEY(i))!, seats, new Map(), 2000), `P${i}`).toBe(true);
+  });
+
+  it('a lost connection is given a while to come back, and then counts as leaving', () => {
+    const s = begun();
+    const seats = s.seats.map((x) => x.n);
+    const away = new Map<number, number>();
+    leave(s, KEY(1), 5000);
+    expect(leftBehind(viewFor(s, KEY(0))!, seats, away, 5000)).toBe(false);
+    expect(leftBehind(viewFor(s, KEY(0))!, seats, away, 5000 + DROP_MS - 1)).toBe(false);
+    // back in time: the count starts again
+    expect(join(s, KEY(1), 'P1', 9000)).toBeNull();
+    expect(leftBehind(viewFor(s, KEY(0))!, seats, away, 9000)).toBe(false);
+    expect(away.size).toBe(0);
+    leave(s, KEY(1), 10_000);
+    expect(leftBehind(viewFor(s, KEY(0))!, seats, away, 10_000)).toBe(false);
+    expect(leftBehind(viewFor(s, KEY(0))!, seats, away, 10_000 + DROP_MS)).toBe(true);
+  });
+
+  it('a match against people that was closed can’t be gone back to: it is a leaver’s loss, as against the computer', () => {
+    const live: LiveMatch = {
+      setup: { seed: 1, map: 'sands', fighters: [] },
+      rival: { name: 'P1', blurb: '', team: [] },
+      skill: 0,
+      rivalRating: 1000,
+      format: 1,
+      stakes: { format: 1, rating: 1000, rank: 'Unblooded', color: '#fff', win: 16, lose: 16, rival: 'P1', blurb: '', rivalRating: 1000 },
+      at: Date.now(),
+      people: true,
+    };
+    expect(liveGoing(live)).toBe(false);
+    expect(liveGoing({ ...live, people: false })).toBe(true);
+    // closed before the gates lifted: nothing
+    writeLive(live);
+    expect(forfeitLive(live)).toBe(0);
+    // closed while it was fought: what walking out of it costs
+    const before = standingOf(readRing(), 1).rating;
+    const fought = { ...live, snap: { p: 'fight' } as LiveMatch['snap'] };
+    writeLive(fought);
+    const cost = forfeitLive(fought);
+    expect(cost).toBe(afterMatch({ ...NEW_STANDING, rating: before }, 1000, false, LEAVER_K).change);
+    expect(cost).toBeLessThan(0);
+    expect(standingOf(readRing(), 1).rating).toBe(before + cost);
   });
 });

@@ -18,6 +18,8 @@ export const SEEK_GRACE_MS = 2_500;
 export const FOUND_MS = 1_200;
 /** A room of another format: how long before moving on (its host may only be about to set it). */
 export const WRONG_MS = 900;
+/** In a match: a player whose connection has been gone this long has left it. */
+export const DROP_MS = 12_000;
 
 export type SeekStep =
   | { do: 'wait' }
@@ -83,4 +85,37 @@ export function seekStep(f: SeekFacts, waited: number, fullFor: number, wrongFor
     return { do: 'wait' };
   }
   return waited >= SEEK_MS + SEEK_GRACE_MS ? { do: 'bots' } : { do: 'wait' };
+}
+
+/**
+ * Who a searcher is up against once the room has begun: the people on the other side, by name, and their rating (the
+ * mean of those who gave one). A match against people is rated as one against the computer's teams is: by the same
+ * rule, against that number (the owner: "same logic as the leaver penalty").
+ */
+export function rivalsOf(v: View): { names: string[]; rating: number | null } {
+  const mine = v.seats.find((s) => s.n === v.you)?.pick?.team;
+  const them = v.seats.filter((s) => s.pick && s.pick.team !== mine);
+  const rated = them.map((s) => s.pick!.rating).filter((r): r is number => typeof r === 'number');
+  return { names: them.map((s) => s.name), rating: rated.length ? Math.round(rated.reduce((a, b) => a + b, 0) / rated.length) : null };
+}
+
+/**
+ * Whether a match found by a search is over for this player because someone else left it: a seat that was in it is
+ * gone from the room, or has been without its connection for DROP_MS. `away`: since when each seat has been seen
+ * without one (kept by the caller between looks). Whoever leaves takes a leaver's loss; for everyone else the match
+ * ends there and nothing changes.
+ */
+export function leftBehind(v: View, seats: readonly number[], away: Map<number, number>, now: number): boolean {
+  for (const n of seats) {
+    if (n === v.you) continue;
+    const s = v.seats.find((x) => x.n === n);
+    if (!s) return true;
+    if (s.online) away.delete(n);
+    else {
+      const since = away.get(n) ?? now;
+      away.set(n, since);
+      if (now - since >= DROP_MS) return true;
+    }
+  }
+  return false;
 }

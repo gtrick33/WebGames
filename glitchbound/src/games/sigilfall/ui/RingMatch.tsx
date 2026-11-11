@@ -989,7 +989,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           <div className="rb-ring-dialog-wrap" role="dialog" aria-label="Leave the match">
             <div className="rb-ring-dialog">
               <h2>Leave the Ring?</h2>
-              <p>{m.phase === 'gates' ? 'The gates haven’t lifted yet, so this costs you nothing.' : role.kind === 'solo' ? `Walking out counts as a leaver’s loss${stakes ? `: −${Math.round(stakes.lose * LEAVER_K)} rating, half again a loss` : ''}.` : role.kind === 'host' ? 'You’re running this match, so leaving ends it for everyone.' : 'Your hero stands where they are until the match ends.'}</p>
+              <p>{m.phase === 'gates' ? 'The gates haven’t lifted yet, so this costs you nothing.' : role.kind === 'solo' || stakes ? `Walking out counts as a leaver’s loss${stakes ? `: −${Math.round(stakes.lose * LEAVER_K)} rating, half again a loss` : ''}.${role.kind === 'solo' ? '' : ' The match ends for the others, and their rating stays as it was.'}` : role.kind === 'host' ? 'You’re running this match, so leaving ends it for everyone.' : 'Your hero stands where they are until the match ends.'}</p>
               <div className="rb-vigil-actions">
                 <button className="rb-btn is-gold" onClick={() => setLeaving(false)} autoFocus>
                   Stay

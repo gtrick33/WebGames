@@ -25,6 +25,8 @@ export interface LiveMatch {
   /** When it was last seen going (ms). */
   at: number;
   snap?: Snapshot;
+  /** Fought against other players, found by a search: it runs on without whoever leaves, so there is no going back. */
+  people?: boolean;
 }
 
 export function readLive(): LiveMatch | null {
@@ -53,5 +55,5 @@ export function clearLive(): void {
 }
 
 /** Whether a match left behind can still be gone back to. */
-export const liveGoing = (l: LiveMatch, now = Date.now()): boolean => now - l.at < LIVE_WAIT && l.snap?.p !== 'over';
+export const liveGoing = (l: LiveMatch, now = Date.now()): boolean => !l.people && now - l.at < LIVE_WAIT && l.snap?.p !== 'over';
 

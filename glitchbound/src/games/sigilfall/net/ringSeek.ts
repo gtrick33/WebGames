@@ -1,11 +1,11 @@
 /**
  * A search for a match in The Ring, carried out (arena/queue.ts decides each step). It asks quick match for a room of
  * its format, sits down, and after that only does what `seekStep` says, four times a second and whenever the room
- * says something new. Once the host says go the room's word is handed over, and the search keeps the connection only
- * to notice the host walking out of a match they were running.
+ * says something new. Once the host says go the room's word is handed over, and the search keeps the connection to
+ * notice anyone leaving the match: it ends there for everyone else.
  */
 import { quickMatch } from '../../../platform/rooms';
-import { SEEK_MS, seekFacts, seekStep } from '../arena/queue';
+import { DROP_MS, leftBehind, SEEK_MS, seekFacts, seekStep } from '../arena/queue';
 import type { Format } from '../arena/ranks';
 import { Link } from './link';
 import type { Action, Pick, View } from './ringRoom';
@@ -26,7 +26,7 @@ export interface SeekHandlers {
   /** Nobody came, or rooms can't be reached: the computer's teams. */
   onBots(): void;
   onRelay(seat: number, d: unknown): void;
-  /** Whoever was running the match left it. */
+  /** Someone else left the match (or its room can't be reached any more): it is over, and nothing changes. */
   onGone(): void;
 }
 
@@ -54,7 +54,10 @@ export class Seek {
   private shown = '';
   /** 'look' while searching, 'run' once the match began, 'over' when stopped. */
   private state: 'look' | 'run' | 'over' = 'look';
-  private hostSeat = 0;
+  /** The seats that were in the match when it began, since when each has been without its connection, and our own. */
+  private runSeats: number[] = [];
+  private away = new Map<number, number>();
+  private downSince = 0;
 
   constructor(
     private readonly o: SeekOptions,
@@ -71,7 +74,7 @@ export class Seek {
       if (this.state !== 'look') return;
       const code = found.code;
       this.link = new Link<View, Action>(code, this.o.name, {
-        onView: (v) => this.view(code, v),
+        onView: () => this.view(code),
         onRelay: (n, d) => this.h.onRelay(n, d),
         onState: (s) => {
           if (s !== 'gone' || this.link?.code !== code) return;
@@ -86,13 +89,25 @@ export class Seek {
     }
   }
 
-  private view(code: string, v: View): void {
+  private view(code: string): void {
     if (this.link?.code !== code) return;
-    if (this.state === 'run') {
-      if (v.phase === 'run' && v.you !== this.hostSeat && !v.seats.some((s) => s.n === this.hostSeat)) this.gone();
+    if (this.state === 'run') this.watch();
+    else this.tick();
+  }
+
+  /** While the match runs: has anyone left it? */
+  private watch(): void {
+    const link = this.link;
+    const v = link?.view;
+    if (this.state !== 'run' || !link || !v) return;
+    const now = Date.now();
+    this.downSince = link.open ? 0 : this.downSince || now;
+    if (this.downSince) {
+      // (our own connection: what the room last said is old news until it is back)
+      if (now - this.downSince >= DROP_MS) this.gone();
       return;
     }
-    this.tick();
+    if (v.phase !== 'run' || leftBehind(v, this.runSeats, this.away, now)) this.gone();
   }
 
   private tick(): void {
@@ -109,8 +124,9 @@ export class Seek {
       // the host's word. (Seated without a side, in a room that went without us: not our match.)
       if (!v.seats.find((s) => s.n === v.you)?.pick) return this.next();
       this.state = 'run';
-      this.hostSeat = v.host;
+      this.runSeats = v.seats.filter((s) => s.pick).map((s) => s.n);
       window.clearInterval(this.timer);
+      this.timer = window.setInterval(() => this.watch(), 1000);
       this.h.onRun(v, this.link!);
       return;
     }
