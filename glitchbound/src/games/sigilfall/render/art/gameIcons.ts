@@ -149,6 +149,18 @@ export function iconTile(name: string, color: string, round = false): Cnv | null
   return c;
 }
 
+/**
+ * Draws a named icon straight from the atlas into a square (false while the atlas isn't in, or for a name it doesn't
+ * have): for what is drawn many times a frame in the world itself, where a tile or a picture of its own would be waste.
+ */
+export function drawIcon(g: CanvasRenderingContext2D, name: string, x: number, y: number, size: number): boolean {
+  const at = atlas;
+  const i = at?.at.get(name);
+  if (!at || i === undefined) return false;
+  g.drawImage(at.img, (i % at.cols) * at.cell, Math.floor(i / at.cols) * at.cell, at.cell, at.cell, x, y, size, size);
+  return true;
+}
+
 const plain = new Map<string, string>();
 
 /** A named icon on its own, as a data URL: for what isn't a skill (The Vigil's cards). Empty until the atlas is in. */

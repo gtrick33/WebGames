@@ -97,36 +97,10 @@ function AuraIcons({ f }: { f: Fighter }) {
       {shown.map((a: Aura, i) => (
         <i key={`${a.ab}-${a.kind}-${i}`} className={`${a.harmful ? 'is-bad' : 'is-good'}${a.cc ? ' is-cc' : ''}`} title={`${ABILITIES[a.ab]?.name ?? ''}: ${auraWord(a)}`}>
           <img src={iconPicture(ABILITIES[a.ab]?.icon ?? '')} alt="" draggable={false} />
-          <b>{Math.ceil(a.t)}</b>
+          <b>{Math.max(1, Math.ceil(a.t))}s</b>
         </i>
       ))}
     </span>
-  );
-}
-
-/**
- * What is on the target, in words: each effect's name, what it does and how long is left, and beside one of the
- * player's own that sets up a combo, the ability to press now. The squares over a health bar said none of this.
- */
-function TargetEffects({ m, me, f, bar }: { m: Match; me: Fighter; f: Fighter; bar: Ability[] }) {
-  const shown = [...f.auras].sort((a, b) => Number(b.src === me.id) - Number(a.src === me.id) || Number(!!b.cc) - Number(!!a.cc)).slice(0, 4);
-  if (!shown.length) return null;
-  return (
-    <div className="rb-ring-effects" aria-label={`On ${f.name}`}>
-      {shown.map((a, i) => {
-        const next = bar.find((ab) => ab.combo && ((ab.combo.ab?.includes(a.ab) && a.src === me.id) || (!!a.cc && !!ab.combo.cc?.includes(a.cc))) && m.comboReady(me, ab, f));
-        return (
-          <span key={`${a.ab}-${a.kind}-${i}`} className={`${a.harmful ? 'is-bad' : 'is-good'}${next ? ' is-setup' : ''}`}>
-            <img src={iconPicture(ABILITIES[a.ab]?.icon ?? '')} alt="" draggable={false} />
-            <b>{ABILITIES[a.ab]?.name ?? ''}</b>
-            <small>
-              {auraWord(a)} · {Math.ceil(a.t)}s
-            </small>
-            {next && <em>→ {next.name}</em>}
-          </span>
-        );
-      })}
-    </div>
   );
 }
 
@@ -304,6 +278,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     const looks = ringLooks(m, { face, body, wear, worn }, myId);
     const fx = new RingFx();
     const view = new RingStage(canvas, ringMapOf(m.map));
+    view.still = !!engine.settings.reducedMotion;
     const fit = (): void => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       const host = canvas.parentElement!;
@@ -438,7 +413,11 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       for (const e of m.events) {
         if (e.k === 'ab') view.swing(e.id, e.ab, m.fighters[e.id]?.cast?.ab === e.ab);
         // (a blow that took a real bite, not a curse's tick)
-        else if (e.k === 'num' && e.kind === 'dmg' && e.n >= 26) view.hurt(e.id, e.crit || e.n >= 110);
+        else if (e.k === 'num' && e.kind === 'dmg' && e.n >= 26) {
+          view.hurt(e.id, e.crit || e.n >= 110);
+          // (a heavy one is felt: harder when it is you who took it)
+          if (e.n >= 80) view.shake(e.id === myId ? 2.6 : 1.5);
+        } else if (e.k === 'super') view.shake(2.2);
         // (somebody's down: the crowd is on its feet)
         else if (e.k === 'death') view.cheer();
       }
@@ -542,7 +521,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         paint(performance.now() / 1000);
         tick((x) => x + 1);
       };
-      (window as unknown as { __ring?: unknown }).__ring = { m, keys, press, run, brains, botThink, paint, view };
+      (window as unknown as { __ring?: unknown }).__ring = { m, keys, press, run, brains, botThink, paint, view, fx };
     }
     return () => {
       cancelAnimationFrame(raf);
@@ -582,8 +561,6 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     if (ab.aim === 'near') return m.enemiesOf(me).some((o) => Math.hypot(o.x - me.x, o.y - me.y) <= ab.range && m.comboReady(me, ab, o)) ? ab.combo.name : null;
     return m.comboReady(me, ab, m.aimOf(me, ab))?.name ?? null;
   };
-  /** Whose effects are spelled out: the enemy the next blow would go to. */
-  const shownFoe = me && m.phase === 'fight' ? (foeAlive ?? m.enemiesOf(me).find((o) => !o.dead && m.aimOf(me, bar.find((a) => a.aim === 'enemy') ?? DASH) === o) ?? null) : null;
   const foeNote = !foeAlive ? (m.phase === 'fight' ? `Click someone or press ${keyName(ringKeys.nextFoe)}. Nearest is used if you don’t.` : `Click someone or press ${keyName(ringKeys.nextFoe)}`) : !me || m.phase !== 'fight' ? `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}%` : !m.sees(me, foeAlive) ? 'Out of sight' : `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}% · ${Math.round(Math.hypot(foeAlive.x - me.x, foeAlive.y - me.y))} away`;
   const foeBad = !!foeAlive && !!me && m.phase === 'fight' && !m.sees(me, foeAlive);
   return (
@@ -706,7 +683,6 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. The blue button steps aside; the gold one is your super, once it’s full. Keep moving: shots can be dodged.' : `${[ringKeys.up, ringKeys.left, ringKeys.down, ringKeys.right].map(keyName).join('')} to move · ${keyName(ringKeys.ab1)} to ${keyName(ringKeys.ab4)} for abilities · ${keyName(ringKeys.dash)} to step aside · ${keyName(ringKeys.super)} for your super · Keep moving: shots can be dodged`}</span>
             </div>
           )}
-          {me && shownFoe && <TargetEffects m={m} me={me} f={shownFoe} bar={bar} />}
           {err && (
             <div className="rb-ring-err" role="status">
               {err}

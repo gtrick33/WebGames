@@ -61,11 +61,13 @@ export class Build {
 
   /** Cut stone in courses over a dark backing, on a face (s: south, e: east, w: west). */
   courses(dir: 's' | 'e' | 'w', a0: number, a1: number, at: number, y0: number, y1: number, rowH: number, blockW: number, palette: readonly C[], joint: C, rand: () => number): void {
-    // the backing stands a hair off the wall it is laid on, and the stones a hair off the backing. (The backing lay
-    // exactly in the wall's own face, two surfaces in one place: on a phone the two flickered through each other, the
-    // owner's "overlapping textures" on the lower wall of the Ring's entry, where a match begins.)
-    const back = 0.016;
-    const out = back + 0.02;
+    // the backing stands a hair off the wall it is laid on (two faces in one plane flicker through each other), and
+    // the stones where they always stood, 0.012 out: everything set against a wall is placed by that (a furnace's
+    // mouth 0.02 out, its fire 0.03, its bars 0.04; a pillar's band 0.025). Pushing the stones out to 0.036 laid
+    // brick over the forge's furnace mouths, the fire showing only through the joints as thin bright lines that
+    // crawled whenever the camera moved: the owner's "jittering of the pillar when im moving".
+    const back = 0.006;
+    const out = 0.012;
     if (dir === 's') this.faceS(a0, a1, at + back, y0, y1, joint);
     else if (dir === 'e') this.faceE(a0, a1, at + back, y0, y1, joint);
     else this.faceW(a0, a1, at - back, y0, y1, joint);
