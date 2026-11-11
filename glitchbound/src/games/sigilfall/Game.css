@@ -6848,7 +6848,9 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 8px;
-  padding: 8px 12px 10px;
+  /* (clear of a phone's island and rounded corners: held on its side, the island lay over the first class and the
+     buttons under it, and they could not be pressed) */
+  padding: calc(8px + var(--sa-t, 0px)) calc(12px + var(--sa-r, 0px)) calc(10px + var(--sa-b, 0px)) calc(12px + var(--sa-l, 0px));
   overflow: hidden;
   color: #efe6d4;
   background:
@@ -6915,6 +6917,7 @@
   border-radius: 12px;
   background: rgb(10 6 22 / 0.66);
 }
+/* (the stand is sized by the hero on it: on a phone the hero was a third the width of the ring behind them) */
 .rb-rp-stage {
   position: relative;
   min-height: 92px;
@@ -6924,7 +6927,8 @@
   position: absolute;
   left: 50%;
   bottom: 32px;
-  width: min(220px, 76%);
+  height: min(55px, calc((100% - 44px) * 0.32));
+  max-width: 76%;
   aspect-ratio: 4 / 1;
   border-radius: 50%;
   translate: -50% 0;
@@ -6956,15 +6960,17 @@
   color: #b8afc8;
   font-size: 11.5px;
 }
+/* (each a square, never wider than it is tall: on a desk the row's columns are wider than 42px and the icons were
+   pulled out sideways) */
 .rb-rp-classes {
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
+  justify-items: center;
   gap: 3px;
 }
 .rb-rp-class {
   aspect-ratio: 1;
-  max-height: 42px;
-  width: 100%;
+  width: min(100%, 44px);
   padding: 0;
   overflow: hidden;
   border: 2px solid rgb(255 255 255 / 0.14);
@@ -6977,6 +6983,7 @@
   display: block;
   width: 100%;
   height: 100%;
+  object-fit: cover;
   image-rendering: pixelated;
   filter: saturate(0.6) brightness(0.72);
 }
@@ -7147,6 +7154,51 @@
   font-size: 11.5px;
   background: rgb(255 227 154 / 0.08);
   cursor: pointer;
+}
+.rb-rs-build small {
+  display: block;
+  color: #cbbfe6;
+  font-size: 9.5px;
+  line-height: 1.15;
+}
+/* the combos a setup's bar can make, one to a line: first this, then that */
+.rb-rs-combos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 10px;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rb-rs-combos li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: #e8dcff;
+  font-size: 11px;
+}
+.rb-rs-combos img {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  image-rendering: pixelated;
+}
+.rb-rs-combos i {
+  color: #a99cc8;
+  font-style: normal;
+}
+.rb-rs-combos b {
+  padding: 0 6px;
+  border-radius: 8px;
+  color: #1a1206;
+  font-size: 10px;
+  white-space: nowrap;
+  background: #ffd257;
+}
+.rb-rs-combos li.is-none {
+  color: #a99cc8;
 }
 .rb-rs-build:hover,
 .rb-rs-build:focus-visible {
@@ -7714,7 +7766,7 @@
 @container (max-height: 430px) {
   .rb-ringlobby {
     gap: 5px;
-    padding: 5px 8px 6px;
+    padding: calc(5px + var(--sa-t, 0px)) calc(8px + var(--sa-r, 0px)) calc(6px + var(--sa-b, 0px)) calc(8px + var(--sa-l, 0px));
   }
   .rb-rp-title p {
     display: none;
@@ -8449,21 +8501,22 @@
 .is-flip .rb-ring-auras {
   flex-direction: row-reverse;
 }
+/* (big enough to see what each is, each with its seconds: at 13px they were colored squares) */
 .rb-ring-auras i {
   position: relative;
   display: block;
-  width: 13px;
-  height: 13px;
+  width: 20px;
+  height: 20px;
   overflow: hidden;
   border: 1px solid #57d36a;
-  border-radius: 2px;
+  border-radius: 3px;
 }
 .rb-ring-auras i.is-bad {
   border-color: #ff5a6a;
 }
 .rb-ring-auras i.is-cc {
-  width: 16px;
-  height: 16px;
+  width: 23px;
+  height: 23px;
   border-color: #fff;
 }
 .rb-ring-auras img {
@@ -8473,11 +8526,124 @@
 }
 .rb-ring-auras b {
   position: absolute;
-  inset: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 2px;
+  border-radius: 3px 0 0 0;
   color: #fff;
-  font: 700 10px/16px system-ui, sans-serif;
-  text-align: center;
-  text-shadow: 0 0 2px #000, 0 0 2px #000;
+  font: 700 9px/10px system-ui, sans-serif;
+  background: rgb(0 0 0 / 0.72);
+}
+.rb-ring-auras i.is-cc b {
+  font-size: 11px;
+  line-height: 12px;
+}
+/* what is on the target, in words, with the ability to press beside what the player set up themselves */
+.rb-ring-effects {
+  position: absolute;
+  left: 8px;
+  bottom: 84px;
+  z-index: 3;
+  display: grid;
+  gap: 3px;
+  max-width: min(380px, 80%);
+  pointer-events: none;
+}
+.rb-ring-effects span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 2px 8px 2px 2px;
+  border: 1px solid rgb(255 90 106 / 0.6);
+  border-radius: 6px;
+  color: #f4ecff;
+  font: 600 11.5px/1.2 system-ui, sans-serif;
+  background: rgb(8 5 16 / 0.82);
+}
+.rb-ring-effects span.is-good {
+  border-color: rgb(87 211 106 / 0.6);
+}
+.rb-ring-effects img {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  image-rendering: pixelated;
+}
+.rb-ring-effects b {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rb-ring-effects small {
+  flex: none;
+  color: #cbbfe6;
+  font-size: 10.5px;
+}
+.rb-ring-effects span.is-setup {
+  border-color: #ffd257;
+  box-shadow: 0 0 8px rgb(255 210 87 / 0.45);
+}
+.rb-ring-effects em {
+  flex: none;
+  color: #ffd257;
+  font-style: normal;
+  font-weight: 800;
+}
+.rb-ring.is-touch .rb-ring-effects {
+  left: 50%;
+  top: 58px;
+  bottom: auto;
+  translate: -50% 0;
+  max-width: 46%;
+}
+.rb-ring.is-touch .rb-ring-effects span:nth-child(n + 3) {
+  display: none;
+}
+.rb-ring.is-touch .rb-ring-effects small {
+  display: none;
+}
+/* a combo is set up: the ability that lands it burns gold round its rim until it is used */
+@keyframes rb-ring-combo {
+  0%,
+  100% {
+    box-shadow: 0 0 6px 1px #ffd257, inset 0 0 6px #ffb020;
+  }
+  50% {
+    box-shadow: 0 0 16px 4px #ffe9a0, inset 0 0 10px #ffd257;
+  }
+}
+.rb-ring-ab.is-combo,
+.rb-ring-thumbs .rb-sb.is-combo {
+  border-color: #ffe9a0;
+  animation: rb-ring-combo 0.9s ease-in-out infinite;
+}
+.rb-ring-ab.is-combo {
+  overflow: visible;
+}
+.rb-ring-ab.is-combo img {
+  border-radius: 6px;
+}
+.rb-ring-combo-tag {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 5px);
+  translate: -50% 0;
+  padding: 1px 7px;
+  border-radius: 6px;
+  color: #1a1206;
+  font: 800 10.5px/1.4 system-ui, sans-serif;
+  white-space: nowrap;
+  background: #ffd257;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-ring-ab.is-combo,
+  .rb-ring-thumbs .rb-sb.is-combo {
+    animation: none;
+    box-shadow: 0 0 10px 2px #ffd257;
+  }
 }
 .rb-ring-dr {
   padding: 0 2px;

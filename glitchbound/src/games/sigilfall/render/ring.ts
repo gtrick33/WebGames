@@ -430,8 +430,13 @@ function landing(q: Fx3D, b: Burst): void {
       q.put({ kind: FX.ring, x: b.x, y: b.y, flat: true, w: 44 * k * out, a: '#d8f4ff', t: u, seed: b.seed });
       break;
     case 'shadow':
-      q.put({ kind: FX.collapse, x: b.x, y: b.y, up: 12, w: 46 * k, a: c, b: '#120a20', t: u, seed: b.seed });
-      spray(FX.shadow, 6, 18, 12);
+      // a knot of shadow that swells and thins, a ring of its color running out along the ground under it, and wisps
+      // thrown off. (This drew the closing Gloam's own effect, which is dark everywhere outside a radius it was never
+      // given: a dark square over whoever a shadow spell hit. The owner, of the Gloamknight: "theres some black
+      // square as an effect on the enemy ... this one just seems as the game is broken".)
+      q.put({ kind: FX.shadow, x: b.x, y: b.y, up: 13, w: 30 * k * (0.55 + out * 0.75), a: c, b: '#120a20', alpha: fade, seed: b.seed });
+      q.put({ kind: FX.ring, x: b.x, y: b.y, flat: true, w: 46 * k * out, a: c, t: u, seed: b.seed });
+      spray(FX.shadow, b.big ? 9 : 6, 20, 11);
       break;
     case 'holy':
       q.put({ kind: FX.shaft, x: b.x, y: b.y, base: true, w: 20 * k, h: 70 * k, a: c, b: '#ffffff', t: u, alpha: fade });

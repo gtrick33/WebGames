@@ -90,6 +90,19 @@ export interface MatchSetup {
 
 export type AuraKind = 'dot' | 'hot' | 'cc' | 'slow' | 'antiheal' | 'absorb' | 'guard' | 'fury' | 'speed' | 'immune' | 'free' | 'reflect' | 'lastgrace';
 
+/**
+ * How fast a live match runs against the clock on the wall: a little under it, so there is time to read what is on
+ * whom and answer it (the owner: "make the combat a tiny bit slower, like 5-10% max"). Everything slows together,
+ * moving, casting and cooling, so nothing about the balance changes. The rules themselves, the bots' practice runs and
+ * the tests keep their own time.
+ */
+export const PACE = 0.93;
+
+/** The classes that fight from range, and the share of their damage they keep. */
+export const RANGED: ReadonlySet<ClassId> = new Set<ClassId>(['mage', 'ranger', 'warlock', 'priest', 'druid']);
+/** (Their abilities' own words give what lands after this: arena/abilities.ts.) */
+export const RANGED_DMG = 0.9;
+
 export interface Aura {
   /** The ability it came from. */
   ab: string;
@@ -272,7 +285,9 @@ function built(cls: ClassId, oathId: string | undefined, talentIds: readonly str
     tune,
     maxHp: Math.round(BODY[cls].hp * (1 + (oath?.hp ?? 0) + sum('hp'))),
     mods: {
-      dmg: 1 + (oath?.dmg ?? 0) + sum('dmg'),
+      // (those who fight from range deal a tenth less, supers and all: the owner found a mage's super "destroys
+      // anyones hp", and the three at arm's length a little behind)
+      dmg: (1 + (oath?.dmg ?? 0) + sum('dmg')) * (RANGED.has(cls) ? RANGED_DMG : 1),
       heal: 1 + (oath?.heal ?? 0) + sum('heal'),
       speed: 1 + (oath?.speed ?? 0) + sum('speed'),
       tenacity: 1 - Math.min(0.6, (oath?.tenacity ?? 0) + sum('tenacity')),
@@ -420,6 +435,16 @@ export class Match {
   }
   friendsOf(f: Fighter): Fighter[] {
     return this.fighters.filter((o) => o.team === f.team && !o.dead);
+  }
+
+  /**
+   * The combo this ability would land on this target right now: what its user set up is on them, or they are held
+   * the way it needs. The same test the blow itself makes, so the bar can light the ability up beforehand.
+   */
+  comboReady(f: Fighter, ab: Ability, t: Fighter | null): NonNullable<Ability['combo']> | null {
+    const c = ab.combo;
+    if (!c || !t || t.dead) return null;
+    return t.auras.some((a) => (!!c.ab?.includes(a.ab) && a.src === f.id) || (!!a.cc && !!c.cc?.includes(a.cc))) ? c : null;
   }
 
   held(f: Fighter): Aura | undefined {
@@ -600,8 +625,7 @@ export class Match {
     let combo: Ability['combo'] | null = null;
     const c = ab.combo;
     if (c && !t.dead) {
-      const mine = (a: Aura): boolean => !!c.ab?.includes(a.ab) && a.src === f.id;
-      if (t.auras.some((a) => mine(a) || (!!a.cc && !!c.cc?.includes(a.cc)))) {
+      if (this.comboReady(f, ab, t)) {
         combo = c;
         // momentum: each combo in a row makes the next one's bonus bigger, and all of them feed the super
         const going = f.streakT > 0 && f.streak > 0;
@@ -614,7 +638,7 @@ export class Match {
         f.streakT = MOMENTUM_HOLD;
         boost = 1 + (c.mult - 1) * (1 + MOMENTUM_STEP * (f.streak - 1));
         f.score.streak = Math.max(f.score.streak ?? 0, f.streak);
-        if (c.consume) t.auras = t.auras.filter((a) => !mine(a));
+        if (c.consume) t.auras = t.auras.filter((a) => !(!!c.ab?.includes(a.ab) && a.src === f.id));
         f.score.combos = (f.score.combos ?? 0) + 1;
         this.events.push({ k: 'word', id: t.id, word: f.streak > 1 ? `${c.name} ×${f.streak}` : c.name, combo: true });
       }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ABILITIES, DASH, kitOf, OATHS, PRESETS, SLOTS, superOf, type Ability } from '../arena/abilities';
+import { ABILITIES, barCombos, DASH, kitOf, OATHS, PRESETS, SLOTS, superOf, type Ability } from '../arena/abilities';
 import type { ClassSets, RingSetup } from '../arena/ladder';
 import { cleanTalents, ROW_NAMES, TALENTS, type Talent } from '../arena/talents';
 import type { ClassId } from '../data/types';
@@ -108,8 +108,14 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
         <div className="rb-rs-builds">
           <small>Start from:</small>
           {PRESETS[cls].map((p) => (
-            <button key={p.id} className="rb-rs-build" title={`Fill this setup with the ${p.name} build`} onClick={() => put({ ...cur, bar: [...p.bar], talents: [...p.talents] })}>
+            <button
+              key={p.id}
+              className="rb-rs-build"
+              title={`Fill this setup with the ${p.name} build. Its combos: ${barCombos(cls, p.bar).map((c) => `${c.from.name}, then ${c.to.name} (${c.name})`).join('; ') || 'none'}`}
+              onClick={() => put({ ...cur, bar: [...p.bar], talents: [...p.talents] })}
+            >
               {p.name}
+              <small>{barCombos(cls, p.bar).map((c) => c.name).join(' · ')}</small>
             </button>
           ))}
         </div>
@@ -118,6 +124,20 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
       <div className="rb-rs-barrow">
         <BarRow bar={cur.bar} cls={cls} onPick={toggle} onHover={setInfo} />
       </div>
+      {/* what to press after what: the combos this bar can make, each as its two abilities in order */}
+      <ul className="rb-rs-combos" aria-label="Combos in this setup">
+        {barCombos(cls, cur.bar).map((c) => (
+          <li key={`${c.from.id}-${c.to.id}`} title={c.text}>
+            <img src={iconPicture(c.from.icon)} alt="" draggable={false} />
+            <span>{c.from.name}</span>
+            <i>then</i>
+            <img src={iconPicture(c.to.icon)} alt="" draggable={false} />
+            <span>{c.to.name}</span>
+            <b>{c.name}</b>
+          </li>
+        ))}
+        {barCombos(cls, cur.bar).length === 0 && <li className="is-none">No combo on this bar yet. Take an ability together with the one that sets it up.</li>}
+      </ul>
 
       <div className="rb-rs-tabs" role="tablist" aria-label="What to change">
         <button role="tab" aria-selected={tab === 'abilities'} className={tab === 'abilities' ? 'is-on' : ''} onClick={() => setTab('abilities')}>
