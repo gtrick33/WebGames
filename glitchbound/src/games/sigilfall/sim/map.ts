@@ -1,6 +1,7 @@
 import { hash2 } from '../core/math';
 import { MODEL_FOOT, modelOnLot, picBody, placeBuilding, yardProps, type PlacedPic } from '../data/buildingArt';
 import { FEET, propBody, propReach, propStandsUp, dressedFor, keepsApart, PROPS } from '../data/props';
+import { DRAWN } from '../data/propDrawn';
 import type { Marker, PlacedMarkerDef, RegionDef, StoryCond } from '../data/types';
 
 /**
@@ -330,6 +331,7 @@ export function parseRegion(def: RegionDef): TileMap {
   settle();
   inSight(markers, w, h, kind, solid, def.kind === 'wild');
   if (def.kind !== 'dungeon' && !def.interior) outOfSight(markers, w, h, kind, solid, block);
+  apart(def, w, h, kind, solid, block, room, markers, buildings);
   // (what the dressing stood on a room's floor is no place for a foe to appear)
   for (let r = 0; r < roomTiles.length; r++) roomTiles[r] = roomTiles[r]!.filter((i) => !solid[i]);
   // what stands has a body of its own size: a bucket doesn't fill its tile, and a wagon runs over into the next ones
@@ -504,6 +506,268 @@ function inSight(markers: PlacedMarker[], w: number, h: number, kind: Uint8Array
     }
   }
   for (let n = markers.length - 1; gone.size && n >= 0; n--) if (gone.has(markers[n]!)) markers.splice(n, 1);
+}
+
+/** What lies flat, grows underfoot or is only a rule: other things may stand over it. */
+const LIES_LOW = new Set(['rug', 'runner', 'hall-floor', 'dais', 'sunbeam', 'window', 'bell-rope', 'block', 'guard-post', 'flowers', 'bones', 'skulls', 'debris', 'rubble', 'spores', 'candle-stub', 'candles', 'eggs', 'coin-pile', 'wheat', 'corn', 'thorns', 'bedroll']);
+/** What is made to hold other things: a boat with its cargo aboard. */
+const HOLDS: Readonly<Record<string, readonly string[]>> = { boat: ['barrel', 'crate', 'sacks', 'fish', 'basket'], wreck: ['barrel', 'crate'] };
+/** What grows or lies in clumps: crystals shoulder to shoulder are a seam of crystal, not a mistake. */
+const CLUMPS = new Set(['rift-crystal', 'ice-crystal', 'crystals', 'ember-rock', 'great-mushroom', 'menhir', 'root-tangle', 'rubble-heap', 'stone-heap', 'coal-heap', 'black-column', 'great-column', 'tall-column', 'column']);
+/** The great trees: a wood's own trees stand under their crowns. */
+const GROWN = new Set(['ancient-oak', 'green-oak', 'ancient-pine', 'dead-colossus', 'great-mushroom-tree']);
+/** Ground a thing may be moved onto. */
+const STANDS_ON = new Set<number>([K.Floor, K.Deco, K.Path, K.Cobble, K.Sand]);
+
+interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+const boxArea = (a: Box): number => (a.x1 - a.x0) * (a.y1 - a.y0);
+const boxOverlap = (a: Box, b: Box): number => Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
+
+/** The tiles round a spot, nearest first, out to three. */
+const NEARBY: readonly (readonly [number, number])[] = (() => {
+  const out: [number, number][] = [];
+  for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (dx || dy) out.push([dx, dy]);
+  return out.sort((a, b) => Math.hypot(a[0], a[1]) - Math.hypot(b[0], b[1]) || a[1] - b[1] || a[0] - b[0]);
+})();
+
+/**
+ * Nothing stands in anything else (the owner: "the collisions should be correct and there should not be overlapping
+ * textures/models"). The rules that set things down each know their own thing: a stall and the goods beside it, a
+ * house and what is in its yard, a camp's tents and the pack that guards them, a wood and the windmill built in it.
+ * None knows how big another's model is drawn, so a crate stood half in a cart, a statue in a chapel's wall, a tree's
+ * crown through a roof, a soldier in a tent. Here every model is measured as it is drawn (data/propDrawn.ts) and the
+ * smaller of two that overlap is stood on the nearest clear ground, or left out if there is none; a tree at a
+ * building's shoulder becomes a bush, one inside it is cleared; a pack is stood clear of what is built.
+ *
+ * What the story sets down and takes away keeps its place (the things round it give way), and so do buildings, arches
+ * and the great trees. Things that lie flat may be stood over; a boat keeps its cargo; crystals keep their clumps.
+ */
+function apart(def: RegionDef, w: number, h: number, kind: Uint8Array, solid: Uint8Array, block: Uint8Array, room: Uint8Array, markers: PlacedMarker[], buildings: MapBuilding[]): void {
+  const boxAt = (name: string, tx: number, ty: number): Box | null => {
+    const d = DRAWN[name];
+    if (!d || d[0] <= 0 || d[1] <= 0) return null;
+    const cx = (tx + 0.5) * TILE;
+    const cy = (ty + 0.5) * TILE;
+    return { x0: cx - d[0] / 2, y0: cy - d[1] / 2, x1: cx + d[0] / 2, y1: cy + d[1] / 2 };
+  };
+  // what stands and stays: buildings as their models stand (a great dark keep rises over its whole yard and is let be)
+  const built: Box[] = [];
+  for (const b of buildings) {
+    let x0 = Infinity;
+    let x1 = -Infinity;
+    let y0 = Infinity;
+    let y1 = -Infinity;
+    for (let y = b.lot.ty; y < b.lot.ty + b.lot.h; y++) {
+      for (let x = b.lot.tx; x < b.lot.tx + b.lot.w; x++) {
+        if (x < 0 || y < 0 || x >= w || y >= h || kind[y * w + x] !== K.House) continue;
+        x0 = Math.min(x0, x);
+        x1 = Math.max(x1, x + 1);
+        y0 = Math.min(y0, y);
+        y1 = Math.max(y1, y + 1);
+      }
+    }
+    if (x1 < x0) continue;
+    const st = modelOnLot(b.style, b.lot, b.pics[0]?.grim === true, x0, x1, y0, y1, b.door?.[0] ?? null);
+    const f = st ? MODEL_FOOT[st.m] : undefined;
+    if (!st || !f || st.seat) continue;
+    built.push({ x0: (st.x + f[0] * st.sx) * TILE, x1: (st.x + f[2] * st.sx) * TILE, y0: (st.z + f[1] * st.sz) * TILE, y1: (st.z + f[3] * st.sz) * TILE });
+  }
+  const kept: { name: string; box: Box }[] = [];
+  /** Whether a thing standing there would be in something that stands already. */
+  const clash = (name: string, box: Box): boolean => {
+    const a = boxArea(box);
+    for (const q of built) if (boxOverlap(box, q) > 0.2 * a) return true;
+    for (const q of kept) {
+      if (HOLDS[q.name]?.includes(name) || HOLDS[name]?.includes(q.name)) continue;
+      const most = CLUMPS.has(name) && CLUMPS.has(q.name) ? 0.36 : 0.18;
+      if (boxOverlap(box, q.box) > most * Math.min(a, boxArea(q.box))) return true;
+    }
+    return false;
+  };
+  interface Mover {
+    name: string;
+    box: Box;
+    pm?: PlacedMarker;
+    yard?: { of: MapBuilding; at: MapBuilding['yard'][number] };
+  }
+  const movers: Mover[] = [];
+  const storied: Mover[] = [];
+  const taken = new Set<number>();
+  for (const pm of markers) {
+    if (pm.marker.kind !== 'building') taken.add(pm.ty * w + pm.tx);
+    if (pm.marker.kind !== 'prop') continue;
+    const name = pm.marker.prop.split(':')[0]!;
+    if (LIES_LOW.has(name) || name === 'great' || FEET[name] || GROWN.has(name)) continue;
+    const box = boxAt(name, pm.tx, pm.ty);
+    if (!box) continue;
+    // (what the story sets down and takes away keeps its place among things, and gives way only to a building: a
+    // memorial stone set on a shop's lot before the shop was a shop's size)
+    if (pm.when) storied.push({ name, box, pm });
+    else movers.push({ name, box, pm });
+  }
+  for (const b of buildings) {
+    for (const y of b.yard) {
+      taken.add(y.ty * w + y.tx);
+      const name = y.prop.split(':')[0]!;
+      const box = LIES_LOW.has(name) ? null : boxAt(name, y.tx, y.ty);
+      if (box) movers.push({ name, box, yard: { of: b, at: y } });
+    }
+  }
+  // the bigger thing keeps its place
+  movers.sort((a, b) => boxArea(b.box) - boxArea(a.box) || (a.pm?.ty ?? a.yard!.at.ty) - (b.pm?.ty ?? b.yard!.at.ty) || (a.pm?.tx ?? a.yard!.at.tx) - (b.pm?.tx ?? b.yard!.at.tx));
+  /** The ground a thing stood on, when it leaves: what lies round it. */
+  const groundAt = (i: number): number => {
+    if (kind[i] !== K.Prop) return kind[i]!;
+    const count = new Map<number, number>();
+    for (const d of [-1, 1, -w, w]) {
+      const k = kind[i + d];
+      if (k !== undefined && STANDS_ON.has(k)) count.set(k, (count.get(k) ?? 0) + 1);
+    }
+    return [...count].sort((a, b) => b[1] - a[1])[0]?.[0] ?? K.Floor;
+  };
+  const IN_THE_WAY = new Set<number>([K.Wall, K.Rampart, K.Tree, K.Water, K.House, K.Rock, K.Fence, K.Pillar]);
+  /** Whether a thing standing there would reach into a wall, a tree or the water beside it. */
+  const into = (box: Box, tx: number, ty: number): boolean => {
+    for (let y = Math.floor(box.y0 / TILE); y <= Math.floor((box.y1 - 0.01) / TILE); y++) {
+      for (let x = Math.floor(box.x0 / TILE); x <= Math.floor((box.x1 - 0.01) / TILE); x++) {
+        if ((x === tx && y === ty) || x < 0 || y < 0 || x >= w || y >= h || !IN_THE_WAY.has(kind[y * w + x]!)) continue;
+        if (boxOverlap(box, { x0: x * TILE, y0: y * TILE, x1: (x + 1) * TILE, y1: (y + 1) * TILE }) > 0.3 * TILE * TILE) return true;
+      }
+    }
+    return false;
+  };
+  const gone = new Set<PlacedMarker>();
+  const inBuilding = (box: Box): boolean => built.some((q) => boxOverlap(box, q) > 0.2 * boxArea(box));
+  for (const t of storied) {
+    if (inBuilding(t.box)) {
+      const i0 = t.pm!.ty * w + t.pm!.tx;
+      for (const [dx, dy] of NEARBY) {
+        const x = t.pm!.tx + dx;
+        const y = t.pm!.ty + dy;
+        if (x < 1 || y < 1 || x >= w - 1 || y >= h - 1) continue;
+        const i = y * w + x;
+        if (taken.has(i) || solid[i] || !STANDS_ON.has(kind[i]!) || room[i] !== room[i0]) continue;
+        const box = boxAt(t.name, x, y)!;
+        if (inBuilding(box) || into(box, x, y)) continue;
+        const was = kind[i0]!;
+        const under = groundAt(i0);
+        kind[i0] = under;
+        solid[i0] = SOLID_KINDS.has(under as K) ? 1 : 0;
+        block[i0] = BLOCK_KINDS.has(under as K) ? 1 : 0;
+        if (was === K.Prop) {
+          kind[i] = K.Prop;
+          solid[i] = 1;
+          block[i] = 0;
+        }
+        taken.delete(i0);
+        taken.add(i);
+        t.pm!.tx = x;
+        t.pm!.ty = y;
+        t.box = box;
+        break;
+      }
+    }
+    kept.push({ name: t.name, box: t.box });
+  }
+  for (const t of movers) {
+    if (!clash(t.name, t.box)) {
+      kept.push({ name: t.name, box: t.box });
+      continue;
+    }
+    const tx = t.pm ? t.pm.tx : t.yard!.at.tx;
+    const ty = t.pm ? t.pm.ty : t.yard!.at.ty;
+    const i0 = ty * w + tx;
+    const was = kind[i0]!;
+    const under = groundAt(i0);
+    let to: [number, number, Box] | null = null;
+    // (a yard's thing is its building's: with no room for it there, it is left out)
+    for (const [dx, dy] of t.yard ? [] : NEARBY) {
+      const x = tx + dx;
+      const y = ty + dy;
+      if (x < 1 || y < 1 || x >= w - 1 || y >= h - 1) continue;
+      const i = y * w + x;
+      if (taken.has(i) || solid[i] || !STANDS_ON.has(kind[i]!) || room[i] !== room[i0]) continue;
+      // (roads stay clear: a thing is moved onto one only if it stood on one)
+      if ((kind[i] === K.Path || kind[i] === K.Cobble) && kind[i] !== under) continue;
+      const box = boxAt(t.name, x, y)!;
+      if (clash(t.name, box) || into(box, x, y)) continue;
+      to = [x, y, box];
+      break;
+    }
+    kind[i0] = under;
+    solid[i0] = SOLID_KINDS.has(under as K) ? 1 : 0;
+    block[i0] = BLOCK_KINDS.has(under as K) ? 1 : 0;
+    taken.delete(i0);
+    if (!to) {
+      if (t.pm) gone.add(t.pm);
+      else t.yard!.of.yard.splice(t.yard!.of.yard.indexOf(t.yard!.at), 1);
+      continue;
+    }
+    const i = to[1] * w + to[0];
+    if (was === K.Prop) {
+      kind[i] = K.Prop;
+      solid[i] = 1;
+      block[i] = 0;
+    }
+    taken.add(i);
+    t.pm!.tx = to[0];
+    t.pm!.ty = to[1];
+    kept.push({ name: t.name, box: to[2] });
+  }
+  for (let n = markers.length - 1; gone.size && n >= 0; n--) if (gone.has(markers[n]!)) markers.splice(n, 1);
+  const tall = kept.filter((q) => (DRAWN[q.name]?.[2] ?? 0) >= 10);
+  // a pack stands clear of what is built: nobody appears inside a tent
+  if (def.kind === 'wild') {
+    const inside = (x: number, y: number): boolean => {
+      const px = (x + 0.5) * TILE;
+      const py = (y + 0.5) * TILE;
+      const at = { x0: px - 9, y0: py - 9, x1: px + 9, y1: py + 9 };
+      return built.some((q) => boxOverlap(at, q) > 0) || tall.some((q) => boxOverlap(at, q.box) > 0);
+    };
+    for (const pm of markers) {
+      if (pm.marker.kind !== 'pack' || !inside(pm.tx, pm.ty)) continue;
+      for (const [dx, dy] of NEARBY) {
+        const x = pm.tx + dx;
+        const y = pm.ty + dy;
+        if (x < 1 || y < 1 || x >= w - 1 || y >= h - 1) continue;
+        const i = y * w + x;
+        if (taken.has(i) || solid[i] || !STANDS_ON.has(kind[i]!) || inside(x, y)) continue;
+        taken.delete(pm.ty * w + pm.tx);
+        taken.add(i);
+        pm.tx = x;
+        pm.ty = y;
+        break;
+      }
+    }
+  }
+  // a tree at a building's shoulder, its crown through the eaves, is a bush there; one growing inside is cleared
+  if (def.kind !== 'dungeon' && !def.interior) {
+    const walls = [...built, ...tall.filter((q) => (DRAWN[q.name]?.[2] ?? 0) >= 20).map((q) => q.box)];
+    for (let ty = 1; ty < h - 1; ty++) {
+      for (let tx = 1; tx < w - 1; tx++) {
+        const i = ty * w + tx;
+        if (kind[i] !== K.Tree) continue;
+        const crown = { x0: (tx - 0.25) * TILE, y0: (ty - 0.25) * TILE, x1: (tx + 1.25) * TILE, y1: (ty + 1.25) * TILE };
+        const mx = (tx + 0.5) * TILE;
+        const my = (ty + 0.5) * TILE;
+        let next = K.Tree as number;
+        for (const q of walls) {
+          if (boxOverlap(crown, q) <= 0.15 * TILE * TILE) continue;
+          const grows = mx > q.x0 - 5 && mx < q.x1 + 5 && my > q.y0 - 5 && my < q.y1 + 5;
+          next = grows ? K.Floor : next === K.Floor ? K.Floor : K.Bush;
+        }
+        if (next === K.Tree) continue;
+        kind[i] = next;
+        solid[i] = SOLID_KINDS.has(next as K) ? 1 : 0;
+        block[i] = BLOCK_KINDS.has(next as K) ? 1 : 0;
+      }
+    }
+  }
 }
 
 /**

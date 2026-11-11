@@ -14,6 +14,7 @@
 import { describe, expect, it } from 'vitest';
 import { MODEL_FOOT, modelOnLot } from '../src/games/sigilfall/data/buildingArt';
 import { DOOR_BLOCKS } from '../src/games/sigilfall/data/greatworks';
+import { DRAWN } from '../src/games/sigilfall/data/propDrawn';
 import { barrenThemes, dressedFor, keepsApart, PROPS } from '../src/games/sigilfall/data/props';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
 import { isRetired } from '../src/games/sigilfall/data/retired';
@@ -308,5 +309,85 @@ describe('Sigilfall: what stands in each land', () => {
       expect(hw.kind[y * hw.w + knights.lot.tx + knights.lot.w + 1], `wood behind that, row ${y}`).toBe(K.Wall);
     }
     expect(chapels).toBeGreaterThanOrEqual(10);
+  });
+
+  it('stands nothing in anything else: no model in a model, a building, or a tree at its shoulder', () => {
+    // (the owner: "the collisions should be correct and there should not be overlapping textures/models")
+    const LOW = new Set(['rug', 'runner', 'hall-floor', 'dais', 'sunbeam', 'window', 'bell-rope', 'block', 'guard-post', 'flowers', 'bones', 'skulls', 'debris', 'rubble', 'spores', 'candle-stub', 'candles', 'eggs', 'coin-pile', 'wheat', 'corn', 'thorns', 'bedroll', 'great']);
+    const CLUMPS = new Set(['rift-crystal', 'ice-crystal', 'crystals', 'ember-rock', 'great-mushroom', 'menhir', 'root-tangle', 'rubble-heap', 'stone-heap', 'coal-heap', 'black-column', 'great-column', 'tall-column', 'column']);
+    const GROWN = new Set(['ancient-oak', 'green-oak', 'ancient-pine', 'dead-colossus', 'great-mushroom-tree']);
+    const ARCHES = new Set(['stone-arch', 'bone-arch']);
+    interface Box { x0: number; y0: number; x1: number; y1: number }
+    const area = (a: Box): number => (a.x1 - a.x0) * (a.y1 - a.y0);
+    const over = (a: Box, b: Box): number => Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
+    let things = 0;
+    for (const id of (Object.keys(REGIONS) as RegionId[]).filter((r) => !isRetired(r))) {
+      const m = mapOf(id);
+      const all: { name: string; box: Box; tx: number; ty: number; when: boolean }[] = [];
+      const add = (full: string, tx: number, ty: number, when: boolean): void => {
+        const name = base(full);
+        const d = DRAWN[name];
+        if (!d || LOW.has(name) || GROWN.has(name) || ARCHES.has(name)) return;
+        const cx = (tx + 0.5) * TILE;
+        const cy = (ty + 0.5) * TILE;
+        all.push({ name, tx, ty, when, box: { x0: cx - d[0] / 2, y0: cy - d[1] / 2, x1: cx + d[0] / 2, y1: cy + d[1] / 2 } });
+      };
+      for (const pm of m.markers) if (pm.marker.kind === 'prop') add(pm.marker.prop, pm.tx, pm.ty, !!pm.when);
+      for (const b of m.buildings) for (const y of b.yard) add(y.prop, y.tx, y.ty, false);
+      things += all.length;
+      // buildings as their models stand (a great dark keep rises over its whole yard and is let be)
+      const built: Box[] = [];
+      for (const b of m.buildings) {
+        let x0 = Infinity;
+        let x1 = -Infinity;
+        let y0 = Infinity;
+        let y1 = -Infinity;
+        for (let y = b.lot.ty; y < b.lot.ty + b.lot.h; y++) {
+          for (let x = b.lot.tx; x < b.lot.tx + b.lot.w; x++) {
+            if (x < 0 || y < 0 || x >= m.w || y >= m.h || m.kind[y * m.w + x] !== K.House) continue;
+            x0 = Math.min(x0, x);
+            x1 = Math.max(x1, x + 1);
+            y0 = Math.min(y0, y);
+            y1 = Math.max(y1, y + 1);
+          }
+        }
+        if (x1 < x0) continue;
+        const st = modelOnLot(b.style, b.lot, b.pics[0]?.grim === true, x0, x1, y0, y1, b.door?.[0] ?? null)!;
+        if (st.seat) continue;
+        const f = MODEL_FOOT[st.m]!;
+        built.push({ x0: (st.x + f[0] * st.sx) * TILE, x1: (st.x + f[2] * st.sx) * TILE, y0: (st.z + f[1] * st.sz) * TILE, y1: (st.z + f[3] * st.sz) * TILE });
+      }
+      for (let i = 0; i < all.length; i++) {
+        const a = all[i]!;
+        for (const q of built) expect(over(a.box, q) > 0.2 * area(a.box), `${id}: ${a.name} at ${a.tx},${a.ty} in a building`).toBe(false);
+        for (let j = i + 1; j < all.length; j++) {
+          const b = all[j]!;
+          // (two things the story sets down may be one thing at two times; a boat keeps its cargo)
+          if ((a.when && b.when) || [a.name, b.name].includes('boat')) continue;
+          if (Math.abs(a.tx - b.tx) > 6 || Math.abs(a.ty - b.ty) > 6) continue;
+          const most = CLUMPS.has(a.name) && CLUMPS.has(b.name) ? 0.36 : 0.18;
+          expect(over(a.box, b.box) > most * Math.min(area(a.box), area(b.box)), `${id}: ${a.name} at ${a.tx},${a.ty} in ${b.name} at ${b.tx},${b.ty}`).toBe(false);
+        }
+      }
+      // out of doors: no tree's crown through a roof, and no pack standing in a tent
+      if (REGIONS[id].kind === 'dungeon' || REGIONS[id].interior) continue;
+      for (let ty = 1; ty < m.h - 1; ty++) {
+        for (let tx = 1; tx < m.w - 1; tx++) {
+          if (m.kind[ty * m.w + tx] !== K.Tree) continue;
+          const crown = { x0: (tx - 0.25) * TILE, y0: (ty - 0.25) * TILE, x1: (tx + 1.25) * TILE, y1: (ty + 1.25) * TILE };
+          for (const q of built) expect(over(crown, q) > 0.15 * TILE * TILE, `${id}: a tree at ${tx},${ty} in a building`).toBe(false);
+        }
+      }
+      if (REGIONS[id].kind !== 'wild') continue;
+      for (const pm of m.markers) {
+        if (pm.marker.kind !== 'pack') continue;
+        const px = (pm.tx + 0.5) * TILE;
+        const py = (pm.ty + 0.5) * TILE;
+        const at = { x0: px - 5, y0: py - 5, x1: px + 5, y1: py + 5 };
+        for (const q of built) expect(over(at, q) > 0, `${id}: a pack at ${pm.tx},${pm.ty} in a building`).toBe(false);
+        for (const t of all) if (!t.when && DRAWN[t.name]![2] >= 10) expect(over(at, t.box) > 0, `${id}: a pack at ${pm.tx},${pm.ty} in ${t.name}`).toBe(false);
+      }
+    }
+    expect(things).toBeGreaterThan(3000);
   });
 });
