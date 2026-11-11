@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, barCombos, kitOf, PRESETS } from '../src/games/sigilfall/arena/abilities';
-import { Match, PACE, type MatchSetup } from '../src/games/sigilfall/arena/sim';
+import { Match, PACE, RANGED, RANGED_DMG, type MatchSetup } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 
@@ -60,6 +60,14 @@ describe('Sigilfall: the Ring says what is going on', () => {
       const all = barCombos(cls, kit).map((c) => c.to.id);
       for (const a of kitOf(cls)) if (a.combo) expect(all, `${cls}: ${a.name}`).toContain(a.id);
     }
+  });
+
+  it('who fights from range deals a tenth less than who fights at arm’s length', () => {
+    const m = new Match(setup('mage', 'warrior'));
+    expect(RANGED.has('mage')).toBe(true);
+    expect(RANGED.has('warrior')).toBe(false);
+    expect(m.fighters[0]!.mods.dmg).toBeCloseTo(m.fighters[1]!.mods.dmg * RANGED_DMG, 5);
+    expect(RANGED_DMG).toBe(0.9);
   });
 
   it('a live match runs a little under the clock', () => {

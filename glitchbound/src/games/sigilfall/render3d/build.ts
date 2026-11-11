@@ -61,10 +61,14 @@ export class Build {
 
   /** Cut stone in courses over a dark backing, on a face (s: south, e: east, w: west). */
   courses(dir: 's' | 'e' | 'w', a0: number, a1: number, at: number, y0: number, y1: number, rowH: number, blockW: number, palette: readonly C[], joint: C, rand: () => number): void {
-    const out = 0.012;
-    if (dir === 's') this.faceS(a0, a1, at, y0, y1, joint);
-    else if (dir === 'e') this.faceE(a0, a1, at, y0, y1, joint);
-    else this.faceW(a0, a1, at, y0, y1, joint);
+    // the backing stands a hair off the wall it is laid on, and the stones a hair off the backing. (The backing lay
+    // exactly in the wall's own face, two surfaces in one place: on a phone the two flickered through each other, the
+    // owner's "overlapping textures" on the lower wall of the Ring's entry, where a match begins.)
+    const back = 0.016;
+    const out = back + 0.02;
+    if (dir === 's') this.faceS(a0, a1, at + back, y0, y1, joint);
+    else if (dir === 'e') this.faceE(a0, a1, at + back, y0, y1, joint);
+    else this.faceW(a0, a1, at - back, y0, y1, joint);
     const gap = 0.022;
     let row = 0;
     for (let y = y0; y < y1 - 0.01; y += rowH) {

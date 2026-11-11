@@ -98,6 +98,10 @@ export type AuraKind = 'dot' | 'hot' | 'cc' | 'slow' | 'antiheal' | 'absorb' | '
  */
 export const PACE = 0.93;
 
+/** The classes that fight from range, and the share of their damage they keep. */
+export const RANGED: ReadonlySet<ClassId> = new Set<ClassId>(['mage', 'ranger', 'warlock', 'priest', 'druid']);
+export const RANGED_DMG = 0.9;
+
 export interface Aura {
   /** The ability it came from. */
   ab: string;
@@ -280,7 +284,9 @@ function built(cls: ClassId, oathId: string | undefined, talentIds: readonly str
     tune,
     maxHp: Math.round(BODY[cls].hp * (1 + (oath?.hp ?? 0) + sum('hp'))),
     mods: {
-      dmg: 1 + (oath?.dmg ?? 0) + sum('dmg'),
+      // (those who fight from range deal a tenth less, supers and all: the owner found a mage's super "destroys
+      // anyones hp", and the three at arm's length a little behind)
+      dmg: (1 + (oath?.dmg ?? 0) + sum('dmg')) * (RANGED.has(cls) ? RANGED_DMG : 1),
       heal: 1 + (oath?.heal ?? 0) + sum('heal'),
       speed: 1 + (oath?.speed ?? 0) + sum('speed'),
       tenacity: 1 - Math.min(0.6, (oath?.tenacity ?? 0) + sum('tenacity')),
