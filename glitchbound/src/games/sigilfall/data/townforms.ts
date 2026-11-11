@@ -591,10 +591,19 @@ export const TOWN_FORMS: Record<string, (k: TownKit) => TownLook> = {
     // (two standards at the foot of the muster ground: eight of them, with the story's own, was a field of flags)
     for (const x of [-10, 11]) k.prop(x, 4, 'red-banner');
     for (const [x, y, name] of [[-9, 2, 'weapon-rack'], [10, 2, 'weapon-rack'], [-9, -3, 'target'], [10, -3, 'target'], [-5, -3, 'armor-stand'], [6, -3, 'armor-stand']] as const) k.prop(x, y, name);
+    // catapults drawn up at the camp's sides, inside its palisade by the east and west gates (the owner: "add some
+    // catapults to the side of the war camps"): outside it they stood among the dead they are aimed at
+    for (const x of [-21, -17, 18, 22]) if (k.open(x, 4) && k.open(x, 5)) k.prop(x, 4, 'catapult');
+    // the camp's own soldiers at their posts ("more friendly soldier npcs guarding it, make it a bit more alive"): two
+    // at each gate of the palisade, two at the hall's door, one at each corner of the muster ground, by the catapults
+    // and at the ends of the tent lines
+    for (const [x, y] of [[-3, -ry + 1], [4, -ry + 1], [-3, ry - 1], [4, ry - 1], [-rx + 1, -3], [-rx + 1, 4], [rx - 1, -3], [rx - 1, 4], [-2, -5], [3, -5], [-12, 5], [13, 5], [-19, 6], [20, 6], [-12, -13], [13, -13], [-24, 11], [24, 11]] as const) {
+      if (k.open(x, y)) k.prop(x, y, 'guard-post', false);
+    }
     return {
       heart: [-3, -6],
       stalls: [[-5, 3, -1], [6, 3, 1]],
-      stall: 'crates-stack',
+      stall: 'armory',
       goods: ['barrel', 'rack', 'sacks', 'armor-stand'],
       furniture: [[-2, -3, 'campfire'], [3, -3, 'campfire'], [6, -1, 'notice']],
       lamp: 'torch',

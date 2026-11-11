@@ -21,7 +21,7 @@ export interface GateLook {
   /** A way down, not a way through: its arch is full of dark. */
   shut?: boolean;
   /** Its wall ends in the open (a fortress's sally port, not a gate in a land's own wall): a great tower closes each end. */
-  ends?: boolean;
+  ends?: boolean | 'east' | 'west';
 }
 
 export interface GateBuilt {
@@ -84,7 +84,7 @@ export function stoneGate(look: GateLook): GateBuilt {
     b.merlons(w0, 0.5, w1, 0.5, 3.0, 0.3, 0.22, stone, dark, hi);
     for (const y of [1.0, 2.0]) b.faceS(w0, w1, 0.505, y, y + 0.08, dark);
     // (the owner: "the bottom wall on the highwall ends abruptly, you could add a big tower to it")
-    if (look.ends) {
+    if (look.ends === true || look.ends === (s < 0 ? 'west' : 'east')) {
       const wide = 2.3;
       const high = 6.1;
       const e0 = s < 0 ? w0 - wide : w1;

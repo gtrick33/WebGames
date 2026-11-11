@@ -573,7 +573,8 @@ function standBuildings(def: RegionDef, w: number, h: number, kind: Uint8Array, 
     // no wood grows up against a wall (the owner: "the church is placed inside the woods"): a land's own woods stand
     // back from what is built in them, a tree's width from a house and two from a chapel or a hall, more before its door
     if (def.kind === 'wild') {
-      const back = lot.style === 'house' || lot.style === 'tower' ? 1 : 2;
+      // (a chapel, a keep or a hall in a real clearing: two tiles of trees left it "still inside the trees")
+      const back = lot.style === 'house' || lot.style === 'tower' ? 1 : lot.style === 'temple' || lot.style === 'keep' || lot.style === 'hall' ? 5 : 2;
       for (let y = lot.ty - back; y < lot.ty + lot.h + back + 1; y++) {
         for (let x = lot.tx - back; x < lot.tx + lot.w + back; x++) {
           if (x < 1 || y < 1 || x >= w - 1 || y >= h - 1) continue;

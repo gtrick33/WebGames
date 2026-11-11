@@ -463,7 +463,7 @@ export const DOORWAYS: Record<string, Doorway> = {
   // Duskspire's gate: the citadel's own pale stone, a length of its curtain wall either side, and the dark under its arch
   duskspire: {
     build: () => {
-      const g = stoneGate({ span: 2.4, body: '#8a86a0', trim: '#c0c8e0', light: '#8f9cff', seed: 11, wings: 4, shut: true, ends: true }).b;
+      const g = stoneGate({ span: 2.4, body: '#8a86a0', trim: '#c0c8e0', light: '#8f9cff', seed: 11, wings: 4, shut: true, ends: 'east' }).b;
       for (let i = 2; i < g.m.pos.length; i += 3) g.m.pos[i] = g.m.pos[i]! - 1.0;
       return g;
     },

@@ -1,7 +1,7 @@
 import { damp } from '../core/math';
 import { mountDef, riddenMount } from '../progress/wardrobe';
 import { NPCS } from '../data/quests';
-import { passerbyLook } from '../render/art/townsfolk';
+import { passerbyLook, TOWNSFOLK_LOOKS } from '../render/art/townsfolk';
 import type { HeroLook } from '../render/art/hero';
 import { npcLookOf } from '../render/sprites';
 import { bossHidden } from '../sim/boss';
@@ -46,6 +46,9 @@ const STATUE_LOOK = {
   cape: '#a0a0a0',
 } as unknown as HeroLook;
 const STATUE_SWORD: Held = { kind: 'sword', tint: '#b0b0b0' };
+/** A war camp's own soldiers (sim/folk.ts): the garrison's mail and blue cloak, a sword and shield for those on guard. */
+const SOLDIER_LOOK = TOWNSFOLK_LOOKS['highwall-soldier']!;
+const SOLDIER_SWORD: Held = { kind: 'sword', tint: '#c8ccd4' };
 const ECHOES = new Set(['echo-of-ysane', 'echo-of-ysane-mere', 'echo-of-ysane-quay', 'echo-of-the-children']);
 const ECHO_TINT = [0.74, 0.88, 1.3] as const;
 /** A memory of summer: the Hallow King's family, coming to him in his last hour (World.kin). */
@@ -197,7 +200,8 @@ export class WorldCast {
         }
         m.set(f.moving ? 'walk' : 'idle', true, 0.2);
         m.advance(f.moving ? dt * stride('walk', f.speed, PERSON_H) : dt);
-        cast.person(passerbyLook(f.look, w.region.theme), null, false, f.x, f.y, turnOf(f.a), m, { alpha: o.folk });
+        if (f.soldier) cast.person(SOLDIER_LOOK, f.posted ? SOLDIER_SWORD : null, !!f.posted, f.x, f.y, turnOf(f.a), m, { alpha: o.folk });
+        else cast.person(passerbyLook(f.look, w.region.theme), null, false, f.x, f.y, turnOf(f.a), m, { alpha: o.folk });
       }
     }
     for (const c of w.chests) {

@@ -13,11 +13,13 @@
  */
 import { describe, expect, it } from 'vitest';
 import { MODEL_FOOT, modelOnLot } from '../src/games/sigilfall/data/buildingArt';
+import { DOOR_BLOCKS } from '../src/games/sigilfall/data/greatworks';
 import { barrenThemes, dressedFor, keepsApart, PROPS } from '../src/games/sigilfall/data/props';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
 import { isRetired } from '../src/games/sigilfall/data/retired';
 import type { RegionId } from '../src/games/sigilfall/data/types';
 import { builtProp } from '../src/games/sigilfall/render3d/propsBuilt';
+import { spawnFolk } from '../src/games/sigilfall/sim/folk';
 import { circleHitsWall, K, parseRegion, TILE, type TileMap } from '../src/games/sigilfall/sim/map';
 
 const LANDS = (Object.keys(REGIONS) as RegionId[]).filter((id) => !isRetired(id) && REGIONS[id].kind !== 'dungeon' && !REGIONS[id].interior);
@@ -228,5 +230,58 @@ describe('Sigilfall: what stands in each land', () => {
       }
     }
     expect(packs).toBeGreaterThan(300);
+  });
+
+  it('garrisons a war camp: guards at their posts, catapults at its sides, a few standards and no field of them', () => {
+    for (const id of ['highwall', 'pale-reach'] as const) {
+      const m = mapOf(id);
+      const props = m.markers.flatMap((pm) => (pm.marker.kind === 'prop' && !pm.when ? [base(pm.marker.prop)] : []));
+      const count = (name: string): number => props.filter((p) => p === name).length;
+      expect(count('guard-post'), `${id}: guard posts`).toBeGreaterThanOrEqual(8);
+      expect(count('catapult'), `${id}: catapults`).toBeGreaterThanOrEqual(2);
+      expect(count('armory'), `${id}: armories`).toBeGreaterThanOrEqual(1);
+      expect(count('red-banner') + count('blue-banner') + count('flag'), `${id}: standards`).toBeLessThanOrEqual(4);
+      // the story raises three more at most, whatever the hero did
+      const story = (REGIONS[id].placed ?? []).filter((p) => p.when && p.marker.kind === 'prop' && ['red-banner', 'blue-banner', 'flag'].includes(base(p.marker.prop)));
+      expect(story.length, `${id}: the story's standards`).toBeLessThanOrEqual(6);
+      // and the guards are there: soldiers who stand, and soldiers who walk the lanes
+      const squares = m.markers.filter((pm) => pm.marker.kind === 'waystone').map((pm) => ({ x: (pm.tx + 0.5) * TILE, y: (pm.ty + 0.5) * TILE }));
+      const { folk } = spawnFolk(m, 7, false, squares);
+      expect(folk.filter((f) => f.posted).length, `${id}: guards`).toBeGreaterThanOrEqual(8);
+      expect(folk.filter((f) => f.soldier && !f.posted).length, `${id}: soldiers about`).toBeGreaterThanOrEqual(3);
+      for (const f of folk.filter((x) => x.posted)) expect(circleHitsWall(m, f.x, f.y, 5), `${id}: a guard in a wall at ${Math.floor(f.x / TILE)},${Math.floor(f.y / TILE)}`).toBe(false);
+    }
+    // a village has no soldiers
+    const village = mapOf('thornvale');
+    expect(spawnFolk(village, 7, false, village.markers.filter((pm) => pm.marker.kind === 'waystone').map((pm) => ({ x: (pm.tx + 0.5) * TILE, y: (pm.ty + 0.5) * TILE }))).folk.some((f) => f.soldier)).toBe(false);
+  });
+
+  it("leaves nothing standing inside a built gate's stone, and trees back from a chapel", () => {
+    // (a road's lamp stood inside Duskspire's arch)
+    for (const [land, door] of Object.entries(DOOR_BLOCKS)) {
+      const m = mapOf(land as RegionId);
+      const at = m.markers.find((pm) => pm.marker.kind === 'exit' && pm.marker.to === door.to)!;
+      for (const pm of m.markers) {
+        if (pm.marker.kind !== 'prop' || pm.marker.prop === 'block' || pm.marker.prop.startsWith('great')) continue;
+        const inside = door.rects.some(([x0, y0, x1, y1]) => pm.tx - at.tx >= x0 && pm.tx - at.tx <= x1 && pm.ty - at.ty >= y0 && pm.ty - at.ty <= y1);
+        expect(inside, `${land}: ${pm.marker.prop} inside the gate to ${door.to}`).toBe(false);
+      }
+    }
+    // (the owner, of the Knights' Chapel: "still feels inside the trees")
+    let chapels = 0;
+    for (const id of WILDS) {
+      const m = mapOf(id);
+      for (const b of m.buildings) {
+        if (b.style !== 'temple') continue;
+        chapels++;
+        for (let y = b.lot.ty - 4; y < b.lot.ty + b.lot.h + 4; y++) {
+          for (let x = b.lot.tx - 4; x < b.lot.tx + b.lot.w + 4; x++) {
+            if (x < 1 || y < 1 || x >= m.w - 1 || y >= m.h - 1) continue;
+            expect(m.kind[y * m.w + x] === K.Tree, `${id}: a tree at ${x},${y} by the chapel at ${b.lot.tx},${b.lot.ty}`).toBe(false);
+          }
+        }
+      }
+    }
+    expect(chapels).toBeGreaterThanOrEqual(10);
   });
 });

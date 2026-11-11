@@ -67,7 +67,8 @@ export const PALE_REACH = wildRegion(
       { near: 'hub', dy: 14, marker: { kind: 'place', id: 'reach-road' } },
       { near: 'hub', dx: -5, dy: 2, marker: { kind: 'place', id: 'reach-tents' } },
       { near: 'hub', dx: 5, dy: 3, marker: { kind: 'npc', npc: 'cael-at-the-reach' }, when: after('the-last-march') },
-      { near: 'hub', dx: -4, dy: 4, marker: { kind: 'npc', npc: 'nyx-at-the-reach' }, when: after('the-last-march') },
+      // (a step from the armory's front, where the quartermaster stands now that the stall is a stall's size)
+      { near: 'hub', dx: -2, dy: 5, marker: { kind: 'npc', npc: 'nyx-at-the-reach' }, when: after('the-last-march') },
       { near: 'hub', dx: 1, dy: 5, marker: { kind: 'npc', npc: 'elyra-at-the-reach' }, when: after('the-last-march') },
       { near: 'hub', dx: 0, dy: 3, marker: { kind: 'prop', prop: 'campfire' } },
       // the banners that came: three standards behind the hall, each raised by either of two who answered (eight in an
