@@ -649,13 +649,37 @@ function standBuildings(def: RegionDef, w: number, h: number, kind: Uint8Array, 
         }
       }
     }
+    // where its model will stand (render3d/land.ts stands it the same way): over the tiles its picture made solid, but
+    // with its own door on the door's tile, so it can reach a tile past them. A yard tile under it is not free: the
+    // statue at Briarhollow's chapel stood inside the chapel's wall (the owner: "the statue here in briarhollow is
+    // inside the chapel, fix it or remove it completely")
+    let mx0 = Infinity;
+    let mx1 = -Infinity;
+    let my0 = Infinity;
+    let my1 = -Infinity;
+    for (let y = lot.ty; y < lot.ty + lot.h; y++) {
+      for (let x = lot.tx; x < lot.tx + lot.w; x++) {
+        if (x < 0 || y < 0 || x >= w || y >= h || kind[y * w + x] !== K.House) continue;
+        mx0 = Math.min(mx0, x);
+        mx1 = Math.max(mx1, x + 1);
+        my0 = Math.min(my0, y);
+        my1 = Math.max(my1, y + 1);
+      }
+    }
+    const stands = mx1 > mx0 ? modelOnLot(lot.style, lot, !!lot.grim, mx0, mx1, my0, my1, way?.tx ?? null) : null;
+    const foot = stands ? MODEL_FOOT[stands.m] : undefined;
+    const within = (x: number, y: number, by: number): boolean =>
+      !!stands && !!foot && x + 1 > stands.x + foot[0] * stands.sx - by && x < stands.x + foot[2] * stands.sx + by && y + 1 > stands.z + foot[1] * stands.sz - by && y < stands.z + foot[3] * stands.sz + by;
+    const under = (x: number, y: number): boolean => within(x, y, 0.15);
+    /** Under its eaves: against the wall, where a low thing is fine and a tall one stands up into the roof. */
+    const eaves = (x: number, y: number): boolean => within(x, y, 0.75);
     // its yard: a few things on the free tiles of the lot's front rows, clear of the doorway
     const free: number[] = [];
     for (let y = Math.max(lot.ty, lot.ty + lot.h - 2); y < lot.ty + lot.h; y++) {
       for (let x = lot.tx; x < lot.tx + lot.w; x++) {
         if (x < 0 || y < 0 || x >= w || y >= h) continue;
         const i = y * w + x;
-        if (kind[i] !== K.Floor || taken.has(i) || (way && Math.abs(x - way.tx) <= 1)) continue;
+        if (kind[i] !== K.Floor || taken.has(i) || (way && Math.abs(x - way.tx) <= 1) || under(x, y)) continue;
         free.push(i);
       }
     }
@@ -672,7 +696,9 @@ function standBuildings(def: RegionDef, w: number, h: number, kind: Uint8Array, 
       const beside = (i: number): boolean =>
         yard.some((y) => y.prop === prop && Math.abs(y.tx - (i % w)) <= 1 && Math.abs(y.ty - Math.floor(i / w)) <= 1) ||
         (apart > 0 && markers.some((pm) => pm.marker.kind === 'prop' && pm.marker.prop.split(':')[0] === prop && Math.abs(pm.tx - (i % w)) <= apart + 1 && Math.abs(pm.ty - Math.floor(i / w)) <= apart + 1));
-      const at = free.findIndex((i) => !beside(i));
+      // (a statue is taller than the eaves it would stand under: the chapel's stood head and horns in its roof)
+      const tall = (PROPS[prop]?.h ?? 0) + (PROPS[prop]?.hero ?? 0) > 44;
+      const at = free.findIndex((i) => !beside(i) && !(tall && eaves(i % w, Math.floor(i / w))));
       if (at < 0) continue;
       const i = free.splice(at, 1)[0]!;
       // (a flowerbed is walked over: only what has a body to bump into takes the tile)
