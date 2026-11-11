@@ -275,7 +275,10 @@ function rng(seed: number): () => number {
 }
 
 /** Quick at first, then a long way between levels: late on, the Host falls by the hundred, and a level stops the night. */
-export const xpForLevel = (level: number): number => Math.round(3 + level * 2.4 + level ** 1.5 * 0.7 + (level / 10) ** 3 * 20);
+export const xpForLevel = (level: number): number => Math.round(4 + level * 3.1 + level ** 1.5 * 0.8 + (level / 10) ** 3 * 21);
+/** The tide: how many of the Host come each second at the start of the night, and at most. */
+export const TIDE_START = 2.3;
+export const TIDE_MAX = 26;
 
 /** How high a spell goes: its top, or as many upgrades as it has. */
 export const topLevel = (def: SpellDef): number => Math.min(MAX_SPELL, 1 + upgradesOf(def).length);
@@ -811,8 +814,8 @@ export class Vigil {
       this.nextEvent += 75;
       this.wave();
     }
-    // the tide: quick to start, then a flood
-    const rate = Math.min(22, 1.4 + this.t * 0.018 + (this.t / 60) ** 1.7 * 0.32) * this.scale.count;
+    // the tide: a crowd from the first seconds, then a flood
+    const rate = Math.min(TIDE_MAX, TIDE_START + this.t * 0.022 + (this.t / 60) ** 1.7 * 0.34) * this.scale.count;
     this.spawnT += dt * rate;
     const pool = this.inSeason();
     const total = pool.reduce((a, f) => a + f.weight, 0);
@@ -857,8 +860,10 @@ export class Vigil {
     const a = this.rand() * Math.PI * 2;
     const d = 210 + this.rand() * 50;
     const tough = this.toughness;
-    // a champion is worth a fight whatever wave it comes with
-    let hp = (boss ? Math.max(def.hp, 90) * tough * 38 * this.scale.boss : def.hp * tough) * this.scale.hp;
+    // a champion is worth a fight whatever wave it comes with (the night's first a little less: it is where a new
+    // keeper learns to step out of a slam)
+    const first = !!boss && this.bossesDone <= 1;
+    let hp = (boss ? Math.max(def.hp, 90) * tough * (first ? 30 : 38) * this.scale.boss : def.hp * tough) * this.scale.hp;
     if (elite) hp *= 5;
     this.foes.push({
       id: this.nextId++,
@@ -867,7 +872,7 @@ export class Vigil {
       y: at?.y ?? anchor.y + Math.sin(a) * d,
       hp,
       maxHp: hp,
-      dmg: def.dmg * (1 + (tough - 1) * 0.45) * (boss ? 1.8 : elite ? 1.25 : 1) * this.scale.dmg,
+      dmg: def.dmg * (1 + (tough - 1) * 0.45) * (boss ? (first ? 1.45 : 1.8) : elite ? 1.25 : 1) * this.scale.dmg,
       speed: def.speed * (boss ? 0.8 : elite ? 0.92 : 1),
       r: def.r * (boss ? 2 : elite ? 1.35 : 1),
       xp: def.xp * (boss ? 25 : elite ? 6 : 1),

@@ -13,7 +13,10 @@ import { openBattlefield } from '../render/vigil';
 import { keepOnLand, trunksOf, VigilPainter, type PartyLook } from '../render/vigil';
 import { TILE } from '../sim/map';
 import { World } from '../sim/world';
-import { FIELD_ICONS, MAX_STRENGTH, SPELLS, STRENGTHS, UNLOCK_HOLD, upgradesOf, VIGIL_MAPS, type StrengthId, type VigilMap } from '../vigil/kit';
+import { FIELD_ICONS, MAX_STRENGTH, SPELLS, STRENGTHS, UNLOCK_HOLD, upgradesOf, VIGIL_MAPS, type Element, type StrengthId, type VigilMap } from '../vigil/kit';
+import { REGIONS } from '../data/regions';
+import type { MusicId } from '../audio/sound';
+import { readRing } from '../arena/ladder';
 import { CARD_SECONDS, EVOLVE_AT, topLevel, Vigil, type Card, type Fx, type Hero, type VigilInput } from '../vigil/sim';
 import { applySnap, SnapWriter, type Snap } from '../vigil/snapshot';
 import { ScreenGate } from './ScreenGate';
@@ -79,25 +82,53 @@ function Loadout({ h }: { h: Hero }) {
   );
 }
 
-/** The sound of each effect, and how close together it may repeat. */
-const FX_SOUND: Partial<Record<Fx['kind'], [string, number, number]>> = {
-  hit: ['hit', 0.12, 0.35],
-  burst: ['explode', 0.16, 0.55],
-  nova: ['nova', 0.2, 0.7],
-  chain: ['zap', 0.14, 0.6],
-  strike: ['meteorCall', 0.3, 0.8],
-  drop: ['arrowRain', 0.5, 0.45],
-  cone: ['swing', 0.12, 0.7],
-  beam: ['beam', 0.2, 0.6],
-  heal: ['potion', 0.3, 0.7],
-  guard: ['shield', 0.3, 0.8],
-  dash: ['dash', 0.1, 0.8],
-  level: ['levelup', 0.3, 0.9],
-  frenzy: ['warhorn', 0.3, 0.9],
-  summon: ['summon', 0.3, 0.7],
-  slam: ['slam', 0.2, 0.9],
-  bomb: ['explode', 0.1, 1],
-};
+/** What each element sounds like when it goes off. */
+const EL_SOUND: Record<Element, string> = { fire: 'fireball', ice: 'freeze', lightning: 'zap', arcane: 'bolt', nature: 'nature', poison: 'drain', holy: 'holy', shadow: 'shadow', water: 'nova', blood: 'clash' };
+/** What falls from the sky sounds like when it is called (its landing is a burst of its own). */
+const CALL_SOUND: Partial<Record<Element, string>> = { fire: 'meteorCall', holy: 'holy', lightning: 'thunder', blood: 'windup' };
+
+/**
+ * The sound of an effect, how close together it may repeat (seconds) and how loud: by what it is and what it is made
+ * of, so a warrior's night is steel and a mage's is fire and frost. Every one is a recording (audio/samples.ts).
+ */
+export function fxSound(kind: Fx['kind'], el: Element): [string, number, number] | undefined {
+  switch (kind) {
+    case 'hit':
+      return [el === 'blood' ? 'clash' : 'hit', 0.12, 0.3];
+    case 'burst':
+      return [el === 'fire' ? 'explode' : EL_SOUND[el], 0.16, 0.5];
+    case 'nova':
+      return [el === 'blood' ? 'slam' : el === 'water' || el === 'arcane' ? 'nova' : EL_SOUND[el], 0.2, 0.65];
+    case 'chain':
+      return [EL_SOUND[el], 0.14, 0.55];
+    case 'strike':
+      return [CALL_SOUND[el] ?? 'rift', 0.3, 0.6];
+    case 'drop':
+      return [el === 'nature' ? 'arrowRain' : EL_SOUND[el], 0.5, 0.4];
+    case 'cone':
+      return [el === 'nature' ? 'swing' : 'swingBig', 0.12, 0.6];
+    case 'beam':
+      return [el === 'nature' ? 'bow' : el === 'holy' ? 'holy' : 'beam', 0.2, 0.55];
+    case 'heal':
+      return ['heal', 0.3, 0.6];
+    case 'guard':
+      return ['shield', 0.3, 0.8];
+    case 'dash':
+      return ['dash', 0.1, 0.8];
+    case 'level':
+      return ['levelup', 0.3, 0.9];
+    case 'frenzy':
+      return ['warhorn', 0.3, 0.9];
+    case 'summon':
+      return ['summon', 0.3, 0.7];
+    case 'slam':
+      return ['slam', 0.2, 0.9];
+    case 'bomb':
+      return ['explode', 0.1, 1];
+    default:
+      return undefined;
+  }
+}
 
 type Inbox = (seat: number, d: unknown) => void;
 type Role = { kind: 'solo' } | { kind: 'host' | 'client'; send: (d: unknown) => void; listen: (fn: Inbox | null) => void };
@@ -278,6 +309,10 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
       hero.shopWorn = structuredClone(wear.shopWorn);
       hero.face = wear.face;
       hero.body = wear.body;
+    } else {
+      // (in plain clothes: the Ring armor chosen under Title & armor)
+      const p = readRing().plain;
+      if (p?.head || p?.chest) hero.shopWorn = { ...(p.head ? { head: p.head } : {}), ...(p.chest ? { chest: p.chest } : {}) };
     }
     // the land: a real region of the game, emptied of everything but the land itself
     const world = new World({ region: land.region, tier: 0, mods: [], hero, settings: { ...DEFAULT_SETTINGS }, seed: 7, handIns: false });
@@ -296,6 +331,8 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
     // the middle of the land, with room to run every way (a region's own start can be right on its edge)
     world.player.x = (map.w / 2) * TILE;
     world.player.y = (map.h / 2) * TILE;
+    // (the land's own song from the story plays through the night)
+    const nightSong = REGIONS[land.region].music as MusicId;
     const v = new Vigil(solo ? (Math.random() * 2 ** 32) >>> 0 : seed, world.player.x, world.player.y, { map: land, bounds: { x0: TILE, y0: TILE, x1: (map.w - 1) * TILE, y1: (map.h - 1) * TILE }, party: party.map((k) => ({ id: k.id, cls: k.cls, name: k.name })) });
     const me = v.heroOf(meId) ?? v.me;
     const painter = new VigilPainter(
@@ -405,7 +442,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
       for (const f of v.fx) {
         if (heard.has(f)) continue;
         heard.add(f);
-        const s = FX_SOUND[f.kind];
+        const s = fxSound(f.kind, f.el);
         if (!s || now - (soundAt.get(s[0]) ?? -9999) < s[1] * 1000) continue;
         soundAt.set(s[0], now);
         engine.sound.play(s[0], s[2]);
@@ -473,6 +510,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
         v.setObstacles(trunksOf(renderer.objects));
       }
       listen(now);
+      engine.setModeMusic(v.foes.some((f) => f.boss) ? 'boss' : nightSong);
       if (me.struck > struck) engine.sound.play('hurt', 0.8);
       struck = me.struck;
       if (me.down && !wasDown) engine.sound.play('playerDie', 0.9);
@@ -550,6 +588,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
     // review tool on the dev server: a hidden pane runs no animation frames, so frames can be stepped by hand
     if (import.meta.env.DEV) (window as unknown as { __vigil?: unknown }).__vigil = { v, me, frame, keys, painter, renderer, world, pick };
     return () => {
+      engine.setModeMusic(null);
       cancelAnimationFrame(raf);
       clearTimeout(landTimer);
       ro.disconnect();

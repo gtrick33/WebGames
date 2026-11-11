@@ -8551,6 +8551,27 @@
   flex: none;
   white-space: nowrap;
 }
+.rb-vlobby-kit .rb-rp-looks {
+  min-width: 0;
+  margin-bottom: 4px;
+}
+.rb-vlobby-kit .rb-rp-looks .rb-wear {
+  justify-content: flex-start;
+  min-width: 0;
+  margin: 0;
+}
+.rb-vlobby-kit .rb-rp-looks .rb-wear span {
+  display: none;
+}
+.rb-vlobby-kit .rb-rp-looks .rb-wear select {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+.rb-vlobby-kit .rb-rp-looks .rb-btn {
+  padding-inline: 8px;
+}
 .rb-rw-strip {
   display: flex;
   align-items: center;

@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SigilEngine } from '../engine';
 import { wornLooks } from '../progress/wardrobe';
-import { wearOf, WearPicker, wearTitle } from './wear';
+import { wearOf, WearPicker } from './wear';
+import { LooksDialog, plainWorn, ringTitle } from './RingRewards';
+import { readRing, writeRing } from '../arena/ladder';
+import { titled } from '../progress/titles';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { CLASSES, CLASS_IDS } from '../data/classes';
 import { useAccount } from '../../../platform/account';
@@ -213,11 +216,16 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
   // (a campaign hero of the class, worn: their gear and their Wardrobe)
   const [wearN, setWearN] = useState(0);
   const wear = useMemo(() => (engine && wearN >= 0 ? wearOf(engine, pick) : null), [engine, pick, wearN]);
+  // (in plain clothes: the title and the armor earned in the Ring, kept with its standing)
+  const [plain, setPlain] = useState(() => readRing().plain);
+  const [looksOpen, setLooksOpen] = useState(false);
+  const myTitle = ringTitle(wear, plain);
   const doll = useMemo(() => {
     const hero = newCharacter(pick, 'The Watch', 'vigil');
     if (wear) return heroDollUrl(heroLook(pick, wear.equip, wornLooks(wear), wear.body, wear.face), 'down', 6, heldWeapon(pick, wear.equip.weapon, wornLooks(wear).weapon), pick === 'warrior' || pick === 'paladin');
-    return heroDollUrl(heroLook(pick, hero.equip, {}, body ?? 'm', face), 'down', 6, heldWeapon(pick, hero.equip.weapon), pick === 'warrior' || pick === 'paladin');
-  }, [pick, body, face, wear]);
+    return heroDollUrl(heroLook(pick, hero.equip, plainWorn(plain), body ?? 'm', face), 'down', 6, heldWeapon(pick, hero.equip.weapon), pick === 'warrior' || pick === 'paladin');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pick, body, face, wear, plain, wearN]);
   const kit = spellsOf(pick);
   const shown = kit[spell] ?? kit[0]!;
   const c = CLASSES[pick];
@@ -277,14 +285,21 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
             <img key={pick} className="rb-vlobby-doll" src={doll} alt={c.name} draggable={false} />
             <div className="rb-vlobby-name">
               <strong>{c.name}</strong>
-              {wear && <small className="rb-wear-who">{wear.name}{wearTitle(wear) ? `, ${wearTitle(wear)}` : ''}</small>}
+              {(wear || myTitle) && <small className="rb-wear-who">{titled(wear ? wear.name : 'You', myTitle)}</small>}
               <small>
                 {stats.hp} health · {stats.speed >= 84 ? 'quick on their feet' : stats.speed <= 74 ? 'heavy but sturdy' : 'steady'}
               </small>
             </div>
-            {engine && <WearPicker engine={engine} cls={pick} onChange={() => setWearN((n) => n + 1)} />}
           </div>
           <div className="rb-vlobby-kit">
+            {engine && (
+              <div className="rb-rp-looks">
+                <WearPicker engine={engine} cls={pick} onChange={() => setWearN((n) => n + 1)} />
+                <button className="rb-btn is-small" onClick={() => setLooksOpen(true)}>
+                  Title & armor
+                </button>
+              </div>
+            )}
             <div className="rb-vlobby-spells">
               {kit.map((s, i) => (
                 <button key={s.id} className={`rb-vlobby-spell${i === spell ? ' is-on' : ''}`} onClick={() => setSpell(i)} onMouseEnter={() => setSpell(i)} aria-label={s.name}>
@@ -358,6 +373,22 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
           )}
           {friends && inRoom && !hosting && <p className="rb-vparty-waiting">Waiting for {hostName} to begin the night…</p>}
         </footer>
+        {looksOpen && engine && (
+          <LooksDialog
+            engine={engine}
+            cls={pick}
+            wear={wear}
+            plain={plain}
+            doll={doll}
+            shown={titled(wear ? wear.name : 'You', myTitle)}
+            onPlain={(p) => {
+              setPlain(p);
+              writeRing({ ...readRing(), plain: p });
+            }}
+            onChange={() => setWearN((n) => n + 1)}
+            onClose={() => setLooksOpen(false)}
+          />
+        )}
       </div>
     </ScreenGate>
   );
