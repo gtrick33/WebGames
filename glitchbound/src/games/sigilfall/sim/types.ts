@@ -18,6 +18,12 @@ export interface Status {
   fromPlayer?: boolean;
   /** When it was laid (the world's clock): a blow can't set off the fire it has only just lit. */
   born?: number;
+  /**
+   * When it was last laid again over itself, and what was left of it just before (its power and its seconds): a blow
+   * that renews a curse and sets the rot off in the same breath sets off what was there, not what it has only just laid.
+   */
+  renewed?: number;
+  was?: { power: number; t: number };
   /** A curse's damage type. */
   dtype?: DmgType;
   /** The skill a curse came from (each skill's curse is its own). */

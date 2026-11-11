@@ -5,7 +5,7 @@ import { typeBonus } from '../progress/build';
 import { bossHidden } from './boss';
 import { moveCircle } from './map';
 import { summonPet } from './pets';
-import type { Enemy, Projectile } from './types';
+import type { Enemy, Projectile, Status } from './types';
 import type { World } from './world';
 
 /**
@@ -216,6 +216,9 @@ export function applyStatus(w: World, e: Enemy, s: { status: StatusId; dur: numb
   const from = id === 'curse' ? src : undefined;
   const cur = e.statuses.find((x) => x.id === id && x.dtype === dtype && x.src === from);
   if (cur) {
+    // (what was left before this blow laid it again: a detonation in the same moment sets off only that)
+    if (cur.born !== w.time && cur.renewed !== w.time) cur.was = { power: cur.power, t: cur.t };
+    cur.renewed = w.time;
     cur.t = Math.max(cur.t, dur);
     cur.power = Math.max(cur.power, power);
   } else e.statuses.push({ id, t: dur, power, tick: 0.5, fromPlayer: true, born: w.time, ...(dtype ? { dtype } : {}), ...(from ? { src: from } : {}) });
@@ -445,16 +448,23 @@ export function applyEffect(w: World, e: Effect, c: EffectCtx): void {
       // (not what this very blow has just laid: it sets off what was already there)
       const lit = t.statuses.filter((s) => s.id === e.status && s.t > 0 && s.born !== w.time);
       if (!lit.length) break;
+      // one this very blow laid again over itself goes off for what was left of it before, and stays as laid
+      const renewed = (s: Status): boolean => s.renewed === w.time && !!s.was;
+      const leftOf = (s: Status): number => (renewed(s) ? s.was!.power * s.was!.t : s.power * s.t);
       // everything it still had to deal, at once (its power was sized from a finished hit: back to a base, as a tick is)
       const type = lit[0]!.dtype ?? STATUS_DMG[e.status] ?? c.type;
-      const left = lit.reduce((a, s) => a + s.power * s.t, 0) * e.mul;
+      const left = lit.reduce((a, s) => a + leftOf(s), 0) * e.mul;
       const base = left / Math.max(0.01, levelPower(w.hero.level) * typeBonus(effStats(w), type));
-      t.statuses = t.statuses.filter((s) => !lit.includes(s));
+      t.statuses = t.statuses.filter((s) => !lit.includes(s) || renewed(s));
+      for (const s of t.statuses) if (renewed(s)) delete s.was;
       w.vfx(`blast:${type}`, t.x, t.y, Math.max(18, (e.radius ?? t.r * 2)), 0.5);
       w.addFx({ kind: 'ring', x: t.x, y: t.y, life: 0.35, size: (e.radius ?? 16) * 1.6, color: DOT_COLOR[type] });
       w.shake(2);
-      if (e.radius) damageArea(w, t.x, t.y, e.radius, base, type, c.depth + 1, null);
-      else hitEnemy(w, t, base, type, { depth: c.depth + 1 });
+      // It lands as what it is: damage over time, all at once. So it never strikes critically (the hit it was sized
+      // from already did or didn't: struck again here, a warlock's Wild Hex took two thirds of a boss's life in one
+      // blow), and it sets off nothing of its own.
+      const struck = e.radius ? enemiesIn(w, t.x, t.y, e.radius) : [t];
+      for (const en of struck) hitEnemy(w, en, base, type, { depth: c.depth + 1, isDot: true, fromX: t.x, fromY: t.y });
       break;
     }
     case 'cdr':
