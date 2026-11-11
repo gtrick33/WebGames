@@ -236,6 +236,10 @@ function beat(walk: Walk): boolean {
         walk.barred.push(`${w.region.id}→${ex.to} at level ${h.level} (wants ${lv[1]})`);
         while (h.level < Number(lv[1])) w.giveXp(1000);
         w.pendingExit = null;
+        // (and steps back off the road's end: a road opens as you step onto it, as a person would step back on)
+        const away = Math.hypot(w.map.w * TILE / 2 - w.player.x, w.map.h * TILE / 2 - w.player.y) || 1;
+        w.player.x += ((w.map.w * TILE / 2 - w.player.x) / away) * TILE * 2;
+        w.player.y += ((w.map.h * TILE / 2 - w.player.y) / away) * TILE * 2;
         return true;
       }
       enter(walk, ex.to as RegionId, w.region.id);

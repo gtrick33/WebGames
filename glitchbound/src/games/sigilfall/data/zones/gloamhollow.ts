@@ -43,7 +43,7 @@ export const GLOAMHOLLOW = wildRegion(
       { side: 's', at: 0.55, to: 'shattered-vale', label: 'South road to the Shattered Vale' },
       { side: 'e', at: 0.45, to: 'bonefields', label: 'East along the gate line to the Bonefields', minLevel: 46, needs: 'the-gloam-gate' },
       // through the Gate into Vaelmoor, once all three Gates are taken (Act V)
-      { side: 'n', at: 0.5, to: 'weeping-woods', label: 'North through the Gloam Gate into Vaelmoor', minLevel: 48, needs: 'the-third-gate' },
+      { side: 'n', at: 0.5, to: 'weeping-woods', label: 'North through the Gloam Gate into Vaelmoor', minLevel: 48, needs: 'the-gloam-gate' },
     ],
     pois: [
       // the second Gate: its garrison goes down to the cells when the hero comes up the causeway

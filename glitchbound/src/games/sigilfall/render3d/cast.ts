@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { dressed, repaint } from './repaint';
 import { ART_TILE, TILE } from '../sim/map';
 import { Crowd, Stand } from './crowd';
 import { dressedOf, type Held, type Wardrobe } from './dress';
@@ -7,6 +8,8 @@ import { UNIT } from './land';
 import { mountKey, mountModel, type MountModel } from './mountKit';
 import { shapeOf } from './mountLook';
 import { loadPack, type MeshData, type Pack } from './pack';
+import { builtProp } from './propsBuilt';
+import { strikeOf, UNMEASURED, type Strike } from './strike';
 import { ringMaterial, rigAnimOf, shadowMaterial, type RigAnim } from './toon';
 import type { MountDef } from '../data/mounts';
 import type { HeroLook } from '../render/art/hero';
@@ -42,6 +45,12 @@ interface KitEntry {
   mesh: MeshData | null;
   kit: Kit;
   loading: boolean;
+}
+
+/** A person's attack as their kind fights: a caster casts, an archer draws, a fighter swings or hews. */
+function personClip(kit: Kit, clip: string): string {
+  const atk = kit.atk === 'stab' || kit.atk === 'punch' ? 'chop' : kit.atk === 'smash' ? 'chop2' : kit.atk;
+  return clip === 'chop' || clip === kit.atk ? (atk ?? (kit.held ? 'chop' : 'cast')) : clip;
 }
 
 /** A clip fading into another, for anyone whose moves must read clearly (heroes, bosses, Ring fighters). */
@@ -201,15 +210,17 @@ export class Cast {
     this.shadowMesh.setMatrixAt(this.shadowN++, this.m4);
   }
 
-  private entry(id: string, kit: Kit): KitEntry {
+  private entry(file: string, kit: Kit): KitEntry {
+    // (a model painted or dressed for one creature is its own: the plain one stays as its file has it)
+    const id = kit.paint || kit.wears ? `${file}@${ownKey(kit)}` : file;
     let e = this.kits.get(id);
     if (!e) {
       e = { crowd: null, rig: null, mesh: null, kit, loading: true };
       this.kits.set(id, e);
       const entry = e;
-      void loadPack(`k/${id}`)
+      void loadPack(`k/${file}`)
         .then((pack) => {
-          const mesh = pack.meshes.body!;
+          let mesh = pack.meshes.body!;
           const w = this.wardrobe;
           if (!w) {
             entry.loading = false;
@@ -217,11 +228,14 @@ export class Cast {
             return;
           }
           const rig = mesh.rig === 'medium' ? w.medium : mesh.rig === 'large' ? w.large : rigAnimOf(pack, mesh.rig!);
+          // a boss painted part by part, and what's built onto it (kits.ts paint, wears)
+          if (kit.paint) mesh = repaint(mesh, rig.joints, kit.paint);
+          if (kit.wears) mesh = dressed(mesh, rig.joints, kit.wears);
           entry.rig = rig;
           entry.mesh = mesh;
           // (the animals of their set are flat-faceted and flat-colored: lit by their smooth normals they read rounded, as
           // the heroes do, and their colors run soft over the body instead of a patchwork of facets)
-          entry.crowd = new Crowd(/^(a_|fbx_)/.test(id) ? softBody(mesh) : mesh, rig, this.root, 16, 0.022);
+          entry.crowd = new Crowd(/^(a_|fbx_)/.test(file) ? softBody(mesh) : mesh, rig, this.root, 16, 0.022);
           entry.loading = false;
         })
         .catch(() => {
@@ -280,12 +294,13 @@ export class Cast {
     if (kit.look) {
       const look = npcLookOf(kit.look);
       if (look) {
-        // (a person's attack as their kind fights: a caster casts, an archer draws, a fighter swings or hews)
-        const atk = kit.atk === 'stab' || kit.atk === 'punch' ? 'chop' : kit.atk === 'smash' ? 'chop2' : kit.atk;
-        const personClip = clip === 'chop' || clip === kit.atk ? (atk ?? (kit.held ? 'chop' : 'cast')) : clip;
-        this.person(look, kit.held ?? null, !!kit.shield, x, y, rot, { clip: personClip, t, loop, from: opts?.from }, { alpha: opts?.alpha, flash: opts?.flash, h });
+        this.person(look, kit.held ?? null, !!kit.shield, x, y, rot, { clip: personClip(kit, clip), t, loop, from: opts?.from }, { alpha: opts?.alpha, flash: opts?.flash, h });
         return kit;
       }
+    }
+    if (kit.steed) {
+      this.steedCreature(kit, kit.steed, x, y, rot, h, clip, t, loop, opts);
+      return kit;
     }
     const e = this.entry(kit.k, kit);
     const crowd = e.crowd;
@@ -330,6 +345,12 @@ export class Cast {
     const sin = Math.sin(rot);
     crowd.put(x * UNIT - (mx * cos + mz * sin), lift - (opts?.rise ?? 0) * (h / TILE), y * UNIT - (mz * cos - mx * sin), rot, s * (opts?.sx ?? 1), s * (opts?.sy ?? 1), frames.a, frames.b, frames.k, Math.min(opts?.alpha ?? 1, kit.ghost ?? 1), r, g, b, opts?.flash ?? 0);
     this.used.add(crowd);
+    // what it wears (not while it fades out, or as it rises from the ground)
+    if (kit.gear && (opts?.alpha ?? 1) > 0.6 && !(opts?.rise ?? 0)) {
+      // (shares of its real height: a long beast is sized by its length, but its gear by how tall it stands)
+      const H = (mesh.max[1] - mesh.min[1]) * s;
+      for (const g of kit.gear) this.worn(g, x * UNIT, lift, y * UNIT, rot, H, opts?.flash ?? 0);
+    }
     if (kit.top) {
       const e2 = this.entry(kit.top.k, { k: kit.top.k });
       if (e2.crowd && e2.rig && e2.mesh) {
@@ -366,6 +387,28 @@ export class Cast {
         });
     }
     return e;
+  }
+
+  /** A creature built as a mount is (Kit.steed): the mount's own model, sized to the creature and moved by its clips. */
+  private steedCreature(kit: Kit, def: MountDef, x: number, y: number, rot: number, h: number, clip: string, t: number, loop: boolean, opts?: { alpha?: number; flash?: number; rise?: number; tint?: readonly [number, number, number]; sx?: number; sy?: number; motion?: Motion; lift?: number; from?: ClipFade }): void {
+    const e = this.mountEntry(def);
+    const crowd = e.crowd;
+    const model = e.model;
+    if (!crowd || !model) return;
+    const { mesh, rig } = model;
+    const s = ((h * (kit.size ?? 1)) / TILE) / Math.max(0.05, mesh.max[1] - mesh.min[1]);
+    const motion = opts?.motion;
+    if (motion) motion.frames(rig, frames);
+    else {
+      frames.a = rig.frame(rig.has(clip) ? clip : 'idle', t, loop);
+      const from = opts?.from;
+      frames.b = from ? rig.frame(rig.has(from.clip) ? from.clip : 'idle', from.t, from.loop) : 0;
+      frames.k = from ? from.k : 0;
+    }
+    const c = opts?.tint ?? ([1, 1, 1] as const);
+    const lift = (kit.float ?? 0) * (ART_TILE / TILE) + (opts?.lift ?? 0) - (opts?.rise ?? 0) * (h / TILE);
+    crowd.put(x * UNIT, lift, y * UNIT, rot, s * (opts?.sx ?? 1), s * (opts?.sy ?? 1), frames.a, frames.b, frames.k, Math.min(opts?.alpha ?? 1, kit.ghost ?? 1), c[0], c[1], c[2], opts?.flash ?? 0);
+    this.used.add(crowd);
   }
 
   /** Whether a mount can be drawn yet. */
@@ -408,6 +451,14 @@ export class Cast {
   rigOf(sprite: string): RigAnim | null {
     const kit = kitOf(sprite);
     return this.entry(kit.k, kit).rig;
+  }
+
+  /** Where the blow is in the clip this creature plays for `clip` (a person plays their own kind of attack). */
+  strike(sprite: string, clip: string, enemy?: string): Strike {
+    const kit = kitOf(sprite, enemy);
+    if (kit.look && npcLookOf(kit.look)) return strikeOf(this.wardrobe?.medium, personClip(kit, clip));
+    if (kit.steed) return UNMEASURED;
+    return strikeOf(this.entry(kit.k, kit).rig, clip);
   }
 
   /** One person in a look: a hero, a villager, anyone who wears the wardrobe. */
@@ -464,6 +515,33 @@ export class Cast {
     s.put(x * UNIT, lift, y * UNIT, rot, k, k, k, tint?.[0] ?? 1, tint?.[1] ?? 1, tint?.[2] ?? 1, 0);
   }
 
+  /** A piece of a beast's gear (Kit.gear), at the beast at (`x`, `z`) facing `rot`, `H` tall, in scene units. */
+  private worn(g: NonNullable<Kit['gear']>[number], x: number, lift: number, z: number, rot: number, H: number, flash: number): void {
+    const s = this.propStand(g.m);
+    if (!s) return;
+    // (a piece is fitted by its longest side, a bone lying flat as long as it is said to be; and it stands on its own
+    // middle, whatever its origin: a knight's pauldron is modeled where a knight's shoulder would be)
+    const geo = s.mesh.geometry as THREE.BufferGeometry & { _long?: number; _foot?: [number, number, number] };
+    if (geo._long === undefined) {
+      geo.computeBoundingBox();
+      const b = geo.boundingBox!;
+      geo._long = Math.max(0.01, b.max.x - b.min.x, b.max.y - b.min.y, b.max.z - b.min.z);
+      geo._foot = [(b.min.x + b.max.x) / 2, b.min.y, (b.min.z + b.max.z) / 2];
+    }
+    const k = (g.h * H) / geo._long;
+    const [fx, fy, fz] = geo._foot!;
+    const turn = rot + (g.turn ?? 0);
+    const tc = Math.cos(turn);
+    const ts = Math.sin(turn);
+    const side = (g.x ?? 0) * H;
+    const fwd = (g.z ?? 0) * H;
+    const cos = Math.cos(rot);
+    const sin = Math.sin(rot);
+    const c = g.tint ? hexRgb(g.tint) : ([1, 1, 1] as const);
+    const lit = 1 + flash * 0.6;
+    s.put(x + side * cos + fwd * sin - (fx * tc + fz * ts) * k, lift + g.y * H - fy * k, z - side * sin + fwd * cos - (fz * tc - fx * ts) * k, turn, k, k, k, c[0] * lit, c[1] * lit, c[2] * lit, 0, g.tipX ?? 0, g.tipZ ?? 0);
+  }
+
   /** A model in flight, `k` times its size, turned any way: an arrow, a skull, a thrown shield. */
   thrown(id: string, x: number, y: number, lift: number, rot: number, k: number, tipX = 0, tipZ = 0): void {
     this.propStand(id)?.put(x * UNIT, lift, y * UNIT, rot, k, k, k, 1, 1, 1, 0, tipX, tipZ);
@@ -478,6 +556,8 @@ export class Cast {
         mesh = p.meshes[id];
         if (mesh) break;
       }
+      // (a model built in code, not in a pack: a cage, a flag, a great column)
+      if (!mesh && id.startsWith('built_')) mesh = builtProp(id) ?? undefined;
       if (!mesh) return null;
       s = new Stand(mesh, this.root, 64);
       this.props.set(id, s);
@@ -506,6 +586,17 @@ export class Cast {
     this.rings.dispose();
     this.root.clear();
   }
+}
+
+const ownKeys = new WeakMap<Kit, string>();
+/** A name for a kit's own paint and dress, the same for the same kit. */
+function ownKey(kit: Kit): string {
+  let k = ownKeys.get(kit);
+  if (!k) {
+    k = JSON.stringify([kit.paint ?? null, kit.wears ?? null]);
+    ownKeys.set(kit, k);
+  }
+  return k;
 }
 
 export type { Held };

@@ -1,4 +1,5 @@
 import type { StoryEventDef } from './types';
+import { isRetired } from './retired';
 import { AMBERFIELD_EVENTS } from './zones/amberfield-quests';
 import { ASHEN_BARROWS_EVENTS } from './zones/ashen-barrows-quests';
 import { BRACKENRIDGE_EVENTS } from './zones/brackenridge-quests';
@@ -43,3 +44,6 @@ export const EVENTS: Record<string, StoryEventDef> = {
   ...HOLLOWMERE_EVENTS,
   ...PALE_REACH_EVENTS,
 };
+
+// a retired land's events go with it (data/retired.ts); those no quest plays any more go in data/quests.ts
+for (const [id, e] of Object.entries(EVENTS)) if (isRetired(e.region)) delete EVENTS[id];

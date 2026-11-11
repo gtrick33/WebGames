@@ -1,4 +1,4 @@
-import { after, any, is } from '../cond';
+import { after, is } from '../cond';
 import type { EnemyDef, NpcDef, QuestDef, StoryEventDef } from '../types';
 
 /**
@@ -8,9 +8,10 @@ import type { EnemyDef, NpcDef, QuestDef, StoryEventDef } from '../types';
  * the southern edge of the Reach. The main chain: the banners come in, the King's kennels and drake graves,
  * the Host in its ranks under the Pale Standard and Vosk at its head (the rider who took Hearthstead's
  * fragment, hollowed now), the siege mages held while they bring down Duskspire's outer wall, the breach,
- * and the Herald's voice in the gate. Then Crownfall: the Ashen Guard and Vaelor on his throne in Duskspire,
- * the Crown's memory of Vaelmoor whole, Elyra's choice, and the Ash Crown itself (the finale's quests are
- * here too, since they are played from the Reach). Orren wants the Hollowing cured from old Wintersend,
+ * and the Herald's voice in the gate (Aurel, who opens the seventh lock: Vosk carried the Sigil of Stone to his
+ * king, and Vaelor wears it in the Ash Crown). Then Crownfall: the Ashen Guard and the Hallow King himself on his
+ * throne of ice in Duskspire, the last fight; the Stone won back; the Crown's memory of Vaelmoor whole, Elyra's
+ * choice, and the Crown unmade (the finale's quests are here too, since they are played from the Reach). Orren wants the Hollowing cured from old Wintersend,
  * Quartermaster Holt wants the pale knights' plate, and Outrider Maeve wants her hound back. Main chain first.
  */
 
@@ -18,14 +19,13 @@ import type { EnemyDef, NpcDef, QuestDef, StoryEventDef } from '../types';
 const FACTIONS: { pet: string; when: ReturnType<typeof after> }[] = [
   { pet: 'fern-ranger', when: after('fern-retaken') },
   { pet: 'hearth-rider', when: after('camp-riders') },
-  { pet: 'kragholt-axe', when: after('camp-dwarves') },
+  // the dwarves of Cinderhold, freed from the Slave Forges
+  { pet: 'kragholt-axe', when: after('break-the-chains') },
   { pet: 'clan-archer', when: after('the-clans-decide') },
   // the forest's knights ride only if Silvaine sang her brother back from the thorns
   { pet: 'thorn-knight', when: is('silvaines-song', 'taken') },
   { pet: 'jarl-huscarl', when: after('the-vault-of-rime') },
   { pet: 'sun-lancer', when: after('the-sun-king') },
-  // Vinehold's boats come either way: hidden by Kesh or forgiven by the Regent
-  { pet: 'marsh-skirmisher', when: any(is('kesh-the-secret', 'taken'), is('kesh-the-truth', 'taken')) },
 ];
 
 export const PALE_REACH_QUESTS: QuestDef[] = [
@@ -33,11 +33,11 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
   {
     id: 'the-last-march',
     name: 'The Last March',
-    giver: 'elyra-lastlight',
+    giver: 'orren-at-the-mere',
     auto: true,
     text: 'Seven of seven. The Regent’s riders went out the same night with one word for every banner that ever owed the hero a favor: north. The coalition gathers at Dawn’s Rest, a ruined waystation at the southern edge of the Pale Reach, beyond Hollowmere, and Mara has gone ahead to command it. Take the north road out of Hollowmere and find her.',
     objective: { kind: 'talk', npc: 'mara-at-the-reach', label: 'Find Mara at Dawn’s Rest' },
-    after: ['the-seventh-sigil'],
+    after: ['ysanes-last-echo'],
     // the hand-off that sends the hero to pale-reach: it starts when the last chapter ends, not on arrival
     level: 56,
     reward: { xp: 2000, gold: 700, text: 'Dawn’s Rest is a roofless waystation full of tents, and the tents are full of people you know.' },
@@ -55,69 +55,25 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     reward: { xp: 1800, gold: 600, text: 'Banner after banner comes up out of the snow. Mara counts them out loud, and when she runs out of fingers she stops counting and just watches.' },
   },
   {
-    id: 'the-kings-kennels',
-    name: 'The King’s Kennels',
-    giver: 'mara-at-the-reach',
-    text: 'The Hallow King keeps hounds: pale, hairless things that hunt by the warmth of you and run down anyone who leaves the fires. They have taken six of the coalition’s foragers in two days. Mara wants the camp’s edges safe before she moves anyone north. Kill the pale hounds on the snow around Dawn’s Rest and the Kennels to the east.',
-    objective: { kind: 'kill', region: 'pale-reach', count: 10, enemies: ['pale-hound'], label: 'Kill pale hounds' },
-    after: ['the-last-road'],
-    zone: 'pale-reach',
-    level: 56,
-    reward: { xp: 1900, gold: 640 },
-  },
-  {
-    id: 'the-drake-graves',
-    name: 'The Drake Graves',
-    giver: 'mara-at-the-reach',
-    text: 'At dusk the drakes fly over Dawn’s Rest: dead drakes, nothing left of them but bone and the memory of wings, and they stoop on the sentries like hawks on mice. Hollis’s scouts, if they came, followed them home to the Drake Graves north-east of camp; if not, Mara’s own did, and fewer came back. Break the bone drakes at their graves.',
-    objective: { kind: 'kill', region: 'pale-reach', count: 6, enemies: ['bone-drake'], label: 'Break bone drakes' },
-    after: ['the-kings-kennels'],
-    zone: 'pale-reach',
-    level: 57,
-    reward: { xp: 2000, gold: 660 },
-  },
-  {
-    id: 'the-kings-host',
-    name: 'The King’s Host',
-    giver: 'mara-at-the-reach',
-    text: 'North-west of Dawn’s Rest the Host stands in the snow: rank on rank of the dead in blackened plate, not moving, not breathing, waiting for their king’s word. They are Vaelmoor’s own, the first memories the Ash Crown ever made. When the word comes they march south, and Dawn’s Rest is in the way. Thin the ranks before they move.',
-    objective: { kind: 'kill', region: 'pale-reach', count: 12, enemies: ['hollow-legionnaire', 'pale-knight'], label: 'Thin the Host’s ranks' },
-    after: ['the-drake-graves'],
-    zone: 'pale-reach',
-    level: 57,
-    reward: { xp: 2100, gold: 680, text: 'One of the legionnaires, falling, says: “Tell the baker I paid him.” They are all like that, Mara says. Every one of them is somebody’s Tuesday.' },
-  },
-  {
-    id: 'the-pale-standard',
-    name: 'The Pale Standard',
-    giver: 'mara-at-the-reach',
-    text: 'The ranks you broke had closed again by morning, and Mara knows why: in the middle of the Host stands its standard, the Hallow King’s colors on a pole of black iron, carried by a dead giant of his old guard. While the Standard stands, the Host stands. Bring it down at the King’s Host north-west of camp.',
-    objective: { kind: 'kill', region: 'pale-reach', count: 1, enemies: ['the-pale-standard'], label: 'Bring down the Pale Standard' },
-    after: ['the-kings-host'],
-    zone: 'pale-reach',
-    level: 57,
-    reward: { xp: 3000, gold: 900, item: { rarity: 'epic' } },
-  },
-  {
     id: 'march-vosk',
     name: 'The Rider at the Head of the Host',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'With the Standard down a rider has taken the Host’s head, and Dunmore’s scouts know the horse before they know the man: Rider-Captain Vosk, who burned Hearthstead and carried its fragment north. The Ash Crown kept him. There is not much left of him to keep. Ride him down at the King’s Host, and the Host has no one left to follow.',
+    text: 'The banners are in, and across the snow the King’s Host has drawn up in its ranks with a rider at its head. Dunmore’s scouts know the horse before they know the man: Rider-Captain Vosk, who burned Hearthstead and carried its fragment north. The Ash Crown kept him. There is not much left of him to keep. Ride him down at the King’s Host, and the Host has no one left to follow.',
     objective: { kind: 'kill', region: 'pale-reach', count: 1, enemies: ['vosk-the-hollowed'], label: 'Bring down Vosk at the head of the Host' },
-    after: ['the-pale-standard'],
+    after: ['the-last-road'],
     zone: 'pale-reach',
     level: 58,
-    reward: { xp: 3600, gold: 1000, text: 'Vosk goes down in the snow and looks up at you as if he is trying to remember where he has seen you. “Hearthstead,” he says at last. “I’m sorry. There was a well. I was thirsty.” Then the grey goes out of him.' },
+    reward: { xp: 3600, gold: 1000, text: 'Vosk goes down in the snow and looks up at you as if he is trying to remember where he has seen you. “Hearthstead,” he says at last. “I’m sorry. There was a well. I was thirsty.” Then the grey goes out of him. In his saddlebag there is a child’s scarf, folded small, and nothing folded in it.' },
   },
   {
     id: 'march-the-siege-mages',
     name: 'The Siege Mages',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'Duskspire’s outer wall is older than Aster and has never been breached. Veilwatch’s siege mages say they can bring it down, given time: they need to stand in the open before it and sing for as long as it takes, and the Host will come for them the moment they start. Every banner at Dawn’s Rest is on the field. Hold it around the mages until the wall comes down.',
+    text: 'Duskspire’s outer wall is older than Aster and has never been breached. Shardwatch’s siege mages, Quell’s scholars with their brass rods, say they can bring it down, given time: they need to stand in the open before it and sing for as long as it takes, and the Host will come for them the moment they start. Every banner at Dawn’s Rest is on the field. Hold it around the mages until the wall comes down.',
     objective: { kind: 'event', event: 'reach-the-mages', label: 'Hold the field around the siege mages' },
-    after: ['march-vosk'],
+    after: ['the-seventh-sigil'],
     zone: 'pale-reach',
     level: 58,
     reward: { xp: 4000, gold: 1100, item: { rarity: 'epic' }, text: 'The wall does not fall so much as remember it is stone. It goes down in a long slide of black blocks, and through the dust you can see the Duskspire Gate.' },
@@ -139,24 +95,24 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     name: 'The Voice in the Gate',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'In the Duskspire Gate, where the Spire of the Tear should have finished him, stands a shape of grey light with no face, speaking in the Herald’s voice without hurry, the way it always has. It says your name. It says Elyra’s. It says it will open the gate for you if you ask nicely. Don’t ask.',
+    text: 'In the Duskspire Gate stands a shape of grey light with no face, speaking in the Herald’s voice without hurry, the way it always has. It says your name. It says Elyra’s. It says it will open the gate for you if you ask nicely. Don’t ask.',
     objective: { kind: 'kill', region: 'pale-reach', count: 1, enemies: ['the-heralds-voice'], label: 'Silence the Herald’s voice in the Duskspire Gate' },
     after: ['march-the-breach'],
     zone: 'pale-reach',
     level: 59,
-    reward: { xp: 4200, gold: 1200, text: 'The voice comes apart into ordinary snow. In the quiet afterward Elyra says, very clearly: “He was Vaelor’s brother, you know. The Herald. He carried the order to open the harbor.” Nobody asks her how she knows.' },
+    reward: { xp: 4200, gold: 1200, text: 'The voice comes apart into ordinary snow, and the last of it is not the Herald’s at all, but a tired man’s: “The seventh lock is my brother’s, and it knows my voice. I closed it behind him three hundred years ago. Let me open one door the right way.” In the quiet afterward Elyra says, very clearly: “That was Aurel. Vaelor’s brother. He carried the order to open the harbor.” Nobody asks her how she knows.' },
   },
   {
     id: 'the-duskspire-gate',
     name: 'The Duskspire Gate',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'The way is open to the foot of Duskspire, the Hallow King’s citadel. Seven locks bar its gate, one for each sigil, and it opens only for someone who carries all seven. You do. Go up to the gate.',
+    text: 'The way is open to the foot of Duskspire, the Hallow King’s citadel, white with three hundred winters on the top of the Reach. Seven locks bar its gate, one for each sigil. Six will turn for the six lights in Elyra’s hands. The seventh is the Stone’s, and the Stone is on Vaelor’s brow; but the Herald’s last words were a promise. Go up to the gate.',
     objective: { kind: 'explore', spot: 'duskspire-gate', label: 'Go up to the Duskspire Gate' },
     after: ['march-the-voice'],
     zone: 'pale-reach',
     level: 59,
-    reward: { xp: 2400, gold: 900, text: 'Seven locks, and seven lights in Elyra’s hands, and the gate opens inward without a sound. Mara stays with the army at the wall. “Somebody has to keep the door,” she says. “I always do.”' },
+    reward: { xp: 2400, gold: 900, text: 'Six locks turn for six lights in Elyra’s hands. The seventh turns by itself, slowly, from the inside, and grey ash sifts out of the keyhole. “Aurel,” Elyra says. “He kept his word. Once.” The gate opens inward without a sound. Mara stays with the army at the wall. “Somebody has to keep the door,” she says. “I always do.”' },
   },
   /* ------------------------------------------------------------- Crownfall */
   {
@@ -173,11 +129,11 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
   },
   {
     id: 'the-hollow-king',
-    name: 'Crownfall: The Throne',
+    name: 'Crownfall: The Hallow King',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'At the top of the Stair of Ash, on his throne between six pillars, Vaelor waits: the Hallow King, who broke his half of the star to call his family back and has been calling ever since. He does not stand when you come in. He has been expecting someone for three hundred years, and he is disappointed it is you.',
-    objective: { kind: 'boss', boss: 'vaelor', label: 'Duel Vaelor in the throne room of Duskspire' },
+    text: 'At the top of the Stair of Ash, in a throne room gone white with rime, on a throne of ice between six pillars, Vaelor waits: the Hallow King, who broke his half of the star to call his family back and has been calling ever since. On his brow is the Ash Crown, and in it, burning cold, the Sigil of Stone: the last of the seven, and the first star of the crown he means to make of them. He does not stand when you come in. He has been expecting someone for three hundred years, and he is disappointed it is you.',
+    objective: { kind: 'boss', boss: 'vaelor', label: 'Defeat Vaelor, the Hallow King, in Duskspire’s throne room' },
     after: ['the-hollow-guard'],
     zone: 'pale-reach',
     level: 60,
@@ -185,7 +141,9 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
       xp: 9000,
       gold: 2400,
       item: 'signet-of-the-vanguard',
-      text: 'Vaelor goes down on the steps of his own throne, and the Ash Crown slides off his head and does not fall. It hangs in the air over him, turning, and the throne room comes apart around it like wet paper. Behind the walls, there is summer.',
+      // the last sigil, won from the last who held it
+      perk: 'sigil-stone',
+      text: 'Vaelor goes down on the steps of his own throne. The Sigil of Stone comes loose from the Ash Crown and falls, ringing on the ice, and Elyra catches it: seven of seven. The Crown does not fall. It slides off his head and hangs in the air over him, turning, and the throne room comes apart around it like wet paper. Over the tower the sky tears open, and behind it, there is summer.',
     },
   },
   {
@@ -193,7 +151,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     name: 'Crownfall: Vaelmoor Whole',
     giver: 'elyra-at-the-reach',
     auto: true,
-    text: 'The Ash Crown has pulled the throne room into the only thing it has left: its memory of Vaelmoor as it was the summer before the plague. Warm stone, banners, a market, people. Through the tear over Duskspire the hero can walk into it. Elyra is already there, standing in the square with all seven sigils lit in her hands, waiting for you.',
+    text: 'The Ash Crown, robbed of the last of its stars, has pulled the throne room into the only thing it has left: its memory of Vaelmoor as it was the summer before the plague. Warm stone, banners, a market, people. Through the tear that has opened in the sky over Duskspire the hero can walk into it. Elyra is already there, standing in the square with all seven sigils lit in her hands, waiting for you.',
     objective: { kind: 'talk', npc: 'elyra-in-the-memory', label: 'Find Elyra in the Crown’s memory of Vaelmoor' },
     after: ['the-hollow-king'],
     // the hand-off that sends the hero to vaelmoor-remembered: it starts when the last chapter ends, not on arrival
@@ -226,11 +184,11 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
   },
   {
     id: 'crownfall-the-ash-crown',
-    name: 'Crownfall: The Ash Crown',
+    name: 'Crownfall: The Crown Unmade',
     giver: 'elyra-in-the-memory',
     auto: true,
-    text: 'With the King gone the Crown has nothing left to hold it but itself, and it does not mean to go quietly: it gathers every grief it ever ate into one shape at the top of the memory, over the palace garden, and comes down to meet you. Elyra holds the sigils. Hold everything else.',
-    objective: { kind: 'boss', boss: 'the-ash-crown', label: 'Break the Ash Crown in the Crown’s memory' },
+    text: 'Whatever was answered, only the Crown is left. It hangs over the palace garden at the top of the memory, seven grey points turning in the summer air with nothing to hold them up but grief, and Elyra holds the seven stars it wanted. Walk her up to it, and stand with her while she unmakes it.',
+    objective: { kind: 'explore', spot: 'memory-garden', label: 'Stand with Elyra under the Crown in the palace garden' },
     after: ['crownfall-one-hour', 'crownfall-break-it'],
     zone: 'vaelmoor-remembered',
     level: 60,
@@ -238,7 +196,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
       xp: 12000,
       gold: 3000,
       item: { rarity: 'legendary' },
-      text: 'The Ash Crown breaks into seven pieces of light and one of ash, and the ash is only ash. The summer goes out of the air. You are standing in a ruined throne room at the top of a ruined tower, and it is snowing, and through the broken roof the sun is coming up over the Pale Reach.',
+      text: 'Elyra lifts the seven sigils, and the Ash Crown breaks into seven pieces of light and one of ash, and the ash is only ash. The summer goes out of the air, thinning like breath on glass, and through it you can see a ruined throne room at the top of a ruined tower, and snow, and the sun coming up over the Pale Reach. Beside you a way home stands open.',
     },
   },
   /* ---------------------------------------------------- Orren's cure */
@@ -337,7 +295,6 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'march-the-siege-mages', state: 'active' }, lines: ['The mages stand in the open and sing, and we stand around the mages and don’t let anything reach them. That’s the whole plan.', 'It’s a good plan. It’s a wall. I know about walls.'] },
       { when: { quest: 'the-duskspire-gate', state: 'active' }, lines: ['I’ll keep the door. Someone always has to keep the door. I’ve been keeping doors since Briarhollow.', 'Bring her back out. Bring yourself back out. In that order, if you have to choose. Don’t tell her I said so.'] },
       // side arcs change what she says: Haldren's dead laid to rest at the Muster Hall
-      { when: { quest: 'laid-to-rest', state: 'done' }, lines: ['Haldren wrote. He plowed his field. He says the soil’s good. He says he cried the whole time and the furrows are straight anyway.', 'I keep his letter in my glove. Don’t tell anyone.'] },
       { when: { quest: 'crownfall-the-ash-crown', state: 'done' }, lines: ['It’s over. I keep saying it and it keeps not sounding like anything.', 'I want to go home and fix the gate. Briarhollow’s gate. It sticks in the wet.'] },
       { lines: ['Shields together. Weight forward. Never step back first.', 'Every one of those banners is somebody you went back for. Remember that when it gets loud.'] },
     ],
@@ -382,11 +339,12 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
   'elyra-at-the-reach': {
     id: 'elyra-at-the-reach',
     name: 'Elyra',
-    title: 'Carrying seven',
+    title: 'Carrying six',
     sprite: 'villager',
     talk: [
       { when: { quest: 'crownfall-vaelmoor', state: 'active' }, lines: ['I can see it from here. Through the tear. It’s summer in there. Come on.'] },
-      { lines: ['Seven. They’re very quiet now. Like they’re waiting for something. Like I am.', 'Don’t tell me your name. I want to find it on my own. I’m close.'] },
+      { when: { quest: 'the-hollow-king', state: 'active' }, lines: ['The seventh is up there. On his brow, in the Crown. I can feel it the way you feel a draft.', 'When it comes loose, I’ll catch it. Just get it loose.'] },
+      { lines: ['Six. They’re very quiet now. Like they’re waiting for something. Like I am.', 'The seventh is up there in the cold, on his brow. I can feel it from here.', 'Don’t tell me your name. I want to find it on my own. I’m close.'] },
     ],
   },
   /* ------------------------------------------- the Crown's memory of Vaelmoor (the finale) */
@@ -405,7 +363,7 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
       },
       { when: { quest: 'crownfall-one-hour', state: 'offered' }, lines: ['One hour. The real light, not the Crown’s. Them as they were. Then I break it.', 'It will take the last of what the sigils have been taking. I know. I don’t mind. I think I don’t mind.', 'If you want him to have it, go to him. If you want it over, tell me now.'] },
       { when: { quest: 'crownfall-break-it', state: 'active' }, lines: ['Now, then. Tell me now, while I still know why.'] },
-      { when: { quest: 'crownfall-the-ash-crown', state: 'active' }, lines: ['It’s coming down from the garden. All of it, everything it ate. I can hold the sigils. You hold everything else.'] },
+      { when: { quest: 'crownfall-the-ash-crown', state: 'active' }, lines: ['It’s up there, over the garden. Everything it ever ate, and nothing left to hold it up.', 'Walk up with me? I don’t want to do this part alone.'] },
       { when: { quest: 'crownfall-break-it', state: 'taken' }, lines: ['I know your name. I do. I can say it. Listen.'] },
       { when: { quest: 'crownfall-one-hour', state: 'taken' }, lines: ['You came for me in the dark. I remember that. I don’t remember the rest. That’s all right. That’s the part that mattered.'] },
       { lines: ['Seven, and all of them quiet. They know it’s nearly done.'] },
@@ -429,12 +387,12 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'crownfall-one-hour', state: 'taken' }, lines: ['He came home. He came home and the bread was still warm.', 'Thank you. Let us go now. Please.'] },
-      { lines: ['The market is early today. Aldis wants honey cake. Wenna wants everything.', 'Have you seen my husband? He is always somewhere else. He means well.'] },
+      { lines: ['The market is early today. Lark wants honey cake. Edda wants everything.', 'Have you seen my husband? He is always somewhere else. He means well.'] },
     ],
   },
   'echo-of-the-children': {
     id: 'echo-of-the-children',
-    name: 'Aldis and Wenna',
+    name: 'Lark and Edda',
     title: 'The prince and princess',
     sprite: 'villager',
     talk: [{ lines: ['Papa’s going to get a star! A real one! He promised!', 'Are you a knight? You don’t look like a knight. You look like you walked a long way.'] }],
@@ -534,7 +492,7 @@ export const PALE_REACH_STORY_FOES: Record<string, EnemyDef> = {
     named: true,
     scale: 1.4,
     resist: { shadow: 0.6, arcane: 0.4 },
-    blurb: 'What the Spire of the Tear could not kill: the Pale Herald’s voice, a shape of grey light in the Duskspire Gate, speaking without hurry. It steps through the air when you close in.',
+    blurb: 'What is left of the Pale Herald in the living world: his voice, a shape of grey light in the Duskspire Gate, speaking without hurry. It steps through the air when you close in.',
   },
 };
 
@@ -592,7 +550,7 @@ export const PALE_REACH_EVENTS: Record<string, StoryEventDef> = {
     // bounded: Mara and Cael, and one of each faction the hero helped (up to eight more)
     allies: ['mara', 'cael'],
     alliesIf: FACTIONS,
-    ward: { pet: 'siege-mages', at: 'wall-field', name: 'Veilwatch’s siege mages' },
+    ward: { pet: 'siege-mages', at: 'wall-field', name: 'Shardwatch’s siege mages' },
     banner: 'The Last March!',
     start: [
       { who: 'mara', text: 'Every banner on the field! Nothing reaches the mages! Nothing!' },

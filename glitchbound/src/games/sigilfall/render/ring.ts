@@ -4,7 +4,7 @@ import { HERO_R, ZONE_START, type Fighter, type Match } from '../arena/sim';
 import type { RingAir } from '../render3d/ringDress';
 import { shot, TONES } from './effects';
 import { CLASSES } from '../data/classes';
-import { heroLook, heldWeapon } from './sprites';
+import { heroLook, heldWeapon, type WornLooks } from './sprites';
 import type { Held } from '../render3d/dress';
 import { FIELD, FX, type Fx3D } from '../render3d/fx3d';
 import type { RingStage, RingView } from '../render3d/ring3d';
@@ -26,7 +26,7 @@ export interface RingLook {
 }
 
 /** Every fighter's picture, made once. */
-export function ringLooks(m: Match, mine: { face?: Face; body?: 'm' | 'f'; wear?: Character | null }, myId: number | null): RingLook[] {
+export function ringLooks(m: Match, mine: { face?: Face; body?: 'm' | 'f'; wear?: Character | null; worn?: WornLooks }, myId: number | null): RingLook[] {
   return m.fighters.map((f) => {
     const hero = newCharacter(f.cls, f.name, 'ring');
     const isMe = f.id === myId;
@@ -34,7 +34,8 @@ export function ringLooks(m: Match, mine: { face?: Face; body?: 'm' | 'f'; wear?
     const w = isMe && mine.wear && mine.wear.cls === f.cls ? mine.wear : null;
     if (w) return { look: heroLook(f.cls, w.equip, wornLooks(w), w.body, w.face), held: heldWeapon(f.cls, w.equip.weapon, wornLooks(w).weapon) };
     const body: 'm' | 'f' = isMe ? (mine.body ?? 'm') : f.id % 2 ? 'f' : 'm';
-    const look = heroLook(f.cls, hero.equip, {}, body, isMe ? mine.face : undefined);
+    // (in plain clothes, the Ring armor they chose goes over them)
+    const look = heroLook(f.cls, hero.equip, isMe ? (mine.worn ?? {}) : {}, body, isMe ? mine.face : undefined);
     return { look, held: heldWeapon(f.cls, hero.equip.weapon) };
   });
 }
@@ -56,7 +57,16 @@ interface Pop {
   text: string;
   color: string;
   big: boolean;
+  /** A word (not a number): words stack. */
+  word?: boolean;
 }
+
+/** What an ability sounds like as it leaves the hand, and as it lands, by its school. */
+const LEAVES: Record<string, string> = { physical: 'swing', fire: 'fireball', frost: 'freeze', arcane: 'bolt', holy: 'holy', shadow: 'shadow', nature: 'nature' };
+const LANDS: Record<string, string> = { physical: 'clash', fire: 'explode', frost: 'freeze', arcane: 'zap', holy: 'holy', shadow: 'shadow', nature: 'nature' };
+const SUPER_SOUND: Record<string, string> = { physical: 'quake', fire: 'meteor', frost: 'freeze', arcane: 'thunder', holy: 'nova', shadow: 'rift', nature: 'thunder' };
+/** Every sound those tables name (a test holds them to the sounds there are). */
+export const ringSchoolSounds = (): string[] => [...Object.values(LEAVES), ...Object.values(LANDS), ...Object.values(SUPER_SOUND)];
 
 /** What's on screen for a moment: kept here, out of the simulation. */
 /** A spell landing: a burst in its school's own manner, bigger for a burst ability. */
@@ -89,33 +99,53 @@ export class RingFx {
         this.spread = (this.spread + 1) % 5;
         const x = f.x + (this.spread - 2) * 7;
         this.pops.push({ x, y: f.y - 30, t: 0, text: e.kind === 'dmg' ? `${e.n}` : e.kind === 'heal' ? `+${e.n}` : `(${e.n})`, color: e.kind === 'dmg' ? (e.crit ? '#ffd257' : '#fff6e0') : e.kind === 'heal' ? '#7fe06a' : '#9fdcff', big: e.crit || e.n > 120 });
-        if (e.kind === 'dmg' && e.id === myId) sound('squish', 0.5);
+        if (e.kind === 'dmg' && e.id === myId) sound('hurt', e.crit ? 0.7 : 0.45);
       } else if (e.k === 'word') {
         const f = m.fighters[e.id];
         if (!f) continue;
-        // (a combo is called out big, in gold, with a burst of light on them)
-        this.pops.push({ x: f.x, y: f.y - (e.combo ? 50 : 42), t: 0, text: e.combo ? `${e.word}!` : e.word, color: e.combo ? '#ffd257' : e.bad ? '#ff9ab0' : '#e0d0ff', big: !!e.combo });
-        if (e.combo) this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.5, r: 26, color: '#ffd257', ring: true });
+        // (a combo is called out big, in gold, with a burst of light on them; words said close together stand one over
+        // the other, never on top of each other)
+        const above = this.pops.filter((p) => p.word && p.t < 0.5 && Math.abs(p.x - f.x) < 40 && Math.abs(p.y - f.y) < 110).length;
+        this.pops.push({ x: f.x, y: f.y - (e.combo ? 50 : 42) - above * 13, t: 0, text: e.combo ? `${e.word}!` : e.word, color: e.combo ? '#ffd257' : e.bad ? '#ff9ab0' : '#e0d0ff', big: !!e.combo, word: true });
+        if (e.combo) {
+          this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.5, r: 26, color: '#ffd257', ring: true });
+          // (a chain's later links ring higher)
+          sound(/×[34]$/.test(e.word) ? 'epic' : 'shard', 0.7);
+        } else if (e.word === 'Interrupted' || e.word === 'Reflected') sound('shieldBreak', 0.6);
       } else if (e.k === 'ab') {
         const ab = ABILITIES[e.ab];
         const f = m.fighters[e.id];
         if (!ab || !f) continue;
         if (ab.aim === 'near') this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.42, r: ab.range + HERO_R, color: ab.color, ring: true });
         else if (ab.cast === 0 && ab.range <= 40) this.flashes.push({ x: f.x + f.dirX * 12, y: f.y - 8 + f.dirY * 8, t: 0, dur: 0.16, r: 16, color: ab.color, ring: false });
-        sound(ab.id === 'dash' ? 'dodge' : ab.school === 'physical' ? 'enemySwing' : 'click', 0.5);
+        // (what it is made of, as it leaves the hand: your own a little louder than the rest)
+        const vol = e.id === myId ? 0.7 : 0.4;
+        const melee = ab.range > 0 && ab.range <= 40;
+        if (ab.id === 'dash') sound('dodge', vol);
+        else if (ab.super) sound(SUPER_SOUND[ab.school] ?? 'nova', 0.9);
+        else if (ab.role === 'heal' || ab.aim === 'friend') sound('buff', vol * 0.8);
+        else if (ab.aim === 'self') sound(ab.role === 'defense' ? 'shield' : ab.role === 'mobility' ? 'blink' : 'buff', vol);
+        else if (ab.school === 'physical') sound(melee ? (ab.role === 'burst' ? 'swingBig' : 'swing') : ab.cls === 'ranger' ? 'bow' : 'swingBig', vol);
+        else sound(LEAVES[ab.school] ?? 'bolt', vol);
       } else if (e.k === 'land') {
         const ab = ABILITIES[e.ab];
         const f = m.fighters[e.id];
         if (!ab || !f) continue;
         this.flashes.push({ x: f.x, y: f.y - 12, t: 0, dur: 0.32, r: ab.role === 'burst' ? 30 : 22, color: ab.color, ring: false });
         if (ab.role === 'heal') this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.5, r: 18, color: ab.color, ring: true });
+        // (and as it lands: steel for a blow, the school's own for a spell, a soft chime for a heal)
+        const mine = e.id === myId;
+        if (ab.role === 'heal' || ab.aim === 'friend') sound('heal', mine ? 0.6 : 0.35);
+        else if (ab.aim === 'enemy' || ab.aim === 'near') sound(ab.school === 'physical' ? (ab.role === 'burst' ? 'critBlade' : 'clash') : ab.role === 'burst' ? 'explode' : (LANDS[ab.school] ?? 'hit'), mine ? 0.75 : 0.5);
         this.bursts.push({ x: f.x, y: f.y, t: 0, dur: ab.role === 'burst' ? 0.75 : 0.55, school: ab.school, color: ab.color, big: ab.role === 'burst', heal: ab.role === 'heal' || ab.aim === 'friend', seed: (f.x * 7 + f.y * 3 + this.bursts.length) % 97 });
         if (this.bursts.length > 24) this.bursts.shift();
       } else if (e.k === 'death') {
         const f = m.fighters[e.id];
         if (!f) continue;
         this.flashes.push({ x: f.x, y: f.y - 10, t: 0, dur: 0.8, r: 60, color: '#ff5a5a', ring: true });
-        sound('playerDie', 0.8);
+        // (a fighter down: a body falling and the crowd's drum; the match's own end has its jingle)
+        sound('die', 0.9);
+        sound('slam', 0.6);
       } else if (e.k === 'miss') {
         // a shot that hit stone or flew out: a puff where it fell
         const ab = ABILITIES[e.ab];
@@ -129,7 +159,7 @@ export class RingFx {
         this.flashes.push({ x: f.x, y: f.y - 14, t: 0, dur: 0.45, r: 34, color: '#fff6d8', ring: false });
         this.pops.push({ x: f.x, y: f.y - 54, t: 0, text: ab.name, color: '#ffd257', big: true });
         this.supers.push({ id: f.id, t: 0 });
-        sound('nova', 0.6);
+        sound('roar', 0.5);
       } else if (e.k === 'sigil') {
         this.flashes.push({ x: e.x, y: e.y, t: 0, dur: 0.6, r: e.id < 0 ? 22 : 34, color: '#ffe27a', ring: true });
         sound(e.id >= 0 ? 'pickupBig' : 'orb', e.id >= 0 ? 0.7 : 0.4);

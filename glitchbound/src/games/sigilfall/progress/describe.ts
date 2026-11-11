@@ -97,6 +97,9 @@ function groundText(g: GroundSpec): string {
   return `leaves ${what} for ${secs(g.dur)}${g.pull ? ' that drags enemies in' : ''}`;
 }
 
+/** A damage-over-time status as a noun. */
+const STATUS_WORD: Partial<Record<string, string>> = { burn: 'burn', bleed: 'bleed', poison: 'poison', curse: 'curse' };
+
 export function effectText(e: Effect): string {
   switch (e.kind) {
     case 'status':
@@ -108,7 +111,8 @@ export function effectText(e: Effect): string {
     case 'chain':
       return `leaps to ${e.jumps} more ${e.jumps === 1 ? 'enemy' : 'enemies'} (${pct(e.mul)} damage)`;
     case 'heal':
-      return `heals you for ${Math.round(e.pct)}% of your health`;
+      // (a small heal keeps its decimal: 0.3% used to read "0%")
+      return `heals you for ${e.pct < 3 && e.pct % 1 !== 0 ? e.pct.toFixed(1) : Math.round(e.pct)}% of your health`;
     case 'shield':
       return `shields you for ${Math.round(e.pct)}% of your health for ${secs(e.dur)}`;
     case 'nova':
@@ -143,6 +147,8 @@ export function effectText(e: Effect): string {
       return `makes enemies around it turn on you for ${secs(e.dur)}`;
     case 'yank':
       return 'drags the enemy hit to you';
+    case 'detonate':
+      return `sets off every ${STATUS_WORD[e.status] ?? e.status} on the enemy at once (${pct(e.mul)} of what was left${e.radius ? ', on everything near it' : ''})`;
   }
 }
 
@@ -153,6 +159,12 @@ export function buffText(b: BuffDef): string {
   if (b.dr) parts.push(`${Math.round(b.dr)}% less damage taken`);
   if (b.hot) parts.push(`heals ${b.hot}% of your health per second`);
   if (b.thorns) parts.push('strikes back at whatever hits you');
+  const m = b.empower;
+  if (m) {
+    const how = [m.pct ? `+${m.pct}% damage${b.max ? ' a stack' : ''}` : '', m.free ? 'free' : '', m.instant ? 'no cast time' : '', m.ready ? 'ready at once' : ''].filter(Boolean);
+    parts.push(`your next ${m.casts && m.casts > 1 ? `${m.casts} casts of ` : ''}${m.type ? `${DMG_NAME[m.type].toLowerCase()} skill` : (SKILLS[m.skill]?.name ?? m.skill)}: ${how.join(', ')}`);
+  }
+  if (b.max && !m) parts.push(`stacks to ${b.max}`);
   return `${b.name} for ${secs(b.dur)}: ${parts.join(', ')}`;
 }
 
@@ -197,7 +209,7 @@ export function opText(skill: string, op: SkillOp): string {
     case 'trail':
       return `${s} ${groundText(op.ground)} along its path.`;
     case 'bonusVs':
-      return `${s} deals +${op.pct}% damage to ${op.status === 'lowHp' ? 'enemies below 30% health' : `${STATUS_NAME[op.status]} enemies`}.`;
+      return `${s} deals +${op.pct}% damage to ${op.status === 'lowHp' ? 'enemies below 30% health' : op.status === 'far' ? 'enemies a long way off' : `${STATUS_NAME[op.status]} enemies`}.`;
     case 'afterDodge':
       return `${s} deals +${op.pct}% damage within ${secs(op.window)} after a dodge.`;
     case 'gen':

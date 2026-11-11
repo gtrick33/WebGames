@@ -1,5 +1,7 @@
 import { TAU } from '../core/math';
 import { CLASSES, emptyStats } from '../data/classes';
+import { ITEM_DEFS } from '../data/items';
+import { SETS, type SetDef } from '../data/riftgear';
 import { SKILLS } from '../data/skills';
 import { SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { Effect, FormDef, GroundSpec, Mod, ProcDef, Rarity, ResourceDef, SkillOp, SkillSpec, SlotKey, Stats, StatKey } from '../data/types';
@@ -71,6 +73,7 @@ export function collectMods(c: Character): Entry[] {
   const out: Entry[] = [];
   const spec = c.spec !== null && c.level >= SPEC_LEVEL ? CLASSES[c.cls].trees[c.spec] : null;
   if (spec) for (const mod of spec.passive.mods) out.push({ mod, rank: 1, source: { name: spec.passive.name, kind: 'talent' } });
+  if (spec?.combo) for (const mod of spec.combo.mods) out.push({ mod, rank: 1, source: { name: spec.combo.name, kind: 'talent' } });
   for (const node of TALENTS[c.cls]) {
     const rank = c.talents[node.id] ?? 0;
     if (rank > 0) for (const mod of node.mods) out.push({ mod, rank, source: { name: node.name, kind: 'talent' } });
@@ -80,7 +83,21 @@ export function collectMods(c: Character): Entry[] {
     if (!item) continue;
     for (const mod of itemMods(item)) out.push({ mod, rank: 1, source: { name: itemName(item), kind: 'item', rarity: item.r } });
   }
+  // what a set gives for the pieces of it worn
+  for (const { set, worn } of setsWorn(c.equip)) {
+    for (const b of set.bonuses) if (worn >= b.need) for (const mod of b.mods) out.push({ mod, rank: 1, source: { name: set.name, kind: 'item', rarity: 'legendary' } });
+  }
   return out;
+}
+
+/** The sets a hero wears pieces of, and how many of each. */
+export function setsWorn(equip: Character['equip']): { set: SetDef; worn: number }[] {
+  const n = new Map<string, number>();
+  for (const slot of SLOTS) {
+    const id = equip[slot] ? ITEM_DEFS[equip[slot]!.base]?.set : undefined;
+    if (id) n.set(id, (n.get(id) ?? 0) + 1);
+  }
+  return [...n].flatMap(([id, worn]) => (SETS[id] ? [{ set: SETS[id]!, worn }] : []));
 }
 
 /** The skill ids a mod's `skill` field can stand for. */

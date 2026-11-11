@@ -2,8 +2,9 @@ import type { ZoneArt } from '.';
 
 /**
  * The Rimeheld Vault: its bosses and enemies, as text art (facing right, two frames). Jarl Hrimfang
- * with his great axe and wolf-pelt mantle, the Rime Wyrm with its wings up and down, the Jarl’s giants
- * and hounds, the vault’s wardens frozen into their ice, and the living ice of its walls.
+ * with his great axe and wolf-pelt mantle, Hallvor the Unthawed with the halberd of the watch, the
+ * Rime Wyrm with its wings up and down, the Jarl’s giants and hounds, the vault’s wardens frozen into
+ * their ice, and the living ice of its walls.
  */
 export const RIMEHELD_VAULT_ART: ZoneArt = {
   foes: {
@@ -270,6 +271,50 @@ export const RIMEHELD_VAULT_ART: ZoneArt = {
           '.....tTT.TTt................',
           '....ttTT.TTtt...............',
           '...tttTT.TTttt..............',
+        ],
+      ],
+    },
+    // Hallvor the Unthawed: a helm of ice, frost-white hair, rime plate with the wardens' gold, a deep-blue cape, the halberd of the watch
+    'hallvor-the-unthawed': {
+      pal: { i: '#e8f6ff', I: '#9cc4e0', e: '#5af0ff', s: '#c4d8e4', w: '#f0f8ff', P: '#7aa8cc', p: '#b8dcf4', y: '#ffd24a', c: '#3a6a9a', C: '#22446a', h: '#c8d8e8', H: '#8aa0b8', b: '#eaf8ff', B: '#9ad8ff' },
+      frames: [
+        [
+          '.............bB...',
+          '.....iii....bBBb..',
+          '....iIiiii...bB...',
+          '....iIeseI....h...',
+          '...wiIsssIw...h...',
+          '...wwIiiIww..yh...',
+          '..cwPpppppPwcPPh..',
+          '.cCPpyyypPPcPPh...',
+          '.cCPppyppPPc..h...',
+          '.cCPpyyypPPc..h...',
+          '.cCPpppppPPc..h...',
+          '.cCcPPPPPPcc..h...',
+          '.cCcPpp.pPcc..h...',
+          '..cCPpp.pPc...H...',
+          '..cCPpp.pPc...h...',
+          '...cPPP.PPP...h...',
+          '...IIII.IIII..H...',
+        ],
+        [
+          '..................',
+          '.....iii.....bB...',
+          '....iIiiii..bBBb..',
+          '....iIeseI...bB...',
+          '...wiIsssIw...h...',
+          '...wwIiiIww..yh...',
+          '..cwPpppppPwcPPh..',
+          '.cCPpyyypPPcPPh...',
+          '.cCPppyppPPc..h...',
+          '.cCPpyyypPPc..h...',
+          'cCCPpppppPPc..h...',
+          'cCCcPPPPPPcc..h...',
+          '.cCcPpp.pPcc..h...',
+          '..cCPpp.pPc...H...',
+          '..cCPpp.pPc...h...',
+          '...cPPP.PPP...h...',
+          '...IIII.IIII..H...',
         ],
       ],
     },

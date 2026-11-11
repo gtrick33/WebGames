@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { markCombo } from './comboMark';
 import { slotLevel } from '../progress/character';
 import { skillCost } from '../sim/cast';
 import { CLASSES } from '../data/classes';
@@ -91,6 +92,7 @@ function Slot({ engine, slot, keyLabel }: { engine: SigilEngine; slot: SlotKey; 
     }
     const spec = world.build.skills[id]?.spec;
     b.classList.toggle('is-nomana', !!spec && skillCost(world, spec, slot) > p.mana + 1e-6);
+    markCombo(b, world, id);
     const c = p.cds[slot];
     const empty = c.charges <= 0;
     const share = empty ? Math.max(0, c.t / Math.max(0.01, c.cd)) : 0;

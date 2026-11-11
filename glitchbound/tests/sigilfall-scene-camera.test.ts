@@ -40,7 +40,7 @@ function begin(w: World, def: SceneDef): void {
   for (const s of SCENES) if (s.id !== def.id && s.region === def.region && !w.hero.opened.includes(`scene:${s.id}`)) w.hero.opened.push(`scene:${s.id}`);
   w.enemies = [];
   if (def.when) {
-    const at = def.near ? (w.places[def.near] ?? w.npcs.find((n) => n.id === def.near)) : null;
+    const at = def.near ? (w.places[def.near] ?? w.spots.find((x) => x.id === def.near) ?? w.npcs.find((n) => n.id === def.near)) : null;
     if (at) {
       w.player.x = at.x;
       w.player.y = at.y + 20;

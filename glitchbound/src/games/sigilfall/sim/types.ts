@@ -16,6 +16,8 @@ export interface Status {
   stack?: number;
   /** Damage over time came from the player. */
   fromPlayer?: boolean;
+  /** When it was laid (the world's clock): a blow can't set off the fire it has only just lit. */
+  born?: number;
   /** A curse's damage type. */
   dtype?: DmgType;
   /** The skill a curse came from (each skill's curse is its own). */
@@ -66,6 +68,9 @@ export interface Player {
   shield: number;
   shieldT: number;
   iframe: number;
+  /** A guard held up (the Gloamknight's Stand Fast): seconds left, and how hard it pays a blow back. */
+  guard: number;
+  guardPow: number;
   dash: { vx: number; vy: number; t: number; spec: SkillSpec | null; hit: Set<number>; dodge: boolean } | null;
   windup: { slot: SlotKey; spec: SkillSpec; t: number; total: number; angle: number; tx: number; ty: number } | null;
   /** A spell being cast (SkillSpec.castTime), or null. */
@@ -74,7 +79,8 @@ export interface Player {
   channel: { spec: SkillSpec; t: number; tickT: number; target?: number } | null;
   /** Timed buffs (shouts, walls, wings, healing over time). */
   /** Timed buffs; `skill` is the skill whose cast gave it (it ends when that skill leaves the bar). */
-  buffs: { def: BuffDef; t: number; skill?: string }[];
+  /** (`n`: its stacks, or the casts it has left) */
+  buffs: { def: BuffDef; t: number; skill?: string; n?: number }[];
   /** A druid's shape (a FormDef id), or null. */
   form: string | null;
   cds: Record<SlotKey, Cooldown>;
@@ -101,6 +107,9 @@ export interface Player {
   actKind: 'swing' | 'cast' | 'shoot' | 'heavy' | 'spin' | null;
   /** Bigger swing for the combo finisher. */
   actBig: boolean;
+  /** How many skills they have made, and the last one: by these the picture knows a new blow from the one before. */
+  actN: number;
+  actSkill: string | null;
   /** Seconds left on the hit flash. */
   flash: number;
   /** The mount ridden (a MountDef id), or null on foot. */
@@ -327,6 +336,20 @@ export interface Field {
 }
 
 /** A warning shape on the ground that deals its damage when it fills up. */
+export type TelegraphKind = 'danger' | 'safe' | 'stand' | 'warn';
+
+/**
+ * What a boss is doing, said once in one place (the slot under its health bar, ui/GameScreen.tsx): a few words, a
+ * bar that runs down while it lasts, and what to do about it, which the banner shows a hero the first time they meet it.
+ */
+export interface Callout {
+  text: string;
+  color: string;
+  t: number;
+  dur: number;
+  hint?: string;
+}
+
 export interface Telegraph {
   id: number;
   shape: 'circle' | 'ring' | 'line' | 'cone' | 'donut';
@@ -345,6 +368,13 @@ export interface Telegraph {
   knock: number;
   /** Visual: enemy attacks are red; the rift is magenta. */
   tone: 'enemy' | 'rift' | 'player';
+  /**
+   * What it asks of the hero, each drawn its own way (render/effects.ts): `danger` (the default: get out, red or the
+   * rift's magenta), `safe` (the one place the blow won't land: gold, outlined, get in), `stand` (somewhere to stand
+   * for the fight's sake: blue, with a mark at its middle), `warn` (it shows what is coming and hurts nobody: grey).
+   * Only a `danger` ever strikes.
+   */
+  kind?: TelegraphKind;
   /** For a moving owner: the shape follows it (slams). */
   owner: number;
   /** Friendly telegraphs (meteor) hit enemies instead, via `then`. */
@@ -408,6 +438,8 @@ export interface Ghost {
   shots: { x: number; y: number; vx: number; vy: number; r: number; color: string }[];
   /** The spell they are casting (a skill id, data/skills) and how far along (0 to 1), or null: drawn only. */
   cast: { id: string; k: number; angle: number } | null;
+  /** The last skill they made (their count of them, which, where it went, what kind, a big swing), drawn only. */
+  act: { n: number; skill: string; angle: number; kind: 'swing' | 'cast' | 'shoot' | 'heavy' | 'spin'; big: boolean } | null;
   /** World time of their last message. */
   seen: number;
 }
@@ -485,6 +517,8 @@ export interface NpcActor {
   since?: number;
   /** When they fell (World.time), if they fell in sight (a `down` NPC's collapse). */
   fell?: number;
+  /** A figure of a memory (a scene's vision), wearing the look of the NPC named: pale, cold, not quite here. */
+  ghost?: string;
 }
 
 export interface FloatText {
@@ -499,7 +533,7 @@ export interface FloatText {
 
 /** Visual-only particles and flashes (never affect play). */
 export interface Fx {
-  kind: 'spark' | 'smoke' | 'ring' | 'slash' | 'bolt' | 'burst' | 'ember' | 'shard' | 'rubble' | 'ghost' | 'coin' | 'beam' | 'text' | 'rift' | 'leaf' | 'zap' | 'glow';
+  kind: 'spark' | 'smoke' | 'ring' | 'slash' | 'bolt' | 'burst' | 'ember' | 'shard' | 'rubble' | 'ghost' | 'coin' | 'beam' | 'text' | 'rift' | 'leaf' | 'flake' | 'zap' | 'glow';
   x: number;
   y: number;
   vx: number;

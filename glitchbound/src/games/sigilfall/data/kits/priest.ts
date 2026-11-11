@@ -1,4 +1,4 @@
-import { cdr, dmg, K, onHit, P, S, skill, spec, stats, T, type Kit } from './kit';
+import { cdr, combo, dmg, K, onHit, P, S, skill, spec, stats, T, when, type Kit } from './kit';
 
 /** The Priest: holy light and shadow on mana, kept alive by shields and the healing woven into every spell. */
 
@@ -25,6 +25,7 @@ export const PRIEST: Kit = {
         color: '#ffe9a0',
         role: 'Shields and atonement',
         skill: 'penance',
+        combo: combo('Vespers', 'The two lights answer each other. A holy hit makes your next shadow skill 25% stronger; a shadow hit makes your next holy skill 25% stronger. Either one, so answered, costs nothing.', when('vespers-dusk', 'hit', { kind: 'buff', buff: { id: 'combo-vespers-dusk', name: 'Dusk', dur: 8, color: '#b07aff', empower: { skill: '*', type: 'shadow', pct: 25, free: true } } }, 'A holy hit strengthens your next shadow skill.', { dmgType: 'holy', icd: 0.5 }), when('vespers-dawn', 'hit', { kind: 'buff', buff: { id: 'combo-vespers-dawn', name: 'Dawn', dur: 8, color: '#ffe9a0', empower: { skill: '*', type: 'holy', pct: 25, free: true } } }, 'A shadow hit strengthens your next holy skill.', { dmgType: 'shadow', icd: 0.5 })),
         passive: {
           name: 'Atonement',
           text: 'Your hits heal you for 1.5% of your health (at most twice a second), and Ward of Grace absorbs 40% of your health.',
@@ -40,6 +41,7 @@ export const PRIEST: Kit = {
         color: '#fff2b0',
         role: 'Radiant damage and healing',
         skill: 'holy-fire',
+        combo: combo('Kindled Hymn', 'The dark makes the light burn brighter. A shadow hit makes your next holy skill 60% stronger; a holy hit makes your next shadow skill 20% stronger.', when('hymn-dusk', 'hit', { kind: 'buff', buff: { id: 'combo-hymn-dusk', name: 'Dusk', dur: 8, color: '#b07aff', empower: { skill: '*', type: 'shadow', pct: 20 } } }, 'A holy hit strengthens your next shadow skill.', { dmgType: 'holy', icd: 0.5 }), when('hymn-dawn', 'hit', { kind: 'buff', buff: { id: 'combo-hymn-dawn', name: 'Dawn', dur: 8, color: '#ffe9a0', empower: { skill: '*', type: 'holy', pct: 60 } } }, 'A shadow hit strengthens your next holy skill.', { dmgType: 'shadow', icd: 0.5 })),
         passive: { name: 'Dawnlight', text: '+10% holy damage and +20% healing.', mods: [S('holy', 10), S('healing', 20)] },
       },
       {
@@ -48,6 +50,7 @@ export const PRIEST: Kit = {
         color: '#8a5aff',
         role: 'Shadow damage over time',
         skill: 'vampiric-touch',
+        combo: combo('The Waking Hunger', 'The light only whets it. A holy hit makes your next shadow skill 60% stronger and ready at once; a shadow hit makes your next holy skill 20% stronger.', when('hunger-dusk', 'hit', { kind: 'buff', buff: { id: 'combo-hunger-dusk', name: 'Dusk', dur: 8, color: '#b07aff', empower: { skill: '*', type: 'shadow', pct: 60, ready: true } } }, 'A holy hit strengthens your next shadow skill.', { dmgType: 'holy', icd: 0.5 }), when('hunger-dawn', 'hit', { kind: 'buff', buff: { id: 'combo-hunger-dawn', name: 'Dawn', dur: 8, color: '#ffe9a0', empower: { skill: '*', type: 'holy', pct: 20 } } }, 'A shadow hit strengthens your next holy skill.', { dmgType: 'shadow', icd: 0.5 })),
         passive: { name: 'Shadowform', text: '+15% shadow damage and +5% max health.', mods: [S('shadow', 15), S('hpPct', 5)] },
       },
     ],
@@ -63,7 +66,7 @@ export const PRIEST: Kit = {
     sk('skill', 28, 'Chastise', 'A rebuke of light that stuns the enemy it strikes.', spec({ id: 'chastise', cast: 'projectile', range: 160, cooldown: 12, damage: 18, dmgType: 'holy', speed: 300, radius: 4, cost: 10, onHit: [{ kind: 'status', status: 'stun', dur: 1.2, power: 1 }], look: 'holy', tags: ['projectile', 'holy', 'control'] })),
     sk('skill', 36, 'Dusk Shade', 'Calls a shadow fiend that fights for you for 15 seconds.', spec({ id: 'shadow-fiend', cast: 'summon', aim: 'self', cooldown: 30, cost: 14, dmgType: 'shadow', onCast: [{ kind: 'summon', pet: 'shadow-fiend', count: 1, dur: 15 }], tags: ['summon', 'shadow'] })),
     sk('skill', 46, 'Sanctuary', 'Hallows ground for 6 seconds: it burns your enemies and heals you while you stand in it.', spec({ id: 'sanctuary', cast: 'ground', aim: 'ground', range: 120, cooldown: 24, damage: 4, dmgType: 'holy', area: 50, duration: 6, tick: 0.5, cost: 18, extra: { heal: 1.5 }, look: 'holy', tags: ['aoe', 'holy', 'heal'] })),
-    sk('basic', 1, 'Smite', 'A bolt of holy light. Each hit gives back a little mana.', spec({ id: 'smite', cast: 'projectile', range: 140, cooldown: 0.45, damage: 11, dmgType: 'holy', speed: 230, radius: 3, extra: { manaOnHit: 2 }, look: 'smite', tags: ['projectile', 'basic'] })),
+    sk('basic', 1, 'Smite', 'Light falls on the enemy you face. It lands at once, and it does not miss. Each hit gives back a little mana.', spec({ id: 'smite', cast: 'mark', range: 140, cooldown: 0.6, damage: 15, dmgType: 'holy', extra: { manaOnHit: 2 }, look: 'smite', tags: ['basic'] })),
     sk(
       'skill',
       1,
@@ -159,8 +162,8 @@ export const PRIEST: Kit = {
       'dodge',
       1,
       'Swift Feather',
-      'Glide a few steps on a feather of light, then move 30% faster for 3 seconds.',
-      spec({ id: 'angelic-feather', cast: 'dash', range: 60, cooldown: 5, duration: 0.18, onCast: [{ kind: 'buff', buff: { id: 'angelic-feather', name: 'Swift Feather', dur: 3, stats: { speed: 30 }, color: '#fff2b0' } }], tags: ['movement', 'dodge'] }),
+      'Drift out of reach on a feather of light: slower than any dash, and nothing can touch you the whole way. Then you move 30% faster for 3 seconds.',
+      spec({ id: 'angelic-feather', cast: 'dash', range: 72, cooldown: 5, duration: 0.5, onCast: [{ kind: 'buff', buff: { id: 'angelic-feather', name: 'Swift Feather', dur: 3, stats: { speed: 30 }, color: '#fff2b0' } }], tags: ['movement', 'dodge'] }),
     ),
   ],
   talents: [
@@ -185,7 +188,7 @@ export const PRIEST: Kit = {
     T(0, 2, 1, 'grace', 'Grace', 3, 'heal', '+5% healing per rank.', [S('healing', 5)]),
     T(0, 2, 2, 'rapture', 'Rapture', 1, 'shield', 'Ward of Grace absorbs 50% of your health.', [K('power-word-shield', { op: 'onCast', effect: { kind: 'shield', pct: 50, dur: 6 } })], 'soul-warding'),
     T(0, 3, 0, 'penitence', 'Penitence', 2, 'clock', 'Atoning Light recharges 12% faster per rank.', [cdr('penance', 12)]),
-    T(0, 3, 1, 'twin-disciplines', 'Twin Vows', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
+    T(0, 3, 1, 'twin-disciplines', 'Twin Vows', 3, 'power', 'Every Smite that lands mends you for 0.4% of your health per rank.', [onHit('smite', { kind: 'heal', pct: 0.4 })]),
     T(
       0,
       3,
@@ -199,7 +202,7 @@ export const PRIEST: Kit = {
     ),
     T(0, 3, 3, 'focused-will', 'Steeled Will', 2, 'heart', '+5% max health per rank.', [S('hpPct', 5)]),
     T(0, 4, 0, 'contrition', 'Contrition', 2, 'drain', 'Atoning Light heals you for 10% more of the damage it deals per rank.', [K('penance', { op: 'extra', key: 'drainHeal', n: 10, label: '% of the damage healed' })]),
-    T(0, 4, 1, 'evangelism', 'Evangelism', 3, 'crit', '+2% critical hit chance per rank.', [S('crit', 2)]),
+    T(0, 4, 1, 'evangelism', 'Evangelism', 3, 'crit', 'Smite deals +8% damage per rank to Cursed enemies.', [K('smite', { op: 'bonusVs', status: 'curse', pct: 8 })]),
     T(0, 4, 2, 'pain-suppression', 'Pain Ward', 2, 'shield', '+15 armor per rank while below half health.', [S('armor', 15, 'lowHp')]),
     T(0, 5, 0, 'purge-the-wicked', 'Burn the Wicked', 1, 'burn', 'Smite sears enemies: 20% of its hit as holy damage every second for 4 s.', [onHit('smite', { kind: 'status', status: 'curse', dur: 4, power: 0.2, dmgType: 'holy' })]),
     T(0, 5, 2, 'harsh-discipline', 'Stern Discipline', 3, 'holy', 'Smite deals +8% damage per rank.', [dmg('smite', 8)]),
@@ -247,11 +250,11 @@ export const PRIEST: Kit = {
       'searing-light',
     ),
     T(1, 3, 0, 'chastise', 'Chastise', 1, 'stun', 'Searing Hymn stuns the enemy it hits for 1 s.', [onHit('holy-fire', { kind: 'status', status: 'stun', dur: 1, power: 1 })]),
-    T(1, 3, 1, 'divine-providence', 'Divine Providence', 3, 'crit', '+2% critical hit chance per rank.', [S('crit', 2)]),
+    T(1, 3, 1, 'divine-providence', 'Second Light', 3, 'crit', 'Smite’s light leaps on to a second enemy for 20% of the hit per rank.', [onHit('smite', { kind: 'chain', jumps: 1, range: 64, mul: 0.2, dmgType: 'holy' })]),
     T(1, 3, 2, 'circle-of-healing', 'Healing Ring', 1, 'heal', 'Radiant Burst heals you for 12% of your health instead of 8%.', [K('holy-nova', { op: 'onCast', effect: { kind: 'heal', pct: 12 } })]),
     T(1, 3, 3, 'prayer-of-fortitude', 'Prayer of Endurance', 2, 'heart', '+5% max health per rank.', [S('hpPct', 5)]),
     T(1, 4, 0, 'empyreal-blaze', 'Heavenfire', 1, 'explode', 'Searing Hymn bursts where it lands, hitting everything nearby for 50% of its damage.', [K('holy-fire', { op: 'onImpact', effect: { kind: 'explode', radius: 30, mul: 0.5, dmgType: 'holy' } })]),
-    T(1, 4, 1, 'light-of-the-naaru', 'Light of the Choir', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
+    T(1, 4, 1, 'light-of-the-naaru', 'Light of the Choir', 3, 'power', 'Every Smite that lands hurries your other skills: 0.04 s off their cooldowns per rank.', [onHit('smite', { kind: 'cdr', s: 0.04 })]),
     T(1, 4, 2, 'benediction', 'Benediction', 2, 'clock', 'Renew recharges 15% faster per rank.', [cdr('renew', 15)]),
     T(1, 5, 0, 'divine-star', 'Circling Star', 2, 'star', 'Halo deals +20% damage per rank.', [dmg('halo', 20)]),
     T(1, 5, 2, 'trail-of-light', 'Path of Light', 2, 'wings', 'Swift Feather heals you for 4% of your health per rank.', [K('angelic-feather', { op: 'onCast', effect: { kind: 'heal', pct: 4 } })]),
@@ -296,12 +299,12 @@ export const PRIEST: Kit = {
       [P({ id: 'spirit-tap', on: 'kill', status: 'curse', chance: 1, icd: 0.2, effect: { kind: 'resource', n: 5 }, text: 'Killing a Cursed enemy gives back mana.' })],
     ),
     T(2, 1, 1, 'improved-mind-blast', 'Sharper Lash', 2, 'shadow', 'Thought Lash deals +10% damage per rank.', [dmg('mind-blast', 10)]),
-    T(2, 1, 2, 'veiled-shadows', 'Veiled Shadows', 3, 'crit', '+2% critical hit chance per rank.', [S('crit', 2)]),
+    T(2, 1, 2, 'veiled-shadows', 'Veiled Shadows', 3, 'crit', 'Swift Feather leaves a veil of shadow where you rose from, harder per rank: what it catches is Slowed for 3 s.', [K('angelic-feather', { op: 'onCast', effect: { kind: 'nova', radius: 36, mul: 0.4, ref: true, dmgType: 'shadow', status: { status: 'chill', dur: 3, power: 0.4 } } })]),
     T(2, 2, 0, 'psychic-horror', 'Mind Horror', 1, 'fear', 'Dread Wail also Weakens: enemies deal 25% less damage for 5 s.', [onHit('psychic-scream', { kind: 'status', status: 'weaken', dur: 5, power: 25 })]),
     T(2, 2, 1, 'twisted-faith', 'Twisted Faith', 3, 'curse', 'Every skill deals +6% damage per rank to Cursed enemies.', [K('*', { op: 'bonusVs', status: 'curse', pct: 6 })]),
     T(2, 2, 2, 'vampiric-embrace', 'Leeching Embrace', 1, 'drain', 'Creeping Pain also heals you for 3% of your health.', [onHit('shadow-word-pain', { kind: 'heal', pct: 3 })]),
     T(2, 3, 0, 'mind-melt', 'Mind Fray', 1, 'skull', 'Thought Lash deals +50% damage to enemies below 30% health.', [K('mind-blast', { op: 'bonusVs', status: 'lowHp', pct: 50 })]),
-    T(2, 3, 1, 'shadow-weaving', 'Dark Weft', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
+    T(2, 3, 1, 'shadow-weaving', 'Dark Weft', 3, 'power', 'Smite Curses what it strikes: 6% of the hit a second per rank, for 4 s.', [onHit('smite', { kind: 'status', status: 'curse', dur: 4, power: 0.06 })]),
     T(2, 3, 2, 'misery', 'Misery', 1, 'mark', 'Leeching Touch Marks the enemy: it takes 10% more damage from you for 8 s.', [onHit('vampiric-touch', { kind: 'status', status: 'mark', dur: 8, power: 10 })]),
     T(2, 3, 3, 'mental-fortitude', 'Mental Fortitude', 2, 'heart', '+5% max health per rank.', [S('hpPct', 5)]),
     T(

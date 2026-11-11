@@ -53,6 +53,8 @@ export interface ThemeLook {
   ambient?: Ambient;
   /** Its water is lava. */
   lava?: boolean;
+  /** A land under snow: its ground is drawn as snow (soft drifts, blue hollows, wind ripples, glints), not as grass. */
+  snowy?: boolean;
   /** Bare land: rock cliffs and mesas stand where other lands have woods (colored by `ground.leaf`). */
   cliffs?: boolean;
   /** A color laid thin over everything (gloomy lands). */
@@ -412,6 +414,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     leaves: ['#1e3a3a', '#2a4e4a', '#3a6460', '#4e7a72', '#c8dae8', '#ffffff'],
     bark: '#4a3e38',
     ambient: 'snow',
+    snowy: true,
   },
   rift: {
     indoor: false,
@@ -581,6 +584,7 @@ export const THEMES: Record<Theme, ThemeLook> = {
     leaves: ['#1a3434', '#244644', '#325a56', '#44706a', '#c8dae8', '#ffffff'],
     bark: '#433832',
     ambient: 'snow',
+    snowy: true,
     cliffs: true,
   },
   // the Sunken Reaches: a drowned coast, kelp on the stones, the sea through the streets
@@ -654,28 +658,31 @@ export const THEMES: Record<Theme, ThemeLook> = {
     dread: { dark: 0, shade: '#06100c', mist: 0.8, lamps: true },
   },
   // the Pale Reach: the King's frozen dead lands under a violet sky
+  // the Pale Reach: the snowfield the Hallow King's citadel stands at the top of, white under a bruised violet sky
   pale: {
     indoor: false,
-    bg: '#5a6070',
+    bg: '#6a7284',
     ground: {
-      grass: ['#8a90a0', '#969cac', '#a2a8b8', '#aeb4c4', '#babfce'],
-      blade: '#7a8094',
-      bladeHi: '#d0d6e2',
+      grass: ['#c2cad8', '#ccd3e0', '#d6dce8', '#e0e5ef', '#eaeef5'],
+      blade: '#a8b2c4',
+      bladeHi: '#f4f7fc',
       flowers: ['#8a6ad8', '#c8d0e0', '#ffffff', '#a888e8', '#e0e8ff'],
-      path: ['#5a5e6a', '#686c78', '#767a86', '#848894'],
-      pebble: '#6a6e7a',
+      // (a road through snow is trodden snow, a little greyer than the drifts: dark slate lay on the white like a shadow)
+      path: ['#bcc4d2', '#c6cdda', '#ced5e0', '#d6dce6'],
+      pebble: '#9aa0b0',
       leaf: ['#1a1c26', '#262a36', '#343846', '#464a5a', '#9ea4b4', '#d8dce6'],
-      water: { deep: '#2a3448', mid: '#36425a', shallow: '#46546e', light: '#8a9ab8', foam: '#e0e8f4', bank: '#5a5e6a', bankDark: '#42464e' },
-      sand: ['#9aa0ae', '#a4aab8', '#aeb4c2', '#b8becc', '#c2c8d6'],
+      water: { deep: '#6a84a6', mid: '#86a0c0', shallow: '#a4bcd8', light: '#dceaf8', foam: '#f4f8ff', bank: '#9aa6b8', bankDark: '#7a8698' },
+      sand: ['#c8d0dc', '#d0d7e2', '#d8dee8', '#e0e5ee', '#e8ecf3'],
       shell: ['#e8ecf4', '#8a6ad8'],
     },
-    trees: ['dead', 'dead', 'snowpine'],
+    trees: ['snowpine', 'dead', 'snowpine'],
     leaves: ['#1e2230', '#2a2e3e', '#383c4e', '#4a4e62', '#a0a6b8', '#dce0ea'],
     bark: '#3a3640',
     ambient: 'snow',
+    snowy: true,
     tint: '#10102a',
     cliffs: true,
-    dread: { dark: 0.3, shade: '#10102a', mist: 0.5, lamps: true },
+    dread: { dark: 0.22, shade: '#10102a', mist: 0.5, lamps: true },
   },
   crypt: indoor('#0e0c18', CRYPT_STONE),
   cave: indoor('#0c0a08', {
@@ -766,21 +773,25 @@ export const THEMES: Record<Theme, ThemeLook> = {
     'embers',
     MOLTEN,
   ),
+  // Duskspire, the Hallow King's citadel on the top of the Pale Reach: pale marble gone white-blue with three hundred
+  // winters of rime, frost in every joint, black iron, and the Crown's violet grieflight in the cracks; snow sifting in
+  // through the broken vaults, and its pools frozen solid
   citadel: indoor(
-    '#08060e',
+    '#0a1018',
     {
-      slab: ['#2a2834', '#302e3a', '#26242e', '#2c2a36'],
-      mortar: '#4a3a6a',
-      top: '#0c0a14',
-      topHi: '#16121e',
-      lip: '#6a4aa8',
-      lip2: '#3a2a5a',
-      brick: ['#3a3848', '#34323e', '#403e4e'],
-      brickMortar: '#1a1626',
-      moss: '#a8c8ff',
-      crack: '#8a5ad8',
+      slab: ['#a6bcd6', '#b0c6de', '#9cb2cc', '#aac0da'],
+      mortar: '#e4f2fc',
+      top: '#141c2a',
+      topHi: '#1e283a',
+      lip: '#b8d0ea',
+      lip2: '#5a6c88',
+      brick: ['#aebccf', '#a2b2c6', '#bac8da'],
+      brickMortar: '#5a6a84',
+      moss: '#eef8ff',
+      crack: '#9a6ae8',
     },
-    'motes',
+    'snow',
+    FROZEN,
   ),
   // under a rotten tree: packed earth and root-walls, blight-pink rot in the cracks
   roots: indoor(

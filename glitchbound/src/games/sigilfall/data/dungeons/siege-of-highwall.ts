@@ -7,9 +7,10 @@ import type { DungeonModule } from '.';
  * north into the Hallow King's lands, is besieged by the Ashen Host, and its gate has fallen. The
  * hero comes in through the Breach in the outer wall and fights through the burning city to relieve
  * it: the Gatehouse Yard, the Burning Market, the Muster Field where the Siege-Breaker grinds toward
- * the barracks gate, the Barracks, the Chapel of the Wardens (a field hospital now), the Inner Wall's
- * Stair, and the Inner Ward, where General Morvain commands the siege from under his war banner. The
- * rooms seal while you fight in them (their floors are the letters below). In the Inner Ward the
+ * the barracks gate, the Barracks, the Chapel of the Wardens (a field hospital until the Host broke in,
+ * where Prior Vessant sings the dead up again), the Inner Wall's Stair, and the Inner Ward, where
+ * General Morvain commands the siege from under his war banner. The rooms seal while you fight in
+ * them (their floors are the letters below). In the Inner Ward the
  * Host's archers line the walls: Morvain calls their volleys down in bands across the yard, and his
  * squads come in through the north and east gates. A cracked wall in the Barracks hides the
  * quartermaster's strongbox.
@@ -22,7 +23,7 @@ const MAP = [
   '####iiiiijiiiiijiiiiijiiiii######lllxllllllllllllllllolllll######QmmmmmmmmmmmmmmmmmmmmmmQ###',
   '####iiiiiiiiiiiiiiiiiiiiiiiD....DllllllllllllllllllllllllllD...Dmmmmmmmmmmmmmmmmmmmmmmmmmm##',
   '####iiiniiyiiiiiiiniiiiiiiiD....DlllllllllllllyllllllllllllD...DmmmmmmmmmmmmVmmmmmmmmmmmmm##',
-  '####iiiiiiiiniiiiiiiyiiniiiD....DllllllllllllllllllllllllllD...Dmmmmmmjmmmmmmmmmmmmjmmmmmm##',
+  '####iiiiiiiiniiWiiiiyiiniiiD....DllllllllllllllllllllllllllD...Dmmmmmmjmmmmmmmmmmmmjmmmmmm##',
   '####iiiiiiiiiiiiyiiiiiiiiii######llllllllllllllllllllllllll#####mmmmmmmmmmmmmmmmmmmmmmmmmm##',
   '####iiiiijiiiiijiiiiijiiiii######llllllllollllllxllllllxlll#####xmmmmmmmmmmmmmmmmmmmmmmmmm##',
   '#####QiiiiiiiiiiiiioiiiiiQ########lllljllllljllllljlllllll######mmmmmmmmmmmmmmmmmmmmmmmmmm##',
@@ -94,6 +95,8 @@ const markers: Record<string, Marker> = {
   S: { kind: 'chest', id: 'sh-strongbox', tier: 'epic', once: true },
   O: { kind: 'boss', boss: 'the-siege-breaker' },
   V: { kind: 'boss', boss: 'general-morvain' },
+  // the Chapel of the Wardens: Prior Vessant and his dirge (sim/patterns/siege-of-highwall.ts)
+  W: { kind: 'boss', boss: 'prior-vessant' },
   x: { kind: 'prop', prop: 'crate', solid: true },
   o: { kind: 'prop', prop: 'barrel', solid: true },
   y: { kind: 'prop', prop: 'bones' },
@@ -195,6 +198,47 @@ const foes: Record<string, EnemyDef> = {
     resist: { poison: 0.6 },
     blurb: 'The Host lets its ghouls loose in the burning streets ahead of the soldiers. They circle in packs, crouch and pounce along a line: step out of it, and hit them while they pick themselves up.',
   },
+  // the Chapel of the Wardens (sim/patterns/siege-of-highwall.ts): the dead on its floor, and what Prior Vessant's dirge makes of them
+  'chapel-corpse': {
+    id: 'chapel-corpse',
+    name: 'Corpse',
+    sprite: 'chapel-corpse',
+    prop: { m: 'ribcage', h: 12, tint: [0.95, 0.9, 0.85] },
+    ai: 'caster',
+    hp: 60,
+    dmg: 1,
+    speed: 0,
+    radius: 8,
+    mass: 99,
+    xp: 0,
+    gold: [0, 0],
+    aggro: 400,
+    reach: 0,
+    windup: 1,
+    recover: 1,
+    attackCd: 999,
+    blurb: 'Burn it before the Prior sings, or it gets up again.',
+  },
+  'risen-defender': {
+    id: 'risen-defender',
+    name: 'Risen Defender',
+    sprite: 'risen-defender',
+    ai: 'melee',
+    hp: 78,
+    dmg: 17,
+    speed: 44,
+    radius: 7,
+    mass: 2,
+    xp: 0,
+    gold: [0, 0],
+    aggro: 400,
+    reach: 22,
+    windup: 0.6,
+    recover: 0.7,
+    attackCd: 1.9,
+    resist: { poison: 0.5 },
+    blurb: 'One of Highwall’s own, who died at the gate this morning. The Prior sang it up again in its own colors.',
+  },
   'death-knight-squire': {
     id: 'death-knight-squire',
     name: 'Death-Knight Squire',
@@ -248,7 +292,7 @@ const bosses: Record<string, BossDef> = {
     name: 'The Siege-Breaker',
     title: 'Ram of the Ashen Host',
     sprite: 'the-siege-breaker',
-    hp: 2600,
+    hp: 3400,
     dmg: 38,
     radius: 14,
     xp: 745,
@@ -314,12 +358,81 @@ const bosses: Record<string, BossDef> = {
     },
     intro: 'Bone for a frame, iron for a hide, a ram for a head and a cauldron of pitch on its back. It walked here from the Host’s lines, and every gate in Highwall has broken on it so far.',
   },
+  'prior-vessant': {
+    id: 'prior-vessant',
+    name: 'Prior Vessant',
+    title: 'Chaplain of the Host',
+    sprite: 'prior-vessant',
+    hp: 5000,
+    dmg: 40,
+    radius: 11,
+    xp: 1100,
+    gold: [160, 230],
+    phases: [
+      {
+        at: 1,
+        speed: 36,
+        rest: [0.7, 1.05],
+        // Highwall's fallen lie where they died, and his ghouls come in with him
+        enter: [
+          { id: 'siege:fallen', w: 1, cd: 0, p: { count: 4 } },
+          { id: 'summon', w: 1, cd: 0, p: { enemies: ['carrion-ghoul', 'carrion-ghoul'] } },
+        ],
+        patterns: [
+          // his censer drinks the hero’s life while they stay in its reach
+          { id: 'spell:drain', w: 3, cd: 5, p: { color: '#9cff9c', type: 'shadow', time: 3, reach: 150, mul: 0.3, heal: 0.004 } },
+          // grave-candles set round the hero: they flare when you come near
+          { id: 'spell:mines', w: 2, cd: 6, p: { color: '#9cff9c', type: 'shadow', count: 4, spread: 70, fuse: 3.5, blast: 32, mul: 1 } },
+          // the censer swung on its chain
+          { id: 'cleave', w: 2, cd: 3.5, p: { r: 50, arc: 1, wind: 0.75, lunge: 16, mul: 1.3 } },
+          { id: 'summon', w: 2, cd: 12, p: { enemies: ['carrion-ghoul', 'plague-ghoul'] } },
+          // the dirge: break his will, or every corpse in the chapel stands up
+          { id: 'siege:dirge', w: 3, cd: 15, p: { time: 5, will: 0.06, heal: 0.03 } },
+        ],
+      },
+      {
+        at: 0.5,
+        banner: 'Prior Vessant lifts his censer high: “All of you! Every one of you, rise!”',
+        speed: 40,
+        rest: [0.5, 0.85],
+        enter: [
+          { id: 'summon', w: 1, cd: 0, p: { enemies: ['carrion-ghoul', 'plague-ghoul', 'carrion-ghoul'] } },
+          { id: 'siege:dirge', w: 1, cd: 12, p: { time: 4.5, will: 0.07, heal: 0.035 } },
+        ],
+        patterns: [
+          // his censer drinks the hero’s life while they stay in its reach
+          { id: 'spell:drain', w: 3, cd: 4.5, p: { color: '#9cff9c', type: 'shadow', time: 3, reach: 150, mul: 0.3, heal: 0.004 } },
+          // grave-candles set round the hero: they flare when you come near
+          { id: 'spell:mines', w: 2, cd: 5, p: { color: '#9cff9c', type: 'shadow', count: 6, spread: 75, fuse: 3.2, blast: 32, mul: 1 } },
+          { id: 'cleave', w: 2, cd: 3.5, p: { swings: 2, r: 50, arc: 1, wind: 0.65, gap: 0.15, lunge: 18, mul: 1.3 } },
+          { id: 'summon', w: 2, cd: 10, p: { enemies: ['carrion-ghoul', 'plague-ghoul'] } },
+          { id: 'siege:dirge', w: 3, cd: 12, p: { time: 4.5, will: 0.07, heal: 0.035 } },
+        ],
+      },
+    ],
+    first: { any: ['highwall-signet'] },
+    drops: {
+      items: {
+        any: ['highwall-signet', 'siege-pitch-flask', 'ram-iron-sabatons', 'banner-of-highwall', 'static-band'],
+        warrior: ['bulwark-of-dawn'],
+        mage: ['twin-flame-circlet'],
+        ranger: ['huntmasters-hood'],
+        paladin: ['sunward-shield'],
+        priest: ['psalter-of-dawn'],
+        warlock: ['codex-of-hunger'],
+        druid: ['thicket-idol'],
+        gloamknight: ['lantern-of-the-last-watch'],
+      },
+      chance: [0.3, 0.5, 0.7],
+    },
+    intro: 'He was a prior of the Wardens once, and buried Highwall’s dead in this chapel for thirty years. The Host taught him a new hymn, and now he sings them up again.',
+  },
   'general-morvain': {
     id: 'general-morvain',
     name: 'General Morvain',
     title: 'Lieutenant of the Hallow King',
     sprite: 'general-morvain',
-    hp: 4800,
+    hp: 7200,
     dmg: 44,
     radius: 12,
     xp: 1490,
@@ -605,17 +718,7 @@ export const SIEGE_OF_HIGHWALL: DungeonModule = {
           { enemies: ['legion-standard-bearer', 'legion-shieldbearer', 'death-knight-squire', 'legion-arbalester'], elite: true },
         ],
       },
-      {
-        id: 'chapel',
-        floor: 'i',
-        title: 'The Chapel of the Wardens',
-        checkpoint: true,
-        waves: [
-          { enemies: ['carrion-ghoul', 'carrion-ghoul', 'plague-ghoul', 'plague-ghoul', 'carrion-ghoul'] },
-          { enemies: ['legion-bonecaller', 'death-knight-squire', 'legion-arbalester'] },
-          { enemies: ['bone-golem', 'legion-standard-bearer', 'carrion-ghoul'], elite: true },
-        ],
-      },
+      { id: 'chapel', floor: 'i', waves: [], boss: 'prior-vessant', checkpoint: true, title: 'The Chapel of the Wardens' },
       {
         id: 'stair',
         floor: 'l',
@@ -629,7 +732,7 @@ export const SIEGE_OF_HIGHWALL: DungeonModule = {
       },
       { id: 'ward', floor: 'm', waves: [], boss: 'general-morvain', checkpoint: true, title: 'The Inner Ward' },
     ],
-    blurb: 'The burning city behind the Breach, the Siege-Breaker grinding at the barracks gate, and General Morvain under his banner in the Inner Ward.',
+    blurb: 'The burning city behind the Breach, the Siege-Breaker grinding at the barracks gate, Prior Vessant singing over the dead in the chapel, and General Morvain under his banner in the Inner Ward.',
   },
   bosses,
   foes,

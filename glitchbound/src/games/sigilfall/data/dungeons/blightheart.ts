@@ -8,9 +8,10 @@ import type { DungeonModule } from '.';
  * in their wells and the spores grow thick in the chambers. The Withered Queen keeps her court here, on a
  * throne of thorns with the Sigil of Thorns grown into it. From the Heartroot: the Root-Gate (the old
  * elven gate, roots through its colonnade), the Sap Wells, the Hollow Bole where the Rotwood Colossus
- * walks, the Spore Chambers (a cracked root-wall hides the gardener's cache), the Hall of Faded Lights,
- * the Thorn Gallery and the Thorn Throne. The rooms seal while you fight in them (the letters below are
- * their floors); the throne room's four pillars are all the cover there is from her thorns.
+ * walks, the Spore Chambers (a cracked root-wall hides the gardener's cache), the Hall of Faded Lights
+ * (where the twin lamp-wardens Elowen and Merrin keep each other), the Thorn Gallery and the Thorn
+ * Throne. The rooms seal while you fight in them (the letters below are their floors); the throne
+ * room's four pillars are all the cover there is from her thorns.
  */
 const MAP = [
   '####################################################################################################',
@@ -51,7 +52,7 @@ const MAP = [
   '######gggggggggggggggggggggggggg##########eeeeeeeeeeeeeeeeeeeeeeeD...Diiiiiiiiiiiiiiiiiiiiiiiiiii###',
   '##############DDD#########################eeeeeeeeeeeeeeeeeeeeeee#####iiiiiiiiiiiiiiiiiiiiiiiiiii###',
   '##############...#########################eeeeeeeepeeeeeeeeeeeeee#####iiiiiiiiiiiiiiiiiiiiiiiiixi###',
-  '##############...#########################eeeeeeeeeeeeeeeeeepeeee#####ixiiiiiiyiiiiiiiiiiiiiiiiii###',
+  '##############...#########################eeeeeeeeeeeeeeeeeepeeee#####ixiiiiiiyiiiiiWiiiiiiiiiiii###',
   '##############...#########################eeveeeeeeeeeeeeeeeeeeee#####iiiiiiiiiiiiiiiiiiiyiiiiiii###',
   '##############...##########################eeeeeeeeeyeeeeeeeeeve######iiiiiiiiiiiiiiiiiiiiiiiiiii###',
   '##############...###########################eeeeyeeeeeeeeeeeeee#######iiiiiiiiiiiiiiiiiiiiiiiiiii###',
@@ -105,6 +106,8 @@ const markers: Record<string, Marker> = {
   S: { kind: 'chest', id: 'bh-gardeners-cache', tier: 'epic', once: true },
   O: { kind: 'boss', boss: 'rotwood-colossus' },
   V: { kind: 'boss', boss: 'the-withered-queen' },
+  // the Hall of Faded Lights: Elowen of the Dawn and her sister (sim/patterns/blightheart.ts)
+  W: { kind: 'boss', boss: 'elowen-of-the-dawn' },
   p: { kind: 'hazard', hazard: 'spore' },
   y: { kind: 'prop', prop: 'bones' },
   v: { kind: 'prop', prop: 'eggs' },
@@ -230,6 +233,33 @@ const foes: Record<string, EnemyDef> = {
     resist: { nature: 0.5, poison: 0.5, fire: -0.3 },
     blurb: 'A dryad the blight made into a garden. Blight-blooms bud from her and waddle off to burst at your feet, and roots tear up the floor where she points. Cut down the gardener, not the flowers.',
   },
+  // the Hall of Faded Lights (sim/patterns/blightheart.ts): Elowen's sister, who keeps her distance and sings her back
+  'merrin-of-the-dusk': {
+    id: 'merrin-of-the-dusk',
+    name: 'Merrin of the Dusk',
+    sprite: 'merrin-of-the-dusk',
+    ai: 'caster',
+    named: true,
+    hp: 2000,
+    dmg: 30,
+    speed: 46,
+    radius: 9,
+    mass: 6,
+    xp: 0,
+    gold: [0, 0],
+    aggro: 400,
+    reach: 170,
+    windup: 0.8,
+    recover: 0.5,
+    attackCd: 2.1,
+    keep: 120,
+    floats: true,
+    blink: 80,
+    slam: { radius: 30 },
+    shot: { speed: 105, radius: 4.5, count: 3, spread: 0.45, color: '#b48aff', homing: 0.45, status: { status: 'chill', dur: 1.4, power: 0.35 } },
+    resist: { nature: 0.4, arcane: 0.3 },
+    blurb: 'The lamp-warden of the evening, as her sister was of the morning. She keeps her distance, throws motes of dusk, and if Elowen falls she sings her back. Bring them down together.',
+  },
   'rotwood-pod': {
     id: 'rotwood-pod',
     name: 'Spore Pod',
@@ -262,7 +292,7 @@ const bosses: Record<string, BossDef> = {
     name: 'The Rotwood Colossus',
     title: 'Warden of the Hollow Bole',
     sprite: 'rotwood-colossus',
-    hp: 3800,
+    hp: 4400,
     dmg: 40,
     radius: 15,
     xp: 790,
@@ -324,12 +354,66 @@ const bosses: Record<string, BossDef> = {
     },
     intro: 'The oldest of the wood’s wardens, a hill of heartwood that walked these halls when the elves still lit them. The Queen’s rot got into its roots. It still guards the way down; it no longer knows what for.',
   },
+  'elowen-of-the-dawn': {
+    id: 'elowen-of-the-dawn',
+    name: 'Elowen of the Dawn',
+    title: 'Lamp-Warden of the Faded Lights',
+    sprite: 'elowen-of-the-dawn',
+    hp: 4600,
+    dmg: 42,
+    radius: 11,
+    xp: 1250,
+    gold: [180, 250],
+    phases: [
+      {
+        at: 1,
+        speed: 40,
+        rest: [0.7, 1.05],
+        // her sister wakes beside her
+        enter: [{ id: 'blight:twins', w: 1, cd: 0 }],
+        patterns: [
+          // a chain of dawn-light to the hero: the farther they stand, the hotter it burns
+          { id: 'spell:tether', w: 3, cd: 5, p: { color: '#ffc8a0', type: 'holy', time: 4, mul: 0.18 } },
+          // the lamp-staff swung
+          { id: 'cleave', w: 3, cd: 3.5, p: { r: 52, arc: 1.05, wind: 0.7, lunge: 20, mul: 1.35 } },
+        ],
+      },
+      {
+        at: 0.5,
+        banner: 'The sisters’ bond catches fire! Never stand between them.',
+        speed: 46,
+        rest: [0.5, 0.85],
+        enter: [{ id: 'roar', w: 1, cd: 0 }],
+        patterns: [
+          // a chain of dawn-light to the hero: the farther they stand, the hotter it burns
+          { id: 'spell:tether', w: 3, cd: 4.5, p: { color: '#ffc8a0', type: 'holy', time: 4, mul: 0.18 } },
+          { id: 'cleave', w: 3, cd: 3, p: { swings: 2, r: 52, arc: 1.05, wind: 0.6, gap: 0.14, lunge: 22, mul: 1.3 } },
+        ],
+      },
+    ],
+    first: { any: ['sporeweave-grips'] },
+    drops: {
+      items: {
+        any: ['sporeweave-grips', 'briarguard-legs', 'colossus-heartwood', 'static-band', 'second-wind-ring'],
+        warrior: ['bulwark-of-dawn'],
+        mage: ['twin-flame-circlet'],
+        ranger: ['huntmasters-hood'],
+        paladin: ['sunward-shield'],
+        priest: ['psalter-of-dawn'],
+        warlock: ['codex-of-hunger'],
+        druid: ['thicket-idol'],
+        gloamknight: ['lantern-of-the-last-watch'],
+      },
+      chance: [0.3, 0.5, 0.7],
+    },
+    intro: 'For a thousand years she lit the elven halls each morning, and her sister lit them each evening. The blight put both lights out. Now they keep each other.',
+  },
   'the-withered-queen': {
     id: 'the-withered-queen',
     name: 'The Withered Queen',
     title: 'Lieutenant of the Hallow King',
     sprite: 'the-withered-queen',
-    hp: 7600,
+    hp: 9000,
     dmg: 42,
     radius: 12,
     xp: 1575,
@@ -643,17 +727,7 @@ export const BLIGHTHEART: DungeonModule = {
           { enemies: ['rotbloom-matron', 'thorn-court-knight', 'blighted-dryad'], elite: true },
         ],
       },
-      {
-        id: 'faded-lights',
-        floor: 'i',
-        title: 'The Hall of Faded Lights',
-        checkpoint: true,
-        waves: [
-          { enemies: ['thorn-court-knight', 'thorn-court-knight', 'thorn-court-sprite', 'thorn-archer'] },
-          { enemies: ['heartrot-treant', 'heartrot-treant', 'blighted-dryad'] },
-          { enemies: ['thorn-court-knight', 'rotbloom-matron', 'briar-lasher', 'thorn-court-sprite'], elite: true },
-        ],
-      },
+      { id: 'faded-lights', floor: 'i', waves: [], boss: 'elowen-of-the-dawn', checkpoint: true, title: 'The Hall of Faded Lights' },
       {
         id: 'thorn-gallery',
         floor: 'l',

@@ -3,7 +3,7 @@ import type { Marker, RegionDef } from '../types';
 /*
  * Gallows Keep (levels 13-16): the Gallows Gang's hideout, dug into Gallows Hill in Thornvale. A tunnel
  * in from the hillside, the cellars where they keep the loot, the barracks yard, the gallows where the
- * Hangman works, the kennels, and the King's Hall where Harlan Blackglove holds court. The rooms seal
+ * Hangman works, the kennels where Gnasher is kept, and the King's Hall where Harlan Blackglove holds court. The rooms seal
  * while you fight in them (the letters below are their floors); a cracked wall by the way in hides the
  * gang's strongbox.
  */
@@ -32,14 +32,14 @@ const GALLOWS_MAP = [
   '#############DDD#################ddddddddddddddddddd####',
   '#####eeeeeeeeeeeeeeee###########ddddddddddddddddddddd###',
   '####eeeeeeeeeeeeeeeeee##########ddddddjdddddddjdddddd###',
-  '###eeeeeeeeeeeeeeeeeeee#########ddddddddddOdddddddddd###',
+  '###eeeneeeeeeeeeeeeneee#########ddddddddddOdddddddddd###',
   '###eeeeeeeeeeeeeeeeeeee#########ddddddddddddddddddddd###',
+  '###eeeeeeeeeeKeeeeeeeeeD.......Dddddddddddddddddddddd###',
   '###eeeeeeeeeeeeeeeeeeeeD.......Dddddddddddddddddddddd###',
   '###eeeeeeeeeeeeeeeeeeeeD.......Dddddddddddddddddddddd###',
-  '###eeeeeeeeeeeeeeeeeeeeD.......Dddddddddddddddddddddd###',
-  '###eeeeeeeeeeeeeeeeeeee#########ddddddddddddddddddddd###',
+  '###eeeeeneeeeeeeeneeeee#########ddddddddddddddddddddd###',
   '###eeeeeeeeeeeeeeeeeeee#########ddddddjdddddddjdddddd###',
-  '####oxeeeeeeeeeeeeeeee##########ddddddddddddddddddddd###',
+  '####oxeeeeeeeneeeeeeee##########ddddddddddddddddddddd###',
   '#####eeeeeeeeeeeeeeee############ddddddddddddddddddd####',
   '##################################ddddddddddddddddd#####',
   '###################################ddddddddddddddd######',
@@ -77,6 +77,9 @@ const markers: Record<string, Marker> = {
   S: { kind: 'chest', id: 'gk-strongbox', tier: 'epic', once: true },
   O: { kind: 'boss', boss: 'hangman' },
   V: { kind: 'boss', boss: 'varric' },
+  // the kennels: Gnasher, and the bone heaps that draw him up out of the floor (sim/patterns/gallows.ts)
+  K: { kind: 'boss', boss: 'gnasher' },
+  n: { kind: 'prop', prop: 'bone-heap' },
   x: { kind: 'prop', prop: 'crate', solid: true },
   o: { kind: 'prop', prop: 'barrel', solid: true },
 };
@@ -117,17 +120,7 @@ export const GALLOWS_KEEP: RegionDef = {
       ],
     },
     { id: 'gallows', floor: 'd', waves: [], boss: 'hangman', checkpoint: true, title: 'The Gallows' },
-    {
-      id: 'kennels',
-      floor: 'e',
-      title: 'The Kennels',
-      checkpoint: true,
-      waves: [
-        { enemies: ['hill-wolf', 'hill-wolf', 'hill-wolf', 'bandit-archer'] },
-        { enemies: ['bandit-cutthroat', 'bandit-cutthroat', 'hedge-witch', 'bandit-archer'] },
-        { enemies: ['hedge-witch', 'hill-wolf', 'hill-wolf'], elite: true },
-      ],
-    },
+    { id: 'kennels', floor: 'e', waves: [], boss: 'gnasher', checkpoint: true, title: 'The Kennels' },
     { id: 'hall', floor: 'g', waves: [], boss: 'varric', checkpoint: true, title: 'The King’s Hall' },
   ],
   blurb: 'The gang’s cellars, their gallows and their king.',

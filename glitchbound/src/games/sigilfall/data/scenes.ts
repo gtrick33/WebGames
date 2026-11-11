@@ -1,5 +1,9 @@
 import { after, all, during, is, not, until } from './cond';
+import { EVENTS } from './events';
+import { QUEST_DEFS } from './quests';
+import { isRetired } from './retired';
 import type { SceneDef } from '../sim/scene';
+import { STORY_SCENES } from './scenes-story';
 
 /**
  * The story's staged beats (sim/scene.ts): a few seconds each, in the world, at the moments the story
@@ -216,7 +220,7 @@ export const SCENES: SceneDef[] = [
   {
     // Act IV: Elyra out of the Gloam Gate's cells, by Lastlight's fire
     id: 'gloam-elyra-free',
-    region: 'gloamhollow',
+    region: 'riftscar',
     when: all(after('gloam-out-of-the-cells'), until('the-gloam-gate')),
     near: 'elyra-lastlight',
     r: 140,
@@ -241,7 +245,7 @@ export const SCENES: SceneDef[] = [
     r: 140,
     steps: [
       { look: 'echo-of-ysane' },
-      { say: 'echo-of-ysane', line: 'Aldis! Wenna! Come in now, it’s snowing. Your father will be home by morning.' },
+      { say: 'echo-of-ysane', line: 'Lark! Edda! Come in now, it’s snowing. Your father will be home by morning.' },
       { wait: 0.8 },
       { say: 'echo-of-ysane', line: 'He went to get the star. For the fever. He promised.' },
       { look: 'hollow-wood' },
@@ -253,7 +257,7 @@ export const SCENES: SceneDef[] = [
     // Act VI: every banner the hero earned, coming into Dawn's Rest
     id: 'reach-the-banners',
     region: 'pale-reach',
-    when: all(after('the-last-road'), until('the-kings-kennels')),
+    when: all(after('the-last-road'), until('march-vosk')),
     near: 'mara-at-the-reach',
     r: 150,
     steps: [
@@ -278,8 +282,39 @@ export const SCENES: SceneDef[] = [
       { look: 'mara-at-the-reach' },
       { say: 'mara-at-the-reach', line: 'Somebody has to keep the door. I always do. Bring her back out.' },
       { move: 'elyra-at-the-reach', to: 'mara-at-the-reach' },
-      { say: 'elyra-at-the-reach', line: 'Seven locks, seven lights. I can feel the door from here. It’s waiting for us.' },
+      { say: 'elyra-at-the-reach', line: 'Seven locks, and six lights. I can feel the door from here. The seventh lock is listening for someone else.' },
       { emote: 'mara-at-the-reach', icon: 'heart' },
+      { look: 'hero' },
+    ],
+  },
+  {
+    // the Stone won back from the Crown: the seventh vision, two kings under one sky, shown in the Crown's own memory of
+    // Vaelmoor as the hero steps into it (before the square: Elyra has been waiting with it)
+    id: 'vision-stone',
+    region: 'vaelmoor-remembered',
+    when: is('crownfall-vaelmoor', 'active'),
+    near: 'elyra-in-the-memory',
+    r: 220,
+    steps: [
+      { look: 'elyra-in-the-memory' },
+      { say: 'elyra-in-the-memory', line: 'You came. Look: the seventh. It was so cold in his crown. It’s warming up in my hands.' },
+      { music: 'chapel' },
+      { fade: 'out', secs: 0.9 },
+      { vision: 'A thousand years ago, two crowns were forged from one star, and two kings shared one sky.', tint: 'ember' },
+      { ghost: 'vision-king-aster', as: 'marshal-dunmore', at: 'memory-square', dx: -2, face: 1 },
+      { ghost: 'vision-king-vaelmoor', as: 'old-gaius', at: 'memory-square', dx: 2, face: -1 },
+      { fade: 'in', secs: 0.9 },
+      { say: 'vision-king-aster', line: 'Half for Aster, half for Vaelmoor. While both are worn, the dead stay dead.' },
+      { say: 'vision-king-vaelmoor', line: 'And if one of us breaks his half?' },
+      { say: 'vision-king-aster', line: 'Then the other holds. Brother.' },
+      { fx: 'holy', at: 'memory-square', color: '#ffd88a', size: 34 },
+      { vision: 'They shook hands under one sky. It was the last thing the two kingdoms ever agreed on.', tint: 'ember' },
+      { wait: 1.6 },
+      { fade: 'out', secs: 0.8 },
+      { vision: '' },
+      { fade: 'in', secs: 0.8 },
+      { say: 'elyra-in-the-memory', line: 'Seven. I can feel all of them. They’re singing.' },
+      { say: 'elyra-in-the-memory', line: 'I know you. I know your face better than my own. But your name… The Tides took it. I’m sorry. I’m so sorry.' },
       { look: 'hero' },
     ],
   },
@@ -294,7 +329,7 @@ export const SCENES: SceneDef[] = [
       { look: 'memory-square' },
       { say: 'vaelmoor-herald-boy', line: 'A star has fallen in the north! The King rides at dawn to see it!' },
       { look: 'echo-of-ysane-whole' },
-      { say: 'echo-of-ysane-whole', line: 'Aldis, leave the cake alone. Your father will be home by supper.' },
+      { say: 'echo-of-ysane-whole', line: 'Lark, leave the cake alone. Your father will be home by supper.' },
       { look: 'vaelor-remembered' },
       { say: 'vaelor-remembered', line: 'I am home. I am home. Why can none of them see me?' },
       { look: 'elyra-in-the-memory' },
@@ -564,14 +599,14 @@ export const SCENES: SceneDef[] = [
   {
     // Act IV: Nyx at the Gloam Gate's cells, and the gate-guards on the stair
     id: 'gloam-the-stair',
-    region: 'gloamhollow',
+    region: 'riftscar',
     opens: { event: 'gloam-cells' },
     steps: [{ look: 'nyx-at-the-lock' }, { title: 'The Cells' }, { wait: 0.8 }, { look: 'foes' }, { wait: 1.4 }, { look: 'hero' }],
   },
   {
     // Act IV: Elyra on her feet in the open cell
     id: 'gloam-out-of-the-dark',
-    region: 'gloamhollow',
+    region: 'riftscar',
     opens: { event: 'gloam-out' },
     steps: [
       { look: 'elyra-freed' },
@@ -607,3 +642,13 @@ export const SCENES: SceneDef[] = [
     steps: [{ title: 'The Camp Goes Home' }, { follow: 'fern-ranger', secs: 6 }, { look: 'hero' }],
   },
 ];
+
+// the main story's own staging, land by land (data/scenes-story.ts)
+SCENES.push(...STORY_SCENES);
+
+// a retired land's scenes go with it, and so does a scene about a quest or a story event that is gone
+const named = (c: unknown): string[] => JSON.stringify(c ?? null).match(/"quest":"[^"]+"/g)?.map((m) => m.slice(9, -1)) ?? [];
+for (let i = SCENES.length - 1; i >= 0; i--) {
+  const d = SCENES[i]!;
+  if (isRetired(d.region) || (d.opens && !EVENTS[d.opens.event]) || named(d.when).some((q) => !QUEST_DEFS[q])) SCENES.splice(i, 1);
+}

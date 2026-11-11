@@ -7,6 +7,69 @@ import type { ZoneArt } from '.';
  */
 export const TOMB_OF_THE_SUN_KING_ART: ZoneArt = {
   foes: {
+    // Vizier Khepset and his sand-glass (sim/patterns/tomb-of-the-sun-king.ts)
+    'vizier-khepset': {
+      pal: { y: '#d8a830', Y: '#ffd27a', w: '#e8dcb8', e: '#ffd27a', E: '#ffd27a', g: '#c89a40', G: '#ffd27a', b: '#a89878', h: '#ffd27a', H: '#fff2c0' },
+      frames: [
+        [
+          '.....yyyyy......',
+          '....yYYYYYy.....',
+          '.....wwwww......',
+          '....wwewEww.....',
+          '....wwwwwww.....',
+          '...gwwwwwwwg....',
+          '..gGgwwwwwgGg...',
+          '..ggwwbwbwwgg...',
+          '...wwwwbwwwww.h.',
+          '...wwbwwwbwww.H.',
+          '...wwwwwwwwww.h.',
+          '....wwbwwbww..h.',
+          '....wwwwwwww....',
+          '.....ww..ww.....',
+        ],
+        [
+          '.....yyyyy......',
+          '....yYYYYYy.....',
+          '.....wwwww......',
+          '....wwewEww.....',
+          '....wwwwwww.....',
+          '...gwwwwwwwg....',
+          '..gGgwwwwwgGg...',
+          '..ggwwbwbwwgg...',
+          '...wwwwbwwwwwh..',
+          '...wwbwwwbwwwH..',
+          '...wwwwwwwwwwh..',
+          '....wwbwwbww..h.',
+          '....wwwwwwww....',
+          '.....ww..ww.....',
+        ],
+      ],
+    },
+    'sand-glass': {
+      pal: { g: '#c89a40', c: '#d8e8f0', s: '#ffd27a' },
+      frames: [
+        [
+          '.gggggg.',
+          '..cccc..',
+          '..cssc..',
+          '...cc...',
+          '...ss...',
+          '..cssc..',
+          '.cssssc.',
+          '.gggggg.',
+        ],
+        [
+          '.gggggg.',
+          '..cccc..',
+          '..c.sc..',
+          '...cc...',
+          '...s....',
+          '..cssc..',
+          '.cssssc.',
+          '.gggggg.',
+        ],
+      ],
+    },
     'ushabti-guardian': {
       pal: { f: '#5ac8b8', F: '#2e8a8a', n: '#1c4c5a', l: '#3a5ad0', L: '#22348a', y: '#ffd04a', Y: '#b88a22', e: '#fff2a0', k: '#141022', w: '#c89a5a', W: '#8a6434' },
       frames: [

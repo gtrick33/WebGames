@@ -6,7 +6,8 @@ import type { RegionId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { SIGILS, type Character } from '../progress/character';
 import { rankOf, topStanding } from '../arena/ranks';
-import { heroTitle, RIFT_LEVEL, wornLooks } from '../progress/wardrobe';
+import { RIFT_LEVEL, wornLooks } from '../progress/wardrobe';
+import { wornTitle } from '../progress/titles';
 import { longestNight } from '../vigil/bests';
 import { iconPicture, iconsReady } from '../render/art/gameIcons';
 import { VIGIL_ICON } from '../render/art/iconPicks';
@@ -201,6 +202,11 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
           <img className="cs-word" src="/games/sigilfall/logo.svg" alt="Sigilfall" width={673} height={168} />
         </div>
         <div className="cs-top-btns">
+          {hero && (
+            <button className="rb-iconbtn cs-delete" onClick={() => setConfirmDelete(at)} aria-label={`Delete ${hero.name}`} title={`Delete ${hero.name}`}>
+              🗑
+            </button>
+          )}
           <button className="rb-iconbtn" onClick={onSettings} aria-label="Settings">
             ⚙
           </button>
@@ -223,7 +229,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
               <b style={{ color: CLASSES[hero.cls].colors.accent }}>
                 Level {hero.level} {CLASSES[hero.cls].name}
               </b>
-              <span> · {heroTitle(hero) ?? farthest(hero.unlocked).name}</span>
+              <span> · {wornTitle(hero, engine.ringRating()) ?? farthest(hero.unlocked).name}</span>
             </p>
           </>
         ) : (
@@ -239,12 +245,14 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
         </ol>
       </div>
 
+      {/* the ways in: the story in the middle, the three other modes and playing with friends beside it. Each says in
+          a line what it is, and where this hero stands in it. */}
       <div className="cs-actions">
-        <button className="cs-mode is-vigil" onClick={onVigil}>
-          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.vigil!)} alt="" draggable={false} />
+        <button className={`cs-mode is-rift${hero && hero.keystone >= 1 ? '' : ' is-locked'}`} disabled={!hero || hero.keystone < 1} onClick={() => onRift(at)}>
+          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.rift!)} alt="" draggable={false} />
           <span>
-            <strong>The Vigil</strong>
-            <small>{night > 0 ? `Longest night ${clock(night)}` : 'Survive the endless horde'}</small>
+            <strong>Rift Trials</strong>
+            <small>{!hero ? 'Make a hero first' : hero.keystone >= 1 ? `Dungeons against the clock · Riftstone +${hero.keystone}` : `Opens at level ${RIFT_LEVEL}, or with your first dungeon`}</small>
           </span>
         </button>
         <button className="cs-mode is-ring" onClick={onRing}>
@@ -252,33 +260,30 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
           <span>
             <strong>The Ring</strong>
             <small>
-              Arena · {standing.rating} {rankOf(standing.best).name}
+              Arena duels · {standing.rating} {rankOf(standing.best).name}
             </small>
           </span>
         </button>
         <button className="cs-enter" onClick={primary} autoFocus>
-          {hero ? 'Enter the world' : 'Create your hero'}
+          <span>{hero ? 'Enter the world' : 'Create your hero'}</span>
+          {hero && <small>The story · {farthest(hero.unlocked).name}</small>}
         </button>
-        <button className={`cs-mode is-rift${hero && hero.keystone >= 1 ? '' : ' is-locked'}`} disabled={!hero || hero.keystone < 1} onClick={() => onRift(at)}>
-          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.rift!)} alt="" draggable={false} />
+        <button className="cs-mode is-vigil" onClick={onVigil}>
+          <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.vigil!)} alt="" draggable={false} />
           <span>
-            <strong>Rift Trials</strong>
-            <small>{!hero ? 'Make a hero to begin' : hero.keystone >= 1 ? `Riftstone +${hero.keystone}` : `Level ${RIFT_LEVEL} or first dungeon`}</small>
+            <strong>The Vigil</strong>
+            <small>{night > 0 ? `Hold out against the horde · best ${clock(night)}` : 'Hold out against the endless horde'}</small>
           </span>
         </button>
-        {hero ? (
-          <button className="cs-mode is-danger" onClick={() => setConfirmDelete(at)}>
-            <span className="cs-mode-glyph is-trash" aria-hidden="true">
-              ✕
-            </span>
-            <span>
-              <strong>Delete hero</strong>
-              <small>{hero.name}</small>
-            </span>
-          </button>
-        ) : (
-          <span className="cs-mode-gap" />
-        )}
+        <button className={`cs-mode is-party${hero ? '' : ' is-locked'}`} disabled={!hero} onClick={() => engine.playTogether(at)}>
+          <span className="cs-mode-glyph is-party" aria-hidden="true">
+            ⚑
+          </span>
+          <span>
+            <strong>Play together</strong>
+            <small>{hero ? 'The story or a Rift, with up to three friends' : 'Make a hero first'}</small>
+          </span>
+        </button>
       </div>
 
       {hero && confirmDelete === at && (

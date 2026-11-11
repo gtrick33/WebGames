@@ -42,3 +42,23 @@ export function topStanding(): Standing {
     return NEW_STANDING;
   }
 }
+
+let best: number | null = null;
+
+/** The best rating this device has seen the player reach, in any format (kept until `forgetBest`: it is asked often). */
+export function bestRating(): number {
+  if (best === null) {
+    try {
+      const raw = JSON.parse(localStorage.getItem(RING_KEY) ?? 'null') as { standings?: Record<string, Standing> } | null;
+      best = Object.values(raw?.standings ?? {}).reduce((a, s) => (typeof s?.best === 'number' && s.best > a ? s.best : a), NEW_STANDING.best);
+    } catch {
+      best = NEW_STANDING.best;
+    }
+  }
+  return best;
+}
+
+/** The standings have been written: ask them afresh. */
+export function forgetBest(): void {
+  best = null;
+}

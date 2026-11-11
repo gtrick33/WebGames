@@ -8,7 +8,7 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { ClassId, Item, PerkId, RegionId, SlotId, StatKey } from '../data/types';
 import { RARITIES, SLOTS } from '../data/types';
 import { STAT_ROLL } from '../data/items';
-import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME, allItems, HELD_MAX } from './character';
+import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, seatSpecSkill, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME, allItems, HELD_MAX } from './character';
 import { itemClass, itemSlot, newUid } from './items';
 import { grantMounts, grantWarden, syncRift, learnLooks, LOOK_SLOTS, tidyWardrobe } from './wardrobe';
 import { MOUNT_DEFS } from '../data/mounts';
@@ -35,7 +35,7 @@ const BACKUP_KEY = 'glitchbound.sigilfall.bak';
 const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
 const OLD_SAVE_KEY = 'glitchbound.riftbound';
 const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 /**
  * Hero places a save keeps. Every account plays three; the Gloamknight Pack opens two more (progress/paidClasses.ts
  * `heroSlots`), and a hero in one of those is kept, out of sight, if the pack is refunded.
@@ -330,14 +330,18 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   // is asked each time (progress/shopGoods.ts), so a save can choose one but never shows one that isn't owned
   const shopId = (v: unknown): v is string => typeof v === 'string' && SHOP_ID.test(v);
   if (shopId(o.shopMount)) c.shopMount = o.shopMount;
+  // (the title worn: only the choice; whether it is earned is asked of the record each time)
+  if (typeof o.title === 'string' && /^[a-z0-9-]{0,24}$/.test(o.title)) c.title = o.title;
   const shopWorn = obj(o.shopWorn) ?? {};
   for (const slot of ['head', 'chest'] as const) if (shopId(shopWorn[slot])) c.shopWorn = { ...c.shopWorn, [slot]: shopWorn[slot] };
-  // mounts: earned ones are owned (the Gullport Strider for anyone who has its perk); the chosen one must be owned.
+  // mounts: earned ones are owned (the Millbrook Cob for anyone who has the old riding perk); the chosen one must be owned.
   // A mount held from before Dunmore's riders came (older rules gave some early) stays in the save: the hero
   // just can't ride it until the riders come (wardrobe.ts ridingOpen, world.ts mountRefusal).
   grantMounts(c);
   grantWarden(c);
   syncRift(c);
+  // (a hero who chose a specialization before its fourth slot opened: its ability comes onto the bar they have)
+  seatSpecSkill(c);
   if (c.mount && !c.mounts.includes(c.mount)) c.mount = c.mounts[0] ?? null;
   const s = obj(o.stats) ?? {};
   c.stats = { kills: int(s.kills, 0, 1e9, 0), deaths: int(s.deaths, 0, 1e9, 0), time: int(s.time, 0, 1e10, 0), runs: int(s.runs, 0, 1e9, 0), bestRun: int(s.bestRun, 0, 1e9, 0) };
@@ -382,6 +386,51 @@ function playedBefore(quests: Record<string, unknown>, ids: string[]): void {
       changed = true;
     }
   }
+}
+
+/**
+ * Version 13: the story in fifteen lands (STORY_BIBLE.md v3). Twelve lands left the story, beats were put in front
+ * of old quests and the main story runs in one line. A hero keeps their place in it: every main quest before the
+ * furthest one they have started counts as played, with what it gives that stays with a hero (its perk, a sigil,
+ * and the land it opens). Their quests of the lands that left the story are dropped as they load.
+ */
+function keepPlace(hero: Raw): void {
+  const quests: Raw = { ...obj(hero.quests) };
+  for (const id of unpackBits(hero.qd, QUEST_TABLE)) if (!(id in quests)) quests[id] = 'd';
+  for (const [id, e] of Object.entries(quests)) if (typeof e === 'string') quests[id] = unpackQuest(e);
+  const started = (id: string): boolean => !!obj(quests[id])?.state;
+  // the main story: what the last bell can't ring without
+  const main = new Set<string>();
+  const walk = (id: string): void => {
+    if (main.has(id)) return;
+    main.add(id);
+    for (const a of QUEST_DEFS[id]?.after ?? []) walk(a);
+  };
+  walk('epilogue-the-bell');
+  const played: string[] = [];
+  const stack = [...main].filter(started);
+  while (stack.length) {
+    const id = stack.pop()!;
+    for (const a of QUEST_DEFS[id]?.after ?? []) {
+      if (started(a) || !main.has(a)) continue;
+      quests[a] = { state: 'done', n: 1 };
+      played.push(a);
+      stack.push(a);
+    }
+  }
+  const perks = Array.isArray(hero.perks) ? (hero.perks as unknown[]) : [];
+  const unlocked = Array.isArray(hero.unlocked) ? (hero.unlocked as unknown[]) : [];
+  // the Gloam's story is played in the Riftscar Wastes now: whoever knew the fen knows the way there
+  if (unlocked.includes('gloamhollow') && !unlocked.includes('riftscar')) unlocked.push('riftscar');
+  for (const id of played) {
+    const r = QUEST_DEFS[id]!.reward;
+    if (r.perk && !perks.includes(r.perk)) perks.push(r.perk);
+    if (r.unlock && !unlocked.includes(r.unlock)) unlocked.push(r.unlock);
+  }
+  hero.perks = perks;
+  hero.unlocked = unlocked;
+  hero.quests = quests;
+  delete hero.qd;
 }
 
 /** Brings an older save up to date. Returns null for something that is not a Sigilfall save. */
@@ -478,6 +527,14 @@ export function migrate(raw: unknown): SaveFile | null {
   // version 12: done quests and opened keys stored as bitsets over progress/saveTables.ts, lands seen almost
   // whole stored whole (saveText); both forms are read
   if (o.v === 11) o.v = 12;
+  // version 13: the story in fifteen lands; every hero keeps their place in it (keepPlace)
+  if (o.v === 12) {
+    for (const h of Array.isArray(o.heroes) ? o.heroes : []) {
+      const hero = obj(h);
+      if (hero) keepPlace(hero);
+    }
+    o.v = 13;
+  }
   if (o.v !== SAVE_VERSION) return null;
   const heroes: (Character | null)[] = [];
   const list = Array.isArray(o.heroes) ? o.heroes : [];

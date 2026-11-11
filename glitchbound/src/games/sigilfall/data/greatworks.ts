@@ -182,6 +182,14 @@ export const GREAT: Record<string, GreatWork> = {
     room: [5, 4],
     overRoad: true,
   },
+  // The Kings' Mound and the Gallows Gang's hill (render3d/doorways.ts): the ground they stand on
+  'mouth-barrow': { parts: [], solid: [[-3, -5, 3, 0]], room: [5, 6], overRoad: true },
+  'mouth-gallows': {
+    parts: [thing('built_skull_banner', 2.6, -3.9, 1.3, { rot: 8 }), thing('built_skull_banner', 2.6, 3.9, 1.3, { rot: -8 }), thing('built_cage', 1.3, 4.6, 2.2, { rot: 20 })],
+    solid: HILL,
+    room: [5, 4],
+    overRoad: true,
+  },
   // The Rotmother's cistern lets out under a wall of brick
   'outfall-rotmother': { parts: [], solid: [[-3, 0, 3, 0]], room: [4, 2], overRoad: true },
 
@@ -258,7 +266,8 @@ export const GREAT: Record<string, GreatWork> = {
       thing('arch_gate', 24, 0, 0, { tint: BLACK, shadow: 7, shadowD: 0.35 }),
       thing('statue_obelisk', 16, -14, 2, { tint: BLACK, flame: 1.5, flameY: 15.5, shadow: 2 }),
       thing('statue_obelisk', 16, 14, 2, { tint: BLACK, flame: 1.5, flameY: 15.5, shadow: 2 }),
-      block(14, 18, 0.5, 0, -0.4, { tint: '#7affb0', y: 0.2, glow: '#7affb0', glowY: 10, glowSize: 90 }),
+      // (the gloam behind its bars: the rift's own violet, not a green the land has nowhere else)
+      block(14, 18, 0.5, 0, -0.4, { tint: '#8a5ad8', y: 0.2, glow: '#c49aff', glowY: 10, glowSize: 90 }),
     ],
     solid: [[-12, -1, -8, 1], [8, -1, 12, 1], [-7, 0, 7, 0], [-14, 2, -14, 2], [14, 2, 14, 2]],
     room: [17, 7],
@@ -435,13 +444,30 @@ export const GREAT: Record<string, GreatWork> = {
     solid: [],
     room: [0, 0],
   },
-  // Duskspire: the Hallow King's own throne, and everything that ever knelt to him
+  // Duskspire: the Hallow King's own throne, cut from the ice of three hundred winters, under a crown of seven great
+  // spires of it fanned out behind like the Crown he wears (one lit violet: the Stone's); his first knights frozen at
+  // its sides, standing guard over an empty seat
   'hallow-throne': {
     parts: [
-      ...throne(20, -6, '#4a4654'),
-      figure('sk_king', 'sit', 17, 0, -5.4, { y: 1.8 + 6.2, tint: '#a8a8b8' }),
-      figure('black_knight', 'idle', 12, -13, -3, { tint: '#6a6874' }),
-      figure('black_knight', 'idle', 12, 13, -3, { tint: '#6a6874' }),
+      ...throne(20, -6, '#b8d0ea'),
+      ...[-3, -2, -1, 0, 1, 2, 3].map((i): GreatPart => thing('stone_tallA', 20 - Math.abs(i) * 2.2, i * 3.4, -8.6 + Math.abs(i) * 0.5, { tipZ: i * -9, rot: i * 37, tint: i === 0 ? '#d8c8ff' : '#cfe6ff', glow: i === 0 ? '#c8a8ff' : undefined, glowY: 16, glowSize: 60 })),
+      figure('black_knight', 'idle', 12, -13, -3, { tint: '#c8dcf0', stone: 0.6 }),
+      figure('black_knight', 'idle', 12, 13, -3, { tint: '#c8dcf0', stone: 0.6 }),
+      thing('stone_tallA', 9, -17, -2.6, { tint: ICE, rot: 30, tipZ: 12 }),
+      thing('stone_tallA', 9, 17, -2.6, { tint: ICE, rot: 140, tipZ: -12 }),
+    ],
+    solid: [],
+    room: [0, 0],
+  },
+
+  // Vaelmoor Remembered: the Ash Crown itself over the palace garden, a crown of seven grey points as tall as the trees,
+  // hanging in the summer air with nothing to hold it up but grief, until Elyra unmakes it
+  // (it stands at the garden's north wall, as a boss's backdrop does, and hangs out over the garden from there)
+  'ash-crown': {
+    parts: [
+      ...ring(7, 2.2, 2.2, (x, z, i) => thing('stone_tallA', 4.2, x, z + 3.2, { y: 4.6, rot: i * 51, tipX: z * 9, tipZ: -x * 9, tint: i % 2 ? '#b9b4bf' : '#9a96a4', glow: i === 0 ? '#c8a8ff' : undefined, glowY: 3, glowSize: 18 })),
+      block(4.6, 0.5, 4.6, 0, 3.2, { y: 4.3, tint: '#8a8694', tipX: 4 }),
+      thing('stone_tallA', 1.6, 0, 3.2, { y: 2.6, rot: 180, tipX: 180, tint: '#c8a8ff', glow: '#c8a8ff', glowY: 0.5, glowSize: 30 }),
     ],
     solid: [],
     room: [0, 0],
@@ -450,10 +476,16 @@ export const GREAT: Record<string, GreatWork> = {
   // The Pale Reach: "the dead stand in ranks and Duskspire rises in the north"
   duskspire: {
     parts: [
-      ...castle(38, '#5a5868', { roof: '20202c' }),
-      thing('b_tower_B#20202c', 44, 0, -12, { tint: '#54525e' }),
-      thing('b_tower_B#20202c', 34, -14, -10, { tint: '#54525e' }),
-      thing('b_tower_B#20202c', 34, 14, -10, { tint: '#54525e' }),
+      ...castle(38, '#c4cede', { roof: '2a3450' }),
+      thing('b_tower_B#2a3450', 44, 0, -12, { tint: '#bcc8da' }),
+      thing('b_tower_B#2a3450', 34, -14, -10, { tint: '#bcc8da' }),
+      thing('b_tower_B#2a3450', 34, 14, -10, { tint: '#bcc8da' }),
+      // three hundred winters grown up its walls: spires of ice taller than its towers, and one lit violet at the top
+      thing('stone_tallA', 30, -21, -6, { tint: ICE, rot: 20, tipZ: 10 }),
+      thing('stone_tallA', 24, -24, -1, { tint: '#cfe6ff', rot: 80, tipZ: 16 }),
+      thing('stone_tallA', 30, 21, -6, { tint: ICE, rot: 160, tipZ: -10 }),
+      thing('stone_tallA', 24, 24, -1, { tint: '#cfe6ff', rot: 110, tipZ: -16 }),
+      thing('stone_tallA', 18, 0, -16, { y: 40, tint: '#d8c8ff', glow: '#c8a8ff', glowY: 10, glowSize: 120 }),
     ],
     solid: [[-17, -14, 17, -1]],
     room: [22, 15],
@@ -510,6 +542,18 @@ export const DOOR_GROUND: Record<string, GreatPlace[]> = {
   saltmarsh: [{ id: 'mouth-grotto', door: 'smugglers-grotto', dy: -1, exact: true }],
   duskfen: [{ id: 'outfall-rotmother', door: 'rotmother-cistern', dy: -1, exact: true }],
   emberdeep: [{ id: 'mouth-molten', door: 'molten-throne', dy: -1, exact: true }],
+  'ashen-barrows': [{ id: 'mouth-barrow', door: 'barrow-of-kings', dy: -1, exact: true }],
+  thornvale: [{ id: 'mouth-gallows', door: 'gallows-keep', dy: -1, exact: true }],
+};
+
+/**
+ * A generated land's built door that stands hard against something already there (Highwall's sally port, the keep close
+ * behind it): its ground as the hand-laid lands' is (withDoorGround), tiles from the door's own.
+ */
+export const DOOR_BLOCKS: Record<string, { to: string; rects: readonly (readonly [number, number, number, number])[] }> = {
+  highwall: { to: 'siege-of-highwall', rects: [[-8, -1, 8, -1], [-8, -2, -5, -2], [2, -2, 2, -2], [5, -2, 8, -2]] },
+  // (Duskspire's gate: the citadel is behind its west half)
+  'pale-reach': { to: 'duskspire', rects: [[-7, -2, 7, -1]] },
 };
 
 export const GREAT_IN: Record<string, GreatPlace[]> = {
@@ -519,10 +563,9 @@ export const GREAT_IN: Record<string, GreatPlace[]> = {
   rimeheld: [{ id: 'frozen-giant', at: [0.25, 0.65] }],
   vinecoil: [{ id: 'serpent-temple', at: [0.68, 0.3] }],
   highwall: [{ id: 'the-highwall', at: [0.42, 0.1] }],
-  gloamhollow: [{ id: 'gloam-gate', at: [0.5, 0.22] }],
   bonefields: [{ id: 'titan', at: [0.5, 0.38] }],
   emberdeep: [{ id: 'black-mountain', door: 'molten-throne', dy: -8 }],
   hollowmere: [{ id: 'necropolis', spot: 'the-necropolis', dy: -9, water: true }],
-  riftscar: [{ id: 'the-tear', at: [0.35, 0.4] }, { id: 'herald-spire', door: 'spire-of-the-rift', dy: -5 }],
+  riftscar: [{ id: 'the-tear', at: [0.35, 0.4] }, { id: 'herald-spire', door: 'spire-of-the-rift', dy: -5 }, { id: 'gloam-gate', at: [0.6, 0.2] }],
   'pale-reach': [{ id: 'duskspire', door: 'duskspire' }, { id: 'ranks-of-the-dead', at: [0.5, 0.45] }],
 };

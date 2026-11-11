@@ -1,4 +1,7 @@
 import { BARROW_OF_KINGS_PATTERNS } from './barrow-of-kings';
+import { CRYPT_PATTERNS } from './crypt';
+import { GALLOWS_PATTERNS } from './gallows';
+import { GROTTO_PATTERNS } from './grotto';
 import { DEEPFORGE_HALLS_PATTERNS } from './deepforge-halls';
 import type { PatternFn } from './kit';
 import { ROTMOTHER_CISTERN_PATTERNS } from './rotmother-cistern';
@@ -9,6 +12,9 @@ import { BLIGHTHEART_PATTERNS } from './blightheart';
 import { MOLTEN_THRONE_PATTERNS } from './molten-throne';
 import { SPIRE_OF_THE_RIFT_PATTERNS } from './spire-of-the-rift';
 import { DUSKSPIRE_PATTERNS } from './duskspire';
+import { SPELL_PATTERNS } from './spells';
+import { CROWN_CATACOMBS_PATTERNS } from './crown-catacombs';
+import { HALLOW_KING_PATTERNS } from './hallow-king';
 
 /** Every boss attack beyond boss.ts's own, by id. */
-export const EXTRA_PATTERNS: Record<string, PatternFn> = { ...ROTMOTHER_CISTERN_PATTERNS, ...DEEPFORGE_HALLS_PATTERNS, ...BARROW_OF_KINGS_PATTERNS, ...TOMB_OF_THE_SUN_KING_PATTERNS, ...RIMEHELD_VAULT_PATTERNS, ...SIEGE_OF_HIGHWALL_PATTERNS, ...BLIGHTHEART_PATTERNS, ...MOLTEN_THRONE_PATTERNS, ...SPIRE_OF_THE_RIFT_PATTERNS, ...DUSKSPIRE_PATTERNS };
+export const EXTRA_PATTERNS: Record<string, PatternFn> = { ...CRYPT_PATTERNS, ...GALLOWS_PATTERNS, ...GROTTO_PATTERNS, ...ROTMOTHER_CISTERN_PATTERNS, ...DEEPFORGE_HALLS_PATTERNS, ...BARROW_OF_KINGS_PATTERNS, ...TOMB_OF_THE_SUN_KING_PATTERNS, ...RIMEHELD_VAULT_PATTERNS, ...SIEGE_OF_HIGHWALL_PATTERNS, ...BLIGHTHEART_PATTERNS, ...MOLTEN_THRONE_PATTERNS, ...SPIRE_OF_THE_RIFT_PATTERNS, ...DUSKSPIRE_PATTERNS, ...CROWN_CATACOMBS_PATTERNS, ...HALLOW_KING_PATTERNS, ...SPELL_PATTERNS };

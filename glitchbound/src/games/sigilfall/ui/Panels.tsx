@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CLASSES, levelPower, MAX_LEVEL, xpToNext } from '../data/classes';
 import { ITEM_DEFS } from '../data/items';
-import { KEY_AFFIXES, KEY_DEATH, keyLevelFor, KEY_MIN, keyAffixes, keyLoot, keyPar, keyScale, weekAffixes, weekOf } from '../data/keystones';
+import { KEY_AFFIXES, KEY_DEATH, keyLevelFor, KEY_MIN, keyAffixes, keyLoot, keyParFor, keyScale, weekAffixes, weekOf } from '../data/keystones';
 import { NPCS, QUESTS } from '../data/quests';
 import { mapColors } from '../data/themes';
 import { REGION_IDS, REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENT_ROWS, TALENTS } from '../data/talents';
-import type { Item, QuestDef, RegionDef, RegionId, SkillIndex, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
+import { setOf } from '../data/riftgear';
+import type { Item, ItemDef, QuestDef, RegionDef, RegionId, SkillIndex, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
 import { SLOT_LEVELS, slotOpen, bagSize, cantEquip, cantLearn, cantSpec, currentObjective, freePoints, learnedSkills, levelGated, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
@@ -30,7 +31,12 @@ import { usePanZoom, type PanZoom } from './panZoom';
 import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
 import { questRewards } from '../progress/rewards';
 import { FOG_CELL, fogSeen, loadFog, type Fog } from '../progress/fog';
+import { RiftGuide } from './RiftGuide';
 import { ShopPanel } from './Shop';
+import { RING_LOOKS } from '../arena/rewards';
+import { MUSIC_CREDITS } from '../audio/tracks';
+import { earnedTitles, titled, titleName, TITLES, wornTitle } from '../progress/titles';
+import { WARDENS } from '../data/wardens';
 import { compareWith, linesOnlyIn, statRows } from './compare';
 import { PartyPanel } from './Party';
 import { PRESETS } from '../progress/presets';
@@ -77,7 +83,7 @@ export function Panels({ engine }: { engine: SigilEngine }) {
 
 /* --------------------------------------------------------------- hero */
 
-const SLOT_LABEL: Record<SlotId, string> = { weapon: 'Weapon', offhand: 'Off-hand', head: 'Head', chest: 'Chest', legs: 'Legs', hands: 'Hands', feet: 'Feet', amulet: 'Amulet', ring: 'Ring', relic: 'Relic' };
+export const SLOT_LABEL: Record<SlotId, string> = { weapon: 'Weapon', offhand: 'Off-hand', head: 'Head', chest: 'Chest', legs: 'Legs', hands: 'Hands', feet: 'Feet', amulet: 'Amulet', ring: 'Ring', relic: 'Relic' };
 const SHOWN_STATS: StatKey[] = ['power', 'crit', 'critDmg', 'haste', 'armor', 'speed', 'regen', 'ultCharge', 'fire', 'frost', 'lightning', 'poison', 'physical', 'arcane', 'potion'];
 
 /** Each sigil's color on the hero sheet. */
@@ -119,7 +125,8 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
         <div className="rb-hero-id">
           <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} face={h.face} size={48} />
           <div>
-            <strong>{h.name}</strong>
+            <strong>{titled(h.name, wornTitle(h, engine.ringRating()))}</strong>
+            <TitlePicker engine={engine} />
             <span>
               Level {h.level} {CLASSES[h.cls].name}
               {h.para.l > 0 && <b className="rb-para-name"> · Paragon {h.para.l}</b>}
@@ -242,8 +249,48 @@ export function isUpgrade(cur: Item | undefined, it: Item): boolean {
   return itemScore(it) > itemScore(cur) + 5;
 }
 
+/** The hero's titles: the one worn (chosen here), and every one there is with how it is earned. */
+function TitlePicker({ engine }: { engine: SigilEngine }) {
+  const h = engine.hero!;
+  const rating = engine.ringRating();
+  const mine = earnedTitles(h, rating);
+  const worn = wornTitle(h, rating);
+  const value = h.title === '' ? '' : (mine.find((t) => titleName(t, h) === worn)?.id ?? '');
+  return (
+    <details className="rb-titles">
+      <summary>
+        Titles <span className="rb-dim">{mine.length} of {TITLES.length}</span>
+      </summary>
+      {mine.length > 0 && (
+        <label className="rb-titles-pick">
+          <span>Wear</span>
+          <select value={value} onChange={(e) => engine.chooseTitle(e.target.value)} aria-label="Title to wear">
+            <option value="">No title</option>
+            {mine.map((t) => (
+              <option key={t.id} value={t.id}>
+                {titleName(t, h)}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <ul>
+        {TITLES.map((t) => {
+          const has = mine.includes(t);
+          return (
+            <li key={t.id} className={has ? 'is-on' : ''}>
+              <b className={t.rare ? 'rb-title-rare' : ''}>{t.id === 'warden' ? WARDENS[h.cls].title : t.name}</b>
+              <span>{t.how}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </details>
+  );
+}
+
 /** One item's card: header, stats (with their change against `compareTo`), what it changes, lore. */
-export function ItemCard({ item, compareTo, label, compact, against, onClose }: { item: Item; compareTo?: Item; label?: 'Equipped' | 'In your bag' | 'For sale'; compact?: boolean; against?: Item; onClose?: () => void }) {
+export function ItemCard({ item, compareTo, label, compact, against, onClose, wornIds }: { item: Item; compareTo?: Item; label?: 'Equipped' | 'In your bag' | 'For sale'; compact?: boolean; against?: Item; onClose?: () => void; wornIds?: ReadonlySet<string> }) {
   const slot = itemSlot(item);
   const def = ITEM_DEFS[item.base];
   const cls = itemClass(item);
@@ -284,7 +331,7 @@ export function ItemCard({ item, compareTo, label, compact, against, onClose }: 
       </ul>
       {lines.length > 0 && (
         <div className="rb-item-mods">
-          <span className="rb-kicker">Changes how you fight</span>
+          <span className="rb-kicker">{def?.forSpec !== undefined && cls ? `Made for the ${CLASSES[cls].trees[def.forSpec]?.name ?? ''}` : 'Changes how you fight'}</span>
           {lines.map((l) => (
             <p key={l} className={gone?.has(l) ? 'rb-down-t' : 'rb-gold'}>
               {gone?.has(l) ? 'You would lose: ' : ''}
@@ -293,7 +340,35 @@ export function ItemCard({ item, compareTo, label, compact, against, onClose }: 
           ))}
         </div>
       )}
+      {def?.set && !compact && <SetLines item={def} wornIds={wornIds} />}
+      {def?.rift !== undefined && <p className="rb-small rb-rift-tag">Rift-forged: found only in the Rift, from Riftstone +{def.rift}.</p>}
       {def && <p className="rb-lore">“{def.lore}”</p>}
+    </div>
+  );
+}
+
+/** A set piece's set: its pieces (the ones worn marked) and what each count of them gives (what counts now, lit). */
+function SetLines({ item, wornIds }: { item: ItemDef; wornIds?: ReadonlySet<string> }) {
+  const set = setOf(item);
+  if (!set) return null;
+  const worn = set.pieces.filter((id) => wornIds?.has(id)).length;
+  return (
+    <div className="rb-item-set">
+      <span className="rb-kicker">
+        {set.name} ({worn}/{set.pieces.length} worn)
+      </span>
+      <ul className="rb-set-pieces">
+        {set.pieces.map((id) => (
+          <li key={id} className={wornIds?.has(id) ? 'is-on' : ''}>
+            {ITEM_DEFS[id]?.name ?? id}
+          </li>
+        ))}
+      </ul>
+      {set.bonuses.map((b) => (
+        <p key={b.need} className={worn >= b.need ? 'rb-gold' : 'rb-dim'}>
+          <b>({b.need})</b> {b.text}
+        </p>
+      ))}
     </div>
   );
 }
@@ -316,7 +391,7 @@ export function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone, act
   return (
     <div className="rb-item" style={{ ['--rc' as string]: rarityColor(item.r) }}>
       <div className={`rb-compare${compare ? ' is-two' : ''}`}>
-        <ItemCard item={item} compareTo={compare} label={worn ? 'Equipped' : compare ? (label ?? 'In your bag') : label} onClose={onDone} />
+        <ItemCard item={item} compareTo={compare} label={worn ? 'Equipped' : compare ? (label ?? 'In your bag') : label} onClose={onDone} wornIds={new Set(Object.values(h.equip).flatMap((i) => (i ? [i.base] : [])))} />
         {compare && <ItemCard item={compare} label="Equipped" compact against={item} />}
         {!worn && !compare && !reason && <p className="rb-small rb-dim rb-icard-none">Nothing equipped in this slot.</p>}
       </div>
@@ -552,6 +627,11 @@ function TalentsPanel({ engine }: { engine: SigilEngine }) {
               <p className="rb-small">
                 <b style={{ color: cls.trees[h.spec].color }}>{cls.trees[h.spec].passive.name}</b> ({cls.trees[h.spec].name}): {cls.trees[h.spec].passive.text}
               </p>
+              {cls.trees[h.spec].combo && (
+                <p className="rb-small rb-combo-line">
+                  <b style={{ color: cls.trees[h.spec].color }}>Combo · {cls.trees[h.spec].combo!.name}:</b> {cls.trees[h.spec].combo!.text}
+                </p>
+              )}
               <p className="rb-dim rb-small">
                 Pick a talent to read it. Each row opens after {ROW_COST} more points in its tree; the last row is the tree’s capstone. Your specialization’s tree comes first: the other two open after {SPEC_FOCUS} points in it.
               </p>
@@ -601,6 +681,11 @@ function SpecChoice({ engine, onDone }: { engine: SigilEngine; onDone: () => voi
               <p className="rb-small">
                 <b>{t.passive.name}:</b> {t.passive.text}
               </p>
+              {t.combo && (
+                <p className="rb-small rb-combo-line">
+                  <b style={{ color: t.color }}>Combo · {t.combo.name}:</b> {t.combo.text}
+                </p>
+              )}
               <button className="rb-btn is-gold" disabled={!!why} onClick={() => engine.chooseSpec(i as 0 | 1 | 2) && onDone()}>
                 {why ?? (h.spec === null ? `Become ${t.name}` : `Switch${cost ? ` · ${cost} gold` : ''}`)}
               </button>
@@ -873,6 +958,7 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
             {useKey ? (
               <>
                 <KeyPicker heroLevel={h.level} region={r} stone={stone} top={h.keystone} best={h.bestKeys[sel] ?? 0} week={week} onPick={setStone} />
+                <RiftGuide hero={h} />
                 <button
                   className="rb-btn is-small"
                   onClick={() => {
@@ -930,7 +1016,7 @@ function KeyPicker({ heroLevel, region, stone, top, best, week, onPick }: { hero
         )}
       </div>
       <span className="rb-small">
-        Enemies at level {keyLevelFor(heroLevel)} with ×{sc.hp.toFixed(1)} health and ×{sc.dmg.toFixed(1)} damage. The clock: <b className="rb-gold">{clockText(keyPar(region))}</b> (each fall costs {KEY_DEATH} s). Beat it to
+        Enemies at level {keyLevelFor(heroLevel)} with ×{sc.hp.toFixed(1)} health and ×{sc.dmg.toFixed(1)} damage. The clock: <b className="rb-gold">{clockText(keyParFor(region, heroLevel))}</b> (each fall costs {KEY_DEATH} s). Beat it to
         open the next levels (up to three, by how fast); late, nothing is lost. Loot of item level {keyLoot(stone, heroLevel)}
         {best ? `; your best here is +${best}` : ''}.
       </span>
@@ -1437,9 +1523,11 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
         </section>
         <section>
           <span className="rb-kicker">Art credits</span>
-          <span className="rb-small rb-dim">
-            {ART_CREDITS.join(' · ')}. Heroes, monsters, bosses, item icons, sound and music are made for the game.
-          </span>
+          <span className="rb-small rb-dim">{ART_CREDITS.join(' · ')}. Item icons and the interface are made for the game.</span>
+        </section>
+        <section>
+          <span className="rb-kicker">Music and sound credits</span>
+          <span className="rb-small rb-dim">{SOUND_CREDITS.join(' ')}</span>
         </section>
         {engine.reviewTools && engine.hero && (
           <section>
@@ -1469,8 +1557,13 @@ const ART_CREDITS = [
   'Gloomvault Crypt by Certainity',
   'Skill and talent icons: Nasha’s Lumenfall, Skill & Spell Icons Vol. 1, by nanasha.',
   '3D models: KayKit by Kay Lousberg, Kenney, and Quaternius.',
-  'Sound effects: RPG Sound Pack by artisticdude.',
-  'Music: Orchestral and World Music Pack by Ragnar Random.',
+];
+
+/** Who made what is heard. The music and one sound library ask to be credited (CC BY), with their link and license. */
+const SOUND_CREDITS = [
+  `Music by Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution 4.0 (creativecommons.org/licenses/by/4.0), each piece cut to length: ${MUSIC_CREDITS.join(', ')}.`,
+  'Sound effects from the Fantasy Sound Effects Library by Little Robot Sound Factory (www.littlerobotsoundfactory.com), licensed under Creative Commons: By Attribution 3.0 (creativecommons.org/licenses/by/3.0), cut and leveled.',
+  'More sound effects, given to the public domain (CC0) on opengameart.org, by artisticdude, rubberduck, Vehicle, StarNinjas, Kenney, Someoneman, Ogrebane, qubodup, TinyWorlds, Kresiek The Furry and SketchMan3.',
 ];
 
 /** The hero in everything they wear (and the Wardrobe looks over it); tap to turn them around. */
@@ -1510,6 +1603,8 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
     const have = new Set(owned.map((l) => l.id));
     const locked = authoredLooks(h.cls, slot).filter((l) => !have.has(l.id));
     locked.sort((a, b) => RARITY_RANK[a.r]! - RARITY_RANK[b.r]! || a.name.localeCompare(b.name));
+    // (and the Ring's armor still to be earned, lowest rank first)
+    locked.unshift(...RING_LOOKS.filter((l) => l.slot === slot && !have.has(l.id)));
     return [...owned.map((l) => ({ look: l, owned: true })), ...locked.map((l) => ({ look: l, owned: false }))];
   }, [h, slot, engine.version]); // eslint-disable-line react-hooks/exhaustive-deps
   const authoredOwned = h.looks.filter((id) => lookOf(id)?.authored && lookFits(lookOf(id)!, h.cls)).length;

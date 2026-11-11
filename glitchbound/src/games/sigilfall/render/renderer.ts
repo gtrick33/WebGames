@@ -1,10 +1,15 @@
 import { clamp, damp, TAU } from '../core/math';
+import { zoneLight } from './zoneLight';
 import { currentObjective } from '../progress/character';
 import { drawMapIcon, type MapIcon } from '../ui/mapIcons';
 import { isMainQuest, turnInNpc } from '../progress/handin';
 import { LEAD, leanTarget, LIFT } from './camera';
 import { Effects, headOf } from './effects';
 import { THEMES } from '../data/themes';
+import { ROOM, type RoomLight } from './rooms';
+
+/** The light of the place the hero is in, where it's under a roof: a deep place, or a house in a town. */
+const roomOf = (w: World): RoomLight | null => (w.region.dark ? (ROOM[w.region.theme] ?? ROOM.default!) : w.region.interior ? (ROOM[w.region.theme] ?? null) : null);
 import type { ClassId } from '../data/types';
 import { TILE } from '../sim/map';
 import type { Enemy, NpcActor, Pet } from '../sim/types';
@@ -416,6 +421,7 @@ export class Renderer {
       st.land?.update(cx / TILE, cy / TILE, st.spanX, st.spanZ);
       st.land?.lightFlames(cx / TILE, cy / TILE, time, this.burning(w));
       st.land?.updateDoors(dt);
+      st.land?.updateColumns(dt, p.x / TILE, p.y / TILE);
       this.folkK = damp(this.folkK, w.story.fighting ? 0 : 1, 3, dt);
       st.cast.begin();
       this.people.sync(st.cast, w, dt, time, { look: this.look ?? heroLook(w.hero.cls), weapon: this.weapon, folk: this.folkK, statues: st.land?.statues, colossi: st.land?.colossi, landOnly: this.landOnly });
@@ -443,6 +449,9 @@ export class Renderer {
 
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    g.setTransform(this.k, 0, 0, this.k, 0, 0);
+    this.vignette(g, w);
+    g.setTransform(1, 0, 0, 1, 0, 0);
 
     // ---- what's drawn on the ground for the player: on its own layer, under whatever stands
     const near0 = (x: number, y: number): boolean => Math.abs(x - cx) < this.vw * 0.7 && Math.abs(y - cy) < this.vh * 0.9;
@@ -534,6 +543,21 @@ export class Renderer {
     return out;
   }
 
+  /** The dim edge of a deep place: drawn under the names and bars, over the world. */
+  private vignette(g: CanvasRenderingContext2D, w: World): void {
+    const room = roomOf(w);
+    if (!room) return;
+    const W = this.cssW;
+    const H = this.cssH;
+    const grd = g.createRadialGradient(W / 2, H * 0.52, Math.min(W, H) * 0.42, W / 2, H * 0.52, Math.hypot(W, H) * 0.62);
+    grd.addColorStop(0, `rgba(${room.edge},0)`);
+    const k = room.edgeK ?? 1;
+    grd.addColorStop(0.6, `rgba(${room.edge},${0.22 * k})`);
+    grd.addColorStop(1, `rgba(${room.edge},${0.62 * k})`);
+    g.fillStyle = grd;
+    g.fillRect(0, 0, W, H);
+  }
+
   private setMood(w: World, st: Stage, dt: number): void {
     const look = THEMES[w.region.theme];
     const grade = LIGHT.uGrade.value;
@@ -542,6 +566,16 @@ export class Renderer {
     const dread = look.dread;
     grade.set(0, 0, 0, 0);
     dark.set(0, 8, 0, 0);
+    // a deep place has its own dim light, which its fires push back in their own color (render3d/toon.ts roomLight)
+    const room = roomOf(w);
+    if (room) {
+      LIGHT.uAmb.value.set(room.amb[0], room.amb[1], room.amb[2], 1);
+      LIGHT.uFlameCol.value.set(room.fire[0], room.fire[1], room.fire[2]);
+      LIGHT.uRim.value.set(room.rim[0], room.rim[1], room.rim[2]);
+    } else {
+      LIGHT.uAmb.value.set(1, 1, 1, 0);
+      LIGHT.uRim.value.set(0.5, 0.47, 0.4);
+    }
     // night falling or lifting is a matter of a few seconds; coming into a land it's already what it is
     const state = w.storyState;
     const want = state?.night ? 1 : state?.dusk ? 0.7 : 0;
@@ -557,6 +591,8 @@ export class Renderer {
     };
     if (look.tint) paint(look.tint, 0.14);
     if (w.storyState?.gloom) paint('#3a4468', 0.16);
+    // a room under the sea (sim/patterns/grotto.ts): green and deep
+    if (w.flooded > 0) paint('#1a7a96', 0.3 * w.flooded);
     if (dread && dread.dark > 0) {
       paint(dread.shade, 0.16);
       dark.set(dread.dark * 0.2, 16, 0, 0);
@@ -564,6 +600,11 @@ export class Renderer {
     // a crypt sets a mood, never hides the game: the far edge of the view is dim, everything can be seen. (A night
     // has no such edge: it's night everywhere, and what's lit is lit.)
     if (w.region.dark) dark.set(0.36, 11, 0, 0);
+    // a quarter of a hall whose lamp was devoured (sim/patterns/barrow-of-kings.ts): the gloom closes in
+    if (w.dimmed > 0) {
+      paint('#1a1030', 0.32 * w.dimmed);
+      dark.set(0.36 + 0.3 * w.dimmed, 11 - 4 * w.dimmed, 0, 0);
+    }
     void st;
   }
 
@@ -929,10 +970,9 @@ export class Renderer {
   /* ----------------------------------------------------------- overlays */
 
   /**
-   * The roads out of a land: a gateway of light standing across the whole way out, in the color of the land it leads
-   * to. A bright pool on the ground fills the road from side to side; over it a veil of light rises, made of pillars
-   * that breathe and drift one after another, with motes going up through it and a crown of sparks along its top, so a
-   * way on reads from afar as the door to somewhere else, not a patch on the road.
+   * The roads out of a land: motes of the next land's light drifting up across the way out, as dust does in a beam.
+   * Nothing else is drawn here (a curtain of light across the road read as a painted panel): the light on the ground
+   * and the gate itself say the rest (render/effects.ts wayLights, render3d/gateways.ts).
    */
   private drawWayBlooms(w: World, time: number): void {
     const g = this.g;
@@ -944,7 +984,7 @@ export class Renderer {
       else groups.push({ to: x.to, pts: [{ x: x.x, y: x.y }] });
     }
     for (const o of groups) {
-      const col = wayColor(REGIONS[o.to as RegionId]?.theme);
+      const col = zoneLight(o.to);
       let x0 = Infinity;
       let x1 = -Infinity;
       let y0 = Infinity;
@@ -955,7 +995,7 @@ export class Renderer {
         y0 = Math.min(y0, p.y);
         y1 = Math.max(y1, p.y);
       }
-      // (it spans the way out, and a little past each side of it, so no edge of the road is left out of the light)
+      // (it spans the way out, and a little past each side of it)
       const across = x1 - x0 >= y1 - y0;
       const pad = TILE * 0.95;
       const ax0 = across ? x0 - pad : (x0 + x1) / 2;
@@ -965,173 +1005,33 @@ export class Renderer {
       const cx = (ax0 + ax1) / 2;
       const cy = (ay0 + ay1) / 2;
       const span = Math.max(ax1 - ax0, ay1 - ay0);
-      const breathe = 0.5 + Math.sin(time * 1.6 + cx * 0.03) * 0.5;
 
-      // the pool on the ground, filling the road from side to side
-      this.flat(cx, cy);
-      g.save();
-      g.globalCompositeOperation = 'lighter';
-      const rx = (across ? span / 2 : TILE * 1.3) + 14;
-      const ry = (across ? TILE * 1.3 : span / 2) + 14;
-      g.translate(cx, cy);
-      g.scale(rx / ry, 1);
-      const pool = g.createRadialGradient(0, 0, 0, 0, 0, ry);
-      pool.addColorStop(0, rgba('#fffbe8', 0.6));
-      pool.addColorStop(0.35, rgba(col, 0.6 + breathe * 0.15));
-      pool.addColorStop(0.75, rgba(col, 0.22));
-      pool.addColorStop(1, rgba(col, 0));
-      g.fillStyle = pool;
-      g.beginPath();
-      g.arc(0, 0, ry, 0, Math.PI * 2);
-      g.fill();
-      g.restore();
-      // a ring of runes turning slowly on the ground at its heart
-      this.flat(cx, cy);
-      g.save();
-      g.globalCompositeOperation = 'lighter';
-      g.strokeStyle = rgba('#fff6d8', 0.35 + breathe * 0.2);
-      g.lineWidth = 1.1;
-      g.setLineDash([5, 4]);
-      g.lineDashOffset = -time * 8;
-      g.beginPath();
-      g.ellipse(cx, cy, rx * 0.62, ry * 0.62, 0, 0, Math.PI * 2);
-      g.stroke();
-      g.setLineDash([]);
-      g.restore();
-
-      // the veil: pillars of light standing all across the way out
-      const n = Math.max(6, Math.round(span / 7));
-      const tall = 96;
-      for (let i = 0; i < n; i++) {
-        const u = n === 1 ? 0.5 : i / (n - 1);
-        const px = ax0 + (ax1 - ax0) * u;
-        const py = ay0 + (ay1 - ay0) * u;
-        // (brightest in the middle, softer to the sides; each pillar breathes on its own beat, and a wave runs across)
-        const edge = Math.sin(u * Math.PI);
-        const wave = 0.5 + Math.sin(time * 2.4 - u * 7 + cx * 0.01) * 0.5;
-        const h = tall * (0.55 + edge * 0.45) * (0.85 + wave * 0.25);
-        const a = (0.11 + edge * 0.16) * (0.7 + wave * 0.5);
-        this.upright(px, py);
-        g.save();
-        g.globalCompositeOperation = 'lighter';
-        const foot = py + 10;
-        const beam = g.createLinearGradient(px, foot, px, py - h);
-        // (the foot fades into the pool rather than ending in a bright bar)
-        beam.addColorStop(0, rgba(col, 0));
-        beam.addColorStop(0.12, rgba('#fffbe8', a * 1.3));
-        beam.addColorStop(0.3, rgba(col, a * 1.2));
-        beam.addColorStop(0.7, rgba(col, a * 0.5));
-        beam.addColorStop(1, rgba(col, 0));
-        g.fillStyle = beam;
-        const bw = 7 + edge * 3;
-        g.beginPath();
-        g.moveTo(px - bw, foot);
-        g.quadraticCurveTo(px - bw * 0.7, py - h * 0.6, px, py - h);
-        g.quadraticCurveTo(px + bw * 0.7, py - h * 0.6, px + bw, foot);
-        g.closePath();
-        g.fill();
-        g.restore();
-      }
-
-      // a great soft glow behind it all, and motes rising through, and sparks along the top
+      const tall = 70;
+      // motes rising through it
       this.upright(cx, cy);
       g.save();
       g.globalCompositeOperation = 'lighter';
       const half = (across ? span : TILE * 2) / 2 + 18;
-      const glow = g.createRadialGradient(cx, cy - tall * 0.42, 0, cx, cy - tall * 0.42, Math.max(half, tall * 0.7));
-      glow.addColorStop(0, rgba('#fff6d8', 0.32 + breathe * 0.12));
-      glow.addColorStop(0.4, rgba(col, 0.24));
-      glow.addColorStop(1, rgba(col, 0));
-      g.fillStyle = glow;
-      g.beginPath();
-      g.ellipse(cx, cy - tall * 0.42, half, tall * 0.72, 0, 0, Math.PI * 2);
-      g.fill();
-      const motes = Math.max(14, Math.round(span / 4));
+      const motes = Math.max(10, Math.round(span / 5));
       for (let i = 0; i < motes; i++) {
-        const t = (time * (0.22 + (i % 5) * 0.04) + i * 0.137) % 1;
+        const t = (time * (0.2 + (i % 5) * 0.035) + i * 0.137) % 1;
         const u = ((i * 0.618) % 1) - 0.5;
         const mx = (across ? cx + u * (half * 1.7) : cx + u * 24) + Math.sin(time * 1.3 + i) * 3;
         const my = cy - 4 - t * tall * 1.05;
         const sz = 0.8 + ((i * 7) % 5) * 0.3;
-        g.fillStyle = rgba(i % 3 ? '#fffbe8' : col, Math.sin(t * Math.PI) * 0.95);
+        g.fillStyle = rgba(i % 3 ? col : '#fffbe8', Math.sin(t * Math.PI) * 0.7);
         g.beginPath();
         g.arc(mx, my, sz, 0, Math.PI * 2);
         g.fill();
-      }
-      for (let i = 0; i < 5; i++) {
-        const t = (time * 0.5 + i / 5) % 1;
-        const sx = cx + (((i * 0.37) % 1) - 0.5) * half * 1.4;
-        const sy = cy - tall * (0.82 + Math.sin(time + i) * 0.06);
-        const k = Math.sin(t * Math.PI);
-        g.strokeStyle = rgba('#ffffff', k * 0.85);
-        g.lineWidth = 0.9;
-        g.beginPath();
-        g.moveTo(sx - 3 * k, sy);
-        g.lineTo(sx + 3 * k, sy);
-        g.moveTo(sx, sy - 3 * k);
-        g.lineTo(sx, sy + 3 * k);
-        g.stroke();
       }
       g.restore();
     }
   }
 
-  /**
-   * The ways into buildings, and back out: a warm pool of light on the step and a gold chevron pointing through
-   * the door (in, under a painted door; out, at a room's door), so a door you can use never looks like one
-   * you can't. Walking onto it goes through. A dungeon's way back out to the land gets the same, on its gap in the wall.
-   */
+  /** What is drawn on the ground at the ways out of a land (the doors of houses and the ways down have their light in render/effects.ts). */
   private drawEntrances(w: World, time: number): void {
-    const g = this.g;
-    const dungeon = w.region.kind === 'dungeon';
-    const inside = !!w.region.interior || dungeon;
-    const seen = new Set<string>();
-    if (!inside) this.drawWayBlooms(w, time);
-    for (const x0 of w.exits) {
-      if (!x0.door && !dungeon) continue;
-      // (a way out two tiles wide is one way out: the chevrons go in the middle of it)
-      let x = x0;
-      if (!x0.door) {
-        if (seen.has(x0.to)) continue;
-        seen.add(x0.to);
-        const twin = w.exits.find((o) => o !== x0 && o.to === x0.to && o.y === x0.y && Math.abs(o.x - x0.x) <= TILE);
-        if (twin) x = { ...x0, x: (x0.x + twin.x) / 2 };
-      }
-      const pulse = 0.5 + Math.sin(time * 3 + x.x * 0.1) * 0.5;
-      // the step: on the tile in front of a painted door, on the door tile itself indoors
-      const cy = inside ? x.y : x.y - 4;
-      // (laid flat where it lies: the view tilts differently here than round the hero, and it would slide as they walk)
-      this.flat(x.x, cy);
-      g.save();
-      const grd = g.createRadialGradient(x.x, cy, 0, x.x, cy, 14);
-      grd.addColorStop(0, rgba('#ffe08a', 0.6 + pulse * 0.2));
-      grd.addColorStop(0.6, rgba('#ffc84a', 0.25 + pulse * 0.1));
-      grd.addColorStop(1, rgba('#ffc84a', 0));
-      g.fillStyle = grd;
-      g.beginPath();
-      g.ellipse(x.x, cy, 14, 7, 0, 0, Math.PI * 2);
-      g.fill();
-      // two chevrons, nudging the way through
-      const dir = inside ? 1 : -1;
-      const bob = Math.round(Math.sin(time * 4) * 1.5) * dir;
-      g.lineJoin = 'round';
-      g.lineCap = 'round';
-      for (const step of [0, 4]) {
-        const tip = cy + dir * (3 - step) + bob;
-        const back = tip - dir * 4;
-        g.beginPath();
-        g.moveTo(x.x - 5, back);
-        g.lineTo(x.x, tip);
-        g.lineTo(x.x + 5, back);
-        g.strokeStyle = 'rgba(40, 24, 16, 0.75)';
-        g.lineWidth = 3.4;
-        g.stroke();
-        g.strokeStyle = step ? 'rgba(255, 244, 196, 0.75)' : '#fff4c4';
-        g.lineWidth = 1.8;
-        g.stroke();
-      }
-      g.restore();
-    }
+    if (w.region.interior || w.region.kind === 'dungeon') return;
+    this.drawWayBlooms(w, time);
   }
 
 }
@@ -1157,15 +1057,4 @@ export function npcMark(w: World, id: string): MapIcon | null {
 }
 
 import { NPCS, QUEST_DEFS } from '../data/quests';
-import { REGIONS } from '../data/regions';
-import type { RegionId, Theme } from '../data/types';
-
-/** The bloom on a road out, in the color that suits the land it leads to (gold where nothing says otherwise). */
-const WAY_COLORS: Partial<Record<Theme, string>> = {
-  village: '#ffd66a', forest: '#9cff7a', farm: '#ffe27a', coast: '#7ae8ff', autumn: '#ffa64a', marsh: '#b8e070', plague: '#c8f070',
-  plains: '#ffe08a', mountain: '#d8e4ff', barrow: '#c8b8ff', storm: '#8ab8ff', moor: '#d0a0ff', desert: '#ffc860', fey: '#ff9af0',
-  snow: '#bfe8ff', rift: '#b88aff', jungle: '#7affa0', warfront: '#ff8a5a', blight: '#c0ff6a', haunted: '#a0d8ff', volcanic: '#ff7a3a',
-  deadlake: '#9ad0d0', peaks: '#e0ecff', sunken: '#6ae0d8', bonefield: '#f0e6c8', gloam: '#d08aff',
-};
-const wayColor = (t: Theme | undefined): string => (t && WAY_COLORS[t]) || '#ffd66a';
 

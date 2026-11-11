@@ -55,7 +55,7 @@ describe('Sigilfall: Rimeheld, the sledge road', () => {
       run(w, 0.5);
     }
     expect(questState(w.hero, 'the-last-sledges')).toBe('done');
-    expect(questState(w.hero, 'bones-on-the-ice')).not.toBe('locked');
+    expect(questState(w.hero, 'the-giants-hearth')).not.toBe('locked');
     const after = newWorld('rimeheld', w.hero);
     const carts = after.map.markers.filter((m) => m.marker.kind === 'prop' && m.marker.prop === 'cart' && after.isShown(m));
     expect(carts.length).toBe(1);

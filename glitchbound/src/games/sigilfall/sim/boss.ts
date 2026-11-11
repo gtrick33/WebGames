@@ -183,7 +183,7 @@ function runPattern(w: World, e: Enemy, dt: number): void {
             const stun = num(u, 'stun', 1.4);
             if (wall && stun > 0) {
               b.dazed = stun;
-              w.text(e.x, e.y - e.r - 10, 'STUNNED', '#ffe066', true);
+              w.callout('STUNNED', '#ffe066');
             }
             endPattern(w, e);
           } else {
@@ -667,7 +667,7 @@ function runPattern(w: World, e: Enemy, dt: number): void {
         pt.data.vx = vx;
         pt.data.vy = vy;
         pt.data.t0 = pt.t;
-        if (n === 0) w.text(e.x, e.y - e.r - 14, 'THE TIDE!', '#9ce8ff', true);
+        if (n === 0) w.callout('THE TIDE!', '#9ce8ff');
         w.sfx('freeze', 0.6);
         pt.step = 1;
       } else if (pt.step === 1 && pt.t >= pt.data.t0! + num(u, 'form', 1.1)) {

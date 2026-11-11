@@ -1418,6 +1418,33 @@
   height: 100%;
   background: linear-gradient(90deg, #ffcf5a, #ff8a3d);
 }
+/* where three stones and two stop being in reach, marked on the clock */
+.rb-keybar {
+  position: relative;
+}
+.rb-keybar em {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  background: rgb(255 255 255 / 0.7);
+}
+.rb-keypace {
+  font: 700 11.5px system-ui, sans-serif;
+  letter-spacing: 0.02em;
+}
+.rb-keypace.is-up3 {
+  color: #ffd257;
+}
+.rb-keypace.is-up2 {
+  color: #9be86a;
+}
+.rb-keypace.is-up1 {
+  color: #8fd8ff;
+}
+.rb-keypace.is-up0 {
+  color: #ff9a9a;
+}
 .rb-keyend {
   display: grid;
   gap: 4px;
@@ -1550,6 +1577,294 @@
 }
 .rb-boss-fill {
   background: linear-gradient(#ff6ae0, #c01a8a);
+}
+/* where its later phases begin, marked on the bar */
+.rb-boss-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--rb-ink);
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.35);
+  text-decoration: none;
+}
+/* its state, in words: which phase, a ward, dazed, what afflicts it */
+.rb-boss-pips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 3px;
+  min-height: 0;
+}
+.rb-boss-pips i {
+  font-style: normal;
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 6px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 8px;
+  background: #2a2438;
+  color: #e8e0f4;
+  text-shadow: none;
+}
+.rb-boss-pips i[data-tone='good'] {
+  background: #1f4a34;
+  color: #c8ffd8;
+}
+.rb-boss-pips i[data-tone='bad'] {
+  background: #3a4a6a;
+  color: #e0ecff;
+}
+/* what it is winding up, when that takes a second or more: a bar that fills until the blow lands */
+.rb-boss-cast {
+  position: relative;
+  width: 56%;
+  height: 7px;
+  margin-top: 4px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 5px;
+  background: #2a1408;
+  overflow: hidden;
+}
+.rb-boss-cast[hidden],
+.rb-boss-call[hidden],
+.rb-boss-call small[hidden] {
+  display: none;
+}
+.rb-boss-cast i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(#ffd27a, #ff8a2a);
+}
+/* what it is doing, called out in one place: a mark, a few words, a bar running down, and for a first meeting what to do */
+.rb-boss-call {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  margin-top: 6px;
+  padding: 5px 12px 6px;
+  max-width: 100%;
+  border: 3px solid var(--rb-ink);
+  border-radius: 10px;
+  background: rgba(18, 12, 28, 0.86);
+  text-shadow: none;
+}
+.rb-boss-call-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.rb-boss-call em {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--call, #ffd27a);
+  color: #14101c;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 13px;
+}
+.rb-boss-call b {
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--call, #ffd27a);
+}
+.rb-boss-call-time {
+  position: relative;
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+.rb-boss-call-time i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--call, #ffd27a);
+}
+.rb-boss-call small {
+  font-size: 12px;
+  color: #f4ecdc;
+  text-align: center;
+}
+/* a ward over the boss (ui/GameScreen.tsx BossBar: its shield), a silver bar under its health that empties as it breaks */
+.rb-boss-ward {
+  position: relative;
+  width: 70%;
+  height: 8px;
+  margin-top: 3px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 4px;
+  background: #1a1a22;
+  overflow: hidden;
+}
+.rb-boss-ward[hidden] {
+  display: none;
+}
+.rb-boss-ward i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(#f4f8ff, #a8b4c8);
+}
+/* a boss's standing order (ui/GameScreen.tsx BossBar, World.order): pulsing while it is called, its time running out
+   while it holds; ice blue to hold still, frost white to keep moving */
+.rb-boss-crown {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 6px;
+}
+.rb-boss-crown[hidden] {
+  display: none;
+}
+/* a point of the Hallow King's crown: dark until it holds its sigil, then lit in the sigil's own color */
+.rb-boss-crown i {
+  width: 12px;
+  height: 16px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  background: #2a2838;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.35);
+  transition: background 0.3s, filter 0.3s, transform 0.3s;
+}
+.rb-boss-crown i[data-on='1'] {
+  background: var(--pt);
+  filter: drop-shadow(0 0 4px var(--pt));
+  transform: translateY(-2px);
+}
+.rb-boss-order {
+  position: relative;
+  margin-top: 6px;
+  padding: 3px 12px 6px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 6px;
+  background: #0e2238;
+  color: #bfe4ff;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  overflow: hidden;
+}
+.rb-boss-order[hidden] {
+  display: none;
+}
+.rb-boss-order[data-kind='march'] {
+  background: #1c2a3a;
+  color: #f4fbff;
+}
+.rb-boss-order[data-on='0'] {
+  animation: rb-order-call 0.4s ease-in-out infinite alternate;
+}
+.rb-boss-order i {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: #9ad8ff;
+}
+@keyframes rb-order-call {
+  to {
+    background: #2a5a8a;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-boss-order[data-on='0'] {
+    animation: none;
+    background: #2a5a8a;
+  }
+}
+/* a skill a combo waits on (ui/comboMark.ts): its button is lit in the combo's color; one still building is fainter,
+   a whole one pulses, so the next thing to press is the thing that shines */
+.rb-slot6[data-combo],
+.rb-sb[data-combo] {
+  box-shadow:
+    0 0 0 2px var(--combo, #ffd27a),
+    0 0 10px 2px color-mix(in srgb, var(--combo, #ffd27a) 55%, transparent);
+}
+.rb-slot6[data-combo='full'],
+.rb-sb[data-combo='full'] {
+  animation: rb-combo 0.7s ease-in-out infinite;
+}
+.rb-slot6[data-combo='full'] img,
+.rb-sb[data-combo='full'] img {
+  filter: brightness(1.25) saturate(1.15);
+}
+@keyframes rb-combo {
+  50% {
+    box-shadow:
+      0 0 0 4px var(--combo, #ffd27a),
+      0 0 22px 7px color-mix(in srgb, var(--combo, #ffd27a) 75%, transparent);
+  }
+}
+/* the combo's own chip (ui/GameScreen.tsx ComboChip): its name, a pip a stack, its time running down */
+.rb-combo {
+  position: absolute;
+  top: calc(86px + var(--sa-t));
+  left: calc(10px + var(--sa-l, 0px));
+  display: grid;
+  gap: 3px;
+  min-width: 108px;
+  padding: 4px 9px 5px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 9px;
+  background: rgb(18 12 28 / 0.84);
+  box-shadow: 0 0 0 1px var(--combo, #ffd27a);
+  pointer-events: none;
+}
+.rb-combo[hidden] {
+  display: none;
+}
+.rb-combo b {
+  font-size: 12px;
+  line-height: 1.1;
+  color: var(--combo, #ffd27a);
+  white-space: nowrap;
+}
+.rb-combo[data-full='1'] {
+  box-shadow:
+    0 0 0 2px var(--combo, #ffd27a),
+    0 0 12px 2px color-mix(in srgb, var(--combo, #ffd27a) 60%, transparent);
+}
+.rb-combo-pips {
+  display: flex;
+  gap: 3px;
+}
+.rb-combo-pips:empty {
+  display: none;
+}
+.rb-combo-pips i {
+  width: 12px;
+  height: 6px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.16);
+}
+.rb-combo-pips i[data-on='1'] {
+  background: var(--combo, #ffd27a);
+}
+.rb-combo-time {
+  position: relative;
+  height: 3px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.14);
+  overflow: hidden;
+}
+.rb-combo-time i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--combo, #ffd27a);
+}
+.rb-combo-line {
+  margin-top: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-slot6[data-combo='full'],
+  .rb-sb[data-combo='full'] {
+    animation: none;
+  }
 }
 /* the hero's cast bar (ui/GameScreen.tsx CastBar): pinned under the hero, the spell's name over a bar that fills
    in its element's color (--cast-a, --cast-b); it flashes full when the spell goes and greys out when stopped */
@@ -2664,6 +2979,51 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+}
+.rb-scene-black {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+}
+/* a memory: the world pale and cold under its tint, a vignette, and its caption over it in the old hand */
+.rb-scene-vision {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.9s ease;
+  background:
+    radial-gradient(ellipse at center, transparent 42%, rgb(10 6 20 / 0.62) 100%),
+    color-mix(in srgb, var(--tint, #c8a8ff) 22%, transparent);
+  backdrop-filter: saturate(0.35) sepia(0.35) brightness(1.06);
+  mix-blend-mode: normal;
+}
+.rb-scene-vision.is-on {
+  opacity: 1;
+}
+/* a vision's caption sits in the upper bar, clear of the lines spoken in the picture */
+.rb-scene-caption {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(780px, 90%);
+  height: 9%;
+  color: #fff6e6;
+  font: italic 600 clamp(12px, 1.9cqw, 19px) / 1.3 Georgia, 'Times New Roman', serif;
+  text-align: center;
+  text-shadow: 0 0 8px rgb(0 0 0 / 0.8);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 0.9s ease;
+}
+.rb-scene-caption.is-on {
+  opacity: 1;
 }
 .rb-scene-bar {
   position: absolute;
@@ -3789,6 +4149,169 @@
 }
 .rb-ware-price {
   font: 700 12px var(--mono);
+  color: var(--rb-gold);
+}
+/* the Riftbroker's table: a button a slot */
+.rb-wagers {
+  display: grid;
+  gap: 10px;
+}
+.rb-wager-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 6px;
+}
+.rb-wager {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 48px;
+  padding: 6px 10px;
+  border-color: #6a3ab0;
+  background: linear-gradient(180deg, rgb(120 70 200 / 0.22), rgb(0 0 0 / 0.26));
+}
+.rb-wager:disabled {
+  opacity: 0.5;
+}
+.rb-wager:not(:disabled):hover {
+  box-shadow: 0 0 0 2px #c58cff;
+}
+/* the hero's titles, folded under their name */
+.rb-titles {
+  font-size: 12.5px;
+}
+.rb-titles > summary {
+  min-height: 28px;
+  padding: 4px 0;
+  color: var(--rb-gold);
+  cursor: pointer;
+}
+.rb-titles-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 6px;
+}
+.rb-titles-pick select {
+  min-height: 36px;
+  flex: 1;
+  min-width: 0;
+  padding: 3px 6px;
+  border: 1px solid rgb(255 227 154 / 0.4);
+  border-radius: 6px;
+  color: #fff4d8;
+  font: inherit;
+  background: rgb(20 12 36 / 0.9);
+}
+.rb-titles ul {
+  display: grid;
+  gap: 3px;
+  max-height: 180px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.rb-titles li {
+  display: grid;
+  opacity: 0.55;
+}
+.rb-titles li.is-on {
+  opacity: 1;
+}
+.rb-titles li.is-on b::before {
+  content: '✓ ';
+  color: #7bff9a;
+}
+.rb-titles li span {
+  color: var(--rb-dim);
+}
+.rb-title-rare {
+  color: #c58cff;
+}
+/* a set piece's card: its fellows, and what wearing them gives */
+.rb-item-set {
+  display: grid;
+  gap: 3px;
+  padding-top: 6px;
+  border-top: 1px solid rgb(255 255 255 / 0.12);
+}
+.rb-item-set p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+.rb-set-pieces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin: 0 0 2px;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--rb-dim, #9a94b8);
+}
+.rb-set-pieces li.is-on {
+  color: #7bff9a;
+}
+.rb-set-pieces li.is-on::before {
+  content: '✓ ';
+}
+.rb-rift-tag {
+  margin: 4px 0 0;
+  color: #c58cff;
+}
+/* How the Rift works: folded under the Riftstone choice, opened by whoever wants it */
+.rb-rift-guide {
+  border: 1px solid #6a3ab0;
+  border-radius: 8px;
+  background: rgb(60 30 110 / 0.2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.rb-rift-guide > summary {
+  min-height: 44px;
+  padding: 11px 12px;
+  font-weight: 700;
+  color: #e3c8ff;
+  cursor: pointer;
+}
+.rb-rift-guide-body {
+  display: grid;
+  gap: 12px;
+  padding: 0 12px 12px;
+}
+.rb-rift-guide h3 {
+  margin: 0 0 3px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--rb-gold);
+}
+.rb-rift-guide p {
+  margin: 0 0 4px;
+}
+.rb-rift-rows {
+  display: grid;
+  gap: 5px;
+  margin: 2px 0 6px;
+  padding: 0;
+  list-style: none;
+}
+.rb-rift-rows li {
+  display: grid;
+  grid-template-columns: 3.2em minmax(0, 1fr);
+  column-gap: 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+}
+.rb-rift-rows b {
+  color: #c58cff;
+}
+.rb-rift-rows li.is-open b {
+  color: #7bff9a;
+}
+.rb-rift-rows em {
+  grid-column: 2;
+  font-style: normal;
   color: var(--rb-gold);
 }
 .rb-inn {
@@ -6046,9 +6569,47 @@
 .cs-mode.is-rift {
   --m: #b48cff;
 }
-.cs-mode.is-danger {
-  --m: #d8404f;
-  background: linear-gradient(155deg, rgb(70 12 22 / 0.94), #120610 82%);
+.cs-mode.is-party {
+  --m: #5ad6c8;
+}
+.cs-mode-glyph.is-party {
+  background: rgb(8 34 38 / 0.9);
+  color: #9ff2e8;
+  font: 700 clamp(13px, 3.4cqh, 20px) system-ui, sans-serif;
+}
+/* the way into the story says where it leads */
+.cs .cs-enter {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 1px;
+}
+.cs .cs-enter small {
+  overflow: hidden;
+  max-width: 100%;
+  color: #5a3410;
+  font: 600 clamp(10px, 1.5cqw, 12.5px) / 1.1 system-ui, sans-serif;
+  text-overflow: ellipsis;
+  text-shadow: none;
+  white-space: nowrap;
+}
+/* deleting a hero is not one of the ways in: a small button by the settings */
+.cs-delete {
+  opacity: 0.72;
+}
+.cs-delete:hover,
+.cs-delete:focus-visible {
+  opacity: 1;
+  color: #ff9a9a;
+}
+/* who stands here reads over anything the hall puts behind the words (the rose window is bright) */
+.cs-id::before {
+  content: '';
+  position: absolute;
+  inset: -14% -18% -22%;
+  z-index: -1;
+  background: radial-gradient(ellipse at 50% 42%, rgb(6 3 16 / 0.72), rgb(6 3 16 / 0.4) 48%, transparent 72%);
+  pointer-events: none;
 }
 .cs-mode.is-locked {
   --m: #6d6580;
@@ -6072,20 +6633,32 @@
     min-height: clamp(30px, 8cqh, 44px);
   }
 }
-@container (max-width: 620px) {
+/* a stage of middling width: the cards stand up, picture over words, so no name is ever cut short */
+@container (max-width: 1000px) {
   .cs-mode {
     flex-direction: column;
     justify-content: center;
+    gap: 3px;
+    padding: 5px 4px;
+    text-align: center;
+  }
+  .cs-mode strong {
+    white-space: normal;
+  }
+  .cs-mode small {
+    -webkit-line-clamp: 3;
+  }
+}
+@container (max-width: 620px) {
+  .cs-mode {
     gap: 2px;
     padding: 3px;
-    text-align: center;
   }
   .cs-mode small {
     display: none;
   }
   .cs-mode strong {
     font-size: 11px;
-    white-space: normal;
   }
 }
 @container (max-height: 300px) {
@@ -7353,7 +7926,7 @@
   image-rendering: pixelated;
 }
 .rb-rr-board {
-  --cols: 32px minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) 54px 62px;
+  --cols: 32px minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) 58px 54px 62px;
   display: grid;
   gap: 4px;
   padding: 6px 8px;
@@ -7391,6 +7964,13 @@
   padding: 2px 4px 2px 2px;
   border-radius: 7px;
   background: rgb(255 255 255 / 0.04);
+}
+.rb-rr-num.is-combos {
+  color: #ffd257;
+}
+.rb-rr-num.is-combos small {
+  color: #ff9a5a;
+  font-weight: 700;
 }
 .rb-rr-row.is-me {
   background: rgb(255 227 154 / 0.1);
@@ -7479,10 +8059,10 @@
 }
 @container (max-width: 620px) {
   .rb-rr-board {
-    --cols: 28px minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 0.8fr);
+    --cols: 28px minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 0.8fr) 46px;
   }
-  .rb-rr-cols span:nth-child(n + 5),
-  .rb-rr-num {
+  .rb-rr-cols span:nth-child(n + 6),
+  .rb-rr-num:not(.is-combos) {
     display: none;
   }
 }
@@ -7983,6 +8563,337 @@
   font: 700 11px/15px system-ui, sans-serif;
   text-align: center;
   text-shadow: 0 1px 1px #000;
+}
+/* the Ring's rewards: the strip in the lobby, the ladder in full, what a climb earned, and the title-and-armor choice */
+.rb-rp-looks {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rb-rp-looks .rb-wear {
+  flex: 1;
+  min-width: 0;
+}
+.rb-rp-looks .rb-btn {
+  flex: none;
+  white-space: nowrap;
+}
+.rb-vlobby-kit .rb-rp-looks {
+  min-width: 0;
+  margin-bottom: 4px;
+}
+.rb-vlobby-kit .rb-rp-looks .rb-wear {
+  justify-content: flex-start;
+  min-width: 0;
+  margin: 0;
+}
+.rb-vlobby-kit .rb-rp-looks .rb-wear span {
+  display: none;
+}
+.rb-vlobby-kit .rb-rp-looks .rb-wear select {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+.rb-vlobby-kit .rb-rp-looks .rb-btn {
+  padding-inline: 8px;
+}
+.rb-rw-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 5px 10px;
+  border: 1px solid rgb(255 227 154 / 0.28);
+  border-radius: 9px;
+  background: linear-gradient(90deg, rgb(255 210 87 / 0.1), rgb(20 12 34 / 0.6));
+  color: #f4ecd8;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.rb-rw-strip:hover,
+.rb-rw-strip:focus-visible {
+  border-color: #ffe39a;
+}
+.rb-rw-pips {
+  display: flex;
+  gap: 4px;
+}
+.rb-rw-pips i {
+  width: 11px;
+  height: 11px;
+  rotate: 45deg;
+  border: 1.5px solid var(--r);
+  border-radius: 2px;
+  opacity: 0.55;
+}
+.rb-rw-pips i.is-on {
+  background: var(--r);
+  box-shadow: 0 0 7px var(--r);
+  opacity: 1;
+}
+.rb-rw-next {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.15;
+}
+.rb-rw-next b {
+  font: 700 12px system-ui, sans-serif;
+}
+.rb-rw-next small {
+  overflow: hidden;
+  color: #cfc4e0;
+  font: 500 11px system-ui, sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-rw-more {
+  flex: none;
+  color: #ffe39a;
+  font: 700 11.5px system-ui, sans-serif;
+  text-decoration: underline;
+}
+.rb-rw-dialog {
+  width: min(520px, 94%);
+  max-height: 94%;
+  overflow-y: auto;
+}
+.rb-rw-list {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0 8px;
+  padding: 0;
+  list-style: none;
+}
+.rb-rw-list li {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px;
+  text-align: left;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-left: 3px solid var(--r);
+  border-radius: 7px;
+  background: rgb(255 255 255 / 0.03);
+  opacity: 0.72;
+}
+.rb-rw-list li.is-on {
+  background: color-mix(in srgb, var(--r) 14%, transparent);
+  opacity: 1;
+}
+.rb-rw-at {
+  display: grid;
+  line-height: 1.1;
+}
+.rb-rw-at b {
+  color: var(--r);
+  font: 800 15px Georgia, 'Times New Roman', serif;
+}
+.rb-rw-at small {
+  color: #cfc4e0;
+  font-size: 10.5px;
+}
+.rb-rw-what {
+  display: grid;
+  gap: 1px;
+  font-size: 12px;
+}
+.rb-rw-list em {
+  color: #cfc4e0;
+  font: 600 11px system-ui, sans-serif;
+  white-space: nowrap;
+}
+.rb-rw-list li.is-on em {
+  color: #7bff9a;
+}
+.rb-rw-swatch {
+  display: inline-flex;
+  overflow: hidden;
+  margin-left: 4px;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+.rb-rw-swatch i {
+  width: 8px;
+  height: 10px;
+}
+.rb-rw-earned {
+  display: grid;
+  gap: 5px;
+  margin: 2px 0 6px;
+}
+.rb-rw-earned p {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1.5px solid var(--r);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--r) 16%, rgb(10 6 20 / 0.8));
+  box-shadow: 0 0 18px -4px var(--r);
+  text-align: center;
+}
+.rb-rw-earned strong {
+  color: var(--r);
+  font: 800 12px system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rb-rw-earned span {
+  font-size: 13px;
+}
+.rb-rw-earned small {
+  color: #cfc4e0;
+  font-size: 11px;
+}
+.rb-rw-looks {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  column-gap: 14px;
+  align-items: start;
+  text-align: left;
+}
+.rb-rw-looks > h2,
+.rb-rw-looks > .rb-vigil-actions {
+  grid-column: 1 / -1;
+}
+.rb-rw-looks > :not(h2, .rb-rw-preview, .rb-vigil-actions) {
+  grid-column: 2;
+}
+.rb-rw-preview {
+  display: grid;
+  grid-row: 2 / span 6;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.rb-rw-preview img {
+  width: 120px;
+  height: 150px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 8px rgb(0 0 0 / 0.5));
+}
+.rb-rw-preview strong {
+  color: #ffe39a;
+  font: 700 12px/1.2 Georgia, 'Times New Roman', serif;
+}
+.rb-rw-field {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 5px 0;
+  font-size: 13px;
+  text-align: left;
+}
+.rb-rw-field select {
+  width: 100%;
+}
+@container (max-width: 520px) {
+  .rb-rw-looks {
+    grid-template-columns: 84px minmax(0, 1fr);
+  }
+  .rb-rw-preview img {
+    width: 80px;
+    height: 104px;
+  }
+}
+.rb-rw-field select {
+  min-height: 38px;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid rgb(255 227 154 / 0.35);
+  border-radius: 7px;
+  background: #1a1028;
+  color: #f4ecd8;
+  font: inherit;
+}
+.rb-rw-none {
+  margin: 2px 0 6px;
+  color: #cfc4e0;
+  font-size: 12px;
+}
+/* momentum: combos in a row, by the bar (it drains as the chain goes cold) */
+.rb-ring-momentum {
+  --mo: #ffd27a;
+  position: absolute;
+  left: 50%;
+  bottom: 30px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  translate: -50% 0;
+  overflow: hidden;
+  padding: 3px 10px 5px 6px;
+  border: 1.5px solid var(--mo);
+  border-radius: 9px;
+  background: rgb(10 6 20 / 0.82);
+  box-shadow: 0 0 14px -2px var(--mo);
+  color: #fff;
+  pointer-events: none;
+  animation: rb-momentum-in 0.22s ease-out;
+}
+.rb-ring-momentum.is-x2 {
+  --mo: #ffb45c;
+}
+.rb-ring-momentum.is-x3 {
+  --mo: #ff8a4a;
+}
+.rb-ring-momentum.is-x4 {
+  --mo: #ff5a7a;
+}
+.rb-ring-momentum b {
+  min-width: 30px;
+  color: var(--mo);
+  font: 800 21px/1 Georgia, 'Times New Roman', serif;
+  text-align: center;
+  text-shadow: 0 1px 2px #000;
+}
+.rb-ring-momentum span {
+  display: grid;
+  line-height: 1.1;
+}
+.rb-ring-momentum strong {
+  font: 700 11.5px system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.rb-ring-momentum small {
+  color: #d8cfe8;
+  font: 500 10.5px system-ui, sans-serif;
+  white-space: nowrap;
+}
+.rb-ring-momentum i {
+  position: absolute;
+  inset: auto auto 0 0;
+  height: 3px;
+  background: var(--mo);
+}
+@keyframes rb-momentum-in {
+  from {
+    scale: 1.25;
+    opacity: 0;
+  }
+}
+.rb-ring.is-touch .rb-ring-momentum {
+  bottom: auto;
+  top: 58px;
+}
+.rb-ring.is-touch .rb-ring-momentum small {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-ring-momentum {
+    animation: none;
+  }
 }
 .rb-ring-tip {
   position: absolute;

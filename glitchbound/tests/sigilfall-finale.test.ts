@@ -57,12 +57,12 @@ function beat(w: World, quest: string, rounds = 40): void {
   }
 }
 const npcHere = (w: World, id: string): boolean => w.npcs.some((n) => n.id === id);
-const FACTION_PETS = ['fern-ranger', 'hearth-rider', 'kragholt-axe', 'clan-archer', 'thorn-knight', 'jarl-huscarl', 'sun-lancer', 'marsh-skirmisher'];
+const FACTION_PETS = ['fern-ranger', 'hearth-rider', 'kragholt-axe', 'clan-archer', 'thorn-knight', 'jarl-huscarl', 'sun-lancer'];
 
 describe('Sigilfall: the Last March (Act VI)', () => {
   it('only the factions the hero helped come to the field, the forest’s knights only if the prince was sung back', () => {
     const alone = heroAt('march-the-siege-mages');
-    for (const id of ['fern-retaken', 'camp-riders', 'camp-dwarves', 'the-clans-decide', 'the-vault-of-rime', 'the-sun-king', 'kesh-the-secret', 'kesh-the-truth', 'silvaines-song', 'the-thorn-court']) delete alone.quests[id];
+    for (const id of ['fern-retaken', 'camp-riders', 'break-the-chains', 'the-clans-decide', 'the-vault-of-rime', 'the-sun-king', 'silvaines-song', 'the-thorn-court']) delete alone.quests[id];
     const w = newWorld('pale-reach', alone);
     goTo(w, 'wall-field');
     run(w, 0.3);
@@ -70,11 +70,9 @@ describe('Sigilfall: the Last March (Act VI)', () => {
     expect(w.pets.filter((p) => FACTION_PETS.includes(p.def.id))).toHaveLength(0);
     expect(w.pets.some((p) => p.def.id === 'siege-mages')).toBe(true);
 
-    const all = heroAt('march-the-siege-mages', 58, ['fern-retaken', 'camp-riders', 'camp-dwarves', 'the-clans-decide', 'the-vault-of-rime', 'the-sun-king']);
+    const all = heroAt('march-the-siege-mages', 58, ['fern-retaken', 'camp-riders', 'break-the-chains', 'the-clans-decide', 'the-vault-of-rime', 'the-sun-king']);
     all.quests['silvaines-song'] = { state: 'done', n: 1 };
     all.quests['the-thorn-court'] = { state: 'done', n: -1 };
-    all.quests['kesh-the-secret'] = { state: 'done', n: 1 };
-    all.quests['kesh-the-truth'] = { state: 'done', n: -1 };
     const full = newWorld('pale-reach', all);
     goTo(full, 'wall-field');
     run(full, 0.3);
@@ -120,7 +118,7 @@ describe('Sigilfall: the Last March (Act VI)', () => {
 });
 
 describe('Sigilfall: Crownfall', () => {
-  it('Duskspire’s gate wants all seven sigils, and Vaelor’s fall opens a tear into the Crown’s memory', () => {
+  it('Duskspire’s gate: six locks for Elyra’s six, the seventh (the Stone’s, on the King’s brow) opened by Aurel; Vaelor’s fall opens a tear into the Crown’s memory', () => {
     const c = heroAt('the-duskspire-gate', 59);
     const gate = newWorld('pale-reach', c);
     const exit = gate.exits.find((x) => x.to === 'duskspire')!;
@@ -128,14 +126,21 @@ describe('Sigilfall: Crownfall', () => {
     const lock = (w: World, x: World['exits'][number]): string | null => (w as unknown as { exitLock(e: World['exits'][number]): string | null }).exitLock(x);
     c.perks = c.perks.filter((p) => !p.startsWith('sigil-'));
     expect(lock(gate, exit)).toMatch(/Seven locks/);
-    c.perks.push('sigil-embers', 'sigil-tides', 'sigil-stone', 'sigil-sun', 'sigil-frost', 'sigil-thorns', 'sigil-veil');
+    // the six Elyra carries: the Stone is not among them (Vosk brought it to his king)
+    c.perks.push('sigil-embers', 'sigil-tides', 'sigil-sun', 'sigil-frost', 'sigil-thorns', 'sigil-veil');
     expect(lock(gate, exit)).toBeNull();
+    // (the seventh lock turns for Aurel's voice: before it is silenced, six are not enough)
+    c.quests['march-the-voice'] = { state: 'active', n: 0 };
+    expect(lock(gate, exit)).toMatch(/the Stone is on the King’s brow/);
+    c.quests['march-the-voice'] = { state: 'done', n: 1 };
+    expect(QUEST_DEFS['the-seventh-sigil']!.reward.perk).toBeUndefined();
+    expect(QUEST_DEFS['the-hollow-king']!.reward.perk).toBe('sigil-stone');
     expect(gate.exits.some((x) => x.to === 'vaelmoor-remembered')).toBe(false);
     const fallen = newWorld('pale-reach', heroAt('crownfall-vaelmoor', 60));
     expect(fallen.exits.some((x) => x.to === 'vaelmoor-remembered')).toBe(true);
   });
 
-  it('Elyra’s choice: both answers offered, by whom the hero goes to; one closes the other; the Crown comes either way', () => {
+  it('Elyra’s choice: both answers offered, by whom the hero goes to; one closes the other; the Crown is unmade either way', () => {
     for (const answer of ['crownfall-one-hour', 'crownfall-break-it'] as const) {
       const c = heroAt('crownfall-vaelmoor', 60);
       c.quests['crownfall-vaelmoor'] = { state: 'done', n: 1 };
@@ -150,6 +155,16 @@ describe('Sigilfall: Crownfall', () => {
       startQuests(c);
       expect(questState(c, 'crownfall-the-ash-crown')).not.toBe('locked');
       const memory = newWorld('vaelmoor-remembered', c);
+      // nothing is fought in the memory: the King was the last fight. Under the Crown, Elyra unmakes it and the way home opens
+      expect(memory.encounters.some((e) => !!e.def.boss)).toBe(false);
+      if (questState(c, 'crownfall-the-ash-crown') === 'active') {
+        expect(memory.props.some((p) => p.prop === 'great:ash-crown')).toBe(true);
+        goTo(memory, 'memory-garden');
+        run(memory, 1);
+        expect(questState(c, 'crownfall-the-ash-crown')).toBe('done');
+        expect(memory.portal).not.toBeNull();
+        c.quests['crownfall-the-ash-crown'] = { state: 'active', n: 0 };
+      }
       // the King stays for his hour, and is gone if the Crown was broken at once
       expect(npcHere(memory, 'vaelor-remembered')).toBe(answer === 'crownfall-one-hour');
       // and the Epilogue shows it: four names on a stone by the chapel, for the hour
@@ -164,7 +179,7 @@ describe('Sigilfall: Crownfall', () => {
 
 describe('Sigilfall: the Epilogue and the postgame', () => {
   it('the camp goes home down the south road, and Briarhollow is a village again', () => {
-    const w = newWorld('briarhollow', heroAt('epilogue-the-camp-goes-home', 60, ['camp-scouts', 'camp-grain', 'camp-healers', 'camp-smiths', 'camp-riders', 'camp-dwarves']));
+    const w = newWorld('briarhollow', heroAt('epilogue-the-camp-goes-home', 60, ['camp-scouts', 'camp-grain', 'camp-riders']));
     expect(npcHere(w, 'ranger-cole')).toBe(true);
     expect(w.props.filter((p) => p.prop === 'tent').length).toBeGreaterThan(0);
     goTo(w, 'briar-square');
@@ -174,7 +189,7 @@ describe('Sigilfall: the Epilogue and the postgame', () => {
     expect(questState(w.hero, 'epilogue-the-camp-goes-home')).toBe('done');
     const home = newWorld('briarhollow', w.hero);
     expect(home.storyState?.id).toBe('rebuilt');
-    for (const id of ['ranger-cole', 'carter-wenna', 'healer-brisa', 'forgewife-runa', 'rider-alder', 'dwarf-tova']) expect(npcHere(home, id), id).toBe(false);
+    for (const id of ['ranger-cole', 'carter-wenna', 'rider-alder']) expect(npcHere(home, id), id).toBe(false);
     expect(home.props.filter((p) => p.prop === 'tent')).toHaveLength(0);
     expect(home.props.filter((p) => p.prop === 'market-stall').length).toBeGreaterThanOrEqual(2);
     expect(npcHere(home, 'elyra')).toBe(true);
@@ -209,7 +224,7 @@ describe('Sigilfall: the Epilogue and the postgame', () => {
     expect(newWorld('emberwick', c).exits.some((x) => x.to === 'crown-catacombs')).toBe(true);
     expect(newWorld('shattered-vale', c).enemies.some((e) => e.def.id === 'the-heralds-first-face' && !e.dead)).toBe(true);
     // the prestige mount has explicit, deterministic criteria
-    expect(MOUNT_DEFS['crownfall-destrier']!.source).toEqual({ kind: 'clears', regions: ['duskspire', 'vaelmoor-remembered'], tier: 1 });
+    expect(MOUNT_DEFS['crownfall-destrier']!.source).toEqual({ kind: 'clears', regions: ['duskspire'], tier: 1 });
     expect(MOUNT_DEFS['crownfall-destrier']!.tier).toBe('prestige');
   });
 
@@ -224,7 +239,7 @@ describe('Sigilfall: the Epilogue and the postgame', () => {
       }
     }
     const late = QUESTS.filter((q) => ['pale-reach', 'vaelmoor-remembered'].includes(q.zone ?? '') || q.id.startsWith('epilogue-') || q.id.startsWith('postgame-') || q.id.startsWith('thread-'));
-    expect(late.length).toBeGreaterThan(25);
+    expect(late.length).toBeGreaterThan(20);
     expect(late.filter((q) => !done.has(q.id)).map((q) => q.id)).toEqual([]);
   });
 });

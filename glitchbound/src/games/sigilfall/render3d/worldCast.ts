@@ -7,13 +7,17 @@ import { npcLookOf } from '../render/sprites';
 import { bossHidden } from '../sim/boss';
 import { hasStatus } from '../sim/combat';
 import { TILE } from '../sim/map';
-import { STORY_FADE } from '../sim/pets';
+import { STORY_ARRIVE, STORY_FADE } from '../sim/pets';
 import { SUMMON_TIME, type World } from '../sim/world';
+import type { ClassId } from '../data/types';
 import type { Enemy, Ghost, NpcActor, Pet } from '../sim/types';
 import { heightFromRadius, Motion, PERSON_H, type Cast, type ClipFade, type Colossus } from './cast';
 import type { Held } from './dress';
 import { kitOf } from './kits';
 import { shapeOf } from './mountLook';
+import { chained, moveOf, type Move } from './moves';
+import { strikeOf, type Strike } from './strike';
+import type { RigAnim } from './toon';
 
 /** A facing in the rules (an angle on the map) as a turn about the vertical. */
 export const turnOf = (a: number): number => Math.atan2(Math.cos(a), Math.sin(a));
@@ -44,6 +48,10 @@ const STATUE_LOOK = {
 const STATUE_SWORD: Held = { kind: 'sword', tint: '#b0b0b0' };
 const ECHOES = new Set(['echo-of-ysane', 'echo-of-ysane-mere', 'echo-of-ysane-quay', 'echo-of-the-children']);
 const ECHO_TINT = [0.74, 0.88, 1.3] as const;
+/** A memory of summer: the Hallow King's family, coming to him in his last hour (World.kin). */
+const SUMMER = [1.35, 1.15, 0.8] as const;
+/** Bone-steel poured white-hot: Ossa's likenesses of the hero (sim/patterns/molten-throne.ts). */
+const MOLTEN = [1.85, 0.95, 0.48] as const;
 const WARD_LOOKS = new Set(['door', 'gate', 'stone', 'boat', 'wagon', 'lantern']);
 
 const shortest = (from: number, to: number): number => {
@@ -70,6 +78,15 @@ interface FoeAnim {
   t: number;
   loop: boolean;
   from: ClipFade | null;
+  /** Its wind-up ended in a blow: what follows shows the blow landing and its follow-through. */
+  struck: boolean;
+  /** A boss's pattern as last seen (which, and how far through its steps), and when its last blow began. */
+  pattern: object | null;
+  step: number;
+  blowAt: number;
+  /** When it last flinched from a hit. */
+  flinchAt: number;
+  hurt: boolean;
 }
 
 /** How fast a figure of a person's height covers the ground at one times its clip's own rate. */
@@ -85,6 +102,30 @@ const stride = (clip: string, speed: number, h: number): number => {
   return Math.max(0.55, Math.min(1.7, speed / natural));
 };
 
+/** A whirlwind's blade is held where the spin clip has it widest (seconds past the start of its turn), and goes round this fast. */
+const WHIRL_POSE = 0.34;
+const WHIRL_RATE = 13;
+/** How much of a drawing clip a wound-up shot shows (the rest is the hold at full draw). */
+const WIND_SHOWN = 0.8;
+/** How fast an enemy's blow plays once it lands, how long a boss takes to raise its weapon, how long a flinch is. */
+const BLOW_RATE = 1.15;
+const BOSS_LIFT = 0.45;
+const FLINCH = 0.22;
+/** The least time between two flinches, and between two of a boss's blows. */
+const FLINCH_EVERY = 0.7;
+const BLOW_EVERY = 0.5;
+const bossDazed = (e: Enemy): boolean => !!e.boss && (e.boss.dazed > 0 || e.boss.dying > 0 || e.boss.shift > 0);
+/** A druid's beast makes every blow with its one attack. */
+const BEAST_BLOW: Move = { clip: 'chop', rate: 1.2, lunge: 0.2 };
+
+/** Where the blow is in a move's clip: measured (strike.ts), unless the move says. */
+function strikeFor(rig: RigAnim | null | undefined, move: Move): Strike {
+  const s = strikeOf(rig, move.clip);
+  if (move.from === undefined) return s;
+  const to = move.to ?? s.to;
+  return { lift: move.from, from: move.from, hit: Math.min(to, move.from + 0.2), to };
+}
+
 const FROZEN = [0.62, 0.86, 1.25] as const;
 const CHILLED = [0.82, 0.93, 1.12] as const;
 
@@ -95,9 +136,8 @@ export class WorldCast {
   private readonly hero = new Motion();
   private readonly mountMotion = new Motion();
   private heroTurn = 0;
-  private lastAct: string | null = null;
-  private readonly ghosts = new Map<number, { m: Motion; turn: number }>();
-  private readonly pets = new Map<number, { m: Motion; turn: number; x: number; y: number }>();
+  private readonly ghosts = new Map<number, { m: Motion; turn: number; n: number; chain: number; act: { move: Move; strike: Strike; t: number; fresh: boolean } | null }>();
+  private readonly pets = new Map<number, { m: Motion; turn: number; x: number; y: number; actT: number }>();
   private readonly walkers = new WeakMap<object, Motion>();
   private readonly turned = new WeakMap<object, number>();
 
@@ -119,6 +159,23 @@ export class WorldCast {
     for (const s of o.statues ?? []) cast.person(STATUE_LOOK, STATUE_SWORD, true, s.x, s.y, 0.2, { clip: 'idle', t: 0.2, loop: false }, { h: s.h, lift: s.lift, tint: s.tint });
     for (const c of o.colossi ?? []) if (Math.hypot(c.x * TILE - w.player.x, c.z * TILE - w.player.y) < COLOSSUS_SEEN + c.h * TILE) cast.colossus(c);
     this.syncHero(cast, w, dt, time, o.look, o.weapon, o);
+    // what a boss fight floats in the air (Ilvane's stones), a shadow under each
+    for (const f of w.floaters) {
+      cast.shadow(f.x, f.y, f.h * 0.5);
+      cast.prop(f.m, f.x, f.y, f.h, f.rot, f.lift / TILE, f.tint);
+    }
+    // what a boss fight casts of the hero (Ossa's likenesses): the hero in white-hot bone-steel, walking where they walked
+    for (const [i, l] of w.likenesses.entries()) {
+      cast.shadow(l.x, l.y, 8);
+      cast.person(o.look, o.weapon, shieldOf(w.hero.cls), l.x, l.y, l.face, { clip: Math.hypot(l.vx, l.vy) > 8 ? 'run' : 'idle', t: time + i * 0.37, loop: true }, { alpha: 0.92, tint: MOLTEN });
+    }
+    // the people of a memory walking the hall (the Hallow King's queen and children, in his summer hour): echoes lit gold
+    for (const k of w.kin) {
+      const look = npcLookOf(k.look);
+      if (!look) continue;
+      cast.shadow(k.x, k.y, 7);
+      cast.person(look, null, false, k.x, k.y, turnOf(k.face), { clip: 'walk', t: time + k.x * 0.1, loop: true }, { alpha: Math.min(1, (w.time - k.since) / 0.8) * 0.92, lift: 0.12 + Math.sin(time * 1.6 + k.x) * 0.04, tint: SUMMER });
+    }
     for (const e of w.enemies) this.syncFoe(cast, e, w, dt, time);
     for (const n of w.npcs) this.syncNpc(cast, n, w, dt, time, Math.min(1, (w.time - (n.since ?? -Infinity)) / 0.8));
     for (const n of w.leftNpcs) {
@@ -156,7 +213,7 @@ export class WorldCast {
       else if (d.kind === 'orb') cast.prop('w_potion_small_red', d.x, d.y, 8, time, hop);
       else if (d.kind === 'shard') cast.prop('stone_tallA', d.x, d.y, 11, time * 1.5, hop, [1.2, 0.5, 1.2]);
     }
-    for (const pet of w.pets) this.syncPet(cast, pet, dt, time);
+    for (const pet of w.pets) this.syncPet(cast, pet, w, dt, time);
     for (const gh of w.coop?.ghosts ?? []) if (gh.seen > 0) this.syncGhost(cast, gh, dt, time);
   }
 
@@ -165,12 +222,41 @@ export class WorldCast {
     const m = this.hero;
     const speed = Math.hypot(p.vx, p.vy);
     const moving = speed > 10;
-    const acting = p.actKind !== null && p.actT > 0;
     const mount = p.riding ? mountDef(p.riding) : undefined;
+    // carried across the ground by a skill (a charge, a leap), not rolling out of the way
+    const carried = !!p.dash && !p.dash.dodge;
+    const formRig = p.form ? cast.rigOf(p.form) : null;
+    // a skill made since the last frame: the body starts its move (moves.ts)
+    if (p.actN !== this.lastActN) {
+      this.lastActN = p.actN;
+      this.act = null;
+      if (p.actKind && !p.dead) {
+        if (chained(p.actSkill)) {
+          this.chain = time - this.chainAt < 1.4 ? this.chain + 1 : 0;
+          this.chainAt = time;
+        }
+        const move = p.form ? BEAST_BLOW : moveOf(w.hero.cls, p.actSkill, p.actKind, this.chain, p.actBig);
+        // (the rules' own third swing ends the chain: the next swing starts it again)
+        if (p.actBig) this.chain = -1;
+        this.act = { move, strike: strikeFor(p.form ? formRig : cast.wardrobe?.medium, move), t: 0, dash: carried ? Math.max(0.05, p.dash!.t) : 0, fresh: true };
+      }
+    }
+    // how far through it they are: held at the top of the lift or the end of the blow while a skill carries them,
+    // then on; over when the follow-through is, or as soon as the blow has landed for someone already on the move
+    let act = this.act;
+    let at = 0;
+    if (act) {
+      const s = act.strike;
+      if (!carried) act.t += dt * (act.move.rate ?? 1);
+      // (a blade carried up comes down on arriving; one carried out, or just along, has landed and is drawn back)
+      const held = act.move.carried === 'up' ? s.from : s.hit;
+      at = carried ? held : (act.dash ? held : s.from) + act.t;
+      if (p.dead || at >= s.to || (moving && !carried && !p.windup && at >= s.hit + 0.05)) act = this.act = null;
+    }
     // which way they face: where the blow goes, else where they walk
     let want = this.heroTurn;
     if (p.casting) want = turnOf(p.casting.angle);
-    else if (acting) want = turnOf(p.actAngle);
+    else if (act || (p.actKind !== null && p.actT > 0) || p.windup) want = turnOf(p.actAngle);
     else if (moving) want = Math.atan2(p.vx, p.vy);
     else if (!p.form) want = this.heroTurn;
     this.heroTurn = damp(this.heroTurn, shortest(this.heroTurn, want), 16, dt);
@@ -178,7 +264,6 @@ export class WorldCast {
     // (safe for a moment: they shine rather than dissolve)
     const alpha = 1;
     const flash = p.flash > 0 ? 0.75 : blink ? 0.4 : 0;
-    const clipOf = (kind: string): string => (kind === 'cast' ? 'cast' : kind === 'shoot' ? 'bow' : kind === 'heavy' ? 'chop2' : kind === 'spin' ? 'spin' : 'chop');
     const inSaddle = !!mount && cast.mountReady(mount);
     // the mount they'd call is fetched ahead, so it's there the moment they're up on it
     // (the one riddenMount gives: their own, or one from the shop while it's theirs)
@@ -186,34 +271,77 @@ export class WorldCast {
     if (called) cast.mountReady(called);
     // calling it: a quick summoning cast, no animal beside them (render/effects.ts draws the swirl, the rules the flash)
     const calling = !!called && p.summon > 0 && !p.dead && !p.form;
-    if (p.dead) m.set('die', false);
+    // where in its clip the body is held this frame (unset: the clip runs on by itself)
+    let pin: number | null = null;
+    // the whole body turned, stepped and lifted by the move
+    let spun = 0;
+    let step = 0;
+    let lift = 0;
+    const whirling = !!p.channel && p.channel.target === undefined;
+    const beast = p.form ? this.formMotion : null;
+    const body = beast ?? m;
+    if (p.dead) body.set('die', false);
     else if (inSaddle) m.set('ride');
-    else if (p.dash) m.set('dodge', false);
-    else if (p.channel) m.set(p.channel.target !== undefined ? 'channel' : 'spin');
-    // a spell with a cast time: hands up, staff forward, held while the bar fills (the release is the 'cast' below)
-    else if (p.casting) m.set('channel', true, 0.12);
-    else if (acting) {
-      const key = `${p.actKind}`;
-      const fresh = this.lastAct !== key || p.actT > (this.lastActT ?? 0) + 0.01;
-      m.set(clipOf(p.actKind!), false, 0.08, fresh);
+    // a guard, not a step (the Gloamknight's Stand Fast): the blade and the arm up, feet planted
+    else if (p.guard > 0 && !beast) m.set('block', false, 0.06);
+    else if (p.dash?.dodge) body.set(beast ? 'run' : 'dodge', !!beast);
+    else if (whirling && !beast) {
+      // a whirlwind: the blade held out at arm's length, and all of them going round
+      m.set('spin', false, 0.08);
+      pin = strikeOf(cast.wardrobe?.medium, 'spin').from + WHIRL_POSE;
+      spun = time * WHIRL_RATE;
+    } else if (p.channel && !beast) m.set('channel');
+    // a spell with a cast time: hands up, staff forward, held while the bar fills (the release is its own move)
+    else if (p.casting && !beast) m.set('channel', true, 0.12);
+    else if (p.windup && !beast) {
+      // a wound-up blow: the lift, taking exactly as long as the rules give it, so the weapon comes down as they strike
+      const mv = moveOf(w.hero.cls, p.windup.spec.id, 'heavy', 0, false);
+      const u = 1 - p.windup.t / Math.max(0.01, p.windup.total);
+      if (mv.wind) {
+        m.set(mv.wind, false, 0.08);
+        pin = u * WIND_SHOWN;
+      } else {
+        const s = strikeFor(cast.wardrobe?.medium, mv);
+        m.set(mv.clip, false, 0.08);
+        pin = s.lift + (s.from - s.lift) * (1 - (1 - u) * (1 - u));
+      }
+      if (mv.hop && !mv.carried) lift = mv.hop * 0.35 * u;
+    } else if (act) {
+      const s = act.strike;
+      body.set(act.move.clip, false, 0.06, act.fresh);
+      act.fresh = false;
+      pin = at;
+      // into the blow and back out of it; off the ground and down as it lands
+      const span = Math.max(0.01, s.hit - s.from);
+      const u = Math.max(0, Math.min(1, (at - s.from) / span));
+      const back = Math.max(0, Math.min(1, (at - s.hit) / Math.max(0.01, s.to - s.hit)));
+      if (act.move.lunge && !act.dash) step = act.move.lunge * (at < s.hit ? u * u * (3 - 2 * u) : 1 - back * back * (3 - 2 * back));
+      if (act.move.hop) {
+        if (carried) {
+          const a = 1 - p.dash!.t / act.dash;
+          lift = act.move.hop * 4 * a * (1 - a);
+        } else if (!act.dash) lift = act.move.hop * 4 * u * (1 - u);
+      }
     } else if (calling) m.set('cast', false, 0.08);
-    else if (moving) m.set(speed > 60 ? 'run' : 'walk');
-    else m.set('idle');
-    this.lastAct = acting ? `${p.actKind}` : null;
-    this.lastActT = p.actT;
-    m.advance(m.clip === 'walk' || m.clip === 'run' ? dt * stride(m.clip, speed, PERSON_H) : dt);
+    else if (moving) body.set(speed > 60 ? 'run' : 'walk');
+    else body.set('idle');
+    body.advance(body.clip === 'walk' || body.clip === 'run' ? dt * stride(body.clip, speed, PERSON_H) : dt);
+    if (pin !== null) body.t = pin;
     // (the cast runs the length of the call, so its sweep ends as they land in the saddle)
     const castClip = cast.wardrobe?.medium.clips.cast;
     if (calling && m.clip === 'cast' && castClip) m.t = (Math.min(1, p.summon / SUMMON_TIME) * castClip.n) / castClip.fps;
 
+    // (the step into a blow is drawn, not walked: the rules have them where they stood)
+    const hx = p.x + Math.cos(p.actAngle) * step * TILE;
+    const hy = p.y + Math.sin(p.actAngle) * step * TILE;
     if (inSaddle) {
       // long as the animal is long
       const sh = shapeOf(mount!).shadow;
       cast.shadow(p.x + Math.sin(this.heroTurn) * sh.ahead, p.y + Math.cos(this.heroTurn) * sh.ahead, sh.r, sh.long, this.heroTurn);
-    } else cast.shadow(p.x, p.y, 8);
+    } else cast.shadow(hx, hy, lift > 0 ? 8 - Math.min(3, lift * 4) : 8);
     if (!p.dead && !o0.landOnly) cast.ring(p.x, p.y, 11, '#22e4ff', 0.75);
-    if (p.form) {
-      cast.creature(p.form, p.x, p.y, this.heroTurn, 30, acting ? 'chop' : moving && !p.casting ? 'run' : 'idle', time, !acting, { alpha, flash });
+    if (beast) {
+      cast.creature(p.form!, hx, hy, this.heroTurn, 30, beast.clip, beast.t, beast.clip !== 'chop' && beast.clip !== 'die', { alpha, flash, motion: beast, lift });
       return;
     }
     if (inSaddle) {
@@ -229,10 +357,19 @@ export class WorldCast {
     }
     // (the animal stands from the moment they're on it, not walking up)
     if (calling) this.mountMotion.set('idle', true, 0);
-    cast.person(look, held, shieldOf(w.hero.cls), p.x, p.y, this.heroTurn, m, { alpha, flash, xray: true });
+    // (adrift in a weightless gallery: off the floor, bobbing)
+    const adrift = w.unmoored > 0 ? w.unmoored * (0.22 + Math.sin(time * 2.4) * 0.05) : 0;
+    cast.person(look, held, shieldOf(w.hero.cls), hx, hy, this.heroTurn + spun, m, { alpha, flash, xray: true, lift: adrift + lift || undefined });
   }
 
-  private lastActT = 0;
+  /** The blow the hero's body is in the middle of. */
+  private act: { move: Move; strike: Strike; t: number; dash: number; fresh: boolean } | null = null;
+  private lastActN = -1;
+  /** Where they are in a basic swing's chain of three, and when the last swing was. */
+  private chain = 0;
+  private chainAt = -9;
+  /** A druid's other shape: its own body, moving as the hero's does. */
+  private readonly formMotion = new Motion();
 
   private syncFoe(cast: Cast, e: Enemy, w: World, dt: number, time: number): void {
     if (e.boss && bossHidden(e)) return;
@@ -241,16 +378,43 @@ export class WorldCast {
       cast.prop('scarecrow', e.x, e.y, 26);
       return;
     }
+    // a thing in a boss fight (a candle, a coffin, a post): its prop, shaking and flashing when struck, fading as it breaks
+    const thing = e.def.prop;
+    if (thing) {
+      if (e.dead && e.deathT > 0.5) return;
+      const shake = e.flash > 0 ? Math.sin(time * 70) * 1.5 : 0;
+      const lit: [number, number, number] | undefined = e.flash > 0 ? [1.7, 1.6, 1.5] : thing.tint;
+      cast.shadow(e.x, e.y, e.r + 1);
+      const lift = thing.lift ? thing.lift + Math.sin(time * 2.2 + e.id) * 0.12 : 0;
+      cast.prop(thing.m, e.x + shake, e.y, thing.h * (e.dead ? Math.max(0.2, 1 - e.deathT * 1.6) : 1), thing.lift ? time * 1.8 + e.id : 0, lift, lit);
+      return;
+    }
     const sprite = e.boss?.def.sprite ?? e.def.sprite;
     const kit = kitOf(sprite, e.def.id);
     const h = heightFromRadius(e.r);
     let anim = this.foes.get(e.id);
     if (!anim) {
-      anim = { state: e.state, since: time, x: e.x, y: e.y, turn: turnOf(e.face), speed: 0, walk: e.id * 0.37, clip: 'idle', t: 0, loop: true, from: null };
+      anim = { state: e.state, since: time, x: e.x, y: e.y, turn: turnOf(e.face), speed: 0, walk: e.id * 0.37, clip: 'idle', t: 0, loop: true, from: null, struck: false, pattern: null, step: 0, blowAt: -9, flinchAt: -9, hurt: false };
       this.foes.set(e.id, anim);
     } else if (anim.state !== e.state) {
+      // (out of a wind-up into its blow: a melee blow lands and they recover, a rush begins)
+      anim.struck = anim.state === 'windup' && (e.state === 'recover' || e.state === 'act');
       anim.state = e.state;
       anim.since = time;
+    }
+    // struck this frame: a flinch (not a boss, and never out of its own attack)
+    const hurtNow = e.flash > 0;
+    if (hurtNow && !anim.hurt && !e.boss && time - anim.flinchAt > FLINCH_EVERY) anim.flinchAt = time;
+    anim.hurt = hurtNow;
+    // a boss's pattern: it winds up as the pattern opens, and strikes each time the pattern moves on a step
+    const pattern = e.boss?.pattern ?? null;
+    if (pattern !== anim.pattern) {
+      anim.pattern = pattern;
+      anim.step = pattern?.step ?? 0;
+    } else if (pattern && pattern.step !== anim.step) {
+      anim.step = pattern.step;
+      // (a pattern that steps quickly: the blow under way is finished first)
+      if (time - anim.blowAt > BLOW_EVERY) anim.blowAt = time;
     }
     const since = time - anim.since;
     // where it's drawn eases after where it is, and from that, how it's really moving
@@ -290,32 +454,65 @@ export class WorldCast {
       if (alpha <= 0) return;
     } else {
       const atk = kit.atk ?? 'chop';
+      // where the blow is in its attack: the lift is shown over the wind-up, so the weapon comes down as the hit lands
+      const blow = cast.strike(sprite, atk, e.def.id);
+      const walking = (): void => {
+        // (still, it stands; walking, its feet keep time with the ground)
+        if (anim.speed > 5) {
+          clip = kit.walk ?? (anim.speed > 62 ? 'run' : 'walk');
+          anim.walk += dt * stride(clip, anim.speed, h);
+          t = anim.walk;
+        } else if (kit.rest) clip = kit.rest;
+      };
       switch (e.state) {
         case 'spawn':
           rise = Math.max(0, 1 - since / 0.7);
           break;
-        case 'windup':
+        case 'windup': {
+          const u = since / Math.max(0.05, since + e.t);
           clip = atk;
-          t = Math.min(since * 0.5, 0.18);
+          t = blow.lift + (blow.from - blow.lift) * (1 - (1 - u) * (1 - u));
           loop = false;
           break;
+        }
         case 'act':
           clip = atk;
-          t = since + 0.18;
+          t = Math.min(blow.from + since, blow.to);
           loop = false;
+          break;
+        case 'recover':
+          // the blow itself and its follow-through (it stands idle once that's done)
+          if (anim.struck && blow.from + since * BLOW_RATE < blow.to) {
+            clip = atk;
+            t = blow.from + since * BLOW_RATE;
+            loop = false;
+          }
           break;
         case 'chase':
         case 'return':
         case 'idle':
-          // (still, it stands; walking, its feet keep time with the ground)
-          if (anim.speed > 5) {
-            clip = kit.walk ?? (anim.speed > 62 ? 'run' : 'walk');
-            anim.walk += dt * stride(clip, anim.speed, h);
-            t = anim.walk;
-          }
+          walking();
           break;
         default:
           break;
+      }
+      if (pattern && !bossDazed(e)) {
+        // a boss: the lift held while its pattern gathers, and a blow each time the pattern moves on
+        const since2 = time - anim.blowAt;
+        if (blow.from + since2 * BLOW_RATE < blow.to) {
+          clip = atk;
+          t = blow.from + since2 * BLOW_RATE;
+          loop = false;
+        } else if (pattern.step === 0 && anim.speed <= 5) {
+          clip = atk;
+          t = blow.lift + (blow.from - blow.lift) * Math.min(1, pattern.t / BOSS_LIFT);
+          loop = false;
+        }
+      } else if (!e.boss && (e.state === 'idle' || e.state === 'chase' || e.state === 'return') && time - anim.flinchAt < FLINCH) {
+        // struck: it flinches (and walks on)
+        clip = 'hit';
+        t = time - anim.flinchAt;
+        loop = false;
       }
       if (e.def.ai === 'hopper') {
         const k = Math.min(1, Math.hypot(e.vx, e.vy) / 90);
@@ -353,20 +550,20 @@ export class WorldCast {
   }
 
   private syncNpc(cast: Cast, n: NpcActor, w: World, dt: number, time: number, alpha: number): void {
-    const def = NPCS[n.id];
-    const look = npcLookOf(n.id);
+    const def = NPCS[n.ghost ?? n.id];
+    const look = npcLookOf(n.ghost ?? n.id);
     const fallen = def?.down;
     const turn = this.easeTurn(n, n.face < 0 ? -0.55 : 0.55, 6, dt);
     const clip = fallen ? 'lie' : 'idle';
     cast.shadow(n.x, n.y, 7);
     // (an echo of the dead is not quite here: it hangs a little off the ground, pale and cold)
-    const echo = ECHOES.has(n.id);
+    const echo = ECHOES.has(n.id) || !!n.ghost;
     if (look) cast.person(look, null, false, n.x, n.y, turn, { clip, t: time + n.x * 0.1, loop: true }, echo ? { alpha, lift: 0.14 + Math.sin(time * 1.6 + n.x) * 0.04, tint: ECHO_TINT } : { alpha });
     else cast.creature(def?.sprite ?? 'villager', n.x, n.y, turn, PERSON_H, fallen ? 'die' : 'idle', fallen ? 9 : time + n.x * 0.1, !fallen, { alpha });
     void w;
   }
 
-  private syncPet(cast: Cast, pet: Pet, dt: number, time: number): void {
+  private syncPet(cast: Cast, pet: Pet, w: World, dt: number, time: number): void {
     const look = pet.def.look;
     if (pet.def.role === 'ward' && WARD_LOOKS.has(look ?? 'door')) {
       const ward = WARDS[look ?? 'door'];
@@ -378,7 +575,7 @@ export class WorldCast {
     }
     let s = this.pets.get(pet.id);
     if (!s) {
-      s = { m: new Motion(), turn: 0, x: pet.x, y: pet.y };
+      s = { m: new Motion(), turn: 0, x: pet.x, y: pet.y, actT: 0 };
       this.pets.set(pet.id, s);
     }
     const speed = Math.hypot(pet.vx, pet.vy);
@@ -390,16 +587,23 @@ export class WorldCast {
     s.y += (pet.y - s.y) * follow;
     if (moving) s.turn = damp(s.turn, shortest(s.turn, Math.atan2(pet.vx, pet.vy)), 10, dt);
     else if (pet.actT > 0) s.turn = damp(s.turn, shortest(s.turn, turnOf(pet.face)), 12, dt);
-    const fade = pet.story ? Math.min(1, pet.deathT > 0 ? 1 - pet.deathT / STORY_FADE : 1) : 1;
+    // the story's people come in as they go out, with a fade (a companion stepping up to speak, the led, the arriving)
+    const arrive = pet.story && pet.born !== undefined ? Math.min(1, Math.max(0, (w.time - pet.born) / STORY_ARRIVE)) : 1;
+    const fade = pet.story ? Math.min(arrive, pet.deathT > 0 ? 1 - pet.deathT / STORY_FADE : 1) : 1;
     const alpha = pet.dead ? Math.max(0, 1 - pet.deathT / 0.6) : fade;
     if (alpha <= 0) return;
+    const person = look ? npcLookOf(look) : null;
     if (pet.dead) s.m.set('die', false);
-    else if (pet.actT > 0) s.m.set('chop', false, 0.08);
-    else s.m.set(moving ? 'walk' : 'idle', true, 0.18);
+    else if (pet.actT > 0) {
+      // (a new blow starts where the blow is in its clip, not at the lift before it)
+      const fresh = s.m.clip !== 'chop' || pet.actT > s.actT + 0.01;
+      s.m.set('chop', false, 0.08, fresh);
+      if (fresh) s.m.t = person ? strikeOf(cast.wardrobe?.medium, 'chop').from : cast.strike(pet.def.sprite ?? 'wolf', 'chop').from;
+    } else s.m.set(moving ? 'walk' : 'idle', true, 0.18);
+    s.actT = pet.actT;
     s.m.advance(s.m.clip === 'walk' ? dt * stride('walk', speed, heightFromRadius(pet.r)) : dt);
     const flash = pet.flash > 0 ? 0.7 : 0;
     cast.shadow(s.x, s.y, pet.r + 1);
-    const person = look ? npcLookOf(look) : null;
     if (person) {
       const small = /child/.test(look!) ? 0.72 : 1;
       cast.person(person, null, false, s.x, s.y, s.turn, s.m, { alpha, flash, h: PERSON_H * small });
@@ -412,17 +616,38 @@ export class WorldCast {
   private syncGhost(cast: Cast, gh: Ghost, dt: number, time: number): void {
     let s = this.ghosts.get(gh.n);
     if (!s) {
-      s = { m: new Motion(), turn: 0 };
+      // (what they did before they were first seen is not replayed)
+      s = { m: new Motion(), turn: 0, n: gh.act?.n ?? -1, chain: 0, act: null };
       this.ghosts.set(gh.n, s);
     }
     const moving = Math.hypot(gh.vx, gh.vy) > 10;
+    // a skill they made since the last word of them: the same move the hero's own body makes for it
+    if (gh.act && gh.act.n !== s.n) {
+      s.n = gh.act.n;
+      if (!gh.dead) {
+        const move = moveOf(gh.cls as ClassId, gh.act.skill, gh.act.kind, chained(gh.act.skill) ? s.chain++ : 0, gh.act.big);
+        if (gh.act.big) s.chain = 0;
+        s.act = { move, strike: strikeFor(cast.wardrobe?.medium, move), t: 0, fresh: true };
+      }
+    }
+    let at = 0;
+    if (s.act) {
+      s.act.t += dt * (s.act.move.rate ?? 1);
+      at = s.act.strike.from + s.act.t;
+      if (gh.dead || at >= s.act.strike.to || (moving && at >= s.act.strike.hit + 0.05)) s.act = null;
+    }
     if (gh.cast && !gh.dead) s.turn = damp(s.turn, shortest(s.turn, turnOf(gh.cast.angle)), 14, dt);
+    else if (s.act && gh.act) s.turn = damp(s.turn, shortest(s.turn, turnOf(gh.act.angle)), 16, dt);
     else if (moving) s.turn = damp(s.turn, shortest(s.turn, Math.atan2(gh.vx, gh.vy)), 14, dt);
     if (gh.dead) s.m.set('die', false);
     // casting a spell (their cast bar): the same raised hands as the hero's own
     else if (gh.cast) s.m.set('channel', true, 0.12);
-    else s.m.set(moving ? 'run' : 'idle');
+    else if (s.act) {
+      s.m.set(s.act.move.clip, false, 0.06, s.act.fresh);
+      s.act.fresh = false;
+    } else s.m.set(moving ? 'run' : 'idle');
     s.m.advance(dt);
+    if (s.act && !gh.cast && !gh.dead) s.m.t = at;
     cast.shadow(gh.x, gh.y, 8);
     const alpha = gh.dead ? 0.55 : gh.untouchable && Math.floor(time * 20) % 2 === 0 ? 0.6 : 1;
     cast.person(gh.look as HeroLook, gh.weapon as Held, gh.cls === 'warrior' || gh.cls === 'paladin', gh.x, gh.y, s.turn, s.m, { alpha, xray: true });

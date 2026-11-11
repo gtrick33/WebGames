@@ -1,4 +1,6 @@
+import { ambienceOf } from './audio/ambience';
 import type { GameHost } from '../../platform/contract';
+import { isRetired } from './data/retired';
 import { reportOrders, waitingOrders } from '../../platform/sigilfallOrders';
 import { sigilfallShop, watchSigilfallShop } from '../../platform/sigilfallShop';
 import { setShopGoods } from './progress/shopGoods';
@@ -8,7 +10,7 @@ import { applyOrder, orderToast } from './progress/gm';
 import { isMainQuest, turnInNpc } from './progress/handin';
 import { rewardSummary } from './progress/rewards';
 import { ACTS, type ActDef } from './data/acts';
-import { CLASSES } from './data/classes';
+import { CLASSES, MAX_LEVEL } from './data/classes';
 import { keyAffixes, weekOf } from './data/keystones';
 import { WARDENS } from './data/wardens';
 import { NPCS, QUEST_DEFS } from './data/quests';
@@ -22,6 +24,9 @@ import { itemName } from './progress/items';
 import { canRide, chooseMount, FIRST_RIDE, grantMounts, grantWarden, hasMount, setShelfPoints, syncRift, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
 import { DEFAULT_SETTINGS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
+import { wager } from './progress/rift';
+import { chooseTitle, newTitles, titled, titleName } from './progress/titles';
+import { bestRating } from './arena/ranks';
 import type { ShopId } from './data/vendors';
 import { iconsReady } from './render/art/gameIcons';
 import { Renderer } from './render/renderer';
@@ -419,6 +424,13 @@ export class SigilEngine {
     this.toWorldFn = fn;
   }
 
+  /** What plays outside the story (the Ring, the Vigil: each sets its own while it is up; null: the title's). */
+  private modeMusic: MusicId = null;
+
+  setModeMusic(id: MusicId): void {
+    this.modeMusic = id;
+  }
+
   isPaused(): boolean {
     const u = this.ui;
     return u.screen !== 'game' || u.pause || !!u.panel || !!u.dialogue || !!u.travel || u.death || !!u.reward || !!u.tip || this.hidden;
@@ -434,7 +446,10 @@ export class SigilEngine {
     this.sound.suspend(this.hidden || (this.ui.screen === 'game' && this.ui.pause));
     const w = this.world;
     if (!w || this.ui.screen !== 'game') {
-      if (this.ui.screen !== 'game') this.sound.setMusic('title');
+      if (this.ui.screen !== 'game') {
+        this.sound.setMusic(this.modeMusic ?? 'title');
+        this.sound.setAmbience(null);
+      }
       return;
     }
     // in a co-op run the world never stops for a menu: the others are still fighting (the hero stands)
@@ -565,7 +580,9 @@ export class SigilEngine {
     if (this.ui.levelUp && t - this.ui.levelUp.id > 3600) this.setUi({ levelUp: null });
     if (this.tipQueue.length) this.showTip(w);
     const boss = w.boss();
-    this.sound.setMusic(boss && !boss.dead ? 'boss' : ((w.storyState?.music ?? REGIONS[w.region.id].music) as MusicId));
+    this.sound.setMusic(boss && !boss.dead ? 'boss' : ((w.scene?.music ?? w.storyState?.music ?? REGIONS[w.region.id].music) as MusicId));
+    // (the air is the land's own, whatever the story plays over it; a town under siege has none)
+    this.sound.setAmbience(ambienceOf(w.storyState?.music ?? REGIONS[w.region.id].music));
   }
 
   private handleEvents(w: World): void {
@@ -596,6 +613,7 @@ export class SigilEngine {
           if (skills.includes(CLASSES[h.cls].ult)) this.hint('ult');
           const spell = skills.find((id) => id !== CLASSES[h.cls].ult);
           if (spell) this.queueTip('spell', spell);
+          if (ev.level >= MAX_LEVEL && h.keystone >= 1) this.queueTip('rift');
           break;
         }
         case 'questDone': {
@@ -691,6 +709,11 @@ export class SigilEngine {
       }
       if (grantWarden(this.hero)) {
         this.toast(`${WARDENS[this.hero.cls].title}: the armor is in your Wardrobe`, 'good');
+        this.sound.play('epic');
+        changed = true;
+      }
+      for (const t of newTitles(this.hero, this.ringRating())) {
+        this.toast(`New title: ${titled(this.hero.name, titleName(t, this.hero))}`, 'good', undefined, 'Wear it from the Hero page, under your name.');
         this.sound.play('epic');
         changed = true;
       }
@@ -941,6 +964,14 @@ export class SigilEngine {
   }
   private shelfAsked = false;
 
+  /** Into the world with this hero, and straight to the party page: the title's "Play together". */
+  playTogether(slot: number): void {
+    this.play(slot);
+    if (this.ui.screen !== 'game' || this.slot !== slot) return;
+    this.ui = { ...this.ui, panel: 'party' };
+    this.bump();
+  }
+
   play(slot: number): void {
     const locked = this.save.heroes[slot];
     if (slot >= heroSlots(account.get().me)) return;
@@ -983,6 +1014,12 @@ export class SigilEngine {
     if (h.level >= SPEC_LEVEL) this.queueTip('talents');
     // (as the talents': a hero who already rides and hasn't seen it, with the hints on, sees it as the land opens)
     if (hasMount(h)) this.queueTip('riding');
+    // (and the endgame, for a hero at the top with a stone)
+    if (h.level >= MAX_LEVEL && h.keystone >= 1) this.queueTip('rift');
+    // (titles earned before this land was entered are simply theirs: one line, not one for each)
+    const owed = newTitles(h, this.ringRating());
+    if (owed.length > 1) this.toast(`${owed.length} titles are yours`, 'good', undefined, 'Choose one to wear on the Hero page, under your name.');
+    else if (owed.length === 1) this.toast(`New title: ${titled(h.name, titleName(owed[0]!, h))}`, 'good', undefined, 'Wear it from the Hero page, under your name.');
     this.bump();
   }
 
@@ -1024,6 +1061,9 @@ export class SigilEngine {
     const h = this.hero;
     if (!h) return false;
     const region = REGIONS[to];
+    // a land the story no longer goes through (data/retired.ts) can't be reached: the way out of one of its
+    // dungeons (a Riftstone run) comes out in Briarhollow
+    if (isRetired(to)) return this.world?.region.kind === 'dungeon' && !party ? this.travel(HOME, 0, []) : false;
     // a party's run goes where the host chose: a friend who hasn't found the way yet is taken along
     if (!h.unlocked.includes(to) && !party && !key) return false;
     // a Riftstone run is a stone the hero holds (never above it; a party runs the host's), in a dungeon
@@ -1301,6 +1341,17 @@ export class SigilEngine {
     return item;
   }
 
+  /** A wager with the Riftbroker: Sigil Marks for an unseen piece for one slot (progress/rift.ts). */
+  wager(slot: SlotId): Item | null {
+    if (!this.hero) return null;
+    const item = wager(this.hero, slot);
+    if (!item) return null;
+    this.sound.play(item.r === 'legendary' ? 'epic' : 'buy');
+    this.persist();
+    this.bump();
+    return item;
+  }
+
   buyPotions(n: number): number {
     if (!this.hero) return 0;
     const got = buyPotions(this.hero, n);
@@ -1453,6 +1504,44 @@ export class SigilEngine {
   }
 
   /** Chooses the mount the mount key calls (and swaps it at once if riding). */
+  /** Wears a title ('' for none). */
+  chooseTitle(id: string): boolean {
+    const h = this.hero;
+    if (!h || !chooseTitle(h, id, this.ringRating())) return false;
+    this.refreshPartyCard();
+    this.sound.play('click');
+    this.scheduleSave(300);
+    this.bump();
+    return true;
+  }
+
+  /** The best rating the player has reached in The Ring, as this device remembers it (the Ring's titles ask). */
+  ringRating(): number {
+    return bestRating();
+  }
+
+  /**
+   * One of the account's heroes dressed, or given a title, from outside the story (the Ring's lobby): what they wear
+   * there is what they wear everywhere.
+   */
+  dress(hero: Character, slot: LookSlot, id: string | null): boolean {
+    if (!this.save.heroes.includes(hero) || !wearLook(hero, slot, id)) return false;
+    if (hero === this.hero) this.changed('equip');
+    this.sound.play('equip');
+    this.scheduleSave(300);
+    this.bump();
+    return true;
+  }
+
+  entitle(hero: Character, id: string): boolean {
+    if (!this.save.heroes.includes(hero) || !chooseTitle(hero, id, this.ringRating())) return false;
+    if (hero === this.hero) this.refreshPartyCard();
+    this.sound.play('click');
+    this.scheduleSave(300);
+    this.bump();
+    return true;
+  }
+
   chooseMount(id: string): boolean {
     const h = this.hero;
     if (!h || !chooseMount(h, id)) return false;

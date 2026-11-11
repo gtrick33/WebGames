@@ -42,6 +42,24 @@ export const FOE_LOOKS: Record<string, HeroLook> = {
   'foe-hedge-witch': foe('#d8b098', '#8a8a7a', 'long', piece('wizard', '#4a3a2a'), piece('robe', '#5a4a34', 'cloth', 'uncommon'), piece('trousers', '#3a3024'), { female: true }),
   // a witch of the blight: rot-green
   'foe-blight-witch': foe('#b8c0a0', '#3a3a2a', 'long', piece('wizard', '#3a4a2a'), piece('robe', '#4a5a2a', 'cloth', 'rare'), piece('trousers', '#2a3218'), { female: true, cape: '#2a3218' }),
+  // the Coffin Matron of the Chapel Crypt: a widow's black veil over a bone-white burial shroud, grave-pale skin
+  'foe-coffin-matron': foe('#c8c4b8', '#e8e4dc', 'long', piece('hood', '#16121c'), piece('robe', '#d8d2c0', 'cloth', 'rare'), piece('trousers', '#8a8474'), { female: true, cape: '#16121c', hands: null, feet: piece('shoes', '#2a2430', 'leather') }),
+  // Vizier Khepset of the Tomb: the dead king's crown of office in gold, a bone-white robe, a mantle of the sun's gold
+  // Hallvor the Unthawed, first of the Sigil-wardens: frost on her skin and hair, rime-white plate, a cape the blue of deep ice
+  'foe-hallvor': foe('#c4d8e4', '#f0f8ff', 'long', piece('helm', '#d4ecff', 'plate', 'rare'), piece('plate', '#8ab8dc', 'plate', 'rare'), piece('greaves', '#6a98c0', 'plate', 'rare'), { female: true, cape: '#2a5a8a', hands: piece('gloves', '#8ab8dc', 'plate'), feet: piece('boots', '#6a98c0', 'plate') }),
+  // Prior Vessant, once a prior of the Wardens, now the Host's chaplain: ash-grey skin, a grey beard, a prior's robe gone dark with the Host's dust
+  'foe-prior-vessant': foe('#a8a49c', '#c8c4bc', 'short', piece('hood', '#2a2a24'), piece('robe', '#4a4a3a', 'cloth', 'rare'), piece('trousers', '#2a2a22'), { cape: '#1e2a1e', beard: '#c8c4bc', hands: piece('gloves', '#3a3a2e', 'cloth'), feet: piece('shoes', '#2a2420', 'leather') }),
+  // the sisters of the Faded Lights: Elowen of the Dawn in faded gold and white, Merrin of the Dusk in violet
+  'foe-elowen': foe('#ecdcc8', '#f8e0a0', 'long', piece('crown', '#ffe08a', 'plate', 'rare'), piece('robe', '#f0e6cc', 'cloth', 'rare'), piece('trousers', '#d8c8a0'), { female: true, cape: '#e8c060', hands: piece('gloves', '#f0e6cc', 'cloth'), feet: piece('shoes', '#c8a860', 'leather') }),
+  'foe-merrin': foe('#c8c0d8', '#3a2a5a', 'long', piece('hood', '#4a3a6a'), piece('robe', '#5a4a7a', 'cloth', 'rare'), piece('trousers', '#3a2e4e'), { female: true, cape: '#2a1e3e', hands: piece('gloves', '#4a3a6a', 'cloth'), feet: piece('shoes', '#2a2238', 'leather') }),
+  // Ilvane the Unmoored, the Spire's astronomer: pale as starlight, silver hair, a robe of deep night under a star-crowned hat
+  'foe-ilvane': foe('#e0dcf0', '#e8e4ff', 'long', piece('wizard', '#3a3060', 'cloth', 'rare'), piece('robe', '#2e2850', 'cloth', 'rare'), piece('trousers', '#24203e'), { female: true, cape: '#c8b8ff', hands: piece('gloves', '#3a3060', 'cloth'), feet: piece('shoes', '#24203e', 'leather') }),
+  // Lady Cendre, the Last Mourner: ash-grey skin and hair, a black hood for a veil, a mourning robe
+  'foe-cendre': foe('#c8c4d0', '#e8e4ec', 'long', piece('hood', '#16121c'), piece('robe', '#2a2430', 'cloth', 'rare'), piece('trousers', '#24202e'), { female: true, cape: '#16121c', hands: piece('gloves', '#2a2430', 'cloth'), feet: piece('shoes', '#16121c', 'leather') }),
+  // the catacombs: Silas Vey, the Herald's spymaster, hooded in black over oiled leathers; the Royal Auditor, an old clerk in ink-black and gold
+  'foe-silas-vey': foe('#d0b8a0', '#1a1418', 'short', piece('hood', '#1a1820'), piece('tunic', '#2a2430', 'leather', 'rare'), piece('trousers', '#1e1a22'), { cape: '#3a2a3a', beard: '#1a1418', hands: piece('gloves', '#2a2228', 'leather'), feet: piece('boots', '#1e1a20', 'leather') }),
+  'foe-royal-auditor': foe('#cfc8b8', '#e8e4dc', 'short', piece('hood', '#2a2420'), piece('robe', '#1e1a1c', 'cloth', 'rare'), piece('trousers', '#1e1a1c'), { beard: '#e8e4dc', cape: '#c8a860', hands: piece('gloves', '#2a2420', 'cloth'), feet: piece('shoes', '#1e1a18', 'leather') }),
+  'foe-vizier-khepset': foe('#b89870', '#1a1410', 'short', piece('crown', '#ffd27a', 'plate', 'epic'), piece('robe', '#efe4c8', 'cloth', 'epic'), piece('trousers', '#c8b890'), { cape: '#d8a830', beard: '#1a1410', hands: piece('gloves', '#d8a830', 'cloth'), feet: piece('shoes', '#c8a050', 'leather') }),
   // a brother of the plague: a stained cleric's robe
   'foe-brother-pustule': foe('#c8b890', '#5a5a3a', 'short', piece('hood', '#6a6a3a'), piece('robe', '#7a7a4a', 'cloth', 'rare'), piece('trousers', '#4a4a2a')),
   // a poacher of the Whisperwood: green and brown, a bow

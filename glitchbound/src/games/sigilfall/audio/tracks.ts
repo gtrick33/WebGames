@@ -2,76 +2,139 @@ import type { SongId } from './songs';
 
 /**
  * The soundtrack: which recorded piece each land plays (the files: public/games/sigilfall/music, built by
- * scripts/sigilfall-sounds.mjs from the Orchestral and World Music Pack by Ragnar Random, CC0). Lands that belong
- * together share a piece, so a journey has a sound of its own. A song with no piece here, or whose file can't be had,
- * plays its procedural score (audio/songs.ts). This table is the place to change by ear.
+ * scripts/sigilfall-sounds.mjs from pieces by Kevin MacLeod, incompetech.com, CC BY 4.0: credited in the game's
+ * Settings and in CREDITS_AND_LICENSES.md). Lands that belong together share a piece, so a journey has a sound of its
+ * own: the Vale's villages a lute, its woods something gentle, the dead lands a choir with no words, the dark woods
+ * dread. A song with no piece here, or whose file can't be had, plays its procedural score (audio/songs.ts). This
+ * table is the place to change by ear.
  */
-export type TrackId = 'adventure' | 'town' | 'road' | 'elf' | 'tower' | 'battle' | 'dark-elf' | 'sultan' | 'sultan-slow' | 'tribe' | 'shaman' | 'qetzyl';
+export type TrackId =
+  | 'title'
+  | 'village'
+  | 'court'
+  | 'tavern'
+  | 'chapel'
+  | 'forest'
+  | 'road'
+  | 'highland'
+  | 'coast'
+  | 'desert'
+  | 'tomb'
+  | 'jungle'
+  | 'forge'
+  | 'barrows'
+  | 'highwall'
+  | 'darkwood'
+  | 'snow'
+  | 'rift'
+  | 'crypt'
+  | 'cave'
+  | 'boss'
+  | 'siege';
 
 export const TRACKS: Readonly<Partial<Record<SongId, TrackId>>> = {
-  title: 'adventure',
-  boss: 'battle',
-  siege: 'battle',
+  title: 'title',
+  boss: 'boss',
+  siege: 'siege',
   // where people live
-  village: 'town',
-  briarhollow: 'town',
-  emberwick: 'town',
-  court: 'town',
-  tavern: 'tribe',
-  chapel: 'tower',
+  village: 'village',
+  briarhollow: 'village',
+  emberwick: 'court',
+  court: 'court',
+  tavern: 'tavern',
+  chapel: 'chapel',
   // the Vale and the first roads
-  whisperwood: 'elf',
-  glimmerwood: 'elf',
-  brackenridge: 'adventure',
-  thornvale: 'adventure',
+  whisperwood: 'forest',
+  glimmerwood: 'forest',
+  brackenridge: 'road',
+  thornvale: 'road',
   amberfield: 'road',
-  ironpeak: 'road',
-  stormwatch: 'road',
-  saltmarsh: 'tribe',
-  'sunken-reaches': 'tribe',
+  ironpeak: 'highland',
+  stormwatch: 'highland',
+  saltmarsh: 'coast',
+  'sunken-reaches': 'coast',
   // far lands
-  sunscorch: 'sultan-slow',
-  sablewind: 'sultan',
-  vinecoil: 'shaman',
-  emberdeep: 'shaman',
+  sunscorch: 'desert',
+  sablewind: 'desert',
+  vinecoil: 'jungle',
+  emberdeep: 'jungle',
   // the Hallow King's dead, and the lands they've taken
-  highwall: 'tower',
-  'ashen-barrows': 'tower',
-  grimward: 'tower',
-  bonefields: 'tower',
-  hollowmere: 'tower',
-  'pale-reach': 'tower',
+  highwall: 'highwall',
+  'ashen-barrows': 'barrows',
+  grimward: 'barrows',
+  bonefields: 'barrows',
+  hollowmere: 'barrows',
+  'pale-reach': 'barrows',
   // where the light is going out
-  rimeheld: 'dark-elf',
-  greyfen: 'dark-elf',
-  duskfen: 'dark-elf',
-  gloamhollow: 'dark-elf',
-  'weeping-woods': 'dark-elf',
-  blightwood: 'dark-elf',
-  'shattered-vale': 'dark-elf',
-  riftscar: 'qetzyl',
+  rimeheld: 'snow',
+  greyfen: 'darkwood',
+  duskfen: 'darkwood',
+  gloamhollow: 'darkwood',
+  'weeping-woods': 'darkwood',
+  blightwood: 'darkwood',
+  'shattered-vale': 'darkwood',
+  riftscar: 'rift',
   // under the ground
-  crypt: 'tower',
-  cave: 'qetzyl',
-  deepforge: 'qetzyl',
-  'frost-vault': 'qetzyl',
-  rootdeep: 'dark-elf',
-  molten: 'shaman',
-  tomb: 'sultan-slow',
+  crypt: 'crypt',
+  cave: 'cave',
+  deepforge: 'forge',
+  'frost-vault': 'snow',
+  rootdeep: 'cave',
+  molten: 'forge',
+  tomb: 'tomb',
 };
 
-/** How long the end of a piece overlaps its own beginning as it comes round again, in seconds. */
+/**
+ * How long the end of a piece overlaps its own beginning as it comes round again, in seconds. The pieces are whole
+ * compositions cut to length on a fade, not loops: a long overlap lets the end die away under the new beginning.
+ */
 export const SEAM: Readonly<Record<TrackId, number>> = {
-  adventure: 0.4,
-  town: 1.5,
-  road: 0.4,
-  elf: 0.4,
-  tower: 0.4,
-  battle: 0.4,
-  'dark-elf': 0.4,
-  sultan: 0.4,
-  'sultan-slow': 0.4,
-  tribe: 0.4,
-  shaman: 2,
-  qetzyl: 2,
+  title: 3,
+  village: 3,
+  court: 3,
+  tavern: 2,
+  chapel: 3,
+  forest: 3,
+  road: 3,
+  highland: 2,
+  coast: 3,
+  desert: 2,
+  tomb: 3,
+  jungle: 2,
+  forge: 3,
+  barrows: 4,
+  highwall: 3,
+  darkwood: 4,
+  snow: 4,
+  rift: 4,
+  crypt: 4,
+  cave: 3,
+  boss: 2,
+  siege: 2,
 };
+
+/** The pieces by their own titles, as the credits name them (Settings; CREDITS_AND_LICENSES.md has the rest). */
+export const MUSIC_CREDITS: readonly string[] = [
+  'Ascending the Vale',
+  'Suonatore di Liuto',
+  'Lord of the Land',
+  'Minstrel Guild',
+  'Agnus Dei X',
+  'Enchanted Valley',
+  'Teller of the Tales',
+  'Skye Cuillin',
+  'Moorland',
+  'Ibn Al-Noor',
+  'Curse of the Scarab',
+  'Tabuk',
+  'The Hive',
+  'Ossuary 6 - Air',
+  'Dark Times',
+  'The Dread',
+  'Frozen Star',
+  'Echoes of Time v2',
+  'Ossuary 5 - Rest',
+  'Crypto',
+  'Five Armies',
+  'Heroic Age',
+];

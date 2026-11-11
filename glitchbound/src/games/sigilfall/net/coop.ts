@@ -59,7 +59,11 @@ interface HeroMsg {
   sh: [number, number, number, number, number, string][];
   /** The spell being cast, if one is: its skill id, how far along (0 to 1) and where it faces. */
   c?: [string, number, number];
+  /** The last skill made: the hero's count of them, its id, where it went, its kind and whether it was a big swing. */
+  a?: [number, string, number, string, 0 | 1];
 }
+
+const ACT_KINDS = new Set(['swing', 'cast', 'shoot', 'heavy', 'spin']);
 
 /** A guest's hits, control and falls since its last message. */
 interface GuestMsg {
@@ -234,7 +238,7 @@ export class CoopSession {
 
   private ghostFor(m: Member, w: World): Ghost {
     const p = w.player;
-    return { n: m.n, name: m.card.name, cls: m.card.cls, x: p.x, y: p.y, tx: p.x, ty: p.y, vx: 0, vy: 0, dir: 0, walkT: 0, r: p.r, hp: 1, maxHp: 1, dead: false, untouchable: true, look: m.card.look, weapon: m.card.weapon, shots: [], cast: null, seen: w.time };
+    return { n: m.n, name: m.card.name, cls: m.card.cls, x: p.x, y: p.y, tx: p.x, ty: p.y, vx: 0, vy: 0, dir: 0, walkT: 0, r: p.r, hp: 1, maxHp: 1, dead: false, untouchable: true, look: m.card.look, weapon: m.card.weapon, shots: [], cast: null, act: null, seen: w.time };
   }
 
   /** After each step of the world: the drawn places ease, and what is due goes out. */
@@ -313,8 +317,13 @@ export class CoopSession {
     for (const pr of w.projectiles) if (!pr.hostile && !pr.dead && sh.length < 24) sh.push([Math.round(pr.x), Math.round(pr.y), Math.round(pr.vx), Math.round(pr.vy), pr.r, pr.color]);
     const msg: HeroMsg = { t: 'p', x: r1(p.x), y: r1(p.y), vx: Math.round(p.vx), vy: Math.round(p.vy), dir: p.dir, hp: Math.round(p.hp), mh: Math.round(p.maxHp), dead: p.dead ? 1 : 0, u: p.iframe > 0 || !!p.dash ? 1 : 0, sh };
     if (p.casting) msg.c = [p.casting.spec.id, Math.round((p.casting.t / p.casting.total) * 100) / 100, r1(p.casting.angle)];
+    // the skill they last made, kept from the moment it happened (its kind is gone from the hero a moment later)
+    if (p.actN !== this.myAct?.[0] && p.actSkill && p.actKind) this.myAct = [p.actN, p.actSkill, Math.round(p.actAngle * 100) / 100, p.actKind, p.actBig ? 1 : 0];
+    if (this.myAct) msg.a = this.myAct;
     return msg;
   }
+
+  private myAct: HeroMsg['a'];
 
   private sendFrame(w: World): void {
     const e: EnemyRow[] = [];
@@ -385,6 +394,10 @@ export class CoopSession {
     const [cid, ck, ca] = list(m.c, 3);
     const skill = typeof cid === 'string' ? SKILLS[cid] : undefined;
     g.cast = skill && skill.cls === g.cls && !g.dead ? { id: skill.id, k: num(ck, 0, 1), angle: num(ca, -10, 10) } : null;
+    // a skill they made: only one this game knows, of their own class, of a kind a body can make
+    const [an, aid, aa, ak, ab] = list(m.a, 5);
+    const made = typeof aid === 'string' ? SKILLS[aid] : undefined;
+    if (made && made.cls === g.cls && typeof ak === 'string' && ACT_KINDS.has(ak)) g.act = { n: num(an, 0, 1e9), skill: made.id, angle: num(aa, -10, 10), kind: ak as NonNullable<Ghost['act']>['kind'], big: ab === 1 };
     g.seen = w.time;
   }
 

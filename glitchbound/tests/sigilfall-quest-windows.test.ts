@@ -155,7 +155,7 @@ describe('Sigilfall quest windows', () => {
         }
       }
     }
-    expect(checks).toBeGreaterThan(50_000);
+    expect(checks).toBeGreaterThan(10_000);
     expect([...missing]).toEqual([]);
     expect([...wrongLand]).toEqual([]);
   });

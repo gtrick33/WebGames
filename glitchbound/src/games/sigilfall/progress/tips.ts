@@ -11,7 +11,7 @@ import type { ResourceDef, SlotKey } from '../data/types';
 import type { PanelId } from '../engine';
 import type { Character } from './character';
 
-export type TipId = 'combat' | 'bag' | 'spell' | 'talents' | 'riding';
+export type TipId = 'combat' | 'bag' | 'spell' | 'talents' | 'riding' | 'rift';
 
 export const TIPS_MARK = 'tips';
 export const tipKey = (id: TipId): string => `tip:${id}`;
@@ -23,12 +23,27 @@ export function giveTips(h: Character): void {
   if (!takesTips(h)) h.opened.push(TIPS_MARK);
 }
 
-/** Whether this hint should still be shown to this hero, with the Settings choice as it is. */
-export const tipDue = (h: Character, on: boolean, id: TipId): boolean => on && takesTips(h) && !h.opened.includes(tipKey(id));
+/**
+ * Whether this hint should still be shown to this hero, with the Settings choice as it is. The Rift's is about the
+ * endgame, which a hero from before the tutorial is as new to as anyone: they see it too, unless they have already
+ * climbed past the first stone.
+ */
+export const tipDue = (h: Character, on: boolean, id: TipId): boolean => on && (takesTips(h) || (id === 'rift' && h.keystone <= 1)) && !h.opened.includes(tipKey(id));
 
 /** Marks a hint as shown (once). */
 export function tipShown(h: Character, id: TipId): void {
   const key = tipKey(id);
+  if (!h.opened.includes(key)) h.opened.push(key);
+}
+
+/**
+ * A boss's mechanic, explained under its callout the first time a hero meets it (ui/GameScreen.tsx BossBar), kept on the
+ * hero like a hint seen. It pauses nothing, so every hero gets it, old or new, while the Settings choice is on.
+ */
+export const mechanicKey = (text: string): string => `hint:${text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40)}`;
+export const mechanicDue = (h: Character, on: boolean, text: string): boolean => on && !h.opened.includes(mechanicKey(text));
+export function mechanicShown(h: Character, text: string): void {
+  const key = mechanicKey(text);
   if (!h.opened.includes(key)) h.opened.push(key);
 }
 
@@ -75,6 +90,7 @@ export function tipSteps(id: TipId, c: TipContext): TipStep[] {
   switch (id) {
     case 'combat': {
       const skill = c.bar.s1 ? SKILLS[c.bar.s1]?.name : undefined;
+      const dodge = c.bar.dodge ? SKILLS[c.bar.dodge] : undefined;
       const cost = c.resource ? ` ${COSTS[c.resource.kind]}` : '';
       return [
         {
@@ -92,8 +108,9 @@ export function tipSteps(id: TipId, c: TipContext): TipStep[] {
         {
           target: barSlot(touch, 'dodge'),
           panel: null,
-          title: 'Your dodge',
-          text: touch ? 'Tap Dodge to dash. You pass through arrows and blows as you go, so use it when an enemy draws back to hit.' : 'Press Space to dash. You pass through arrows and blows as you go, so use it when an enemy draws back to hit.',
+          // (every class's is its own: a barge, a blink, a guard; the skill's own words say which)
+          title: dodge ? `Your dodge: ${dodge.name}` : 'Your dodge',
+          text: `${touch ? 'Tap Dodge' : 'Press Space'}. ${dodge?.blurb ?? 'A quick dash out of harm’s way.'} Nothing can hurt you while it lasts, so use it when an enemy draws back to hit.`,
         },
       ];
     }
@@ -162,6 +179,34 @@ export function tipSteps(id: TipId, c: TipContext): TipStep[] {
           panel: 'talents',
           title: 'Spend your points',
           text: 'You earn one talent point per level from now on, and you spend them in the tree here. Resetting them is free until level 20.',
+        },
+      ];
+    // (a hero at the top level with a Riftstone: the endgame, where it is and what it is for; ui/RiftGuide.tsx has the whole of it)
+    case 'rift':
+      return [
+        {
+          target: null,
+          panel: null,
+          title: 'Level 60: the Rift',
+          text: 'The story’s dungeons have a second life. With a Riftstone, any of them can be run again against a clock, harder with every level of the stone. The best gear in the game comes from there, and only from there.',
+        },
+        {
+          target: hudButton('Map'),
+          panel: null,
+          title: 'Where to go',
+          text: `${touch ? 'Open the map' : 'Open the map (M)'} at any waystone, pick a dungeon and choose Riftstone. Or take The Rift Trials from the title screen, with no road to walk first. With friends, it’s Play together.`,
+        },
+        {
+          target: null,
+          panel: null,
+          title: 'What it gives',
+          text: 'Beat the clock and the next stones open; late, the run still pays and nothing is lost. Every level raises the item level of what drops, and every new stone you open gives a Rift-forged piece: your class’s set first, then one for each specialization.',
+        },
+        {
+          target: null,
+          panel: null,
+          title: 'Sigil Marks and the Riftbroker',
+          text: 'Every run pays Sigil Marks. The Sigil Quartermaster takes them for wagers: marks on a slot, and one piece for it comes back, sometimes Rift-forged. The whole guide is on the Riftstone panel, under How the Rift works.',
         },
       ];
     // (after Riders for Briarhollow, the quest that gives the first mount: wardrobe.ts FIRST_RIDE)

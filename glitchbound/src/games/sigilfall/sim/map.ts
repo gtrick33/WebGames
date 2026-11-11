@@ -43,7 +43,7 @@ export const K = {
 } as const;
 export type K = (typeof K)[keyof typeof K];
 
-const TERRAIN: Record<string, K> = {
+export const TERRAIN: Record<string, K> = {
   '.': K.Floor,
   ',': K.Deco,
   '=': K.Path,
@@ -141,7 +141,7 @@ export interface MapBuilding {
 function settled(placed: readonly PlacedMarkerDef[], w: number, h: number): PlacedMarkerDef[] {
   // (a little overlap is only things standing close)
   const TOUCH = 12;
-  const reachOf = (pm: PlacedMarkerDef): { w: number; d: number } | null => (pm.marker.kind === 'prop' && propStandsUp(pm.marker.prop) ? propReach(pm.marker.prop) : null);
+  const reachOf = (pm: PlacedMarkerDef): { w: number; d: number } | null => (pm.marker.kind === 'prop' && !pm.marker.through && propStandsUp(pm.marker.prop) ? propReach(pm.marker.prop) : null);
   const standing = placed.filter((pm) => reachOf(pm));
   if (!standing.length) return [...placed];
   const size = (pm: PlacedMarkerDef): number => {
@@ -369,7 +369,7 @@ export function parseRegion(def: RegionDef): TileMap {
       const cy = (pm.ty + 0.5) * TILE;
       for (const [dx, dy, fw, fd] of FEET[m.prop]!) standing({ x0: cx + dx - fw / 2, y0: cy + dy - fd / 2, x1: cx + dx + fw / 2, y1: cy + dy + fd / 2 }, false);
       if (kind[pm.ty * w + pm.tx] === K.Prop) soft[pm.ty * w + pm.tx] = 1;
-    } else if (m.kind === 'prop' && (m.solid || propStandsUp(m.prop))) pm.body = stand(propBody(m.prop), pm.tx, pm.ty);
+    } else if (m.kind === 'prop' && !m.through && (m.solid || propStandsUp(m.prop))) pm.body = stand(propBody(m.prop), pm.tx, pm.ty);
     else if (m.kind === 'waystone') pm.body = stand({ w: 20, d: 16 }, pm.tx, pm.ty);
     else if (m.kind === 'dummy') pm.body = stand({ w: 14, d: 10 }, pm.tx, pm.ty);
     if (m.kind === 'prop' && m.prop !== 'block') {

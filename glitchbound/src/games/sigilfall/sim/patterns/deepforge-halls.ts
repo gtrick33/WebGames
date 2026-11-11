@@ -2,6 +2,8 @@ import { dist, TAU } from '../../core/math';
 import { castRay, circleHitsWall, flowStep, lineOfSight, moveCircle, TILE, tileAt } from '../map';
 import type { Enemy } from '../types';
 import type { World } from '../world';
+import { hurtPlayer } from '../combat';
+import { exposed, ringSpots } from './arena';
 import type { PatternFn, PatternKit } from './kit';
 
 /**
@@ -129,7 +131,7 @@ const shed: PatternFn = (w, e, _dt, k) => {
       }
     }
     for (let i = 0; i < 12; i++) w.addFx({ kind: 'rubble', x: e.x + (w.rand() - 0.5) * 20, y: e.y - 10 - w.rand() * 12, vx: (w.rand() - 0.5) * 120, vy: -60 - w.rand() * 60, life: 0.7, size: 2, color: w.rand() < 0.5 ? '#4a3a34' : '#ff7a2a' });
-    w.text(e.x, e.y - e.r - 16, 'CRACK!', '#ffb04d', true);
+    w.callout('CRACK!', '#ffb04d');
     w.sfx('crumble');
     w.shake(3);
     pt.step = 1;
@@ -140,7 +142,7 @@ const shed: PatternFn = (w, e, _dt, k) => {
 function crack(w: World, e: Enemy, k: PatternKit): void {
   const daze = k.num('daze', 2.5);
   e.def.sprite = 'slag-colossus';
-  w.text(e.x, e.y - e.r - 16, 'CRACKED!', '#ffd04a', true);
+  w.callout('CRACKED!', '#ffd04a');
   w.sfx('crumble');
   w.shake(5);
   w.fxBurst(e.x, e.y - 10, '#ff8a2a', 24, 22);
@@ -165,7 +167,7 @@ const harden: PatternFn = (w, e, dt, k) => {
     pt.data.full = e.shield;
     pt.data.next = 1.4;
     e.def.sprite = 'slag-colossus-cooled';
-    w.text(e.x, e.y - e.r - 16, 'HARDENED!', '#c8ccd4', true);
+    w.callout('HARDENED!', '#c8ccd4');
     w.sfx('freeze');
     w.shake(3);
     for (let i = 0; i < 16; i++) w.addFx({ kind: 'smoke', x: e.x + (w.rand() - 0.5) * 26, y: e.y - w.rand() * 24, vx: (w.rand() - 0.5) * 30, vy: -14 - w.rand() * 16, life: 0.9, size: 4, color: '#b8bcc8' });
@@ -208,7 +210,7 @@ const harden: PatternFn = (w, e, dt, k) => {
       // not cracked in time: the heat inside breaks out
       w.telegraphs = w.telegraphs.filter((t) => t.owner !== e.id);
       w.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r: 72, r2: 0, angle: 0, len: 0, dur: 1.3, dmg: e.dmg * 1.8, status: burn(e, 3), knock: 180, tone: 'enemy', owner: e.id, linger: 0 });
-      w.text(e.x, e.y - e.r - 16, 'ERUPTION!', '#ff6a3d', true);
+      w.callout('ERUPTION!', '#ff6a3d');
       w.sfx('beamCharge');
       pt.data.t1 = pt.t;
       pt.step = 2;
@@ -329,7 +331,7 @@ const pourPattern: PatternFn = (w, e, _dt, k) => {
       const pick = [order[0]!, ...rest].slice(0, k.num('count', 1));
       pick.forEach((l, i) => pour(w, e, l, k.num('wind', 1.4) + i * 0.3, k.num('open', 3), phase));
     }
-    w.text(e.x, e.y - e.r - 14, 'MOLTEN STEEL!', '#ffb04d', true);
+    w.callout('MOLTEN STEEL!', '#ffb04d');
     w.sfx('windup', 0.7);
     pt.step = 1;
   } else if (pt.t >= 0.9) k.end();
@@ -530,7 +532,7 @@ const blades: PatternFn = (w, e, dt, k) => {
   }
 };
 
-export const DEEPFORGE_HALLS_PATTERNS: Record<string, PatternFn> = {
+const FIRST_PATTERNS: Record<string, PatternFn> = {
   'forge:slag': slag,
   'forge:shed': shed,
   'forge:harden': harden,
@@ -539,3 +541,166 @@ export const DEEPFORGE_HALLS_PATTERNS: Record<string, PatternFn> = {
   'forge:quake': quake,
   'forge:blades': blades,
 };
+
+/* ------------------------------------------------------------ the Runewarden */
+
+/**
+ * The Runewarden (the Bellows Hall), the dwarves' rune-guardian the Host bound with its own runes. While bound, a blow
+ * to it mostly glances off (`bound`). It shows a sequence on the four rune plates of its hall, one after another
+ * (`runes`): step on them in that order and the binding breaks, the warden reeling and open to every blow until it
+ * binds itself again; step on a wrong one and it bursts under the hero, and the sequence is lost. Longer sequences as
+ * it weakens.
+ *
+ * The binding and the runes outlive the pattern that shows them, so they are kept per boss here and run by a small
+ * ticker (World.after, once a step) for as long as the fight lasts.
+ */
+
+const RUNE = '#ffd27a';
+const RUNE_DIM = '#a8885a';
+const RUNE_BAD = '#ff6a4a';
+
+interface Runes {
+  last: number;
+  /** While bound, the share of a blow that glances off; how long it stays unbound once freed. */
+  cut: number;
+  freeUntil: number;
+  lastHp: number;
+  clangT: number;
+  /** The four plates, the sequence to step (indices), how far the hero has got, which plate they stand on. */
+  plates: { x: number; y: number }[];
+  seq: number[];
+  got: number;
+  on: number;
+  open: number;
+  fxT: number;
+}
+
+const RUNE_FIGHTS = new WeakMap<Enemy, Runes>();
+
+function runeFight(w: World, e: Enemy): Runes {
+  let s = RUNE_FIGHTS.get(e);
+  if (!s) {
+    s = { last: w.time, cut: 0, freeUntil: 0, lastHp: e.hp, clangT: 0, plates: [], seq: [], got: 0, on: -1, open: 0, fxT: 0 };
+    RUNE_FIGHTS.set(e, s);
+    w.after(0, () => runeTick(w, e));
+  }
+  return s;
+}
+
+function runeTick(w: World, e: Enemy): void {
+  const s = RUNE_FIGHTS.get(e);
+  if (!s) return;
+  if (!fighting(w, e)) {
+    RUNE_FIGHTS.delete(e);
+    return;
+  }
+  const dt = Math.max(0, w.time - s.last);
+  s.last = w.time;
+  const p = w.player;
+  // bound: a blow mostly glances off
+  s.clangT -= dt;
+  const lost = s.lastHp - e.hp;
+  if (s.cut > 0 && w.time >= s.freeUntil && lost > 0 && e.boss!.dying <= 0 && e.hp > 0) {
+    e.hp = Math.min(e.maxHp, e.hp + lost * s.cut);
+    if (s.clangT <= 0) {
+      s.clangT = 0.7;
+      w.text(e.x, e.y - e.r - 12, 'Bound! Break the runes!', RUNE, false);
+    }
+  }
+  s.lastHp = e.hp;
+  // the plates glow where they lie (brighter while a sequence waits to be stepped)
+  s.fxT -= dt;
+  if (s.fxT <= 0 && s.plates.length) {
+    s.fxT = 0.3;
+    for (const pl of s.plates) w.addFx({ kind: 'glow', x: pl.x, y: pl.y, life: 0.32, size: s.open > w.time ? 15 : 10, color: s.open > w.time ? RUNE : RUNE_DIM });
+  }
+  // stepping on the plates, in order
+  if (s.open > w.time && s.seq.length && !p.dead) {
+    const here = s.plates.findIndex((pl) => dist(pl.x, pl.y, p.x, p.y) < 18);
+    if (here !== s.on) {
+      s.on = here;
+      if (here >= 0) {
+        const pl = s.plates[here]!;
+        if (here === s.seq[s.got]) {
+          s.got++;
+          w.addFx({ kind: 'ring', x: pl.x, y: pl.y, life: 0.4, size: 24, color: RUNE });
+          w.text(pl.x, pl.y - 20, `${s.got}/${s.seq.length}`, RUNE, false);
+          w.sfx('shard', 0.5);
+          if (s.got >= s.seq.length) {
+            // the binding breaks
+            s.open = 0;
+            s.seq = [];
+            s.freeUntil = w.time + 10;
+            exposed(w, e, 3.5, 'The runes break! It is unbound!', RUNE);
+          }
+        } else {
+          // a wrong rune bursts
+          s.open = 0;
+          s.seq = [];
+          w.addFx({ kind: 'ring', x: pl.x, y: pl.y, life: 0.4, size: 30, color: RUNE_BAD });
+          w.fxBurst(pl.x, pl.y - 6, RUNE_BAD, 16, 14);
+          if (hurtPlayer(w, p.maxHp * 0.18, { pierce: true })) w.text(pl.x, pl.y - 20, 'Wrong rune!', RUNE_BAD, true);
+        }
+      }
+    }
+  }
+  w.after(0, () => runeTick(w, e));
+}
+
+/** The binding: `cut` of a blow glances off while it is bound; its four plates are laid down round its hall. */
+const bound: PatternFn = (w, e, _dt, k) => {
+  const s = runeFight(w, e);
+  s.cut = k.num('cut', 0.55);
+  s.lastHp = e.hp;
+  if (!s.plates.length) s.plates = ringSpots(w, e, 4, 110, Math.PI / 4);
+  k.end();
+};
+
+/** The runes: a sequence of `len` plates shown one after another (`beat` s apart); `time` s to step it. */
+const runes: PatternFn = (w, e, _dt, k) => {
+  const { pt } = k;
+  const s = runeFight(w, e);
+  if (!s.plates.length) s.plates = ringSpots(w, e, 4, 110, Math.PI / 4);
+  const beat = k.num('beat', 0.75);
+  if (pt.step === 0) {
+    const len = Math.round(k.num('len', 3));
+    s.seq = [];
+    for (let i = 0; i < len; i++) {
+      let n = Math.floor(w.rand() * s.plates.length);
+      if (i > 0 && n === s.seq[i - 1]) n = (n + 1) % s.plates.length;
+      s.seq.push(n);
+    }
+    s.got = 0;
+    s.open = 0;
+    s.on = s.plates.findIndex((pl) => dist(pl.x, pl.y, w.player.x, w.player.y) < 18);
+    w.callout('The runes remember. Do you?', RUNE);
+    w.sfx('rift', 0.5);
+    pt.data.n = 0;
+    pt.data.next = pt.t + 0.6;
+    pt.step = 1;
+  }
+  if (pt.step === 1 && pt.t >= pt.data.next!) {
+    const i = pt.data.n!;
+    if (i >= s.seq.length) {
+      s.open = w.time + k.num('time', 9);
+      w.text(w.player.x, w.player.y - 30, 'Step on the runes in that order!', '#ffe8b0', false);
+      k.end();
+      return;
+    }
+    const pl = s.plates[s.seq[i]!]!;
+    w.addFx({ kind: 'glow', x: pl.x, y: pl.y, life: beat * 0.9, size: 26, color: RUNE });
+    w.addFx({ kind: 'ring', x: pl.x, y: pl.y, life: beat * 0.9, size: 28, color: RUNE });
+    w.text(pl.x, pl.y - 22, String(i + 1), RUNE, true);
+    w.sfx('bell-toll', 0.3);
+    pt.data.n = i + 1;
+    pt.data.next = pt.t + beat;
+  }
+};
+
+/** The Runewarden's plates, the sequence waiting to be stepped, and whether it is bound now (for tests). */
+export const runesOf = (w: World, e: Enemy): { plates: readonly { x: number; y: number }[]; seq: readonly number[]; bound: boolean } => {
+  const s = RUNE_FIGHTS.get(e);
+  return { plates: s?.plates ?? [], seq: s && s.open > w.time ? s.seq : [], bound: !!s && s.cut > 0 && w.time >= s.freeUntil };
+};
+
+export const DEEPFORGE_HALLS_PATTERNS: Record<string, PatternFn> = { ...FIRST_PATTERNS, 'forge:bound': bound, 'forge:runes': runes };

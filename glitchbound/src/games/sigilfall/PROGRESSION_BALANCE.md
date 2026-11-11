@@ -206,3 +206,45 @@ The rank and file's plain pieces, and one roll in five of their other drops, now
 piece's salvage value; elites, chests, bosses and quest rewards drop as before. The random sequence of a fight
 is unchanged, so every play-through stays as it was. Story and dungeon rewards (hand-made items, boss
 first-kill items, mounts, Wardrobe looks) are untouched, so they stand out more against fewer random drops.
+
+## Part 4 — Specializations side by side (2026-11-10)
+
+Measured with the play-bot: a level-45 hero in rare gear with every talent point spent (its own tree first), 40
+seconds on a target that never dies with two more beside it, two seeds, the default bar (the first three skills
+learned and the specialization's own). Damage a second on the one target:
+
+| Class | Tree 1 | Tree 2 | Tree 3 |
+| --- | --- | --- | --- |
+| Warrior | Berserker 9,372 | Guardian 5,211 | Weaponmaster 18,073 |
+| Mage | Pyromancer 9,312 | Stormcaller 4,416 | Cryomancer 2,879 |
+| Ranger | Deadeye 8,198 | Trapper 11,592 | Beastmaster 5,170 |
+| Paladin | Dawnkeeper 8,401 | Shieldbearer 6,507 | Zealot 14,254 |
+| Priest | Aegis 4,562 | Lumen 4,116 | Umbral 5,589 |
+| Warlock | Hexer 4,486 | Binder 4,028 | Doomcaller 1,804 |
+| Druid | Starseer 3,527 | Wildclaw 2,842 | Bearward 1,953 |
+| Gloamknight | Bloodsworn 5,331 | Ruinblade 6,878 | Dreadbinder 5,768 |
+
+What the table can and can't say:
+
+- The bot plays a fighter's kit about as well as a person: instant blows, pressed as they come ready. It plays
+  casters badly. It never takes a druid's shape (so Wildclaw and Bearward above are a druid casting Wrath), it
+  breaks its own long casts by walking, and it re-summons a demon it already has. A caster's low number is partly
+  the bot's.
+- The bar matters as much as the tree. A Cryomancer on the default bar is casting Fireball; on four frost skills
+  it did no better (2,207). That one is the kit's, not the bot's.
+- Two fighters stood well clear of the rest of their own classes under the same play: Weaponmaster (almost twice a
+  Berserker) and Zealot.
+
+What changed with this measurement:
+
+- Weaponmaster: Deep Wounds bleeds for 20% of the hit a second (was 30%), and Open the Wound lands what bleeding is
+  left without the half again on top. 18,073 to 14,209.
+- Zealot: Twin Edict 34 damage (was 40). 14,254 to 13,626: the tree, not the skill, carries it, so this is a
+  first step.
+- Cryomancer: Ice Javelin 28 (was 20), Ice Storm 9 a tick (was 6), Shatter +40% to Frozen and +20% to Chilled
+  (was 25 and 10). 2,207 to 2,813 on the frost bar: still the lowest damage tree in the game.
+- Doomcaller: Ruin Bolt casts in 1.1 s (was 1.5). 1,804 to 2,419.
+
+Still open, and wanting the owner's say before the numbers move again: whether tank and healer trees should
+close most of the gap for solo play, Cryomancer's damage, and the casters as a group against the fighters. A
+bot that takes a shape and holds a cast would make the druid's and the warlock's rows mean something.

@@ -94,7 +94,6 @@ function brambleAndBarrel(): CityPlan {
   // from dawn on, the inn's back room sleeps the people the raid left with no roof
   c.prop('cot:#5a6a3a', 2, 7, true, CAMP);
   c.prop('cot:#6a4a7a', 2, 9, true, CAMP);
-  c.prop('cot:#7a5a2a', 20, 9, true, after('camp-healers'));
   c.marker(11, 12, { kind: 'start' });
   return c;
 }
@@ -128,10 +127,7 @@ function chapelOfTheBell(): CityPlan {
 const CAMP_BANNERS: [string, string, number][] = [
   ['camp-scouts', '#3a6a3a', 2],
   ['camp-grain', '#c8a040', 4],
-  ['camp-healers', '#2a6a8a', 6],
-  ['camp-smiths', '#2a5a6a', 12],
   ['camp-riders', '#8a2a2a', 14],
-  ['camp-dwarves', '#6a6a7a', 16],
 ];
 
 function eldersHall(): CityPlan {
@@ -276,7 +272,6 @@ function brannocsForge(): CityPlan {
   c.prop('weapon-rack', 3, 2);
   c.prop('weapon-rack', 13, 2);
   c.prop('anvil', 7, 5);
-  c.prop('anvil', 10, 5, true, after('camp-dwarves'));
   c.prop('trough', 12, 7);
   c.prop('grindstone', 3, 7);
   c.prop('barrel', 1, 9);
@@ -348,7 +343,6 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Keeps the camp’s ledger',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'camp-dwarves', state: 'done' }, lines: ['Dwarf-steel from Kragholt, rangers from Fernstead, grain from Millbrook, healers from Reedwater, smiths from Gullport, riders from Hearthstead. Six banners.', 'A camp of six villages is a town. A town with an army is a problem for somebody. I hope it’s the right somebody.'] },
       { when: { quest: 'camp-riders', state: 'done' }, lines: ['Five banners on the wall. Every one of them is a village that would be ash without you.', 'The Elder reads the ledger every night. She says it’s for the numbers. She skips the numbers.'] },
       { when: { quest: 'camp-scouts', state: 'done' }, lines: ['Rangers on the watchfire, so a banner on the wall. Elder Maren says every village that comes gets one.', 'I have a column for what each one brings, and a column for what each one lost. The second is longer.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The Elder’s table is a war table now. I keep the ledger: beds, bread, arrows, names.', 'We are a camp of one village. The Elder says the others will come. She says it like she’s already counting them.'] },
@@ -396,7 +390,6 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Brannoc’s apprentice',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'camp-dwarves', state: 'done' }, lines: ['Dwarf-steel! Brannoc let me hold a bar of it. I wasn’t allowed to breathe on it.', 'The second anvil’s for the Kragholt smiths when they come through. Brannoc pretends he doesn’t want to learn from them.'] },
       { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['We haven’t made a plowshare since the Night of Knives. Spears, spears, shields, spears.', 'Brannoc says a smith in wartime works twice and sleeps half. He hasn’t slept since Tuesday.'] },
       { lines: ['Pump the bellows, quench the blade, sweep the floor, pump the bellows. One day I’ll get to hit something.', 'Brannoc’s out front. In here’s just me and the fire. The fire is better company.'] },
     ],

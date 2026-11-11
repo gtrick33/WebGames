@@ -1,4 +1,5 @@
 import { DUNGEONS } from './dungeons';
+import { RIFT_ITEMS } from './riftgear';
 import { WARDEN_ITEMS } from './wardens';
 import type { ClassId, ItemBase, ItemDef, Rarity, SkillOp, SlotId, StatKey } from './types';
 import { ZONES } from './zones';
@@ -9,6 +10,7 @@ import { ZONES } from './zones';
  */
 export const ITEMS: ItemDef[] = [
   ...WARDEN_ITEMS,
+  ...RIFT_ITEMS,
   /* ---------------------------------------------------------------- mage */
   {
     id: 'ember-staff',

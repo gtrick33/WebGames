@@ -1,3 +1,4 @@
+import { isRetired } from './retired';
 import type { QuestDef } from './types';
 
 /**
@@ -44,9 +45,9 @@ export const STORY_QUESTS: QuestDef[] = [
     id: 'the-regents-council',
     name: 'The Courier’s Letter',
     giver: 'maren',
-    text: 'Millbrook’s grain and Reedwater’s healers have reached the camp, and the square is full of people who were strangers a month ago. Maren has dried Oskar Fell’s letter by the fire at last and wants you to hear it.',
+    text: 'Fernstead’s rangers and Millbrook’s grain have reached the camp, and the square is full of people who were strangers a month ago. Maren has dried Oskar Fell’s letter by the fire at last and wants you to hear it.',
     objective: { kind: 'talk', npc: 'maren', label: 'Hear the courier’s letter at Briarhollow' },
-    after: ['camp-grain', 'camp-healers'],
+    after: ['camp-grain'],
     reward: {
       xp: 2600,
       gold: 300,
@@ -101,14 +102,14 @@ export const STORY_QUESTS: QuestDef[] = [
     name: 'The First Gate',
     giver: 'lord-commander-varn',
     zone: 'highwall',
-    text: 'General Morvain is dead in the rubble of Highwall’s inner ward, and his half of the Ashen Host is breaking up into the snow. The first of the Three Gates is ours. The Lord-Commander wants the Regent to hear it from the one who did it.',
-    objective: { kind: 'talk', npc: 'regent-elowen', label: 'Tell the Regent that Highwall holds' },
+    text: 'General Morvain is dead in the rubble of Highwall’s inner ward, and his half of the Ashen Host is breaking up into the snow. The first of the Three Gates is ours. Mara commanded the relief. She should hear it from you.',
+    objective: { kind: 'talk', npc: 'captain-mara', label: 'Tell Mara that Highwall holds' },
     after: ['general-morvain'],
     reward: {
       xp: 30000,
       gold: 2400,
       item: { rarity: 'epic' },
-      text: 'One gate of three. Beyond the other two lies Vaelmoor, the Dead Kingdom, and its Hallow King.',
+      text: 'Mara hears it with her helmet still on, and then takes it off and sits down on a barrel for a long time. “One gate,” she says. “Nyx’s map says Elyra is behind the next. Go and get her.”',
     },
   },
   {
@@ -132,27 +133,27 @@ export const STORY_QUESTS: QuestDef[] = [
   {
     id: 'into-vaelmoor',
     name: 'Into Vaelmoor',
-    giver: 'regent-elowen',
+    giver: 'elyra-lastlight',
     auto: true,
     text: 'North of the Gloam Gate the road goes on into Vaelmoor, the Dead Kingdom, where no living person has walked in three hundred years. Brother Orren went through the Gate the morning it was taken, alone, with his lantern; he left a note for you with Brin at Lastlight that says only “Candlewick. Come and see.” The road through the Gate to the Weeping Woods is open.',
     objective: { kind: 'talk', npc: 'orren-in-vaelmoor', label: 'Find Brother Orren at Candlewick in the Weeping Woods' },
-    after: ['the-third-gate'],
+    after: ['the-gloam-gate'],
     reward: { xp: 4000, gold: 600, text: 'Candlewick is a village of Vaelmoor that died three hundred years ago in the middle of an ordinary evening. Nobody told it. Orren has been sitting in its square for two days, watching it not know.' },
   },
   {
     id: 'the-seventh-sigil',
-    name: 'Seven of Seven',
-    giver: 'elyra-lastlight',
+    name: 'The Empty Scarf',
+    giver: 'mara-at-the-reach',
     auto: true,
-    text: 'The Sigil of Thorns from the Withered Queen, the Sigil of the Veil from the Herald’s spire, the Starlight setting Ashkar forged at the bottom of the Molten Throne, the drowned harbor quiet and the necropolis empty. Seven points of the Starlight Crown and something to hold them in. Elyra is waiting at Lastlight. Bring them home to her.',
-    objective: { kind: 'talk', npc: 'elyra-lastlight', label: 'Bring the last sigils to Elyra at Lastlight' },
-    after: ['the-pale-herald', 'ashkar-the-bound', 'ysanes-last-echo', 'the-fireships'],
-    level: 56,
+    text: 'Vosk is dust in the snow, and in his saddlebag, folded small in a refugee child’s scarf, there is nothing at all. The Sigil of Stone he took from under Hearthstead’s hall the night the ram burned went north long ago, to the king he served. Six sigils came north with Elyra. She will know where the seventh is. Bring her the scarf.',
+    objective: { kind: 'talk', npc: 'elyra-at-the-reach', label: 'Bring Vosk’s empty scarf to Elyra at Dawn’s Rest' },
+    after: ['march-vosk'],
+    level: 57,
     reward: {
       xp: 16000,
       gold: 3000,
       item: { rarity: 'epic' },
-      text: 'Elyra takes the last two in her open hands, and the light goes into her like water into sand. She is quiet a long time. Then she looks up at you, and smiles the way she smiled at the inn, and says, very carefully, as if it were a word in another language: “I know you. I do. Tell me your name again.”',
+      text: 'Elyra holds the empty scarf a long time. Then she turns and looks north, up the long white slope to Duskspire, as if she can see through its walls. “It’s up there. On his brow,” she says. “He set it in the Crown: one star of seven, lit. I can feel it from here, cold as a well in winter.” She folds the scarf and puts it inside her coat. “Six, then. We go up, and we take the seventh off his head.”',
     },
   },
   /* --------------------------------------------- Epilogue */
@@ -162,7 +163,7 @@ export const STORY_QUESTS: QuestDef[] = [
     giver: 'maren',
     auto: true,
     zone: 'briarhollow',
-    text: 'It is over. The portal out of the Crown’s memory set you down at Briarhollow’s gate at dawn, and the camp is already taking itself apart: Hollis’s rangers rolling tents, Millbrook’s carts loaded for the south road, Reedwater’s healers singing, the forge going onto its cart. Every village the hero saved is going home. Stand in the square and see them off.',
+    text: 'It is over. The portal out of the Crown’s memory set you down at Briarhollow’s gate at dawn, and the camp is already taking itself apart: Hollis’s rangers rolling tents, Millbrook’s carts loaded for the south road, Dunmore’s riders saddling for the steppe, and Fernstead’s people already arguing about whose orchard is whose. Every village the hero saved is going home. Stand in the square and see them off.',
     objective: { kind: 'event', event: 'epilogue-the-camp', label: 'See the camp off from Briarhollow’s square' },
     after: ['crownfall-the-ash-crown'],
     level: 60,
@@ -192,7 +193,7 @@ export const STORY_QUESTS: QuestDef[] = [
     name: 'Crownfall, Again',
     giver: 'maren',
     zone: 'briarhollow',
-    text: 'The Ash Crown is broken, but grief does not keep to the rules of a story: Duskspire stands, colder and stronger, and what is left of its guard has not heard the news. Clear Duskspire on Heroic, and the Vaelmoor memory after it, and the camp’s riders say a horse is waiting for you in the Hallow King’s own stable.',
+    text: 'The Ash Crown is broken, but grief does not keep to the rules of a story: Duskspire stands, colder and stronger, and what is left of its guard has not heard the news. Clear Duskspire on Heroic, the Hallow King and all, and the camp’s riders say a horse is waiting for you in his own stable.',
     objective: { kind: 'clear', region: 'duskspire', tier: 1, label: 'Clear Duskspire on Heroic' },
     after: ['epilogue-the-bell'],
     level: 60,
@@ -210,3 +211,9 @@ export const STORY_QUESTS: QuestDef[] = [
     reward: { xp: 12000, gold: 5000, item: 'glitch-shard', keystone: 1, text: 'The bell in Briarhollow rings on its own that night, once. Haldor says it was the wind. Haldor is lying. In the morning there is a stone on its rope, warm as a hand, with the Tear still turning in it: a Riftstone. Riftstone +1, and every dungeon in the Vale again, against the clock.' },
   },
 ];
+
+// (the spine's beats in a retired land, and the camp's arrivals that came from one, are gone with it: data/retired.ts)
+for (let i = STORY_QUESTS.length - 1; i >= 0; i--) {
+  const q = STORY_QUESTS[i]!;
+  if ((q.zone && isRetired(q.zone)) || q.id === 'camp-smiths') STORY_QUESTS.splice(i, 1);
+}

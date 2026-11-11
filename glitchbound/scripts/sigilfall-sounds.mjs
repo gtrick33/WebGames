@@ -1,16 +1,20 @@
 #!/usr/bin/env node
 /*
- * Builds Sigilfall's sound files from the pack it was given, by hand when the choices change (the files ship; the
- * pack stays out of the repository): RPG Sound Pack by artisticdude, CC0,
- * https://opengameart.org/content/rpg-sound-pack, unzipped in ~/Downloads/rpg_sound_pack (or SIGILFALL_SOUNDS).
+ * Builds Sigilfall's sound files from the packs they come from, by hand when the choices change (the files ship; the
+ * packs stay out of the repository). Where each is from, and under what license, is in
+ * src/games/sigilfall/CREDITS_AND_LICENSES.md.
+ *
+ * - ~/Downloads/rpg_sound_pack (or SIGILFALL_SOUNDS): RPG Sound Pack by artisticdude, CC0.
+ * - ~/Downloads/sigilfall-audio/packs (or SIGILFALL_SOUNDS_MORE): the other effect packs, each unzipped in a folder of
+ *   its own (paths below that start with '@/'): rubberduck's CC0 packs, Vehicle's CC0 fantasy libraries, StarNinjas'
+ *   impacts, Kenney's interface sounds, a few single CC0 sounds, and the Fantasy Sound Effects Library by Little Robot
+ *   Sound Factory (CC BY 3.0).
+ * - ~/Downloads/sigilfall-audio/music (or SIGILFALL_MUSIC): the soundtrack, by Kevin MacLeod (incompetech.com), CC BY 4.0.
  *
  * Each sound comes out mono and small (MP3, which every browser can decode), starting right on its first
  * moment, cut to length where it needs to be, and no louder on average than the rest, so a table of gains
- * (src/games/sigilfall/audio/samples.ts) can mix them.
- *
- * The music comes from the Orchestral and World Music Pack by Ragnar Random, CC0,
- * https://opengameart.org/content/orchestral-and-world-music-pack, in ~/Downloads/orchestral_world_music (or
- * SIGILFALL_MUSIC): stereo, 96 kbps, silence off both ends, all at one loudness.
+ * (src/games/sigilfall/audio/samples.ts) can mix them. The music comes out stereo at 80 kbps, silence off both ends,
+ * no longer than MUSIC_MAX with its end faded, and all at one loudness (quieter than the effects: it sits under them).
  */
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, rmSync } from 'node:fs';
@@ -18,11 +22,15 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 const PACK = process.env.SIGILFALL_SOUNDS ?? join(homedir(), 'Downloads/rpg_sound_pack/RPG Sound Pack');
-const MUSIC = process.env.SIGILFALL_MUSIC ?? join(homedir(), 'Downloads/orchestral_world_music');
+const MORE = process.env.SIGILFALL_SOUNDS_MORE ?? join(homedir(), 'Downloads/sigilfall-audio/packs');
+const MUSIC = process.env.SIGILFALL_MUSIC ?? join(homedir(), 'Downloads/sigilfall-audio/music');
 const OUT = 'public/games/sigilfall/audio';
 const MUSIC_OUT = 'public/games/sigilfall/music';
-/** How loud a piece of music is overall (LUFS). */
-const MUSIC_LOUDNESS = -21;
+/** How loud a piece of music is overall (LUFS), and the longest one runs (seconds). */
+const MUSIC_LOUDNESS = -23;
+const MUSIC_MAX = 150;
+/** How loud a loop of ambience is on average (dB): well under everything else. */
+const AMBIENCE = -30;
 const FFMPEG = process.env.FFMPEG ?? '/opt/homebrew/bin/ffmpeg';
 /** How loud a sound is on average, at most (dB). */
 const TARGET = -20;
@@ -38,10 +46,6 @@ const FILES = {
   clash3: ['battle/sword-unsheathe3.wav', { to: 0.32 }],
   clash4: ['battle/sword-unsheathe4.wav', { to: 0.32 }],
   clash5: ['battle/sword-unsheathe5.wav', { to: 0.32 }],
-  // spells
-  magic: ['battle/magic1.wav', { to: 0.55 }],
-  'magic-long': ['battle/magic1.wav'],
-  spell: ['battle/spell.wav', { to: 0.9 }],
   // the hero's things
   armor: ['inventory/armor-light.wav'],
   chain1: ['inventory/chainmail1.wav'],
@@ -49,23 +53,18 @@ const FILES = {
   bottle: ['inventory/bottle.wav'],
   bubble1: ['inventory/bubble.wav'],
   bubble2: ['inventory/bubble2.wav'],
-  bubble3: ['inventory/bubble3.wav'],
   cloth: ['inventory/cloth.wav'],
   'cloth-heavy': ['inventory/cloth-heavy.wav'],
   coin1: ['inventory/coin.wav'],
   coin2: ['inventory/coin2.wav'],
   coin3: ['inventory/coin3.wav'],
   ring: ['inventory/metal-ringing.wav'],
-  metal1: ['inventory/metal-small1.wav'],
   metal2: ['inventory/metal-small2.wav'],
   metal3: ['inventory/metal-small3.wav'],
   wood: ['inventory/wood-small.wav'],
   beads: ['inventory/beads.wav', { boost: 10 }],
   door: ['world/door.wav'],
   // the menus
-  click: ['interface/interface1.wav'],
-  page1: ['interface/interface2.wav'],
-  page2: ['interface/interface3.wav'],
   // those who fight
   giant1: ['NPC/giant/giant1.wav'],
   giant2: ['NPC/giant/giant2.wav'],
@@ -98,22 +97,135 @@ const FILES = {
   bite1: ['NPC/beetle/bite-small.wav'],
   bite2: ['NPC/beetle/bite-small2.wav'],
   bite3: ['NPC/beetle/bite-small3.wav'],
+
+  // ---- the other packs ('@/' is SIGILFALL_SOUNDS_MORE) ----
+  // blows landing: on flesh and leather, on the hero, on metal, on a raised guard
+  hit1: ['@/sfx_breaking_and_falling/bfh1_hit_05.ogg'],
+  hit2: ['@/sfx_breaking_and_falling/bfh1_hit_09.ogg'],
+  hit3: ['@/sfx_breaking_and_falling/bfh1_hit_10.ogg'],
+  hit4: ['@/sfx_breaking_and_falling/bfh1_hit_11.ogg'],
+  hit5: ['@/sfx_breaking_and_falling/bfh1_hit_13.ogg'],
+  hit6: ['@/sfx_breaking_and_falling/bfh1_hit_08.ogg'],
+  thud1: ['@/sfx_breaking_and_falling/bfh1_hit_03.ogg'],
+  thud2: ['@/sfx_breaking_and_falling/bfh1_hit_04.ogg'],
+  thud3: ['@/sfx_breaking_and_falling/bfh1_hit_07.ogg'],
+  metalhit1: ['@/sfx_breaking_and_falling/bfh1_metal_hit_01.ogg'],
+  metalhit2: ['@/sfx_breaking_and_falling/bfh1_metal_hit_03.ogg'],
+  metalhit3: ['@/sfx_breaking_and_falling/bfh1_metal_hit_05.ogg'],
+  metalhit4: ['@/sfx_breaking_and_falling/bfh1_metal_hit_06.ogg'],
+  block1: ['@/impact_-_starninjas/impact.2.ogg'],
+  block2: ['@/impact_-_starninjas/impact.6.ogg', { to: 0.6 }],
+  block3: ['@/impact_-_starninjas/impact.10.ogg', { to: 0.6 }],
+  steel1: ['@/tinysized/sfx-cc0/sword-clash-01.wav', { to: 0.7 }],
+  steel2: ['@/tinysized/sfx-cc0/sword-clash-02.wav', { to: 0.7 }],
+  steel3: ['@/tinysized/sfx-cc0/sword-clash-03.wav', { to: 0.7 }],
+  steel4: ['@/tinysized/sfx-cc0/sword-clash-04.wav', { to: 0.7 }],
+  // the ground: a slam, stones, rock breaking, a blast
+  slam1: ['@/100-CC0-SFX_0/slam_01.ogg'],
+  slam2: ['@/100-CC0-SFX_0/slam_02.ogg'],
+  slam3: ['@/100-CC0-SFX_0/slam_07.ogg'],
+  stones1: ['@/80-CC0-RPG-SFX_0/stones_01.ogg'],
+  stones2: ['@/80-CC0-RPG-SFX_0/stones_02.ogg'],
+  stones3: ['@/80-CC0-RPG-SFX_0/stones_03.ogg'],
+  rock1: ['@/sfx_breaking_and_falling/bfh1_rock_breaking_01.ogg'],
+  rock2: ['@/sfx_breaking_and_falling/bfh1_rock_breaking_02.ogg'],
+  rock3: ['@/sfx_breaking_and_falling/bfh1_rock_falling_01.ogg'],
+  boom: ['@/100-CC0-SFX_0/explosion.ogg'],
+  // spells, by what they are made of
+  fire1: ['@/80-CC0-RPG-SFX_0/spell_fire_01.ogg'],
+  fire2: ['@/80-CC0-RPG-SFX_0/spell_fire_02.ogg'],
+  fire3: ['@/80-CC0-RPG-SFX_0/spell_fire_05.ogg'],
+  fire4: ['@/80-CC0-RPG-SFX_0/spell_fire_06.ogg'],
+  fire5: ['@/80-CC0-RPG-SFX_0/spell_fire_07.ogg'],
+  firebig1: ['@/80-CC0-RPG-SFX_0/spell_fire_03.ogg'],
+  firebig2: ['@/80-CC0-RPG-SFX_0/spell_fire_04.ogg'],
+  arc1: ['@/80-CC0-RPG-SFX_0/spell_01.ogg'],
+  arc2: ['@/80-CC0-RPG-SFX_0/spell_02.ogg'],
+  chime1: ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Spell_00.wav', { to: 1.4 }],
+  chime2: ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Spell_01.wav'],
+  conjure: ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Spell_02.wav', { to: 1.8 }],
+  riftcall: ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Spell_03.wav', { to: 2.4 }],
+  dark: ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Spell_04.wav', { to: 1.6 }],
+  frost: ['@/single/freeze.wav', { to: 1.4 }],
+  shatter1: ['@/sfx_breaking_and_falling/bfh1_glass_breaking_01.ogg'],
+  shatter2: ['@/sfx_breaking_and_falling/bfh1_glass_breaking_02.ogg'],
+  zap1: ['@/tinysized/sfx-cc0/paralyzer-discharge-01.wav', { to: 0.55 }],
+  zap2: ['@/tinysized/sfx-cc0/paralyzer-discharge-02.wav', { to: 0.6 }],
+  thunder: ['@/sfx_100_v2/sfx100v2_thunder_01.ogg', { to: 2.4 }],
+  cure1: ['@/single/cure/Cure4.wav'],
+  cure2: ['@/single/cure/Cure5.wav', { to: 1.3 }],
+  cure3: ['@/single/cure/Cure8.wav', { to: 1.3 }],
+  teleport: ['@/single/teleport.wav', { to: 1 }],
+  breath: ['@/single/ghostbreath.flac', { to: 1.6 }],
+  // the air: a weapon drawn back, an arrow away
+  whoosh1: ['@/tinysized/sfx-cc0/tube-plastic-whoosh-01.wav'],
+  whoosh2: ['@/tinysized/sfx-cc0/tube-plastic-whoosh-02.wav'],
+  whoosh3: ['@/tinysized/sfx-cc0/tin-whistle-whoosh-01.wav'],
+  arrow1: ['@/weapons-apparel/sfx/arrow-feathers-01.wav'],
+  arrow2: ['@/weapons-apparel/sfx/arrow-feathers-02.wav'],
+  arrow3: ['@/weapons-apparel/sfx/arrow-feathers-03.wav'],
+  // things found, things sprung
+  gem1: ['@/80-CC0-RPG-SFX_0/item_gem_01.ogg'],
+  gem2: ['@/80-CC0-RPG-SFX_0/item_gem_03.ogg'],
+  gem3: ['@/80-CC0-RPG-SFX_0/item_gem_04.ogg'],
+  trap1: ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Trap_00.wav'],
+  bag: ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Inventory_Open_00.wav'],
+  // great voices
+  growl1: ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Dragon_Growl_00.wav', { to: 2.2 }],
+  growl2: ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Dragon_Growl_01.wav', { to: 2.2 }],
+  // a bell, a gong
+  bell: ['@/100-CC0-SFX_0/bell_03.ogg'],
+  gong: ['@/100-CC0-SFX_0/gong_01.ogg'],
+  // the moments: a level, a quest, a boss down, a fall
+  jingle: ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Jingle_Achievement_00.wav'],
+  'win-short': ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Jingle_Win_00.wav', { to: 2 }],
+  win: ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Jingle_Win_00.wav', { to: 5.5 }],
+  lose: ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Jingle_Lose_00.wav', { to: 4 }],
+  // the menus
+  'ui-click': ['@/kenney_interfaceSounds/Audio/click_001.ogg'],
+  'ui-select': ['@/kenney_interfaceSounds/Audio/select_001.ogg'],
+  'ui-open': ['@/kenney_interfaceSounds/Audio/open_001.ogg'],
+  'ui-close': ['@/kenney_interfaceSounds/Audio/close_001.ogg'],
+  'ui-confirm': ['@/kenney_interfaceSounds/Audio/confirmation_001.ogg'],
+  'ui-error': ['@/kenney_interfaceSounds/Audio/error_004.ogg'],
+  'ui-pluck': ['@/kenney_interfaceSounds/Audio/pluck_001.ogg'],
+  'ui-bong': ['@/kenney_interfaceSounds/Audio/bong_001.ogg'],
+  'ui-tick': ['@/kenney_interfaceSounds/Audio/tick_001.ogg'],
 };
 
-/** The soundtrack (src/games/sigilfall/audio/tracks.ts says who plays what). */
+/** The air of a place, looping quietly under everything (src/games/sigilfall/audio/ambience.ts says where). */
+const AMBIENCES = {
+  cave: '@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Ambience_Cave_00.wav',
+  forest: '@/single/Forest_Ambience.mp3',
+  day: '@/single/amb_morning_0.ogg',
+  wind: '@/single/wind.ogg',
+  water: '@/sfx_100_v2/sfx100v2_loop_water_02.ogg',
+};
+
+/** The soundtrack (src/games/sigilfall/audio/tracks.ts says who plays what): Kevin MacLeod's pieces, by title. */
 const TRACKS = {
-  adventure: '01_-_it_is_dangerous_to_be_lonely_without_a_sword.ogg',
-  town: '02_-_the_town_where_i_got_the_magic_bottle.ogg',
-  road: '03_-_quest_of_magic_cowboy_dude.ogg',
-  elf: '04_-_youthful_elf_seeking_adventure.ogg',
-  tower: '05_-_tower_of_the_vampire.ogg',
-  battle: '06_-_samurai_eats_ninja_for_breakfast.ogg',
-  'dark-elf': '07_-_youthful_elf_in_the_dark_world.ogg',
-  'sultan-slow': '08_-_poison_the_sultan_with_saltpeter_slower_world_version.ogg',
-  sultan: '08_-_poison_the_sultan_with_saltpeter_world_version.ogg',
-  tribe: '09_-_the_tribe_is_mellow_0.ogg',
-  shaman: '10_-_the_shaman_is_dancing_0.ogg',
-  qetzyl: '11_-_dungeon_of_qetzyl_0.ogg',
+  title: 'Ascending the Vale',
+  village: 'Suonatore di Liuto',
+  court: 'Lord of the Land',
+  tavern: 'Minstrel Guild',
+  chapel: 'Agnus Dei X',
+  forest: 'Enchanted Valley',
+  road: 'Teller of the Tales',
+  highland: 'Skye Cuillin',
+  coast: 'Moorland',
+  desert: 'Ibn Al-Noor',
+  tomb: 'Curse of the Scarab',
+  jungle: 'Tabuk',
+  forge: 'The Hive',
+  barrows: 'Ossuary 6 - Air',
+  highwall: 'Dark Times',
+  darkwood: 'The Dread',
+  snow: 'Frozen Star',
+  rift: 'Echoes of Time v2',
+  crypt: 'Ossuary 5 - Rest',
+  cave: 'Crypto',
+  boss: 'Five Armies',
+  siege: 'Heroic Age',
 };
 
 function ffmpeg(args) {
@@ -128,11 +240,14 @@ function measure(src, chain) {
   return { mean: Number(/mean_volume: (-?[\d.]+)/.exec(text)[1]), peak: Number(/max_volume: (-?[\d.]+)/.exec(text)[1]) };
 }
 
+/** Where a sound comes from: the first pack, or ('@/') the folder of the others. */
+const from = (file) => (file.startsWith('@/') ? join(MORE, file.slice(2)) : join(PACK, file));
+
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 let total = 0;
 for (const [name, [file, o = {}]] of Object.entries(FILES)) {
-  const src = join(PACK, file);
+  const src = from(file);
   const chain = ['aformat=channel_layouts=mono', 'aresample=44100', 'silenceremove=start_periods=1:start_threshold=-50dB'];
   if (o.to) chain.push(`atrim=end=${o.to}`, `afade=t=out:st=${o.to - 0.06}:d=0.06`);
   if (o.boost) chain.push(`volume=${o.boost}dB`, 'alimiter=limit=0.9');
@@ -145,15 +260,28 @@ for (const [name, [file, o = {}]] of Object.entries(FILES)) {
 }
 console.log(`${total} sounds in ${OUT}`);
 
+// the air of places: a loop each, quiet, with its ends eased so the seam is not heard
+for (const [name, file] of Object.entries(AMBIENCES)) {
+  const src = from(file);
+  const chain = ['aformat=channel_layouts=mono', 'aresample=44100'];
+  const { mean, peak } = measure(src, chain);
+  const gain = Math.min(AMBIENCE - mean, -1 - peak);
+  ffmpeg(['-y', '-loglevel', 'error', '-i', src, '-af', [...chain, `volume=${gain.toFixed(2)}dB`].join(','), '-codec:a', 'libmp3lame', '-b:a', '56k', '-map_metadata', '-1', join(OUT, `amb-${name}.mp3`)]);
+  console.log(`amb-${name}: ${mean} dB, ${gain.toFixed(1)} dB`);
+}
+
 rmSync(MUSIC_OUT, { recursive: true, force: true });
 mkdirSync(MUSIC_OUT, { recursive: true });
 const TRIM = ['silenceremove=start_periods=1:start_threshold=-60dB', 'areverse', 'silenceremove=start_periods=1:start_threshold=-60dB', 'areverse'];
-for (const [name, file] of Object.entries(TRACKS)) {
-  const src = join(MUSIC, file);
-  const text = ffmpeg(['-nostats', '-i', src, '-af', [...TRIM, 'ebur128=framelog=quiet'].join(','), '-f', 'null', '-']);
+for (const [name, title] of Object.entries(TRACKS)) {
+  const src = join(MUSIC, `${title}.mp3`);
+  // (a long piece is cut to length, on a slow fade)
+  const cut = [...TRIM, `atrim=end=${MUSIC_MAX}`, `afade=t=out:st=${MUSIC_MAX - 4}:d=4`];
+  const text = ffmpeg(['-nostats', '-i', src, '-af', [...cut, 'ebur128=framelog=quiet'].join(','), '-f', 'null', '-']);
   const lufs = Number(/I:\s+(-?[\d.]+) LUFS/.exec(text)[1]);
-  const gain = MUSIC_LOUDNESS - lufs;
-  const chain = [...TRIM, `volume=${gain.toFixed(2)}dB`, 'alimiter=limit=0.89:level=disabled'];
-  ffmpeg(['-y', '-loglevel', 'error', '-i', src, '-af', chain.join(','), '-ar', '44100', '-codec:a', 'libmp3lame', '-b:a', '96k', '-map_metadata', '-1', join(MUSIC_OUT, `${name}.mp3`)]);
-  console.log(`${name}: ${lufs} LUFS, ${gain.toFixed(1)} dB`);
+  // (the battle pieces a little above the rest: they are meant to be felt)
+  const gain = MUSIC_LOUDNESS + (name === 'boss' || name === 'siege' ? 2 : 0) - lufs;
+  const chain = [...cut, `volume=${gain.toFixed(2)}dB`, 'alimiter=limit=0.89:level=disabled'];
+  ffmpeg(['-y', '-loglevel', 'error', '-i', src, '-af', chain.join(','), '-ar', '44100', '-codec:a', 'libmp3lame', '-b:a', '80k', '-map_metadata', '-1', join(MUSIC_OUT, `${name}.mp3`)]);
+  console.log(`${name}: ${title}, ${lufs} LUFS, ${gain.toFixed(1)} dB`);
 }

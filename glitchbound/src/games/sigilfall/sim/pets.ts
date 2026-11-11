@@ -1,6 +1,7 @@
 import { angleDiff, dist, dist2, TAU } from '../core/math';
 import { CLASSES } from '../data/classes';
 import { PETS } from '../data/pets';
+import { bossHidden } from './boss';
 import { effStats, hitEnemy } from './combat';
 import { castRay, circleHitsWall, flowField, flowStep, lineOfSight, moveCircle, pushOut, TILE } from './map';
 import { aimAlong, clearLine, findRoute } from './nav';
@@ -59,6 +60,8 @@ export function summonPet(w: World, id: string, count: number, dur: number, skil
 
 /** Seconds one of the story's people takes to fade out as they go (a summon goes in a puff instead). */
 export const STORY_FADE = 1.2;
+/** Seconds one of the story's people takes to come in where they are set down (render: a fade). */
+export const STORY_ARRIVE = 0.6;
 
 /**
  * Puts a story pet (a companion, a door to hold, a villager to lead out) at a place; it stays until the
@@ -113,12 +116,13 @@ export function refreshPets(w: World): void {
 
 function pickTarget(w: World, pet: Pet): Enemy | null {
   const p = w.player;
-  const cur = pet.target !== null ? w.enemies.find((e) => e.id === pet.target && !e.dead) : undefined;
+  // (a boss gone from sight, in a coffin or torn into shards, can't be fought: the pet turns to what can)
+  const cur = pet.target !== null ? w.enemies.find((e) => e.id === pet.target && !e.dead && !bossHidden(e)) : undefined;
   if (cur && dist(cur.x, cur.y, p.x, p.y) < 190) return cur;
   let best: Enemy | null = null;
   let bd = Infinity;
   for (const e of w.enemies) {
-    if (e.dead || e.dummy || e.held || e.state === 'spawn') continue;
+    if (e.dead || e.dummy || e.held || e.state === 'spawn' || bossHidden(e)) continue;
     // only what is already fighting, or close to the hero
     const dh = dist(e.x, e.y, p.x, p.y);
     if (dh > 150 || (!e.aggro && dh > 90)) continue;

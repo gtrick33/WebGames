@@ -3,6 +3,7 @@ import { hurtPlayer } from '../combat';
 import { circleHitsWall, K, moveCircle, TILE, tileAt } from '../map';
 import type { Enemy, Field, Telegraph } from '../types';
 import type { World } from '../world';
+import { exposed, removeThing, ringSpots, spawnThing, up } from './arena';
 import type { PatternFn } from './kit';
 
 /**
@@ -424,7 +425,7 @@ const sunDisc: PatternFn = (w, e, _dt, k) => {
     s.sun = sun;
     raiseLight(w, sun, sun.wind);
     faceTo(e, k.aimAt());
-    w.text(e.x, e.y - e.r - 18, 'THE SUN RISES!', SUN, true);
+    w.callout('THE SUN RISES!', SUN);
     w.text(w.player.x, w.player.y - 30, 'Hide in a pillar’s shadow!', SUNCORE, true);
     w.addFx({ kind: 'zap', x: e.x, y: e.y - 16, x2: sun.x, y2: sun.y - SUN_HIGH, life: 0.4, size: 1, color: SUN });
     w.sfx('summon', 0.6);
@@ -537,7 +538,7 @@ const scarabs: PatternFn = (w, e, _dt, k) => {
         break;
       }
     }
-    if (used.length) w.text(e.x, e.y - e.r - 16, 'SCARABS!', '#7ae0c8', true);
+    if (used.length) w.callout('SCARABS!', '#7ae0c8');
     w.sfx('summon', 0.5);
     pt.step = 1;
   } else if (pt.t >= Math.min(wind, 0.9)) k.end();
@@ -693,7 +694,7 @@ const sandsweep: PatternFn = (w, e, dt, k) => {
     const along = dir === 0 ? 0 : dir === 1 ? Math.PI / 2 : dir === 2 ? Math.PI : -Math.PI / 2;
     for (const [s0, s1] of parts) w.addTelegraph({ shape: 'line', x: horiz ? pos : (s0 + s1) / 2, y: horiz ? (s0 + s1) / 2 : pos, r: 0, r2: s1 - s0, angle: along, len: Math.abs(pt.data.end - pos), dur: form + travel + 0.3, dmg: 0, knock: 0, tone: 'enemy', owner: -1, linger: 0 });
     pt.data.id2 = w.nextId;
-    if (n === 0) w.text(e.x, e.y - e.r - 16, 'THE SANDS RISE!', '#e8d0a0', true);
+    if (n === 0) w.callout('THE SANDS RISE!', '#e8d0a0');
     faceTo(e, k.aimAt());
     w.sfx('quake', 0.6);
     pt.step = 1;
@@ -778,7 +779,7 @@ const quicksand: PatternFn = (w, e, _dt, k) => {
         w.sfx('crumble', 0.4);
       });
     }
-    w.text(e.x, e.y - e.r - 16, 'QUICKSAND!', '#e8d0a0', true);
+    w.callout('QUICKSAND!', '#e8d0a0');
     w.sfx('quake', 0.5);
     w.shake(2);
     pt.step = 1;
@@ -829,7 +830,7 @@ const crumble: PatternFn = (w, e, _dt, k) => {
     const sprite = e.def.sprite;
     e.def.sprite = k.str('sprite', 'the-sand-warden-heap');
     for (let i = 0; i < 26; i++) w.addFx({ kind: i % 2 ? 'rubble' : 'smoke', x: e.x + (w.rand() - 0.5) * 26, y: e.y - 6 - w.rand() * 22, vx: (w.rand() - 0.5) * 140, vy: -40 - w.rand() * 70, life: 0.8, size: i % 2 ? 2 : 4, color: SAND[i % 4]! });
-    w.text(e.x, e.y - e.r - 18, 'IT FALLS INTO SAND!', '#e8d0a0', true);
+    w.callout('IT FALLS INTO SAND!', '#e8d0a0');
     w.sfx('crumble');
     w.shake(6);
     // the wraiths rise from the spilled sand
@@ -880,7 +881,7 @@ function tickHeap(w: World, e: Enemy, s: Fight): void {
     b.dazed = h.daze;
     e.statuses.push({ id: 'stun', t: h.daze, power: 1, tick: 0 });
     e.statuses.push({ id: 'armorBreak', t: h.daze + 4, power: 30, tick: 0 });
-    w.text(e.x, e.y - e.r - 18, 'IT REFORMS, CRACKED!', '#ffe066', true);
+    w.callout('IT REFORMS, CRACKED!', '#ffe066');
     return;
   }
   // every wraith still walking flows back into it
@@ -895,7 +896,7 @@ function tickHeap(w: World, e: Enemy, s: Fight): void {
   w.text(e.x, e.y - e.r - 18, `IT REFORMS! +${Math.round(add)}`, '#e8d0a0', true);
 }
 
-export const TOMB_OF_THE_SUN_KING_PATTERNS: Record<string, PatternFn> = {
+const FIRST_PATTERNS: Record<string, PatternFn> = {
   'tomb:sun-disc': sunDisc,
   'tomb:sunbeam': sunbeam,
   'tomb:scarabs': scarabs,
@@ -907,3 +908,132 @@ export const TOMB_OF_THE_SUN_KING_PATTERNS: Record<string, PatternFn> = {
 
 /** For tests: whether a hero standing at (hx, hy) would be in the light of a sun at (x, y). */
 export const inSunlight = (w: World, x: number, y: number, hx: number, hy: number, r: number): boolean => lightShapes(w, x, y).some((t) => within(t, hx, hy, r));
+
+/* ------------------------------------------------------------ Vizier Khepset, Keeper of the Last Hour */
+
+/**
+ * Vizier Khepset (the Hall of the Sun-Disc) keeps the dead king's last hour. He sets down a great sand-glass and turns
+ * it (`hourglass`): while its sand runs, a golden mark shows where the hero stood when the hour began. When the sand
+ * runs out the hour turns back: every wound he took in it closes, and the hero is pulled back to the mark. Shatter the
+ * glass first and the turning fails: he reels, and the wounds stay.
+ *
+ * The glass and its hour outlive the pattern that turns it, so they are kept per boss here and run by a small ticker
+ * (World.after, once a step) for as long as the fight lasts.
+ */
+
+const HOURGOLD = '#ffd27a';
+const GLASS = 'sand-glass';
+
+interface Hour {
+  last: number;
+  glass: Enemy | null;
+  /** Where the hero stood when the hour began; his health then; when the sand runs out; the last second counted. */
+  mx: number;
+  my: number;
+  hp: number;
+  until: number;
+  tick: number;
+  fxT: number;
+}
+
+const HOURS = new WeakMap<Enemy, Hour>();
+
+function hourOf(w: World, e: Enemy): Hour {
+  let s = HOURS.get(e);
+  if (!s) {
+    s = { last: w.time, glass: null, mx: 0, my: 0, hp: e.hp, until: 0, tick: 0, fxT: 0 };
+    HOURS.set(e, s);
+    w.after(0, () => hourTick(w, e));
+  }
+  return s;
+}
+
+function hourTick(w: World, e: Enemy): void {
+  const s = HOURS.get(e);
+  if (!s) return;
+  if (!fighting(w, e)) {
+    removeThing(w, s.glass);
+    HOURS.delete(e);
+    return;
+  }
+  const dt = Math.max(0, w.time - s.last);
+  s.last = w.time;
+  const g = s.glass;
+  if (g) {
+    if (!up(w, g)) {
+      // shattered: the hour fails, and he reels
+      s.glass = null;
+      w.fxBurst(g.x, g.y - 10, HOURGOLD, 26, 20);
+      exposed(w, e, 3, 'No! The hour... it slips away!', HOURGOLD);
+    } else if (w.time >= s.until) {
+      // the hour turns back: his wounds close, and the hero goes back to where it began
+      s.glass = null;
+      removeThing(w, g);
+      const healed = Math.max(0, s.hp - e.hp);
+      if (healed > 0) {
+        e.hp = Math.min(e.maxHp, s.hp);
+        w.text(e.x, e.y - e.r - 14, `+${Math.round(healed)}`, HOURGOLD, true);
+      }
+      const p = w.player;
+      if (!p.dead) {
+        w.addFx({ kind: 'beam', x: p.x, y: p.y - 8, x2: s.mx, y2: s.my - 8, life: 0.5, size: 2, color: HOURGOLD });
+        p.x = s.mx;
+        p.y = s.my;
+        p.vx = 0;
+        p.vy = 0;
+        w.fxBurst(p.x, p.y - 8, HOURGOLD, 16, 14);
+      }
+      w.callout('The hour turns back!', HOURGOLD);
+      w.sfx('rift', 0.7);
+      w.shake(4);
+    } else {
+      // the sand running, the mark of where the hour began, the count over the glass
+      s.fxT -= dt;
+      if (s.fxT <= 0) {
+        s.fxT = 0.25;
+        w.addFx({ kind: 'spark', x: g.x + (((w.time * 37) % 1) - 0.5) * 6, y: g.y - 26, vx: 0, vy: 30, life: 0.4, size: 2, color: HOURGOLD });
+        w.addFx({ kind: 'ring', x: s.mx, y: s.my, life: 0.3, size: 18, color: HOURGOLD });
+        w.addFx({ kind: 'glow', x: s.mx, y: s.my, life: 0.3, size: 12, color: HOURGOLD });
+      }
+      const left = s.until - w.time;
+      if (left <= 4 && Math.ceil(left) !== s.tick) {
+        s.tick = Math.ceil(left);
+        w.text(g.x, g.y - 36, String(s.tick), HOURGOLD, true);
+      }
+    }
+  }
+  w.after(0, () => hourTick(w, e));
+}
+
+/** The sand-glass: set down `far` px from him, its hour `time` s long. */
+const hourglass: PatternFn = (w, e, _dt, k) => {
+  const { pt } = k;
+  const s = hourOf(w, e);
+  const p = w.player;
+  if (pt.step === 0) {
+    if (s.glass) {
+      k.end();
+      return;
+    }
+    const spots = ringSpots(w, e, 8, k.num('far', 120), w.rand() * TAU).filter((sp) => dist(sp.x, sp.y, p.x, p.y) > 50);
+    const sp = spots[Math.floor(w.rand() * spots.length)] ?? { x: e.x + 60, y: e.y };
+    s.glass = spawnThing(w, e, GLASS, sp.x, sp.y);
+    s.mx = p.x;
+    s.my = p.y;
+    s.hp = e.hp;
+    s.until = w.time + k.num('time', 7);
+    s.tick = 0;
+    w.callout('I turn the glass. This hour is mine.', HOURGOLD, 'Shatter the sand-glass!');
+    w.sfx('bell-toll', 0.5);
+    pt.data.t1 = pt.t;
+    pt.step = 1;
+  } else if (pt.step === 1 && pt.t >= pt.data.t1! + 0.6) k.end();
+};
+
+/** Khepset's sand-glass and the mark of where its hour began (for tests). */
+export const hourOfVizier = (e: Enemy): { glass: Enemy | null; mx: number; my: number } | null => {
+  const s = HOURS.get(e);
+  return s ? { glass: s.glass, mx: s.mx, my: s.my } : null;
+};
+
+export const TOMB_OF_THE_SUN_KING_PATTERNS: Record<string, PatternFn> = { ...FIRST_PATTERNS, 'tomb:hourglass': hourglass };

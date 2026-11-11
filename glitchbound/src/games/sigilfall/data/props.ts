@@ -25,12 +25,16 @@ export interface PropDef {
   box?: boolean;
   /** A stone hero this tall stands on it. */
   hero?: number;
+  /** A pine that keeps its green whatever the land's leaves have turned to (render3d/land.ts colorsFor). */
+  evergreen?: boolean;
 }
 
 export const PROPS: Record<string, PropDef> = {
   // the road and the yard
   lamp: { m: 'built_lamp', w: 18, d: 18, h: 50, glow: '#ffc060', light: 5 },
   lantern: { m: 'built_lantern', w: 12, d: 12, h: 18, glow: '#ffc060', light: 3 },
+  // a barrow's grave-lamp: no light of its own, a fight's effects light it (sim/patterns/barrow-of-kings.ts)
+  'grave-lamp': { m: 'post_lantern', w: 14, d: 14, h: 40, tint: '#a8a4b0' },
   torch: { m: 'built_torch', w: 12, d: 12, h: 32, flame: 0.62, flameAt: 32 },
   'iron-torch': { m: 'built_iron_torch', w: 12, d: 12, h: 32, flame: 0.62, flameAt: 32 },
   brazier: { m: 'bucket', w: 18, d: 18, h: 20, tint: '#7c7a8a', flame: 1, flameAt: 20 },
@@ -109,11 +113,11 @@ export const PROPS: Record<string, PropDef> = {
   altar: { m: 'altar-stone', w: 48, d: 26, h: 22, across: true, tint: '#b4b0a4' },
   // deep places
   'broken-column': { m: 'column', w: 24, d: 24, h: 36 },
-  'great-column': { m: 'built_great_column', w: 42, d: 38, h: 118, box: true },
-  'tall-column': { m: 'pillar', w: 34, d: 34, h: 104, box: true, tint: '#a8a6b0' },
+  'great-column': { m: 'built_great_column', w: 40, d: 38, h: 92, box: true },
+  'tall-column': { m: 'pillar', w: 32, d: 32, h: 86, box: true, tint: '#a8a6b0' },
   'mossy-column': { m: 'pillar', w: 34, d: 34, h: 96, box: true, tint: '#8aa080' },
-  'sand-column': { m: 'built_great_column', w: 42, d: 38, h: 118, box: true, tint: '#e0c088' },
-  'ice-column': { m: 'pillar', w: 36, d: 36, h: 104, box: true, tint: '#b8dcf4' },
+  'sand-column': { m: 'built_great_column', w: 40, d: 38, h: 92, box: true, tint: '#e0c088' },
+  'ice-column': { m: 'pillar', w: 34, d: 34, h: 86, box: true, tint: '#b8dcf4' },
   'black-column': { m: 'built_great_column', w: 42, d: 38, h: 124, box: true, tint: '#5a5664' },
   'crates-stack': { m: 'crates_stacked', w: 34, d: 34, h: 34 },
   'big-barrel': { m: 'barrel_large', w: 26, d: 26, h: 30 },
@@ -134,8 +138,9 @@ export const PROPS: Record<string, PropDef> = {
   spores: { m: 'mushroom_redGroup', w: 24, d: 24, h: 14 },
   thorns: { m: 'Bush_4_D', w: 40, d: 30, h: 18, tint: '#a07a9a' },
   // what a land is known by, seen from far off
-  'ancient-oak': { m: 'Tree_7_B', w: 130, d: 130, h: 250 },
-  'ancient-pine': { m: 'tree_pine_orange_large', w: 130, d: 130, h: 220 },
+  // (an oak old enough to be a landmark is broad before it is tall: the widest-crowned tree of the set, not its tallest)
+  'ancient-oak': { m: 'Tree_3_A', w: 190, d: 190, h: 200 },
+  'ancient-pine': { m: 'tree_pine_orange_large', w: 130, d: 130, h: 220, evergreen: true },
   'dead-colossus': { m: 'tree_dead_large', w: 110, d: 80, h: 230, tint: '#6a5a50' },
   lighthouse: { m: 'b_tower_B', w: 84, d: 84, h: 200 },
   'water-mill': { m: 'b_watermill', w: 110, d: 110, h: 130 },
@@ -182,6 +187,21 @@ export const PROPS: Record<string, PropDef> = {
   lion: { m: 'statue_block', w: 24, d: 24, h: 9, box: true, tint: '#8a8a90', hero: 30 },
   throne: { m: 'built_throne', w: 28, d: 26, h: 36 },
   'high-throne': { m: 'built_throne', w: 42, d: 34, h: 52 },
+  // the dungeon pack's own stores and wreckage: what a place men have used has standing about in it
+  'barrel-stack': { m: 'barrel_small_stack', w: 28, d: 24, h: 26 },
+  'crate-pile': { m: 'box_stacked', w: 30, d: 28, h: 30 },
+  'small-crates': { m: 'box_small_decorated', w: 16, d: 16, h: 13 },
+  'fine-keg': { m: 'keg_decorated', w: 24, d: 22, h: 22 },
+  'fine-barrel': { m: 'barrel_large_decorated', w: 24, d: 24, h: 28 },
+  'broken-table': { m: 'table_long_broken', w: 46, d: 24, h: 14, across: true },
+  'small-trunk': { m: 'trunk_small_C', w: 18, d: 14, h: 12 },
+  'low-wall': { m: 'barrier', w: 50, d: 10, h: 15, across: true },
+  'bed-frame': { m: 'bed_frame', w: 24, d: 44, h: 12 },
+  'candle-stub': { m: 'candle_melted', w: 7, d: 7, h: 9, tint: '#d8c8a0', glow: '#ffc060' },
+  // the Hallow King's seat on its dais (render3d/propsBuilt.ts frozenThrone)
+  'frozen-throne': { m: 'built_frozen_throne', w: 132, d: 44, h: 150, glow: '#bfe4ff' },
+  // the banner of the house of Vaelmoor, as it stands in Duskspire still: white, the color gone out of it
+  'royal-banner': { m: 'built_flag_royal', w: 30, d: 12, h: 70 },
   hearth: { m: 'campfire_bricks', w: 62, d: 26, h: 16, across: true, tint: '#9a8e80', flame: 1.3, flameAt: 8 },
   forge: { m: 'campfire_bricks', w: 46, d: 26, h: 18, across: true, tint: '#a09aa8', flame: 1.2, flameAt: 12 },
   grindstone: { m: 'grindstone', w: 20, d: 18, h: 22 },
@@ -201,12 +221,19 @@ export const PROPS: Record<string, PropDef> = {
 const BODIES: Record<string, [number, number]> = {
   lamp: [4, 4],
   lantern: [4, 4],
+  'grave-lamp': [6, 6],
   torch: [4, 4],
   'iron-torch': [4, 4],
   flag: [4, 4],
   'blue-banner': [4, 4],
   'red-banner': [4, 4],
   'skull-banner': [4, 4],
+  'royal-banner': [4, 4],
+  'barrel-stack': [27, 15],
+  'fine-keg': [24, 14],
+  'low-wall': [50, 6],
+  'bed-frame': [17, 34],
+  'frozen-throne': [112, 30],
   'banner-red': [16, 5],
   'banner-blue': [16, 5],
   'banner-shield': [18, 6],
@@ -318,7 +345,7 @@ export const FEET: Record<string, readonly (readonly [number, number, number, nu
 };
 
 /** Things you walk through or over: they lie on the ground, or bend. */
-const UNDERFOOT = new Set(['flowers', 'wheat', 'corn', 'bones', 'skulls', 'debris', 'rubble', 'eggs', 'candles', 'rug', 'runner', 'spores', 'bedroll', 'coin-pile', 'planter', 'flowerbed', 'bone-heap', 'thorns']);
+const UNDERFOOT = new Set(['candle-stub', 'flowers', 'wheat', 'corn', 'bones', 'skulls', 'debris', 'rubble', 'eggs', 'candles', 'rug', 'runner', 'spores', 'bedroll', 'coin-pile', 'planter', 'flowerbed', 'bone-heap', 'thorns']);
 
 /** Share of what a model may fill that its body takes up: it's rarely square to its box, and never to its corners. */
 const FILLS = 0.84;

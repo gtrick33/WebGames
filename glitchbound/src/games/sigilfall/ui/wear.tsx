@@ -1,7 +1,7 @@
 import type { ClassId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import type { Character } from '../progress/character';
-import { heroTitle } from '../progress/wardrobe';
+import { wornTitle } from '../progress/titles';
 
 /**
  * In The Ring and The Vigil, a player with a campaign hero of the class they bring can fight in that hero's looks
@@ -43,7 +43,7 @@ export function wearOf(engine: SigilEngine, cls: ClassId): Character | null {
 }
 
 /** A wearer's title, if they've earned one. */
-export const wearTitle = (h: Character | null): string | null => (h ? heroTitle(h) : null);
+export const wearTitle = (h: Character | null, rating?: number): string | null => (h ? wornTitle(h, rating) : null);
 
 /** The choice, beside the class: which hero's looks to fight in. Shown only when there's a hero of the class. */
 export function WearPicker({ engine, cls, onChange }: { engine: SigilEngine; cls: ClassId; onChange: () => void }) {
@@ -62,7 +62,7 @@ export function WearPicker({ engine, cls, onChange }: { engine: SigilEngine; cls
       >
         {list.map((h) => (
           <option key={keyOf(h)} value={keyOf(h)}>
-            {h.name}’s Wardrobe{heroTitle(h) ? `, ${heroTitle(h)}` : ''}
+            {h.name}’s Wardrobe{wornTitle(h) ? `, ${wornTitle(h)}` : ''}
           </option>
         ))}
         <option value={PLAIN}>Plain</option>

@@ -13,10 +13,10 @@ export interface ActDef {
 
 export const ACTS: ActDef[] = [
   { id: 'prologue', over: 'Prologue', name: 'The Night the Bells Stopped', opens: 'briar-dusk' },
-  { id: 'act-1', over: 'Act I', name: 'The Villages of the Vale', opens: 'south-road' },
-  { id: 'act-2', over: 'Act II', name: 'Road to the Crown City', opens: 'the-sick-villages' },
-  { id: 'act-3', over: 'Act III', name: 'The Broken Alliance', opens: 'the-sun-kings-tomb' },
-  { id: 'act-4', over: 'Act IV', name: 'War of the Three Gates', opens: 'the-wall-burns' },
+  { id: 'act-1', over: 'Act I', name: 'The Villages of the Vale', opens: 'west-road' },
+  { id: 'act-2', over: 'Act II', name: 'The Crown City', opens: 'the-lanterns-dim' },
+  { id: 'act-3', over: 'Act III', name: 'The Race for the Sigils', opens: 'the-sun-kings-tomb' },
+  { id: 'act-4', over: 'Act IV', name: 'The Gates', opens: 'the-wall-burns' },
   { id: 'act-5', over: 'Act V', name: 'The Dead Kingdom', opens: 'into-vaelmoor' },
   { id: 'act-6', over: 'Act VI', name: 'The Last March', opens: 'the-last-march' },
   { id: 'crownfall', over: 'The Finale', name: 'Crownfall', opens: 'the-hollow-king' },

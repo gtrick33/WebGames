@@ -3,8 +3,9 @@ import { GameMenuButton } from '../../../components/GameMenuButton';
 import { ABILITIES, kitOf, PRESETS, SLOTS } from '../arena/abilities';
 import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, namedApart, nameFor, ratingChange, readRing, setsOf, skillAt, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave } from '../arena/ladder';
 import { MAP_IDS, MAPS } from '../arena/maps';
-import { FORMATS, nextRank, rankOf, type Format } from '../arena/ranks';
-import type { FighterSetup, MatchSetup } from '../arena/sim';
+import { bestRating, FORMATS, nextRank, rankOf, type Format } from '../arena/ranks';
+import { rewardsBetween } from '../arena/rewards';
+import { GATES_SOLO, type FighterSetup, type MatchSetup } from '../arena/sim';
 import { CLASS_IDS, CLASSES } from '../data/classes';
 import { useAccount } from '../../../platform/account';
 import { classOpen } from '../progress/paidClasses';
@@ -18,8 +19,10 @@ import { heldWeapon, heroDollUrl, heroLook } from '../render/sprites';
 import { RingMatch, type MatchResult, type MatchStakes, type RingInbox } from './RingMatch';
 import { RingResult, type RatingOutcome } from './RingResult';
 import { BarRow, RingHelp, SetupChips, SetupEditor } from './RingSetup';
-import { wearOf, WearPicker, wearTitle } from './wear';
+import { wearOf, WearPicker } from './wear';
+import { LooksDialog, plainWorn, RewardsDialog, RewardStrip, ringTitle } from './RingRewards';
 import { wornLooks } from '../progress/wardrobe';
+import { titled } from '../progress/titles';
 import { ScreenGate } from './ScreenGate';
 
 /** The computer's teammates: who they are and which of their bars they bring. */
@@ -110,6 +113,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const [mates, setMates] = useState<Mate[]>(() => DEFAULT_MATES[cls ?? 'warrior']);
   const [map, setMap] = useState<string>('random');
   const [help, setHelp] = useState(false);
+  const [rewardsOpen, setRewardsOpen] = useState(false);
+  const [looksOpen, setLooksOpen] = useState(false);
   const [fight, setFight] = useState<{ setup: MatchSetup; rival: Comp; skill: number; rivalRating: number; stakes: MatchStakes; format: Format; snap?: LiveMatch['snap'] } | null>(() => (resume ? { ...resume, stakes: resume.stakes } : null));
   const [roomFight, setRoomFight] = useState<{ setup: MatchSetup; mine: number; host: boolean } | null>(null);
   const [run, setRun] = useState(0);
@@ -129,13 +134,17 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   // (a campaign hero of the class, worn: their gear, their Wardrobe and their title)
   const [wearN, setWearN] = useState(0);
   const wear = useMemo(() => (wearN >= 0 ? wearOf(engine, pick) : null), [engine, pick, wearN]);
+  // (in plain clothes: the Ring armor and the Ring title chosen, kept with the standing)
+  const worn = useMemo(() => (wear ? undefined : plainWorn(save.plain)), [wear, save.plain]);
+  const myTitle = ringTitle(wear, save.plain);
   const doll = useMemo(() => {
     const plain = newCharacter(pick, 'Ring', 'ring');
     const w = wear;
-    const look = w ? heroLook(pick, w.equip, wornLooks(w), w.body, w.face) : heroLook(pick, plain.equip, {}, body ?? 'm', face);
+    const look = w ? heroLook(pick, w.equip, wornLooks(w), w.body, w.face) : heroLook(pick, plain.equip, worn ?? {}, body ?? 'm', face);
     const held = w ? heldWeapon(pick, w.equip.weapon, wornLooks(w).weapon) : heldWeapon(pick, plain.equip.weapon);
     return heroDollUrl(look, 'down', 5, held, pick === 'warrior' || pick === 'paladin');
-  }, [pick, body, face, wear]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pick, body, face, wear, worn, wearN]);
   const sets = setsOf(save, pick);
   const setup = sets.list[sets.active]!;
   const { bar, oath, talents } = setup;
@@ -164,7 +173,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     setPage('play');
     setRun((r) => r + 1);
     const next = {
-      setup: { seed, map: map === 'random' ? MAP_IDS[seed % MAP_IDS.length]! : map, fighters: namedApart([...team, ...fighters]) },
+      setup: { seed, map: map === 'random' ? MAP_IDS[seed % MAP_IDS.length]! : map, fighters: namedApart([...team, ...fighters]), gates: GATES_SOLO },
       rival: comp,
       skill: skillAt(rivalRating),
       rivalRating,
@@ -269,8 +278,10 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
       clearLive();
       const was = standingOf(latest.current, fight.format);
       const out = afterMatch(was, fight.rivalRating, won, k);
+      // (what the climb has earned: the best of all three formats counts, so a reward is given once)
+      const bestWas = bestRating();
       commit((now) => ({ ...now, standings: { ...now.standings, [fight.format]: out.next } }));
-      return { before: was.rating, after: out.next.rating, bestBefore: was.best, bestAfter: out.next.best, rankUp: out.rankUp, streak: out.next.streak };
+      return { before: was.rating, after: out.next.rating, bestBefore: was.best, bestAfter: out.next.best, rankUp: out.rankUp, streak: out.next.streak, rewards: rewardsBetween(bestWas, bestRating()) };
     };
     return (
       <RingMatch
@@ -280,6 +291,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         myId={0}
         face={face}
         wear={wear}
+        worn={worn}
+        title={myTitle}
         body={body}
         role={{ kind: 'solo', skill: fight.skill }}
         sets={sets}
@@ -316,6 +329,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         myId={roomFight.mine}
         face={face}
         wear={wear}
+        worn={worn}
+        title={myTitle}
         body={body}
         role={roomFight.host ? { kind: 'host', skill: 0.6, send: relay, listen } : { kind: 'client', send: relay, listen }}
         sets={sets}
@@ -396,10 +411,15 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
                 <img key={pick} className="rb-rp-doll" src={doll} alt={CLASSES[pick].name} draggable={false} />
                 <div className="rb-rp-who">
                   <strong>{CLASSES[pick].name}</strong>
-                  <small>{wear ? `${wear.name}${wearTitle(wear) ? `, ${wearTitle(wear)}` : ''}` : hero}</small>
+                  <small>{titled(wear ? wear.name : hero, myTitle)}</small>
                 </div>
               </div>
-              <WearPicker engine={engine} cls={pick} onChange={() => setWearN((n) => n + 1)} />
+              <div className="rb-rp-looks">
+                <WearPicker engine={engine} cls={pick} onChange={() => setWearN((n) => n + 1)} />
+                <button className="rb-btn is-small" onClick={() => setLooksOpen(true)}>
+                  Title & armor
+                </button>
+              </div>
               <ClassRow pick={pick} onPick={choose} />
               <div className="rb-rp-setup">
                 <div className="rb-rp-setup-head">
@@ -445,6 +465,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
                   </span>
                 )}
               </div>
+              <RewardStrip best={bestRating()} onOpen={() => setRewardsOpen(true)} />
 
               {format > 1 && (
                 <div className="rb-rp-block">
@@ -550,6 +571,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         {page === 'friends' && <FriendsPage view={view} state={linkState} err={roomErr} ready={ready} codeIn={codeIn} setCodeIn={setCodeIn} onOpen={() => void openRoom()} onJoin={joinRoom} send={(a) => linkRef.current?.send(a)} myPick={myPick} pick={pick} onPick={choose} onSetup={() => openSetup('friends')} bar={bar} />}
 
         {help && <RingHelp onClose={() => setHelp(false)} />}
+        {rewardsOpen && <RewardsDialog best={bestRating()} onClose={() => setRewardsOpen(false)} />}
+        {looksOpen && <LooksDialog engine={engine} cls={pick} wear={wear} plain={save.plain} doll={doll} shown={titled(wear ? wear.name : hero, myTitle)} onPlain={(p) => commit((now) => ({ ...now, plain: p }))} onChange={() => setWearN((n) => n + 1)} onClose={() => setLooksOpen(false)} />}
       </div>
     </ScreenGate>
   );

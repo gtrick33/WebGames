@@ -1,4 +1,4 @@
-import { cdr, dmg, K, onHit, P, S, skill, spec, stats, T, type Kit } from './kit';
+import { cdr, combo, dmg, K, next, onHit, P, S, skill, spec, stats, T, when, type Kit } from './kit';
 
 /** The Warlock: curses, demons and stolen life, on mana. Affliction, Demonology or Destruction. */
 
@@ -25,6 +25,7 @@ export const WARLOCK: Kit = {
         color: '#8bff6a',
         role: 'Damage over time',
         skill: 'unstable-affliction',
+        combo: combo('Come Due', 'Wild Hex calls in every debt at once: all the rot still to come on its target lands now, half again as hard, on everything near it.', when('come-due', 'hit', { kind: 'detonate', status: 'curse', mul: 1.5, radius: 40 }, 'Wild Hex sets off the rot.', { skill: 'unstable-affliction', status: 'curse' })),
         passive: { name: 'Malefic Grasp', text: '+25% shadow damage, and every skill deals +20% damage to Cursed enemies.', mods: [S('shadow', 25), K('*', { op: 'bonusVs', status: 'curse', pct: 20 })] },
       },
       {
@@ -33,6 +34,7 @@ export const WARLOCK: Kit = {
         color: '#ff8a3d',
         role: 'Demons fight for you',
         skill: 'summon-felguard',
+        combo: combo('Blood for the Pit', 'Blood Tithe feeds more than you: your demons hit 40% harder for 8 s, and an imp climbs out of what you spilled to fight for 8 s.', K('life-tap', { op: 'onCast', effect: { kind: 'buff', buff: { id: 'combo-pit', name: 'Blood for the Pit', dur: 8, color: '#c84a3a', stats: { pet: 40 } } } }), K('life-tap', { op: 'onCast', effect: { kind: 'summon', pet: 'imp', count: 1, dur: 8 } })),
         passive: { name: 'Master Demonologist', text: 'Your demons deal 25% more damage and have 25% more health.', mods: [S('pet', 25)] },
       },
       {
@@ -41,6 +43,7 @@ export const WARLOCK: Kit = {
         color: '#ff4f2a',
         role: 'Fire and explosive burst',
         skill: 'chaos-bolt',
+        combo: combo('Pyre', 'Nothing you have cursed dies quietly: it goes up in fire, burning everything around it (once a second), and the pyre makes your next Ruin Bolt cast at once.', when('pyre', 'kill', { kind: 'nova', radius: 48, mul: 1.8, ref: true, dmgType: 'fire', status: { status: 'burn', dur: 3, power: 0.25 } }, 'A Cursed enemy that dies bursts into fire.', { status: 'curse', icd: 1 }), when('pyre-bolt', 'kill', { kind: 'buff', buff: next('pyre', 'Pyre', '#ff7a3d', 'chaos-bolt', 8, { instant: true }) }, 'A Cursed death readies an instant Ruin Bolt.', { status: 'curse', icd: 1 })),
         passive: { name: 'Ruin', text: '+10% fire damage and +20% critical damage.', mods: [S('fire', 10), S('critDmg', 20)] },
       },
     ],
@@ -55,7 +58,7 @@ export const WARLOCK: Kit = {
     sk('skill', 28, 'Shadow Snare', 'A snare of shadow on the ground: the first enemy to step on it is stunned.', spec({ id: 'shadow-snare', cast: 'trap', aim: 'ground', range: 110, cooldown: 12, damage: 12, dmgType: 'shadow', area: 30, duration: 12, cost: 10, onHit: [{ kind: 'status', status: 'stun', dur: 1.5, power: 1 }], extra: { maxTraps: 2, arm: 0.3 }, tags: ['trap', 'shadow', 'control'] })),
     sk('skill', 36, 'Harvest', 'Reaps a soul: far heavier against enemies below 30% health, and a kill heals you.', spec({ id: 'harvest', cast: 'mark', range: 150, cooldown: 8, damage: 26, dmgType: 'shadow', cost: 10, bonusVs: [{ status: 'lowHp', pct: 120 }], onKill: [{ kind: 'heal', pct: 8 }], tags: ['mark', 'shadow', 'execute'] })),
     sk('skill', 46, 'Gate Step', 'Step through a gate and back: you blink away, and 3 seconds later you return to where you stood.', spec({ id: 'gate-step', cast: 'blink', range: 90, cooldown: 12, cost: 8, dmgType: 'shadow', extra: { recall: 3 }, onCast: [{ kind: 'riftBurst', radius: 40, mul: 1.2, delay: 0.6 }], tags: ['movement', 'shadow'] })),
-    sk('basic', 1, 'Shadow Bolt', 'A bolt of shadow. Each hit gives back a little mana.', spec({ id: 'shadow-bolt', cast: 'projectile', range: 150, cooldown: 0.45, damage: 11, dmgType: 'shadow', speed: 210, radius: 3, extra: { manaOnHit: 2 }, look: 'shadowbolt', tags: ['projectile', 'basic'] })),
+    sk('basic', 1, 'Shadow Bolt', 'A slow, heavy bolt of shadow that leaves rot behind: what it hits goes on taking a quarter of the hit every second for 4 s. Each hit gives back a little mana.', spec({ id: 'shadow-bolt', cast: 'projectile', range: 150, cooldown: 0.62, damage: 13, dmgType: 'shadow', speed: 185, radius: 4, extra: { manaOnHit: 2 }, onHit: [{ kind: 'status', status: 'curse', dur: 4, power: 0.25 }], look: 'shadowbolt', tags: ['projectile', 'basic'] })),
     sk(
       'skill',
       1,
@@ -110,7 +113,7 @@ export const WARLOCK: Kit = {
       10,
       'Ruin Bolt',
       'A slow, heavy bolt of chaos fire that tears through the first enemy into the next.',
-      spec({ id: 'chaos-bolt', cast: 'projectile', range: 170, cooldown: 8, damage: 84, castTime: 1.5, dmgType: 'fire', speed: 190, radius: 6, pierce: 1, knock: 80, cost: 20, look: 'chaosbolt', tags: ['projectile', 'fire'] }),
+      spec({ id: 'chaos-bolt', cast: 'projectile', range: 170, cooldown: 8, damage: 84, castTime: 1.1, dmgType: 'fire', speed: 190, radius: 6, pierce: 1, knock: 80, cost: 20, look: 'chaosbolt', tags: ['projectile', 'fire'] }),
     ),
     sk(
       'ultimate',
@@ -134,7 +137,7 @@ export const WARLOCK: Kit = {
         tags: ['aoe', 'fire', 'summon', 'ultimate'],
       }),
     ),
-    sk('dodge', 1, 'Demonic Step', 'Slip through the shadows a few steps away, untouchable for a moment.', spec({ id: 'demonic-step', cast: 'dash', range: 52, cooldown: 5, duration: 0.16, tags: ['movement', 'dodge'] })),
+    sk('dodge', 1, 'Demonic Step', 'Step through the shadows and leave a shade of yourself where you stood: your enemies go for it while it lasts.', spec({ id: 'demonic-step', cast: 'dash', range: 52, cooldown: 5, duration: 0.16, onCast: [{ kind: 'summon', pet: 'shade-decoy', count: 1, dur: 2.5 }], tags: ['movement', 'dodge'] })),
   ],
   talents: [
     /* --------------------------------------------------------- Affliction */
@@ -179,11 +182,11 @@ export const WARLOCK: Kit = {
       'Shadow Bolt hits on Cursed enemies have a 15% chance to make Wild Hex ready again (once every 4 s).',
       [P({ id: 'nightfall', on: 'hit', skill: 'shadow-bolt', status: 'curse', chance: 0.15, icd: 4, effect: { kind: 'resetCd', skill: 'unstable-affliction' }, text: 'Shadow Bolt hits on Cursed enemies can make Wild Hex ready again.' })],
     ),
-    T(0, 3, 1, 'shadow-embrace', 'Dusk’s Embrace', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
+    T(0, 3, 1, 'shadow-embrace', 'Dusk’s Embrace', 3, 'power', 'Shadow Bolt deals +8% damage per rank to Cursed enemies.', [K('shadow-bolt', { op: 'bonusVs', status: 'curse', pct: 8 })]),
     T(0, 3, 2, 'soul-siphon', 'Soul Leech', 2, 'drain', 'Drain Life lasts 20% longer per rank.', [K('drain-life', { op: 'duration', pct: 20 })], 'siphon-life'),
     T(0, 3, 3, 'fel-endurance', 'Hellforged Endurance', 2, 'heart', '+5% max health per rank.', [S('hpPct', 5)]),
     T(0, 4, 0, 'drain-soul', 'Drain Soul', 1, 'skull', 'Drain Life deals +50% damage to enemies below 30% health.', [K('drain-life', { op: 'bonusVs', status: 'lowHp', pct: 50 })]),
-    T(0, 4, 1, 'fel-concentration', 'Infernal Focus', 3, 'clock', '+3% haste per rank.', [S('haste', 3)]),
+    T(0, 4, 1, 'fel-concentration', 'Infernal Focus', 3, 'clock', 'Demonic Step leaves a burst of shadow where you stood, harder per rank, and what it catches rots for 4 s.', [K('demonic-step', { op: 'onCast', effect: { kind: 'nova', radius: 36, mul: 0.5, ref: true, dmgType: 'shadow', status: { status: 'curse', dur: 4, power: 0.25 } } })]),
     T(0, 4, 2, 'pandemic', 'Pandemic', 2, 'clock', 'Wild Hex recharges 12% faster per rank.', [cdr('unstable-affliction', 12)]),
     T(0, 5, 0, 'deaths-embrace', 'Grave’s Embrace', 2, 'skull', 'Every skill deals +8% damage per rank to enemies below 30% health.', [K('*', { op: 'bonusVs', status: 'lowHp', pct: 8 })]),
     T(0, 5, 2, 'soul-rot', 'Soul Rot', 3, 'curse', 'Rotting Curse and Wild Hex deal +6% damage per rank.', [dmg('corruption', 6), dmg('unstable-affliction', 6)]),
@@ -204,7 +207,7 @@ export const WARLOCK: Kit = {
     T(1, 0, 1, 'demonic-embrace', 'Fiend’s Embrace', 2, 'heart', '+5% max health per rank.', [S('hpPct', 5)]),
     T(1, 0, 2, 'fel-domination', 'Iron Binding', 1, 'demon', 'Summon Imp and Summon Pit Knight cost 50% less mana.', [K('summon-imp', { op: 'cost', pct: 50 }), K('summon-felguard', { op: 'cost', pct: 50 })]),
     T(1, 1, 0, 'howl-of-terror', 'Shriek of Dread', 1, 'fear', 'Fear also terrifies every enemy around the target for 3 s.', [K('fear', { op: 'onHit', effect: { kind: 'fear', radius: 40, dur: 3 } })]),
-    T(1, 1, 1, 'demonic-knowledge', 'Fiendlore', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
+    T(1, 1, 1, 'demonic-knowledge', 'Fiendlore', 3, 'power', 'After a Demonic Step your demons hit 10% harder per rank for 4 s.', [K('demonic-step', { op: 'onCast', effect: { kind: 'buff', buff: { id: 'fiendlore', name: 'Fiendlore', dur: 4, stats: { pet: 10 }, color: '#c84a3a' } } })]),
     T(1, 1, 2, 'demon-skin', 'Fiend Hide', 2, 'shield', '+8 armor per rank.', [S('armor', 8)]),
     T(1, 2, 0, 'soul-link', 'Soul Link', 2, 'shield', 'Blood Tithe also shields you for 8% of your health per rank for 5 s.', [K('life-tap', { op: 'onCast', effect: { kind: 'shield', pct: 8, dur: 5 } })]),
     T(
@@ -221,7 +224,7 @@ export const WARLOCK: Kit = {
     ),
     T(1, 2, 2, 'mana-feed', 'Mana Offering', 2, 'clock', 'Blood Tithe recharges 15% faster per rank.', [cdr('life-tap', 15)]),
     T(1, 3, 0, 'dark-bargain', 'Dark Bargain', 1, 'demon', 'Blood Tithe also calls a Voidwalker for 10 s that draws enemies to it.', [K('life-tap', { op: 'onCast', effect: { kind: 'summon', pet: 'voidwalker', count: 1, dur: 10 } })], 'soul-link'),
-    T(1, 3, 1, 'demonic-tactics', 'Fiendish Tactics', 3, 'crit', '+2% critical hit chance per rank.', [S('crit', 2)]),
+    T(1, 3, 1, 'demonic-tactics', 'Fiendish Tactics', 3, 'crit', 'Shadow Bolt marks its prey for the pit: what it hits takes 3% more damage per rank from everything for 4 s.', [onHit('shadow-bolt', { kind: 'status', status: 'mark', dur: 4, power: 3 })]),
     T(1, 3, 2, 'infernal-fury', 'Infernal Fury', 2, 'meteor', 'Summon Brimstone Golem deals +20% damage per rank.', [dmg('summon-infernal', 20)]),
     T(1, 3, 3, 'fel-armor', 'Brimstone Armor', 2, 'heal', '+1 health regen per second per rank.', [S('regen', 1)]),
     T(1, 4, 0, 'call-of-the-nether', 'Call of the Pit', 2, 'star', 'Kills charge your ultimate by 2% per rank.', [P({ id: 'call-of-the-nether', on: 'kill', chance: 1, icd: 0, effect: { kind: 'charge', pct: 2 }, text: 'Kills charge your ultimate.' })]),
@@ -246,7 +249,7 @@ export const WARLOCK: Kit = {
     T(2, 0, 1, 'bane', 'Bane', 2, 'explode', 'Ruin Bolt deals +10% damage per rank.', [dmg('chaos-bolt', 10)]),
     T(2, 0, 2, 'incinerate', 'Incinerate', 1, 'fire', 'Shadow Bolt turns to fire.', [K('shadow-bolt', { op: 'convert', dmgType: 'fire', look: 'firebolt' })]),
     T(2, 1, 0, 'immolate', 'Immolate', 1, 'burn', 'Shadow Bolt sets enemies Burning: 25% of its hit as fire damage every second for 3 s.', [onHit('shadow-bolt', { kind: 'status', status: 'burn', dur: 3, power: 0.25 })], 'incinerate'),
-    T(2, 1, 1, 'devastation', 'Devastation', 3, 'crit', '+2% critical hit chance per rank.', [S('crit', 2)]),
+    T(2, 1, 1, 'devastation', 'Devastation', 3, 'crit', 'Shadow Bolt deals +8% damage per rank to Burning enemies.', [K('shadow-bolt', { op: 'bonusVs', status: 'burn', pct: 8 })]),
     T(2, 1, 2, 'conflagrate', 'Conflagrate', 1, 'burn', 'Ruin Bolt deals +30% damage to Burning enemies.', [K('chaos-bolt', { op: 'bonusVs', status: 'burn', pct: 30 })]),
     T(
       2,
@@ -262,7 +265,7 @@ export const WARLOCK: Kit = {
     T(2, 2, 1, 'shadow-and-flame', 'Shadow and Flame', 3, 'crit', '+8% critical damage per rank.', [S('critDmg', 8)]),
     T(2, 2, 2, 'hellrain', 'Hellrain', 2, 'aoe', 'Rain of Fire covers 15% more area per rank.', [K('rain-of-fire', { op: 'area', pct: 15 })]),
     T(2, 3, 0, 'shadowburn', 'Shadowsear', 1, 'skull', 'Ruin Bolt deals +50% damage to enemies below 30% health.', [K('chaos-bolt', { op: 'bonusVs', status: 'lowHp', pct: 50 })]),
-    T(2, 3, 1, 'fel-fire', 'Pitfire', 3, 'power', '+3% damage per rank.', [S('power', 3)]),
+    T(2, 3, 1, 'fel-fire', 'Pitfire', 3, 'power', 'Demonic Step leaves fire where you stood, harder per rank, and what it catches Burns for 3 s.', [K('demonic-step', { op: 'onCast', effect: { kind: 'nova', radius: 36, mul: 0.5, ref: true, dmgType: 'fire', status: { status: 'burn', dur: 3, power: 0.15 } } })]),
     T(2, 3, 2, 'aftermath', 'Aftermath', 2, 'clock', 'Rain of Fire lasts 25% longer per rank.', [K('rain-of-fire', { op: 'duration', pct: 25 })]),
     T(2, 3, 3, 'nether-protection', 'Void Warding', 2, 'shield', '+8 armor per rank.', [S('armor', 8)]),
     T(2, 4, 0, 'brimstone', 'Brimstone', 1, 'stun', 'Every Rain of Fire tick has a 10% chance to stun the enemy it hits for 1 s.', [onHit('rain-of-fire', { kind: 'status', status: 'stun', dur: 1, power: 1, chance: 0.1 })], 'hellrain'),

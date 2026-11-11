@@ -28,6 +28,8 @@ export const SPIRE_OF_THE_RIFT_ART: ZoneArt = {
     // black glass older than the Spire, with a heart of grieflight
     'veil-sentinel': recolor(V['the-tearborn']!, { n: '#1a1428', N: '#2e2444', m: '#4a3a6a', p: '#e0d8ff', P: '#a890e0', Q: '#6a50a8', q: '#3a2870', c: '#ffffff', C: '#c8b0ff', r: '#c58cff', R: '#f0e0ff', w: '#ffffff', e: '#ffffff' }),
     // a tall man in white with nothing where his face should be
+    // the astronomer of the Weightless Gallery, robed in starlight, floating off her floor
+    'ilvane-the-unmoored': recolor(RIFTSCAR_ART.foes['pale-acolyte']!, { w: '#d8d0f4', r: '#c8b8ff', R: '#f0eaff', d: '#e8e0fa' }),
     'herald-in-the-spire': recolor(CREATURE_ART.morgrave!, { p: '#f2eefa', P: '#c8c2d8', k: '#d8d4e4', e: '#d8d4e4', E: '#f0e8ff', g: '#e8e4f0', w: '#d8d4e4', s: '#e0dcea', o: '#c58cff', O: '#f4e4ff', r: '#c58cff', v: '#e8e4f0' }),
   },
   looks: {},

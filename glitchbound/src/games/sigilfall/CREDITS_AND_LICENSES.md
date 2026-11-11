@@ -18,14 +18,36 @@ packs below into the game's own files in `public/games/sigilfall/3d/` (the packs
 | Ultimate Animated Animals, Farm Animals, Animated Dinosaurs | Quaternius, https://quaternius.com | The pack pages say CC0; the license page shows QAL v1.0, which allows use inside a game and forbids redistributing the files alone. We ship them only as part of the game. | The real beasts of the world: wolves, boars, bears, deer, horses, sheep, pigs, raptors. Monsters come from one family instead (KayKit, and shapes built in the asset script). The mounts' harts and boars are built on the stag and the bull, and the drakes on the T-Rex, with their wings, horns and saddles made in `render3d/mountKit.ts`. |
 | Low-Poly Horses Pack, Plus tier ($4.99; 9 of its 17 horses ship) | Amir, https://ahmedamirdev.itch.io/amir-low-poly-horses-pack | The store page: "Free & Plus tiers: Use in personal and commercial projects. Credit is appreciated but not required." No license file comes with the download. The page says more about changing the models only for its Source tier ($5.99): "Full rights to modify and redistribute your modified versions." See LEGAL_REVIEW.md. | The riding horses, repainted and dressed in `render3d/mountKit.ts` |
 
-## Sound (2026-11-04)
+## Sound and music (2026-11-11)
+
+`scripts/sigilfall-sounds.mjs` builds every file from the packs below into `public/games/sigilfall/audio/` and
+`public/games/sigilfall/music/` (cut, made mono or shortened, and leveled); the packs themselves stay out of the
+repository. `audio/samples.ts` says which game sound plays which file, `audio/tracks.ts` which land plays which piece.
+
+**Two of these must be credited where players can see it** (they are, in Settings › Music and sound credits): the
+music and the Little Robot Sound Factory library. Both are Creative Commons Attribution: name the author, link the
+source and the license, and say the work was changed.
 
 | Sounds | Author | Terms | What we use |
 | --- | --- | --- | --- |
-| RPG Sound Pack | artisticdude, https://opengameart.org/content/rpg-sound-pack | CC0 | Sword swings and clashes, spell whooshes, creature voices (giants, ogres, beasts, shades, slimes, beetles), coins, bottles, armor, doors, menu sounds. `scripts/sigilfall-sounds.mjs` builds them into `public/games/sigilfall/audio/`; the pack stays out of the repository. |
-| Orchestral and World Music Pack | Ragnar Random, https://opengameart.org/content/orchestral-and-world-music-pack | CC0 | The soundtrack: 12 pieces (`audio/tracks.ts` says which land plays which), built into `public/games/sigilfall/music/`. |
+| The soundtrack: 22 pieces | Kevin MacLeod, https://incompetech.com | **CC BY 4.0**, https://creativecommons.org/licenses/by/4.0/ . Credit required. Changed: each piece is cut to at most 150 seconds with a fade and leveled. | "Ascending the Vale" (title), "Suonatore di Liuto" (villages), "Lord of the Land" (courts), "Minstrel Guild" (taverns), "Agnus Dei X" (chapels), "Enchanted Valley" (woods), "Teller of the Tales" (roads), "Skye Cuillin" (heights), "Moorland" (coasts), "Ibn Al-Noor" (deserts), "Curse of the Scarab" (the tomb), "Tabuk" (jungle), "The Hive" (forges), "Ossuary 6 - Air" (the barrows), "Dark Times" (Highwall), "The Dread" (dark woods), "Frozen Star" (snow), "Echoes of Time v2" (the Riftscar), "Ossuary 5 - Rest" (crypts), "Crypto" (caves), "Five Armies" (bosses), "Heroic Age" (sieges, the Ring) |
+| Fantasy Sound Effects Library | Little Robot Sound Factory, https://www.littlerobotsoundfactory.com (from https://opengameart.org/content/fantasy-sound-effects-library) | **CC BY 3.0**, https://creativecommons.org/licenses/by/3.0/ . Credit required: "Attribute Little Robot Sound Factory, and provide this link where possible: www.littlerobotsoundfactory.com". Changed: cut and leveled. | Spell chimes, conjuring, the rift's call, a dark bolt, a trap, a bag, two growls, the level, quest, victory and defeat jingles, the cave's air (14 files) |
+| RPG Sound Pack; Freeze Spell | artisticdude, https://opengameart.org/content/rpg-sound-pack | CC0 | Sword swings and clashes, creature voices (giants, ogres, beasts, shades, slimes, beetles), coins, bottles, armor, cloth, doors; the frost spell |
+| 75 CC0 breaking / falling / hit sfx; 100 CC0 SFX; 100 CC0 SFX #2; 80 CC0 RPG SFX | rubberduck, https://opengameart.org/users/rubberduck | CC0 | Blows landing, thuds, metal hits, rocks, shatters; slams, a boom, a bell, a gong; thunder, the water's air; stones, fire, arcs, gems |
+| Fantasy Sound Effects (Tinysized SFX); Fantasy Weapons and Apparel SFX Library | Vehicle, https://opengameart.org/users/vehicle | CC0 | Steel on steel, lightning, whooshes; arrows |
+| 10 Impact / Shield Blocks | StarNinjas, https://opengameart.org/users/starninjas | CC0 | A shield taking a blow |
+| Interface Sounds | Kenney, https://kenney.nl | CC0 | The menus: clicks, panels opening and closing, a choice made, a refusal |
+| Cure Magic | Someoneman, https://opengameart.org/users/someoneman | CC0 | Healing |
+| Teleport Spell | Ogrebane, https://opengameart.org/users/ogrebane | CC0 | A blink |
+| Ghost breath | qubodup, https://opengameart.org/users/qubodup | CC0 | A drain of life |
+| Forest Ambience | TinyWorlds, https://opengameart.org/users/tinyworlds | CC0 | The air of the woods |
+| AMB Morning Sounds | Kresiek The Furry, https://opengameart.org | CC0 | The air of villages and fields |
+| Wind whoosh loop | SketchMan3, https://opengameart.org/users/sketchman3 | CC0 | The air of the heights and the dead lands |
 
-The rest of the effects are synthesized in code (`audio/`), and so is the procedural score that stands in if a piece can't be loaded.
+Two sounds have no recording and are synthesized in code (`audio/sound.ts`): a war horn and a scene's two low notes.
+So is the procedural score that stands in if a piece of music can't be loaded (`audio/songs.ts`).
+
+The soundtrack before 2026-11-11 (Orchestral and World Music Pack by Ragnar Random, CC0) no longer ships.
 
 ## 2D art
 
@@ -46,7 +68,7 @@ owner asked for one art language, and Royal Keep covers the whole outdoor world)
 Gloomvault states no provenance; its painted look reads as AI-assisted (ASSET_AUDIT.md). The license still grants
 its use; what it means is that nobody may own a copyright in those pieces, ours included.
 
-Everything else in Sigilfall (heroes, monsters, bosses, item icons, UI, sound and music) is made in code for the game.
+Everything else in Sigilfall (item icons, UI) is made in code for the game; its sound and music are credited above.
 The skill and talent icons were painted in code too until 2026-10-29; those glyphs remain as the fallback while the
 icon atlas loads.
 Fonts are the site's (OFL 1.1: Bricolage Grotesque, Space Mono).

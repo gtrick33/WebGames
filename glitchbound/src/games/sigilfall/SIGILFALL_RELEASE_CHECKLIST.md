@@ -41,7 +41,7 @@ browser this cycle), **UNVERIFIED** (not checked, with the reason).
 | Act VI (every faction's troop by what was done), Crownfall's four stages and Elyra's choice, the Epilogue, the postgame threads and Heroic/Mythic | VERIFIED | `sigilfall-finale`, `sigilfall-dungeon-duskspire`, `-vaelmoor-remembered`, `-crown-catacombs` |
 | The Last March camp, the memory of Vaelmoor, Haldor's bell in rebuilt Briarhollow, Elyra by Lastlight's fire, Ysane's echo | MANUALLY VERIFIED | review presets in the dev browser; docs/review/phase-14 |
 | Frame time on a real phone in the heaviest battle | UNVERIFIED | no device in this cycle; dev-browser figures in docs/review/README.md |
-| Audio (volumes, mute, the new stingers and the bell) | UNVERIFIED | synthesized; not listened to in this cycle |
+| Audio (volumes, mute, the recorded effects, ambience and soundtrack of 2026-11-11) | UNVERIFIED | chosen by description and loudness, never listened to; `audio/samples.ts` and `audio/tracks.ts` are where to change them |
 
 ## Known issues accepted for release
 

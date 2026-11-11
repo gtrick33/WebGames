@@ -30,7 +30,7 @@ export const potionCap = (c: Pick<Character, 'perks'>): number => POTION_CAP + (
 export const PERKS: Record<PerkId, { name: string; text: string }> = {
   satchel: { name: 'Millbrook Satchel', text: '6 more bag slots' },
   flask: { name: 'Tobin’s Flask', text: 'carry one more potion' },
-  mount: { name: 'Gullport Strider', text: 'a horse to ride outside fights (30% faster)' },
+  mount: { name: 'Millbrook Cob', text: 'a horse to ride outside fights (30% faster)' },
   hearth: { name: 'Homestone', text: 'return to the last waystone from anywhere' },
   'sigil-embers': { name: 'Sigil of Embers', text: '+4% health and power' },
   'sigil-tides': { name: 'Sigil of Tides', text: '+4% health and power' },
@@ -122,6 +122,8 @@ export interface Character {
   shopMount?: string;
   shopWorn?: Partial<Record<LookSlot, string>>;
   stats: { kills: number; deaths: number; time: number; runs: number; bestRun: number };
+  /** The title worn (a progress/titles.ts id; '' for none on purpose; unset: the warden's, once earned). */
+  title?: string;
   created: number;
   updated: number;
 }
@@ -307,10 +309,27 @@ export function chooseSpec(c: Character, tree: 0 | 1 | 2): boolean {
   const others = (def.forms ?? []).filter((f) => f.specSwap && f.specSwap.tree !== tree).map((f) => f.skill);
   c.skills = c.skills.map((id) => (id && others.includes(id) ? null : id)) as Character['skills'];
   autoSlotSkills(c);
-  // the specialization's ability goes on the bar even when it is full (in the last slot; what was there
-  // stays learned and can go back from the Skills screen)
-  const skill = def.trees[tree].skill;
-  if (!def.trees[tree].formOnly && !c.skills.includes(skill)) c.skills[3] = skill;
+  seatSpecSkill(c);
+  return true;
+}
+
+/**
+ * The specialization's ability goes on the bar even when the bar is full: in the last slot that is open (what was
+ * there stays learned and can go back from the Skills screen). It used to go in the fourth slot always, which
+ * opens at level 15: a hero who chose at level 10 could not use the one skill the choice was about for five levels.
+ * True when it moved anything (a hero saved in that state is put right as they load).
+ */
+export function seatSpecSkill(c: Character): boolean {
+  if (c.spec === null || c.level < SPEC_LEVEL) return false;
+  const tree = CLASSES[c.cls].trees[c.spec];
+  if (tree.formOnly) return false;
+  const last = ([3, 2, 1, 0] as const).find((i) => slotOpen(c, i));
+  if (last === undefined) return false;
+  const at = c.skills.indexOf(tree.skill);
+  if (at >= 0 && slotOpen(c, at as SkillIndex)) return false;
+  // (in a slot not open yet: it changes places with what the last open slot holds, which waits there for its level)
+  if (at >= 0) c.skills[at] = c.skills[last] ?? null;
+  c.skills[last] = tree.skill;
   return true;
 }
 

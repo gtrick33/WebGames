@@ -26,8 +26,9 @@ effects are Willosuna's. Nothing else enters without approval.
   tile by tile reads as a staircase); squares are paved rectangles with their corners cut.
 - **Buildings stand where they are drawn** (`data/buildingArt.ts`, `sim/map.ts`): the tiles the painted walls and
   roof cover are solid, nothing else on the lot is; the rest of the lot is a yard with a few things in it. A
-  building with a way in stands with its painted door over the step, and the step is marked: a warm pool of
-  light and two gold chevrons pointing through the door (and back out, indoors). Walking onto it goes through.
+  building with a way in stands with its painted door over the step, and the step is marked by light, not by an
+  arrow (since 2026-11-10): lamplight falls out of the door onto the step, and from inside daylight comes in at the
+  door (`render/effects.ts` wayLights). Walking onto it goes through.
 - **Indoors is peaceful**: no spells or blows in an inn or a chapel, and the skill bar is put away, so nothing
   covers a room's door.
 
@@ -186,8 +187,9 @@ Every visual phase saves desktop, phone and tablet screenshots in `docs/review/p
 
 ## Feedback conventions: sound and effects (blueprint Prompt 15)
 
-Every sound is synthesized (audio/sound.ts), on one bus per kind, under the master, music and effects volumes
-(Settings, saved).
+Every sound is a recording (audio/samples.ts; two with none are synthesized in audio/sound.ts), on one bus per kind,
+under the master, music and effects volumes (Settings, saved). The air of each land (audio/ambience.ts) plays under
+the effects and follows their volume.
 
 **A song for every land** (audio/songs.ts, played by audio/score.ts): each land has its own tune, key, meter and
 band. Briarhollow is a waltz on a soft flute with birds in the hedges; Emberwick a march; Brackenridge and the inns

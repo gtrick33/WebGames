@@ -1,6 +1,9 @@
 import * as THREE from 'three';
+import { zoneLight } from '../render/zoneLight';
+import { stoneGate, timberGate, type GateBuilt } from './gateways';
 import { hash2 } from '../core/math';
 import { modelOnLot, picBody } from '../data/buildingArt';
+import { ARENAS, type Floor } from '../data/dungeongen';
 import { REGIONS } from '../data/regions';
 import { GREAT, type GreatPart } from '../data/greatworks';
 import { THEMES, type ThemeLook, type TreeKind } from '../data/themes';
@@ -119,10 +122,6 @@ const FLOWERS = ['flower_redA', 'flower_yellowA', 'flower_purpleA'];
 
 /** A dungeon's way in that's a model of its own; the ones no model would do (a stair, a hole in a hill) are in doorways.ts. */
 const ENTRANCES: Record<string, { m: string; w: number; tint?: string }> = {
-  'barrow-of-kings': { m: 'crypt-large-door', w: 3 },
-  'gallows-keep': { m: 'gate', w: 3, tint: '#a09a90' },
-  'siege-of-highwall': { m: 'gate', w: 3.2 },
-  duskspire: { m: 'gate', w: 3.2, tint: '#7a7488' },
   'tomb-of-the-sun-king': { m: 'arch_gate', w: 3, tint: '#f0d8a0' },
   'spire-of-the-rift': { m: 'arch', w: 3, tint: '#c0a0f0' },
   'vaelmoor-remembered': { m: 'arch', w: 3, tint: '#d8d8f0' },
@@ -267,6 +266,28 @@ function colorsFor(m: MeshData, look: ThemeLook, id: string): Uint8Array {
   // (bone is bone, not timber, and hay, a pumpkin and a flower aren't timber either)
   if (!/ribcage|skull|bone_|pumpkin|haybale|flower_|crops_/.test(id)) harmonize(out, m.n);
   const roof = id.split('#')[1];
+  if (roof === 'evergreen') {
+    // an old pine keeps its needles whatever the land's leaves have turned to: its foliage a deep green, dark at the
+    // heart of each bough and lighter at its tip; its wood stays wood
+    const bark = hexRgb(look.bark);
+    for (let v = 0; v < m.n; v++) {
+      const i = v * 3;
+      // (by the model's own colors, before they were toned down: its needles are its strongest color)
+      const [h, s, l] = hsl(m.col[i]! / 255, m.col[i + 1]! / 255, m.col[i + 2]! / 255);
+      if (s > 0.45 && l > 0.3) {
+        const k = 0.62 + l * 0.9;
+        out[i] = Math.min(255, 38 * k);
+        out[i + 1] = Math.min(255, 92 * k);
+        out[i + 2] = Math.min(255, 58 * k);
+      } else if (h > 5 && h < 60) {
+        const f = 0.6 + l * 0.7;
+        out[i] = Math.min(255, bark[0] * 255 * f);
+        out[i + 1] = Math.min(255, bark[1] * 255 * f);
+        out[i + 2] = Math.min(255, bark[2] * 255 * f);
+      }
+    }
+    return out;
+  }
   if (roof) {
     const [rr, rg, rb] = hexRgb(`#${roof}`);
     for (let v = 0; v < m.n; v++) {
@@ -287,7 +308,8 @@ function colorsFor(m: MeshData, look: ThemeLook, id: string): Uint8Array {
     return [(lum + (r - lum) * k) * 0.93, (lum + (g - lum) * k) * 0.93, (lum + (b - lum) * k) * 0.88];
   });
   const bark = hexRgb(look.bark);
-  const leafy = /^(Tree|Bush|Grass|tree_|plant|hanging)/.test(id);
+  // (a cactus too: the pack's own is a turquoise no desert grows)
+  const leafy = /^(Tree|Bush|Grass|tree_|plant|hanging|cactus)/.test(id);
   // (a flower's stem and a crop's leaves are the land's green; its bloom is its own)
   const sprout = /^(flower_|crops_)/.test(id);
   const rocky = /^(Rock|rock_|stone_)/.test(id);
@@ -351,12 +373,19 @@ const groundFrag = /* glsl */ `
   uniform vec3 uEdge;
   uniform float uIndoor;
   uniform float uLava;
+  uniform float uSnow;
+  uniform sampler2D uRoomA;
+  uniform sampler2D uRoomB;
   uniform float uTime;
   uniform vec4 uGrade;
   uniform vec4 uDark;
   uniform vec4 uSee;
   uniform vec3 uFlames[8];
   uniform vec4 uNight;
+  uniform vec4 uAmb;
+  uniform vec3 uFlameCol;
+  uniform sampler2D uAo;
+  uniform float uTrim;
   varying vec3 vW;
   float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
   float noise(vec2 p) {
@@ -375,7 +404,70 @@ const groundFrag = /* glsl */ `
     float wob = (n - 0.5) * 0.22 + (n2 - 0.5) * 0.1;
     vec3 c;
     float ck = mod(floor(p.x) + floor(p.y), 2.0);
-    if (uIndoor > 0.5) {
+    vec2 rt = (floor(p) + 0.5) / uSize;
+    vec4 ra = texture2D(uRoomA, rt);
+    vec4 rb = texture2D(uRoomB, rt);
+    if (uIndoor > 0.5 && ra.a > 0.05) {
+      // a boss's chamber, floored in its own stone (data/dungeongen.ts ARENAS)
+      vec3 A = ra.rgb;
+      vec3 B = rb.rgb;
+      if (ra.a < 0.35) {
+        // flagstones in courses
+        vec2 s = p * vec2(1.6, 2.2);
+        s.x += mod(floor(s.y), 2.0) * 0.5;
+        vec2 id = floor(s);
+        vec2 f = fract(s) - 0.5;
+        float line = smoothstep(0.43, 0.5, max(abs(f.x), abs(f.y)));
+        c = mix(A, B, hash(id));
+        c *= 0.92 + n * 0.16;
+        c = mix(c, c * 0.62, line * 0.7);
+      } else if (ra.a < 0.6) {
+        // great polished squares of marble in two stones, veined, a sheen drifting over them
+        vec2 s = p * 0.5;
+        vec2 id = floor(s);
+        vec2 f = fract(s) - 0.5;
+        c = mix(A, B, mod(id.x + id.y, 2.0));
+        // (no veins drawn as lines: at this size they read as scribbles; the stone clouds from square to square instead)
+        c *= 0.9 + noise(p * 0.45 + id * 3.1) * 0.2;
+        c += vec3(0.04) * smoothstep(0.35, 0.95, noise(p * 0.22 + 5.0));
+        // a band inlaid a little inside each square's edge, and the joint between squares
+        float e = max(abs(f.x), abs(f.y));
+        // (both wide and soft-edged: a line a pixel wide crawls as the view moves)
+        float inlay = smoothstep(0.375, 0.405, e) - smoothstep(0.43, 0.46, e);
+        c = mix(c, c * 1.22 + 0.02, inlay * 0.45);
+        float line = smoothstep(0.465, 0.5, e);
+        c = mix(c, c * 0.5, line);
+      } else if (ra.a < 0.8) {
+        // rough ground: earth, rock or ice, mottled, a crack wandering through it
+        c = mix(A, B, smoothstep(0.25, 0.75, noise(p * 0.7)));
+        c *= 0.9 + noise(p * 1.9 + 4.0) * 0.14;
+        // (a crack here and there, faint, only where the ground is at its darkest: not an outline round every patch)
+        float crack = smoothstep(0.03, 0.0, abs(noise(p * 0.85 + 11.0) - 0.5)) * smoothstep(0.55, 0.3, noise(p * 0.3 + 2.0));
+        c = mix(c, c * 0.7, crack * 0.4);
+        c *= 0.94 + noise(p * 4.5) * 0.1;
+      } else if (ra.a < 0.95) {
+        // boards, their seams staggered, the grain running along them
+        vec2 s = vec2(p.x * 0.8, p.y * 2.6);
+        float row = floor(s.y);
+        s.x += hash(vec2(row, 3.0)) * 4.0;
+        vec2 id = vec2(floor(s.x), row);
+        vec2 f = fract(s);
+        c = mix(A, B, hash(id));
+        c *= 0.93 + noise(vec2(p.x * 5.0, row * 3.0)) * 0.1;
+        float seam = max(smoothstep(0.07, 0.0, f.y), smoothstep(0.975, 1.0, f.x));
+        c = mix(c, c * 0.55, seam);
+      } else {
+        // a mosaic: small tiles laid in diamonds of two colors (a pattern, not a scatter: a scatter reads as noise)
+        vec2 s = p * 2.0;
+        vec2 id = floor(s);
+        vec2 f = fract(s) - 0.5;
+        float diamond = mod(floor((id.x + id.y) / 3.0) + floor((id.x - id.y) / 3.0), 2.0);
+        c = mix(A, B, diamond);
+        c *= 0.96 + hash(id + 3.0) * 0.07;
+        float line = smoothstep(0.42, 0.5, max(abs(f.x), abs(f.y)));
+        c = mix(c, c * 0.66, line * 0.6);
+      }
+    } else if (uIndoor > 0.5) {
       // fitted flagstones, worn unevenly (no grid: the stones lie in courses, each its own shade)
       vec2 s = p * vec2(1.6, 2.2);
       s.x += mod(floor(s.y), 2.0) * 0.5;
@@ -384,7 +476,31 @@ const groundFrag = /* glsl */ `
       float line = smoothstep(0.43, 0.5, max(abs(f.x), abs(f.y)));
       c = mix(uA, uB, hash(id));
       c *= 0.9 + n * 0.2;
-      c = mix(c, uEdge, line * 0.45);
+      // each stone stands a little proud of its joint: light along its upper left edge, shade along its lower right
+      float proud = smoothstep(0.3, 0.43, max(-f.x, -f.y)) - smoothstep(0.3, 0.43, max(f.x, f.y));
+      c *= 1.0 + proud * 0.09 * (1.0 - line);
+      c *= 0.95 + hash(id + 9.0) * 0.1;
+      c = mix(c, uEdge * 0.8, line * 0.62);
+    } else if (uSnow > 0.5) {
+      // snow (no grain: grain on white reads as pixels): soft drifts, the hollows between them holding a cool blue
+      // shade, ripples the wind has carved bending round the drifts, and a few crystals catching the light
+      float drift = noise(p * 0.21 + 3.0) * 0.65 + noise(p * 0.55 + 1.7) * 0.35;
+      c = mix(uA, uB, smoothstep(0.25, 0.8, drift));
+      float hollow = smoothstep(0.46, 0.14, drift);
+      c = mix(c, c * vec3(0.82, 0.89, 1.05), hollow * 0.6);
+      c *= 0.95 + noise(p * 0.17 + 7.0) * 0.1;
+      vec2 q = p + vec2(noise(p * 0.3) * 2.4, noise(p * 0.3 + 9.0) * 2.4);
+      float rip = sin(q.x * 2.6 + q.y * 1.1);
+      float crest = smoothstep(0.55, 1.0, rip) * (0.55 + 0.45 * noise(p * 0.8 + 4.0));
+      float lee = smoothstep(-0.25, -0.95, rip) * (0.55 + 0.45 * noise(p * 0.8 + 4.0));
+      c *= 1.0 + crest * 0.055 - lee * 0.045;
+      c = mix(c, c * vec3(0.9, 0.95, 1.06), lee * 0.5);
+      vec2 gl = p * 9.0;
+      vec2 gi = floor(gl);
+      float h = hash(gi);
+      float glint = step(0.982, h) * smoothstep(0.34, 0.0, length(fract(gl) - 0.5));
+      glint *= 0.45 + 0.55 * sin(uTime * 2.3 + h * 60.0);
+      c += vec3(0.85, 0.92, 1.0) * max(glint, 0.0) * 0.7;
     } else {
       // grass in big soft blotches over a checker a player's eye can measure distance by
       c = mix(uA, uB, smoothstep(0.3, 0.7, n));
@@ -392,9 +508,30 @@ const groundFrag = /* glsl */ `
       c *= 0.86 + noise(p * 0.17 + 7.0) * 0.26;
       c *= 0.95 + noise(p * 6.0) * 0.1;
       c *= 1.0 + (ck - 0.5) * 0.01;
+      // open ground isn't one lawn: wide patches where it grows lush and dark, others worn dry and pale, and a scatter
+      // of small flowers and clover through it (soft-edged specks, a few to a tile, more where it's lush)
+      float lay = noise(p * 0.085 + 13.0) * 0.7 + noise(p * 0.23 + 4.0) * 0.3;
+      float lush = smoothstep(0.54, 0.74, lay);
+      float dry = smoothstep(0.44, 0.24, lay);
+      c = mix(c, c * vec3(0.84, 0.93, 0.8), lush * 0.75);
+      c = mix(c, c * vec3(1.1, 1.05, 0.84) + vec3(0.02, 0.015, 0.0), dry * 0.6);
+      vec2 sg = p * 3.2;
+      vec2 si = floor(sg);
+      float sh = hash(si + 21.0);
+      vec2 so = vec2(hash(si + 3.0), hash(si + 7.0)) * 0.6 + 0.2;
+      float speck = step(0.9 - lush * 0.07, sh) * smoothstep(0.2, 0.06, length(fract(sg) - so));
+      vec3 bloom = sh > 0.965 ? vec3(1.0, 0.95, 0.7) : sh > 0.93 ? vec3(0.95, 0.97, 1.0) : c * 1.22;
+      c = mix(c, bloom, speck * (sh > 0.93 ? 0.55 : 0.5));
     }
     float sand = smoothstep(0.46, 0.54, m.b + wob);
-    c = mix(c, mix(uSandA, uSandB, n), sand);
+    // (sand and bare earth in drifts, rippled a little by the wind, with pebbles in it: not one flat color)
+    vec3 sc = mix(uSandA, uSandB, n);
+    sc *= 0.9 + noise(p * 0.11 + 5.0) * 0.2;
+    sc *= 1.0 + sin(p.x * 1.1 + p.y * 2.3 + noise(p * 0.35 + 2.0) * 5.0) * 0.022;
+    vec2 pg = p * 4.0;
+    float ph = hash(floor(pg) + 31.0);
+    sc = mix(sc, sc * 0.72, step(0.95, ph) * smoothstep(0.22, 0.08, length(fract(pg) - 0.5)));
+    c = mix(c, sc, sand);
     float path = smoothstep(0.46, 0.54, m.r + wob);
     vec3 pc = mix(uPathA, uPathB, n * 0.7 + n2 * 0.3);
     float pathShade = smoothstep(0.54, 0.46, m.r + wob + 0.1);
@@ -437,7 +574,33 @@ const groundFrag = /* glsl */ `
     c *= 1.0 - foot;
     float lum = dot(c, vec3(0.3, 0.59, 0.11));
     c = mix(vec3(lum), c, 0.84) * vec3(0.99, 0.97, 0.91);
+    // the ground is darker along the foot of what's built on it: a wall, a cliff, a column (the light doesn't get in there)
+    float ao = texture2D(uAo, uv).r;
+    // a built place's floor is finished where it meets its walls: a course of stone set along them and round each
+    // column's foot, a lighter line inside it (not on a boss's rough ground, nor in a cave)
+    if (uTrim > 0.5 && !(ra.a >= 0.6 && ra.a < 0.8) && m.g < 0.3) {
+      // (close in against the wall, and quiet: out on the floor it reads as a ring drawn round the room)
+      float line = smoothstep(0.34, 0.39, ao) - smoothstep(0.43, 0.48, ao);
+      c = mix(c, c * 0.82, smoothstep(0.43, 0.5, ao) * 0.6);
+      c = mix(c, c * 1.16 + 0.012, line * 0.4);
+    }
+    c *= 1.0 - smoothstep(0.02, 0.75, ao) * (uIndoor > 0.5 ? 0.5 : 0.3);
     c = mix(c, uGrade.rgb, uGrade.a);
+    if (uAmb.a > 0.0) {
+      // a room under a roof: its own dimness, each fire's pool in the fire's color, and the light the hero carries
+      float lit = 0.0;
+      for (int i = 0; i < 8; i++) {
+        if (uFlames[i].z > 0.0) {
+          float t = 1.0 - clamp(length(vW.xz - uFlames[i].xy) / (uFlames[i].z * 1.3), 0.0, 1.0);
+          lit += t * t;
+        }
+      }
+      float hero = 1.0 - smoothstep(1.5, 9.5, length(vW.xz - uSee.xz));
+      float f = 1.0 - exp(-lit * 1.5);
+      vec3 l = mix(uAmb.rgb, uFlameCol * 1.12, f * 0.78);
+      l += (vec3(1.0) - l) * hero * 0.5;
+      c *= mix(vec3(1.0), l, uAmb.a);
+    }
     if (uNight.a > 0.0) {
       float fire = 0.0;
       for (int i = 0; i < 8; i++) {
@@ -507,9 +670,81 @@ function groundUnderThings(map: TileMap): Uint8Array {
   return out;
 }
 
-export function buildGround(map: TileMap, look: ThemeLook): THREE.Mesh {
+const FLOOR_KIND: Record<Floor['kind'], number> = { flag: 51, marble: 128, rough: 179, plank: 230, mosaic: 255 };
+
+/**
+ * The ground. `floors`, by room (a dungeon's encounters, in order): a room that has its own floor (a boss's chamber,
+ * data/dungeongen.ts ARENAS) is drawn in it.
+ */
+/**
+ * How near each spot of ground is to the foot of something built or of rock (a wall, a rampart, a column): 1 under it,
+ * falling away over a tile or so. The ground is drawn darker by it.
+ */
+function footShade(map: TileMap): THREE.DataTexture {
   const W = map.w;
   const H = map.h;
+  let a = new Float32Array(W * H);
+  for (let i = 0; i < W * H; i++) {
+    const k = map.kind[i]!;
+    a[i] = k === K.Wall || k === K.Illusion || k === K.Rampart || k === K.Cracked ? 1 : k === K.Pillar ? 0.7 : 0;
+  }
+  for (let pass = 0; pass < 2; pass++) {
+    const b = new Float32Array(W * H);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        let sum = 0;
+        let n = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const xx = x + dx;
+            const yy = y + dy;
+            // (past the map's edge it's all wall)
+            sum += xx < 0 || yy < 0 || xx >= W || yy >= H ? 1 : a[yy * W + xx]!;
+            n++;
+          }
+        }
+        b[y * W + x] = sum / n;
+      }
+    }
+    a = b;
+  }
+  const data = new Uint8Array(W * H * 4);
+  for (let i = 0; i < W * H; i++) data[i * 4] = Math.round(a[i]! * 255);
+  const t = new THREE.DataTexture(data, W, H, THREE.RGBAFormat);
+  t.magFilter = THREE.LinearFilter;
+  t.minFilter = THREE.LinearFilter;
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  t.needsUpdate = true;
+  return t;
+}
+
+export function buildGround(map: TileMap, look: ThemeLook, floors: readonly (Floor | null | undefined)[] = [], trim = false): THREE.Mesh {
+  const W = map.w;
+  const H = map.h;
+  const roomA = new Uint8Array(W * H * 4);
+  const roomB = new Uint8Array(W * H * 4);
+  if (look.indoor && floors.some(Boolean)) {
+    for (let i = 0; i < W * H; i++) {
+      const f = map.room[i] ? floors[map.room[i]! - 1] : null;
+      if (!f) continue;
+      const a = hexRgb(f.a);
+      const b = hexRgb(f.b);
+      for (let k = 0; k < 3; k++) {
+        roomA[i * 4 + k] = Math.round(a[k]! * 255);
+        roomB[i * 4 + k] = Math.round(b[k]! * 255);
+      }
+      roomA[i * 4 + 3] = FLOOR_KIND[f.kind];
+      roomB[i * 4 + 3] = 255;
+    }
+  }
+  const roomTex = (data: Uint8Array): THREE.DataTexture => {
+    const t = new THREE.DataTexture(data, W, H, THREE.RGBAFormat);
+    t.magFilter = THREE.NearestFilter;
+    t.minFilter = THREE.NearestFilter;
+    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+    t.needsUpdate = true;
+    return t;
+  };
   const mask = new Uint8Array(W * H * 4);
   const kinds = groundUnderThings(map);
   for (let i = 0; i < W * H; i++) {
@@ -538,6 +773,10 @@ export function buildGround(map: TileMap, look: ThemeLook): THREE.Mesh {
       uSee: LIGHT.uSee,
       uFlames: LIGHT.uFlames,
       uNight: LIGHT.uNight,
+      uAmb: LIGHT.uAmb,
+      uFlameCol: LIGHT.uFlameCol,
+      uAo: { value: footShade(map) },
+      uTrim: { value: trim ? 1 : 0 },
       uMask: { value: tex },
       uSize: { value: new THREE.Vector2(W, H) },
       uA: { value: col3(stone ? stone.slab[1] : g.grass[2]) },
@@ -555,6 +794,9 @@ export function buildGround(map: TileMap, look: ThemeLook): THREE.Mesh {
       uFoam: { value: col3(g.water.foam) },
       uIndoor: { value: look.indoor ? 1 : 0 },
       uLava: { value: look.lava ? 1 : 0 },
+      uSnow: { value: look.snowy ? 1 : 0 },
+      uRoomA: { value: roomTex(roomA) },
+      uRoomB: { value: roomTex(roomB) },
     },
     vertexShader: groundVert,
     fragmentShader: groundFrag,
@@ -580,7 +822,7 @@ interface BlockStyle {
 /** How tall the walls of a place under a roof stand, in tiles: halls, not cellars. */
 const DUNGEON_WALL = 2.7;
 
-function blockStyles(look: ThemeLook, woody: boolean): { wall: BlockStyle; rampart: BlockStyle } {
+function blockStyles(look: ThemeLook, woody: boolean, stone?: string): { wall: BlockStyle; rampart: BlockStyle } {
   const st = look.stone;
   const wall: BlockStyle = st
     ? { h: DUNGEON_WALL, top: hexRgb(st.top), top2: hexRgb(st.topHi), side: hexRgb(st.brick[1]), side2: hexRgb(st.brick[0]) }
@@ -588,7 +830,15 @@ function blockStyles(look: ThemeLook, woody: boolean): { wall: BlockStyle; rampa
       ? // a wood is a low mossy floor its trees stand on, as in the art set's own scenes, not a block with crowns poking out
         { h: WOOD_FLOOR, top: mossOf(look), top2: mossOf(look), side: mossOf(look, 0.6), side2: mossOf(look, 0.5) }
       : { h: 1.7, top: hexRgb(look.ground.leaf[3]), top2: hexRgb(look.ground.leaf[4]), side: hexRgb(look.ground.leaf[1]), side2: hexRgb(look.ground.leaf[0]) };
-  const rampart: BlockStyle = { h: 2.5, top: [0.46, 0.44, 0.46], top2: [0.68, 0.65, 0.62], side: [0.62, 0.59, 0.56], side2: [0.42, 0.4, 0.42] };
+  let rampart: BlockStyle = { h: 2.5, top: [0.46, 0.44, 0.46], top2: [0.68, 0.65, 0.62], side: [0.62, 0.59, 0.56], side2: [0.42, 0.4, 0.42] };
+  // (in a dark land or a strange one, a wall is of that land's own stone: a pale grey one stands out of it like chalk)
+  if (stone) {
+    const c = hexRgb(stone);
+    if (c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11 < 0.52) {
+      const tone = (k: number): [number, number, number] => [Math.min(1, c[0] * k), Math.min(1, c[1] * k), Math.min(1, c[2] * k)];
+      rampart = { h: 2.5, top: tone(0.72), top2: tone(1.12), side: tone(1), side2: tone(0.66) };
+    }
+  }
   return { wall, rampart };
 }
 
@@ -636,6 +886,45 @@ export class Mesher {
 function shade(c: readonly number[], k: number): number[] {
   return [Math.min(1, c[0]! * k), Math.min(1, c[1]! * k), Math.min(1, c[2]! * k)];
 }
+
+/** The stone a land builds its gates of (gateways.ts), where that isn't plain grey. */
+const GATE_STONE: Partial<Record<string, string>> = {
+  village: '#b0a698', farm: '#b4aa98', plains: '#bcae94', coast: '#b8b4a8', warfront: '#8a8078', snow: '#c4d0de', desert: '#d8b888', barrow: '#8c869c',
+  marsh: '#8a9078', moor: '#8e8898', deadlake: '#7c8a8c', pale: '#b8c4d8', gloam: '#7a6c8c', storm: '#8690a4',
+  rift: '#6e5e8e', haunted: '#6c7484', volcanic: '#5c4c4a', fey: '#8a7ca8', bonefield: '#b4ac98', blight: '#6c7658', autumn: '#a89a86', forest: '#9aa08e',
+};
+/** How a built place's walls are faced with the dungeon pack's pieces (Land3D.cladWalls). */
+interface Cladding {
+  /** Multiplied into the pack's grey stone: the place's own. */
+  tint: readonly [number, number, number];
+  /** The share of plain pieces that are cracked. */
+  cracked: number;
+  /** The share of a long run's inner pieces that are something else, and what. */
+  odd: number;
+  pieces: readonly string[];
+  /** Its everyday piece, where that isn't bare masonry. */
+  plain?: string;
+}
+/** How deep a facing piece is, in tiles, and how far it stands out of the wall it faces. */
+const CLAD_DEEP = 0.3;
+const CLAD_OUT = 0.07;
+const CLADDING: Partial<Record<string, Cladding>> = {
+  // the old dead's crypts: cold blue-violet stone, niches for the dead, bars
+  crypt: { tint: [0.84, 0.82, 1.06], cracked: 0.22, odd: 0.5, pieces: ['wall_arched', 'wall_pillar', 'wall_archedwindow_gated', 'wall_arched', 'wall_gated'] },
+  // a keep men still hold: warm grey stone, shelves and shuttered windows
+  keep: { tint: [0.98, 0.94, 0.9], cracked: 0.12, odd: 0.45, pieces: ['wall_pillar', 'wall_shelves', 'wall_window_closed', 'wall_pillar', 'wall_archedwindow_gated'] },
+  // the frozen citadel: pale ice-blue stone, tall niches and buttresses, much of it split by three hundred winters
+  citadel: { tint: [0.62, 0.72, 0.98], cracked: 0.3, odd: 0.5, pieces: ['wall_pillar', 'wall_arched', 'wall_pillar', 'wall_archedwindow_gated'] },
+  // the sun king's tomb: sandstone, niches and pilasters
+  temple: { tint: [1.16, 1.0, 0.76], cracked: 0.16, odd: 0.5, pieces: ['wall_arched', 'wall_pillar', 'wall_arched'] },
+  // the cistern under the city: wet green-grey stone, drains behind bars
+  cistern: { tint: [0.8, 0.98, 0.88], cracked: 0.26, odd: 0.5, pieces: ['wall_gated', 'wall_archedwindow_gated', 'wall_pillar', 'wall_arched'] },
+  // a town's houses: timber framing over the stone, shuttered windows, a shelf here and there
+  tavern: { tint: [1.16, 1.06, 0.92], cracked: 0, odd: 0.6, pieces: ['wall_window_closed_scaffold', 'wall_scaffold', 'wall_shelves', 'wall_window_open_scaffold'], plain: 'wall_scaffold' },
+  greathall: { tint: [1.02, 1.0, 1.04], cracked: 0, odd: 0.55, pieces: ['wall_pillar', 'wall_archedwindow_gated', 'wall_pillar', 'wall_arched'] },
+  // the spire in the rift: violet stone, coming apart
+  riftspire: { tint: [0.96, 0.8, 1.12], cracked: 0.34, odd: 0.4, pieces: ['wall_pillar', 'wall_arched', 'wall_broken'] },
+};
 
 const NO_LIGHTS: readonly { x: number; z: number; reach: number }[] = [];
 
@@ -700,8 +989,8 @@ function softenMask(mask: Uint8Array, W: number, H: number, passes: number): voi
   }
 }
 
-function buildBlocks(map: TileMap, look: ThemeLook, woody: boolean, cut: Uint8Array | null): THREE.Mesh {
-  const { wall, rampart } = blockStyles(look, woody);
+function buildBlocks(map: TileMap, look: ThemeLook, woody: boolean, cut: Uint8Array | null, stone?: string): THREE.Mesh {
+  const { wall, rampart } = blockStyles(look, woody, stone);
   const m = new Mesher();
   const W = map.w;
   const H = map.h;
@@ -973,6 +1262,12 @@ export class Land3D {
   private cx = NaN;
   private cz = NaN;
   private readonly doors: { i: number; x: number; y: number; k: number; h: number }[] = [];
+  /**
+   * A hall's columns (the map's pillars and a nave's tall columns), in tiles, each with how much of its height stands
+   * now (1 whole, less while cut away).
+   */
+  private readonly columns: { m: string; x: number; z: number; rot: number; sx: number; sy: number; sz: number; r: number; g: number; b: number; cut: number }[] = [];
+  private readonly columnStands = new Map<string, Stand>();
   private readonly doorStand: Stand;
   /** What's built rather than placed: the ways into dungeons (doorways.ts), and the carpets down a hall. */
   private readonly built: THREE.Mesh[] = [];
@@ -983,6 +1278,8 @@ export class Land3D {
   private readonly rugs: { tx: number; ty: number; c: readonly number[] }[] = [];
   /** The walls cut down to a kerb, so what's behind them shows (under a roof). */
   private readonly cut: Uint8Array | null;
+  /** How a built place's walls are faced (null: bare rock, or not a dungeon). */
+  private clad: Cladding | null = null;
 
   constructor(
     private readonly map: TileMap,
@@ -995,14 +1292,17 @@ export class Land3D {
     const look = THEMES[theme];
     this.look = look;
     const woody = !look.indoor && !look.cliffs && look.trees.filter((t) => t !== 'cactus' && t !== 'crystal').length * 2 > look.trees.length;
-    this.ground = buildGround(map, look);
+    this.ground = buildGround(map, look, region.kind === 'dungeon' ? region.encounters.map((e) => (e.boss ? ARENAS[e.boss]?.floor : null)) : [], look.indoor && (region.kind === 'dungeon' || !!region.interior) && !!CLADDING[theme]);
     this.cut = look.indoor ? cutAway(map) : null;
-    this.blocks = buildBlocks(map, look, woody, this.cut);
+    this.blocks = buildBlocks(map, look, woody, this.cut, GATE_STONE[theme]);
     this.planks = buildPlanks(map, look);
     this.under.add(this.ground, this.planks);
     this.group.add(this.blocks);
     this.wallH = look.indoor ? DUNGEON_WALL : woody ? 1 : 1.6;
+    this.clad = look.indoor && (region.kind === 'dungeon' || region.interior) ? (CLADDING[theme] ?? null) : null;
     this.placeAll(woody);
+    if (woody && !look.stone && !look.indoor) this.woodsBeyond();
+    this.cladWalls();
     this.clearWays();
     this.passages(woody);
     this.placeSlabs();
@@ -1112,39 +1412,56 @@ export class Land3D {
         if (look.cliffs) {
           // a cave mouth in the land's own rock
           const L = look.ground.leaf;
-          const b = caveMouth({ top: L[4], face: L[2], foot: L[1], lip: L[5], throat: '#0c0a0a', teeth: L[2], wide: span + 1.4, high: 2.2, seed: pm.tx * 7 + pm.ty }).m.build();
+          const b = caveMouth({ top: L[4], face: L[2], foot: L[1], lip: L[5], throat: '#0c0a0a', teeth: L[2], wide: span + 3.2, high: 3.4, seed: pm.tx * 7 + pm.ty }).m.build();
           b.position.set(mx + out[0] * 0.5, 0, mz + out[1] * 0.5);
           b.rotation.y = rot;
           this.group.add(b);
           this.built.push(b);
           continue;
         }
-        // an old stone arch over the road
-        const mesh = this.pack('arch');
-        if (!mesh) continue;
-        const xw = mesh.max[0] - mesh.min[0];
-        const k = Math.min((span + 1.8) / Math.max(0.01, xw), 4 / Math.max(0.01, mesh.max[1] - mesh.min[1]));
-        const tint = look.stone ? hexRgb(look.stone.top) : ([0.92, 0.9, 0.86] as const);
-        this.add({ m: 'arch', x: mx, z: mz, rot: across ? 0 : Math.PI / 2, sx: k, r: tint[0], g: tint[1], b: tint[2], shadow: 1.2, shadowD: 0.4 });
+        this.gateway(stoneGate({ span: span + 2, body: GATE_STONE[region.theme] ?? '#a69e94', trim: '#d8c8a0', light: zoneLight(mk.to), seed: pm.tx * 7 + pm.ty }), mx, mz, rot, side, span);
         continue;
       }
-      // a tunnel of trees: tall ones either side of the road, taller ones behind them leaning over it, bushes at their feet
-      const half = span / 2;
-      for (const sd of [-1, 1]) {
-        for (const [off, back, k] of [
-          [half + 0.75, -1.2, 1.1],
-          [half + 1.9, -0.1, 1.28],
-          [half + 0.9, 1.0, 1.2],
-        ] as const) {
-          const kind = look.trees[Math.floor(hash2(pm.tx + sd, pm.ty + back, 91) * look.trees.length)] ?? 'oak';
-          const def = TREES[kind] ?? TREES.oak;
-          const m = def.m[Math.floor(hash2(pm.tx + sd * 3, pm.ty, 77) * def.m.length) % def.m.length]!;
-          const x = mx + side[0] * sd * off + out[0] * back;
-          const z = mz + side[1] * sd * off + out[1] * back;
-          this.add({ m, x, z, rot: hash2(pm.tx, sd + back, 71) * 6.28, sx: this.fitted(m, def.h * k, 2.6), sway: kind === 'dead' ? 0 : 0.7, shadow: 1.2 });
-          const bush = BUSHES[Math.floor(hash2(pm.tx + sd, pm.ty + back, 79) * BUSHES.length)]!;
-          this.add({ m: bush, x: x - side[0] * sd * 0.5, z: z - side[1] * sd * 0.5, rot: hash2(sd, back, 81) * 6.28, sx: this.fitted(bush, 0.55, 0.9) });
-        }
+      // a wood's gate: two great trunks and a third across them, a palisade going off into the trees
+      this.gateway(timberGate({ span: span + 2, body: `#${look.bark.replace('#', '')}`, trim: '#c8a878', light: zoneLight(mk.to), seed: pm.tx * 7 + pm.ty }), mx, mz, rot, side, span);
+    }
+  }
+
+  /** Stands a great gate (gateways.ts) across a road out, clears the trees from where it and its walls stand, and lights it. */
+  private gateway(g: GateBuilt, mx: number, mz: number, rot: number, side: readonly [number, number], span: number): void {
+    const mesh = g.b.m.build();
+    mesh.position.set(mx, 0, mz);
+    mesh.rotation.y = rot;
+    this.group.add(mesh);
+    this.built.push(mesh);
+    const cos = Math.cos(rot);
+    const sin = Math.sin(rot);
+    const at = (x: number, z: number): [number, number] => [mx + x * cos + z * sin, mz - x * sin + z * cos];
+    for (const f of g.flames) {
+      const [x, z] = at(f.x, f.z);
+      this.flames.push({ x, z, y: f.y, size: f.size });
+    }
+    for (const o of g.glows) {
+      const [x, z] = at(o.x, o.z);
+      this.glows.push({ x, z, y: o.y, color: o.color, size: o.size });
+    }
+    // (no tree grows through its towers or its wall)
+    const reach = span / 2 + 12;
+    const ax = Math.abs(side[0]);
+    this.clearTrees(mx - (ax ? reach : 1.6), mx + (ax ? reach : 1.6), mz - (ax ? 1.6 : reach), mz + (ax ? 1.6 : reach), true);
+  }
+
+  /**
+   * A wood goes on past the edge of its map (the view shows a few tiles of what's beyond a way out, and bare moss there
+   * reads as a land left unfinished): the same trees, bushes and tufts, eight tiles out on every side.
+   */
+  private woodsBeyond(): void {
+    const { w: W, h: H } = this.map;
+    const out = 8;
+    for (let ty = -out; ty < H + out; ty++) {
+      for (let tx = -out; tx < W + out; tx++) {
+        if (tx >= 0 && ty >= 0 && tx < W && ty < H) continue;
+        this.woodland(tx, ty, false, 0);
       }
     }
   }
@@ -1241,6 +1558,90 @@ export class Land3D {
     }
   }
 
+  /**
+   * A built place's walls, faced in the dungeon pack's own masonry: every wall a room shows (its far side, and down its
+   * flanks) gets the pack's wall pieces laid along it, fitted to the run (never stretched more than a quarter), in the
+   * place's own stone. Most are plain courses; here and there a cracked one, a pilaster, an arched niche, a barred
+   * window, each place by its own list. A cave's walls are rock and stay rock.
+   */
+  private cladWalls(): void {
+    const clad = this.clad;
+    const cut = this.cut;
+    if (!clad || !this.pack('wall')) return;
+    const { map } = this;
+    const W = map.w;
+    const H = map.h;
+    const wall = (x: number, y: number): boolean => {
+      if (x < 0 || y < 0 || x >= W || y >= H) return true;
+      const k = map.kind[y * W + x]!;
+      return k === K.Wall || k === K.Illusion;
+    };
+    /** A wall standing its full height with open floor on this side of it. */
+    const faces = (x: number, y: number, dx: number, dy: number): boolean => {
+      if (x < 0 || y < 0 || x >= W || y >= H || !wall(x, y) || cut?.[y * W + x]) return false;
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= W || ny >= H) return false;
+      const k = map.kind[ny * W + nx]!;
+      return k !== K.Wall && k !== K.Illusion && k !== K.Cracked && k !== K.Door;
+    };
+    const tint = clad.tint;
+    // (a hair taller than the wall it faces: its cap lies over the wall's top, not in the same plane, where the two
+    // would flicker through each other)
+    const syFar = (DUNGEON_WALL + 0.035) / 4;
+    const pick = (a: number, b: number, long: boolean): string => {
+      // (the odd piece only on a long run, and never two alike side by side: a wall is mostly wall)
+      const h = hash2(a, b, 131);
+      if (!long || h > clad.odd) return hash2(a, b, 133) < clad.cracked ? 'wall_cracked' : (clad.plain && hash2(a, b, 139) < 0.5 ? clad.plain : 'wall');
+      return clad.pieces[Math.floor(hash2(a, b, 137) * clad.pieces.length) % clad.pieces.length]!;
+    };
+    const lay = (len: number, at: (u: number) => { x: number; z: number }, rot: number, seedA: number, seedB: number, sy = syFar): void => {
+      if (len === 1) {
+        const p = at(0);
+        // (the half piece runs from its own corner, not its middle)
+        const q = at(-0.5);
+        void p;
+        this.add({ m: 'wall_half', x: q.x, z: q.z, rot, sx: 0.5, sy, sz: CLAD_DEEP, r: tint[0], g: tint[1], b: tint[2], shadow: 0 });
+        return;
+      }
+      const n = Math.max(1, Math.round(len / 2.6));
+      const wide = len / n;
+      for (let i = 0; i < n; i++) {
+        const p = at((i + 0.5) * wide - len / 2);
+        // (a run's ends stay plain, where it meets its corners)
+        const m = pick(seedA + i * 7, seedB, n >= 3 && i > 0 && i < n - 1 && i % 2 === 1);
+        this.add({ m, x: p.x, z: p.z, rot, sx: wide / 4, sy, sz: CLAD_DEEP, r: tint[0], g: tint[1], b: tint[2], shadow: 0 });
+      }
+    };
+    // the far walls: runs along a row, facing south
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        if (!faces(x, y, 0, 1) || faces(x - 1, y, 0, 1)) continue;
+        let x1 = x;
+        while (faces(x1 + 1, y, 0, 1)) x1++;
+        const len = x1 - x + 1;
+        const mid = x + len / 2;
+        lay(len, (u) => ({ x: mid + u, z: y + 1 - CLAD_DEEP / 2 + CLAD_OUT }), 0, x, y);
+      }
+    }
+    // the flanks: runs down a column, facing east or west
+    for (const dx of [1, -1]) {
+      for (let x = 0; x < W; x++) {
+        for (let y = 0; y < H; y++) {
+          if (!faces(x, y, dx, 0) || faces(x, y - 1, dx, 0)) continue;
+          let y1 = y;
+          while (faces(x, y1 + 1, dx, 0)) y1++;
+          const len = y1 - y + 1;
+          const mid = y + len / 2;
+          const fx = dx > 0 ? x + 1 - CLAD_DEEP / 2 + CLAD_OUT : x + CLAD_DEEP / 2 - CLAD_OUT;
+          // (turned a quarter: the piece's length runs down the wall, and its face is to the room)
+          // (and a flank's cap a hair over the far wall's, where the two meet in a corner)
+          lay(len, (u) => ({ x: fx, z: mid - u * dx }), (dx * Math.PI) / 2, x + 500, y, syFar + 0.004);
+        }
+      }
+    }
+  }
+
   private placeAll(woody: boolean): void {
     const { map, look, region } = this;
     const W = map.w;
@@ -1304,8 +1705,13 @@ export class Land3D {
           const pw = this.spanOf(m, 0);
           const ph = this.spanOf(m, 1);
           if (look.indoor) {
-            if (this.keepIt({ x: wx, y: wy, kind: 'pillar', dy: -96 })) this.add({ m, x, z, rot: 0, sx: 1.25 / pw, sy: 4.4 / ph, sz: 1.25 / pw, shadow: 0.9 });
-          } else if (this.keepIt({ x: wx, y: wy, kind: 'pillar', dy: -40 })) this.add({ m, x, z, rot: 0, sx: this.fitted(m, 2.6, 1), shadow: 0.8, r: 0.68, g: 0.68, b: 0.72 });
+            // (drawn each frame, so one between the camera and the hero can sink out of the way: updateColumns)
+            if (this.keepIt({ x: wx, y: wy, kind: 'pillar', dy: -96 }) && this.pack(m)) this.columns.push({ m, x, z, rot: 0, sx: 1.1 / pw, sy: 3.2 / ph, sz: 1.1 / pw, r: 0.86, g: 0.84, b: 0.86, cut: 1 });
+          } else if (this.keepIt({ x: wx, y: wy, kind: 'pillar', dy: -40 })) {
+            // (an old column out in the land is of the land's own stone, weathered: not the pack's clean blue-grey)
+            const sc = hexRgb(GATE_STONE[region.theme] ?? '#a69e94');
+            this.add({ m, x, z, rot: 0, sx: this.fitted(m, 2.6, 1), shadow: 0.8, r: Math.min(1.2, sc[0] * 1.12), g: Math.min(1.2, sc[1] * 1.12), b: Math.min(1.2, sc[2] * 1.12) });
+          }
           break;
         }
         case K.Brazier: {
@@ -1318,7 +1724,8 @@ export class Land3D {
         case K.Floor: {
           if (look.indoor) break;
           const d = hash2(tx, ty, 41);
-          if (d < (k === K.Deco ? 0.8 : 0.26)) {
+          // (under snow only the odd tuft shows through)
+          if (d < (k === K.Deco ? 0.8 : look.snowy ? 0.05 : 0.26)) {
             const flower = hash2(tx, ty, 43) < 0.18 && !BARE_LANDS.has(region.theme);
             const m = flower ? FLOWERS[Math.floor(hash2(tx, ty, 47) * FLOWERS.length)]! : TUFTS[Math.floor(hash2(tx, ty, 47) * TUFTS.length)]!;
             this.add({ m, x: x + (hash2(tx, ty, 51) - 0.5) * 0.8, z: z + (hash2(tx, ty, 53) - 0.5) * 0.8, rot: d * 40, sx: this.sized(m, flower ? 0.42 : 0.34 + d * 0.2), sway: flower ? 0 : 1.2 });
@@ -1339,9 +1746,10 @@ export class Land3D {
             if (below !== K.Wall && below !== K.Cracked && below !== K.Door) {
               // a hall's wall has a rhythm: a buttress, then a torch, then a buttress
               if (tx % 6 === 0) {
-                this.add({ m: 'torch_mounted', x, z: ty + 1.02, rot: 0, sx: this.sized('torch_mounted', 0.7), y: 0.9 });
-                this.flames.push({ x, z: ty + 1.06, y: 1.4, size: 0.72 });
-              } else if (tx % 6 === 3 && look.stone) {
+                const out = this.clad ? CLAD_OUT : 0;
+                this.add({ m: 'torch_mounted', x, z: ty + 1.02 + out, rot: 0, sx: this.sized('torch_mounted', 0.7), y: 0.9 });
+                this.flames.push({ x, z: ty + 1.06 + out, y: 1.4, size: 0.72 });
+              } else if (tx % 6 === 3 && look.stone && !this.clad) {
                 this.add({ m: 'pillar', x, z: ty + 1, rot: 0, sx: this.fitted('pillar', 3.1, 0.78), shadow: 0 });
               }
             }
@@ -1351,7 +1759,11 @@ export class Land3D {
             // bare land: broken rock along the top of the cliff, not a flat table
             if (hash2(tx, ty, 71) < 0.62) {
               const rock = ROCKS[Math.floor(hash2(tx, ty, 73) * ROCKS.length)]!;
-              this.add({ m: rock, x: x + (h - 0.5) * 0.5, z: z + (hash2(tx, ty, 31) - 0.5) * 0.5, rot: h * 6.28, sx: this.fitted(rock, 0.7 + hash2(tx, ty, 21) * 0.8, 1.5), y: 1.5 });
+              // (the rock is the cliff's own: where the land doesn't recolor its rocks, they take the cliff top's color,
+              // not the pack's grey, which sits on a violet or a black cliff like gravel tipped on it)
+              const top = look.cliffs ? null : hexRgb(look.ground.leaf[3]);
+              const tone = top ? ([Math.min(1.5, Math.max(0.4, top[0] / 0.52)), Math.min(1.5, Math.max(0.4, top[1] / 0.52)), Math.min(1.5, Math.max(0.4, top[2] / 0.52))] as const) : ([1, 1, 1] as const);
+              this.add({ m: rock, x: x + (h - 0.5) * 0.5, z: z + (hash2(tx, ty, 31) - 0.5) * 0.5, rot: h * 6.28, sx: this.fitted(rock, 0.7 + hash2(tx, ty, 21) * 0.8, 1.5), y: 1.5, r: tone[0], g: tone[1], b: tone[2] });
             }
             break;
           }
@@ -1458,7 +1870,7 @@ export class Land3D {
         }
         const built = DOORWAYS[m.to];
         if (built) {
-          const b = built.build().m.build();
+          const b = built.build(look).m.build();
           b.position.set(x, 0, z);
           this.group.add(b);
           this.built.push(b);
@@ -1601,13 +2013,18 @@ export class Land3D {
     const loose = !def.across && !def.flat && (def.w ?? TILE) < 30;
     const rot = size.rot + (loose ? (hash2(tx, ty, 3) - 0.5) * 0.5 : 0);
     // (a building-pack model carries the land's own roof color)
-    const model = def.m.startsWith('b_') && !tint ? `${def.m}#${this.roofOf(tx, ty)}` : def.m;
+    const model = def.evergreen ? `${def.m}#evergreen` : def.m.startsWith('b_') && !tint ? `${def.m}#${this.roofOf(tx, ty)}` : def.m;
     // (its middle on the tile, whatever the model's own origin and however it's turned)
     const lx = ((mesh.min[0] + mesh.max[0]) / 2) * size.sx;
     const lz = ((mesh.min[2] + mesh.max[2]) / 2) * size.sz;
     const ox = -(lx * Math.cos(rot) + lz * Math.sin(rot));
     const oz = -(-lx * Math.sin(rot) + lz * Math.cos(rot));
     const sw = def.w ?? TILE;
+    // a nave's tall column: drawn each frame, to sink out of the way in front of the hero (updateColumns)
+    if (this.look.indoor && name.endsWith('column') && (def.h ?? 0) >= 60) {
+      this.columns.push({ m: model, x: x + ox, z: z + oz, rot, sx: size.sx, sy: size.sy, sz: size.sz, r: c[0] * 0.86, g: c[1] * 0.84, b: c[2] * 0.86, cut: 1 });
+      return;
+    }
     this.add({ m: model, x: x + ox, z: z + oz, rot, sx: size.sx, sy: size.sy, sz: size.sz, shadow: def.flat || (def.h ?? 0) < 12 ? 0 : Math.min(2.4, (sw / TILE) * 0.65), shadowD: Math.min(1, (def.d ?? sw) / sw + 0.1), y: def.flat ? 0.02 : 0, r: c[0], g: c[1], b: c[2] });
     // (at the top of the model as it was sized, which may be under the height its table allows)
     if (def.flame) this.flames.push({ x, z, y: size.sy * (mesh.max[1] - mesh.min[1]) * ((def.flameAt ?? 10) / (def.h ?? 10)), size: def.flame });
@@ -1753,6 +2170,12 @@ export class Land3D {
         this.shadows.setMatrixAt(shadow++, m4);
       }
     }
+    for (const c of this.columns) {
+      if (c.x < x0 || c.x > x1 || c.z < z0 || c.z > z1 || shadow >= 1500) continue;
+      m4.makeScale(0.9 * 1.6, 1, 0.9 * 1.6);
+      m4.setPosition(c.x, 0, c.z);
+      this.shadows.setMatrixAt(shadow++, m4);
+    }
     this.shadows.count = shadow;
     this.shadows.instanceMatrix.needsUpdate = true;
     for (const [id, s] of this.stands) {
@@ -1772,6 +2195,33 @@ export class Land3D {
       for (const p of list) s.put(p.x, p.y, p.z, p.rot, p.sx, p.sy, p.sz, p.r, p.g, p.b, p.sway, p.tipX ?? 0, p.tipZ ?? 0);
       s.end();
     }
+  }
+
+  /**
+   * A hall's columns go up into the dark, far over anyone's head: one that stands between the camera and the hero
+   * (just below the hero on the screen, where its height would hide them and the fight) sinks to a stump while it
+   * does, and rises again once the hero has gone by. `hx`, `hz`: the hero, in tiles.
+   */
+  updateColumns(dt: number, hx: number, hz: number): void {
+    if (!this.columns.length) return;
+    const k = Math.min(1, dt * 7);
+    for (const s of this.columnStands.values()) s.begin();
+    for (const c of this.columns) {
+      let s = this.columnStands.get(c.m);
+      if (!s) {
+        const m = this.pack(c.m)!;
+        s = new Stand(m, this.group, this.columns.filter((o) => o.m === c.m).length, colorsFor(m, this.look, c.m.split('#')[0]!), false);
+        s.begin();
+        this.columnStands.set(c.m, s);
+      }
+      // (it no longer sinks out of the way in front of the hero: it thins to a dither there, as every wall does: toon.ts
+      // seeThrough; what was sunk when that came in rises back)
+      c.cut += (1 - c.cut) * k;
+      void hx;
+      void hz;
+      s.put(c.x, 0, c.z, c.rot, c.sx, c.sy * c.cut, c.sz, c.r, c.g, c.b, 0);
+    }
+    for (const s of this.columnStands.values()) s.end();
   }
 
   /** Doors rise and sink as the rules open and shut them; a cracked wall is there until it is broken. */
@@ -1794,6 +2244,7 @@ export class Land3D {
     for (const s of this.stands.values()) s.dispose();
     this.stands.clear();
     this.doorStand.dispose();
+    for (const s of this.columnStands.values()) s.dispose();
     this.ground.geometry.dispose();
     const mat = this.ground.material as THREE.ShaderMaterial;
     (mat.uniforms.uMask!.value as THREE.Texture).dispose();

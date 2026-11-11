@@ -69,7 +69,7 @@ export const AMBERFIELD = wildRegion(
       // the centaurs' war camp, where the clans meet and their war-chief holds the circle
       { at: [0.8, 0.52], r: 12, kind: 'camp', packs: [['centaur-outrider', 'centaur-warbringer', 'centaur-outrider'], ['centaur-warbringer', 'centaur-outrider'], ['centaur-outrider', 'centaur-outrider']], elite: true, rare: 'stormhoof', chest: 'common', spot: { id: 'clan-stones', name: 'The Clan Stones' } },
       // the Host's picket on the north road: its riders leave for Hearthstead the day the hero finds it
-      { at: [0.52, 0.14], r: 12, kind: 'camp', packs: [['legion-scout', 'legion-scout', 'grave-hound'], ['legion-scout', 'grave-hound', 'grave-hound'], ['legion-scout', 'legion-scout']], elite: true, chest: 'rare', spot: { id: 'legion-picket', name: 'The Ashen Picket' }, when: until('the-legion-picket') },
+      { at: [0.52, 0.14], r: 12, kind: 'camp', packs: [['legion-scout', 'legion-scout', 'grave-hound'], ['legion-scout', 'grave-hound', 'grave-hound'], ['legion-scout', 'legion-scout']], elite: true, chest: 'rare', spot: { id: 'legion-picket', name: 'The Ashen Picket' }, when: until('the-clan-stones') },
       // the pride's rocks
       { at: [0.12, 0.6], r: 10, kind: 'den', packs: [['plains-lion', 'plains-lion'], ['plains-lion']], rare: 'goldmane', spot: { id: 'lion-rocks', name: 'Lion Rocks' } },
       // Wil Ashby's farm, out where nobody else would farm
@@ -117,8 +117,8 @@ export const AMBERFIELD = wildRegion(
       { near: 'gate', dx: -3, dy: 3, marker: { kind: 'prop', prop: 'debris' }, when: MORNING },
       { near: 'gate', dx: 3, dy: 4, marker: { kind: 'prop', prop: 'debris' }, when: MORNING },
       // the empty picket: cold fires and cut horse lines
-      { near: 'legion-picket', dx: 2, marker: { kind: 'prop', prop: 'skull-banner' }, when: until('the-legion-picket') },
-      { near: 'legion-picket', dx: -2, dy: 2, marker: { kind: 'prop', prop: 'debris' }, when: after('the-legion-picket') },
+      { near: 'legion-picket', dx: 2, marker: { kind: 'prop', prop: 'skull-banner' }, when: until('the-clan-stones') },
+      { near: 'legion-picket', dx: -2, dy: 2, marker: { kind: 'prop', prop: 'debris' }, when: after('the-clan-stones') },
     ],
   },
 );

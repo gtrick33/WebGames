@@ -41,14 +41,14 @@ const MAP = [
   '######aaaaaaaa#########################################iiiiiiiiiii######',
   '#####QaaaaaaaaQ#################lllllllllll###########iQiiiiiiiiiQi#####',
   '####aaaaaaaaaaaa###############QlllllllllllQ#########iiiiiiiiiiiiiii####',
-  '####aajaaaaaajaa##############lllllllllllllll#######iiiyiiiiiiiiiyiii###',
+  '####aajaaaaaajaa##############llLlllllllllLll#######iiiyiiiiiiiiiyiii###',
   '####aaaaaaaaaaaa##############llljllljllljlll#######iiiiiiiiiiiiiiiii###',
   '####aaaaaaaaaaaa##############lllllllllllllllD.....Diiiijiiiiiiijiiii###',
-  '####aaaaaaaaaaaa##############lllllllllllllllD.....Diiiiiiiiyiiiiiiii###',
+  '####aaaaaaaaaaaa##############lllllllWlllllllD.....Diiiiiiiiyiiiiiiii###',
   '####aajaaaaaajaa##############lllllllllllllllD.....Diiiiiiiiiiiiiiiyi###',
   '####aaaaaaaaaaaa##############lllllllllllllll#######iiyiiiiiiiiiiiiii###',
   '####aaaaayaaaaaa##############llljllljllljlll#######iiiiiiiijiiiiiiii###',
-  '####aaaaaaaaaaaa##############lllllllllllllll#######iiiiiyiiiiiiyiiii###',
+  '####aaaaaaaaaaaa##############llLlllllllllLll#######iiiiiyiiiiiiyiiii###',
   '####aajaaaaaajaa###############llllyllllllll#########iiiiiiiiiiiiiii####',
   '####aaaaaaaaaaaa################lllllllllll###########iiiiiiiyiiiii#####',
   '####aaaaaaaaaaaa####################DDD################iiiiiiiiiii######',
@@ -83,6 +83,9 @@ const markers: Record<string, Marker> = {
   S: { kind: 'chest', id: 'bk-vault', tier: 'epic', once: true },
   O: { kind: 'boss', boss: 'king-hrodric' },
   V: { kind: 'boss', boss: 'sir-corvane' },
+  // the Oathsworn Gallery: Gloomwing, the Lamp-Eater, and the four grave-lamps she hungers for
+  W: { kind: 'boss', boss: 'gloomwing' },
+  L: { kind: 'prop', prop: 'grave-lamp', solid: true },
   x: { kind: 'prop', prop: 'crate', solid: true },
   o: { kind: 'prop', prop: 'barrel', solid: true },
   y: { kind: 'prop', prop: 'bones' },
@@ -209,13 +212,60 @@ const foes: Record<string, EnemyDef> = {
 /* ------------------------------------------------------------------ bosses */
 
 const bosses: Record<string, BossDef> = {
+  // a drake blacked out by a thousand years of the barrow's devoured lamplight: it devours the gallery's lamps and
+  // shelters in the dark they leave
+  gloomwing: {
+    id: 'gloomwing',
+    name: 'Gloomwing',
+    title: 'the Lamp-Eater',
+    sprite: 'gloomwing',
+    hp: 5000,
+    dmg: 31,
+    radius: 13,
+    xp: 900,
+    gold: [140, 200],
+    floats: true,
+    phases: [
+      {
+        at: 1,
+        speed: 40,
+        rest: [0.7, 1.1],
+        // (sim/patterns/barrow-of-kings.ts) the gallery's lamps, and her feast on them
+        enter: [{ id: 'barrow:dark', w: 1, cd: 0, p: { cut: 0.6 } }, { id: 'barrow:feast', w: 1, cd: 0, p: { count: 1, dark: 16 } }],
+        patterns: [
+          // dark feathers falling from its wings about the hall
+          { id: 'spell:rain', w: 3, cd: 3.5, p: { color: '#b8a8ff', type: 'shadow', count: 10, onHero: 3, time: 2.2, rr: 18, mul: 0.9 } },
+          { id: 'charge', w: 2, cd: 5, p: { stun: 0.6 } },
+          { id: 'barrow:feast', w: 3, cd: 10, p: { count: 1, dark: 16 } },
+        ],
+      },
+      {
+        at: 0.5,
+        banner: 'Gloomwing hungers for every flame!',
+        speed: 46,
+        rest: [0.55, 0.9],
+        enter: [{ id: 'barrow:feast', w: 1, cd: 0, p: { count: 2, dark: 18, wind: 0.65 } }],
+        patterns: [
+          // dark feathers falling from its wings about the hall
+          { id: 'spell:rain', w: 3, cd: 3, p: { color: '#b8a8ff', type: 'shadow', count: 10, onHero: 3, time: 2.2, rr: 18, mul: 0.9 } },
+          // a buffet of its wings flings whoever stands before it across the hall
+          { id: 'spell:hurl', w: 3, cd: 3, p: { color: '#b8a8ff', type: 'shadow', reach: 90, dur: 0.7, mul: 0.6 } },
+          { id: 'tripleCharge', w: 2, cd: 6, p: { count: 2, wind: 0.6, speed: 330, len: 150, stun: 0, mul: 1.2 } },
+          { id: 'barrow:feast', w: 3, cd: 8, p: { count: 2, dark: 18, wind: 0.65, pick: 1 } },
+        ],
+      },
+    ],
+    first: { any: ['second-wind-ring'] },
+    drops: { items: { any: ['second-wind-ring', 'static-band', 'thornmail'] }, chance: [0.3, 0.45, 0.65] },
+    intro: 'The barrow-wardens kept its lamps lit for a thousand years. Something has been eating the light.',
+  },
   'king-hrodric': {
     id: 'king-hrodric',
     name: 'King Hrodric',
     title: 'the Barrow King',
     sprite: 'king-hrodric',
-    hp: 2950,
-    dmg: 29,
+    hp: 4200,
+    dmg: 31,
     radius: 11,
     xp: 560,
     gold: [90, 130],
@@ -273,8 +323,8 @@ const bosses: Record<string, BossDef> = {
     name: 'Sir Corvane the Fallen',
     title: 'First Grave Knight of the Hallow King',
     sprite: 'sir-corvane',
-    hp: 6300,
-    dmg: 33,
+    hp: 9000,
+    dmg: 36,
     radius: 13,
     xp: 1120,
     gold: [170, 240],
@@ -288,10 +338,10 @@ const bosses: Record<string, BossDef> = {
           { id: 'barrow:steed-charge', w: 3, cd: 6, p: { passes: 3, wind: 0.75, wind2: 0.55, speed: 300, len: 300, mul: 1.4, trail: 3.5, trailMul: 0.12 } },
           // the runeblade from the saddle, in a wide sweep
           { id: 'cleave', w: 3, cd: 3, p: { r: 52, arc: 1.05, wind: 0.6, lunge: 30, mul: 1.35 } },
-          // the dead reach up out of the floor
-          { id: 'graveGrasp', w: 2, cd: 5, p: { count: 4 } },
-          // grave-frost bolts that seek you out
-          { id: 'orbs', w: 2, cd: 6, p: { count: 5, ring: 0, speed: 62, homing: 0.9, mul: 0.8, color: '#9ad8ff' } },
+          // spectral lances thrust from the barrow walls
+          { id: 'spell:lances', w: 2, cd: 5, p: { color: '#a8c8ff', type: 'frost', count: 4, width: 14, mul: 1.05 } },
+          // the barrow’s judgment, on the half of the hall the hero stands in
+          { id: 'spell:halves', w: 2, cd: 6, p: { color: '#a8c8ff', type: 'frost', dur: 1.5, mul: 1.3 } },
           { id: 'summon', w: 1, cd: 20, p: { enemies: ['oathsworn-guard', 'crypt-stalker'] } },
         ],
       },
@@ -308,7 +358,8 @@ const bosses: Record<string, BossDef> = {
           // the runeblade in the floor: ice bursts up and spreads
           { id: 'barrow:rime', w: 2, cd: 8, p: { count: 4, r: 22, wind: 1, mul: 1.1, grow: 5, max: 36, life: 12 } },
           { id: 'chop', w: 2, cd: 5, p: { lines: 3, spread: 0.45, len: 160, width: 16, wind: 0.8, mul: 1.5 } },
-          { id: 'graveGrasp', w: 1, cd: 6, p: { count: 5 } },
+          // spectral lances thrust from the barrow walls
+          { id: 'spell:lances', w: 1, cd: 6, p: { color: '#a8c8ff', type: 'frost', count: 4, width: 14, mul: 1.05 } },
           { id: 'summon', w: 1, cd: 22, p: { enemies: ['crypt-stalker', 'crypt-stalker'] } },
         ],
       },
@@ -567,17 +618,7 @@ export const BARROW_OF_KINGS: DungeonModule = {
           { enemies: ['crypt-guardian', 'rime-archer', 'tomb-priest'], elite: true },
         ],
       },
-      {
-        id: 'gallery',
-        floor: 'l',
-        title: 'The Oathsworn Gallery',
-        checkpoint: true,
-        waves: [
-          { enemies: ['oathsworn-guard', 'oathsworn-guard', 'rime-archer', 'rime-archer'] },
-          { enemies: ['crypt-stalker', 'crypt-stalker', 'crypt-stalker', 'tomb-priest'] },
-          { enemies: ['oathsworn-guard', 'cursed-hoard', 'rime-archer'], elite: true },
-        ],
-      },
+      { id: 'gallery', floor: 'l', waves: [], boss: 'gloomwing', checkpoint: true, title: 'The Oathsworn Gallery' },
       { id: 'chapel', floor: 'm', waves: [], boss: 'sir-corvane', checkpoint: true, title: 'The Chapel of Black Candles' },
     ],
     blurb: 'The old kings’ halls and their hoard, King Hrodric on his throne, and Sir Corvane among his black candles.',

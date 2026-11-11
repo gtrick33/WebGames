@@ -13,7 +13,8 @@ import { hasKit, kitOf } from '../src/games/sigilfall/render3d/kits';
 describe('Sigilfall: who plays whom', () => {
   it('every creature in the data has its own model, chosen by hand', () => {
     const missing = new Set<string>();
-    for (const e of Object.values(ENEMIES)) if (!hasKit(e.sprite)) missing.add(e.sprite);
+    // (a boss fight's thing, a coffin or a cage, is drawn as its prop: tests/sigilfall-polish.test.ts checks those models)
+    for (const e of Object.values(ENEMIES)) if (!e.prop && !hasKit(e.sprite)) missing.add(e.sprite);
     for (const b of Object.values(BOSSES)) if (!hasKit(b.sprite)) missing.add(b.sprite);
     for (const p of Object.values(PETS)) if (!p.look && !hasKit(p.sprite)) missing.add(p.sprite);
     expect([...missing]).toEqual([]);

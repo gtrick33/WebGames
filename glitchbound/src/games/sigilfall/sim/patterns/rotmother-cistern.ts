@@ -1,8 +1,9 @@
-import { dist, TAU } from '../../core/math';
+import { dist, inCone, TAU } from '../../core/math';
 import { hurtPlayer } from '../combat';
 import { castRay, circleHitsWall, moveCircle, TILE, tileAt } from '../map';
 import type { Enemy, Field } from '../types';
 import type { World } from '../world';
+import { fighting, onFloor, removeThing, roomBox, spawnThing, up } from './arena';
 import type { PatternFn } from './kit';
 
 /**
@@ -136,7 +137,7 @@ function vats(w: World, e: Enemy): { x: number; y: number }[] {
   return Array.from({ length: m.vats }, (_, i) => ({ x: m[`vat${i}x`]!, y: m[`vat${i}y`]! }));
 }
 
-export const ROTMOTHER_CISTERN_PATTERNS: Record<string, PatternFn> = {
+const FIRST_PATTERNS: Record<string, PatternFn> = {
   /**
    * Brother Pustule swings his censer high: clouds of plague come down on and around the hero, one
    * after another, each shown as a circle first, and hang there for `cloud` seconds.
@@ -289,7 +290,7 @@ export const ROTMOTHER_CISTERN_PATTERNS: Record<string, PatternFn> = {
       }
       if (!e.boss!.misc.risen) {
         e.boss!.misc.risen = 1;
-        w.text(e.x, e.y - e.r - 16, 'THE BREW RISES!', '#c8f07a', true);
+        w.callout('THE BREW RISES!', '#c8f07a');
       }
       w.sfx('quake', 0.6);
       w.shake(2);
@@ -346,7 +347,7 @@ export const ROTMOTHER_CISTERN_PATTERNS: Record<string, PatternFn> = {
           }
         });
       }
-      w.text(e.x, e.y - e.r - 16, 'THE VATS!', '#c8f07a', true);
+      w.callout('THE VATS!', '#c8f07a');
       w.sfx('windup', 0.7);
       pt.step = 1;
     } else if (pt.t >= 0.8) k.end();
@@ -452,3 +453,211 @@ export const ROTMOTHER_CISTERN_PATTERNS: Record<string, PatternFn> = {
     }
   },
 };
+
+/* ------------------------------------------------------------ the leeches and the sluices */
+
+/**
+ * Brother Pustule's leeches (`leeches`): he sprays them down a cone, and those that catch the hero cling on, each one
+ * drinking a little of the hero's health every second and feeding it to him. Only a dodge shakes them off (two at a
+ * time); the more he lands, the faster the hero bleeds and the longer he lasts.
+ *
+ * Old Sluicegut, warden of the Charnel Drain, opens the sluices (`sluices`): currents run across his room in lanes,
+ * dragging whoever stands in one toward the drain grate at its end, which grinds what it catches. Each open lane
+ * has its lever at the upstream wall: strike the lever and that sluice shuts.
+ *
+ * Both outlive the pattern that made them, so they are kept per boss here and run by a small ticker (World.after,
+ * once a step) for as long as the fight lasts.
+ */
+
+const LEECH = '#4a6a2a';
+const BRINE = '#6a7a3a';
+const LEVER = 'sluice-lever';
+
+interface Lane {
+  y: number;
+  x0: number;
+  x1: number;
+  dir: 1 | -1;
+  lever: Enemy | null;
+  until: number;
+  fxT: number;
+  markT: number;
+  hurtT: number;
+}
+
+interface Cistern {
+  last: number;
+  leeches: number;
+  leechT: number;
+  dodgeSeen: number;
+  fxT: number;
+  lanes: Lane[];
+  /** How hard the open sluices drag, px a second. */
+  push: number;
+}
+
+const FIGHTS = new WeakMap<Enemy, Cistern>();
+
+function fight(w: World, e: Enemy): Cistern {
+  let s = FIGHTS.get(e);
+  if (!s) {
+    s = { last: w.time, leeches: 0, leechT: 1, dodgeSeen: w.player.lastDodge, fxT: 0, lanes: [], push: 80 };
+    FIGHTS.set(e, s);
+    w.after(0, () => tick(w, e));
+  }
+  return s;
+}
+
+function tick(w: World, e: Enemy): void {
+  const s = FIGHTS.get(e);
+  if (!s) return;
+  if (!fighting(w, e)) {
+    for (const l of s.lanes) removeThing(w, l.lever);
+    FIGHTS.delete(e);
+    return;
+  }
+  const dt = Math.max(0, w.time - s.last);
+  s.last = w.time;
+  tickLeeches(w, e, s, dt);
+  tickLanes(w, s, dt);
+  w.after(0, () => tick(w, e));
+}
+
+/** Leeches: a cone (`r`, half-angle `arc`) shown for `wind` s; caught in it, `n` more leeches cling on (at most `most`). */
+const leeches: PatternFn = (w, e, _dt, k) => {
+  const { pt } = k;
+  const p = w.player;
+  const s = fight(w, e);
+  const wind = k.num('wind', 0.8);
+  const r = k.num('r', 74);
+  const arc = k.num('arc', 0.5);
+  if (pt.step === 0) {
+    const a = k.aimAt();
+    pt.data.a = a;
+    w.addTelegraph({ shape: 'cone', x: e.x, y: e.y, r, r2: arc, angle: a, len: 0, dur: wind, dmg: e.dmg * k.num('mul', 0.6), knock: 0, tone: 'enemy', owner: e.id, linger: 0 });
+    w.callout('Drink, my little ones!', '#b8d84a');
+    w.sfx('squish', 0.6);
+    pt.step = 1;
+  } else if (pt.step === 1 && pt.t >= wind) {
+    if (!p.dead && p.iframe <= 0 && inCone(p.x, p.y, e.x, e.y, pt.data.a!, arc, r + p.r)) {
+      const before = s.leeches;
+      s.leeches = Math.min(k.num('most', 8), s.leeches + Math.round(k.num('n', 2)));
+      if (s.leeches > before) w.text(p.x, p.y - 30, `Leeches ×${s.leeches}! Dodge to shake them off!`, '#b8d84a', false);
+    }
+    pt.data.t1 = pt.t;
+    pt.step = 2;
+  } else if (pt.step === 2 && pt.t >= pt.data.t1! + 0.3) k.end();
+};
+
+function tickLeeches(w: World, e: Enemy, s: Cistern, dt: number): void {
+  const p = w.player;
+  // a dodge shakes two off
+  if (p.lastDodge > s.dodgeSeen) {
+    s.dodgeSeen = p.lastDodge;
+    if (s.leeches > 0) {
+      s.leeches = Math.max(0, s.leeches - 2);
+      w.text(p.x, p.y - 30, s.leeches ? `Shaken off! ×${s.leeches} left` : 'Shaken off!', '#d8f0a0', false);
+      w.fxBurst(p.x, p.y - 8, LEECH, 10, 10);
+    }
+  }
+  if (!s.leeches || p.dead) return;
+  s.fxT -= dt;
+  if (s.fxT <= 0) {
+    s.fxT = 0.3;
+    w.addFx({ kind: 'spark', x: p.x + (((w.time * 41) % 1) - 0.5) * 12, y: p.y - 6, vx: 0, vy: 10, life: 0.4, size: 2, color: LEECH });
+  }
+  s.leechT -= dt;
+  if (s.leechT <= 0) {
+    s.leechT = 1;
+    // they drink: the hero bleeds, and the brother drinks it
+    if (hurtPlayer(w, p.maxHp * 0.012 * s.leeches, { pierce: true })) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.002 * s.leeches);
+  }
+}
+
+/** The bands of the room the sluices run in (three, top to bottom), each with its open floor from wall to wall. */
+function bands(w: World, e: Enemy): { y: number; x0: number; x1: number }[] {
+  const box = roomBox(w, e);
+  const out: { y: number; x0: number; x1: number }[] = [];
+  for (let k = 0; k < 3; k++) {
+    const y = box.y0 + ((k + 0.5) * (box.y1 - box.y0)) / 3;
+    let x0 = Infinity;
+    let x1 = -Infinity;
+    for (let x = box.x0 + TILE / 2; x < box.x1; x += TILE / 2) {
+      if (!onFloor(w, e, x, y, 4)) continue;
+      x0 = Math.min(x0, x);
+      x1 = Math.max(x1, x);
+    }
+    if (x1 > x0) out.push({ y, x0, x1 });
+  }
+  return out;
+}
+
+/** The sluices: `lanes` of the room's bands open for `time` s (each with its lever), pushing at `push` px a second. */
+const sluices: PatternFn = (w, e, _dt, k) => {
+  const { pt } = k;
+  const s = fight(w, e);
+  if (pt.step === 0) {
+    const open = bands(w, e).filter((b) => !s.lanes.some((l) => Math.abs(l.y - b.y) < 4));
+    const want = Math.min(open.length, Math.round(k.num('lanes', 2)));
+    s.push = k.num('push', 80);
+    for (let i = 0; i < want; i++) {
+      const b = open.splice(Math.floor(w.rand() * open.length), 1)[0]!;
+      const dir: 1 | -1 = w.rand() < 0.5 ? 1 : -1;
+      let lx = dir > 0 ? b.x0 + 6 : b.x1 - 6;
+      while (!onFloor(w, e, lx, b.y, 10) && Math.abs(lx - (b.x0 + b.x1) / 2) > 10) lx += dir * 4;
+      const lever = spawnThing(w, e, LEVER, lx, b.y);
+      s.lanes.push({ y: b.y, x0: b.x0, x1: b.x1, dir, lever, until: w.time + k.num('time', 12), fxT: 0, markT: 0, hurtT: 0 });
+    }
+    w.callout('Open the sluices!', '#c8d890');
+    w.text(w.player.x, w.player.y - 30, 'Strike the levers to shut them!', '#e8f0c0', false);
+    w.sfx('doorSlam', 0.7);
+    w.shake(4);
+    pt.data.t1 = pt.t;
+    pt.step = 1;
+  } else if (pt.step === 1 && pt.t >= pt.data.t1! + 0.7) k.end();
+};
+
+function tickLanes(w: World, s: Cistern, dt: number): void {
+  const p = w.player;
+  const push = s.push;
+  for (const l of [...s.lanes]) {
+    const struck = !!l.lever && !up(w, l.lever);
+    if (struck || w.time >= l.until) {
+      s.lanes.splice(s.lanes.indexOf(l), 1);
+      if (!struck) removeThing(w, l.lever);
+      w.text((l.x0 + l.x1) / 2, l.y - 20, struck ? 'The sluice shuts!' : 'The water slackens...', '#c8d890', false);
+      continue;
+    }
+    // the water running, shown as a lane
+    l.fxT -= dt;
+    if (l.fxT <= 0) {
+      l.fxT = 0.08;
+      const x = l.x0 + ((w.time * 0.37 + l.y * 0.013) % 1) * (l.x1 - l.x0);
+      w.addFx({ kind: 'smoke', x, y: l.y + (((w.time * 29) % 1) - 0.5) * 36, vx: l.dir * 130, vy: 0, life: 0.6, size: 5, color: BRINE });
+    }
+    l.markT -= dt;
+    if (l.markT <= 0) {
+      l.markT = 0.3;
+      const from = l.dir > 0 ? l.x0 - 10 : l.x1 + 10;
+      w.addTelegraph({ shape: 'line', x: from, y: l.y, r: 0, r2: TILE * 2, angle: l.dir > 0 ? 0 : Math.PI, len: l.x1 - l.x0 + 20, dur: 0.32, dmg: 0, knock: 0, tone: 'enemy', owner: -1, linger: 0 });
+      // the grate it runs into
+      w.addFx({ kind: 'ring', x: l.dir > 0 ? l.x1 : l.x0, y: l.y, life: 0.3, size: 22, color: BRINE });
+    }
+    if (p.dead || Math.abs(p.y - l.y) > TILE || p.x < l.x0 - 14 || p.x > l.x1 + 14) continue;
+    // caught in it: dragged toward the grate
+    const m = moveCircle(w.map, p.x, p.y, p.r, l.dir * push * dt, 0);
+    p.x = m.x;
+    const atGrate = l.dir > 0 ? p.x > l.x1 - 30 : p.x < l.x0 + 30;
+    l.hurtT -= dt;
+    if (atGrate && l.hurtT <= 0) {
+      l.hurtT = 0.5;
+      if (hurtPlayer(w, p.maxHp * 0.05, { pierce: true })) w.text(p.x, p.y - 30, 'Into the grate!', '#ff8a8a', false);
+    }
+  }
+}
+
+/** How many leeches cling to the hero in a boss's fight, and its open sluices (for tests). */
+export const leechCount = (e: Enemy): number => FIGHTS.get(e)?.leeches ?? 0;
+export const openSluices = (e: Enemy): readonly Lane[] => FIGHTS.get(e)?.lanes ?? [];
+
+export const ROTMOTHER_CISTERN_PATTERNS: Record<string, PatternFn> = { ...FIRST_PATTERNS, 'rot:leeches': leeches, 'rot:sluices': sluices };

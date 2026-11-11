@@ -84,6 +84,7 @@ const WEAPONS: Record<string, readonly string[]> = {
   dagger: ['w_dagger_A', 'w_dagger_B', 'w_dagger_C'],
   wand: ['w_wand_A', 'w_wand_B'],
   spear: ['w_spear_A', 'w_halberd'],
+  halberd: ['w_halberd'],
 };
 const SHIELDS = ['w_shield_A', 'w_shield_B', 'w_shield_C', 'w_shield_D', 'w_shield_round', 'w_shield_square', 'w_shield_badge', 'w_shield_spikes'];
 

@@ -15,6 +15,7 @@ import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
 import { SPEC_LEVEL, TALENTS } from '../src/games/sigilfall/data/talents';
 import { rng } from '../src/games/sigilfall/core/math';
 import { flowField, flowStep, lineOfSight, TILE } from '../src/games/sigilfall/sim/map';
+import { bossHidden } from '../src/games/sigilfall/sim/boss';
 import type { Enemy, WorldEvent } from '../src/games/sigilfall/sim/types';
 import { emptyInput, inside, World } from '../src/games/sigilfall/sim/world';
 
@@ -155,7 +156,8 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
         target = null;
         let best = Infinity;
         for (const e of w.enemies) {
-          if (e.dead || e.dummy || e.hp <= 0 || (leftAlone.get(e.id) ?? 0) > res.time) continue;
+          // (a boss gone from sight, hiding in a coffin or torn into shards, is no target: a player goes for what is there)
+          if (e.dead || e.dummy || e.hp <= 0 || bossHidden(e) || (leftAlone.get(e.id) ?? 0) > res.time) continue;
           const d = fromHero[tileOf(w, e.x, e.y)] ?? -1;
           if (d < 0) continue;
           if (d < best) {
@@ -175,7 +177,7 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
         if (goalPt) toTarget = flowField(w.map, Math.floor(goalPt.x / TILE), Math.floor(goalPt.y / TILE), 4000, toTarget);
       }
       // danger first: step out of anything about to land
-      const danger = w.telegraphs.find((t) => t.tone !== 'player' && !t.dead && inside(t, p.x, p.y, p.r));
+      const danger = w.telegraphs.find((t) => t.tone !== 'player' && (t.kind ?? 'danger') === 'danger' && !t.dead && inside(t, p.x, p.y, p.r));
       let mx = 0;
       let my = 0;
       if (danger) {
@@ -219,7 +221,26 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
           my = (p.y - target.y) / d;
         }
       } else if (goalPt) {
-        const step = flowStep(w.map, toTarget, p.x, p.y);
+        let step = flowStep(w.map, toTarget, p.x, p.y);
+        // standing on a tile the map counts as taken (beside a crate, inside its tile but clear of its body): no path
+        // starts there, so first a step onto the nearest open tile, as a player would just walk off
+        const here = tileOf(w, p.x, p.y);
+        if (!step && w.map.solid[here]) {
+          const tx = here % w.map.w;
+          const ty = Math.floor(here / w.map.w);
+          let best: { x: number; y: number } | null = null;
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]] as const) {
+            const i = (ty + dy) * w.map.w + tx + dx;
+            if (w.map.solid[i] || (toTarget[i] ?? -1) < 0) continue;
+            const x = (tx + dx + 0.5) * TILE;
+            const y = (ty + dy + 0.5) * TILE;
+            if (!best || Math.hypot(x - p.x, y - p.y) < Math.hypot(best.x - p.x, best.y - p.y)) best = { x, y };
+          }
+          if (best) {
+            const d = Math.hypot(best.x - p.x, best.y - p.y) || 1;
+            step = { x: (best.x - p.x) / d, y: (best.y - p.y) / d };
+          }
+        }
         if (step) {
           mx = step.x;
           my = step.y;
@@ -278,6 +299,30 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
           f.mx = 0;
           f.my = 0;
         }
+      }
+      // a boss's order to the hero (Hallvor's watch), read off the screen as a player would: told to hold, not a
+      // step (no dodge, no dash, no blink); told to walk the round, never still (and no spell that needs standing)
+      const order = w.order;
+      if (order && w.time >= order.from - 0.05 && w.time < order.until) {
+        const spec = (slot: SlotKey) => w.build.skills[w.build.bar[slot] ?? '']?.spec;
+        if (order.kind === 'hold') {
+          f.mx = 0;
+          f.my = 0;
+          f.casts = f.casts.filter((c) => c.slot !== 'dodge' && spec(c.slot)?.cast !== 'dash' && spec(c.slot)?.cast !== 'blink');
+        } else {
+          f.casts = f.casts.filter((c) => (spec(c.slot)?.castTime ?? 0) <= 0);
+          if (Math.hypot(f.mx, f.my) < 0.5) {
+            // round and round what it fights
+            const a = Math.atan2(p.y - (target?.y ?? p.y), p.x - (target?.x ?? p.x - 1)) + Math.PI / 2;
+            f.mx = Math.cos(a);
+            f.my = Math.sin(a);
+          }
+        }
+      }
+      // turned around by grief (it says so over the hero): the bot steers the other way, as a player learns to
+      if (w.inverted > 0) {
+        f.mx = -f.mx;
+        f.my = -f.my;
       }
       if (p.hp < p.maxHp * 0.4 && w.hero.potions > 0) f.potion = true;
     }

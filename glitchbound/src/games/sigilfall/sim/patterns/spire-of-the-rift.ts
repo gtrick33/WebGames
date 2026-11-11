@@ -320,7 +320,7 @@ const gravity: PatternFn = (w, e, dt, k) => {
   const reach = k.num('reach', 240);
   if (pt.step === 0) {
     w.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r: k.num('r', 66), r2: 0, angle: 0, len: 0, dur: time, dmg: e.dmg * k.num('mul', 1.8), knock: 170, tone: 'rift', owner: e.id, linger: 0 });
-    w.text(e.x, e.y - e.r - 18, 'THE RIFT TURNS INWARD!', '#ff9af0', true);
+    w.callout('THE RIFT TURNS INWARD!', '#ff9af0');
     w.addFx({ kind: 'rift', x: e.x, y: e.y, life: time, size: 20, color: RIFT });
     w.sfx('beamCharge', 0.9);
     w.sfx('rift', 0.5);
@@ -532,7 +532,7 @@ const echoes: PatternFn = (w, e, dt, k) => {
     pt.data.hide = 1;
     w.addFx({ kind: 'rift', x: e.x, y: e.y, life: 0.6, size: 16, color: RIFT });
     w.fxBurst(e.x, e.y - 8, PALE, 16, 16);
-    w.text(e.x, e.y - e.r - 18, 'WHICH OF US?', PALE, true);
+    w.callout('WHICH OF US?', PALE);
     w.sfx('blink');
     pt.step = 1;
   } else if (pt.step === 1 && pt.t >= k.num('hide', 0.7)) {
@@ -569,7 +569,7 @@ const echoes: PatternFn = (w, e, dt, k) => {
         fade(w, x);
       }
       s.echoes = [];
-      w.text(e.x, e.y - e.r - 18, 'FOUND!', '#ffffff', true);
+      w.callout('FOUND!', '#ffffff');
       w.sfx('shieldBreak');
       w.shake(4);
       w.fxBurst(e.x, e.y - 8, VEIL, 20, 18);
@@ -587,7 +587,7 @@ const echoes: PatternFn = (w, e, dt, k) => {
     if (pt.t >= pt.data.t1! + k.num('time', 9)) {
       // out of time: all of them at once
       for (const c of casters) lance(w, e, c, k.num('fwind', 1.3), k.num('width', 14), e.dmg * k.num('fmul', 1.4));
-      w.text(e.x, e.y - e.r - 18, 'HEAR US!', '#ff9af0', true);
+      w.callout('HEAR US!', '#ff9af0');
       w.sfx('beamCharge');
       pt.data.t2 = pt.t;
       pt.step = 3;
@@ -724,7 +724,7 @@ const sunder: PatternFn = (w, e, _dt, k) => {
       }
       w.after(wind, () => fall(w, e, q, phase, life, vmul));
     }
-    w.text(e.x, e.y - e.r - 18, 'THE FLOOR FALLS!', '#ff9af0', true);
+    w.callout('THE FLOOR FALLS!', '#ff9af0');
     w.addFx({ kind: 'glow', x: e.x, y: e.y - 10, life: 0.6, size: 18, color: VEIL });
     w.sfx('crumble', 0.5);
     w.sfx('beamCharge', 0.6);
@@ -733,10 +733,190 @@ const sunder: PatternFn = (w, e, _dt, k) => {
   } else if (pt.t >= 0.8) k.end();
 };
 
+/* ------------------------------------------------------------ Ilvane the Unmoored */
+
+/**
+ * Ilvane the Unmoored (the Weightless Gallery) charted the stars from the Spire before the Herald came; now she has
+ * forgotten which way is down, and she makes her gallery forget it too (`unmoor`). For a while everything lets go of the
+ * floor: the hero drifts on what they push, slow to start and slow to stop (a dodge still pushes off the air at
+ * once), and the gallery's stones rise and float about the room. Then the weight comes back all at once: every
+ * floating stone hangs still a moment, its shadow marked, and crashes down where it hangs. From her second phase she
+ * flings the drifting stones at the hero while they float.
+ *
+ * The weightless spell and its stones outlive the pattern that casts them, so they are kept per boss here and run by a
+ * small ticker (World.after, once a step) for as long as the fight lasts.
+ */
+
+const STAR = '#c8b8ff';
+/** How far off the floor the stones float (px), and how fast they drift (px/s). */
+const STONE_LIFT = 42;
+const STONE_DRIFT = 18;
+const STONES = ['Rock_1_A', 'Rock_4_C', 'rocks'];
+
+interface Stone {
+  f: World['floaters'][number];
+  vx: number;
+  vy: number;
+  spin: number;
+  /** Marked to fall: it hangs still. */
+  marked: boolean;
+}
+interface Gallery {
+  last: number;
+  /** While the gallery is weightless: until when, when the stones are marked, the fall's blow, the flinging. */
+  until: number;
+  mark: number;
+  mul: number;
+  fling: number;
+  flingT: number;
+  stones: Stone[];
+  said: number;
+}
+
+const GALLERIES = new WeakMap<Enemy, Gallery>();
+
+function galleryOf(w: World, e: Enemy): Gallery {
+  let s = GALLERIES.get(e);
+  if (!s) {
+    s = { last: w.time, until: 0, mark: 0, mul: 1.1, fling: 0, flingT: 0, stones: [], said: 0 };
+    GALLERIES.set(e, s);
+    w.after(0, () => galleryTick(w, e));
+  }
+  return s;
+}
+
+function dropStones(w: World, s: Gallery): void {
+  const mine = new Set(s.stones.map((st) => st.f));
+  w.floaters = w.floaters.filter((f) => !mine.has(f));
+  s.stones = [];
+}
+
+function galleryTick(w: World, e: Enemy): void {
+  const s = GALLERIES.get(e);
+  if (!s) return;
+  if (!fighting(w, e)) {
+    dropStones(w, s);
+    w.unmoored = 0;
+    GALLERIES.delete(e);
+    return;
+  }
+  const dt = Math.max(0, w.time - s.last);
+  s.last = w.time;
+  const adrift = s.until > w.time;
+  // the weight lets go gently, and comes back all at once
+  w.unmoored = adrift ? Math.min(1, w.unmoored + dt * 2.5) : 0;
+  const box = roomBox(w, e);
+  const p = w.player;
+  if (adrift) {
+    for (const st of s.stones) {
+      const f = st.f;
+      f.lift = Math.min(STONE_LIFT, f.lift + dt * 60) + (st.marked ? 0 : Math.sin(w.time * 2 + f.x) * 0.15);
+      f.rot += st.spin * dt;
+      if (st.marked) continue;
+      // drifting, turned back by the walls and the pillars
+      let nx = f.x + st.vx * dt;
+      let ny = f.y + st.vy * dt;
+      if (nx < box.x0 + 14 || nx > box.x1 - 14 || circleHitsWall(w.map, nx, f.y, 8)) {
+        st.vx = -st.vx;
+        nx = f.x;
+      }
+      if (ny < box.y0 + 14 || ny > box.y1 - 14 || circleHitsWall(w.map, f.x, ny, 8)) {
+        st.vy = -st.vy;
+        ny = f.y;
+      }
+      f.x = nx;
+      f.y = ny;
+    }
+    // the weight is coming: every stone hangs still, and its fall is marked under it
+    if (w.time >= s.mark && s.stones.some((st) => !st.marked)) {
+      for (const st of s.stones) {
+        if (st.marked) continue;
+        st.marked = true;
+        w.addTelegraph({ shape: 'circle', x: st.f.x, y: st.f.y, r: 22, r2: 0, angle: 0, len: 0, dur: Math.max(0.3, s.until - w.time), dmg: e.dmg * s.mul, knock: 60, tone: 'enemy', owner: -1, linger: 0 });
+      }
+      w.text(p.x, p.y - 30, 'The weight comes back: out from under the stones!', '#e8e0ff', false);
+    }
+    // she flings the drifting stones at the hero
+    if (s.fling > 0 && !p.dead) {
+      s.flingT -= dt;
+      const free = s.stones.filter((st) => !st.marked);
+      if (s.flingT <= 0 && free.length) {
+        s.flingT = s.fling;
+        const st = free.reduce((a, b) => (dist(a.f.x, a.f.y, p.x, p.y) > dist(b.f.x, b.f.y, p.x, p.y) ? a : b));
+        const a = Math.atan2(p.y - st.f.y, p.x - st.f.x);
+        w.spawnProjectile({ x: st.f.x, y: st.f.y - 4, vx: Math.cos(a) * 150, vy: Math.sin(a) * 150, r: 6, life: 260, dmg: e.dmg * 0.8, type: 'physical', spec: null, depth: 0, pierce: 0, bounce: 0, hit: [], look: 'orb', color: '#9a92b0', hostile: true, homing: 0, child: false, knock: 80 });
+        w.addFx({ kind: 'beam', x: e.x, y: e.y - 20, x2: st.f.x, y2: st.f.y - st.f.lift, life: 0.2, size: 1.5, color: STAR });
+        w.floaters = w.floaters.filter((f) => f !== st.f);
+        s.stones = s.stones.filter((o) => o !== st);
+        w.sfx('rush', 0.4);
+      }
+    }
+    // the hero adrift: motes of starlight about them
+    if (Math.floor(w.time * 6) !== Math.floor((w.time - dt) * 6)) w.addFx({ kind: 'spark', x: p.x + (w.rand() - 0.5) * 14, y: p.y - 4, vx: 0, vy: -16, life: 0.6, size: 2, color: STAR });
+  } else if (s.stones.length) {
+    // down they come
+    for (const st of s.stones) {
+      w.fxBurst(st.f.x, st.f.y, '#9a92b0', 12, 16);
+      w.addFx({ kind: 'rubble', x: st.f.x, y: st.f.y, life: 0.5, size: 3, color: '#7a7290' });
+    }
+    dropStones(w, s);
+    w.text(p.x, p.y - 30, 'Heavy!', '#ffffff', true);
+    w.shake(5);
+    w.sfx('slam');
+  }
+  w.after(0, () => galleryTick(w, e));
+}
+
+/**
+ * The gallery lets go: weightless for `time` s, `stones` stones rising to float about the room; `warn` s before the
+ * end they hang still and their falls are marked (`mul` of her blow). With `fling`, she throws a drifting stone at the
+ * hero every `fling` s.
+ */
+const unmoor: PatternFn = (w, e, _dt, k) => {
+  const { pt } = k;
+  const s = galleryOf(w, e);
+  if (pt.step === 0) {
+    if (s.until > w.time) {
+      k.end();
+      return;
+    }
+    const time = k.num('time', 6);
+    s.until = w.time + time;
+    s.mark = s.until - k.num('warn', 1.1);
+    s.mul = k.num('mul', 1.1);
+    s.fling = k.num('fling', 0);
+    s.flingT = 1.2;
+    dropStones(w, s);
+    const n = k.num('stones', 7);
+    for (let i = 0; i < n; i++) {
+      const at = anySpot(w, e, 10);
+      if (!at || dist(at.x, at.y, w.player.x, w.player.y) < 30) continue;
+      const a = w.rand() * TAU;
+      const f = { m: STONES[i % STONES.length]!, x: at.x, y: at.y, lift: 0, h: 14 + w.rand() * 8, rot: w.rand() * TAU, tint: [0.86, 0.8, 1.02] as const };
+      s.stones.push({ f, vx: Math.cos(a) * STONE_DRIFT * (0.6 + w.rand() * 0.6), vy: Math.sin(a) * STONE_DRIFT * (0.6 + w.rand() * 0.6), spin: (w.rand() - 0.5) * 1.6, marked: false });
+      w.floaters.push(f);
+      w.fxBurst(at.x, at.y, '#9a92b0', 8, 10);
+    }
+    w.callout('Let go of the floor. It was never holding you.', STAR);
+    w.text(w.player.x, w.player.y - 30, 'Weightless! You drift: a dodge still pushes off.', '#e8e0ff', false);
+    w.sfx('rift', 0.6);
+    w.addFx({ kind: 'ring', x: e.x, y: e.y, life: 0.8, size: 60, color: STAR });
+    pt.data.t1 = pt.t;
+    pt.step = 1;
+  } else if (pt.t >= pt.data.t1! + 0.7) k.end();
+};
+
+/** Ilvane's stones and whether her gallery is weightless (for tests). */
+export const galleryOfIlvane = (w: World, e: Enemy): { adrift: boolean; stones: { x: number; y: number; marked: boolean }[] } | null => {
+  const s = GALLERIES.get(e);
+  return s ? { adrift: s.until > w.time, stones: s.stones.map((st) => ({ x: st.f.x, y: st.f.y, marked: st.marked })) } : null;
+};
+
 export const SPIRE_OF_THE_RIFT_PATTERNS: Record<string, PatternFn> = {
   'spire:prism': prism,
   'spire:gravity': gravity,
   'spire:tear': tear,
   'spire:echoes': echoes,
   'spire:sunder': sunder,
+  'spire:unmoor': unmoor,
 };

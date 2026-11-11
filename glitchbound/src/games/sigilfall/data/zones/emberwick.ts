@@ -44,7 +44,7 @@ function plan(): CityPlan {
   // the Crown City opens to the hero in Act II, at the end of the King's Road (STORY_BIBLE.md §3)
   c.gate('e', 41, 4, 94, 95, { to: 'ashen-barrows', label: 'East gate: the King’s Road to Lantern Hill' });
   c.gate('s', 52, 4, 73, 74, { to: 'amberfield', label: 'South gate: the refugee road to Hearthstead' });
-  c.gate('w', 41, 4, 8, 9, { to: 'ironpeak', label: 'West gate: the mountain road to Kragholt' });
+  c.gate('w', 41, 4, 8, 9, { to: 'sunscorch', label: 'West gate: the long road to the Sunscorch', minLevel: 28 });
   c.building('tower', 93, 35, 3, 3, { pave: false });
   c.building('tower', 93, 44, 3, 3, { pave: false });
   c.building('tower', 45, 72, 3, 3, { pave: false });
@@ -212,7 +212,7 @@ function plan(): CityPlan {
   c.building('shop', 74, 45, 5, 3, { npc: 'odo', name: 'Odo’s Armory' });
   c.building('shop', 82, 45, 5, 3, { npc: 'wren', name: 'Imelda’s Curios' });
   // Nyx: from the day she joins until the night at the Tear
-  c.npc('nyx', 87, 49, all(after('nyx-joins'), until('the-heralds-ambush')));
+  c.npc('nyx', 87, 49, all(after('the-bandit-king'), until('the-heralds-ambush')));
   c.building('house', 66, 55, 4, 3);
   c.building('house', 72, 55, 4, 3);
   c.building('house', 80, 55, 4, 3);

@@ -90,7 +90,7 @@ export type Effect =
   /** A shield absorbing `pct`% of max health, for `dur` seconds. */
   | { kind: 'shield'; pct: number; dur: number }
   /** A burst around the caster. */
-  | { kind: 'nova'; radius: number; mul: number; dmgType?: DmgType; status?: { status: StatusId; dur: number; power: number } }
+  | { kind: 'nova'; radius: number; mul: number; dmgType?: DmgType; status?: { status: StatusId; dur: number; power: number }; /** Of the class's reference damage, not the skill's (a skill that deals none itself: a dodge). */ ref?: boolean }
   /** A wave that rolls forward from the impact along the aim, through every enemy. */
   | { kind: 'shockwave'; length: number; width: number; mul: number }
   /** Leaves a field on the ground. */
@@ -120,7 +120,12 @@ export type Effect =
   /** Enemies within `radius` turn on the hero for `dur` seconds, whatever else they wanted. */
   | { kind: 'taunt'; radius: number; dur: number }
   /** Drags the enemy hit `dist` toward the caster (elites half as far, bosses not at all). */
-  | { kind: 'yank'; dist: number };
+  | { kind: 'yank'; dist: number }
+  /**
+   * Sets off a damage-over-time status on the enemy hit: everything it still had to deal lands at once, times `mul`,
+   * and the status is gone. With `radius`, every enemy that near takes it too.
+   */
+  | { kind: 'detonate'; status: StatusId; mul: number; radius?: number };
 
 /** A timed buff on the hero. The same id refreshes instead of stacking. */
 export interface BuffDef {
@@ -136,6 +141,30 @@ export interface BuffDef {
   /** Strikes back at whatever hits the hero for this share of the class's reference damage. */
   thorns?: number;
   color: string;
+  /** It stacks this high: gaining it again adds one and renews its time, and its stats count once a stack. */
+  max?: number;
+  /** It makes the hero's next cast of one skill more than it is (a specialization's combo): that cast uses it up. */
+  empower?: Empower;
+}
+
+/**
+ * What a combo does to the cast it waits for. Where its buff stacks, the damage counts once a stack and `instant` and
+ * `ready` hold only at full stacks; the cast takes every stack. Where it doesn't, it lasts `casts` casts.
+ */
+export interface Empower {
+  /** The skill it waits for; '*' with `type`: the next skill of that damage type that isn't the basic attack. */
+  skill: string;
+  type?: DmgType;
+  /** +% damage. */
+  pct?: number;
+  /** It costs nothing. */
+  free?: boolean;
+  /** It has no cast time. */
+  instant?: boolean;
+  /** Gaining it makes the skill ready at once, whatever its cooldown. */
+  ready?: boolean;
+  /** How many casts it lasts (1 where not said). */
+  casts?: number;
 }
 
 /**
@@ -187,8 +216,8 @@ export interface SkillSpec {
   onKill: Effect[];
   onCast: Effect[];
   trail?: GroundSpec;
-  /** Extra damage against enemies with a status, or below 30% health ('lowHp'). */
-  bonusVs: { status: StatusId | 'lowHp'; pct: number }[];
+  /** Extra damage against enemies with a status, below 30% health ('lowHp'), or a long way off ('far': a ranger's eye). */
+  bonusVs: { status: StatusId | 'lowHp' | 'far'; pct: number }[];
   /** Extra damage when cast soon after a dodge. */
   afterDodge?: { window: number; pct: number };
   /** Skill-specific knobs: chain jumps and range, trap limit, echo waves, pull, mana per hit, etc. */
@@ -233,7 +262,7 @@ export type SkillOp =
   | { op: 'convert'; dmgType: DmgType; look?: string }
   | { op: 'onHit' | 'onImpact' | 'onKill' | 'onCast'; effect: Effect }
   | { op: 'trail'; ground: GroundSpec }
-  | { op: 'bonusVs'; status: StatusId | 'lowHp'; pct: number }
+  | { op: 'bonusVs'; status: StatusId | 'lowHp' | 'far'; pct: number }
   | { op: 'afterDodge'; window: number; pct: number }
   /** More of the resource gained when used. */
   | { op: 'gen'; n: number }
@@ -244,7 +273,7 @@ export type SkillOp =
 export interface ProcDef {
   /** Unique id: the internal cooldown is tracked per proc. */
   id: string;
-  on: 'hit' | 'crit' | 'kill' | 'dodge' | 'hurt' | 'ult';
+  on: 'hit' | 'crit' | 'kill' | 'dodge' | 'hurt' | 'ult' | 'block';
   /** Only hits of this damage type / from this skill / against enemies with this status count. */
   dmgType?: DmgType;
   skill?: string;
@@ -314,6 +343,12 @@ export interface ItemDef {
   minLevel: number;
   /** Only from a quest or a boss (never random drops). */
   special?: boolean;
+  /** One of a set (data/riftgear.ts SETS): worn with its fellows it does more. */
+  set?: string;
+  /** Rift-forged: it comes only out of the Rift, to a hero whose Riftstone has opened this level. */
+  rift?: number;
+  /** Made for one of its class's three specializations: what it changes is that one's own skill. */
+  forSpec?: 0 | 1 | 2;
 }
 
 /** A base type for generated gear: a slot, a look and the stats it can roll. */
@@ -383,6 +418,11 @@ export interface SpecDef {
   skill: string;
   /** Always on while this is your specialization. */
   passive: { name: string; text: string; mods: Mod[] };
+  /**
+   * Its combo: the one thing its skills do together that no other specialization's do (one skill setting up
+   * another, charges built and spent, a status set off). Its mods are always on, as the passive's are.
+   */
+  combo?: { name: string; text: string; mods: Mod[] };
   /** The ability belongs to a druid shape: it is used there, not put on the normal bar. */
   formOnly?: boolean;
 }
@@ -472,6 +512,11 @@ export interface EnemyDef {
   id: string;
   name: string;
   sprite: string;
+  /**
+   * A thing, not a creature: drawn as this prop (`m`, `h` px tall) and standing still, like a boss fight's
+   * candles, coffins or posts (data/bosses.ts): it shakes and flashes when struck.
+   */
+  prop?: { m: string; h: number; tint?: [number, number, number]; /** It hangs this far off the ground (tiles), bobbing: a thing that floats (a sigil torn loose). */ lift?: number };
   ai: EnemyAi;
   hp: number;
   dmg: number;
@@ -727,7 +772,7 @@ export type Marker =
   | { kind: 'secret'; id: string }
   | { kind: 'shrine'; id: string }
   | { kind: 'dummy'; shooter?: boolean }
-  | { kind: 'prop'; prop: string; solid?: boolean }
+  | { kind: 'prop'; prop: string; solid?: boolean; /** Only seen: nobody bumps into it (a boss chamber's dressing out on its floor, where its fight is). */ through?: boolean }
   | { kind: 'torch' }
   | { kind: 'checkpoint' }
   | { kind: 'hazard'; hazard: 'bramble' | 'spore' }
@@ -810,6 +855,11 @@ export interface RegionDef {
   kind: 'town' | 'wild' | 'dungeon';
   /** Inside a building of a town (safe, entered by its door, never on the world map; no riding). */
   interior?: boolean;
+  /**
+   * A dungeon whose story ends in a deed rather than a fight (the Ash Crown unmade in its own memory): when this
+   * quest is done here, the way home opens where the hero stands, as it does when a last boss falls.
+   */
+  homeAfter?: string;
   /** Enemy level on Normal (in the wilds, at the way in; packs carry their own). */
   level: number;
   /** The levels the region is for, shown on the world map. */

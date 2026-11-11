@@ -29,6 +29,8 @@ export const MOLTEN_THRONE_ART: ZoneArt = {
     'the-pale-crown': recolor(SHATTERED_VALE_ART.foes['rift-shardling']!, { p: '#f4f0fa', P: '#d8d0e8', Q: '#a89cc0', q: '#6a5a8a', c: '#ffffff', C: '#e0d8ff', r: '#c8a0ff' }),
     // bone-steel for a frame and the mountain's fire for a heart
     'magma-warden': recolor(DEEPFORGE_HALLS_ART.foes['slag-colossus']!, { s: '#3a2a2a', S: '#5a3e30', l: '#8a6a52', r: '#e8541e', o: '#ff9a3d', y: '#fff2a0', b: '#d8d0c0', i: '#9a7a6a' }),
+    // the Host's founder: bone-white, the anvil on her back, her hammer and crucible white-hot
+    'ossa-the-founder': recolor(DEEPFORGE_HALLS_ART.foes['the-runewarden']!, { a: '#e8dcc8', A: '#fff8e8', S: '#d8ccb4', s: '#8a8070', e: '#ff9a3d', g: '#5a5660', G: '#8a8690', r: '#ffb060', u: '#ff7a2a' }),
     // the fire lord on his own throne, in chains
     'ashkar-the-bound': recolor(TOMB_OF_THE_SUN_KING_ART.foes['the-sun-king']!, { y: '#ff9a3d', Y: '#e8541e', z: '#8a2a12', h: '#fff2a0', l: '#3a2a2a', L: '#241a1a', e: '#fff4b0', w: '#e8c8a0', W: '#b88a60', V: '#7a5a3a', r: '#ff7a1e', R: '#b8361a', c: '#5a2a1a', C: '#3a1a10', o: '#ffd84d', s: '#c87a3a' }),
   },

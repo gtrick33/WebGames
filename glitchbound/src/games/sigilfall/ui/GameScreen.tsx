@@ -1,7 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { comboNow } from './comboMark';
+import { bossPips, phaseTicks, sixWords, windingUp } from './bossbar';
+import { mechanicDue, mechanicShown } from '../progress/tips';
+import type { Callout } from '../sim/types';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { MAX_LEVEL, xpToNext } from '../data/classes';
-import { KEY_AFFIXES, KEY_DEATH } from '../data/keystones';
+import { KEY_AFFIXES, KEY_DEATH, keyUpgrade } from '../data/keystones';
 import { NPCS, QUEST_DEFS } from '../data/quests';
 import { REGIONS, TIERS } from '../data/regions';
 import { SKILLS } from '../data/skills';
@@ -18,6 +22,7 @@ import { itemMods, itemName, usableBy } from '../progress/items';
 import { TONES } from '../render/effects';
 import { rarityColor } from '../render/renderer';
 import { clockText, type World } from '../sim/world';
+import { sceneDark } from '../sim/scene';
 import { fmt, ItemIcon, Portrait } from './common';
 import { DesktopBar } from './DesktopBar';
 import { Panels } from './Panels';
@@ -32,9 +37,25 @@ import { mapIconUrl } from './mapIcons';
 function SceneBars({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLDivElement>(null);
   const title = useRef<HTMLDivElement>(null);
+  const black = useRef<HTMLDivElement>(null);
+  const memory = useRef<HTMLDivElement>(null);
+  const caption = useRef<HTMLElement>(null);
   const shown = useRef('');
+  const told = useRef('');
   useFrame(engine, (w) => {
     if (!ref.current) return;
+    // a fade to black, and a memory: the picture pale and tinted, its caption in the upper bar (clear of anyone's lines)
+    if (black.current) black.current.style.opacity = String(sceneDark(w.scene));
+    const v = w.scene?.vision;
+    if (memory.current) {
+      memory.current.classList.toggle('is-on', !!v);
+      caption.current?.classList.toggle('is-on', !!v);
+      if (v && v.text !== told.current) {
+        told.current = v.text;
+        memory.current.style.setProperty('--tint', v.tint);
+        if (caption.current) caption.current.textContent = v.text;
+      }
+    }
     ref.current.classList.toggle('is-on', !!w.scene);
     ref.current.parentElement?.classList.toggle('is-scene', !!w.scene);
     // a battle's or a boss's name, over the lower bar (it fades out with the bars)
@@ -49,8 +70,11 @@ function SceneBars({ engine }: { engine: SigilEngine }) {
   });
   return (
     <div className="rb-scene" ref={ref} aria-hidden={!engine.world?.scene}>
+      <div className="rb-scene-vision" ref={memory} />
+      <div className="rb-scene-black" ref={black} />
       <div className="rb-scene-bar" />
       <div className="rb-scene-bar is-low" />
+      <em className="rb-scene-caption" ref={caption} />
       <div className="rb-scene-title" ref={title}>
         <strong />
         <span />
@@ -86,6 +110,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
     <div className={`rb-ui${engine.touchMode ? ' is-touch' : ' is-mouse'}${engine.settings.lefty ? ' is-lefty' : ''}${engine.storyTalk() ? ' is-talk' : ''}${ui.card?.act ? ' is-act' : ''}`}>
       <Hud engine={engine} />
       <CastBar engine={engine} />
+      <ComboChip engine={engine} />
       {ui.boss && <BossBar engine={engine} />}
       {engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}
       {!ui.dialogue && <Toasts engine={engine} />}
@@ -288,18 +313,113 @@ function HudButton({ icon, label, badge, onClick, kbd, engine, spare }: { icon: 
   );
 }
 
+/** The seven points of the Hallow King's crown (World.crown), in the order the bar shows them, and their colors. */
+const CROWN_POINTS: [string, string, string][] = [
+  ['stone', 'Stone', '#c8b898'],
+  ['embers', 'Embers', '#ff7a3d'],
+  ['sun', 'the Sun', '#ffd84d'],
+  ['thorns', 'Thorns', '#6ad05a'],
+  ['frost', 'Frost', '#bfe8ff'],
+  ['veil', 'the Veil', '#c58cff'],
+  ['tides', 'Tides', '#4ab8ff'],
+];
+
+/** What a boss's standing order says (World.order: Hallvor's watch), under its bar. */
+const ORDER_SAY = { hold: 'Hold your post: don’t move', march: 'Walk the round: keep moving' } as const;
+
 function BossBar({ engine }: { engine: SigilEngine }) {
   const bar = useRef<HTMLElement>(null);
   const lag = useRef<HTMLElement>(null);
+  const order = useRef<HTMLSpanElement>(null);
+  const orderSay = useRef<HTMLElement>(null);
+  const orderFill = useRef<HTMLElement>(null);
+  const ward = useRef<HTMLElement>(null);
+  const wardFill = useRef<HTMLElement>(null);
+  const wardTop = useRef(0);
+  const crown = useRef<HTMLSpanElement>(null);
+  const crownSaid = useRef('');
   const shown = useRef(1);
+  const cast = useRef<HTMLSpanElement>(null);
+  const castFill = useRef<HTMLElement>(null);
+  const pips = useRef<HTMLSpanElement>(null);
+  const pipsSaid = useRef('');
+  const call = useRef<HTMLSpanElement>(null);
+  const callSay = useRef<HTMLElement>(null);
+  const callFill = useRef<HTMLElement>(null);
+  const callHint = useRef<HTMLElement>(null);
+  const shoutSeen = useRef<Callout | null>(null);
   useFrame(engine, (w) => {
     const b = w.boss();
     const share = b ? Math.max(0, b.hp / b.maxHp) : 0;
     shown.current = Math.max(share, shown.current - 0.004);
     if (bar.current) bar.current.style.width = `${share * 100}%`;
     if (lag.current) lag.current.style.width = `${shown.current * 100}%`;
+    // a ward over the boss (Prior Vessant's will while he sings): its own bar, emptying as it is broken
+    const sh = b && b.shield > 0 ? b.shield : 0;
+    wardTop.current = sh > 0 ? Math.max(wardTop.current, sh) : 0;
+    if (ward.current) ward.current.hidden = sh <= 0;
+    if (wardFill.current && sh > 0) wardFill.current.style.width = `${(sh / wardTop.current) * 100}%`;
+    // the Hallow King's crown: a point lit for each sigil it holds
+    const c = crown.current;
+    if (c) {
+      const said = w.crown ? w.crown.join(',') : '';
+      if (said !== crownSaid.current) {
+        crownSaid.current = said;
+        c.hidden = !w.crown;
+        for (const [i, el] of [...c.querySelectorAll('i')].entries()) el.dataset.on = w.crown?.includes(CROWN_POINTS[i]![0]) ? '1' : '0';
+        c.title = w.crown ? `The Crown holds: ${w.crown.map((id) => `the Sigil of ${CROWN_POINTS.find((x) => x[0] === id)?.[1] ?? id}`).join(', ')}` : '';
+      }
+    }
+    // what it is winding up, if that takes a second or more
+    const wind = b ? windingUp(w) : null;
+    if (cast.current) cast.current.hidden = !wind;
+    if (wind && castFill.current) castFill.current.style.width = `${wind.k * 100}%`;
+    // its state, in words (rebuilt only when it changes)
+    const list = b ? bossPips(b) : [];
+    const key = list.map((p) => p.id + p.label).join('|');
+    if (pips.current && key !== pipsSaid.current) {
+      pipsSaid.current = key;
+      pips.current.replaceChildren(
+        ...list.map((p) => {
+          const el = document.createElement('i');
+          el.dataset.tone = p.tone;
+          el.textContent = p.label;
+          return el;
+        }),
+      );
+    }
+    // what it is doing, called out: a few words, a bar running down, and what to do about it the first time
+    const s = w.shout;
+    if (call.current && callSay.current && callFill.current && callHint.current) {
+      call.current.hidden = !s;
+      if (s) {
+        if (s !== shoutSeen.current) {
+          shoutSeen.current = s;
+          callSay.current.textContent = sixWords(s.text);
+          call.current.style.setProperty('--call', s.color);
+          const due = !!s.hint && mechanicDue(w.hero, engine.settings.tutorial, s.text);
+          callHint.current.hidden = !due;
+          callHint.current.textContent = due ? s.hint! : '';
+          if (due) mechanicShown(w.hero, s.text);
+        }
+        callFill.current.style.width = `${Math.max(0, 1 - s.t / s.dur) * 100}%`;
+      } else shoutSeen.current = null;
+    }
+    // the order: called (it pulses until it holds), then holding (its time running out)
+    const o = w.order;
+    const el = order.current;
+    if (!el || !orderSay.current || !orderFill.current) return;
+    el.hidden = !o;
+    if (!o) return;
+    const on = w.time >= o.from;
+    el.dataset.kind = o.kind;
+    el.dataset.on = on ? '1' : '0';
+    orderSay.current.textContent = ORDER_SAY[o.kind];
+    orderFill.current.style.width = `${on ? Math.max(0, (o.until - w.time) / (o.until - o.from)) * 100 : 100}%`;
   });
   const boss = engine.ui.boss!;
+  const def = engine.world?.boss()?.boss?.def;
+  const ticks = def ? phaseTicks(def) : [];
   return (
     <div className="rb-bossbar" role="status">
       <strong>{boss.name}</strong>
@@ -307,6 +427,35 @@ function BossBar({ engine }: { engine: SigilEngine }) {
       <span className="rb-boss-track">
         <i ref={lag} className="rb-boss-lag" />
         <i ref={bar} className="rb-boss-fill" />
+        {ticks.map((at) => (
+          <u key={at} className="rb-boss-tick" style={{ left: `${at * 100}%` }} />
+        ))}
+      </span>
+      <span ref={pips} className="rb-boss-pips" />
+      <span ref={cast} className="rb-boss-cast" hidden aria-label="Winding up">
+        <i ref={castFill} />
+      </span>
+      <span ref={ward} className="rb-boss-ward" hidden>
+        <i ref={wardFill} />
+      </span>
+      <span ref={crown} className="rb-boss-crown" hidden aria-label="The sigils in the Hallow King’s crown">
+        {CROWN_POINTS.map(([id, , color]) => (
+          <i key={id} style={{ '--pt': color } as CSSProperties} data-on="0" />
+        ))}
+      </span>
+      <span ref={order} className="rb-boss-order" hidden>
+        <b ref={orderSay} />
+        <i ref={orderFill} />
+      </span>
+      <span ref={call} className="rb-boss-call" hidden>
+        <span className="rb-boss-call-line">
+          <em aria-hidden="true">!</em>
+          <b ref={callSay} />
+        </span>
+        <i className="rb-boss-call-time">
+          <i ref={callFill} />
+        </i>
+        <small ref={callHint} hidden />
       </span>
     </div>
   );
@@ -317,6 +466,54 @@ function BossBar({ engine }: { engine: SigilEngine }) {
  * already is: the spell's name over a bar that fills in its element's color. When the spell goes the bar
  * flashes full; when the cast is stopped it says so; either way it fades out.
  */
+/**
+ * The specialization's combo while it is going (data/types.ts SpecDef.combo): its name, a pip for each stack or cast,
+ * and its time running down, in a chip over the hero's cast bar. Nothing shows when no combo is up.
+ */
+function ComboChip({ engine }: { engine: SigilEngine }) {
+  const el = useRef<HTMLDivElement>(null);
+  const name = useRef<HTMLElement>(null);
+  const pips = useRef<HTMLSpanElement>(null);
+  const fill = useRef<HTMLElement>(null);
+  const said = useRef('');
+  useFrame(engine, (w) => {
+    const d = el.current;
+    if (!d) return;
+    const c = comboNow(w);
+    d.hidden = !c;
+    if (!c) {
+      said.current = '';
+      return;
+    }
+    const key = `${c.name}|${c.n}|${c.of}`;
+    if (key !== said.current) {
+      said.current = key;
+      d.style.setProperty('--combo', c.color);
+      d.dataset.full = c.n >= c.of ? '1' : '0';
+      if (name.current) name.current.textContent = c.name;
+      if (pips.current) {
+        pips.current.replaceChildren(
+          ...Array.from({ length: c.of > 1 ? c.of : 0 }, (_, i) => {
+            const p = document.createElement('i');
+            p.dataset.on = i < c.n ? '1' : '0';
+            return p;
+          }),
+        );
+      }
+    }
+    if (fill.current) fill.current.style.width = `${c.left * 100}%`;
+  });
+  return (
+    <div ref={el} className="rb-combo" hidden role="status">
+      <b ref={name} />
+      <span ref={pips} className="rb-combo-pips" />
+      <i className="rb-combo-time">
+        <i ref={fill} />
+      </i>
+    </div>
+  );
+}
+
 function CastBar({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLDivElement>(null);
   const name = useRef<HTMLSpanElement>(null);
@@ -380,10 +577,20 @@ function KeyClock({ engine }: { engine: SigilEngine }) {
   const time = useRef<HTMLElement>(null);
   const bar = useRef<HTMLElement>(null);
   const rooms = useRef<HTMLElement>(null);
+  const pace = useRef<HTMLElement>(null);
   useFrame(engine, (world) => {
     const run = world.keyRun;
     if (!run) return;
     const t = run.end ? run.end.time : run.t + run.deaths * KEY_DEATH;
+    // what the run is racing for: three stones inside 60% of the clock, two inside 80%, one inside it
+    if (pace.current) {
+      const up = keyUpgrade(t, run.par);
+      const text = run.end ? (up > 0 ? `In time: +${up}` : 'Out of time') : up === 3 ? 'Racing for +3' : up === 2 ? 'Racing for +2' : up === 1 ? 'Racing for +1' : 'Out of time: finish for marks';
+      if (pace.current.textContent !== text) {
+        pace.current.textContent = text;
+        pace.current.className = `rb-keypace is-up${Math.max(0, up)}`;
+      }
+    }
     if (time.current) {
       time.current.textContent = `${clockText(t)} / ${clockText(run.par)}`;
       time.current.classList.toggle('is-late', t > run.par);
@@ -400,7 +607,10 @@ function KeyClock({ engine }: { engine: SigilEngine }) {
       <b ref={time} className="rb-keytime" />
       <span className="rb-keybar">
         <i ref={bar} />
+        <em style={{ left: '60%' }} />
+        <em style={{ left: '80%' }} />
       </span>
+      <span ref={pace} className="rb-keypace" />
       <span ref={rooms} className="rb-small" />
       {k.affixes.length > 0 && <span className="rb-small rb-dim">{k.affixes.map((a) => KEY_AFFIXES[a].name).join(' · ')}</span>}
     </div>

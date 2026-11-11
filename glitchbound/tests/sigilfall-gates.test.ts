@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { QUESTS, QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
 import type { RegionId } from '../src/games/sigilfall/data/types';
-import { questState, sigilCount, type Character } from '../src/games/sigilfall/progress/character';
+import { questState, type Character } from '../src/games/sigilfall/progress/character';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import type { World } from '../src/games/sigilfall/sim/world';
 import { newWorld, readyHero } from './sigilfall-bot';
@@ -71,7 +71,7 @@ const npcHere = (w: World, id: string): boolean => w.npcs.some((n) => n.id === i
 const exitTo = (w: World, to: RegionId): World['exits'][number] | undefined => w.exits.find((x) => x.to === to);
 
 /** The zones Acts IV and V added. */
-const NEW_ZONES = ['gloamhollow', 'bonefields', 'weeping-woods', 'sunken-reaches', 'blightwood', 'emberdeep', 'hollowmere', 'riftscar'];
+const NEW_ZONES = ['riftscar', 'weeping-woods', 'emberdeep', 'hollowmere'];
 
 describe('Sigilfall: the Three Gates (Act IV)', () => {
   it('every quest of the two Acts opens in turn from a new hero’s start: no loops, nothing out of reach', () => {
@@ -84,8 +84,8 @@ describe('Sigilfall: the Three Gates (Act IV)', () => {
         changed = true;
       }
     }
-    const acts = QUESTS.filter((q) => NEW_ZONES.includes(q.zone ?? '') || ['the-third-gate', 'into-vaelmoor', 'the-seventh-sigil', 'gate-nyx-returns', 'gate-the-prison-map'].includes(q.id));
-    expect(acts.length).toBeGreaterThan(140);
+    const acts = QUESTS.filter((q) => NEW_ZONES.includes(q.zone ?? '') || ['into-vaelmoor', 'the-seventh-sigil', 'gate-nyx-returns', 'gate-the-prison-map'].includes(q.id));
+    expect(acts.length).toBeGreaterThan(40);
     expect(acts.filter((q) => !done.has(q.id)).map((q) => q.id)).toEqual([]);
   });
 
@@ -118,12 +118,12 @@ describe('Sigilfall: the Three Gates (Act IV)', () => {
     expect(questState(w.hero, 'gate-the-prison-map')).toBe('active');
     run(w, 0.6);
     expect(npcHere(w, 'nyx-returned')).toBe(true);
-    // the Gloam road opens from the Vale only once the map is read
-    expect(exitTo(newWorld('gloamhollow', heroAt('gloam-the-lamp-road', 44)), 'shattered-vale')).toBeTruthy();
+    // the road into the Riftscar opens from the Vale only once the map is read
+    expect(exitTo(newWorld('riftscar', heroAt('gloam-the-lamp-road', 44)), 'shattered-vale')).toBeTruthy();
   });
 
   it('the Gloam Gate: the cells, the way out, the Gatewarden, and Lastlight’s fire after', () => {
-    const held = newWorld('gloamhollow', heroAt('gloam-the-cells', 48));
+    const held = newWorld('riftscar', heroAt('gloam-the-cells', 48));
     expect(held.storyState?.id).toBe('gate-held');
     expect(held.enemies.some((e) => e.def.id === 'the-gatewarden' && !e.dead)).toBe(true);
     const w = held;
@@ -133,7 +133,7 @@ describe('Sigilfall: the Three Gates (Act IV)', () => {
     expect(w.pets.some((p) => p.def.id === 'nyx-at-the-lock')).toBe(true);
     expect(w.pets.some((p) => p.def.id === 'cael')).toBe(true);
     // a reload in the middle starts the cells over from the quest's step: nothing is lost, nothing paid
-    const mid = newWorld('gloamhollow', w.hero);
+    const mid = newWorld('riftscar', w.hero);
     expect(questState(mid.hero, 'gloam-the-cells')).toBe('active');
     beat(w, 'gloam-the-cells');
     expect(questState(w.hero, 'gloam-the-cells')).toBe('done');
@@ -147,59 +147,23 @@ describe('Sigilfall: the Three Gates (Act IV)', () => {
     expect(questState(w.hero, 'gloam-out-of-the-cells')).toBe('done');
     expect(questState(w.hero, 'the-gatewarden')).toBe('active');
     // coming back after the cells: the event does not play again
-    const again = newWorld('gloamhollow', w.hero);
+    const again = newWorld('riftscar', w.hero);
     goTo(again, 'gate-cells');
     run(again, 0.5);
     expect(again.story.run).toBeNull();
     expect(npcHere(again, 'elyra-lastlight')).toBe(true);
     expect(npcHere(again, 'wren')).toBe(true);
     // the Gate taken: lamps on its hooks, the gloom gone
-    const lit = newWorld('gloamhollow', heroAt('the-gloam-gate', 48));
+    const lit = newWorld('riftscar', heroAt('the-gloam-gate', 48));
     expect(lit.storyState).toBeNull();
     expect(lit.props.filter((p) => p.prop === 'lantern').length).toBeGreaterThanOrEqual(2);
     expect(lit.enemies.some((e) => e.def.id === 'the-gatewarden' && !e.dead)).toBe(false);
-  });
-
-  it('the Muster Hall: the coalition on the field, then the Colossus; the Hall burns the day it falls', () => {
-    const w = newWorld('bonefields', heroAt('muster-the-field', 50));
-    expect(w.storyState?.id).toBe('muster-held');
-    expect(npcHere(w, 'mara-at-the-muster')).toBe(true);
-    goTo(w, 'muster-field');
-    run(w, 0.3);
-    expect(w.story.run?.def.id).toBe('muster-field');
-    const allies = w.pets.filter((p) => ['mara', 'cael', 'highwall-soldier', 'hearth-rider', 'kragholt-axe'].includes(p.def.id));
-    // bounded: seven allies, never a crowd
-    expect(allies).toHaveLength(7);
-    let catapults = false;
-    for (let i = 0; i < 40 && questState(w.hero, 'muster-the-field') === 'active'; i++) {
-      run(w, 2.5);
-      catapults ||= w.enemies.some((e) => e.def.id === 'bone-catapult' && !e.dead);
-      w.player.hp = w.player.maxHp;
-      smite(w);
-    }
-    expect(catapults).toBe(true);
-    expect(questState(w.hero, 'muster-the-field')).toBe('done');
-    expect(questState(w.hero, 'the-bone-colossus')).toBe('active');
-    // the Colossus stands in the Hall's yard, waiting
-    expect(newWorld('bonefields', w.hero).enemies.some((e) => e.def.id === 'the-bone-colossus' && !e.dead)).toBe(true);
-    const burning = newWorld('bonefields', heroAt('the-third-gate', 50));
-    expect(burning.storyState?.id).toBe('hall-burning');
-    expect(burning.fires.length).toBeGreaterThanOrEqual(4);
-  });
-
-  it('the roads into Vaelmoor open only when all three Gates are taken', () => {
-    const before = heroAt('the-bone-colossus', 50);
-    const after = heroAt('into-vaelmoor', 50);
-    for (const [region, to] of [['gloamhollow', 'weeping-woods'], ['bonefields', 'sunken-reaches'], ['bonefields', 'emberdeep'], ['glimmerwood', 'blightwood']] as const) {
-      expect(exitTo(newWorld(region, before), to)?.needs, `${region} → ${to}`).toBe('the-third-gate');
-      expect(questState(after, 'the-third-gate'), `${region} → ${to}`).toBe('done');
-    }
   });
 });
 
 describe('Sigilfall: the Dead Kingdom (Act V)', () => {
   it('Lark’s Hollow: the queen calls her children in until the hero brings them home', () => {
-    const w = newWorld('weeping-woods', heroAt('wood-the-children', 49));
+    const w = newWorld('weeping-woods', heroAt('wood-the-children', 50));
     expect(w.storyState?.id).toBe('weeping');
     expect(npcHere(w, 'echo-of-ysane')).toBe(true);
     expect(npcHere(w, 'orren-in-vaelmoor')).toBe(true);
@@ -209,25 +173,9 @@ describe('Sigilfall: the Dead Kingdom (Act V)', () => {
     expect(w.pets.filter((p) => p.def.id === 'echo-child')).toHaveLength(2);
     lead(w, 'wood-the-children', 'hollow-door', ['echo-child']);
     expect(questState(w.hero, 'wood-the-children')).toBe('done');
-    expect(questState(w.hero, 'the-kings-call')).toBe('active');
+    expect(questState(w.hero, 'the-weeping-tree')).toBe('active');
     run(w, 4);
     expect(npcHere(w, 'echo-of-ysane')).toBe(false);
-  });
-
-  it('Lowhaven: the queen on the sea wall until the fireships go in; the harbor smokes after', () => {
-    const wall = newWorld('sunken-reaches', heroAt('the-queens-quay', 49));
-    expect(npcHere(wall, 'echo-of-ysane-quay')).toBe(true);
-    const w = newWorld('sunken-reaches', heroAt('the-fireships', 52));
-    goTo(w, 'harbor-quay');
-    run(w, 0.3);
-    expect(w.story.run?.def.id).toBe('the-fireships');
-    expect(w.pets.some((p) => p.def.id === 'fireship')).toBe(true);
-    expect(w.pets.some((p) => p.def.id === 'isolde')).toBe(true);
-    beat(w, 'the-fireships');
-    expect(questState(w.hero, 'the-fireships')).toBe('done');
-    const after = newWorld('sunken-reaches', w.hero);
-    expect(after.storyState?.id).toBe('fleet-burned');
-    expect(npcHere(after, 'echo-of-ysane-quay')).toBe(false);
   });
 
   it('Hollowmere: the lake answers Orren and he holds; Ysane waits behind the Lich’s throne, then is let go', () => {
@@ -247,19 +195,5 @@ describe('Sigilfall: the Dead Kingdom (Act V)', () => {
     const gone = heroAt('ysanes-last-echo', 56);
     gone.quests['ysanes-last-echo'] = { state: 'done', n: 1 };
     expect(npcHere(newWorld('hollowmere', gone), 'echo-of-ysane-mere')).toBe(false);
-  });
-
-  it('the seven sigils: the Thorns from the Withered Queen, the Veil from the Herald, and Elyra waiting at Lastlight', () => {
-    expect(QUEST_DEFS['the-withered-queen']!.reward.perk).toBe('sigil-thorns');
-    expect(QUEST_DEFS['the-pale-herald']!.reward.perk).toBe('sigil-veil');
-    const sigilQuests = Object.values(QUEST_DEFS).filter((q) => q.reward.perk?.startsWith('sigil-'));
-    expect(new Set(sigilQuests.map((q) => q.reward.perk)).size).toBe(7);
-    // a hero who has won every one carries all seven (Duskspire's last door asks for them all)
-    const c = heroAt('the-seventh-sigil', 56);
-    for (const q of sigilQuests) c.quests[q.id] = { state: 'done', n: 1 };
-    c.perks = [...new Set(sigilQuests.map((q) => q.reward.perk!))];
-    expect(sigilCount(c)).toBe(7);
-    expect(npcHere(newWorld('gloamhollow', c), 'elyra-lastlight')).toBe(true);
-    expect(QUEST_DEFS['the-seventh-sigil']!.after).toEqual(expect.arrayContaining(['the-pale-herald', 'ashkar-the-bound', 'ysanes-last-echo', 'the-fireships']));
   });
 });

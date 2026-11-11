@@ -6,7 +6,7 @@ import { BOSSES } from '../data/bosses';
 import { CLASSES, MAX_LEVEL, xpToNext } from '../data/classes';
 import { ELITE_AFFIXES, ENEMIES, enemyScale } from '../data/enemies';
 import { ITEM_DEFS, ITEMS } from '../data/items';
-import { KEY_DEATH, keyLevelFor, KEY_MIN, keyCache, keyLoot, keyMarks, keyPar, keyScale, keyUpgrade, type KeyAffix } from '../data/keystones';
+import { KEY_DEATH, keyLevelFor, KEY_MIN, keyCache, keyLoot, keyMarks, keyParFor, keyScale, keyUpgrade, type KeyAffix } from '../data/keystones';
 import { QUEST_DEFS, QUESTS } from '../data/quests';
 import { outlevelled } from '../data/progression';
 import { SPEC_LEVEL } from '../data/talents';
@@ -24,6 +24,7 @@ import { turnInNpc } from '../progress/handin';
 import { activeQuests, addItem, addXp, BAG_OVERFLOW, bagFull, bagSize, deliverHeld, giveReward, PERKS, potionCap, questEvent, sigilCount, SIGILS, startQuests, type Character, questState, HOME, currentObjective } from '../progress/character';
 import { potionPrice } from '../progress/shop';
 import { goldDrop, itemName, makeItem, rollLoot, rollRarity, salvageValue, type LootSource } from '../progress/items';
+import { riftFirsts } from '../progress/rift';
 import type { Settings } from '../progress/save';
 import { learnLooks, riddenMount, ridingLocked, ridingOpen, shopMountsFor } from '../progress/wardrobe';
 import { addParagonXp, paragonXp } from '../progress/paragon';
@@ -34,7 +35,7 @@ import { spawnFolk, updateFolk, type Folk } from './folk';
 import { updateCasting, updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
 import { healPlayer, hurtPlayer, playerSlow, playerStunned, tickPlayerStatuses } from './combat';
 import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type PlacedMarker, type TileMap } from './map';
-import type { Chest, CoopSide, Drop, Enemy, Field, FloatText, Fx, Ghost, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent } from './types';
+import type { Chest, CoopSide, Drop, Enemy, Field, FloatText, Fx, Ghost, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent, Callout } from './types';
 import { inCone, inLine } from '../core/math';
 
 /** What the input adapters hand the world every frame. */
@@ -88,7 +89,7 @@ export interface KeyRun {
   par: number;
   t: number;
   deaths: number;
-  end: { time: number; up: number; marks: number; stone: number; best: boolean } | null;
+  end: { time: number; up: number; marks: number; stone: number; best: boolean; forged?: string[] } | null;
   /** The hero's level when the run began: below SYNC_BELOW the stone meets them at their own strength. */
   heroLevel: number;
 }
@@ -215,9 +216,43 @@ export class World {
   leftNpcs: (NpcActor & { left: number })[] = [];
   spores: Spore[] = [];
   texts: FloatText[] = [];
+  /** What the boss is doing, as its bar says it (callout below). */
+  shout: Callout | null = null;
   fx: Fx[] = [];
   encounters: EncounterState[] = [];
   delayed: { t: number; fn: () => void }[] = [];
+  /** How far a boss fight has the room under water (0 dry, 1 flooded): the Drowned Priestess's flood, drawn as a sea-green wash. */
+  flooded = 0;
+  /** How dark a boss fight has the hero's corner of the room (0 lit, 1 dark): Gloomwing's devoured lamps, drawn as a gloom. */
+  dimmed = 0;
+  /**
+   * A boss's standing order to the hero, while it is called and while it holds: 'hold' (not a step until it ends) or
+   * 'march' (no standing still). Hallvor's watch (sim/patterns/rimeheld-vault.ts); shown under the boss bar.
+   */
+  order: { kind: 'hold' | 'march'; from: number; until: number } | null = null;
+  /**
+   * What a boss fight casts of the hero, walking where the hero walked a moment ago (Ossa's likenesses,
+   * sim/patterns/molten-throne.ts): drawn as the hero in white-hot bone-steel.
+   */
+  likenesses: { x: number; y: number; vx: number; vy: number; face: number }[] = [];
+  /**
+   * How weightless a boss fight has made the hero (0 not at all, 1 adrift): Ilvane's gallery (sim/patterns/spire-of-the-rift.ts).
+   * Adrift, the hero is slow to start and slow to stop (a dodge still pushes off the air at once).
+   */
+  unmoored = 0;
+  /** Seconds left of grief turning the hero around (Lady Cendre's keening): their movement goes the other way. */
+  inverted = 0;
+  /** Seconds the hero has pushed to move and been held fast on every side (see updatePlayer). */
+  private snagT = 0;
+  /** Things a boss fight floats in the air (Ilvane's stones): drawn as props off the ground. */
+  floaters: { m: string; x: number; y: number; lift: number; h: number; rot: number; tint?: readonly [number, number, number] }[] = [];
+  /**
+   * The people of a memory a boss fight walks through the hall (the Hallow King's queen and children, coming to him in
+   * his summer hour: sim/patterns/hallow-king.ts), wearing the looks of the NPCs named: drawn pale, as echoes are.
+   */
+  kin: { look: string; x: number; y: number; /** Which way they walk (radians, as an enemy faces). */ face: number; since: number }[] = [];
+  /** The sigils set in a boss's crown while it holds them (the Hallow King's: sigil ids), shown under its bar. */
+  crown: string[] | null = null;
   events: WorldEvent[] = [];
   procCd: Record<string, number> = {};
   flow: Int16Array;
@@ -338,7 +373,7 @@ export class World {
     // Riftstone: the dungeon at Mythic's top level, the stone's might and the week's affixes
     if (o.key && o.key >= KEY_MIN && this.region.kind === 'dungeon') {
       const affixes = o.affixes ?? [];
-      this.keyRun = { key: o.key, affixes, par: keyPar(this.region), t: 0, deaths: 0, end: null, heroLevel: o.hero.level };
+      this.keyRun = { key: o.key, affixes, par: keyParFor(this.region, o.hero.level), t: 0, deaths: 0, end: null, heroLevel: o.hero.level };
       this.tier = 2;
       this.level = keyLevelFor(o.hero.level);
       this.mods = affixes.filter((a): a is 'volatile' | 'hasted' => a === 'volatile' || a === 'hasted');
@@ -355,7 +390,10 @@ export class World {
     // arriving through an exit: appear just inside the exit that leads back where we came from
     if (o.from) {
       const back = this.map.markers.find((m) => m.marker.kind === 'exit' && m.marker.to === o.from);
-      if (back) spawn = this.insideOf(markerPos(back), back.marker.kind === 'exit' && back.marker.door ? (this.region.interior ? [0, -1] : [0, 1]) : undefined);
+      // (out of a house, or up out of a deep place: in front of its door, which faces south. Beside it, the way on can
+      // lie straight back across the door's own tile, and the hero walks in again)
+      const south = back?.marker.kind === 'exit' && (back.marker.door ? !this.region.interior : this.region.kind !== 'dungeon' && REGIONS[o.from]?.kind === 'dungeon');
+      if (back) spawn = this.insideOf(markerPos(back), south ? [0, 1] : back.marker.kind === 'exit' && back.marker.door ? [0, -1] : undefined);
     }
     this.checkpoint = { ...spawn };
     this.storyState = regionState(this.region, this.storyHero);
@@ -413,6 +451,8 @@ export class World {
       shield: 0,
       shieldT: 0,
       iframe: 0.5,
+      guard: 0,
+      guardPow: 0,
       dash: null,
       windup: null,
       casting: null,
@@ -439,6 +479,8 @@ export class World {
       actAngle: 0,
       actKind: null,
       actBig: false,
+      actN: 0,
+      actSkill: null,
       flash: 0,
       riding: null,
       summon: 0,
@@ -850,6 +892,19 @@ export class World {
     this.addEnemy(id, free.x, free.y, this.level, { room, pack: -1, spawn: true });
   }
 
+  /** The nearest spot (within a tile or so) where a circle of radius r stands clear of everything, with room to spare. */
+  private openNear(x: number, y: number, r: number): { x: number; y: number } | null {
+    for (let d = 2; d <= 26; d += 2) {
+      for (let i = 0; i < 16; i++) {
+        const a = (Math.PI * 2 * i) / 16;
+        const nx = x + Math.cos(a) * d;
+        const ny = y + Math.sin(a) * d;
+        if (!circleHitsWall(this.map, nx, ny, r + 2)) return { x: nx, y: ny };
+      }
+    }
+    return null;
+  }
+
   /** Where someone can stand at a spot: there, or just beside whatever stands on it. */
   private besideThings(pos: { x: number; y: number }): { x: number; y: number } {
     return pushOut(this.map, pos.x, pos.y, 6) ?? pos;
@@ -961,6 +1016,13 @@ export class World {
     const field: Field = { ...f, id: this.nextId++, t: f.dur, tickT: f.hostile ? 0.25 : 0 };
     this.fields.push(field);
     return field;
+  }
+  /**
+   * A boss's mechanic, called out in the slot under its bar and not over its head (where it sat on the fight and
+   * was gone in a second): up to six words, held `dur` seconds, with what to do about it for a hero's first meeting.
+   */
+  callout(text: string, color: string, hint?: string, dur = 3): void {
+    this.shout = { text, color, t: 0, dur, ...(hint ? { hint } : {}) };
   }
   /** Shows an attack on the ground and returns it. */
   addTelegraph(t: Omit<Telegraph, 'id' | 't' | 'dead'>): Telegraph {
@@ -1190,6 +1252,7 @@ export class World {
     }
     // corpses fade, effects age
     this.enemies = this.enemies.filter((e) => !e.dead || e.deathT < 0.6);
+    if (this.shout && (this.shout.t += rawDt) >= this.shout.dur) this.shout = null;
     for (const t of this.texts) {
       t.t += rawDt;
       t.y += t.vy * rawDt;
@@ -1214,7 +1277,10 @@ export class World {
   private updatePlayer(dt: number): void {
     const p = this.player;
     // nobody acts while a scene plays
-    const inp = this.scene ? emptyInput() : this.input;
+    const raw = this.scene ? emptyInput() : this.input;
+    // (grief turns the hero around: left is right, up is down)
+    this.inverted = Math.max(0, this.inverted - dt);
+    const inp = this.inverted > 0 ? { ...raw, mx: -raw.mx, my: -raw.my } : raw;
     // the ultimate's charge budget refills at one full bar per ultFloor seconds, and banks at most ULT_BANK of
     // a bar: after a lull, a stream of fast hits fills that much at once and earns the rest at the usual pace
     const ultRate = 100 / ultFloor(this.hero.level);
@@ -1226,6 +1292,7 @@ export class World {
     }
     const stats = this.build.stats;
     p.iframe = Math.max(0, p.iframe - dt);
+    p.guard = Math.max(0, p.guard - dt);
     p.flash = Math.max(0, p.flash - dt);
     p.potionT = Math.max(0, p.potionT - dt);
     p.actT = Math.max(0, p.actT - dt);
@@ -1344,7 +1411,8 @@ export class World {
       if (stunned) speed = 0;
       const tx = inp.mx * speed;
       const ty = inp.my * speed;
-      const accel = moving ? 16 : 20;
+      // (adrift in a weightless gallery, slow to start and slow to stop)
+      const accel = (moving ? 16 : 20) * (1 - this.unmoored * 0.86);
       const k = 1 - Math.exp(-accel * dt);
       p.vx += (tx - p.vx) * k;
       p.vy += (ty - p.vy) * k;
@@ -1357,6 +1425,19 @@ export class World {
         }
       }
       const res = moveCircle(this.map, p.x, p.y, p.r, p.vx * dt, p.vy * dt);
+      // snagged: pressing to move but held fast on every side (wedged between the bodies of a crate and a cask):
+      // eased out onto the nearest open ground
+      if (moving && !stunned && res.bx && res.by) {
+        this.snagT += dt;
+        if (this.snagT > 0.4) {
+          this.snagT = 0;
+          const free = this.openNear(p.x, p.y, p.r);
+          if (free) {
+            res.x = free.x;
+            res.y = free.y;
+          }
+        }
+      } else this.snagT = 0;
       if (res.bx) p.vx = 0;
       if (res.by) p.vy = 0;
       p.x = res.x;
@@ -1419,13 +1500,13 @@ export class World {
       }
       if (t.t < t.dur) continue;
       // the host's attacks strike the other heroes too (their games take the hit)
-      if (this.coop?.role === 'host' && t.tone !== 'player' && t.dmg > 0 && (t.t - dt < t.dur || t.linger > 0) && !t.dead)
+      if (this.coop?.role === 'host' && t.tone !== 'player' && t.dmg > 0 && (t.kind ?? 'danger') === 'danger' && (t.t - dt < t.dur || t.linger > 0) && !t.dead)
         for (const g of this.coop.ghosts) {
           if (g.dead || t.struck?.includes(g.n) || !inside(t, g.x, g.y, g.r)) continue;
           (t.struck ??= []).push(g.n);
           this.ghostHit(g, t.dmg, { fromX: t.x, fromY: t.y, knock: t.knock, ...(t.status ? { status: t.status } : {}), ...(t.owner >= 0 ? { src: t.owner } : {}) });
         }
-      if (t.tone !== 'player' && !t.remote && t.dmg > 0 && !p.dead && (t.t - dt < t.dur || t.linger > 0) && !t.dead) {
+      if (t.tone !== 'player' && !t.remote && t.dmg > 0 && (t.kind ?? 'danger') === 'danger' && !p.dead && (t.t - dt < t.dur || t.linger > 0) && !t.dead) {
         if (inside(t, p.x, p.y, p.r)) {
           if (hurtPlayer(this, t.dmg, { fromX: t.x, fromY: t.y, knock: t.knock, status: t.status, source: t.owner >= 0 ? this.enemyById(t.owner) : undefined })) t.dmg = 0;
         }
@@ -1487,8 +1568,10 @@ export class World {
   private rollItem(source: LootSource, level: number): Item {
     const h = this.hero;
     const have = new Set([...h.bag, ...Object.values(h.equip)].flatMap((i) => (i ? [itemName(i)] : [])));
-    let item = rollLoot(h.cls as ClassId, level, source, this.tier, this.rand);
-    for (let i = 0; i < 2 && have.has(itemName(item)); i++) item = rollLoot(h.cls as ClassId, level, source, this.tier, this.rand);
+    // (Rift-forged pieces come only out of the Rift, by the highest stone the hero has opened)
+    const stone = this.keyRun ? h.keystone : 0;
+    let item = rollLoot(h.cls as ClassId, level, source, this.tier, this.rand, stone);
+    for (let i = 0; i < 2 && have.has(itemName(item)); i++) item = rollLoot(h.cls as ClassId, level, source, this.tier, this.rand, stone);
     return item;
   }
 
@@ -1664,6 +1747,8 @@ export class World {
       for (const o of this.enemies) if (!o.boss && o.hp <= 0) o.dead = true;
       return;
     }
+    // a fight's thing (a candle snuffed, a coffin or a cage broken open) is part of the fight, not a foe: no kill, no loot
+    if (e.def.prop) return;
     h.stats.kills += 1;
     this.run.kills += 1;
     if (this.keyRun && !e.master) this.keyOnKill(e);
@@ -1980,6 +2065,13 @@ export class World {
     h.marks += marks;
     // the Rift's cache: more the higher the stone, and only in time
     if (up > 0) for (let i = 0; i < keyCache(k.key); i++) this.dropItem(x, y, this.rollItem('boss', keyLoot(k.key, k.heroLevel)));
+    // every new stone opened gives one Rift-forged piece the hero doesn't have yet (sets first, as the stones open them)
+    const firsts = riftFirsts(h, h.keystone, h.keystone - before);
+    for (const d of firsts) {
+      const it = makeItem(d.id, keyLoot(k.key, k.heroLevel), this.rand);
+      if (it) this.dropItem(x, y, it);
+    }
+    k.end.forged = firsts.map((d) => d.name);
     this.emit({
       t: 'banner',
       text: up > 0 ? `In time: ${clockText(time)}` : `Out of time: ${clockText(time)}`,
@@ -2315,7 +2407,13 @@ export class World {
         if (this.rand() < dt * 2.4) this.addFx({ kind: 'leaf', x: p.x + 200 - this.rand() * 80, y: sy, vx: -40 - this.rand() * 25, vy: 4 + this.rand() * 4, life: 6, size: 1, color: pick(['#f0fbff', '#e8d4a0']), a });
         break;
       case 'snow':
-        if (this.rand() < dt * 9) this.addFx({ kind: 'leaf', x: sx, y: p.y - 130, vx: -8 + this.rand() * 6, vy: 22 + this.rand() * 14, life: 8, size: 1, color: pick(['#ffffff', '#e8f0ff']), a });
+        // flakes of every size: a few big near ones coming down faster, many small far ones drifting (never so many
+        // that a fight's own effects are crowded out)
+        for (let n = 0; n < 2 && this.fx.length < 260; n++) {
+          if (this.rand() >= dt * 13) continue;
+          const big = this.rand() < 0.2;
+          this.addFx({ kind: 'flake', x: p.x + (this.rand() - 0.5) * 420, y: p.y - 130 - this.rand() * 50, vx: -9 + this.rand() * 7, vy: (big ? 30 : 19) + this.rand() * 12, life: 7.5, size: big ? 1.7 + this.rand() * 0.9 : 0.6 + this.rand() * 0.6, color: pick(['#ffffff', '#f0f6ff', '#e2ecff']), a: this.rand() });
+        }
         break;
       case 'ash':
         if (this.rand() < dt * 3) this.addFx({ kind: 'leaf', x: sx, y: p.y - 130, vx: 6 + this.rand() * 8, vy: 12 + this.rand() * 8, life: 9, size: 1, color: pick(['#8a8a8a', '#b8b0a8', '#5a5a5a']), a });
@@ -2382,8 +2480,14 @@ export class World {
     if ((x.to === 'whisperwood' || x.to === 'crypt') && !h.unlocked.includes(x.to)) return x.to === 'crypt' ? 'The crypt stair is sealed under the chapel floor.' : 'Not open yet.';
     // roads the story opens (the King’s Road to the Crown City)
     if (x.needs && questState(h, x.needs) !== 'done') return `The way is shut: ${QUEST_DEFS[x.needs]?.name ?? 'the story'} first.`;
-    // Duskspire's last door: seven locks, one for each sigil
-    if (x.to === 'duskspire' && sigilCount(h) < SIGILS.length) return `Seven locks bar the gate, one for each sigil. You carry ${sigilCount(h)} of ${SIGILS.length}.`;
+    // Duskspire's last door: seven locks, one for each sigil. Six turn for the six Elyra carries; the seventh is the
+    // Stone's, and the Stone is on the King's brow (Vosk brought it him), so it answers only to his own blood: his
+    // brother Aurel, the Herald, opens it from the inside once his voice in the gate is silenced
+    if (x.to === 'duskspire' && sigilCount(h) < SIGILS.length) {
+      const six = SIGILS.filter((id) => id !== 'sigil-stone' && h.perks.includes(id)).length;
+      if (six < SIGILS.length - 1) return `Seven locks bar the gate, one for each sigil. You carry ${six} of the six Elyra can bring.`;
+      if (questState(h, 'march-the-voice') !== 'done') return 'Seven locks bar the gate. Six would turn for the sigils Elyra carries; the seventh is the Stone’s, and the Stone is on the King’s brow. It answers only to his own blood.';
+    }
     if (x.minLevel && h.level < x.minLevel) {
       const r = REGIONS[x.to];
       return `Too dangerous before level ${x.minLevel}: ${r.name} is for levels ${r.levels[0]}-${r.levels[1]}.`;
@@ -2449,6 +2553,12 @@ export class World {
       }
       // a quest the hero has long out-grown pays less (data/progression.ts)
       this.giveXp(Math.round(r.xp * outlevelled(h.level, q.xpLevel ?? h.level, 1)));
+      // a land whose story ends in a deed, not a fight (the Ash Crown unmade in its own memory): the way home opens
+      if (this.region.homeAfter === q.id && !this.portal) {
+        this.cleared = true;
+        this.portal = { x: this.player.x, y: this.player.y - TILE * 1.5 };
+        this.fxBurst(this.portal.x, this.portal.y, '#ffe9b0', 30, 24);
+      }
       if (q.id === 'rift-shards') h.shards = Math.max(0, h.shards - 3);
     }
     const started = startQuests(h);

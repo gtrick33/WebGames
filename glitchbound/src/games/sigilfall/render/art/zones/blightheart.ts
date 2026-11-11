@@ -14,6 +14,49 @@ const recolor = (base: Art, pal: Pal): Art => ({ pal: { ...base.pal, ...pal }, f
 const ROTWOOD: Pal = { s: '#4a3a2a', S: '#6a5236', l: '#8a7050', r: '#5a8a2a', o: '#8ac040', y: '#d8ff8a', b: '#c8b890', B: '#8a7a5a', i: '#6a8a4a', I: '#3e5a2e', e: '#ff6ac8', k: '#1e180e' };
 const QUEEN: Pal = { s: '#c8a0c0', S: '#9a7090', D: '#6a4a66', l: '#f0d8ec', h: '#5a3a5a', H: '#3a2238', e: '#ff6ac8', g: '#b6e36b', G: '#7ab83a', y: '#e0ffa0', t: '#c83a8a', m: '#5a1a3a', b: '#ff9ad8', B: '#c84a8a', w: '#e8d8e0', o: '#8a6a4a', O: '#5a4630', k: '#3a5a1e' };
 
+/** The Faded Lights' two lamp-wardens, drawn once: long hair, a warden's robe, the lamp-staff with its light (sim/patterns/blightheart.ts). */
+const LAMPWARDEN: Art = {
+  pal: {},
+  frames: [
+    [
+      '...........gGg..',
+      '....hhhh....g...',
+      '...hHhhhh...s...',
+      '...hffefh...s...',
+      '..hHfffh....s...',
+      '..hHtttth...s...',
+      '..hrrttrrr..s...',
+      '..rRrrrrrrrrs...',
+      '..rRrrtrrRr.s...',
+      '..rRrrtrrRr.s...',
+      '.rRrrrtrrrRrs...',
+      '.rRrrrtrrrRrs...',
+      'rRrrrrtrrrrRs...',
+      'RRRrrrrrrRRRs...',
+      '..ff....ff..s...',
+    ],
+    [
+      '..........gGgg..',
+      '....hhhh...gg...',
+      '...hHhhhh...s...',
+      '...hffefh...s...',
+      '..hHfffh....s...',
+      '..hHtttth...s...',
+      '..hrrttrrr..s...',
+      '..rRrrrrrrrrs...',
+      '..rRrrtrrRr.s...',
+      '..rRrrtrrRr.s...',
+      '.rRrrrtrrrRrs...',
+      '.rRrrrtrrrRrs...',
+      'rRrrrrtrrrrRs...',
+      'RRRrrrrrrRRRs...',
+      '..ff....ff..s...',
+    ],
+  ],
+};
+const DAWN: Pal = { h: '#f8e0a0', H: '#d8b060', f: '#ecdcc8', e: '#ffe08a', r: '#f0e6cc', R: '#c8b890', t: '#e8c060', s: '#a88a5a', g: '#ffe08a', G: '#fffbe0' };
+const DUSK: Pal = { h: '#4a3a6a', H: '#2e2244', f: '#c8c0d8', e: '#d8b0ff', r: '#5a4a7a', R: '#3a2e52', t: '#9a7ad8', s: '#4a3a5a', g: '#b48aff', G: '#ecdcff' };
+
 /** Blightheart: its bosses and enemies, drawn from the wood's own art in the colors of the rot. */
 export const BLIGHTHEART_ART: ZoneArt = {
   foes: {
@@ -30,6 +73,9 @@ export const BLIGHTHEART_ART: ZoneArt = {
     'rotwood-pod': recolor(SHATTERED_VALE_ART.foes['rift-shardling']!, { p: '#d8ff8a', P: '#a8d860', Q: '#6a9a3a', q: '#3a5a1e', c: '#ff9ad8', C: '#e86ab0', r: '#ffe066' }),
     // a hill of heartwood that walks
     'rotwood-colossus': recolor(DEEPFORGE_HALLS_ART.foes['slag-colossus']!, ROTWOOD),
+    // the sisters of the Faded Lights: Elowen in the morning's gold, Merrin in the evening's violet
+    'elowen-of-the-dawn': recolor(LAMPWARDEN, DAWN),
+    'merrin-of-the-dusk': recolor(LAMPWARDEN, DUSK),
     // the Green Lady on her throne of thorns, and withered when the winter takes her
     'the-withered-queen': recolor(ROTMOTHER_CISTERN_ART.foes['the-rot-mother']!, QUEEN),
     'the-withered-queen-withered': recolor(ROTMOTHER_CISTERN_ART.foes['the-rot-mother']!, { ...QUEEN, s: '#8a8088', S: '#6a6068', D: '#4a4248', l: '#b8b0b4', e: '#a87a9a', g: '#8a9a6a', G: '#5a6a44', y: '#b0b89a', b: '#a89aa4', B: '#7a6a76', t: '#7a5a6a' }),

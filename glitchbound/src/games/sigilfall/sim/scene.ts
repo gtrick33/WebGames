@@ -6,7 +6,7 @@ import { QUESTS } from '../data/quests';
 import { currentObjective } from '../progress/character';
 import { isMainQuest, questSteps } from '../progress/handin';
 import { questTarget, questWhere } from './objective';
-import type { RegionId, StoryCond } from '../data/types';
+import type { MusicTrack, RegionId, StoryCond } from '../data/types';
 import { castRay, TILE, WORLD_K } from './map';
 import { aimAlong, findRoute, type Route } from './nav';
 import { placePet } from './pets';
@@ -46,7 +46,23 @@ export type SceneStep =
   | { shake: number }
   /** A title in the lower bar (a battle's, a boss's name): it stays till the scene ends; the scene goes straight on. */
   | { title: string; sub?: string }
-  | { wait: number };
+  | { wait: number }
+  /** The picture goes to black (`out`) or comes back from it (`in`) over `secs`; the scene waits for it. */
+  | { fade: 'out' | 'in'; secs?: number }
+  /**
+   * A memory (a sigil's vision): the picture goes pale and tinted, with a caption over it, until a `vision: ''`
+   * ends it. Ghosts placed meanwhile are the people of the memory.
+   */
+  | { vision: string; tint?: string }
+  /**
+   * A figure of a memory, standing at a place (or `dx`, `dy` tiles from it), with the look of an NPC (`as`): it can
+   * be spoken for and walked like a person by its `ghost` id, and it is gone when the vision ends.
+   */
+  | { ghost: string; as: string; at: string; dx?: number; dy?: number; face?: number }
+  /** A spell's effect at a place or a person (render/effects.ts `spell` names: blast, summon, shatter, thunder…). */
+  | { fx: string; at: string; color?: string; size?: number }
+  /** The music for the rest of the scene. */
+  | { music: MusicTrack };
 
 export interface SceneDef {
   id: string;
@@ -76,14 +92,40 @@ export interface ScenePlay {
   seen?: boolean;
   /** The title in the lower bar, if a step has given one. */
   title?: { text: string; sub?: string };
-  /** The way someone in a `move` step is walking. */
+  /** The way someone in a `move` step is walking, and how fast (world px a second). */
   route?: Route;
+  pace?: number;
   emotes: { who: string; icon: Emote; t: number }[];
+  /** How black the picture is (0 to 1), and where it is going. */
+  dark?: { from: number; to: number; t: number; secs: number };
+  /** A memory playing: its caption and tint. */
+  vision?: { text: string; tint: string };
+  /** The figures of the memory (NPC actors, by id). */
+  ghosts?: string[];
+  /** Effects playing (render/effects.ts draws them). */
+  fx?: { name: string; x: number; y: number; t: number; color: string; size: number; seed: number }[];
+  /** The music a step asked for. */
+  music?: MusicTrack;
 }
+
+/** How black the scene's picture is now. */
+export const sceneDark = (s: ScenePlay | null): number => {
+  const d = s?.dark;
+  if (!d) return 0;
+  const u = d.secs > 0 ? Math.min(1, d.t / d.secs) : 1;
+  return d.from + (d.to - d.from) * u;
+};
+
+/** A vision's tint by name (or a color). */
+const TINTS: Record<string, string> = { memory: '#c8a8ff', ember: '#ffb070', frost: '#a8e0ff', sun: '#ffd88a', grief: '#9a8ab8', blood: '#ff8a8a' };
 
 const SPEAK = 2.6;
 const lineTime = (line: string): number => SPEAK + line.length * 0.025;
 const WALK = 42;
+/** The longest a scene waits on someone walking to their mark, in seconds, before they pick up their feet. */
+const LONGEST_WALK = 4.5;
+/** How far from their mark someone out of the picture starts their walk in (world px: a little past the screen's edge). */
+const ENTERS_FROM = 8 * TILE;
 
 /**
  * A named place, a person (or a foe, by kind), or the hero, in world px (null when nothing by that name is
@@ -102,8 +144,8 @@ function where(w: World, name: string): { x: number; y: number } | null {
     const b = w.boss();
     return b && !b.dead ? { x: b.x, y: b.y } : null;
   }
-  const place = w.places[name];
-  if (place) return place;
+  const place = w.places[name] ?? w.spots.find((sp) => sp.id === name);
+  if (place) return { x: place.x, y: place.y };
   const n = w.npcs.find((x) => x.id === name) ?? w.pets.find((p) => !p.dead && p.def.id === name) ?? w.enemies.find((e) => !e.dead && e.def.id === name);
   if (n) return { x: n.x, y: n.y };
   const b = w.map.buildings.find((x) => x.name === name);
@@ -119,6 +161,42 @@ function where(w: World, name: string): { x: number; y: number } | null {
 }
 
 const seenKey = (id: string): string => `scene:${id}`;
+
+/** What the camera shows round where it looks, in tiles: a little less than the screen, so a speaker is never at its very edge. */
+const SIGHT = { side: 6.2, up: 4, down: 3.2 };
+/** Whether someone is in the picture when the camera looks at `cam`. */
+export function inSight(cam: { x: number; y: number }, who: { x: number; y: number }): boolean {
+  const dx = (who.x - cam.x) / TILE;
+  const dy = (who.y - cam.y) / TILE;
+  return Math.abs(dx) <= SIGHT.side && dy <= SIGHT.down && dy >= -SIGHT.up;
+}
+
+/** The middle of the nearest tile to (x, y) that can be stood on (the spot itself, when it can). */
+function openGround(w: World, x: number, y: number): { x: number; y: number } {
+  const m = w.map;
+  const tx = Math.floor(x / TILE);
+  const ty = Math.floor(y / TILE);
+  const open = (cx: number, cy: number): boolean => cx >= 0 && cy >= 0 && cx < m.w && cy < m.h && !m.solid[cy * m.w + cx];
+  if (open(tx, ty)) return { x, y };
+  for (let r = 1; r <= 4; r++) {
+    let best: { x: number; y: number } | null = null;
+    let bd = Infinity;
+    for (let cy = ty - r; cy <= ty + r; cy++) {
+      for (let cx = tx - r; cx <= tx + r; cx++) {
+        if (Math.max(Math.abs(cx - tx), Math.abs(cy - ty)) !== r || !open(cx, cy)) continue;
+        const px = (cx + 0.5) * TILE;
+        const py = (cy + 0.5) * TILE;
+        const d = (px - x) ** 2 + (py - y) ** 2;
+        if (d < bd) {
+          bd = d;
+          best = { x: px, y: py };
+        }
+      }
+    }
+    if (best) return best;
+  }
+  return { x, y };
+}
 
 /**
  * Whether this world plays the story's staged scenes: playing alone, or leading a party questing together (the
@@ -262,6 +340,7 @@ export function updateScene(w: World, dt: number): void {
   // something attacks: the scene stops (it plays again another time) and the fight is the hero's
   if (w.enemies.some((e) => !e.dead && !e.dummy && e.aggro)) {
     w.story.hush(s.def.steps.flatMap((st) => ('say' in st ? [st.say] : [])));
+    clearGhosts(w, s);
     w.scene = null;
     letGo(w);
     w.emit({ t: 'scene', id: s.def.id, playing: false });
@@ -279,8 +358,33 @@ export function updateScene(w: World, dt: number): void {
   s.begun = true;
   let done: boolean;
   if ('say' in step) {
-    if (first) w.story.speakNow({ who: step.say, text: step.line }, lineTime(step.line));
+    if (first) {
+      w.story.speakNow({ who: step.say, text: step.line }, lineTime(step.line));
+      // the camera finds whoever speaks, if the scene has left them out of its sight: nobody talks from off the screen
+      const who = where(w, step.say);
+      const cam = s.focus ?? w.player;
+      if (who && !inSight(cam, who)) s.focus = step.say === 'hero' ? null : { x: who.x, y: who.y };
+    }
     done = s.t >= lineTime(step.line) + 0.15;
+  } else if ('ghost' in step) {
+    if (first) {
+      const at = where(w, step.at);
+      if (at) {
+        // (never in a wall or a tree: the nearest open ground to where the scene put them)
+        const to = openGround(w, at.x + (step.dx ?? 0) * TILE, at.y + (step.dy ?? 0) * TILE);
+        w.npcs = w.npcs.filter((n) => n.id !== step.ghost);
+        w.npcs.push({ id: step.ghost, x: to.x, y: to.y, face: step.face ?? 1, bob: 0, since: w.time, ghost: step.as });
+        (s.ghosts ??= []).push(step.ghost);
+      }
+    }
+    done = true;
+  } else if ('fx' in step) {
+    if (first) {
+      const at = where(w, step.at);
+      if (at) (s.fx ??= []).push({ name: step.fx, x: at.x, y: at.y, t: 0, color: step.color ?? '#c8a8ff', size: step.size ?? 30, seed: w.rand() * 10 });
+      if (step.fx === 'blast' || step.fx === 'thunder' || step.fx === 'shatter') w.shake(3);
+    }
+    done = true;
   } else if ('look' in step) {
     const at = where(w, step.look);
     s.focus = step.look === 'hero' ? null : at;
@@ -304,10 +408,28 @@ export function updateScene(w: World, dt: number): void {
       const tx = step.to === 'hero' || !w.places[step.to] ? to.x + (n.x < to.x ? -26 : 26) : to.x;
       const ty = to.y;
       const d = dist(n.x, n.y, tx, ty);
-      if (first) s.route = findRoute(w.map, n.x, n.y, tx, ty, { r: 7, budget: 12000, roads: true }) ?? findRoute(w.map, n.x, n.y, tx, ty, { r: 4, budget: 12000 }) ?? undefined;
+      if (first) {
+        s.route = findRoute(w.map, n.x, n.y, tx, ty, { r: 7, budget: 12000, roads: true }) ?? findRoute(w.map, n.x, n.y, tx, ty, { r: 4, budget: 12000 }) ?? undefined;
+        // someone a long way off and out of the picture is cut to, as a film would: they come in from just beyond its
+        // edge, on the way they would have walked
+        if (s.route && !inSight(s.focus ?? w.player, n)) {
+          let back = 0;
+          for (let i = s.route.pts.length - 1; i > 0; i--) {
+            back += dist(s.route.pts[i]!.x, s.route.pts[i]!.y, s.route.pts[i - 1]!.x, s.route.pts[i - 1]!.y);
+            if (back >= ENTERS_FROM) {
+              n.x = s.route.pts[i - 1]!.x;
+              n.y = s.route.pts[i - 1]!.y;
+              s.route = { pts: s.route.pts.slice(i - 1), at: 0 };
+              break;
+            }
+          }
+        }
+        // (and whoever still has a long way to come hurries: nobody watches a ten-second walk)
+        s.pace = Math.min(WALK * 3, Math.max(WALK, (dist(n.x, n.y, tx, ty) * 1.25) / LONGEST_WALK));
+      }
       const aim = s.route ? aimAlong(s.route, n.x, n.y) : d > 1 ? { x: (tx - n.x) / d, y: (ty - n.y) / d } : null;
       if (aim) {
-        const stride = WALK * dt;
+        const stride = (s.pace ?? WALK) * dt;
         n.x += aim.x * stride;
         n.y += aim.y * stride;
         if (Math.abs(aim.x) > 0.1) n.face = aim.x < 0 ? 1 : 0;
@@ -327,13 +449,41 @@ export function updateScene(w: World, dt: number): void {
   } else if ('title' in step) {
     s.title = { text: step.title, sub: step.sub };
     done = true;
+  } else if ('fade' in step) {
+    const secs = step.secs ?? 0.8;
+    if (first) s.dark = { from: sceneDark(s), to: step.fade === 'out' ? 1 : 0, t: 0, secs };
+    done = s.t >= secs;
+  } else if ('vision' in step) {
+    if (!step.vision) {
+      s.vision = undefined;
+      clearGhosts(w, s);
+    } else s.vision = { text: step.vision, tint: TINTS[step.tint ?? 'memory'] ?? step.tint ?? TINTS.memory! };
+    done = true;
+  } else if ('music' in step) {
+    s.music = step.music;
+    done = true;
   } else done = s.t >= step.wait;
+  if (s.dark) s.dark.t += dt;
+  if (s.fx) {
+    for (const f of s.fx) f.t += dt;
+    s.fx = s.fx.filter((f) => f.t < 1.6);
+  }
   if (done) {
     s.step += 1;
     s.t = 0;
     s.begun = false;
     s.seen = false;
   }
+}
+
+/** A memory's figures go (its vision is over, or the scene). */
+function clearGhosts(w: World, s: ScenePlay): void {
+  if (!s.ghosts?.length) return;
+  const gone = new Set(s.ghosts);
+  // the figures of a memory fade out where they stood, as the people of a place do when they leave
+  w.leftNpcs.push(...w.npcs.filter((n) => gone.has(n.id)).map((n) => ({ ...n, left: w.time })));
+  w.npcs = w.npcs.filter((n) => !gone.has(n.id));
+  s.ghosts = [];
 }
 
 /** Ends the scene (played through, or skipped): it has been seen, and the camera goes back to the hero. */
@@ -356,6 +506,7 @@ export function endScene(w: World, skipped: boolean): void {
     w.story.hurry();
   }
   if (!w.hero.opened.includes(seenKey(s.def.id))) w.hero.opened.push(seenKey(s.def.id));
+  clearGhosts(w, s);
   w.scene = null;
   letGo(w);
   w.emit({ t: 'scene', id: s.def.id, playing: false });

@@ -44,7 +44,7 @@ describe('sigilfall play-throughs', () => {
       const r = play(w, { seconds: 900, done: (x) => x.cleared, goal: nextRoom });
       expect(r.stuck).toBe(false);
       expect(w.cleared).toBe(true);
-      expect(r.bossesDown).toEqual(['ossric', 'morgrave']);
+      expect(r.bossesDown).toEqual(['coffin-matron', 'ossric', 'morgrave']);
       expect(r.deaths).toBeLessThanOrEqual(1);
       // the clear is recorded and opens the next difficulty's quest
       expect(w.hero.clears['crypt:0']).toBe(1);

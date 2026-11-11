@@ -49,7 +49,8 @@ export function stockFor(c: Character, shop: ShopId): ShopItem[] {
   const out: ShopItem[] = [];
   if (shop === 'quartermaster') {
     for (const d of ITEMS) {
-      if (d.special || (d.rarity !== 'epic' && d.rarity !== 'legendary')) continue;
+      // (never the Rift's own: those are found there, or wagered for)
+      if (d.special || d.rift !== undefined || (d.rarity !== 'epic' && d.rarity !== 'legendary')) continue;
       // made for a little above the hero's level, not the top: a strong piece, not a jump over three acts
       const item = makeItem(d.id, qmLevel(c), r)!;
       if (!usableBy(item, c.cls)) continue;

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type PointerEvent as RPointerEvent } from 'react';
+import { markCombo } from './comboMark';
 import { toLocalDelta } from './turn';
 import { Stick } from './Stick';
 import { slotLevel } from '../progress/character';
@@ -104,6 +105,7 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
     }
     const spec = id ? world.build.skills[id]?.spec : undefined;
     b.classList.toggle('is-nomana', !!spec && skillCost(world, spec, slot) > p.mana + 1e-6);
+    if (id) markCombo(b, world, id);
     const cd = p.cds[slot];
     const empty = cd.charges <= 0;
     const share = empty ? Math.max(0, cd.t / Math.max(0.01, cd.cd)) : 0;

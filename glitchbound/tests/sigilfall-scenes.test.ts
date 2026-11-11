@@ -4,12 +4,13 @@ import { EVENTS } from '../src/games/sigilfall/data/events';
 import { SCENES } from '../src/games/sigilfall/data/scenes';
 import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { applyPreset, PRESETS } from '../src/games/sigilfall/progress/presets';
+import { npcLookOf } from '../src/games/sigilfall/render/sprites';
 import { migrate, SAVE_VERSION } from '../src/games/sigilfall/progress/save';
 import { endScene } from '../src/games/sigilfall/sim/scene';
 import { holds } from '../src/games/sigilfall/sim/story';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
-import { TILE } from '../src/games/sigilfall/sim/map';
+import { TILE, WORLD_K } from '../src/games/sigilfall/sim/map';
 import { heroAtEvent, newWorld, readyHero } from './sigilfall-bot';
 
 /**
@@ -47,7 +48,7 @@ function startAt(w: World, id: string): void {
   const def = SCENES.find((s) => s.id === id)!;
   for (const s of SCENES) if (s.id !== id && s.region === def.region && !w.hero.opened.includes(`scene:${s.id}`)) w.hero.opened.push(`scene:${s.id}`);
   w.enemies = [];
-  const at = def.near ? (w.places[def.near] ?? w.npcs.find((n) => n.id === def.near)) : null;
+  const at = def.near ? (w.places[def.near] ?? w.spots.find((sp) => sp.id === def.near) ?? w.npcs.find((n) => n.id === def.near)) : null;
   if (at) {
     w.player.x = at.x;
     w.player.y = at.y + 20;
@@ -74,14 +75,43 @@ describe('Sigilfall: scenes', () => {
       const w = newWorld(def.region, atScene(def.id));
       startAt(w, def.id);
       expect(w.scene?.def.id, def.id).toBe(def.id);
-      const named = new Set(def.steps.flatMap((s) => ('say' in s ? [s.say] : 'move' in s ? [s.move] : 'emote' in s ? [s.emote] : [])));
+      // (a vision's ghosts come with the scene: they are named by its own steps)
+      const ghosts = new Set(def.steps.flatMap((s) => ('ghost' in s ? [s.ghost] : [])));
+      const named = new Set(def.steps.flatMap((s) => ('say' in s ? [s.say] : 'move' in s ? [s.move] : 'emote' in s ? [s.emote] : [])).filter((who) => !ghosts.has(who)));
       // a villager of the place, the hero, or a companion of the story at their side
       for (const who of named) expect(w.npcs.some((n) => n.id === who) || w.pets.some((p) => !p.dead && p.def.id === who) || who === 'hero', `${def.id}: ${who}`).toBe(true);
-      for (const s of def.steps) if ('look' in s && s.look !== 'hero') expect(!!w.places[s.look] || w.npcs.some((n) => n.id === s.look) || w.map.buildings.some((b) => b.name === s.look), `${def.id}: ${s.look}`).toBe(true);
+      for (const s of def.steps) if ('look' in s && s.look !== 'hero') expect(!!w.places[s.look] || w.spots.some((sp) => sp.id === s.look) || w.npcs.some((n) => n.id === s.look) || w.map.buildings.some((b) => b.name === s.look), `${def.id}: ${s.look}`).toBe(true);
+      // a ghost stands somewhere there, in the look of somebody real; an effect goes off somewhere there
+      for (const s of def.steps) {
+        if ('ghost' in s) {
+          expect(s.at === 'hero' || !!w.places[s.at] || w.spots.some((sp) => sp.id === s.at) || w.npcs.some((n) => n.id === s.at), `${def.id}: ghost at ${s.at}`).toBe(true);
+          expect(npcLookOf(s.as), `${def.id}: ghost as ${s.as}`).not.toBeNull();
+        }
+        // (in a dungeon, which names no places, a vision stands round the hero)
+        if ('fx' in s) expect(s.at === 'hero' || !!w.places[s.at] || w.spots.some((sp) => sp.id === s.at) || w.npcs.some((n) => n.id === s.at), `${def.id}: fx at ${s.at}`).toBe(true);
+      }
       run(w, 60);
       expect(w.scene, def.id).toBeNull();
       expect(w.hero.opened).toContain(`scene:${def.id}`);
     }
+  });
+
+  it('a scene that opens a walk to somewhere plays well before the hero gets there (not after the walk is done)', () => {
+    // a place is found (its quest step done) inside its radius; the scene must come into play some tiles further out,
+    // while the hero can still be calm: otherwise a fight at a guarded place lets the step finish first and the scene
+    // never plays
+    let checked = 0;
+    for (const def of SCENES) {
+      const m = def.when && def.near ? /\{"quest":"([a-z0-9-]+)","is":"active"\}/.exec(JSON.stringify(def.when)) : null;
+      const q = m ? QUEST_DEFS[m[1]!] : undefined;
+      const walk = q && [q.objective, ...(q.then ?? [])].find((o) => o.kind === 'explore');
+      if (!walk || walk.kind !== 'explore' || walk.spot !== def.near) continue;
+      const sp = newWorld(def.region, readyHero('mage', q!.level ?? 30)).spots.find((x) => x.id === def.near);
+      if (!sp) continue;
+      checked++;
+      expect(((def.r ?? 90) * WORLD_K - sp.r * TILE) / TILE, `${def.id}: plays only ${(((def.r ?? 90) * WORLD_K - sp.r * TILE) / TILE).toFixed(1)} tiles before ${sp.id} is found`).toBeGreaterThanOrEqual(8);
+    }
+    expect(checked).toBeGreaterThan(15);
   });
 
   it('the hero stands still while a scene plays; skipping ends it and it never plays again', () => {

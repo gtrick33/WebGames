@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
-import { keyLevelFor, keyLoot, keyPar, keyScale, riftDungeons, riftTop } from '../data/keystones';
+import { keyLevelFor, keyLoot, keyParFor, keyScale, riftDungeons, riftTop } from '../data/keystones';
 import { ECHOES, RIFT_CAP_UNFINISHED, WARDENS } from '../data/wardens';
 import type { SigilEngine } from '../engine';
 import { campaignDone } from '../progress/wardrobe';
+import { RiftGuide } from './RiftGuide';
 import { clockText } from '../sim/world';
 
 /**
@@ -50,7 +51,7 @@ export function RiftScreen({ engine, slot, onBack }: { engine: SigilEngine; slot
               <li key={r.id}>
                 <button role="radio" aria-checked={r.id === picked.id} className={r.id === picked.id ? 'is-on' : ''} onClick={() => setRegion(r.id)}>
                   <strong>{r.name}</strong>
-                  <span className="rb-dim">Clock {clockText(keyPar(r))}</span>
+                  <span className="rb-dim">Clock {clockText(keyParFor(r, h.level))}</span>
                 </button>
               </li>
             ))}
@@ -66,6 +67,7 @@ export function RiftScreen({ engine, slot, onBack }: { engine: SigilEngine; slot
           </button>
         </section>
         <section className="rb-rift-echoes" aria-label="What the stones remember">
+          <RiftGuide hero={h} open={top <= 1} />
           <h2>What the stones remember</h2>
           {seen.map((e) => (
             <article key={e.at}>
@@ -78,7 +80,7 @@ export function RiftScreen({ engine, slot, onBack }: { engine: SigilEngine; slot
           {next && <p className="rb-small rb-dim">The next memory waits at Riftstone +{next.at}.</p>}
           {!done && (
             <p className="rb-rift-warden">
-              <b>{warden.title}.</b> Stones go no higher than +{RIFT_CAP_UNFINISHED} until you have stood before the Ash Crown yourself. Finish the story as a {h.cls} to {warden.sigil ? `become a warden of the ${warden.sigil} Sigil` : 'take up the watch the songs left out, at the Gloam Gate'}: the title, the armor and the {warden.drake.name}.
+              <b>{warden.title}.</b> Stones go no higher than +{RIFT_CAP_UNFINISHED} until you have stood before the Hallow King yourself. Finish the story as a {h.cls} to {warden.sigil ? `become a warden of the ${warden.sigil} Sigil` : 'take up the watch the songs left out, at the Gloam Gate'}: the title, the armor and the {warden.drake.name}.
             </p>
           )}
         </section>

@@ -1,4 +1,5 @@
 import { clamp, hash2, TAU } from '../core/math';
+import { DAY_LIGHT, DOOR_LIGHT, zoneLight } from './zoneLight';
 import type { MountDef } from '../data/mounts';
 import { mountDef, riddenMount, wornLooks } from '../progress/wardrobe';
 import type { ClassId } from '../data/types';
@@ -9,9 +10,10 @@ import { heightFromRadius, PERSON_H, type Cast } from '../render3d/cast';
 import { kitOf } from '../render3d/kits';
 import { PITCH } from '../render3d/land';
 import type { Land3D, RoofSpot } from '../render3d/land';
+import { bossHidden } from '../sim/boss';
 import { hasStatus } from '../sim/combat';
 import { TILE } from '../sim/map';
-import type { Enemy, Fx, Projectile, Telegraph } from '../sim/types';
+import type { Enemy, Fx, Projectile, Telegraph, TelegraphKind } from '../sim/types';
 import { SUMMON_TIME, type World } from '../sim/world';
 
 /**
@@ -42,6 +44,10 @@ export const TONES: Record<string, Tone> = {
   nature: { a: '#58c848', b: '#e4ffc8' },
   physical: { a: '#e0d8c8', b: '#ffffff' },
 };
+/** What a mark on the ground asks of the hero (sim/types.ts TelegraphKind): absent, it is an attack. */
+export const telegraphKind = (t: { kind?: TelegraphKind }): TelegraphKind => t.kind ?? 'danger';
+/** The colors of the marks that aren't attacks: gold for safety, blue for a place to stand, grey for a plain warning. */
+export const KIND_COLOR: Record<Exclude<TelegraphKind, 'danger'>, string> = { safe: '#ffd24a', stand: '#4aa8ff', warn: '#b8b4c4' };
 const toneOf = (type: string): Tone => TONES[type] ?? TONES.physical!;
 
 /** What fire looks like in a place: most burn orange, a deep place its own color. */
@@ -52,7 +58,8 @@ const FIRE: Record<string, Tone> = {
   icecave: { a: '#2a8ad8', b: '#90e0f8' },
   riftspire: { a: '#a03ae0', b: '#f090f8' },
   roots: { a: '#5a9a2a', b: '#c0e050' },
-  citadel: { a: '#7a4ac8', b: '#c8a0f8' },
+  // Duskspire, the Hallow King's frozen citadel: grieflight burning cold, violet at the heart and ice-white at the tips
+  citadel: { a: '#6a5ad8', b: '#d0e4ff' },
   lavacave: { a: '#e0321a', b: '#ff8a1e' },
   cistern: { a: '#3a9a78', b: '#80e0b0' },
 };
@@ -219,6 +226,90 @@ export function spell(fx: Fx3D, name: string, tone: Tone, x: number, y: number, 
 type Aura = { a: string; b: string; n: number; speed: number; spin: number; from: number; rise: number; size: number; halo?: { up: number; w: number; alpha: number } };
 
 /** The shop's armor sets, the same way (their colors are the set's own or an admin's: its glow, then its trim). */
+/**
+ * What hangs in the air round a boss (render/effects.ts bossPresence): `kind` of particle, `n` of them (more each
+ * phase), how fast they go round (`speed`, `spin`), from how high (`from`) and how far they rise or fall (`rise`), how
+ * big (`size`), and its two colors (`a` the sigil and halo, `b` the light it turns and falls in).
+ */
+interface BossAura {
+  kind: 'spark' | 'smoke' | 'rain' | 'bubble';
+  n: number;
+  speed: number;
+  spin: number;
+  from: number;
+  rise: number;
+  size: number;
+  a: string;
+  b: string;
+}
+const EMBERS = (a: string, b: string): BossAura => ({ kind: 'spark', n: 10, speed: 0.45, spin: 0.2, from: 8, rise: 46, size: 7, a, b });
+const MOTES = (a: string, b: string): BossAura => ({ kind: 'spark', n: 9, speed: 0.2, spin: 0.6, from: 6, rise: 40, size: 8, a, b });
+const FALLING = (a: string, b: string): BossAura => ({ kind: 'spark', n: 9, speed: 0.25, spin: 0.15, from: 10, rise: -48, size: 6, a, b });
+const GLOOM = (a: string, b: string): BossAura => ({ kind: 'smoke', n: 6, speed: 0.3, spin: 0.25, from: 4, rise: 30, size: 16, a, b });
+const BUBBLES = (a: string, b: string): BossAura => ({ kind: 'bubble', n: 7, speed: 0.35, spin: 0.3, from: 2, rise: 44, size: 6, a, b });
+/** By the land a boss is fought in. */
+const THEME_AURA: Record<string, BossAura> = {
+  crypt: MOTES('#7af0c8', '#d8fff0'),
+  cave: MOTES('#d8c8a0', '#fff2d0'),
+  cistern: { kind: 'rain', n: 1, speed: 0.3, spin: 0, from: 0, rise: 0, size: 0, a: '#9ad84a', b: '#e0ff9a' },
+  keep: EMBERS('#ff8a3a', '#ffd27a'),
+  icecave: FALLING('#bfe8ff', '#ffffff'),
+  lavacave: EMBERS('#ff5a1e', '#ffc23a'),
+  riftspire: MOTES('#b07aff', '#f0d8ff'),
+  roots: MOTES('#a8d84a', '#f0ffb0'),
+  forest: MOTES('#a8d84a', '#f0ffb0'),
+  temple: MOTES('#ffd27a', '#fff6d0'),
+  citadel: FALLING('#d8e8ff', '#ffffff'),
+  village: EMBERS('#ff8a3a', '#ffd27a'),
+};
+/** A boss with an air of its own. */
+const BOSS_AURA: Record<string, BossAura> = {
+  'coffin-matron': MOTES('#9cff9c', '#e0ffe0'),
+  ossric: EMBERS('#ffd88a', '#fff2c0'),
+  morgrave: MOTES('#ff3fd2', '#ffd0f6'),
+  hangman: GLOOM('#4a3a3a', '#c9b89a'),
+  gnasher: EMBERS('#ff4a2a', '#ffb070'),
+  varric: EMBERS('#ffb04d', '#ffe8b0'),
+  'the-drowned': BUBBLES('#7ad8ff', '#d8f6ff'),
+  clatterclaw: BUBBLES('#87cfc4', '#e0fff8'),
+  saltbeard: MOTES('#e0d0f0', '#ffffff'),
+  'brother-pustule': { kind: 'rain', n: 1, speed: 0.3, spin: 0, from: 0, rise: 0, size: 0, a: '#b8d84a', b: '#f0ffb0' },
+  'old-sluicegut': GLOOM('#5a7a3a', '#c8e0a0'),
+  'the-rot-mother': { kind: 'rain', n: 1, speed: 0.3, spin: 0, from: 0, rise: 0, size: 0, a: '#a8d04a', b: '#e8ff9a' },
+  'slag-colossus': EMBERS('#ff5a1e', '#ffc23a'),
+  'the-runewarden': MOTES('#ffd27a', '#fff2c0'),
+  'forgemaster-grold': EMBERS('#ff7a2a', '#ffe08a'),
+  'king-hrodric': FALLING('#bfe8ff', '#ffffff'),
+  gloomwing: GLOOM('#2a1e3a', '#b8a8ff'),
+  'sir-corvane': FALLING('#a8c8ff', '#e8f0ff'),
+  grimtusk: MOTES('#c86aff', '#f0d0ff'),
+  'the-sand-warden': FALLING('#e8cf95', '#fff2d0'),
+  'the-sun-king': EMBERS('#ffd27a', '#fffbe0'),
+  'vizier-khepset': FALLING('#ffd27a', '#fff6d0'),
+  'jarl-hrimfang': FALLING('#bfe8ff', '#ffffff'),
+  'hallvor-the-unthawed': MOTES('#9ad8ff', '#ffffff'),
+  'the-rime-wyrm': FALLING('#a9dcff', '#ffffff'),
+  'the-siege-breaker': EMBERS('#ff8a3a', '#ffd27a'),
+  'prior-vessant': GLOOM('#2a3a2a', '#9cff9c'),
+  'general-morvain': MOTES('#ffd27a', '#ffffff'),
+  'rotwood-colossus': MOTES('#a8d84a', '#f0ffb0'),
+  'elowen-of-the-dawn': MOTES('#ffe08a', '#ffffff'),
+  'the-withered-queen': GLOOM('#4a6a2a', '#d8f0a0'),
+  'magma-warden': EMBERS('#ff5a1e', '#ffc23a'),
+  'ossa-the-founder': EMBERS('#ffb060', '#fff2d0'),
+  'ashkar-the-bound': EMBERS('#ff3a1a', '#ffe08a'),
+  'veil-sentinel': MOTES('#a48bdc', '#f0e0ff'),
+  'ilvane-the-unmoored': MOTES('#c8b8ff', '#ffffff'),
+  'herald-in-the-spire': MOTES('#d8d0f0', '#ffffff'),
+  'lady-cendre': GLOOM('#2a2430', '#c08aff'),
+  'hollow-guard': GLOOM('#3a3448', '#c8c0e0'),
+  // the Hallow King: rime falling round him in a slow crown, grieflight in it
+  vaelor: { kind: 'spark', n: 14, speed: 0.22, spin: 0.35, from: 14, rise: -56, size: 7, a: '#c8a8ff', b: '#e8f6ff' },
+  'silas-vey': GLOOM('#2a2430', '#e8d07a'),
+  'the-royal-auditor': MOTES('#f0e0a0', '#ffffff'),
+  'maelis-crane': MOTES('#ffd98a', '#ffffff'),
+};
+
 const SHOP_GLOW: Record<string, Omit<Aura, 'a' | 'b'>> = {
   crownforged: { n: 8, speed: 0.42, spin: 0, from: 6, rise: 32, size: 7, halo: { up: 18, w: 40, alpha: 0.14 } },
   celestine: { n: 9, speed: 0.2, spin: 0.6, from: 8, rise: -34, size: 7, halo: { up: 34, w: 42, alpha: 0.2 } },
@@ -299,6 +390,8 @@ export class Effects {
     this.shots(w, sc);
     this.throwing(w, sc);
     for (const f of w.fx) if (sc.near(f.x, f.y)) this.particle(f, sc);
+    // a scene's own effects (a sigil waking, a wall going): render/effects' spells, by name
+    for (const f of w.scene?.fx ?? []) spell(sc.fx, f.name, { a: f.color, b: '#ffffff' }, f.x, f.y, Math.min(1, f.t / 1.4), f.size, f.seed);
     for (const gh of w.coop?.ghosts ?? []) {
       for (const sh of gh.shots) {
         const d = dyeOf(sh.color);
@@ -444,8 +537,13 @@ export class Effects {
   private telegraph(t: Telegraph, fx: Fx3D): void {
     if (t.t >= t.dur && t.linger <= 0) return;
     const k = clamp(t.t / t.dur, 0, 1);
-    const a = t.tone === 'rift' ? '#ff3fd2' : t.tone === 'player' ? '#ffb04d' : '#ff3b3b';
+    const kind = telegraphKind(t);
+    const a = kind === 'danger' ? (t.tone === 'rift' ? '#ff3fd2' : t.tone === 'player' ? '#ffb04d' : '#ff3b3b') : KIND_COLOR[kind];
     const lingering = t.t >= t.dur;
+    if (kind !== 'danger') {
+      this.quietTelegraph(t, kind, a, fx);
+      return;
+    }
     switch (t.shape) {
       case 'circle':
         fx.put({ kind: FX.warn, x: t.x, y: t.y, flat: true, w: t.r * 2, a, t: lingering ? 1 : k, p1: WARN.circle, seed: lingering ? 0.7 : 0 });
@@ -465,6 +563,39 @@ export class Effects {
         fx.put({ kind: FX.warn, x: t.x, y: t.y, flat: true, w: t.r * 2, rot: t.angle, a, t: k, p1: WARN.cone, p2: t.r2 });
         break;
     }
+  }
+
+  /**
+   * A place on the ground that isn't an attack, each kind its own look so it is never read as one: a safe place is
+   * gold, steady (it doesn't fill like a blow about to land) and outlined; a place to stand is blue with a mark turning
+   * at its middle; a plain warning is grey and faint.
+   */
+  private quietTelegraph(t: Telegraph, kind: Exclude<TelegraphKind, 'danger'>, a: string, fx: Fx3D): void {
+    if (t.t >= t.dur) return;
+    const pulse = 0.5 + Math.sin(t.t * 5) * 0.08;
+    const fill = kind === 'warn' ? 0.2 : pulse;
+    const alpha = kind === 'warn' ? 0.45 : 1;
+    let cx = t.x;
+    let cy = t.y;
+    switch (t.shape) {
+      case 'circle':
+        fx.put({ kind: FX.warn, x: t.x, y: t.y, flat: true, w: t.r * 2, a, t: fill, p1: WARN.circle, alpha });
+        if (kind === 'safe') fx.put({ kind: FX.mark, x: t.x, y: t.y, flat: true, w: t.r * 2 + 4, a });
+        break;
+      case 'ring':
+      case 'donut':
+        fx.put({ kind: FX.warn, x: t.x, y: t.y, flat: true, w: t.r * 2, a, t: fill, p1: WARN.donut, p2: t.r2 / t.r, alpha });
+        break;
+      case 'line':
+        cx = t.x + (Math.cos(t.angle) * t.len) / 2;
+        cy = t.y + (Math.sin(t.angle) * t.len) / 2;
+        fx.put({ kind: FX.warn, x: cx, y: cy, flat: true, w: t.len, h: t.r2, rot: t.angle, a, t: fill, p1: WARN.line, alpha });
+        break;
+      case 'cone':
+        fx.put({ kind: FX.warn, x: t.x, y: t.y, flat: true, w: t.r * 2, rot: t.angle, a, t: fill, p1: WARN.cone, p2: t.r2, alpha });
+        break;
+    }
+    if (kind === 'stand') fx.put({ kind: FX.rune, x: cx, y: cy, flat: true, w: Math.min(40, Math.max(18, t.r)), a, b: '#ffffff', t: 0.6, seed: t.id * 0.37 });
   }
 
   /** The wind-ups of ordinary foes, read from their state: arcs, slam circles, aim lines, charge lanes. */
@@ -563,6 +694,69 @@ export class Effects {
     fx.put({ kind: FX.rain, x: x + 14, y, up: peak + 10, base: true, w: 70, h: 100, a: '#ffe08a', t: -1, seed: (key % 31) + 5, p1: 1 });
   }
 
+  /**
+   * The light at the ways through: out of each road's gate the next land's own light spills along the ground in that
+   * land's color, soft on every side (it lies on the ground in the world, so a tree or a wall stands in it and hides it
+   * as it would, and it has no edge to be cut off at); a way down in the middle of a land has its deep place's light at
+   * its mouth; and a house that can be gone into has lamplight falling out of its door onto the step (no arrow painted
+   * on the ground: a door you can use is the one with a light in it). From inside, daylight comes in at the door.
+   */
+  private wayLights(w: World, sc: EffectsScene): void {
+    const fx = sc.fx;
+    const time = sc.time;
+    const dungeon = w.region.kind === 'dungeon';
+    const inside = !!w.region.interior || dungeon;
+    const mw = w.map.w * TILE;
+    const mh = w.map.h * TILE;
+    /** Light from a source at (x, y) spilling toward `into` (radians: 0 east, a quarter turn south), `long` px. */
+    const spill = (x: number, y: number, into: number, long: number, wide: number, color: string, alpha: number, seed: number): void => {
+      // (the source is a quarter of the way in from the quad's near edge: fx3d.ts spill)
+      fx.put({ kind: FX.spill, x: x + Math.cos(into) * long * 0.25, y: y + Math.sin(into) * long * 0.25, up: 2, flat: true, w: wide, h: long, rot: into - Math.PI / 2, a: color, alpha, seed });
+    };
+    const groups: { to: string; door: boolean; x: number; y: number; n: number }[] = [];
+    for (const x of w.exits) {
+      const g = groups.find((o) => o.to === x.to && o.door === !!x.door && Math.abs(o.x / o.n - x.x) < TILE * 4 && Math.abs(o.y / o.n - x.y) < TILE * 4);
+      if (g) {
+        g.x += x.x;
+        g.y += x.y;
+        g.n++;
+      } else groups.push({ to: x.to, door: !!x.door, x: x.x, y: x.y, n: 1 });
+    }
+    for (const g of groups) {
+      const x = g.x / g.n;
+      const y = g.y / g.n;
+      if (!sc.near(x, y) && !sc.near(x, y + 220) && !sc.near(x, y - 220) && !sc.near(x + 220, y) && !sc.near(x - 220, y)) continue;
+      const breathe = 0.5 + Math.sin(time * 1.3 + x * 0.02) * 0.5;
+      const seed = (x * 0.013 + y * 0.007) % 1;
+      if (inside) {
+        // the way back out: daylight on the floor at the door
+        if (g.door) spill(x, y + 6, -Math.PI / 2, 120, 96, DAY_LIGHT, 0.5 + breathe * 0.08, seed);
+        else fx.put({ kind: FX.glow, x, y, up: 2, flat: true, w: 110, a: DAY_LIGHT, alpha: 0.42 + breathe * 0.08 });
+        continue;
+      }
+      if (g.door) {
+        // a house: its lamplight out of the door and down the step, and the door itself lit
+        spill(x, y - 12, Math.PI / 2, 132, 104, DOOR_LIGHT, 0.62 + breathe * 0.1, seed);
+        fx.put({ kind: FX.glow, x, y: y - 14, up: 15, w: 40, a: DOOR_LIGHT, alpha: 0.3 + breathe * 0.06, over: true });
+        continue;
+      }
+      const col = zoneLight(g.to);
+      const least = Math.min(x, y, mw - x, mh - y);
+      if (least < TILE * 8) {
+        // a gate at the land's edge: into the land, away from that edge
+        const into = least === y ? Math.PI / 2 : least === mh - y ? -Math.PI / 2 : least === x ? 0 : Math.PI;
+        // (its source under the gate's arch, which stands a tile in from the edge: not out past the land's end)
+        const gx = x + Math.cos(into) * TILE * 1.1;
+        const gy = y + Math.sin(into) * TILE * 1.1;
+        spill(gx, gy, into, 620, 600, col, 0.42 + breathe * 0.06, seed);
+        fx.put({ kind: FX.glow, x: gx, y: gy, up: 70, w: 230, a: col, alpha: 0.13 + breathe * 0.04, over: true });
+      } else {
+        // a way down in the middle of the land: its doors face south
+        spill(x, y - 10, Math.PI / 2, 330, 320, col, 0.42 + breathe * 0.06, seed);
+      }
+    }
+  }
+
   private fires(w: World, sc: EffectsScene): void {
     const fx = sc.fx;
     const tone = FIRE[w.region.theme] ?? FIRE.default!;
@@ -578,8 +772,11 @@ export class Effects {
         if (!sc.near(x, y)) continue;
         const r = f.size * (0.92 + Math.sin(sc.time * 1.8 + x) * 0.08);
         fx.put({ kind: FX.glow, x, y, up: f.y * TILE, w: r * 2.6, a: f.color, alpha: 0.6 });
+        // in a deep place its light lies on the floor round it too: a small warm pool in the room's cold
+        if (w.region.dark) fx.put({ kind: FX.glow, x, y, flat: true, w: r * 9, a: f.color, alpha: 0.2 + Math.sin(sc.time * 5.3 + x * 0.7) * 0.02 });
       }
     }
+    this.wayLights(w, sc);
     for (const f of w.fires) {
       const lit = w.fireLit(f);
       if (lit && sc.near(f.x, f.y)) this.blaze(fx, f, lit, sc.land?.roofAt(f.x / TILE, f.y / TILE) ?? [], sc.time, tone);
@@ -597,6 +794,8 @@ export class Effects {
   private marks(w: World, sc: EffectsScene): void {
     const fx = sc.fx;
     for (const e of w.enemies) if (!e.dead && sc.near(e.x, e.y)) this.enemyMarks(e, fx, sc.time);
+    // a boss's presence: its sigil, its halo and what hangs in the air round it, and the light of its turns and its fall
+    for (const e of w.enemies) if (e.boss && sc.near(e.x, e.y) && !bossHidden(e)) this.bossPresence(e, fx, sc.time, w.region.theme);
     const p = w.player;
     if (p.dead) return;
     if (p.shield > 0) fx.put({ kind: FX.bubble, x: p.x, y: p.y, up: 16, w: 50, a: '#7fd8ff' });
@@ -683,6 +882,58 @@ export class Effects {
     for (let i = 0; i < 3; i++) {
       const a = time * 5 + (i * TAU) / 3;
       fx.put({ kind: FX.spark, x: x + Math.cos(a) * 9, y: y + Math.sin(a) * 3, up, w: 11, a: '#ffe066', t: 0.1 });
+    }
+  }
+
+  /**
+   * A boss's presence, so that it looks the fight it is: a rune turning on the floor under it in its own color, a halo
+   * behind it, and what hangs in the air round it (embers off a forge's master, frost off a wyrm, souls off a crypt's
+   * dead, gloom off a lamp-eater...), thicker with every phase. As it turns to its next phase, light gathers into it
+   * and flares; as it falls, a column of light and a spiral of sparks go up from it.
+   */
+  private bossPresence(e: Enemy, fx: Fx3D, time: number, theme: string): void {
+    const b = e.boss!;
+    const look = BOSS_AURA[b.def.id] ?? THEME_AURA[theme] ?? THEME_AURA.cave!;
+    const h = headOf(e);
+    const seed = e.id * 0.37;
+    const phase = b.phase;
+    const dying = b.dying > 0 ? 1 - b.dying / 1.8 : 0;
+    const pulse = Math.sin(time * 2.2 + seed) * 0.5 + 0.5;
+    // the sigil under it, and its halo
+    fx.put({ kind: FX.rune, x: e.x, y: e.y, flat: true, w: (e.r + 16 + phase * 4) * 2, a: look.a, b: look.b, t: 0.32 + pulse * 0.12 + dying * 0.4, seed });
+    fx.put({ kind: FX.glow, x: e.x, y: e.y, up: h * 0.55, w: e.r * 4 + 34 + phase * 8, a: look.a, alpha: 0.16 + pulse * 0.08 + phase * 0.04, behind: true });
+    // what hangs in the air round it
+    const n = Math.round(look.n * (1 + phase * 0.5));
+    for (let i = 0; i < n; i++) {
+      const u = (time * look.speed + i / n) % 1;
+      const round = Math.floor(time * look.speed + i / n);
+      const a = hash2(i, round, 7 + e.id) * TAU + time * look.spin;
+      const out = e.r * 0.6 + 6 + hash2(i, round, 11) * (e.r + 10);
+      const rise = look.rise >= 0 ? u * look.rise : (1 - u) * -look.rise;
+      const color = i % 3 === 2 ? look.b : look.a;
+      if (look.kind === 'rain') fx.put({ kind: FX.rain, x: e.x, y: e.y, base: true, w: e.r * 3 + 16, h: h + 14, a: color, t: -1, seed: seed + i });
+      else if (look.kind === 'smoke') fx.put({ kind: FX.smoke, x: e.x + Math.cos(a) * out, y: e.y + Math.sin(a) * out * 0.6, up: look.from + rise, w: look.size * (0.6 + u), a: color, alpha: 0.5 * Math.sin(u * Math.PI), t: u, seed: seed + i });
+      else if (look.kind === 'bubble') fx.put({ kind: FX.bubble, x: e.x + Math.cos(a) * out, y: e.y + Math.sin(a) * out * 0.6, up: look.from + rise, w: look.size * Math.sin(u * Math.PI) + 1, a: color });
+      else fx.put({ kind: FX.spark, x: e.x + Math.cos(a) * out, y: e.y + Math.sin(a) * out * 0.6, up: look.from + rise, w: look.size * Math.sin(u * Math.PI), a: color, t: 0.1 + u * 0.6 });
+    }
+    // in its last phase it burns brighter: a second, wider sigil turning the other way
+    if (phase >= 1 && phase === b.def.phases.length - 1) fx.put({ kind: FX.rune, x: e.x, y: e.y, flat: true, w: (e.r + 30) * 2, a: look.b, b: look.a, t: 0.22 + pulse * 0.1, seed: seed + 0.5 });
+    // turning to its next phase: the light gathers into it and flares
+    if (b.shift > 0) {
+      const u = 1 - b.shift / 1.4;
+      fx.put({ kind: FX.gather, x: e.x, y: e.y, up: h * 0.5, w: e.r * 5 + 50, a: look.a, b: '#ffffff', t: u, seed });
+      fx.put({ kind: FX.glow, x: e.x, y: e.y, up: h * 0.5, w: (e.r * 4 + 40) * (0.6 + u), a: look.b, alpha: 0.35 * Math.sin(u * Math.PI) + 0.1 });
+    }
+    // falling: a column of light, and sparks spiraling up out of it
+    if (dying > 0) {
+      fx.put({ kind: FX.shaft, x: e.x, y: e.y, base: true, w: e.r * 3 + 26, h: 150, a: look.b, alpha: 0.5 + 0.45 * dying, t: dying, seed });
+      fx.put({ kind: FX.glow, x: e.x, y: e.y, flat: true, w: (e.r * 4 + 40) * (1 + dying), a: look.b, alpha: 0.5 * (1 - dying * 0.5) });
+      fx.put({ kind: FX.glow, x: e.x, y: e.y, up: headOf(e) * 0.6, w: e.r * 5 + 40, a: '#ffffff', alpha: 0.3 * dying });
+      for (let i = 0; i < 14; i++) {
+        const u = (dying * 1.6 + i / 14) % 1;
+        const a = (i / 14) * TAU + dying * 9;
+        fx.put({ kind: FX.spark, x: e.x + Math.cos(a) * (e.r + 6) * (1 - u * 0.5), y: e.y + Math.sin(a) * (e.r + 6) * 0.6 * (1 - u * 0.5), up: u * 90, w: 9 * (1 - u), a: i % 2 ? '#ffffff' : look.a, t: 0.1 + u * 0.5 });
+      }
     }
   }
 
@@ -1005,6 +1256,11 @@ export class Effects {
         break;
       case 'smoke':
         fx.put({ kind: FX.smoke, x: f.x, y: f.y, up: 4 + k * 15, w: f.size * (3.2 + k * 3.4), a: f.color, alpha: 0.85, t: k * 0.9, seed: f.life * 11 });
+        break;
+      case 'flake':
+        // a snowflake coming down out of the sky, swaying on the wind, fading as it settles
+        fx.put({ kind: FX.flake, x: f.x, y: f.y, up: 3 + (1 - k) * 36, w: 3 + f.size * 2.8, a: f.color, alpha: clamp(Math.min(k * 6, (1 - k) * 3.5), 0, 0.95), seed: f.a, t: k });
+        f.vx += Math.sin(f.t * 1.6 + f.a) * 0.32;
         break;
       case 'leaf':
         fx.put({ kind: FX.leaf, x: f.x, y: f.y, up: 6 + (1 - k) * 14, w: 7, h: 4, rot: f.a + f.t * 4, a: f.color, alpha: clamp(1 - k * 1.2, 0, 0.95) });

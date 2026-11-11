@@ -7,7 +7,7 @@ import type { DungeonModule } from '.';
  * spire of black glass that climbs through the Veil, floor by floor, each stranger than the last. The
  * hero comes in at the Spire's Foot and climbs: the Glass Threshold, the Hall of Mirrors (pillars of
  * black glass in rows), the Sentinel's Stair where the Veil Sentinel guards the way up, the Weightless
- * Gallery (the stones float there), the Herald's Scriptorium (the letters he signed to every traitor),
+ * Gallery (the stones float there, and Ilvane the Unmoored with them), the Herald's Scriptorium (the letters he signed to every traitor),
  * the Halls Half-Through (things caught halfway out of the Veil), and the Crown of the Spire, open to
  * the Tear, where the Pale Herald keeps the Sigil of the Veil. The rooms seal while you fight in them
  * (their floors are the letters below). The Crown has no pillars: its floor is glass panes over the Tear,
@@ -44,7 +44,7 @@ const MAP = [
   '####################gggggggggggjgggggggggggg######eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee#####################',
   '####################ggggggjgggggggggggjggggg######eeeeeeeejeeeeeeeeeeeeeejeeeeeeee#####################',
   '####################ggggggggggggggggggggggggD....Deeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee#####################',
-  '####################ggggggggggggggygggggggggD....Deeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee#####################',
+  '####################ggggggggggWgggygggggggggD....Deeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee#####################',
   '####################gggQgggggggggggggggggQggD....DeeeeeeeeeeeeeeeeOeeeeeeeeeeeeeee#####################',
   '####################ggggggggggggjggggggggggg######eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee#####################',
   '####################gggggggggggggggggggggggg######eeeeeyeeeeeeeeeeeeeeeeeeeeeeeeee#####################',
@@ -101,6 +101,8 @@ const markers: Record<string, Marker> = {
   S: { kind: 'chest', id: 'spire-strongbox', tier: 'epic', once: true },
   O: { kind: 'boss', boss: 'veil-sentinel' },
   V: { kind: 'boss', boss: 'herald-in-the-spire' },
+  // the Weightless Gallery: Ilvane the Unmoored (sim/patterns/spire-of-the-rift.ts)
+  W: { kind: 'boss', boss: 'ilvane-the-unmoored' },
   x: { kind: 'prop', prop: 'crate', solid: true },
   n: { kind: 'prop', prop: 'lamp', solid: true },
   y: { kind: 'prop', prop: 'bones' },
@@ -263,7 +265,7 @@ const bosses: Record<string, BossDef> = {
     name: 'The Veil Sentinel',
     title: 'Warden of the Stair',
     sprite: 'veil-sentinel',
-    hp: 4000,
+    hp: 4600,
     dmg: 37,
     radius: 14,
     xp: 885,
@@ -301,8 +303,8 @@ const bosses: Record<string, BossDef> = {
           { id: 'cleave', w: 2, cd: 3, p: { swings: 2, r: 58, arc: 0.9, wind: 0.65, gap: 0.14, lunge: 16, mul: 1.3 } },
           // and the crush sends a shockwave rolling out across the stair
           { id: 'spire:gravity', w: 2, cd: 10, p: { time: 2.2, pull: 40, reach: 260, r: 70, mul: 1.9, wave: 1.2 } },
-          { id: 'riftNova', w: 2, cd: 8 },
-          { id: 'slamRings', w: 1, cd: 9 },
+          // prism lines cut across the stair through the hero
+          { id: 'spell:crossfire', w: 1, cd: 9, p: { color: '#9affff', type: 'arcane', lines: 3, twice: 0, width: 14, mul: 1.05 } },
           { id: 'charge', w: 1, cd: 7, p: { count: 2, wind: 0.8, speed: 300, len: 300, mul: 1.4, stun: 1.4 } },
           { id: 'summon', w: 1, cd: 18, p: { enemies: ['spire-mote', 'spire-mote', 'rift-shardling'] } },
         ],
@@ -325,12 +327,75 @@ const bosses: Record<string, BossDef> = {
     },
     intro: 'A construct of black glass older than the Spire, with a heart of grieflight crystal where its face should be. It was made to guard the stair, and the Herald taught it whom to let pass.',
   },
+  'ilvane-the-unmoored': {
+    id: 'ilvane-the-unmoored',
+    name: 'Ilvane the Unmoored',
+    title: 'Keeper of the Weightless Gallery',
+    sprite: 'ilvane-the-unmoored',
+    hp: 6000,
+    dmg: 44,
+    radius: 11,
+    xp: 1500,
+    gold: [210, 290],
+    phases: [
+      {
+        at: 1,
+        speed: 40,
+        rest: [0.7, 1.05],
+        patterns: [
+          // falling stars, one after another toward the hero
+          { id: 'spell:meteors', w: 3, cd: 5, p: { color: '#c8b8ff', type: 'arcane', count: 7, gap: 0.18, rr: 18, mul: 0.95 } },
+          // stars set about the hero, then joined one to the next, line by line
+          { id: 'spell:constellation', w: 2, cd: 8, p: { color: '#c8b8ff', type: 'arcane', count: 5, step: 0.35, dur: 0.8, mul: 1 } },
+          // the astrolabe-staff swung
+          { id: 'cleave', w: 2, cd: 3.5, p: { r: 52, arc: 1.05, wind: 0.7, lunge: 18, mul: 1.35 } },
+          // the gallery lets go of the floor
+          { id: 'spire:unmoor', w: 3, cd: 13, p: { time: 6, stones: 7, warn: 1.1, mul: 1.1 } },
+        ],
+      },
+      {
+        at: 0.5,
+        banner: 'Ilvane spreads her arms: “Up! All of it! Let nothing touch the floor again!”',
+        speed: 46,
+        rest: [0.5, 0.85],
+        enter: [
+          { id: 'roar', w: 1, cd: 0 },
+          { id: 'spire:unmoor', w: 1, cd: 11, p: { time: 7, stones: 10, warn: 1, mul: 1.15, fling: 1.3 } },
+        ],
+        patterns: [
+          // falling stars, one after another toward the hero
+          { id: 'spell:meteors', w: 3, cd: 4.5, p: { color: '#c8b8ff', type: 'arcane', count: 7, gap: 0.18, rr: 18, mul: 0.95 } },
+          // stars set about the hero, then joined one to the next, line by line
+          { id: 'spell:constellation', w: 2, cd: 7, p: { color: '#c8b8ff', type: 'arcane', count: 5, step: 0.35, dur: 0.8, mul: 1 } },
+          { id: 'cleave', w: 2, cd: 3, p: { swings: 2, r: 52, arc: 1.05, wind: 0.6, gap: 0.14, lunge: 20, mul: 1.3 } },
+          // now she flings the drifting stones at the hero while they float
+          { id: 'spire:unmoor', w: 3, cd: 11, p: { time: 7, stones: 10, warn: 1, mul: 1.15, fling: 1.3 } },
+        ],
+      },
+    ],
+    first: { any: ['veilstep-treads'] },
+    drops: {
+      items: {
+        any: ['veilstep-treads', 'prismglass-band', 'sentinel-gravity-core', 'static-band', 'second-wind-ring'],
+        warrior: ['bulwark-of-dawn'],
+        mage: ['twin-flame-circlet'],
+        ranger: ['huntmasters-hood'],
+        paladin: ['sunward-shield'],
+        priest: ['psalter-of-dawn'],
+        warlock: ['codex-of-hunger'],
+        druid: ['thicket-idol'],
+        gloamknight: ['lantern-of-the-last-watch'],
+      },
+      chance: [0.3, 0.5, 0.7],
+    },
+    intro: 'She charted the stars from this gallery for forty years. When the Herald opened the Veil above it, she looked up, and forgot which way was down.',
+  },
   'herald-in-the-spire': {
     id: 'herald-in-the-spire',
     name: 'The Pale Herald',
     title: 'Voice of the Hallow King',
     sprite: 'herald-in-the-spire',
-    hp: 6800,
+    hp: 8600,
     dmg: 31,
     radius: 12,
     xp: 1770,
@@ -345,11 +410,8 @@ const bosses: Record<string, BossDef> = {
           { id: 'volley', w: 3, cd: 4, p: { ...LANCES, shots: 2 } },
           // tears in the Veil: each pulls you toward it, spits grieflight, and bursts as it closes
           { id: 'spire:tear', w: 3, cd: 9, p: { count: 2, life: 7, pull: 20, reach: 120 } },
-          { id: 'riftSpiral', w: 2, cd: 9, p: { arms: 3, time: 2.6 } },
-          // hands of the Veil reach up through the floor
-          { id: 'graveGrasp', w: 2, cd: 7, p: { count: 4 } },
-          { id: 'teleport', w: 1, cd: 8 },
-          { id: 'riftBeams', w: 1, cd: 10, p: { beams: 3 } },
+          // he steps out of the world and back in behind you
+          { id: 'spell:blink', w: 1, cd: 8, p: { color: '#e8d8ff', behind: 1, rr: 32 } },
         ],
       },
       {
@@ -363,9 +425,8 @@ const bosses: Record<string, BossDef> = {
           { id: 'spire:echoes', w: 2, cd: 18, p: { count: 3, time: 9 } },
           { id: 'spire:tear', w: 3, cd: 9, p: { count: 2, life: 7, pull: 22, reach: 120 } },
           { id: 'volley', w: 2, cd: 4, p: { ...LANCES, shots: 3 } },
-          { id: 'orbs', w: 2, cd: 7, p: { count: 6, ring: 1, speed: 50, color: RIFT, homing: 0.8, mul: 0.8 } },
-          { id: 'riftNova', w: 1, cd: 9 },
-          { id: 'teleport', w: 1, cd: 8 },
+          // he steps out of the world and back in behind you
+          { id: 'spell:blink', w: 1, cd: 8, p: { color: '#e8d8ff', behind: 1, rr: 32 } },
         ],
       },
       {
@@ -379,9 +440,7 @@ const bosses: Record<string, BossDef> = {
           { id: 'spire:sunder', w: 3, cd: 8, p: { count: 3, wind: 1.6, life: 7 } },
           { id: 'spire:tear', w: 2, cd: 9, p: { count: 2, life: 6, pull: 32, reach: 130 } },
           { id: 'spire:echoes', w: 1, cd: 20, p: { count: 3, time: 8 } },
-          { id: 'riftSpiral', w: 2, cd: 9, p: { arms: 4, time: 2.4 } },
           { id: 'volley', w: 2, cd: 4, p: { ...LANCES, shots: 3 } },
-          { id: 'riftBeams', w: 1, cd: 10, p: { beams: 4 } },
         ],
       },
       {
@@ -397,9 +456,7 @@ const bosses: Record<string, BossDef> = {
         patterns: [
           { id: 'spire:sunder', w: 3, cd: 6, p: { count: 4, wind: 1.5, life: 5 } },
           { id: 'spire:tear', w: 2, cd: 8, p: { count: 2, life: 5, pull: 28, reach: 120 } },
-          { id: 'riftSpiral', w: 2, cd: 8, p: { arms: 5, time: 2.2 } },
           { id: 'volley', w: 2, cd: 3.5, p: { ...LANCES, shots: 3, wind: 0.6 } },
-          { id: 'riftNova', w: 1, cd: 8 },
         ],
       },
     ],
@@ -610,16 +667,7 @@ export const SPIRE_OF_THE_RIFT: DungeonModule = {
         ],
       },
       { id: 'stair', floor: 'e', waves: [], boss: 'veil-sentinel', checkpoint: true, title: 'The Sentinel’s Stair' },
-      {
-        id: 'gallery',
-        floor: 'g',
-        title: 'The Weightless Gallery',
-        waves: [
-          { enemies: ['rift-wyrm', 'rift-wyrm', 'spire-halfborn', 'spire-mote', 'spire-mote'] },
-          { enemies: ['spire-anchor', 'spire-anchor', 'shard-golem'] },
-          { enemies: ['spire-lancer', 'spire-halfborn', 'spire-cantor'], elite: true },
-        ],
-      },
+      { id: 'gallery', floor: 'g', waves: [], boss: 'ilvane-the-unmoored', checkpoint: true, title: 'The Weightless Gallery' },
       {
         id: 'scriptorium',
         floor: 'i',
