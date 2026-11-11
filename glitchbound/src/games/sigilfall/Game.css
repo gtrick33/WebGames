@@ -5882,7 +5882,9 @@
   display: grid;
   justify-items: center;
   gap: clamp(1px, 0.6cqh, 5px);
-  width: min(56%, 460px);
+  /* (never wider than the room between the wordmark on its left and its mirror on the right, whatever a phone's island
+     takes off the sides: on a phone held sideways the hero's name ran over the SIGILFALL mark) */
+  width: min(56%, 460px, calc(100% - 2 * (34px + max(var(--sa-l, 0px), var(--sa-r, 0px)) + clamp(120px, 24cqw, 230px))));
   transform: translateX(-50%);
   text-align: center;
   animation: cs-plate-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -5907,6 +5909,8 @@
 }
 .cs-line {
   margin: 0;
+  max-width: 100%;
+  text-wrap: balance;
   color: #d8cdea;
   font-size: clamp(12px, 1.9cqw, 15px);
   text-shadow: 0 1px 2px #000, 0 0 8px #000;
@@ -5981,6 +5985,12 @@
   }
   .cs-id {
     width: 66%;
+  }
+}
+/* a phone held sideways: the name a size down, so a long one still fits between the mark and the buttons */
+@container (max-height: 430px) {
+  .cs-name {
+    font-size: clamp(18px, 3.4cqw, 28px);
   }
 }
 
@@ -7265,9 +7275,11 @@
 }
 
 /* The setup editor */
+/* (its rows: the saved setups, the bar, the bar's combos, the tabs, what the open tab holds, and the hovered thing's
+   words. The combos' row was added without one here, so the tabs took the growing row and stood as tall as the page) */
 .rb-rs {
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
   gap: 5px;
   min-height: 0;
 }
@@ -7801,7 +7813,7 @@
     display: none;
   }
   .rb-rs {
-    grid-template-rows: repeat(5, max-content);
+    grid-template-rows: repeat(6, max-content);
   }
   .rb-rs-panel {
     overflow: visible;

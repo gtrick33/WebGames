@@ -45,7 +45,7 @@ export interface RingView {
 export class RingStage implements RingView {
   readonly stage: Stage;
   private built = false;
-  private readonly motions = new Map<number, { m: Motion; turn: number; swing: number; clip: string; fresh: boolean }>();
+  private readonly motions = new Map<number, { m: Motion; turn: number; swing: number; clip: string; fresh: boolean; time: number; lunge: number; hurt: number; hard: boolean }>();
   private readonly gates: Stand[] = [];
   private k = 1;
   private cx = ARENA_W / 2;
@@ -119,6 +119,11 @@ export class RingStage implements RingView {
     if (!this.built) this.build(st.landPacks!);
     LIGHT.uTime.value = time;
     LIGHT.uDark.value.set(0, 8, 0, 0);
+    // nothing in the Ring thins away in front of a hero. (The campaign's see-through, which dithers a wall between the
+    // camera and its hero, was left pointing at wherever that hero last stood: in the Ring that spot fell on the left
+    // entry, whose wall and block tops were drawn half in a crawling dither. The owner: "the glitched wall on the
+    // sand map and ... the glitched top of the column, they keep jittering".)
+    LIGHT.uSee.value.set(0, 0, 0, 0);
     LIGHT.uNight.value.set(1, 1, 1, 0);
     const grade = SKINS[this.map.theme].grade;
     LIGHT.uGrade.value.set(grade[0], grade[1], grade[2], grade[3]);
@@ -198,7 +203,7 @@ export class RingStage implements RingView {
     const cast = this.stage.cast;
     let s = this.motions.get(f.id);
     if (!s) {
-      s = { m: new Motion(), turn: turnOf(Math.atan2(f.dirY, f.dirX)), swing: 0, clip: 'chop', fresh: false };
+      s = { m: new Motion(), turn: turnOf(Math.atan2(f.dirY, f.dirX)), swing: 0, clip: 'chop', fresh: false, time: 0.5, lunge: 0, hurt: 0, hard: false };
       this.motions.set(f.id, s);
     }
     const moving = Math.hypot(f.vx, f.vy) > 1;
@@ -208,6 +213,7 @@ export class RingStage implements RingView {
     if (d < -Math.PI) d += Math.PI * 2;
     s.turn += d * (1 - Math.exp(-dt * 14));
     s.swing = Math.max(0, s.swing - dt);
+    s.hurt = Math.max(0, s.hurt - dt);
     const hexed = f.auras.some((a) => a.ab === 'm-toad' && a.cc === 'incap');
     const gale = f.auras.some((a) => a.ab === 'l-gale' && a.cc === 'incap');
     const stunned = f.auras.some((a) => a.cc === 'stun' || a.cc === 'incap');
@@ -221,6 +227,8 @@ export class RingStage implements RingView {
       s.fresh = false;
     }
     else if (stunned) s.m.set('hit');
+    // (struck: they flinch, unless they are in the middle of a blow or a spell of their own)
+    else if (s.hurt > 0.1 && !moving) s.m.set('hit', false, 0.05);
     else if (moving) s.m.set('run');
     else s.m.set('idle');
     if (frozen) dt = 0;
@@ -231,7 +239,13 @@ export class RingStage implements RingView {
       return;
     }
     const lift = gale ? (10 + Math.sin(time * 6) * 2) * UNIT : 0;
-    cast.person(l.look, l.held, shieldOf(f.cls as ClassId), f.x, f.y, s.turn, s.m, { lift, alpha: f.dead ? 0.85 : 1, tint: frozen ? [0.75, 0.92, 1.25] : undefined });
+    // a blow carries its maker into it and back: a step toward whoever it is for, out at the strike and home after.
+    // And whoever is struck flashes white and is rocked a little where they stand
+    const u = s.swing > 0 && s.time > 0 ? 1 - s.swing / s.time : 1;
+    const reach = s.lunge > 0 && !f.dead ? s.lunge * Math.sin(Math.PI * Math.min(1, u * 1.35)) : 0;
+    const rock = s.hurt > 0 && !f.dead ? Math.sin(s.hurt * 60) * (s.hard ? 1.6 : 0.9) * (s.hurt / 0.26) : 0;
+    const flash = s.hurt > 0 && !f.dead ? Math.min(1, s.hurt / 0.26) * (s.hard ? 0.85 : 0.6) : 0;
+    cast.person(l.look, l.held, shieldOf(f.cls as ClassId), f.x + f.dirX * reach + rock, f.y + f.dirY * reach, s.turn, s.m, { lift, flash, alpha: f.dead ? 0.85 : 1, tint: frozen ? [0.75, 0.92, 1.25] : undefined });
   }
 
   /** Something to shout about. */
@@ -240,33 +254,67 @@ export class RingStage implements RingView {
   }
 
   /**
-   * A fighter uses an ability (the 'ab' event): a move that fits it. A blow is a slash, a burst blow an overhead
-   * smash, what strikes all round a spin, an arrow a draw of the bow, a spell a cast thrown out; a long cast, when it
-   * goes off, is thrown out too. (`starting`: the start of a cast, which its own casting pose shows instead.)
+   * A fighter uses an ability (the 'ab' event): a move that says what it is. A plain blow is a cut, the next one a
+   * slice from the other side; a burst blow comes down from overhead with a long step in; what stuns is a bash with
+   * the weight behind it, what cuts a cast off a short jab, a charge ends on the point; what bleeds is drawn across;
+   * a shout is thrown out from the chest, a guard is a guard, a trap is set down by hand, a thrown weapon is thrown,
+   * an arrow drawn, a spell cast, and a super is the biggest thing its class can do. (`starting`: the start of a
+   * cast, which its own casting pose shows instead.) Before, every blow was one of two chops for 0.4 seconds and
+   * every self-cast the same flick of the hand: the owner, "attacks seem irrelevant and not meaningful".
    */
   swing(id: number, abId: string, starting = false): void {
     const ab = ABILITIES[abId];
     const s = this.motions.get(id);
     // (a Swift Step is its own streak, not a swing)
     if (!s || !ab || starting || ab.id === 'dash') return;
+    const has = (k: string): boolean => ab.effects.some((e) => e.k === k);
+    const holds = (cc: string): boolean => ab.effects.some((e) => (e.k === 'cc' || e.k === 'trap') && e.cc === cc);
     const melee = ab.range > 0 && ab.range <= 40;
     const archer = ab.cls === 'ranger' && (ab.school === 'physical' || ab.school === 'nature') && ab.aim === 'enemy' && !melee;
     let clip = 'cast';
-    let time = 0.42;
-    if (ab.aim === 'near') {
-      clip = 'spin';
-      time = 0.55;
-    } else if (archer) {
-      clip = 'bow';
-      time = 0.5;
-    } else if (melee || (ab.school === 'physical' && ab.aim === 'enemy')) {
-      // (blow after blow, the arm changes: a slash, then a heavier one)
-      clip = ab.role === 'burst' || s.clip === 'chop' ? 'chop2' : 'chop';
-      time = clip === 'chop2' ? 0.55 : 0.42;
-    } else if (ab.cast > 0) time = 0.36;
+    let time = 0.5;
+    let lunge = 0;
+    if (ab.super) {
+      // the class's great moment: held longer than anything else it does
+      if (ab.aim === 'near') [clip, time] = ['spin', 0.95];
+      else if (archer) [clip, time] = ['bow', 0.8];
+      else if (melee) [clip, time, lunge] = ['chop2', 0.9, 16];
+      else [clip, time] = [ab.aim === 'friend' ? 'cheer' : 'cast', 0.8];
+    } else if (ab.aim === 'near') {
+      if (holds('fear') && !has('dmg')) [clip, time] = ['taunt', 0.7];
+      else [clip, time] = ['spin', 0.7];
+    } else if (has('trap')) [clip, time] = ['pickup', 0.6];
+    else if (archer) [clip, time] = ['bow', 0.55];
+    else if (melee && ab.aim === 'enemy') {
+      if (has('charge')) [clip, time, lunge] = ['stab', 0.5, 4];
+      else if (holds('stun')) [clip, time, lunge] = ['bash', 0.62, 11];
+      else if (has('interrupt')) [clip, time, lunge] = ['punch', 0.42, 9];
+      else if (ab.role === 'burst') [clip, time, lunge] = ['chop2', 0.72, 13];
+      else if (has('dot') || has('antiheal')) [clip, time, lunge] = ['slice', 0.6, 9];
+      // (blow after blow, the arm changes: a cut, then a slice back the other way)
+      else [clip, time, lunge] = [s.clip === 'chop' ? 'slice' : 'chop', 0.52, 8];
+    } else if (ab.school === 'physical' && ab.aim === 'enemy') [clip, time] = ['throw', 0.58];
+    else if (ab.aim === 'self') {
+      if (has('guard') || has('absorb') || has('immune') || has('reflect')) [clip, time] = ['block', 0.65];
+      else if (has('fury') || has('speed') || has('price')) [clip, time] = ['taunt', 0.65];
+      else if (has('heal') || has('hot')) [clip, time] = ['use', 0.6];
+      else [clip, time] = ['cast', 0.45];
+    } else if (ab.aim === 'friend') [clip, time] = [has('dispel') ? 'interact' : 'cast', 0.52];
+    else if (holds('fear')) [clip, time] = ['taunt', 0.62];
+    else if (ab.cast > 0) time = 0.4;
     s.clip = clip;
     s.swing = time;
+    s.time = time;
+    s.lunge = lunge;
     s.fresh = true;
+  }
+
+  /** A fighter is struck (a blow that took a real bite): they flash and flinch; harder for a heavy one. */
+  hurt(id: number, hard: boolean): void {
+    const s = this.motions.get(id);
+    if (!s) return;
+    s.hurt = 0.26;
+    s.hard = hard;
   }
 
   flat(x: number, y: number): void {

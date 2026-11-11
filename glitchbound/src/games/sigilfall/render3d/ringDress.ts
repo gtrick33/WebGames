@@ -221,8 +221,9 @@ function sideWalls(b: Build, s: Masonry, rand: () => number): void {
 /** The parapet along the south, low enough never to hide a fighter, and the walk behind it. */
 function southWalk(b: Build, s: Masonry, palette: readonly C[], rand: () => number): void {
   b.box(-14, AH, AW + 14, AH + 12, 0, SOUTH, s.dark, mul(s.dark, 0.7), s.dark);
-  b.box(-14, AH, AW + 14, AH + 0.34, SOUTH - 0.1, SOUTH, s.edge, s.dark, s.top);
-  b.flags(-14, AH + 0.34, AW + 14, AH + 7, SOUTH + 0.005, 1.1, 0.62, palette, s.joint, rand);
+  // (the coping stands proud of the walk, and the flags a clear step over it: laid in one plane they flickered)
+  b.box(-14, AH, AW + 14, AH + 0.34, SOUTH - 0.1, SOUTH + 0.04, s.edge, s.dark, s.top);
+  b.flags(-14, AH + 0.34, AW + 14, AH + 7, SOUTH + 0.02, 1.1, 0.62, palette, s.joint, rand);
 }
 
 function southFolk(people: Watcher[], folk: Folk, rand: () => number, gaps: (x: number, z: number) => boolean): void {
@@ -239,7 +240,8 @@ function southFolk(people: Watcher[], folk: Folk, rand: () => number, gaps: (x: 
 /** An entry's flanking block, in courses, with what stands on it left to each ground. */
 function entryBlock(b: Build, p: Pillar, s: Masonry, h: number, rand: () => number): void {
   const t = tilesOf(p);
-  b.box(t.x0, t.z0, t.x1, t.z1, 0, h, s.dark, mul(s.dark, 0.7), s.top);
+  // (its own top a little under the coping's: two tops in one plane flicker)
+  b.box(t.x0, t.z0, t.x1, t.z1, 0, h - 0.04, s.dark, mul(s.dark, 0.7), s.top);
   const right = t.x0 < AW / 2;
   if (right) b.courses('e', t.z0, t.z1, t.x1, 0.12, h - 0.1, 0.34, 0.9, s.blocks, s.joint, rand);
   else b.courses('w', t.z0, t.z1, t.x0, 0.12, h - 0.1, 0.34, 0.9, s.blocks, s.joint, rand);
