@@ -675,9 +675,32 @@ class ZoneBuilder {
       };
       const a = this.sidePoint(wt.from, clearOf(wt.from, 0.3 + this.r() * 0.4));
       const b = this.sidePoint(wt.to, clearOf(wt.to, 0.3 + this.r() * 0.4));
-      for (const [x, y] of this.meander(a, b, 0.22)) {
-        const width = 1.3 + noise2(x / 9, y / 9, seed) * 1.4;
-        for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (Math.hypot(dx, dy) <= width) this.set(x + dx, y + dy, WATER);
+      // a river goes round a village, not through it: a village's ground is cleared for its houses, and a river that
+      // crossed it stopped at one edge and began again at the other. Where its course would enter that ground it is
+      // pushed out to the edge, on the side it came from, and follows the edge round
+      const hubs = this.spec.hubs.map((hb) => this.tileOf(hb.at));
+      const round = (x: number, y: number): [number, number] => {
+        for (const [hx, hy] of hubs) {
+          const dy = (y - hy) / (VY + 5);
+          if (Math.abs(dy) >= 1) continue;
+          const half = (VX + 5) * (1 - dy ** 4) ** 0.25;
+          if (Math.abs(x - hx) < half) return [Math.round(hx + (x < hx ? -half : half)), y];
+        }
+        return [x, y];
+      };
+      let last: [number, number] | null = null;
+      for (const raw of this.meander(a, b, 0.22)) {
+        const to = round(raw[0], raw[1]);
+        // (stepping from where it was, so a push to one side leaves no gap in it)
+        const from: [number, number] = last ?? to;
+        const steps = Math.max(1, Math.abs(to[0] - from[0]), Math.abs(to[1] - from[1]));
+        for (let k = 1; k <= steps; k++) {
+          const x = Math.round(from[0] + ((to[0] - from[0]) * k) / steps);
+          const y = Math.round(from[1] + ((to[1] - from[1]) * k) / steps);
+          const width = 1.3 + noise2(x / 9, y / 9, seed) * 1.4;
+          for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (Math.hypot(dx, dy) <= width) this.set(x + dx, y + dy, WATER);
+        }
+        last = to;
       }
     }
   }
