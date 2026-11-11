@@ -365,16 +365,50 @@ const SCENES: Record<string, { rows: string[]; key: Record<string, SceneCell> }>
   battlefield: { rows: ['k.d.s', '.r...', 's..k.', '..d.r'], key: { k: P('skulls'), d: P('debris'), s: P('bone-heap'), r: P('rack', true) } },
   witch: { rows: ['.c.c.', 'c.C.c', '.c.c.'], key: { C: P('cauldron', true), c: P('candles') } },
   cairn: { rows: ['.R.', 'RlR', '.R.'], key: { R: P('menhir', true), l: P('torch', true) } },
+  // places with a story to them, each for the lands it belongs to (the owner: "the eerie feeling of each zone's vibe"):
+  // a gibbet and its skulls, a pyre that burned out, a camp nobody came back to, a colonnade the sand took, crystals
+  // grown through the ground, a vent in the ash, a boat left where the water was, drying racks, a barricade, an
+  // engine and its stones, a fairy ring, a mown field, a marker stone with its urns
+  // (its lamp, not the Host's skull standard: that is the story's to raise and strike)
+  gibbet: { rows: ['.k.', 'sCs', '.b.'], key: { C: P('cage', true), k: P('grave-lamp', true), s: P('skulls'), b: P('bones') } },
+  pyre: { rows: ['.L.', 'sFk', '.L.'], key: { F: P('campfire', true), L: P('log'), s: P('bone-heap'), k: P('skulls') } },
+  lostcamp: { rows: ['T..k', '.b..', 'd.x.'], key: { T: P('camp-tent', true), b: P('bedroll'), k: P('bones'), d: P('debris'), x: P('crate', true) } },
+  colonnade: { rows: ['c.c.c', '.....', 'c.r.c', '..u..'], key: { c: P('sand-column', true), r: P('rubble'), u: P('urn', true) } },
+  icefall: { rows: ['c..c.', '..k..', '.c..c'], key: { c: P('ice-crystal', true), k: P('ice-column', true) } },
+  vent: { rows: ['e.e.', '..k.', 'e.s.', '..e.'], key: { e: P('ember-rock', true), k: P('skulls'), s: P('bone-heap') } },
+  seam: { rows: ['.c.c.', 'c.l.c', '.c.c.'], key: { c: P('rift-crystal', true), l: P('candles') } },
+  beached: { rows: ['.f...', 'd.B.x', '...k.'], key: { B: P('boat', true), f: P('fish', true), x: P('crate', true), d: P('debris'), k: P('bones') } },
+  nets: { rows: ['r.r', '...', 'b.f'], key: { r: P('rack', true), b: P('basket', true), f: P('fish', true) } },
+  barricade: { rows: ['d.w.d', '.....', 'r.x.r'], key: { d: P('debris'), w: P('weapon-rack', true), r: P('rack', true), x: P('crate', true) } },
+  siege: { rows: ['..C..', '.....', 's...s'], key: { C: P('catapult', true), s: P('stone-heap', true) } },
+  ring: { rows: ['.m.m.', 'm...m', '.m.m.'], key: { m: P('great-mushroom', true) } },
+  hayfield: { rows: ['h.h.h', '.....', 'h.h.h'], key: { h: P('hay', true) } },
+  marker: { rows: ['.o.', '...', 'u.u'], key: { o: P('standing-stone', true), u: P('urn', true) } },
 };
 /** Which scenes belong in which kind of land (a woodcutter in the wood, graves on the moor, a war camp at the front). */
-const SCENES_FOR: Record<'vale' | 'wood' | 'high' | 'dry' | 'wet' | 'grim' | 'war', string[]> = {
-  vale: ['farmstead', 'woodcut', 'camp', 'pen', 'orchard', 'field', 'shrine', 'wagon', 'pond', 'hunters', 'meadow', 'well'],
-  wood: ['woodcut', 'hunters', 'camp', 'shrine', 'stones', 'cairn', 'pond', 'meadow', 'ruin', 'witch'],
+const SCENES_FOR: Record<'vale' | 'wood' | 'high' | 'frost' | 'dry' | 'wet' | 'grim' | 'war' | 'ember' | 'rift' | 'drowned', string[]> = {
+  vale: ['farmstead', 'woodcut', 'camp', 'pen', 'orchard', 'field', 'shrine', 'wagon', 'pond', 'hunters', 'meadow', 'well', 'hayfield'],
+  wood: ['woodcut', 'hunters', 'camp', 'shrine', 'stones', 'cairn', 'pond', 'meadow', 'ruin', 'witch', 'ring'],
   high: ['camp', 'quarry', 'stones', 'outpost', 'ruin', 'cairn', 'wagon', 'hunters', 'woodcut', 'pond'],
-  dry: ['camp', 'quarry', 'ruin', 'outpost', 'stones', 'wagon', 'bones', 'cairn'],
+  frost: ['camp', 'icefall', 'stones', 'outpost', 'lostcamp', 'ruin', 'cairn', 'hunters', 'wagon', 'woodcut', 'icefall'],
+  dry: ['camp', 'colonnade', 'quarry', 'ruin', 'marker', 'outpost', 'stones', 'wagon', 'bones', 'lostcamp', 'cairn'],
   wet: ['camp', 'pond', 'witch', 'ruin', 'hunters', 'wagon', 'stones', 'graves', 'pond'],
-  grim: ['graveyard', 'witch', 'stones', 'battlefield', 'ruin', 'cairn', 'graves', 'camp', 'bones'],
-  war: ['warcamp', 'battlefield', 'outpost', 'bones', 'ruin', 'wagon', 'graves', 'quarry'],
+  grim: ['graveyard', 'witch', 'gibbet', 'stones', 'battlefield', 'ruin', 'pyre', 'cairn', 'graves', 'lostcamp', 'bones'],
+  war: ['warcamp', 'battlefield', 'siege', 'outpost', 'barricade', 'bones', 'ruin', 'pyre', 'wagon', 'graves', 'gibbet'],
+  ember: ['vent', 'ruin', 'gibbet', 'bones', 'lostcamp', 'cairn', 'vent', 'battlefield', 'pyre', 'quarry', 'stones'],
+  rift: ['seam', 'ruin', 'stones', 'lostcamp', 'cairn', 'seam', 'bones', 'witch', 'battlefield', 'graves'],
+  drowned: ['beached', 'graves', 'nets', 'ruin', 'witch', 'stones', 'lostcamp', 'gibbet', 'beached', 'bones', 'camp'],
+};
+
+/**
+ * Where a scene belongs (the owner: "every area/village/town/enemy camp should have a reason to be placed where it
+ * is"): what people farm is by a village and its road; what travellers leave is at the roadside; what is cut,
+ * hunted or conjured is at the wood's edge; what is found is off the road, for whoever goes looking.
+ */
+const SCENE_AT: Record<string, 'village' | 'road' | 'wood' | 'wild'> = {
+  field: 'village', farmstead: 'village', pen: 'village', orchard: 'village', hayfield: 'village',
+  well: 'road', wagon: 'road', shrine: 'road', camp: 'road', warcamp: 'road', outpost: 'road', graves: 'road', graveyard: 'road', gibbet: 'road', barricade: 'road', siege: 'road', marker: 'road', nets: 'road',
+  woodcut: 'wood', hunters: 'wood', witch: 'wood', ring: 'wood',
 };
 const sceneLand = (t: Theme | null): keyof typeof SCENES_FOR => {
   switch (t) {
@@ -385,9 +419,10 @@ const sceneLand = (t: Theme | null): keyof typeof SCENES_FOR => {
     case 'mountain':
     case 'storm':
     case 'peaks':
+      return 'high';
     case 'snow':
     case 'pale':
-      return 'high';
+      return 'frost';
     case 'desert':
       return 'dry';
     case 'marsh':
@@ -399,12 +434,15 @@ const sceneLand = (t: Theme | null): keyof typeof SCENES_FOR => {
     case 'barrow':
     case 'moor':
     case 'haunted':
-    case 'deadlake':
-    case 'rift':
       return 'grim';
+    case 'deadlake':
+      return 'drowned';
+    case 'rift':
+      return 'rift';
+    case 'volcanic':
+      return 'ember';
     case 'warfront':
     case 'bonefield':
-    case 'volcanic':
       return 'war';
     default:
       return 'vale';
@@ -463,7 +501,7 @@ class ZoneBuilder {
     this.water();
     this.woods();
     const hubs = s.hubs.map((hb) => this.tileOf(hb.at));
-    const pois = s.pois.map((p) => this.tileOf(p.at));
+    const pois = s.pois.map((p) => this.besideRiver(this.tileOf(p.at)));
     const exits = s.exits.map((e) => this.exitTiles(e));
     // clearings first, so roads and buildings have room
     this.hubAt.push(...hubs);
@@ -565,10 +603,30 @@ class ZoneBuilder {
         const d = Math.hypot(x - cx, y - cy) + (hash2(x, y, this.spec.seed + 3) - 0.5) * 1.6;
         if (d > r) continue;
         const i = this.idx(x, y);
-        if (this.g[i] !== WATER || d < r - 2) this.g[i] = FLOOR;
+        // (a river runs on through a clearing: cleared out of every place it passed, it was a row of ponds)
+        if (this.g[i] !== WATER || (d < r - 2 && this.spec.water?.kind !== 'river')) this.g[i] = FLOOR;
         this.lock[i] = 1;
       }
     }
+  }
+
+  /** A place set where a river runs stands on its bank instead: the nearest ground with no water within five tiles. */
+  private besideRiver(at: [number, number]): [number, number] {
+    if (this.spec.water?.kind !== 'river') return at;
+    const wet = (cx: number, cy: number): boolean => {
+      for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) if (this.inside(cx + dx, cy + dy) && this.g[this.idx(cx + dx, cy + dy)] === WATER) return true;
+      return false;
+    };
+    if (!wet(at[0], at[1])) return at;
+    for (let r = 1; r <= 14; r++) {
+      // (east and west first: a river that crosses a land north to south has its banks either side)
+      for (const [dx, dy] of [[r, 0], [-r, 0], [0, r], [0, -r], [r, r], [-r, r], [r, -r], [-r, -r]] as const) {
+        const x = at[0] + dx;
+        const y = at[1] + dy;
+        if (this.inside(x, y, 10) && !wet(x, y)) return [x, y];
+      }
+    }
+    return at;
   }
 
   /* ---------------------------------------------------------------- terrain */
@@ -609,8 +667,14 @@ class ZoneBuilder {
         }
       }
     } else {
-      const a = this.sidePoint(wt.from, 0.3 + this.r() * 0.4);
-      const b = this.sidePoint(wt.to, 0.3 + this.r() * 0.4);
+      // (a river doesn't leave the land by the road's own gate: the road to Brackenridge's south gate ran fourteen
+      // tiles down the middle of the river on a deck of planks)
+      const clearOf = (side: Side, t: number): number => {
+        for (const ex of this.spec.exits) if (ex.side === side && Math.abs(ex.at - t) < 0.2) return ex.at < 0.5 ? ex.at + 0.25 : ex.at - 0.25;
+        return t;
+      };
+      const a = this.sidePoint(wt.from, clearOf(wt.from, 0.3 + this.r() * 0.4));
+      const b = this.sidePoint(wt.to, clearOf(wt.to, 0.3 + this.r() * 0.4));
       for (const [x, y] of this.meander(a, b, 0.22)) {
         const width = 1.3 + noise2(x / 9, y / 9, seed) * 1.4;
         for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (Math.hypot(dx, dy) <= width) this.set(x + dx, y + dy, WATER);
@@ -739,24 +803,47 @@ class ZoneBuilder {
     const run = Math.min(span, 32);
     if (hubA && Math.abs(bend - a0) < run) bend = a0 + Math.sign(b0 - a0) * run;
     if (hubB && Math.abs(b0 - bend) < run) bend = b0 - Math.sign(b0 - a0) * run;
-    const tiles: [number, number][] = [[ax, ay]];
-    let x = ax;
-    let y = ay;
-    const go = (tx: number, ty: number): void => {
-      while (x !== tx || y !== ty) {
-        if (x !== tx) x += Math.sign(tx - x);
-        else y += Math.sign(ty - y);
-        tiles.push([x, y]);
+    /** The road's tiles for a place to turn, and the longest stretch of them over water. */
+    const lay = (turn: number): { tiles: [number, number][]; wet: number } => {
+      const out: [number, number][] = [[ax, ay]];
+      let x = ax;
+      let y = ay;
+      const go = (tx: number, ty: number): void => {
+        while (x !== tx || y !== ty) {
+          if (x !== tx) x += Math.sign(tx - x);
+          else y += Math.sign(ty - y);
+          out.push([x, y]);
+        }
+      };
+      if (along) {
+        go(turn, ay);
+        go(turn, by);
+      } else {
+        go(ax, turn);
+        go(bx, turn);
       }
+      go(bx, by);
+      let wet = 0;
+      let run = 0;
+      for (const [tx, ty] of out) {
+        run = this.inside(tx, ty) && this.g[this.idx(tx, ty)] === WATER ? run + 1 : 0;
+        wet = Math.max(wet, run);
+      }
+      return { tiles: out, wet };
     };
-    if (along) {
-      go(bend, ay);
-      go(bend, by);
-    } else {
-      go(ax, bend);
-      go(bx, bend);
+    // a road crosses a river, it doesn't ride it: where the turn it would have taken runs down the water for more
+    // than a bridge's length, it turns somewhere else along its way, as near as it can
+    let laid = lay(bend);
+    const lo = Math.min(a0, b0);
+    const hi = Math.max(a0, b0);
+    for (let off = 2; laid.wet > 5 && off <= span; off += 2) {
+      for (const turn of [bend + off, bend - off]) {
+        if (turn < lo || turn > hi || (hubA && Math.abs(turn - a0) < run) || (hubB && Math.abs(b0 - turn) < run)) continue;
+        const other = lay(turn);
+        if (other.wet < laid.wet) laid = other;
+      }
     }
-    go(bx, by);
+    const tiles = laid.tiles;
     // (a town laid out in a form of its own takes the road in by its own streets, from the edge of it)
     const inTown = (x: number, y: number): boolean =>
       this.hubAt.some(([hx, hy], i) => TOWN_FORMS[this.planOf(this.spec.hubs[i]!, hx, hy)] && Math.abs(x - hx) <= VX && Math.abs(y - hy) <= VY);
@@ -1731,14 +1818,62 @@ class ZoneBuilder {
     const done: [number, number][] = [];
     const BUSY = new Set([PATH, BRIDGE, COBBLE, HOUSE, HOUSE_ANCHOR, FENCE, RAMPART]);
     const start = Math.floor(rand() * kinds.length);
-    for (let tries = 0; tries < want * 80 && done.length < want; tries++) {
-      const sc = SCENES[kinds[(start + done.length) % kinds.length]!]!;
+    // how far every tile is from a road and from the wood's edge, in steps (for where a scene belongs)
+    const far = (from: (k: number) => boolean): Int16Array => {
+      const d = new Int16Array(this.w * this.h).fill(999);
+      let edge: number[] = [];
+      for (let i = 0; i < this.g.length; i++) {
+        if (!from(this.g[i]!)) continue;
+        d[i] = 0;
+        edge.push(i);
+      }
+      for (let step = 1; step <= 24 && edge.length; step++) {
+        const next: number[] = [];
+        for (const i of edge) {
+          const x = i % this.w;
+          for (const j of [x > 0 ? i - 1 : -1, x < this.w - 1 ? i + 1 : -1, i - this.w, i + this.w]) {
+            if (j < 0 || j >= d.length || d[j]! <= step) continue;
+            d[j] = step;
+            next.push(j);
+          }
+        }
+        edge = next;
+      }
+      return d;
+    };
+    const toRoad = far((k) => k === PATH || k === COBBLE || k === BRIDGE);
+    const toWood = far((k) => k === WALL || k === TREE);
+    const belongs = (name: string, cx: number, cy: number): boolean => {
+      const i = this.idx(Math.round(cx), Math.round(cy));
+      switch (SCENE_AT[name] ?? 'wild') {
+        case 'village':
+          return toRoad[i]! <= 9 && this.hubAt.some(([hx, hy]) => Math.hypot(hx - cx, hy - cy) < 46);
+        case 'road':
+          return toRoad[i]! <= 6;
+        case 'wood':
+          return toWood[i]! <= 4;
+        default:
+          return toRoad[i]! >= 5;
+      }
+    };
+    // (a scene that finds no place where it belongs in this land, after a fair look, goes where there is room)
+    let turn = 0;
+    let looked = 0;
+    for (let tries = 0; tries < want * 160 && done.length < want; tries++) {
+      // (and one there is no room for at all gives its turn to the next)
+      if (looked > 600) {
+        turn++;
+        looked = 0;
+      }
+      const name = kinds[(start + turn) % kinds.length]!;
+      const sc = SCENES[name]!;
       const h = sc.rows.length;
       const w = Math.max(...sc.rows.map((r) => r.length));
       const x0 = 4 + Math.floor(rand() * (this.w - w - 8));
       const y0 = 4 + Math.floor(rand() * (this.h - h - 8));
       const cx = x0 + w / 2;
       const cy = y0 + h / 2;
+      if (++looked <= 220 && !belongs(name, cx, cy)) continue;
       if (this.hubAt.some(([hx, hy]) => ((cx - hx) / (VX + 6)) ** 2 + ((cy - hy) / (VY + 5)) ** 2 < 1)) continue;
       if (pois.some(([px, py], k) => Math.hypot(px - cx, py - cy) < this.spec.pois[k]!.r + 5)) continue;
       if (done.some(([px, py]) => Math.hypot(px - cx, py - cy) < 16)) continue;
@@ -1772,6 +1907,8 @@ class ZoneBuilder {
         }
       });
       done.push([cx, cy]);
+      turn++;
+      looked = 0;
     }
     // the roads' shoulders
     for (let i = 0; i < this.g.length; i++) {
