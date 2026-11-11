@@ -11,6 +11,7 @@ import { SPEC_LEVEL } from '../data/talents';
 import type { ClassId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { cleanName, HAIRS, SKINS, type Body, type Face } from '../progress/character';
+import { Doll } from './Doll';
 import { heldWeapon, heroDollUrl, heroLook } from '../render/sprites';
 import { CharacterSelect } from './CharacterSelect';
 import { SkillIcon } from './common';
@@ -222,7 +223,7 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
           const c = CLASSES[id];
           return (
             <button key={id} role="radio" aria-checked={cls === id} className={`rb-class${cls === id ? ' is-on' : ''}`} style={{ ['--cc' as string]: c.colors.main }} onClick={() => setCls(id)}>
-              <img className="rb-class-doll" src={heroDollUrl(heroLook(id, {}, {}, body, face), 'down', 2, heldWeapon(id, undefined), id === 'warrior' || id === 'paladin')} alt="" draggable={false} />
+              <Doll className="rb-class-doll" src={heroDollUrl(heroLook(id, {}, {}, body, face), 'down', 2, heldWeapon(id, undefined), id === 'warrior' || id === 'paladin')} />
               <strong>{c.name}</strong>
               <span className="rb-dim">{c.role}</span>
               {!classOpen(id, me) && <span className="rb-class-lock">Shop · {priceOf(id) ?? 'paid'}</span>}

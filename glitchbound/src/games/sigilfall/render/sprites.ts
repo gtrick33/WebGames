@@ -259,8 +259,13 @@ export function heroDollUrl(look: HeroLook, view: HeroDir, scale = 4, held: { ki
     iconCache.set(key, shot);
     return shot;
   }
+  // (the painted stand-in, while the models aren't in: kept under a name of its own, so the real picture is made the
+  // next time it is asked for, not hidden behind its stand-in for the rest of the visit)
+  const standIn = `${key}:2d`;
+  const had = iconCache.get(standIn);
+  if (had) return had;
   const url = scaled(heroSprite(look, view, 0).c, Math.max(1, Math.round((scale * DETAIL) / HERO_K))).toDataURL();
-  iconCache.set(key, url);
+  iconCache.set(standIn, url);
   return url;
 }
 
