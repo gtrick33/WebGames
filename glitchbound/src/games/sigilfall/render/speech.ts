@@ -61,12 +61,15 @@ export function layoutSpeech(o: { text: string; name: string; headX: number; hea
   // the hero is playing)
   const left = Math.max(8, o.left ?? 8);
   const right = Math.max(8, o.right ?? 8);
-  const room = Math.max(96, Math.min(o.viewW - left - right - padX * 2, fs * 21));
+  // (a little kept at the right of the card for the mark that the next line can be taken: on a one-line card it
+  // sat on the last letter)
+  const mark = Math.round(fs * 0.75);
+  const room = Math.max(96, Math.min(o.viewW - left - right - padX * 2 - mark, fs * 21));
   const lines = wrapWords(o.text, room, (s) => o.measure(s, fs, 600));
   const nameW = o.name ? o.measure(o.name, nameFs, 800) : 0;
   const nameH = o.name ? Math.round(nameFs * 1.35) : 0;
   const wide = Math.max(nameW, ...lines.map((l) => o.measure(l, fs, 600)), fs * 4);
-  const w = Math.min(o.viewW - left - right, Math.ceil(wide) + padX * 2);
+  const w = Math.min(o.viewW - left - right, Math.ceil(wide) + padX * 2 + mark);
   const h = padY * 2 + nameH + lines.length * lineH;
   let x = o.headX - w / 2;
   let y = o.headY - 12 - h;
