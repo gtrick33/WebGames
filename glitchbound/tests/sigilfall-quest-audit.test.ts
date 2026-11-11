@@ -7,7 +7,7 @@ import { TALL, WIDE } from '../src/games/sigilfall/data/zonegen';
 import { questRegion } from '../src/games/sigilfall/progress/character';
 import { questSteps, turnInNpc } from '../src/games/sigilfall/progress/handin';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
-import { TILE } from '../src/games/sigilfall/sim/map';
+import { circleHitsWall, TILE } from '../src/games/sigilfall/sim/map';
 import { npcRegion } from '../src/games/sigilfall/sim/routes';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { heroAtEvent, newWorld, readyHero } from './sigilfall-bot';
@@ -151,8 +151,10 @@ describe('Sigilfall: every quest, step by step', () => {
       }
       const ok = reach(w, w.player.x, w.player.y);
       for (const p of run.pets) {
-        // (a boat is moored in the water, beside the bank)
-        if (w.map.solid[Math.floor(p.y / TILE) * w.map.w + Math.floor(p.x / TILE)] && p.def.look !== 'boat') found.push(`${ev.id}: ${p.def.id} put down in a wall at ${tile(p.x, p.y)}`);
+        // (a boat is moored in the water, beside the bank. In a wall: where its own body can't be, not on a tile that
+        // has a lantern's post somewhere on it)
+        const tileAt = Math.floor(p.y / TILE) * w.map.w + Math.floor(p.x / TILE);
+        if (w.map.solid[tileAt] && (!w.map.soft[tileAt] || circleHitsWall(w.map, p.x, p.y, 3)) && p.def.look !== 'boat') found.push(`${ev.id}: ${p.def.id} put down in a wall at ${tile(p.x, p.y)}`);
         else if (!within(w, ok, p.x, p.y)) found.push(`${ev.id}: ${p.def.id} can't be reached at ${tile(p.x, p.y)}`);
       }
       const spots = [ev.rescue?.at, ev.rescue?.to, ev.rescue?.into, ev.arrive?.from, ev.arrive?.to, ev.escort?.from, ev.escort?.to, ev.enter, ...ev.waves.flatMap((x) => x.from)];

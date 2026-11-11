@@ -43,6 +43,8 @@ export interface Speech {
   text: string;
   t: number;
   dur: number;
+  /** A scene's line: written out letter by letter, with a mark once it can be taken on (sim/scene.ts). */
+  staged?: boolean;
 }
 
 interface Running {
@@ -102,9 +104,10 @@ export class StoryDirector {
   }
 
   /** A line said at once, for as long as given (a scene's: sim/scene.ts paces them itself). */
-  speakNow(b: Bark, dur: number): void {
-    this.speech = this.speech.filter((s) => s.who !== b.who);
-    this.speech.push({ who: b.who, text: b.text, t: 0, dur });
+  speakNow(b: Bark, dur: number, staged = false): void {
+    // (one line of a scene at a time: the last speaker's is gone as the next begins)
+    this.speech = this.speech.filter((s) => s.who !== b.who && !(staged && s.staged));
+    this.speech.push({ who: b.who, text: b.text, t: 0, dur, ...(staged ? { staged } : {}) });
   }
 
   /**

@@ -40,10 +40,13 @@ function SceneBars({ engine }: { engine: SigilEngine }) {
   const black = useRef<HTMLDivElement>(null);
   const memory = useRef<HTMLDivElement>(null);
   const caption = useRef<HTMLElement>(null);
+  const hint = useRef<HTMLSpanElement>(null);
   const shown = useRef('');
   const told = useRef('');
   useFrame(engine, (w) => {
     if (!ref.current) return;
+    // (how to take the next line, while there is one to take)
+    hint.current?.classList.toggle('is-on', !!w.scene && w.story.speech.some((sp) => sp.staged));
     // a fade to black, and a memory: the picture pale and tinted, its caption in the upper bar (clear of anyone's lines)
     if (black.current) black.current.style.opacity = String(sceneDark(w.scene));
     const v = w.scene?.vision;
@@ -79,8 +82,13 @@ function SceneBars({ engine }: { engine: SigilEngine }) {
         <strong />
         <span />
       </div>
+      {/* the whole picture takes the next line; Skip, over it, ends the scene */}
+      <button className="rb-scene-next" aria-label="Next line" tabIndex={-1} onClick={() => engine.sceneNext()} />
+      <span className="rb-scene-hint" ref={hint}>
+        {engine.touchMode ? 'Tap for the next line' : 'Click or Space for the next line'}
+      </span>
       <button className="rb-scene-skip" onClick={() => engine.skipScene()}>
-        Skip {engine.touchMode ? '›' : '(Space)'}
+        Skip scene {engine.touchMode ? '›' : '(Esc)'}
       </button>
     </div>
   );

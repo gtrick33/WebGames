@@ -56,6 +56,9 @@ export const THORNVALE = wildRegion(
     ],
     wildCount: 55,
     story: [
+      // the Old Watchtower is a watchtower: its stump stands over the ring of its fallen stones (the place was a
+      // circle of pillars with a tower's name)
+      { near: 'old-watchtower', dx: 0, dy: -4, marker: { kind: 'prop', prop: 'broken-tower', solid: true } },
       // the mill and the gang's barricade across its road
       { near: 'millers-pond', dx: 4, dy: -3, marker: { kind: 'prop', prop: 'windmill', solid: true } },
       { near: 'millers-pond', marker: { kind: 'place', id: 'mill-pond' } },

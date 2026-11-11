@@ -33,7 +33,7 @@ import { Renderer } from './render/renderer';
 import { Sound, type MusicId } from './audio/sound';
 import type { Interactable } from './sim/types';
 import { emptyInput, World, type InputFrame } from './sim/world';
-import { endScene } from './sim/scene';
+import { advanceScene, endScene } from './sim/scene';
 import { applyPreset, PRESETS } from './progress/presets';
 import { resetParagon, spendParagon, type ParaStat } from './progress/paragon';
 import { CoopSession, type Role } from './net/coop';
@@ -476,9 +476,10 @@ export class SigilEngine {
         f.aimX = null;
         f.aimY = null;
       }
-      // a scene playing: the hero's keys skip it (Space, Enter, a click or a tap on attack)
+      // a scene playing: the hero's keys take its next line (Space, Enter, a click or a tap on attack), as a quest's
+      // words are clicked through; only Skip (or Esc) ends it
       if (w.scene) {
-        if (f.interact || f.casts.some((c) => c.slot === 'dodge' || c.slot === 'basic')) endScene(w, true);
+        if (f.interact || f.casts.some((c) => c.slot === 'dodge' || c.slot === 'basic')) advanceScene(w);
         f.casts = [];
         f.holdBasic = null;
         f.interact = false;
@@ -1383,6 +1384,11 @@ export class SigilEngine {
 
   private uiKey(k: UiKey): void {
     if (this.ui.screen !== 'game' || this.ui.death || this.ui.reward) return;
+    // (Esc ends a scene, as it ends a film anywhere; the menus wait until it is over)
+    if (this.world?.scene) {
+      if (k === 'pause') this.skipScene();
+      return;
+    }
     // a hint is answered on its own buttons (Esc puts it away); the keys for the menus wait
     if (this.ui.tip) {
       if (k === 'pause') this.endTip();
@@ -1488,6 +1494,11 @@ export class SigilEngine {
   skipScene(): void {
     if (this.world?.scene) endScene(this.world, true);
     this.bump();
+  }
+
+  /** Takes a scene's next line (a tap or a click on the picture): the one being written is shown whole first. */
+  sceneNext(): void {
+    if (this.world?.scene) advanceScene(this.world);
   }
 
   /** The mount button: call the mount, or get down. */

@@ -357,7 +357,9 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
     const hpNow = w.enemies.reduce((a, e) => a + (e.dead || e.dummy ? 0 : e.hp + e.shield), 0);
     const progress = Math.hypot(w.player.x - lastMove.x, w.player.y - lastMove.y) > 24 || hpNow < foeHp - 0.5;
     foeHp = hpNow;
-    if (progress) lastMove = { x: w.player.x, y: w.player.y, t: res.time };
+    // (nor is watching a scene being stuck: the hero stands still for as long as it plays, and a scene left unread
+    // takes its time)
+    if (progress || w.scene) lastMove = { x: w.player.x, y: w.player.y, t: res.time };
     else if (res.time - lastMove.t > 20 && (target || goalPt)) {
       res.stuck = true;
       break;

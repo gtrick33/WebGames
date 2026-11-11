@@ -164,12 +164,14 @@ export const PROPS: Record<string, PropDef> = {
   'giant-statue': { m: 'statue_block', w: 96, d: 96, h: 34, box: true, tint: '#8a8a90', hero: 170 },
   'great-obelisk': { m: 'statue_obelisk', w: 70, d: 70, h: 210, tint: '#a8a49a' },
   'stone-arch': { m: 'arch', w: 130, d: 30, h: 136 },
-  'crypt-hill': { m: 'crypt', w: 130, d: 150, h: 170 },
+  // (weathered: its pack's bright tile roof stood out of every grey land it is set in)
+  'crypt-hill': { m: 'crypt', w: 130, d: 150, h: 170, tint: '#9c9aae' },
   'bone-arch': { m: 'ribcage', w: 170, d: 150, h: 170, tint: '#d8d0b8' },
   'giant-skull': { m: 'skull', w: 110, d: 110, h: 104, tint: '#d8d0b8' },
   'ice-spire': { m: 'stone_tallA', w: 90, d: 80, h: 190, tint: '#b8dcff' },
   'rift-spire': { m: 'stone_tallA', w: 90, d: 80, h: 190, tint: '#a868f0' },
-  'lava-spire': { m: 'Rock_4_C', w: 70, d: 70, h: 200, tint: '#5a2a24' },
+  // (it burns at its crown: without the fire it was a black post)
+  'lava-spire': { m: 'Rock_4_C', w: 70, d: 70, h: 200, tint: '#5a2a24', flame: 2.6, flameAt: 196 },
   'sand-spire': { m: 'Rock_4_C', w: 70, d: 70, h: 180, tint: '#c8a070' },
   'sea-rock': { m: 'Rock_3_G', w: 120, d: 110, h: 110 },
   'great-mushroom-tree': { m: 'mushroom_redTall', w: 90, d: 90, h: 190 },
