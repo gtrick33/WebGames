@@ -29,7 +29,11 @@ describe('the daily streak on the server', () => {
       // started an hour ago, so any score passes the time check
       db.sqlite.prepare(`INSERT INTO runs (id, user_id, game, started_at, status) VALUES (?, ?, ?, ?, 'open')`).run(runId, user.id, c.game.slug, Date.now() - 3_600_000);
       const value = clear ? c.target : 0;
-      const body = c.metric === 'score' ? { runId, score: value, stats: {}, day } : { runId, score: 1, stats: { [c.metric]: value }, day };
+      // (a score the game's own limits allow beside that stat: nothing scored when nothing was done, so the round is
+      // never refused as implausible on a day whose challenge counts something other than the score)
+      const exact = c.game.limits?.scoreIs?.[c.metric];
+      const score = exact !== undefined ? exact * value : value > 0 ? 1 : 0;
+      const body = c.metric === 'score' ? { runId, score: value, stats: {}, day } : { runId, score, stats: { [c.metric]: value }, day };
       const request = new Request(`${ORIGIN}/api/runs/end`, { method: 'POST', headers: { origin: ORIGIN, cookie: jar, 'content-type': 'application/json' }, body: JSON.stringify(body) });
       return (await (await endRun({ request, env, params: {} })).json()) as RunEndResult;
     };
