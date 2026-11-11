@@ -277,8 +277,13 @@ function rng(seed: number): () => number {
 /** Quick at first, then a long way between levels: late on, the Host falls by the hundred, and a level stops the night. */
 export const xpForLevel = (level: number): number => Math.round(4 + level * 3.1 + level ** 1.5 * 0.8 + (level / 10) ** 3 * 21);
 /** The tide: how many of the Host come each second at the start of the night, and at most. */
+/** From this minute on the Host's health compounds, by this much a minute. */
+export const SURGE_FROM = 0.5;
+export const SURGE = 1.3;
 export const TIDE_START = 2.3;
 export const TIDE_MAX = 26;
+/** How many of the Host come each second, this far into the night: a flood by the sixth minute (it was the ninth). */
+export const tideAt = (t: number): number => Math.min(TIDE_MAX, TIDE_START + t * 0.03 + (t / 60) ** 1.8 * 0.5);
 
 /** How high a spell goes: its top, or as many upgrades as it has. */
 export const topLevel = (def: SpellDef): number => Math.min(MAX_SPELL, 1 + upgradesOf(def).length);
@@ -486,10 +491,20 @@ export class Vigil {
   get xpNext(): number {
     return xpForLevel(this.level);
   }
-  /** The Host grows with time and never stops growing: that is the Vigil. */
-  private get toughness(): number {
+  /** The Host grows with time and never stops growing: that is the Vigil. Its blows grow by this. */
+  private get grown(): number {
     const m = this.t / 60;
     return (1 + m * 0.14 + (m * m) / 70) * landTough(this.map);
+  }
+  /**
+   * How much health the Host has: what it has grown by, and from the second minute a fifth more with every minute,
+   * compounding (SURGE). The owner, after ten easy minutes with every spell at its top and the Host falling as fast as
+   * it came: "i want it to become exponentially way harder". A foe used to live about a second at nine minutes, and
+   * never reached anyone; now it lives four or five, long enough to cross the ground and close in, and each minute
+   * after is worse than the last. Its blows keep their old growth: once it reaches a hero, two or three are enough.
+   */
+  private get toughness(): number {
+    return this.grown * SURGE ** Math.max(0, this.t / 60 - SURGE_FROM);
   }
 
   /** A spell's numbers, right now. */
@@ -815,7 +830,7 @@ export class Vigil {
       this.wave();
     }
     // the tide: a crowd from the first seconds, then a flood
-    const rate = Math.min(TIDE_MAX, TIDE_START + this.t * 0.022 + (this.t / 60) ** 1.7 * 0.34) * this.scale.count;
+    const rate = tideAt(this.t) * this.scale.count;
     this.spawnT += dt * rate;
     const pool = this.inSeason();
     const total = pool.reduce((a, f) => a + f.weight, 0);
@@ -859,7 +874,10 @@ export class Vigil {
     const anchor = this.anyStanding() ?? this.me;
     const a = this.rand() * Math.PI * 2;
     const d = 210 + this.rand() * 50;
-    const tough = this.toughness;
+    const grown = this.grown;
+    // (a champion's own health compounds at half the pace: at the full one, the tenth minute's would still be standing
+    // when the next came)
+    const tough = boss ? Math.sqrt(this.toughness * grown) : this.toughness;
     // a champion is worth a fight whatever wave it comes with (the night's first a little less: it is where a new
     // keeper learns to step out of a slam)
     const first = !!boss && this.bossesDone <= 1;
@@ -872,7 +890,7 @@ export class Vigil {
       y: at?.y ?? anchor.y + Math.sin(a) * d,
       hp,
       maxHp: hp,
-      dmg: def.dmg * (1 + (tough - 1) * 0.45) * (boss ? (first ? 1.45 : 1.8) : elite ? 1.25 : 1) * this.scale.dmg,
+      dmg: def.dmg * (1 + (grown - 1) * 0.45) * (boss ? (first ? 1.45 : 1.8) : elite ? 1.25 : 1) * this.scale.dmg,
       speed: def.speed * (boss ? 0.8 : elite ? 0.92 : 1),
       r: def.r * (boss ? 2 : elite ? 1.35 : 1),
       xp: def.xp * (boss ? 25 : elite ? 6 : 1),

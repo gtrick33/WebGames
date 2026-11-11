@@ -62,12 +62,12 @@ describe('Sigilfall: the Ring says what is going on', () => {
     }
   });
 
-  it('who fights from range deals a tenth less than who fights at arm’s length', () => {
+  it('who fights from range deals well under what who fights at arm’s length does', () => {
     const m = new Match(setup('mage', 'warrior'));
     expect(RANGED.has('mage')).toBe(true);
     expect(RANGED.has('warrior')).toBe(false);
     expect(m.fighters[0]!.mods.dmg).toBeCloseTo(m.fighters[1]!.mods.dmg * RANGED_DMG, 5);
-    expect(RANGED_DMG).toBe(0.9);
+    expect(RANGED_DMG).toBeCloseTo(0.9 * 0.8, 5);
   });
 
   it('a live match runs a little under the clock', () => {
