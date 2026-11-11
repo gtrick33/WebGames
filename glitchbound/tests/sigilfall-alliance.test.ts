@@ -90,9 +90,9 @@ describe('Sigilfall: the broken alliance (Act III)', () => {
       run(w, 1);
       if (!w.pets.some((p) => p.def.id === 'nyx' && !p.dead)) nyxLeft = true;
       if (w.enemies.some((e) => e.def.id === 'the-pale-herald' && !e.dead)) heraldCame = true;
-      // the hero holds, but the Herald does not fall
+      // the hero holds, but the Herald does not fall (nor what the Tear makes next: that is the next quest's to kill)
       w.player.hp = w.player.maxHp;
-      smite(w, ['the-pale-herald']);
+      smite(w, ['the-pale-herald', 'the-tearborn']);
     }
     expect(nyxLeft).toBe(true);
     expect(heraldCame).toBe(true);

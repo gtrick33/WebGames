@@ -1954,11 +1954,14 @@
 .rb-ui.is-touch .rb-toast:nth-last-child(n + 3) {
   display: none;
 }
+/* (two lines each, not one cut short: "Tap the horseshoe to ride. Choose…" told half of what to do) */
 .rb-ui.is-touch .rb-toast-text > * {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   font-size: 11.5px;
+  line-height: 1.25;
 }
 .rb-ui.is-touch .rb-toast-text > strong {
   font-size: 12px;
@@ -10252,6 +10255,22 @@
   gap: 7px;
   white-space: nowrap;
 }
+/* a banner's second part goes under its name when the two don't fit side by side: on a small phone a quest's name
+   and its objective on one line ran off the screen's edge */
+.rb-ui.is-touch .rb-announce > .rb-banner {
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 0;
+  white-space: normal;
+}
+.rb-ui.is-touch .rb-announce > .rb-banner strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rb-ui.is-touch .rb-announce > .rb-banner span {
+  text-wrap: balance;
+}
 .rb-ui.is-touch .rb-levelup strong {
   font-size: 14px;
 }
@@ -10532,12 +10551,14 @@
 .is-touch .rb-minimap-hud {
   overflow: visible;
 }
+/* (no wider than the map and the gap beside it: at 150px a long name, "The Amberfield Steppes", ran 20px off the
+   screen's edge) */
 .is-touch .rb-minimap-name {
   position: absolute;
   bottom: calc(100% + 1px);
   left: 50%;
   display: block;
-  max-width: 150px;
+  max-width: calc(100% + 12px);
   padding: 1px 10px;
   border: 1px solid #d6aa4a;
   border-radius: 3px;

@@ -49,6 +49,32 @@ export const GESTURES = {
 } as const;
 export type Gesture = keyof typeof GESTURES;
 
+/**
+ * Who the figures of the memories are. A figure wears the look of someone living (`as`), but it is not them: over
+ * its words stands its own name (the two kings of the first vision were named for the marshal and the old man whose
+ * faces they borrow). One this doesn't list is named from its id.
+ */
+const GHOST_NAMES: Record<string, string> = {
+  'vision-king-aster': 'The King of Aster',
+  'vision-king-vaelmoor': 'The King of Vaelmoor',
+  'vision-smith-aster': 'A Smith of Aster',
+  'vision-smith-vaelmoor': 'A Smith of Vaelmoor',
+  'vision-sun-king': 'The Sun King',
+  'vision-captain': 'The Captain',
+  'vision-host-a': 'One of the Host',
+  'vision-host-b': 'One of the Host',
+  'vision-host-c': 'One of the Host',
+  'vision-vaelor': 'King Vaelor',
+  'vision-ysane': 'Queen Ysane',
+};
+export const ghostName = (id: string): string =>
+  GHOST_NAMES[id] ??
+  id
+    .replace(/^vision-/, '')
+    .split('-')
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(' ');
+
 /** How near the camera stands, as a share of its usual distance (render: Stage.push). */
 export const ZOOMS = { close: 0.7, near: 0.82, wide: 1.2 } as const;
 /** How near it draws by itself while someone is speaking. */

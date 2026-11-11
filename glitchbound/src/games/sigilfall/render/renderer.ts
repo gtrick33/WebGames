@@ -5,7 +5,7 @@ import { drawMapIcon, type MapIcon } from '../ui/mapIcons';
 import { isMainQuest, turnInNpc } from '../progress/handin';
 import { LEAD, leanTarget, LIFT } from './camera';
 import { layoutSpeech } from './speech';
-import { TALK_ZOOM, TYPE_CPS } from '../sim/scene';
+import { ghostName, TALK_ZOOM, TYPE_CPS } from '../sim/scene';
 import { Effects, headOf } from './effects';
 import { THEMES } from '../data/themes';
 import { ROOM, type RoomLight } from './rooms';
@@ -909,23 +909,27 @@ export class Renderer {
       g.font = `${weight} ${px}px ${FONT}`;
       return g.measureText(text).width;
     };
-    // (a scene's bars are 9% of the picture each; the HUD's rows otherwise)
-    const top = w.scene ? this.cssH * 0.09 + 4 : 44;
+    // (a scene's bars are 9% of the picture each; otherwise the HUD's rows, and on a phone its stick and its skills:
+    // a shout is kept to the open middle, not under the buttons)
+    const hud = !w.scene && !this.landOnly;
+    const top = w.scene ? this.cssH * 0.09 + 4 : this.touchMode ? 62 : 44;
     const bottom = w.scene ? this.cssH * 0.09 + 4 : 76;
+    const sideL = hud && this.touchMode ? this.cssW * 0.26 : 8;
+    const sideR = hud && this.touchMode ? this.cssW * 0.39 : 8;
     for (const s of speech) {
       const npc = w.npcs.find((n) => n.id === s.who);
       const pet = w.pets.find((p) => !p.dead && p.def.id === s.who);
       const foe = w.enemies.find((e) => !e.dead && e.def.id === s.who);
       const who = s.who === 'hero' ? w.player : (pet ?? npc ?? foe);
       if (!who) continue;
-      const name = s.who === 'hero' ? w.hero.name : pet ? pet.def.name : npc ? (NPCS[npc.ghost ?? npc.id]?.name ?? '') : (foe?.def.name ?? '');
+      const name = s.who === 'hero' ? w.hero.name : pet ? pet.def.name : npc ? (npc.ghost ? ghostName(npc.id) : (NPCS[npc.id]?.name ?? '')) : (foe?.def.name ?? '');
       const accent = s.who === 'hero' ? '#9fd8ff' : foe && !pet && !npc ? '#ff9a8a' : '#ffcf5a';
       // where their head is on the screen; someone out of the picture (or behind the camera) can still shout: their
       // words are kept at the edge nearest them
       const head = st ? st.project(who.x, who.y, PERSON_H + 9) : { x: ((who.x - this.camX) / this.vw) * this.cssW, y: ((who.y - PERSON_H - 9 - this.camY) / this.vh) * this.cssH };
       const behind = who.y > this.camY + this.vh * 1.5;
       const sane = Number.isFinite(head.x) && Number.isFinite(head.y);
-      const card = layoutSpeech({ text: s.text, name, headX: sane && !behind ? head.x : this.cssW / 2, headY: behind ? this.cssH * 2 : sane ? head.y : -this.cssH, viewW: this.cssW, viewH: this.cssH, top, bottom, measure });
+      const card = layoutSpeech({ text: s.text, name, headX: sane && !behind ? head.x : this.cssW / 2, headY: behind ? this.cssH * 2 : sane ? head.y : -this.cssH, viewW: this.cssW, viewH: this.cssH, top, bottom, left: sideL, right: sideR, measure });
       const fade = clamp(Math.min(s.t / 0.15, (s.dur - s.t) / 0.3), 0, 1);
       g.globalAlpha = fade * 0.95;
       g.fillStyle = 'rgba(22,16,36,0.93)';

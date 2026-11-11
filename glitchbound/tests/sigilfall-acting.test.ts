@@ -14,7 +14,7 @@ import { NPCS } from '../src/games/sigilfall/data/quests';
 import { SCENES } from '../src/games/sigilfall/data/scenes';
 import { applyPreset, PRESETS } from '../src/games/sigilfall/progress/presets';
 import { layoutSpeech, speechSize, wrapWords } from '../src/games/sigilfall/render/speech';
-import { advanceScene, endScene, GESTURES, heading, lineTime, TALK_ZOOM, TYPE_CPS, ZOOMS } from '../src/games/sigilfall/sim/scene';
+import { advanceScene, endScene, GESTURES, ghostName, heading, lineTime, TALK_ZOOM, TYPE_CPS, ZOOMS } from '../src/games/sigilfall/sim/scene';
 import { holds } from '../src/games/sigilfall/sim/story';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { newWorld, readyHero } from './sigilfall-bot';
@@ -247,6 +247,41 @@ describe('Sigilfall: a spoken line on the screen', () => {
       }
     }
     expect(cards).toBeGreaterThan(10_000);
+  });
+
+  it('a shout while the hero is playing on a phone keeps to the open middle, clear of the stick and the skills', () => {
+    for (const [viewW, viewH] of [[568, 320], [667, 375], [844, 390]] as const) {
+      const left = viewW * 0.26;
+      const right = viewW * 0.39;
+      for (const l of LINES) {
+        for (const hx of [0.1, 0.5, 0.9]) {
+          const c = layoutSpeech({ text: l.line, name: 'Captain Mara', headX: viewW * hx, headY: viewH * 0.55, viewW, viewH, top: 62, bottom: 76, left, right, measure });
+          expect(c.lines.join(' ')).toBe(l.line.split(/\s+/).join(' '));
+          expect(c.x, `${l.id} on ${viewW}x${viewH}`).toBeGreaterThanOrEqual(left - 0.5);
+          expect(c.x + c.w, `${l.id} on ${viewW}x${viewH}`).toBeLessThanOrEqual(viewW - right + 0.5);
+          expect(c.y).toBeGreaterThanOrEqual(62);
+        }
+      }
+    }
+  });
+
+  it('a figure of a memory speaks under its own name, not the name of whoever lent it a face', () => {
+    let figures = 0;
+    for (const def of SCENES) {
+      for (const st of def.steps) {
+        if (!('ghost' in st)) continue;
+        figures++;
+        const name = ghostName(st.ghost);
+        expect(name.length, st.ghost).toBeGreaterThan(2);
+        expect(name, st.ghost).not.toMatch(/^vision|-/i);
+        // (the same person remembered may keep their name: the queen, the king)
+        const lender = NPCS[st.as]?.name;
+        if (lender && !['vision-vaelor', 'vision-ysane', 'vision-orla'].includes(st.ghost)) expect(name, `${st.ghost} as ${st.as}`).not.toBe(lender);
+      }
+    }
+    expect(figures).toBeGreaterThan(20);
+    expect(ghostName('vision-king-aster')).toBe('The King of Aster');
+    expect(ghostName('vision-teodric')).toBe('Teodric');
   });
 
   it('words are broken only between words, and one too long for its line keeps a line to itself', () => {

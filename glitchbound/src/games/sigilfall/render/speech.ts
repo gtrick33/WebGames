@@ -49,25 +49,28 @@ export const speechSize = (viewW: number, viewH: number): number => clamp(Math.m
 
 /**
  * Lays a line out over a head at (headX, headY). `top` and `bottom` are what the edges of the view keep for
- * themselves (a scene's bars, the HUD's rows).
+ * themselves (a scene's bars, the HUD's rows), `left` and `right` what its sides do.
  */
-export function layoutSpeech(o: { text: string; name: string; headX: number; headY: number; viewW: number; viewH: number; top: number; bottom: number; measure: Measure }): SpeechCard {
+export function layoutSpeech(o: { text: string; name: string; headX: number; headY: number; viewW: number; viewH: number; top: number; bottom: number; left?: number; right?: number; measure: Measure }): SpeechCard {
   const fs = speechSize(o.viewW, o.viewH);
   const nameFs = Math.round(fs * 0.82 * 10) / 10;
   const lineH = Math.round(fs * 1.32);
   const padX = Math.round(fs * 0.8);
   const padY = Math.round(fs * 0.6);
-  const edge = 8;
-  const room = Math.max(120, Math.min(o.viewW - edge * 2 - padX * 2, fs * 21));
+  // (what the sides of the view keep for themselves: a phone's stick on the left and its skills on the right, while
+  // the hero is playing)
+  const left = Math.max(8, o.left ?? 8);
+  const right = Math.max(8, o.right ?? 8);
+  const room = Math.max(96, Math.min(o.viewW - left - right - padX * 2, fs * 21));
   const lines = wrapWords(o.text, room, (s) => o.measure(s, fs, 600));
   const nameW = o.name ? o.measure(o.name, nameFs, 800) : 0;
   const nameH = o.name ? Math.round(nameFs * 1.35) : 0;
   const wide = Math.max(nameW, ...lines.map((l) => o.measure(l, fs, 600)), fs * 4);
-  const w = Math.min(o.viewW - edge * 2, Math.ceil(wide) + padX * 2);
+  const w = Math.min(o.viewW - left - right, Math.ceil(wide) + padX * 2);
   const h = padY * 2 + nameH + lines.length * lineH;
   let x = o.headX - w / 2;
   let y = o.headY - 12 - h;
-  const x0 = clamp(x, edge, Math.max(edge, o.viewW - edge - w));
+  const x0 = clamp(x, left, Math.max(left, o.viewW - right - w));
   const y0 = clamp(y, o.top + 4, Math.max(o.top + 4, o.viewH - o.bottom - 4 - h - 8));
   const moved = Math.abs(y0 - y) > 1;
   x = x0;
