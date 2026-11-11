@@ -4,6 +4,8 @@ import { currentObjective } from '../progress/character';
 import { drawMapIcon, type MapIcon } from '../ui/mapIcons';
 import { isMainQuest, turnInNpc } from '../progress/handin';
 import { LEAD, leanTarget, LIFT } from './camera';
+import { layoutSpeech } from './speech';
+import { TALK_ZOOM, TYPE_CPS } from '../sim/scene';
 import { Effects, headOf } from './effects';
 import { THEMES } from '../data/themes';
 import { ROOM, type RoomLight } from './rooms';
@@ -406,6 +408,12 @@ export class Renderer {
     const rate = w.scene || talk ? 2.6 : 4;
     this.leanX = damp(this.leanX, lx, rate, dt);
     this.leanY = damp(this.leanY, ly, rate, dt);
+    // a scene's camera draws in on whoever is speaking (or stands as near as a step says), and eases back out after
+    if (st) {
+      const speaking = !!w.scene && w.story.speech.some((sp) => sp.staged);
+      const push = this.landOnly ? 1 : (w.scene?.zoom ?? (speaking ? TALK_ZOOM : 1));
+      st.push = this.reducedMotion ? push : damp(st.push, push, 2.2, dt);
+    }
     this.placeCamera(w);
     const shake = this.reducedMotion ? 0 : w.shakeAmt;
     this.shakeX = shake ? (Math.random() - 0.5) * shake : 0;
@@ -498,7 +506,7 @@ export class Renderer {
       }
     }
     this.upright(p.x, p.y);
-    this.drawSpeech(w);
+    this.drawSpeech(w, time);
     if (ui && st) {
       this.drawInteractMarker(w, time, st);
       this.drawObjectiveArrow(w, time, st);
@@ -879,88 +887,90 @@ export class Renderer {
     g.restore();
   }
 
-  /** The size a world pixel is drawn in the middle of the view, on the overlay. */
-  private plainScale(): number {
-    const st = this.stage;
-    if (!st) return this.k;
-    const cx = this.camX + this.vw / 2;
-    const cy = this.camY + this.vh / 2;
-    const a = st.project(cx, cy, PERSON_H);
-    const b = st.project(cx + TILE, cy, PERSON_H);
-    return ((b.x - a.x) / TILE) * this.k;
-  }
-
-  /** Lines over people's heads (companions shouting in a fight, villagers crying out). */
-  private drawSpeech(w: World): void {
+  /**
+   * Lines over people's heads: a scene's (written out under the speaker's name, with a mark once the next can be
+   * taken), a companion's shout in a fight, a villager crying out. Laid out on the screen, not in the world: the same
+   * size near or far and however close the camera stands, every word of it shown, and all of it on the screen clear
+   * of the bars along its edges (render/speech.ts).
+   */
+  private drawSpeech(w: World, time: number): void {
     this.drawEmotes(w);
     const speech = w.story.speech;
     if (!speech.length) return;
     const g = this.g;
+    const st = this.stage;
     g.save();
-    g.font = '600 5.5px "Bricolage Grotesque Variable", system-ui, sans-serif';
-    g.textBaseline = 'top';
-    g.textAlign = 'left';
+    g.setTransform(this.k, 0, 0, this.k, 0, 0);
     g.imageSmoothingEnabled = true;
+    g.textBaseline = 'alphabetic';
+    g.textAlign = 'left';
+    const FONT = '"Bricolage Grotesque Variable", system-ui, sans-serif';
+    const measure = (text: string, px: number, weight: number): number => {
+      g.font = `${weight} ${px}px ${FONT}`;
+      return g.measureText(text).width;
+    };
+    // (a scene's bars are 9% of the picture each; the HUD's rows otherwise)
+    const top = w.scene ? this.cssH * 0.09 + 4 : 44;
+    const bottom = w.scene ? this.cssH * 0.09 + 4 : 76;
     for (const s of speech) {
-      const who = s.who === 'hero' ? w.player : (w.pets.find((p) => !p.dead && p.def.id === s.who) ?? w.npcs.find((n) => n.id === s.who) ?? w.enemies.find((e) => !e.dead && e.def.id === s.who));
+      const npc = w.npcs.find((n) => n.id === s.who);
+      const pet = w.pets.find((p) => !p.dead && p.def.id === s.who);
+      const foe = w.enemies.find((e) => !e.dead && e.def.id === s.who);
+      const who = s.who === 'hero' ? w.player : (pet ?? npc ?? foe);
       if (!who) continue;
-      // wrap at about 34 characters, at most three lines
-      const words = s.text.split(' ');
-      const lines: string[] = [];
-      let cur = '';
-      for (const wd of words) {
-        if ((cur + ' ' + wd).trim().length > 34 && cur) {
-          lines.push(cur);
-          cur = wd;
-        } else cur = (cur + ' ' + wd).trim();
-      }
-      if (cur) lines.push(cur);
-      const shown = lines.slice(0, 3);
-      const wdt = Math.max(...shown.map((l) => g.measureText(l).width)) + 6;
-      const hgt = shown.length * 6.5 + 4;
+      const name = s.who === 'hero' ? w.hero.name : pet ? pet.def.name : npc ? (NPCS[npc.ghost ?? npc.id]?.name ?? '') : (foe?.def.name ?? '');
+      const accent = s.who === 'hero' ? '#9fd8ff' : foe && !pet && !npc ? '#ff9a8a' : '#ffcf5a';
+      // where their head is on the screen; someone out of the picture (or behind the camera) can still shout: their
+      // words are kept at the edge nearest them
+      const head = st ? st.project(who.x, who.y, PERSON_H + 9) : { x: ((who.x - this.camX) / this.vw) * this.cssW, y: ((who.y - PERSON_H - 9 - this.camY) / this.vh) * this.cssH };
+      const behind = who.y > this.camY + this.vh * 1.5;
+      const sane = Number.isFinite(head.x) && Number.isFinite(head.y);
+      const card = layoutSpeech({ text: s.text, name, headX: sane && !behind ? head.x : this.cssW / 2, headY: behind ? this.cssH * 2 : sane ? head.y : -this.cssH, viewW: this.cssW, viewH: this.cssH, top, bottom, measure });
       const fade = clamp(Math.min(s.t / 0.15, (s.dur - s.t) / 0.3), 0, 1);
-      // (over the head of whoever is speaking, wherever they stand)
-      this.upright(who.x, who.y, PERSON_H + 3);
-      const x = who.x - wdt / 2;
-      const y = who.y - 3 - hgt;
-      // ...and always all of it on the screen, clear of the bars along its edges: someone just out of view can still
-      // shout. (Then it has no one to point at, so it goes without its tail.) One size for everyone, near or far: past
-      // the far edge of the view the land's perspective would stretch it, and behind the camera turn it upside down.
-      let t = g.getTransform();
-      const plain = this.plainScale();
-      if (!(t.a >= plain * 0.82 && t.a <= plain * 1.2)) {
-        const s0 = t.a > 0 ? Math.min(plain * 1.2, Math.max(plain * 0.82, t.a)) : plain;
-        const aimed = t.a > 0 && Number.isFinite(t.e) && Number.isFinite(t.f);
-        const ax = aimed ? t.a * who.x + t.e : g.canvas.width / 2;
-        const ay = aimed ? t.d * (who.y - 3 - hgt) + t.f : -9999;
-        g.setTransform(s0, 0, 0, s0, ax - s0 * who.x, ay - s0 * (who.y - 3 - hgt));
-        t = g.getTransform();
-      }
-      const cw = g.canvas.width;
-      const ch = g.canvas.height;
-      const edge = 8 * this.k;
-      const left = t.a * x + t.e;
-      const right = t.a * (x + wdt) + t.e;
-      const up = t.d * y + t.f;
-      const low = t.d * (y + hgt + 3) + t.f;
-      const inX = right - left > cw - edge * 2 ? 0 : left < edge ? edge - left : right > cw - edge ? cw - edge - right : 0;
-      const inY = up < 44 * this.k ? 44 * this.k - up : low > ch - 76 * this.k ? ch - 76 * this.k - low : 0;
-      if (inX || inY) g.setTransform(t.a, t.b, t.c, t.d, t.e + inX, t.f + inY);
-      g.globalAlpha = fade * 0.92;
-      g.fillStyle = 'rgba(27,20,40,0.88)';
+      g.globalAlpha = fade * 0.95;
+      g.fillStyle = 'rgba(22,16,36,0.93)';
+      g.strokeStyle = rgba(accent, 0.5);
+      g.lineWidth = 1;
       g.beginPath();
-      g.roundRect(x, y, wdt, hgt, 3);
+      g.roundRect(card.x, card.y, card.w, card.h, Math.round(card.fs * 0.6));
       g.fill();
-      if (!inY) {
+      g.stroke();
+      if (card.tailX !== null) {
         g.beginPath();
-        g.moveTo(who.x - 2, y + hgt);
-        g.lineTo(who.x, y + hgt + 3);
-        g.lineTo(who.x + 2, y + hgt);
+        g.moveTo(card.tailX - 6, card.y + card.h - 0.5);
+        g.lineTo(card.tailX, card.y + card.h + 7);
+        g.lineTo(card.tailX + 6, card.y + card.h - 0.5);
+        g.closePath();
         g.fill();
       }
       g.globalAlpha = fade;
+      if (name) {
+        g.font = `800 ${card.nameFs}px ${FONT}`;
+        g.fillStyle = accent;
+        g.fillText(name, card.x + card.padX, card.y + card.padY + card.nameFs * 0.86);
+      }
+      g.font = `600 ${card.fs}px ${FONT}`;
       g.fillStyle = '#f8f2e4';
-      shown.forEach((l, i) => g.fillText(l, x + 3, y + 2.5 + i * 6.5));
+      // a scene's line is written out; anyone else's is simply said
+      let left = s.staged ? Math.floor(s.t * TYPE_CPS) : Infinity;
+      card.lines.forEach((l, i) => {
+        if (left <= 0) return;
+        g.fillText(left >= l.length ? l : l.slice(0, left), card.x + card.padX, card.textY + i * card.lineH);
+        left -= l.length + 1;
+      });
+      // all of it out: a small mark at its foot says the next line can be taken (a tap, a click, the talk key)
+      if (s.staged && s.t * TYPE_CPS >= s.text.length) {
+        const mx = card.x + card.w - card.padX * 0.9;
+        const my = card.y + card.h - card.padY * 0.75 + (this.reducedMotion ? 0 : Math.sin(time * 5) * 1.5);
+        g.fillStyle = accent;
+        g.globalAlpha = fade * 0.9;
+        g.beginPath();
+        g.moveTo(mx - 4, my - 3);
+        g.lineTo(mx + 4, my - 3);
+        g.lineTo(mx, my + 2.5);
+        g.closePath();
+        g.fill();
+      }
     }
     g.restore();
   }

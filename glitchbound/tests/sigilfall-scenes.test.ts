@@ -171,14 +171,18 @@ describe('Sigilfall: scenes', () => {
     const c = atScene(def.id);
     const w = newWorld(def.region, c);
     startAt(w, def.id);
-    run(w, 2);
+    run(w, 4);
     expect(w.scene).not.toBeNull();
+    const reached = w.scene!.step;
     const saved = migrate(JSON.parse(JSON.stringify({ v: SAVE_VERSION, heroes: [c], last: 0, settings: {}, saved: 0 })))!.heroes[0]!;
     expect(saved.opened).not.toContain(`scene:${def.id}`);
     expect(saved.review).toBe(true);
     const back = newWorld(def.region, saved);
     startAt(back, def.id);
-    expect(back.scene?.step).toBe(0);
+    // (from its first shot again: a step that takes no time, the camera's distance, may already be behind it)
+    expect(back.scene?.def.id).toBe(def.id);
+    expect(back.scene!.step).toBeLessThanOrEqual(1);
+    expect(back.scene!.step).toBeLessThan(reached);
   });
 
   it('an attack stops a scene, which then plays another time', () => {

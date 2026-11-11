@@ -3100,6 +3100,43 @@
   opacity: 1;
   pointer-events: auto;
 }
+/* a tap or a click anywhere on a scene's picture takes its next line */
+.rb-ui .rb-scene-next {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+}
+.rb-scene.is-on .rb-scene-next {
+  pointer-events: auto;
+}
+/* how, in the lower bar, clear of the Skip button beside it */
+.rb-scene-hint {
+  position: absolute;
+  left: calc(14px + var(--sa-l));
+  bottom: calc(10px + var(--sa-b));
+  max-width: calc(100% - 190px - var(--sa-l) - var(--sa-r));
+  overflow: hidden;
+  color: rgb(242 234 216 / 0.7);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 30px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.rb-scene.is-on .rb-scene-hint.is-on {
+  opacity: 1;
+}
 /* the Wardrobe */
 .rb-look-tile {
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--rc, #6a5a8a) 55%, transparent);

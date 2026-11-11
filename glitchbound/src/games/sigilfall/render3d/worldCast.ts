@@ -151,6 +151,9 @@ export class WorldCast {
   }
 
   /** A turn eased toward where someone should face. */
+  /** How each of the story's people is moving: their clip, where they were a frame ago, the gesture they are on. */
+  private readonly acting = new WeakMap<NpcActor, { m: Motion; x: number; y: number; heading: number; still: number; act: number; over: number }>();
+
   private easeTurn(who: object, want: number, rate: number, dt: number): number {
     const now = this.turned.get(who) ?? want;
     const next = damp(now, shortest(now, want), rate, dt);
@@ -262,8 +265,10 @@ export class WorldCast {
     if (p.casting) want = turnOf(p.casting.angle);
     else if (act || (p.actKind !== null && p.actT > 0) || p.windup) want = turnOf(p.actAngle);
     else if (moving) want = Math.atan2(p.vx, p.vy);
+    // (in a scene they turn to whoever is speaking to them)
+    else if (w.scene && w.scene.turns.hero !== undefined) want = w.scene.turns.hero;
     else if (!p.form) want = this.heroTurn;
-    this.heroTurn = damp(this.heroTurn, shortest(this.heroTurn, want), 16, dt);
+    this.heroTurn = damp(this.heroTurn, shortest(this.heroTurn, want), w.scene ? 7 : 16, dt);
     const blink = p.iframe > 0 && !p.dash && dt > 0 && Math.floor(time * 20) % 2 === 0;
     // (safe for a moment: they shine rather than dissolve)
     const alpha = 1;
@@ -553,18 +558,58 @@ export class WorldCast {
     cast.creature(sprite, x, y, anim.turn, h, clip, t, loop, { alpha, flash, rise, sx, sy, enemy: e.def.id, tint: frozen ? FROZEN : chilled ? CHILLED : undefined, ...(anim.from ? { from: anim.from } : {}) });
   }
 
+  /**
+   * One of the story's people. They stand as their place has them, until a scene has them do something: then they
+   * walk when they are moved (their legs keeping time with the ground, turned the way they go), turn to whoever the
+   * scene turns them to, and make its gestures (sim/scene.ts `turns`, `acts`). Before, someone a scene walked across
+   * a square slid there standing still.
+   */
   private syncNpc(cast: Cast, n: NpcActor, w: World, dt: number, time: number, alpha: number): void {
     const def = NPCS[n.ghost ?? n.id];
     const look = npcLookOf(n.ghost ?? n.id);
     const fallen = def?.down;
-    const turn = this.easeTurn(n, n.face < 0 ? -0.55 : 0.55, 6, dt);
-    const clip = fallen ? 'lie' : 'idle';
+    let a = this.acting.get(n);
+    if (!a) {
+      a = { m: new Motion(), x: n.x, y: n.y, heading: 0, still: 9, act: -1, over: -1 };
+      // (each their own moment of standing: a square of people doesn't breathe in step)
+      a.m.t = Math.abs(n.x * 0.1 + n.y * 0.07) % 2;
+      this.acting.set(n, a);
+    }
+    const dx = n.x - a.x;
+    const dy = n.y - a.y;
+    const speed = dt > 0 ? Math.hypot(dx, dy) / dt : 0;
+    // (a jump across the land is a cut, not a walk)
+    const walking = speed > 5 && speed < 420;
+    if (walking) {
+      a.heading = Math.atan2(dx, dy);
+      a.still = 0;
+    } else a.still += dt;
+    a.x = n.x;
+    a.y = n.y;
+    const scene = w.scene;
+    const moving = walking || a.still < 0.12;
+    const turn = this.easeTurn(n, moving ? a.heading : (scene?.turns[n.id] ?? (n.face < 0 ? -0.55 : 0.55)), moving ? 10 : 5, dt);
+    const act = scene?.acts[n.id];
+    if (moving) a.m.set(speed > 78 ? 'run' : 'walk', true, 0.16);
+    else if (act && a.over !== act.at) {
+      const fresh = a.act !== act.at;
+      a.act = act.at;
+      a.m.set(act.clip, false, 0.18, fresh);
+      // a gesture made once is over when its clip is; one that is held keeps its last pose (kneeling, fallen)
+      const c = cast.wardrobe?.medium.clips[act.clip];
+      if (!act.hold && (!c || a.m.t >= c.n / c.fps - 0.12)) {
+        a.over = act.at;
+        a.m.set('idle', true, 0.22);
+      }
+    } else if (!act || a.m.clip === 'walk' || a.m.clip === 'run') a.m.set('idle', true, 0.2);
+    a.m.advance(moving ? dt * stride(a.m.clip, speed, PERSON_H) : dt);
     cast.shadow(n.x, n.y, 7);
     // (an echo of the dead is not quite here: it hangs a little off the ground, pale and cold)
     const echo = ECHOES.has(n.id) || !!n.ghost;
-    if (look) cast.person(look, null, false, n.x, n.y, turn, { clip, t: time + n.x * 0.1, loop: true }, echo ? { alpha, lift: 0.14 + Math.sin(time * 1.6 + n.x) * 0.04, tint: ECHO_TINT } : { alpha });
+    // (...but one a scene has on its knees is down on the ground, not sitting in the air)
+    const down = !!act?.hold && !moving;
+    if (look) cast.person(look, null, false, n.x, n.y, turn, fallen ? { clip: 'lie', t: time + n.x * 0.1, loop: true } : a.m, echo ? { alpha, lift: down ? 0.02 : 0.14 + Math.sin(time * 1.6 + n.x) * 0.04, tint: ECHO_TINT } : { alpha });
     else cast.creature(def?.sprite ?? 'villager', n.x, n.y, turn, PERSON_H, fallen ? 'die' : 'idle', fallen ? 9 : time + n.x * 0.1, !fallen, { alpha });
-    void w;
   }
 
   private syncPet(cast: Cast, pet: Pet, w: World, dt: number, time: number): void {
@@ -591,6 +636,8 @@ export class WorldCast {
     s.y += (pet.y - s.y) * follow;
     if (moving) s.turn = damp(s.turn, shortest(s.turn, Math.atan2(pet.vx, pet.vy)), 10, dt);
     else if (pet.actT > 0) s.turn = damp(s.turn, shortest(s.turn, turnOf(pet.face)), 12, dt);
+    // (a companion in a scene turns to who they speak to, as the place's own people do)
+    else if (w.scene && w.scene.turns[pet.def.id] !== undefined) s.turn = damp(s.turn, shortest(s.turn, w.scene.turns[pet.def.id]!), 6, dt);
     // the story's people come in as they go out, with a fade (a companion stepping up to speak, the led, the arriving)
     const arrive = pet.story && pet.born !== undefined ? Math.min(1, Math.max(0, (w.time - pet.born) / STORY_ARRIVE)) : 1;
     const fade = pet.story ? Math.min(arrive, pet.deathT > 0 ? 1 - pet.deathT / STORY_FADE : 1) : 1;

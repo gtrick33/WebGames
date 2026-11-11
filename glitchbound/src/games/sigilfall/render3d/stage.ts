@@ -114,6 +114,9 @@ export class Stage {
       });
   }
 
+  /** How near the camera stands, as a share of its usual distance: under 1 it has drawn in, over 1 stepped back. */
+  push = 1;
+
   /** `tilePx`: device pixels a tile spans at the middle of the view. */
   setSize(cssW: number, cssH: number, dpr: number, tilePx: number, touch = false): void {
     this.cssW = cssW;
@@ -141,9 +144,10 @@ export class Stage {
     this.spanX = (cssW * dpr) / tilePx / 2;
   }
 
-  /** Points the camera at a spot on the ground (tiles). */
+  /** Points the camera at a spot on the ground (tiles), from as near as `push` says (a scene drawing in on a face). */
   look(cx: number, cz: number): void {
-    this.camera.position.set(cx, this.dist * Math.sin(PITCH), cz + this.dist * Math.cos(PITCH));
+    const d = this.dist * this.push;
+    this.camera.position.set(cx, d * Math.sin(PITCH), cz + d * Math.cos(PITCH));
     this.camera.lookAt(cx, 0, cz);
     this.camera.updateMatrixWorld(true);
     this.syncCamera();

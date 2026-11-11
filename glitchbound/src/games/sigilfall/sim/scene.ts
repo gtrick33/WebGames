@@ -20,9 +20,39 @@ import type { World } from './world';
  * text. A scene only stages: it changes nothing the story keeps (who stands where afterwards is the
  * region's markers' business), so it is safe to skip, to interrupt and to see again after a reload; it
  * counts as seen once it has finished or been skipped. The hero can't act while one plays.
+ *
+ * People act in it: whoever speaks turns to whoever they speak to and moves as they talk, those listening turn to
+ * them, the camera draws in on a face, and a step can have someone turn, gesture, kneel or fall (`face`, `act`). A
+ * line is written out and waits to be read at a reader's pace: a tap, a click or the talk key takes the next one
+ * sooner (advanceScene), as a quest's words are clicked through; only Skip ends the scene.
  */
 
 export type Emote = 'alert' | 'question' | 'dots' | 'heart' | 'note';
+
+/** What a person in a scene can be seen to do, and the clip of the people's rig that shows it (render3d). */
+export const GESTURES = {
+  speak: 'interact',
+  point: 'taunt',
+  wave: 'wave',
+  cheer: 'cheer',
+  kneel: 'sitfloor',
+  sit: 'sit',
+  flinch: 'hit',
+  take: 'pickup',
+  give: 'use',
+  pray: 'channel',
+  guard: 'block',
+  conjure: 'cast',
+  work: 'work',
+  fall: 'die',
+  rise: 'rise',
+} as const;
+export type Gesture = keyof typeof GESTURES;
+
+/** How near the camera stands, as a share of its usual distance (render: Stage.push). */
+export const ZOOMS = { close: 0.7, near: 0.82, wide: 1.2 } as const;
+/** How near it draws by itself while someone is speaking. */
+export const TALK_ZOOM = 0.84;
 
 export type SceneStep =
   /** A line over someone's head (an NPC, a companion, 'hero'); the scene waits until it has been read. */
@@ -36,8 +66,17 @@ export type SceneStep =
    * (become the place's own person there) or `secs` have passed.
    */
   | { follow: string; secs: number }
-  /** Someone walks to a named place (or next to a person). */
-  | { move: string; to: string }
+  /** Someone walks to a named place (or next to a person), or `dx`, `dy` tiles from it; at a run, if it says. */
+  | { move: string; to: string; dx?: number; dy?: number; run?: boolean }
+  /** Someone ('hero' too) turns to someone or somewhere, and stays so; the scene goes straight on. */
+  | { face: string; to: string }
+  /**
+   * Someone makes a gesture (GESTURES): once, or keeping its last pose (`hold`: kneeling, sitting, fallen) until the
+   * scene ends or they do something else. The scene goes straight on.
+   */
+  | { act: string; does: Gesture; hold?: boolean }
+  /** How near the camera stands from here on: `close` on a face, `wide` over a place, `auto` as it would by itself. */
+  | { zoom: 'close' | 'near' | 'wide' | 'auto' }
   /** A sign over someone's head. */
   | { emote: string; icon: Emote }
   /** A sound (audio/sound.ts), played as the step begins; the scene goes straight on. */
@@ -106,6 +145,19 @@ export interface ScenePlay {
   fx?: { name: string; x: number; y: number; t: number; color: string; size: number; seed: number }[];
   /** The music a step asked for. */
   music?: MusicTrack;
+  /**
+   * Which way the scene has turned whom, by name ('hero' too): a walker's heading in radians, 0 toward the camera.
+   * It lasts as long as the scene: afterwards everyone stands as their place has them.
+   */
+  turns: Record<string, number>;
+  /** The gestures being made, by name: the clip, when it began (World.time), whether its last pose is kept. */
+  acts: Record<string, { clip: string; at: number; hold: boolean }>;
+  /** Whom a `face` step has turned: they keep that way, whoever speaks, until the scene turns or walks them again. */
+  posed: Record<string, true>;
+  /** Who spoke last: whoever speaks next turns to them, when they are near. */
+  spoke?: string;
+  /** How near the camera stands, when a step has said so (else it draws in on whoever is speaking). */
+  zoom?: number;
 }
 
 /** How black the scene's picture is now. */
@@ -119,8 +171,19 @@ export const sceneDark = (s: ScenePlay | null): number => {
 /** A vision's tint by name (or a color). */
 const TINTS: Record<string, string> = { memory: '#c8a8ff', ember: '#ffb070', frost: '#a8e0ff', sun: '#ffd88a', grief: '#9a8ab8', blood: '#ff8a8a' };
 
-const SPEAK = 2.6;
-const lineTime = (line: string): number => SPEAK + line.length * 0.025;
+/** Letters a second a line is written out at. */
+export const TYPE_CPS = 46;
+/**
+ * How long a line stays before the scene goes on by itself: time to read it at an easy pace, however long it is (the
+ * old pace gave a 140-letter line six seconds). Whoever reads faster takes the next line with a tap.
+ */
+export const lineTime = (line: string): number => Math.min(9.5, Math.max(2.6, 1.3 + line.length * 0.055));
+/** Nobody in a scene turns their back on the camera: a heading is kept within this of facing it (radians). */
+const SHOWS_FACE = 1.75;
+/** The way from one spot to another as a heading someone can be turned to. */
+export const heading = (from: { x: number; y: number }, to: { x: number; y: number }): number => Math.max(-SHOWS_FACE, Math.min(SHOWS_FACE, Math.atan2(to.x - from.x, to.y - from.y)));
+/** How far two people can stand apart and still be talking to each other (world px). */
+const IN_TALK = 7 * TILE;
 const WALK = 42;
 /** The longest a scene waits on someone walking to their mark, in seconds, before they pick up their feet. */
 const LONGEST_WALK = 4.5;
@@ -164,11 +227,16 @@ const seenKey = (id: string): string => `scene:${id}`;
 
 /** What the camera shows round where it looks, in tiles: a little less than the screen, so a speaker is never at its very edge. */
 const SIGHT = { side: 6.2, up: 4, down: 3.2 };
+/**
+ * The middle of the picture, where a speaker is: what a phone held upright still shows with the camera drawn in (its
+ * view is six tiles across, not twelve).
+ */
+const MIDDLE = { side: 2.3, up: 1.9, down: 1.6 };
 /** Whether someone is in the picture when the camera looks at `cam`. */
-export function inSight(cam: { x: number; y: number }, who: { x: number; y: number }): boolean {
+export function inSight(cam: { x: number; y: number }, who: { x: number; y: number }, sight: { side: number; up: number; down: number } = SIGHT): boolean {
   const dx = (who.x - cam.x) / TILE;
   const dy = (who.y - cam.y) / TILE;
-  return Math.abs(dx) <= SIGHT.side && dy <= SIGHT.down && dy >= -SIGHT.up;
+  return Math.abs(dx) <= sight.side && dy <= sight.down && dy >= -sight.up;
 }
 
 /** The middle of the nearest tile to (x, y) that can be stood on (the spot itself, when it can). */
@@ -282,7 +350,7 @@ export function questBeat(w: World): SceneDef | null {
 }
 
 function play(w: World, def: SceneDef): void {
-  w.scene = { def, step: 0, t: 0, begun: false, focus: null, emotes: [] };
+  w.scene = { def, step: 0, t: 0, begun: false, focus: null, emotes: [], turns: {}, acts: {}, posed: {} };
   w.dismount();
   w.emit({ t: 'scene', id: def.id, playing: true });
 }
@@ -359,11 +427,29 @@ export function updateScene(w: World, dt: number): void {
   let done: boolean;
   if ('say' in step) {
     if (first) {
-      w.story.speakNow({ who: step.say, text: step.line }, lineTime(step.line));
-      // the camera finds whoever speaks, if the scene has left them out of its sight: nobody talks from off the screen
+      w.story.speakNow({ who: step.say, text: step.line }, lineTime(step.line), true);
       const who = where(w, step.say);
+      // whoever speaks turns to who they are speaking to: the one who spoke before them, if near, else the hero; and
+      // those two turn to listen
+      const before = s.spoke && s.spoke !== step.say ? where(w, s.spoke) : null;
+      const partner = before && who && dist(before.x, before.y, who.x, who.y) < IN_TALK ? before : null;
+      const heroNear = !!who && step.say !== 'hero' && dist(w.player.x, w.player.y, who.x, who.y) < IN_TALK;
+      const to = partner ?? (heroNear ? w.player : null);
+      if (who && to && !s.posed[step.say]) s.turns[step.say] = heading(who, to);
+      if (who && partner && s.spoke && !s.posed[s.spoke]) s.turns[s.spoke] = heading(partner, who);
+      if (who && heroNear && !s.posed.hero) s.turns.hero = heading(w.player, who);
+      // ...and moves as they talk (a hand out; an arm thrown up at a shout), unless the scene has just given them
+      // something of their own to do, or has them kneeling
+      const doing = s.acts[step.say];
+      if (step.say !== 'hero' && !doing?.hold && !(doing && w.time - doing.at < 0.25)) s.acts[step.say] = { clip: /!["’”]?$/.test(step.line) ? GESTURES.point : GESTURES.speak, at: w.time, hold: false };
+      s.spoke = step.say;
+      // the camera finds whoever speaks, if the scene has left them out of the middle of its picture: nobody talks
+      // from off the screen, on a phone's narrow one either. Two who are talking are framed together
       const cam = s.focus ?? w.player;
-      if (who && !inSight(cam, who)) s.focus = step.say === 'hero' ? null : { x: who.x, y: who.y };
+      if (who && !inSight(cam, who, MIDDLE)) {
+        const two = to && dist(to.x, to.y, who.x, who.y) < 4.5 * TILE ? { x: who.x + (to.x - who.x) * 0.35, y: who.y + (to.y - who.y) * 0.35 } : { x: who.x, y: who.y };
+        s.focus = step.say === 'hero' ? null : two;
+      }
     }
     done = s.t >= lineTime(step.line) + 0.15;
   } else if ('ghost' in step) {
@@ -404,9 +490,10 @@ export function updateScene(w: World, dt: number): void {
     const to = where(w, step.to);
     if (!n || !to) done = true;
     else {
-      // next to a person, on a place
-      const tx = step.to === 'hero' || !w.places[step.to] ? to.x + (n.x < to.x ? -26 : 26) : to.x;
-      const ty = to.y;
+      // next to a person, on a place (or as far from it as the step says)
+      const off = step.dx !== undefined || step.dy !== undefined;
+      const tx = off ? to.x + (step.dx ?? 0) * TILE : step.to === 'hero' || !w.places[step.to] ? to.x + (n.x < to.x ? -26 : 26) : to.x;
+      const ty = to.y + (step.dy ?? 0) * TILE;
       const d = dist(n.x, n.y, tx, ty);
       if (first) {
         s.route = findRoute(w.map, n.x, n.y, tx, ty, { r: 7, budget: 12000, roads: true }) ?? findRoute(w.map, n.x, n.y, tx, ty, { r: 4, budget: 12000 }) ?? undefined;
@@ -425,7 +512,11 @@ export function updateScene(w: World, dt: number): void {
           }
         }
         // (and whoever still has a long way to come hurries: nobody watches a ten-second walk)
-        s.pace = Math.min(WALK * 3, Math.max(WALK, (dist(n.x, n.y, tx, ty) * 1.25) / LONGEST_WALK));
+        s.pace = Math.min(WALK * 3, Math.max(step.run ? WALK * 2 : WALK, (dist(n.x, n.y, tx, ty) * 1.25) / LONGEST_WALK));
+        // (a gesture held is let go of: nobody walks off kneeling)
+        delete s.acts[step.move];
+        delete s.turns[step.move];
+        delete s.posed[step.move];
       }
       const aim = s.route ? aimAlong(s.route, n.x, n.y) : d > 1 ? { x: (tx - n.x) / d, y: (ty - n.y) / d } : null;
       if (aim) {
@@ -437,6 +528,20 @@ export function updateScene(w: World, dt: number): void {
       // (time enough for the way there, however it winds)
       done = !aim || d < 1.5 || s.t > 14;
     }
+  } else if ('face' in step) {
+    const who = where(w, step.face);
+    const to = where(w, step.to);
+    if (who && to && dist(who.x, who.y, to.x, to.y) > 2) {
+      s.turns[step.face] = heading(who, to);
+      s.posed[step.face] = true;
+    }
+    done = true;
+  } else if ('act' in step) {
+    if (first) s.acts[step.act] = { clip: GESTURES[step.does], at: w.time, hold: !!step.hold };
+    done = true;
+  } else if ('zoom' in step) {
+    s.zoom = step.zoom === 'auto' ? undefined : ZOOMS[step.zoom];
+    done = true;
   } else if ('emote' in step) {
     if (first) s.emotes.push({ who: step.emote, icon: step.icon, t: 0 });
     done = s.t >= 0.8;
@@ -476,6 +581,37 @@ export function updateScene(w: World, dt: number): void {
   }
 }
 
+/**
+ * The reader is ready for more (a tap, a click, the talk key): a line still being written out is shown whole; one
+ * that has been is done with, and the next comes; a pause is cut short. A camera's move or someone's walk is not
+ * hurried. True when it took the scene on.
+ */
+export function advanceScene(w: World): boolean {
+  const s = w.scene;
+  if (!s || !s.begun) return false;
+  const step = s.def.steps[s.step];
+  if (!step) return false;
+  if ('say' in step) {
+    // (a hair past its last letter: all of it, whatever the arithmetic makes of the division)
+    const whole = (step.line.length + 0.5) / TYPE_CPS;
+    if (s.t < whole) {
+      s.t = whole;
+      for (const sp of w.story.speech) if (sp.who === step.say) sp.t = Math.max(sp.t, whole);
+      return true;
+    }
+    // (not on the same touch that showed it whole: a double tap doesn't throw a line away unread)
+    if (s.t < whole + 0.25) return false;
+    w.story.hush([step.say]);
+    s.t = Infinity;
+    return true;
+  }
+  if ('wait' in step && s.t > 0.2) {
+    s.t = Infinity;
+    return true;
+  }
+  return false;
+}
+
 /** A memory's figures go (its vision is over, or the scene). */
 function clearGhosts(w: World, s: ScenePlay): void {
   if (!s.ghosts?.length) return;
@@ -497,8 +633,8 @@ export function endScene(w: World, skipped: boolean): void {
       const n = w.npcs.find((x) => x.id === step.move);
       const to = where(w, step.to);
       if (n && to && w.places[step.to]) {
-        n.x = to.x;
-        n.y = to.y;
+        n.x = to.x + (step.dx ?? 0) * TILE;
+        n.y = to.y + (step.dy ?? 0) * TILE;
       }
     }
     w.story.hush(s.def.steps.flatMap((st) => ('say' in st ? [st.say] : [])));
