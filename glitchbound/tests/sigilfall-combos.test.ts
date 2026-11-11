@@ -192,6 +192,64 @@ describe('Sigilfall: what combos are made of', () => {
     // (about 100 a second for what was left of 4 s, half again: well over 400)
     expect(before - e.hp).toBeGreaterThan(400);
   });
+
+  it('what is set off lands as what it is, damage over time: never a critical blow on top of the hit it was sized from', () => {
+    // (a warlock's Wild Hex once took two thirds of a boss's life in one blow: the rot struck critically a second time)
+    const blast = (crit: number): number => {
+      const w = heroWith('warlock', 'unstable-affliction', 0);
+      w.build.stats.crit = crit;
+      const e = target(w, 60);
+      applyStatus(w, e, { status: 'curse', dur: 8, power: 1 }, 100, 'corruption');
+      step(w, 0.25);
+      // (what is left of it, as the ticks would have dealt it)
+      const left = e.statuses.filter((s) => s.id === 'curse').reduce((a, s) => a + s.power * s.t, 0);
+      const before = e.hp;
+      applyEffect(w, { kind: 'detonate', status: 'curse', mul: 1.5 }, { x: e.x, y: e.y, angle: 0, spec: null, base: 10, type: 'shadow', depth: 0, target: e, hitDmg: 10, when: 'proc' });
+      expect(e.statuses.some((s) => s.id === 'curse')).toBe(false);
+      return (before - e.hp) / left;
+    };
+    const plain = blast(0);
+    const lucky = blast(100);
+    // half again what was left, whatever the hero's chance to strike critically
+    expect(plain).toBeGreaterThan(1.4);
+    expect(plain).toBeLessThan(1.6);
+    expect(lucky).toBeCloseTo(plain, 5);
+  });
+
+  it('a blow that lays a curse again and sets the rot off in the same breath sets off what was there, and leaves what it laid', () => {
+    const w = heroWith('warlock', 'unstable-affliction', 0);
+    w.build.stats.crit = 0;
+    const e = target(w, 60);
+    // an old, small curse with three seconds left; and another skill's, untouched by this blow
+    applyStatus(w, e, { status: 'curse', dur: 4, power: 1 }, 100, 'unstable-affliction');
+    applyStatus(w, e, { status: 'curse', dur: 6, power: 1 }, 50, 'corruption');
+    step(w, 1);
+    const mine = e.statuses.find((s) => s.src === 'unstable-affliction')!;
+    const other = e.statuses.find((s) => s.src === 'corruption')!;
+    const owed = mine.power * mine.t + other.power * other.t;
+    // the blow: the same curse laid again, far stronger and for longer, and the rot set off at once
+    applyStatus(w, e, { status: 'curse', dur: 8, power: 1 }, 4000, 'unstable-affliction');
+    const laid = { power: mine.power, t: mine.t };
+    expect(laid.power).toBeGreaterThan(3000);
+    const before = e.hp;
+    applyEffect(w, { kind: 'detonate', status: 'curse', mul: 1.5 }, { x: e.x, y: e.y, angle: 0, spec: null, base: 10, type: 'shadow', depth: 0, target: e, hitDmg: 10, when: 'proc' });
+    const dealt = before - e.hp;
+    // half again what the two old curses still owed: nothing of the 32,000 this blow has only just laid
+    expect(dealt).toBeGreaterThan(owed * 1.4);
+    expect(dealt).toBeLessThan(owed * 1.6);
+    expect(dealt).toBeLessThan(2000);
+    // the other skill's curse is spent; this blow's own stays, whole, to run its course
+    expect(e.statuses.some((s) => s.src === 'corruption')).toBe(false);
+    const kept = e.statuses.find((s) => s.src === 'unstable-affliction')!;
+    expect(kept).toMatchObject(laid);
+    expect(kept.was).toBeUndefined();
+    // and a later blow can set that one off in its turn
+    step(w, 1);
+    const then = e.hp;
+    applyEffect(w, { kind: 'detonate', status: 'curse', mul: 1.5 }, { x: e.x, y: e.y, angle: 0, spec: null, base: 10, type: 'shadow', depth: 0, target: e, hitDmg: 10, when: 'proc' });
+    expect(then - e.hp).toBeGreaterThan(20000);
+    expect(e.statuses.some((s) => s.id === 'curse')).toBe(false);
+  });
 });
 
 describe('Sigilfall: the combos in play', () => {
