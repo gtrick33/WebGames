@@ -152,8 +152,9 @@ const YARD: Record<Style, string[]> = {
   inn: ['big-barrel', 'bench', 'keg', 'table', 'barrel'],
   shop: ['crates-stack', 'sacks', 'barrel', 'market-goods', 'basket'],
   smithy: ['anvil', 'grindstone', 'woodpile', 'weapon-rack', 'bucket'],
-  temple: ['statue', 'statue', 'planter', 'flowerbed'],
-  keep: ['statue', 'statue', 'planter', 'planter'],
+  // (one statue to a building: two from the same list landed side by side on a chapel's step, stacked)
+  temple: ['statue', 'planter', 'bench', 'flowerbed'],
+  keep: ['statue', 'planter', 'planter'],
   tower: [],
   hall: ['weapon-rack', 'rack', 'crates-stack', 'target', 'barrel'],
   lighthouse: ['barrel', 'crate'],
@@ -164,6 +165,8 @@ export interface PlacedPic {
   /** The picture's left edge and the ground line under its walls, in world pixels. */
   x: number;
   y: number;
+  /** The ground its model stands on, where that isn't the painted picture's own ([x0, y0, x1, y1], world px). */
+  ground?: [number, number, number, number];
   /** Drawn this many times its size (the capital's keep and its towers). */
   scale?: number;
   /** In dark stone, its lit windows and red banners kept (data/types.ts). */
@@ -204,6 +207,8 @@ export function placeBuilding(style: Style | 'house', lot: Lot, theme: Theme, to
     if (door === null) x = Math.max(lot.tx * 16 - 3 - pic.ox * s, Math.min((lot.tx + lot.w) * 16 + 3 - (pic.ox + pic.fpw) * s, x));
   }
   const out: PlacedPic[] = [{ id, x, y: ground, ...look }];
+  const stands = modelGround(style, lot, out[0]!, door, o.fit === true);
+  if (stands) out[0]!.ground = stands;
   if (id === 'keep' && s > 1 && !o.fit) {
     const kc = x + (pic.ox + pic.fpw / 2) * s;
     const inner = buildingPic('tower_round_slate')!;
@@ -224,6 +229,34 @@ export function placeBuilding(style: Style | 'house', lot: Lot, theme: Theme, to
     for (const s of [-1, 1]) out.push({ id: 'tower_round_tile', x: Math.round(kc + (s * span) / 2 - tower.ox - tower.fpw / 2), y: ground - 6 });
   }
   return out;
+}
+
+/**
+ * The least ground a building of each kind stands on, in tiles across (as much of it as its lot has). The pictures
+ * these lots were laid out for were tall and thin, a gabled house two tiles wide and four deep, a watchtower one
+ * wide; the models that stand there now are near square, and one fitted into a thin strip came out half its size:
+ * a chapel with a door to the hero's waist, a tower no taller than the guard beside it.
+ */
+const LEAST: Partial<Record<Style | 'house', number>> = { house: 3, shop: 4, smithy: 4, hall: 5, temple: 4, tavern: 5, inn: 5, tower: 2, lighthouse: 3 };
+
+/** A chapel's ground as its model has it, four tiles by five: a lot laid out for one (`fit`) is filled in that shape. */
+const CHAPEL: readonly [number, number] = [4, 5];
+
+/** The ground a building's model stands on, if its picture's own is too thin for it ([x0, y0, x1, y1], world px). */
+function modelGround(style: Style | 'house', lot: Lot, main: PlacedPic, door: number | null, fit: boolean): [number, number, number, number] | null {
+  const [bx0, by0, bx1, by1] = picBody(main);
+  const middle = door !== null ? door + 0.5 : lot.tx + lot.w / 2;
+  if (style === 'temple' && fit) {
+    const k = Math.min(lot.w / CHAPEL[0], lot.h / CHAPEL[1]);
+    if (k * CHAPEL[0] >= 3.5) return [(middle - (k * CHAPEL[0]) / 2) * 16, by1 - k * CHAPEL[1] * 16, (middle + (k * CHAPEL[0]) / 2) * 16, by1];
+  }
+  const least = Math.min(lot.w, style === 'tower' && lot.w >= 4 ? 3 : (LEAST[style] ?? 0));
+  if (!least || (bx1 - bx0) / 16 >= least - 0.25) return null;
+  // whole tiles, about its door if it has one, inside its own lot
+  const x0 = Math.max(lot.tx, Math.min(lot.tx + lot.w - least, Math.round(middle - least / 2)));
+  // (no deeper than it was unless it must be: a row more behind a forge was where someone stood at night)
+  const deep = Math.max((by1 - by0) / 16, Math.min(lot.h, least - 1));
+  return [x0 * 16, by1 - deep * 16, (x0 + least) * 16, by1];
 }
 
 /** The yard's things for a building: up to `n` from its kind's list, in a stable order. */
@@ -263,6 +296,9 @@ export const MODEL_FOOT: Record<string, readonly [number, number, number, number
   b_blacksmith: [-0.63, -0.56, 0.658, 0.685],
 };
 
+/** Models made low and wide, raised a little so their eaves clear a customer's head (a shop on a lot three tiles deep). */
+const RISE: Record<string, number> = { b_workshop: 1.26, b_blacksmith: 1.14 };
+
 /** Where a model's door and the steps up to it are, across it (where it isn't the middle): a way in opens right there. */
 const MODEL_DOOR: Record<string, number> = { b_tavern: -0.14, b_townhall: -0.185, b_blacksmith: -0.04 };
 
@@ -285,7 +321,9 @@ export interface StandingModel {
  */
 export function modelOnLot(style: string, lot: Lot, grim: boolean, x0: number, x1: number, y0: number, y1: number, doorTile: number | null = null): StandingModel | null {
   const list = MODELS[style] ?? MODELS.house!;
-  const m = list[Math.floor(hash2(lot.tx, lot.ty, 7) * list.length)]!;
+  const pick = list[Math.floor(hash2(lot.tx, lot.ty, 7) * list.length)]!;
+  // (the wooden watchtower is as wide as it is tall: on narrow ground its platform would be at a guard's shoulder)
+  const m = pick === 'b_watchtower' && x1 - x0 < 3 ? 'b_tower_A' : pick;
   const b = MODEL_FOOT[m];
   if (!b) return null;
   const wideX = Math.max(0.01, b[2] - b[0]);
@@ -297,7 +335,7 @@ export function modelOnLot(style: string, lot: Lot, grim: boolean, x0: number, x
   const base = Math.min(fx, fz) * (seat ? 2.1 : 1);
   const sx = seat ? base : Math.min(fx, base * 1.25) * 1.03;
   const sz = seat ? base : Math.min(fz, base * 1.25) * 1.03;
-  const sy = base * (seat ? 1 : 1.12);
+  const sy = base * (seat ? 1 : 1.12) * (RISE[m] ?? 1);
   // (its own steps over the tile that takes you in, if it has one: that's where the arrow is)
   const x = doorTile !== null && !seat ? doorTile + 0.5 - (MODEL_DOOR[m] ?? 0) * sx : (x0 + x1) / 2 - ((b[0] + b[2]) / 2) * sx;
   return { m, x, z: y1 + 0.05 - b[3] * sz, sx, sy, sz, seat };
@@ -305,6 +343,7 @@ export function modelOnLot(style: string, lot: Lot, grim: boolean, x0: number, x
 
 /** The ground rectangle a placed picture covers ([x0, y0, x1, y1], world px): its walls and roof, not its shadow. */
 export function picBody(p: PlacedPic): [number, number, number, number] {
+  if (p.ground) return p.ground;
   const pic = buildingPic(p.id)!;
   const s = p.scale ?? 1;
   return [p.x + pic.ox * s, p.y - pic.oy * s, p.x + (pic.ox + pic.fpw) * s, p.y];

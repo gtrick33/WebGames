@@ -551,9 +551,10 @@ export const DOOR_GROUND: Record<string, GreatPlace[]> = {
  * behind it): its ground as the hand-laid lands' is (withDoorGround), tiles from the door's own.
  */
 export const DOOR_BLOCKS: Record<string, { to: string; rects: readonly (readonly [number, number, number, number])[] }> = {
-  highwall: { to: 'siege-of-highwall', rects: [[-8, -1, 8, -1], [-8, -2, -5, -2], [2, -2, 2, -2], [5, -2, 8, -2]] },
+  // (and the tower that closes each end of its wall)
+  highwall: { to: 'siege-of-highwall', rects: [[-8, -1, 8, -1], [-8, -2, -5, -2], [2, -2, 2, -2], [5, -2, 8, -2], [-10, -2, -9, -1], [9, -2, 10, -1]] },
   // (Duskspire's gate: the citadel is behind its west half)
-  'pale-reach': { to: 'duskspire', rects: [[-7, -2, 7, -1]] },
+  'pale-reach': { to: 'duskspire', rects: [[-7, -2, 7, -1], [-9, -2, -8, -1], [8, -2, 9, -1]] },
 };
 
 export const GREAT_IN: Record<string, GreatPlace[]> = {

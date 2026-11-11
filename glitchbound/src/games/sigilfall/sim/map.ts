@@ -1,6 +1,6 @@
 import { hash2 } from '../core/math';
 import { MODEL_FOOT, modelOnLot, picBody, placeBuilding, yardProps, type PlacedPic } from '../data/buildingArt';
-import { FEET, propBody, propReach, propStandsUp } from '../data/props';
+import { FEET, propBody, propReach, propStandsUp, dressedFor, keepsApart, PROPS } from '../data/props';
 import type { Marker, PlacedMarkerDef, RegionDef, StoryCond } from '../data/types';
 
 /**
@@ -328,7 +328,8 @@ export function parseRegion(def: RegionDef): TileMap {
     }
   };
   settle();
-  inSight(markers, w, h, kind, solid);
+  inSight(markers, w, h, kind, solid, def.kind === 'wild');
+  if (def.kind !== 'dungeon' && !def.interior) outOfSight(markers, w, h, kind, solid, block);
   // (what the dressing stood on a room's floor is no place for a foe to appear)
   for (let r = 0; r < roomTiles.length; r++) roomTiles[r] = roomTiles[r]!.filter((i) => !solid[i]);
   // what stands has a body of its own size: a bucket doesn't fill its tile, and a wagon runs over into the next ones
@@ -437,7 +438,7 @@ export function parseRegion(def: RegionDef): TileMap {
  * What the camera comes in over from the south: someone to talk to or a chest to open standing right behind a house
  * can't be seen, so they stand round the front, on the nearest ground where they can.
  */
-function inSight(markers: PlacedMarker[], w: number, h: number, kind: Uint8Array, solid: Uint8Array): void {
+function inSight(markers: PlacedMarker[], w: number, h: number, kind: Uint8Array, solid: Uint8Array, packs = false): void {
   const RISE = Math.tan((50 * Math.PI) / 180);
   const tallAt = (i: number): number => {
     const k = kind[i];
@@ -454,17 +455,26 @@ function inSight(markers: PlacedMarker[], w: number, h: number, kind: Uint8Array
     return false;
   };
   const taken = new Set(markers.map((pm) => pm.ty * w + pm.tx));
+  // (a pack stands about its marker, a tile or two either side: none of them behind the wall. The owner, of a bone
+  // catapult behind a ruin's wall: "there's also something behind the wall there that is not visible")
+  // (to its top, not to where a head shows over it: a wall as it is built stands over three tiles with its merlons)
+  const behind = (tx: number, ty: number): boolean => {
+    const k = ty + 1 < h ? kind[(ty + 1) * w + tx] : K.Floor;
+    return k === K.Wall || k === K.Illusion || k === K.Rampart || k === K.House;
+  };
+  const packUnseen = (tx: number, ty: number): boolean => [-1, 0, 1].some((dx) => [-1, 0, 1].some((dy) => behind(tx + dx, ty + dy)));
   for (const pm of markers) {
-    if (pm.marker.kind !== 'npc' && pm.marker.kind !== 'chest') continue;
+    const pack = packs && pm.marker.kind === 'pack';
+    if (pm.marker.kind !== 'npc' && pm.marker.kind !== 'chest' && !pack) continue;
     const up = pm.marker.kind === 'npc' ? 0.95 : 0.4;
-    if (!unseen(pm.tx, pm.ty, up)) continue;
+    if (pack ? !packUnseen(pm.tx, pm.ty) : !unseen(pm.tx, pm.ty, up)) continue;
     let best: [number, number] | null = null;
     let bd = Infinity;
     for (let y = pm.ty - 8; y <= pm.ty + 8; y++) {
       for (let x = pm.tx - 8; x <= pm.tx + 8; x++) {
         if (x < 1 || y < 1 || x >= w - 1 || y >= h - 1) continue;
         const i = y * w + x;
-        if (solid[i] || kind[i] === K.Water || taken.has(i) || unseen(x, y, up)) continue;
+        if (solid[i] || kind[i] === K.Water || taken.has(i) || (pack ? packUnseen(x, y) || solid[i - 1] || solid[i + 1] : unseen(x, y, up))) continue;
         const d = Math.hypot(x - pm.tx, y - pm.ty);
         if (d < bd) {
           bd = d;
@@ -477,6 +487,45 @@ function inSight(markers: PlacedMarker[], w: number, h: number, kind: Uint8Array
       pm.tx = best[0];
       pm.ty = best[1];
     }
+  }
+}
+
+/**
+ * Nothing is set down where no one can see it (the owner: "there's also something behind the wall there that is not
+ * visible"): a wagon, a rack or a lamp right behind a wall, a rampart or a house, its middle below the camera's line
+ * over the top, is left out, and the ground it would have stood on is open. People and chests are moved round the
+ * front instead (inSight); what the story sets down and takes away is the story's to place.
+ */
+function outOfSight(markers: PlacedMarker[], w: number, h: number, kind: Uint8Array, solid: Uint8Array, block: Uint8Array): void {
+  const RISE = Math.tan((50 * Math.PI) / 180);
+  // (to their tops as they are built, merlons and eaves and all: not to where a head would show over them)
+  const tallAt = (i: number): number => {
+    const k = kind[i];
+    return k === K.Wall || k === K.Illusion || k === K.Rampart ? 3.3 : k === K.House ? 3.6 : 0;
+  };
+  for (let n = markers.length - 1; n >= 0; n--) {
+    const pm = markers[n]!;
+    if (pm.marker.kind !== 'prop' || pm.when) continue;
+    const def = PROPS[pm.marker.prop.split(':')[0]!];
+    // (a rule with no model has nothing to see; what lies flat is seen from above; a tower or a great tree is seen over anything)
+    if (!def || !def.m || def.flat || (def.h ?? 0) > 2.2 * TILE) continue;
+    const up = (def.h ?? 12) / TILE / 2;
+    let hidden = false;
+    for (let d = 1; d <= 3 && !hidden; d++) {
+      const y = pm.ty + d;
+      if (y >= h) break;
+      const sight = up + (y + 0.5 - pm.ty) * RISE;
+      if (sight > 3.7) break;
+      if (tallAt(y * w + pm.tx) > sight) hidden = true;
+    }
+    if (!hidden) continue;
+    const i = pm.ty * w + pm.tx;
+    if (kind[i] === K.Prop) {
+      kind[i] = K.Floor;
+      solid[i] = 0;
+      block[i] = 0;
+    }
+    markers.splice(n, 1);
   }
 }
 
@@ -521,6 +570,18 @@ function standBuildings(def: RegionDef, w: number, h: number, kind: Uint8Array, 
     const col = lot.tx + Math.floor(lot.w / 2);
     const way = ways.find((d) => d.ty === lot.ty + lot.h && Math.abs(d.tx - col) <= 1) ?? null;
     const pics = placeBuilding(lot.style, lot, def.theme, def.kind === 'town', lot.art, way ? way.tx : null, { ...(lot.scale ? { scale: lot.scale } : {}), ...(lot.grim ? { grim: true } : {}), ...(lot.fit ? { fit: true } : {}) });
+    // no wood grows up against a wall (the owner: "the church is placed inside the woods"): a land's own woods stand
+    // back from what is built in them, a tree's width from a house and two from a chapel or a hall, more before its door
+    if (def.kind === 'wild') {
+      const back = lot.style === 'house' || lot.style === 'tower' ? 1 : 2;
+      for (let y = lot.ty - back; y < lot.ty + lot.h + back + 1; y++) {
+        for (let x = lot.tx - back; x < lot.tx + lot.w + back; x++) {
+          if (x < 1 || y < 1 || x >= w - 1 || y >= h - 1) continue;
+          const i = y * w + x;
+          if (kind[i] === K.Tree || kind[i] === K.Bush) kind[i] = K.Floor;
+        }
+      }
+    }
     for (let y = lot.ty; y < lot.ty + lot.h; y++) {
       for (let x = lot.tx; x < lot.tx + lot.w; x++) {
         if (x < 0 || y < 0 || x >= w || y >= h) continue;
@@ -560,8 +621,20 @@ function standBuildings(def: RegionDef, w: number, h: number, kind: Uint8Array, 
     }
     free.sort((a, b) => hash2(a % w, Math.floor(a / w), 57) - hash2(b % w, Math.floor(b / w), 57));
     const yard: MapBuilding['yard'] = [];
-    for (const prop of yardProps(lot.style, lot, Math.min(3, Math.ceil(free.length / 2)))) {
-      const i = free.shift()!;
+    // (a great dark keep rises far over its own lot, front rows and all: nothing is set down under it)
+    const seat = lot.style === 'keep' && !!lot.grim;
+    for (const given of seat ? [] : yardProps(lot.style, lot, Math.min(3, Math.ceil(free.length / 2)))) {
+      // (as the land would have it: no flowerbeds on ash or by a dead lake)
+      const prop = dressedFor(def.theme, given);
+      // never beside another of its own kind (two statues shoulder to shoulder read as a mistake), nor within its
+      // kind's keep of one the town already set down (a chapel's statue two steps from the square's): the next free place
+      const apart = keepsApart(prop);
+      const beside = (i: number): boolean =>
+        yard.some((y) => y.prop === prop && Math.abs(y.tx - (i % w)) <= 1 && Math.abs(y.ty - Math.floor(i / w)) <= 1) ||
+        (apart > 0 && markers.some((pm) => pm.marker.kind === 'prop' && pm.marker.prop.split(':')[0] === prop && Math.abs(pm.tx - (i % w)) <= apart + 1 && Math.abs(pm.ty - Math.floor(i / w)) <= apart + 1));
+      const at = free.findIndex((i) => !beside(i));
+      if (at < 0) continue;
+      const i = free.splice(at, 1)[0]!;
       // (a flowerbed is walked over: only what has a body to bump into takes the tile)
       if (propBody(prop)) kind[i] = K.Prop;
       yard.push({ prop, tx: i % w, ty: Math.floor(i / w) });

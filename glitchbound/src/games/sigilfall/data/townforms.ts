@@ -188,7 +188,7 @@ export const TOWN_FORMS: Record<string, (k: TownKit) => TownLook> = {
     // the spokes: every road in comes to the green
     k.rect(0, -k.vy, 1, k.vy, PATH);
     k.rect(-k.vx, 0, k.vx + 1, 1, PATH);
-    k.prop(-7, -6, 'ancient-oak');
+    k.prop(-7, -6, 'green-oak');
     for (const [x, y] of [[-8, -6], [-6, -6], [-7, -7], [-7, -5]] as const) k.prop(x, y, 'block');
     // the north arc looks down on the ring; the south arc stands inside it, looking out across the road
     const spots: [number, number][] = [[-14, -9], [-8, -11], [-3, -12], [4, -12], [9, -11], [15, -9], [-17, -4], [18, -4], [-12, 8], [-5, 10], [5, 10], [12, 8], [-16, 4], [17, 4]];
@@ -450,7 +450,7 @@ export const TOWN_FORMS: Record<string, (k: TownKit) => TownLook> = {
     for (let x = -k.vx; x <= k.vx; x++) k.rect(x, Math.round(Math.sin(x / 7) * 1.6), x, Math.round(Math.sin(x / 7) * 1.6) + 1, PATH);
     for (let y = -k.vy; y <= k.vy; y++) k.rect(Math.round(Math.sin(y / 6) * 1.6), y, Math.round(Math.sin(y / 6) * 1.6) + 1, y, PATH);
     k.rect(-3, -3, 4, 2, DECO);
-    k.prop(-8, -5, k.theme === 'fey' ? 'great-mushroom-tree' : k.theme === 'rift' ? 'rift-spire' : 'ancient-oak');
+    k.prop(-8, -5, k.theme === 'fey' ? 'great-mushroom-tree' : k.theme === 'rift' ? 'rift-spire' : 'green-oak');
     for (const [x, y] of [[-9, -5], [-7, -5], [-8, -6], [-8, -4]] as const) k.prop(x, y, 'block');
     const spots: [number, number, LotStyle][] = [
       [8, -8, 'tavern'],
@@ -588,10 +588,8 @@ export const TOWN_FORMS: Record<string, (k: TownKit) => TownLook> = {
       }
     }
     for (const x of [-23, -19, 19, 23]) k.prop(x, -13, `camp-tent${canvas}`);
-    for (const x of [-10, -6, 7, 11]) {
-      k.prop(x, -5, 'red-banner');
-      k.prop(x, 4, 'red-banner');
-    }
+    // (two standards at the foot of the muster ground: eight of them, with the story's own, was a field of flags)
+    for (const x of [-10, 11]) k.prop(x, 4, 'red-banner');
     for (const [x, y, name] of [[-9, 2, 'weapon-rack'], [10, 2, 'weapon-rack'], [-9, -3, 'target'], [10, -3, 'target'], [-5, -3, 'armor-stand'], [6, -3, 'armor-stand']] as const) k.prop(x, y, name);
     return {
       heart: [-3, -6],
@@ -621,7 +619,10 @@ export const TOWN_FORMS: Record<string, (k: TownKit) => TownLook> = {
     // the moat round the keep, north of the square, and the one bridge over it
     for (let y = -14; y <= -4; y++) for (let x = -14; x <= 15; x++) if (Math.abs(x - 0.5) > 11 || y < -12 || y > -6) k.water(x, y);
     k.rect(0, -5, 1, -4, BRIDGE);
-    k.lot('keep', -9, -6, 20, 6);
+    // (the keep stands a row back from the moat: the bridge comes onto open ground before its door, so the island is
+    // reached by the bridge. With the keep's wall right at the bridge's head the island's ground was cut off, and the
+    // land put bridges of its own across the moat to the flags at the keep's corners, each ending at a flag's pole.)
+    k.lot('keep', -9, -7, 20, 6);
     // the north gate's road comes round behind the moat
     k.rect(0, -k.vy, 1, -15, COBBLE);
     k.rect(-19, -15, 20, -15, COBBLE);

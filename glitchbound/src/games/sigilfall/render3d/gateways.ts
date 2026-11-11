@@ -20,6 +20,8 @@ export interface GateLook {
   wings?: number;
   /** A way down, not a way through: its arch is full of dark. */
   shut?: boolean;
+  /** Its wall ends in the open (a fortress's sally port, not a gate in a land's own wall): a great tower closes each end. */
+  ends?: boolean;
 }
 
 export interface GateBuilt {
@@ -81,6 +83,22 @@ export function stoneGate(look: GateLook): GateBuilt {
     b.box(w0, -0.5, w1, 0.5, 0, 3.0, mul(stone, 0.94), dark, mul(stone, 0.58));
     b.merlons(w0, 0.5, w1, 0.5, 3.0, 0.3, 0.22, stone, dark, hi);
     for (const y of [1.0, 2.0]) b.faceS(w0, w1, 0.505, y, y + 0.08, dark);
+    // (the owner: "the bottom wall on the highwall ends abruptly, you could add a big tower to it")
+    if (look.ends) {
+      const wide = 2.3;
+      const high = 6.1;
+      const e0 = s < 0 ? w0 - wide : w1;
+      const e1 = e0 + wide;
+      b.box(e0 - 0.14, -1.29, e1 + 0.14, 1.29, 0, 0.6, dark, mul(dark, 0.8), stone);
+      b.box(e0, -1.15, e1, 1.15, 0.6, high, stone, dark, roof);
+      b.box(e0 - 0.18, -1.33, e1 + 0.18, 1.33, high, high + 0.38, hi, stone, roof);
+      b.merlons(e0 - 0.18, 1.33, e1 + 0.18, 1.33, high + 0.38, 0.4, 0.22, stone, dark, hi);
+      b.merlons(e0 - 0.18, -1.33, e1 + 0.18, -1.33, high + 0.38, 0.4, 0.22, stone, dark, hi);
+      for (const y of [1.6, 3.1, 4.6]) b.faceS(e0, e1, 1.155, y, y + 0.1, dark);
+      const lit = b.m.nor.length;
+      for (const y of [2.2, 3.9]) b.faceS((e0 + e1) / 2 - 0.1, (e0 + e1) / 2 + 0.1, 1.16, y, y + 0.7, cloth, mul(cloth, 1.2));
+      alight(b, lit);
+    }
   }
   // the arch: the wall over the road, stepped in under itself at each side, a keystone at its crown
   b.box(-half, -0.7, half, 0.7, 3.5, 4.5, stone, dark, mul(stone, 0.55));

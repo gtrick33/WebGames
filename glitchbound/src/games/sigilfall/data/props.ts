@@ -1,3 +1,4 @@
+import type { Theme } from './types';
 /**
  * The world's one scale (the way the great RPGs keep theirs: everything is measured against the hero). A hero is 36
  * world pixels tall, and each prop is sized in world pixels: a crate comes to the knee, a barrel to the hip, a door a
@@ -48,7 +49,8 @@ export const PROPS: Record<string, PropDef> = {
   pot: { m: 'barrel_small', w: 11, d: 11, h: 13, tint: '#c88a5c' },
   urn: { m: 'barrel_small', w: 15, d: 15, h: 20, tint: '#c8a060' },
   cauldron: { m: 'bucket', w: 20, d: 20, h: 15, tint: '#55525f' },
-  fish: { m: 'p_trough', w: 24, d: 16, h: 9, tint: '#c8d8d8' },
+  // (a basket of the catch: as a pale trough it was a tub of water, and a harbor's market looked set with washbowls)
+  fish: { m: 'built_fish', w: 16, d: 16, h: 11 },
   woodpile: { m: 'built_woodpile', w: 28, d: 22, h: 18 },
   log: { m: 'built_log', w: 30, d: 12, h: 9 },
   stump: { m: 'stump_round', w: 16, d: 16, h: 10, tint: '#a88a66' },
@@ -88,8 +90,9 @@ export const PROPS: Record<string, PropDef> = {
   wreck: { m: 'p_boat', w: 64, d: 34, h: 30, across: true, tint: '#88807a' },
   // towers stand over everything: stone ones on a wall, a wooden lookout in a camp
   watchtower: { m: 'b_tower_A', w: 74, d: 74, h: 158 },
-  lookout: { m: 'b_watchtower', w: 66, d: 66, h: 110 },
-  windmill: { m: 'b_windmill', w: 96, d: 96, h: 180 },
+  // (as wide as it's tall: at two tiles across its platform was at a guard's shoulder)
+  lookout: { m: 'b_watchtower', w: 84, d: 84, h: 130 },
+  windmill: { m: 'b_windmill', w: 124, d: 124, h: 232 },
   flag: { m: 'built_flag_red', w: 28, d: 12, h: 64 },
   'blue-banner': { m: 'built_flag_blue', w: 28, d: 12, h: 64 },
   'red-banner': { m: 'built_flag_red', w: 28, d: 12, h: 64 },
@@ -140,6 +143,8 @@ export const PROPS: Record<string, PropDef> = {
   // what a land is known by, seen from far off
   // (an oak old enough to be a landmark is broad before it is tall: the widest-crowned tree of the set, not its tallest)
   'ancient-oak': { m: 'Tree_3_A', w: 190, d: 190, h: 200 },
+  // (a village green's own tree: big, but not the wood's giant, whose crown hid the inn across the green)
+  'green-oak': { m: 'Tree_3_A', w: 124, d: 124, h: 136 },
   'ancient-pine': { m: 'tree_pine_orange_large', w: 130, d: 130, h: 220, evergreen: true },
   'dead-colossus': { m: 'tree_dead_large', w: 110, d: 80, h: 230, tint: '#6a5a50' },
   lighthouse: { m: 'b_tower_B', w: 84, d: 84, h: 200 },
@@ -161,7 +166,8 @@ export const PROPS: Record<string, PropDef> = {
   'sand-spire': { m: 'Rock_4_C', w: 70, d: 70, h: 180, tint: '#c8a070' },
   'sea-rock': { m: 'Rock_3_G', w: 120, d: 110, h: 110 },
   'great-mushroom-tree': { m: 'mushroom_redTall', w: 90, d: 90, h: 190 },
-  'great-wreck': { m: 'p_boat', w: 200, d: 110, h: 70, across: true, tint: '#88807a' },
+  // (a beached longboat a few strides long: at seven tiles a rowboat's shape read as a toy made huge beside the town)
+  'great-wreck': { m: 'p_boat', w: 112, d: 60, h: 40, across: true, tint: '#88807a' },
   // indoors
   table: { m: 'table_medium', w: 32, d: 24, h: 17, across: true },
   longtable: { m: 'table_long_tablecloth_decorated_A', w: 84, d: 28, h: 20, across: true },
@@ -251,12 +257,15 @@ const BODIES: Record<string, [number, number]> = {
   column: [16, 16],
   // what's up in the air isn't in the way: a tree is its trunk, a windmill its tower, a mushroom its stem
   'ancient-oak': [40, 30],
+  'green-oak': [28, 22],
   'ancient-pine': [46, 36],
   'dead-colossus': [34, 26],
   'great-mushroom-tree': [22, 18],
   'great-mushroom': [8, 7],
   'root-tangle': [8, 6],
-  windmill: [54, 46],
+  windmill: [68, 58],
+  // (it stands on four legs, as wide as it was before it grew: a camp laid out round it keeps its lanes)
+  lookout: [52, 52],
 };
 
 /**
@@ -317,7 +326,7 @@ const FILLED: Record<string, [number, number]> = {
   'lava-spire': [68, 68],
   'sand-spire': [61, 61],
   'sea-rock': [102, 95],
-  'great-wreck': [200, 100],
+  'great-wreck': [112, 56],
   table: [24, 24],
   longtable: [42, 22],
   'war-table': [47, 23],
@@ -343,6 +352,88 @@ export const FEET: Record<string, readonly (readonly [number, number, number, nu
   'stone-arch': [[-50, 0, 22, 20], [50, 0, 22, 20]],
   'bone-arch': [[-62, 0, 26, 40], [62, 0, 26, 40]],
 };
+
+/**
+ * What a land's own mood makes of the homely things a town is dressed with. Flowers, planters and flowerbeds are laid
+ * by rules that know nothing of the land (a flower under a window, a planter by the chapel door): on a caldera's
+ * ash, by a dead lake or in the snow they are wrong, and the owner saw them ("there's flowers on the lava land").
+ * Each harsh land has its own in their place, and all of them lie on the ground as flowers do (nothing here gains a
+ * body, so no lane is narrowed by the change).
+ */
+const BARREN: Partial<Record<Theme, Record<string, string>>> = {
+  // a caldera's forge town: slag and old bones
+  volcanic: { flowers: 'skulls', planter: 'rubble', flowerbed: 'bones', topiary: 'ember-rock', hay: 'sacks' },
+  lavacave: { flowers: 'skulls', planter: 'rubble', flowerbed: 'bones', topiary: 'ember-rock', hay: 'sacks' },
+  // the dead kingdom's lake: candles for the drowned
+  deadlake: { flowers: 'skulls', planter: 'candles', flowerbed: 'bones', hay: 'sacks' },
+  sunken: { flowers: 'skulls', planter: 'candles', flowerbed: 'bones', hay: 'sacks' },
+  // the plague wood, where every window keeps a candle
+  haunted: { flowers: 'candle-stub', planter: 'candles', flowerbed: 'candle-stub', hay: 'sacks' },
+  gloam: { flowers: 'candle-stub', planter: 'candles', flowerbed: 'candle-stub', hay: 'sacks' },
+  plague: { flowers: 'candle-stub', planter: 'candles', flowerbed: 'bones', hay: 'sacks' },
+  // barrow downs: lamps for the dead, and what the barrows give up
+  barrow: { flowers: 'candle-stub', planter: 'candles', flowerbed: 'bones', hay: 'sacks' },
+  moor: { flowers: 'candle-stub', planter: 'candles', flowerbed: 'bones', hay: 'sacks' },
+  bonefield: { flowers: 'skulls', planter: 'bones', flowerbed: 'bone-heap', hay: 'sacks' },
+  blight: { flowers: 'spores', planter: 'bones', flowerbed: 'spores', hay: 'sacks' },
+  // snow and the white north: nothing grows, and what lies about is what a camp leaves
+  snow: { flowers: 'rubble', planter: 'debris', flowerbed: 'rubble', hay: 'woodpile' },
+  peaks: { flowers: 'rubble', planter: 'debris', flowerbed: 'rubble', hay: 'woodpile' },
+  pale: { flowers: 'bones', planter: 'debris', flowerbed: 'rubble', hay: 'sacks' },
+  // glass and torn sky
+  rift: { flowers: 'rubble', planter: 'candles', flowerbed: 'debris', hay: 'sacks' },
+  // a siege: what the batteries have knocked down
+  warfront: { flowers: 'rubble', planter: 'debris', flowerbed: 'rubble', hay: 'sacks' },
+  // sand: a town keeps pots, not beds
+  desert: { flowers: 'clay-pot', planter: 'clay-pot', flowerbed: 'pot', hay: 'sacks' },
+};
+
+/** A prop as this land would have it (its color and other notes after a colon are kept): itself, where it belongs. */
+export function dressedFor(theme: Theme | null | undefined, prop: string): string {
+  if (!theme) return prop;
+  const [name, ...rest] = prop.split(':');
+  const to = BARREN[theme]?.[name!];
+  return to ? [to, ...rest.filter((r) => !r.startsWith('#'))].join(':') : prop;
+}
+
+/** The lands whose towns keep no flowers (a test holds every generated land to it). */
+export const barrenThemes = (): Theme[] => Object.keys(BARREN) as Theme[];
+
+/**
+ * Things there is one of in a place, and how many tiles round one another of its kind is kept away (the owner: "the
+ * statues are also stacked"). Two rules that each set down a statue, a banner or a lantern, knowing nothing of each
+ * other, set them down side by side: the second is one too many. Goods are let be: crates, barrels and sacks pile up.
+ */
+const ALONE: Record<string, number> = {
+  statue: 3,
+  well: 4,
+  fountain: 4,
+  notice: 4,
+  altar: 2,
+  anvil: 2,
+  grindstone: 2,
+  cauldron: 2,
+  campfire: 2,
+  lion: 1,
+  'red-banner': 1,
+  'blue-banner': 1,
+  flag: 1,
+  'skull-banner': 1,
+  lantern: 1,
+  lamp: 1,
+  torch: 1,
+  'iron-torch': 1,
+  'weapon-rack': 1,
+  rack: 1,
+  'armor-stand': 1,
+  scarecrow: 1,
+  target: 1,
+  woodpile: 1,
+  'big-barrel': 1,
+};
+
+/** How far a prop keeps others of its kind (tiles, in every direction; 0: they may stand together). */
+export const keepsApart = (prop: string): number => ALONE[prop.split(':')[0]!] ?? 0;
 
 /** Things you walk through or over: they lie on the ground, or bend. */
 const UNDERFOOT = new Set(['candle-stub', 'flowers', 'wheat', 'corn', 'bones', 'skulls', 'debris', 'rubble', 'eggs', 'candles', 'rug', 'runner', 'spores', 'bedroll', 'coin-pile', 'planter', 'flowerbed', 'bone-heap', 'thorns']);
