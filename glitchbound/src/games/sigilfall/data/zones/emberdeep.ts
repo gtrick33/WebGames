@@ -62,7 +62,8 @@ export const EMBERDEEP = wildRegion(
       { near: 'fire-ward', dx: -2, dy: 3, marker: { kind: 'prop', prop: 'iron-torch' } },
       { near: 'fire-ward', dx: 2, dy: 3, marker: { kind: 'prop', prop: 'iron-torch' } },
       { near: 'throne-gate', dx: 0, dy: -2, marker: { kind: 'wisp', color: '#e8e0f0', size: 3 }, when: until('ashkar-the-bound') },
-      { near: 'hub', dx: 0, dy: -5, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('ashkar-the-bound') },
+      // (raised before the keep's door, beside the bridge's head: it used to stand on the bridge itself, in half its width)
+      { near: 'hub', dx: -2, dy: -6, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('ashkar-the-bound') },
     ],
     wildCount: 54,
   },

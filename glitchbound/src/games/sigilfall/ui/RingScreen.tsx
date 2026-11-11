@@ -24,6 +24,7 @@ import { LooksDialog, plainWorn, RewardsDialog, RewardStrip, ringTitle } from '.
 import { wornLooks } from '../progress/wardrobe';
 import { titled } from '../progress/titles';
 import { ScreenGate } from './ScreenGate';
+import { Doll } from './Doll';
 
 /** The computer's teammates: who they are and which of their bars they bring. */
 interface Mate {
@@ -408,7 +409,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
             <section className="rb-rp-hero" aria-label="Your hero">
               <div className="rb-rp-stage">
                 <i className="rb-rp-dais" aria-hidden="true" />
-                <img key={pick} className="rb-rp-doll" src={doll} alt={CLASSES[pick].name} draggable={false} />
+                <Doll key={pick} className="rb-rp-doll" src={doll} alt={CLASSES[pick].name} />
                 <div className="rb-rp-who">
                   <strong>{CLASSES[pick].name}</strong>
                   <small>{titled(wear ? wear.name : hero, myTitle)}</small>

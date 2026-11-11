@@ -98,6 +98,25 @@ function basket(): Build {
   return b;
 }
 
+/** A wicker basket of the day's catch: silver fish laid across it, heads and tails over the rim. */
+function fishBasket(): Build {
+  const b = new Build();
+  const c = rgb('#a88a58');
+  b.post(0, 0, 0.21, 0.29, 0, 0.24, 9, mul(c, 0.7), c);
+  b.post(0, 0, 0.29, 0.305, 0.24, 0.27, 9, mul(c, 1.1), mul(c, 1.2));
+  b.post(0, 0, 0.29, 0, 0.265, 0.27, 9, rgb('#3e4a52'), rgb('#3e4a52'));
+  const silver = rgb('#b4c6d0');
+  const belly = rgb('#e2ecf0');
+  const back = rgb('#6a8494');
+  for (const [x, z, len, y] of [[-0.02, -0.12, 0.25, 0.27], [0.03, -0.01, 0.27, 0.285], [-0.03, 0.1, 0.24, 0.27], [0.02, 0.19, 0.2, 0.26]] as const) {
+    b.box(x - len, z - 0.045, x + len, z + 0.045, y, y + 0.06, silver, back, belly);
+    // its tail, and a dark eye's worth of head
+    b.box(x + len, z - 0.07, x + len + 0.07, z + 0.07, y + 0.01, y + 0.05, back, back, silver);
+    b.box(x - len - 0.05, z - 0.035, x - len, z + 0.035, y + 0.005, y + 0.055, back, back, back);
+  }
+  return b;
+}
+
 /** A log on its side, running north and south: the cut end looks at the camera, pale with its rings. */
 function logEnd(b: Build, x: number, y: number, z0: number, z1: number, r: number, seed: number): void {
   const m = b.m;
@@ -467,6 +486,7 @@ const BUILDERS: Record<string, () => Build> = {
   built_iron_torch: () => poleTorch(IRON, IRON_DARK),
   built_sacks: sacks,
   built_basket: basket,
+  built_fish: fishBasket,
   built_woodpile: woodpile,
   built_log: log,
   built_well: well,

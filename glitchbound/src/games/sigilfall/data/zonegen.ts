@@ -1,3 +1,4 @@
+import { dressedFor, keepsApart } from './props';
 import { DOOR_BLOCKS, DOOR_GROUND, GREAT, GREAT_IN, withDoorGround, type GreatPlace } from './greatworks';
 import { isRetired, liveExits } from './retired';
 import { clamp, hash2, noise2, rng } from '../core/math';
@@ -198,7 +199,7 @@ interface Heart {
 const HEARTS: Record<string, Heart> = {
   well: { ground: COBBLE, centre: [[0, 0, 'well'], [-1, 0, 'bucket'], [1, 0, 'bench']], stall: 'market-stall', goods: ['market-goods', 'basket', 'crate', 'sacks'] },
   harvest: { ground: PATH, centre: [[0, 0, 'tree'], [-1, 1, 'bench'], [1, 1, 'bench'], [1, -1, 'hay']], stall: 'market-stall', goods: ['basket', 'sacks', 'crate', 'hay'] },
-  harbor: { ground: COBBLE, centre: [[0, 0, 'statue'], [-1, 0, 'fish'], [1, 0, 'fish']], stall: 'market-stall', goods: ['fish', 'barrel', 'crate', 'basket'] },
+  harbor: { ground: COBBLE, centre: [[0, 0, 'statue'], [-1, 0, 'lantern'], [1, 0, 'lantern']], stall: 'market-stall', goods: ['fish', 'barrel', 'crate', 'basket'] },
   healer: { ground: PATH, centre: [[0, 0, 'cauldron'], [-1, 0, 'clay-pot'], [1, 0, 'basket'], [0, -1, 'torch']], stall: 'market-stall', goods: ['pot', 'basket', 'clay-pot', 'sacks'] },
   forge: { ground: COBBLE, centre: [[0, 0, 'brazier'], [-1, 0, 'anvil'], [1, 0, 'weapon-rack']], stall: 'market-stall', goods: ['crate', 'barrel', 'rack', 'sacks'] },
   bonfire: { ground: PATH, centre: [[0, 0, 'campfire'], [-1, 1, 'bench'], [1, 1, 'bench'], [1, -1, 'keg']], stall: 'market-stall', goods: ['keg', 'barrel', 'crate', 'sacks'] },
@@ -516,7 +517,20 @@ class ZoneBuilder {
     return [Math.round(clamp(at[0], 0.04, 0.96) * (this.w - 1)), Math.round(clamp(at[1], 0.04, 0.96) * (this.h - 1))];
   }
 
-  private put(x: number, y: number, marker: Marker, when?: StoryCond): void {
+  private put(x: number, y: number, given: Marker, when?: StoryCond): void {
+    // (a thing set down by a rule that knows nothing of the land is set down as this land would have it: no flowers
+    // on a caldera's ash or by a dead lake. data/props.ts dressedFor)
+    const marker: Marker = given.kind === 'prop' ? { ...given, prop: dressedFor(this.theme, given.prop) } : given;
+    // (one statue to a square, one banner to a spot: a second of the same, set down beside it by another rule, is left out)
+    if (marker.kind === 'prop' && !when) {
+      const reach = keepsApart(marker.prop);
+      const name = marker.prop.split(':')[0]!;
+      for (let dy = -reach; reach && dy <= reach; dy++) {
+        for (let dx = -reach; dx <= reach; dx++) {
+          if (this.inside(x + dx, y + dy) && this.props.get(this.idx(x + dx, y + dy))?.split(':')[0] === name) return;
+        }
+      }
+    }
     this.placed.push({ tx: x, ty: y, marker, ...(when ? { when } : {}) });
     this.marked.add(this.idx(x, y));
     if (marker.kind === 'prop') this.props.set(this.idx(x, y), marker.prop);
@@ -1453,7 +1467,7 @@ class ZoneBuilder {
   /**
    * Each building's frontage dressed with what belongs to it (the owner: "supporting assets... need to be
    * logically placed"): flowers under a house's window and its firewood or water barrel at its corner, the inn's
-   * barrels and a bench, the smithy's firewood and weapon rack, the stable's hay and trough, the shop's crates and
+   * barrels and a bench, the smithy's firewood and weapon rack, the hall's bench and barrel, the shop's crates and
    * sacks, the chapel's planters, the keep's flags. On the free tiles beside the front of the lot, never before a door.
    */
   private villageFronts(made: { style: BuildingStyle; x0: number; y0: number; w: number; h: number }[], seed: number, look: TownLook | null): void {
@@ -1465,7 +1479,8 @@ class ZoneBuilder {
       tavern: [['barrel'], ['bench']],
       inn: [['barrel'], ['bench']],
       smithy: [['woodpile'], ['weapon-rack']],
-      hall: [['hay'], ['trough']],
+      // (a hall was a stable in the painted world, hay and a trough at its door: it's a meeting hall with a clock now)
+      hall: [['bench'], ['barrel']],
       shop: [['crate'], ['sacks']],
       temple: [['planter'], ['planter']],
       keep: [['flag'], ['flag']],

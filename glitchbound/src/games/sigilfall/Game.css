@@ -6054,13 +6054,27 @@
     opacity: 0.62;
   }
 }
+/* A hero's picture on its spot (ui/Doll.tsx): a box of the picture's own shape from the first frame, so where it
+   stands never waits on the picture coming in, and shown only once the picture is in. */
+.rb-dollpic {
+  aspect-ratio: 1 / 1.35;
+  object-fit: contain;
+  object-position: 50% 100%;
+  image-rendering: auto;
+}
+.rb-dollpic:not(.is-in) {
+  visibility: hidden;
+  animation: none;
+}
+/* (set over the middle of its stage by its margins, never by a share of its own width: that is nothing until the
+   picture is in) */
 .rb-vlobby-doll {
   position: absolute;
-  left: 50%;
+  right: 0;
   bottom: 50px;
+  left: 0;
   height: min(calc(100% - 54px), 240px);
-  translate: -50% 0;
-  image-rendering: pixelated;
+  margin-inline: auto;
   filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.5));
   animation: rb-vlobby-in 0.22s ease-out;
 }
@@ -6880,11 +6894,11 @@
 }
 .rb-rp-doll {
   position: absolute;
-  left: 50%;
+  right: 0;
   bottom: 40px;
+  left: 0;
   height: min(calc(100% - 44px), 190px);
-  translate: -50% 0;
-  image-rendering: pixelated;
+  margin-inline: auto;
   filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.5));
   animation: rb-vlobby-in 0.22s ease-out;
 }
@@ -7825,7 +7839,9 @@
 }
 .rb-rr-doll {
   height: clamp(44px, 13cqh, 76px);
-  image-rendering: pixelated;
+  aspect-ratio: 1 / 1.35;
+  object-fit: contain;
+  image-rendering: auto;
   filter: drop-shadow(0 3px 5px rgb(0 0 0 / 0.6));
 }
 .rb-rr-number {

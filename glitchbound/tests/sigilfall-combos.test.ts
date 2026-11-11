@@ -12,7 +12,7 @@ import { SKILLS } from '../src/games/sigilfall/data/skills';
 import type { ClassId, Mod } from '../src/games/sigilfall/data/types';
 import { setSkill, type Character } from '../src/games/sigilfall/progress/character';
 import { castTimeOf, skillCost, tryCast } from '../src/games/sigilfall/sim/cast';
-import { addBuff, applyEffect, applyStatus, effStats, empowerFull, empowerOf, hurtPlayer } from '../src/games/sigilfall/sim/combat';
+import { addBuff, applyEffect, applyStatus, effStats, empowerFull, empowerOf, GUARD_BLOW, hurtPlayer, THORN_BLOW } from '../src/games/sigilfall/sim/combat';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { comboNow } from '../src/games/sigilfall/ui/comboMark';
 import { newWorld, readyHero } from './sigilfall-bot';
@@ -421,5 +421,70 @@ describe('Sigilfall: the combos in play', () => {
       step(w, 0.5);
     }
     expect(w.pets.length).toBeGreaterThan(pets);
+  });
+
+  it("a Gloamknight's guard pays each blow back once, however long the blow leans on it", () => {
+    // (a boss's rush reaches for the hero every step it touches them, and a guard never lets it land: answered step
+    // for step, Stand Fast did 95% of a late boss's life by itself)
+    const w = heroWith('gloamknight', 'umbral-rend', 0);
+    w.build.stats.crit = 0;
+    // (only the guard's own answer: no talent that curses or lashes out on top of it)
+    w.build.procs = [];
+    const e = target(w, 24);
+    const other = target(w, -24);
+    const p = w.player;
+    const guard = (): void => {
+      p.cds.dodge.charges = 1;
+      p.cds.dodge.t = 0;
+      expect(tryCast(w, { slot: 'dodge', angle: 0, dist: 0.5, assist: 0 })).toBe(true);
+      expect(p.guard).toBeGreaterThan(0);
+    };
+    guard();
+    const hp = e.hp;
+    let landed = 0;
+    // one blow, leaning on the guard for as long as it stands
+    for (let i = 0; i < 40 && p.guard > 0; i++) {
+      if (hurtPlayer(w, 400, { source: e })) landed++;
+      if (i === 0) expect(e.hp).toBeLessThan(hp);
+      w.input = emptyInput();
+      w.step(1 / 60);
+    }
+    expect(landed).toBe(0);
+    const once = hp - e.hp;
+    expect(once).toBeGreaterThan(0);
+    // a second enemy's blow on the next guard is its own, and the first is answered again: one each
+    step(w, 1);
+    const hp2 = e.hp;
+    guard();
+    for (let i = 0; i < 10; i++) {
+      hurtPlayer(w, 400, { source: e });
+      hurtPlayer(w, 400, { source: other });
+    }
+    expect(hp2 - e.hp).toBe(once);
+    expect(1e6 - other.hp).toBe(once);
+    expect(GUARD_BLOW).toBeGreaterThan(SKILLS['shade-step']!.base.duration + 0.08);
+  });
+
+  it('thorns prick whoever strikes once a blow, not once a step', () => {
+    const w = heroWith('gloamknight', 'night-mantle', 0);
+    w.build.stats.crit = 0;
+    w.build.procs = [];
+    const e = target(w, 24);
+    const p = w.player;
+    p.hp = p.maxHp = 1e9;
+    expect(cast(w)).toBe(true);
+    expect(p.buffs.some((b) => (b.def.thorns ?? 0) > 0)).toBe(true);
+    const hp = e.hp;
+    // a fire that burns every step for a quarter of a second: one prick
+    for (let i = 0; i < 15; i++) {
+      expect(hurtPlayer(w, 5, { source: e })).toBe(true);
+      w.time += 1 / 60;
+    }
+    const once = hp - e.hp;
+    expect(once).toBeGreaterThan(0);
+    // and the next blow, a moment later, is pricked again
+    w.time += THORN_BLOW;
+    hurtPlayer(w, 5, { source: e });
+    expect(hp - e.hp).toBe(once * 2);
   });
 });

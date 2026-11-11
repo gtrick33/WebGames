@@ -452,7 +452,7 @@ export const DOORWAYS: Record<string, Doorway> = {
   // under its arch
   'siege-of-highwall': {
     build: () => {
-      const g = stoneGate({ span: 2.4, body: '#8a8078', trim: '#b8a888', light: '#c8442c', seed: 7, wings: 5, shut: true }).b;
+      const g = stoneGate({ span: 2.4, body: '#8a8078', trim: '#b8a888', light: '#c8442c', seed: 7, wings: 5, shut: true, ends: true }).b;
       // (it stands north of the door's tile, its arch over the step)
       for (let i = 2; i < g.m.pos.length; i += 3) g.m.pos[i] = g.m.pos[i]! - 1.0;
       return g;
@@ -463,7 +463,7 @@ export const DOORWAYS: Record<string, Doorway> = {
   // Duskspire's gate: the citadel's own pale stone, a length of its curtain wall either side, and the dark under its arch
   duskspire: {
     build: () => {
-      const g = stoneGate({ span: 2.4, body: '#8a86a0', trim: '#c0c8e0', light: '#8f9cff', seed: 11, wings: 4, shut: true }).b;
+      const g = stoneGate({ span: 2.4, body: '#8a86a0', trim: '#c0c8e0', light: '#8f9cff', seed: 11, wings: 4, shut: true, ends: true }).b;
       for (let i = 2; i < g.m.pos.length; i += 3) g.m.pos[i] = g.m.pos[i]! - 1.0;
       return g;
     },
