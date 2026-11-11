@@ -20,6 +20,8 @@ export interface Pick {
   bar: string[];
   oath: string;
   talents: string[];
+  /** Their rating in the room's format, when a search brought them (arena/queue.ts): what a win over them is worth. */
+  rating?: number;
 }
 
 export interface State extends RoomBase {
@@ -85,7 +87,8 @@ export function cleanPick(v: unknown): Pick | null {
   if ((p.team !== 0 && p.team !== 1) || typeof p.cls !== 'string' || !ID.test(p.cls) || typeof p.oath !== 'string' || !ID.test(p.oath)) return null;
   if (!Array.isArray(p.bar) || p.bar.length > 6 || !p.bar.every((b) => typeof b === 'string' && ID.test(b))) return null;
   const talents = Array.isArray(p.talents) && p.talents.length <= 3 && p.talents.every((b) => typeof b === 'string' && ID.test(b)) ? (p.talents as string[]) : [];
-  return { team: p.team, cls: p.cls, bar: p.bar as string[], oath: p.oath, talents };
+  const rating = typeof p.rating === 'number' && Number.isFinite(p.rating) ? { rating: Math.max(0, Math.min(9999, Math.round(p.rating))) } : {};
+  return { team: p.team, cls: p.cls, bar: p.bar as string[], oath: p.oath, talents, ...rating };
 }
 
 export function act(s: State, key: string, a: Action, now: number): string | null {
@@ -172,4 +175,5 @@ export function viewFor(s: State, key: string): View | null {
   };
 }
 
-export const summary = (s: State): ReturnType<typeof summaryOf> => summaryOf(s, 'sigilfall-ring', MAX_PLAYERS);
+/** (`max`: what a search fills, both sides of its format; a room of friends still seats six) */
+export const summary = (s: State): ReturnType<typeof summaryOf> => ({ ...summaryOf(s, 'sigilfall-ring', MAX_PLAYERS), max: s.format * 2 });

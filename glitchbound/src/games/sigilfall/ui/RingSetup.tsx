@@ -388,9 +388,11 @@ export function RingHelp({ onClose }: { onClose: () => void }) {
               <dt>Super</dt>
               <dd>Q, once your meter is full: your class’s big one</dd>
               <dt>Choose an enemy</dt>
-              <dd>Their nameplate on the right, or Tab</dd>
+              <dd>Their nameplate on the right, the fighter themself, or Tab</dd>
               <dt>Choose who to help</dt>
-              <dd>Their nameplate on the left, or F</dd>
+              <dd>Their nameplate on the left, the fighter themself, or F</dd>
+              <dt>Nameplates</dt>
+              <dd>The ▤ button at the top right of a match puts them away and brings them back. Health and effects stay over every fighter’s head</dd>
             </dl>
           </section>
           <section>
@@ -419,6 +421,9 @@ export function RingHelp({ onClose }: { onClose: () => void }) {
               </li>
               <li>
                 <b>The Gloam closes in.</b> Forty seconds in, it starts closing in from the edges and burns whoever is out in it, until there’s nowhere left to stand.
+              </li>
+              <li>
+                <b>Finding a match.</b> The Ring looks for other players for ten seconds. If someone is looking for the same kind of fight, you meet them; if nobody is, you fight the computer’s teams. Both are for rating. Walk out once the gates have lifted and it is a leaver’s loss, half again a loss; against other players the match then ends for everyone else, and their rating stays as it was.
               </li>
               <li>
                 <b>Climb for rewards.</b> Every rank gives its title and a suit of Ringforged armor, for good. See them under Rewards in the lobby, and wear them from Title & armor.

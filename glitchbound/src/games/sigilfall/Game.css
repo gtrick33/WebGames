@@ -7870,6 +7870,51 @@
   outline: 2px solid #ffe39a;
   outline-offset: 1px;
 }
+/* the waiting screen of a search for other players: a ring that turns round the seconds left */
+.rb-rp-seek-ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  font-style: normal;
+}
+.rb-rp-seek-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 4px solid rgb(255 255 255 / 0.1);
+  border-top-color: var(--c, #ffe39a);
+  border-right-color: var(--c, #ffe39a);
+  border-radius: 50%;
+  animation: rb-rp-seek 1.1s linear infinite;
+}
+.rb-rp-seek-ring.is-found::before {
+  border-color: #6ee07a;
+  animation: none;
+}
+.rb-rp-seek-ring > b {
+  color: #ffe39a;
+  font: 700 26px Georgia, 'Times New Roman', serif;
+  font-variant-numeric: tabular-nums;
+}
+.rb-rp-seek .rb-ring-dialog p {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 14px;
+  line-height: 1.4;
+}
+@keyframes rb-rp-seek {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-rp-seek-ring::before {
+    animation: none;
+  }
+}
 .rb-rp-error {
   margin: 0;
   padding: 5px 9px;
@@ -8500,6 +8545,9 @@
   height: 28px;
   min-height: 0;
   font-size: 13px;
+}
+.rb-ring-menu .rb-iconbtn.is-off {
+  opacity: 0.55;
 }
 .rb-ring-frame {
   display: flex;

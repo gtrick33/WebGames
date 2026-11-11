@@ -13,6 +13,10 @@ import { RANGED, type Aura } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import { worn } from '../src/games/sigilfall/render/ring';
 import { Build } from '../src/games/sigilfall/render3d/build';
+import { ringMasonry } from '../src/games/sigilfall/render3d/ringDress';
+import { ARENA_H, ARENA_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
+import { TILE } from '../src/games/sigilfall/sim/map';
+import * as THREE from 'three';
 
 const readable = (cls: (typeof CLASS_IDS)[number]): Ability[] => [...kitOf(cls), SUPERS[cls], DASH];
 
@@ -118,6 +122,52 @@ describe('Sigilfall: a wall’s stones stay behind what is set against it', () =
       expect(b.m.pos.length, dir).toBeGreaterThan(12 * 8);
       expect(far, dir).toBeGreaterThan(0);
       expect(far, dir).toBeLessThan(SET - 0.004);
+    }
+  });
+});
+
+describe('Sigilfall: nothing in a ring is laid in the same plane as something else', () => {
+  /**
+   * Two faces in one plane are drawn through each other in stripes that crawl as the camera moves. That is what the
+   * owner saw on the Cinder Forge's furnaces ("in the fire arena the jitter of the pillars is still happening"): the
+   * brick's own top lay in the plane of the iron band's. Every face the camera can see (tops, and the sides that
+   * look south, east and west) inside the ring is read here, on every ground.
+   */
+  it('no two faces of different colors share a plane where the fight is', () => {
+    const AW = ARENA_W / TILE;
+    const AH = ARENA_H / TILE;
+    for (const id of MAP_IDS) {
+      const { b } = ringMasonry(MAPS[id]!, new THREE.Object3D());
+      const { pos, nor, col } = b.m;
+      const planes = new Map<string, { u0: number; u1: number; w0: number; w1: number; c: number[] }[]>();
+      const quads = pos.length / 12;
+      expect(quads, id).toBeGreaterThan(1000);
+      for (let q = 0; q < quads; q++) {
+        const n = [nor[q * 12]!, nor[q * 12 + 1]!, nor[q * 12 + 2]!];
+        const ax = n.findIndex((x) => Math.abs(x) > 0.999);
+        // (not what faces north or down: the camera never sees it)
+        if (ax < 0 || (ax !== 0 && n[ax]! < 0)) continue;
+        const v = [0, 1, 2, 3].map((k) => [pos[q * 12 + k * 3]!, pos[q * 12 + k * 3 + 1]!, pos[q * 12 + k * 3 + 2]!]);
+        if (v.some((p) => Math.abs(p[ax]! - v[0]![ax]!) > 1e-6)) continue;
+        if (!v.some((p) => p[0]! > 0 && p[0]! < AW && p[2]! > 0 && p[2]! < AH)) continue;
+        const [u, w] = [0, 1, 2].filter((k) => k !== ax) as [number, number];
+        const face = { u0: Math.min(...v.map((p) => p[u]!)), u1: Math.max(...v.map((p) => p[u]!)), w0: Math.min(...v.map((p) => p[w]!)), w1: Math.max(...v.map((p) => p[w]!)), c: [0, 1, 2].map((k) => col[q * 12 + k]!) };
+        const key = `${ax}${Math.sign(n[ax]!)}@${v[0]![ax]!.toFixed(4)}`;
+        planes.set(key, [...(planes.get(key) ?? []), face]);
+      }
+      const clashes: string[] = [];
+      for (const [key, list] of planes) {
+        for (let i = 0; i < list.length; i++) {
+          for (let j = i + 1; j < list.length; j++) {
+            const A = list[i]!;
+            const B = list[j]!;
+            const over = Math.min(Math.min(A.u1, B.u1) - Math.max(A.u0, B.u0), Math.min(A.w1, B.w1) - Math.max(A.w0, B.w0));
+            const apart = Math.max(...A.c.map((x, k) => Math.abs(x - B.c[k]!)));
+            if (over > 0.015 && apart > 0.05) clashes.push(`${id} ${key}: ${A.u0.toFixed(2)},${A.w0.toFixed(2)} and ${B.u0.toFixed(2)},${B.w0.toFixed(2)}`);
+          }
+        }
+      }
+      expect(clashes, id).toEqual([]);
     }
   });
 });

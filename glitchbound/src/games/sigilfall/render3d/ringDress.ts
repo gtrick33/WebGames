@@ -876,7 +876,10 @@ function furnace(b: Build, air: RingAir, p: Pillar, rand: () => number): void {
   const cx = (t.x0 + t.x1) / 2;
   const cz = (t.z0 + t.z1) / 2;
   const top = 1.55;
-  b.box(t.x0, t.z0, t.x1, t.z1, 0, top, brick[0]!, joint, rgb('#3a2626'));
+  // (its own top a little under the iron band's. They lay in one plane, and two faces in one plane are drawn through
+  // each other in stripes that crawl whenever the camera moves: the owner, "in the fire arena the jitter of the
+  // pillars is still happening")
+  b.box(t.x0, t.z0, t.x1, t.z1, 0, top - 0.04, brick[0]!, joint, rgb('#3a2626'));
   b.courses('s', t.x0, t.x1, t.z1, 0.02, top, 0.2, 0.34, brick, joint, rand);
   b.courses('e', t.z0, t.z1, t.x1, 0.02, top, 0.2, 0.34, brick, joint, rand);
   b.courses('w', t.z0, t.z1, t.x0, 0.02, top, 0.2, 0.34, brick, joint, rand);
@@ -1007,8 +1010,8 @@ function cinderForge(b: Build, place: Placer, people: Watcher[], air: RingAir, m
     const edge = left ? t.x1 : t.x0;
     const far = left ? t.x0 + 0.5 : t.x1 - 0.5;
     const zc = (t.z0 + t.z1) / 2;
-    // straps round its corner
-    for (const z of [t.z0 + 0.5, t.z1 - 0.5]) b.box(edge - 0.02, z - 0.06, edge + 0.02, z + 0.06, 0, 1.1, iron, ironD, ironHi);
+    // straps round its corner (their ends a hair over the coping's top, not in its plane)
+    for (const z of [t.z0 + 0.5, t.z1 - 0.5]) b.box(edge - 0.02, z - 0.06, edge + 0.02, z + 0.06, 0, 1.108, iron, ironD, ironHi);
     place.put('anvil', far, zc - 0.7, 1.1, 0.42, { rot: Math.PI / 2 });
     place.put('barrel_small', far, zc + 0.1, 1.1, 0.5);
     place.put('barrel_small', far + (left ? 0.1 : -0.1), zc + 0.62, 1.1, 0.42);
@@ -1030,7 +1033,8 @@ export interface RingDress {
   stands: Stand[];
 }
 
-export function dressRing(map: RingMap, packs: LandPacks, parent: THREE.Object3D): RingDress {
+/** Everything built for a ring before any of it is handed to the renderer (the tests read its faces). */
+export function ringMasonry(map: RingMap, parent: THREE.Object3D): { b: Build; place: Placer; people: Watcher[]; air: RingAir; gears: RingGear[] } {
   const b = new Build();
   const place = new Placer();
   const people: Watcher[] = [];
@@ -1039,6 +1043,11 @@ export function dressRing(map: RingMap, packs: LandPacks, parent: THREE.Object3D
   if (map.theme === 'sands') provingSands(b, place, people, air, map);
   else if (map.theme === 'frost') frozenMere(b, place, people, air, map);
   else cinderForge(b, place, people, air, map, parent, gears);
+  return { b, place, people, air, gears };
+}
+
+export function dressRing(map: RingMap, packs: LandPacks, parent: THREE.Object3D): RingDress {
+  const { b, place, people, air, gears } = ringMasonry(map, parent);
   parent.add(b.m.build());
   const stands = [...place.build(packs, parent), ...crowdStands(people, parent)];
   const gearStand = gears.length ? new Stand(gearMesh(), parent, gears.length) : null;

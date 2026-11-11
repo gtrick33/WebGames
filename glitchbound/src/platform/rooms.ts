@@ -43,9 +43,12 @@ export async function listRooms(game?: RoomGame): Promise<ListedRoom[]> {
   return data.rooms;
 }
 
-/** Quick match: the code of a public room about to start (or a new one, held for the next searcher). `skip`: rooms found full. */
-export async function quickMatch(game: RoomGame, skip: readonly string[] = []): Promise<{ code: string; created: boolean }> {
-  const res = await fetch('/api/rooms/match', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ game, skip }) }).catch(() => null);
+/**
+ * Quick match: the code of a public room about to start (or a new one, held for the next searcher). `skip`: rooms
+ * found full. `kind`: which of the game's queues (The Ring's '1', '2' and '3' for its formats).
+ */
+export async function quickMatch(game: RoomGame, skip: readonly string[] = [], kind = ''): Promise<{ code: string; created: boolean }> {
+  const res = await fetch('/api/rooms/match', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(kind ? { game, skip, kind } : { game, skip }) }).catch(() => null);
   const data = (await res?.json().catch(() => ({}))) as { code?: string; created?: boolean; error?: string } | undefined;
   if (!res?.ok || !data?.code) throw new Error('Matchmaking is not available right now. Try again in a minute.');
   track('room_match', { room: game, created: data.created ? 1 : 0 });

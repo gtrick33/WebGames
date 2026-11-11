@@ -1514,6 +1514,10 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
             <input type="checkbox" checked={s.reducedMotion} onChange={(e) => set({ reducedMotion: e.target.checked })} />
             <span>Reduced motion (no shake, calmer weather and effects)</span>
           </label>
+          <label className="rb-check">
+            <input type="checkbox" checked={s.ringPlates} onChange={(e) => set({ ringPlates: e.target.checked })} />
+            <span>Nameplates in The Ring (the fighters’ names and bars along the top of a match)</span>
+          </label>
           <button className="rb-btn is-small is-ghost" onClick={() => engine.resetSettings()}>
             Reset settings
           </button>
