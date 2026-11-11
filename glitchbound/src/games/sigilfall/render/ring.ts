@@ -86,6 +86,8 @@ export class RingFx {
   flashes: Flash[] = [];
   pops: Pop[] = [];
   bursts: Burst[] = [];
+  /** The path of a blade through the air, in front of whoever swung it: where, which way, how wide, how heavy. */
+  arcs: { x: number; y: number; a: number; t: number; dur: number; color: string; arc: number; r: number; heavy: boolean }[] = [];
   /** Who just let a super go: a column of light on them for a moment. */
   supers: { id: number; t: number }[] = [];
   private spread = 0;
@@ -117,7 +119,13 @@ export class RingFx {
         const f = m.fighters[e.id];
         if (!ab || !f) continue;
         if (ab.aim === 'near') this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.42, r: ab.range + HERO_R, color: ab.color, ring: true });
-        else if (ab.cast === 0 && ab.range <= 40) this.flashes.push({ x: f.x + f.dirX * 12, y: f.y - 8 + f.dirY * 8, t: 0, dur: 0.16, r: 16, color: ab.color, ring: false });
+        else if (ab.cast === 0 && ab.range <= 40 && ab.aim === 'enemy') {
+          // a blow leaves its arc in the air: wide for a cut, wider and heavier for a great one, narrow for a thrust
+          const heavy = ab.role === 'burst' || !!ab.super;
+          const thrust = ab.effects.some((x) => x.k === 'charge' || x.k === 'interrupt');
+          this.arcs.push({ x: f.x + f.dirX * 6, y: f.y + f.dirY * 6, a: Math.atan2(f.dirY, f.dirX), t: 0, dur: heavy ? 0.34 : 0.26, color: ab.school === 'physical' ? '#fff4e0' : ab.color, arc: thrust ? 0.7 : heavy ? 2.6 : 2, r: heavy ? 34 : 28, heavy });
+          if (this.arcs.length > 16) this.arcs.shift();
+        }
         // (what it is made of, as it leaves the hand: your own a little louder than the rest)
         const vol = e.id === myId ? 0.7 : 0.4;
         const melee = ab.range > 0 && ab.range <= 40;
@@ -173,6 +181,8 @@ export class RingFx {
     for (const f of this.flashes) f.t += dt;
     for (const p of this.pops) p.t += dt;
     for (const b of this.bursts) b.t += dt;
+    for (const a of this.arcs) a.t += dt;
+    this.arcs = this.arcs.filter((a) => a.t < a.dur);
     for (const s of this.supers) s.t += dt;
     this.supers = this.supers.filter((s) => s.t < 0.8);
     this.bursts = this.bursts.filter((b) => b.t < b.dur);
@@ -377,6 +387,7 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
     else q.put({ kind: FX.impact, x: f.x, y: f.y, up: 12, w: f.r * 2.4, a: f.color, b: '#fffdf0', t: u, seed: f.x * 0.2 });
   }
   for (const b of fx.bursts) landing(q, b);
+  for (const a of fx.arcs) q.put({ kind: FX.slash, x: a.x, y: a.y, up: 13, flat: true, w: (a.r * 2) / 0.82, rot: a.a, a: a.color, t: a.t / a.dur, p1: a.arc, p2: a.heavy ? 1 : 0 });
   const map = MAPS[m.map] ?? Object.values(MAPS)[0]!;
   // sand on the wind, low over the ground
   if (map.theme === 'sands') {

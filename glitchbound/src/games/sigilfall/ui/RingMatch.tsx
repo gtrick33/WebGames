@@ -437,6 +437,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       lastPaint = time;
       for (const e of m.events) {
         if (e.k === 'ab') view.swing(e.id, e.ab, m.fighters[e.id]?.cast?.ab === e.ab);
+        // (a blow that took a real bite, not a curse's tick)
+        else if (e.k === 'num' && e.kind === 'dmg' && e.n >= 26) view.hurt(e.id, e.crit || e.n >= 110);
         // (somebody's down: the crowd is on its feet)
         else if (e.k === 'death') view.cheer();
       }

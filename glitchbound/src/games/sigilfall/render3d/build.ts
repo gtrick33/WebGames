@@ -102,7 +102,7 @@ export class Build {
         const sw = w * (0.75 + rand() * 0.5);
         const s0 = Math.max(x0, x) + 0.02;
         const s1 = Math.min(x1, x + sw) - 0.02;
-        if (s1 > s0) this.flat(s0, z + 0.02, s1, Math.min(z1, z + d) - 0.02, y + 0.008, mul(pick(palette, rand), 0.95 + rand() * 0.1));
+        if (s1 > s0) this.flat(s0, z + 0.02, s1, Math.min(z1, z + d) - 0.02, y + 0.02, mul(pick(palette, rand), 0.95 + rand() * 0.1));
         x += sw;
       }
       row++;
