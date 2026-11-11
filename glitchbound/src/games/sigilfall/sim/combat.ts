@@ -668,15 +668,40 @@ export const armorReduction = (armor: number, level: number): number => Math.min
  * Hurts the hero (armor, then damage-cutting buffs, then a shield). `pierce`: armor doesn't count (a curse or the sea
  * takes a share of the hero's health, however they are dressed); a dodge, a shield and a ward still do.
  */
+/**
+ * What answers a blow (a Gloamknight's guard, thorns) answers each blow once. A boss's rush, fire or whirl of blades
+ * reaches for the hero every step it touches them, and against a guard it never lands, so it reaches again: answered
+ * step for step, half a second of Stand Fast paid one charge back thirty times at full strength. A Bloodsworn
+ * Gloamknight did 95% of a late boss's life with its guard alone, three times as fast as anyone else. Whatever one
+ * enemy lands on a guard while it stands is one blow (`GUARD_BLOW`, a little longer than the guard), and thorns
+ * prick the same enemy no faster than its blows can fall (`THORN_BLOW`).
+ */
+export const GUARD_BLOW = 0.62;
+export const THORN_BLOW = 0.3;
+const blows = new WeakMap<World, Map<string, number>>();
+
+/** Whether this is a new blow from that enemy, for what answers blows (and notes it). */
+function oneBlow(w: World, what: 'guard' | 'thorns', within: number, source?: Enemy): boolean {
+  let seen = blows.get(w);
+  if (!seen) blows.set(w, (seen = new Map()));
+  const key = `${what}:${source ? source.id : 0}`;
+  const last = seen.get(key);
+  if (last !== undefined && w.time >= last && w.time - last < within) return false;
+  if (seen.size > 96) for (const [k, t] of seen) if (w.time - t > 2 || t > w.time) seen.delete(k);
+  seen.set(key, w.time);
+  return true;
+}
+
 /** Umbra for a blow taken on a Gloamknight's guard. */
 const GUARD_UMBRA = 14;
 
 /**
  * A blow lands on a guard (the Gloamknight's Stand Fast): nothing gets through, the Umbra comes anyway, and whoever
- * struck is paid back in shadow, the guard's strength times the class's reference damage.
+ * struck is paid back in shadow, the guard's strength times the class's reference damage. Once for each blow.
  */
 function guarded(w: World, source?: Enemy): void {
   const p = w.player;
+  if (!oneBlow(w, 'guard', GUARD_BLOW, source)) return;
   gainResource(w, GUARD_UMBRA);
   w.addFx({ kind: 'ring', x: p.x, y: p.y, life: 0.25, size: 16, color: '#b89aff' });
   w.sfx('shieldBreak', 0.6);
@@ -740,7 +765,7 @@ export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: n
   runProcs(w, 'hurt', { x: p.x, y: p.y, base: 0, type: 'physical', depth: 1, hitDmg: d });
   // thorns: whoever struck the hero is struck back
   const thorns = p.buffs.reduce((a, b) => a + (b.def.thorns ?? 0), 0);
-  if (thorns > 0 && o.source && !o.source.dead) hitEnemy(w, o.source, CLASSES[w.hero.cls].refDamage * thorns, 'nature', { depth: 1, fromX: p.x, fromY: p.y, knock: 20, charge: 0.4 });
+  if (thorns > 0 && o.source && !o.source.dead && oneBlow(w, 'thorns', THORN_BLOW, o.source)) hitEnemy(w, o.source, CLASSES[w.hero.cls].refDamage * thorns, 'nature', { depth: 1, fromX: p.x, fromY: p.y, knock: 20, charge: 0.4 });
   if (p.hp <= 0) w.playerDies();
   return true;
 }
