@@ -276,13 +276,38 @@ export const BODY: Record<ClassId, { hp: number; mana: number }> = {
 /** Ready-made bars: what a hero brings before their player changes anything, and what the computer plays. */
 export const PRESETS: Record<ClassId, { id: string; name: string; bar: string[]; talents: string[] }[]> = {
   warrior: [{ id: 'arms', name: 'Reaper', bar: ['w-hew', 'w-gash', 'w-rush', 'w-hurl'], talents: ['w-1c', 'w-2a', 'w-3c'] }, { id: 'pin', name: 'Hound', bar: ['w-hew', 'w-bleed', 'w-hamstring', 'w-rush'], talents: ['w-1b', 'w-2c', 'w-3b'] }],
-  mage: [{ id: 'fire', name: 'Pyre', bar: ['m-lash', 'm-burn', 'm-pyre', 'm-blink'], talents: ['m-1a', 'm-2a', 'm-3b'] }, { id: 'frost', name: 'Rime', bar: ['m-spear', 'm-burn', 'm-ring', 'm-chill'], talents: ['m-1b', 'm-2b', 'm-3c'] }],
+  mage: [{ id: 'fire', name: 'Pyre', bar: ['m-lash', 'm-burn', 'm-pyre', 'm-blink'], talents: ['m-1a', 'm-2a', 'm-3b'] }, { id: 'frost', name: 'Rime', bar: ['m-spear', 'm-steal', 'm-ring', 'm-chill'], talents: ['m-1b', 'm-2b', 'm-3c'] }],
   ranger: [{ id: 'sniper', name: 'Longbow', bar: ['r-swift', 'r-aimed', 'r-venom', 'r-hawk'], talents: ['r-1b', 'r-2b', 'r-3a'] }, { id: 'trapper', name: 'Trapper', bar: ['r-swift', 'r-hobble', 'r-wind', 'r-trap'], talents: ['r-1a', 'r-2a', 'r-3a'] }],
   priest: [{ id: 'healer', name: 'Lifegiver', bar: ['p-mend', 'p-renew', 'p-ward', 'p-lance'], talents: ['p-1a', 'p-2c', 'p-3a'] }, { id: 'shadow', name: 'Curse-speaker', bar: ['p-smite', 'p-curse', 'p-lance', 'p-wail'], talents: ['p-1c', 'p-2b', 'p-3c'] }],
   paladin: [{ id: 'holy', name: 'Oathkeeper', bar: ['d-flash', 'd-hands', 'd-hammer', 'd-judge'], talents: ['d-1c', 'd-2a', 'd-3b'] }, { id: 'ret', name: 'Zealot', bar: ['d-blow', 'd-judge', 'd-wrath', 'd-hammer'], talents: ['d-1a', 'd-2c', 'd-3a'] }],
   warlock: [{ id: 'curses', name: 'Hexer', bar: ['k-agony', 'k-wither', 'k-unstable', 'k-dread'], talents: ['k-1a', 'k-2a', 'k-3a'] }, { id: 'ruin', name: 'Doomcaller', bar: ['k-bolt', 'k-chaos', 'k-agony', 'k-howl'], talents: ['k-1c', 'k-2c', 'k-3c'] }],
   druid: [{ id: 'heal', name: 'Grovekeeper', bar: ['l-regrow', 'l-rejuv', 'l-bloom', 'l-moon'], talents: ['l-1c', 'l-2a', 'l-3a'] }, { id: 'star', name: 'Starseer', bar: ['l-lash', 'l-moon', 'l-gale', 'l-roots'], talents: ['l-1b', 'l-2b', 'l-3b'] }],  gloamknight: [{ id: 'reaver', name: 'Bloodsworn', bar: ['g-cleave', 'g-reap', 'g-lunge', 'g-hand'], talents: ['g-1a', 'g-2a', 'g-3a'] }, { id: 'dread', name: 'Dreadbinder', bar: ['g-gloom', 'g-devour', 'g-slip', 'g-toll'], talents: ['g-1c', 'g-2c', 'g-3b'] }],
 };
+
+/** A combo a bar can make: the ability that sets it up, the one that lands it, and its name. */
+export interface BarCombo {
+  name: string;
+  text: string;
+  from: Ability;
+  to: Ability;
+}
+
+/**
+ * The combos a bar holds: every ability on it whose combo another ability on it (or the class's super) sets up, by
+ * leaving its mark on the target or by holding them the way the combo needs. A setup shows these, so its player knows
+ * what to press after what.
+ */
+export function barCombos(cls: ClassId, bar: readonly string[]): BarCombo[] {
+  const have = [...bar.map((id) => ABILITIES[id]).filter((x): x is Ability => !!x), SUPERS[cls]];
+  const out: BarCombo[] = [];
+  for (const to of have) {
+    const c = to.combo;
+    if (!c) continue;
+    const from = have.find((x) => x !== to && (c.ab?.includes(x.id) || x.effects.some((e) => (e.k === 'cc' || e.k === 'trap') && !!c.cc?.includes(e.cc))));
+    if (from) out.push({ name: c.name, text: c.text, from, to });
+  }
+  return out;
+}
 
 /** One passive taken into the match, on top of the bar. */
 export interface Oath {

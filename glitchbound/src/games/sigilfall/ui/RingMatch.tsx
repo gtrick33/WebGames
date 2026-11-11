@@ -4,7 +4,7 @@ import { ABILITIES, DASH, SLOTS, superOf, type Ability } from '../arena/abilitie
 import { botThink, newBrain } from '../arena/bot';
 import { LEAVER_K, type ClassSets } from '../arena/ladder';
 import { MAPS } from '../arena/maps';
-import { CLOSE_FROM, Match, MATCH_LIMIT, MOMENTUM_HOLD, MOMENTUM_MAX, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
+import { CLOSE_FROM, Match, MATCH_LIMIT, MOMENTUM_HOLD, MOMENTUM_MAX, PACE, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
 import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
 import type { Character, Face } from '../progress/character';
@@ -54,18 +54,79 @@ const clock = (t: number): string => {
 const CC_WORD: Record<string, string> = { stun: 'Stunned', fear: 'Feared', incap: 'Dazed', root: 'Rooted', silence: 'Silenced' };
 const DR_MARK = ['', '½', '¼', '✕'];
 
+/** What an effect does to whoever carries it, in a word or two. */
+const auraWord = (a: Aura): string => {
+  const pct = `${Math.round(a.n * 100)}%`;
+  switch (a.kind) {
+    case 'cc':
+      return CC_WORD[a.cc ?? ''] ?? 'Held';
+    case 'dot':
+      return 'Burning';
+    case 'hot':
+      return 'Mending';
+    case 'slow':
+      return `Slowed ${pct}`;
+    case 'antiheal':
+      return `Healing −${pct}`;
+    case 'absorb':
+      return 'Shielded';
+    case 'guard':
+      return `Guarded ${pct}`;
+    case 'fury':
+      return `Damage +${pct}`;
+    case 'speed':
+      return `Faster ${pct}`;
+    case 'immune':
+      return a.still ? 'Frozen safe' : 'Immune';
+    case 'free':
+      return 'Unbound';
+    case 'reflect':
+      return 'Reflecting';
+    case 'lastgrace':
+      return 'Death-warded';
+    default:
+      return '';
+  }
+};
+
 function AuraIcons({ f }: { f: Fighter }) {
   // what holds them first, then what's left
   const shown = [...f.auras].sort((a, b) => Number(!!b.cc) - Number(!!a.cc)).slice(0, 6);
   return (
     <span className="rb-ring-auras">
       {shown.map((a: Aura, i) => (
-        <i key={`${a.ab}-${a.kind}-${i}`} className={`${a.harmful ? 'is-bad' : 'is-good'}${a.cc ? ' is-cc' : ''}`} title={ABILITIES[a.ab]?.name}>
+        <i key={`${a.ab}-${a.kind}-${i}`} className={`${a.harmful ? 'is-bad' : 'is-good'}${a.cc ? ' is-cc' : ''}`} title={`${ABILITIES[a.ab]?.name ?? ''}: ${auraWord(a)}`}>
           <img src={iconPicture(ABILITIES[a.ab]?.icon ?? '')} alt="" draggable={false} />
-          {a.cc && <b>{Math.ceil(a.t)}</b>}
+          <b>{Math.ceil(a.t)}</b>
         </i>
       ))}
     </span>
+  );
+}
+
+/**
+ * What is on the target, in words: each effect's name, what it does and how long is left, and beside one of the
+ * player's own that sets up a combo, the ability to press now. The squares over a health bar said none of this.
+ */
+function TargetEffects({ m, me, f, bar }: { m: Match; me: Fighter; f: Fighter; bar: Ability[] }) {
+  const shown = [...f.auras].sort((a, b) => Number(b.src === me.id) - Number(a.src === me.id) || Number(!!b.cc) - Number(!!a.cc)).slice(0, 4);
+  if (!shown.length) return null;
+  return (
+    <div className="rb-ring-effects" aria-label={`On ${f.name}`}>
+      {shown.map((a, i) => {
+        const next = bar.find((ab) => ab.combo && ((ab.combo.ab?.includes(a.ab) && a.src === me.id) || (!!a.cc && !!ab.combo.cc?.includes(a.cc))) && m.comboReady(me, ab, f));
+        return (
+          <span key={`${a.ab}-${a.kind}-${i}`} className={`${a.harmful ? 'is-bad' : 'is-good'}${next ? ' is-setup' : ''}`}>
+            <img src={iconPicture(ABILITIES[a.ab]?.icon ?? '')} alt="" draggable={false} />
+            <b>{ABILITIES[a.ab]?.name ?? ''}</b>
+            <small>
+              {auraWord(a)} · {Math.ceil(a.t)}s
+            </small>
+            {next && <em>→ {next.name}</em>}
+          </span>
+        );
+      })}
+    </div>
   );
 }
 
@@ -398,7 +459,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         // the fight moves by the frame's own length (in pieces no longer than MAX_STEP when a frame ran long): fixed
         // steps against a screen that is never quite regular made everyone stutter, a step missed here, two there
         const pieces = Math.max(1, Math.ceil(dt / MAX_STEP));
-        const h = dt / pieces;
+        const h = (dt * PACE) / pieces;
         for (let i = 0; i < pieces && h > 0; i++) {
           const moves: Record<number, MoveInput> = { [myId]: mine };
           for (const f of m.fighters) {
@@ -511,6 +572,16 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const friend = m.fighters[friendId] ?? null;
   const helps = bar.some((a) => a.aim === 'friend');
   const held = me && m.held(me);
+  /** The combo an ability on the bar would land now, on whoever it would go to: its button glows. */
+  // (on whoever the ability would really go to: the chosen enemy, else the nearest, as the rules pick; a burst round
+  // the hero, on anyone it would reach)
+  const comboOf = (ab: Ability): string | null => {
+    if (!me || m.phase !== 'fight' || !ab.combo) return null;
+    if (ab.aim === 'near') return m.enemiesOf(me).some((o) => Math.hypot(o.x - me.x, o.y - me.y) <= ab.range && m.comboReady(me, ab, o)) ? ab.combo.name : null;
+    return m.comboReady(me, ab, m.aimOf(me, ab))?.name ?? null;
+  };
+  /** Whose effects are spelled out: the enemy the next blow would go to. */
+  const shownFoe = me && m.phase === 'fight' ? (foeAlive ?? m.enemiesOf(me).find((o) => !o.dead && m.aimOf(me, bar.find((a) => a.aim === 'enemy') ?? DASH) === o) ?? null) : null;
   const foeNote = !foeAlive ? (m.phase === 'fight' ? `Click someone or press ${keyName(ringKeys.nextFoe)}. Nearest is used if you don’t.` : `Click someone or press ${keyName(ringKeys.nextFoe)}`) : !me || m.phase !== 'fight' ? `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}%` : !m.sees(me, foeAlive) ? 'Out of sight' : `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}% · ${Math.round(Math.hypot(foeAlive.x - me.x, foeAlive.y - me.y))} away`;
   const foeBad = !!foeAlive && !!me && m.phase === 'fight' && !m.sees(me, foeAlive);
   return (
@@ -576,7 +647,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   return (
                     <button
                       key={ab.id}
-                      className={`rb-sb rb-sb-${TOUCH_SLOTS[i]}${sup ? ` is-super${charge >= 1 ? ' is-ready' : ''}` : ''}${isOut(m, me, ab) ? ' is-nomana' : ''}${wait > 0 ? ' is-cooling' : ''}${held && ab.anyState ? ' is-free-now' : ''}`}
+                      className={`rb-sb rb-sb-${TOUCH_SLOTS[i]}${sup ? ` is-super${charge >= 1 ? ' is-ready' : ''}` : ''}${isOut(m, me, ab) ? ' is-nomana' : ''}${wait > 0 ? ' is-cooling' : ''}${held && ab.anyState ? ' is-free-now' : ''}${comboOf(ab) && wait <= 0 ? ' is-combo' : ''}`}
                       style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined}
                       aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}
                       onPointerDown={(e) => {
@@ -632,6 +703,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. The blue button steps aside; the gold one is your super, once it’s full. Keep moving: shots can be dodged.' : `${[ringKeys.up, ringKeys.left, ringKeys.down, ringKeys.right].map(keyName).join('')} to move · ${keyName(ringKeys.ab1)} to ${keyName(ringKeys.ab4)} for abilities · ${keyName(ringKeys.dash)} to step aside · ${keyName(ringKeys.super)} for your super · Keep moving: shots can be dodged`}</span>
             </div>
           )}
+          {me && shownFoe && <TargetEffects m={m} me={me} f={shownFoe} bar={bar} />}
           {err && (
             <div className="rb-ring-err" role="status">
               {err}
@@ -682,13 +754,14 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 const full = cd > gcd ? ab.cd : 1;
                 const sup = !!ab.super;
                 return (
-                  <button key={ab.id} className={`rb-ring-ab${isOut(m, me, ab) ? ' is-out' : ''}${ab.id === 'dash' ? ' is-step' : ''}${sup ? ` is-super${charge >= 1 ? ' is-full' : ''}` : ''}${held && ab.anyState ? ' is-ready' : ''}`} style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined} onPointerDown={(e) => { e.preventDefault(); press(ab.id); }} onMouseEnter={() => setTip(ab)} onMouseLeave={() => setTip(null)} aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}>
+                  <button key={ab.id} className={`rb-ring-ab${isOut(m, me, ab) ? ' is-out' : ''}${ab.id === 'dash' ? ' is-step' : ''}${sup ? ` is-super${charge >= 1 ? ' is-full' : ''}` : ''}${held && ab.anyState ? ' is-ready' : ''}${comboOf(ab) ? ' is-combo' : ''}`} style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined} onPointerDown={(e) => { e.preventDefault(); press(ab.id); }} onMouseEnter={() => setTip(ab)} onMouseLeave={() => setTip(null)} aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}>
                     <img src={iconPicture(ab.icon)} alt="" draggable={false} />
                     {sup && charge < 1 && <i className="rb-ring-charge" />}
                     {wait > 0 && <i className="rb-ring-cool" style={{ ['--p' as string]: `${Math.min(1, wait / (full || 1)) * 100}%` }} />}
                     {cd > 0.05 && <b>{cd >= 10 ? Math.ceil(cd) : cd.toFixed(1)}</b>}
                     {sup && charge < 1 && <b className="is-charge">{Math.floor(charge * 100)}%</b>}
                     <kbd>{keyOf(i)}</kbd>
+                    {comboOf(ab) && <span className="rb-ring-combo-tag">{comboOf(ab)}</span>}
                   </button>
                 );
               })}
