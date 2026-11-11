@@ -2254,6 +2254,19 @@ const de: string[] = [
   'Kein Icon',
   'Neue Klasse',
   'Gloamknight-Paket',
+  // Real life switch (live party rooms)
+  'Echtes Leben',
+  '· alle im selben Raum? Keine Hinweise tippen: sagt sie laut und tippt dann auf einen Knopf, um weiterzumachen',
+  '🗣️ Hinweis laut gesagt',
+  'Ich habe meinen Hinweis gesagt',
+  'Nur du siehst die Stelle. Überleg dir {clue} dafür zwischen {a} und {b}: ein Ding, eine Person, ein Spruch. Sag ihn laut, keine Zahlen!',
+  'Ein Wort, keine Farbnamen. Sag es laut und tippe dann unten.',
+  'Bis zu zwei Wörter. Sag sie laut und tippe dann unten.',
+  'Vergleicht eure Hinweise erst leise (flüstern oder aufschreiben): gleiche fliegen raus. Dann sagt die übrigen laut.',
+  'Bereit ✓ Warte auf die anderen…',
+  'Hör zu: Deine Freunde sagen ihre Hinweise laut.',
+  'Hör dir die Hinweise an und tippe dann deinen Tipp.',
+  'Keine Tipps außer den Hinweisen! {name} rät.',
 ];
 
 export default de;

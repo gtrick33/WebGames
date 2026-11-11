@@ -2263,6 +2263,19 @@ export const KEYS: string[] = [
   "No icon",
   "New class",
   "Gloamknight Pack",
+  // Real life switch (live party rooms)
+  "Real life",
+  "· all in the same room? Skip typing clues: say them out loud instead, then tap a button to carry on",
+  "🗣️ Clue said out loud",
+  "I’ve said my clue",
+  "Only you can see the spot. Think of {clue} for it between {a} and {b}: a thing, a person, a saying. Say it out loud, no numbers!",
+  "One word, no color names. Say it out loud, then tap below.",
+  "Up to two words. Say it out loud, then tap below.",
+  "Compare your clues quietly first (whisper, or jot them down): matching clues are out. Then say the ones left out loud.",
+  "Ready ✓ Waiting for the others…",
+  "Listen: your friends will say their clues out loud.",
+  "Listen to the clues, then type your guess.",
+  "No hints beyond the clues! {name} is guessing.",
 ];
 
 export const UI_COUNT = 311;

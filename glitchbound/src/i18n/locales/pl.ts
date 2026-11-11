@@ -2254,6 +2254,19 @@ const pl: string[] = [
   'Bez ikony',
   'Nowa klasa',
   'Pakiet Gloamknight',
+  // Real life switch (live party rooms)
+  'Na żywo',
+  '· wszyscy w jednym pokoju? Bez wpisywania podpowiedzi: powiedzcie je na głos, a potem dotknijcie przycisku, aby grać dalej',
+  '🗣️ Podpowiedź powiedziana na głos',
+  'Powiedziałem podpowiedź',
+  'Tylko ty widzisz to miejsce. Wymyśl {clue} dla niego między {a} a {b}: rzecz, osobę, powiedzenie. Powiedz ją na głos, bez liczb!',
+  'Jedno słowo, bez nazw kolorów. Powiedz je na głos, a potem dotknij poniżej.',
+  'Do dwóch słów. Powiedz je na głos, a potem dotknij poniżej.',
+  'Najpierw porównajcie podpowiedzi po cichu (szeptem lub na kartce): takie same odpadają. Potem powiedzcie pozostałe na głos.',
+  'Gotowe ✓ Czekamy na resztę…',
+  'Słuchaj: znajomi powiedzą swoje podpowiedzi na głos.',
+  'Wysłuchaj podpowiedzi, a potem wpisz odpowiedź.',
+  'Żadnych wskazówek poza podpowiedziami! {name} zgaduje.',
 ];
 
 export default pl;

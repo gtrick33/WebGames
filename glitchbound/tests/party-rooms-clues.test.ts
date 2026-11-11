@@ -380,3 +380,76 @@ describe('Hue Knew? room', () => {
     expect(nudge(179, 0, 1)).toBe(179);
   });
 });
+
+describe('Real life: clues said out loud instead of typed', () => {
+  it('is off by default and only the host can switch it, between games', () => {
+    const s = dial.newRoom('ABCDE', T0, 5);
+    KEYS.slice(0, 3).forEach((k, i) => dial.join(s, k, `P${i + 1}`, T0));
+    expect(s.settings.real).toBe(false);
+    expect(dial.act(s, KEYS[1]!, { t: 'settings', settings: { real: true } }, T0)).toMatch(/host/);
+    dial.act(s, KEYS[0]!, { t: 'settings', settings: { real: true } }, T0);
+    expect(s.settings.real).toBe(true);
+    dial.act(s, KEYS[0]!, { t: 'start' }, T0);
+    expect(dial.act(s, KEYS[0]!, { t: 'settings', settings: { real: false } }, T0)).toMatch(/between games/);
+  });
+
+  it('Dial It In: the reader taps “said” and the round scores as if a clue was typed', () => {
+    const s = dial.newRoom('ABCDE', T0, 5);
+    KEYS.slice(0, 3).forEach((k, i) => dial.join(s, k, `P${i + 1}`, T0));
+    dial.act(s, KEYS[0]!, { t: 'settings', settings: { teams: false, real: true } }, T0);
+    dial.act(s, KEYS[0]!, { t: 'start' }, T0);
+    dial.act(s, KEYS[0]!, { t: 'clue', text: '' }, T0);
+    expect(s.phase).toBe('guess');
+    expect(s.round!.clue).toBe('');
+    expect(dial.viewFor(s, KEYS[1]!)!.round!.said).toBe(true);
+    s.round!.needle = s.round!.target;
+    dial.act(s, KEYS[1]!, { t: 'lock' }, T0);
+    expect(s.round!.points).toBe(dialPoints(s.round!.target, s.round!.target));
+    expect(s.round!.points).toBeGreaterThan(0);
+  });
+
+  it('Hue Knew?: both clues can be said out loud, and guesses still score', () => {
+    const s = hues.newRoom('ABCDE', T0, 8);
+    KEYS.slice(0, 3).forEach((k, i) => hues.join(s, k, `P${i + 1}`, T0));
+    hues.act(s, KEYS[0]!, { t: 'settings', settings: { second: true, real: true } }, T0);
+    hues.act(s, KEYS[0]!, { t: 'start' }, T0);
+    const r = s.round!;
+    expect(hues.act(s, KEYS[0]!, { t: 'clue', text: '' }, T0)).toMatch(/color first/);
+    hues.act(s, KEYS[0]!, { t: 'pick', cell: r.offer[0]! }, T0);
+    hues.act(s, KEYS[0]!, { t: 'clue', text: '' }, T0);
+    expect(s.phase).toBe('guess');
+    expect(hues.viewFor(s, KEYS[1]!)!.round!.said).toBe(true);
+    hues.act(s, KEYS[1]!, { t: 'mark', cell: r.target! }, T0);
+    hues.act(s, KEYS[2]!, { t: 'mark', cell: r.target! }, T0);
+    expect(s.phase).toBe('clue2');
+    hues.act(s, KEYS[0]!, { t: 'clue', text: '' }, T0);
+    expect(s.phase).toBe('guess');
+    expect(r.pass).toBe(2);
+    hues.act(s, KEYS[1]!, { t: 'mark', cell: r.target! }, T0);
+    hues.act(s, KEYS[2]!, { t: 'mark', cell: r.target! }, T0);
+    expect(s.phase).toBe('reveal');
+    expect(r.gained['2']).toBe(2 * huePoints(r.target!, r.target!));
+    expect(r.gained['1']).toBeGreaterThan(0);
+  });
+
+  it('One of a Kind: every clue giver taps “said”, then the guesser types a guess with no clue list', () => {
+    const s = unique.newRoom('ABCDE', T0, 11);
+    KEYS.slice(0, 4).forEach((k, i) => unique.join(s, k, `P${i + 1}`, T0));
+    unique.act(s, KEYS[0]!, { t: 'settings', settings: { real: true } }, T0);
+    unique.act(s, KEYS[0]!, { t: 'start' }, T0);
+    s.word = 'pineapple';
+    unique.act(s, KEYS[1]!, { t: 'clue', text: '' }, T0);
+    expect(unique.viewFor(s, KEYS[1]!)!.myClue).toBe('');
+    expect(unique.viewFor(s, KEYS[2]!)!.myClue).toBeNull();
+    expect(unique.viewFor(s, KEYS[2]!)!.canSwap).toBe(false);
+    unique.act(s, KEYS[0]!, { t: 'clue', text: '' }, T0); // the guesser has no clue to say
+    unique.act(s, KEYS[2]!, { t: 'clue', text: '' }, T0);
+    expect(s.phase).toBe('write');
+    unique.act(s, KEYS[3]!, { t: 'clue', text: '' }, T0);
+    expect(s.phase).toBe('guess');
+    expect(unique.viewFor(s, KEYS[0]!)!.clues).toEqual([]);
+    unique.act(s, KEYS[0]!, { t: 'guess', text: 'Pineapples' }, T0);
+    expect(s.outcome).toBe('right');
+    expect(s.score).toBe(1);
+  });
+});

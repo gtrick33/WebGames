@@ -2254,6 +2254,19 @@ const pt: string[] = [
   'Sem ícone',
   'Nova classe',
   'Pacote Gloamknight',
+  // Real life switch (live party rooms)
+  'Vida real',
+  '· todos na mesma sala? Nada de digitar dicas: digam-nas em voz alta e depois toquem num botão para continuar',
+  '🗣️ Dica dita em voz alta',
+  'Já disse a minha dica',
+  'Só tu vês o ponto. Pensa em {clue} para ele entre {a} e {b}: uma coisa, uma pessoa, um ditado. Diz em voz alta, sem números!',
+  'Uma palavra, sem nomes de cores. Diz em voz alta e depois toca em baixo.',
+  'Até duas palavras. Diz em voz alta e depois toca em baixo.',
+  'Primeiro comparem as dicas em silêncio (a sussurrar ou a anotar): as iguais ficam de fora. Depois digam as restantes em voz alta.',
+  'Pronto ✓ À espera dos outros…',
+  'Ouve: os teus amigos vão dizer as dicas em voz alta.',
+  'Ouve as dicas e depois escreve o teu palpite.',
+  'Nenhuma ajuda além das dicas! {name} está a adivinhar.',
 ];
 
 export default pt;
