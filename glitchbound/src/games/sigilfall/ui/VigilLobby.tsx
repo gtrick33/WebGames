@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SigilEngine } from '../engine';
 import { wornLooks } from '../progress/wardrobe';
+import { Doll } from './Doll';
 import { wearOf, WearPicker } from './wear';
 import { LooksDialog, plainWorn, ringTitle } from './RingRewards';
 import { readRing, writeRing } from '../arena/ladder';
@@ -282,7 +283,7 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
           </div>
           <div className="rb-vlobby-stage">
             <i className="rb-vlobby-dais" aria-hidden="true" />
-            <img key={pick} className="rb-vlobby-doll" src={doll} alt={c.name} draggable={false} />
+            <Doll key={pick} className="rb-vlobby-doll" src={doll} alt={c.name} />
             <div className="rb-vlobby-name">
               <strong>{c.name}</strong>
               {(wear || myTitle) && <small className="rb-wear-who">{titled(wear ? wear.name : 'You', myTitle)}</small>}
