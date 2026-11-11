@@ -1,4 +1,4 @@
-import { RANKS } from '../arena/ranks';
+import { bestRating, RANKS } from '../arena/ranks';
 import { MAX_LEVEL } from '../data/classes';
 import { QUESTS } from '../data/quests';
 import { REGIONS } from '../data/regions';
@@ -55,7 +55,7 @@ export const TITLES: readonly TitleDef[] = [
   { id: 'last-memory', name: 'Keeper of the Last Memory', how: 'Open Riftstone +25.', rare: true, earned: (c) => c.keystone >= 25 },
   { id: 'exalted', name: 'the Exalted', how: 'Reach Paragon 25.', rare: true, earned: (c) => c.para.l >= 25 },
   // the Ring (the best rating this device has seen the player reach)
-  ...RING_TITLES.map((t): TitleDef => ({ id: t.id, name: t.name, how: `Reach ${t.rating} rating in The Ring.`, rare: t.rating >= 1700, earned: (_c, rating) => (rating ?? 0) >= t.rating })),
+  ...RING_TITLES.map((t): TitleDef => ({ id: t.id, name: t.name, how: `Reach ${t.rating} rating in The Ring.`, rare: t.rating >= 1700, earned: (_c, rating) => (rating ?? bestRating()) >= t.rating })),
 ];
 
 const BY_ID: Record<string, TitleDef> = Object.fromEntries(TITLES.map((t) => [t.id, t]));

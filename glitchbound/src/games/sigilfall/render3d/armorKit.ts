@@ -968,8 +968,52 @@ const palOf = (p: Piece | null | undefined, set: string): Pal => {
   return { main: main!, trim: trim!, cloth: cloth!, glow: glow! };
 };
 
-/** The shop's armor sets (src/catalog/sigilItems.ts): any class wears them, in their own colors or an admin's. */
+/**
+ * The armor sets any class wears, each in the colors its look carries: the shop's (src/catalog/sigilItems.ts, in
+ * their own colors or an admin's) and the Ring's (arena/rewards.ts, one set of shapes in a colorway for every rank).
+ */
 const SHOP_SETS: Record<string, { head(c: Ctx, p: Pal): MeshData[]; chest(c: Ctx, p: Pal): MeshData[] }> = {
+  // the Ring's: a pit fighter's harness. An open helm with a tall crest front to back, one great spiked pauldron on
+  // the sword arm, crossed straps over the plate with a stone where they meet, and a short ragged cape
+  ringforged: {
+    head(c, { main, trim, cloth, glow }) {
+      const parts: MeshData[] = [];
+      const face = plainHead(c.w, c.look, { parts: [], bald: true }, c.skin, c.hair);
+      if (face) parts.push(face);
+      for (const id of ['Knight_Helmet', 'Knight_HelmetVisor']) {
+        const m = c.w.hero.meshes[id];
+        if (m) parts.push(painted(m, { skin: c.skin, metal: tup(main), cloth: tup(cloth), plated: true, white: tup(mix(main, trim, 0.35)) }));
+      }
+      // the crest: a fan of blades over the top, tallest in the middle, in the cloth's color and tipped with the trim
+      const dyed = mul(cloth, 1.35);
+      for (const [z, tall] of [[0.4, 0.36], [0.2, 0.62], [-0.02, 0.8], [-0.24, 0.7], [-0.46, 0.52], [-0.64, 0.34]] as const) parts.push(blade(z, 2.44 - Math.abs(z + 0.1) * 0.3, tall, 0.26, 0.08, dyed, trim, c.head, M));
+      // a stone on the brow
+      parts.push(glowing(gemAt(c.head, 0, 2.34, 0.6, 0.075, glow)));
+      return parts;
+    },
+    chest(c, { main, trim, cloth, glow }) {
+      const parts = setBody(c, 'Knight', 'Knight', { metal: tup(main), cloth: tup(cloth), plated: true, white: tup(mix(main, trim, 0.3)) });
+      const body = c.w.hero.meshes.Knight_Body!;
+      const front: Inside = (_x, _y, z) => z;
+      // a belt and a collar in the trim, and straps crossing the breast
+      parts.push(shell(body, [above(0.6), below(0.68)], 0.018, trim));
+      parts.push(shell(body, [above(1.08), below(1.13)], 0.018, trim));
+      const strap = mul(cloth, 1.4);
+      parts.push(shell(body, [front, (x, y) => 0.045 - Math.abs(y - 0.88 - x * 0.9), above(0.68), below(1.08)], 0.016, strap));
+      parts.push(shell(body, [front, (x, y) => 0.045 - Math.abs(y - 0.88 + x * 0.9), above(0.68), below(1.08)], 0.016, strap));
+      // the stone where they cross
+      parts.push(glowing(gemAt(c.chest, 0, 0.88, frontAt(body, 0.88) + 0.03, 0.09, glow)));
+      // one great pauldron on the sword arm, spiked; a plain one on the other
+      parts.push(pauldron(c.w, 1, 1.55, main, trim), pauldron(c.w, -1, 1.0, main, trim));
+      const point = mix(trim, [1, 1, 1], 0.4);
+      parts.push(rod([0.5, 1.36, 0.06], [0.72, 1.84, 0.1], 0.1, 0, 6, main, point, c.chest, M));
+      parts.push(rod([0.68, 1.27, -0.04], [1.08, 1.54, -0.04], 0.09, 0, 6, main, point, c.chest, M));
+      parts.push(rod([0.42, 1.36, -0.14], [0.5, 1.74, -0.28], 0.09, 0, 6, main, point, c.chest, M));
+      parts.push(tabard(c, cloth, trim));
+      parts.push(capeOf(c.w, cloth, trim, 'jag', 0.84));
+      return parts;
+    },
+  },
   // black plate and gold: a king's crown fixed to a war helm, a drake's horns, and a visor with a fire behind it
   crownforged: {
     head(c, { main, trim, cloth, glow }) {

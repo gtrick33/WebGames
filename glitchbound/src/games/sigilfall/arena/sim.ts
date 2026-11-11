@@ -55,6 +55,18 @@ export const BURST_K = 1.25;
 export const CRIT_K = 1.7;
 /** Healing over its ability's number: a little under, so that a healer slows a kill rather than stopping it. */
 export const HEAL_K = 0.85;
+/**
+ * Momentum: a combo landed within this long of the last one keeps a chain going, and a different combo from the last
+ * one is its next link (the same one again holds the chain where it is). Each link past the first makes a combo's own
+ * bonus this much bigger (up to MOMENTUM_MAX links), and each new link fills the super meter by MOMENTUM_CHARGE times
+ * its place in the chain: a fighter who weaves their combos hits harder and gets their super sooner.
+ */
+export const MOMENTUM_HOLD = 7;
+export const MOMENTUM_MAX = 4;
+export const MOMENTUM_STEP = 0.15;
+export const MOMENTUM_CHARGE = 0.04;
+/** The gates of a ladder match against the computer lift sooner: there is nobody to wait for. */
+export const GATES_SOLO = 15;
 
 export interface FighterSetup {
   team: 0 | 1;
@@ -72,6 +84,8 @@ export interface MatchSetup {
   seed: number;
   map: string;
   fighters: FighterSetup[];
+  /** Seconds in the entry before the gates lift (GATES when not said). */
+  gates?: number;
 }
 
 export type AuraKind = 'dot' | 'hot' | 'cc' | 'slow' | 'antiheal' | 'absorb' | 'guard' | 'fury' | 'speed' | 'immune' | 'free' | 'reflect' | 'lastgrace';
@@ -143,9 +157,14 @@ export interface Fighter {
   talents: string[];
   mods: { dmg: number; heal: number; speed: number; tenacity: number; cool: number; regen: number };
   tune: Record<string, Tune>;
-  score: { dmg: number; heal: number; cc: number; kicks: number; combos?: number; supers?: number };
+  score: { dmg: number; heal: number; cc: number; kicks: number; combos?: number; supers?: number; streak?: number };
   /** The super meter, 0 to 1. */
   charge: number;
+  /** Momentum: how many combos in a row (0 when the chain has gone cold), and how long the chain still holds. */
+  streak: number;
+  streakT: number;
+  /** The last combo landed (the next link of a chain has to be a different one). */
+  lastCombo?: string;
 }
 
 export interface Bolt {
@@ -287,6 +306,7 @@ export class Match {
 
   constructor(setup: MatchSetup) {
     this.rand = rng(setup.seed);
+    if (setup.gates && setup.gates > 0) this.gateAt = setup.gates;
     this.map = setup.map;
     const map = MAPS[setup.map] ?? Object.values(MAPS)[0]!;
     this.pillars = map.pillars;
@@ -330,6 +350,8 @@ export class Match {
         fearY: 0,
         score: { dmg: 0, heal: 0, cc: 0, kicks: 0 },
         charge: 0,
+        streak: 0,
+        streakT: 0,
       };
     });
   }
@@ -581,10 +603,20 @@ export class Match {
       const mine = (a: Aura): boolean => !!c.ab?.includes(a.ab) && a.src === f.id;
       if (t.auras.some((a) => mine(a) || (!!a.cc && !!c.cc?.includes(a.cc)))) {
         combo = c;
-        boost = c.mult;
+        // momentum: each combo in a row makes the next one's bonus bigger, and all of them feed the super
+        const going = f.streakT > 0 && f.streak > 0;
+        const link = !going || f.lastCombo !== c.name;
+        if (link) {
+          f.streak = Math.min(MOMENTUM_MAX, (going ? f.streak : 0) + 1);
+          f.charge = Math.min(1, f.charge + MOMENTUM_CHARGE * f.streak);
+        }
+        f.lastCombo = c.name;
+        f.streakT = MOMENTUM_HOLD;
+        boost = 1 + (c.mult - 1) * (1 + MOMENTUM_STEP * (f.streak - 1));
+        f.score.streak = Math.max(f.score.streak ?? 0, f.streak);
         if (c.consume) t.auras = t.auras.filter((a) => !mine(a));
         f.score.combos = (f.score.combos ?? 0) + 1;
-        this.events.push({ k: 'word', id: t.id, word: c.name, combo: true });
+        this.events.push({ k: 'word', id: t.id, word: f.streak > 1 ? `${c.name} ×${f.streak}` : c.name, combo: true });
       }
     }
     for (const e of ab.effects) {
@@ -973,6 +1005,10 @@ export class Match {
       else f.locks[k] = left;
     }
     if (f.maxMana) f.mana = Math.min(f.maxMana, f.mana + dt * 1.5 * f.mods.regen);
+    if (f.streakT > 0) {
+      f.streakT -= dt;
+      if (f.streakT <= 0) f.streak = 0;
+    }
     this.tickAuras(f, dt);
     if (f.dead) return;
     this.moveFighter(f, dt, m);
@@ -1225,6 +1261,8 @@ export class Match {
         l: f.locks,
         sc: f.score,
         ch: Math.round(f.charge * 1000) / 1000,
+        st: f.streak,
+        stt: Math.round(f.streakT * 10) / 10,
       })),
       b: this.bolts,
       tr: this.traps,
@@ -1276,6 +1314,8 @@ export class Match {
       f.locks = n.l;
       f.score = n.sc;
       f.charge = n.ch ?? 0;
+      f.streak = n.st ?? 0;
+      f.streakT = n.stt ?? 0;
     });
   }
 
@@ -1300,6 +1340,7 @@ export class Match {
       f.gcd = Math.max(0, f.gcd - dt);
       for (const k of Object.keys(f.cds)) f.cds[k] = Math.max(0, (f.cds[k] ?? 0) - dt);
       for (const a of f.auras) a.t = Math.max(0, a.t - dt);
+      f.streakT = Math.max(0, f.streakT - dt);
     }
     // shots fly on in their straight lines
     for (const b of this.bolts) {
@@ -1336,6 +1377,8 @@ export interface Snapshot {
     l: Partial<Record<string, number>>;
     sc: Fighter['score'];
     ch?: number;
+    st?: number;
+    stt?: number;
   }[];
   b: Bolt[];
   tr: Trap[];

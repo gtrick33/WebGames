@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { nextRank, rankOf } from '../arena/ranks';
+import type { RingReward } from '../arena/rewards';
+import { RewardsEarned } from './RingRewards';
 import type { Fighter, Match } from '../arena/sim';
 import { CLASSES } from '../data/classes';
 import { iconPicture } from '../render/art/gameIcons';
@@ -12,6 +14,8 @@ export interface RatingOutcome {
   bestAfter: number;
   rankUp: string | null;
   streak: number;
+  /** What the climb has just earned (arena/rewards.ts). */
+  rewards?: RingReward[];
 }
 
 const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
@@ -164,6 +168,10 @@ function Row({ f, top, mine, doll, awards }: { f: Fighter; top: { dmg: number; h
         <i style={{ width: `${top.heal ? (f.score.heal / top.heal) * 100 : 0}%` }} />
         <b>{f.score.heal.toLocaleString('en-US')}</b>
       </span>
+      <span className="rb-rr-num is-combos" title={f.score.streak && f.score.streak > 1 ? `Best chain ×${f.score.streak}` : undefined}>
+        {f.score.combos ?? 0}
+        {f.score.streak && f.score.streak > 1 ? <small> ×{f.score.streak}</small> : null}
+      </span>
       <span className="rb-rr-num">{Math.round(f.score.cc)}s</span>
       <span className="rb-rr-num">{f.score.kicks}</span>
     </div>
@@ -185,8 +193,8 @@ export function RingResult({ match, myId, won, draw, rating, rival, dolls, again
     const best = match.fighters.reduce((a, b) => (pick(b) > pick(a) ? b : a));
     return pick(best) > 0 ? best.id : null;
   };
-  const most = { dmg: award((f) => f.score.dmg), heal: award((f) => f.score.heal), cc: award((f) => f.score.cc), kicks: award((f) => f.score.kicks) };
-  const awardsOf = (f: Fighter): string[] => [most.dmg === f.id ? 'Most damage' : '', most.heal === f.id ? 'Most healing' : '', most.cc === f.id ? 'Most control' : '', most.kicks === f.id ? 'Most interrupts' : ''].filter(Boolean);
+  const most = { dmg: award((f) => f.score.dmg), heal: award((f) => f.score.heal), cc: award((f) => f.score.cc), kicks: award((f) => f.score.kicks), combos: award((f) => f.score.combos ?? 0) };
+  const awardsOf = (f: Fighter): string[] => [most.dmg === f.id ? 'Most damage' : '', most.heal === f.id ? 'Most healing' : '', most.cc === f.id ? 'Most control' : '', most.kicks === f.id ? 'Most interrupts' : '', most.combos === f.id ? 'Most combos' : ''].filter(Boolean);
   const me = match.fighters[myId];
   const line = draw ? `Nobody left standing after ${clock(match.clock)}.` : `${won ? 'You beat' : 'You fell to'} ${rival ?? 'the other team'} in ${clock(match.clock)}.`;
   return (
@@ -226,12 +234,14 @@ export function RingResult({ match, myId, won, draw, rating, rival, dolls, again
             New rank: <b>{rating.rankUp}</b>
           </p>
         )}
+        {rating?.rewards && <RewardsEarned rewards={rating.rewards} />}
         <section className="rb-rr-board" aria-label="Scoreboard">
           <div className="rb-rr-cols" aria-hidden="true">
             <span />
             <span />
             <span>Damage</span>
             <span>Healing</span>
+            <span>Combos</span>
             <span>Control</span>
             <span>Interrupts</span>
           </div>

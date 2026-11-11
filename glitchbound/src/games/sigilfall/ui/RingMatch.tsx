@@ -4,15 +4,14 @@ import { ABILITIES, DASH, SLOTS, superOf, type Ability } from '../arena/abilitie
 import { botThink, newBrain } from '../arena/bot';
 import { LEAVER_K, type ClassSets } from '../arena/ladder';
 import { MAPS } from '../arena/maps';
-import { CLOSE_FROM, Match, MATCH_LIMIT, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
+import { CLOSE_FROM, Match, MATCH_LIMIT, MOMENTUM_HOLD, MOMENTUM_MAX, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
 import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
 import type { Character, Face } from '../progress/character';
-import { wearTitle } from './wear';
 import { iconPicture } from '../render/art/gameIcons';
 import { drawRing, RingFx, ringLooks, ringSpells } from '../render/ring';
 import { RingStage, ringMapOf } from '../render3d/ring3d';
-import { heroDollUrl } from '../render/sprites';
+import { heroDollUrl, type WornLooks } from '../render/sprites';
 import { RingHelp, SetupEditor, timing } from './RingSetup';
 import { ScreenGate } from './ScreenGate';
 import { Stick } from './Stick';
@@ -39,6 +38,8 @@ export interface MatchStakes {
 
 // (a step per frame on a 60 Hz screen: at 30 a second, everyone moved on every other frame and the fight looked choppy)
 const STEP = 1 / 60;
+/** The longest piece of time the fight is moved by at once. */
+const MAX_STEP = 1 / 45;
 /** A host speaks ten times a second: plenty for frames that coast between. */
 const SEND_EVERY = 0.1;
 /** The campaign's thumb cluster: the same places, so a phone player's hands already know them (the four abilities,
@@ -171,7 +172,7 @@ function isOut(m: Match, me: Fighter | null, ab: Ability): boolean {
 }
 
 /** A match: The Ring's ground, its frames and a bar of abilities. Solo, the computer plays everyone else. */
-export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes, onSets, onDone, onLeave, resume, onSnap, wear }: { engine: SigilEngine; setup: MatchSetup; myId: number; face?: Face; body?: 'm' | 'f'; wear?: Character | null; role: Role; sets: ClassSets; stakes: MatchStakes | null; onSets: (s: ClassSets) => void; onDone: (r: MatchResult) => void; onLeave: (started: boolean) => void; resume?: Snapshot; onSnap?: (s: Snapshot) => void }) {
+export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes, onSets, onDone, onLeave, resume, onSnap, wear, worn, title }: { engine: SigilEngine; setup: MatchSetup; myId: number; face?: Face; body?: 'm' | 'f'; wear?: Character | null; worn?: WornLooks; title?: string | null; role: Role; sets: ClassSets; stakes: MatchStakes | null; onSets: (s: ClassSets) => void; onDone: (r: MatchResult) => void; onLeave: (started: boolean) => void; resume?: Snapshot; onSnap?: (s: Snapshot) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ringKeys, setRingKeys] = useState<RingKeys>(readKeys);
   const keysRef = useRef(ringKeys);
@@ -191,7 +192,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const [tip, setTip] = useState<Ability | null>(null);
   const errAt = useRef(0);
   const stick = useRef<MoveInput>({ mx: 0, my: 0 });
-  const dolls = useMemo(() => ringLooks(m, { face, body, wear }, myId).map((l) => heroDollUrl(l.look, 'down', 2, l.held)), [m, face, body, myId, wear]);
+  const dolls = useMemo(() => ringLooks(m, { face, body, wear, worn }, myId).map((l) => heroDollUrl(l.look, 'down', 2, l.held)), [m, face, body, myId, wear, worn]);
 
   const me = m.fighters[myId] ?? null;
   const touch = engine.touchMode;
@@ -231,9 +232,15 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     tick((x) => x + 1);
   };
 
+  // the Ring's own music while a match is up (the title's comes back with the lobby)
+  useEffect(() => {
+    engine.setModeMusic('siege');
+    return () => engine.setModeMusic(null);
+  }, [engine]);
+
   useEffect(() => {
     const canvas = canvasRef.current!;
-    const looks = ringLooks(m, { face, body, wear }, myId);
+    const looks = ringLooks(m, { face, body, wear, worn }, myId);
     const fx = new RingFx();
     const view = new RingStage(canvas, ringMapOf(m.map));
     const fit = (): void => {
@@ -262,7 +269,10 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       const pals = me ? m.fighters.filter((f) => f.team === me.team && f.id !== me.id) : [];
       if (act && act !== 'up' && act !== 'down' && act !== 'left' && act !== 'right') e.preventDefault();
       if (n >= 0 && me?.bar[n]) press(me.bar[n]!);
-      else if (act === 'dash') press(DASH.id);
+      // (behind the gates, the step key says "ready")
+      else if (act === 'dash' && m.phase === 'gates' && role.kind !== 'client') {
+        if (m.gateAt - m.t > 5) ready();
+      } else if (act === 'dash') press(DASH.id);
       else if (act === 'super' && me) press(superOf(me.cls).id);
       else if (act === 'nextFoe' && me) {
         const next = cycle(m.enemiesOf(me), me.target);
@@ -351,7 +361,6 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     const brains = m.fighters.map((_, i) => newBrain(setup.seed + i * 97));
     const skill = role.kind === 'client' ? 0 : role.skill;
     let last = performance.now();
-    let acc = 0;
     let sendT = 0;
     let lastSent = '';
     let hudT = 0;
@@ -386,19 +395,19 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       const mine = moveNow();
       let sent: Match['events'] | null = null;
       if (role.kind !== 'client') {
-        acc += dt;
-        // catching up, but never so far behind that a stall turns into a jump
-        for (let i = 0; i < 8 && acc >= STEP; i++) {
-          acc -= STEP;
+        // the fight moves by the frame's own length (in pieces no longer than MAX_STEP when a frame ran long): fixed
+        // steps against a screen that is never quite regular made everyone stutter, a step missed here, two there
+        const pieces = Math.max(1, Math.ceil(dt / MAX_STEP));
+        const h = dt / pieces;
+        for (let i = 0; i < pieces && h > 0; i++) {
           const moves: Record<number, MoveInput> = { [myId]: mine };
           for (const f of m.fighters) {
             if (f.id === myId) continue;
             if (f.seat !== null) moves[f.id] = others[f.id] ?? { mx: 0, my: 0 };
-            else moves[f.id] = botThink(m, f, brains[f.id]!, skill, STEP);
+            else moves[f.id] = botThink(m, f, brains[f.id]!, skill, h);
           }
-          m.step(STEP, moves);
+          m.step(h, moves);
         }
-        if (acc > STEP * 8) acc = 0;
         if (role.kind === 'host') {
           sendT += dt;
           if (sendT >= SEND_EVERY) {
@@ -512,7 +521,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           <div className="rb-ring-top">
             <div className="rb-ring-team">
               {left.map((f) => (
-                <Frame key={f.id} f={f} m={m} me={me} doll={dolls[f.id]!} title={f.id === myId ? wearTitle(wear ?? null) : null} tag={helps && f.id === friendId && m.phase === 'fight' ? 'Helping' : null} onPick={() => target(f.id)} />
+                <Frame key={f.id} f={f} m={m} me={me} doll={dolls[f.id]!} title={f.id === myId ? (title ?? null) : null} tag={helps && f.id === friendId && m.phase === 'fight' ? 'Helping' : null} onPick={() => target(f.id)} />
               ))}
             </div>
             <div className="rb-ring-clock">
@@ -611,14 +620,14 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 <span className="rb-ring-prep-rival">A friendly match: no rating changes hands.</span>
               )}
               <span className="rb-ring-prep-actions">
-                <button className="rb-btn is-gold" onClick={() => setEditing(true)}>
-                  Change my setup
-                </button>
                 {role.kind !== 'client' && (
-                  <button className="rb-btn" onClick={ready}>
-                    I’m ready
+                  <button className="rb-btn is-gold" onClick={ready} autoFocus>
+                    I’m ready{touch ? '' : ` (${keyName(ringKeys.dash)})`}
                   </button>
                 )}
+                <button className={`rb-btn${role.kind === 'client' ? ' is-gold' : ''}`} onClick={() => setEditing(true)}>
+                  Change my setup
+                </button>
               </span>
               <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. The blue button steps aside; the gold one is your super, once it’s full. Keep moving: shots can be dodged.' : `${[ringKeys.up, ringKeys.left, ringKeys.down, ringKeys.right].map(keyName).join('')} to move · ${keyName(ringKeys.ab1)} to ${keyName(ringKeys.ab4)} for abilities · ${keyName(ringKeys.dash)} to step aside · ${keyName(ringKeys.super)} for your super · Keep moving: shots can be dodged`}</span>
             </div>
@@ -626,6 +635,16 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           {err && (
             <div className="rb-ring-err" role="status">
               {err}
+            </div>
+          )}
+          {me && me.streak > 0 && m.phase === 'fight' && (
+            <div className={`rb-ring-momentum is-x${me.streak}`} role="status" aria-label={`Momentum ${me.streak}`}>
+              <b>×{me.streak}</b>
+              <span>
+                <strong>Momentum</strong>
+                <small>{me.streak >= MOMENTUM_MAX ? 'Every combo at its hardest' : 'Land a different combo to build it'}</small>
+              </span>
+              <i style={{ width: `${Math.max(0, Math.min(1, me.streakT / MOMENTUM_HOLD)) * 100}%` }} />
             </div>
           )}
           {cast && castAb && (

@@ -33,6 +33,7 @@ import { questRewards } from '../progress/rewards';
 import { FOG_CELL, fogSeen, loadFog, type Fog } from '../progress/fog';
 import { RiftGuide } from './RiftGuide';
 import { ShopPanel } from './Shop';
+import { RING_LOOKS } from '../arena/rewards';
 import { MUSIC_CREDITS } from '../audio/tracks';
 import { earnedTitles, titled, titleName, TITLES, wornTitle } from '../progress/titles';
 import { WARDENS } from '../data/wardens';
@@ -1602,6 +1603,8 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
     const have = new Set(owned.map((l) => l.id));
     const locked = authoredLooks(h.cls, slot).filter((l) => !have.has(l.id));
     locked.sort((a, b) => RARITY_RANK[a.r]! - RARITY_RANK[b.r]! || a.name.localeCompare(b.name));
+    // (and the Ring's armor still to be earned, lowest rank first)
+    locked.unshift(...RING_LOOKS.filter((l) => l.slot === slot && !have.has(l.id)));
     return [...owned.map((l) => ({ look: l, owned: true })), ...locked.map((l) => ({ look: l, owned: false }))];
   }, [h, slot, engine.version]); // eslint-disable-line react-hooks/exhaustive-deps
   const authoredOwned = h.looks.filter((id) => lookOf(id)?.authored && lookFits(lookOf(id)!, h.cls)).length;

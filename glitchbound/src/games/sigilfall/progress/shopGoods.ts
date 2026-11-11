@@ -1,6 +1,7 @@
 import { sigilColors, type SigilLookSpec, type SigilMountSpec, type SigilSet, type SigilSpec } from '../../../catalog/sigilItems';
 import type { MountDef, MountExtra } from '../data/mounts';
 import type { ItemIcon, Material } from '../data/types';
+import { ownedRingLooks, ownsRingLook, ringLook } from '../arena/rewards';
 import type { Look } from './wardrobe';
 
 /**
@@ -88,16 +89,17 @@ export function setShopGoods(items: readonly { id: string; name: string; blurb: 
   now = goodsFrom(items, owned);
 }
 
-export const ownsShopItem = (id: string): boolean => now.owned.has(id);
+/** Whether the account has it: bought in the shop, or (a Ring reward look) earned by rating on this device. */
+export const ownsShopItem = (id: string): boolean => now.owned.has(id) || ownsRingLook(id);
 
 /** A shop mount by its id (owned or not), or undefined. */
 export const shopMount = (id: string): MountDef | undefined => now.mounts.find((m) => m.id === id);
 
 /** A shop look by its id (owned or not), or undefined. */
-export const shopLook = (id: string): Look | undefined => now.looks.find((l) => l.id === id);
+export const shopLook = (id: string): Look | undefined => now.looks.find((l) => l.id === id) ?? ringLook(id);
 
 /** The shop's mounts this account owns now. */
 export const ownedShopMounts = (): MountDef[] => now.mounts.filter((m) => now.owned.has(m.id));
 
 /** The shop's looks this account owns now. */
-export const ownedShopLooks = (): Look[] => now.looks.filter((l) => now.owned.has(l.id));
+export const ownedShopLooks = (): Look[] => [...now.looks.filter((l) => now.owned.has(l.id)), ...ownedRingLooks()];

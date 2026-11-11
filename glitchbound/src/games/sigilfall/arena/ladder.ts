@@ -1,6 +1,6 @@
 import type { ClassId } from '../data/types';
 import { PRESETS, SLOTS } from './abilities';
-import { NEW_STANDING, rankOf, RING_KEY, type Format, type Standing } from './ranks';
+import { forgetBest, NEW_STANDING, rankOf, RING_KEY, type Format, type Standing } from './ranks';
 import type { FighterSetup } from './sim';
 import { clearLive, LEAVER_K, type LiveMatch } from './live';
 export { clearLive, LEAVER_K, liveGoing, LIVE_WAIT, readLive, writeLive, type LiveMatch } from './live';
@@ -127,6 +127,8 @@ export const SET_COUNT = 3;
 export interface RingSave {
   standings: Record<string, Standing>;
   sets: Partial<Record<ClassId, ClassSets>>;
+  /** What a fighter with no campaign hero behind them wears: Ring armor (arena/rewards.ts looks) and a Ring title. */
+  plain?: { head?: string; chest?: string; title?: string };
 }
 
 const presetSetup = (cls: ClassId, i: number): RingSetup => {
@@ -149,7 +151,8 @@ export function setsOf(save: RingSave, cls: ClassId): ClassSets {
 export function readRing(): RingSave {
   try {
     const raw = JSON.parse(localStorage.getItem(RING_KEY) ?? 'null') as Partial<RingSave> | null;
-    return { standings: raw?.standings ?? {}, sets: raw?.sets ?? {} };
+    const plain = raw?.plain && typeof raw.plain === 'object' ? raw.plain : undefined;
+    return { standings: raw?.standings ?? {}, sets: raw?.sets ?? {}, ...(plain ? { plain } : {}) };
   } catch {
     return { standings: {}, sets: {} };
   }
@@ -161,6 +164,8 @@ export function writeRing(s: RingSave): void {
   } catch {
     /* a browser that keeps nothing: the match still happened */
   }
+  // (what the rating has earned is asked afresh)
+  forgetBest();
 }
 
 export const standingOf = (s: RingSave, f: Format): Standing => s.standings[f] ?? NEW_STANDING;

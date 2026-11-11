@@ -254,6 +254,9 @@ export function RingHelp({ onClose }: { onClose: () => void }) {
                 <b>Shots fly, and can be dodged.</b> Most ranged spells fly at where your target is heading. Change direction or take a Swift Step to make them miss.
               </li>
               <li>
+                <b>Land combos, and weave them.</b> Many abilities hit much harder against a target you have set up (their cards say how). Each different combo in a row builds Momentum, up to ×4: your combos hit harder still and your super fills faster. Seven seconds without one and it’s gone.
+              </li>
+              <li>
                 <b>Fill your super.</b> Dealing damage and healing fill the meter (taking hits fills it a little). When it’s full, let it go.
               </li>
               <li>
@@ -261,6 +264,9 @@ export function RingHelp({ onClose }: { onClose: () => void }) {
               </li>
               <li>
                 <b>The Gloam closes in.</b> Forty seconds in, it starts closing in from the edges and burns whoever is out in it, until there’s nowhere left to stand.
+              </li>
+              <li>
+                <b>Climb for rewards.</b> Every rank gives its title and a suit of Ringforged armor, for good. See them under Rewards in the lobby, and wear them from Title & armor.
               </li>
               <li>
                 <b>Pillars block sight.</b> Step behind one to dodge a cast, or to stop a healer reaching someone. Interrupt a cast to lock that school of magic for a few seconds. Holds are short and wear off faster each time.

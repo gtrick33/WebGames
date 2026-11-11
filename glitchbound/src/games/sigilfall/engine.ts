@@ -26,7 +26,7 @@ import { DEFAULT_SETTINGS, loadSave, writeSave, type LoadStatus, type SaveFile, 
 import { buyItem, buyPotions, restock } from './progress/shop';
 import { wager } from './progress/rift';
 import { chooseTitle, newTitles, titled, titleName } from './progress/titles';
-import { topStanding } from './arena/ranks';
+import { bestRating } from './arena/ranks';
 import type { ShopId } from './data/vendors';
 import { iconsReady } from './render/art/gameIcons';
 import { Renderer } from './render/renderer';
@@ -425,7 +425,11 @@ export class SigilEngine {
   }
 
   /** What plays outside the story (the Ring, the Vigil: each sets its own while it is up; null: the title's). */
-  modeMusic: MusicId = null;
+  private modeMusic: MusicId = null;
+
+  setModeMusic(id: MusicId): void {
+    this.modeMusic = id;
+  }
 
   isPaused(): boolean {
     const u = this.ui;
@@ -1513,7 +1517,29 @@ export class SigilEngine {
 
   /** The best rating the player has reached in The Ring, as this device remembers it (the Ring's titles ask). */
   ringRating(): number {
-    return topStanding().best;
+    return bestRating();
+  }
+
+  /**
+   * One of the account's heroes dressed, or given a title, from outside the story (the Ring's lobby): what they wear
+   * there is what they wear everywhere.
+   */
+  dress(hero: Character, slot: LookSlot, id: string | null): boolean {
+    if (!this.save.heroes.includes(hero) || !wearLook(hero, slot, id)) return false;
+    if (hero === this.hero) this.changed('equip');
+    this.sound.play('equip');
+    this.scheduleSave(300);
+    this.bump();
+    return true;
+  }
+
+  entitle(hero: Character, id: string): boolean {
+    if (!this.save.heroes.includes(hero) || !chooseTitle(hero, id, this.ringRating())) return false;
+    if (hero === this.hero) this.refreshPartyCard();
+    this.sound.play('click');
+    this.scheduleSave(300);
+    this.bump();
+    return true;
   }
 
   chooseMount(id: string): boolean {

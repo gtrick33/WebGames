@@ -8,6 +8,8 @@ import type { ClassId, Item, ItemIcon, Material, RegionId, Rarity } from '../dat
 import type { Character } from './character';
 import { itemMat, itemTint } from './items';
 import { ownedShopMounts, ownsShopItem, shopLook, shopMount } from './shopGoods';
+import { ringLook } from '../arena/rewards';
+import { rankOf } from '../arena/ranks';
 
 /**
  * The Wardrobe and the mount collection (blueprint §6, COLLECTION_SYSTEM_DESIGN.md). A look is the
@@ -41,6 +43,8 @@ export interface Look {
   authored: boolean;
   /** From the site's shop (progress/shopGoods.ts): any class wears it, while the account owns it. */
   shop?: boolean;
+  /** A Ring reward (arena/rewards.ts): the rating it is earned at. Worn like a shop look, by any class. */
+  ring?: number;
 }
 
 const HEX = /^[0-9a-f]{6}$/;
@@ -216,6 +220,8 @@ function sourceIndex(): Map<string, { quest?: string; boss?: string }> {
  */
 export function lookSource(c: Pick<Character, 'quests'>, id: string): string {
   const def = ITEM_DEFS[id];
+  const won = def ? undefined : ringLook(id);
+  if (won) return `Earned in The Ring: reach ${won.ring} rating (${rankOf(won.ring).name}). Any class wears it, on every hero.`;
   if (!def && shopOnly(id)) return 'From the shop: yours on every hero of your account, for any class';
   if (!def) return 'Found gear';
   if (id.startsWith('warden-')) return 'Finish the story with this class';
