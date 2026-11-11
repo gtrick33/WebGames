@@ -13,7 +13,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { MODEL_FOOT, modelOnLot } from '../src/games/sigilfall/data/buildingArt';
-import { DOOR_BLOCKS } from '../src/games/sigilfall/data/greatworks';
+import { DOOR_BLOCKS, GREAT } from '../src/games/sigilfall/data/greatworks';
 import { DRAWN } from '../src/games/sigilfall/data/propDrawn';
 import { barrenThemes, dressedFor, keepsApart, PROPS } from '../src/games/sigilfall/data/props';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
@@ -389,5 +389,33 @@ describe('Sigilfall: what stands in each land', () => {
       }
     }
     expect(things).toBeGreaterThan(3000);
+  });
+
+  it('stands an army on open ground, and one well to a square', () => {
+    // the dead of the Pale Reach stand in their ranks before Duskspire: none of them in a crag
+    let ranks = 0;
+    for (const id of WILDS) {
+      const m = mapOf(id);
+      for (const pm of m.markers) {
+        if (pm.marker.kind !== 'prop' || !pm.marker.prop.startsWith('great:')) continue;
+        const work = GREAT[pm.marker.prop.slice(6)];
+        if (!work?.field) continue;
+        for (const part of work.parts) {
+          const x = Math.floor(pm.tx + 0.5 + part.x);
+          const y = Math.floor(pm.ty + 0.5 + part.z);
+          ranks++;
+          expect(m.kind[y * m.w + x], `${id}: one of ${pm.marker.prop} stands in rock at ${x},${y}`).not.toBe(K.Wall);
+        }
+      }
+    }
+    expect(ranks).toBeGreaterThan(40);
+    // a square is gathered round one well, not two
+    let wells = 0;
+    for (const id of LANDS) {
+      const at = mapOf(id).markers.filter((pm) => pm.marker.kind === 'prop' && base(pm.marker.prop) === 'well');
+      wells += at.length;
+      for (const a of at) for (const b of at) if (a !== b) expect(Math.max(Math.abs(a.tx - b.tx), Math.abs(a.ty - b.ty)), `${id}: wells at ${a.tx},${a.ty} and ${b.tx},${b.ty}`).toBeGreaterThan(12);
+    }
+    expect(wells).toBeGreaterThan(5);
   });
 });

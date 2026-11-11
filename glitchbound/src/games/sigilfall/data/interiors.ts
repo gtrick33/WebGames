@@ -271,10 +271,16 @@ function brannocsForge(): CityPlan {
   wide(c, 'forge', 8, 2, 3);
   c.prop('weapon-rack', 3, 2);
   c.prop('weapon-rack', 13, 2);
+  // (a working smithy: coal by the fire, a quench bucket at the anvil, a bench of half-done work, mail on a stand)
+  c.prop('coal-heap', 5, 2);
+  c.prop('armor-stand', 11, 2);
   c.prop('anvil', 7, 5);
+  c.prop('bucket', 9, 5);
+  c.prop('table', 13, 5);
   c.prop('trough', 12, 7);
   c.prop('grindstone', 3, 7);
   c.prop('barrel', 1, 9);
+  c.prop('sacks', 2, 10);
   c.prop('crate', 15, 9);
   c.prop('crate', 15, 10);
   c.npc('apprentice-kit', 5, 6);

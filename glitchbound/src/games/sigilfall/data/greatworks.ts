@@ -60,6 +60,8 @@ export interface GreatWork {
   overRoad?: boolean;
   /** Its ground has a wall round it: what's in there isn't for walking on, and now you can see why. */
   walled?: boolean;
+  /** It stands all over its ground (an army in its ranks): the crag or deep wood there goes too, or half of it stands in rock. */
+  field?: boolean;
 }
 
 /* ------------------------------------------------------------------ what they're made of */
@@ -494,6 +496,7 @@ export const GREAT: Record<string, GreatWork> = {
     parts: Array.from({ length: 48 }, (_, i): GreatPart => figure('sk_guard', 'idle', 2.6, ((i % 8) - 3.5) * 3.2, (Math.floor(i / 8) - 2.5) * 3.2, { rot: 180, t: (i % 5) * 0.1, tint: '#c8ccd8', stone: 0.3 })),
     solid: [],
     room: [15, 11],
+    field: true,
   },
 };
 

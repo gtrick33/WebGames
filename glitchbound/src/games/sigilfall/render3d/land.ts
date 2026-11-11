@@ -1542,7 +1542,8 @@ export class Land3D {
       const def = TREES[kind] ?? TREES.oak;
       const m = def.m[Math.floor(hash2(tx, ty, 77) * def.m.length) % def.m.length]!;
       const size = def.h * (0.72 + hash2(tx, ty, 21) * 0.34);
-      const frost = kind === 'snowpine' ? FROST : null;
+      // (a crystal takes the land's own light, as the ones inside the border do: the model itself is plain white)
+      const frost = kind === 'snowpine' ? FROST : kind === 'crystal' ? hexRgb(look.leaves[hash2(tx, ty, 93) < 0.3 ? 5 : 4]) : null;
       this.add({ m, x, z, y, rot: hash2(tx, ty, 71) * 6.28, sx: this.fitted(m, size, 2.1), sway: kind === 'dead' || kind === 'crystal' || kind === 'cactus' ? 0 : 0.8, shadow: 1.1, ...(frost ? { r: frost[0], g: frost[1], b: frost[2] } : {}) });
       // (a bush at the foot of some trees)
       if (hash2(tx, ty, 73) < 0.45) {
@@ -1784,13 +1785,17 @@ export class Land3D {
     // zones if they have empty spaces like this ... make it look complete, polished and fitting"). Nine tiles out, as
     // far as anyone standing at the border can see
     if (!woody && !look.indoor && !look.stone) {
+      // (in the cliff's own color, as the rock on the cliff inside the border is: pale grey past a violet rim read as
+      // another land's stone)
+      const top = look.cliffs ? null : hexRgb(look.ground.leaf[3]);
+      const tone = top ? ([Math.min(1.5, Math.max(0.4, top[0] / 0.52)), Math.min(1.5, Math.max(0.4, top[1] / 0.52)), Math.min(1.5, Math.max(0.4, top[2] / 0.52))] as const) : ([1, 1, 1] as const);
       for (let ty = -BEYOND; ty < H + BEYOND; ty++) {
         for (let tx = -BEYOND; tx < W + BEYOND; tx++) {
           if (tx >= 0 && ty >= 0 && tx < W && ty < H) continue;
           const h = hash2(tx + 40, ty + 40, 71);
           if (h <= 0.5) {
             const rock = ROCKS[Math.floor(hash2(tx + 40, ty + 40, 73) * ROCKS.length)]!;
-            this.add({ m: rock, x: tx + 0.5 + (h - 0.25) * 0.8, z: ty + 0.5 + (hash2(tx, ty, 31) - 0.5) * 0.5, rot: h * 12.5, sx: this.fitted(rock, 0.7 + hash2(tx, ty, 21) * 0.8, 1.5), y: 1.7 });
+            this.add({ m: rock, x: tx + 0.5 + (h - 0.25) * 0.8, z: ty + 0.5 + (hash2(tx, ty, 31) - 0.5) * 0.5, rot: h * 12.5, sx: this.fitted(rock, 0.7 + hash2(tx, ty, 21) * 0.8, 1.5), y: 1.7, r: tone[0], g: tone[1], b: tone[2] });
           } else if (h > 0.62) this.woodland(tx, ty, false, 1.7);
         }
       }

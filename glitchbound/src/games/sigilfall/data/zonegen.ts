@@ -372,7 +372,8 @@ const SCENES: Record<string, { rows: string[]; key: Record<string, SceneCell> }>
   // (its lamp, not the Host's skull standard: that is the story's to raise and strike)
   gibbet: { rows: ['.k.', 'sCs', '.b.'], key: { C: P('cage', true), k: P('grave-lamp', true), s: P('skulls'), b: P('bones') } },
   pyre: { rows: ['.L.', 'sFk', '.L.'], key: { F: P('campfire', true), L: P('log'), s: P('bone-heap'), k: P('skulls') } },
-  lostcamp: { rows: ['T..k', '.b..', 'd.x.'], key: { T: P('camp-tent', true), b: P('bedroll'), k: P('bones'), d: P('debris'), x: P('crate', true) } },
+  // (the bedroll a full step from the tent: at its corner it lay half under the canvas)
+  lostcamp: { rows: ['T..k', '..b.', 'd.x.'], key: { T: P('camp-tent', true), b: P('bedroll'), k: P('bones'), d: P('debris'), x: P('crate', true) } },
   colonnade: { rows: ['c.c.c', '.....', 'c.r.c', '..u..'], key: { c: P('sand-column', true), r: P('rubble'), u: P('urn', true) } },
   icefall: { rows: ['c..c.', '..k..', '.c..c'], key: { c: P('ice-crystal', true), k: P('ice-column', true) } },
   vent: { rows: ['e.e.', '..k.', 'e.s.', '..e.'], key: { e: P('ember-rock', true), k: P('skulls'), s: P('bone-heap') } },
@@ -1296,7 +1297,8 @@ class ZoneBuilder {
       stalls.push([dx, dy]);
       prop(dx + side, dy, goods[(i + Math.floor(hash2(cx, cy, seed + 87) * 4)) % goods.length]!);
     });
-    for (const [dx, dy, name] of sq.furniture) prop(dx, dy, name);
+    // (one of a kind: a square whose heart is a well doesn't get the court's second well beside it, but a trader's cart)
+    for (const [dx, dy, name] of sq.furniture) prop(dx, dy, name === heart.centre[0]?.[2] ? 'market-cart' : name);
     // the people stand where they work: the smith at the smithy, the brewer at the inn, the trader before their
     // stall (behind it, its awning hid them), the priest at the chapel, the lord at the keep; everyone else at the
     // door of a house of their own, nearest the square first (no crowd round the waystone)
@@ -1467,6 +1469,8 @@ class ZoneBuilder {
               if (!this.inside(x, y, 4) || this.marked.has(this.idx(x, y)) || this.lock[this.idx(x, y)]) continue;
               const k = this.at(x, y);
               if (k === TREE || k === BUSH || k === ROCK) this.set(x, y, FLOOR);
+              // (an army's field is open ground: the crag in it goes, out to a ragged rim and not a ruled one)
+              else if (work.field && k === WALL && ((x - cx) / (work.room[0] + 1)) ** 2 + ((y - cy) / (work.room[1] + 1)) ** 2 < 0.9 + hash2(x, y, this.spec.seed + 61) * 0.3) this.set(x, y, FLOOR);
             }
           }
           // (a door the story hasn't opened yet: nothing's there to walk into until it has)
@@ -2218,7 +2222,7 @@ const LANDMARKS: Record<string, LandmarkSpec[]> = {
   'weeping-woods': [{ prop: 'dead-colossus', at: [0.62, 0.28], foot: 2 }, { prop: 'crypt-hill', at: [0.28, 0.72], foot: 3 }],
   'sunken-reaches': [{ prop: 'great-wreck', at: [0.3, 0.62], foot: 2 }, { prop: 'lighthouse', at: [0.76, 0.28], foot: 2 }],
   blightwood: [{ prop: 'dead-colossus', at: [0.4, 0.64], foot: 2 }, { prop: 'great-mushroom-tree', at: [0.76, 0.28], foot: 1 }],
-  emberdeep: [{ prop: 'lava-spire', at: [0.28, 0.3], foot: 2 }, { prop: 'giant-skull:#b88a70', at: [0.72, 0.7], foot: 2 }],
+  emberdeep: [{ prop: 'lava-spire', at: [0.28, 0.3], foot: 2 }, { prop: 'giant-skull:#8e7a70', at: [0.72, 0.7], foot: 2 }],
   hollowmere: [{ prop: 'crypt-hill', at: [0.72, 0.28], foot: 3 }, { prop: 'great-wreck', at: [0.28, 0.72], foot: 2 }],
   riftscar: [{ prop: 'rift-spire', at: [0.15, 0.36], foot: 2 }, { prop: 'rift-spire', at: [0.72, 0.64], foot: 2 }],
   'pale-reach': [{ prop: 'bone-arch', at: [0.24, 0.72], foot: 2 }],
