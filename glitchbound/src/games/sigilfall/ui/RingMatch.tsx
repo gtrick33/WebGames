@@ -225,6 +225,9 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const keysRef = useRef(ringKeys);
   const binding = useRef(false);
   const [keysOpen, setKeysOpen] = useState(false);
+  // the nameplates along the top can be put away (the owner: "add as an option to remove the nameplates on the screen
+  // during a fight in the ring"); kept with the game's settings, so the next match starts the same way
+  const [plates, setPlates] = useState(() => engine.settings.ringPlates);
   const [, tick] = useState(0);
   const [m] = useState(() => {
     const out = new Match(setup);
@@ -753,8 +756,9 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         <div className="rb-ring-stage">
           <canvas ref={canvasRef} className="rb-ring-canvas" />
           <div className="rb-ring-top">
+            {/* (with the nameplates put away their places stay, empty, so the clock keeps to the middle) */}
             <div className="rb-ring-team">
-              {left.map((f) => (
+              {plates && left.map((f) => (
                 <Frame key={f.id} f={f} m={m} me={me} doll={dolls[f.id]!} title={f.id === myId ? (title ?? null) : null} tag={helps && f.id === friendId && m.phase === 'fight' ? 'Helping' : null} onPick={() => target(f.id)} />
               ))}
             </div>
@@ -773,11 +777,25 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               {damp > 0 && <small className="rb-ring-damp" title="Healing fades the longer a match goes">Healing −{damp}%</small>}
             </div>
             <div className="rb-ring-team is-foes">
-              {right.map((f) => (
+              {plates && right.map((f) => (
                 <Frame key={f.id} flip f={f} m={m} me={me} doll={dolls[f.id]!} tag={f === foeAlive ? 'Target' : null} onPick={() => target(f.id)} />
               ))}
             </div>
             <div className="rb-ring-menu">
+              <button
+                className={`rb-iconbtn${plates ? '' : ' is-off'}`}
+                aria-pressed={plates}
+                aria-label="Nameplates"
+                title={plates ? 'Hide the nameplates' : 'Show the nameplates'}
+                onClick={() => {
+                  engine.setSettings({ ringPlates: !plates });
+                  // (written now: the game's own saving waits for its world to tick, and none does during a match)
+                  engine.persist();
+                  setPlates(!plates);
+                }}
+              >
+                ▤
+              </button>
               {!touch && (
                 <button className="rb-iconbtn" onClick={() => setKeysOpen(true)} aria-label="Keys" title="Keys">
                   ⌨

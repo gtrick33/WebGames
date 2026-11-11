@@ -76,6 +76,8 @@ export interface Settings {
   rotateSeen: boolean;
   /** The first-timer's hints (progress/tips.ts) are on. */
   tutorial: boolean;
+  /** The Ring shows each fighter's nameplate along the top of the screen during a match. */
+  ringPlates: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -98,6 +100,7 @@ export const DEFAULT_SETTINGS: Settings = {
   lefty: false,
   rotateSeen: false,
   tutorial: true,
+  ringPlates: true,
 };
 
 export interface SaveFile {
@@ -153,6 +156,7 @@ export function validateSettings(v: unknown): Settings {
     skill4Key: o.skill4Key === 'v' || o.skill4Key === 'z' || o.skill4Key === 'x' ? o.skill4Key : 'c',
     lefty: bool(o.lefty, d.lefty),
     tutorial: bool(o.tutorial, d.tutorial),
+    ringPlates: bool(o.ringPlates, d.ringPlates),
     rotateSeen: bool(o.rotateSeen, d.rotateSeen),
   };
 }

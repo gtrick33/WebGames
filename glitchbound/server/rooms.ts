@@ -76,12 +76,15 @@ export async function listRooms(env: Env, game?: RoomGame): Promise<ListedRoom[]
 
 /**
  * Quick match: a public room of this game that is about to start and has a free seat (not one of `skip`,
- * the rooms this player already found full), else a new one held for whoever searches next.
+ * the rooms this player already found full), else a new one held for whoever searches next. `kind`: which of the
+ * game's queues, for a game with more than one.
  */
-export async function matchRoom(env: Env, game: RoomGame, skip: readonly string[] = []): Promise<{ code: string; created: boolean } | null> {
+export async function matchRoom(env: Env, game: RoomGame, skip: readonly string[] = [], kind = ''): Promise<{ code: string; created: boolean } | null> {
   const codes = skip.filter(validCode).slice(0, 10).join(',');
+  // (a game with several queues names the one it wants: The Ring's 1v1, 2v2 and 3v3)
+  const queue = /^[a-z0-9-]{1,12}$/.test(kind) ? kind : '';
   const res = await lobbyStub(env)
-    ?.fetch(`https://room/lobby/match?game=${game}${codes ? `&skip=${codes}` : ''}`, { method: 'POST' })
+    ?.fetch(`https://room/lobby/match?game=${game}${codes ? `&skip=${codes}` : ''}${queue ? `&kind=${queue}` : ''}`, { method: 'POST' })
     .catch(() => null);
   return res?.ok ? ((await res.json()) as { code: string; created: boolean }) : null;
 }

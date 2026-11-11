@@ -172,4 +172,5 @@ export function viewFor(s: State, key: string): View | null {
   };
 }
 
-export const summary = (s: State): ReturnType<typeof summaryOf> => summaryOf(s, 'sigilfall-ring', MAX_PLAYERS);
+/** (`max`: what a search fills, both sides of its format; a room of friends still seats six) */
+export const summary = (s: State): ReturnType<typeof summaryOf> => ({ ...summaryOf(s, 'sigilfall-ring', MAX_PLAYERS), max: s.format * 2 });

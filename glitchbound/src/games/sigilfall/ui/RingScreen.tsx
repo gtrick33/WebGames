@@ -12,6 +12,7 @@ import { classOpen } from '../progress/paidClasses';
 import type { ClassId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { Link, type LinkState } from '../net/link';
+import { Seek, type SeekLook } from '../net/ringSeek';
 import type { Action as RoomAction, Pick as RoomPick, View as RoomView } from '../net/ringRoom';
 import { newCharacter, type Face } from '../progress/character';
 import { iconPicture } from '../render/art/gameIcons';
@@ -125,18 +126,31 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const [rewardsOpen, setRewardsOpen] = useState(false);
   const [looksOpen, setLooksOpen] = useState(false);
   const [fight, setFight] = useState<{ setup: MatchSetup; rival: Comp; skill: number; rivalRating: number; stakes: MatchStakes; format: Format; snap?: LiveMatch['snap'] } | null>(() => (resume ? { ...resume, stakes: resume.stakes } : null));
-  const [roomFight, setRoomFight] = useState<{ setup: MatchSetup; mine: number; host: boolean } | null>(null);
+  // (`matched`: found by a search, not a room of friends: there is no room to go back to when it ends)
+  const [roomFight, setRoomFight] = useState<{ setup: MatchSetup; mine: number; host: boolean; matched?: boolean } | null>(null);
   const [run, setRun] = useState(0);
-  const [result, setResult] = useState<{ r: MatchResult; rating: RatingOutcome | null; rival?: string; solo: boolean } | null>(null);
+  const [result, setResult] = useState<{ r: MatchResult; rating: RatingOutcome | null; rival?: string; kind: 'solo' | 'matched' | 'room' } | null>(null);
+  // a search for other players (net/ringSeek.ts): what its waiting screen shows, and a word left by one that ended badly
+  const [look, setLook] = useState<SeekLook | null>(null);
+  const [seekNote, setSeekNote] = useState('');
+  const seekRef = useRef<Seek | null>(null);
   const [view, setView] = useState<RoomView | null>(null);
   const [linkState, setLinkState] = useState<LinkState | 'none'>('none');
   const [roomErr, setRoomErr] = useState('');
   const [codeIn, setCodeIn] = useState('');
   const linkRef = useRef<Link<RoomView, RoomAction> | null>(null);
   const inbox = useRef<RingInbox | null>(null);
-  useEffect(() => () => linkRef.current?.close(), []);
+  useEffect(
+    () => () => {
+      linkRef.current?.close();
+      seekRef.current?.stop();
+    },
+    [],
+  );
 
   const hero = name ?? 'You';
+  // (what other people see: a player with no campaign hero goes by their arcade name, not as somebody else's "You")
+  const shownAs = name ?? (engine.defaultName.trim() || 'You');
   const standing = standingOf(save, format);
   const rank = rankOf(standing.best);
   const next = nextRank(standing.best);
@@ -194,6 +208,61 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     setFight(next);
   };
 
+  /** Out of a search, or of the match it found (`soon`: this end ran the match, and lets its last word arrive first). */
+  const endSeek = (soon = false): void => {
+    if (soon) seekRef.current?.stopSoon();
+    else seekRef.current?.stop();
+    seekRef.current = null;
+    linkRef.current = null;
+    setLook(null);
+  };
+
+  /**
+   * "Find a match": other players first, for ten seconds, then the computer's teams (the owner: "try to find existing
+   * players for a while and after 10 secs of loading screen, load bots if noone is queing").
+   */
+  const findMatch = (): void => {
+    if (!ready) {
+      openSetup('play');
+      return;
+    }
+    setResult(null);
+    setPage('play');
+    setSeekNote('');
+    seekRef.current?.stop();
+    const ground = map === 'random' ? MAP_IDS[Math.floor(Math.random() * MAP_IDS.length)]! : map;
+    seekRef.current = new Seek(
+      { format, map: ground, name: shownAs, pick: { cls: pick, bar, oath, talents } },
+      {
+        onLook: setLook,
+        onRun: (v, link) => {
+          const { setup: s, mine } = setupFromRoom(v);
+          if (mine < 0) {
+            endSeek();
+            enter();
+            return;
+          }
+          linkRef.current = link;
+          setLook(null);
+          setRun((r) => r + 1);
+          setRoomFight({ setup: s, mine, host: v.host === v.you, matched: true });
+        },
+        onBots: () => {
+          seekRef.current = null;
+          setLook(null);
+          enter();
+        },
+        onRelay: (n, d) => inbox.current?.(n, d),
+        onGone: () => {
+          seekRef.current = null;
+          linkRef.current = null;
+          setRoomFight(null);
+          setSeekNote('That match ended because a player left it. Nothing changed for you.');
+        },
+      },
+    );
+  };
+
   /* -------------------------------------------------- the room */
   const myPick = useMemo((): RoomPick => ({ team: view?.seats.find((s) => s.you)?.pick?.team ?? 0, cls: pick, bar, oath, talents }), [view, pick, bar, oath, talents]);
   const runSeen = useRef(0);
@@ -238,7 +307,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     setRoomErr('');
     setLinkState('connecting');
     try {
-      linkRef.current = await Link.create<RoomView, RoomAction>(hero, handlers, 'sigilfall-ring');
+      linkRef.current = await Link.create<RoomView, RoomAction>(shownAs, handlers, 'sigilfall-ring');
     } catch (e) {
       setLinkState('none');
       setRoomErr(e instanceof Error ? e.message : 'Could not open a room.');
@@ -249,7 +318,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     if (!code) return;
     setRoomErr('');
     setLinkState('connecting');
-    linkRef.current = new Link<RoomView, RoomAction>(code, hero, handlers);
+    linkRef.current = new Link<RoomView, RoomAction>(code, shownAs, handlers);
   };
   const leaveRoom = (): void => {
     linkRef.current?.send({ t: 'bye' });
@@ -319,7 +388,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
           clearLive();
           const rating: RatingOutcome = r.draw ? { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: 0 } : settle(r.won);
           if (rating.rankUp) engine.sound.play('levelup');
-          setResult({ r, rating, rival: fight.rival.name, solo: true });
+          setResult({ r, rating, rival: fight.rival.name, kind: 'solo' });
           setFight(null);
         }}
       />
@@ -346,12 +415,14 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         stakes={null}
         onSets={putSets}
         onLeave={() => {
-          if (roomFight.host) linkRef.current?.send({ t: 'end' });
+          if (roomFight.matched) endSeek();
+          else if (roomFight.host) linkRef.current?.send({ t: 'end' });
           setRoomFight(null);
         }}
         onDone={(r) => {
-          setResult({ r, rating: null, solo: false });
-          if (roomFight.host) linkRef.current?.send({ t: 'end' });
+          setResult({ r, rating: null, kind: roomFight.matched ? 'matched' : 'room' });
+          if (roomFight.matched) endSeek(roomFight.host);
+          else if (roomFight.host) linkRef.current?.send({ t: 'end' });
           setRoomFight(null);
         }}
       />
@@ -367,9 +438,9 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         rating={result.rating}
         rival={result.rival}
         dolls={result.r.dolls}
-        againLabel={result.solo ? 'Fight again' : 'Back to the room'}
+        againLabel={result.kind === 'room' ? 'Back to the room' : 'Fight again'}
         onAgain={() => {
-          if (result.solo) enter();
+          if (result.kind !== 'room') findMatch();
           else {
             setResult(null);
             setPage('friends');
@@ -377,11 +448,11 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         }}
         onSetup={() => {
           setResult(null);
-          openSetup(result.solo ? 'play' : 'friends');
+          openSetup(result.kind === 'room' ? 'friends' : 'play');
         }}
         onExit={() => {
           setResult(null);
-          if (!result.solo) leaveRoom();
+          if (result.kind === 'room') leaveRoom();
           setPage('play');
         }}
       />
@@ -559,8 +630,13 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
                 </div>
               </div>
 
+              {seekNote && (
+                <p className="rb-rp-error" role="status">
+                  {seekNote}
+                </p>
+              )}
               <div className="rb-rp-go">
-                <button className="rb-btn is-gold is-big" onClick={enter}>
+                <button className="rb-btn is-gold is-big" onClick={findMatch}>
                   {ready ? `Find a ${format}v${format} match` : `Choose ${SLOTS - bar.length} more abilities`}
                 </button>
                 <button className="rb-btn" onClick={() => setPage('friends')}>
@@ -579,11 +655,42 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
 
         {page === 'friends' && <FriendsPage view={view} state={linkState} err={roomErr} ready={ready} codeIn={codeIn} setCodeIn={setCodeIn} onOpen={() => void openRoom()} onJoin={joinRoom} send={(a) => linkRef.current?.send(a)} myPick={myPick} pick={pick} onPick={choose} onSetup={() => openSetup('friends')} bar={bar} />}
 
+        {look && <Seeking look={look} format={format} cls={pick} onCancel={() => endSeek()} />}
         {help && <RingHelp onClose={() => setHelp(false)} />}
         {rewardsOpen && <RewardsDialog best={bestRating()} onClose={() => setRewardsOpen(false)} />}
         {looksOpen && <LooksDialog engine={engine} cls={pick} wear={wear} plain={save.plain} doll={doll} shown={titled(wear ? wear.name : hero, myTitle)} onPlain={(p) => commit((now) => ({ ...now, plain: p }))} onChange={() => setWearN((n) => n + 1)} onClose={() => setLooksOpen(false)} />}
       </div>
     </ScreenGate>
+  );
+}
+
+const listed = (names: string[]): string => (names.length < 2 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]!}`);
+
+/** The waiting screen of a search: who has turned up, how long is left, and a way out. */
+function Seeking({ look, format, cls, onCancel }: { look: SeekLook; format: Format; cls: ClassId; onCancel: () => void }) {
+  const here = listed(look.others);
+  const more = format * 2 - 1 - look.others.length;
+  return (
+    <div className="rb-ring-dialog-wrap rb-rp-seek" role="dialog" aria-modal="true" aria-label="Looking for a match">
+      <div className="rb-ring-dialog">
+        <i className={`rb-rp-seek-ring${look.full ? ' is-found' : ''}`} style={{ ['--c' as string]: CLASSES[cls].colors.accent }} aria-hidden="true">
+          <b>{look.full ? '✓' : look.left}</b>
+        </i>
+        <h2>{look.full ? 'Match found' : 'Looking for players'}</h2>
+        <p role="status">
+          {look.full
+            ? `${here}. The gates are opening.`
+            : look.others.length
+              ? `${here} ${look.others.length === 1 ? 'is' : 'are'} here. Waiting for ${more} more; the computer takes any place left empty.`
+              : `A ${format}v${format} match. If nobody turns up in ${look.left} ${look.left === 1 ? 'second' : 'seconds'}, you fight the computer’s teams.`}
+        </p>
+        {!look.full && (
+          <button className="rb-btn" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 

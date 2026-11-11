@@ -63,6 +63,8 @@ interface Listing {
   matched: boolean;
   /** When a quick-match room starts by itself. */
   startAt: number | null;
+  /** Which of its game's queues quick match opened it for (lobby.ts `kind`). */
+  kind?: string;
 }
 const NOT_LISTED: Listing = { listed: false, matched: false, startAt: null };
 
@@ -143,7 +145,7 @@ export class Room {
     const sum = engineFor(s).summary(s) as { code: string; phase: string; players: number; host: string; full: boolean; game?: string; max?: number };
     const game = (sum.game ?? 'crass-act') as GameId;
     // the room's real size (quick match fills QUICK.seats of it; engines without `max` seat exactly that)
-    const entry = !closed && this.listing.listed ? { code: sum.code, game, phase: sum.phase, players: sum.players, max: sum.max ?? QUICK[game].seats, host: sum.host, full: sum.full, matched: this.listing.matched } : null;
+    const entry = !closed && this.listing.listed ? { code: sum.code, game, phase: sum.phase, players: sum.players, max: sum.max ?? QUICK[game].seats, host: sum.host, full: sum.full, matched: this.listing.matched, ...(this.listing.kind ? { kind: this.listing.kind } : {}) } : null;
     const sig = entry ? JSON.stringify(entry) : 'off';
     if (sig === this.reported) return;
     // A private room the lobby never heard of has nothing to take back.
@@ -185,7 +187,8 @@ export class Room {
       const s = ENGINES[isGameId(game) ? game : 'crass-act'].newRoom(code, now, crypto.getRandomValues(new Uint32Array(1))[0]!);
       this.state = s;
       const matched = url.searchParams.get('matched') === '1';
-      await this.setListing({ listed: matched || url.searchParams.get('listed') === '1', matched, startAt: null });
+      const kind = matched ? lobbyList.cleanKind(url.searchParams.get('kind')) : '';
+      await this.setListing({ listed: matched || url.searchParams.get('listed') === '1', matched, startAt: null, ...(kind ? { kind } : {}) });
       await this.save(s);
       return json({ ...(engineFor(s).summary(s) as object), listed: this.listing.listed });
     }
@@ -270,7 +273,8 @@ export class Room {
     if (url.pathname === '/lobby/match') {
       if (!isGameId(game) || !this.env.ROOM) return json({ error: 'bad' }, 400);
       const skip = (url.searchParams.get('skip') ?? '').split(',').filter(Boolean);
-      const found = lobbyList.match(rooms, game, now, skip);
+      const kind = lobbyList.cleanKind(url.searchParams.get('kind'));
+      const found = lobbyList.match(rooms, game, now, skip, kind);
       if (found) {
         await store();
         return json({ code: found.code, created: false });
@@ -279,8 +283,8 @@ export class Room {
       for (let attempt = 0; attempt < 5; attempt++) {
         const code = newCode();
         if (rooms[code]) continue;
-        lobbyList.reserve(rooms, code, game, QUICK[game].seats, now);
-        const res = await this.env.ROOM.get(this.env.ROOM.idFromName(code)).fetch(`https://room/init?code=${code}&game=${game}&matched=1`, { method: 'POST' });
+        lobbyList.reserve(rooms, code, game, QUICK[game].seats, now, kind);
+        const res = await this.env.ROOM.get(this.env.ROOM.idFromName(code)).fetch(`https://room/init?code=${code}&game=${game}&matched=1${kind ? `&kind=${kind}` : ''}`, { method: 'POST' });
         if (res.ok) {
           await store();
           return json({ code, created: true });
