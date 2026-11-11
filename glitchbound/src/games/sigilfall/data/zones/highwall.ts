@@ -67,6 +67,10 @@ export const HIGHWALL = wildRegion(
     ],
     wildCount: 56,
     story: [
+      // more of the Knights' Chapel's dead, across the east of its walled yard (the owner: "you can add more graves where
+      // the catapult was"). In its far row only: the near one is behind the yard's wall, where nothing is set down
+      { near: 'knights-chapel', dx: -2, dy: -17, marker: { kind: 'prop', prop: 'grave-cross', solid: true } },
+      { near: 'knights-chapel', dx: 0, dy: -17, marker: { kind: 'prop', prop: 'gravestone', solid: true } },
       // the ground before the Breach where Cael's riders go in
       { near: 'the-breach', dx: 6, dy: 10, marker: { kind: 'place', id: 'sortie-ground' } },
       { near: 'the-breach', dx: 2, dy: 2, marker: { kind: 'place', id: 'sortie-n' } },

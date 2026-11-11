@@ -1852,7 +1852,7 @@ class ZoneBuilder {
       const bands = s.wild.filter((b) => t >= b.band[0] - 0.05 && t <= b.band[1] + 0.05);
       const band = bands.length ? bands[Math.floor(this.r() * bands.length)]! : s.wild[0]!;
       const enemies = band.packs[Math.floor(this.r() * band.packs.length)]!;
-      this.put(x, y, { kind: 'pack', enemies, level: this.levelAt(x, y), ...(this.r() < 0.06 ? { elite: true } : {}) });
+      this.put(x, y, { kind: 'pack', enemies, level: this.levelAt(x, y), ...(this.r() < 0.06 ? { elite: true } : {}), roam: true });
       this.packSpots.push([x, y]);
       made++;
     }

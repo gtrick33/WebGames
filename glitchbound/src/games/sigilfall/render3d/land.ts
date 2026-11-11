@@ -842,6 +842,9 @@ function blockStyles(look: ThemeLook, woody: boolean, stone?: string): { wall: B
   return { wall, rampart };
 }
 
+/** How far past a land's edge its wood or its cliff tops are dressed, in tiles: as far as the camera sees from the border. */
+const BEYOND = 9;
+
 export class Mesher {
   pos: number[] = [];
   nor: number[] = [];
@@ -1776,22 +1779,26 @@ export class Land3D {
           break;
       }
     }
-    // a bare land's cliff tops past the edge carry their broken rock, as inside
+    // a bare land's cliff tops past the edge carry their broken rock, as inside, and what grows in that land: its dead
+    // trees, its cactus, its crystal, standing along the rim (the owner, of the ground past Highwall's edge: "check all
+    // zones if they have empty spaces like this ... make it look complete, polished and fitting"). Nine tiles out, as
+    // far as anyone standing at the border can see
     if (!woody && !look.indoor && !look.stone) {
-      for (let ty = -6; ty < H + 6; ty++) {
-        for (let tx = -6; tx < W + 6; tx++) {
+      for (let ty = -BEYOND; ty < H + BEYOND; ty++) {
+        for (let tx = -BEYOND; tx < W + BEYOND; tx++) {
           if (tx >= 0 && ty >= 0 && tx < W && ty < H) continue;
           const h = hash2(tx + 40, ty + 40, 71);
-          if (h > 0.5) continue;
-          const rock = ROCKS[Math.floor(hash2(tx + 40, ty + 40, 73) * ROCKS.length)]!;
-          this.add({ m: rock, x: tx + 0.5 + (h - 0.25) * 0.8, z: ty + 0.5 + (hash2(tx, ty, 31) - 0.5) * 0.5, rot: h * 12.5, sx: this.fitted(rock, 0.7 + hash2(tx, ty, 21) * 0.8, 1.5), y: 1.7 });
+          if (h <= 0.5) {
+            const rock = ROCKS[Math.floor(hash2(tx + 40, ty + 40, 73) * ROCKS.length)]!;
+            this.add({ m: rock, x: tx + 0.5 + (h - 0.25) * 0.8, z: ty + 0.5 + (hash2(tx, ty, 31) - 0.5) * 0.5, rot: h * 12.5, sx: this.fitted(rock, 0.7 + hash2(tx, ty, 21) * 0.8, 1.5), y: 1.7 });
+          } else if (h > 0.62) this.woodland(tx, ty, false, 1.7);
         }
       }
     }
     // the wood goes on past the edge of the map: a land doesn't stop at its border
     if (woody) {
-      for (let ty = -6; ty < H + 6; ty++) {
-        for (let tx = -6; tx < W + 6; tx++) {
+      for (let ty = -BEYOND; ty < H + BEYOND; ty++) {
+        for (let tx = -BEYOND; tx < W + BEYOND; tx++) {
           if (tx >= 0 && ty >= 0 && tx < W && ty < H) continue;
           this.woodland(tx, ty, false, 0);
         }

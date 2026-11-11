@@ -762,7 +762,7 @@ export interface StoryEventDef {
 
 export type Marker =
   | { kind: 'start' }
-  | { kind: 'pack'; enemies: string[]; elite?: boolean; named?: string; level?: number; rare?: boolean }
+  | { kind: 'pack'; enemies: string[]; elite?: boolean; named?: string; level?: number; rare?: boolean; /** One of a land's wandering packs, not a place's own: it has nowhere it must be. */ roam?: boolean }
   | { kind: 'chest'; id: string; tier: 'common' | 'rare' | 'epic'; once?: boolean }
   | { kind: 'npc'; npc: string }
   /** A way to another region; a `door` is walked straight through (into or out of a building), no road sign. */

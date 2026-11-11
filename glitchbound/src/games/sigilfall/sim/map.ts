@@ -455,19 +455,34 @@ function inSight(markers: PlacedMarker[], w: number, h: number, kind: Uint8Array
     return false;
   };
   const taken = new Set(markers.map((pm) => pm.ty * w + pm.tx));
+  const gone = new Set<PlacedMarker>();
   // (a pack stands about its marker, a tile or two either side: none of them behind the wall. The owner, of a bone
   // catapult behind a ruin's wall: "there's also something behind the wall there that is not visible")
   // (to its top, not to where a head shows over it: a wall as it is built stands over three tiles with its merlons)
+  // (nor a few steps back from it, showing over its top. A place's own pack is stood where it can be seen; one of the
+  // land's wandering packs has nowhere it must be and is taken away: the owner, of a bone catapult that had wandered
+  // into the Knights' Chapel's walled graveyard, moved two tiles off the wall and then round to its front: "i was just
+  // asking to remove the catapult")
+  // (what is built: a rampart, a house. The deep wood and the cliffs a land is closed with are walls to the map too,
+  // and half a land's packs stand north of some of them: those are let be)
   const behind = (tx: number, ty: number): boolean => {
-    const k = ty + 1 < h ? kind[(ty + 1) * w + tx] : K.Floor;
-    return k === K.Wall || k === K.Illusion || k === K.Rampart || k === K.House;
+    for (let d = 1; d <= 3; d++) {
+      const k = ty + d < h ? kind[(ty + d) * w + tx] : K.Floor;
+      if (k === K.Rampart || k === K.House) return true;
+    }
+    return false;
   };
   const packUnseen = (tx: number, ty: number): boolean => [-1, 0, 1].some((dx) => [-1, 0, 1].some((dy) => behind(tx + dx, ty + dy)));
   for (const pm of markers) {
     const pack = packs && pm.marker.kind === 'pack';
     if (pm.marker.kind !== 'npc' && pm.marker.kind !== 'chest' && !pack) continue;
     const up = pm.marker.kind === 'npc' ? 0.95 : 0.4;
-    if (pack ? !packUnseen(pm.tx, pm.ty) : !unseen(pm.tx, pm.ty, up)) continue;
+    if (pack && !packUnseen(pm.tx, pm.ty)) continue;
+    if (pack && pm.marker.kind === 'pack' && pm.marker.roam) {
+      gone.add(pm);
+      continue;
+    }
+    if (!pack && !unseen(pm.tx, pm.ty, up)) continue;
     let best: [number, number] | null = null;
     let bd = Infinity;
     for (let y = pm.ty - 8; y <= pm.ty + 8; y++) {
@@ -488,6 +503,7 @@ function inSight(markers: PlacedMarker[], w: number, h: number, kind: Uint8Array
       pm.ty = best[1];
     }
   }
+  for (let n = markers.length - 1; gone.size && n >= 0; n--) if (gone.has(markers[n]!)) markers.splice(n, 1);
 }
 
 /**
@@ -571,15 +587,38 @@ function standBuildings(def: RegionDef, w: number, h: number, kind: Uint8Array, 
     const way = ways.find((d) => d.ty === lot.ty + lot.h && Math.abs(d.tx - col) <= 1) ?? null;
     const pics = placeBuilding(lot.style, lot, def.theme, def.kind === 'town', lot.art, way ? way.tx : null, { ...(lot.scale ? { scale: lot.scale } : {}), ...(lot.grim ? { grim: true } : {}), ...(lot.fit ? { fit: true } : {}) });
     // no wood grows up against a wall (the owner: "the church is placed inside the woods"): a land's own woods stand
-    // back from what is built in them, a tree's width from a house and two from a chapel or a hall, more before its door
+    // back from what is built in them. Not along a ruled line ("don't cut it abruptly like that, it has to be
+    // natural"): a rounded clearing whose edge gives way tree by tree, wider for a chapel, a keep or a hall than for a
+    // house, and closing in again toward the land's own edge, which keeps its trees ("a forest surrounding it, just
+    // not colliding directly"). Of the deep wood a land closes its unreached ground with, drawn as trees too, only
+    // what stands at a great building's roof and shoulders goes: cleared far back, the Knights' Chapel stood in a bare
+    // field, which the owner called horrendous
     if (def.kind === 'wild') {
-      // (a chapel, a keep or a hall in a real clearing: two tiles of trees left it "still inside the trees")
-      const back = lot.style === 'house' || lot.style === 'tower' ? 1 : lot.style === 'temple' || lot.style === 'keep' || lot.style === 'hall' ? 5 : 2;
-      for (let y = lot.ty - back; y < lot.ty + lot.h + back + 1; y++) {
-        for (let x = lot.tx - back; x < lot.tx + lot.w + back; x++) {
+      const great = lot.style === 'temple' || lot.style === 'keep' || lot.style === 'hall';
+      const back = lot.style === 'house' || lot.style === 'tower' ? 1.5 : great ? 5.5 : 2.5;
+      const cx = lot.tx + lot.w / 2;
+      const cy = lot.ty + lot.h / 2;
+      const rx = lot.w / 2 + back;
+      const ry = lot.h / 2 + back;
+      for (let y = Math.floor(cy - ry) - 1; y <= Math.ceil(cy + ry) + 1; y++) {
+        for (let x = Math.floor(cx - rx) - 1; x <= Math.ceil(cx + rx) + 1; x++) {
           if (x < 1 || y < 1 || x >= w - 1 || y >= h - 1) continue;
           const i = y * w + x;
-          if (kind[i] === K.Tree || kind[i] === K.Bush) kind[i] = K.Floor;
+          const k = kind[i];
+          if (k !== K.Tree && k !== K.Bush && k !== K.Wall) continue;
+          const edge = Math.min(x, y, w - 1 - x, h - 1 - y);
+          // how far out it is, as a share of the clearing: 1 at its rim
+          const n = Math.hypot((x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry);
+          if (k === K.Wall) {
+            const at = x >= lot.tx - 1 && x < lot.tx + lot.w + 1 && y >= lot.ty - 3 && y < lot.ty + lot.h;
+            if (great && edge >= 4 && (at || n < 0.5 + 0.28 * hash2(x, y, 917))) kind[i] = K.Floor;
+            continue;
+          }
+          // right against it, always; further out, a ragged rim
+          const at = x >= lot.tx - 1 && x < lot.tx + lot.w + 1 && y >= lot.ty - 2 && y < lot.ty + lot.h + 2;
+          const inside = n < 0.72 + 0.4 * hash2(x, y, 911);
+          const kept = edge < 4 || (edge < 8 && hash2(x, y, 913) > (edge - 3) / 5);
+          if ((at && edge >= 2) || (inside && !kept)) kind[i] = K.Floor;
         }
       }
     }

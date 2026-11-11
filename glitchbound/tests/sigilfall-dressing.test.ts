@@ -221,12 +221,12 @@ describe('Sigilfall: what stands in each land', () => {
     let packs = 0;
     for (const id of WILDS) {
       const m = mapOf(id);
-      const wall = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < m.w && y < m.h && (m.kind[y * m.w + x] === K.Wall || m.kind[y * m.w + x] === K.Rampart || m.kind[y * m.w + x] === K.House);
+      const wall = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < m.w && y < m.h && (m.kind[y * m.w + x] === K.Rampart || m.kind[y * m.w + x] === K.House);
       for (const pm of m.markers) {
         if (pm.marker.kind !== 'pack') continue;
         packs++;
-        // (it stands about its marker, a tile either way: none of that ground has a wall right south of it)
-        for (const dx of [-1, 0, 1]) for (const dy of [-1, 0, 1]) expect(wall(pm.tx + dx, pm.ty + dy + 1) && !wall(pm.tx + dx, pm.ty + dy), `${id}: a pack at ${pm.tx},${pm.ty} behind a wall`).toBe(false);
+        // (it stands about its marker, a tile either way: none of that ground has a built wall within three tiles south of it)
+        for (const dx of [-1, 0, 1]) for (const dy of [-1, 0, 1]) for (const d of [1, 2, 3]) expect(wall(pm.tx + dx, pm.ty + dy + d) && !wall(pm.tx + dx, pm.ty + dy), `${id}: a pack at ${pm.tx},${pm.ty} behind a wall`).toBe(false);
       }
     }
     expect(packs).toBeGreaterThan(300);
@@ -267,21 +267,37 @@ describe('Sigilfall: what stands in each land', () => {
         expect(inside, `${land}: ${pm.marker.prop} inside the gate to ${door.to}`).toBe(false);
       }
     }
-    // (the owner, of the Knights' Chapel: "still feels inside the trees")
+    // (the owner, of the Knights' Chapel: "still colliding with the trees"; and of the clearing that followed, cut far
+    // back along a ruled line: "this is horrendous", "it has to be natural")
     let chapels = 0;
+    let cleared = 0;
+    let wooded = 0;
     for (const id of WILDS) {
       const m = mapOf(id);
       for (const b of m.buildings) {
         if (b.style !== 'temple') continue;
         chapels++;
-        for (let y = b.lot.ty - 4; y < b.lot.ty + b.lot.h + 4; y++) {
-          for (let x = b.lot.tx - 4; x < b.lot.tx + b.lot.w + 4; x++) {
-            if (x < 1 || y < 1 || x >= m.w - 1 || y >= m.h - 1) continue;
-            expect(m.kind[y * m.w + x] === K.Tree, `${id}: a tree at ${x},${y} by the chapel at ${b.lot.tx},${b.lot.ty}`).toBe(false);
+        // nothing growing right against it: a tile to each side, two behind and before
+        for (let y = b.lot.ty - 2; y < b.lot.ty + b.lot.h + 2; y++) {
+          for (let x = b.lot.tx - 1; x < b.lot.tx + b.lot.w + 1; x++) {
+            if (x < 2 || y < 2 || x >= m.w - 2 || y >= m.h - 2) continue;
+            expect(m.kind[y * m.w + x] === K.Tree, `${id}: a tree at ${x},${y} against the chapel at ${b.lot.tx},${b.lot.ty}`).toBe(false);
+            if (x >= 4 && y >= 4 && x < m.w - 4 && y < m.h - 4 && y < b.lot.ty + b.lot.h) expect(m.kind[y * m.w + x] === K.Wall, `${id}: deep wood at ${x},${y} against the chapel at ${b.lot.tx},${b.lot.ty}`).toBe(false);
+          }
+        }
+        // and the wood is still there round it: ten tiles out, a chapel that stood in a wood stands in one
+        for (let y = b.lot.ty - 12; y < b.lot.ty + b.lot.h + 12; y++) {
+          for (let x = b.lot.tx - 12; x < b.lot.tx + b.lot.w + 12; x++) {
+            if (x < 0 || y < 0 || x >= m.w || y >= m.h) continue;
+            const far = x < b.lot.tx - 9 || x >= b.lot.tx + b.lot.w + 9 || y < b.lot.ty - 9 || y >= b.lot.ty + b.lot.h + 9;
+            if (!far) cleared += m.kind[y * m.w + x] === K.Floor ? 1 : 0;
+            else wooded += m.kind[y * m.w + x] === K.Tree || m.kind[y * m.w + x] === K.Wall ? 1 : 0;
           }
         }
       }
     }
+    expect(wooded).toBeGreaterThan(200);
+    expect(cleared).toBeGreaterThan(200);
     expect(chapels).toBeGreaterThanOrEqual(10);
   });
 });
