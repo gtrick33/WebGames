@@ -7,7 +7,7 @@ import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
 import { afterMatch, COMPS, drawOpponents, namedApart, NEW_STANDING, nextRank, rankOf, ratingChange, RANKS, SET_COUNT, setsOf, skillAt } from '../src/games/sigilfall/arena/ladder';
 import { ARENA_H, ARENA_W, ENTRY_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
 import { cleanTalents, ROW_NAMES, TALENTS } from '../src/games/sigilfall/arena/talents';
-import { BASE_SPEED, CAST_SLOW, clearLine, CLOSE_FROM, CLOSE_TO, GATES, HERO_R, Match, MATCH_LIMIT, SIGIL_FIRST, ZONE_END, ZONE_START, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
+import { BASE_SPEED, CAST_SLOW, clearLine, CLOSE_FROM, CLOSE_TO, GATES, HERO_R, Match, MATCH_LIMIT, RANGED, RANGED_DMG, SIGIL_FIRST, ZONE_END, ZONE_START, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { act, cleanPick, join, newRoom, relay, viewFor } from '../src/games/sigilfall/net/ringRoom';
@@ -536,7 +536,9 @@ describe('The Ring: the kits', () => {
       for (const e of a.effects) {
         if (e.k === 'dot' || e.k === 'hot') {
           const said = a.text.match(/(\d+) (more )?over/);
-          if (said) expect(Number(said[1]), a.id).toBe(e.n);
+          // (what is said is what lands: those who fight from range deal a tenth less than their numbers)
+          const lands = e.k === 'dot' && a.cls !== 'any' && RANGED.has(a.cls) ? Math.round(e.n * RANGED_DMG) : e.n;
+          if (said) expect(Number(said[1]), a.id).toBe(lands);
         }
         if (e.k === 'absorb') {
           const said = a.text.match(/(\d+) damage/);

@@ -100,6 +100,7 @@ export const PACE = 0.93;
 
 /** The classes that fight from range, and the share of their damage they keep. */
 export const RANGED: ReadonlySet<ClassId> = new Set<ClassId>(['mage', 'ranger', 'warlock', 'priest', 'druid']);
+/** (Their abilities' own words give what lands after this: arena/abilities.ts.) */
 export const RANGED_DMG = 0.9;
 
 export interface Aura {
