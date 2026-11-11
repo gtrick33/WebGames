@@ -6997,14 +6997,6 @@
   image-rendering: pixelated;
   filter: saturate(0.6) brightness(0.72);
 }
-/* the Gloamknight's medal is a painted round, not a square of pixels: smooth, and drawn out to the frame's corners */
-.rb-rp-class.is-medal {
-  background: radial-gradient(circle at 50% 45%, #3a1a66, #120a20 72%);
-}
-.rb-rp-class.is-medal img {
-  image-rendering: auto;
-  scale: 1.22;
-}
 .rb-rp-class:hover,
 .rb-rp-class:focus-visible {
   transform: translateY(-2px);
@@ -8906,6 +8898,9 @@
   text-shadow: 0 1px 2px #000;
   pointer-events: none;
   background: rgb(5 3 13 / 0.78);
+}
+.rb-ring-err.is-note {
+  color: #ffe9b0;
 }
 .rb-ring-mycast {
   position: absolute;

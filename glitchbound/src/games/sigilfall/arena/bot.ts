@@ -1,12 +1,12 @@
 import { ABILITIES, DASH, superOf, type Ability } from './abilities';
 import { ARENA_H, ARENA_W } from './maps';
-import { BOLT_R, BOLT_SPEED, HERO_R, type Bolt, type Fighter, type Match, type MoveInput } from './sim';
+import { BASE_SPEED, HERO_R, type Fighter, type Match, type MoveInput, type Zone } from './sim';
 
 /**
  * A computer player for The Ring. It plays by the player's rules: it sees what a player sees, and presses the same
  * buttons through Match.press. `skill` from 0 to 1 is how quickly it reacts and how much of the game it plays: a low
- * one walks into shots, rarely interrupts and sits on its super; a high one sidesteps what's flying at it, strafes
- * while it casts, races for the sigil, saves its super for the kill and kicks heals.
+ * one stands under what is falling on it, rarely interrupts and sits on its super; a high one steps out from under it,
+ * strafes while it casts, races for the sigil and the healing spheres, saves its super for the kill and kicks heals.
  */
 export interface Brain {
   /** Time to the next thought. */
@@ -20,8 +20,8 @@ export interface Brain {
   /** Which way it circles its target, and when it turns the other way. */
   side: number;
   turnAt: number;
-  /** Shots it has already made up its mind about (to step aside or not). */
-  shots: WeakMap<Bolt, boolean>;
+  /** What is falling that it has already made up its mind about (to step out or not), by where and whose. */
+  shots: Map<string, boolean>;
 }
 
 export function newBrain(seed: number): Brain {
@@ -37,7 +37,7 @@ export function newBrain(seed: number): Brain {
     },
     side: seed % 2 ? 1 : -1,
     turnAt: 0,
-    shots: new WeakMap(),
+    shots: new Map(),
   };
 }
 
@@ -47,10 +47,13 @@ export const isHealer = (f: Pick<Fighter, 'bar'>): boolean => f.bar.filter((b) =
 
 const hpShare = (f: Fighter): number => f.hp / f.maxHp;
 
+/** Aimed at an enemy: at the one, or placed on the ground under them. */
+const atFoe = (a: Ability): boolean => a.aim === 'enemy' || a.aim === 'ground';
+
 /** One more moment of a computer player's mind. It returns where it wants to walk. */
 export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: number): MoveInput {
   if (f.dead || m.phase !== 'fight') return { mx: 0, my: 0 };
-  // a reflex, every frame: a shot about to land is stepped away from
+  // a reflex, every frame: what is about to fall on them is stepped out from under
   const away = dodge(m, f, b, skill);
   if (away) {
     b.move = away;
@@ -296,13 +299,15 @@ function attack(m: Match, f: Fighter, b: Brain, skill: number, target: Fighter):
       }
       continue;
     }
-    if (a.aim === 'enemy' && !(a.cast > 0 && pressed) && !m.blocked(f, a, target)) {
+    // (a placed spell with a cast lands where they stood when it began: only on someone who is going nowhere)
+    if (a.aim === 'ground' && a.cast > 0 && !(m.held(target) || m.rooted(target) || (target.cast && !target.cast.channel && target.cast.dur - target.cast.t > 0.8))) continue;
+    if (atFoe(a) && !(a.cast > 0 && pressed) && !m.blocked(f, a, target)) {
       m.press(f.id, a.id);
       return;
     }
   }
   // curses and poisons kept up, then the best hit on hand (casting slows you, so a blade close by wants instants)
-  const options = near.filter((a) => a.role === 'damage' && a.aim === 'enemy');
+  const options = near.filter((a) => a.role === 'damage' && atFoe(a));
   const fresh = options.filter((a) => a.effects.some((e) => e.k === 'dmg') || !target.auras.some((x) => x.ab === a.id && x.t > 1));
   const instant = fresh.filter((a) => a.cast === 0).sort((x, y) => worth(y) - worth(x));
   const cast = fresh.filter((a) => a.cast > 0).sort((x, y) => worth(y) - worth(x));
@@ -330,53 +335,59 @@ function unleash(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter
     if (caught.length && !m.blocked(f, sup)) m.press(f.id, sup.id);
     return;
   }
-  // a shot: best close in, or on someone who can't step aside
-  const d = Math.hypot(target.x - f.x, target.y - f.y);
-  const sure = !sup.bolt || d < 90 || !!m.held(target) || m.rooted(target);
-  if (sure && !m.blocked(f, sup, target)) m.press(f.id, sup.id);
+  if (sup.aim === 'ground') {
+    // placed: where it catches the most of them, among the spots under each one it can reach
+    let best: Fighter | null = null;
+    let most = 0;
+    for (const e of enemies) {
+      if (m.blocked(f, sup, e)) continue;
+      const caught = enemies.filter((o) => Math.hypot(o.x - e.x, o.y - e.y) <= (sup.area ?? 40) - 8).length + (e === target ? 0.5 : 0);
+      if (caught > most) {
+        most = caught;
+        best = e;
+      }
+    }
+    if (best) m.press(f.id, sup.id, { x: best.x, y: best.y });
+    return;
+  }
+  if (!m.blocked(f, sup, target)) m.press(f.id, sup.id);
 }
 
-/** A shot coming that will land: which way to step to make it miss (and a Swift Step when it's close). */
+/** Something placed is about to land on them: which way out is nearest (and a Swift Step when walking won't do). */
 function dodge(m: Match, f: Fighter, b: Brain, skill: number): MoveInput | null {
   if (m.held(f) || m.rooted(f) || f.dash) return null;
-  let best: { bolt: Bolt; at: number; sx: number; sy: number } | null = null;
-  for (const bolt of m.bolts) {
-    const src = m.fighters[bolt.src];
-    if (!src || src.team === f.team) continue;
-    const ab = ABILITIES[bolt.ab];
-    // a sharp eye sees it leave sooner
-    const flown = ((ab?.range ?? 0) + HERO_R + 40 - bolt.left) / BOLT_SPEED;
-    if (flown < 0.3 - skill * 0.22) continue;
-    let will = b.shots.get(bolt);
+  if (b.shots.size > 24) b.shots.clear();
+  let best: { z: Zone; out: number; sx: number; sy: number } | null = null;
+  for (const z of m.zones) {
+    if (z.team === f.team) continue;
+    const dx = f.x - z.x;
+    const dy = f.y - z.y;
+    const d = Math.hypot(dx, dy);
+    if (d > z.r + 4) continue;
+    // a sharp eye sees it placed sooner
+    if (z.dur - z.t < 0.34 - skill * 0.28) continue;
+    const key = `${z.src}:${z.ab}:${Math.round(z.x)}:${Math.round(z.y)}`;
+    let will = b.shots.get(key);
     if (will === undefined) {
       will = b.rand() < 0.04 + skill * skill * 0.66;
-      b.shots.set(bolt, will);
+      b.shots.set(key, will);
     }
     if (!will) continue;
-    // where it passes closest to where they stand
-    const gx = bolt.x;
-    const gy = bolt.y + 8;
-    const sp = Math.hypot(bolt.vx, bolt.vy) || 1;
-    const ux = bolt.vx / sp;
-    const uy = bolt.vy / sp;
-    const along = (f.x - gx) * ux + (f.y - gy) * uy;
-    if (along < -HERO_R) continue;
-    const side = (f.x - gx) * -uy + (f.y - gy) * ux;
-    if (Math.abs(side) > HERO_R + BOLT_R + 4) continue;
-    const at = along / sp;
-    if (at > 0.65 || (best && at > best.at)) continue;
-    // out to whichever side it's already further from
-    const dir = side >= 0 ? 1 : -1;
-    best = { bolt, at, sx: -uy * dir, sy: ux * dir };
+    const out = z.r + 5 - d;
+    if (best && out < best.out) continue;
+    // straight out from its middle (from the dead middle, the way they were going)
+    const len = d || 1;
+    best = { z, out, sx: d > 1 ? dx / len : f.dirX || 1, sy: d > 1 ? dy / len : f.dirY };
   }
   if (!best) return null;
-  // too close to walk clear: a Swift Step, if it's ready (and not at the price of a cast nearly done)
-  if (best.at < 0.28 && skill > 0.35 && !(f.cast && f.cast.dur - f.cast.t < 0.6) && !m.blocked(f, DASH)) {
-    f.dirX = best.sx;
-    f.dirY = best.sy;
+  const step = keepIn(m, f, best.sx, best.sy);
+  // further out than they can walk in the time left: a Swift Step, if it's ready (and not at the price of a cast nearly done)
+  if (best.out > BASE_SPEED * f.mods.speed * best.z.t * 0.9 && skill > 0.35 && !(f.cast && f.cast.dur - f.cast.t < 0.6) && !m.blocked(f, DASH)) {
+    f.dirX = step.mx;
+    f.dirY = step.my;
     m.press(f.id, DASH.id);
   }
-  return keepIn(m, f, best.sx, best.sy);
+  return step;
 }
 
 /** A way to step that doesn't run into the wall, stone or the Gloam: turned about if it would. */
@@ -428,6 +439,20 @@ function walk(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[],
       }
       return steer(m, f, b, sg.x, sg.y);
     }
+  }
+  // a healing sphere, when hurt and one is close and inside the Gloam's edge (a sharp one goes further for it)
+  if (hpShare(f) < 0.7 && b.rand() < 0.25 + skill * 0.75) {
+    let orb: { x: number; y: number } | null = null;
+    let od = 60 + skill * 70 + (hpShare(f) < 0.35 ? 60 : 0);
+    for (const o of m.orbs) {
+      if (m.clock < o.at || m.zoneAt(o.x, o.y) > 0.95) continue;
+      const d = Math.hypot(o.x - f.x, o.y - f.y);
+      if (d < od) {
+        od = d;
+        orb = o;
+      }
+    }
+    if (orb) return steer(m, f, b, orb.x, orb.y);
   }
   if (m.clock >= b.turnAt) {
     b.side = b.rand() < 0.5 ? 1 : -1;

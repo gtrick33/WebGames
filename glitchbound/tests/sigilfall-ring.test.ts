@@ -7,7 +7,7 @@ import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
 import { afterMatch, COMPS, drawOpponents, namedApart, NEW_STANDING, nextRank, rankOf, ratingChange, RANKS, SET_COUNT, setsOf, skillAt } from '../src/games/sigilfall/arena/ladder';
 import { ARENA_H, ARENA_W, ENTRY_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
 import { cleanTalents, ROW_NAMES, TALENTS } from '../src/games/sigilfall/arena/talents';
-import { BASE_SPEED, CAST_SLOW, clearLine, CLOSE_FROM, CLOSE_TO, GATES, HERO_R, Match, MATCH_LIMIT, RANGED, RANGED_DMG, SIGIL_FIRST, ZONE_END, ZONE_START, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
+import { BASE_SPEED, CAST_SLOW, CLASS_DMG, clearLine, CLOSE_FROM, CLOSE_TO, GATES, HERO_R, Match, MATCH_LIMIT, SIGIL_FIRST, ZONE_END, ZONE_START, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { act, cleanPick, join, newRoom, relay, viewFor } from '../src/games/sigilfall/net/ringRoom';
@@ -536,8 +536,8 @@ describe('The Ring: the kits', () => {
       for (const e of a.effects) {
         if (e.k === 'dot' || e.k === 'hot') {
           const said = a.text.match(/(\d+) (more )?over/);
-          // (what is said is what lands: those who fight from range deal a tenth less than their numbers)
-          const lands = e.k === 'dot' && a.cls !== 'any' && RANGED.has(a.cls) ? Math.round(e.n * RANGED_DMG) : e.n;
+          // (what is said is what lands: each class deals its own share of its numbers)
+          const lands = e.k === 'dot' && a.cls !== 'any' ? Math.round(e.n * CLASS_DMG[a.cls]) : e.n;
           if (said) expect(Number(said[1]), a.id).toBe(lands);
         }
         if (e.k === 'absorb') {
@@ -889,26 +889,39 @@ describe('The Ring: combos', () => {
 });
 
 describe('The Ring: a brawl', () => {
-  it('a shot flies where they were going: it lands on someone who keeps on, and misses someone who steps aside', () => {
-    const shoot = (dodge: boolean): number => {
-      const m = duel('mage', ['m-burn'], 'warrior');
+  it('a cast shot follows its target and lands, whichever way they turn, step or hide', () => {
+    // (the owner: "the misses are a bit annoying ... let's make all the spells hit the target, without any misses")
+    const shoot = (after: 'on' | 'turn' | 'step' | 'stone'): number => {
+      const m = duel('mage', ['m-lash'], 'warrior');
       const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
-      // (in the open between the sands' pillars, in reach)
-      me.x = 150;
-      foe.x = 270;
-      // walking up the ground when it's thrown
-      m.step(STEP, { 1: { mx: 0, my: -1 } });
-      expect(m.press(0, 'm-burn')).toBeNull();
+      const p = m.pillars[0]!;
+      me.x = p.x - 70;
+      me.y = p.y + p.h + 30;
+      foe.x = p.x + 10;
+      foe.y = p.y + p.h + 30;
+      expect(m.press(0, 'm-lash')).toBeNull();
+      for (let i = 0; i < 60 && m.fighters[0]!.cast; i++) m.step(STEP, { 1: { mx: 0, my: 1 } });
       expect(m.bolts).toHaveLength(1);
-      for (let i = 0; i < 30; i++) m.step(STEP, { 1: { mx: 0, my: dodge && i > 3 ? 1 : -1 } });
+      if (after === 'step') {
+        foe.dirX = 0;
+        foe.dirY = 1;
+        expect(m.press(1, DASH.id)).toBeNull();
+      }
+      // (behind the pillar, out of the caster's sight, while it is in the air)
+      if (after === 'stone') {
+        foe.x = p.x + p.w + 14;
+        foe.y = p.y - 6;
+        expect(m.sees(me, foe)).toBe(false);
+      }
+      for (let i = 0; i < 60; i++) m.step(STEP, { 1: { mx: after === 'turn' ? (i % 8 < 4 ? 1 : -1) : 0, my: after === 'turn' ? 0 : 1 } });
+      expect(m.bolts).toHaveLength(0);
       return foe.maxHp - foe.hp;
     };
-    expect(shoot(false)).toBeGreaterThan(0);
-    expect(shoot(true)).toBe(0);
+    for (const how of ['on', 'turn', 'step', 'stone'] as const) expect(shoot(how), how).toBeGreaterThan(0);
   });
 
-  it('a shot hits the first enemy in its way, and stone stops it', () => {
-    const m = new Match({ seed: 2, map: 'sands', fighters: [fighter(0, 'mage', ['m-burn']), fighter(1, 'warrior'), fighter(1, 'ranger')] });
+  it('a shot goes to the one it was thrown at, past anyone in its way, and goes out if they fall first', () => {
+    const m = new Match({ seed: 2, map: 'sands', fighters: [fighter(0, 'mage', ['m-lash']), fighter(1, 'warrior'), fighter(1, 'ranger')] });
     m.step(GATES + 0.01, {});
     const [me, far, near] = m.fighters as [typeof m.fighters[0], typeof m.fighters[0], typeof m.fighters[0]];
     me.x = 100;
@@ -918,26 +931,21 @@ describe('The Ring: a brawl', () => {
     near.x = 170;
     near.y = 126;
     me.target = far.id;
-    m.press(0, 'm-burn');
-    wait(m, 0.6);
-    expect(near.hp).toBeLessThan(near.maxHp);
-    expect(far.hp).toBe(far.maxHp);
+    m.press(0, 'm-lash');
+    wait(m, 2);
+    expect(far.hp).toBeLessThan(far.maxHp);
+    expect(near.hp).toBe(near.maxHp);
 
-    const n = duel('mage', ['m-burn'], 'warrior');
-    const p = n.pillars[0]!;
+    const n = duel('mage', ['m-lash'], 'warrior');
     const [a, b] = [n.fighters[0]!, n.fighters[1]!];
-    a.x = p.x - 30;
-    a.y = p.y + p.h / 2;
-    b.x = p.x + p.w + 30;
-    b.y = p.y + p.h / 2;
-    // (a shot already in the air, straight at them through the stone)
-    n.bolts.push({ ab: 'm-burn', src: 0, tgt: 1, x: a.x, y: a.y - 8, vx: 300, vy: 0, left: 200 });
+    a.x = 100;
+    b.x = 240;
+    n.bolts.push({ ab: 'm-lash', src: 0, tgt: 1, x: a.x, y: a.y - 8, vx: 300, vy: 0, age: 0 });
+    b.dead = true;
     const seen: string[] = [];
-    for (let i = 0; i < 40; i++) {
-      n.step(STEP, {});
-      for (const e of n.events) seen.push(e.k);
-    }
-    expect(b.hp).toBe(b.maxHp);
+    n.step(STEP, {});
+    for (const e of n.events) seen.push(e.k);
+    expect(n.bolts).toHaveLength(0);
     expect(seen).toContain('miss');
   });
 

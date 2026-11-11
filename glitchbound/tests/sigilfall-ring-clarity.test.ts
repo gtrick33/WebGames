@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, barCombos, kitOf, PRESETS } from '../src/games/sigilfall/arena/abilities';
-import { Match, PACE, RANGED, RANGED_DMG, type MatchSetup } from '../src/games/sigilfall/arena/sim';
+import { CLASS_DMG, Match, PACE, RANGED, type MatchSetup } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 
@@ -62,12 +62,18 @@ describe('Sigilfall: the Ring says what is going on', () => {
     }
   });
 
-  it('who fights from range deals well under what who fights at arm’s length does', () => {
-    const m = new Match(setup('mage', 'warrior'));
-    expect(RANGED.has('mage')).toBe(true);
-    expect(RANGED.has('warrior')).toBe(false);
-    expect(m.fighters[0]!.mods.dmg).toBeCloseTo(m.fighters[1]!.mods.dmg * RANGED_DMG, 5);
-    expect(RANGED_DMG).toBeCloseTo(0.9 * 0.8, 5);
+  it('each class deals its own share of its numbers, and those at range less than those at arm’s length', () => {
+    for (const cls of CLASS_IDS) {
+      const m = new Match(setup(cls, 'warrior'));
+      expect(m.fighters[0]!.mods.dmg, cls).toBeCloseTo(CLASS_DMG[cls], 5);
+      expect(CLASS_DMG[cls], cls).toBeGreaterThanOrEqual(0.6);
+      expect(CLASS_DMG[cls], cls).toBeLessThanOrEqual(1);
+    }
+    const mean = (far: boolean): number => {
+      const list = CLASS_IDS.filter((c) => RANGED.has(c) === far);
+      return list.reduce((n, c) => n + CLASS_DMG[c], 0) / list.length;
+    };
+    expect(mean(true)).toBeLessThan(mean(false) - 0.05);
   });
 
   it('a live match runs a little under the clock', () => {
