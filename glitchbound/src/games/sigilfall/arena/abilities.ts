@@ -261,16 +261,19 @@ const KITS: Record<ClassId, Ability[]> = {
 export const ABILITIES: Record<string, Ability> = Object.fromEntries([...Object.values(KITS).flat(), ...Object.values(SUPERS), DASH, SIGIL].map((x) => [x.id, x]));
 export const kitOf = (cls: ClassId): Ability[] => KITS[cls];
 
-/** How each class is built before anything is chosen. */
+/**
+ * How each class is built before anything is chosen. (The three who fight at arm's length carry about 5% more than
+ * they did: the owner found them a little behind, and they spend part of every fight walking to it.)
+ */
 export const BODY: Record<ClassId, { hp: number; mana: number }> = {
-  warrior: { hp: 1260, mana: 0 },
-  paladin: { hp: 1250, mana: 100 },
+  warrior: { hp: 1320, mana: 0 },
+  paladin: { hp: 1310, mana: 100 },
   druid: { hp: 1280, mana: 100 },
   ranger: { hp: 1260, mana: 0 },
   priest: { hp: 1070, mana: 100 },
   warlock: { hp: 1200, mana: 100 },
   mage: { hp: 1200, mana: 100 },
-  gloamknight: { hp: 1230, mana: 0 },
+  gloamknight: { hp: 1290, mana: 0 },
 };
 
 /** Ready-made bars: what a hero brings before their player changes anything, and what the computer plays. */

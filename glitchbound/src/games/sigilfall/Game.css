@@ -6848,7 +6848,9 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 8px;
-  padding: 8px 12px 10px;
+  /* (clear of a phone's island and rounded corners: held on its side, the island lay over the first class and the
+     buttons under it, and they could not be pressed) */
+  padding: calc(8px + var(--sa-t, 0px)) calc(12px + var(--sa-r, 0px)) calc(10px + var(--sa-b, 0px)) calc(12px + var(--sa-l, 0px));
   overflow: hidden;
   color: #efe6d4;
   background:
@@ -6915,6 +6917,7 @@
   border-radius: 12px;
   background: rgb(10 6 22 / 0.66);
 }
+/* (the stand is sized by the hero on it: on a phone the hero was a third the width of the ring behind them) */
 .rb-rp-stage {
   position: relative;
   min-height: 92px;
@@ -6924,7 +6927,8 @@
   position: absolute;
   left: 50%;
   bottom: 32px;
-  width: min(220px, 76%);
+  height: min(55px, calc((100% - 44px) * 0.32));
+  max-width: 76%;
   aspect-ratio: 4 / 1;
   border-radius: 50%;
   translate: -50% 0;
@@ -7762,7 +7766,7 @@
 @container (max-height: 430px) {
   .rb-ringlobby {
     gap: 5px;
-    padding: 5px 8px 6px;
+    padding: calc(5px + var(--sa-t, 0px)) calc(8px + var(--sa-r, 0px)) calc(6px + var(--sa-b, 0px)) calc(8px + var(--sa-l, 0px));
   }
   .rb-rp-title p {
     display: none;

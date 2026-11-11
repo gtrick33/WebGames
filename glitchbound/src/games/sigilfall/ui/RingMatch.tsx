@@ -629,7 +629,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               <GameMenuButton className="rb-iconbtn" />
             </div>
           </div>
-          {touch && (
+          {/* (a fallen fighter has nothing to press: the stick and the abilities step aside and leave the whole ring to watch) */}
+          {touch && !(me?.dead && m.phase === 'fight') && (
             <div className="rb-ui rb-ring-thumbs">
               <Stick
                 settings={engine.settings}

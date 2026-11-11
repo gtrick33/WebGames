@@ -54,6 +54,10 @@ export class RingStage implements RingView {
   private cssW = 1;
   private cssH = 1;
   private follow = true;
+  /** How far the camera has to step back to hold the whole ring (1: it already does). */
+  private back = 1;
+  /** Device pixels a tile spans: the camera rests on whole ones. */
+  private tilePx = 32;
   private dress: RingDress | null = null;
   private floor: THREE.Mesh | null = null;
   /** What burns, smokes and glints round the arena. */
@@ -88,6 +92,8 @@ export class RingStage implements RingView {
     const readable = Math.min((34 / 16) * TILE * dpr, ((this.cssW * dpr) / 24 / 16) * TILE);
     const tile = Math.max(whole, readable);
     this.follow = tile > whole * 1.02;
+    this.back = Math.min(1.9, Math.max(1, tile / whole));
+    this.tilePx = tile;
     this.stage.setSize(this.cssW, this.cssH, dpr, tile);
   }
 
@@ -127,7 +133,13 @@ export class RingStage implements RingView {
     let cx = ARENA_W / 2;
     // (a little north of the middle: what stands up there takes more of the screen than what lies south)
     let cy = ARENA_H / 2 - 14;
-    if (this.follow && me) {
+    // someone who has fallen while their side fights on watches the whole ring: the camera goes to its middle and steps
+    // back until all of it is in the picture (the owner: "when i die but my partner is alive, the camera should center
+    // and zone out a bit so i can look at everything")
+    const watching = !!me && me.dead && m.phase === 'fight';
+    const push = watching ? this.back : 1;
+    st.push += (push - st.push) * (dt > 0 ? 1 - Math.exp(-dt * 2.4) : 1);
+    if (this.follow && me && !watching) {
       const halfW = (st.spanX * TILE) * 0.95;
       const halfH = (st.spanZ * TILE) * 0.95;
       cx = ARENA_W <= halfW * 2 ? ARENA_W / 2 : Math.max(halfW - 24, Math.min(ARENA_W - halfW + 24, me.x));
@@ -136,7 +148,10 @@ export class RingStage implements RingView {
     const ease = 1 - Math.exp(-dt * 5);
     this.cx += (cx - this.cx) * (dt > 0 ? ease : 1);
     this.cy += (cy - this.cy) * (dt > 0 ? ease : 1);
-    st.look(this.cx * UNIT, this.cy * UNIT);
+    // the camera rests on whole pixels: eased by fractions of one, the thin courses of the wall nearest it (the south
+    // wall, biggest on the screen) crawled from one row of pixels to the next and shimmered as the hero walked
+    const snap = (v: number): number => Math.round(v * UNIT * this.tilePx) / this.tilePx;
+    st.look(snap(this.cx), snap(this.cy));
     const cast = st.cast;
     cast.begin();
     // what stands on the ring's floor throws its shadow too: every pillar and stone, as the fighters do
