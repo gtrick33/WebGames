@@ -78,8 +78,15 @@ export const PROPS: Record<string, PropDef> = {
   'market-stall': { m: 'b_market', w: 74, d: 56, h: 46 },
   fountain: { m: 'built_fountain', w: 56, d: 56, h: 52 },
   // camps and the things of the land
-  tent: { m: 'b_tent', w: 46, d: 46, h: 42 },
-  'camp-tent': { m: 'tent_detailedOpen', w: 46, d: 46, h: 36, tint: '#d8c8a8' },
+  // (the owner: "the huts and armories look too small compared to the characters")
+  tent: { m: 'b_tent', w: 64, d: 64, h: 58 },
+  'camp-tent': { m: 'tent_detailedOpen', w: 54, d: 54, h: 44, tint: '#d8c8a8' },
+  // a war camp's armory: a stall the size of the quartermaster's trade, under canvas
+  armory: { m: 'b_market', w: 96, d: 72, h: 60, tint: '#c8b898' },
+  // a catapult on its wheels, its arm drawn back
+  catapult: { m: 'built_catapult', w: 68, d: 84, h: 64 },
+  // (where a soldier of the camp stands guard: sim/folk.ts. A rule, nothing drawn)
+  'guard-post': { m: '' },
   pavilion: { m: 'b_tent', w: 60, d: 60, h: 52, tint: '#f0dcb4' },
   bedroll: { m: 'built_bedroll', w: 18, d: 30, h: 6 },
   'market-cart': { m: 'p_cart_merchant', w: 44, d: 34, h: 42, across: true },
@@ -290,8 +297,10 @@ const FILLED: Record<string, [number, number]> = {
   'weapon-rack': [18, 12],
   rack: [18, 12],
   'market-stall': [74, 54],
-  tent: [46, 41],
-  'camp-tent': [46, 35],
+  tent: [54, 48],
+  armory: [92, 66],
+  catapult: [54, 70],
+  'camp-tent': [50, 38],
   pavilion: [60, 53],
   'market-cart': [44, 22],
   'market-goods': [20, 12],

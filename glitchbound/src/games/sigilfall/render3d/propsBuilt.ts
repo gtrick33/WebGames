@@ -117,6 +117,39 @@ function fishBasket(): Build {
   return b;
 }
 
+/** A catapult: a timber frame on four wheels, its arm drawn back toward the camera with a stone in its cup. */
+function catapult(): Build {
+  const b = new Build();
+  const beam = WOOD;
+  const dark = WOOD_DARK;
+  const pale = mul(WOOD, 1.18);
+  // the frame: two rails, three cross beams
+  for (const x of [-0.4, 0.4]) b.box(x - 0.07, -0.78, x + 0.07, 0.78, 0.22, 0.36, beam, dark, pale);
+  for (const z of [-0.7, 0, 0.7]) b.box(-0.4, z - 0.07, 0.4, z + 0.07, 0.22, 0.34, mul(beam, 0.9), dark, beam);
+  // four wheels, iron at their hubs
+  for (const x of [-0.55, 0.55]) {
+    for (const z of [-0.5, 0.5]) {
+      b.box(x - 0.06, z - 0.22, x + 0.06, z + 0.22, 0.04, 0.4, dark, mul(dark, 0.8), dark);
+      b.box(x - 0.06, z - 0.13, x + 0.06, z + 0.13, 0, 0.44, dark, mul(dark, 0.8), dark);
+      b.box(x - 0.075, z - 0.05, x + 0.075, z + 0.05, 0.17, 0.27, IRON, IRON_DARK, IRON);
+    }
+  }
+  // the uprights, the bar the arm strikes, and a brace behind each
+  for (const x of [-0.4, 0.4]) {
+    b.post(x, -0.12, 0.075, 0.06, 0.36, 1.2, 6, dark, beam);
+    b.post(x, 0.62, 0.05, 0.05, 0.36, 1.05, 5, dark, beam, 0, -0.7);
+  }
+  b.box(-0.5, -0.2, 0.5, -0.05, 1.1, 1.25, beam, dark, pale);
+  // the arm, drawn back and down, its cup and the stone in it
+  b.post(0, -0.1, 0.07, 0.05, 0.42, 0.98, 6, beam, pale, 0, 0.92);
+  b.post(0, 0.84, 0.15, 0.2, 0.94, 1.04, 8, dark, beam);
+  b.post(0, 0.84, 0.14, 0.06, 1.04, 1.24, 7, STONE_DARK, STONE);
+  // the windlass that draws it, a rope round it
+  b.box(-0.34, 0.6, 0.34, 0.74, 0.36, 0.5, mul(beam, 0.8), dark, beam);
+  b.box(-0.08, 0.59, 0.08, 0.75, 0.35, 0.51, rgb('#c8b890'), rgb('#8a7a58'), rgb('#d8c8a0'));
+  return b;
+}
+
 /** A log on its side, running north and south: the cut end looks at the camera, pale with its rings. */
 function logEnd(b: Build, x: number, y: number, z0: number, z1: number, r: number, seed: number): void {
   const m = b.m;
@@ -487,6 +520,7 @@ const BUILDERS: Record<string, () => Build> = {
   built_sacks: sacks,
   built_basket: basket,
   built_fish: fishBasket,
+  built_catapult: catapult,
   built_woodpile: woodpile,
   built_log: log,
   built_well: well,

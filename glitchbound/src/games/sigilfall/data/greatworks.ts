@@ -520,8 +520,11 @@ export interface GreatPlace {
 export function withDoorGround(placed: PlacedMarkerDef[], to: string, rects: readonly (readonly [number, number, number, number])[]): PlacedMarkerDef[] {
   const door = placed.find((p) => p.marker.kind === 'exit' && p.marker.to === to);
   if (!door) return placed;
-  const taken = new Set(placed.map((p) => `${p.tx},${p.ty}`));
-  const out = [...placed];
+  // (what a rule set down where the gate's own stone stands is taken away: a road's lamp stood inside Duskspire's arch)
+  const under = (p: PlacedMarkerDef): boolean => p.marker.kind === 'prop' && !p.marker.prop.startsWith('great') && rects.some(([x0, y0, x1, y1]) => p.tx - door.tx >= x0 && p.tx - door.tx <= x1 && p.ty - door.ty >= y0 && p.ty - door.ty <= y1);
+  const kept = placed.filter((p) => !under(p));
+  const taken = new Set(kept.map((p) => `${p.tx},${p.ty}`));
+  const out = [...kept];
   for (const [x0, y0, x1, y1] of rects) {
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
@@ -554,7 +557,8 @@ export const DOOR_BLOCKS: Record<string, { to: string; rects: readonly (readonly
   // (and the tower that closes each end of its wall)
   highwall: { to: 'siege-of-highwall', rects: [[-8, -1, 8, -1], [-8, -2, -5, -2], [2, -2, 2, -2], [5, -2, 8, -2], [-10, -2, -9, -1], [9, -2, 10, -1]] },
   // (Duskspire's gate: the citadel is behind its west half)
-  'pale-reach': { to: 'duskspire', rects: [[-7, -2, 7, -1], [-9, -2, -8, -1], [8, -2, 9, -1]] },
+  // (a tower closes its east end: the west runs into the citadel itself)
+  'pale-reach': { to: 'duskspire', rects: [[-7, -2, 7, -1], [8, -2, 9, -1]] },
 };
 
 export const GREAT_IN: Record<string, GreatPlace[]> = {

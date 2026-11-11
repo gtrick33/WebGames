@@ -602,13 +602,14 @@ export class World {
   private resetFolk(): void {
     const st = this.storyState;
     const calm = !this.region.interior && this.region.kind !== 'dungeon' && !this.dark && !st?.burning && !st?.gloom;
-    if (!calm) {
+    if (this.region.interior || this.region.kind === 'dungeon') {
       this.folk = [];
       return;
     }
     const squares = this.map.markers.filter((pm) => pm.marker.kind === 'waystone').map(markerPos);
     const r = spawnFolk(this.map, this.folkSeed, this.region.kind === 'town', this.region.kind === 'town' ? null : squares);
-    this.folk = r.folk;
+    // (villagers keep indoors at night and while a place burns: a camp's guards stand their posts through both)
+    this.folk = calm ? r.folk : r.folk.filter((f) => f.posted);
     this.folkRand = r.rand;
   }
 

@@ -33,6 +33,10 @@ export interface Folk {
   still: number;
   /** Which villager's look (render/art/townsfolk.ts, passerby). */
   look: number;
+  /** One of a war camp's own: mail, a helm and a sword, not a villager's smock. */
+  soldier?: boolean;
+  /** Standing guard at a post: never walks on. */
+  posted?: boolean;
 }
 
 /** Anyone else about (the hero, the people who stand in a place). */
@@ -62,10 +66,20 @@ export function spawnFolk(map: TileMap, seed: number, town: boolean, squares: { 
   // out in the wilds only the village round a square is lived in (a lone farm has wolves at its fence)
   const lived = (b: TileMap['buildings'][number]): boolean => !squares || squares.some((q) => Math.hypot((b.lot.tx + b.lot.w / 2) * TILE - q.x, (b.lot.ty + b.lot.h) * TILE - q.y) < 30 * TILE);
   const doors = map.buildings.filter((b) => (b.style === 'house' || b.style === 'inn' || b.style === 'tavern' || b.style === 'shop' || b.style === 'smithy' || b.style === 'hall') && lived(b));
-  if (doors.length < 3) return { folk: [], rand };
-  // (a few people about their day: a town is lived in, not crowded)
-  const n = Math.min(town ? 8 : 5, Math.round(doors.length * 0.3));
+  // a war camp's soldiers at their posts (data/townforms.ts `ranks`: its gates, its hall, its catapults), facing out
+  // over the ground they guard; the owner: "more friendly soldier npcs guarding it, make it a bit more alive"
+  const posts = map.markers.filter((pm) => pm.marker.kind === 'prop' && pm.marker.prop === 'guard-post');
   const folk: Folk[] = [];
+  for (const pm of posts) {
+    const x = (pm.tx + 0.5) * TILE;
+    const y = (pm.ty + 0.5) * TILE;
+    if (circleHitsWall(map, x, y, BODY)) continue;
+    folk.push({ x, y, hx: x, hy: y, route: null, a: Math.PI / 2 + (rand() - 0.5) * 0.5, wait: Infinity, stuck: 0, speed: 0, walkT: rand(), moving: false, still: 1, look: Math.floor(rand() * 64), soldier: true, posted: true });
+  }
+  const camp = posts.length > 0;
+  if (doors.length < 3) return { folk, rand };
+  // (a few people about their day: a town is lived in, not crowded; a camp's off-duty soldiers walk its lanes)
+  const n = camp ? 6 : Math.min(town ? 8 : 5, Math.round(doors.length * 0.3));
   // a third of them about the square and the market (a town's squares: its waystones), the rest by their doors
   const plazas = squares ?? map.markers.filter((pm) => pm.marker.kind === 'waystone').map((pm) => ({ x: (pm.tx + 0.5) * TILE, y: (pm.ty + 2.5) * TILE }));
   for (let k = 0; k < n; k++) {
@@ -75,7 +89,7 @@ export function spawnFolk(map: TileMap, seed: number, town: boolean, squares: { 
     const hy = square ? square.y : (b.lot.ty + b.lot.h + 0.6) * TILE;
     // (never inside something: nobody can walk out of a wall)
     const at = pickSpot(map, hx, hy, rand) ?? pushOut(map, hx, hy, BODY) ?? { x: hx, y: hy };
-    folk.push({ x: at.x, y: at.y, hx, hy, route: null, a: Math.PI / 2, wait: rand() * 4, stuck: 0, speed: 15 + rand() * 9, walkT: rand(), moving: false, still: 1, look: Math.floor(rand() * 64) });
+    folk.push({ x: at.x, y: at.y, hx, hy, route: null, a: Math.PI / 2, wait: rand() * 4, stuck: 0, speed: 15 + rand() * 9, walkT: rand(), moving: false, still: 1, look: Math.floor(rand() * 64), ...(camp ? { soldier: true } : {}) });
   }
   return { folk, rand };
 }

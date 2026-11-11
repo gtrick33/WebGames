@@ -159,8 +159,8 @@ const WALKABLE = new Set([FLOOR, DECO, PATH, COBBLE, BRIDGE, SAND]);
  * wide enough to hide a person diagonally behind them too: nobody is put there (the owner, of the chapel's
  * people: "most of the npcs can barely be seen"; Gloamhollow's tinker stood wholly behind her own stall).
  */
-export const TALL = new Set(['market-cart', 'market-stall', 'pavilion', 'tent', 'camp-tent', 'statue', 'well', 'fountain', 'watchtower', 'menhir', 'standing-stone']);
-export const WIDE = new Set(['market-cart', 'market-stall', 'pavilion', 'tent', 'camp-tent']);
+export const TALL = new Set(['market-cart', 'market-stall', 'armory', 'pavilion', 'tent', 'camp-tent', 'statue', 'well', 'fountain', 'watchtower', 'menhir', 'standing-stone']);
+export const WIDE = new Set(['market-cart', 'market-stall', 'armory', 'pavilion', 'tent', 'camp-tent']);
 /** A village's reach from its square, in tiles (the half-axes of its clearing). */
 /** How far a village reaches from its square, east and west, north and south (tiles). */
 /**
@@ -174,7 +174,7 @@ const PY = 13;
 const VX = Math.round(PX * TOWN_SCALE);
 const VY = Math.round(PY * TOWN_SCALE);
 /** The tiles beside it, in a row, that a wide thing on one tile also stands on. */
-const FOOT: Record<string, number[]> = { 'market-stall': [-1, 1], pavilion: [-1, 1], wagon: [1], fountain: [-1, 1] };
+const FOOT: Record<string, number[]> = { 'market-stall': [-1, 1], armory: [-1, 1], pavilion: [-1, 1], wagon: [1], fountain: [-1, 1] };
 /** Plan tiles to map tiles. */
 const sc = (v: number): number => Math.floor(v * TOWN_SCALE + 1e-6);
 const PLANS: VillagePlan[] = ['cross', 'street', 'green'];
