@@ -1,4 +1,5 @@
-import { ABILITIES } from '../arena/abilities';
+import { drawIcon } from './art/gameIcons';
+import { ABILITIES, type Ability } from '../arena/abilities';
 import { ARENA_H, ARENA_W, MAPS } from '../arena/maps';
 import { HERO_R, ZONE_START, type Fighter, type Match } from '../arena/sim';
 import type { RingAir } from '../render3d/ringDress';
@@ -59,7 +60,25 @@ interface Pop {
   big: boolean;
   /** A word (not a number): words stack. */
   word?: boolean;
+  /** How far up the screen it starts, when the one it is about wears effect pictures over the bar. */
+  lift?: number;
 }
+
+/**
+ * The effects drawn over a fighter's bar: those that run out and belong to an ability with a picture, one picture to
+ * an ability (a curse that both burns and cuts healing is one curse to the eye, shown with its longest part).
+ */
+export function worn(f: Pick<Fighter, 'auras'>): Fighter['auras'] {
+  const out: Fighter['auras'] = [];
+  for (const a of f.auras) {
+    if (!(a.dur > 0 && a.t > 0 && ABILITIES[a.ab])) continue;
+    const i = out.findIndex((o) => o.ab === a.ab && o.harmful === a.harmful);
+    if (i < 0) out.push(a);
+    else if (a.t > out[i]!.t) out[i] = a;
+  }
+  return out;
+}
+const wears = (f: Fighter): boolean => worn(f).length > 0;
 
 /** What an ability sounds like as it leaves the hand, and as it lands, by its school. */
 const LEAVES: Record<string, string> = { physical: 'swing', fire: 'fireball', frost: 'freeze', arcane: 'bolt', holy: 'holy', shadow: 'shadow', nature: 'nature' };
@@ -87,7 +106,17 @@ export class RingFx {
   pops: Pop[] = [];
   bursts: Burst[] = [];
   /** The path of a blade through the air, in front of whoever swung it: where, which way, how wide, how heavy. */
-  arcs: { x: number; y: number; a: number; t: number; dur: number; color: string; arc: number; r: number; heavy: boolean }[] = [];
+  arcs: { x: number; y: number; a: number; t: number; dur: number; color: string; edge?: string; arc: number; r: number; heavy: boolean }[] = [];
+  /** Who last used each ability: when it lands, what it drinks goes back to them. */
+  private readonly by = new Map<string, number>();
+  /** Life drunk: motes that leave whoever was struck and fly to whoever struck them. */
+  drains: { x: number; y: number; to: number; t: number; dur: number; n: number }[] = [];
+  /** A hand of shadow come up out of the ground under someone. */
+  hands: { x: number; y: number; t: number; dur: number }[] = [];
+  /** Where each Gloamknight has just been: the dark they leave behind them as they go (by fighter, newest last). */
+  readonly wakes = new Map<number, { x: number; y: number; at: number }[]>();
+  /** A toll of dusk rolling out from someone: rings of dark, one after another. */
+  tolls: { x: number; y: number; t: number; dur: number; r: number }[] = [];
   /** Who just let a super go: a column of light on them for a moment. */
   supers: { id: number; t: number }[] = [];
   private spread = 0;
@@ -100,7 +129,9 @@ export class RingFx {
         if (!f) continue;
         this.spread = (this.spread + 1) % 5;
         const x = f.x + (this.spread - 2) * 7;
-        this.pops.push({ x, y: f.y - 30, t: 0, text: e.kind === 'dmg' ? `${e.n}` : e.kind === 'heal' ? `+${e.n}` : `(${e.n})`, color: e.kind === 'dmg' ? (e.crit ? '#ffd257' : '#fff6e0') : e.kind === 'heal' ? '#7fe06a' : '#9fdcff', big: e.crit || e.n > 120 });
+        // (over the effect pictures when they wear any, so a wound that ticks each second doesn't hide its own timer)
+        const lift = wears(f) ? 16 : 0;
+        this.pops.push({ x, y: f.y - 30, lift, t: 0, text: e.kind === 'dmg' ? `${e.n}` : e.kind === 'heal' ? `+${e.n}` : `(${e.n})`, color: e.kind === 'dmg' ? (e.crit ? '#ffd257' : '#fff6e0') : e.kind === 'heal' ? '#7fe06a' : '#9fdcff', big: e.crit || e.n > 120 });
         if (e.kind === 'dmg' && e.id === myId) sound('hurt', e.crit ? 0.7 : 0.45);
       } else if (e.k === 'word') {
         const f = m.fighters[e.id];
@@ -108,7 +139,7 @@ export class RingFx {
         // (a combo is called out big, in gold, with a burst of light on them; words said close together stand one over
         // the other, never on top of each other)
         const above = this.pops.filter((p) => p.word && p.t < 0.5 && Math.abs(p.x - f.x) < 40 && Math.abs(p.y - f.y) < 110).length;
-        this.pops.push({ x: f.x, y: f.y - (e.combo ? 50 : 42) - above * 13, t: 0, text: e.combo ? `${e.word}!` : e.word, color: e.combo ? '#ffd257' : e.bad ? '#ff9ab0' : '#e0d0ff', big: !!e.combo, word: true });
+        this.pops.push({ x: f.x, y: f.y - (e.combo ? 50 : 42) - above * 13, lift: wears(f) ? 12 : 0, t: 0, text: e.combo ? `${e.word}!` : e.word, color: e.combo ? '#ffd257' : e.bad ? '#ff9ab0' : '#e0d0ff', big: !!e.combo, word: true });
         if (e.combo) {
           this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.5, r: 26, color: '#ffd257', ring: true });
           // (a chain's later links ring higher)
@@ -118,7 +149,9 @@ export class RingFx {
         const ab = ABILITIES[e.ab];
         const f = m.fighters[e.id];
         if (!ab || !f) continue;
-        if (ab.aim === 'near') this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.42, r: ab.range + HERO_R, color: ab.color, ring: true });
+        this.by.set(ab.id, f.id);
+        if (ab.cls === 'gloamknight') this.gloam(ab, f);
+        else if (ab.aim === 'near') this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.42, r: ab.range + HERO_R, color: ab.color, ring: true });
         else if (ab.cast === 0 && ab.range <= 40 && ab.aim === 'enemy') {
           // a blow leaves its arc in the air: wide for a cut, wider and heavier for a great one, narrow for a thrust
           const heavy = ab.role === 'burst' || !!ab.super;
@@ -147,6 +180,14 @@ export class RingFx {
         else if (ab.aim === 'enemy' || ab.aim === 'near') sound(ab.school === 'physical' ? (ab.role === 'burst' ? 'critBlade' : 'clash') : ab.role === 'burst' ? 'explode' : (LANDS[ab.school] ?? 'hit'), mine ? 0.75 : 0.5);
         this.bursts.push({ x: f.x, y: f.y, t: 0, dur: ab.role === 'burst' ? 0.75 : 0.55, school: ab.school, color: ab.color, big: ab.role === 'burst', heal: ab.role === 'heal' || ab.aim === 'friend', seed: (f.x * 7 + f.y * 3 + this.bursts.length) % 97 });
         if (this.bursts.length > 24) this.bursts.shift();
+        // a blow that drinks: what it took streams back to whoever struck it
+        const drunk = ab.effects.find((x) => x.k === 'heal');
+        const from = this.by.get(ab.id);
+        if (drunk && drunk.k === 'heal' && ab.effects.some((x) => x.k === 'dmg') && from !== undefined && from !== f.id) {
+          this.drains.push({ x: f.x, y: f.y, to: from, t: 0, dur: 0.5, n: drunk.n >= 60 ? 9 : drunk.n >= 25 ? 6 : 4 });
+          if (this.drains.length > 8) this.drains.shift();
+        }
+        if (ab.id === 'g-hand') this.hands.push({ x: f.x, y: f.y, t: 0, dur: 1.1 });
       } else if (e.k === 'death') {
         const f = m.fighters[e.id];
         if (!f) continue;
@@ -177,8 +218,67 @@ export class RingFx {
     if (this.pops.length > 40) this.pops.splice(0, this.pops.length - 40);
   }
 
+  /**
+   * The Gloamknight's own way of doing things (the owner, after playing one: "the class feels lame and boring, static
+   * and not dynamic - animations wise ... make it better looking"): a two-handed blade that leaves a wide violet arc,
+   * a reaping that goes all the way round, a rend that crosses itself, a toll that rolls out in rings of dusk.
+   */
+  private gloam(ab: Ability, f: Fighter): void {
+    const a = Math.atan2(f.dirY, f.dirX);
+    const at = { x: f.x + f.dirX * 7, y: f.y + f.dirY * 7 };
+    const arc = (da: number, sweep: number, r: number, delay: number, heavy: boolean, color = '#4a1f9e', dur = 0.34): void => {
+      this.arcs.push({ ...at, a: a + da, t: -delay, dur, color, edge: '#d8bcff', arc: sweep, r, heavy });
+    };
+    switch (ab.id) {
+      case 'g-cleave':
+        arc(0, 2.5, 38, 0, true);
+        arc(0, 2.1, 30, 0.05, false, '#9a6cff', 0.26);
+        break;
+      case 'g-reap':
+        // all the way round, front then back
+        arc(0, 3, 44, 0, true);
+        arc(Math.PI, 3, 44, 0.1, true);
+        arc(0, 2.4, 34, 0.06, false, '#c02a7a', 0.3);
+        break;
+      case 'g-slip':
+        // two cuts that cross
+        arc(-0.55, 1.5, 34, 0, true);
+        arc(0.55, 1.5, 34, 0.11, true, '#8a4ae0');
+        break;
+      case 'g-sever':
+        arc(0, 0.6, 40, 0, true, '#9a6cff', 0.2);
+        break;
+      case 'g-super':
+        arc(0, 3, 50, 0.12, true);
+        arc(Math.PI, 3, 50, 0.2, true);
+        arc(Math.PI / 2, 3, 40, 0.28, true, '#c02a7a');
+        break;
+      case 'g-toll':
+        for (let i = 0; i < 3; i++) this.tolls.push({ x: f.x, y: f.y, t: -i * 0.14, dur: 0.6, r: ab.range + HERO_R });
+        break;
+      case 'g-price':
+        this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.5, r: 22, color: '#ff3a5a', ring: true });
+        this.bursts.push({ x: f.x, y: f.y, t: 0, dur: 0.5, school: 'shadow', color: '#ff3a5a', big: false, heal: false, seed: f.x % 97 });
+        break;
+      case 'g-ward':
+      case 'g-mantle':
+        this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.5, r: 24, color: '#8a5cff', ring: true });
+        break;
+      default:
+        break;
+    }
+    while (this.arcs.length > 18) this.arcs.shift();
+    while (this.tolls.length > 9) this.tolls.shift();
+  }
+
   age(dt: number): void {
     for (const f of this.flashes) f.t += dt;
+    for (const d of this.drains) d.t += dt;
+    this.drains = this.drains.filter((d) => d.t < d.dur);
+    for (const h of this.hands) h.t += dt;
+    this.hands = this.hands.filter((h) => h.t < h.dur);
+    for (const o of this.tolls) o.t += dt;
+    this.tolls = this.tolls.filter((o) => o.t < o.dur);
     for (const p of this.pops) p.t += dt;
     for (const b of this.bursts) b.t += dt;
     for (const a of this.arcs) a.t += dt;
@@ -246,25 +346,40 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
     g.lineTo(f.x + 4, by - 3);
     g.stroke();
   }
-  // what's on them, over the bar: harm in red-edged pips, help in green, each running down as it wears off
-  const shown = f.auras.filter((a) => a.dur > 0 && a.t > 0 && ABILITIES[a.ab]).slice(0, 6);
-  const pip = 4.6;
-  const gap = 1.2;
+  // what's on them, over the bar: each effect as its own spell's picture, edged red for harm and green for help, with
+  // the seconds it has left written on it. (They were plain squares of the spell's color, darkening as they wore
+  // off: the owner, "the debuffs are just squares and i dont understand anything from them ... make the square with
+  // the spells icon image and add a 7s 6s timer on it".)
+  const shown = worn(f).slice(0, 5);
+  const pip = 10.6;
+  const gap = 1.4;
   let px = f.x - (shown.length * (pip + gap) - gap) / 2;
-  const py = by - pip - 2.2;
+  const py = by - pip - 2.6;
+  g.textAlign = 'center';
+  g.lineJoin = 'round';
   for (const a of shown) {
     const ab = ABILITIES[a.ab]!;
-    g.fillStyle = 'rgba(6,2,14,0.9)';
-    g.fillRect(px - 0.5, py - 0.5, pip + 1, pip + 1);
-    g.fillStyle = ab.color;
-    g.fillRect(px, py, pip, pip);
-    // (the part that's worn off, darkened from the top)
-    const gone = 1 - Math.max(0, Math.min(1, a.t / a.dur));
-    g.fillStyle = 'rgba(6,2,14,0.62)';
-    g.fillRect(px, py, pip, pip * gone);
+    g.fillStyle = 'rgba(6,2,14,0.92)';
+    g.fillRect(px - 0.7, py - 0.7, pip + 1.4, pip + 1.4);
+    const smooth = g.imageSmoothingEnabled;
+    g.imageSmoothingEnabled = false;
+    if (!drawIcon(g, ab.icon, px, py, pip)) {
+      g.fillStyle = ab.color;
+      g.fillRect(px, py, pip, pip);
+    }
+    g.imageSmoothingEnabled = smooth;
     g.strokeStyle = a.harmful ? '#ff4a5a' : '#6ee07a';
-    g.lineWidth = 0.6;
-    g.strokeRect(px - 0.3, py - 0.3, pip + 0.6, pip + 0.6);
+    g.lineWidth = 0.8;
+    g.strokeRect(px - 0.4, py - 0.4, pip + 0.8, pip + 0.8);
+    // (the seconds, on its lower half where a thumb-sized picture can still be told by its top: whole ones, the last
+    // of them as "1s")
+    const left = `${Math.max(1, Math.ceil(a.t))}s`;
+    g.font = '800 6px "Bricolage Grotesque Variable", system-ui, sans-serif';
+    g.lineWidth = 1.9;
+    g.strokeStyle = '#0a0612';
+    g.strokeText(left, px + pip / 2, py + pip - 0.9);
+    g.fillStyle = '#ffffff';
+    g.fillText(left, px + pip / 2, py + pip - 0.9);
     px += pip + gap;
   }
   // the cast they're holding: a bar of its own under the life, with its name, so a cast to stop can be seen and read
@@ -387,7 +502,79 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
     else q.put({ kind: FX.impact, x: f.x, y: f.y, up: 12, w: f.r * 2.4, a: f.color, b: '#fffdf0', t: u, seed: f.x * 0.2 });
   }
   for (const b of fx.bursts) landing(q, b);
-  for (const a of fx.arcs) q.put({ kind: FX.slash, x: a.x, y: a.y, up: 13, flat: true, w: (a.r * 2) / 0.82, rot: a.a, a: a.color, t: a.t / a.dur, p1: a.arc, p2: a.heavy ? 1 : 0 });
+  // (an arc may wait its turn: the second cut of a rend, the back half of a reaping)
+  for (const a of fx.arcs) if (a.t >= 0) q.put({ kind: FX.slash, x: a.x, y: a.y, up: 13, flat: true, w: (a.r * 2) / 0.82, rot: a.a, a: a.color, b: a.edge, t: a.t / a.dur, p1: a.arc, p2: a.heavy ? 1 : 0 });
+  // life drunk: motes that leave the one struck, swing wide and home on the one who struck
+  for (const d of fx.drains) {
+    const to = m.fighters[d.to];
+    if (!to || to.dead) continue;
+    for (let i = 0; i < d.n; i++) {
+      const u = Math.min(1, Math.max(0, (d.t / d.dur) * 1.25 - i * 0.045));
+      if (u <= 0 || u >= 1) continue;
+      const e = u * u * (3 - 2 * u);
+      const side = (i % 2 ? 1 : -1) * (6 + (i % 3) * 4) * Math.sin(u * Math.PI);
+      const dx = to.x - d.x;
+      const dy = to.y - d.y;
+      const l = Math.hypot(dx, dy) || 1;
+      q.put({ kind: FX.spark, x: d.x + dx * e + (-dy / l) * side, y: d.y + dy * e + (dx / l) * side, up: 12 + Math.sin(u * Math.PI) * 9, w: 7.5 - u * 3, a: i % 3 ? '#d05aff' : '#ff5a8a', t: 0.25, alpha: 0.95, seed: i });
+    }
+  }
+  // a hand of shadow: five fingers come up round them and close, in a pool of dark
+  for (const h of fx.hands) {
+    const u = h.t / h.dur;
+    const up = Math.min(1, u * 4);
+    const close = Math.min(1, Math.max(0, (u - 0.2) * 3));
+    const fade = Math.max(0, 1 - Math.max(0, u - 0.75) * 4);
+    q.put({ kind: FX.ring, x: h.x, y: h.y, flat: true, w: 40 - close * 10, a: '#7a3cff', t: 0.35, alpha: fade, seed: 5 });
+    q.put({ kind: FX.shaft, x: h.x, y: h.y, base: true, w: 20, h: 40 * up, a: '#4a1a8a', b: '#c8a8ff', t: 0.4, alpha: 0.6 * fade });
+    for (let i = 0; i < 5; i++) {
+      const ang = -0.2 + (i / 4) * (Math.PI + 0.4);
+      const r = 15 - close * 8;
+      q.put({ kind: FX.shadow, x: h.x + Math.cos(ang) * r, y: h.y + Math.sin(ang) * r * 0.55 + 2, up: 4 + up * (20 + (i % 2) * 5) - close * 4, w: 11, a: '#b48cff', b: '#120a20', alpha: fade, seed: i * 3.1 });
+      q.put({ kind: FX.shadow, x: h.x + Math.cos(ang) * (r + 2), y: h.y + Math.sin(ang) * (r + 2) * 0.55 + 2, up: 2 + up * 9, w: 9, a: '#8a5cff', b: '#120a20', alpha: fade * 0.9, seed: i * 1.7 });
+    }
+  }
+  // a toll of dusk: rings rolling out one after another, the dark thrown ahead of them
+  for (const o of fx.tolls) {
+    if (o.t < 0) continue;
+    const u = o.t / o.dur;
+    q.put({ kind: FX.ring, x: o.x, y: o.y, flat: true, w: o.r * 2 * (0.25 + u * 0.75), a: '#8a5cff', t: u, alpha: 1 - u * 0.6, seed: o.r });
+    for (let i = 0; i < 8; i++) {
+      const ang = (i / 8) * Math.PI * 2 + o.r;
+      q.put({ kind: FX.shadow, x: o.x + Math.cos(ang) * o.r * u, y: o.y + Math.sin(ang) * o.r * u * 0.7, up: 8 + Math.sin(u * Math.PI) * 8, w: 12 * (1 - u * 0.5), a: '#b48cff', b: '#120a20', alpha: 1 - u, seed: i });
+    }
+  }
+  // the gloam that goes about with a Gloamknight: dark rising off them, a violet light at their feet, and when they
+  // lunge, the dark they came through
+  for (const f of m.fighters) {
+    if (f.cls !== 'gloamknight' || f.dead) continue;
+    q.put({ kind: FX.glow, x: f.x, y: f.y, up: 3, w: 34, a: '#7a3cff', alpha: 0.2 + Math.sin(time * 2.2 + f.id) * 0.05 });
+    // their wake: a trail of soft dark where they have just been, long in a lunge and short at a walk. (Not a faded
+    // copy of the figure: a figure can only be thinned by a stipple here, and a stippled ghost reads as a fault.)
+    let wake = fx.wakes.get(f.id);
+    if (!wake) fx.wakes.set(f.id, (wake = []));
+    const last = wake[wake.length - 1];
+    if (!last || Math.hypot(f.x - last.x, f.y - last.y) > 5) wake.push({ x: f.x, y: f.y, at: time });
+    const keep = f.dash ? 0.5 : 0.32;
+    while (wake.length && (time - wake[0]!.at > keep || wake.length > 14)) wake.shift();
+    for (let i = 0; i < wake.length - 1; i++) {
+      const k = 1 - (time - wake[i]!.at) / keep;
+      if (k <= 0) continue;
+      q.put({ kind: FX.shadow, x: wake[i]!.x, y: wake[i]!.y, up: 9, w: 9 + k * 9, a: '#8a5cff', b: '#120a20', alpha: 0.7 * k, seed: i * 1.3 + f.id });
+      if (i % 2 === 0) q.put({ kind: FX.shadow, x: wake[i]!.x, y: wake[i]!.y, up: 20, w: 7 + k * 7, a: '#b48cff', b: '#120a20', alpha: 0.55 * k, seed: i * 2.1 + f.id });
+    }
+    for (let i = 0; i < 4; i++) {
+      const u = (time * 0.55 + i / 4 + f.id * 0.31) % 1;
+      const ang = i * 1.9 + f.id + time * 0.7;
+      q.put({ kind: FX.shadow, x: f.x + Math.cos(ang) * 8, y: f.y + Math.sin(ang) * 4.5, up: 2 + u * 26, w: 9 - u * 5, a: '#9a6ae0', b: '#120a20', alpha: 0.75 * Math.sin(u * Math.PI), seed: i + f.id });
+    }
+    if (f.dash) {
+      const dx = f.dash.x - f.x;
+      const dy = f.dash.y - f.y;
+      const d = Math.hypot(dx, dy) || 1;
+      for (let i = 1; i <= 6; i++) q.put({ kind: FX.shadow, x: f.x - (dx / d) * i * 7, y: f.y - (dy / d) * i * 7, up: 12, w: 16 - i * 1.6, a: '#b48cff', b: '#120a20', alpha: 1 - i * 0.14, seed: i });
+    }
+  }
   const map = MAPS[m.map] ?? Object.values(MAPS)[0]!;
   // sand on the wind, low over the ground
   if (map.theme === 'sands') {
@@ -489,12 +676,19 @@ function ringMarks(q: Fx3D, f: Fighter, time: number): void {
       q.put({ kind: FX.smoke, x: f.x, y: f.y, up: 6, w: 34, a: '#e8e8f4', alpha: 0.55, t: 0.2, seed: time * 2 });
       q.put({ kind: FX.ring, x: f.x, y: f.y, flat: true, w: 34, a: '#e8e8f4', t: (time * 1.6) % 1, seed });
     } else if (a.kind === 'absorb') {
-      q.put({ kind: FX.bubble, x: f.x, y: f.y, up: 15, w: 44, a: '#7fd8ff' });
+      q.put({ kind: FX.bubble, x: f.x, y: f.y, up: 15, w: 44, a: a.ab === 'g-ward' ? '#a070ff' : '#7fd8ff' });
     } else if (a.kind === 'immune') {
       q.put({ kind: FX.bubble, x: f.x, y: f.y, up: 15, w: 50 + Math.sin(time * 5) * 2, a: a.still ? '#a8e4ff' : '#ffe39a' });
       if (a.still) q.put({ kind: FX.field, x: f.x, y: f.y, flat: true, w: 34, a: '#7fd4ff', b: '#ffffff', t: 1, seed, p1: FIELD.frost });
     } else if (a.kind === 'reflect') {
       q.put({ kind: FX.slash, x: f.x, y: f.y, up: 14, flat: true, w: 36, rot: time * 3, a: '#bee8ff', t: 0.3, p1: 1.4, p2: 0 });
+    } else if (a.kind === 'guard' && a.ab === 'g-mantle') {
+      // a mantle of night: dark turning about them
+      for (let i = 0; i < 6; i++) {
+        const an = time * 2.4 + (i / 6) * Math.PI * 2;
+        q.put({ kind: FX.smoke, x: f.x + Math.cos(an) * 11, y: f.y + Math.sin(an) * 6, up: 8 + (i % 3) * 7 + lift, w: 17, a: '#3a1460', alpha: 0.62, t: 0.3, seed: i + seed });
+      }
+      q.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: 28, a: '#8a5cff' });
     } else if (a.kind === 'guard') {
       q.put({ kind: FX.mark, x: f.x, y: f.y, flat: true, w: 26, a: '#d8dce6' });
     } else if (a.kind === 'fury') {
@@ -607,9 +801,10 @@ export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number
     g.lineWidth = 2;
     g.lineJoin = 'round';
     g.strokeStyle = '#120a20';
-    g.strokeText(p.text, p.x, p.y + 30 - u * 14);
+    const ty = p.y + 30 - u * 14 - (p.lift ?? 0);
+    g.strokeText(p.text, p.x, ty);
     g.fillStyle = p.color;
-    g.fillText(p.text, p.x, p.y + 30 - u * 14);
+    g.fillText(p.text, p.x, ty);
   }
   g.globalAlpha = 1;
 }

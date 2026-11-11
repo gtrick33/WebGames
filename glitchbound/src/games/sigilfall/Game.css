@@ -6997,6 +6997,14 @@
   image-rendering: pixelated;
   filter: saturate(0.6) brightness(0.72);
 }
+/* the Gloamknight's medal is a painted round, not a square of pixels: smooth, and drawn out to the frame's corners */
+.rb-rp-class.is-medal {
+  background: radial-gradient(circle at 50% 45%, #3a1a66, #120a20 72%);
+}
+.rb-rp-class.is-medal img {
+  image-rendering: auto;
+  scale: 1.22;
+}
 .rb-rp-class:hover,
 .rb-rp-class:focus-visible {
   transform: translateY(-2px);
@@ -7164,6 +7172,200 @@
   font-size: 11.5px;
   background: rgb(255 227 154 / 0.08);
   cursor: pointer;
+}
+/* an ability opened to be read: over the whole game, whatever the page under it has scrolled to */
+.rb-ring-dialog-wrap.is-card {
+  position: fixed;
+  z-index: 60;
+  /* (a card taller than the smallest phone starts at the top and scrolls: centered, its head would be cut off) */
+  place-items: start center;
+  padding: calc(8px + var(--sa-t, 0px)) calc(10px + var(--sa-r, 0px)) calc(8px + var(--sa-b, 0px)) calc(10px + var(--sa-l, 0px));
+}
+.rb-ring-dialog.rb-rs-card {
+  justify-items: stretch;
+  gap: 7px;
+  width: min(720px, 100%);
+  margin: auto 0;
+  padding: 11px 14px;
+  text-align: left;
+}
+.rb-rs-card header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rb-rs-card header img {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border: 2px solid #6e5526;
+  border-radius: 9px;
+  image-rendering: pixelated;
+}
+.rb-rs-card header span {
+  display: grid;
+  min-width: 0;
+}
+.rb-rs-card header strong {
+  color: #ffe39a;
+  font: 700 19px/1.1 Georgia, 'Times New Roman', serif;
+}
+.rb-rs-card header em {
+  color: #9fd8ff;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.rb-rs-card header small {
+  color: #b8afc8;
+  font-size: 12px;
+}
+.rb-rs-card-text {
+  margin: 0;
+  color: #fff6e0;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.rb-rs-card-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 6px 16px;
+}
+.rb-rs-card h4 {
+  margin: 0 0 2px;
+  color: #d9b65e;
+  font: 700 11px/1.2 system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rb-rs-card ul {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0 0 0 16px;
+}
+.rb-rs-card li,
+.rb-rs-card section p {
+  margin: 0;
+  color: #e4daf2;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+.rb-rs-card section p + p {
+  margin-top: 5px;
+}
+.rb-rs-card section b {
+  color: #ffd257;
+}
+.rb-rs-partners {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 6px;
+  margin-top: 2px;
+  color: #b8afc8;
+}
+.rb-rs-partner {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px 1px 2px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 10px;
+  color: #fff6e0;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.rb-rs-partner img {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  image-rendering: pixelated;
+}
+.rb-rs-partner small {
+  color: #ff9ab0;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.rb-rs-partner.is-held {
+  border-color: rgb(87 211 106 / 0.6);
+}
+.rb-rs-partner.is-held small {
+  color: #7fe06a;
+}
+.rb-rs-card-swap {
+  display: grid;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 9px;
+  background: rgb(0 0 0 / 0.34);
+}
+.rb-rs-card-swap small {
+  color: #ffd257;
+  font-size: 12.5px;
+}
+.rb-rs-card-swap div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.rb-rs-card-swap .rb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.rb-rs-card-swap img {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  image-rendering: pixelated;
+}
+.rb-rs-card-cols[hidden] {
+  display: none;
+}
+/* (Equip and Cancel stay in reach however long the card is) */
+.rb-rs-card footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0 -14px -11px;
+  padding: 6px 14px 11px;
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(180deg, rgb(12 7 24 / 0), #0c0718 34%);
+}
+.rb-rs-card footer .rb-btn {
+  min-width: 108px;
+}
+@container (max-height: 360px) {
+  .rb-ring-dialog.rb-rs-card {
+    gap: 5px;
+    padding: 8px 12px;
+  }
+  .rb-rs-card header img {
+    width: 38px;
+    height: 38px;
+  }
+  .rb-rs-card header strong {
+    font-size: 17px;
+  }
+  .rb-rs-card-text {
+    font-size: 13px;
+    line-height: 1.3;
+  }
+  .rb-rs-card li,
+  .rb-rs-card section p {
+    font-size: 12px;
+    line-height: 1.28;
+  }
+  .rb-rs-card footer {
+    margin: 0 -12px -8px;
+    padding: 4px 12px 8px;
+  }
 }
 .rb-rs-build small {
   display: block;
@@ -8549,72 +8751,6 @@
 .rb-ring-auras i.is-cc b {
   font-size: 11px;
   line-height: 12px;
-}
-/* what is on the target, in words, with the ability to press beside what the player set up themselves */
-.rb-ring-effects {
-  position: absolute;
-  left: 8px;
-  bottom: 84px;
-  z-index: 3;
-  display: grid;
-  gap: 3px;
-  max-width: min(380px, 80%);
-  pointer-events: none;
-}
-.rb-ring-effects span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  padding: 2px 8px 2px 2px;
-  border: 1px solid rgb(255 90 106 / 0.6);
-  border-radius: 6px;
-  color: #f4ecff;
-  font: 600 11.5px/1.2 system-ui, sans-serif;
-  background: rgb(8 5 16 / 0.82);
-}
-.rb-ring-effects span.is-good {
-  border-color: rgb(87 211 106 / 0.6);
-}
-.rb-ring-effects img {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  image-rendering: pixelated;
-}
-.rb-ring-effects b {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.rb-ring-effects small {
-  flex: none;
-  color: #cbbfe6;
-  font-size: 10.5px;
-}
-.rb-ring-effects span.is-setup {
-  border-color: #ffd257;
-  box-shadow: 0 0 8px rgb(255 210 87 / 0.45);
-}
-.rb-ring-effects em {
-  flex: none;
-  color: #ffd257;
-  font-style: normal;
-  font-weight: 800;
-}
-.rb-ring.is-touch .rb-ring-effects {
-  left: 50%;
-  top: 58px;
-  bottom: auto;
-  translate: -50% 0;
-  max-width: 46%;
-}
-.rb-ring.is-touch .rb-ring-effects span:nth-child(n + 3) {
-  display: none;
-}
-.rb-ring.is-touch .rb-ring-effects small {
-  display: none;
 }
 /* a combo is set up: the ability that lands it burns gold round its rim until it is used */
 @keyframes rb-ring-combo {

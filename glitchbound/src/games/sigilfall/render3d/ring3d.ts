@@ -46,6 +46,11 @@ export class RingStage implements RingView {
   readonly stage: Stage;
   private built = false;
   private readonly motions = new Map<number, { m: Motion; turn: number; swing: number; clip: string; fresh: boolean; time: number; lunge: number; hurt: number; hard: boolean }>();
+  /** The picture shaken by a heavy blow: how hard (world px) and for how much longer. */
+  private quake = 0;
+  private quakeT = 0;
+  /** Off for those who asked for less motion. */
+  still = false;
   private readonly gates: Stand[] = [];
   private k = 1;
   private cx = ARENA_W / 2;
@@ -56,8 +61,6 @@ export class RingStage implements RingView {
   private follow = true;
   /** How far the camera has to step back to hold the whole ring (1: it already does). */
   private back = 1;
-  /** Device pixels a tile spans: the camera rests on whole ones. */
-  private tilePx = 32;
   private dress: RingDress | null = null;
   private floor: THREE.Mesh | null = null;
   /** What burns, smokes and glints round the arena. */
@@ -93,7 +96,6 @@ export class RingStage implements RingView {
     const tile = Math.max(whole, readable);
     this.follow = tile > whole * 1.02;
     this.back = Math.min(1.9, Math.max(1, tile / whole));
-    this.tilePx = tile;
     this.stage.setSize(this.cssW, this.cssH, dpr, tile);
   }
 
@@ -153,10 +155,13 @@ export class RingStage implements RingView {
     const ease = 1 - Math.exp(-dt * 5);
     this.cx += (cx - this.cx) * (dt > 0 ? ease : 1);
     this.cy += (cy - this.cy) * (dt > 0 ? ease : 1);
-    // the camera rests on whole pixels: eased by fractions of one, the thin courses of the wall nearest it (the south
-    // wall, biggest on the screen) crawled from one row of pixels to the next and shimmered as the hero walked
-    const snap = (v: number): number => Math.round(v * UNIT * this.tilePx) / this.tilePx;
-    st.look(snap(this.cx), snap(this.cy));
+    // (the camera glides: it is not held to whole pixels. That was tried against a shimmer that turned out to be
+    // something else, the campaign's see-through and brick laid over a furnace's fire, and on a phone, whose picture is
+    // drawn at 1.7 pixels to the point and not its screen's 3, a step of one screen pixel is not a whole drawn one)
+    this.quakeT = Math.max(0, this.quakeT - dt);
+    const jolt = this.quakeT > 0 ? this.quake * (this.quakeT / 0.22) : 0;
+    if (this.quakeT <= 0) this.quake = 0;
+    st.look((this.cx + (jolt ? Math.sin(time * 91) * jolt : 0)) * UNIT, (this.cy + (jolt ? Math.cos(time * 77) * jolt * 0.7 : 0)) * UNIT);
     const cast = st.cast;
     cast.begin();
     // what stands on the ring's floor throws its shadow too: every pillar and stone, as the fighters do
@@ -274,7 +279,25 @@ export class RingStage implements RingView {
     let clip = 'cast';
     let time = 0.5;
     let lunge = 0;
-    if (ab.super) {
+    // a Gloamknight fights two-handed, and heavily: every blow has its own shape and a long step into it
+    const gloam: Record<string, [string, number, number]> = {
+      'g-cleave': [s.clip === 'chop2' ? 'slice' : 'chop2', 0.62, 13],
+      'g-reap': ['spin', 0.85, 10],
+      'g-slip': ['slice', 0.6, 15],
+      'g-sever': ['stab', 0.42, 14],
+      'g-lunge': ['stab', 0.55, 6],
+      'g-hand': ['summon', 0.75, 0],
+      'g-toll': ['taunt', 0.8, 0],
+      'g-price': ['use', 0.65, 0],
+      'g-ward': ['block', 0.7, 0],
+      'g-mantle': ['block', 0.7, 0],
+      'g-gloom': ['cast', 0.6, 0],
+      'g-devour': ['throw', 0.6, 0],
+      'g-super': ['spin', 1, 16],
+    };
+    const own = gloam[ab.id];
+    if (own) [clip, time, lunge] = own;
+    else if (ab.super) {
       // the class's great moment: held longer than anything else it does
       if (ab.aim === 'near') [clip, time] = ['spin', 0.95];
       else if (archer) [clip, time] = ['bow', 0.8];
@@ -307,6 +330,13 @@ export class RingStage implements RingView {
     s.time = time;
     s.lunge = lunge;
     s.fresh = true;
+  }
+
+  /** A heavy blow shakes the picture a little (not for those who asked for less motion). */
+  shake(amount: number): void {
+    if (this.still) return;
+    this.quake = Math.max(this.quake, amount);
+    this.quakeT = 0.22;
   }
 
   /** A fighter is struck (a blow that took a real bite): they flash and flinch; harder for a heavy one. */

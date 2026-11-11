@@ -139,7 +139,7 @@ export const SUPERS: Record<ClassId, Ability> = {
   paladin: a({ id: 'd-super', cls: 'paladin', name: 'Sunhammer', text: 'A hammer of the sun: 190, and stunned for 1.5 seconds. It flies: they can dodge it.', icon: 'hammer_of_light_with_golden_rays_on_gold', color: '#ffd84a', school: 'holy', role: 'burst', aim: 'enemy', range: MID, cast: 0, cd: 0, mana: 0, free: true, bolt: true, super: true, effects: [{ k: 'dmg', n: 190 }, { k: 'cc', cc: 'stun', dur: 1.5 }] }),
   warlock: a({ id: 'k-super', cls: 'warlock', name: 'Riftmaw', text: 'A rift tears open around you: 72 to everyone near, 86 more over 6 seconds, and slowed by half.', icon: 'dark_portal_on_black', color: '#b06aff', school: 'shadow', role: 'burst', aim: 'near', range: 80, cast: 0, cd: 0, mana: 0, free: true, super: true, effects: [{ k: 'dmg', n: 100 }, { k: 'dot', n: 120, dur: 6 }, { k: 'slow', pct: 50, dur: 4 }] }),
   druid: a({ id: 'l-super', cls: 'druid', name: 'Thornstorm', text: 'Thorns burst up around you: 94 to everyone near, held to the ground for 1.5 seconds.', icon: 'thorn_burst_on_dark_green', color: '#9be86a', school: 'nature', role: 'burst', aim: 'near', range: 80, cast: 0, cd: 0, mana: 0, free: true, super: true, effects: [{ k: 'dmg', n: 130 }, { k: 'cc', cc: 'root', dur: 1.5 }] }),
-  gloamknight: a({ id: 'g-super', cls: 'gloamknight', name: 'Eclipse Reaping', text: 'Lunge through the dark and reap: 210, and you drink 100 of it.', icon: 'dark_scythe_on_violet', color: '#c8a8ff', school: 'shadow', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 0, mana: 0, free: true, sticky: true, super: true, effects: [{ k: 'charge' }, { k: 'dmg', n: 210 }, { k: 'heal', n: 100 }] }),
+  gloamknight: a({ id: 'g-super', cls: 'gloamknight', name: 'Eclipse Reaping', text: 'Lunge through the dark and reap: 210, and you drink 100 of it.', icon: 'eclipse_sun_on_black', color: '#c8a8ff', school: 'shadow', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 0, mana: 0, free: true, sticky: true, super: true, effects: [{ k: 'charge' }, { k: 'dmg', n: 210 }, { k: 'heal', n: 100 }] }),
 };
 export const superOf = (cls: ClassId): Ability => SUPERS[cls];
 
@@ -242,19 +242,21 @@ const KITS: Record<ClassId, Ability[]> = {
     a({ id: 'l-moon', cls: 'druid', name: 'Moonburn', text: 'Instant: burns 122 over 10 seconds.', icon: 'moonfire_beam_on_navy', color: '#cfe0ff', school: 'nature', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 5, mana: 3, combo: { name: 'Lunar Wind', text: 'Against a target lifted in your Whirling Gale: burns twice as much.', ab: ['l-gale'], mult: 2 }, effects: [{ k: 'dot', n: 170, dur: 10 }] }),
     a({ id: 'l-cure', cls: 'druid', name: 'Forest’s Cure', text: 'Takes one curse, poison or hex off a friend.', icon: 'rejuvenate_leaf_drop_on_green', color: '#e8fff8', school: 'nature', role: 'dispel', aim: 'friend', range: FAR, cast: 0, cd: 6, mana: 3, effects: [{ k: 'dispel' }] }),
   ],
+  // (its pictures are all of the dark and the violet: one look for the whole bar, where it had a red sword, a green
+  // grave and an orange lantern among them)
   gloamknight: [
-    a({ id: 'g-cleave', cls: 'gloamknight', name: 'Gloam Cleave', text: 'A heavy two-handed blow that drinks a little of what it spills.', icon: 'two_handed_sword_mastery_on_red', color: '#c8a8ff', school: 'shadow', role: 'damage', aim: 'enemy', range: MELEE, cast: 0, cd: 0, mana: 0, sticky: true, combo: { name: 'Grave Cut', text: 'Against a stunned target: twice as hard.', cc: ['stun'], mult: 2 }, effects: [{ k: 'dmg', n: 31 }, { k: 'heal', n: 9 }] }),
+    a({ id: 'g-cleave', cls: 'gloamknight', name: 'Gloam Cleave', text: 'A heavy two-handed blow that drinks a little of what it spills.', icon: 'dark_scythe_on_violet', color: '#c8a8ff', school: 'shadow', role: 'damage', aim: 'enemy', range: MELEE, cast: 0, cd: 0, mana: 0, sticky: true, combo: { name: 'Grave Cut', text: 'Against a stunned target: twice as hard.', cc: ['stun'], mult: 2 }, effects: [{ k: 'dmg', n: 31 }, { k: 'heal', n: 9 }] }),
     a({ id: 'g-reap', cls: 'gloamknight', name: 'Night Reaping', text: 'A great blow that heals you for half of what it deals.', icon: 'giant_reaper_silhouette_on_black', color: '#9a6ae0', school: 'shadow', role: 'burst', aim: 'enemy', range: MELEE, cast: 0, cd: 9, mana: 0, sticky: true, combo: { name: 'Harvest', text: 'Against a target slowed by your Shadow Lunge: 60% harder.', ab: ['g-lunge'], mult: 1.6 }, effects: [{ k: 'dmg', n: 62 }, { k: 'heal', n: 31 }] }),
-    a({ id: 'g-price', cls: 'gloamknight', name: 'Blood Price', text: 'Pay 140 of your own health: deal 35% more damage for 10 seconds.', icon: 'burning_heart_on_red', color: '#c0344e', school: 'shadow', role: 'burst', aim: 'self', range: 0, cast: 0, cd: 25, mana: 0, free: true, effects: [{ k: 'price', n: 140 }, { k: 'fury', pct: 35, dur: 10 }] }),
+    a({ id: 'g-price', cls: 'gloamknight', name: 'Blood Price', text: 'Pay 140 of your own health: deal 35% more damage for 10 seconds.', icon: 'dark_heart_beating_on_black', color: '#c0344e', school: 'shadow', role: 'burst', aim: 'self', range: 0, cast: 0, cd: 25, mana: 0, free: true, effects: [{ k: 'price', n: 140 }, { k: 'fury', pct: 35, dur: 10 }] }),
     a({ id: 'g-gloom', cls: 'gloamknight', name: 'Clinging Gloom', text: 'Shadow clings to them: 108 over 9 seconds, and slows by 30%.', icon: 'cursed_status_dark_cloud_on_violet', color: '#b48cff', school: 'shadow', role: 'damage', aim: 'enemy', range: MID, cast: 0, cd: 9, mana: 0, effects: [{ k: 'dot', n: 108, dur: 9 }, { k: 'slow', pct: 30, dur: 9 }] }),
-    a({ id: 'g-lunge', cls: 'gloamknight', name: 'Shadow Lunge', text: 'Lunge through the dark to an enemy and slow them by half for 4 seconds.', icon: 'shadow_clone_of_two_figures_on_black', color: '#7a52b0', school: 'shadow', role: 'mobility', aim: 'enemy', range: FAR, cast: 0, cd: 10, mana: 0, free: true, effects: [{ k: 'charge' }, { k: 'slow', pct: 50, dur: 4 }] }),
-    a({ id: 'g-sever', cls: 'gloamknight', name: 'Severing Edge', text: 'Cuts off a cast and locks that school for 4 seconds.', icon: 'burning_sword_on_black', color: '#c8a8ff', school: 'physical', role: 'interrupt', aim: 'enemy', range: MELEE, cast: 0, cd: 8, mana: 0, free: true, effects: [{ k: 'interrupt', lock: 4 }] }),
-    a({ id: 'g-hand', cls: 'gloamknight', name: 'Grave Hand', text: 'A hand of shadow holds them fast: stunned for 1.5 seconds.', icon: 'raise_dead_grave_with_bones_on_dark_green', color: '#9a6ae0', school: 'shadow', role: 'cc', aim: 'enemy', range: MID, cast: 0, cd: 17, mana: 0, bolt: true, effects: [{ k: 'cc', cc: 'stun', dur: 1.5 }] }),
-    a({ id: 'g-toll', cls: 'gloamknight', name: 'Dread Toll', text: 'A toll of dusk: every enemy near you flees for 2 seconds.', icon: 'skull_lantern_on_black', color: '#b48cff', school: 'shadow', role: 'cc', aim: 'near', range: 54, cast: 0, cd: 22, mana: 0, effects: [{ k: 'cc', cc: 'fear', dur: 2 }] }),
-    a({ id: 'g-ward', cls: 'gloamknight', name: 'Hollow Ward', text: 'Pay 100 of your own health for a ward that soaks up 260 damage for 10 seconds.', icon: 'heart_inside_a_shield_on_red', color: '#c0344e', school: 'shadow', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 18, mana: 0, free: true, effects: [{ k: 'price', n: 100 }, { k: 'absorb', n: 260, dur: 10 }] }),
+    a({ id: 'g-lunge', cls: 'gloamknight', name: 'Shadow Lunge', text: 'Lunge through the dark to an enemy and slow them by half for 4 seconds.', icon: 'shadow_dash_streak_on_black', color: '#7a52b0', school: 'shadow', role: 'mobility', aim: 'enemy', range: FAR, cast: 0, cd: 10, mana: 0, free: true, effects: [{ k: 'charge' }, { k: 'slow', pct: 50, dur: 4 }] }),
+    a({ id: 'g-sever', cls: 'gloamknight', name: 'Severing Edge', text: 'Cuts off a cast and locks that school for 4 seconds.', icon: 'hidden_blade_from_a_sleeve_on_violet', color: '#c8a8ff', school: 'physical', role: 'interrupt', aim: 'enemy', range: MELEE, cast: 0, cd: 8, mana: 0, free: true, effects: [{ k: 'interrupt', lock: 4 }] }),
+    a({ id: 'g-hand', cls: 'gloamknight', name: 'Grave Hand', text: 'A hand of shadow holds them fast: stunned for 1.5 seconds.', icon: 'shadow_hand_grabbing_on_violet', color: '#9a6ae0', school: 'shadow', role: 'cc', aim: 'enemy', range: MID, cast: 0, cd: 17, mana: 0, bolt: true, effects: [{ k: 'cc', cc: 'stun', dur: 1.5 }] }),
+    a({ id: 'g-toll', cls: 'gloamknight', name: 'Dread Toll', text: 'A toll of dusk: every enemy near you flees for 2 seconds.', icon: 'bat_swarm_on_violet', color: '#b48cff', school: 'shadow', role: 'cc', aim: 'near', range: 54, cast: 0, cd: 22, mana: 0, effects: [{ k: 'cc', cc: 'fear', dur: 2 }] }),
+    a({ id: 'g-ward', cls: 'gloamknight', name: 'Hollow Ward', text: 'Pay 100 of your own health for a ward that soaks up 260 damage for 10 seconds.', icon: 'dark_orb_on_violet', color: '#c0344e', school: 'shadow', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 18, mana: 0, free: true, effects: [{ k: 'price', n: 100 }, { k: 'absorb', n: 260, dur: 10 }] }),
     a({ id: 'g-mantle', cls: 'gloamknight', name: 'Night Mantle', text: 'Take 40% less damage for 8 seconds, even held.', icon: 'shadow_veil_curtain_on_violet', color: '#7a52b0', school: 'shadow', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 44, mana: 0, free: true, anyState: true, effects: [{ k: 'guard', pct: 40, dur: 8 }] }),
-    a({ id: 'g-devour', cls: 'gloamknight', name: 'Umbral Burst', text: 'Shadow bursts out of them at once.', icon: 'eclipse_sun_on_black', color: '#9a6ae0', school: 'shadow', role: 'damage', aim: 'enemy', range: MID, cast: 0, cd: 8, mana: 0, combo: { name: 'Consume', text: 'Against a target under your Clinging Gloom: 80% harder, and the Gloom is used up.', ab: ['g-gloom'], mult: 1.8, consume: true }, effects: [{ k: 'dmg', n: 74 }] }),
-    a({ id: 'g-slip', cls: 'gloamknight', name: 'Dusk Rend', text: 'A tearing blow: 46, and 72 more over 6 seconds.', icon: 'vanish_puff_of_smoke_on_violet', color: '#c8a8ff', school: 'shadow', role: 'damage', aim: 'enemy', range: MELEE, cast: 0, cd: 10, mana: 0, sticky: true, combo: { name: 'Nightfall', text: 'Against a fleeing target: twice as hard.', cc: ['fear'], mult: 2 }, effects: [{ k: 'dmg', n: 46 }, { k: 'dot', n: 72, dur: 6 }] }),
+    a({ id: 'g-devour', cls: 'gloamknight', name: 'Umbral Burst', text: 'Shadow bursts out of them at once.', icon: 'dark_explosion_on_violet', color: '#9a6ae0', school: 'shadow', role: 'damage', aim: 'enemy', range: MID, cast: 0, cd: 8, mana: 0, combo: { name: 'Consume', text: 'Against a target under your Clinging Gloom: 80% harder, and the Gloom is used up.', ab: ['g-gloom'], mult: 1.8, consume: true }, effects: [{ k: 'dmg', n: 74 }] }),
+    a({ id: 'g-slip', cls: 'gloamknight', name: 'Dusk Rend', text: 'A tearing blow: 46, and 72 more over 6 seconds.', icon: 'shadow_claw_slash_on_black', color: '#c8a8ff', school: 'shadow', role: 'damage', aim: 'enemy', range: MELEE, cast: 0, cd: 10, mana: 0, sticky: true, combo: { name: 'Nightfall', text: 'Against a fleeing target: twice as hard.', cc: ['fear'], mult: 2 }, effects: [{ k: 'dmg', n: 46 }, { k: 'dot', n: 72, dur: 6 }] }),
   ],
 };
 
@@ -287,6 +289,12 @@ export const PRESETS: Record<ClassId, { id: string; name: string; bar: string[];
   druid: [{ id: 'heal', name: 'Grovekeeper', bar: ['l-regrow', 'l-rejuv', 'l-bloom', 'l-moon'], talents: ['l-1c', 'l-2a', 'l-3a'] }, { id: 'star', name: 'Starseer', bar: ['l-lash', 'l-moon', 'l-gale', 'l-roots'], talents: ['l-1b', 'l-2b', 'l-3b'] }],  gloamknight: [{ id: 'reaver', name: 'Bloodsworn', bar: ['g-cleave', 'g-reap', 'g-lunge', 'g-hand'], talents: ['g-1a', 'g-2a', 'g-3a'] }, { id: 'dread', name: 'Dreadbinder', bar: ['g-gloom', 'g-devour', 'g-slip', 'g-toll'], talents: ['g-1c', 'g-2c', 'g-3b'] }],
 };
 
+/** Does `from` set up the combo `to` lands: by leaving its own mark on the target, or by holding them the way it needs? */
+const setsUpCombo = (from: Ability, to: Ability): boolean => {
+  const c = to.combo;
+  return !!c && from !== to && (!!c.ab?.includes(from.id) || from.effects.some((e) => (e.k === 'cc' || e.k === 'trap') && !!c.cc?.includes(e.cc)));
+};
+
 /** A combo a bar can make: the ability that sets it up, the one that lands it, and its name. */
 export interface BarCombo {
   name: string;
@@ -306,10 +314,26 @@ export function barCombos(cls: ClassId, bar: readonly string[]): BarCombo[] {
   for (const to of have) {
     const c = to.combo;
     if (!c) continue;
-    const from = have.find((x) => x !== to && (c.ab?.includes(x.id) || x.effects.some((e) => (e.k === 'cc' || e.k === 'trap') && !!c.cc?.includes(e.cc))));
+    const from = have.find((x) => setsUpCombo(x, to));
     if (from) out.push({ name: c.name, text: c.text, from, to });
   }
   return out;
+}
+
+/** What an ability has to do with its class's combos: the ones it lands (and after what), and the ones it sets up. */
+export interface AbilityCombos {
+  /** The combo this ability lands, and what from the class's kit sets it up (a hold of the right kind counts). */
+  lands: { name: string; text: string; after: Ability[] } | null;
+  /** The combos of other abilities that this one sets up. */
+  setsUp: { name: string; text: string; then: Ability }[];
+}
+
+export function combosOf(cls: ClassId, ab: Ability): AbilityCombos {
+  const all = [...KITS[cls], SUPERS[cls]];
+  return {
+    lands: ab.combo ? { name: ab.combo.name, text: ab.combo.text, after: all.filter((x) => setsUpCombo(x, ab)) } : null,
+    setsUp: all.filter((y) => setsUpCombo(ab, y)).map((y) => ({ name: y.combo!.name, text: y.combo!.text, then: y })),
+  };
 }
 
 /** One passive taken into the match, on top of the bar. */

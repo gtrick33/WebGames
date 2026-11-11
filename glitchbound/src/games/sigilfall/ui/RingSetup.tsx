@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import { ABILITIES, barCombos, DASH, kitOf, OATHS, PRESETS, SLOTS, superOf, type Ability } from '../arena/abilities';
+import { useState, type ReactNode } from 'react';
+import { ABILITIES, barCombos, combosOf, DASH, kitOf, OATHS, PRESETS, SLOTS, superOf, type Ability } from '../arena/abilities';
+import { usesOf } from '../arena/advice';
 import type { ClassSets, RingSetup } from '../arena/ladder';
+import { RANGED } from '../arena/sim';
 import { cleanTalents, ROW_NAMES, TALENTS, type Talent } from '../arena/talents';
 import type { ClassId } from '../data/types';
 import { iconPicture } from '../render/art/gameIcons';
@@ -35,9 +37,9 @@ export function BarRow({ bar, cls, onPick, onHover }: { bar: string[]; cls: Clas
         );
       })}
       {[DASH, superOf(cls)].map((ab) => (
-        <span key={ab.id} className={`rb-rs-slot is-token${ab.super ? ' is-super' : ''}`} title={`${ab.super ? 'Super' : ab.name}: ${ab.text}`} onMouseEnter={() => onHover?.(ab)}>
+        <button key={ab.id} type="button" className={`rb-rs-slot is-token${ab.super ? ' is-super' : ''}`} disabled={!onPick} title={`${ab.super ? 'Super' : ab.name}: ${ab.text}`} onClick={() => onPick?.(ab)} onMouseEnter={() => onHover?.(ab)}>
           <img src={iconPicture(ab.icon)} alt={ab.name} draggable={false} />
-        </span>
+        </button>
       ))}
     </div>
   );
@@ -66,6 +68,113 @@ export function SetupChips({ cls, setup }: { cls: ClassId; setup: RingSetup }) {
 }
 
 /**
+ * An ability read before it is taken (the owner: "whenever i click on spell, please add a pop up with info about it,
+ * best uses, best combos and 2 buttons - equip or cancel"): what it does, when to press it, what it combines with
+ * from this class's kit (and whether that is on the bar), and then the choice. On a full bar, Equip asks which of the
+ * four it replaces. The Swift Step and the super are always carried: theirs only closes.
+ */
+function AbilityCard({ ab, cls, bar, onEquip, onSwap, onRemove, onClose }: { ab: Ability; cls: ClassId; bar: string[]; onEquip: () => void; onSwap: (out: string) => void; onRemove: () => void; onClose: () => void }) {
+  const [swapping, setSwapping] = useState(false);
+  const on = bar.includes(ab.id);
+  const carried = !!ab.super || ab.id === DASH.id;
+  const full = !on && bar.length >= SLOTS;
+  const combos = combosOf(cls, ab);
+  const held = (x: Ability): boolean => !!x.super || bar.includes(x.id);
+  const partner = (x: Ability): ReactNode => (
+    <span key={x.id} className={`rb-rs-partner${held(x) ? ' is-held' : ''}`}>
+      <img src={iconPicture(x.icon)} alt="" draggable={false} />
+      {x.name}
+      <small>{x.super ? 'your super' : held(x) ? 'on your bar' : 'not on your bar'}</small>
+    </span>
+  );
+  return (
+    <div className="rb-ring-dialog-wrap is-card" role="dialog" aria-modal="true" aria-label={ab.name} onClick={onClose}>
+      <div className="rb-ring-dialog rb-rs-card" onClick={(e) => e.stopPropagation()}>
+        <header>
+          <img src={iconPicture(ab.icon)} alt="" draggable={false} />
+          <span>
+            <strong>{ab.name}</strong>
+            <em>{ab.super ? 'Super' : ab.id === DASH.id ? 'Movement' : ROLE_WORD[ab.role]}</em>
+            <small>{ab.super ? 'Ready when your meter is full' : timing(ab)}</small>
+          </span>
+        </header>
+        <p className="rb-rs-card-text">{ab.text}</p>
+        {/* (choosing what it replaces takes the place of the reading: a phone on its side has no room for both) */}
+        <div className="rb-rs-card-cols" hidden={swapping}>
+          <section>
+            <h4>Best used</h4>
+            <ul>
+              {usesOf(ab, RANGED.has(cls)).map((u) => (
+                <li key={u}>{u}</li>
+              ))}
+            </ul>
+          </section>
+          <section>
+            <h4>Combos</h4>
+            {combos.lands && (
+              <p>
+                <b>{combos.lands.name}.</b> {combos.lands.text}
+                {combos.lands.after.length > 0 && <span className="rb-rs-partners">Set it up with {combos.lands.after.map(partner)}</span>}
+              </p>
+            )}
+            {combos.setsUp.map((c) => (
+              <p key={c.then.id}>
+                It sets up <b>{c.name}</b>.<span className="rb-rs-partners">Follow it with {partner(c.then)}</span>
+              </p>
+            ))}
+            {!combos.lands && combos.setsUp.length === 0 && <p className="rb-dim">It is not part of a combo. It does its own job.</p>}
+          </section>
+        </div>
+        {swapping && (
+          <div className="rb-rs-card-swap">
+            <small>Your bar is full. Which one does it replace?</small>
+            <div>
+              {bar.map((id) => {
+                const x = ABILITIES[id];
+                return x ? (
+                  <button key={id} type="button" className="rb-btn is-small" onClick={() => onSwap(id)}>
+                    <img src={iconPicture(x.icon)} alt="" draggable={false} />
+                    {x.name}
+                  </button>
+                ) : null;
+              })}
+            </div>
+          </div>
+        )}
+        <footer>
+          {carried ? (
+            <button type="button" className="rb-btn is-gold" onClick={onClose} autoFocus>
+              Close
+            </button>
+          ) : (
+            <>
+              <button type="button" className="rb-btn" onClick={onClose}>
+                Cancel
+              </button>
+              {on ? (
+                <button type="button" className="rb-btn is-gold" onClick={onRemove}>
+                  Take it off
+                </button>
+              ) : full ? (
+                !swapping && (
+                  <button type="button" className="rb-btn is-gold" onClick={() => setSwapping(true)} autoFocus>
+                    Equip
+                  </button>
+                )
+              ) : (
+                <button type="button" className="rb-btn is-gold" onClick={onEquip} autoFocus>
+                  Equip
+                </button>
+              )}
+            </>
+          )}
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Changing what a class brings: three saved setups, each a bar of four abilities, three talents and an oath. One thing
  * at a time, on tabs, with what everything does written where it can be read.
  */
@@ -73,21 +182,17 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
   const cur = sets.list[sets.active]!;
   const [tab, setTab] = useState<Tab>('abilities');
   const [info, setInfo] = useState<Ability | null>(null);
-  const [fullNote, setFullNote] = useState(false);
+  /** The ability being read before it is taken or left (AbilityCard). */
+  const [card, setCard] = useState<Ability | null>(null);
   const put = (next: RingSetup): void => {
     const list = [...sets.list];
     list[sets.active] = next;
     onSets({ ...sets, list });
   };
-  const toggle = (ab: Ability): void => {
+  /** A click on an ability opens it to be read: nothing is taken or dropped until its card says so. */
+  const open = (ab: Ability): void => {
     setInfo(ab);
-    if (cur.bar.includes(ab.id)) {
-      setFullNote(false);
-      put({ ...cur, bar: cur.bar.filter((x) => x !== ab.id) });
-    } else if (cur.bar.length < SLOTS) {
-      setFullNote(false);
-      put({ ...cur, bar: [...cur.bar, ab.id] });
-    } else setFullNote(true);
+    setCard(ab);
   };
   const pickTalent = (t: Talent): void => {
     const others = cur.talents.filter((id) => TALENTS[cls].find((x) => x.id === id)?.row !== t.row);
@@ -122,7 +227,7 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
       </div>
 
       <div className="rb-rs-barrow">
-        <BarRow bar={cur.bar} cls={cls} onPick={toggle} onHover={setInfo} />
+        <BarRow bar={cur.bar} cls={cls} onPick={open} onHover={setInfo} />
       </div>
       {/* what to press after what: the combos this bar can make, each as its two abilities in order */}
       <ul className="rb-rs-combos" aria-label="Combos in this setup">
@@ -154,12 +259,12 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
       <div className="rb-rs-panel" role="tabpanel">
         {tab === 'abilities' && (
           <>
-            <p className={`rb-rs-hint${fullNote ? ' is-warn' : ''}`}>{fullNote ? 'Your bar is full. Click one that’s on it to take it off first.' : 'Choose four to bring. Click to add or remove.'}</p>
+            <p className="rb-rs-hint">Choose four to bring. Open an ability to read it, then equip it.</p>
             <div className="rb-rs-kit">
               {kitOf(cls).map((ab) => {
                 const on = cur.bar.includes(ab.id);
                 return (
-                  <button key={ab.id} className={`rb-rs-ab${on ? ' is-on' : ''}`} onClick={() => toggle(ab)} onMouseEnter={() => setInfo(ab)} onFocus={() => setInfo(ab)} aria-pressed={on}>
+                  <button key={ab.id} className={`rb-rs-ab${on ? ' is-on' : ''}`} onClick={() => open(ab)} onMouseEnter={() => setInfo(ab)} onFocus={() => setInfo(ab)} aria-pressed={on}>
                     <img src={iconPicture(ab.icon)} alt="" draggable={false} />
                     <small>{ab.name}</small>
                     {on && (
@@ -235,6 +340,27 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
             )}
           </span>
         </div>
+      )}
+      {card && (
+        <AbilityCard
+          key={card.id}
+          ab={card}
+          cls={cls}
+          bar={cur.bar}
+          onClose={() => setCard(null)}
+          onEquip={() => {
+            put({ ...cur, bar: [...cur.bar, card.id] });
+            setCard(null);
+          }}
+          onSwap={(out) => {
+            put({ ...cur, bar: cur.bar.map((x) => (x === out ? card.id : x)) });
+            setCard(null);
+          }}
+          onRemove={() => {
+            put({ ...cur, bar: cur.bar.filter((x) => x !== card.id) });
+            setCard(null);
+          }}
+        />
       )}
     </div>
   );

@@ -311,12 +311,17 @@ const fragment = /* glsl */ `
     float f = clamp((ang + half_) / max(0.001, head + half_), 0.0, 1.0);
     float pinch = sin(clamp((ang + half_) / sweep, 0.0, 1.0) * 3.14159);
     float th = mix(0.3 + heavy * 0.1, 0.1, t) * pinch + 0.015;
-    float band = smoothstep(th, th * 0.35, abs(r - 0.82));
+    // (a heavy blow's band is wider than the card it is drawn on: it thins out before the card's edge, or the edge
+    // shows as a straight white cut across the swing)
+    float band = smoothstep(th, th * 0.35, abs(r - 0.82)) * smoothstep(1.0, 0.86, r);
     float streak = 0.75 + 0.5 * noise(vec2(r * 22.0, ang * 2.0));
     float fade = clamp(1.2 - t * 1.25, 0.0, 1.0);
     float k = band * pow(f, 1.6) * fade * streak;
-    vec3 c = mix(vA.rgb, vec3(1.0), smoothstep(0.6, 1.0, f) * 0.85);
-    return vec4(c * k, k * 0.55);
+    // (white at the blade, unless the swing brings a second color for its edge: a blade of shadow is pale violet there
+    // and covers more of the ground behind it, so it reads as dark and not as a flash)
+    float own = step(0.02, distance(vA.rgb, vB.rgb));
+    vec3 c = mix(vA.rgb, mix(vec3(1.0), vB.rgb, own), smoothstep(0.6, 1.0, f) * 0.85);
+    return vec4(c * k, k * mix(0.55, 0.8, own));
   }
 
   // what lies on the ground and keeps hurting
