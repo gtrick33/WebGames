@@ -298,6 +298,15 @@ describe('Sigilfall: what stands in each land', () => {
     }
     expect(wooded).toBeGreaterThan(200);
     expect(cleared).toBeGreaterThan(200);
+    // and no more of the deep wood than touches it: the Knights' Chapel stands hard against Highwall's eastern wood,
+    // one open tile at its flank and the trees right behind that (two and three tiles of it taken left a bare strip
+    // "free of props" where "players can venture")
+    const hw = mapOf('highwall');
+    const knights = hw.buildings.find((b) => b.style === 'temple' && b.lot.tx > 100)!;
+    for (let y = knights.lot.ty; y < knights.lot.ty + knights.lot.h; y++) {
+      expect(hw.solid[y * hw.w + knights.lot.tx + knights.lot.w], `open at its flank, row ${y}`).toBe(0);
+      expect(hw.kind[y * hw.w + knights.lot.tx + knights.lot.w + 1], `wood behind that, row ${y}`).toBe(K.Wall);
+    }
     expect(chapels).toBeGreaterThanOrEqual(10);
   });
 });

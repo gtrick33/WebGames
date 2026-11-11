@@ -610,8 +610,12 @@ function standBuildings(def: RegionDef, w: number, h: number, kind: Uint8Array, 
           // how far out it is, as a share of the clearing: 1 at its rim
           const n = Math.hypot((x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry);
           if (k === K.Wall) {
+            // (one tile at each flank and three rows behind its roof, no more: with the wood taken two and three tiles
+            // back there was a strip of bare ground beside the Knights' Chapel that "players can venture" into. The
+            // far row gives way tree by tree, so the notch isn't ruled either)
             const at = x >= lot.tx - 1 && x < lot.tx + lot.w + 1 && y >= lot.ty - 3 && y < lot.ty + lot.h;
-            if (great && edge >= 4 && (at || n < 0.5 + 0.28 * hash2(x, y, 917))) kind[i] = K.Floor;
+            const rim = y === lot.ty - 3 && hash2(x, y, 917) < 0.45;
+            if (great && edge >= 4 && at && !rim) kind[i] = K.Floor;
             continue;
           }
           // right against it, always; further out, a ragged rim
