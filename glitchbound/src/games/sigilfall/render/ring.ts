@@ -117,6 +117,10 @@ export class RingFx {
   readonly wakes = new Map<number, { x: number; y: number; at: number }[]>();
   /** A toll of dusk rolling out from someone: rings of dark, one after another. */
   tolls: { x: number; y: number; t: number; dur: number; r: number }[] = [];
+  /** What lands at once but is thrown (an arrow, a hammer): a streak from the hand to whoever it hit. */
+  zips: { x0: number; y0: number; x1: number; y1: number; t: number; dur: number; ab: string }[] = [];
+  /** A placed ability that has just come down: its patch, lit. */
+  falls: { x: number; y: number; r: number; t: number; dur: number; ab: string }[] = [];
   /** Who just let a super go: a column of light on them for a moment. */
   supers: { id: number; t: number }[] = [];
   private spread = 0;
@@ -150,6 +154,14 @@ export class RingFx {
         const f = m.fighters[e.id];
         if (!ab || !f) continue;
         this.by.set(ab.id, f.id);
+        if (ab.zip) {
+          const to = m.aimOf(f, ab);
+          if (to && to !== f) {
+            const d = Math.hypot(to.x - f.x, to.y - f.y);
+            this.zips.push({ x0: f.x, y0: f.y, x1: to.x, y1: to.y, t: 0, dur: Math.max(0.07, Math.min(0.16, d / 1100)), ab: ab.id });
+            if (this.zips.length > 12) this.zips.shift();
+          }
+        }
         if (ab.cls === 'gloamknight') this.gloam(ab, f);
         else if (ab.aim === 'near') this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.42, r: ab.range + HERO_R, color: ab.color, ring: true });
         else if (ab.cast === 0 && ab.range <= 40 && ab.aim === 'enemy') {
@@ -177,7 +189,7 @@ export class RingFx {
         // (and as it lands: steel for a blow, the school's own for a spell, a soft chime for a heal)
         const mine = e.id === myId;
         if (ab.role === 'heal' || ab.aim === 'friend') sound('heal', mine ? 0.6 : 0.35);
-        else if (ab.aim === 'enemy' || ab.aim === 'near') sound(ab.school === 'physical' ? (ab.role === 'burst' ? 'critBlade' : 'clash') : ab.role === 'burst' ? 'explode' : (LANDS[ab.school] ?? 'hit'), mine ? 0.75 : 0.5);
+        else if (ab.aim === 'enemy' || ab.aim === 'near' || ab.aim === 'ground') sound(ab.school === 'physical' ? (ab.role === 'burst' ? 'critBlade' : 'clash') : ab.role === 'burst' ? 'explode' : (LANDS[ab.school] ?? 'hit'), mine ? 0.75 : 0.5);
         this.bursts.push({ x: f.x, y: f.y, t: 0, dur: ab.role === 'burst' ? 0.75 : 0.55, school: ab.school, color: ab.color, big: ab.role === 'burst', heal: ab.role === 'heal' || ab.aim === 'friend', seed: (f.x * 7 + f.y * 3 + this.bursts.length) % 97 });
         if (this.bursts.length > 24) this.bursts.shift();
         // a blow that drinks: what it took streams back to whoever struck it
@@ -196,9 +208,21 @@ export class RingFx {
         sound('die', 0.9);
         sound('slam', 0.6);
       } else if (e.k === 'miss') {
-        // a shot that hit stone or flew out: a puff where it fell
+        // a shot whose target fell before it got there: a puff where it went out
         const ab = ABILITIES[e.ab];
         this.flashes.push({ x: e.x, y: e.y, t: 0, dur: 0.22, r: 9, color: ab?.color ?? '#ffffff', ring: false });
+      } else if (e.k === 'zone') {
+        // what was placed comes down: its whole patch lit, a ring racing out to its edge, and the ground hit hard
+        const ab = ABILITIES[e.ab];
+        if (!ab) continue;
+        this.falls.push({ x: e.x, y: e.y, r: e.r, t: 0, dur: 0.55, ab: ab.id });
+        if (this.falls.length > 8) this.falls.shift();
+        this.flashes.push({ x: e.x, y: e.y, t: 0, dur: 0.45, r: e.r, color: ab.color, ring: true });
+        this.bursts.push({ x: e.x, y: e.y, t: 0, dur: 0.75, school: ab.school, color: ab.color, big: true, heal: false, seed: (e.x * 7 + e.y * 3) % 97 });
+        sound(ab.super ? 'slam' : (LANDS[ab.school] ?? 'hit'), ab.super ? 0.9 : 0.55);
+      } else if (e.k === 'orb') {
+        this.flashes.push({ x: e.x, y: e.y, t: 0, dur: 0.5, r: 26, color: '#7fe06a', ring: true });
+        sound('heal', e.id === myId ? 0.7 : 0.4);
       } else if (e.k === 'super') {
         // a super: a great ring of its color, a crowd that roars, and its name called out
         const ab = ABILITIES[e.ab];
@@ -275,6 +299,10 @@ export class RingFx {
     for (const f of this.flashes) f.t += dt;
     for (const d of this.drains) d.t += dt;
     this.drains = this.drains.filter((d) => d.t < d.dur);
+    for (const z of this.zips) z.t += dt;
+    this.zips = this.zips.filter((z) => z.t < z.dur);
+    for (const z of this.falls) z.t += dt;
+    this.falls = this.falls.filter((z) => z.t < z.dur);
     for (const h of this.hands) h.t += dt;
     this.hands = this.hands.filter((h) => h.t < h.dur);
     for (const o of this.tolls) o.t += dt;
@@ -451,6 +479,67 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
     const tone = el === 'trail' ? { a: c, b: '#ffffff' } : (TONES[el] ?? { a: c, b: '#ffffff' });
     const k = ab?.super ? 1.7 : 1;
     shot(q, el === 'trail' ? 'orb' : el, b.x, b.y, Math.cos(a) * 100, Math.sin(a) * 100, 14 * k, 3.4 * k, b.x * 0.03 + b.y * 0.05, tone);
+  }
+  // what is thrown and lands at once: seen crossing, all the same
+  for (const z of fx.zips) {
+    const ab = ABILITIES[z.ab];
+    const c = ab?.color ?? '#ffffff';
+    const el = SCHOOL_EL[ab?.school ?? ''] ?? 'arcane';
+    const tone = el === 'trail' ? { a: c, b: '#ffffff' } : (TONES[el] ?? { a: c, b: '#ffffff' });
+    const a = Math.atan2(z.y1 - z.y0, z.x1 - z.x0);
+    for (let i = 0; i < 3; i++) {
+      const u = Math.min(1, Math.max(0, z.t / z.dur - i * 0.14));
+      shot(q, el === 'trail' ? 'orb' : el, z.x0 + (z.x1 - z.x0) * u, z.y0 - 8 + (z.y1 - z.y0) * u, Math.cos(a) * 100, Math.sin(a) * 100, 13 - i * 3, 3.2 - i * 0.7, z.x0 * 0.03 + i, tone);
+    }
+  }
+  // what was placed, on its way down: it falls out of the sky onto the middle of its patch
+  for (const z of m.zones) {
+    const ab = ABILITIES[z.ab];
+    if (!ab) continue;
+    const u = 1 - Math.max(0, z.t) / z.dur;
+    const el = SCHOOL_EL[ab.school] ?? 'arcane';
+    const tone = el === 'trail' ? { a: ab.color, b: '#ffffff' } : (TONES[el] ?? { a: ab.color, b: '#ffffff' });
+    const big = ab.super ? 1.8 : 1;
+    if (ab.school === 'shadow') {
+      // (a rift does not fall: it opens)
+      q.put({ kind: FX.shadow, x: z.x, y: z.y, up: 3, flat: true, w: z.r * 2 * (0.3 + u * 0.7), a: '#0a0314', b: '#7a3cff', t: u, alpha: 0.5 + u * 0.4, seed: z.x });
+      for (let i = 0; i < 6; i++) {
+        const ang = time * 2.4 + (i / 6) * Math.PI * 2;
+        q.put({ kind: FX.smoke, x: z.x + Math.cos(ang) * z.r * 0.6 * u, y: z.y + Math.sin(ang) * z.r * 0.6 * u, up: 6 + u * 10, w: 16, a: '#3a1460', alpha: 0.6 * u, t: 0.3, seed: i });
+      }
+    } else if (ab.school === 'nature' || ab.school === 'physical') {
+      // (a volley: many small things coming down all over it; thorns: the same, coming up)
+      for (let i = 0; i < 12; i++) {
+        const ang = i * 2.4;
+        const rr = z.r * Math.sqrt(((i * 37) % 100) / 100) * 0.9;
+        const v = Math.min(1, Math.max(0, u * 1.25 - (i % 4) * 0.08));
+        q.put({ kind: FX.spark, x: z.x + Math.cos(ang) * rr + (1 - v) * 26, y: z.y + Math.sin(ang) * rr, up: (1 - v) * 130 + 2, w: 6, a: tone.a, b: tone.b, t: 0.2, alpha: 0.4 + v * 0.6 });
+      }
+    } else {
+      // (a comet, a lance of sun: one thing, from high up and a little to one side)
+      const h = (1 - u) * (1 - u) * 190;
+      shot(q, el === 'trail' ? 'orb' : el, z.x + (1 - u) * 46, z.y - h, -60, 100, 15 * big, 3.6 * big, z.x * 0.03, tone);
+      q.put({ kind: FX.glow, x: z.x, y: z.y, up: 4, w: z.r * (0.6 + u), a: tone.a, alpha: 0.2 + u * 0.45 });
+    }
+  }
+  for (const z of fx.falls) {
+    const ab = ABILITIES[z.ab];
+    const u = z.t / z.dur;
+    q.put({ kind: FX.glow, x: z.x, y: z.y, up: 6, w: z.r * 2.2, a: ab?.color ?? '#ffffff', alpha: 0.8 * (1 - u) });
+    q.put({ kind: FX.ring, x: z.x, y: z.y, flat: true, w: z.r * 2 * (0.5 + u * 0.5), a: ab?.color ?? '#ffffff', t: u, alpha: 1 - u, seed: 2 });
+    if (ab?.school === 'fire') for (let i = 0; i < 7; i++) q.put({ kind: FX.flame, x: z.x + Math.cos(i * 0.9) * z.r * 0.55, y: z.y + Math.sin(i * 0.9) * z.r * 0.55, up: -2, base: true, w: 13, h: 26 * (1 - u), a: '#f4561f', b: '#ffb02e', seed: i * 0.7 });
+    if (ab?.school === 'holy') q.put({ kind: FX.shaft, x: z.x, y: z.y, base: true, w: z.r * 0.9, h: 120, a: ab.color, b: '#ffffff', t: u, alpha: 1 - u });
+  }
+  // the healing spheres: green, bobbing, there for whoever is hurt
+  for (const o of m.orbs) {
+    if (m.phase !== 'fight' || m.clock < o.at) continue;
+    const bob = Math.sin(time * 2.6 + o.x) * 2;
+    q.put({ kind: FX.glow, x: o.x, y: o.y, up: 10 + bob, w: 34, a: '#58e07a', alpha: 0.6 });
+    q.put({ kind: FX.orb, x: o.x, y: o.y, up: 10 + bob, w: 10, a: '#7dff9a', b: '#eafff0', t: 0.3, seed: time + o.x });
+    for (let i = 0; i < 3; i++) {
+      const u = (time * 0.5 + i / 3 + o.y * 0.01) % 1;
+      q.put({ kind: FX.spark, x: o.x + Math.sin(i * 2.1 + o.x) * 6, y: o.y, up: 8 + u * 22, w: 4 - u * 2.4, a: '#c8ffd4', t: 0.2, alpha: 1 - u });
+    }
   }
   // a Swift Step: a streak of light behind
   for (const f of m.fighters) {
@@ -758,31 +847,73 @@ function lingering(q: Fx3D, f: Fighter, a: Fighter['auras'][number], time: numbe
 }
 
 /** The top layer of one frame. */
-export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number, view: RingStage): void {
+/** A placed ability being aimed by hand: which, and where its user has it now. */
+export interface RingAim {
+  ab: string;
+  x: number;
+  y: number;
+}
+
+export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number, view: RingStage, aim: RingAim | null = null): void {
   const me = myId === null ? null : (m.fighters[myId] ?? null);
   let g = view.groundLayer();
   if (m.phase === 'fight' && m.zone < ZONE_START - 0.01) gloamGround(g, m, view, time);
-  // a shot is a thing to dodge: a fading line on the ground ahead of it, where it's going
-  g.save();
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.lineCap = 'round';
-  for (const b of m.bolts) {
-    const sp = Math.hypot(b.vx, b.vy) || 1;
-    const reach = Math.min(70, b.left);
-    const from = view.spot(b.x, b.y + 8);
-    const to = view.spot(b.x + (b.vx / sp) * reach, b.y + 8 + (b.vy / sp) * reach);
-    const line = g.createLinearGradient(from.x, from.y, to.x, to.y);
-    const c = ABILITIES[b.ab]?.color ?? '#ffffff';
-    line.addColorStop(0, `${c}88`);
-    line.addColorStop(1, `${c}00`);
-    g.strokeStyle = line;
-    g.lineWidth = 4;
+  // what is placed is seen before it lands: its patch on the ground, filling from the middle as it comes (red when it
+  // is the other side's, so there is no doubt about which to step out of)
+  for (const z of m.zones) {
+    const ab = ABILITIES[z.ab];
+    const hostile = !!me && z.team !== me.team;
+    const c = hostile ? '#ff4a5a' : (ab?.color ?? '#ffe39a');
+    const u = 1 - Math.max(0, z.t) / z.dur;
+    view.flat(z.x, z.y);
+    g.globalAlpha = hostile ? 0.22 : 0.16;
+    g.fillStyle = c;
     g.beginPath();
-    g.moveTo(from.x, from.y);
-    g.lineTo(to.x, to.y);
-    g.stroke();
+    g.ellipse(z.x, z.y, z.r, z.r, 0, 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = hostile ? 0.44 : 0.32;
+    g.beginPath();
+    g.ellipse(z.x, z.y, z.r * u, z.r * u, 0, 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = 1;
+    ring(g, z.x, z.y, z.r, c, hostile ? 2.6 : 2.2);
   }
-  g.restore();
+  // a placed spell still being cast: its caster sees where it will come down (nobody else does, until it falls)
+  const casting = me && !me.dead && me.cast?.at ? ABILITIES[me.cast.ab] : null;
+  if (me && casting?.aim === 'ground') {
+    const p = m.reach(me, casting, me.cast!.at!);
+    view.flat(p.x, p.y);
+    g.globalAlpha = 0.12;
+    g.fillStyle = casting.color;
+    g.beginPath();
+    g.ellipse(p.x, p.y, casting.area ?? 40, casting.area ?? 40, 0, 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = 1;
+    g.setLineDash([6, 5]);
+    ring(g, p.x, p.y, casting.area ?? 40, casting.color, 2);
+    g.setLineDash([]);
+  }
+  // placing one: how far it reaches, and the patch where it will go (grey where it can't be seen from here)
+  if (aim && me && !me.dead) {
+    const ab = ABILITIES[aim.ab];
+    if (ab) {
+      const p = m.reach(me, ab, aim);
+      const ok = m.sees(me, { x: p.x, y: p.y + 4 });
+      view.flat(me.x, me.y);
+      g.setLineDash([5, 5]);
+      ring(g, me.x, me.y, ab.range, 'rgba(255,255,255,0.35)', 1.2);
+      g.setLineDash([]);
+      view.flat(p.x, p.y);
+      g.globalAlpha = 0.22;
+      g.fillStyle = ok ? ab.color : '#8a8a96';
+      g.beginPath();
+      g.ellipse(p.x, p.y, ab.area ?? 40, ab.area ?? 40, 0, 0, Math.PI * 2);
+      g.fill();
+      g.globalAlpha = 1;
+      ring(g, p.x, p.y, ab.area ?? 40, ok ? '#ffffff' : '#8a8a96', 2.2);
+      ring(g, p.x, p.y, 3, ok ? '#ffffff' : '#8a8a96', 2);
+    }
+  }
   for (const f of m.fighters) {
     view.flat(f.x, f.y);
     if (f.id === myId) ring(g, f.x, f.y, 11, '#ffe39a', 1.4);

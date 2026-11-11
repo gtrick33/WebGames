@@ -14,7 +14,8 @@ export function timing(ab: Ability): string {
   if (ab.channel) bits.push(`Channel ${ab.channel}s`);
   else bits.push(ab.cast ? `${ab.cast}s cast` : 'Instant');
   if (ab.cd) bits.push(`${ab.cd}s cooldown`);
-  if (ab.range > 40 && ab.aim !== 'near' && ab.aim !== 'self') bits.push('Ranged');
+  if (ab.aim === 'ground') bits.push('Placed');
+  else if (ab.range > 40 && ab.aim !== 'near' && ab.aim !== 'self') bits.push('Ranged');
   if (ab.range > 0 && ab.range <= 40) bits.push('Melee');
   if (ab.mana) bits.push(`${ab.mana} mana`);
   return bits.join(' · ');
@@ -379,9 +380,9 @@ export function RingHelp({ onClose }: { onClose: () => void }) {
               <dt>Move</dt>
               <dd>WASD, the arrows, or drag on a touch screen</dd>
               <dt>Abilities</dt>
-              <dd>1 to 4, or click them. They aim themselves at your target</dd>
+              <dd>1 to 4, or click them. They aim themselves at your target, all but a placed one (a comet, a volley, a pyre): hold its key and point with the mouse, or hold its button and push the circle out with your thumb, then let go</dd>
               <dt>Swift Step</dt>
-              <dd>Space: a quick step the way you’re going, out of the way of a shot</dd>
+              <dd>Space: a quick step the way you’re going, out from under what is about to land on you</dd>
               <dt>Super</dt>
               <dd>Q, once your meter is full: your class’s big one</dd>
               <dt>Choose an enemy</dt>
@@ -397,7 +398,13 @@ export function RingHelp({ onClose }: { onClose: () => void }) {
                 <b>Keep moving.</b> You can cast on the move: casting only slows you down.
               </li>
               <li>
-                <b>Shots fly, and can be dodged.</b> Most ranged spells fly at where your target is heading. Change direction or take a Swift Step to make them miss.
+                <b>Spells land. Circles can be left.</b> What is aimed at someone always hits them: quick ones at once, cast ones after a short flight. What is placed on the ground shows as a circle first, red when it is the other side’s: take a Swift Step out of it before it lands.
+              </li>
+              <li>
+                <b>Healing spheres.</b> Green spheres rise around the ground. Walk into one when you are hurt and it gives back part of your health, then rises again a little later.
+              </li>
+              <li>
+                <b>Bigger fights heal more.</b> Healing is 20% stronger in 2v2 and 35% stronger in 3v3.
               </li>
               <li>
                 <b>Land combos, and weave them.</b> Many abilities hit much harder against a target you have set up (their cards say how). Each different combo in a row builds Momentum, up to ×4: your combos hit harder still and your super fills faster. Seven seconds without one and it’s gone.
@@ -415,7 +422,7 @@ export function RingHelp({ onClose }: { onClose: () => void }) {
                 <b>Climb for rewards.</b> Every rank gives its title and a suit of Ringforged armor, for good. See them under Rewards in the lobby, and wear them from Title & armor.
               </li>
               <li>
-                <b>Pillars block sight.</b> Step behind one to dodge a cast, or to stop a healer reaching someone. Interrupt a cast to lock that school of magic for a few seconds. Holds are short and wear off faster each time.
+                <b>Pillars block sight.</b> Step behind one before a cast ends and it is lost, and a healer can’t reach who they can’t see. Interrupt a cast to lock that school of magic for a few seconds. Holds are short and wear off faster each time.
               </li>
             </ul>
           </section>

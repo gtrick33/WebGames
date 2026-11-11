@@ -21,11 +21,19 @@ export const MATCH_LIMIT = 150;
 /** How long crowd control's returns stay diminished after one wears off. */
 const DR_RESET = 18;
 const DR_STEPS = [1, 0.5, 0.25];
-/** Shots fly this fast, aimed at where the target will be if they keep on, and land on the first enemy they touch. */
+/**
+ * A shot flies this fast and follows its target: it always lands (the owner: "the misses are a bit annoying ... let's
+ * make all the spells hit the target, without any misses"). It quickens as it goes, so nobody outruns one for long.
+ */
 export const BOLT_SPEED = 300;
+const BOLT_QUICKEN = 260;
 export const BOLT_R = 6;
-/** How much of the target's stride a shot allows for: nearly all, so only a change of step (or a Swift Step) dodges it. */
-const LEAD = 0.9;
+/** Healing is this much stronger by how many fight on a side: there is more than one enemy's damage to answer. */
+export const HEAL_BY_SIZE: readonly number[] = [1, 1, 1.2, 1.35];
+/** Healing spheres: the first rise at this, each comes back this long after it's taken, and gives this share of a life. */
+export const ORB_FIRST = 12;
+export const ORB_EVERY = 24;
+export const ORB_HEAL = 0.14;
 const QUEUE = 0.35;
 /** Casting doesn't stop you, but it slows you to this. */
 export const CAST_SLOW = 0.55;
@@ -98,10 +106,16 @@ export type AuraKind = 'dot' | 'hot' | 'cc' | 'slow' | 'antiheal' | 'absorb' | '
  */
 export const PACE = 0.93;
 
-/** The classes that fight from range, and the share of their damage they keep. */
+/** The classes that fight from range. */
 export const RANGED: ReadonlySet<ClassId> = new Set<ClassId>(['mage', 'ranger', 'warlock', 'priest', 'druid']);
-/** (Their abilities' own words give what lands after this: arena/abilities.ts.) */
-export const RANGED_DMG = 0.72;
+/**
+ * The share of its abilities' numbers each class deals (their abilities' own words give what lands after this:
+ * arena/abilities.ts). Those who fight from range deal less than those at arm's length; within that, each class is
+ * set so that none wins or loses much more than half its matches when the computer plays every fighting setup against
+ * every other (the owner, once shots stopped missing: "adjust the dmg so each class is somewhat balanced"). Before
+ * that it was 1 at arm's length and 0.72 from range, and by the same measure the classes ran from 30% to 70%.
+ */
+export const CLASS_DMG: Readonly<Record<ClassId, number>> = { warrior: 0.89, paladin: 0.88, gloamknight: 0.84, mage: 0.72, ranger: 0.78, warlock: 0.84, priest: 0.78, druid: 0.81 };
 
 export interface Aura {
   /** The ability it came from. */
@@ -126,6 +140,8 @@ export interface Aura {
 export interface Cast {
   ab: string;
   target: number;
+  /** A placed ability: where its user put it. */
+  at?: { x: number; y: number };
   t: number;
   dur: number;
   channel: boolean;
@@ -163,7 +179,7 @@ export interface Fighter {
   locks: Partial<Record<string, number>>;
   dr: Partial<Record<CcKind, { n: number; until: number }>>;
   dash: { x: number; y: number; speed: number } | null;
-  queued: { ab: string; t: number } | null;
+  queued: { ab: string; t: number; at?: { x: number; y: number } } | null;
   fearX: number;
   fearY: number;
   oath: string | null;
@@ -183,15 +199,35 @@ export interface Fighter {
 export interface Bolt {
   ab: string;
   src: number;
-  /** Who it was aimed at (it lands on whichever enemy it touches first). */
+  /** Who it is going to: it follows them and lands on them. */
   tgt: number;
   /** Where it is: `y` is its height in the air over the ground, 8 up. */
   x: number;
   y: number;
   vx: number;
   vy: number;
-  /** How much further it flies before it falls. */
-  left: number;
+  /** How long it has flown. */
+  age: number;
+}
+
+/** A placed ability on its way down: a patch of ground everyone can see, that lands on whoever of the other side is in it. */
+export interface Zone {
+  ab: string;
+  src: number;
+  team: 0 | 1;
+  x: number;
+  y: number;
+  r: number;
+  /** Seconds until it lands, of `dur`. */
+  t: number;
+  dur: number;
+}
+
+/** A healing sphere's place, and when it next rises (it is there to take once the clock has passed this). */
+export interface Orb {
+  x: number;
+  y: number;
+  at: number;
 }
 
 export interface SigilStone {
@@ -218,8 +254,12 @@ export type MatchEvent =
   | { k: 'ab'; id: number; ab: string }
   | { k: 'land'; id: number; ab: string }
   | { k: 'death'; id: number }
-  /** A shot that hit nothing (stone, or the air past its reach). */
+  /** A shot whose target fell before it got there. */
   | { k: 'miss'; x: number; y: number; ab: string }
+  /** A placed ability lands on its patch of ground. */
+  | { k: 'zone'; x: number; y: number; r: number; ab: string }
+  /** Someone takes a healing sphere. */
+  | { k: 'orb'; id: number; x: number; y: number }
   /** The sigil rises (id -1), or someone takes it. */
   | { k: 'sigil'; id: number; x: number; y: number }
   /** A super goes off. */
@@ -285,9 +325,8 @@ function built(cls: ClassId, oathId: string | undefined, talentIds: readonly str
     tune,
     maxHp: Math.round(BODY[cls].hp * (1 + (oath?.hp ?? 0) + sum('hp'))),
     mods: {
-      // (those who fight from range deal less, supers and all: a tenth off when the owner found a mage's super
-      // "destroys anyones hp" and the three at arm's length a little behind, then "another 20%" after more matches)
-      dmg: (1 + (oath?.dmg ?? 0) + sum('dmg')) * (RANGED.has(cls) ? RANGED_DMG : 1),
+      // (each class deals its own share, supers and all: CLASS_DMG)
+      dmg: (1 + (oath?.dmg ?? 0) + sum('dmg')) * CLASS_DMG[cls],
       heal: 1 + (oath?.heal ?? 0) + sum('heal'),
       speed: 1 + (oath?.speed ?? 0) + sum('speed'),
       tenacity: 1 - Math.min(0.6, (oath?.tenacity ?? 0) + sum('tenacity')),
@@ -311,6 +350,10 @@ export class Match {
   fighters: Fighter[];
   bolts: Bolt[] = [];
   traps: Trap[] = [];
+  zones: Zone[] = [];
+  orbs: Orb[] = [];
+  /** How much stronger healing is in this match (HEAL_BY_SIZE, by the bigger side). */
+  readonly healK: number;
   /** The sigil, while it stands waiting to be taken, and when the next one rises. */
   sigil: SigilStone | null = null;
   sigilAt = SIGIL_FIRST;
@@ -325,6 +368,9 @@ export class Match {
     this.map = setup.map;
     const map = MAPS[setup.map] ?? Object.values(MAPS)[0]!;
     this.pillars = map.pillars;
+    this.orbs = map.orbs.map(([x, y]) => ({ x, y, at: ORB_FIRST }));
+    const size = Math.max(setup.fighters.filter((f) => f.team === 0).length, setup.fighters.filter((f) => f.team === 1).length);
+    this.healK = HEAL_BY_SIZE[Math.min(size, HEAL_BY_SIZE.length - 1)] ?? 1;
     const count: [number, number] = [0, 0];
     this.fighters = setup.fighters.map((s, id) => {
       const i = count[s.team]++;
@@ -461,7 +507,7 @@ export class Match {
   }
 
   /** Why this fighter can't use this right now, or null if they can. Doesn't change anything. */
-  blocked(f: Fighter, ab: Ability, target?: Fighter | null): string | null {
+  blocked(f: Fighter, ab: Ability, target?: Fighter | null, at?: { x: number; y: number }): string | null {
     if (this.phase !== 'fight') return 'Wait for the gates';
     if (f.dead) return 'You have fallen';
     if (f.auras.some((a) => a.still)) return 'Sealed in ice';
@@ -478,7 +524,12 @@ export class Match {
     if ((f.cds[ab.id] ?? 0) > 0) return 'Not ready yet';
     if (!ab.free && f.gcd > 0) return 'Not ready yet';
     if (ab.mana > f.mana) return 'Not enough mana';
-    if (ab.aim === 'enemy' || ab.aim === 'friend') {
+    if (ab.aim === 'ground' && at) {
+      // placed by hand: anywhere in reach that its user can see (it is brought back into reach if put past it)
+      const p = this.reach(f, ab, at);
+      return this.sees(f, { x: p.x, y: p.y + 4 }) ? null : 'Out of sight';
+    }
+    if (ab.aim === 'enemy' || ab.aim === 'friend' || ab.aim === 'ground') {
       const t = target === undefined ? this.aimOf(f, ab) : target;
       if (!t) return ab.aim === 'enemy' ? 'Nobody to aim at' : 'Nobody to help';
       if (t.dead) return 'They have fallen';
@@ -486,6 +537,15 @@ export class Match {
       if (t !== f && !this.sees(f, t)) return 'Out of sight';
     }
     return null;
+  }
+
+  /** A placed ability's point, brought back into its reach and onto the ground. */
+  reach(f: Fighter, ab: Ability, at: { x: number; y: number }): { x: number; y: number } {
+    const dx = at.x - f.x;
+    const dy = at.y - f.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const k = Math.min(1, ab.range / d);
+    return { x: Math.max(0, Math.min(ARENA_W, f.x + dx * k)), y: Math.max(0, Math.min(ARENA_H, f.y + dy * k)) };
   }
 
   /** Who an ability would land on. Without a chosen enemy, the nearest one in sight. */
@@ -512,23 +572,25 @@ export class Match {
   /* -------------------------------------------------------------- asking */
 
   /** A player presses an ability. Null if it went off (or was queued); otherwise why not, in words. */
-  press(id: number, abId: string): string | null {
+  press(id: number, abId: string, point?: { x: number; y: number }): string | null {
     const f = this.fighters[id];
     const ab = ABILITIES[abId];
     if (!f || !ab || (!f.bar.includes(abId) && !this.extras(f).includes(ab))) return 'You don’t have that';
-    const why = this.blocked(f, ab);
+    // (a point means something only to an ability that is placed)
+    const at = ab.aim === 'ground' && point && Number.isFinite(point.x) && Number.isFinite(point.y) ? { x: point.x, y: point.y } : undefined;
+    const why = this.blocked(f, ab, undefined, at);
     if (!why) {
-      this.begin(f, ab);
+      this.begin(f, ab, at);
       return null;
     }
     // a press in the last moments of a cast goes off the moment it lands
     if (why === 'Casting' && f.cast && f.cast.dur - f.cast.t <= QUEUE) {
-      f.queued = { ab: ab.id, t: f.cast.dur - f.cast.t + QUEUE };
+      f.queued = { ab: ab.id, t: f.cast.dur - f.cast.t + QUEUE, at };
       return null;
     }
     // a press in the last moments of the global cooldown waits for it, so that a player never feels a dropped key
     if (why === 'Not ready yet' && !ab.free && !ab.super && (f.cds[ab.id] ?? 0) <= QUEUE && f.gcd <= QUEUE) {
-      f.queued = { ab: ab.id, t: QUEUE };
+      f.queued = { ab: ab.id, t: QUEUE, at };
       return null;
     }
     return why;
@@ -543,20 +605,22 @@ export class Match {
     else f.target = null;
   }
 
-  private begin(f: Fighter, ab: Ability): void {
+  private begin(f: Fighter, ab: Ability, point?: { x: number; y: number }): void {
     const t = this.aimOf(f, ab) ?? f;
+    // (a placed ability with a cast is aimed when the cast begins: the ground is chosen, then the wait)
+    const at = point ?? (ab.aim === 'ground' && ab.cast > 0 ? { x: t.x, y: t.y } : undefined);
     if (!ab.free) f.gcd = GCD;
     f.queued = null;
     // starting something else lets go of the last cast (a free ability goes off alongside it)
     if (!ab.free && f.cast) this.endCast(f);
     if (ab.cast > 0 || ab.channel) {
-      f.cast = { ab: ab.id, target: t.id, t: 0, dur: ab.channel ?? ab.cast * (f.tune[ab.id]?.cast ?? 1), channel: !!ab.channel, next: ab.tick ?? 0, pushed: 0 };
+      f.cast = { ab: ab.id, target: t.id, at, t: 0, dur: ab.channel ?? ab.cast * (f.tune[ab.id]?.cast ?? 1), channel: !!ab.channel, next: ab.tick ?? 0, pushed: 0 };
       this.events.push({ k: 'ab', id: f.id, ab: ab.id });
       if (ab.channel) this.spend(f, ab);
       return;
     }
     this.spend(f, ab);
-    this.fire(f, ab, t);
+    this.fire(f, ab, t, at);
   }
 
   private spend(f: Fighter, ab: Ability): void {
@@ -574,8 +638,15 @@ export class Match {
   }
 
   /** A cast (or an instant) goes off. */
-  private fire(f: Fighter, ab: Ability, t: Fighter): void {
+  private fire(f: Fighter, ab: Ability, t: Fighter, at?: { x: number; y: number }): void {
     this.events.push({ k: 'ab', id: f.id, ab: ab.id });
+    if (ab.aim === 'ground') {
+      // placed: where its user put it, or under whoever it is aimed at. Everyone sees the patch before it lands.
+      const p = this.reach(f, ab, at ?? t);
+      const dur = ab.fall ?? 0.6;
+      this.zones.push({ ab: ab.id, src: f.id, team: f.team, x: p.x, y: p.y, r: ab.area ?? 40, t: dur, dur });
+      return;
+    }
     if (ab.aim === 'near') {
       for (const o of this.enemiesOf(f)) {
         if (Math.hypot(o.x - f.x, o.y - f.y) <= ab.range + HERO_R && this.sees(f, o)) this.land(f, ab, o, true);
@@ -589,23 +660,16 @@ export class Match {
     this.land(f, ab, t, false);
   }
 
-  /** A shot leaves: at where they'll be when it gets there, if they keep going the way they are. */
+  /** A shot leaves for its target. */
   private aim(f: Fighter, ab: Ability, t: Fighter): Bolt {
-    let ax = t.x;
-    let ay = t.y;
-    for (let i = 0; i < 2; i++) {
-      const time = Math.hypot(ax - f.x, ay - f.y) / BOLT_SPEED;
-      ax = t.x + t.vx * time * LEAD;
-      ay = t.y + t.vy * time * LEAD;
-    }
-    const d = Math.hypot(ax - f.x, ay - f.y) || 1;
-    return { ab: ab.id, src: f.id, tgt: t.id, x: f.x, y: f.y - 8, vx: ((ax - f.x) / d) * BOLT_SPEED, vy: ((ay - f.y) / d) * BOLT_SPEED, left: ab.range + HERO_R + 40 };
+    const d = Math.hypot(t.x - f.x, t.y - f.y) || 1;
+    return { ab: ab.id, src: f.id, tgt: t.id, x: f.x, y: f.y - 8, vx: ((t.x - f.x) / d) * BOLT_SPEED, vy: ((t.y - f.y) / d) * BOLT_SPEED, age: 0 };
   }
 
-  /** It reaches them. A blow already in the air lands whatever has come between: the time to dodge was before it left. */
+  /** It reaches them. A blow already in the air lands whatever has come between: the time to stop it was before it left. */
   private land(f: Fighter, ab: Ability, target: Fighter, area: boolean): void {
     let t = target;
-    const harmful = ab.aim === 'enemy' || ab.aim === 'near';
+    const harmful = ab.aim === 'enemy' || ab.aim === 'near' || ab.aim === 'ground';
     if (harmful && !area && ab.school !== 'physical') {
       const mirror = t.auras.find((a) => a.kind === 'reflect');
       if (mirror) {
@@ -920,7 +984,7 @@ export class Match {
 
   private heal(src: Fighter, t: Fighter, amount: number): void {
     if (t.dead) return;
-    let n = amount * HEAL_K * src.mods.heal * (1 - this.dampening);
+    let n = amount * HEAL_K * src.mods.heal * this.healK * (1 - this.dampening);
     if (this.rand() < CRIT) n *= 1.5;
     for (const a of t.auras) if (a.kind === 'antiheal') n *= 1 - a.n;
     n = Math.round(Math.min(n, t.maxHp - t.hp));
@@ -952,8 +1016,10 @@ export class Match {
       this.tickFighter(f, dt, moves[f.id]);
     }
     this.moveBolts(dt);
+    this.fallZones(dt);
     this.tripTraps(dt);
     this.tendSigil();
+    this.tendOrbs();
     this.closeIn(dt);
     this.judge();
   }
@@ -1041,7 +1107,7 @@ export class Match {
       f.queued.t -= dt;
       const ab = ABILITIES[f.queued.ab];
       if (f.queued.t <= 0 || !ab) f.queued = null;
-      else if (f.gcd <= 0 && !this.blocked(f, ab)) this.begin(f, ab);
+      else if (f.gcd <= 0 && !this.blocked(f, ab, undefined, f.queued.at)) this.begin(f, ab, f.queued.at);
     }
   }
 
@@ -1154,11 +1220,13 @@ export class Match {
     const ab = ABILITIES[c.ab]!;
     const t = this.fighters[c.target];
     c.t += dt;
-    if (!t || t.dead) {
+    // (placed by hand, it needs nobody: the ground is still there)
+    const placed = ab.aim === 'ground' && !!c.at;
+    if (!t || (t.dead && !placed)) {
       this.endCast(f);
       return;
     }
-    const gone = t !== f && (Math.hypot(t.x - f.x, t.y - f.y) > ab.range + HERO_R + 14 || !this.sees(f, t));
+    const gone = !placed && t !== f && (Math.hypot(t.x - f.x, t.y - f.y) > ab.range + HERO_R + 14 || !this.sees(f, t));
     if (c.channel) {
       if (gone) {
         this.endCast(f);
@@ -1180,35 +1248,66 @@ export class Match {
         return;
       }
       this.spend(f, ab);
-      this.fire(f, ab, t);
+      this.fire(f, ab, t, c.at);
     }
   }
 
-  /** Shots fly straight: into the first enemy they touch, into stone, or on until they fall. */
+  /** Shots follow whoever they were thrown at, and land on them. Only a target who has fallen is spared. */
   private moveBolts(dt: number): void {
     for (let i = this.bolts.length - 1; i >= 0; i--) {
       const b = this.bolts[i]!;
       const src = this.fighters[b.src]!;
-      const ab = ABILITIES[b.ab]!;
-      // in two halves, so that nothing slips between frames
-      let end: 'hit' | 'miss' | null = null;
-      for (let k = 0; k < 2 && !end; k++) {
-        b.x += b.vx * dt * 0.5;
-        b.y += b.vy * dt * 0.5;
-        b.left -= Math.hypot(b.vx, b.vy) * dt * 0.5;
-        const gx = b.x;
-        const gy = b.y + 8;
-        const hit = this.fighters.find((o) => !o.dead && o.team !== src.team && Math.hypot(o.x - gx, o.y - gy) <= HERO_R + BOLT_R);
-        if (hit) {
-          this.land(src, ab, hit, false);
-          end = 'hit';
-        } else if (this.solid.some((p) => gx > p.x && gx < p.x + p.w && gy > p.y && gy < p.y + p.h) || b.left <= 0 || gx < 0 || gy < 0 || gx > ARENA_W || gy > ARENA_H) {
-          end = 'miss';
-        }
+      const t = this.fighters[b.tgt];
+      if (!t || t.dead) {
+        this.bolts.splice(i, 1);
+        this.events.push({ k: 'miss', x: b.x, y: b.y, ab: b.ab });
+        continue;
       }
-      if (!end) continue;
-      this.bolts.splice(i, 1);
-      if (end === 'miss') this.events.push({ k: 'miss', x: b.x, y: b.y, ab: b.ab });
+      b.age += dt;
+      const speed = BOLT_SPEED + BOLT_QUICKEN * b.age;
+      const dx = t.x - b.x;
+      const dy = t.y - 8 - b.y;
+      const d = Math.hypot(dx, dy);
+      if (d <= speed * dt + HERO_R) {
+        this.bolts.splice(i, 1);
+        this.land(src, ABILITIES[b.ab]!, t, false);
+        continue;
+      }
+      b.vx = (dx / d) * speed;
+      b.vy = (dy / d) * speed;
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+    }
+  }
+
+  /** What was placed comes down: on everyone of the other side still standing on its patch. */
+  private fallZones(dt: number): void {
+    for (let i = this.zones.length - 1; i >= 0; i--) {
+      const z = this.zones[i]!;
+      z.t -= dt;
+      if (z.t > 0) continue;
+      this.zones.splice(i, 1);
+      const src = this.fighters[z.src]!;
+      const ab = ABILITIES[z.ab]!;
+      this.events.push({ k: 'zone', x: z.x, y: z.y, r: z.r, ab: z.ab });
+      for (const o of this.fighters) {
+        if (o.dead || o.team === z.team || Math.hypot(o.x - z.x, o.y - z.y) > z.r) continue;
+        this.land(src, ab, o, true);
+      }
+    }
+  }
+
+  /** The healing spheres: whoever is hurt and walks into one takes it, and it rises again later. */
+  private tendOrbs(): void {
+    for (const o of this.orbs) {
+      if (this.clock < o.at) continue;
+      const by = this.fighters.find((f) => !f.dead && f.hp < f.maxHp && Math.hypot(f.x - o.x, f.y - o.y) < HERO_R + 9);
+      if (!by) continue;
+      o.at = this.clock + ORB_EVERY;
+      const n = Math.round(Math.min(by.maxHp * ORB_HEAL, by.maxHp - by.hp));
+      by.hp += n;
+      this.events.push({ k: 'num', id: by.id, n, kind: 'heal', crit: false });
+      this.events.push({ k: 'orb', id: by.id, x: o.x, y: o.y });
     }
   }
 
@@ -1290,6 +1389,8 @@ export class Match {
       })),
       b: this.bolts,
       tr: this.traps,
+      z: this.zones,
+      o: this.orbs.map((o) => Math.round(o.at * 10) / 10),
       sg: this.sigil,
       sa: this.sigilAt,
     };
@@ -1305,6 +1406,10 @@ export class Match {
     this.draw = s.dr;
     this.bolts = s.b;
     this.traps = s.tr;
+    this.zones = s.z ?? [];
+    s.o?.forEach((at, i) => {
+      if (this.orbs[i]) this.orbs[i]!.at = at;
+    });
     this.sigil = s.sg ?? null;
     this.sigilAt = s.sa ?? this.sigilAt;
     s.f.forEach((n, i) => {
@@ -1366,11 +1471,12 @@ export class Match {
       for (const a of f.auras) a.t = Math.max(0, a.t - dt);
       f.streakT = Math.max(0, f.streakT - dt);
     }
-    // shots fly on in their straight lines
+    // shots fly on, and what was placed keeps falling
     for (const b of this.bolts) {
       b.x += b.vx * dt;
       b.y += b.vy * dt;
     }
+    for (const z of this.zones) z.t = Math.max(0, z.t - dt);
   }
 }
 
@@ -1406,6 +1512,9 @@ export interface Snapshot {
   }[];
   b: Bolt[];
   tr: Trap[];
+  z?: Zone[];
+  /** When each healing sphere next rises, in the map's order. */
+  o?: number[];
   sg?: SigilStone | null;
   sa?: number;
 }

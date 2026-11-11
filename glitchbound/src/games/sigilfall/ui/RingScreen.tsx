@@ -70,11 +70,12 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
 type Page = 'play' | 'setup' | 'friends';
 
 /**
- * A class's emblem in the lists of who to fight as: its first ability's picture, and for the Gloamknight its own
- * medal, the crowned helm. (It had Gloam Cleave's, a plain sword on red that could have been anyone's: the owner, "his
- * icon in the character selection screen could be way better".)
+ * A class's emblem in the lists of who to fight as: its first ability's picture, and for the Gloamknight a picture of
+ * his own, a horned helm with burning eyes drawn like all the rest. (It had Gloam Cleave's, which could have been
+ * anyone's: the owner, "his icon in the character selection screen could be way better"; then the shop's painted
+ * head: "gloamknight's in game character selection icon is his head from the shop, can we change that".)
  */
-const classEmblem = (c: ClassId): string => (c === 'gloamknight' ? `${(import.meta.env?.BASE_URL as string | undefined) ?? '/'}games/sigilfall/gloamknight-medal.webp` : iconPicture(kitOf(c)[0]!.icon));
+const classEmblem = (c: ClassId): string => iconPicture(c === 'gloamknight' ? 'berserker_face_mask_with_red_eyes_on_black' : kitOf(c)[0]!.icon);
 
 /** The classes to fight as. One from the shop can be picked once it's bought (progress/paidClasses.ts). */
 function ClassRow({ pick, onPick }: { pick: ClassId; onPick: (c: ClassId) => void }) {
@@ -89,7 +90,7 @@ function ClassRow({ pick, onPick }: { pick: ClassId; onPick: (c: ClassId) => voi
           aria-disabled={!classOpen(c, me)}
           aria-label={CLASSES[c].name}
           title={classOpen(c, me) ? CLASSES[c].name : `${CLASSES[c].name}: unlock it in the shop`}
-          className={`rb-rp-class${c === pick ? ' is-on' : ''}${classOpen(c, me) ? '' : ' is-locked'}${c === 'gloamknight' ? ' is-medal' : ''}`}
+          className={`rb-rp-class${c === pick ? ' is-on' : ''}${classOpen(c, me) ? '' : ' is-locked'}`}
           style={{ ['--c' as string]: CLASSES[c].colors.accent }}
           onClick={() => classOpen(c, me) && onPick(c)}
         >

@@ -19,15 +19,19 @@ export function usesOf(ab: Ability, ranged: boolean): string[] {
   if (ab.super) {
     say('It has no cooldown: it is ready when your meter is full, and combos fill the meter fastest.');
     say(ab.aim === 'friend' ? 'Keep it for the moment a friend is about to fall.' : 'Keep it for the moment that decides the fight: an enemy low on health, or their healer caught and unable to act.');
-    if (ab.bolt) say('It flies, so a quick step can dodge it. Throw it at someone who is stunned, rooted or in the middle of a cast.');
+    if (ab.aim === 'ground') say('You aim it yourself: hold, put the circle where you want it, let go. Best on someone who is stunned, rooted or slowed, or where it catches two.');
     return out;
   }
   if (ab.id === 'dash') {
-    say('Step out of the way of anything that flies at you: a bolt, an arrow, a super.');
+    say('Step out from under anything placed on you: a red circle on the ground means something is about to land there.');
     say('It also gets you behind a pillar, where nobody can target you.');
     return out;
   }
 
+  if (ab.aim === 'ground') {
+    say('You aim it yourself: hold its button and push the circle out, or hold its key and point with the mouse, then let go.');
+    say(ab.cast > 0 ? 'It lands where you aimed when the cast began, so cast it on someone who is stunned, rooted or busy casting.' : 'It hits everyone on its patch, and it takes a moment to land: a Swift Step gets them out, a slow or a hold keeps them in.');
+  }
   const stop = has('interrupt');
   if (stop) say(`Save it for the cast that matters, a heal or a long heavy spell. It cuts the cast off and locks that kind of magic for ${stop.lock} seconds.`);
   if (hold?.cc === 'stun') {
