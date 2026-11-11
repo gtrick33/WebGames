@@ -30,7 +30,7 @@ export function RiftGuide({ hero, open }: { hero: Character; open?: boolean }) {
         <section>
           <h3>How a run is won</h3>
           <p>
-            Clear the dungeon before its clock runs out. Every fall costs {KEY_DEATH} seconds. In time, the next stone opens (two for 80% of the clock, three for 60%). Late, the run still pays and nothing is lost. More dungeons
+            Clear the dungeon before its clock runs out: the clock by the map says what you are racing for. Every fall costs {KEY_DEATH} seconds. In time, the next stone opens (two for 80% of the clock, three for 60%). Late, the run still pays and nothing is lost. More dungeons
             join the list every other stone, and a new set of affixes comes every week from +2.
           </p>
         </section>
@@ -38,7 +38,7 @@ export function RiftGuide({ hero, open }: { hero: Character; open?: boolean }) {
           <h3>What each stone gives</h3>
           {young && (
             <p className="rb-dim">
-              Until level {FORGED_LEVEL} the Rift meets you at your own level and gives levels and ordinary gear. What follows is for a level-{FORGED_LEVEL} hero.
+              Until level {FORGED_LEVEL} the Rift meets you at your own level, gives a younger hero a longer clock, and gives levels and ordinary gear. What follows is for a level-{FORGED_LEVEL} hero.
             </p>
           )}
           <ul className="rb-rift-rows">

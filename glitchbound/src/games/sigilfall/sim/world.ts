@@ -6,7 +6,7 @@ import { BOSSES } from '../data/bosses';
 import { CLASSES, MAX_LEVEL, xpToNext } from '../data/classes';
 import { ELITE_AFFIXES, ENEMIES, enemyScale } from '../data/enemies';
 import { ITEM_DEFS, ITEMS } from '../data/items';
-import { KEY_DEATH, keyLevelFor, KEY_MIN, keyCache, keyLoot, keyMarks, keyPar, keyScale, keyUpgrade, type KeyAffix } from '../data/keystones';
+import { KEY_DEATH, keyLevelFor, KEY_MIN, keyCache, keyLoot, keyMarks, keyParFor, keyScale, keyUpgrade, type KeyAffix } from '../data/keystones';
 import { QUEST_DEFS, QUESTS } from '../data/quests';
 import { outlevelled } from '../data/progression';
 import { SPEC_LEVEL } from '../data/talents';
@@ -373,7 +373,7 @@ export class World {
     // Riftstone: the dungeon at Mythic's top level, the stone's might and the week's affixes
     if (o.key && o.key >= KEY_MIN && this.region.kind === 'dungeon') {
       const affixes = o.affixes ?? [];
-      this.keyRun = { key: o.key, affixes, par: keyPar(this.region), t: 0, deaths: 0, end: null, heroLevel: o.hero.level };
+      this.keyRun = { key: o.key, affixes, par: keyParFor(this.region, o.hero.level), t: 0, deaths: 0, end: null, heroLevel: o.hero.level };
       this.tier = 2;
       this.level = keyLevelFor(o.hero.level);
       this.mods = affixes.filter((a): a is 'volatile' | 'hasted' => a === 'volatile' || a === 'hasted');

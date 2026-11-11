@@ -1418,6 +1418,33 @@
   height: 100%;
   background: linear-gradient(90deg, #ffcf5a, #ff8a3d);
 }
+/* where three stones and two stop being in reach, marked on the clock */
+.rb-keybar {
+  position: relative;
+}
+.rb-keybar em {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  background: rgb(255 255 255 / 0.7);
+}
+.rb-keypace {
+  font: 700 11.5px system-ui, sans-serif;
+  letter-spacing: 0.02em;
+}
+.rb-keypace.is-up3 {
+  color: #ffd257;
+}
+.rb-keypace.is-up2 {
+  color: #9be86a;
+}
+.rb-keypace.is-up1 {
+  color: #8fd8ff;
+}
+.rb-keypace.is-up0 {
+  color: #ff9a9a;
+}
 .rb-keyend {
   display: grid;
   gap: 4px;

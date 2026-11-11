@@ -110,6 +110,18 @@ export function keyPar(r: Pick<RegionDef, 'id' | 'encounters'>): number {
   return Math.round((1.3 * (60 + 2.4 * foes + 0.028 * bossHp)) / 15) * 15;
 }
 
+/**
+ * The clock a hero runs against. The measured clocks are a level-60 hero's in Mythic gear; a younger hero's trial is
+ * fought at their own level with half a bar of skills and plain gear, and the play-bot at level 20 takes about twice
+ * as long over the same rooms (measured 2026-11-11: 200 to 520 s where the clocks said 225 and 240). So the clock is
+ * longer the younger the hero: 2.3 times at level 20, easing to the measured clock by level 45.
+ */
+export const TRIAL_EASE_TO = 45;
+export function keyParFor(r: Pick<RegionDef, 'id' | 'encounters'>, heroLevel: number): number {
+  const young = Math.max(0, Math.min(1, (TRIAL_EASE_TO - heroLevel) / 25));
+  return Math.round((keyPar(r) * (1 + 1.3 * young)) / 15) * 15;
+}
+
 /** How many levels a run opens above its own: by how far inside the clock it finished (−1: late, none). */
 export function keyUpgrade(time: number, par: number): number {
   if (time <= par * 0.6) return 3;

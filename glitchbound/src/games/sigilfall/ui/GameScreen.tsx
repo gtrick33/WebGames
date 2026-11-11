@@ -5,7 +5,7 @@ import { mechanicDue, mechanicShown } from '../progress/tips';
 import type { Callout } from '../sim/types';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { MAX_LEVEL, xpToNext } from '../data/classes';
-import { KEY_AFFIXES, KEY_DEATH } from '../data/keystones';
+import { KEY_AFFIXES, KEY_DEATH, keyUpgrade } from '../data/keystones';
 import { NPCS, QUEST_DEFS } from '../data/quests';
 import { REGIONS, TIERS } from '../data/regions';
 import { SKILLS } from '../data/skills';
@@ -577,10 +577,20 @@ function KeyClock({ engine }: { engine: SigilEngine }) {
   const time = useRef<HTMLElement>(null);
   const bar = useRef<HTMLElement>(null);
   const rooms = useRef<HTMLElement>(null);
+  const pace = useRef<HTMLElement>(null);
   useFrame(engine, (world) => {
     const run = world.keyRun;
     if (!run) return;
     const t = run.end ? run.end.time : run.t + run.deaths * KEY_DEATH;
+    // what the run is racing for: three stones inside 60% of the clock, two inside 80%, one inside it
+    if (pace.current) {
+      const up = keyUpgrade(t, run.par);
+      const text = run.end ? (up > 0 ? `In time: +${up}` : 'Out of time') : up === 3 ? 'Racing for +3' : up === 2 ? 'Racing for +2' : up === 1 ? 'Racing for +1' : 'Out of time: finish for marks';
+      if (pace.current.textContent !== text) {
+        pace.current.textContent = text;
+        pace.current.className = `rb-keypace is-up${Math.max(0, up)}`;
+      }
+    }
     if (time.current) {
       time.current.textContent = `${clockText(t)} / ${clockText(run.par)}`;
       time.current.classList.toggle('is-late', t > run.par);
@@ -597,7 +607,10 @@ function KeyClock({ engine }: { engine: SigilEngine }) {
       <b ref={time} className="rb-keytime" />
       <span className="rb-keybar">
         <i ref={bar} />
+        <em style={{ left: '60%' }} />
+        <em style={{ left: '80%' }} />
       </span>
+      <span ref={pace} className="rb-keypace" />
       <span ref={rooms} className="rb-small" />
       {k.affixes.length > 0 && <span className="rb-small rb-dim">{k.affixes.map((a) => KEY_AFFIXES[a].name).join(' · ')}</span>}
     </div>

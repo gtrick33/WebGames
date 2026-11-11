@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
-import { keyLevelFor, keyLoot, keyPar, keyScale, riftDungeons, riftTop } from '../data/keystones';
+import { keyLevelFor, keyLoot, keyParFor, keyScale, riftDungeons, riftTop } from '../data/keystones';
 import { ECHOES, RIFT_CAP_UNFINISHED, WARDENS } from '../data/wardens';
 import type { SigilEngine } from '../engine';
 import { campaignDone } from '../progress/wardrobe';
@@ -51,7 +51,7 @@ export function RiftScreen({ engine, slot, onBack }: { engine: SigilEngine; slot
               <li key={r.id}>
                 <button role="radio" aria-checked={r.id === picked.id} className={r.id === picked.id ? 'is-on' : ''} onClick={() => setRegion(r.id)}>
                   <strong>{r.name}</strong>
-                  <span className="rb-dim">Clock {clockText(keyPar(r))}</span>
+                  <span className="rb-dim">Clock {clockText(keyParFor(r, h.level))}</span>
                 </button>
               </li>
             ))}

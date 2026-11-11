@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CLASSES, levelPower, MAX_LEVEL, xpToNext } from '../data/classes';
 import { ITEM_DEFS } from '../data/items';
-import { KEY_AFFIXES, KEY_DEATH, keyLevelFor, KEY_MIN, keyAffixes, keyLoot, keyPar, keyScale, weekAffixes, weekOf } from '../data/keystones';
+import { KEY_AFFIXES, KEY_DEATH, keyLevelFor, KEY_MIN, keyAffixes, keyLoot, keyParFor, keyScale, weekAffixes, weekOf } from '../data/keystones';
 import { NPCS, QUESTS } from '../data/quests';
 import { mapColors } from '../data/themes';
 import { REGION_IDS, REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
@@ -1016,7 +1016,7 @@ function KeyPicker({ heroLevel, region, stone, top, best, week, onPick }: { hero
         )}
       </div>
       <span className="rb-small">
-        Enemies at level {keyLevelFor(heroLevel)} with ×{sc.hp.toFixed(1)} health and ×{sc.dmg.toFixed(1)} damage. The clock: <b className="rb-gold">{clockText(keyPar(region))}</b> (each fall costs {KEY_DEATH} s). Beat it to
+        Enemies at level {keyLevelFor(heroLevel)} with ×{sc.hp.toFixed(1)} health and ×{sc.dmg.toFixed(1)} damage. The clock: <b className="rb-gold">{clockText(keyParFor(region, heroLevel))}</b> (each fall costs {KEY_DEATH} s). Beat it to
         open the next levels (up to three, by how fast); late, nothing is lost. Loot of item level {keyLoot(stone, heroLevel)}
         {best ? `; your best here is +${best}` : ''}.
       </span>
