@@ -63,6 +63,27 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
       };
     }
     host.report({ type: 'ready' });
+    // A touch screen: nothing on the page is selected while the game is up. Tapping the game's buttons fast, the phone
+    // took two taps for "select this word" (of the page round the game, or of the game's own words) and put its
+    // Copy / Look Up bar over the fight (the owner: "if i spam on the buttons, sometimes this pop up appears"). The
+    // page's CSS says no (Game.css), and a selection that starts all the same is let go at once. Not in a field.
+    const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+    const inField = (n: Node | null): boolean => {
+      const el = n instanceof Element ? n : (n?.parentElement ?? null);
+      return !!el?.closest('input, textarea, [contenteditable="true"]');
+    };
+    const noSelection = (): void => {
+      const sel = document.getSelection();
+      if (sel && !sel.isCollapsed && !inField(sel.anchorNode)) sel.removeAllRanges();
+    };
+    const noMenu = (e: Event): void => {
+      if (!inField(e.target as Node | null)) e.preventDefault();
+    };
+    if (coarse) {
+      document.documentElement.classList.add('rb-touch-playing');
+      document.addEventListener('selectionchange', noSelection);
+      stage.addEventListener('contextmenu', noMenu);
+    }
     // a field being typed in (a hero's name, a party code): the phone's keyboard shortens the screen meanwhile
     const typing = (): boolean => {
       const a = document.activeElement;
@@ -146,6 +167,9 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
     stage.addEventListener('click', onTouchEnd, true);
     window.addEventListener('keydown', onKey);
     return () => {
+      document.documentElement.classList.remove('rb-touch-playing');
+      document.removeEventListener('selectionchange', noSelection);
+      stage.removeEventListener('contextmenu', noMenu);
       stopLive();
       ro.disconnect();
       cancelAnimationFrame(frame);
