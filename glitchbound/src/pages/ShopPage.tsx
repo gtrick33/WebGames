@@ -1,13 +1,14 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { BannerArt, FramedAvatar } from '../components/Looks';
+import { Checkout, itemText } from '../components/ShopCheckout';
 import { openSignIn } from '../components/openSignIn';
 import { gameUrl } from '../catalog/urls';
 import type { LookKind, LookSpec } from '../catalog/looks';
-import { offered, PRODUCTS, type Product } from '../catalog/shop';
+import { GLOAMKNIGHT_ITEM, offered, PRODUCTS, type Product } from '../catalog/shop';
 import { fill, priceIn, rich, useShopText } from '../i18n/shopText';
 import type { ShopText } from '../i18n/shopTypes';
 import { useLiveCatalog } from '../platform/liveCatalog';
-import { api, ApiError, useAccount } from '../platform/account';
+import { useAccount } from '../platform/account';
 import { usePageMeta } from '../platform/meta';
 import { useMoney } from '../platform/money';
 import { Link } from '../router/router';
@@ -42,14 +43,6 @@ function Inspectable({ product, label, onLook, size }: { product: Product; label
 export function ShopPage() {
   const { lang, words } = useShopText();
   return words ? <Shop lang={lang} t={words} /> : null;
-}
-
-/** An item's name and description in the reader's language, while it still reads as the code wrote it (an item an admin made or renamed reads as they wrote it). */
-function itemText(t: ShopText, p: Product): { name: string; blurb: string } {
-  const mine = t.items[p.id];
-  const code = PRODUCTS.find((x) => x.id === p.id);
-  if (!mine || !code) return { name: p.name, blurb: p.blurb };
-  return { name: p.name === code.name ? mine.name : p.name, blurb: p.blurb === code.blurb ? mine.blurb : p.blurb };
 }
 
 type W = ShopText['shop'];
@@ -111,7 +104,9 @@ function Shop({ lang, t }: { lang: Parameters<typeof priceIn>[0]; t: ShopText })
     </section>
   );
   const kinds: LookKind[] = ['border', 'banner', 'icon'];
-  const extras = now.filter((p) => !p.look && !p.sigil);
+  // (the Gloamknight Pack is Sigilfall's: it heads the game's own group, not the page)
+  const pack = now.filter((p) => p.id === GLOAMKNIGHT_ITEM);
+  const extras = now.filter((p) => !p.look && !p.sigil && p.id !== GLOAMKNIGHT_ITEM);
   const sigil = (kind: 'mount' | 'look'): Product[] => now.filter((p) => p.sigil?.kind === kind);
   return (
     <div className="wrap info-page">
@@ -128,13 +123,13 @@ function Shop({ lang, t }: { lang: Parameters<typeof priceIn>[0]; t: ShopText })
         </p>
       )}
       {extras.length > 0 && <div className="info-cols">{extras.map(card)}</div>}
-      {/* (what the Gloamknight Pack's pieces sit with: right under it) */}
-      {sigil('mount').length + sigil('look').length > 0 && (
+      {pack.length + sigil('mount').length + sigil('look').length > 0 && (
         <section className="shop-group shop-sigilfall" aria-labelledby="shop-sigilfall">
           <h2 id="shop-sigilfall" className="profile-h2">
             Sigilfall
           </h2>
           <p className="info-small">{w.sigilNote}</p>
+          {pack.length > 0 && <div className="info-cols">{pack.map(card)}</div>}
           {sigil('mount').length > 0 && <div className="info-cols">{sigil('mount').map(card)}</div>}
           {sigil('look').length > 0 && <div className="info-cols">{sigil('look').map(card)}</div>}
         </section>
@@ -209,56 +204,6 @@ function LookPreview({ spec, name, src }: { spec: LookSpec; name: string; src?: 
   return (
     <div className="shop-look shop-look-border">
       <FramedAvatar name={name} src={src} size={104} border={spec.kind === 'border' ? spec : undefined} icon={spec.kind === 'icon' ? spec : undefined} />
-    </div>
-  );
-}
-
-/**
- * The last step before paying: the two statements, each ticked by hand, and the price again. It opens inside the item's
- * own panel, scrolled into view with the focus on it, so it shows up where the button was pressed. The statements are in
- * the language the buyer reads, and the purchase records which (the confirmation email repeats them in it).
- */
-function Checkout({ product, name, price, lang, w, onClose }: { product: Product; name: string; price: string; lang: string; w: W; onClose: () => void }) {
-  const title = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    title.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
-    title.current?.focus({ preventScroll: true });
-  }, []);
-  const [now, setNow] = useState(false);
-  const [age, setAge] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const go = (): void => {
-    setBusy(true);
-    setError('');
-    api<{ url: string }>('/api/shop/checkout', { body: { product: product.id, agreeNow: now, agreeAge: age, lang } })
-      .then((r) => window.location.assign(r.url))
-      .catch((e: unknown) => {
-        setBusy(false);
-        setError(e instanceof ApiError && e.code === 'already_yours' ? w.already : w.failed);
-      });
-  };
-  return (
-    <div className="shop-checkout" role="group" aria-labelledby={`shop-buy-${product.id}`}>
-      <h3 id={`shop-buy-${product.id}`} ref={title} tabIndex={-1}>
-        {name}: {price}
-      </h3>
-      <p className="info-small">{w.checkoutNote}</p>
-      <label className="info-small">
-        <input type="checkbox" checked={now} onChange={(e) => setNow(e.target.checked)} /> {w.agreeNow}
-      </label>
-      <label className="info-small">
-        <input type="checkbox" checked={age} onChange={(e) => setAge(e.target.checked)} /> {w.agreeAge}
-      </label>
-      {error && <p role="alert">{error}</p>}
-      <div className="reset-row">
-        <button className="btn btn-primary" disabled={!now || !age || busy} onClick={go}>
-          {w.pay}
-        </button>
-        <button className="btn btn-ghost" onClick={onClose}>
-          {w.cancel}
-        </button>
-      </div>
     </div>
   );
 }

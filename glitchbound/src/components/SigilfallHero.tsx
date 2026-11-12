@@ -1,9 +1,7 @@
 import { useRef, type CSSProperties } from 'react';
 import { useT } from '../i18n';
 import { SECTION_GAMES } from '../catalog/catalog';
-import { useAccount } from '../platform/account';
 import { useLiveCatalog } from '../platform/liveCatalog';
-import { useMoney } from '../platform/money';
 import { Link } from '../router/router';
 import { Icon } from './Icon';
 import './SigilfallHero.css';
@@ -31,18 +29,16 @@ export function useSigilfall() {
 /**
  * The first thing on the site: a banner of Sigilfall's key art (the Wardens' Sanctum at night, all seven heroes in their
  * sigil armor and two Sigil Drakes, composed from the game's own 3D), its name in gold and one button. A cue on its
- * bottom edge says there's more below. The Gloamknight, the class sold in the shop, has his own sigil medallion in its top
- * corner, clear of the heroes: with the shop open it and its tag are a link to the Gloamknight Pack, before that to the game.
+ * bottom edge says there's more below. The Gloamknight has his own sigil medallion in its top corner, clear of the
+ * heroes: a picture, and a way into the game like the rest of the banner. It sells nothing: his pack is in the shop
+ * (the Shop tab, and Sigilfall's own shop inside the game), for whoever goes looking (the owner's call, 2026-11-12:
+ * a "New class · Gloamknight Pack" tag on the first thing a visitor sees was too forward).
  */
 export function SigilfallHero() {
   const t = useT();
   const game = useSigilfall();
   const words = useLiveCatalog().raw.banner;
   const banner = useRef<HTMLElement>(null);
-  // the Gloamknight's medallion; once the shop is open (or for an admin) it leads to his pack
-  const money = useMoney();
-  const { me } = useAccount();
-  const pack = money.shop || !!me?.isAdmin;
   if (!game) return null;
   const showMore = (): void => {
     const bottom = banner.current?.getBoundingClientRect().bottom ?? 400;
@@ -63,16 +59,8 @@ export function SigilfallHero() {
           <i key={i} className="sfh-ember" style={style} />
         ))}
       </div>
-      <Link href={pack ? '/shop' : `${game.section!.path}?play=1`} className="sfh-gk" aria-label={pack ? `${t('New class')}: ${t('Gloamknight Pack')}` : 'Sigilfall'}>
+      <Link href={`${game.section!.path}?play=1`} className="sfh-gk" aria-label="Sigilfall">
         <img src="/games/sigilfall/gloamknight-medal.webp" alt="" width={300} height={300} decoding="async" />
-        {pack && (
-          <span className="sfh-gk-tag">
-            <b>{t('New class')}</b>
-            <span>
-              {t('Gloamknight Pack')} <Icon name="arrowRight" size={14} />
-            </span>
-          </span>
-        )}
       </Link>
 
       <div className="sfh-inner">

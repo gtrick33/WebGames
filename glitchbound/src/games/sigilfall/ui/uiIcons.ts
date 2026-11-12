@@ -14,6 +14,8 @@ const ART: Record<string, string[]> = {
   skills: ['pp...pp', 'pccpccp', '.pcccp.', '..pcp..', '.pcccp.', 'pccpccp', 'pp...pp'],
   horseshoe: ['.SSSSS.', 'SsykysS', 'Sk...kS', 'Sy...yS', 'Sk...kS', 'Ss...sS', 'SS...SS'],
   hand: ['..ww....', '..ww....', '..wwww..', '..wwwwww', 'wwwwwwww', 'wwwwwww.', '.wwwwww.', '..wwww..'],
+  // a market stall: Sigilfall's own shop (ui/Store.tsx)
+  store: ['.rrwwrrwwr.', 'rrwwrrwwrr', 'rwwrrwwrrw', '.S......S.', '.SbbbbbbS.', '.SbyybbbS.', '.SbbbbbbS.', '.SSSSSSSS.'],
   party: ['.yy....cc.', 'yyyy..cccc', 'yyyy..cccc', '.yy....cc.', '..........', '.yyy..ccc.', 'yyyyy.cccc', 'yyyyy.cccc', 'yyyyy.cccc'],
 };
 

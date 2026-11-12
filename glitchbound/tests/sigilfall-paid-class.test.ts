@@ -23,7 +23,7 @@ describe('the paid class', () => {
 
   it('is a built-in shop item at its full price, kept in any saved list, and follows the shop’s word rules', () => {
     const p = productIn(PRODUCTS, GLOAMKNIGHT_ITEM)!;
-    expect(p).toMatchObject({ name: 'Gloamknight Pack', cents: 999 });
+    expect(p).toMatchObject({ name: 'Gloamknight Pack', cents: 499 });
     expect(p.later).toBeUndefined();
     expect(breaksRules(`${p.name} ${p.blurb}`)).toBe(false);
     expect(isBuiltIn(GLOAMKNIGHT_ITEM)).toBe(true);
@@ -58,7 +58,7 @@ describe('the pack', () => {
 });
 
 describe('making a hero', () => {
-  it('shows the Gloamknight with its price, and sends a guest to the shop instead of making one', async () => {
+  it('shows the Gloamknight with a quiet mark and no price, and never makes one for a player who doesn’t have it', async () => {
     const { render, screen, fireEvent, cleanup } = await import('@testing-library/react');
     const { createElement } = await import('react');
     // a canvas that draws nothing, as the other game screen tests use
@@ -69,10 +69,17 @@ describe('making a hero', () => {
     const made: string[] = [];
     const engine = { ui: { createSlot: 0 }, defaultName: 'Tester', asksForTips: false, toTitle: () => undefined, createHero: (_s: number, cls: string) => made.push(cls) };
     render(createElement(CreateScreen, { engine: engine as never }));
-    expect(screen.getByText('Shop · €9.99')).toBeTruthy();
-    fireEvent.click(screen.getByRole('radio', { name: /Gloamknight/ }));
+    // (it said "Shop · €9.99" on the tile: the first thing a new player read on their first screen. The price is
+    // in the shop, for whoever goes looking)
+    const tile = screen.getByRole('radio', { name: /Gloamknight/ });
+    expect(tile.textContent).toContain('Pack');
+    expect(document.body.textContent).not.toMatch(/€|Shop ·/);
+    fireEvent.click(tile);
     expect(screen.queryByRole('button', { name: /Begin as/ })).toBeNull();
-    expect(screen.getByRole('link', { name: 'Sign in to unlock it in the shop' }).getAttribute('href')).toBe('/shop');
+    // with the shop closed (as it is until it's opened in Admin) there is nothing to point at: it says so, plainly
+    expect(screen.getByText('The Gloamknight isn’t available yet.')).toBeTruthy();
+    expect(screen.queryByRole('link')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/€/);
     // a free class is made as before
     fireEvent.click(screen.getByRole('radio', { name: /Warrior/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Begin as Warrior' }));

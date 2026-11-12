@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { uiIcon } from './uiIcons';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { CLASSES } from '../data/classes';
 import { REGIONS } from '../data/regions';
@@ -32,7 +33,7 @@ function placeOf(offset: number): { x: number; y: number; scale: number; dim: bo
  * swipe walk the ring of heroes round; an empty place is a shadow with a plus. Drag the hero to turn them. The
  * hall's banners and the sigil under their feet take the color of whoever stands there.
  */
-export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, confirmDelete, setConfirmDelete }: { engine: SigilEngine; onRift: (slot: number) => void; onVigil: () => void; onRing: () => void; onSettings: () => void; confirmDelete: number | null; setConfirmDelete: (n: number | null) => void }) {
+export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, onStore, confirmDelete, setConfirmDelete }: { engine: SigilEngine; onRift: (slot: number) => void; onVigil: () => void; onRing: () => void; onSettings: () => void; onStore?: () => void; confirmDelete: number | null; setConfirmDelete: (n: number | null) => void }) {
   const heroes = engine.heroes();
   const n = heroes.length;
   // (the last hero played may be in a place this account no longer plays: the pack's, after a refund)
@@ -205,6 +206,12 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onSettings, c
           {hero && (
             <button className="rb-iconbtn cs-delete" onClick={() => setConfirmDelete(at)} aria-label={`Delete ${hero.name}`} title={`Delete ${hero.name}`}>
               🗑
+            </button>
+          )}
+          {/* (the game's own shop, where there is one: a small button among the others, never more) */}
+          {onStore && (
+            <button className="rb-iconbtn cs-store" onClick={onStore} aria-label="Shop" title="Shop">
+              <img src={uiIcon('store', 2)} alt="" draggable={false} />
             </button>
           )}
           <button className="rb-iconbtn" onClick={onSettings} aria-label="Settings">

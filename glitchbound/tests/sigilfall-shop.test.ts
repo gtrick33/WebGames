@@ -62,8 +62,8 @@ describe('Sigilfall in the shop: the items', () => {
       expect(sanitizeSigil(p.sigil), p.id).toEqual(p.sigil);
     }
     // the drake costs the most; never a horse
-    expect(productIn(PRODUCTS, WYRM)).toMatchObject({ cents: 599, sigil: { kind: 'mount', body: 'drake' } });
-    expect(Math.max(...MOUNTS.map((p) => p.cents))).toBe(599);
+    expect(productIn(PRODUCTS, WYRM)).toMatchObject({ cents: 299, sigil: { kind: 'mount', body: 'drake' } });
+    expect(Math.max(...MOUNTS.map((p) => p.cents))).toBe(299);
     for (const p of MOUNTS) expect(['drake', 'deer', 'boar'], p.id).toContain((p.sigil as SigilMountSpec).body);
   });
 

@@ -55,7 +55,8 @@ export interface DialoguePage {
   quest: string;
 }
 
-export type PanelId = 'hero' | 'wardrobe' | 'skills' | 'talents' | 'quests' | 'map' | 'settings' | 'shop' | 'party';
+/** (`shop` is a vendor's, for gold; `store` is the game's own shop for the things sold for money: ui/Store.tsx) */
+export type PanelId = 'hero' | 'wardrobe' | 'skills' | 'talents' | 'quests' | 'map' | 'settings' | 'shop' | 'party' | 'store';
 
 /** A co-op party (net/room.ts): the live connection, the room's latest view, and what went wrong. */
 export interface PartyState {

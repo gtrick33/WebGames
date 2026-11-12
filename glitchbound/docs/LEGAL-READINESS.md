@@ -44,12 +44,27 @@ items marked for them before taking money.
   while its purchase is paid: a refund takes it off everywhere.
 
 **What may be sold** (these rules are in `src/catalog/shop.ts`): cosmetics and ad-free, plus one class, the **Gloamknight**,
-sold as the **Gloamknight Pack** (€9.99) by the owner's choice (2026-11-05), like a class pack in other action RPGs: the class,
+sold as the **Gloamknight Pack** (€4.99 since 2026-11-12, €9.99 before) by the owner's choice (2026-11-05), like a class pack in other action RPGs: the class,
 two more hero slots, and looks that come only with it (the Duskborn helm and armor, the Gloamwing Drake, the Gloam border and
 banner; they're hidden items, and a pack owner owns them through `withIncluded`). It's a different way to play, balanced with
 the seven free classes, and the shop, `/terms/sale` and the admin page say plainly that it's the one item that changes how a
 game plays. Real-money prices shown in full. Don't add game currency, random boxes, anything that makes a player stronger,
 countdowns, "last chance" wording, or words telling children to buy. Regulators in the EU have acted on exactly those.
+
+**Sigilfall's prices came down on 2026-11-12** (the owner's call: low enough that a new player tries one): the pack €9.99 to
+€4.99, mounts €2.99–5.99 to €1.49–2.99, helms €1.99 to €0.99, armor €2.49 to €1.49. Migration 0022 moves a price list saved in
+Admin › Ads & shop too, where a saved price was still the old default. They are the prices now, not an offer: the shop shows no
+"was" price and no discount (a struck-through old price is only lawful if it was really charged in the 30 days before).
+
+**The shop inside Sigilfall** (`src/games/sigilfall/ui/Store.tsx`, the owner's call, 2026-11-12): the Gloamknight Pack, the
+mounts and the Wardrobe looks, listed inside the game. It is the same shop as `/shop`, not a second one: the same items and
+prices, every price in full with "VAT included, paid once", the same two statements ticked by hand, and the same checkout
+(`src/components/ShopCheckout.tsx` is the one component both show), which records the same agreement and brings the buyer back
+to the game. It exists only while the shop is open (or for an admin testing it). What keeps it on the right side of the
+rules above is that it never comes to the player: nothing opens it but a small button on the title screen, a "See the pack"
+button under the locked class, and one line in the Wardrobe; it never opens by itself, nothing in the game waits on it, and no
+price is shown anywhere outside it (the hero screen said "Shop · €9.99" on the class's tile, and the home banner carried a
+"New class · Gloamknight Pack" tag: both are gone).
 - **How the class is locked** (`src/games/sigilfall/progress/paidClasses.ts`): making a Gloamknight, playing one, picking it
   in the Vigil and the Ring and using the fourth and fifth hero slots all need the pack; admins can always, to test. The game asks the account each time, never
   the save, so a refund locks it again and the hero waits, kept. Bots in the Ring can still be Gloamknights.
@@ -127,7 +142,9 @@ Lawyer:
       (Diablo III's Necromancer pack), and the EU rules on in-game purchases (the Unfair Commercial Practices Directive, the CPC
       network's guidance) aim at hidden prices, pressure, game currencies, random boxes and pushing children to buy, none of which
       the shop does. What has to stay true is the wording in `/terms/sale` ("a different way to play, … not a stronger one"):
-      keep the class balanced with the free ones, and keep the game's pointer to the shop a plain link.
+      keep the class balanced with the free ones, and keep the game's way to the shop plain: since 2026-11-12 that is the
+      shop inside Sigilfall (above), which the player opens and which never opens itself. Worth a lawyer's eye with the
+      rest: a shop inside a game that children may play, though it shows nothing unasked and asks for the age statement.
 - [ ] Read `/terms/sale`, `/terms` and `/privacy` as written for the shop-open state (staff can see them while it's closed),
       especially the merchant-of-record wording against Stripe's actual contract, the 14-day waiver flow, and "lasts as long as
       GlitchBound runs" for ad-free.

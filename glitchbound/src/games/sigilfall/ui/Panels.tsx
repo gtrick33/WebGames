@@ -39,6 +39,7 @@ import { earnedTitles, titled, titleName, TITLES, wornTitle } from '../progress/
 import { WARDENS } from '../data/wardens';
 import { compareWith, linesOnlyIn, statRows } from './compare';
 import { PartyPanel } from './Party';
+import { StorePanel, useStoreOpen } from './Store';
 import { PRESETS } from '../progress/presets';
 import { clockText } from '../sim/world';
 import { PARA_STATS, PARAGON, paragonFree, paragonSpent, paragonXp } from '../progress/paragon';
@@ -57,6 +58,7 @@ export function Panels({ engine }: { engine: SigilEngine }) {
   if (p === 'settings') return <SettingsPanel engine={engine} onClose={() => engine.closePanel()} />;
   if (p === 'shop' && engine.ui.shop) return <ShopPanel engine={engine} shop={engine.ui.shop} />;
   if (p === 'party') return <PartyPanel engine={engine} />;
+  if (p === 'store') return <StorePanel onClose={() => engine.closePanel()} />;
   const h = engine.hero!;
   const title = (
     <span className="rb-tabs" role="tablist">
@@ -1593,6 +1595,7 @@ const RARITY_RANK: Record<string, number> = { legendary: 0, epic: 1, rare: 2, un
  */
 function WardrobePanel({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
+  const storeOpen = useStoreOpen();
   const [tab, setTab] = useState<LookSlot | 'mounts'>('head');
   // the tile picked: a look id, 'equipped', 'bare', or a mount id
   const [pick, setPick] = useState<string | null>(null);
@@ -1656,6 +1659,12 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
           </li>
         </ul>
         <p className="rb-small rb-dim">Looks change only how you appear. Your stats always come from what you have equipped.</p>
+        {/* (the game's own shop, for whoever wants more to wear: one quiet line under the collection) */}
+        {storeOpen && (
+          <button className="rb-linkbtn rb-small" onClick={() => engine.openPanel('store')}>
+            More looks and mounts in the shop
+          </button>
+        )}
       </section>
       <section className="rb-bag" aria-label="Collection">
         <div className="rb-bag-head">
