@@ -262,6 +262,8 @@ export class World {
   inverted = 0;
   /** Seconds the hero has pushed to move and been held fast on every side (see updatePlayer). */
   private snagT = 0;
+  /** Where the hero was last eased out to (updatePlayer): they are eased out once for a place. */
+  private snagAt: { x: number; y: number } | null = null;
   /** Things a boss fight floats in the air (Ilvane's stones): drawn as props off the ground. */
   floaters: { m: string; x: number; y: number; lift: number; h: number; rot: number; tint?: readonly [number, number, number] }[] = [];
   /**
@@ -1487,14 +1489,21 @@ export class World {
         }
       }
       const res = moveCircle(this.map, p.x, p.y, p.r, p.vx * dt, p.vy * dt);
-      // snagged: pressing to move but held fast on every side (wedged between the bodies of a crate and a cask):
-      // eased out onto the nearest open ground
-      if (moving && !stunned && res.bx && res.by) {
+      // snagged: pressing to move but stopped both ways, wedged between the bodies of a crate and a cask: eased out
+      // onto the nearest open ground. Only among things that stand (a wedge has something small in it to get round),
+      // and once for a place. A hero pressed into the corner of a room is stopped both ways too, and is not stuck:
+      // they were "eased out" of every corner they leaned into, walked back into it and were eased out again, two or
+      // three times a second, and the camera, which is on the hero, went with them. The whole picture shook, and what
+      // showed it was the walls and the gates (the owner: "some walls still jitter in campaign mode, walls, gates")
+      if (this.snagAt && Math.hypot(p.x - this.snagAt.x, p.y - this.snagAt.y) > 12) this.snagAt = null;
+      if (moving && !stunned && res.bx && res.by && !this.snagAt && this.amongThings(res.x, res.y, p.r)) {
         this.snagT += dt;
         if (this.snagT > 0.4) {
           this.snagT = 0;
           const free = this.openNear(p.x, p.y, p.r);
           if (free) {
+            // (where they were set down: pressing on from there into the same place, they are left to stand in it)
+            this.snagAt = { x: free.x, y: free.y };
             res.x = free.x;
             res.y = free.y;
           }
@@ -1516,6 +1525,28 @@ export class World {
     }
     if (p.hp < p.maxHp * 0.3 && this.hpBefore >= p.maxHp * 0.3 && this.hero.potions > 0) this.emit({ t: 'hint', id: 'potion' });
     this.hpBefore = p.hp;
+  }
+
+  /** Something that stands (a crate, a trunk, a building's own wall) is at their elbow: not only the land's walls. */
+  private amongThings(x: number, y: number, r: number): boolean {
+    const m = this.map;
+    const reach = r + 2;
+    const tx = Math.floor(x / TILE);
+    const ty = Math.floor(y / TILE);
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const nx = tx + dx;
+        const ny = ty + dy;
+        if (nx < 0 || ny < 0 || nx >= m.w || ny >= m.h) continue;
+        for (const b of m.bodies[ny * m.w + nx] ?? []) {
+          if (b.off) continue;
+          const px = Math.max(b.x0, Math.min(x, b.x1));
+          const py = Math.max(b.y0, Math.min(y, b.y1));
+          if ((px - x) * (px - x) + (py - y) * (py - y) < reach * reach) return true;
+        }
+      }
+    }
+    return false;
   }
 
   /** Desktop ground skills aim at the exact mouse distance. */
