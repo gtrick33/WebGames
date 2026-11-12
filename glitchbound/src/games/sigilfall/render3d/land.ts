@@ -759,7 +759,19 @@ export function buildGround(map: TileMap, look: ThemeLook, floors: readonly (Flo
   }
   // (softened a little, tile into tile: a square of paving, a road's turn, a shore's corner come out rounded, the way
   // ground wears, not ruled to the grid)
-  if (!look.indoor) softenMask(mask, W, H, 2);
+  if (!look.indoor) {
+    softenMask(mask, W, H, 2);
+    // Water is where the rules have it: softened like the roads, a river two tiles wide was drawn a ribbon down its
+    // middle and came to a point three tiles short of its end, and a hero walking round the end of it, over what was
+    // drawn as grass, was stopped by water that wasn't there to see (the owner, of the Whisperwood's south river:
+    // "the character cant get above the river to cross it as they get blocked by a collider"). So a tile of water
+    // is water to its edges, and the softening only rounds its corners a little way out onto the bank.
+    for (let i = 0; i < W * H; i++) {
+      const k = kinds[i]!;
+      const wet = k === K.Water || k === K.Bridge;
+      mask[i * 4 + 1] = wet ? 255 : Math.round(mask[i * 4 + 1]! * 0.3);
+    }
+  }
   const tex = new THREE.DataTexture(mask, W, H, THREE.RGBAFormat);
   tex.magFilter = THREE.LinearFilter;
   tex.minFilter = THREE.LinearFilter;

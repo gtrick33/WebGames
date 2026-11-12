@@ -736,8 +736,11 @@ export class Effects {
       }
       if (g.door) {
         // a house: its lamplight out of the door and down the step, and the door itself lit
-        spill(x, y - 12, Math.PI / 2, 132, 104, DOOR_LIGHT, 0.62 + breathe * 0.1, seed);
-        fx.put({ kind: FX.glow, x, y: y - 14, up: 15, w: 40, a: DOOR_LIGHT, alpha: 0.3 + breathe * 0.06, over: true });
+        // (the doorway itself full of light: what is behind it isn't seen through it. The owner: "increase the glow of
+        // the zone gates and innkeeps, make it so that it covers the background")
+        spill(x, y - 12, Math.PI / 2, 150, 118, DOOR_LIGHT, 0.82 + breathe * 0.1, seed);
+        fx.put({ kind: FX.glow, x, y: y - 14, up: 15, w: 62, a: DOOR_LIGHT, alpha: 0.62 + breathe * 0.08, over: true });
+        fx.put({ kind: FX.glow, x, y: y - 14, up: 13, w: 30, a: DOOR_LIGHT, alpha: 0.9, over: true });
         continue;
       }
       const col = zoneLight(g.to);
@@ -748,8 +751,8 @@ export class Effects {
         // (its source under the gate's arch, which stands a tile in from the edge: not out past the land's end)
         const gx = x + Math.cos(into) * TILE * 1.1;
         const gy = y + Math.sin(into) * TILE * 1.1;
-        spill(gx, gy, into, 620, 600, col, 0.42 + breathe * 0.06, seed);
-        fx.put({ kind: FX.glow, x: gx, y: gy, up: 70, w: 230, a: col, alpha: 0.13 + breathe * 0.04, over: true });
+        spill(gx, gy, into, 660, 640, col, 0.6 + breathe * 0.08, seed);
+        fx.put({ kind: FX.glow, x: gx, y: gy, up: 70, w: 300, a: col, alpha: 0.3 + breathe * 0.06, over: true });
       } else {
         // a way down in the middle of the land: its doors face south
         spill(x, y - 10, Math.PI / 2, 330, 320, col, 0.42 + breathe * 0.06, seed);

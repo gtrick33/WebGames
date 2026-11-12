@@ -33,9 +33,11 @@ export const QUESTS: QuestDef[] = [
     giver: 'maren',
     auto: true,
     text: 'The arrow in Oskar Fell’s back came out of the Whisperwood, and so did the Ashen Host. The north road is open: go up it while it is light and thin out what hunts on the trails.',
-    objective: { kind: 'kill', region: 'whisperwood', count: 6, label: 'Thin out the maddened beasts on the trails' },
+    // (eighteen, where it was six: two camps did it, and nothing asked a hero to see the rest of the wood before the
+    // den. The owner: "i dont have an intentive of clearing more than 2 camps". Five or six camps now, paid as more work)
+    objective: { kind: 'kill', region: 'whisperwood', count: 18, label: 'Thin out the maddened beasts on the trails' },
     after: ['the-empty-tomb'],
-    reward: { xp: 140, gold: 40 },
+    reward: { xp: 220, gold: 60 },
   },
   {
     id: 'rift-shards',
