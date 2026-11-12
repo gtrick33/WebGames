@@ -11564,4 +11564,17 @@ html.rb-touch-playing textarea {
   .rb-ui.is-boss.is-mouse .rb-banner {
     top: 24%;
   }
+/* The quest being followed is plain words over the land, with no panel behind them (the owner: "the active quest's
+   dark panel could go away and just leave it as plain text"). An edge of dark round each letter keeps them read over
+   grass, snow and sand alike. Folded to its mark, and the Riftstone's clock, keep their chips. */
+.rb-tracker:not(.rb-keyclock):not(.is-folded) {
+  border-color: transparent;
+  background: none;
+  box-shadow: none;
+  text-shadow:
+    0 1px 0 #000,
+    1px 0 0 #000,
+    -1px 0 0 #000,
+    0 -1px 0 #000,
+    0 0 6px rgb(0 0 0 / 0.9);
 }

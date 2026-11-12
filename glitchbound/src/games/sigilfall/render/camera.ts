@@ -73,3 +73,12 @@ export function placeCamera(
   const drawY = Math.floor(camY * detail + 1e-6) / detail;
   return { camX, camY, drawX, drawY, slideX: Math.round((camX - drawX) * q), slideY: Math.round((camY - drawY) * q) };
 }
+
+/**
+ * Which way an arrow at the edge of the view points to a place the hero can't see, as an angle on the screen (0 to the
+ * right, a quarter turn down): the way to it over the ground, since the screen's up is the land's north. It was read
+ * off where the place came out on the screen, and a place far to the south is behind the camera, where the picture's
+ * arithmetic turns everything about: the arrow pointed north-west at a quest in the south-east (the owner: "on the
+ * minimap the actual quest is in the south, but the arrow is pointing to the other direction").
+ */
+export const edgeArrowAngle = (hx: number, hy: number, tx: number, ty: number): number => Math.atan2(ty - hy, tx - hx);
