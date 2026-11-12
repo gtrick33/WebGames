@@ -631,26 +631,53 @@ function grayed(m, floor = 70) {
 
 /* ------------------------------------------------------------------ built creatures */
 
-/** Low-poly shapes, skinned whole to one joint each. */
+const mixed = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+
+/** Low-poly shapes, skinned whole to one joint each (or, a `tube`, ring by ring between two). */
 class Builder {
   constructor() {
     this.parts = [];
+    this.o = [0, 0, 0];
   }
+  /** Where what's shaped next is set down: shapes are made round their joint, and the joint stands here. */
+  at(p) {
+    this.o = [p[0], p[1], p[2]];
+    return this;
+  }
+  /** `color`: one color, or what color a point is by which way it faces. */
   blob(joint, c, r, color, seg = 7, rings = 5) {
+    return this.oval(joint, c, r, color, null, seg, rings);
+  }
+  /** A blob turned: `turn` {x, y, z} in radians. Its colors go by the way a point faced before the turn. */
+  oval(joint, c, r, color, turn = null, seg = 7, rings = 5) {
     const pos = [];
     const nor = [];
     const col = [];
     const skin = [];
     const idx = [];
+    const e = turn && (turn.x || turn.y || turn.z) ? new THREE.Euler(turn.x ?? 0, turn.y ?? 0, turn.z ?? 0) : null;
+    const v = new THREE.Vector3();
     for (let i = 0; i <= rings; i++) {
       const a = (i / rings) * Math.PI;
       for (let j = 0; j <= seg; j++) {
-        const b = (j / seg) * Math.PI * 2;
-        const n = [Math.sin(a) * Math.cos(b), Math.cos(a), Math.sin(a) * Math.sin(b)];
-        pos.push(c[0] + n[0] * r[0], c[1] + n[1] * r[1], c[2] + n[2] * r[2]);
-        nor.push(n[0], n[1], n[2]);
-        const shade = 0.85 + 0.15 * n[1];
-        col.push(color[0] * shade, color[1] * shade, color[2] * shade);
+        const bb = (j / seg) * Math.PI * 2;
+        const n = [Math.sin(a) * Math.cos(bb), Math.cos(a), Math.sin(a) * Math.sin(bb)];
+        let p = [n[0] * r[0], n[1] * r[1], n[2] * r[2]];
+        // (the way the skin of a squashed ball faces isn't the way out from its middle)
+        let m = [n[0] / r[0], n[1] / r[1], n[2] / r[2]];
+        const ml = Math.hypot(m[0], m[1], m[2]) || 1;
+        m = m.map((x) => x / ml);
+        if (e) {
+          v.set(p[0], p[1], p[2]).applyEuler(e);
+          p = [v.x, v.y, v.z];
+          v.set(m[0], m[1], m[2]).applyEuler(e);
+          m = [v.x, v.y, v.z];
+        }
+        pos.push(c[0] + p[0], c[1] + p[1], c[2] + p[2]);
+        nor.push(m[0], m[1], m[2]);
+        const cl = typeof color === 'function' ? color(n) : color;
+        const shade = 0.86 + 0.14 * m[1];
+        col.push(cl[0] * shade, cl[1] * shade, cl[2] * shade);
         skin.push(joint, joint, 255);
       }
     }
@@ -661,6 +688,74 @@ class Builder {
       }
     }
     this.add(pos, nor, col, skin, idx);
+    return this;
+  }
+  /**
+   * One skin over a run of rings (a serpent's length): each ring {p, rx, ry, skin: [joint, joint, share], color(nx, ny)},
+   * placed in the model, not round a joint. The first end is closed here; the last ring closes the other.
+   */
+  tube(rings, seg = 8) {
+    const pos = [];
+    const nor = [];
+    const col = [];
+    const skin = [];
+    const idx = [];
+    const all = [{ ...rings[0], rx: 0.001, ry: 0.001 }, ...rings];
+    // (across starts out to the side, and is carried along the run from ring to ring, so the skin doesn't twist)
+    let u = [1, 0, 0];
+    all.forEach((ring, i) => {
+      const a = all[Math.max(0, i - 1)].p;
+      const z = all[Math.min(all.length - 1, i + 1)].p;
+      let A = [z[0] - a[0], z[1] - a[1], z[2] - a[2]];
+      const l = Math.hypot(A[0], A[1], A[2]) || 1;
+      A = A.map((x) => x / l);
+      const d = u[0] * A[0] + u[1] * A[1] + u[2] * A[2];
+      u = u.map((x, c) => x - A[c] * d);
+      const ul = Math.hypot(u[0], u[1], u[2]) || 1;
+      u = u.map((x) => x / ul);
+      const v = [A[1] * u[2] - A[2] * u[1], A[2] * u[0] - A[0] * u[2], A[0] * u[1] - A[1] * u[0]];
+      for (let j = 0; j <= seg; j++) {
+        const t = (j / seg) * Math.PI * 2;
+        const n = [u[0] * Math.cos(t) + v[0] * Math.sin(t), u[1] * Math.cos(t) + v[1] * Math.sin(t), u[2] * Math.cos(t) + v[2] * Math.sin(t)];
+        pos.push(ring.p[0] + u[0] * Math.cos(t) * ring.rx + v[0] * Math.sin(t) * ring.ry, ring.p[1] + u[1] * Math.cos(t) * ring.rx + v[1] * Math.sin(t) * ring.ry, ring.p[2] + u[2] * Math.cos(t) * ring.rx + v[2] * Math.sin(t) * ring.ry);
+        nor.push(n[0], n[1], n[2]);
+        const cl = ring.color(n[0], n[1]);
+        const shade = 0.88 + 0.12 * n[1];
+        col.push(cl[0] * shade, cl[1] * shade, cl[2] * shade);
+        skin.push(ring.skin[0], ring.skin[1], ring.skin[2]);
+      }
+    });
+    for (let i = 0; i < all.length - 1; i++) {
+      for (let j = 0; j < seg; j++) {
+        const p = i * (seg + 1) + j;
+        idx.push(p, p + 1, p + seg + 1, p + 1, p + seg + 2, p + seg + 1);
+      }
+    }
+    this.parts.push({ n: pos.length / 3, pos: Float32Array.from(pos), nor: Float32Array.from(nor), col: Uint8Array.from(col, (c) => Math.max(0, Math.min(255, c * 255))), skin: Uint8Array.from(skin), idx });
+    return this;
+  }
+  /** A thin skin between three points (a wing's web), `top` above and `under` below. */
+  sheet(joint, a, b, c, top, under) {
+    let n = [(b[1] - a[1]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[1] - a[1]), (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]), (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])];
+    const l = Math.hypot(n[0], n[1], n[2]) || 1;
+    n = n.map((x) => x / l);
+    // (so that the first face is the one that looks up)
+    const [p, q, r] = n[1] >= 0 ? [a, b, c] : [a, c, b];
+    if (n[1] < 0) n = n.map((x) => -x);
+    const T = 0.012;
+    const pos = [];
+    const nor = [];
+    const col = [];
+    const skin = [];
+    for (const [pts, s, cl] of [[[p, q, r], 1, top], [[p, r, q], -1, under]]) {
+      for (const pt of pts) {
+        pos.push(pt[0] + n[0] * T * s, pt[1] + n[1] * T * s, pt[2] + n[2] * T * s);
+        nor.push(n[0] * s, n[1] * s, n[2] * s);
+        col.push(cl[0], cl[1], cl[2]);
+        skin.push(joint, joint, 255);
+      }
+    }
+    this.add(pos, nor, col, skin, [0, 1, 2, 3, 4, 5]);
     return this;
   }
   /** A tapered limb from one point to another. */
@@ -697,7 +792,8 @@ class Builder {
     return this;
   }
   add(pos, nor, col, skin, idx) {
-    this.parts.push({ n: pos.length / 3, pos: Float32Array.from(pos), nor: Float32Array.from(nor), col: Uint8Array.from(col, (c) => Math.min(255, c * 255)), skin: Uint8Array.from(skin), idx });
+    for (let i = 0; i < pos.length; i++) pos[i] += this.o[i % 3];
+    this.parts.push({ n: pos.length / 3, pos: Float32Array.from(pos), nor: Float32Array.from(nor), col: Uint8Array.from(col, (c) => Math.max(0, Math.min(255, c * 255))), skin: Uint8Array.from(skin), idx });
   }
   done() {
     return joinParts(this.parts);
@@ -750,134 +846,419 @@ function builtRig(pack, id, joints, clips) {
   return rig;
 }
 
-/** Crawling things: a body, a ring of legs, and claws, a tail or horn as they have them. */
+/** Crawling things: a head, a body in its plates, legs that bend at a knee, and claws, a tail, a shell or a horn. */
 function bugKit(id, o) {
   const pack = new Pack();
-  const body = o.body;
-  const legs = o.legs;
   const joints = [['root', null, [0, 0, 0]], ['body', 'root', [0, o.h, 0]]];
+  // (where each joint stands in the model: a part is shaped round its joint, then set down there)
+  const W = { root: [0, 0, 0], body: [0, o.h, 0] };
+  const joint = (name, parent, at) => {
+    joints.push([name, parent, at]);
+    W[name] = W[parent].map((x, i) => x + at[i]);
+    b.at(W[name]);
+    return joints.length - 1;
+  };
   const dark = rgb(o.dark);
   const main = rgb(o.main);
   const light = rgb(o.light);
+  const pale = mixed(light, [1, 0.97, 0.9], 0.45);
+  const black = [0.07, 0.05, 0.08];
+  const [bx, by, bz] = o.body;
   const b = new Builder();
-  const J = (n) => joints.findIndex((j) => j[0] === n);
-  b.blob(1, [0, 0, 0], body, main);
-  if (o.abdomen) b.blob(1, [0, 0.02, -body[2] - o.abdomen[2] * 0.7], o.abdomen, dark);
-  if (o.shell) b.blob(1, [0, body[1] * 0.35, -0.04], [body[0] * 1.02, body[1] * 0.85, body[2] * 1.02], light);
-  // eyes
-  b.blob(1, [body[0] * 0.42, body[1] * 0.35, body[2] * 0.88], [0.07, 0.07, 0.07], [0.95, 0.95, 0.9], 5, 3);
-  b.blob(1, [-body[0] * 0.42, body[1] * 0.35, body[2] * 0.88], [0.07, 0.07, 0.07], [0.95, 0.95, 0.9], 5, 3);
-  b.blob(1, [body[0] * 0.42, body[1] * 0.36, body[2] * 0.95], [0.035, 0.035, 0.035], [0.05, 0.04, 0.06], 4, 2);
-  b.blob(1, [-body[0] * 0.42, body[1] * 0.36, body[2] * 0.95], [0.035, 0.035, 0.035], [0.05, 0.04, 0.06], 4, 2);
-  for (let i = 0; i < legs; i++) {
-    const side = i % 2 ? 1 : -1;
-    const row = Math.floor(i / 2) / Math.max(1, Math.floor(legs / 2) - 1) - 0.5;
-    const name = `leg${i}`;
-    const at = [side * body[0] * 0.8, 0, row * body[2] * 1.4];
-    joints.push([name, 'body', at]);
-    const j = J(name);
-    const knee = [side * o.reach * 0.55, o.knee, row * 0.25];
-    const foot = [side * o.reach, -o.h + 0.03, row * 0.45];
-    b.limb(j, [0, 0, 0], knee, o.leg, o.leg * 0.8, dark);
-    b.limb(j, knee, foot, o.leg * 0.8, o.leg * 0.35, dark);
+  b.at(W.body);
+  const under = (top, n) => (n[1] < -0.25 ? mixed(top, dark, 0.6) : top);
+  const eye = (p, r) => {
+    b.blob(1, p, [r, r, r], o.eye ? rgb(o.eye) : black, 6, 4);
+    if (o.eye) b.blob(1, [p[0], p[1], p[2] + r * 0.62], [r * 0.5, r * 0.62, r * 0.5], black, 5, 3);
+    b.blob(1, [p[0] + r * 0.3, p[1] + r * 0.45, p[2] + r * 0.72], [r * 0.3, r * 0.3, r * 0.3], [1, 1, 1], 4, 2);
+  };
+  // the head, set low at the front
+  const hr = o.head ?? [bx * 0.55, by * 0.6, bz * 0.4];
+  const hz = bz * 0.9 + hr[2] * 0.5;
+  const hy = -by * 0.12;
+  if (o.kind === 'crab') {
+    // one wide shell, pale at its rim and under, pocked on top, spined along its front edge
+    b.blob(1, [0, 0, 0], o.body, (n) => (n[1] < -0.2 ? pale : n[1] < 0.22 ? light : Math.sin(n[0] * 13) * Math.sin(n[2] * 11 + 1) > 0.55 ? mixed(main, dark, 0.55) : main), 12, 7);
+    for (let k = -3; k <= 3; k++) {
+      const a = (k / 3) * 1.15;
+      const p = [Math.sin(a) * bx * 0.93, by * 0.1, Math.cos(a) * bz * 0.93];
+      b.limb(1, p, [p[0] * 1.14, by * 0.3, p[2] * 1.16 + 0.02], 0.05, 0.004, light);
+    }
+    for (const s of [-1, 1]) {
+      b.limb(1, [s * bx * 0.3, by * 0.5, bz * 0.72], [s * bx * 0.34, by * 1.25, bz * 0.86], 0.035, 0.03, main);
+      eye([s * bx * 0.34, by * 1.3, bz * 0.88], 0.075);
+    }
+  } else {
+    if (o.kind === 'scorpion') {
+      // a low run of plates, each lapped over the next
+      for (let k = 0; k < 5; k++) {
+        const f = 1 - k * 0.09;
+        b.blob(1, [0, by * (0.05 - k * 0.03), bz * (0.62 - k * 0.36)], [bx * f, by * f, bz * 0.3], (n) => under(k % 2 ? mixed(main, dark, 0.35) : main, n), 9, 5);
+      }
+    } else b.blob(1, [0, 0, 0], o.body, (n) => under(main, n), 9, 6);
+    b.blob(1, [0, hy, hz], hr, (n) => under(mixed(main, dark, 0.45), n), 8, 5);
+    if (o.abdomen) {
+      // a spider's great hind part, tipped up, with its mark down the back
+      const a = o.abdomen;
+      b.oval(1, [0, by * 0.45, -bz * 0.7 - a[2] * 0.82], a, (n) => (n[1] > 0.25 && Math.abs(n[0]) < 0.3 && Math.sin(n[2] * 8.5 + 0.6) > -0.1 ? light : n[1] < -0.3 ? mixed(dark, black, 0.4) : dark), { x: 0.28 }, 10, 7);
+    }
+    if (o.shell) {
+      // wing cases: a seam down the middle, a shine along one side, ribbed
+      b.blob(1, [0, by * 0.18, bz * 0.58], [bx * 0.84, by * 0.78, bz * 0.36], (n) => under(mixed(light, main, 0.5), n), 9, 5);
+      b.blob(1, [0, by * 0.3, -bz * 0.3], [bx * 1.06, by * 0.95, bz * 0.92], (n) => {
+        if (n[1] < -0.2) return mixed(main, dark, 0.5);
+        if (Math.abs(n[0]) < 0.07 && n[1] > 0) return dark;
+        if (n[1] > 0.55 && n[0] > 0.18 && n[0] < 0.5) return mixed(light, [1, 1, 1], 0.45);
+        return Math.sin(Math.abs(n[0]) * 19) > 0.72 ? mixed(light, main, 0.55) : light;
+      }, 12, 7);
+    }
+    // eyes
+    if (o.kind === 'spider') {
+      for (const s of [-1, 1]) {
+        eye([s * hr[0] * 0.34, hy + hr[1] * 0.5, hz + hr[2] * 0.78], 0.06);
+        eye([s * hr[0] * 0.72, hy + hr[1] * 0.42, hz + hr[2] * 0.5], 0.04);
+        eye([s * hr[0] * 0.3, hy + hr[1] * 0.85, hz + hr[2] * 0.4], 0.032);
+      }
+    } else for (const s of [-1, 1]) eye([s * hr[0] * 0.62, hy + hr[1] * 0.45, hz + hr[2] * 0.66], o.eyeSize ?? 0.06);
+    // jaws, and feelers
+    if (o.jaws) for (const s of [-1, 1]) {
+      const p = [s * hr[0] * 0.42, hy - hr[1] * 0.2, hz + hr[2] * 0.75];
+      b.limb(1, p, [s * hr[0] * 0.5, hy - hr[1] * 0.45, hz + hr[2] * 0.75 + o.jaws * 0.6], o.jaws * 0.3, o.jaws * 0.22, mixed(main, dark, 0.6));
+      b.limb(1, [s * hr[0] * 0.5, hy - hr[1] * 0.45, hz + hr[2] * 0.75 + o.jaws * 0.6], [s * hr[0] * 0.12, hy - hr[1] * 0.75, hz + hr[2] * 0.75 + o.jaws * 1.05], o.jaws * 0.22, 0.004, pale);
+    }
+    if (o.feelers) for (const s of [-1, 1]) {
+      const p = [s * hr[0] * 0.35, hy + hr[1] * 0.6, hz + hr[2] * 0.5];
+      const q = [s * hr[0] * 0.9, hy + hr[1] * 1.5 * o.feelers, hz + hr[2] * 0.9 + 0.14 * o.feelers];
+      b.limb(1, p, q, 0.022, 0.016, dark, 4);
+      b.limb(1, q, [q[0] + s * 0.12 * o.feelers, q[1] - 0.04, q[2] + 0.16 * o.feelers], 0.016, 0.004, dark, 4);
+    }
+    if (o.horn) {
+      // a stag-beetle's horn: up and forward, forked at its end
+      const p = [0, hy + hr[1] * 0.5, hz + hr[2] * 0.3];
+      const q = [0, hy + hr[1] * 0.5 + o.horn * 0.75, hz + hr[2] * 0.3 + o.horn * 0.7];
+      b.limb(1, p, q, 0.085, 0.06, mixed(light, main, 0.4));
+      for (const s of [-1, 1]) b.limb(1, q, [s * o.horn * 0.3, q[1] + o.horn * 0.3, q[2] + o.horn * 0.12], 0.06, 0.004, pale);
+    }
+  }
+  // legs: out and up to a knee, then down to the ground; the front pair reaching forward, the hind pair back
+  const pairs = o.legs / 2;
+  for (let k = 0; k < pairs; k++) {
+    const row = pairs > 1 ? 0.5 - k / (pairs - 1) : 0;
+    for (const s of [-1, 1]) {
+      const name = `leg${k * 2 + (s > 0 ? 1 : 0)}`;
+      const at = [s * bx * (o.kind === 'crab' ? 0.72 : 0.7), -by * 0.25, row * bz * (o.spread ?? 1.2) + (o.legsAt ?? 0)];
+      const j = joint(name, 'body', at);
+      const fan = row * (o.fan ?? 1.1);
+      const knee = [s * o.reach * 0.5, o.knee, fan * o.reach * 0.4];
+      const foot = [s * o.reach, -(o.h + at[1]) + 0.015, fan * o.reach * 0.85];
+      b.limb(j, [0, 0, 0], knee, o.leg, o.leg * 0.8, mixed(main, dark, 0.5));
+      b.blob(j, knee, [o.leg * 1.05, o.leg * 1.05, o.leg * 1.05], main, 5, 3);
+      b.limb(j, knee, foot, o.leg * 0.78, o.leg * 0.18, dark);
+      if (o.pads) b.blob(j, [foot[0], foot[1], foot[2]], [o.pads, 0.012, o.pads], light, 6, 2);
+    }
   }
   if (o.claws) {
-    for (const side of [-1, 1]) {
-      const name = side < 0 ? 'clawL' : 'clawR';
-      joints.push([name, 'body', [side * body[0] * 0.8, 0.02, body[2] * 0.75]]);
-      const j = J(name);
-      b.limb(j, [0, 0, 0], [side * 0.28, 0.06, 0.26], 0.07, 0.09, main);
-      b.blob(j, [side * 0.36, 0.08, 0.42], [o.claws, o.claws * 0.62, o.claws * 1.15], light, 6, 4);
+    const c = o.claws;
+    const a = o.arm ?? 0.3;
+    for (const s of [-1, 1]) {
+      const j = joint(s < 0 ? 'clawL' : 'clawR', 'body', [s * bx * 0.7, -by * 0.05, bz * 0.72]);
+      const elbow = [s * a * 0.95, 0.05, a * 0.55];
+      const wrist = [s * a * 0.8, 0.07, a * 1.5];
+      b.limb(j, [0, 0, 0], elbow, c * 0.36, c * 0.32, main);
+      b.blob(j, elbow, [c * 0.36, c * 0.36, c * 0.36], mixed(main, dark, 0.3), 5, 3);
+      b.limb(j, elbow, wrist, c * 0.32, c * 0.4, main);
+      // the hand, and its two fingers closing on each other
+      b.oval(j, [wrist[0], wrist[1], wrist[2] + c * 0.55], [c * 0.72, c * 0.56, c * 0.95], (n) => (n[1] < -0.2 ? pale : light), { y: s * -0.25 }, 8, 5);
+      b.limb(j, [wrist[0] + s * c * 0.34, wrist[1], wrist[2] + c * 1.05], [wrist[0] - s * c * 0.05, wrist[1], wrist[2] + c * 2.35], c * 0.34, 0.006, pale);
+      b.limb(j, [wrist[0] - s * c * 0.36, wrist[1], wrist[2] + c * 0.95], [wrist[0] - s * c * 0.2, wrist[1], wrist[2] + c * 2.1], c * 0.24, 0.006, pale);
     }
   }
   if (o.tail) {
+    // a scorpion's tail: up from the hind end, over the back, the sting hanging forward
+    const k = o.tail;
+    const steps = [[0, 0.2, -0.16], [0, 0.25, -0.03], [0, 0.21, 0.13], [0, 0.1, 0.21], [0, -0.02, 0.19]].map((v) => v.map((x) => x * k));
     let last = 'body';
-    let at = [0, 0.06, -body[2] * 0.95];
-    for (let i = 0; i < 4; i++) {
-      const name = `tail${i}`;
-      joints.push([name, last, at]);
-      const j = J(name);
-      const step = [0, 0.14 + i * 0.02, -0.14 + i * 0.07];
-      b.blob(j, [0, 0, 0], [0.11 - i * 0.01, 0.11 - i * 0.01, 0.13], i % 2 ? main : dark, 6, 4);
-      if (i === 3) b.limb(j, [0, 0, 0], [0, 0.04, 0.24], 0.06, 0.005, light);
-      at = step;
-      last = name;
+    let at = [0, by * 0.2, -bz * 1.02];
+    for (let i = 0; i < 5; i++) {
+      const j = joint(`tail${i}`, last, at);
+      const r = (0.105 - i * 0.008) * k;
+      if (i < 4) {
+        b.blob(j, [0, 0, 0], [r, r, r], i % 2 ? mixed(main, dark, 0.4) : main, 6, 4);
+        b.limb(j, [0, 0, 0], steps[i], r * 0.8, r * 0.75, i % 2 ? main : mixed(main, dark, 0.4));
+      } else {
+        b.blob(j, [0, 0, 0], [r * 1.25, r * 1.25, r * 1.35], light, 7, 5);
+        b.limb(j, [0, -r * 0.4, r * 0.9], [0, -r * 2.6, r * 2.3], r * 0.62, 0.004, [0.2, 0.1, 0.08]);
+      }
+      at = steps[i];
+      last = `tail${i}`;
     }
   }
-  if (o.horn) b.limb(1, [0, body[1] * 0.3, body[2] * 0.8], [0, body[1] * 1.15, body[2] * 1.2], 0.08, 0.01, light);
-  const legSwing = (name, t, speed, amp) => {
+  const legSwing = (name, t, amp) => {
     const n = Number(name.slice(3));
-    const ph = (n % 2 === Math.floor(n / 2) % 2 ? 0 : Math.PI) + t * speed;
-    return { rx: Math.sin(ph) * amp, dy: Math.max(0, Math.cos(ph)) * 0.03 };
+    const side = n % 2 ? 1 : -1;
+    const ph = (n % 2 === Math.floor(n / 2) % 2 ? 0 : Math.PI) + t;
+    // (forward and back about the upright, lifted on the way forward)
+    return { ry: Math.sin(ph) * amp * side, rz: side * Math.max(0, Math.cos(ph)) * amp * 0.55 };
   };
+  const tau = Math.PI * 2;
   builtRig(pack, id, joints, {
-    idle: { dur: 1.4, pose: (n, j, t, u) => (n === 'body' ? { dy: Math.sin(u * 6.283) * 0.012 } : n.startsWith('tail') ? { rx: Math.sin(u * 6.283 + Number(n[4])) * 0.05 } : null) },
-    walk: { dur: 0.6, pose: (n, j, t, u) => (n.startsWith('leg') ? legSwing(n, u * 6.283, 1, 0.42) : n === 'body' ? { dy: Math.abs(Math.sin(u * 12.57)) * 0.015 } : null) },
-    run: { dur: 0.36, pose: (n, j, t, u) => (n.startsWith('leg') ? legSwing(n, u * 6.283, 1, 0.55) : null) },
+    idle: {
+      dur: 1.6,
+      pose: (n, j, t, u) => {
+        if (n === 'body') return { dy: Math.sin(u * tau) * 0.014 };
+        if (n.startsWith('tail')) return { rx: Math.sin(u * tau + Number(n[4]) * 0.7) * 0.06 };
+        if (n === 'clawL' || n === 'clawR') return { ry: Math.sin(u * tau) * 0.08 * (n === 'clawL' ? 1 : -1) };
+        return null;
+      },
+    },
+    walk: { dur: 0.6, pose: (n, j, t, u) => (n.startsWith('leg') ? legSwing(n, u * tau, 0.34) : n === 'body' ? { dy: Math.abs(Math.sin(u * tau * 2)) * 0.015, rz: Math.sin(u * tau) * 0.03 } : null) },
+    run: { dur: 0.36, pose: (n, j, t, u) => (n.startsWith('leg') ? legSwing(n, u * tau, 0.44) : n === 'body' ? { rz: Math.sin(u * tau) * 0.04 } : null) },
     chop: {
       dur: 0.6,
       pose: (n, j, t, u) => {
         const k = Math.sin(Math.min(1, u * 1.5) * Math.PI);
-        if (n === 'body') return { rx: -k * 0.28, dz: k * 0.1 };
-        if (n === 'clawL' || n === 'clawR') return { rx: -k * 0.9 };
-        if (n.startsWith('tail')) return { rx: k * 0.55 };
+        if (n === 'body') return { rx: -k * 0.22, dz: k * 0.12 };
+        if (n === 'clawL') return { ry: k * 0.5, rx: -k * 0.3 };
+        if (n === 'clawR') return { ry: -k * 0.5, rx: -k * 0.3 };
+        if (n.startsWith('tail')) return { rx: k * 0.3 };
         return null;
       },
     },
-    hit: { dur: 0.3, pose: (n, j, t, u) => (n === 'body' ? { rx: Math.sin(u * 3.14) * 0.2, dz: -Math.sin(u * 3.14) * 0.06 } : null) },
-    die: { dur: 0.7, pose: (n, j, t, u) => (n === 'root' ? { rz: Math.min(1, u * 1.6) * 3.14, dy: Math.sin(Math.min(1, u * 1.6) * 3.14) * 0.3 + Math.min(1, u * 1.6) * o.h * 1.6 } : n.startsWith('leg') ? { rx: Math.min(1, u * 2) * 0.6 } : null) },
+    hit: { dur: 0.3, pose: (n, j, t, u) => (n === 'body' ? { rx: Math.sin(u * Math.PI) * 0.2, dz: -Math.sin(u * Math.PI) * 0.06 } : null) },
+    die: {
+      dur: 0.7,
+      pose: (n, j, t, u) => {
+        const k = Math.min(1, u * 1.6);
+        if (n === 'root') return { rz: k * Math.PI, dy: Math.sin(k * Math.PI) * 0.3 + k * o.h * 1.6 };
+        if (n.startsWith('leg')) return { rz: (Number(n.slice(3)) % 2 ? 1 : -1) * k * 0.7 };
+        return null;
+      },
+    },
   });
-  const m = b.done();
-  pack.addMesh('body', m);
+  pack.addMesh('body', b.done());
   pack.meshes.body.rig = id;
   return pack;
 }
 
-/** A serpent: a chain of joints that waves along itself, its head held up. */
+/**
+ * A serpent: one length of skin over a chain of joints, the head held up off the ground on its neck, the body waving
+ * along itself behind. A cobra's hood, a crest of spines, a wurm's ring of teeth, a drake's wings, as each has them.
+ */
 function serpentKit(id, o) {
   const pack = new Pack();
-  const wings = !!o.wings;
   const main = rgb(o.main);
   const dark = rgb(o.dark);
   const light = rgb(o.light);
+  const pale = mixed(light, [1, 0.97, 0.88], 0.5);
+  const black = [0.07, 0.05, 0.08];
   const N = o.n;
-  const joints = [['root', null, [0, 0, 0]]];
-  const b = new Builder();
+  const r = o.r;
   const seg = o.len / N;
-  let prev = 'root';
+  const up = o.up ?? r * 4;
+  const neck = o.neck ?? 3;
+  // the line down its middle: from the head, down the neck to the ground, and along it
+  const P = [[0, up, o.len * 0.36]];
+  for (let i = 1; i < N; i++) {
+    const t = Math.min(1, i / neck);
+    const y = r * 0.92 + (up - r * 0.92) * (1 - t * t * (3 - 2 * t));
+    const dy = y - P[i - 1][1];
+    const dz = Math.sqrt(Math.max(seg * seg - dy * dy, seg * seg * 0.2));
+    P.push([0, y, P[i - 1][2] - dz]);
+  }
+  const joints = [['root', null, [0, 0, 0]]];
+  for (let i = 0; i < N; i++) joints.push([`s${i}`, i ? `s${i - 1}` : 'root', i ? P[i].map((x, c) => x - P[i - 1][c]) : P[0]]);
+  const b = new Builder();
+  // how thick it is along its length: a slim neck, thickest a third of the way down, then away to nothing
+  const thick = (t) => r * (t < 0.3 ? 0.72 + (t / 0.3) * 0.28 : 1 - Math.pow((t - 0.3) / 0.7, 1.5) * 0.9) * (o.maw ? 1.08 : 1);
+  const rings = [];
+  const skinOf = (i, half) => (half && i < N - 1 ? [i + 1, i + 2, 128] : [i + 1, i + 1, 255]);
   for (let i = 0; i < N; i++) {
-    const name = `s${i}`;
-    const y = i === 0 ? o.r * 1 + (o.rise ?? 0) : i < 3 ? -(o.rise ?? 0) / 2 : 0;
-    joints.push([name, prev, [0, y, i === 0 ? 0.2 : -seg]]);
-    const r = o.r * (i < 2 ? 0.8 : 1 - ((i - 2) / (N - 2)) * 0.78);
-    b.blob(i + 1, [0, 0, 0], [r, r * 0.9, seg * 0.85], i % 2 ? main : dark, 7, 4);
-    prev = name;
+    for (const half of [0, 1]) {
+      if (half && i === N - 1) break;
+      const p = half ? P[i].map((x, c) => (x + P[i + 1][c]) / 2) : P[i];
+      const t = (i + half * 0.5) / (N - 0.5);
+      const band = (i * 2 + half) % 4 < 2;
+      const k = thick(t) * (o.maw && !half ? 1.08 : 1);
+      rings.push({
+        p,
+        rx: k,
+        ry: k * 0.9,
+        skin: skinOf(i, half),
+        color: (nx, ny) => {
+          if (ny < -0.45) return pale;
+          if (ny < -0.15) return mixed(pale, main, 0.5);
+          if (o.maw) return half ? mixed(main, dark, 0.7) : ny > 0.6 ? mixed(main, light, 0.4) : main;
+          // a row of dark saddles down the back, a spot between them on each flank
+          if (ny > 0.5) return band ? mixed(dark, [0, 0, 0], 0.25) : mixed(main, light, 0.7);
+          if (!band && ny > 0 && ny < 0.4) return mixed(main, dark, 0.7);
+          return main;
+        },
+      });
+    }
   }
-  // the head
-  b.blob(1, [0, o.r * 0.15, o.r * 0.9], [o.r * 1.05, o.r * 0.72, o.r * 1.25], light, 7, 5);
-  b.blob(1, [o.r * 0.5, o.r * 0.55, o.r * 1.4], [0.05 + o.r * 0.14, 0.05 + o.r * 0.14, 0.05 + o.r * 0.14], [0.95, 0.9, 0.5], 5, 3);
-  b.blob(1, [-o.r * 0.5, o.r * 0.55, o.r * 1.4], [0.05 + o.r * 0.14, 0.05 + o.r * 0.14, 0.05 + o.r * 0.14], [0.95, 0.9, 0.5], 5, 3);
-  if (wings) {
-    joints.push(['wingL', 's1', [-o.r * 0.7, o.r * 0.5, 0]], ['wingR', 's1', [o.r * 0.7, o.r * 0.5, 0]]);
-    const lj = joints.findIndex((j) => j[0] === 'wingL');
-    const rj = joints.findIndex((j) => j[0] === 'wingR');
-    b.blob(lj, [-o.wings * 0.5, 0, -0.1], [o.wings * 0.55, 0.05, o.wings * 0.36], dark, 8, 5);
-    b.blob(rj, [o.wings * 0.5, 0, -0.1], [o.wings * 0.55, 0.05, o.wings * 0.36], dark, 8, 5);
+  const end = P[N - 1].map((x, c) => x + (x - P[N - 2][c]) * 0.9);
+  rings.push({ p: end, rx: 0.012, ry: 0.012, skin: [N, N, 255], color: () => dark });
+  b.tube(rings, 9);
+  // ---- the head, on the first joint
+  b.at(P[0]);
+  if (o.maw) {
+    // a wurm has no face: a blunt end, a dark gullet, and a ring of teeth round it
+    b.blob(1, [0, 0, r * 0.35], [r * 1.12, r * 1.05, r * 0.95], (n) => (n[2] > 0.72 ? [0.2, 0.06, 0.08] : n[1] < -0.4 ? pale : main), 10, 7);
+    for (let k = 0; k < 10; k++) {
+      const a = (k / 10) * Math.PI * 2;
+      const c = [Math.cos(a) * r * 0.74, Math.sin(a) * r * 0.7, r * 1.02];
+      b.limb(1, c, [Math.cos(a) * r * 0.42, Math.sin(a) * r * 0.4, r * (k % 2 ? 1.75 : 1.5)], r * 0.17, 0.004, pale);
+    }
+    for (let k = 0; k < 4; k++) {
+      const a = (k / 4) * Math.PI * 2 + 0.785;
+      b.limb(1, [Math.cos(a) * r * 0.98, Math.sin(a) * r * 0.92, r * 0.5], [Math.cos(a) * r * 1.3, Math.sin(a) * r * 1.22, r * 1.55], r * 0.2, 0.004, dark);
+    }
+  } else {
+    b.oval(1, [0, r * 0.08, r * 0.7], [r * 1.2, r * 0.76, r * 1.45], (n) => (n[1] < -0.2 ? pale : n[1] > 0.55 && n[2] < 0.3 ? dark : main), { x: 0.1 }, 10, 6);
+    b.oval(1, [0, -r * 0.12, r * 1.85], [r * 0.8, r * 0.5, r * 0.85], (n) => (n[1] < -0.2 ? pale : mixed(main, light, 0.3)), { x: 0.1 }, 8, 5);
+    for (const s of [-1, 1]) {
+      const er = r * 0.27;
+      const e = [s * r * 0.78, r * 0.36, r * 1.28];
+      b.blob(1, e, [er, er, er], [0.99, 0.84, 0.2], 6, 4);
+      b.blob(1, [e[0] + s * er * 0.6, e[1], e[2] + er * 0.52], [er * 0.42, er * 0.82, er * 0.42], black, 5, 3);
+      // a heavy brow over each eye: what makes it a look
+      b.limb(1, [s * r * 0.3, r * 0.56, r * 1.95], [s * r * 1.08, r * 0.78, r * 0.75], r * 0.15, r * 0.19, dark);
+      b.limb(1, [s * r * 0.3, -r * 0.38, r * 2.3], [s * r * 0.3, -r * 0.95, r * 2.2], r * 0.1, 0.004, [1, 1, 0.95], 4);
+      b.blob(1, [s * r * 0.26, -r * 0.02, r * 2.52], [r * 0.07, r * 0.05, r * 0.07], black, 4, 2);
+    }
+    if (o.tongue !== false) {
+      const red = [0.86, 0.14, 0.2];
+      b.limb(1, [0, -r * 0.42, r * 2.4], [0, -r * 0.62, r * 3.2], r * 0.07, r * 0.055, red, 4);
+      for (const s of [-1, 1]) b.limb(1, [0, -r * 0.62, r * 3.2], [s * r * 0.26, -r * 0.56, r * 3.75], r * 0.055, 0.004, red, 4);
+    }
+    if (o.horns) for (const s of [-1, 1]) {
+      const p = [s * r * 0.62, r * 0.6, r * 0.25];
+      const q = [s * r * 0.95, r * 1.3, -r * 0.9 * o.horns];
+      b.limb(1, p, q, r * 0.24, r * 0.15, mixed(dark, black, 0.3));
+      b.limb(1, q, [s * r * 0.85, r * 1.45, -r * 1.9 * o.horns], r * 0.15, 0.004, pale);
+    }
   }
-  const wave = (n, u, amp, cycles) => {
-    if (n === 'wingL') return { rz: Math.sin(u * 6.283 * 2) * 0.5 };
-    if (n === 'wingR') return { rz: -Math.sin(u * 6.283 * 2) * 0.5 };
+  if (o.hood) {
+    // a cobra's hood: spread flat behind the head, across the line of the neck
+    const mid = P[1].map((x, c) => (x + P[0][c]) / 2);
+    const d = [P[0][1] - P[1][1], P[0][2] - P[1][2]];
+    b.at(mid);
+    b.oval(2, [0, 0, 0], [r * 2.3 * o.hood, r * 1.9 * o.hood, r * 0.42], (n) => (n[2] > 0.25 ? (Math.hypot(n[0], n[1] - 0.1) < 0.42 && Math.hypot(n[0], n[1] - 0.1) > 0.22 ? dark : pale) : n[2] < -0.3 && Math.abs(n[0]) < 0.25 ? dark : main), { x: Math.atan2(d[1], d[0]) }, 12, 7);
+  }
+  if (o.crest) {
+    // spines down the back, tallest behind the head
+    for (let i = 0; i < Math.floor(N * 0.75); i++) {
+      for (const half of [0, 1]) {
+        const p = half ? P[i].map((x, c) => (x + P[i + 1][c]) / 2) : P[i];
+        const t = (i + half * 0.5) / (N - 0.5);
+        const h = o.crest * r * (1.5 - t * 1.3) * (half ? 0.7 : 1);
+        b.at(p);
+        b.limb(i + 1, [0, thick(t) * 0.6, 0], [0, thick(t) * 0.75 + h, -h * 0.75], r * 0.2, 0.004, half ? light : pale, 4);
+      }
+    }
+  }
+  if (o.wings) {
+    const w = o.wings;
+    for (const s of [-1, 1]) {
+      const name = s < 0 ? 'wingL' : 'wingR';
+      const at = [s * r * 0.7, r * 0.5, 0];
+      joints.push([name, 's1', at]);
+      const j = joints.length - 1;
+      b.at(P[1].map((x, c) => x + at[c]));
+      // an arm out to a wrist, three fingers from it, and the skin stretched between
+      const wrist = [s * w * 0.42, w * 0.2, w * 0.1];
+      b.limb(j, [0, 0, 0], wrist, r * 0.3, r * 0.2, main);
+      const tips = [[s * w, w * 0.12, -w * 0.02], [s * w * 0.86, 0, -w * 0.42], [s * w * 0.52, -w * 0.06, -w * 0.62]];
+      for (const tip of tips) b.limb(j, wrist, tip, r * 0.17, 0.006, mixed(main, dark, 0.5), 4);
+      const webs = [[wrist, tips[0], tips[1]], [wrist, tips[1], tips[2]], [[0, 0, 0], wrist, tips[2]], [[0, 0, 0], tips[2], [s * w * 0.12, -w * 0.04, -w * 0.5]]];
+      for (const [p0, p1, p2] of webs) b.sheet(j, p0, p1, p2, mixed(dark, main, 0.35), mixed(dark, black, 0.2));
+    }
+  }
+  const tau = Math.PI * 2;
+  const wave = (n, u, amp) => {
+    if (n === 'wingL') return { rz: Math.sin(u * tau) * 0.5 };
+    if (n === 'wingR') return { rz: -Math.sin(u * tau) * 0.5 };
     if (!n.startsWith('s')) return null;
     const i = Number(n.slice(1));
-    return { ry: Math.sin(u * 6.283 * cycles - i * 0.9) * amp * (i === 0 ? 0.4 : 1) };
+    // (the neck holds steadier than the body behind it)
+    return { ry: Math.sin(u * tau - i * 0.95) * amp * (i === 0 ? 0.35 : i <= neck ? 0.55 : 1) };
+  };
+  /** The head put somewhere else, the neck taking it up so that the body stays where it lies. */
+  const reach = (n, u, amp, dy, dz, rx = 0) => {
+    const base = wave(n, u, amp) ?? {};
+    if (!n.startsWith('s')) return base;
+    const i = Number(n.slice(1));
+    if (i === 0) return { ...base, dy, dz, rx };
+    if (i <= neck) return { ...base, dy: -dy / neck, dz: -dz / neck };
+    return base;
   };
   builtRig(pack, id, joints, {
-    idle: { dur: 1.6, pose: (n, j, t, u) => wave(n, u, 0.08, 1) },
-    walk: { dur: 0.9, pose: (n, j, t, u) => wave(n, u, 0.3, 1) },
-    run: { dur: 0.5, pose: (n, j, t, u) => wave(n, u, 0.38, 1) },
-    chop: { dur: 0.6, pose: (n, j, t, u) => (n === 's0' ? { rx: -Math.sin(Math.min(1, u * 1.5) * 3.14) * 0.7, dz: Math.sin(Math.min(1, u * 1.5) * 3.14) * 0.3 } : wave(n, u, 0.08, 1)) },
-    hit: { dur: 0.3, pose: (n, j, t, u) => (n === 's0' ? { rx: Math.sin(u * 3.14) * 0.4 } : null) },
-    die: { dur: 0.8, pose: (n, j, t, u) => (n === 's0' ? { dy: -Math.min(1, u * 1.5) * o.r * 0.9, rx: Math.min(1, u * 1.5) * 0.5 } : wave(n, u, 0.3 * (1 - u), 1)) },
+    idle: { dur: 2, pose: (n, j, t, u) => reach(n, u, 0.2, Math.sin(u * tau) * r * 0.12, 0) },
+    walk: { dur: 0.9, pose: (n, j, t, u) => wave(n, u, 0.34) },
+    run: { dur: 0.5, pose: (n, j, t, u) => wave(n, u, 0.4) },
+    chop: {
+      dur: 0.6,
+      pose: (n, j, t, u) => {
+        const k = Math.sin(Math.min(1, u * 1.5) * Math.PI);
+        return reach(n, u, 0.12, -k * (up - r) * 0.45, k * o.len * 0.2, k * 0.35);
+      },
+    },
+    hit: { dur: 0.3, pose: (n, j, t, u) => reach(n, u, 0.1, 0, -Math.sin(u * Math.PI) * r * 0.8, -Math.sin(u * Math.PI) * 0.3) },
+    die: {
+      dur: 0.8,
+      pose: (n, j, t, u) => {
+        const k = Math.min(1, u * 1.5);
+        return reach(n, u, 0.3 * (1 - u), -k * (up - r * 0.8), k * r * 0.5, k * 0.2);
+      },
+    },
+  });
+  pack.addMesh('body', b.done());
+  pack.meshes.body.rig = id;
+  return pack;
+}
+
+/**
+ * A naga's coil: the tail a naga's body rises from (kits.ts sets the body on it). It lies wound on itself, the tip
+ * out to one side, each turn inside and on top of the last, and its end stands up in the middle as the waist.
+ */
+function coilKit(id, o) {
+  const pack = new Pack();
+  const main = rgb(o.main);
+  const dark = rgb(o.dark);
+  const light = rgb(o.light);
+  const pale = mixed(light, [1, 0.97, 0.88], 0.5);
+  const r = o.r;
+  const joints = [['root', null, [0, 0, 0]], ['body', 'root', [0, 0, 0]], ['tip', 'body', [r * 3.1, 0, -r * 0.6]]];
+  const b = new Builder();
+  const rings = [];
+  const M = 46;
+  for (let i = 0; i <= M; i++) {
+    const t = i / M;
+    // wound inward and upward; the last of it turns up to stand
+    const wind = Math.min(1, t / 0.86);
+    const a = wind * Math.PI * 2 * 1.85 - 0.2;
+    const out = r * (3.3 - wind * 2.75) * (t > 0.86 ? 1 - (t - 0.86) / 0.14 : 1) * (t > 0.86 ? 0.55 / 0.55 : 1);
+    const k = r * (t < 0.3 ? 0.14 + (t / 0.3) * 0.86 : 1);
+    const y = t > 0.86 ? k * 0.9 + r * 0.95 + ((t - 0.86) / 0.14) * r * 1.5 : k * 0.9 + (wind > 0.52 ? ((wind - 0.52) / 0.48) * r * 0.95 : 0);
+    const band = Math.floor(i / 2) % 2 === 0;
+    rings.push({
+      p: [Math.cos(a) * out, y, Math.sin(a) * out],
+      rx: k,
+      ry: k * 0.92,
+      skin: t < 0.12 ? [2, 2, 255] : t < 0.2 ? [2, 1, 128] : [1, 1, 255],
+      color: (nx, ny) => (ny < -0.4 ? pale : ny > 0.45 ? (band ? dark : mixed(main, light, 0.4)) : main),
+    });
+  }
+  b.tube(rings, 9);
+  const tau = Math.PI * 2;
+  const sway = (n, u, amp) => (n === 'tip' ? { ry: Math.sin(u * tau) * amp * 3 } : n === 'body' ? { ry: Math.sin(u * tau) * amp * 0.4, dy: Math.sin(u * tau * 2) * 0.01 } : null);
+  builtRig(pack, id, joints, {
+    idle: { dur: 1.8, pose: (n, j, t, u) => sway(n, u, 0.08) },
+    walk: { dur: 0.9, pose: (n, j, t, u) => sway(n, u, 0.2) },
+    run: { dur: 0.5, pose: (n, j, t, u) => sway(n, u, 0.26) },
+    chop: { dur: 0.6, pose: (n, j, t, u) => (n === 'body' ? { dz: Math.sin(Math.min(1, u * 1.5) * Math.PI) * 0.25 } : sway(n, u, 0.1)) },
+    hit: { dur: 0.3, pose: (n, j, t, u) => (n === 'body' ? { dz: -Math.sin(u * Math.PI) * 0.1 } : null) },
+    die: { dur: 0.8, pose: (n, j, t, u) => (n === 'body' ? { dy: -Math.min(1, u * 1.5) * r * 0.5 } : sway(n, u, 0.2 * (1 - u))) },
   });
   pack.addMesh('body', b.done());
   pack.meshes.body.rig = id;
@@ -1039,28 +1420,96 @@ function wispKit(id) {
   return pack;
 }
 
-/** Anything that flaps: a body, a head and two wings. `beak` makes it a bird. */
+/** Anything that flaps: a body, a head and two wings. A bird has a beak, a fan of a tail and feathered wings; a moth
+ * has feelers, a furred body and four wings with an eye painted on each. */
 function flyerKit(id, o) {
   const pack = new Pack();
   const main = rgb(o.main);
   const dark = rgb(o.dark);
+  const black = [0.07, 0.05, 0.08];
+  const [bx, by, bz] = o.body;
+  const [w, , wz] = o.wing;
   const b = new Builder();
-  const joints = [['root', null, [0, 0, 0]], ['body', 'root', [0, 0.5, 0]], ['wingL', 'body', [-o.body[0] * 0.8, 0.06, 0]], ['wingR', 'body', [o.body[0] * 0.8, 0.06, 0]]];
-  b.blob(1, [0, 0, 0], o.body, main, 8, 6);
-  b.blob(1, [0, o.body[1] * 0.55, o.body[2] * 0.85], [o.body[0] * 0.72, o.body[0] * 0.72, o.body[0] * 0.72], main, 7, 5);
-  if (o.beak) b.limb(1, [0, o.body[1] * 0.5, o.body[2] * 1.3], [0, o.body[1] * 0.38, o.body[2] * 1.9], 0.07, 0.01, rgb(o.beak), 5);
-  if (o.tail) b.blob(1, [0, 0, -o.body[2] * 1.1], [o.body[0] * 0.5, o.body[1] * 0.25, o.body[2] * 0.6], dark, 6, 4);
-  for (const side of [-1, 1]) {
-    b.blob(1, [side * o.body[0] * 0.38, o.body[1] * 0.72, o.body[2] * 1.2], [0.055, 0.06, 0.04], [0.95, 0.95, 0.85], 5, 3);
-    b.blob(side < 0 ? 2 : 3, [side * o.wing[0] * 0.5, 0, 0], [o.wing[0] * 0.55, o.wing[1], o.wing[2]], dark, 8, 5);
+  const up = 0.5;
+  const joints = [['root', null, [0, 0, 0]], ['body', 'root', [0, up, 0]], ['wingL', 'body', [-bx * 0.8, 0.06, 0]], ['wingR', 'body', [bx * 0.8, 0.06, 0]]];
+  b.at([0, up, 0]);
+  const eye = (p, r) => {
+    b.blob(1, p, [r, r, r], black, 6, 4);
+    b.blob(1, [p[0] + r * 0.25, p[1] + r * 0.45, p[2] + r * 0.7], [r * 0.32, r * 0.32, r * 0.32], [1, 1, 1], 4, 2);
+  };
+  if (o.beak) {
+    const beak = rgb(o.beak);
+    const back = mixed(main, [0, 0, 0], 0.3);
+    // a breast paler than the back, a round head, a beak in two halves
+    b.oval(1, [0, 0, 0], o.body, (n) => (n[1] > 0.25 ? back : n[1] > -0.1 ? mixed(main, back, 0.5) : main), { x: -0.18 }, 10, 7);
+    const hr = bx * 0.74;
+    const h = [0, by * 0.72, bz * 0.82];
+    b.blob(1, h, [hr, hr, hr], (n) => (n[1] > 0.35 && n[2] < 0.5 ? back : main), 9, 6);
+    b.limb(1, [h[0], h[1] - hr * 0.05, h[2] + hr * 0.7], [0, h[1] - hr * 0.42, h[2] + hr * 2.05], hr * 0.4, 0.006, beak, 5);
+    b.limb(1, [h[0], h[1] - hr * 0.3, h[2] + hr * 0.6], [0, h[1] - hr * 0.5, h[2] + hr * 1.55], hr * 0.26, 0.006, mixed(beak, [0, 0, 0], 0.25), 5);
+    for (const s of [-1, 1]) {
+      eye([s * hr * 0.72, h[1] + hr * 0.18, h[2] + hr * 0.52], hr * 0.2);
+      // legs tucked under, toes forward
+      b.limb(1, [s * bx * 0.4, -by * 0.7, -bz * 0.1], [s * bx * 0.42, -by * 1.35, bz * 0.05], 0.03, 0.022, beak, 4);
+      b.limb(1, [s * bx * 0.42, -by * 1.35, bz * 0.05], [s * bx * 0.42, -by * 1.4, bz * 0.42], 0.024, 0.004, beak, 4);
+    }
+    if (o.comb) for (let k = 0; k < 3; k++) b.blob(1, [0, h[1] + hr * (0.95 - k * 0.12), h[2] + hr * (0.35 - k * 0.38)], [hr * 0.14, hr * 0.3, hr * 0.26], rgb(o.comb), 5, 3);
+    // the tail: three long feathers, fanned
+    for (let k = -1; k <= 1; k++) b.oval(1, [k * bx * 0.3, by * 0.05, -bz * 1.25], [bx * 0.3, 0.03, bz * 0.62], (n) => (n[2] < -0.3 ? mixed(dark, [0, 0, 0], 0.45) : dark), { y: -k * 0.32, x: 0.2 }, 6, 3);
+    for (const s of [-1, 1]) {
+      b.at([s * bx * 0.8, up + 0.06, 0]);
+      const j = s < 0 ? 2 : 3;
+      // the wing: its shoulder, then the long feathers one behind another, each swept further back, dark at the tip
+      b.oval(j, [s * w * 0.26, 0.012, wz * 0.12], [w * 0.3, 0.05, wz * 0.8], main, {}, 7, 4);
+      for (let k = 0; k < 5; k++) {
+        const len = w * (0.4 - k * 0.035);
+        const yaw = 0.1 + k * 0.2;
+        const root = [s * w * (0.34 + k * 0.1), -0.004 * k, wz * (0.25 - k * 0.24)];
+        b.oval(j, [root[0] + s * Math.cos(yaw) * len * 0.8, root[1], root[2] - Math.sin(yaw) * len * 0.8], [len, 0.022, wz * 0.34], (n) => (s * n[0] > 0.35 ? mixed(dark, [0, 0, 0], 0.5) : k % 2 ? dark : mixed(dark, main, 0.4)), { y: s * yaw }, 7, 3);
+      }
+    }
+  } else {
+    const fur = mixed(main, [0.35, 0.25, 0.18], 0.45);
+    const spot = rgb(o.spot ?? '#d0703a');
+    // a furred body in three parts, banded behind
+    b.blob(1, [0, 0, bz * 0.3], [bx, by, bz * 0.5], fur, 8, 5);
+    b.blob(1, [0, -by * 0.1, -bz * 0.55], [bx * 0.82, by * 0.82, bz * 0.75], (n) => (Math.sin(n[2] * 9) > 0.1 ? fur : mixed(fur, [0, 0, 0], 0.4)), 8, 6);
+    const h = [0, by * 0.15, bz * 0.95];
+    b.blob(1, h, [bx * 0.72, bx * 0.66, bx * 0.66], mixed(fur, [0, 0, 0], 0.25), 7, 5);
+    for (const s of [-1, 1]) {
+      eye([s * bx * 0.5, h[1] + bx * 0.18, h[2] + bx * 0.36], bx * 0.3);
+      // feathered feelers
+      const q = [s * bx * 1.3, h[1] + bx * 2.1, h[2] + bx * 1.3];
+      b.limb(1, [s * bx * 0.25, h[1] + bx * 0.5, h[2] + bx * 0.2], q, 0.02, 0.014, black, 4);
+      for (let k = 1; k <= 3; k++) {
+        const p = [s * bx * (0.25 + 1.05 * k / 3), h[1] + bx * (0.5 + 1.6 * k / 3), h[2] + bx * (0.2 + 1.1 * k / 3)];
+        b.limb(1, p, [p[0] + s * 0.08, p[1] + 0.02, p[2] + 0.07], 0.012, 0.003, black, 3);
+      }
+      b.at([s * bx * 0.8, up + 0.06, 0]);
+      const j = s < 0 ? 2 : 3;
+      // each wing: a dark edge, a paler field, and an eye on it to stare a bird down
+      const wing = (cx, cz, r, yaw, big) =>
+        b.oval(j, [cx, 0, cz], r, (n) => {
+          const d = Math.hypot(n[0] - s * 0.3, n[2] + 0.05);
+          if (Math.abs(n[1]) < 0.3) return mixed(dark, [0.2, 0.12, 0.08], 0.75);
+          if (d < 0.17 * big) return black;
+          if (d < 0.3 * big) return spot;
+          if (d < 0.38 * big) return mixed(dark, [1, 1, 1], 0.5);
+          return Math.sin(Math.hypot(n[0], n[2]) * 16) > 0.75 ? mixed(dark, main, 0.6) : dark;
+        }, { y: yaw }, 14, 10);
+      wing(s * w * 0.52, wz * 0.38, [w * 0.56, 0.028, wz * 0.9], s * -0.38, 1);
+      wing(s * w * 0.36, -wz * 0.72, [w * 0.4, 0.024, wz * 0.72], s * 0.42, 0.8);
+      b.at([0, up, 0]);
+    }
   }
-  const flap = (n, u, amp) => (n === 'wingL' ? { rz: Math.sin(u * 6.283) * amp } : n === 'wingR' ? { rz: -Math.sin(u * 6.283) * amp } : n === 'body' ? { dy: Math.sin(u * 6.283 + 1.4) * 0.03 } : null);
+  const tau = Math.PI * 2;
+  const flap = (n, u, amp) => (n === 'wingL' ? { rz: Math.sin(u * tau) * amp } : n === 'wingR' ? { rz: -Math.sin(u * tau) * amp } : n === 'body' ? { dy: Math.sin(u * tau + 1.4) * 0.03 } : null);
   builtRig(pack, id, joints, {
     idle: { dur: 0.5, pose: (n, j, t, u) => flap(n, u, 0.55) },
     walk: { dur: 0.32, pose: (n, j, t, u) => flap(n, u, 0.75) },
     run: { dur: 0.24, pose: (n, j, t, u) => flap(n, u, 0.85) },
-    chop: { dur: 0.5, pose: (n, j, t, u) => (n === 'body' ? { rx: Math.sin(u * 3.14) * 0.5, dz: Math.sin(u * 3.14) * 0.3 } : flap(n, u, 0.5)) },
-    hit: { dur: 0.3, pose: (n, j, t, u) => (n === 'body' ? { dz: -Math.sin(u * 3.14) * 0.12 } : null) },
+    chop: { dur: 0.5, pose: (n, j, t, u) => (n === 'body' ? { rx: Math.sin(u * Math.PI) * 0.5, dz: Math.sin(u * Math.PI) * 0.3 } : flap(n, u, 0.5)) },
+    hit: { dur: 0.3, pose: (n, j, t, u) => (n === 'body' ? { dz: -Math.sin(u * Math.PI) * 0.12 } : null) },
     die: { dur: 0.7, pose: (n, j, t, u) => (n === 'root' ? { dy: -u * 0.4, rz: u * 1.5 } : null) },
   });
   pack.addMesh('body', b.done());
@@ -1069,19 +1518,21 @@ function flyerKit(id, o) {
 }
 
 const BUGS = {
-  spider: { body: [0.3, 0.2, 0.3], abdomen: [0.42, 0.34, 0.46], h: 0.42, legs: 8, reach: 0.95, knee: 0.34, leg: 0.05, main: '#5b4a68', dark: '#34283f', light: '#8a78a0' },
-  crab: { body: [0.55, 0.26, 0.42], h: 0.34, legs: 6, reach: 0.9, knee: 0.2, leg: 0.06, claws: 0.2, main: '#e0633f', dark: '#a53c22', light: '#f48d63' },
-  scorpion: { body: [0.3, 0.16, 0.46], h: 0.26, legs: 6, reach: 0.7, knee: 0.16, leg: 0.045, claws: 0.17, tail: true, main: '#c79a58', dark: '#8a6431', light: '#e4c27f' },
-  beetle: { body: [0.42, 0.26, 0.52], h: 0.28, legs: 6, reach: 0.68, knee: 0.14, leg: 0.05, shell: true, horn: true, main: '#3f6b49', dark: '#22402b', light: '#6ea86f' },
-  scarab: { body: [0.42, 0.24, 0.5], h: 0.26, legs: 6, reach: 0.62, knee: 0.12, leg: 0.05, shell: true, main: '#a8862f', dark: '#5f4a17', light: '#e6c14f' },
-  strider: { body: [0.2, 0.14, 0.34], h: 0.8, legs: 6, reach: 1.15, knee: 0.5, leg: 0.03, main: '#5d7a54', dark: '#374c33', light: '#8aa77c' },
+  spider: { kind: 'spider', body: [0.27, 0.19, 0.27], head: [0.2, 0.15, 0.17], abdomen: [0.4, 0.33, 0.46], h: 0.36, legs: 8, reach: 0.82, knee: 0.4, leg: 0.045, fan: 1.3, spread: 1.5, jaws: 0.16, eye: '#e0483a', main: '#5b4a68', dark: '#34283f', light: '#c9b6e6' },
+  crab: { kind: 'crab', body: [0.56, 0.24, 0.4], h: 0.3, legs: 6, reach: 0.74, knee: 0.26, leg: 0.055, fan: 0.7, legsAt: -0.1, claws: 0.2, arm: 0.3, main: '#e0633f', dark: '#a53c22', light: '#f48d63' },
+  scorpion: { kind: 'scorpion', body: [0.3, 0.15, 0.44], head: [0.24, 0.12, 0.16], h: 0.22, legs: 8, reach: 0.56, knee: 0.2, leg: 0.04, fan: 0.9, legsAt: -0.12, claws: 0.15, arm: 0.3, tail: 1, jaws: 0.08, main: '#c79a58', dark: '#8a6431', light: '#e4c27f' },
+  beetle: { body: [0.4, 0.25, 0.5], head: [0.24, 0.17, 0.2], h: 0.27, legs: 6, reach: 0.66, knee: 0.2, leg: 0.048, shell: true, horn: 0.5, feelers: 0.7, main: '#3f6b49', dark: '#22402b', light: '#6ea86f' },
+  scarab: { body: [0.4, 0.23, 0.48], head: [0.26, 0.15, 0.18], h: 0.25, legs: 6, reach: 0.6, knee: 0.18, leg: 0.048, shell: true, feelers: 0.6, jaws: 0.1, main: '#a8862f', dark: '#5f4a17', light: '#e6c14f' },
+  strider: { body: [0.18, 0.13, 0.36], head: [0.13, 0.1, 0.14], h: 0.8, legs: 6, reach: 1.1, knee: 0.28, leg: 0.028, fan: 1.2, pads: 0.09, feelers: 1, eyeSize: 0.05, main: '#5d7a54', dark: '#374c33', light: '#8aa77c' },
 };
 const SERPENTS = {
-  viper: { n: 8, r: 0.2, len: 2, main: '#4f8f4a', dark: '#2f5f33', light: '#79b862' },
-  serpent: { n: 10, r: 0.32, len: 3.4, main: '#3f8f94', dark: '#27616a', light: '#79c4bd' },
-  wurm: { n: 9, r: 0.52, len: 3.4, main: '#c7a266', dark: '#8e6f3e', light: '#e6c98e' },
+  viper: { n: 8, r: 0.2, len: 2.3, up: 0.95, hood: 1, main: '#4f8f4a', dark: '#2f5f33', light: '#79b862' },
+  serpent: { n: 10, r: 0.3, len: 3.6, up: 1.35, crest: 1, main: '#3f8f94', dark: '#27616a', light: '#79c4bd' },
+  wurm: { n: 9, r: 0.5, len: 3.6, up: 1.7, neck: 4, maw: true, main: '#c7a266', dark: '#8e6f3e', light: '#e6c98e' },
+  wyrm: { n: 9, r: 0.36, len: 3.6, up: 0.8, neck: 2, wings: 1.7, horns: 1, crest: 0.8, tongue: false, main: '#d8d4cc', dark: '#a8a49c', light: '#f0ece4' },
+};
+const COILS = {
   naga_coil: { n: 9, r: 0.3, len: 2.6, rise: 0.5, main: '#3f8f6a', dark: '#27604a', light: '#6fbf94' },
-  wyrm: { n: 9, r: 0.42, len: 3.6, rise: 0.25, wings: 1.7, main: '#d8d4cc', dark: '#a8a49c', light: '#f0ece4' },
 };
 const FARM = 'Farm Animals by @Quaternius/FBX/';
 const DINO = 'Dinosaur Animated Pack - Dec 2018/FBX/';
@@ -1252,10 +1703,28 @@ async function mountKits(says) {
   says('fbx_trex', (await fbxKit('fbx_trex', join(SRC, `${DINO}Trex.fbx`), DRAKE_CLIPS)).write('k/fbx_trex.pack'));
 }
 
+/** The creatures that are made here from nothing, with no art pack behind them. */
+function builtKits(says) {
+  for (const [id, o] of Object.entries(BUGS)) says(id, bugKit(id, o).write(`k/${id}.pack`));
+  says('slime', slimeKit('slime').write('k/slime.pack'));
+  says('wisp', wispKit('wisp').write('k/wisp.pack'));
+  says('moth', flyerKit('moth', { body: [0.17, 0.15, 0.3], wing: [0.66, 0.05, 0.36], main: '#c8b890', dark: '#e4d8b8' }).write('k/moth.pack'));
+  says('bird', flyerKit('bird', { body: [0.26, 0.25, 0.4], wing: [0.74, 0.05, 0.3], beak: '#e0a840', main: '#e8e4e0', dark: '#c8c4c0' }).write('k/bird.pack'));
+  for (const [id, o] of Object.entries(SERPENTS)) says(id, serpentKit(id, o).write(`k/${id}.pack`));
+  for (const [id, o] of Object.entries(COILS)) says(id, coilKit(id, o).write(`k/${id}.pack`));
+}
+
 async function main() {
   mkdirSync(OUT, { recursive: true });
   const report = [];
   const says = (name, bytes) => report.push(`${name} ${(bytes / 1024).toFixed(0)}KB`);
+
+  // (only what's made here from nothing: these need none of the art packs)
+  if (process.env.SIGILFALL_ONLY === 'built') {
+    builtKits(says);
+    console.log(report.join('\n'));
+    return;
+  }
 
   // (only what's ridden, without rebuilding the whole world)
   if (process.env.SIGILFALL_ONLY === 'mounts') {
@@ -1343,12 +1812,7 @@ async function main() {
     pack.meshes.body.rig = 'medium';
     says(id, pack.write(`k/${id}.pack`));
   }
-  for (const [id, o] of Object.entries(BUGS)) says(id, bugKit(id, o).write(`k/${id}.pack`));
-  says('slime', slimeKit('slime').write('k/slime.pack'));
-  says('wisp', wispKit('wisp').write('k/wisp.pack'));
-  says('moth', flyerKit('moth', { body: [0.18, 0.16, 0.3], wing: [0.62, 0.05, 0.36], main: '#c8b890', dark: '#e4d8b8' }).write('k/moth.pack'));
-  says('bird', flyerKit('bird', { body: [0.26, 0.26, 0.42], wing: [0.72, 0.05, 0.3], beak: '#e0a840', tail: true, main: '#e8e4e0', dark: '#c8c4c0' }).write('k/bird.pack'));
-  for (const [id, o] of Object.entries(SERPENTS)) says(id, serpentKit(id, o).write(`k/${id}.pack`));
+  builtKits(says);
   for (const [id, rel] of [['fbx_pig', `${FARM}Pig.fbx`], ['fbx_sheep', `${FARM}Sheep.fbx`], ['fbx_raptor', `${DINO}Velociraptor.fbx`]]) {
     says(id, (await fbxKit(id, join(SRC, rel), FBX_CLIPS)).write(`k/${id}.pack`));
   }
