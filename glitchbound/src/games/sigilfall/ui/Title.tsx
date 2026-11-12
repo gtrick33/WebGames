@@ -1,9 +1,7 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { LEAVER_K, liveGoing, readLive, type LiveMatch } from '../arena/live';
 import { GameMenuButton } from '../../../components/GameMenuButton';
-import { priceText, productIn, PRODUCTS } from '../../../catalog/shop';
 import { useAccount } from '../../../platform/account';
-import { useLiveCatalog } from '../../../platform/liveCatalog';
 import { classOpen, PAID_CLASSES } from '../progress/paidClasses';
 import { CLASS_IDS, CLASSES } from '../data/classes';
 import { SKILLS } from '../data/skills';
@@ -18,6 +16,7 @@ import { SkillIcon } from './common';
 import { RiftScreen } from './RiftScreen';
 import { ScreenGate } from './ScreenGate';
 import { SettingsPanel } from './Panels';
+import { StorePanel, useStoreOpen } from './Store';
 
 const VigilScreen = lazy(() => import('./VigilScreen').then((m) => ({ default: m.VigilScreen })));
 const RingScreen = lazy(() => import('./RingScreen').then((m) => ({ default: m.RingScreen })));
@@ -76,6 +75,14 @@ function EpicSky() {
 export function TitleScreen({ engine }: { engine: SigilEngine }) {
   const heroes = engine.heroes();
   const [settings, setSettings] = useState(false);
+  // the game's own shop (ui/Store.tsx): opened by its button, and by coming back from the checkout it sent the buyer
+  // to (`?bought=<item>`, or `?shop=1` when they turned back), which is read once and taken off the address
+  const storeOpen = useStoreOpen();
+  const [store, setStore] = useState<{ bought: string | null } | null>(() => {
+    const back = storeReturn();
+    return back.open ? { bought: back.bought } : null;
+  });
+  useEffect(() => forgetStoreReturn(), []);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [rift, setRift] = useState<number | null>(null);
   const [vigil, setVigil] = useState(false);
@@ -131,7 +138,7 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
   return (
     <div className="rb-title is-hall">
       <ScreenGate intro label="Opening the sanctum">
-        <CharacterSelect engine={engine} onRift={setRift} onVigil={() => setVigil(true)} onRing={() => setRing(true)} onSettings={() => setSettings(true)} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} />
+        <CharacterSelect engine={engine} onRift={setRift} onVigil={() => setVigil(true)} onRing={() => setRing(true)} onSettings={() => setSettings(true)} onStore={storeOpen ? () => setStore({ bought: null }) : undefined} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} />
       </ScreenGate>
       {engine.ui.notice && <p className="rb-notice" role="status">{engine.ui.notice}</p>}
       {left && liveGoing(left) && (
@@ -184,8 +191,30 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
           <SettingsPanel engine={engine} onClose={() => setSettings(false)} />
         </div>
       )}
+      {store && storeOpen && (
+        <div className="rb-modal">
+          <StorePanel onClose={() => setStore(null)} bought={store.bought} />
+        </div>
+      )}
     </div>
   );
+}
+
+/** Coming back from the checkout the game's shop sent the buyer to: what the address says (server/shop.ts BACK). */
+export function storeReturn(): { open: boolean; bought: string | null } {
+  if (typeof location === 'undefined') return { open: false, bought: null };
+  const q = new URLSearchParams(location.search);
+  const bought = q.get('bought');
+  return { open: !!bought || q.get('shop') === '1', bought: bought && /^[a-z0-9-]{2,40}$/.test(bought) ? bought : null };
+}
+/** Read once: a reload, or the game's link shared, doesn't open the shop again. */
+export function forgetStoreReturn(): void {
+  if (typeof location === 'undefined' || typeof history === 'undefined') return;
+  const url = new URL(location.href);
+  if (!url.searchParams.has('bought') && !url.searchParams.has('shop')) return;
+  url.searchParams.delete('bought');
+  url.searchParams.delete('shop');
+  history.replaceState(history.state, '', url.pathname + url.search + url.hash);
 }
 
 const DIFFICULTY = ['', 'Easy to learn', 'Some practice', 'Takes skill'];
@@ -201,13 +230,11 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
   const begin = (tips?: boolean): void => engine.createHero(engine.ui.createSlot, cls, cleanName(name), body, face, tips);
   const def = CLASSES[cls];
   const { me } = useAccount();
-  const items = useLiveCatalog().raw.shopItems ?? PRODUCTS;
-  // a class sold in the shop can be looked at here, and made once it's bought
-  const priceOf = (id: ClassId): string | null => {
-    const item = PAID_CLASSES[id];
-    const p = item ? productIn(items, item) : undefined;
-    return p ? priceText(p.cents) : null;
-  };
+  // a class that comes with a pack can be looked at here, and made once the pack is the player's. Its tile says so
+  // with a small mark and no price: the price is in the shop, for whoever goes looking (it stood on the tile, the
+  // first thing a new player read on their first screen)
+  const storeOpen = useStoreOpen();
+  const [store, setStore] = useState<string | null>(null);
   const open = classOpen(cls, me);
   return (
     <div className="rb-create">
@@ -226,7 +253,11 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
               <Doll className="rb-class-doll" src={heroDollUrl(heroLook(id, {}, {}, body, face), 'down', 2, heldWeapon(id, undefined), id === 'warrior' || id === 'paladin')} />
               <strong>{c.name}</strong>
               <span className="rb-dim">{c.role}</span>
-              {!classOpen(id, me) && <span className="rb-class-lock">Shop · {priceOf(id) ?? 'paid'}</span>}
+              {!classOpen(id, me) && (
+                <span className="rb-class-lock" title={`The ${c.name} comes with a pack`}>
+                  Pack
+                </span>
+              )}
               <span className="rb-dots" aria-label={DIFFICULTY[c.difficulty]}>
                 {[1, 2, 3].map((n) => (
                   <i key={n} className={n <= c.difficulty ? 'is-on' : ''} />
@@ -305,13 +336,20 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
             <button className="rb-btn is-gold is-big" type="submit">
               Begin as {def.name}
             </button>
+          ) : storeOpen && PAID_CLASSES[cls] ? (
+            <button className="rb-btn is-big" type="button" onClick={() => setStore(PAID_CLASSES[cls]!)}>
+              See the {def.name} Pack
+            </button>
           ) : (
-            <a className="rb-btn is-gold is-big" href="/shop">
-              {me ? `Unlock the ${def.name} in the shop` : 'Sign in to unlock it in the shop'}
-            </a>
+            <p className="rb-dim rb-create-locked">The {def.name} isn’t available yet.</p>
           )}
         </form>
       </div>
+      {store && storeOpen && (
+        <div className="rb-modal">
+          <StorePanel onClose={() => setStore(null)} focus={store} />
+        </div>
+      )}
       {askTips && (
         <div className="rb-ring-dialog-wrap rb-tip-ask" role="dialog" aria-modal="true" aria-labelledby="rb-tip-ask-title">
           <div className="rb-ring-dialog">

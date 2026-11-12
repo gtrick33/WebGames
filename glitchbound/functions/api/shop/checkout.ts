@@ -3,9 +3,9 @@ import { productIn } from '../../../src/catalog/shop';
 import { loadCatalog } from '../../../server/catalogSettings';
 import { bad, json, readJson, sameOrigin, type Ctx } from '../../../server/http';
 import { isAdmin, requireUser } from '../../../server/session';
-import { canSell, langOf, loadItems, ownedBy, startCheckout } from '../../../server/shop';
+import { backOf, canSell, langOf, loadItems, ownedBy, startCheckout } from '../../../server/shop';
 
-/** POST /api/shop/checkout { product, agreeNow: true, agreeAge: true, lang? }: where to pay. Off until the shop is opened. */
+/** POST /api/shop/checkout { product, agreeNow: true, agreeAge: true, lang?, back? }: where to pay. Off until the shop is opened. */
 export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (!sameOrigin(request)) return bad('bad_origin', 403);
   const user = await requireUser(env, request);
@@ -21,6 +21,7 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
   if (body?.agreeNow !== true || body?.agreeAge !== true) return bad('must_agree');
   if ((await ownedBy(env, user.id)).includes(p.id)) return bad('already_yours', 409);
   // (the language the buyer read the terms and ticked the statements in: the purchase records it)
-  const url = await startCheckout(env, user, p, new URL(request.url).origin, Date.now(), langOf(body?.lang));
+  // (and where they bought it from: the shop page, or the shop inside Sigilfall, which they come back to)
+  const url = await startCheckout(env, user, p, new URL(request.url).origin, Date.now(), langOf(body?.lang), backOf(body?.back));
   return url ? json({ url }) : bad('checkout_failed', 502);
 }

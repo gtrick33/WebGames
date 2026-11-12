@@ -114,8 +114,19 @@ const langOfTerms = (terms: string | null): Lang => langOf(terms?.split(' ')[1])
 /** Stripe's checkout page in the buyer's language, where Stripe has it (it has no Ukrainian: that reader gets Stripe's own choice). */
 const STRIPE_LOCALES = new Set(['bg', 'de', 'es', 'fr', 'it', 'nl', 'pl', 'pt', 'ro', 'tr']);
 
+/**
+ * Where a buyer comes back to after Stripe: the shop page, or the game they bought from inside (the shop in Sigilfall
+ * opens again there, on what they bought). Only these: a request can pick one by name, never give an address.
+ */
+const BACK = {
+  shop: { bought: '/shop?bought=', left: '/shop' },
+  sigilfall: { bought: '/sigilfall?play=1&bought=', left: '/sigilfall?play=1&shop=1' },
+} as const;
+export type ShopBack = keyof typeof BACK;
+export const backOf = (v: unknown): ShopBack => (typeof v === 'string' && Object.hasOwn(BACK, v) ? (v as ShopBack) : 'shop');
+
 /** Opens a Stripe Checkout for a one-time payment and records the buyer's agreement. Returns where to send them. */
-export async function startCheckout(env: Env, user: { id: string; email: string }, p: Product, origin: string, now = Date.now(), lang: Lang = 'en'): Promise<string | null> {
+export async function startCheckout(env: Env, user: { id: string; email: string }, p: Product, origin: string, now = Date.now(), lang: Lang = 'en', back: ShopBack = 'shop'): Promise<string | null> {
   const price = await stripePriceFor(env, p);
   if (!price) return null;
   const id = randomToken(16);
@@ -133,8 +144,8 @@ export async function startCheckout(env: Env, user: { id: string; email: string 
       client_reference_id: id,
       customer_email: user.email,
       locale: STRIPE_LOCALES.has(lang) ? lang : 'auto',
-      success_url: `${origin}/shop?bought=${encodeURIComponent(p.id)}`,
-      cancel_url: `${origin}/shop`,
+      success_url: `${origin}${BACK[back].bought}${encodeURIComponent(p.id)}`,
+      cancel_url: `${origin}${BACK[back].left}`,
     }),
   );
   return session?.url ?? null;

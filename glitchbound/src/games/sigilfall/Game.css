@@ -10952,3 +10952,228 @@
   opacity: 0.8;
   pointer-events: none;
 }
+
+/* ------------------------------------------------------------------ the game's own shop (ui/Store.tsx)
+   The Gloamknight Pack, the mounts and the Wardrobe looks, in the game's own panel. It is plain on purpose: a list
+   with every price in full, nothing that flashes, counts down or asks twice. */
+/* (the frame's own body scrolls: this only lays the shop out inside it) */
+.rb-store-body {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding-bottom: 4px;
+}
+.rb-store-lead,
+.rb-store-terms {
+  margin: 0;
+  max-width: 72ch;
+}
+.rb-store-terms a {
+  color: var(--rb-gold);
+}
+.rb-store-note {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.06);
+}
+.rb-store-note.is-good {
+  background: rgb(110 200 120 / 0.14);
+  color: #b9f0b0;
+}
+.rb-store-h {
+  margin: 4px 0 6px;
+  color: var(--rb-gold);
+  font: 700 15px var(--rb-serif, Georgia, serif);
+}
+.rb-store-pack {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid rgb(154 106 224 / 0.45);
+  border-radius: 8px;
+  background: linear-gradient(120deg, rgb(52 30 84 / 0.55), rgb(24 17 11 / 0.4));
+}
+.rb-store-pack.is-focus {
+  box-shadow: 0 0 0 2px rgb(154 106 224 / 0.55);
+}
+.rb-store-pack h3 {
+  margin: 0;
+  color: #d9c2ff;
+  font: 700 18px var(--rb-serif, Georgia, serif);
+}
+.rb-store-pack p {
+  margin: 0;
+}
+.rb-store-hero {
+  height: 132px;
+  image-rendering: pixelated;
+}
+.rb-store-words {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  justify-items: start;
+}
+.rb-store-parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+.rb-store-parts li {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.07);
+}
+.rb-store-parts b {
+  font-weight: 700;
+}
+.rb-store-list {
+  display: grid;
+  /* (two to a row on a phone on its side, never three: at a third of the panel an item's words ran ten lines deep
+     and its button broke over three) */
+  grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rb-store-item {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 10px;
+  border: 1px solid rgb(168 130 58 / 0.3);
+  border-radius: 8px;
+  background: rgb(18 12 8 / 0.5);
+}
+/* (the two statements need the card's whole width) */
+.rb-store-item.is-buying {
+  grid-column: 1 / -1;
+}
+.rb-store-item.is-owned,
+.rb-store-pack.is-owned {
+  border-color: rgb(110 200 120 / 0.35);
+}
+.rb-store-pic.sigil-pic {
+  width: 96px;
+  height: 96px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, #3a2d20, #120c08 78%);
+}
+.rb-store-pic.sigil-pic img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.rb-store-price {
+  margin: 0;
+}
+.rb-store-price strong {
+  color: var(--rb-text);
+  font-size: 15px;
+}
+.rb-store-yours {
+  margin: 0;
+  color: #b9f0b0;
+  font-size: 12.5px;
+}
+.rb-store-checkout {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  background: rgb(0 0 0 / 0.28);
+}
+.rb-store-checkout h3 {
+  margin: 0;
+  font: 700 15px var(--rb-serif, Georgia, serif);
+}
+.rb-store-checkout h3:focus {
+  outline: none;
+}
+.rb-store-checkout p {
+  margin: 0;
+}
+.rb-store-checkout label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  line-height: 1.35;
+  cursor: pointer;
+}
+.rb-store-checkout input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--rb-gold);
+}
+.rb-store-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+/* a plain line of text that is a button: the Wardrobe's way to the shop */
+.rb-linkbtn {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--rb-dim);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.rb-linkbtn:hover,
+.rb-linkbtn:focus-visible {
+  color: var(--rb-gold);
+}
+.cs-store img {
+  display: block;
+  height: 20px;
+  image-rendering: pixelated;
+}
+/* the paid class on the hero screen: a quiet mark, no price (it was gold, and said what it cost) */
+.rb-class-lock {
+  background: rgb(255 255 255 / 0.1);
+  color: var(--rb-dim);
+  font-weight: 700;
+}
+.rb-create-locked {
+  margin: 0;
+  align-self: center;
+}
+/* a phone on its side: the pack's hero steps aside, and an item is its picture over its words */
+@container (max-width: 620px) {
+  .rb-store-hero {
+    height: 96px;
+  }
+  .rb-store-item {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+  .rb-store-pic.sigil-pic {
+    width: 72px;
+    height: 72px;
+  }
+}
+@container (max-width: 420px) {
+  .rb-store-pack {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rb-store-hero {
+    display: none;
+  }
+}
