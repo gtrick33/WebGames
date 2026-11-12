@@ -21,6 +21,7 @@ import { heldWeapon, itemIconCanvas, heroLook, vendorSign } from './sprites';
 import type { HeroLook } from './art/hero';
 import { wornLooks } from '../progress/wardrobe';
 import { objectiveTarget } from '../sim/objective';
+import { ZOOM_MAX, ZOOM_MIN } from '../progress/save';
 import { autoTarget, seekReach, tapAutoAims } from '../sim/cast';
 import { PERSON_H, type Cast } from '../render3d/cast';
 import type { Fx3D } from '../render3d/fx3d';
@@ -142,11 +143,25 @@ export class Renderer {
     return this.cssH;
   }
 
+  /**
+   * How far back the camera stands, as the player set it (Settings: Camera distance): 1 is the game's own view, more
+   * is further out. What the land keeps standing follows it (render3d/land.ts viewBox goes by the picture's reach).
+   */
+  private zoom = 1;
+  private sized: [number, number, number, boolean] | null = null;
+  setZoom(zoom: number): void {
+    const z = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom));
+    if (z === this.zoom) return;
+    this.zoom = z;
+    if (this.sized) this.resize(...this.sized);
+  }
+
   resize(cssW: number, cssH: number, dpr: number, touch: boolean): void {
+    this.sized = [cssW, cssH, dpr, touch];
     const devW = Math.max(1, Math.round(cssW * dpr));
     const devH = Math.max(1, Math.round(cssH * dpr));
     const landscape = devW >= devH;
-    let total = (landscape ? devH : devW * 1.25) / (touch ? 216 : 300);
+    let total = (landscape ? devH : devW * 1.25) / ((touch ? 216 : 300) * this.zoom);
     total = Math.min(total, Math.min(devW, devH) / 150);
     total = Math.max(0.5, total);
     this.cssW = Math.max(1, cssW);

@@ -31,6 +31,35 @@ export const UNIT = 1 / TILE;
 /** How far the camera looks down from level. */
 export const PITCH = (50 * Math.PI) / 180;
 
+/**
+ * What ground the picture shows, and so what is kept standing on it. The camera looks down along the land with a
+ * lens, so the picture is not a rectangle of ground but a wedge: at its top edge it reaches a quarter further away
+ * than its height says, and a quarter wider than at its middle. The land used to be kept for the rectangle and three
+ * tiles round it, which on a wide screen left the top corners short: trees and houses came up out of nothing there
+ * as the hero walked (the owner: "rendering of props, land, and buildings should be extended so that the camera
+ * doesnt notice the suddenly appearing items"), more so once the camera was drawn back twice. `spanX`, `spanZ`: half
+ * the picture's reach at its middle, in tiles (render3d/stage.ts).
+ */
+/** How much further than `spanZ` the top edge of the picture reaches, and how much wider the picture is there. */
+const VIEW_FAR_REACH = 1.27;
+const VIEW_WIDENS = 0.21;
+/** Tiles kept past the picture's edges: the land is looked over again only every two tiles walked, a tree is two
+ * tiles wide, and what stands below the bottom edge shows its top in the picture. */
+export const VIEW_PAD = { side: 5, far: 6, near: 6 };
+/** The box of ground round everything the picture can show. */
+export function viewBox(camX: number, camZ: number, spanX: number, spanZ: number): { x0: number; x1: number; z0: number; z1: number } {
+  const half = spanX * (1 + VIEW_WIDENS * VIEW_FAR_REACH) + VIEW_PAD.side;
+  return { x0: camX - half, x1: camX + half, z0: camZ - spanZ * VIEW_FAR_REACH - VIEW_PAD.far, z1: camZ + spanZ + VIEW_PAD.near };
+}
+/** Whether a place is within the picture's sides at its own depth (wider the further up the picture it is). */
+export function inViewX(camX: number, camZ: number, spanX: number, spanZ: number, x: number, z: number): boolean {
+  return Math.abs(x - camX) < spanX * (1 + (VIEW_WIDENS * (camZ - z)) / Math.max(1, spanZ)) + VIEW_PAD.side;
+}
+/** Whether a place is on ground the picture can show (with the margins the land is kept standing for). */
+export function inView(camX: number, camZ: number, spanX: number, spanZ: number, x: number, z: number): boolean {
+  return z > camZ - spanZ * VIEW_FAR_REACH - VIEW_PAD.far && z < camZ + spanZ + VIEW_PAD.near && inViewX(camX, camZ, spanX, spanZ, x, z);
+}
+
 export interface LandPacks {
   /** The people's parts and weapons: a giant's sword is the same sword. */
   hero: Pack;
@@ -1278,6 +1307,7 @@ export class Land3D {
   private wallH = 1.45;
   private cx = NaN;
   private cz = NaN;
+  private span = NaN;
   private readonly doors: { i: number; x: number; y: number; k: number; h: number; across: boolean }[] = [];
   /**
    * A hall's columns (the map's pillars and a nave's tall columns), in tiles, each with how much of its height stands
@@ -2166,14 +2196,13 @@ export class Land3D {
   update(camX: number, camZ: number, spanX: number, spanZ: number): void {
     const cx = Math.floor(camX / 2);
     const cz = Math.floor(camZ / 2);
-    if (cx === this.cx && cz === this.cz) return;
+    // (and when the picture's reach changes: the window resized, or the camera's distance set further out in Settings)
+    const span = Math.round(spanX * 4) * 1000 + Math.round(spanZ * 4);
+    if (cx === this.cx && cz === this.cz && span === this.span) return;
     this.cx = cx;
     this.cz = cz;
-    const R = 3;
-    const x0 = camX - spanX - R;
-    const x1 = camX + spanX + R;
-    const z0 = camZ - spanZ - R - 5;
-    const z1 = camZ + spanZ + R + 2;
+    this.span = span;
+    const { x0, x1, z0, z1 } = viewBox(camX, camZ, spanX, spanZ);
     const want = new Map<string, Placed[]>();
     const c0 = Math.floor(x0 / CELL);
     const c1 = Math.floor(x1 / CELL);
@@ -2186,7 +2215,7 @@ export class Land3D {
         const list = this.cells.get(cellKey(r, c));
         if (!list) continue;
         for (const p of list) {
-          if (p.x < x0 || p.x > x1 || p.z < z0 || p.z > z1) continue;
+          if (p.z < z0 || p.z > z1 || !inViewX(camX, camZ, spanX, spanZ, p.x, p.z)) continue;
           let w = want.get(p.m);
           if (!w) {
             w = [];

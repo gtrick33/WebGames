@@ -45,6 +45,10 @@ export const BASE_HERO_SLOTS = 3;
 /** A shop item's id (src/catalog/shop.ts sanitizeProducts). */
 const SHOP_ID = /^[a-z0-9][a-z0-9-]{1,39}$/;
 
+/** The nearest and the furthest the camera can be set (Settings: Camera distance), against the game's own view. */
+export const ZOOM_MIN = 0.8;
+export const ZOOM_MAX = 1.3;
+
 export interface Settings {
   master: number;
   music: number;
@@ -64,6 +68,8 @@ export interface Settings {
   /** Tapping a skill or the ultimate aims it at the nearest enemy (a drag still aims by hand). */
   autoAimSkills: boolean;
   shake: boolean;
+  /** How far back the camera stands: 1 is the game's own view, more is further out (ZOOM_MIN to ZOOM_MAX). */
+  zoom: number;
   numbers: boolean;
   /** Calmer screen: no shake, lighter weather (a new save starts from the device's own setting). */
   reducedMotion: boolean;
@@ -93,6 +99,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoTarget: true,
   autoAimSkills: true,
   shake: true,
+  zoom: 1,
   numbers: true,
   reducedMotion: false,
   ultKey: 'f',
@@ -150,6 +157,7 @@ export function validateSettings(v: unknown): Settings {
     autoTarget: bool(o.autoTarget, d.autoTarget),
     autoAimSkills: bool(o.autoAimSkills, d.autoAimSkills),
     shake: bool(o.shake, d.shake),
+    zoom: num(o.zoom, ZOOM_MIN, ZOOM_MAX, d.zoom),
     numbers: bool(o.numbers, d.numbers),
     reducedMotion: bool(o.reducedMotion, d.reducedMotion),
     ultKey: o.ultKey === 't' || o.ultKey === 'shift' || o.ultKey === 'rmb' ? o.ultKey : 'f',

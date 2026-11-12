@@ -12,6 +12,7 @@ import type { Item, ItemDef, QuestDef, RegionDef, RegionId, SkillIndex, SkillSpe
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
 import { SLOT_LEVELS, slotOpen, bagSize, cantEquip, cantLearn, cantSpec, currentObjective, freePoints, learnedSkills, levelGated, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
+import { ZOOM_MAX, ZOOM_MIN } from '../progress/save';
 import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL, costText } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, salvageValue } from '../progress/items';
@@ -1465,7 +1466,7 @@ function LandMap({ engine, region }: { engine: SigilEngine; region: RegionId }) 
 export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClose: () => void }) {
   const s = engine.settings;
   const set = engine.setSettings.bind(engine);
-  const slider = (label: string, key: 'master' | 'music' | 'sfx' | 'deadzone' | 'sensitivity' | 'joystick', min: number, max: number, step: number, show: (v: number) => string) => (
+  const slider = (label: string, key: 'master' | 'music' | 'sfx' | 'deadzone' | 'sensitivity' | 'joystick' | 'zoom', min: number, max: number, step: number, show: (v: number) => string) => (
     <label className="rb-range">
       <span>
         {label} <b>{show(s[key])}</b>
@@ -1486,6 +1487,11 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
           {slider('Volume', 'master', 0, 1, 0.05, pct)}
           {slider('Music', 'music', 0, 1, 0.05, pct)}
           {slider('Effects', 'sfx', 0, 1, 0.05, pct)}
+        </section>
+        <section>
+          <span className="rb-kicker">Camera</span>
+          {slider('Camera distance', 'zoom', ZOOM_MIN, ZOOM_MAX, 0.05, pct)}
+          <span className="rb-small rb-dim">100% is the game's own view. Further out shows more of the land around you; closer shows your hero bigger.</span>
         </section>
         <section>
           <span className="rb-kicker">Touch controls</span>
