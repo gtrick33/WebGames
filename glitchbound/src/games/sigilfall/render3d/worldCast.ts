@@ -240,6 +240,8 @@ export class WorldCast {
       else if (d.kind === 'potion') cast.prop('w_potion_medium_red', d.x, d.y, 10, time, hop);
       else if (d.kind === 'orb') cast.prop('w_potion_small_red', d.x, d.y, 8, time, hop);
       else if (d.kind === 'shard') cast.prop('stone_tallA', d.x, d.y, 11, time * 1.5, hop, [1.2, 0.5, 1.2]);
+      // a quest's thing: a small coffer of it, gold, turning (its light and its name are drawn over it: render/effects.ts)
+      else if (d.kind === 'quest') cast.prop('chest_gold', d.x, d.y, 8, time * 1.6 + d.x, hop + 0.06, [1.25, 1.15, 0.8]);
     }
     for (const pet of w.pets) this.syncPet(cast, pet, w, dt, time);
     for (const gh of w.coop?.ghosts ?? []) if (gh.seen > 0) this.syncGhost(cast, gh, dt, time);
