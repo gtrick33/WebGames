@@ -132,6 +132,7 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
   // walking to a goal into something the map's paths don't know (a prop's body): a second of that, and it
   // slides along it for a moment, one way and then the other
   let blockedT = 0;
+  let nowhere = { x: w.player.x, y: w.player.y, t: 0, foes: Infinity, x0: w.player.x, y0: w.player.y, len: 1.2 };
   let slideT = 0;
   let slide = 1;
   let foeHp = Infinity;
@@ -215,6 +216,14 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
           } else {
             mx = (target.x - p.x) / d;
             my = (target.y - p.y) / d;
+          }
+          // (walking dead-on into a trunk on the way to a foe, the hero stands against it: a step to the side, as on
+          // the way to a room)
+          if (slideT > 0) {
+            slideT -= DT;
+            const ax = mx;
+            mx = -my * slide;
+            my = ax * slide;
           }
         } else if (!melee && d < keep * 0.6) {
           mx = (p.x - target.x) / d;
@@ -330,12 +339,32 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
     if (o.trace && Math.round(res.time * 60) % 30 === 0) o.trace(w, JSON.stringify({ t: res.time.toFixed(1), p: [(w.player.x / TILE).toFixed(1), (w.player.y / TILE).toFixed(1)], m: [f.mx.toFixed(2), f.my.toFixed(2)], tg: target ? [target.def.id, (target.x / TILE).toFixed(1), (target.y / TILE).toFixed(1)] : null, st: w.player.statuses.map((x) => x.id), busy: [!!w.player.windup, !!w.player.dash, !!w.player.channel, !!w.player.casting], casts: f.casts.map((c) => c.slot) }));
     const was = { x: w.player.x, y: w.player.y };
     w.step(DT);
-    if (!target && !w.player.dead && Math.hypot(f.mx, f.my) > 0.5 && Math.hypot(w.player.x - was.x, w.player.y - was.y) < 0.05) blockedT += DT;
+    if (!w.player.dead && Math.hypot(f.mx, f.my) > 0.5 && Math.hypot(w.player.x - was.x, w.player.y - was.y) < 0.05) blockedT += DT;
     else blockedT = 0;
     if (blockedT > 1) {
       blockedT = 0;
       slideT = 0.6;
       slide = -slide;
+    }
+    // going nowhere and hurting nothing, though not stopped dead: stepping to and fro at a gap in the undergrowth that
+    // the way to a far foe runs through and a hero's shoulders don't fit (the check above, for a hero stopped still,
+    // never sees it). A player gives that foe up and goes round; so does the bot: that foe is left alone a while, or,
+    // with none, it walks round the other way.
+    const foesNow = w.enemies.reduce((a, e) => a + (e.dead || e.dummy ? 0 : e.hp + e.shield), 0);
+    if (Math.hypot(w.player.x - nowhere.x0, w.player.y - nowhere.y0) > 70) nowhere = { ...nowhere, x0: w.player.x, y0: w.player.y, len: 1.2 };
+    if (w.player.dead || w.scene || foesNow < nowhere.foes - 0.5 || Math.hypot(w.player.x - nowhere.x, w.player.y - nowhere.y) > 20) nowhere = { ...nowhere, x: w.player.x, y: w.player.y, t: res.time, foes: foesNow };
+    else if (res.time - nowhere.t > 5 && Math.hypot(f.mx, f.my) > 0.5 && slideT <= 0) {
+      // (the way the map gives can run between two bushes that stand too close for a hero's shoulders: so round, the
+      // other way each time and further, until it is somewhere else; and a foe that way is left for later)
+      nowhere.t = res.time;
+      slideT = nowhere.len;
+      slide = -slide;
+      nowhere.len = Math.min(5, nowhere.len * 1.6);
+      if (target) {
+        leftAlone.set(target.id, res.time + 6);
+        target = null;
+        think = 0;
+      }
     }
     res.time += DT;
     for (const ev of w.events) {

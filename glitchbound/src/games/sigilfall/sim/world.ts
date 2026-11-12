@@ -147,8 +147,21 @@ export const ultFloor = (level: number): number => 1.3 * (level <= 3 ? 20 : leve
 export const ULT_BANK = 70;
 /** The most haste (%) speeds the basic attack. */
 export const BASIC_HASTE = 60;
-/** Riding: one speed for every mount (blueprint §6.4: no "best mount"). */
-export const MOUNT_SPEED = 1.3;
+/**
+ * How fast a hero goes on foot, in world pixels a second, before what their gear adds. Walking the land is a twelfth
+ * slower than it was (the owner: "slow down the character a bit but keep mount speed the same"). In a fight a hero
+ * is as quick as ever: every boss's dance and every pack's chase was set against 78, and with a slower hero the
+ * play-throughs lost fights they had won (a mage fell to the Royal Auditor fifty times). A fight is a boss on the
+ * field, or a blow given or taken in the last few seconds (Player.calm); the pace eases down as it ends. A mount is
+ * as fast as it ever was (78 × 1.3), so riding is worth more than it was.
+ */
+export const WALK_SPEED = 72;
+export const FIGHT_SPEED = 78;
+export const RIDE_SPEED = 78 * 1.3;
+/** How long after the last blow the pace takes to ease from a fight's to a walk's. */
+const PACE_EASES = 1.5;
+/** Riding: one speed for every mount (blueprint §6.4: no "best mount"), as a share of walking. */
+export const MOUNT_SPEED = RIDE_SPEED / WALK_SPEED;
 /** Calling a mount takes this long, standing still. */
 export const SUMMON_TIME = 0.6;
 /**
@@ -1469,8 +1482,7 @@ export class World {
       updateDash(this, dt);
     } else {
       const stunned = playerStunned(this);
-      let speed = 78 * (1 + stats.speed / 100) * playerSlow(this);
-      if (p.riding) speed *= MOUNT_SPEED;
+      let speed = (p.riding ? RIDE_SPEED : this.footPace()) * (1 + stats.speed / 100) * playerSlow(this);
       if (p.channel) speed *= 0.8;
       if (p.windup) speed *= 0.35;
       if (stunned) speed = 0;
@@ -1526,6 +1538,13 @@ export class World {
     }
     if (p.hp < p.maxHp * 0.3 && this.hpBefore >= p.maxHp * 0.3 && this.hero.potions > 0) this.emit({ t: 'hint', id: 'potion' });
     this.hpBefore = p.hp;
+  }
+
+  /** How fast the hero goes on foot just now: a fight's pace, a walk's, or between them as a fight ends (WALK_SPEED). */
+  footPace(): number {
+    if (this.boss()) return FIGHT_SPEED;
+    const k = Math.max(0, Math.min(1, (this.player.calm - CALM_AFTER) / PACE_EASES));
+    return FIGHT_SPEED + (WALK_SPEED - FIGHT_SPEED) * k;
   }
 
   /** Something that stands (a crate, a trunk, a building's own wall) is at their elbow: not only the land's walls. */

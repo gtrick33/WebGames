@@ -14,6 +14,7 @@ import type { Enemy, Ghost, NpcActor, Pet } from '../sim/types';
 import { heightFromRadius, Motion, PERSON_H, type Cast, type ClipFade, type Colossus } from './cast';
 import type { Held } from './dress';
 import { kitOf } from './kits';
+import { inView } from './land';
 import { shapeOf } from './mountLook';
 import { chained, moveOf, type Move } from './moves';
 import { strikeOf, type Strike } from './strike';
@@ -141,14 +142,6 @@ export interface CastView {
   spanX: number;
   spanZ: number;
 }
-/**
- * How far past the view's edges someone is still drawn, in tiles: the land's own margins (render3d/land.ts update),
- * so nobody is missing from ground that is standing. Wider up the picture, where the camera's tilt shows more.
- */
-const VIEW_SIDE = 3;
-const VIEW_FAR = 8;
-const VIEW_NEAR = 5;
-
 export class WorldCast {
   private readonly foes = new Map<number, FoeAnim>();
   private readonly hero = new Motion();
@@ -179,7 +172,7 @@ export class WorldCast {
   sync(cast: Cast, w: World, dt: number, time: number, o: { look: HeroLook; weapon: Held; folk: number; landOnly: boolean; view?: CastView; statues?: readonly { x: number; y: number; h: number; lift: number; tint: readonly [number, number, number] }[]; colossi?: readonly Colossus[] }): void {
     // who the picture can show: within the view and the same margins the land keeps standing (render3d/land.ts update)
     const v = o.view;
-    const shown = v ? (x: number, y: number): boolean => Math.abs(x / TILE - v.x) < v.spanX + VIEW_SIDE && y / TILE > v.z - v.spanZ - VIEW_FAR && y / TILE < v.z + v.spanZ + VIEW_NEAR : (): boolean => true;
+    const shown = v ? (x: number, y: number): boolean => inView(v.x, v.z, v.spanX, v.spanZ, x / TILE, y / TILE) : (): boolean => true;
     for (const s of o.statues ?? []) cast.person(STATUE_LOOK, STATUE_SWORD, true, s.x, s.y, 0.2, { clip: 'idle', t: 0.2, loop: false }, { h: s.h, lift: s.lift, tint: s.tint });
     for (const c of o.colossi ?? []) if (Math.hypot(c.x * TILE - w.player.x, c.z * TILE - w.player.y) < COLOSSUS_SEEN + c.h * TILE) cast.colossus(c);
     this.syncHero(cast, w, dt, time, o.look, o.weapon, o);
