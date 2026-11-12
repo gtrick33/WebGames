@@ -23,10 +23,10 @@ import { npcLookOf } from '../render/sprites';
 /**
  * How big everyone is drawn, against how big they were until 1.0: the hero, the people of the land, every foe and
  * boss, the pets and the mounts, all by the same share so they keep their sizes beside each other (the owner: "make
- * all the npcs smaller including the hero: around 15% smaller please, or even 20, they feel too big now"). Only how
+ * all the npcs smaller including the hero: around 15% smaller please, or even 20, they feel too big now", and then "by another 5%"). Only how
  * they are drawn: how wide the rules take them to be (who can be hit from where, who fits through what) is as it was.
  */
-export const FIGURE = 0.83;
+export const FIGURE = 0.79;
 /** A figure's height in world pixels, from how wide the rules say it is. */
 export const heightFromRadius = (r: number, size = 1): number => (r * 2.5 + 16) * size * FIGURE;
 /** A person's height in world pixels. */

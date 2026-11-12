@@ -131,8 +131,8 @@ export class Renderer {
   }
 
   /**
-   * Fits the view to the element: about 206 world pixels tall on phones (bigger figures) and 286 on
-   * desktops (240 and 196 until 1.0: the owner asked for the camera 10 to 15% further out on a desk, then 5% more on both), never less than 150 across the short side.
+   * Fits the view to the element: about 216 world pixels tall on phones (bigger figures) and 300 on
+   * desktops (240 and 196 until 1.0: the owner asked for the camera 10 to 15% further out on a desk, then 5% more on both, twice), never less than 150 across the short side.
    */
   /** The view's size in CSS pixels (what the HUD is laid out in). */
   get viewW(): number {
@@ -146,7 +146,7 @@ export class Renderer {
     const devW = Math.max(1, Math.round(cssW * dpr));
     const devH = Math.max(1, Math.round(cssH * dpr));
     const landscape = devW >= devH;
-    let total = (landscape ? devH : devW * 1.25) / (touch ? 206 : 286);
+    let total = (landscape ? devH : devW * 1.25) / (touch ? 216 : 300);
     total = Math.min(total, Math.min(devW, devH) / 150);
     total = Math.max(0.5, total);
     this.cssW = Math.max(1, cssW);

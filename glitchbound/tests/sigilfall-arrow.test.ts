@@ -27,8 +27,8 @@ describe('the arrow to a quest out of sight', () => {
 
 describe('how big everyone is drawn', () => {
   it('is about a sixth smaller than it was, people and creatures by the same share', () => {
-    expect(FIGURE).toBeGreaterThanOrEqual(0.8);
-    expect(FIGURE).toBeLessThanOrEqual(0.85);
+    expect(FIGURE).toBeGreaterThanOrEqual(0.75);
+    expect(FIGURE).toBeLessThanOrEqual(0.82);
     expect(PERSON_H).toBeCloseTo(36 * FIGURE);
     expect(heightFromRadius(8)).toBeCloseTo(36 * FIGURE);
     expect(heightFromRadius(20, 1.5)).toBeCloseTo(66 * 1.5 * FIGURE);
