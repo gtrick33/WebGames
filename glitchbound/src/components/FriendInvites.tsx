@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { getGame } from '../catalog/catalog';
 import { useT } from '../i18n';
 import { api } from '../platform/account';
 import type { FriendInvite } from '../platform/apiTypes';
+import { anyInvitesClaimed, inviteClaimsVersion, invitesClaimed, watchInviteClaims } from '../platform/friends';
 import { Link } from '../router/router';
 import './Pins.css';
 
@@ -16,19 +17,26 @@ export function FriendInvites() {
   useEffect(() => {
     let cancelled = false;
     const check = (): void => {
-      if (document.hidden) return;
+      // (a game open in this tab asks for itself, and says its player is in it: the bar asking too would say, every
+      // other time, that they are only on the site)
+      if (document.hidden || anyInvitesClaimed()) return;
       api<{ invites: FriendInvite[] }>('/api/friends/invites')
         .then((r) => !cancelled && setInvites(r.invites))
         .catch(() => undefined);
     };
     check();
     const id = window.setInterval(check, CHECK_MS);
+    // (the game closed: the bar takes over at once, not up to 45 seconds later)
+    const stop = watchInviteClaims(check);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      stop();
     };
   }, []);
-  const invite = invites[0];
+  // (a game that shows its invitations inside itself keeps them while it is open: platform/friends.ts)
+  useSyncExternalStore(watchInviteClaims, inviteClaimsVersion, inviteClaimsVersion);
+  const invite = invites.find((i) => !invitesClaimed(i.game));
   if (!invite) return null;
   const done = (): void => {
     setInvites((list) => list.filter((i) => i.id !== invite.id));

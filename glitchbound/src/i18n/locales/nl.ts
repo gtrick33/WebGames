@@ -2267,6 +2267,8 @@ const nl: string[] = [
   'Luister: je vrienden zeggen hun hints hardop.',
   'Luister naar de hints en typ dan je gok.',
   'Geen tips behalve de hints! {name} raadt.',
+  'nu online',
+  'in {game}',
 ];
 
 export default nl;

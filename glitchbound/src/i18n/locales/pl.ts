@@ -2267,6 +2267,8 @@ const pl: string[] = [
   'Słuchaj: znajomi powiedzą swoje podpowiedzi na głos.',
   'Wysłuchaj podpowiedzi, a potem wpisz odpowiedź.',
   'Żadnych wskazówek poza podpowiedziami! {name} zgaduje.',
+  'teraz online',
+  'w {game}',
 ];
 
 export default pl;

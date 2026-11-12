@@ -2267,6 +2267,8 @@ const es: string[] = [
   'Escucha: tus amigos dirán sus pistas en voz alta.',
   'Escucha las pistas y luego escribe tu respuesta.',
   '¡Ninguna ayuda aparte de las pistas! {name} está adivinando.',
+  'en línea ahora',
+  'en {game}',
 ];
 
 export default es;

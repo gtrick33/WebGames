@@ -12,6 +12,7 @@ import { cleanName, HAIRS, SKINS, type Body, type Face } from '../progress/chara
 import { Doll } from './Doll';
 import { heldWeapon, heroDollUrl, heroLook } from '../render/sprites';
 import { CharacterSelect } from './CharacterSelect';
+import { InviteCards } from './Friends';
 import { SkillIcon } from './common';
 import { RiftScreen } from './RiftScreen';
 import { ScreenGate } from './ScreenGate';
@@ -181,6 +182,7 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
         </div>
       )}
       {engine.party && !engine.invite && <p className="rb-notice" role="status">You’re still in party {engine.party.link.code}. Choose a hero to go back to it.</p>}
+      <InviteCards engine={engine} />
       {engine.invite && (
         <p className="rb-notice is-invite" role="status">
           A friend invited you to their party (code {engine.invite}). Choose a hero, or make one, to join them.
@@ -238,6 +240,8 @@ export function CreateScreen({ engine }: { engine: SigilEngine }) {
   const open = classOpen(cls, me);
   return (
     <div className="rb-create">
+      {/* (a friend's invitation shows here too: it waits for the hero being made) */}
+      <InviteCards engine={engine} />
       <div className="rb-create-head">
         <button className="rb-btn is-small is-ghost" onClick={() => engine.toTitle()}>
           ← Back

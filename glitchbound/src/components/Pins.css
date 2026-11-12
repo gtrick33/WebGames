@@ -420,6 +420,19 @@
   font-size: 13.5px;
   color: var(--fg-2);
 }
+/* a friend who is here right now: said in green, after their rank and points */
+.friend-who .friend-online {
+  color: #178a48;
+  font-weight: 700;
+}
+:root[data-theme='dark'] .friend-who .friend-online {
+  color: #6fd07a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .friend-who .friend-online {
+    color: #6fd07a;
+  }
+}
 .friend-actions {
   display: flex;
   flex-wrap: wrap;

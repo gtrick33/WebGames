@@ -2267,6 +2267,8 @@ const de: string[] = [
   'Hör zu: Deine Freunde sagen ihre Hinweise laut.',
   'Hör dir die Hinweise an und tippe dann deinen Tipp.',
   'Keine Tipps außer den Hinweisen! {name} rät.',
+  'jetzt online',
+  'in {game}',
 ];
 
 export default de;

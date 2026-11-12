@@ -35,6 +35,8 @@ import type { Interactable } from './sim/types';
 import { emptyInput, World, type InputFrame } from './sim/world';
 import { advanceScene, endScene } from './sim/scene';
 import { applyPreset, PRESETS } from './progress/presets';
+import { claimInvites, friendsApi } from '../../platform/friends';
+import type { FriendInvite, FriendsView } from '../../platform/apiTypes';
 import { resetParagon, spendParagon, type ParaStat } from './progress/paragon';
 import { CoopSession, type Role } from './net/coop';
 import { Link, type LinkState } from './net/link';
@@ -162,6 +164,22 @@ const FRAME_SHIFT = 0.1;
 /** When the game looks for game masters' orders. */
 const GM_FIRST_MS = 6_000;
 const GM_EVERY_MS = 90_000;
+/**
+ * How often the game asks whether a friend wants this player (platform/friends.ts). Asking also tells friends the
+ * player is here, in Sigilfall. Often enough that an invitation feels like it arrived, cheap enough to keep up: one
+ * small request, and nothing while the tab is hidden.
+ */
+const SOCIAL_FIRST_MS = 4_000;
+const SOCIAL_EVERY_MS = 20_000;
+/** How long a friend's row says "Invited" after asking them. */
+export const ASKED_MS = 60_000;
+/** Why a friend's code didn't work, in the Friends page's own words (src/pages/FriendsPage.tsx). */
+const FRIEND_ERRORS: Record<string, string> = {
+  unknown_code: 'That code doesn’t work. Check it with your friend.',
+  own_code: 'That’s your own code.',
+  too_many: 'That friends list is full.',
+  sign_in: 'Sign in to add friends.',
+};
 
 /** How long a toast stays (ms): loot and hints longer, to be read. */
 const toastTime = (tone: Toast['tone']): number => (tone === 'loot' ? 5000 : tone === 'hint' ? 6000 : 3600);
@@ -219,6 +237,18 @@ export class SigilEngine {
   private hidden = false;
   /** The co-op party this hero is in, and the run it is fighting (null playing alone). */
   party: PartyState | null = null;
+  /**
+   * The player's friends on the site, as the party panel shows them (ui/Friends.tsx): who is online, and who is in
+   * this game. Asked for when the panel opens and kept fresh while it is open; a guest has none. `asked` is when
+   * each friend was last invited from here.
+   */
+  friends: { view: FriendsView | null; state: 'idle' | 'loading' | 'ready' | 'offline'; asked: Record<string, number> } = { view: null, state: 'idle', asked: {} };
+  /** What friends are asking right now (a party to join): a card over the game until it is answered. */
+  invites: FriendInvite[] = [];
+  private inviteDone = new Set<number>();
+  private socialStart = 0;
+  private socialTimer = 0;
+  private stopClaim: () => void = () => undefined;
   coop: CoopSession | null = null;
   /** The party's run this game last started (a new one in the room's view starts the next). */
   private partyRun = 0;
@@ -368,6 +398,7 @@ export class SigilEngine {
     this.kbm.onUi = (k) => this.uiKey(k);
     this.last = performance.now();
     this.startGm();
+    this.startSocial();
     this.syncShop();
     this.stopShop = watchSigilfallShop(() => this.syncShop());
     const loop = (t: number): void => {
@@ -385,6 +416,9 @@ export class SigilEngine {
     this.stopShop();
     window.clearTimeout(this.gmStart);
     window.clearInterval(this.gmTimer);
+    window.clearTimeout(this.socialStart);
+    window.clearInterval(this.socialTimer);
+    this.stopClaim();
     cancelAnimationFrame(this.raf);
     document.removeEventListener('visibilitychange', this.onVisibility);
     window.removeEventListener('pagehide', this.onPageHide);
@@ -1615,6 +1649,123 @@ export class SigilEngine {
     if (h.level < COOP_LEVEL) return `Riftstone runs with friends are for heroes at level ${COOP_LEVEL}.`;
     if (h.keystone < 1) return 'Clear Duskspire on Mythic to earn the Riftstone first.';
     return '';
+  }
+
+  /* ------------------------------------------------------------- friends */
+
+  private startSocial(): void {
+    // (the game shows its own invitations: the site's bar leaves them to it while it is open)
+    this.stopClaim = claimInvites('sigilfall');
+    this.socialStart = window.setTimeout(() => void this.checkSocial(), SOCIAL_FIRST_MS);
+    this.socialTimer = window.setInterval(() => void this.checkSocial(), SOCIAL_EVERY_MS);
+  }
+
+  /**
+   * Asks whether a friend wants this player, which also tells friends they are here; and keeps the friends list
+   * fresh while the party panel is open. A guest has neither, and a hidden tab asks nothing (so a player who put
+   * the game away is offline to their friends a couple of minutes later).
+   */
+  async checkSocial(): Promise<void> {
+    if (this.hidden) return;
+    if (!account.get().me) {
+      if (this.invites.length || this.friends.view) {
+        this.invites = [];
+        this.friends = { view: null, state: 'idle', asked: {} };
+        this.bump();
+      }
+      return;
+    }
+    try {
+      const got = (await friendsApi.invites('sigilfall')).filter((i) => i.game === 'sigilfall' && !!i.code && !this.inviteDone.has(i.id));
+      const fresh = got.some((i) => !this.invites.some((x) => x.id === i.id));
+      if (fresh || got.length !== this.invites.length) {
+        this.invites = got;
+        if (fresh) this.sound.play('quest');
+        this.bump();
+      }
+    } catch {
+      /* offline: it asks again in a moment */
+    }
+    if (this.ui.panel === 'party') void this.refreshFriends();
+  }
+
+  /** Fetches the friends list (the party panel asks as it opens). */
+  async refreshFriends(): Promise<void> {
+    if (!account.get().me || this.friends.state === 'loading') return;
+    if (!this.friends.view) {
+      this.friends = { ...this.friends, state: 'loading' };
+      this.bump();
+    }
+    try {
+      const view = await friendsApi.list();
+      this.friends = { ...this.friends, view, state: 'ready' };
+    } catch {
+      this.friends = { ...this.friends, state: this.friends.view ? 'ready' : 'offline' };
+    }
+    this.bump();
+  }
+
+  /**
+   * Adds a friend by the code they gave: straight onto the player's GlitchBound friends list, the same one the
+   * site's Friends page shows. Returns '' when it worked, else what went wrong, in words.
+   */
+  async addFriend(code: string): Promise<string> {
+    try {
+      const view = await friendsApi.add(code);
+      this.friends = { ...this.friends, view, state: 'ready' };
+      this.bump();
+      return '';
+    } catch (e) {
+      return FRIEND_ERRORS[(e as { code?: string } | null)?.code ?? ''] ?? 'That didn’t work. Try again in a moment.';
+    }
+  }
+
+  /** Asks a friend into the party. With no party yet, a questing party is opened first (any level can join one). */
+  async inviteFriend(id: string): Promise<void> {
+    if (!this.hero) return;
+    if (!this.party) await this.createParty('party');
+    const code = this.party?.link.code;
+    if (!code) return;
+    this.friends = { ...this.friends, asked: { ...this.friends.asked, [id]: Date.now() } };
+    this.bump();
+    try {
+      await friendsApi.invite(id, 'sigilfall', code);
+    } catch {
+      const asked = { ...this.friends.asked };
+      delete asked[id];
+      this.friends = { ...this.friends, asked };
+      this.toast('The invitation didn’t go out. Try again in a moment.', 'warn');
+      this.bump();
+    }
+  }
+
+  /**
+   * Takes a friend's invitation: into their party, here and now, with its panel open. From the hero list it waits
+   * for a hero to be chosen, as an invitation by link does.
+   */
+  acceptInvite(id: number): void {
+    const inv = this.invites.find((i) => i.id === id);
+    this.answerInvite(id);
+    if (!inv?.code) return;
+    if (this.hero && this.ui.screen === 'game') {
+      this.joinParty(inv.code);
+      this.openPanel('party');
+    } else {
+      this.invite = inv.code.toUpperCase();
+      this.bump();
+    }
+  }
+
+  /** Turns an invitation down: it goes, and the friend is told nothing. */
+  declineInvite(id: number): void {
+    this.answerInvite(id);
+  }
+
+  private answerInvite(id: number): void {
+    this.inviteDone.add(id);
+    this.invites = this.invites.filter((i) => i.id !== id);
+    void friendsApi.done(id).catch(() => undefined);
+    this.bump();
   }
 
   /** Opens a new party room and joins it (the host): for a Riftstone run, or questing together. */

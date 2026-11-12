@@ -93,6 +93,10 @@ export interface FriendRow extends RowLooks {
   rank: string;
   lastGame: string | null;
   lastAt: number | null;
+  /** Their tab was in front of them in the last couple of minutes (server/friends.ts). Older servers don't say. */
+  online?: boolean;
+  /** The game they are in while they are online ('sigilfall'), or null for the site. */
+  onlineIn?: string | null;
 }
 
 export interface FriendsView {
@@ -106,6 +110,8 @@ export interface FriendInvite {
   game: string;
   from: string;
   href: string;
+  /** The room's code: a game that shows the invitation inside itself joins by it. Older servers don't send it. */
+  code?: string;
 }
 
 export interface PinsView {

@@ -98,7 +98,7 @@ const pl: LegalText = {
     deleteMe: 'W każdej chwili możesz usunąć swoje konto i wszystkie te dane na <profile>swoim profilu</profile>.',
     deleteGuest: 'W każdej chwili możesz usunąć swoje konto i wszystkie te dane na swoim profilu.',
     friendsH: 'Znajomi i twoja półka',
-    friends: 'Znajomego dodajesz kodem lub linkiem, który ci dał; nikt nie może cię wyszukać. Twoi znajomi widzą twój pseudonim, poziom, Półkę z trofeami, twoje wyniki w rankingach znajomych i grę, w którą grałeś ostatnio. Znajomy może zaprosić cię do swojego pokoju, bez własnej wiadomości. Usunięcie lub zablokowanie kogoś działa od razu, a usunięcie konta usuwa to wszystko.',
+    friends: 'Znajomego dodajesz kodem lub linkiem, który ci dał; nikt nie może cię wyszukać. Twoi znajomi widzą twój pseudonim, poziom, Półkę z trofeami, twoje wyniki w rankingach znajomych i grę, w którą grałeś ostatnio. Widzą też, czy jesteś teraz online i w jakiej grze. Znajomy może zaprosić cię do swojego pokoju, bez własnej wiadomości. Usunięcie lub zablokowanie kogoś działa od razu, a usunięcie konta usuwa to wszystko.',
     challengesH: 'Wyzwania znajomych',
     challenges: 'Gdy zaczynasz wyzwanie lub do niego dołączasz, nazwa, pod którą grasz, i twoje wyniki są zapisywane na naszym serwerze, żeby każdy w wyzwaniu mógł je zobaczyć, razem z losowym kluczem z tej przeglądarki, który trzyma twoje miejsce. Ten klucz jest zapisany w pamięci tej przeglądarki i w jednym niezbędnym pliku cookie (<code>gb_guest</code>, który może odczytać tylko nasz serwer, do 400 dni), żebyś zachował swoje miejsca, nawet jeśli przeglądarka wyczyści swoją pamięć; usunięcie danych GlitchBound powyżej usuwa oba. Wyzwania są usuwane mniej więcej miesiąc po zakończeniu.',
     roomsH: 'Pokoje imprezowe i Discord',
