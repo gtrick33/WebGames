@@ -317,7 +317,7 @@ export const BOSSES: Record<string, BossDef> = {
     sprite: 'gnasher',
     hp: 3800,
     dmg: 29,
-    radius: 11,
+    radius: 14,
     xp: 600,
     gold: [90, 140],
     phases: [
@@ -326,8 +326,8 @@ export const BOSSES: Record<string, BossDef> = {
         speed: 52,
         rest: [0.7, 1.1],
         patterns: [
-          // two bites, a lunge with each
-          { id: 'cleave', w: 3, cd: 2.6, p: { swings: 2, r: 36, arc: 0.8, wind: 0.5, gap: 0.12, lunge: 30, mul: 1 } },
+          // two bites, a lunge with each, from his jaws (`ahead`), wide enough to see past his own body
+          { id: 'cleave', w: 3, cd: 2.6, p: { swings: 2, r: 52, arc: 0.85, ahead: 30, wind: 0.5, gap: 0.12, lunge: 30, mul: 1 } },
           { id: 'charge', w: 2, cd: 5, p: { stun: 0.8 } },
           // under the floor after the hero (bone heaps in the kennels draw him up: sim/patterns/gallows.ts)
           { id: 'gallows:burrow', w: 3, cd: 11, p: { time: 4.5, speed: 92, erupt: 0.6 } },
@@ -340,7 +340,7 @@ export const BOSSES: Record<string, BossDef> = {
         rest: [0.55, 0.9],
         enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['hill-wolf', 'hill-wolf'] } }, { id: 'gallows:burrow', w: 1, cd: 0, p: { time: 5, speed: 100, erupt: 0.55 } }],
         patterns: [
-          { id: 'cleave', w: 3, cd: 2.2, p: { swings: 3, r: 36, arc: 0.8, wind: 0.45, gap: 0.1, lunge: 30, mul: 1 } },
+          { id: 'cleave', w: 3, cd: 2.2, p: { swings: 3, r: 52, arc: 0.85, ahead: 30, wind: 0.45, gap: 0.1, lunge: 30, mul: 1 } },
           { id: 'tripleCharge', w: 2, cd: 6, p: { count: 2, wind: 0.6, speed: 320, len: 150, stun: 0, mul: 1.2 } },
           { id: 'gallows:burrow', w: 3, cd: 9, p: { time: 4.5, speed: 102, r: 46, erupt: 0.55 } },
           { id: 'summon', w: 1, cd: 22, p: { enemies: ['hill-wolf'] } },

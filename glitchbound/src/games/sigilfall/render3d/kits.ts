@@ -1,4 +1,5 @@
 import type { MountDef } from '../data/mounts';
+import type { Beast } from './beast';
 import type { Paint, Wear } from './repaint';
 
 /**
@@ -37,9 +38,10 @@ export interface Kit {
    * What a great beast wears or carries (a boss's barding, trophies, a shell): props fixed to it, turned with it. Each
    * is placed `x` to its right, `y` up and `z` forward and sized `h` long (its longest side), all as shares of the
    * beast's own height;
-   * `turn` turns it about its own upright (radians), `tipX`/`tipZ` tip it forward and sideways.
+   * `turn` turns it about its own upright (radians), `tipX`/`tipZ` tip it forward and sideways; `both` draws it
+   * from behind as well (a wall banner has only a front, and vanished when the beast turned away).
    */
-  gear?: { m: string; x?: number; y: number; z?: number; h: number; tint?: string; turn?: number; tipX?: number; tipZ?: number }[];
+  gear?: { m: string; x?: number; y: number; z?: number; h: number; tint?: string; turn?: number; tipX?: number; tipZ?: number; both?: boolean }[];
   /**
    * Built as a mount is (render3d/mountKit.ts): a great beast made the way the drakes are made, with their horns,
    * blades, wings, plates and light, sized and moved as a creature (it walks, strikes and falls as one).
@@ -53,6 +55,8 @@ export interface Kit {
   paint?: readonly Paint[];
   /** What is built onto it, on its head: a crown, eyes alight. They move with the head, as its own. */
   wears?: readonly Wear[];
+  /** An animal's coat, markings, eyes and what it has that its plain model hasn't (render3d/beast.ts). */
+  beast?: Beast;
 }
 
 const ASH = '#b9b4bf';
@@ -193,21 +197,47 @@ put('storm-wisp', { k: 'wisp', tint: ICE, size: 0.7, float: 0.35 });
 put('spire-mote', { k: 'wisp', tint: VOID, size: 0.7, float: 0.35 });
 put('spire-echo', { k: 'vampire', tint: VOID, ghost: 0.7, float: 0.3, ...CASTER });
 put('the-grey-lady', { k: 'witch', tint: PALE, ghost: 0.72, float: 0.3, ...CASTER });
+/*
+ * The animals, each painted and dressed as its kind (render3d/beast.ts): a coat with its belly, back, socks and muzzle,
+ * eyes, and what the plain model hasn't (tusks, a bristled ridge, a mane, curled horns). A model so made is no longer
+ * tinted whole.
+ */
+const WOLF: Beast = { coat: '#8f8c92', under: '#ddd6ca', back: '#4b4850', legs: '#6c676a', muzzle: '#e6dfd2', ears: '#37333a', tail: '#3b383e', eyes: { color: '#ffc23a' }, ridge: { color: '#3d3a42', size: 0.75 }, fangs: true };
+const BEASTS = {
+  wolf: WOLF,
+  boneHound: { coat: '#cfc6b4', under: '#efe8d8', back: '#8f8676', legs: '#9a917f', muzzle: '#f2ecde', nose: '#3a2e2a', ears: '#6f6656', tail: '#8f8676', eyes: { color: '#ff5a3a' }, ridge: { color: '#f2ead2', size: 1.05 }, fangs: true },
+  blightWolf: { coat: '#5c6a48', under: '#8a9a6a', back: '#2f3a26', legs: '#3a4630', muzzle: '#93a274', eyes: { color: '#c8ff5a' }, pattern: { kind: 'seams', color: '#a8ff5a', lit: true, amount: 0.9 }, ridge: { color: '#263020', size: 0.9 }, fangs: true },
+  magmaHound: { coat: '#2b2325', under: '#4a3230', back: '#151012', legs: '#1c1516', muzzle: '#5a3a30', eyes: { color: '#ffd23a', size: 1.15 }, pattern: { kind: 'seams', color: '#ff7a1e', lit: true }, ridge: { color: '#ff9a3a', size: 1, lit: true }, fangs: true },
+  warHound: { coat: '#bdb6ae', under: '#e6e0d8', back: '#6f6862', legs: '#8a837c', muzzle: '#ebe5dc', ears: '#4a4440', tail: '#5f5852', eyes: { color: '#ff4a2a', size: 1.1 }, ridge: { color: '#4f4944', size: 1.1 }, fangs: true },
+  barghest: { coat: '#232028', under: '#3a3440', back: '#0f0d12', legs: '#15131a', muzzle: '#403848', eyes: { color: '#ff3a2a', size: 1.2 }, pattern: { kind: 'seams', color: '#c02a3a', lit: true, amount: 0.7 }, ridge: { color: '#0c0a0f', size: 1.2 }, fangs: true },
+  rimeHound: { coat: '#a9c8de', under: '#f6fcff', back: '#5d84a6', legs: '#7fa2be', muzzle: '#ffffff', nose: '#27384a', ears: '#3f6282', tail: '#f6fcff', eyes: { color: '#7fe0ff', size: 1.1 }, ridge: { color: '#e2f8ff', size: 0.85, lit: true } },
+  boar: { coat: '#4b3a30', under: '#7c6454', back: '#261c17', legs: '#1f1714', muzzle: '#6e5048', nose: '#8f6660', ears: '#2a1f1a', eyes: { color: '#ff9a3a', size: 0.9 }, tusks: 1.35, ridge: { color: '#19120f', size: 1.6 } },
+  russetBoar: { coat: '#b5683f', under: '#e2ac84', back: '#7a3f22', legs: '#4a2a1a', muzzle: '#c98a68', nose: '#8a4a3a', ears: '#6a3620', eyes: { color: '#2a1810', size: 0.9, dark: true }, tusks: 1, ridge: { color: '#5a2e18', size: 1.15 } },
+  frostRam: { coat: '#dfeefa', under: '#ffffff', back: '#bdd8ee', legs: '#3a4a5c', muzzle: '#33414f', nose: '#1a222c', ears: '#33414f', eyes: { color: '#7fe0ff' }, horns: { kind: 'ram', color: '#8fb6d8', size: 1.15 } },
+  stag: { coat: '#a8744a', under: '#eedfc4', back: '#7a5030', legs: '#4a3424', muzzle: '#eadac0', tail: '#ffffff', ears: '#5a3a22', eyes: { color: '#2a1c14', dark: true }, antlers: { skull: 0.42, color: '#e6d6b4' } },
+  blightedStag: { coat: '#6f7a58', under: '#9aa67c', back: '#3c4630', legs: '#2c3424', muzzle: '#a4ae86', eyes: { color: '#c8ff5a' }, pattern: { kind: 'seams', color: '#a8ff5a', lit: true, amount: 0.8 }, antlers: { skull: 0.42, color: '#3a3428' } },
+  lion: { coat: '#d9a45a', under: '#f6e2b4', back: '#b07a38', legs: '#c08a48', muzzle: '#f8ecd0', nose: '#5a3028', ears: '#8a5a2a', tail: '#d9a45a', tuft: '#5a3418', mane: { color: '#7a4a22', size: 1.25 }, eyes: { color: '#ffb02e' }, fangs: true },
+  panther: { coat: '#2d2b37', under: '#46424f', back: '#16151c', legs: '#201e28', muzzle: '#4a4654', nose: '#0c0b10', eyes: { color: '#7dff8a', size: 1.1 }, pattern: { kind: 'spots', color: '#0d0c12', amount: 0.85 }, fangs: true },
+  rat: { coat: '#7b756c', under: '#b9b1a5', back: '#4e4943', legs: '#c59a94', muzzle: '#a99f93', nose: '#e09a98', ears: '#d6a09a', tail: '#d9a6a0', eyes: { color: '#ff4a3a', size: 0.85 } },
+  cat: { coat: '#d9b98c', under: '#f4e6cc', back: '#a8824e', legs: '#c8a674', muzzle: '#f8eeda', nose: '#c8807a', eyes: { color: '#8aff9a' }, pattern: { kind: 'stripes', color: '#8a683c', amount: 0.75 } },
+  raptor: { coat: '#b8894e', under: '#ecd8a8', back: '#6a4526', legs: '#5a4030', muzzle: '#b8894e', nose: 'none', tail: '#3a2616', eyes: { color: '#ffe03a', size: 1.1 }, pattern: { kind: 'stripes', color: '#4a2e18', amount: 0.85 }, ridge: { color: '#c8402a', size: 1 }, fangs: true },
+} satisfies Record<string, Beast>;
+
 // the risen beasts of the Host
-put('hound grave-hound barrow-hound pale-hound grave-wolf', { k: 'a_wolf', tint: BONE, gain: 1.5 });
-put('blight-wolf', { k: 'a_wolf', tint: ROT, gain: 1.4 });
-put('magma-hound', { k: 'a_wolf', tint: FIRE, gain: 1.4 });
+put('hound grave-hound barrow-hound pale-hound grave-wolf', { k: 'a_wolf', beast: BEASTS.boneHound });
+put('blight-wolf', { k: 'a_wolf', beast: BEASTS.blightWolf });
+put('magma-hound', { k: 'a_wolf', beast: BEASTS.magmaHound });
 // Gallows Keep's war-hound: a scarred brute twice a wolf's size
 put('gnasher', {
   k: 'a_wolf',
-  tint: '#e4e0e8',
-  gain: 1.1,
-  size: 2.3,
+  beast: BEASTS.warHound,
+  // (he was 2.3 of a wolf: eight tiles of hound, too long to see his own attacks past, and too big to stride)
+  size: 1.3,
   gear: [
     // (the wolf stands 1 tall and runs from 1.1 behind to 0.95 ahead: its neck about 0.5 ahead, 0.7 up)
     // a great ash-pale war-wolf in the gang's black iron: a spiked collar, pauldrons, the gang's triple banner
     // raised from his back, trophies hung at his flanks
-    { m: 'banner_triple_red', y: 0.5, z: -0.3, h: 0.85 },
+    { m: 'banner_triple_red', y: 0.5, z: -0.3, h: 0.85, both: true },
     { m: 'w_shield_spikes', y: 0.42, z: 0.6, h: 0.4, tint: '#5a5660' },
     { m: 'BlackKnight_ShoulderLeft', x: 0.19, y: 0.46, z: 0.32, h: 0.32, tint: '#5a5660' },
     { m: 'BlackKnight_ShoulderRight', x: -0.19, y: 0.46, z: 0.32, h: 0.32, tint: '#5a5660' },
@@ -215,7 +245,7 @@ put('gnasher', {
     { m: 'skull', x: -0.24, y: 0.28, z: -0.05, h: 0.17, turn: -Math.PI / 2, tint: BONE },
   ],
 });
-put('rime-hound ice-wolf', { k: 'a_husky', tint: ICE });
+put('rime-hound ice-wolf', { k: 'a_husky', beast: BEASTS.rimeHound });
 put('bone-drake', { k: 'wyrm', tint: BONE, float: 0.5, size: 1.15 });
 put('ash-drake', { k: 'wyrm', tint: ASH, float: 0.5 });
 put('rotwing', { k: 'wyrm', tint: ROT, float: 0.5 });
@@ -241,7 +271,7 @@ put('the-runewarden', {
   ...SMASH,
   gear: [
     { m: 'Necromancer_Crown', y: 0.93, z: 0.02, h: 0.2, tint: '#d8d0f0' },
-    { m: 'w_hammer_D', y: 0.25, z: -0.3, h: 0.75, tipZ: 0.5, tint: '#b8a888' },
+    { m: 'w_hammer_D', y: 0.25, z: -0.16, h: 0.75, tipZ: 0.5, tint: '#b8a888' },
     { m: 'Rock_1_A', x: 0.3, y: 0.74, z: 0, h: 0.13, tint: '#ffd27a' },
     { m: 'Rock_1_A', x: -0.3, y: 0.74, z: 0, h: 0.13, tint: '#ffd27a' },
   ],
@@ -255,7 +285,7 @@ put('ossa-the-founder', {
   size: 1.55,
   ...SMASH,
   gear: [
-    { m: 'anvil', y: 0.6, z: -0.3, h: 0.36, tint: '#6a6670' },
+    { m: 'anvil', y: 0.6, z: -0.17, h: 0.36, tint: '#6a6670' },
     { m: 'w_hammer_C', x: 0.36, y: 0.28, z: 0.1, h: 0.6, tipZ: 0.35, tint: '#ffb070' },
     { m: 'bucket', x: -0.36, y: 0.38, z: 0.14, h: 0.2, tint: '#ff8a3a' },
   ],
@@ -285,7 +315,7 @@ put('old-sluicegut', {
   size: 1.7,
   ...SMASH,
   gear: [
-    { m: 'w_shield_round', y: 0.42, z: -0.3, h: 0.5, turn: Math.PI, tint: '#9a6a4a' },
+    { m: 'w_shield_round', y: 0.42, z: -0.17, h: 0.5, turn: Math.PI, tint: '#9a6a4a' },
     { m: 'mushroom_tanTall', x: 0.3, y: 0.72, z: -0.05, h: 0.2, tint: '#d8e0a0' },
     { m: 'mushroom_tanTall', x: -0.32, y: 0.7, z: 0, h: 0.17, tint: '#c8d890' },
     { m: 'mushroom_tanTall', x: 0.12, y: 0.82, z: -0.2, h: 0.14, tint: '#e0e8b0' },
@@ -312,22 +342,23 @@ put('mystic', { k: 'witch', look: 'folk-mystic', held: { kind: 'staff' }, ...CAS
 /* ------------------------------------------------------------------ giants and things of the land */
 put('frost-giant giant-huscarl giant-hurler jarl-hrimfang', { k: 'barbarian_large', tint: ICE, atk: 'chop2' });
 put('yeti', { k: 'golem', tint: '#eef4ff', ...SMASH });
-put('wolf', { k: 'a_wolf' });
+put('wolf', { k: 'a_wolf', beast: BEASTS.wolf });
 put('werewolf werewolf-howler moonfang', { k: 'werewolf' });
-put('boar', { k: 'a_wolf', tint: '#c8b8a8' });
-put('russet-boar', { k: 'fbx_pig', tint: '#b5683f', size: 0.86 });
+// (a boar is a boar: it was the wolf in a paler coat)
+put('boar', { k: 'fbx_pig', beast: BEASTS.boar });
+put('russet-boar', { k: 'fbx_pig', beast: BEASTS.russetBoar, size: 0.86 });
 put('grimtusk', { k: 'orc_brute', tint: '#8a7a6c', size: 1.4, ...SMASH });
-put('stag', { k: 'a_stag' });
-put('blighted-stag', { k: 'a_stag', tint: ROT });
-put('frost-ram', { k: 'fbx_sheep', tint: ICE });
+put('stag', { k: 'a_stag', beast: BEASTS.stag });
+put('blighted-stag', { k: 'a_stag', beast: BEASTS.blightedStag });
+put('frost-ram', { k: 'fbx_sheep', beast: BEASTS.frostRam });
 // (no great cat in the art set: a big hunter's body, its coat tawny, reads truer than a fox grown large)
-put('plains-lion', { k: 'a_wolf', tint: '#f0c27a', size: 1.3 });
-put('jungle-panther', { k: 'a_wolf', tint: '#4a4654', size: 1.2 });
+put('plains-lion', { k: 'a_wolf', beast: BEASTS.lion, size: 1.3 });
+put('jungle-panther', { k: 'a_wolf', beast: BEASTS.panther, size: 1.2 });
 put('griffon', { k: 'avian', tint: '#e0b868', size: 1.12 });
 put('cliff-roc', { k: 'avian', tint: '#b8895f', size: 1.25 });
 put('harpy storm-harpy', { k: 'avian' });
 put('carrion-crow gibbet-crow plague-crow', { k: 'bird', tint: '#57536c', size: 0.8, float: 0.45 });
-put('canyon-raptor', { k: 'fbx_raptor' });
+put('canyon-raptor', { k: 'fbx_raptor', beast: BEASTS.raptor });
 put('centaur-outrider', { k: 'a_horse', tint: '#caa27f', top: { k: 'top_centaur', clip: 'bow', y: 0.5, size: 0.72 } });
 put('centaur-warbringer', { k: 'a_horse', tint: '#8f6b52', top: { k: 'top_centaur', clip: 'idle', y: 0.5, size: 0.72 } });
 // small crawling things
@@ -342,7 +373,8 @@ put('clatterclaw', {
   k: 'crab',
   tint: '#6a1c14',
   gain: 1.15,
-  size: 2.1,
+  // (2.1 until the bosses were looked over: his legs reached a dozen tiles, three times the ground the rules give him)
+  size: 1.6,
   gear: [
     { m: 'ribcage', y: 0.3, z: -0.15, h: 1.35, tint: '#e0d6c0' },
     { m: 'skull', y: 0.25, z: -0.75, h: 0.85, turn: Math.PI, tipX: -0.6, tint: '#d8ccb0' },
@@ -382,14 +414,14 @@ put('gloomwing', {
     tier: 'shop',
   },
 });
-put('cistern-rat', { k: 'a_fox', tint: '#8a8880', size: 0.5 });
+put('cistern-rat', { k: 'a_fox', beast: BEASTS.rat, size: 0.5 });
 put('slime', { k: 'plant_warrior', tint: MOSS, size: 0.78 });
 put('slag-lump', { k: 'slime', tint: FIRE });
 put('cursed-hoard', { k: 'mimic' });
 put('kraken-spawn', { k: 'spider', tint: SEA, size: 0.8 });
-put('temple-viper', { k: 'viper' });
-put('mere-serpent', { k: 'serpent' });
-put('sand-wurm', { k: 'wurm' });
+put('temple-viper', { k: 'viper', size: 0.72 });
+put('mere-serpent', { k: 'serpent', size: 0.8 });
+put('sand-wurm', { k: 'wurm', size: 0.85 });
 put('naga-warrior', { k: 'naga_coil', top: { k: 'top_naga', clip: 'idle', y: 0.52, size: 0.66 } });
 put('the-coiled-queen', { k: 'naga_coil', size: 1.25, top: { k: 'top_naga', tint: GOLD, clip: 'cast', y: 0.52, size: 0.66 } });
 put('mirefin mirefin-oracle barnacle-brute deep-siren old-barnacle the-tide-lord', { k: 'monster', tint: SEA });
@@ -418,7 +450,7 @@ put('voidwalker', { k: 'ghost', tint: VOID, float: 0.3, ghost: 0.85, walk: 'skel
 put('ashkar-the-bound', { k: 'golem', tint: FIRE, size: 1.3, ...SMASH });
 // a druid's shapes
 put('bear', { k: 'werewolf', tint: '#b08560', size: 1.1 });
-put('cat', { k: 'a_fox', tint: '#d9b98c' });
+put('cat', { k: 'a_fox', beast: BEASTS.cat });
 put('moonkin', { k: 'avian', tint: '#a7a0d6' });
 // small folk
 put('chicken', { k: 'bird', size: 0.9 });
@@ -434,7 +466,7 @@ const BY_ENEMY: Record<string, Kit> = {
   'ash-archer': TABLE['hollow-hunter']!,
   'black-bess': { k: 'rogue_hooded', tint: DARK, size: 1.1 },
   hob: { k: 'werewolf', tint: '#b08a60', size: 1.1 },
-  barghest: { k: 'a_wolf', tint: DARK, size: 1.15 },
+  barghest: { k: 'a_wolf', beast: BEASTS.barghest, size: 1.15 },
   'obsidian-golem': { k: 'golem', tint: '#5c5868', ...SMASH },
   'the-drowned-mother': { k: 'ghost', tint: SEA, float: 0.45, ghost: 0.82, size: 1.15, walk: 'skelidle' },
   // the Hallow King's remembered (sim/patterns/hallow-king.ts): the hero's own beaten foes as the Ash Crown keeps them,

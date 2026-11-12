@@ -114,7 +114,7 @@ export function repaint(m: MeshData, joints: readonly string[], rules: readonly 
 }
 
 /** Where a bone's part of a model is, at rest: the box round every vertex that hangs from it and is still drawn. */
-function boxOf(m: MeshData, joint: number): { min: [number, number, number]; max: [number, number, number] } | null {
+export function boxOf(m: MeshData, joint: number): { min: [number, number, number]; max: [number, number, number] } | null {
   const min: [number, number, number] = [Infinity, Infinity, Infinity];
   const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
   const used = new Uint8Array(m.n);
@@ -132,7 +132,7 @@ function boxOf(m: MeshData, joint: number): { min: [number, number, number]; max
 }
 
 /** Triangles in the making: flat-shaded, each corner its own color; `lit` corners give their own light. */
-class Bits {
+export class Bits {
   pos: number[] = [];
   nor: number[] = [];
   col: number[] = [];
@@ -161,7 +161,7 @@ class Bits {
 }
 
 /** A model with `bits` added to it, hanging whole from one bone. */
-function withBits(m: MeshData, bits: Bits, joint: number): MeshData {
+export function withBits(m: MeshData, bits: Bits, joint: number): MeshData {
   const add = bits.pos.length / 3;
   const n = m.n + add;
   const pos = new Float32Array(n * 3);
@@ -284,7 +284,7 @@ function eyes(b: Bits, box: { min: number[]; max: number[] }, w: Wear): void {
 }
 
 /** A length of horn or thorn from `p0` to `p1`, four-sided, `r0` thick at its foot and `r1` at its end. */
-function prism(b: Bits, p0: readonly number[], p1: readonly number[], r0: number, r1: number, c0: readonly number[], c1: readonly number[], lit = false): void {
+export function prism(b: Bits, p0: readonly number[], p1: readonly number[], r0: number, r1: number, c0: readonly number[], c1: readonly number[], lit = false): void {
   const d = [p1[0]! - p0[0]!, p1[1]! - p0[1]!, p1[2]! - p0[2]!];
   const l = Math.hypot(d[0]!, d[1]!, d[2]!) || 1;
   // two directions square to it
