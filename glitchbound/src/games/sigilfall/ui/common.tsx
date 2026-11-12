@@ -41,7 +41,16 @@ export function Frame({ title, onClose, children, wide, className = '', label }:
     const before = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (!el.contains(document.activeElement)) (el.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]') ?? el.querySelector<HTMLElement>('.rb-frame-head .rb-x') ?? el).focus({ preventScroll: true });
     return () => {
-      if (before && before !== document.body && before.isConnected) before.focus({ preventScroll: true });
+      // back to where the keys were, if that was another panel or a conversation. Not to a button of the HUD: the
+      // button that opened the panel kept the keys once it was shut, and the next press of Space (the dodge) pressed
+      // that button and opened the panel again (the owner: "when you close the menu, if i hit space, it opens the menu
+      // again ... unfocus them on close"). There the keys go back to the game
+      if (before && before !== document.body && before.isConnected && before.closest('.rb-frame, .rb-dialogue, .rb-modal')) {
+        before.focus({ preventScroll: true });
+        return;
+      }
+      const a = document.activeElement;
+      if (a instanceof HTMLElement && a !== document.body) a.blur();
     };
   }, []);
   // Tab and Shift+Tab go round the panel's own controls

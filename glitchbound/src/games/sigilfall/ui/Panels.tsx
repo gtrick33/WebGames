@@ -393,9 +393,23 @@ export function ItemDetail({ engine, item, worn, confirm, onSalvage, onDone, act
   }, [h, item, slot, worn, reason]);
   return (
     <div className="rb-item" style={{ ['--rc' as string]: rarityColor(item.r) }}>
-      <div className={`rb-compare${compare ? ' is-two' : ''}`}>
+      {/* One card, and on it what wearing the piece changes: each of its stats with the difference from what is worn,
+          the stats that would be lost, and (below) the effects of the worn piece that would go with it. The worn
+          piece's own card stood beside it, and on a phone on its side the two of them squeezed the bag to a strip
+          (the owner: "the item comparison may be irrelevant, you can just keep what you're gaining and what you're
+          losing as stats and effects"). */}
+      <div className="rb-compare">
         <ItemCard item={item} compareTo={compare} label={worn ? 'Equipped' : compare ? (label ?? 'In your bag') : label} onClose={onDone} wornIds={new Set(Object.values(h.equip).flatMap((i) => (i ? [i.base] : [])))} />
-        {compare && <ItemCard item={compare} label="Equipped" compact against={item} />}
+        {compare && (
+          <div className="rb-swap">
+            <span className="rb-kicker">Instead of {itemName(compare)}</span>
+            {linesOnlyIn(compare, item).map((l) => (
+              <p key={l} className="rb-down-t rb-small">
+                You would lose: {l}
+              </p>
+            ))}
+          </div>
+        )}
         {!worn && !compare && !reason && <p className="rb-small rb-dim rb-icard-none">Nothing equipped in this slot.</p>}
       </div>
       {preview && (preview.hp !== 0 || preview.power !== 0) && (
@@ -608,27 +622,6 @@ function TalentsPanel({ engine }: { engine: SigilEngine }) {
           </div>
         </section>
         <div className="rb-talent-detail">
-          {node ? (
-            <>
-              <strong>
-                {node.name}{' '}
-                <span className="rb-dim">
-                  · rank {h.talents[node.id] ?? 0}/{node.ranks} · {cls.trees[node.tree].name}
-                  {node.row === TALENT_ROWS - 1 ? ' · capstone' : ''}
-                </span>
-              </strong>
-              <p>{node.text}</p>
-              {(h.talents[node.id] ?? 0) > 0 && modLines(node.mods.map((m) => scaleMod(m, h.talents[node.id] ?? 0))).length > 0 && <p className="rb-gold rb-small">Now: {modLines(node.mods.map((m) => scaleMod(m, h.talents[node.id] ?? 0))).join(' ')}</p>}
-              {cantLearn(h, node.id) ? (
-                <p className="rb-dim rb-small">{cantLearn(h, node.id)}</p>
-              ) : (
-                <button className="rb-btn is-gold" onClick={() => engine.learn(node.id)}>
-                  Learn {node.name}
-                </button>
-              )}
-            </>
-          ) : (
-            <>
               <p className="rb-small">
                 <b style={{ color: cls.trees[h.spec].color }}>{cls.trees[h.spec].passive.name}</b> ({cls.trees[h.spec].name}): {cls.trees[h.spec].passive.text}
               </p>
@@ -638,11 +631,67 @@ function TalentsPanel({ engine }: { engine: SigilEngine }) {
                 </p>
               )}
               <p className="rb-dim rb-small">
-                Pick a talent to read it. Each row opens after {ROW_COST} more points in its tree; the last row is the tree’s capstone. Your specialization’s tree comes first: the other two open after {SPEC_FOCUS} points in it.
+                Tap a talent to read it and learn it. Each row opens after {ROW_COST} more points in its tree; the last row is the tree’s capstone. Your specialization’s tree comes first: the other two open after {SPEC_FOCUS} points in it.
               </p>
-            </>
-          )}
         </div>
+      </div>
+      {node && <TalentCard engine={engine} node={node} onClose={() => setSel(null)} />}
+    </div>
+  );
+}
+
+/**
+ * A talent, opened: what it does, what it is doing at the hero's rank, and the button that learns it, in a card over
+ * the tree where it was tapped. It was read at the foot of the panel, a scroll away from the tree on a phone, and
+ * scrolled back from for every one looked at (the owner: "it would also be nice if the talents had pop up with the
+ * information about them and 'learn' button instead of having to scroll down every time"). It stays up while ranks
+ * are learned; a tap outside it, its cross or Escape puts it away.
+ */
+export function TalentCard({ engine, node, onClose }: { engine: SigilEngine; node: TalentNode; onClose: () => void }) {
+  const h = engine.hero!;
+  const cls = CLASSES[h.cls];
+  const tree = cls.trees[node.tree];
+  const rank = h.talents[node.id] ?? 0;
+  const why = cantLearn(h, node.id);
+  const now = rank > 0 ? modLines(node.mods.map((m) => scaleMod(m, rank))) : [];
+  const learn = useRef<HTMLButtonElement>(null);
+  const shut = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    (learn.current ?? shut.current)?.focus({ preventScroll: true });
+    const key = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape') return;
+      // (the card goes, not the whole panel with it)
+      e.stopPropagation();
+      onClose();
+    };
+    window.addEventListener('keydown', key, true);
+    return () => window.removeEventListener('keydown', key, true);
+  }, [node.id, onClose]);
+  return (
+    <div className="rb-talent-pop-wrap" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="rb-talent-pop" role="dialog" aria-modal="true" aria-label={node.name} style={{ ['--tc' as string]: tree.color }}>
+        <header>
+          <img src={talentIconUrl(h.cls, node, tree.color)} alt="" draggable={false} />
+          <div>
+            <strong>{node.name}</strong>
+            <span className="rb-small rb-dim">
+              Rank {rank}/{node.ranks} · {tree.name}
+              {node.row === TALENT_ROWS - 1 ? ' · capstone' : ''}
+            </span>
+          </div>
+          <button ref={shut} className="rb-x" onClick={onClose} aria-label="Close">
+            ×
+          </button>
+        </header>
+        <p>{node.text}</p>
+        {now.length > 0 && <p className="rb-gold rb-small">Now: {now.join(' ')}</p>}
+        {why ? (
+          <p className="rb-dim rb-small rb-talent-why">{why}</p>
+        ) : (
+          <button ref={learn} className="rb-btn is-gold" onClick={() => engine.learn(node.id)}>
+            Learn {node.name}
+          </button>
+        )}
       </div>
     </div>
   );
