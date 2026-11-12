@@ -160,7 +160,7 @@ export class Stage {
   }
 
   /** World pixels on the ground (lifted `h` world pixels) to CSS pixels on the screen. */
-  project(x: number, y: number, h = 0): { x: number; y: number } {
+  project(x: number, y: number, h = 0): { x: number; y: number; front?: boolean } {
     const e = this.vp.elements;
     const px = x / TILE;
     const py = h / TILE;
@@ -168,7 +168,8 @@ export class Stage {
     const w = e[3]! * px + e[7]! * py + e[11]! * pz + e[15]!;
     const nx = (e[0]! * px + e[4]! * py + e[8]! * pz + e[12]!) / w;
     const ny = (e[1]! * px + e[5]! * py + e[9]! * pz + e[13]!) / w;
-    return { x: ((nx + 1) / 2) * this.cssW, y: ((1 - ny) / 2) * this.cssH };
+    // (`front`: false for what is behind the camera, whose place on the screen comes out mirrored and means nothing)
+    return { x: ((nx + 1) / 2) * this.cssW, y: ((1 - ny) / 2) * this.cssH, front: w > 0 };
   }
 
   /** A point on the screen (CSS pixels) to where it falls on the ground, in world pixels. */
