@@ -197,6 +197,10 @@ describe('sigilfall in the wilds', () => {
     expect(h.quests[q.id]!.n).toBe(0);
     kill('hill-wolf');
     kill('hill-wolf');
+    // the pelts lie where the wolves fell, far from the hero: theirs when taken (tests/sigilfall-quest-drops.test.ts)
+    expect(w.drops.filter((d) => d.kind === 'quest' && d.label === 'Wolf Pelt').length).toBe(2);
+    expect(h.quests[q.id]!.state).toBe('active');
+    w.collectAll();
     expect(h.quests[q.id]!.state).toBe('done');
   });
 

@@ -527,6 +527,12 @@ export class Renderer {
         if (gh.cast && !gh.dead) this.bar(s.x, s.y + 8, 34, gh.cast.k, '#ffd36a');
       }
       for (const n of w.npcs) if (near(n.x, n.y)) this.drawNpcSigns(w, n, st);
+      // what a quest asks for, lying on the ground: its name over it
+      for (const d of w.drops) {
+        if (d.kind !== 'quest' || !d.label || !near(d.x, d.y)) continue;
+        const s = st.project(d.x, d.y, 16 + d.z);
+        this.label(d.label, s.x, s.y - 6, 10, '#ffe066');
+      }
     }
     if (st) {
       // (a boss's call is said over the top of the picture, in the HUD: a caption that would rise under it, "The

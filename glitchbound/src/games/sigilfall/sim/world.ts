@@ -162,6 +162,9 @@ export const RIDE_SPEED = 78 * 1.3;
 const PACE_EASES = 1.5;
 /** Riding: one speed for every mount (blueprint §6.4: no "best mount"), as a share of walking. */
 export const MOUNT_SPEED = RIDE_SPEED / WALK_SPEED;
+/** A quest's thing on the ground comes to a hero this near (world pixels), and to one anywhere after this long (seconds). */
+export const QUEST_DRAW = 70;
+export const QUEST_WAIT = 8;
 /** Calling a mount takes this long, standing still. */
 export const SUMMON_TIME = 0.6;
 /**
@@ -1704,10 +1707,11 @@ export class World {
       }
       if (p.dead || d.t < 0.35) continue;
       const dd = dist(d.x, d.y, p.x, p.y);
-      const magnet = d.kind === 'gold' || d.kind === 'orb' || d.kind === 'shard' || d.kind === 'potion' ? 40 : 0;
+      const called = d.kind === 'quest' && d.t > QUEST_WAIT;
+      const magnet = called ? Infinity : d.kind === 'quest' ? QUEST_DRAW : d.kind === 'gold' || d.kind === 'orb' || d.kind === 'shard' || d.kind === 'potion' ? 40 : 0;
       if (dd < magnet) {
         const a = Math.atan2(p.y - d.y, p.x - d.x);
-        const sp = 160 * dt;
+        const sp = Math.min(dd, (called ? 300 : d.kind === 'quest' ? 200 : 160) * dt);
         d.x += Math.cos(a) * sp;
         d.y += Math.sin(a) * sp;
       }
@@ -1728,7 +1732,7 @@ export class World {
     let salvaged = 0;
     for (const d of this.drops) {
       if (d.dead) continue;
-      if (d.kind === 'gold' || d.kind === 'shard' || d.kind === 'potion') this.pickUp(d);
+      if (d.kind === 'gold' || d.kind === 'shard' || d.kind === 'potion' || d.kind === 'quest') this.pickUp(d);
       else if (d.kind === 'item') {
         const item = d.item!;
         d.dead = true;
@@ -1778,6 +1782,17 @@ export class World {
         this.sfx('potion', 0.5);
         this.emit({ t: 'toast', text: `Potion (${h.potions}/${potionCap(h)})`, tone: 'loot' });
         this.emit({ t: 'save' });
+        break;
+      }
+      case 'quest': {
+        d.dead = true;
+        // (still wanted: the quest may have been finished, or given up, while this lay there)
+        const def = d.quest ? QUEST_DEFS[d.quest] : undefined;
+        const o = def && h.quests[d.quest!]?.state === 'active' ? currentObjective(h, def) : undefined;
+        if (o?.kind !== 'loot' || o.item !== d.label) break;
+        this.text(this.player.x, this.player.y - 26, `+ ${o.item}`, '#ffe066', false);
+        this.sfx('pickup', 0.6);
+        this.questProgress((x) => x === o);
         break;
       }
       case 'shard': {
@@ -1906,10 +1921,21 @@ export class World {
       const d = QUEST_DEFS[id];
       const o = d ? currentObjective(h, d) : undefined;
       if (o?.kind !== 'loot' || o.region !== here || !o.from.includes(e.def.id) || this.rand() >= o.chance) continue;
-      this.text(e.x, e.y - e.r - 12, `+ ${o.item}`, '#ffe066', false);
-      this.sfx('pickup', 0.5);
-      this.questProgress((x) => x === o);
+      this.dropQuestItem(e, id, o.item);
     }
+  }
+
+  /**
+   * What a quest asks for falls from the foe that carried it and lies where it fell, alight, for the hero to take
+   * (the owner: "itd be cool if the things you find where droppable or visible on the ground with some glow for the
+   * quests, currently i cant see some of the quest items im collecting"): it used to be counted the moment the foe
+   * died, a line of text over a body and nothing to see. It counts when it is picked up. It can't be lost: it comes
+   * to a hero who is near (QUEST_DRAW), to one anywhere after a while (QUEST_WAIT), and to one who is leaving
+   * (collectAll). Which way it falls goes by the foe, not by the dice, so the land's luck is what it was.
+   */
+  private dropQuestItem(e: Enemy, quest: string, label: string): void {
+    const a = e.id * 2.399963;
+    this.drops.push({ id: this.nextId++, kind: 'quest', x: e.x, y: e.y, vx: Math.cos(a) * 34, vy: Math.sin(a) * 34 * 0.6, z: 0, vz: 95, amount: 1, t: 0, dead: false, label, quest });
   }
 
   giveXp(n: number): void {

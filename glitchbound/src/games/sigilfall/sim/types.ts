@@ -489,7 +489,8 @@ export interface Trap {
 
 export interface Drop {
   id: number;
-  kind: 'gold' | 'item' | 'orb' | 'shard' | 'potion';
+  /** `quest`: a thing a quest asks for, fallen from a foe that carried one (World.dropQuestItem). */
+  kind: 'gold' | 'item' | 'orb' | 'shard' | 'potion' | 'quest';
   x: number;
   y: number;
   vx: number;
@@ -502,6 +503,9 @@ export interface Drop {
   dead: boolean;
   /** Bag was full: don't keep telling. */
   nagged?: boolean;
+  /** A quest's thing: what it is called, and whose quest it is for. */
+  label?: string;
+  quest?: string;
 }
 
 export interface Chest {

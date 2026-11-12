@@ -796,6 +796,14 @@ export class Effects {
       const lit = w.fireLit(f);
       if (lit && sc.near(f.x, f.y)) this.blaze(fx, f, lit, sc.land?.roofAt(f.x / TILE, f.y / TILE) ?? [], sc.time, tone);
     }
+    // what a quest asks for, lying where it fell: a shaft of gold over it and a pool of light under, pulsing, so it is
+    // seen across a field (the owner couldn't see what they were collecting)
+    for (const d of w.drops) {
+      if (d.kind !== 'quest' || !sc.near(d.x, d.y)) continue;
+      const beat = 0.75 + Math.sin(sc.time * 5 + d.x) * 0.2;
+      fx.put({ kind: FX.shaft, x: d.x, y: d.y, base: true, w: 16, h: 70, a: QUEST_GOLD, alpha: 0.85 * beat, seed: d.x * 0.1 });
+      fx.put({ kind: FX.glow, x: d.x, y: d.y, flat: true, w: 40, a: QUEST_GOLD, alpha: 0.7 * beat });
+    }
     for (const d of w.drops) {
       if (d.kind !== 'item' || !d.item || !sc.near(d.x, d.y)) continue;
       const color = BEAM[d.item.r] ?? '#ffffff';
@@ -1339,6 +1347,8 @@ export class Effects {
 }
 
 /** The beam over an item on the ground. */
+/** The light of a thing a quest asks for, where it lies. */
+const QUEST_GOLD = '#ffe066';
 const BEAM: Record<string, string> = { common: '#e8e4d8', uncommon: '#7fe06a', rare: '#6fb4ff', epic: '#c58bff', legendary: '#ffae42' };
 
 /** A friendly look's own colors (the rest take their damage type's). */
