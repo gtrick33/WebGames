@@ -23,6 +23,17 @@ export interface SpeechCard {
   tailX: number | null;
 }
 
+/** A box on the view, in its CSS pixels: a card, or a piece of the HUD the picture's words keep clear of. */
+export interface ViewBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Do two boxes meet (or come within `gap` of each other)? */
+export const boxesMeet = (a: ViewBox, b: ViewBox, gap = 0): boolean => a.x < b.x + b.w + gap && a.x + a.w + gap > b.x && a.y < b.y + b.h + gap && a.y + a.h + gap > b.y;
+
 /** How a string is measured: its width at a size and a weight, in the same pixels as the view. */
 export type Measure = (text: string, px: number, weight: number) => number;
 
@@ -51,7 +62,21 @@ export const speechSize = (viewW: number, viewH: number): number => clamp(Math.m
  * Lays a line out over a head at (headX, headY). `top` and `bottom` are what the edges of the view keep for
  * themselves (a scene's bars, the HUD's rows), `left` and `right` what its sides do.
  */
-export function layoutSpeech(o: { text: string; name: string; headX: number; headY: number; viewW: number; viewH: number; top: number; bottom: number; left?: number; right?: number; measure: Measure }): SpeechCard {
+export interface SpeechAsk {
+  text: string;
+  name: string;
+  headX: number;
+  headY: number;
+  viewW: number;
+  viewH: number;
+  top: number;
+  bottom: number;
+  left?: number;
+  right?: number;
+  measure: Measure;
+}
+
+export function layoutSpeech(o: SpeechAsk): SpeechCard {
   const fs = speechSize(o.viewW, o.viewH);
   const nameFs = Math.round(fs * 0.82 * 10) / 10;
   const lineH = Math.round(fs * 1.32);
@@ -80,4 +105,36 @@ export function layoutSpeech(o: { text: string; name: string; headX: number; hea
   y = y0;
   const tailX = !moved && o.headX > x + 12 && o.headX < x + w - 12 ? o.headX : null;
   return { x, y, w, h, lines, fs, nameFs, lineH, padX, padY, textY: y + padY + nameH + Math.round(fs * 0.98), tailX };
+}
+
+/** The pieces of the HUD a spoken line looks out for (ui/hudBoxes.ts measures them; a piece not on the screen is absent). */
+const TAKEN = ['quest', 'map', 'thumbs', 'potion'] as const;
+
+/**
+ * A line laid out as `layoutSpeech` does, then moved off the quest if it would be written across it. On a phone held
+ * on its side the quest sits under the hero's bars and reaches into the open middle the words are kept to, so a shout
+ * from the left of the picture covered the end of the objective. The line goes beside the quest instead: along the
+ * top of the picture as far as the map when it stays above the thumb's buttons, else only as far as those buttons, if
+ * that doesn't break it into a column. Where neither fits the line stays where it was, and the HUD lets the quest fade
+ * while the words are up (ui/GameScreen.tsx Tracker).
+ */
+export function layoutSpeechClear(o: SpeechAsk, hud: ReadonlyMap<string, ViewBox> | null): SpeechCard {
+  const card = layoutSpeech(o);
+  const quest = hud?.get('quest');
+  if (!hud || !quest || !boxesMeet(card, quest, 2)) return card;
+  const mid = o.viewW / 2;
+  const onLeft = (b: ViewBox): boolean => b.x + b.w / 2 < mid;
+  const map = hud.get('map');
+  const thumbs = hud.get('thumbs');
+  const questLeft = onLeft(quest);
+  const left = questLeft ? quest.x + quest.w + 6 : map && onLeft(map) ? map.x + map.w + 12 : 8;
+  const right = questLeft ? (map && !onLeft(map) ? o.viewW - map.x + 12 : 8) : o.viewW - quest.x + 6;
+  const short = thumbs && questLeft !== onLeft(thumbs) ? (questLeft ? { left, right: o.viewW - thumbs.x + 6 } : { left: thumbs.x + thumbs.w + 6, right }) : null;
+  const taken = TAKEN.map((k) => hud.get(k)).filter((b): b is ViewBox => !!b);
+  for (const side of [{ left, right }, short]) {
+    if (!side) continue;
+    const beside = layoutSpeech({ ...o, ...side });
+    if (beside.lines.length <= card.lines.length + 1 && !taken.some((b) => boxesMeet(beside, b, 2))) return beside;
+  }
+  return card;
 }

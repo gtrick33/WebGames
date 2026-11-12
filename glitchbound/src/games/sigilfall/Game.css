@@ -2429,7 +2429,7 @@
   right: calc(100px + var(--sa-r));
 }
 .is-touch .rb-tracker {
-  top: calc(96px + var(--sa-t));
+  top: calc(106px + var(--sa-t));
   right: calc(8px + var(--sa-r));
   max-width: min(220px, 34cqw);
 }
@@ -10682,6 +10682,15 @@
 .rb-ui.is-touch .rb-toast:nth-last-child(n + 2) {
   display: none;
 }
+/* someone speaking across the quest (ui/GameScreen.tsx Tracker): their words are on the picture, under the HUD, so
+   the quest steps aside until they are said */
+.rb-tracker {
+  transition: opacity 0.15s;
+}
+.rb-tracker.is-under-speech {
+  opacity: 0;
+  pointer-events: none;
+}
 /* the quest, folded to its mark: a tap opens it again */
 .rb-tracker.is-folded {
   display: grid;
@@ -10916,22 +10925,25 @@
   bottom: calc(100% + 1px);
   left: 50%;
   display: block;
+  /* (a long name takes a second line, never an ellipsis: "The Chapel …" told nobody where they were. The map sits a
+     little lower to leave it the room) */
+  width: max-content;
   max-width: calc(100% + 12px);
-  padding: 1px 10px;
+  padding: 1px 6px;
   border: 1px solid #d6aa4a;
   border-radius: 3px;
   color: #7fe07a;
-  font: 700 11px var(--rb-serif, Georgia, serif);
-  white-space: nowrap;
+  font: 700 11px/1.12 var(--rb-serif, Georgia, serif);
+  text-align: center;
+  text-wrap: balance;
   overflow: hidden;
-  text-overflow: ellipsis;
   background: linear-gradient(180deg, rgb(60 44 30 / 0.95), rgb(24 16 10 / 0.95));
   box-shadow: 0 0 0 1px #1a1006;
   transform: translateX(-50%);
   pointer-events: none;
 }
 .is-touch .rb-minimap-hud {
-  top: calc(22px + var(--sa-t));
+  top: calc(32px + var(--sa-t));
 }
 .rb-cluster .rb-sb.is-empty {
   border: 2px solid rgb(214 170 74 / 0.45);

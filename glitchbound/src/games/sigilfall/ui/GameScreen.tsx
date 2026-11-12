@@ -24,6 +24,8 @@ import { rarityColor } from '../render/renderer';
 import { clockText, type World } from '../sim/world';
 import { sceneDark } from '../sim/scene';
 import { fmt, ItemIcon, Portrait } from './common';
+import { useHudBox } from './hudBoxes';
+import { boxesMeet } from '../render/speech';
 import { DesktopBar } from './DesktopBar';
 import { Panels } from './Panels';
 import { Minimap } from './Minimap';
@@ -356,6 +358,8 @@ function BossBar({ engine }: { engine: SigilEngine }) {
   const callFill = useRef<HTMLElement>(null);
   const callHint = useRef<HTMLElement>(null);
   const shoutSeen = useRef<Callout | null>(null);
+  // (a caption drawn on the picture keeps out from under the call: render/renderer.ts)
+  useHudBox(engine, 'call', call);
   useFrame(engine, (w) => {
     const b = w.boss();
     const share = b ? Math.max(0, b.hp / b.maxHp) : 0;
@@ -638,6 +642,20 @@ function Tracker({ engine }: { engine: SigilEngine }) {
     rememberFold(to);
     setFolded(to);
   };
+  // someone speaking across it (a phone on its side: the quest sits under the hero's bars, where a shout from the
+  // left of the picture is written). The renderer writes the line beside the quest when there is room for it there;
+  // where there isn't, the words win, and the quest fades until they are said
+  const box = useRef<HTMLElement>(null);
+  const setBox = (el: HTMLElement | null): void => {
+    box.current = el;
+  };
+  useHudBox(engine, 'quest', box);
+  useFrame(engine, () => {
+    const el = box.current;
+    if (!el) return;
+    const at = engine.renderer.hudBoxes.get('quest');
+    el.classList.toggle('is-under-speech', !!at && engine.renderer.speechBoxes.some((s) => boxesMeet(s, at, 2)));
+  });
   const q = trackedQuest(h, engine.world?.region.id);
   if (engine.ui.boss) return null;
   // the main story waiting for a level: said, so it never just stops (PROGRESSION_BALANCE.md G)
@@ -645,7 +663,7 @@ function Tracker({ engine }: { engine: SigilEngine }) {
   const gate = storyOn ? undefined : levelGated(h).find((x) => isMainQuest(x.id));
   if (!q) {
     return gate ? (
-      <div className="rb-tracker is-main is-gated">
+      <div ref={setBox} className="rb-tracker is-main is-gated">
         <strong>
           <img src={mapIconUrl('offer', 2)} alt="" />
           {gate.name}
@@ -662,12 +680,12 @@ function Tracker({ engine }: { engine: SigilEngine }) {
   // on touch a tap folds it to its mark (the quest stays on the map), and a tap opens it again
   if (engine.touchMode && folded)
     return (
-      <button className={`rb-tracker is-folded${main ? ' is-main' : ' is-side'}`} onClick={() => fold(false)} aria-label={`Quest: ${q.name}. Tap to show`}>
+      <button ref={setBox} className={`rb-tracker is-folded${main ? ' is-main' : ' is-side'}`} onClick={() => fold(false)} aria-label={`Quest: ${q.name}. Tap to show`}>
         <img src={icon} alt="" />
       </button>
     );
   return (
-    <button className={`rb-tracker${main ? ' is-main' : ' is-side'}`} onClick={() => (engine.touchMode ? fold(true) : engine.showOnMap(q.id))} title={engine.touchMode ? 'Tap to fold' : 'Show on the map'}>
+    <button ref={setBox} className={`rb-tracker${main ? ' is-main' : ' is-side'}`} onClick={() => (engine.touchMode ? fold(true) : engine.showOnMap(q.id))} title={engine.touchMode ? 'Tap to fold' : 'Show on the map'}>
       <strong>
         <img src={icon} alt="" />
         {q.name}
