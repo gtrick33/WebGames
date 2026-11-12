@@ -11511,6 +11511,59 @@ html.rb-touch-playing textarea {
   letter-spacing: 0.06em;
 }
 
+/* ---- a boss fight: the screen is the fight's ----
+   The owner: "during boss fights it would be nice if the screen wasnt as stacked ... leave only the pause button and
+   map, hide everything else and display the boss hp bar states and attacks a bit more to the top of the screen".
+   So while a boss's bar is up (.is-boss, from ui.boss: it goes when the boss falls, the hero dies and rises, or
+   leaves) the menu buttons, the land's name, the experience bar, the notices and the room's label are put away;
+   what the hero fights with stays (health, the resource, the skills, the potion), and so do Pause and the map. The
+   boss's bar goes up into the room the buttons left, in one row with the hero's bars, off the middle of the fight. */
+.rb-ui.is-boss .rb-hud-menu > :not(.is-pause),
+.rb-ui.is-boss .rb-hud-hero .rb-region,
+.rb-ui.is-boss .rb-hud-hero .rb-xp,
+.rb-ui.is-boss .rb-toasts,
+.rb-ui.is-boss .rb-encounter {
+  display: none;
+}
+.rb-ui.is-boss .rb-bossbar {
+  grid-template-columns: auto auto;
+  justify-content: center;
+  align-items: baseline;
+  column-gap: 8px;
+}
+.rb-ui.is-boss .rb-bossbar > * {
+  grid-column: 1 / -1;
+}
+.rb-ui.is-boss .rb-bossbar > strong {
+  grid-column: 1;
+}
+.rb-ui.is-boss .rb-bossbar > .rb-boss-title {
+  grid-column: 2;
+  margin-bottom: 0;
+}
+@container (min-width: 700px) {
+  /* (between the hero's bars and the Pause button and map, which is not always the screen's middle: on a phone on
+     its side, or a narrow window, a bar set in the middle lay across the health bar or the potion) */
+  .rb-ui.is-boss .rb-bossbar {
+    top: calc(4px + var(--sa-t));
+    left: calc(352px + var(--sa-l));
+    right: calc(112px + var(--sa-r));
+    width: auto;
+    max-width: 480px;
+    margin: 0 auto;
+    transform: none;
+  }
+  .rb-ui.is-boss.is-touch .rb-bossbar {
+    left: calc(300px + var(--sa-l));
+    right: calc(158px + var(--sa-r));
+  }
+  /* what is announced during the fight (a phase's shout) goes under the bar, not across it */
+  .rb-ui.is-boss.is-touch .rb-announce {
+    top: calc(112px + var(--sa-t));
+  }
+  .rb-ui.is-boss.is-mouse .rb-banner {
+    top: 24%;
+  }
 /* The quest being followed is plain words over the land, with no panel behind them (the owner: "the active quest's
    dark panel could go away and just leave it as plain text"). An edge of dark round each letter keeps them read over
    grass, snow and sand alike. Folded to its mark, and the Riftstone's clock, keep their chips. */

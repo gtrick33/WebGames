@@ -21,7 +21,7 @@ import { heldWeapon, itemIconCanvas, heroLook, vendorSign } from './sprites';
 import type { HeroLook } from './art/hero';
 import { wornLooks } from '../progress/wardrobe';
 import { objectiveTarget } from '../sim/objective';
-import { aimReach, autoTarget, tapAutoAims } from '../sim/cast';
+import { autoTarget, seekReach, tapAutoAims } from '../sim/cast';
 import { PERSON_H, type Cast } from '../render3d/cast';
 import type { Fx3D } from '../render3d/fx3d';
 import { hexRgb } from '../render3d/kits';
@@ -824,7 +824,7 @@ export class Renderer {
         const id = w.build.bar[slot];
         const spec = id ? w.build.skills[id]?.spec : undefined;
         const ready = slot === 'ult' ? p.ult >= 100 : p.cds[slot].charges > 0;
-        if (spec && ready && tapAutoAims(spec)) reach = Math.max(reach, aimReach(spec));
+        if (spec && ready && tapAutoAims(spec)) reach = Math.max(reach, seekReach(spec));
       }
     this.tapPick = { at: w.time, e: reach ? autoTarget(w, reach, p.aim) : null };
     return this.tapPick.e;
