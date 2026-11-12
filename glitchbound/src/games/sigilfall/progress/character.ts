@@ -111,6 +111,14 @@ export interface Character {
   /** Skin, hair and beard, chosen at the start: only how the hero looks. */
   face?: Face;
   /** Fog of war: each land's explored parts (progress/fog.ts). */
+  /**
+   * Where the hero is: the land, town or dungeon they last walked into (its difficulty, and the land they came from,
+   * so they stand at the same gate). Kept each time they travel, so a hero who quits or is cut off comes back there
+   * and not at Briarhollow's gate (the owner: "in case we disconnect or quit and have to log in once again, the
+   * character should be in the respective zone"). A dungeon is come back to at its door: its rooms begin again.
+   * Not kept for a Riftstone run (its clock can't be picked up) nor a party's run (it is the party's, not the hero's).
+   */
+  at?: { region: RegionId; tier?: number; from?: RegionId };
   seen: Partial<Record<RegionId, string>>;
   /** Mounts owned for good, and the one the mount key summons. */
   mounts: string[];

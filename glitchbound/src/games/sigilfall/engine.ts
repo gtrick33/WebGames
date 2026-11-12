@@ -1024,7 +1024,10 @@ export class SigilEngine {
     this.save.last = slot;
     this.tipQueue = [];
     this.ui = { ...this.ui, screen: 'game', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], teach: null };
-    this.travel(HOME, 0, []);
+    // back where they were when they last played (Character.at): the land, the town, a dungeon at its door. A place
+    // that can't be gone to any more (a land the story left, a way lost) is Briarhollow, as it always was
+    const at = h.at;
+    if (!at || at.region === HOME || !this.travel(at.region, at.tier ?? 0, [], at.from)) this.travel(HOME, 0, []);
     this.sound.unlock();
     // still in a party's lobby (back from choosing another hero): the party sees the new one
     if (this.party && !this.invite) this.refreshPartyCard(true);
@@ -1159,6 +1162,11 @@ export class SigilEngine {
     if (prev?.player.riding && region.kind !== 'dungeon' && !region.interior && canRide(h, prev.player.riding)) w.player.riding = prev.player.riding;
     // the quests of a land start when the hero first gets there
     for (const q of startQuests(h)) w.emit({ t: 'questStart', quest: q.id });
+    // where the hero is now, for the next time they play (not a Riftstone's run, nor a party's: Character.at)
+    if (!party && !stone) {
+      if (to === HOME) delete h.at;
+      else h.at = { region: to, ...(w.tier ? { tier: w.tier } : {}), ...(from ? { from } : {}) };
+    }
     this.world = w;
     this.renderer.snap(w);
     const sub = region.safe ? region.subtitle : w.keyRun ? `Riftstone +${w.keyRun.key} · the clock is running` : `${region.subtitle}${w.tier ? ` · ${TIERS[w.tier]!.name}` : ''}`;

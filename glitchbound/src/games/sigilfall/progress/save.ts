@@ -313,6 +313,13 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   if (c.quests['briar-the-seal'] && !c.quests['briar-the-rider']) c.quests['briar-the-rider'] = { state: 'done', n: 1 };
   if (typeof o.tracked === 'string' && (c.quests[o.tracked]?.state === 'active' || c.quests[o.tracked]?.state === 'ready')) c.tracked = o.tracked;
   if (Array.isArray(o.unlocked)) for (const r of o.unlocked) if (typeof r === 'string' && r in REGIONS && !c.unlocked.includes(r as RegionId)) c.unlocked.push(r as RegionId);
+  // where they last stood: a land they know the way to (anything else, and they wake in Briarhollow as before)
+  const at = obj(o.at);
+  if (at && typeof at.region === 'string' && at.region in REGIONS && c.unlocked.includes(at.region as RegionId)) {
+    const tier = int(at.tier, 0, 2, 0);
+    const from = typeof at.from === 'string' && at.from in REGIONS ? (at.from as RegionId) : undefined;
+    c.at = { region: at.region as RegionId, ...(tier ? { tier } : {}), ...(from ? { from } : {}) };
+  }
   // quests of the zones the hero has been to start once those are known
   startQuests(c);
   for (const key of ['bosses', 'clears', 'bestKeys'] as const) {
