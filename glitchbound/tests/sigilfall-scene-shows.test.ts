@@ -75,3 +75,20 @@ describe('a scene shows what it looks at', () => {
     expect(w.stageBoss('grimtusk')).toBeNull();
   });
 });
+
+describe('words over a boss', () => {
+  it('said again while they are still up are not laid over themselves; numbers still stack', () => {
+    const w = newWorld('whisperwood', readyHero('warrior', 4));
+    w.texts.length = 0;
+    w.text(100, 100, 'CLANG! Get behind her!', '#fff', false);
+    w.text(101, 99, 'CLANG! Get behind her!', '#fff', false);
+    expect(w.texts.length).toBe(1);
+    // (another thing said, or the same from across the room, is its own line)
+    w.text(100, 100, 'Too slow!', '#fff', false);
+    w.text(400, 100, 'CLANG! Get behind her!', '#fff', false);
+    expect(w.texts.length).toBe(3);
+    w.text(100, 100, '42', '#fff', false);
+    w.text(100, 100, '42', '#fff', false);
+    expect(w.texts.length).toBe(5);
+  });
+});

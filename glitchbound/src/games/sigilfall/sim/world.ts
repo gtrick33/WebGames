@@ -1043,6 +1043,10 @@ export class World {
     this.delayed.push({ t, fn });
   }
   text(x: number, y: number, text: string, color: string, big: boolean): void {
+    // words said again while they are still rising from the same place aren't laid over themselves (a boss's shell
+    // rang "CLANG! Get behind her!" twice a second, each on top of the last: the owner, "boss callouts can stack on
+    // top of each other"). Numbers stack as they always have: each is its own blow
+    if (/[a-z]/i.test(text) && this.texts.some((o) => o.text === text && o.t < 1 && Math.abs(o.x - x) < 60 && Math.abs(o.y + o.vy * o.t - y) < 60)) return;
     if (this.texts.length > 60) this.texts.shift();
     this.texts.push({ x, y, text, color, t: 0, big, vy: -26 });
   }

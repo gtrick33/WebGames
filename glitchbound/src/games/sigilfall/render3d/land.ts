@@ -1687,7 +1687,21 @@ export class Land3D {
           const s = this.fitted(m, def.h * (0.74 + hash2(tx, ty, 21) * 0.26), 1.9);
           // (a crystal takes the land's own light: the model itself is plain white)
           const shard = kind === 'crystal' ? hexRgb(look.leaves[hash2(tx, ty, 93) < 0.3 ? 5 : 4]) : kind === 'snowpine' ? FROST : null;
-          if (this.keepIt({ x: wx, y: wy, kind: 'tree', dy: -def.h * TILE })) this.add({ m, x: x + (h - 0.5) * 0.12, z: z + (hash2(tx, ty, 31) - 0.5) * 0.12, rot: h * 6.28, sx: s, sway: kind === 'dead' || kind === 'crystal' || kind === 'cactus' ? 0 : 1, shadow: 1.25, ...(shard ? { r: shard[0], g: shard[1], b: shard[2] } : {}) });
+          if (this.keepIt({ x: wx, y: wy, kind: 'tree', dy: -def.h * TILE })) {
+            this.add({ m, x: x + (h - 0.5) * 0.12, z: z + (hash2(tx, ty, 31) - 0.5) * 0.12, rot: h * 6.28, sx: s, sway: kind === 'dead' || kind === 'crystal' || kind === 'cactus' ? 0 : 1, shadow: 1.25, ...(shard ? { r: shard[0], g: shard[1], b: shard[2] } : {}) });
+            // (a tree that fills its tile for a walker, where the wood wasn't opened round it, has undergrowth at its foot
+            // to fill it for the eye: sim/map.ts `openWoods` opens the rest, and those stop a walker at the trunk)
+            if (woody && map.solid[i]) {
+              for (const [ox, oz, seed] of [
+                [-0.27, 0.2, 61],
+                [0.28, -0.14, 63],
+                [0.1, 0.3, 65],
+              ] as const) {
+                const bm = BUSHES[Math.floor(hash2(tx, ty, seed) * BUSHES.length)]!;
+                this.add({ m: bm, x: x + ox, z: z + oz, rot: hash2(tx, ty, seed + 1) * 6.28, sx: this.fitted(bm, 0.4 + hash2(tx, ty, seed + 2) * 0.14, 0.7), sway: 0.6 });
+              }
+            }
+          }
           break;
         }
         case K.Bush:

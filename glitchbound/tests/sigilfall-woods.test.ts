@@ -75,6 +75,31 @@ describe('the edge of a wood', () => {
     expect(thick).toBeGreaterThan(100);
   });
 
+  it('in every wooded land, nothing of the wood that stops a walker beside open ground is drawn thin', () => {
+    let lands = 0;
+    for (const def of OUTDOORS) {
+      const look = THEMES[def.theme]!;
+      if (!isWoody(look) || look.stone) continue;
+      lands++;
+      const m = parseRegion(def);
+      let air = 0;
+      for (let i = 0; i < m.w * m.h; i++) {
+        if (m.kind[i] !== K.Wall || !m.solid[i] || m.thicket[i]) continue;
+        const x = i % m.w;
+        const y = Math.floor(i / m.w);
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx >= 0 && ny >= 0 && nx < m.w && ny < m.h && !m.solid[ny * m.w + nx]) air++;
+          }
+        }
+      }
+      expect(air, def.id).toBe(0);
+    }
+    expect(lands).toBeGreaterThan(10);
+  });
+
   it('never opens a way that wasn’t there, in any land', () => {
     for (const def of OUTDOORS) {
       const m = parseRegion(def);

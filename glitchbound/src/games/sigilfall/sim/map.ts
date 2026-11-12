@@ -582,6 +582,9 @@ function openWoods(
     }
   }
   if (!woody) return;
+  // every tile of the wood that still stands as wall beside ground that can be walked is drawn thick: behind the
+  // opened edge, and where the edge was left whole (by a gate, at the map's edge, between two grounds). So nowhere
+  // does a walker stop at grass with a tree a pace off
   for (let i = 0; i < w * h; i++) {
     if (kind[i] !== K.Wall || !solid[i]) continue;
     const x = i % w;
@@ -591,7 +594,7 @@ function openWoods(
         const nx = x + dx;
         const ny = y + dy;
         if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
-        if (!solid[ny * w + nx] && kind[ny * w + nx] === K.Wall) {
+        if (!solid[ny * w + nx]) {
           thicket[i] = 1;
           break;
         }

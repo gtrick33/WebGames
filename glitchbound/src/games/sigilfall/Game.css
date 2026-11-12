@@ -10874,6 +10874,11 @@
   opacity: 0;
   pointer-events: none;
 }
+/* and so does an announcement (a land's name, a banner) lying across what someone is saying */
+.rb-announce > .is-under-speech {
+  opacity: 0 !important;
+  transition: opacity 0.15s;
+}
 /* the quest, folded to its mark: a tap opens it again */
 .rb-tracker.is-folded {
   display: grid;
