@@ -30,7 +30,7 @@ function field(w: number, h: number, put?: (i: number, x: number, y: number) => 
       solid[i] = k === K.Wall ? 1 : 0;
     }
   }
-  return { w, h, kind, room: new Uint8Array(w * h), solid, block: solid.slice(), markers: [], doors: [], roomTiles: [], buildings: [], bodies: new Array(w * h), soft: new Uint8Array(w * h), clogged: new Uint8Array(w * h) };
+  return { w, h, kind, room: new Uint8Array(w * h), solid, block: solid.slice(), markers: [], doors: [], roomTiles: [], buildings: [], bodies: new Array(w * h), soft: new Uint8Array(w * h), clogged: new Uint8Array(w * h), thicket: new Uint8Array(w * h) };
 }
 
 describe('Sigilfall: what stands has a body', () => {

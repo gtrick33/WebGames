@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { zoneLight } from '../render/zoneLight';
+import { Build, mul } from './build';
 import { stoneGate, timberGate, type GateBuilt } from './gateways';
 import { hash2 } from '../core/math';
+import { woodAt } from '../sim/woods';
 import { modelOnLot, picBody } from '../data/buildingArt';
 import { ARENAS, type Floor } from '../data/dungeongen';
 import { REGIONS } from '../data/regions';
@@ -1272,6 +1274,7 @@ export class Land3D {
   private readonly columns: { m: string; x: number; z: number; rot: number; sx: number; sy: number; sz: number; r: number; g: number; b: number; cut: number }[] = [];
   private readonly columnStands = new Map<string, Stand>();
   private readonly doorStand: Stand;
+  private readonly stockade: Stand | null;
   /** What's built rather than placed: the ways into dungeons (doorways.ts), and the carpets down a hall. */
   private readonly built: THREE.Mesh[] = [];
   /** The ways into dungeons that stand here, by where they go. */
@@ -1333,6 +1336,8 @@ export class Land3D {
       }
     }
     this.doorStand = new Stand(box, this.group, Math.max(1, doors));
+    // (out in the land, what shuts a boss's ground is a stockade of pointed logs driven up out of the earth)
+    this.stockade = look.indoor ? null : new Stand(stockade(look.bark), this.group, Math.max(1, doors));
     this.updateDoors(0);
     // (materials may need to compile on first draw; nothing else is set up lazily)
   }
@@ -1529,15 +1534,13 @@ export class Land3D {
    * its own way, with bushes, a rock and tufts of grass between, and the floor showing through; a wood's edge a little
    * thicker, so it reads as a wood. `y`: the floor it stands on.
    */
-  private woodland(tx: number, ty: number, edge: boolean, y: number): void {
+  private woodland(tx: number, ty: number, edge: boolean, y: number, thick = false): void {
     const { look } = this;
-    const r = hash2(tx, ty, 61);
-    const jx = (hash2(tx, ty, 63) - 0.5) * 0.6;
-    const jz = (hash2(tx, ty, 67) - 0.5) * 0.6;
-    const x = tx + 0.5 + jx;
-    const z = ty + 0.5 + jz;
-    const treeAt = edge ? 0.5 : 0.32;
-    if (r < treeAt) {
+    // (what grows here and where is the rules' answer too: sim/woods.ts. A walker bumps into exactly this)
+    const g = woodAt(tx, ty, edge, thick);
+    if (!g) return;
+    const { x, z } = g;
+    if (g.what === 'tree') {
       const kind = look.trees[Math.floor(hash2(tx, ty, 91) * look.trees.length)] ?? 'oak';
       const def = TREES[kind] ?? TREES.oak;
       const m = def.m[Math.floor(hash2(tx, ty, 77) * def.m.length) % def.m.length]!;
@@ -1545,20 +1548,20 @@ export class Land3D {
       // (a crystal takes the land's own light, as the ones inside the border do: the model itself is plain white)
       const frost = kind === 'snowpine' ? FROST : kind === 'crystal' ? hexRgb(look.leaves[hash2(tx, ty, 93) < 0.3 ? 5 : 4]) : null;
       this.add({ m, x, z, y, rot: hash2(tx, ty, 71) * 6.28, sx: this.fitted(m, size, 2.1), sway: kind === 'dead' || kind === 'crystal' || kind === 'cactus' ? 0 : 0.8, shadow: 1.1, ...(frost ? { r: frost[0], g: frost[1], b: frost[2] } : {}) });
-      // (a bush at the foot of some trees)
-      if (hash2(tx, ty, 73) < 0.45) {
+      // (a bush at the foot of some trees; where the wood closes, of most)
+      if (hash2(tx, ty, 73) < (thick ? 0.8 : 0.45)) {
         const b = BUSHES[Math.floor(hash2(tx, ty, 79) * BUSHES.length)]!;
         this.add({ m: b, x: x + 0.45, z: z + 0.3, y, rot: hash2(tx, ty, 81) * 6.28, sx: this.fitted(b, 0.45 + hash2(tx, ty, 83) * 0.2, 0.85) });
       }
-    } else if (r < treeAt + 0.25) {
+    } else if (g.what === 'bush') {
       const b = BUSHES[Math.floor(hash2(tx, ty, 79) * BUSHES.length)]!;
-      this.add({ m: b, x, z, y, rot: hash2(tx, ty, 81) * 6.28, sx: this.fitted(b, 0.5 + hash2(tx, ty, 83) * 0.25, 1) });
-    } else if (r < treeAt + 0.28) {
+      this.add({ m: b, x, z, y, rot: hash2(tx, ty, 81) * 6.28, sx: this.fitted(b, g.size, thick ? 1.3 : 1) });
+    } else if (g.what === 'rock') {
       const rock = ROCKS[Math.floor(hash2(tx, ty, 87) * ROCKS.length)]!;
-      this.add({ m: rock, x, z, y, rot: hash2(tx, ty, 89) * 6.28, sx: this.fitted(rock, 0.25 + hash2(tx, ty, 85) * 0.25, 0.8) });
-    } else if (r < treeAt + 0.45) {
+      this.add({ m: rock, x, z, y, rot: hash2(tx, ty, 89) * 6.28, sx: this.fitted(rock, g.size, 0.8) });
+    } else {
       const t = TUFTS[Math.floor(hash2(tx, ty, 97) * TUFTS.length)]!;
-      this.add({ m: t, x, z, y, rot: hash2(tx, ty, 99) * 6.28, sx: this.fitted(t, 0.3 + hash2(tx, ty, 95) * 0.15, 0.8), sway: 1 });
+      this.add({ m: t, x, z, y, rot: hash2(tx, ty, 99) * 6.28, sx: this.fitted(t, g.size, 0.8), sway: 1 });
     }
   }
 
@@ -1773,7 +1776,7 @@ export class Land3D {
           }
           // the wood: its edge and its depths
           const open = kindAt(tx, ty + 1) !== K.Wall || kindAt(tx - 1, ty) !== K.Wall || kindAt(tx + 1, ty) !== K.Wall || kindAt(tx, ty - 1) !== K.Wall;
-          this.woodland(tx, ty, open, 0);
+          this.woodland(tx, ty, open, 0, map.thicket[i] === 1);
           break;
         }
         default:
@@ -2241,21 +2244,27 @@ export class Land3D {
     const look = this.look;
     const tall = look.indoor ? 1.45 : 1.3;
     this.doorStand.begin();
+    this.stockade?.begin();
     for (const d of this.doors) {
       const solid = this.map.solid[d.i] ? 1 : 0;
       const kind = this.map.kind[d.i];
       const target = kind === d.k ? solid : 0;
       d.h += (target - d.h) * Math.min(1, dt * 6);
       if (d.h < 0.02) continue;
-      this.doorStand.put(d.x + 0.5, 0, d.y + 0.5, 0, 1, d.h * tall, 1, 1, 1, 1, 0);
+      // (each tile's logs turned their own way and a little taller or shorter, so a gate three tiles deep is a mass
+      // of stakes and not a pattern; they come up out of the ground, and go back into it)
+      if (this.stockade && d.k === K.Door) this.stockade.put(d.x + 0.5, 0, d.y + 0.5, hash2(d.x, d.y, 43) < 0.5 ? 0 : Math.PI, 1, d.h * (0.9 + hash2(d.x, d.y, 45) * 0.22), 1, 1, 1, 1, 0);
+      else this.doorStand.put(d.x + 0.5, 0, d.y + 0.5, 0, 1, d.h * tall, 1, 1, 1, 1, 0);
     }
     this.doorStand.end();
+    this.stockade?.end();
   }
 
   dispose(): void {
     for (const s of this.stands.values()) s.dispose();
     this.stands.clear();
     this.doorStand.dispose();
+    this.stockade?.dispose();
     for (const s of this.columnStands.values()) s.dispose();
     this.ground.geometry.dispose();
     const mat = this.ground.material as THREE.ShaderMaterial;
@@ -2277,6 +2286,42 @@ export class Land3D {
 }
 
 /** A unit block standing on the ground. */
+/**
+ * One tile of the stockade that shuts a boss's ground out in the land (the owner, of Grimtusk's: "there should be like a
+ * big ass fence or some kind of obstacle that actually blocks the path"): great pointed logs standing shoulder to
+ * shoulder, each its own height, sharpened pale at the top, lashed with two bands of rope and braced by a beam. It
+ * fills its tile from edge to edge, so tiles side by side are one wall with no way between.
+ */
+function stockade(barkHex: string): MeshData {
+  const b = new Build();
+  const bark = hexRgb(barkHex);
+  const dark = mul(bark, 0.62);
+  const cut = [0.86, 0.72, 0.5];
+  const rope = [0.62, 0.52, 0.34];
+  // two rows of logs, the back row in the gaps of the front
+  const rows: [number, number, number][] = [
+    [-0.26, 0.0, 0],
+    [0.26, 0.17, 1],
+  ];
+  for (const [z, off, row] of rows) {
+    for (let i = 0; i < 3; i++) {
+      const x = -0.34 + i * 0.34 + off - (row ? 0.17 : 0);
+      const h = 2.25 + ((i * 5 + row * 3) % 4) * 0.16;
+      const r = 0.2 + ((i + row) % 2) * 0.02;
+      b.post(x, z, r + 0.03, r, 0, 0.25, 7, mul(dark, 0.8), dark);
+      b.post(x, z, r, r - 0.02, 0.25, h, 7, dark, bark, ((i % 2) - 0.5) * 0.04, 0);
+      b.post(x, z, r - 0.02, 0.0, h, h + 0.5, 7, bark, cut);
+    }
+  }
+  // the lashings and the brace
+  for (const y of [0.95, 1.75]) {
+    b.box(-0.5, -0.5, 0.5, -0.43, y, y + 0.1, rope, mul(rope, 0.7), rope);
+    b.box(-0.5, 0.43, 0.5, 0.5, y, y + 0.1, rope, mul(rope, 0.7), rope);
+  }
+  b.box(-0.5, -0.07, 0.5, 0.07, 1.3, 1.5, dark, mul(dark, 0.8), bark);
+  return b.m.data();
+}
+
 function boxMesh(c: readonly number[]): MeshData {
   const b = new THREE.BoxGeometry(1, 1, 1);
   b.translate(0, 0.5, 0);

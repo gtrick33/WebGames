@@ -2,7 +2,9 @@ import { hash2 } from '../core/math';
 import { MODEL_FOOT, modelOnLot, picBody, placeBuilding, yardProps, type PlacedPic } from '../data/buildingArt';
 import { FEET, propBody, propReach, propStandsUp, dressedFor, keepsApart, PROPS } from '../data/props';
 import { DRAWN } from '../data/propDrawn';
+import { THEMES } from '../data/themes';
 import type { Marker, PlacedMarkerDef, RegionDef, StoryCond } from '../data/types';
+import { isWoody, treeOn, woodAt } from './woods';
 
 /**
  * A region's tile map at runtime: terrain kinds, which room each floor tile belongs to, what is solid
@@ -120,6 +122,8 @@ export interface TileMap {
   clogged: Uint8Array;
   /** 1 = only the bodies on it stop a walker, though routes go round it (`solid`). */
   soft: Uint8Array;
+  /** 1 = the first tile of a wood that can't be walked into: it is drawn thick, a tree or a great bush on every tile. */
+  thicket: Uint8Array;
 }
 
 export interface MapBuilding {
@@ -392,7 +396,9 @@ export function parseRegion(def: RegionDef): TileMap {
     const my = (pm.ty + 0.5) * TILE;
     if (pm.marker.solid && ownBoxes.some((q) => mx >= q.x0 && mx <= q.x1 && my >= q.y0 && my <= q.y1)) soft[pm.ty * w + pm.tx] = 1;
   }
-  const map: TileMap = { w, h, kind, room, solid, block, markers, doors, roomTiles, buildings, bodies, soft, clogged };
+  const thicket = new Uint8Array(w * h);
+  if (def.kind !== 'dungeon' && !def.interior) openWoods(def, w, h, kind, solid, block, markers, buildings, thicket, standing);
+  const map: TileMap = { w, h, kind, room, solid, block, markers, doors, roomTiles, buildings, bodies, soft, clogged, thicket };
   // a tall roof over the ground behind its lot is wall only if that cuts nobody off
   const start = markers.find((m) => m.marker.kind === 'start');
   if (over.length && start) {
@@ -434,6 +440,164 @@ export function parseRegion(def: RegionDef): TileMap {
   // (and a picture's roof past the back of its lot was never anything you could bump into)
   for (const [i] of over) if (kind[i] === K.House) soft[i] = 1;
   return map;
+}
+
+/** How deep into a wood's edge a walker can go, in tiles. */
+const WOOD_DEEP = 2;
+/** How near a way out of the land a wood stays whole: its gate's towers and walls stand there (render3d/gateways.ts). */
+const GATE_CLEAR = 14;
+
+/**
+ * The edge of a wood is walked through, and what stops a walker there is what stands there (sim/woods.ts): a trunk, a
+ * bush, a rock, each its own size, where every tile of it used to be a wall of air. The same for the trees that stand alone in
+ * the open; a bush or a rock there fills its tile and stays one. Two tiles in, the wood closes (`thicket`, drawn thick).
+ *
+ * It never opens a way that wasn't there: a tile is only opened where all the open ground near it is one ground
+ * already, counting a shut door, a wall to be broken and a hidden way as shut. So a hedge between two fields stays a
+ * hedge, a boss's den stays closed behind its gate, and nothing walled in is let out.
+ */
+function openWoods(
+  def: RegionDef,
+  w: number,
+  h: number,
+  kind: Uint8Array,
+  solid: Uint8Array,
+  block: Uint8Array,
+  markers: PlacedMarker[],
+  buildings: MapBuilding[],
+  thicket: Uint8Array,
+  standing: (body: PropBody, thin: boolean) => void,
+): void {
+  const look = THEMES[def.theme];
+  if (!look || look.indoor) return;
+  const woody = isWoody(look) && !look.stone;
+  const wide = !isWoody(look);
+  const grows = (i: number): boolean => {
+    const k = kind[i];
+    return k === K.Tree || k === K.Bush || k === K.Rock || (woody && k === K.Wall);
+  };
+  // the grounds of the land: open tiles that are one walk from each other, with every door shut
+  const ground = new Int32Array(w * h);
+  const open = (i: number): boolean => !solid[i] && kind[i] !== K.Door && kind[i] !== K.Cracked && kind[i] !== K.Illusion;
+  let grounds = 0;
+  const queue = new Int32Array(w * h);
+  for (let s = 0; s < w * h; s++) {
+    if (ground[s] || !open(s)) continue;
+    ground[s] = ++grounds;
+    let head = 0;
+    let tail = 0;
+    queue[tail++] = s;
+    while (head < tail) {
+      const i = queue[head++]!;
+      const x = i % w;
+      for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i - w, i + w]) {
+        if (j < 0 || j >= w * h || ground[j] || !open(j)) continue;
+        ground[j] = ground[i]!;
+        queue[tail++] = j;
+      }
+    }
+  }
+  // how deep in the wood each of its tiles is, and which ground it is the edge of
+  const deep = new Uint8Array(w * h);
+  const of = new Int32Array(w * h);
+  let ring: number[] = [];
+  for (let i = 0; i < w * h; i++) if (ground[i]) ring.push(i);
+  for (let d = 1; d <= WOOD_DEEP; d++) {
+    const next: number[] = [];
+    for (const i of ring) {
+      const x = i % w;
+      for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i - w, i + w]) {
+        if (j < 0 || j >= w * h || deep[j] || ground[j] || !grows(j)) continue;
+        deep[j] = d;
+        of[j] = ground[i] || of[i]!;
+        next.push(j);
+      }
+    }
+    ring = next;
+  }
+  // where a wood stays whole: at the map's edge, round the ways out (their gates stand there) and under what is built
+  const whole = new Uint8Array(w * h);
+  const keep = (x0: number, y0: number, x1: number, y1: number): void => {
+    for (let y = Math.max(0, y0); y <= Math.min(h - 1, y1); y++) for (let x = Math.max(0, x0); x <= Math.min(w - 1, x1); x++) whole[y * w + x] = 1;
+  };
+  keep(0, 0, w - 1, 1);
+  keep(0, h - 2, w - 1, h - 1);
+  keep(0, 0, 1, h - 1);
+  keep(w - 2, 0, w - 1, h - 1);
+  for (const pm of markers) {
+    if (pm.marker.kind === 'exit' && !pm.marker.door) keep(pm.tx - GATE_CLEAR, pm.ty - GATE_CLEAR, pm.tx + GATE_CLEAR, pm.ty + GATE_CLEAR);
+    // (a dungeon's way in is a model set in the wood: a cave's mouth, a stair's head)
+    else if (pm.marker.kind === 'exit') keep(pm.tx - 3, pm.ty - 4, pm.tx + 3, pm.ty + 2);
+    // (a great tree or an arch clears the wood where it stands)
+    else if (pm.marker.kind === 'prop' && FEET[pm.marker.prop]) keep(pm.tx - 3, pm.ty - 3, pm.tx + 3, pm.ty + 3);
+  }
+  for (const b of buildings) keep(b.lot.tx - 2, b.lot.ty - 3, b.lot.tx + b.lot.w + 1, b.lot.ty + b.lot.h + 1);
+  // a tile opens only where everything round it is of the one ground
+  const opens = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    if (!deep[i] || whole[i]) continue;
+    const x = i % w;
+    const y = Math.floor(i / w);
+    let ok = true;
+    for (let dy = -1; dy <= 1 && ok; dy++) {
+      for (let dx = -1; dx <= 1 && ok; dx++) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+        const j = ny * w + nx;
+        const g = ground[j] || (deep[j] && !whole[j] ? of[j]! : 0);
+        if (g && g !== of[i]) ok = false;
+      }
+    }
+    if (ok) opens[i] = 1;
+  }
+  const near = (x: number, y: number): number => {
+    let n = 0;
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]] as const) {
+      const nx = x + dx;
+      const ny = y + dy;
+      const k = nx < 0 || ny < 0 || nx >= w || ny >= h ? K.Wall : kind[ny * w + nx];
+      if (k === K.Tree || k === K.Wall) n++;
+    }
+    return n;
+  };
+  const wall = (x: number, y: number): boolean => x < 0 || y < 0 || x >= w || y >= h || kind[y * w + x] === K.Wall;
+  for (let i = 0; i < w * h; i++) {
+    if (!opens[i]) continue;
+    const x = i % w;
+    const y = Math.floor(i / w);
+    const k = kind[i];
+    // (a bush or a rock of the open land nearly fills its tile, and stays a tile: opened, it left a rim a walker could
+    // step onto and not off again. So does a tree of a thicket that is drawn as one of those)
+    if (k === K.Bush || k === K.Rock) continue;
+    const g = k === K.Wall ? woodAt(x, y, !wall(x, y + 1) || !wall(x - 1, y) || !wall(x + 1, y) || !wall(x, y - 1)) : treeOn(x, y, near(x, y), wide);
+    if (g && k === K.Tree && (g.what !== 'tree' || g.body > THIN_POST / TILE)) continue;
+    solid[i] = 0;
+    block[i] = 0;
+    if (g && g.body > 0) {
+      const half = (g.body * TILE) / 2;
+      // (not as a thin post, though a trunk is one: a route that ran through every trunk's tile had whoever followed
+      // it walking into trunks all the way, and stopping at some. Routes go round a tile with a trunk in its middle)
+      standing({ x0: g.x * TILE - half, y0: g.z * TILE - half, x1: g.x * TILE + half, y1: g.z * TILE + half }, false);
+    }
+  }
+  if (!woody) return;
+  for (let i = 0; i < w * h; i++) {
+    if (kind[i] !== K.Wall || !solid[i]) continue;
+    const x = i % w;
+    const y = Math.floor(i / w);
+    for (let dy = -1; dy <= 1 && !thicket[i]; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+        if (!solid[ny * w + nx] && kind[ny * w + nx] === K.Wall) {
+          thicket[i] = 1;
+          break;
+        }
+      }
+    }
+  }
 }
 
 /**
