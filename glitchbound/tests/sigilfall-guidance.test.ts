@@ -72,8 +72,8 @@ describe('Sigilfall: the quest arrow and the story’s fights', () => {
   it('a boss felled before its quest asked still counts once the quest begins', () => {
     const w = newWorld('whisperwood', heroAt('into-the-wood', 6));
     w.hero.bosses['grimtusk'] = 1;
-    // the last of the fifteen: the Alpha opens, with Grimtusk already down
-    w.hero.quests['into-the-wood']!.n = 14;
+    // the last of the eighteen: the Alpha opens, with Grimtusk already down
+    w.hero.quests['into-the-wood']!.n = 17;
     w.questProgress((o) => o.kind === 'kill' && o.region === 'whisperwood');
     expect(questState(w.hero, 'alpha')).toBe('active');
     run(w, 1.5);
