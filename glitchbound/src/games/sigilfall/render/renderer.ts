@@ -6,7 +6,7 @@ import { isMainQuest, turnInNpc } from '../progress/handin';
 import { LEAD, leanTarget, LIFT } from './camera';
 import { layoutSpeechClear, type ViewBox } from './speech';
 import { ghostName, TALK_ZOOM, TYPE_CPS } from '../sim/scene';
-import { Effects, headOf } from './effects';
+import { Effects, headOf, inView } from './effects';
 import { THEMES } from '../data/themes';
 import { ROOM, type RoomLight } from './rooms';
 
@@ -451,7 +451,7 @@ export class Renderer {
       this.people.sync(st.cast, w, dt, time, { look: this.look ?? heroLook(w.hero.cls), weapon: this.weapon, folk: this.folkK, statues: st.land?.statues, colossi: st.land?.colossi, landOnly: this.landOnly, view: { x: cx / TILE, z: cy / TILE, spanX: st.spanX, spanZ: st.spanZ } });
       this.layer?.cast?.(st.cast, dt, time);
       st.fx.begin();
-      this.effects.draw(w, { fx: st.fx, cast: st.cast, land: st.land, time, near: (x, y) => Math.abs(x - cx) < this.vw * 0.7 && Math.abs(y - cy) < this.vh * 0.9 });
+      this.effects.draw(w, { fx: st.fx, cast: st.cast, land: st.land, time, near: (x, y, reach = 0) => inView(cx, cy, this.vw, this.vh, x, y, reach) });
       this.layer?.fx?.(st.fx, st.cast, time);
       st.fx.end();
       st.cast.end();

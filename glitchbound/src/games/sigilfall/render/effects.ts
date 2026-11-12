@@ -45,6 +45,12 @@ export const TONES: Record<string, Tone> = {
   physical: { a: '#e0d8c8', b: '#ffffff' },
 };
 /** What a mark on the ground asks of the hero (sim/types.ts TelegraphKind): absent, it is an attack. */
+/**
+ * Whether something drawn round (x, y), reaching `reach` world pixels from it, can be in a view `vw` by `vh` centered
+ * on (cx, cy). A little past the view's edges counts (the camera's tilt shows more up the picture than its flat size).
+ */
+export const inView = (cx: number, cy: number, vw: number, vh: number, x: number, y: number, reach = 0): boolean => Math.abs(x - cx) < vw * 0.7 + reach && Math.abs(y - cy) < vh * 0.9 + reach;
+
 export const telegraphKind = (t: { kind?: TelegraphKind }): TelegraphKind => t.kind ?? 'danger';
 /** The colors of the marks that aren't attacks: gold for safety, blue for a place to stand, grey for a plain warning. */
 export const KIND_COLOR: Record<Exclude<TelegraphKind, 'danger'>, string> = { safe: '#ffd24a', stand: '#4aa8ff', warn: '#b8b4c4' };
@@ -136,8 +142,11 @@ export interface EffectsScene {
   cast: Cast;
   land: Land3D | null;
   time: number;
-  /** Whether a spot is near enough to the view to matter. */
-  near(x: number, y: number): boolean;
+  /**
+   * Whether a spot is near enough to the view to matter. `reach`: how far what is drawn there goes from the spot (a
+   * blow's circle, a pool on the ground): something whose middle is off the picture can still lie half across it.
+   */
+  near(x: number, y: number, reach?: number): boolean;
 }
 
 /** An effect by name, somewhere on its way through its life (`u`, 0 to 1): The Vigil's spells use them too. */
@@ -411,8 +420,11 @@ export class Effects {
   private ground(w: World, sc: EffectsScene): void {
     const fx = sc.fx;
     const p = w.player;
-    for (const f of w.fields) if (sc.near(f.x, f.y)) this.field(f, sc);
-    for (const t of w.telegraphs) if (sc.near(t.x, t.y) || t.shape === 'line') this.telegraph(t, fx);
+    // (by how far each reaches: a boss's great circle, cone or ring whose middle was just off the picture wasn't drawn
+    // at all, and the half of it that lay across the room came and went as the hero stepped. The owner: "some of the
+    // red projected spells of the boss get cut off on the side")
+    for (const f of w.fields) if (sc.near(f.x, f.y, f.r)) this.field(f, sc);
+    for (const t of w.telegraphs) if (t.shape === 'line' || sc.near(t.x, t.y, Math.max(t.r, t.len))) this.telegraph(t, fx);
     for (const wv of w.waves) {
       const out = wv.r + wv.width;
       fx.put({ kind: FX.shock, x: wv.x, y: wv.y, flat: true, w: out * 2, a: '#ff8a4a', p1: wv.r / out, p2: wv.width / out, seed: wv.id * 0.3 });

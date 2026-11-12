@@ -825,7 +825,11 @@ function lingering(q: Fx3D, f: Fighter, a: Fighter['auras'][number], time: numbe
         if (i % 2) q.put({ kind: FX.spark, x, y, up: up + 6, w: 5, a: '#ffd36a', t: ph, seed: seed + i });
         break;
       case 'shadow':
-        q.put({ kind: FX.shadow, x, y, up, w: 10 + (1 - ph) * 6, a: c, b: '#120a20', seed: seed + i });
+        // (a curse is wisps about someone, not a cloud over them: each was up to sixteen pixels across, five of them
+        // round a fighter twenty tall, and a cursed fighter couldn't be seen for the curse. The owner: "warlock and
+        // gloamknight curses on enemies are too big on the characters, scale them down a bit". Smaller, closer in,
+        // and not rising as far)
+        q.put({ kind: FX.shadow, x: f.x + (x - f.x) * 0.8, y: f.y + (y - f.y) * 0.8, up: 4 + ph * 19 + lift, w: 6 + (1 - ph) * 3.5, a: c, b: '#120a20', seed: seed + i });
         break;
       case 'nature':
         q.put({ kind: FX.poison, x, y, up: up * 0.7, w: 8 + (1 - ph) * 4, a: c, b: '#e8ffb0', seed: seed + i });
