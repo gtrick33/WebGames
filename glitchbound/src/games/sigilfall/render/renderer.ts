@@ -448,7 +448,7 @@ export class Renderer {
       st.land?.updateColumns(dt, p.x / TILE, p.y / TILE);
       this.folkK = damp(this.folkK, w.story.fighting ? 0 : 1, 3, dt);
       st.cast.begin();
-      this.people.sync(st.cast, w, dt, time, { look: this.look ?? heroLook(w.hero.cls), weapon: this.weapon, folk: this.folkK, statues: st.land?.statues, colossi: st.land?.colossi, landOnly: this.landOnly });
+      this.people.sync(st.cast, w, dt, time, { look: this.look ?? heroLook(w.hero.cls), weapon: this.weapon, folk: this.folkK, statues: st.land?.statues, colossi: st.land?.colossi, landOnly: this.landOnly, view: { x: cx / TILE, z: cy / TILE, spanX: st.spanX, spanZ: st.spanZ } });
       this.layer?.cast?.(st.cast, dt, time);
       st.fx.begin();
       this.effects.draw(w, { fx: st.fx, cast: st.cast, land: st.land, time, near: (x, y) => Math.abs(x - cx) < this.vw * 0.7 && Math.abs(y - cy) < this.vh * 0.9 });
