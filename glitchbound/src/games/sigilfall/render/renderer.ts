@@ -3,7 +3,7 @@ import { zoneLight } from './zoneLight';
 import { currentObjective } from '../progress/character';
 import { drawMapIcon, type MapIcon } from '../ui/mapIcons';
 import { isMainQuest, turnInNpc } from '../progress/handin';
-import { LEAD, leanTarget, LIFT } from './camera';
+import { edgeArrowAngle, LEAD, leanTarget, LIFT } from './camera';
 import { layoutSpeechClear, type ViewBox } from './speech';
 import { ghostName, TALK_ZOOM, TYPE_CPS } from '../sim/scene';
 import { Effects, headOf, inView } from './effects';
@@ -131,8 +131,8 @@ export class Renderer {
   }
 
   /**
-   * Fits the view to the element: about 196 world pixels tall on phones (bigger figures) and 272 on
-   * desktops (240 until 1.0: the owner asked for the camera 10 to 15% further out there), never less than 150 across the short side.
+   * Fits the view to the element: about 206 world pixels tall on phones (bigger figures) and 286 on
+   * desktops (240 and 196 until 1.0: the owner asked for the camera 10 to 15% further out on a desk, then 5% more on both), never less than 150 across the short side.
    */
   /** The view's size in CSS pixels (what the HUD is laid out in). */
   get viewW(): number {
@@ -146,7 +146,7 @@ export class Renderer {
     const devW = Math.max(1, Math.round(cssW * dpr));
     const devH = Math.max(1, Math.round(cssH * dpr));
     const landscape = devW >= devH;
-    let total = (landscape ? devH : devW * 1.25) / (touch ? 196 : 272);
+    let total = (landscape ? devH : devW * 1.25) / (touch ? 206 : 286);
     total = Math.min(total, Math.min(devW, devH) / 150);
     total = Math.max(0.5, total);
     this.cssW = Math.max(1, cssW);
@@ -734,11 +734,12 @@ export class Renderer {
     if (time - this.arrowSince < 0.5) return;
     const s = st.project(target.x, target.y, PERSON_H);
     const m = 28;
-    if (s.x > m && s.x < W - m && s.y > m && s.y < H - m) {
+    if (s.front !== false && s.x > m && s.x < W - m && s.y > m && s.y < H - m) {
       this.label('▼', s.x, s.y + Math.sin(time * 5) * 3, 15, '#ffe066');
       return;
     }
-    const a = Math.atan2(s.y - H / 2, s.x - W / 2);
+    // (over the ground from the hero, not from where the place falls on the screen: render/camera.ts)
+    const a = edgeArrowAngle(w.player.x, w.player.y, target.x, target.y);
     const mx = W / 2 - m;
     const my = H / 2 - m;
     const t = Math.min(Math.abs(mx / (Math.cos(a) || 1e-6)), Math.abs(my / (Math.sin(a) || 1e-6)));
