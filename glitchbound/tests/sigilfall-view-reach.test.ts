@@ -1,7 +1,10 @@
+import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { inView, PITCH, viewBox } from '../src/games/sigilfall/render3d/land';
 import { FIGHT_SPEED, MOUNT_SPEED, RIDE_SPEED, WALK_SPEED } from '../src/games/sigilfall/sim/world';
+import { DEFAULT_SETTINGS, validateSettings, ZOOM_MAX, ZOOM_MIN } from '../src/games/sigilfall/progress/save';
+import { viewBox as box } from '../src/games/sigilfall/render3d/land';
 import { newWorld, readyHero } from './sigilfall-bot';
 
 /** The camera as render3d/stage.ts sets it: a 28 degree lens looking down at 50 degrees at a spot on the ground. */
@@ -81,5 +84,37 @@ describe('Sigilfall: on foot and mounted', () => {
     expect(w.footPace()).toBeLessThan(FIGHT_SPEED);
     w.player.calm = 5;
     expect(w.footPace()).toBeCloseTo(WALK_SPEED);
+  });
+});
+
+describe('Sigilfall: the camera\'s distance is the player\'s to set', () => {
+  it('is a setting: the game\'s own view unless changed, kept within what the land can be drawn for', () => {
+    expect(DEFAULT_SETTINGS.zoom).toBe(1);
+    expect(ZOOM_MIN).toBeLessThan(1);
+    expect(ZOOM_MAX).toBeGreaterThan(1);
+    expect(ZOOM_MAX).toBeLessThanOrEqual(1.5);
+    expect(validateSettings({ zoom: 9 }).zoom).toBe(ZOOM_MAX);
+    expect(validateSettings({ zoom: 0.1 }).zoom).toBe(ZOOM_MIN);
+    expect(validateSettings({ zoom: 1.15 }).zoom).toBeCloseTo(1.15);
+    // a save from before the setting
+    expect(validateSettings({}).zoom).toBe(1);
+  });
+
+  it('what the land keeps standing grows with it: the further out, the more ground', () => {
+    const near = box(0, 0, 16.7 * ZOOM_MIN, 12.2 * ZOOM_MIN);
+    const own = box(0, 0, 16.7, 12.2);
+    const far = box(0, 0, 16.7 * ZOOM_MAX, 12.2 * ZOOM_MAX);
+    const area = (b: { x0: number; x1: number; z0: number; z1: number }): number => (b.x1 - b.x0) * (b.z1 - b.z0);
+    expect(area(near)).toBeLessThan(area(own));
+    expect(area(far)).toBeGreaterThan(area(own) * 1.3);
+  });
+
+  it('the camera, the settings page and the land all take it up', () => {
+    const read = (f: string): string => readFileSync(`src/games/sigilfall/${f}`, 'utf8');
+    expect(read('engine.ts')).toContain('this.renderer.setZoom(s.zoom)');
+    expect(read('render/renderer.ts')).toContain('* this.zoom)');
+    expect(read('ui/Panels.tsx')).toContain("slider('Camera distance', 'zoom', ZOOM_MIN, ZOOM_MAX");
+    // (the land looks again when the picture's reach changes, not only when the hero has walked)
+    expect(read('render3d/land.ts')).toContain('span === this.span');
   });
 });

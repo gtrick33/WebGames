@@ -1307,6 +1307,7 @@ export class Land3D {
   private wallH = 1.45;
   private cx = NaN;
   private cz = NaN;
+  private span = NaN;
   private readonly doors: { i: number; x: number; y: number; k: number; h: number; across: boolean }[] = [];
   /**
    * A hall's columns (the map's pillars and a nave's tall columns), in tiles, each with how much of its height stands
@@ -2195,9 +2196,12 @@ export class Land3D {
   update(camX: number, camZ: number, spanX: number, spanZ: number): void {
     const cx = Math.floor(camX / 2);
     const cz = Math.floor(camZ / 2);
-    if (cx === this.cx && cz === this.cz) return;
+    // (and when the picture's reach changes: the window resized, or the camera's distance set further out in Settings)
+    const span = Math.round(spanX * 4) * 1000 + Math.round(spanZ * 4);
+    if (cx === this.cx && cz === this.cz && span === this.span) return;
     this.cx = cx;
     this.cz = cz;
+    this.span = span;
     const { x0, x1, z0, z1 } = viewBox(camX, camZ, spanX, spanZ);
     const want = new Map<string, Placed[]>();
     const c0 = Math.floor(x0 / CELL);
