@@ -1,10 +1,12 @@
+import { rankEntries } from './progress/ranks';
+import { readBests } from './vigil/bests';
 import { ambienceOf } from './audio/ambience';
 import type { GameHost } from '../../platform/contract';
 import { isRetired } from './data/retired';
 import { reportOrders, waitingOrders } from '../../platform/sigilfallOrders';
 import { sigilfallShop, watchSigilfallShop } from '../../platform/sigilfallShop';
 import { setShopGoods } from './progress/shopGoods';
-import { account } from '../../platform/account';
+import { account, api } from '../../platform/account';
 import { classOpen, heroSlots } from './progress/paidClasses';
 import { applyOrder, orderToast } from './progress/gm';
 import { isMainQuest, turnInNpc } from './progress/handin';
@@ -26,7 +28,7 @@ import { DEFAULT_SETTINGS, loadSave, writeSave, type LoadStatus, type SaveFile, 
 import { buyItem, buyPotions, restock } from './progress/shop';
 import { wager } from './progress/rift';
 import { chooseTitle, newTitles, titled, titleName } from './progress/titles';
-import { bestRating } from './arena/ranks';
+import { bestRating, NEW_STANDING } from './arena/ranks';
 import type { ShopId } from './data/vendors';
 import { iconsReady } from './render/art/gameIcons';
 import { Renderer } from './render/renderer';
@@ -1085,6 +1087,24 @@ export class SigilEngine {
     this.bump();
   }
 
+  /**
+   * Sends this account's bests to the rankings (progress/ranks.ts), for a player who is signed in: at the title, where
+   * every mode comes back to. Asked for again only when something has changed. A guest's bests stay on their device.
+   */
+  reportRanks(): void {
+    if (!account.get().me || typeof fetch !== 'function') return;
+    const fought = bestRating() > NEW_STANDING.best ? bestRating() : 0;
+    const entries = rankEntries(this.save, readBests(), fought);
+    const sig = JSON.stringify(entries);
+    if (!entries.length || sig === this.ranksSent) return;
+    this.ranksSent = sig;
+    void api('/api/sigilfall/ranks', { body: { entries } }).catch(() => {
+      // (offline, or signed out since: asked again next time)
+      this.ranksSent = '';
+    });
+  }
+  private ranksSent = '';
+
   toTitle(): void {
     this.greetIn = 0;
     this.standDownFromParty();
@@ -1096,6 +1116,7 @@ export class SigilEngine {
     this.cards = [];
     this.tipQueue = [];
     this.setUi({ screen: 'title', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], levelUp: null, banner: null, teach: null, card: null });
+    this.reportRanks();
   }
 
   /* ------------------------------------------------------------- travel */
