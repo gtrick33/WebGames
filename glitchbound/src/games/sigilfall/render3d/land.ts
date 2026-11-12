@@ -1266,7 +1266,7 @@ export class Land3D {
   private wallH = 1.45;
   private cx = NaN;
   private cz = NaN;
-  private readonly doors: { i: number; x: number; y: number; k: number; h: number }[] = [];
+  private readonly doors: { i: number; x: number; y: number; k: number; h: number; across: boolean }[] = [];
   /**
    * A hall's columns (the map's pillars and a nave's tall columns), in tiles, each with how much of its height stands
    * now (1 whole, less while cut away).
@@ -1274,7 +1274,9 @@ export class Land3D {
   private readonly columns: { m: string; x: number; z: number; rot: number; sx: number; sy: number; sz: number; r: number; g: number; b: number; cut: number }[] = [];
   private readonly columnStands = new Map<string, Stand>();
   private readonly doorStand: Stand;
-  private readonly stockade: Stand | null;
+  private readonly stockade: Stand;
+  /** Its bars run across the way through (a portcullis): each tile is turned to the way it shuts. */
+  private readonly barred: boolean;
   /** What's built rather than placed: the ways into dungeons (doorways.ts), and the carpets down a hall. */
   private readonly built: THREE.Mesh[] = [];
   /** The ways into dungeons that stand here, by where they go. */
@@ -1332,12 +1334,16 @@ export class Land3D {
       const k = map.kind[i]!;
       if (k === K.Door || k === K.Cracked) {
         doors++;
-        this.doors.push({ i, x: i % map.w, y: Math.floor(i / map.w), k, h: map.solid[i] ? 1 : 0 });
+        // (the way through a door runs north and south where the tile above or below it is floor)
+        const walk = (j: number): boolean => j >= 0 && j < map.w * map.h && map.kind[j] !== K.Wall && map.kind[j] !== K.Door && map.kind[j] !== K.Rampart;
+        this.doors.push({ i, x: i % map.w, y: Math.floor(i / map.w), k, h: map.solid[i] ? 1 : 0, across: walk(i - map.w) || walk(i + map.w) });
       }
     }
     this.doorStand = new Stand(box, this.group, Math.max(1, doors));
-    // (out in the land, what shuts a boss's ground is a stockade of pointed logs driven up out of the earth)
-    this.stockade = look.indoor ? null : new Stand(stockade(look.bark), this.group, Math.max(1, doors));
+    // (what shuts a boss's ground is of its place: `barrier`)
+    const style: BarrierStyle = look.indoor ? (BARRIERS[theme] ?? 'iron') : 'timber';
+    this.barred = false;
+    this.stockade = new Stand(barrier(style, look), this.group, Math.max(1, doors));
     this.updateDoors(0);
     // (materials may need to compile on first draw; nothing else is set up lazily)
   }
@@ -2244,27 +2250,30 @@ export class Land3D {
     const look = this.look;
     const tall = look.indoor ? 1.45 : 1.3;
     this.doorStand.begin();
-    this.stockade?.begin();
+    this.stockade.begin();
     for (const d of this.doors) {
       const solid = this.map.solid[d.i] ? 1 : 0;
       const kind = this.map.kind[d.i];
       const target = kind === d.k ? solid : 0;
       d.h += (target - d.h) * Math.min(1, dt * 6);
       if (d.h < 0.02) continue;
-      // (each tile's logs turned their own way and a little taller or shorter, so a gate three tiles deep is a mass
-      // of stakes and not a pattern; they come up out of the ground, and go back into it)
-      if (this.stockade && d.k === K.Door) this.stockade.put(d.x + 0.5, 0, d.y + 0.5, hash2(d.x, d.y, 43) < 0.5 ? 0 : Math.PI, 1, d.h * (0.9 + hash2(d.x, d.y, 45) * 0.22), 1, 1, 1, 1, 0);
+      // (each tile turned its own way and a little taller or shorter, so a gate three tiles deep is a mass of stakes
+      // and not a pattern; a portcullis is turned to the way it shuts. It comes up out of the ground, and goes back)
+      if (d.k === K.Door) {
+        const rot = this.barred ? (d.across ? 0 : Math.PI / 2) : hash2(d.x, d.y, 43) < 0.5 ? 0 : Math.PI;
+        this.stockade.put(d.x + 0.5, 0, d.y + 0.5, rot, 1, d.h * (this.barred ? 1 : 0.9 + hash2(d.x, d.y, 45) * 0.22), 1, 1, 1, 1, 0);
+      }
       else this.doorStand.put(d.x + 0.5, 0, d.y + 0.5, 0, 1, d.h * tall, 1, 1, 1, 1, 0);
     }
     this.doorStand.end();
-    this.stockade?.end();
+    this.stockade.end();
   }
 
   dispose(): void {
     for (const s of this.stands.values()) s.dispose();
     this.stands.clear();
     this.doorStand.dispose();
-    this.stockade?.dispose();
+    this.stockade.dispose();
     for (const s of this.columnStands.values()) s.dispose();
     this.ground.geometry.dispose();
     const mat = this.ground.material as THREE.ShaderMaterial;
@@ -2286,39 +2295,143 @@ export class Land3D {
 }
 
 /** A unit block standing on the ground. */
+/** What shuts a boss's ground, by the place it is in. */
+type BarrierStyle = 'timber' | 'iron' | 'ice' | 'thorn' | 'obsidian' | 'crystal';
+const BARRIERS: Record<string, BarrierStyle> = { icecave: 'ice', roots: 'thorn', lavacave: 'obsidian', riftspire: 'crystal' };
+
+/** A normal too short to shade: the part gives its own light. */
+function litFrom(b: Build, from: number): void {
+  for (let i = from; i < b.m.nor.length; i++) b.m.nor[i] = 0;
+}
+
 /**
- * One tile of the stockade that shuts a boss's ground out in the land (the owner, of Grimtusk's: "there should be like a
- * big ass fence or some kind of obstacle that actually blocks the path"): great pointed logs standing shoulder to
- * shoulder, each its own height, sharpened pale at the top, lashed with two bands of rope and braced by a beam. It
- * fills its tile from edge to edge, so tiles side by side are one wall with no way between.
+ * One tile of what shuts a boss's ground while the fight is on (the owner, of Grimtusk's, which was three brown
+ * boxes: "there should be like a big ass fence or some kind of obstacle that actually blocks the path", and then "more
+ * beautiful and fitting", in every place that has one). Each fills its tile from edge to edge, so tiles side by side
+ * are one wall with no way between, and each is of its place:
+ *
+ *   timber    out in the land: a stockade of great pointed logs, lashed and braced, sharpened stakes leaning out of it
+ *   iron      a crypt, a keep, a cistern, a temple: a cage of spear-headed bars in a sill of the place's stone
+ *   ice       the Rimeheld Vault: a wall of ice shards, lit from inside
+ *   thorn     Blightheart: black roots grown up across the way, thorned, a sick light in them
+ *   obsidian  the Molten Throne: blades of black glass with fire in their edges
+ *   crystal   the Spire: shards of the rift's own crystal
+ *
  */
-function stockade(barkHex: string): MeshData {
+function barrier(style: BarrierStyle, look: ThemeLook): MeshData {
   const b = new Build();
-  const bark = hexRgb(barkHex);
-  const dark = mul(bark, 0.62);
-  const cut = [0.86, 0.72, 0.5];
-  const rope = [0.62, 0.52, 0.34];
-  // two rows of logs, the back row in the gaps of the front
-  const rows: [number, number, number][] = [
-    [-0.26, 0.0, 0],
-    [0.26, 0.17, 1],
-  ];
-  for (const [z, off, row] of rows) {
-    for (let i = 0; i < 3; i++) {
-      const x = -0.34 + i * 0.34 + off - (row ? 0.17 : 0);
-      const h = 2.25 + ((i * 5 + row * 3) % 4) * 0.16;
-      const r = 0.2 + ((i + row) % 2) * 0.02;
-      b.post(x, z, r + 0.03, r, 0, 0.25, 7, mul(dark, 0.8), dark);
-      b.post(x, z, r, r - 0.02, 0.25, h, 7, dark, bark, ((i % 2) - 0.5) * 0.04, 0);
-      b.post(x, z, r - 0.02, 0.0, h, h + 0.5, 7, bark, cut);
+  if (style === 'timber') {
+    const bark = hexRgb(look.bark);
+    const dark = mul(bark, 0.62);
+    const cut = [0.88, 0.74, 0.52];
+    const rope = [0.66, 0.56, 0.36];
+    const iron = [0.2, 0.19, 0.22];
+    // two rows of logs, the back row in the gaps of the front
+    for (const [z, off, row] of [
+      [-0.27, 0, 0],
+      [0.27, 0.17, 1],
+    ] as const) {
+      for (let i = 0; i < 3; i++) {
+        const x = -0.34 + i * 0.34 + off - (row ? 0.17 : 0);
+        const h = 2.3 + ((i * 5 + row * 3) % 4) * 0.17;
+        const r = 0.2 + ((i + row) % 2) * 0.02;
+        b.post(x, z, r + 0.04, r, 0, 0.25, 8, mul(dark, 0.8), dark);
+        b.post(x, z, r, r - 0.02, 0.25, h, 8, dark, bark, ((i % 2) - 0.5) * 0.04, 0);
+        // (its top cut to a point, the fresh wood pale)
+        b.post(x, z, r - 0.02, 0.0, h, h + 0.55, 8, mul(cut, 0.8), cut);
+        // an iron band under each point
+        b.post(x, z, r + 0.005, r + 0.005, h - 0.22, h - 0.12, 8, iron, mul(iron, 1.3));
+      }
     }
+    // the lashings, the brace through the middle, and stakes leaning out of its foot, front and back
+    for (const y of [0.9, 1.72]) {
+      b.box(-0.5, -0.52, 0.5, -0.44, y, y + 0.11, rope, mul(rope, 0.7), rope);
+      b.box(-0.5, 0.44, 0.5, 0.52, y, y + 0.11, rope, mul(rope, 0.7), rope);
+    }
+    b.box(-0.5, -0.08, 0.5, 0.08, 1.28, 1.5, dark, mul(dark, 0.8), bark);
+    for (const s of [-1, 1] as const) {
+      for (const x of [-0.3, 0.12]) {
+        b.post(x + (s > 0 ? 0.1 : 0), s * 0.34, 0.085, 0.07, 0, 0.78, 6, dark, bark, 0, s * 0.3);
+        b.post(x + (s > 0 ? 0.1 : 0), s * 0.64, 0.07, 0.0, 0.78, 1.06, 6, mul(cut, 0.8), cut, 0, s * 0.11);
+      }
+    }
+    return b.m.data();
   }
-  // the lashings and the brace
-  for (const y of [0.95, 1.75]) {
-    b.box(-0.5, -0.5, 0.5, -0.43, y, y + 0.1, rope, mul(rope, 0.7), rope);
-    b.box(-0.5, 0.43, 0.5, 0.5, y, y + 0.1, rope, mul(rope, 0.7), rope);
+  const stone = hexRgb(look.stone?.brick[2] ?? '#6a6670');
+  if (style === 'iron') {
+    const iron = [0.2, 0.2, 0.24];
+    const hi = [0.42, 0.42, 0.48];
+    const rust = [0.34, 0.24, 0.2];
+    // the sill it comes up out of, a block of the place's stone at each corner
+    b.box(-0.5, -0.5, 0.5, 0.5, 0, 0.1, mul(stone, 0.9), mul(stone, 0.6), mul(stone, 1.1));
+    for (const sx of [-1, 1] as const) for (const sz of [-1, 1] as const) b.box(sx < 0 ? -0.5 : 0.36, sz < 0 ? -0.5 : 0.36, sx < 0 ? -0.36 : 0.5, sz < 0 ? -0.36 : 0.5, 0.1, 0.5, stone, mul(stone, 0.7), mul(stone, 1.15));
+    // a cage of bars round the tile, each a spear: a grate from whichever side the way comes to it
+    const bar = (x: number, z: number, i: number): void => {
+      b.post(x, z, 0.05, 0.045, 0.1, 2.0, 6, iron, mul(iron, 1.15));
+      b.post(x, z, 0.1, 0.0, 2.0, 2.42 + (i % 2) * 0.12, 4, hi, mul(hi, 1.2), 0, 0, Math.PI / 4);
+      b.post(x, z, 0.075, 0.075, 1.92, 2.0, 6, rust, hi);
+    };
+    for (let i = 0; i < 5; i++) {
+      const t = -0.42 + i * 0.21;
+      bar(t, -0.42, i);
+      bar(t, 0.42, i + 1);
+      if (i > 0 && i < 4) {
+        bar(-0.42, t, i);
+        bar(0.42, t, i + 1);
+      }
+    }
+    // the bands that hold them, round all four sides
+    for (const y of [0.62, 1.36]) {
+      for (const z of [-0.42, 0.42]) b.box(-0.5, z - 0.06, 0.5, z + 0.06, y, y + 0.12, iron, mul(iron, 0.7), hi);
+      for (const x of [-0.42, 0.42]) b.box(x - 0.06, -0.5, x + 0.06, 0.5, y, y + 0.12, iron, mul(iron, 0.7), hi);
+    }
+    return b.m.data();
   }
-  b.box(-0.5, -0.07, 0.5, 0.07, 1.3, 1.5, dark, mul(dark, 0.8), bark);
+  // shards: a wall of them, the tall ones along the middle, each leaning its own way
+  const of = {
+    ice: { foot: [0.36, 0.56, 0.78], tip: [0.86, 0.96, 1.0], core: [0.6, 0.9, 1.0], sides: 5, tall: 2.3, fat: 0.2, lean: 0.16 },
+    thorn: { foot: [0.12, 0.09, 0.07], tip: [0.3, 0.2, 0.13], core: [0.55, 0.95, 0.3], sides: 6, tall: 2.2, fat: 0.15, lean: 0.34 },
+    obsidian: { foot: [0.07, 0.06, 0.08], tip: [0.2, 0.17, 0.22], core: [1.0, 0.5, 0.14], sides: 4, tall: 2.35, fat: 0.21, lean: 0.14 },
+    crystal: { foot: [0.3, 0.16, 0.5], tip: [0.82, 0.62, 1.0], core: [0.9, 0.6, 1.0], sides: 5, tall: 2.4, fat: 0.19, lean: 0.2 },
+  }[style];
+  // (a foot of the place's stone broken up round them)
+  b.box(-0.5, -0.5, 0.5, 0.5, 0, 0.07, mul(stone, 0.8), mul(stone, 0.55), mul(stone, 0.95));
+  const spots: [number, number, number][] = [
+    [-0.33, -0.3, 0.62],
+    [0.02, -0.34, 0.78],
+    [0.34, -0.27, 0.58],
+    [-0.18, 0.0, 1.0],
+    [0.2, 0.03, 0.92],
+    [-0.38, 0.06, 0.7],
+    [0.4, -0.02, 0.66],
+    [-0.3, 0.33, 0.6],
+    [0.04, 0.31, 0.74],
+    [0.35, 0.34, 0.56],
+  ];
+  spots.forEach(([x, z, k], i) => {
+    const h = of.tall * k;
+    const lx = (((i * 7) % 5) - 2) * 0.5 * of.lean;
+    const lz = (((i * 3) % 5) - 2) * 0.5 * of.lean;
+    const r = of.fat * (0.72 + k * 0.4);
+    b.post(x, z, r, r * 0.74, 0, h * 0.55, of.sides, of.foot, mul(of.tip, 0.7), lx * 0.5, lz * 0.5, i * 0.7);
+    b.post(x + lx * 0.5, z + lz * 0.5, r * 0.74, 0.0, h * 0.55, h, of.sides, mul(of.tip, 0.7), of.tip, lx * 0.5, lz * 0.5, i * 0.7);
+    if (style === 'thorn') {
+      // thorns off each root
+      for (const [t, a] of [
+        [0.3, 0.6],
+        [0.52, 3.4],
+        [0.72, 1.9],
+      ] as const) {
+        const tx = x + lx * t;
+        const tz = z + lz * t;
+        b.post(tx, tz, 0.035, 0.0, h * t, h * t + 0.1, 4, of.tip, mul(of.tip, 1.4), Math.cos(a + i) * 0.2, Math.sin(a + i) * 0.2);
+      }
+    }
+  });
+  // its own light, low in the middle of it: a seam of fire, a glow in the ice, the blight's green
+  const from = b.m.nor.length;
+  for (const [x, z, k] of spots.filter((_, i) => i % 3 === 0)) b.post(x + 0.09, z + 0.07, 0.06, 0.0, 0.07, of.tall * k * 0.5, 4, of.core, mul(of.core, 1.15));
+  litFrom(b, from);
   return b.m.data();
 }
 

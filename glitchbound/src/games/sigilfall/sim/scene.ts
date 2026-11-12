@@ -1,4 +1,5 @@
 import { dist, TAU } from '../core/math';
+import { BOSSES } from '../data/bosses';
 import { picBody } from '../data/buildingArt';
 import { PETS } from '../data/pets';
 import { SCENES } from '../data/scenes';
@@ -237,6 +238,12 @@ function where(w: World, name: string): { x: number; y: number } | null {
   if (place) return { x: place.x, y: place.y };
   const n = w.npcs.find((x) => x.id === name) ?? w.pets.find((p) => !p.dead && p.def.id === name) ?? w.enemies.find((e) => !e.dead && e.def.id === name);
   if (n) return { x: n.x, y: n.y };
+  // a boss by its name, not standing anywhere yet (it comes when its ground is entered): a figure of it stands in
+  // its den for as long as the scene looks, so the camera never goes to an empty place (world.ts `stageBoss`)
+  if (BOSSES[name]) {
+    const e = w.stageBoss(name);
+    if (e) return { x: e.x, y: e.y };
+  }
   const b = w.map.buildings.find((x) => x.name === name);
   if (!b) return null;
   // (a building's picture is measured on the art's own grid; and it stands up the screen from where its feet are, so
@@ -367,13 +374,19 @@ export function questBeat(w: World): SceneDef | null {
       { title: q.name, sub: 'label' in o ? o.label : undefined },
       { sfx: sound },
       ...(o.kind === 'boss' ? [{ shake: 3 }] : []),
-      ...(far && t ? [{ at: { x: t.x, y: t.y } }, { wait: 2.2 }] : [{ wait: 1.8 }]),
+      // (what the camera goes out to is there to be seen: a boss stands in its den for the shot, and a pack that
+      // was cut down and hasn't come back yet comes back now. The owner: "it tried focusing on grimtusk but he wasnt
+      // there ... make sure every time a cinematic focuses, it renders the enemies/boss it focuses on")
+      ...(far && t ? [o.kind === 'boss' && bossHere(w, o.boss) ? { look: o.boss } : { at: { x: t.x, y: t.y } }, { wait: 2.2 }] : [{ wait: 1.8 }]),
       { look: 'hero' },
     ];
+    if (far && t && (o.kind === 'kill' || o.kind === 'loot')) w.callPacks(t.x, t.y);
     return { id, region: w.region.id, steps };
   }
   return null;
 }
+
+const bossHere = (w: World, boss: string): boolean => w.map.markers.some((pm) => pm.marker.kind === 'boss' && pm.marker.boss === boss);
 
 function play(w: World, def: SceneDef): void {
   w.scene = { def, step: 0, t: 0, begun: false, focus: null, emotes: [], turns: {}, acts: {}, posed: {} };
@@ -640,6 +653,7 @@ export function advanceScene(w: World): boolean {
 
 /** A memory's figures go (its vision is over, or the scene). */
 function clearGhosts(w: World, s: ScenePlay): void {
+  w.unstage();
   if (!s.ghosts?.length) return;
   const gone = new Set(s.ghosts);
   // the figures of a memory fade out where they stood, as the people of a place do when they leave

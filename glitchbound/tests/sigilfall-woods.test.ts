@@ -124,6 +124,25 @@ describe('a boss’s ground out in the land', () => {
   });
 });
 
+describe('a boss’s room in a dungeon', () => {
+  it('has no way in but its doors (the Rime Wyrm’s cavern opened onto the Jarl’s hall)', () => {
+    for (const def of Object.values(REGIONS)) {
+      if (def.kind !== 'dungeon' || !def.encounters?.length) continue;
+      const m = parseRegion(def);
+      const start = m.markers.find((p) => p.marker.kind === 'start');
+      if (!start) continue;
+      for (let r = 0; r < m.doors.length; r++) {
+        if (!m.doors[r]!.length || !m.roomTiles[r]?.length || m.room[start.ty * m.w + start.tx] === r + 1) continue;
+        setDoors(m, r, true);
+        const seen = reach(m, start.ty * m.w + start.tx);
+        const leaked = m.roomTiles[r]!.filter((i) => seen[i]).length;
+        setDoors(m, r, false);
+        expect(leaked, `${def.id} room ${r}`).toBe(0);
+      }
+    }
+  });
+});
+
 describe('standing in the edge of a wood', () => {
   it('is no safe place: what hunts a hero comes in after them', async () => {
     const { newWorld, readyHero } = await import('./sigilfall-bot');
