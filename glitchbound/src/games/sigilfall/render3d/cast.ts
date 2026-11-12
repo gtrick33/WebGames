@@ -354,7 +354,10 @@ export class Cast {
     if (kit.gear && (opts?.alpha ?? 1) > 0.6 && !(opts?.rise ?? 0)) {
       // (shares of its real height: a long beast is sized by its length, but its gear by how tall it stands)
       const H = (mesh.max[1] - mesh.min[1]) * s;
-      for (const g of kit.gear) this.worn(g, x * UNIT, lift, y * UNIT, rot, H, opts?.flash ?? 0);
+      for (const g of kit.gear) {
+        this.worn(g, x * UNIT, lift, y * UNIT, rot, H, opts?.flash ?? 0);
+        if (g.both) this.worn({ ...g, turn: (g.turn ?? 0) + Math.PI }, x * UNIT, lift, y * UNIT, rot, H, opts?.flash ?? 0);
+      }
     }
     if (kit.top) {
       const e2 = this.entry(kit.top.k, { k: kit.top.k });

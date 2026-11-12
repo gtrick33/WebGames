@@ -38,9 +38,10 @@ export interface Kit {
    * What a great beast wears or carries (a boss's barding, trophies, a shell): props fixed to it, turned with it. Each
    * is placed `x` to its right, `y` up and `z` forward and sized `h` long (its longest side), all as shares of the
    * beast's own height;
-   * `turn` turns it about its own upright (radians), `tipX`/`tipZ` tip it forward and sideways.
+   * `turn` turns it about its own upright (radians), `tipX`/`tipZ` tip it forward and sideways; `both` draws it
+   * from behind as well (a wall banner has only a front, and vanished when the beast turned away).
    */
-  gear?: { m: string; x?: number; y: number; z?: number; h: number; tint?: string; turn?: number; tipX?: number; tipZ?: number }[];
+  gear?: { m: string; x?: number; y: number; z?: number; h: number; tint?: string; turn?: number; tipX?: number; tipZ?: number; both?: boolean }[];
   /**
    * Built as a mount is (render3d/mountKit.ts): a great beast made the way the drakes are made, with their horns,
    * blades, wings, plates and light, sized and moved as a creature (it walks, strikes and falls as one).
@@ -230,12 +231,13 @@ put('magma-hound', { k: 'a_wolf', beast: BEASTS.magmaHound });
 put('gnasher', {
   k: 'a_wolf',
   beast: BEASTS.warHound,
-  size: 2.3,
+  // (he was 2.3 of a wolf: eight tiles of hound, too long to see his own attacks past, and too big to stride)
+  size: 1.3,
   gear: [
     // (the wolf stands 1 tall and runs from 1.1 behind to 0.95 ahead: its neck about 0.5 ahead, 0.7 up)
     // a great ash-pale war-wolf in the gang's black iron: a spiked collar, pauldrons, the gang's triple banner
     // raised from his back, trophies hung at his flanks
-    { m: 'banner_triple_red', y: 0.5, z: -0.3, h: 0.85 },
+    { m: 'banner_triple_red', y: 0.5, z: -0.3, h: 0.85, both: true },
     { m: 'w_shield_spikes', y: 0.42, z: 0.6, h: 0.4, tint: '#5a5660' },
     { m: 'BlackKnight_ShoulderLeft', x: 0.19, y: 0.46, z: 0.32, h: 0.32, tint: '#5a5660' },
     { m: 'BlackKnight_ShoulderRight', x: -0.19, y: 0.46, z: 0.32, h: 0.32, tint: '#5a5660' },
@@ -269,7 +271,7 @@ put('the-runewarden', {
   ...SMASH,
   gear: [
     { m: 'Necromancer_Crown', y: 0.93, z: 0.02, h: 0.2, tint: '#d8d0f0' },
-    { m: 'w_hammer_D', y: 0.25, z: -0.3, h: 0.75, tipZ: 0.5, tint: '#b8a888' },
+    { m: 'w_hammer_D', y: 0.25, z: -0.16, h: 0.75, tipZ: 0.5, tint: '#b8a888' },
     { m: 'Rock_1_A', x: 0.3, y: 0.74, z: 0, h: 0.13, tint: '#ffd27a' },
     { m: 'Rock_1_A', x: -0.3, y: 0.74, z: 0, h: 0.13, tint: '#ffd27a' },
   ],
@@ -283,7 +285,7 @@ put('ossa-the-founder', {
   size: 1.55,
   ...SMASH,
   gear: [
-    { m: 'anvil', y: 0.6, z: -0.3, h: 0.36, tint: '#6a6670' },
+    { m: 'anvil', y: 0.6, z: -0.17, h: 0.36, tint: '#6a6670' },
     { m: 'w_hammer_C', x: 0.36, y: 0.28, z: 0.1, h: 0.6, tipZ: 0.35, tint: '#ffb070' },
     { m: 'bucket', x: -0.36, y: 0.38, z: 0.14, h: 0.2, tint: '#ff8a3a' },
   ],
@@ -313,7 +315,7 @@ put('old-sluicegut', {
   size: 1.7,
   ...SMASH,
   gear: [
-    { m: 'w_shield_round', y: 0.42, z: -0.3, h: 0.5, turn: Math.PI, tint: '#9a6a4a' },
+    { m: 'w_shield_round', y: 0.42, z: -0.17, h: 0.5, turn: Math.PI, tint: '#9a6a4a' },
     { m: 'mushroom_tanTall', x: 0.3, y: 0.72, z: -0.05, h: 0.2, tint: '#d8e0a0' },
     { m: 'mushroom_tanTall', x: -0.32, y: 0.7, z: 0, h: 0.17, tint: '#c8d890' },
     { m: 'mushroom_tanTall', x: 0.12, y: 0.82, z: -0.2, h: 0.14, tint: '#e0e8b0' },
@@ -371,7 +373,8 @@ put('clatterclaw', {
   k: 'crab',
   tint: '#6a1c14',
   gain: 1.15,
-  size: 2.1,
+  // (2.1 until the bosses were looked over: his legs reached a dozen tiles, three times the ground the rules give him)
+  size: 1.6,
   gear: [
     { m: 'ribcage', y: 0.3, z: -0.15, h: 1.35, tint: '#e0d6c0' },
     { m: 'skull', y: 0.25, z: -0.75, h: 0.85, turn: Math.PI, tipX: -0.6, tint: '#d8ccb0' },

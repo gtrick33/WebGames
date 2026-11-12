@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BOSSES } from '../src/games/sigilfall/data/bosses';
 import { ENEMIES } from '../src/games/sigilfall/data/enemies';
 import { beastOf, type Beast } from '../src/games/sigilfall/render3d/beast';
 import { kitOf } from '../src/games/sigilfall/render3d/kits';
@@ -129,5 +130,37 @@ describe('Sigilfall: the creatures built from nothing', () => {
     const [wide, tall, deep] = size(readPack('k/naga_coil').meshes.body!);
     expect(wide).toBeGreaterThan(tall * 1.5);
     expect(deep).toBeGreaterThan(tall * 1.5);
+  });
+});
+
+describe('Sigilfall: Gnasher', () => {
+  it('bites from his jaws, in a cone wide enough to see past his own body', () => {
+    const bites = BOSSES.gnasher!.phases.flatMap((ph) => ph.patterns).filter((p) => p.id === 'cleave');
+    expect(bites.length).toBe(2);
+    for (const b of bites) {
+      expect(b.p!.ahead).toBeGreaterThanOrEqual(24);
+      expect(b.p!.r).toBeGreaterThanOrEqual(48);
+    }
+  });
+
+  it("is a great hound, not eight tiles of one, and his banner shows from behind", () => {
+    const kit = kitOf('gnasher');
+    expect(kit.size).toBeLessThanOrEqual(1.6);
+    expect(kit.beast).toBeDefined();
+    expect(kit.gear!.find((g) => g.m.startsWith('banner'))!.both).toBe(true);
+  });
+});
+
+describe('Sigilfall: what the great beasts carry', () => {
+  it("is on their backs, not hung in the air behind them (the Runewarden's hammer, Ossa's anvil, Sluicegut's wheel)", () => {
+    for (const [boss, piece] of [['the-runewarden', 'w_hammer_D'], ['ossa-the-founder', 'anvil'], ['old-sluicegut', 'w_shield_round']] as const) {
+      const g = kitOf(boss).gear!.find((x) => x.m === piece)!;
+      expect(g.z!, boss).toBeLessThan(0);
+      expect(g.z!, boss).toBeGreaterThanOrEqual(-0.2);
+    }
+  });
+
+  it('Clatterclaw is no wider than a boss room can show', () => {
+    expect(kitOf('clatterclaw').size).toBeLessThanOrEqual(1.7);
   });
 });

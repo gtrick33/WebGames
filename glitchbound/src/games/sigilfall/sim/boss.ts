@@ -414,6 +414,9 @@ function runPattern(w: World, e: Enemy, dt: number): void {
       const wind = num(u, 'wind', 0.7);
       const r = num(u, 'r', 50);
       const arc = num(u, 'arc', 0.9);
+      // (`ahead`: the blow starts this far in front of the boss's middle: a long beast bites with its head, and a
+      // cone from the middle of its back was hidden under it)
+      const ahead = num(u, 'ahead', 0);
       if (pt.step === 0) {
         const lunge = num(u, 'lunge', 0);
         const s0 = (pt.data.s0 ??= pt.t);
@@ -429,12 +432,12 @@ function runPattern(w: World, e: Enemy, dt: number): void {
         const a = aimAt();
         pt.data.a = a;
         pt.data.t0 = pt.t;
-        w.addTelegraph({ shape: 'cone', x: e.x, y: e.y, r, r2: arc, angle: a, len: 0, dur: wind, dmg: e.dmg * num(u, 'mul', 1.4), knock: 150, tone: 'enemy', owner: e.id, linger: 0 });
+        w.addTelegraph({ shape: 'cone', x: e.x + Math.cos(a) * ahead, y: e.y + Math.sin(a) * ahead, r, r2: arc, angle: a, len: 0, dur: wind, dmg: e.dmg * num(u, 'mul', 1.4), knock: 150, tone: 'enemy', owner: e.id, linger: 0 });
         e.face = Math.cos(a) < 0 ? Math.PI : 0;
         w.sfx('windup', 0.5);
         pt.step = 1;
       } else if (pt.step === 1 && pt.t >= pt.data.t0! + wind) {
-        w.addFx({ kind: 'slash', x: e.x, y: e.y, a: pt.data.a!, a2: arc * 2, life: 0.2, size: r, color: '#ffb0a0', r2: 1 });
+        w.addFx({ kind: 'slash', x: e.x + Math.cos(pt.data.a!) * ahead, y: e.y + Math.sin(pt.data.a!) * ahead, a: pt.data.a!, a2: arc * 2, life: ahead ? 0.28 : 0.2, size: r, color: '#ffb0a0', r2: 1 });
         w.sfx('swingBig');
         w.shake(2);
         pt.data.n = (pt.data.n ?? 0) + 1;
