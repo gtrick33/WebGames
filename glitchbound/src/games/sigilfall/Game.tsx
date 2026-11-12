@@ -55,6 +55,13 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
         return res.text();
       };
     }
+    // the site's pictures of the game, rendered from its own hall (render3d/keyArt.ts; scripts/sigilfall-key-art.mjs)
+    if (import.meta.env.DEV) {
+      (window as unknown as { __rbKeyArt?: (name: string) => Promise<string> }).__rbKeyArt = async (name) => {
+        const { keyArt, KEY_ART_SHOTS } = await import('./render3d/keyArt');
+        return keyArt(KEY_ART_SHOTS[name]!);
+      };
+    }
     host.report({ type: 'ready' });
     // a field being typed in (a hero's name, a party code): the phone's keyboard shortens the screen meanwhile
     const typing = (): boolean => {

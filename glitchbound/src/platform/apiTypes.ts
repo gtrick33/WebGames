@@ -336,6 +336,8 @@ export interface GmPlayerDetail {
   save: unknown;
   ring: unknown;
   vigil: unknown;
+  /** The shop items they bought for the game (the Gloamknight Pack, mounts, Wardrobe looks), by id. */
+  bought: string[];
   orders: GmOrderView[];
   graves: { id: string; created: number; name: string; cls: string; level: number; deletedAt: number; restoredAt: number | null }[];
 }

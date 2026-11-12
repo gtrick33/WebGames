@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { GLOAMKNIGHT_ITEM, offered, PRODUCTS, type Product } from '../../../catalog/shop';
 import { openSignIn } from '../../../components/openSignIn';
+import { BannerArt, FramedAvatar } from '../../../components/Looks';
 import { Checkout, itemText, type CheckoutLook } from '../../../components/ShopCheckout';
+import { SigilInspect } from '../../../components/SigilInspect';
 import { SigilPicture } from '../../../components/SigilPicture';
 import { fill, priceIn, rich, useShopText } from '../../../i18n/shopText';
 import { useAccount } from '../../../platform/account';
@@ -15,6 +17,10 @@ import { Doll } from './Doll';
  * Sigilfall's own shop: the Gloamknight Pack, the mounts and the Wardrobe looks, and nothing else of the site's. It
  * is the same shop as the site's page, shown where the things are used: the same items at the same prices, the same
  * two statements ticked by hand and the same checkout (components/ShopCheckout.tsx), which brings the buyer back here.
+ *
+ * Everything is shown as it looks, as on the site's page: each piece of the pack has its picture (the helm, the armor,
+ * the drake, the border on the player's own picture, the banner), and a mount or a Wardrobe look opens on a stand to
+ * be turned round before it is bought (components/SigilInspect.tsx).
  *
  * It keeps the shop's rules (src/catalog/shop.ts): every price in full, one-time purchases, no countdowns and nothing
  * that makes a hero stronger. And it stays out of the way: nothing opens it but the player (the small button on the
@@ -40,6 +46,7 @@ export function StorePanel({ onClose, bought, focus }: { onClose: () => void; bo
   const { me } = useAccount();
   const items = useLiveCatalog().raw.shopItems ?? PRODUCTS;
   const [buying, setBuying] = useState<string | null>(null);
+  const [looking, setLooking] = useState<Product | null>(null);
   if (!words) return null;
   const w = words.shop;
   const canBuy = money.shop || !!me?.isAdmin;
@@ -74,9 +81,16 @@ export function StorePanel({ onClose, bought, focus }: { onClose: () => void; bo
       <strong>{price(p)}</strong> <span className="rb-small rb-dim">{w.vat}</span>
     </p>
   );
+  /** An item's picture, which opens it on a stand to be turned round. */
+  const picture = (p: Product) =>
+    p.sigil && (
+      <button type="button" className="rb-store-look" onClick={() => setLooking(p)} aria-label={fill(w.inspect, { name: text(p).name })} title={fill(w.inspect, { name: text(p).name })}>
+        <SigilPicture id={p.id} spec={p.sigil} size={240} className="rb-store-pic" />
+      </button>
+    );
   const card = (p: Product) => (
     <li key={p.id} className={`rb-store-item${isMount(p) ? ' is-mount' : ''}${owned.has(p.id) ? ' is-owned' : ''}${buying === p.id ? ' is-buying' : ''}`}>
-      {p.sigil && <SigilPicture id={p.id} spec={p.sigil} size={240} className="rb-store-pic" />}
+      {picture(p)}
       <div className="rb-store-words">
         <strong>{text(p).name}</strong>
         <span className="rb-small rb-dim">{text(p).blurb}</span>
@@ -101,21 +115,28 @@ export function StorePanel({ onClose, bought, focus }: { onClose: () => void; bo
         )}
         {pack && (
           <section className={`rb-store-pack${focus === pack.id ? ' is-focus' : ''}${owned.has(pack.id) ? ' is-owned' : ''}`} aria-labelledby="rb-store-pack">
-            <Doll className="rb-store-hero" src={heroDollUrl(heroLook('gloamknight', {}, {}, 'm'), 'down', 3, heldWeapon('gloamknight', undefined), false)} />
             <div className="rb-store-words">
               <h3 id="rb-store-pack">{text(pack).name}</h3>
               <p className="rb-small">{text(pack).blurb}</p>
-              <ul className="rb-store-parts" aria-label={w.inPack}>
-                <li>
-                  <b>{w.packClass}</b>
-                  <span className="rb-dim">{w.packClassWhat}</span>
+            </div>
+            <ul className="rb-store-parts" aria-label={w.inPack}>
+              <li className="is-class">
+                <Doll className="rb-store-hero" src={heroDollUrl(heroLook('gloamknight', {}, {}, 'm'), 'down', 3, heldWeapon('gloamknight', undefined), false)} />
+                <b>{w.packClass}</b>
+                <span className="rb-dim">{w.packClassWhat}</span>
+              </li>
+              {parts.map((x) => (
+                <li key={x.id}>
+                  {picture(x)}
+                  {x.look?.kind === 'banner' && <BannerArt spec={x.look} className="rb-store-banner" />}
+                  {x.look && x.look.kind !== 'banner' && (
+                    <FramedAvatar name={me?.nickname ?? 'GlitchBound'} src={me?.avatar} size={64} border={x.look.kind === 'border' ? x.look : undefined} icon={x.look.kind === 'icon' ? x.look : undefined} />
+                  )}
+                  <b>{text(x).name}</b>
                 </li>
-                {parts.map((x) => (
-                  <li key={x.id}>
-                    <b>{text(x).name}</b>
-                  </li>
-                ))}
-              </ul>
+              ))}
+            </ul>
+            <div className="rb-store-words">
               {cost(pack)}
               {action(pack)}
             </div>
@@ -148,6 +169,7 @@ export function StorePanel({ onClose, bought, focus }: { onClose: () => void; bo
           })}
         </p>
       </div>
+      {looking?.sigil && <SigilInspect spec={looking.sigil} name={text(looking).name} hint={w.turnHint} close={w.close} onClose={() => setLooking(null)} />}
     </Frame>
   );
 }

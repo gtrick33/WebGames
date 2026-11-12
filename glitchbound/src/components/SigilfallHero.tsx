@@ -27,12 +27,12 @@ export function useSigilfall() {
 }
 
 /**
- * The first thing on the site: a banner of Sigilfall's key art (the Wardens' Sanctum at night, all seven heroes in their
- * sigil armor and two Sigil Drakes, composed from the game's own 3D), its name in gold and one button. A cue on its
- * bottom edge says there's more below. The Gloamknight has his own sigil medallion in its top corner, clear of the
- * heroes: a picture, and a way into the game like the rest of the banner. It sells nothing: his pack is in the shop
- * (the Shop tab, and Sigilfall's own shop inside the game), for whoever goes looking (the owner's call, 2026-11-12:
- * a "New class · Gloamknight Pack" tag on the first thing a visitor sees was too forward).
+ * The first thing on the site: a banner of Sigilfall's key art (the Wardens' Sanctum at night, all eight heroes in their
+ * sigil armor and two Sigil Drakes, rendered from the game's own 3D), its name in gold and one button. A cue on its
+ * bottom edge says there's more below. All eight heroes are in the picture, the Gloamknight on the dais among them
+ * (scripts/sigilfall-key-art.mjs renders it from the game). The banner sells nothing: his pack is in the shop (the
+ * Shop tab, and Sigilfall's own shop inside the game), for whoever goes looking. He had a medallion of his own in the
+ * banner's corner, with a "New class · Gloamknight Pack" tag; the owner had both taken off (2026-11-12).
  */
 export function SigilfallHero() {
   const t = useT();
@@ -59,9 +59,6 @@ export function SigilfallHero() {
           <i key={i} className="sfh-ember" style={style} />
         ))}
       </div>
-      <Link href={`${game.section!.path}?play=1`} className="sfh-gk" aria-label="Sigilfall">
-        <img src="/games/sigilfall/gloamknight-medal.webp" alt="" width={300} height={300} decoding="async" />
-      </Link>
 
       <div className="sfh-inner">
         <div className="sfh-copy">

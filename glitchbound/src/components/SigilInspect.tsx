@@ -14,6 +14,8 @@ export function SigilInspect({ spec, name, hint, close, onClose }: { spec: Sigil
   const [failed, setFailed] = useState(false);
   const [at, setAt] = useState(0);
   const drag = useRef<{ x: number; at: number } | null>(null);
+  // (inside Sigilfall on an upright phone the game is turned a quarter: a drag along the item runs down the screen)
+  const along = (e: { clientX: number; clientY: number; currentTarget: Element }): number => (e.currentTarget.closest('.is-turned') ? e.clientY : e.clientX);
   const touched = useRef(false);
   const shut = useRef<HTMLButtonElement>(null);
   const size = spec.kind === 'mount' ? 420 : 380;
@@ -79,13 +81,13 @@ export function SigilInspect({ spec, name, hint, close, onClose }: { spec: Sigil
           className={`sigil-pic sigil-inspect-stage ${spec.kind === 'mount' ? 'is-mount' : `is-${spec.slot}`}`}
           onPointerDown={(e) => {
             touched.current = true;
-            drag.current = { x: e.clientX, at };
+            drag.current = { x: along(e), at };
             e.currentTarget.setPointerCapture(e.pointerId);
           }}
           onPointerMove={(e) => {
             const d = drag.current;
             if (!d) return;
-            const step = Math.round((e.clientX - d.x) / 14);
+            const step = Math.round((along(e) - d.x) / 14);
             setAt((((d.at - step) % FRAMES) + FRAMES) % FRAMES);
           }}
           onPointerUp={() => {

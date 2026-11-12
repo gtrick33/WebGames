@@ -420,13 +420,14 @@ export class Cast {
    * A mount, its saddle over the spot it's standing on, so that it turns round its rider. Says where the saddle is
    * right now, by the same sums the animal's own frame is drawn with: what rides on it moves exactly with it.
    */
-  mount(def: MountDef, x: number, y: number, rot: number, motion: Motion, opts?: { alpha?: number; flash?: number }): Saddle | null {
+  mount(def: MountDef, x: number, y: number, rot: number, motion: Motion, opts?: { alpha?: number; flash?: number; scale?: number }): Saddle | null {
     const e = this.mountEntry(def);
     const crowd = e.crowd;
     const model = e.model;
     if (!crowd || !model) return null;
     const { shape, rig, joint } = model;
-    const s = shape.px / TILE;
+    // (`scale`: a great drake in a picture, render3d/keyArt.ts; a mount in the game is its own size)
+    const s = (shape.px / TILE) * (opts?.scale ?? 1);
     motion.frames(rig, frames);
     const cos = Math.cos(rot);
     const sin = Math.sin(rot);

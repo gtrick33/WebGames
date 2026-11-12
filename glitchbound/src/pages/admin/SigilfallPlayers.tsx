@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { GLOAMKNIGHT_ITEM, PRODUCTS } from '../../catalog/shop';
 import { Icon } from '../../components/Icon';
 import { CLASSES, MAX_LEVEL, xpToNext } from '../../games/sigilfall/data/classes';
 import { ITEMS } from '../../games/sigilfall/data/items';
 import { MOUNT_DEFS } from '../../games/sigilfall/data/mounts';
+import { GAME_VERSION } from '../../games/sigilfall/data/version';
 import { QUEST_DEFS } from '../../games/sigilfall/data/quests';
 import { REGIONS } from '../../games/sigilfall/data/regions';
 import { SKILLS } from '../../games/sigilfall/data/skills';
@@ -94,11 +96,12 @@ function PlayerList() {
         <h2 id="gm-players">
           <Icon name="user" /> Players
         </h2>
-        <span className="mono info-small">game master tools</span>
+        <span className="mono info-small">game master tools · Sigilfall {GAME_VERSION}</span>
       </div>
       <p className="info-small">
         Every signed-in player with a hero on the server. Open one to see their heroes’ progress, gear, talents, quests and dungeons, and to help them out. What you do waits until their game next
-        checks, about a minute if they’re playing, and is written to the change log. Guests’ heroes stay on their own device until they sign in.
+        checks, about a minute if they’re playing, and is written to the change log. Guests’ heroes stay on their own device until they sign in. A player’s page also says what they have from
+        the shop (the Gloamknight Pack, mounts, looks), which is what decides their hero slots.
       </p>
       {o && (
         <>
@@ -288,6 +291,10 @@ function PlayerPage({ id }: { id: string }) {
             </h2>
             <p className="info-small">
               {data.email} · member since {when(data.createdAt)} · last seen {when(data.lastSeen)}
+            </p>
+            <p className="info-small">
+              {data.bought.length ? `Has from the shop (bought or given): ${data.bought.map((id) => PRODUCTS.find((p) => p.id === id)?.name ?? id).join(', ')}.` : 'Nothing from the shop.'}
+              {data.bought.includes(GLOAMKNIGHT_ITEM) ? ' The pack gives five hero slots and the Gloamknight.' : ' Three hero slots, no Gloamknight.'}
             </p>
             <p className="info-small">{data.savedAt ? `Save from ${when(data.savedAt)} (${ago(data.savedAt)}).` : 'Nothing saved on the server yet.'}</p>
             {data.banned && (

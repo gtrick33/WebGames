@@ -165,6 +165,45 @@ export class Hall3D {
     st.render(dt);
   }
 
+  /**
+   * A still of the hall for the site's pictures (render3d/keyArt.ts): whoever `place` stands in it, every sigil of
+   * the crown alight, seen from wherever `cam` is. Called a frame at a time until everyone's model has arrived.
+   */
+  poster(cam: { at: readonly [number, number, number]; look: readonly [number, number, number]; fov: number }, color: string, place: (st: Stage) => void, time: number): boolean {
+    const st = this.stage;
+    if (!st.ready) return false;
+    if (!this.built) {
+      this.built = true;
+      this.dress = dressHall(st, st.landPacks!);
+    }
+    LIGHT.uTime.value = time;
+    LIGHT.uSun.value.set(SUN[0], SUN[1], SUN[2]).normalize();
+    LIGHT.uDark.value.set(0, 8, 0, 0);
+    LIGHT.uNight.value.set(1, 1, 1, 0);
+    LIGHT.uGrade.value.set(0, 0, 0, 0);
+    for (const f of LIGHT.uFlames.value) f.set(0, 0, 0);
+    const c = st.camera;
+    c.fov = cam.fov;
+    c.updateProjectionMatrix();
+    c.position.set(cam.at[0], cam.at[1], cam.at[2]);
+    c.lookAt(cam.look[0], cam.look[1], cam.look[2]);
+    c.updateMatrixWorld(true);
+    st.syncCamera();
+    const tint = hexRgb(color);
+    for (const s of this.dress?.colors ?? []) {
+      s.begin();
+      s.put(0, 0, 0, 0, 1, 1, 1, tint[0], tint[1], tint[2], 0);
+      s.end();
+    }
+    this.crown({ look: null as never, held: null, shield: false, sigils: [true, true, true, true, true, true, true] }, time);
+    st.cast.begin();
+    place(st);
+    st.cast.end();
+    this.air(time);
+    st.render(0);
+    return true;
+  }
+
   /** The broken crown, turning slowly over the head of whoever's on the dais, each sigil they've won alight. */
   private crown(here: HallHero | null | undefined, time: number): void {
     const s = this.dress?.sigils;
