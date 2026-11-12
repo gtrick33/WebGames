@@ -184,9 +184,11 @@ export function FriendsSection({ engine }: { engine: SigilEngine }) {
  * invitation runs out.
  */
 export function InviteCards({ engine }: { engine: SigilEngine }) {
-  const inv = engine.invites[0];
+  // (a screen drawn over a stand-in for the engine, as some tests draw one, has nobody asking)
+  const waiting = (engine.invites as SigilEngine['invites'] | undefined) ?? [];
+  const inv = waiting[0];
   if (!inv) return null;
-  const more = engine.invites.length - 1;
+  const more = waiting.length - 1;
   const inWorld = !!engine.hero && engine.ui.screen === 'game';
   const leaving = inWorld && !!engine.party && (engine.party.view?.seats.length ?? 1) > 1;
   return (
