@@ -4681,6 +4681,189 @@
   user-select: text;
   -webkit-user-select: text;
 }
+/* ------------------------------------------------------------------ friends, inside the game (ui/Friends.tsx)
+   The party panel: the party on one side, the player's GlitchBound friends on the other, who is online, and a
+   button each to ask them in. */
+.rb-party-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.rb-party-cols > .rb-party {
+  max-width: none;
+}
+.rb-friends {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  justify-items: start;
+  min-width: 0;
+  padding: 10px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 8px;
+  background: rgb(18 12 8 / 0.4);
+}
+.rb-friends > * {
+  margin: 0;
+}
+.rb-friends h3 {
+  color: var(--rb-gold);
+  font: 700 15px var(--rb-serif, Georgia, serif);
+}
+.rb-friends h3 span {
+  font: 600 12px var(--rb-sans, system-ui, sans-serif);
+}
+.rb-friend-list {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  max-height: 232px;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+}
+.rb-friend-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 6px 5px 8px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.05);
+}
+.rb-friend-who {
+  display: grid;
+  min-width: 0;
+}
+.rb-friend-who strong,
+.rb-friend-who span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* who is here: a lit lamp for a friend in Sigilfall, a plain one for a friend online elsewhere, none for the rest */
+.rb-friend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.16);
+}
+.is-online > .rb-friend-dot {
+  background: #6fd07a;
+}
+.is-here > .rb-friend-dot {
+  background: #6fd07a;
+  box-shadow: 0 0 0 3px rgb(111 208 122 / 0.25);
+}
+.is-offline > .rb-friend-who strong {
+  color: var(--rb-dim);
+}
+.rb-friend-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 6px;
+  width: 100%;
+  align-items: center;
+}
+.rb-friend-add label {
+  grid-column: 1 / -1;
+}
+.rb-friend-add .rb-input {
+  min-width: 0;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rb-friend-ok {
+  color: #b9f0b0;
+}
+.rb-friend-mine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.rb-friend-mine strong {
+  letter-spacing: 0.1em;
+  font-family: var(--rb-mono, ui-monospace, monospace);
+}
+.rb-textbtn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--rb-gold);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+/* a narrow panel (a phone held upright, a small window): the friends go under the party */
+@container (max-width: 640px) {
+  .rb-party-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A friend's invitation, as it arrives: a card at the top of the game, over the world, a menu or the hero list. It
+   takes no controls but its own two buttons. */
+.rb-invite {
+  position: absolute;
+  top: calc(58px + var(--sa-t));
+  left: 50%;
+  z-index: 40;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  width: max-content;
+  max-width: min(360px, calc(100% - 24px));
+  padding: 10px 14px;
+  border: 2px solid var(--rb-gold-2);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgb(44 34 25 / 0.97), rgb(24 17 11 / 0.97));
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.55);
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  animation: rb-invite-in 0.25s ease-out;
+}
+.rb-invite p {
+  margin: 0;
+}
+.rb-invite strong {
+  color: var(--rb-gold);
+}
+.rb-invite-row {
+  display: flex;
+  gap: 8px;
+}
+@keyframes rb-invite-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+}
+/* In the world the top of the picture is taken (the hero's bars, the quest, a boss's bar), so the card sits low in
+   the middle: over the skill bar on a desk, and on a phone between the stick and the thumb's buttons, no wider than
+   the gap between them. */
+.rb-ui > .rb-invite {
+  top: auto;
+  bottom: calc(92px + var(--sa-b));
+}
+.rb-ui.is-touch > .rb-invite {
+  bottom: calc(12px + var(--sa-b));
+  left: 42.5%;
+  max-width: max(190px, 33cqw);
+}
+.rb-ui.is-touch.is-lefty > .rb-invite {
+  left: 57.5%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-invite {
+    animation: none;
+  }
+}
+
 .rb-party {
   display: grid;
   gap: 10px;

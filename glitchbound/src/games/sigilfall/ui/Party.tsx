@@ -1,5 +1,3 @@
-import { api, useAccount } from '../../../platform/account';
-import type { FriendsView } from '../../../platform/apiTypes';
 import { useEffect, useState } from 'react';
 import { CLASSES } from '../data/classes';
 import { KEY_MIN, keyAffixes, KEY_AFFIXES, weekOf } from '../data/keystones';
@@ -8,6 +6,7 @@ import type { ClassId, RegionId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { COOP_LEVEL, MAX_PLAYERS } from '../net/room';
 import { Frame } from './common';
+import { FriendsSection } from './Friends';
 
 /**
  * Play together (net/room.ts, net/coop.ts): start a party or join one by its code, share the invite, see
@@ -15,51 +14,15 @@ import { Frame } from './common';
  * then fights in the same run, each on their own device.
  */
 
-/** Friends from the site's list, a tap each to ask them in: they see it on any page they have open. */
-function FriendInvitePicker({ code }: { code: string }) {
-  const { me } = useAccount();
-  const [open, setOpen] = useState(false);
-  const [friends, setFriends] = useState<FriendsView['friends'] | null>(null);
-  const [asked, setAsked] = useState<string[]>([]);
-  if (!me) return null;
-  const toggle = (): void => {
-    setOpen(!open);
-    if (friends) return;
-    api<FriendsView>('/api/friends')
-      .then((v) => setFriends(v.friends))
-      .catch(() => setFriends([]));
-  };
-  const ask = (id: string): void => {
-    setAsked((a) => [...a, id]);
-    void api('/api/friends', { body: { action: 'invite', id, game: 'sigilfall', code } }).catch(() => setAsked((a) => a.filter((x) => x !== id)));
-  };
-  return (
-    <div className="rb-party-friends">
-      <button className="rb-btn is-small is-ghost" onClick={toggle} aria-expanded={open}>
-        Invite a friend
-      </button>
-      {open && (
-        <ul>
-          {friends?.length === 0 && <li className="rb-small">No friends yet. Add them under Friends on your profile.</li>}
-          {friends?.map((f) => (
-            <li key={f.id}>
-              <span>{f.nickname}</span>
-              <button className="rb-btn is-small" disabled={asked.includes(f.id)} onClick={() => ask(f.id)}>
-                {asked.includes(f.id) ? 'Asked' : 'Ask'}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
 export function PartyPanel({ engine }: { engine: SigilEngine }) {
   const party = engine.party;
   return (
-    <Frame title="Play together" onClose={() => engine.closePanel()} className="rb-panel-party">
-      {party ? <Lobby engine={engine} /> : <NoParty engine={engine} />}
+    <Frame title="Play together" onClose={() => engine.closePanel()} className="rb-panel-party" wide>
+      {/* the party on one side, the player's friends on the other (under it on a narrow screen) */}
+      <div className="rb-party-cols">
+        {party ? <Lobby engine={engine} /> : <NoParty engine={engine} />}
+        <FriendsSection engine={engine} />
+      </div>
     </Frame>
   );
 }
@@ -169,7 +132,6 @@ function Lobby({ engine }: { engine: SigilEngine }) {
           {sent || 'Invite'}
         </button>
       </div>
-      <FriendInvitePicker code={v.code} />
       <ul className="rb-party-seats" aria-label="The party">
         {v.seats.map((s) => (
           <li key={s.n} className={`${s.online ? '' : 'is-away'}${s.you ? ' is-you' : ''}`}>

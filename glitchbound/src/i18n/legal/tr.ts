@@ -98,7 +98,7 @@ const tr: LegalText = {
     deleteMe: 'Hesabını ve tüm bu verileri istediğin zaman <profile>profilinden</profile> silebilirsin.',
     deleteGuest: 'Hesabını ve tüm bu verileri istediğin zaman profilinden silebilirsin.',
     friendsH: 'Arkadaşlar ve rafın',
-    friends: 'Bir arkadaşını, onun sana verdiği bir kod veya bağlantıyla eklersin; kimse seni aratamaz. Arkadaşların takma adını, seviyeni, Kupa Rafını, arkadaş sıralamalarındaki skorlarını ve en son oynadığın oyunu görür. Bir arkadaşın seni kendi mesajı olmadan odasına davet edebilir. Birini kaldırmak ya da engellemek hemen geçerli olur ve hesabını silmek tüm bunları kaldırır.',
+    friends: 'Bir arkadaşını, onun sana verdiği bir kod veya bağlantıyla eklersin; kimse seni aratamaz. Arkadaşların takma adını, seviyeni, Kupa Rafını, arkadaş sıralamalarındaki skorlarını ve en son oynadığın oyunu görür. Şu anda çevrimiçi olup olmadığını ve hangi oyunda olduğunu da görürler. Bir arkadaşın seni kendi mesajı olmadan odasına davet edebilir. Birini kaldırmak ya da engellemek hemen geçerli olur ve hesabını silmek tüm bunları kaldırır.',
     challengesH: 'Arkadaş meydan okumaları',
     challenges: 'Bir meydan okuma başlattığında ya da birine katıldığında, oynadığın ad ve oradaki skorların, meydan okumadaki herkes görebilsin diye sunucumuzda saklanır; yerini tutan, bu tarayıcıdan gelen rastgele bir anahtarla birlikte. Bu anahtar bu tarayıcının depolamasında ve tek bir zorunlu çerezde (<code>gb_guest</code>, yalnızca sunucumuzun okuyabildiği, en fazla 400 gün) tutulur; böylece tarayıcı depolamasını temizlese bile yerlerin korunur. Yukarıdan GlitchBound verilerini silmek ikisini de kaldırır. Meydan okumalar bittikten yaklaşık bir ay sonra silinir.',
     roomsH: 'Parti odaları ve Discord',

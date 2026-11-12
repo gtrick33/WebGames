@@ -2276,6 +2276,9 @@ export const KEYS: string[] = [
   "Listen: your friends will say their clues out loud.",
   "Listen to the clues, then type your guess.",
   "No hints beyond the clues! {name} is guessing.",
+  // a friend who is here right now (the Friends page; Sigilfall's own list says it in its own words)
+  "online now",
+  "in {game}",
 ];
 
 export const UI_COUNT = 311;

@@ -98,7 +98,7 @@ const en: LegalText = {
     deleteMe: 'You can delete your account and all of this data at any time from <profile>your profile</profile>.',
     deleteGuest: 'You can delete your account and all of this data at any time from your profile.',
     friendsH: 'Friends and your shelf',
-    friends: 'You add a friend with a code or link they gave you; nobody can search for you. Your friends see your nickname, level, Trophy Shelf, your scores on the friends boards and the game you last played. A friend can ask you to join their room, with no message of their own. Removing or blocking someone takes effect at once, and deleting your account removes all of this.',
+    friends: 'You add a friend with a code or link they gave you; nobody can search for you. Your friends see your nickname, level, Trophy Shelf, your scores on the friends boards and the game you last played. They also see whether you are online right now, and in which game. A friend can ask you to join their room, with no message of their own. Removing or blocking someone takes effect at once, and deleting your account removes all of this.',
     challengesH: 'Friend challenges',
     challenges: 'When you start or join a challenge, the name you play under and your scores in it are stored on our server so everyone in the challenge can see them, with a random key from this browser that keeps your seat. That key is kept in this browser’s storage and in one essential cookie (<code>gb_guest</code>, which only our server can read, for up to 400 days), so you keep your seats even if the browser clears its storage; deleting your GlitchBound data above removes both. Challenges are deleted about a month after they end.',
     roomsH: 'Party rooms and Discord',

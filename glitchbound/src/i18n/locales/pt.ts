@@ -2267,6 +2267,8 @@ const pt: string[] = [
   'Ouve: os teus amigos vão dizer as dicas em voz alta.',
   'Ouve as dicas e depois escreve o teu palpite.',
   'Nenhuma ajuda além das dicas! {name} está a adivinhar.',
+  'online agora',
+  'em {game}',
 ];
 
 export default pt;

@@ -272,6 +272,16 @@ hero whose quest waits on it. The party travels as one: the leader's roads and w
 others can't wander off without leaving the party, and a frame in an open land holds only the enemies near a hero.
 A leader who drops out is waited for twenty seconds.
 
+**Friends** (`ui/Friends.tsx`, `src/platform/friends.ts`, the engine's friends methods): the party panel shows the
+player's GlitchBound friends beside the party, the same list as the site's Friends page. Each row says whether the
+friend is online and whether they are in Sigilfall, and has an Invite button; with no party yet, inviting opens a
+questing party first. A friend is added by the code they gave, which adds them to that one list. An invitation arrives
+as a card over the game with Join and Not now (on the hero list it waits for a hero to be chosen); the site's own
+invitation bar leaves Sigilfall's invitations to the game while it is open. The game asks for invitations every 20
+seconds while its tab is in front, and that ask is also what tells friends the player is here: "online" is a tab seen
+in the last two and a half minutes (`server/friends.ts`), told to friends alone, and the time itself never leaves the
+server.
+
 **Paragon** (`progress/paragon.ts`): experience past 60 earns Paragon levels, each a point for Might (+1% damage),
 Vigor (+1% health), Precision (crit, up to 50 points) or Toughness (armor and regeneration, up to 50), taken back
 for free. With Riftstone loot it is what lets a hero climb further every week.

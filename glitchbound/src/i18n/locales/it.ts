@@ -2267,6 +2267,8 @@ const it: string[] = [
   'Ascolta: i tuoi amici diranno i loro indizi ad alta voce.',
   'Ascolta gli indizi, poi scrivi la tua risposta.',
   'Nessun aiuto oltre agli indizi! {name} sta indovinando.',
+  'online adesso',
+  'in {game}',
 ];
 
 export default it;

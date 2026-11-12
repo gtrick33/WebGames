@@ -187,7 +187,14 @@ export function FriendsPage() {
                   </strong>
                   <span>
                     {t(f.rank)} · {t('{n} points', { n: f.points })}
-                    {game && f.lastAt ? ` · ${t('played {game} {when}', { game: game.title, when: ago(f.lastAt) })}` : ''}
+                    {/* here right now (and in which game), else what they last played and when */}
+                    {f.online ? (
+                      <b className="friend-online"> · {f.onlineIn && getGame(f.onlineIn) ? t('in {game}', { game: getGame(f.onlineIn)!.title }) : t('online now')}</b>
+                    ) : game && f.lastAt ? (
+                      ` · ${t('played {game} {when}', { game: game.title, when: ago(f.lastAt) })}`
+                    ) : (
+                      ''
+                    )}
                   </span>
                 </span>
                 <span className="friend-actions">

@@ -2267,6 +2267,8 @@ const fr: string[] = [
   'Écoute : tes amis vont dire leurs indices à voix haute.',
   'Écoute les indices, puis tape ta réponse.',
   'Aucune aide en dehors des indices ! {name} devine.',
+  'en ligne maintenant',
+  'dans {game}',
 ];
 
 export default fr;

@@ -25,6 +25,7 @@ import { clockText, type World } from '../sim/world';
 import { sceneDark } from '../sim/scene';
 import { fmt, ItemIcon, Portrait } from './common';
 import { DesktopBar } from './DesktopBar';
+import { InviteCards } from './Friends';
 import { Panels } from './Panels';
 import { Minimap } from './Minimap';
 import { TipOverlay } from './Tips';
@@ -122,6 +123,8 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
       {ui.boss && <BossBar engine={engine} />}
       {engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}
       {!ui.dialogue && <Toasts engine={engine} />}
+      {/* a friend asking the player into their party (ui/Friends.tsx): over everything, a menu too */}
+      {!engine.world?.scene && <InviteCards engine={engine} />}
       {/* (on touch the announcements stack in a strip along the top, clear of the hero; on a mouse each keeps its place) */}
       <div className="rb-announce">
         {ui.banner && (
