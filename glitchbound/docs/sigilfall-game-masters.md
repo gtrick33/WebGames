@@ -11,6 +11,11 @@ potions, difficulty, Riftstone, time played, gear, bag, talents, skills, quests,
 gifts and looks. The Ring's standings and the Vigil's nights sync now too (`syncKeys.ts`), so they show here and follow the
 player between devices.
 
+A player's page also lists what they have from the shop for the game (the Gloamknight Pack, mounts, Wardrobe looks; bought
+or given, never a refunded one), read from `purchases`: the pack is what gives the fourth and fifth hero slots and the
+Gloamknight, so it explains a locked hero or a full hero screen. The page's header names the game's version
+(`src/games/sigilfall/data/version.ts`, also at the foot of the game's Settings).
+
 **Guests can't be seen.** Their heroes stay on their device, as the Privacy page promises. They appear once they sign in.
 
 ## How it acts

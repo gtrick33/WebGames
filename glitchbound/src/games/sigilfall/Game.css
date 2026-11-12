@@ -11171,9 +11171,7 @@
 }
 .rb-store-pack {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 14px;
-  align-items: center;
+  gap: 12px;
   padding: 12px;
   border: 1px solid rgb(154 106 224 / 0.45);
   border-radius: 8px;
@@ -11191,7 +11189,7 @@
   margin: 0;
 }
 .rb-store-hero {
-  height: 132px;
+  height: 96px;
   image-rendering: pixelated;
 }
 .rb-store-words {
@@ -11200,25 +11198,73 @@
   min-width: 0;
   justify-items: start;
 }
+/* what the pack gives, each piece as it looks: the class, the helm, the armor, the drake, the border, the banner */
 .rb-store-parts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 6px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
   font-size: 12px;
 }
 .rb-store-parts li {
-  display: flex;
-  gap: 6px;
-  align-items: baseline;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.07);
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  align-content: start;
+  padding: 8px 6px;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.26);
+  text-align: center;
+  line-height: 1.25;
 }
 .rb-store-parts b {
   font-weight: 700;
+}
+.rb-store-parts .rb-store-pic.sigil-pic,
+.rb-store-parts .rb-store-banner {
+  width: 96px;
+  height: 96px;
+}
+.rb-store-parts .avatar-frame,
+.rb-store-parts .avatar,
+.rb-store-parts .rb-store-hero {
+  margin: 16px 0;
+  height: 64px;
+}
+.rb-store-banner {
+  border-radius: 6px;
+  overflow: hidden;
+}
+/* an item's picture is a button: it opens the item on a stand, to be turned round */
+.rb-store-look {
+  position: relative;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: zoom-in;
+}
+.rb-store-look::after {
+  content: '⟳';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 12px;
+  background: rgb(20 12 40 / 0.78);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.25);
+}
+.rb-store-look:hover .sigil-pic,
+.rb-store-look:focus-visible .sigil-pic {
+  box-shadow: 0 0 0 2px var(--rb-gold);
 }
 .rb-store-list {
   display: grid;
@@ -11339,24 +11385,25 @@
   margin: 0;
   align-self: center;
 }
-/* a phone on its side: the pack's hero steps aside, and an item is its picture over its words */
+/* (on an upright phone the game lies on its side, so the screen's width is the stand's height) */
+.rb.is-turned .sigil-inspect-stage {
+  height: min(62vw, 440px);
+}
+/* a phone on its side: an item's picture is smaller beside its words */
 @container (max-width: 620px) {
-  .rb-store-hero {
-    height: 96px;
-  }
   .rb-store-item {
     grid-template-columns: 72px minmax(0, 1fr);
   }
-  .rb-store-pic.sigil-pic {
+  .rb-store-item .rb-store-pic.sigil-pic {
     width: 72px;
     height: 72px;
   }
 }
-@container (max-width: 420px) {
-  .rb-store-pack {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .rb-store-hero {
-    display: none;
-  }
+
+/* the game's version, at the foot of Settings */
+.rb-version {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  text-align: center;
+  letter-spacing: 0.06em;
 }

@@ -64,7 +64,10 @@ to the game. It exists only while the shop is open (or for an admin testing it).
 rules above is that it never comes to the player: nothing opens it but a small button on the title screen, a "See the pack"
 button under the locked class, and one line in the Wardrobe; it never opens by itself, nothing in the game waits on it, and no
 price is shown anywhere outside it (the hero screen said "Shop · €9.99" on the class's tile, and the home banner carried a
-"New class · Gloamknight Pack" tag: both are gone).
+"New class · Gloamknight Pack" tag: both are gone). The banner's picture now has the Gloamknight standing among the
+other seven heroes (`scripts/sigilfall-key-art.mjs` makes every Sigilfall picture from one scene), with no tag, price or link
+of his own. Inside the game's shop each piece of the pack is shown as it looks, and a mount, helm or armor opens on a stand to
+be turned round before buying, as on `/shop`.
 - **How the class is locked** (`src/games/sigilfall/progress/paidClasses.ts`): making a Gloamknight, playing one, picking it
   in the Vigil and the Ring and using the fourth and fifth hero slots all need the pack; admins can always, to test. The game asks the account each time, never
   the save, so a refund locks it again and the hero waits, kept. Bots in the Ring can still be Gloamknights.

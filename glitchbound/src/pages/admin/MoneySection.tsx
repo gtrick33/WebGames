@@ -53,7 +53,7 @@ function Switches({ data, send, busy }: { data: AdminCatalog; send: Send; busy: 
     {
       key: 'shop',
       title: 'The shop',
-      what: 'Opens the Shop tab, the terms of sale and the checkout to everyone. Turning it off closes all of them at once. Whoever bought something keeps it. You see the Shop tab either way, and can test a purchase while it’s closed.',
+      what: 'Opens the Shop tab, the shop inside Sigilfall (the same items at the same prices), the terms of sale and the checkout to everyone. Turning it off closes all of them at once. Whoever bought something keeps it. You see the Shop tab either way, and can test a purchase while it’s closed.',
       needs: [{ ok: hasAddress, text: 'Your postal address below' }],
     },
   ];
@@ -430,10 +430,10 @@ function NewItem({ taken, onAdd, onCancel }: { taken: string[]; onAdd: (p: Produ
     setKind(k);
     if (k === 'sigil-mount') {
       setSigil(NEW_MOUNT);
-      setEuros('2.99');
+      setEuros('1.99');
     } else if (k === 'sigil-look') {
       setSigil(NEW_LOOK);
-      setEuros('1.99');
+      setEuros('0.99');
     } else if (k !== 'plain') setLook({ kind: k, style: STYLES[k][0]!.id, colors: STYLES[k][0]!.colors });
   };
   let preview: ReactNode = <p className="info-small">No preview: this item has no look.</p>;

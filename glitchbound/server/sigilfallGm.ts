@@ -3,6 +3,7 @@
  * for the player's game to carry out (src/games/sigilfall/progress/gm.ts). Guests' heroes never leave their device.
  * Endpoints in functions/api/admin/sigilfall and functions/api/sigilfall.
  */
+import { GLOAMKNIGHT_ITEM } from '../src/catalog/shop';
 import type { GmHeroRow, GmOrderView, GmOverview, GmPlayerDetail, GmPlayerRow } from '../src/platform/apiTypes';
 import type { D1PreparedStatement, Env } from './http';
 
@@ -150,12 +151,17 @@ export async function playerDetail(env: Env, userId: string, now = Date.now()): 
     .bind(userId)
     .first<{ id: string; nickname: string; email: string; created_at: number; last_seen: number; banned_at: number | null; ban_reason: string | null }>();
   if (!u) return null;
-  const [saves, orders, graves] = await Promise.all([
+  const [saves, orders, graves, bought] = await Promise.all([
     env.DB.prepare(`SELECT key, data, updated_at FROM game_saves WHERE user_id = ? AND key IN (?, ?, ?)`).bind(userId, SAVE_KEY, RING_KEY, VIGIL_KEY).all<{ key: string; data: string; updated_at: number }>(),
     env.DB.prepare('SELECT * FROM sigilfall_orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 100').bind(userId).all<Row>(),
     env.DB.prepare('SELECT id, created, name, cls, level, deleted_at, restored_at FROM sigilfall_graves WHERE user_id = ? ORDER BY deleted_at DESC LIMIT 20')
       .bind(userId)
       .all<{ id: string; created: number; name: string; cls: string; level: number; deleted_at: number; restored_at: number | null }>(),
+    // what they bought for the game (the pack, mounts, looks): a refunded purchase doesn't count
+    env.DB.prepare("SELECT DISTINCT product FROM purchases WHERE user_id = ? AND status = 'paid' AND (product = ? OR product LIKE 'sigilfall-%') ORDER BY product")
+      .bind(userId, GLOAMKNIGHT_ITEM)
+      .all<{ product: string }>()
+      .catch(() => ({ results: [] as { product: string }[] })),
   ]);
   const of = (key: string) => saves.results.find((s) => s.key === key);
   const save = of(SAVE_KEY);
@@ -172,6 +178,7 @@ export async function playerDetail(env: Env, userId: string, now = Date.now()): 
     save: parseJson(save?.data),
     ring: parseJson(of(RING_KEY)?.data),
     vigil: parseJson(of(VIGIL_KEY)?.data),
+    bought: bought.results.map((r) => r.product),
     orders: orders.results.map(orderView),
     graves: graves.results.map((g) => ({ id: g.id, created: g.created, name: g.name, cls: g.cls, level: g.level, deletedAt: g.deleted_at, restoredAt: g.restored_at })),
   };

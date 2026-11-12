@@ -39,6 +39,7 @@ import { earnedTitles, titled, titleName, TITLES, wornTitle } from '../progress/
 import { WARDENS } from '../data/wardens';
 import { compareWith, linesOnlyIn, statRows } from './compare';
 import { PartyPanel } from './Party';
+import { GAME_VERSION } from '../data/version';
 import { StorePanel, useStoreOpen } from './Store';
 import { PRESETS } from '../progress/presets';
 import { clockText } from '../sim/world';
@@ -1473,22 +1474,27 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
             ))}
           </div>
           <span className="rb-small rb-dim">Spells go where your hero faces (the small arrow) or where you drag them. Aim assist nudges a dragged aim by a few degrees toward an enemy; it never overrides where you point.</span>
-          <span className="rb-kicker">Keyboard</span>
-          <div className="rb-seg" role="group" aria-label="Ultimate key">
-            {(['f', 't', 'shift', 'rmb'] as const).map((k) => (
-              <button key={k} className={s.ultKey === k ? 'is-on' : ''} onClick={() => set({ ultKey: k })}>
-                Ultimate: {k === 'rmb' ? 'Right mouse' : k === 'shift' ? 'Shift' : k.toUpperCase()}
-              </button>
-            ))}
-          </div>
-          <div className="rb-seg" role="group" aria-label="Fourth skill key">
-            {(['c', 'v', 'z', 'x'] as const).map((k) => (
-              <button key={k} className={s.skill4Key === k ? 'is-on' : ''} onClick={() => set({ skill4Key: k })}>
-                Fourth skill: {k.toUpperCase()}
-              </button>
-            ))}
-          </div>
-          <span className="rb-small rb-dim">WASD move · mouse aim · left click attack · Q E R {s.skill4Key.toUpperCase()} skills · Space dodge · {s.ultKey === 'rmb' ? 'Right mouse' : s.ultKey === 'shift' ? 'Shift' : s.ultKey.toUpperCase()} ultimate · 1 potion · Y ride · {s.ultKey === 'f' ? 'G' : 'F'} or Enter talk/travel · I bag · K talents · U skills · J quests · M map · O play together · Esc pause</span>
+          {/* (a phone has no keys to choose: the keyboard's part is for whoever is playing with one) */}
+          {!engine.touchMode && (
+            <>
+              <span className="rb-kicker">Keyboard</span>
+              <div className="rb-seg" role="group" aria-label="Ultimate key">
+                {(['f', 't', 'shift', 'rmb'] as const).map((k) => (
+                  <button key={k} className={s.ultKey === k ? 'is-on' : ''} onClick={() => set({ ultKey: k })}>
+                    Ultimate: {k === 'rmb' ? 'Right mouse' : k === 'shift' ? 'Shift' : k.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <div className="rb-seg" role="group" aria-label="Fourth skill key">
+                {(['c', 'v', 'z', 'x'] as const).map((k) => (
+                  <button key={k} className={s.skill4Key === k ? 'is-on' : ''} onClick={() => set({ skill4Key: k })}>
+                    Fourth skill: {k.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <span className="rb-small rb-dim">WASD move · mouse aim · left click attack · Q E R {s.skill4Key.toUpperCase()} skills · Space dodge · {s.ultKey === 'rmb' ? 'Right mouse' : s.ultKey === 'shift' ? 'Shift' : s.ultKey.toUpperCase()} ultimate · 1 potion · Y ride · {s.ultKey === 'f' ? 'G' : 'F'} or Enter talk/travel · I bag · K talents · U skills · J quests · M map · O play together · Esc pause</span>
+            </>
+          )}
         </section>
         <section>
           <span className="rb-kicker">Tutorial hints</span>
@@ -1537,6 +1543,7 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
           <span className="rb-kicker">Music and sound credits</span>
           <span className="rb-small rb-dim">{SOUND_CREDITS.join(' ')}</span>
         </section>
+        <p className="rb-small rb-dim rb-version">Sigilfall {GAME_VERSION}</p>
         {engine.reviewTools && engine.hero && (
           <section>
             <span className="rb-kicker">Review presets</span>
