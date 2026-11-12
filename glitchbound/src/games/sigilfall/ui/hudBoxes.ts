@@ -34,7 +34,9 @@ export function useHudBox(engine: SigilEngine, id: string, ref: RefObject<HTMLEl
   const watch = useRef<{ ro: ResizeObserver | null; el: HTMLElement | null }>({ ro: null, el: null });
   const measure = (): void => {
     const el = ref.current;
-    const r = engine.renderer;
+    // (a HUD drawn with no picture under it, as the tests draw one, has nothing to tell)
+    const r = engine.renderer as SigilEngine['renderer'] | undefined;
+    if (!r) return;
     const box = el ? hudBoxOf(r.canvas, el, r.viewW, r.viewH) : null;
     if (box) r.hudBoxes.set(id, box);
     else r.hudBoxes.delete(id);
@@ -56,14 +58,15 @@ export function useHudBox(engine: SigilEngine, id: string, ref: RefObject<HTMLEl
     if (typeof ResizeObserver !== 'undefined') {
       w.ro = new ResizeObserver(again);
       if (w.el) w.ro.observe(w.el);
-      w.ro.observe(engine.renderer.canvas);
+      const canvas = (engine.renderer as SigilEngine['renderer'] | undefined)?.canvas;
+      if (canvas) w.ro.observe(canvas);
     }
     window.addEventListener('resize', again);
     return () => {
       w.ro?.disconnect();
       w.ro = null;
       window.removeEventListener('resize', again);
-      engine.renderer.hudBoxes.delete(id);
+      (engine.renderer as SigilEngine['renderer'] | undefined)?.hudBoxes.delete(id);
     };
   }, [engine, id]);
 }

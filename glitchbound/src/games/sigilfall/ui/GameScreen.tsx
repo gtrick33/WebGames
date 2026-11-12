@@ -653,8 +653,9 @@ function Tracker({ engine }: { engine: SigilEngine }) {
   useFrame(engine, () => {
     const el = box.current;
     if (!el) return;
-    const at = engine.renderer.hudBoxes.get('quest');
-    el.classList.toggle('is-under-speech', !!at && engine.renderer.speechBoxes.some((s) => boxesMeet(s, at, 2)));
+    const r = engine.renderer as SigilEngine['renderer'] | undefined;
+    const at = r?.hudBoxes.get('quest');
+    el.classList.toggle('is-under-speech', !!r && !!at && r.speechBoxes.some((s) => boxesMeet(s, at, 2)));
   });
   const q = trackedQuest(h, engine.world?.region.id);
   if (engine.ui.boss) return null;
