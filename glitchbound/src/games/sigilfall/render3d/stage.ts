@@ -198,10 +198,19 @@ export class Stage {
   }
 
   render(_dt: number): void {
+    // (the step in quality is taken before the frame is drawn, never after it: changing a canvas's size empties it,
+    // and a step taken after the drawing left that frame with nothing on it, the land and everyone on it gone dark
+    // for a blink under the HUD)
+    this.pace();
     this.groundGl.render(this.groundScene, this.camera);
     this.gl.render(this.scene, this.camera);
-    // a phone that can't keep up draws fewer pixels rather than stutter (real time between frames; a tab left in the
-    // background isn't a slow phone)
+  }
+
+  /**
+   * A phone that can't keep up draws fewer pixels rather than stutter (real time between frames; a tab left in the
+   * background isn't a slow phone).
+   */
+  private pace(): void {
     const now = performance.now();
     const dt = (now - this.lastFrame) / 1000;
     this.lastFrame = now;
