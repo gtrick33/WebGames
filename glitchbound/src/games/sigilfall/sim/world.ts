@@ -907,6 +907,43 @@ export class World {
     return e;
   }
 
+  /**
+   * A boss for a scene to look at, where there is none yet: it only comes when its ground is entered, so a shot of
+   * its den showed an empty den. A figure of it stands at its mark, held (it does nothing and can't be fought), and is
+   * taken away when the scene ends (`unstage`). The boss itself, if it is already here, is what the scene looks at.
+   */
+  stageBoss(id: string): Enemy | null {
+    const have = this.enemies.find((e) => !e.dead && e.def.id === id);
+    if (have) return have;
+    const m = this.map.markers.find((pm) => pm.marker.kind === 'boss' && pm.marker.boss === id);
+    if (!m || !BOSSES[id]) return null;
+    const pos = markerPos(m);
+    const was = this.bossId;
+    const e = this.addBoss(id, pos.x, pos.y, -1);
+    // (no boss bar, no fight: it is a picture of what waits there)
+    this.bossId = was;
+    e.boss!.queue = [];
+    e.held = true;
+    e.aggro = false;
+    e.staged = true;
+    e.state = 'idle';
+    return e;
+  }
+
+  /** Takes away what a scene stood up to look at. */
+  unstage(): void {
+    if (this.enemies.some((e) => e.staged)) this.enemies = this.enemies.filter((e) => !e.staged);
+  }
+
+  /** The packs camped round a spot that were cut down and haven't come back: they come back now (a scene is about to look). */
+  callPacks(x: number, y: number): void {
+    for (const st of this.packs) {
+      if (st.gone || st.respawnT < 0 || Math.hypot(st.x - x, st.y - y) > 6 * TILE) continue;
+      st.respawnT = 0;
+      st.called = true;
+    }
+  }
+
   /** Adds summoned by a boss (they appear with a short rise). */
   spawnAdd(id: string, x: number, y: number, room: number): void {
     const free = this.freeSpot(x, y, 6);
@@ -1006,6 +1043,10 @@ export class World {
     this.delayed.push({ t, fn });
   }
   text(x: number, y: number, text: string, color: string, big: boolean): void {
+    // words said again while they are still rising from the same place aren't laid over themselves (a boss's shell
+    // rang "CLANG! Get behind her!" twice a second, each on top of the last: the owner, "boss callouts can stack on
+    // top of each other"). Numbers stack as they always have: each is its own blow
+    if (/[a-z]/i.test(text) && this.texts.some((o) => o.text === text && o.t < 1 && Math.abs(o.x - x) < 60 && Math.abs(o.y + o.vy * o.t - y) < 60)) return;
     if (this.texts.length > 60) this.texts.shift();
     this.texts.push({ x, y, text, color, t: 0, big, vy: -26 });
   }

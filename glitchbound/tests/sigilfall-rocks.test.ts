@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
 import { setSkill } from '../src/games/sigilfall/progress/character';
 import { tryCast } from '../src/games/sigilfall/sim/cast';
-import { K, parseRegion, TILE } from '../src/games/sigilfall/sim/map';
+import { circleHitsWall, K, parseRegion, TILE } from '../src/games/sigilfall/sim/map';
 import { emptyInput } from '../src/games/sigilfall/sim/world';
 import { newWorld, readyHero } from './sigilfall-bot';
 
@@ -20,10 +20,12 @@ describe('Sigilfall: spells fly over lone rocks', () => {
       for (let i = 0; i < m.w * m.h; i++) {
         if (m.kind[i] === K.Rock) {
           rocks++;
-          expect(m.solid[i], id).toBe(1);
+          // (it stops feet where it stands, as wide as it is drawn: sim/map.ts `openWoods`)
+          expect(circleHitsWall(m, ((i % m.w) + 0.5) * TILE, (Math.floor(i / m.w) + 0.5) * TILE, 4), id).toBe(true);
           expect(m.block[i], id).toBe(0);
         }
-        if (m.kind[i] === K.Wall || m.kind[i] === K.Tree) expect(m.block[i], id).toBe(1);
+        // (the edge of a wood is walked and shot through, between its trunks; where it stands as wall it stops both)
+        if ((m.kind[i] === K.Wall || m.kind[i] === K.Tree) && m.solid[i]) expect(m.block[i], id).toBe(1);
       }
       expect(rocks, id).toBeGreaterThan(0);
     }

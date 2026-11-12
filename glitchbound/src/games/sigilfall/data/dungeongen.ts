@@ -820,7 +820,27 @@ function shape(def: RegionDef, source: readonly string[], given: readonly Placed
       }
     }
   }
-  return { map: g.map((r) => r.join('')), placed };
+  // No room opens straight onto another: its doors are the only way in. (The Rime Wyrm's cavern, rounded out, came
+  // down onto the roof of the Jarl's hall, and whoever beat the Jarl walked up into the last fight past three rooms
+  // and every door.) Where two rooms' floors touch, the bigger room gives the tiles up to wall.
+  const size = new Map<string, number>();
+  for (const row of g) for (const c of row) if (floors.has(c)) size.set(c, (size.get(c) ?? 0) + 1);
+  const walled: [number, number][] = [];
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const c = g[y]![x]!;
+      if (!floors.has(c)) continue;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const o = at(x + dx, y + dy);
+          if (o !== c && floors.has(o) && (size.get(c)! > size.get(o)! || (size.get(c) === size.get(o) && c > o))) walled.push([x, y]);
+        }
+      }
+    }
+  }
+  for (const [x, y] of walled) g[y]![x] = '#';
+  const shut = new Set(walled.map(([x, y]) => `${x},${y}`));
+  return { map: g.map((r) => r.join('')), placed: shut.size ? placed.filter((m) => !shut.has(`${m.tx},${m.ty}`)) : placed };
 }
 
 /** Gives a dungeon its tight rooms and its dressing, the first time something looks at its map. */

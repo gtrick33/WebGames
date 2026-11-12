@@ -160,6 +160,8 @@ export interface Enemy {
   hunts?: boolean;
   /** Seen coming in a scene's shot (a story fight's foes mustering, a boss met): it stands until the shot is over. */
   held?: boolean;
+  /** A figure of a boss stood in its den for a scene's shot (world.ts `stageBoss`): not the boss, and gone with the shot. */
+  staged?: boolean;
   /** A raider's own way to whoever it hunts, past the reach of the shared field (and when it was made). */
   huntFlow?: Int16Array;
   huntAt?: number;

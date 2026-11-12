@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { comboNow } from './comboMark';
 import { bossPips, phaseTicks, sixWords, windingUp } from './bossbar';
 import { mechanicDue, mechanicShown } from '../progress/tips';
@@ -24,7 +24,7 @@ import { rarityColor } from '../render/renderer';
 import { clockText, type World } from '../sim/world';
 import { sceneDark } from '../sim/scene';
 import { fmt, ItemIcon, Portrait } from './common';
-import { useHudBox } from './hudBoxes';
+import { hudBoxOf, useHudBox } from './hudBoxes';
 import { boxesMeet } from '../render/speech';
 import { DesktopBar } from './DesktopBar';
 import { InviteCards } from './Friends';
@@ -111,6 +111,30 @@ export function useFrame(engine: SigilEngine, fn: (w: World) => void): void {
   }, [engine]);
 }
 
+/**
+ * The announcements (a land's name, a banner, a level gained). Words someone is saying are written on the picture,
+ * under the HUD: an announcement that lies across them steps aside until they are said (the owner: "the big land
+ * title is drawn over Mara's speech bubble").
+ */
+function Announce({ engine, children }: { engine: SigilEngine; children: ReactNode }) {
+  const strip = useRef<HTMLDivElement>(null);
+  useFrame(engine, () => {
+    const el = strip.current;
+    const r = engine.renderer as SigilEngine['renderer'] | undefined;
+    if (!el || !r) return;
+    for (const child of el.children) {
+      if (!(child instanceof HTMLElement)) continue;
+      const at = r.speechBoxes.length ? hudBoxOf(r.canvas, child, r.viewW, r.viewH) : null;
+      child.classList.toggle('is-under-speech', !!at && r.speechBoxes.some((s) => boxesMeet(s, at, 4)));
+    }
+  });
+  return (
+    <div className="rb-announce" ref={strip}>
+      {children}
+    </div>
+  );
+}
+
 export function GameScreen({ engine }: { engine: SigilEngine }) {
   const ui = engine.ui;
   const w = engine.world;
@@ -128,7 +152,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
       {/* a friend asking the player into their party (ui/Friends.tsx): over everything, a menu too */}
       {!engine.world?.scene && <InviteCards engine={engine} />}
       {/* (on touch the announcements stack in a strip along the top, clear of the hero; on a mouse each keeps its place) */}
-      <div className="rb-announce">
+      <Announce engine={engine}>
         {ui.banner && (
           <div className="rb-banner" key={`banner:${ui.banner.id}`} aria-live="polite">
             <strong>{ui.banner.text}</strong>
@@ -146,7 +170,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
             </div>
           </div>
         )}
-      </div>
+      </Announce>
       {!overlay && (engine.touchMode ? <TouchControls engine={engine} /> : <DesktopBar engine={engine} />)}
       <SceneBars engine={engine} />
       {ui.dialogue && <Dialogue engine={engine} />}

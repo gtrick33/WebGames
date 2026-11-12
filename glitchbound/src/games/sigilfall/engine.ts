@@ -612,7 +612,10 @@ export class SigilEngine {
     // a title card waits for its moment, then holds the screen a few seconds
     const card = this.ui.card;
     if (card && t - card.id > (card.act ? ACT_CARD_MS : LAND_CARD_MS)) this.setUi({ card: null });
-    else if (!card && this.cards.length && !this.ui.dialogue && !this.ui.panel && !this.ui.death && !w.scene) this.setUi({ card: { ...this.cards.shift()!, id: t } });
+    // (nor while someone's words are up on the picture: a land's name came up across what Mara was saying as the
+    // hero first walked into the Whisperwood. It waits for her to finish)
+    else if (!card && this.cards.length && !this.ui.dialogue && !this.ui.panel && !this.ui.death && !w.scene && !(this.renderer as SigilEngine['renderer'] | undefined)?.speechBoxes.length)
+      this.setUi({ card: { ...this.cards.shift()!, id: t } });
     if (this.ui.levelUp && t - this.ui.levelUp.id > 3600) this.setUi({ levelUp: null });
     if (this.tipQueue.length) this.showTip(w);
     const boss = w.boss();
