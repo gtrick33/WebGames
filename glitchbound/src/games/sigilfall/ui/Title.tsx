@@ -14,6 +14,7 @@ import { heldWeapon, heroDollUrl, heroLook } from '../render/sprites';
 import { CharacterSelect } from './CharacterSelect';
 import { InviteCards } from './Friends';
 import { SkillIcon } from './common';
+import { trialsOpen } from '../progress/trial';
 import { RiftScreen } from './RiftScreen';
 import { ScreenGate } from './ScreenGate';
 import { SettingsPanel } from './Panels';
@@ -128,11 +129,11 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
       </Suspense>
     );
   }
-  if (rift !== null && heroes[rift]) {
+  if (rift !== null && trialsOpen(engine.save)) {
     return (
       <div className="rb-title is-epic is-roster">
         <EpicSky />
-        <RiftScreen engine={engine} slot={rift} onBack={() => setRift(null)} />
+        <RiftScreen engine={engine} onBack={() => setRift(null)} />
       </div>
     );
   }

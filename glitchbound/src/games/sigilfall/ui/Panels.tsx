@@ -920,14 +920,16 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
   const atStone = !!w.interactable && w.interactable.kind === 'waystone';
   const canTravel = atStone || w.safe;
   const [sel, setSel] = useState<RegionId>(w.region.id);
-  const [tier, setTier] = useState(Math.min(h.tier, w.tier || h.tier));
+  const [tier, setTier] = useState(Math.min(h.tier, w.tier || h.tier, h.level >= MAX_LEVEL ? 2 : 1));
   const [mods, setMods] = useState<RiftMod[]>([]);
   // Riftstone: any level the Riftstone has opened (0: the tiers instead)
   const [stone, setStone] = useState(w.keyRun ? Math.min(w.keyRun.key, h.keystone) : 0);
   const r = REGIONS[sel];
   const open = h.unlocked.includes(sel);
   const here = w.region.id === sel;
-  const keyed = h.keystone >= KEY_MIN && r.kind === 'dungeon';
+  // (Mythic and the Riftstones are for heroes at the top level)
+  const top = h.level >= MAX_LEVEL;
+  const keyed = top && h.keystone >= KEY_MIN && r.kind === 'dungeon';
   const useKey = keyed && stone > 0;
   // difficulty tiers are for dungeons (and the old wood)
   const tiered = h.tier > 0 && (r.kind === 'dungeon' || sel === 'whisperwood');
@@ -991,7 +993,7 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
           <div className="rb-tiers">
             <span className="rb-kicker">Difficulty</span>
             <div className="rb-seg">
-              {TIERS.slice(0, h.tier + 1).map((t, i) => (
+              {TIERS.slice(0, Math.min(h.tier, top ? 2 : 1) + 1).map((t, i) => (
                 <button
                   key={t.name}
                   className={tier === i && !useKey ? 'is-on' : ''}

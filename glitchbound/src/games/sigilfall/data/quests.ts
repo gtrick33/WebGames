@@ -1,3 +1,4 @@
+import { MAX_LEVEL } from './classes';
 import { EVENTS } from './events';
 import { storyLive } from './retired';
 import { balanceQuestXp } from './progression';
@@ -101,7 +102,7 @@ export const QUESTS: QuestDef[] = [
     objective: { kind: 'clear', region: 'crypt', tier: 1, label: 'Clear the Chapel Crypt on Heroic' },
     after: ['close-the-rift'],
     level: 12,
-    reward: { xp: 1500, gold: 400, item: 'amulet-of-echoes', tier: 2, text: 'Mythic difficulty is open.' },
+    reward: { xp: 1500, gold: 400, item: 'amulet-of-echoes', tier: 2, text: 'Mythic difficulty waits for you at level 60.' },
   },
   {
     id: 'mythic',
@@ -110,7 +111,9 @@ export const QUESTS: QuestDef[] = [
     text: 'At Mythic, the crypt shows what the Ash Crown makes of grief. Clear the Chapel Crypt there.',
     objective: { kind: 'clear', region: 'crypt', tier: 2, label: 'Clear the Chapel Crypt on Mythic' },
     after: ['heroic'],
-    level: 17,
+    // (Mythic is for heroes at the top level: the owner, "mythic and riftstones should be solely for max level
+    // characters"; it was offered at 17)
+    level: MAX_LEVEL,
     reward: { xp: 4000, gold: 1000, item: 'glitch-shard' },
   },
 ];
