@@ -46,17 +46,22 @@ function alight(b: Build, from: number): void {
  */
 function veil(b: Build, glows: GateBuilt['glows'], light: string, half: number, high: number): void {
   const c = rgb(light);
-  const night: C = [0.03, 0.03, 0.06];
-  const low = [c[0]! * 0.62 + 0.3, c[1]! * 0.62 + 0.3, c[2]! * 0.62 + 0.3];
-  const mid = [c[0]! * 0.34 + night[0]!, c[1]! * 0.34 + night[1]!, c[2]! * 0.34 + night[2]!];
-  const top = [c[0]! * 0.08 + night[0]!, c[1]! * 0.08 + night[1]!, c[2]! * 0.08 + night[2]!];
+  // (bright enough to be the thing looked at, and all of it light: its upper half went up into dark, and the dark
+  // read as the hole it was put there to fill. The owner: "increase the glow of the zone gates ... make it so that it
+  // covers the background")
+  const low = [c[0]! * 0.5 + 0.5, c[1]! * 0.5 + 0.5, c[2]! * 0.5 + 0.5];
+  const mid = [c[0]! * 0.72 + 0.16, c[1]! * 0.72 + 0.16, c[2]! * 0.72 + 0.16];
+  const top = [c[0]! * 0.55 + 0.04, c[1]! * 0.55 + 0.04, c[2]! * 0.55 + 0.04];
   const from = b.m.nor.length;
-  b.box(-half, -0.62, half, -0.56, 0, high * 0.42, mid, low, mid);
-  b.box(-half, -0.62, half, -0.56, high * 0.42, high, top, mid, top);
+  // (a sheet of it across the way, a pace past the middle of the gate. A body of light running on out past the
+  // land's edge was tried, for the gates seen from their side: from the south it was a painted box on the road)
+  b.box(-half, -0.62, half, -0.56, 0, high * 0.45, mid, low, mid);
+  b.box(-half, -0.62, half, -0.56, high * 0.45, high, top, mid, top);
   // (and its light lying on the road before it)
-  b.flat(-half, -0.56, half, 0.2, 0.03, mul(low, 0.5));
+  b.flat(-half, -0.56, half, 0.2, 0.03, mul(low, 0.62));
   alight(b, from);
-  glows.push({ x: 0, z: -0.3, y: 0.9, color: light, size: 30 });
+  glows.push({ x: 0, z: -0.3, y: 1.0, color: light, size: 46 });
+  glows.push({ x: 0, z: -0.5, y: high * 0.6, color: light, size: 40 });
 }
 
 /**

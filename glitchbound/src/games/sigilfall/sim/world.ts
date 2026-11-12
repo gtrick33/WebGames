@@ -2518,10 +2518,23 @@ export class World {
       }
     }
     let onExit = -1;
+    const mw = this.map.w * TILE;
+    const mh = this.map.h * TILE;
     this.exits.forEach((x, i) => {
       const d = dist(p.x, p.y, x.x, x.y);
-      // a door is a step away, a road's end a little further
-      if (d < (x.door ? 11 : 20)) {
+      // a door is a step away. A road's end is its whole gate: anywhere under the arch, from tower to tower, and
+      // not a spot in the middle of it (the owner: "increase the collider of where u enter the gate ... currently u
+      // have to hit a specific point within the gate"). Along the land's edge it reaches two tiles and a half either
+      // side of the way out, and into the land as far as the gate stands
+      let on = d < (x.door ? 15 : 20);
+      const least = Math.min(x.x, x.y, mw - x.x, mh - x.y);
+      if (!on && !x.door && least < TILE * 2) {
+        const across = least === x.y || least === mh - x.y;
+        const along = across ? Math.abs(p.x - x.x) : Math.abs(p.y - x.y);
+        const deep = across ? Math.abs(p.y - x.y) : Math.abs(p.x - x.x);
+        on = along < TILE * 2.5 && deep < TILE * 1.5;
+      }
+      if (on) {
         onExit = i;
         best = { kind: 'exit', to: x.to, x: x.x, y: x.y, label: x.label, locked: this.exitLock(x), ...(x.door ? { door: true } : {}) };
       }
