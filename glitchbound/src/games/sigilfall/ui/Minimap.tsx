@@ -7,6 +7,7 @@ import { K, TILE, type TileMap } from '../sim/map';
 import { objectiveTarget, objectiveTargets } from '../sim/objective';
 import type { World } from '../sim/world';
 import { useFrame } from './GameScreen';
+import { useHudBox } from './hudBoxes';
 import { drawMapIcon, type MapIcon } from './mapIcons';
 import { npcMark } from '../render/renderer';
 import { FOG_CELL, fogSeen, type Fog } from '../progress/fog';
@@ -87,6 +88,9 @@ function baseLayer(map: TileMap, theme: Theme): HTMLCanvasElement {
 
 export function Minimap({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  // (a spoken line written along the top of the picture stops short of the map: render/renderer.ts)
+  const hud = useRef<HTMLButtonElement>(null);
+  useHudBox(engine, 'map', hud);
   const last = useRef(0);
   useFrame(engine, (w: World) => {
     const c = ref.current;
@@ -97,7 +101,7 @@ export function Minimap({ engine }: { engine: SigilEngine }) {
     draw(c, w);
   });
   return (
-    <button className="rb-minimap-hud" onClick={() => engine.openPanel('map')} aria-label="Map (opens the full map)">
+    <button ref={hud} className="rb-minimap-hud" onClick={() => engine.openPanel('map')} aria-label="Map (opens the full map)">
       {/* (the land's name on a plate over the map, as a phone's map wears it) */}
       {engine.world && <span className="rb-minimap-name">{engine.world.region.name}</span>}
       <canvas ref={ref} width={SIZE * 2} height={SIZE * 2} />

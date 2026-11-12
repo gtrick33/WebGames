@@ -134,6 +134,21 @@ const CHILLED = [0.82, 0.93, 1.12] as const;
 
 
 /** Everyone in the rules, told to the cast each frame. */
+/** The middle of the picture and half its reach over the ground, in tiles (render3d/stage.ts spanX, spanZ). */
+export interface CastView {
+  x: number;
+  z: number;
+  spanX: number;
+  spanZ: number;
+}
+/**
+ * How far past the view's edges someone is still drawn, in tiles: the land's own margins (render3d/land.ts update),
+ * so nobody is missing from ground that is standing. Wider up the picture, where the camera's tilt shows more.
+ */
+const VIEW_SIDE = 3;
+const VIEW_FAR = 8;
+const VIEW_NEAR = 5;
+
 export class WorldCast {
   private readonly foes = new Map<number, FoeAnim>();
   private readonly hero = new Motion();
@@ -161,7 +176,10 @@ export class WorldCast {
     return next;
   }
 
-  sync(cast: Cast, w: World, dt: number, time: number, o: { look: HeroLook; weapon: Held; folk: number; landOnly: boolean; statues?: readonly { x: number; y: number; h: number; lift: number; tint: readonly [number, number, number] }[]; colossi?: readonly Colossus[] }): void {
+  sync(cast: Cast, w: World, dt: number, time: number, o: { look: HeroLook; weapon: Held; folk: number; landOnly: boolean; view?: CastView; statues?: readonly { x: number; y: number; h: number; lift: number; tint: readonly [number, number, number] }[]; colossi?: readonly Colossus[] }): void {
+    // who the picture can show: within the view and the same margins the land keeps standing (render3d/land.ts update)
+    const v = o.view;
+    const shown = v ? (x: number, y: number): boolean => Math.abs(x / TILE - v.x) < v.spanX + VIEW_SIDE && y / TILE > v.z - v.spanZ - VIEW_FAR && y / TILE < v.z + v.spanZ + VIEW_NEAR : (): boolean => true;
     for (const s of o.statues ?? []) cast.person(STATUE_LOOK, STATUE_SWORD, true, s.x, s.y, 0.2, { clip: 'idle', t: 0.2, loop: false }, { h: s.h, lift: s.lift, tint: s.tint });
     for (const c of o.colossi ?? []) if (Math.hypot(c.x * TILE - w.player.x, c.z * TILE - w.player.y) < COLOSSUS_SEEN + c.h * TILE) cast.colossus(c);
     this.syncHero(cast, w, dt, time, o.look, o.weapon, o);
@@ -182,7 +200,16 @@ export class WorldCast {
       cast.shadow(k.x, k.y, 7);
       cast.person(look, null, false, k.x, k.y, turnOf(k.face), { clip: 'walk', t: time + k.x * 0.1, loop: true }, { alpha: Math.min(1, (w.time - k.since) / 0.8) * 0.92, lift: 0.12 + Math.sin(time * 1.6 + k.x) * 0.04, tint: SUMMER });
     }
-    for (const e of w.enemies) this.syncFoe(cast, e, w, dt, time);
+    // (only those: a land's whole bestiary went to the card every frame wherever it stood, six to eleven thousand
+    // triangles a creature and each drawn twice for its outline. Highwall March's 173 made 2.7 million triangles a
+    // frame with none of them on the screen. A boss is always drawn: the camera leans to it from a long way off)
+    for (const e of w.enemies) {
+      if (!e.boss && !shown(e.x, e.y)) {
+        this.foes.delete(e.id);
+        continue;
+      }
+      this.syncFoe(cast, e, w, dt, time);
+    }
     for (const n of w.npcs) this.syncNpc(cast, n, w, dt, time, Math.min(1, (w.time - (n.since ?? -Infinity)) / 0.8));
     for (const n of w.leftNpcs) {
       const a = 1 - (w.time - n.left) / (NPCS[n.id]?.down ? 3.2 : 1.2);
@@ -194,6 +221,7 @@ export class WorldCast {
     }
     if (o.folk > 0.02) {
       for (const f of w.folk) {
+        if (!shown(f.x, f.y)) continue;
         cast.shadow(f.x, f.y, 7);
         let m = this.walkers.get(f);
         if (!m) {

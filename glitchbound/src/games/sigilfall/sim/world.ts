@@ -168,6 +168,24 @@ export function challenge(level: number, boss: boolean): { hp: number; dmg: numb
 }
 const NO_CHALLENGE = { hp: 1, dmg: 1 };
 
+/** The first dungeon a hero meets (the crypt under Briarhollow's chapel, on the first night). */
+export const FIRST_DUNGEON: RegionId = 'crypt';
+/**
+ * A dungeon asks a little more than the road to it, and more the deeper into the story it lies (the owner's call
+ * after the first full play-through, 2026-11-12). Measured with the play-bot at the level the story brings a hero in:
+ * the early dungeons already cost it falls, and from the Rimeheld Vault on it walked every one without a fall, often
+ * never under half its health. So everything in an early dungeon hits 3% harder and has 2% more health, and from
+ * level 26 that grows, to 15% and 12% by the level-50 dungeons. The Chapel Crypt goes the other way: a new hero
+ * meets their first boss there at level 4 in what they were given, and its blows land 5% lighter. As with
+ * `challenge`, this is the campaign's own measure: Heroic, Mythic and Riftstone runs keep theirs.
+ */
+export function depth(region: Pick<RegionDef, 'id' | 'kind' | 'level'>): { hp: number; dmg: number } {
+  if (region.kind !== 'dungeon') return NO_CHALLENGE;
+  if (region.id === FIRST_DUNGEON) return { hp: 1, dmg: 0.95 };
+  const k = Math.max(0, Math.min(1, (region.level - 26) / 24));
+  return { hp: 1.02 + 0.1 * k, dmg: 1.03 + 0.12 * k };
+}
+
 /** A pack in the open: where it stands, what it is, and when it comes back. */
 interface PackState {
   index: number;
@@ -794,7 +812,8 @@ export class World {
     const hasted = this.mods.includes('hasted') ? 1.2 : 1;
     const wild = o.pack >= 0 && !!this.region.holds;
     const ch = this.keyRun || this.tier > 0 ? NO_CHALLENGE : challenge(level, false);
-    const hp = Math.round(def.hp * sc.hp * this.hpMul(false) * ch.hp * (o.elite ? 3.2 : 1) * (wild ? WILD.hp : 1));
+    const deep = this.keyRun || this.tier > 0 ? NO_CHALLENGE : depth(this.region);
+    const hp = Math.round(def.hp * sc.hp * this.hpMul(false) * ch.hp * deep.hp * (o.elite ? 3.2 : 1) * (wild ? WILD.hp : 1));
     const e: Enemy = {
       id: this.nextId++,
       def,
@@ -806,7 +825,7 @@ export class World {
       r: def.radius * (def.scale ?? 1) * (o.elite ? 1.25 : 1),
       hp,
       maxHp: hp,
-      dmg: def.dmg * sc.dmg * this.dmgMul(false) * ch.dmg * (o.elite ? 1.35 : 1) * (wild ? WILD.dmg : 1),
+      dmg: def.dmg * sc.dmg * this.dmgMul(false) * ch.dmg * deep.dmg * (o.elite ? 1.35 : 1) * (wild ? WILD.dmg : 1),
       speedMul: hasted * (elite.includes('frenzied') ? 1.35 : 1),
       atkMul: hasted * (elite.includes('frenzied') ? 1.4 : 1),
       shield: elite.includes('shielded') ? hp * 0.4 : 0,
@@ -864,12 +883,13 @@ export class World {
     const level = this.level + 1;
     const sc = enemyScale(level);
     const bch = this.keyRun || this.tier > 0 ? NO_CHALLENGE : challenge(level, true);
-    const hp = Math.round(def.hp * sc.hp * this.hpMul(true) * bch.hp);
+    const deep = this.keyRun || this.tier > 0 ? NO_CHALLENGE : depth(this.region);
+    const hp = Math.round(def.hp * sc.hp * this.hpMul(true) * bch.hp * deep.hp);
     const e = this.addEnemy('skeleton', x, y, level, { room, pack: -1 });
     e.def = { ...ENEMIES.skeleton!, id: def.id, name: def.name, sprite: def.sprite, radius: def.radius, mass: 99, resist: {}, armor: 0, xp: def.xp, gold: def.gold, scale: 1 };
     e.r = def.radius;
     e.hp = e.maxHp = hp;
-    e.dmg = def.dmg * sc.dmg * this.dmgMul(true) * bch.dmg;
+    e.dmg = def.dmg * sc.dmg * this.dmgMul(true) * bch.dmg * deep.dmg;
     e.name = def.name;
     e.scale = 1;
     e.state = 'chase';

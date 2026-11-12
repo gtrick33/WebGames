@@ -13,6 +13,7 @@ import { hasMount } from '../progress/wardrobe';
 import { skillHasPicture, skillIconUrl } from '../render/sprites';
 import { SUMMON_TIME, type World } from '../sim/world';
 import { useFrame } from './GameScreen';
+import { useHudBox } from './hudBoxes';
 import { uiIcon } from './uiIcons';
 
 /**
@@ -28,6 +29,9 @@ const AIM_RANGE = 70;
 export function TouchControls({ engine }: { engine: SigilEngine }) {
   // fingers are let go when the controls go away (a menu opened)
   useEffect(() => () => engine.touch.release(), [engine]);
+  // (a spoken line written beside the quest keeps clear of the thumb's buttons: render/renderer.ts)
+  const cluster = useRef<HTMLDivElement>(null);
+  useHudBox(engine, 'thumbs', cluster);
   // indoors is peaceful (sim/world.ts): only the stick and the Talk button
   if (engine.world?.region.interior) {
     return (
@@ -40,7 +44,7 @@ export function TouchControls({ engine }: { engine: SigilEngine }) {
   return (
     <>
       <Joystick engine={engine} />
-      <div className="rb-cluster">
+      <div ref={cluster} className="rb-cluster">
         {/* the lesson sits over the button it teaches (inside the cluster: its size and side follow the cluster's) */}
         {engine.ui.teach && !engine.ui.tip && (
           <div className={`rb-teach is-touch is-at-${engine.ui.teach.slot}`} role="status">
@@ -224,8 +228,12 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
 /** A potion within thumb's reach (on touch it lives in the cluster, not the top bar). */
 function PotionButton({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
+  // (it stands above the rest of the cluster: the highest thing a spoken line beside the quest must clear)
+  const el = useRef<HTMLButtonElement>(null);
+  useHudBox(engine, 'potion', el);
   return (
     <button
+      ref={el}
       className="rb-sb rb-sb-potion"
       aria-label={`Drink a potion (${h.potions} left)`}
       disabled={h.potions <= 0}

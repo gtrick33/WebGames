@@ -1,6 +1,6 @@
 import { PETS } from '../data/pets';
 import { SKILLS } from '../data/skills';
-import type { BuffDef, DmgType, Effect, GroundSpec, Mod, ProcDef, SkillOp, StatKey, StatusId } from '../data/types';
+import type { BuffDef, DmgType, Effect, GroundSpec, Mod, ProcDef, ResourceDef, SkillOp, StatKey, StatusId } from '../data/types';
 
 /**
  * Plain-language text for stats, effects and modifiers, generated from the same data the simulation
@@ -195,7 +195,8 @@ export function opText(skill: string, op: SkillOp): string {
     case 'charges':
       return `${s} holds ${op.n} more ${op.n === 1 ? 'charge' : 'charges'}.`;
     case 'extra':
-      return `${s}: +${op.n} ${op.label}.`;
+      // (ranks add up in binary: three of 0.2 is 0.6000000000000001 unless it is rounded for the eye)
+      return `${s}: +${Math.round(op.n * 100) / 100} ${op.label}.`;
     case 'convert':
       return `${s} deals ${DMG_NAME[op.dmgType]} damage instead.`;
     case 'onHit':
@@ -220,6 +221,15 @@ export function opText(skill: string, op: SkillOp): string {
 }
 
 export const procText = (p: ProcDef): string => p.text;
+
+/**
+ * What a skill costs, in the class's own resource and under its own name: mana is a share of the pool (so it grows
+ * with the hero), the others are points (sim/cast.ts skillCost). "20 Rage", "3 Zeal", "31 Mana"; null for a free one.
+ */
+export function costText(res: ResourceDef | null, cost: number, max: number): string | null {
+  if (!res || cost <= 0 || max <= 0) return null;
+  return `${Math.round(res.kind === 'mana' ? (cost * max) / 100 : cost)} ${res.name}`;
+}
 
 /** Everything a mod list does, as lines (stat mods with `when` included). */
 export function modLines(mods: Mod[]): string[] {

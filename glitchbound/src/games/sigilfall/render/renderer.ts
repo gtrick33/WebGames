@@ -4,7 +4,7 @@ import { currentObjective } from '../progress/character';
 import { drawMapIcon, type MapIcon } from '../ui/mapIcons';
 import { isMainQuest, turnInNpc } from '../progress/handin';
 import { LEAD, leanTarget, LIFT } from './camera';
-import { layoutSpeech } from './speech';
+import { layoutSpeechClear, type ViewBox } from './speech';
 import { ghostName, TALK_ZOOM, TYPE_CPS } from '../sim/scene';
 import { Effects, headOf } from './effects';
 import { THEMES } from '../data/themes';
@@ -104,6 +104,14 @@ export class Renderer {
   private heldTill = -Infinity;
   /** Held dark while the models load: the engine holds the world still meanwhile. */
   waiting = false;
+  /**
+   * Where pieces of the HUD sit over the picture, in the view's CSS pixels (ui/hudBoxes.ts keeps them): `quest` is
+   * the quest under the hero's bars, `call` a boss's call, `map` the minimap, `thumbs` and `potion` a phone's skills.
+   * The picture's own words know what they would cover.
+   */
+  readonly hudBoxes = new Map<string, ViewBox>();
+  /** The spoken lines drawn this frame, as boxes: the HUD steps out from under them (the quest fades while one is across it). */
+  readonly speechBoxes: ViewBox[] = [];
   aim: AimPreview | null = null;
   /** Touch controls: show the facing marker (where a tapped spell goes). */
   touchMode = false;
@@ -126,6 +134,14 @@ export class Renderer {
    * Fits the view to the element: about 196 world pixels tall on phones (bigger figures) and 240 on
    * desktops, never less than 150 across the short side.
    */
+  /** The view's size in CSS pixels (what the HUD is laid out in). */
+  get viewW(): number {
+    return this.cssW;
+  }
+  get viewH(): number {
+    return this.cssH;
+  }
+
   resize(cssW: number, cssH: number, dpr: number, touch: boolean): void {
     const devW = Math.max(1, Math.round(cssW * dpr));
     const devH = Math.max(1, Math.round(cssH * dpr));
@@ -432,7 +448,7 @@ export class Renderer {
       st.land?.updateColumns(dt, p.x / TILE, p.y / TILE);
       this.folkK = damp(this.folkK, w.story.fighting ? 0 : 1, 3, dt);
       st.cast.begin();
-      this.people.sync(st.cast, w, dt, time, { look: this.look ?? heroLook(w.hero.cls), weapon: this.weapon, folk: this.folkK, statues: st.land?.statues, colossi: st.land?.colossi, landOnly: this.landOnly });
+      this.people.sync(st.cast, w, dt, time, { look: this.look ?? heroLook(w.hero.cls), weapon: this.weapon, folk: this.folkK, statues: st.land?.statues, colossi: st.land?.colossi, landOnly: this.landOnly, view: { x: cx / TILE, z: cy / TILE, spanX: st.spanX, spanZ: st.spanZ } });
       this.layer?.cast?.(st.cast, dt, time);
       st.fx.begin();
       this.effects.draw(w, { fx: st.fx, cast: st.cast, land: st.land, time, near: (x, y) => Math.abs(x - cx) < this.vw * 0.7 && Math.abs(y - cy) < this.vh * 0.9 });
@@ -498,11 +514,23 @@ export class Renderer {
       for (const n of w.npcs) if (near(n.x, n.y)) this.drawNpcSigns(w, n, st);
     }
     if (st) {
+      // (a boss's call is said over the top of the picture, in the HUD: a caption that would rise under it, "The
+      // coffin closes: out the open side!" with the hero at the top of a room, is kept just below it. Numbers are
+      // left where they land)
+      const call = ui ? this.hudBoxes.get('call') : undefined;
       for (const t of w.texts) {
         const a = clamp(1.6 - t.t / (t.big ? 0.75 : 0.55), 0, 1);
         const s = st.project(t.x, t.y, 18);
         const pop = t.big && t.t < 0.12 ? 1.7 : 1;
-        this.label(t.text, s.x, s.y, (t.big ? 17 : 13) * pop, t.color, a);
+        const size = (t.big ? 17 : 13) * pop;
+        let y = s.y;
+        if (call && t.text.length > 8 && /[a-z]{3}/i.test(t.text)) {
+          g.font = `800 ${size}px "Bricolage Grotesque Variable", system-ui, sans-serif`;
+          const half = g.measureText(t.text).width / 2;
+          const tall = size * 0.75;
+          if (s.x + half > call.x && s.x - half < call.x + call.w && y + tall > call.y && y - tall < call.y + call.h) y = call.y + call.h + tall + 2;
+        }
+        this.label(t.text, s.x, y, size, t.color, a);
       }
     }
     this.upright(p.x, p.y);
@@ -895,6 +923,7 @@ export class Renderer {
    */
   private drawSpeech(w: World, time: number): void {
     this.drawEmotes(w);
+    this.speechBoxes.length = 0;
     const speech = w.story.speech;
     if (!speech.length) return;
     const g = this.g;
@@ -929,7 +958,11 @@ export class Renderer {
       const head = st ? st.project(who.x, who.y, PERSON_H + 9) : { x: ((who.x - this.camX) / this.vw) * this.cssW, y: ((who.y - PERSON_H - 9 - this.camY) / this.vh) * this.cssH };
       const behind = who.y > this.camY + this.vh * 1.5;
       const sane = Number.isFinite(head.x) && Number.isFinite(head.y);
-      const card = layoutSpeech({ text: s.text, name, headX: sane && !behind ? head.x : this.cssW / 2, headY: behind ? this.cssH * 2 : sane ? head.y : -this.cssH, viewW: this.cssW, viewH: this.cssH, top, bottom, left: sideL, right: sideR, measure });
+      const said = { text: s.text, name, headX: sane && !behind ? head.x : this.cssW / 2, headY: behind ? this.cssH * 2 : sane ? head.y : -this.cssH, viewW: this.cssW, viewH: this.cssH, top, bottom, measure };
+      // (on a phone the quest under the hero's bars reaches into the open middle: a line that would be written across
+      // it goes beside it when it fits there, render/speech.ts; where it doesn't, the HUD lets the quest fade)
+      const card = layoutSpeechClear({ ...said, left: sideL, right: sideR }, hud ? this.hudBoxes : null);
+      if (hud) this.speechBoxes.push({ x: card.x, y: card.y, w: card.w, h: card.h });
       const fade = clamp(Math.min(s.t / 0.15, (s.dur - s.t) / 0.3), 0, 1);
       g.globalAlpha = fade * 0.95;
       g.fillStyle = 'rgba(22,16,36,0.93)';
