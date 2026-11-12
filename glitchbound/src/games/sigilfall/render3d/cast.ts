@@ -20,10 +20,17 @@ import { npcLookOf } from '../render/sprites';
  * share a model share a draw call, so a screen full of the same skeleton costs no more than one.
  */
 
+/**
+ * How big everyone is drawn, against how big they were until 1.0: the hero, the people of the land, every foe and
+ * boss, the pets and the mounts, all by the same share so they keep their sizes beside each other (the owner: "make
+ * all the npcs smaller including the hero: around 15% smaller please, or even 20, they feel too big now", and then "by another 5%"). Only how
+ * they are drawn: how wide the rules take them to be (who can be hit from where, who fits through what) is as it was.
+ */
+export const FIGURE = 0.79;
 /** A figure's height in world pixels, from how wide the rules say it is. */
-export const heightFromRadius = (r: number, size = 1): number => (r * 2.5 + 16) * size;
+export const heightFromRadius = (r: number, size = 1): number => (r * 2.5 + 16) * size * FIGURE;
 /** A person's height in world pixels. */
-export const PERSON_H = 36;
+export const PERSON_H = 36 * FIGURE;
 /** How high someone's hips are when they stand, in their own model's units. */
 const HIPS_AT = 0.406;
 
@@ -427,7 +434,7 @@ export class Cast {
     if (!crowd || !model) return null;
     const { shape, rig, joint } = model;
     // (`scale`: a great drake in a picture, render3d/keyArt.ts; a mount in the game is its own size)
-    const s = (shape.px / TILE) * (opts?.scale ?? 1);
+    const s = (shape.px / TILE) * (opts?.scale ?? 1) * FIGURE;
     motion.frames(rig, frames);
     const cos = Math.cos(rot);
     const sin = Math.sin(rot);
