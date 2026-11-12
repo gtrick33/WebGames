@@ -142,7 +142,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
   if (!w || !h) return null;
   const overlay = ui.panel || ui.dialogue || ui.travel || ui.pause || ui.death || ui.reward;
   return (
-    <div className={`rb-ui${engine.touchMode ? ' is-touch' : ' is-mouse'}${engine.settings.lefty ? ' is-lefty' : ''}${engine.storyTalk() ? ' is-talk' : ''}${ui.card?.act ? ' is-act' : ''}`}>
+    <div className={`rb-ui${engine.touchMode ? ' is-touch' : ' is-mouse'}${engine.settings.lefty ? ' is-lefty' : ''}${engine.storyTalk() ? ' is-talk' : ''}${ui.card?.act ? ' is-act' : ''}${ui.boss ? ' is-boss' : ''}`}>
       <Hud engine={engine} />
       <CastBar engine={engine} />
       <ComboChip engine={engine} />
@@ -183,7 +183,8 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
           <Panels engine={engine} />
         </div>
       )}
-      {ui.tip && <TipOverlay engine={engine} />}
+      {/* (not across the death screen: a hint about the bag came up over "You fell", two texts in one place) */}
+      {ui.tip && !ui.death && <TipOverlay engine={engine} />}
       <RotateHint engine={engine} />
     </div>
   );
@@ -343,7 +344,7 @@ function PartyFrames({ engine }: { engine: SigilEngine }) {
 
 function HudButton({ icon, label, badge, onClick, kbd, engine, spare }: { icon: string; label: string; badge?: number; onClick: () => void; kbd: string; engine: SigilEngine; spare?: boolean }) {
   return (
-    <button className={`rb-hudbtn${spare ? ' is-spare' : ''}`} onClick={onClick} aria-label={badge ? `${label} (${badge} new)` : label} title={engine.touchMode ? label : `${label} (${kbd})`}>
+    <button className={`rb-hudbtn is-${icon}${spare ? ' is-spare' : ''}`} onClick={onClick} aria-label={badge ? `${label} (${badge} new)` : label} title={engine.touchMode ? label : `${label} (${kbd})`}>
       <img src={uiIcon(icon, 3)} alt="" />
       {badge ? <span className="rb-badge">{badge}</span> : null}
     </button>

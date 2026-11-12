@@ -81,6 +81,19 @@ export function aimReach(spec: SkillSpec): number {
   return spec.cast === 'melee' ? spec.area + 30 : spec.cast === 'dash' ? spec.range + 20 : spec.range;
 }
 
+/**
+ * How far a tapped spell looks for someone to aim at: half as far again as it reaches (the owner: "auto aim for
+ * spells should increase its range by about 50%"), so that a spell turns to a foe coming in, not only one already
+ * on top of the hero. The spell itself goes no further than it did; a swing, a dash and the basic attack look as
+ * far as they reach, and a spell that must have a target (a chain, a mark, a drain) takes only one it can touch.
+ */
+export const AUTO_AIM_REACH = 1.5;
+export function seekReach(spec: SkillSpec): number {
+  const reach = aimReach(spec);
+  const touches = spec.cast === 'melee' || spec.cast === 'dash' || spec.cast === 'chain' || spec.cast === 'mark' || spec.cast === 'drain';
+  return touches ? reach : reach * AUTO_AIM_REACH;
+}
+
 export interface Aim {
   angle: number;
   tx: number;
@@ -112,7 +125,7 @@ export function resolveAim(w: World, spec: SkillSpec, req: CastRequest): Aim | n
   // drains) always do; the rest go where the hero faces, shown by the facing marker. A ground spell lands on
   // the target (up to its range).
   const auto = req.slot === 'basic' ? w.settings.autoTarget : w.settings.autoAimSkills !== false && tapAutoAims(spec);
-  const target = targeted || auto ? autoTarget(w, reach, p.aim) : null;
+  const target = targeted || auto ? autoTarget(w, req.slot === 'basic' ? reach : seekReach(spec), p.aim) : null;
   if (target) {
     const angle = Math.atan2(target.y - p.y, target.x - p.x);
     const d = Math.min(spec.range, dist(p.x, p.y, target.x, target.y));

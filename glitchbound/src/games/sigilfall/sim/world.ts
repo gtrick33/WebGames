@@ -11,6 +11,7 @@ import { QUEST_DEFS, QUESTS } from '../data/quests';
 import { outlevelled } from '../data/progression';
 import { SPEC_LEVEL } from '../data/talents';
 import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
+import { isRetired } from '../data/retired';
 import { THEMES } from '../data/themes';
 import { BOSS_MARKS } from '../data/vendors';
 import type { ClassId, EliteAffix, Encounter, Item, Objective, QuestDef, RegionDef, RegionId, SkillSpec, SlotKey, StatusId } from '../data/types';
@@ -2571,7 +2572,7 @@ export class World {
       }
     });
     // the portal after the final boss
-    if (this.portal && dist(p.x, p.y, this.portal.x, this.portal.y) < 22) best = { kind: 'exit', to: HOME, x: this.portal.x, y: this.portal.y, label: 'Portal to Briarhollow', locked: null };
+    if (this.portal && dist(p.x, p.y, this.portal.x, this.portal.y) < 22) best = { kind: 'exit', ...this.portalWay(), x: this.portal.x, y: this.portal.y, locked: null };
     this.interactable = p.dead ? null : best;
     // walking onto an exit offers to travel once; stepping off and back on offers again
     if (onExit !== this.exitInside) {
@@ -2581,6 +2582,19 @@ export class World {
   }
 
   /** Why an exit won't take the hero yet (the old roads need a quest, Duskspire all seven sigils; new lands warn the too-young), or null. */
+  /**
+   * Where the portal after a dungeon's last boss leads: out to the land the dungeon is entered from, at its door
+   * (the owner: "once you finish dungeon, portal should teleport you out at the entrance of the dungeon if possible";
+   * it used to drop every hero in Briarhollow, a long walk from the next thing to do). Briarhollow still, where
+   * there is no such land to stand in: one the story no longer goes through, or one this hero has never found (a
+   * Riftstone run is entered from anywhere).
+   */
+  portalWay(): { to: RegionId; label: string } {
+    const out = this.region.kind === 'dungeon' ? this.exits.find((x) => !x.door && !isRetired(x.to) && !!REGIONS[x.to] && this.hero.unlocked.includes(x.to)) : undefined;
+    if (!out || out.to === HOME) return { to: HOME, label: 'Portal to Briarhollow' };
+    return { to: out.to, label: `Portal out to ${REGIONS[out.to].name}` };
+  }
+
   private exitLock(x: World['exits'][number]): string | null {
     const h = this.hero;
     if ((x.to === 'whisperwood' || x.to === 'crypt') && !h.unlocked.includes(x.to)) return x.to === 'crypt' ? 'The crypt stair is sealed under the chapel floor.' : 'Not open yet.';
