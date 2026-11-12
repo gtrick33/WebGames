@@ -248,3 +248,32 @@ What changed with this measurement:
 Still open, and wanting the owner's say before the numbers move again: whether tank and healer trees should
 close most of the gap for solo play, Cryomancer's damage, and the casters as a group against the fighters. A
 bot that takes a shape and holds a cast would make the druid's and the warlock's rows mean something.
+
+## Part 5 — Dungeons against the road (2026-11-12)
+
+The owner's call after the first full play-through: every dungeon a little harder, the first one a little easier.
+
+Measured first, with the play-bot at the level the story brings a hero in (the low end of each dungeon's range, in
+what drops by then), four classes, three runs each. The early dungeons already cost it falls; from the Rimeheld
+Vault on it walked every one without a fall, often never under half its health. So the step grows with depth
+(`depth` in sim/world.ts, beside `challenge`, and like it only on Normal: Heroic, Mythic and Riftstone keep their own
+measure):
+
+| Dungeon | Level | Damage | Health |
+| --- | --- | --- | --- |
+| The Chapel Crypt | 4 | −5% | as it was |
+| Gallows Keep, the Smugglers’ Grotto, the Rotmother’s Cistern, the Deepforge Halls | 14–26 | +3% | +2% |
+| The Barrow of Kings | 29 | +4.5% | +3% |
+| The Tomb of the Sun King | 35 | +7.5% | +6% |
+| The Rimeheld Vault | 39 | +9.5% | +7% |
+| The Siege of Highwall | 44 | +12% | +9.5% |
+| Blightheart, the Molten Throne, the Spire, Duskspire, the Catacombs | 52–60 | +15% | +12% |
+
+Everything in the dungeon carries it, packs and bosses alike. The same bot afterwards: the late bosses take 5 to 13%
+longer and it falls now and then where it never did (the Siege 0.4 to 1.5 falls a run, the Spire 0 to 1.3); the early
+dungeons are where they were; the Crypt costs it a little less (10.3 to 9.6 falls a run across the four classes, its
+mage and paladin still the ones that cannot do it at level 4). Every class still clears every dungeon inside the six
+falls the dungeon tests allow.
+
+A first cut that started the growth at level 10 (5% and 4% at Gallows Keep) broke the bot's mage in the Deepforge
+Halls and then in the Cistern: the early dungeons have no room to give, which is why they got the smallest step.
