@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { takeSavesLive } from '../../platform/syncGate';
 import { SigilEngine } from './engine';
+import { ArrivalCard } from './ui/Arrival';
 import { GameScreen } from './ui/GameScreen';
 import { isTurned, setTurned } from './ui/turn';
 import { CreateScreen, TitleScreen } from './ui/Title';
@@ -207,6 +208,7 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
     <div className="rb" ref={stageRef}>
       <canvas ref={canvasRef} className="rb-canvas" aria-label="Sigilfall game view" />
       {engine && <Screens engine={engine} />}
+      {engine && <ArrivalCard engine={engine} />}
     </div>
   );
 }

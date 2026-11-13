@@ -6,6 +6,8 @@ import './SigilPicture.css';
 /** The built-in Sigilfall items have their pictures made already (public/shop/sigilfall/), so the shop shows them at once. */
 const MADE = new Set(PRODUCTS.filter((p) => p.sigil).map((p) => p.id));
 export const madePicture = (id: string): string | null => (MADE.has(id) ? `/shop/sigilfall/${id.replace(/^sigilfall-/, '')}.webp` : null);
+/** An item's made picture, or a pack's: the first of its pieces that has one. */
+export const itemPicture = (p: { id: string; includes?: string[] }): string | null => madePicture(p.id) ?? (p.includes ?? []).map(madePicture).find((x) => x !== null) ?? null;
 
 const canDraw = (): boolean => typeof window !== 'undefined' && typeof window.WebGLRenderingContext !== 'undefined';
 

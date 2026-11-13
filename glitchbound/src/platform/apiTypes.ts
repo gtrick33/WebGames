@@ -44,6 +44,8 @@ export interface BestView {
 export interface Me {
   /** What this member's one-time purchases unlocked (src/catalog/shop.ts). */
   owned?: string[];
+  /** Those of them an admin gave rather than the member bought (a card for a new one thanks them differently). */
+  gifts?: string[];
   /** The border and banner this member wears, from the ones they own (src/catalog/looks.ts). */
   looks?: Worn;
   id: string;

@@ -1,4 +1,4 @@
-import { loadItems, ownedBy } from './shop';
+import { giftsTo, loadItems, ownedBy } from './shop';
 import { wornFrom, type Worn } from '../src/catalog/looks';
 import { liveRules } from './catalogSettings';
 import type { Badge, BestView, Me, QuestView } from '../src/platform/apiTypes';
@@ -76,6 +76,8 @@ export async function buildLooks(env: Env, user: UserRow): Promise<Worn> {
 }
 
 export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me> {
+  // (what was given rather than bought: a card for a new one thanks the member differently, src/platform/arrivals.ts)
+  const gifting = giftsTo(env, user.id);
   const [owned, items] = await Promise.all([ownedBy(env, user.id), loadItems(env)]);
   const [favs, bests, roundCount, dailyDone, claimsCount, crown, quests, saves] = await Promise.all([
     env.DB.prepare('SELECT game FROM favorites WHERE user_id = ? ORDER BY created_at').bind(user.id).all<{ game: string }>(),
@@ -116,6 +118,7 @@ export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me>
   ];
   return {
     owned,
+    gifts: await gifting,
     looks: wornFrom({ border: user.look_border, banner: user.look_banner, icon: user.look_icon }, owned, items),
     id: user.id,
     nickname: user.nickname,
