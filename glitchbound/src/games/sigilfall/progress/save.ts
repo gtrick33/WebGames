@@ -1,3 +1,4 @@
+import { CLASSES } from '../data/classes';
 import { HAIRS, SKINS, type Face } from './character';
 import { CLASS_IDS, MAX_LEVEL, xpToNext } from '../data/classes';
 import { BASE_DEFS, ITEM_DEFS, MINOR_MODS } from '../data/items';
@@ -117,6 +118,8 @@ export interface SaveFile {
   last: number;
   settings: Settings;
   saved: number;
+  /** The Rift Trials: how high each calling's stone has been taken on this account (progress/trial.ts). */
+  rift: Record<string, number>;
 }
 
 export type LoadStatus = 'new' | 'ok' | 'recovered' | 'reset' | 'newer' | 'blocked';
@@ -130,7 +133,7 @@ function parseFace(raw: unknown): Face | undefined {
   return { skin: f.skin, hair: f.hair, style, beard: f.beard === true };
 }
 
-export const emptySave = (): SaveFile => ({ v: SAVE_VERSION, heroes: Array(HERO_SLOTS).fill(null), last: 0, settings: { ...DEFAULT_SETTINGS }, saved: 0 });
+export const emptySave = (): SaveFile => ({ v: SAVE_VERSION, heroes: Array(HERO_SLOTS).fill(null), last: 0, settings: { ...DEFAULT_SETTINGS }, saved: 0, rift: {} });
 
 /* ------------------------------------------------------------ validation */
 
@@ -558,7 +561,10 @@ export function migrate(raw: unknown): SaveFile | null {
   const heroes: (Character | null)[] = [];
   const list = Array.isArray(o.heroes) ? o.heroes : [];
   for (let i = 0; i < HERO_SLOTS; i++) heroes.push(validateCharacter(list[i], i));
-  return { v: SAVE_VERSION, heroes, last: int(o.last, 0, HERO_SLOTS - 1, 0), settings: validateSettings(o.settings), saved: int(o.saved, 0, 4e12, 0) };
+  // (a save from before the Trials had their own heroes has none: every calling starts at its first stone)
+  const rift: Record<string, number> = {};
+  if (o.rift && typeof o.rift === 'object') for (const [cls, n] of Object.entries(o.rift as Record<string, unknown>)) if (cls in CLASSES && typeof n === 'number' && Number.isFinite(n)) rift[cls] = Math.max(1, Math.min(999, Math.floor(n)));
+  return { v: SAVE_VERSION, heroes, last: int(o.last, 0, HERO_SLOTS - 1, 0), settings: validateSettings(o.settings), saved: int(o.saved, 0, 4e12, 0), rift };
 }
 
 /* --------------------------------------------------------------- storage */

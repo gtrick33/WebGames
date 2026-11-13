@@ -1,5 +1,6 @@
 import { rankEntries } from './progress/ranks';
 import { readBests } from './vigil/bests';
+import { trialHero, trialsOpen, trialStone } from './progress/trial';
 import { ambienceOf } from './audio/ambience';
 import type { GameHost } from '../../platform/contract';
 import { isRetired } from './data/retired';
@@ -688,7 +689,9 @@ export class SigilEngine {
         case 'bossStart': {
           const b = w.boss();
           // (met for the first time, its name is in the shot of it: no banner after)
-          if (b?.boss) this.ui = { ...this.ui, boss: { name: b.boss.def.name, title: b.boss.def.title }, banner: w.scene ? this.ui.banner : { text: b.boss.def.name, sub: b.boss.def.title, id: performance.now() } };
+          // (its name and title are on its bar, which comes up now: said again in a banner under the bar, the two lay
+          // across each other and across what the boss calls)
+          if (b?.boss) this.ui = { ...this.ui, boss: { name: b.boss.def.name, title: b.boss.def.title }, banner: w.scene ? this.ui.banner : null };
           changed = true;
           break;
         }
@@ -921,7 +924,10 @@ export class SigilEngine {
 
   persist(): void {
     if (!this.canSave) return;
-    if (this.hero) {
+    if (this.hero && this.trial) {
+      // a Trial's hero is not kept: only how high the calling's stone has been taken
+      this.save.rift = { ...this.save.rift, [this.trial]: Math.max(trialStone(this.save, this.trial), this.hero.keystone) };
+    } else if (this.hero) {
       // whatever the hero carries now, its look is theirs for good
       learnLooks(this.hero, allItems(this.hero));
       // stamped only when something changed: opening a hero without playing doesn't make that copy the newest
@@ -980,10 +986,27 @@ export class SigilEngine {
     this.play(slot);
   }
 
-  /** Straight into a Rift Trial from the title: from home, and home again afterward. */
-  startRift(slot: number, region: RegionId, stone: number): void {
-    this.play(slot);
-    this.travel(region, 2, [], HOME, stone);
+  /**
+   * The calling whose Rift Trial is being played, with its ready hero (progress/trial.ts), or null in the story.
+   * Such a hero is nobody's saved hero: nothing of theirs is written down but how high the calling's stone has gone
+   * (SaveFile.rift), and wherever the story would send them home, they go back to the title.
+   */
+  trial: ClassId | null = null;
+
+  /** Straight into a Rift Trial from the title, as a calling's ready hero on one of its paths. */
+  startRiftTrial(cls: ClassId, spec: 0 | 1 | 2, region: RegionId, pick?: number): void {
+    if (!trialsOpen(this.save) || !classOpen(cls, account.get().me) || REGIONS[region]?.kind !== 'dungeon') return;
+    const top = trialStone(this.save, cls);
+    // (any stone up to the calling's own: a lower one to learn a dungeon on)
+    const stone = Math.max(1, Math.min(top, Math.floor(pick ?? top)));
+    this.trial = cls;
+    this.hero = trialHero(cls, spec, top);
+    this.heroSig = heroSignature(this.hero);
+    this.tipQueue = [];
+    this.ui = { ...this.ui, screen: 'game', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], teach: null };
+    this.sound.unlock();
+    if (!this.travel(region, 2, [], undefined, stone)) this.toTitle();
+    this.bump();
   }
 
   deleteHero(slot: number): void {
@@ -1024,6 +1047,7 @@ export class SigilEngine {
     const h = this.save.heroes[slot];
     if (!h) return;
     this.askShelf();
+    this.trial = null;
     this.slot = slot;
     this.hero = h;
     this.heroSig = heroSignature(h);
@@ -1078,11 +1102,14 @@ export class SigilEngine {
     const loaded = loadSave();
     if (loaded.status === 'newer' || loaded.status === 'blocked') return;
     const next = loaded.save;
-    if (this.ui.screen === 'game' && this.hero) {
+    if (this.ui.screen === 'game' && this.hero && this.trial) next.settings = this.save.settings;
+    else if (this.ui.screen === 'game' && this.hero) {
       next.heroes[this.slot] = this.hero;
       next.settings = this.save.settings;
       next.last = this.slot;
     }
+    // (the Trials' stones never go down: the higher of this device's and the account's, calling by calling)
+    for (const [cls, n] of Object.entries(this.save.rift)) next.rift[cls] = Math.max(next.rift[cls] ?? 1, n);
     this.save = next;
     this.bump();
   }
@@ -1113,6 +1140,7 @@ export class SigilEngine {
     this.persist();
     this.world = null;
     this.hero = null;
+    this.trial = null;
     this.cards = [];
     this.tipQueue = [];
     this.setUi({ screen: 'title', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], levelUp: null, banner: null, teach: null, card: null });
@@ -1132,6 +1160,18 @@ export class SigilEngine {
     if (!h.unlocked.includes(to) && !party && !key) return false;
     // a Riftstone run is a stone the hero holds (never above it; a party runs the host's), in a dungeon
     if (key > 0 && (region.kind !== 'dungeon' || (key > h.keystone && !party))) return false;
+    // a Trial's hero has no village and no road: anywhere but a stone's dungeon is the way back to the title
+    if (this.trial && !key) {
+      this.toTitle();
+      return true;
+    }
+    // Mythic and the Riftstones are for heroes at the top level (the owner: "they shouldnt be accessed by anyone
+    // lower of 60 lvl or whatever the max is"); a younger hero asking for Mythic gets Heroic
+    if (key > 0 && h.level < MAX_LEVEL) {
+      this.toast(`Riftstones are for heroes at level ${MAX_LEVEL}.`, 'info');
+      return false;
+    }
+    if (tier >= 2 && h.level < MAX_LEVEL) tier = Math.min(tier, 1);
     // questing together the party travels as one: the leader's way is everyone's, the others follow
     if (this.coop && !party && this.party?.view?.mode === 'party' && this.party.view.phase === 'run') {
       if (this.coop.role === 'host') this.party.link.send({ t: 'go', region: to, tier: region.safe ? 0 : tier });
@@ -1241,7 +1281,7 @@ export class SigilEngine {
     const score = Math.round(s.xp + s.gold * 2 + s.bosses * 250 + (s.key && s.key.up > 0 ? s.key.key * 1000 : 0));
     this.hero.stats.bestRun = Math.max(this.hero.stats.bestRun, score);
     // a review hero (jumped to a story beat) plays for looking, not for the leaderboard
-    if (!this.hero.review) this.host.report({ type: 'end', score, stats: { level: this.hero.level, kills: s.kills, bosses: s.bosses, ...(this.hero.para.l ? { paragon: this.hero.para.l } : {}), ...(s.key ? { mythicPlus: s.key.up > 0 ? s.key.key : 0 } : {}) } });
+    if (!this.hero.review && !this.trial) this.host.report({ type: 'end', score, stats: { level: this.hero.level, kills: s.kills, bosses: s.bosses, ...(this.hero.para.l ? { paragon: this.hero.para.l } : {}), ...(s.key ? { mythicPlus: s.key.up > 0 ? s.key.key : 0 } : {}) } });
     // the vendors have new stock when you come back
     restock(this.hero);
     if (toast && (s.kills || s.items.length)) this.toast(`Expedition over: +${s.xp} XP, +${s.gold} gold`, 'good', undefined, `${s.kills} foes defeated${s.items.length ? ` · ${s.items.length} items` : ''}`);
@@ -1679,7 +1719,7 @@ export class SigilEngine {
   partyReady(): string {
     const h = this.hero;
     if (!h) return 'Choose a hero first.';
-    if (h.level < COOP_LEVEL) return `Riftstone runs with friends are for heroes at level ${COOP_LEVEL}.`;
+    if (h.level < Math.max(COOP_LEVEL, MAX_LEVEL)) return `Riftstone runs with friends are for heroes at level ${Math.max(COOP_LEVEL, MAX_LEVEL)}.`;
     if (h.keystone < 1) return 'Clear Duskspire on Mythic to earn the Riftstone first.';
     return '';
   }

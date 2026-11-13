@@ -1,3 +1,4 @@
+import { TRIALS_OPEN_AT, trialsOpen } from '../progress/trial';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { uiIcon } from './uiIcons';
 import { GameMenuButton } from '../../../components/GameMenuButton';
@@ -7,7 +8,7 @@ import type { RegionId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { SIGILS, type Character } from '../progress/character';
 import { rankOf, topStanding } from '../arena/ranks';
-import { RIFT_LEVEL, wornLooks } from '../progress/wardrobe';
+import { wornLooks } from '../progress/wardrobe';
 import { wornTitle } from '../progress/titles';
 import { longestNight } from '../vigil/bests';
 import { iconPicture, iconsReady } from '../render/art/gameIcons';
@@ -258,11 +259,13 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
       {/* the ways in: the story in the middle, the three other modes and playing with friends beside it. Each says in
           a line what it is, and where this hero stands in it. */}
       <div className="cs-actions">
-        <button className={`cs-mode is-rift${hero && hero.keystone >= 1 ? '' : ' is-locked'}`} disabled={!hero || hero.keystone < 1} onClick={() => onRift(at)}>
+        {/* (the Trials are the account's, not a hero's: open once any hero has reached level 20, played as a calling's
+            own ready champion: progress/trial.ts) */}
+        <button className={`cs-mode is-rift${trialsOpen(engine.save) ? '' : ' is-locked'}`} disabled={!trialsOpen(engine.save)} onClick={() => onRift(at)}>
           <img className="cs-mode-glyph" src={iconPicture(VIGIL_ICON.rift!)} alt="" draggable={false} />
           <span>
             <strong>Rift Trials</strong>
-            <small>{!hero ? 'Make a hero first' : hero.keystone >= 1 ? `Dungeons against the clock · Riftstone +${hero.keystone}` : `Opens at level ${RIFT_LEVEL}, or with your first dungeon`}</small>
+            <small>{trialsOpen(engine.save) ? `Dungeons against the clock · best stone +${Math.max(1, ...Object.values(engine.save.rift))}` : `Opens when a hero reaches level ${TRIALS_OPEN_AT}`}</small>
           </span>
         </button>
         <button className="cs-mode is-ring" onClick={onRing}>
