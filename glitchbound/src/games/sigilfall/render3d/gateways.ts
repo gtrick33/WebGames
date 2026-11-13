@@ -126,7 +126,9 @@ export function stoneGate(look: GateLook): GateBuilt {
     b.box(s < 0 ? -half : half - 0.22, -0.7, s < 0 ? -half + 0.22 : half, 0.7, 2.3, 2.9, stone, dark, stone);
   }
   // (a keystone a little proud of the arch, of its own stone: not a pale post standing up out of it)
-  b.box(-0.34, -0.76, 0.34, 0.76, 3.5, 4.5, mul(stone, 1.1), stone, mul(stone, 0.6));
+  // (and a little higher than it: its top lay in the plane of the arch's top, a darker patch that came and went
+  // over the gate as the camera moved. The owner: "some of the gates' textures, the ones top, keep jittering")
+  b.box(-0.34, -0.76, 0.34, 0.76, 3.5, 4.53, mul(stone, 1.1), stone, mul(stone, 0.6));
   b.faceS(-0.34, 0.34, 0.765, 3.5, 3.58, trim);
   // (a way down: the dark behind the arch, going back into it)
   if (look.shut) {

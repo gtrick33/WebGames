@@ -145,6 +145,8 @@ export class Renderer {
   /** The hero's held weapon changes with gear. */
   private weapon: { kind: string; tint?: string } = { kind: 'staff' };
   reducedMotion = false;
+  /** How big what is written and barred over the picture is drawn (render/camera.ts hudScale): names, health plates. */
+  hud = 1;
   /** Plates over heads (Settings): the hero's health and resource, and every foe's health. */
   plates = true;
   private cssW = 1;
@@ -184,6 +186,8 @@ export class Renderer {
 
   resize(cssW: number, cssH: number, dpr: number, touch: boolean): void {
     this.sized = [cssW, cssH, dpr, touch];
+    // (the picture's reach over the ground is measured again at its new size)
+    this.reach = null;
     const devW = Math.max(1, Math.round(cssW * dpr));
     const devH = Math.max(1, Math.round(cssH * dpr));
     const landscape = devW >= devH;
@@ -280,13 +284,38 @@ export class Renderer {
     const shift = this.vw > this.vh * 1.2 ? this.frameShift * this.vw : 0;
     const mapW = w.map.w * TILE;
     const mapH = w.map.h * TILE;
-    const x = w.player.x + this.leanX + shift - this.vw / 2;
-    const y = w.player.y + this.leanY - this.vh / 2;
-    // near a way out at an edge the view may go a little past the edge, so what it goes through (a cave, an arch,
-    // trees) is seen whole: easing in as the hero nears it, so the camera never jumps
+    // The picture is held inside the land. It is not a rectangle of ground `vw` by `vh` but a wedge, reaching further
+    // up the land than down it and wider at its top (the camera looks along the land with a lens), and holding only
+    // the rectangle in let the top of the picture and its corners run well past the map's edge, onto the bare pale
+    // ground beyond it (the owner, at a town's south gate: "check the pale green ground, this is ugly ... edges of
+    // the map shouldn't be visible"). So it is held by what it really shows (`reach`, measured from the picture
+    // itself each frame), and the hero walks on toward the edge of the screen from there.
+    const cx = w.player.x + this.leanX + shift;
+    const cy = w.player.y + this.leanY;
+    // near a way out at an edge the view may still go a little past it, so the hero at a gate isn't standing under
+    // the HUD: easing in as the hero nears it, so the camera never jumps
     const peek = this.edgePeek(w);
-    this.camX = mapW <= this.vw ? (mapW - this.vw) / 2 : clamp(x, -peek.l, mapW - this.vw + peek.r);
-    this.camY = mapH <= this.vh ? (mapH - this.vh) / 2 : clamp(y, -peek.t, mapH - this.vh + peek.b);
+    const r = this.reach ?? { far: this.vh / 2, near: this.vh / 2 };
+    const held = (c: number, lo: number, hi: number, size: number): number => (lo > hi ? size / 2 : clamp(c, lo, hi));
+    // (to the sides it is held by its width where the hero stands, not at its top where it is widest: held by its
+    // top, a hero at the land's west edge was off the side of the screen. So at a side edge the top corners of the
+    // picture still show a few tiles of what is beyond; never the top or the bottom)
+    this.camX = held(cx, this.vw / 2 - peek.l, mapW - this.vw / 2 + peek.r, mapW) - this.vw / 2;
+    this.camY = held(cy, r.far - peek.t, mapH - r.near + peek.b, mapH) - this.vh / 2;
+  }
+
+  /**
+   * How far the picture reaches over the ground from the spot the camera looks at, in world pixels: up the land
+   * (`far`) and down it (`near`). Null until the 3D view has drawn once (the flat view's own reach is its rectangle).
+   */
+  private reach: { far: number; near: number } | null = null;
+  private measureReach(st: Stage, cy: number): void {
+    const top = st.unproject(0, 0);
+    const bottom = st.unproject(this.cssW, this.cssH);
+    const far = cy - top.y;
+    const near = bottom.y - cy;
+    // (a camera placed by hand, or one drawn right in on a face, shows less: never more than the open view's)
+    if (Number.isFinite(far) && Number.isFinite(near) && far > 0 && near > 0) this.reach = { far, near };
   }
 
   /** How far past each edge the view may go: up to a few tiles, the nearer the hero is to a way out at that edge. */
@@ -296,7 +325,8 @@ export class Renderer {
     const mapW = w.map.w * TILE;
     const mapH = w.map.h * TILE;
     const near = TILE * 12;
-    const most = TILE * 4;
+    // (two tiles, where it was four: what lies past an edge is dressed for a glimpse, not for a view)
+    const most = TILE * 2;
     const p = w.player;
     for (const x of w.exits) {
       if (x.door) continue;
@@ -353,6 +383,7 @@ export class Renderer {
     const g = this.g;
     g.setTransform(this.k, 0, 0, this.k, 0, 0);
     g.globalAlpha = alpha;
+    size *= this.hud;
     g.font = `800 ${size}px "Bricolage Grotesque Variable", system-ui, sans-serif`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
@@ -369,7 +400,8 @@ export class Renderer {
   private bar(x: number, y: number, wide: number, k: number, color: string, shield = 0): void {
     const g = this.g;
     g.setTransform(this.k, 0, 0, this.k, 0, 0);
-    const h = 5;
+    wide *= this.hud;
+    const h = 5 * this.hud;
     g.fillStyle = 'rgba(20,12,32,0.9)';
     g.beginPath();
     g.roundRect(x - wide / 2 - 1.5, y - h / 2 - 1.5, wide + 3, h + 3, 3);
@@ -480,6 +512,8 @@ export class Renderer {
 
     if (st?.ready) {
       st.look(cx / TILE, cy / TILE);
+      // (measured with the camera drawn back as far as it goes: a scene's close-up mustn't loosen the hold)
+      if (st.push >= 0.999) this.measureReach(st, cy);
       LIGHT.uTime.value = time;
       this.setMood(w, st, dt);
       st.heroAt(p.x, p.y);
@@ -705,6 +739,8 @@ export class Renderer {
   private plate(id: number, x: number, y: number, wide: number, high: number, k: number, tone: Plate, o: { shield?: number; under?: { k: number; tone: Plate }; alpha?: number } = {}): void {
     const g = this.g;
     g.setTransform(this.k, 0, 0, this.k, 0, 0);
+    wide *= this.hud;
+    high *= this.hud;
     const kk = clamp(k, 0, 1);
     // the trail: it follows the health down, never up
     const was = this.plateTrail.get(id) ?? kk;
@@ -779,8 +815,8 @@ export class Renderer {
       const quiet = e.hp >= e.maxHp && !e.aggro && !elite && !named;
       this.plate(e.id, s.x, s.y, elite || named ? 48 : 32, elite || named ? 5.5 : 4.5, e.hp / e.maxHp, named ? PLATE.named : elite ? PLATE.elite : PLATE.foe, { shield: e.shield > 0 ? e.shield / (e.maxHp * 0.4) : 0, alpha: quiet ? 0.6 : 1 });
     }
-    if (named) this.label(`${e.name} ${e.level}`, s.x, s.y - 11, 11, '#e8d0ff');
-    else if (elite) this.label(e.name.split(' ')[0]!, s.x, s.y - 11, 11, '#ffd36b');
+    if (named) this.label(`${e.name} ${e.level}`, s.x, s.y - 11 * this.hud, 11, '#e8d0ff');
+    else if (elite) this.label(e.name.split(' ')[0]!, s.x, s.y - 11 * this.hud, 11, '#ffd36b');
   }
 
   /** The hero's own plate: health, and under it what they spend (mana, rage, energy, focus, zeal). */
