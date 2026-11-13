@@ -49,8 +49,15 @@ export const TITLE_MAX = 40;
 /** A title as typed by an admin, tidied (control characters out, spaces folded), or '' if nothing usable is left. */
 export function cleanTitle(raw: unknown): string {
   if (typeof raw !== 'string') return '';
-  return raw
-    .replace(/[\u0000-\u001f\u007f-\u009f​-‏ -‮⁦-⁩]/g, '')
+  return (
+    [...raw]
+      // (control characters, and the invisible ones that turn text around or hide in it)
+      .filter((ch) => {
+        const c = ch.codePointAt(0)!;
+        return c >= 0x20 && !(c >= 0x7f && c <= 0x9f) && !(c >= 0x200b && c <= 0x200f) && !(c >= 0x2028 && c <= 0x202e) && !(c >= 0x2066 && c <= 0x2069);
+      })
+      .join('')
+  )
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, TITLE_MAX)
