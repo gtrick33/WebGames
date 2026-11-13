@@ -1576,6 +1576,10 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
             <span>Damage numbers</span>
           </label>
           <label className="rb-check">
+            <input type="checkbox" checked={s.plates} onChange={(e) => set({ plates: e.target.checked })} />
+            <span>Health bars over heads (yours, and every enemy’s)</span>
+          </label>
+          <label className="rb-check">
             <input type="checkbox" checked={s.reducedMotion} onChange={(e) => set({ reducedMotion: e.target.checked })} />
             <span>Reduced motion (no shake, calmer weather and effects)</span>
           </label>
