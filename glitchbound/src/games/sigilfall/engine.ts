@@ -10,6 +10,7 @@ import { setShopGoods } from './progress/shopGoods';
 import { account, api } from '../../platform/account';
 import { classOpen, heroSlots } from './progress/paidClasses';
 import { applyOrder, orderToast } from './progress/gm';
+import { announceGm } from './progress/gmArrival';
 import { isMainQuest, turnInNpc } from './progress/handin';
 import { rewardSummary } from './progress/rewards';
 import { ACTS, type ActDef } from './data/acts';
@@ -164,9 +165,9 @@ const PARTY_ERRORS: Record<string, string> = {
 /** On touch screens the hero stands this share of the view's width off the middle (render/renderer.ts frameShift). */
 const FRAME_SHIFT = 0.1;
 
-/** When the game looks for game masters' orders. */
+/** When the game looks for game masters' orders (and when the player comes back to the tab: ui/Arrival.tsx). */
 const GM_FIRST_MS = 6_000;
-const GM_EVERY_MS = 90_000;
+const GM_EVERY_MS = 60_000;
 /**
  * How often the game asks whether a friend wants this player (platform/friends.ts). Asking also tells friends the
  * player is here, in Sigilfall. Often enough that an invitation feels like it arrived, cheap enough to keep up: one
@@ -357,7 +358,7 @@ export class SigilEngine {
     this.bump();
   }
 
-  /** Looks for orders soon after the game opens (the saves have arrived by then) and then every minute and a half. */
+  /** Looks for orders soon after the game opens (the saves have arrived by then) and then every minute. */
   private startGm(): void {
     this.gmStart = window.setTimeout(() => void this.checkGm(), GM_FIRST_MS);
     this.gmTimer = window.setInterval(() => void this.checkGm(), GM_EVERY_MS);
@@ -384,6 +385,8 @@ export class SigilEngine {
         done.push({ id: o.id, result });
         if (result) continue;
         if (this.hero && this.hero.created === o.created) live = true;
+        // (a mount, a look or an item: the card for things received, wherever the player is: ui/Arrival.tsx)
+        if (announceGm(this.save, o)) continue;
         const line = orderToast(o);
         if (line && this.world) this.toast(line, 'good');
       }

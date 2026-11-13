@@ -50,6 +50,7 @@ const LeaderboardsPage = lazyPage(() => import('./pages/LeaderboardsPage').then(
 const ProfilePage = lazyPage(() => import('./pages/ProfilePage').then((m) => m.ProfilePage));
 const BugReportPage = lazyPage(() => import('./pages/BugReportPage').then((m) => m.BugReportPage));
 const FriendInvites = lazy(fresh(() => import('./components/FriendInvites').then((m) => ({ default: m.FriendInvites }))));
+const Arrivals = lazy(fresh(() => import('./components/Arrivals').then((m) => ({ default: m.Arrivals }))));
 const FriendsPage = lazyPage(() => import('./pages/FriendsPage').then((m) => m.FriendsPage));
 const TrophiesPage = lazyPage(() => import('./pages/TrophiesPage').then((m) => m.TrophiesPage));
 const PartyPage = lazyPage(() => import('./party/ui/PartyPage').then((m) => m.PartyPage));
@@ -63,6 +64,12 @@ const DiscordPage = lazyPage(() => import('./pages/DiscordPage').then((m) => m.D
 function FriendInviteBar() {
   const { me } = useAccount();
   return me ? <FriendInvites /> : null;
+}
+
+/** "It's yours!" when a purchase or a gift arrives (platform/arrivals.ts): members only too. */
+function ArrivalCards() {
+  const { me } = useAccount();
+  return me ? <Arrivals /> : null;
 }
 
 // What each page needs before it can show: the router loads it before switching pages, so the switch never
@@ -211,6 +218,7 @@ export function App() {
       )}
       <Suspense fallback={null}>
         <FriendInviteBar />
+        <ArrivalCards />
         <MusicControl />
       </Suspense>
       <Suspense fallback={null}>

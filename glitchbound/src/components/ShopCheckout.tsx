@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { PRODUCTS, type Product } from '../catalog/shop';
 import type { ShopText } from '../i18n/shopTypes';
 import { api, ApiError } from '../platform/account';
+import { expectPurchase } from '../platform/arrivals';
 
 type W = ShopText['shop'];
 
@@ -46,7 +47,11 @@ export function Checkout({ product, name, price, lang, w, onClose, back, look = 
     setBusy(true);
     setError('');
     api<{ url: string }>('/api/shop/checkout', { body: { product: product.id, agreeNow: now, agreeAge: age, lang, ...(back ? { back } : {}) } })
-      .then((r) => window.location.assign(r.url))
+      .then((r) => {
+        // (back from paying, the item is looked for until it comes, and said when it does: platform/arrivals.ts)
+        expectPurchase(product.id);
+        window.location.assign(r.url);
+      })
       .catch((e: unknown) => {
         setBusy(false);
         setError(e instanceof ApiError && e.code === 'already_yours' ? w.already : w.failed);

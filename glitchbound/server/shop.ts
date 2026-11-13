@@ -58,6 +58,18 @@ export async function ownedBy(env: Env, userId: string): Promise<string[]> {
   }
 }
 
+/** The items this member has only as gifts (giftItem): never paid for themselves. */
+export async function giftsTo(env: Env, userId: string): Promise<string[]> {
+  try {
+    const rows = await env.DB.prepare("SELECT product FROM purchases WHERE user_id = ? AND status = 'paid' GROUP BY product HAVING MIN(terms = 'gift') = 1")
+      .bind(userId)
+      .all<{ product: string }>();
+    return rows.results.map((r) => r.product);
+  } catch {
+    return [];
+  }
+}
+
 export const canSell = (env: Env, p: Product | undefined, money: { ads: boolean }): p is Product => !!p && !p.later && offered(p, money) && !!env.STRIPE_SECRET_KEY;
 
 async function stripe<T>(env: Env, path: string, body: URLSearchParams): Promise<T | null> {
