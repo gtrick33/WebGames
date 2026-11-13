@@ -121,3 +121,19 @@ describe('Sigilfall: the boss bar and the Riftstone clock', () => {
     expect(readFileSync('src/games/sigilfall/ui/GameScreen.tsx', 'utf8')).toContain('{engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}');
   });
 });
+
+describe('Sigilfall: the quest being followed is plain words', () => {
+  const css = readFileSync('src/games/sigilfall/Game.css', 'utf8');
+
+  it('has no panel behind it: no fill, no border, an edge of dark round the letters (the clock and the folded mark keep theirs)', () => {
+    const at = css.lastIndexOf('\n.rb-tracker:not(.rb-keyclock):not(.is-folded) {');
+    expect(at).toBeGreaterThan(0);
+    const rule = css.slice(at, css.indexOf('\n}', at));
+    expect(rule).toContain('background: none;');
+    expect(rule).toContain('border-color: transparent;');
+    expect(rule).toContain('text-shadow:');
+    // it stands on its own at the top level, not inside a block for one size of screen
+    const before = css.slice(0, at);
+    expect((before.match(/\{/g) ?? []).length).toBe((before.match(/\}/g) ?? []).length);
+  });
+});
