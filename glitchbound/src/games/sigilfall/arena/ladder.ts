@@ -1,5 +1,5 @@
 import type { ClassId } from '../data/types';
-import { PRESETS, SLOTS } from './abilities';
+import { ABILITIES, fullBar, PRESETS, SLOTS } from './abilities';
 import { forgetBest, NEW_STANDING, rankOf, RING_KEY, type Format, type Standing } from './ranks';
 import type { FighterSetup } from './sim';
 import { clearLive, LEAVER_K, type LiveMatch } from './live';
@@ -141,8 +141,12 @@ export function setsOf(save: RingSave, cls: ClassId): ClassSets {
   const kept = save.sets[cls];
   const list = Array.from({ length: SET_COUNT }, (_, i) => {
     const k = kept?.list[i];
-    // (a setup kept from when a bar held six keeps its first four)
-    return k && Array.isArray(k.bar) && Array.isArray(k.talents) && typeof k.oath === 'string' ? { ...k, bar: k.bar.slice(0, SLOTS) } : presetSetup(cls, i);
+    if (!(k && Array.isArray(k.bar) && Array.isArray(k.talents) && typeof k.oath === 'string')) return presetSetup(cls, i);
+    // (a setup kept from when a bar held six keeps its first four; one holding an ability since taken out of the game, or
+    // renamed, loses it and is filled up again, so that it is never left short. A bar its player is still filling is left
+    // as it is)
+    const own = k.bar.filter((id) => ABILITIES[id]?.cls === cls && !ABILITIES[id]!.super);
+    return { ...k, bar: own.length < k.bar.length ? fullBar(cls, own) : k.bar.slice(0, SLOTS) };
   });
   const active = kept && kept.active >= 0 && kept.active < SET_COUNT ? kept.active : 0;
   return { active, list };

@@ -6,7 +6,7 @@ import { THEMES, type ThemeLook } from '../data/themes';
 import type { ClassId } from '../data/types';
 import type { HeroLook } from '../render/art/hero';
 import { K, TILE, type TileMap } from '../sim/map';
-import { Motion } from './cast';
+import { Motion, PERSON_H } from './cast';
 import { strikeOf } from './strike';
 import { Stand } from './crowd';
 import type { Held } from './dress';
@@ -29,6 +29,13 @@ export interface RingFighterLook {
   held: Held;
 }
 
+/** The Gloamknight's ashbound dead are the barrows' own skeletons (render3d/kits.ts), a little smaller than a hero, ash-violet. */
+const THRALL_SPRITE = 'barrow-skeleton';
+const THRALL_H = PERSON_H * 0.86;
+const ASHBOUND = [0.8, 0.72, 1.08] as const;
+/** Seconds one takes to sink back into the ground once it has fallen or its time is up. */
+const THRALL_SINK = 1.1;
+
 const SKINS = {
   sands: { land: 'desert', kind: K.Sand, grade: [1, 0.72, 0.4, 0.03] },
   frost: { land: 'snow', kind: K.Floor, grade: [0.5, 0.72, 1, 0.04] },
@@ -46,6 +53,14 @@ export class RingStage implements RingView {
   readonly stage: Stage;
   private built = false;
   private readonly motions = new Map<number, { m: Motion; turn: number; swing: number; clip: string; fresh: boolean; time: number; lunge: number; hurt: number; hard: boolean }>();
+  /**
+   * Where each body was drawn this frame: the rules' spot, carried into a blow and back, rocked by a flinch. What is
+   * worn on a fighter (the Gloamknight's gloam, a shield, a curse) is drawn here too, so it goes with the body rather
+   * than staying on the spot while the body steps away from it and back.
+   */
+  private readonly drawn = new Map<number, { x: number; y: number }>();
+  /** Blows each of the raised dead had struck when last drawn (a new one starts its swing). */
+  private readonly blows = new Map<number, number>();
   /** The picture shaken by a heavy blow: how hard (world px) and for how much longer. */
   private quake = 0;
   private quakeT = 0;
@@ -166,7 +181,12 @@ export class RingStage implements RingView {
     cast.begin();
     // what stands on the ring's floor throws its shadow too: every pillar and stone, as the fighters do
     for (const p of this.map.pillars) cast.shadow(p.x + p.w / 2, p.y + p.h / 2, Math.max(p.w, p.h) * 0.58);
+    this.drawn.clear();
     for (const f of m.fighters) {
+      if (f.pet) {
+        this.thrall(m, f, dt);
+        continue;
+      }
       const l = looks[f.id];
       if (!l) continue;
       this.fighter(f, l, dt, time);
@@ -240,6 +260,7 @@ export class RingStage implements RingView {
     s.m.advance(dt);
     cast.shadow(f.x, f.y, f.dead ? 10 : 8);
     if (hexed) {
+      this.drawn.set(f.id, { x: f.x, y: f.y });
       cast.creature('slime', f.x, f.y, s.turn, 16, 'idle', time, true);
       return;
     }
@@ -250,7 +271,62 @@ export class RingStage implements RingView {
     const reach = s.lunge > 0 && !f.dead ? s.lunge * Math.sin(Math.PI * Math.min(1, u * 1.35)) : 0;
     const rock = s.hurt > 0 && !f.dead ? Math.sin(s.hurt * 60) * (s.hard ? 1.6 : 0.9) * (s.hurt / 0.26) : 0;
     const flash = s.hurt > 0 && !f.dead ? Math.min(1, s.hurt / 0.26) * (s.hard ? 0.85 : 0.6) : 0;
-    cast.person(l.look, l.held, shieldOf(f.cls as ClassId), f.x + f.dirX * reach + rock, f.y + f.dirY * reach, s.turn, s.m, { lift, flash, alpha: f.dead ? 0.85 : 1, tint: frozen ? [0.75, 0.92, 1.25] : undefined });
+    const bx = f.x + f.dirX * reach + rock;
+    const by = f.y + f.dirY * reach;
+    this.drawn.set(f.id, { x: bx, y: by });
+    cast.person(l.look, l.held, shieldOf(f.cls as ClassId), bx, by, s.turn, s.m, { lift, flash, alpha: f.dead ? 0.85 : 1, tint: frozen ? [0.75, 0.92, 1.25] : undefined });
+  }
+
+  /** Where a fighter's body was drawn this frame (their spot, if it hasn't been): for what goes about on them. */
+  bodyAt(f: { id: number; x: number; y: number }): { x: number; y: number } {
+    return this.drawn.get(f.id) ?? f;
+  }
+
+  /**
+   * One of the Gloamknight's ashbound dead: a barrow skeleton gone the grey-violet of his gloam, clawing its way up out of
+   * the ground when it is called, striking with its master's foe, and sinking back into the ground when it falls or its
+   * time is up.
+   */
+  private thrall(m: Match, f: Fighter, dt: number): void {
+    const pet = f.pet!;
+    const cast = this.stage.cast;
+    const gone = f.dead ? m.clock - (pet.end ?? m.clock) : 0;
+    if (gone > THRALL_SINK) {
+      this.motions.delete(f.id);
+      return;
+    }
+    let s = this.motions.get(f.id);
+    if (!s) {
+      s = { m: new Motion(), turn: turnOf(Math.atan2(f.dirY, f.dirX)), swing: 0, clip: 'idle', fresh: false, time: 0, lunge: 0, hurt: 0, hard: false };
+      this.motions.set(f.id, s);
+    }
+    let d = (turnOf(Math.atan2(f.dirY, f.dirX)) - s.turn) % (Math.PI * 2);
+    if (d > Math.PI) d -= Math.PI * 2;
+    if (d < -Math.PI) d += Math.PI * 2;
+    s.turn += d * (1 - Math.exp(-dt * 12));
+    s.swing = Math.max(0, s.swing - dt);
+    s.hurt = Math.max(0, s.hurt - dt);
+    const held = f.auras.some((a) => a.cc === 'stun' || a.cc === 'incap');
+    const moving = Math.hypot(f.vx, f.vy) > 1;
+    if (f.dead) s.m.set('die', false);
+    else if ((this.blows.get(f.id) ?? 0) < pet.hits) {
+      // a new blow: from where its strike begins, not the lift before it
+      s.m.set('chop', false, 0.06, true);
+      s.m.t = cast.strike(THRALL_SPRITE, 'chop').from;
+      s.swing = 0.55;
+    } else if (s.swing > 0) {
+      // (the blow plays out)
+    } else if (held) s.m.set('hit');
+    else s.m.set(moving ? cast.walkOf(THRALL_SPRITE) : 'idle', true, 0.18);
+    this.blows.set(f.id, pet.hits);
+    s.m.advance(dt);
+    // up out of the ground over its first half second; back into it once it is done
+    const age = pet.max - pet.life;
+    const rise = f.dead ? Math.min(1, gone / THRALL_SINK) * 0.9 : Math.max(0, 1 - age / 0.5);
+    const flash = s.hurt > 0 && !f.dead ? Math.min(1, s.hurt / 0.26) * 0.7 : 0;
+    this.drawn.set(f.id, { x: f.x, y: f.y });
+    cast.shadow(f.x, f.y, f.dead ? 5 : 6);
+    cast.creature(THRALL_SPRITE, f.x, f.y, s.turn, THRALL_H, s.m.clip, s.m.t, false, { motion: s.m, rise, flash, tint: ASHBOUND, alpha: f.dead ? Math.max(0, 1 - gone / THRALL_SINK) : 1 });
   }
 
   /** Something to shout about. */
@@ -288,7 +364,7 @@ export class RingStage implements RingView {
       'g-lunge': ['stab', 0.55, 6],
       'g-hand': ['summon', 0.75, 0],
       'g-toll': ['taunt', 0.8, 0],
-      'g-price': ['use', 0.65, 0],
+      'g-ashbound': ['summon', 0.85, 0],
       'g-ward': ['block', 0.7, 0],
       'g-mantle': ['block', 0.7, 0],
       'g-gloom': ['cast', 0.6, 0],

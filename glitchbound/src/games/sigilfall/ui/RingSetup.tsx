@@ -7,7 +7,7 @@ import { cleanTalents, ROW_NAMES, TALENTS, type Talent } from '../arena/talents'
 import type { ClassId } from '../data/types';
 import { iconPicture } from '../render/art/gameIcons';
 
-const ROLE_WORD: Record<string, string> = { damage: 'Damage', heal: 'Healing', cc: 'Crowd control', interrupt: 'Interrupt', defense: 'Defense', mobility: 'Movement', dispel: 'Dispel', burst: 'Burst' };
+const ROLE_WORD: Record<string, string> = { damage: 'Damage', heal: 'Healing', cc: 'Crowd control', interrupt: 'Interrupt', defense: 'Defense', mobility: 'Movement', dispel: 'Dispel', burst: 'Burst', summon: 'Summon' };
 
 export function timing(ab: Ability): string {
   const bits: string[] = [];
@@ -281,7 +281,7 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
         )}
         {tab === 'talents' && (
           <>
-            <p className="rb-rs-hint">One from each row. Most sharpen a single ability, so they need that ability on your bar.</p>
+            <p className="rb-rs-hint">One from each row. Each works for the whole class, whatever is on your bar.</p>
             {ROW_NAMES.map((name, row) => (
               <div key={name} className="rb-rs-row" role="radiogroup" aria-label={name}>
                 <h4>{name}</h4>
@@ -289,16 +289,13 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
                   {TALENTS[cls]
                     .filter((t) => t.row === row)
                     .map((t) => {
-                      const needs = Object.keys(t.tune ?? {})[0];
-                      const idle = !!needs && !cur.bar.includes(needs);
                       const on = cur.talents.includes(t.id);
                       return (
-                        <button key={t.id} role="radio" aria-checked={on} className={`rb-rs-option${on ? ' is-on' : ''}${idle ? ' is-idle' : ''}`} onClick={() => pickTalent(t)}>
+                        <button key={t.id} role="radio" aria-checked={on} className={`rb-rs-option${on ? ' is-on' : ''}`} onClick={() => pickTalent(t)}>
                           <img src={talentIcon(t)} alt="" draggable={false} />
                           <span>
                             <strong>{t.name}</strong>
                             <small>{t.text}</small>
-                            {idle && on && <em>{ABILITIES[needs]?.name} isn’t on your bar</em>}
                           </span>
                         </button>
                       );

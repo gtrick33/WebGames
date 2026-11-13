@@ -1,7 +1,7 @@
 import type { ClassId } from '../data/types';
 import { ABILITIES, BODY, DASH, GCD, OATHS, SIGIL, SLOTS, superOf, type Ability, type CcKind, type Effect } from './abilities';
 import { ARENA_H, ARENA_W, ENTRY_GATES, MAPS, type Pillar } from './maps';
-import { cleanTalents, type Tune } from './talents';
+import { cleanTalents, EXECUTE, RALLY, type Talent, type Tune } from './talents';
 
 /**
  * The Ring's simulation: everything about a match but the drawing, so it can be tested, run by a bot at speed, and run
@@ -75,6 +75,14 @@ export const MOMENTUM_STEP = 0.15;
 export const MOMENTUM_CHARGE = 0.04;
 /** The gates of a ladder match against the computer lift sooner: there is nobody to wait for. */
 export const GATES_SOLO = 15;
+/**
+ * The Gloamknight's ashbound dead (Call the Ashbound): what they are called over their heads, how fast they walk
+ * beside a hero, how often they strike and from how near, and how little of a super they are worth (dealt to them, or
+ * by them, it fills a meter at this share).
+ */
+export const THRALL = { name: 'Ashbound', speed: 0.9, every: 1.25, reach: HERO_R * 2 + 4, charge: 0.5 } as const;
+/** An ashbound's blow: a claw, a blow like any other (Turn Aside and Oath of Shelter stop it). Not on anyone's bar. */
+const CLAW: Ability = { id: 'g-claw', cls: 'gloamknight', name: 'Grave Claw', text: '', icon: 'dark_crystal_skull_on_violet', color: '#9a6ae0', school: 'physical', role: 'damage', aim: 'enemy', range: THRALL.reach, cast: 0, cd: 0, mana: 0, effects: [] };
 
 export interface FighterSetup {
   team: 0 | 1;
@@ -113,9 +121,12 @@ export const RANGED: ReadonlySet<ClassId> = new Set<ClassId>(['mage', 'ranger', 
  * arena/abilities.ts). Those who fight from range deal less than those at arm's length; within that, each class is
  * set so that none wins or loses much more than half its matches when the computer plays every fighting setup against
  * every other (the owner, once shots stopped missing: "adjust the dmg so each class is somewhat balanced"). Before
- * that it was 1 at arm's length and 0.72 from range, and by the same measure the classes ran from 30% to 70%.
+ * that it was 1 at arm's length and 0.72 from range, and by the same measure the classes ran from 30% to 70%. Set
+ * again when the talents became the whole class's (some classes' ready-made builds had leaned on a talent that made
+ * their main ability a quarter stronger) and the warrior gave up most of its holds: the warrior 0.89 to 0.92, the mage
+ * 0.72 to 0.74, the warlock 0.84 to 0.9 and the druid 0.81 to 0.85, which put every class between 45% and 56%.
  */
-export const CLASS_DMG: Readonly<Record<ClassId, number>> = { warrior: 0.89, paladin: 0.88, gloamknight: 0.84, mage: 0.72, ranger: 0.78, warlock: 0.84, priest: 0.78, druid: 0.81 };
+export const CLASS_DMG: Readonly<Record<ClassId, number>> = { warrior: 0.92, paladin: 0.88, gloamknight: 0.84, mage: 0.74, ranger: 0.78, warlock: 0.9, priest: 0.78, druid: 0.85 };
 
 export interface Aura {
   /** The ability it came from. */
@@ -184,7 +195,15 @@ export interface Fighter {
   fearY: number;
   oath: string | null;
   talents: string[];
-  mods: { dmg: number; heal: number; speed: number; tenacity: number; cool: number; regen: number };
+  /**
+   * What the oath and talents make of them, as multipliers: damage, healing, speed, how long they are held, cooldowns,
+   * mana back, how long their own holds and slows last, damage taken, how fast their super fills, and the chance of a
+   * critical hit.
+   */
+  mods: { dmg: number; heal: number; speed: number; tenacity: number; cool: number; regen: number; hold: number; guard: number; charge: number; crit: number };
+  /** What their talents do now and then (arena/talents.ts), and when each can next. */
+  perks: Perks;
+  procs: Partial<Record<'stun' | 'snare' | 'rally', number>>;
   tune: Record<string, Tune>;
   score: { dmg: number; heal: number; cc: number; kicks: number; combos?: number; supers?: number; streak?: number };
   /** The super meter, 0 to 1. */
@@ -194,6 +213,37 @@ export interface Fighter {
   streakT: number;
   /** The last combo landed (the next link of a chain has to be a different one). */
   lastCombo?: string;
+  /** One of the raised dead, fighting for whoever raised them (not a hero: it has no bar, no seat and no say in who wins). */
+  pet?: Pet;
+}
+
+/** A talent's doings that aren't a plain number (arena/talents.ts), as one fighter has them. */
+export interface Perks {
+  leech: number;
+  exec: number;
+  slow: { pct: number; dur: number } | null;
+  stun: { dur: number; every: number } | null;
+  snare: { dur: number; every: number } | null;
+  rally: { pct: number; every: number; name: string } | null;
+}
+const NO_PERKS: Perks = { leech: 0, exec: 0, slow: null, stun: null, snare: null, rally: null };
+
+/** What makes one of the raised dead what it is: whose it is, how long it has, and its blow. */
+export interface Pet {
+  owner: number;
+  /** The ability that raised it: its blow's slow is put on as that ability's, by its master. */
+  ab: string;
+  /** Seconds left, of `max`. */
+  life: number;
+  max: number;
+  /** Its blow (before its master's share) and the slow it leaves, and seconds to the next. */
+  dmg: number;
+  slow: number;
+  next: number;
+  /** Blows struck so far: the drawing swings at each new one. */
+  hits: number;
+  /** When it fell or crumbled, by the match's clock (the drawing lets it sink back into the ground). */
+  end?: number;
 }
 
 export interface Bolt {
@@ -263,7 +313,9 @@ export type MatchEvent =
   /** The sigil rises (id -1), or someone takes it. */
   | { k: 'sigil'; id: number; x: number; y: number }
   /** A super goes off. */
-  | { k: 'super'; id: number; ab: string };
+  | { k: 'super'; id: number; ab: string }
+  /** One of the raised dead strikes at someone. */
+  | { k: 'claw'; id: number; to: number };
 
 export type Phase = 'gates' | 'fight' | 'over';
 
@@ -313,10 +365,12 @@ export function clearLine(pillars: Pillar[], ax: number, ay: number, bx: number,
 }
 
 /** What an oath and talents add up to. */
-function built(cls: ClassId, oathId: string | undefined, talentIds: readonly string[] | undefined): Pick<Fighter, 'mods' | 'tune' | 'maxHp' | 'talents' | 'oath'> {
+function built(cls: ClassId, oathId: string | undefined, talentIds: readonly string[] | undefined): Pick<Fighter, 'mods' | 'perks' | 'procs' | 'tune' | 'maxHp' | 'talents' | 'oath'> {
   const oath = OATHS.find((o) => o.id === oathId);
   const list = cleanTalents(cls, talentIds);
-  const sum = (key: 'hp' | 'dmg' | 'heal' | 'speed' | 'tenacity' | 'regen'): number => list.reduce((n, x) => n + (x[key] ?? 0), 0);
+  const sum = (key: 'hp' | 'dmg' | 'heal' | 'speed' | 'tenacity' | 'regen' | 'cool' | 'guard' | 'hold' | 'leech' | 'charge' | 'crit' | 'exec'): number => list.reduce((n, x) => n + (x[key] ?? 0), 0);
+  const one = <K extends 'slow' | 'stun' | 'snare'>(key: K): NonNullable<Talent[K]> | null => list.find((x) => x[key])?.[key] ?? null;
+  const rally = list.find((x) => x.rally);
   const tune: Record<string, Tune> = {};
   for (const x of list) Object.assign(tune, x.tune);
   return {
@@ -330,9 +384,15 @@ function built(cls: ClassId, oathId: string | undefined, talentIds: readonly str
       heal: 1 + (oath?.heal ?? 0) + sum('heal'),
       speed: 1 + (oath?.speed ?? 0) + sum('speed'),
       tenacity: 1 - Math.min(0.6, (oath?.tenacity ?? 0) + sum('tenacity')),
-      cool: 1 - (oath?.cool ?? 0),
+      cool: 1 - Math.min(0.5, (oath?.cool ?? 0) + sum('cool')),
       regen: 1 + sum('regen'),
+      hold: 1 + sum('hold'),
+      guard: 1 - Math.min(0.5, sum('guard')),
+      charge: 1 + sum('charge'),
+      crit: CRIT + sum('crit'),
     },
+    perks: { leech: sum('leech'), exec: sum('exec'), slow: one('slow'), stun: one('stun'), snare: one('snare'), rally: rally?.rally ? { ...rally.rally, name: rally.name } : null },
+    procs: {},
   };
 }
 
@@ -476,11 +536,20 @@ export class Match {
     if (this.phase === 'gates') this.gateAt = Math.min(this.gateAt, this.t + GATES_READY);
   }
 
+  /** Everyone standing on the other side, the raised dead among them (what hits everyone near hits them too). */
   enemiesOf(f: Fighter): Fighter[] {
     return this.fighters.filter((o) => o.team !== f.team && !o.dead);
   }
   friendsOf(f: Fighter): Fighter[] {
     return this.fighters.filter((o) => o.team === f.team && !o.dead);
+  }
+  /** The heroes of the match, without anyone's raised dead: who the match is between. */
+  get heroes(): Fighter[] {
+    return this.fighters.filter((o) => !o.pet);
+  }
+  /** Who is behind a fighter: the hero who raised them, or themself. */
+  masterOf(f: Fighter): Fighter {
+    return f.pet ? (this.fighters[f.pet.owner] ?? f) : f;
   }
 
   /**
@@ -560,7 +629,8 @@ export class Match {
     let best: Fighter | null = null;
     let bd = Infinity;
     for (const o of this.enemiesOf(f)) {
-      const d = Math.hypot(o.x - f.x, o.y - f.y) + (this.sees(f, o) ? 0 : 1000);
+      // (a hero before somebody's raised dead, unless the dead are a good deal nearer: chosen, they are hit like anyone)
+      const d = Math.hypot(o.x - f.x, o.y - f.y) + (this.sees(f, o) ? 0 : 1000) + (o.pet ? 120 : 0);
       if (d < bd) {
         bd = d;
         best = o;
@@ -746,9 +816,9 @@ export class Match {
         this.addAura(t, { ...base, kind: 'hot', harmful: false, dur: e.dur, n: (e.n * power) / e.dur, next: 1 });
         return;
       case 'cc':
-        return this.crowd(f, ab, t, e.cc, e.dur * (f.tune[ab.id]?.dur ?? 1)) ? undefined : 'stop';
+        return this.crowd(f, ab, t, e.cc, e.dur * (f.tune[ab.id]?.dur ?? 1) * f.mods.hold) ? undefined : 'stop';
       case 'slow':
-        this.addAura(t, { ...base, kind: 'slow', harmful: true, dur: e.dur * t.mods.tenacity, n: e.pct / 100 });
+        this.addAura(t, { ...base, kind: 'slow', harmful: true, dur: e.dur * t.mods.tenacity * f.mods.hold, n: e.pct / 100 });
         return;
       case 'antiheal':
         this.addAura(t, { ...base, kind: 'antiheal', harmful: true, dur: e.dur, n: e.pct / 100 });
@@ -820,7 +890,10 @@ export class Match {
         return;
       case 'trap':
         this.traps = this.traps.filter((x) => !(x.src === f.id && x.ab === ab.id));
-        this.traps.push({ ab: ab.id, src: f.id, team: f.team, x: f.x, y: f.y, arm: 1, life: 30, cc: e.cc, dur: e.dur });
+        this.traps.push({ ab: ab.id, src: f.id, team: f.team, x: f.x, y: f.y, arm: 1, life: 30, cc: e.cc, dur: e.dur * f.mods.hold });
+        return;
+      case 'raise':
+        this.raise(f, ab, e);
         return;
       case 'backlash': {
         const dot = t.auras.find((a) => a.ab === ab.id && a.kind === 'dot');
@@ -846,6 +919,12 @@ export class Match {
         return;
       }
       case 'dash': {
+        // (a Wild Snare is left where the step began: a trap of the ranger's own, that holds rather than dazes)
+        const snare = f.perks.snare;
+        if (snare && (f.procs.snare ?? 0) <= this.clock) {
+          f.procs.snare = this.clock + snare.every;
+          this.traps.push({ ab: 'r-trap', src: f.id, team: f.team, x: f.x, y: f.y, arm: 0.4, life: 20, cc: 'root', dur: snare.dur * f.mods.hold });
+        }
         const d = Math.hypot(f.dirX, f.dirY) || 1;
         f.dash = { x: f.x + (f.dirX / d) * e.dist, y: f.y + (f.dirY / d) * e.dist, speed: 430 };
         this.endCast(f);
@@ -910,6 +989,169 @@ export class Match {
     this.endCast(f);
   }
 
+  /* -------------------------------------------------------------- the raised dead */
+
+  /**
+   * The dead come up out of the ground at their master's sides, a little ahead (on the stone's near side if that's
+   * where the side is). Whatever of theirs still stood from the last calling crumbles first: a master has only so many.
+   */
+  private raise(f: Fighter, ab: Ability, e: Extract<Effect, { k: 'raise' }>): void {
+    for (const o of this.fighters) if (o.pet?.owner === f.id && !o.dead) this.crumble(o);
+    const d = Math.hypot(f.dirX, f.dirY) || 1;
+    const ux = f.dirX / d;
+    const uy = f.dirY / d;
+    for (let i = 0; i < e.n; i++) {
+      const side = (i % 2 ? 1 : -1) * (14 + Math.floor(i / 2) * 10);
+      let x = f.x + ux * 8 - uy * side;
+      let y = f.y + uy * 8 + ux * side;
+      if (this.hits(x, y) || x < HERO_R || y < HERO_R + 4 || x > ARENA_W - HERO_R || y > ARENA_H - HERO_R) {
+        x = f.x;
+        y = f.y;
+      }
+      this.fighters.push(this.makePet(f, x, y, { ab: ab.id, hp: e.hp, dmg: e.dmg, slow: e.slow, life: e.life, max: e.life, next: 0.5, hits: 0 }));
+    }
+  }
+
+  /** One of the raised dead, as a fighter: the next place in the match, on its master's side and with their share. */
+  private makePet(owner: Fighter, x: number, y: number, p: Omit<Pet, 'owner' | 'end'> & { hp: number }): Fighter {
+    return {
+      id: this.fighters.length,
+      team: owner.team,
+      cls: owner.cls,
+      name: THRALL.name,
+      bar: [],
+      seat: null,
+      human: false,
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      dirX: owner.dirX,
+      dirY: owner.dirY,
+      walk: 0,
+      hp: p.hp,
+      maxHp: p.hp,
+      mana: 0,
+      maxMana: 0,
+      dead: false,
+      target: null,
+      friend: null,
+      gcd: 0,
+      cds: {},
+      cast: null,
+      auras: [],
+      locks: {},
+      dr: {},
+      dash: null,
+      queued: null,
+      fearX: 0,
+      fearY: 0,
+      oath: null,
+      talents: [],
+      // (they hit with their master's share, and none of the rest of their talents)
+      mods: { dmg: owner.mods.dmg, heal: 1, speed: THRALL.speed, tenacity: 1, cool: 1, regen: 1, hold: 1, guard: 1, charge: 0, crit: CRIT },
+      perks: NO_PERKS,
+      procs: {},
+      tune: {},
+      score: { dmg: 0, heal: 0, cc: 0, kicks: 0 },
+      charge: 0,
+      streak: 0,
+      streakT: 0,
+      pet: { owner: owner.id, ab: p.ab, life: p.life, max: p.max, dmg: p.dmg, slow: p.slow, next: p.next, hits: p.hits },
+    };
+  }
+
+  /** Its time is up, or its master has fallen: back into the ground. */
+  private crumble(p: Fighter): void {
+    if (p.dead || !p.pet) return;
+    p.dead = true;
+    p.hp = 0;
+    p.auras = [];
+    p.dash = null;
+    p.pet.end = this.clock;
+    this.events.push({ k: 'death', id: p.id });
+  }
+
+  /**
+   * One of the raised dead, for a moment: it goes for its master's enemy (whoever they have chosen, else the nearest
+   * of the other side it can see, a hero before somebody else's dead), walks round the stone to them, and strikes when
+   * it is close. Held, it does nothing; afraid, it runs like anyone. With no one to fight it keeps to its master's side.
+   */
+  private tickPet(p: Fighter, dt: number): void {
+    const pet = p.pet!;
+    const owner = this.fighters[pet.owner];
+    pet.life -= dt;
+    if (pet.life <= 0 || !owner || owner.dead) {
+      this.crumble(p);
+      return;
+    }
+    this.tickAuras(p, dt);
+    if (p.dead) return;
+    pet.next = Math.max(0, pet.next - dt);
+    const t = this.petTarget(p, owner);
+    p.target = t?.id ?? null;
+    let move: MoveInput = { mx: 0, my: 0 };
+    if (t) {
+      const dx = t.x - p.x;
+      const dy = t.y - p.y;
+      const d = Math.hypot(dx, dy) || 1;
+      if (d > THRALL.reach) move = this.petStep(p, dx / d, dy / d);
+      else if (!this.held(p)) {
+        p.dirX = dx / d;
+        p.dirY = dy / d;
+      }
+      if (d <= THRALL.reach + HERO_R && pet.next <= 0 && !this.held(p) && this.sees(p, t)) this.claw(p, t);
+    } else {
+      const dx = owner.x - p.x;
+      const dy = owner.y - p.y;
+      const d = Math.hypot(dx, dy);
+      if (d > 28) move = this.petStep(p, dx / d, dy / d);
+    }
+    this.moveFighter(p, dt, move);
+  }
+
+  private petTarget(p: Fighter, owner: Fighter): Fighter | null {
+    const open = (o: Fighter): boolean => !this.immuneTo(o, CLAW);
+    const want = owner.target === null ? null : this.fighters[owner.target];
+    if (want && !want.dead && want.team !== p.team && open(want) && this.sees(p, want)) return want;
+    let best: Fighter | null = null;
+    let bd = Infinity;
+    for (const o of this.enemiesOf(p)) {
+      const d = Math.hypot(o.x - p.x, o.y - p.y) + (o.pet ? 60 : 0) + (this.sees(p, o) ? 0 : 400) + (open(o) ? 0 : 600);
+      if (d < bd) {
+        bd = d;
+        best = o;
+      }
+    }
+    return best;
+  }
+
+  /** The way to walk toward somewhere, turned aside for the stone in the way. */
+  private petStep(p: Fighter, ux: number, uy: number): MoveInput {
+    const a0 = Math.atan2(uy, ux);
+    for (const off of [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8]) {
+      const a = a0 + off;
+      const x = p.x + Math.cos(a) * 14;
+      const y = p.y + Math.sin(a) * 14;
+      if (!this.hits(x, y) && x > HERO_R && y > HERO_R + 4 && x < ARENA_W - HERO_R && y < ARENA_H - HERO_R) return { mx: Math.cos(a), my: Math.sin(a) };
+    }
+    return { mx: ux, my: uy };
+  }
+
+  private claw(p: Fighter, t: Fighter): void {
+    const pet = p.pet!;
+    pet.next = THRALL.every;
+    pet.hits++;
+    this.events.push({ k: 'claw', id: p.id, to: t.id });
+    if (this.immuneTo(t, CLAW)) {
+      this.events.push({ k: 'word', id: t.id, word: 'Immune' });
+      return;
+    }
+    this.damage(p, t, pet.dmg, true, CLAW);
+    // (the slow is its master's, put on with the ability that raised it: what a combo of theirs looks for)
+    if (!t.dead && pet.slow > 0) this.addAura(t, { ab: pet.ab, src: pet.owner, dur: 2 * t.mods.tenacity, magic: false, n: pet.slow / 100, kind: 'slow', harmful: true });
+  }
+
   /* -------------------------------------------------------------- hurting and mending */
 
   private damage(src: Fighter, t: Fighter, amount: number, direct: boolean, ab?: Ability): void {
@@ -919,19 +1161,27 @@ export class Match {
     // (fights turn on bursts: a blow hits a little harder than its number, a burst ability harder still, a crit a lot)
     if (direct) n *= HIT_K;
     if (direct && ab?.role === 'burst') n *= BURST_K;
+    // (a headsman's talent: harder on whoever is low)
+    if (src.perks.exec && t.hp < t.maxHp * EXECUTE) n *= 1 + src.perks.exec;
     let crit = false;
-    if (direct && this.rand() < CRIT) {
+    if (direct && this.rand() < src.mods.crit) {
       n *= CRIT_K;
       crit = true;
     }
     for (const a of src.auras) if (a.kind === 'fury') n *= 1 + a.n;
     for (const a of t.auras) if (a.kind === 'guard') n *= 1 - a.n;
-    n = Math.round(n);
-    src.score.dmg += n;
+    n = Math.round(n * t.mods.guard);
+    // (what the raised dead do is their master's doing, and they are worth less to a meter, striking or struck)
+    const by = this.masterOf(src);
+    by.score.dmg += n;
     if (src !== t) {
+      const k = src.pet || t.pet ? THRALL.charge : 1;
       // (a super's own blow doesn't fill the meter it just emptied)
-      if (!ab?.super) src.charge = Math.min(1, src.charge + n / SUPER_DEALT);
-      t.charge = Math.min(1, t.charge + n / SUPER_TAKEN);
+      if (!ab?.super) by.charge = Math.min(1, by.charge + (n / SUPER_DEALT) * k * by.mods.charge);
+      if (!t.pet) t.charge = Math.min(1, t.charge + (n / SUPER_TAKEN) * t.mods.charge);
+      // what a talent drinks of it, and what it does to whoever is hit: a slow, or now and then a stun
+      if (src.perks.leech && n > 0) this.mend(src, n * src.perks.leech);
+      if (direct && ab) this.onHit(src, t, ab);
     }
     for (const a of t.auras) {
       if (a.kind !== 'absorb' || n <= 0) continue;
@@ -962,11 +1212,41 @@ export class Match {
     }
   }
 
+  /** A talent's blow lands: whoever it hit is slowed, or (now and then, and never one of the raised dead) stunned. */
+  private onHit(src: Fighter, t: Fighter, ab: Ability): void {
+    const { slow, stun } = src.perks;
+    if (t.dead) return;
+    if (slow) this.addAura(t, { ab: ab.id, src: src.id, dur: slow.dur * t.mods.tenacity * src.mods.hold, magic: false, n: slow.pct / 100, kind: 'slow', harmful: true });
+    // (not on someone who would only shrug it off: it waits for a stun that will hold)
+    const worn = t.dr.stun && t.dr.stun.until > this.clock && t.dr.stun.n >= DR_STEPS.length;
+    if (stun && !t.pet && !worn && (src.procs.stun ?? 0) <= this.clock && this.crowd(src, ab, t, 'stun', stun.dur * src.mods.hold)) src.procs.stun = this.clock + stun.every;
+  }
+
+  /** Healing from a talent: no critical, but what cuts healing cuts it, and it fades with the match as all healing does. */
+  private mend(t: Fighter, amount: number, word?: string): void {
+    if (t.dead || t.pet) return;
+    let n = amount * (1 - this.dampening);
+    for (const a of t.auras) if (a.kind === 'antiheal') n *= 1 - a.n;
+    n = Math.round(Math.min(n, t.maxHp - t.hp));
+    if (word) this.events.push({ k: 'word', id: t.id, word });
+    if (n <= 0) return;
+    t.hp += n;
+    t.score.heal += n;
+    this.events.push({ k: 'num', id: t.id, n, kind: 'heal', crit: false });
+  }
+
   /** Life lost, and maybe the end of them. */
   private wound(t: Fighter, n: number, crit: boolean): void {
     t.hp -= n;
     this.events.push({ k: 'num', id: t.id, n, kind: 'dmg', crit });
+    // a second wind: falling low brings a little back, now and then
+    const rally = t.perks.rally;
+    if (rally && t.hp > 0 && t.hp < t.maxHp * RALLY && (t.procs.rally ?? 0) <= this.clock) {
+      t.procs.rally = this.clock + rally.every;
+      this.mend(t, t.maxHp * rally.pct, rally.name);
+    }
     if (t.hp > 0) return;
+    if (t.pet) t.pet.end = this.clock;
     const grace = t.auras.find((a) => a.kind === 'lastgrace');
     if (grace) {
       t.auras.splice(t.auras.indexOf(grace), 1);
@@ -991,7 +1271,7 @@ export class Match {
     if (n <= 0) return;
     t.hp += n;
     src.score.heal += n;
-    src.charge = Math.min(1, src.charge + n / SUPER_DEALT);
+    src.charge = Math.min(1, src.charge + (n / SUPER_DEALT) * (t.pet ? THRALL.charge : 1) * src.mods.charge);
     this.events.push({ k: 'num', id: t.id, n, kind: 'heal', crit: false });
   }
 
@@ -1011,9 +1291,11 @@ export class Match {
       return;
     }
     this.clock += dt;
+    // (the raised dead think for themselves: nobody's moves are theirs. Any raised in this frame take their first step in it)
     for (const f of this.fighters) {
       if (f.dead) continue;
-      this.tickFighter(f, dt, moves[f.id]);
+      if (f.pet) this.tickPet(f, dt);
+      else this.tickFighter(f, dt, moves[f.id]);
     }
     this.moveBolts(dt);
     this.fallZones(dt);
@@ -1034,7 +1316,7 @@ export class Match {
       return;
     }
     const s = this.sigil;
-    const by = this.fighters.find((f) => !f.dead && Math.hypot(f.x - s.x, f.y - s.y) < HERO_R + 8);
+    const by = this.fighters.find((f) => !f.dead && !f.pet && Math.hypot(f.x - s.x, f.y - s.y) < HERO_R + 8);
     if (!by) return;
     this.sigil = null;
     this.sigilAt = this.clock + SIGIL_EVERY;
@@ -1301,7 +1583,7 @@ export class Match {
   private tendOrbs(): void {
     for (const o of this.orbs) {
       if (this.clock < o.at) continue;
-      const by = this.fighters.find((f) => !f.dead && f.hp < f.maxHp && Math.hypot(f.x - o.x, f.y - o.y) < HERO_R + 9);
+      const by = this.fighters.find((f) => !f.dead && !f.pet && f.hp < f.maxHp && Math.hypot(f.x - o.x, f.y - o.y) < HERO_R + 9);
       if (!by) continue;
       o.at = this.clock + ORB_EVERY;
       const n = Math.round(Math.min(by.maxHp * ORB_HEAL, by.maxHp - by.hp));
@@ -1322,7 +1604,8 @@ export class Match {
       }
       if (tr.arm > 0) continue;
       for (const f of this.fighters) {
-        if (f.dead || f.team === tr.team || Math.hypot(f.x - tr.x, f.y - tr.y) > 15 || f.auras.some((a) => a.kind === 'immune')) continue;
+        // (a trap is for a hero: the raised dead walk over it)
+        if (f.dead || f.pet || f.team === tr.team || Math.hypot(f.x - tr.x, f.y - tr.y) > 15 || f.auras.some((a) => a.kind === 'immune')) continue;
         this.traps.splice(i, 1);
         this.events.push({ k: 'land', id: f.id, ab: tr.ab });
         const src = this.fighters[tr.src]!;
@@ -1335,7 +1618,8 @@ export class Match {
   private judge(): void {
     const alive: [number, number] = [0, 0];
     const life: [number, number] = [0, 0];
-    for (const f of this.fighters) {
+    // (the match is between the heroes: the raised dead keep no side standing)
+    for (const f of this.heroes) {
       if (!f.dead) alive[f.team]++;
       life[f.team] += f.hp / f.maxHp;
     }
@@ -1343,14 +1627,14 @@ export class Match {
       this.phase = 'over';
       if (alive[0] === alive[1]) this.draw = true;
       else this.winner = alive[0] > 0 ? 0 : 1;
-      return;
-    }
-    if (this.clock >= MATCH_LIMIT) {
+    } else if (this.clock >= MATCH_LIMIT) {
       this.phase = 'over';
       // the time ran out: whoever has more life left in them takes it
       if (Math.abs(life[0] - life[1]) < 0.001) this.draw = true;
       else this.winner = life[0] > life[1] ? 0 : 1;
     }
+    // over: the dead go back into the ground, and what is left to read (the results, the scores) is the heroes'
+    if (this.phase === 'over') this.fighters = this.heroes;
   }
 
   /* -------------------------------------------------------------- over the wire */
@@ -1386,6 +1670,7 @@ export class Match {
         ch: Math.round(f.charge * 1000) / 1000,
         st: f.streak,
         stt: Math.round(f.streakT * 10) / 10,
+        ...(f.pet ? { pt: { o: f.pet.owner, a: f.pet.ab, l: Math.round(f.pet.life * 100) / 100, m: f.pet.max, dm: f.pet.dmg, s: f.pet.slow, n: Math.round(f.pet.next * 100) / 100, h: f.pet.hits, ...(f.pet.end !== undefined ? { e: f.pet.end } : {}) } } : {}),
       })),
       b: this.bolts,
       tr: this.traps,
@@ -1412,9 +1697,15 @@ export class Match {
     });
     this.sigil = s.sg ?? null;
     this.sigilAt = s.sa ?? this.sigilAt;
+    // the raised dead come and go with the host's word: raised here as they are there, and gone when they are
+    // (always after the heroes, so no hero's place moves)
+    while (this.fighters.length > s.f.length && this.fighters[this.fighters.length - 1]!.pet) this.fighters.pop();
     s.f.forEach((n, i) => {
+      const pt = n.pt;
+      if (!this.fighters[i] && pt && i === this.fighters.length && this.fighters[pt.o]) this.fighters.push(this.makePet(this.fighters[pt.o]!, n.x, n.y, { ab: pt.a, hp: n.mh, dmg: pt.dm, slow: pt.s, life: pt.l, max: pt.m, next: pt.n, hits: pt.h }));
       const f = this.fighters[i];
       if (!f) return;
+      if (f.pet && pt) Object.assign(f.pet, { life: pt.l, next: pt.n, hits: pt.h, end: pt.e });
       // your own feet are yours between messages, unless the host disagrees by more than a stride
       const far = Math.hypot(f.x - n.x, f.y - n.y) > 26;
       if (i !== mine || far) {
@@ -1470,6 +1761,7 @@ export class Match {
       for (const k of Object.keys(f.cds)) f.cds[k] = Math.max(0, (f.cds[k] ?? 0) - dt);
       for (const a of f.auras) a.t = Math.max(0, a.t - dt);
       f.streakT = Math.max(0, f.streakT - dt);
+      if (f.pet) f.pet.life = Math.max(0, f.pet.life - dt);
     }
     // shots fly on, and what was placed keeps falling
     for (const b of this.bolts) {
@@ -1509,6 +1801,8 @@ export interface Snapshot {
     ch?: number;
     st?: number;
     stt?: number;
+    /** One of the raised dead: whose (`o`), raised by what, life left and in all, its blow and slow, time to the next, blows struck, and when it fell. */
+    pt?: { o: number; a: string; l: number; m: number; dm: number; s: number; n: number; h: number; e?: number };
   }[];
   b: Bolt[];
   tr: Trap[];

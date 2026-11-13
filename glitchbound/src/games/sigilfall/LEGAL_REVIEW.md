@@ -50,6 +50,11 @@ abilities and warden set are named for this game: none is a Final Fantasy XIV Da
 death knight ability, and its signature colors (smoke-dark plate, dusk violet and rose) are its own. The ultimate is
 Duskfall, not "Nightfall" (a World of Warcraft warlock talent).
 
+In the Ring (2026-11-13) he raises the dead, as the owner asked ("similar to death knights in wow"): **Call the
+Ashbound**, two of the ashbound dead, not "Raise Dead", "Army of the Dead" or a ghoul. The rule (a timed summon that
+fights for its master) is copied, the names and the barrow skeletons they are drawn as are the game's own. Dusk Rend's
+combo, which had been called Nightfall, is **Gloomfall**.
+
 ## Fixed
 
 ### The licensed art packs and the public repository (was HIGH)

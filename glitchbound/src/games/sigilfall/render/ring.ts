@@ -178,6 +178,8 @@ export class RingFx {
         if (ab.id === 'dash') sound('dodge', vol);
         else if (ab.super) sound(SUPER_SOUND[ab.school] ?? 'nova', 0.9);
         else if (ab.role === 'heal' || ab.aim === 'friend') sound('buff', vol * 0.8);
+        // (the ground torn open for the dead)
+        else if (ab.role === 'summon') sound('rift', vol);
         else if (ab.aim === 'self') sound(ab.role === 'defense' ? 'shield' : ab.role === 'mobility' ? 'blink' : 'buff', vol);
         else if (ab.school === 'physical') sound(melee ? (ab.role === 'burst' ? 'swingBig' : 'swing') : ab.cls === 'ranger' ? 'bow' : 'swingBig', vol);
         else sound(LEAVES[ab.school] ?? 'bolt', vol);
@@ -201,6 +203,21 @@ export class RingFx {
           if (this.drains.length > 8) this.drains.shift();
         }
         if (ab.id === 'g-hand') this.hands.push({ x: f.x, y: f.y, t: 0, dur: 1.1 });
+      } else if (e.k === 'claw') {
+        // one of the raised dead strikes: a short violet rake in front of it, and a dull knock
+        const f = m.fighters[e.id];
+        const to = m.fighters[e.to];
+        if (!f || !to) continue;
+        const a = Math.atan2(to.y - f.y, to.x - f.x);
+        this.arcs.push({ x: f.x + Math.cos(a) * 6, y: f.y + Math.sin(a) * 6, a, t: 0, dur: 0.24, color: '#4a1f9e', edge: '#d8bcff', arc: 1.6, r: 20, heavy: false });
+        if (this.arcs.length > 18) this.arcs.shift();
+        sound('swing', e.to === myId ? 0.4 : 0.2);
+      } else if (e.k === 'death' && m.fighters[e.id]?.pet) {
+        // one of the raised dead goes back into the ground: a puff of the gloam, no more
+        const f = m.fighters[e.id]!;
+        this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.5, r: 18, color: '#8a5cff', ring: true });
+        this.bursts.push({ x: f.x, y: f.y, t: 0, dur: 0.55, school: 'shadow', color: '#9a6ae0', big: false, heal: false, seed: (f.x * 7 + f.y * 3) % 97 });
+        sound('shadow', 0.3);
       } else if (e.k === 'death') {
         const f = m.fighters[e.id];
         if (!f) continue;
@@ -281,9 +298,10 @@ export class RingFx {
       case 'g-toll':
         for (let i = 0; i < 3; i++) this.tolls.push({ x: f.x, y: f.y, t: -i * 0.14, dur: 0.6, r: ab.range + HERO_R });
         break;
-      case 'g-price':
-        this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.5, r: 22, color: '#ff3a5a', ring: true });
-        this.bursts.push({ x: f.x, y: f.y, t: 0, dur: 0.5, school: 'shadow', color: '#ff3a5a', big: false, heal: false, seed: f.x % 97 });
+      case 'g-ashbound':
+        // the ground opens round him: a ring of dusk rolling out, and the dark welling up where the dead will climb
+        for (let i = 0; i < 2; i++) this.tolls.push({ x: f.x, y: f.y, t: -i * 0.16, dur: 0.6, r: 30 });
+        this.bursts.push({ x: f.x, y: f.y, t: 0, dur: 0.6, school: 'shadow', color: '#9a6ae0', big: true, heal: false, seed: f.x % 97 });
         break;
       case 'g-ward':
       case 'g-mantle':
@@ -333,8 +351,9 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
   const gale = f.auras.some((a) => a.ab === 'l-gale' && a.cc === 'incap');
   const lift = gale ? 10 + Math.sin(time * 6) * 2 : 0;
   if (f.dead) return;
-  // what's on them that's a word: `head` is their head's height on the screen, drawn as if on their own spot
-  view.up(f.x, f.y, HEAD + lift);
+  // what's on them that's a word: `head` is their head's height on the screen, drawn as if on their own spot (one of
+  // the raised dead stands lower, and carries a smaller bar and no pictures)
+  view.up(f.x, f.y, (f.pet ? HEAD * 0.8 : HEAD) + lift);
   const head = f.y;
   for (const a of f.auras) {
     if (a.cc === 'fear') {
@@ -355,7 +374,7 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
     }
   }
   // a bar over the head, in their team's color
-  const barW = 26;
+  const barW = f.pet ? 16 : 26;
   const by = head - 6;
   g.fillStyle = 'rgba(6,2,14,0.85)';
   g.beginPath();
@@ -379,7 +398,7 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
   // the seconds it has left written on it. (They were plain squares of the spell's color, darkening as they wore
   // off: the owner, "the debuffs are just squares and i dont understand anything from them ... make the square with
   // the spells icon image and add a 7s 6s timer on it".)
-  const shown = worn(f).slice(0, 5);
+  const shown = f.pet ? [] : worn(f).slice(0, 5);
   const pip = 10.6;
   const gap = 1.4;
   let px = f.x - (shown.length * (pip + gap) - gap) / 2;
@@ -440,8 +459,11 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
 /** How high a fighter's head stands, in world pixels. */
 const HEAD = 30;
 
-/** The spells in flight and what's afoot on the fighters: handed to the shaders before the frame is drawn. */
-export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, time: number, air: RingAir): void {
+/**
+ * The spells in flight and what's afoot on the fighters: handed to the shaders before the frame is drawn. `at` is where
+ * each body was drawn (RingStage.bodyAt): what goes about on a fighter is drawn there, with the body.
+ */
+export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, time: number, air: RingAir, at: (f: Fighter) => { x: number; y: number } = (f) => f): void {
   const me = myId === null ? null : (m.fighters[myId] ?? null);
   for (const tr of m.traps) {
     const enemy = me && tr.team !== me.team;
@@ -471,7 +493,10 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
       q.put({ kind: FX.spark, x: e.x + Math.sin(time * 1.1 + i) * (5 + u * 14) + ((i * 13) % 18) - 9, y: e.y + ((i * 7) % 12) - 6, up: 2 + u * 62, w: 3.4 - u * 1.8, a: u < 0.5 ? '#ffd27a' : '#ff6a2a', t: 0.2, alpha: 1 - u });
     }
   }
-  for (const f of m.fighters) ringMarks(q, f, time);
+  for (const f of m.fighters) {
+    const p = at(f);
+    ringMarks(q, p.x === f.x && p.y === f.y ? f : { ...f, x: p.x, y: p.y }, time);
+  }
   for (const b of m.bolts) {
     const ab = ABILITIES[b.ab];
     const c = ab?.color ?? '#ffffff';
@@ -635,16 +660,20 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
     }
   }
   // the gloam that goes about with a Gloamknight: dark rising off them, a violet light at their feet, and when they
-  // lunge, the dark they came through
+  // lunge, the dark they came through. All of it where the body is drawn, which a blow carries forward and a flinch
+  // rocks: on the rules' spot it stood still while the body stepped away from it and back, and the dark about him
+  // jumped at every blow (the owner: "gloamknight's orb effect around the character jitters when moving vs another
+  // player")
   for (const f of m.fighters) {
-    if (f.cls !== 'gloamknight' || f.dead) continue;
-    q.put({ kind: FX.glow, x: f.x, y: f.y, up: 3, w: 34, a: '#7a3cff', alpha: 0.2 + Math.sin(time * 2.2 + f.id) * 0.05 });
+    if (f.cls !== 'gloamknight' || f.dead || f.pet) continue;
+    const p = at(f);
+    q.put({ kind: FX.glow, x: p.x, y: p.y, up: 3, w: 34, a: '#7a3cff', alpha: 0.2 + Math.sin(time * 2.2 + f.id) * 0.05 });
     // their wake: a trail of soft dark where they have just been, long in a lunge and short at a walk. (Not a faded
     // copy of the figure: a figure can only be thinned by a stipple here, and a stippled ghost reads as a fault.)
     let wake = fx.wakes.get(f.id);
     if (!wake) fx.wakes.set(f.id, (wake = []));
     const last = wake[wake.length - 1];
-    if (!last || Math.hypot(f.x - last.x, f.y - last.y) > 5) wake.push({ x: f.x, y: f.y, at: time });
+    if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 5) wake.push({ x: p.x, y: p.y, at: time });
     const keep = f.dash ? 0.5 : 0.32;
     while (wake.length && (time - wake[0]!.at > keep || wake.length > 14)) wake.shift();
     for (let i = 0; i < wake.length - 1; i++) {
@@ -656,7 +685,7 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
     for (let i = 0; i < 4; i++) {
       const u = (time * 0.55 + i / 4 + f.id * 0.31) % 1;
       const ang = i * 1.9 + f.id + time * 0.7;
-      q.put({ kind: FX.shadow, x: f.x + Math.cos(ang) * 8, y: f.y + Math.sin(ang) * 4.5, up: 2 + u * 26, w: 9 - u * 5, a: '#9a6ae0', b: '#120a20', alpha: 0.75 * Math.sin(u * Math.PI), seed: i + f.id });
+      q.put({ kind: FX.shadow, x: p.x + Math.cos(ang) * 8, y: p.y + Math.sin(ang) * 4.5, up: 2 + u * 26, w: 9 - u * 5, a: '#9a6ae0', b: '#120a20', alpha: 0.75 * Math.sin(u * Math.PI), seed: i + f.id });
     }
     if (f.dash) {
       const dx = f.dash.x - f.x;
@@ -664,6 +693,21 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
       const d = Math.hypot(dx, dy) || 1;
       for (let i = 1; i <= 6; i++) q.put({ kind: FX.shadow, x: f.x - (dx / d) * i * 7, y: f.y - (dy / d) * i * 7, up: 12, w: 16 - i * 1.6, a: '#b48cff', b: '#120a20', alpha: 1 - i * 0.14, seed: i });
     }
+  }
+  // the ashbound dead: a pool of the gloam they climb out of, a cold light in their skulls, the dark smoking off them,
+  // and as their time runs out they thin
+  for (const f of m.fighters) {
+    if (!f.pet || f.dead) continue;
+    const age = f.pet.max - f.pet.life;
+    const fade = Math.min(1, f.pet.life / 2);
+    if (age < 0.9) {
+      const u = age / 0.9;
+      q.put({ kind: FX.shadow, x: f.x, y: f.y, up: 2, flat: true, w: 26 * (0.5 + u * 0.5), a: '#0a0314', b: '#7a3cff', t: u, alpha: 0.9 * (1 - u), seed: f.id });
+    }
+    q.put({ kind: FX.glow, x: f.x, y: f.y, up: 2, w: 22, a: '#7a3cff', alpha: 0.18 * fade });
+    q.put({ kind: FX.spark, x: f.x, y: f.y, up: 21, w: 4.5, a: '#d8bcff', t: 0.1, alpha: 0.8 * fade });
+    const u = (time * 0.7 + f.id * 0.37) % 1;
+    q.put({ kind: FX.shadow, x: f.x + Math.sin(time * 1.3 + f.id) * 3, y: f.y, up: 4 + u * 20, w: 7 - u * 3, a: '#9a6ae0', b: '#120a20', alpha: 0.6 * Math.sin(u * Math.PI) * fade, seed: f.id });
   }
   const map = MAPS[m.map] ?? Object.values(MAPS)[0]!;
   // sand on the wind, low over the ground
@@ -914,6 +958,8 @@ export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number
     }
   }
   for (const f of m.fighters) {
+    // (the raised dead, once back in the ground, are nobody's to choose)
+    if (f.pet && f.dead) continue;
     view.flat(f.x, f.y);
     if (f.id === myId) ring(g, f.x, f.y, 11, '#ffe39a', 1.4);
     if (f.id === me?.target) ring(g, f.x, f.y, 13 + Math.sin(time * 5) * 0.8, '#ff5a6a', 1.8);

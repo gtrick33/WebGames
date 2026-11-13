@@ -66,6 +66,10 @@ export function usesOf(ab: Ability, ranged: boolean): string[] {
   if (has('fury')) say('Press it just before your hardest blows, best of all on a stunned enemy.');
   if (has('dispel')) say(ab.aim === 'enemy' ? 'It strips a shield or a blessing off an enemy. Take their protection away before your burst.' : 'It takes a curse or a magical hold off a friend. Free a healer who has been feared or silenced.');
   if (has('charge')) say('It closes the gap at once. Open the fight with it, or catch someone who is running.');
+  if (has('raise')) {
+    say('Call them as the fight is joined: they go for whoever you have chosen, or the nearest enemy they can see.');
+    say('They walk slower than a hero, and they can be held and cut down: fight beside them, and an enemy has two more to deal with.');
+  }
   if (has('blink') || has('leap') || has('dash')) say('Use it to get out of melee reach, or behind a pillar so they lose sight of you.');
   if (has('break') || has('free')) say('It gets you out of roots and slows: use it to escape, or to stay on a target who keeps you slowed.');
   if (has('speed') && !has('break')) say('Run faster to catch a target or to open a gap.');
