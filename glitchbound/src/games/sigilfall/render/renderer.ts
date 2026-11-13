@@ -68,6 +68,27 @@ export interface LandLayer {
   over(g: CanvasRenderingContext2D, time: number, view: LandView): void;
 }
 
+/** A plate's colors: its bar from top to bottom, the trough behind it, and the frame's bright edge. */
+interface Plate {
+  top: string;
+  mid: string;
+  low: string;
+  back: string;
+  rim: string;
+}
+const PLATE: Record<'foe' | 'elite' | 'named' | 'hero' | 'heroLow' | 'mana' | 'rage' | 'energy' | 'focus' | 'holy', Plate> = {
+  foe: { top: '#ff8a7a', mid: '#e23a44', low: '#8f1626', back: '#3a0e16', rim: 'rgba(255,150,150,0.55)' },
+  elite: { top: '#fff0a8', mid: '#f2b632', low: '#a86a10', back: '#3a2a0c', rim: 'rgba(255,224,130,0.85)' },
+  named: { top: '#f0d8ff', mid: '#b878f0', low: '#6a2fa8', back: '#2a1040', rim: 'rgba(224,180,255,0.85)' },
+  hero: { top: '#b8ffa0', mid: '#4fd060', low: '#1f7a36', back: '#0e2a16', rim: 'rgba(200,255,190,0.8)' },
+  heroLow: { top: '#ffc0a0', mid: '#ff5a3a', low: '#a81e1e', back: '#3a0e0e', rim: 'rgba(255,170,150,0.9)' },
+  mana: { top: '#a8dcff', mid: '#3a8fe8', low: '#1c4aa0', back: '#0c1a36', rim: '' },
+  rage: { top: '#ffa890', mid: '#e0403a', low: '#8a1c1c', back: '#300c0c', rim: '' },
+  energy: { top: '#fff0a8', mid: '#e8b04a', low: '#9a6a18', back: '#2e220a', rim: '' },
+  focus: { top: '#b8ffd8', mid: '#3ac890', low: '#167a56', back: '#0a2a1e', rim: '' },
+  holy: { top: '#fff6c8', mid: '#ffd84d', low: '#b88a18', back: '#2e260a', rim: '' },
+};
+
 /** Aim preview the touch controls ask for while a skill button is dragged. */
 export interface AimPreview {
   shape: 'line' | 'circle' | 'cone' | 'ring';
@@ -121,6 +142,8 @@ export class Renderer {
   /** The hero's held weapon changes with gear. */
   private weapon: { kind: string; tint?: string } = { kind: 'staff' };
   reducedMotion = false;
+  /** Plates over heads (Settings): the hero's health and resource, and every foe's health. */
+  plates = true;
   private cssW = 1;
   private cssH = 1;
   /** Canvas pixels per CSS pixel of this top canvas. */
@@ -517,6 +540,7 @@ export class Renderer {
     const ui = !w.scene && !this.landOnly;
     if (ui && st) {
       for (const e of w.enemies) if (seen(e.x, e.y, 24)) this.drawEnemyBar(e, st);
+      this.drawHeroPlate(w, st);
       for (const pet of w.pets) if (near(pet.x, pet.y)) this.drawPetBar(pet, st);
       for (const gh of w.coop?.ghosts ?? []) {
         if (gh.seen <= 0 || !near(gh.x, gh.y)) continue;
@@ -667,15 +691,99 @@ export class Renderer {
 
   /* ---------------------------------------------------------------- names and marks */
 
+  /**
+   * A plate over someone's head: their health in a framed bar, as the nameplates of the great online worlds are (the
+   * owner: "add the health bar and the mana on top of the character like wow, and also u can add the hp bars of all
+   * enemies even if they arent hit, make it stylish"). A dark frame with a thin bright edge, the bar itself shaded
+   * from light to deep with a line of gloss along its top, notches at each quarter, and behind the health a pale
+   * trail that drains a moment after a blow, so a hit is seen as well as counted. `under`: a second, thinner bar
+   * (the hero's mana, rage, energy). `id`: whose trail this is.
+   */
+  private plate(id: number, x: number, y: number, wide: number, high: number, k: number, tone: Plate, o: { shield?: number; under?: { k: number; tone: Plate }; alpha?: number } = {}): void {
+    const g = this.g;
+    g.setTransform(this.k, 0, 0, this.k, 0, 0);
+    const kk = clamp(k, 0, 1);
+    // the trail: it follows the health down, never up
+    const was = this.plateTrail.get(id) ?? kk;
+    const trail = kk >= was ? kk : Math.max(kk, was - Math.max(0.006, (was - kk) * 0.07));
+    if (this.plateTrail.size > 600) this.plateTrail.clear();
+    this.plateTrail.set(id, trail);
+    const uh = o.under ? Math.max(2.5, high * 0.5) : 0;
+    const x0 = x - wide / 2;
+    const y0 = y - high / 2;
+    const whole = high + (o.under ? uh + 1 : 0);
+    g.globalAlpha = o.alpha ?? 1;
+    // the frame: a dark body, a bright rim
+    g.fillStyle = 'rgba(12,8,20,0.92)';
+    g.beginPath();
+    g.roundRect(x0 - 2, y0 - 2, wide + 4, whole + 4, 3.5);
+    g.fill();
+    g.strokeStyle = tone.rim;
+    g.lineWidth = 1;
+    g.beginPath();
+    g.roundRect(x0 - 1.5, y0 - 1.5, wide + 3, whole + 3, 3);
+    g.stroke();
+    const fill = (fy: number, fh: number, share: number, t: Plate, lag: number): void => {
+      g.fillStyle = t.back;
+      g.fillRect(x0, fy, wide, fh);
+      if (lag > share) {
+        g.fillStyle = 'rgba(255,236,190,0.85)';
+        g.fillRect(x0, fy, wide * lag, fh);
+      }
+      if (share > 0) {
+        const grad = g.createLinearGradient(0, fy, 0, fy + fh);
+        grad.addColorStop(0, t.top);
+        grad.addColorStop(0.55, t.mid);
+        grad.addColorStop(1, t.low);
+        g.fillStyle = grad;
+        g.fillRect(x0, fy, Math.max(1, wide * share), fh);
+        // a line of gloss along the top
+        g.fillStyle = 'rgba(255,255,255,0.28)';
+        g.fillRect(x0, fy, Math.max(1, wide * share), Math.max(0.8, fh * 0.22));
+      }
+    };
+    fill(y0, high, kk, tone, trail);
+    // a notch at each quarter
+    g.fillStyle = 'rgba(8,4,14,0.55)';
+    for (let q = 1; q < 4; q++) g.fillRect(x0 + (wide * q) / 4 - 0.4, y0, 0.8, high);
+    if (o.shield && o.shield > 0) {
+      g.fillStyle = '#9fe4ff';
+      g.fillRect(x0, y0 - 1.6, wide * clamp(o.shield, 0, 1), 1.6);
+    }
+    if (o.under) fill(y0 + high + 1, uh, clamp(o.under.k, 0, 1), o.under.tone, 0);
+    g.globalAlpha = 1;
+  }
+  private plateTrail = new Map<number, number>();
+
+  /** Every foe carries a plate, struck or not: fainter on one that hasn't been touched and isn't after the hero. */
   private drawEnemyBar(e: Enemy, st: Stage): void {
-    if (e.dead || e.boss || e.dummy || e.state === 'spawn') return;
+    if (e.dead || e.boss || e.dummy || e.state === 'spawn') {
+      if (e.dead) this.plateTrail.delete(e.id);
+      return;
+    }
     const named = !!e.def.named;
-    if (e.hp >= e.maxHp && !e.elite.length && !named && e.shield <= 0) return;
+    const elite = e.elite.length > 0;
     const s = st.project(e.x, e.y, headOf(e));
-    const wide = e.elite.length || named ? 46 : 30;
-    this.bar(s.x, s.y, wide, e.hp / e.maxHp, named ? '#d8b0ff' : e.elite.length ? '#ffcf5a' : '#ff4a5a', e.shield > 0 ? e.shield / (e.maxHp * 0.4) : 0);
+    if (!this.plates) {
+      // (the plain bars, as before: only on one that is hurt, or is somebody)
+      if (e.hp >= e.maxHp && !elite && !named && e.shield <= 0) return;
+      this.bar(s.x, s.y, elite || named ? 46 : 30, e.hp / e.maxHp, named ? '#d8b0ff' : elite ? '#ffcf5a' : '#ff4a5a', e.shield > 0 ? e.shield / (e.maxHp * 0.4) : 0);
+    } else {
+      const quiet = e.hp >= e.maxHp && !e.aggro && !elite && !named;
+      this.plate(e.id, s.x, s.y, elite || named ? 48 : 32, elite || named ? 5.5 : 4.5, e.hp / e.maxHp, named ? PLATE.named : elite ? PLATE.elite : PLATE.foe, { shield: e.shield > 0 ? e.shield / (e.maxHp * 0.4) : 0, alpha: quiet ? 0.6 : 1 });
+    }
     if (named) this.label(`${e.name} ${e.level}`, s.x, s.y - 11, 11, '#e8d0ff');
-    else if (e.elite.length) this.label(e.name.split(' ')[0]!, s.x, s.y - 11, 11, '#ffd36b');
+    else if (elite) this.label(e.name.split(' ')[0]!, s.x, s.y - 11, 11, '#ffd36b');
+  }
+
+  /** The hero's own plate: health, and under it what they spend (mana, rage, energy, focus, zeal). */
+  private drawHeroPlate(w: World, st: Stage): void {
+    const p = w.player;
+    if (!this.plates || p.dead) return;
+    const s = st.project(p.x, p.y, PERSON_H + (p.riding ? 22 : 6));
+    const res = w.build.resource;
+    const low = p.hp < p.maxHp * 0.3;
+    this.plate(-1, s.x, s.y, 40, 5.5, p.hp / p.maxHp, low ? PLATE.heroLow : PLATE.hero, { shield: p.shield > 0 ? p.shield / p.maxHp : 0, ...(res && p.maxMana > 0 ? { under: { k: p.mana / p.maxMana, tone: PLATE[res.kind] } } : {}) });
   }
 
   private drawPetBar(pet: Pet, st: Stage): void {

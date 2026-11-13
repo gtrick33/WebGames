@@ -955,6 +955,7 @@ export class SigilEngine {
     const s = this.settings;
     this.sound.setVolumes({ master: s.master, music: s.music, sfx: s.sfx, muted: s.muted });
     this.renderer.reducedMotion = s.reducedMotion;
+    this.renderer.plates = s.plates;
     this.renderer.setZoom(s.zoom);
     if (this.kbm) {
       this.kbm.ultKey = s.ultKey;

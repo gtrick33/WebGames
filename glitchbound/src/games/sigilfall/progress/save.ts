@@ -72,6 +72,8 @@ export interface Settings {
   /** How far back the camera stands: 1 is the game's own view, more is further out (ZOOM_MIN to ZOOM_MAX). */
   zoom: number;
   numbers: boolean;
+  /** Plates over heads: the hero's health and resource, and every foe's health, struck or not. */
+  plates: boolean;
   /** Calmer screen: no shake, lighter weather (a new save starts from the device's own setting). */
   reducedMotion: boolean;
   ultKey: 'f' | 't' | 'shift' | 'rmb';
@@ -102,6 +104,7 @@ export const DEFAULT_SETTINGS: Settings = {
   shake: true,
   zoom: 1,
   numbers: true,
+  plates: true,
   reducedMotion: false,
   ultKey: 'f',
   skill4Key: 'c',
@@ -162,6 +165,7 @@ export function validateSettings(v: unknown): Settings {
     shake: bool(o.shake, d.shake),
     zoom: num(o.zoom, ZOOM_MIN, ZOOM_MAX, d.zoom),
     numbers: bool(o.numbers, d.numbers),
+    plates: bool(o.plates, d.plates),
     reducedMotion: bool(o.reducedMotion, d.reducedMotion),
     ultKey: o.ultKey === 't' || o.ultKey === 'shift' || o.ultKey === 'rmb' ? o.ultKey : 'f',
     skill4Key: o.skill4Key === 'v' || o.skill4Key === 'z' || o.skill4Key === 'x' ? o.skill4Key : 'c',
