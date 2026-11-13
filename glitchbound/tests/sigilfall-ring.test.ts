@@ -424,7 +424,7 @@ describe('The Ring: talents and set ups', () => {
       expect(TALENTS[cls], cls).toHaveLength(ROW_NAMES.length * 3);
       for (const row of [0, 1, 2]) expect(TALENTS[cls].filter((t) => t.row === row)).toHaveLength(3);
       for (const t of TALENTS[cls]) {
-        expect(t.tune || t.hp || t.tenacity || t.regen || t.dmg || t.heal || t.speed || t.cool || t.guard || t.hold || t.leech || t.charge || t.crit || t.exec || t.slow || t.stun || t.snare || t.rally, t.id).toBeTruthy();
+        expect(t.tune || t.does || t.guard || t.hold || t.exec || t.slow || t.stun || t.snare || t.rally, t.id).toBeTruthy();
         // (the whole class's: what it sharpens is only ever what every hero of the class carries, whatever their bar)
         for (const id of Object.keys(t.tune ?? {})) {
           expect([DASH.id, superOf(cls).id], `${t.id} sharpens ${id}`).toContain(id);
@@ -441,8 +441,8 @@ describe('The Ring: talents and set ups', () => {
     expect(cleanTalents('warrior', undefined)).toEqual([]);
   });
 
-  it('a talent changes the numbers, whatever is on the bar: harder hits, shorter clocks, longer holds, the Swift Step', () => {
-    const hit = (talents: string[], bar = ['w-hew']): number => {
+  it('a talent changes the numbers, whatever is on the bar: harder on the low, a slower Swift Step for a blink, longer holds', () => {
+    const hit = (talents: string[], bar = ['w-hew'], low = false): number => {
       const m = new Match({ seed: 11, map: 'sands', fighters: [{ ...fighter(0, 'warrior', bar), talents }, fighter(1, 'paladin')] });
       m.step(GATES + 0.01, {});
       const [a, b] = [m.fighters[0]!, m.fighters[1]!];
@@ -450,29 +450,22 @@ describe('The Ring: talents and set ups', () => {
       a.y = 125;
       b.x = 215;
       b.y = 125;
+      a.mods.crit = 0;
+      if (low) b.hp = Math.round(b.maxHp * 0.3);
       const before = b.hp;
       m.press(0, bar[0]!);
       return before - b.hp;
     };
     // (the same talent for one blow as for another: nothing hangs on which ability is on the bar)
-    expect(hit(['w-1a'])).toBeGreaterThan(hit([]) * 1.05);
-    expect(hit(['w-1a'], ['w-gash'])).toBeGreaterThan(hit([], ['w-gash']) * 1.05);
+    expect(hit(['w-1b'], ['w-hew'], true)).toBeGreaterThan(hit([], ['w-hew'], true) * 1.15);
+    expect(hit(['w-1b'], ['w-gash'], true)).toBeGreaterThan(hit([], ['w-gash'], true) * 1.15);
+    expect(hit(['w-1b'])).toBe(hit([]));
 
-    const m = new Match({ seed: 1, map: 'sands', fighters: [{ ...fighter(0, 'mage', ['m-lash', 'm-blink', 'm-snap', 'm-chill']), talents: ['m-1a', 'm-2b', 'm-3b'] }, fighter(1, 'warrior')] });
+    // Fold Space: the Swift Step comes back a second slower, for being a blink
+    const m = new Match({ seed: 1, map: 'sands', fighters: [{ ...fighter(0, 'mage', ['m-lash', 'm-blink', 'm-snap', 'm-chill']), talents: ['m-2b'] }, fighter(1, 'warrior')] });
     m.step(GATES + 0.01, {});
-    const [a, b] = [m.fighters[0]!, m.fighters[1]!];
-    a.x = 200;
-    a.y = 125;
-    b.x = 225;
-    b.y = 125;
-    a.dirX = -1;
-    m.press(0, 'm-blink');
-    expect(a.cds['m-blink']).toBeCloseTo(ABILITIES['m-blink']!.cd * 0.88);
-    m.press(0, 'm-snap');
-    expect(a.cds['m-snap']).toBeCloseTo(ABILITIES['m-snap']!.cd * 0.88);
-    // (Restless and Quick Mind both: the Swift Step comes back sooner)
     expect(m.press(0, DASH.id)).toBeNull();
-    expect(a.cds[DASH.id]).toBeCloseTo(DASH.cd * 0.88 * 0.6);
+    expect(m.fighters[0]!.cds[DASH.id]).toBeCloseTo(DASH.cd * 1.2);
 
     // holds put on them last longer, a hold of the bar's or the super's alike
     const held = (talents: string[]): number => {

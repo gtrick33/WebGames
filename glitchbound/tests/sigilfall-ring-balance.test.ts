@@ -22,6 +22,14 @@
  *
  * The computer is not a person, so this guards against a change that tips a class far over, no more. (Healers in 1v1,
  * where they have nobody to heal, win a quarter of their matches: a healer's setup is for team fights.)
+ *
+ * When the talents became each class's own (2026-11-13, "please make them very unique"), each was measured in the
+ * ready-made builds against its row's other two, and the ones far ahead or behind were tuned (Pit Imp, Mana Skin,
+ * Verdict of Light, Light Returned, Halo of Dread, Forager, Soul Shield, Open Heart, Sapping Word). Classes, in % won
+ * (1v1 by tests/sigilfall-ring-aim.test.ts, then 2v2 / 3v3 here), before -> after:
+ *
+ *   warrior 42/46/54 -> 47/51/54   mage    50/45/45 -> 54/42/44   ranger  50/42/45 -> 45/44/44   paladin     50/57/49 -> 49/55/53
+ *   priest  49/61/61 -> 49/62/58   warlock 52/45/48 -> 52/47/43   druid   49/54/52 -> 56/51/51   gloamknight 58/44/44 -> 47/43/51
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';

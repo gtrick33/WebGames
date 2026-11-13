@@ -1,6 +1,7 @@
 import { drawReticle } from './reticle';
 import { drawIcon } from './art/gameIcons';
 import { ABILITIES, type Ability } from '../arena/abilities';
+import { lookOf } from '../arena/look';
 import { ARENA_H, ARENA_W, MAPS } from '../arena/maps';
 import { HERO_R, ZONE_START, type Fighter, type Match } from '../arena/sim';
 import type { RingAir } from '../render3d/ringDress';
@@ -72,7 +73,7 @@ interface Pop {
 export function worn(f: Pick<Fighter, 'auras'>): Fighter['auras'] {
   const out: Fighter['auras'] = [];
   for (const a of f.auras) {
-    if (!(a.dur > 0 && a.t > 0 && ABILITIES[a.ab])) continue;
+    if (!(a.dur > 0 && a.t > 0 && lookOf(a.ab))) continue;
     const i = out.findIndex((o) => o.ab === a.ab && o.harmful === a.harmful);
     if (i < 0) out.push(a);
     else if (a.t > out[i]!.t) out[i] = a;
@@ -203,6 +204,17 @@ export class RingFx {
           if (this.drains.length > 8) this.drains.shift();
         }
         if (ab.id === 'g-hand') this.hands.push({ x: f.x, y: f.y, t: 0, dur: 1.1 });
+      } else if (e.k === 'streak') {
+        // something a talent throws (an imp's spit, a hammer leaping on, light called down): seen crossing, and lighting where it lands
+        const f = m.fighters[e.id];
+        const to = m.fighters[e.to];
+        const look = lookOf(e.ab);
+        if (!f || !to || !look) continue;
+        const d = Math.hypot(to.x - f.x, to.y - f.y);
+        this.zips.push({ x0: f.x, y0: f.y, x1: to.x, y1: to.y, t: 0, dur: Math.max(0.08, Math.min(0.2, d / 900)), ab: e.ab });
+        if (this.zips.length > 12) this.zips.shift();
+        this.flashes.push({ x: to.x, y: to.y - 12, t: 0, dur: 0.3, r: 18, color: look.color, ring: false });
+        sound(LANDS[look.school] ?? 'hit', e.id === myId || e.to === myId ? 0.45 : 0.25);
       } else if (e.k === 'claw') {
         // one of the raised dead strikes: a short violet rake in front of it, and a dull knock
         const f = m.fighters[e.id];
@@ -406,7 +418,7 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
   g.textAlign = 'center';
   g.lineJoin = 'round';
   for (const a of shown) {
-    const ab = ABILITIES[a.ab]!;
+    const ab = lookOf(a.ab)!;
     g.fillStyle = 'rgba(6,2,14,0.92)';
     g.fillRect(px - 0.7, py - 0.7, pip + 1.4, pip + 1.4);
     const smooth = g.imageSmoothingEnabled;
@@ -508,7 +520,7 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
   }
   // what is thrown and lands at once: seen crossing, all the same
   for (const z of fx.zips) {
-    const ab = ABILITIES[z.ab];
+    const ab = lookOf(z.ab);
     const c = ab?.color ?? '#ffffff';
     const el = SCHOOL_EL[ab?.school ?? ''] ?? 'arcane';
     const tone = el === 'trail' ? { a: c, b: '#ffffff' } : (TONES[el] ?? { a: c, b: '#ffffff' });
@@ -804,8 +816,17 @@ function ringMarks(q: Fx3D, f: Fighter, time: number): void {
         const an = time * 5 + (i * Math.PI * 2) / 3;
         q.put({ kind: FX.spark, x: f.x + Math.cos(an) * 9, y: f.y + Math.sin(an) * 3, up: HEAD + lift, w: 11, a: '#ffe39a', t: 0.1 });
       }
-    } else if (a.cc === 'root') {
-      q.put({ kind: FX.field, x: f.x, y: f.y, flat: true, w: 26, a: '#4a9a3a', b: '#b8ff8a', t: 1, seed, p1: FIELD.nature });
+    } else if (a.cc === 'root' || a.kind === 'oak') {
+      q.put({ kind: FX.field, x: f.x, y: f.y, flat: true, w: a.kind === 'oak' ? 34 : 26, a: '#4a9a3a', b: '#b8ff8a', t: 1, seed, p1: FIELD.nature });
+    } else if (a.kind === 'mark') {
+      // a ranger's quarry: a red ring at their feet for the whole side to see
+      q.put({ kind: FX.ring, x: f.x, y: f.y, flat: true, w: 30, a: '#ff6a5a', t: (time * 0.8) % 1, seed });
+    } else if (a.kind === 'revenant') {
+      // a revenant: the grave's dark rising off them
+      for (let i = 0; i < 5; i++) {
+        const an = time * 1.8 + (i / 5) * Math.PI * 2;
+        q.put({ kind: FX.smoke, x: f.x + Math.cos(an) * 9, y: f.y + Math.sin(an) * 5, up: 6 + (i % 3) * 8 + lift, w: 15, a: '#1e5a52', alpha: 0.55, t: 0.3, seed: i + seed });
+      }
     } else if (a.ab === 'l-gale' && a.cc) {
       q.put({ kind: FX.smoke, x: f.x, y: f.y, up: 6, w: 34, a: '#e8e8f4', alpha: 0.55, t: 0.2, seed: time * 2 });
       q.put({ kind: FX.ring, x: f.x, y: f.y, flat: true, w: 34, a: '#e8e8f4', t: (time * 1.6) % 1, seed });
@@ -845,7 +866,7 @@ function ringMarks(q: Fx3D, f: Fighter, time: number): void {
  * licks and throws embers, a bleed drips, light and growth rise in motes. Several at once, each on its own clock.
  */
 function lingering(q: Fx3D, f: Fighter, a: Fighter['auras'][number], time: number, lift: number): void {
-  const ab = ABILITIES[a.ab];
+  const ab = lookOf(a.ab);
   if (!ab) return;
   const c = ab.color;
   const seed = f.id * 3.1 + a.ab.length;

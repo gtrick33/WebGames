@@ -5,6 +5,7 @@ import { GameMenuButton } from '../../../components/GameMenuButton';
 import { ABILITIES, DASH, SLOTS, superOf, type Ability } from '../arena/abilities';
 import { botThink, newBrain } from '../arena/bot';
 import { LEAVER_K, type ClassSets } from '../arena/ladder';
+import { lookOf } from '../arena/look';
 import { MAPS } from '../arena/maps';
 import { CLOSE_FROM, Match, MATCH_LIMIT, MOMENTUM_HOLD, MOMENTUM_MAX, PACE, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
 import { CLASSES } from '../data/classes';
@@ -87,6 +88,16 @@ const auraWord = (a: Aura): string => {
       return 'Reflecting';
     case 'lastgrace':
       return 'Death-warded';
+    case 'mark':
+      return `Hunted +${pct}`;
+    case 'weak':
+      return `Damage −${pct}`;
+    case 'oak':
+      return 'Rooted as an oak';
+    case 'spirit':
+      return 'Lingering';
+    case 'revenant':
+      return 'Revenant';
     default:
       return '';
   }
@@ -98,8 +109,8 @@ function AuraIcons({ f }: { f: Fighter }) {
   return (
     <span className="rb-ring-auras">
       {shown.map((a: Aura, i) => (
-        <i key={`${a.ab}-${a.kind}-${i}`} className={`${a.harmful ? 'is-bad' : 'is-good'}${a.cc ? ' is-cc' : ''}`} title={`${ABILITIES[a.ab]?.name ?? ''}: ${auraWord(a)}`}>
-          <img src={iconPicture(ABILITIES[a.ab]?.icon ?? '')} alt="" draggable={false} />
+        <i key={`${a.ab}-${a.kind}-${i}`} className={`${a.harmful ? 'is-bad' : 'is-good'}${a.cc ? ' is-cc' : ''}`} title={`${lookOf(a.ab)?.name ?? ''}: ${auraWord(a)}`}>
+          <img src={iconPicture(lookOf(a.ab)?.icon ?? '')} alt="" draggable={false} />
           <b>{Math.max(1, Math.ceil(a.t))}s</b>
         </i>
       ))}
