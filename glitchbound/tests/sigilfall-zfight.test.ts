@@ -1,4 +1,3 @@
-import { writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { DOORWAYS } from '../src/games/sigilfall/render3d/doorways';
 import { stoneGate, timberGate } from '../src/games/sigilfall/render3d/gateways';
@@ -25,7 +24,6 @@ describe('Sigilfall: nothing built flickers', () => {
       }
       check(`timber ${span}`, timberGate({ span, body: '#6a4a2a', trim: '#c8a878', light: '#7fe06a', seed: 5 }).b.m);
     }
-    writeFileSync('/tmp/claude-0/-home-user-WebGames/fe5db45c-2a76-5000-b446-9a5ab0d44377/scratchpad/zfight.txt', JSON.stringify(found, null, 1));
     expect(found).toEqual({});
   });
 
@@ -35,7 +33,6 @@ describe('Sigilfall: nothing built flickers', () => {
       const f = fights(d.build(LOOKS[0]!).m);
       if (f.length) bad[id] = `${f.length}: ${sum(f)}`;
     }
-    writeFileSync('/tmp/claude-0/-home-user-WebGames/fe5db45c-2a76-5000-b446-9a5ab0d44377/scratchpad/zfight2.txt', JSON.stringify(bad, null, 1));
     expect(bad).toEqual({});
   });
 });
