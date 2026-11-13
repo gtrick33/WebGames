@@ -9,7 +9,8 @@ import type { SigilEngine } from '../engine';
 import { SIGILS, type Character } from '../progress/character';
 import { rankOf, topStanding } from '../arena/ranks';
 import { wornLooks } from '../progress/wardrobe';
-import { wornTitle } from '../progress/titles';
+import { wornTitleShown } from '../progress/titles';
+import { TitleFx } from '../../../components/TitleFx';
 import { longestNight } from '../vigil/bests';
 import { iconPicture, iconsReady } from '../render/art/gameIcons';
 import { VIGIL_ICON } from '../render/art/iconPicks';
@@ -241,7 +242,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
               <b className="cs-class" style={{ color: CLASSES[hero.cls].colors.accent }}>
                 Level {hero.level} {CLASSES[hero.cls].name}
               </b>
-              <span className="cs-place">{wornTitle(hero, engine.ringRating()) ?? farthest(hero.unlocked).name}</span>
+              <HeroPlace engine={engine} hero={hero} />
             </p>
           </>
         ) : (
@@ -326,4 +327,10 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
       )}
     </div>
   );
+}
+
+/** Under a hero's level and calling: the title they wear, in its light, or else the farthest land they have reached. */
+function HeroPlace({ engine, hero }: { engine: SigilEngine; hero: Character }) {
+  const title = wornTitleShown(hero, engine.ringRating());
+  return <span className="cs-place">{title ? <TitleFx fx={title.fx}>{title.text}</TitleFx> : farthest(hero.unlocked).name}</span>;
 }

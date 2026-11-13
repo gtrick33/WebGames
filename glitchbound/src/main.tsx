@@ -37,6 +37,12 @@ const pageCode = !leaving && (firstRoute === 'game' || firstRoute === 'section')
 // The sign-in check starts before anything renders: a game page can open its game at once, and the game
 // must wait for a signed-in player's saves (platform/syncGate.ts), which this check leads to.
 if (!leaving) account.start();
+// What a member receives (a purchase, a gift) arrives while the page is open (platform/arrivals.ts). A checkout's way
+// back (?bought=) is read now, before the shop's page or the game takes it off the address.
+if (!leaving) {
+  const bought = new URLSearchParams(location.search).get('bought');
+  void import('./platform/arrivals').then((m) => m.startArrivals(bought)).catch(() => undefined);
+}
 // The guest key's server copy (platform/challenges.ts): restores a key the browser lost or can't keep.
 // Loaded on its own: the challenge code isn't needed to draw the first page.
 if (!leaving) void import('./platform/challenges').then((m) => m.syncGuestKey()).catch(() => undefined);

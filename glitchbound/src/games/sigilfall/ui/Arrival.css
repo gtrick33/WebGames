@@ -1,0 +1,183 @@
+/* Something received, said in the game (ui/Arrival.tsx): a small card at the top, dressed as the Ring's dialogs are
+   (night violet, an antique gold rule, a serif name), over everything but never in the way: only the card takes clicks,
+   and it goes by itself. */
+.rb-arrival-slot {
+  position: absolute;
+  top: calc(10px + var(--sa-t));
+  left: 50%;
+  z-index: 70;
+  width: min(380px, calc(100% - 20px));
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.rb-arrival {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 10px 40px 13px 10px;
+  border: 2px solid #6e5526;
+  border-radius: 12px;
+  background:
+    radial-gradient(240px 110px at 0% 0%, rgb(255 227 154 / 0.14), transparent 70%),
+    linear-gradient(180deg, #1c1228, #0c0718);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 227 154 / 0.12),
+    0 0 22px rgb(233 196 106 / 0.25),
+    0 12px 34px rgb(0 0 0 / 0.65);
+  color: #efe6d4;
+  pointer-events: auto;
+  user-select: none;
+  animation: rb-arrival-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes rb-arrival-in {
+  from {
+    transform: translateY(-16px) scale(0.94);
+    opacity: 0;
+  }
+}
+/* a glint passing over the gold rule as it comes in */
+.rb-arrival::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 12px;
+  background: linear-gradient(110deg, transparent 35%, rgb(255 240 200 / 0.55) 50%, transparent 65%) no-repeat;
+  background-size: 250% 100%;
+  background-position: 120% 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  animation: rb-arrival-glint 1.4s 0.3s ease-out both;
+}
+@keyframes rb-arrival-glint {
+  to {
+    background-position: -20% 0;
+  }
+}
+
+.rb-arrival-art {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  border: 1px solid #6e5526;
+  border-radius: 9px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 40%, rgb(139 92 255 / 0.35), transparent 65%),
+    linear-gradient(180deg, #241838, #0b0618);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.6);
+}
+.rb-arrival-art img {
+  width: 34px;
+  height: 34px;
+  image-rendering: pixelated;
+}
+.rb-arrival-art.is-pic img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: auto;
+  /* (the shop's pictures leave room round the thing for its stand: closer in, it fills the small box) */
+  transform: scale(1.2);
+}
+
+.rb-arrival-words {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  text-align: left;
+}
+.rb-arrival-head {
+  color: #e9c46a;
+  font: 700 11px/1.3 var(--rb-serif);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.rb-arrival-name {
+  overflow: hidden;
+  color: #ffe39a;
+  font: 700 19px/1.2 var(--rb-serif);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 1px 0 #000;
+}
+/* a title in its light: the light is its own (a shadow would show through its see-through letters) */
+.rb-arrival-name .tfx {
+  text-shadow: none;
+}
+.rb-arrival-line {
+  color: #cfc6dc;
+  font-size: 13px;
+}
+.rb-arrival-where {
+  color: #f3ead8;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.rb-arrival-x {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+  font-size: 12px;
+}
+.rb-arrival-x:focus-visible {
+  outline: 3px solid var(--rb-cyan);
+  outline-offset: 2px;
+}
+
+/* how long it stays */
+.rb-arrival-time {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 5px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #a8823a, #ffe39a);
+  transform-origin: left;
+  animation: rb-arrival-time linear forwards;
+  opacity: 0.8;
+}
+@keyframes rb-arrival-time {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* a phone: a little smaller, the picture too */
+@container (max-height: 460px) {
+  .rb-arrival {
+    gap: 9px;
+    padding: 7px 36px 10px 7px;
+  }
+  .rb-arrival-art {
+    width: 48px;
+    height: 48px;
+  }
+  .rb-arrival-name {
+    font-size: 16px;
+  }
+  .rb-arrival-line,
+  .rb-arrival-where {
+    font-size: 11.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rb-arrival,
+  .rb-arrival::before {
+    animation: none;
+  }
+  .rb-arrival-time {
+    display: none;
+  }
+}

@@ -52,7 +52,8 @@ const atFoe = (a: Ability): boolean => a.aim === 'enemy' || a.aim === 'ground';
 
 /** One more moment of a computer player's mind. It returns where it wants to walk. */
 export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: number): MoveInput {
-  if (f.dead || m.phase !== 'fight') return { mx: 0, my: 0 };
+  // (the raised dead have minds of their own, in the rules: Match.tickPet. Nobody gives them a brain)
+  if (f.dead || f.pet || m.phase !== 'fight') return { mx: 0, my: 0 };
   // a reflex, every frame: what is about to fall on them is stepped out from under
   const away = dodge(m, f, b, skill);
   if (away) {
@@ -64,31 +65,41 @@ export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: numb
   if (b.wait > 0) return b.move;
   // a sharp player thinks several times a second; a dull one twice
   b.wait = 0.5 - skill * 0.32 + b.rand() * 0.06;
-  const enemies = m.enemiesOf(f);
+  // (the heroes on each side: who holds, kicks, heals and is fled from. Somebody's raised dead are only a target when
+  // they are worth one: pickTarget)
+  const enemies = m.enemiesOf(f).filter((o) => !o.pet);
   if (!enemies.length) return { mx: 0, my: 0 };
-  const friends = m.friendsOf(f);
+  const friends = m.friendsOf(f).filter((o) => !o.pet);
   const healer = isHealer(f);
-  const target = pickTarget(m, f, enemies);
-  f.target = target.id;
+  const target = pickTarget(m, f, m.enemiesOf(f));
+  // (with one of the dead in the way, what is kept for a hero, a super, a hold, a rush, is kept for the one who raised it)
+  const hero = target.pet ? (enemies.find((e) => e.id === m.masterOf(target).id) ?? enemies[0]!) : target;
+  f.target = hero.id;
 
   if (!m.held(f)) {
-    unleash(m, f, b, skill, enemies, target, friends);
+    unleash(m, f, b, skill, enemies, hero, friends);
     defend(m, f, b, skill, enemies);
     kick(m, f, b, skill, enemies, dt);
-    mobilize(m, f, b, skill, enemies, target);
+    mobilize(m, f, b, skill, enemies, hero);
     if (!f.cast) {
       if (healer) healFriends(m, f, b, skill, friends, enemies);
       dispelFriends(m, f, b, skill, friends);
-      control(m, f, b, skill, enemies, target, friends);
+      control(m, f, b, skill, enemies, hero, friends);
+      f.target = target.id;
       attack(m, f, b, skill, target);
       if (!healer) healSelf(m, f);
     }
   }
+  f.target = target.id;
   b.move = walk(m, f, b, skill, enemies, target, friends, healer);
   return b.move;
 }
 
-/** The one to kill: a team falls on the weakest they can reach, and prefers a healer when nothing is close to dying. */
+/**
+ * The one to kill: a team falls on the weakest they can reach, and prefers a healer when nothing is close to dying.
+ * Somebody's raised dead count for less than a hero (they crumble on their own soon enough), unless one is clawing at
+ * this fighter and has been worn down: then it is put out of the way first.
+ */
 function pickTarget(m: Match, f: Fighter, enemies: Fighter[]): Fighter {
   const held = (o: Fighter): boolean => o.auras.some((a) => a.kind === 'immune' || a.cc === 'incap');
   const score = (o: Fighter): number => {
@@ -96,10 +107,11 @@ function pickTarget(m: Match, f: Fighter, enemies: Fighter[]): Fighter {
     if (held(o)) s += 200;
     if (!m.sees(f, o)) s += 25;
     s += Math.hypot(o.x - f.x, o.y - f.y) * 0.05;
+    if (o.pet) s += 70 - (o.target === f.id && Math.hypot(o.x - f.x, o.y - f.y) < 40 ? 50 : 0);
     // stay on the same one: nothing wastes more than changing your mind
     if (f.target === o.id) s -= 12;
     // what a teammate is on counts for a lot
-    for (const a of m.friendsOf(f)) if (a !== f && a.target === o.id) s -= 14;
+    for (const a of m.friendsOf(f)) if (a !== f && !a.pet && a.target === o.id) s -= 14;
     return s;
   };
   return enemies.reduce((a, c) => (score(c) < score(a) ? c : a));
@@ -111,7 +123,7 @@ function defend(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[
     const ab = ABILITIES[id]!;
     if (ab.role !== 'defense') continue;
     if (ab.aim === 'friend') {
-      const ally = m.friendsOf(f).find((a) => hpShare(a) < 0.3 && !a.auras.some((x) => x.ab === ab.id));
+      const ally = m.friendsOf(f).find((a) => !a.pet && hpShare(a) < 0.3 && !a.auras.some((x) => x.ab === ab.id));
       if (ally && !m.blocked(f, ab, ally)) {
         f.friend = ally.id;
         m.press(f.id, id);
@@ -149,7 +161,7 @@ function mobilize(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighte
       continue;
     }
     if (ab.aim === 'friend') {
-      const ally = m.friendsOf(f).find((a) => m.rooted(a) || a.auras.some((x) => x.kind === 'slow' && x.n >= 0.4));
+      const ally = m.friendsOf(f).find((a) => !a.pet && (m.rooted(a) || a.auras.some((x) => x.kind === 'slow' && x.n >= 0.4)));
       if (ally && !m.blocked(f, ab, ally)) {
         f.friend = ally.id;
         m.press(f.id, id);
@@ -283,10 +295,16 @@ function control(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter
 function attack(m: Match, f: Fighter, b: Brain, skill: number, target: Fighter): void {
   if (f.gcd > 0 || f.cast) return;
   const near = f.bar.map((x) => ABILITIES[x]!);
+  // the dead called up as the fight is joined, close enough to go for whoever is being fought, and not while some stand
+  const raise = near.find((a) => a.role === 'summon');
+  if (raise && !target.pet && Math.hypot(target.x - f.x, target.y - f.y) < 110 && m.sees(f, target) && !m.fighters.some((o) => o.pet?.owner === f.id && !o.dead) && !m.blocked(f, raise)) {
+    m.press(f.id, raise.id);
+    return;
+  }
   // a blade at your throat: no time for anything slow
   const pressed = m.enemiesOf(f).some((e) => Math.hypot(e.x - f.x, e.y - f.y) < 50 && !m.held(e) && !m.rooted(e));
-  // chance to throw burst when they're low or they have no help
-  const burst = near.filter((a) => a.role === 'burst');
+  // chance to throw burst when they're low or they have no help (never on somebody's raised dead)
+  const burst = target.pet ? [] : near.filter((a) => a.role === 'burst');
   for (const a of burst) {
     if (a.aim === 'self' && Math.hypot(target.x - f.x, target.y - f.y) < 60 && !m.blocked(f, a)) {
       m.press(f.id, a.id);
@@ -307,7 +325,7 @@ function attack(m: Match, f: Fighter, b: Brain, skill: number, target: Fighter):
     }
   }
   // curses and poisons kept up, then the best hit on hand (casting slows you, so a blade close by wants instants)
-  const options = near.filter((a) => a.role === 'damage' && atFoe(a));
+  const options = near.filter((a) => a.role === 'damage' && atFoe(a) && (!target.pet || a.effects.some((e) => e.k === 'dmg')));
   const fresh = options.filter((a) => a.effects.some((e) => e.k === 'dmg') || !target.auras.some((x) => x.ab === a.id && x.t > 1));
   const instant = fresh.filter((a) => a.cast === 0).sort((x, y) => worth(y) - worth(x));
   const cast = fresh.filter((a) => a.cast > 0).sort((x, y) => worth(y) - worth(x));

@@ -10,6 +10,7 @@ import { setShopGoods } from './progress/shopGoods';
 import { account, api } from '../../platform/account';
 import { classOpen, heroSlots } from './progress/paidClasses';
 import { applyOrder, orderToast } from './progress/gm';
+import { announceGm } from './progress/gmArrival';
 import { isMainQuest, turnInNpc } from './progress/handin';
 import { rewardSummary } from './progress/rewards';
 import { ACTS, type ActDef } from './data/acts';
@@ -28,7 +29,7 @@ import { canRide, chooseMount, FIRST_RIDE, grantMounts, grantWarden, hasMount, s
 import { DEFAULT_SETTINGS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
 import { wager } from './progress/rift';
-import { chooseTitle, newTitles, titled, titleName } from './progress/titles';
+import { chooseTitle, newTitles, setGivenTitles, titled, titleShown } from './progress/titles';
 import { bestRating, NEW_STANDING } from './arena/ranks';
 import type { ShopId } from './data/vendors';
 import { iconsReady } from './render/art/gameIcons';
@@ -164,9 +165,9 @@ const PARTY_ERRORS: Record<string, string> = {
 /** On touch screens the hero stands this share of the view's width off the middle (render/renderer.ts frameShift). */
 const FRAME_SHIFT = 0.1;
 
-/** When the game looks for game masters' orders. */
+/** When the game looks for game masters' orders (and when the player comes back to the tab: ui/Arrival.tsx). */
 const GM_FIRST_MS = 6_000;
-const GM_EVERY_MS = 90_000;
+const GM_EVERY_MS = 60_000;
 /**
  * How often the game asks whether a friend wants this player (platform/friends.ts). Asking also tells friends the
  * player is here, in Sigilfall. Often enough that an invitation feels like it arrived, cheap enough to keep up: one
@@ -350,12 +351,14 @@ export class SigilEngine {
   private syncShop(): void {
     const { items, owned } = sigilfallShop();
     setShopGoods(items, owned);
+    // (and the titles an admin gave the account: every hero of it can wear them, from the moment they arrive)
+    setGivenTitles(account.get().me?.sigilTitles);
     const w = this.world;
     if (w?.player.riding && this.hero && !canRide(this.hero, w.player.riding)) w.dismount();
     this.bump();
   }
 
-  /** Looks for orders soon after the game opens (the saves have arrived by then) and then every minute and a half. */
+  /** Looks for orders soon after the game opens (the saves have arrived by then) and then every minute. */
   private startGm(): void {
     this.gmStart = window.setTimeout(() => void this.checkGm(), GM_FIRST_MS);
     this.gmTimer = window.setInterval(() => void this.checkGm(), GM_EVERY_MS);
@@ -382,6 +385,8 @@ export class SigilEngine {
         done.push({ id: o.id, result });
         if (result) continue;
         if (this.hero && this.hero.created === o.created) live = true;
+        // (a mount, a look or an item: the card for things received, wherever the player is: ui/Arrival.tsx)
+        if (announceGm(this.save, o)) continue;
         const line = orderToast(o);
         if (line && this.world) this.toast(line, 'good');
       }
@@ -757,7 +762,7 @@ export class SigilEngine {
         changed = true;
       }
       for (const t of newTitles(this.hero, this.ringRating())) {
-        this.toast(`New title: ${titled(this.hero.name, titleName(t, this.hero))}`, 'good', undefined, 'Wear it from the Hero page, under your name.');
+        this.toast(`New title: ${titled(this.hero.name, titleShown(t, this.hero))}`, 'good', undefined, 'Wear it from the Hero page, under your name.');
         this.sound.play('epic');
         changed = true;
       }
@@ -1089,7 +1094,7 @@ export class SigilEngine {
     // (titles earned before this land was entered are simply theirs: one line, not one for each)
     const owed = newTitles(h, this.ringRating());
     if (owed.length > 1) this.toast(`${owed.length} titles are yours`, 'good', undefined, 'Choose one to wear on the Hero page, under your name.');
-    else if (owed.length === 1) this.toast(`New title: ${titled(h.name, titleName(owed[0]!, h))}`, 'good', undefined, 'Wear it from the Hero page, under your name.');
+    else if (owed.length === 1) this.toast(`New title: ${titled(h.name, titleShown(owed[0]!, h))}`, 'good', undefined, 'Wear it from the Hero page, under your name.');
     this.bump();
   }
 
@@ -1644,11 +1649,24 @@ export class SigilEngine {
   }
 
   /**
+   * The save's own copy of a hero a screen is holding. A copy of the save from the account (another device's, or this
+   * one's come back merged: takeArrivedSave) puts new hero objects in place while a lobby is open, and the lobby's hero
+   * is then no longer in the save: changing it changed nothing, and the Ring's "Title & armor" stopped answering (the
+   * owner: "can't change character appearance for some reason after getting titles/equipment"). The same hero is the
+   * one made at the same moment, of the same class.
+   */
+  private savedHero(h: Character): Character | null {
+    if (this.save.heroes.includes(h)) return h;
+    return this.save.heroes.find((x): x is Character => !!x && x.created === h.created && x.cls === h.cls) ?? null;
+  }
+
+  /**
    * One of the account's heroes dressed, or given a title, from outside the story (the Ring's lobby): what they wear
    * there is what they wear everywhere.
    */
-  dress(hero: Character, slot: LookSlot, id: string | null): boolean {
-    if (!this.save.heroes.includes(hero) || !wearLook(hero, slot, id)) return false;
+  dress(asked: Character, slot: LookSlot, id: string | null): boolean {
+    const hero = this.savedHero(asked);
+    if (!hero || !wearLook(hero, slot, id)) return false;
     if (hero === this.hero) this.changed('equip');
     this.sound.play('equip');
     this.scheduleSave(300);
@@ -1656,8 +1674,9 @@ export class SigilEngine {
     return true;
   }
 
-  entitle(hero: Character, id: string): boolean {
-    if (!this.save.heroes.includes(hero) || !chooseTitle(hero, id, this.ringRating())) return false;
+  entitle(asked: Character, id: string): boolean {
+    const hero = this.savedHero(asked);
+    if (!hero || !chooseTitle(hero, id, this.ringRating())) return false;
     if (hero === this.hero) this.refreshPartyCard();
     this.sound.play('click');
     this.scheduleSave(300);

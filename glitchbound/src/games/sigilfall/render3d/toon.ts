@@ -267,6 +267,33 @@ export const LIGHT = {
   uRim: { value: new THREE.Vector3(0.5, 0.47, 0.4) },
 };
 
+type LightCopy = Record<string, unknown>;
+
+/** Every light's value now, to be put back with `putLight`. */
+export function copyLight(): LightCopy {
+  const out: LightCopy = {};
+  for (const [k, u] of Object.entries(LIGHT) as [string, { value: unknown }][]) {
+    const v = u.value;
+    out[k] = Array.isArray(v) ? v.map((x: THREE.Vector3) => x.clone()) : typeof v === 'number' ? v : (v as THREE.Vector3).clone();
+  }
+  return out;
+}
+
+/** Puts the lights back as `copyLight` found them. */
+export function putLight(c: LightCopy): void {
+  for (const [k, u] of Object.entries(LIGHT) as [string, { value: unknown }][]) {
+    const v = c[k];
+    if (v === undefined) continue;
+    if (typeof v === 'number') (u as { value: number }).value = v;
+    else if (Array.isArray(v)) (u.value as THREE.Vector3[]).forEach((x, i) => v[i] && x.copy(v[i] as THREE.Vector3));
+    else (u.value as THREE.Vector3).copy(v as THREE.Vector3);
+  }
+}
+
+/** The lights as they start: daylight out of doors, nothing over it. A picture for the menus is taken in them. */
+const DAYLIGHT = copyLight();
+export const daylight = (): void => putLight(DAYLIGHT);
+
 const COMMON_VERT = /* glsl */ `
 attribute vec3 aCol;
 attribute vec4 iTint;

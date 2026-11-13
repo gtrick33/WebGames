@@ -8,7 +8,7 @@ import { hexRgb, kitOf } from './kits';
 import { mountModel } from './mountKit';
 import { shapeOf } from './mountLook';
 import { loadPack, type MeshData, type Pack } from './pack';
-import { LIGHT, rigAnimOf, type RigAnim } from './toon';
+import { copyLight, daylight, putLight, rigAnimOf, type RigAnim } from './toon';
 
 /**
  * Pictures of heroes for the menus: the same models as the game, posed and photographed once on a canvas of their
@@ -54,6 +54,51 @@ function ensure(): boolean {
   return true;
 }
 
+/**
+ * The picture, taken in the same light every time, or null when it couldn't be (the caller keeps its stand-in, and asks
+ * again later). The lights are the game's own, shared by every model: a picture taken after a dark room, a night or
+ * a fire came out as dark as the place the game was last drawn in; and a canvas whose drawing context the browser has
+ * taken back (it keeps only so many, and the Vigil and the Ring each open one of their own) draws nothing at all, an
+ * empty picture that was kept for the rest of the visit: the Vigil's hero was missing from their stand (the owner:
+ * "in the vigil, the character is missing completely"). The lights are put back as they were afterwards.
+ */
+function photograph(w: number, h: number): string | null {
+  const r = renderer!;
+  const gl = r.getContext();
+  if (gl.isContextLost()) {
+    dropRenderer();
+    return null;
+  }
+  const was = copyLight();
+  daylight();
+  try {
+    r.render(scene, camera);
+    // (anything drawn at all: a column down the middle and a row across it, where every subject stands)
+    const down = new Uint8Array(4 * h);
+    const across = new Uint8Array(4 * w);
+    gl.readPixels(Math.floor(w / 2), 0, 1, h, gl.RGBA, gl.UNSIGNED_BYTE, down);
+    gl.readPixels(0, Math.floor(h * 0.55), w, 1, gl.RGBA, gl.UNSIGNED_BYTE, across);
+    const drawn = down.some((v, i) => i % 4 === 3 && v > 0) || across.some((v, i) => i % 4 === 3 && v > 0);
+    if (!drawn || gl.isContextLost()) {
+      if (gl.isContextLost()) dropRenderer();
+      return null;
+    }
+    return r.domElement.toDataURL('image/png');
+  } finally {
+    putLight(was);
+  }
+}
+
+/** A renderer whose context is gone: let go of it, so the next picture makes a new one. */
+function dropRenderer(): void {
+  try {
+    renderer?.dispose();
+  } catch {
+    /* (already gone) */
+  }
+  renderer = null;
+}
+
 function shoot(look: HeroLook, held: Held | null, shield: boolean, turn: number, w: number, h: number, clip: string, t: number, framing: 'full' | 'bust'): string | null {
   if (!wardrobe || !ensure()) return null;
   const { mesh } = dressedOf(wardrobe, look, held, shield);
@@ -64,10 +109,6 @@ function shoot(look: HeroLook, held: Held | null, shield: boolean, turn: number,
   crowd.begin();
   crowd.put(0, 0, 0, turn, 1, 1, wardrobe.medium.frame(clip, t));
   crowd.end();
-  LIGHT.uSee.value.set(0, 0, 0, 0);
-  LIGHT.uDark.value.set(0, 8, 0, 0);
-  LIGHT.uNight.value.set(1, 1, 1, 0);
-  LIGHT.uGrade.value.set(0, 0, 0, 0);
   camera.aspect = w / h;
   if (framing === 'bust') {
     camera.position.set(0, 2.05, 3.9);
@@ -77,8 +118,7 @@ function shoot(look: HeroLook, held: Held | null, shield: boolean, turn: number,
     camera.lookAt(0, 1.16, 0);
   }
   camera.updateProjectionMatrix();
-  r.render(scene, camera);
-  const url = r.domElement.toDataURL('image/png');
+  const url = photograph(w, h);
   crowd.dispose();
   return url;
 }
@@ -136,16 +176,11 @@ function shootCreature(sprite: string, w: number, h: number, turn: number, tint:
     top.put(0, rider.seat * k, 0, turn, 0.8, 0.8, wardrobe.medium.frame('sit', 0.3));
     top.end();
   }
-  LIGHT.uSee.value.set(0, 0, 0, 0);
-  LIGHT.uDark.value.set(0, 8, 0, 0);
-  LIGHT.uNight.value.set(1, 1, 1, 0);
-  LIGHT.uGrade.value.set(0, 0, 0, 0);
   camera.aspect = w / h;
   camera.position.set(0, tall * k * 0.72 + (rider ? 1 : 0.6), 7.6);
   camera.lookAt(0, tall * k * 0.46 + (rider ? 0.32 : 0), 0);
   camera.updateProjectionMatrix();
-  r.render(scene, camera);
-  const url = r.domElement.toDataURL('image/png');
+  const url = photograph(w, h);
   crowd.dispose();
   top?.dispose();
   return url;
@@ -210,17 +245,12 @@ export function mountPicture(def: MountDef, size: number, rider: { look: HeroLoo
     top.put(dz * sin, standing.y * k - 0.406 * scale, dz * cos, turn, scale, scale, wardrobe.medium.frame('ride', 0.3));
     top.end();
   }
-  LIGHT.uSee.value.set(0, 0, 0, 0);
-  LIGHT.uDark.value.set(0, 8, 0, 0);
-  LIGHT.uNight.value.set(1, 1, 1, 0);
-  LIGHT.uGrade.value.set(0, 0, 0, 0);
   camera.aspect = w / h;
   const tall = (mesh.max[1] - mesh.min[1]) * k;
   camera.position.set(0, tall * 0.72 + (rider ? 1 : 0.6), 7.6);
   camera.lookAt(0, tall * 0.46 + (rider ? 0.32 : 0), 0);
   camera.updateProjectionMatrix();
-  r.render(scene, camera);
-  const url = r.domElement.toDataURL('image/png');
+  const url = photograph(w, h);
   crowd.dispose();
   top?.dispose();
   return url;
@@ -261,10 +291,6 @@ function framed(mesh: MeshData, rig: RigAnim, frame: number, turn: number, w: nu
   crowd.begin();
   crowd.put(0, 0, 0, turn, k, k, frame);
   crowd.end();
-  LIGHT.uSee.value.set(0, 0, 0, 0);
-  LIGHT.uDark.value.set(0, 8, 0, 0);
-  LIGHT.uNight.value.set(1, 1, 1, 0);
-  LIGHT.uGrade.value.set(0, 0, 0, 0);
   camera.aspect = w / h;
   const half = Math.tan((camera.fov * Math.PI) / 360);
   const cx = ((x0 + x1) / 2) * k;
@@ -273,8 +299,7 @@ function framed(mesh: MeshData, rig: RigAnim, frame: number, turn: number, w: nu
   camera.position.set(cx, cy + dist * 0.1, dist);
   camera.lookAt(cx, cy, 0);
   camera.updateProjectionMatrix();
-  r.render(scene, camera);
-  const url = r.domElement.toDataURL('image/png');
+  const url = photograph(w, h);
   crowd.dispose();
   return url;
 }

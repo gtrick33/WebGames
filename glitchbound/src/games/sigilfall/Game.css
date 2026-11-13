@@ -6422,8 +6422,8 @@ html.rb-touch-playing textarea {
 .rb-vlobby-dais {
   position: absolute;
   left: 50%;
-  bottom: 34px;
-  width: min(260px, 70%);
+  bottom: 44px;
+  width: min(300px, 70%);
   aspect-ratio: 4 / 1;
   border-radius: 50%;
   translate: -50% 0;
@@ -6453,9 +6453,9 @@ html.rb-touch-playing textarea {
 .rb-vlobby-doll {
   position: absolute;
   right: 0;
-  bottom: 50px;
+  bottom: 60px;
   left: 0;
-  height: min(calc(100% - 54px), 240px);
+  height: min(calc(100% - 66px), 340px);
   margin-inline: auto;
   filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.5));
   animation: rb-vlobby-in 0.22s ease-out;
@@ -6644,17 +6644,69 @@ html.rb-touch-playing textarea {
   .rb-vlobby-head p {
     display: none;
   }
+  /* (a phone on its side: the classes a block of pictures, two by four, and the hero standing beside the kit, not on a
+     ledge over it. As a list of names the classes were a column too narrow for them that scrolled sideways, the last
+     cut off at its foot (the owner: "on mobile, the classes in the vigil and the riftstone are a bit cutoff and they
+     can be scrolled sideways"), and the hero had a sliver of the stand above the kit, too short to show them) */
   .rb-vlobby-hero {
-    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template: minmax(0, 1fr) / 84px minmax(104px, 0.75fr) minmax(0, 1.5fr);
+    grid-template-areas: 'classes stage kit';
+  }
+  .rb-vlobby-classes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: center;
+    gap: 4px;
+    overflow: hidden;
   }
   .rb-vlobby-class {
-    min-height: 30px;
-    gap: 4px;
-    font-size: 11.5px;
+    justify-content: center;
+    min-width: 0;
+    min-height: 0;
+    aspect-ratio: 1;
+    padding: 2px;
+  }
+  .rb-vlobby-class:hover,
+  .rb-vlobby-class:focus-visible {
+    transform: none;
+  }
+  .rb-vlobby-class span {
+    display: none;
   }
   .rb-vlobby-class img {
-    width: 24px;
-    height: 24px;
+    width: 100%;
+    max-width: 30px;
+    height: auto;
+  }
+  .rb-vlobby-kit {
+    min-height: 0;
+    align-content: center;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .rb-vlobby-kit .rb-rp-looks {
+    flex-wrap: wrap;
+  }
+  .rb-vlobby-kit .rb-rp-looks .rb-wear {
+    flex: 1 1 100%;
+  }
+  /* (the Trials' long line about its champion waits for a taller screen: in three lines it stood over their legs) */
+  .rb-rlobby .rb-vlobby-name small:not(.rb-wear-who) {
+    display: none;
+  }
+  .rb-vlobby-dais {
+    bottom: 40px;
+    width: min(150px, 92%);
+  }
+  .rb-vlobby-doll {
+    bottom: 52px;
+    height: calc(100% - 56px);
+  }
+  .rb-vlobby-name strong {
+    font-size: 15px;
+  }
+  .rb-vlobby-name small {
+    font-size: 10.5px;
+    line-height: 1.2;
   }
   .rb-vlobby-spell {
     width: 32px;
@@ -7182,6 +7234,15 @@ html.rb-touch-playing textarea {
   }
 }
 
+/* The lobbies (the Ring's, the Vigil's and the Rift Trials', which wears the Vigil's): laid out for a desk screen of
+   1366 by 768, and grown with the stage past that, as the HUD is (`--hud`, Game.tsx; 1 on a touch screen). Drawn at
+   their own size on a 2560 by 1440 screen they were a small layout in a sea of empty room, the hero a doll at the
+   foot of an empty panel (the owner: "check the character selection, it's bad looking"). */
+.rb-ringlobby,
+.rb-vlobby {
+  zoom: var(--hud, 1);
+}
+
 /* The Ring: its pages */
 .rb-ringlobby {
   position: absolute;
@@ -7269,7 +7330,7 @@ html.rb-touch-playing textarea {
   position: absolute;
   left: 50%;
   bottom: 32px;
-  height: min(55px, calc((100% - 44px) * 0.32));
+  height: min(68px, calc((100% - 44px) * 0.24));
   max-width: 76%;
   aspect-ratio: 4 / 1;
   border-radius: 50%;
@@ -7283,7 +7344,9 @@ html.rb-touch-playing textarea {
   right: 0;
   bottom: 40px;
   left: 0;
-  height: min(calc(100% - 44px), 190px);
+  /* (as tall as the stand lets them, to a size the picture is still sharp at: they stood a third of it high, at its
+     foot, with the rest of the stand empty above them) */
+  height: min(calc(100% - 46px), 330px);
   margin-inline: auto;
   filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.5));
   animation: rb-vlobby-in 0.22s ease-out;
@@ -7298,9 +7361,15 @@ html.rb-touch-playing textarea {
   color: #fff4d8;
   font: 700 18px/1.1 Georgia, 'Times New Roman', serif;
 }
-.rb-rp-who small {
+.rb-rp-who small,
+.rb-rp-whoname {
   color: #b8afc8;
   font-size: 11.5px;
+}
+/* (the name under the hero, with their title in its light: a size up, so the light reads) */
+.rb-rp-whoname {
+  font: 600 13px Georgia, 'Times New Roman', serif;
+  color: #e6dcc8;
 }
 /* (each a square, never wider than it is tall: on a desk the row's columns are wider than 42px and the icons were
    pulled out sideways) */
@@ -9541,6 +9610,12 @@ html.rb-touch-playing textarea {
 .rb-rw-field select {
   width: 100%;
 }
+/* the title chosen, in its light, under its list */
+.rb-rw-titlefx {
+  grid-column: 2;
+  justify-self: start;
+  font: 700 15px Georgia, 'Times New Roman', serif;
+}
 @container (max-width: 520px) {
   .rb-rw-looks {
     grid-template-columns: 84px minmax(0, 1fr);
@@ -9919,6 +9994,102 @@ html.rb-touch-playing textarea {
 }
 .rb-ring.is-touch .rb-ring-under {
   display: none;
+}
+/* A phone on its side: each frame one slim row, the name inside the health bar and the mana or the cast a line under
+   it. At two lines and a tail each, three of them a side took two fifths of the screen's height, over where the
+   fighters stand (the owner: "UI/Nameplates on phone take too much screen space"). */
+@container (max-height: 430px) {
+  .rb-ring.is-touch .rb-ring-team {
+    flex-basis: 142px;
+    gap: 2px;
+  }
+  .rb-ring.is-touch .rb-ring-frame {
+    align-items: center;
+    gap: 3px;
+    padding: 1px;
+    border-width: 1px;
+    border-radius: 6px;
+  }
+  .rb-ring.is-touch .rb-ring-face {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+  }
+  .rb-ring.is-touch .rb-ring-face img {
+    top: -1px;
+    width: 32px;
+  }
+  .rb-ring.is-touch .rb-ring-bars {
+    position: relative;
+    gap: 1px;
+  }
+  .rb-ring.is-touch .rb-ring-name {
+    position: absolute;
+    inset: 0 30px auto 4px;
+    z-index: 1;
+    height: 14px;
+    font-size: 10px;
+    line-height: 14px;
+    text-shadow: 0 1px 1px #000, 0 0 2px #000;
+    pointer-events: none;
+  }
+  .rb-ring.is-touch .is-flip .rb-ring-name {
+    inset: 0 4px auto 30px;
+  }
+  .rb-ring.is-touch .rb-ring-name em {
+    padding: 0 3px;
+    font-size: 7.5px;
+    line-height: 11px;
+    text-shadow: none;
+  }
+  .rb-ring.is-touch .rb-ring-title {
+    font-size: 9px;
+  }
+  .rb-ring.is-touch .rb-ring-bar {
+    height: 14px;
+  }
+  .rb-ring.is-touch .rb-ring-bar b {
+    padding: 0 4px;
+    font-size: 9px;
+    line-height: 14px;
+    text-align: right;
+  }
+  .rb-ring.is-touch .is-flip .rb-ring-bar b {
+    text-align: left;
+  }
+  .rb-ring.is-touch .rb-ring-tail {
+    height: 5px;
+  }
+  .rb-ring.is-touch .rb-ring-mana {
+    height: 5px;
+  }
+  /* (a cast, a hold and out-of-sight say themselves by their color: there is no room for their words) */
+  .rb-ring.is-touch .rb-ring-cast {
+    height: 5px;
+  }
+  .rb-ring.is-touch .rb-ring-cast b,
+  .rb-ring.is-touch .rb-ring-held,
+  .rb-ring.is-touch .rb-ring-unseen {
+    font-size: 0;
+    line-height: 5px;
+  }
+  .rb-ring.is-touch .rb-ring-clock {
+    padding: 0 7px 2px;
+  }
+  .rb-ring.is-touch .rb-ring-clock > b {
+    font-size: 15px;
+  }
+  .rb-ring.is-touch .rb-ring-rating {
+    font-size: 11px;
+  }
+  .rb-ring.is-touch .rb-ring-rating small {
+    font-size: 9px;
+  }
+  .rb-ring.is-touch .rb-ring-menu .rb-iconbtn {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
 }
 @container (max-height: 430px) {
   .rb-ring-team {
@@ -11136,6 +11307,9 @@ html.rb-touch-playing textarea {
   display: inline;
   margin-left: 4px;
 }
+.rb-ring-name .rb-ring-title.is-before {
+  margin: 0 4px 0 0;
+}
 
 /* An ability's combo, under what it does */
 .rb-rs-combo {
@@ -11661,14 +11835,46 @@ html.rb-touch-playing textarea {
 .rb-rlobby .rb-vlobby-class {
   position: relative;
 }
+/* (the stone stands at the end of the class's line, after its name: hung on the corner it sat over "Gloamknight") */
+.rb-rlobby .rb-vlobby-hero {
+  grid-template-columns: 158px minmax(0, 1fr);
+}
 .rb-rlobby-stone {
-  position: absolute;
+  margin-left: auto;
+}
+@container (max-height: 430px) and (min-height: 301px) {
+  .rb-rlobby .rb-vlobby-hero {
+    grid-template-columns: 84px minmax(104px, 0.75fr) minmax(0, 1.5fr);
+  }
+}
+@container (max-height: 300px) {
+  .rb-rlobby .rb-vlobby-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.rb-rlobby-stone {
+  position: static;
   top: 2px;
   right: 4px;
   font-size: 10.5px;
   font-variant-numeric: tabular-nums;
   color: #ff8a3d;
   text-shadow: 1px 1px 0 #000;
+}
+/* (on a phone on its side the class is a picture alone: its stone sits on its corner) */
+@container (max-height: 430px) and (min-height: 301px) {
+  .rb-rlobby-stone {
+    position: absolute;
+    margin: 0;
+    top: auto;
+    right: 1px;
+    bottom: 0;
+    padding: 0 2px;
+    border-radius: 4px;
+    font-size: 9.5px;
+    line-height: 1.2;
+    background: rgb(8 4 18 / 0.78);
+  }
 }
 .rb-rlobby-paths {
   flex-wrap: wrap;

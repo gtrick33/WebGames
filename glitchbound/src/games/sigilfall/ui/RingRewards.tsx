@@ -5,7 +5,9 @@ import type { ClassId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import type { Character } from '../progress/character';
 import { ownedShopLooks, ownsShopItem, shopLook } from '../progress/shopGoods';
-import { earnedTitles, RING_TITLES, titleName, wornTitle } from '../progress/titles';
+import type { ReactNode } from 'react';
+import { TitleFx } from '../../../components/TitleFx';
+import { allTitles, earnedTitles, RING_TITLES, titleName, titleShown, wornTitleShown, type TitleShown } from '../progress/titles';
 import { BARE_LOOK, lookFits, lookOf, wornId, type Look, type LookSlot } from '../progress/wardrobe';
 import type { WornLooks } from '../render/sprites';
 
@@ -128,14 +130,24 @@ export function plainWorn(p: Plain): WornLooks {
   return out;
 }
 
-/** The Ring title a fighter in plain clothes wears, while it is earned. */
-export function plainTitle(p: Plain): string | null {
-  const t = RING_TITLES.find((x) => x.id === p?.title);
-  return t && bestRating() >= t.rating ? t.name : null;
+/** The titles a fighter in plain clothes can wear: the Ring's they have reached, and any the account was given. */
+const plainTitles = (): { id: string; shown: TitleShown }[] => {
+  const best = bestRating();
+  return [
+    ...RING_TITLES.filter((t) => best >= t.rating).map((t) => ({ id: t.id, shown: { text: t.name, fx: t.fx, before: true } })),
+    ...allTitles()
+      .filter((t) => t.given)
+      .map((t) => ({ id: t.id, shown: titleShown(t, { cls: 'warrior' }) })),
+  ];
+};
+
+/** The title a fighter in plain clothes wears, while it is theirs. */
+export function plainTitle(p: Plain): TitleShown | null {
+  return plainTitles().find((x) => x.id === p?.title)?.shown ?? null;
 }
 
 /** The title shown for the player: their worn hero's, or their plain choice. */
-export const ringTitle = (wear: Character | null, p: Plain): string | null => (wear ? wornTitle(wear) : plainTitle(p));
+export const ringTitle = (wear: Character | null, p: Plain): TitleShown | null => (wear ? wornTitleShown(wear) : plainTitle(p));
 
 /* ------------------------------------------------------------------ the choice */
 
@@ -152,10 +164,11 @@ function looksFor(h: Character, slot: LookSlot): Look[] {
  * Title and armor: for a worn campaign hero, their own title and Wardrobe (kept with the hero); in plain clothes, a
  * Ring title and Ring armor (kept with the Ring's standing).
  */
-export function LooksDialog({ engine, cls, wear, plain, doll, shown, onPlain, onChange, onClose }: { engine: SigilEngine; cls: ClassId; wear: Character | null; plain: Plain; doll: string; shown: string; onPlain: (p: NonNullable<Plain>) => void; onChange: () => void; onClose: () => void }) {
-  const best = bestRating();
-  const titles = wear ? earnedTitles(wear).map((t) => ({ id: t.id, name: titleName(t, wear) })) : RING_TITLES.filter((t) => best >= t.rating).map((t) => ({ id: t.id, name: t.name }));
-  const titleNow = wear ? (wear.title === '' ? '' : (titles.find((t) => t.name === wornTitle(wear))?.id ?? '')) : plainTitle(plain) ? (plain?.title ?? '') : '';
+export function LooksDialog({ engine, cls, wear, plain, doll, shown, onPlain, onChange, onClose }: { engine: SigilEngine; cls: ClassId; wear: Character | null; plain: Plain; doll: string; shown: ReactNode; onPlain: (p: NonNullable<Plain>) => void; onChange: () => void; onClose: () => void }) {
+  const titles = wear ? earnedTitles(wear).map((t) => ({ id: t.id, name: titleName(t, wear), shown: titleShown(t, wear) })) : plainTitles().map((t) => ({ id: t.id, name: t.shown.text, shown: t.shown }));
+  const wornNow = wear ? wornTitleShown(wear) : null;
+  const titleNow = wear ? (wear.title === '' ? '' : (titles.find((t) => t.name === wornNow?.text)?.id ?? '')) : plainTitle(plain) ? (plain?.title ?? '') : '';
+  const titlePicked = titles.find((t) => t.id === titleNow);
   const slots: LookSlot[] = wear ? ['head', 'chest', 'weapon'] : ['head', 'chest'];
   const account = ownedShopLooks();
   return (
@@ -184,6 +197,7 @@ export function LooksDialog({ engine, cls, wear, plain, doll, shown, onPlain, on
               </option>
             ))}
           </select>
+          {titlePicked && <TitleFx fx={titlePicked.shown.fx} className="rb-rw-titlefx">{titlePicked.name}</TitleFx>}
         </label>
         {!titles.length && <p className="rb-rw-none">No title yet. The first is {RING_REWARDS[0]?.rank}, at {RING_REWARDS[0]?.at} rating.</p>}
         {slots.map((slot) => {

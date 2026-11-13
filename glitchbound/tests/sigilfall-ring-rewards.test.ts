@@ -213,10 +213,10 @@ describe('The Ring: what its ranks give', () => {
     expect(earnedTitles(hero).some((t) => t.id === 'ring-1900')).toBe(false);
     expect(chooseTitle(hero, 'ring-1700')).toBe(true);
     expect(wornTitle(hero)).toBe('Bladeward');
-    expect(ringTitle(hero, undefined)).toBe('Bladeward');
+    expect(ringTitle(hero, undefined)).toEqual({ text: 'Bladeward', fx: 'arcane', before: true });
     // in plain clothes: the Ring's own title and armor, kept with the standing
-    expect(plainTitle({ title: 'ring-1500' })).toBe('Pit Veteran');
-    expect(ringTitle(null, { title: 'ring-1500' })).toBe('Pit Veteran');
+    expect(plainTitle({ title: 'ring-1500' })?.text).toBe('Pit Veteran');
+    expect(ringTitle(null, { title: 'ring-1500' })?.text).toBe('Pit Veteran');
     expect(plainTitle({ title: 'ring-1900' })).toBeNull();
     expect(plainWorn({ head: ringLookId(1700, 'head'), chest: ringLookId(1900, 'chest') })).toMatchObject({ head: { id: ringLookId(1700, 'head') } });
     expect(plainWorn({ chest: ringLookId(1900, 'chest') }).chest).toBeUndefined();

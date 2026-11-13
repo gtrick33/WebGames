@@ -1,0 +1,174 @@
+/* Giving a Sigilfall title (SigilTitles.tsx). The lights are made for the game's dark panels, so every title here sits
+   on a dark chip of its own, whichever theme the admin page is in. */
+.tg {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.tg-form {
+  display: grid;
+  gap: 12px;
+}
+.tg-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px 14px;
+}
+.tg-words {
+  flex: 1 1 260px;
+}
+.tg-words small {
+  margin-left: 6px;
+  color: var(--fg-3);
+  font-weight: 400;
+}
+.tg-side button {
+  height: 38px;
+}
+.tg-dark {
+  color: #efe6ff;
+  background:
+    radial-gradient(120% 140% at 50% 0%, rgb(123 77 255 / 0.28), transparent 70%),
+    #120a26;
+  border: 1.5px solid #2c1d55;
+  border-radius: 12px;
+}
+.tg-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  margin: 0;
+  padding: 14px 18px;
+  font-size: clamp(20px, 2.6vw, 28px);
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  overflow: hidden;
+}
+.tg-preview .tfx {
+  margin: 0 0.12em;
+}
+.tg-name {
+  color: #f6f1ff;
+}
+.tg-hint {
+  color: #a193cf;
+  font-size: 15px;
+  font-weight: 600;
+}
+.tg-why {
+  margin: -4px 0 0;
+}
+.tg-lights {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.tg-lights legend {
+  margin-bottom: 6px;
+  padding: 0;
+}
+.tg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  gap: 8px;
+}
+.tg-light {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--well);
+  cursor: pointer;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.tg-light:hover {
+  border-color: var(--cyan);
+}
+.tg-light.is-on {
+  border-color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+}
+.tg-light:has(:focus-visible) {
+  outline: 3px solid var(--cyan);
+  outline-offset: 2px;
+}
+.tg-sample {
+  display: grid;
+  place-items: center;
+  min-height: 46px;
+  padding: 8px 10px;
+  font-size: 18px;
+  font-weight: 800;
+  overflow: hidden;
+}
+.tg-light-text {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 2px 8px;
+}
+.tg-light-text small {
+  grid-column: 1 / -1;
+  color: var(--fg-2);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.tg-pips {
+  display: inline-flex;
+  gap: 3px;
+}
+.tg-pips i {
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+.tg-pips i.is-on {
+  border-color: transparent;
+  background: var(--yellow);
+}
+.tg-h {
+  margin: 4px 0 0;
+}
+.tg-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tg-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--well);
+}
+.tg-row.is-gone {
+  opacity: 0.7;
+}
+.tg-chip {
+  max-width: 100%;
+  padding: 5px 12px;
+  font-size: 16px;
+  font-weight: 800;
+  overflow: hidden;
+}
+.tg-meta {
+  flex: 1 1 200px;
+  color: var(--fg-2);
+}
+.tg-gone summary {
+  cursor: pointer;
+}
+.tg-gone .tg-list {
+  margin-top: 6px;
+}

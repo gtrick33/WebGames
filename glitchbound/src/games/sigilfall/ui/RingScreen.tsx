@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
-import { ABILITIES, kitOf, PRESETS, SLOTS } from '../arena/abilities';
+import { fullBar, PRESETS, SLOTS } from '../arena/abilities';
 import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, namedApart, nameFor, ratingChange, readRing, setsOf, skillAt, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave } from '../arena/ladder';
 import { MAP_IDS, MAPS } from '../arena/maps';
 import { bestRating, FORMATS, nextRank, rankOf, type Format } from '../arena/ranks';
@@ -16,7 +16,6 @@ import { Seek, type SeekLook } from '../net/ringSeek';
 import { rivalsOf } from '../arena/queue';
 import type { Action as RoomAction, Pick as RoomPick, View as RoomView } from '../net/ringRoom';
 import { newCharacter, type Face } from '../progress/character';
-import { iconPicture } from '../render/art/gameIcons';
 import { heldWeapon, heroDollUrl, heroLook } from '../render/sprites';
 import { RingMatch, type MatchResult, type MatchStakes, type RingInbox } from './RingMatch';
 import { RingResult, type RatingOutcome } from './RingResult';
@@ -24,9 +23,10 @@ import { BarRow, RingHelp, SetupChips, SetupEditor } from './RingSetup';
 import { wearOf, WearPicker } from './wear';
 import { LooksDialog, plainWorn, RewardsDialog, RewardStrip, ringTitle } from './RingRewards';
 import { wornLooks } from '../progress/wardrobe';
-import { titled } from '../progress/titles';
+import { Titled } from './Titled';
 import { ScreenGate } from './ScreenGate';
 import { Doll } from './Doll';
+import { classEmblem } from './classEmblem';
 
 /** The computer's teammates: who they are and which of their bars they bring. */
 interface Mate {
@@ -55,9 +55,10 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
     for (const s of on) {
       const known = CLASS_IDS.includes(s.pick!.cls as ClassId);
       const cls = (known ? s.pick!.cls : 'warrior') as ClassId;
-      // (a bar of six from a player whose game is from before bars held four keeps its first four)
-      const bar = s.pick!.bar.filter((id) => ABILITIES[id]?.cls === cls && !ABILITIES[id]!.super).slice(0, SLOTS);
-      fighters.push({ team, cls, name: s.name, bar: bar.length === SLOTS ? bar : PRESETS[cls][0]!.bar, oath: s.pick!.oath, talents: s.pick!.talents, seat: s.n });
+      // (a bar of six from a player whose game is from before bars held four keeps its first four; one with an ability
+      // this game doesn't have, from a game older or newer, keeps the rest and is filled up from the class's own)
+      const bar = fullBar(cls, s.pick!.bar);
+      fighters.push({ team, cls, name: s.name, bar, oath: s.pick!.oath, talents: s.pick!.talents, seat: s.n });
     }
     const list = COMPS[v.format];
     const comp = list[(v.runSeed + team) % list.length]!;
@@ -71,13 +72,6 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
 
 type Page = 'play' | 'setup' | 'friends';
 
-/**
- * A class's emblem in the lists of who to fight as: its first ability's picture, and for the Gloamknight a picture of
- * his own, a horned helm with burning eyes drawn like all the rest. (It had Gloam Cleave's, which could have been
- * anyone's: the owner, "his icon in the character selection screen could be way better"; then the shop's painted
- * head: "gloamknight's in game character selection icon is his head from the shop, can we change that".)
- */
-const classEmblem = (c: ClassId): string => iconPicture(c === 'gloamknight' ? 'berserker_face_mask_with_red_eyes_on_black' : kitOf(c)[0]!.icon);
 
 /** The classes to fight as. One from the shop can be picked once it's bought (progress/paidClasses.ts). */
 function ClassRow({ pick, onPick }: { pick: ClassId; onPick: (c: ClassId) => void }) {
@@ -158,7 +152,9 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const next = nextRank(standing.best);
   // (a campaign hero of the class, worn: their gear, their Wardrobe and their title)
   const [wearN, setWearN] = useState(0);
-  const wear = useMemo(() => (wearN >= 0 ? wearOf(engine, pick) : null), [engine, pick, wearN]);
+  // (asked again whenever the game changes: a copy of the save from the account puts new heroes in place)
+  const saved = engine.getVersion();
+  const wear = useMemo(() => (wearN >= 0 && saved >= 0 ? wearOf(engine, pick) : null), [engine, pick, wearN, saved]);
   // (in plain clothes: the Ring armor and the Ring title chosen, kept with the standing)
   const worn = useMemo(() => (wear ? undefined : plainWorn(save.plain)), [wear, save.plain]);
   const myTitle = ringTitle(wear, save.plain);
@@ -528,7 +524,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
                 <Doll key={pick} className="rb-rp-doll" src={doll} alt={CLASSES[pick].name} />
                 <div className="rb-rp-who">
                   <strong>{CLASSES[pick].name}</strong>
-                  <small>{titled(wear ? wear.name : hero, myTitle)}</small>
+                  {/* (with no title worn, the rank reached in this format is shown before the name: "Unblooded Guitartrick") */}
+                  <Titled className="rb-rp-whoname" name={wear ? wear.name : hero} title={myTitle} orRank={rank} />
                 </div>
               </div>
               <div className="rb-rp-looks">
@@ -695,7 +692,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         {look && <Seeking look={look} format={format} cls={pick} onCancel={() => endSeek()} />}
         {help && <RingHelp onClose={() => setHelp(false)} />}
         {rewardsOpen && <RewardsDialog best={bestRating()} onClose={() => setRewardsOpen(false)} />}
-        {looksOpen && <LooksDialog engine={engine} cls={pick} wear={wear} plain={save.plain} doll={doll} shown={titled(wear ? wear.name : hero, myTitle)} onPlain={(p) => commit((now) => ({ ...now, plain: p }))} onChange={() => setWearN((n) => n + 1)} onClose={() => setLooksOpen(false)} />}
+        {looksOpen && <LooksDialog engine={engine} cls={pick} wear={wear} plain={save.plain} doll={doll} shown={<Titled name={wear ? wear.name : hero} title={myTitle} />} onPlain={(p) => commit((now) => ({ ...now, plain: p }))} onChange={() => setWearN((n) => n + 1)} onClose={() => setLooksOpen(false)} />}
       </div>
     </ScreenGate>
   );

@@ -37,7 +37,9 @@ import { RiftGuide } from './RiftGuide';
 import { ShopPanel } from './Shop';
 import { RING_LOOKS } from '../arena/rewards';
 import { MUSIC_CREDITS } from '../audio/tracks';
-import { earnedTitles, titled, titleName, TITLES, wornTitle } from '../progress/titles';
+import { allTitles, earnedTitles, titleName, titleShown, wornTitleShown } from '../progress/titles';
+import { TitleFx } from '../../../components/TitleFx';
+import { Titled } from './Titled';
 import { WARDENS } from '../data/wardens';
 import { compareWith, linesOnlyIn, statRows } from './compare';
 import { PartyPanel } from './Party';
@@ -130,7 +132,9 @@ function HeroPanel({ engine }: { engine: SigilEngine }) {
         <div className="rb-hero-id">
           <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} face={h.face} size={48} />
           <div>
-            <strong>{titled(h.name, wornTitle(h, engine.ringRating()))}</strong>
+            <strong>
+              <Titled name={h.name} title={wornTitleShown(h, engine.ringRating())} />
+            </strong>
             <TitlePicker engine={engine} />
             <span>
               Level {h.level} {CLASSES[h.cls].name}
@@ -259,12 +263,13 @@ function TitlePicker({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const rating = engine.ringRating();
   const mine = earnedTitles(h, rating);
-  const worn = wornTitle(h, rating);
-  const value = h.title === '' ? '' : (mine.find((t) => titleName(t, h) === worn)?.id ?? '');
+  const worn = wornTitleShown(h, rating);
+  const value = h.title === '' ? '' : (mine.find((t) => titleName(t, h) === worn?.text)?.id ?? '');
+  const all = allTitles();
   return (
     <details className="rb-titles">
       <summary>
-        Titles <span className="rb-dim">{mine.length} of {TITLES.length}</span>
+        Titles <span className="rb-dim">{mine.length} of {all.length}</span>
       </summary>
       {mine.length > 0 && (
         <label className="rb-titles-pick">
@@ -280,11 +285,12 @@ function TitlePicker({ engine }: { engine: SigilEngine }) {
         </label>
       )}
       <ul>
-        {TITLES.map((t) => {
+        {all.map((t) => {
           const has = mine.includes(t);
           return (
             <li key={t.id} className={has ? 'is-on' : ''}>
-              <b className={t.rare ? 'rb-title-rare' : ''}>{t.id === 'warden' ? WARDENS[h.cls].title : t.name}</b>
+              {/* (its light is shown on the ones earned: the rest are a promise) */}
+              <b className={t.rare ? 'rb-title-rare' : ''}>{has ? <TitleFx fx={titleShown(t, h).fx}>{titleName(t, h)}</TitleFx> : t.id === 'warden' ? WARDENS[h.cls].title : t.name}</b>
               <span>{t.how}</span>
             </li>
           );

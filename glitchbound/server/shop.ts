@@ -3,7 +3,8 @@ import type { Lang } from '../src/i18n';
 import { SHOP_TEXTS } from '../src/i18n/shopAll';
 import { fill, priceIn } from '../src/i18n/shopFormat';
 import { sendBatch } from './email';
-import { randomToken, type Env } from './http';
+import { likeOf, randomToken, type Env } from './http';
+import type { ShopReport, ShopSale } from '../src/platform/apiTypes';
 
 /**
  * One-time purchases through Stripe Managed Payments, where Stripe (through Link) is the merchant of record: it sells to
@@ -53,6 +54,18 @@ export async function ownedBy(env: Env, userId: string): Promise<string[]> {
     return withIncluded(rows.results.map((r) => r.product));
   } catch {
     // (before the migration has run)
+    return [];
+  }
+}
+
+/** The items this member has only as gifts (giftItem): never paid for themselves. */
+export async function giftsTo(env: Env, userId: string): Promise<string[]> {
+  try {
+    const rows = await env.DB.prepare("SELECT product FROM purchases WHERE user_id = ? AND status = 'paid' GROUP BY product HAVING MIN(terms = 'gift') = 1")
+      .bind(userId)
+      .all<{ product: string }>();
+    return rows.results.map((r) => r.product);
+  } catch {
     return [];
   }
 }
@@ -219,14 +232,36 @@ async function confirmByEmail(env: Env, id: string, now: number): Promise<void> 
 
 /* ------------------------------------------------------------------ for Admin › Ads & shop */
 
-export interface ShopReport {
-  /** Paid items and money taken, by item and currency. */
-  items: { product: string; paid: number; refunded: number; gifted: number; cents: number; currency: string | null }[];
-  recent: { id: string; product: string; status: string; amount: number | null; currency: string | null; at: number; nickname: string | null; gift: boolean }[];
+/** The latest purchases come a page at a time: 10 to start with, never more than 100 in one go. */
+export const SALES_PAGE = 10;
+export const SALES_MAX = 100;
+
+export interface SalesQuery {
+  /** Finds a purchase by the player's nickname or email, the item's name or id, or the purchase's id or Stripe's. */
+  q?: string;
+  offset?: number;
+  limit?: number;
 }
 
-export async function shopReport(env: Env): Promise<ShopReport> {
-  const [items, recent] = await Promise.all([
+/**
+ * Sales by item, and one page of the purchases that match, newest first, with how many match in all. The search runs
+ * here, not in the browser, so a long history never travels whole.
+ */
+export async function shopReport(env: Env, query: SalesQuery = {}): Promise<ShopReport> {
+  const q = (query.q ?? '').trim().slice(0, 80);
+  const limit = Math.min(SALES_MAX, Math.max(1, Math.floor(query.limit ?? SALES_PAGE) || SALES_PAGE));
+  const offset = Math.min(1_000_000_000, Math.max(0, Math.floor(query.offset ?? 0) || 0));
+  let where = "p.status != 'pending'";
+  const args: unknown[] = [];
+  if (q) {
+    const like = likeOf(q);
+    // an item is found by the name the admins gave it too, which only the shop's list knows
+    const named = (await loadItems(env)).filter((p) => p.name.toLowerCase().includes(q.toLowerCase())).map((p) => p.id);
+    const fields = ['u.nickname', 'u.email', 'p.product', 'p.id', 'p.provider_ref'].map((f) => `${f} LIKE ? ESCAPE '\\'`).join(' OR ');
+    where += ` AND (${fields} OR p.product IN (SELECT value FROM json_each(?)))`;
+    args.push(like, like, like, like, like, JSON.stringify(named));
+  }
+  const [items, recent, count] = await Promise.all([
     env.DB.prepare(
       `SELECT product,
          SUM(CASE WHEN status = 'paid' AND provider_ref NOT LIKE 'gift:%' AND COALESCE(currency, '') != 'test' THEN 1 ELSE 0 END) AS paid,
@@ -236,12 +271,24 @@ export async function shopReport(env: Env): Promise<ShopReport> {
          MAX(currency) AS currency
        FROM purchases WHERE status != 'pending' GROUP BY product ORDER BY cents DESC`,
     ).all<ShopReport['items'][number]>(),
+    // (ordered by the very expression migrations/0025 indexes, so the newest page is read without sorting them all)
     env.DB.prepare(
-      `SELECT p.id, p.product, p.status, p.amount, p.currency, COALESCE(p.paid_at, p.created_at) AS at, u.nickname, p.provider_ref AS ref
-       FROM purchases p LEFT JOIN users u ON u.id = p.user_id WHERE p.status != 'pending' ORDER BY at DESC LIMIT 40`,
-    ).all<ShopReport['recent'][number] & { ref: string | null }>(),
+      `SELECT p.id, p.product, p.status, p.amount, p.currency, COALESCE(p.paid_at, p.created_at) AS at, u.nickname, u.email, p.provider_ref AS ref
+       FROM purchases p LEFT JOIN users u ON u.id = p.user_id WHERE ${where} ORDER BY COALESCE(p.paid_at, p.created_at) DESC LIMIT ? OFFSET ?`,
+    )
+      .bind(...args, limit, offset)
+      .all<Omit<ShopSale, 'gift'> & { ref: string | null }>(),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM purchases p LEFT JOIN users u ON u.id = p.user_id WHERE ${where}`)
+      .bind(...args)
+      .first<{ n: number }>(),
   ]);
-  return { items: items.results, recent: recent.results.map(({ ref, ...r }) => ({ ...r, gift: !!ref?.startsWith('gift:') })) };
+  return {
+    items: items.results,
+    recent: recent.results.map(({ ref, ...r }) => ({ ...r, gift: !!ref?.startsWith('gift:') })),
+    total: count?.n ?? 0,
+    offset,
+    limit,
+  };
 }
 
 /** Gives an item to a member, for support or a prize. Shown as a gift, never counted as money. */
