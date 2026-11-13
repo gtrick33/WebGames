@@ -149,7 +149,9 @@ describe('Sigilfall: Gnasher', () => {
     expect(kit.size).toBeLessThanOrEqual(1.6);
     expect(kit.beast).toBeDefined();
     expect(kit.gear!.some((g) => g.m.startsWith('banner'))).toBe(false);
-    const hips = kit.gear!.filter((g) => g.m === 'skull' && g.h >= 0.2 && (g.z ?? 0) < -0.3);
+    const hips = kit.gear!.filter((g) => g.m === 'skull' && g.h >= 0.2 && (g.z ?? 0) < -0.2);
+    // (against his side, not out beside it: his body is 0.17 of his height to each side at the haunch)
+    for (const g of hips) expect(Math.abs(g.x ?? 0)).toBeLessThanOrEqual(0.18);
     expect(hips.map((g) => Math.sign(g.x ?? 0)).sort()).toEqual([-1, 1]);
   });
 });

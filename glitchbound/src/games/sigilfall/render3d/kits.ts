@@ -243,12 +243,14 @@ put('gnasher', {
     { m: 'w_shield_spikes', y: 0.42, z: 0.6, h: 0.4, tint: '#5a5660' },
     { m: 'BlackKnight_ShoulderLeft', x: 0.19, y: 0.46, z: 0.32, h: 0.32, tint: '#5a5660' },
     { m: 'BlackKnight_ShoulderRight', x: -0.19, y: 0.46, z: 0.32, h: 0.32, tint: '#5a5660' },
-    // the great ones, one on each hip, looking outward
-    { m: 'skull', x: 0.17, y: 0.4, z: -0.5, h: 0.22, turn: Math.PI / 2, tint: BONE },
-    { m: 'skull', x: -0.17, y: 0.4, z: -0.5, h: 0.22, turn: -Math.PI / 2, tint: BONE },
+    // the great ones, one on each haunch, looking outward, set half into his side so they rest on him (measured on
+    // the model: his body is 0.17 of his height to each side there; further back is only his tail, and skulls hung
+    // there floated beside it)
+    { m: 'skull', x: 0.165, y: 0.5, z: -0.3, h: 0.22, turn: Math.PI / 2, tint: BONE },
+    { m: 'skull', x: -0.165, y: 0.5, z: -0.3, h: 0.22, turn: -Math.PI / 2, tint: BONE },
     // and the lesser, at his flanks
-    { m: 'skull', x: 0.17, y: 0.36, z: 0.0, h: 0.13, turn: Math.PI / 2, tint: BONE },
-    { m: 'skull', x: -0.17, y: 0.36, z: -0.0, h: 0.13, turn: -Math.PI / 2, tint: BONE },
+    { m: 'skull', x: 0.16, y: 0.55, z: 0.02, h: 0.13, turn: Math.PI / 2, tint: BONE },
+    { m: 'skull', x: -0.16, y: 0.55, z: 0.02, h: 0.13, turn: -Math.PI / 2, tint: BONE },
   ],
 });
 put('rime-hound ice-wolf', { k: 'a_husky', beast: BEASTS.rimeHound });
