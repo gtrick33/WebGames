@@ -6,7 +6,7 @@ import { classEmblem } from './classEmblem';
 import { wearOf, WearPicker } from './wear';
 import { LooksDialog, plainWorn, ringTitle } from './RingRewards';
 import { readRing, writeRing } from '../arena/ladder';
-import { titled } from '../progress/titles';
+import { Titled } from './Titled';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { CLASSES, CLASS_IDS } from '../data/classes';
 import { useAccount } from '../../../platform/account';
@@ -289,7 +289,7 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
             <Doll key={pick} className="rb-vlobby-doll" src={doll} alt={c.name} />
             <div className="rb-vlobby-name">
               <strong>{c.name}</strong>
-              {(wear || myTitle) && <small className="rb-wear-who">{titled(wear ? wear.name : 'You', myTitle)}</small>}
+              {(wear || myTitle) && <Titled className="rb-wear-who" name={wear ? wear.name : 'You'} title={myTitle} />}
               <small>
                 {stats.hp} health · {stats.speed >= 84 ? 'quick on their feet' : stats.speed <= 74 ? 'heavy but sturdy' : 'steady'}
               </small>
@@ -384,7 +384,7 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
             wear={wear}
             plain={plain}
             doll={doll}
-            shown={titled(wear ? wear.name : 'You', myTitle)}
+            shown={<Titled name={wear ? wear.name : 'You'} title={myTitle} />}
             onPlain={(p) => {
               setPlain(p);
               writeRing({ ...readRing(), plain: p });

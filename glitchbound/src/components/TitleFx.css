@@ -7,7 +7,6 @@
   position: relative;
   display: inline-block;
   max-width: 100%;
-  font-style: normal;
   white-space: nowrap;
   text-overflow: ellipsis;
   vertical-align: baseline;
@@ -18,7 +17,8 @@
   -webkit-text-fill-color: transparent;
   -webkit-background-clip: text;
   background-clip: text;
-  background-repeat: no-repeat;
+  /* (the moving pictures tile: each begins and ends on its own color, and slides on past its own width) */
+  background-repeat: repeat;
 }
 .tfx::before,
 .tfx::after {
@@ -223,7 +223,7 @@
 /* ---------------------------------------------------------------- tier 5 */
 
 .tfx-void {
-  background-image: radial-gradient(120% 160% at 50% 50%, #3b1670 0%, #1a0838 40%, #4d1d8f 62%, #12052a 100%);
+  background-image: radial-gradient(120% 160% at 50% 50%, #6a2fc0 0%, #2c0f5c 40%, #8a4ae0 62%, #24094c 100%);
   background-size: 220% 220%;
   animation: tfx-swirl 6s ease-in-out infinite alternate, tfx-void-rim 3.4s ease-in-out infinite;
 }
@@ -276,7 +276,6 @@
     radial-gradient(circle at 85% 30%, #fff 0 0.06em, transparent 0.08em),
     linear-gradient(90deg, #8fa8ff, #d5c4ff, #7f8cff, #c3a8ff, #9fb4ff, #8fa8ff);
   background-size: 2.4em 1.4em, 3.1em 1.6em, 1.9em 1.3em, 300% 100%;
-  background-repeat: repeat, repeat, repeat, no-repeat;
   filter: drop-shadow(0 0 2px rgb(190 170 255 / 0.8)) drop-shadow(0 0 7px rgb(100 90 255 / 0.45));
   animation: tfx-drift 9s linear infinite;
 }
@@ -302,7 +301,7 @@
 .tfx-ashfire {
   background-image:
     linear-gradient(100deg, transparent 0 42%, rgb(255 255 230 / 0.95) 50%, transparent 58% 100%),
-    linear-gradient(120deg, #fff6c8 0%, #ffc23a 16%, #ff6a1a 33%, #b3140a 50%, #ff8a2a 66%, #ffd85a 83%, #fff6c8 100%);
+    linear-gradient(120deg, #fff6c8 0%, #ffc23a 16%, #ff7a1a 33%, #e0381a 50%, #ff9a2a 66%, #ffd85a 83%, #fff6c8 100%);
   background-size: 260% 100%, 300% 300%;
   animation: tfx-ash-flow 4.2s linear infinite, tfx-ash-heat 2.2s ease-in-out infinite;
 }

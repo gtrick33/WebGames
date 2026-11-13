@@ -23,7 +23,7 @@ import { BarRow, RingHelp, SetupChips, SetupEditor } from './RingSetup';
 import { wearOf, WearPicker } from './wear';
 import { LooksDialog, plainWorn, RewardsDialog, RewardStrip, ringTitle } from './RingRewards';
 import { wornLooks } from '../progress/wardrobe';
-import { titled } from '../progress/titles';
+import { Titled } from './Titled';
 import { ScreenGate } from './ScreenGate';
 import { Doll } from './Doll';
 import { classEmblem } from './classEmblem';
@@ -523,7 +523,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
                 <Doll key={pick} className="rb-rp-doll" src={doll} alt={CLASSES[pick].name} />
                 <div className="rb-rp-who">
                   <strong>{CLASSES[pick].name}</strong>
-                  <small>{titled(wear ? wear.name : hero, myTitle)}</small>
+                  {/* (with no title worn, the rank reached in this format is shown before the name: "Unblooded Guitartrick") */}
+                  <Titled className="rb-rp-whoname" name={wear ? wear.name : hero} title={myTitle} orRank={rank} />
                 </div>
               </div>
               <div className="rb-rp-looks">
@@ -690,7 +691,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         {look && <Seeking look={look} format={format} cls={pick} onCancel={() => endSeek()} />}
         {help && <RingHelp onClose={() => setHelp(false)} />}
         {rewardsOpen && <RewardsDialog best={bestRating()} onClose={() => setRewardsOpen(false)} />}
-        {looksOpen && <LooksDialog engine={engine} cls={pick} wear={wear} plain={save.plain} doll={doll} shown={titled(wear ? wear.name : hero, myTitle)} onPlain={(p) => commit((now) => ({ ...now, plain: p }))} onChange={() => setWearN((n) => n + 1)} onClose={() => setLooksOpen(false)} />}
+        {looksOpen && <LooksDialog engine={engine} cls={pick} wear={wear} plain={save.plain} doll={doll} shown={<Titled name={wear ? wear.name : hero} title={myTitle} />} onPlain={(p) => commit((now) => ({ ...now, plain: p }))} onChange={() => setWearN((n) => n + 1)} onClose={() => setLooksOpen(false)} />}
       </div>
     </ScreenGate>
   );

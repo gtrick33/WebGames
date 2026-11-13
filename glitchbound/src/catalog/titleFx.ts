@@ -5,7 +5,7 @@
  * both draw a title the same way (components/TitleFx.tsx and its stylesheet).
  */
 
-export const TITLE_FX_IDS = ['plain', 'gleam', 'verdant', 'tide', 'gilded', 'frost', 'blood', 'ember', 'arcane', 'storm', 'void', 'radiant', 'starfall', 'ashfire'] as const;
+export const TITLE_FX_IDS = ['plain', 'gleam', 'verdant', 'tide', 'gilded', 'blood', 'frost', 'ember', 'arcane', 'storm', 'void', 'radiant', 'starfall', 'ashfire'] as const;
 
 export type TitleFxId = (typeof TITLE_FX_IDS)[number];
 
@@ -25,8 +25,8 @@ export const TITLE_FX: readonly TitleFxDef[] = [
   { id: 'verdant', name: 'Verdant', blurb: 'A living green glow that breathes.', tier: 1 },
   { id: 'tide', name: 'Tide', blurb: 'Sea-blue light rolling through like a wave.', tier: 2 },
   { id: 'gilded', name: 'Gilded', blurb: 'Polished gold with a bright glint.', tier: 2 },
+  { id: 'blood', name: 'Blood', blurb: 'Dark red that beats like a heart and runs down.', tier: 2 },
   { id: 'frost', name: 'Frost', blurb: 'Ice-white letters with cold sparkles.', tier: 3 },
-  { id: 'blood', name: 'Blood', blurb: 'Dark red that beats like a heart and runs down.', tier: 3 },
   { id: 'ember', name: 'Ember', blurb: 'Flickering flame from below.', tier: 3 },
   { id: 'arcane', name: 'Arcane', blurb: 'Violet runelight shifting through its colors.', tier: 4 },
   { id: 'storm', name: 'Storm', blurb: 'Crackling lightning blue that flashes.', tier: 4 },

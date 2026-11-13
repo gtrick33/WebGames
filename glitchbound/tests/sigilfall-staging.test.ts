@@ -9,7 +9,8 @@ import { RANKS } from '../src/games/sigilfall/arena/ranks';
 import { SCENES } from '../src/games/sigilfall/data/scenes';
 import { WARDENS, CAMPAIGN_END } from '../src/games/sigilfall/data/wardens';
 import { applyPreset, PRESETS } from '../src/games/sigilfall/progress/presets';
-import { chooseTitle, earnedTitles, newTitles, titled, TITLES, wornTitle } from '../src/games/sigilfall/progress/titles';
+import { allTitles, chooseTitle, earnedTitles, newTitles, RING_TITLES, setGivenTitles, titled, TITLES, wornTitle, wornTitleShown } from '../src/games/sigilfall/progress/titles';
+import { isTitleFx, TITLE_FX, titleFx } from '../src/catalog/titleFx';
 import { migrate, SAVE_VERSION } from '../src/games/sigilfall/progress/save';
 import { inSight } from '../src/games/sigilfall/sim/scene';
 import { holds } from '../src/games/sigilfall/sim/story';
@@ -121,11 +122,46 @@ describe('Sigilfall: titles', () => {
     expect(chooseTitle(c, 'no-such-title')).toBe(false);
   });
 
-  it('reads after the name the way a title does', () => {
+  it('stands before the name, unless it names what it is of (the owner: "Unblooded Guitartrick, Blooded Guitartrick")', () => {
     expect(titled('Ash', 'the Kingslayer')).toBe('Ash the Kingslayer');
     expect(titled('Ash', 'of Briarhollow')).toBe('Ash of Briarhollow');
-    expect(titled('Ash', 'Stablemaster')).toBe('Ash, Stablemaster');
+    expect(titled('Ash', 'Champion of the Starfall')).toBe('Ash, Champion of the Starfall');
+    expect(titled('Ash', 'Stablemaster')).toBe('Stablemaster Ash');
+    expect(titled('Ash', 'Blooded')).toBe('Blooded Ash');
     expect(titled('Ash', null)).toBe('Ash');
+    // the Ring's ranks always stand before it, even one with "of" in it
+    const c = hero();
+    c.stats.deaths = 3;
+    expect(chooseTitle(c, 'ring-1900', 1900)).toBe(true);
+    expect(titled(c.name, wornTitleShown(c, 1900))).toBe(`Warden of the Ring ${c.name}`);
+  });
+
+  it('each wears a light, finer the harder it is, and the finest is the top of the Ring', () => {
+    for (const t of TITLES) expect(isTitleFx(t.fx), t.id).toBe(true);
+    const tier = (id: string): number => titleFx(TITLES.find((t) => t.id === id)!.fx).tier;
+    const top = Math.max(...TITLE_FX.map((f) => f.tier));
+    expect(TITLES.filter((t) => titleFx(t.fx).tier === top).map((t) => t.id)).toEqual(['ring-2100']);
+    // the Ring's climb never steps down
+    const ring = RING_TITLES.map((t) => tier(t.id));
+    expect(ring).toEqual([...ring].sort((a, b) => a - b));
+    expect(TITLES.every((t) => t.fx !== 'plain')).toBe(true);
+  });
+
+  it('one an admin gave the account can be worn by any hero of it, while the account has it', () => {
+    const c = hero();
+    c.stats.deaths = 3;
+    setGivenTitles([{ id: 'g1', name: '  Friend\u202e of the  Ring  ', fx: 'void', before: false, at: 1 }, { id: '', name: 'x', fx: 'void', before: true, at: 1 }, { id: 'g2', name: '', fx: 'gleam', before: true, at: 1 }]);
+    expect(allTitles().filter((t) => t.given).map((t) => t.name)).toEqual(['Friend of the Ring']);
+    expect(chooseTitle(c, 'given-g1')).toBe(true);
+    expect(wornTitleShown(c)).toEqual({ text: 'Friend of the Ring', fx: 'void', before: false });
+    expect(titled(c.name, wornTitleShown(c))).toBe(`${c.name}, Friend of the Ring`);
+    // never told of once per hero: the site tells of it when it arrives
+    expect(newTitles(c).some((t) => t.given)).toBe(false);
+    setGivenTitles([]);
+    expect(wornTitle(c)).toBeNull();
+    setGivenTitles([{ id: 'g3', name: 'Blessed', fx: 'nonsense' as never, before: true, at: 1 }]);
+    expect(allTitles().find((t) => t.given)?.fx).toBe('gleam');
+    setGivenTitles(undefined);
   });
 
   it('a new one is told once, and the choice is kept with the hero', () => {

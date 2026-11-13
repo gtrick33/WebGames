@@ -7361,9 +7361,15 @@ html.rb-touch-playing textarea {
   color: #fff4d8;
   font: 700 18px/1.1 Georgia, 'Times New Roman', serif;
 }
-.rb-rp-who small {
+.rb-rp-who small,
+.rb-rp-whoname {
   color: #b8afc8;
   font-size: 11.5px;
+}
+/* (the name under the hero, with their title in its light: a size up, so the light reads) */
+.rb-rp-whoname {
+  font: 600 13px Georgia, 'Times New Roman', serif;
+  color: #e6dcc8;
 }
 /* (each a square, never wider than it is tall: on a desk the row's columns are wider than 42px and the icons were
    pulled out sideways) */
@@ -9604,6 +9610,12 @@ html.rb-touch-playing textarea {
 .rb-rw-field select {
   width: 100%;
 }
+/* the title chosen, in its light, under its list */
+.rb-rw-titlefx {
+  grid-column: 2;
+  justify-self: start;
+  font: 700 15px Georgia, 'Times New Roman', serif;
+}
 @container (max-width: 520px) {
   .rb-rw-looks {
     grid-template-columns: 84px minmax(0, 1fr);
@@ -11198,6 +11210,9 @@ html.rb-touch-playing textarea {
 .rb-ring-name .rb-ring-title {
   display: inline;
   margin-left: 4px;
+}
+.rb-ring-name .rb-ring-title.is-before {
+  margin: 0 4px 0 0;
 }
 
 /* An ability's combo, under what it does */

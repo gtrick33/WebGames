@@ -28,7 +28,7 @@ import { canRide, chooseMount, FIRST_RIDE, grantMounts, grantWarden, hasMount, s
 import { DEFAULT_SETTINGS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
 import { buyItem, buyPotions, restock } from './progress/shop';
 import { wager } from './progress/rift';
-import { chooseTitle, newTitles, titled, titleName } from './progress/titles';
+import { chooseTitle, newTitles, setGivenTitles, titled, titleShown } from './progress/titles';
 import { bestRating, NEW_STANDING } from './arena/ranks';
 import type { ShopId } from './data/vendors';
 import { iconsReady } from './render/art/gameIcons';
@@ -350,6 +350,8 @@ export class SigilEngine {
   private syncShop(): void {
     const { items, owned } = sigilfallShop();
     setShopGoods(items, owned);
+    // (and the titles an admin gave the account: every hero of it can wear them, from the moment they arrive)
+    setGivenTitles(account.get().me?.sigilTitles);
     const w = this.world;
     if (w?.player.riding && this.hero && !canRide(this.hero, w.player.riding)) w.dismount();
     this.bump();
@@ -757,7 +759,7 @@ export class SigilEngine {
         changed = true;
       }
       for (const t of newTitles(this.hero, this.ringRating())) {
-        this.toast(`New title: ${titled(this.hero.name, titleName(t, this.hero))}`, 'good', undefined, 'Wear it from the Hero page, under your name.');
+        this.toast(`New title: ${titled(this.hero.name, titleShown(t, this.hero))}`, 'good', undefined, 'Wear it from the Hero page, under your name.');
         this.sound.play('epic');
         changed = true;
       }
@@ -1089,7 +1091,7 @@ export class SigilEngine {
     // (titles earned before this land was entered are simply theirs: one line, not one for each)
     const owed = newTitles(h, this.ringRating());
     if (owed.length > 1) this.toast(`${owed.length} titles are yours`, 'good', undefined, 'Choose one to wear on the Hero page, under your name.');
-    else if (owed.length === 1) this.toast(`New title: ${titled(h.name, titleName(owed[0]!, h))}`, 'good', undefined, 'Wear it from the Hero page, under your name.');
+    else if (owed.length === 1) this.toast(`New title: ${titled(h.name, titleShown(owed[0]!, h))}`, 'good', undefined, 'Wear it from the Hero page, under your name.');
     this.bump();
   }
 

@@ -62,7 +62,7 @@ export function WearPicker({ engine, cls, onChange }: { engine: SigilEngine; cls
       >
         {list.map((h) => (
           <option key={keyOf(h)} value={keyOf(h)}>
-            {h.name}’s Wardrobe{wornTitle(h) ? `, ${wornTitle(h)}` : ''}
+            {h.name}’s Wardrobe{wornTitle(h) ? ` (${wornTitle(h)})` : ''}
           </option>
         ))}
         <option value={PLAIN}>Plain</option>

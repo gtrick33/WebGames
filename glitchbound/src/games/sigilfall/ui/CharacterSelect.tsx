@@ -9,7 +9,8 @@ import type { SigilEngine } from '../engine';
 import { SIGILS, type Character } from '../progress/character';
 import { rankOf, topStanding } from '../arena/ranks';
 import { wornLooks } from '../progress/wardrobe';
-import { wornTitle } from '../progress/titles';
+import { wornTitleShown } from '../progress/titles';
+import { TitleFx } from '../../../components/TitleFx';
 import { longestNight } from '../vigil/bests';
 import { iconPicture, iconsReady } from '../render/art/gameIcons';
 import { VIGIL_ICON } from '../render/art/iconPicks';
@@ -45,6 +46,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     void iconsReady.then(setIcons);
   }, []);
   const hero: Character | null = heroes[at] ?? null;
+  const heroTitle = hero ? wornTitleShown(hero, engine.ringRating()) : null;
   const color = hero ? CLASSES[hero.cls].colors.main : '#8d6bff';
   const [night] = useState(longestNight);
   const [standing] = useState(topStanding);
@@ -241,7 +243,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
               <b className="cs-class" style={{ color: CLASSES[hero.cls].colors.accent }}>
                 Level {hero.level} {CLASSES[hero.cls].name}
               </b>
-              <span className="cs-place">{wornTitle(hero, engine.ringRating()) ?? farthest(hero.unlocked).name}</span>
+              <span className="cs-place">{heroTitle ? <TitleFx fx={heroTitle.fx}>{heroTitle.text}</TitleFx> : farthest(hero.unlocked).name}</span>
             </p>
           </>
         ) : (

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { TitleFx } from '../../../components/TitleFx';
+import type { TitleShown } from '../progress/titles';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { ABILITIES, DASH, SLOTS, superOf, type Ability } from '../arena/abilities';
 import { botThink, newBrain } from '../arena/bot';
@@ -108,7 +110,7 @@ function AuraIcons({ f }: { f: Fighter }) {
 /** How far along a cast is (a channel runs down). */
 const castShare = (c: { t: number; dur: number; channel: boolean }): number => Math.max(0, Math.min(1, c.channel ? 1 - c.t / c.dur : c.t / c.dur));
 
-function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Match; me: Fighter | null; doll: string; tag: string | null; onPick: () => void; flip?: boolean; title?: string | null }) {
+function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Match; me: Fighter | null; doll: string; tag: string | null; onPick: () => void; flip?: boolean; title?: TitleShown | null }) {
   const hold = f.auras.find((a) => a.cc);
   const c = f.cast;
   const ab = c ? ABILITIES[c.ab] : null;
@@ -129,8 +131,17 @@ function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Ma
       </span>
       <span className="rb-ring-bars">
         <span className="rb-ring-name">
+          {title?.before && (
+            <small className="rb-ring-title is-before">
+              <TitleFx fx={title.fx}>{title.text}</TitleFx>
+            </small>
+          )}
           <b>{f.id === me?.id ? 'You' : f.name}</b>
-          {title && <small className="rb-ring-title">{title}</small>}
+          {title && !title.before && (
+            <small className="rb-ring-title">
+              <TitleFx fx={title.fx}>{title.text}</TitleFx>
+            </small>
+          )}
           {tag && <em>{tag}</em>}
         </span>
         <span className={`rb-ring-bar${share < 0.3 ? ' is-low' : ''}`}>
@@ -213,7 +224,7 @@ const AIM_THROW = 78;
 const AIM_SLACK = 8;
 
 /** A match: The Ring's ground, its frames and a bar of abilities. Solo, the computer plays everyone else. */
-export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes, onSets, onDone, onLeave, resume, onSnap, wear, worn, title }: { engine: SigilEngine; setup: MatchSetup; myId: number; face?: Face; body?: 'm' | 'f'; wear?: Character | null; worn?: WornLooks; title?: string | null; role: Role; sets: ClassSets; stakes: MatchStakes | null; onSets: (s: ClassSets) => void; onDone: (r: MatchResult) => void; onLeave: (started: boolean) => void; resume?: Snapshot; onSnap?: (s: Snapshot) => void }) {
+export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes, onSets, onDone, onLeave, resume, onSnap, wear, worn, title }: { engine: SigilEngine; setup: MatchSetup; myId: number; face?: Face; body?: 'm' | 'f'; wear?: Character | null; worn?: WornLooks; title?: TitleShown | null; role: Role; sets: ClassSets; stakes: MatchStakes | null; onSets: (s: ClassSets) => void; onDone: (r: MatchResult) => void; onLeave: (started: boolean) => void; resume?: Snapshot; onSnap?: (s: Snapshot) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ringKeys, setRingKeys] = useState<RingKeys>(readKeys);
   const keysRef = useRef(ringKeys);
