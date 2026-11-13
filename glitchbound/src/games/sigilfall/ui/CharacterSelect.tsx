@@ -46,7 +46,6 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     void iconsReady.then(setIcons);
   }, []);
   const hero: Character | null = heroes[at] ?? null;
-  const heroTitle = hero ? wornTitleShown(hero, engine.ringRating()) : null;
   const color = hero ? CLASSES[hero.cls].colors.main : '#8d6bff';
   const [night] = useState(longestNight);
   const [standing] = useState(topStanding);
@@ -243,7 +242,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
               <b className="cs-class" style={{ color: CLASSES[hero.cls].colors.accent }}>
                 Level {hero.level} {CLASSES[hero.cls].name}
               </b>
-              <span className="cs-place">{heroTitle ? <TitleFx fx={heroTitle.fx}>{heroTitle.text}</TitleFx> : farthest(hero.unlocked).name}</span>
+              <HeroPlace engine={engine} hero={hero} />
             </p>
           </>
         ) : (
@@ -328,4 +327,10 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
       )}
     </div>
   );
+}
+
+/** Under a hero's level and calling: the title they wear, in its light, or else the farthest land they have reached. */
+function HeroPlace({ engine, hero }: { engine: SigilEngine; hero: Character }) {
+  const title = wornTitleShown(hero, engine.ringRating());
+  return <span className="cs-place">{title ? <TitleFx fx={title.fx}>{title.text}</TitleFx> : farthest(hero.unlocked).name}</span>;
 }
