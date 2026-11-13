@@ -6284,7 +6284,9 @@ html.rb-touch-playing textarea {
   grid-template: auto minmax(0, 1fr) auto / minmax(0, 1.25fr) minmax(0, 1fr);
   grid-template-areas: 'head head' 'hero lands' 'foot foot';
   gap: 8px 12px;
-  padding: 10px 14px;
+  /* (clear of a phone's notch or island and its rounded corners, as the Ring's lobby is: on its side an iPhone's
+     island cut into the callings down the left edge. Shared by the Rift Trials' lobby, which wears these styles) */
+  padding: calc(10px + var(--sa-t, 0px)) calc(14px + var(--sa-r, 0px)) calc(10px + var(--sa-b, 0px)) calc(14px + var(--sa-l, 0px));
   overflow: hidden;
   color: #efe6d4;
   background:
@@ -6588,7 +6590,7 @@ html.rb-touch-playing textarea {
 @container (max-height: 430px) {
   .rb-vlobby {
     gap: 4px 8px;
-    padding: 6px 10px;
+    padding: calc(6px + var(--sa-t, 0px)) calc(10px + var(--sa-r, 0px)) calc(6px + var(--sa-b, 0px)) calc(10px + var(--sa-l, 0px));
   }
   .rb-vlobby-head p {
     display: none;
@@ -11598,4 +11600,19 @@ html.rb-touch-playing textarea {
 .rb-rlobby-key {
   justify-content: flex-start;
   margin: 6px 0 2px;
+}
+/* (a phone on its side has room for the choices and not for the reading: the path's blurb and the fine print wait for
+   a taller screen, where they lay under the gold button) */
+@container (max-height: 430px) {
+  .rb-rlobby .rb-vlobby-about,
+  .rb-rlobby .rb-vlobby-kit > .rb-small {
+    display: none;
+  }
+  .rb-rlobby-paths button {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  .rb-rlobby-key {
+    margin: 2px 0 0;
+  }
 }
