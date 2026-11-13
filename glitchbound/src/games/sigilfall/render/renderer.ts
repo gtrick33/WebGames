@@ -1,3 +1,4 @@
+import { drawReach, drawReticle } from './reticle';
 import { clamp, damp, TAU } from '../core/math';
 import { zoneLight } from './zoneLight';
 import { currentObjective } from '../progress/character';
@@ -98,6 +99,8 @@ export interface AimPreview {
   /** Line width / circle radius / cone reach. */
   size: number;
   cancel: boolean;
+  /** The spell's own color (its kind of harm), for the mark. */
+  color?: string;
 }
 
 export class Renderer {
@@ -899,49 +902,58 @@ export class Renderer {
     g.globalAlpha = 1;
   }
 
-  /** The touch aim preview: where the dragged skill will go. */
+  /** The touch aim preview: where the dragged skill will go (a placed spell's mark is render/reticle.ts). */
   private drawAim(w: World): void {
     const a = this.aim;
     const p = w.player;
     if (!a || p.dead) return;
     const g = this.g;
-    const color = a.cancel ? '#ff5a5a' : '#ffffff';
+    const time = this.reducedMotion ? 0 : performance.now() / 1000;
+    const color = a.cancel ? '#ff5a5a' : (a.color ?? '#ffd84d');
     g.save();
-    g.globalAlpha = 0.45;
-    g.fillStyle = color;
-    g.strokeStyle = color;
-    g.lineWidth = 1;
-    if (a.shape === 'line') {
-      g.translate(p.x, p.y);
-      g.rotate(a.angle);
-      g.fillRect(6, -a.size / 2, a.dist, a.size);
-      g.globalAlpha = 0.8;
-      g.fillRect(a.dist + 4, -2, 3, 4);
-    } else if (a.shape === 'circle') {
+    if (a.shape === 'circle') {
       const x = p.x + Math.cos(a.angle) * a.dist;
       const y = p.y + Math.sin(a.angle) * a.dist;
-      g.beginPath();
-      g.ellipse(x, y, a.size, a.size, 0, 0, TAU);
-      g.fill();
-      g.globalAlpha = 0.8;
-      g.stroke();
-      g.globalAlpha = 0.3;
-      g.beginPath();
-      g.moveTo(p.x, p.y);
-      g.lineTo(x, y);
-      g.stroke();
-    } else if (a.shape === 'cone') {
-      g.beginPath();
-      g.moveTo(p.x, p.y);
-      g.arc(p.x, p.y, a.size, a.angle - a.dist / 2, a.angle + a.dist / 2);
-      g.closePath();
-      g.fill();
+      drawReach(g, p.x, p.y, x - Math.cos(a.angle) * a.size, y - Math.sin(a.angle) * a.size, color, time, a.cancel);
+      // (laid on the ground where it will land: the ground's slant there, not at the hero)
+      this.flat(x, y);
+      drawReticle(g, x, y, a.size, color, time, a.cancel);
+      this.flat(p.x, p.y);
+    } else if (a.shape === 'ring') {
+      drawReticle(g, p.x, p.y, a.size, color, time, a.cancel);
     } else {
+      // a shot's lane, a swing's fan: the spell's color, its edge drawn dark and bright so it reads on any ground
+      g.globalAlpha = 0.3;
+      g.fillStyle = color;
       g.beginPath();
-      g.ellipse(p.x, p.y, a.size, a.size, 0, 0, TAU);
+      if (a.shape === 'line') {
+        g.translate(p.x, p.y);
+        g.rotate(a.angle);
+        g.rect(6, -a.size / 2, a.dist, a.size);
+      } else {
+        g.moveTo(p.x, p.y);
+        g.arc(p.x, p.y, a.size, a.angle - a.dist / 2, a.angle + a.dist / 2);
+        g.closePath();
+      }
       g.fill();
-      g.globalAlpha = 0.8;
+      g.globalAlpha = 1;
+      g.lineWidth = 2.4;
+      g.strokeStyle = 'rgba(14,8,22,0.6)';
       g.stroke();
+      g.lineWidth = 1.2;
+      g.strokeStyle = color;
+      g.stroke();
+      if (a.shape === 'line') {
+        // its head: a bright arrow at the far end
+        g.fillStyle = '#ffffff';
+        g.beginPath();
+        g.moveTo(a.dist + 12, 0);
+        g.lineTo(a.dist + 4, -Math.max(3, a.size * 0.7));
+        g.lineTo(a.dist + 4, Math.max(3, a.size * 0.7));
+        g.closePath();
+        g.fill();
+        g.stroke();
+      }
     }
     g.restore();
   }

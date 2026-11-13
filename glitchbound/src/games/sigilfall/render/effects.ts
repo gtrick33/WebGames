@@ -758,13 +758,10 @@ export class Effects {
       const col = zoneLight(g.to);
       const least = Math.min(x, y, mw - x, mh - y);
       if (least < TILE * 8) {
-        // a gate at the land's edge: into the land, away from that edge
-        const into = least === y ? Math.PI / 2 : least === mh - y ? -Math.PI / 2 : least === x ? 0 : Math.PI;
-        // (its source under the gate's arch, which stands a tile in from the edge: not out past the land's end)
-        const gx = x + Math.cos(into) * TILE * 1.1;
-        const gy = y + Math.sin(into) * TILE * 1.1;
-        spill(gx, gy, into, 660, 640, col, 0.6 + breathe * 0.08, seed);
-        fx.put({ kind: FX.glow, x: gx, y: gy, up: 70, w: 300, a: col, alpha: 0.3 + breathe * 0.06, over: true });
+        // a gate at the land's edge: the way through that fills its arch is the gate's own (render3d/portal.ts), and
+        // it throws no light. It used to: a great fan of the next land's color down the road and a haze of it in
+        // the air, which the owner asked to have gone ("without illuminating anything on the floor").
+        continue;
       } else {
         // a way down in the middle of the land: its doors face south
         spill(x, y - 10, Math.PI / 2, 330, 320, col, 0.42 + breathe * 0.06, seed);

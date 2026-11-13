@@ -62,7 +62,10 @@ export function StorePanel({ onClose, bought, focus }: { onClose: () => void; bo
   /** What the buyer can do about an item: it is theirs, they are buying it, they can, or they sign in first. */
   const action = (p: Product) =>
     owned.has(p.id) ? (
-      <p className="rb-store-yours">{p.id === GLOAMKNIGHT_ITEM ? 'Yours. Make a Gloamknight from the hero screen.' : 'Yours. It’s in the Wardrobe of every hero.'}</p>
+      <p className="rb-store-yours">
+        <b className="rb-store-owned">✓ Owned</b>
+        <span>{p.id === GLOAMKNIGHT_ITEM ? 'Make a Gloamknight from the hero screen.' : isMount(p) ? 'It’s in the stable of every hero.' : 'It’s in the Wardrobe of every hero.'}</span>
+      </p>
     ) : !canBuy ? (
       <p className="rb-small rb-dim">{w.notYet}</p>
     ) : !me ? (
@@ -76,11 +79,14 @@ export function StorePanel({ onClose, bought, focus }: { onClose: () => void; bo
         {fill(w.get, { name: text(p).name })}
       </button>
     );
-  const cost = (p: Product) => (
+  // (what is already theirs has no price on it: the owner, "when you have a pack and it says 'yours' maybe remove the
+  // price and highlight it better")
+  const cost = (p: Product) =>
+    owned.has(p.id) ? null : (
     <p className="rb-store-price">
       <strong>{price(p)}</strong> <span className="rb-small rb-dim">{w.vat}</span>
     </p>
-  );
+    );
   /** An item's picture, which opens it on a stand to be turned round. */
   const picture = (p: Product) =>
     p.sigil && (

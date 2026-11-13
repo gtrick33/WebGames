@@ -1051,28 +1051,38 @@ function impact(w: World, pr: Projectile, e: Enemy | null): void {
   if (pr.spec && pr.spec.onImpact.length) applyEffects(w, pr.spec.onImpact, { x, y, angle, spec: pr.spec, base: pr.dmg, type: pr.type, depth: pr.depth, target: e ?? undefined, hitDmg: 0, proj: pr, when: 'impact' });
 }
 
+/** How fast a well drags, in pixels a second for each point of its pull (Gravity Well's 55: 150 a second, twice a foe's walk). */
+export const WELL_PACE = 2.75;
+
 /** Fields: friendly ones hurt enemies, hostile ones hurt the hero. */
 export function updateFields(w: World, dt: number): void {
   const p = w.player;
   for (const f of w.fields) {
     f.t -= dt;
     f.tickT -= dt;
+    // A well that drags: whoever is in it is carried to its middle and held there for as long as it lasts, every
+    // frame and faster than they can walk out. It used to give a small shove each tick, which a foe's own walking
+    // more than undid: about twenty pixels a second inward against forty to seventy out, so nothing was seen to
+    // move (the owner: "gravity well just dmgs enemies and doesnt pull them back to the center for 3 seconds as the
+    // description says"). An elite is dragged at half the pace; a boss not at all.
+    if (f.pull && !f.hostile && f.t > 0) {
+      for (const e of enemiesIn(w, f.x, f.y, f.r + 8)) {
+        if (e.boss || e.dead || e.dummy) continue;
+        const d = Math.hypot(f.x - e.x, f.y - e.y);
+        if (d < 2) continue;
+        const step = Math.min(d, f.pull * WELL_PACE * (e.elite.length ? 0.5 : 1) * dt);
+        const m = moveCircle(w.map, e.x, e.y, e.r, ((f.x - e.x) / d) * step, ((f.y - e.y) / d) * step);
+        e.x = m.x;
+        e.y = m.y;
+      }
+    }
     if (f.tickT <= 0) {
       f.tickT += f.tick;
       if (f.hostile) {
         if (w.coop?.role === 'host') for (const g of w.coop.ghosts) if (!g.dead && dist2(g.x, g.y, f.x, f.y) < (f.r + g.r * 0.5) ** 2) w.ghostHit(g, f.dmg, f.status ? { status: f.status } : {});
         if (!f.remote && !p.dead && dist2(p.x, p.y, f.x, f.y) < (f.r + p.r * 0.5) ** 2) hurtPlayer(w, f.dmg, { status: f.status });
       } else {
-        // a well that drags, a grove that mends
-        if (f.pull) {
-          for (const e of enemiesIn(w, f.x, f.y, f.r + 8)) {
-            if (e.boss) continue;
-            const a = Math.atan2(f.y - e.y, f.x - e.x);
-            const k = e.elite.length ? 0.5 : 1;
-            e.vx += Math.cos(a) * f.pull * k;
-            e.vy += Math.sin(a) * f.pull * k;
-          }
-        }
+        // (a grove that mends; a well's drag is every frame, below)
         if (f.heal && !p.dead && dist2(p.x, p.y, f.x, f.y) < f.r * f.r) healPlayer(w, f.heal, false);
         // a field that only mends (a bloom) hurts nobody
         for (const e of f.dmg > 0 ? enemiesIn(w, f.x, f.y, f.r) : []) {
