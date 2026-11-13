@@ -236,14 +236,19 @@ put('gnasher', {
   size: 1.3,
   gear: [
     // (the wolf stands 1 tall and runs from 1.1 behind to 0.95 ahead: its neck about 0.5 ahead, 0.7 up)
-    // a great ash-pale war-wolf in the gang's black iron: a spiked collar, pauldrons, the gang's triple banner
-    // raised from his back, trophies hung at his flanks
-    { m: 'banner_triple_red', y: 0.5, z: -0.3, h: 0.85, both: true },
+    // a great ash-pale war-wolf in the gang's black iron: a spiked collar, pauldrons, and the skulls of what he has
+    // run down slung at his hips and shoulders (the gang's banner stood from his back until the owner had it off:
+    // "we can remove gnashers banners as they seem floating with his body, can you add big skulls to the side of
+    // his hips")
     { m: 'w_shield_spikes', y: 0.42, z: 0.6, h: 0.4, tint: '#5a5660' },
     { m: 'BlackKnight_ShoulderLeft', x: 0.19, y: 0.46, z: 0.32, h: 0.32, tint: '#5a5660' },
     { m: 'BlackKnight_ShoulderRight', x: -0.19, y: 0.46, z: 0.32, h: 0.32, tint: '#5a5660' },
-    { m: 'skull', x: 0.24, y: 0.28, z: 0.05, h: 0.17, turn: Math.PI / 2, tint: BONE },
-    { m: 'skull', x: -0.24, y: 0.28, z: -0.05, h: 0.17, turn: -Math.PI / 2, tint: BONE },
+    // the great ones, one on each hip, looking outward
+    { m: 'skull', x: 0.17, y: 0.4, z: -0.5, h: 0.22, turn: Math.PI / 2, tint: BONE },
+    { m: 'skull', x: -0.17, y: 0.4, z: -0.5, h: 0.22, turn: -Math.PI / 2, tint: BONE },
+    // and the lesser, at his flanks
+    { m: 'skull', x: 0.17, y: 0.36, z: 0.0, h: 0.13, turn: Math.PI / 2, tint: BONE },
+    { m: 'skull', x: -0.17, y: 0.36, z: -0.0, h: 0.13, turn: -Math.PI / 2, tint: BONE },
   ],
 });
 put('rime-hound ice-wolf', { k: 'a_husky', beast: BEASTS.rimeHound });

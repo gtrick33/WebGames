@@ -144,11 +144,13 @@ describe('Sigilfall: Gnasher', () => {
     }
   });
 
-  it("is a great hound, not eight tiles of one, and his banner shows from behind", () => {
+  it("is a great hound, not eight tiles of one, with great skulls at his hips and no banner", () => {
     const kit = kitOf('gnasher');
     expect(kit.size).toBeLessThanOrEqual(1.6);
     expect(kit.beast).toBeDefined();
-    expect(kit.gear!.find((g) => g.m.startsWith('banner'))!.both).toBe(true);
+    expect(kit.gear!.some((g) => g.m.startsWith('banner'))).toBe(false);
+    const hips = kit.gear!.filter((g) => g.m === 'skull' && g.h >= 0.2 && (g.z ?? 0) < -0.3);
+    expect(hips.map((g) => Math.sign(g.x ?? 0)).sort()).toEqual([-1, 1]);
   });
 });
 
