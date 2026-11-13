@@ -11542,39 +11542,66 @@ html.rb-touch-playing textarea {
   margin-bottom: 0;
 }
 @container (min-width: 700px) {
-  /* (between the hero's bars and the Pause button and map, which is not always the screen's middle: on a phone on
-     its side, or a narrow window, a bar set in the middle lay across the health bar or the potion) */
+  /* (at the top of the screen and in its middle. The owner, twice: set to one side between the hero's bars and
+     Pause it was "hard to follow"; under the bars in the middle it was "still lowkey in the middle of the screen,
+     can we squish the players hp and mana bar so that we put it a bit to the top, but its centered". So the hero's
+     own bars are narrowed for the fight to what is left beside it) */
   .rb-ui.is-boss .rb-bossbar {
     top: calc(4px + var(--sa-t));
-    left: calc(352px + var(--sa-l));
-    right: calc(112px + var(--sa-r));
-    width: auto;
-    max-width: 480px;
-    margin: 0 auto;
-    transform: none;
+    left: 50%;
+    width: min(46cqw, 460px);
+    transform: translateX(-50%);
   }
-  .rb-ui.is-boss.is-touch .rb-bossbar {
-    left: calc(300px + var(--sa-l));
-    right: calc(158px + var(--sa-r));
+  .rb-ui.is-boss .rb-hud-bars {
+    width: clamp(84px, calc(50cqw - min(23cqw, 230px) - 78px), 230px);
   }
-  /* what is announced during the fight (a phase's shout) goes under the bar, not across it */
+  /* (a desk's potion button stands beside the bars, and takes its share) */
+  .rb-ui.is-boss.is-mouse .rb-hud-bars {
+    width: clamp(84px, calc(50cqw - min(23cqw, 230px) - 128px), 230px);
+  }
+  /* what is announced during the fight (a phase's shout) keeps clear of the bar and what it calls: on a phone, at
+     the foot of the screen between the thumbs; on a desk, lower in the picture */
   .rb-ui.is-boss.is-touch .rb-announce {
-    top: calc(112px + var(--sa-t));
+    top: auto;
+    bottom: calc(10px + var(--sa-b));
   }
   .rb-ui.is-boss.is-mouse .rb-banner {
-    top: 24%;
+    top: 30%;
   }
-/* The quest being followed is plain words over the land, with no panel behind them (the owner: "the active quest's
-   dark panel could go away and just leave it as plain text"). An edge of dark round each letter keeps them read over
-   grass, snow and sand alike. Folded to its mark, and the Riftstone's clock, keep their chips. */
-.rb-tracker:not(.rb-keyclock):not(.is-folded) {
-  border-color: transparent;
-  background: none;
-  box-shadow: none;
-  text-shadow:
-    0 1px 0 #000,
-    1px 0 0 #000,
-    -1px 0 0 #000,
-    0 -1px 0 #000,
-    0 0 6px rgb(0 0 0 / 0.9);
+}
+
+/* ---- a Riftstone run's clock ----
+   A fifth smaller than it was, and where the quest is in that layout (the owner: "riftstone timer can be moved to
+   where the quest was ... scale down the timer panel by about 20%"): the quest is not shown for the whole of the run
+   (ui/GameScreen.tsx shows one or the other). On a phone on its side that is under the hero's bars, where it lay
+   across the potion and the skills before. */
+.rb-tracker.rb-keyclock {
+  transform: scale(0.8);
+  transform-origin: top right;
+}
+@container rb-stage (max-height: 440px) {
+  .rb-ui.is-touch .rb-tracker.rb-keyclock {
+    top: calc(62px + var(--sa-t));
+    right: auto;
+    left: calc(8px + var(--sa-l));
+    display: grid;
+    gap: 1px;
+    max-width: 200px;
+    padding: 4px 8px;
+    white-space: normal;
+    transform: scale(0.8);
+    transform-origin: top left;
+  }
+  .rb-ui.is-touch.is-lefty .rb-tracker.rb-keyclock {
+    right: calc(8px + var(--sa-r));
+    left: auto;
+    transform-origin: top right;
+  }
+  .rb-ui.is-touch .rb-keyclock .rb-keybar {
+    width: auto;
+  }
+  /* (in a boss fight the hero's own second line is put away, and the clock comes up into its room) */
+  .rb-ui.is-touch.is-boss .rb-tracker.rb-keyclock {
+    top: calc(48px + var(--sa-t));
+  }
 }

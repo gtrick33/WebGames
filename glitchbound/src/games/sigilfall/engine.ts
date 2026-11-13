@@ -686,7 +686,9 @@ export class SigilEngine {
         case 'bossStart': {
           const b = w.boss();
           // (met for the first time, its name is in the shot of it: no banner after)
-          if (b?.boss) this.ui = { ...this.ui, boss: { name: b.boss.def.name, title: b.boss.def.title }, banner: w.scene ? this.ui.banner : { text: b.boss.def.name, sub: b.boss.def.title, id: performance.now() } };
+          // (its name and title are on its bar, which comes up now: said again in a banner under the bar, the two lay
+          // across each other and across what the boss calls)
+          if (b?.boss) this.ui = { ...this.ui, boss: { name: b.boss.def.name, title: b.boss.def.title }, banner: w.scene ? this.ui.banner : null };
           changed = true;
           break;
         }
