@@ -763,8 +763,12 @@ export class Renderer {
     }
     const named = !!e.def.named;
     const elite = e.elite.length > 0;
-    const s = st.project(e.x, e.y, headOf(e));
-    if (!this.plates) {
+    // (what a boss fight stands up, a coffin, a candle, a cage, is a thing: it shows its health once it is struck,
+    // not a row of full bars over the furniture)
+    const thing = !!e.def.prop;
+    // (a little above the head: on a boar's or a ram's back the bar lay across the animal)
+    const s = st.project(e.x, e.y, headOf(e) + (this.plates ? 5 : 0));
+    if (!this.plates || (thing && e.hp >= e.maxHp && e.shield <= 0)) {
       // (the plain bars, as before: only on one that is hurt, or is somebody)
       if (e.hp >= e.maxHp && !elite && !named && e.shield <= 0) return;
       this.bar(s.x, s.y, elite || named ? 46 : 30, e.hp / e.maxHp, named ? '#d8b0ff' : elite ? '#ffcf5a' : '#ff4a5a', e.shield > 0 ? e.shield / (e.maxHp * 0.4) : 0);

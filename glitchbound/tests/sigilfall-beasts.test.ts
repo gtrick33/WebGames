@@ -164,3 +164,23 @@ describe('Sigilfall: what the great beasts carry', () => {
     expect(kitOf('clatterclaw').size).toBeLessThanOrEqual(1.7);
   });
 });
+
+describe('Sigilfall: the griffon and the slime', () => {
+  it('a griffon is a lion with an eagle\'s head, a beak and wings (it was the bird-folk\'s model in gold)', () => {
+    const kit = kitOf('griffon');
+    expect(kit.k).toBe('a_wolf');
+    expect(kit.beast!.wings).toBeDefined();
+    expect(kit.beast!.beak).toBeDefined();
+    expect(kit.beast!.head).toBeDefined();
+    const { before, after } = dressed(kit.k, kit.beast!);
+    // two wings of an arm and eight feathers each, and a beak: a good many more points than the wolf it is built on
+    expect(after.n - before.n).toBeGreaterThan(400);
+  });
+
+  it('a slime is more than one ball: a skirt, drips, a shine and a face', () => {
+    const m = readPack('k/slime').meshes.body!;
+    expect(m.n).toBeGreaterThan(350);
+    // drips lie out beyond the body on the ground
+    expect(m.max[0] - m.min[0]).toBeGreaterThan(1.4);
+  });
+});

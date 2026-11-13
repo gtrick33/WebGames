@@ -42,6 +42,12 @@ export interface Beast {
   /** Horns: a ram's curl, or short spikes. */
   horns?: { kind: 'ram' | 'spikes'; color: string; size?: number };
   fangs?: boolean;
+  /** The head and the front of the neck in a color of their own (a griffon's eagle head on a lion's body). */
+  head?: string;
+  /** A hooked beak over the muzzle. */
+  beak?: string;
+  /** Feathered wings from the shoulders, half spread: `tip` the color of the long feathers' ends. */
+  wings?: { color: string; tip?: string; size?: number };
   /**
    * For a model whose head carries antlers: what share of the head's height is skull (the rest, above, is antler), and
    * the antlers' color. The eyes and the muzzle are then found on the skull, not up among the tines.
@@ -259,6 +265,8 @@ export function beastOf(m: MeshData, joints: readonly string[], spec: Beast): Me
       c = mix(c, back, smooth(0.75, 1, 1 - low) * smooth(0.6, 0.2, fwd) * 0.6);
       c = mix(c, nose, smooth(0.9, 0.97, fwd) * smooth(0.75, 0.35, low));
     }
+    if (spec.head && (part === 'head' || part === 'ear')) c = mix(c, hex(spec.head), part === 'ear' ? 0.8 : 0.92);
+    if (spec.head && part === 'neck') c = mix(c, hex(spec.head), smooth(head.min[2] - hl * 1.1, head.min[2], z) * 0.9);
     if (part === 'ear') c = mix(c, earTip, ears[j]! >= 3 ? 0.9 : 0.3);
     if (part === 'tail') c = mix(c, tailTip, smooth(0.55, 0.9, tails[j]! / lastTail));
     // (a little of every hair its own shade)
@@ -385,6 +393,18 @@ export function beastOf(m: MeshData, joints: readonly string[], spec: Beast): Me
       }
     }
   }
+  if (spec.beak && headJ >= 0) {
+    const bc = hex(spec.beak);
+    const tip = find(inHead, (_x, y) => highOf(y) > 0.2 && highOf(y) < 0.8, (_x, _y, z) => z);
+    if (tip) {
+      // over the muzzle and hooked down at its end
+      const root: V3 = [hx, tip.p[1] + hh * 0.12, tip.p[2] - hl * 0.3];
+      const mid: V3 = [hx, tip.p[1] + hh * 0.04, tip.p[2] + hl * 0.12];
+      const end: V3 = [hx, tip.p[1] - hh * 0.26, tip.p[2] + hl * 0.2];
+      prism(on(tip.j), root, mid, hw * 0.3, hw * 0.2, bc, shade(bc, 1.1));
+      prism(on(tip.j), mid, end, hw * 0.2, 0, shade(bc, 1.1), shade(bc, 0.7));
+    }
+  }
   const spine = (part: Part): boolean => part === 'body' || part === 'neck';
   const cxTrunk = (trunk.min[0] + trunk.max[0]) / 2;
   const tw = trunk.max[0] - trunk.min[0] || 1;
@@ -428,6 +448,30 @@ export function beastOf(m: MeshData, joints: readonly string[], spec: Beast): Me
       const tone = 0.8 + hash2(v, 5, 25) * 0.45;
       prism(on(j), [x - nx * len * 0.2, y - nyy * len * 0.2, z], [x + nx * len * 0.55, y + nyy * len * 0.55 - len * 0.3, z - len * 0.9], hh * 0.085 * k, 0, shade(mc, tone * 0.82), shade(mc, tone));
       if (++n > 340) break;
+    }
+  }
+  if (spec.wings) {
+    const wc = hex(spec.wings.color);
+    const wt = hex(spec.wings.tip ?? spec.wings.color);
+    const k = spec.wings.size ?? 1;
+    const tl = trunk.max[2] - trunk.min[2] || 1;
+    const zs = trunk.max[2] - tl * 0.3;
+    for (const s of [-1, 1]) {
+      // from the top of the shoulder: an arm of the wing out and up, and the long feathers fanned back from it
+      const at = find(spine, (x, _y, z) => Math.abs(z - zs) < tl * 0.12 && s * (x - cxTrunk) > tw * 0.12, (_x, y) => y);
+      if (!at) continue;
+      const root: V3 = [at.p[0], at.p[1] - H * 0.02, at.p[2]];
+      const wrist: V3 = [root[0] + s * H * 0.3 * k, root[1] + H * 0.34 * k, root[2] - H * 0.05 * k];
+      prism(on(at.j), root, wrist, H * 0.07 * k, H * 0.045 * k, shade(wc, 0.8), wc);
+      const N = 8;
+      for (let i = 0; i < N; i++) {
+        const t = i / (N - 1);
+        // (along the arm: the inner feathers short and close to the back, the outer long and swept away behind)
+        const from: V3 = [root[0] + (wrist[0] - root[0]) * (0.25 + t * 0.75), root[1] + (wrist[1] - root[1]) * (0.25 + t * 0.75), root[2] + (wrist[2] - root[2]) * (0.25 + t * 0.75)];
+        const len = H * (0.34 + t * 0.34) * k;
+        const to: V3 = [from[0] + s * len * (0.15 + t * 0.5), from[1] - len * (0.25 - t * 0.45), from[2] - len * (0.85 - t * 0.25)];
+        prism(on(at.j), from, to, H * 0.06 * k, 0, i % 2 ? wc : shade(wc, 0.86), wt);
+      }
     }
   }
   if (spec.tuft) {

@@ -221,6 +221,7 @@ const BEASTS = {
   rat: { coat: '#7b756c', under: '#b9b1a5', back: '#4e4943', legs: '#c59a94', muzzle: '#a99f93', nose: '#e09a98', ears: '#d6a09a', tail: '#d9a6a0', eyes: { color: '#ff4a3a', size: 0.85 } },
   cat: { coat: '#d9b98c', under: '#f4e6cc', back: '#a8824e', legs: '#c8a674', muzzle: '#f8eeda', nose: '#c8807a', eyes: { color: '#8aff9a' }, pattern: { kind: 'stripes', color: '#8a683c', amount: 0.75 } },
   raptor: { coat: '#b8894e', under: '#ecd8a8', back: '#6a4526', legs: '#5a4030', muzzle: '#b8894e', nose: 'none', tail: '#3a2616', eyes: { color: '#ffe03a', size: 1.1 }, pattern: { kind: 'stripes', color: '#4a2e18', amount: 0.85 }, ridge: { color: '#c8402a', size: 1 }, fangs: true },
+  griffon: { coat: '#c89a52', under: '#ead7a6', back: '#8a6430', legs: '#7a5628', head: '#f4efe2', muzzle: '#f4efe2', nose: 'none', ears: '#d8d0c0', tail: '#5a3a18', tuft: '#4a2e12', eyes: { color: '#ffb428', size: 1.25 }, beak: '#f0b030', wings: { color: '#b08040', tip: '#f4efe2', size: 1.05 } },
 } satisfies Record<string, Beast>;
 
 // the risen beasts of the Host
@@ -354,7 +355,8 @@ put('frost-ram', { k: 'fbx_sheep', beast: BEASTS.frostRam });
 // (no great cat in the art set: a big hunter's body, its coat tawny, reads truer than a fox grown large)
 put('plains-lion', { k: 'a_wolf', beast: BEASTS.lion, size: 1.3 });
 put('jungle-panther', { k: 'a_wolf', beast: BEASTS.panther, size: 1.2 });
-put('griffon', { k: 'avian', tint: '#e0b868', size: 1.12 });
+// (a griffon is a lion with an eagle's head and wings, not a man in feathers: it was the bird-folk's model in gold)
+put('griffon', { k: 'a_wolf', beast: BEASTS.griffon, size: 1.25 });
 put('cliff-roc', { k: 'avian', tint: '#b8895f', size: 1.25 });
 put('harpy storm-harpy', { k: 'avian' });
 put('carrion-crow gibbet-crow plague-crow', { k: 'bird', tint: '#57536c', size: 0.8, float: 0.45 });

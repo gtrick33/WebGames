@@ -1375,18 +1375,32 @@ async function fbxKit(id, path, picks) {
   return pack;
 }
 
-/** A blob of slime: it hops and quivers. Gray, for the game to color. */
+/**
+ * A blob of slime: it hops and quivers. Gray, for the game to color. A dome with a darker foot and a pale crown, a
+ * shine on its shoulder, a clot at its heart, a wide-eyed face with a mouth, and drips round it on the ground (it was
+ * one plain ball with two dots, the plainest thing in a land).
+ */
 function slimeKit(id) {
   const pack = new Pack();
-  const c = [0.92, 0.92, 0.92];
+  const c = [0.9, 0.9, 0.9];
+  const deep = [0.56, 0.56, 0.6];
+  const pale = [1, 1, 1];
   const b = new Builder();
   const joints = [['root', null, [0, 0, 0]], ['body', 'root', [0, 0.42, 0]]];
-  b.blob(1, [0, 0, 0], [0.62, 0.44, 0.62], c, 10, 7);
-  b.blob(1, [0, 0.22, 0], [0.34, 0.3, 0.34], [c[0] * 1.05, c[1] * 1.05, c[2] * 1.05], 8, 5);
+  // (shaped round the ground, as it always was: half of the ball is under it, and what shows is the dome)
+  b.blob(1, [0, 0, 0], [0.62, 0.46, 0.62], (n) => (n[1] < 0.2 ? deep : n[1] > 0.8 ? pale : n[1] > 0.55 ? mixed(c, pale, 0.5) : c), 12, 9);
+  // a skirt where it spreads on the ground, and drips beyond it
+  b.blob(1, [0, 0.02, 0], [0.72, 0.1, 0.72], deep, 12, 4);
+  for (const [x, z, r] of [[0.7, 0.3, 0.12], [-0.62, 0.42, 0.1], [0.2, -0.72, 0.11], [-0.5, -0.5, 0.08]]) b.blob(1, [x, 0.03, z], [r, r * 0.6, r], c, 6, 3);
+  // the shine, and the clot it carries inside
+  b.oval(1, [-0.24, 0.3, 0.26], [0.16, 0.07, 0.1], pale, { z: 0.5, x: -0.4 }, 6, 3);
+  b.blob(1, [0.1, 0.38, -0.12], [0.2, 0.1, 0.2], mixed(c, pale, 0.7), 7, 3);
   for (const side of [-1, 1]) {
-    b.blob(1, [side * 0.2, 0.14, 0.52], [0.12, 0.14, 0.09], [1, 1, 1], 6, 4);
-    b.blob(1, [side * 0.2, 0.14, 0.59], [0.06, 0.08, 0.05], [0.04, 0.03, 0.06], 5, 3);
+    b.blob(1, [side * 0.21, 0.2, 0.5], [0.13, 0.15, 0.1], [1, 1, 1], 7, 5);
+    b.blob(1, [side * 0.2, 0.2, 0.58], [0.065, 0.085, 0.05], [0.04, 0.03, 0.06], 6, 4);
+    b.blob(1, [side * 0.2 + 0.03, 0.25, 0.62], [0.025, 0.025, 0.02], [1, 1, 1], 4, 2);
   }
+  b.oval(1, [0, 0.07, 0.6], [0.1, 0.035, 0.04], [0.1, 0.05, 0.08], null, 6, 3);
   builtRig(pack, id, joints, {
     idle: { dur: 1.2, pose: (n, j, t, u) => (n === 'body' ? { dy: Math.sin(u * 6.283) * 0.03 } : null) },
     walk: { dur: 0.7, pose: (n, j, t, u) => (n === 'root' ? { dy: Math.abs(Math.sin(u * 3.14)) * 0.34 } : null) },
