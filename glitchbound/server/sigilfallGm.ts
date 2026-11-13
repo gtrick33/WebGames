@@ -5,7 +5,7 @@
  */
 import { GLOAMKNIGHT_ITEM } from '../src/catalog/shop';
 import type { GmHeroRow, GmOrderView, GmOverview, GmPlayerDetail, GmPlayerRow } from '../src/platform/apiTypes';
-import type { D1PreparedStatement, Env } from './http';
+import { likeOf, type D1PreparedStatement, type Env } from './http';
 
 export const SAVE_KEY = 'glitchbound.sigilfall';
 const RING_KEY = 'sigilfall.ring.v1';
@@ -52,8 +52,6 @@ function heroesOf(row: Row): GmHeroRow[] {
   }
   return out;
 }
-
-const likeOf = (q: string): string => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
 /** One page of the players who have a save on the server, found by nickname, email, player id or hero name. */
 export async function listPlayers(env: Env, q: string, sort: string, offset: number, now = Date.now()): Promise<{ rows: GmPlayerRow[]; total: number; page: number }> {

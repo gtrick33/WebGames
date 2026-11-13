@@ -60,7 +60,7 @@ export async function onRequestDelete({ request, env }: Ctx): Promise<Response> 
   const user = await requireUser(env, request);
   if (user instanceof Response) return user;
   await env.DB.batch(
-    ['sessions', 'favorites', 'runs', 'bests', 'dailies', 'quest_claims', 'game_saves', 'coin_grants', 'player_emails', 'staff', 'sigilfall_orders', 'sigilfall_graves'].map((t) => env.DB.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(user.id)).concat([
+    ['sessions', 'favorites', 'runs', 'bests', 'dailies', 'quest_claims', 'game_saves', 'coin_grants', 'player_emails', 'staff', 'sigilfall_orders', 'sigilfall_graves', 'sigilfall_titles'].map((t) => env.DB.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(user.id)).concat([
       env.DB.prepare('DELETE FROM pins WHERE user_id = ?').bind(user.id),
       env.DB.prepare('DELETE FROM friends WHERE user_id = ? OR friend_id = ?').bind(user.id, user.id),
       env.DB.prepare('DELETE FROM blocks WHERE user_id = ? OR blocked_id = ?').bind(user.id, user.id),

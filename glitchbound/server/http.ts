@@ -115,6 +115,9 @@ export function utcDay(ms = Date.now()): string {
   return new Date(ms).toISOString().slice(0, 10);
 }
 
+/** A LIKE pattern that finds `q` anywhere, with its own % and _ taken literally (the query says ESCAPE '\\'). */
+export const likeOf = (q: string): string => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
 export function int(v: unknown): number {
   return typeof v === 'number' && Number.isFinite(v) ? Math.floor(v) : Number.NaN;
 }
