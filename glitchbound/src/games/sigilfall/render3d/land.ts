@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { zoneLight } from '../render/zoneLight';
 import { Build, mul } from './build';
 import { stoneGate, timberGate, type GateBuilt } from './gateways';
+import { portalMesh } from './portal';
 import { hash2 } from '../core/math';
 import { woodAt } from '../sim/woods';
 import { modelOnLot, picBody } from '../data/buildingArt';
@@ -1321,6 +1322,8 @@ export class Land3D {
   private readonly barred: boolean;
   /** What's built rather than placed: the ways into dungeons (doorways.ts), and the carpets down a hall. */
   private readonly built: THREE.Mesh[] = [];
+  /** The ways through its gates (portal.ts), each with a material of its own to let go of. */
+  private readonly portals: THREE.Mesh[] = [];
   /** The ways into dungeons that stand here, by where they go. */
   readonly ways = new Map<string, { mesh: THREE.Mesh; x: number; z: number; flames: Land3D['flames']; glows: Land3D['glows'] }>();
   private readonly opening: { way: NonNullable<ReturnType<Land3D['ways']['get']>>; t: number; fade: THREE.ShaderMaterial }[] = [];
@@ -1493,6 +1496,15 @@ export class Land3D {
     const cos = Math.cos(rot);
     const sin = Math.sin(rot);
     const at = (x: number, z: number): [number, number] => [mx + x * cos + z * sin, mz - x * sin + z * cos];
+    // the way through, filling its opening
+    if (g.portal) {
+      const way = portalMesh(g.portal.half, g.portal.high, g.portal.color, hash2(Math.round(mx) * 7 + Math.round(mz), 91));
+      const [x, z] = at(0, g.portal.z);
+      way.position.set(x, 0, z);
+      way.rotation.y = rot;
+      this.group.add(way);
+      this.portals.push(way);
+    }
     for (const f of g.flames) {
       const [x, z] = at(f.x, f.z);
       this.flames.push({ x, z, y: f.y, size: f.size });
@@ -2341,6 +2353,10 @@ export class Land3D {
     for (const b of this.built) {
       b.geometry.dispose();
       (b as THREE.InstancedMesh).dispose();
+    }
+    for (const p of this.portals) {
+      p.geometry.dispose();
+      (p.material as THREE.Material).dispose();
     }
     this.shadows.geometry.dispose();
     this.shadows.dispose();

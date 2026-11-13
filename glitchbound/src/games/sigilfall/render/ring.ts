@@ -1,3 +1,4 @@
+import { drawReticle } from './reticle';
 import { drawIcon } from './art/gameIcons';
 import { ABILITIES, type Ability } from '../arena/abilities';
 import { ARENA_H, ARENA_W, MAPS } from '../arena/maps';
@@ -908,14 +909,8 @@ export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number
       ring(g, me.x, me.y, ab.range, 'rgba(255,255,255,0.35)', 1.2);
       g.setLineDash([]);
       view.flat(p.x, p.y);
-      g.globalAlpha = 0.22;
-      g.fillStyle = ok ? ab.color : '#8a8a96';
-      g.beginPath();
-      g.ellipse(p.x, p.y, ab.area ?? 40, ab.area ?? 40, 0, 0, Math.PI * 2);
-      g.fill();
-      g.globalAlpha = 1;
-      ring(g, p.x, p.y, ab.area ?? 40, ok ? '#ffffff' : '#8a8a96', 2.2);
-      ring(g, p.x, p.y, 3, ok ? '#ffffff' : '#8a8a96', 2);
+      // (the spell's own mark, turning: render/reticle.ts)
+      drawReticle(g, p.x, p.y, ab.area ?? 40, ab.color, time, !ok);
     }
   }
   for (const f of m.fighters) {

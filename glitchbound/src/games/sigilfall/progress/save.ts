@@ -68,6 +68,8 @@ export interface Settings {
   autoTarget: boolean;
   /** Tapping a skill or the ultimate aims it at the nearest enemy (a drag still aims by hand). */
   autoAimSkills: boolean;
+  /** The Ring, with a mouse: a placed ability's key drops it at the pointer at once (off: its circle comes up, and a click drops it). */
+  quickCast: boolean;
   shake: boolean;
   /** How far back the camera stands: 1 is the game's own view, more is further out (ZOOM_MIN to ZOOM_MAX). */
   zoom: number;
@@ -101,6 +103,7 @@ export const DEFAULT_SETTINGS: Settings = {
   aimAssist: 1,
   autoTarget: true,
   autoAimSkills: true,
+  quickCast: true,
   shake: true,
   zoom: 1,
   numbers: true,
@@ -162,6 +165,7 @@ export function validateSettings(v: unknown): Settings {
     aimAssist: int(o.aimAssist, 0, 2, d.aimAssist),
     autoTarget: bool(o.autoTarget, d.autoTarget),
     autoAimSkills: bool(o.autoAimSkills, d.autoAimSkills),
+    quickCast: bool(o.quickCast, d.quickCast),
     shake: bool(o.shake, d.shake),
     zoom: num(o.zoom, ZOOM_MIN, ZOOM_MAX, d.zoom),
     numbers: bool(o.numbers, d.numbers),

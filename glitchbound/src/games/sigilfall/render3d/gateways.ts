@@ -29,6 +29,8 @@ export interface GateBuilt {
   /** Fires on it (x, z from its middle; y up), for the land to light. */
   flames: { x: number; z: number; y: number; size: number }[];
   glows: { x: number; z: number; y: number; color: string; size: number }[];
+  /** Its opening, for the way through that fills it (portal.ts): tiles each side of its middle, tall, how far back, and the next land's light. */
+  portal?: { half: number; high: number; z: number; color: string };
 }
 
 const rgb = hexRgb;
@@ -39,32 +41,19 @@ function alight(b: Build, from: number): void {
 }
 
 /**
- * What is seen through a gate: the next land's own light, low and bright over the road and going up into dark. The
- * map ends a pace past the gate, and what showed through it was bare ground in full daylight (the owner, of the gate
- * to the Whisperwood: "the light green grasping through the actual gate ... feels like incomplete zone"). It stands
- * just past the middle of the gate, so whoever goes through walks into it and is gone.
+ * What is seen through a gate: the way to the next land, a sheet of that land's light turning in on itself, from
+ * post to post and from the road to the arch (render3d/portal.ts, which the land stands in the gate). The map ends a
+ * pace past the gate, and what showed through it was bare ground in full daylight (the owner, of the gate to the
+ * Whisperwood: "the light green grasping through the actual gate ... feels like incomplete zone"). It stands just
+ * past the middle of the gate, so whoever goes through walks into it and is gone.
+ *
+ * It was two boxes of plain light with a patch of it painted on the road, and glows hung in the air before it. The
+ * owner: "the gate's glows sometimes flicker ... make it dynamic, maybe with shaders, make it look more intense and
+ * cartoony", and then, "through the whole 'hole' of our gate, without illuminating anything on the floor". So the
+ * gate itself builds none of it now: it only says where its opening is.
  */
-function veil(b: Build, glows: GateBuilt['glows'], light: string, half: number, high: number): void {
-  const c = rgb(light);
-  // (bright enough to be the thing looked at, and all of it light: its upper half went up into dark, and the dark
-  // read as the hole it was put there to fill. The owner: "increase the glow of the zone gates ... make it so that it
-  // covers the background")
-  const low = [c[0]! * 0.5 + 0.5, c[1]! * 0.5 + 0.5, c[2]! * 0.5 + 0.5];
-  const mid = [c[0]! * 0.72 + 0.16, c[1]! * 0.72 + 0.16, c[2]! * 0.72 + 0.16];
-  const top = [c[0]! * 0.55 + 0.04, c[1]! * 0.55 + 0.04, c[2]! * 0.55 + 0.04];
-  const from = b.m.nor.length;
-  // (a sheet of it across the way, a pace past the middle of the gate. A body of light running on out past the
-  // land's edge was tried, for the gates seen from their side: from the south it was a painted box on the road)
-  // (a hair inside the arch it fills, at its sides and its top: lying in the very planes of the arch's own stone it
-  // fought them for the same place, and the stone flickered as the camera moved: tests/sigilfall-zfight.test.ts)
-  const w = half - 0.012;
-  b.box(-w, -0.62, w, -0.56, 0, high * 0.45, mid, low, mid);
-  b.box(-w, -0.62, w, -0.56, high * 0.45, high - 0.015, top, mid, top);
-  // (and its light lying on the road before it)
-  b.flat(-half, -0.56, half, 0.2, 0.03, mul(low, 0.62));
-  alight(b, from);
-  glows.push({ x: 0, z: -0.3, y: 1.0, color: light, size: 46 });
-  glows.push({ x: 0, z: -0.5, y: high * 0.6, color: light, size: 40 });
+function veil(light: string, half: number, high: number): NonNullable<GateBuilt['portal']> {
+  return { half, high, z: -0.59, color: light };
 }
 
 /**
@@ -147,7 +136,7 @@ export function stoneGate(look: GateLook): GateBuilt {
     b.faceS(-half, half, -0.5, 0, 3.5, black, mul(stone, 0.16));
     b.flat(-half, -0.5, half, 0.7, 0.02, mul(stone, 0.2));
   }
-  else veil(b, glows, look.light, half, 3.5);
+  const portal = look.shut ? undefined : veil(look.light, half, 3.5);
   // the portcullis drawn up: its teeth showing under the arch
   const iron: C = [0.16, 0.15, 0.18];
   for (let x = -half + 0.7; x <= half - 0.7; x += 0.42) b.post(x, 0, 0.05, 0.0, 3.5, 3.05, 4, iron, iron);
@@ -156,7 +145,7 @@ export function stoneGate(look: GateLook): GateBuilt {
   b.box(-0.16, 0.77, 0.16, 0.8, 3.78, 4.14, cloth, cloth, cloth);
   alight(b, from);
   glows.push({ x: 0, z: 0.9, y: 3.9, color: look.light, size: 26 });
-  return { b, flames, glows };
+  return { b, flames, glows, portal };
 }
 
 /**
@@ -194,7 +183,7 @@ export function timberGate(look: GateLook): GateBuilt {
   b.box(-half - 1.5, -0.42, half + 1.5, 0.42, tall - 0.95, tall - 0.2, bark, dark, mul(bark, 1.12));
   b.box(-half - 1.3, -0.3, half + 1.3, 0.3, tall - 0.2, tall + 0.06, mul(bark, 0.9), dark, mul(bark, 0.7));
   b.box(-1.0, 0.43, 1.0, 0.5, tall - 1.5, tall - 1.0, mul(cut, 0.8), dark, cut);
-  veil(b, glows, look.light, half + 0.1, tall - 0.95);
+  const portal = veil(look.light, half + 0.1, tall - 0.95);
   // lanterns hung along it
   const n = Math.max(2, Math.round(look.span / 1.4));
   for (let i = 0; i < n; i++) {
@@ -205,5 +194,5 @@ export function timberGate(look: GateLook): GateBuilt {
     alight(b, from);
     glows.push({ x, z: 0.5, y: tall - 1.75, color: look.light, size: 13 });
   }
-  return { b, flames, glows };
+  return { b, flames, glows, portal };
 }

@@ -15,6 +15,7 @@ import { heroDollUrl, type WornLooks } from '../render/sprites';
 import { RingHelp, SetupEditor, timing } from './RingSetup';
 import { ScreenGate } from './ScreenGate';
 import { Stick } from './Stick';
+import { autoPoint as pointFor, isOut } from './ringAim';
 import { actionOf, keyName, readKeys, saveKeys, type RingKeys } from './ringKeys';
 import { KeysDialog } from './RingKeysDialog';
 
@@ -199,13 +200,6 @@ export interface MatchResult {
   dolls: string[];
 }
 
-/** Why an ability can't go right now, if that's something to show on its button. */
-function isOut(m: Match, me: Fighter | null, ab: Ability): boolean {
-  if (!me || m.phase !== 'fight') return false;
-  const why = m.blocked(me, ab);
-  return why === 'Out of sight' || why === 'Too far away' || why === 'Not enough mana' || why === 'Silenced' || (why?.endsWith('is locked') ?? false) || why === 'You can’t do that now' || why === 'Nobody to aim at';
-}
-
 /** What an ability's button does with a touch: a placed one is aimed with it, any other goes off at the press. */
 interface AimApi {
   down: (e: ReactPointerEvent<HTMLButtonElement>, ab: Ability) => void;
@@ -368,6 +362,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       setPlacing(point);
       placeAim();
     };
+    /** Where a placed ability goes when it is simply sent (ringAim.ts). */
+    const autoPoint = (id: string): { x: number; y: number } | undefined => pointFor(m, me, ABILITIES[id]);
     /** The circle is let go: dropped where it is, dropped on the target (`auto`), or put away. */
     const endAim = (how: 'place' | 'auto' | 'cancel'): void => {
       placeAim();
@@ -375,7 +371,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       aim = null;
       setPlacing(false);
       if (!a || how === 'cancel') return;
-      press(a.ab, how === 'place' ? { x: a.x, y: a.y } : undefined);
+      press(a.ab, how === 'place' ? { x: a.x, y: a.y } : autoPoint(a.ab));
     };
     aimApi.current = {
       down: (e, ab) => {
@@ -437,6 +433,15 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       if (aim?.point && aim.ab === ab.id) endAim('auto');
       else startAim(ab, mouse.x, mouse.y, null, true);
     };
+    /**
+     * Quick cast (Settings; the owner: "in the ring targeted spells could be quick cast"): a placed ability's key
+     * drops it at once where the pointer is, as far as it reaches, with no circle to click. With no pointer seen yet
+     * it goes on the target.
+     */
+    const quickKey = (ab: Ability): void => {
+      if (aim) endAim('cancel');
+      press(ab.id, me && mouse.seen ? m.reach(me, ab, toWorld(mouse.x, mouse.y)) : autoPoint(ab.id));
+    };
     /** An ability's key goes down: a placed one shows its circle for a click to drop, anything else goes at once. */
     const keyPress = (id: string, e: KeyboardEvent): void => {
       const ab = ABILITIES[id];
@@ -446,7 +451,9 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         press(id);
         return;
       }
-      if (!e.repeat) placedKey(ab);
+      if (e.repeat) return;
+      if (engine.settings.quickCast) quickKey(ab);
+      else placedKey(ab);
     };
     const keys = new Set<string>();
     const cycle = (list: Fighter[], cur: number | null): number | null => {

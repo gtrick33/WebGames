@@ -1,3 +1,4 @@
+import { TONES } from '../render/effects';
 import { useEffect, useRef, type PointerEvent as RPointerEvent } from 'react';
 import { markCombo } from './comboMark';
 import { toLocalDelta } from './turn';
@@ -77,10 +78,12 @@ function previewFor(engine: SigilEngine, slot: SlotKey, angle: number, frac: num
   const id = w.build.bar[slot];
   const spec = id ? w.build.skills[id]?.spec : undefined;
   if (!spec) return null;
-  if (spec.aim === 'ground') return { shape: 'circle', angle, dist: Math.max(16, frac * spec.range), size: spec.area || 20, cancel };
-  if (spec.aim === 'self') return { shape: 'ring', angle, dist: 0, size: spec.area, cancel };
-  if (spec.cast === 'melee') return { shape: 'cone', angle, dist: spec.arc, size: spec.area + 8, cancel };
-  return { shape: 'line', angle, dist: spec.range, size: Math.max(3, spec.radius * 2 + 2), cancel };
+  // (in the spell's own color: fire's orange, frost's pale blue)
+  const color = TONES[spec.dmgType]?.a;
+  if (spec.aim === 'ground') return { shape: 'circle', angle, dist: Math.max(16, frac * spec.range), size: spec.area || 20, cancel, color };
+  if (spec.aim === 'self') return { shape: 'ring', angle, dist: 0, size: spec.area, cancel, color };
+  if (spec.cast === 'melee') return { shape: 'cone', angle, dist: spec.arc, size: spec.area + 8, cancel, color };
+  return { shape: 'line', angle, dist: spec.range, size: Math.max(3, spec.radius * 2 + 2), cancel, color };
 }
 
 function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {

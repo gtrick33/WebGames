@@ -78,8 +78,16 @@ describe('Sigilfall’s shop: what it shows', () => {
     render(<StorePanel onClose={() => undefined} />);
     expect(screen.queryByRole('button', { name: 'Get Cinderhorn Hart' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Get Gloamknight Pack' })).toBeNull();
-    expect(screen.getByText('Yours. It’s in the Wardrobe of every hero.')).toBeTruthy();
-    expect(screen.getByText('Yours. Make a Gloamknight from the hero screen.')).toBeTruthy();
+    // (what is theirs wears a seal and says where it is, and has no price on it any more)
+    expect(screen.getAllByText('✓ Owned').length).toBe(2);
+    const hart = screen.getByText('It’s in the stable of every hero.').closest('li')!;
+    expect(hart.className).toContain('is-owned');
+    expect(hart.querySelector('.rb-store-price')).toBeNull();
+    const pack = screen.getByText('Make a Gloamknight from the hero screen.').closest('section')!;
+    expect(pack.className).toContain('is-owned');
+    expect(pack.querySelector('.rb-store-price')).toBeNull();
+    // (what isn't theirs still has its price)
+    expect(screen.getByRole('button', { name: 'Get Moonglass Hart' }).closest('li')!.querySelector('.rb-store-price')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Get Moonglass Hart' })).toBeTruthy();
     cleanup();
     await site({ shop: true });

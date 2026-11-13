@@ -11752,6 +11752,32 @@ html.rb-touch-playing textarea {
     0 0 6px rgb(0 0 0 / 0.9);
 }
 
+/* ---- the shop: what is already yours ----
+   No price on it, a green seal that says so, and a green edge round the whole card, so it is told from what is for
+   sale at a glance (it had its price still on it, and "Yours" in small pale letters under). */
+.rb-store-item.is-owned,
+.rb-store-pack.is-owned {
+  border-color: rgb(120 220 130 / 0.75);
+  box-shadow: inset 0 0 0 1px rgb(120 220 130 / 0.25), 0 0 14px rgb(90 200 110 / 0.18);
+  opacity: 1;
+}
+.rb-store-yours {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.rb-store-owned {
+  padding: 2px 9px 3px;
+  border: 2px solid #1c5a2a;
+  border-radius: 999px;
+  background: linear-gradient(#8fe89a, #3fb858);
+  color: #0c2a14;
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
+}
+
 /* ---- the HUD grows with the screen ----
    On a big monitor everything on the HUD was the size it is on a laptop, a strip of specks in the corners of a 2560
    by 1440 picture. Each piece is drawn `--hud` times its size (Game.tsx sets it from the stage: render/camera.ts

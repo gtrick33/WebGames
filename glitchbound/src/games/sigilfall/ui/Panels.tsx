@@ -1523,6 +1523,12 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
             <input type="checkbox" checked={s.autoAimSkills} onChange={(e) => set({ autoAimSkills: e.target.checked })} />
             <span>Skills aim at the nearest enemy when tapped</span>
           </label>
+          {!engine.touchMode && (
+            <label className="rb-check">
+              <input type="checkbox" checked={s.quickCast} onChange={(e) => set({ quickCast: e.target.checked })} />
+              <span>The Ring: quick cast (a placed spell drops at your pointer when you press its key)</span>
+            </label>
+          )}
           <div className="rb-seg" role="group" aria-label="Aim assist">
             {['Off', 'Light', 'Strong'].map((l, i) => (
               <button key={l} className={s.aimAssist === i ? 'is-on' : ''} onClick={() => set({ aimAssist: i })}>
