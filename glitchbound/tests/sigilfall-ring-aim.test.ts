@@ -279,8 +279,9 @@ describe('The Ring: no class much above or below the rest', () => {
 });
 
 describe('The Ring: healing in bigger fights', () => {
-  it('is a fifth stronger in 2v2 and 35% stronger in 3v3', () => {
-    expect(HEAL_BY_SIZE.slice(1)).toEqual([1, 1.2, 1.35]);
+  // (the owner, 2026-11-13: "increase the healing a tad bit more for the healers in the 2v2/3v3"; it was 1.2 and 1.35)
+  it('is 30% stronger in 2v2 and 45% stronger in 3v3', () => {
+    expect(HEAL_BY_SIZE.slice(1)).toEqual([1, 1.3, 1.45]);
     const healed = (size: number): number => {
       const side = (team: 0 | 1): FighterSetup[] => Array.from({ length: size }, () => fighter(team, 'druid', ['l-bloom', 'l-regrow', 'l-rejuv', 'l-moon']));
       const m = new Match({ seed: 9, map: 'sands', fighters: [...side(0), ...side(1)] });
@@ -293,8 +294,8 @@ describe('The Ring: healing in bigger fights', () => {
     };
     const one = healed(1);
     expect(one).toBeGreaterThan(100);
-    expect(healed(2) / one).toBeCloseTo(1.2, 1);
-    expect(healed(3) / one).toBeCloseTo(1.35, 1);
+    expect(healed(2) / one).toBeCloseTo(1.3, 1);
+    expect(healed(3) / one).toBeCloseTo(1.45, 1);
   });
 });
 

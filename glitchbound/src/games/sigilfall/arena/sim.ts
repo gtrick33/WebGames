@@ -28,8 +28,11 @@ const DR_STEPS = [1, 0.5, 0.25];
 export const BOLT_SPEED = 300;
 const BOLT_QUICKEN = 260;
 export const BOLT_R = 6;
-/** Healing is this much stronger by how many fight on a side: there is more than one enemy's damage to answer. */
-export const HEAL_BY_SIZE: readonly number[] = [1, 1, 1.2, 1.35];
+/**
+ * Healing is this much stronger by how many fight on a side: there is more than one enemy's damage to answer. Raised
+ * from 1.2 and 1.35 on the owner's "increase the healing a tad bit more for the healers in the 2v2/3v3" (2026-11-13).
+ */
+export const HEAL_BY_SIZE: readonly number[] = [1, 1, 1.3, 1.45];
 /** Healing spheres: the first rise at this, each comes back this long after it's taken, and gives this share of a life. */
 export const ORB_FIRST = 12;
 export const ORB_EVERY = 24;
@@ -125,8 +128,11 @@ export const RANGED: ReadonlySet<ClassId> = new Set<ClassId>(['mage', 'ranger', 
  * again when the talents became the whole class's (some classes' ready-made builds had leaned on a talent that made
  * their main ability a quarter stronger) and the warrior gave up most of its holds: the warrior 0.89 to 0.92, the mage
  * 0.72 to 0.74, the warlock 0.84 to 0.9 and the druid 0.81 to 0.85, which put every class between 45% and 56%.
+ * The Gloamknight 0.84 to 0.9 on 2026-11-13, when its blows gave back less of what they dealt (its self-healing made it
+ * the best in 1v1 and among the worst in teams). From then on each setup is tuned on its own abilities' numbers, in
+ * 1v1, 2v2 and 3v3 together: see the list of numbers in tests/sigilfall-ring-balance.test.ts.
  */
-export const CLASS_DMG: Readonly<Record<ClassId, number>> = { warrior: 0.92, paladin: 0.88, gloamknight: 0.84, mage: 0.74, ranger: 0.78, warlock: 0.9, priest: 0.78, druid: 0.85 };
+export const CLASS_DMG: Readonly<Record<ClassId, number>> = { warrior: 0.92, paladin: 0.88, gloamknight: 0.9, mage: 0.74, ranger: 0.78, warlock: 0.9, priest: 0.78, druid: 0.85 };
 
 export interface Aura {
   /** The ability it came from. */

@@ -5,6 +5,12 @@
  * the room, and says go as soon as both sides are full of people, or when their own ten seconds are up and at least
  * one other person came (the computer takes the empty places). Nobody in ten seconds: the computer's teams, as before.
  *
+ * Rated since the owner's notes of 2026-11-13 ("a better mmr matchmaking ... dynamic, if there's no people at all or
+ * their number is unsufficient for queue, start the bots match instantly"): a search says its rating and is sent to
+ * the waiting room nearest it, within a window that widens as rooms wait and is open to all while the queue is thin
+ * (rooms/lobby.ts `match`). When nobody else has searched that queue in the last few minutes there is nobody to wait
+ * for, and the computer's teams come at once. What a match is worth is arena/ladder.ts `stakesOf`.
+ *
  * This file is the deciding, pure: what a searcher does next, given what the room shows. net/ringSeek.ts does it.
  */
 import type { View } from '../net/ringRoom';
@@ -92,11 +98,16 @@ export function seekStep(f: SeekFacts, waited: number, fullFor: number, wrongFor
  * mean of those who gave one). A match against people is rated as one against the computer's teams is: by the same
  * rule, against that number (the owner: "same logic as the leaver penalty").
  */
-export function rivalsOf(v: View): { names: string[]; rating: number | null } {
+export function rivalsOf(v: View): { names: string[]; rating: number | null; ours: number | null } {
   const mine = v.seats.find((s) => s.n === v.you)?.pick?.team;
+  const mean = (list: typeof v.seats): number | null => {
+    const rated = list.map((s) => s.pick!.rating).filter((r): r is number => typeof r === 'number');
+    return rated.length ? Math.round(rated.reduce((a, b) => a + b, 0) / rated.length) : null;
+  };
   const them = v.seats.filter((s) => s.pick && s.pick.team !== mine);
-  const rated = them.map((s) => s.pick!.rating).filter((r): r is number => typeof r === 'number');
-  return { names: them.map((s) => s.name), rating: rated.length ? Math.round(rated.reduce((a, b) => a + b, 0) / rated.length) : null };
+  // (the side's matchmaking rating: the people on it who gave one; the computer's places on it don't count)
+  const us = v.seats.filter((s) => s.pick && s.pick.team === mine);
+  return { names: them.map((s) => s.name), rating: mean(them), ours: mean(us) };
 }
 
 /**
