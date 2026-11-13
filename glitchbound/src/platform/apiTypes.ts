@@ -1,5 +1,6 @@
 import type { Worn } from '../catalog/looks';
 import type { PublicCatalog } from '../catalog/settings';
+import type { TitleFxId } from '../catalog/titleFx';
 /** Shapes exchanged between the site and /api (Pages Functions). Shared by both sides. */
 
 export interface PublicConfig {
@@ -72,6 +73,20 @@ export interface Me {
   joinedAt: number;
   /** When the newest cloud save changed (0: none): a device that already has it skips the download. */
   savesAt?: number;
+  /** Sigilfall titles an admin gave this member (Admin › Sigilfall): any of their heroes can wear them. */
+  sigilTitles?: SigilTitleGrant[];
+}
+
+/** A Sigilfall title an admin gave a member, with the light it wears (src/catalog/titleFx.ts). */
+export interface SigilTitleGrant {
+  id: string;
+  /** The words, as the admin typed them (src/catalog/titleFx.ts cleanTitle). */
+  name: string;
+  fx: TitleFxId;
+  /** Read before the name ("Blooded Ash") rather than after it ("Ash the Kingslayer"). */
+  before: boolean;
+  /** When it was given. */
+  at: number;
 }
 
 export interface RunEndResult {
