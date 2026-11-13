@@ -32,6 +32,16 @@
   flex: 1 1 240px;
   min-width: 0;
 }
+/* The invitation: the player picker (admin/PlayerPicker.tsx), with the button at the foot of its box. */
+.qa-invite {
+  align-items: flex-end;
+}
+.qa-invite .pp {
+  flex: 1 1 320px;
+}
+.qa-invite > .btn {
+  height: 48px;
+}
 .qa-inline .field {
   flex: 1 1 160px;
   min-width: 0;

@@ -17,6 +17,7 @@ import { validateCharacter } from '../../games/sigilfall/progress/save';
 import { api, ApiError } from '../../platform/account';
 import type { GmOrderView, GmOverview, GmPlayerDetail, GmPlayerRow } from '../../platform/apiTypes';
 import { Link, navigate, useLocation } from '../../router/router';
+import { TitleGiver } from './SigilTitles';
 import './SigilfallPlayers.css';
 
 /**
@@ -313,6 +314,17 @@ function PlayerPage({ id }: { id: string }) {
           </div>
         </div>
         <Message onSend={(text, note) => send({ action: 'file', slot: -1, created: 0, heroName: '', kind: 'message', payload: { text }, label: '', note }, 'Message filed. The player sees it in the game.')} />
+      </section>
+
+      <section className="panel info-block" aria-labelledby="gm-titles">
+        <div className="admin-row">
+          <h2 id="gm-titles">
+            <Icon name="star" /> Titles
+          </h2>
+          <span className="mono info-small">account-wide</span>
+        </div>
+        <p className="info-small">A title of your own words, for any of {data.nickname}’s heroes to wear. Type it, then pick its light by how it looks.</p>
+        <TitleGiver userId={data.id} nickname={data.nickname} names={[...new Set([...(hero ? [hero.name] : []), ...heroes.flatMap((h) => (h ? [h.name] : []))])]} />
       </section>
 
       {heroes.some((h) => h) ? (

@@ -1,26 +1,32 @@
-import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { STYLES, styleOf, type LookKind, type LookSpec } from '../../catalog/looks';
 import { BannerArt, FramedAvatar } from '../../components/Looks';
 import { NO_MONEY, type MoneySettings } from '../../catalog/settings';
 import { MOUNT_EXTRAS, SIGIL_BODIES, SIGIL_GLOWS, SIGIL_SETS, sigilSetOf, type SigilBody, type SigilGlow, type SigilSpec } from '../../catalog/sigilItems';
 import { AD_FREE_ID, breaksRules, isBuiltIn, MAX_CENTS, MIN_CENTS, priceText, PRODUCTS, type Product } from '../../catalog/shop';
-import { api } from '../../platform/account';
-import type { AdminCatalog } from '../../platform/apiTypes';
+import { api, ApiError } from '../../platform/account';
+import type { AdminCatalog, AdminMember, ShopReport, ShopSale } from '../../platform/apiTypes';
 import { ADS } from '../../platform/env';
 import { Link } from '../../router/router';
+import { PlayerPicker } from './PlayerPicker';
+import { TitleGiver } from './SigilTitles';
 import type { Send } from './useAdminCatalog';
 
 /**
- * Ads and the shop: the switches, the shop's items and prices, and its sales. All off until the owner opens it. Each
- * switch says what it needs first and can't be turned on while something is missing. docs/LEGAL-READINESS.md has the
- * full list, including what's for a lawyer and an accountant.
+ * Ads and the shop: the switches, the shop's items and prices, giving things to players, and the sales. All off until the
+ * owner opens it. Each switch says what it needs first and can't be turned on while something is missing.
+ * docs/LEGAL-READINESS.md has the full list, including what's for a lawyer and an accountant.
  */
 export function MoneySection({ data, send, busy }: { data: AdminCatalog; send: Send; busy: boolean }) {
+  // something given shows at the top of the sales
+  const [given, setGiven] = useState(0);
+  const items = data.shopItems ?? PRODUCTS;
   return (
     <>
       <Switches data={data} send={send} busy={busy} />
       <Items data={data} send={send} busy={busy} />
-      <Sales items={data.shopItems ?? PRODUCTS} />
+      <Gifts items={items} onGiven={() => setGiven((n) => n + 1)} />
+      <Sales items={items} reloadKey={given} />
     </>
   );
 }
@@ -497,78 +503,243 @@ function NewItem({ taken, onAdd, onCancel }: { taken: string[]; onAdd: (p: Produ
   );
 }
 
-interface Report {
-  items: { product: string; paid: number; refunded: number; gifted: number; cents: number; currency: string | null }[];
-  recent: { id: string; product: string; status: string; amount: number | null; currency: string | null; at: number; nickname: string | null; gift: boolean }[];
+const errorText = (e: unknown, fallback: string): string => (e instanceof ApiError ? (e.message && e.message !== e.code ? e.message : fallback) : 'Network error. Try again.');
+
+/**
+ * Giving a member something, for support or a prize: pick them from the list (no typing their nickname out), then give
+ * an item from the shop or a Sigilfall title of your own words. Both go in the change log; an item never counts as money.
+ */
+function Gifts({ items, onGiven }: { items: Product[]; onGiven: () => void }) {
+  const [who, setWho] = useState<AdminMember | null>(null);
+  const [gift, setGift] = useState(AD_FREE_ID);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; bad?: boolean } | null>(null);
+  const nameOf = (id: string): string => items.find((p) => p.id === id)?.name ?? id;
+  const give = (): void => {
+    if (!who) return;
+    setBusy(true);
+    setMsg(null);
+    api('/api/admin/shop', { body: { action: 'gift', userId: who.id, product: gift } })
+      .then(
+        () => {
+          setMsg({ text: `Gave ${nameOf(gift)} to ${who.nickname}.` });
+          onGiven();
+        },
+        (e: unknown) => setMsg({ text: errorText(e, 'That didn’t work.'), bad: true }),
+      )
+      .finally(() => setBusy(false));
+  };
+  return (
+    <section className="panel info-block" aria-labelledby="ag-gifts">
+      <h2 id="ag-gifts" className="side-title">
+        Give to a player
+      </h2>
+      <p className="info-small">For support or a prize. Pick the player, then give them an item or a Sigilfall title. Everything given goes in the change log, and an item never counts as money.</p>
+      <PlayerPicker
+        label="Player"
+        value={who}
+        onChange={(m) => {
+          setWho(m);
+          setMsg(null);
+        }}
+      />
+      {who && (
+        <div className="money-gifts">
+          <form
+            className="money-gift"
+            aria-labelledby="ag-gift-item"
+            onSubmit={(e) => {
+              e.preventDefault();
+              give();
+            }}
+          >
+            <h3 id="ag-gift-item" className="admin-h3">
+              An item
+            </h3>
+            <div className="money-gift-row">
+              <select className="field" aria-label="Item to give" value={gift} onChange={(e) => setGift(e.target.value)}>
+                {items.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <button className="btn btn-sm btn-primary" disabled={busy}>
+                Give it to {who.nickname}
+              </button>
+            </div>
+            {msg && (
+              <p className="info-small" role={msg.bad ? 'alert' : 'status'}>
+                {msg.text}
+              </p>
+            )}
+          </form>
+          <div className="money-gift" role="group" aria-labelledby="ag-gift-title">
+            <h3 id="ag-gift-title" className="admin-h3">
+              A Sigilfall title
+            </h3>
+            <p className="info-small">Their own, account-wide: any of their heroes can wear it. Type the words, then pick its light by how it looks.</p>
+            <TitleGiver key={who.id} userId={who.id} nickname={who.nickname} names={[who.nickname]} />
+          </div>
+        </div>
+      )}
+    </section>
+  );
 }
 
-function Sales({ items }: { items: Product[] }) {
-  const [report, setReport] = useState<Report | null>(null);
+/** The latest purchases shown at first; Show more adds this many more. */
+const FIRST = 10;
+const MORE = 50;
+/** The most the server sends in one go. */
+const MOST = 100;
+/** The sales summary shows this many items until Show all. */
+const ITEMS_FIRST = 10;
+
+const day = (ms: number): string => new Date(ms).toISOString().slice(0, 10);
+
+function Sales({ items, reloadKey }: { items: Product[]; reloadKey: number }) {
+  const [summary, setSummary] = useState<ShopReport['items'] | null>(null);
+  const [rows, setRows] = useState<ShopSale[]>([]);
+  const [total, setTotal] = useState(0);
+  // the search the rows on show answer (until it's the one typed, they're loading), and whether more are on the way
+  const [answered, setAnswered] = useState<string | null>(null);
+  const [more, setMore] = useState(false);
   const [error, setError] = useState('');
-  const [nick, setNick] = useState('');
-  const [gift, setGift] = useState(AD_FREE_ID);
-  const load = useCallback(() => {
-    api<Report>('/api/admin/shop')
-      .then(setReport)
-      .catch(() => setError('Could not load the sales.'));
-  }, []);
-  useEffect(load, [load]);
-  const act = (body: Record<string, unknown>): void => {
-    setError('');
-    api('/api/admin/shop', { body })
-      .then(load)
-      .catch(() => setError(body.action === 'gift' ? 'No player with that nickname.' : 'That didn’t work.'));
-  };
+  const [q, setQ] = useState('');
+  const [term, setTerm] = useState('');
+  const [allItems, setAllItems] = useState(false);
+  const asked = useRef(0);
   const nameOf = (id: string): string => items.find((p) => p.id === id)?.name ?? id;
+  const loading = answered !== term;
+
+  // the search runs on the server, a moment after typing stops
+  useEffect(() => {
+    const t = window.setTimeout(() => setTerm(q.trim()), 300);
+    return () => window.clearTimeout(t);
+  }, [q]);
+
+  /** A page of what matches, after `keep` (the rows already shown); a late answer to an older question is dropped. */
+  const fetchRows = useCallback(
+    (keep: ShopSale[], limit: number) => {
+      const n = ++asked.current;
+      return api<ShopReport>(`/api/admin/shop?q=${encodeURIComponent(term)}&offset=${keep.length}&limit=${Math.min(MOST, limit)}`).then(
+        (r) => {
+          if (n !== asked.current) return;
+          // (a sale made since the first page can push one already shown onto the next)
+          const had = new Set(keep.map((s) => s.id));
+          setSummary(r.items ?? []);
+          setRows([...keep, ...(r.recent ?? []).filter((s) => !had.has(s.id))]);
+          setTotal(r.total ?? keep.length + (r.recent?.length ?? 0));
+          setError('');
+          setAnswered(term);
+          setMore(false);
+        },
+        () => {
+          if (n !== asked.current) return;
+          setError('Could not load the sales.');
+          setAnswered(term);
+          setMore(false);
+        },
+      );
+    },
+    [term],
+  );
+  // a new search, or something given: the latest ones again
+  useEffect(() => {
+    void fetchRows([], FIRST);
+  }, [fetchRows, reloadKey]);
+
+  const takeBackSale = (r: ShopSale): void => {
+    if (!window.confirm(`Take ${nameOf(r.product)} back from ${r.nickname ?? 'this deleted account'}? Refund any money in Stripe.`)) return;
+    setError('');
+    api('/api/admin/shop', { body: { action: 'takeBack', id: r.id } }).then(
+      () => fetchRows([], Math.max(FIRST, rows.length)),
+      () => setError('That didn’t work.'),
+    );
+  };
+
+  const left = total - rows.length;
+  const list = summary ?? [];
   return (
     <section className="panel info-block" aria-labelledby="ag-sales">
       <h2 id="ag-sales" className="side-title">
         Sales
       </h2>
-      {error && <p className="info-small" role="alert">{error}</p>}
-      {report && !report.items.length && <p className="info-small">No sales yet.</p>}
-      {report?.items.map((r) => (
-        <p key={r.product} className="info-small">
+      {error && (
+        <p className="info-small" role="alert">
+          {error}
+        </p>
+      )}
+      {summary && !list.length && <p className="info-small">No sales yet.</p>}
+      {(allItems ? list : list.slice(0, ITEMS_FIRST)).map((r) => (
+        <p key={r.product} className="info-small money-sum">
           <strong>{nameOf(r.product)}:</strong> {r.paid} sold, {priceText(r.cents)} taken before Stripe&rsquo;s share, {r.refunded} refunded, {r.gifted} gifted
         </p>
       ))}
-      <form
-        className="money-row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (nick.trim()) act({ action: 'gift', nickname: nick.trim(), product: gift });
-        }}
-      >
-        <div>
-          <label className="ag-field">
-            Give an item to a player, for support or a prize. It goes in the change log and never counts as money.
-            <input className="field" placeholder="Nickname" value={nick} maxLength={32} onChange={(e) => setNick(e.target.value)} />
-          </label>
-          <select className="field" aria-label="Item to give" value={gift} onChange={(e) => setGift(e.target.value)}>
-            {items.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button className="btn btn-sm" disabled={!nick.trim()}>
-          Give it
+      {list.length > ITEMS_FIRST && (
+        <button type="button" className="btn btn-sm btn-ghost" onClick={() => setAllItems(!allItems)}>
+          {allItems ? 'Show fewer items' : `Show all ${list.length} items`}
         </button>
-      </form>
-      {!!report?.recent.length && <h3 className="info-small">Latest</h3>}
-      {report?.recent.map((r) => (
-        <div key={r.id} className="money-row">
-          <span className="info-small">
-            {new Date(r.at).toISOString().slice(0, 10)} · {r.nickname ?? 'Deleted account'} · {nameOf(r.product)} · {r.gift ? 'gift' : r.currency === 'test' ? 'test purchase' : priceText(r.amount ?? 0)} · {r.status}
-          </span>
-          {r.status === 'paid' && (
-            <button className="btn btn-sm btn-ghost" onClick={() => act({ action: 'takeBack', id: r.id })}>
-              Take back
+      )}
+      <h3 className="admin-h3">Purchases</h3>
+      <div className="money-find">
+        <input className="field" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find by player, email, item or purchase id" aria-label="Find a purchase" maxLength={80} />
+        <span className="mono info-small" aria-live="polite">
+          {loading && !rows.length ? 'Loading…' : total ? `${rows.length.toLocaleString('en-US')} of ${total.toLocaleString('en-US')}${term ? ' found' : ''}` : ''}
+        </span>
+      </div>
+      {!loading && !rows.length && <p className="info-small">{term ? `No purchase matches “${term}”.` : 'No purchases yet.'}</p>}
+      {rows.length > 0 && (
+        <ul className="money-sales" aria-label="Purchases, newest first">
+          {rows.map((r) => (
+            <li key={r.id} className="money-sale">
+              <span className="money-sale-what">
+                <b>{nameOf(r.product)}</b>
+                <span className="info-small">
+                  {r.nickname ?? 'Deleted account'}
+                  {r.email ? ` · ${r.email}` : ''}
+                </span>
+              </span>
+              <span className="money-sale-how info-small">
+                {r.gift ? 'gift' : r.currency === 'test' ? 'test purchase' : priceText(r.amount ?? 0)} · {r.status}
+                <br />
+                <span className="mono">
+                  {day(r.at)} · {r.id.slice(0, 8)}
+                </span>
+              </span>
+              {r.status === 'paid' ? (
+                <button className="btn btn-sm btn-ghost" onClick={() => takeBackSale(r)}>
+                  Take back
+                </button>
+              ) : (
+                <span />
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {(left > 0 || rows.length > FIRST) && (
+        <div className="reset-row">
+          {left > 0 && (
+            <button
+              type="button"
+              className="btn btn-sm"
+              disabled={loading || more}
+              onClick={() => {
+                setMore(true);
+                void fetchRows(rows, left <= MOST ? left : MORE);
+              }}
+            >
+              {left <= MOST ? `Show all ${total.toLocaleString('en-US')}` : `Show ${MORE} more`}
+            </button>
+          )}
+          {rows.length > FIRST && (
+            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setRows(rows.slice(0, FIRST))}>
+              Show only the latest {FIRST}
             </button>
           )}
         </div>
-      ))}
+      )}
       <p className="info-small">Taking something back doesn&rsquo;t return money: refund it in Stripe, and Stripe&rsquo;s message takes the item back by itself.</p>
     </section>
   );

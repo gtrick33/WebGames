@@ -1,0 +1,113 @@
+/* The admin's player picker (PlayerPicker.tsx): a box with the matching members under it, or the one picked. */
+.pp {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.pp-label {
+  font-size: 13px;
+  font-weight: 700;
+}
+.pp-box {
+  position: relative;
+}
+/* The admin's panels scroll sideways on their own (AdminPage.css), which would cut the list off at the panel's edge:
+   while it's open it may hang out over what follows. */
+.admin .info-block:has(.pp-pop) {
+  overflow: visible;
+}
+.pp-box .field {
+  width: 100%;
+}
+.pp-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--hard-sm);
+}
+.pp-note {
+  margin: 0;
+  padding: 2px 8px;
+  color: var(--fg-3);
+  font-size: 11.5px;
+}
+.pp-list {
+  display: grid;
+  gap: 2px;
+  max-height: min(360px, 50vh);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.pp-option,
+.pp-picked {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 10px;
+}
+.pp-option {
+  cursor: pointer;
+}
+.pp-option.is-on {
+  background: var(--well);
+  box-shadow: inset 0 0 0 1.5px var(--cyan);
+}
+.pp-picked {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--well);
+}
+.pp-avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+  background: var(--violet);
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+}
+.pp-who {
+  display: grid;
+  min-width: 0;
+}
+.pp-who b,
+.pp-who small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pp-who small,
+.pp-seen {
+  color: var(--fg-2);
+  font-size: 12.5px;
+}
+.pp-seen {
+  white-space: nowrap;
+}
+@media (max-width: 520px) {
+  .pp-option .pp-seen {
+    display: none;
+  }
+  .pp-picked {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .pp-picked .pp-seen {
+    display: none;
+  }
+}
