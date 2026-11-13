@@ -41,7 +41,7 @@ const EMBERS = Array.from({ length: 18 }, (_, i) => ({ x: (i * 53) % 100, delay:
  * on the far crag, fog in the valley and embers rising from the Rift. All CSS and one small drawing: it
  * paints at once, scales with the stage, and holds still for players who ask for less motion.
  */
-function EpicSky() {
+export function EpicSky() {
   return (
     <div className="rb-epic-sky" aria-hidden="true">
       <i className="rb-epic-stars" />
@@ -130,12 +130,8 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
     );
   }
   if (rift !== null && trialsOpen(engine.save)) {
-    return (
-      <div className="rb-title is-epic is-roster">
-        <EpicSky />
-        <RiftScreen engine={engine} onBack={() => setRift(null)} />
-      </div>
-    );
+    // (on its own, as the Vigil's lobby and the Ring's are: it is laid out as they are)
+    return <RiftScreen engine={engine} onBack={() => setRift(null)} />;
   }
   return (
     <div className="rb-title is-hall">

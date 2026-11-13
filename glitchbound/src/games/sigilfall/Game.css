@@ -11579,43 +11579,23 @@ html.rb-touch-playing textarea {
     0 0 6px rgb(0 0 0 / 0.9);
 }
 
-/* ---- the Rift Trials: a calling and a path to go in as ---- */
-.rb-rift-classes {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-  gap: 6px;
+/* ---- the Rift Trials' lobby: the Vigil's lobby (rb-vlobby), with a stone on each calling and one to choose ---- */
+.rb-rlobby .rb-vlobby-class {
+  position: relative;
 }
-.rb-rift-class {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 7px 9px;
-  border: 2px solid rgb(255 255 255 / 0.14);
-  border-radius: 8px;
-  background: rgb(18 12 8 / 0.55);
-  color: var(--rb-text, #efe6d2);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.rb-rift-class strong {
-  color: var(--c, #ffd98a);
-  font-size: 13px;
-}
-.rb-rift-class span {
-  font-size: 12px;
+.rb-rlobby-stone {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 10.5px;
   font-variant-numeric: tabular-nums;
   color: #ff8a3d;
+  text-shadow: 1px 1px 0 #000;
 }
-.rb-rift-class.is-on {
-  border-color: var(--c, #ffd98a);
-  background: rgb(40 28 14 / 0.8);
+.rb-rlobby-paths {
+  flex-wrap: wrap;
 }
-.rb-rift-class.is-locked {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-.rb-rift-paths {
-  margin-top: 8px;
+.rb-rlobby-key {
+  justify-content: flex-start;
+  margin: 6px 0 2px;
 }
