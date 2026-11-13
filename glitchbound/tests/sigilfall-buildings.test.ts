@@ -4,7 +4,7 @@ import { REGIONS } from '../src/games/sigilfall/data/regions';
 import type { RegionId } from '../src/games/sigilfall/data/types';
 import { newCharacter } from '../src/games/sigilfall/progress/character';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
-import { ART_TILE, K, parseRegion, TILE } from '../src/games/sigilfall/sim/map';
+import { ART_TILE, circleHitsWall, K, parseRegion } from '../src/games/sigilfall/sim/map';
 import { emptyInput, World } from '../src/games/sigilfall/sim/world';
 
 /**
@@ -116,7 +116,8 @@ describe('Sigilfall villages and their people', () => {
     }
     // they walk (and keep to ground anyone can walk on)
     expect(w.folk.some((f, k) => Math.hypot(f.x - before[k]![0]!, f.y - before[k]![1]!) > 16)).toBe(true);
-    for (const f of w.folk) expect(w.map.solid[Math.floor(f.y / TILE) * w.map.w + Math.floor(f.x / TILE)]).toBe(0);
+    // (never inside anything: a tile with a torch on it is a tile they may cross, clear of the torch itself)
+    for (const f of w.folk) expect(circleHitsWall(w.map, f.x, f.y, 2)).toBe(false);
     // on their own random numbers: the world's draw the same with or without them
     expect(w.rand()).toBe(empty.rand());
     // nobody about in a dungeon

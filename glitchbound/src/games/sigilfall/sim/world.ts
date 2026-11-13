@@ -33,6 +33,7 @@ import { deathSound } from '../data/voices';
 import { separate, updateEnemy, updatePuppet } from './ai';
 import { refreshPets, summonPet, updatePets } from './pets';
 import { spawnFolk, updateFolk, type Folk } from './folk';
+import { herdOf, letOut, updateCritters, type Critter } from './critters';
 import { updateCasting, updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
 import { healPlayer, hurtPlayer, playerSlow, playerStunned, tickPlayerStatuses } from './combat';
 import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type PlacedMarker, type TileMap } from './map';
@@ -343,7 +344,9 @@ export class World {
   /** The pack markers that have their enemies (a conditional one gets them when it first shows). */
   private readonly packed = new Set<TileMap['markers'][number]>();
   props: { x: number; y: number; prop: string }[] = [];
-  chickens: { x: number; y: number; vx: number; vy: number; t: number; face: number }[] = [];
+  /** The animals of the place (sim/critters.ts): hens, sheep, a dog about the square. Decoration, on their own random numbers. */
+  critters: Critter[] = [];
+  private readonly critterRand: () => number;
   /** The people of the place going about their day (sim/folk.ts): decoration, on their own random numbers. */
   folk: Folk[] = [];
   private folkRand: () => number = () => 0.5;
@@ -419,6 +422,7 @@ export class World {
     this.settings = o.settings;
     this.rand = rng(o.seed);
     this.folkSeed = o.seed;
+    this.critterRand = rng(o.seed ^ 0x3c1d);
     this.build = buildHero(o.hero);
     this.flow = new Int16Array(this.map.w * this.map.h);
     this.encounters = this.region.encounters.map((def, index) => ({ def, index, state: 'idle', wave: 0, waveT: 0 }));
@@ -644,9 +648,10 @@ export class World {
       return;
     }
     const squares = this.map.markers.filter((pm) => pm.marker.kind === 'waystone').map(markerPos);
-    const r = spawnFolk(this.map, this.folkSeed, this.region.kind === 'town', this.region.kind === 'town' ? null : squares);
+    const r = spawnFolk(this.map, this.folkSeed, this.region.kind === 'town', this.region.kind === 'town' ? null : squares, (pm) => this.shown(pm));
     // (villagers keep indoors at night and while a place burns: a camp's guards stand their posts through both)
-    this.folk = calm ? r.folk : r.folk.filter((f) => f.posted);
+    // (and the people at their work go in with the rest: only the soldiers stay out)
+    this.folk = calm ? r.folk : r.folk.filter((f) => f.posted && f.soldier);
     this.folkRand = r.rand;
   }
 
@@ -750,17 +755,18 @@ export class World {
     }
   }
 
-  /** A prop that stands (lights, wells); a flock of hens is let out once, wherever it is first shown. */
+  /** A prop that stands (lights, wells); a flock of hens (or any animals: sim/critters.ts) is let out once, wherever it is first shown. */
   private addProp(pm: { tx: number; ty: number; marker: { kind: string } }, pos: { x: number; y: number }): void {
     const m = pm.marker as Extract<Marker, { kind: 'prop' }>;
-    if (m.prop !== 'chickens') {
+    const herd = herdOf(m.prop);
+    if (!herd) {
       this.props.push({ ...pos, prop: m.prop });
       return;
     }
     const key = pm.ty * this.map.w + pm.tx;
     if (this.flocks.has(key)) return;
     this.flocks.add(key);
-    for (let i = 0; i < 4; i++) this.chickens.push({ x: pos.x + (this.rand() - 0.5) * 30, y: pos.y + (this.rand() - 0.5) * 20, vx: 0, vy: 0, t: this.rand() * 2, face: 1 });
+    this.critters.push(...letOut(herd, pos.x, pos.y, this.critterRand));
   }
 
   /** A pack's enemies, around its spot (again, when it comes back). */
@@ -2498,29 +2504,7 @@ export class World {
       for (const q of this.pets) if (!q.dead) this.folkAround.push(q);
       updateFolk(this.folk, this.map, this.folkRand, dt, this.folkAround);
     }
-    for (const c of this.chickens) {
-      c.t -= dt;
-      if (c.t <= 0) {
-        c.t = 1 + this.rand() * 3;
-        const a = this.rand() * TAU;
-        const s = this.rand() < 0.4 ? 0 : 18;
-        c.vx = Math.cos(a) * s;
-        c.vy = Math.sin(a) * s;
-        if (c.vx) c.face = c.vx < 0 ? -1 : 1;
-      }
-      // they don't like heroes
-      const p = this.player;
-      if (dist(c.x, c.y, p.x, p.y) < 22) {
-        const a = Math.atan2(c.y - p.y, c.x - p.x);
-        c.vx = Math.cos(a) * 60;
-        c.vy = Math.sin(a) * 60;
-        c.face = c.vx < 0 ? -1 : 1;
-        c.t = 0.6;
-      }
-      const r = moveCircle(this.map, c.x, c.y, 3, c.vx * dt, c.vy * dt);
-      c.x = r.x;
-      c.y = r.y;
-    }
+    if (this.critters.length) updateCritters(this.critters, this.map, this.player, this.critterRand, dt);
     for (const n of this.npcs) {
       n.bob += dt;
       const p = this.player;

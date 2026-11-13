@@ -11,6 +11,8 @@ import { STORY_ARRIVE, STORY_FADE } from '../sim/pets';
 import { SUMMON_TIME, type World } from '../sim/world';
 import type { ClassId } from '../data/types';
 import type { Enemy, Ghost, NpcActor, Pet } from '../sim/types';
+import type { FolkJob } from '../sim/folk';
+import type { CritterKind } from '../sim/critters';
 import { heightFromRadius, Motion, PERSON_H, type Cast, type ClipFade, type Colossus } from './cast';
 import type { Held } from './dress';
 import { kitOf } from './kits';
@@ -50,6 +52,29 @@ const STATUE_SWORD: Held = { kind: 'sword', tint: '#b0b0b0' };
 /** A war camp's own soldiers (sim/folk.ts): the garrison's mail and blue cloak, a sword and shield for those on guard. */
 const SOLDIER_LOOK = TOWNSFOLK_LOOKS['highwall-soldier']!;
 const SOLDIER_SWORD: Held = { kind: 'sword', tint: '#c8ccd4' };
+/** What the people at their posts hold and are seen doing (sim/folk.ts FolkJob; a clip of the people's rig, or their own standing). */
+const WORK: Record<FolkJob, { held: Held | null; clip?: string }> = {
+  guard: { held: SOLDIER_SWORD },
+  vendor: { held: null },
+  smith: { held: { kind: 'hammer', tint: '#8a8690' }, clip: 'chop' },
+  farmer: { held: { kind: 'spear', tint: '#a8824e' }, clip: 'work' },
+  woodcutter: { held: { kind: 'axe', tint: '#9a9aa4' }, clip: 'chop' },
+  hunter: { held: { kind: 'bow', tint: '#8a6238' } },
+  fisher: { held: { kind: 'staff', tint: '#a8824e' } },
+  traveler: { held: null, clip: 'sit' },
+  pilgrim: { held: null, clip: 'channel' },
+  herder: { held: { kind: 'staff', tint: '#a8824e' } },
+};
+/** An animal of a place (sim/critters.ts): its kit, how tall it stands (world px) and its shadow. */
+const CRITTER: Record<CritterKind, readonly [string, number, number]> = {
+  chicken: ['chicken', 15, 5],
+  sheep: ['farm-sheep', 19, 8],
+  pig: ['farm-pig', 15, 8],
+  dog: ['farm-dog', 17, 7],
+  cat: ['cat', 11, 5],
+  horse: ['farm-horse', 38, 11],
+  deer: ['stag', 34, 9],
+};
 const ECHOES = new Set(['echo-of-ysane', 'echo-of-ysane-mere', 'echo-of-ysane-quay', 'echo-of-the-children']);
 const ECHO_TINT = [0.74, 0.88, 1.3] as const;
 /** A memory of summer: the Hallow King's family, coming to him in his last hour (World.kin). */
@@ -208,9 +233,11 @@ export class WorldCast {
       const a = 1 - (w.time - n.left) / (NPCS[n.id]?.down ? 3.2 : 1.2);
       if (a > 0) this.syncNpc(cast, n, w, dt, time, a);
     }
-    for (const c of w.chickens) {
-      cast.shadow(c.x, c.y, 5);
-      cast.creature('chicken', c.x, c.y, this.easeTurn(c, c.face < 0 ? -Math.PI / 2 : Math.PI / 2, 10, dt), 15, Math.hypot(c.vx, c.vy) > 4 ? 'walk' : 'idle', time + c.x * 0.1, true);
+    for (const c of w.critters) {
+      if (!shown(c.x, c.y)) continue;
+      const [sprite, tall, shade] = CRITTER[c.kind];
+      cast.shadow(c.x, c.y, shade);
+      cast.creature(sprite, c.x, c.y, this.easeTurn(c, c.face < 0 ? -Math.PI / 2 : Math.PI / 2, 10, dt), tall, Math.hypot(c.vx, c.vy) > 4 ? 'walk' : 'idle', time + c.x * 0.1, true);
     }
     if (o.folk > 0.02) {
       for (const f of w.folk) {
@@ -225,7 +252,11 @@ export class WorldCast {
         m.set(f.moving ? 'walk' : 'idle', true, 0.2);
         m.advance(f.moving ? dt * stride('walk', f.speed, PERSON_H) : dt);
         if (f.soldier) cast.person(SOLDIER_LOOK, f.posted ? SOLDIER_SWORD : null, !!f.posted, f.x, f.y, turnOf(f.a), m, { alpha: o.folk });
-        else cast.person(passerbyLook(f.look, w.region.theme), null, false, f.x, f.y, turnOf(f.a), m, { alpha: o.folk });
+        else if (f.posted && f.job) {
+          // at their work: the tool of their trade in hand, and seen at it (a smith's hammer falls, travelers sit)
+          const work = WORK[f.job];
+          cast.person(passerbyLook(f.look, w.region.theme), work.held, false, f.x, f.y, turnOf(f.a), work.clip ? { clip: work.clip, t: time + f.look * 0.61, loop: true } : m, { alpha: o.folk });
+        } else cast.person(passerbyLook(f.look, w.region.theme), null, false, f.x, f.y, turnOf(f.a), m, { alpha: o.folk });
       }
     }
     for (const c of w.chests) {

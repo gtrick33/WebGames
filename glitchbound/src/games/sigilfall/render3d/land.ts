@@ -10,7 +10,7 @@ import { ARENAS, type Floor } from '../data/dungeongen';
 import { REGIONS } from '../data/regions';
 import { GREAT, type GreatPart } from '../data/greatworks';
 import { THEMES, type ThemeLook, type TreeKind } from '../data/themes';
-import type { RegionDef } from '../data/types';
+import type { PropFace, RegionDef } from '../data/types';
 import { ART_TILE, K, TILE, type PlacedMarker, type TileMap } from '../sim/map';
 import { hexRgb } from './kits';
 import type { Colossus } from './cast';
@@ -158,6 +158,9 @@ const ENTRANCES: Record<string, { m: string; w: number; tint?: string }> = {
   'spire-of-the-rift': { m: 'arch', w: 3, tint: '#c0a0f0' },
   'vaelmoor-remembered': { m: 'arch', w: 3, tint: '#d8d8f0' },
 };
+
+/** How far a prop is turned to face a way that isn't south (data/types.ts PropFace). */
+const FACE_TURN: Record<PropFace, number> = { e: Math.PI / 2, w: -Math.PI / 2, n: Math.PI };
 
 /** The size a model takes to keep within a prop's limits. */
 function sizeWithin(m: MeshData, def: PropDef): { sx: number; sy: number; sz: number; rot: number } {
@@ -1937,7 +1940,7 @@ export class Land3D {
       const z = pm.ty + 0.5;
       const wx = x * TILE;
       const wy = (pm.ty + 1) * TILE - 3;
-      if (m.kind === 'prop') this.placeProp(m.prop, pm.tx, pm.ty);
+      if (m.kind === 'prop') this.placeProp(m.prop, pm.tx, pm.ty, m.face);
       else if (m.kind === 'waystone') {
         if (this.keepIt({ x: wx, y: wy, kind: 'waystone', dy: -30 })) {
           // (of the land's own stone, its rune in the land's own light)
@@ -2071,7 +2074,7 @@ export class Land3D {
     for (const p of work.parts) this.placePart(p, tx + 0.5, ty + 0.5);
   }
 
-  private placeProp(prop: string, tx: number, ty: number): void {
+  private placeProp(prop: string, tx: number, ty: number, face?: PropFace): void {
     const [name, param] = prop.split(':') as [string, string | undefined];
     if (name === 'great') {
       this.placeGreat(param!, tx, ty);
@@ -2100,7 +2103,8 @@ export class Land3D {
     const c = tint ? hexRgb(tint) : ([1, 1, 1] as const);
     // (a little turn of its own for loose things; furniture stands square)
     const loose = !def.across && !def.flat && (def.w ?? TILE) < 30;
-    const rot = size.rot + (loose ? (hash2(tx, ty, 3) - 0.5) * 0.5 : 0);
+    // (and turned to the way it faces: its front is south as it's made)
+    const rot = size.rot + (loose ? (hash2(tx, ty, 3) - 0.5) * 0.5 : 0) + (face ? FACE_TURN[face] : 0);
     // (a building-pack model carries the land's own roof color)
     const model = def.evergreen ? `${def.m}#evergreen` : def.m.startsWith('b_') && !tint ? `${def.m}#${this.roofOf(tx, ty)}` : def.m;
     // (its middle on the tile, whatever the model's own origin and however it's turned)

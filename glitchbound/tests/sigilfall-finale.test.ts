@@ -181,7 +181,7 @@ describe('Sigilfall: the Epilogue and the postgame', () => {
   it('the camp goes home down the south road, and Briarhollow is a village again', () => {
     const w = newWorld('briarhollow', heroAt('epilogue-the-camp-goes-home', 60, ['camp-scouts', 'camp-grain', 'camp-riders']));
     expect(npcHere(w, 'ranger-cole')).toBe(true);
-    expect(w.props.filter((p) => p.prop === 'tent').length).toBeGreaterThan(0);
+    expect(w.props.filter((p) => p.prop === 'camp-tent').length).toBeGreaterThan(0);
     goTo(w, 'briar-square');
     run(w, 0.3);
     expect(w.story.run?.def.id).toBe('epilogue-the-camp');
@@ -190,7 +190,7 @@ describe('Sigilfall: the Epilogue and the postgame', () => {
     const home = newWorld('briarhollow', w.hero);
     expect(home.storyState?.id).toBe('rebuilt');
     for (const id of ['ranger-cole', 'carter-wenna', 'rider-alder']) expect(npcHere(home, id), id).toBe(false);
-    expect(home.props.filter((p) => p.prop === 'tent')).toHaveLength(0);
+    expect(home.props.filter((p) => p.prop === 'camp-tent')).toHaveLength(0);
     expect(home.props.filter((p) => p.prop === 'market-stall').length).toBeGreaterThanOrEqual(2);
     expect(npcHere(home, 'elyra')).toBe(true);
   });
