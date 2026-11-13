@@ -20,6 +20,8 @@ export interface LiveMatch {
   rival: Comp;
   skill: number;
   rivalRating: number;
+  /** Against people in 2v2 and 3v3: the mean rating of the player's own side, which the stakes are worked from. */
+  ourRating?: number;
   format: Format;
   stakes: { format: number; rating: number; rank: string; color: string; win: number; lose: number; rival: string; blurb: string; rivalRating: number };
   /** When it was last seen going (ms). */

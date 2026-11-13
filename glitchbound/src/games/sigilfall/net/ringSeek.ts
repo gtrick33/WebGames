@@ -4,7 +4,7 @@
  * says something new. Once the host says go the room's word is handed over, and the search keeps the connection to
  * notice anyone leaving the match: it ends there for everyone else.
  */
-import { quickMatch } from '../../../platform/rooms';
+import { ratedMatch } from '../../../platform/rooms';
 import { DROP_MS, leftBehind, SEEK_MS, seekFacts, seekStep } from '../arena/queue';
 import type { Format } from '../arena/ranks';
 import { Link } from './link';
@@ -36,6 +36,21 @@ export interface SeekOptions {
   name: string;
   pick: Omit<Pick, 'team'>;
 }
+
+/** A name for this device's searches (not the player's: only so the queue doesn't count their own last search as someone else). */
+function searcherId(): string {
+  const make = (): string => Array.from({ length: 16 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
+  try {
+    const kept = localStorage.getItem('sigilfall.ring.who');
+    if (kept && /^[a-z0-9]{6,24}$/.test(kept)) return kept;
+    const id = make();
+    localStorage.setItem('sigilfall.ring.who', id);
+    return id;
+  } catch {
+    return (memo ??= make());
+  }
+}
+let memo: string | undefined;
 
 /** How many rooms a search will try before it just waits its time out. */
 const MAX_ROOMS = 4;
@@ -70,9 +85,11 @@ export class Seek {
 
   private async find(): Promise<void> {
     try {
-      const found = await quickMatch('sigilfall-ring', this.skip, String(this.o.format));
+      // (rated: sent to players near this rating; nobody else around in this queue: the computer at once)
+      const found = await ratedMatch('sigilfall-ring', this.skip, String(this.o.format), this.o.pick.rating ?? 1000, searcherId());
       if (this.state !== 'look') return;
       const code = found.code;
+      if (code === null) return this.bots();
       this.link = new Link<View, Action>(code, this.o.name, {
         onView: () => this.view(code),
         onRelay: (n, d) => this.h.onRelay(n, d),

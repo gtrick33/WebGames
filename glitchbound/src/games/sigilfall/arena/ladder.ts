@@ -13,15 +13,35 @@ export { FORMATS, NEW_STANDING, nextRank, rankOf, RANKS, type Format, type Stand
  * for changing a rating are pure so they can be tested.
  */
 
-/** The elo rule: what you stood to win against what you were expected to. */
-export function ratingChange(mine: number, theirs: number, won: boolean): number {
+/** How far a match moves a rating at most (K). */
+export const K_BASE = 32;
+/** ...in a player's first PLACEMENT matches of a format, while the ladder is still finding where they belong. */
+export const K_NEW = 48;
+export const PLACEMENT = 10;
+export const kFor = (s: Standing): number => (s.wins + s.losses < PLACEMENT ? K_NEW : K_BASE);
+
+/**
+ * The elo rule, as rated arenas use it: what you stood to win against what you were expected to. Against a side rated
+ * below yours a win is expected, so it pays little and a loss costs a lot; against an even side both are about half
+ * of K; against a side above yours a win pays a lot and a loss costs little (the owner: "queuing vs lower players
+ * should give less rate on win and take more on loss ... vs higher players should let u lose less and win more").
+ */
+export function ratingChange(mine: number, theirs: number, won: boolean, kf = K_BASE): number {
   const expected = 1 / (1 + 10 ** ((theirs - mine) / 400));
-  return Math.round(32 * ((won ? 1 : 0) - expected));
+  return Math.round(kf * ((won ? 1 : 0) - expected));
 }
 
-/** `k`: a loss counts this many times over (a leaver's: LEAVER_K). */
-export function afterMatch(s: Standing, theirs: number, won: boolean, k = 1): { next: Standing; change: number; rankUp: string | null } {
-  const change = Math.round(ratingChange(s.rating, theirs, won) * (won ? 1 : k));
+/**
+ * What a match stands to win and lose, before it begins. `ours`: the rating the expectation is worked from: in 2v2 and
+ * 3v3 against people, the mean of the player's own side (their team's matchmaking rating), as against the other side's.
+ */
+export function stakesOf(s: Standing, theirs: number, ours = s.rating): { win: number; lose: number } {
+  return { win: ratingChange(ours, theirs, true, kFor(s)), lose: -ratingChange(ours, theirs, false, kFor(s)) };
+}
+
+/** `k`: a loss counts this many times over (a leaver's: LEAVER_K). `ours`: as stakesOf. */
+export function afterMatch(s: Standing, theirs: number, won: boolean, k = 1, ours = s.rating): { next: Standing; change: number; rankUp: string | null } {
+  const change = Math.round(ratingChange(ours, theirs, won, kFor(s)) * (won ? 1 : k));
   // never below the floor: a bad night doesn't dig a hole that takes a week to climb out of
   const rating = Math.max(800, s.rating + change);
   const before = rankOf(s.best);
@@ -183,7 +203,7 @@ export function forfeitLive(l: LiveMatch): number {
   }
   const save = readRing();
   const was = standingOf(save, l.format);
-  const out = afterMatch(was, l.rivalRating, false, LEAVER_K);
+  const out = afterMatch(was, l.rivalRating, false, LEAVER_K, l.ourRating ?? was.rating);
   writeRing({ ...save, standings: { ...save.standings, [l.format]: out.next } });
   clearLive();
   return out.change;

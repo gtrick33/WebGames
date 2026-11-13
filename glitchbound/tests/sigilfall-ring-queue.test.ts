@@ -234,8 +234,8 @@ describe('Sigilfall: a match against people is rated, and a leaver pays for it a
 
   it('each side is up against the other side’s own rating', () => {
     const s = begun();
-    expect(rivalsOf(viewFor(s, KEY(0))!)).toEqual({ names: ['P1', 'P3'], rating: 1300 });
-    expect(rivalsOf(viewFor(s, KEY(1))!)).toEqual({ names: ['P0', 'P2'], rating: 1050 });
+    expect(rivalsOf(viewFor(s, KEY(0))!)).toEqual({ names: ['P1', 'P3'], rating: 1300, ours: 1050 });
+    expect(rivalsOf(viewFor(s, KEY(1))!)).toEqual({ names: ['P0', 'P2'], rating: 1050, ours: 1300 });
     // (so the same result moves the two sides the same way an even match against the computer would)
     expect(ratingChange(1000, 1300, true)).toBeGreaterThan(ratingChange(1400, 1050, true));
   });

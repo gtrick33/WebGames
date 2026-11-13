@@ -74,17 +74,26 @@ export async function listRooms(env: Env, game?: RoomGame): Promise<ListedRoom[]
   return res?.ok ? ((await res.json()) as { rooms: ListedRoom[] }).rooms : null;
 }
 
+/** A rated search (The Ring): the searcher's rating, a name for them kept on their device, and whether an empty queue sends them to the computer at once. */
+export interface RatedSearch {
+  rating: number;
+  who: string;
+  alone?: 'bots';
+}
+
 /**
  * Quick match: a public room of this game that is about to start and has a free seat (not one of `skip`,
  * the rooms this player already found full), else a new one held for whoever searches next. `kind`: which of the
- * game's queues, for a game with more than one.
+ * game's queues, for a game with more than one. `rated`: see RatedSearch; then `code` is null when nobody else is
+ * around and the searcher would rather fight the computer, and `active` is how many others searched lately.
  */
-export async function matchRoom(env: Env, game: RoomGame, skip: readonly string[] = [], kind = ''): Promise<{ code: string; created: boolean } | null> {
+export async function matchRoom(env: Env, game: RoomGame, skip: readonly string[] = [], kind = '', rated?: RatedSearch): Promise<{ code: string | null; created: boolean; active?: number } | null> {
   const codes = skip.filter(validCode).slice(0, 10).join(',');
   // (a game with several queues names the one it wants: The Ring's 1v1, 2v2 and 3v3)
   const queue = /^[a-z0-9-]{1,12}$/.test(kind) ? kind : '';
+  const extra = rated && Number.isFinite(rated.rating) && /^[a-z0-9]{6,24}$/i.test(rated.who) ? `&rating=${Math.round(rated.rating)}&who=${rated.who}${rated.alone ? '&alone=bots' : ''}` : '';
   const res = await lobbyStub(env)
-    ?.fetch(`https://room/lobby/match?game=${game}${codes ? `&skip=${codes}` : ''}${queue ? `&kind=${queue}` : ''}`, { method: 'POST' })
+    ?.fetch(`https://room/lobby/match?game=${game}${codes ? `&skip=${codes}` : ''}${queue ? `&kind=${queue}` : ''}${extra}`, { method: 'POST' })
     .catch(() => null);
-  return res?.ok ? ((await res.json()) as { code: string; created: boolean }) : null;
+  return res?.ok ? ((await res.json()) as { code: string | null; created: boolean; active?: number }) : null;
 }

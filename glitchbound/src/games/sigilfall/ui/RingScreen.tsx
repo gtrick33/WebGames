@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { fullBar, PRESETS, SLOTS } from '../arena/abilities';
-import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, namedApart, nameFor, ratingChange, readRing, setsOf, skillAt, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave } from '../arena/ladder';
+import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, namedApart, nameFor, readRing, setsOf, skillAt, stakesOf, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave } from '../arena/ladder';
 import { MAP_IDS, MAPS } from '../arena/maps';
 import { bestRating, FORMATS, nextRank, rankOf, type Format } from '../arena/ranks';
 import { rewardsBetween } from '../arena/rewards';
@@ -188,8 +188,9 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     const seed = (Math.random() * 2 ** 31) >>> 0;
     const { comp, fighters } = drawOpponents(format, seed);
     const team: FighterSetup[] = [{ team: 0, cls: pick, name: hero, bar, oath, talents, human: true }, ...mates.slice(0, format - 1).map((x, i) => ({ team: 0 as const, cls: x.cls, name: nameFor(x.cls, seed + i + 11), bar: PRESETS[x.cls][x.preset]!.bar, talents: PRESETS[x.cls][x.preset]!.talents, oath: 'will' }))];
-    // the other side's rating lands a little either way of yours
-    const rivalRating = Math.max(800, standing.rating + (seed % 121) - 60);
+    // the other side's rating lands either way of yours, up to 150 (what it pays and costs follows: stakesOf), and
+    // how sharp the computer plays follows it
+    const rivalRating = Math.max(800, standing.rating + (seed % 301) - 150);
     setResult(null);
     setPage('play');
     setRun((r) => r + 1);
@@ -199,7 +200,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
       skill: skillAt(rivalRating),
       rivalRating,
       format,
-      stakes: { format, rating: standing.rating, rank: rankOf(standing.best).name, color: rankOf(standing.best).color, win: ratingChange(standing.rating, rivalRating, true), lose: -ratingChange(standing.rating, rivalRating, false), rival: comp.name, blurb: comp.blurb, rivalRating },
+      stakes: { format, rating: standing.rating, rank: rankOf(standing.best).name, color: rankOf(standing.best).color, ...stakesOf(standing, rivalRating), rival: comp.name, blurb: comp.blurb, rivalRating },
     };
     // (kept as it goes: a player who leaves it while it's going can come back to it, or lose as a leaver)
     writeLive({ ...next, at: Date.now() });
@@ -207,10 +208,10 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   };
 
   /** A rated match is settled: the standing moves, and what the climb has earned is worked out. */
-  const settleFor = (f: Format, rivalRating: number, won: boolean, k = 1): RatingOutcome => {
+  const settleFor = (f: Format, rivalRating: number, won: boolean, k = 1, ours?: number): RatingOutcome => {
     clearLive();
     const was = standingOf(latest.current, f);
-    const out = afterMatch(was, rivalRating, won, k);
+    const out = afterMatch(was, rivalRating, won, k, ours ?? was.rating);
     // (what the climb has earned: the best of all three formats counts, so a reward is given once)
     const bestWas = bestRating();
     commit((now) => ({ ...now, standings: { ...now.standings, [f]: out.next } }));
@@ -257,6 +258,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
           const st = standingOf(latest.current, v.format);
           const them = rivalsOf(v);
           const rivalRating = them.rating ?? st.rating;
+          // (2v2 and 3v3: worked from the two sides' means, as rated arenas do; 1v1: that is just your own)
+          const ourRating = them.ours ?? st.rating;
           const rival = listed(them.names) || 'the other team';
           const rk = rankOf(st.best);
           const live: LiveMatch = {
@@ -264,8 +267,9 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
             rival: { name: rival, blurb: '', team: [] },
             skill: 0,
             rivalRating,
+            ourRating,
             format: v.format,
-            stakes: { format: v.format, rating: st.rating, rank: rk.name, color: rk.color, win: ratingChange(st.rating, rivalRating, true), lose: -ratingChange(st.rating, rivalRating, false), rival, blurb: '', rivalRating },
+            stakes: { format: v.format, rating: st.rating, rank: rk.name, color: rk.color, ...stakesOf(st, rivalRating, ourRating), rival, blurb: '', rivalRating },
             at: Date.now(),
             people: true,
           };
@@ -439,7 +443,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         onSnap={live ? (snap) => writeLive({ ...live, snap, at: Date.now() }) : undefined}
         onLeave={(started) => {
           // (walking out of a match against people: a leaver's loss, and the match ends for the others)
-          if (live && started) settleFor(live.format, live.rivalRating, false, LEAVER_K);
+          if (live && started) settleFor(live.format, live.rivalRating, false, LEAVER_K, live.ourRating);
           else if (live) clearLive();
           if (roomFight.matched) endSeek();
           else if (roomFight.host) linkRef.current?.send({ t: 'end' });
@@ -450,7 +454,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
           if (live) {
             const was = standingOf(latest.current, live.format);
             clearLive();
-            rating = r.draw ? { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: 0 } : settleFor(live.format, live.rivalRating, r.won);
+            rating = r.draw ? { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: 0 } : settleFor(live.format, live.rivalRating, r.won, 1, live.ourRating);
             if (rating.rankUp) engine.sound.play('levelup');
           }
           setResult({ r, rating, rival: live?.rival.name, kind: roomFight.matched ? 'matched' : 'room' });

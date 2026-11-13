@@ -29,7 +29,7 @@ describe('ring leavers', () => {
   it('a match left while going waits a while, then counts as a leaver’s loss', () => {
     expect(liveGoing(live('fight'))).toBe(true);
     expect(liveGoing(live('fight', Date.now() - LIVE_WAIT - 1))).toBe(false);
-    writeRing({ standings: { 1: { ...NEW_STANDING, rating: 1000 } }, sets: {} });
+    writeRing({ standings: { 1: { ...NEW_STANDING, rating: 1000, wins: 10, losses: 10 } }, sets: {} });
     const l = live('fight');
     writeLive(l);
     const change = forfeitLive(l);
@@ -39,7 +39,7 @@ describe('ring leavers', () => {
   });
 
   it('left before the gates lifted costs nothing', () => {
-    writeRing({ standings: { 1: { ...NEW_STANDING, rating: 1000 } }, sets: {} });
+    writeRing({ standings: { 1: { ...NEW_STANDING, rating: 1000, wins: 10, losses: 10 } }, sets: {} });
     expect(forfeitLive(live('gates'))).toBe(0);
     expect(readRing().standings[1]!.rating).toBe(1000);
   });

@@ -250,6 +250,7 @@ export class Room {
 
   /** The "lobby" object: the public room list and quick match (lobby.ts). */
   private lobbyRooms: lobbyList.Lobby | null = null;
+  private lobbySeekers: lobbyList.Seekers | null = null;
 
   private async lobby(url: URL, request: Request, now: number): Promise<Response> {
     const rooms = (this.lobbyRooms ??= (await this.ctx.storage.get<lobbyList.Lobby>('lobby')) ?? {});
@@ -274,20 +275,30 @@ export class Room {
       if (!isGameId(game) || !this.env.ROOM) return json({ error: 'bad' }, 400);
       const skip = (url.searchParams.get('skip') ?? '').split(',').filter(Boolean);
       const kind = lobbyList.cleanKind(url.searchParams.get('kind'));
-      const found = lobbyList.match(rooms, game, now, skip, kind);
+      // a rated search (The Ring) says its rating, who is searching (to count who else is around) and whether it
+      // would rather fight the computer at once than wait in an empty queue
+      const r = Number(url.searchParams.get('rating'));
+      const rating = url.searchParams.has('rating') && Number.isFinite(r) ? Math.max(0, Math.min(5000, r)) : undefined;
+      const who = lobbyList.cleanWho(url.searchParams.get('who'));
+      const seekers = (this.lobbySeekers ??= (await this.ctx.storage.get<lobbyList.Seekers>('seekers')) ?? {});
+      const active = who ? lobbyList.seen(seekers, game, kind, who, now) : 0;
+      if (who) await this.ctx.storage.put('seekers', seekers);
+      const found = lobbyList.match(rooms, game, now, skip, kind, rating);
       if (found) {
         await store();
-        return json({ code: found.code, created: false });
+        return json({ code: found.code, created: false, active: Math.max(1, active) });
       }
+      // nobody else is around in this queue: the computer, at once, rather than ten seconds of an empty room
+      if (url.searchParams.get('alone') === 'bots' && active === 0) return json({ code: null, created: false, active: 0 });
       // Nobody waiting: open a room and hold it, before waiting on anything, so the next searcher lands in it too.
       for (let attempt = 0; attempt < 5; attempt++) {
         const code = newCode();
         if (rooms[code]) continue;
-        lobbyList.reserve(rooms, code, game, QUICK[game].seats, now, kind);
+        lobbyList.reserve(rooms, code, game, QUICK[game].seats, now, kind, rating);
         const res = await this.env.ROOM.get(this.env.ROOM.idFromName(code)).fetch(`https://room/init?code=${code}&game=${game}&matched=1${kind ? `&kind=${kind}` : ''}`, { method: 'POST' });
         if (res.ok) {
           await store();
-          return json({ code, created: true });
+          return json({ code, created: true, active });
         }
         delete rooms[code];
         if (res.status !== 409) break;

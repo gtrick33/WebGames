@@ -1,6 +1,6 @@
 import { ABILITIES, DASH, superOf, type Ability } from './abilities';
 import { ARENA_H, ARENA_W } from './maps';
-import { BASE_SPEED, HERO_R, type Fighter, type Match, type MoveInput, type Zone } from './sim';
+import { BASE_SPEED, HERO_R, RANGED, type Fighter, type Match, type MoveInput, type Zone } from './sim';
 
 /**
  * A computer player for The Ring. It plays by the player's rules: it sees what a player sees, and presses the same
@@ -481,6 +481,16 @@ function walk(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[],
   if (incoming && skill > 0.5 && (hpShare(f) < 0.65 || (ABILITIES[incoming.cast!.ab]?.cast ?? 0) > 2.2) && b.rand() < skill) {
     const hide = hidingSpot(m, f, incoming);
     if (hide) return steer(m, f, b, hide.x, hide.y);
+  }
+  // pillar play, as people do it: hurt, with a caster or an archer free to shoot, a sharp player puts stone between
+  // them and waits for a heal, a sphere or the other's cooldowns (curses and poisons keep burning behind it, which is
+  // what a curse is for). Not a healer's game: they stand where they can be seen by those they keep alive.
+  if (!healer && skill >= 0.7 && hpShare(f) < 0.4) {
+    const shooter = enemies.find((e) => RANGED.has(e.cls) && !m.held(e) && m.sees(e, f) && Math.hypot(e.x - f.x, e.y - f.y) < 200);
+    if (shooter && b.rand() < skill * 0.8) {
+      const hide = hidingSpot(m, f, shooter);
+      if (hide) return steer(m, f, b, hide.x, hide.y);
+    }
   }
   if (melee) {
     const d = Math.hypot(target.x - f.x, target.y - f.y);
