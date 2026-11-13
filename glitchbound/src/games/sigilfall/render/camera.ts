@@ -82,3 +82,14 @@ export function placeCamera(
  * minimap the actual quest is in the south, but the arrow is pointing to the other direction").
  */
 export const edgeArrowAngle = (hx: number, hy: number, tx: number, ty: number): number => Math.atan2(ty - hy, tx - hx);
+
+/**
+ * How big the HUD is drawn on a stage of this size (CSS pixels): 1 up to a desk screen of 1366 by 768, then growing
+ * with whichever of the stage's sides has grown less, in steps of a twentieth, to at most 2.25 (a 4K screen). Touch
+ * screens keep 1: their HUD is sized for thumbs and has its own layouts.
+ */
+export function hudScale(width: number, height: number, touch: boolean): number {
+  if (touch) return 1;
+  const k = Math.min(width / 1366, height / 768);
+  return Math.round(Math.min(2.25, Math.max(1, k)) * 20) / 20;
+}
