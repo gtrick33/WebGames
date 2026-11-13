@@ -11734,3 +11734,20 @@ html.rb-touch-playing textarea {
   font-variant-numeric: tabular-nums;
   color: #ffe9b0;
 }
+
+/* The quest being followed is plain words over the land, with no panel behind them (the owner: "the active quest's
+   dark panel could go away and just leave it as plain text"). An edge of dark round each letter keeps them read over
+   grass, snow and sand alike. Folded to its mark, and the Riftstone's clock, keep their chips.
+   (This rule was dropped by a later edit to the end of this file and the panel came back, which the owner caught:
+   tests/sigilfall-boss-screen.test.ts now holds it here.) */
+.rb-tracker:not(.rb-keyclock):not(.is-folded) {
+  border-color: transparent;
+  background: none;
+  box-shadow: none;
+  text-shadow:
+    0 1px 0 #000,
+    1px 0 0 #000,
+    -1px 0 0 #000,
+    0 -1px 0 #000,
+    0 0 6px rgb(0 0 0 / 0.9);
+}
