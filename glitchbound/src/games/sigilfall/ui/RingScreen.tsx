@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
-import { ABILITIES, kitOf, PRESETS, SLOTS } from '../arena/abilities';
+import { fullBar, kitOf, PRESETS, SLOTS } from '../arena/abilities';
 import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, namedApart, nameFor, ratingChange, readRing, setsOf, skillAt, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave } from '../arena/ladder';
 import { MAP_IDS, MAPS } from '../arena/maps';
 import { bestRating, FORMATS, nextRank, rankOf, type Format } from '../arena/ranks';
@@ -55,9 +55,10 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
     for (const s of on) {
       const known = CLASS_IDS.includes(s.pick!.cls as ClassId);
       const cls = (known ? s.pick!.cls : 'warrior') as ClassId;
-      // (a bar of six from a player whose game is from before bars held four keeps its first four)
-      const bar = s.pick!.bar.filter((id) => ABILITIES[id]?.cls === cls && !ABILITIES[id]!.super).slice(0, SLOTS);
-      fighters.push({ team, cls, name: s.name, bar: bar.length === SLOTS ? bar : PRESETS[cls][0]!.bar, oath: s.pick!.oath, talents: s.pick!.talents, seat: s.n });
+      // (a bar of six from a player whose game is from before bars held four keeps its first four; one with an ability
+      // this game doesn't have, from a game older or newer, keeps the rest and is filled up from the class's own)
+      const bar = fullBar(cls, s.pick!.bar);
+      fighters.push({ team, cls, name: s.name, bar, oath: s.pick!.oath, talents: s.pick!.talents, seat: s.n });
     }
     const list = COMPS[v.format];
     const comp = list[(v.runSeed + team) % list.length]!;

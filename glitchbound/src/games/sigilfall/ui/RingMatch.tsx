@@ -467,8 +467,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       if (binding.current) return;
       const act = actionOf(keysRef.current, e.code);
       const n = act && act.startsWith('ab') ? Number(act.slice(2)) - 1 : -1;
-      const foes = me ? m.fighters.filter((f) => f.team !== me.team) : [];
-      const pals = me ? m.fighters.filter((f) => f.team === me.team && f.id !== me.id) : [];
+      const foes = me ? m.heroes.filter((f) => f.team !== me.team) : [];
+      const pals = me ? m.heroes.filter((f) => f.team === me.team && f.id !== me.id) : [];
       if (act && act !== 'up' && act !== 'down' && act !== 'left' && act !== 'right') e.preventDefault();
       if (n >= 0 && me?.bar[n]) keyPress(me.bar[n]!, e);
       // (behind the gates, the step key says "ready")
@@ -595,10 +595,17 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     const sound = (id: string, vol?: number): void => engine.sound.play(id, vol);
     let lastPaint = 0;
     let wasShown = m.phase;
-    const paint = (time: number): void => {
-      const dt = lastPaint ? Math.min(0.1, Math.max(0, time - lastPaint)) : 0;
-      lastPaint = time;
-      for (const e of m.events) {
+    /**
+     * The bodies answer what happened: a blow's own move, a flinch, the picture shaken, the crowd. Once for each event,
+     * as it comes. (This was read in the painting, after the effects had taken the events and cleared them: alone or
+     * as a guest nobody's blows were ever drawn, and a host, whose events wait to go out ten times a second, started
+     * each blow over on every frame until they went, then let it lunge, while what goes about a body stayed on its
+     * spot: the Gloamknight's gloam jumped about him in a match against a player.)
+     */
+    let reacted = 0;
+    const react = (): void => {
+      for (let i = reacted; i < m.events.length; i++) {
+        const e = m.events[i]!;
         if (e.k === 'ab') view.swing(e.id, e.ab, m.fighters[e.id]?.cast?.ab === e.ab);
         // (a blow that took a real bite, not a curse's tick)
         else if (e.k === 'num' && e.kind === 'dmg' && e.n >= 26) {
@@ -608,14 +615,19 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         } else if (e.k === 'super') view.shake(2.2);
         // (what was placed comes down)
         else if (e.k === 'zone') view.shake(ABILITIES[e.ab]?.super ? 3 : 1.2);
-        // (somebody's down: the crowd is on its feet)
-        else if (e.k === 'death') view.cheer();
+        // (somebody's down: the crowd is on its feet; not for the raised dead going back into the ground)
+        else if (e.k === 'death' && !m.fighters[e.id]?.pet) view.cheer();
       }
+      reacted = m.events.length;
+    };
+    const paint = (time: number): void => {
+      const dt = lastPaint ? Math.min(0.1, Math.max(0, time - lastPaint)) : 0;
+      lastPaint = time;
       if (m.phase !== wasShown) {
         wasShown = m.phase;
         view.cheer(m.phase === 'fight' ? 0.7 : m.phase === 'over' ? 1 : 0);
       }
-      view.frame(m, looks, myId, dt, time, (q) => ringSpells(q, m, fx, myId, time, view.air));
+      view.frame(m, looks, myId, dt, time, (q) => ringSpells(q, m, fx, myId, time, view.air, (f) => view.bodyAt(f)));
       placeAim();
       drawRing(m, fx, myId, time, view, aim);
     };
@@ -650,7 +662,9 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           }
         }
       } else {
-        m.coast(dt, myId, mine);
+        // (by the host's clock: it runs the fight at PACE, and a guest's copy that ran at the wall's ran everyone a
+        // little ahead between its words, to be pulled back at each)
+        m.coast(dt * PACE, myId, mine);
         sendT += dt;
         const said = `${mine.mx.toFixed(2)},${mine.my.toFixed(2)}`;
         if (sendT >= 1 / 15 && said !== lastSent) {
@@ -659,8 +673,12 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           role.send({ mx: mine.mx, my: mine.my });
         }
       }
+      react();
       // (a host's events go out only as often as it speaks: the ones between wait to be drawn with them)
-      if (role.kind !== 'host' || sent) fx.take(m, sound, myId);
+      if (role.kind !== 'host' || sent) {
+        fx.take(m, sound, myId);
+        reacted = 0;
+      }
       fx.age(dt);
       if (m.phase !== wasPhase) {
         if (m.phase === 'fight') {
@@ -709,6 +727,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           for (const f of m.fighters) moves[f.id] = f.id === myId ? moveNow() : botThink(m, f, brains[f.id]!, skill, STEP);
           m.step(STEP, moves);
         }
+        react();
         paint(performance.now() / 1000);
         tick((x) => x + 1);
       };
@@ -729,7 +748,9 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [m]);
 
-  const teamOf = (t: 0 | 1): Fighter[] => m.fighters.filter((f) => f.team === t);
+  const teamOf = (t: 0 | 1): Fighter[] => m.heroes.filter((f) => f.team === t);
+  // (one of the raised dead wears its master's face on a card)
+  const dollOf = (f: Fighter): string => dolls[m.masterOf(f).id] ?? '';
   const mine = me?.team ?? 0;
   const left = teamOf(mine);
   const right = teamOf(mine === 0 ? 1 : 0);
@@ -939,7 +960,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         </div>
         {!touch && (
           <div className="rb-ring-dock">
-            <AimCard label="Target" kind="foe" f={foeAlive} note={foeNote} bad={foeBad} doll={foeAlive ? dolls[foeAlive.id]! : ''} />
+            <AimCard label="Target" kind="foe" f={foeAlive} note={foeNote} bad={foeBad} doll={foeAlive ? dollOf(foeAlive) : ''} />
             <div className="rb-ring-actions" role="toolbar" aria-label="Abilities">
               {bar.map((ab, i) => {
                 const cd = me?.cds[ab.id] ?? 0;
@@ -960,7 +981,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 );
               })}
             </div>
-            {helps ? <AimCard label="Helping" kind="friend" f={friend} note={friend ? `${Math.round((friend.hp / friend.maxHp) * 100)}%` : ''} bad={false} doll={friend ? dolls[friend.id]! : ''} /> : <span className="rb-ring-aim is-blank" />}
+            {helps ? <AimCard label="Helping" kind="friend" f={friend} note={friend ? `${Math.round((friend.hp / friend.maxHp) * 100)}%` : ''} bad={false} doll={friend ? dollOf(friend) : ''} /> : <span className="rb-ring-aim is-blank" />}
           </div>
         )}
         {editing && m.phase === 'gates' && me && (

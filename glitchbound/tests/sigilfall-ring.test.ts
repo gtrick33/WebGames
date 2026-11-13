@@ -101,11 +101,12 @@ describe('The Ring: the rules', () => {
   it('another ability pressed mid-cast doesn’t cut the cast short: it waits, and goes off as the cast lands if pressed at the end', () => {
     const m = duel('mage', ['m-lash', 'm-burn'], 'warrior');
     const me = m.fighters[0]!;
+    const cast = ABILITIES['m-lash']!.cast;
     m.press(0, 'm-lash');
-    wait(m, 0.4);
+    wait(m, 0.2);
     expect(m.press(0, 'm-burn')).toBe('Casting');
     expect(me.cast?.ab).toBe('m-lash');
-    wait(m, 0.5);
+    wait(m, cast - 0.4);
     // (0.2s left: queued)
     expect(m.press(0, 'm-burn')).toBeNull();
     expect(me.cast?.ab).toBe('m-lash');
@@ -423,9 +424,10 @@ describe('The Ring: talents and set ups', () => {
       expect(TALENTS[cls], cls).toHaveLength(ROW_NAMES.length * 3);
       for (const row of [0, 1, 2]) expect(TALENTS[cls].filter((t) => t.row === row)).toHaveLength(3);
       for (const t of TALENTS[cls]) {
-        expect(t.tune || t.hp || t.tenacity || t.regen || t.dmg || t.heal || t.speed, t.id).toBeTruthy();
+        expect(t.tune || t.hp || t.tenacity || t.regen || t.dmg || t.heal || t.speed || t.cool || t.guard || t.hold || t.leech || t.charge || t.crit || t.exec || t.slow || t.stun || t.snare || t.rally, t.id).toBeTruthy();
+        // (the whole class's: what it sharpens is only ever what every hero of the class carries, whatever their bar)
         for (const id of Object.keys(t.tune ?? {})) {
-          expect(ABILITIES[id]?.cls, `${t.id} sharpens ${id}`).toBe(cls);
+          expect([DASH.id, superOf(cls).id], `${t.id} sharpens ${id}`).toContain(id);
           // the talent speaks of the ability it changes
           expect(t.text, t.id).toContain(ABILITIES[id]!.name);
         }
@@ -439,9 +441,9 @@ describe('The Ring: talents and set ups', () => {
     expect(cleanTalents('warrior', undefined)).toEqual([]);
   });
 
-  it('a talent changes the numbers: harder hits, quicker casts, shorter clocks, longer holds', () => {
-    const hit = (talents: string[]): number => {
-      const m = new Match({ seed: 11, map: 'sands', fighters: [{ ...fighter(0, 'warrior', ['w-hew']), talents }, fighter(1, 'paladin')] });
+  it('a talent changes the numbers, whatever is on the bar: harder hits, shorter clocks, longer holds, the Swift Step', () => {
+    const hit = (talents: string[], bar = ['w-hew']): number => {
+      const m = new Match({ seed: 11, map: 'sands', fighters: [{ ...fighter(0, 'warrior', bar), talents }, fighter(1, 'paladin')] });
       m.step(GATES + 0.01, {});
       const [a, b] = [m.fighters[0]!, m.fighters[1]!];
       a.x = 200;
@@ -449,34 +451,91 @@ describe('The Ring: talents and set ups', () => {
       b.x = 215;
       b.y = 125;
       const before = b.hp;
-      m.press(0, 'w-hew');
+      m.press(0, bar[0]!);
       return before - b.hp;
     };
-    expect(hit(['w-1a'])).toBeGreaterThan(hit([]) * 1.2);
+    // (the same talent for one blow as for another: nothing hangs on which ability is on the bar)
+    expect(hit(['w-1a'])).toBeGreaterThan(hit([]) * 1.05);
+    expect(hit(['w-1a'], ['w-gash'])).toBeGreaterThan(hit([], ['w-gash']) * 1.05);
 
-    const m = new Match({ seed: 1, map: 'sands', fighters: [{ ...fighter(0, 'mage', ['m-lash', 'm-blink', 'm-snap', 'm-burn']), talents: ['m-1a', 'm-2c', 'm-3b'] }, fighter(1, 'warrior')] });
+    const m = new Match({ seed: 1, map: 'sands', fighters: [{ ...fighter(0, 'mage', ['m-lash', 'm-blink', 'm-snap', 'm-chill']), talents: ['m-1a', 'm-2b', 'm-3b'] }, fighter(1, 'warrior')] });
     m.step(GATES + 0.01, {});
     const [a, b] = [m.fighters[0]!, m.fighters[1]!];
     a.x = 200;
     a.y = 125;
     b.x = 225;
     b.y = 125;
-    m.press(0, 'm-lash');
-    expect(a.cast!.dur).toBeCloseTo(ABILITIES['m-lash']!.cast * (1.5 / 1.8));
+    a.dirX = -1;
     m.press(0, 'm-blink');
-    expect(a.cds['m-blink']).toBeCloseTo(ABILITIES['m-blink']!.cd * 0.625);
+    expect(a.cds['m-blink']).toBeCloseTo(ABILITIES['m-blink']!.cd * 0.88);
     m.press(0, 'm-snap');
-    expect(a.cds['m-snap']).toBeCloseTo(ABILITIES['m-snap']!.cd * 0.7);
+    expect(a.cds['m-snap']).toBeCloseTo(ABILITIES['m-snap']!.cd * 0.88);
+    // (Restless and Quick Mind both: the Swift Step comes back sooner)
+    expect(m.press(0, DASH.id)).toBeNull();
+    expect(a.cds[DASH.id]).toBeCloseTo(DASH.cd * 0.88 * 0.6);
 
-    const n = new Match({ seed: 1, map: 'sands', fighters: [{ ...fighter(0, 'ranger', PRESETS.ranger[0]!.bar), talents: ['r-2b'] }, fighter(1, 'warrior')] });
-    n.step(GATES + 0.01, {});
-    n.fighters[0]!.x = 200;
-    n.fighters[0]!.y = 125;
-    n.fighters[1]!.x = 240;
-    n.fighters[1]!.y = 125;
-    n.press(0, 'r-hawk');
-    wait(n, 0.3);
-    expect(n.held(n.fighters[1]!)!.t).toBeGreaterThan(1.6);
+    // holds put on them last longer, a hold of the bar's or the super's alike
+    const held = (talents: string[]): number => {
+      const n = new Match({ seed: 1, map: 'sands', fighters: [{ ...fighter(0, 'mage', ['m-chill']), talents }, fighter(1, 'warrior')] });
+      n.step(GATES + 0.01, {});
+      n.fighters[0]!.x = 200;
+      n.fighters[0]!.y = 125;
+      n.fighters[1]!.x = 240;
+      n.fighters[1]!.y = 125;
+      n.press(0, 'm-chill');
+      return n.held(n.fighters[1]!)!.t;
+    };
+    expect(held(['m-2a'])).toBeCloseTo(held([]) * 1.2, 5);
+  });
+
+  it('what a talent does now and then: a slow on every hit, a stun once in a while, a snare behind a step, a second wind', () => {
+    /** A warrior with a talent, at arm's length from a mage, gates open. */
+    const close = (talents: string[], bar: string[]): Match => {
+      const n = new Match({ seed: 5, map: 'sands', fighters: [{ ...fighter(0, 'warrior', bar), talents }, fighter(1, 'mage', ['m-burn'])] });
+      n.step(GATES + 0.01, {});
+      Object.assign(n.fighters[0]!, { x: 200, y: 125 });
+      Object.assign(n.fighters[1]!, { x: 215, y: 125 });
+      return n;
+    };
+    // Crippling Blows: whatever lands slows, a blow with no slow of its own as much as any
+    const m = close(['w-2a'], ['w-gash']);
+    m.press(0, 'w-gash');
+    expect(m.fighters[1]!.auras.some((a) => a.kind === 'slow' && Math.abs(a.n - 0.3) < 1e-9)).toBe(true);
+
+    // Bonebreaker: a blow stuns, and not again for a while
+    const s = close(['w-2b'], ['w-hew']);
+    const [w, foe] = [s.fighters[0]!, s.fighters[1]!];
+    s.press(0, 'w-hew');
+    expect(s.held(foe)?.cc).toBe('stun');
+    wait(s, 1.2);
+    w.gcd = 0;
+    s.press(0, 'w-hew');
+    expect(s.held(foe)).toBeUndefined();
+
+    // Wild Snare: a step leaves a snare where it began
+    const r = new Match({ seed: 5, map: 'sands', fighters: [{ ...fighter(0, 'ranger', ['r-swift']), talents: ['r-2b'] }, fighter(1, 'warrior')] });
+    r.step(GATES + 0.01, {});
+    const ranger = r.fighters[0]!;
+    ranger.x = 200;
+    ranger.y = 125;
+    ranger.dirX = 1;
+    expect(r.press(0, DASH.id)).toBeNull();
+    expect(r.traps).toHaveLength(1);
+    expect(r.traps[0]).toMatchObject({ x: 200, y: 125, cc: 'root' });
+
+    // Second Wind: falling low brings some back, once in a while
+    const gm = close(['w-3c'], ['w-hew']);
+    const me = gm.fighters[0]!;
+    me.hp = Math.round(me.maxHp * 0.36);
+    gm.press(1, 'm-burn');
+    expect(me.hp).toBeGreaterThan(me.maxHp * 0.36);
+    expect(gm.events.some((e) => e.k === 'word' && e.word === 'Second Wind')).toBe(true);
+    // (and not again so soon)
+    gm.fighters[1]!.cds = {};
+    gm.fighters[1]!.gcd = 0;
+    me.hp = Math.round(me.maxHp * 0.36);
+    gm.press(1, 'm-burn');
+    expect(me.hp).toBeLessThan(me.maxHp * 0.36);
   });
 
   it('every ready-made build names real talents, one a row', () => {
