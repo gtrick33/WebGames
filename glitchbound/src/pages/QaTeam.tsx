@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Icon } from '../components/Icon';
 import { api, ApiError } from '../platform/account';
-import type { AuditRow, StaffRow } from '../platform/apiTypes';
+import type { AdminMember, AuditRow, StaffRow } from '../platform/apiTypes';
+import { PlayerPicker } from './admin/PlayerPicker';
 import './QaPanel.css';
 
 /**
@@ -21,7 +22,7 @@ const STATUS: Record<StaffRow['status'], { label: string; tone: string }> = {
 
 export function QaTeam() {
   const [staff, setStaff] = useState<StaffRow[] | null>(null);
-  const [email, setEmail] = useState('');
+  const [who, setWho] = useState<AdminMember | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -62,15 +63,16 @@ export function QaTeam() {
           for an account signed in with the invited address.
         </p>
         <form
-          className="qa-search"
+          className="qa-search qa-invite"
           onSubmit={(e: FormEvent) => {
             e.preventDefault();
-            const address = email.trim();
-            void act('invite', address, `Invitation sent to ${address}`).then((ok) => ok && setEmail(''));
+            if (!who) return;
+            const address = who.email;
+            void act('invite', address, `Invitation sent to ${address}`).then((ok) => ok && setWho(null));
           }}
         >
-          <input className="field" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tester@example.com" aria-label="Email to invite" required />
-          <button className="btn btn-primary btn-sm" disabled={busy}>
+          <PlayerPicker label="Who to invite" value={who} onChange={setWho} allowEmail placeholder="A member’s nickname or email, or any email address" />
+          <button className="btn btn-primary btn-sm" disabled={busy || !who}>
             <Icon name="mail" size={16} /> Invite to QA
           </button>
         </form>

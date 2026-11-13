@@ -282,6 +282,38 @@ export interface AdminCatalog extends PublicCatalog {
   log: { ts: number; admin: string; action: string; detail: string }[];
 }
 
+/** GET /api/admin/members?q=: a member in the admin's player picker (src/pages/admin/PlayerPicker.tsx). */
+export interface AdminMember {
+  id: string;
+  nickname: string;
+  email: string;
+  lastSeen: number;
+}
+
+/** GET /api/admin/shop?q=&offset=&limit=: sales by item, and one page of the purchases (newest first) that match. */
+export interface ShopReport {
+  /** Paid items and money taken, by item and currency. */
+  items: { product: string; paid: number; refunded: number; gifted: number; cents: number; currency: string | null }[];
+  recent: ShopSale[];
+  /** How many purchases match, over every page. */
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export interface ShopSale {
+  id: string;
+  product: string;
+  status: string;
+  amount: number | null;
+  currency: string | null;
+  at: number;
+  /** Null once the account is deleted. */
+  nickname: string | null;
+  email: string | null;
+  gift: boolean;
+}
+
 /* ------------------------------------------------------------------ Sigilfall's game masters */
 
 /** One hero, as the player list shows them. */
@@ -355,6 +387,13 @@ export interface GmPlayerDetail {
   bought: string[];
   orders: GmOrderView[];
   graves: { id: string; created: number; name: string; cls: string; level: number; deletedAt: number; restoredAt: number | null }[];
+}
+
+/** A Sigilfall title an admin gave, as the admin sees it: taken-back ones too. */
+export interface GmTitle extends SigilTitleGrant {
+  /** The admin who gave it. */
+  by: string;
+  revokedAt: number | null;
 }
 
 /* ------------------------------------------------------------------ QA tools and the QA team */

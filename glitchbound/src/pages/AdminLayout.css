@@ -603,3 +603,91 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+/* Giving to a player: the picker, then an item and a Sigilfall title, each in a box of its own. */
+.money-gifts {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+.money-gift {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.money-gift .admin-h3 {
+  margin: 0;
+}
+.money-gift p {
+  margin: 0;
+}
+.money-gift-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+.money-gift-row .field {
+  min-width: 0;
+  width: 100%;
+}
+@media (max-width: 560px) {
+  .money-gift-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* The sales: one line per item, then the purchases, found on the server and shown a page at a time. */
+.money-sum {
+  margin: 2px 0;
+}
+.money-find {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+.money-find .field {
+  width: 100%;
+}
+.money-sales {
+  display: grid;
+  gap: 5px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.money-sale {
+  display: grid;
+  /* (the last column is as wide in every row, button or not, so the rows line up) */
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 7.5em;
+  justify-items: start;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--well);
+}
+.money-sale-what {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+}
+.money-sale > .btn {
+  justify-self: end;
+}
+.money-sale-what > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 560px) {
+  .money-sale {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .money-sale-how {
+    grid-row: 2;
+  }
+}

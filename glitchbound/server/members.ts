@@ -1,10 +1,11 @@
 import { loadItems, ownedBy } from './shop';
 import { wornFrom, type Worn } from '../src/catalog/looks';
 import { liveRules } from './catalogSettings';
-import type { Badge, BestView, Me, QuestView } from '../src/platform/apiTypes';
+import type { AdminMember, Badge, BestView, Me, QuestView } from '../src/platform/apiTypes';
 import { currentStreak, longestStreak } from '../src/platform/daily';
 import { levelForXp, questsForDay, xpForLevel, type QuestDef } from '../src/platform/progression';
-import type { Env } from './http';
+import { likeOf, type Env } from './http';
+import { liveTitles } from './sigilfallTitles';
 import { isAdmin, roleOf, type UserRow } from './session';
 import { listed } from './staff';
 
@@ -77,7 +78,7 @@ export async function buildLooks(env: Env, user: UserRow): Promise<Worn> {
 
 export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me> {
   const [owned, items] = await Promise.all([ownedBy(env, user.id), loadItems(env)]);
-  const [favs, bests, roundCount, dailyDone, claimsCount, crown, quests, saves] = await Promise.all([
+  const [favs, bests, roundCount, dailyDone, claimsCount, crown, quests, saves, sigilTitles] = await Promise.all([
     env.DB.prepare('SELECT game FROM favorites WHERE user_id = ? ORDER BY created_at').bind(user.id).all<{ game: string }>(),
     env.DB.prepare(
       `SELECT b.game, b.score, b.stats, b.at,
@@ -97,6 +98,7 @@ export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me>
       .first<{ n: number }>(),
     questViews(env, user, day),
     env.DB.prepare('SELECT MAX(updated_at) AS at FROM game_saves WHERE user_id = ?').bind(user.id).first<{ at: number | null }>(),
+    liveTitles(env, user.id),
   ]);
   const bestMap: Record<string, BestView> = {};
   for (const b of bests.results) bestMap[b.game] = { score: b.score, stats: parseStats(b.stats), at: b.at, rank: b.rank, players: b.players };
@@ -138,7 +140,38 @@ export async function buildMe(env: Env, user: UserRow, day: string): Promise<Me>
     questDay: day,
     joinedAt: user.created_at,
     savesAt: saves?.at ?? 0,
+    sigilTitles,
   };
+}
+
+/** The most members the admin's player picker shows at once. */
+export const MEMBERS_MAX = 20;
+
+/**
+ * Members for the admin's player picker (src/pages/admin/PlayerPicker.tsx): those whose nickname or email has the
+ * words in it, or whose id they are, an exact match first, then names that start with them; with nothing typed, the
+ * members seen last.
+ */
+export async function findMembers(env: Env, raw: string, limit = MEMBERS_MAX): Promise<AdminMember[]> {
+  const q = raw.trim().slice(0, 80);
+  const n = Math.min(MEMBERS_MAX, Math.max(1, Math.floor(limit) || MEMBERS_MAX));
+  type Row = { id: string; nickname: string; email: string; last_seen: number };
+  let rows: { results: Row[] };
+  if (q) {
+    const like = likeOf(q);
+    // (the same pattern without its leading %: a name that starts with the words)
+    const starts = like.slice(1);
+    rows = await env.DB.prepare(
+      `SELECT id, nickname, email, last_seen FROM users
+       WHERE id = ? OR nickname LIKE ? ESCAPE '\\' OR email LIKE ? ESCAPE '\\'
+       ORDER BY (id = ? OR nickname = ? COLLATE NOCASE OR email = ? COLLATE NOCASE) DESC, (nickname LIKE ? ESCAPE '\\') DESC, last_seen DESC LIMIT ?`,
+    )
+      .bind(q, like, like, q, q, q, starts, n)
+      .all<Row>();
+  } else {
+    rows = await env.DB.prepare('SELECT id, nickname, email, last_seen FROM users ORDER BY last_seen DESC LIMIT ?').bind(n).all<Row>();
+  }
+  return rows.results.map((r) => ({ id: r.id, nickname: r.nickname, email: r.email, lastSeen: r.last_seen }));
 }
 
 export { longestStreak };
