@@ -11542,14 +11542,22 @@ html.rb-touch-playing textarea {
   margin-bottom: 0;
 }
 @container (min-width: 700px) {
-  /* (under the hero's bars and in the middle of the screen, where the eye already is: the owner, after a week of it
-     set to one side between the bars and Pause: "move it below the health bar but always at the ideal center of the
-     screen, now its hard to follow") */
+  /* (at the top of the screen and in its middle. The owner, twice: set to one side between the hero's bars and
+     Pause it was "hard to follow"; under the bars in the middle it was "still lowkey in the middle of the screen,
+     can we squish the players hp and mana bar so that we put it a bit to the top, but its centered". So the hero's
+     own bars are narrowed for the fight to what is left beside it) */
   .rb-ui.is-boss .rb-bossbar {
-    top: calc(50px + var(--sa-t));
+    top: calc(4px + var(--sa-t));
     left: 50%;
     width: min(46cqw, 460px);
     transform: translateX(-50%);
+  }
+  .rb-ui.is-boss .rb-hud-bars {
+    width: clamp(84px, calc(50cqw - min(23cqw, 230px) - 78px), 230px);
+  }
+  /* (a desk's potion button stands beside the bars, and takes its share) */
+  .rb-ui.is-boss.is-mouse .rb-hud-bars {
+    width: clamp(84px, calc(50cqw - min(23cqw, 230px) - 128px), 230px);
   }
   /* what is announced during the fight (a phase's shout) keeps clear of the bar and what it calls: on a phone, at
      the foot of the screen between the thumbs; on a desk, lower in the picture */

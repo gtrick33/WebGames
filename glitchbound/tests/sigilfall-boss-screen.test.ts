@@ -96,11 +96,12 @@ describe('Sigilfall: the boss bar and the Riftstone clock', () => {
     return at < 0 ? '' : css.slice(at, css.indexOf('}', at));
   };
 
-  it('the boss bar is in the middle of the screen, just under the hero\'s bars', () => {
+  it('the boss bar is at the top of the screen and in its middle, the hero\'s bars narrowed to make room beside it', () => {
     const r = rule('  .rb-ui.is-boss .rb-bossbar');
     expect(r).toContain('left: 50%');
     expect(r).toContain('translateX(-50%)');
-    expect(r).toMatch(/top: calc\((4\d|5\d)px/);
+    expect(r).toContain('top: calc(4px + var(--sa-t))');
+    expect(rule('  .rb-ui.is-boss .rb-hud-bars')).toContain('50cqw - min(23cqw, 230px)');
   });
 
   it('a boss\'s name is said once, on its bar: no banner of it under the bar, across what the boss calls', () => {
