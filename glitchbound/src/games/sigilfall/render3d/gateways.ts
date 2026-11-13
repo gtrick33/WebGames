@@ -55,8 +55,11 @@ function veil(b: Build, glows: GateBuilt['glows'], light: string, half: number, 
   const from = b.m.nor.length;
   // (a sheet of it across the way, a pace past the middle of the gate. A body of light running on out past the
   // land's edge was tried, for the gates seen from their side: from the south it was a painted box on the road)
-  b.box(-half, -0.62, half, -0.56, 0, high * 0.45, mid, low, mid);
-  b.box(-half, -0.62, half, -0.56, high * 0.45, high, top, mid, top);
+  // (a hair inside the arch it fills, at its sides and its top: lying in the very planes of the arch's own stone it
+  // fought them for the same place, and the stone flickered as the camera moved: tests/sigilfall-zfight.test.ts)
+  const w = half - 0.012;
+  b.box(-w, -0.62, w, -0.56, 0, high * 0.45, mid, low, mid);
+  b.box(-w, -0.62, w, -0.56, high * 0.45, high - 0.015, top, mid, top);
   // (and its light lying on the road before it)
   b.flat(-half, -0.56, half, 0.2, 0.03, mul(low, 0.62));
   alight(b, from);
@@ -134,7 +137,9 @@ export function stoneGate(look: GateLook): GateBuilt {
     b.box(s < 0 ? -half : half - 0.22, -0.7, s < 0 ? -half + 0.22 : half, 0.7, 2.3, 2.9, stone, dark, stone);
   }
   // (a keystone a little proud of the arch, of its own stone: not a pale post standing up out of it)
-  b.box(-0.34, -0.76, 0.34, 0.76, 3.5, 4.5, mul(stone, 1.1), stone, mul(stone, 0.6));
+  // (and a little higher than it: its top lay in the plane of the arch's top, a darker patch that came and went
+  // over the gate as the camera moved. The owner: "some of the gates' textures, the ones top, keep jittering")
+  b.box(-0.34, -0.76, 0.34, 0.76, 3.5, 4.53, mul(stone, 1.1), stone, mul(stone, 0.6));
   b.faceS(-0.34, 0.34, 0.765, 3.5, 3.58, trim);
   // (a way down: the dark behind the arch, going back into it)
   if (look.shut) {

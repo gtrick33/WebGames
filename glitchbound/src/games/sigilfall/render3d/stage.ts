@@ -21,6 +21,9 @@ import { LIGHT } from './toon';
 const FOV = 28;
 /** Never renders more pixels than this per CSS pixel. */
 const MAX_DPR = 2;
+/** Slower than this between frames (about fifty a second), kept up, and the picture is drawn with fewer pixels; and the least it is drawn with. */
+export const PACE_SLOW = 1 / 50;
+export const QUALITY_FLOOR = 0.45;
 /**
  * On a phone, a little less: the screen is small enough that nobody sees the difference, and every pixel is drawn on
  * two canvases, which is most of what warms it.
@@ -208,20 +211,25 @@ export class Stage {
   }
 
   /**
-   * A phone that can't keep up draws fewer pixels rather than stutter (real time between frames; a tab left in the
-   * background isn't a slow phone).
+   * A machine that can't keep up draws fewer pixels rather than stutter (real time between frames; a tab left in the
+   * background isn't a slow machine). It aims at a smooth sixty: it used to step down only under forty frames a
+   * second, and no lower than 0.6, so a big monitor on a modest card sat at forty-odd for good (the owner, at 2560 by
+   * 1440: "it feels as if its capped by 30 fps or smth, i want it smooth"). Now anything under about fifty for
+   * three quarters of a second takes a step, down to 0.45; and it comes back up only after twenty seconds at speed.
    */
   private pace(): void {
     const now = performance.now();
     const dt = (now - this.lastFrame) / 1000;
     this.lastFrame = now;
     if (dt > 0 && dt < 0.25) {
-      if (dt > 1 / 40) this.slow++;
-      else this.slow = Math.max(0, this.slow - 1);
-      if (dt < 1 / 55) this.fast++;
+      // (the pace over the last ten frames or so: one long frame is a hitch, not a slow machine)
+      this.avg = this.avg * 0.9 + dt * 0.1;
+      if (this.avg > PACE_SLOW) this.slow++;
+      else this.slow = Math.max(0, this.slow - 2);
+      if (this.avg < 1 / 55) this.fast++;
       else this.fast = 0;
-      if (this.slow > 90 && this.quality > 0.6) {
-        this.quality = Math.max(0.6, this.quality - 0.15);
+      if (this.slow > 40 && this.quality > QUALITY_FLOOR) {
+        this.quality = Math.max(QUALITY_FLOOR, this.quality - 0.15);
         this.slow = 0;
         this.fast = 0;
         this.applyQuality();
@@ -232,6 +240,7 @@ export class Stage {
       }
     }
   }
+  private avg = 1 / 60;
 
   private applyQuality(): void {
     const d = Math.min(this.lastDpr, this.maxDpr) * this.quality;

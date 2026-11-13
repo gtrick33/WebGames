@@ -1,3 +1,4 @@
+import { hudScale } from './render/camera';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { GameHost, GameModuleProps } from '../../platform/contract';
 import { takeSavesLive } from '../../platform/syncGate';
@@ -111,6 +112,12 @@ function Sigilfall({ host, pauseKey, playerName }: { host: GameHost; pauseKey?: 
       if (key === last && !force) return;
       last = key;
       e.dpr = dpr;
+      // how big the HUD is drawn: its own size up to a desk screen of 1366 by 768, and growing with the stage past
+      // that (the owner, on a 2560 by 1440 monitor: "the ui gets small af ... it needs to scale with the resolution
+      // of the display"). A touch screen's HUD is sized for thumbs already.
+      const hud = hudScale(r.width, r.height, e.touchMode);
+      stage.style.setProperty('--hud', String(hud));
+      e.renderer.hud = hud;
       e.renderer.resize(r.width, r.height, dpr, e.touchMode);
       e.setToWorld((x, y) => e.renderer.toWorld(x, y, dpr));
       e.bump();

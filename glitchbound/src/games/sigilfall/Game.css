@@ -11751,3 +11751,29 @@ html.rb-touch-playing textarea {
     0 -1px 0 #000,
     0 0 6px rgb(0 0 0 / 0.9);
 }
+
+/* ---- the HUD grows with the screen ----
+   On a big monitor everything on the HUD was the size it is on a laptop, a strip of specks in the corners of a 2560
+   by 1440 picture. Each piece is drawn `--hud` times its size (Game.tsx sets it from the stage: render/camera.ts
+   hudScale; 1 up to 1366 by 768), from the corner or edge it sits at, so the pieces keep their places against
+   each other. With a mouse only: a touch screen's HUD is sized for thumbs. The cast bar is placed by the hero each
+   frame and keeps its size; the windows over the game (bag, talents, map) grow by half as much, so they still fit. */
+.rb-ui.is-mouse > .rb-hud-hero,
+.rb-ui.is-mouse > .rb-hud-menu,
+.rb-ui.is-mouse > .rb-minimap-hud,
+.rb-ui.is-mouse > .rb-encounter,
+.rb-ui.is-mouse > .rb-tracker,
+.rb-ui.is-mouse > .rb-bossbar,
+.rb-ui.is-mouse > .rb-toasts,
+.rb-ui.is-mouse > .rb-party-frames,
+.rb-ui.is-mouse > .rb-combo,
+.rb-ui.is-mouse > .rb-deskbar,
+.rb-ui.is-mouse > .rb-dialogue,
+.rb-ui.is-mouse .rb-announce > * {
+  zoom: var(--hud, 1);
+}
+.rb-ui.is-mouse > .rb-modal > *,
+.rb-ui.is-mouse > .rb-pause,
+.rb-ui.is-mouse > .rb-death {
+  zoom: calc(1 + (var(--hud, 1) - 1) * 0.5);
+}
