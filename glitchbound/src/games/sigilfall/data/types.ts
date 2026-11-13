@@ -760,6 +760,9 @@ export interface StoryEventDef {
   retry?: Bark[];
 }
 
+/** The way a prop's front looks when it isn't south. */
+export type PropFace = 'n' | 'e' | 'w';
+
 export type Marker =
   | { kind: 'start' }
   | { kind: 'pack'; enemies: string[]; elite?: boolean; named?: string; level?: number; rare?: boolean; /** One of a land's wandering packs, not a place's own: it has nowhere it must be. */ roam?: boolean }
@@ -772,7 +775,18 @@ export type Marker =
   | { kind: 'secret'; id: string }
   | { kind: 'shrine'; id: string }
   | { kind: 'dummy'; shooter?: boolean }
-  | { kind: 'prop'; prop: string; solid?: boolean; /** Only seen: nobody bumps into it (a boss chamber's dressing out on its floor, where its fight is). */ through?: boolean }
+  | {
+      kind: 'prop';
+      prop: string;
+      solid?: boolean;
+      /** Only seen: nobody bumps into it (a boss chamber's dressing out on its floor, where its fight is). */
+      through?: boolean;
+      /**
+       * Which way its front looks, when not south (toward the camera, as everything is made): a market stall on the
+       * west side of a square looks east across it, a camp's tents open on its fire.
+       */
+      face?: PropFace;
+    }
   | { kind: 'torch' }
   | { kind: 'checkpoint' }
   | { kind: 'hazard'; hazard: 'bramble' | 'spore' }

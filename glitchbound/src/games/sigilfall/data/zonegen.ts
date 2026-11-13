@@ -5,7 +5,7 @@ import { clamp, hash2, noise2, rng } from '../core/math';
 import { buildingRows, villageHouses } from './buildingArt';
 import { THEMES } from './themes';
 import { TOWN_FORMS, type LotStyle, type TownKit, type TownLook } from './townforms';
-import type { Marker, PlacedMarkerDef, RegionDef, RegionId, StoryCond, Theme } from './types';
+import type { Marker, PlacedMarkerDef, PropFace, RegionDef, RegionId, StoryCond, Theme } from './types';
 
 /*
  * The wilds are generated, not drawn: a zone is a seeded description (its size, how wooded it is, its
@@ -174,7 +174,42 @@ const PY = 13;
 const VX = Math.round(PX * TOWN_SCALE);
 const VY = Math.round(PY * TOWN_SCALE);
 /** The tiles beside it, in a row, that a wide thing on one tile also stands on. */
-const FOOT: Record<string, number[]> = { 'market-stall': [-1, 1], armory: [-1, 1], pavilion: [-1, 1], wagon: [1], fountain: [-1, 1] };
+const FOOT: Record<string, number[]> = { 'market-stall': [-1, 1], armory: [-1, 1], pavilion: [-1, 1], wagon: [1], fountain: [-1, 1], tent: [-1, 1], 'camp-tent': [-1, 1] };
+/** The stalls with a front and a back, turned to look over their square (a cart, a table and a round pavilion serve all round). */
+const TURNS = new Set(['market-stall', 'armory']);
+/**
+ * The animals about a village, by its land: hens and a dog on a farm, cats on a quay, sled dogs in the snow, the
+ * horses of a war camp. (Each is a rule that lets them out: sim/critters.ts.)
+ */
+const VILLAGE_BEASTS: Partial<Record<Theme, string[]>> = {
+  farm: ['chickens', 'chickens', 'dog', 'cat', 'horse'],
+  plains: ['chickens', 'dog', 'horse', 'cat'],
+  village: ['chickens', 'chickens', 'dog', 'cat', 'horse'],
+  autumn: ['chickens', 'chickens', 'dog', 'cat'],
+  forest: ['chickens', 'cat', 'dog'],
+  fey: ['cat', 'chickens'],
+  jungle: ['chickens', 'cat'],
+  coast: ['cat', 'cat', 'dog'],
+  storm: ['cat', 'dog'],
+  sunken: ['cat'],
+  deadlake: ['cat', 'cat'],
+  marsh: ['cat', 'chickens'],
+  plague: ['cat'],
+  gloam: ['cat'],
+  blight: ['cat'],
+  haunted: ['cat', 'dog'],
+  barrow: ['cat', 'dog'],
+  moor: ['dog', 'cat'],
+  mountain: ['dog', 'horse'],
+  peaks: ['dog', 'dog'],
+  snow: ['dog', 'dog', 'horse'],
+  desert: ['cat', 'horse', 'chickens'],
+  volcanic: ['dog'],
+  rift: ['cat'],
+  warfront: ['horse', 'horse', 'dog'],
+  bonefield: ['horse', 'dog'],
+  pale: ['horse', 'horse', 'dog'],
+};
 /** Plan tiles to map tiles. */
 const sc = (v: number): number => Math.floor(v * TOWN_SCALE + 1e-6);
 const PLANS: VillagePlan[] = ['cross', 'street', 'green'];
@@ -338,30 +373,37 @@ const SQUARES: Record<'cross' | 'street' | 'green' | 'court', Square> = {
  * Each is drawn as rows of tiles: '.' stays open ground; a key is a prop (solid or not) or a ground kind. Their
  * props have names of their own (a 'camp-tent', a 'wagon', a 'menhir'), so they are never taken for the story's.
  */
-type SceneCell = number | { prop: string; solid?: boolean };
-const P = (prop: string, solid = false): SceneCell => ({ prop, solid });
+type SceneCell = number | { prop: string; solid?: boolean; face?: PropFace };
+const P = (prop: string, solid = false, face?: PropFace): SceneCell => ({ prop, solid, ...(face ? { face } : {}) });
+/*
+ * Who is at a scene, and what lives there (the owner: "every enemy should have a purpose, warcamps, armies, villagers,
+ * salespeople npcs, whatever, everything should have purpose"): a post is a rule with nothing to draw, and someone
+ * stands at it at their work (sim/folk.ts); `sheep`, `chickens`, `dog` and `deer` let animals out (sim/critters.ts).
+ * A cut wood has its woodcutter, a pen its sheep and their herder, a field its farmer, a camp the travelers at its fire.
+ */
+const WHO = (job: string, face?: PropFace): SceneCell => P(`post-${job}`, false, face);
 const SCENES: Record<string, { rows: string[]; key: Record<string, SceneCell> }> = {
-  woodcut: { rows: ['s..L.', '.Wc..', 'L..s.', '..s..'], key: { s: P('stump'), L: P('log'), W: P('woodpile', true), c: P('chopping-block', true) } },
-  camp: { rows: ['.T...T.', '.......', '.b.F.p.', '...x...'], key: { T: P('camp-tent', true), F: P('campfire', true), b: P('bedroll'), p: P('cauldron', true), x: P('crate', true) } },
-  pen: { rows: ['ffffff', 'f.h..f', 'f...hf', 'ft...f', 'ff..ff'], key: { f: FENCE, h: P('hay', true), t: P('trough', true) } },
+  woodcut: { rows: ['s..L.', '.Wcw.', 'L..s.', '..s..'], key: { s: P('stump'), L: P('log'), W: P('woodpile', true), c: P('chopping-block', true), w: WHO('woodcutter', 'w') } },
+  camp: { rows: ['.T...T.', '.......', '.baFzp.', '...x...'], key: { T: P('camp-tent', true), F: P('campfire', true), b: P('bedroll'), p: P('cauldron', true), x: P('crate', true), a: WHO('traveler', 'e'), z: WHO('traveler', 'w') } },
+  pen: { rows: ['ffffff', 'f.h..f', 'f.S.hf', 'ft...f', 'ff..ff', '....H.'], key: { f: FENCE, h: P('hay', true), t: P('trough', true), S: P('sheep'), H: WHO('herder', 'w') } },
   // (a fenced field has something growing in it: wheat here, corn at a farmstead)
-  field: { rows: ['fffffff', 'f,,,,,f', 'f,,S,,f', 'f,,,,,f', 'fff.fff'], key: { f: FENCE, ',': P('wheat'), S: P('scarecrow', true) } },
-  shrine: { rows: ['b.S.b', '.....', 'l.n.l'], key: { S: P('statue', true), b: P('flowerbed', true), l: P('torch', true), n: P('bench', true) } },
+  field: { rows: ['fffffff', 'f,,,,,f', 'f,,S,,f', 'f,,F,,f', 'fff.fff'], key: { f: FENCE, ',': P('wheat'), S: P('scarecrow', true), F: WHO('farmer') } },
+  shrine: { rows: ['b.S.b', '..p..', 'l.n.l'], key: { S: P('statue', true), b: P('flowerbed', true), l: P('torch', true), n: P('bench', true), p: WHO('pilgrim', 'n') } },
   graves: { rows: ['g.c.g', '.....', 'c.g.c', '..l..'], key: { g: P('gravestone', true), c: P('grave-cross', true), l: P('torch', true) } },
-  graveyard: { rows: ['fffffff', 'fg.c.gf', 'f.....f', 'fc.g.cf', 'f.....f', 'fff.fff', '.l...l.'], key: { f: FENCE, g: P('gravestone', true), c: P('grave-cross', true), l: P('lamp', true) } },
-  wagon: { rows: ['.x..', 'kC.s', '.b..'], key: { C: P('wagon', true), x: P('crate', true), b: P('barrel', true), s: P('sacks'), k: P('debris') } },
+  graveyard: { rows: ['fffffff', 'fg.c.gf', 'f..p..f', 'fc.g.cf', 'f.....f', 'fff.fff', '.l...l.'], key: { f: FENCE, g: P('gravestone', true), c: P('grave-cross', true), l: P('lamp', true), p: WHO('pilgrim', 'n') } },
+  wagon: { rows: ['.x..', 'kC.s', '.b.h'], key: { C: P('wagon', true), x: P('crate', true), b: P('barrel', true), s: P('sacks'), k: P('debris'), h: WHO('herder', 'w') } },
   stones: { rows: ['..R..', 'R...R', '.....', 'R...R', '..R..'], key: { R: P('menhir', true) } },
   pond: { rows: ['.~~~.', '~~~~~', '~~~~~', '.~~~.'], key: { '~': WATER } },
   ruin: { rows: ['||.||', 'j...|', '.r.r.'], key: { '|': RAMPART, j: PILLAR, r: P('rubble') } },
-  meadow: { rows: ['.,,,.', ',,,,,', ',,,,,', '.,,,.'], key: { ',': DECO } },
+  meadow: { rows: ['.,,,.', ',,D,,', ',,,,,', '.,,,.'], key: { ',': DECO, D: P('deer') } },
   bones: { rows: ['k...s', '..d..', 's.k..'], key: { k: P('skulls'), s: P('bone-heap'), d: P('debris') } },
-  warcamp: { rows: ['T...T', '..F..', 'r.R.x'], key: { T: P('camp-tent', true), F: P('campfire', true), r: P('weapon-rack', true), R: P('red-banner', true), x: P('crate', true) } },
+  warcamp: { rows: ['T...T', 'g.F.g', 'r.R.x'], key: { T: P('camp-tent', true), F: P('campfire', true), r: P('weapon-rack', true), R: P('red-banner', true), x: P('crate', true), g: WHO('guard') } },
   well: { rows: ['.b.', 'xWx'], key: { W: P('well', true), b: P('bucket'), x: P('barrel', true) } },
-  farmstead: { rows: ['ffffff..', 'f,,,,f.h', 'f,S,,f..', 'f,,,,f.W', 'ff.fff..'], key: { f: FENCE, ',': P('corn'), S: P('scarecrow', true), h: P('hay', true), W: P('wagon', true) } },
-  orchard: { rows: ['T.T.T', '.....', 'T.T.T', '..b..'], key: { T: TREE, b: P('basket') } },
-  hunters: { rows: ['.T.r.', '..F..', 'b.L.x'], key: { T: P('camp-tent', true), r: P('rack', true), F: P('campfire', true), b: P('bedroll'), L: P('log'), x: P('crate', true) } },
-  quarry: { rows: ['rr.rr', 'r.k.r', '.x.W.'], key: { r: ROCK, k: P('rubble'), x: P('crate', true), W: P('wagon', true) } },
-  outpost: { rows: ['.F.T.', 'w...x', '..O..'], key: { O: P('lookout', true), T: P('camp-tent', true), F: P('campfire', true), w: P('weapon-rack', true), x: P('barrel', true) } },
+  farmstead: { rows: ['ffffff..', 'f,,,,f.h', 'f,S,,fF.', 'f,,,,f.W', 'ff.fffC.'], key: { f: FENCE, ',': P('corn'), S: P('scarecrow', true), h: P('hay', true), W: P('wagon', true), F: WHO('farmer', 'w'), C: P('chickens') } },
+  orchard: { rows: ['T.T.T', '.F...', 'T.T.T', '..b..'], key: { T: TREE, b: P('basket'), F: WHO('farmer') } },
+  hunters: { rows: ['.T.r.', '..Fh.', 'b.Ldx'], key: { T: P('camp-tent', true), r: P('rack', true), F: P('campfire', true), b: P('bedroll'), L: P('log'), x: P('crate', true), h: WHO('hunter', 'w'), d: P('dog') } },
+  quarry: { rows: ['rr.rr', 'r.kmr', '.x.W.'], key: { r: ROCK, k: P('rubble'), x: P('crate', true), W: P('wagon', true), m: WHO('smith', 'w') } },
+  outpost: { rows: ['.F.T.', 'w.g.x', '..O..'], key: { O: P('lookout', true), T: P('camp-tent', true), F: P('campfire', true), w: P('weapon-rack', true), x: P('barrel', true), g: WHO('guard') } },
   battlefield: { rows: ['k.d.s', '.r...', 's..k.', '..d.r'], key: { k: P('skulls'), d: P('debris'), s: P('bone-heap'), r: P('rack', true) } },
   witch: { rows: ['.c.c.', 'c.C.c', '.c.c.'], key: { C: P('cauldron', true), c: P('candles') } },
   cairn: { rows: ['.R.', 'RlR', '.R.'], key: { R: P('menhir', true), l: P('torch', true) } },
@@ -379,11 +421,11 @@ const SCENES: Record<string, { rows: string[]; key: Record<string, SceneCell> }>
   vent: { rows: ['e.e.', '..k.', 'e.s.', '..e.'], key: { e: P('ember-rock', true), k: P('skulls'), s: P('bone-heap') } },
   seam: { rows: ['.c.c.', 'c.l.c', '.c.c.'], key: { c: P('rift-crystal', true), l: P('candles') } },
   beached: { rows: ['.f...', 'd.B.x', '...k.'], key: { B: P('boat', true), f: P('fish', true), x: P('crate', true), d: P('debris'), k: P('bones') } },
-  nets: { rows: ['r.r', '...', 'b.f'], key: { r: P('rack', true), b: P('basket', true), f: P('fish', true) } },
+  nets: { rows: ['r.r', '.h.', 'b.f'], key: { r: P('rack', true), b: P('basket', true), f: P('fish', true), h: WHO('fisher') } },
   barricade: { rows: ['d.w.d', '.....', 'r.x.r'], key: { d: P('debris'), w: P('weapon-rack', true), r: P('rack', true), x: P('crate', true) } },
-  siege: { rows: ['..C..', '.....', 's...s'], key: { C: P('catapult', true), s: P('stone-heap', true) } },
+  siege: { rows: ['..C..', '.g.g.', 's...s'], key: { C: P('catapult', true), s: P('stone-heap', true), g: WHO('guard') } },
   ring: { rows: ['.m.m.', 'm...m', '.m.m.'], key: { m: P('great-mushroom', true) } },
-  hayfield: { rows: ['h.h.h', '.....', 'h.h.h'], key: { h: P('hay', true) } },
+  hayfield: { rows: ['h.h.h', '..F..', 'h.h.h'], key: { h: P('hay', true), F: WHO('farmer') } },
   marker: { rows: ['.o.', '...', 'u.u'], key: { o: P('standing-stone', true), u: P('urn', true) } },
 };
 /** Which scenes belong in which kind of land (a woodcutter in the wood, graves on the moor, a war camp at the front). */
@@ -484,6 +526,8 @@ class ZoneBuilder {
   private readonly houses: [number, number][] = [];
   /** The villages' middles: roads keep a straight run through them, packs and scenes keep out. */
   private readonly hubAt: [number, number][] = [];
+  /** Every sight's clearing: its middle and how far it reaches. Nothing of a town's is planted in one. */
+  private readonly sightAt: [number, number, number][] = [];
 
   constructor(
     private readonly spec: ZoneSpec,
@@ -502,12 +546,22 @@ class ZoneBuilder {
     this.water();
     this.woods();
     const hubs = s.hubs.map((hb) => this.tileOf(hb.at));
-    const pois = s.pois.map((p) => this.besideRiver(this.tileOf(p.at)));
+    this.hubAt.push(...hubs);
+    // A sight keeps clear of the towns, its whole clearing outside their streets: one written too near a village was
+    // built inside it. Highwall's old ruin stood, pillars, ghouls and all, among the tents of the war camp, and the
+    // Host's camp on the Amberfield lay against Hearthstead's wall (the owner: "some of the tents are ... too close to
+    // the walls or colliding with pillars").
+    // (a camp's tents reach well out from its fire, so a camp stands off a wall by its whole spread; anything else
+    // moves only when its middle is in the streets themselves)
+    // One with a building of its own (a lighthouse on its point) stays where it's put.
+    const pois = s.pois.map((p) => (p.landmark ? this.besideRiver(this.tileOf(p.at)) : this.sightSpot(this.tileOf(p.at), p.kind === 'camp' ? Math.min(p.r, 9) + 3 : 0)));
     const exits = s.exits.map((e) => this.exitTiles(e));
     // clearings first, so roads and buildings have room
-    this.hubAt.push(...hubs);
     hubs.forEach(([x, y], i) => this.clearVillage(x, y, s.hubs[i]!));
-    pois.forEach(([x, y], i) => this.clear(x, y, s.pois[i]!.r));
+    pois.forEach(([x, y], i) => {
+      this.clear(x, y, s.pois[i]!.r);
+      this.sightAt.push([x, y, s.pois[i]!.r]);
+    });
     exits.forEach((e) => this.corridor(e.edge, e.inner));
     const marks = (s.landmarks ?? []).map((lm) => ({ lm, at: this.clearOfTowns(this.tileOf(lm.at)) }));
     marks.forEach(({ lm, at }) => this.clear(at[0], at[1], (lm.foot ?? 2) + 4));
@@ -609,6 +663,41 @@ class ZoneBuilder {
         this.lock[i] = 1;
       }
     }
+  }
+
+  /**
+   * Where a sight stands: where it was written, or the nearest ground to that which is clear of every town (by `pad`
+   * tiles past its streets) and, in a land with a river, not on its bank. (Each rule alone undid the other: pushed
+   * out of the war camp, Highwall's ruin landed by the river, and the river put it back among the tents.)
+   */
+  private sightSpot(at: [number, number], pad: number): [number, number] {
+    // (a town is a block of streets, and a walled one a rectangle: square-shouldered, so a sight off its corner is clear of the corner)
+    const inTown = (x: number, y: number): boolean => this.hubAt.some(([hx, hy]) => ((x - hx) / (VX + pad)) ** 6 + ((y - hy) / (VY + pad)) ** 6 < 1);
+    const river = this.spec.water?.kind === 'river';
+    const wet = (cx: number, cy: number): boolean => {
+      for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) if (this.inside(cx + dx, cy + dy) && this.g[this.idx(cx + dx, cy + dy)] === WATER) return true;
+      return false;
+    };
+    const near = (cx: number, cy: number): boolean => {
+      for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (this.at(cx + dx, cy + dy) === WATER) return true;
+      return false;
+    };
+    if (!inTown(at[0], at[1])) return this.besideRiver(at);
+    for (let r = 1; r <= 60; r++) {
+      let best: [number, number] | null = null;
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const x = at[0] + dx;
+          const y = at[1] + dy;
+          // (nor out in the water, whatever the land's water is: a camp pushed off a harbor town went into the sea)
+          if (!this.inside(x, y, 10) || inTown(x, y) || (river ? wet(x, y) : near(x, y))) continue;
+          if (!best || Math.hypot(dx, dy) < Math.hypot(best[0] - at[0], best[1] - at[1])) best = [x, y];
+        }
+      }
+      if (best) return best;
+    }
+    return this.besideRiver(at);
   }
 
   /** A place set where a river runs stands on its bank instead: the nearest ground with no water within five tiles. */
@@ -970,19 +1059,21 @@ class ZoneBuilder {
     };
     /** The tile before each door: nothing solid goes there, whatever else fits. */
     const steps = new Set<number>();
-    const prop = (dx: number, dy: number, name: string, solid = true): boolean => {
-      const x = X(dx);
-      const y = Y(dy);
-      if (!open(x, y) && !(free(x, y) && (this.at(x, y) === COBBLE || this.at(x, y) === PATH))) return false;
+    /** A thing on a map tile, facing a way if it has one (south, to the camera, unless it says). */
+    const propAt = (x: number, y: number, name: string, solid = true, face?: PropFace): boolean => {
+      if (!open(x, y) && !(free(x, y) && (this.at(x, y) === COBBLE || this.at(x, y) === PATH || this.at(x, y) === BRIDGE))) return false;
       if (solid && steps.has(this.idx(x, y))) return false;
-      this.put(x, y, { kind: 'prop', prop: name, solid });
-      // (a big thing stands on the tiles it covers)
-      for (const dx2 of FOOT[name] ?? []) {
-        const bx = x + dx2;
-        if (free(bx, y) && !steps.has(this.idx(bx, y)) && (OPEN.has(this.at(bx, y)) || this.at(bx, y) === COBBLE)) this.put(bx, y, { kind: 'prop', prop: 'block', solid: false });
+      this.put(x, y, { kind: 'prop', prop: name, solid, ...(face ? { face } : {}) });
+      // (a big thing stands on the tiles it covers: along its front, whichever way that runs)
+      const upright = face === 'e' || face === 'w';
+      for (const d of FOOT[name.split(':')[0]!] ?? []) {
+        const bx = upright ? x : x + d;
+        const by = upright ? y + d : y;
+        if (free(bx, by) && !steps.has(this.idx(bx, by)) && (OPEN.has(this.at(bx, by)) || this.at(bx, by) === COBBLE)) this.put(bx, by, { kind: 'prop', prop: 'block', solid: false });
       }
       return true;
     };
+    const prop = (dx: number, dy: number, name: string, solid = true): boolean => propAt(X(dx), Y(dy), name, solid);
     const pick = (list: readonly string[], x: number, y: number, salt: number): string => list[Math.floor(hash2(x, y, seed + salt) * list.length) % list.length]!;
     const made: { style: BuildingStyle; x0: number; y0: number; w: number; h: number }[] = [];
     /** A building on a lot `w` by `h` whose front row is `front`, its door on the street below; false if it won't fit. */
@@ -1118,6 +1209,18 @@ class ZoneBuilder {
             // (a dirt road stays stone where it's been paved: nothing paints a street back over its cobbles)
             if (c === PATH && k === COBBLE) continue;
             this.set(x, y, c);
+            this.lock[this.idx(x, y)] = 1;
+          }
+        }
+      },
+      bare: (dx0, dy0, dx1, dy1) => {
+        for (let dy = dy0; dy <= dy1; dy++) {
+          for (let dx = dx0; dx <= dx1; dx++) {
+            const x = X(dx);
+            const y = Y(dy);
+            if (!this.inside(x, y, 3) || this.marked.has(this.idx(x, y))) continue;
+            const k = this.at(x, y);
+            if (k === WALL || k === TREE || k === BUSH || k === ROCK) this.set(x, y, FLOOR);
             this.lock[this.idx(x, y)] = 1;
           }
         }
@@ -1290,12 +1393,50 @@ class ZoneBuilder {
         if (free(X(hx + dx), Y(hy + dy))) this.set(X(hx + dx), Y(hy + dy), TREE);
       } else prop(hx + dx, hy + dy, name);
     }
-    const stalls: [number, number][] = [];
+    // The market. A stall looks out over the square it trades on, never at a wall or the back of a house (the owner,
+    // of Hearthstead: "the markets facing towards the houses and they have no right orientation"). It faces south, to
+    // the camera, where the square lies before it; otherwise it turns east or west to the open side and backs up to
+    // the square's edge. Its goods are stacked at one end of its counter, and whoever keeps it stands before it.
+    const stalls: { x: number; y: number; face: 's' | 'e' | 'w' }[] = [];
     const goods = look?.goods ?? heart.goods;
+    const stallName = look?.stall ?? heart.stall;
+    const FRONT = { s: [0, 1], e: [1, 0], w: [-1, 0] } as const;
+    const roomAt = (x: number, y: number): number => {
+      if (!this.inside(x, y, 2) || !WALKABLE.has(this.at(x, y))) return -3;
+      if (this.marked.has(this.idx(x, y))) return -1;
+      return this.at(x, y) === FLOOR || this.at(x, y) === DECO ? 1 : 2;
+    };
+    /** How open the ground before a stall is, looking a way: the three rows before its counter. */
+    const before = (x: number, y: number, f: 's' | 'e' | 'w'): number => {
+      const [fx, fy] = FRONT[f];
+      let n = 0;
+      for (let d = 1; d <= 3; d++) for (let a = -1; a <= 1; a++) n += roomAt(x + fx * d + (fy ? a : 0), y + fy * d + (fx ? a : 0));
+      return n;
+    };
+    const paved = (x: number, y: number): boolean => free(x, y) && !steps.has(this.idx(x, y)) && (this.at(x, y) === COBBLE || this.at(x, y) === PATH || this.at(x, y) === BRIDGE || this.at(x, y) === ground);
     sq.stalls.forEach(([dx, dy, side], i) => {
-      if (!prop(dx, dy, look?.stall ?? heart.stall)) return;
-      stalls.push([dx, dy]);
-      prop(dx + side, dy, goods[(i + Math.floor(hash2(cx, cy, seed + 87) * 4)) % goods.length]!);
+      let x = X(dx);
+      let y = Y(dy);
+      let face: 's' | 'e' | 'w' = 's';
+      if (TURNS.has(stallName)) {
+        const s0 = before(x, y, 's');
+        const e0 = before(x, y, 'e');
+        const w0 = before(x, y, 'w');
+        const turned = e0 > w0 || (e0 === w0 && x < cx) ? 'e' : 'w';
+        if (s0 < 10 && Math.max(e0, w0) > s0 + 2) face = turned;
+        // (its back to the edge of the square: a step or two back while there is paving behind it)
+        if (face !== 's') {
+          for (let n = 0; n < 2 && paved(x - FRONT[face][0], y) && paved(x - FRONT[face][0], y - 1) && paved(x - FRONT[face][0], y + 1); n++) x -= FRONT[face][0];
+          // (and up off the foot of the square, where the roofs of the row behind stood over it: two rows of paving
+          // south of its counter's end)
+          for (let n = 0; n < 4 && !(paved(x, y + 2) && paved(x, y + 3)) && paved(x, y - 2) && paved(x, y - 1); n++) y--;
+        }
+      }
+      if (!propAt(x, y, stallName, true, face === 's' ? undefined : face)) return;
+      stalls.push({ x, y, face });
+      const good = goods[(i + Math.floor(hash2(cx, cy, seed + 87) * 4)) % goods.length]!;
+      const ends: [number, number][] = face === 's' ? [[x + side * flip * 2, y], [x - side * flip * 2, y]] : [[x, y + side * 2], [x, y - side * 2]];
+      for (const [gx, gy] of ends) if (propAt(gx, gy, good)) break;
     });
     // (one of a kind: a square whose heart is a well doesn't get the court's second well beside it, but a trader's cart)
     for (const [dx, dy, name] of sq.furniture) prop(dx, dy, name === heart.centre[0]?.[2] ? 'market-cart' : name);
@@ -1312,10 +1453,12 @@ class ZoneBuilder {
       .map((m): [number, number] => [m.x0 + Math.floor(m.w / 2) + 2, m.y0 + m.h]);
     let k = 0;
     let s = 0;
+    const roles = new Set<string>();
     hub.npcs.forEach((npc) => {
       const role = ROLES.find(([re]) => re.test(npc))?.[1];
+      if (role) roles.add(role);
       const stall = role === 'market' ? stalls[s++ % Math.max(1, stalls.length)] : undefined;
-      const at = role === 'market' ? (stall ? [X(stall[0]), Y(stall[1] + 1)] : null) : role ? doorOf(role) : null;
+      const at = role === 'market' ? (stall ? [stall.x + FRONT[stall.face][0], stall.y + FRONT[stall.face][1]] : null) : role ? doorOf(role) : null;
       const home = homes[k % Math.max(1, homes.length)] ?? [cx + 3, cy + 3];
       if (!at) k++;
       const [tx, ty] = this.free(at ? at[0]! : home[0], at ? at[1]! : home[1], true);
@@ -1323,11 +1466,64 @@ class ZoneBuilder {
     });
     this.villageFronts(made, seed, look);
     this.villageStreets(cx, cy, seed, look);
+    // The life of the place (the owner: "add more livelyhood to the cities ... in every single zone"). A stall nobody
+    // named keeps has a trader of its own before it; a forge with no smith to talk to has one at its anvil; a walled
+    // town has two of its guard at every gate; and the land's own animals are about: hens by the back doors, a dog on
+    // the square, a cat by the inn, a horse tied at its trough.
+    stalls.slice(Math.min(s, stalls.length)).forEach((st) => {
+      const [fx, fy] = FRONT[st.face];
+      if (WALKABLE.has(this.at(st.x + fx, st.y + fy)) && free(st.x + fx, st.y + fy)) this.put(st.x + fx, st.y + fy, { kind: 'prop', prop: 'post-vendor', solid: false, ...(st.face === 's' ? {} : { face: st.face }) });
+    });
+    const forge = made.find((m) => m.style === 'smithy');
+    if (forge && !roles.has('smithy')) {
+      const fy = forge.y0 + forge.h;
+      const door = forge.x0 + Math.floor(forge.w / 2);
+      // (the anvil out at the end of its front, the smith at it: clear of the door)
+      const [ax, sx2, turn]: [number, number, PropFace] = forge.x0 + forge.w - 1 > door + 1 ? [forge.x0 + forge.w, forge.x0 + forge.w - 1, 'e'] : [forge.x0 - 1, forge.x0, 'w'];
+      if (sx2 !== door && WALKABLE.has(this.at(sx2, fy)) && free(sx2, fy) && propAt(ax, fy, 'anvil')) this.put(sx2, fy, { kind: 'prop', prop: 'post-smith', solid: false, face: turn });
+    }
+    // the gates: where a road goes out through the wall, a guard either side of it, inside
+    for (const [gx, gy] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
+      for (let d = 4; d <= (gx ? VX : VY) + 3; d++) {
+        const x = cx + (gx > 0 ? 1 : 0) + gx * d;
+        const y = cy + (gy > 0 ? 1 : 0) + gy * d;
+        const walled = [2, 3, 4, 5].some((o) => this.at(x + (gy ? o : 0), y + (gx ? o : 0)) === RAMPART) && [2, 3, 4, 5].some((o) => this.at(x - (gy ? o : 0), y - (gx ? o : 0)) === RAMPART);
+        if (!walled || !WALKABLE.has(this.at(x, y))) continue;
+        // (the road is two tiles wide: the tile either side of it)
+        for (const o of [-1, 2]) {
+          const px = x - gx * 2 + (gy ? o : 0);
+          const py = y - gy * 2 + (gx ? o : 0);
+          if (WALKABLE.has(this.at(px, py)) && free(px, py)) this.put(px, py, { kind: 'prop', prop: 'post-guard', solid: false, ...(gx > 0 ? { face: 'e' as const } : gx < 0 ? { face: 'w' as const } : {}) });
+        }
+        break;
+      }
+    }
+    /** The nearest open grass to a tile (never a road or a doorstep): where an animal is let out. */
+    const grass = (x: number, y: number): [number, number] | null => {
+      for (let rad = 0; rad <= 4; rad++) for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) if (Math.max(Math.abs(dx), Math.abs(dy)) === rad && open(x + dx, y + dy) && !steps.has(this.idx(x + dx, y + dy))) return [x + dx, y + dy];
+      return null;
+    };
+    const homesFar = made.filter((m) => m.style === 'house').sort((a, b) => Math.hypot(b.x0 - cx, b.y0 - cy) - Math.hypot(a.x0 - cx, a.y0 - cy));
+    const inn = made.find((m) => m.style === 'tavern' || m.style === 'inn') ?? made.find((m) => m.style === 'hall');
+    let hens = 0;
+    for (const beast of VILLAGE_BEASTS[theme] ?? VILLAGE_BEASTS.farm!) {
+      const home = homesFar[hens % Math.max(1, homesFar.length)];
+      // hens by a house away from the square, a horse at the inn's trough, the others about the square
+      const near: [number, number] | null =
+        beast === 'chickens' ? (home ? [home.x0 + home.w + 1, home.y0 + home.h - 1] : null) : beast === 'horse' ? (inn ? [inn.x0 - 2, inn.y0 + inn.h - 1] : null) : beast === 'cat' ? (inn ? [inn.x0 + inn.w + 1, inn.y0 + inn.h] : [cx - 4, cy + 3]) : [cx + 4, cy + 4];
+      if (beast === 'chickens') hens++;
+      const at = near && grass(near[0], near[1]);
+      if (!at) continue;
+      this.put(at[0], at[1], { kind: 'prop', prop: beast, solid: false });
+      if (beast === 'horse' && open(at[0] - 1, at[1])) this.put(at[0] - 1, at[1], { kind: 'prop', prop: 'trough', solid: true });
+    }
     if (look && !look.green) return;
     // the green: flowers in drifts on the open ground, the clearing's edge planted
     for (let y = cy - VY; y <= cy + VY; y++) {
       for (let x = cx - VX; x <= cx + VX; x++) {
         if (!open(x, y) || this.at(x, y) !== FLOOR) continue;
+        // (not in a sight's own clearing: a village's hedge grew through the camp beside it, a bush in every tent)
+        if (this.sightAt.some(([px, py, pr]) => Math.hypot(x - px, y - py) <= pr + 1)) continue;
         const d = ((x - cx) / VX) ** 4 + ((y - cy) / VY) ** 4;
         const nearRoad = [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => [PATH, COBBLE, BRIDGE, HOUSE, FENCE, RAMPART].includes(this.at(x + dx, y + dy))));
         if (nearRoad) continue;
@@ -1382,10 +1578,10 @@ class ZoneBuilder {
   }
 
   /** A place, or the nearest point out past any town it falls in. */
-  private clearOfTowns(at: [number, number]): [number, number] {
+  private clearOfTowns(at: [number, number], pad = 5): [number, number] {
     let [x, y] = at;
     for (let step = 0; step < 60; step++) {
-      const hub = this.hubAt.find(([hx, hy]) => ((x - hx) / (VX + 5)) ** 2 + ((y - hy) / (VY + 5)) ** 2 < 1);
+      const hub = this.hubAt.find(([hx, hy]) => ((x - hx) / (VX + pad)) ** 2 + ((y - hy) / (VY + pad)) ** 2 < 1);
       if (!hub) break;
       const a = Math.atan2(y - hub[1], x - hub[0] || 1);
       x = clamp(Math.round(x + Math.cos(a) * 2), 7, this.w - 8);
@@ -1661,11 +1857,59 @@ class ZoneBuilder {
     };
     const free = (x: number, y: number): boolean => OPEN.has(this.at(x, y)) && !this.marked.has(this.idx(x, y));
     switch (p.kind) {
-      case 'camp':
-        if (free(cx, cy)) this.put(cx, cy, { kind: 'prop', prop: 'campfire', solid: true });
-        ring(3, r * 0.55, (x, y) => free(x, y) && this.put(x, y, { kind: 'prop', prop: 'tent', solid: true }));
-        ring(4, r * 0.8, (x, y, k) => free(x, y) && this.put(x, y, { kind: 'prop', prop: k % 2 ? 'crate' : 'barrel', solid: true }));
+      case 'camp': {
+        // A camp somebody lives in and means to hold (the owner: "the enemy camps ... everything should have purpose").
+        // It was three huts and four boxes dropped in a ring. Now the fire is its middle; the chief's hut stands at
+        // its back, the band's tents either side of it, every mouth to the fire (and to the camera: a ridge tent
+        // seen side-on is a slab of canvas); a bedroll before each, a log to sit on; the stores stacked together at
+        // one end and the arms at the other; a torch either side of the way in; and a fence of stakes round the back
+        // of it all, open to the south, where its trail comes in.
+        const lay = (dx: number, dy: number, name: string, solid = true): boolean => {
+          const x = cx + dx;
+          const y = cy + dy;
+          const k = this.at(x, y);
+          if (!this.inside(x, y, 3) || this.marked.has(this.idx(x, y)) || !(OPEN.has(k) || k === PATH)) return false;
+          // (a tent wants the ground either side of it too)
+          if ((name === 'tent' || name === 'camp-tent') && [-1, 1].some((d) => !(OPEN.has(this.at(x + d, y)) || this.at(x + d, y) === PATH))) return false;
+          this.put(x, y, { kind: 'prop', prop: name, solid });
+          return true;
+        };
+        // (bare ground under all of it: nothing grows through a tent or out of the stores)
+        for (let y = cy - 8; y <= cy + 6; y++) {
+          for (let x = cx - 10; x <= cx + 10; x++) {
+            if (!this.inside(x, y, 3) || Math.hypot(x - cx, y - cy) > r) continue;
+            const k = this.at(x, y);
+            if (k === TREE || k === BUSH || k === ROCK) this.set(x, y, FLOOR);
+            this.lock[this.idx(x, y)] = 1;
+          }
+        }
+        lay(0, 0, 'campfire');
+        lay(0, -4, 'tent');
+        for (const side of [-1, 1] as const) {
+          lay(side * 4, -3, 'camp-tent');
+          lay(side * 2, 1, 'bedroll', false);
+          if (r >= 9) lay(side * 8, -1, 'camp-tent');
+          lay(side * 2, 5, 'torch');
+        }
+        lay(0, 2, 'log', false);
+        // the stores at the east end, the arms at the west
+        lay(5, 1, 'crates-stack');
+        lay(6, 1, 'barrel');
+        lay(5, 2, 'sacks');
+        lay(6, 2, 'barrel');
+        lay(-5, 1, 'weapon-rack');
+        lay(-5, 3, 'target');
+        // the stakes: round the north of it, a gap wherever a trail runs through
+        const reach = Math.min(r - 2, 8);
+        // (in three runs, with a way through between them: nothing behind the camp is fenced off from the land)
+        for (let a = 198; a <= 342; a += 4) {
+          if ((a > 228 && a < 256) || (a > 284 && a < 312)) continue;
+          const x = Math.round(cx + Math.cos((a * Math.PI) / 180) * (reach + 1));
+          const y = Math.round(cy + Math.sin((a * Math.PI) / 180) * reach * 0.8) - 1;
+          if (this.inside(x, y, 3) && free(x, y)) this.set(x, y, FENCE);
+        }
         break;
+      }
       case 'den':
         ring(Math.round(r * 2.2), r - 0.5, (x, y, k) => k % 3 !== 0 && free(x, y) && this.set(x, y, ROCK));
         ring(4, r * 0.4, (x, y) => free(x, y) && this.put(x, y, { kind: 'prop', prop: 'bones' }));
@@ -1894,6 +2138,7 @@ class ZoneBuilder {
       }
       const name = kinds[(start + turn) % kinds.length]!;
       const sc = SCENES[name]!;
+      const tented = Object.values(sc.key).some((c) => typeof c !== 'number' && (c.prop === 'camp-tent' || c.prop === 'tent'));
       const h = sc.rows.length;
       const w = Math.max(...sc.rows.map((r) => r.length));
       const x0 = 4 + Math.floor(rand() * (this.w - w - 8));
@@ -1917,6 +2162,9 @@ class ZoneBuilder {
           const cell = sc.rows[dy]?.[dx];
           if (cell !== undefined && cell !== ' ') ok = OPEN.has(this.g[i]!) && !this.lock[i] && !this.marked.has(i);
           else if (BUSY.has(this.g[i]!) || this.marked.has(i)) ok = false;
+          // (a scene with a tent in it keeps a step of open ground all round: a tent is wider than its tile, and one
+          // pitched at the scene's edge stood in the bush or the wood beside it)
+          else if (tented && dx >= -1 && dx <= w && dy >= -1 && dy <= h && !OPEN.has(this.g[i]!)) ok = false;
         }
       }
       if (!ok) continue;
@@ -1930,7 +2178,7 @@ class ZoneBuilder {
           const cell = sc.key[ch];
           if (cell === undefined) continue;
           if (typeof cell === 'number') this.set(x, y, cell);
-          else this.put(x, y, { kind: 'prop', prop: cell.prop, solid: !!cell.solid });
+          else this.put(x, y, { kind: 'prop', prop: cell.prop, solid: !!cell.solid, ...(cell.face ? { face: cell.face } : {}) });
         }
       });
       done.push([cx, cy]);

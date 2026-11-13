@@ -320,7 +320,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
     world.npcs.length = 0;
     world.chests.length = 0;
     world.folk.length = 0;
-    world.chickens.length = 0;
+    world.critters.length = 0;
     world.spores.length = 0;
     openBattlefield(world.map);
     const renderer = new Renderer(base);

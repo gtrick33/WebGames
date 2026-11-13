@@ -236,11 +236,12 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
         {hero ? (
           <>
             <h2 className="cs-name">{hero.name}</h2>
+            {/* (their level and calling on a line of their own, large: the owner could not read them on a big screen) */}
             <p className="cs-line">
-              <b style={{ color: CLASSES[hero.cls].colors.accent }}>
+              <b className="cs-class" style={{ color: CLASSES[hero.cls].colors.accent }}>
                 Level {hero.level} {CLASSES[hero.cls].name}
               </b>
-              <span> · {wornTitle(hero, engine.ringRating()) ?? farthest(hero.unlocked).name}</span>
+              <span className="cs-place">{wornTitle(hero, engine.ringRating()) ?? farthest(hero.unlocked).name}</span>
             </p>
           </>
         ) : (

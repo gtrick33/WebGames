@@ -40,6 +40,8 @@ export interface TownKit {
   open(dx: number, dy: number): boolean;
   /** Ground, over grass, woods and (for stone) dirt road. */
   rect(dx0: number, dy0: number, dx1: number, dy1: number, c: number): void;
+  /** Bare ground: the woods, trees, bushes and rocks off it (roads and water stay), and nothing planted there after. */
+  bare(dx0: number, dy0: number, dx1: number, dy1: number): void;
   /** Takes the road off some ground, to build there (whoever takes it gives the road another way round). */
   clear(dx0: number, dy0: number, dx1: number, dy1: number): void;
   /** Water here (a road through it becomes a bridge). */
@@ -431,7 +433,9 @@ export const TOWN_FORMS: Record<string, (k: TownKit) => TownLook> = {
     }
     return {
       heart: [-17, 4],
-      stalls: [[-17, 7, 1], [17, 6, -1], [-9, 2, -1], [9, 2, 1]],
+      // (the two by the pool stand on its bank, beside the road round it: on the road itself, a pavilion and the
+      // house across from it shut the road, and nobody could walk round the water)
+      stalls: [[-15, 7, 1], [15, 7, -1], [-9, 2, -1], [9, 2, 1]],
       stall: 'pavilion',
       goods: ['pot', 'urn', 'basket', 'clay-pot'],
       furniture: [[4, 2, 'bench'], [-4, 2, 'clay-pot'], [-3, -1, 'pot'], [5, -1, 'basket'], [-5, 3, 'urn'], [6, 3, 'urn']],
@@ -508,6 +512,7 @@ export const TOWN_FORMS: Record<string, (k: TownKit) => TownLook> = {
     const rx = 24;
     const ry = 16;
     const inside = (x: number, y: number): boolean => Math.abs(x) <= rx && Math.abs(y) <= ry && Math.abs(x) + Math.abs(y) * 1.4 <= rx + 12;
+    k.bare(-rx - 1, -ry - 1, rx + 1, ry + 1);
     k.clear(-10, -13, 11, -6);
     for (let y = -ry - 1; y <= ry + 1; y++) {
       for (let x = -rx - 1; x <= rx + 1; x++) {
@@ -559,6 +564,9 @@ export const TOWN_FORMS: Record<string, (k: TownKit) => TownLook> = {
     const ry = 16;
     // (the Host's camp is the color of ash, the last camp in the Reach the color of the snow on it)
     const canvas = k.theme === 'bonefield' ? ':#a89c84' : k.theme === 'pale' ? ':#c8ccd8' : '';
+    // (the whole camp on cleared ground: where the woods came up to it they stood in its corners, a tree at the end
+    // of a tent line and a gap in the palisade)
+    k.bare(-rx - 2, -ry - 2, rx + 2, ry + 2);
     k.clear(-10, -13, 11, -7);
     for (let x = -rx; x <= rx; x++) {
       for (const y of [-ry, ry]) if (Math.abs(x - 0.5) > 2.5 && k.open(x, y)) k.set(x, y, FENCE);
@@ -619,6 +627,7 @@ export const TOWN_FORMS: Record<string, (k: TownKit) => TownLook> = {
   citadel(k) {
     const rx = 24;
     const ry = 16;
+    k.bare(-rx - 1, -ry - 1, rx + 1, ry + 1);
     k.clear(0, -15, 1, -4);
     for (let y = -ry; y <= ry; y++) {
       for (let x = -rx; x <= rx; x++) {
@@ -758,8 +767,10 @@ function quayEast(k: TownKit): TownLook {
     k.rect(qx + 3, y, qx + 3 + len, y + 1, BRIDGE);
     k.prop(qx + 6, y - 2, 'boat', false);
     k.prop(qx + 10, y + 3, 'boat', false);
+    // (both on the pier's north plank, the south one clear to its end: set corner to corner they shut the end of the
+    // pier off, and whatever the land joined to it out there could not be reached)
     k.prop(qx + 2 + len, y, 'crate');
-    k.prop(qx + 1 + len, y + 1, 'barrel');
+    k.prop(qx + 1 + len, y, 'barrel');
   }
   // lanes down to it: paved, narrow, the houses shoulder to shoulder
   k.rect(-k.vx, 0, qx, 1, COBBLE);
@@ -808,7 +819,7 @@ function quaySouth(k: TownKit): TownLook {
     k.prop(x - 3, qy + 6, 'boat', false);
     k.prop(x + 3, qy + 9, 'boat', false);
     k.prop(x, qy + 2 + len, 'crate');
-    k.prop(x + 1, qy + 1 + len, 'barrel');
+    k.prop(x, qy + 1 + len, 'barrel');
   }
   k.rect(-k.vx, 0, k.vx + 1, 1, COBBLE);
   k.rect(0, -k.vy, 1, qy, COBBLE);

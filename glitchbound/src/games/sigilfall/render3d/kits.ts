@@ -465,6 +465,11 @@ put('cat', { k: 'a_fox', beast: BEASTS.cat });
 put('moonkin', { k: 'avian', tint: '#a7a0d6' });
 // small folk
 put('chicken', { k: 'bird', size: 0.9 });
+// the animals of a farm and a village (sim/critters.ts): a white sheep, a pink pig, a brown dog, a bay horse
+put('farm-sheep', { k: 'fbx_sheep', beast: { coat: '#efe9dc', under: '#ffffff', back: '#ddd5c4', legs: '#3a3028', muzzle: '#3a3028', nose: '#241c18', ears: '#3a3028', eyes: { color: '#1c1410', dark: true } } });
+put('farm-pig', { k: 'fbx_pig', beast: { coat: '#e9a9a0', under: '#f6cdc4', back: '#d98f86', legs: '#c8807a', muzzle: '#f2b6ac', nose: '#d07a72', ears: '#d98f86', eyes: { color: '#2a1810', size: 0.9, dark: true } } });
+put('farm-dog', { k: 'a_husky', beast: { coat: '#b9884f', under: '#f1deba', back: '#7c5429', legs: '#a57842', muzzle: '#f4e6cc', nose: '#2a1e1a', ears: '#6a4622', tail: '#f1deba', eyes: { color: '#2a1c14', dark: true } } });
+put('farm-horse', { k: 'a_horse', tint: '#9a6844' });
 
 /** Those who fight under another's name, set apart from the creature they borrow. */
 const BY_ENEMY: Record<string, Kit> = {

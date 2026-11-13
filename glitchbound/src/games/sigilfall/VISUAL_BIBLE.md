@@ -299,3 +299,24 @@ Everything that glows, flows or burns is a quad with a shader (`render3d/fx3d.ts
   chest height, and that ring is what you dodge. Warnings fill up as the blow comes. A hostile field has a red rim.
 - **A wall of water is one wave.** The shots of a `tide` are drawn back to front with their noise carried across them.
 - **Names, bars and numbers stay on the 2D canvas.** They're for reading, not for looking at.
+
+## What stands in a place stands there for a reason (owner, 2026-11-13)
+
+The owner's references are villages where every thing has a use and a place. The rules the generator keeps
+(`data/zonegen.ts`, `data/townforms.ts`; `tests/sigilfall-world-tree.test.ts` holds them):
+
+- **A market stall looks out over the square it trades on**, never at a wall or the back of a house. It faces south
+  (the camera) where the square lies before it, and otherwise turns east or west (`face` on a prop marker) and backs
+  up to the square's edge. Its goods are at one end of its counter and its keeper stands before it; a stall no named
+  trader keeps has one of its own (`post-vendor`).
+- **A tent stands on clear ground**: nothing grows through it and nothing stands against it. A camp's tents open on
+  its fire and on the camera (a ridge tent seen side-on is a slab of canvas). An enemy camp is a fire, the chief's
+  hut behind it, the band's tents either side, bedrolls, a log, the stores at one end and the arms at the other,
+  torches at the way in and stakes round its back.
+- **A sight keeps clear of the towns** (`sightSpot`): a camp by its whole spread, anything else when its middle is in
+  the streets. Nothing of a town's is planted in a sight's clearing.
+- **People are at their work** (`sim/folk.ts`, the `post-…` rules): a smith at the anvil, guards at a walled town's
+  gates, a farmer in the rows, a woodcutter at the block, travelers sitting at their fire. **Animals live where they
+  would** (`sim/critters.ts`): hens by the back doors, a dog on the square, a cat by the inn, a horse at its trough,
+  sheep in the pen, deer in the meadow. Both are decoration on their own random numbers.
+- Villagers camp under canvas (`camp-tent`); the round hut (`tent`) is a raider chief's.

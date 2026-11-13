@@ -3818,10 +3818,21 @@ html.rb-touch-playing textarea {
   padding-left: 18px;
   color: var(--rb-dim);
 }
+/* the map's window takes the room the screen has: the world is a tree, a row to a land, and wants the height */
+.rb-frame.is-wide:has(.rb-map) {
+  width: min(1120px, 100%);
+  height: min(790px, 100%);
+}
 .rb-map {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
   gap: 12px;
+  min-height: 100%;
+}
+.rb-map-right {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 /* the quest the map was opened for (a click on the tracker or the log), over the land's map */
 .rb-map-quest {
@@ -3950,7 +3961,9 @@ html.rb-touch-playing textarea {
 }
 .rb-world-view {
   position: relative;
-  height: min(56cqh, 420px);
+  /* (as tall as the window leaves it) */
+  flex: 1 1 300px;
+  min-height: min(56cqh, 300px);
   margin-bottom: 8px;
   overflow: hidden;
   border: 3px solid var(--rb-ink);
@@ -3968,15 +3981,28 @@ html.rb-touch-playing textarea {
 .rb-world-sea {
   fill: #20384e;
 }
-.rb-world line {
-  stroke: #6a6480;
+/* a branch of the tree: a road the hero has not walked is a faint dotted one */
+.rb-world-road {
+  fill: none;
+  stroke: #56607a;
   stroke-width: 0.6;
   stroke-dasharray: 1.2 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-.rb-world line.is-known {
+.rb-world-road.is-known {
   stroke: #c9a06a;
-  stroke-width: 0.9;
+  stroke-width: 1;
   stroke-dasharray: none;
+}
+/* the picked land's other roads */
+.rb-world-tie {
+  fill: none;
+  stroke: #8fd0ff;
+  stroke-width: 0.6;
+  stroke-dasharray: 0.4 1.5;
+  stroke-linecap: round;
+  opacity: 0.85;
 }
 .rb-world-node {
   cursor: pointer;
@@ -4022,7 +4048,8 @@ html.rb-touch-playing textarea {
   fill: #f2ead8;
 }
 .rb-world-lvl {
-  font-size: 2.6px;
+  font-size: 2.7px;
+  font-weight: 600;
   fill: #b8b0cc;
 }
 .rb-world-q {
@@ -6088,14 +6115,14 @@ html.rb-touch-playing textarea {
 }
 .cs-kicker {
   color: #d9b65e;
-  font: 700 clamp(8.5px, 1.3cqw, 11px) / 1 var(--font-mono, monospace);
+  font: 700 clamp(8.5px, 1.3cqw, max(11px, 0.78cqw)) / 1 var(--font-mono, monospace);
   letter-spacing: 0.24em;
   text-transform: uppercase;
   text-shadow: 0 1px 2px #000;
 }
 .cs-word {
   display: block;
-  width: clamp(120px, 24cqw, 230px);
+  width: clamp(120px, 24cqw, max(230px, 16cqw));
   height: auto;
   margin-top: 2px;
   filter: drop-shadow(0 3px 6px rgb(0 0 0 / 0.6));
@@ -6103,6 +6130,8 @@ html.rb-touch-playing textarea {
 .cs-top-btns {
   display: flex;
   gap: 6px;
+  /* (they grow with the screen, as the HUD's do: `--hud` is the stage's, from Game.tsx) */
+  zoom: var(--hud, 1);
 }
 
 /* the great arrows either side of the hero */
@@ -6112,7 +6141,7 @@ html.rb-touch-playing textarea {
   z-index: 6;
   display: grid;
   place-items: center;
-  width: clamp(44px, 7cqw, 62px);
+  width: clamp(44px, 7cqw, max(62px, 4.4cqw));
   aspect-ratio: 1;
   padding: 0;
   border: 2px solid #8a6a2a;
@@ -6165,7 +6194,7 @@ html.rb-touch-playing textarea {
   gap: clamp(1px, 0.6cqh, 5px);
   /* (never wider than the room between the wordmark on its left and its mirror on the right, whatever a phone's island
      takes off the sides: on a phone held sideways the hero's name ran over the SIGILFALL mark) */
-  width: min(56%, 460px, calc(100% - 2 * (34px + max(var(--sa-l, 0px), var(--sa-r, 0px)) + clamp(120px, 24cqw, 230px))));
+  width: min(56%, max(460px, 36cqw), calc(100% - 2 * (34px + max(var(--sa-l, 0px), var(--sa-r, 0px)) + clamp(120px, 24cqw, max(230px, 16cqw)))));
   transform: translateX(-50%);
   text-align: center;
   animation: cs-plate-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -6182,30 +6211,50 @@ html.rb-touch-playing textarea {
   overflow: hidden;
   max-width: 100%;
   color: #fff6e0;
-  font: 700 clamp(22px, 4.4cqw, 38px) / 1.05 Georgia, 'Times New Roman', serif;
+  font: 700 clamp(24px, 4.6cqw, max(40px, 3.3cqw)) / 1.05 Georgia, 'Times New Roman', serif;
   letter-spacing: 0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-shadow: 0 2px 0 #000, 0 0 16px rgb(0 0 0 / 0.9);
 }
+/* The hero's level and calling, then where their story has reached (or the title they wear). Every size here grows
+   with the hall: the old ones stopped at a laptop's, and on a big screen in full screen the level and the calling
+   were a line of specks under the name (the owner: "we need this to be big and readable"). */
 .cs-line {
+  display: grid;
+  justify-items: center;
+  gap: clamp(1px, 0.5cqh, 5px);
   margin: 0;
   max-width: 100%;
   text-wrap: balance;
   color: #d8cdea;
-  font-size: clamp(12px, 1.9cqw, 15px);
+  font-size: clamp(12px, 1.9cqw, max(15px, 1.15cqw));
   text-shadow: 0 1px 2px #000, 0 0 8px #000;
 }
+.cs-class {
+  font: 800 clamp(15px, 2.7cqw, max(23px, 1.8cqw)) / 1.1 Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 0 #000, 0 0 12px rgb(0 0 0 / 0.95);
+}
+/* a short stage (a phone on its side, inside the page): one line, so the hero's head stays clear of the words */
+@container (max-height: 300px) {
+  .cs-line {
+    display: block;
+  }
+  .cs-class::after {
+    content: ' · ';
+  }
+}
 .cs .cs-enter {
-  min-width: clamp(130px, 22cqw, 250px);
-  min-height: clamp(38px, 9cqh, 58px);
+  min-width: clamp(130px, 22cqw, max(250px, 18cqw));
+  min-height: clamp(38px, 9cqh, max(58px, 7cqh));
   padding: 0 clamp(14px, 3cqw, 28px);
   border: 2px solid #3a2208;
   border-radius: 8px;
   background: linear-gradient(180deg, #ffe7a8, #f6c453 52%, #cf8a2d);
   box-shadow: 0 0 0 2px #15101f, 0 0 0 3px rgb(246 196 83 / 0.6), 0 5px 0 #15101f, 0 0 26px rgb(246 196 83 / 0.3);
   color: #2a1406;
-  font: 700 clamp(15px, 2.7cqw, 22px) Georgia, 'Times New Roman', serif;
+  font: 700 clamp(15px, 2.7cqw, max(22px, 1.6cqw)) Georgia, 'Times New Roman', serif;
   text-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
   white-space: nowrap;
   cursor: pointer;
@@ -6814,7 +6863,7 @@ html.rb-touch-playing textarea {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto minmax(0, 1fr) minmax(0, 1fr);
   align-items: stretch;
   gap: clamp(4px, 1cqw, 10px);
-  width: min(98%, 1120px);
+  width: min(98%, max(1120px, 80cqw));
   transform: translateX(-50%);
 }
 .cs-mode {
@@ -6824,7 +6873,7 @@ html.rb-touch-playing textarea {
   align-items: center;
   gap: clamp(5px, 1cqw, 10px);
   min-width: 0;
-  min-height: clamp(46px, 13.5cqh, 76px);
+  min-height: clamp(46px, 13.5cqh, max(76px, 8.6cqh));
   padding: 5px clamp(6px, 1cqw, 12px) 5px clamp(5px, 0.8cqw, 9px);
   overflow: hidden;
   border: 2px solid color-mix(in srgb, var(--m) 72%, #000);
@@ -6877,7 +6926,7 @@ html.rb-touch-playing textarea {
 .cs-mode strong {
   display: block;
   overflow: hidden;
-  font: 700 clamp(12px, 1.65cqw, 17px) / 1.12 Georgia, 'Times New Roman', serif;
+  font: 700 clamp(12px, 1.65cqw, max(17px, 1.2cqw)) / 1.12 Georgia, 'Times New Roman', serif;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-shadow: 0 1px 2px #000;
@@ -6888,15 +6937,15 @@ html.rb-touch-playing textarea {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   color: color-mix(in srgb, var(--m) 42%, #fff);
-  font-size: clamp(9.5px, 1.45cqw, 12px);
+  font-size: clamp(9.5px, 1.45cqw, max(12px, 0.88cqw));
   line-height: 1.16;
 }
 .cs-mode-glyph {
   flex: none;
   display: grid;
   place-items: center;
-  width: clamp(24px, 7.4cqh, 38px);
-  height: clamp(24px, 7.4cqh, 38px);
+  width: clamp(24px, 7.4cqh, max(38px, 4.8cqh));
+  height: clamp(24px, 7.4cqh, max(38px, 4.8cqh));
   border: 2px solid var(--m);
   border-radius: 8px;
   box-shadow: 0 0 10px color-mix(in srgb, var(--m) 60%, transparent);
@@ -6935,7 +6984,7 @@ html.rb-touch-playing textarea {
   overflow: hidden;
   max-width: 100%;
   color: #5a3410;
-  font: 600 clamp(10px, 1.5cqw, 12.5px) / 1.1 system-ui, sans-serif;
+  font: 600 clamp(10px, 1.5cqw, max(12.5px, 0.9cqw)) / 1.1 system-ui, sans-serif;
   text-overflow: ellipsis;
   text-shadow: none;
   white-space: nowrap;

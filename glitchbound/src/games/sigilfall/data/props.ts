@@ -87,6 +87,19 @@ export const PROPS: Record<string, PropDef> = {
   catapult: { m: 'built_catapult', w: 68, d: 84, h: 64 },
   // (where a soldier of the camp stands guard: sim/folk.ts. A rule, nothing drawn)
   'guard-post': { m: '' },
+  // (and where the people of a place stand at their work: the trader behind the stall, the smith at the anvil, the
+  // farmer in the rows, travelers at their fire. Rules too: sim/folk.ts postJob)
+  // (a town's own guard at its gate: one soldier, where a war camp's `guard-post` means a garrison)
+  'post-guard': { m: '' },
+  'post-vendor': { m: '' },
+  'post-smith': { m: '' },
+  'post-farmer': { m: '' },
+  'post-woodcutter': { m: '' },
+  'post-hunter': { m: '' },
+  'post-fisher': { m: '' },
+  'post-traveler': { m: '' },
+  'post-pilgrim': { m: '' },
+  'post-herder': { m: '' },
   pavilion: { m: 'b_tent', w: 60, d: 60, h: 52, tint: '#f0dcb4' },
   bedroll: { m: 'built_bedroll', w: 18, d: 30, h: 6 },
   'market-cart': { m: 'p_cart_merchant', w: 44, d: 34, h: 42, across: true },
@@ -230,6 +243,13 @@ export const PROPS: Record<string, PropDef> = {
   // (a marker for a whole great work: greatworks.ts)
   great: { m: '' },
   chickens: { m: '' },
+  // (and the other animals a place lets out: sim/critters.ts. Rules, nothing drawn)
+  sheep: { m: '' },
+  pigs: { m: '' },
+  dog: { m: '' },
+  cat: { m: '' },
+  horse: { m: '' },
+  deer: { m: '' },
 };
 
 /** Less than the size a model may fill: what its body takes up on the ground, across and deep (thin things). */

@@ -376,7 +376,11 @@ export function parseRegion(def: RegionDef): TileMap {
       const cy = (pm.ty + 0.5) * TILE;
       for (const [dx, dy, fw, fd] of FEET[m.prop]!) standing({ x0: cx + dx - fw / 2, y0: cy + dy - fd / 2, x1: cx + dx + fw / 2, y1: cy + dy + fd / 2 }, false);
       if (kind[pm.ty * w + pm.tx] === K.Prop) soft[pm.ty * w + pm.tx] = 1;
-    } else if (m.kind === 'prop' && !m.through && (m.solid || propStandsUp(m.prop))) pm.body = stand(propBody(m.prop), pm.tx, pm.ty);
+    } else if (m.kind === 'prop' && !m.through && (m.solid || propStandsUp(m.prop))) {
+      // (turned to face east or west, what it takes up turns with it)
+      const size = propBody(m.prop);
+      pm.body = stand(size && (m.face === 'e' || m.face === 'w') ? { w: size.d, d: size.w } : size, pm.tx, pm.ty);
+    }
     else if (m.kind === 'waystone') pm.body = stand({ w: 20, d: 16 }, pm.tx, pm.ty);
     else if (m.kind === 'dummy') pm.body = stand({ w: 14, d: 10 }, pm.tx, pm.ty);
     if (m.kind === 'prop' && m.prop !== 'block') {
@@ -384,7 +388,8 @@ export function parseRegion(def: RegionDef): TileMap {
       if (reach && (FEET[m.prop] || propBody(m.prop))) {
         const cx = (pm.tx + 0.5) * TILE;
         const cy = (pm.ty + 0.5) * TILE;
-        ownBoxes.push({ x0: cx - reach.w / 2 - 14, y0: cy - reach.d / 2 - 14, x1: cx + reach.w / 2 + 14, y1: cy + reach.d / 2 + 14 });
+        const [rw, rd] = m.face === 'e' || m.face === 'w' ? [reach.d, reach.w] : [reach.w, reach.d];
+        ownBoxes.push({ x0: cx - rw / 2 - 14, y0: cy - rd / 2 - 14, x1: cx + rw / 2 + 14, y1: cy + rd / 2 + 14 });
       }
     }
   }

@@ -98,6 +98,9 @@ function plan(): SpreadPlan {
 
   c.prop('market-stall', 28, 25, true, CALM);
   c.prop('market-stall', 36, 25, true, CALM);
+  // (and someone to sell from each, before its counter)
+  c.prop('post-vendor', 28, 26, false, CALM);
+  c.prop('post-vendor', 36, 26, false, CALM);
 
   // the guard yard by the gate: Mara's dummies
   c.fill(18, 14, 26, 18, 'path');
@@ -248,22 +251,28 @@ function plan(): SpreadPlan {
   c.npc('trader-ilse', 50, 24, CALM);
   c.npc('goodwife-bramble', 18, 25, CALM);
   // Elyra keeps the camp with Thessa until the Pale Herald takes her at the Tear (Act III)
-  c.npc('elyra', 28, 32, all(CAMP, not(is('the-heralds-ambush', 'done'))));
+  c.npc('elyra', 24, 23, all(CAMP, not(is('the-heralds-ambush', 'done'))));
   // home with Thessa after it is all over
   c.npc('elyra', 24, 36, HOME);
   c.npc('mara-venn', 47, 20, NIGHT);
   c.npc('elyra', 43, 20, NIGHT);
   c.npc('briar-oda', 24, 44, CALM);
-  // the camp at dawn: tents and a cookfire in the square, the burned inn's guests under canvas
-  c.prop('tent', 27, 28, true, CAMPED(CAMP));
-  c.prop('tent', 36, 28, true, CAMPED(CAMP));
-  c.prop('campfire', 30, 30, true, CAMPED(CAMP));
-  c.prop('tent', 24, 30, true, CAMPED(CAMP));
+  // The camp at dawn: the burned inn's guests under canvas, on the inn's own lawn between it and the square, their
+  // cookfire before the tents. (It was three round huts set down in the square itself, one against the Elder's Hall
+  // and one against the cottage behind it; the owner: "a 'warcamp' right in the middle of the square next to the
+  // house". The square is the market's; the camp is a place of its own, and of canvas: these are villagers.)
+  c.prop('camp-tent', 20, 21, true, CAMPED(CAMP));
+  c.prop('camp-tent', 22, 20, true, CAMPED(CAMP));
+  c.prop('camp-tent', 25, 21, true, CAMPED(CAMP));
+  c.prop('campfire', 22, 23, true, CAMPED(CAMP));
+  c.prop('bedroll', 20, 23, false, CAMPED(CAMP));
+  c.prop('cauldron', 24, 22, true, CAMPED(CAMP));
+  c.prop('post-traveler', 21, 23, false, all(CAMPED(CAMP), CALM));
 
   // the camp grows (Act I): every village the hero saves sends its people, and they stay
   // Fernstead's rangers keep a watchfire by the gate
   c.prop('campfire', 40, 15, true, CAMPED(is('camp-scouts', 'done')));
-  c.prop('tent', 37, 17, true, CAMPED(is('camp-scouts', 'done')));
+  c.prop('camp-tent', 37, 17, true, CAMPED(is('camp-scouts', 'done')));
   c.npc('ranger-cole', 39, 16, all(is('camp-scouts', 'done'), CALM, not(HOME)));
   // Millbrook's grain carts by the west road, and Tobin's hens (the sheep would not come)
   c.prop('cart', 8, 17, true, CAMPED(is('camp-grain', 'done')));
@@ -279,8 +288,8 @@ function plan(): SpreadPlan {
   // Fernstead's people under canvas, from the Herald's ambush (the village lost) until it is taken back (Act III):
   // they are never nowhere while their quests wait
   const FERN_CAMP = all(is('the-heralds-ambush', 'done'), not(is('fern-retaken', 'done')), not(is('epilogue-the-camp-goes-home', 'done')));
-  c.prop('tent', 15, 32, true, FERN_CAMP);
-  c.prop('tent', 19, 32, true, FERN_CAMP);
+  c.prop('camp-tent', 15, 32, true, FERN_CAMP);
+  c.prop('camp-tent', 19, 32, true, FERN_CAMP);
   c.prop('campfire', 17, 33, true, FERN_CAMP);
   // (round the fire, before the tents: behind them, the canvas hid them)
   c.npc('warden-hollis', 16, 33, FERN_CAMP);
