@@ -18,7 +18,7 @@
   -webkit-text-fill-color: transparent;
   -webkit-background-clip: text;
   background-clip: text;
-  background-repeat: no-repeat;
+  background-repeat: repeat;
 }
 .tfx::before,
 .tfx::after {
@@ -276,7 +276,6 @@
     radial-gradient(circle at 85% 30%, #fff 0 0.06em, transparent 0.08em),
     linear-gradient(90deg, #8fa8ff, #d5c4ff, #7f8cff, #c3a8ff, #9fb4ff, #8fa8ff);
   background-size: 2.4em 1.4em, 3.1em 1.6em, 1.9em 1.3em, 300% 100%;
-  background-repeat: repeat, repeat, repeat, no-repeat;
   filter: drop-shadow(0 0 2px rgb(190 170 255 / 0.8)) drop-shadow(0 0 7px rgb(100 90 255 / 0.45));
   animation: tfx-drift 9s linear infinite;
 }
