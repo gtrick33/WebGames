@@ -9,11 +9,11 @@ import { ECHOES } from '../data/wardens';
 import type { SigilEngine } from '../engine';
 import { classOpen } from '../progress/paidClasses';
 import { trialHero, trialStone } from '../progress/trial';
-import { iconPicture, iconsReady } from '../render/art/gameIcons';
+import { iconsReady } from '../render/art/gameIcons';
 import { heldWeapon, heroDollUrl, heroLook, portraitUrl } from '../render/sprites';
 import { clockText } from '../sim/world';
-import { spellsOf } from '../vigil/kit';
 import { Doll } from './Doll';
+import { classEmblem } from './classEmblem';
 import { ScreenGate } from './ScreenGate';
 
 /** The calling and the path played last, kept on this device (which stone each has reached is in the save). */
@@ -95,7 +95,7 @@ export function RiftScreen({ engine, onBack }: { engine: SigilEngine; onBack: ()
               const open = classOpen(id, me);
               return (
                 <button key={id} role="radio" aria-checked={id === pick.cls} className={`rb-vlobby-class${id === pick.cls ? ' is-on' : ''}${open ? '' : ' is-locked'}`} style={{ ['--c' as string]: CLASSES[id].colors.accent }} aria-disabled={!open} title={open ? `${CLASSES[id].name}: Riftstone +${trialStone(engine.save, id)}` : `${CLASSES[id].name}: unlock it in the shop`} onClick={() => open && choose(id, 0)}>
-                  <img src={iconPicture(spellsOf(id)[0]!.icon)} alt="" draggable={false} />
+                  <img src={classEmblem(id)} alt="" draggable={false} />
                   <span>{CLASSES[id].name}</span>
                   <b className="rb-rlobby-stone">+{trialStone(engine.save, id)}</b>
                 </button>

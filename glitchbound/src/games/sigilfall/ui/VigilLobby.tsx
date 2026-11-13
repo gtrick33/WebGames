@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SigilEngine } from '../engine';
 import { wornLooks } from '../progress/wardrobe';
 import { Doll } from './Doll';
+import { classEmblem } from './classEmblem';
 import { wearOf, WearPicker } from './wear';
 import { LooksDialog, plainWorn, ringTitle } from './RingRewards';
 import { readRing, writeRing } from '../arena/ladder';
@@ -134,7 +135,7 @@ function PartyPanel({ room, pick, body, face, land, lands, onLand }: { room: Vig
           const known = CLASS_IDS.includes(s.pick?.cls as ClassId) ? (s.pick!.cls as ClassId) : null;
           return (
             <li key={s.n} className={`rb-vparty-seat${s.you ? ' is-you' : ''}${s.online ? '' : ' is-away'}`} style={{ ['--c' as string]: known ? CLASSES[known].colors.accent : '#8a8a94' }}>
-              {known ? <img src={iconPicture(spellsOf(known)[0]!.icon)} alt="" draggable={false} /> : <i aria-hidden="true">?</i>}
+              {known ? <img src={classEmblem(known)} alt="" draggable={false} /> : <i aria-hidden="true">?</i>}
               <span>
                 <b>{s.name}</b>
                 <small>
@@ -216,7 +217,9 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
   }, []);
   // (a campaign hero of the class, worn: their gear and their Wardrobe)
   const [wearN, setWearN] = useState(0);
-  const wear = useMemo(() => (engine && wearN >= 0 ? wearOf(engine, pick) : null), [engine, pick, wearN]);
+  // (asked again whenever the game changes: a copy of the save from the account puts new heroes in place)
+  const saved = engine?.getVersion() ?? 0;
+  const wear = useMemo(() => (engine && wearN >= 0 && saved >= 0 ? wearOf(engine, pick) : null), [engine, pick, wearN, saved]);
   // (in plain clothes: the title and the armor earned in the Ring, kept with its standing)
   const [plain, setPlain] = useState(() => readRing().plain);
   const [looksOpen, setLooksOpen] = useState(false);
@@ -276,7 +279,7 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
                   setSpell(0);
                 }}
               >
-                <img src={iconPicture(spellsOf(id)[0]!.icon)} alt="" draggable={false} />
+                <img src={classEmblem(id)} alt="" draggable={false} />
                 <span>{CLASSES[id].name}</span>
               </button>
             ))}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
-import { ABILITIES, kitOf, PRESETS, SLOTS } from '../arena/abilities';
+import { ABILITIES, PRESETS, SLOTS } from '../arena/abilities';
 import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, namedApart, nameFor, ratingChange, readRing, setsOf, skillAt, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave } from '../arena/ladder';
 import { MAP_IDS, MAPS } from '../arena/maps';
 import { bestRating, FORMATS, nextRank, rankOf, type Format } from '../arena/ranks';
@@ -16,7 +16,6 @@ import { Seek, type SeekLook } from '../net/ringSeek';
 import { rivalsOf } from '../arena/queue';
 import type { Action as RoomAction, Pick as RoomPick, View as RoomView } from '../net/ringRoom';
 import { newCharacter, type Face } from '../progress/character';
-import { iconPicture } from '../render/art/gameIcons';
 import { heldWeapon, heroDollUrl, heroLook } from '../render/sprites';
 import { RingMatch, type MatchResult, type MatchStakes, type RingInbox } from './RingMatch';
 import { RingResult, type RatingOutcome } from './RingResult';
@@ -27,6 +26,7 @@ import { wornLooks } from '../progress/wardrobe';
 import { titled } from '../progress/titles';
 import { ScreenGate } from './ScreenGate';
 import { Doll } from './Doll';
+import { classEmblem } from './classEmblem';
 
 /** The computer's teammates: who they are and which of their bars they bring. */
 interface Mate {
@@ -71,13 +71,6 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
 
 type Page = 'play' | 'setup' | 'friends';
 
-/**
- * A class's emblem in the lists of who to fight as: its first ability's picture, and for the Gloamknight a picture of
- * his own, a horned helm with burning eyes drawn like all the rest. (It had Gloam Cleave's, which could have been
- * anyone's: the owner, "his icon in the character selection screen could be way better"; then the shop's painted
- * head: "gloamknight's in game character selection icon is his head from the shop, can we change that".)
- */
-const classEmblem = (c: ClassId): string => iconPicture(c === 'gloamknight' ? 'berserker_face_mask_with_red_eyes_on_black' : kitOf(c)[0]!.icon);
 
 /** The classes to fight as. One from the shop can be picked once it's bought (progress/paidClasses.ts). */
 function ClassRow({ pick, onPick }: { pick: ClassId; onPick: (c: ClassId) => void }) {
@@ -158,7 +151,9 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const next = nextRank(standing.best);
   // (a campaign hero of the class, worn: their gear, their Wardrobe and their title)
   const [wearN, setWearN] = useState(0);
-  const wear = useMemo(() => (wearN >= 0 ? wearOf(engine, pick) : null), [engine, pick, wearN]);
+  // (asked again whenever the game changes: a copy of the save from the account puts new heroes in place)
+  const saved = engine.getVersion();
+  const wear = useMemo(() => (wearN >= 0 && saved >= 0 ? wearOf(engine, pick) : null), [engine, pick, wearN, saved]);
   // (in plain clothes: the Ring armor and the Ring title chosen, kept with the standing)
   const worn = useMemo(() => (wear ? undefined : plainWorn(save.plain)), [wear, save.plain]);
   const myTitle = ringTitle(wear, save.plain);

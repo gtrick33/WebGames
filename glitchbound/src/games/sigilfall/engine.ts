@@ -1644,11 +1644,24 @@ export class SigilEngine {
   }
 
   /**
+   * The save's own copy of a hero a screen is holding. A copy of the save from the account (another device's, or this
+   * one's come back merged: takeArrivedSave) puts new hero objects in place while a lobby is open, and the lobby's hero
+   * is then no longer in the save: changing it changed nothing, and the Ring's "Title & armor" stopped answering (the
+   * owner: "can't change character appearance for some reason after getting titles/equipment"). The same hero is the
+   * one made at the same moment, of the same class.
+   */
+  private savedHero(h: Character): Character | null {
+    if (this.save.heroes.includes(h)) return h;
+    return this.save.heroes.find((x): x is Character => !!x && x.created === h.created && x.cls === h.cls) ?? null;
+  }
+
+  /**
    * One of the account's heroes dressed, or given a title, from outside the story (the Ring's lobby): what they wear
    * there is what they wear everywhere.
    */
-  dress(hero: Character, slot: LookSlot, id: string | null): boolean {
-    if (!this.save.heroes.includes(hero) || !wearLook(hero, slot, id)) return false;
+  dress(asked: Character, slot: LookSlot, id: string | null): boolean {
+    const hero = this.savedHero(asked);
+    if (!hero || !wearLook(hero, slot, id)) return false;
     if (hero === this.hero) this.changed('equip');
     this.sound.play('equip');
     this.scheduleSave(300);
@@ -1656,8 +1669,9 @@ export class SigilEngine {
     return true;
   }
 
-  entitle(hero: Character, id: string): boolean {
-    if (!this.save.heroes.includes(hero) || !chooseTitle(hero, id, this.ringRating())) return false;
+  entitle(asked: Character, id: string): boolean {
+    const hero = this.savedHero(asked);
+    if (!hero || !chooseTitle(hero, id, this.ringRating())) return false;
     if (hero === this.hero) this.refreshPartyCard();
     this.sound.play('click');
     this.scheduleSave(300);
