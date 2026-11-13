@@ -14,6 +14,8 @@ import { heldWeapon, heroDollUrl, heroLook } from '../render/sprites';
 import { CharacterSelect } from './CharacterSelect';
 import { InviteCards } from './Friends';
 import { SkillIcon } from './common';
+import { RankScreen } from './RankScreen';
+import { trialsOpen } from '../progress/trial';
 import { RiftScreen } from './RiftScreen';
 import { ScreenGate } from './ScreenGate';
 import { SettingsPanel } from './Panels';
@@ -40,7 +42,7 @@ const EMBERS = Array.from({ length: 18 }, (_, i) => ({ x: (i * 53) % 100, delay:
  * on the far crag, fog in the valley and embers rising from the Rift. All CSS and one small drawing: it
  * paints at once, scales with the stage, and holds still for players who ask for less motion.
  */
-function EpicSky() {
+export function EpicSky() {
   return (
     <div className="rb-epic-sky" aria-hidden="true">
       <i className="rb-epic-stars" />
@@ -88,6 +90,7 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
   const [rift, setRift] = useState<number | null>(null);
   const [vigil, setVigil] = useState(false);
   const [ring, setRing] = useState(false);
+  const [ranks, setRanks] = useState(false);
   // a rated Ring match left while it was going: back to it, or a leaver's loss
   const [left, setLeft] = useState<LiveMatch | null>(() => readLive());
   const [resume, setResume] = useState<LiveMatch | null>(null);
@@ -128,18 +131,22 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
       </Suspense>
     );
   }
-  if (rift !== null && heroes[rift]) {
+  if (ranks) {
     return (
       <div className="rb-title is-epic is-roster">
         <EpicSky />
-        <RiftScreen engine={engine} slot={rift} onBack={() => setRift(null)} />
+        <RankScreen engine={engine} onBack={() => setRanks(false)} />
       </div>
     );
+  }
+  if (rift !== null && trialsOpen(engine.save)) {
+    // (on its own, as the Vigil's lobby and the Ring's are: it is laid out as they are)
+    return <RiftScreen engine={engine} onBack={() => setRift(null)} />;
   }
   return (
     <div className="rb-title is-hall">
       <ScreenGate intro label="Opening the sanctum">
-        <CharacterSelect engine={engine} onRift={setRift} onVigil={() => setVigil(true)} onRing={() => setRing(true)} onSettings={() => setSettings(true)} onStore={storeOpen ? () => setStore({ bought: null }) : undefined} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} />
+        <CharacterSelect engine={engine} onRift={setRift} onVigil={() => setVigil(true)} onRing={() => setRing(true)} onRanks={() => setRanks(true)} onSettings={() => setSettings(true)} onStore={storeOpen ? () => setStore({ bought: null }) : undefined} confirmDelete={confirmDelete} setConfirmDelete={setConfirmDelete} />
       </ScreenGate>
       {engine.ui.notice && <p className="rb-notice" role="status">{engine.ui.notice}</p>}
       {left && liveGoing(left) && (

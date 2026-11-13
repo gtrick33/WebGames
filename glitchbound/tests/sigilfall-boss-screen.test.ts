@@ -87,3 +87,37 @@ describe('Sigilfall: the screen in a boss fight', () => {
     expect(screen).toContain('ui.tip && !ui.death && <TipOverlay');
   });
 });
+
+describe('Sigilfall: the boss bar and the Riftstone clock', () => {
+  const css = readFileSync('src/games/sigilfall/Game.css', 'utf8');
+  const engine = readFileSync('src/games/sigilfall/engine.ts', 'utf8');
+  const rule = (sel: string): string => {
+    const at = css.lastIndexOf(`\n${sel} {`);
+    return at < 0 ? '' : css.slice(at, css.indexOf('}', at));
+  };
+
+  it('the boss bar is at the top of the screen and in its middle, the hero\'s bars narrowed to make room beside it', () => {
+    const r = rule('  .rb-ui.is-boss .rb-bossbar');
+    expect(r).toContain('left: 50%');
+    expect(r).toContain('translateX(-50%)');
+    expect(r).toContain('top: calc(4px + var(--sa-t))');
+    expect(rule('  .rb-ui.is-boss .rb-hud-bars')).toContain('50cqw - min(23cqw, 230px)');
+  });
+
+  it('a boss\'s name is said once, on its bar: no banner of it under the bar, across what the boss calls', () => {
+    expect(engine).toContain('banner: w.scene ? this.ui.banner : null };');
+  });
+
+  it('the clock is a fifth smaller, and on a phone on its side lies where the quest does', () => {
+    expect(rule('.rb-tracker.rb-keyclock')).toContain('scale(0.8)');
+    const phone = rule('  .rb-ui.is-touch .rb-tracker.rb-keyclock');
+    expect(phone).toContain('left: calc(8px + var(--sa-l))');
+    expect(phone).toContain('top: calc(62px + var(--sa-t))');
+    // the quest's own place there
+    expect(rule('  .rb-ui.is-touch .rb-tracker:not(.rb-keyclock)')).toContain('top: calc(62px + var(--sa-t))');
+  });
+
+  it('a run shows the clock and not the quest, which is back when the run is over', () => {
+    expect(readFileSync('src/games/sigilfall/ui/GameScreen.tsx', 'utf8')).toContain('{engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}');
+  });
+});
