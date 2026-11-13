@@ -9995,6 +9995,102 @@ html.rb-touch-playing textarea {
 .rb-ring.is-touch .rb-ring-under {
   display: none;
 }
+/* A phone on its side: each frame one slim row, the name inside the health bar and the mana or the cast a line under
+   it. At two lines and a tail each, three of them a side took two fifths of the screen's height, over where the
+   fighters stand (the owner: "UI/Nameplates on phone take too much screen space"). */
+@container (max-height: 430px) {
+  .rb-ring.is-touch .rb-ring-team {
+    flex-basis: 142px;
+    gap: 2px;
+  }
+  .rb-ring.is-touch .rb-ring-frame {
+    align-items: center;
+    gap: 3px;
+    padding: 1px;
+    border-width: 1px;
+    border-radius: 6px;
+  }
+  .rb-ring.is-touch .rb-ring-face {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+  }
+  .rb-ring.is-touch .rb-ring-face img {
+    top: -1px;
+    width: 32px;
+  }
+  .rb-ring.is-touch .rb-ring-bars {
+    position: relative;
+    gap: 1px;
+  }
+  .rb-ring.is-touch .rb-ring-name {
+    position: absolute;
+    inset: 0 30px auto 4px;
+    z-index: 1;
+    height: 14px;
+    font-size: 10px;
+    line-height: 14px;
+    text-shadow: 0 1px 1px #000, 0 0 2px #000;
+    pointer-events: none;
+  }
+  .rb-ring.is-touch .is-flip .rb-ring-name {
+    inset: 0 4px auto 30px;
+  }
+  .rb-ring.is-touch .rb-ring-name em {
+    padding: 0 3px;
+    font-size: 7.5px;
+    line-height: 11px;
+    text-shadow: none;
+  }
+  .rb-ring.is-touch .rb-ring-title {
+    font-size: 9px;
+  }
+  .rb-ring.is-touch .rb-ring-bar {
+    height: 14px;
+  }
+  .rb-ring.is-touch .rb-ring-bar b {
+    padding: 0 4px;
+    font-size: 9px;
+    line-height: 14px;
+    text-align: right;
+  }
+  .rb-ring.is-touch .is-flip .rb-ring-bar b {
+    text-align: left;
+  }
+  .rb-ring.is-touch .rb-ring-tail {
+    height: 5px;
+  }
+  .rb-ring.is-touch .rb-ring-mana {
+    height: 5px;
+  }
+  /* (a cast, a hold and out-of-sight say themselves by their color: there is no room for their words) */
+  .rb-ring.is-touch .rb-ring-cast {
+    height: 5px;
+  }
+  .rb-ring.is-touch .rb-ring-cast b,
+  .rb-ring.is-touch .rb-ring-held,
+  .rb-ring.is-touch .rb-ring-unseen {
+    font-size: 0;
+    line-height: 5px;
+  }
+  .rb-ring.is-touch .rb-ring-clock {
+    padding: 0 7px 2px;
+  }
+  .rb-ring.is-touch .rb-ring-clock > b {
+    font-size: 15px;
+  }
+  .rb-ring.is-touch .rb-ring-rating {
+    font-size: 11px;
+  }
+  .rb-ring.is-touch .rb-ring-rating small {
+    font-size: 9px;
+  }
+  .rb-ring.is-touch .rb-ring-menu .rb-iconbtn {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+}
 @container (max-height: 430px) {
   .rb-ring-team {
     flex-basis: 168px;
