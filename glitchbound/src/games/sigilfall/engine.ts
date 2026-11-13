@@ -1198,6 +1198,9 @@ export class SigilEngine {
       this.run.region = to;
     }
     const stone = this.run?.key ?? 0;
+    // (an expedition keeps the difficulty it set out at from land to land: one that set out at Mythic before Mythic
+    // was for the top level only, or with a party's leader who is there, still comes down to Heroic for a younger hero)
+    if (this.run && this.run.tier >= 2 && h.level < MAX_LEVEL) this.run.tier = 1;
     const keepTier = this.run ? this.run.tier : tier;
     // a land seen for the first time comes up as a title over it; after that, a banner (asked before the world
     // is made: its first look round already marks some of the land seen)

@@ -73,6 +73,8 @@ describe('Sigilfall: Mythic and the Riftstones are for heroes at the top level',
   it('a story hero below it can start neither: the road refuses a stone and gives Heroic for Mythic', () => {
     expect(engine).toContain('if (key > 0 && h.level < MAX_LEVEL) {');
     expect(engine).toContain('if (tier >= 2 && h.level < MAX_LEVEL) tier = Math.min(tier, 1);');
+    // (nor does an expedition already under way at Mythic carry it into the next land)
+    expect(engine).toContain('if (this.run && this.run.tier >= 2 && h.level < MAX_LEVEL) this.run.tier = 1;');
   });
 
   it('the map offers neither below it', () => {
