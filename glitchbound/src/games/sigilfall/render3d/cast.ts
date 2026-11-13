@@ -9,6 +9,7 @@ import { UNIT } from './land';
 import { mountKey, mountModel, type MountModel } from './mountKit';
 import { shapeOf } from './mountLook';
 import { loadPack, type MeshData, type Pack } from './pack';
+import { withGear } from './gear';
 import { builtProp } from './propsBuilt';
 import { strikeOf, UNMEASURED, type Strike } from './strike';
 import { ringMaterial, rigAnimOf, shadowMaterial, type RigAnim } from './toon';
@@ -53,6 +54,8 @@ interface KitEntry {
   mesh: MeshData | null;
   kit: Kit;
   loading: boolean;
+  /** Its gear is part of its body (render3d/gear.ts), not drawn piece by piece each frame. */
+  geared?: boolean;
 }
 
 /** A person's attack as their kind fights: a caster casts, an archer draws, a fighter swings or hews. */
@@ -220,7 +223,7 @@ export class Cast {
 
   private entry(file: string, kit: Kit): KitEntry {
     // (a model painted or dressed for one creature is its own: the plain one stays as its file has it)
-    const id = kit.paint || kit.wears || kit.beast ? `${file}@${ownKey(kit)}` : file;
+    const id = kit.paint || kit.wears || kit.beast || kit.gear ? `${file}@${ownKey(kit)}` : file;
     let e = this.kits.get(id);
     if (!e) {
       e = { crowd: null, rig: null, mesh: null, kit, loading: true };
@@ -246,6 +249,20 @@ export class Cast {
           let body = /^(a_|fbx_)/.test(file) ? softBody(mesh) : mesh;
           // an animal painted and dressed as its kind (kits.ts beast): after the softening, so its markings stay its own
           if (kit.beast) body = beastOf(body, rig.joints, kit.beast);
+          // what it wears or carries, made part of it, so that it moves as the body does (render3d/gear.ts)
+          if (kit.gear) {
+            const kt = kit.tint ? hexRgb(kit.tint) : ([1, 1, 1] as const);
+            const gain = kit.gain ?? 1;
+            const geared = withGear(body, kit.gear, (m) => this.propMesh(m), [kt[0] * gain, kt[1] * gain, kt[2] * gain]);
+            if (geared) {
+              // (how big it is drawn, and where its gear sits, go by the body alone: kept as `mesh`)
+              entry.mesh = body;
+              entry.geared = true;
+              entry.crowd = new Crowd(geared, rig, this.root, 16, 0.022);
+              entry.loading = false;
+              return;
+            }
+          }
           entry.mesh = body;
           entry.crowd = new Crowd(body, rig, this.root, 16, 0.022);
           entry.loading = false;
@@ -333,13 +350,14 @@ export class Cast {
     let r = 1;
     let g = 1;
     let b = 1;
-    if (kit.tint) {
+    // (a beast whose gear is part of its body has its own color painted into it already: render3d/gear.ts)
+    if (kit.tint && !e.geared) {
       const c = hexRgb(kit.tint);
       r = c[0];
       g = c[1];
       b = c[2];
     }
-    if (kit.gain) {
+    if (kit.gain && !e.geared) {
       r *= kit.gain;
       g *= kit.gain;
       b *= kit.gain;
@@ -358,7 +376,7 @@ export class Cast {
     crowd.put(x * UNIT - (mx * cos + mz * sin), lift - (opts?.rise ?? 0) * (h / TILE), y * UNIT - (mz * cos - mx * sin), rot, s * (opts?.sx ?? 1), s * (opts?.sy ?? 1), frames.a, frames.b, frames.k, Math.min(opts?.alpha ?? 1, kit.ghost ?? 1), r, g, b, opts?.flash ?? 0);
     this.used.add(crowd);
     // what it wears (not while it fades out, or as it rises from the ground)
-    if (kit.gear && (opts?.alpha ?? 1) > 0.6 && !(opts?.rise ?? 0)) {
+    if (kit.gear && !e.geared && (opts?.alpha ?? 1) > 0.6 && !(opts?.rise ?? 0)) {
       // (shares of its real height: a long beast is sized by its length, but its gear by how tall it stands)
       const H = (mesh.max[1] - mesh.min[1]) * s;
       for (const g of kit.gear) {
@@ -563,6 +581,12 @@ export class Cast {
     this.propStand(id)?.put(x * UNIT, lift, y * UNIT, rot, k, k, k, 1, 1, 1, 0, tipX, tipZ);
   }
 
+  /** A still model by name, from the packs or built in code; null while it isn't loaded. */
+  private propMesh(id: string): MeshData | null {
+    for (const p of this.packs) if (p.meshes[id]) return p.meshes[id]!;
+    return id.startsWith('built_') ? (builtProp(id) ?? null) : null;
+  }
+
   /** The instances of a still model, ready for this frame. */
   private propStand(id: string): Stand | null {
     let s = this.props.get(id);
@@ -609,7 +633,7 @@ const ownKeys = new WeakMap<Kit, string>();
 function ownKey(kit: Kit): string {
   let k = ownKeys.get(kit);
   if (!k) {
-    k = JSON.stringify([kit.paint ?? null, kit.wears ?? null, kit.beast ?? null]);
+    k = JSON.stringify([kit.paint ?? null, kit.wears ?? null, kit.beast ?? null, kit.gear ?? null]);
     ownKeys.set(kit, k);
   }
   return k;

@@ -357,7 +357,8 @@ put('plains-lion', { k: 'a_wolf', beast: BEASTS.lion, size: 1.3 });
 put('jungle-panther', { k: 'a_wolf', beast: BEASTS.panther, size: 1.2 });
 // (a griffon is a lion with an eagle's head and wings, not a man in feathers: it was the bird-folk's model in gold)
 put('griffon', { k: 'a_wolf', beast: BEASTS.griffon, size: 1.25 });
-put('cliff-roc', { k: 'avian', tint: '#b8895f', size: 1.25 });
+// (a great bird, not a bird-man: the feathered bird of the built creatures, big and on the wing)
+put('cliff-roc', { k: 'bird', tint: '#c89a68', size: 1.3, float: 0.5 });
 put('harpy storm-harpy', { k: 'avian' });
 put('carrion-crow gibbet-crow plague-crow', { k: 'bird', tint: '#57536c', size: 0.8, float: 0.45 });
 put('canyon-raptor', { k: 'fbx_raptor', beast: BEASTS.raptor });
@@ -451,7 +452,8 @@ put('felguard', { k: 'orc_brute', tint: FIRE, ...SMASH });
 put('voidwalker', { k: 'ghost', tint: VOID, float: 0.3, ghost: 0.85, walk: 'skelidle' });
 put('ashkar-the-bound', { k: 'golem', tint: FIRE, size: 1.3, ...SMASH });
 // a druid's shapes
-put('bear', { k: 'werewolf', tint: '#b08560', size: 1.1 });
+// (its own model, built in scripts/sigilfall-3d-assets.mjs bearKit: it was a werewolf in brown)
+put('bear', { k: 'bear', size: 1.2 });
 put('cat', { k: 'a_fox', beast: BEASTS.cat });
 put('moonkin', { k: 'avian', tint: '#a7a0d6' });
 // small folk
