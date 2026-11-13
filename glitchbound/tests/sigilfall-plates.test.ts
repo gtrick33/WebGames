@@ -26,6 +26,8 @@ describe('Sigilfall: health plates over heads', () => {
     // with the plates on, nothing about being unhurt sends a foe away without one
     const plated = body.slice(body.indexOf('} else {'));
     expect(plated).toContain('this.plate(e.id,');
+    // (a thing a boss fight stands up, a coffin, a candle, shows its health only once it is struck)
+    expect(body).toContain('if (!this.plates || (thing && e.hp >= e.maxHp && e.shield <= 0)) {');
     expect(plated).not.toContain('return;');
     // with them off, the plain bars are as they were: only on one that is hurt, or is somebody
     expect(body).toContain('if (e.hp >= e.maxHp && !elite && !named && e.shield <= 0) return;');

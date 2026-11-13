@@ -42,6 +42,12 @@ export interface Beast {
   /** Horns: a ram's curl, or short spikes. */
   horns?: { kind: 'ram' | 'spikes'; color: string; size?: number };
   fangs?: boolean;
+  /** The head and the front of the neck in a color of their own (a griffon's eagle head on a lion's body). */
+  head?: string;
+  /** A hooked beak over the muzzle. */
+  beak?: string;
+  /** Feathered wings from the shoulders, half spread: `tip` the color of the long feathers' ends. */
+  wings?: { color: string; tip?: string; size?: number };
   /**
    * For a model whose head carries antlers: what share of the head's height is skull (the rest, above, is antler), and
    * the antlers' color. The eyes and the muzzle are then found on the skull, not up among the tines.
@@ -153,6 +159,35 @@ function gem(b: Bits, c: readonly number[], rx: number, ry: number, rz: number, 
   }
 }
 
+/** A soft round clump (a lock of a mane): a low ball whose faces shade as one curve, not as flat facets. */
+function ball(b: Bits, c: readonly number[], rx: number, ry: number, rz: number, color: readonly number[]): void {
+  const SEG = 7;
+  const RINGS = 5;
+  const at = (i: number, j: number): { p: number[]; n: number[] } => {
+    const a = (i / RINGS) * Math.PI;
+    const t = (j / SEG) * Math.PI * 2;
+    const n = [Math.sin(a) * Math.cos(t), Math.cos(a), Math.sin(a) * Math.sin(t)];
+    return { p: [c[0]! + n[0]! * rx, c[1]! + n[1]! * ry, c[2]! + n[2]! * rz], n };
+  };
+  const put = (v: { p: number[]; n: number[] }): void => {
+    b.pos.push(...v.p);
+    b.nor.push(...v.n);
+    // (a little darker underneath, as hair lies)
+    const k = 0.84 + 0.16 * v.n[1]!;
+    b.col.push(color[0]! * k, color[1]! * k, color[2]! * k);
+  };
+  for (let i = 0; i < RINGS; i++) {
+    for (let j = 0; j < SEG; j++) {
+      const p00 = at(i, j);
+      const p01 = at(i, j + 1);
+      const p10 = at(i + 1, j);
+      const p11 = at(i + 1, j + 1);
+      // (wound to face outward: the same way round as the builders of the creature files)
+      for (const v of [p00, p01, p10, p01, p11, p10]) put(v);
+    }
+  }
+}
+
 /**
  * The model painted and dressed as `spec` says. `joints`: its bones' names, in the order its vertices name them.
  * Lengths are taken from the animal itself (its height, its head), so the same description fits a model of any scale.
@@ -259,6 +294,8 @@ export function beastOf(m: MeshData, joints: readonly string[], spec: Beast): Me
       c = mix(c, back, smooth(0.75, 1, 1 - low) * smooth(0.6, 0.2, fwd) * 0.6);
       c = mix(c, nose, smooth(0.9, 0.97, fwd) * smooth(0.75, 0.35, low));
     }
+    if (spec.head && (part === 'head' || part === 'ear')) c = mix(c, hex(spec.head), part === 'ear' ? 0.8 : 0.92);
+    if (spec.head && part === 'neck') c = mix(c, hex(spec.head), smooth(head.min[2] - hl * 1.1, head.min[2], z) * 0.9);
     if (part === 'ear') c = mix(c, earTip, ears[j]! >= 3 ? 0.9 : 0.3);
     if (part === 'tail') c = mix(c, tailTip, smooth(0.55, 0.9, tails[j]! / lastTail));
     // (a little of every hair its own shade)
@@ -385,6 +422,18 @@ export function beastOf(m: MeshData, joints: readonly string[], spec: Beast): Me
       }
     }
   }
+  if (spec.beak && headJ >= 0) {
+    const bc = hex(spec.beak);
+    const tip = find(inHead, (_x, y) => highOf(y) > 0.2 && highOf(y) < 0.8, (_x, _y, z) => z);
+    if (tip) {
+      // over the muzzle and hooked down at its end
+      const root: V3 = [hx, tip.p[1] + hh * 0.12, tip.p[2] - hl * 0.3];
+      const mid: V3 = [hx, tip.p[1] + hh * 0.04, tip.p[2] + hl * 0.12];
+      const end: V3 = [hx, tip.p[1] - hh * 0.26, tip.p[2] + hl * 0.2];
+      prism(on(tip.j), root, mid, hw * 0.3, hw * 0.2, bc, shade(bc, 1.1));
+      prism(on(tip.j), mid, end, hw * 0.2, 0, shade(bc, 1.1), shade(bc, 0.7));
+    }
+  }
   const spine = (part: Part): boolean => part === 'body' || part === 'neck';
   const cxTrunk = (trunk.min[0] + trunk.max[0]) / 2;
   const tw = trunk.max[0] - trunk.min[0] || 1;
@@ -411,23 +460,61 @@ export function beastOf(m: MeshData, joints: readonly string[], spec: Beast): Me
   if (spec.mane) {
     const mc = hex(spec.mane.color);
     const k = spec.mane.size ?? 1;
-    // tufts standing off the neck all round it, swept back, longest under the jaw and over the shoulders
+    // a thick ruff round the neck: soft clumps close together for its body, darker toward the shoulders, and longer
+    // locks hanging from the chest and jaw for its edge (spikes alone made a pine cone of it)
     let n = 0;
+    const taken = new Set<string>();
     for (let v = 0; v < m.n; v++) {
       if (!used[v]) continue;
       const j = m.skin[v * 3]!;
       const part = parts[j] ?? 'body';
       const z = m.pos[v * 3 + 2]!;
-      const nearNeck = part === 'neck' || (part === 'head' && fwdOf(z) < 0.3) || (part === 'body' && z > head.min[2] - hl * 0.9 && z < head.min[2]);
-      if (!nearNeck || hash2(v, 7, 21) > 0.62) continue;
+      // (the neck, the back of the skull and the top of the chest: not down the forelegs)
+      const high = m.pos[v * 3 + 1]! > trunk.min[1] + (trunk.max[1] - trunk.min[1]) * 0.38;
+      const nearNeck = part === 'neck' || (part === 'head' && fwdOf(z) < 0.28) || (part === 'body' && high && z > head.min[2] - hl * 0.8 && z < head.min[2]);
+      if (!nearNeck) continue;
+      // (one clump to a place: the model has several points at each corner of each face, and a clump on every one of
+      // them lay through its neighbors like shingles)
+      const cell = `${Math.round(m.pos[v * 3]! / (hh * 0.3))},${Math.round(m.pos[v * 3 + 1]! / (hh * 0.3))},${Math.round(z / (hh * 0.3))}`;
+      if (taken.has(cell)) continue;
+      taken.add(cell);
       const x = m.pos[v * 3]!;
       const y = m.pos[v * 3 + 1]!;
       const nx = m.sn[v * 3]! / 127;
       const nyy = m.sn[v * 3 + 1]! / 127;
-      const len = hh * (0.26 + hash2(v, 3, 23) * 0.2) * k;
-      const tone = 0.8 + hash2(v, 5, 25) * 0.45;
-      prism(on(j), [x - nx * len * 0.2, y - nyy * len * 0.2, z], [x + nx * len * 0.55, y + nyy * len * 0.55 - len * 0.3, z - len * 0.9], hh * 0.085 * k, 0, shade(mc, tone * 0.82), shade(mc, tone));
-      if (++n > 340) break;
+      const back = smooth(head.min[2], head.min[2] - hl * 0.95, z);
+      const tone = (1 - back * 0.28) * (0.95 + hash2(v, 5, 25) * 0.1);
+      const r = hh * (0.25 + hash2(v, 3, 23) * 0.08) * k;
+      ball(on(j), [x + nx * r * 0.3, y + nyy * r * 0.3 - r * 0.1, z - r * 0.2], r, r * 0.9, r * 1.25, shade(mc, tone));
+      if (nyy < -0.2 && hash2(v, 9, 27) > 0.55) prism(on(j), [x, y, z], [x + nx * r * 0.6, y - r * 2.1, z - r * 0.9], r * 0.5, 0, shade(mc, tone * 0.85), shade(mc, tone * 0.7));
+      if (++n > 300) break;
+    }
+  }
+  if (spec.wings) {
+    const wc = hex(spec.wings.color);
+    const wt = hex(spec.wings.tip ?? spec.wings.color);
+    const k = spec.wings.size ?? 1;
+    const tl = trunk.max[2] - trunk.min[2] || 1;
+    const zs = trunk.max[2] - tl * 0.3;
+    for (const s of [-1, 1]) {
+      // from the top of the shoulder: an arm of the wing out and up, and the long feathers fanned back from it
+      const at = find(spine, (x, _y, z) => Math.abs(z - zs) < tl * 0.12 && s * (x - cxTrunk) > tw * 0.12, (_x, y) => y);
+      if (!at) continue;
+      // (hung from the shoulder's own bone where the animal has one: the wings then rise and fall with its stride)
+      const sj = joints.findIndex((name) => new RegExp(`^FrontShoulder\\.${s < 0 ? 'L' : 'R'}$`, 'i').test(name));
+      if (sj >= 0) at.j = sj;
+      const root: V3 = [at.p[0], at.p[1] - H * 0.02, at.p[2]];
+      const wrist: V3 = [root[0] + s * H * 0.3 * k, root[1] + H * 0.34 * k, root[2] - H * 0.05 * k];
+      prism(on(at.j), root, wrist, H * 0.07 * k, H * 0.045 * k, shade(wc, 0.8), wc);
+      const N = 8;
+      for (let i = 0; i < N; i++) {
+        const t = i / (N - 1);
+        // (along the arm: the inner feathers short and close to the back, the outer long and swept away behind)
+        const from: V3 = [root[0] + (wrist[0] - root[0]) * (0.25 + t * 0.75), root[1] + (wrist[1] - root[1]) * (0.25 + t * 0.75), root[2] + (wrist[2] - root[2]) * (0.25 + t * 0.75)];
+        const len = H * (0.34 + t * 0.34) * k;
+        const to: V3 = [from[0] + s * len * (0.15 + t * 0.5), from[1] - len * (0.25 - t * 0.45), from[2] - len * (0.85 - t * 0.25)];
+        prism(on(at.j), from, to, H * 0.06 * k, 0, i % 2 ? wc : shade(wc, 0.86), wt);
+      }
     }
   }
   if (spec.tuft) {

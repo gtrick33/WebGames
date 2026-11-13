@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BOSSES } from '../src/games/sigilfall/data/bosses';
 import { ENEMIES } from '../src/games/sigilfall/data/enemies';
 import { beastOf, type Beast } from '../src/games/sigilfall/render3d/beast';
+import { withGear } from '../src/games/sigilfall/render3d/gear';
 import { kitOf } from '../src/games/sigilfall/render3d/kits';
 import type { MeshData } from '../src/games/sigilfall/render3d/pack';
 import { readPack } from './sigilfall-packs';
@@ -143,11 +144,15 @@ describe('Sigilfall: Gnasher', () => {
     }
   });
 
-  it("is a great hound, not eight tiles of one, and his banner shows from behind", () => {
+  it("is a great hound, not eight tiles of one, with great skulls at his hips and no banner", () => {
     const kit = kitOf('gnasher');
     expect(kit.size).toBeLessThanOrEqual(1.6);
     expect(kit.beast).toBeDefined();
-    expect(kit.gear!.find((g) => g.m.startsWith('banner'))!.both).toBe(true);
+    expect(kit.gear!.some((g) => g.m.startsWith('banner'))).toBe(false);
+    const hips = kit.gear!.filter((g) => g.m === 'skull' && g.h >= 0.2 && (g.z ?? 0) < -0.2);
+    // (against his side, not out beside it: his body is 0.17 of his height to each side at the haunch)
+    for (const g of hips) expect(Math.abs(g.x ?? 0)).toBeLessThanOrEqual(0.18);
+    expect(hips.map((g) => Math.sign(g.x ?? 0)).sort()).toEqual([-1, 1]);
   });
 });
 
@@ -162,5 +167,99 @@ describe('Sigilfall: what the great beasts carry', () => {
 
   it('Clatterclaw is no wider than a boss room can show', () => {
     expect(kitOf('clatterclaw').size).toBeLessThanOrEqual(1.7);
+  });
+});
+
+describe('Sigilfall: the griffon and the slime', () => {
+  it('a griffon is a lion with an eagle\'s head, a beak and wings (it was the bird-folk\'s model in gold)', () => {
+    const kit = kitOf('griffon');
+    expect(kit.k).toBe('a_wolf');
+    expect(kit.beast!.wings).toBeDefined();
+    expect(kit.beast!.beak).toBeDefined();
+    expect(kit.beast!.head).toBeDefined();
+    const { before, after } = dressed(kit.k, kit.beast!);
+    // two wings of an arm and eight feathers each, and a beak: a good many more points than the wolf it is built on
+    expect(after.n - before.n).toBeGreaterThan(400);
+  });
+
+  it('a slime is more than one ball: a skirt, drips, a shine and a face', () => {
+    const m = readPack('k/slime').meshes.body!;
+    expect(m.n).toBeGreaterThan(350);
+    // drips lie out beyond the body on the ground
+    expect(m.max[0] - m.min[0]).toBeGreaterThan(1.4);
+  });
+});
+
+describe('Sigilfall: a beast\'s gear is part of its body', () => {
+  const prop = (id: string): MeshData | null => {
+    for (const pack of ['indoor', 'town', 'nature', 'hero']) {
+      try {
+        const m = readPack(pack).meshes[id];
+        if (m) return m;
+      } catch {
+        /* no such pack */
+      }
+    }
+    return null;
+  };
+
+  it('each piece is hung from a bone of the beast, so it goes where the body goes', () => {
+    for (const sprite of ['ossa-the-founder', 'the-runewarden', 'old-sluicegut', 'clatterclaw', 'gnasher']) {
+      const kit = kitOf(sprite);
+      const pack = readPack(`k/${kit.k}`);
+      const body = pack.meshes.body!;
+      const out = withGear(body, kit.gear!, prop);
+      expect(out, sprite).not.toBeNull();
+      expect(out!.n, sprite).toBeGreaterThan(body.n);
+      // (a beast on the shared skeletons has its bones in another file: any bone the body itself uses will do)
+      const joints = pack.rigs[body.rig!]?.joints.length ?? 256;
+      for (let v = body.n; v < out!.n; v++) {
+        expect(out!.skin![v * 3]!, sprite).toBeLessThan(joints);
+        expect(out!.skin![v * 3 + 2], sprite).toBe(255);
+      }
+      for (let t = 0; t < out!.i; t++) if (out!.idx[t]! >= out!.n) throw new Error(`${sprite}: a face names a point that isn't there`);
+      // how big the beast is drawn goes by its body, not by what it carries
+      expect(out!.min).toEqual(body.min);
+      expect(out!.max).toEqual(body.max);
+    }
+  });
+
+  it('the beast\'s own color is painted into its body, and its gear keeps its own', () => {
+    const kit = kitOf('clatterclaw');
+    const body = readPack(`k/${kit.k}`).meshes.body!;
+    const red = withGear(body, kit.gear!, prop, [0.4, 0.1, 0.1])!;
+    const plain = withGear(body, kit.gear!, prop)!;
+    // the body is darker for the tint; the bones on its back are the same either way
+    let bodySum = 0;
+    let plainSum = 0;
+    for (let i = 0; i < body.n * 3; i++) {
+      bodySum += red.col[i]!;
+      plainSum += plain.col[i]!;
+    }
+    expect(bodySum).toBeLessThan(plainSum * 0.5);
+    for (let i = body.n * 3; i < red.n * 3; i++) expect(red.col[i]).toBe(plain.col[i]);
+  });
+
+  it('with a piece missing nothing is fitted (the pieces are then drawn as they were)', () => {
+    const kit = kitOf('gnasher');
+    expect(withGear(readPack(`k/${kit.k}`).meshes.body!, kit.gear!, () => null)).toBeNull();
+  });
+});
+
+describe('Sigilfall: the bear and the roc', () => {
+  it('a bear is a bear: its own model, on four legs, with every move', () => {
+    expect(kitOf('bear').k).toBe('bear');
+    const pack = readPack('k/bear');
+    const rig = pack.rigs[pack.meshes.body!.rig!]!;
+    for (const j of ['head', 'legFL', 'legFR', 'legBL', 'legBR']) expect(rig.joints, j).toContain(j);
+    for (const clip of ['idle', 'walk', 'run', 'chop', 'hit', 'die']) expect(rig.clips[clip], clip).toBeDefined();
+    const m = pack.meshes.body!;
+    expect(m.max[2] - m.min[2]).toBeGreaterThan(m.max[1] - m.min[1]);
+    expect(m.min[1]).toBeGreaterThan(-0.08);
+  });
+
+  it('a roc is a great bird on the wing, not a bird-man', () => {
+    expect(kitOf('cliff-roc').k).toBe('bird');
+    expect(kitOf('cliff-roc').float).toBeGreaterThan(0);
   });
 });

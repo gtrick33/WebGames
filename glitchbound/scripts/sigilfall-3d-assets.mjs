@@ -1375,18 +1375,32 @@ async function fbxKit(id, path, picks) {
   return pack;
 }
 
-/** A blob of slime: it hops and quivers. Gray, for the game to color. */
+/**
+ * A blob of slime: it hops and quivers. Gray, for the game to color. A dome with a darker foot and a pale crown, a
+ * shine on its shoulder, a clot at its heart, a wide-eyed face with a mouth, and drips round it on the ground (it was
+ * one plain ball with two dots, the plainest thing in a land).
+ */
 function slimeKit(id) {
   const pack = new Pack();
-  const c = [0.92, 0.92, 0.92];
+  const c = [0.9, 0.9, 0.9];
+  const deep = [0.56, 0.56, 0.6];
+  const pale = [1, 1, 1];
   const b = new Builder();
   const joints = [['root', null, [0, 0, 0]], ['body', 'root', [0, 0.42, 0]]];
-  b.blob(1, [0, 0, 0], [0.62, 0.44, 0.62], c, 10, 7);
-  b.blob(1, [0, 0.22, 0], [0.34, 0.3, 0.34], [c[0] * 1.05, c[1] * 1.05, c[2] * 1.05], 8, 5);
+  // (shaped round the ground, as it always was: half of the ball is under it, and what shows is the dome)
+  b.blob(1, [0, 0, 0], [0.62, 0.46, 0.62], (n) => (n[1] < 0.2 ? deep : n[1] > 0.8 ? pale : n[1] > 0.55 ? mixed(c, pale, 0.5) : c), 12, 9);
+  // a skirt where it spreads on the ground, and drips beyond it
+  b.blob(1, [0, 0.02, 0], [0.72, 0.1, 0.72], deep, 12, 4);
+  for (const [x, z, r] of [[0.7, 0.3, 0.12], [-0.62, 0.42, 0.1], [0.2, -0.72, 0.11], [-0.5, -0.5, 0.08]]) b.blob(1, [x, 0.03, z], [r, r * 0.6, r], c, 6, 3);
+  // the shine, and the clot it carries inside
+  b.oval(1, [-0.24, 0.3, 0.26], [0.16, 0.07, 0.1], pale, { z: 0.5, x: -0.4 }, 6, 3);
+  b.blob(1, [0.1, 0.38, -0.12], [0.2, 0.1, 0.2], mixed(c, pale, 0.7), 7, 3);
   for (const side of [-1, 1]) {
-    b.blob(1, [side * 0.2, 0.14, 0.52], [0.12, 0.14, 0.09], [1, 1, 1], 6, 4);
-    b.blob(1, [side * 0.2, 0.14, 0.59], [0.06, 0.08, 0.05], [0.04, 0.03, 0.06], 5, 3);
+    b.blob(1, [side * 0.21, 0.2, 0.5], [0.13, 0.15, 0.1], [1, 1, 1], 7, 5);
+    b.blob(1, [side * 0.2, 0.2, 0.58], [0.065, 0.085, 0.05], [0.04, 0.03, 0.06], 6, 4);
+    b.blob(1, [side * 0.2 + 0.03, 0.25, 0.62], [0.025, 0.025, 0.02], [1, 1, 1], 4, 2);
   }
+  b.oval(1, [0, 0.07, 0.6], [0.1, 0.035, 0.04], [0.1, 0.05, 0.08], null, 6, 3);
   builtRig(pack, id, joints, {
     idle: { dur: 1.2, pose: (n, j, t, u) => (n === 'body' ? { dy: Math.sin(u * 6.283) * 0.03 } : null) },
     walk: { dur: 0.7, pose: (n, j, t, u) => (n === 'root' ? { dy: Math.abs(Math.sin(u * 3.14)) * 0.34 } : null) },
@@ -1394,6 +1408,88 @@ function slimeKit(id) {
     chop: { dur: 0.6, pose: (n, j, t, u) => (n === 'root' ? { dz: Math.sin(u * 3.14) * 0.5, dy: Math.sin(u * 3.14) * 0.3 } : null) },
     hit: { dur: 0.3, pose: (n, j, t, u) => (n === 'body' ? { dz: -Math.sin(u * 3.14) * 0.1 } : null) },
     die: { dur: 0.6, pose: (n, j, t, u) => (n === 'body' ? { dy: -Math.min(1, u * 1.4) * 0.38 } : null) },
+  });
+  pack.addMesh('body', b.done());
+  pack.meshes.body.rig = id;
+  return pack;
+}
+
+/**
+ * A bear: a heavy body with a hump over the shoulders, a broad head with round ears and a pale muzzle, four thick
+ * legs on their own joints and a stub of a tail. It walks on diagonal pairs, and rears to strike. (The game's bear
+ * was a werewolf in brown: an upright wolf-man is not a bear.)
+ */
+function bearKit(id, o) {
+  const pack = new Pack();
+  const main = rgb(o.main);
+  const dark = rgb(o.dark);
+  const light = rgb(o.light);
+  const black = [0.07, 0.05, 0.06];
+  const joints = [['root', null, [0, 0, 0]], ['body', 'root', [0, 0.8, 0]]];
+  const W = { root: [0, 0, 0], body: [0, 0.8, 0] };
+  const b = new Builder();
+  const joint = (name, parent, at) => {
+    joints.push([name, parent, at]);
+    W[name] = W[parent].map((x, i) => x + at[i]);
+    b.at(W[name]);
+    return joints.length - 1;
+  };
+  const coat = (n) => (n[1] < -0.45 ? mixed(main, light, 0.55) : n[1] > 0.6 ? mixed(main, dark, 0.45) : main);
+  b.at(W.body);
+  b.oval(1, [0, 0, 0], [0.5, 0.46, 0.82], coat, null, 11, 7);
+  b.oval(1, [0, 0.2, 0.36], [0.44, 0.38, 0.42], coat, null, 10, 6);
+  b.oval(1, [0, 0.0, -0.5], [0.48, 0.45, 0.44], coat, null, 10, 6);
+  b.blob(1, [0, 0.12, -0.92], [0.1, 0.1, 0.1], dark, 6, 4);
+  const hj = joint('head', 'body', [0, 0.14, 0.78]);
+  b.oval(hj, [0, 0, 0.08], [0.31, 0.28, 0.31], (n) => (n[1] > 0.55 ? mixed(main, dark, 0.4) : main), null, 10, 7);
+  b.oval(hj, [0, -0.09, 0.36], [0.17, 0.14, 0.2], (n) => (n[1] < -0.3 ? mixed(light, [1, 1, 1], 0.2) : light), null, 8, 5);
+  b.blob(hj, [0, -0.04, 0.55], [0.07, 0.055, 0.05], black, 6, 4);
+  for (const s of [-1, 1]) {
+    b.blob(hj, [s * 0.21, 0.25, 0.0], [0.1, 0.1, 0.06], main, 7, 5);
+    b.blob(hj, [s * 0.21, 0.25, 0.04], [0.055, 0.055, 0.035], mixed(dark, black, 0.3), 6, 4);
+    b.blob(hj, [s * 0.14, 0.07, 0.34], [0.038, 0.042, 0.03], black, 6, 4);
+    b.blob(hj, [s * 0.14 + 0.012, 0.085, 0.365], [0.012, 0.012, 0.01], [1, 1, 1], 4, 2);
+  }
+  for (const [name, x, z] of [['legFL', -0.3, 0.44], ['legFR', 0.3, 0.44], ['legBL', -0.32, -0.5], ['legBR', 0.32, -0.5]]) {
+    const j = joint(name, 'body', [x, -0.18, z]);
+    b.limb(j, [0, 0.06, 0], [0, -0.5, 0.02], 0.19, 0.16, mixed(main, dark, 0.25), 7);
+    b.oval(j, [0, -0.55, 0.07], [0.17, 0.08, 0.22], dark, null, 8, 4);
+    for (const k of [-1, 0, 1]) b.limb(j, [k * 0.08, -0.57, 0.24], [k * 0.09, -0.61, 0.33], 0.022, 0.004, [0.92, 0.9, 0.82], 3);
+  }
+  const tau = Math.PI * 2;
+  const step = (n, u, amp) => {
+    // diagonal pairs: the fore left with the hind right
+    const lead = n === 'legFL' || n === 'legBR';
+    const ph = u * tau + (lead ? 0 : Math.PI);
+    return { rx: Math.sin(ph) * amp, dy: Math.max(0, Math.cos(ph)) * 0.05 };
+  };
+  builtRig(pack, id, joints, {
+    idle: { dur: 2.2, pose: (n, j, t, u) => (n === 'body' ? { dy: Math.sin(u * tau) * 0.012 } : n === 'head' ? { rx: Math.sin(u * tau) * 0.06, ry: Math.sin(u * tau * 0.5) * 0.12 } : null) },
+    walk: { dur: 0.9, pose: (n, j, t, u) => (n.startsWith('leg') ? step(n, u, 0.42) : n === 'body' ? { dy: Math.abs(Math.sin(u * tau)) * 0.03, rz: Math.sin(u * tau) * 0.04 } : n === 'head' ? { rx: Math.sin(u * tau * 2) * 0.05 } : null) },
+    run: { dur: 0.5, pose: (n, j, t, u) => (n.startsWith('leg') ? step(n, u, 0.7) : n === 'body' ? { dy: Math.abs(Math.sin(u * tau)) * 0.07, rx: Math.sin(u * tau) * 0.08 } : null) },
+    chop: {
+      dur: 0.8,
+      pose: (n, j, t, u) => {
+        // up on its hind legs, then down with both paws
+        const up = Math.sin(Math.min(1, u / 0.55) * Math.PI * 0.5) * (u < 0.55 ? 1 : Math.max(0, 1 - (u - 0.55) / 0.2));
+        if (n === 'body') return { rx: -up * 0.75, dy: up * 0.28 };
+        if (n === 'legFL' || n === 'legFR') return { rx: -up * 1.1 + (u > 0.55 ? Math.min(1, (u - 0.55) / 0.15) * 0.5 * up : 0) };
+        if (n === 'legBL' || n === 'legBR') return { rx: up * 0.7 };
+        if (n === 'head') return { rx: up * 0.4 };
+        return null;
+      },
+    },
+    hit: { dur: 0.3, pose: (n, j, t, u) => (n === 'body' ? { rx: Math.sin(u * Math.PI) * 0.12, dz: -Math.sin(u * Math.PI) * 0.08 } : n === 'head' ? { rx: -Math.sin(u * Math.PI) * 0.3 } : null) },
+    die: {
+      dur: 0.9,
+      pose: (n, j, t, u) => {
+        const k = Math.min(1, u * 1.5);
+        if (n === 'root') return { rz: k * 1.5, dy: k * 0.42 - Math.sin(k * Math.PI) * -0.1 };
+        if (n.startsWith('leg')) return { rx: k * 0.5 };
+        if (n === 'head') return { rx: k * 0.4 };
+        return null;
+      },
+    },
   });
   pack.addMesh('body', b.done());
   pack.meshes.body.rig = id;
@@ -1712,6 +1808,7 @@ function builtKits(says) {
   says('bird', flyerKit('bird', { body: [0.26, 0.25, 0.4], wing: [0.74, 0.05, 0.3], beak: '#e0a840', main: '#e8e4e0', dark: '#c8c4c0' }).write('k/bird.pack'));
   for (const [id, o] of Object.entries(SERPENTS)) says(id, serpentKit(id, o).write(`k/${id}.pack`));
   for (const [id, o] of Object.entries(COILS)) says(id, coilKit(id, o).write(`k/${id}.pack`));
+  says('bear', bearKit('bear', { main: '#7a5234', dark: '#4a2e1c', light: '#b99468' }).write('k/bear.pack'));
 }
 
 async function main() {
