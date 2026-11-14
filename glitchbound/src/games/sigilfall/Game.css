@@ -6131,6 +6131,17 @@ html.rb-touch-playing textarea {
   gap: 1px;
   pointer-events: none;
 }
+.cs-version {
+  display: block;
+  margin-top: 1px;
+  color: rgb(236 226 210 / 0.42);
+  font: 600 10px/1.2 var(--font-mono, monospace);
+  text-shadow: 0 1px 2px #000;
+  letter-spacing: 0.04em;
+  pointer-events: auto;
+  user-select: text;
+  -webkit-user-select: text;
+}
 .cs-kicker {
   color: #d9b65e;
   font: 700 clamp(8.5px, 1.3cqw, max(11px, 0.78cqw)) / 1 var(--font-mono, monospace);
@@ -8841,6 +8852,24 @@ html.rb-touch-playing textarea {
 .rb-ring-team.is-foes {
   margin-left: auto;
 }
+/* the middle, between the nameplates: the clock, the match's buttons, a hint and the tutorial's words, stacked and as
+   wide as the room between the nameplates. Only what is in it takes a press: the rest of it is the ground. */
+.rb-ring-mid {
+  flex: 1 1 0;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 4px;
+}
+.rb-ring-top > .rb-ring-mid {
+  pointer-events: none;
+}
+.rb-ring-mid > * {
+  pointer-events: auto;
+}
+.rb-ring-mid > .rb-ring-hint {
+  pointer-events: none;
+}
 .rb-ring-clock {
   display: grid;
   justify-items: center;
@@ -8897,8 +8926,9 @@ html.rb-touch-playing textarea {
 }
 .rb-ring-menu {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 2px;
-  flex: none;
 }
 .rb-ring-menu .rb-iconbtn {
   width: 28px;
@@ -9884,6 +9914,25 @@ html.rb-touch-playing textarea {
 /* the frames give way to the thumbs on a phone */
 .rb-ring.is-touch .rb-ring-team {
   flex-basis: 170px;
+}
+/* and keep off the screen's top edge, which a phone keeps for its own pull-down: the top nameplate starts a thumb's
+   width lower, and the team's column reaches up over the strip so a press there still finds the nearest nameplate */
+.rb-ring.is-touch .rb-ring-top {
+  top: calc(16px + var(--sa-t, 0px));
+}
+.rb-ring.is-touch .rb-ring-team {
+  margin-top: -12px;
+  padding-top: 12px;
+}
+/* the switch-target button: the cluster's fifth place, unused in the Ring */
+.rb-ring-thumbs .rb-sb-target {
+  border-color: #ff9aa6;
+  color: #fff;
+  font: 700 28px/1 system-ui, sans-serif;
+  background: radial-gradient(circle at 40% 28%, #ff8a96, #a8263a 72%);
+}
+.rb-ring-thumbs .rb-sb-target:disabled {
+  opacity: 0.35;
 }
 .rb-ring.is-touch .rb-ring-under {
   display: none;
@@ -12131,10 +12180,22 @@ html.rb-touch-playing textarea {
 .rb-coach.is-top {
   top: calc(52px + var(--sa-t, 0px));
 }
-/* (in a match: under the nameplates, so it never covers a cast bar it points at) */
-.rb-ring .rb-coach.is-top {
-  top: 82px;
-  width: min(420px, calc(100% - 24px));
+/* in a match: in the middle column under the clock, between the nameplates and no wider than the room there */
+.rb-coach.is-inline {
+  position: static;
+  width: min(420px, 100%);
+  translate: none;
+}
+.rb-coach-more {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  color: #ffd257;
+  font: 700 12px Georgia, 'Times New Roman', serif;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  background: none;
+  cursor: pointer;
 }
 .rb-coach header {
   display: flex;
@@ -12209,8 +12270,8 @@ html.rb-touch-playing textarea {
   .rb-coach.is-bottom {
     bottom: calc(52px + var(--sa-b, 0px));
   }
-  .rb-ring .rb-coach.is-top {
-    top: 64px;
+  .rb-coach.is-inline {
+    width: min(320px, 100%);
   }
 }
 /* the tutorial's words in the entry, as the entry's own */
@@ -12392,20 +12453,13 @@ html.rb-touch-playing textarea {
 
 /* a hint the first time something happens in a match */
 .rb-ring-hint {
-  position: absolute;
-  left: 50%;
-  top: 50px;
-  z-index: 5;
-  width: max-content;
-  max-width: min(440px, calc(100% - 24px));
+  max-width: min(440px, 100%);
   padding: 6px 12px;
   border: 1.5px solid #ffd257;
   border-radius: 9px;
   color: #fff4d8;
   font: 600 13px/1.35 Georgia, 'Times New Roman', serif;
   text-align: center;
-  translate: -50% 0;
-  pointer-events: none;
   background: rgb(24 16 8 / 0.9);
   box-shadow: 0 4px 16px rgb(0 0 0 / 0.5);
 }

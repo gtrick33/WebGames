@@ -97,6 +97,11 @@ export interface TutorialView {
   of: number;
   title: string;
   text: string;
+  /**
+   * What to do, in one line, for a step done by doing it: what the panel shows while the match goes on, the whole of
+   * `text` a press away (empty for a step that is read).
+   */
+  short: string;
   /** It's read, then Next (otherwise it's done by doing it). */
   next: boolean;
   spot: MatchSpot;
@@ -376,51 +381,52 @@ export class TutorialRun {
     const melee = !RANGED.has(me.cls);
     const sup = ultOf(me.cls, me.ult);
     const stepKey = t ? 'the blue button' : keys.dash;
-    const out = (title: string, text: string, spot: MatchSpot): TutorialView => ({ id: this.id, n: this.i + 1, of: this.steps.length, title, text, next: this.readNow(), spot, note: this.note });
+    const out = (title: string, text: string, spot: MatchSpot, short = ''): TutorialView => ({ id: this.id, n: this.i + 1, of: this.steps.length, title, text, short: this.readNow() ? '' : short, next: this.readNow(), spot, note: this.note });
+    const press = (what: string): string => (t ? `Tap ${what}` : `Press ${what}`);
     switch (this.id) {
       case 'gates':
         return out('The entry', `Before every match you wait here behind the gates. You can still change your setup (Change my setup). When you’re ready, press I’m ready${t ? '' : ` or ${keys.dash}`}.`, 'prep');
       case 'plates':
-        return out('Who’s who', 'You are on the left, your sparring partner on the right. Each bar shows health, and the thin blue one is a caster’s mana. Holds, curses and casts show under the names, and over every fighter’s head.', 'plates');
+        return out('Who’s who', 'You’re on the left, your sparring partner on the right. The bars show health (and a caster’s mana); holds and casts show under the names and over every fighter’s head.', 'plates');
       case 'move':
-        return out('Move', t ? 'Move with your left thumb: put it down anywhere on the left side and push.' : 'Move with W A S D or the arrow keys. You can use abilities while you move.', null);
+        return out('Move', t ? 'Move with your left thumb: put it down anywhere on the left side and push.' : 'Move with W A S D or the arrow keys. You can use abilities while you move.', null, t ? 'Push with your left thumb to move.' : 'Move with W A S D or the arrow keys.');
       case 'target':
-        return out('Choose your enemy', `${t ? 'Tap your sparring partner, or their nameplate on the right.' : `Click your sparring partner, click their nameplate on the right, or press ${keys.nextFoe}.`} Your attacks go to whoever is your target.`, 'foes');
+        return out('Choose your enemy', `${t ? 'Tap your sparring partner, or their nameplate on the right.' : `Click your sparring partner, click their nameplate on the right, or press ${keys.nextFoe}.`} Your attacks go to whoever is your target.`, 'foes', t ? 'Tap your sparring partner or their nameplate.' : `Click them or their nameplate, or press ${keys.nextFoe}.`);
       case 'ability': {
         const first = ABILITIES[me.bar[0] ?? ''];
         const reach = melee ? (keys.closeIn ? ' You fight up close: press it from afar and you walk there by yourself.' : ' You fight up close, so walk right up to them first.') : ' You attack from range, so you can stay back.';
-        return out('Use your abilities', `${t ? 'Tap the ability buttons on the right.' : `Press 1 to 4 (or click the buttons).`} Try ${first ? `${first.name} (${keyOf(first)})` : 'one'} and another.${reach} The dark sweep over a button is its cooldown.`, 'bar');
+        return out('Use your abilities', `${t ? 'Tap the ability buttons on the right.' : `Press 1 to 4 (or click the buttons).`} Try ${first ? `${first.name} (${keyOf(first)})` : 'one'} and another.${reach} The dark sweep over a button is its cooldown.`, 'bar', `${t ? 'Tap two of your ability buttons' : 'Use two abilities: press 1 to 4'}${melee && keys.closeIn ? '. You walk up by yourself.' : '.'}`);
       }
       case 'combo': {
         const c = this.combo();
         if (!c) return out('Combos', 'Your bar has no combo yet. On the setup page, take an ability together with the one that sets it up.', 'bar');
         const friendly = c.from.aim === 'friend' || c.to.aim === 'friend' ? ' Here they go on you; in a team fight, on whoever you’re helping.' : '';
-        return out('Land a combo', `${c.from.name} sets up ${c.to.name}. Use ${c.from.name} (${keyOf(c.from)}), then ${c.to.name} (${keyOf(c.to)}) for ${c.name}: it hits much harder. A button glows when its combo is ready.${friendly}`, 'bar');
+        return out('Land a combo', `${c.from.name} sets up ${c.to.name}. Use ${c.from.name} (${keyOf(c.from)}), then ${c.to.name} (${keyOf(c.to)}) for ${c.name}: it hits much harder. A button glows when its combo is ready.${friendly}`, 'bar', `Use ${c.from.name} (${keyOf(c.from)}), then ${c.to.name} (${keyOf(c.to)}): the second hits much harder.`);
       }
       case 'momentum':
-        return out('Momentum', 'Land different combos one after another, each within 7 seconds of the last, to build Momentum up to ×4. Your combos hit harder still, and your super fills faster.', null);
+        return out('Momentum', 'Land different combos one after another, each within 7 seconds of the last, to build Momentum up to ×4: harder combos and a faster super.', null);
       case 'circle':
-        return out('Step out of red circles', `Look out! A red circle means an attack is about to land there (it’s slowed down for now). ${cap(t ? 'tap' : 'press')} ${stepKey} for your Swift Step to get out before it lands.`, 'step');
+        return out('Step out of red circles', `Look out! A red circle means an attack is about to land there (it’s slowed down for now). ${cap(t ? 'tap' : 'press')} ${stepKey} for your Swift Step to get out before it lands.`, 'step', `Red circle! ${press(stepKey)} to step out of it before it lands.`);
       case 'place': {
         const p = this.placed!;
-        return out('Place an ability', `${p.name} lands on a patch of ground, like the comet did. ${t ? `Hold its button and push the circle where you want it, or just tap it to drop it on your target.` : `Press ${keyOf(p)}, then click where it should land. Press it twice to drop it on your target.`}`, 'bar');
+        return out('Place an ability', `${p.name} lands on a patch of ground, like the comet did. ${t ? `Hold its button and push the circle where you want it, or just tap it to drop it on your target.` : `Press ${keyOf(p)}, then click where it should land. Press it twice to drop it on your target.`}`, 'bar', t ? `Hold ${p.name} and push its circle, or just tap it.` : `Press ${keyOf(p)}, then click where ${p.name} should land.`);
       }
       case 'super':
-        return out('Your super', `Your super meter fills as you fight; we filled it for you. ${t ? 'Tap the gold button' : `Press ${keys.super}`} to unleash ${sup.name}: ${sup.text}${sup.aim === 'ground' ? (t ? ' Hold the button and push to place it.' : ' Click where it should land.') : ''}`, 'super');
+        return out('Your super', `Your super meter fills as you fight; we filled it for you. ${t ? 'Tap the gold button' : `Press ${keys.super}`} to unleash ${sup.name}: ${sup.text}${sup.aim === 'ground' ? (t ? ' Hold the button and push to place it.' : ' Click where it should land.') : ''}`, 'super', `Your super is full. ${press(t ? 'the gold button' : keys.super)} to unleash ${sup.name}.`);
       case 'sphere':
-        return out('Healing spheres', 'You’re hurt. Green healing spheres rise around the arena: walk into one to get some health back. It rises again a little later.', null);
+        return out('Healing spheres', 'You’re hurt. Green healing spheres rise around the arena: walk into one to get some health back. It rises again a little later.', null, 'You’re hurt: walk into a green healing sphere.');
       case 'sigil':
-        return out('The sigil', 'A sigil rose in the middle of the arena. Run over it: it heals you, fills a third of your super and speeds you up. Grab it before your enemy does.', null);
+        return out('The sigil', 'A sigil rose in the middle of the arena. Run over it: it heals you, fills a third of your super and speeds you up. Grab it before your enemy does.', null, 'Run over the sigil in the middle of the arena.');
       case 'pillar':
-        return out('Pillars block sight', 'Step behind a pillar so your sparring partner can’t see you. Nobody can aim at someone they can’t see, and a healer can’t reach a friend out of sight.', 'target');
+        return out('Pillars block sight', 'Step behind a pillar so your sparring partner can’t see you. Nobody can aim at someone they can’t see, and a healer can’t reach a friend out of sight.', 'target', 'Hide behind a pillar so they can’t see you.');
       case 'holds':
-        return out('Casts and holds', `Watch their nameplate: a bar fills while they cast. A cast can be cut off by an interrupt, which also locks that kind of magic for a few seconds. Stuns, fears, dazes, roots and silences hold a fighter for a moment; each hold of the same kind in a row lasts half as long, and enough damage breaks a fear, a daze or a root.`, 'foes');
+        return out('Casts and holds', 'Watch their nameplate: a bar fills while they cast, and an interrupt cuts it off. Stuns, fears, roots and the like hold a fighter for a moment, and each one in a row lasts half as long.', 'foes');
       case 'friends':
-        return out('Teammates', `In 2v2 and 3v3 you fight beside teammates: their nameplates are on the left, under yours. ${t ? 'Tap one' : `Click one or press ${keys.nextFriend}`} to choose who your heals go to. Healing is stronger in bigger fights.`, 'plates');
+        return out('Teammates', `In 2v2 and 3v3 your teammates’ nameplates sit under yours. ${t ? 'Tap one' : `Click one or press ${keys.nextFriend}`} to choose who your heals go to.${t ? ' In a team fight, the ◎ button above your abilities switches between enemies.' : ''}`, 'plates');
       case 'gloam':
-        return out('The Gloam', 'No match lasts forever. Forty seconds in, the Gloam closes in from the edges and burns whoever stands in it, and healing grows weaker the longer a match goes. Stay near the middle.', null);
+        return out('The Gloam', 'Forty seconds in, the Gloam closes in from the edges and burns whoever stands in it, and healing weakens as a match goes on. Stay near the middle.', null);
       case 'fight':
-        return out('Now, a real fight', 'Your sparring partner fights back now, gently. Use everything: combos, the Swift Step, your super, the spheres. Win it!', null);
+        return out('Now, a real fight', 'Your sparring partner fights back now, gently. Use everything: combos, the Swift Step, your super, the spheres. Win it!', null, 'Win the fight! Use everything you’ve learned.');
     }
   }
 }

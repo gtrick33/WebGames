@@ -17,6 +17,7 @@ import { VIGIL_ICON } from '../render/art/iconPicks';
 import { heldWeapon, heroLook } from '../render/sprites';
 import { Hall3D, type HallHero } from '../render3d/hall';
 import { shieldOf } from '../render3d/worldCast';
+import { buildLabel } from '../../../buildLabel';
 
 /** How far apart the others stand, on the stage's own grid. */
 const PLINTHS = { dx: 184, y: 286 };
@@ -203,6 +204,10 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
         <div className="cs-mark">
           <span className="cs-kicker">A GlitchBound adventure</span>
           <img className="cs-word" src="/games/sigilfall/logo.svg" alt="Sigilfall" width={673} height={168} />
+          {/* (which build this is, small, so the latest can be told apart: src/buildLabel.ts) */}
+          <small className="cs-version" title={`Built ${__BUILD__.day}`}>
+            {buildLabel()}
+          </small>
         </div>
         <div className="cs-top-btns">
           {hero && (

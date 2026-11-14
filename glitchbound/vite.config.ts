@@ -1,6 +1,7 @@
 import { defineConfig, type Plugin } from 'vitest/config';
 import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -110,11 +111,29 @@ function reviewShots(): Plugin {
 /** Test files that need a page to themselves (see `test.projects` below). */
 const ISOLATED = ['tests/ad-rules.test.tsx', 'tests/cloud-save.test.ts', 'tests/looks.test.tsx', 'tests/no-card-blink.test.ts', 'tests/party-room-name.test.tsx', 'tests/stage.test.tsx'];
 
+/**
+ * Which build this is, shown small on Sigilfall's title screen (the owner: "make a version please on the main screen
+ * somewhere subtle so we can track the latest version"): the CI run that built and deployed it (a number that only
+ * goes up), its commit and its day. Built anywhere else it is "dev" and the checkout's commit.
+ */
+function buildInfo(): { run: string | null; sha: string; day: string } {
+  let sha = process.env.GITHUB_SHA ?? '';
+  if (!sha) {
+    try {
+      sha = execSync('git rev-parse HEAD', { cwd: HERE, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    } catch {
+      sha = '';
+    }
+  }
+  return { run: process.env.GITHUB_RUN_NUMBER ?? null, sha: sha.slice(0, 7), day: new Date().toISOString().slice(0, 10) };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   const siteUrl = (env.VITE_SITE_URL || 'https://glitchboundstudio.com').replace(/\/+$/, '');
   return {
     base: '/',
+    define: { __BUILD__: JSON.stringify(buildInfo()) },
     plugins: [react(), seoPages(siteUrl, env.VITE_ADSENSE_CLIENT ?? ''), reviewShots()],
     // `npm run dev` proxies /api (and live-room sockets) to the Pages Functions (`npm run dev:api`,
     // port 8788). GB_API points it at another one, e.g. when several copies run side by side.

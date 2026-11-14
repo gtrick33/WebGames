@@ -1,12 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
  * The Ring tutorial's words (arena/tutorial.ts): a panel that says one thing at a time, how far along it is, and the
- * way on, and never blocks what it talks about. Used over the lobby and over the practice match.
+ * way on, and never blocks what it talks about. Used over the lobby, and in a match under the clock, between the
+ * nameplates (`inline`): there a step done by doing it says only what to do (`short`), the rest a press away, so that
+ * the panel stays off the fight and the buttons.
  */
-export function Coach({ n, of, title, text, note, at, onNext, nextLabel, onBack, onSkip, small }: { n: number; of: number; title: string; text: string; note?: string; at: 'top' | 'bottom'; onNext?: () => void; nextLabel?: string; onBack?: () => void; onSkip: () => void; small?: boolean }) {
+export function Coach({ n, of, title, text, short, note, at, inline, onNext, nextLabel, onBack, onSkip, small }: { n: number; of: number; title: string; text: string; short?: string; note?: string; at?: 'top' | 'bottom'; inline?: boolean; onNext?: () => void; nextLabel?: string; onBack?: () => void; onSkip: () => void; small?: boolean }) {
+  const [more, setMore] = useState(false);
+  const brief = !!short && !more;
   return (
-    <aside className={`rb-coach is-${at}${small ? ' is-small' : ''}`} role="status" aria-live="polite" aria-label="Tutorial">
+    <aside className={`rb-coach${inline ? ' is-inline' : ` is-${at ?? 'bottom'}`}${small ? ' is-small' : ''}`} role="status" aria-live="polite" aria-label="Tutorial">
       <header>
         <small>
           Tutorial · {n} of {of}
@@ -16,7 +20,12 @@ export function Coach({ n, of, title, text, note, at, onNext, nextLabel, onBack,
         </button>
       </header>
       <strong>{title}</strong>
-      {!small && <p>{text}</p>}
+      {!small && <p>{brief ? short : text}</p>}
+      {!small && short && (
+        <button type="button" className="rb-coach-more" onClick={() => setMore((x) => !x)} aria-expanded={more}>
+          {more ? 'Less' : 'More'}
+        </button>
+      )}
       {note && <em className="rb-coach-note">{note}</em>}
       {(onBack || onNext) && (
         <footer>

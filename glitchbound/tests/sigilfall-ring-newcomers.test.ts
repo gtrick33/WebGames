@@ -245,6 +245,23 @@ describe('The Ring for newcomers: the tutorial', () => {
     expect(foe.hp).toBe(foe.maxHp);
   });
 
+  it('says what to do in a line on every step done by doing it, the whole of it a press away', () => {
+    for (const cls of ['warrior', 'mage', 'priest'] as const) {
+      const { tut } = tutorialMatch(cls);
+      for (let i = 0; i < tut.steps.length; i++) {
+        tut.i = i;
+        for (const touch of [false, true]) {
+          const v = tut.view({ ...TUT_KEYS, touch });
+          if (v.next || v.id === 'gates') expect(v.short).toBe('');
+          else {
+            expect(v.short.length, `${cls} ${v.id}`).toBeGreaterThan(10);
+            expect(v.short.length, `${cls} ${v.id}`).toBeLessThan(v.text.length);
+          }
+        }
+      }
+    }
+  });
+
   it('lets nobody fall while it teaches', () => {
     const { m, tut } = tutorialMatch('mage');
     m.openSoon();

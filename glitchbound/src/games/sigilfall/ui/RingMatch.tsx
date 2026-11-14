@@ -196,7 +196,7 @@ function nearestPlate(e: ReactPointerEvent<HTMLDivElement>, list: Fighter[], pic
   if (e.target !== e.currentTarget) return;
   const plates = [...e.currentTarget.querySelectorAll<HTMLElement>(':scope > .rb-ring-frame')];
   let best = -1;
-  let bd = PLATE_SLACK;
+  let bd = e.pointerType === 'mouse' ? PLATE_SLACK : PLATE_SLACK_TOUCH;
   plates.forEach((el, i) => {
     const r = el.getBoundingClientRect();
     const d = Math.hypot(Math.max(r.left - e.clientX, 0, e.clientX - r.right), Math.max(r.top - e.clientY, 0, e.clientY - r.bottom));
@@ -212,6 +212,12 @@ function nearestPlate(e: ReactPointerEvent<HTMLDivElement>, list: Fighter[], pic
 }
 /** How far from a nameplate a press still counts as on it, in CSS px. */
 const PLATE_SLACK = 8;
+/**
+ * And a thumb's: further, for the strip of the team's column round its nameplates (above the top one too, which a
+ * phone's own top edge could take: the owner, "if i try to select the enemy thats on most top side of the nameplates
+ * on my phone, its not working").
+ */
+const PLATE_SLACK_TOUCH = 16;
 
 /** Who an ability will land on, and whether it can right now. */
 function AimCard({ label, f, note, bad, doll, kind }: { label: string; f: Fighter | null; note: string; bad: boolean; doll: string; kind: 'foe' | 'friend' }) {
@@ -365,6 +371,14 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     m.setTarget(myId, id);
     tut?.onTarget(id);
     tick((x) => x + 1);
+  };
+  /** The next enemy, as Tab chooses: a phone's ◎ button by the abilities, the easiest way there is to switch target. */
+  const nextFoe = (): void => {
+    if (!me) return;
+    const list = m.enemiesOf(me).filter((o) => !o.pet && !m.unseen(o, me));
+    if (!list.length) return;
+    const at = list.findIndex((f) => f.id === me.target);
+    target(list[(at + 1) % list.length]!.id);
   };
 
   // the Ring's own music while a match is up (the title's comes back with the lobby)
@@ -875,7 +889,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         paint(performance.now() / 1000);
         tick((x) => x + 1);
       };
-      (window as unknown as { __ring?: unknown }).__ring = { m, keys, press, run, brains, botThink, paint, view, fx };
+      (window as unknown as { __ring?: unknown }).__ring = { m, keys, press, run, brains, botThink, paint, view, fx, tut };
     }
     return () => {
       cancelAnimationFrame(raf);
@@ -937,52 +951,84 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 <Frame key={f.id} f={f} m={m} me={me} doll={dolls[f.id]!} title={f.id === myId ? (title ?? null) : null} tag={helps && f.id === friendId && m.phase === 'fight' ? 'Helping' : null} onPick={() => target(f.id)} />
               ))}
             </div>
-            <div className="rb-ring-clock">
-              <b>{clock(m.clock)}</b>
-              {stakes ? (
-                <span className="rb-ring-rating" style={{ ['--r' as string]: stakes.color }} title={`${stakes.rank}. ${stakes.format}v${stakes.format} rating`}>
-                  <i aria-hidden="true">◆</i>
-                  {stakes.rating}
-                  <small>{stakes.rank}</small>
-                </span>
-              ) : (
-                <span className="rb-ring-rating is-friendly">{tut ? 'Tutorial' : 'Friendly'}</span>
+            {/* the middle, between the nameplates: the clock, the match's buttons (out of the corner, where a phone's own
+                edge took the taps meant for the top enemy's nameplate), a hint, and the tutorial's words, all as wide as
+                the room between the nameplates and no wider (the owner: "the tutorial is overlapping with the ui") */}
+            <div className="rb-ring-mid">
+              <div className="rb-ring-clock">
+                <b>{clock(m.clock)}</b>
+                {stakes ? (
+                  <span className="rb-ring-rating" style={{ ['--r' as string]: stakes.color }} title={`${stakes.rank}. ${stakes.format}v${stakes.format} rating`}>
+                    <i aria-hidden="true">◆</i>
+                    {stakes.rating}
+                    <small>{stakes.rank}</small>
+                  </span>
+                ) : (
+                  <span className="rb-ring-rating is-friendly">{tut ? 'Tutorial' : 'Friendly'}</span>
+                )}
+                {m.phase === 'fight' && !m.hold && (gloamIn > 0 ? gloamIn <= 15 && <small className="rb-ring-gloam">The Gloam in {gloamIn}</small> : <small className="rb-ring-gloam is-on">The Gloam is closing</small>)}
+                {damp > 0 && <small className="rb-ring-damp" title="Healing fades the longer a match goes">Healing weaker: −{damp}%</small>}
+              </div>
+              <div className="rb-ring-menu">
+                <button
+                  className={`rb-iconbtn${plates ? '' : ' is-off'}`}
+                  aria-pressed={plates}
+                  aria-label="Nameplates"
+                  title={plates ? 'Hide the nameplates' : 'Show the nameplates'}
+                  onClick={() => {
+                    engine.setSettings({ ringPlates: !plates });
+                    // (written now: the game's own saving waits for its world to tick, and none does during a match)
+                    engine.persist();
+                    setPlates(!plates);
+                  }}
+                >
+                  ▤
+                </button>
+                {!touch && (
+                  <button className="rb-iconbtn" onClick={() => setKeysOpen(true)} aria-label="Keys" title="Keys">
+                    ⌨
+                  </button>
+                )}
+                <button className="rb-iconbtn" onClick={() => setHelp(true)} aria-label="How The Ring works" title="How The Ring works">
+                  ?
+                </button>
+                <button className="rb-iconbtn" onClick={() => setLeaving(true)} aria-label={tut ? 'Leave the tutorial' : 'Leave the match'} title={tut ? 'Leave the tutorial' : 'Leave the match'}>
+                  ⚑
+                </button>
+                <GameMenuButton className="rb-iconbtn" />
+              </div>
+              {hint && !err && (
+                <div className="rb-ring-hint" role="status">
+                  <b>Tip</b> {hint}
+                </div>
               )}
-              {m.phase === 'fight' && !m.hold && (gloamIn > 0 ? gloamIn <= 15 && <small className="rb-ring-gloam">The Gloam in {gloamIn}</small> : <small className="rb-ring-gloam is-on">The Gloam is closing</small>)}
-              {damp > 0 && <small className="rb-ring-damp" title="Healing fades the longer a match goes">Healing weaker: −{damp}%</small>}
+              {tv && tv.id !== 'gates' && (
+                <Coach
+                  key={tv.id}
+                  inline
+                  n={tv.n}
+                  of={tv.of}
+                  title={tv.title}
+                  text={tv.text}
+                  short={tv.short}
+                  note={tv.note}
+                  small={tv.id === 'fight' && m.clock > CLOSE_FROM + 4}
+                  onNext={
+                    tv.next
+                      ? () => {
+                          tut?.next();
+                          tick((x) => x + 1);
+                        }
+                      : undefined
+                  }
+                  onSkip={() => setLeaving(true)}
+                />
+              )}
             </div>
             <div className="rb-ring-team is-foes" onPointerDown={(e) => nearestPlate(e, right, target)} data-tut="foes">
               {plates && right.map((f) => (
                 <Frame key={f.id} flip f={f} m={m} me={me} doll={dolls[f.id]!} tag={f === foeAlive ? 'Target' : null} onPick={() => target(f.id)} />
               ))}
-            </div>
-            <div className="rb-ring-menu">
-              <button
-                className={`rb-iconbtn${plates ? '' : ' is-off'}`}
-                aria-pressed={plates}
-                aria-label="Nameplates"
-                title={plates ? 'Hide the nameplates' : 'Show the nameplates'}
-                onClick={() => {
-                  engine.setSettings({ ringPlates: !plates });
-                  // (written now: the game's own saving waits for its world to tick, and none does during a match)
-                  engine.persist();
-                  setPlates(!plates);
-                }}
-              >
-                ▤
-              </button>
-              {!touch && (
-                <button className="rb-iconbtn" onClick={() => setKeysOpen(true)} aria-label="Keys" title="Keys">
-                  ⌨
-                </button>
-              )}
-              <button className="rb-iconbtn" onClick={() => setHelp(true)} aria-label="How The Ring works" title="How The Ring works">
-                ?
-              </button>
-              <button className="rb-iconbtn" onClick={() => setLeaving(true)} aria-label={tut ? 'Leave the tutorial' : 'Leave the match'} title={tut ? 'Leave the tutorial' : 'Leave the match'}>
-                ⚑
-              </button>
-              <GameMenuButton className="rb-iconbtn" />
             </div>
           </div>
           {/* (a fallen fighter has nothing to press: the stick and the abilities step aside and leave the whole ring to watch) */}
@@ -995,6 +1041,22 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 }}
               />
               <div className="rb-cluster" data-tut="bar">
+                {/* (two or more on the other side: a button to switch between them, where the right thumb already is) */}
+                {right.length > 1 && (
+                  <button
+                    type="button"
+                    className="rb-sb rb-sb-s4 rb-sb-target"
+                    disabled={right.filter((f) => !f.dead).length < 2}
+                    aria-label={`Switch target${foeAlive ? `, now ${foeAlive.name}` : ''}`}
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      nextFoe();
+                    }}
+                    onContextMenu={(e) => e.preventDefault()}
+                  >
+                    <span aria-hidden="true">◎</span>
+                  </button>
+                )}
                 {bar.map((ab, i) => {
                   const cd = me?.cds[ab.id] ?? 0;
                   const gcd = !ab.free ? (me?.gcd ?? 0) : 0;
@@ -1074,32 +1136,6 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
             <div className={`rb-ring-err${errNote ? ' is-note' : ''}`} role="status">
               {err}
             </div>
-          )}
-          {hint && !err && (
-            <div className="rb-ring-hint" role="status">
-              <b>Tip</b> {hint}
-            </div>
-          )}
-          {/* (in the entry, the tutorial's words are the entry's own: over it, they hid its countdown on a phone) */}
-          {tv && tv.id !== 'gates' && (
-            <Coach
-              n={tv.n}
-              of={tv.of}
-              title={tv.title}
-              text={tv.text}
-              note={tv.note}
-              at="top"
-              small={tv.id === 'fight' && m.clock > CLOSE_FROM + 4}
-              onNext={
-                tv.next
-                  ? () => {
-                      tut?.next();
-                      tick((x) => x + 1);
-                    }
-                  : undefined
-              }
-              onSkip={() => setLeaving(true)}
-            />
           )}
           {placing && !err && (
             <div className="rb-ring-err is-note" role="status">
