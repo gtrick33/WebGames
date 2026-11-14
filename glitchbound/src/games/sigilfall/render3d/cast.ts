@@ -316,9 +316,10 @@ export class Cast {
 
   /**
    * One creature, by the game's name for it. `h` is its height in world pixels, `rot` its facing about the
-   * vertical. Returns the kit, so the caller can read how high its head is.
+   * vertical. Returns the kit, so the caller can read how high its head is. `feet`: it stands on its own feet at the
+   * spot (a figure modeled standing at its origin), not on the middle of all it holds out round it.
    */
-  creature(sprite: string, x: number, y: number, rot: number, h: number, clip: string, t: number, loop: boolean, opts?: { alpha?: number; flash?: number; rise?: number; tint?: readonly [number, number, number]; sx?: number; sy?: number; motion?: Motion; lift?: number; enemy?: string; from?: ClipFade }): Kit {
+  creature(sprite: string, x: number, y: number, rot: number, h: number, clip: string, t: number, loop: boolean, opts?: { alpha?: number; flash?: number; rise?: number; tint?: readonly [number, number, number]; sx?: number; sy?: number; motion?: Motion; lift?: number; enemy?: string; from?: ClipFade; feet?: boolean }): Kit {
     const kit = kitOf(sprite, opts?.enemy);
     if (kit.look) {
       const look = npcLookOf(kit.look);
@@ -369,8 +370,8 @@ export class Cast {
     }
     const lift = (kit.float ?? 0) * (ART_TILE / TILE) + (opts?.lift ?? 0);
     // (a beast's own middle stands on its spot: some are modeled with their hips at the origin)
-    const mx = ((mesh.min[0] + mesh.max[0]) / 2) * s;
-    const mz = ((mesh.min[2] + mesh.max[2]) / 2) * s;
+    const mx = opts?.feet ? 0 : ((mesh.min[0] + mesh.max[0]) / 2) * s;
+    const mz = opts?.feet ? 0 : ((mesh.min[2] + mesh.max[2]) / 2) * s;
     const cos = Math.cos(rot);
     const sin = Math.sin(rot);
     crowd.put(x * UNIT - (mx * cos + mz * sin), lift - (opts?.rise ?? 0) * (h / TILE), y * UNIT - (mz * cos - mx * sin), rot, s * (opts?.sx ?? 1), s * (opts?.sy ?? 1), frames.a, frames.b, frames.k, Math.min(opts?.alpha ?? 1, kit.ghost ?? 1), r, g, b, opts?.flash ?? 0);

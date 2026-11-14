@@ -66,6 +66,12 @@ Embrace**, not "Subterfuge" or "Master of Subtlety"; the combos **Unseen Edge** 
 dead went to the warlock's new **Gravecaller** setup, with **Grave Hunger** (the rule of a frenzy on one's summons), not
 "Dark Transformation" or "Unholy Frenzy".
 
+The Ring's second supers (2026-11-14), one per ready-made setup, are named for this game: Run Them Down, Winter's
+Grasp, Thicket of Snares, Voidburst, Dawn's Covenant, Grave Legion, Heart of the Grove and Night's Ruin; none is a World
+of Warcraft ability ("Bladestorm", "Ice Block", "Void Eruption", "Army of the Dead", "Tranquility" and the like are
+avoided). The PvP trinket rule is copied as the **Unbinding Charm**, not "Gladiator's Medallion" or "Every Man for
+Himself".
+
 ## Fixed
 
 ### The licensed art packs and the public repository (was HIGH)

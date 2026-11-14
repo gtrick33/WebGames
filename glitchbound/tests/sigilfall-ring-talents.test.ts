@@ -28,13 +28,14 @@ interface Who {
   talents?: string[];
   bar?: string[];
   at?: [number, number];
+  ult?: string;
 }
 /**
  * A fight with its gates open, no critical hits (so numbers can be compared), each standing where told (or the first
  * of each side face to face down the middle of the sands), the first of each side aiming at the other's first.
  */
 function fight(list: Who[], map = 'sands'): Match {
-  const m = new Match({ seed: 5, map, fighters: list.map((w) => ({ team: w.team, cls: w.cls, name: w.cls, bar: w.bar ?? PRESETS[w.cls][0]!.bar, talents: w.talents ?? [] })) });
+  const m = new Match({ seed: 5, map, fighters: list.map((w) => ({ team: w.team, cls: w.cls, name: w.cls, bar: w.bar ?? PRESETS[w.cls][0]!.bar, talents: w.talents ?? [], ult: w.ult })) });
   m.step(GATES + 0.01, {});
   const firsts = [m.fighters.find((f) => f.team === 0)!, m.fighters.find((f) => f.team === 1)!];
   m.fighters.forEach((f, i) => {
@@ -503,7 +504,7 @@ describe('The Ring talents: the paladin', () => {
 
   it('Sun’s Verdict: Sunhammer strikes the nearest other enemy too', () => {
     for (const talents of [['d-1c'], []]) {
-      const m = fight([{ team: 0, cls: 'paladin', talents }, { team: 1, cls: 'warrior', at: [260, 125] }, { team: 1, cls: 'mage', at: [290, 125] }]);
+      const m = fight([{ team: 0, cls: 'paladin', talents, ult: 'd-super' }, { team: 1, cls: 'warrior', at: [260, 125] }, { team: 1, cls: 'mage', at: [290, 125] }]);
       m.fighters[0]!.charge = 1;
       expect(m.press(0, 'd-super')).toBeNull();
       wait(m, 0.5);
@@ -695,7 +696,7 @@ describe('The Ring talents: the druid', () => {
   });
 
   it('Gathering Storm: Thornstorm leaves them slowed after the thorns let go', () => {
-    const m = fight([{ team: 0, cls: 'druid', talents: ['l-1b'] }, { team: 1, cls: 'warrior', at: [300, 125] }]);
+    const m = fight([{ team: 0, cls: 'druid', talents: ['l-1b'], ult: 'l-super' }, { team: 1, cls: 'warrior', at: [300, 125] }]);
     m.fighters[0]!.charge = 1;
     expect(m.press(0, 'l-super', { x: 300, y: 125 })).toBeNull();
     wait(m, 1);

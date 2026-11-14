@@ -136,6 +136,10 @@ export interface RingSetup {
   bar: string[];
   oath: string;
   talents: string[];
+  /** What it carries beside the bar: the Swift Step (`dash`, or nothing said) or the Unbinding Charm (`charm`). */
+  step?: string;
+  /** Which of its class's two supers (abilities.ts ultsOf); nothing said: the one that goes with its bar (ultFor). */
+  ult?: string;
 }
 
 /** A class's saved set ups, and which is in hand. */
@@ -157,7 +161,7 @@ export interface RingSave {
 
 const presetSetup = (cls: ClassId, i: number): RingSetup => {
   const p = PRESETS[cls][i % PRESETS[cls].length]!;
-  return { bar: [...p.bar], oath: 'iron', talents: [...p.talents] };
+  return { bar: [...p.bar], oath: 'iron', talents: [...p.talents], ult: p.ult };
 };
 
 /** A class's set ups: what the player has kept, or the ready-made ones to start from. */

@@ -1222,6 +1222,8 @@ export class SigilEngine {
       beats: true,
       ...(stone ? { key: stone, affixes: keyAffixes(stone, party ? party.week : weekOf(Date.now())) } : {}),
       ...(party ? { coop: party.role } : {}),
+      // (a Rift Trial's hero keeps nothing, so nothing drops for them)
+      ...(this.trial ? { noLoot: true } : {}),
     });
     if (party) this.coop?.attach(w);
     if (prev && !prev.region.safe && this.run) {

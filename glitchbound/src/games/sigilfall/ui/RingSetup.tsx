@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { ABILITIES, barCombos, combosOf, DASH, kitOf, OATHS, PRESETS, SLOTS, superOf, type Ability } from '../arena/abilities';
+import { ABILITIES, barCombos, combosOf, kitOf, OATHS, PRESETS, SLOTS, stepOf, STEPS, ultFor, ultOf, ultsOf, type Ability } from '../arena/abilities';
 import { usesOf } from '../arena/advice';
 import type { ClassSets, RingSetup } from '../arena/ladder';
 import { RANGED } from '../arena/sim';
@@ -7,7 +7,7 @@ import { cleanTalents, ROW_NAMES, TALENTS, type Talent } from '../arena/talents'
 import type { ClassId } from '../data/types';
 import { iconPicture } from '../render/art/gameIcons';
 
-const ROLE_WORD: Record<string, string> = { damage: 'Damage', heal: 'Healing', cc: 'Crowd control', interrupt: 'Interrupt', defense: 'Defense', mobility: 'Movement', dispel: 'Dispel', burst: 'Burst', summon: 'Summon' };
+const ROLE_WORD: Record<string, string> = { damage: 'Damage', heal: 'Healing', cc: 'Crowd control', interrupt: 'Interrupt', defense: 'Defense', mobility: 'Movement', dispel: 'Dispel', burst: 'Burst', summon: 'Summon', stealth: 'Stealth' };
 
 export function timing(ab: Ability): string {
   const bits: string[] = [];
@@ -23,10 +23,13 @@ export function timing(ab: Ability): string {
 
 export const talentIcon = (t: Talent): string => iconPicture(t.icon ?? ABILITIES[Object.keys(t.tune ?? {})[0] ?? '']?.icon ?? '');
 
-type Tab = 'abilities' | 'talents' | 'oath';
+type Tab = 'abilities' | 'talents' | 'ultimate' | 'step' | 'oath';
 
-/** The bar as it stands: four places, then what every hero has besides (the Swift Step, and their class's super). */
-export function BarRow({ bar, cls, onPick, onHover }: { bar: string[]; cls: ClassId; onPick?: (ab: Ability) => void; onHover?: (ab: Ability) => void }) {
+/** The Swift Step or the charm that takes its place: carried beside the bar, never on it. */
+const isStep = (ab: Ability): boolean => STEPS.includes(ab);
+
+/** The bar as it stands: four places, then what every hero has besides (the Swift Step or its charm, and their class's super). */
+export function BarRow({ bar, cls, step, ult, onPick, onHover }: { bar: string[]; cls: ClassId; step?: string; ult?: string; onPick?: (ab: Ability) => void; onHover?: (ab: Ability) => void }) {
   return (
     <div className="rb-rs-slots">
       {Array.from({ length: SLOTS }, (_, i) => {
@@ -37,7 +40,7 @@ export function BarRow({ bar, cls, onPick, onHover }: { bar: string[]; cls: Clas
           </button>
         );
       })}
-      {[DASH, superOf(cls)].map((ab) => (
+      {[stepOf(step), ultOf(cls, ult ?? ultFor(cls, bar))].map((ab) => (
         <button key={ab.id} type="button" className={`rb-rs-slot is-token${ab.super ? ' is-super' : ''}`} disabled={!onPick} title={`${ab.super ? 'Super' : ab.name}: ${ab.text}`} onClick={() => onPick?.(ab)} onMouseEnter={() => onHover?.(ab)}>
           <img src={iconPicture(ab.icon)} alt={ab.name} draggable={false} />
         </button>
@@ -77,7 +80,7 @@ export function SetupChips({ cls, setup }: { cls: ClassId; setup: RingSetup }) {
 function AbilityCard({ ab, cls, bar, onEquip, onSwap, onRemove, onClose }: { ab: Ability; cls: ClassId; bar: string[]; onEquip: () => void; onSwap: (out: string) => void; onRemove: () => void; onClose: () => void }) {
   const [swapping, setSwapping] = useState(false);
   const on = bar.includes(ab.id);
-  const carried = !!ab.super || ab.id === DASH.id;
+  const carried = !!ab.super || isStep(ab);
   const full = !on && bar.length >= SLOTS;
   const combos = combosOf(cls, ab);
   const held = (x: Ability): boolean => !!x.super || bar.includes(x.id);
@@ -95,7 +98,7 @@ function AbilityCard({ ab, cls, bar, onEquip, onSwap, onRemove, onClose }: { ab:
           <img src={iconPicture(ab.icon)} alt="" draggable={false} />
           <span>
             <strong>{ab.name}</strong>
-            <em>{ab.super ? 'Super' : ab.id === DASH.id ? 'Movement' : ROLE_WORD[ab.role]}</em>
+            <em>{ab.super ? 'Super' : isStep(ab) ? (ab.role === 'mobility' ? 'Movement' : 'Freedom') : ROLE_WORD[ab.role]}</em>
             <small>{ab.super ? 'Ready when your meter is full' : timing(ab)}</small>
           </span>
         </header>
@@ -199,7 +202,8 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
     const others = cur.talents.filter((id) => TALENTS[cls].find((x) => x.id === id)?.row !== t.row);
     put({ ...cur, talents: cur.talents.includes(t.id) ? others : [...others, t.id] });
   };
-  const shown = info ?? ABILITIES[cur.bar[0] ?? ''] ?? superOf(cls);
+  const curUlt = ultOf(cls, cur.ult ?? ultFor(cls, cur.bar));
+  const shown = info ?? ABILITIES[cur.bar[0] ?? ''] ?? curUlt;
   const talentCount = cleanTalents(cls, cur.talents).length;
   return (
     <div className="rb-rs">
@@ -218,7 +222,7 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
               key={p.id}
               className="rb-rs-build"
               title={`Fill this setup with the ${p.name} build. Its combos: ${barCombos(cls, p.bar).map((c) => `${c.from.name}, then ${c.to.name} (${c.name})`).join('; ') || 'none'}`}
-              onClick={() => put({ ...cur, bar: [...p.bar], talents: [...p.talents] })}
+              onClick={() => put({ ...cur, bar: [...p.bar], talents: [...p.talents], ult: p.ult })}
             >
               {p.name}
               <small>{barCombos(cls, p.bar).map((c) => c.name).join(' · ')}</small>
@@ -228,11 +232,11 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
       </div>
 
       <div className="rb-rs-barrow">
-        <BarRow bar={cur.bar} cls={cls} onPick={open} onHover={setInfo} />
+        <BarRow bar={cur.bar} cls={cls} step={cur.step} ult={curUlt.id} onPick={open} onHover={setInfo} />
       </div>
       {/* what to press after what: the combos this bar can make, each as its two abilities in order */}
       <ul className="rb-rs-combos" aria-label="Combos in this setup">
-        {barCombos(cls, cur.bar).map((c) => (
+        {barCombos(cls, cur.bar, curUlt.id).map((c) => (
           <li key={`${c.from.id}-${c.to.id}`} title={c.text}>
             <img src={iconPicture(c.from.icon)} alt="" draggable={false} />
             <span>{c.from.name}</span>
@@ -242,7 +246,7 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
             <b>{c.name}</b>
           </li>
         ))}
-        {barCombos(cls, cur.bar).length === 0 && <li className="is-none">No combo on this bar yet. Take an ability together with the one that sets it up.</li>}
+        {barCombos(cls, cur.bar, curUlt.id).length === 0 && <li className="is-none">No combo on this bar yet. Take an ability together with the one that sets it up.</li>}
       </ul>
 
       <div className="rb-rs-tabs" role="tablist" aria-label="What to change">
@@ -251,6 +255,12 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
         </button>
         <button role="tab" aria-selected={tab === 'talents'} className={tab === 'talents' ? 'is-on' : ''} onClick={() => setTab('talents')}>
           Talents <b className={talentCount === 3 ? 'is-full' : 'is-short'}>{talentCount}/3</b>
+        </button>
+        <button role="tab" aria-selected={tab === 'ultimate'} className={tab === 'ultimate' ? 'is-on' : ''} onClick={() => setTab('ultimate')}>
+          Ultimate
+        </button>
+        <button role="tab" aria-selected={tab === 'step'} className={tab === 'step' ? 'is-on' : ''} onClick={() => setTab('step')}>
+          Step
         </button>
         <button role="tab" aria-selected={tab === 'oath'} className={tab === 'oath' ? 'is-on' : ''} onClick={() => setTab('oath')}>
           Oath
@@ -303,6 +313,50 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
                 </div>
               </div>
             ))}
+          </>
+        )}
+        {tab === 'ultimate' && (
+          <>
+            <p className="rb-rs-hint">Your super, ready when your meter is full. Each way your class fights has its own.</p>
+            <div className="rb-rs-options is-oaths" role="radiogroup" aria-label="Ultimate">
+              {ultsOf(cls).map((x) => {
+                const on = curUlt === x;
+                const of = PRESETS[cls].find((p) => p.ult === x.id);
+                return (
+                  <button key={x.id} role="radio" aria-checked={on} className={`rb-rs-option${on ? ' is-on' : ''}`} onClick={() => put({ ...cur, ult: x.id })}>
+                    <img src={iconPicture(x.icon)} alt="" draggable={false} />
+                    <span>
+                      <strong>
+                        {x.name}
+                        {of && <em> · the {of.name}’s</em>}
+                      </strong>
+                      <small>{x.text}</small>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+        {tab === 'step' && (
+          <>
+            <p className="rb-rs-hint">What you carry beside your bar: the Swift Step to get out of the way, or a charm to break free.</p>
+            <div className="rb-rs-options is-oaths" role="radiogroup" aria-label="Step">
+              {STEPS.map((x) => {
+                const on = stepOf(cur.step) === x;
+                return (
+                  <button key={x.id} role="radio" aria-checked={on} className={`rb-rs-option${on ? ' is-on' : ''}`} onClick={() => put({ ...cur, step: x.id })}>
+                    <img src={iconPicture(x.icon)} alt="" draggable={false} />
+                    <span>
+                      <strong>{x.name}</strong>
+                      <small>
+                        {x.text} {x.cd}s cooldown.
+                      </small>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </>
         )}
         {tab === 'oath' && (

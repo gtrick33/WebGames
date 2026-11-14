@@ -79,6 +79,12 @@ export interface WorldOptions {
   coop?: 'host' | 'guest';
   /** Stages each step of the main story with a beat of its own (sim/scene.ts questBeat): the game; tests leave it off. */
   beats?: boolean;
+  /**
+   * Nothing found here is kept, so nothing is dropped: no gear, no Rift cache, no Rift-forged pieces. A Rift Trial's
+   * ready hero is thrown away at the end of the run (progress/trial.ts; the owner: "make it so the insta riftstone mode
+   * doesnt drop items").
+   */
+  noLoot?: boolean;
 }
 
 /** Seconds as m:ss. */
@@ -378,6 +384,8 @@ export class World {
   private hpBefore = 0;
   /** A Riftstone run, if this is one. */
   keyRun: KeyRun | null = null;
+  /** Nothing found is kept, so nothing drops (WorldOptions.noLoot: a Rift Trial). */
+  readonly noLoot: boolean;
   /** A co-op party (net/coop.ts): the other heroes, and what to send them. Null playing alone. */
   coop: CoopSide | null = null;
   /**
@@ -402,6 +410,7 @@ export class World {
   private raged = new WeakSet<Enemy>();
 
   constructor(o: WorldOptions) {
+    this.noLoot = !!o.noLoot;
     this.handIns = o.handIns ?? true;
     this.beats = o.beats ?? false;
     if (o.coop) this.coop = { role: o.coop, ghosts: [], out: [] };
@@ -1681,6 +1690,7 @@ export class World {
   }
 
   dropItem(x: number, y: number, item: Item): void {
+    if (this.noLoot) return;
     this.dropAt('item', x, y, 1, item);
     if (item.r === 'legendary') this.sfx('legendary');
     else if (item.r === 'epic') this.sfx('epic');
@@ -2211,7 +2221,7 @@ export class World {
     // the Rift's cache: more the higher the stone, and only in time
     if (up > 0) for (let i = 0; i < keyCache(k.key); i++) this.dropItem(x, y, this.rollItem('boss', keyLoot(k.key, k.heroLevel)));
     // every new stone opened gives one Rift-forged piece the hero doesn't have yet (sets first, as the stones open them)
-    const firsts = riftFirsts(h, h.keystone, h.keystone - before);
+    const firsts = this.noLoot ? [] : riftFirsts(h, h.keystone, h.keystone - before);
     for (const d of firsts) {
       const it = makeItem(d.id, keyLoot(k.key, k.heroLevel), this.rand);
       if (it) this.dropItem(x, y, it);

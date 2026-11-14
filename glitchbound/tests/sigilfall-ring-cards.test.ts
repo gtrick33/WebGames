@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, barCombos, combosOf, DASH, kitOf, SUPERS, type Ability } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, barCombos, combosOf, DASH, kitOf, SUPERS, ultsOf, type Ability } from '../src/games/sigilfall/arena/abilities';
 import { usesOf } from '../src/games/sigilfall/arena/advice';
 import { RANGED, type Aura } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
@@ -61,7 +61,7 @@ describe('Sigilfall: an ability can be read before it is taken', () => {
   it('what a card says of combos agrees both ways, and with what a bar shows', () => {
     let pairs = 0;
     for (const cls of CLASS_IDS) {
-      const all = [...kitOf(cls), SUPERS[cls]];
+      const all = [...kitOf(cls), ...ultsOf(cls)];
       for (const ab of all) {
         const c = combosOf(cls, ab);
         expect(!!c.lands, ab.id).toBe(!!ab.combo);
@@ -71,7 +71,7 @@ describe('Sigilfall: an ability can be read before it is taken', () => {
           expect(combosOf(cls, from).setsUp.map((s) => s.then), `${from.id} → ${ab.id}`).toContain(ab);
           // (the same pair on a bar is the combo the setup screen lists under it)
           const bar = [from, ab].filter((x) => !x.super).map((x) => x.id);
-          expect(barCombos(cls, bar).some((b) => b.to === ab && b.name === c.lands!.name), `${from.id} + ${ab.id} on a bar`).toBe(true);
+          expect(barCombos(cls, bar, [from, ab].find((x) => x.super)?.id).some((b) => b.to === ab && b.name === c.lands!.name), `${from.id} + ${ab.id} on a bar`).toBe(true);
         }
         for (const s of c.setsUp) expect(combosOf(cls, s.then).lands?.after, `${ab.id} → ${s.then.id}`).toContain(ab);
       }
