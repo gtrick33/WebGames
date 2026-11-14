@@ -442,9 +442,11 @@ describe('The Ring: talents and set ups', () => {
         expect(t.tune || t.does || t.guard || t.hold || t.exec || t.slow || t.stun || t.snare || t.rally, t.id).toBeTruthy();
         // (the whole class's: what it sharpens is only ever what every hero of the class carries, whatever their bar)
         for (const id of Object.keys(t.tune ?? {})) {
-          expect([DASH.id, superOf(cls).id], `${t.id} sharpens ${id}`).toContain(id);
-          // the talent speaks of the ability it changes
-          expect(t.text, t.id).toContain(ABILITIES[id]!.name);
+          // (`super` is whichever of the class's two the hero carries)
+          expect([DASH.id, 'super'], `${t.id} sharpens ${id}`).toContain(id);
+          // the talent speaks of what it changes: the Swift Step by name, a super as "your super"
+          if (id === 'super') expect(t.text, t.id).toMatch(/your super/i);
+          else expect(t.text, t.id).toContain(ABILITIES[id]!.name);
         }
       }
       expect(new Set(TALENTS[cls].map((t) => t.name)).size).toBe(9);

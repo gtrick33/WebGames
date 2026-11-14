@@ -72,6 +72,10 @@ of Warcraft ability ("Bladestorm", "Ice Block", "Void Eruption", "Army of the De
 avoided). The PvP trinket rule is copied as the **Unbinding Charm**, not "Gladiator's Medallion" or "Every Man for
 Himself".
 
+The Ring's super talents (2026-11-14), which work on either super, are named Warpath, Spellscar, Doomed Prey, Bright
+Wings, Blinding Dawn, Doom's Herald, Grove's Bloom and Eclipse Hunger. "Marked for Death" (a World of Warcraft rogue
+talent) and "Wild Growth" (a World of Warcraft druid spell) were the first drafts and were renamed before release.
+
 ## Fixed
 
 ### The licensed art packs and the public repository (was HIGH)

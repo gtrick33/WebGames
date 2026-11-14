@@ -99,6 +99,9 @@ const CLAW: Ability = { id: 'k-claw', cls: 'warlock', name: 'Grave Claw', text: 
  * wearer walks, how long nothing that lands breaks it when it was taken in a fight, how soon it is back when taken out
  * of one, and how long without hurting or being hurt counts as out of a fight.
  */
+/** How far a super's blessing reaches the user's friends, by a talent (Bright Wings, Wild Growth): a long spell's reach. */
+const TALENT_REACH = 185;
+
 export const VEIL = { t: 999, slow: 0.15, grace: 3, rest: 3, calm: 5 } as const;
 
 export interface FighterSetup {
@@ -698,6 +701,12 @@ export class Match {
     return (dx * t.dirX + dy * t.dirY) / (d * fd) < -0.3;
   }
 
+  /** What talents make of an ability for this fighter: by its id, or, for a super, whichever of the two they carry (`super`). */
+  private tuneOf(f: Fighter, ab: Ability | undefined): Tune | undefined {
+    if (!ab) return undefined;
+    return f.tune[ab.id] ?? (ab.super ? f.tune.super : undefined);
+  }
+
   /** In the shroud: hidden from the other side. */
   hidden(f: Fighter): boolean {
     return f.auras.some((a) => a.kind === 'veil');
@@ -848,7 +857,7 @@ export class Match {
     if (opens) f.fought = this.clock;
     if (ab.cast > 0 || ab.channel) {
       if (opens) this.unveil(f);
-      f.cast = { ab: ab.id, target: t.id, at, t: 0, dur: ab.channel ?? ab.cast * (f.tune[ab.id]?.cast ?? 1), channel: !!ab.channel, next: ab.tick ?? 0, pushed: 0 };
+      f.cast = { ab: ab.id, target: t.id, at, t: 0, dur: ab.channel ?? ab.cast * (this.tuneOf(f, ab)?.cast ?? 1), channel: !!ab.channel, next: ab.tick ?? 0, pushed: 0 };
       this.events.push({ k: 'ab', id: f.id, ab: ab.id });
       if (ab.channel) this.spend(f, ab);
       return;
@@ -876,7 +885,7 @@ export class Match {
       f.score.supers = (f.score.supers ?? 0) + 1;
       this.events.push({ k: 'super', id: f.id, ab: ab.id });
     }
-    if (ab.cd > 0) f.cds[ab.id] = ab.cd * f.mods.cool * (f.tune[ab.id]?.cd ?? 1);
+    if (ab.cd > 0) f.cds[ab.id] = ab.cd * f.mods.cool * (this.tuneOf(f, ab)?.cd ?? 1);
   }
 
   private endCast(f: Fighter): void {
@@ -888,6 +897,13 @@ export class Match {
     this.events.push({ k: 'ab', id: f.id, ab: ab.id });
     // (what a super does to its own user, as it goes)
     for (const e of ab.self ?? []) this.apply(f, ab, f, e);
+    // (and what a talent makes of it: on its user, on every friend in reach, on every enemy near)
+    const tn = ab.super ? this.tuneOf(f, ab) : undefined;
+    if (tn) {
+      for (const e of tn.self ?? []) this.apply(f, ab, f, e);
+      if (tn.friends) for (const o of this.friendsOf(f)) if (!o.pet && Math.hypot(o.x - f.x, o.y - f.y) <= TALENT_REACH + HERO_R && (o === f || this.sees(f, o))) for (const e of tn.friends) this.apply(f, ab, o, e);
+      if (tn.foes) for (const o of this.enemiesOf(f)) if (!o.dead && !this.unseen(o, f) && Math.hypot(o.x - f.x, o.y - f.y) <= NEAR + HERO_R && this.sees(f, o)) for (const e of tn.foes) if (!o.dead) this.apply(f, ab, o, e);
+    }
     if (ab.allies) {
       // (on every friend in reach and sight, its user among them)
       for (const o of this.friendsOf(f)) if (!o.pet && Math.hypot(o.x - f.x, o.y - f.y) <= ab.range + HERO_R && (o === f || this.sees(f, o))) this.land(f, ab, o, true);
@@ -973,7 +989,7 @@ export class Match {
     }
     this.sparing = null;
     if (combo?.extra) for (const e of combo.extra) if (!t.dead || e.k === 'heal') this.apply(f, ab, t, e);
-    const tune = f.tune[ab.id];
+    const tune = this.tuneOf(f, ab);
     if (!tune) return;
     // what a talent adds to a super: more that it does, and others it reaches
     if (tune.extra) for (const e of tune.extra) if (!t.dead) this.apply(f, ab, t, e, scale);
@@ -1030,19 +1046,19 @@ export class Match {
   private apply(f: Fighter, ab: Ability, t: Fighter, e: Effect, boost = 1): 'stop' | void {
     const magic = ab.school !== 'physical' && !ab.sticky;
     const base = { ab: ab.id, src: f.id, dur: 0, magic, n: 0 };
-    const power = (f.tune[ab.id]?.power ?? 1) * boost;
+    const power = (this.tuneOf(f, ab)?.power ?? 1) * boost;
     // (a druid's long seasons: what burns or mends over time goes on longer, as strong each second)
     const season = 1 + (f.perks.does.seasons?.pct ?? 0);
     switch (e.k) {
       case 'dmg': {
         const dealt = this.damage(f, t, e.n * power, true, ab);
         // what drains gives back: an ability with both heals its user (or, sharpened, a share of all it dealt)
-        const drink = f.tune[ab.id]?.drink;
+        const drink = this.tuneOf(f, ab)?.drink;
         if (drink && dealt > 0) this.mend(f, dealt * drink);
         return;
       }
       case 'heal':
-        if (f.tune[ab.id]?.drink && ab.aim === 'enemy') return;
+        if (this.tuneOf(f, ab)?.drink && ab.aim === 'enemy') return;
         this.heal(f, ab.aim === 'enemy' ? f : t, e.n * power);
         return;
       case 'dot':
@@ -1052,7 +1068,7 @@ export class Match {
         this.addAura(t, { ...base, kind: 'hot', harmful: false, dur: e.dur * season, n: (e.n * power) / e.dur, next: 1 });
         return;
       case 'cc':
-        return this.crowd(f, ab, t, e.cc, e.dur * (f.tune[ab.id]?.dur ?? 1) * f.mods.hold) ? undefined : 'stop';
+        return this.crowd(f, ab, t, e.cc, e.dur * (this.tuneOf(f, ab)?.dur ?? 1) * f.mods.hold) ? undefined : 'stop';
       case 'slow':
         this.addAura(t, { ...base, kind: 'slow', harmful: true, dur: e.dur * t.mods.tenacity * f.mods.hold, n: e.pct / 100 });
         return;
@@ -1150,7 +1166,7 @@ export class Match {
         const dy = t.y - f.y;
         const d = Math.hypot(dx, dy) || 1;
         // (a fault line: dragged in to arm's length, where it would throw them out)
-        if (f.tune[ab.id]?.pull) {
+        if (this.tuneOf(f, ab)?.pull) {
           this.drag(t, f.x, f.y, HERO_R * 2 + 2);
           return;
         }
@@ -1170,6 +1186,12 @@ export class Match {
         return;
       case 'pull':
         if (t !== f && !t.dead) this.drag(t, f.x, f.y, HERO_R * 2 + 2);
+        return;
+      case 'mark':
+        this.addAura(t, { ...base, kind: 'mark', harmful: true, magic: false, dur: e.dur, n: e.pct / 100 });
+        return;
+      case 'stepTalents':
+        this.swiftStep(f, 0, true);
         return;
       case 'undot':
         t.auras = t.auras.filter((a) => a.kind !== 'dot');
@@ -1345,7 +1367,7 @@ export class Match {
    * Below), a leap to a friend (Guardian Leap), a blink (Fold Space). One that ends beside an enemy may knock them down
    * (Shoulder Check): that is seen when it ends (arrive).
    */
-  private swiftStep(f: Fighter, dist: number): void {
+  private swiftStep(f: Fighter, dist: number, charm = false): void {
     const does = f.perks.does;
     this.endCast(f);
     const say = (k: keyof Does): void => {
@@ -1398,7 +1420,7 @@ export class Match {
           const ox = o.x - f.x;
           const oy = o.y - f.y;
           const od = Math.hypot(ox, oy) || 1;
-          return !o.pet && !this.unseen(o, f) && od <= does.drag!.reach && (ox * ux + oy * uy) / od > 0.7 && this.sees(f, o) && !o.auras.some((a) => a.kind === 'immune');
+          return !o.pet && !this.unseen(o, f) && od <= does.drag!.reach && (charm || (ox * ux + oy * uy) / od > 0.7) && this.sees(f, o) && !o.auras.some((a) => a.kind === 'immune');
         })
         .sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y))[0];
       // (they come along to where the step ends: the step is still a step)
@@ -1424,7 +1446,8 @@ export class Match {
     if (does.fold) {
       f.auras = f.auras.filter((a) => a.kind !== 'slow' && a.cc !== 'root');
       f.dash = null;
-      this.blinkTo(f, ux, uy, dist * does.fold.far);
+      // (the charm's blink is a short one: it has no step of its own to lengthen)
+      this.blinkTo(f, ux, uy, charm ? 40 : dist * does.fold.far);
       return;
     }
     f.dash = { x: f.x + ux * dist, y: f.y + uy * dist, speed: 430, step: true };
@@ -2447,7 +2470,7 @@ export class Match {
         if (o.dead || o.team === z.team || Math.hypot(o.x - z.x, o.y - z.y) > z.r) continue;
         this.land(src, ab, o, true);
         // (a riftcaller's maw drags all it opens under into its middle)
-        if (src.tune[z.ab]?.pull && !o.dead && !this.immuneTo(o, ab)) this.drag(o, z.x, z.y, 0);
+        if (this.tuneOf(src, ab)?.pull && !o.dead && !this.immuneTo(o, ab)) this.drag(o, z.x, z.y, 0);
       }
     }
   }

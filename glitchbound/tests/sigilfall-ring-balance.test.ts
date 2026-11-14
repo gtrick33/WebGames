@@ -77,6 +77,13 @@
  *   Longbow     51/42/49 47   Trapper   55/45/43 48   Oathkeeper   18/59/61 46   Zealot      53/51/48 51
  *   Lifegiver   15/61/48 41   Curse-sp. 48/50/51 50   Hexer        74/48/42 55   Gravecaller 63/42/44 50
  *   Grovekeeper 23/58/57 46   Starseer  53/39/44 45   Bloodsworn   63/39/39 47   Nightblade  57/55/63 58
+ *
+ * Then each class's super talent came to work on whichever super its hero carries (they had only touched the first),
+ * and the talents that work through the Swift Step came to work through the Unbinding Charm too. The Rime and the
+ * Starseer, whose ready-made talents had done nothing for their own supers, gained most; the Starseer's Grove's Bloom
+ * was cut, and the Pyre's and the Curse-speaker's own abilities given about 8%. After (1v1 / 2v2 / 3v3):
+ *
+ *   Pyre 56/46/44   Rime 58/44/47   Curse-speaker 53/49/51   Starseer 55/42/40   Gravecaller 60/38/39
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';

@@ -81,9 +81,9 @@ describe('The Ring: talents are their own', () => {
     for (const key of ['slow', 'stun', 'snare', 'rally', 'hold', 'exec'] as const) expect(new Set(all.filter((t) => t[key]).map((t) => t.cls)).size, key).toBeLessThanOrEqual(1);
     // every class has its own super talent, that changes what the super does rather than only its numbers
     for (const cls of CLASS_IDS) {
-      const sup = TALENTS[cls].find((t) => Object.keys(t.tune ?? {}).some((id) => ABILITIES[id]?.super));
-      const tune = Object.values(sup?.tune ?? {})[0];
-      expect(tune && (tune.pull || tune.extra || tune.line || tune.spread || tune.bounce || tune.drink), cls).toBeTruthy();
+      // (and works on either of the class's supers: whichever its hero carries)
+      const tune = TALENTS[cls].find((t) => t.tune?.super)?.tune?.super;
+      expect(tune && (tune.pull || tune.extra || tune.line || tune.spread || tune.bounce || tune.drink || tune.self || tune.friends || tune.foes), cls).toBeTruthy();
     }
   });
 
@@ -117,16 +117,16 @@ describe('The Ring talents: the warrior', () => {
     expect(blow(b)).toBe(hits[0]);
   });
 
-  it('Fault Line: Quakebreaker drags everyone near in, where it would throw them back', () => {
-    const after = (talents: string[]): number => {
-      const m = fight([{ team: 0, cls: 'warrior', talents, bar: ['w-hew'] }, { team: 1, cls: 'mage', at: [250, 125] }]);
-      m.fighters[0]!.charge = 1;
-      expect(m.press(0, 'w-super')).toBeNull();
-      wait(m, 0.6);
-      return m.fighters[1]!.x - m.fighters[0]!.x;
-    };
-    expect(after(['w-1c'])).toBeLessThan(HERO_R * 2 + 4);
-    expect(after([])).toBeGreaterThan(90);
+  it('Warpath: either super hits harder and leaves the warrior unstoppable and quick', () => {
+    for (const ult of ['w-super', 'w-super2']) {
+      const m = fight([{ team: 0, cls: 'warrior', talents: ['w-1c'], ult }, { team: 1, cls: 'mage', at: [240, 125] }]);
+      const w = m.fighters[0]!;
+      w.charge = 1;
+      w.auras.push({ ab: 'm-spear', kind: 'slow', src: 1, t: 4, dur: 4, harmful: true, magic: true, n: 0.4 });
+      expect(m.press(0, ult), ult).toBeNull();
+      expect(w.auras.some((a) => a.kind === 'slow'), ult).toBe(false);
+      expect(w.auras.some((a) => a.kind === 'free') && w.auras.some((a) => a.kind === 'speed'), ult).toBe(true);
+    }
   });
 
   it('Shoulder Check: a Swift Step that ends beside an enemy stuns them, and not again for a while', () => {
@@ -293,14 +293,13 @@ describe('The Ring talents: the ranger', () => {
     expect(inside(m).damage(r, foe, 100, true, AB('r-swift'))).toBeCloseTo(near * (1 + doing('r-1b', 'far').pct), -0.5);
   });
 
-  it('Skypiercer: Skypierce Arrow flies on through everyone behind', () => {
-    for (const talents of [['r-1c'], []]) {
-      const m = fight([{ team: 0, cls: 'ranger', talents }, { team: 1, cls: 'warrior', at: [260, 125] }, { team: 1, cls: 'mage', at: [300, 125] }]);
+  it('Doomed Prey: whoever either super hits takes more from the whole side', () => {
+    for (const ult of ['r-super', 'r-super2']) {
+      const m = fight([{ team: 0, cls: 'ranger', talents: ['r-1c'], ult }, { team: 1, cls: 'warrior', at: [300, 125] }]);
       m.fighters[0]!.charge = 1;
-      expect(m.press(0, 'r-super')).toBeNull();
-      wait(m, 0.6);
-      const behind = m.fighters[2]!;
-      expect(behind.hp < behind.maxHp, `${talents}`).toBe(talents.length > 0);
+      expect(m.press(0, ult, { x: 300, y: 125 }), ult).toBeNull();
+      wait(m, 1);
+      expect(m.fighters[1]!.auras.find((a) => a.kind === 'mark' && a.src === 0)?.n, ult).toBeCloseTo(0.15, 5);
     }
   });
 
@@ -376,16 +375,17 @@ describe('The Ring talents: the priest', () => {
     expect(p.hp).toBe(p.maxHp);
   });
 
-  it('Bright Wings: Dawnward lands on every friend, the others a little less', () => {
-    const m = fight([{ team: 0, cls: 'priest', talents: ['p-1b'] }, { team: 1, cls: 'warrior', at: [500, 125] }, { team: 0, cls: 'warrior', at: [150, 125] }, { team: 0, cls: 'mage', at: [150, 175] }]);
-    const [p, , a, b] = m.fighters as [Fighter, Fighter, Fighter, Fighter];
-    p.charge = 1;
-    p.friend = a.id;
-    for (const f of [a, b]) f.hp = Math.round(f.maxHp / 2);
-    expect(m.press(0, 'p-super')).toBeNull();
-    expect(a.auras.find((x) => x.ab === 'p-super' && x.kind === 'absorb')?.n).toBeCloseTo(200);
-    expect(b.auras.find((x) => x.ab === 'p-super' && x.kind === 'absorb')?.n).toBeCloseTo(200 * TALENT_BY_ID['p-1b']!.tune!['p-super']!.spread!);
-    expect(b.hp).toBeGreaterThan(b.maxHp / 2);
+  it('Bright Wings: either super heals every friend in reach and frees them of a curse', () => {
+    for (const ult of ['p-super', 'p-super2']) {
+      const m = fight([{ team: 0, cls: 'priest', talents: ['p-1b'], ult }, { team: 0, cls: 'warrior', at: [230, 140] }, { team: 1, cls: 'mage', at: [320, 125] }]);
+      const [p, w] = m.fighters as [Fighter, Fighter];
+      p.charge = 1;
+      w.hp = 500;
+      w.auras.push({ ab: 'k-agony', kind: 'dot', src: 2, t: 6, dur: 6, harmful: true, magic: true, n: 1, next: 1 });
+      expect(m.press(0, ult, { x: 320, y: 125 }), ult).toBeNull();
+      expect(w.hp, ult).toBeGreaterThan(500);
+      expect(w.auras.some((a) => a.ab === 'k-agony'), ult).toBe(false);
+    }
   });
 
   it('Brimming Grace: healing past full stays on as a shield, to a cap', () => {
@@ -502,13 +502,13 @@ describe('The Ring talents: the paladin', () => {
     expect(near).toBeCloseTo(far * (1 + doing('d-1b', 'wrath').pct), -0.5);
   });
 
-  it('Sun’s Verdict: Sunhammer strikes the nearest other enemy too', () => {
-    for (const talents of [['d-1c'], []]) {
-      const m = fight([{ team: 0, cls: 'paladin', talents, ult: 'd-super' }, { team: 1, cls: 'warrior', at: [260, 125] }, { team: 1, cls: 'mage', at: [290, 125] }]);
+  it('Blinding Dawn: either super dazes every enemy near the paladin', () => {
+    for (const ult of ['d-super', 'd-super2']) {
+      const m = fight([{ team: 0, cls: 'paladin', talents: ['d-1c'], ult }, { team: 1, cls: 'warrior', at: [230, 125] }, { team: 1, cls: 'mage', at: [225, 145] }]);
       m.fighters[0]!.charge = 1;
-      expect(m.press(0, 'd-super')).toBeNull();
-      wait(m, 0.5);
-      expect(m.held(m.fighters[2]!)?.cc, `${talents}`).toBe(talents.length ? 'stun' : undefined);
+      expect(m.press(0, ult), ult).toBeNull();
+      // (Sunhammer's own blow lands on the warrior and breaks his daze: the mage beside him stays dazed)
+      expect(m.held(m.fighters[2]!)?.cc, ult).toBe('incap');
     }
   });
 
@@ -606,12 +606,13 @@ describe('The Ring talents: the warlock', () => {
     expect(inside(m).damage(k, foe, 100, true, AB('k-bolt'))).toBeCloseTo(full * (1 + doing('k-1b', 'desperate').pct * 0.8), -0.5);
   });
 
-  it('Riftcaller: Riftmaw drags everyone it opens under into its middle', () => {
-    const m = fight([{ team: 0, cls: 'warlock', talents: ['k-1c'] }, { team: 1, cls: 'warrior', at: [330, 125] }]);
-    m.fighters[0]!.charge = 1;
-    expect(m.press(0, 'k-super', { x: 300, y: 125 })).toBeNull();
-    wait(m, 1.4);
-    expect(Math.abs(m.fighters[1]!.x - 300)).toBeLessThan(4);
+  it('Doom’s Herald: either super curses every enemy near the warlock', () => {
+    for (const ult of ['k-super', 'k-super2']) {
+      const m = fight([{ team: 0, cls: 'warlock', talents: ['k-1c'], ult }, { team: 1, cls: 'warrior', at: [240, 125] }]);
+      m.fighters[0]!.charge = 1;
+      expect(m.press(0, ult, { x: 240, y: 125 }), ult).toBeNull();
+      expect(m.fighters[1]!.auras.some((a) => a.kind === 'dot' && a.src === 0), ult).toBe(true);
+    }
   });
 
   it('Enfeeble: who they hurt hits softer for a while', () => {
@@ -695,12 +696,14 @@ describe('The Ring talents: the druid', () => {
     expect(inside(m).damage(d, foe, 100, true, AB('l-lash'))).toBe(plain);
   });
 
-  it('Gathering Storm: Thornstorm leaves them slowed after the thorns let go', () => {
-    const m = fight([{ team: 0, cls: 'druid', talents: ['l-1b'], ult: 'l-super' }, { team: 1, cls: 'warrior', at: [300, 125] }]);
-    m.fighters[0]!.charge = 1;
-    expect(m.press(0, 'l-super', { x: 300, y: 125 })).toBeNull();
-    wait(m, 1);
-    expect(m.fighters[1]!.auras.find((a) => a.ab === 'l-super' && a.kind === 'slow')?.n).toBe(0.5);
+  it('Grove’s Bloom: either super makes every friend in reach bloom and quicken', () => {
+    for (const ult of ['l-super', 'l-super2']) {
+      const m = fight([{ team: 0, cls: 'druid', talents: ['l-1b'], ult }, { team: 0, cls: 'warrior', at: [230, 140] }, { team: 1, cls: 'mage', at: [320, 125] }]);
+      m.fighters[0]!.charge = 1;
+      expect(m.press(0, ult, { x: 320, y: 125 }), ult).toBeNull();
+      const w = m.fighters[1]!;
+      expect(w.auras.some((a) => a.kind === 'hot' && a.src === 0) && w.auras.some((a) => a.kind === 'speed'), ult).toBe(true);
+    }
   });
 
   it('Long Seasons: their burns and heals over time last longer', () => {
@@ -908,5 +911,37 @@ describe('The Ring talents: the Gloamknight', () => {
     expect(hit(m)).toBe(plain);
     wait(m, d.every + 0.1);
     expect(hit(m)).toBeCloseTo(plain * (1 - d.pct), -0.5);
+  });
+});
+
+describe('The Ring talents: what works through the Swift Step works through the Unbinding Charm too', () => {
+  it('Shed Skin, Stag Form, Wild Snare and Drag Below go off when the charm is used in the Swift Step’s place', () => {
+    const charm = (cls: ClassId, talents: string[], foe: [number, number] = [300, 125]): Match => {
+      const m = new Match({ seed: 5, map: 'sands', fighters: [{ team: 0, cls, name: cls, bar: PRESETS[cls][0]!.bar, talents, step: 'charm' }, { team: 1, cls: 'warrior', name: 'w', bar: ['w-hew'] }] });
+      m.step(GATES + 0.01, {});
+      Object.assign(m.fighters[0]!, { x: 200, y: 125, dirX: 1, dirY: 0 });
+      Object.assign(m.fighters[1]!, { x: foe[0], y: foe[1] });
+      return m;
+    };
+    // a druid's shed skin and stag form
+    const d = charm('druid', ['l-3c']);
+    const druid = d.fighters[0]!;
+    druid.hp = 600;
+    druid.auras.push({ ab: 'k-agony', kind: 'dot', src: 1, t: 6, dur: 6, harmful: true, magic: true, n: 1, next: 1 });
+    expect(d.press(0, 'charm')).toBeNull();
+    expect(druid.auras.some((a) => a.ab === 'k-agony')).toBe(false);
+    expect(druid.hp).toBeGreaterThan(600);
+    const s = charm('druid', ['l-2a']);
+    expect(s.press(0, 'charm')).toBeNull();
+    expect(s.fighters[0]!.auras.some((a) => a.kind === 'free') && s.fighters[0]!.auras.some((a) => a.kind === 'speed')).toBe(true);
+    // a ranger's snare where they stood
+    const r = charm('ranger', ['r-2b']);
+    expect(r.press(0, 'charm')).toBeNull();
+    expect(r.traps.some((t) => t.src === 0)).toBe(true);
+    // a Gloamknight's drag: the enemy in reach is pulled to them, whichever way they face
+    const g = charm('gloamknight', ['g-2a'], [150, 125]);
+    expect(g.press(0, 'charm')).toBeNull();
+    wait(g, 0.5);
+    expect(Math.hypot(g.fighters[1]!.x - 200, g.fighters[1]!.y - 125)).toBeLessThan(25);
   });
 });
