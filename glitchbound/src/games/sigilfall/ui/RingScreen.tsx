@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { fullBar, PRESETS, SLOTS } from '../arena/abilities';
-import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, namedApart, nameFor, readRing, setsOf, skillAt, stakesOf, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave } from '../arena/ladder';
+import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, mateSkill, mmrOf, namedApart, nameFor, readRing, rivalFor, setsOf, skillAt, stakesOf, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave } from '../arena/ladder';
 import { MAP_IDS, MAPS } from '../arena/maps';
 import { bestRating, FORMATS, nextRank, rankOf, type Format } from '../arena/ranks';
 import { rewardsBetween } from '../arena/rewards';
@@ -213,7 +213,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const [help, setHelp] = useState(false);
   const [rewardsOpen, setRewardsOpen] = useState(false);
   const [looksOpen, setLooksOpen] = useState(false);
-  const [fight, setFight] = useState<{ setup: MatchSetup; rival: Comp; skill: number; rivalRating: number; stakes: MatchStakes; format: Format; snap?: LiveMatch['snap'] } | null>(() => (resume ? { ...resume, stakes: resume.stakes } : null));
+  const [fight, setFight] = useState<{ setup: MatchSetup; rival: Comp; skill: number; mates?: number; rivalRating: number; stakes: MatchStakes; format: Format; snap?: LiveMatch['snap'] } | null>(() => (resume ? { ...resume, stakes: resume.stakes } : null));
   // (`matched`: found by a search, not a room of friends: there is no room to go back to when it ends, and it is
   // rated, `live` being what is kept of it while it goes, as for a match against the computer's teams)
   const [roomFight, setRoomFight] = useState<{ setup: MatchSetup; mine: number; host: boolean; matched?: boolean; live?: LiveMatch } | null>(null);
@@ -283,9 +283,9 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     const { comp, fighters } = drawOpponents(format, seed);
     const fill = fillSide(format, [specOf(pick, bar)], mates, seed);
     const team: FighterSetup[] = [{ team: 0, cls: pick, name: hero, bar, oath, talents, step, ult, human: true }, ...fill.map((x, i) => ({ team: 0 as const, cls: x.cls, name: nameFor(x.cls, seed + i + 11), bar: PRESETS[x.cls][x.preset]!.bar, talents: PRESETS[x.cls][x.preset]!.talents, oath: 'will' }))];
-    // the other side's rating lands either way of yours, up to 150 (what it pays and costs follows: stakesOf), and
-    // how sharp the computer plays follows it
-    const rivalRating = Math.max(800, standing.rating + (seed % 301) - 150);
+    // the other side's rating lands either way of your matchmaking rating, up to 150 (what it pays and costs follows:
+    // stakesOf), and how sharp the computer plays follows it; your own side's play to yours
+    const rivalRating = rivalFor(standing, seed);
     setResult(null);
     setPage('play');
     setRun((r) => r + 1);
@@ -293,6 +293,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
       setup: { seed, map: map === 'random' ? MAP_IDS[seed % MAP_IDS.length]! : map, fighters: namedApart([...team, ...fighters]), gates: GATES_SOLO },
       rival: comp,
       skill: skillAt(rivalRating),
+      mates: mateSkill(mmrOf(standing)),
       rivalRating,
       format,
       stakes: { format, rating: standing.rating, rank: rankOf(standing.best).name, color: rankOf(standing.best).color, ...stakesOf(standing, rivalRating), rival: comp.name, blurb: comp.blurb, rivalRating },
@@ -306,7 +307,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const settleFor = (f: Format, rivalRating: number, won: boolean, k = 1, ours?: number): RatingOutcome => {
     clearLive();
     const was = standingOf(latest.current, f);
-    const out = afterMatch(was, rivalRating, won, k, ours ?? was.rating);
+    const out = afterMatch(was, rivalRating, won, k, ours ?? mmrOf(was));
     // (what the climb has earned: the best of all three formats counts, so a reward is given once)
     const bestWas = bestRating();
     commit((now) => ({ ...now, standings: { ...now.standings, [f]: out.next } }));
@@ -337,7 +338,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     seekRef.current?.stop();
     const ground = map === 'random' ? MAP_IDS[Math.floor(Math.random() * MAP_IDS.length)]! : map;
     seekRef.current = new Seek(
-      { format, map: ground, name: shownAs, pick: { cls: pick, bar, oath, talents, step, ult, rating: standing.rating, mates: mates.map(choiceWord) } },
+      { format, map: ground, name: shownAs, pick: { cls: pick, bar, oath, talents, step, ult, rating: mmrOf(standing), mates: mates.map(choiceWord) } },
       {
         onLook: setLook,
         onRun: (v, link) => {
@@ -352,9 +353,10 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
           // leaver's loss
           const st = standingOf(latest.current, v.format);
           const them = rivalsOf(v);
-          const rivalRating = them.rating ?? st.rating;
-          // (2v2 and 3v3: worked from the two sides' means, as rated arenas do; 1v1: that is just your own)
-          const ourRating = them.ours ?? st.rating;
+          const rivalRating = them.rating ?? mmrOf(st);
+          // (2v2 and 3v3: worked from the two sides' means, as rated arenas do; 1v1: that is just your own. A search
+          // says the searcher's matchmaking rating, so these are matchmaking ratings)
+          const ourRating = them.ours ?? mmrOf(st);
           const rival = listed(them.names) || 'the other team';
           const rk = rankOf(st.best);
           const live: LiveMatch = {
@@ -494,7 +496,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         worn={worn}
         title={myTitle}
         body={body}
-        role={{ kind: 'solo', skill: fight.skill }}
+        role={{ kind: 'solo', skill: fight.skill, ...(fight.mates !== undefined ? { mates: fight.mates } : {}) }}
         sets={sets}
         stakes={fight.stakes}
         onSets={putSets}

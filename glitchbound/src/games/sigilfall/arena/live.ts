@@ -19,6 +19,8 @@ export interface LiveMatch {
   setup: MatchSetup;
   rival: Comp;
   skill: number;
+  /** How sharp the computer plays on the player's own side (missing: as `skill`). */
+  mates?: number;
   rivalRating: number;
   /** Against people in 2v2 and 3v3: the mean rating of the player's own side, which the stakes are worked from. */
   ourRating?: number;

@@ -12,7 +12,16 @@ export interface Standing {
   wins: number;
   losses: number;
   streak: number;
+  /**
+   * The matchmaking rating: hidden, as in rated arenas. It is what the other side is drawn against and what a match's
+   * expectation is worked from; the rating shown climbs toward it (arena/ladder.ts `afterMatch`). Missing from a
+   * standing kept before it existed: then it is the rating (`mmrOf`).
+   */
+  mmr?: number;
 }
+
+/** A standing's matchmaking rating. */
+export const mmrOf = (s: Pick<Standing, 'rating' | 'mmr'>): number => (typeof s.mmr === 'number' && Number.isFinite(s.mmr) ? s.mmr : s.rating);
 
 export const NEW_STANDING: Standing = { rating: 1000, best: 1000, wins: 0, losses: 0, streak: 0 };
 

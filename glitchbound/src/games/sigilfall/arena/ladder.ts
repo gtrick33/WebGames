@@ -1,11 +1,11 @@
 import type { ClassId } from '../data/types';
 import { ABILITIES, fullBar, PRESETS, SLOTS } from './abilities';
-import { forgetBest, NEW_STANDING, rankOf, RING_KEY, type Format, type Standing } from './ranks';
+import { forgetBest, mmrOf, NEW_STANDING, rankOf, RING_KEY, type Format, type Standing } from './ranks';
 import type { FighterSetup } from './sim';
 import { clearLive, LEAVER_K, type LiveMatch } from './live';
 export { clearLive, LEAVER_K, liveGoing, LIVE_WAIT, readLive, writeLive, type LiveMatch } from './live';
 
-export { FORMATS, NEW_STANDING, nextRank, rankOf, RANKS, type Format, type Standing } from './ranks';
+export { FORMATS, mmrOf, NEW_STANDING, nextRank, rankOf, RANKS, type Format, type Standing } from './ranks';
 
 /**
  * The Ring's standing: a rating for each format, ranks with a name worth earning, and who you're drawn against. It is
@@ -19,6 +19,15 @@ export const K_BASE = 32;
 export const K_NEW = 48;
 export const PLACEMENT = 10;
 export const kFor = (s: Standing): number => (s.wins + s.losses < PLACEMENT ? K_NEW : K_BASE);
+/**
+ * The matchmaking rating moves further still in those first matches (and by K_BASE after): it finds where a newcomer
+ * belongs within a few matches, and the rating shown follows it there (catchUp).
+ */
+export const K_MMR_NEW = 64;
+export const kMmrFor = (s: Standing): number => (s.wins + s.losses < PLACEMENT ? K_MMR_NEW : K_BASE);
+
+/** The elo rule before rounding: what a match moves a rating worked from `mine`, at `kf`. */
+const eloOf = (mine: number, theirs: number, won: boolean, kf: number): number => kf * ((won ? 1 : 0) - 1 / (1 + 10 ** ((theirs - mine) / 400)));
 
 /**
  * The elo rule, as rated arenas use it: what you stood to win against what you were expected to. Against a side rated
@@ -27,35 +36,85 @@ export const kFor = (s: Standing): number => (s.wins + s.losses < PLACEMENT ? K_
  * should give less rate on win and take more on loss ... vs higher players should let u lose less and win more").
  */
 export function ratingChange(mine: number, theirs: number, won: boolean, kf = K_BASE): number {
-  const expected = 1 / (1 + 10 ** ((theirs - mine) / 400));
-  return Math.round(kf * ((won ? 1 : 0) - expected));
+  return Math.round(eloOf(mine, theirs, won, kf));
+}
+
+/** The rating shown never falls below this: a bad night doesn't dig a hole that takes a week to climb out of. */
+export const RATING_FLOOR = 800;
+/**
+ * The matchmaking rating can fall further: a player who keeps losing is drawn against easier sides still (and the
+ * computer plays them more gently: skillAt), while the rating they show stays where it is.
+ */
+export const MMR_FLOOR = 600;
+/** How far the rating shown has to trail the matchmaking rating for a win to pay double and a loss to cost half. */
+export const CATCH_UP = 400;
+
+/**
+ * As rated arenas do it: while the rating shown is below the matchmaking rating, wins pay more and losses cost less,
+ * so that it climbs to where the player is matched (twice as much, and half, CATCH_UP below it); above it, the other
+ * way round (half as much at most, and half again). Equal, a match moves both alike.
+ */
+export function catchUp(rating: number, mmr: number, won: boolean): number {
+  const gap = (mmr - rating) / CATCH_UP;
+  return won ? 1 + Math.max(-0.5, Math.min(1, gap)) : 1 - Math.max(-0.5, Math.min(0.5, gap));
+}
+
+/** What a match moves the rating shown, before the floor. `k` and `ours`: as afterMatch. */
+function shownChange(s: Standing, theirs: number, won: boolean, k: number, ours: number): number {
+  return Math.round(Math.round(eloOf(ours, theirs, won, kFor(s)) * catchUp(s.rating, mmrOf(s), won)) * (won ? 1 : k));
 }
 
 /**
- * What a match stands to win and lose, before it begins. `ours`: the rating the expectation is worked from: in 2v2 and
- * 3v3 against people, the mean of the player's own side (their team's matchmaking rating), as against the other side's.
+ * What a match stands to win and lose, before it begins. `ours`: the rating the expectation is worked from: the
+ * player's matchmaking rating, or in 2v2 and 3v3 against people, the mean of their own side's (their team's
+ * matchmaking rating), as against the other side's.
  */
-export function stakesOf(s: Standing, theirs: number, ours = s.rating): { win: number; lose: number } {
-  return { win: ratingChange(ours, theirs, true, kFor(s)), lose: -ratingChange(ours, theirs, false, kFor(s)) };
+export function stakesOf(s: Standing, theirs: number, ours = mmrOf(s)): { win: number; lose: number } {
+  return { win: shownChange(s, theirs, true, 1, ours), lose: -shownChange(s, theirs, false, 1, ours) };
 }
 
-/** `k`: a loss counts this many times over (a leaver's: LEAVER_K). `ours`: as stakesOf. */
-export function afterMatch(s: Standing, theirs: number, won: boolean, k = 1, ours = s.rating): { next: Standing; change: number; rankUp: string | null } {
-  const change = Math.round(ratingChange(ours, theirs, won, kFor(s)) * (won ? 1 : k));
-  // never below the floor: a bad night doesn't dig a hole that takes a week to climb out of
-  const rating = Math.max(800, s.rating + change);
+/**
+ * A match settled. `k`: a loss counts this many times over (a leaver's: LEAVER_K). `ours`: as stakesOf. The
+ * matchmaking rating moves by the plain elo rule (kMmrFor); the rating shown by the same at kFor, scaled toward the
+ * matchmaking rating (catchUp).
+ */
+export function afterMatch(s: Standing, theirs: number, won: boolean, k = 1, ours = mmrOf(s)): { next: Standing; change: number; rankUp: string | null } {
+  const rating = Math.max(RATING_FLOOR, s.rating + shownChange(s, theirs, won, k, ours));
+  const mmr = Math.max(MMR_FLOOR, mmrOf(s) + Math.round(Math.round(eloOf(ours, theirs, won, kMmrFor(s))) * (won ? 1 : k)));
   const before = rankOf(s.best);
   const best = Math.max(s.best, rating);
   const after = rankOf(best);
   return {
-    next: { rating, best, wins: s.wins + (won ? 1 : 0), losses: s.losses + (won ? 0 : 1), streak: won ? Math.max(1, s.streak + 1) : Math.min(-1, s.streak - 1) },
+    next: { rating, best, wins: s.wins + (won ? 1 : 0), losses: s.losses + (won ? 0 : 1), streak: won ? Math.max(1, s.streak + 1) : Math.min(-1, s.streak - 1), mmr },
     change: rating - s.rating,
     rankUp: after.at > before.at ? after.name : null,
   };
 }
 
-/** How sharp the computer is at a rating. A newcomer gets slow hands; the top of the ladder gets everything it has. */
-export const skillAt = (rating: number): number => Math.max(0.12, Math.min(1, 0.12 + (rating - 800) / 1300));
+/**
+ * The rating of the computer's side drawn against a standing: either way of its matchmaking rating, up to 150 (what
+ * the match pays and costs follows, stakesOf, and so does how sharply the computer plays, skillAt).
+ */
+export const rivalFor = (s: Standing, seed: number): number => Math.max(MMR_FLOOR, Math.round(mmrOf(s)) + (seed % 301) - 150);
+
+/**
+ * How sharp the computer is at a rating, from 0 to 1 (arena/bot.ts, arena/tactics.ts). The owner, 2026-11-14: "they
+ * should be bad when you first start and get progressively harder and harder". A straight climb from SKILL_FROM, where
+ * it is at its clumsiest, to SKILL_TOP, where it plays everything it knows: about 0.1 at the starting 1000, where it
+ * stands about and wastes its cooldowns (less and less as the rating climbs, and not at all from about 1720); a
+ * practised player's habits from about 1500, more of them the higher; 0.86 at 2100, the top rank; all of it from 2300.
+ */
+export const SKILL_FROM = 850;
+export const SKILL_TOP = 2300;
+export const skillAt = (rating: number): number => Math.max(0, Math.min(1, (rating - SKILL_FROM) / (SKILL_TOP - SKILL_FROM)));
+
+/**
+ * How sharp the computer plays on the player's own side in 2v2 and 3v3: as the ladder does at their matchmaking
+ * rating, but never as clumsy as a newcomer's opponents (a friend who stands about would make the first matches a
+ * chore rather than easy).
+ */
+export const MATE_FLOOR = 0.3;
+export const mateSkill = (mmr: number): number => Math.max(MATE_FLOOR, skillAt(mmr));
 
 export interface Comp {
   name: string;
@@ -212,7 +271,7 @@ export function forfeitLive(l: LiveMatch): number {
   }
   const save = readRing();
   const was = standingOf(save, l.format);
-  const out = afterMatch(was, l.rivalRating, false, LEAVER_K, l.ourRating ?? was.rating);
+  const out = afterMatch(was, l.rivalRating, false, LEAVER_K, l.ourRating ?? mmrOf(was));
   writeRing({ ...save, standings: { ...save.standings, [l.format]: out.next } });
   clearLive();
   return out.change;

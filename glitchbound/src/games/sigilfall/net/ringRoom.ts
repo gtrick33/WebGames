@@ -24,7 +24,7 @@ export interface Pick {
   step?: string;
   /** Which of their class's supers (the match checks it is one of theirs). */
   ult?: string;
-  /** Their rating in the room's format, when a search brought them (arena/queue.ts): what a win over them is worth. */
+  /** Their matchmaking rating in the room's format, when a search brought them (arena/queue.ts): what a win over them is worth. */
   rating?: number;
   /**
    * What the computer brings to this player's side for each place no person takes (arena/teammates.ts `choiceWord`:

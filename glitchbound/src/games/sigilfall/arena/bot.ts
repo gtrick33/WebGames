@@ -1,12 +1,15 @@
 import { ABILITIES, CHARM, DASH, type Ability } from './abilities';
 import { ARENA_H, ARENA_W } from './maps';
 import { BASE_SPEED, HERO_R, RANGED, type Fighter, type Match, type MoveInput, type Zone } from './sim';
+import { armored, brace, chainHealer, focusBias, fumble, guard, holdSuper, knows, lapse, lateKick, nextLook, peel, SHARP_FROM } from './tactics';
 
 /**
  * A computer player for The Ring. It plays by the player's rules: it sees what a player sees, and presses the same
  * buttons through Match.press. `skill` from 0 to 1 is how quickly it reacts and how much of the game it plays: a low
  * one stands under what is falling on it, rarely interrupts and sits on its super; a high one steps out from under it,
  * strafes while it casts, races for the sigil and the healing spheres, saves its super for the kill and kicks heals.
+ * What a practised player does beyond that, and a newcomer's slips, are arena/tactics.ts: the ladder's rating sets
+ * the skill (arena/ladder.ts `skillAt`).
  */
 export interface Brain {
   /** Time to the next thought. */
@@ -54,6 +57,8 @@ const atFoe = (a: Ability): boolean => a.aim === 'enemy' || a.aim === 'ground';
 export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: number): MoveInput {
   // (the raised dead have minds of their own, in the rules: Match.tickPet. Nobody gives them a brain)
   if (f.dead || f.pet || m.phase !== 'fight') return { mx: 0, my: 0 };
+  // a sharp player watches the cast bars all the time, and kicks late in the cast (tactics.ts)
+  if (skill >= SHARP_FROM) lateKick(m, f, b, skill, dt);
   // a reflex, every frame: what is about to fall on them is stepped out from under
   const away = dodge(m, f, b, skill);
   if (away) {
@@ -76,7 +81,7 @@ export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: numb
     return b.move;
   }
   const healer = isHealer(f);
-  const target = pickTarget(m, f, seen);
+  const target = pickTarget(m, f, seen, focusBias(skill));
   // (with one of the dead in the way, what is kept for a hero, a super, a hold, a rush, is kept for the one who raised it)
   const hero = target.pet ? (enemies.find((e) => e.id === m.masterOf(target).id) ?? enemies[0]!) : target;
   f.target = hero.id;
@@ -90,23 +95,29 @@ export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: numb
     b.move = m.hidden(f) ? stalk(m, f, b, hero) : walk(m, f, b, skill, enemies, hero, friends, healer);
     return b.move;
   }
-  if (!m.held(f)) {
+  // (a newcomer stands about now and then, looking at their bar: tactics.ts)
+  if (!m.held(f) && !lapse(b, skill)) {
     shroud(m, f, b, skill, enemies);
-    unleash(m, f, b, skill, enemies, hero, friends);
-    defend(m, f, b, skill, enemies);
-    kick(m, f, b, skill, enemies, dt);
+    if (!holdSuper(m, f, b, skill, enemies, hero)) unleash(m, f, b, skill, enemies, hero, friends);
+    // (a sharp player's defensives are its own: with none on the bar, there's nothing to weigh)
+    if (f.bar.some((x) => ABILITIES[x]?.role === 'defense') && knows(b, skill)) guard(m, f, b, skill, enemies);
+    else defend(m, f, b, skill, enemies);
+    if (skill < SHARP_FROM) kick(m, f, b, skill, enemies, dt);
     mobilize(m, f, b, skill, enemies, hero);
     if (!f.cast) {
       if (healer) healFriends(m, f, b, skill, friends, enemies);
       dispelFriends(m, f, b, skill, friends);
-      control(m, f, b, skill, enemies, hero, friends);
+      if (!peel(m, f, b, skill, enemies, friends) && !chainHealer(m, f, b, skill, enemies, hero)) control(m, f, b, skill, enemies, hero, friends);
       f.target = target.id;
       attack(m, f, b, skill, target);
       if (!healer) healSelf(m, f);
     }
-  }
+    fumble(m, f, b, skill);
+  } else if (m.held(f)) brace(m, f, b, skill, enemies);
   f.target = target.id;
   b.move = walk(m, f, b, skill, enemies, target, friends, healer);
+  // (and looks back at the bar as the global cooldown comes up: tactics.ts)
+  b.wait = nextLook(f, b.wait, skill);
   return b.move;
 }
 
@@ -115,7 +126,7 @@ export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: numb
  * Somebody's raised dead count for less than a hero (they crumble on their own soon enough), unless one is clawing at
  * this fighter and has been worn down: then it is put out of the way first.
  */
-function pickTarget(m: Match, f: Fighter, enemies: Fighter[]): Fighter {
+function pickTarget(m: Match, f: Fighter, enemies: Fighter[], extra?: (o: Fighter) => number): Fighter {
   const held = (o: Fighter): boolean => o.auras.some((a) => a.kind === 'immune' || a.cc === 'incap');
   const score = (o: Fighter): number => {
     let s = hpShare(o) * 100;
@@ -127,6 +138,8 @@ function pickTarget(m: Match, f: Fighter, enemies: Fighter[]): Fighter {
     if (f.target === o.id) s -= 12;
     // what a teammate is on counts for a lot
     for (const a of m.friendsOf(f)) if (a !== f && !a.pet && a.target === o.id) s -= 14;
+    // (and what a sharp team weighs besides: tactics.ts)
+    if (extra) s += extra(o);
     return s;
   };
   return enemies.reduce((a, c) => (score(c) < score(a) ? c : a));
@@ -323,7 +336,8 @@ function attack(m: Match, f: Fighter, b: Brain, skill: number, target: Fighter):
   // a blade at your throat: no time for anything slow
   const pressed = m.enemiesOf(f).some((e) => Math.hypot(e.x - f.x, e.y - f.y) < 50 && !m.held(e) && !m.rooted(e));
   // chance to throw burst when they're low or they have no help (never on somebody's raised dead)
-  const burst = target.pet ? [] : near.filter((a) => a.role === 'burst');
+  // (nor, for a sharp one, into immunity or a big ward)
+  const burst = target.pet || (skill >= SHARP_FROM && armored(target)) ? [] : near.filter((a) => a.role === 'burst');
   for (const a of burst) {
     if (a.aim === 'self' && a !== rouse && Math.hypot(target.x - f.x, target.y - f.y) < 60 && !m.blocked(f, a)) {
       m.press(f.id, a.id);
