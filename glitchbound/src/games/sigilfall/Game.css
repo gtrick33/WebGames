@@ -7534,6 +7534,32 @@ html.rb-touch-playing textarea {
   border-radius: 6px;
   image-rendering: pixelated;
 }
+/* Random: a die-like mark where a class's emblem would be, and what it will bring beside the class list */
+.rb-rp-mate-any {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1.5px dashed var(--c);
+  border-radius: 6px;
+  color: var(--c);
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 700;
+  background: rgb(255 227 154 / 0.08);
+}
+.rb-rp-mate-fit {
+  overflow: hidden;
+  color: #ffe9b8;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-rp-matehint {
+  color: #b8afc8;
+  font-size: 11px;
+  line-height: 1.35;
+}
 .rb-ringlobby select,
 .rb-rp-join input {
   min-width: 0;

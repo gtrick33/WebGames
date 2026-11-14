@@ -27,27 +27,14 @@ import { Titled } from './Titled';
 import { ScreenGate } from './ScreenGate';
 import { Doll } from './Doll';
 import { classEmblem } from './classEmblem';
-
-/** The computer's teammates: who they are and which of their bars they bring. */
-interface Mate {
-  cls: ClassId;
-  preset: number;
-}
-
-const DEFAULT_MATES: Record<ClassId, Mate[]> = {
-  warrior: [{ cls: 'priest', preset: 0 }, { cls: 'mage', preset: 1 }],
-  mage: [{ cls: 'druid', preset: 0 }, { cls: 'warrior', preset: 0 }],
-  ranger: [{ cls: 'priest', preset: 0 }, { cls: 'warlock', preset: 0 }],
-  priest: [{ cls: 'warrior', preset: 0 }, { cls: 'mage', preset: 1 }],
-  paladin: [{ cls: 'ranger', preset: 0 }, { cls: 'warlock', preset: 1 }],
-  warlock: [{ cls: 'druid', preset: 0 }, { cls: 'ranger', preset: 0 }],
-  druid: [{ cls: 'warlock', preset: 0 }, { cls: 'warrior', preset: 0 }],
-  gloamknight: [{ cls: 'priest', preset: 0 }, { cls: 'mage', preset: 0 }],
-};
+import { bestFits, bestPreset, choiceFromWord, choicesFor, choiceWord, fillSide, healerSpec, honored, slotsFor, specOf, type MateChoice, type Spec } from '../arena/teammates';
 
 const roomErrors: Record<string, string> = { full: 'That room is full.', in_run: 'That room is already in a match.' };
 
-/** Both ends of a room build the same match from the room's own word. Empty places go to the computer. */
+/**
+ * Both ends of a room build the same match from the room's own word. Empty places go to the computer: on a side with
+ * people, the teammates the first of them chose (arena/teammates.ts); on a side with nobody, one of the computer's teams.
+ */
 export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } {
   const fighters: FighterSetup[] = [];
   for (const team of [0, 1] as const) {
@@ -62,10 +49,19 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
     }
     const list = COMPS[v.format];
     const comp = list[(v.runSeed + team) % list.length]!;
-    for (let i = on.length; i < v.format; i++) {
-      const t = comp.team[i % comp.team.length]!;
+    const people = fighters.filter((f) => f.team === team);
+    const fill: Spec[] = people.length
+      ? fillSide(
+          v.format,
+          people.map((f) => specOf(f.cls, f.bar)),
+          (on[0]!.pick!.mates ?? []).map(choiceFromWord),
+          v.runSeed + team,
+        )
+      : comp.team.slice(0, v.format);
+    fill.forEach((t, k) => {
+      const i = on.length + k;
       fighters.push({ team, cls: t.cls, name: nameFor(t.cls, v.runSeed + i + team * 7), bar: PRESETS[t.cls][t.preset]!.bar, talents: PRESETS[t.cls][t.preset]!.talents });
-    }
+    });
   }
   return { setup: { seed: v.runSeed, map: MAPS[v.map] ? v.map : 'sands', fighters: namedApart(fighters) }, mine: fighters.findIndex((f) => f.seat === v.you) };
 }
@@ -97,6 +93,88 @@ function ClassRow({ pick, onPick }: { pick: ClassId; onPick: (c: ClassId) => voi
   );
 }
 
+const setupName = (s: Spec): string => `${CLASSES[s.cls].name} (${PRESETS[s.cls][s.preset]!.name})`;
+
+/**
+ * The computer's teammates for a 2v2's or a 3v3's empty places: a class and one of its ready-made setups each, or
+ * Random, the team that wins most beside the player's own setup (arena/teammates.ts). A friend who joins takes a place
+ * first.
+ */
+function MatesPicker({ format, cls, bar, mates, onMates }: { format: Format; cls: ClassId; bar: string[]; mates: MateChoice[]; onMates: (m: MateChoice[]) => void }) {
+  const shown = honored(cls, mates);
+  const me = specOf(cls, bar);
+  // what Random picks between, the places chosen kept where they are
+  const fits = bestFits(format, [me], shown);
+  const set = (i: number, c: MateChoice): void => onMates(shown.map((x, j) => (j === i ? c : x)));
+  const comps = COMPS[format].filter((c) => c.team.some((t) => t.cls === cls));
+  return (
+    <div className="rb-rp-block">
+      <h3>Your {format === 2 ? 'teammate' : 'teammates'}</h3>
+      <div className="rb-rp-mates">
+        {shown.map((x, i) => {
+          const could = fits.map((t) => t[i]).filter((t): t is Spec => !!t);
+          const names = [...new Set(could.map(setupName))];
+          const heals = could.filter(healerSpec).length;
+          // (one team clearly best: it is named; several as good: what kind of teammate they all are)
+          const role = names.length === 1 ? names[0] : heals === could.length ? 'A healer' : heals === 0 ? 'Damage' : 'Healer or damage';
+          return (
+            <span key={i} className={`rb-rp-mate${x === 'random' ? ' is-any' : ''}`} style={{ ['--c' as string]: x === 'random' ? '#ffe39a' : CLASSES[x.cls].colors.accent }}>
+              {x === 'random' ? (
+                <i className="rb-rp-mate-any" aria-hidden="true">
+                  ?
+                </i>
+              ) : (
+                <img src={classEmblem(x.cls)} alt="" draggable={false} />
+              )}
+              <select
+                aria-label={`Teammate ${i + 1}`}
+                value={x === 'random' ? 'random' : x.cls}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  set(i, v === 'random' ? 'random' : { cls: v as ClassId, preset: bestPreset(me, v as ClassId) });
+                }}
+              >
+                <option value="random">Random</option>
+                {CLASS_IDS.filter((c) => c !== cls).map((c) => (
+                  <option key={c} value={c} disabled={shown.some((o, j) => j !== i && o !== 'random' && o.cls === c)}>
+                    {CLASSES[c].name}
+                  </option>
+                ))}
+              </select>
+              {x === 'random' ? (
+                <small className="rb-rp-mate-fit" title={`Best beside your ${PRESETS[cls][me.preset]!.name}: ${names.join(', ')}`}>
+                  {role}, best fit
+                </small>
+              ) : (
+                <select aria-label={`Teammate ${i + 1}'s build`} value={x.preset} onChange={(e) => set(i, { cls: x.cls, preset: Number(e.target.value) })}>
+                  {PRESETS[x.cls].map((p, n) => (
+                    <option key={p.id} value={n}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </span>
+          );
+        })}
+      </div>
+      <small className="rb-rp-matehint">
+        {format === 3 ? 'Random brings one healer and one damage dealer, the pair that wins most beside your setup.' : 'Random brings the healer or damage dealer that wins most beside your setup.'} A friend who joins takes a place first.
+      </small>
+      {comps.length > 0 && (
+        <div className="rb-rp-comps">
+          <small>Teams that work:</small>
+          {comps.map((c) => (
+            <button key={c.name} title={c.blurb} className="rb-rs-build" onClick={() => onMates(c.team.filter((t) => t.cls !== cls).map((t) => ({ cls: t.cls, preset: t.preset })))}>
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * The Ring, as three plain pages: Play (who, what kind of fight, go), Setup (what you bring), and With friends. A
  * match and its result lie beyond them, and every page has one way back.
@@ -115,7 +193,6 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const [format, setFormat] = useState<Format>(1);
   const { me } = useAccount();
   const [pick, setPick] = useState<ClassId>(cls && classOpen(cls, me) ? cls : 'warrior');
-  const [mates, setMates] = useState<Mate[]>(() => DEFAULT_MATES[cls ?? 'warrior']);
   const [map, setMap] = useState<string>('random');
   const [help, setHelp] = useState(false);
   const [rewardsOpen, setRewardsOpen] = useState(false);
@@ -170,10 +247,10 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const setup = sets.list[sets.active]!;
   const { bar, oath, talents } = setup;
   const ready = bar.length === SLOTS;
-  const choose = (c: ClassId): void => {
-    setPick(c);
-    setMates(DEFAULT_MATES[c]);
-  };
+  const choose = (c: ClassId): void => setPick(c);
+  // the computer's teammates for this format's empty places, kept with the standing (arena/teammates.ts)
+  const mates = choicesFor(save.mates?.[format], format);
+  const putMates = (list: MateChoice[]): void => commit((now) => ({ ...now, mates: { ...now.mates, [format]: list } }));
   const putSets = (s: ClassSets): void => commit((now) => ({ ...now, sets: { ...now.sets, [pick]: s } }));
   const openSetup = (from: Page): void => {
     setSetupFrom(from);
@@ -187,7 +264,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     }
     const seed = (Math.random() * 2 ** 31) >>> 0;
     const { comp, fighters } = drawOpponents(format, seed);
-    const team: FighterSetup[] = [{ team: 0, cls: pick, name: hero, bar, oath, talents, human: true }, ...mates.slice(0, format - 1).map((x, i) => ({ team: 0 as const, cls: x.cls, name: nameFor(x.cls, seed + i + 11), bar: PRESETS[x.cls][x.preset]!.bar, talents: PRESETS[x.cls][x.preset]!.talents, oath: 'will' }))];
+    const fill = fillSide(format, [specOf(pick, bar)], mates, seed);
+    const team: FighterSetup[] = [{ team: 0, cls: pick, name: hero, bar, oath, talents, human: true }, ...fill.map((x, i) => ({ team: 0 as const, cls: x.cls, name: nameFor(x.cls, seed + i + 11), bar: PRESETS[x.cls][x.preset]!.bar, talents: PRESETS[x.cls][x.preset]!.talents, oath: 'will' }))];
     // the other side's rating lands either way of yours, up to 150 (what it pays and costs follows: stakesOf), and
     // how sharp the computer plays follows it
     const rivalRating = Math.max(800, standing.rating + (seed % 301) - 150);
@@ -242,7 +320,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     seekRef.current?.stop();
     const ground = map === 'random' ? MAP_IDS[Math.floor(Math.random() * MAP_IDS.length)]! : map;
     seekRef.current = new Seek(
-      { format, map: ground, name: shownAs, pick: { cls: pick, bar, oath, talents, rating: standing.rating } },
+      { format, map: ground, name: shownAs, pick: { cls: pick, bar, oath, talents, rating: standing.rating, mates: mates.map(choiceWord) } },
       {
         onLook: setLook,
         onRun: (v, link) => {
@@ -297,7 +375,9 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   };
 
   /* -------------------------------------------------- the room */
-  const myPick = useMemo((): RoomPick => ({ team: view?.seats.find((s) => s.you)?.pick?.team ?? 0, cls: pick, bar, oath, talents }), [view, pick, bar, oath, talents]);
+  const roomMates = view ? choicesFor(save.mates?.[view.format], view.format) : [];
+  const roomWords = roomMates.map(choiceWord).join(' ');
+  const myPick = useMemo((): RoomPick => ({ team: view?.seats.find((s) => s.you)?.pick?.team ?? 0, cls: pick, bar, oath, talents, ...(roomWords ? { mates: roomWords.split(' ') } : {}) }), [view, pick, bar, oath, talents, roomWords]);
   const runSeen = useRef(0);
   const handlers = {
     onView: (v: RoomView) => {
@@ -585,72 +665,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
               </div>
               <RewardStrip best={bestRating()} onOpen={() => setRewardsOpen(true)} />
 
-              {format > 1 && (
-                <div className="rb-rp-block">
-                  <h3>Your {format === 2 ? 'teammate' : 'teammates'}</h3>
-                  <div className="rb-rp-mates">
-                    {mates.slice(0, format - 1).map((x, i) => (
-                      <span key={i} className="rb-rp-mate" style={{ ['--c' as string]: CLASSES[x.cls].colors.accent }}>
-                        <img src={classEmblem(x.cls)} alt="" draggable={false} />
-                        <select
-                          aria-label={`Teammate ${i + 1}`}
-                          value={x.cls}
-                          onChange={(e) => {
-                            const list = [...mates];
-                            list[i] = { cls: e.target.value as ClassId, preset: 0 };
-                            setMates(list);
-                          }}
-                        >
-                          {CLASS_IDS.map((c) => (
-                            <option key={c} value={c}>
-                              {CLASSES[c].name}
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          aria-label={`Teammate ${i + 1}'s build`}
-                          value={x.preset}
-                          onChange={(e) => {
-                            const list = [...mates];
-                            list[i] = { cls: x.cls, preset: Number(e.target.value) };
-                            setMates(list);
-                          }}
-                        >
-                          {PRESETS[x.cls].map((p, n) => (
-                            <option key={p.id} value={n}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
-                      </span>
-                    ))}
-                  </div>
-                  {COMPS[format].some((c) => c.team.some((t) => t.cls === pick)) && (
-                    <div className="rb-rp-comps">
-                      <small>Teams that work:</small>
-                      {COMPS[format]
-                        .filter((c) => c.team.some((t) => t.cls === pick))
-                        .map((c) => (
-                          <button
-                            key={c.name}
-                            title={c.blurb}
-                            className="rb-rs-build"
-                            onClick={() => {
-                              const rest = [...c.team];
-                              rest.splice(
-                                rest.findIndex((t) => t.cls === pick),
-                                1,
-                              );
-                              setMates(rest);
-                            }}
-                          >
-                            {c.name}
-                          </button>
-                        ))}
-                    </div>
-                  )}
-                </div>
-              )}
+              {format > 1 && <MatesPicker format={format} cls={pick} bar={bar} mates={mates} onMates={putMates} />}
 
               <div className="rb-rp-block">
                 <h3>Arena</h3>
@@ -691,7 +706,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
           </div>
         )}
 
-        {page === 'friends' && <FriendsPage view={view} state={linkState} err={roomErr} ready={ready} codeIn={codeIn} setCodeIn={setCodeIn} onOpen={() => void openRoom()} onJoin={joinRoom} send={(a) => linkRef.current?.send(a)} myPick={myPick} pick={pick} onPick={choose} onSetup={() => openSetup('friends')} bar={bar} />}
+        {page === 'friends' && <FriendsPage view={view} state={linkState} err={roomErr} ready={ready} codeIn={codeIn} setCodeIn={setCodeIn} onOpen={() => void openRoom()} onJoin={joinRoom} send={(a) => linkRef.current?.send(a)} myPick={myPick} pick={pick} onPick={choose} onSetup={() => openSetup('friends')} bar={bar} mates={roomMates} />}
 
         {look && <Seeking look={look} format={format} cls={pick} onCancel={() => endSeek()} />}
         {help && <RingHelp onClose={() => setHelp(false)} />}
@@ -732,7 +747,7 @@ function Seeking({ look, format, cls, onCancel }: { look: SeekLook; format: Form
   );
 }
 
-function FriendsPage({ view, state, err, ready, codeIn, setCodeIn, onOpen, onJoin, send, myPick, pick, onPick, onSetup, bar }: { view: RoomView | null; state: LinkState | 'none'; err: string; ready: boolean; codeIn: string; setCodeIn: (s: string) => void; onOpen: () => void; onJoin: () => void; send: (a: RoomAction) => void; myPick: RoomPick; pick: ClassId; onPick: (c: ClassId) => void; onSetup: () => void; bar: string[] }) {
+function FriendsPage({ view, state, err, ready, codeIn, setCodeIn, onOpen, onJoin, send, myPick, pick, onPick, onSetup, bar, mates }: { view: RoomView | null; state: LinkState | 'none'; err: string; ready: boolean; codeIn: string; setCodeIn: (s: string) => void; onOpen: () => void; onJoin: () => void; send: (a: RoomAction) => void; myPick: RoomPick; pick: ClassId; onPick: (c: ClassId) => void; onSetup: () => void; bar: string[]; mates: MateChoice[] }) {
   const [copied, setCopied] = useState(false);
   if (!view) {
     return (
@@ -846,9 +861,10 @@ function FriendsPage({ view, state, err, ready, codeIn, setCodeIn, onOpen, onJoi
                   </small>
                 </span>
               ))}
-              {Array.from({ length: Math.max(0, view.format - team(t).length) }, (_, i) => (
+              {/* (the computer's places on your side hold the teammates you chose for this format, when you sat down first) */}
+              {(team(t)[0]?.you ? slotsFor(view.format, team(t).map((s) => s.pick!.cls as ClassId), mates) : Array.from({ length: Math.max(0, view.format - team(t).length) }, () => null)).map((c, i) => (
                 <span key={`e${i}`} className="rb-rp-seat is-empty">
-                  <small>Computer, unless someone joins</small>
+                  <small>{c === null ? 'Computer, unless someone joins' : c === 'random' ? 'Computer: best fit, unless someone joins' : `Computer: ${setupName(c)}, unless someone joins`}</small>
                 </span>
               ))}
               {myPick.team !== t && team(t).length < view.format && (
