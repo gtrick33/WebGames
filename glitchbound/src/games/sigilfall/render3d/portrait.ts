@@ -8,6 +8,7 @@ import { hexRgb, kitOf } from './kits';
 import { mountModel } from './mountKit';
 import { shapeOf } from './mountLook';
 import { loadPack, type MeshData, type Pack } from './pack';
+import { busyElsewhere } from './pace';
 import { copyLight, daylight, putLight, rigAnimOf, type RigAnim } from './toon';
 
 /**
@@ -86,6 +87,8 @@ function photograph(w: number, h: number): string | null {
     return r.domElement.toDataURL('image/png');
   } finally {
     putLight(was);
+    // (the game waited on this picture: not the world's slowness, render3d/pace.ts)
+    busyElsewhere();
   }
 }
 
