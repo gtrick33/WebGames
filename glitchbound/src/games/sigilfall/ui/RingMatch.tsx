@@ -22,7 +22,8 @@ import { autoPoint as pointFor, isOut } from './ringAim';
 import { actionOf, keyName, readKeys, saveKeys, type RingKeys } from './ringKeys';
 import { KeysDialog } from './RingKeysDialog';
 
-export type Role = { kind: 'solo'; skill: number } | { kind: 'host'; skill: number; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void } | { kind: 'client'; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void };
+/** `skill`: how sharp the computer plays (arena/ladder.ts skillAt); `mates`, in solo: the player's own side's, when not the same. */
+export type Role = { kind: 'solo'; skill: number; mates?: number } | { kind: 'host'; skill: number; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void } | { kind: 'client'; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void };
 
 /** What the room's traffic is handed to (one per match). */
 export type RingInbox = (seat: number, d: unknown) => void;
@@ -609,6 +610,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     /* --------------------------------------------------- the loop */
     const brains = m.fighters.map((_, i) => newBrain(setup.seed + i * 97));
     const skill = role.kind === 'client' ? 0 : role.skill;
+    const myTeam0 = m.fighters[myId]?.team;
+    const sharpOf = (f: Fighter): number => (role.kind === 'solo' && role.mates !== undefined && f.team === myTeam0 ? role.mates : skill);
     let last = performance.now();
     let sendT = 0;
     let lastSent = '';
@@ -674,7 +677,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           for (const f of m.fighters) {
             if (f.id === myId) continue;
             if (f.seat !== null) moves[f.id] = others[f.id] ?? { mx: 0, my: 0 };
-            else moves[f.id] = botThink(m, f, brains[f.id]!, skill, h);
+            else moves[f.id] = botThink(m, f, brains[f.id]!, sharpOf(f), h);
           }
           m.step(h, moves);
         }
@@ -749,7 +752,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       const run = (seconds: number): void => {
         for (let i = 0; i < seconds / STEP && m.phase !== 'over'; i++) {
           const moves: Record<number, MoveInput> = {};
-          for (const f of m.fighters) moves[f.id] = f.id === myId ? moveNow() : botThink(m, f, brains[f.id]!, skill, STEP);
+          for (const f of m.fighters) moves[f.id] = f.id === myId ? moveNow() : botThink(m, f, brains[f.id]!, sharpOf(f), STEP);
           m.step(STEP, moves);
         }
         react();

@@ -20,7 +20,7 @@ export interface Pick {
   bar: string[];
   oath: string;
   talents: string[];
-  /** Their rating in the room's format, when a search brought them (arena/queue.ts): what a win over them is worth. */
+  /** Their matchmaking rating in the room's format, when a search brought them (arena/queue.ts): what a win over them is worth. */
   rating?: number;
 }
 
