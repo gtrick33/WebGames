@@ -143,6 +143,8 @@ const PATH = 61; // '='
 const COBBLE = 58; // ':'
 const WATER = 126; // '~'
 const BRIDGE = 98; // 'b'
+/** The ways through a land (its roads, its bridges): a story prop moved off taken ground keeps off them when it can (free). */
+const ROADS = new Set([PATH, BRIDGE]);
 const TREE = 84; // 'T'
 const BUSH = 116; // 't'
 const ROCK = 114; // 'r'
@@ -2366,7 +2368,7 @@ class ZoneBuilder {
         this.put(x, y, m, sm.when);
         continue;
       }
-      const [tx, ty] = this.free(x, y, m.kind === 'npc');
+      const [tx, ty] = this.free(x, y, m.kind === 'npc', m.kind === 'prop');
       // nothing the story stands up may close a road
       const marker = m.kind === 'prop' && m.solid && !OPEN.has(this.at(tx, ty)) ? { ...m, solid: false } : m;
       this.put(tx, ty, marker, sm.when);
@@ -2427,19 +2429,33 @@ class ZoneBuilder {
    * The nearest walkable tile nobody stands on, without carving anything; for a `person`, one with nothing tall
    * in front of them.
    */
-  private free(x: number, y: number, person = false): [number, number] {
-    for (let rad = 0; rad < 10; rad++) {
+  private free(x: number, y: number, person = false, offRoad = false): [number, number] {
+    // a thing the story stands up, moved off taken ground, goes beside the road rather than onto it if there is room
+    // within a few steps: a banner meant for the foot of Hearthstead's tower was moved into the gate between the
+    // towers, and others onto town streets (the owner: "the banner appears randomly there")
+    if (offRoad) {
+      const near = this.ring(x, y, 0, 0, person, false) ?? this.ring(x, y, 1, 3, person, true);
+      if (near) return near;
+    }
+    return this.ring(x, y, 0, 9, person, false) ?? [x, y];
+  }
+
+  /** The first open, unmarked tile from `x`, `y` outward, `from` to `to` steps out (off the roads, if it says). */
+  private ring(x: number, y: number, from: number, to: number, person: boolean, offRoad: boolean): [number, number] | null {
+    for (let rad = from; rad <= to; rad++) {
       for (let dy = -rad; dy <= rad; dy++) {
         for (let dx = -rad; dx <= rad; dx++) {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== rad) continue;
           const tx = x + dx;
           const ty = y + dy;
+          if (offRoad && ROADS.has(this.at(tx, ty))) continue;
           if (this.inside(tx, ty, 2) && WALKABLE.has(this.at(tx, ty)) && !this.marked.has(this.idx(tx, ty)) && !(person && this.hidden(tx, ty))) return [tx, ty];
         }
       }
     }
-    return [x, y];
+    return null;
   }
+
 }
 
 /**

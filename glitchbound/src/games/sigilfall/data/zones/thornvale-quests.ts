@@ -273,8 +273,9 @@ export const THORNVALE_EVENTS: Record<string, StoryEventDef> = {
     radius: 18,
     arrive: { pets: ['mill-carter', 'mill-carter', 'mill-militia'], from: 'briar-south', to: 'briar-granary' },
     banner: 'Millbrook’s grain',
-    start: [{ who: 'mill-carter', text: 'Grain from Millbrook! Twelve carts! And hens. Tobin sent hens.' }],
+    // (what is said as they come in is said in the shot of it, data/scenes.ts)
+    start: [],
     waves: [],
-    end: [{ who: 'briar-oda', text: 'Twelve carts! I haven’t seen twelve of anything since spring!' }],
+    end: [],
   },
 };

@@ -338,8 +338,9 @@ export const SALTMARSH_EVENTS: Record<string, StoryEventDef> = {
     radius: 18,
     arrive: { pets: ['gull-smith', 'gull-smith', 'gull-hand'], from: 'briar-south', to: 'briar-forge' },
     banner: 'Gullport’s forge',
-    start: [{ who: 'gull-smith', text: 'Gullport’s forge, for Elder Maren! Mind the kegs. Really, mind the kegs.' }],
+    // (what is said as they come in is said in the shot of it, data/scenes.ts)
+    start: [],
     waves: [],
-    end: [{ who: 'smith-hollin', text: 'Two forges in one village. Keep to your side of the square.' }],
+    end: [],
   },
 };

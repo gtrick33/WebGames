@@ -160,7 +160,8 @@ describe('Sigilfall: the Vale (Act I)', () => {
     expect(w.story.run?.def.id).toBe('hearth-riders');
     beat(w, 'hearth-the-riders-come');
     expect(questState(w.hero, 'hearth-hold-the-wall')).toBe('active');
-    run(w, 4.5);
+    // (the next fight waits until the last one's closing words are said: story.ts finish)
+    run(w, 8);
     goTo(w, 'hearth-gate');
     run(w, 0.3);
     expect(w.story.run?.def.id).toBe('hearth-wall');

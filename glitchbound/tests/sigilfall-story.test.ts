@@ -156,6 +156,8 @@ describe('Sigilfall: the story in the world', () => {
       smite(w);
     }
     expect(questState(c, 'briar-nightfall')).toBe('active');
+    // (the next fight waits until the last one's closing words are said: story.ts finish)
+    run(w, 6);
     // she stays on through the bell, and goes into the lanes with the hero
     goTo(w, 'briar-square');
     run(w, 0.5);
@@ -317,7 +319,8 @@ describe('Sigilfall: the story in the world', () => {
     expect(questState(w.hero, 'briar-the-inn')).toBe('done');
     expect(questState(w.hero, 'briar-hold-the-door')).toBe('active');
     // the children go in at the chapel door; Elyra stays on from the inn to ward it
-    run(w, 4);
+    // (the next fight waits until the last one's closing words are said: story.ts finish)
+    run(w, 8);
     expect(w.pets.some((p) => p.def.id === 'briar-child' && !p.dead)).toBe(false);
     expect(w.story.run?.def.id).toBe('briar-door');
     expect(w.story.run?.pets).toContain(elyra);

@@ -33,6 +33,8 @@ export const PRESETS: Preset[] = [
   { id: 'hearthstead', label: 'Act I: the Defense of Hearthstead', region: 'amberfield', active: 'hearth-the-riders-come', level: 17 },
   { id: 'hearth-ram', label: 'Act I: the ram at Hearthstead’s gate', region: 'amberfield', active: 'hearth-the-ram', level: 21 },
   { id: 'hearth-morning', label: 'Act I: Hearthstead the morning after (scene)', region: 'amberfield', active: 'hearth-the-shrine', level: 18 },
+  { id: 'chapel-door', label: 'Prologue: holding the chapel door', region: 'briarhollow', active: 'briar-hold-the-door', level: 3 },
+  { id: 'lantern-vigil', label: 'Act II: the vigil at the great lamp', region: 'ashen-barrows', active: 'the-last-lamp', level: 24 },
   { id: 'camp-riders', label: 'Act I: Dunmore’s riders reach the camp (the first mount)', region: 'briarhollow', active: 'camp-riders', level: 20 },
   { id: 'lantern-relit', label: 'Act II: Lantern Hill alight (scene)', region: 'ashen-barrows', done: ['the-last-lamp'], level: 26 },
   { id: 'crown-city', label: 'Act II: the Regent (scene)', region: 'emberwick', active: 'the-kings-design', level: 28 },

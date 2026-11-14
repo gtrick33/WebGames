@@ -652,15 +652,19 @@ export function questRegion(q: QuestDef): RegionId | undefined {
 }
 
 /**
- * The quest to point at: the first active one done where the hero is now, else the first active one
- * (the story comes first in the list).
+ * The quest to point at when the hero hasn't chosen one: the main story's, here and then anywhere, before a side
+ * quest. It took the first quest done where the hero stood, and a side quest listed before the story's next beat (a
+ * war-chief offered by the same marshal in the same breath) took the tracker from it: the owner saw the main quest
+ * "blue for whatever reason".
  */
 export function trackedQuest(c: Character, here?: RegionId): QuestDef | undefined {
   // the one the hero chose to follow, while it lasts
   const chosen = c.tracked ? QUEST_DEFS[c.tracked] : undefined;
   if (chosen && (questState(c, chosen.id) === 'active' || questState(c, chosen.id) === 'ready')) return chosen;
   const list = QUESTS.filter((q) => questState(c, q.id) === 'active' || questState(c, q.id) === 'ready');
-  return (here && list.find((q) => questRegion(q) === here)) || list[0];
+  const main = list.filter((q) => isMainQuest(q.id));
+  const at = (l: QuestDef[]): QuestDef | undefined => (here ? l.find((q) => questRegion(q) === here) : undefined);
+  return at(main) ?? main[0] ?? at(list) ?? list[0];
 }
 
 /** Follows a quest (null: back to following the story). */

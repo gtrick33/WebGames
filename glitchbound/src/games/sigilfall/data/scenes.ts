@@ -536,29 +536,31 @@ export const SCENES: SceneDef[] = [
     steps: [{ look: 'chapel-door' }, { title: 'Hold the Chapel Door' }, { wait: 0.6 }, { look: 'foes' }, { sfx: 'roar' }, { shake: 3 }, { wait: 1.2 }, { look: 'hero' }],
   },
   {
-    // Act I, the camp filling up: each village's people walking into Briarhollow, watched all the way in
+    // Act I, the camp filling up: each village's people walking into Briarhollow, seen coming in, and then (a cut) where
+    // they stop, with what they call out and the camp's answer said there. The shot followed them for six seconds and
+    // went back to the hero while they were still on the road; their lines came after it, off the picture
     id: 'briar-the-rangers-come',
     region: 'briarhollow',
     opens: { event: 'camp-scouts' },
-    steps: [{ title: 'Rangers for Briarhollow' }, { follow: 'fern-ranger', secs: 6 }, { look: 'hero' }],
+    steps: [{ title: 'Rangers for Briarhollow' }, { follow: 'fern-ranger', secs: 5 }, { fade: 'out', secs: 0.5 }, { cut: true }, { look: 'briar-watchfire' }, { fade: 'in', secs: 0.5 }, { say: 'fern-ranger', line: 'Rangers of Fernstead, for the camp! Where’s this watchfire we’re keeping?' }, { say: 'mara-venn', line: 'By the gate. You can see the north road from there. Welcome to Briarhollow.' }, { look: 'hero' }],
   },
   {
     id: 'briar-the-grain-comes',
     region: 'briarhollow',
     opens: { event: 'camp-grain' },
-    steps: [{ title: 'Grain for Briarhollow' }, { follow: 'mill-carter', secs: 6 }, { look: 'hero' }],
+    steps: [{ title: 'Grain for Briarhollow' }, { follow: 'mill-carter', secs: 5 }, { fade: 'out', secs: 0.5 }, { cut: true }, { look: 'briar-granary' }, { fade: 'in', secs: 0.5 }, { say: 'mill-carter', line: 'Grain from Millbrook! Twelve carts! And hens. Tobin sent hens.' }, { say: 'briar-oda', line: 'Twelve carts! I haven’t seen twelve of anything since spring!' }, { look: 'hero' }],
   },
   {
     id: 'briar-the-healers-come',
     region: 'briarhollow',
     opens: { event: 'camp-healers' },
-    steps: [{ title: 'Healers for Briarhollow' }, { follow: 'reed-healer', secs: 6 }, { look: 'hero' }],
+    steps: [{ title: 'Healers for Briarhollow' }, { follow: 'reed-healer', secs: 5 }, { fade: 'out', secs: 0.5 }, { cut: true }, { look: 'briar-infirmary' }, { fade: 'in', secs: 0.5 }, { say: 'reed-healer', line: 'Reedwater’s herb-boats, for the camp! Where are the sick? Where is Thessa?' }, { say: 'herbwife-thessa', line: 'Here. And about time. Wash your hands, all of you.' }, { look: 'hero' }],
   },
   {
     id: 'briar-the-forge-comes',
     region: 'briarhollow',
     opens: { event: 'camp-smiths' },
-    steps: [{ title: 'A Forge for Briarhollow' }, { follow: 'gull-smith', secs: 6 }, { look: 'hero' }],
+    steps: [{ title: 'A Forge for Briarhollow' }, { follow: 'gull-smith', secs: 5 }, { fade: 'out', secs: 0.5 }, { cut: true }, { look: 'briar-forge' }, { fade: 'in', secs: 0.5 }, { say: 'gull-smith', line: 'Gullport’s forge, for Elder Maren! Mind the kegs. Really, mind the kegs.' }, { say: 'smith-hollin', line: 'Two forges in one village. Keep to your side of the square.' }, { look: 'hero' }],
   },
   {
     id: 'briar-the-riders-come',
@@ -572,7 +574,7 @@ export const SCENES: SceneDef[] = [
     id: 'briar-the-steel-comes',
     region: 'briarhollow',
     opens: { event: 'camp-dwarves' },
-    steps: [{ title: 'Steel for Briarhollow' }, { follow: 'dwarf-carter', secs: 6 }, { look: 'hero' }],
+    steps: [{ title: 'Steel for Briarhollow' }, { follow: 'dwarf-carter', secs: 5 }, { fade: 'out', secs: 0.5 }, { cut: true }, { look: 'briar-dwarves' }, { fade: 'in', secs: 0.5 }, { say: 'dwarf-carter', line: 'Steel from the Deepforge, for the Elder! Where’s your anvil? You have an anvil?' }, { say: 'forgewife-runa', line: 'Two anvils. Over here. Don’t touch the kegs.' }, { look: 'hero' }],
   },
   {
     // Act I: the Harvest Stone, and the restless dead coming for its candles
@@ -670,7 +672,7 @@ export const SCENES: SceneDef[] = [
     id: 'highwall-the-white-rag',
     region: 'highwall',
     opens: { event: 'nyx-returns' },
-    steps: [{ title: 'Under a White Rag' }, { follow: 'nyx', secs: 6 }, { look: 'hero' }],
+    steps: [{ title: 'Under a White Rag' }, { follow: 'nyx', secs: 4 }, { say: 'highwall-soldier', line: 'Hold! One of yours, Captain? She says she’s one of yours.' }, { fade: 'out', secs: 0.5 }, { cut: true }, { look: 'relief-tents' }, { fade: 'in', secs: 0.5 }, { say: 'nyx', line: 'Hello. I brought something. Don’t shoot me before you see it.' }, { say: 'captain-mara', line: 'Give her a tent. Give her a guard. Give her soup. Nobody gives her a knife.' }, { look: 'hero' }],
   },
   {
     // Act IV: Nyx at the Gloam Gate's cells, and the gate-guards on the stair

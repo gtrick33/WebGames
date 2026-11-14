@@ -290,8 +290,9 @@ export const BRACKENRIDGE_EVENTS: Record<string, StoryEventDef> = {
     radius: 18,
     arrive: { pets: ['fern-ranger', 'fern-ranger', 'fern-ranger'], from: 'briar-west', to: 'briar-watchfire' },
     banner: 'Fernstead’s rangers',
-    start: [{ who: 'fern-ranger', text: 'Rangers of Fernstead, for the camp! Where’s this watchfire we’re keeping?' }],
+    // (what is said as they come in is said in the shot of it, data/scenes.ts)
+    start: [],
     waves: [],
-    end: [{ who: 'mara-venn', text: 'By the gate. You can see the north road from there. Welcome to Briarhollow.' }],
+    end: [],
   },
 };

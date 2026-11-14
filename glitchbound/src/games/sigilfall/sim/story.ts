@@ -126,6 +126,8 @@ export class StoryDirector {
       if (!f.goal) continue;
       f.x = f.goal.x;
       f.y = f.goal.y;
+      // (they come in where they stop with a fade, as anyone the story sends in does: not a jump across the village)
+      f.born = this.w.time;
       f.vx = 0;
       f.vy = 0;
       f.route = undefined;
@@ -573,6 +575,9 @@ export class StoryDirector {
     const stay = Math.max(0, this.gap) + [...this.queue, ...(run.def.end ?? [])].reduce((t, b) => t + barkTime(b), 0) + 0.8 + (run.def.stay ?? 0);
     this.clear(run, stay);
     this.say(run.def.end);
+    // the next fight here waits until the last words are read and a breath after: the square's raiders gone, the
+    // wall's began in the same moment, over the quest's own toast and Mara's line (the owner: "sudden transitions")
+    this.cool = Math.max(this.cool, Math.min(stay, WORDS_WAIT) + BREATH);
     w.questProgress((o) => o.kind === 'event' && o.event === run.def.id);
     // questing together: the party's other heroes were there too (their quests for it count)
     if (w.coop?.role === 'host') w.coop.out.push({ t: 'event', id: run.def.id });
@@ -589,6 +594,13 @@ export class StoryDirector {
     w.emit({ t: 'save' });
   }
 }
+
+/**
+ * How long the next story fight here waits for the last one's closing words (seconds, at most), and the breath after
+ * them (story.finish).
+ */
+const WORDS_WAIT = 5;
+const BREATH = 0.5;
 
 /** The room one person takes in a group the story places, in world pixels: their model's width and a little air. */
 const ROOM = 28;

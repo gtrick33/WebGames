@@ -335,11 +335,9 @@ export const HIGHWALL_EVENTS: Record<string, StoryEventDef> = {
     radius: 16,
     arrive: { pets: ['nyx', 'highwall-soldier', 'highwall-soldier'], from: 'relief-road', to: 'relief-tents' },
     banner: 'Under a white rag',
-    start: [{ who: 'highwall-soldier', text: 'Hold! One of yours, Captain? She says she’s one of yours.' }],
+    // (what is said as they come in is said in the shot of it, data/scenes.ts)
+    start: [],
     waves: [],
-    end: [
-      { who: 'nyx', text: 'Hello. I brought something. Don’t shoot me before you see it.' },
-      { who: 'captain-mara', text: 'Give her a tent. Give her a guard. Give her soup. Nobody gives her a knife.' },
-    ],
+    end: [],
   },
 };

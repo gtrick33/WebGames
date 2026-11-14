@@ -370,8 +370,9 @@ export const IRONPEAK_EVENTS: Record<string, StoryEventDef> = {
     radius: 18,
     arrive: { pets: ['dwarf-carter', 'dwarf-carter'], from: 'briar-north', to: 'briar-dwarves' },
     banner: 'Dwarf-steel',
-    start: [{ who: 'dwarf-carter', text: 'Steel from the Deepforge, for the Elder! Where’s your anvil? You have an anvil?' }],
+    // (what is said as they come in is said in the shot of it, data/scenes.ts)
+    start: [],
     waves: [],
-    end: [{ who: 'forgewife-runa', text: 'Two anvils. Over here. Don’t touch the kegs.' }],
+    end: [],
   },
 };

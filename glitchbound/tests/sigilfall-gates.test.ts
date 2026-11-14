@@ -138,7 +138,8 @@ describe('Sigilfall: the Three Gates (Act IV)', () => {
     beat(w, 'gloam-the-cells');
     expect(questState(w.hero, 'gloam-the-cells')).toBe('done');
     expect(questState(w.hero, 'gloam-out-of-the-cells')).toBe('active');
-    run(w, 4.5);
+    // (the next fight waits until the last one's closing words are said: story.ts finish)
+    run(w, 8);
     goTo(w, 'gate-cells');
     run(w, 0.3);
     expect(w.story.run?.def.id).toBe('gloam-out');

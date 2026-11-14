@@ -372,8 +372,9 @@ export const GREYFEN_EVENTS: Record<string, StoryEventDef> = {
     radius: 18,
     arrive: { pets: ['reed-healer', 'reed-healer', 'reed-healer'], from: 'briar-west', to: 'briar-infirmary' },
     banner: 'Reedwater’s healers',
-    start: [{ who: 'reed-healer', text: 'Reedwater’s herb-boats, for the camp! Where are the sick? Where is Thessa?' }],
+    // (what is said as they come in is said in the shot of it, data/scenes.ts)
+    start: [],
     waves: [],
-    end: [{ who: 'herbwife-thessa', text: 'Here. And about time. Wash your hands, all of you.' }],
+    end: [],
   },
 };

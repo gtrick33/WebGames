@@ -199,7 +199,8 @@ function beat(walk: Walk): boolean {
     // at a waystone the arrow led to: the map, and the difficulty a quest wants
     const stone = w.waystones.find((s) => Math.hypot(s.x - w.player.x, s.y - w.player.y) < 30);
     const hardStep = activeQuests(h).map((q) => currentObjective(h, q)).find((o) => o.kind === 'clear' && o.tier > w.tier && o.tier <= h.tier);
-    if (stone && hardStep && hardStep.kind === 'clear') {
+    // (not in the middle of a story fight: the game won't travel then, world.ts)
+    if (stone && hardStep && hardStep.kind === 'clear' && !w.story.fighting) {
       enter(walk, hardStep.region, undefined, hardStep.tier);
       return true;
     }

@@ -71,10 +71,12 @@ export const PALE_REACH = wildRegion(
       { near: 'hub', dx: -2, dy: 5, marker: { kind: 'npc', npc: 'nyx-at-the-reach' }, when: after('the-last-march') },
       { near: 'hub', dx: 1, dy: 5, marker: { kind: 'npc', npc: 'elyra-at-the-reach' }, when: after('the-last-march') },
       { near: 'hub', dx: 0, dy: 3, marker: { kind: 'prop', prop: 'campfire' } },
+      // (the middle one stood behind the hall, on the hall itself, and was moved onto its front steps: it stands before
+      // them now)
       // the banners that came: three standards behind the hall, each raised by either of two who answered (eight in an
       // arc, one a faction, stood shoulder to shoulder with the camp's own)
       { near: 'hub', dx: -6, dy: -5, marker: { kind: 'prop', prop: 'flag' }, when: all(after('the-last-road'), any(after('fern-retaken'), after('camp-riders'))) },
-      { near: 'hub', dx: 0, dy: -7, marker: { kind: 'prop', prop: 'blue-banner' }, when: all(after('the-last-road'), any(after('break-the-chains'), after('the-clans-decide'))) },
+      { near: 'hub', dx: 0, dy: -4, marker: { kind: 'prop', prop: 'blue-banner' }, when: all(after('the-last-road'), any(after('break-the-chains'), after('the-clans-decide'))) },
       { near: 'hub', dx: 6, dy: -5, marker: { kind: 'prop', prop: 'red-banner' }, when: all(after('the-last-road'), any(after('the-vault-of-rime'), after('the-sun-king'))) },
       ...[-10, -7, 7, 10].map((dx, i) => ({ near: 'hub', dx, dy: 2 + (i % 2) * 3, marker: { kind: 'prop' as const, prop: 'tent' }, when: after('the-last-road') })),
       // the champions the Crown kept: Vosk at the head of the Host, the Herald's voice in the gate

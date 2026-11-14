@@ -70,12 +70,16 @@ export function questCounts(h: World['hero']): Map<RegionId, { work: number; off
   return out;
 }
 
-/** The hero's active and finished quests in the tracker's order: the followed one, then those done here, then the story's. */
+/**
+ * The hero's active and finished quests in the tracker's order (progress/character.ts trackedQuest): the followed one,
+ * then the main story's (here first), then side quests (here first). The arrow pointed at a side quest done here while
+ * the tracker showed the story's.
+ */
 export function rankedQuests(w: World): QuestDef[] {
   const h = w.hero;
   const here = w.region.id;
   const active = [...activeQuests(h), ...readyQuests(h)];
-  const rank = (q: QuestDef): number => (q.id === h.tracked ? 2 : 0) + (questWhere(h, q) === here ? 1 : 0);
+  const rank = (q: QuestDef): number => (q.id === h.tracked ? 8 : 0) + (isMainQuest(q.id) ? 4 : 0) + (questWhere(h, q) === here ? 1 : 0);
   return active.sort((a, b) => rank(b) - rank(a));
 }
 

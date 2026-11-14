@@ -652,7 +652,7 @@ export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
     kind: 'arrival',
     at: 'briar-square',
     radius: 16,
-    arrive: { pets: ['fern-ranger', 'mill-carter', 'reed-healer', 'gull-smith', 'hearth-rider', 'dwarf-carter'], from: 'briar-square', to: 'briar-south' },
+    arrive: { pets: ['fern-ranger', 'mill-carter', 'reed-healer', 'gull-smith', 'hearth-horseman', 'dwarf-carter'], from: 'briar-square', to: 'briar-south' },
     banner: 'Going home',
     start: [{ who: 'maren', text: 'Fernstead, Millbrook, Hearthstead. Go home. Go home and be ordinary. That’s an order.' }],
     waves: [],

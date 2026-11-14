@@ -564,9 +564,27 @@ function townGate(): Build {
   return b;
 }
 
+/**
+ * Lantern Hill's great lamp (the vigil's ward, Act II): a stepped stone plinth, an iron column twice a man's height
+ * and a great lantern on it, its panes lit. It was the packs' little standing lantern, no bigger than the candles
+ * round it, for "the great lamp" the dead are kept off.
+ */
+function greatLamp(): Build {
+  const b = new Build();
+  b.box(-0.62, -0.62, 0.62, 0.62, 0, 0.18, STONE_DARK, mul(STONE_DARK, 0.8), STONE);
+  b.box(-0.46, -0.46, 0.46, 0.46, 0.18, 0.36, STONE, STONE_DARK, mul(STONE, 1.1));
+  b.post(0, 0, 0.2, 0.17, 0.36, 0.62, 8, STONE_DARK, STONE);
+  b.post(0, 0, 0.1, 0.08, 0.62, 2.3, 8, IRON_DARK, IRON);
+  for (const y of [0.9, 1.5, 2.1]) b.post(0, 0, 0.12, 0.12, y, y + 0.06, 8, IRON_DARK, IRON);
+  b.post(0, 0, 0.1, 0.32, 2.22, 2.34, 4, IRON_DARK, IRON, 0, 0, Math.PI / 4);
+  lanternHead(b, 2.35, 2.4);
+  return b;
+}
+
 const BUILDERS: Record<string, () => Build> = {
   built_frozen_throne: frozenThrone,
   built_town_gate: townGate,
+  built_great_lamp: greatLamp,
   built_flag_royal: () => standard(rgb('#cfdcf2'), rgb('#8a9cc4'), rgb('#3f62b4')),
   built_lamp: lamp,
   built_lantern: lantern,

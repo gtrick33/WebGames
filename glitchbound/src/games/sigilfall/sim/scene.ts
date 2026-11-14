@@ -93,6 +93,12 @@ export type SceneStep =
    * (become the place's own person there) or `secs` have passed.
    */
   | { follow: string; secs: number }
+  /**
+   * A cut, as a film makes one: those the story has walking in (an arrival's people, an escort) are where they were
+   * going at once. A `follow` shows them coming in; the cut skips the long walk across the village, which the camera
+   * left halfway (it went back to the hero while they were still on the road, and what they said was off the picture).
+   */
+  | { cut: true }
   /** Someone walks to a named place (or next to a person), or `dx`, `dy` tiles from it; at a run, if it says. */
   | { move: string; to: string; dx?: number; dy?: number; run?: boolean }
   /** Someone ('hero' too) turns to someone or somewhere, and stays so; the scene goes straight on. */
@@ -584,6 +590,9 @@ export function updateScene(w: World, dt: number): void {
   } else if ('emote' in step) {
     if (first) s.emotes.push({ who: step.emote, icon: step.icon, t: 0 });
     done = s.t >= 0.8;
+  } else if ('cut' in step) {
+    if (first) w.story.hurry();
+    done = true;
   } else if ('sfx' in step) {
     if (first) w.sfx(step.sfx);
     done = true;

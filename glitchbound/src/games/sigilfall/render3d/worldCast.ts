@@ -35,7 +35,8 @@ const WARDS: Record<string, { m: string; h: number; dx?: number }> = {
   stone: { m: 'statue_obelisk', h: 34 },
   boat: { m: 'p_boat', h: 22 },
   wagon: { m: 'wagon', h: 24 },
-  lantern: { m: 'lantern_standing', h: 26 },
+  // (Lantern Hill's great lamp: it was the packs' little standing lantern, no bigger than the candles round it)
+  lantern: { m: 'built_great_lamp', h: 3.6 * TILE },
 };
 /** How far off a colossus is drawn (world pixels from the hero, past its own height). */
 const COLOSSUS_SEEN = 620;

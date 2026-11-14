@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { abandonQuest, cantAbandon, newCharacter, questState } from '../src/games/sigilfall/progress/character';
+import { abandonQuest, cantAbandon, newCharacter, questState, trackedQuest } from '../src/games/sigilfall/progress/character';
 import { letOut, updateCritters } from '../src/games/sigilfall/sim/critters';
 import { K, TILE, type TileMap } from '../src/games/sigilfall/sim/map';
 import { PETS } from '../src/games/sigilfall/data/pets';
@@ -112,5 +112,21 @@ describe('Sigilfall: Dunmore’s riders come on horseback', () => {
     expect(MOUNT_DEFS[rider.rides!]).toBeDefined();
     expect(rider.role).toBe('follower');
     expect(AMBERFIELD_EVENTS['camp-riders']!.arrive!.pets.every((p) => PETS[p]?.rides)).toBe(true);
+  });
+});
+
+describe('Sigilfall: the tracker follows the story', () => {
+  it('shows the main quest, not a side quest the same marshal gave in the same breath', () => {
+    const h = hero();
+    h.quests = {};
+    // Stormhoof (Dunmore's side quest) comes before the story's next beat in the list
+    h.quests.stormhoof = { state: 'active', n: 0 };
+    h.quests['hearth-the-riders-come'] = { state: 'active', n: 0 };
+    expect(trackedQuest(h, 'amberfield')?.id).toBe('hearth-the-riders-come');
+    // the story's, even done elsewhere, before a side quest here
+    expect(trackedQuest(h, 'briarhollow')?.id).toBe('hearth-the-riders-come');
+    // ...unless the hero chose to follow the side quest
+    h.tracked = 'stormhoof';
+    expect(trackedQuest(h, 'amberfield')?.id).toBe('stormhoof');
   });
 });
