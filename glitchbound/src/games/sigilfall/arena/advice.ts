@@ -48,7 +48,10 @@ export function usesOf(ab: Ability, ranged: boolean): string[] {
     if (safe) say('Nothing can hurt them while it lasts either, so use the time on the other enemy, or to get away.');
     else say('Any damage breaks it at once, so leave that enemy alone while it lasts.');
   }
-  if (hold?.cc === 'root') say(ranged ? 'It pins a melee fighter in place while you walk out of reach.' : 'It pins a runner so they can’t get away from you.');
+  if (hold?.cc === 'root') {
+    say(ranged ? 'It pins a melee fighter in place while you walk out of reach.' : 'It pins a runner so they can’t get away from you.');
+    say('Enough damage breaks it, so use the time to get away or to close in.');
+  }
   if (hold?.cc === 'silence' && !stop) say('A silenced caster can’t cast at all. It is best on a healer while their friend is low.');
   if (hold) say('Each hold of the same kind lasts half as long as the one before on the same enemy, so don’t use two in a row.');
   if (has('trap')) say('Set it where they have to come: at your own feet when a melee fighter is on you, or in a gap between pillars.');
