@@ -29,12 +29,14 @@ export interface RingFighterLook {
   held: Held;
 }
 
-/** The Gloamknight's ashbound dead are the barrows' own skeletons (render3d/kits.ts), a little smaller than a hero, ash-violet. */
+/** The warlock's ashbound dead (the Gloamknight's, once) are the barrows' own skeletons (render3d/kits.ts), a little smaller than a hero, ash-violet. */
 const THRALL_SPRITE = 'barrow-skeleton';
 const THRALL_H = PERSON_H * 0.86;
 const ASHBOUND = [0.8, 0.72, 1.08] as const;
 /** Seconds one takes to sink back into the ground once it has fallen or its time is up. */
 const THRALL_SINK = 1.1;
+/** One of your own in the shroud: drawn see-through, gone the violet of the dusk. */
+const SHADE: readonly [number, number, number] = [0.55, 0.45, 0.9];
 
 const SKINS = {
   sands: { land: 'desert', kind: K.Sand, grade: [1, 0.72, 0.4, 0.03] },
@@ -189,7 +191,9 @@ export class RingStage implements RingView {
       }
       const l = looks[f.id];
       if (!l) continue;
-      this.fighter(f, l, dt, time);
+      // (one of the other side in the shroud is not there at all; one of your own is a shade of themself)
+      if (me && m.unseen(f, me) && !f.dead) continue;
+      this.fighter(f, l, dt, time, m.hidden(f) && !f.dead);
     }
     cast.end();
     st.fx.begin();
@@ -224,7 +228,7 @@ export class RingStage implements RingView {
     return this.g;
   }
 
-  private fighter(f: Fighter, l: RingFighterLook, dt: number, time: number): void {
+  private fighter(f: Fighter, l: RingFighterLook, dt: number, time: number, shade = false): void {
     const cast = this.stage.cast;
     let s = this.motions.get(f.id);
     if (!s) {
@@ -258,7 +262,7 @@ export class RingStage implements RingView {
     else s.m.set('idle');
     if (frozen) dt = 0;
     s.m.advance(dt);
-    cast.shadow(f.x, f.y, f.dead ? 10 : 8);
+    if (!shade) cast.shadow(f.x, f.y, f.dead ? 10 : 8);
     if (hexed) {
       this.drawn.set(f.id, { x: f.x, y: f.y });
       cast.creature('slime', f.x, f.y, s.turn, 16, 'idle', time, true);
@@ -274,7 +278,7 @@ export class RingStage implements RingView {
     const bx = f.x + f.dirX * reach + rock;
     const by = f.y + f.dirY * reach;
     this.drawn.set(f.id, { x: bx, y: by });
-    cast.person(l.look, l.held, shieldOf(f.cls as ClassId), bx, by, s.turn, s.m, { lift, flash, alpha: f.dead ? 0.85 : 1, tint: frozen ? [0.75, 0.92, 1.25] : undefined });
+    cast.person(l.look, l.held, shieldOf(f.cls as ClassId), bx, by, s.turn, s.m, { lift, flash, alpha: f.dead ? 0.85 : shade ? 0.42 : 1, tint: frozen ? [0.75, 0.92, 1.25] : shade ? SHADE : undefined });
   }
 
   /** Where a fighter's body was drawn this frame (their spot, if it hasn't been): for what goes about on them. */
@@ -283,7 +287,7 @@ export class RingStage implements RingView {
   }
 
   /**
-   * One of the Gloamknight's ashbound dead: a barrow skeleton gone the grey-violet of his gloam, clawing its way up out of
+   * One of the warlock's ashbound dead: a barrow skeleton gone the grey-violet of the gloam, clawing its way up out of
    * the ground when it is called, striking with its master's foe, and sinking back into the ground when it falls or its
    * time is up.
    */
@@ -359,17 +363,18 @@ export class RingStage implements RingView {
     const gloam: Record<string, [string, number, number]> = {
       'g-cleave': [s.clip === 'chop2' ? 'slice' : 'chop2', 0.62, 13],
       'g-reap': ['spin', 0.85, 10],
-      'g-slip': ['slice', 0.6, 15],
       'g-sever': ['stab', 0.42, 14],
       'g-lunge': ['stab', 0.55, 6],
       'g-hand': ['summon', 0.75, 0],
-      'g-toll': ['taunt', 0.8, 0],
-      'g-ashbound': ['summon', 0.85, 0],
+      'g-chain': ['throw', 0.62, 0],
       'g-ward': ['block', 0.7, 0],
       'g-mantle': ['block', 0.7, 0],
-      'g-gloom': ['cast', 0.6, 0],
-      'g-devour': ['throw', 0.6, 0],
+      // (and out of the dark: a quick blade, an ambush that comes down hard, a step that leaves no swing)
+      'g-knife': ['stab', 0.4, 12],
+      'g-ambush': ['slice', 0.6, 15],
       'g-super': ['spin', 1, 16],
+      // (the warlock's dead are called up by the hands, as his were)
+      'k-raise': ['summon', 0.85, 0],
     };
     const own = gloam[ab.id];
     if (own) [clip, time, lunge] = own;

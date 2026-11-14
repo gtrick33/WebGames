@@ -66,17 +66,30 @@ export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: numb
   // a sharp player thinks several times a second; a dull one twice
   b.wait = 0.5 - skill * 0.32 + b.rand() * 0.06;
   // (the heroes on each side: who holds, kicks, heals and is fled from. Somebody's raised dead are only a target when
-  // they are worth one: pickTarget)
-  const enemies = m.enemiesOf(f).filter((o) => !o.pet);
-  if (!enemies.length) return { mx: 0, my: 0 };
+  // they are worth one: pickTarget. Whoever is in the shroud isn't there to it, as to a player)
+  const seen = m.enemiesOf(f).filter((o) => !m.unseen(o, f));
+  const enemies = seen.filter((o) => !o.pet);
   const friends = m.friendsOf(f).filter((o) => !o.pet);
+  if (!enemies.length) {
+    // nobody to be seen: into the middle, near the rest of the side, where whoever is hiding has to come
+    b.move = m.enemiesOf(f).some((o) => !o.pet) ? lookOut(m, f, b, friends) : { mx: 0, my: 0 };
+    return b.move;
+  }
   const healer = isHealer(f);
-  const target = pickTarget(m, f, m.enemiesOf(f));
+  const target = pickTarget(m, f, seen);
   // (with one of the dead in the way, what is kept for a hero, a super, a hold, a rush, is kept for the one who raised it)
   const hero = target.pet ? (enemies.find((e) => e.id === m.masterOf(target).id) ?? enemies[0]!) : target;
   f.target = hero.id;
 
+  // in the shroud: nothing that would bring them out of it but the blow it was taken for
+  if (m.hidden(f) && !m.held(f)) {
+    f.target = hero.id;
+    prowl(m, f, b, skill, hero);
+    b.move = m.hidden(f) ? stalk(m, f, b, hero) : walk(m, f, b, skill, enemies, hero, friends, healer);
+    return b.move;
+  }
   if (!m.held(f)) {
+    shroud(m, f, b, skill, enemies);
     unleash(m, f, b, skill, enemies, hero, friends);
     defend(m, f, b, skill, enemies);
     kick(m, f, b, skill, enemies, dt);
@@ -156,7 +169,7 @@ function mobilize(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighte
     const ab = ABILITIES[id]!;
     if (ab.role !== 'mobility') continue;
     const kinds = ab.effects.map((e) => e.k);
-    if (kinds.includes('charge')) {
+    if (kinds.includes('charge') || kinds.includes('behind') || kinds.includes('pull')) {
       if (Math.hypot(target.x - f.x, target.y - f.y) > 60 && !m.blocked(f, ab, target)) m.press(f.id, id);
       continue;
     }
@@ -297,16 +310,20 @@ function attack(m: Match, f: Fighter, b: Brain, skill: number, target: Fighter):
   const near = f.bar.map((x) => ABILITIES[x]!);
   // the dead called up as the fight is joined, close enough to go for whoever is being fought, and not while some stand
   const raise = near.find((a) => a.role === 'summon');
-  if (raise && !target.pet && Math.hypot(target.x - f.x, target.y - f.y) < 110 && m.sees(f, target) && !m.fighters.some((o) => o.pet?.owner === f.id && !o.dead) && !m.blocked(f, raise)) {
+  // (from a caster's distance too: the warlock who calls them keeps hers)
+  if (raise && !target.pet && Math.hypot(target.x - f.x, target.y - f.y) < 170 && m.sees(f, target) && !m.fighters.some((o) => o.pet?.owner === f.id && !o.dead) && !m.blocked(f, raise)) {
     m.press(f.id, raise.id);
     return;
   }
+  // the dead roused once they are at it
+  const rouse = near.find((a) => a.effects.some((e) => e.k === 'frenzy'));
+  if (rouse && !m.blocked(f, rouse) && m.fighters.some((o) => o.pet?.owner === f.id && !o.dead && o.target !== null && Math.hypot((m.fighters[o.target]?.x ?? 1e9) - o.x, (m.fighters[o.target]?.y ?? 1e9) - o.y) < 30)) m.press(f.id, rouse.id);
   // a blade at your throat: no time for anything slow
   const pressed = m.enemiesOf(f).some((e) => Math.hypot(e.x - f.x, e.y - f.y) < 50 && !m.held(e) && !m.rooted(e));
   // chance to throw burst when they're low or they have no help (never on somebody's raised dead)
   const burst = target.pet ? [] : near.filter((a) => a.role === 'burst');
   for (const a of burst) {
-    if (a.aim === 'self' && Math.hypot(target.x - f.x, target.y - f.y) < 60 && !m.blocked(f, a)) {
+    if (a.aim === 'self' && a !== rouse && Math.hypot(target.x - f.x, target.y - f.y) < 60 && !m.blocked(f, a)) {
       m.press(f.id, a.id);
       return;
     }
@@ -432,6 +449,65 @@ function healSelf(m: Match, f: Fighter): void {
   }
 }
 
+/* ------------------------------------------------------------------ the shroud */
+
+const veilOf = (f: Fighter): Ability | undefined => f.bar.map((x) => ABILITIES[x]!).find((a) => a.effects.some((e) => e.k === 'veil'));
+
+/**
+ * Into the shroud: out of a fight whenever it can (it is back in moments), and in one when the fight is going badly and
+ * someone is on them (the long way out, to come back on their own terms).
+ */
+function shroud(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[]): void {
+  const ab = veilOf(f);
+  if (!ab || m.blocked(f, ab)) return;
+  const near = enemies.some((e) => Math.hypot(e.x - f.x, e.y - f.y) < 60);
+  if (m.calm(f) && !near) {
+    m.press(f.id, ab.id);
+    return;
+  }
+  const hunted = enemies.some((e) => e.target === f.id);
+  if (hunted && hpShare(f) < 0.35 && b.rand() < 0.3 + skill * 0.7) m.press(f.id, ab.id);
+}
+
+/** Hidden, and close enough: the opener (a step to their back first, from a little way off). */
+function prowl(m: Match, f: Fighter, b: Brain, skill: number, target: Fighter): void {
+  const bar = f.bar.map((x) => ABILITIES[x]!);
+  const d = Math.hypot(target.x - f.x, target.y - f.y);
+  const walk = bar.find((a) => a.quiet && a.effects.some((e) => e.k === 'behind'));
+  if (walk && d > 44 && b.rand() < 0.4 + skill * 0.6 && !m.blocked(f, walk, target)) m.press(f.id, walk.id);
+  const opener = bar.find((a) => a.veiled && !m.blocked(f, a, target)) ?? (bar.some((a) => a.veiled) ? undefined : bar.find((a) => atFoe(a) && a.role !== 'mobility' && !m.blocked(f, a, target)));
+  // (a sharp one waits until it's at their back, unless it has been creeping a long while)
+  if (opener && (m.behind(f, target) || skill < 0.5 || b.rand() < 0.15)) m.press(f.id, opener.id);
+}
+
+/** Creeping up on them: round to their back, out of their way. */
+function stalk(m: Match, f: Fighter, b: Brain, t: Fighter): MoveInput {
+  const back = backOf(t, 14);
+  const d = Math.hypot(back.x - f.x, back.y - f.y);
+  if (d < 4) return { mx: 0, my: 0 };
+  // (not through the front of them: wide round their side when coming from ahead)
+  if (!m.behind(f, t) && Math.hypot(t.x - f.x, t.y - f.y) < 50) {
+    const side = backOf(t, 26, b.side * 1.6);
+    return steer(m, f, b, side.x, side.y);
+  }
+  return steer(m, f, b, back.x, back.y);
+}
+
+/** A point at a fighter's back (or turned `turn` round from it), `r` out. */
+function backOf(t: Fighter, r: number, turn = 0): { x: number; y: number } {
+  const fd = Math.hypot(t.dirX, t.dirY) || 1;
+  const a = Math.atan2(-t.dirY / fd, -t.dirX / fd) + turn;
+  return { x: t.x + Math.cos(a) * r, y: t.y + Math.sin(a) * r };
+}
+
+/** Nobody to be seen: the middle of the ground, beside a friend if there is one, looking about. */
+function lookOut(m: Match, f: Fighter, b: Brain, friends: Fighter[]): MoveInput {
+  const pal = friends.find((o) => o !== f && !o.dead);
+  const s = pal ?? m.sigilSpot();
+  if (Math.hypot(s.x - f.x, s.y - f.y) < (pal ? 30 : 20)) return { mx: 0, my: 0 };
+  return steer(m, f, b, s.x, s.y);
+}
+
 /* ------------------------------------------------------------------ feet */
 
 function walk(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[], target: Fighter, friends: Fighter[], healer: boolean): MoveInput {
@@ -499,6 +575,11 @@ function walk(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[],
       f.dirX = target.x - f.x;
       f.dirY = target.y - f.y;
       m.press(f.id, DASH.id);
+    }
+    // (a blade that cuts deeper from behind works round to their back once close)
+    if (d < 40 && bar.some((a) => a.combo?.behind) && !m.behind(f, target) && !m.held(target)) {
+      const back = backOf(target, 14);
+      return steer(m, f, b, back.x, back.y);
     }
     if (d > 22) return steer(m, f, b, target.x, target.y);
     return { mx: 0, my: 0 };

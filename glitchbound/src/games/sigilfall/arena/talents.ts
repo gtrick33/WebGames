@@ -102,7 +102,7 @@ export type Doing =
   | { k: 'shed'; heal: number }
   // the Gloamknight
   | { k: 'price'; cost: number; pct: number }
-  | { k: 'harvest'; life: number; every: number }
+  | { k: 'shade'; pct: number }
   | { k: 'drag'; reach: number; every: number; pct: number; dur: number }
   | { k: 'mantle'; pct: number }
   | { k: 'knell'; pct: number }
@@ -281,11 +281,11 @@ export const TALENTS: Record<ClassId, Talent[]> = {
       { name: 'Shed Skin', text: 'Your Swift Step sheds one curse, poison or hex from you, and mends 4% of your health.', icon: 'falling_leaves_on_orange', does: { k: 'shed', heal: 0.04 } },
     ], 'l'),
   ],
-  // the dark that drinks: blows bought with blood, the dead at his call, and a grave he won't stay in
+  // the dark that drinks: blows bought with blood, a blade out of the shroud, and a grave he won't stay in
   gloamknight: [
     ...rowOf('gloamknight', 0, [
       { name: 'Blood Price', text: 'Each attack you make costs 1% of your health and hits 20% harder.', icon: 'heart_pierced_by_a_dagger_on_black', does: { k: 'price', cost: 0.01, pct: 0.2 } },
-      { name: 'Grave Harvest', text: 'When an enemy near you falls under 35% health, one of the ashbound dead claws up beside you for 10 seconds. Once every 20 seconds.', icon: 'raise_dead_grave_with_bones_on_dark_green', does: { k: 'harvest', life: 10, every: 20 } },
+      { name: 'Night’s Embrace', text: 'Hidden, you move at full speed, and the first blow you strike out of the shroud hits 30% harder.', icon: 'shadow_fox_mask_on_violet', does: { k: 'shade', pct: 0.3 } },
       { name: 'Eclipse Hunger', text: 'Eclipse Reaping drinks 80% of what it deals, not just 100.', tune: { 'g-super': { drink: 0.8 } } },
     ], 'g'),
     ...rowOf('gloamknight', 1, [

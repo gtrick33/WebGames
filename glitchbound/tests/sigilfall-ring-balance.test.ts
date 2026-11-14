@@ -47,6 +47,16 @@
  *   Longbow     57/41/47 48   Trapper   60/47/49 52   Oathkeeper   24/60/53 46   Zealot      57/46/48 50
  *   Lifegiver   17/59/54 43   Curse-sp. 45/55/51 50   Hexer        67/44/43 51   Doomcaller  49/47/50 49
  *   Grovekeeper 25/55/57 45   Starseer  62/48/42 51   Bloodsworn   59/45/44 49   Dreadbinder 53/44/55 51
+ *
+ * Then the Gloamknight became a death knight or a blade in the dark, and the ashbound dead the warlock's (2026-11-14, a
+ * friend of the owner's: "typical dk and a shadow rogue, leave summons for a necro warlock spec"): the Dreadbinder gave
+ * way to the Nightblade, who hides, and the Doomcaller to the Gravecaller, who raises the dead. Their numbers were set
+ * the same way, over 12 seeds of every 1v1 and 900 random teams of each size. Each new setup, and the one beside it:
+ *
+ *   Nightblade  44/50/60 51   Gravecaller 71/46/44 54   Bloodsworn   69/43/42 51   Hexer       67/43/44 51
+ *
+ * The owner then asked for the Gravecaller to win fewer duels. What carried it there was the slow on its dead's claws
+ * (without it: 37/40/38); at 10%, not 20%, it came to 61/52/47 53.
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';

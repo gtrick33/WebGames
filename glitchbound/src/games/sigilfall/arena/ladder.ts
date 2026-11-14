@@ -75,6 +75,8 @@ export const COMPS: Record<Format, Comp[]> = {
     { name: 'The Starseer', blurb: 'A druid who shuts you out and burns you from afar.', team: [{ cls: 'druid', preset: 1 }] },
     { name: 'The Curse-speaker', blurb: 'A priest who has given up on healing anyone.', team: [{ cls: 'priest', preset: 1 }] },
     { name: 'The Bloodsworn', blurb: 'A gloamknight who pays in blood and drinks it back.', team: [{ cls: 'gloamknight', preset: 0 }] },
+    { name: 'The Nightblade', blurb: 'A gloamknight you won’t see until the knife is in.', team: [{ cls: 'gloamknight', preset: 1 }] },
+    { name: 'The Gravecaller', blurb: 'A warlock who sends the dead to you and waits.', team: [{ cls: 'warlock', preset: 1 }] },
   ],
   2: [
     { name: 'Blade and Dawn', blurb: 'A warrior in your face and a priest behind them. Stop the heals.', team: [{ cls: 'warrior', preset: 0 }, { cls: 'priest', preset: 0 }] },
@@ -87,7 +89,7 @@ export const COMPS: Record<Format, Comp[]> = {
     { name: 'The Old Guard', blurb: 'A warrior, a mage and a priest. It has always worked.', team: [{ cls: 'warrior', preset: 0 }, { cls: 'mage', preset: 1 }, { cls: 'priest', preset: 0 }] },
     { name: 'Rot and Roots', blurb: 'Curses, a stun at the right moment, and a druid in the back.', team: [{ cls: 'warlock', preset: 0 }, { cls: 'ranger', preset: 0 }, { cls: 'druid', preset: 0 }] },
     { name: 'Oath and Arrow', blurb: 'They all go for one target at once, and a paladin stands behind them.', team: [{ cls: 'ranger', preset: 0 }, { cls: 'warrior', preset: 1 }, { cls: 'paladin', preset: 0 }] },
-    { name: 'The Pale Choir', blurb: 'Three casters who never want you to come close.', team: [{ cls: 'mage', preset: 0 }, { cls: 'warlock', preset: 1 }, { cls: 'priest', preset: 0 }] },
+    { name: 'The Pale Choir', blurb: 'Two casters and a warlock’s dead between you and them.', team: [{ cls: 'mage', preset: 0 }, { cls: 'warlock', preset: 1 }, { cls: 'priest', preset: 0 }] },
   ],
 };
 

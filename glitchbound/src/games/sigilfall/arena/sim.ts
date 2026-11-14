@@ -79,13 +79,20 @@ export const MOMENTUM_CHARGE = 0.04;
 /** The gates of a ladder match against the computer lift sooner: there is nobody to wait for. */
 export const GATES_SOLO = 15;
 /**
- * The Gloamknight's ashbound dead (Call the Ashbound): what they are called over their heads, how fast they walk
+ * The warlock's ashbound dead (Call the Ashbound, the Gravecaller's; they were the Gloamknight's): what they are called over their heads, how fast they walk
  * beside a hero, how often they strike and from how near, and how little of a super they are worth (dealt to them, or
  * by them, it fills a meter at this share).
  */
 export const THRALL = { name: 'Ashbound', speed: 0.9, every: 1.25, reach: HERO_R * 2 + 4, charge: 0.5 } as const;
 /** An ashbound's blow: a claw, a blow like any other (Turn Aside and Oath of Shelter stop it). Not on anyone's bar. */
-const CLAW: Ability = { id: 'g-claw', cls: 'gloamknight', name: 'Grave Claw', text: '', icon: 'dark_crystal_skull_on_violet', color: '#9a6ae0', school: 'physical', role: 'damage', aim: 'enemy', range: THRALL.reach, cast: 0, cd: 0, mana: 0, effects: [] };
+const CLAW: Ability = { id: 'k-claw', cls: 'warlock', name: 'Grave Claw', text: '', icon: 'dark_crystal_skull_on_violet', color: '#9a6ae0', school: 'physical', role: 'damage', aim: 'enemy', range: THRALL.reach, cast: 0, cd: 0, mana: 0, effects: [] };
+
+/**
+ * The shroud (Shroud of Dusk): how long it stays on if nothing breaks it (longer than any match), how much slower its
+ * wearer walks, how long nothing that lands breaks it when it was taken in a fight, how soon it is back when taken out
+ * of one, and how long without hurting or being hurt counts as out of a fight.
+ */
+export const VEIL = { t: 999, slow: 0.15, grace: 3, rest: 3, calm: 5 } as const;
 
 export interface FighterSetup {
   team: 0 | 1;
@@ -110,9 +117,10 @@ export interface MatchSetup {
 /**
  * What can be on a fighter. Besides the abilities' own: a ranger's `mark` (their side hits its wearer harder), a
  * warlock's `weak` (its wearer hits softer), a druid's `oak` (rooted where they stand, by their own doing), a priest's
- * `spirit` (fallen, but lingering on) and a Gloamknight's `revenant` (fallen, and fighting to stay).
+ * `spirit` (fallen, but lingering on), a Gloamknight's `revenant` (fallen, and fighting to stay) and his `veil` (hidden
+ * from the other side: Match.veil).
  */
-export type AuraKind = 'dot' | 'hot' | 'cc' | 'slow' | 'antiheal' | 'absorb' | 'guard' | 'fury' | 'speed' | 'immune' | 'free' | 'reflect' | 'lastgrace' | 'mark' | 'weak' | 'oak' | 'spirit' | 'revenant';
+export type AuraKind = 'dot' | 'hot' | 'cc' | 'slow' | 'antiheal' | 'absorb' | 'guard' | 'fury' | 'speed' | 'immune' | 'free' | 'reflect' | 'lastgrace' | 'mark' | 'weak' | 'oak' | 'spirit' | 'revenant' | 'veil';
 
 /**
  * How fast a live match runs against the clock on the wall: a little under it, so there is time to read what is on
@@ -158,6 +166,8 @@ export interface Aura {
   took?: number;
   backlash?: number;
   next?: number;
+  /** The shroud: nothing that lands breaks it while `t` is above this (it was taken in a fight, a moment ago). */
+  keep?: number;
 }
 
 export interface Cast {
@@ -229,6 +239,8 @@ export interface Fighter {
   lastCombo?: string;
   /** One of the raised dead, fighting for whoever raised them (not a hero: it has no bar, no seat and no say in who wins). */
   pet?: Pet;
+  /** When they last hurt someone or were hurt, by the match's clock: a while after, they are out of the fight (the shroud's). */
+  fought?: number;
 }
 
 /** A talent's doings that aren't a plain number (arena/talents.ts), as one fighter has them. */
@@ -268,6 +280,8 @@ export interface TalentState {
   boneT?: number;
   /** Spent once a match: a lingering spirit, an unbroken vow, an unquiet grave. */
   spent?: string[];
+  /** The blow that is bringing them out of the shroud is being struck (a night's embrace makes it hit harder). */
+  opening?: boolean;
 }
 
 /** What makes one of the raised dead what it is: whose it is, how long it has, and its blow. */
@@ -626,7 +640,32 @@ export class Match {
   comboReady(f: Fighter, ab: Ability, t: Fighter | null): NonNullable<Ability['combo']> | null {
     const c = ab.combo;
     if (!c || !t || t.dead) return null;
+    if (c.behind && t !== f && this.behind(f, t)) return c;
     return t.auras.some((a) => (!!c.ab?.includes(a.ab) && a.src === f.id) || (!!a.cc && !!c.cc?.includes(a.cc))) ? c : null;
+  }
+
+  /** Is `f` at `t`'s back: behind the way they last faced? */
+  behind(f: { x: number; y: number }, t: Fighter): boolean {
+    const fd = Math.hypot(t.dirX, t.dirY) || 1;
+    const dx = f.x - t.x;
+    const dy = f.y - t.y;
+    const d = Math.hypot(dx, dy) || 1;
+    return (dx * t.dirX + dy * t.dirY) / (d * fd) < -0.3;
+  }
+
+  /** In the shroud: hidden from the other side. */
+  hidden(f: Fighter): boolean {
+    return f.auras.some((a) => a.kind === 'veil');
+  }
+
+  /** Can't be seen by `by` at all: one of the other side, in the shroud. Nothing of theirs can be aimed at them. */
+  unseen(o: Fighter, by: { team: 0 | 1 }): boolean {
+    return o.team !== by.team && this.hidden(o);
+  }
+
+  /** Out of the fight: a while since they hurt anyone or were hurt. */
+  calm(f: Fighter): boolean {
+    return this.clock - (f.fought ?? -Infinity) >= VEIL.calm;
   }
 
   held(f: Fighter): Aura | undefined {
@@ -656,6 +695,8 @@ export class Match {
       if ((f.locks[ab.school] ?? 0) > 0) return `${ab.school[0]!.toUpperCase()}${ab.school.slice(1)} is locked`;
     }
     if (ab.super && f.charge < 1) return 'Your super isn’t charged';
+    if (ab.veiled && !this.hidden(f)) return 'Only from the shroud';
+    if (ab.effects.some((e) => e.k === 'frenzy') && !this.fighters.some((o) => o.pet?.owner === f.id && !o.dead)) return 'None of your dead stand';
     // (a blink or a stag's leap goes even from roots)
     if (ab.effects.some((e) => e.k === 'dash') && this.rooted(f) && !f.perks.does.fold && !f.perks.does.stag) return 'Rooted';
     if ((f.cds[ab.id] ?? 0) > 0) return 'Not ready yet';
@@ -670,6 +711,7 @@ export class Match {
       const t = target === undefined ? this.aimOf(f, ab) : target;
       if (!t) return ab.aim === 'enemy' ? 'Nobody to aim at' : 'Nobody to help';
       if (t.dead) return 'They have fallen';
+      if (this.unseen(t, f)) return 'Out of sight';
       if (Math.hypot(t.x - f.x, t.y - f.y) > ab.range + HERO_R) return 'Too far away';
       if (t !== f && !this.sees(f, t)) return 'Out of sight';
     }
@@ -693,10 +735,11 @@ export class Match {
       return t && !t.dead && t.team === f.team ? t : f;
     }
     const t = f.target === null ? null : this.fighters[f.target];
-    if (t && !t.dead && t.team !== f.team) return t;
+    if (t && !t.dead && t.team !== f.team && !this.unseen(t, f)) return t;
     let best: Fighter | null = null;
     let bd = Infinity;
     for (const o of this.enemiesOf(f)) {
+      if (this.unseen(o, f)) continue;
       // (a hero before somebody's raised dead, unless the dead are a good deal nearer: chosen, they are hit like anyone)
       const d = Math.hypot(o.x - f.x, o.y - f.y) + (this.sees(f, o) ? 0 : 1000) + (o.pet ? 120 : 0);
       if (d < bd) {
@@ -738,6 +781,8 @@ export class Match {
     const f = this.fighters[id];
     const t = target === null ? null : this.fighters[target];
     if (!f) return;
+    // (nobody chooses what they can't see)
+    if (t && this.unseen(t, f)) return;
     if (t && t.team !== f.team) f.target = t.id;
     else if (t && t.team === f.team) f.friend = t.id;
     else f.target = null;
@@ -751,14 +796,20 @@ export class Match {
     f.queued = null;
     // starting something else lets go of the last cast (a free ability goes off alongside it)
     if (!ab.free && f.cast) this.endCast(f);
+    // (out of the shroud with anything but a quiet step or a Swift Step: a cast at once, a blow as it lands)
+    const opens = this.hidden(f) && !ab.quiet && ab.id !== DASH.id;
     if (ab.cast > 0 || ab.channel) {
+      if (opens) this.unveil(f);
       f.cast = { ab: ab.id, target: t.id, at, t: 0, dur: ab.channel ?? ab.cast * (f.tune[ab.id]?.cast ?? 1), channel: !!ab.channel, next: ab.tick ?? 0, pushed: 0 };
       this.events.push({ k: 'ab', id: f.id, ab: ab.id });
       if (ab.channel) this.spend(f, ab);
       return;
     }
     this.spend(f, ab);
+    f.tal.opening = opens;
     this.fire(f, ab, t, at);
+    f.tal.opening = false;
+    if (opens) this.unveil(f);
   }
 
   private spend(f: Fighter, ab: Ability): void {
@@ -873,7 +924,7 @@ export class Match {
       const dy = t.y - f.y;
       const len = Math.hypot(dx, dy) || 1;
       for (const o of this.enemiesOf(f)) {
-        if (o === t) continue;
+        if (o === t || this.unseen(o, f)) continue;
         const along = ((o.x - f.x) * dx + (o.y - f.y) * dy) / len;
         const off = Math.abs((o.x - f.x) * dy - (o.y - f.y) * dx) / len;
         if (along > 0 && along < len + ab.range / 2 && off < HERO_R * 2) this.land(f, ab, o, true);
@@ -881,7 +932,7 @@ export class Match {
     }
     if (tune.bounce) {
       const next = this.enemiesOf(f)
-        .filter((o) => o !== t && !o.pet && Math.hypot(o.x - t.x, o.y - t.y) < NEAR * 1.5 && this.sees(t, o))
+        .filter((o) => o !== t && !o.pet && !this.unseen(o, f) && Math.hypot(o.x - t.x, o.y - t.y) < NEAR * 1.5 && this.sees(t, o))
         .sort((a, b) => Math.hypot(a.x - t.x, a.y - t.y) - Math.hypot(b.x - t.x, b.y - t.y))[0];
       if (next) {
         this.events.push({ k: 'streak', id: t.id, to: next.id, ab: ab.id });
@@ -896,6 +947,11 @@ export class Match {
   }
 
   private addAura(t: Fighter, a: Omit<Aura, 't'>): Aura {
+    // (what the other side puts on someone brings them out of the shroud)
+    if (a.harmful) {
+      const by = this.fighters[a.src];
+      if (by) this.exposed(t, by);
+    }
     // (a paladin's hand of freedom shakes a slow off at once, now and then)
     if (a.kind === 'slow' && a.harmful && this.freed(t)) return { ...a, t: 0 };
     // the same thing from the same hand refreshes rather than stacks
@@ -1041,7 +1097,86 @@ export class Match {
       case 'dash':
         this.swiftStep(f, e.dist);
         return;
+      case 'veil':
+        this.veil(f, ab);
+        return;
+      case 'behind':
+        if (t !== f) this.stepBehind(f, t);
+        return;
+      case 'pull':
+        if (t !== f && !t.dead) this.drag(t, f.x, f.y, HERO_R * 2 + 2);
+        return;
+      case 'frenzy':
+        for (const o of this.fighters) {
+          if (o.pet?.owner !== f.id || o.dead) continue;
+          this.addAura(o, { ...base, kind: 'fury', harmful: false, magic: false, dur: e.dur, n: e.pct / 100 });
+          this.addAura(o, { ...base, kind: 'speed', harmful: false, magic: false, dur: e.dur, n: 1 / 3 });
+        }
+        return;
     }
+  }
+
+  /**
+   * Into the shroud. Whoever had them chosen loses them, what was being cast at them is lost, and what was flying at
+   * them goes astray. Taken out of a fight (Match.calm) it is back in moments; in one, it shakes off roots and slows
+   * (the ability's own `break`), nothing that lands breaks it for a moment, and it is the long way back.
+   */
+  private veil(f: Fighter, ab: Ability | null): void {
+    const calm = this.calm(f);
+    f.auras = f.auras.filter((a) => a.kind !== 'veil');
+    f.auras.push({ ab: ab?.id ?? 'g-veil', kind: 'veil', src: f.id, t: VEIL.t, dur: 0, harmful: false, magic: false, n: VEIL.slow, keep: calm ? VEIL.t : VEIL.t - VEIL.grace });
+    if (ab && calm) f.cds[ab.id] = VEIL.rest * f.mods.cool;
+    this.endCast(f);
+    for (const o of this.fighters) {
+      if (o.team === f.team || o.dead) continue;
+      if (o.target === f.id) o.target = null;
+      if (o.cast && o.cast.target === f.id && !o.cast.at) {
+        this.endCast(o);
+        this.events.push({ k: 'word', id: o.id, word: 'Lost sight', bad: true });
+      }
+    }
+    for (let i = this.bolts.length - 1; i >= 0; i--) {
+      const b = this.bolts[i]!;
+      if (b.tgt !== f.id) continue;
+      this.bolts.splice(i, 1);
+      this.events.push({ k: 'miss', x: b.x, y: b.y, ab: b.ab });
+    }
+  }
+
+  /** Out of the shroud (they struck, or were struck once it could break). */
+  private unveil(f: Fighter): void {
+    if (!this.hidden(f)) return;
+    f.auras = f.auras.filter((a) => a.kind !== 'veil');
+  }
+
+  /** Something of the other side lands on them: out of the shroud, unless it was taken a moment ago in a fight. */
+  private exposed(t: Fighter, src: Fighter): void {
+    if (src.team === t.team) return;
+    const v = t.auras.find((a) => a.kind === 'veil');
+    if (!v || v.t > (v.keep ?? VEIL.t)) return;
+    this.unveil(t);
+    this.events.push({ k: 'word', id: t.id, word: 'Revealed', bad: true });
+  }
+
+  /** Out of the dark at their back, facing them (beside them, if stone stands behind them). */
+  private stepBehind(f: Fighter, t: Fighter): void {
+    const fd = Math.hypot(t.dirX, t.dirY);
+    const back = fd > 0.01 ? Math.atan2(-t.dirY / fd, -t.dirX / fd) : Math.atan2(f.y - t.y, f.x - t.x);
+    const r = HERO_R * 2 + 2;
+    for (const off of [0, 0.5, -0.5, 1, -1, 1.6, -1.6]) {
+      const x = t.x + Math.cos(back + off) * r;
+      const y = t.y + Math.sin(back + off) * r;
+      if (this.hits(x, y) || x < HERO_R || y < HERO_R + 4 || x > ARENA_W - HERO_R || y > ARENA_H - HERO_R) continue;
+      f.x = x;
+      f.y = y;
+      break;
+    }
+    const d = Math.hypot(t.x - f.x, t.y - f.y) || 1;
+    f.dirX = (t.x - f.x) / d;
+    f.dirY = (t.y - f.y) / d;
+    f.dash = null;
+    f.target = t.id;
+    this.endCast(f);
   }
 
   /** Crowd control, with its diminishing returns. False if it did nothing. */
@@ -1194,7 +1329,7 @@ export class Match {
           const ox = o.x - f.x;
           const oy = o.y - f.y;
           const od = Math.hypot(ox, oy) || 1;
-          return !o.pet && od <= does.drag!.reach && (ox * ux + oy * uy) / od > 0.7 && this.sees(f, o) && !o.auras.some((a) => a.kind === 'immune');
+          return !o.pet && !this.unseen(o, f) && od <= does.drag!.reach && (ox * ux + oy * uy) / od > 0.7 && this.sees(f, o) && !o.auras.some((a) => a.kind === 'immune');
         })
         .sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y))[0];
       // (they come along to where the step ends: the step is still a step)
@@ -1231,7 +1366,7 @@ export class Match {
     const check = f.perks.does.check;
     if (!check || !this.ready(f, 'check')) return;
     const foe = this.enemiesOf(f)
-      .filter((o) => !o.pet && Math.hypot(o.x - f.x, o.y - f.y) <= check.reach && !o.auras.some((a) => a.kind === 'immune'))
+      .filter((o) => !o.pet && !this.unseen(o, f) && Math.hypot(o.x - f.x, o.y - f.y) <= check.reach && !o.auras.some((a) => a.kind === 'immune'))
       .sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y))[0];
     if (foe && this.crowd(f, abOfDoing(f.cls, 'check'), foe, 'stun', check.dur * f.mods.hold)) f.procs.check = this.clock + check.every;
   }
@@ -1363,10 +1498,11 @@ export class Match {
   private petTarget(p: Fighter, owner: Fighter): Fighter | null {
     const open = (o: Fighter): boolean => !this.immuneTo(o, CLAW);
     const want = owner.target === null ? null : this.fighters[owner.target];
-    if (want && !want.dead && want.team !== p.team && open(want) && this.sees(p, want)) return want;
+    if (want && !want.dead && want.team !== p.team && !this.unseen(want, p) && open(want) && this.sees(p, want)) return want;
     let best: Fighter | null = null;
     let bd = Infinity;
     for (const o of this.enemiesOf(p)) {
+      if (this.unseen(o, p)) continue;
       const d = Math.hypot(o.x - p.x, o.y - p.y) + (o.pet ? 60 : 0) + (this.sees(p, o) ? 0 : 400) + (open(o) ? 0 : 600);
       if (d < bd) {
         bd = d;
@@ -1410,6 +1546,11 @@ export class Match {
     if (ab && t.auras.some((a) => a.kind === 'immune' && (!a.phys || ab.school === 'physical'))) return 0;
     // (what the raised dead do is their master's doing, and they are worth less to a meter, striking or struck)
     const by = this.masterOf(src);
+    if (src !== t && amount > 0) {
+      by.fought = this.clock;
+      t.fought = this.clock;
+      this.exposed(t, src);
+    }
     let n = amount * src.mods.dmg;
     // (fights turn on bursts: a blow hits a little harder than its number, a burst ability harder still, a crit a lot)
     if (direct) n *= HIT_K;
@@ -1495,6 +1636,7 @@ export class Match {
     if (does.far && ab && ab.range > ARM && Math.hypot(t.x - src.x, t.y - src.y) > ab.range / 2) k *= 1 + does.far.pct;
     if (does.desperate) k *= 1 + does.desperate.pct * (1 - src.hp / src.maxHp);
     if (does.price) k *= 1 + does.price.pct;
+    if (does.shade && src.tal.opening) k *= 1 + does.shade.pct;
     if (does.tides && src.tal.hit) {
       k *= 1 + does.tides.pct;
       src.tal.hit = false;
@@ -1695,11 +1837,10 @@ export class Match {
   private wound(t: Fighter, n: number, crit: boolean): void {
     // (nothing touches a lingering spirit, not even the Gloam)
     if (t.auras.some((a) => a.kind === 'spirit')) return;
-    const before = t.hp;
     t.hp -= n;
     this.events.push({ k: 'num', id: t.id, n, kind: 'dmg', crit });
     if (t.hp > 0) {
-      this.low(t, before);
+      this.low(t);
       return;
     }
     if (t.pet) t.pet.end = this.clock;
@@ -1736,9 +1877,9 @@ export class Match {
 
   /**
    * They've been hurt and live: what falling low brings, by talents. A second wind, an unbroken vow, a vanishing, a
-   * hollow pact, an old oak; and to a Gloamknight near an enemy who has just fallen low, one of the dead.
+   * hollow pact, an old oak.
    */
-  private low(t: Fighter, before: number): void {
+  private low(t: Fighter): void {
     const line = t.maxHp * RALLY;
     const rally = t.perks.rally;
     if (rally && t.hp < line && this.ready(t, 'rally')) {
@@ -1773,17 +1914,6 @@ export class Match {
         this.endCast(t);
         this.events.push({ k: 'word', id: t.id, word: name });
       }
-    }
-    if (t.pet || before < line || t.hp >= line) return;
-    for (const g of this.heroes) {
-      const h = g.perks.does.harvest;
-      if (!h || g.dead || g.team === t.team || Math.hypot(g.x - t.x, g.y - t.y) > NEAR || !this.ready(g, 'harvest')) continue;
-      g.procs.harvest = this.clock + h.every;
-      const raise = ABILITIES['g-ashbound']?.effects.find((e) => e.k === 'raise');
-      if (!raise || raise.k !== 'raise') continue;
-      const [x, y] = this.besideOf(g, 0);
-      this.fighters.push(this.makePet(g, x, y, { ab: 'g-ashbound', hp: raise.hp, dmg: raise.dmg, slow: raise.slow, life: h.life, max: h.life, next: 0.5, hits: 0 }));
-      this.events.push({ k: 'word', id: g.id, word: abOfDoing(g.cls, 'harvest').name });
     }
   }
 
@@ -1888,7 +2018,7 @@ export class Match {
       }
     }
     if (does.gale && this.ready(f, 'gale')) {
-      const foe = this.enemiesOf(f).find((o) => !o.pet && Math.hypot(o.x - f.x, o.y - f.y) <= ARM && !o.auras.some((a) => a.kind === 'immune'));
+      const foe = this.enemiesOf(f).find((o) => !o.pet && !this.unseen(o, f) && Math.hypot(o.x - f.x, o.y - f.y) <= ARM && !o.auras.some((a) => a.kind === 'immune'));
       if (foe) {
         f.procs.gale = this.clock + does.gale.every;
         const dx = foe.x - f.x;
@@ -1904,7 +2034,7 @@ export class Match {
 
   /** Whom something of theirs that needs no aiming goes for (an imp): the enemy they've chosen if in reach and sight, else the nearest hero who is. */
   private foeOf(f: Fighter, range: number): Fighter | null {
-    const ok = (o: Fighter): boolean => !o.dead && o.team !== f.team && Math.hypot(o.x - f.x, o.y - f.y) <= range + HERO_R && this.sees(f, o) && !o.auras.some((a) => a.kind === 'immune');
+    const ok = (o: Fighter): boolean => !o.dead && o.team !== f.team && !this.unseen(o, f) && Math.hypot(o.x - f.x, o.y - f.y) <= range + HERO_R && this.sees(f, o) && !o.auras.some((a) => a.kind === 'immune');
     const want = f.target === null ? null : this.fighters[f.target];
     if (want && ok(want)) return want;
     return (
@@ -1926,6 +2056,8 @@ export class Match {
       if (this.t >= this.gateAt) {
         this.phase = 'fight';
         this.events.push({ k: 'word', id: -1, word: 'Fight!' });
+        // (with the shroud on their bar, they come through the gates in it)
+        for (const f of this.fighters) if (!f.pet && f.bar.some((id) => ABILITIES[id]?.effects.some((e) => e.k === 'veil'))) this.veil(f, null);
       }
       return;
     }
@@ -2075,6 +2207,8 @@ export class Match {
     const mantle = this.near(f, 'mantle', 'foe', ARM);
     if (mantle) k *= 1 - mantle.d.pct;
     for (const a of f.auras) if (a.kind === 'speed') k *= 1 + a.n;
+    // (the shroud is a careful step, unless the night holds them)
+    if (!f.perks.does.shade) for (const a of f.auras) if (a.kind === 'veil') k *= 1 - a.n;
     if (!f.auras.some((a) => a.kind === 'free')) {
       let slow = 0;
       for (const a of f.auras) if (a.kind === 'slow') slow = Math.max(slow, a.n);
@@ -2169,7 +2303,7 @@ export class Match {
       this.endCast(f);
       return;
     }
-    const gone = !placed && t !== f && (Math.hypot(t.x - f.x, t.y - f.y) > ab.range + HERO_R + 14 || !this.sees(f, t));
+    const gone = !placed && t !== f && (Math.hypot(t.x - f.x, t.y - f.y) > ab.range + HERO_R + 14 || !this.sees(f, t) || this.unseen(t, f));
     if (c.channel) {
       if (gone) {
         this.endCast(f);
@@ -2201,7 +2335,7 @@ export class Match {
       const b = this.bolts[i]!;
       const src = this.fighters[b.src]!;
       const t = this.fighters[b.tgt];
-      if (!t || t.dead) {
+      if (!t || t.dead || this.unseen(t, src)) {
         this.bolts.splice(i, 1);
         this.events.push({ k: 'miss', x: b.x, y: b.y, ab: b.ab });
         continue;
