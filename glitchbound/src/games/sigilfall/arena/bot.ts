@@ -1,4 +1,4 @@
-import { ABILITIES, DASH, superOf, type Ability } from './abilities';
+import { ABILITIES, CHARM, DASH, superOf, type Ability } from './abilities';
 import { ARENA_H, ARENA_W } from './maps';
 import { BASE_SPEED, HERO_R, RANGED, type Fighter, type Match, type MoveInput, type Zone } from './sim';
 
@@ -81,6 +81,8 @@ export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: numb
   const hero = target.pet ? (enemies.find((e) => e.id === m.masterOf(target).id) ?? enemies[0]!) : target;
   f.target = hero.id;
 
+  // held, with the charm that breaks it: spent when the hold matters
+  breakFree(m, f, b, skill, enemies);
   // in the shroud: nothing that would bring them out of it but the blow it was taken for
   if (m.hidden(f) && !m.held(f)) {
     f.target = hero.id;
@@ -447,6 +449,20 @@ function healSelf(m: Match, f: Fighter): void {
     f.friend = f.id;
     m.press(f.id, ab.id);
   }
+}
+
+/**
+ * The Unbinding Charm, when they carry it in the Swift Step's place: broken out of a hold that will last a while yet,
+ * when someone is on them or they are hurt (a sharp one waits for the hold worth breaking; a dull one wastes it, or
+ * forgets it).
+ */
+function breakFree(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[]): void {
+  const charm = m.extras(f)[0]!;
+  if (charm.id !== CHARM.id || m.blocked(f, charm)) return;
+  const hold = f.auras.find((a) => !!a.cc && a.cc !== 'silence' && a.harmful);
+  if (!hold || hold.t < 1 - skill * 0.4) return;
+  const danger = hpShare(f) < 0.6 || enemies.some((e) => e.target === f.id && Math.hypot(e.x - f.x, e.y - f.y) < 70);
+  if ((danger || skill < 0.4) && b.rand() < 0.25 + skill * 0.6) m.press(f.id, charm.id);
 }
 
 /* ------------------------------------------------------------------ the shroud */
