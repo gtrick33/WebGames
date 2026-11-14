@@ -182,10 +182,10 @@ export const SCENES: SceneDef[] = [
     r: 150,
     steps: [
       { look: 'hearth-gate' },
-      { say: 'marshal-dunmore', line: 'The gate held. I didn’t think it would. I’ve stopped telling people that.' },
+      { say: 'marshal-dunmore', line: 'The gate held. I didn’t think it would.' },
       { look: 'tess-hearthkeeper' },
       { emote: 'tess-hearthkeeper', icon: 'dots' },
-      { say: 'tess-hearthkeeper', line: 'The shrine fire went out in the night. It wasn’t blown out. It was taken. Come and look.' },
+      { say: 'tess-hearthkeeper', line: 'The hearthstone is gone from the shrine. Someone took it in the night. Come and look.' },
       { act: 'tess-hearthkeeper', does: 'wave' },
       { wait: 0.9 },
       { look: 'hero' },
@@ -568,7 +568,7 @@ export const SCENES: SceneDef[] = [
     opens: { event: 'camp-riders' },
     // (the shot stays on them until they are in: it came back to the hero while they were still on the north road, and
     // what they called out was said off the picture)
-    steps: [{ title: 'Riders for Briarhollow' }, { follow: 'hearth-horseman', secs: 9 }, { say: 'hearth-horseman', line: 'Hearthstead’s riders, for Elder Maren! Where do we put the horses?' }, { look: 'hero' }],
+    steps: [{ title: 'Riders for Briarhollow' }, { follow: 'hearth-horseman', secs: 9 }, { say: 'hearth-horseman', line: 'Hearthstead’s riders, sent to Elder Maren! Where should we put the horses?' }, { look: 'hero' }],
   },
   {
     id: 'briar-the-steel-comes',
