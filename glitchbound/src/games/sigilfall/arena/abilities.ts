@@ -63,7 +63,18 @@ export type Effect =
    * blow of `dmg` (before its master's share) every so often that slows by `slow`% for a moment (their master's
    * doing, as far as a combo is concerned). They can be struck, held and killed like anyone.
    */
-  | { k: 'raise'; n: number; hp: number; dmg: number; life: number; slow: number };
+  | { k: 'raise'; n: number; hp: number; dmg: number; life: number; slow: number }
+  /**
+   * Into the shroud: hidden from the other side until its user strikes or is struck (Match.veil). Out of a fight it is
+   * back in moments; in one, it is the long way out, and what lands in its first moments doesn't break it.
+   */
+  | { k: 'veil' }
+  /** Step out of the dark at the target's back, facing them. */
+  | { k: 'behind' }
+  /** Drags the target in to arm's length of its user, and cuts off what they were casting. */
+  | { k: 'pull' }
+  /** Its user's raised dead hit this much harder and run a third faster for a while. */
+  | { k: 'frenzy'; pct: number; dur: number };
 
 /**
  * A combo: when the target carries something this hero put on them (`ab`, by ability) or is held a certain way (`cc`),
@@ -75,6 +86,8 @@ export interface Combo {
   text: string;
   ab?: string[];
   cc?: CcKind[];
+  /** Or its user strikes from behind them (their back is turned: the way they last faced). */
+  behind?: boolean;
   mult: number;
   consume?: boolean;
   extra?: Effect[];
@@ -86,7 +99,7 @@ export interface Combo {
  */
 export type Aim = 'enemy' | 'friend' | 'self' | 'near' | 'ground';
 /** What the computer players read an ability as. */
-export type Role = 'damage' | 'heal' | 'cc' | 'interrupt' | 'defense' | 'mobility' | 'dispel' | 'burst' | 'summon';
+export type Role = 'damage' | 'heal' | 'cc' | 'interrupt' | 'defense' | 'mobility' | 'dispel' | 'burst' | 'summon' | 'stealth';
 
 export interface Ability {
   id: string;
@@ -130,6 +143,10 @@ export interface Ability {
   combo?: Combo;
   /** A class's super: no clock of its own, it's ready when the meter filled by fighting is full. */
   super?: boolean;
+  /** Only from the shroud: it can be used only while its user is hidden. */
+  veiled?: boolean;
+  /** Doesn't bring its user out of the shroud. */
+  quiet?: boolean;
 }
 
 const MELEE = 30;
@@ -238,18 +255,20 @@ const KITS: Record<ClassId, Ability[]> = {
     a({ id: 'd-hands', cls: 'paladin', name: 'Laying On', text: 'Heals a friend for a third of a life, once in a long while.', icon: 'golden_heart_with_white_wings_on_gold', color: '#fff2b0', school: 'holy', role: 'heal', aim: 'friend', range: MID, cast: 0, cd: 45, mana: 0, free: true, anyState: false, effects: [{ k: 'heal', n: 333 }] }),
   ],
   warlock: [
-    a({ id: 'k-bolt', cls: 'warlock', name: 'Gloom Bolt', text: 'A heavy bolt of shadow.', icon: 'dark_meteor_on_violet', color: '#a060ff', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 1.1, cd: 0, mana: 5, bolt: true, combo: { name: 'Gloomfire', text: 'Against a fleeing target: 60% harder.', cc: ['fear'], mult: 1.6 }, effects: [{ k: 'dmg', n: 74 }] }),
-    a({ id: 'k-agony', cls: 'warlock', name: 'Creeping Agony', text: 'A curse that burns 167 over 12 seconds.', icon: 'poison_cloud_on_green', color: '#9ae85a', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 4, mana: 3, effects: [{ k: 'dot', n: 185, dur: 12 }] }),
+    a({ id: 'k-bolt', cls: 'warlock', name: 'Gloom Bolt', text: 'A heavy bolt of shadow.', icon: 'dark_meteor_on_violet', color: '#a060ff', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 1.1, cd: 0, mana: 5, bolt: true, combo: { name: 'Gloomfire', text: 'Against a fleeing target, or one your ashbound are clawing at: 60% harder.', ab: ['k-raise'], cc: ['fear'], mult: 1.6 }, effects: [{ k: 'dmg', n: 74 }] }),
+    a({ id: 'k-agony', cls: 'warlock', name: 'Creeping Agony', text: 'A curse that burns 167 over 12 seconds.', icon: 'poison_cloud_on_green', color: '#9ae85a', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 4, mana: 3, combo: { name: 'Grave Rot', text: 'Against a target your ashbound are clawing at: 40% harder.', ab: ['k-raise'], mult: 1.4 }, effects: [{ k: 'dot', n: 185, dur: 12 }] }),
     a({ id: 'k-wither', cls: 'warlock', name: 'Wither', text: 'A curse that burns 82 over 8 seconds and slows by 30%.', icon: 'dark_flame_on_violet', color: '#c88aff', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 8, mana: 3, combo: { name: 'Deep Rot', text: 'Against a target with your Barbed Curse on them: 50% harder.', ab: ['k-unstable'], mult: 1.5 }, effects: [{ k: 'dot', n: 91, dur: 8 }, { k: 'slow', pct: 30, dur: 8 }] }),
     a({ id: 'k-dread', cls: 'warlock', name: 'Dread Gaze', text: 'A bolt of dread sends them fleeing for 1.5 seconds. Hurt them enough and it breaks.', icon: 'dark_star_on_black', color: '#a060ff', school: 'shadow', role: 'cc', aim: 'enemy', range: FAR, cast: 0.9, cd: 0, mana: 6, bolt: true, effects: [{ k: 'cc', cc: 'fear', dur: 1.5 }] }),
-    a({ id: 'k-howl', cls: 'warlock', name: 'Howl of the Pit', text: 'Every enemy near you flees for 2 seconds.', icon: 'shadow_imp_summon_on_black', color: '#ff7a3d', school: 'shadow', role: 'cc', aim: 'near', range: 58, cast: 0, cd: 20, mana: 4, effects: [{ k: 'cc', cc: 'fear', dur: 2 }] }),
     a({ id: 'k-drain', cls: 'warlock', name: 'Soul Drink', text: 'Drain their life into yours for 3 seconds.', icon: 'bound_spirit_chain_on_teal', color: '#c88aff', school: 'shadow', role: 'heal', aim: 'enemy', range: FAR, cast: 0, channel: 3, tick: 0.5, cd: 10, mana: 5, effects: [{ k: 'dmg', n: 26 }, { k: 'heal', n: 26 }] }),
     a({ id: 'k-lock', cls: 'warlock', name: 'Spell Seal', text: 'Cuts off a cast at range and locks that school for 5 seconds.', icon: 'summoning_circle_on_violet', color: '#c88aff', school: 'shadow', role: 'interrupt', aim: 'enemy', range: FAR, cast: 0, cd: 12, mana: 2, free: true, effects: [{ k: 'interrupt', lock: 5 }] }),
     a({ id: 'k-step', cls: 'warlock', name: 'Darkstride', text: 'Step through the dark and appear ahead of you.', icon: 'dark_portal_on_black', color: '#7a50c8', school: 'shadow', role: 'mobility', aim: 'self', range: 0, cast: 0, cd: 12, mana: 3, free: true, anyState: false, effects: [{ k: 'break' }, { k: 'blink', dist: 110 }] }),
     a({ id: 'k-unstable', cls: 'warlock', name: 'Barbed Curse', text: 'Burns 92 over 8 seconds. Whoever takes it off is silenced for 4 seconds.', icon: 'ring_of_fire_on_black', color: '#ff7a3d', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 0.7, cd: 10, mana: 4, combo: { name: 'Hex Bloom', text: 'Against a target with your Creeping Agony on them: 80% harder, and 54 more at once.', ab: ['k-agony'], mult: 1.8, extra: [{ k: 'dmg', n: 60 }] }, effects: [{ k: 'dot', n: 102, dur: 8 }, { k: 'backlash', dur: 4 }] }),
-    a({ id: 'k-chaos', cls: 'warlock', name: 'Ruin', text: 'A long cast that lands like a hammer.', icon: 'dark_meteor_on_violet', color: '#8bff6a', school: 'fire', role: 'burst', aim: 'enemy', range: FAR, cast: 1.5, cd: 8, mana: 10, bolt: true, combo: { name: 'Doom', text: 'Against a target with your Creeping Agony on them: 50% harder.', ab: ['k-agony'], mult: 1.5 }, effects: [{ k: 'dmg', n: 181 }] }),
     a({ id: 'k-pact', cls: 'warlock', name: 'Black Bargain', text: 'Soaks up 190 damage for 15 seconds.', icon: 'cursed_amulet_on_violet', color: '#7a50c8', school: 'shadow', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 17, mana: 6, effects: [{ k: 'absorb', n: 190, dur: 15 }] }),
     a({ id: 'k-resolve', cls: 'warlock', name: 'Dread Resolve', text: 'Take 40% less damage for 8 seconds.', icon: 'dark_star_on_black', color: '#a060ff', school: 'shadow', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 44, mana: 0, free: true, anyState: true, effects: [{ k: 'guard', pct: 40, dur: 8 }] }),
+    // (the dead at her call: the Gravecaller's. They were the Gloamknight's until he became a death knight and a blade in the
+    // dark, the owner's friend: "leave summons for a necro warlock spec". What they are and how they fight is THRALL in sim.ts)
+    a({ id: 'k-raise', cls: 'warlock', name: 'Call the Ashbound', text: 'Two of the ashbound dead claw up out of the ground to fight beside you for 14 seconds. They go for your target, and each claw does 9 and slows by 20%. They can be cut down.', icon: 'raise_dead_grave_with_bones_on_dark_green', color: '#9ae85a', school: 'shadow', role: 'summon', aim: 'self', range: 0, cast: 0, cd: 30, mana: 6, effects: [{ k: 'raise', n: 2, hp: 170, dmg: 10, life: 14, slow: 20 }] }),
+    a({ id: 'k-frenzy', cls: 'warlock', name: 'Grave Hunger', text: 'Your ashbound hunger: for 6 seconds they hit 60% harder and run a third faster. Only while some stand.', icon: 'skull_with_green_eyes_on_black', color: '#9ae85a', school: 'shadow', role: 'burst', aim: 'self', range: 0, cast: 0, cd: 16, mana: 4, free: true, effects: [{ k: 'frenzy', pct: 60, dur: 6 }] }),
   ],
   druid: [
     a({ id: 'l-lash', cls: 'druid', name: 'Starlash', text: 'A bolt of cold starlight.', icon: 'moonfire_beam_on_navy', color: '#cfe0ff', school: 'nature', role: 'damage', aim: 'enemy', range: FAR, cast: 1, cd: 0, mana: 5, bolt: true, combo: { name: 'Eclipse', text: 'Against a target with your Moonburn on them: 50% harder.', ab: ['l-moon'], mult: 1.5 }, effects: [{ k: 'dmg', n: 83 }] }),
@@ -269,19 +288,19 @@ const KITS: Record<ClassId, Ability[]> = {
   // grave and an orange lantern among them)
   gloamknight: [
     a({ id: 'g-cleave', cls: 'gloamknight', name: 'Gloam Cleave', text: 'A heavy two-handed blow that drinks a little of what it spills.', icon: 'dark_scythe_on_violet', color: '#c8a8ff', school: 'shadow', role: 'damage', aim: 'enemy', range: MELEE, cast: 0, cd: 0, mana: 0, sticky: true, combo: { name: 'Grave Cut', text: 'Against a stunned target: twice as hard.', cc: ['stun'], mult: 2 }, effects: [{ k: 'dmg', n: 34 }, { k: 'heal', n: 4 }] }),
-    a({ id: 'g-reap', cls: 'gloamknight', name: 'Night Reaping', text: 'A great blow that heals you for a fifth of what it deals.', icon: 'giant_reaper_silhouette_on_black', color: '#9a6ae0', school: 'shadow', role: 'burst', aim: 'enemy', range: MELEE, cast: 0, cd: 9, mana: 0, sticky: true, combo: { name: 'Harvest', text: 'Against a target slowed by your Shadow Lunge: 60% harder.', ab: ['g-lunge'], mult: 1.6 }, effects: [{ k: 'dmg', n: 73 }, { k: 'heal', n: 14 }] }),
-    // (the dead at his call, in Blood Price's place: the owner, "gloamknight's idea is to summon undeads". What they
-    // are and how they fight is the rules' own: THRALL in sim.ts)
-    a({ id: 'g-ashbound', cls: 'gloamknight', name: 'Call the Ashbound', text: 'Two of the ashbound dead claw up out of the ground to fight beside you for 12 seconds. They go for your target, and each claw does 9 and slows by 20%. They can be cut down.', icon: 'dark_crystal_skull_on_violet', color: '#9a6ae0', school: 'shadow', role: 'summon', aim: 'self', range: 0, cast: 0, cd: 35, mana: 0, effects: [{ k: 'raise', n: 2, hp: 140, dmg: 10, life: 12, slow: 20 }] }),
-    a({ id: 'g-gloom', cls: 'gloamknight', name: 'Clinging Gloom', text: 'Shadow clings to them: 95 over 9 seconds, and slows by 30%.', icon: 'cursed_status_dark_cloud_on_violet', color: '#b48cff', school: 'shadow', role: 'damage', aim: 'enemy', range: MID, cast: 0, cd: 9, mana: 0, effects: [{ k: 'dot', n: 105, dur: 9 }, { k: 'slow', pct: 30, dur: 9 }] }),
+    a({ id: 'g-reap', cls: 'gloamknight', name: 'Night Reaping', text: 'A great blow that heals you for a fifth of what it deals.', icon: 'giant_reaper_silhouette_on_black', color: '#9a6ae0', school: 'shadow', role: 'burst', aim: 'enemy', range: MELEE, cast: 0, cd: 9, mana: 0, sticky: true, combo: { name: 'Harvest', text: 'Against a target slowed by your Shadow Lunge or Grave Chain: 60% harder.', ab: ['g-lunge', 'g-chain'], mult: 1.6 }, effects: [{ k: 'dmg', n: 73 }, { k: 'heal', n: 14 }] }),
     a({ id: 'g-lunge', cls: 'gloamknight', name: 'Shadow Lunge', text: 'Lunge through the dark to an enemy and slow them by half for 4 seconds.', icon: 'shadow_dash_streak_on_black', color: '#7a52b0', school: 'shadow', role: 'mobility', aim: 'enemy', range: FAR, cast: 0, cd: 10, mana: 0, free: true, effects: [{ k: 'charge' }, { k: 'slow', pct: 50, dur: 4 }] }),
     a({ id: 'g-sever', cls: 'gloamknight', name: 'Severing Edge', text: 'Cuts off a cast and locks that school for 4 seconds.', icon: 'hidden_blade_from_a_sleeve_on_violet', color: '#c8a8ff', school: 'physical', role: 'interrupt', aim: 'enemy', range: MELEE, cast: 0, cd: 8, mana: 0, free: true, effects: [{ k: 'interrupt', lock: 4 }] }),
     a({ id: 'g-hand', cls: 'gloamknight', name: 'Grave Hand', text: 'A hand of shadow holds them fast: stunned for 1.5 seconds.', icon: 'shadow_hand_grabbing_on_violet', color: '#9a6ae0', school: 'shadow', role: 'cc', aim: 'enemy', range: MID, cast: 0, cd: 17, mana: 0, effects: [{ k: 'cc', cc: 'stun', dur: 1.5 }] }),
-    a({ id: 'g-toll', cls: 'gloamknight', name: 'Dread Toll', text: 'A toll of dusk: every enemy near you flees for 2 seconds.', icon: 'bat_swarm_on_violet', color: '#b48cff', school: 'shadow', role: 'cc', aim: 'near', range: 54, cast: 0, cd: 22, mana: 0, effects: [{ k: 'cc', cc: 'fear', dur: 2 }] }),
     a({ id: 'g-ward', cls: 'gloamknight', name: 'Hollow Ward', text: 'Pay 100 of your own health for a ward that soaks up 260 damage for 10 seconds.', icon: 'dark_orb_on_violet', color: '#c0344e', school: 'shadow', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 18, mana: 0, free: true, effects: [{ k: 'price', n: 100 }, { k: 'absorb', n: 260, dur: 10 }] }),
     a({ id: 'g-mantle', cls: 'gloamknight', name: 'Night Mantle', text: 'Take 40% less damage for 8 seconds, even held.', icon: 'shadow_veil_curtain_on_violet', color: '#7a52b0', school: 'shadow', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 44, mana: 0, free: true, anyState: true, effects: [{ k: 'guard', pct: 40, dur: 8 }] }),
-    a({ id: 'g-devour', cls: 'gloamknight', name: 'Umbral Burst', text: 'Shadow bursts out of them at once.', icon: 'dark_explosion_on_violet', color: '#9a6ae0', school: 'shadow', role: 'damage', aim: 'enemy', range: MID, cast: 0, cd: 8, mana: 0, combo: { name: 'Consume', text: 'Against a target under your Clinging Gloom: 80% harder, and the Gloom is used up.', ab: ['g-gloom'], mult: 1.8, consume: true }, effects: [{ k: 'dmg', n: 72 }] }),
-    a({ id: 'g-slip', cls: 'gloamknight', name: 'Dusk Rend', text: 'A tearing blow: 41, and 63 more over 6 seconds.', icon: 'shadow_claw_slash_on_black', color: '#c8a8ff', school: 'shadow', role: 'damage', aim: 'enemy', range: MELEE, cast: 0, cd: 10, mana: 0, sticky: true, combo: { name: 'Gloomfall', text: 'Against a fleeing target, or one your ashbound are clawing at: twice as hard.', ab: ['g-ashbound'], cc: ['fear'], mult: 2 }, effects: [{ k: 'dmg', n: 45 }, { k: 'dot', n: 70, dur: 6 }] }),
+    // the death knight: a chain that brings them to the blade
+    a({ id: 'g-chain', cls: 'gloamknight', name: 'Grave Chain', text: 'A chain of grave-iron drags an enemy to you, cuts off what they were casting, and slows them by 40% for 3 seconds.', icon: 'chain_with_a_hook_pulling_on_grey', color: '#9a8ab8', school: 'shadow', role: 'mobility', aim: 'enemy', range: MID, cast: 0, cd: 18, mana: 0, effects: [{ k: 'pull' }, { k: 'slow', pct: 40, dur: 3 }] }),
+    // the blade in the dark (the owner's friend: "typical dk and a shadow rogue"): hidden until it strikes, from behind
+    a({ id: 'g-veil', cls: 'gloamknight', name: 'Shroud of Dusk', text: 'Slip into the dark: hidden from your enemies until you strike or are struck, a little slower on your feet. Out of a fight it is back in 3 seconds. In one, it shakes off roots and slows, nothing breaks it for 3 seconds, and it is 30 seconds coming back. With it on your bar you start a match hidden.', icon: 'vanish_puff_of_smoke_on_violet', color: '#8a6ac8', school: 'physical', role: 'stealth', aim: 'self', range: 0, cast: 0, cd: 30, mana: 0, free: true, quiet: true, effects: [{ k: 'break' }, { k: 'veil' }] }),
+    a({ id: 'g-ambush', cls: 'gloamknight', name: 'Dusk Ambush', text: 'Only from the shroud: come out of the dark on them, 42 and stunned for 1.5 seconds.', icon: 'blackout_eye_on_violet', color: '#b48cff', school: 'physical', role: 'cc', aim: 'enemy', range: MELEE, cast: 0, cd: 0, mana: 0, veiled: true, combo: { name: 'Out of Nowhere', text: 'Against a target stumbling from your Shade Walk: 50% harder.', ab: ['g-walk'], mult: 1.5 }, effects: [{ k: 'dmg', n: 42 }, { k: 'cc', cc: 'stun', dur: 1.5 }] }),
+    a({ id: 'g-knife', cls: 'gloamknight', name: 'Nightknife', text: 'A short blade where the plate is thin.', icon: 'heart_pierced_by_a_dagger_on_black', color: '#d8c8ff', school: 'physical', role: 'damage', aim: 'enemy', range: MELEE, cast: 0, cd: 0, mana: 0, combo: { name: 'Unseen Edge', text: 'From behind, or against a target stunned by your Dusk Ambush: 70% harder.', ab: ['g-ambush'], behind: true, mult: 1.7 }, effects: [{ k: 'dmg', n: 31 }] }),
+    a({ id: 'g-walk', cls: 'gloamknight', name: 'Shade Walk', text: 'Step through the dark and out of it at an enemy’s back, free of roots and slows, and they stumble: slowed by 30% for 2 seconds. It doesn’t bring you out of the shroud.', icon: 'shadow_clone_of_two_figures_on_black', color: '#7a52b0', school: 'physical', role: 'mobility', aim: 'enemy', range: MID, cast: 0, cd: 15, mana: 0, free: true, quiet: true, effects: [{ k: 'break' }, { k: 'behind' }, { k: 'slow', pct: 30, dur: 2 }] }),
   ],
 };
 
@@ -310,9 +329,9 @@ export const PRESETS: Record<ClassId, { id: string; name: string; bar: string[];
   ranger: [{ id: 'sniper', name: 'Longbow', bar: ['r-swift', 'r-aimed', 'r-venom', 'r-hawk'], talents: ['r-1b', 'r-2a', 'r-3a'] }, { id: 'trapper', name: 'Trapper', bar: ['r-swift', 'r-hobble', 'r-wind', 'r-trap'], talents: ['r-1a', 'r-2b', 'r-3b'] }],
   priest: [{ id: 'healer', name: 'Lifegiver', bar: ['p-mend', 'p-renew', 'p-ward', 'p-lance'], talents: ['p-1c', 'p-2c', 'p-3b'] }, { id: 'shadow', name: 'Curse-speaker', bar: ['p-smite', 'p-curse', 'p-lance', 'p-wail'], talents: ['p-1a', 'p-2b', 'p-3c'] }],
   paladin: [{ id: 'holy', name: 'Oathkeeper', bar: ['d-flash', 'd-hands', 'd-hammer', 'd-judge'], talents: ['d-1b', 'd-2b', 'd-3a'] }, { id: 'ret', name: 'Zealot', bar: ['d-blow', 'd-judge', 'd-wrath', 'd-hammer'], talents: ['d-1a', 'd-2c', 'd-3c'] }],
-  warlock: [{ id: 'curses', name: 'Hexer', bar: ['k-agony', 'k-wither', 'k-unstable', 'k-dread'], talents: ['k-1b', 'k-2a', 'k-3c'] }, { id: 'ruin', name: 'Doomcaller', bar: ['k-bolt', 'k-chaos', 'k-agony', 'k-howl'], talents: ['k-1a', 'k-2c', 'k-3a'] }],
+  warlock: [{ id: 'curses', name: 'Hexer', bar: ['k-agony', 'k-wither', 'k-unstable', 'k-dread'], talents: ['k-1b', 'k-2a', 'k-3c'] }, { id: 'grave', name: 'Gravecaller', bar: ['k-bolt', 'k-raise', 'k-frenzy', 'k-agony'], talents: ['k-1a', 'k-2c', 'k-3a'] }],
   druid: [{ id: 'heal', name: 'Grovekeeper', bar: ['l-regrow', 'l-rejuv', 'l-bloom', 'l-moon'], talents: ['l-1a', 'l-2b', 'l-3a'] }, { id: 'star', name: 'Starseer', bar: ['l-lash', 'l-moon', 'l-gale', 'l-roots'], talents: ['l-1b', 'l-2a', 'l-3b'] }],
-  gloamknight: [{ id: 'reaver', name: 'Bloodsworn', bar: ['g-cleave', 'g-reap', 'g-lunge', 'g-hand'], talents: ['g-1c', 'g-2b', 'g-3b'] }, { id: 'dread', name: 'Dreadbinder', bar: ['g-gloom', 'g-devour', 'g-slip', 'g-ashbound'], talents: ['g-1b', 'g-2c', 'g-3c'] }],
+  gloamknight: [{ id: 'reaver', name: 'Bloodsworn', bar: ['g-cleave', 'g-reap', 'g-lunge', 'g-hand'], talents: ['g-1c', 'g-2b', 'g-3b'] }, { id: 'shadow', name: 'Nightblade', bar: ['g-veil', 'g-ambush', 'g-knife', 'g-walk'], talents: ['g-1b', 'g-2c', 'g-3c'] }],
 };
 
 /**
@@ -333,7 +352,7 @@ export function fullBar(cls: ClassId, bar: readonly unknown[] | undefined): stri
 /** Does `from` set up the combo `to` lands: by leaving its own mark on the target, or by holding them the way it needs? */
 const setsUpCombo = (from: Ability, to: Ability): boolean => {
   const c = to.combo;
-  return !!c && from !== to && (!!c.ab?.includes(from.id) || from.effects.some((e) => (e.k === 'cc' || e.k === 'trap') && !!c.cc?.includes(e.cc)));
+  return !!c && from !== to && (!!c.ab?.includes(from.id) || from.effects.some((e) => ((e.k === 'cc' || e.k === 'trap') && !!c.cc?.includes(e.cc)) || (e.k === 'behind' && !!c.behind)));
 };
 
 /** A combo a bar can make: the ability that sets it up, the one that lands it, and its name. */

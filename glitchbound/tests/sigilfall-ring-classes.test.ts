@@ -24,22 +24,22 @@ const wait = (m: Match, seconds: number, moves: Record<number, MoveInput> = {}, 
     m.events.length = 0;
   }
 };
-/** A Gloamknight and a warrior, gates open, a little apart on open ground. */
-function face(bar = ['g-ashbound', 'g-cleave'], foe: ClassId = 'warrior'): Match {
-  const m = new Match({ seed: 3, map: 'sands', fighters: [fighter(0, 'gloamknight', bar), fighter(1, foe, ['w-hew'])] });
+/** A warlock and a warrior, gates open, a little apart on open ground. */
+function face(bar = ['k-raise', 'k-bolt'], foe: ClassId = 'warrior', cls: ClassId = 'warlock'): Match {
+  const m = new Match({ seed: 3, map: 'sands', fighters: [fighter(0, cls, bar), fighter(1, foe, ['w-hew'])] });
   m.step(GATES + 0.01, {});
   Object.assign(m.fighters[0]!, { x: 160, y: 125, dirX: 1, dirY: 0, target: 1 });
   Object.assign(m.fighters[1]!, { x: 230, y: 125 });
   return m;
 }
 const thralls = (m: Match): Fighter[] => m.fighters.filter((f) => f.pet);
-const RAISE = ABILITIES['g-ashbound']!.effects.find((e) => e.k === 'raise') as Extract<Effect, { k: 'raise' }>;
+const RAISE = ABILITIES['k-raise']!.effects.find((e) => e.k === 'raise') as Extract<Effect, { k: 'raise' }>;
 
-describe('The Ring: the Gloamknight calls the ashbound dead', () => {
-  it('two rise beside him, go for his target and strike it, and crumble when their time is up', () => {
+describe('The Ring: the Gravecaller calls the ashbound dead (the Gloamknight’s, until the owner’s friend: "leave summons for a necro warlock spec")', () => {
+  it('two rise beside her, go for his target and strike it, and crumble when their time is up', () => {
     const m = face();
     const foe = m.fighters[1]!;
-    expect(m.press(0, 'g-ashbound')).toBeNull();
+    expect(m.press(0, 'k-raise')).toBeNull();
     const raised = thralls(m);
     expect(raised).toHaveLength(RAISE.n);
     for (const t of raised) {
@@ -55,9 +55,9 @@ describe('The Ring: the Gloamknight calls the ashbound dead', () => {
     expect(seen.filter((e) => e.k === 'claw' && e.to === 1).length).toBeGreaterThanOrEqual(4);
     expect(foe.hp).toBeLessThan(before);
     expect(m.fighters[0]!.score.dmg).toBe(before - foe.hp);
-    expect(foe.auras.some((a) => a.ab === 'g-ashbound' && a.kind === 'slow' && a.src === 0)).toBe(true);
-    // … and with his Dusk Rend on someone they are clawing, that is Gloomfall
-    expect(m.comboReady(m.fighters[0]!, ABILITIES['g-slip']!, foe)?.name).toBe('Gloomfall');
+    expect(foe.auras.some((a) => a.ab === 'k-raise' && a.kind === 'slow' && a.src === 0)).toBe(true);
+    // … and her Gloom Bolt on someone they are clawing is Gloomfire
+    expect(m.comboReady(m.fighters[0]!, ABILITIES['k-bolt']!, foe)?.name).toBe('Gloomfire');
     wait(m, RAISE.life - 5 + 0.3, {}, seen);
     expect(thralls(m).every((t) => t.dead)).toBe(true);
     expect(seen.filter((e) => e.k === 'death').map((e) => (e as { id: number }).id).sort()).toEqual(raised.map((t) => t.id).sort());
@@ -67,7 +67,7 @@ describe('The Ring: the Gloamknight calls the ashbound dead', () => {
 
   it('they can be chosen, struck and killed like anyone, and what hits everyone near hits them too', () => {
     const m = face();
-    m.press(0, 'g-ashbound');
+    m.press(0, 'k-raise');
     const [a, b] = thralls(m);
     // the warrior chooses one and hews it down
     const w = m.fighters[1]!;
@@ -88,7 +88,7 @@ describe('The Ring: the Gloamknight calls the ashbound dead', () => {
 
   it('they fall with their master, and are gone from the match once it is over', () => {
     const m = face();
-    m.press(0, 'g-ashbound');
+    m.press(0, 'k-raise');
     m.fighters[0]!.hp = 1;
     m.fighters[1]!.target = 0;
     m.fighters[1]!.x = 172;
@@ -104,8 +104,8 @@ describe('The Ring: the Gloamknight calls the ashbound dead', () => {
 
   it('a player’s own copy raises them as the host does, and lets them go when the host does', () => {
     const m = face();
-    const copy = new Match({ seed: 3, map: 'sands', fighters: [fighter(0, 'gloamknight', ['g-ashbound', 'g-cleave']), fighter(1, 'warrior', ['w-hew'])] });
-    m.press(0, 'g-ashbound');
+    const copy = new Match({ seed: 3, map: 'sands', fighters: [fighter(0, 'warlock', ['k-raise', 'k-bolt']), fighter(1, 'warrior', ['w-hew'])] });
+    m.press(0, 'k-raise');
     wait(m, 1);
     copy.restore(JSON.parse(JSON.stringify(m.snapshot())) as ReturnType<Match['snapshot']>, 1);
     expect(copy.fighters).toHaveLength(4);
@@ -132,14 +132,14 @@ describe('The Ring: the Gloamknight calls the ashbound dead', () => {
     let struck = 0;
     for (const seed of [1, 2, 3, 4]) {
       const foe = (['warrior', 'mage', 'paladin', 'ranger'] as const)[seed - 1]!;
-      const m = new Match({ seed, map: MAP_IDS[seed % 3]!, fighters: [fighter(0, 'gloamknight', PRESETS.gloamknight[1]!.bar, PRESETS.gloamknight[1]!.talents), fighter(1, foe, PRESETS[foe][PRESETS[foe].length - 1]!.bar)] });
+      const m = new Match({ seed, map: MAP_IDS[seed % 3]!, fighters: [fighter(0, 'warlock', PRESETS.warlock[1]!.bar, PRESETS.warlock[1]!.talents), fighter(1, foe, PRESETS[foe][PRESETS[foe].length - 1]!.bar)] });
       const brains = m.fighters.map((_, i) => newBrain(seed * 31 + i));
       for (let i = 0; i < 30 * 200 && m.phase !== 'over'; i++) {
         const moves: Record<number, MoveInput> = {};
         for (const f of m.fighters) moves[f.id] = botThink(m, f, brains[f.id]!, 0.8, STEP);
         m.step(STEP, moves);
         for (const e of m.events) {
-          if (e.k === 'ab' && e.ab === 'g-ashbound') raised++;
+          if (e.k === 'ab' && e.ab === 'k-raise') raised++;
           if (e.k === 'claw') clawed++;
           if (e.k === 'num' && e.kind === 'dmg' && m.fighters[e.id]?.pet) struck++;
         }
@@ -156,7 +156,7 @@ describe('The Ring: the Gloamknight calls the ashbound dead', () => {
 
   it('the computer keeps its hardest for a hero, and puts down one of the dead that is clawing at it once it is worn', () => {
     const m = face();
-    m.press(0, 'g-ashbound');
+    m.press(0, 'k-raise');
     const w = m.fighters[1]!;
     const [a] = thralls(m);
     Object.assign(a!, { x: w.x - 12, y: w.y, target: w.id });
@@ -242,7 +242,7 @@ describe('The Ring: what older games kept still fights', () => {
 
 describe('The Ring: what goes about a fighter goes with the body', () => {
   it('the Gloamknight’s gloam is drawn where his body is drawn, carried into a blow and back', () => {
-    const m = face();
+    const m = face(['g-cleave'], 'warrior', 'gloamknight');
     const knight = m.fighters[0]!;
     const puts: FxQuad[] = [];
     const q = { put: (x: FxQuad) => puts.push(x) } as unknown as Fx3D;

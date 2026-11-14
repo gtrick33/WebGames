@@ -18,6 +18,7 @@ interface Inside {
   damage(src: Fighter, t: Fighter, amount: number, direct: boolean, ab?: Ability): number;
   heal(src: Fighter, t: Fighter, amount: number, direct?: boolean): void;
   crowd(f: Fighter, ab: Ability, t: Fighter, cc: CcKind, dur: number): boolean;
+  speedOf(f: Fighter): number;
 }
 const inside = (m: Match): Inside => m as unknown as Inside;
 
@@ -788,13 +789,23 @@ describe('The Ring talents: the Gloamknight', () => {
     expect(g.hp).toBeLessThan(g.maxHp - g.maxHp * 0.005);
   });
 
-  it('Grave Harvest: an enemy near falling low brings one of the dead up beside them', () => {
-    const m = fight([{ team: 0, cls: 'gloamknight', talents: ['g-1b'] }, { team: 1, cls: 'warrior' }]);
-    const [g, foe] = m.fighters as [Fighter, Fighter];
-    foe.hp = Math.round(foe.maxHp * 0.4);
-    inside(m).damage(g, foe, 100, true, AB('g-cleave'));
-    const pet = m.fighters.find((f) => f.pet);
-    expect(pet?.pet).toMatchObject({ owner: g.id, ab: 'g-ashbound', life: doing('g-1b', 'harvest').life });
+  it('Night’s Embrace: hidden, full speed, and the first blow out of the shroud hits harder', () => {
+    const NB = PRESETS.gloamknight[1]!.bar;
+    const out = (talents: string[]): { speed: number; dealt: number } => {
+      const m = fight([{ team: 0, cls: 'gloamknight', talents, bar: NB }, { team: 1, cls: 'warrior', at: [222, 125] }]);
+      const [g, foe] = m.fighters as [Fighter, Fighter];
+      expect(m.hidden(g)).toBe(true);
+      const speed = inside(m).speedOf(g);
+      const hp = foe.hp;
+      expect(m.press(0, 'g-ambush')).toBeNull();
+      expect(m.hidden(g)).toBe(false);
+      return { speed, dealt: hp - foe.hp };
+    };
+    const plain = out([]);
+    const held = out(['g-1b']);
+    expect(held.speed / plain.speed).toBeCloseTo(1 / 0.85, 2);
+    expect(held.dealt / plain.dealt).toBeCloseTo(1.3, 1);
+    expect(doing('g-1b', 'shade').pct).toBe(0.3);
   });
 
   it('Eclipse Hunger: Eclipse Reaping drinks a share of all it deals', () => {

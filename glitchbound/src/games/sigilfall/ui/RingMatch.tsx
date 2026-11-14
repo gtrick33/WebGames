@@ -125,7 +125,9 @@ function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Ma
   const hold = f.auras.find((a) => a.cc);
   const c = f.cast;
   const ab = c ? ABILITIES[c.ab] : null;
-  const sees = !me || me === f || m.phase !== 'fight' || m.sees(me, f);
+  // (one of the other side in the shroud: their place is kept, but nothing of how they are)
+  const veiled = !!me && m.unseen(f, me) && !f.dead;
+  const sees = !veiled && (!me || me === f || m.phase !== 'fight' || m.sees(me, f));
   const dr = Object.entries(f.dr).filter(([, d]) => d && d.until > m.clock && d.n > 0);
   const share = f.hp / f.maxHp;
   return (
@@ -157,7 +159,7 @@ function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Ma
         </span>
         <span className={`rb-ring-bar${share < 0.3 ? ' is-low' : ''}`}>
           <i style={{ width: `${share * 100}%` }} />
-          <b>{f.dead ? 'Fallen' : `${Math.round(share * 100)}%`}</b>
+          <b>{f.dead ? 'Fallen' : veiled ? 'Hidden' : `${Math.round(share * 100)}%`}</b>
         </span>
         <span className="rb-ring-tail">
           {f.maxMana > 0 && (
@@ -499,7 +501,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       } else if (act === 'dash') press(DASH.id);
       else if (act === 'super' && me) keyPress(superOf(me.cls).id, e);
       else if (act === 'nextFoe' && me) {
-        const next = cycle(m.enemiesOf(me), me.target);
+        const next = cycle(m.enemiesOf(me).filter((o) => !m.unseen(o, me)), me.target);
         if (next !== null) target(next);
       } else if (act === 'nextFriend' && me) {
         const next = cycle(m.friendsOf(me), me.friend ?? me.id);
@@ -548,7 +550,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       let best: Fighter | null = null;
       let bd = e.pointerType === 'touch' ? 44 : 30;
       for (const f of m.fighters) {
-        if (f.dead) continue;
+        const viewer = m.fighters[myId];
+        if (f.dead || (viewer && m.unseen(f, viewer))) continue;
         // (anywhere on them, feet to head)
         for (const h of [4, 16, 28]) {
           const s = view.stage.project(f.x, f.y, h);

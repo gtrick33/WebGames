@@ -86,10 +86,10 @@ describe('Sigilfall: what a fighter wears is drawn as its spell', () => {
   const aura = (ab: string, t: number, more: Partial<Aura> = {}): Aura => ({ ab, kind: 'dot', src: 0, t, dur: 9, harmful: true, magic: true, n: 1, ...more });
 
   it('one picture to an ability, with its longest part, and nothing for what never runs out', () => {
-    const shown = worn({ auras: [aura('g-gloom', 4.2), aura('g-gloom', 7.9, { kind: 'antiheal' }), aura('g-slip', 3), aura('g-mantle', 5, { harmful: false, kind: 'guard' }), aura('g-ward', 0), aura('g-toll', 2, { dur: 0 }), aura('not-an-ability', 3)] });
+    const shown = worn({ auras: [aura('k-wither', 4.2), aura('k-wither', 7.9, { kind: 'slow' }), aura('k-agony', 3), aura('g-mantle', 5, { harmful: false, kind: 'guard' }), aura('g-ward', 0), aura('g-veil', 990, { dur: 0, kind: 'veil', harmful: false }), aura('not-an-ability', 3)] });
     expect(shown.map((a) => [a.ab, a.t])).toEqual([
-      ['g-gloom', 7.9],
-      ['g-slip', 3],
+      ['k-wither', 7.9],
+      ['k-agony', 3],
       ['g-mantle', 5],
     ]);
   });

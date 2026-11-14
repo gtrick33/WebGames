@@ -185,10 +185,10 @@ describe('The Ring: the rules', () => {
   });
 
   it('feared heroes run, and rooted ones stay put', () => {
-    const m = duel('warlock', ['k-howl'], 'warrior');
+    const m = duel('priest', ['p-wail'], 'warrior');
     const foe = m.fighters[1]!;
     const { x, y } = foe;
-    m.press(0, 'k-howl');
+    m.press(0, 'p-wail');
     wait(m, 2);
     // running blind, turning now and then, with nobody at the wheel
     expect(foe.walk).toBeGreaterThan(1.5);

@@ -129,7 +129,11 @@ export class RingFx {
 
   /** Takes the match's events. Returns what's worth a sound. */
   take(m: Match, sound: (id: string, vol?: number) => void, myId: number | null): void {
+    const viewer = myId === null ? null : (m.fighters[myId] ?? null);
     for (const e of m.events) {
+      // (what happens to one of the other side in the shroud is neither seen nor heard, but for their slipping into it)
+      const who = 'id' in e ? m.fighters[e.id] : undefined;
+      if (who && viewer && m.unseen(who, viewer) && !(e.k === 'ab' && ABILITIES[e.ab]?.effects.some((x) => x.k === 'veil'))) continue;
       if (e.k === 'num') {
         const f = m.fighters[e.id];
         if (!f) continue;
@@ -165,6 +169,11 @@ export class RingFx {
           }
         }
         if (ab.cls === 'gloamknight') this.gloam(ab, f);
+        else if (ab.effects.some((x) => x.k === 'raise')) {
+          // the ground opens round the warlock: a ring of rot rolling out, and the dark welling up where the dead will climb
+          for (let i = 0; i < 2; i++) this.tolls.push({ x: f.x, y: f.y, t: -i * 0.16, dur: 0.6, r: 30 });
+          this.bursts.push({ x: f.x, y: f.y, t: 0, dur: 0.6, school: 'shadow', color: '#9ae85a', big: true, heal: false, seed: f.x % 97 });
+        }
         else if (ab.aim === 'near') this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.42, r: ab.range + HERO_R, color: ab.color, ring: true });
         else if (ab.cast === 0 && ab.range <= 40 && ab.aim === 'enemy') {
           // a blow leaves its arc in the air: wide for a cut, wider and heavier for a great one, narrow for a thrust
@@ -294,10 +303,19 @@ export class RingFx {
         arc(Math.PI, 3, 44, 0.1, true);
         arc(0, 2.4, 34, 0.06, false, '#c02a7a', 0.3);
         break;
-      case 'g-slip':
-        // two cuts that cross
+      case 'g-knife':
+        // a short thrust, low
+        arc(0, 0.5, 30, 0, false, '#b48cff', 0.18);
+        break;
+      case 'g-ambush':
+        // two cuts that cross, out of nowhere
         arc(-0.55, 1.5, 34, 0, true);
         arc(0.55, 1.5, 34, 0.11, true, '#8a4ae0');
+        break;
+      case 'g-veil':
+      case 'g-walk':
+        // a puff of dusk where they were
+        this.bursts.push({ x: f.x, y: f.y, t: 0, dur: 0.45, school: 'shadow', color: '#6a4aa0', big: false, heal: false, seed: f.x % 89 });
         break;
       case 'g-sever':
         arc(0, 0.6, 40, 0, true, '#9a6cff', 0.2);
@@ -306,14 +324,6 @@ export class RingFx {
         arc(0, 3, 50, 0.12, true);
         arc(Math.PI, 3, 50, 0.2, true);
         arc(Math.PI / 2, 3, 40, 0.28, true, '#c02a7a');
-        break;
-      case 'g-toll':
-        for (let i = 0; i < 3; i++) this.tolls.push({ x: f.x, y: f.y, t: -i * 0.14, dur: 0.6, r: ab.range + HERO_R });
-        break;
-      case 'g-ashbound':
-        // the ground opens round him: a ring of dusk rolling out, and the dark welling up where the dead will climb
-        for (let i = 0; i < 2; i++) this.tolls.push({ x: f.x, y: f.y, t: -i * 0.16, dur: 0.6, r: 30 });
-        this.bursts.push({ x: f.x, y: f.y, t: 0, dur: 0.6, school: 'shadow', color: '#9a6ae0', big: true, heal: false, seed: f.x % 97 });
         break;
       case 'g-ward':
       case 'g-mantle':
@@ -505,7 +515,10 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
       q.put({ kind: FX.spark, x: e.x + Math.sin(time * 1.1 + i) * (5 + u * 14) + ((i * 13) % 18) - 9, y: e.y + ((i * 7) % 12) - 6, up: 2 + u * 62, w: 3.4 - u * 1.8, a: u < 0.5 ? '#ffd27a' : '#ff6a2a', t: 0.2, alpha: 1 - u });
     }
   }
+  // (nothing goes about on one of the other side in the shroud: they are not there to be seen)
+  const unseen = (f: Fighter): boolean => !!me && m.unseen(f, me);
   for (const f of m.fighters) {
+    if (unseen(f)) continue;
     const p = at(f);
     ringMarks(q, p.x === f.x && p.y === f.y ? f : { ...f, x: p.x, y: p.y }, time);
   }
@@ -581,7 +594,7 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
   }
   // a Swift Step: a streak of light behind
   for (const f of m.fighters) {
-    if (!f.dash || f.dead) continue;
+    if (!f.dash || f.dead || unseen(f)) continue;
     for (let i = 1; i <= 4; i++) {
       const dx = f.dash.x - f.x;
       const dy = f.dash.y - f.y;
@@ -677,7 +690,8 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
   // jumped at every blow (the owner: "gloamknight's orb effect around the character jitters when moving vs another
   // player")
   for (const f of m.fighters) {
-    if (f.cls !== 'gloamknight' || f.dead || f.pet) continue;
+    // (and the gloam about him goes with him into the shroud: his own side sees him by his shape alone)
+    if (f.cls !== 'gloamknight' || f.dead || f.pet || m.hidden(f)) continue;
     const p = at(f);
     q.put({ kind: FX.glow, x: p.x, y: p.y, up: 3, w: 34, a: '#7a3cff', alpha: 0.2 + Math.sin(time * 2.2 + f.id) * 0.05 });
     // their wake: a trail of soft dark where they have just been, long in a lunge and short at a walk. (Not a faded
@@ -979,15 +993,15 @@ export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number
     }
   }
   for (const f of m.fighters) {
-    // (the raised dead, once back in the ground, are nobody's to choose)
-    if (f.pet && f.dead) continue;
+    // (the raised dead, once back in the ground, are nobody's to choose; one of the other side in the shroud is nobody's to see)
+    if ((f.pet && f.dead) || (me && m.unseen(f, me))) continue;
     view.flat(f.x, f.y);
     if (f.id === myId) ring(g, f.x, f.y, 11, '#ffe39a', 1.4);
     if (f.id === me?.target) ring(g, f.x, f.y, 13 + Math.sin(time * 5) * 0.8, '#ff5a6a', 1.8);
     else if (f.id === me?.friend && f.id !== myId) ring(g, f.x, f.y, 13, '#7fe06a', 1.6);
   }
   g = view.upperLayer();
-  for (const f of m.fighters) markFighter(g, m, f, myId, time, !me || f === me || m.sees(me, f), view);
+  for (const f of m.fighters) if (!me || !m.unseen(f, me)) markFighter(g, m, f, myId, time, !me || f === me || m.sees(me, f), view);
   g.textAlign = 'center';
   for (const p of fx.pops) {
     const u = p.t / 0.9;

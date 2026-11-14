@@ -55,6 +55,17 @@ Ashbound**, two of the ashbound dead, not "Raise Dead", "Army of the Dead" or a 
 fights for its master) is copied, the names and the barrow skeletons they are drawn as are the game's own. Dusk Rend's
 combo, which had been called Nightfall, is **Gloomfall**.
 
+In the Ring (2026-11-14), after a friend of the owner's ("typical dk and a shadow rogue, leave summons for a necro
+warlock spec"), he is two setups: the **Bloodsworn**, a death knight with **Grave Chain** (the rule of a pull to its user,
+not "Death Grip"), and the **Nightblade**, who hides and strikes from behind as the classic arena's rogue does. Only the
+rules are copied: stealth that the other side can't target, broken by striking or being struck; an in-fight vanish whose
+first moments damage doesn't break; an opener only usable hidden; a blade that hits harder from behind; a step to the
+target's back. The names are the game's own: **Shroud of Dusk**, not "Stealth" or "Vanish"; **Dusk Ambush**, not
+"Ambush" or "Cheap Shot"; **Nightknife**, not "Backstab"; **Shade Walk**, not "Shadowstep"; the talent **Night's
+Embrace**, not "Subterfuge" or "Master of Subtlety"; the combos **Unseen Edge** and **Out of Nowhere**. The ashbound
+dead went to the warlock's new **Gravecaller** setup, with **Grave Hunger** (the rule of a frenzy on one's summons), not
+"Dark Transformation" or "Unholy Frenzy".
+
 ## Fixed
 
 ### The licensed art packs and the public repository (was HIGH)
