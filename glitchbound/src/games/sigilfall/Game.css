@@ -7262,7 +7262,8 @@ html.rb-touch-playing textarea {
     linear-gradient(180deg, #120a18, #05030d);
   touch-action: pan-y;
 }
-.rb-ringlobby h3 {
+.rb-ringlobby h3,
+.rb-ringvl h3 {
   margin: 0;
   color: #ffe39a;
   font: 700 13px Georgia, 'Times New Roman', serif;
@@ -7273,7 +7274,6 @@ html.rb-touch-playing textarea {
   align-items: center;
   gap: 8px;
 }
-.rb-rp-play,
 .rb-rp-setuppage,
 .rb-rp-friends {
   text-align: left;
@@ -7297,74 +7297,6 @@ html.rb-touch-playing textarea {
 }
 .rb-rp-back.rb-btn {
   flex: none;
-}
-.rb-rp-play {
-  display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-  gap: 12px;
-  min-height: 0;
-}
-.rb-rp-hero,
-.rb-rp-fight {
-  min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  touch-action: pan-y;
-}
-.rb-rp-hero {
-  display: grid;
-  grid-template-rows: minmax(92px, 1fr) auto auto;
-  gap: 7px;
-  padding: 8px;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  border-radius: 12px;
-  background: rgb(10 6 22 / 0.66);
-}
-/* (the stand is sized by the hero on it: on a phone the hero was a third the width of the ring behind them) */
-.rb-rp-stage {
-  position: relative;
-  min-height: 92px;
-  overflow: hidden;
-}
-.rb-rp-dais {
-  position: absolute;
-  left: 50%;
-  bottom: 32px;
-  height: min(68px, calc((100% - 44px) * 0.24));
-  max-width: 76%;
-  aspect-ratio: 4 / 1;
-  border-radius: 50%;
-  translate: -50% 0;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--cls) 60%, transparent), transparent);
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--cls) 55%, transparent);
-  animation: rb-vlobby-dais 3.6s ease-in-out infinite;
-}
-.rb-rp-doll {
-  position: absolute;
-  right: 0;
-  bottom: 40px;
-  left: 0;
-  /* (as tall as the stand lets them, to a size the picture is still sharp at: they stood a third of it high, at its
-     foot, with the rest of the stand empty above them) */
-  height: min(calc(100% - 46px), 330px);
-  margin-inline: auto;
-  filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.5));
-  animation: rb-vlobby-in 0.22s ease-out;
-}
-.rb-rp-who {
-  position: absolute;
-  inset: auto 0 0;
-  display: grid;
-  justify-items: center;
-}
-.rb-rp-who strong {
-  color: #fff4d8;
-  font: 700 18px/1.1 Georgia, 'Times New Roman', serif;
-}
-.rb-rp-who small,
-.rb-rp-whoname {
-  color: #b8afc8;
-  font-size: 11.5px;
 }
 /* (the name under the hero, with their title in its light: a size up, so the light reads) */
 .rb-rp-whoname {
@@ -7434,11 +7366,6 @@ html.rb-touch-playing textarea {
   margin: 0;
   color: #ff9a7a;
   font-size: 12px;
-}
-.rb-rp-fight {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 .rb-rp-formats {
   display: grid;
@@ -7561,6 +7488,7 @@ html.rb-touch-playing textarea {
   line-height: 1.35;
 }
 .rb-ringlobby select,
+.rb-ringvl select,
 .rb-rp-join input {
   min-width: 0;
   width: 100%;
@@ -8464,19 +8392,6 @@ html.rb-touch-playing textarea {
   }
   .rb-rp-head {
     margin-bottom: 5px;
-  }
-  .rb-rp-play {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .rb-rp-hero,
-  .rb-rp-fight {
-    overflow: visible;
-  }
-  .rb-rp-hero {
-    grid-template-rows: auto auto auto;
-  }
-  .rb-rp-stage {
-    display: none;
   }
   .rb-rs {
     grid-template-rows: repeat(6, max-content);
@@ -11918,6 +11833,99 @@ html.rb-touch-playing textarea {
   }
   .rb-rlobby-key {
     margin: 2px 0 0;
+  }
+}
+
+/* ---- the Ring's Play page: the Vigil's lobby (rb-vlobby), with the setup beside the hero and the fight where the
+   lands are (the owner: "make the ui selection in the ring similar to the vigil and riftstones, currently the
+   character feels way too small on mobile". On a phone the hero had been a doll a few dozen pixels high, or not
+   there at all) ---- */
+.rb-ringvl .rb-vlobby-kit,
+.rb-ringvl-fight {
+  text-align: left;
+}
+.rb-ringvl-fight {
+  gap: 8px;
+  touch-action: pan-y;
+}
+/* (the kit is the setup: the Wardrobe, the bar, the talents and the oath in one box under the hero) */
+.rb-ringvl .rb-vlobby-kit.rb-rp-setup {
+  align-content: start;
+}
+.rb-ringvl .rb-vlobby-kit .rb-rp-looks {
+  margin-bottom: 0;
+}
+/* (the gold button and "With friends" share one line, as they did on the Ring's own page: wrapped onto two, an
+   upright phone's foot stood over a quarter of the screen) */
+.rb-ringvl .rb-vlobby-foot {
+  flex-wrap: nowrap;
+}
+.rb-ringvl .rb-vlobby-foot .rb-btn.is-gold {
+  flex: 0 1 380px;
+  min-width: 0;
+}
+.rb-ringvl .rb-vlobby-foot .rb-btn:not(.is-gold) {
+  flex: none;
+}
+/* a phone on its side: the hero gets the stand's share before the kit, which scrolls in its own column */
+@container (max-height: 430px) and (min-height: 301px) {
+  .rb-ringvl .rb-vlobby-hero {
+    grid-template-columns: 84px minmax(120px, 1fr) minmax(0, 1.3fr);
+  }
+  .rb-ringvl .rb-vlobby-kit {
+    align-content: start;
+  }
+  .rb-ringvl .rb-rp-setup-head h3 {
+    display: none;
+  }
+  .rb-ringvl-fight {
+    gap: 5px;
+  }
+  .rb-ringvl .rb-rp-format {
+    padding: 2px;
+  }
+  .rb-ringvl .rb-rp-format small {
+    display: none;
+  }
+}
+/* a phone held upright: the classes a row of emblems across the top, the hero standing tall under them, then the
+   setup and the fight, the gold button held at the foot */
+@container (max-width: 560px) and (min-height: 301px) {
+  .rb-ringvl .rb-vlobby-hero {
+    grid-template-areas: 'classes' 'stage' 'kit';
+  }
+  .rb-ringvl .rb-vlobby-classes {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 3px;
+  }
+  .rb-ringvl .rb-vlobby-class {
+    justify-content: center;
+    min-width: 0;
+    min-height: 0;
+    aspect-ratio: 1;
+    padding: 2px;
+  }
+  .rb-ringvl .rb-vlobby-class:hover,
+  .rb-ringvl .rb-vlobby-class:focus-visible {
+    transform: none;
+  }
+  .rb-ringvl .rb-vlobby-class span {
+    display: none;
+  }
+  .rb-ringvl .rb-vlobby-class img {
+    width: 100%;
+    max-width: 36px;
+    height: auto;
+  }
+  .rb-ringvl .rb-vlobby-stage {
+    min-height: clamp(250px, 48cqh, 440px);
+  }
+  .rb-ringvl .rb-vlobby-dais {
+    width: min(300px, 80%);
+  }
+  .rb-ringvl .rb-vlobby-doll {
+    height: min(calc(100% - 66px), 380px);
   }
 }
 
