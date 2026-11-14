@@ -1,4 +1,4 @@
-import { after, is, until } from '../cond';
+import { after, all, is, until } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
@@ -90,8 +90,8 @@ export const RIFTSCAR = wildRegion(
       { near: 'fallen-ward', dx: -2, dy: 3, marker: { kind: 'prop', prop: 'iron-torch' }, when: after('the-gloam-gate') },
       { near: 'fallen-ward', dx: 2, dy: 3, marker: { kind: 'prop', prop: 'iron-torch' }, when: after('the-gloam-gate') },
       // Lastlight, the coalition's door into Vaelmoor: Nyx from the day she comes; Elyra and Wren by the fire after the cells
-      { near: 'hub', dx: 5, dy: 3, marker: { kind: 'npc', npc: 'nyx-lastlight' }, when: is('gloam-the-lamp-road', 'done') },
-      { near: 'hub', dx: -1, dy: 3, marker: { kind: 'npc', npc: 'elyra-lastlight' }, when: is('gloam-out-of-the-cells', 'done') },
+      { near: 'hub', dx: 5, dy: 3, marker: { kind: 'npc', npc: 'nyx-lastlight' }, when: is('gloam-the-lamp-road', 'started') },
+      { near: 'hub', dx: -1, dy: 3, marker: { kind: 'npc', npc: 'elyra-lastlight' }, when: all(is('gloam-out-of-the-cells', 'done'), until('the-last-march')) },
       { near: 'hub', dx: 1, dy: 4, marker: { kind: 'npc', npc: 'wren' }, when: after('gloam-out-of-the-cells') },
       { near: 'hub', dx: 0, dy: 2, marker: { kind: 'prop', prop: 'campfire' }, when: after('gloam-out-of-the-cells') },
       { near: 'hub', dx: 0, dy: -5, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('the-gloam-gate') },

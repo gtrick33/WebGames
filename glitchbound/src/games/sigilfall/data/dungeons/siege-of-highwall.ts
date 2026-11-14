@@ -732,7 +732,7 @@ export const SIEGE_OF_HIGHWALL: DungeonModule = {
       },
       { id: 'ward', floor: 'm', waves: [], boss: 'general-morvain', checkpoint: true, title: 'The Inner Ward' },
     ],
-    blurb: 'The burning city behind the Breach, the Siege-Breaker grinding at the barracks gate, Prior Vessant singing over the dead in the chapel, and General Morvain under his banner in the Inner Ward.',
+    blurb: 'The burning city behind the Breach, the Siege-Breaker grinding at the gate of the inner ward, Prior Vessant singing over the dead in the chapel, and General Morvain under his banner in the Inner Ward.',
   },
   bosses,
   foes,

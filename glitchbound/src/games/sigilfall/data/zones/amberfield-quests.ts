@@ -33,7 +33,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     objective: { kind: 'explore', spot: 'broken-caravan', label: 'Find the Broken Caravan' },
     after: ['refugees-on-the-road'],
     zone: 'amberfield',
-    reward: { xp: 400, gold: 140, text: 'One wagon is still standing. Hiding under it are Brin Corrin, the sister of Hearthstead’s wheelwright, and an eight-year-old girl named Marit. They walk back to town with you.' },
+    reward: { xp: 400, gold: 140, text: 'One wagon is still standing. Hiding under it are Ada Corrin, the sister of Hearthstead’s wheelwright Hale, and her eight-year-old daughter, Marit. They walk back to town with you.' },
   },
   {
     id: 'riders-in-the-grass',
@@ -67,7 +67,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     after: ['the-clan-stones'],
     zone: 'amberfield',
     level: 19,
-    reward: { xp: 780, gold: 200, item: { rarity: 'rare' }, text: 'Stormhoof gets back up and looks at the stolen feathers for a long time. He promises that if the grey riders attack Hearthstead, the clans will watch the ridges for them.' },
+    reward: { xp: 780, gold: 200, item: { rarity: 'rare' }, text: 'Stormhoof gets back up and looks at the stolen feathers for a long time. He promises the clans will stop blaming the refugees, and will hunt the riders who wear their feathers.' },
   },
   /* ------------------------------------------------- the Defense of Hearthstead */
   {
@@ -99,7 +99,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     name: 'The Ram',
     giver: 'marshal-dunmore',
     auto: true,
-    text: 'An ashen ram is coming: a battering beam carried by a beast made of old bones. Blades barely scratch it. Elyra came with Mara, and she says she can destroy it if it stands still long enough. Keep it away from the gate until she can.',
+    text: 'An ashen ram is coming: a battering beam carried by a beast made of old bones. Blades barely scratch it. Elyra says she can destroy it if it stands still long enough. Keep it away from the gate until she can.',
     objective: { kind: 'event', event: 'hearth-ram', label: 'Keep the ashen ram off the gate' },
     after: ['hearth-hold-the-wall'],
     zone: 'amberfield',
@@ -132,7 +132,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
       xp: 1850,
       gold: 600,
       item: 'vosk-greaves',
-      text: 'Gaius reads them twice. “Carry the stone north by the King’s Road. The barrow-king’s knight will take it from there.” Below that, in a clerk’s neat handwriting: “The roads are paid for. Nobody will stop you.” Someone in the Crown City is paying the Host’s way. Dunmore gives you the greave Vosk left behind.',
+      text: 'Gaius reads them twice. “Carry the stone north by the King’s Road to the King. The knight of the barrows will see you safely through the downs.” Below that, in a clerk’s neat handwriting: “The roads are paid for. Nobody will stop you.” Someone in the Crown City is paying the Host’s way. Dunmore gives you the greave Vosk left behind.',
     },
   },
   {
@@ -283,8 +283,8 @@ export const AMBERFIELD_NPCS: Record<string, NpcDef> = {
       {
         when: { quest: 'orders-from-the-north', state: 'active' },
         lines: [
-          'These are Vosk’s orders: “Carry the stone north by the King’s Road. The barrow-king’s knight will take it from there.”',
-          'The barrow-king rules the Ashen Barrows, north of the steppe. Whoever holds the King’s Road holds the way to the Crown City.',
+          'These are Vosk’s orders: “Carry the stone north by the King’s Road to the King. The knight of the barrows will see you safely through the downs.”',
+          'The barrows are the Ashen Barrows, north of the steppe. Whoever holds the King’s Road holds the way to the Crown City.',
         ],
       },
       { lines: ['I’m Gaius. I served thirty years in the Amber Lancers. Now I sell armor.', 'Everything on this cart has been to war.'] },
@@ -315,19 +315,19 @@ export const AMBERFIELD_NPCS: Record<string, NpcDef> = {
     title: 'Wheelwright, from the east',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'the-broken-caravan', state: 'active' }, lines: ['My sister Brin was on that caravan. She wears a red scarf. Please find her.'] },
-      { when: { quest: 'the-broken-caravan', state: 'done' }, lines: ['You found Brin. Thank you. She’s resting in the wagon shed, and Marit won’t leave her side.'] },
+      { when: { quest: 'the-broken-caravan', state: 'active' }, lines: ['My sister Ada and her girl Marit were on that caravan. Ada wears a red scarf. Please find them.'] },
+      { when: { quest: 'the-broken-caravan', state: 'done' }, lines: ['You found Ada and Marit. Thank you. They’re resting in the wagon shed.'] },
       { lines: ['I made wheels in Ashford until the Host came over the hills.', 'Now I fix the camp’s carts, so people can leave if they have to.'] },
     ],
   },
   'refugee-marit': {
     id: 'refugee-marit',
     name: 'Marit',
-    title: 'Refugee, eight years old',
+    title: 'Hale’s niece, eight years old',
     sprite: 'villager',
     talk: [
       { when: { quest: 'hunt-goldmane', state: 'done' }, lines: ['You killed the lion with the golden mane! Wil says he helped. Did he?'] },
-      { lines: ['Are you a soldier? Brin says you found us under the wagon.', 'My grandma says the grey people are sad. I don’t care. They burned our house.'] },
+      { lines: ['Are you a soldier? Mama says you found us under the wagon.', 'Uncle Hale is fixing our cart. Mama says we’re staying here now.'] },
     ],
   },
 };

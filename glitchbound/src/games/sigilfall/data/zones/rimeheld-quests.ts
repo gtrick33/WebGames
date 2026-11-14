@@ -143,7 +143,7 @@ export const RIMEHELD_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'the-last-sledges', state: 'done' },
-        lines: ['Eleven drivers home, and every one of them says the same thing: the dead knew the sledge roads. They knew where the trains stop.', 'Somebody in Frostgate told them. Somebody who wears a torc.'],
+        lines: ['Three drivers home, and every one of them says the same thing: the dead knew the sledge roads. They knew where the trains stop.', 'Somebody in Frostgate told them. Somebody who wears a torc.'],
       },
       {
         when: { quest: 'the-giants-hearth', state: 'active' },

@@ -240,7 +240,8 @@ function plan(): SpreadPlan {
   c.marker(17, 21, { kind: 'fire', size: 2, delay: 3.4 }, is('briar-the-inn', 'started'));
 
   // the people: who stands where depends on the night
-  c.npc('mara-venn', 31, 14, CALM);
+  // (not while she commands the relief of Highwall and the Last March: Act IV until the camp goes home)
+  c.npc('mara-venn', 31, 14, all(CALM, any(not(is('the-wall-burns', 'started')), is('epilogue-the-camp-goes-home', 'started'))));
   // the courier lies where he fell, just inside the gate
   c.npc('oskar-fell', 32, 15, is('briar-the-seal', 'active'));
   c.npc('maren', 38, 37, CALM);
@@ -250,8 +251,9 @@ function plan(): SpreadPlan {
   c.npc('smith-hollin', 44, 24, CALM);
   c.npc('trader-ilse', 50, 24, CALM);
   c.npc('goodwife-bramble', 18, 25, CALM);
-  // Elyra keeps the camp with Thessa until the Pale Herald takes her at the Tear (Act III)
-  c.npc('elyra', 24, 23, all(CAMP, not(is('the-heralds-ambush', 'done'))));
+  // Elyra keeps the camp with Thessa until she goes south with the hero after the sigils (Act III): she travelled
+  // with them and stood in the camp at the same time
+  c.npc('elyra', 24, 23, all(CAMP, not(is('the-sun-kings-tomb', 'started'))));
   // home with Thessa after it is all over
   c.npc('elyra', 24, 36, HOME);
   c.npc('mara-venn', 47, 20, NIGHT);
@@ -453,8 +455,9 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'briar-below', state: 'active' }, lines: ['They stopped fighting us. Did you see? They just stopped, and started digging.', 'Whatever is under that chapel, they want it more than they want us dead. I don’t like that.'] },
       { when: { quest: 'fern-retaken', state: 'offered' }, lines: ['I have counted Fernstead’s tents every morning for a week. I am done counting.', 'Hollis’s rangers, Dunmore’s riders, you, and me. We take it back. Tonight, if you’ll come.'] },
       { when: { quest: 'fern-retaken', state: 'active' }, lines: ['Fernstead square. They’ve left a garrison that thinks it’s won. Let’s explain.'] },
+      { when: { quest: 'gloam-out-of-the-cells', state: 'done' }, lines: ['You got Elyra out of the Gloam. I told her I was wrong about magic. She laughed at me.', 'I still trust walls and people who show up. She showed up.'] },
       { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['They took Elyra. Out of the middle of you. And Nyx walked away from it.', 'I don’t trust magic. I trusted Elyra. I’m going to get her back, and then I’m going to tell her I was wrong about the magic.'] },
-      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Half the roofs gone, but nobody we pulled out of that inn died. I keep counting. Still nobody.', 'Maren says we gather the Vale. Fine. I’ll keep the gate while you find us people worth gathering.'] },
+      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Half the roofs gone, but nobody we pulled out of that inn died. I keep counting. Still nobody.', 'Maren says we gather the Vale. I’ll ride with you when you need me, and keep the gate when you don’t.'] },
       { lines: ['The gate stays shut after dark. That isn’t going to change.', 'I don’t trust magic. I trust walls and people who show up.'] },
     ],
   },
@@ -469,7 +472,8 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'briar-below', state: 'active' }, lines: ['I can feel it. Down there, under the chapel. Something warm, like a hearth in a cold house.', 'Thessa says I mustn’t say things like that out loud. I’m saying it anyway.'] },
       { when: { quest: 'the-empty-tomb', state: 'active' }, lines: ['It’s in me now. The fragment. When I touched it, it — went in. Like light through a window.', 'I can see better in the dark. I can hear the bell that isn’t ringing. Tell Maren. Please. Before I lose my nerve.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Every time I use it, I forget something small. This morning it was the name of Thessa’s cat.', 'I’ll come when you need me. Just — tell me the cat’s name if I ask, will you? It’s Burr.'] },
-      { lines: ['I was only ever good at small wards. Keeping milk from souring. Keeping wasps off the plums.', 'Last night I held a burning roof up over three children. I don’t know how.'] },
+      { when: { quest: 'close-the-rift', state: 'active' }, lines: ['Tonight I held a burning roof up over three children. I don’t know how I did it.'] },
+      { lines: ['I was only ever good at small wards. Keeping milk from souring. Keeping wasps off the plums.', 'The night of the raid I held a burning roof up over three children. I don’t know how.'] },
     ],
   },
   'oskar-fell': {
@@ -500,7 +504,7 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'the-regents-council', state: 'active' }, lines: ['Sit. I’ve read Oskar Fell’s letter at last: I had to dry it by the fire first.', 'The king’s couriers have been warning the Crown City for months that the crown is being hunted. Every letter, lost. Someone in the city has been burying them.', 'We will have to go there ourselves, in the end. Not yet. First the Vale must hold.'] },
       { when: { quest: 'fall-of-fernstead', state: 'active' }, lines: ['Fernstead is burning. Its people are on the west road with whatever they could carry.', 'Go and meet them. Let them see a face they know.'] },
       { when: { quest: 'fall-of-fernstead', state: 'done' }, lines: ['The first village you saved. The Host knew exactly which one to take.', 'They’re learning us. We had better learn them faster.'] },
-      { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['Rangers, grain, healers, smiths, riders. A month ago this was a village that nailed its shutters closed.', 'The Crown City is next, whether it wants us or not. Someone there has been burying the king’s letters. Go and dig them up.'] },
+      { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['Rangers from Fernstead, grain from Millbrook, riders from Hearthstead. This spring, this village nailed its shutters closed.', 'The Crown City is next, whether it wants us or not. Someone there has been burying the king’s letters. Go and dig them up.'] },
       { lines: ['Every village that holds is one more wall.', 'The square fills up a little more every week. That’s your doing.'] },
     ],
   },
@@ -510,10 +514,10 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
     title: 'Bell-ringer',
     sprite: 'elder',
     talk: [
-      { when: { quest: 'epilogue-the-bell', state: 'active' }, lines: ['It’s over, then. I said I would ring her when it was over. Pip won’t hear it. I know that. I’ve known it a while.', 'Stand with me. Somebody should be standing with me.'] },
+      { when: { quest: 'epilogue-the-bell', state: 'active' }, lines: ['It’s over, then. I said I would ring her when it was over. Robin won’t hear it. I know that. I’ve known it a while.', 'Stand with me. Somebody should be standing with me.'] },
       { when: { quest: 'epilogue-the-bell', state: 'done' }, lines: ['Once for the dead, once for the living, and the rest because my arms remembered. They heard it in Fernstead. Hollis sent a rider to ask what was wrong.', 'Nothing’s wrong. That’s what it means. Nothing’s wrong.'] },
-      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The rope’s still there. I go up every morning and hold it.', 'My grandson Pip went out after the lamps were lit, three weeks gone. The bell won’t ring for me until he’s home. Or until it’s all over.'] },
-      { lines: ['Three weeks I haven’t rung it. Not since Pip went out after dark.', 'A bell calls people home. I won’t call them home to this.'] },
+      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The rope’s still there. I go up every morning and hold it.', 'My grandson Robin went out after the lamps were lit, the week the bell stopped. I won’t ring it until he’s home, or until it’s all over.'] },
+      { lines: ['I haven’t rung it since my grandson Robin went out after dark.', 'A bell calls people home. I won’t call them home to this.'] },
     ],
   },
   'herbwife-thessa': {
@@ -522,7 +526,8 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
     title: 'Healer, Elyra’s teacher',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['I keep setting a cup out for her. Every morning. Brisa takes it away and doesn’t say anything.', 'She’ll be forgetting things, wherever she is. Our cat’s name is Burr. Tell her that, when you find her. Tell her first.'] },
+      { when: { quest: 'gloam-out-of-the-cells', state: 'done' }, lines: ['Elyra is free. I keep her cup out anyway, for when she comes home.', 'If she has forgotten things, tell her our cat’s name is Burr.'] },
+      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['I keep setting a cup out for her. Every morning. Bramble takes it away and doesn’t say anything.', 'She’ll be forgetting things, wherever she is. Our cat’s name is Burr. Tell her that, when you find her. Tell her first.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The infirmary is my kitchen now. Burns, mostly. Burns and grief.', 'Elyra won’t tell me what it costs her. I can see it anyway. Bring her back to me in one piece.'] },
       { lines: ['There’s an old grove in the north-west of the wood, behind a hedge that isn’t there. My grandmother picked starwort in it.', 'If you find it, I’ll make it worth your while.'] },
     ],
@@ -652,7 +657,7 @@ export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
     kind: 'arrival',
     at: 'briar-square',
     radius: 16,
-    arrive: { pets: ['fern-ranger', 'mill-carter', 'reed-healer', 'gull-smith', 'hearth-horseman', 'dwarf-carter'], from: 'briar-square', to: 'briar-south' },
+    arrive: { pets: ['fern-ranger', 'mill-carter', 'mill-carter', 'hearth-horseman'], from: 'briar-square', to: 'briar-south' },
     banner: 'Going home',
     start: [{ who: 'maren', text: 'Fernstead, Millbrook, Hearthstead. Go home. Go home and be ordinary. That’s an order.' }],
     waves: [],

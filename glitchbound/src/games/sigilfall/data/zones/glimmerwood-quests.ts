@@ -58,7 +58,7 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     giver: 'old-root',
     choice: 'thistlemourn',
     offer: ['The prince is gone, small one. What sits in the Summer Hall wears his face and the Host’s crown. Silvaine will ask you to try to save him. Do not.', 'End it. Quickly, for his sake. (Taking this path closes Silvaine’s.)'],
-    text: 'The seal is Silvaine’s brother’s. Prince Thistlemourn, heir of the Summer Court, rode north in the spring to see why the trees were dying, and swore himself to the Ashen Host to save his court from the blight. Now he holds court in the old Summer Hall, north-west of Lumen Glade, and every summons ends the same way: come and be made new. Old Root says end it, and be quick, for his sake.',
+    text: 'The letter in the pavilion was signed by Silvaine’s brother. Prince Thistlemourn, heir of the Summer Court, rode north in the spring to see why the trees were dying, and swore himself to the Ashen Host to save his court from the blight. Now he holds court in the old Summer Hall, north-west of Lumen Glade, and every summons ends the same way: come and be made new. Old Root says end it, and be quick, for his sake.',
     objective: { kind: 'kill', region: 'glimmerwood', count: 1, enemies: ['prince-thistlemourn'], label: 'Defeat Prince Thistlemourn at the Thorn Court' },
     after: ['the-pale-pavilion'],
     zone: 'glimmerwood',
@@ -202,7 +202,7 @@ export const GLIMMERWOOD_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'the-fading-lights', state: 'active' },
-        lines: ['Maren sent you. Good. I asked for help, which the fey do not do, so I asked for the best.', 'I am Silvaine. This is Lumen Glade, the last court in the Glimmerwood that still shines. I would like it to keep shining.'],
+        lines: ['Sefu passed on my letter? Good. I asked for help, which the fey do not do, so I asked for the best.', 'I am Silvaine. This is Lumen Glade, the last court in the Glimmerwood that still shines. I would like it to keep shining.'],
       },
       {
         when: { quest: 'the-withered-ring', state: 'active' },
@@ -210,23 +210,23 @@ export const GLIMMERWOOD_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'the-pale-pavilion', state: 'active' },
-        lines: ['Sent from the north. I had feared it.', 'And there is worse: my knights are leaving me. Two and three at a time, to a pavilion in the far south-west of the wood. Find out whose banner they ride under.'],
+        lines: ['The blight on the Withered Ring came from the north. I had feared it.', 'And there is worse: my knights are leaving me. Two and three at a time, to a pavilion in the far south-west of the wood. Find out whose banner they ride under.'],
       },
       {
         when: { quest: 'the-thorn-court', state: 'active' },
-        lines: ['Old Root has told you to end him. I know. I asked him to; I could not ask it myself.', 'Go. Be quick, for his sake. Be careful, for yours.'],
+        lines: ['You chose Old Root’s way. I asked you not to, but I understand why.', 'Go. Be quick, for his sake. Be careful, for yours.'],
       },
       { when: { quest: 'silvaines-song', state: 'active' }, lines: ['The Summer Hall. I will sing, and I will not stop, whatever comes through the doors. That part is yours.'] },
       {
         when: { quest: 'the-clans-decide', state: 'active' },
         lines: ['The clans are here. Every one, even the Dew Court, who have not spoken to us in a century.', 'They want to hear it from you. Tell them what the Host offered my brother, and what it cost.'],
       },
-      { when: { quest: 'silvaines-song', state: 'taken' }, lines: ['He is sleeping. Properly sleeping, for the first time since spring. He talks in it, about our mother.', 'You held the door while I sang. Lumen Glade will not forget. Neither will I.'] },
+      { when: { quest: 'silvaines-song', state: 'taken' }, lines: ['He sleeps at night now, properly, for the first time since spring. He talks in his sleep about our mother.', 'You held the door while I sang. Lumen Glade will not forget. Neither will I.'] },
       { when: { quest: 'the-moonwell', state: 'active' }, lines: ['My light comes from the Moonwell, north-east of the glade, and it dims by a candle a night.', 'I may not leave the glade while it still shines. Go and look for me.'] },
       { when: { quest: 'moonwater', state: 'active' }, lines: ['Choked with blight. My handmaids can clean it, if nothing keeps fouling it. Clear the dryads and moths around it.'] },
       {
         when: { quest: 'the-thorn-court', state: 'taken' },
-        lines: ['He knew me at the end. You gave me that. I will not forget it, and I will not forgive it, and both are true.', 'When you go north into the ice for the next sigil, the light of Lumen Glade goes with you.'],
+        lines: ['He knew me at the end. You gave me that. I will not forget it, and I will not forgive it, and both are true.', 'When you go into the ice for the next sigil, the light of Lumen Glade goes with you.'],
       },
       { lines: ['Welcome to Lumen Glade. Mind the mushrooms: the glowing ones are lamps, the others are guests.', 'The wood was all like this once. It will be again, if I have any say.'] },
     ],

@@ -41,7 +41,7 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     name: 'Under a White Rag',
     giver: 'captain-mara',
     auto: true,
-    text: 'A rider from Highwall, with a letter in Mara’s square hand: “Someone walked into my camp at dawn under a white rag, and asked for you by name. I have not killed her yet. Come quickly.” Go back to the relief camp in Highwall March.',
+    text: 'A rider brings word from Mara: someone is walking up the road to the relief camp under a white rag, asking for you by name. Go back to the relief camp in Highwall March and meet them.',
     objective: { kind: 'event', event: 'nyx-returns', label: 'Go back to the relief camp at Highwall' },
     after: ['cael-the-sortie'],
     zone: 'highwall',
@@ -95,7 +95,8 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     auto: true,
     text: 'Hollowbane’s trench is broken, and Mara will not give the Host a night to mend it. Cael leads the riders out of the camp and straight at the Host lines before the Breach; Hearthstead’s riders and Fernstead’s rangers go with him; you go in at his side. Open the way to the wall.',
     objective: { kind: 'event', event: 'highwall-sortie', label: 'Ride out with Cael and break the lines before the Breach' },
-    after: ['ashes-of-ashby'],
+    // (after Hollowbane: its text and the next quest's begin with his trench broken)
+    after: ['captain-hollowbane'],
     zone: 'highwall',
     level: 42,
     reward: { xp: 2800, gold: 600, item: { rarity: 'rare' }, text: 'The Host’s lines fold like wet paper. Cael rides back through the camp with his visor up, and the old soldiers of the field army stand and bang their shields as he goes by. He doesn’t know what to do with his face.' },
@@ -188,7 +189,7 @@ export const HIGHWALL_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'the-wall-burns', state: 'active' },
-        lines: ['The Regent sent you? Good. I asked her for a thousand lances and she sent one hero. She knows something I don’t, I hope.', 'I’m Varn. Highwall is behind that smoke, and I mean to get back in it. Sit. We’ll talk about how.'],
+        lines: ['The Regent sent you? Good. I asked her for a thousand lances, and she sent one hero ahead of them.', 'I’m Varn. Highwall is behind that smoke, and I mean to get back in it. Sit. We’ll talk about how.'],
       },
       {
         when: { quest: 'ashes-of-ashby', state: 'active' },
@@ -212,17 +213,18 @@ export const HIGHWALL_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'the-long-night-ends', state: 'active' },
-        lines: ['Morvain is dead in the rubble of my inner ward, and his army is running north into the snow. I watched it from the gate. I may have shouted.', 'The Regent should hear it from you, not from a rider. Go home to Emberwick. Tell her Highwall holds.'],
+        lines: ['Morvain is dead in the rubble of my inner ward, and his army is running north into the snow. I watched it from the gate.', 'Mara commanded the relief. She should hear it from you. Go and tell her Highwall holds.'],
       },
       {
         when: { quest: 'the-long-night-ends', state: 'done' },
-        lines: ['Highwall holds, and the road north is open. Beyond it are the King’s own lands. I’ve never seen them. I don’t much want to.', 'When you go north, go through my gate. I’d like to see you off properly. With a band. We have a drum left.'],
+        lines: ['Highwall holds. Beyond the Gates are the King’s own lands. I’ve never seen them. I don’t much want to.', 'When you go north through the Gloam Gate, come back through mine. I’d like to welcome you home properly.'],
       },
+      { when: { quest: 'the-long-night-ends', state: 'offered' }, lines: ['Morvain is dead and his army is running north. Mara commanded the relief. Go and tell her.'] },
       {
         when: { quest: 'the-wall-burns', state: 'done' },
         lines: ['The relief camp: what’s left of the field army, a field hospital, Bess’s wagons and a great deal of mud.', 'Highwall is behind that smoke. Thirty thousand souls, and every one of them looking at this camp, waiting for us.'],
       },
-      { lines: ['This is a war camp, not a market. If you can hold a sword, find Bess. If you can’t, find Ottis.', 'The road north to the King’s lands runs through Highwall. As long as the walls stand, it stays shut.'] },
+      { lines: ['This is a war camp, not a market. If you can hold a sword, find Bess. If you can’t, find Ottis.', 'Highwall guards the south against the King’s army. As long as the walls stand, the Host can’t come this way.'] },
     ],
   },
   'quartermaster-bess': {
@@ -294,7 +296,7 @@ export const HIGHWALL_NPCS: Record<string, NpcDef> = {
           'Varn’s army has been sitting in the mud for a season waiting for the wall to fall. It won’t. We’re going to go and get it.',
         ],
       },
-      { when: { quest: 'gate-nyx-returns', state: 'active' }, lines: ['She walked in at dawn with her hands up and a white rag on a stick. My sentries nearly shot her. I nearly let them.'] },
+      { when: { quest: 'gate-nyx-returns', state: 'active' }, lines: ['Someone is coming up the road under a white rag, asking for you. My sentries won’t shoot unless I tell them to.'] },
       { when: { quest: 'gate-the-prison-map', state: 'active' }, lines: ['She sold us to him. She sold Elyra to him. And she walked back in here knowing exactly what I’d want to do.', 'That’s either very brave or very clever, and I can’t tell which, so you go and listen to her. I can’t. I’ll put my spear through the table.'] },
       { when: { quest: 'gloam-the-lamp-road', state: 'active' }, lines: ['North from the Vale, then. The Gloam Gate. Cael and Orren will follow you up the causeway when you need them.', 'Bring her back. Bring both of them back, if you must. I don’t have to like it to want it.'] },
       { when: { quest: 'cael-the-sortie', state: 'active' }, lines: ['Cael leads. You go in at his side. I’ll be on the ridge watching the whole thing go wrong in a slightly different way to how I planned.', 'Open me a way to the Breach. That’s all I need.'] },

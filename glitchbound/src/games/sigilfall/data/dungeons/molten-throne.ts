@@ -502,7 +502,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'The fire lord of Emberdeep, chained to his own throne and made to forge a crown for the Hallow King. A hundred years of it have driven him mad with pain. He does not know you from his jailers. The only mercy left is to break what binds him.',
+    intro: 'The fire lord of Emberdeep, chained to his own throne and made to forge a crown for the Hallow King. A month of it has driven him mad with pain. He does not know you from his jailers. The only mercy left is to break what binds him.',
   },
 };
 
@@ -621,7 +621,7 @@ const items: ItemDef[] = [
         },
       },
     ],
-    lore: 'One of the fire lord’s shackles, the broken chain still hanging from it. He wore it a hundred years. It fits you better.',
+    lore: 'One of the fire lord’s shackles, the broken chain still hanging from it. He wore it a month. It fits you better.',
     minLevel: 53,
     special: true,
   },

@@ -334,7 +334,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'The old kingdom set it at the king’s door with one order: let no one pass. It has stood there three thousand years, and the Host did not pass either. Then the king woke, and it let him out.',
+    intro: 'The old kingdom set it at the king’s door with one order: let no one pass. It has stood there three hundred years, and the Host did not pass either. Then the king woke, and it let him out.',
   },
   'the-sun-king': {
     id: 'the-sun-king',
@@ -412,7 +412,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'He ruled the desert when it was green, and was buried with the sun itself on his brow. He has woken angry, and the Host’s spells are not what keeps him standing. He was always this bright.',
+    intro: 'He ruled the desert three hundred years ago, and was buried with the sun itself on his brow. He has woken angry, and the Host’s spells are not what keeps him standing. He was always this bright.',
   },
 };
 
@@ -443,7 +443,7 @@ const items: ItemDef[] = [
         },
       },
     ],
-    lore: 'It measured the Warden’s watch: three thousand years to a turn. The sand in it is still running, and it runs faster when you bleed.',
+    lore: 'It measured the Warden’s watch: three hundred years to a turn. The sand in it is still running, and it runs faster when you bleed.',
     minLevel: 34,
     special: true,
   },

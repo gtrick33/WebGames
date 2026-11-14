@@ -858,7 +858,7 @@ const VAELOR: BossDef = {
     items: { any: ['vaelors-heartstone', 'hollowbrand-shard', 'shroud-of-duskspire', 'oath-of-the-hollow-guard'] },
     chance: [1, 1, 1],
   },
-  intro: 'He bargained with the Ash Crown for a life that would not end, and it hollowed him out. He wears the Crown still, and in it the Sigil of Stone, the last of the seven: the first star of a crown that would make his summer last forever. Three hundred years in the cold have not made him kinder. They have made him patient.',
+  intro: 'He broke his half of the star to call his queen and children back from the plague, and it hollowed him out. He wears the Crown still, and in it the Sigil of Stone, the last of the seven: the first star of a crown that would make his summer last forever. Three hundred years in the cold have not made him kinder. They have made him patient.',
 };
 
 /* ------------------------------------------------------------ items */
@@ -975,7 +975,7 @@ const ITEMS: ItemDef[] = [
         },
       },
     ],
-    lore: 'The heart the Sigil-wardens tore out of him and hid. You have carried it all this way without knowing.',
+    lore: 'What was left of the King’s heart. It fell from him when he fell.',
     minLevel: 60,
     special: true,
   },

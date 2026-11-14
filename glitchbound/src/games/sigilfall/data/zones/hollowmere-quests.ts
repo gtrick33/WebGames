@@ -34,7 +34,7 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     name: 'The Restless Shore',
     auto: true,
     giver: 'the-ferryman',
-    text: 'The Ferryman has rowed the dead across Hollowmere for longer than he can count, one coin a head, and they always used to wait quietly on the shore for him. Not any more: the drowned of the sunken towns walk out of the water every night and knock on Old Nan’s shutters. Put down twelve drowned dead along the shore around the landing. Don’t leave them lying about, he adds: the lake stitches its own back together.',
+    text: 'The Ferryman has rowed the dead across Hollowmere for longer than he can count, one coin a head, and they always used to wait quietly on the shore for him. Not any more: the drowned of the sunken towns walk out of the water every night and knock on Old Nan’s shutters. Put down six drowned dead along the shore around the landing. Don’t leave them lying about, he adds: the lake stitches its own back together.',
     objective: { kind: 'kill', region: 'hollowmere', count: 6, enemies: ['drowned-dead'], label: 'Put down the drowned dead on the shore' },
     after: ['the-dead-lake'],
     zone: 'hollowmere',
@@ -48,7 +48,7 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     name: 'The Answering Water',
     giver: 'orren-at-the-mere',
     auto: true,
-    text: 'The seals are in hand and the causeway is open, and Orren has walked out onto Mourners’ Shore alone at dusk with his lantern, the way the mourners do. Nan saw him go. She says the lake answers everyone eventually, and it has started answering him: a boy’s voice, out on the water, calling his name. Go after him and keep the lake off him while he decides.',
+    text: 'Orren has walked out onto Mourners’ Shore alone at dusk with his lantern, the way the mourners do. Nan saw him go. She says the lake answers everyone eventually, and it has started answering him: a boy’s voice, out on the water, calling his name. Go after him and keep the lake off him while he decides.',
     objective: { kind: 'event', event: 'orren-on-the-shore', label: 'Hold Mourners’ Shore while the lake calls Orren' },
     after: ['the-restless-shore'],
     zone: 'hollowmere',
@@ -64,7 +64,7 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     name: 'Across the Mere',
     giver: 'the-ferryman',
     auto: true,
-    text: 'The Ferryman will not row to the island. No boat that went there ever came back, he says, and he would like to keep his. But the old causeway the dead were once carried along to be buried still runs out to it, north-east of the landing beyond the Serpent Shallows, and with the seal its doors will open. Go to the necropolis and see what the Lich is making.',
+    text: 'The Ferryman will not row to the island. No boat that went there ever came back, he says, and he would like to keep his. But the old causeway the dead were once carried along to be buried still runs out to it, north-east of the landing beyond the Serpent Shallows, and its doors stand open. Go to the necropolis and see what the Lich is making.',
     objective: { kind: 'explore', spot: 'the-necropolis', label: 'Reach the necropolis on the water' },
     after: ['orren-on-the-shore'],
     zone: 'hollowmere',
@@ -102,7 +102,7 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
       xp: 4000,
       gold: 900,
       perk: 'sigil-tides',
-      text: 'She knows what she is. She knows what he did, and why, and what it costs every night in a kingdom she has never seen. “I loved him,” she says. “I would like to stop being the reason. Let me go. When you find him, tell him to let me go.” Her maid hid the Sigil of Tides in the drowned altar the night she died; she puts it in your hands, and asks you to put out the lamp, and when you do, she is not there. Elyra holds the sigil a long time. When she looks up she smiles at you, and doesn’t say your name.',
+      text: 'She knows what she is. She knows what he did, and why, and what it costs every night in a kingdom she has never seen. “I loved him,” she says. “I would like to stop being the reason. Let me go. When you find him, tell him to let me go.” When the wardens came north after her death, her old maid Bettany hid the Sigil of Tides in the drowned altar; she puts it in your hands, and asks you to put out the lamp, and when you do, she is not there. When you bring it to Elyra at Lastlight, she holds it a long time. When she looks up she smiles at you, and doesn’t say your name.',
     },
   },
   /* --------------------------------------------------- Osric's daughter */
@@ -185,7 +185,7 @@ export const HOLLOWMERE_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'the-dead-lake', state: 'active' },
-        lines: ['Hesper sent you. Candlewick’s candlewife. Her grandmother’s grandmother bought eels off me. Good teeth, that family.', 'You’re warm. Most who come down this road aren’t, by the time they get to me. Sit, if you like. The lake isn’t going anywhere. Neither am I.'],
+        lines: ['Hroki sent you? Cinderhold’s thane. His grandfather bought eels off me.', 'You’re warm. Most who come down this road aren’t, by the time they get to me. Sit, if you like. The lake isn’t going anywhere. Neither am I.'],
       },
       {
         when: { quest: 'the-restless-shore', state: 'active' },
@@ -211,7 +211,7 @@ export const HOLLOWMERE_NPCS: Record<string, NpcDef> = {
         when: { quest: 'the-dead-lake', state: 'done' },
         lines: ['The landing: Nan’s hostel, Tobiah’s charms, Mott’s graves and my boat. Everything a traveler needs, and a few things they’d rather not.', 'Mind the water. It is very still, and it shows you a sky that isn’t there. Don’t look at it too long.'],
       },
-      { lines: ['One coin a head. Living folk ride free, but I don’t get many.', 'I have rowed this lake longer than anyone remembers. Including me, some days.'] },
+      { lines: ['One coin a head, living or dead. I don’t get many living.', 'I have rowed this lake longer than anyone remembers. Including me, some days.'] },
     ],
   },
   'old-nan': {

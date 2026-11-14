@@ -293,8 +293,8 @@ const bosses: Record<string, BossDef> = {
   },
   'hallvor-the-unthawed': {
     id: 'hallvor-the-unthawed',
-    name: 'Hallvor the Unthawed',
-    title: 'First of the Sigil-Wardens',
+    name: 'Hallvor',
+    title: 'Ingrith’s Shield-Thane',
     sprite: 'hallvor-the-unthawed',
     hp: 7600,
     dmg: 40,
@@ -356,7 +356,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.5, 0.7],
     },
-    intro: 'The first of the Sigil-wardens froze at her post rather than leave it. The Host’s bonecallers woke her, and she knows nothing now but the watch.',
+    intro: 'Ingrith the Unthawed’s shield-thane froze at her side rather than leave her. The Host’s bonecallers woke her, and she knows nothing now but the watch.',
   },
   'the-rime-wyrm': {
     id: 'the-rime-wyrm',

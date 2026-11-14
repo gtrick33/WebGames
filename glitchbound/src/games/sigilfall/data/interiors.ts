@@ -301,7 +301,7 @@ const NPCS: Record<string, NpcDef> = {
     talk: [
       { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['Highwall held. Mum cried into the stew. Don’t tell her I told you.', 'Every cot in the back is somebody from a village that isn’t there anymore. Every one of them asked for you by name.'] },
       { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['Nobody plays Elyra’s song anymore. Wil tried. Halfway through, he just put the fiddle down.', 'Eat something. That’s not a question.'] },
-      { when: { quest: 'camp-riders', state: 'done' }, lines: ['Riders from Hearthstead drink like they fight: all at once and very loudly.', 'Five villages under one roof. Mum says we should charge rent. Mum is joking. Mostly.'] },
+      { when: { quest: 'camp-riders', state: 'done' }, lines: ['Riders from Hearthstead drink like they fight: all at once and very loudly.', 'Four villages under one roof now. Mum says we should charge rent. She’s joking.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The roof held over the bar and nowhere else. So the bar is where everybody sleeps now.', 'Potions are on the shelf where the fire couldn’t get them. Help yourself, I’ll write it down.'] },
       { lines: ['Ale, broth, a bed upstairs if you don’t mind the damp. Potions are Mum’s, but I sell them when she isn’t looking.', 'Shutters close at sunset. Haven’t heard the bell in three weeks, so I watch the sky instead.'] },
     ],
@@ -313,7 +313,7 @@ const NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'fern-retaken', state: 'done' }, lines: ['I’m writing a song about Fernstead taken back. It rhymes “Hollis” with “solace.” I am not proud.', 'They say Mara Venn smiled when the banner went up. Just once. Somebody should write that down.'] },
-      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['A grey woman at the Tear, they say, who walked out of a story nobody finished.', 'I knew a song about the Pale Herald once. My grandmother made me forget it.'] },
+      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['A faceless man in white at the Tear, they say, who walked out of a story nobody finished.', 'I knew a song about the Pale Herald once. My grandmother made me forget it.'] },
       { when: { quest: 'festival-the-champion', state: 'done' }, lines: ['Champion of Aster! I have a verse about you already. Several. One of them is even true.', 'The Chancellor ran into the catacombs and nobody went after him. Says something about the catacombs. Says more about the Chancellor.'] },
       { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['Riders on the King’s Road with grey shields and no faces. The road warden waves them through.', 'If the roads office closed the road, who opened it for them? That’s not in any song yet.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The bell under the chapel was older than the chapel, Haldor says. And something was buried with it that wasn’t a body.', 'Here’s a tune for people who pull children out of fires. It’s short. It ends well.'] },
@@ -327,7 +327,7 @@ const NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['My grandfather said the dead would come out of the north one day. He also said that about the weather.', 'This time he was right. Don’t tell him. He’s dead. You know what I mean.'] },
-      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Lost my stool in the fire. Hob made me a new one. It’s the wrong height. I love it.', 'The grey ones didn’t take anything. No gold, no grain. They took people, and they took the warm out of the hearths.'] },
+      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Lost my stool in the fire. Hob made me a new one. It’s the wrong height. I love it.', 'The grey ones didn’t take anything. No gold, no grain. Just the warm out of the hearths.'] },
       { lines: ['Forty years on this stool. I’ve seen three kings, two floods and one honest tax collector.', 'You’re not from here. Nobody comes here. Which means something brought you. Sit.'] },
     ],
   },
@@ -349,7 +349,7 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Keeps the camp’s ledger',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'camp-riders', state: 'done' }, lines: ['Five banners on the wall. Every one of them is a village that would be ash without you.', 'The Elder reads the ledger every night. She says it’s for the numbers. She skips the numbers.'] },
+      { when: { quest: 'camp-riders', state: 'done' }, lines: ['Four banners on the wall. Every one of them is a village that would be ash without you.', 'The Elder reads the ledger every night. She says it’s for the numbers. She skips the numbers.'] },
       { when: { quest: 'camp-scouts', state: 'done' }, lines: ['Rangers on the watchfire, so a banner on the wall. Elder Maren says every village that comes gets one.', 'I have a column for what each one brings, and a column for what each one lost. The second is longer.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The Elder’s table is a war table now. I keep the ledger: beds, bread, arrows, names.', 'We are a camp of one village. The Elder says the others will come. She says it like she’s already counting them.'] },
       { lines: ['The Elder’s hall. Mind the floor; it’s older than the kingdom and creaks in three places.', 'I write down the harvest, the births and the burials. Lately, the burials are the longest column.'] },
@@ -386,7 +386,7 @@ const NPCS: Record<string, NpcDef> = {
     talk: [
       { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['The court hasn’t met in this hall since the war began. The war council has met here every night.', 'Two gates still stand between us and the Dead Kingdom. The Regent sleeps in her chair by the map.'] },
       { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['After the Night of Knives the court became a council of war. I took the tapestries down to make room for the map.', 'The Chancellor’s chair is still at the table. Nobody sits in it. Nobody will move it either.'] },
-      { when: { quest: 'festival-the-champion', state: 'started' }, lines: ['The Starfall Festival: lanterns in every window, and every lord in the kingdom pretending to like the others.', 'Mind the Chancellor’s people. They smile with their whole face and none of their eyes.'] },
+      { when: { quest: 'city-the-cellar', state: 'done' }, lines: ['The Starfall Festival: lanterns in every window, and every lord in the kingdom pretending to like the others.', 'Mind the Chancellor’s people. They smile with their whole face and none of their eyes.'] },
       { lines: ['The Great Hall of the Ember Keep. The king held court here, before he took to his bed.', 'Mind the rugs; they are older than you, and in better condition than me.'] },
     ],
   },

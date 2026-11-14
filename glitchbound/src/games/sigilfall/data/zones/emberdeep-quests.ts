@@ -36,14 +36,14 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     objective: { kind: 'explore', spot: 'slave-forges', label: 'Find who is working the old smelters north-west of Cinderhold' },
     after: ['the-pale-crown'],
     zone: 'emberdeep',
-    reward: { xp: 1800, gold: 600 },
+    reward: { xp: 1800, gold: 600, text: 'On the smelters’ anvil you find a block of obsidian cut all over with Hollow runes. Hroki wants to know what it says.' },
   },
   {
     id: 'break-the-chains',
     name: 'Break the Chains',
     auto: true,
     giver: 'thane-hroki',
-    text: 'The Slave Forges are worked by the dead: forge-slaves chained at the ankle, hauling buckets of slag from the lava flows to the anvils and back, without rest, because the dead don’t need any. Some of them wear Cinderhold’s colors under the soot. Hroki wants them laid down, all of them, and he will settle for twelve. At the Slave Forges north-west of town, and along the flows. Step back when they fall: the buckets spill.',
+    text: 'The Slave Forges are worked by the dead: forge-slaves chained at the ankle, hauling buckets of slag from the lava flows to the anvils and back, without rest, because the dead don’t need any. Some of them wear Cinderhold’s colors under the soot. Hroki wants them laid down, all of them, and he will settle for six. At the Slave Forges north-west of town, and along the flows. Step back when they fall: the buckets spill.',
     objective: { kind: 'kill', region: 'emberdeep', count: 6, enemies: ['legion-forgeslave'], label: 'Free the dead made to work the forges' },
     after: ['dvalins-reading'],
     zone: 'emberdeep',
@@ -180,7 +180,7 @@ export const EMBERDEEP_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'break-the-chains', state: 'active' },
-        lines: ['The dead, hauling slag. Some in our colors. Some of those I knew.', 'Lay them down. Twelve, to begin with. And stand back when they fall: those buckets were full when they picked them up.'],
+        lines: ['The dead, hauling slag. Some in our colors. Some of those I knew.', 'Lay them down. Six, to begin with. And stand back when they fall: those buckets were full when they picked them up.'],
       },
       { when: { quest: 'dvalins-reading', state: 'active' }, lines: ['I can read a ledger and a liar, but not that. Dvalin can read anything cut in stone. Take it to his forge.', 'He’ll tell you he can read it before you’ve shown it him. Let him.'] },
       {
@@ -236,7 +236,7 @@ export const EMBERDEEP_NPCS: Record<string, NpcDef> = {
         lines: [
           'I can read that. I can read anything cut in stone. Give it here.',
           'Hollow runes. Not for the golems: these are the runes on Ashkar’s chains. Bone-steel from the Deepforge, cut so his pain never closes. Pain that never closes burns hot enough to forge a crown for the dead.',
-          'Chains like that, you don’t cut. You make them forget. For that I need the old ward-stone, from the Fire-Ward on the east rim. Tell Hroki.',
+          'Chains like that, you don’t cut. You make them forget. For that I need the old ward-stone from the Fire-Ward on the east rim. Hroki keeps it, and I’ve sent for it.',
         ],
       },
       { when: { quest: 'the-throne-gate', state: 'active' }, lines: ['The hammer’s done. Strike his chains with it and they’ll remember they were only iron.', 'Don’t hit anything else with it. It’s a key, not a club. Mostly.'] },

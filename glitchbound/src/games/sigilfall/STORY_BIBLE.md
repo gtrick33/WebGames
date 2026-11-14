@@ -109,7 +109,7 @@ it saw (the player sees it with her: `vision` scenes).
 | Sigil | Where (land) | Its warden | The vision it shows | What Elyra forgets |
 | --- | --- | --- | --- | --- |
 | **Embers** | under Briarhollow's chapel (Prologue) | Brother Hale, who became Briarhollow's first priest | the star falling and breaking over two kingdoms | the words of her mother's lullaby (she still hums it) |
-| **Stone** | the shrine under Hearthstead's hall (Amberfield) | Marshal Teodric | two crowns forged; two kings who shared a sky | — (Vosk takes it before she can touch it and carries it north to his king; Vaelor wears it in the Ash Crown, and it is won back only when he falls) |
+| **Stone** | Hearthstead's hearthstone, in the shrine by the well (Amberfield) | Marshal Teodric | two crowns forged; two kings who shared a sky | — (Vosk takes it before she can touch it and carries it north to his king; Vaelor wears it in the Ash Crown, and it is won back only when he falls) |
 | **Sun** | the Tomb of the Sun King (Sunscorch) | the Sun King, a warden-king of the desert sealed in his tomb with it | the plague ship coming into Vaelmoor's harbor, and the man who let it in | the color of Briarhollow's orchard in spring |
 | **Thorns** | the Thorn Court (Glimmerwood) | the first Thistlemourn | Vaelor at his children's bedside, the night he broke his crown | Thessa's face (she knows the name) |
 | **Frost** | the Vault of Rime (Rimeheld) | Jarl Ingrith the Unthawed, frozen in the vault with it | the eight wardens at the border; seven ride away and one stays | her own birthday |
@@ -207,7 +207,7 @@ sing.
    Elyra feels it from a mile off.
 4. `hearth-hold-the-wall` **The Defense of Hearthstead** — *defend*, three waves on the wall with Mara commanding,
    Dunmore's riders on screen; then `hearth-the-ram` **The Ram**: Elyra's light breaks it.
-5. `hearth-the-shrine` **The Empty Shrine** — in the smoke Vosk took the **Sigil of Stone** from under the hall.
+5. `hearth-the-shrine` **The Empty Shrine** — in the smoke Vosk took the **Sigil of Stone** (the hearthstone itself) from the shrine by the well.
    *Scene: the empty niche, a vision fragment (two crowns forged) cut off as the sigil leaves.* Then
    `orders-from-the-north` **Orders from the North**: Maren reads the courier's soaked letter aloud: the King's
    courier was riding to warn the Crown City the sigils were being hunted, **and someone in the city has been hiding
@@ -253,7 +253,7 @@ sing.
    Obelisk: the Sun King sleeps "with his warm thing" where the sun first touches the sand.
 3. `the-hollow-dig` / `the-sunken-gate` / `the-sand-warden` **The Ashen Dig** — the Host's dig, the door it broke,
    and the tomb's keeper that broke the Host.
-4. `the-sun-king` **The Sun King** — *boss* in the tomb: the warden-king, woken by the Host's picks. She gives
+4. `the-sun-king` **The Sun King** — *boss* in the tomb: the warden-king, woken by the Host's picks. He gives
    up the **Sigil of the Sun**. **Vision:** the plague ship in Vaelmoor's harbor, and a young man in harbor-master's
    blue waving it in. Elyra forgets the color of the orchard.
 

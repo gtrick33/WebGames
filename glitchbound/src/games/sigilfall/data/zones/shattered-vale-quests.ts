@@ -20,7 +20,7 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     objective: { kind: 'kill', region: 'shattered-vale', count: 1, enemies: ['the-heralds-first-face'], label: 'Face the man at the bottom of the Tear' },
     after: ['epilogue-the-bell'],
     level: 60,
-    reward: { xp: 8000, gold: 3000, item: { rarity: 'legendary' }, text: 'He was Aurel, Vaelor’s younger brother, who rode down to the harbor with the King’s order to open it, and watched the plague ship come in, and walked into the Tear the next winter so that he would never have to remember it. The Crown made a herald out of what was left. Quell lets the Tear close over him gently, and writes his name in the Watch’s book.' },
+    reward: { xp: 8000, gold: 3000, item: { rarity: 'legendary' }, text: 'He was Aurel, Vaelor’s younger brother, who opened the harbor against his brother’s quarantine, and watched the plague ship come in, and walked into the Tear the next winter so that he would never have to remember it. The Crown made a herald out of what was left. Quell lets the Tear close over him gently, and writes his name in the Watch’s book.' },
   },
   /* ---------------------------------------------------------- the way in */
   {
@@ -32,7 +32,7 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     objective: { kind: 'talk', npc: 'magister-quell', label: 'Talk to Magister Quell in Shardwatch' },
     after: ['the-vault-of-rime'],
     level: 35,
-    reward: { xp: 1000, gold: 280, text: 'Quell has been watching the Tear for eleven years. It has never been this wide, she says, and there are tracks in the glass round its lip. Grey ones.' },
+    reward: { xp: 1000, gold: 280, text: 'Quell has been watching the Tear for eleven years. It has never been this wide, he says, and there are tracks in the glass round its lip. Grey ones.' },
   },
   /* ------------------------------------------------------------- the Tear */
   {
@@ -224,7 +224,7 @@ export const SHATTERED_VALE_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'where-the-rift-bleeds', state: 'active' },
-        lines: ['Rimeheld? Sigrun finally read my letters. Eleven of them. I numbered them so she’d feel guilty.', 'Quell. I measure the Tear, and the Tear has been measuring me back. You’ve come at an interesting time, which is a scholar’s way of saying a bad one.'],
+        lines: ['Rimeheld? Sigrun finally answered. I wrote to her and to the Crown, eleven letters each. Only she answered.', 'Quell. I measure the Tear, and the Tear has been measuring me back. You’ve come at an interesting time, which is a scholar’s way of saying a bad one.'],
       },
       { when: { quest: 'the-breach-camp', state: 'active' }, lines: ['Torches east of camp at night, by the breach that hums. And singing.', 'Scholars don’t sing. Not where anyone can hear. Go and see who does.'] },
       { when: { quest: 'the-heralds-cipher', state: 'active' }, lines: ['ash-gold. The empty crown. The Pale Herald’s coin, in my Vale.', 'The letter is in cipher. Ennis says he can read it. Take it to him, and don’t let him start on shardlings.'] },
@@ -255,7 +255,7 @@ export const SHATTERED_VALE_NPCS: Record<string, NpcDef> = {
         when: { quest: 'the-heralds-cipher', state: 'active' },
         lines: [
           'A cipher! Oh, that’s lovely. Simple shift, a key word, very old-fashioned. Give me a moment. And don’t mention shardlings, I’ll only start.',
-          '“Keep the Tear open. Feed it what comes through. The Herald feeds it from the other side.” Signed with an empty crown.',
+          '“The thief will bring them up the Vale. Her brother for the iron.” Signed with an empty crown. Nyx told you it said nothing.',
           'The other side. I don’t like that phrase. Nobody should.',
         ],
       },
@@ -344,7 +344,7 @@ export const SHATTERED_VALE_EVENTS: Record<string, StoryEventDef> = {
     ],
     end: [
       { who: 'cael', text: 'Elyra! ELYRA!' },
-      { who: 'orren', text: 'Gone. He took her into the Tear, and the Tear closed on them. Lord of the long road.' },
+      { who: 'orren', text: 'Gone. He took her into the Tear, and the grey closed behind them. Lord of the long road.' },
     ],
     retry: [{ who: 'cael', text: 'Get up. Get up! He hasn’t taken her yet!' }],
   },

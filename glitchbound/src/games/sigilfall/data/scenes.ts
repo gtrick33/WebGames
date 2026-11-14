@@ -142,7 +142,9 @@ export const SCENES: SceneDef[] = [
     // the Herald has taken Elyra: her teacher alone in the camp
     id: 'briar-elyra-gone',
     region: 'briarhollow',
-    when: all(after('the-heralds-ambush'), not(after('fern-retaken')), until('gloam-out-of-the-cells')),
+    // (after Fernstead burns: Thessa hears the news in that scene, data/scenes-story.ts briar-fernstead-burns, and
+    // asked for Elyra there after this one had her grieving already)
+    when: all(after('fall-of-fernstead'), not(after('fern-retaken')), until('gloam-out-of-the-cells')),
     near: 'herbwife-thessa',
     r: 130,
     steps: [

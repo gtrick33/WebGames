@@ -63,7 +63,7 @@ export const QUESTS: QuestDef[] = [
     name: 'The Alpha',
     giver: 'maren',
     auto: true,
-    text: 'The beasts of the wood follow one great tusked orc with grey light in its eyes: Grimtusk. It dens at the east end of the Whisperwood. Kill it and there is one less thing at Briarhollow’s door.',
+    text: 'The beasts of the wood follow one great boar with grey light in its eyes: Grimtusk. It dens at the east end of the Whisperwood. Kill it and there is one less thing at Briarhollow’s door.',
     objective: { kind: 'boss', boss: 'grimtusk', label: 'Defeat Grimtusk' },
     after: ['into-the-wood'],
     reward: { xp: 260, gold: 60, text: 'One less thing at Briarhollow’s door. Mara will pretend not to be pleased.' },
@@ -211,8 +211,8 @@ export const NPCS: Record<string, NpcDef> = {
     talk: [
       { when: { quest: 'epilogue-the-camp-goes-home', state: 'done' }, lines: ['My uncle the King died in his sleep the week the bell rang. Peacefully, they tell me. I believe them. I want to believe one thing they tell me.', 'I am to be crowned in the spring, with the old crown and no sigils in it. It will be the first time in three hundred years the Crown of Aster is only a hat. I find I am looking forward to it.'] },
       { when: { quest: 'into-vaelmoor', state: 'active' }, lines: ['Past the Gates is his country. Nobody living has walked it in three hundred years. Orren went first, alone, of course.', 'Two sigils are still out there, and him. Go and get them before he does.'] },
-      { when: { quest: 'gate-nyx-returns', state: 'active' }, lines: ['A letter from Mara: someone walked into her camp under a white rag. She has not killed them yet, she writes, underlined twice.', 'Go back to Highwall. I would like to know who can make Mara Venn hesitate.'] },
-      { when: { quest: 'the-long-night-ends', state: 'active' }, lines: ['Highwall holds? Then the Hallow King has lost his first real battle, and he lost it to you.', 'One gate of three. Mara Venn says the other two will be harder. I believe her. I have started believing Mara Venn about everything.'] },
+      { when: { quest: 'gate-nyx-returns', state: 'active' }, lines: ['A letter from Mara: someone is coming to her camp under a white rag, asking for you.', 'Go back to Highwall. I would like to know who can make Mara Venn hesitate.'] },
+      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['Highwall holds? Then the Hallow King has lost his first real battle, and he lost it to you.', 'One gate of three. Mara Venn says the other two will be harder. I believe her. I have started believing Mara Venn about everything.'] },
       { when: { quest: 'the-wall-burns', state: 'active' }, lines: ['Highwall is under siege: the first of the Three Gates. If it falls, the Host is on the road to every city in the south.', 'Lord-Commander Varn holds the March outside its walls. Go to him, and take whatever he needs to you, from me. Mara Venn will command the relief.'] },
       { when: { quest: 'the-frozen-road', state: 'active' }, lines: ['The Sigil of Frost sleeps in a vault under the Rimeheld ice, in the far north-west, and the jarls are at each other’s throats over it.', 'Jarl Sigrun of Frostgate keeps the way. She owes the Crown nothing, so be polite. We need her huscarls more than she needs us.'] },
       { when: { quest: 'the-sun-kings-tomb', state: 'active' }, lines: ['The sun houses want the Sun Sigil left in its tomb forever. I understand them. I need it anyway.', 'Find Oasis-keeper Sefu at the Oasis of Ras, at the end of the long road west from my gate. Persuade the houses, if you can. Get there before the Host, whatever happens.'] },
@@ -245,7 +245,7 @@ export const NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['City’s locked down. Nobody in or out without a pass. Except you. You have a face now.'] },
-      { lines: ['East gate. The King’s Road runs to Lantern Hill and the downs, and it isn’t a stroll any more.', 'South gate goes down to the refugee road. West gate to the mountains. Don’t go before you’re ready.'] },
+      { lines: ['East gate. The King’s Road runs to Lantern Hill and the downs, and it isn’t a stroll any more.', 'South gate goes down to the refugee road. West gate takes the long road to the sands. Don’t go before you’re ready.'] },
     ],
   },
 };

@@ -35,7 +35,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     name: 'The Last March',
     giver: 'orren-at-the-mere',
     auto: true,
-    text: 'Seven of seven. The Regent’s riders went out the same night with one word for every banner that ever owed the hero a favor: north. The coalition gathers at Dawn’s Rest, a ruined waystation at the southern edge of the Pale Reach, beyond Hollowmere, and Mara has gone ahead to command it. Take the north road out of Hollowmere and find her.',
+    text: 'Six sigils of seven, and Vosk carries the seventh, the camp believes. The Regent’s riders went out the same night with one word for every banner that ever owed the hero a favor: north. The coalition gathers at Dawn’s Rest, a ruined waystation at the southern edge of the Pale Reach, beyond Hollowmere, and Mara has gone ahead to command it. Take the north road out of Hollowmere and find her.',
     objective: { kind: 'talk', npc: 'mara-at-the-reach', label: 'Find Mara at Dawn’s Rest' },
     after: ['ysanes-last-echo'],
     // the hand-off that sends the hero to pale-reach: it starts when the last chapter ends, not on arrival
@@ -100,7 +100,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     after: ['march-the-breach'],
     zone: 'pale-reach',
     level: 59,
-    reward: { xp: 4200, gold: 1200, text: 'The voice comes apart into ordinary snow, and the last of it is not the Herald’s at all, but a tired man’s: “The seventh lock is my brother’s, and it knows my voice. I closed it behind him three hundred years ago. Let me open one door the right way.” In the quiet afterward Elyra says, very clearly: “That was Aurel. Vaelor’s brother. He carried the order to open the harbor.” Nobody asks her how she knows.' },
+    reward: { xp: 4200, gold: 1200, text: 'The voice comes apart into ordinary snow, and the last of it is not the Herald’s at all, but a tired man’s: “The seventh lock is my brother’s, and it knows my voice. I closed it behind him three hundred years ago. Let me open one door the right way.” In the quiet afterward Elyra says, very clearly: “That was Aurel. Vaelor’s brother. He let the plague ship into the harbor.” Nobody asks her how she knows.' },
   },
   {
     id: 'the-duskspire-gate',
@@ -215,8 +215,8 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     id: 'old-wintersend',
     name: 'Old Wintersend',
     giver: 'orren-at-the-reach',
-    text: 'The shards are splinters of grieflight, Orren says, and he has read of only one cure: the temple at Wintersend, a village of Vaelmoor south-west of Dawn’s Rest, kept a reliquary against the Hollowing when the King first rose. The King’s winter took Wintersend three hundred years ago and nobody has been back since. Go and see whether its hall still stands.',
-    objective: { kind: 'explore', spot: 'frozen-village', label: 'Find Old Wintersend south-west of Dawn’s Rest' },
+    text: 'The shards are splinters of grieflight, Orren says, and he has read of only one cure: the temple at Wintersend, a village of Vaelmoor west of Dawn’s Rest, kept a reliquary against the Hollowing when the King first rose. The King’s winter took Wintersend three hundred years ago and nobody has been back since. Go and see whether its hall still stands.',
+    objective: { kind: 'explore', spot: 'frozen-village', label: 'Find Old Wintersend west of Dawn’s Rest' },
     after: ['the-hollowing'],
     zone: 'pale-reach',
     level: 58,
@@ -291,7 +291,7 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     talk: [
       { when: { quest: 'the-last-march', state: 'active' }, lines: ['There you are. Look at this. Look at it. Briarhollow’s village guard, commanding the last army in the world.', 'I keep waiting for someone to notice and send me home.'] },
       { when: { quest: 'the-last-road', state: 'active' }, lines: ['They’re still coming up the road. Stand with me at the edge of camp. I want to count them.'] },
-      { when: { quest: 'march-vosk', state: 'active' }, lines: ['Vosk. The man who burned Hearthstead the night I stood on its wall. I’ve thought about him every day since.', 'I thought I’d want to do it myself. I don’t. I want it done.'] },
+      { when: { quest: 'march-vosk', state: 'active' }, lines: ['Vosk. The man who set Hearthstead’s gate on fire the night I stood on its wall. I’ve thought about him every day since.', 'I thought I’d want to do it myself. I don’t. I want it done.'] },
       { when: { quest: 'march-the-siege-mages', state: 'active' }, lines: ['The mages stand in the open and sing, and we stand around the mages and don’t let anything reach them. That’s the whole plan.', 'It’s a good plan. It’s a wall. I know about walls.'] },
       { when: { quest: 'the-duskspire-gate', state: 'active' }, lines: ['I’ll keep the door. Someone always has to keep the door. I’ve been keeping doors since Briarhollow.', 'Bring her back out. Bring yourself back out. In that order, if you have to choose. Don’t tell her I said so.'] },
       // side arcs change what she says: Haldren's dead laid to rest at the Muster Hall
@@ -329,7 +329,7 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'the-hollowing', state: 'active' }, lines: ['Shards of grieflight, where their hearts should be. They throw it, and it lodges, and my soldiers stop being able to feel warm.', 'Bring me four. I want to know what I’m praying against.'] },
-      { when: { quest: 'old-wintersend', state: 'active' }, lines: ['Wintersend kept a reliquary against the Hollowing, the old books say. South-west of here. Go and look.'] },
+      { when: { quest: 'old-wintersend', state: 'active' }, lines: ['Wintersend kept a reliquary against the Hollowing, the old books say. West of here. Go and look.'] },
       { when: { quest: 'the-watchers-of-wintersend', state: 'active' }, lines: ['Its people are still keeping watch over it. Of course they are. Lay them down gently. They were waiting for someone to tell them they could stop.'] },
       // Tobiah's daughter crossed at Hollowmere
       { when: { quest: 'the-bell-of-elsmere', state: 'done' }, lines: ['Tobiah stopped calling across the water. I sat with him the night he stopped. It was the bravest thing I have ever watched a man do.', 'I think about it when Davin calls. He still does, some nights. I don’t answer. It’s getting easier not to.'] },
@@ -342,7 +342,7 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     title: 'Carrying six',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'crownfall-vaelmoor', state: 'active' }, lines: ['I can see it from here. Through the tear. It’s summer in there. Come on.'] },
+      { when: { quest: 'crownfall-vaelmoor', state: 'active' }, lines: ['Go through the tear. I’ll be waiting for you inside, in the square. It’s summer in there.'] },
       { when: { quest: 'the-hollow-king', state: 'active' }, lines: ['The seventh is up there. On his brow, in the Crown. I can feel it the way you feel a draft.', 'When it comes loose, I’ll catch it. Just get it loose.'] },
       { lines: ['Six. They’re very quiet now. Like they’re waiting for something. Like I am.', 'The seventh is up there in the cold, on his brow. I can feel it from here.', 'Don’t tell me your name. I want to find it on my own. I’m close.'] },
     ],

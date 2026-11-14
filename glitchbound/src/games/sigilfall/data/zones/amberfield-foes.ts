@@ -285,7 +285,7 @@ export const AMBERFIELD_ITEMS: ItemDef[] = [
         },
       },
     ],
-    lore: 'Bone-steel from the Deepforge. The dwarves would like it back. So, probably, would the bones.',
+    lore: 'Bone-steel, forged for the Ashen Host’s riders. Vosk left it behind in Hearthstead’s shrine.',
     minLevel: 20,
     special: true,
   },

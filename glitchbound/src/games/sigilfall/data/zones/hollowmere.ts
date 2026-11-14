@@ -58,7 +58,7 @@ export const HOLLOWMERE = wildRegion(
     ],
     story: [
       // Orren at the landing from the day he comes down to the water
-      { near: 'hub', dx: 4, dy: 2, marker: { kind: 'npc', npc: 'orren-at-the-mere' }, when: after('the-dead-lake') },
+      { near: 'hub', dx: 4, dy: 2, marker: { kind: 'npc', npc: 'orren-at-the-mere' }, when: all(after('the-dead-lake'), until('the-last-march')) },
       // Mourners' Shore: where the lake answers him
       { near: 'mourners-shore', dx: -2, dy: 2, marker: { kind: 'place', id: 'mourners-edge' } },
       { near: 'mourners-shore', dx: 0, dy: -10, marker: { kind: 'place', id: 'mourners-water' } },

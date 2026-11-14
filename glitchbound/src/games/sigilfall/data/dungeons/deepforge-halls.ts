@@ -287,7 +287,7 @@ const BOSSES: Record<string, BossDef> = {
     ],
     first: { any: ['thornmail'] },
     drops: { items: { any: ['thornmail', 'second-wind-ring', 'static-band', 'zephyr-boots'] }, chance: [0.3, 0.45, 0.65] },
-    intro: 'The dwarves carved it to guard the Sigil of Stone. The Host bound it with its own runes, and now it guards the Host.',
+    intro: 'The dwarves carved it to guard the Deepforge’s great anvil. The Host bound it with its own runes, and now it guards the Host.',
   },
   'slag-colossus': {
     id: 'slag-colossus',

@@ -1,4 +1,4 @@
-import { after, all, any, is, until } from '../cond';
+import { after, all, any, is, not, until } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
@@ -94,7 +94,7 @@ export const HIGHWALL = wildRegion(
       { near: 'hub', marker: { kind: 'place', id: 'relief-camp' } },
       { near: 'hub', dx: 18, dy: 2, marker: { kind: 'place', id: 'relief-road' } },
       { near: 'hub', dx: -2, dy: 4, marker: { kind: 'place', id: 'relief-tents' } },
-      { near: 'hub', dx: -3, dy: 4, marker: { kind: 'npc', npc: 'nyx-returned' }, when: all(is('gate-nyx-returns', 'done'), until('gloam-the-lamp-road')) },
+      { near: 'hub', dx: -3, dy: 4, marker: { kind: 'npc', npc: 'nyx-returned' }, when: all(is('gate-nyx-returns', 'done'), not(is('gloam-the-lamp-road', 'started'))) },
       // relieved: the Ninefold flag and the Crown's banners over the camp
       { near: 'hub', dx: -3, dy: -5, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('general-morvain') },
       { near: 'hub', dx: 3, dy: -5, marker: { kind: 'prop', prop: 'flag' }, when: after('general-morvain') },

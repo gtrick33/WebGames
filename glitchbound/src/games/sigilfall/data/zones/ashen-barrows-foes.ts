@@ -70,7 +70,7 @@ export const ASHEN_BARROWS_FOES: Record<string, EnemyDef> = {
     armor: 0.55,
     slam: { radius: 34 },
     resist: { poison: 0.5, shadow: 0.3 },
-    blurb: 'Black plate, an old shield and a new blade of Deepforge bone-steel. Break its armor or burn it out.',
+    blurb: 'Black plate, an old shield and a new blade of bone-steel. Break its armor or burn it out.',
   },
   'barrow-hound': {
     id: 'barrow-hound',
@@ -271,7 +271,7 @@ export const ASHEN_BARROWS_ITEMS: ItemDef[] = [
         },
       },
     ],
-    lore: 'A Sigil-warden’s badge, snapped in two and worn three hundred years by the man who broke his oath. It still remembers it.',
+    lore: 'A Ninefold Watch badge, snapped in two and worn ten years by the man who broke his oath.',
     minLevel: 28,
     special: true,
   },

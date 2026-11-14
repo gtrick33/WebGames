@@ -6,7 +6,7 @@ import type { NpcDef, QuestDef, StoryEventDef } from '../types';
  * holds the mill on Miller's Pond so that no grain leaves the vale. Harlan is paid in ash-gold: the
  * Ashen Host wants the Vale hungry. The story runs from the Burnt Farm through Redcap Camp and the Old
  * Watchtower down into Gallows Keep, then back to break the blockade at the mill; Nyx turns up to read
- * the gang's cipher for Pim, and is gone. Tobin and Hanna have side errands, and the gang's powder trail
+ * the gang's cipher for Pim, and goes up Gallows Hill ahead of the hero. Tobin and Hanna have side errands, and the gang's powder trail
  * points east to Gullport. Millbrook's grain goes north to Briarhollow's camp. Order matters: the main
  * chain comes first, so it is the quest the hero follows by default.
  */
@@ -45,7 +45,7 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     objective: { kind: 'talk', npc: 'nyx', label: 'Have Nyx read the gang’s orders' },
     after: ['kettle-farm'],
     zone: 'thornvale',
-    reward: { xp: 240, gold: 60, text: '“Hunt the bell-chapels. Bring me the warm iron.” No name. Grey ink. And the gang’s pay comes from the Pale Herald, whoever that is. Nyx charges you two silver and doesn’t take it.' },
+    reward: { xp: 240, gold: 60, text: '“Hunt the bell-chapels. Bring me the warm iron.” No name. Grey ink. Nyx charges you two silver and doesn’t take it.' },
   },
   {
     id: 'the-bandit-king',
@@ -144,7 +144,7 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'the-bandit-king', state: 'active' },
-        lines: ['The Hangman is dead? Then only Harlan is left. Harlan Blackglove, the bandit king. Never beaten. Never tried.', 'End him, and I’ll give you the best thing Millbrook has. It’s a satchel. You’d be amazed what fits in it.'],
+        lines: ['First the Hangman and his dog, then Harlan Blackglove, the bandit king. Nobody has ever beaten him.', 'End him, and I’ll give you the best thing Millbrook has. It’s a satchel. You’d be amazed what fits in it.'],
       },
       { when: { quest: 'mill-the-bridge', state: 'active' }, lines: ['Harlan’s strongbox was full of coins no mint ever struck. Grey. Cold. They weigh nothing. Somebody was paying him to keep us hungry.', 'His blades still hold the mill. Sefa has the lads. Go with them, and burn that barricade high.'] },
       { when: { quest: 'mill-the-bridge', state: 'done' }, lines: ['Millbrook sleeps with its doors unlocked again. Well, most doors. I’ve kept a lock on the treasury. Old habits.', 'The grain goes north to Maren’s camp. Show her those grey coins. She’ll know what they are. I don’t want to.'] },
@@ -163,7 +163,7 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
         when: { quest: 'tobins-letter', state: 'active' },
         lines: ['A letter? From Tobin? Is it about my pies? It’s about my pies.', '…It isn’t only about my pies. Oh. Tell him… No. I’ll tell him myself. Tell him there are pies on Tuesday.'],
       },
-      { lines: ['Welcome to the Millwheel. Potions on the shelf, stew in the pot.', 'Catch your breath between fights out there. Potions are for when something is still hitting you.'] },
+      { lines: ['Welcome to the Wayfarer’s Rest. Potions on the shelf, stew in the pot.', 'Catch your breath between fights out there. Potions are for when something is still hitting you.'] },
     ],
   },
   tobin: {
@@ -214,11 +214,11 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
         lines: [
           'Thieves’ cant? Me? I’m a humble peddler. …Give it here. Hm. No. There’s a cipher under the cant. That’s not gang work. That’s somebody paying for secrecy.',
           'My friend reads everything. She’s by the well, in the dark coat. She’ll want paying. She always wants paying.',
-          '…She read it standing up. “Takings to Bess at the old tower. Powder from the coast. Hold the mill till the grey man says. Paid in the cold coin.” The rest is rude about the Reeve.',
+          '…She’ll read it. Then she’ll tell you how much trouble you’re in.',
         ],
       },
       { when: { quest: 'the-bandit-king', state: 'done' }, lines: ['No gang, no tolls. My prices are coming down. Not far. A little.'] },
-      { when: { quest: 'thieves-cant', state: 'done' }, lines: ['My friend? Gone already. She does that. She left a note: “Tell your hero they owe me a drink. Two drinks.”'] },
+      { when: { quest: 'thieves-cant', state: 'done' }, lines: ['My friend? She went up Gallows Hill ahead of you. She wants to see who pays the gang.'] },
       { lines: ['Rings, charms, amulets, and a spoon that might be silver. Have a look.', 'I pay the gang’s toll like everyone else. I just pay it in gossip.'] },
     ],
   },
@@ -233,7 +233,7 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
         lines: [
           'You’re Pim’s hero? Huh. Taller in the story. Give it here.',
           'That’s not the gang’s cipher. The Gallows Gang can barely spell “gallows”. Somebody taught them this, and paid them in something cold. Pim has the rest.',
-          'Fee’s three silver. Or one favor, later. I’ll know when I need it.',
+          'Fee’s two silver. Or one favor, later. I’ll know when I need it.',
         ],
       },
     ],

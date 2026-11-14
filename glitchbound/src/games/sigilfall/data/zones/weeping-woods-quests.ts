@@ -35,7 +35,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     name: 'The Wardens’ Rest',
     auto: true,
     giver: 'candlewife-hesper',
-    text: 'Every plate you brought bears the same badge: a star over a weeping tree, the mark of Lord Halvard’s own company. Halvard held this wood against Vaelor in the first war, and his company garrisoned the Wardens’ Rest, the old hall in the middle of the wood, north-west of Candlewick. Those knights never left their posts in three hundred years. Hesper wants to know what has called them off. Go and look.',
+    text: 'Every piece of armor found on the wood’s roads bears the same badge: a star over a weeping tree, the mark of Lord Halvard’s own company. Halvard held this wood against Vaelor in the first war, and his company garrisoned the Wardens’ Rest, the old hall in the middle of the wood, north-west of Candlewick. Those knights never left their posts in three hundred years. Hesper wants to know what has called them off. Go and look.',
     objective: { kind: 'explore', spot: 'wardens-rest', label: 'Go to the Wardens’ Rest north-west of town' },
     after: ['the-candle-road'],
     zone: 'weeping-woods',
@@ -97,7 +97,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
       xp: 8100,
       gold: 2000,
       item: 'the-wardens-oath',
-      text: 'Halvard goes down on one knee in the candlelight, and Hesper reads his name, and the violet goes out of his eyes. “We did not beat him with swords,” he says. “We beat him when the seven sigils were raised against him together. Not one. Not six. All seven.” He lays his sword under the tree, and all through the wood the dead lie down with him. Then, more quietly: “His queen is under the lake at Hollowmere. He goes there. He still goes there.” Hesper gives you his oath, engraved in a silver star.',
+      text: 'Halvard goes down on one knee in the candlelight, and Hesper reads his name, and the violet goes out of his eyes. “We did not beat him with swords,” he says. “We sealed him away. Only the seven sigils raised together can end him. Not one. Not six. All seven.” He lays his sword under the tree, and all through the wood the dead lie down with him. Then, more quietly: “His queen is under the lake at Hollowmere. He goes there. He still goes there.” Hesper gives you his oath, engraved in a silver star.',
     },
   },
   /* ---------------------------------------------- Sexton Abel's hanged men */
@@ -197,7 +197,7 @@ export const WEEPING_WOODS_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'the-wardens-rest', state: 'active' },
-        lines: ['Every plate has the same badge: a star over a weeping tree. Lord Halvard’s company. They held the Wardens’ Rest, the old hall north-west of here, in the middle of the wood.', 'They never leave their posts. Something has called them off. Go and see what.'],
+        lines: ['Every piece of armor found on the roads has the same badge: a star over a weeping tree. Lord Halvard’s company. They held the Wardens’ Rest, the old hall north-west of here, in the middle of the wood.', 'They never leave their posts. Something has called them off. Go and see what.'],
       },
       {
         when: { quest: 'the-weeping-tree', state: 'active' },

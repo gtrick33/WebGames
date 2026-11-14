@@ -395,7 +395,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'The greatest of the Sigil-wardens once. He stood beside the heroes who sealed the King away, and then he went to him.',
+    intro: 'The best knight of the Ninefold Watch, ten years ago. He held the Watch a night and a day, and then he went into the Mound and knelt to the King.',
   },
 };
 
