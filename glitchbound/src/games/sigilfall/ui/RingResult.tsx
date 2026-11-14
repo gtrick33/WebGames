@@ -179,7 +179,7 @@ function Row({ f, top, mine, doll, awards }: { f: Fighter; top: { dmg: number; h
 }
 
 /** A match's end: who won, what it did to your standing, and who did what. */
-export function RingResult({ match, myId, won, draw, rating, rival, dolls, againLabel, onAgain, onSetup, onExit }: { match: Match; myId: number; won: boolean; draw: boolean; rating: RatingOutcome | null; rival?: string; dolls: string[]; againLabel: string; onAgain: () => void; onSetup: () => void; onExit: () => void }) {
+export function RingResult({ match, myId, won, draw, rating, rival, dolls, lesson, tutorial, againLabel, onAgain, onSetup, onExit }: { match: Match; myId: number; won: boolean; draw: boolean; rating: RatingOutcome | null; rival?: string; dolls: string[]; lesson?: string | null; tutorial?: boolean; againLabel: string; onAgain: () => void; onSetup: () => void; onExit: () => void }) {
   const kind = draw ? 'draw' : won ? 'win' : 'loss';
   // (ready for the keyboard, without scrolling the verdict off the top of a short screen)
   const again = useRef<HTMLButtonElement>(null);
@@ -220,6 +220,14 @@ export function RingResult({ match, myId, won, draw, rating, rival, dolls, again
             <RankClimb o={rating} />
             {rating.streak >= 2 && <span className="rb-rr-streak">{rating.streak} wins in a row</span>}
           </section>
+        ) : tutorial ? (
+          <section className="rb-rr-rating is-friendly is-tutorial">
+            <span className="rb-rr-number">
+              <small>Tutorial complete</small>
+              <strong>You know the Ring now</strong>
+            </span>
+            <p>Find a real match when you’re ready. If nobody else is looking for one, you fight the computer’s teams, which go easy on a newcomer. The tutorial is under the Tutorial button whenever you want it again.</p>
+          </section>
         ) : (
           <section className="rb-rr-rating is-friendly">
             <span className="rb-rr-number">
@@ -227,6 +235,11 @@ export function RingResult({ match, myId, won, draw, rating, rival, dolls, again
               <strong>No rating changed</strong>
             </span>
           </section>
+        )}
+        {lesson && (
+          <p className="rb-rr-lesson">
+            <b>Try this next time:</b> {lesson}
+          </p>
         )}
         {rating?.rankUp && (
           <p className="rb-rr-rankup">

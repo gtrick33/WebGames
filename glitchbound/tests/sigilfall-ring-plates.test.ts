@@ -18,8 +18,9 @@ describe('The Ring: nameplates on a phone', () => {
   });
 
   it('a press between two plates goes to the nearer, on both sides', () => {
-    expect(match).toContain('<div className="rb-ring-team" onPointerDown={(e) => nearestPlate(e, left, target)}>');
-    expect(match).toContain('<div className="rb-ring-team is-foes" onPointerDown={(e) => nearestPlate(e, right, target)}>');
+    // (other attributes may sit beside it: the tutorial marks each side to light it up)
+    expect(match).toMatch(/<div className="rb-ring-team" onPointerDown=\{\(e\) => nearestPlate\(e, left, target\)\}[^>]*>/);
+    expect(match).toMatch(/<div className="rb-ring-team is-foes" onPointerDown=\{\(e\) => nearestPlate\(e, right, target\)\}[^>]*>/);
     expect(match).toContain('const PLATE_SLACK = 8;');
   });
 });

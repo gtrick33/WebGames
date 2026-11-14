@@ -89,6 +89,8 @@ export interface Settings {
   tutorial: boolean;
   /** The Ring shows each fighter's nameplate along the top of the screen during a match. */
   ringPlates: boolean;
+  /** The Ring: an ability pressed out of reach (or out of sight) of its target walks the hero there, then goes off. */
+  ringCloseIn: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -115,6 +117,7 @@ export const DEFAULT_SETTINGS: Settings = {
   rotateSeen: false,
   tutorial: true,
   ringPlates: true,
+  ringCloseIn: true,
 };
 
 export interface SaveFile {
@@ -176,6 +179,7 @@ export function validateSettings(v: unknown): Settings {
     lefty: bool(o.lefty, d.lefty),
     tutorial: bool(o.tutorial, d.tutorial),
     ringPlates: bool(o.ringPlates, d.ringPlates),
+    ringCloseIn: bool(o.ringCloseIn, d.ringCloseIn),
     rotateSeen: bool(o.rotateSeen, d.rotateSeen),
   };
 }
