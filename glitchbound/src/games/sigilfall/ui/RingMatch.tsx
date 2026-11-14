@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { TitleShown } from '../progress/titles';
-import { GameMenuButton } from '../../../components/GameMenuButton';
+import { useGameMenu } from '../../../components/GameMenuButton';
 import { ABILITIES, SLOTS, type Ability } from '../arena/abilities';
 import { botThink, newBrain, steerTo } from '../arena/bot';
 import { LEAVER_K, type ClassSets } from '../arena/ladder';
@@ -303,6 +303,10 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   /** "Close in automatically": the ability pressed out of reach, walked toward until it can go off. */
   const chase = useRef<{ ab: string; until: number } | null>(null);
   const [leaving, setLeaving] = useState(false);
+  // the match's own buttons, folded behind one small one beside the clock (the owner: "maybe you can hide the middle
+  // buttons a bit more since theyre right in the middle of the screen, id like them to be somewhere subtle")
+  const [menuOpen, setMenuOpen] = useState(false);
+  const gameMenu = useGameMenu();
   const [editing, setEditing] = useState(false);
   const [help, setHelp] = useState(false);
   const [tip, setTip] = useState<Ability | null>(null);
@@ -589,6 +593,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       } else if (e.code === 'Escape') {
         setEditing(false);
         setHelp(false);
+        setMenuOpen(false);
         setLeaving((x) => !x);
       }
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
@@ -956,6 +961,71 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 the room between the nameplates and no wider (the owner: "the tutorial is overlapping with the ui") */}
             <div className="rb-ring-mid">
               <div className="rb-ring-clock">
+                <button type="button" className={`rb-ring-more${menuOpen ? ' is-on' : ''}`} aria-label="Match menu" aria-haspopup="menu" aria-expanded={menuOpen} title="Nameplates, keys, help, leave" onClick={() => setMenuOpen((o) => !o)}>
+                  ⋯
+                </button>
+                {menuOpen && (
+                  <div className="rb-ring-menu" role="menu" aria-label="Match menu">
+                    <button
+                      type="button"
+                      role="menuitemcheckbox"
+                      aria-checked={plates}
+                      onClick={() => {
+                        engine.setSettings({ ringPlates: !plates });
+                        // (written now: the game's own saving waits for its world to tick, and none does during a match)
+                        engine.persist();
+                        setPlates(!plates);
+                        setMenuOpen(false);
+                      }}
+                    >
+                      {plates ? 'Hide the nameplates' : 'Show the nameplates'}
+                    </button>
+                    {!touch && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setKeysOpen(true);
+                          setMenuOpen(false);
+                        }}
+                      >
+                        Keys
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setHelp(true);
+                        setMenuOpen(false);
+                      }}
+                    >
+                      How the Ring works
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setLeaving(true);
+                        setMenuOpen(false);
+                      }}
+                    >
+                      {tut ? 'Leave the tutorial' : 'Leave the match'}
+                    </button>
+                    {gameMenu && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          gameMenu();
+                        }}
+                      >
+                        Game menu
+                      </button>
+                    )}
+                  </div>
+                )}
                 <b>{clock(m.clock)}</b>
                 {stakes ? (
                   <span className="rb-ring-rating" style={{ ['--r' as string]: stakes.color }} title={`${stakes.rank}. ${stakes.format}v${stakes.format} rating`}>
@@ -968,34 +1038,6 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 )}
                 {m.phase === 'fight' && !m.hold && (gloamIn > 0 ? gloamIn <= 15 && <small className="rb-ring-gloam">The Gloam in {gloamIn}</small> : <small className="rb-ring-gloam is-on">The Gloam is closing</small>)}
                 {damp > 0 && <small className="rb-ring-damp" title="Healing fades the longer a match goes">Healing weaker: −{damp}%</small>}
-              </div>
-              <div className="rb-ring-menu">
-                <button
-                  className={`rb-iconbtn${plates ? '' : ' is-off'}`}
-                  aria-pressed={plates}
-                  aria-label="Nameplates"
-                  title={plates ? 'Hide the nameplates' : 'Show the nameplates'}
-                  onClick={() => {
-                    engine.setSettings({ ringPlates: !plates });
-                    // (written now: the game's own saving waits for its world to tick, and none does during a match)
-                    engine.persist();
-                    setPlates(!plates);
-                  }}
-                >
-                  ▤
-                </button>
-                {!touch && (
-                  <button className="rb-iconbtn" onClick={() => setKeysOpen(true)} aria-label="Keys" title="Keys">
-                    ⌨
-                  </button>
-                )}
-                <button className="rb-iconbtn" onClick={() => setHelp(true)} aria-label="How The Ring works" title="How The Ring works">
-                  ?
-                </button>
-                <button className="rb-iconbtn" onClick={() => setLeaving(true)} aria-label={tut ? 'Leave the tutorial' : 'Leave the match'} title={tut ? 'Leave the tutorial' : 'Leave the match'}>
-                  ⚑
-                </button>
-                <GameMenuButton className="rb-iconbtn" />
               </div>
               {hint && !err && (
                 <div className="rb-ring-hint" role="status">
@@ -1137,6 +1179,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               {err}
             </div>
           )}
+          {menuOpen && <div className="rb-ring-menu-away" onPointerDown={() => setMenuOpen(false)} aria-hidden="true" />}
           {placing && !err && (
             <div className="rb-ring-err is-note" role="status">
               Click where it should land · Esc to put it away

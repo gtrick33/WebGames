@@ -601,8 +601,8 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
               <dd>Their nameplate on the right, the fighter themself, or Tab</dd>
               <dt>Choose who to help</dt>
               <dd>Their nameplate on the left, the fighter themself, or F</dd>
-              <dt>Nameplates</dt>
-              <dd>The ▤ button at the top right of a match puts them away and brings them back. Health and effects stay over every fighter’s head</dd>
+              <dt>Match menu</dt>
+              <dd>The ⋯ beside the clock: hide or show the nameplates, the keys, these rules, and leaving the match. Health and effects stay over every fighter’s head with the nameplates hidden</dd>
             </dl>
           </details>
         </div>

@@ -8924,20 +8924,67 @@ html.rb-touch-playing textarea {
     color: #c88aff;
   }
 }
+/* the match's buttons, folded behind a small ⋯ hung beside the clock: out of the middle, and off the corner */
+.rb-ring-clock {
+  position: relative;
+}
+.rb-ring-more {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: 26px;
+  height: 26px;
+  margin-left: 3px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 7px;
+  color: rgb(239 230 212 / 0.7);
+  font: 700 15px/1 system-ui, sans-serif;
+  translate: 0 -50%;
+  background: rgb(5 3 13 / 0.6);
+  cursor: pointer;
+}
+.rb-ring-more:hover,
+.rb-ring-more:focus-visible,
+.rb-ring-more.is-on {
+  color: #fff4d8;
+  border-color: rgb(255 227 154 / 0.6);
+}
 .rb-ring-menu {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 2px;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  z-index: 6;
+  display: grid;
+  min-width: 190px;
+  padding: 4px;
+  border: 1.5px solid rgb(255 227 154 / 0.5);
+  border-radius: 10px;
+  translate: -50% 0;
+  background: rgb(14 9 24 / 0.97);
+  box-shadow: 0 8px 22px rgb(0 0 0 / 0.55);
 }
-.rb-ring-menu .rb-iconbtn {
-  width: 28px;
-  height: 28px;
-  min-height: 0;
-  font-size: 13px;
+.rb-ring-menu button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 7px;
+  color: #efe6d4;
+  font: 600 13.5px Georgia, 'Times New Roman', serif;
+  text-align: left;
+  background: none;
+  cursor: pointer;
 }
-.rb-ring-menu .rb-iconbtn.is-off {
-  opacity: 0.55;
+.rb-ring-menu button:hover,
+.rb-ring-menu button:focus-visible {
+  color: #fff4d8;
+  background: rgb(255 227 154 / 0.12);
+}
+/* (a press anywhere else puts the menu away, and does nothing more) */
+.rb-ring-menu-away {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
 }
 .rb-ring-frame {
   display: flex;
@@ -10027,10 +10074,9 @@ html.rb-touch-playing textarea {
   .rb-ring.is-touch .rb-ring-rating small {
     font-size: 9px;
   }
-  .rb-ring.is-touch .rb-ring-menu .rb-iconbtn {
+  .rb-ring.is-touch .rb-ring-more {
     width: 30px;
     height: 30px;
-    font-size: 13px;
   }
 }
 @container (max-height: 430px) {
@@ -10822,13 +10868,8 @@ html.rb-touch-playing textarea {
   .rb-ring-editing .rb-btn.is-small {
     min-height: 38px;
   }
-  .rb-ring-menu {
-    gap: 4px;
-  }
-  .rb-ring-menu .rb-iconbtn {
-    width: 36px;
-    height: 36px;
-    font-size: 15px;
+  .rb-ring-menu button {
+    min-height: 42px;
   }
 }
 
