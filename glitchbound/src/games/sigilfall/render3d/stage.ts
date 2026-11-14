@@ -5,6 +5,7 @@ import { Fx3D } from './fx3d';
 import { loadWardrobe } from './dress';
 import { loadLand, PITCH, type Land3D, type LandPacks } from './land';
 import { LIGHT } from './toon';
+import { heldElsewhere, Pacer, QUALITY_FLOOR } from './pace';
 
 /**
  * The 3D view, four layers deep under the player's touches:
@@ -21,14 +22,16 @@ import { LIGHT } from './toon';
 const FOV = 28;
 /** Never renders more pixels than this per CSS pixel. */
 const MAX_DPR = 2;
-/** Slower than this between frames (about fifty a second), kept up, and the picture is drawn with fewer pixels; and the least it is drawn with. */
-export const PACE_SLOW = 1 / 50;
-export const QUALITY_FLOOR = 0.45;
 /**
  * On a phone, a little less: the screen is small enough that nobody sees the difference, and every pixel is drawn on
  * two canvases, which is most of what warms it.
  */
 const MAX_DPR_TOUCH = 1.7;
+/**
+ * However slow a phone is, never fewer pixels drawn than the page has CSS pixels: under it the picture is a blur
+ * under a sharp HUD (a 3x iPhone at the old floor drew 0.77 of a pixel for every CSS pixel).
+ */
+export const MIN_DPR_TOUCH = 1;
 
 function layer(className: string): HTMLCanvasElement {
   const c = document.createElement('canvas');
@@ -73,10 +76,8 @@ export class Stage {
   spanX = 12;
   spanZ = 9;
   /** Rendering scale, lowered if the device struggles. */
-  private quality = 1;
+  private readonly pacer = new Pacer();
   private maxDpr = MAX_DPR;
-  private slow = 0;
-  private fast = 0;
   private lastDpr = 1;
   private lastFrame = 0;
 
@@ -127,8 +128,11 @@ export class Stage {
     this.lastDpr = dpr;
     this.maxDpr = touch ? MAX_DPR_TOUCH : MAX_DPR;
     const d = Math.min(dpr, this.maxDpr);
+    const pacer = this.pacer;
+    pacer.floor = touch ? Math.min(1, Math.max(QUALITY_FLOOR, MIN_DPR_TOUCH / d)) : QUALITY_FLOOR;
+    pacer.quality = Math.max(pacer.quality, pacer.floor);
     for (const r of [this.gl, this.groundGl]) {
-      r.setPixelRatio(d * this.quality);
+      r.setPixelRatio(d * pacer.quality);
       r.setSize(cssW, cssH, false);
     }
     // (the decals are drawn at the 2D renderer's scale, its own dpr up to 2: render/renderer.ts `k`. A touch screen's
@@ -210,40 +214,18 @@ export class Stage {
     this.gl.render(this.scene, this.camera);
   }
 
-  /**
-   * A machine that can't keep up draws fewer pixels rather than stutter (real time between frames; a tab left in the
-   * background isn't a slow machine). It aims at a smooth sixty: it used to step down only under forty frames a
-   * second, and no lower than 0.6, so a big monitor on a modest card sat at forty-odd for good (the owner, at 2560 by
-   * 1440: "it feels as if its capped by 30 fps or smth, i want it smooth"). Now anything under about fifty for
-   * three quarters of a second takes a step, down to 0.45; and it comes back up only after twenty seconds at speed.
-   */
+  /** A machine that can't keep up draws fewer pixels rather than stutter (render3d/pace.ts). */
   private pace(): void {
     const now = performance.now();
     const dt = (now - this.lastFrame) / 1000;
     this.lastFrame = now;
-    if (dt > 0 && dt < 0.25) {
-      // (the pace over the last ten frames or so: one long frame is a hitch, not a slow machine)
-      this.avg = this.avg * 0.9 + dt * 0.1;
-      if (this.avg > PACE_SLOW) this.slow++;
-      else this.slow = Math.max(0, this.slow - 2);
-      if (this.avg < 1 / 55) this.fast++;
-      else this.fast = 0;
-      if (this.slow > 40 && this.quality > QUALITY_FLOOR) {
-        this.quality = Math.max(QUALITY_FLOOR, this.quality - 0.15);
-        this.slow = 0;
-        this.fast = 0;
-        this.applyQuality();
-      } else if (this.fast > 1200 && this.quality < 1) {
-        this.quality = Math.min(1, this.quality + 0.1);
-        this.fast = 0;
-        this.applyQuality();
-      }
-    }
+    // (a menu's pictures being drawn: pace.ts busyElsewhere)
+    if (heldElsewhere(now)) return;
+    if (this.pacer.tick(dt)) this.applyQuality();
   }
-  private avg = 1 / 60;
 
   private applyQuality(): void {
-    const d = Math.min(this.lastDpr, this.maxDpr) * this.quality;
+    const d = Math.min(this.lastDpr, this.maxDpr) * this.pacer.quality;
     this.gl.setPixelRatio(d);
     this.groundGl.setPixelRatio(d);
   }

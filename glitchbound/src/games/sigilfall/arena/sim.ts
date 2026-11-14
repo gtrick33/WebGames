@@ -22,6 +22,13 @@ export const MATCH_LIMIT = 150;
 const DR_RESET = 18;
 const DR_STEPS = [1, 0.5, 0.25];
 /**
+ * Hurt breaks a hold, as in the classic arena: a daze at once, a fear after this share of its target's health, a root
+ * after this (the owner, 2026-11-14: "roots should break after some dmg has been done, similar to wows roots, same
+ * for fears", the shares they had before that morning's "shouldnt be breakable by dmg"). A stun holds through anything.
+ */
+export const FEAR_BREAK = 0.1;
+export const ROOT_BREAK = 0.14;
+/**
  * A shot flies this fast and follows its target: it always lands (the owner: "the misses are a bit annoying ... let's
  * make all the spells hit the target, without any misses"). It quickens as it goes, so nobody outruns one for long.
  */
@@ -168,6 +175,8 @@ export interface Aura {
   phys?: boolean;
   /** A held target: damage taken so far, against what breaks it. */
   took?: number;
+  /** A root of ice (Ability.shatter): how many more Shatters break it. */
+  shatters?: number;
   backlash?: number;
   next?: number;
   /** The shroud: nothing that lands breaks it while `t` is above this (it was taken in a fight, a moment ago). */
@@ -656,6 +665,25 @@ export class Match {
     return t.auras.some((a) => (!!c.ab?.includes(a.ab) && a.src === f.id) || (!!a.cc && !!c.cc?.includes(a.cc))) ? c : null;
   }
 
+  /**
+   * A combo that landed for a hold of ice (Ability.shatter) uses one of its Shatters, and the last breaks it. Not when
+   * something else it needs was there anyway: what its user set up, a stun, or a root that isn't ice. The ice, if it
+   * still stands after this one.
+   */
+  private shatter(f: Fighter, c: NonNullable<Ability['combo']>, t: Fighter): Aura | null {
+    const fits = (a: Aura): boolean => !!a.cc && !!c.cc?.includes(a.cc);
+    if (t.auras.some((a) => (!!c.ab?.includes(a.ab) && a.src === f.id) || (fits(a) && a.shatters === undefined))) return null;
+    const ice = t.auras.find((a) => fits(a) && (a.shatters ?? 0) > 0);
+    if (!ice) return null;
+    ice.shatters = ice.shatters! - 1;
+    if (ice.shatters > 0) return ice;
+    t.auras = t.auras.filter((a) => a !== ice);
+    this.events.push({ k: 'word', id: t.id, word: 'Shattered' });
+    return null;
+  }
+  /** The ice a spear is shattering this moment: its blow doesn't count toward breaking it (land). */
+  private sparing: Aura | null = null;
+
   /** Is `f` at `t`'s back: behind the way they last faced? */
   behind(f: { x: number; y: number }, t: Fighter): boolean {
     const fd = Math.hypot(t.dirX, t.dirY) || 1;
@@ -910,6 +938,7 @@ export class Match {
     // a combo: what this hero set up on them (or the hold they're in) makes this land harder
     let boost = 1;
     let combo: Ability['combo'] | null = null;
+    let iced: Aura | null = null;
     const c = ab.combo;
     if (c && !t.dead) {
       if (this.comboReady(f, ab, t)) {
@@ -926,14 +955,18 @@ export class Match {
         boost = 1 + (c.mult - 1) * (1 + MOMENTUM_STEP * (f.streak - 1));
         f.score.streak = Math.max(f.score.streak ?? 0, f.streak);
         if (c.consume) t.auras = t.auras.filter((a) => !(!!c.ab?.includes(a.ab) && a.src === f.id));
+        iced = this.shatter(f, c, t);
         f.score.combos = (f.score.combos ?? 0) + 1;
         this.events.push({ k: 'word', id: t.id, word: f.streak > 1 ? `${c.name} ×${f.streak}` : c.name, combo: true });
       }
     }
+    // (the spear that shatters the ice isn't counted toward breaking it as well: its Shatters are its own limit)
+    this.sparing = iced;
     for (const e of ab.effects) {
       if (t.dead && e.k !== 'heal') break;
       if (this.apply(f, ab, t, e, boost * scale) === 'stop') break;
     }
+    this.sparing = null;
     if (combo?.extra) for (const e of combo.extra) if (!t.dead || e.k === 'heal') this.apply(f, ab, t, e);
     const tune = f.tune[ab.id];
     if (!tune) return;
@@ -1232,7 +1265,7 @@ export class Match {
     const lasts = dur * DR_STEPS[dr.n]! * t.mods.tenacity * (1 - (resolve?.d.pct ?? 0));
     if (!ab.noDr) t.dr[cc] = { n: dr.n + 1, until: this.clock + lasts + DR_RESET };
     t.auras = t.auras.filter((a) => a.cc !== cc);
-    this.addAura(t, { ab: ab.id, src: f.id, dur: lasts, magic: ab.school !== 'physical', n: 0, kind: 'cc', harmful: true, cc, took: 0 });
+    this.addAura(t, { ab: ab.id, src: f.id, dur: lasts, magic: ab.school !== 'physical', n: 0, kind: 'cc', harmful: true, cc, took: 0, ...(cc === 'root' && ab.shatter ? { shatters: ab.shatter } : {}) });
     f.score.cc += lasts;
     t.dash = null;
     if (cc !== 'root' && t.cast) this.endCast(t);
@@ -1632,10 +1665,13 @@ export class Match {
     // (a rewind keeps a few seconds of what was taken, to give some of it back)
     if (t.perks.does.rewind) t.tal.hurt = [...(t.tal.hurt ?? []).filter((h) => h.at >= this.clock - t.perks.does.rewind!.back), { at: this.clock, n }];
     if (t.dead) return worth;
-    // a daze breaks with hurt; a stun, a fear and a root hold whatever lands (the owner: "any stun, root, or fear
-    // shouldnt be breakable by dmg". Fears and roots once broke after a tenth and a seventh of their health)
+    // what holds them breaks with hurt: a daze at once, a fear or a root once enough has landed; a stun never
     for (let i = t.auras.length - 1; i >= 0; i--) {
-      if (t.auras[i]!.cc !== 'incap') continue;
+      const a = t.auras[i]!;
+      if ((a.cc !== 'incap' && a.cc !== 'fear' && a.cc !== 'root') || a === this.sparing) continue;
+      a.took = (a.took ?? 0) + n;
+      const limit = a.cc === 'incap' ? 0 : t.maxHp * (a.cc === 'fear' ? FEAR_BREAK : ROOT_BREAK);
+      if (a.took <= limit) continue;
       t.auras.splice(i, 1);
       this.events.push({ k: 'word', id: t.id, word: 'Broke free' });
     }
