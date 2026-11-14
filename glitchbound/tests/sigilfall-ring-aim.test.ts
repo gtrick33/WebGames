@@ -35,6 +35,8 @@ function open(cls: ClassId, bar: string[], foes: ClassId[] = ['warrior']): Match
 
 /** Presses a placed ability and, when it has a cast, waits the cast out: back with its patch on the ground. */
 function place(m: Match, ab: Ability, point?: { x: number; y: number }, moves: Record<number, MoveInput> = {}): string | null {
+  // (a super is the one its fighter carries: whichever of their class's two is being tried)
+  if (ab.super) m.fighters[0]!.ult = ab.id;
   const why = m.press(0, ab.id, point);
   if (why) return why;
   for (let i = 0; i < 200 && m.fighters[0]!.cast; i++) m.step(STEP, moves);

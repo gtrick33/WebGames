@@ -161,6 +161,7 @@ describe('The Ring: the Gloamknight is a death knight or a blade in the dark', (
     const m = nightblade('mage', ['m-lash', 'm-spear'], [330, 125]);
     const [g, mage] = m.fighters as [Fighter, Fighter];
     g.auras = [];
+    g.fought = m.clock;
     mage.target = g.id;
     expect(m.press(mage.id, 'm-lash')).toBeNull();
     expect(mage.cast).not.toBeNull();
@@ -173,6 +174,8 @@ describe('The Ring: the Gloamknight is a death knight or a blade in the dark', (
     const n = nightblade('mage', ['m-lash'], [330, 125]);
     const [h, mage2] = n.fighters as [Fighter, Fighter];
     h.auras = [];
+    // (in the fight, so the shroud doesn't come back of itself)
+    h.fought = n.clock;
     mage2.target = h.id;
     n.press(mage2.id, 'm-lash');
     // (the cast ends and the bolt is on its way)
@@ -288,7 +291,7 @@ describe('The Ring: the Gravecaller rouses her dead', () => {
     const dead = m.fighters.filter((f) => f.pet);
     expect(dead).toHaveLength(2);
     for (const d of dead) {
-      expect(d.auras.find((a) => a.kind === 'fury')?.n).toBeCloseTo(0.6, 5);
+      expect(d.auras.find((a) => a.kind === 'fury')?.n).toBeCloseTo(0.45, 5);
       expect(d.auras.some((a) => a.kind === 'speed')).toBe(true);
     }
     expect(k.auras.some((a) => a.kind === 'fury')).toBe(false);

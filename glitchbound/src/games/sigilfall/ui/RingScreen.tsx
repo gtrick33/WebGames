@@ -45,7 +45,7 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
       // (a bar of six from a player whose game is from before bars held four keeps its first four; one with an ability
       // this game doesn't have, from a game older or newer, keeps the rest and is filled up from the class's own)
       const bar = fullBar(cls, s.pick!.bar);
-      fighters.push({ team, cls, name: s.name, bar, oath: s.pick!.oath, talents: s.pick!.talents, seat: s.n });
+      fighters.push({ team, cls, name: s.name, bar, oath: s.pick!.oath, talents: s.pick!.talents, step: s.pick!.step, ult: s.pick!.ult, seat: s.n });
     }
     const list = COMPS[v.format];
     const comp = list[(v.runSeed + team) % list.length]!;
@@ -262,7 +262,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   }, [pick, body, face, wear, worn, wearN]);
   const sets = setsOf(save, pick);
   const setup = sets.list[sets.active]!;
-  const { bar, oath, talents } = setup;
+  const { bar, oath, talents, step, ult } = setup;
   const ready = bar.length === SLOTS;
   const choose = (c: ClassId): void => setPick(c);
   // the computer's teammates for this format's empty places, kept with the standing (arena/teammates.ts)
@@ -282,7 +282,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     const seed = (Math.random() * 2 ** 31) >>> 0;
     const { comp, fighters } = drawOpponents(format, seed);
     const fill = fillSide(format, [specOf(pick, bar)], mates, seed);
-    const team: FighterSetup[] = [{ team: 0, cls: pick, name: hero, bar, oath, talents, human: true }, ...fill.map((x, i) => ({ team: 0 as const, cls: x.cls, name: nameFor(x.cls, seed + i + 11), bar: PRESETS[x.cls][x.preset]!.bar, talents: PRESETS[x.cls][x.preset]!.talents, oath: 'will' }))];
+    const team: FighterSetup[] = [{ team: 0, cls: pick, name: hero, bar, oath, talents, step, ult, human: true }, ...fill.map((x, i) => ({ team: 0 as const, cls: x.cls, name: nameFor(x.cls, seed + i + 11), bar: PRESETS[x.cls][x.preset]!.bar, talents: PRESETS[x.cls][x.preset]!.talents, oath: 'will' }))];
     // the other side's rating lands either way of yours, up to 150 (what it pays and costs follows: stakesOf), and
     // how sharp the computer plays follows it
     const rivalRating = Math.max(800, standing.rating + (seed % 301) - 150);
@@ -337,7 +337,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     seekRef.current?.stop();
     const ground = map === 'random' ? MAP_IDS[Math.floor(Math.random() * MAP_IDS.length)]! : map;
     seekRef.current = new Seek(
-      { format, map: ground, name: shownAs, pick: { cls: pick, bar, oath, talents, rating: standing.rating, mates: mates.map(choiceWord) } },
+      { format, map: ground, name: shownAs, pick: { cls: pick, bar, oath, talents, step, ult, rating: standing.rating, mates: mates.map(choiceWord) } },
       {
         onLook: setLook,
         onRun: (v, link) => {
@@ -394,7 +394,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   /* -------------------------------------------------- the room */
   const roomMates = view ? choicesFor(save.mates?.[view.format], view.format) : [];
   const roomWords = roomMates.map(choiceWord).join(' ');
-  const myPick = useMemo((): RoomPick => ({ team: view?.seats.find((s) => s.you)?.pick?.team ?? 0, cls: pick, bar, oath, talents, ...(roomWords ? { mates: roomWords.split(' ') } : {}) }), [view, pick, bar, oath, talents, roomWords]);
+  const myPick = useMemo((): RoomPick => ({ team: view?.seats.find((s) => s.you)?.pick?.team ?? 0, cls: pick, bar, oath, talents, step, ult, ...(roomWords ? { mates: roomWords.split(' ') } : {}) }), [view, pick, bar, oath, talents, step, ult, roomWords]);
   const runSeen = useRef(0);
   const handlers = {
     onView: (v: RoomView) => {
@@ -648,7 +648,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
                     Change abilities & talents
                   </button>
                 </div>
-                <BarRow bar={bar} cls={pick} />
+                <BarRow bar={bar} cls={pick} step={step} ult={ult} />
                 <SetupChips cls={pick} setup={setup} />
                 {!ready && <p className="rb-rp-warn">Your bar needs {SLOTS - bar.length} more.</p>}
               </div>
@@ -833,7 +833,7 @@ function FriendsPage({ view, state, err, ready, codeIn, setCodeIn, onOpen, onJoi
         <div className="rb-rp-block">
           <h3>You bring</h3>
           <ClassRow pick={pick} onPick={onPick} />
-          <BarRow bar={bar} cls={pick} />
+          <BarRow bar={bar} cls={pick} step={myPick.step} ult={myPick.ult} />
           <button className="rb-btn is-small" onClick={onSetup}>
             Change abilities & talents
           </button>

@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { TitleFx } from '../../../components/TitleFx';
 import type { TitleShown } from '../progress/titles';
 import { GameMenuButton } from '../../../components/GameMenuButton';
-import { ABILITIES, DASH, SLOTS, superOf, type Ability } from '../arena/abilities';
+import { ABILITIES, SLOTS, type Ability } from '../arena/abilities';
 import { botThink, newBrain } from '../arena/bot';
 import { LEAVER_K, type ClassSets } from '../arena/ladder';
 import { lookOf } from '../arena/look';
 import { MAPS } from '../arena/maps';
-import { CLOSE_FROM, Match, MATCH_LIMIT, MOMENTUM_HOLD, MOMENTUM_MAX, PACE, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
+import { CLOSE_FROM, Match, MATCH_LIMIT, PACE, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
 import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
 import type { Character, Face } from '../progress/character';
@@ -21,6 +20,7 @@ import { Stick } from './Stick';
 import { autoPoint as pointFor, isOut } from './ringAim';
 import { actionOf, keyName, readKeys, saveKeys, type RingKeys } from './ringKeys';
 import { KeysDialog } from './RingKeysDialog';
+import { NameReel } from './NameReel';
 
 export type Role = { kind: 'solo'; skill: number } | { kind: 'host'; skill: number; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void } | { kind: 'client'; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void };
 
@@ -138,23 +138,13 @@ function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Ma
         onPick();
       }}
       onClick={onPick}
-      aria-label={`${f.name}, ${CLASSES[f.cls].name}, ${Math.round(share * 100)}% health`}>
+      aria-label={`${f.name}${title ? `, ${title.text}` : ''}, ${CLASSES[f.cls].name}, ${Math.round(share * 100)}% health`}>
       <span className="rb-ring-face">
         <img src={doll} alt="" draggable={false} />
       </span>
       <span className="rb-ring-bars">
         <span className="rb-ring-name">
-          {title?.before && (
-            <small className="rb-ring-title is-before">
-              <TitleFx fx={title.fx}>{title.text}</TitleFx>
-            </small>
-          )}
-          <b>{f.id === me?.id ? 'You' : f.name}</b>
-          {title && !title.before && (
-            <small className="rb-ring-title">
-              <TitleFx fx={title.fx}>{title.text}</TitleFx>
-            </small>
-          )}
+          <NameReel name={f.id === me?.id ? 'You' : f.name} title={title} />
           {tag && <em>{tag}</em>}
         </span>
         <span className={`rb-ring-bar${share < 0.3 ? ' is-low' : ''}`}>
@@ -498,8 +488,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       // (behind the gates, the step key says "ready")
       else if (act === 'dash' && m.phase === 'gates' && role.kind !== 'client') {
         if (m.gateAt - m.t > 5) ready();
-      } else if (act === 'dash') press(DASH.id);
-      else if (act === 'super' && me) keyPress(superOf(me.cls).id, e);
+      } else if (act === 'dash' && me) press(m.extras(me)[0]!.id);
+      else if (act === 'super' && me) keyPress(m.extras(me)[1]!.id, e);
       else if (act === 'nextFoe' && me) {
         const next = cycle(m.enemiesOf(me).filter((o) => !m.unseen(o, me)), me.target);
         if (next !== null) target(next);
@@ -587,9 +577,9 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       role.listen((seat, d) => {
         const f = m.fighters.find((x) => x.seat === seat);
         if (!f || !d || typeof d !== 'object') return;
-        const q = d as { mx?: unknown; my?: unknown; p?: unknown; at?: unknown; tg?: unknown; eq?: { bar?: unknown; oath?: unknown; talents?: unknown } };
+        const q = d as { mx?: unknown; my?: unknown; p?: unknown; at?: unknown; tg?: unknown; eq?: { bar?: unknown; oath?: unknown; talents?: unknown; step?: unknown; ult?: unknown } };
         const eq = q.eq;
-        if (eq && Array.isArray(eq.bar) && eq.bar.length <= 12 && eq.bar.every((b) => typeof b === 'string')) m.equip(f.id, { bar: eq.bar as string[], oath: typeof eq.oath === 'string' ? eq.oath : undefined, talents: Array.isArray(eq.talents) ? (eq.talents.filter((b) => typeof b === 'string').slice(0, 3) as string[]) : [] });
+        if (eq && Array.isArray(eq.bar) && eq.bar.length <= 12 && eq.bar.every((b) => typeof b === 'string')) m.equip(f.id, { bar: eq.bar as string[], oath: typeof eq.oath === 'string' ? eq.oath : undefined, talents: Array.isArray(eq.talents) ? (eq.talents.filter((b) => typeof b === 'string').slice(0, 3) as string[]) : [], step: typeof eq.step === 'string' ? eq.step : undefined, ult: typeof eq.ult === 'string' ? eq.ult : undefined });
         if (typeof q.mx === 'number' && typeof q.my === 'number' && Number.isFinite(q.mx) && Number.isFinite(q.my)) others[f.id] = { mx: Math.max(-1, Math.min(1, q.mx)), my: Math.max(-1, Math.min(1, q.my)) };
         // (press checks it's on their bar, and the rules, as for anyone)
         // (a placed ability comes with where: two plain numbers, which the rules bring into reach and sight)
@@ -779,7 +769,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const mine = me?.team ?? 0;
   const left = teamOf(mine);
   const right = teamOf(mine === 0 ? 1 : 0);
-  const bar = me ? [...me.bar.map((id) => ABILITIES[id]!), DASH, superOf(me.cls)] : [];
+  const bar = me ? [...me.bar.map((id) => ABILITIES[id]!), ...m.extras(me)] : [];
   const keyOf = (i: number): string => keyName(i < SLOTS ? ringKeys[`ab${i + 1}` as 'ab1'] : i === SLOTS ? ringKeys.dash : ringKeys.super);
   const charge = me?.charge ?? 0;
   const gloamIn = Math.ceil(CLOSE_FROM - m.clock);
@@ -947,16 +937,6 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           {placing && !err && (
             <div className="rb-ring-err is-note" role="status">
               Click where it should land · Esc to put it away
-            </div>
-          )}
-          {me && me.streak > 0 && m.phase === 'fight' && (
-            <div className={`rb-ring-momentum is-x${me.streak}`} role="status" aria-label={`Momentum ${me.streak}`}>
-              <b>×{me.streak}</b>
-              <span>
-                <strong>Momentum</strong>
-                <small>{me.streak >= MOMENTUM_MAX ? 'Every combo at its hardest' : 'Land a different combo to build it'}</small>
-              </span>
-              <i style={{ width: `${Math.max(0, Math.min(1, me.streakT / MOMENTUM_HOLD)) * 100}%` }} />
             </div>
           )}
           {cast && castAb && (

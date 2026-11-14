@@ -9581,81 +9581,6 @@ html.rb-touch-playing textarea {
   color: #cfc4e0;
   font-size: 12px;
 }
-/* momentum: combos in a row, by the bar (it drains as the chain goes cold) */
-.rb-ring-momentum {
-  --mo: #ffd27a;
-  position: absolute;
-  left: 50%;
-  bottom: 30px;
-  z-index: 4;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  translate: -50% 0;
-  overflow: hidden;
-  padding: 3px 10px 5px 6px;
-  border: 1.5px solid var(--mo);
-  border-radius: 9px;
-  background: rgb(10 6 20 / 0.82);
-  box-shadow: 0 0 14px -2px var(--mo);
-  color: #fff;
-  pointer-events: none;
-  animation: rb-momentum-in 0.22s ease-out;
-}
-.rb-ring-momentum.is-x2 {
-  --mo: #ffb45c;
-}
-.rb-ring-momentum.is-x3 {
-  --mo: #ff8a4a;
-}
-.rb-ring-momentum.is-x4 {
-  --mo: #ff5a7a;
-}
-.rb-ring-momentum b {
-  min-width: 30px;
-  color: var(--mo);
-  font: 800 21px/1 Georgia, 'Times New Roman', serif;
-  text-align: center;
-  text-shadow: 0 1px 2px #000;
-}
-.rb-ring-momentum span {
-  display: grid;
-  line-height: 1.1;
-}
-.rb-ring-momentum strong {
-  font: 700 11.5px system-ui, sans-serif;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.rb-ring-momentum small {
-  color: #d8cfe8;
-  font: 500 10.5px system-ui, sans-serif;
-  white-space: nowrap;
-}
-.rb-ring-momentum i {
-  position: absolute;
-  inset: auto auto 0 0;
-  height: 3px;
-  background: var(--mo);
-}
-@keyframes rb-momentum-in {
-  from {
-    scale: 1.25;
-    opacity: 0;
-  }
-}
-.rb-ring.is-touch .rb-ring-momentum {
-  bottom: auto;
-  top: 58px;
-}
-.rb-ring.is-touch .rb-ring-momentum small {
-  display: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .rb-ring-momentum {
-    animation: none;
-  }
-}
 .rb-ring-tip {
   position: absolute;
   left: 50%;
@@ -9895,9 +9820,18 @@ html.rb-touch-playing textarea {
 .rb-ring.is-touch {
   grid-template-rows: minmax(0, 1fr);
 }
+/* your own cast low on the screen, between the stick and the thumb cluster, under the fight rather than over it (the
+   owner: "currently the cast bar is in the middle of the screen, you can add it a bit more to the bottom"): the stick
+   rests in the first 200 points from the left, the cluster's lowest buttons reach 276 in from the right */
 .rb-ring.is-touch .rb-ring-mycast {
-  bottom: auto;
-  top: 34%;
+  left: calc(206px + var(--sa-l, 0px));
+  right: calc(286px + var(--sa-r, 0px));
+  bottom: calc(10px + var(--sa-b, 0px));
+  width: auto;
+  max-width: 280px;
+  min-width: 120px;
+  margin-inline: auto;
+  translate: none;
 }
 .rb-ring.is-touch .rb-ring-err {
   bottom: auto;
@@ -11250,6 +11184,68 @@ html.rb-touch-playing textarea {
 }
 .rb-ring-name .rb-ring-title.is-before {
   margin: 0 4px 0 0;
+}
+/* a name with a title: the two roll up through one line, one and then the other, as a slot machine's reel turns
+   (ui/NameReel.tsx). Three rows, the name again last, so each turn ends where the next begins */
+.rb-ring-reel {
+  display: block;
+  flex: 0 1 auto;
+  align-self: stretch;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+.rb-ring-reel-track {
+  display: flex;
+  flex-direction: column;
+  height: 300%;
+  animation: rb-ring-reel 6s cubic-bezier(0.55, 0, 0.25, 1.08) infinite;
+}
+.rb-ring-reel-track > * {
+  flex: 1 0 0;
+  min-height: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-ring-name .rb-ring-reel .rb-ring-title {
+  display: block;
+  margin: 0;
+  line-height: inherit;
+}
+@keyframes rb-ring-reel {
+  0%,
+  38% {
+    transform: translateY(0);
+  }
+  50%,
+  88% {
+    transform: translateY(-33.333%);
+  }
+  100% {
+    transform: translateY(-66.667%);
+  }
+}
+/* less motion: the name and the title take turns, with no rolling between. (The site stops every animation for those
+   who ask for less motion, src/styles/base.css; this one has no motion left in it, and without it the title would never
+   be seen, so it is kept going) */
+@keyframes rb-ring-reel-still {
+  0%,
+  49.99% {
+    transform: translateY(0);
+  }
+  50%,
+  100% {
+    transform: translateY(-33.333%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-ring-reel-track {
+    animation-name: rb-ring-reel-still;
+    animation-timing-function: linear;
+    animation-duration: 6s !important;
+    animation-iteration-count: infinite !important;
+  }
 }
 
 /* An ability's combo, under what it does */
