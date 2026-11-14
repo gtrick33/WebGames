@@ -151,6 +151,10 @@ export interface Ability {
   quiet?: boolean;
   /** Its holds don't wear off with use: no diminishing returns. */
   noDr?: boolean;
+  /** What it does to its user as well, as it goes off (a super's own strength). */
+  self?: Effect[];
+  /** A friend's spell that lands on every friend in reach and sight, not one. */
+  allies?: boolean;
 }
 
 const MELEE = 30;
@@ -191,6 +195,35 @@ export const SUPERS: Record<ClassId, Ability> = {
   druid: a({ id: 'l-super', cls: 'druid', name: 'Thornstorm', text: 'Thorns burst up where you choose: 111 to everyone there, held to the ground for 1.5 seconds.', icon: 'thorn_burst_on_dark_green', color: '#9be86a', school: 'nature', role: 'burst', aim: 'ground', range: FAR, cast: 0, cd: 0, mana: 0, free: true, super: true, area: 60, fall: 0.8, effects: [{ k: 'dmg', n: 130 }, { k: 'cc', cc: 'root', dur: 1.5 }] }),
   gloamknight: a({ id: 'g-super', cls: 'gloamknight', name: 'Eclipse Reaping', text: 'Lunge through the dark and reap: 189, and you drink 100 of it.', icon: 'eclipse_sun_on_black', color: '#c8a8ff', school: 'shadow', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 0, mana: 0, free: true, sticky: true, super: true, effects: [{ k: 'charge' }, { k: 'dmg', n: 210 }, { k: 'heal', n: 100 }] }),
 };
+
+/**
+ * Each class's second super, for its other way to fight (the owner: "let's also add unique ultimates for each loadout,
+ * currently every spec has the same ultimate, make every ultimate fun to use, very impactful and cool"). The first is
+ * the one above; a setup picks either (arena/ladder.ts RingSetup.ult), and each ready-made one comes with its own.
+ */
+export const SUPERS2: Record<ClassId, Ability> = {
+  // the Hound: run them down and don't let go
+  warrior: a({ id: 'w-super2', cls: 'warrior', name: 'Run Them Down', text: 'Rush them: 74, a wound that bleeds 110 over 6 seconds, slowed by 50% for 3. For 4 seconds you hit 15% harder and nothing slows or roots you.', icon: 'fire_wolf_head_on_black', color: '#ff6a4a', school: 'physical', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 0, mana: 0, free: true, sticky: true, super: true, self: [{ k: 'break' }, { k: 'free', dur: 4 }, { k: 'fury', pct: 15, dur: 4 }], effects: [{ k: 'charge' }, { k: 'dmg', n: 80 }, { k: 'dot', n: 120, dur: 6 }, { k: 'slow', pct: 50, dur: 3 }] }),
+  // the Rime: the whole ring frozen round her, and her Rime Spear shattering each of them
+  mage: a({ id: 'm-super2', cls: 'mage', name: 'Winter’s Grasp', text: 'Winter bursts out of you: 72 to everyone near, frozen to the ground for 3 seconds (it never wears off with use) and slowed after. A barrier of ice soaks up 180 damage for you.', icon: 'frost_crown_on_navy', color: '#bfeaff', school: 'frost', role: 'burst', aim: 'near', range: 76, cast: 0, cd: 0, mana: 0, free: true, super: true, noDr: true, self: [{ k: 'absorb', n: 180, dur: 10 }], effects: [{ k: 'dmg', n: 100 }, { k: 'cc', cc: 'root', dur: 3 }, { k: 'slow', pct: 50, dur: 6 }] }),
+  // the Trapper: a whole patch of the ring made a snare
+  ranger: a({ id: 'r-super2', cls: 'ranger', name: 'Thicket of Snares', text: 'Nets and vines burst out over a wide patch of ground: 67 to everyone on it, held fast for 2.5 seconds, and poisoned for 150 more over 6.', icon: 'net_trap_on_green', color: '#9be86a', school: 'nature', role: 'burst', aim: 'ground', range: FAR, cast: 0, cd: 0, mana: 0, free: true, super: true, area: 72, fall: 0.6, effects: [{ k: 'dmg', n: 86 }, { k: 'cc', cc: 'root', dur: 2.5 }, { k: 'dot', n: 192, dur: 6 }] }),
+  // the Curse-speaker: a word that empties the ground of sound and of healing
+  priest: a({ id: 'p-super2', cls: 'priest', name: 'Voidburst', text: 'The void opens where you choose: 117 to everyone in it, silenced for 2.5 seconds, and healing on them halved for 8. The void wraps you too: it heals you 150 and soaks up 200 damage for 10 seconds.', icon: 'anti_heal_status_broken_heart_on_black', color: '#a060ff', school: 'shadow', role: 'burst', aim: 'ground', range: FAR, cast: 0, cd: 0, mana: 0, free: true, super: true, self: [{ k: 'heal', n: 150 }, { k: 'absorb', n: 200, dur: 10 }], area: 58, fall: 0.5, effects: [{ k: 'dmg', n: 150 }, { k: 'cc', cc: 'silence', dur: 2.5 }, { k: 'antiheal', pct: 50, dur: 8 }] }),
+  // the Oathkeeper: the whole side lifted up at once
+  paladin: a({ id: 'd-super2', cls: 'paladin', name: 'Dawn’s Covenant', text: 'A covenant of dawn on your whole side in reach: each is healed 220, freed of every hold, and shielded from 160 damage for 10 seconds.', icon: 'gate_opening_with_light_on_gold', color: '#ffe9a0', school: 'holy', role: 'heal', aim: 'friend', range: FAR, cast: 0, cd: 0, mana: 0, free: true, anyState: true, super: true, allies: true, effects: [{ k: 'token' }, { k: 'heal', n: 220 }, { k: 'absorb', n: 160, dur: 10 }] }),
+  // the Gravecaller: the barrow empties
+  warlock: a({ id: 'k-super2', cls: 'warlock', name: 'Grave Legion', text: 'The barrow empties: three of the ashbound dead claw up around you for 12 seconds, in place of any you had standing.', icon: 'graveyard_gate_on_black', color: '#9ae85a', school: 'shadow', role: 'summon', aim: 'self', range: 0, cast: 0, cd: 0, mana: 0, free: true, super: true, effects: [{ k: 'raise', n: 3, hp: 170, dmg: 9, life: 12, slow: 10 }] }),
+  // the Grovekeeper: the old wood's heart beating in every friend
+  druid: a({ id: 'l-super2', cls: 'druid', name: 'Heart of the Grove', text: 'The grove’s heart beats in your whole side in reach: each is healed 60 at once and 140 more over 8 seconds, and takes 10% less damage meanwhile.', icon: 'tree_of_life_on_green', color: '#9be86a', school: 'nature', role: 'heal', aim: 'friend', range: FAR, cast: 0, cd: 0, mana: 0, free: true, super: true, allies: true, effects: [{ k: 'heal', n: 60 }, { k: 'hot', n: 140, dur: 8 }, { k: 'guard', pct: 10, dur: 8 }] }),
+  // the Nightblade: out of the dark, the blow, and back into it
+  gloamknight: a({ id: 'g-super2', cls: 'gloamknight', name: 'Night’s Ruin', text: 'Step out of the dark at their back: 162 and stunned for 1.5 seconds, and you are back in the shroud before they can turn (nothing breaks it for 3 seconds).', icon: 'bone_wings_on_violet', color: '#b48cff', school: 'physical', role: 'burst', aim: 'enemy', range: MID, cast: 0, cd: 0, mana: 0, free: true, quiet: true, super: true, effects: [{ k: 'behind' }, { k: 'dmg', n: 180 }, { k: 'cc', cc: 'stun', dur: 1.5 }, { k: 'veil' }] }),
+};
+
+/** A class's two supers, the first first. */
+export const ultsOf = (cls: ClassId): [Ability, Ability] => [SUPERS[cls], SUPERS2[cls]];
+/** The super a setup picked (`id`), or the class's first. */
+export const ultOf = (cls: ClassId, id: string | undefined): Ability => ultsOf(cls).find((x) => x.id === id) ?? SUPERS[cls];
 export const superOf = (cls: ClassId): Ability => SUPERS[cls];
 
 const KITS: Record<ClassId, Ability[]> = {
@@ -318,7 +351,7 @@ const KITS: Record<ClassId, Ability[]> = {
   ],
 };
 
-export const ABILITIES: Record<string, Ability> = Object.fromEntries([...Object.values(KITS).flat(), ...Object.values(SUPERS), DASH, CHARM, SIGIL].map((x) => [x.id, x]));
+export const ABILITIES: Record<string, Ability> = Object.fromEntries([...Object.values(KITS).flat(), ...Object.values(SUPERS), ...Object.values(SUPERS2), DASH, CHARM, SIGIL].map((x) => [x.id, x]));
 export const kitOf = (cls: ClassId): Ability[] => KITS[cls];
 
 /**
@@ -337,16 +370,26 @@ export const BODY: Record<ClassId, { hp: number; mana: number }> = {
 };
 
 /** Ready-made bars: what a hero brings before their player changes anything, and what the computer plays. */
-export const PRESETS: Record<ClassId, { id: string; name: string; bar: string[]; talents: string[] }[]> = {
-  warrior: [{ id: 'arms', name: 'Reaper', bar: ['w-hew', 'w-gash', 'w-rush', 'w-hurl'], talents: ['w-1b', 'w-2c', 'w-3c'] }, { id: 'pin', name: 'Hound', bar: ['w-hew', 'w-bleed', 'w-hamstring', 'w-rush'], talents: ['w-1a', 'w-2a', 'w-3a'] }],
-  mage: [{ id: 'fire', name: 'Pyre', bar: ['m-lash', 'm-burn', 'm-pyre', 'm-blink'], talents: ['m-1a', 'm-2c', 'm-3b'] }, { id: 'frost', name: 'Rime', bar: ['m-spear', 'm-steal', 'm-ring', 'm-chill'], talents: ['m-1c', 'm-2a', 'm-3a'] }],
-  ranger: [{ id: 'sniper', name: 'Longbow', bar: ['r-swift', 'r-aimed', 'r-venom', 'r-hawk'], talents: ['r-1b', 'r-2a', 'r-3a'] }, { id: 'trapper', name: 'Trapper', bar: ['r-swift', 'r-hobble', 'r-wind', 'r-trap'], talents: ['r-1a', 'r-2b', 'r-3b'] }],
-  priest: [{ id: 'healer', name: 'Lifegiver', bar: ['p-mend', 'p-renew', 'p-ward', 'p-lance'], talents: ['p-1c', 'p-2c', 'p-3b'] }, { id: 'shadow', name: 'Curse-speaker', bar: ['p-smite', 'p-curse', 'p-lance', 'p-wail'], talents: ['p-1a', 'p-2b', 'p-3c'] }],
-  paladin: [{ id: 'holy', name: 'Oathkeeper', bar: ['d-flash', 'd-hands', 'd-hammer', 'd-judge'], talents: ['d-1b', 'd-2b', 'd-3a'] }, { id: 'ret', name: 'Zealot', bar: ['d-blow', 'd-judge', 'd-wrath', 'd-hammer'], talents: ['d-1a', 'd-2c', 'd-3c'] }],
-  warlock: [{ id: 'curses', name: 'Hexer', bar: ['k-agony', 'k-wither', 'k-unstable', 'k-dread'], talents: ['k-1b', 'k-2a', 'k-3c'] }, { id: 'grave', name: 'Gravecaller', bar: ['k-bolt', 'k-raise', 'k-frenzy', 'k-agony'], talents: ['k-1a', 'k-2c', 'k-3a'] }],
-  druid: [{ id: 'heal', name: 'Grovekeeper', bar: ['l-regrow', 'l-rejuv', 'l-bloom', 'l-moon'], talents: ['l-1a', 'l-2b', 'l-3a'] }, { id: 'star', name: 'Starseer', bar: ['l-lash', 'l-moon', 'l-gale', 'l-roots'], talents: ['l-1b', 'l-2a', 'l-3b'] }],
-  gloamknight: [{ id: 'reaver', name: 'Bloodsworn', bar: ['g-cleave', 'g-reap', 'g-lunge', 'g-hand'], talents: ['g-1c', 'g-2b', 'g-3b'] }, { id: 'shadow', name: 'Nightblade', bar: ['g-veil', 'g-ambush', 'g-knife', 'g-walk'], talents: ['g-1b', 'g-2c', 'g-3c'] }],
+export const PRESETS: Record<ClassId, { id: string; name: string; bar: string[]; talents: string[]; ult: string }[]> = {
+  warrior: [{ id: 'arms', name: 'Reaper', bar: ['w-hew', 'w-gash', 'w-rush', 'w-hurl'], talents: ['w-1b', 'w-2c', 'w-3c'], ult: 'w-super' }, { id: 'pin', name: 'Hound', bar: ['w-hew', 'w-bleed', 'w-hamstring', 'w-rush'], talents: ['w-1a', 'w-2a', 'w-3a'], ult: 'w-super2' }],
+  mage: [{ id: 'fire', name: 'Pyre', bar: ['m-lash', 'm-burn', 'm-pyre', 'm-blink'], talents: ['m-1a', 'm-2c', 'm-3b'], ult: 'm-super' }, { id: 'frost', name: 'Rime', bar: ['m-spear', 'm-steal', 'm-ring', 'm-chill'], talents: ['m-1c', 'm-2a', 'm-3a'], ult: 'm-super2' }],
+  ranger: [{ id: 'sniper', name: 'Longbow', bar: ['r-swift', 'r-aimed', 'r-venom', 'r-hawk'], talents: ['r-1b', 'r-2a', 'r-3a'], ult: 'r-super' }, { id: 'trapper', name: 'Trapper', bar: ['r-swift', 'r-hobble', 'r-wind', 'r-trap'], talents: ['r-1a', 'r-2b', 'r-3b'], ult: 'r-super2' }],
+  priest: [{ id: 'healer', name: 'Lifegiver', bar: ['p-mend', 'p-renew', 'p-ward', 'p-lance'], talents: ['p-1c', 'p-2c', 'p-3b'], ult: 'p-super' }, { id: 'shadow', name: 'Curse-speaker', bar: ['p-smite', 'p-curse', 'p-lance', 'p-wail'], talents: ['p-1a', 'p-2b', 'p-3c'], ult: 'p-super2' }],
+  paladin: [{ id: 'holy', name: 'Oathkeeper', bar: ['d-flash', 'd-hands', 'd-hammer', 'd-judge'], talents: ['d-1b', 'd-2b', 'd-3a'], ult: 'd-super2' }, { id: 'ret', name: 'Zealot', bar: ['d-blow', 'd-judge', 'd-wrath', 'd-hammer'], talents: ['d-1a', 'd-2c', 'd-3c'], ult: 'd-super' }],
+  warlock: [{ id: 'curses', name: 'Hexer', bar: ['k-agony', 'k-wither', 'k-unstable', 'k-dread'], talents: ['k-1b', 'k-2a', 'k-3c'], ult: 'k-super' }, { id: 'grave', name: 'Gravecaller', bar: ['k-bolt', 'k-raise', 'k-frenzy', 'k-agony'], talents: ['k-1a', 'k-2c', 'k-3a'], ult: 'k-super2' }],
+  druid: [{ id: 'heal', name: 'Grovekeeper', bar: ['l-regrow', 'l-rejuv', 'l-bloom', 'l-moon'], talents: ['l-1a', 'l-2b', 'l-3a'], ult: 'l-super2' }, { id: 'star', name: 'Starseer', bar: ['l-lash', 'l-moon', 'l-gale', 'l-roots'], talents: ['l-1b', 'l-2a', 'l-3b'], ult: 'l-super' }],
+  gloamknight: [{ id: 'reaver', name: 'Bloodsworn', bar: ['g-cleave', 'g-reap', 'g-lunge', 'g-hand'], talents: ['g-1c', 'g-2b', 'g-3b'], ult: 'g-super' }, { id: 'shadow', name: 'Nightblade', bar: ['g-veil', 'g-ambush', 'g-knife', 'g-walk'], talents: ['g-1b', 'g-2c', 'g-3c'], ult: 'g-super2' }],
 };
+
+/**
+ * The super that goes with a bar, when its setup hasn't picked one (a setup kept from before there were two, a
+ * computer's, a test's): the one of whichever ready-made setup shares most of its abilities, the first on a tie.
+ */
+export function ultFor(cls: ClassId, bar: readonly string[]): string {
+  const [a, b] = PRESETS[cls];
+  const share = (p: { bar: string[] } | undefined): number => (p ? p.bar.filter((id) => bar.includes(id)).length : -1);
+  return (share(b) > share(a) ? b! : a!).ult;
+}
 
 /**
  * A bar as it can be fought with: only its class's own abilities (an id from an older game, or one taken out since, is
@@ -382,8 +425,8 @@ export interface BarCombo {
  * leaving its mark on the target or by holding them the way the combo needs. A setup shows these, so its player knows
  * what to press after what.
  */
-export function barCombos(cls: ClassId, bar: readonly string[]): BarCombo[] {
-  const have = [...bar.map((id) => ABILITIES[id]).filter((x): x is Ability => !!x), SUPERS[cls]];
+export function barCombos(cls: ClassId, bar: readonly string[], ult?: string): BarCombo[] {
+  const have = [...bar.map((id) => ABILITIES[id]).filter((x): x is Ability => !!x), ultOf(cls, ult ?? ultFor(cls, bar))];
   const out: BarCombo[] = [];
   for (const to of have) {
     const c = to.combo;
@@ -403,7 +446,7 @@ export interface AbilityCombos {
 }
 
 export function combosOf(cls: ClassId, ab: Ability): AbilityCombos {
-  const all = [...KITS[cls], SUPERS[cls]];
+  const all = [...KITS[cls], ...ultsOf(cls)];
   return {
     lands: ab.combo ? { name: ab.combo.name, text: ab.combo.text, after: all.filter((x) => setsUpCombo(x, ab)) } : null,
     setsUp: all.filter((y) => setsUpCombo(ab, y)).map((y) => ({ name: y.combo!.name, text: y.combo!.text, then: y })),
@@ -436,4 +479,4 @@ export const OATHS: Oath[] = [
 ];
 
 /** Every icon The Ring shows, for the icon build. */
-export const ringIcons = (): string[] => [DASH.icon, CHARM.icon, SIGIL.icon, ...Object.values(SUPERS).map((x) => x.icon), ...Object.values(KITS).flat().map((x) => x.icon), ...OATHS.map((o) => o.icon)];
+export const ringIcons = (): string[] => [DASH.icon, CHARM.icon, SIGIL.icon, ...Object.values(SUPERS).map((x) => x.icon), ...Object.values(SUPERS2).map((x) => x.icon), ...Object.values(KITS).flat().map((x) => x.icon), ...OATHS.map((o) => o.icon)];

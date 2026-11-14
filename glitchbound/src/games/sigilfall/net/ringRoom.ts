@@ -22,6 +22,8 @@ export interface Pick {
   talents: string[];
   /** What they carry beside the bar: 'dash' (the Swift Step) or 'charm' (arena/abilities.ts STEPS). */
   step?: string;
+  /** Which of their class's supers (the match checks it is one of theirs). */
+  ult?: string;
   /** Their rating in the room's format, when a search brought them (arena/queue.ts): what a win over them is worth. */
   rating?: number;
 }
@@ -91,7 +93,8 @@ export function cleanPick(v: unknown): Pick | null {
   const talents = Array.isArray(p.talents) && p.talents.length <= 3 && p.talents.every((b) => typeof b === 'string' && ID.test(b)) ? (p.talents as string[]) : [];
   const rating = typeof p.rating === 'number' && Number.isFinite(p.rating) ? { rating: Math.max(0, Math.min(9999, Math.round(p.rating))) } : {};
   const step = p.step === 'dash' || p.step === 'charm' ? { step: p.step } : {};
-  return { team: p.team, cls: p.cls, bar: p.bar as string[], oath: p.oath, talents, ...step, ...rating };
+  const ult = typeof p.ult === 'string' && ID.test(p.ult) ? { ult: p.ult } : {};
+  return { team: p.team, cls: p.cls, bar: p.bar as string[], oath: p.oath, talents, ...step, ...ult, ...rating };
 }
 
 export function act(s: State, key: string, a: Action, now: number): string | null {

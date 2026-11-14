@@ -174,7 +174,10 @@ export class RingFx {
           for (let i = 0; i < 2; i++) this.tolls.push({ x: f.x, y: f.y, t: -i * 0.16, dur: 0.6, r: 30 });
           this.bursts.push({ x: f.x, y: f.y, t: 0, dur: 0.6, school: 'shadow', color: '#9ae85a', big: true, heal: false, seed: f.x % 97 });
         }
-        else if (ab.aim === 'near') this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.42, r: ab.range + HERO_R, color: ab.color, ring: true });
+        else if (ab.allies) {
+          // (a blessing on the whole side: a ring of its light on every friend it reaches)
+          for (const o of m.friendsOf(f)) if (!o.pet && Math.hypot(o.x - f.x, o.y - f.y) <= ab.range + HERO_R) this.flashes.push({ x: o.x, y: o.y, t: 0, dur: 0.8, r: 30, color: ab.color, ring: true });
+        } else if (ab.aim === 'near') this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.42, r: ab.range + HERO_R, color: ab.color, ring: true });
         else if (ab.cast === 0 && ab.range <= 40 && ab.aim === 'enemy') {
           // a blow leaves its arc in the air: wide for a cut, wider and heavier for a great one, narrow for a thrust
           const heavy = ab.role === 'burst' || !!ab.super;
@@ -324,6 +327,13 @@ export class RingFx {
         arc(0, 3, 50, 0.12, true);
         arc(Math.PI, 3, 50, 0.2, true);
         arc(Math.PI / 2, 3, 40, 0.28, true, '#c02a7a');
+        break;
+      case 'g-super2':
+        // out of the dark: a cross of cuts at their back, and the dusk closing over
+        arc(-0.7, 1.6, 40, 0, true);
+        arc(0.7, 1.6, 40, 0.08, true, '#8a4ae0');
+        arc(0, 2.6, 46, 0.16, true, '#c02a7a');
+        this.bursts.push({ x: f.x, y: f.y, t: 0, dur: 0.6, school: 'shadow', color: '#6a4aa0', big: true, heal: false, seed: f.x % 83 });
         break;
       case 'g-ward':
       case 'g-mantle':

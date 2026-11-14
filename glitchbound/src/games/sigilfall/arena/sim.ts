@@ -1,5 +1,5 @@
 import type { ClassId } from '../data/types';
-import { ABILITIES, BODY, DASH, GCD, OATHS, SIGIL, SLOTS, stepOf, superOf, type Ability, type CcKind, type Effect } from './abilities';
+import { ABILITIES, BODY, DASH, GCD, OATHS, SIGIL, SLOTS, stepOf, superOf, ultFor, ultOf, type Ability, type CcKind, type Effect } from './abilities';
 import { ARENA_H, ARENA_W, ENTRY_GATES, MAPS, type Pillar } from './maps';
 import { ARM, cleanTalents, EXECUTE, NEAR, RALLY, TALENT_BY_ID, type Does, type Talent, type Tune } from './talents';
 
@@ -103,6 +103,8 @@ export interface FighterSetup {
   talents?: string[];
   /** What they carry beside the bar: the Swift Step (`dash`, the default) or the Unbinding Charm (`charm`). */
   step?: string;
+  /** Which of their class's two supers (abilities.ts ultsOf); without it, the one that goes with their bar. */
+  ult?: string;
   /** The room seat playing them (null or missing: the computer, or the local player if `human`). */
   seat?: number | null;
   human?: boolean;
@@ -222,6 +224,8 @@ export interface Fighter {
   talents: string[];
   /** What they carry beside the bar (abilities.ts STEPS): the Swift Step, or the charm that breaks every hold. */
   step: string;
+  /** Their super: one of their class's two. */
+  ult: string;
   /**
    * What the oath and talents make of them, as multipliers: damage, healing, speed, how long they are held, cooldowns,
    * mana back, how long their own holds and slows last, damage taken, how fast their super fills, and the chance of a
@@ -529,6 +533,7 @@ export class Match {
         name: s.name,
         bar: s.bar.filter((b) => ABILITIES[b]?.cls === s.cls && !ABILITIES[b]!.super).slice(0, SLOTS),
         step: stepOf(s.step).id,
+        ult: ultOf(s.cls, s.ult ?? ultFor(s.cls, s.bar)).id,
         seat: s.seat ?? null,
         human: !!s.human,
         x: spot[0],
@@ -592,7 +597,7 @@ export class Match {
 
   /** The abilities everyone has besides their bar: the Swift Step and their class's super. */
   extras(f: Fighter): Ability[] {
-    return [stepOf(f.step), superOf(f.cls)];
+    return [stepOf(f.step), ultOf(f.cls, f.ult)];
   }
 
   /** Everything solid right now: the stone, and the gates until they lift. */
@@ -605,7 +610,7 @@ export class Match {
   }
 
   /** In the entry, a player can still change what they brought. */
-  equip(id: number, s: { bar: string[]; oath?: string; talents?: string[]; step?: string }): boolean {
+  equip(id: number, s: { bar: string[]; oath?: string; talents?: string[]; step?: string; ult?: string }): boolean {
     const f = this.fighters[id];
     if (!f || this.phase !== 'gates') return false;
     const bar = s.bar.filter((b, i) => ABILITIES[b]?.cls === f.cls && !ABILITIES[b]!.super && s.bar.indexOf(b) === i).slice(0, SLOTS);
@@ -614,6 +619,7 @@ export class Match {
     Object.assign(f, made);
     f.bar = bar;
     f.step = stepOf(s.step).id;
+    f.ult = ultOf(f.cls, s.ult ?? ultFor(f.cls, bar)).id;
     f.hp = made.maxHp;
     return true;
   }
@@ -702,7 +708,8 @@ export class Match {
     }
     if (ab.super && f.charge < 1) return 'Your super isn’t charged';
     if (ab.veiled && !this.hidden(f)) return 'Only from the shroud';
-    if (ab.effects.some((e) => e.k === 'frenzy') && !this.fighters.some((o) => o.pet?.owner === f.id && !o.dead)) return 'None of your dead stand';
+    // (rousing the dead wants some standing, unless it calls them up first)
+    if (ab.effects.some((e) => e.k === 'frenzy') && !ab.effects.some((e) => e.k === 'raise') && !this.fighters.some((o) => o.pet?.owner === f.id && !o.dead)) return 'None of your dead stand';
     // (a blink or a stag's leap goes even from roots)
     if (ab.effects.some((e) => e.k === 'dash') && this.rooted(f) && !f.perks.does.fold && !f.perks.does.stag) return 'Rooted';
     if ((f.cds[ab.id] ?? 0) > 0) return 'Not ready yet';
@@ -846,6 +853,13 @@ export class Match {
   /** A cast (or an instant) goes off. */
   private fire(f: Fighter, ab: Ability, t: Fighter, at?: { x: number; y: number }): void {
     this.events.push({ k: 'ab', id: f.id, ab: ab.id });
+    // (what a super does to its own user, as it goes)
+    for (const e of ab.self ?? []) this.apply(f, ab, f, e);
+    if (ab.allies) {
+      // (on every friend in reach and sight, its user among them)
+      for (const o of this.friendsOf(f)) if (!o.pet && Math.hypot(o.x - f.x, o.y - f.y) <= ab.range + HERO_R && (o === f || this.sees(f, o))) this.land(f, ab, o, true);
+      return;
+    }
     if (ab.aim === 'ground') {
       // placed: where its user put it, or under whoever it is aimed at. Everyone sees the patch before it lands.
       const p = this.reach(f, ab, at ?? t);
@@ -1450,6 +1464,7 @@ export class Match {
       oath: null,
       talents: [],
       step: DASH.id,
+      ult: owner.ult,
       // (they hit with their master's share, and none of the rest of their talents)
       mods: { dmg: owner.mods.dmg, heal: 1, speed: THRALL.speed, tenacity: 1, cool: 1, regen: 1, hold: 1, guard: 1, charge: 0, crit: CRIT },
       perks: NO_PERKS,

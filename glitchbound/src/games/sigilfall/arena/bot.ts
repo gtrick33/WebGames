@@ -1,4 +1,4 @@
-import { ABILITIES, CHARM, DASH, superOf, type Ability } from './abilities';
+import { ABILITIES, CHARM, DASH, type Ability } from './abilities';
 import { ARENA_H, ARENA_W } from './maps';
 import { BASE_SPEED, HERO_R, RANGED, type Fighter, type Match, type MoveInput, type Zone } from './sim';
 
@@ -358,8 +358,13 @@ function attack(m: Match, f: Fighter, b: Brain, skill: number, target: Fighter):
 
 /** The super, when it's full: on a kill, on a crowd, or to save a friend. */
 function unleash(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[], target: Fighter, friends: Fighter[]): void {
-  const sup = superOf(f.cls);
+  const sup = m.extras(f)[1]!;
   if (f.charge < 1 || b.rand() > 0.35 + skill * 0.65) return;
+  // (one that calls up the dead, or works on its user alone: once the fight is close)
+  if (sup.aim === 'self') {
+    if (Math.hypot(target.x - f.x, target.y - f.y) < 150 && m.sees(f, target) && !m.blocked(f, sup)) m.press(f.id, sup.id);
+    return;
+  }
   if (sup.aim === 'friend') {
     const low = [...friends].sort((a, c) => hpShare(a) - hpShare(c))[0];
     if (!low || hpShare(low) > 0.6) return;
