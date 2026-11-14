@@ -6,7 +6,7 @@ import { ABILITIES, DASH, kitOf, OATHS, PRESETS, SLOTS, superOf, SUPERS } from '
 import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
 import { afterMatch, COMPS, drawOpponents, namedApart, NEW_STANDING, nextRank, rankOf, ratingChange, RANKS, SET_COUNT, setsOf, skillAt } from '../src/games/sigilfall/arena/ladder';
 import { ARENA_H, ARENA_W, ENTRY_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
-import { cleanTalents, ROW_NAMES, TALENTS } from '../src/games/sigilfall/arena/talents';
+import { cleanTalents, ROW_NAMES, TALENT_BY_ID, TALENTS } from '../src/games/sigilfall/arena/talents';
 import { BASE_SPEED, CAST_SLOW, CLASS_DMG, clearLine, CLOSE_FROM, CLOSE_TO, GATES, HERO_R, Match, MATCH_LIMIT, SIGIL_FIRST, ZONE_END, ZONE_START, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
@@ -457,15 +457,16 @@ describe('The Ring: talents and set ups', () => {
       return before - b.hp;
     };
     // (the same talent for one blow as for another: nothing hangs on which ability is on the bar)
-    expect(hit(['w-1b'], ['w-hew'], true)).toBeGreaterThan(hit([], ['w-hew'], true) * 1.15);
-    expect(hit(['w-1b'], ['w-gash'], true)).toBeGreaterThan(hit([], ['w-gash'], true) * 1.15);
+    const exec = TALENT_BY_ID['w-1b']!.exec!;
+    expect(hit(['w-1b'], ['w-hew'], true)).toBeCloseTo(hit([], ['w-hew'], true) * (1 + exec), -0.5);
+    expect(hit(['w-1b'], ['w-gash'], true)).toBeCloseTo(hit([], ['w-gash'], true) * (1 + exec), -0.5);
     expect(hit(['w-1b'])).toBe(hit([]));
 
     // Fold Space: the Swift Step comes back a second slower, for being a blink
     const m = new Match({ seed: 1, map: 'sands', fighters: [{ ...fighter(0, 'mage', ['m-lash', 'm-blink', 'm-snap', 'm-chill']), talents: ['m-2b'] }, fighter(1, 'warrior')] });
     m.step(GATES + 0.01, {});
     expect(m.press(0, DASH.id)).toBeNull();
-    expect(m.fighters[0]!.cds[DASH.id]).toBeCloseTo(DASH.cd * 1.2);
+    expect(m.fighters[0]!.cds[DASH.id]).toBeCloseTo(DASH.cd * TALENT_BY_ID['m-2b']!.tune!.dash!.cd!);
 
     // holds put on them last longer, a hold of the bar's or the super's alike
     const held = (talents: string[]): number => {
@@ -478,7 +479,7 @@ describe('The Ring: talents and set ups', () => {
       n.press(0, 'm-chill');
       return n.held(n.fighters[1]!)!.t;
     };
-    expect(held(['m-2a'])).toBeCloseTo(held([]) * 1.2, 5);
+    expect(held(['m-2a'])).toBeCloseTo(held([]) * (1 + TALENT_BY_ID['m-2a']!.hold!), 5);
   });
 
   it('what a talent does now and then: a slow on every hit, a stun once in a while, a snare behind a step, a second wind', () => {
@@ -493,7 +494,7 @@ describe('The Ring: talents and set ups', () => {
     // Crippling Blows: whatever lands slows, a blow with no slow of its own as much as any
     const m = close(['w-2a'], ['w-gash']);
     m.press(0, 'w-gash');
-    expect(m.fighters[1]!.auras.some((a) => a.kind === 'slow' && Math.abs(a.n - 0.3) < 1e-9)).toBe(true);
+    expect(m.fighters[1]!.auras.some((a) => a.kind === 'slow' && Math.abs(a.n - TALENT_BY_ID['w-2a']!.slow!.pct / 100) < 1e-9)).toBe(true);
 
     // Bonebreaker: a blow stuns, and not again for a while
     const s = close(['w-2b'], ['w-hew']);

@@ -34,8 +34,8 @@ export interface Tune {
   spread?: number;
   /** It strikes the nearest other enemy as well. */
   bounce?: boolean;
-  /** Its user drinks all the damage it deals (in place of what it heals by its own words). */
-  drink?: boolean;
+  /** Its user drinks this share of the damage it deals (in place of what it heals by its own words). */
+  drink?: number;
 }
 
 /**
@@ -45,7 +45,7 @@ export interface Tune {
 export type Doing =
   // the warrior
   | { k: 'grudge'; step: number; max: number }
-  | { k: 'check'; dur: number; every: number }
+  | { k: 'check'; dur: number; every: number; reach: number }
   | { k: 'scar'; step: number; max: number; dur: number }
   | { k: 'loose'; pct: number; dur: number }
   // the mage
@@ -90,7 +90,7 @@ export type Doing =
   | { k: 'mirror'; share: number; every: number }
   | { k: 'pact'; per: number; every: number }
   | { k: 'bargain'; pct: number }
-  | { k: 'soulward'; pct: number; max: number; dur: number }
+  | { k: 'soulward'; pct: number; max: number; dur: number; every: number }
   // the druid
   | { k: 'tides'; pct: number }
   | { k: 'seasons'; pct: number }
@@ -99,11 +99,11 @@ export type Doing =
   | { k: 'gale'; dist: number; every: number }
   | { k: 'oak'; dur: number; guard: number; pct: number; every: number }
   | { k: 'vigor'; pct: number; every: number }
-  | { k: 'shed' }
+  | { k: 'shed'; heal: number }
   // the Gloamknight
   | { k: 'price'; cost: number; pct: number }
   | { k: 'harvest'; life: number; every: number }
-  | { k: 'drag'; reach: number; every: number }
+  | { k: 'drag'; reach: number; every: number; pct: number; dur: number }
   | { k: 'mantle'; pct: number }
   | { k: 'knell'; pct: number }
   | { k: 'revenant'; dur: number; live: number }
@@ -156,16 +156,16 @@ export const TALENTS: Record<ClassId, Talent[]> = {
   // a brawler who won't let go: the longer he stays on someone, the worse it gets for them
   warrior: [
     ...rowOf('warrior', 0, [
-      { name: 'Grudge', text: 'Each blow in a row on the same enemy hits 3% harder, up to 15%. Turning on someone else starts it over.', icon: 'sword_with_three_stacked_chevrons_on_red', does: { k: 'grudge', step: 0.03, max: 5 } },
-      { name: 'Headsman', text: 'Deal 20% more damage to anyone under 35% health.', icon: 'death_mark_target_on_black', exec: 0.2 },
-      { name: 'Fault Line', text: 'Quakebreaker drags everyone near you in, where it would throw them back.', tune: { 'w-super': { pull: true } } },
+      { name: 'Grudge', text: 'Each blow in a row on the same enemy hits 2% harder, up to 10%. Turning on someone else starts it over.', icon: 'sword_with_three_stacked_chevrons_on_red', does: { k: 'grudge', step: 0.02, max: 5 } },
+      { name: 'Headsman', text: 'Deal 25% more damage to anyone under 35% health.', icon: 'death_mark_target_on_black', exec: 0.25 },
+      { name: 'Fault Line', text: 'Quakebreaker hits 10% harder and drags everyone near you in, where it would throw them back.', tune: { 'w-super': { pull: true, power: 1.1 } } },
     ], 'w'),
     // (the warrior's holds were too many and too long, one after another: the owner, "warriors have too much cc ...
     // or maybe make cc into talent options". Its bar holds less, and a stun or a slow on every blow is chosen here)
     ...rowOf('warrior', 1, [
-      { name: 'Crippling Blows', text: 'What you hit is slowed by 30% for 3 seconds.', icon: 'slowed_status_snail_on_teal', slow: { pct: 30, dur: 3 } },
-      { name: 'Bonebreaker', text: 'Once every 16 seconds, a blow stuns for 1 second.', icon: 'stunned_status_stars_on_yellow', stun: { dur: 1, every: 16 } },
-      { name: 'Shoulder Check', text: 'A Swift Step that ends beside an enemy knocks them off their feet: stunned for 1 second. Once every 12 seconds.', icon: 'shield_bash_with_impact_rays_on_red', does: { k: 'check', dur: 1, every: 12 } },
+      { name: 'Crippling Blows', text: 'What you hit is slowed by 20% for 2 seconds.', icon: 'slowed_status_snail_on_teal', slow: { pct: 20, dur: 2 } },
+      { name: 'Bonebreaker', text: 'Once every 12 seconds, a blow stuns for 1 second.', icon: 'stunned_status_stars_on_yellow', stun: { dur: 1, every: 12 } },
+      { name: 'Shoulder Check', text: 'A Swift Step that ends near an enemy knocks them off their feet: stunned for 1.5 seconds. Once every 10 seconds.', icon: 'shield_bash_with_impact_rays_on_red', does: { k: 'check', dur: 1.5, every: 10, reach: 60 } },
     ], 'w'),
     ...rowOf('warrior', 2, [
       { name: 'Scar Tissue', text: 'Every blow that lands on you hardens you: 2% less damage taken for 6 seconds, up to 10%.', icon: 'rock_armour_skin_on_brown', does: { k: 'scar', step: 0.02, max: 0.1, dur: 6 } },
@@ -176,27 +176,27 @@ export const TALENTS: Record<ClassId, Talent[]> = {
   // glass that bends space: fire that spreads, frost that counts, and never where the blow lands
   mage: [
     ...rowOf('mage', 0, [
-      { name: 'Wildfire', text: 'Your critical hits set them burning: a third of the hit again over 4 seconds.', icon: 'fire_eye_on_red', does: { k: 'wildfire', share: 1 / 3, dur: 4 } },
+      { name: 'Wildfire', text: 'Your critical hits set them burning: 40% of the hit again over 4 seconds.', icon: 'fire_eye_on_red', does: { k: 'wildfire', share: 0.4, dur: 4 } },
       { name: 'Brimming Power', text: 'While your mana is above 80%, your spells hit 12% harder.', icon: 'magic_up_status_star_arrow_up_on_violet', does: { k: 'brim', over: 0.8, pct: 0.12 } },
-      { name: 'Comet Caller', text: 'Cinder Comet leaves everyone it hits burning: 90 more over 6 seconds.', tune: { 'm-super': { extra: [{ k: 'dot', n: 90, dur: 6 }] } } },
+      { name: 'Comet Caller', text: 'Cinder Comet leaves everyone it hits burning: 100 more over 6 seconds.', tune: { 'm-super': { extra: [{ k: 'dot', n: 100, dur: 6 }] } } },
     ], 'm'),
     ...rowOf('mage', 1, [
-      { name: 'Long Winter', text: 'Holds and slows you put on an enemy last 20% longer, your super’s too.', icon: 'frozen_chain_on_navy', hold: 0.2 },
-      { name: 'Fold Space', text: 'Your Swift Step is a blink: half again as far, out of roots and slows, even rooted. It comes back 1 second slower.', icon: 'spirit_swap_arrows_on_teal', tune: { dash: { cd: 1.2 } }, does: { k: 'fold', far: 1.5 } },
-      { name: 'Third Chill', text: 'Every third hit on the same enemy within 6 seconds freezes them to the ground for 1.5 seconds. Once every 20 seconds.', icon: 'frozen_status_snowflake_on_blue', does: { k: 'third', n: 3, within: 6, dur: 1.5, every: 20 } },
+      { name: 'Long Winter', text: 'Holds and slows you put on an enemy last 25% longer, your super’s too.', icon: 'frozen_chain_on_navy', hold: 0.25 },
+      { name: 'Fold Space', text: 'Your Swift Step is a blink: half again as far, out of roots and slows, even rooted. It comes back half a second slower.', icon: 'spirit_swap_arrows_on_teal', tune: { dash: { cd: 1.1 } }, does: { k: 'fold', far: 1.5 } },
+      { name: 'Third Chill', text: 'Every third hit on the same enemy within 6 seconds freezes them to the ground for 1.2 seconds. Once every 20 seconds.', icon: 'frozen_status_snowflake_on_blue', does: { k: 'third', n: 3, within: 6, dur: 1.2, every: 20 } },
     ], 'm'),
     ...rowOf('mage', 2, [
-      { name: 'Mana Skin', text: 'While your mana is above half, 30% of the damage you take is paid from it instead, 1 mana for every 6.', icon: 'shield_status_bubble_on_blue', does: { k: 'manaskin', share: 0.3, per: 6, above: 0.5 } },
+      { name: 'Mana Skin', text: 'While your mana is above 30%, 30% of the damage you take is paid from it instead, 1 mana for every 6.', icon: 'shield_status_bubble_on_blue', does: { k: 'manaskin', share: 0.3, per: 6, above: 0.3 } },
       { name: 'Rewind', text: 'A Swift Step takes back half the damage you took in the 3 seconds before it. Once every 30 seconds.', icon: 'frozen_hourglass_on_navy', does: { k: 'rewind', back: 3, share: 0.5, every: 30 } },
-      { name: 'Vanishing Point', text: 'Fall under 35% health and you vanish, to appear away from the nearest enemy, out of roots and slows. Once every 45 seconds.', icon: 'vanish_puff_of_smoke_on_violet', does: { k: 'vanish', dist: 100, every: 45 } },
+      { name: 'Vanishing Point', text: 'Fall under 35% health and you vanish, to appear away from the nearest enemy, out of roots and slows. Once every 30 seconds.', icon: 'vanish_puff_of_smoke_on_violet', does: { k: 'vanish', dist: 100, every: 30 } },
     ], 'm'),
   ],
   // the kiter: marks a quarry, hits hardest from far off, and heals where nobody can see
   ranger: [
     ...rowOf('ranger', 0, [
-      { name: 'Quarry', text: 'Your hits mark one enemy at a time: your whole side deals 8% more damage to them.', icon: 'marked_status_target_on_red', does: { k: 'quarry', pct: 0.08 } },
-      { name: 'Long Shot', text: 'Hits from farther than half their reach away hit 12% harder.', icon: 'long_range_arrow_with_a_scope_ring_on_teal', does: { k: 'far', pct: 0.12 } },
-      { name: 'Skypiercer', text: 'Skypierce Arrow flies on through: everyone in a line behind them is hit too.', tune: { 'r-super': { line: true } } },
+      { name: 'Quarry', text: 'Your hits mark one enemy at a time: your whole side deals 10% more damage to them.', icon: 'marked_status_target_on_red', does: { k: 'quarry', pct: 0.1 } },
+      { name: 'Long Shot', text: 'Hits from farther than half their reach away hit 15% harder.', icon: 'long_range_arrow_with_a_scope_ring_on_teal', does: { k: 'far', pct: 0.15 } },
+      { name: 'Skypiercer', text: 'Skypierce Arrow hits 40% harder and flies on through: everyone in a line behind them is hit too.', tune: { 'r-super': { line: true, power: 1.4 } } },
     ], 'r'),
     ...rowOf('ranger', 1, [
       { name: 'Pinning Shot', text: 'A critical hit pins them to the ground for 1.5 seconds. Once every 12 seconds.', icon: 'rope_arrow_with_a_hook_on_brown', does: { k: 'pin', dur: 1.5, every: 12 } },
@@ -204,17 +204,17 @@ export const TALENTS: Record<ClassId, Talent[]> = {
       { name: 'Hawk’s Cry', text: 'Once every 20 seconds, hitting someone mid-cast cuts the cast off and locks its school for 2 seconds.', icon: 'eagle_eye_on_teal', does: { k: 'cry', lock: 2, every: 20 } },
     ], 'r'),
     ...rowOf('ranger', 2, [
-      { name: 'Cover', text: 'After 2 seconds out of every enemy’s sight, you heal 3% of your health each second.', icon: 'hidden_glade_on_green', does: { k: 'cover', after: 2, pct: 0.03 } },
+      { name: 'Cover', text: 'After 1.5 seconds out of every enemy’s sight, you heal 4% of your health each second.', icon: 'hidden_glade_on_green', does: { k: 'cover', after: 1.5, pct: 0.04 } },
       { name: 'Forager', text: 'Healing spheres and the sigil heal you 20% more, and quicken you by 15% for 3 seconds.', icon: 'fruit_of_life_on_green', does: { k: 'forage', more: 0.2, pct: 15, dur: 3 } },
-      { name: 'Antivenom', text: 'Burns, bleeds, curses and poisons hurt you 30% less.', icon: 'poison_vial_on_green', does: { k: 'antivenom', pct: 0.3 } },
+      { name: 'Antivenom', text: 'Burns, bleeds, curses and poisons hurt you 25% less.', icon: 'poison_vial_on_green', does: { k: 'antivenom', pct: 0.25 } },
     ], 'r'),
   ],
   // heals by fighting, shields by overflowing, and keeps on after falling
   priest: [
     ...rowOf('priest', 0, [
       { name: 'Light Returned', text: '10% of the damage you deal heals whichever friend is most hurt (you, if nobody is hurt more).', icon: 'light_crescent_and_a_sun_on_gold', does: { k: 'returned', share: 0.1 } },
-      { name: 'Bright Wings', text: 'Dawnward lands on every friend at once: half as strong on the others.', tune: { 'p-super': { spread: 0.5 } } },
-      { name: 'Brimming Grace', text: 'Your healing past full health becomes a shield, up to 8% of their health, for 6 seconds.', icon: 'golden_chalice_with_a_light_glow_on_gold', does: { k: 'overflow', cap: 0.08, dur: 6 } },
+      { name: 'Bright Wings', text: 'Dawnward lands on every friend at once: three quarters as strong on the others.', tune: { 'p-super': { spread: 0.75 } } },
+      { name: 'Brimming Grace', text: 'Your healing past full health becomes a shield, up to 12% of their health, for 8 seconds.', icon: 'golden_chalice_with_a_light_glow_on_gold', does: { k: 'overflow', cap: 0.12, dur: 8 } },
     ], 'p'),
     ...rowOf('priest', 1, [
       { name: 'Guardian Leap', text: 'Your Swift Step goes 30% farther, and with a friend chosen within reach, it lands you at their side.', icon: 'winged_golden_boot_on_gold', does: { k: 'leap', far: 1.3, reach: 200 } },
@@ -222,7 +222,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
       { name: 'Halo of Dread', text: 'Once every 25 seconds, the next enemy to hit you flees in fear for 1 second.', icon: 'blessed_status_halo_on_gold', does: { k: 'halo', dur: 1, every: 25 } },
     ], 'p'),
     ...rowOf('priest', 2, [
-      { name: 'Lingering Spirit', text: 'When you fall, you linger 5 seconds as a spirit: nothing can hurt or heal you, and you can still fight. Once a match.', icon: 'white_wing_over_a_heart_on_gold', does: { k: 'spirit', dur: 5 } },
+      { name: 'Lingering Spirit', text: 'When you fall, you linger 3 seconds as a spirit: nothing can hurt or heal you, and you can still fight. Once a match.', icon: 'white_wing_over_a_heart_on_gold', does: { k: 'spirit', dur: 3 } },
       { name: 'Morning Ward', text: 'Every 20 seconds a ward forms on you that soaks up 5% of your health.', icon: 'holy_resist_status_sun_shield_on_gold', does: { k: 'ward', pct: 0.05, every: 20 } },
       { name: 'Open Heart', text: 'All healing you are given is 10% stronger: your own, your friends’, the spheres and the sigil.', icon: 'heart_with_green_gold_sparkles_on_gold', does: { k: 'open', pct: 0.1 } },
     ], 'p'),
@@ -241,32 +241,32 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ], 'd'),
     ...rowOf('paladin', 2, [
       { name: 'Shared Burden', text: 'A fifth of the damage friends near you take is yours instead, and you take 6% less.', icon: 'golden_heart_with_white_wings_on_gold', guard: 0.06, does: { k: 'burden', share: 0.2 } },
-      { name: 'Plate and Prayer', text: 'Blows and arrows hurt you 12% less.', icon: 'shining_tower_shield_with_a_lion_on_gold', does: { k: 'plate', pct: 0.12 } },
+      { name: 'Plate and Prayer', text: 'Blows and arrows hurt you 15% less.', icon: 'shining_tower_shield_with_a_lion_on_gold', does: { k: 'plate', pct: 0.15 } },
       { name: 'Unbroken Vow', text: 'The first time each match you fall under 20% health, nothing can touch you for 2 seconds.', icon: 'invincible_status_gold_shield_on_gold', does: { k: 'vow', under: 0.2, dur: 2 } },
     ], 'd'),
   ],
   // bargains: an imp on the shoulder, power bought with blood, curses thrown back
   warlock: [
     ...rowOf('warlock', 0, [
-      { name: 'Pit Imp', text: 'An imp rides on your shoulder and spits shadow at your enemy every 3 seconds: 12 damage.', icon: 'shadow_imp_summon_on_black', does: { k: 'imp', n: 12, every: 3, range: 185 } },
+      { name: 'Pit Imp', text: 'An imp rides on your shoulder and spits shadow at your enemy every 3 seconds: 10 damage.', icon: 'shadow_imp_summon_on_black', does: { k: 'imp', n: 10, every: 3, range: 185 } },
       { name: 'Black Desperation', text: 'The lower your health, the harder you hit: up to 20% harder at the very end.', icon: 'burning_red_eye_of_rage_on_black', does: { k: 'desperate', pct: 0.2 } },
-      { name: 'Riftcaller', text: 'Riftmaw drags everyone it opens under into its middle.', tune: { 'k-super': { pull: true } } },
+      { name: 'Riftcaller', text: 'Riftmaw hits 10% harder and drags everyone it opens under into its middle.', tune: { 'k-super': { pull: true, power: 1.1 } } },
     ], 'k'),
     ...rowOf('warlock', 1, [
-      { name: 'Enfeeble', text: 'Enemies you hurt deal 8% less damage for 4 seconds.', icon: 'cursed_status_dark_cloud_on_violet', does: { k: 'enfeeble', pct: 8, dur: 4 } },
+      { name: 'Enfeeble', text: 'Enemies you hurt deal 8% less damage for 3 seconds.', icon: 'cursed_status_dark_cloud_on_violet', does: { k: 'enfeeble', pct: 8, dur: 3 } },
       { name: 'Way Back', text: 'For 8 seconds after a Swift Step, your next one takes you back to where the first began.', icon: 'dark_portal_on_black', does: { k: 'back', within: 8 } },
       { name: 'Mirror Curse', text: 'Once every 20 seconds, the first hold put on you is turned back on whoever put it, for half as long.', icon: 'cursed_mirror_on_violet', does: { k: 'mirror', share: 0.5, every: 20 } },
     ], 'k'),
     ...rowOf('warlock', 2, [
-      { name: 'Hollow Pact', text: 'Fall under 35% health and all your mana becomes health, 2 for each. Once every 45 seconds.', icon: 'dark_heart_beating_on_black', does: { k: 'pact', per: 2, every: 45 } },
-      { name: 'Unholy Bargain', text: 'Take 8% less damage, but all healing on you is 25% weaker.', icon: 'cursed_silver_coin_on_black', guard: 0.08, does: { k: 'bargain', pct: 0.25 } },
-      { name: 'Soul Shield', text: 'Each second you deal damage, a hit or a burn, wards you for 1% of your health, up to 6%, for 5 seconds.', icon: 'soul_orb_rising_on_violet', does: { k: 'soulward', pct: 0.01, max: 0.06, dur: 5 } },
+      { name: 'Hollow Pact', text: 'Fall under 35% health and all your mana becomes health, 3 for each. Once every 45 seconds.', icon: 'dark_heart_beating_on_black', does: { k: 'pact', per: 3, every: 45 } },
+      { name: 'Unholy Bargain', text: 'Take 12% less damage, but all healing on you is 25% weaker.', icon: 'cursed_silver_coin_on_black', guard: 0.12, does: { k: 'bargain', pct: 0.25 } },
+      { name: 'Soul Shield', text: 'Every 2 seconds that you deal damage, a hit or a burn, you are warded for 1% of your health, up to 4%, for 5 seconds.', icon: 'soul_orb_rising_on_violet', does: { k: 'soulward', pct: 0.01, max: 0.04, dur: 5, every: 2 } },
     ], 'k'),
   ],
   // the wild: sun and moon in turn, the shapes of beasts, and an old oak when it goes badly
   druid: [
     ...rowOf('druid', 0, [
-      { name: 'Sun and Moon', text: 'Dealing damage makes your next heal 20% stronger; healing makes your next hit 20% stronger.', icon: 'eclipse_sun_on_black', does: { k: 'tides', pct: 0.2 } },
+      { name: 'Sun and Moon', text: 'Dealing damage makes your next heal 25% stronger; healing makes your next hit 25% stronger.', icon: 'eclipse_sun_on_black', does: { k: 'tides', pct: 0.25 } },
       { name: 'Gathering Storm', text: 'Thornstorm leaves a thicket behind: everyone it catches is slowed by half for 4 seconds after the thorns let go.', tune: { 'l-super': { extra: [{ k: 'slow', pct: 50, dur: 5.5 }] } } },
       { name: 'Long Seasons', text: 'Your heals and burns over time last 30% longer.', icon: 'fern_unfurling_on_teal', does: { k: 'seasons', pct: 0.3 } },
     ], 'l'),
@@ -278,24 +278,24 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...rowOf('druid', 2, [
       { name: 'Heartwood', text: 'Fall under 35% health and you take root as an old oak for 4 seconds: 40% less damage taken, 4% of your health back each second. Once a minute.', icon: 'treant_face_on_green', does: { k: 'oak', dur: 4, guard: 0.4, pct: 0.04, every: 60 } },
       { name: 'Wild Vigor', text: 'You heal 2% of your health every 5 seconds.', icon: 'regeneration_leaf_mastery_on_green', does: { k: 'vigor', pct: 0.02, every: 5 } },
-      { name: 'Shed Skin', text: 'Your Swift Step sheds one curse, poison or hex from you.', icon: 'falling_leaves_on_orange', does: { k: 'shed' } },
+      { name: 'Shed Skin', text: 'Your Swift Step sheds one curse, poison or hex from you, and mends 4% of your health.', icon: 'falling_leaves_on_orange', does: { k: 'shed', heal: 0.04 } },
     ], 'l'),
   ],
   // the dark that drinks: blows bought with blood, the dead at his call, and a grave he won't stay in
   gloamknight: [
     ...rowOf('gloamknight', 0, [
       { name: 'Blood Price', text: 'Each attack you make costs 1% of your health and hits 20% harder.', icon: 'heart_pierced_by_a_dagger_on_black', does: { k: 'price', cost: 0.01, pct: 0.2 } },
-      { name: 'Grave Harvest', text: 'When an enemy near you falls under 35% health, one of the ashbound dead claws up beside you for 8 seconds. Once every 25 seconds.', icon: 'raise_dead_grave_with_bones_on_dark_green', does: { k: 'harvest', life: 8, every: 25 } },
-      { name: 'Eclipse Hunger', text: 'Eclipse Reaping drinks all the damage it deals, not just 100.', tune: { 'g-super': { drink: true } } },
+      { name: 'Grave Harvest', text: 'When an enemy near you falls under 35% health, one of the ashbound dead claws up beside you for 10 seconds. Once every 20 seconds.', icon: 'raise_dead_grave_with_bones_on_dark_green', does: { k: 'harvest', life: 10, every: 20 } },
+      { name: 'Eclipse Hunger', text: 'Eclipse Reaping drinks 80% of what it deals, not just 100.', tune: { 'g-super': { drink: 0.8 } } },
     ], 'g'),
     ...rowOf('gloamknight', 1, [
-      { name: 'Drag Below', text: 'Once every 15 seconds, a Swift Step toward an enemy within reach drags them to you instead.', icon: 'chain_with_a_hook_pulling_on_grey', does: { k: 'drag', reach: 120, every: 15 } },
+      { name: 'Drag Below', text: 'Once every 10 seconds, a Swift Step toward an enemy within reach drags them along to where it ends, slowed by half for 2 seconds.', icon: 'chain_with_a_hook_pulling_on_grey', does: { k: 'drag', reach: 120, every: 10, pct: 50, dur: 2 } },
       { name: 'Dusk Mantle', text: 'Enemies within arm’s reach of you move 15% slower.', icon: 'shadow_veil_curtain_on_violet', does: { k: 'mantle', pct: 0.15 } },
       { name: 'Death Knell', text: 'Enemies under 35% health near you are healed 40% less.', icon: 'skull_lantern_on_black', does: { k: 'knell', pct: 0.4 } },
     ], 'g'),
     ...rowOf('gloamknight', 2, [
       { name: 'Unquiet Grave', text: 'Once a match, a killing blow makes you a revenant for 5 seconds: you drink all you deal, and nobody else can heal you. End it above 25% health and you live.', icon: 'ghost_face_screaming_on_teal', does: { k: 'revenant', dur: 5, live: 0.25 } },
-      { name: 'Thirst of Dusk', text: 'You and friends near you drink 10% of the damage you deal.', icon: 'vampire_bat_on_black', does: { k: 'thirst', pct: 0.1 } },
+      { name: 'Thirst of Dusk', text: 'You and friends near you drink 12% of the damage you deal.', icon: 'vampire_bat_on_black', does: { k: 'thirst', pct: 0.12 } },
       { name: 'Bone Shield', text: 'Three plates of bone each take 30% off one hit and break. One grows back every 8 seconds.', icon: 'bone_heap_on_grey', does: { k: 'bones', n: 3, pct: 0.3, every: 8 } },
     ], 'g'),
   ],

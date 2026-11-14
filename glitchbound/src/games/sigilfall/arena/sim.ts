@@ -135,9 +135,10 @@ export const RANGED: ReadonlySet<ClassId> = new Set<ClassId>(['mage', 'ranger', 
  * 0.72 to 0.74, the warlock 0.84 to 0.9 and the druid 0.81 to 0.85, which put every class between 45% and 56%.
  * The Gloamknight 0.84 to 0.9 on 2026-11-13, when its blows gave back less of what they dealt (its self-healing made it
  * the best in 1v1 and among the worst in teams). From then on each setup is tuned on its own abilities' numbers, in
- * 1v1, 2v2 and 3v3 together: see the list of numbers in tests/sigilfall-ring-balance.test.ts.
+ * 1v1, 2v2 and 3v3 together: see the list of numbers in tests/sigilfall-ring-balance.test.ts. The mage 0.74 to 0.72
+ * when the talents became each class's own (2026-11-13): its new ones carry it further in a duel than in a team fight.
  */
-export const CLASS_DMG: Readonly<Record<ClassId, number>> = { warrior: 0.92, paladin: 0.88, gloamknight: 0.9, mage: 0.74, ranger: 0.78, warlock: 0.9, priest: 0.78, druid: 0.85 };
+export const CLASS_DMG: Readonly<Record<ClassId, number>> = { warrior: 0.92, paladin: 0.88, gloamknight: 0.9, mage: 0.72, ranger: 0.78, warlock: 0.9, priest: 0.78, druid: 0.85 };
 
 export interface Aura {
   /** The ability it came from. */
@@ -914,8 +915,9 @@ export class Match {
     switch (e.k) {
       case 'dmg': {
         const dealt = this.damage(f, t, e.n * power, true, ab);
-        // what drains gives back: an ability with both heals its user (or, sharpened, all it dealt)
-        if (f.tune[ab.id]?.drink && dealt > 0) this.mend(f, dealt);
+        // what drains gives back: an ability with both heals its user (or, sharpened, a share of all it dealt)
+        const drink = f.tune[ab.id]?.drink;
+        if (drink && dealt > 0) this.mend(f, dealt * drink);
         return;
       }
       case 'heal':
@@ -1135,7 +1137,7 @@ export class Match {
 
   /**
    * The Swift Step, and what a talent makes of it: a snare left behind (Wild Snare), what was taken lately given back
-   * (Rewind), a curse shed (Shed Skin), a stag's shape (Stag Form), the way back (Way Back), an enemy dragged in (Drag
+   * (Rewind), a curse shed (Shed Skin), a stag's shape (Stag Form), the way back (Way Back), an enemy dragged along (Drag
    * Below), a leap to a friend (Guardian Leap), a blink (Fold Space). One that ends beside an enemy may knock them down
    * (Shoulder Check): that is seen when it ends (arrive).
    */
@@ -1160,7 +1162,10 @@ export class Match {
         say('rewind');
       }
     }
-    if (does.shed && f.auras.some((a) => a.magic && a.harmful)) this.dispel(f, f);
+    if (does.shed) {
+      if (f.auras.some((a) => a.magic && a.harmful)) this.dispel(f, f);
+      this.mend(f, f.maxHp * does.shed.heal);
+    }
     if (does.stag) {
       const base = { ab: abOfDoing(f.cls, 'stag').id, src: f.id, harmful: false, magic: false, dur: does.stag.dur };
       f.auras = f.auras.filter((a) => a.kind !== 'slow' && a.cc !== 'root');
@@ -1192,11 +1197,12 @@ export class Match {
           return !o.pet && od <= does.drag!.reach && (ox * ux + oy * uy) / od > 0.7 && this.sees(f, o) && !o.auras.some((a) => a.kind === 'immune');
         })
         .sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y))[0];
+      // (they come along to where the step ends: the step is still a step)
       if (foe) {
         f.procs.drag = this.clock + does.drag.every;
-        this.drag(foe, f.x, f.y, HERO_R * 2 + 2);
+        this.drag(foe, f.x + ux * dist, f.y + uy * dist, HERO_R * 2 + 2);
+        this.addAura(foe, { ab: abOfDoing(f.cls, 'drag').id, src: f.id, kind: 'slow', harmful: true, magic: false, dur: does.drag.dur * foe.mods.tenacity, n: does.drag.pct / 100 });
         say('drag');
-        return;
       }
     }
     if (does.leap) {
@@ -1220,12 +1226,12 @@ export class Match {
     f.dash = { x: f.x + ux * dist, y: f.y + uy * dist, speed: 430, step: true };
   }
 
-  /** A Swift Step has ended: a shoulder check knocks down whoever it ended beside. */
+  /** A Swift Step has ended: a shoulder check knocks down whoever it ended near. */
   private arrive(f: Fighter): void {
     const check = f.perks.does.check;
     if (!check || !this.ready(f, 'check')) return;
     const foe = this.enemiesOf(f)
-      .filter((o) => !o.pet && Math.hypot(o.x - f.x, o.y - f.y) <= ARM && !o.auras.some((a) => a.kind === 'immune'))
+      .filter((o) => !o.pet && Math.hypot(o.x - f.x, o.y - f.y) <= check.reach && !o.auras.some((a) => a.kind === 'immune'))
       .sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y))[0];
     if (foe && this.crowd(f, abOfDoing(f.cls, 'check'), foe, 'stun', check.dur * f.mods.hold)) f.procs.check = this.clock + check.every;
   }
@@ -1545,7 +1551,7 @@ export class Match {
     const thirst = this.near(src, 'thirst', 'friend');
     if (thirst) this.mend(src, n * thirst.d.pct);
     if (does.soulward && this.ready(src, 'soulward')) {
-      src.procs.soulward = this.clock + 1;
+      src.procs.soulward = this.clock + does.soulward.every;
       this.stack(src, src, abOfDoing(src.cls, 'soulward').id, 'absorb', Math.round(src.maxHp * does.soulward.pct), Math.round(src.maxHp * does.soulward.max), does.soulward.dur);
     }
     if (!direct) return;

@@ -23,13 +23,16 @@
  * The computer is not a person, so this guards against a change that tips a class far over, no more. (Healers in 1v1,
  * where they have nobody to heal, win a quarter of their matches: a healer's setup is for team fights.)
  *
- * When the talents became each class's own (2026-11-13, "please make them very unique"), each was measured in the
- * ready-made builds against its row's other two, and the ones far ahead or behind were tuned (Pit Imp, Mana Skin,
- * Verdict of Light, Light Returned, Halo of Dread, Forager, Soul Shield, Open Heart, Sapping Word). Classes, in % won
- * (1v1 by tests/sigilfall-ring-aim.test.ts, then 2v2 / 3v3 here), before -> after:
+ * When the talents became each class's own (2026-11-13, "please make them very unique"), every talent was measured
+ * against the other two in its row, in 1v1 and in 2v2 (a healer's on its healer's build), on the same seeds, and tuned
+ * until each row's three came within a few points of each other where they are meant to be used (a team talent, an
+ * aura or Skypiercer, shows little in 1v1). Two changes outside the talents: the mage deals 0.72 of its numbers (was
+ * 0.74; its new talents carry it further in a duel than in a team), and the priest's Knit Wounds heals 86 (was 95; its
+ * healing build won 68% of 2v2s, against 60% for the paladin's). Classes, in % won (1v1 by
+ * tests/sigilfall-ring-aim.test.ts, then 2v2 / 3v3 here), before -> after:
  *
- *   warrior 42/46/54 -> 47/51/54   mage    50/45/45 -> 54/42/44   ranger  50/42/45 -> 45/44/44   paladin     50/57/49 -> 49/55/53
- *   priest  49/61/61 -> 49/62/58   warlock 52/45/48 -> 52/47/43   druid   49/54/52 -> 56/51/51   gloamknight 58/44/44 -> 47/43/51
+ *   warrior 42/46/54 -> 48/52/57   mage    50/45/45 -> 60/42/43   ranger  50/42/45 -> 50/41/46   paladin     50/57/49 -> 46/55/54
+ *   priest  49/61/61 -> 47/61/58   warlock 52/45/48 -> 49/44/46   druid   49/54/52 -> 51/53/48   gloamknight 58/44/44 -> 50/45/48
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';
