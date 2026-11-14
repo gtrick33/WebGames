@@ -373,6 +373,7 @@ export class RingStage implements RingView {
       'g-knife': ['stab', 0.4, 12],
       'g-ambush': ['slice', 0.6, 15],
       'g-super': ['spin', 1, 16],
+      'g-super2': ['slice', 0.8, 0],
       // (the warlock's dead are called up by the hands, as his were)
       'k-raise': ['summon', 0.85, 0],
     };
