@@ -7,7 +7,7 @@ import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
 import { afterMatch, COMPS, drawOpponents, namedApart, NEW_STANDING, nextRank, rankOf, ratingChange, RANKS, SET_COUNT, setsOf, skillAt } from '../src/games/sigilfall/arena/ladder';
 import { ARENA_H, ARENA_W, ENTRY_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
 import { cleanTalents, ROW_NAMES, TALENT_BY_ID, TALENTS } from '../src/games/sigilfall/arena/talents';
-import { BASE_SPEED, CAST_SLOW, CLASS_DMG, clearLine, CLOSE_FROM, CLOSE_TO, GATES, HERO_R, Match, MATCH_LIMIT, SIGIL_FIRST, ZONE_END, ZONE_START, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
+import { BASE_SPEED, CAST_SLOW, CLASS_DMG, clearLine, CLOSE_FROM, CLOSE_TO, FEAR_BREAK, GATES, HERO_R, Match, MATCH_LIMIT, ROOT_BREAK, SIGIL_FIRST, ZONE_END, ZONE_START, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { act, cleanPick, join, newRoom, relay, viewFor } from '../src/games/sigilfall/net/ringRoom';
@@ -163,18 +163,31 @@ describe('The Ring: the rules', () => {
     expect(stun()).toBeCloseTo(1.5);
   });
 
-  it('a daze breaks on any hurt; a stun, a fear and a root hold whatever lands (the owner: "any stun, root, or fear shouldnt be breakable by dmg")', () => {
+  it('hurt breaks a hold as in the classic arena: a daze at once, a fear past a tenth of their health, a root past 14%; a stun never (the owner: "roots should break after some dmg has been done, similar to wows roots, same for fears")', () => {
+    type Hurt = { damage(s: unknown, t: unknown, n: number, d: boolean): void };
     const m = duel('warlock', ['k-dread', 'k-bolt'], 'warrior');
     const foe = m.fighters[1]!;
     m.press(0, 'k-dread');
     wait(m, 1.6);
     expect(foe.auras.some((a) => a.cc === 'fear')).toBe(true);
-    (m as unknown as { damage(s: unknown, t: unknown, n: number, d: boolean): void }).damage(m.fighters[0], foe, foe.maxHp * 0.3, false);
+    (m as unknown as Hurt).damage(m.fighters[0], foe, Math.floor(foe.maxHp * FEAR_BREAK * 0.9), false);
     expect(foe.auras.some((a) => a.cc === 'fear')).toBe(true);
+    (m as unknown as Hurt).damage(m.fighters[0], foe, Math.ceil(foe.maxHp * FEAR_BREAK), false);
+    expect(foe.auras.some((a) => a.cc === 'fear')).toBe(false);
+
+    // (Frost Snare's ice too: it breaks like any root)
     const r = duel('mage', ['m-ring'], 'warrior');
+    const rooted = r.fighters[1]!;
     r.press(0, 'm-ring');
-    (r as unknown as { damage(s: unknown, t: unknown, n: number, d: boolean): void }).damage(r.fighters[0], r.fighters[1], r.fighters[1]!.maxHp * 0.3, true);
-    expect(r.fighters[1]!.auras.some((a) => a.cc === 'root')).toBe(true);
+    (r as unknown as Hurt).damage(r.fighters[0], rooted, Math.floor(rooted.maxHp * ROOT_BREAK * 0.9), true);
+    expect(rooted.auras.some((a) => a.cc === 'root')).toBe(true);
+    (r as unknown as Hurt).damage(r.fighters[0], rooted, Math.ceil(rooted.maxHp * ROOT_BREAK), true);
+    expect(rooted.auras.some((a) => a.cc === 'root')).toBe(false);
+
+    const s = duel('druid', ['l-bash'], 'warrior');
+    s.press(0, 'l-bash');
+    (s as unknown as Hurt).damage(s.fighters[0], s.fighters[1], s.fighters[1]!.maxHp * 0.4, true);
+    expect(s.fighters[1]!.auras.some((a) => a.cc === 'stun')).toBe(true);
 
     const n = duel('mage', ['m-toad'], 'warrior');
     n.press(0, 'm-toad');
@@ -182,7 +195,7 @@ describe('The Ring: the rules', () => {
     const held = n.fighters[1]!;
     expect(held.auras.some((a) => a.cc === 'incap')).toBe(true);
     expect(n.press(1, 'w-hew')).toBe('You can’t do that now');
-    (n as unknown as { damage(s: unknown, t: unknown, n: number, d: boolean): void }).damage(n.fighters[0], held, 1, false);
+    (n as unknown as Hurt).damage(n.fighters[0], held, 1, false);
     expect(held.auras.some((a) => a.cc === 'incap')).toBe(false);
   });
 
