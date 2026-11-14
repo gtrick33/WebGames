@@ -40,9 +40,20 @@ describe('Sigilfall rankings: the server', () => {
     }
   });
 
-  it('knows its boards: the modes, a calling of the Trials, a land of the Vigil, and nothing else', () => {
-    for (const ok of ['trial', 'trial:mage', 'stone', 'vigil', 'vigil:pale-reach', 'ring', 'level']) expect(boardOf(ok), ok).not.toBeNull();
-    for (const no of ['', 'gold', 'ring:mage', 'stone:warrior', 'trial:', 'trial:Mage', 'trial:a', "vigil:x'; DROP", 7, null]) expect(boardOf(no), String(no)).toBeNull();
+  it('knows its boards: the modes, a calling of the Trials, a land of the Vigil, a format of the Ring, and nothing else', () => {
+    for (const ok of ['trial', 'trial:mage', 'stone', 'vigil', 'vigil:pale-reach', 'ring', 'ring:solo', 'ring:duo', 'ring:trio', 'level']) expect(boardOf(ok), ok).not.toBeNull();
+    for (const no of ['', 'gold', 'ring:mage', 'ring:quad', 'ring:1v1', 'stone:warrior', 'trial:', 'trial:Mage', 'trial:a', "vigil:x'; DROP", 7, null]) expect(boardOf(no), String(no)).toBeNull();
+  });
+
+  it('keeps each of the Ring’s formats on a board of its own', async () => {
+    await post('ana', [
+      { board: 'ring:solo', score: 1320 },
+      { board: 'ring:trio', score: 1180 },
+    ]);
+    await post('ben', [{ board: 'ring:solo', score: 1410 }]);
+    expect((await board('ring:solo')).data.rows.map((r) => r.score)).toEqual([1410, 1320]);
+    expect((await board('ring:duo')).data.rows).toEqual([]);
+    expect((await board('ring:trio')).data.rows.map((r) => r.score)).toEqual([1180]);
   });
 
   it('ranks every player on a board, best first; equal scores share a rank', async () => {
@@ -142,6 +153,11 @@ describe('Sigilfall rankings: what an account sends', () => {
       ring: 1460,
     });
     expect(levelOf(got.level!)).toEqual({ level: MAX_LEVEL, paragon: 3 });
+  });
+
+  it('the Ring’s formats, each on its own board, for every format a match has been played in', () => {
+    const got = Object.fromEntries(rankEntries(emptySave(), {}, 1460, { 1: 1460, 3: 1000 }).map((e) => [e.board, e.score]));
+    expect(got).toEqual({ ring: 1460, 'ring:solo': 1460, 'ring:trio': 1000 });
   });
 
   it('a hero jumped to a story beat for review is on no board', () => {

@@ -30,7 +30,7 @@ import { DEFAULT_SETTINGS, loadSave, writeSave, type LoadStatus, type SaveFile, 
 import { buyItem, buyPotions, restock } from './progress/shop';
 import { wager } from './progress/rift';
 import { chooseTitle, newTitles, setGivenTitles, titled, titleShown } from './progress/titles';
-import { bestRating, NEW_STANDING } from './arena/ranks';
+import { bestByFormat, bestRating, NEW_STANDING } from './arena/ranks';
 import type { ShopId } from './data/vendors';
 import { iconsReady } from './render/art/gameIcons';
 import { Renderer } from './render/renderer';
@@ -1133,7 +1133,7 @@ export class SigilEngine {
   reportRanks(): void {
     if (!account.get().me || typeof fetch !== 'function') return;
     const fought = bestRating() > NEW_STANDING.best ? bestRating() : 0;
-    const entries = rankEntries(this.save, readBests(), fought);
+    const entries = rankEntries(this.save, readBests(), fought, bestByFormat());
     const sig = JSON.stringify(entries);
     if (!entries.length || sig === this.ranksSent) return;
     this.ranksSent = sig;

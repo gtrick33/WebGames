@@ -11960,6 +11960,10 @@ html.rb-touch-playing textarea {
   overflow: auto;
   min-height: 0;
 }
+/* (the Ring's three formats side by side, each its own board) */
+.rb-rank-cols.is-three {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
 .rb-rank-board {
   padding: 10px 12px;
   border: 2px solid rgb(255 255 255 / 0.12);

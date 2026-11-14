@@ -21,12 +21,14 @@ const FAMILIES: Record<string, number> = {
   stone: 999,
   // the Vigil's longest night in seconds (overall, and `vigil:<land>`)
   vigil: 86_400,
-  // the Ring's best rating
+  // the Ring's best rating (overall, and `ring:solo`, `ring:duo`, `ring:trio`: 1v1, 2v2 and 3v3)
   ring: 9999,
   // the highest hero: level × 10000 + Paragon level
   level: 60 * 10_000 + 9999,
 };
 const BOARD = /^([a-z]{3,8})(?::([a-z][a-z-]{1,31}))?$/;
+/** The Ring's formats, each a board of its own: 1v1, 2v2 and 3v3. */
+const RING_FORMATS: ReadonlySet<string> = new Set(['solo', 'duo', 'trio']);
 
 /** A board's name if there is such a board, else null; and the most its score can be. */
 export function boardOf(name: unknown): { board: string; max: number } | null {
@@ -34,8 +36,9 @@ export function boardOf(name: unknown): { board: string; max: number } | null {
   const m = BOARD.exec(name);
   const max = m ? FAMILIES[m[1]!] : undefined;
   if (!m || max === undefined) return null;
-  // (only the Trials and the Vigil have boards within them)
-  if (m[2] && m[1] !== 'trial' && m[1] !== 'vigil') return null;
+  // (only the Trials, the Vigil and the Ring have boards within them: the Ring's, one for each format, and no other)
+  if (m[2] && m[1] !== 'trial' && m[1] !== 'vigil' && m[1] !== 'ring') return null;
+  if (m[2] && m[1] === 'ring' && !RING_FORMATS.has(m[2])) return null;
   return { board: name, max };
 }
 

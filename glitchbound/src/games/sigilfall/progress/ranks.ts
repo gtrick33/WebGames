@@ -1,3 +1,4 @@
+import { RING_BOARDS, type Format } from '../arena/ranks';
 import { CLASS_IDS, MAX_LEVEL } from '../data/classes';
 import type { SaveFile } from './save';
 
@@ -16,7 +17,7 @@ export const levelScore = (level: number, paragon: number): number => Math.min(M
 export const levelOf = (score: number): { level: number; paragon: number } => ({ level: Math.floor(score / 10_000), paragon: score % 10_000 });
 
 /** Every best this account has, as the boards want them. Boards with nothing on them are left out. */
-export function rankEntries(save: Pick<SaveFile, 'heroes'> & { rift?: Record<string, number> }, vigil: Record<string, number>, ringBest: number): RankEntry[] {
+export function rankEntries(save: Pick<SaveFile, 'heroes'> & { rift?: Record<string, number> }, vigil: Record<string, number>, ringBest: number, ringByFormat: Partial<Record<Format, number>> = {}): RankEntry[] {
   const out: RankEntry[] = [];
   const put = (board: string, score: number): void => {
     if (Number.isFinite(score) && score > 0) out.push({ board, score: Math.floor(score) });
@@ -48,8 +49,10 @@ export function rankEntries(save: Pick<SaveFile, 'heroes'> & { rift?: Record<str
     night = Math.max(night, t);
   }
   put('vigil', night);
-  // the Ring (`ringBest`: 0 until a rating has been fought for; everyone starts with one)
+  // the Ring (`ringBest`: 0 until a rating has been fought for; everyone starts with one), and each format's own board
+  // (the owner: "make the leaderboard based on the mode 1v1, 2v2, 3v3"), for every format a match has been played in
   put('ring', ringBest);
+  for (const b of RING_BOARDS) put(`ring:${b.part}`, ringByFormat[b.format] ?? 0);
   return out;
 }
 
