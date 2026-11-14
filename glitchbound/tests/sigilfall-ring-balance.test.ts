@@ -54,6 +54,9 @@
  * the same way, over 12 seeds of every 1v1 and 900 random teams of each size. Each new setup, and the one beside it:
  *
  *   Nightblade  44/50/60 51   Gravecaller 71/46/44 54   Bloodsworn   69/43/42 51   Hexer       67/43/44 51
+ *
+ * The owner then asked for the Gravecaller to win fewer duels. What carried it there was the slow on its dead's claws
+ * (without it: 37/40/38); at 10%, not 20%, it came to 61/52/47 53.
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';
