@@ -363,7 +363,7 @@ export const BODY: Record<ClassId, { hp: number; mana: number }> = {
   paladin: { hp: 1310, mana: 100 },
   druid: { hp: 1280, mana: 100 },
   ranger: { hp: 1260, mana: 0 },
-  priest: { hp: 1070, mana: 100 },
+  priest: { hp: 1130, mana: 100 },
   warlock: { hp: 1200, mana: 100 },
   mage: { hp: 1200, mana: 100 },
   gloamknight: { hp: 1290, mana: 0 },
