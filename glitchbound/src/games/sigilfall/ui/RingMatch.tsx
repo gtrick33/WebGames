@@ -2,8 +2,10 @@ import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointer
 import type { TitleShown } from '../progress/titles';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { ABILITIES, SLOTS, type Ability } from '../arena/abilities';
-import { botThink, newBrain } from '../arena/bot';
+import { botThink, newBrain, steerTo } from '../arena/bot';
 import { LEAVER_K, type ClassSets } from '../arena/ladder';
+import { hintNow, keepLog, lessonOf, newLog, type HintKeys } from '../arena/lessons';
+import { TutorialRun, type TutorialKeys } from '../arena/tutorial';
 import { lookOf } from '../arena/look';
 import { MAPS } from '../arena/maps';
 import { CLOSE_FROM, Match, MATCH_LIMIT, PACE, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
@@ -17,10 +19,11 @@ import { heroDollUrl, type WornLooks } from '../render/sprites';
 import { RingHelp, SetupEditor, timing } from './RingSetup';
 import { ScreenGate } from './ScreenGate';
 import { Stick } from './Stick';
-import { autoPoint as pointFor, isOut } from './ringAim';
+import { autoPoint as pointFor, isOut, plainWhy } from './ringAim';
 import { actionOf, keyName, readKeys, saveKeys, type RingKeys } from './ringKeys';
 import { KeysDialog } from './RingKeysDialog';
 import { NameReel } from './NameReel';
+import { Coach, useSpot } from './RingCoach';
 
 /** `skill`: how sharp the computer plays (arena/ladder.ts skillAt); `mates`, in solo: the player's own side's, when not the same. */
 export type Role = { kind: 'solo'; skill: number; mates?: number } | { kind: 'host'; skill: number; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void } | { kind: 'client'; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void };
@@ -213,7 +216,7 @@ const PLATE_SLACK = 8;
 /** Who an ability will land on, and whether it can right now. */
 function AimCard({ label, f, note, bad, doll, kind }: { label: string; f: Fighter | null; note: string; bad: boolean; doll: string; kind: 'foe' | 'friend' }) {
   return (
-    <div className={`rb-ring-aim is-${kind}${f ? '' : ' is-none'}${bad ? ' is-bad' : ''}`}>
+    <div className={`rb-ring-aim is-${kind}${f ? '' : ' is-none'}${bad ? ' is-bad' : ''}`} data-tut={kind === 'foe' ? 'target' : undefined}>
       <small>{label}</small>
       {f ? (
         <span className="rb-ring-aim-who">
@@ -238,7 +241,20 @@ export interface MatchResult {
   match: Match;
   myId: number;
   dolls: string[];
+  /** After a match that wasn't won: one thing to try next time (arena/lessons.ts). */
+  lesson?: string | null;
 }
+
+/** The one-time hints of a real match (arena/lessons.ts): which have been shown on this device, and word of a new one. */
+export interface MatchHints {
+  seen: readonly string[];
+  onSeen: (id: string) => void;
+}
+
+/** How long a hint stays up, in ms. */
+const HINT_MS = 7000;
+/** How long "Close in automatically" walks before it gives up, in ms: long enough to cross the ground. */
+const CHASE_MS = 10000;
 
 /** What an ability's button does with a touch: a placed one is aimed with it, any other goes off at the press. */
 interface AimApi {
@@ -253,7 +269,7 @@ const AIM_THROW = 78;
 const AIM_SLACK = 8;
 
 /** A match: The Ring's ground, its frames and a bar of abilities. Solo, the computer plays everyone else. */
-export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes, onSets, onDone, onLeave, resume, onSnap, wear, worn, title }: { engine: SigilEngine; setup: MatchSetup; myId: number; face?: Face; body?: 'm' | 'f'; wear?: Character | null; worn?: WornLooks; title?: TitleShown | null; role: Role; sets: ClassSets; stakes: MatchStakes | null; onSets: (s: ClassSets) => void; onDone: (r: MatchResult) => void; onLeave: (started: boolean) => void; resume?: Snapshot; onSnap?: (s: Snapshot) => void }) {
+export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes, onSets, onDone, onLeave, resume, onSnap, wear, worn, title, tutorial, hints }: { engine: SigilEngine; setup: MatchSetup; myId: number; face?: Face; body?: 'm' | 'f'; wear?: Character | null; worn?: WornLooks; title?: TitleShown | null; role: Role; sets: ClassSets; stakes: MatchStakes | null; onSets: (s: ClassSets) => void; onDone: (r: MatchResult) => void; onLeave: (started: boolean) => void; resume?: Snapshot; onSnap?: (s: Snapshot) => void; tutorial?: boolean; hints?: MatchHints }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ringKeys, setRingKeys] = useState<RingKeys>(readKeys);
   const keysRef = useRef(ringKeys);
@@ -269,7 +285,17 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     if (resume) out.restore(resume, null);
     return out;
   });
+  // the tutorial's lessons over this match (arena/tutorial.ts): the player against the first of the other side
+  const [tut] = useState(() => (tutorial ? new TutorialRun(m, myId, m.fighters.find((f) => f.team !== m.fighters[myId]?.team)?.id ?? 1 - myId) : null));
   const [err, setErr] = useState('');
+  const [errNote, setErrNote] = useState(false);
+  const [hint, setHint] = useState('');
+  const hintAt = useRef(0);
+  const seenRef = useRef(new Set<string>(hints?.seen ?? []));
+  // how the match goes for the player, for the one thing to try next time (arena/lessons.ts)
+  const log = useRef(newLog());
+  /** "Close in automatically": the ability pressed out of reach, walked toward until it can go off. */
+  const chase = useRef<{ ab: string; until: number } | null>(null);
   const [leaving, setLeaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [help, setHelp] = useState(false);
@@ -280,21 +306,34 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
 
   const me = m.fighters[myId] ?? null;
   const touch = engine.touchMode;
-  const say = (why: string | null): void => {
+  const say = (why: string | null, ab?: Ability, note = false): void => {
     if (!why || why === 'Already casting' || why === 'Casting') return;
-    setErr(why);
+    if (why === 'Out of sight') log.current.outOfSight++;
+    setErr(note ? why : plainWhy(m, me, why, ab, touch ? 'tap the blue button' : `press ${keyName(keysRef.current.dash)}`));
+    setErrNote(note);
     errAt.current = performance.now();
+  };
+  /** "Close in automatically" (Settings): an ability aimed at someone out of reach or out of sight walks there first. */
+  const closeIn = (ab: Ability | undefined, why: string | null): boolean => {
+    if (!ab || !engine.settings.ringCloseIn || (why !== 'Too far away' && why !== 'Out of sight') || (ab.aim !== 'enemy' && ab.aim !== 'friend')) return false;
+    chase.current = { ab: ab.id, until: performance.now() + CHASE_MS };
+    say('Closing in…', ab, true);
+    return true;
   };
   const press = (id: string, at?: { x: number; y: number }): void => {
     if (!me) return;
+    chase.current = null;
+    const ab = ABILITIES[id];
     if (role.kind === 'client') {
-      const ab = ABILITIES[id];
       const why = ab ? m.blocked(me, ab, undefined, ab.aim === 'ground' ? at : undefined) : null;
-      if (why && why !== 'Not ready yet') say(why);
+      if (closeIn(ab, why)) return;
+      if (why && why !== 'Not ready yet') say(why, ab);
       else role.send(at ? { p: id, at: [Math.round(at.x), Math.round(at.y)] } : { p: id });
       return;
     }
-    say(m.press(myId, id, at));
+    const why = m.press(myId, id, at);
+    if (closeIn(ab, why)) return;
+    say(why, ab);
   };
   /*
    * A placed ability (a comet, a volley, a pyre) goes where its user puts it (the owner: "by targeted i mean not
@@ -324,6 +363,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     if (m.fighters[id]?.dead) return;
     if (role.kind === 'client') role.send({ tg: id });
     m.setTarget(myId, id);
+    tut?.onTarget(id);
     tick((x) => x + 1);
   };
 
@@ -597,7 +637,35 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       const k = keysRef.current;
       const mx = (keys.has(k.right) || keys.has('ArrowRight') ? 1 : 0) - (keys.has(k.left) || keys.has('ArrowLeft') ? 1 : 0);
       const my = (keys.has(k.down) || keys.has('ArrowDown') ? 1 : 0) - (keys.has(k.up) || keys.has('ArrowUp') ? 1 : 0);
-      return mx || my ? { mx, my } : stick.current;
+      // (moving by hand stops a walk the game was taking toward a target)
+      if (mx || my) {
+        chase.current = null;
+        return { mx, my };
+      }
+      const st = stick.current;
+      if (Math.hypot(st.mx, st.my) > 0.2) {
+        chase.current = null;
+        return st;
+      }
+      return chaseMove() ?? st;
+    };
+    /** "Close in automatically": a step toward whoever the pressed ability goes to, and the ability itself once it can go. */
+    const chaseMove = (): MoveInput | null => {
+      const c = chase.current;
+      if (!c || !me) return null;
+      const ab = ABILITIES[c.ab];
+      const t = ab ? m.aimOf(me, ab) : null;
+      if (!ab || !t || t.dead || t === me || m.phase !== 'fight' || me.dead || performance.now() > c.until) {
+        chase.current = null;
+        return null;
+      }
+      const why = m.blocked(me, ab);
+      if (why !== 'Too far away' && why !== 'Out of sight') {
+        chase.current = null;
+        press(c.ab);
+        return { mx: 0, my: 0 };
+      }
+      return steerTo(m, me, t.x, t.y);
     };
 
     /* --------------------------------------------------- the room's traffic */
@@ -626,6 +694,10 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     }
 
     /* --------------------------------------------------- the loop */
+    const hintKeys = (): HintKeys => ({ touch, dash: keyName(keysRef.current.dash), super: keyName(keysRef.current.super) });
+    // (the match's own record of whose falling circles are whose, for the log)
+    const circles = new Map<string, boolean>();
+    let logged = 0;
     const brains = m.fighters.map((_, i) => newBrain(setup.seed + i * 97));
     const skill = role.kind === 'client' ? 0 : role.skill;
     const myTeam0 = m.fighters[myId]?.team;
@@ -689,16 +761,23 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         // the fight moves by the frame's own length (in pieces no longer than MAX_STEP when a frame ran long): fixed
         // steps against a screen that is never quite regular made everyone stutter, a step missed here, two there
         const pieces = Math.max(1, Math.ceil(dt / MAX_STEP));
-        const h = (dt * PACE) / pieces;
+        // (the tutorial slows the match while a red circle falls on a newcomer)
+        const h = (dt * PACE * (tut?.pace() ?? 1)) / pieces;
         for (let i = 0; i < pieces && h > 0; i++) {
           const moves: Record<number, MoveInput> = { [myId]: mine };
           for (const f of m.fighters) {
             if (f.id === myId) continue;
             if (f.seat !== null) moves[f.id] = others[f.id] ?? { mx: 0, my: 0 };
+            // (while the tutorial teaches, its sparring partner only does what the lesson needs)
+            else if (tut && !tut.free) moves[f.id] = f.id === tut.foeId ? tut.foeMove() : { mx: 0, my: 0 };
             else moves[f.id] = botThink(m, f, brains[f.id]!, sharpOf(f), h);
           }
           m.step(h, moves);
         }
+        tut?.after(h * pieces);
+        // (in the tutorial only its last, real fight is kept: the lessons before it are no measure of anything)
+        if (!tut || tut.free) keepLog(log.current, m, me, h * pieces, circles, m.events.slice(logged));
+        logged = m.events.length;
         if (role.kind === 'host') {
           sendT += dt;
           if (sendT >= SEND_EVERY) {
@@ -711,6 +790,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         // (by the host's clock: it runs the fight at PACE, and a guest's copy that ran at the wall's ran everyone a
         // little ahead between its words, to be pulled back at each)
         m.coast(dt * PACE, myId, mine);
+        keepLog(log.current, m, me, dt * PACE, circles, m.events.slice(logged));
+        logged = m.events.length;
         sendT += dt;
         const said = `${mine.mx.toFixed(2)},${mine.my.toFixed(2)}`;
         if (sendT >= 1 / 15 && said !== lastSent) {
@@ -724,6 +805,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       if (role.kind !== 'host' || sent) {
         fx.take(m, sound, myId);
         reacted = 0;
+        logged = 0;
       }
       fx.age(dt);
       if (m.phase !== wasPhase) {
@@ -751,6 +833,20 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           errAt.current = 0;
           setErr('');
         }
+        // a hint the first time something happens (arena/lessons.ts): one at a time, each once on this device
+        if (hintAt.current && now - hintAt.current > HINT_MS) {
+          hintAt.current = 0;
+          setHint('');
+        }
+        if (hints && !tut && !hintAt.current) {
+          const next = hintNow(m, me, [...seenRef.current], hintKeys());
+          if (next) {
+            seenRef.current.add(next.id);
+            hints.onSeen(next.id);
+            hintAt.current = now;
+            setHint(next.text);
+          }
+        }
         tick((x) => x + 1);
       }
       if (m.phase === 'over' && !done) {
@@ -759,7 +855,9 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         sound(m.winner === myTeam ? 'victory' : 'playerDie');
         // the last word goes out at once, then a moment to see the last blow land
         if (role.kind === 'host') role.send({ s: m.snapshot(), e: [] });
-        window.setTimeout(() => onDone({ won: m.winner === myTeam, draw: m.draw, match: m, myId, dolls: m.fighters.map((f) => heroDollUrl(looks[f.id]!.look, 'down', 3, looks[f.id]!.held)) }), 1300);
+        const won = m.winner === myTeam;
+        const lesson = !won && me ? lessonOf(log.current, me, hintKeys()) : null;
+        window.setTimeout(() => onDone({ won, draw: m.draw, match: m, myId, dolls: m.fighters.map((f) => heroDollUrl(looks[f.id]!.look, 'down', 3, looks[f.id]!.held)), lesson }), 1300);
       }
     };
     // the ground on the first frame, before the veil lifts
@@ -824,6 +922,9 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   };
   const foeNote = !foeAlive ? (m.phase === 'fight' ? `Click someone or press ${keyName(ringKeys.nextFoe)}. Nearest is used if you don’t.` : `Click someone or press ${keyName(ringKeys.nextFoe)}`) : !me || m.phase !== 'fight' ? `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}%` : !m.sees(me, foeAlive) ? 'Out of sight' : `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}% · ${Math.round(Math.hypot(foeAlive.x - me.x, foeAlive.y - me.y))} away`;
   const foeBad = !!foeAlive && !!me && m.phase === 'fight' && !m.sees(me, foeAlive);
+  const tutKeys: TutorialKeys = { touch, ab: [ringKeys.ab1, ringKeys.ab2, ringKeys.ab3, ringKeys.ab4].map(keyName), dash: keyName(ringKeys.dash), super: keyName(ringKeys.super), nextFoe: keyName(ringKeys.nextFoe), nextFriend: keyName(ringKeys.nextFriend), closeIn: engine.settings.ringCloseIn };
+  const tv = tut?.view(tutKeys) ?? null;
+  useSpot(tv?.spot ?? null);
   return (
     <ScreenGate label="Entering the Ring">
       <div className={`rb-ring${touch ? ' is-touch' : ''}`}>
@@ -831,7 +932,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           <canvas ref={canvasRef} className="rb-ring-canvas" />
           <div className="rb-ring-top">
             {/* (with the nameplates put away their places stay, empty, so the clock keeps to the middle) */}
-            <div className="rb-ring-team" onPointerDown={(e) => nearestPlate(e, left, target)}>
+            <div className="rb-ring-team" onPointerDown={(e) => nearestPlate(e, left, target)} data-tut="plates">
               {plates && left.map((f) => (
                 <Frame key={f.id} f={f} m={m} me={me} doll={dolls[f.id]!} title={f.id === myId ? (title ?? null) : null} tag={helps && f.id === friendId && m.phase === 'fight' ? 'Helping' : null} onPick={() => target(f.id)} />
               ))}
@@ -845,12 +946,12 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   <small>{stakes.rank}</small>
                 </span>
               ) : (
-                <span className="rb-ring-rating is-friendly">Friendly</span>
+                <span className="rb-ring-rating is-friendly">{tut ? 'Tutorial' : 'Friendly'}</span>
               )}
-              {m.phase === 'fight' && (gloamIn > 0 ? gloamIn <= 15 && <small className="rb-ring-gloam">The Gloam in {gloamIn}</small> : <small className="rb-ring-gloam is-on">The Gloam is closing</small>)}
-              {damp > 0 && <small className="rb-ring-damp" title="Healing fades the longer a match goes">Healing −{damp}%</small>}
+              {m.phase === 'fight' && !m.hold && (gloamIn > 0 ? gloamIn <= 15 && <small className="rb-ring-gloam">The Gloam in {gloamIn}</small> : <small className="rb-ring-gloam is-on">The Gloam is closing</small>)}
+              {damp > 0 && <small className="rb-ring-damp" title="Healing fades the longer a match goes">Healing weaker: −{damp}%</small>}
             </div>
-            <div className="rb-ring-team is-foes" onPointerDown={(e) => nearestPlate(e, right, target)}>
+            <div className="rb-ring-team is-foes" onPointerDown={(e) => nearestPlate(e, right, target)} data-tut="foes">
               {plates && right.map((f) => (
                 <Frame key={f.id} flip f={f} m={m} me={me} doll={dolls[f.id]!} tag={f === foeAlive ? 'Target' : null} onPick={() => target(f.id)} />
               ))}
@@ -878,7 +979,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               <button className="rb-iconbtn" onClick={() => setHelp(true)} aria-label="How The Ring works" title="How The Ring works">
                 ?
               </button>
-              <button className="rb-iconbtn" onClick={() => setLeaving(true)} aria-label="Leave the match" title="Leave the match">
+              <button className="rb-iconbtn" onClick={() => setLeaving(true)} aria-label={tut ? 'Leave the tutorial' : 'Leave the match'} title={tut ? 'Leave the tutorial' : 'Leave the match'}>
                 ⚑
               </button>
               <GameMenuButton className="rb-iconbtn" />
@@ -893,7 +994,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   stick.current = { mx, my };
                 }}
               />
-              <div className="rb-cluster">
+              <div className="rb-cluster" data-tut="bar">
                 {bar.map((ab, i) => {
                   const cd = me?.cds[ab.id] ?? 0;
                   const gcd = !ab.free ? (me?.gcd ?? 0) : 0;
@@ -903,6 +1004,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   return (
                     <button
                       key={ab.id}
+                      data-tut={sup ? 'super' : i === SLOTS ? 'step' : undefined}
                       className={`rb-sb rb-sb-${TOUCH_SLOTS[i]}${sup ? ` is-super${charge >= 1 ? ' is-ready' : ''}` : ''}${isOut(m, me, ab) ? ' is-nomana' : ''}${wait > 0 ? ' is-cooling' : ''}${held && ab.anyState ? ' is-free-now' : ''}${comboOf(ab) && wait <= 0 ? ' is-combo' : ''}`}
                       style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined}
                       aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}
@@ -927,7 +1029,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
             </div>
           )}
           {m.phase === 'gates' && count > 5 && !editing && (
-            <div className="rb-ring-prep" role="status">
+            <div className="rb-ring-prep" role="status" data-tut="prep">
               <small>{MAPS[m.map]?.name}</small>
               <strong>The gates lift in {count}</strong>
               {stakes ? (
@@ -944,7 +1046,15 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   </span>
                 </>
               ) : (
-                <span className="rb-ring-prep-rival">A friendly match: no rating changes hands.</span>
+                <span className="rb-ring-prep-rival">{tut ? 'A tutorial match against a sparring partner: your rating doesn’t change.' : 'A friendly match: no rating changes hands.'}</span>
+              )}
+              {tv?.id === 'gates' && (
+                <span className="rb-ring-prep-tut">
+                  <b>
+                    Tutorial · {tv.n} of {tv.of}: {tv.title}.
+                  </b>{' '}
+                  {tv.text}
+                </span>
               )}
               {m.healK > 1 && <span className="rb-ring-prep-rival">Healing is {Math.round((m.healK - 1) * 100)}% stronger in a fight this size.</span>}
               <span className="rb-ring-prep-actions">
@@ -961,9 +1071,35 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
             </div>
           )}
           {err && (
-            <div className="rb-ring-err" role="status">
+            <div className={`rb-ring-err${errNote ? ' is-note' : ''}`} role="status">
               {err}
             </div>
+          )}
+          {hint && !err && (
+            <div className="rb-ring-hint" role="status">
+              <b>Tip</b> {hint}
+            </div>
+          )}
+          {/* (in the entry, the tutorial's words are the entry's own: over it, they hid its countdown on a phone) */}
+          {tv && tv.id !== 'gates' && (
+            <Coach
+              n={tv.n}
+              of={tv.of}
+              title={tv.title}
+              text={tv.text}
+              note={tv.note}
+              at="top"
+              small={tv.id === 'fight' && m.clock > CLOSE_FROM + 4}
+              onNext={
+                tv.next
+                  ? () => {
+                      tut?.next();
+                      tick((x) => x + 1);
+                    }
+                  : undefined
+              }
+              onSkip={() => setLeaving(true)}
+            />
           )}
           {placing && !err && (
             <div className="rb-ring-err is-note" role="status">
@@ -997,7 +1133,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         {!touch && (
           <div className="rb-ring-dock">
             <AimCard label="Target" kind="foe" f={foeAlive} note={foeNote} bad={foeBad} doll={foeAlive ? dollOf(foeAlive) : ''} />
-            <div className="rb-ring-actions" role="toolbar" aria-label="Abilities">
+            <div className="rb-ring-actions" role="toolbar" aria-label="Abilities" data-tut="bar">
               {bar.map((ab, i) => {
                 const cd = me?.cds[ab.id] ?? 0;
                 const gcd = !ab.free ? (me?.gcd ?? 0) : 0;
@@ -1005,7 +1141,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 const full = cd > gcd ? ab.cd : 1;
                 const sup = !!ab.super;
                 return (
-                  <button key={ab.id} className={`rb-ring-ab${isOut(m, me, ab) ? ' is-out' : ''}${ab.id === 'dash' ? ' is-step' : ''}${sup ? ` is-super${charge >= 1 ? ' is-full' : ''}` : ''}${held && ab.anyState ? ' is-ready' : ''}${comboOf(ab) ? ' is-combo' : ''}`} style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined} onPointerDown={(e) => aimApi.current.down(e, ab)} onPointerMove={(e) => aimApi.current.move(e)} onPointerUp={(e) => aimApi.current.up(e)} onPointerCancel={(e) => aimApi.current.cancel(e)} onMouseEnter={() => setTip(ab)} onMouseLeave={() => setTip(null)} aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}>
+                  <button key={ab.id} data-tut={sup ? 'super' : i === SLOTS ? 'step' : undefined} className={`rb-ring-ab${isOut(m, me, ab) ? ' is-out' : ''}${ab.id === 'dash' ? ' is-step' : ''}${sup ? ` is-super${charge >= 1 ? ' is-full' : ''}` : ''}${held && ab.anyState ? ' is-ready' : ''}${comboOf(ab) ? ' is-combo' : ''}`} style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined} onPointerDown={(e) => aimApi.current.down(e, ab)} onPointerMove={(e) => aimApi.current.move(e)} onPointerUp={(e) => aimApi.current.up(e)} onPointerCancel={(e) => aimApi.current.cancel(e)} onMouseEnter={() => setTip(ab)} onMouseLeave={() => setTip(null)} aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}>
                     <img src={iconPicture(ab.icon)} alt="" draggable={false} />
                     {sup && charge < 1 && <i className="rb-ring-charge" />}
                     {wait > 0 && <i className="rb-ring-cool" style={{ ['--p' as string]: `${Math.min(1, wait / (full || 1)) * 100}%` }} />}
@@ -1034,7 +1170,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
             <SetupEditor cls={me.cls} sets={sets} onSets={changeSets} />
           </div>
         )}
-        {help && <RingHelp onClose={() => setHelp(false)} />}
+        {help && <RingHelp onClose={() => setHelp(false)} touch={touch} engine={engine} />}
         {keysOpen && (
           <KeysDialog
             keys={ringKeys}
@@ -1052,8 +1188,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         {leaving && m.phase !== 'over' && (
           <div className="rb-ring-dialog-wrap" role="dialog" aria-label="Leave the match">
             <div className="rb-ring-dialog">
-              <h2>Leave the Ring?</h2>
-              <p>{m.phase === 'gates' ? 'The gates haven’t lifted yet, so this costs you nothing.' : role.kind === 'solo' || stakes ? `Walking out counts as a leaver’s loss${stakes ? `: −${Math.round(stakes.lose * LEAVER_K)} rating, half again a loss` : ''}.${role.kind === 'solo' ? '' : ' The match ends for the others, and their rating stays as it was.'}` : role.kind === 'host' ? 'You’re running this match, so leaving ends it for everyone.' : 'Your hero stands where they are until the match ends.'}</p>
+              <h2>{tut ? 'Leave the tutorial?' : 'Leave the Ring?'}</h2>
+              <p>{tut ? 'Nothing is lost: you can start it again from the Tutorial button in the lobby.' : m.phase === 'gates' ? 'The gates haven’t lifted yet, so this costs you nothing.' : role.kind === 'solo' || stakes ? `Walking out counts as a leaver’s loss${stakes ? `: −${Math.round(stakes.lose * LEAVER_K)} rating, half again a loss` : ''}.${role.kind === 'solo' ? '' : ' The match ends for the others, and their rating stays as it was.'}` : role.kind === 'host' ? 'You’re running this match, so leaving ends it for everyone.' : 'Your hero stands where they are until the match ends.'}</p>
               <div className="rb-vigil-actions">
                 <button className="rb-btn is-gold" onClick={() => setLeaving(false)} autoFocus>
                   Stay

@@ -1563,6 +1563,10 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
               <span>The Ring: quick cast (a placed spell drops at your pointer when you press its key)</span>
             </label>
           )}
+          <label className="rb-check">
+            <input type="checkbox" checked={s.ringCloseIn} onChange={(e) => set({ ringCloseIn: e.target.checked })} />
+            <span>The Ring: close in automatically (an ability used out of reach walks you to your target, then goes off)</span>
+          </label>
           <div className="rb-seg" role="group" aria-label="Aim assist">
             {['Off', 'Light', 'Strong'].map((l, i) => (
               <button key={l} className={s.aimAssist === i ? 'is-on' : ''} onClick={() => set({ aimAssist: i })}>

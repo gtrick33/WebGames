@@ -721,6 +721,12 @@ function hidingSpot(m: Match, f: Fighter, from: Fighter): { x: number; y: number
 
 /** Walk toward a point, turning aside for stone. */
 function steer(m: Match, f: Fighter, b: Brain, tx: number, ty: number): MoveInput {
+  void b;
+  return steerTo(m, f, tx, ty);
+}
+
+/** Walk toward a point, turning aside for stone: the computer's way, and a player's "close in automatically" (RingMatch). */
+export function steerTo(m: Match, f: Fighter, tx: number, ty: number): MoveInput {
   const dx = tx - f.x;
   const dy = ty - f.y;
   const d = Math.hypot(dx, dy);
@@ -737,6 +743,5 @@ function steer(m: Match, f: Fighter, b: Brain, tx: number, ty: number): MoveInpu
   for (const off of [0, 0.5, -0.5, 1, -1, 1.5, -1.5, 2.2, -2.2]) {
     if (!blocked(a0 + off, reach) && !blocked(a0 + off, reach / 2)) return { mx: Math.cos(a0 + off), my: Math.sin(a0 + off) };
   }
-  void b;
   return { mx: ux, my: uy };
 }

@@ -216,6 +216,24 @@ export interface RingSave {
   plain?: { head?: string; chest?: string; title?: string };
   /** The computer teammates chosen for each format's empty places (arena/teammates.ts reads them). */
   mates?: Partial<Record<string, unknown[]>>;
+  /**
+   * What the Ring has taught on this device: whether the tutorial was offered (`asked`) and finished (`done`), and the
+   * one-time hints already shown in a match (arena/lessons.ts).
+   */
+  learn?: RingLearn;
+}
+
+export interface RingLearn {
+  asked?: boolean;
+  done?: boolean;
+  hints?: string[];
+}
+
+/** What was taught, as far as it can be trusted. */
+function learnOf(v: unknown): RingLearn | undefined {
+  if (!v || typeof v !== 'object') return undefined;
+  const o = v as Record<string, unknown>;
+  return { asked: o.asked === true, done: o.done === true, hints: Array.isArray(o.hints) ? o.hints.filter((h): h is string => typeof h === 'string').slice(0, 32) : [] };
 }
 
 const presetSetup = (cls: ClassId, i: number): RingSetup => {
@@ -244,7 +262,8 @@ export function readRing(): RingSave {
     const raw = JSON.parse(localStorage.getItem(RING_KEY) ?? 'null') as Partial<RingSave> | null;
     const plain = raw?.plain && typeof raw.plain === 'object' ? raw.plain : undefined;
     const mates = raw?.mates && typeof raw.mates === 'object' ? raw.mates : undefined;
-    return { standings: raw?.standings ?? {}, sets: raw?.sets ?? {}, ...(plain ? { plain } : {}), ...(mates ? { mates } : {}) };
+    const learn = learnOf(raw?.learn);
+    return { standings: raw?.standings ?? {}, sets: raw?.sets ?? {}, ...(plain ? { plain } : {}), ...(mates ? { mates } : {}), ...(learn ? { learn } : {}) };
   } catch {
     return { standings: {}, sets: {} };
   }

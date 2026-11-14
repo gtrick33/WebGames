@@ -6,6 +6,9 @@ import { MAP_IDS, MAPS } from '../arena/maps';
 import { bestRating, FORMATS, nextRank, rankOf, type Format } from '../arena/ranks';
 import { rewardsBetween } from '../arena/rewards';
 import { GATES_SOLO, type FighterSetup, type MatchSetup } from '../arena/sim';
+import { CLASS_EASE, CLASS_WAY, EASE_WORD } from '../arena/styles';
+import { LOBBY_STEPS, tutorialSetup } from '../arena/tutorial';
+import { Coach, useSpot } from './RingCoach';
 import { CLASS_IDS, CLASSES } from '../data/classes';
 import { useAccount } from '../../../platform/account';
 import { classOpen } from '../progress/paidClasses';
@@ -17,7 +20,7 @@ import { rivalsOf } from '../arena/queue';
 import type { Action as RoomAction, Pick as RoomPick, View as RoomView } from '../net/ringRoom';
 import { newCharacter, type Face } from '../progress/character';
 import { heldWeapon, heroDollUrl, heroLook } from '../render/sprites';
-import { RingMatch, type MatchResult, type MatchStakes, type RingInbox } from './RingMatch';
+import { RingMatch, type MatchHints, type MatchResult, type MatchStakes, type RingInbox } from './RingMatch';
 import { RingResult, type RatingOutcome } from './RingResult';
 import { BarRow, RingHelp, SetupChips, SetupEditor } from './RingSetup';
 import { wearOf, WearPicker } from './wear';
@@ -78,11 +81,14 @@ function ClassRow({ pick, onPick, lobby }: { pick: ClassId; onPick: (c: ClassId)
   const { me } = useAccount();
   if (lobby) {
     return (
-      <div className="rb-vlobby-classes" role="radiogroup" aria-label="Class">
+      <div className="rb-vlobby-classes" role="radiogroup" aria-label="Class" data-tut="classes">
         {CLASS_IDS.map((c) => (
-          <button key={c} role="radio" aria-checked={c === pick} aria-disabled={!classOpen(c, me)} aria-label={CLASSES[c].name} title={classOpen(c, me) ? undefined : `${CLASSES[c].name}: unlock it in the shop`} className={`rb-vlobby-class${c === pick ? ' is-on' : ''}${classOpen(c, me) ? '' : ' is-locked'}`} style={{ ['--c' as string]: CLASSES[c].colors.accent }} onClick={() => classOpen(c, me) && onPick(c)}>
+          <button key={c} role="radio" aria-checked={c === pick} aria-disabled={!classOpen(c, me)} aria-label={`${CLASSES[c].name}: ${CLASS_WAY[c].toLowerCase()}, ${EASE_WORD[CLASS_EASE[c]].toLowerCase()} to learn`} title={classOpen(c, me) ? `${CLASSES[c].name}: ${CLASS_WAY[c].toLowerCase()}, ${EASE_WORD[CLASS_EASE[c]].toLowerCase()} to learn` : `${CLASSES[c].name}: unlock it in the shop`} className={`rb-vlobby-class${c === pick ? ' is-on' : ''}${classOpen(c, me) ? '' : ' is-locked'}`} style={{ ['--c' as string]: CLASSES[c].colors.accent }} onClick={() => classOpen(c, me) && onPick(c)}>
             <img src={classEmblem(c)} alt="" draggable={false} />
-            <span>{CLASSES[c].name}</span>
+            <span>
+              {CLASSES[c].name}
+              <small className={`rb-ringvl-tag is-${CLASS_EASE[c]}`}>{EASE_WORD[CLASS_EASE[c]]}</small>
+            </span>
           </button>
         ))}
       </div>
@@ -97,7 +103,7 @@ function ClassRow({ pick, onPick, lobby }: { pick: ClassId; onPick: (c: ClassId)
           aria-checked={c === pick}
           aria-disabled={!classOpen(c, me)}
           aria-label={CLASSES[c].name}
-          title={classOpen(c, me) ? CLASSES[c].name : `${CLASSES[c].name}: unlock it in the shop`}
+          title={classOpen(c, me) ? `${CLASSES[c].name}: ${CLASS_WAY[c].toLowerCase()}, ${EASE_WORD[CLASS_EASE[c]].toLowerCase()} to learn` : `${CLASSES[c].name}: unlock it in the shop`}
           className={`rb-rp-class${c === pick ? ' is-on' : ''}${classOpen(c, me) ? '' : ' is-locked'}`}
           style={{ ['--c' as string]: CLASSES[c].colors.accent }}
           onClick={() => classOpen(c, me) && onPick(c)}
@@ -210,7 +216,11 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const { me } = useAccount();
   const [pick, setPick] = useState<ClassId>(cls && classOpen(cls, me) ? cls : 'warrior');
   const [map, setMap] = useState<string>('random');
+  const [mapsOpen, setMapsOpen] = useState(false);
   const [help, setHelp] = useState(false);
+  // the tutorial (arena/tutorial.ts): its step over the lobby, if it's being taken, and its practice match
+  const [tut, setTut] = useState<number | null>(null);
+  const [tutFight, setTutFight] = useState<{ setup: MatchSetup } | null>(null);
   const [rewardsOpen, setRewardsOpen] = useState(false);
   const [looksOpen, setLooksOpen] = useState(false);
   const [fight, setFight] = useState<{ setup: MatchSetup; rival: Comp; skill: number; mates?: number; rivalRating: number; stakes: MatchStakes; format: Format; snap?: LiveMatch['snap'] } | null>(() => (resume ? { ...resume, stakes: resume.stakes } : null));
@@ -218,7 +228,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   // rated, `live` being what is kept of it while it goes, as for a match against the computer's teams)
   const [roomFight, setRoomFight] = useState<{ setup: MatchSetup; mine: number; host: boolean; matched?: boolean; live?: LiveMatch } | null>(null);
   const [run, setRun] = useState(0);
-  const [result, setResult] = useState<{ r: MatchResult; rating: RatingOutcome | null; rival?: string; kind: 'solo' | 'matched' | 'room' } | null>(null);
+  const [result, setResult] = useState<{ r: MatchResult; rating: RatingOutcome | null; rival?: string; kind: 'solo' | 'matched' | 'room' | 'tutorial' } | null>(null);
   // a search for other players (net/ringSeek.ts): what its waiting screen shows, and a word left by one that ended badly
   const [look, setLook] = useState<SeekLook | null>(null);
   const [seekNote, setSeekNote] = useState('');
@@ -273,6 +283,39 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     setSetupFrom(from);
     setPage('setup');
   };
+
+  /* -------------------------------------------------- the tutorial */
+  const learn = save.learn ?? {};
+  // (offered once, on a first visit: nobody who has fought here, or has been asked, is asked again)
+  const firstVisit = !learn.asked && !learn.done && FORMATS.every((f) => standingOf(save, f).wins + standingOf(save, f).losses === 0);
+  const putLearn = (fn: (l: NonNullable<RingSave['learn']>) => NonNullable<RingSave['learn']>): void => commit((now) => ({ ...now, learn: fn(now.learn ?? {}) }));
+  const tutStep = tut === null ? null : (LOBBY_STEPS[tut] ?? null);
+  useSpot(tutStep?.spot ?? null);
+  const goTut = (i: number): void => {
+    const st = LOBBY_STEPS[i];
+    if (!st) return;
+    setTut(i);
+    if (st.page === 'setup' && page !== 'setup') openSetup('play');
+    else if (st.page === 'play' && page !== 'play') setPage('play');
+  };
+  const beginTutorial = (): void => {
+    putLearn((l) => ({ ...l, asked: true }));
+    setHelp(false);
+    setFormat(1);
+    goTut(0);
+  };
+  /** The practice match: as this class is set up now, against the sparring partner. Not rated, not kept as a live match. */
+  const startTutorialMatch = (): void => {
+    const seed = (Math.random() * 2 ** 31) >>> 0;
+    const me: FighterSetup = { team: 0, cls: pick, name: hero, bar: fullBar(pick, bar), oath, talents, step, ult, human: true };
+    setTut(null);
+    setResult(null);
+    setPage('play');
+    setRun((r) => r + 1);
+    setTutFight({ setup: tutorialSetup(me, seed) });
+  };
+  /** One-time hints in a real match (arena/lessons.ts), unless the game's tutorial hints are off. */
+  const hints: MatchHints | undefined = engine.settings.tutorial ? { seen: learn.hints ?? [], onSeen: (id) => putLearn((l) => ({ ...l, hints: [...new Set([...(l.hints ?? []), id])] })) } : undefined;
 
   const enter = (): void => {
     if (!ready) {
@@ -483,6 +526,32 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     } else onBack();
   };
 
+  if (tutFight) {
+    return (
+      <RingMatch
+        key={run}
+        engine={engine}
+        setup={tutFight.setup}
+        myId={0}
+        face={face}
+        wear={wear}
+        worn={worn}
+        title={myTitle}
+        body={body}
+        role={{ kind: 'solo', skill: 0 }}
+        sets={sets}
+        stakes={null}
+        tutorial
+        onSets={putSets}
+        onLeave={() => setTutFight(null)}
+        onDone={(r) => {
+          putLearn((l) => ({ ...l, asked: true, done: true }));
+          setResult({ r, rating: null, rival: 'your sparring partner', kind: 'tutorial' });
+          setTutFight(null);
+        }}
+      />
+    );
+  }
   if (fight) {
     const settle = (won: boolean, k = 1): RatingOutcome => settleFor(fight.format, fight.rivalRating, won, k);
     return (
@@ -499,6 +568,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         role={{ kind: 'solo', skill: fight.skill, ...(fight.mates !== undefined ? { mates: fight.mates } : {}) }}
         sets={sets}
         stakes={fight.stakes}
+        hints={hints}
         onSets={putSets}
         resume={fight.snap}
         onSnap={(snap) => writeLive({ ...fight, snap, at: Date.now() })}
@@ -538,6 +608,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         role={roomFight.host ? { kind: 'host', skill: 0.6, send: relay, listen } : { kind: 'client', send: relay, listen }}
         sets={sets}
         stakes={live?.stakes ?? null}
+        hints={hints}
         onSets={putSets}
         onSnap={live ? (snap) => writeLive({ ...live, snap, at: Date.now() }) : undefined}
         onLeave={(started) => {
@@ -574,7 +645,9 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         rating={result.rating}
         rival={result.rival}
         dolls={result.r.dolls}
-        againLabel={result.kind === 'room' ? 'Back to the room' : 'Fight again'}
+        lesson={result.r.lesson}
+        tutorial={result.kind === 'tutorial'}
+        againLabel={result.kind === 'room' ? 'Back to the room' : result.kind === 'tutorial' ? 'Find a real match' : 'Fight again'}
         onAgain={() => {
           if (result.kind !== 'room') findMatch();
           else {
@@ -633,11 +706,14 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
                 <Doll key={pick} className="rb-vlobby-doll" src={doll} alt={CLASSES[pick].name} />
                 <div className="rb-vlobby-name">
                   <strong>{CLASSES[pick].name}</strong>
+                  <span className={`rb-ringvl-way is-${CLASS_EASE[pick]}`}>
+                    {CLASS_WAY[pick]} · {EASE_WORD[CLASS_EASE[pick]]} to learn
+                  </span>
                   {/* (with no title worn, the rank reached in this format is shown before the name: "Unblooded Guitartrick") */}
                   <Titled className="rb-rp-whoname" name={wear ? wear.name : hero} title={myTitle} orRank={rank} />
                 </div>
               </div>
-              <div className="rb-vlobby-kit rb-rp-setup">
+              <div className="rb-vlobby-kit rb-rp-setup" data-tut="loadout">
                 <div className="rb-rp-looks">
                   <WearPicker engine={engine} cls={pick} onChange={() => setWearN((n) => n + 1)} />
                   <button className="rb-btn is-small" onClick={() => setLooksOpen(true)}>
@@ -657,7 +733,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
             </section>
 
             <section className="rb-vlobby-lands rb-ringvl-fight" aria-label="Your fight">
-              <div className="rb-rp-formats" role="radiogroup" aria-label="Format">
+              <div className="rb-rp-formats" role="radiogroup" aria-label="Format" data-tut="formats">
                 {FORMATS.map((f) => {
                   const st = standingOf(save, f);
                   const r = rankOf(st.best);
@@ -673,7 +749,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
                 })}
               </div>
 
-              <div className="rb-rp-rank">
+              <div className="rb-rp-rank" data-tut="rank">
                 <span>
                   <b>{rank.name}</b> · {standing.wins} wins, {standing.losses} losses
                   {standing.streak >= 2 ? ` · ${standing.streak} in a row` : ''}
@@ -691,15 +767,27 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
 
               {format > 1 && <MatesPicker format={format} cls={pick} bar={bar} mates={mates} onMates={putMates} />}
 
-              <div className="rb-rp-block">
-                <h3>Arena</h3>
-                <div className="rb-rp-maps" role="radiogroup" aria-label="Arena">
-                  <button role="radio" aria-checked={map === 'random'} className={`rb-rp-map${map === 'random' ? ' is-on' : ''}`} onClick={() => setMap('random')}>
+              <div className="rb-rp-block" data-tut="arena">
+                <h3 className="rb-rp-arenahead">
+                  Arena
+                  <button className="rb-linkbtn" onClick={() => setMapsOpen((o) => !o)} aria-expanded={mapsOpen}>
+                    {mapsOpen ? 'Done' : 'Change'}
+                  </button>
+                </h3>
+                {!mapsOpen && <p className="rb-rp-mapnow">{map === 'random' ? 'Any: a different arena each time' : `${MAPS[map]?.name ?? ''} · ${MAPS[map]?.blurb ?? ''}`}</p>}
+                <div className="rb-rp-maps" role="radiogroup" aria-label="Arena" hidden={!mapsOpen}>
+                  <button role="radio" aria-checked={map === 'random'} className={`rb-rp-map${map === 'random' ? ' is-on' : ''}`} onClick={() => {
+                      setMap('random');
+                      setMapsOpen(false);
+                    }}>
                     <strong>Any</strong>
                     <small>A surprise</small>
                   </button>
                   {MAP_IDS.map((id) => (
-                    <button key={id} role="radio" aria-checked={map === id} title={MAPS[id]!.blurb} className={`rb-rp-map${map === id ? ' is-on' : ''}`} style={{ ['--c' as string]: MAPS[id]!.color }} onClick={() => setMap(id)}>
+                    <button key={id} role="radio" aria-checked={map === id} title={MAPS[id]!.blurb} className={`rb-rp-map${map === id ? ' is-on' : ''}`} style={{ ['--c' as string]: MAPS[id]!.color }} onClick={() => {
+                        setMap(id);
+                        setMapsOpen(false);
+                      }}>
                       <strong>{MAPS[id]!.name}</strong>
                       <small>{MAPS[id]!.blurb}</small>
                     </button>
@@ -721,20 +809,53 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
               <button className="rb-btn" onClick={() => setPage('friends')}>
                 With friends
               </button>
+              <button className="rb-btn" onClick={beginTutorial} data-tut="tutorial">
+                Tutorial
+              </button>
             </footer>
           </>
         )}
 
         {page === 'setup' && (
           <div className="rb-rp-setuppage">
-            <SetupEditor key={pick} cls={pick} sets={sets} onSets={putSets} />
+            <SetupEditor key={pick} cls={pick} sets={sets} onSets={putSets} guide={tutStep?.page === 'setup' ? { mode: tutStep.mode, tab: tutStep.tab } : undefined} />
           </div>
         )}
 
         {page === 'friends' && <FriendsPage view={view} state={linkState} err={roomErr} ready={ready} codeIn={codeIn} setCodeIn={setCodeIn} onOpen={() => void openRoom()} onJoin={joinRoom} send={(a) => linkRef.current?.send(a)} myPick={myPick} pick={pick} onPick={choose} onSetup={() => openSetup('friends')} bar={bar} mates={roomMates} />}
 
         {look && <Seeking look={look} format={format} cls={pick} onCancel={() => endSeek()} />}
-        {help && <RingHelp onClose={() => setHelp(false)} />}
+        {help && <RingHelp onClose={() => setHelp(false)} touch={engine.touchMode} engine={engine} onTutorial={beginTutorial} />}
+        {tutStep && tut !== null && (
+          <Coach
+            n={tut + 1}
+            of={LOBBY_STEPS.length}
+            title={tutStep.title}
+            text={tutStep.text(pick)}
+            at={tutStep.at}
+            onBack={tut > 0 ? () => goTut(tut - 1) : undefined}
+            onNext={tut < LOBBY_STEPS.length - 1 ? () => goTut(tut + 1) : startTutorialMatch}
+            nextLabel={tut < LOBBY_STEPS.length - 1 ? (tutStep.id === 'loadout' ? 'Open my setup' : 'Next') : 'Start the practice fight'}
+            onSkip={() => setTut(null)}
+          />
+        )}
+        {firstVisit && tut === null && page === 'play' && !look && (
+          <div className="rb-ring-dialog-wrap" role="dialog" aria-modal="true" aria-label="New to the Ring?">
+            <div className="rb-ring-dialog rb-ring-welcome">
+              <h2>New to the Ring?</h2>
+              <p>Take the tutorial: about five minutes, from picking a class to your first fight. It shows you everything, and it doesn’t touch your rating.</p>
+              <div className="rb-vigil-actions">
+                <button className="rb-btn is-gold" onClick={beginTutorial} autoFocus>
+                  Start the tutorial
+                </button>
+                <button className="rb-btn" onClick={() => putLearn((l) => ({ ...l, asked: true }))}>
+                  Not now
+                </button>
+              </div>
+              <small>You can take it any time from the Tutorial button or from the ? button.</small>
+            </div>
+          </div>
+        )}
         {rewardsOpen && <RewardsDialog best={bestRating()} onClose={() => setRewardsOpen(false)} />}
         {looksOpen && <LooksDialog engine={engine} cls={pick} wear={wear} plain={save.plain} doll={doll} shown={<Titled name={wear ? wear.name : hero} title={myTitle} />} onPlain={(p) => commit((now) => ({ ...now, plain: p }))} onChange={() => setWearN((n) => n + 1)} onClose={() => setLooksOpen(false)} />}
       </div>

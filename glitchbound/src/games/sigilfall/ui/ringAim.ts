@@ -33,3 +33,21 @@ export function autoPoint(m: Match, me: Fighter | null, ab: Ability | undefined)
   }
   return { x: me.x, y: me.y };
 }
+
+const HELD_WORD: Record<string, string> = { stun: 'stunned', fear: 'feared', incap: 'dazed' };
+
+/**
+ * A refusal in plain words, for a newcomer (the rules say it shortly: arena/sim.ts blocked): what holds them and how
+ * to get free, how near to go, what is in the way. `free` is how the Swift Step's place is pressed ("press Space").
+ */
+export function plainWhy(m: Match, me: Fighter | null, why: string, ab: Ability | undefined, free: string): string {
+  if (why === 'You can’t do that now' && me) {
+    const hold = m.held(me);
+    const word = hold?.cc ? HELD_WORD[hold.cc] : undefined;
+    const charm = me.step === 'charm' && (me.cds.charm ?? 0) <= 0;
+    return `${word ? `You’re ${word}` : 'You’re held'}${charm ? `: ${free} to break free` : ' and can’t act yet'}`;
+  }
+  if (why === 'Too far away') return ab && ab.range > 0 && ab.range <= 40 ? 'Too far: walk up to them' : 'Too far: get closer';
+  if (why === 'Out of sight') return 'Out of sight: a pillar is in the way';
+  return why;
+}

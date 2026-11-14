@@ -3,8 +3,11 @@ import { ABILITIES, barCombos, combosOf, kitOf, OATHS, PRESETS, SLOTS, stepOf, S
 import { usesOf } from '../arena/advice';
 import type { ClassSets, RingSetup } from '../arena/ladder';
 import { RANGED } from '../arena/sim';
+import { EASE_WORD, presetOfBar, styleOf } from '../arena/styles';
 import { cleanTalents, ROW_NAMES, TALENTS, type Talent } from '../arena/talents';
+import type { SetupTab } from '../arena/tutorial';
 import type { ClassId } from '../data/types';
+import type { SigilEngine } from '../engine';
 import { iconPicture } from '../render/art/gameIcons';
 
 const ROLE_WORD: Record<string, string> = { damage: 'Damage', heal: 'Healing', cc: 'Crowd control', interrupt: 'Interrupt', defense: 'Defense', mobility: 'Movement', dispel: 'Dispel', burst: 'Burst', summon: 'Summon', stealth: 'Stealth' };
@@ -22,8 +25,6 @@ export function timing(ab: Ability): string {
 }
 
 export const talentIcon = (t: Talent): string => iconPicture(t.icon ?? ABILITIES[Object.keys(t.tune ?? {})[0] ?? '']?.icon ?? '');
-
-type Tab = 'abilities' | 'talents' | 'ultimate' | 'step' | 'oath';
 
 /** The Swift Step or the charm that takes its place: carried beside the bar, never on it. */
 const isStep = (ab: Ability): boolean => STEPS.includes(ab);
@@ -179,12 +180,72 @@ function AbilityCard({ ab, cls, bar, onEquip, onSwap, onRemove, onClose }: { ab:
 }
 
 /**
- * Changing what a class brings: three saved setups, each a bar of four abilities, three talents and an oath. One thing
- * at a time, on tabs, with what everything does written where it can be read.
+ * The playstyles: each of the class's ready-made builds as a card, with what it plays like in a line and how hard it is
+ * (arena/styles.ts). Taking one fills the setup at once: the first thing a newcomer sees on the setup page, with
+ * everything else behind Customize (the owner, 2026-11-14: "i wanna make this game mode accessible for every type of
+ * player").
  */
-export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSets; onSets: (s: ClassSets) => void }) {
+function StyleCards({ cls, setup, onPick }: { cls: ClassId; setup: RingSetup; onPick: (i: number) => void }) {
+  const on = presetOfBar(cls, setup.bar);
+  return (
+    <div className="rb-rs-styles" data-tut="styles" role="radiogroup" aria-label="Playstyle">
+      {PRESETS[cls].map((p, i) => {
+        const st = styleOf(cls, p.id);
+        const combos = barCombos(cls, p.bar, p.ult);
+        return (
+          <button key={p.id} role="radio" aria-checked={on === i} className={`rb-rs-style${on === i ? ' is-on' : ''}`} onClick={() => onPick(i)}>
+            <span className="rb-rs-style-head">
+              <strong>{p.name}</strong>
+              <em className={`rb-ease is-${st.ease}`}>{EASE_WORD[st.ease]}</em>
+            </span>
+            <span className="rb-rs-style-line">{st.line}</span>
+            <span className="rb-rs-style-bar" aria-hidden="true">
+              {p.bar.map((id) => (
+                <img key={id} src={iconPicture(ABILITIES[id]?.icon ?? '')} alt="" draggable={false} />
+              ))}
+              <img className="is-super" src={iconPicture(ultOf(cls, p.ult).icon)} alt="" draggable={false} />
+            </span>
+            {combos.length > 0 && (
+              <small className="rb-rs-style-combos">
+                Combos: {combos.map((c) => `${c.from.name} then ${c.to.name}`).join(' · ')}
+              </small>
+            )}
+            {on === i && (
+              <i className="rb-rs-check" aria-hidden="true">
+                ✓
+              </i>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** What the tutorial (arena/tutorial.ts) shows of the setup page: the playstyles, or everything, on which tab. */
+export interface SetupGuide {
+  mode?: 'styles' | 'custom';
+  tab?: SetupTab;
+}
+
+/**
+ * Changing what a class brings: three saved setups, each a bar of four abilities, three talents, a super and the
+ * extras (the Swift Step or its charm, and an oath). It opens on the playstyles, unless the setup in hand is one of the
+ * player's own making; Customize opens the rest, one thing at a time, on tabs, with what everything does written where
+ * it can be read.
+ */
+export function SetupEditor({ cls, sets, onSets, guide }: { cls: ClassId; sets: ClassSets; onSets: (s: ClassSets) => void; guide?: SetupGuide }) {
   const cur = sets.list[sets.active]!;
-  const [tab, setTab] = useState<Tab>('abilities');
+  const [mode, setMode] = useState<'styles' | 'custom'>(() => guide?.mode ?? (cur.bar.length < SLOTS || presetOfBar(cls, cur.bar) >= 0 ? 'styles' : 'custom'));
+  const [tab, setTab] = useState<SetupTab>(guide?.tab ?? 'abilities');
+  // (the tutorial turns the pages itself: a new step's page and tab are taken as it comes)
+  const guideKey = `${guide?.mode ?? ''}/${guide?.tab ?? ''}`;
+  const [guided, setGuided] = useState(guideKey);
+  if (guideKey !== guided) {
+    setGuided(guideKey);
+    if (guide?.mode) setMode(guide.mode);
+    if (guide?.tab) setTab(guide.tab);
+  }
   const [info, setInfo] = useState<Ability | null>(null);
   /** The ability being read before it is taken or left (AbilityCard). */
   const [card, setCard] = useState<Ability | null>(null);
@@ -202,196 +263,212 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
     const others = cur.talents.filter((id) => TALENTS[cls].find((x) => x.id === id)?.row !== t.row);
     put({ ...cur, talents: cur.talents.includes(t.id) ? others : [...others, t.id] });
   };
+  const usePreset = (i: number): void => {
+    const p = PRESETS[cls][i]!;
+    put({ ...cur, bar: [...p.bar], talents: [...p.talents], ult: p.ult });
+  };
   const curUlt = ultOf(cls, cur.ult ?? ultFor(cls, cur.bar));
   const shown = info ?? ABILITIES[cur.bar[0] ?? ''] ?? curUlt;
   const talentCount = cleanTalents(cls, cur.talents).length;
+  const combos = barCombos(cls, cur.bar, curUlt.id);
   return (
-    <div className="rb-rs">
+    <div className={`rb-rs${mode === 'styles' ? ' is-styles' : ''}`}>
       <div className="rb-rs-top">
-        <div className="rb-rs-sets" role="tablist" aria-label="Saved setups">
+        <div className="rb-rs-sets" role="tablist" aria-label="Saved setups" data-tut="sets">
           {sets.list.map((_, i) => (
             <button key={i} role="tab" aria-selected={i === sets.active} className={`rb-rs-set${i === sets.active ? ' is-on' : ''}`} onClick={() => onSets({ ...sets, active: i })}>
               Setup {i + 1}
             </button>
           ))}
         </div>
-        <div className="rb-rs-builds">
-          <small>Start from:</small>
-          {PRESETS[cls].map((p) => (
-            <button
-              key={p.id}
-              className="rb-rs-build"
-              title={`Fill this setup with the ${p.name} build. Its combos: ${barCombos(cls, p.bar).map((c) => `${c.from.name}, then ${c.to.name} (${c.name})`).join('; ') || 'none'}`}
-              onClick={() => put({ ...cur, bar: [...p.bar], talents: [...p.talents], ult: p.ult })}
-            >
-              {p.name}
-              <small>{barCombos(cls, p.bar).map((c) => c.name).join(' · ')}</small>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="rb-rs-barrow">
-        <BarRow bar={cur.bar} cls={cls} step={cur.step} ult={curUlt.id} onPick={open} onHover={setInfo} />
-      </div>
-      {/* what to press after what: the combos this bar can make, each as its two abilities in order */}
-      <ul className="rb-rs-combos" aria-label="Combos in this setup">
-        {barCombos(cls, cur.bar, curUlt.id).map((c) => (
-          <li key={`${c.from.id}-${c.to.id}`} title={c.text}>
-            <img src={iconPicture(c.from.icon)} alt="" draggable={false} />
-            <span>{c.from.name}</span>
-            <i>then</i>
-            <img src={iconPicture(c.to.icon)} alt="" draggable={false} />
-            <span>{c.to.name}</span>
-            <b>{c.name}</b>
-          </li>
-        ))}
-        {barCombos(cls, cur.bar, curUlt.id).length === 0 && <li className="is-none">No combo on this bar yet. Take an ability together with the one that sets it up.</li>}
-      </ul>
-
-      <div className="rb-rs-tabs" role="tablist" aria-label="What to change">
-        <button role="tab" aria-selected={tab === 'abilities'} className={tab === 'abilities' ? 'is-on' : ''} onClick={() => setTab('abilities')}>
-          Abilities <b className={cur.bar.length === SLOTS ? 'is-full' : 'is-short'}>{cur.bar.length}/{SLOTS}</b>
-        </button>
-        <button role="tab" aria-selected={tab === 'talents'} className={tab === 'talents' ? 'is-on' : ''} onClick={() => setTab('talents')}>
-          Talents <b className={talentCount === 3 ? 'is-full' : 'is-short'}>{talentCount}/3</b>
-        </button>
-        <button role="tab" aria-selected={tab === 'ultimate'} className={tab === 'ultimate' ? 'is-on' : ''} onClick={() => setTab('ultimate')}>
-          Ultimate
-        </button>
-        <button role="tab" aria-selected={tab === 'step'} className={tab === 'step' ? 'is-on' : ''} onClick={() => setTab('step')}>
-          Step
-        </button>
-        <button role="tab" aria-selected={tab === 'oath'} className={tab === 'oath' ? 'is-on' : ''} onClick={() => setTab('oath')}>
-          Oath
-        </button>
-      </div>
-
-      <div className="rb-rs-panel" role="tabpanel">
-        {tab === 'abilities' && (
-          <>
-            <p className="rb-rs-hint">Choose four to bring. Open an ability to read it, then equip it.</p>
-            <div className="rb-rs-kit">
-              {kitOf(cls).map((ab) => {
-                const on = cur.bar.includes(ab.id);
-                return (
-                  <button key={ab.id} className={`rb-rs-ab${on ? ' is-on' : ''}`} onClick={() => open(ab)} onMouseEnter={() => setInfo(ab)} onFocus={() => setInfo(ab)} aria-pressed={on}>
-                    <img src={iconPicture(ab.icon)} alt="" draggable={false} />
-                    <small>{ab.name}</small>
-                    {on && (
-                      <i className="rb-rs-check" aria-hidden="true">
-                        ✓
-                      </i>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </>
+        {mode === 'custom' ? (
+          <button className="rb-btn is-small rb-rs-mode" onClick={() => setMode('styles')}>
+            ← Playstyles
+          </button>
+        ) : (
+          <button className="rb-btn is-small rb-rs-mode" data-tut="customize" onClick={() => setMode('custom')}>
+            Customize →
+          </button>
         )}
-        {tab === 'talents' && (
-          <>
-            <p className="rb-rs-hint">One from each row. Each works for the whole class, whatever is on your bar.</p>
-            {ROW_NAMES.map((name, row) => (
-              <div key={name} className="rb-rs-row" role="radiogroup" aria-label={name}>
-                <h4>{name}</h4>
-                <div className="rb-rs-options">
-                  {TALENTS[cls]
-                    .filter((t) => t.row === row)
-                    .map((t) => {
-                      const on = cur.talents.includes(t.id);
+      </div>
+
+      {mode === 'styles' && (
+        <>
+          <p className="rb-rs-hint">Pick a playstyle to start from. Each is ready to fight with as it is.</p>
+          <StyleCards cls={cls} setup={cur} onPick={usePreset} />
+          <div className="rb-rs-barrow" data-tut="bar">
+            <BarRow bar={cur.bar} cls={cls} step={cur.step} ult={curUlt.id} onPick={open} />
+          </div>
+          <button className="rb-btn rb-rs-custom" onClick={() => setMode('custom')}>
+            Customize abilities, talents and more
+          </button>
+        </>
+      )}
+
+      {mode === 'custom' && (
+        <>
+          <div className="rb-rs-barrow" data-tut="bar">
+            <BarRow bar={cur.bar} cls={cls} step={cur.step} ult={curUlt.id} onPick={open} onHover={setInfo} />
+          </div>
+          {/* what to press after what: the combos this bar can make, each as its two abilities in order */}
+          <ul className="rb-rs-combos" aria-label="Combos in this setup" data-tut="combos">
+            {combos.map((c) => (
+              <li key={`${c.from.id}-${c.to.id}`} title={c.text}>
+                <img src={iconPicture(c.from.icon)} alt="" draggable={false} />
+                <span>{c.from.name}</span>
+                <i>then</i>
+                <img src={iconPicture(c.to.icon)} alt="" draggable={false} />
+                <span>{c.to.name}</span>
+                <b>{c.name}</b>
+              </li>
+            ))}
+            {combos.length === 0 && <li className="is-none">No combo on this bar yet. Take an ability together with the one that sets it up.</li>}
+          </ul>
+
+          <div className="rb-rs-tabs" role="tablist" aria-label="What to change">
+            <button role="tab" aria-selected={tab === 'abilities'} className={tab === 'abilities' ? 'is-on' : ''} onClick={() => setTab('abilities')}>
+              Abilities <b className={cur.bar.length === SLOTS ? 'is-full' : 'is-short'}>{cur.bar.length}/{SLOTS}</b>
+            </button>
+            <button role="tab" aria-selected={tab === 'talents'} className={tab === 'talents' ? 'is-on' : ''} onClick={() => setTab('talents')}>
+              Talents <b className={talentCount === 3 ? 'is-full' : 'is-short'}>{talentCount}/3</b>
+            </button>
+            <button role="tab" aria-selected={tab === 'super'} className={tab === 'super' ? 'is-on' : ''} onClick={() => setTab('super')}>
+              Super
+            </button>
+            <button role="tab" aria-selected={tab === 'extras'} className={tab === 'extras' ? 'is-on' : ''} onClick={() => setTab('extras')}>
+              Extras
+            </button>
+          </div>
+
+          <div className="rb-rs-panel" role="tabpanel" data-tut="panel">
+            {tab === 'abilities' && (
+              <>
+                <p className="rb-rs-hint">Choose four to bring. Open an ability to read it, then equip it.</p>
+                <div className="rb-rs-kit" data-tut="kit">
+                  {kitOf(cls).map((ab) => {
+                    const on = cur.bar.includes(ab.id);
+                    return (
+                      <button key={ab.id} className={`rb-rs-ab${on ? ' is-on' : ''}`} onClick={() => open(ab)} onMouseEnter={() => setInfo(ab)} onFocus={() => setInfo(ab)} aria-pressed={on}>
+                        <img src={iconPicture(ab.icon)} alt="" draggable={false} />
+                        <small>{ab.name}</small>
+                        {on && (
+                          <i className="rb-rs-check" aria-hidden="true">
+                            ✓
+                          </i>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+            {tab === 'talents' && (
+              <>
+                <p className="rb-rs-hint">One from each row. Each works for the whole class, whatever is on your bar.</p>
+                {ROW_NAMES.map((name, row) => (
+                  <div key={name} className="rb-rs-row" role="radiogroup" aria-label={name}>
+                    <h4>{name}</h4>
+                    <div className="rb-rs-options">
+                      {TALENTS[cls]
+                        .filter((t) => t.row === row)
+                        .map((t) => {
+                          const on = cur.talents.includes(t.id);
+                          return (
+                            <button key={t.id} role="radio" aria-checked={on} className={`rb-rs-option${on ? ' is-on' : ''}`} onClick={() => pickTalent(t)}>
+                              <img src={talentIcon(t)} alt="" draggable={false} />
+                              <span>
+                                <strong>{t.name}</strong>
+                                <small>{t.text}</small>
+                              </span>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+            {tab === 'super' && (
+              <>
+                <p className="rb-rs-hint">Your super: a big ability, ready when your meter is full. Dealing damage and healing fill it. Each way your class fights has its own.</p>
+                <div className="rb-rs-options is-oaths" role="radiogroup" aria-label="Super">
+                  {ultsOf(cls).map((x) => {
+                    const on = curUlt === x;
+                    const of = PRESETS[cls].find((p) => p.ult === x.id);
+                    return (
+                      <button key={x.id} role="radio" aria-checked={on} className={`rb-rs-option${on ? ' is-on' : ''}`} onClick={() => put({ ...cur, ult: x.id })}>
+                        <img src={iconPicture(x.icon)} alt="" draggable={false} />
+                        <span>
+                          <strong>
+                            {x.name}
+                            {of && <em> · the {of.name}’s</em>}
+                          </strong>
+                          <small>{x.text}</small>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+            {tab === 'extras' && (
+              <>
+                <div className="rb-rs-row" role="radiogroup" aria-label="Beside your bar">
+                  <h4>Beside your bar</h4>
+                  <p className="rb-rs-hint">The Swift Step gets you out of the way; the charm breaks you free of a hold instead.</p>
+                  <div className="rb-rs-options is-oaths">
+                    {STEPS.map((x) => {
+                      const on = stepOf(cur.step) === x;
                       return (
-                        <button key={t.id} role="radio" aria-checked={on} className={`rb-rs-option${on ? ' is-on' : ''}`} onClick={() => pickTalent(t)}>
-                          <img src={talentIcon(t)} alt="" draggable={false} />
+                        <button key={x.id} role="radio" aria-checked={on} className={`rb-rs-option${on ? ' is-on' : ''}`} onClick={() => put({ ...cur, step: x.id })}>
+                          <img src={iconPicture(x.icon)} alt="" draggable={false} />
                           <span>
-                            <strong>{t.name}</strong>
-                            <small>{t.text}</small>
+                            <strong>{x.name}</strong>
+                            <small>
+                              {x.text} {x.cd}s cooldown.
+                            </small>
                           </span>
                         </button>
                       );
                     })}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </>
-        )}
-        {tab === 'ultimate' && (
-          <>
-            <p className="rb-rs-hint">Your super, ready when your meter is full. Each way your class fights has its own.</p>
-            <div className="rb-rs-options is-oaths" role="radiogroup" aria-label="Ultimate">
-              {ultsOf(cls).map((x) => {
-                const on = curUlt === x;
-                const of = PRESETS[cls].find((p) => p.ult === x.id);
-                return (
-                  <button key={x.id} role="radio" aria-checked={on} className={`rb-rs-option${on ? ' is-on' : ''}`} onClick={() => put({ ...cur, ult: x.id })}>
-                    <img src={iconPicture(x.icon)} alt="" draggable={false} />
-                    <span>
-                      <strong>
-                        {x.name}
-                        {of && <em> · the {of.name}’s</em>}
-                      </strong>
-                      <small>{x.text}</small>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        )}
-        {tab === 'step' && (
-          <>
-            <p className="rb-rs-hint">What you carry beside your bar: the Swift Step to get out of the way, or a charm to break free.</p>
-            <div className="rb-rs-options is-oaths" role="radiogroup" aria-label="Step">
-              {STEPS.map((x) => {
-                const on = stepOf(cur.step) === x;
-                return (
-                  <button key={x.id} role="radio" aria-checked={on} className={`rb-rs-option${on ? ' is-on' : ''}`} onClick={() => put({ ...cur, step: x.id })}>
-                    <img src={iconPicture(x.icon)} alt="" draggable={false} />
-                    <span>
-                      <strong>{x.name}</strong>
-                      <small>
-                        {x.text} {x.cd}s cooldown.
-                      </small>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        )}
-        {tab === 'oath' && (
-          <>
-            <p className="rb-rs-hint">One passive bonus for the whole match.</p>
-            <div className="rb-rs-options is-oaths" role="radiogroup" aria-label="Oath">
-              {OATHS.map((o) => (
-                <button key={o.id} role="radio" aria-checked={o.id === cur.oath} className={`rb-rs-option${o.id === cur.oath ? ' is-on' : ''}`} onClick={() => put({ ...cur, oath: o.id })}>
-                  <img src={iconPicture(o.icon)} alt="" draggable={false} />
-                  <span>
-                    <strong>{o.name}</strong>
-                    <small>{o.text}</small>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-
-      {tab === 'abilities' && (
-        <div className="rb-rs-info">
-          <img src={iconPicture(shown.icon)} alt="" draggable={false} />
-          <span>
-            <strong>{shown.name}</strong>
-            <em>{ROLE_WORD[shown.role]}</em>
-            <small>{timing(shown)}</small>
-            <p>{shown.text}</p>
-            {shown.combo && (
-              <p className="rb-rs-combo">
-                <b>Combo · {shown.combo.name}:</b> {shown.combo.text}
-              </p>
+                <div className="rb-rs-row" role="radiogroup" aria-label="Oath">
+                  <h4>Oath</h4>
+                  <p className="rb-rs-hint">One small bonus for the whole match.</p>
+                  <div className="rb-rs-options is-oaths">
+                    {OATHS.map((o) => (
+                      <button key={o.id} role="radio" aria-checked={o.id === cur.oath} className={`rb-rs-option${o.id === cur.oath ? ' is-on' : ''}`} onClick={() => put({ ...cur, oath: o.id })}>
+                        <img src={iconPicture(o.icon)} alt="" draggable={false} />
+                        <span>
+                          <strong>{o.name}</strong>
+                          <small>{o.text}</small>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
-          </span>
-        </div>
+          </div>
+
+          {tab === 'abilities' && (
+            <div className="rb-rs-info">
+              <img src={iconPicture(shown.icon)} alt="" draggable={false} />
+              <span>
+                <strong>{shown.name}</strong>
+                <em>{shown.super ? 'Super' : ROLE_WORD[shown.role]}</em>
+                <small>{shown.super ? 'Ready when your meter is full' : timing(shown)}</small>
+                <p>{shown.text}</p>
+                {shown.combo && (
+                  <p className="rb-rs-combo">
+                    <b>Combo · {shown.combo.name}:</b> {shown.combo.text}
+                  </p>
+                )}
+              </span>
+            </div>
+          )}
+        </>
       )}
       {card && (
         <AbilityCard
@@ -418,15 +495,97 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
   );
 }
 
-/** How The Ring plays, for whoever asks: on demand, never in the way. */
-export function RingHelp({ onClose }: { onClose: () => void }) {
+/** The Ring's one assist that changes how a press plays, beside the rules where it's read (also in Settings). */
+function CloseInToggle({ engine }: { engine: SigilEngine }) {
+  const [on, setOn] = useState(engine.settings.ringCloseIn);
+  return (
+    <label className="rb-check rb-ring-assist">
+      <input
+        type="checkbox"
+        checked={on}
+        onChange={(e) => {
+          engine.setSettings({ ringCloseIn: e.target.checked });
+          engine.persist();
+          setOn(e.target.checked);
+        }}
+      />
+      <span>
+        <b>Close in automatically.</b> Use an ability while your target is out of reach and your hero walks there, then uses it. Moving yourself stops the walk.
+      </span>
+    </label>
+  );
+}
+
+/**
+ * How The Ring plays, for whoever asks: on demand, never in the way. First the four things a newcomer needs, then the
+ * rest of the rules and the controls behind their own headings, folded until opened.
+ */
+export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () => void; touch?: boolean; engine?: SigilEngine; onTutorial?: () => void }) {
   return (
     <div className="rb-ring-dialog-wrap" role="dialog" aria-label="How The Ring works" onClick={onClose}>
       <div className="rb-ring-dialog is-help" onClick={(e) => e.stopPropagation()}>
         <h2>How The Ring works</h2>
         <div className="rb-ring-help">
-          <section>
-            <h3>Controls</h3>
+          <section className="rb-ring-help-four">
+            <h3>The four things you need</h3>
+            <ol>
+              <li>
+                <b>Move.</b> {touch ? 'Your left thumb, anywhere on the left side.' : 'W A S D or the arrow keys.'} You can use abilities while you move.
+              </li>
+              <li>
+                <b>Use your abilities.</b> {touch ? 'The buttons on the right.' : '1 to 4, or click them.'} They go to your target (the nearest enemy until you choose one). A button that glows lands a combo.
+              </li>
+              <li>
+                <b>Step out of red circles.</b> A red circle on the ground is an attack about to land. {touch ? 'Tap the blue button' : 'Press Space'} for your Swift Step and get out.
+              </li>
+              <li>
+                <b>Use your super.</b> When the round gold button is full, {touch ? 'tap it' : 'press Q'}.
+              </li>
+            </ol>
+            {onTutorial && (
+              <button className="rb-btn is-small" onClick={onTutorial}>
+                Take the tutorial
+              </button>
+            )}
+          </section>
+          {engine && <CloseInToggle engine={engine} />}
+          <details className="rb-ring-help-more">
+            <summary>More rules</summary>
+            <ul>
+              <li>
+                <b>Combos and Momentum.</b> Many abilities hit much harder against a target you have set up (their cards say how). Each different combo in a row builds Momentum, up to ×4: your combos hit harder still and your super fills faster. Seven seconds without one and it’s gone.
+              </li>
+              <li>
+                <b>Spells land. Circles can be left.</b> What is aimed at someone always hits them: quick ones at once, cast ones after a short flight. What is placed on the ground shows as a circle first, red when it is the other side’s.
+              </li>
+              <li>
+                <b>Healing spheres.</b> Green spheres rise around the ground. Walk into one when you are hurt and it gives back part of your health, then rises again a little later.
+              </li>
+              <li>
+                <b>Take the sigil.</b> A sigil rises in the middle now and then: it heals, fills your super by a third and speeds you up.
+              </li>
+              <li>
+                <b>Pillars block sight.</b> Step behind one before a cast ends and it is lost, and a healer can’t reach who they can’t see.
+              </li>
+              <li>
+                <b>Casts, interrupts and holds.</b> Interrupt a cast to lock that school of magic for a few seconds. Stuns, fears, dazes, roots and silences are short and wear off faster each time; enough damage breaks a fear, a daze or a root.
+              </li>
+              <li>
+                <b>The Gloam closes in.</b> Forty seconds in, it starts closing in from the edges and burns whoever is out in it, until there’s nowhere left to stand. Healing also fades the longer a match goes.
+              </li>
+              <li>
+                <b>Bigger fights heal more.</b> Healing is 30% stronger in 2v2 and 45% stronger in 3v3.
+              </li>
+              <li>
+                <b>Finding a match.</b> The Ring looks for other players for ten seconds. If someone is looking for the same kind of fight, you meet them; if nobody is, you fight the computer’s teams. Both are for rating. Walk out once the gates have lifted and it is a leaver’s loss, half again a loss; against other players the match then ends for everyone else, and their rating stays as it was.
+              </li>
+              <li>
+                <b>Climb for rewards.</b> Every rank gives its title and a suit of Ringforged armor, for good. See them under Rewards in the lobby, and wear them from Title & armor.
+              </li>
+            </ul>
+          </details>
+          <details className="rb-ring-help-more">
+            <summary>All the controls</summary>
             <dl>
               <dt>Move</dt>
               <dd>WASD, the arrows, or drag on a touch screen</dd>
@@ -445,45 +604,7 @@ export function RingHelp({ onClose }: { onClose: () => void }) {
               <dt>Nameplates</dt>
               <dd>The ▤ button at the top right of a match puts them away and brings them back. Health and effects stay over every fighter’s head</dd>
             </dl>
-          </section>
-          <section>
-            <h3>The rules</h3>
-            <ul>
-              <li>
-                <b>Keep moving.</b> You can cast on the move: casting only slows you down.
-              </li>
-              <li>
-                <b>Spells land. Circles can be left.</b> What is aimed at someone always hits them: quick ones at once, cast ones after a short flight. What is placed on the ground shows as a circle first, red when it is the other side’s: take a Swift Step out of it before it lands.
-              </li>
-              <li>
-                <b>Healing spheres.</b> Green spheres rise around the ground. Walk into one when you are hurt and it gives back part of your health, then rises again a little later.
-              </li>
-              <li>
-                <b>Bigger fights heal more.</b> Healing is 20% stronger in 2v2 and 35% stronger in 3v3.
-              </li>
-              <li>
-                <b>Land combos, and weave them.</b> Many abilities hit much harder against a target you have set up (their cards say how). Each different combo in a row builds Momentum, up to ×4: your combos hit harder still and your super fills faster. Seven seconds without one and it’s gone.
-              </li>
-              <li>
-                <b>Fill your super.</b> Dealing damage and healing fill the meter (taking hits fills it a little). When it’s full, let it go.
-              </li>
-              <li>
-                <b>Take the sigil.</b> A sigil rises in the middle now and then: it heals, fills your super by a third and speeds you up.
-              </li>
-              <li>
-                <b>The Gloam closes in.</b> Forty seconds in, it starts closing in from the edges and burns whoever is out in it, until there’s nowhere left to stand.
-              </li>
-              <li>
-                <b>Finding a match.</b> The Ring looks for other players for ten seconds. If someone is looking for the same kind of fight, you meet them; if nobody is, you fight the computer’s teams. Both are for rating. Walk out once the gates have lifted and it is a leaver’s loss, half again a loss; against other players the match then ends for everyone else, and their rating stays as it was.
-              </li>
-              <li>
-                <b>Climb for rewards.</b> Every rank gives its title and a suit of Ringforged armor, for good. See them under Rewards in the lobby, and wear them from Title & armor.
-              </li>
-              <li>
-                <b>Pillars block sight.</b> Step behind one before a cast ends and it is lost, and a healer can’t reach who they can’t see. Interrupt a cast to lock that school of magic for a few seconds. Holds are short and wear off faster each time.
-              </li>
-            </ul>
-          </section>
+          </details>
         </div>
         <button className="rb-btn is-gold" onClick={onClose} autoFocus>
           Got it

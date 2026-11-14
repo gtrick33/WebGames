@@ -515,6 +515,11 @@ export class Match {
   /** The sigil, while it stands waiting to be taken, and when the next one rises. */
   sigil: SigilStone | null = null;
   sigilAt = SIGIL_FIRST;
+  /**
+   * The clock stands still while this is set: no Gloam, no fading of healing, no sigil or sphere rising by itself and
+   * no end by time. The Ring's tutorial (arena/tutorial.ts) holds it while it teaches, and lets it go for the last fight.
+   */
+  hold = false;
   events: MatchEvent[] = [];
   private rand: () => number;
   private burnT = 0;
@@ -2126,7 +2131,7 @@ export class Match {
       }
       return;
     }
-    this.clock += dt;
+    if (!this.hold) this.clock += dt;
     // (the raised dead think for themselves: nobody's moves are theirs. Any raised in this frame take their first step in it)
     for (const f of this.fighters) {
       if (f.dead) continue;
