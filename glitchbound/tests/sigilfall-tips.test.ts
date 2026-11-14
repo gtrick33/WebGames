@@ -164,7 +164,7 @@ describe('sigilfall hints: they only pause the game', () => {
     Object.assign(e, {
       ui,
       hero: h,
-      world: { scene: null, keyRun: null, events: [], build: { bar: { s1: CLASSES.mage.skills[0] }, resource: null } },
+      world: { scene: null, keyRun: null, events: [], story: { talking: false, fighting: false }, build: { bar: { s1: CLASSES.mage.skills[0] }, resource: null } },
       save: { settings: { ...DEFAULT_SETTINGS, tutorial }, heroes: [h] },
       sound: { play: vi.fn(), setVolumes: vi.fn(), suspend: vi.fn() },
       renderer: { waiting: false, reducedMotion: false, setZoom: () => {} },
@@ -172,6 +172,7 @@ describe('sigilfall hints: they only pause the game', () => {
       coop: null,
       hidden: false,
       tipQueue: [],
+      tipAfter: 0,
       tipOpenedAt: 0,
       saveAt: 0,
       version: 0,
@@ -182,6 +183,7 @@ describe('sigilfall hints: they only pause the game', () => {
       showTip(w: unknown): void;
       uiKey(k: string): void;
       tipQueue: unknown[];
+      tipAfter: number;
       world: unknown;
       save: { heroes: unknown[] };
     };
@@ -212,7 +214,7 @@ describe('sigilfall hints: they only pause the game', () => {
     expect(e.queueTip('bag')).toBe(false);
   });
 
-  it('teaches riding once, right after Riders for Briarhollow, and only with the hints on', () => {
+  it('teaches riding once, right after Riders for Briarhollow, to every hero, once the talk and the reward are over', () => {
     type Events = { handleEvents(w: unknown): void; hero: { quests: Record<string, unknown>; mounts: string[]; opened: string[] } };
     const done = (e: ReturnType<typeof engine>, quest: string): void => {
       const w = e.world as { events: unknown[] };
@@ -228,6 +230,15 @@ describe('sigilfall hints: they only pause the game', () => {
     // the first mount came with it, and the hint waits for the hero to be free
     expect(e.hero!.mounts).toContain('briarhollow-chestnut');
     expect(e.tipQueue).toEqual([{ id: 'riding', spell: undefined }]);
+    // not over the quest's end and the mount's toasts, nor over Mara's answer to the riders
+    e.showTip(e.world);
+    expect(e.ui.tip).toBeNull();
+    e.tipAfter = 0;
+    const story = (e.world as { story: { talking: boolean; fighting: boolean } }).story;
+    story.talking = true;
+    e.showTip(e.world);
+    expect(e.ui.tip).toBeNull();
+    story.talking = false;
     e.showTip(e.world);
     expect(e.ui.tip?.id).toBe('riding');
     e.tipNext();
@@ -240,11 +251,13 @@ describe('sigilfall hints: they only pause the game', () => {
     expect(e.hero!.opened).toContain(tipKey('riding'));
     done(e, 'camp-riders');
     expect(e.tipQueue).toEqual([]);
-    // with the hints off, never
+    // with the hints off too: riding comes long after they were asked for, and nothing else says how it's done
     const off = engine(false);
     done(off, 'camp-riders');
-    expect(off.tipQueue).toEqual([]);
+    expect(off.tipQueue).toEqual([{ id: 'riding', spell: undefined }]);
     expect(off.hero!.mounts).toContain('briarhollow-chestnut');
+    // (the rest of the hints stay off)
+    expect(off.queueTip('bag')).toBe(false);
   });
 
   it('never stops a party or a Riftstone run', () => {

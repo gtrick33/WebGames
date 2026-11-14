@@ -98,6 +98,11 @@ export class StoryDirector {
     return !!this.run && this.run.def.kind !== 'arrival';
   }
 
+  /** Is someone saying a line, or are lines waiting to be said? */
+  get talking(): boolean {
+    return this.speech.length > 0 || this.queue.length > 0;
+  }
+
   /** Queues lines to be said one after another. */
   say(lines: Bark[] | undefined): void {
     if (lines) this.queue.push(...lines);

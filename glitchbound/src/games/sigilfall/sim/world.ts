@@ -352,6 +352,8 @@ export class World {
   props: { x: number; y: number; prop: string }[] = [];
   /** The animals of the place (sim/critters.ts): hens, sheep, a dog about the square. Decoration, on their own random numbers. */
   critters: Critter[] = [];
+  /** Where the place is under attack this frame, for its animals to run from (updateAmbient). */
+  private readonly trouble: { x: number; y: number }[] = [];
   private readonly critterRand: () => number;
   /** The people of the place going about their day (sim/folk.ts): decoration, on their own random numbers. */
   folk: Folk[] = [];
@@ -2514,7 +2516,14 @@ export class World {
       for (const q of this.pets) if (!q.dead) this.folkAround.push(q);
       updateFolk(this.folk, this.map, this.folkRand, dt, this.folkAround);
     }
-    if (this.critters.length) updateCritters(this.critters, this.map, this.player, this.critterRand, dt);
+    if (this.critters.length) {
+      // the animals bolt from an attack: the hero in a story fight, a roof alight near their home
+      const trouble = this.trouble;
+      trouble.length = 0;
+      if (this.story.fighting) trouble.push(this.player);
+      for (const f of this.fires) if (this.time >= f.born) trouble.push(f);
+      updateCritters(this.critters, this.map, this.player, this.critterRand, dt, trouble);
+    }
     for (const n of this.npcs) {
       n.bob += dt;
       const p = this.player;

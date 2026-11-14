@@ -510,8 +510,63 @@ function frozenThrone(): Build {
   return b;
 }
 
+/**
+ * A walled town's gate shut against a siege (the Defense of Hearthstead's ward): a stone lintel with battlements
+ * from tower to tower, at the height of the town's own wall, and under it a pair of heavy oak doors banded in iron and
+ * barred. It was the packs' little garden gate, a plank across a road four tiles wide (the owner: "the wall is just
+ * this wooden plank ... its ugly and not appropriate"). Its ends run into the towers either side, so it closes the
+ * opening whatever the towers' girth.
+ */
+function townGate(): Build {
+  const b = new Build();
+  const stone = STONE;
+  const dark = STONE_DARK;
+  const hi = mul(STONE, 1.14);
+  const oak = rgb('#6e4c2e');
+  const oakDark = rgb('#3e2a1a');
+  const oakHi = rgb('#8a6440');
+  const half = 1.55;
+  const doorTop = 1.75;
+  const top = 2.5;
+  // the posts the doors hang on, and the lintel over them, the depth of the wall
+  for (const s of [-1, 1] as const) b.box(s < 0 ? -half : half - 0.3, -0.4, s < 0 ? -half + 0.3 : half, 0.4, 0, top, stone, dark, hi);
+  b.box(-half, -0.4, half, 0.4, doorTop, top, stone, dark, hi);
+  b.courses('s', -half + 0.3, half - 0.3, 0.401, doorTop + 0.02, top - 0.02, 0.19, 0.38, [stone, mul(stone, 0.92), mul(stone, 1.06)], dark, (() => {
+    let n = 7;
+    return () => hash2(n++, 3, 11);
+  })());
+  // a keystone over the middle, and the battlements on top
+  b.box(-0.17, 0.38, 0.17, 0.46, doorTop - 0.08, doorTop + 0.36, hi, stone, mul(hi, 1.05));
+  b.box(-half - 0.06, -0.46, half + 0.06, 0.46, top, top + 0.1, dark, dark, stone);
+  b.merlons(-half, 0.22, half, 0.46, top + 0.1, 0.3, 0.2, stone, dark, hi);
+  b.merlons(-half, -0.46, half, -0.22, top + 0.1, 0.3, 0.2, stone, dark, hi);
+  // the doors: planks standing side by side, a seam down the middle
+  const x0 = -half + 0.3;
+  const x1 = half - 0.3;
+  b.box(x0, -0.16, x1, 0.16, 0, doorTop, oak, oakDark, oakHi);
+  const planks = 8;
+  for (let i = 0; i < planks; i++) {
+    const a = x0 + ((x1 - x0) * i) / planks;
+    const w = (x1 - x0) / planks;
+    const tone = 0.88 + hash2(i, 5, 17) * 0.24;
+    b.faceS(a + 0.012, a + w - 0.012, 0.165, 0.02, doorTop - 0.02, mul(oakDark, tone), mul(oak, tone));
+  }
+  b.faceS(-0.025, 0.025, 0.17, 0, doorTop, oakDark);
+  // iron straps across both leaves, studded, and the bar across them in its brackets
+  for (const y of [0.3, 0.95, 1.5]) {
+    b.box(x0 + 0.04, 0.16, x1 - 0.04, 0.2, y, y + 0.09, IRON, IRON_DARK, IRON);
+    for (let x = x0 + 0.14; x < x1 - 0.1; x += 0.26) b.box(x - 0.025, 0.2, x + 0.025, 0.23, y + 0.02, y + 0.07, IRON_DARK, IRON_DARK, IRON);
+  }
+  b.box(x0 + 0.1, 0.22, x1 - 0.1, 0.36, 0.62, 0.78, oakHi, oakDark, mul(oakHi, 1.1));
+  for (const x of [x0 + 0.3, -0.3, 0.3, x1 - 0.3]) b.box(x - 0.05, 0.2, x + 0.05, 0.38, 0.58, 0.82, IRON_DARK, IRON_DARK, IRON);
+  // a ring to pull each leaf by
+  for (const x of [-0.22, 0.22]) b.post(x, 0.21, 0.07, 0.07, 1.1, 1.14, 6, IRON, IRON);
+  return b;
+}
+
 const BUILDERS: Record<string, () => Build> = {
   built_frozen_throne: frozenThrone,
+  built_town_gate: townGate,
   built_flag_royal: () => standard(rgb('#cfdcf2'), rgb('#8a9cc4'), rgb('#3f62b4')),
   built_lamp: lamp,
   built_lantern: lantern,

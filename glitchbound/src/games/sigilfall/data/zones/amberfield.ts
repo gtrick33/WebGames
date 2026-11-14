@@ -111,9 +111,11 @@ export const AMBERFIELD = wildRegion(
       { near: 'hub', dx: -12, dy: 10, marker: { kind: 'npc', npc: 'refugee-marit' }, when: all(REFUGEES, AT_HOME) },
       // the night of the attack: the roofs burn
       ...[0, 1, 2, 3, 4, 5, 6].map((i) => ({ near: `house:${i}`, marker: { kind: 'fire' as const, size: 2 + (i % 2) } })),
-      // after it: new banners at the gate, and Dunmore's word on the gatepost
-      { near: 'gate', dx: -2, dy: 1, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('hearth-the-ram') },
-      { near: 'gate', dx: 2, dy: 1, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('hearth-the-ram') },
+      // after it: new banners at the gate, one before each tower. The towers stand two tiles west and three east of
+      // the gate's tile, their feet over the row south of the wall, so the banners go a row further out and a tile
+      // wide of them: one tile in from a tower, a banner was moved off the taken ground onto the road between them
+      { near: 'gate', dx: -3, dy: 2, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('hearth-the-ram') },
+      { near: 'gate', dx: 4, dy: 2, marker: { kind: 'prop', prop: 'blue-banner' }, when: after('hearth-the-ram') },
       { near: 'gate', dx: -3, dy: 3, marker: { kind: 'prop', prop: 'debris' }, when: MORNING },
       { near: 'gate', dx: 3, dy: 4, marker: { kind: 'prop', prop: 'debris' }, when: MORNING },
       // the empty picket: cold fires and cut horse lines

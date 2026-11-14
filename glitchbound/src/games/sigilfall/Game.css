@@ -3767,6 +3767,24 @@ html.rb-touch-playing textarea {
 .rb-quest.is-tracked {
   box-shadow: inset 0 0 0 2px var(--rb-gold);
 }
+/* the reward, and giving a side quest up (asked twice: its progress goes with it) */
+.rb-quest-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.rb-quest-foot > .rb-small {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.rb-quest-abandon {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
 .rb-quest-steps {
   margin: 0;
   padding-left: 20px;

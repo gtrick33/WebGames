@@ -25,8 +25,13 @@ import type { RigAnim } from './toon';
 /** A facing in the rules (an angle on the map) as a turn about the vertical. */
 export const turnOf = (a: number): number => Math.atan2(Math.cos(a), Math.sin(a));
 
-const WARDS: Record<string, { m: string; h: number }> = {
-  gate: { m: 'wooden_gate', h: 26 },
+/**
+ * What a ward that is a thing is drawn as, how tall (world px) and how far east of where it stands (`dx`). A walled
+ * town's gate (data/zonegen.ts, the 'court' town) is four tiles wide between its towers, its middle half a tile east of
+ * the gate's own tile: the gate is drawn there, at its own size (2.9 tiles, its battlements level with the wall's).
+ */
+const WARDS: Record<string, { m: string; h: number; dx?: number }> = {
+  gate: { m: 'built_town_gate', h: 2.9 * TILE, dx: TILE / 2 },
   stone: { m: 'statue_obelisk', h: 34 },
   boat: { m: 'p_boat', h: 22 },
   wagon: { m: 'wagon', h: 24 },
@@ -173,7 +178,7 @@ export class WorldCast {
   private readonly mountMotion = new Motion();
   private heroTurn = 0;
   private readonly ghosts = new Map<number, { m: Motion; turn: number; n: number; chain: number; act: { move: Move; strike: Strike; t: number; fresh: boolean } | null }>();
-  private readonly pets = new Map<number, { m: Motion; turn: number; x: number; y: number; actT: number }>();
+  private readonly pets = new Map<number, { m: Motion; turn: number; x: number; y: number; actT: number; horse?: Motion }>();
   private readonly walkers = new WeakMap<object, Motion>();
   private readonly turned = new WeakMap<object, number>();
 
@@ -234,10 +239,13 @@ export class WorldCast {
       if (a > 0) this.syncNpc(cast, n, w, dt, time, a);
     }
     for (const c of w.critters) {
-      if (!shown(c.x, c.y)) continue;
+      if (c.alpha <= 0 || !shown(c.x, c.y)) continue;
       const [sprite, tall, shade] = CRITTER[c.kind];
-      cast.shadow(c.x, c.y, shade);
-      cast.creature(sprite, c.x, c.y, this.easeTurn(c, c.face < 0 ? -Math.PI / 2 : Math.PI / 2, 10, dt), tall, Math.hypot(c.vx, c.vy) > 4 ? 'walk' : 'idle', time + c.x * 0.1, true);
+      const speed = Math.hypot(c.vx, c.vy);
+      // (it faces the way it goes: an animal running off from an attack ran sideways when it ran north or south)
+      const turn = speed > 4 ? Math.atan2(c.vx, c.vy) : c.face < 0 ? -Math.PI / 2 : Math.PI / 2;
+      if (c.alpha > 0.5) cast.shadow(c.x, c.y, shade);
+      cast.creature(sprite, c.x, c.y, this.easeTurn(c, turn, 10, dt), tall, speed > 40 ? 'run' : speed > 4 ? 'walk' : 'idle', time + c.x * 0.1, true, { alpha: c.alpha });
     }
     if (o.folk > 0.02) {
       for (const f of w.folk) {
@@ -672,7 +680,7 @@ export class WorldCast {
       const ward = WARDS[look ?? 'door'];
       if (ward) {
         const shake = pet.flash > 0 ? Math.sin(time * 60) * 1 : 0;
-        cast.prop(ward.m, pet.x + shake, pet.y, ward.h);
+        cast.prop(ward.m, pet.x + (ward.dx ?? 0) + shake, pet.y, ward.h);
       }
       return;
     }
@@ -708,6 +716,20 @@ export class WorldCast {
     s.actT = pet.actT;
     s.m.advance(s.m.clip === 'walk' ? dt * stride('walk', speed, heightFromRadius(pet.r)) : dt);
     const flash = pet.flash > 0 ? 0.7 : 0;
+    // one who comes on horseback (Dunmore's riders): the horse at its own gait, the rider in the saddle
+    const steed = person && pet.def.rides ? mountDef(pet.def.rides) : undefined;
+    if (steed && cast.mountReady(steed)) {
+      const shape = shapeOf(steed);
+      const horse = (s.horse ??= new Motion());
+      horse.set(moving ? (speed > shape.gallop * 0.55 ? 'run' : 'walk') : 'idle', true, 0.14);
+      horse.advance(moving ? dt * Math.max(0.6, Math.min(3, speed / (horse.clip === 'run' ? shape.gallop : shape.gallop * 0.3))) : dt);
+      const sh = shape.shadow;
+      cast.shadow(s.x + Math.sin(s.turn) * sh.ahead, s.y + Math.cos(s.turn) * sh.ahead, sh.r, sh.long, s.turn);
+      const saddle = cast.mount(steed, s.x, s.y, s.turn, horse, { alpha, flash });
+      s.m.set('ride');
+      if (saddle) cast.person(person!, null, false, saddle.x, saddle.y, s.turn, s.m, { alpha, flash, h: PERSON_H * shape.rider, hipsAt: saddle.high, tip: saddle.tip * 0.55 });
+      return;
+    }
     cast.shadow(s.x, s.y, pet.r + 1);
     if (person) {
       const small = /child/.test(look!) ? 0.72 : 1;

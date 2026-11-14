@@ -405,9 +405,10 @@ export const AMBERFIELD_EVENTS: Record<string, StoryEventDef> = {
     kind: 'arrival',
     at: 'briar-square',
     radius: 16,
-    arrive: { pets: ['hearth-rider', 'hearth-rider', 'hearth-rider', 'hearth-rider'], from: 'briar-north', to: 'briar-riders' },
+    arrive: { pets: ['hearth-horseman', 'hearth-horseman', 'hearth-horseman', 'hearth-horseman'], from: 'briar-north', to: 'briar-riders' },
     banner: 'Riders!',
-    start: [{ who: 'hearth-rider', text: 'Hearthstead’s riders, for Elder Maren! Where do we put the horses?' }],
+    // (their call is said in the shot of them coming in, data/scenes.ts: said after it, they were gone)
+    start: [],
     waves: [],
     end: [{ who: 'mara-venn', text: 'Behind the guard yard. And you muck them out yourselves.' }],
   },

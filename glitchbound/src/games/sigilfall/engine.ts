@@ -23,7 +23,7 @@ import { SKILLS } from './data/skills';
 import type { ClassId, Item, RegionId, SkillIndex, SlotId, SlotKey } from './data/types';
 import { KeyboardMouse, TouchState, type UiKey } from './input/input';
 import { holds } from './sim/story';
-import { acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, type Body, type Face, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
+import { abandonQuest, acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, type Body, type Face, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
 import { canRide, chooseMount, FIRST_RIDE, grantMounts, grantWarden, hasMount, setShelfPoints, syncRift, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
 import { DEFAULT_SETTINGS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
@@ -147,6 +147,8 @@ const LEAD_WAIT_MS = 20_000;
 const GREET_AFTER = 1.4;
 /** How long a title card holds the screen (ms): an act's, a land's. */
 const ACT_CARD_MS = 4200;
+/** How long after a quest's reward its hint waits (ms): the quest's own toasts are read first. */
+const TIP_AFTER_REWARD = 2600;
 const LAND_CARD_MS = 3400;
 
 /** What the party's room answers, in words (net/room.ts act). */
@@ -264,6 +266,8 @@ export class SigilEngine {
   private pausedDrawAt = 0;
   /** Hints asked for, waiting for the hero to be free. */
   private tipQueue: { id: TipId; spell?: string }[] = [];
+  /** No hint before this (performance.now() ms): a quest's end and what it gave are read first. */
+  private tipAfter = 0;
   private tipOpenedAt = 0;
   /** The game is turned to landscape on a phone held upright (ui/turn.ts). */
   turned = false;
@@ -668,7 +672,7 @@ export class SigilEngine {
           if (q && this.hero && !q.quiet) this.toast(`Quest complete: ${q.name}`, 'quest', undefined, rewardSummary(this.hero, q) || q.reward.text);
           this.sound.play('questDone');
           // the first horses: how to ride, once the mount is in (granted below, shown when the hero is free)
-          if (ev.quest === FIRST_RIDE) this.queueTip('riding');
+          if (ev.quest === FIRST_RIDE && this.queueTip('riding')) this.tipAfter = performance.now() + TIP_AFTER_REWARD;
           break;
         }
         case 'questStep': {
@@ -845,7 +849,9 @@ export class SigilEngine {
   /** The next hint, once the hero is free: not over a scene, someone talking, a menu or a land still loading. */
   private showTip(w: World): void {
     const h = this.hero;
-    if (!h || this.ui.tip || this.coop || w.keyRun || w.scene || this.ui.card || this.isPaused() || this.renderer.waiting) return;
+    // (nor over a line said out of a fight: the first horses' hint came up over Mara's answer to the riders, and the
+    // game paused, held her line and the quest's own toasts behind it. In a fight the lesson can't wait for the barks)
+    if (!h || this.ui.tip || this.coop || w.keyRun || w.scene || (w.story.talking && !w.story.fighting) || performance.now() < this.tipAfter || this.ui.card || this.isPaused() || this.renderer.waiting) return;
     const next = this.tipQueue.shift();
     if (!next) return;
     // (turned off since it was asked for, or shown already)
@@ -1420,6 +1426,19 @@ export class SigilEngine {
   trackQuest(id: string | null): void {
     if (!this.hero) return;
     trackQuest(this.hero, id);
+    this.persist();
+    this.bump();
+  }
+
+  /** Gives up a side quest (progress/character.ts cantAbandon): back to its giver, offered again with nothing done. */
+  abandonQuest(id: string): void {
+    const h = this.hero;
+    if (!h) return;
+    const q = abandonQuest(h, id);
+    if (!q) return;
+    // (what the land shows for it, a marker while it's under way, goes with it)
+    this.world?.refreshStoryState();
+    this.toast(`Abandoned: ${q.name}`, 'info', undefined, `${NPCS[q.giver]?.name ?? 'Its giver'} can give it to you again.`);
     this.persist();
     this.bump();
   }

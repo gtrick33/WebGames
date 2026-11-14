@@ -5,7 +5,21 @@ import { isTurned } from './turn';
  * Pan and zoom over a map `w`×`h` units big, shown in an element: the wheel and a pinch zoom round the point
  * under them, a drag pans, and the buttons zoom round the middle. At zoom 1 the whole map fits. A drag never
  * counts as a click on what is under it (a land on the world map).
+ *
+ * A finger's drag the map can't take (it is zoomed all the way out, or already at its edge that way) scrolls the
+ * window the map is in instead. The map covers most of its window on a phone and takes every touch on it, so the
+ * window scrolled only from the strip of frame beside it (the owner: "the map cant be scrolled up and down with
+ * fingers unless i explicitly scroll on the brown side of the pop up").
  */
+
+/** The nearest box round `node` that scrolls up and down, if any. */
+function scroller(node: HTMLElement): HTMLElement | null {
+  for (let p = node.parentElement; p; p = p.parentElement) {
+    const y = getComputedStyle(p).overflowY;
+    if ((y === 'auto' || y === 'scroll') && p.scrollHeight > p.clientHeight + 1) return p;
+  }
+  return null;
+}
 
 export interface View {
   /** Zoom: 1 is the whole map in the element. */
@@ -123,6 +137,18 @@ export function usePanZoom(el: RefObject<HTMLElement | null>, w: number, h: numb
           const to = fix({ ...v, cx: v.cx - dx / s, cy: v.cy - dy / s });
           live.current = { ...live.current, view: to };
           setRaw({ key: at, v: to });
+          // (what of a finger's drag up or down the map couldn't take goes to the window: it scrolls)
+          const left = dy + (to.cy - v.cy) * s;
+          if (e.pointerType !== 'mouse' && Math.abs(left) > 0.5) {
+            const box = scroller(node);
+            if (box) {
+              const before = box.scrollTop;
+              box.scrollTop = before - left;
+              // (the map moved under the finger with the window: where the finger is on it now)
+              pts.set(e.pointerId, [now[0], now[1] + box.scrollTop - before]);
+              return;
+            }
+          }
         }
       } else if (pts.size === 2) {
         const other = [...pts.entries()].find(([id]) => id !== e.pointerId)?.[1];

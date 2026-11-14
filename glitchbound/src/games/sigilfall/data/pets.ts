@@ -40,6 +40,8 @@ export interface PetDef {
   rally?: boolean;
   /** Carries a light this far (world px) in the dark (a lantern, a torch). */
   light?: number;
+  /** Comes on horseback: the mount (data/mounts.ts id) it is drawn riding. */
+  rides?: string;
 }
 
 export const PETS: Record<string, PetDef> = {
@@ -66,6 +68,9 @@ export const PETS: Record<string, PetDef> = {
   'gull-hand': { id: 'gull-hand', name: 'Gullport dockhand', sprite: 'villager', look: 'gull-hand', hp: 0.8, dmg: 0.4, dmgType: 'physical', speed: 80, radius: 6, reach: 20, ranged: false, attackCd: 1.1, taunt: true },
   'gull-smith': { id: 'gull-smith', name: 'Gullport smith', sprite: 'villager', look: 'gull-smith', hp: 1, dmg: 0, dmgType: 'physical', speed: 70, radius: 6, reach: 0, ranged: false, attackCd: 9, taunt: false, role: 'follower', unhurt: true },
   'hearth-rider': { id: 'hearth-rider', name: 'Hearthstead rider', sprite: 'villager', look: 'hearth-rider', hp: 0.9, dmg: 0.45, dmgType: 'physical', speed: 96, radius: 6, reach: 22, ranged: false, attackCd: 1.0, taunt: true },
+  // Dunmore's riders coming to the camp on their horses (the first mount is one of theirs): they rode in on foot, and
+  // were still on the road when the shot of them ended
+  'hearth-horseman': { id: 'hearth-horseman', name: 'Hearthstead rider', sprite: 'villager', look: 'hearth-rider', hp: 1, dmg: 0, dmgType: 'physical', speed: 150, radius: 6, reach: 0, ranged: false, attackCd: 9, taunt: false, role: 'follower', unhurt: true, rides: 'briarhollow-chestnut' },
   // what must not fall: a harvest stone being cleansed, a boat on its slip, a village gate
   'harvest-stone': { id: 'harvest-stone', name: 'The Harvest Stone', sprite: 'villager', look: 'stone', hp: 2, dmg: 0, dmgType: 'physical', speed: 0, radius: 8, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },
   'ines-boat': { id: 'ines-boat', name: 'The Patience', sprite: 'villager', look: 'boat', hp: 2.2, dmg: 0, dmgType: 'physical', speed: 0, radius: 12, reach: 0, ranged: false, attackCd: 9, taunt: true, role: 'ward' },

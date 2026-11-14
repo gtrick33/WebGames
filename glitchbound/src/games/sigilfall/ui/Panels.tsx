@@ -11,7 +11,7 @@ import { setOf } from '../data/riftgear';
 import type { Item, ItemDef, QuestDef, RegionDef, RegionId, SkillIndex, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
-import { SLOT_LEVELS, slotOpen, bagSize, cantEquip, cantLearn, cantSpec, currentObjective, freePoints, learnedSkills, levelGated, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
+import { SLOT_LEVELS, slotOpen, bagSize, cantAbandon, cantEquip, cantLearn, cantSpec, currentObjective, freePoints, learnedSkills, levelGated, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
 import { ZOOM_MAX, ZOOM_MIN } from '../progress/save';
 import { buildHero, typeBonus } from '../progress/build';
 import { DMG_NAME, fmtStat, modLines, STAT_LABEL, costText } from '../progress/describe';
@@ -787,6 +787,8 @@ function QuestsPanel({ engine }: { engine: SigilEngine }) {
   const order = [...groups.keys()].sort((a, b) => Number(b === here) - Number(a === here));
   // quests waiting only for the hero's level, the story's first
   const gated = levelGated(h).sort((a, b) => Number(isMainQuest(b.id)) - Number(isMainQuest(a.id)));
+  // the side quest the hero asked to give up, waiting for them to say yes
+  const [asking, setAsking] = useState<string | null>(null);
   return (
     <div className="rb-quests">
       {active.length === 0 && <p className="rb-dim">{gated.length ? `No quests right now. The next one opens at level ${Math.min(...gated.map((q) => q.level!))}.` : 'No quests right now. The Rift will stir again.'}</p>}
@@ -828,7 +830,28 @@ function QuestsPanel({ engine }: { engine: SigilEngine }) {
                   {who && <li className={ready ? 'is-now' : 'is-later'}>Return to {NPCS[who]?.name ?? who}</li>}
                 </ol>
                 {!ready && pr.of > 1 && <Bar value={pr.n} max={pr.of} color={main ? '#ffcf5a' : '#6cc4ff'} />}
-                <span className="rb-small rb-dim">Reward: {questRewards(h, q).map((x) => x.text).join(' · ')}</span>
+                <div className="rb-quest-foot">
+                  <span className="rb-small rb-dim">Reward: {questRewards(h, q).map((x) => x.text).join(' · ')}</span>
+                  {!cantAbandon(h, q.id) &&
+                    (asking === q.id ? (
+                      <span className="rb-quest-abandon" role="group" aria-label={`Abandon ${q.name}?`}>
+                        <span className="rb-small">Abandon? Progress is lost.</span>
+                        <button className="rb-btn is-small is-danger" onClick={() => {
+                            setAsking(null);
+                            engine.abandonQuest(q.id);
+                          }}>
+                          Abandon
+                        </button>
+                        <button className="rb-btn is-small is-ghost" onClick={() => setAsking(null)}>
+                          Keep
+                        </button>
+                      </span>
+                    ) : (
+                      <button className="rb-btn is-small is-ghost" onClick={() => setAsking(q.id)} aria-label={`Abandon ${q.name}`}>
+                        Abandon
+                      </button>
+                    ))}
+                </div>
               </article>
             );
           })}

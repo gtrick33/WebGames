@@ -564,7 +564,9 @@ export const SCENES: SceneDef[] = [
     id: 'briar-the-riders-come',
     region: 'briarhollow',
     opens: { event: 'camp-riders' },
-    steps: [{ title: 'Riders for Briarhollow' }, { follow: 'hearth-rider', secs: 6 }, { look: 'hero' }],
+    // (the shot stays on them until they are in: it came back to the hero while they were still on the north road, and
+    // what they called out was said off the picture)
+    steps: [{ title: 'Riders for Briarhollow' }, { follow: 'hearth-horseman', secs: 9 }, { say: 'hearth-horseman', line: 'Hearthstead’s riders, for Elder Maren! Where do we put the horses?' }, { look: 'hero' }],
   },
   {
     id: 'briar-the-steel-comes',

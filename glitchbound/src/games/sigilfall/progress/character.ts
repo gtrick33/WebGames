@@ -5,7 +5,7 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS, talentNode } from '../data/t
 import type { ClassId, Item, Objective, PerkId, QuestDef, RegionId, SigilId, SkillIndex, SlotId } from '../data/types';
 import { itemClass, itemSlot, salvageValue } from './items';
 import { learnLooks, type LookSlot } from './wardrobe';
-import { questSteps, turnInNpc } from './handin';
+import { isMainQuest, questSteps, turnInNpc } from './handin';
 import { newParagon, type Paragon } from './paragon';
 
 /**
@@ -614,6 +614,32 @@ export function acceptQuest(c: Character, id: string): QuestDef | null {
   c.quests[id] = { state: 'active', n: 0 };
   closeChoice(c, q);
   return q;
+}
+
+/**
+ * Why a quest can't be abandoned, or null when it can. The hero may give up a side quest they took (the owner:
+ * "quests should also be abandonable"): it goes back to its giver, offered again with nothing done. The main story
+ * can't be dropped (nothing else would carry the hero on), nor a beat that starts by itself (it would only start
+ * again), nor one played through as a story event or a lesson, nor an answer to a choice (taking it closed the
+ * others for good).
+ */
+export function cantAbandon(c: Character, id: string): string | null {
+  const q = QUEST_DEFS[id];
+  const s = questState(c, id);
+  if (!q || (s !== 'active' && s !== 'ready')) return 'Not a quest under way.';
+  if (isMainQuest(id)) return 'The main story can’t be abandoned.';
+  if (q.auto) return 'This one is part of the story where it happens.';
+  if (q.choice) return 'Your answer has been given.';
+  if (questSteps(q).some((o) => o.kind === 'event' || o.kind === 'tutorial')) return 'This one is played through where it happens.';
+  return null;
+}
+
+/** Gives up a quest (cantAbandon): offered by its giver again, with nothing done. */
+export function abandonQuest(c: Character, id: string): QuestDef | null {
+  if (cantAbandon(c, id)) return null;
+  c.quests[id] = { state: 'offered', n: 0 };
+  if (c.tracked === id) delete c.tracked;
+  return QUEST_DEFS[id]!;
 }
 
 export const questDef = (id: string): QuestDef | undefined => QUEST_DEFS[id];

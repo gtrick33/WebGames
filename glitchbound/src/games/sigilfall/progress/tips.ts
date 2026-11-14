@@ -26,9 +26,11 @@ export function giveTips(h: Character): void {
 /**
  * Whether this hint should still be shown to this hero, with the Settings choice as it is. The Rift's is about the
  * endgame, which a hero from before the tutorial is as new to as anyone: they see it too, unless they have already
- * climbed past the first stone.
+ * climbed past the first stone. Riding comes halfway through Act I, long after the hints were asked for or turned
+ * down, and nothing else on the screen says how it is done (the owner: "theres no tutorial for the mount riding"): its
+ * three cards are shown to every hero once, hints on or off.
  */
-export const tipDue = (h: Character, on: boolean, id: TipId): boolean => on && (takesTips(h) || (id === 'rift' && h.keystone <= 1)) && !h.opened.includes(tipKey(id));
+export const tipDue = (h: Character, on: boolean, id: TipId): boolean => (id === 'riding' || (on && (takesTips(h) || (id === 'rift' && h.keystone <= 1)))) && !h.opened.includes(tipKey(id));
 
 /** Marks a hint as shown (once). */
 export function tipShown(h: Character, id: TipId): void {
