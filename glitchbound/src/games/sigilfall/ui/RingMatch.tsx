@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointer
 import { TitleFx } from '../../../components/TitleFx';
 import type { TitleShown } from '../progress/titles';
 import { GameMenuButton } from '../../../components/GameMenuButton';
-import { ABILITIES, DASH, SLOTS, superOf, type Ability } from '../arena/abilities';
+import { ABILITIES, SLOTS, type Ability } from '../arena/abilities';
 import { botThink, newBrain } from '../arena/bot';
 import { LEAVER_K, type ClassSets } from '../arena/ladder';
 import { lookOf } from '../arena/look';
@@ -498,8 +498,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       // (behind the gates, the step key says "ready")
       else if (act === 'dash' && m.phase === 'gates' && role.kind !== 'client') {
         if (m.gateAt - m.t > 5) ready();
-      } else if (act === 'dash') press(DASH.id);
-      else if (act === 'super' && me) keyPress(superOf(me.cls).id, e);
+      } else if (act === 'dash' && me) press(m.extras(me)[0]!.id);
+      else if (act === 'super' && me) keyPress(m.extras(me)[1]!.id, e);
       else if (act === 'nextFoe' && me) {
         const next = cycle(m.enemiesOf(me).filter((o) => !m.unseen(o, me)), me.target);
         if (next !== null) target(next);
@@ -587,9 +587,9 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       role.listen((seat, d) => {
         const f = m.fighters.find((x) => x.seat === seat);
         if (!f || !d || typeof d !== 'object') return;
-        const q = d as { mx?: unknown; my?: unknown; p?: unknown; at?: unknown; tg?: unknown; eq?: { bar?: unknown; oath?: unknown; talents?: unknown } };
+        const q = d as { mx?: unknown; my?: unknown; p?: unknown; at?: unknown; tg?: unknown; eq?: { bar?: unknown; oath?: unknown; talents?: unknown; step?: unknown } };
         const eq = q.eq;
-        if (eq && Array.isArray(eq.bar) && eq.bar.length <= 12 && eq.bar.every((b) => typeof b === 'string')) m.equip(f.id, { bar: eq.bar as string[], oath: typeof eq.oath === 'string' ? eq.oath : undefined, talents: Array.isArray(eq.talents) ? (eq.talents.filter((b) => typeof b === 'string').slice(0, 3) as string[]) : [] });
+        if (eq && Array.isArray(eq.bar) && eq.bar.length <= 12 && eq.bar.every((b) => typeof b === 'string')) m.equip(f.id, { bar: eq.bar as string[], oath: typeof eq.oath === 'string' ? eq.oath : undefined, talents: Array.isArray(eq.talents) ? (eq.talents.filter((b) => typeof b === 'string').slice(0, 3) as string[]) : [], step: typeof eq.step === 'string' ? eq.step : undefined });
         if (typeof q.mx === 'number' && typeof q.my === 'number' && Number.isFinite(q.mx) && Number.isFinite(q.my)) others[f.id] = { mx: Math.max(-1, Math.min(1, q.mx)), my: Math.max(-1, Math.min(1, q.my)) };
         // (press checks it's on their bar, and the rules, as for anyone)
         // (a placed ability comes with where: two plain numbers, which the rules bring into reach and sight)
@@ -779,7 +779,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const mine = me?.team ?? 0;
   const left = teamOf(mine);
   const right = teamOf(mine === 0 ? 1 : 0);
-  const bar = me ? [...me.bar.map((id) => ABILITIES[id]!), DASH, superOf(me.cls)] : [];
+  const bar = me ? [...me.bar.map((id) => ABILITIES[id]!), ...m.extras(me)] : [];
   const keyOf = (i: number): string => keyName(i < SLOTS ? ringKeys[`ab${i + 1}` as 'ab1'] : i === SLOTS ? ringKeys.dash : ringKeys.super);
   const charge = me?.charge ?? 0;
   const gloamIn = Math.ceil(CLOSE_FROM - m.clock);

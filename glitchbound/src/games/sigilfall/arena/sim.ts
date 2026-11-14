@@ -1,5 +1,5 @@
 import type { ClassId } from '../data/types';
-import { ABILITIES, BODY, DASH, GCD, OATHS, SIGIL, SLOTS, superOf, type Ability, type CcKind, type Effect } from './abilities';
+import { ABILITIES, BODY, DASH, GCD, OATHS, SIGIL, SLOTS, stepOf, superOf, type Ability, type CcKind, type Effect } from './abilities';
 import { ARENA_H, ARENA_W, ENTRY_GATES, MAPS, type Pillar } from './maps';
 import { ARM, cleanTalents, EXECUTE, NEAR, RALLY, TALENT_BY_ID, type Does, type Talent, type Tune } from './talents';
 
@@ -101,6 +101,8 @@ export interface FighterSetup {
   bar: string[];
   oath?: string;
   talents?: string[];
+  /** What they carry beside the bar: the Swift Step (`dash`, the default) or the Unbinding Charm (`charm`). */
+  step?: string;
   /** The room seat playing them (null or missing: the computer, or the local player if `human`). */
   seat?: number | null;
   human?: boolean;
@@ -218,6 +220,8 @@ export interface Fighter {
   fearY: number;
   oath: string | null;
   talents: string[];
+  /** What they carry beside the bar (abilities.ts STEPS): the Swift Step, or the charm that breaks every hold. */
+  step: string;
   /**
    * What the oath and talents make of them, as multipliers: damage, healing, speed, how long they are held, cooldowns,
    * mana back, how long their own holds and slows last, damage taken, how fast their super fills, and the chance of a
@@ -524,6 +528,7 @@ export class Match {
         cls: s.cls,
         name: s.name,
         bar: s.bar.filter((b) => ABILITIES[b]?.cls === s.cls && !ABILITIES[b]!.super).slice(0, SLOTS),
+        step: stepOf(s.step).id,
         seat: s.seat ?? null,
         human: !!s.human,
         x: spot[0],
@@ -587,7 +592,7 @@ export class Match {
 
   /** The abilities everyone has besides their bar: the Swift Step and their class's super. */
   extras(f: Fighter): Ability[] {
-    return [DASH, superOf(f.cls)];
+    return [stepOf(f.step), superOf(f.cls)];
   }
 
   /** Everything solid right now: the stone, and the gates until they lift. */
@@ -600,7 +605,7 @@ export class Match {
   }
 
   /** In the entry, a player can still change what they brought. */
-  equip(id: number, s: { bar: string[]; oath?: string; talents?: string[] }): boolean {
+  equip(id: number, s: { bar: string[]; oath?: string; talents?: string[]; step?: string }): boolean {
     const f = this.fighters[id];
     if (!f || this.phase !== 'gates') return false;
     const bar = s.bar.filter((b, i) => ABILITIES[b]?.cls === f.cls && !ABILITIES[b]!.super && s.bar.indexOf(b) === i).slice(0, SLOTS);
@@ -608,6 +613,7 @@ export class Match {
     const made = built(f.cls, s.oath, s.talents);
     Object.assign(f, made);
     f.bar = bar;
+    f.step = stepOf(s.step).id;
     f.hp = made.maxHp;
     return true;
   }
@@ -798,6 +804,8 @@ export class Match {
     if (!ab.free && f.cast) this.endCast(f);
     // (out of the shroud with anything but a quiet step or a Swift Step: a cast at once, a blow as it lands)
     const opens = this.hidden(f) && !ab.quiet && ab.id !== DASH.id;
+    // (whatever brings them out of the shroud starts a fight: they don't slip back in at once)
+    if (opens) f.fought = this.clock;
     if (ab.cast > 0 || ab.channel) {
       if (opens) this.unveil(f);
       f.cast = { ab: ab.id, target: t.id, at, t: 0, dur: ab.channel ?? ab.cast * (f.tune[ab.id]?.cast ?? 1), channel: !!ab.channel, next: ab.tick ?? 0, pushed: 0 };
@@ -951,6 +959,11 @@ export class Match {
     if (a.harmful) {
       const by = this.fighters[a.src];
       if (by) this.exposed(t, by);
+      // (held, slowed or cursed by the other side is in the fight, as is whoever did it)
+      if (by && by.team !== t.team) {
+        t.fought = this.clock;
+        this.masterOf(by).fought = this.clock;
+      }
     }
     // (a paladin's hand of freedom shakes a slow off at once, now and then)
     if (a.kind === 'slow' && a.harmful && this.freed(t)) return { ...a, t: 0 };
@@ -1106,6 +1119,9 @@ export class Match {
       case 'pull':
         if (t !== f && !t.dead) this.drag(t, f.x, f.y, HERO_R * 2 + 2);
         return;
+      case 'undot':
+        t.auras = t.auras.filter((a) => a.kind !== 'dot');
+        return;
       case 'frenzy':
         for (const o of this.fighters) {
           if (o.pet?.owner !== f.id || o.dead) continue;
@@ -1181,7 +1197,8 @@ export class Match {
 
   /** Crowd control, with its diminishing returns. False if it did nothing. */
   private crowd(f: Fighter, ab: Ability, t: Fighter, cc: CcKind, dur: number): boolean {
-    const dr = t.dr[cc] && t.dr[cc]!.until > this.clock ? t.dr[cc]! : { n: 0, until: 0 };
+    // (a hold that never wears off with use is counted as a first one, and counts toward nothing)
+    const dr = !ab.noDr && t.dr[cc] && t.dr[cc]!.until > this.clock ? t.dr[cc]! : { n: 0, until: 0 };
     if (dr.n >= DR_STEPS.length) {
       this.events.push({ k: 'word', id: t.id, word: 'Immune' });
       return false;
@@ -1199,7 +1216,7 @@ export class Match {
     // (and his aura of resolve: shorter, near him)
     const resolve = this.near(t, 'resolve', 'friend');
     const lasts = dur * DR_STEPS[dr.n]! * t.mods.tenacity * (1 - (resolve?.d.pct ?? 0));
-    t.dr[cc] = { n: dr.n + 1, until: this.clock + lasts + DR_RESET };
+    if (!ab.noDr) t.dr[cc] = { n: dr.n + 1, until: this.clock + lasts + DR_RESET };
     t.auras = t.auras.filter((a) => a.cc !== cc);
     this.addAura(t, { ab: ab.id, src: f.id, dur: lasts, magic: ab.school !== 'physical', n: 0, kind: 'cc', harmful: true, cc, took: 0 });
     f.score.cc += lasts;
@@ -1432,6 +1449,7 @@ export class Match {
       fearY: 0,
       oath: null,
       talents: [],
+      step: DASH.id,
       // (they hit with their master's share, and none of the rest of their talents)
       mods: { dmg: owner.mods.dmg, heal: 1, speed: THRALL.speed, tenacity: 1, cool: 1, regen: 1, hold: 1, guard: 1, charge: 0, crit: CRIT },
       perks: NO_PERKS,
@@ -1599,16 +1617,12 @@ export class Match {
     // (a rewind keeps a few seconds of what was taken, to give some of it back)
     if (t.perks.does.rewind) t.tal.hurt = [...(t.tal.hurt ?? []).filter((h) => h.at >= this.clock - t.perks.does.rewind!.back), { at: this.clock, n }];
     if (t.dead) return worth;
-    // what holds you breaks with hurt: at once when dazed, after a while when feared or rooted
+    // a daze breaks with hurt; a stun, a fear and a root hold whatever lands (the owner: "any stun, root, or fear
+    // shouldnt be breakable by dmg". Fears and roots once broke after a tenth and a seventh of their health)
     for (let i = t.auras.length - 1; i >= 0; i--) {
-      const a = t.auras[i]!;
-      if (a.cc !== 'incap' && a.cc !== 'fear' && a.cc !== 'root') continue;
-      a.took = (a.took ?? 0) + n;
-      const limit = a.cc === 'incap' ? 0 : t.maxHp * (a.cc === 'fear' ? 0.1 : 0.14);
-      if (a.took > limit) {
-        t.auras.splice(i, 1);
-        this.events.push({ k: 'word', id: t.id, word: 'Broke free' });
-      }
+      if (t.auras[i]!.cc !== 'incap') continue;
+      t.auras.splice(i, 1);
+      this.events.push({ k: 'word', id: t.id, word: 'Broke free' });
     }
     // a blow knocks a cast back (twice at most; as far again and as often as they land, from a paladin's stern blows)
     if (direct && t.cast && !t.cast.channel) {
@@ -2159,6 +2173,12 @@ export class Match {
     if (f.dead) return;
     this.tickTalents(f, dt);
     if (f.dead) return;
+    // (one who carries the shroud slips back into it by themself once out of the fight a while: the owner, "it should
+    // put u to stealth auto if u are not damaged for 5s")
+    if (!this.hidden(f) && !f.cast && !this.held(f) && this.calm(f) && f.bar.some((id) => ABILITIES[id]?.effects.some((e) => e.k === 'veil'))) {
+      this.veil(f, null);
+      this.events.push({ k: 'ab', id: f.id, ab: f.bar.find((id) => ABILITIES[id]?.effects.some((e) => e.k === 'veil'))! });
+    }
     const stepping = !!f.dash?.step;
     this.moveFighter(f, dt, m);
     if (stepping && !f.dash) this.arrive(f);

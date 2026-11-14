@@ -136,6 +136,8 @@ export interface RingSetup {
   bar: string[];
   oath: string;
   talents: string[];
+  /** What it carries beside the bar: the Swift Step (`dash`, or nothing said) or the Unbinding Charm (`charm`). */
+  step?: string;
 }
 
 /** A class's saved set ups, and which is in hand. */

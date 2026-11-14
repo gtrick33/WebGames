@@ -163,16 +163,18 @@ describe('The Ring: the rules', () => {
     expect(stun()).toBeCloseTo(1.5);
   });
 
-  it('a stun holds you; a daze breaks on any hurt; a fear and a root only on enough of it', () => {
+  it('a daze breaks on any hurt; a stun, a fear and a root hold whatever lands (the owner: "any stun, root, or fear shouldnt be breakable by dmg")', () => {
     const m = duel('warlock', ['k-dread', 'k-bolt'], 'warrior');
     const foe = m.fighters[1]!;
     m.press(0, 'k-dread');
     wait(m, 1.6);
     expect(foe.auras.some((a) => a.cc === 'fear')).toBe(true);
-    (m as unknown as { damage(s: unknown, t: unknown, n: number, d: boolean): void }).damage(m.fighters[0], foe, 10, false);
+    (m as unknown as { damage(s: unknown, t: unknown, n: number, d: boolean): void }).damage(m.fighters[0], foe, foe.maxHp * 0.3, false);
     expect(foe.auras.some((a) => a.cc === 'fear')).toBe(true);
-    (m as unknown as { damage(s: unknown, t: unknown, n: number, d: boolean): void }).damage(m.fighters[0], foe, foe.maxHp * 0.2, false);
-    expect(foe.auras.some((a) => a.cc === 'fear')).toBe(false);
+    const r = duel('mage', ['m-ring'], 'warrior');
+    r.press(0, 'm-ring');
+    (r as unknown as { damage(s: unknown, t: unknown, n: number, d: boolean): void }).damage(r.fighters[0], r.fighters[1], r.fighters[1]!.maxHp * 0.3, true);
+    expect(r.fighters[1]!.auras.some((a) => a.cc === 'root')).toBe(true);
 
     const n = duel('mage', ['m-toad'], 'warrior');
     n.press(0, 'm-toad');

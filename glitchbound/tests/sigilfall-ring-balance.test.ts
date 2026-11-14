@@ -57,6 +57,14 @@
  *
  * The owner then asked for the Gravecaller to win fewer duels. What carried it there was the slow on its dead's claws
  * (without it: 37/40/38); at 10%, not 20%, it came to 61/52/47 53.
+ *
+ * Then holds stopped breaking on hurt (a daze still does), the mage's Frost Snare and Hoar Grip stopped wearing off with
+ * use, Shatter hit 15% harder, the Hexer's curses 5% harder, the Nightblade slipped back into the shroud by itself and
+ * its Nightknife hit 15% harder, and the Gravecaller's dead were softened (claws 9, Grave Hunger 45%), all as the owner
+ * asked. The same measure, after:
+ *
+ *   Rime        65/48/55 56   Hexer       67/48/42 52   Gravecaller 62/48/48 53   Nightblade  60/55/65 60
+ *   Bloodsworn  64/38/36 46   (the Bloodsworn, who fights at arm's length, lost most to fears and roots that hold)
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';
