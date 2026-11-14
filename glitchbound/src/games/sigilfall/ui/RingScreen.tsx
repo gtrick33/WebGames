@@ -69,9 +69,25 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
 type Page = 'play' | 'setup' | 'friends';
 
 
-/** The classes to fight as. One from the shop can be picked once it's bought (progress/paidClasses.ts). */
-function ClassRow({ pick, onPick }: { pick: ClassId; onPick: (c: ClassId) => void }) {
+/**
+ * The classes to fight as. One from the shop can be picked once it's bought (progress/paidClasses.ts). On the Play page
+ * (`lobby`) they are the Vigil lobby's list of callings, each with its name, beside the hero on the dais; in a room, a
+ * row of emblems.
+ */
+function ClassRow({ pick, onPick, lobby }: { pick: ClassId; onPick: (c: ClassId) => void; lobby?: boolean }) {
   const { me } = useAccount();
+  if (lobby) {
+    return (
+      <div className="rb-vlobby-classes" role="radiogroup" aria-label="Class">
+        {CLASS_IDS.map((c) => (
+          <button key={c} role="radio" aria-checked={c === pick} aria-disabled={!classOpen(c, me)} aria-label={CLASSES[c].name} title={classOpen(c, me) ? undefined : `${CLASSES[c].name}: unlock it in the shop`} className={`rb-vlobby-class${c === pick ? ' is-on' : ''}${classOpen(c, me) ? '' : ' is-locked'}`} style={{ ['--c' as string]: CLASSES[c].colors.accent }} onClick={() => classOpen(c, me) && onPick(c)}>
+            <img src={classEmblem(c)} alt="" draggable={false} />
+            <span>{CLASSES[c].name}</span>
+          </button>
+        ))}
+      </div>
+    );
+  }
   return (
     <div className="rb-rp-classes" role="radiogroup" aria-label="Class">
       {CLASS_IDS.map((c) => (
@@ -240,7 +256,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     const w = wear;
     const look = w ? heroLook(pick, w.equip, wornLooks(w), w.body, w.face) : heroLook(pick, plain.equip, worn ?? {}, body ?? 'm', face);
     const held = w ? heldWeapon(pick, w.equip.weapon, wornLooks(w).weapon) : heldWeapon(pick, plain.equip.weapon);
-    return heroDollUrl(look, 'down', 5, held, pick === 'warrior' || pick === 'paladin');
+    // (drawn at the Vigil lobby's size: the hero stands as tall on the dais here as there)
+    return heroDollUrl(look, 'down', 6, held, pick === 'warrior' || pick === 'paladin');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pick, body, face, wear, worn, wearN]);
   const sets = setsOf(save, pick);
@@ -578,10 +595,15 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
 
   const title = page === 'setup' ? 'Your setup' : page === 'friends' ? 'With friends' : 'The Ring';
   const sub = page === 'setup' ? `${CLASSES[pick].name}. Saved as you go.` : page === 'friends' ? 'A private room. Friendly matches don’t change your rating.' : 'Pick your hero and your fight. Use the stone.';
+  // (the Play page is laid out as the Vigil's lobby and the Rift Trials' are, in their styles (rb-vlobby): the classes,
+  // the hero large on a dais with what they bring beside them, the fight to choose, and one gold button at the foot.
+  // The owner: "make the ui selection in the ring similar to the vigil and riftstones, currently the character feels
+  // way too small on mobile". The setup and the room keep the Ring's own pages)
+  const lobby = page === 'play';
   return (
     <ScreenGate label="Opening the Ring">
-      <div className="rb-ringlobby" style={{ ['--cls' as string]: CLASSES[pick].colors.accent, ['--r' as string]: rank.color }}>
-        <header className="rb-rp-head">
+      <div className={lobby ? 'rb-vlobby rb-ringvl' : 'rb-ringlobby'} style={{ ['--cls' as string]: CLASSES[pick].colors.accent, ['--r' as string]: rank.color, ['--land' as string]: rank.color }}>
+        <header className={lobby ? 'rb-vlobby-head' : 'rb-rp-head'}>
           <button className="rb-iconbtn" onClick={back} aria-label={page === 'play' ? 'Back to your heroes' : 'Back'}>
             ←
           </button>
@@ -601,25 +623,25 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         </header>
 
         {page === 'play' && (
-          <div className="rb-rp-play">
-            <section className="rb-rp-hero" aria-label="Your hero">
-              <div className="rb-rp-stage">
-                <i className="rb-rp-dais" aria-hidden="true" />
-                <Doll key={pick} className="rb-rp-doll" src={doll} alt={CLASSES[pick].name} />
-                <div className="rb-rp-who">
+          <>
+            <section className="rb-vlobby-hero" aria-label="Your hero">
+              <ClassRow lobby pick={pick} onPick={choose} />
+              <div className="rb-vlobby-stage">
+                <i className="rb-vlobby-dais" aria-hidden="true" />
+                <Doll key={pick} className="rb-vlobby-doll" src={doll} alt={CLASSES[pick].name} />
+                <div className="rb-vlobby-name">
                   <strong>{CLASSES[pick].name}</strong>
                   {/* (with no title worn, the rank reached in this format is shown before the name: "Unblooded Guitartrick") */}
                   <Titled className="rb-rp-whoname" name={wear ? wear.name : hero} title={myTitle} orRank={rank} />
                 </div>
               </div>
-              <div className="rb-rp-looks">
-                <WearPicker engine={engine} cls={pick} onChange={() => setWearN((n) => n + 1)} />
-                <button className="rb-btn is-small" onClick={() => setLooksOpen(true)}>
-                  Title & armor
-                </button>
-              </div>
-              <ClassRow pick={pick} onPick={choose} />
-              <div className="rb-rp-setup">
+              <div className="rb-vlobby-kit rb-rp-setup">
+                <div className="rb-rp-looks">
+                  <WearPicker engine={engine} cls={pick} onChange={() => setWearN((n) => n + 1)} />
+                  <button className="rb-btn is-small" onClick={() => setLooksOpen(true)}>
+                    Title & armor
+                  </button>
+                </div>
                 <div className="rb-rp-setup-head">
                   <h3>Setup {sets.active + 1}</h3>
                   <button className="rb-btn is-small" onClick={() => openSetup('play')}>
@@ -632,7 +654,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
               </div>
             </section>
 
-            <section className="rb-rp-fight" aria-label="Your fight">
+            <section className="rb-vlobby-lands rb-ringvl-fight" aria-label="Your fight">
               <div className="rb-rp-formats" role="radiogroup" aria-label="Format">
                 {FORMATS.map((f) => {
                   const st = standingOf(save, f);
@@ -688,16 +710,17 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
                   {seekNote}
                 </p>
               )}
-              <div className="rb-rp-go">
-                <button className="rb-btn is-gold is-big" onClick={findMatch}>
-                  {ready ? `Find a ${format}v${format} match` : `Choose ${SLOTS - bar.length} more abilities`}
-                </button>
-                <button className="rb-btn" onClick={() => setPage('friends')}>
-                  With friends
-                </button>
-              </div>
             </section>
-          </div>
+
+            <footer className="rb-vlobby-foot">
+              <button className="rb-btn is-gold is-big" onClick={findMatch}>
+                {ready ? `Find a ${format}v${format} match` : `Choose ${SLOTS - bar.length} more abilities`}
+              </button>
+              <button className="rb-btn" onClick={() => setPage('friends')}>
+                With friends
+              </button>
+            </footer>
+          </>
         )}
 
         {page === 'setup' && (

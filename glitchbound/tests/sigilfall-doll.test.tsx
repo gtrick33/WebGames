@@ -19,12 +19,12 @@ describe('Sigilfall: a hero’s picture on its spot', () => {
   afterEach(() => vi.restoreAllMocks());
 
   it('is held back until the picture is in, then steps in', () => {
-    const { container } = render(<Doll src="data:image/png;base64,AAAA" className="rb-rp-doll" alt="Warrior" />);
+    const { container } = render(<Doll src="data:image/png;base64,AAAA" className="rb-vlobby-doll" alt="Warrior" />);
     const img = container.querySelector('img')!;
-    expect(img.className).toBe('rb-dollpic rb-rp-doll');
+    expect(img.className).toBe('rb-dollpic rb-vlobby-doll');
     expect(img.getAttribute('alt')).toBe('Warrior');
     fireEvent.load(img);
-    expect(img.className).toBe('rb-dollpic rb-rp-doll is-in');
+    expect(img.className).toBe('rb-dollpic rb-vlobby-doll is-in');
   });
 
   it('a picture the browser already holds is in at once, and one that can’t be had isn’t waited for forever', () => {
@@ -59,7 +59,7 @@ describe('Sigilfall: a hero’s picture on its spot', () => {
   });
 
   it('stands over the middle of its stage by its margins, never by a share of a width it may not have yet', () => {
-    for (const selector of ['.rb-rp-doll', '.rb-vlobby-doll']) {
+    for (const selector of ['.rb-vlobby-doll']) {
       const r = rule(selector);
       expect(r, selector).toContain('margin-inline: auto;');
       expect(r, selector).toMatch(/\n {2}left: 0;/);
@@ -70,11 +70,19 @@ describe('Sigilfall: a hero’s picture on its spot', () => {
   });
 
   it('every screen that stands a hero on a spot uses it', () => {
-    for (const [file, cls] of [['RingScreen', 'rb-rp-doll'], ['VigilLobby', 'rb-vlobby-doll'], ['Title', 'rb-class-doll']] as const) {
+    for (const [file, cls] of [['RingScreen', 'rb-vlobby-doll'], ['VigilLobby', 'rb-vlobby-doll'], ['Title', 'rb-class-doll']] as const) {
       const text = readFileSync(`src/games/sigilfall/ui/${file}.tsx`, 'utf8');
       expect(text, file).toContain(`<Doll `);
       expect(text, file).toMatch(new RegExp(`<Doll [^>]*className="${cls}"`));
       expect(text, file).not.toMatch(new RegExp(`<img [^>]*className="${cls}"`));
     }
+  });
+
+  it('the Ring’s Play page is laid out as the Vigil’s lobby, and keeps its hero on an upright phone', () => {
+    const ring = readFileSync('src/games/sigilfall/ui/RingScreen.tsx', 'utf8');
+    for (const cls of ['rb-vlobby rb-ringvl', 'rb-vlobby-hero', 'rb-vlobby-classes', 'rb-vlobby-stage', 'rb-vlobby-dais', 'rb-vlobby-kit', 'rb-vlobby-lands', 'rb-vlobby-foot']) expect(ring, cls).toContain(cls);
+    // (the old page hid the stand on a phone held upright: the hero was not there at all)
+    expect(css).not.toMatch(/\.rb-ringvl \.rb-vlobby-stage \{[^}]*display: none/);
+    expect(css).toMatch(/\.rb-ringvl \.rb-vlobby-stage \{\n {4}min-height: clamp\(/);
   });
 });
