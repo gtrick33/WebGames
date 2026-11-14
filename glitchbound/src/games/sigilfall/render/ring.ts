@@ -10,6 +10,7 @@ import { CLASSES } from '../data/classes';
 import { heroLook, heldWeapon, type WornLooks } from './sprites';
 import type { Held } from '../render3d/dress';
 import { FIELD, FX, type Fx3D } from '../render3d/fx3d';
+import { THRALL_EYES } from '../render3d/thrall';
 import type { RingStage, RingView } from '../render3d/ring3d';
 import { newCharacter, type Character, type Face } from '../progress/character';
 import { wornLooks } from '../progress/wardrobe';
@@ -103,6 +104,13 @@ interface Burst {
   seed: number;
 }
 
+/**
+ * A combo called out over whoever it landed on: its name alone. The rules add the momentum chain to it ("Gloomfire ×3"),
+ * but the chain is no longer shown (the owner: "remove the momentum pop up if possible at all"); its sound still
+ * rings higher for a long chain.
+ */
+export const comboWord = (word: string): string => word.replace(/\s*×\d+$/, '');
+
 export class RingFx {
   flashes: Flash[] = [];
   pops: Pop[] = [];
@@ -149,7 +157,7 @@ export class RingFx {
         // (a combo is called out big, in gold, with a burst of light on them; words said close together stand one over
         // the other, never on top of each other)
         const above = this.pops.filter((p) => p.word && p.t < 0.5 && Math.abs(p.x - f.x) < 40 && Math.abs(p.y - f.y) < 110).length;
-        this.pops.push({ x: f.x, y: f.y - (e.combo ? 50 : 42) - above * 13, lift: wears(f) ? 12 : 0, t: 0, text: e.combo ? `${e.word}!` : e.word, color: e.combo ? '#ffd257' : e.bad ? '#ff9ab0' : '#e0d0ff', big: !!e.combo, word: true });
+        this.pops.push({ x: f.x, y: f.y - (e.combo ? 50 : 42) - above * 13, lift: wears(f) ? 12 : 0, t: 0, text: e.combo ? `${comboWord(e.word)}!` : e.word, color: e.combo ? '#ffd257' : e.bad ? '#ff9ab0' : '#e0d0ff', big: !!e.combo, word: true });
         if (e.combo) {
           this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.5, r: 26, color: '#ffd257', ring: true });
           // (a chain's later links ring higher)
@@ -732,18 +740,20 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
   }
   // the ashbound dead: a pool of the gloam they climb out of, a cold light in their skulls, the dark smoking off them,
   // and as their time runs out they thin
+  // (where the body is drawn, which a blow carries a step forward: on the rules' spot they stayed behind it)
   for (const f of m.fighters) {
     if (!f.pet || f.dead) continue;
     const age = f.pet.max - f.pet.life;
     const fade = Math.min(1, f.pet.life / 2);
+    const p = at(f);
     if (age < 0.9) {
       const u = age / 0.9;
       q.put({ kind: FX.shadow, x: f.x, y: f.y, up: 2, flat: true, w: 26 * (0.5 + u * 0.5), a: '#0a0314', b: '#7a3cff', t: u, alpha: 0.9 * (1 - u), seed: f.id });
     }
-    q.put({ kind: FX.glow, x: f.x, y: f.y, up: 2, w: 22, a: '#7a3cff', alpha: 0.18 * fade });
-    q.put({ kind: FX.spark, x: f.x, y: f.y, up: 21, w: 4.5, a: '#d8bcff', t: 0.1, alpha: 0.8 * fade });
+    q.put({ kind: FX.glow, x: p.x, y: p.y, up: 2, w: 22, a: '#7a3cff', alpha: 0.18 * fade });
+    q.put({ kind: FX.spark, x: p.x, y: p.y, up: THRALL_EYES, w: 4.5, a: '#d8bcff', t: 0.1, alpha: 0.8 * fade });
     const u = (time * 0.7 + f.id * 0.37) % 1;
-    q.put({ kind: FX.shadow, x: f.x + Math.sin(time * 1.3 + f.id) * 3, y: f.y, up: 4 + u * 20, w: 7 - u * 3, a: '#9a6ae0', b: '#120a20', alpha: 0.6 * Math.sin(u * Math.PI) * fade, seed: f.id });
+    q.put({ kind: FX.shadow, x: p.x + Math.sin(time * 1.3 + f.id) * 3, y: p.y, up: 4 + u * 20, w: 7 - u * 3, a: '#9a6ae0', b: '#120a20', alpha: 0.6 * Math.sin(u * Math.PI) * fade, seed: f.id });
   }
   const map = MAPS[m.map] ?? Object.values(MAPS)[0]!;
   // sand on the wind, low over the ground

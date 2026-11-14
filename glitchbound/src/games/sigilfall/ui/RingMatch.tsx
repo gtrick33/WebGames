@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { TitleFx } from '../../../components/TitleFx';
 import type { TitleShown } from '../progress/titles';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { ABILITIES, SLOTS, type Ability } from '../arena/abilities';
@@ -7,7 +6,7 @@ import { botThink, newBrain } from '../arena/bot';
 import { LEAVER_K, type ClassSets } from '../arena/ladder';
 import { lookOf } from '../arena/look';
 import { MAPS } from '../arena/maps';
-import { CLOSE_FROM, Match, MATCH_LIMIT, MOMENTUM_HOLD, MOMENTUM_MAX, PACE, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
+import { CLOSE_FROM, Match, MATCH_LIMIT, PACE, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
 import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
 import type { Character, Face } from '../progress/character';
@@ -21,6 +20,7 @@ import { Stick } from './Stick';
 import { autoPoint as pointFor, isOut } from './ringAim';
 import { actionOf, keyName, readKeys, saveKeys, type RingKeys } from './ringKeys';
 import { KeysDialog } from './RingKeysDialog';
+import { NameReel } from './NameReel';
 
 export type Role = { kind: 'solo'; skill: number } | { kind: 'host'; skill: number; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void } | { kind: 'client'; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void };
 
@@ -138,23 +138,13 @@ function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Ma
         onPick();
       }}
       onClick={onPick}
-      aria-label={`${f.name}, ${CLASSES[f.cls].name}, ${Math.round(share * 100)}% health`}>
+      aria-label={`${f.name}${title ? `, ${title.text}` : ''}, ${CLASSES[f.cls].name}, ${Math.round(share * 100)}% health`}>
       <span className="rb-ring-face">
         <img src={doll} alt="" draggable={false} />
       </span>
       <span className="rb-ring-bars">
         <span className="rb-ring-name">
-          {title?.before && (
-            <small className="rb-ring-title is-before">
-              <TitleFx fx={title.fx}>{title.text}</TitleFx>
-            </small>
-          )}
-          <b>{f.id === me?.id ? 'You' : f.name}</b>
-          {title && !title.before && (
-            <small className="rb-ring-title">
-              <TitleFx fx={title.fx}>{title.text}</TitleFx>
-            </small>
-          )}
+          <NameReel name={f.id === me?.id ? 'You' : f.name} title={title} />
           {tag && <em>{tag}</em>}
         </span>
         <span className={`rb-ring-bar${share < 0.3 ? ' is-low' : ''}`}>
@@ -947,16 +937,6 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           {placing && !err && (
             <div className="rb-ring-err is-note" role="status">
               Click where it should land · Esc to put it away
-            </div>
-          )}
-          {me && me.streak > 0 && m.phase === 'fight' && (
-            <div className={`rb-ring-momentum is-x${me.streak}`} role="status" aria-label={`Momentum ${me.streak}`}>
-              <b>×{me.streak}</b>
-              <span>
-                <strong>Momentum</strong>
-                <small>{me.streak >= MOMENTUM_MAX ? 'Every combo at its hardest' : 'Land a different combo to build it'}</small>
-              </span>
-              <i style={{ width: `${Math.max(0, Math.min(1, me.streakT / MOMENTUM_HOLD)) * 100}%` }} />
             </div>
           )}
           {cast && castAb && (

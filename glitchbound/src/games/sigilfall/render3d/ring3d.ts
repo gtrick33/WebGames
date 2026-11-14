@@ -17,6 +17,7 @@ import { dressRing, type RingAir, type RingDress } from './ringDress';
 import { disposeFloor, floorOf } from './ringFloor';
 import { Stage } from './stage';
 import { CROWD, LIGHT } from './toon';
+import { THRALL_BLOW_T, THRALL_LUNGE, THRALL_SPRITE, thrallPose } from './thrall';
 import { shieldOf, turnOf } from './worldCast';
 
 /**
@@ -29,10 +30,10 @@ export interface RingFighterLook {
   held: Held;
 }
 
-/** The warlock's ashbound dead (the Gloamknight's, once) are the barrows' own skeletons (render3d/kits.ts), a little smaller than a hero, ash-violet. */
-const THRALL_SPRITE = 'barrow-skeleton';
+/** The warlock's ashbound dead are the Ashen Host's skeleton soldiers (render3d/thrall.ts), a little smaller than a hero, ash-violet. */
 const THRALL_H = PERSON_H * 0.86;
-const ASHBOUND = [0.8, 0.72, 1.08] as const;
+// (multiplied into the soldier's ash-grey, which is painted dark: brighter than plain, so the bones read under the violet)
+const ASHBOUND = [1.3, 1.2, 1.6] as const;
 /** Seconds one takes to sink back into the ground once it has fallen or its time is up. */
 const THRALL_SINK = 1.1;
 /** One of your own in the shroud: drawn see-through, gone the violet of the dusk. */
@@ -135,7 +136,11 @@ export class RingStage implements RingView {
   frame(m: Match, looks: RingFighterLook[], myId: number | null, dt: number, time: number, spells?: (fx: Fx3D) => void): void {
     const st = this.stage;
     if (!st.ready) return;
-    if (!this.built) this.build(st.landPacks!);
+    if (!this.built) {
+      this.build(st.landPacks!);
+      // (the dead's model fetched now, if anyone here can raise them, so they don't climb out of the ground unseen)
+      if (m.fighters.some((f) => f.bar.some((id) => ABILITIES[id]?.effects.some((e) => e.k === 'raise')))) st.cast.preload([THRALL_SPRITE]);
+    }
     LIGHT.uTime.value = time;
     LIGHT.uDark.value.set(0, 8, 0, 0);
     // nothing in the Ring thins away in front of a hero. (The campaign's see-through, which dithers a wall between the
@@ -287,9 +292,9 @@ export class RingStage implements RingView {
   }
 
   /**
-   * One of the warlock's ashbound dead: a barrow skeleton gone the grey-violet of the gloam, clawing its way up out of
-   * the ground when it is called, striking with its master's foe, and sinking back into the ground when it falls or its
-   * time is up.
+   * One of the warlock's ashbound dead: a skeleton soldier gone the grey-violet of the gloam, clawing its way up out of
+   * the ground when it is called, running at its master's foe, cutting at them with every claw the rules land (a cut,
+   * then a slice back, each with a step into it), and sinking back into the ground when it falls or its time is up.
    */
   private thrall(m: Match, f: Fighter, dt: number): void {
     const pet = f.pet!;
@@ -297,12 +302,15 @@ export class RingStage implements RingView {
     const gone = f.dead ? m.clock - (pet.end ?? m.clock) : 0;
     if (gone > THRALL_SINK) {
       this.motions.delete(f.id);
+      this.blows.delete(f.id);
       return;
     }
     let s = this.motions.get(f.id);
     if (!s) {
       s = { m: new Motion(), turn: turnOf(Math.atan2(f.dirY, f.dirX)), swing: 0, clip: 'idle', fresh: false, time: 0, lunge: 0, hurt: 0, hard: false };
       this.motions.set(f.id, s);
+      // (one that comes back from a saved match has struck before: only the blows from here on are drawn)
+      this.blows.set(f.id, pet.hits);
     }
     let d = (turnOf(Math.atan2(f.dirY, f.dirX)) - s.turn) % (Math.PI * 2);
     if (d > Math.PI) d -= Math.PI * 2;
@@ -312,25 +320,30 @@ export class RingStage implements RingView {
     s.hurt = Math.max(0, s.hurt - dt);
     const held = f.auras.some((a) => a.cc === 'stun' || a.cc === 'incap');
     const moving = Math.hypot(f.vx, f.vy) > 1;
-    if (f.dead) s.m.set('die', false);
-    else if ((this.blows.get(f.id) ?? 0) < pet.hits) {
+    const pose = thrallPose(this.blows.get(f.id) ?? 0, pet.hits, s.swing > 0, f.dead, held, moving);
+    if (pose.blow && pose.clip) {
       // a new blow: from where its strike begins, not the lift before it
-      s.m.set('chop', false, 0.06, true);
-      s.m.t = cast.strike(THRALL_SPRITE, 'chop').from;
-      s.swing = 0.55;
-    } else if (s.swing > 0) {
-      // (the blow plays out)
-    } else if (held) s.m.set('hit');
-    else s.m.set(moving ? cast.walkOf(THRALL_SPRITE) : 'idle', true, 0.18);
+      s.m.set(pose.clip, false, 0.06, true);
+      s.m.t = cast.strike(THRALL_SPRITE, pose.clip).from;
+      s.clip = pose.clip;
+      s.swing = THRALL_BLOW_T;
+      s.time = THRALL_BLOW_T;
+      s.lunge = THRALL_LUNGE;
+    } else if (pose.clip) s.m.set(pose.clip, pose.loop, 0.14);
     this.blows.set(f.id, pet.hits);
     s.m.advance(dt);
     // up out of the ground over its first half second; back into it once it is done
     const age = pet.max - pet.life;
     const rise = f.dead ? Math.min(1, gone / THRALL_SINK) * 0.9 : Math.max(0, 1 - age / 0.5);
     const flash = s.hurt > 0 && !f.dead ? Math.min(1, s.hurt / 0.26) * 0.7 : 0;
-    this.drawn.set(f.id, { x: f.x, y: f.y });
-    cast.shadow(f.x, f.y, f.dead ? 5 : 6);
-    cast.creature(THRALL_SPRITE, f.x, f.y, s.turn, THRALL_H, s.m.clip, s.m.t, false, { motion: s.m, rise, flash, tint: ASHBOUND, alpha: f.dead ? Math.max(0, 1 - gone / THRALL_SINK) : 1 });
+    // a blow carries it a step toward whoever it is for, out at the strike and home after
+    const u = s.swing > 0 && s.time > 0 ? 1 - s.swing / s.time : 1;
+    const reach = s.swing > 0 && !f.dead ? s.lunge * Math.sin(Math.PI * Math.min(1, u * 1.35)) : 0;
+    const bx = f.x + f.dirX * reach;
+    const by = f.y + f.dirY * reach;
+    this.drawn.set(f.id, { x: bx, y: by });
+    cast.shadow(bx, by, f.dead ? 5 : 6);
+    cast.creature(THRALL_SPRITE, bx, by, s.turn, THRALL_H, s.m.clip, s.m.t, false, { motion: s.m, rise, flash, tint: ASHBOUND, feet: true, alpha: f.dead ? Math.max(0, 1 - gone / THRALL_SINK) : 1 });
   }
 
   /** Something to shout about. */
