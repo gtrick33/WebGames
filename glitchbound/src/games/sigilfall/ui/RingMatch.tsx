@@ -185,6 +185,31 @@ function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Ma
   );
 }
 
+/**
+ * A press on a column of nameplates that falls between two of them (they are 2 px apart, and on a phone a press with
+ * the other thumb on the stick is never nudged onto a button as a tap would be) goes to the nearest one.
+ */
+function nearestPlate(e: ReactPointerEvent<HTMLDivElement>, list: Fighter[], pick: (id: number) => void): void {
+  if (e.target !== e.currentTarget) return;
+  const plates = [...e.currentTarget.querySelectorAll<HTMLElement>(':scope > .rb-ring-frame')];
+  let best = -1;
+  let bd = PLATE_SLACK;
+  plates.forEach((el, i) => {
+    const r = el.getBoundingClientRect();
+    const d = Math.hypot(Math.max(r.left - e.clientX, 0, e.clientX - r.right), Math.max(r.top - e.clientY, 0, e.clientY - r.bottom));
+    if (d <= bd) {
+      bd = d;
+      best = i;
+    }
+  });
+  const f = list[best];
+  if (!f) return;
+  e.preventDefault();
+  pick(f.id);
+}
+/** How far from a nameplate a press still counts as on it, in CSS px. */
+const PLATE_SLACK = 8;
+
 /** Who an ability will land on, and whether it can right now. */
 function AimCard({ label, f, note, bad, doll, kind }: { label: string; f: Fighter | null; note: string; bad: boolean; doll: string; kind: 'foe' | 'friend' }) {
   return (
@@ -522,10 +547,13 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       keys.clear();
       if (aim) endAim('cancel');
     };
-    // a click or a tap on a fighter in the ring chooses them (an enemy to hit, an ally to help)
+    // a click or a tap on a fighter in the ring chooses them (an enemy to hit, an ally to help). Only on the ground
+    // itself: a thumb coming down on the stick, or on the entry's words over it, chose whoever was drawn under it, and on
+    // a phone the left thumb lands there all the time. A nameplate tapped to change target was undone the next time it
+    // did, back to the enemy beside you (the owner: "sometimes i have to click 3-4 times on my phone in order to swap
+    // the target")
     const pick = (e: PointerEvent): void => {
-      const el = e.target as HTMLElement | null;
-      if (!el || el.closest('button, .rb-ring-top, .rb-ring-bar, .rb-cluster, [role="dialog"]')) return;
+      if (e.target !== canvas) return;
       // a circle under the mouse: the click drops it there (the other button puts it away), and chooses nobody
       if (aim?.point) {
         e.preventDefault();
@@ -803,7 +831,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
           <canvas ref={canvasRef} className="rb-ring-canvas" />
           <div className="rb-ring-top">
             {/* (with the nameplates put away their places stay, empty, so the clock keeps to the middle) */}
-            <div className="rb-ring-team">
+            <div className="rb-ring-team" onPointerDown={(e) => nearestPlate(e, left, target)}>
               {plates && left.map((f) => (
                 <Frame key={f.id} f={f} m={m} me={me} doll={dolls[f.id]!} title={f.id === myId ? (title ?? null) : null} tag={helps && f.id === friendId && m.phase === 'fight' ? 'Helping' : null} onPick={() => target(f.id)} />
               ))}
@@ -822,7 +850,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               {m.phase === 'fight' && (gloamIn > 0 ? gloamIn <= 15 && <small className="rb-ring-gloam">The Gloam in {gloamIn}</small> : <small className="rb-ring-gloam is-on">The Gloam is closing</small>)}
               {damp > 0 && <small className="rb-ring-damp" title="Healing fades the longer a match goes">Healing −{damp}%</small>}
             </div>
-            <div className="rb-ring-team is-foes">
+            <div className="rb-ring-team is-foes" onPointerDown={(e) => nearestPlate(e, right, target)}>
               {plates && right.map((f) => (
                 <Frame key={f.id} flip f={f} m={m} me={me} doll={dolls[f.id]!} tag={f === foeAlive ? 'Target' : null} onPick={() => target(f.id)} />
               ))}
