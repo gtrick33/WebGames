@@ -5,7 +5,7 @@ import { Fx3D } from './fx3d';
 import { loadWardrobe } from './dress';
 import { loadLand, PITCH, type Land3D, type LandPacks } from './land';
 import { LIGHT } from './toon';
-import { Pacer, QUALITY_FLOOR } from './pace';
+import { heldElsewhere, Pacer, QUALITY_FLOOR } from './pace';
 
 /**
  * The 3D view, four layers deep under the player's touches:
@@ -219,6 +219,8 @@ export class Stage {
     const now = performance.now();
     const dt = (now - this.lastFrame) / 1000;
     this.lastFrame = now;
+    // (a menu's pictures being drawn: pace.ts busyElsewhere)
+    if (heldElsewhere(now)) return;
     if (this.pacer.tick(dt)) this.applyQuality();
   }
 

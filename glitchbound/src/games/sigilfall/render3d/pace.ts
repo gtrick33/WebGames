@@ -12,6 +12,26 @@
  * phone's 3x screen the picture was drawn at under one pixel for every three the screen has, a blur under a sharp HUD.
  */
 
+/**
+ * Work outside the world that stops the game for a moment: a menu's picture of a hero or a mount (portrait.ts) is
+ * drawn, read back and packed as an image on the page's own thread, tens of milliseconds a picture on a phone, and
+ * the mounts page draws them one after another. Frames that waited on it say nothing about how hard the world is to
+ * draw: counted, they stepped the picture down to its floor whenever the mounts were looked at or a look was tried
+ * on, and it took a minute and more at speed to come back.
+ */
+export const QUIET_MS = 300;
+let quietUntil = 0;
+
+/** Something outside the world just held up the frame: the next frames aren't the world's to answer for. */
+export function busyElsewhere(now = performance.now()): void {
+  quietUntil = Math.max(quietUntil, now + QUIET_MS);
+}
+
+/** Whether frames are still being held up by something outside the world. */
+export function heldElsewhere(now = performance.now()): boolean {
+  return now < quietUntil;
+}
+
 /** Slower than this between frames (about fifty a second), kept up, and the picture is drawn with fewer pixels. */
 export const PACE_SLOW = 1 / 50;
 /** The least share of the full picture it is drawn with. */

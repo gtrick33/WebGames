@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { hudScale } from '../src/games/sigilfall/render/camera';
-import { PACE_SLOW, Pacer, QUALITY_FLOOR } from '../src/games/sigilfall/render3d/pace';
+import { busyElsewhere, heldElsewhere, PACE_SLOW, Pacer, QUALITY_FLOOR, QUIET_MS } from '../src/games/sigilfall/render3d/pace';
 
 describe('Sigilfall: the HUD grows with the screen', () => {
   it('is its own size up to a laptop, and bigger on a bigger monitor', () => {
@@ -78,6 +78,32 @@ describe('Sigilfall: the picture keeps to a smooth pace', () => {
     // (far too much to draw: every step helps, and none is enough)
     run(p, 5000, (q) => (1 / 10) * q * q);
     expect(p.quality).toBeCloseTo(1 / 1.7);
+  });
+
+  it('frames held up by a menu drawing its pictures (the mounts, a look tried on) are not counted', () => {
+    busyElsewhere(1000);
+    expect(heldElsewhere(1000 + QUIET_MS - 1)).toBe(true);
+    expect(heldElsewhere(1000 + QUIET_MS)).toBe(false);
+    // the mounts page: a picture of 80 ms every other frame for twenty seconds, on a phone that otherwise keeps up
+    const p = new Pacer();
+    let now = 5000;
+    let last = now;
+    let lowest = 1;
+    for (let i = 0; i < 600; i++) {
+      const photo = i % 2 === 0;
+      now += 1000 / 60 + (photo ? 80 : 0);
+      if (photo) busyElsewhere(now);
+      const dt = (now - last) / 1000;
+      last = now;
+      if (!heldElsewhere(now)) p.tick(dt);
+      lowest = Math.min(lowest, p.quality);
+    }
+    // (counted, the picture stepped down while the pictures were drawn)
+    expect(lowest).toBe(1);
+    const portrait = readFileSync('src/games/sigilfall/render3d/portrait.ts', 'utf8');
+    expect(portrait).toContain('busyElsewhere();');
+    const stage = readFileSync('src/games/sigilfall/render3d/stage.ts', 'utf8');
+    expect(stage).toContain('if (heldElsewhere(now)) return;');
   });
 
   it('a phone never draws fewer pixels than the page has CSS pixels', () => {
