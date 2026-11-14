@@ -22,6 +22,31 @@
  *
  * The computer is not a person, so this guards against a change that tips a class far over, no more. (Healers in 1v1,
  * where they have nobody to heal, win a quarter of their matches: a healer's setup is for team fights.)
+ *
+ * When the talents became each class's own (2026-11-13, "please make them very unique"), every talent was measured
+ * against the other two in its row, in 1v1 and in 2v2 (a healer's on its healer's build), on the same seeds, and tuned
+ * until each row's three came within a few points of each other where they are meant to be used (a team talent, an
+ * aura or Skypiercer, shows little in 1v1). Two changes outside the talents: the mage deals 0.72 of its numbers (was
+ * 0.74; its new talents carry it further in a duel than in a team), and the priest's Knit Wounds heals 86 (was 95; its
+ * healing build won 68% of 2v2s, against 60% for the paladin's). Classes, in % won (1v1 by
+ * tests/sigilfall-ring-aim.test.ts, then 2v2 / 3v3 here), before -> after:
+ *
+ *   warrior 42/46/54 -> 46/49/54   mage    50/45/45 -> 60/46/44   ranger  50/42/45 -> 43/45/47   paladin     50/57/49 -> 53/57/52
+ *   priest  49/61/61 -> 42/57/54   warlock 52/45/48 -> 49/44/47   druid   49/54/52 -> 49/53/51   gloamknight 58/44/44 -> 57/44/50
+ *
+ * Then each ready-made setup on its own, with the new talents: every one of the sixteen played every other in 1v1 and in
+ * random 2v2 and 3v3 teams, and each setup's own abilities (never one it shares with its class's other setup) were
+ * scaled until its wins over the three came to about half, a healer's about 55% in teams (a healer in 1v1, with
+ * nobody to heal, still loses most). The Reaper's Festering Gash and Hurled Maul 15% weaker; the Lifegiver's Knit
+ * Wounds, Dawnlight and Ward of Faith 7-15% weaker, the Oathkeeper's Dawn's Touch 10%; the Hound's bleed and Hock
+ * Cut, the Rime's spear and shards, the Trapper's Hobbling Shot and Serpent Volley, the Zealot's Oath Blow and Wave
+ * of Dawn, the Doomcaller's bolt and Ruin and the Bloodsworn's blows 6-18% stronger, the Curse-speaker's 6% weaker.
+ * Each setup's 1v1 / 2v2 / 3v3, and the mean of the three, after:
+ *
+ *   Reaper      46/53/61 54   Hound     52/49/47 49   Pyre         63/48/47 53   Rime        66/42/45 51
+ *   Longbow     57/41/47 48   Trapper   60/47/49 52   Oathkeeper   24/60/53 46   Zealot      57/46/48 50
+ *   Lifegiver   17/59/54 43   Curse-sp. 45/55/51 50   Hexer        67/44/43 51   Doomcaller  49/47/50 49
+ *   Grovekeeper 25/55/57 45   Starseer  62/48/42 51   Bloodsworn   59/45/44 49   Dreadbinder 53/44/55 51
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';
