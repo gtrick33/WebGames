@@ -74,7 +74,9 @@ export type Effect =
   /** Drags the target in to arm's length of its user, and cuts off what they were casting. */
   | { k: 'pull' }
   /** Its user's raised dead hit this much harder and run a third faster for a while. */
-  | { k: 'frenzy'; pct: number; dur: number };
+  | { k: 'frenzy'; pct: number; dur: number }
+  /** Everything burning or rotting on the target comes off (so that a hold which damage breaks can hold). */
+  | { k: 'undot' };
 
 /**
  * A combo: when the target carries something this hero put on them (`ab`, by ability) or is held a certain way (`cc`),
@@ -147,6 +149,12 @@ export interface Ability {
   veiled?: boolean;
   /** Doesn't bring its user out of the shroud. */
   quiet?: boolean;
+  /** Its holds don't wear off with use: no diminishing returns. */
+  noDr?: boolean;
+  /** What it does to its user as well, as it goes off (a super's own strength). */
+  self?: Effect[];
+  /** A friend's spell that lands on every friend in reach and sight, not one. */
+  allies?: boolean;
 }
 
 const MELEE = 30;
@@ -163,6 +171,16 @@ export const SLOTS = 4;
 /** Everyone's, besides their four: a quick step out from under what is about to fall, or out of reach. */
 export const DASH: Ability = a({ id: 'dash', cls: 'any', name: 'Swift Step', text: 'A quick step the way you’re going: out from under what is about to fall on you, or out of a blade’s reach.', icon: 'dodge_roll_arrow_on_teal', color: '#bff4ff', school: 'physical', role: 'mobility', aim: 'self', range: 0, cast: 0, cd: 5, mana: 0, free: true, effects: [{ k: 'dash', dist: 62 }] });
 
+/**
+ * What can take the Swift Step's place (the owner: "swift step part should have another tab for that where you should
+ * be able to replace it with a trinket that frees u from any stun with 30s cooldown"): a charm that breaks every hold.
+ */
+export const CHARM: Ability = a({ id: 'charm', cls: 'any', name: 'Unbinding Charm', text: 'Break free of every hold on you: stuns, fears, roots, dazes, silences and slows. Usable while held.', icon: 'broken_chain_links_snapping_on_grey', color: '#ffe39a', school: 'physical', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 30, mana: 0, free: true, anyState: true, quiet: true, effects: [{ k: 'token' }] });
+
+/** The choices for the place beside the bar: the Swift Step (the default) or the charm. */
+export const STEPS: readonly Ability[] = [DASH, CHARM];
+export const stepOf = (id: string | undefined): Ability => STEPS.find((x) => x.id === id) ?? DASH;
+
 /** The sigil in the middle of the ground (not an ability anyone has: what it gives, for the pictures and the words). */
 export const SIGIL: Ability = a({ id: 'sigil', cls: 'any', name: 'Sigil of Might', text: 'Heals a fifth of your life, fills your super meter by a third and quickens you.', icon: 'radiant_star_burst_on_gold', color: '#ffe27a', school: 'holy', role: 'heal', aim: 'self', range: 0, cast: 0, cd: 0, mana: 0, effects: [{ k: 'speed', pct: 30, dur: 4 }] });
 
@@ -177,6 +195,35 @@ export const SUPERS: Record<ClassId, Ability> = {
   druid: a({ id: 'l-super', cls: 'druid', name: 'Thornstorm', text: 'Thorns burst up where you choose: 111 to everyone there, held to the ground for 1.5 seconds.', icon: 'thorn_burst_on_dark_green', color: '#9be86a', school: 'nature', role: 'burst', aim: 'ground', range: FAR, cast: 0, cd: 0, mana: 0, free: true, super: true, area: 60, fall: 0.8, effects: [{ k: 'dmg', n: 130 }, { k: 'cc', cc: 'root', dur: 1.5 }] }),
   gloamknight: a({ id: 'g-super', cls: 'gloamknight', name: 'Eclipse Reaping', text: 'Lunge through the dark and reap: 189, and you drink 100 of it.', icon: 'eclipse_sun_on_black', color: '#c8a8ff', school: 'shadow', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 0, mana: 0, free: true, sticky: true, super: true, effects: [{ k: 'charge' }, { k: 'dmg', n: 210 }, { k: 'heal', n: 100 }] }),
 };
+
+/**
+ * Each class's second super, for its other way to fight (the owner: "let's also add unique ultimates for each loadout,
+ * currently every spec has the same ultimate, make every ultimate fun to use, very impactful and cool"). The first is
+ * the one above; a setup picks either (arena/ladder.ts RingSetup.ult), and each ready-made one comes with its own.
+ */
+export const SUPERS2: Record<ClassId, Ability> = {
+  // the Hound: run them down and don't let go
+  warrior: a({ id: 'w-super2', cls: 'warrior', name: 'Run Them Down', text: 'Rush them: 74, a wound that bleeds 110 over 6 seconds, slowed by 50% for 3. For 4 seconds you hit 15% harder and nothing slows or roots you.', icon: 'fire_wolf_head_on_black', color: '#ff6a4a', school: 'physical', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 0, mana: 0, free: true, sticky: true, super: true, self: [{ k: 'break' }, { k: 'free', dur: 4 }, { k: 'fury', pct: 15, dur: 4 }], effects: [{ k: 'charge' }, { k: 'dmg', n: 80 }, { k: 'dot', n: 120, dur: 6 }, { k: 'slow', pct: 50, dur: 3 }] }),
+  // the Rime: the whole ring frozen round her, and her Rime Spear shattering each of them
+  mage: a({ id: 'm-super2', cls: 'mage', name: 'Winter’s Grasp', text: 'Winter bursts out of you: 72 to everyone near, frozen to the ground for 3 seconds (it never wears off with use) and slowed after. A barrier of ice soaks up 180 damage for you.', icon: 'frost_crown_on_navy', color: '#bfeaff', school: 'frost', role: 'burst', aim: 'near', range: 76, cast: 0, cd: 0, mana: 0, free: true, super: true, noDr: true, self: [{ k: 'absorb', n: 180, dur: 10 }], effects: [{ k: 'dmg', n: 100 }, { k: 'cc', cc: 'root', dur: 3 }, { k: 'slow', pct: 50, dur: 6 }] }),
+  // the Trapper: a whole patch of the ring made a snare
+  ranger: a({ id: 'r-super2', cls: 'ranger', name: 'Thicket of Snares', text: 'Nets and vines burst out over a wide patch of ground: 67 to everyone on it, held fast for 2.5 seconds, and poisoned for 150 more over 6.', icon: 'net_trap_on_green', color: '#9be86a', school: 'nature', role: 'burst', aim: 'ground', range: FAR, cast: 0, cd: 0, mana: 0, free: true, super: true, area: 72, fall: 0.6, effects: [{ k: 'dmg', n: 86 }, { k: 'cc', cc: 'root', dur: 2.5 }, { k: 'dot', n: 192, dur: 6 }] }),
+  // the Curse-speaker: a word that empties the ground of sound and of healing
+  priest: a({ id: 'p-super2', cls: 'priest', name: 'Voidburst', text: 'The void opens where you choose: 117 to everyone in it, silenced for 2.5 seconds, and healing on them halved for 8. The void wraps you too: it heals you 150 and soaks up 200 damage for 10 seconds.', icon: 'anti_heal_status_broken_heart_on_black', color: '#a060ff', school: 'shadow', role: 'burst', aim: 'ground', range: FAR, cast: 0, cd: 0, mana: 0, free: true, super: true, self: [{ k: 'heal', n: 150 }, { k: 'absorb', n: 200, dur: 10 }], area: 58, fall: 0.5, effects: [{ k: 'dmg', n: 150 }, { k: 'cc', cc: 'silence', dur: 2.5 }, { k: 'antiheal', pct: 50, dur: 8 }] }),
+  // the Oathkeeper: the whole side lifted up at once
+  paladin: a({ id: 'd-super2', cls: 'paladin', name: 'Dawn’s Covenant', text: 'A covenant of dawn on your whole side in reach: each is healed 220, freed of every hold, and shielded from 160 damage for 10 seconds.', icon: 'gate_opening_with_light_on_gold', color: '#ffe9a0', school: 'holy', role: 'heal', aim: 'friend', range: FAR, cast: 0, cd: 0, mana: 0, free: true, anyState: true, super: true, allies: true, effects: [{ k: 'token' }, { k: 'heal', n: 220 }, { k: 'absorb', n: 160, dur: 10 }] }),
+  // the Gravecaller: the barrow empties
+  warlock: a({ id: 'k-super2', cls: 'warlock', name: 'Grave Legion', text: 'The barrow empties: three of the ashbound dead claw up around you for 12 seconds, in place of any you had standing.', icon: 'graveyard_gate_on_black', color: '#9ae85a', school: 'shadow', role: 'summon', aim: 'self', range: 0, cast: 0, cd: 0, mana: 0, free: true, super: true, effects: [{ k: 'raise', n: 3, hp: 170, dmg: 9, life: 12, slow: 10 }] }),
+  // the Grovekeeper: the old wood's heart beating in every friend
+  druid: a({ id: 'l-super2', cls: 'druid', name: 'Heart of the Grove', text: 'The grove’s heart beats in your whole side in reach: each is healed 60 at once and 140 more over 8 seconds, and takes 10% less damage meanwhile.', icon: 'tree_of_life_on_green', color: '#9be86a', school: 'nature', role: 'heal', aim: 'friend', range: FAR, cast: 0, cd: 0, mana: 0, free: true, super: true, allies: true, effects: [{ k: 'heal', n: 60 }, { k: 'hot', n: 140, dur: 8 }, { k: 'guard', pct: 10, dur: 8 }] }),
+  // the Nightblade: out of the dark, the blow, and back into it
+  gloamknight: a({ id: 'g-super2', cls: 'gloamknight', name: 'Night’s Ruin', text: 'Step out of the dark at their back: 162 and stunned for 1.5 seconds, and you are back in the shroud before they can turn (nothing breaks it for 3 seconds).', icon: 'bone_wings_on_violet', color: '#b48cff', school: 'physical', role: 'burst', aim: 'enemy', range: MID, cast: 0, cd: 0, mana: 0, free: true, quiet: true, super: true, effects: [{ k: 'behind' }, { k: 'dmg', n: 180 }, { k: 'cc', cc: 'stun', dur: 1.5 }, { k: 'veil' }] }),
+};
+
+/** A class's two supers, the first first. */
+export const ultsOf = (cls: ClassId): [Ability, Ability] => [SUPERS[cls], SUPERS2[cls]];
+/** The super a setup picked (`id`), or the class's first. */
+export const ultOf = (cls: ClassId, id: string | undefined): Ability => ultsOf(cls).find((x) => x.id === id) ?? SUPERS[cls];
 export const superOf = (cls: ClassId): Ability => SUPERS[cls];
 
 const KITS: Record<ClassId, Ability[]> = {
@@ -200,17 +247,17 @@ const KITS: Record<ClassId, Ability[]> = {
   // cooldown's 0.75 is no quicker to follow, so Rime Spear lost the least)
   mage: [
     a({ id: 'm-lash', cls: 'mage', name: 'Ember Lash', text: 'A heavy lash of fire that leaves them Kindled: 23 more over 6 seconds.', icon: 'fire_comet_with_a_long_tail_on_navy', color: '#ff7a1e', school: 'fire', role: 'damage', aim: 'enemy', range: FAR, cast: 0.8, cd: 0, mana: 5, bolt: true, effects: [{ k: 'dmg', n: 78 }, { k: 'dot', n: 32, dur: 6 }] }),
-    a({ id: 'm-spear', cls: 'mage', name: 'Rime Spear', text: 'A spear of ice that slows by 40% for 5 seconds.', icon: 'ice_spear_on_cyan', color: '#9fdcff', school: 'frost', role: 'damage', aim: 'enemy', range: FAR, cast: 0.6, cd: 0, mana: 4, bolt: true, combo: { name: 'Shatter', text: 'Against a target frozen to the ground or stunned: 80% harder.', cc: ['root', 'stun'], mult: 1.8 }, effects: [{ k: 'dmg', n: 77 }, { k: 'slow', pct: 40, dur: 5 }] }),
+    a({ id: 'm-spear', cls: 'mage', name: 'Rime Spear', text: 'A spear of ice that slows by 40% for 5 seconds.', icon: 'ice_spear_on_cyan', color: '#9fdcff', school: 'frost', role: 'damage', aim: 'enemy', range: FAR, cast: 0.6, cd: 0, mana: 4, bolt: true, combo: { name: 'Shatter', text: 'Against a target frozen to the ground or stunned: a little over twice as hard.', cc: ['root', 'stun'], mult: 2.07 }, effects: [{ k: 'dmg', n: 77 }, { k: 'slow', pct: 40, dur: 5 }] }),
     a({ id: 'm-burn', cls: 'mage', name: 'Flashburn', text: 'An instant bolt of fire, on the move.', icon: 'flame_circle_on_the_ground_on_dark_red', color: '#ff6a2a', school: 'fire', role: 'damage', aim: 'enemy', range: MID, cast: 0, cd: 5, mana: 4, zip: true, combo: { name: 'Flashover', text: 'Against a target Kindled by your Ember Lash: 70% harder, and the Kindling is used up.', ab: ['m-lash'], mult: 1.7, consume: true }, effects: [{ k: 'dmg', n: 93 }] }),
-    a({ id: 'm-toad', cls: 'mage', name: 'Toad Hex', text: 'A hex that flies at them and turns them into a toad for 3 seconds. Any damage breaks it.', icon: 'frog_jumping_on_teal', color: '#8bff6a', school: 'arcane', role: 'cc', aim: 'enemy', range: FAR, cast: 0.6, cd: 0, mana: 6, bolt: true, effects: [{ k: 'cc', cc: 'incap', dur: 3 }] }),
-    a({ id: 'm-ring', cls: 'mage', name: 'Frost Snare', text: 'Everyone near you is frozen to the ground for 2 seconds.', icon: 'frost_nova_ring_on_blue', color: '#bfeaff', school: 'frost', role: 'cc', aim: 'near', range: 58, cast: 0, cd: 13, mana: 5, effects: [{ k: 'dmg', n: 14 }, { k: 'cc', cc: 'root', dur: 2 }] }),
+    a({ id: 'm-toad', cls: 'mage', name: 'Toad Hex', text: 'A hex that flies at them and turns them into a toad for 3 seconds. Any damage breaks it, so the hex first snuffs out everything burning or rotting on them.', icon: 'frog_jumping_on_teal', color: '#8bff6a', school: 'arcane', role: 'cc', aim: 'enemy', range: FAR, cast: 0.6, cd: 0, mana: 6, bolt: true, effects: [{ k: 'undot' }, { k: 'cc', cc: 'incap', dur: 3 }] }),
+    a({ id: 'm-ring', cls: 'mage', name: 'Frost Snare', text: 'Everyone near you is frozen to the ground for 2 seconds. Damage doesn’t break it, and it never wears off with use.', icon: 'frost_nova_ring_on_blue', color: '#bfeaff', school: 'frost', role: 'cc', aim: 'near', range: 58, cast: 0, cd: 13, mana: 5, noDr: true, effects: [{ k: 'dmg', n: 14 }, { k: 'cc', cc: 'root', dur: 2 }] }),
     a({ id: 'm-snap', cls: 'mage', name: 'Spell Snap', text: 'Cuts off a cast at range and locks that school for 5 seconds.', icon: 'chain_lightning_between_three_dots_on_violet', color: '#b48cff', school: 'arcane', role: 'interrupt', aim: 'enemy', range: FAR, cast: 0, cd: 11, mana: 2, free: true, effects: [{ k: 'interrupt', lock: 5 }] }),
     a({ id: 'm-blink', cls: 'mage', name: 'Flicker', text: 'Vanish and appear ahead of you, free of what held you.', icon: 'three_small_fireballs_orbiting_on_red', color: '#c9b8ff', school: 'arcane', role: 'mobility', aim: 'self', range: 0, cast: 0, cd: 9, mana: 3, free: true, anyState: true, effects: [{ k: 'break' }, { k: 'blink', dist: 96 }] }),
     a({ id: 'm-prison', cls: 'mage', name: 'Ice Prison', text: 'Seal yourself in ice for 4 seconds: nothing touches you, and you can’t act.', icon: 'ice_prison_cage_on_cyan', color: '#bfeaff', school: 'frost', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 45, mana: 0, free: true, anyState: true, effects: [{ k: 'immune', dur: 4, still: true }, { k: 'token' }] }),
     a({ id: 'm-shield', cls: 'mage', name: 'Mana Veil', text: 'Soaks up 170 damage for 15 seconds.', icon: 'water_bubble_shield_on_cyan', color: '#8fd8ff', school: 'arcane', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 14, mana: 6, effects: [{ k: 'absorb', n: 170, dur: 15 }] }),
     a({ id: 'm-pyre', cls: 'mage', name: 'Great Pyre', text: 'A cast that brings a pyre down on a patch of ground: 190 to everyone under it. Don’t let them finish it.', icon: 'meteor_falling_with_flames_on_orange', color: '#ffb45c', school: 'fire', role: 'burst', aim: 'ground', range: FAR, cast: 0.7, cd: 9, mana: 12, combo: { name: 'Conflagration', text: 'Against a target Kindled by your Ember Lash: 40% harder.', ab: ['m-lash'], mult: 1.4 }, area: 48, fall: 0.4, effects: [{ k: 'dmg', n: 264 }] }),
     a({ id: 'm-steal', cls: 'mage', name: 'Arcane Shards', text: 'Instant shards of raw arcane, on the move.', icon: 'lightning_hourglass_on_violet', color: '#c9b8ff', school: 'arcane', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 8, mana: 4, zip: true, combo: { name: 'Fracture', text: 'Against a target slowed by your Rime Spear: 60% harder.', ab: ['m-spear'], mult: 1.6 }, effects: [{ k: 'dmg', n: 72 }] }),
-    a({ id: 'm-chill', cls: 'mage', name: 'Hoar Grip', text: 'A shard of ice that stuns for 1.5 seconds.', icon: 'frost_hand_with_ice_on_blue', color: '#9fdcff', school: 'frost', role: 'cc', aim: 'enemy', range: MID, cast: 0, cd: 17, mana: 5, zip: true, effects: [{ k: 'cc', cc: 'stun', dur: 1.5 }] }),
+    a({ id: 'm-chill', cls: 'mage', name: 'Hoar Grip', text: 'A shard of ice that stuns for 1.5 seconds. It never wears off with use.', icon: 'frost_hand_with_ice_on_blue', color: '#9fdcff', school: 'frost', role: 'cc', aim: 'enemy', range: MID, cast: 0, cd: 17, mana: 5, zip: true, noDr: true, effects: [{ k: 'cc', cc: 'stun', dur: 1.5 }] }),
   ],
   ranger: [
     a({ id: 'r-swift', cls: 'ranger', name: 'Swift Shot', text: 'An instant arrow, on the move.', icon: 'arrow_shot_with_a_speed_trail_on_green', color: '#d8ffb0', school: 'physical', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 0, mana: 0, zip: true, combo: { name: 'Falconer', text: 'Against a target your hawk has stunned: twice as hard.', ab: ['r-hawk'], mult: 2 }, effects: [{ k: 'dmg', n: 36 }] }),
@@ -256,19 +303,19 @@ const KITS: Record<ClassId, Ability[]> = {
   ],
   warlock: [
     a({ id: 'k-bolt', cls: 'warlock', name: 'Gloom Bolt', text: 'A heavy bolt of shadow.', icon: 'dark_meteor_on_violet', color: '#a060ff', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 1.1, cd: 0, mana: 5, bolt: true, combo: { name: 'Gloomfire', text: 'Against a fleeing target, or one your ashbound are clawing at: 60% harder.', ab: ['k-raise'], cc: ['fear'], mult: 1.6 }, effects: [{ k: 'dmg', n: 74 }] }),
-    a({ id: 'k-agony', cls: 'warlock', name: 'Creeping Agony', text: 'A curse that burns 167 over 12 seconds.', icon: 'poison_cloud_on_green', color: '#9ae85a', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 4, mana: 3, combo: { name: 'Grave Rot', text: 'Against a target your ashbound are clawing at: 40% harder.', ab: ['k-raise'], mult: 1.4 }, effects: [{ k: 'dot', n: 185, dur: 12 }] }),
-    a({ id: 'k-wither', cls: 'warlock', name: 'Wither', text: 'A curse that burns 82 over 8 seconds and slows by 30%.', icon: 'dark_flame_on_violet', color: '#c88aff', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 8, mana: 3, combo: { name: 'Deep Rot', text: 'Against a target with your Barbed Curse on them: 50% harder.', ab: ['k-unstable'], mult: 1.5 }, effects: [{ k: 'dot', n: 91, dur: 8 }, { k: 'slow', pct: 30, dur: 8 }] }),
+    a({ id: 'k-agony', cls: 'warlock', name: 'Creeping Agony', text: 'A curse that burns 175 over 12 seconds.', icon: 'poison_cloud_on_green', color: '#9ae85a', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 4, mana: 3, combo: { name: 'Grave Rot', text: 'Against a target your ashbound are clawing at: 40% harder.', ab: ['k-raise'], mult: 1.4 }, effects: [{ k: 'dot', n: 194, dur: 12 }] }),
+    a({ id: 'k-wither', cls: 'warlock', name: 'Wither', text: 'A curse that burns 86 over 8 seconds and slows by 30%.', icon: 'dark_flame_on_violet', color: '#c88aff', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 8, mana: 3, combo: { name: 'Deep Rot', text: 'Against a target with your Barbed Curse on them: 50% harder.', ab: ['k-unstable'], mult: 1.5 }, effects: [{ k: 'dot', n: 96, dur: 8 }, { k: 'slow', pct: 30, dur: 8 }] }),
     a({ id: 'k-dread', cls: 'warlock', name: 'Dread Gaze', text: 'A bolt of dread sends them fleeing for 1.5 seconds. Hurt them enough and it breaks.', icon: 'dark_star_on_black', color: '#a060ff', school: 'shadow', role: 'cc', aim: 'enemy', range: FAR, cast: 0.9, cd: 0, mana: 6, bolt: true, effects: [{ k: 'cc', cc: 'fear', dur: 1.5 }] }),
     a({ id: 'k-drain', cls: 'warlock', name: 'Soul Drink', text: 'Drain their life into yours for 3 seconds.', icon: 'bound_spirit_chain_on_teal', color: '#c88aff', school: 'shadow', role: 'heal', aim: 'enemy', range: FAR, cast: 0, channel: 3, tick: 0.5, cd: 10, mana: 5, effects: [{ k: 'dmg', n: 26 }, { k: 'heal', n: 26 }] }),
     a({ id: 'k-lock', cls: 'warlock', name: 'Spell Seal', text: 'Cuts off a cast at range and locks that school for 5 seconds.', icon: 'summoning_circle_on_violet', color: '#c88aff', school: 'shadow', role: 'interrupt', aim: 'enemy', range: FAR, cast: 0, cd: 12, mana: 2, free: true, effects: [{ k: 'interrupt', lock: 5 }] }),
     a({ id: 'k-step', cls: 'warlock', name: 'Darkstride', text: 'Step through the dark and appear ahead of you.', icon: 'dark_portal_on_black', color: '#7a50c8', school: 'shadow', role: 'mobility', aim: 'self', range: 0, cast: 0, cd: 12, mana: 3, free: true, anyState: false, effects: [{ k: 'break' }, { k: 'blink', dist: 110 }] }),
-    a({ id: 'k-unstable', cls: 'warlock', name: 'Barbed Curse', text: 'Burns 92 over 8 seconds. Whoever takes it off is silenced for 4 seconds.', icon: 'ring_of_fire_on_black', color: '#ff7a3d', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 0.7, cd: 10, mana: 4, combo: { name: 'Hex Bloom', text: 'Against a target with your Creeping Agony on them: 80% harder, and 54 more at once.', ab: ['k-agony'], mult: 1.8, extra: [{ k: 'dmg', n: 60 }] }, effects: [{ k: 'dot', n: 102, dur: 8 }, { k: 'backlash', dur: 4 }] }),
+    a({ id: 'k-unstable', cls: 'warlock', name: 'Barbed Curse', text: 'Burns 96 over 8 seconds. Whoever takes it off is silenced for 4 seconds.', icon: 'ring_of_fire_on_black', color: '#ff7a3d', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 0.7, cd: 10, mana: 4, combo: { name: 'Hex Bloom', text: 'Against a target with your Creeping Agony on them: 80% harder, and 54 more at once.', ab: ['k-agony'], mult: 1.8, extra: [{ k: 'dmg', n: 60 }] }, effects: [{ k: 'dot', n: 107, dur: 8 }, { k: 'backlash', dur: 4 }] }),
     a({ id: 'k-pact', cls: 'warlock', name: 'Black Bargain', text: 'Soaks up 190 damage for 15 seconds.', icon: 'cursed_amulet_on_violet', color: '#7a50c8', school: 'shadow', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 17, mana: 6, effects: [{ k: 'absorb', n: 190, dur: 15 }] }),
     a({ id: 'k-resolve', cls: 'warlock', name: 'Dread Resolve', text: 'Take 40% less damage for 8 seconds.', icon: 'dark_star_on_black', color: '#a060ff', school: 'shadow', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 44, mana: 0, free: true, anyState: true, effects: [{ k: 'guard', pct: 40, dur: 8 }] }),
     // (the dead at her call: the Gravecaller's. They were the Gloamknight's until he became a death knight and a blade in the
     // dark, the owner's friend: "leave summons for a necro warlock spec". What they are and how they fight is THRALL in sim.ts)
-    a({ id: 'k-raise', cls: 'warlock', name: 'Call the Ashbound', text: 'Two of the ashbound dead claw up out of the ground to fight beside you for 14 seconds. They go for your target, and each claw does 9 and slows by 10%. They can be cut down.', icon: 'raise_dead_grave_with_bones_on_dark_green', color: '#9ae85a', school: 'shadow', role: 'summon', aim: 'self', range: 0, cast: 0, cd: 30, mana: 6, effects: [{ k: 'raise', n: 2, hp: 170, dmg: 10, life: 14, slow: 10 }] }),
-    a({ id: 'k-frenzy', cls: 'warlock', name: 'Grave Hunger', text: 'Your ashbound hunger: for 6 seconds they hit 60% harder and run a third faster. Only while some stand.', icon: 'skull_with_green_eyes_on_black', color: '#9ae85a', school: 'shadow', role: 'burst', aim: 'self', range: 0, cast: 0, cd: 16, mana: 4, free: true, effects: [{ k: 'frenzy', pct: 60, dur: 6 }] }),
+    a({ id: 'k-raise', cls: 'warlock', name: 'Call the Ashbound', text: 'Two of the ashbound dead claw up out of the ground to fight beside you for 14 seconds. They go for your target, and each claw does 8 and slows by 10%. They can be cut down.', icon: 'raise_dead_grave_with_bones_on_dark_green', color: '#9ae85a', school: 'shadow', role: 'summon', aim: 'self', range: 0, cast: 0, cd: 30, mana: 6, effects: [{ k: 'raise', n: 2, hp: 170, dmg: 9, life: 14, slow: 10 }] }),
+    a({ id: 'k-frenzy', cls: 'warlock', name: 'Grave Hunger', text: 'Your ashbound hunger: for 6 seconds they hit 45% harder and run a third faster. Only while some stand.', icon: 'skull_with_green_eyes_on_black', color: '#9ae85a', school: 'shadow', role: 'burst', aim: 'self', range: 0, cast: 0, cd: 16, mana: 4, free: true, effects: [{ k: 'frenzy', pct: 45, dur: 6 }] }),
   ],
   druid: [
     a({ id: 'l-lash', cls: 'druid', name: 'Starlash', text: 'A bolt of cold starlight.', icon: 'moonfire_beam_on_navy', color: '#cfe0ff', school: 'nature', role: 'damage', aim: 'enemy', range: FAR, cast: 1, cd: 0, mana: 5, bolt: true, combo: { name: 'Eclipse', text: 'Against a target with your Moonburn on them: 50% harder.', ab: ['l-moon'], mult: 1.5 }, effects: [{ k: 'dmg', n: 83 }] }),
@@ -299,12 +346,12 @@ const KITS: Record<ClassId, Ability[]> = {
     // the blade in the dark (the owner's friend: "typical dk and a shadow rogue"): hidden until it strikes, from behind
     a({ id: 'g-veil', cls: 'gloamknight', name: 'Shroud of Dusk', text: 'Slip into the dark: hidden from your enemies until you strike or are struck, a little slower on your feet. Out of a fight it is back in 3 seconds. In one, it shakes off roots and slows, nothing breaks it for 3 seconds, and it is 30 seconds coming back. With it on your bar you start a match hidden.', icon: 'vanish_puff_of_smoke_on_violet', color: '#8a6ac8', school: 'physical', role: 'stealth', aim: 'self', range: 0, cast: 0, cd: 30, mana: 0, free: true, quiet: true, effects: [{ k: 'break' }, { k: 'veil' }] }),
     a({ id: 'g-ambush', cls: 'gloamknight', name: 'Dusk Ambush', text: 'Only from the shroud: come out of the dark on them, 42 and stunned for 1.5 seconds.', icon: 'blackout_eye_on_violet', color: '#b48cff', school: 'physical', role: 'cc', aim: 'enemy', range: MELEE, cast: 0, cd: 0, mana: 0, veiled: true, combo: { name: 'Out of Nowhere', text: 'Against a target stumbling from your Shade Walk: 50% harder.', ab: ['g-walk'], mult: 1.5 }, effects: [{ k: 'dmg', n: 42 }, { k: 'cc', cc: 'stun', dur: 1.5 }] }),
-    a({ id: 'g-knife', cls: 'gloamknight', name: 'Nightknife', text: 'A short blade where the plate is thin.', icon: 'heart_pierced_by_a_dagger_on_black', color: '#d8c8ff', school: 'physical', role: 'damage', aim: 'enemy', range: MELEE, cast: 0, cd: 0, mana: 0, combo: { name: 'Unseen Edge', text: 'From behind, or against a target stunned by your Dusk Ambush: 70% harder.', ab: ['g-ambush'], behind: true, mult: 1.7 }, effects: [{ k: 'dmg', n: 31 }] }),
+    a({ id: 'g-knife', cls: 'gloamknight', name: 'Nightknife', text: 'A short blade where the plate is thin.', icon: 'heart_pierced_by_a_dagger_on_black', color: '#d8c8ff', school: 'physical', role: 'damage', aim: 'enemy', range: MELEE, cast: 0, cd: 0, mana: 0, combo: { name: 'Unseen Edge', text: 'From behind, or against a target stunned by your Dusk Ambush: 70% harder.', ab: ['g-ambush'], behind: true, mult: 1.7 }, effects: [{ k: 'dmg', n: 36 }] }),
     a({ id: 'g-walk', cls: 'gloamknight', name: 'Shade Walk', text: 'Step through the dark and out of it at an enemy’s back, free of roots and slows, and they stumble: slowed by 30% for 2 seconds. It doesn’t bring you out of the shroud.', icon: 'shadow_clone_of_two_figures_on_black', color: '#7a52b0', school: 'physical', role: 'mobility', aim: 'enemy', range: MID, cast: 0, cd: 15, mana: 0, free: true, quiet: true, effects: [{ k: 'break' }, { k: 'behind' }, { k: 'slow', pct: 30, dur: 2 }] }),
   ],
 };
 
-export const ABILITIES: Record<string, Ability> = Object.fromEntries([...Object.values(KITS).flat(), ...Object.values(SUPERS), DASH, SIGIL].map((x) => [x.id, x]));
+export const ABILITIES: Record<string, Ability> = Object.fromEntries([...Object.values(KITS).flat(), ...Object.values(SUPERS), ...Object.values(SUPERS2), DASH, CHARM, SIGIL].map((x) => [x.id, x]));
 export const kitOf = (cls: ClassId): Ability[] => KITS[cls];
 
 /**
@@ -323,16 +370,26 @@ export const BODY: Record<ClassId, { hp: number; mana: number }> = {
 };
 
 /** Ready-made bars: what a hero brings before their player changes anything, and what the computer plays. */
-export const PRESETS: Record<ClassId, { id: string; name: string; bar: string[]; talents: string[] }[]> = {
-  warrior: [{ id: 'arms', name: 'Reaper', bar: ['w-hew', 'w-gash', 'w-rush', 'w-hurl'], talents: ['w-1b', 'w-2c', 'w-3c'] }, { id: 'pin', name: 'Hound', bar: ['w-hew', 'w-bleed', 'w-hamstring', 'w-rush'], talents: ['w-1a', 'w-2a', 'w-3a'] }],
-  mage: [{ id: 'fire', name: 'Pyre', bar: ['m-lash', 'm-burn', 'm-pyre', 'm-blink'], talents: ['m-1a', 'm-2c', 'm-3b'] }, { id: 'frost', name: 'Rime', bar: ['m-spear', 'm-steal', 'm-ring', 'm-chill'], talents: ['m-1c', 'm-2a', 'm-3a'] }],
-  ranger: [{ id: 'sniper', name: 'Longbow', bar: ['r-swift', 'r-aimed', 'r-venom', 'r-hawk'], talents: ['r-1b', 'r-2a', 'r-3a'] }, { id: 'trapper', name: 'Trapper', bar: ['r-swift', 'r-hobble', 'r-wind', 'r-trap'], talents: ['r-1a', 'r-2b', 'r-3b'] }],
-  priest: [{ id: 'healer', name: 'Lifegiver', bar: ['p-mend', 'p-renew', 'p-ward', 'p-lance'], talents: ['p-1c', 'p-2c', 'p-3b'] }, { id: 'shadow', name: 'Curse-speaker', bar: ['p-smite', 'p-curse', 'p-lance', 'p-wail'], talents: ['p-1a', 'p-2b', 'p-3c'] }],
-  paladin: [{ id: 'holy', name: 'Oathkeeper', bar: ['d-flash', 'd-hands', 'd-hammer', 'd-judge'], talents: ['d-1b', 'd-2b', 'd-3a'] }, { id: 'ret', name: 'Zealot', bar: ['d-blow', 'd-judge', 'd-wrath', 'd-hammer'], talents: ['d-1a', 'd-2c', 'd-3c'] }],
-  warlock: [{ id: 'curses', name: 'Hexer', bar: ['k-agony', 'k-wither', 'k-unstable', 'k-dread'], talents: ['k-1b', 'k-2a', 'k-3c'] }, { id: 'grave', name: 'Gravecaller', bar: ['k-bolt', 'k-raise', 'k-frenzy', 'k-agony'], talents: ['k-1a', 'k-2c', 'k-3a'] }],
-  druid: [{ id: 'heal', name: 'Grovekeeper', bar: ['l-regrow', 'l-rejuv', 'l-bloom', 'l-moon'], talents: ['l-1a', 'l-2b', 'l-3a'] }, { id: 'star', name: 'Starseer', bar: ['l-lash', 'l-moon', 'l-gale', 'l-roots'], talents: ['l-1b', 'l-2a', 'l-3b'] }],
-  gloamknight: [{ id: 'reaver', name: 'Bloodsworn', bar: ['g-cleave', 'g-reap', 'g-lunge', 'g-hand'], talents: ['g-1c', 'g-2b', 'g-3b'] }, { id: 'shadow', name: 'Nightblade', bar: ['g-veil', 'g-ambush', 'g-knife', 'g-walk'], talents: ['g-1b', 'g-2c', 'g-3c'] }],
+export const PRESETS: Record<ClassId, { id: string; name: string; bar: string[]; talents: string[]; ult: string }[]> = {
+  warrior: [{ id: 'arms', name: 'Reaper', bar: ['w-hew', 'w-gash', 'w-rush', 'w-hurl'], talents: ['w-1b', 'w-2c', 'w-3c'], ult: 'w-super' }, { id: 'pin', name: 'Hound', bar: ['w-hew', 'w-bleed', 'w-hamstring', 'w-rush'], talents: ['w-1a', 'w-2a', 'w-3a'], ult: 'w-super2' }],
+  mage: [{ id: 'fire', name: 'Pyre', bar: ['m-lash', 'm-burn', 'm-pyre', 'm-blink'], talents: ['m-1a', 'm-2c', 'm-3b'], ult: 'm-super' }, { id: 'frost', name: 'Rime', bar: ['m-spear', 'm-steal', 'm-ring', 'm-chill'], talents: ['m-1c', 'm-2a', 'm-3a'], ult: 'm-super2' }],
+  ranger: [{ id: 'sniper', name: 'Longbow', bar: ['r-swift', 'r-aimed', 'r-venom', 'r-hawk'], talents: ['r-1b', 'r-2a', 'r-3a'], ult: 'r-super' }, { id: 'trapper', name: 'Trapper', bar: ['r-swift', 'r-hobble', 'r-wind', 'r-trap'], talents: ['r-1a', 'r-2b', 'r-3b'], ult: 'r-super2' }],
+  priest: [{ id: 'healer', name: 'Lifegiver', bar: ['p-mend', 'p-renew', 'p-ward', 'p-lance'], talents: ['p-1c', 'p-2c', 'p-3b'], ult: 'p-super' }, { id: 'shadow', name: 'Curse-speaker', bar: ['p-smite', 'p-curse', 'p-lance', 'p-wail'], talents: ['p-1a', 'p-2b', 'p-3c'], ult: 'p-super2' }],
+  paladin: [{ id: 'holy', name: 'Oathkeeper', bar: ['d-flash', 'd-hands', 'd-hammer', 'd-judge'], talents: ['d-1b', 'd-2b', 'd-3a'], ult: 'd-super2' }, { id: 'ret', name: 'Zealot', bar: ['d-blow', 'd-judge', 'd-wrath', 'd-hammer'], talents: ['d-1a', 'd-2c', 'd-3c'], ult: 'd-super' }],
+  warlock: [{ id: 'curses', name: 'Hexer', bar: ['k-agony', 'k-wither', 'k-unstable', 'k-dread'], talents: ['k-1b', 'k-2a', 'k-3c'], ult: 'k-super' }, { id: 'grave', name: 'Gravecaller', bar: ['k-bolt', 'k-raise', 'k-frenzy', 'k-agony'], talents: ['k-1a', 'k-2c', 'k-3a'], ult: 'k-super2' }],
+  druid: [{ id: 'heal', name: 'Grovekeeper', bar: ['l-regrow', 'l-rejuv', 'l-bloom', 'l-moon'], talents: ['l-1a', 'l-2b', 'l-3a'], ult: 'l-super2' }, { id: 'star', name: 'Starseer', bar: ['l-lash', 'l-moon', 'l-gale', 'l-roots'], talents: ['l-1b', 'l-2a', 'l-3b'], ult: 'l-super' }],
+  gloamknight: [{ id: 'reaver', name: 'Bloodsworn', bar: ['g-cleave', 'g-reap', 'g-lunge', 'g-hand'], talents: ['g-1c', 'g-2b', 'g-3b'], ult: 'g-super' }, { id: 'shadow', name: 'Nightblade', bar: ['g-veil', 'g-ambush', 'g-knife', 'g-walk'], talents: ['g-1b', 'g-2c', 'g-3c'], ult: 'g-super2' }],
 };
+
+/**
+ * The super that goes with a bar, when its setup hasn't picked one (a setup kept from before there were two, a
+ * computer's, a test's): the one of whichever ready-made setup shares most of its abilities, the first on a tie.
+ */
+export function ultFor(cls: ClassId, bar: readonly string[]): string {
+  const [a, b] = PRESETS[cls];
+  const share = (p: { bar: string[] } | undefined): number => (p ? p.bar.filter((id) => bar.includes(id)).length : -1);
+  return (share(b) > share(a) ? b! : a!).ult;
+}
 
 /**
  * A bar as it can be fought with: only its class's own abilities (an id from an older game, or one taken out since, is
@@ -368,8 +425,8 @@ export interface BarCombo {
  * leaving its mark on the target or by holding them the way the combo needs. A setup shows these, so its player knows
  * what to press after what.
  */
-export function barCombos(cls: ClassId, bar: readonly string[]): BarCombo[] {
-  const have = [...bar.map((id) => ABILITIES[id]).filter((x): x is Ability => !!x), SUPERS[cls]];
+export function barCombos(cls: ClassId, bar: readonly string[], ult?: string): BarCombo[] {
+  const have = [...bar.map((id) => ABILITIES[id]).filter((x): x is Ability => !!x), ultOf(cls, ult ?? ultFor(cls, bar))];
   const out: BarCombo[] = [];
   for (const to of have) {
     const c = to.combo;
@@ -389,7 +446,7 @@ export interface AbilityCombos {
 }
 
 export function combosOf(cls: ClassId, ab: Ability): AbilityCombos {
-  const all = [...KITS[cls], SUPERS[cls]];
+  const all = [...KITS[cls], ...ultsOf(cls)];
   return {
     lands: ab.combo ? { name: ab.combo.name, text: ab.combo.text, after: all.filter((x) => setsUpCombo(x, ab)) } : null,
     setsUp: all.filter((y) => setsUpCombo(ab, y)).map((y) => ({ name: y.combo!.name, text: y.combo!.text, then: y })),
@@ -422,4 +479,4 @@ export const OATHS: Oath[] = [
 ];
 
 /** Every icon The Ring shows, for the icon build. */
-export const ringIcons = (): string[] => [DASH.icon, SIGIL.icon, ...Object.values(SUPERS).map((x) => x.icon), ...Object.values(KITS).flat().map((x) => x.icon), ...OATHS.map((o) => o.icon)];
+export const ringIcons = (): string[] => [DASH.icon, CHARM.icon, SIGIL.icon, ...Object.values(SUPERS).map((x) => x.icon), ...Object.values(SUPERS2).map((x) => x.icon), ...Object.values(KITS).flat().map((x) => x.icon), ...OATHS.map((o) => o.icon)];

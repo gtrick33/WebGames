@@ -1,4 +1,4 @@
-import { ABILITIES, DASH, superOf, type Ability } from './abilities';
+import { ABILITIES, CHARM, DASH, type Ability } from './abilities';
 import { ARENA_H, ARENA_W } from './maps';
 import { BASE_SPEED, HERO_R, RANGED, type Fighter, type Match, type MoveInput, type Zone } from './sim';
 import { armored, brace, chainHealer, focusBias, fumble, guard, holdSuper, knows, lapse, lateKick, nextLook, peel, SHARP_FROM } from './tactics';
@@ -86,6 +86,8 @@ export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: numb
   const hero = target.pet ? (enemies.find((e) => e.id === m.masterOf(target).id) ?? enemies[0]!) : target;
   f.target = hero.id;
 
+  // held, with the charm that breaks it: spent when the hold matters
+  breakFree(m, f, b, skill, enemies);
   // in the shroud: nothing that would bring them out of it but the blow it was taken for
   if (m.hidden(f) && !m.held(f)) {
     f.target = hero.id;
@@ -370,8 +372,13 @@ function attack(m: Match, f: Fighter, b: Brain, skill: number, target: Fighter):
 
 /** The super, when it's full: on a kill, on a crowd, or to save a friend. */
 function unleash(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[], target: Fighter, friends: Fighter[]): void {
-  const sup = superOf(f.cls);
+  const sup = m.extras(f)[1]!;
   if (f.charge < 1 || b.rand() > 0.35 + skill * 0.65) return;
+  // (one that calls up the dead, or works on its user alone: once the fight is close)
+  if (sup.aim === 'self') {
+    if (Math.hypot(target.x - f.x, target.y - f.y) < 150 && m.sees(f, target) && !m.blocked(f, sup)) m.press(f.id, sup.id);
+    return;
+  }
   if (sup.aim === 'friend') {
     const low = [...friends].sort((a, c) => hpShare(a) - hpShare(c))[0];
     if (!low || hpShare(low) > 0.6) return;
@@ -461,6 +468,20 @@ function healSelf(m: Match, f: Fighter): void {
     f.friend = f.id;
     m.press(f.id, ab.id);
   }
+}
+
+/**
+ * The Unbinding Charm, when they carry it in the Swift Step's place: broken out of a hold that will last a while yet,
+ * when someone is on them or they are hurt (a sharp one waits for the hold worth breaking; a dull one wastes it, or
+ * forgets it).
+ */
+function breakFree(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[]): void {
+  const charm = m.extras(f)[0]!;
+  if (charm.id !== CHARM.id || m.blocked(f, charm)) return;
+  const hold = f.auras.find((a) => !!a.cc && a.cc !== 'silence' && a.harmful);
+  if (!hold || hold.t < 1 - skill * 0.4) return;
+  const danger = hpShare(f) < 0.6 || enemies.some((e) => e.target === f.id && Math.hypot(e.x - f.x, e.y - f.y) < 70);
+  if ((danger || skill < 0.4) && b.rand() < 0.25 + skill * 0.6) m.press(f.id, charm.id);
 }
 
 /* ------------------------------------------------------------------ the shroud */

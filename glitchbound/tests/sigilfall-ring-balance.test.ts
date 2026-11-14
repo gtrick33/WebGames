@@ -57,6 +57,26 @@
  *
  * The owner then asked for the Gravecaller to win fewer duels. What carried it there was the slow on its dead's claws
  * (without it: 37/40/38); at 10%, not 20%, it came to 61/52/47 53.
+ *
+ * Then holds stopped breaking on hurt (a daze still does), the mage's Frost Snare and Hoar Grip stopped wearing off with
+ * use, Shatter hit 15% harder, the Hexer's curses 5% harder, the Nightblade slipped back into the shroud by itself and
+ * its Nightknife hit 15% harder, and the Gravecaller's dead were softened (claws 9, Grave Hunger 45%), all as the owner
+ * asked. The same measure, after:
+ *
+ *   Rime        65/48/55 56   Hexer       67/48/42 52   Gravecaller 62/48/48 53   Nightblade  60/55/65 60
+ *   Bloodsworn  64/38/36 46   (the Bloodsworn, who fights at arm's length, lost most to fears and roots that hold)
+ *
+ * Then every ready-made setup got a super of its own, a class's second (abilities.ts SUPERS2) going to the setup the
+ * first didn't fit: Run Them Down (Hound), Winter's Grasp (Rime), Thicket of Snares (Trapper), Voidburst
+ * (Curse-speaker), Dawn's Covenant (Oathkeeper), Grave Legion (Gravecaller), Heart of the Grove (Grovekeeper) and
+ * Night's Ruin (Nightblade). The first measure had the Hound at 77/58/54 and the Grovekeeper at 27/74/75 (a whole side
+ * healed and guarded at once); both were brought down, and the Curse-speaker, who had leaned on Dawnward to live
+ * through a duel, was given the void's wrap. After:
+ *
+ *   Reaper      50/52/59 54   Hound     66/48/52 55   Pyre         56/44/43 48   Rime        56/43/48 49
+ *   Longbow     51/42/49 47   Trapper   55/45/43 48   Oathkeeper   18/59/61 46   Zealot      53/51/48 51
+ *   Lifegiver   15/61/48 41   Curse-sp. 48/50/51 50   Hexer        74/48/42 55   Gravecaller 63/42/44 50
+ *   Grovekeeper 23/58/57 46   Starseer  53/39/44 45   Bloodsworn   63/39/39 47   Nightblade  57/55/63 58
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';

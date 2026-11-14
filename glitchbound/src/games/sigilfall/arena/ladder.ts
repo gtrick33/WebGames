@@ -195,6 +195,10 @@ export interface RingSetup {
   bar: string[];
   oath: string;
   talents: string[];
+  /** What it carries beside the bar: the Swift Step (`dash`, or nothing said) or the Unbinding Charm (`charm`). */
+  step?: string;
+  /** Which of its class's two supers (abilities.ts ultsOf); nothing said: the one that goes with its bar (ultFor). */
+  ult?: string;
 }
 
 /** A class's saved set ups, and which is in hand. */
@@ -210,11 +214,13 @@ export interface RingSave {
   sets: Partial<Record<ClassId, ClassSets>>;
   /** What a fighter with no campaign hero behind them wears: Ring armor (arena/rewards.ts looks) and a Ring title. */
   plain?: { head?: string; chest?: string; title?: string };
+  /** The computer teammates chosen for each format's empty places (arena/teammates.ts reads them). */
+  mates?: Partial<Record<string, unknown[]>>;
 }
 
 const presetSetup = (cls: ClassId, i: number): RingSetup => {
   const p = PRESETS[cls][i % PRESETS[cls].length]!;
-  return { bar: [...p.bar], oath: 'iron', talents: [...p.talents] };
+  return { bar: [...p.bar], oath: 'iron', talents: [...p.talents], ult: p.ult };
 };
 
 /** A class's set ups: what the player has kept, or the ready-made ones to start from. */
@@ -237,7 +243,8 @@ export function readRing(): RingSave {
   try {
     const raw = JSON.parse(localStorage.getItem(RING_KEY) ?? 'null') as Partial<RingSave> | null;
     const plain = raw?.plain && typeof raw.plain === 'object' ? raw.plain : undefined;
-    return { standings: raw?.standings ?? {}, sets: raw?.sets ?? {}, ...(plain ? { plain } : {}) };
+    const mates = raw?.mates && typeof raw.mates === 'object' ? raw.mates : undefined;
+    return { standings: raw?.standings ?? {}, sets: raw?.sets ?? {}, ...(plain ? { plain } : {}), ...(mates ? { mates } : {}) };
   } catch {
     return { standings: {}, sets: {} };
   }
