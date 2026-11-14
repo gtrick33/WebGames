@@ -155,6 +155,8 @@ export interface RingSave {
   sets: Partial<Record<ClassId, ClassSets>>;
   /** What a fighter with no campaign hero behind them wears: Ring armor (arena/rewards.ts looks) and a Ring title. */
   plain?: { head?: string; chest?: string; title?: string };
+  /** The computer teammates chosen for each format's empty places (arena/teammates.ts reads them). */
+  mates?: Partial<Record<string, unknown[]>>;
 }
 
 const presetSetup = (cls: ClassId, i: number): RingSetup => {
@@ -182,7 +184,8 @@ export function readRing(): RingSave {
   try {
     const raw = JSON.parse(localStorage.getItem(RING_KEY) ?? 'null') as Partial<RingSave> | null;
     const plain = raw?.plain && typeof raw.plain === 'object' ? raw.plain : undefined;
-    return { standings: raw?.standings ?? {}, sets: raw?.sets ?? {}, ...(plain ? { plain } : {}) };
+    const mates = raw?.mates && typeof raw.mates === 'object' ? raw.mates : undefined;
+    return { standings: raw?.standings ?? {}, sets: raw?.sets ?? {}, ...(plain ? { plain } : {}), ...(mates ? { mates } : {}) };
   } catch {
     return { standings: {}, sets: {} };
   }

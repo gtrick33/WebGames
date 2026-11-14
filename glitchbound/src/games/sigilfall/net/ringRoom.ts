@@ -26,6 +26,11 @@ export interface Pick {
   ult?: string;
   /** Their rating in the room's format, when a search brought them (arena/queue.ts): what a win over them is worth. */
   rating?: number;
+  /**
+   * What the computer brings to this player's side for each place no person takes (arena/teammates.ts `choiceWord`:
+   * `priest-0`, or `random`), when they are the first on it.
+   */
+  mates?: string[];
 }
 
 export interface State extends RoomBase {
@@ -94,7 +99,8 @@ export function cleanPick(v: unknown): Pick | null {
   const rating = typeof p.rating === 'number' && Number.isFinite(p.rating) ? { rating: Math.max(0, Math.min(9999, Math.round(p.rating))) } : {};
   const step = p.step === 'dash' || p.step === 'charm' ? { step: p.step } : {};
   const ult = typeof p.ult === 'string' && ID.test(p.ult) ? { ult: p.ult } : {};
-  return { team: p.team, cls: p.cls, bar: p.bar as string[], oath: p.oath, talents, ...step, ...ult, ...rating };
+  const mates = Array.isArray(p.mates) && p.mates.length <= 2 && p.mates.every((b) => typeof b === 'string' && ID.test(b)) ? { mates: p.mates as string[] } : {};
+  return { team: p.team, cls: p.cls, bar: p.bar as string[], oath: p.oath, talents, ...step, ...ult, ...rating, ...mates };
 }
 
 export function act(s: State, key: string, a: Action, now: number): string | null {
