@@ -569,7 +569,7 @@ const FOES: Record<string, EnemyDef> = {
     scale: 1.2,
     named: true,
     resist: { poison: 0.6, shadow: 0.4 },
-    blurb: 'The Weeping Lord, who held his wood against his own king for three hundred years. The Crown has him at last.',
+    blurb: 'The Weeping Lord, who held his wood against the Hallow King for three hundred years. The Crown has him at last.',
   },
   'echo-of-ashkar': {
     id: 'echo-of-ashkar',

@@ -377,7 +377,7 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     talk: [
       { when: { quest: 'crownfall-one-hour', state: 'active' }, lines: ['She said you would come. The girl with the stars. She says I may have an hour.', 'I have had three hundred years of this, and not one hour. Not one. Bring me to them.'] },
       { when: { quest: 'crownfall-one-hour', state: 'taken' }, lines: ['Ysane says she waited. She says it was all right.', 'Break it. Tell the girl. I am ready to be let go.'] },
-      { lines: ['I went north for the star. For the fever. I was back by morning. I was back by morning.', 'Who are you? You are not one of mine. You have no grief I can find.'] },
+      { lines: ['I rode for the physicians. I was back by morning. I sat between their beds all winter, and it was not enough.', 'Who are you? You are not one of mine. You have no grief I can find.'] },
     ],
   },
   'echo-of-ysane-whole': {
@@ -395,7 +395,7 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     name: 'Lark and Edda',
     title: 'The prince and princess',
     sprite: 'villager',
-    talk: [{ lines: ['Papa’s going to get a star! A real one! He promised!', 'Are you a knight? You don’t look like a knight. You look like you walked a long way.'] }],
+    talk: [{ lines: ['Papa’s riding to the border to meet the other king! He promised to bring us something!', 'Are you a knight? You don’t look like a knight. You look like you walked a long way.'] }],
   },
   'vaelmoor-baker': {
     id: 'vaelmoor-baker',
@@ -409,7 +409,7 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     name: 'A crier of Vaelmoor',
     title: 'A memory',
     sprite: 'villager',
-    talk: [{ lines: ['A star has fallen in the north! The King rides at dawn to see it!', 'They say it is warm to touch. They say it can mend anything.'] }],
+    talk: [{ lines: ['The King rides to the border at dawn, to meet the King of Aster!', 'They say the two crowns will be shown side by side, the way they were forged.'] }],
   },
   'quartermaster-holt': {
     id: 'quartermaster-holt',

@@ -27,18 +27,12 @@ About 105 discrepancies were found. The clear ones are fixed; four need the owne
 - **Names:** Grimtusk is a boar. Haldor's grandson is Robin (Pip Tanner is someone else). Hale's sister is Ada
   (Brin is Lastlight's lamp-keeper), and Marit is Hale's niece, as the Bible says.
 
-## Open: the owner's call
+## The owner's calls (decided 2026-11-14: "do as you recommend")
 
-1. **The night Vaelmoor died.** The Weeping Woods, Ysane's echo and Vaelor's last words say the King rode north to
-   fetch a fallen star for the fever and came back too late. The Tides, Thorns and Glimmerwood visions (and the
-   Bible) say he sat up all night between their beds and broke his crown when they died. The crier in the Crown's
-   memory also announces a star falling in Vaelor's time, while the first vision dates the star to a thousand years
-   earlier. One version has to go; the Bible's (the bedside) is the one the visions already tell.
-2. **Elyra in Act V.** She now stays at Lastlight until the Last March, so "I could feel it from here" and "Orren
-   wrote" hold, and Hollowmere's reward has you bring her the Tides. If she should travel with the hero in Act V
-   instead, those lines change.
-3. **Halvard's side.** He is called a warden of Aster in the Weeping Woods, but "held this hall against his own king"
-   in Duskspire.
-4. **Retired lands** (Greyfen, Saltmarsh, Ironpeak, Duskfen, Sablewind, Stormwatch, Bonefields, Blightwood, Vinecoil,
-   Grimward, the Sunken Reaches) still contradict the live story in places (where the Tides and Stone sigils were,
-   who opened the harbor). Nobody plays them; they would need the same pass if they come back.
+1. **The night Vaelmoor died: the bedside.** The visions and the Bible stand. Lark's Hollow is the night the fever
+   came to the lodge: Vaelor rode for the physicians, was back by morning, and sat between their beds all winter;
+   the children ran out into the snow looking for him. The crier in the Crown's summer memory announces the King
+   riding to the border to meet the King of Aster, not a falling star (the star fell a thousand years before).
+2. **Elyra in Act V stays at Lastlight** until the Last March (as already set): "I could feel it from here" holds.
+3. **Halvard was Aster's warden.** He held his wood against the Hallow King, not "his own king".
+4. **Retired lands are left as they are.** Nobody plays them; they need the same pass if they come back.

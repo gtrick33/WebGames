@@ -1390,7 +1390,7 @@ export const STORY_SCENES: SceneDef[] = [
       { fx: 'summon', at: 'wardens-rest', color: '#b48cff', size: 34 },
       { sfx: 'soul' },
       { wait: 0.8 },
-      { say: 'cael', line: 'Lord Halvard’s company. They held this hall against their own king, and they’re still holding it. Still at their posts.' },
+      { say: 'cael', line: 'Lord Halvard’s company. They held this hall against the Hallow King, and they’re still holding it. Still at their posts.' },
       { say: 'cael', line: 'Look at their eyes. The violet’s getting in. Three hundred years on watch, and it’s getting in.' },
       { look: 'hero' },
     ],

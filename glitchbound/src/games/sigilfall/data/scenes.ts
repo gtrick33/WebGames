@@ -291,7 +291,7 @@ export const SCENES: SceneDef[] = [
       // (nobody comes. She goes down in the snow where she stands)
       { zoom: 'close' },
       { act: 'echo-of-ysane', does: 'kneel', hold: true },
-      { say: 'echo-of-ysane', line: 'He went to get the star. For the fever. He promised.' },
+      { say: 'echo-of-ysane', line: 'He rode for the physicians. He promised he would be back by morning.' },
       { zoom: 'auto' },
       { look: 'hollow-wood' },
       { say: 'orren-in-vaelmoor', line: 'She has said that every night for three hundred years. They are still out there. Go and bring them home.' },
@@ -391,7 +391,7 @@ export const SCENES: SceneDef[] = [
     steps: [
       { look: 'memory-square' },
       { act: 'vaelmoor-herald-boy', does: 'wave' },
-      { say: 'vaelmoor-herald-boy', line: 'A star has fallen in the north! The King rides at dawn to see it!' },
+      { say: 'vaelmoor-herald-boy', line: 'The King rides to the border at dawn, to meet the King of Aster!' },
       { look: 'echo-of-ysane-whole' },
       { say: 'echo-of-ysane-whole', line: 'Lark, leave the cake alone. Your father will be home by supper.' },
       { look: 'vaelor-remembered' },
@@ -703,7 +703,7 @@ export const SCENES: SceneDef[] = [
     steps: [
       { look: 'echo-child' },
       { title: 'Two Names in the Snow' },
-      { say: 'echo-child', line: 'Is it Papa? Papa, did you get the star? Mama says you went to get the star.' },
+      { say: 'echo-child', line: 'Is it Papa? Papa, did you bring the doctors? Mama says you went to get the doctors.' },
       { look: 'hero' },
     ],
   },

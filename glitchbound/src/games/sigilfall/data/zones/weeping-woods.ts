@@ -115,7 +115,7 @@ export const WEEPING_WOODS = wildRegion(
         landmark: { style: 'temple', w: 5, h: 4, name: 'The Drowned Bell Chapel' },
         chest: 'common',
       },
-      // Lark's Hollow: Queen Ysane's lodge, frozen in the night Vaelmoor died
+      // Lark's Hollow: Queen Ysane's lodge, frozen in the night the fever came
       // the specters keep the hollow until the hero is sent into it; then it is still, frozen in its hour
       { at: [0.62, 0.42], r: 9, kind: 'ruin', level: 49, packs: [['weeping-specter', 'weeping-specter'], ['mourning-willow', 'weeping-specter']], spot: { id: 'larks-hollow', name: 'Lark’s Hollow' }, landmark: { style: 'hall', w: 5, h: 4, name: 'The Queen’s Lodge' }, when: until('the-wardens-rest') },
       // the wolfhounds' barrow north of town, and the Lord's empty grave

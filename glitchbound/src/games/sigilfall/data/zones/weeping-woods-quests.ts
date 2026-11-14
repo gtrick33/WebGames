@@ -48,7 +48,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     name: 'Lark’s Hollow',
     giver: 'orren-in-vaelmoor',
     auto: true,
-    text: 'The path from the Wardens’ Rest goes east to Lark’s Hollow: a royal lodge and its hamlet in a fold of the wood, frosted over, with its bonfire burning and not burning, exactly as it was on the night Vaelmoor died. Orren will not go in alone. He says it is because of the dead. It is because of the bonfire.',
+    text: 'The path from the Wardens’ Rest goes east to Lark’s Hollow: a royal lodge and its hamlet in a fold of the wood, frosted over, with its bonfire burning and not burning, exactly as it was on the night the fever came to the lodge. Orren will not go in alone. He says it is because of the dead. It is because of the bonfire.',
     objective: { kind: 'explore', spot: 'larks-hollow', label: 'Go into Lark’s Hollow with Orren' },
     after: ['the-wardens-rest'],
     zone: 'weeping-woods',
@@ -60,7 +60,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     name: 'Two Names in the Snow',
     giver: 'orren-in-vaelmoor',
     auto: true,
-    text: 'The echo at the door is Queen Ysane, Vaelor’s wife, three hundred years dead, calling her children in. They are out in the frozen wood: two small grey shapes running from tree to tree, looking for their father, who went north to the fallen star that night and did not come back in time. The memory has been stuck at its worst moment for three centuries, and the wood’s grief has come to feed on it. Find the children and bring them home to her door.',
+    text: 'The echo at the door is Queen Ysane, Vaelor’s wife, three hundred years dead, calling her children in. They are out in the frozen wood: two small grey shapes running from tree to tree, looking for their father, who rode out for the physicians the night the fever came. The memory has been stuck at its worst moment for three centuries, and the wood’s grief has come to feed on it. Find the children and bring them home to her door.',
     objective: { kind: 'event', event: 'wood-the-children', label: 'Lead the queen’s children home through the frozen wood' },
     after: ['the-frozen-hamlet'],
     zone: 'weeping-woods',
@@ -68,7 +68,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     reward: {
       xp: 2600,
       gold: 640,
-      text: 'At the door Ysane kneels and holds them, and the frost goes out of the hollow all at once. “He went to get the star,” she tells you, as if you had asked. “For the fever. He said he would be back by morning. Tell him we waited. Tell him we waited and it was all right.” Then she is gone, and the bonfire is only ash. Orren sits down in the snow and doesn’t say anything for a long time.',
+      text: 'At the door Ysane kneels and holds them, and the frost goes out of the hollow all at once. “He rode for the physicians,” she tells you, as if you had asked. “He was back by morning, and he sat between our beds all winter. Tell him we know he tried. Tell him it was all right.” Then she is gone, and the bonfire is only ash. Orren sits down in the snow and doesn’t say anything for a long time.',
     },
   },
   {
@@ -181,7 +181,7 @@ export const WEEPING_WOODS_NPCS: Record<string, NpcDef> = {
     title: 'An echo',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'wood-the-children', state: 'done' }, lines: ['He went to get the star. For the fever. He said he would be back by morning.', 'Tell him we waited. Tell him it was all right.'] },
+      { when: { quest: 'wood-the-children', state: 'done' }, lines: ['He rode for the physicians. He was back by morning, and he sat between our beds all winter.', 'Tell him we know he tried. Tell him it was all right.'] },
       { lines: ['Lark! Edda! Come in now, it’s snowing. Your father will be home soon.', 'Have you seen my children? Two of them. This high. They went out to find their father.'] },
     ],
   },
@@ -293,7 +293,7 @@ export const WEEPING_WOODS_EVENTS: Record<string, StoryEventDef> = {
     rescue: { pets: ['echo-child', 'echo-child'], at: 'hollow-wood', to: 'hollow-door' },
     banner: 'An echo',
     start: [
-      { who: 'echo-child', text: 'Is it Papa? Papa, did you get the star? Mama says you went to get the star.' },
+      { who: 'echo-child', text: 'Is it Papa? Papa, did you bring the doctors? Mama says you went to get the doctors.' },
       { who: 'orren', text: 'They can’t hear you. Not really. Just walk, and they’ll follow the light. That’s what they’re looking for.' },
     ],
     waves: [
