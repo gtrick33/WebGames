@@ -11187,6 +11187,31 @@ html.rb-touch-playing textarea {
   filter: grayscale(0.6);
   cursor: not-allowed;
 }
+/* a class still to be bought: a padlock on its picture, and "In the shop" where its difficulty would be */
+.rb-vlobby-class.is-locked,
+.rb-rp-class.is-locked {
+  position: relative;
+  opacity: 1;
+  filter: none;
+}
+.rb-vlobby-class.is-locked > img,
+.rb-vlobby-class.is-locked > span,
+.rb-rp-class.is-locked > img {
+  opacity: 0.5;
+  filter: grayscale(0.6);
+}
+.rb-ring-padlock {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 11px;
+  height: 13px;
+  color: #ffd257;
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.8));
+}
+.rb-ringvl-tag.is-shop {
+  color: #ffd257;
+}
 
 
 /* ---------------------------------------------------------------- touch: a clear middle
@@ -12230,6 +12255,41 @@ html.rb-touch-playing textarea {
   }
   .rb-ringvl .rb-vlobby-doll {
     height: min(calc(100% - 66px), 380px);
+  }
+}
+
+/* the Ring on a phone on its side: the classes one column of picture and name, not a block of pictures without names
+   (the plan the owner took up: "phone lobby: class names") */
+@container (max-height: 430px) {
+  .rb-ringvl .rb-vlobby-hero {
+    grid-template-columns: 112px minmax(96px, 0.7fr) minmax(0, 1.5fr);
+  }
+  .rb-ringvl .rb-vlobby-classes {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .rb-ringvl .rb-vlobby-class {
+    aspect-ratio: auto;
+    justify-content: flex-start;
+    gap: 5px;
+    padding: 2px 5px;
+  }
+  .rb-ringvl .rb-vlobby-class img {
+    width: 22px;
+    max-width: 22px;
+    flex: none;
+  }
+  .rb-ringvl .rb-vlobby-class span {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 10.5px;
+    line-height: 1.1;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .rb-ringvl .rb-vlobby-class span small {
+    display: none;
   }
 }
 

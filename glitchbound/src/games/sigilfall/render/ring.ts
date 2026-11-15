@@ -65,7 +65,17 @@ interface Pop {
   word?: boolean;
   /** How far up the screen it starts, when the one it is about wears effect pictures over the bar. */
   lift?: number;
+  /** A number's fighter, kind and sum, so that hits close together are added into one (RingFx MERGE_T). */
+  of?: number;
+  kind?: string;
+  n?: number;
 }
+
+/**
+ * Numbers on one fighter of one kind within this long of each other are one number (a burst of ticks and blows read
+ * as a single sum, not a spray: the plan's "merged damage numbers"). A critical hit stands on its own.
+ */
+export const MERGE_T = 0.35;
 
 /**
  * The effects drawn over a fighter's bar: those that run out and belong to an ability with a picture, one picture to
@@ -82,6 +92,21 @@ export function worn(f: Pick<Fighter, 'auras'>): Fighter['auras'] {
   return out;
 }
 const wears = (f: Fighter): boolean => worn(f).length > 0;
+
+/** How many pictures stand over one fighter at most. */
+export const OVERHEAD_MAX = 3;
+
+/**
+ * What of it stands over a fighter's head, where the fight is (the plan the owner took up: "over heads: only holds and
+ * your own effects; everything else on the nameplates"): any hold on them, whoever's, then what the player put on them,
+ * longest-held first, three at most. Nothing is hidden: every effect is still on the fighter's nameplate (RingMatch
+ * Frame). With no player (a replay, a test), the holds alone.
+ */
+export function overhead(f: Pick<Fighter, 'auras'>, myId: number | null): Fighter['auras'] {
+  const holds = worn(f).filter((a) => !!a.cc);
+  const mine = myId === null ? [] : worn(f).filter((a) => !a.cc && a.src === myId);
+  return [...holds.sort((a, b) => b.t - a.t), ...mine.sort((a, b) => b.t - a.t)].slice(0, OVERHEAD_MAX);
+}
 
 /** What an ability sounds like as it leaves the hand, and as it lands, by its school. */
 const LEAVES: Record<string, string> = { physical: 'swing', fire: 'fireball', frost: 'freeze', arcane: 'bolt', holy: 'holy', shadow: 'shadow', nature: 'nature' };
@@ -144,11 +169,19 @@ export class RingFx {
       if (e.k === 'num') {
         const f = m.fighters[e.id];
         if (!f) continue;
-        this.spread = (this.spread + 1) % 5;
-        const x = f.x + (this.spread - 2) * 7;
-        // (over the effect pictures when they wear any, so a wound that ticks each second doesn't hide its own timer)
-        const lift = wears(f) ? 16 : 0;
-        this.pops.push({ x, y: f.y - 30, lift, t: 0, text: e.kind === 'dmg' ? `${e.n}` : e.kind === 'heal' ? `+${e.n}` : `(${e.n})`, color: e.kind === 'dmg' ? (e.crit ? '#ffd257' : '#fff6e0') : e.kind === 'heal' ? '#7fe06a' : '#9fdcff', big: e.crit || e.n > 120 });
+        const say = (n: number): string => (e.kind === 'dmg' ? `${n}` : e.kind === 'heal' ? `+${n}` : `(${n})`);
+        const near = e.crit ? undefined : this.pops.find((p) => p.of === f.id && p.kind === e.kind && p.t < MERGE_T && p.color !== '#ffd257');
+        if (near) {
+          near.n = (near.n ?? 0) + e.n;
+          near.text = say(near.n);
+          near.big = near.big || near.n > 120;
+        } else {
+          this.spread = (this.spread + 1) % 5;
+          const x = f.x + (this.spread - 2) * 7;
+          // (over the effect pictures when they wear any, so a wound that ticks each second doesn't hide its own timer)
+          const lift = wears(f) ? 16 : 0;
+          this.pops.push({ x, y: f.y - 30, lift, t: 0, text: say(e.n), color: e.kind === 'dmg' ? (e.crit ? '#ffd257' : '#fff6e0') : e.kind === 'heal' ? '#7fe06a' : '#9fdcff', big: e.crit || e.n > 120, of: f.id, kind: e.kind, n: e.n });
+        }
         if (e.kind === 'dmg' && e.id === myId) sound('hurt', e.crit ? 0.7 : 0.45);
       } else if (e.k === 'word') {
         const f = m.fighters[e.id];
@@ -616,8 +649,9 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
   // what's on them, over the bar: each effect as its own spell's picture, edged red for harm and green for help, with
   // the seconds it has left written on it. (They were plain squares of the spell's color, darkening as they wore
   // off: the owner, "the debuffs are just squares and i dont understand anything from them ... make the square with
-  // the spells icon image and add a 7s 6s timer on it".)
-  const shown = f.pet ? [] : worn(f).slice(0, 5);
+  // the spells icon image and add a 7s 6s timer on it".) Only the holds and the player's own, three at most: the rest
+  // are on the nameplates (overhead).
+  const shown = f.pet ? [] : overhead(f, myId);
   const pip = 10.6;
   const gap = 1.4;
   let px = f.x - (shown.length * (pip + gap) - gap) / 2;

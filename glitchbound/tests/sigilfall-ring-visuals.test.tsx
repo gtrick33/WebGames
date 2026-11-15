@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { PRESETS } from '../src/games/sigilfall/arena/abilities';
 import { GATES, Match, type FighterSetup, type MatchEvent } from '../src/games/sigilfall/arena/sim';
 import type { ClassId } from '../src/games/sigilfall/data/types';
-import { comboWord, RingFx } from '../src/games/sigilfall/render/ring';
+import { comboWord, MERGE_T, RingFx } from '../src/games/sigilfall/render/ring';
 import { hasKit, kitOf } from '../src/games/sigilfall/render3d/kits';
 import { THRALL_BLOWS, THRALL_RUN, THRALL_SPRITE, thrallPose } from '../src/games/sigilfall/render3d/thrall';
 
@@ -60,6 +60,21 @@ describe('The Ring: no momentum pop-up', () => {
     const match = read('src/games/sigilfall/ui/RingMatch.tsx');
     expect(match).not.toMatch(/rb-ring-momentum|\.streak|MOMENTUM_/);
     expect(CSS).not.toMatch(/rb-ring-momentum|rb-momentum-in/);
+  });
+
+  it('numbers close together on one fighter are added into one; a critical hit stands on its own', () => {
+    const m = new Match({ seed: 1, map: 'sands', fighters: [fighter(0, 'warlock'), fighter(1, 'warrior')] });
+    const fx = new RingFx();
+    m.events.push({ k: 'num', id: 1, n: 30, kind: 'dmg', crit: false }, { k: 'num', id: 1, n: 12, kind: 'dmg', crit: false }, { k: 'num', id: 1, n: 20, kind: 'heal', crit: false });
+    fx.take(m, () => {}, 0);
+    m.events = [{ k: 'num', id: 1, n: 8, kind: 'dmg', crit: false }, { k: 'num', id: 1, n: 90, kind: 'dmg', crit: true }];
+    fx.take(m, () => {}, 0);
+    expect(fx.pops.map((p) => p.text)).toEqual(['50', '+20', '90']);
+    // (later than MERGE_T: a new one)
+    for (const p of fx.pops) p.t = MERGE_T + 0.01;
+    m.events = [{ k: 'num', id: 1, n: 5, kind: 'dmg', crit: false }];
+    fx.take(m, () => {}, 0);
+    expect(fx.pops.at(-1)!.text).toBe('5');
   });
 
   it('a combo is called out by its name alone, without the chain the rules count onto it', () => {

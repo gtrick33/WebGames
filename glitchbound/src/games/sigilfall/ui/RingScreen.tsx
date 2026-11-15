@@ -100,8 +100,10 @@ function ClassRow({ pick, onPick, lobby }: { pick: ClassId; onPick: (c: ClassId)
             <img src={classEmblem(c)} alt="" draggable={false} />
             <span>
               {CLASSES[c].name}
-              <small className={`rb-ringvl-tag is-${CLASS_EASE[c]}`}>{EASE_WORD[CLASS_EASE[c]]}</small>
+              {/* (one still to be bought says so where it can be seen, not only in a pointer's tooltip a phone never shows) */}
+              {classOpen(c, me) ? <small className={`rb-ringvl-tag is-${CLASS_EASE[c]}`}>{EASE_WORD[CLASS_EASE[c]]}</small> : <small className="rb-ringvl-tag is-shop">In the shop</small>}
             </span>
+            {!classOpen(c, me) && <Padlock />}
           </button>
         ))}
       </div>
@@ -122,9 +124,20 @@ function ClassRow({ pick, onPick, lobby }: { pick: ClassId; onPick: (c: ClassId)
           onClick={() => classOpen(c, me) && onPick(c)}
         >
           <img src={classEmblem(c)} alt="" draggable={false} />
+          {!classOpen(c, me) && <Padlock />}
         </button>
       ))}
     </div>
+  );
+}
+
+/** A small padlock over a class still to be bought. */
+function Padlock() {
+  return (
+    <svg className="rb-ring-padlock" viewBox="0 0 12 14" aria-hidden="true">
+      <path d="M3.2 6V4.2a2.8 2.8 0 0 1 5.6 0V6" fill="none" stroke="#ffd257" strokeWidth="1.6" />
+      <rect x="1.5" y="6" width="9" height="7" rx="1.4" fill="#ffd257" />
+    </svg>
   );
 }
 
