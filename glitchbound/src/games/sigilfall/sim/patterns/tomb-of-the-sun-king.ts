@@ -329,7 +329,7 @@ function tickSun(w: World, e: Enemy, s: Fight, dt: number): void {
     // everything the light touches burns: once a flare, the moment it is touched (a dodge's
     // instant passes; the blaze outlasts it)
     if (!sun.hit && !p.dead && sun.tels.some((t) => within(t, p.x, p.y, p.r))) {
-      if (hurtPlayer(w, e.dmg * sun.mul, { status: burn(e, 2) })) {
+      if (hurtPlayer(w, e.dmg * sun.mul, { status: burn(e, 2), source: e })) {
         sun.hit = true;
         w.text(p.x, p.y - 26, 'SUNBURNT!', '#ffb04d', true);
       }

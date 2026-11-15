@@ -53,6 +53,15 @@ export const BOSS_MARKS: Record<string, number> = {
   vaelor: 10,
 };
 
+/**
+ * The share of coin the road pays out against what it used to: coins from foes and chests, the purse a foe leaves in
+ * place of a piece of gear, the gold a quest pays, what a piece melts down or sells for, and a potion a full belt has no
+ * room for. The owner (2026-11-15): "gold currently is meaningless, either drop way less, or adjust prices, i say drop
+ * less, ive got 50k gold and i have no idea what to use them for". What things cost stays as it was (the vendors'
+ * gear, the quartermaster, potions, a respec), so a purchase is a choice again.
+ */
+export const GOLD_FIND = 0.25;
+
 /** The quartermaster's prices, by rarity. */
 export const QM_PRICE = { epic: { marks: 6, gold: 400 }, legendary: { marks: 16, gold: 1200 } } as const;
 

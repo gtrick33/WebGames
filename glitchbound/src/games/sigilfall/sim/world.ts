@@ -3,7 +3,7 @@ import { RIFT_CAP_UNFINISHED } from '../data/wardens';
 import { SYNC_BELOW } from '../data/keystones';
 import { dist, dist2, rng, TAU } from '../core/math';
 import { BOSSES } from '../data/bosses';
-import { CLASSES, MAX_LEVEL, xpToNext } from '../data/classes';
+import { CLASSES, hardening, HERO_DAMAGE, heroDamage, MAX_LEVEL, xpToNext } from '../data/classes';
 import { ELITE_AFFIXES, ENEMIES, enemyScale } from '../data/enemies';
 import { ITEM_DEFS, ITEMS } from '../data/items';
 import { KEY_DEATH, keyLevelFor, KEY_MIN, keyCache, keyLoot, keyMarks, keyParFor, keyScale, keyUpgrade, type KeyAffix } from '../data/keystones';
@@ -13,7 +13,7 @@ import { SPEC_LEVEL } from '../data/talents';
 import { REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { isRetired } from '../data/retired';
 import { THEMES } from '../data/themes';
-import { BOSS_MARKS } from '../data/vendors';
+import { BOSS_MARKS, GOLD_FIND } from '../data/vendors';
 import type { ClassId, EliteAffix, Encounter, Item, Objective, QuestDef, RegionDef, RegionId, SkillSpec, SlotKey, StatusId } from '../data/types';
 import { ACTION_SLOTS, SKILL_SLOTS } from '../data/types';
 import type { Marker, RegionStateDef, StoryCond } from '../data/types';
@@ -35,7 +35,7 @@ import { refreshPets, summonPet, updatePets } from './pets';
 import { spawnFolk, updateFolk, type Folk } from './folk';
 import { herdOf, letOut, updateCritters, type Critter } from './critters';
 import { updateCasting, updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
-import { healPlayer, hurtPlayer, playerSlow, playerStunned, tickPlayerStatuses } from './combat';
+import { blowFloor, healPlayer, hurtPlayer, playerSlow, playerStunned, tickPlayerStatuses } from './combat';
 import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type PlacedMarker, type TileMap } from './map';
 import type { Chest, CoopSide, Drop, Enemy, Field, FloatText, Fx, Ghost, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent, Callout } from './types';
 import { inCone, inLine } from '../core/math';
@@ -195,6 +195,39 @@ export const SUMMON_TIME = 0.6;
 const WILD = { hp: 1.8, dmg: 1.15, xp: 0.5 };
 
 /**
+ * How hard foes hit, on top of their level, the difficulty and the measures below. The owner (2026-11-15): "all the
+ * different bosses' abilities don't really matter whether they hit you or not, we want this to matter ... the beam
+ * spell he did hurt me for around 10% of my health, we want every boss, every mob to feel challenging and intimidating
+ * with huge damage spike". A boss does everything it does through its patterns, each one shown before it lands, so a
+ * boss's blows are the kind a player can step out of: they are raised the most, and each takes at least its floor of the
+ * hero's own health however well they are dressed (sim/combat.ts BLOW_FLOOR: a third or more for a heavy one), so two in
+ * a row can end the fight. What wears a hero down instead stays as it was: its
+ * barrages (a fan of spears, a ring of orbs: many shots to weave through), the ground it leaves burning or poisoned,
+ * and the burns and poisons its blows leave on the hero (spawnProjectile, spawnField, wearing). Raised with the rest,
+ * those were what the play-bot fell to dozens of times over, a chip at a time, not a blow it could have stepped out of.
+ * The rank and file hit harder too, and the blows they wind up for (a caster's circle, a brute's slam, a swell about to
+ * burst, sim/ai.ts) harder still; but not those standing in a boss's room, whose threat is the boss.
+ */
+export const BOSS_DAMAGE = 1.5;
+export const MOB_DAMAGE = 1.5;
+/**
+ * A boss's health against the hero's blows (HERO_DAMAGE): every hero hits half as hard as they did, and a boss, with
+ * everything in its room, has half the health it had, so its fight lasts as long as it always did. What changed is how
+ * much its blows hurt. Not longer as well: what a fight takes out of a hero is how hard the boss hits times how long it
+ * lasts, and a boss's own clock (leeches that drink while they cling, adds that come every so often, a ward to break in
+ * time) was set against fights of this length. The play-bot that walked every dungeon fell dozens of times in each with
+ * both raised at once.
+ */
+export const BOSS_HEALTH = HERO_DAMAGE;
+/**
+ * The three at a foe's level, as far into the harder game as it is (data/classes.ts hardening). A boss's blows grow to
+ * all of BOSS_DAMAGE more slowly, by level 30: the first dungeons' bosses already hit a hero hard for their health.
+ */
+export const bossDamage = (level: number): number => 1 + (BOSS_DAMAGE - 1) * Math.max(0, Math.min(1, (level - 4) / 26));
+export const mobDamage = (level: number): number => 1 + (MOB_DAMAGE - 1) * hardening(level);
+export const bossHealth = (level: number): number => 1 - (1 - BOSS_HEALTH) * hardening(level);
+
+/**
  * The campaign is meant to be hard: a fight can be lost, and done again from the last checkpoint. The first levels
  * (the night Briarhollow burns, the first wood) stay as they were, to learn in; from level 4 foes grow tougher, to
  * 30% more health and 40% more damage by level 7 (bosses 40% and 45%). Heroic, Mythic and Riftstone runs, hard by
@@ -276,6 +309,8 @@ export class World {
   shout: Callout | null = null;
   fx: Fx[] = [];
   encounters: EncounterState[] = [];
+  /** The boss whose turn it is, while its patterns run (sim/ai.ts): what it shoots is a barrage, not a blow (spawnProjectile). */
+  bossActing: Enemy | null = null;
   delayed: { t: number; fn: () => void }[] = [];
   /** How far a boss fight has the room under water (0 dry, 1 flooded): the Drowned Priestess's flood, drawn as a sea-green wash. */
   flooded = 0;
@@ -849,6 +884,20 @@ export class World {
     return keyScale(k.key, k.heroLevel).dmg * (k.affixes.includes(boss ? 'tyrannical' : 'fortified') ? 1.15 : 1);
   }
 
+  /** A boss's BOSS_DAMAGE at its level: a Riftstone run keeps its own measure (its clocks were set against it). */
+  bossBoost(level: number): number {
+    return this.keyRun ? 1 : bossDamage(level);
+  }
+
+  /**
+   * A Riftstone run keeps its own measure: every hero hits half as hard as they did (HERO_DAMAGE), so everything in the
+   * run has health to match, and its clocks (data/keystones.ts KEY_PARS, set against the old blows) still hold. Its foes
+   * hit as they did, too: the harder blows are the campaign's.
+   */
+  private keyHealth(): number {
+    return heroDamage(this.hero.level);
+  }
+
   /** Creates an enemy (scaled to its level, the difficulty tier and rift modifiers). */
   addEnemy(id: string, x: number, y: number, level: number, o: { elite?: boolean; room: number; pack: number; spawn?: boolean; post?: boolean }): Enemy {
     const def = ENEMIES[id] ?? ENEMIES['moss-slime']!;
@@ -866,7 +915,11 @@ export class World {
     const wild = o.pack >= 0 && !!this.region.holds;
     const ch = this.keyRun || this.tier > 0 ? NO_CHALLENGE : challenge(level, false);
     const deep = this.keyRun || this.tier > 0 ? NO_CHALLENGE : depth(this.region);
-    const hp = Math.round(def.hp * sc.hp * this.hpMul(false) * ch.hp * deep.hp * (o.elite ? 3.2 : 1) * (wild ? WILD.hp : 1));
+    // (whatever stands in a boss's room, its guards, what it calls up and the things its fight is fought over, stands as
+    // long against the hero's blows as the boss does: a fight's own clock, adds to kill before they reach the boss or a
+    // ward to break in time, was set against the hero's old blows)
+    const bossRoom = o.room >= 0 && !!this.encounters[o.room]?.def.boss;
+    const hp = Math.round(def.hp * sc.hp * this.hpMul(false) * ch.hp * deep.hp * (o.elite ? 3.2 : 1) * (wild ? WILD.hp : 1) * (this.keyRun ? this.keyHealth() : bossRoom ? bossHealth(level) : 1));
     const e: Enemy = {
       id: this.nextId++,
       def,
@@ -878,7 +931,7 @@ export class World {
       r: def.radius * (def.scale ?? 1) * (o.elite ? 1.25 : 1),
       hp,
       maxHp: hp,
-      dmg: def.dmg * sc.dmg * this.dmgMul(false) * ch.dmg * deep.dmg * (o.elite ? 1.35 : 1) * (wild ? WILD.dmg : 1),
+      dmg: def.dmg * sc.dmg * this.dmgMul(false) * ch.dmg * deep.dmg * (o.elite ? 1.35 : 1) * (wild ? WILD.dmg : 1) * (bossRoom || this.keyRun ? 1 : mobDamage(level)),
       speedMul: hasted * (elite.includes('frenzied') ? 1.35 : 1),
       atkMul: hasted * (elite.includes('frenzied') ? 1.4 : 1),
       shield: elite.includes('shielded') ? hp * 0.4 : 0,
@@ -937,12 +990,12 @@ export class World {
     const sc = enemyScale(level);
     const bch = this.keyRun || this.tier > 0 ? NO_CHALLENGE : challenge(level, true);
     const deep = this.keyRun || this.tier > 0 ? NO_CHALLENGE : depth(this.region);
-    const hp = Math.round(def.hp * sc.hp * this.hpMul(true) * bch.hp * deep.hp);
+    const hp = Math.round(def.hp * sc.hp * this.hpMul(true) * bch.hp * deep.hp * (this.keyRun ? this.keyHealth() : bossHealth(level)));
     const e = this.addEnemy('skeleton', x, y, level, { room, pack: -1 });
     e.def = { ...ENEMIES.skeleton!, id: def.id, name: def.name, sprite: def.sprite, radius: def.radius, mass: 99, resist: {}, armor: 0, xp: def.xp, gold: def.gold, scale: 1 };
     e.r = def.radius;
     e.hp = e.maxHp = hp;
-    e.dmg = def.dmg * sc.dmg * this.dmgMul(true) * bch.dmg * deep.dmg;
+    e.dmg = def.dmg * sc.dmg * this.dmgMul(true) * bch.dmg * deep.dmg * this.bossBoost(level);
     e.name = def.name;
     e.scale = 1;
     e.state = 'chase';
@@ -1093,7 +1146,20 @@ export class World {
     this.slowAt = at;
   }
   after(t: number, fn: () => void): void {
-    this.delayed.push({ t, fn });
+    // (what a boss's pattern leaves to happen a moment later, a pool where its bile lands, is still that boss's doing:
+    // it is run as the boss's turn, bossActing, whenever it comes)
+    const by = this.bossActing;
+    this.delayed.push({ t, fn: by ? () => this.asBoss(by, fn) : fn });
+  }
+  /** Runs `fn` as the boss's turn (bossActing), as sim/ai.ts runs its patterns. */
+  asBoss(by: Enemy, fn: () => void): void {
+    const was = this.bossActing;
+    this.bossActing = by;
+    try {
+      fn();
+    } finally {
+      this.bossActing = was;
+    }
   }
   text(x: number, y: number, text: string, color: string, big: boolean): void {
     // words said again while they are still rising from the same place aren't laid over themselves (a boss's shell
@@ -1123,11 +1189,17 @@ export class World {
   }
   spawnProjectile(p: Partial<Projectile> & Pick<Projectile, 'x' | 'y' | 'vx' | 'vy' | 'r' | 'life' | 'dmg' | 'type' | 'spec' | 'depth' | 'pierce' | 'bounce' | 'hit' | 'look' | 'color' | 'child' | 'knock'>): void {
     if (this.projectiles.length > 260) return;
+    // (a boss's barrage, many shots to weave through, hurts shot for shot as it did: BOSS_DAMAGE is for its blows)
+    const by = this.bossActing;
+    if (p.hostile && by) p = { ...p, dmg: p.dmg / this.bossBoost(by.level), ...(p.status ? { status: this.wearing(p.status) } : {}) };
     this.projectiles.push({ id: this.nextId++, hostile: false, splitDone: false, trailT: 0, homing: 0, age: 0, wide: false, dead: false, ...p });
   }
   /** Lays a field on the ground and returns it (a pattern may grow it or take it away). */
   spawnField(f: Omit<Field, 'id' | 't' | 'tickT'>): Field {
     if (this.fields.length > 200) this.fields.shift();
+    // (the ground a boss leaves burning or poisoned wears a hero down as it did: BOSS_DAMAGE is for its blows)
+    const by = this.bossActing;
+    if (f.hostile && by) f = { ...f, dmg: f.dmg / this.bossBoost(by.level), ...(f.status ? { status: this.wearing(f.status) } : {}) };
     const field: Field = { ...f, id: this.nextId++, t: f.dur, tickT: f.hostile ? 0.25 : 0 };
     this.fields.push(field);
     return field;
@@ -1141,9 +1213,23 @@ export class World {
   }
   /** Shows an attack on the ground and returns it. */
   addTelegraph(t: Omit<Telegraph, 'id' | 't' | 'dead'>): Telegraph {
+    // (a boss's blow lands at its full weight, and at least its floor of the hero's health, sim/combat.ts BLOW_FLOOR; the
+    // burn or poison it leaves on the hero wears them down as it did)
+    const by = this.bossActing;
+    if (by && t.status) t = { ...t, status: this.wearing(t.status) };
+    if (by && !this.keyRun && t.dmg > 0 && t.floor === undefined) t = { ...t, floor: blowFloor(t.dmg, by.dmg) };
     const tg: Telegraph = { ...t, id: this.nextId++, t: 0, dead: false };
     this.telegraphs.push(tg);
     return tg;
+  }
+  /**
+   * Damage over time a boss lays on the hero, taken back to what it was before BOSS_DAMAGE: the owner asked for blows
+   * that matter, and burning, poison and bleeding that grew with them were what the play-bot fell to again and again,
+   * a tick at a time, not a blow it could have stepped out of. Other statuses (a chill, a stun) are left as they are.
+   */
+  private wearing(st: { status: StatusId; dur: number; power: number }): { status: StatusId; dur: number; power: number } {
+    const by = this.bossActing;
+    return by && (st.status === 'burn' || st.status === 'poison' || st.status === 'bleed') ? { ...st, power: st.power / this.bossBoost(by.level) } : st;
   }
   spawnWave(x: number, y: number, speed: number, max: number, width: number, dmg: number): void {
     this.waves.push({ id: this.nextId++, x, y, r: 8, speed, max, width, dmg, hitPlayer: false, dead: false });
@@ -1660,7 +1746,7 @@ export class World {
         }
       if (t.tone !== 'player' && !t.remote && t.dmg > 0 && (t.kind ?? 'danger') === 'danger' && !p.dead && (t.t - dt < t.dur || t.linger > 0) && !t.dead) {
         if (inside(t, p.x, p.y, p.r)) {
-          if (hurtPlayer(this, t.dmg, { fromX: t.x, fromY: t.y, knock: t.knock, status: t.status, source: t.owner >= 0 ? this.enemyById(t.owner) : undefined })) t.dmg = 0;
+          if (hurtPlayer(this, t.dmg, { fromX: t.x, fromY: t.y, knock: t.knock, status: t.status, source: t.owner >= 0 ? this.enemyById(t.owner) : undefined, floor: t.floor ?? 0 })) t.dmg = 0;
         }
         if (t.t - dt < t.dur) {
           if (t.shape === 'circle' || t.shape === 'donut' || t.shape === 'ring') this.fxBurst(t.x, t.y, t.tone === 'rift' ? '#ff3fd2' : '#ff6a4d', 10, t.r * 0.6);
@@ -1809,7 +1895,7 @@ export class World {
         d.dead = true;
         // a full belt takes it as its price in coin
         if (h.potions >= potionCap(h)) {
-          const g = potionPrice(h.level);
+          const g = Math.max(1, Math.round(potionPrice(h.level) * GOLD_FIND));
           h.gold += g;
           this.run.gold += g;
           this.sfx('coin', 0.6);
@@ -2020,7 +2106,7 @@ export class World {
     this.sfx('victory');
     const tier = TIERS[this.tier]!;
     this.giveXp(def.xp * enemyScale(e.level).xp * tier.xp);
-    this.dropGold(e.x, e.y, Math.round((def.gold[0] + this.rand() * (def.gold[1] - def.gold[0])) * (1 + 0.2 * (e.level - 1))));
+    this.dropGold(e.x, e.y, Math.round((def.gold[0] + this.rand() * (def.gold[1] - def.gold[0])) * (1 + 0.2 * (e.level - 1)) * GOLD_FIND));
     const cls = h.cls as ClassId;
     const il = this.keyRun ? keyLoot(this.keyRun.key, this.keyRun.heroLevel) : e.level;
     if (first) {

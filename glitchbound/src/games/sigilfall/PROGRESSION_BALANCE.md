@@ -277,3 +277,46 @@ falls the dungeon tests allow.
 
 A first cut that started the growth at level 10 (5% and 4% at Gallows Keep) broke the bot's mage in the Deepforge
 Halls and then in the Cistern: the early dungeons have no room to give, which is why they got the smallest step.
+
+## Part 6 — A harder game (2026-11-15)
+
+The owner, at level 34: "with my 34 mage i managed to complete the tomb of the sun king without wasting a single
+potion, none of the bosses' abilities mattered if it hit me, im nuking all the smaller mobs almost with one shot". And:
+"scale down the dmg for every class ... we want every boss, every mob to feel challenging and intimidating with huge
+damage spike".
+
+Measured first, with the play-bot through every dungeon (four classes, the level the test plays, the gear a player has
+by then): it cleared all but one dungeon without a fall, its median lowest health in a run was 42%, and the biggest
+blow it took averaged a fifth of its health (14 to 22% in the Tomb of the Sun King). A level 34 mage in blue gear
+cleared a pack of three Sunscorch mummies (13,900 health) in 1.2 seconds. The owner's own mage had 1,360 health at
+34, more than a full set of epics gives (1,082): gear bought with gold the road paid too much of.
+
+What changed:
+
+| | Before | Now |
+| --- | --- | --- |
+| Every hero's blows (`data/classes.ts` HERO_DAMAGE) | ×1 | ×0.5 from level 14 (×1 at level 4, growing between); every class and every kind of blow alike, so the classes and trees stand as they did. The ultimate is measured against it and fills as fast as it did. |
+| A boss's health, and everything in its room (`sim/world.ts` BOSS_HEALTH) | ×1 | ×0.5: its fight lasts as long as it did. A boss's own clock (leeches that drink, adds that come, a ward to break) was set against fights of that length. |
+| A boss's blows (BOSS_DAMAGE) | ×1 | ×1.5 by level 30 (×1 at level 4) |
+| The least a boss's blow takes (`sim/combat.ts` BLOW_FLOOR) | none | a quarter of the hero's health for each time over the boss's damage it hits (a cleave of 1.5: 37%; the Sun King's beam of 1.2: 30%), after armor, before walls and shields; never more than 60% |
+| A boss's barrages, the ground it leaves, the burns and poisons it lays | — | as they were: raised with the rest, they were what the bot died to dozens of times over, a chip at a time |
+| The rank and file (MOB_DAMAGE) | ×1 | ×1.5 from level 14; those in a boss's room ×1 |
+| The blows they wind up for (`sim/ai.ts` SPIKE: a caster's circle, a brute's slam, a charger's rush, a swell about to burst) | ×1 | ×1.8 on top |
+| Riftstone | — | its own measure: health to match the halved blows, the old damage (its clocks, KEY_PARS, were set against the old blows) |
+
+The same bot afterwards (14 dungeons × 8 classes, first seed): the biggest blow it took averages a third of its health
+(31 to 37% in the Tomb, the warrior and the paladin as much as the mage, where they took 9 to 14% before); its median
+lowest health is 28% (42%); runs that drank every potion went from 9 to 27. It clears every dungeon with every class
+inside the falls the dungeon tests allow, which are twelve now (six): its mage and druid fall in the last dungeons where
+a player would not (it walks out of its own long casts). Two dungeons only a Riftstone run reaches now (the Rotmother's
+Cistern and the Deepforge Halls) are still tested on Normal, in green gear.
+
+First tries that didn't hold: boss damage ×2.6 with the fight twice as long (the bot fell 44 times to the Sun King; the
+early dungeons could not be cleared at all); ×2.2 with fights a fifth longer (the Rot Mother's leeches drank faster than
+any hero could kill her; Duskspire's adds came without end). What a fight takes out of a hero is how hard it hits times
+how long it lasts, and a boss's mechanics are timed: the fights keep their length, and the blows carry the change.
+
+Gold (`data/vendors.ts` GOLD_FIND): the road pays a quarter of what it did: coins from foes and chests, the purse in place
+of a piece of gear, quest gold, what a piece melts down or sells for, and a potion a full belt has no room for. What
+things cost is unchanged (a vendor's gear is four times a piece's worth, the quartermaster, potions, a respec), so a
+purchase is a choice again.

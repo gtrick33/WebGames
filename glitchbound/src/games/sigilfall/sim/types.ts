@@ -373,6 +373,8 @@ export interface Telegraph {
   dur: number;
   dmg: number;
   status?: { status: StatusId; dur: number; power: number };
+  /** A boss's blow: the least share of the hero's health it takes when it lands (sim/combat.ts BLOW_FLOOR). */
+  floor?: number;
   knock: number;
   /** Visual: enemy attacks are red; the rift is magenta. */
   tone: 'enemy' | 'rift' | 'player';

@@ -3,6 +3,7 @@ import { hasStatus, hurtPlayer, tickStatuses } from './combat';
 import { hurtPet } from './pets';
 import { castRay, circleHitsWall, flowField, flowStep, lineOfSight, moveCircle, pushOut, TILE } from './map';
 import { updateBoss } from './boss';
+import { hardening } from '../data/classes';
 import type { StatusId } from '../data/types';
 import type { Enemy, Ghost, Pet } from './types';
 import type { World } from './world';
@@ -60,7 +61,7 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
     return;
   }
   if (e.boss) {
-    updateBoss(w, e, dt);
+    w.asBoss(e, () => updateBoss(w, e, dt));
     return;
   }
   // trolls and the like knit back together when left alone
@@ -262,7 +263,7 @@ export function updateEnemy(w: World, e: Enemy, dt: number): void {
       e.rushLeft -= step;
       if (!e.rushHit && !p.dead && dist(e.x, e.y, p.x, p.y) < e.r + p.r + 2) {
         e.rushHit = true;
-        hurtVictim(w, p, e.dmg * (e.def.ai === 'hopper' ? 1 : 1.25), { fromX: e.x, fromY: e.y, knock: 130, source: e });
+        hurtVictim(w, p, e.dmg * (e.def.ai === 'hopper' ? 1 : 1.25 * spike(w, e)), { fromX: e.x, fromY: e.y, knock: 130, source: e });
       }
       if (e.def.ai === 'charger' && (w.rand() < 0.5)) w.addFx({ kind: 'smoke', x: e.x, y: e.y + e.r * 0.6, life: 0.3, size: 3, color: '#b9a58a' });
       if (res.bx || res.by) {
@@ -404,6 +405,16 @@ function victimOf(w: World, e: Enemy): Victim {
   }
   return { x: pet.x, y: pet.y, r: pet.r, dead: false, pet };
 }
+
+/**
+ * The blows an enemy winds up for and marks before they land (a caster's circle on the ground, a brute's slam, a
+ * charger's rush, a swell about to burst) hit far harder than a plain swing or a shot: they are seen coming and can be
+ * stepped out of, and taking one should hurt (the owner, 2026-11-15: "every mob to feel challenging and intimidating
+ * with huge damage spike").
+ */
+export const SPIKE = 1.8;
+/** SPIKE at this foe's level, as far into the harder game as it is (data/classes.ts hardening); a Riftstone run keeps its own. */
+const spike = (w: World, e: Enemy): number => (w.keyRun ? 1 : 1 + (SPIKE - 1) * hardening(e.level));
 
 /** An enemy's blow lands on whoever it was after. */
 function hurtVictim(w: World, v: Victim, dmg: number, o: Parameters<typeof hurtPlayer>[2]): void {
@@ -557,7 +568,7 @@ function startWindup(w: World, e: Enemy): void {
   if (e.def.ai === 'caster' && (!e.def.shot || w.rand() < 0.55)) {
     // a circle on the ground where the player stands now
     const r = e.def.slam?.radius ?? 20;
-    w.addTelegraph({ shape: 'circle', x: p.x, y: p.y, r, r2: 0, angle: 0, len: 0, dur: e.def.windup / e.atkMul, dmg: e.dmg * 1.2, knock: 40, tone: e.def.id === 'rift-acolyte' ? 'rift' : 'enemy', owner: e.id, linger: 0 });
+    w.addTelegraph({ shape: 'circle', x: p.x, y: p.y, r, r2: 0, angle: 0, len: 0, dur: e.def.windup / e.atkMul, dmg: e.dmg * 1.2 * spike(w, e), knock: 40, tone: e.def.id === 'rift-acolyte' ? 'rift' : 'enemy', owner: e.id, linger: 0 });
     e.aimX = -1;
   } else if (e.def.ai === 'caster') e.aimX = -2;
   if (e.def.ai === 'charger') {
@@ -567,7 +578,7 @@ function startWindup(w: World, e: Enemy): void {
   if (e.def.ai === 'exploder') {
     // the swell: a circle that follows it and bursts when the wind-up ends
     const r = e.def.burst?.radius ?? 26;
-    w.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r, r2: 0, angle: 0, len: 0, dur: e.def.windup / e.atkMul, dmg: e.dmg * 2.2, knock: 140, tone: 'enemy', owner: e.id, linger: 0 });
+    w.addTelegraph({ shape: 'circle', x: e.x, y: e.y, r, r2: 0, angle: 0, len: 0, dur: e.def.windup / e.atkMul, dmg: e.dmg * 2.2 * spike(w, e), knock: 140, tone: 'enemy', owner: e.id, linger: 0 });
   }
   if (e.def.ai === 'diver') {
     // a swoop along a line marked on the ground
@@ -626,7 +637,7 @@ function act(w: World, e: Enemy): void {
       w.fxBurst(e.x, e.y + 4, '#a89070', 10, r);
       w.shake(2);
       w.sfx('slam', 0.6);
-      if (!p.dead && dist(e.x, e.y, p.x, p.y) <= r + p.r * 0.5) hurtVictim(w, p, e.dmg * 1.2, { fromX: e.x, fromY: e.y, knock: 120, source: e });
+      if (!p.dead && dist(e.x, e.y, p.x, p.y) <= r + p.r * 0.5) hurtVictim(w, p, e.dmg * 1.2 * spike(w, e), { fromX: e.x, fromY: e.y, knock: 120, source: e });
       // a slam also catches companions standing in it
       for (const pet of w.pets) if (!pet.dead && pet !== p.pet && dist(e.x, e.y, pet.x, pet.y) <= r + pet.r * 0.5) hurtPet(w, pet, e.dmg * 1.2);
       e.state = 'recover';

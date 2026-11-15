@@ -96,9 +96,13 @@ export function newWorld(region: RegionId, hero: Character, seed = 1, tier = 0, 
  */
 /**
  * How many falls a dungeon may cost and still count as cleared: the campaign is meant to be hard (sim/world.ts
- * challenge), and a player dies and goes again from the last checkpoint; what must hold is that it can be done.
+ * challenge), and a player dies and goes again from the last checkpoint; what must hold is that it can be done. Twelve
+ * since the owner asked for a game that is "hard af" (2026-11-15: "adjust your tests, we want a challenging game not a
+ * breezy one"): a boss's blow takes a third of a hero's health now, and this bot steps out of what it sees coming but
+ * plays a caster badly (it walks out of its own long casts), so its mage and druid fall in the last dungeons where a
+ * player would not. Before that change it cleared nearly every dungeon without a fall.
  */
-export const HARD_DEATHS = 6;
+export const HARD_DEATHS = 12;
 
 /**
  * The gear a player has on by a dungeon's level, on a hard campaign: what drops in the lands before it (blue past
