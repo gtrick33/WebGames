@@ -13,6 +13,9 @@
   isolation: isolate;
 }
 .tfx:not(.tfx-plain) {
+  /* (its letters are see-through, the light painted through them: a text-shadow handed down from where it stands, the
+     title screen's hero line, showed through them and turned the light dark. The lights make their own shadows) */
+  text-shadow: none;
   color: transparent;
   -webkit-text-fill-color: transparent;
   -webkit-background-clip: text;

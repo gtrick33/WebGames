@@ -122,6 +122,31 @@ describe('Sigilfall rankings: the server', () => {
   });
 });
 
+describe('Sigilfall rankings: studio and QA accounts', () => {
+  it('are listed with everyone, marked; a banned player is still left off', async () => {
+    const db = memoryD1();
+    const env: Env = { DB: db, NR_DB: {} as Env['NR_DB'], ADMIN_EMAILS: 'cy@example.com' };
+    const cookies: Record<string, string> = {};
+    for (const who of ['ana', 'ben', 'cy']) {
+      const s = await signIn(env, new Request(ORIGIN), { sub: `dev:${who}@example.com`, email: `${who}@example.com`, name: who, givenName: '', picture: '', provider: 'email' });
+      cookies[who] = s.cookie.split(';')[0]!;
+    }
+    const post = (who: string, entries: unknown) => postRanks({ request: new Request(`${ORIGIN}/api/sigilfall/ranks`, { method: 'POST', headers: { origin: ORIGIN, cookie: cookies[who]!, 'content-type': 'application/json' }, body: JSON.stringify({ entries }) }), env, params: {} });
+    const read = async (who: string) => (await (await getRanks({ request: new Request(`${ORIGIN}/api/sigilfall/ranks?board=ring:solo`, { headers: { origin: ORIGIN, cookie: cookies[who]! } }), env, params: {} })).json()) as Board;
+    await post('ana', [{ board: 'ring:solo', score: 1300 }]);
+    await post('ben', [{ board: 'ring:solo', score: 1200 }]);
+    await post('cy', [{ board: 'ring:solo', score: 1500 }]);
+    const seen = await read('ana');
+    expect(seen.rows.map((r) => [r.score, !!r.staff])).toEqual([
+      [1500, true],
+      [1300, false],
+      [1200, false],
+    ]);
+    db.sqlite.prepare("UPDATE users SET banned_at = 1 WHERE email = 'ben@example.com'").run();
+    expect((await read('cy')).rows.map((r) => r.score)).toEqual([1500, 1300]);
+  });
+});
+
 describe('Sigilfall rankings: what an account sends', () => {
   it('nothing, for an account that has done nothing', () => {
     expect(rankEntries(emptySave(), {}, 0)).toEqual([]);

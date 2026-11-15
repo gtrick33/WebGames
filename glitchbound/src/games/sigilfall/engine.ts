@@ -1145,18 +1145,24 @@ export class SigilEngine {
    * Sends this account's bests to the rankings (progress/ranks.ts), for a player who is signed in: at the title, where
    * every mode comes back to. Asked for again only when something has changed. A guest's bests stay on their device.
    */
-  reportRanks(): void {
-    if (!account.get().me || typeof fetch !== 'function') return;
+  reportRanks(): Promise<void> {
+    if (!account.get().me || typeof fetch !== 'function') return Promise.resolve();
     const fought = bestRating() > NEW_STANDING.best ? bestRating() : 0;
     const entries = rankEntries(this.save, readBests(), fought, bestByFormat());
     const sig = JSON.stringify(entries);
-    if (!entries.length || sig === this.ranksSent) return;
+    if (!entries.length || sig === this.ranksSent) return this.ranksGoing;
     this.ranksSent = sig;
-    void api('/api/sigilfall/ranks', { body: { entries } }).catch(() => {
-      // (offline, or signed out since: asked again next time)
-      this.ranksSent = '';
-    });
+    // (the rankings wait for this before they read the boards: RankScreen)
+    this.ranksGoing = api('/api/sigilfall/ranks', { body: { entries } }).then(
+      () => undefined,
+      () => {
+        // (offline, or signed out since: asked again next time)
+        this.ranksSent = '';
+      },
+    );
+    return this.ranksGoing;
   }
+  private ranksGoing: Promise<void> = Promise.resolve();
   private ranksSent = '';
 
   toTitle(): void {
@@ -1171,7 +1177,7 @@ export class SigilEngine {
     this.cards = [];
     this.tipQueue = [];
     this.setUi({ screen: 'title', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], levelUp: null, banner: null, teach: null, card: null });
-    this.reportRanks();
+    void this.reportRanks();
   }
 
   /* ------------------------------------------------------------- travel */

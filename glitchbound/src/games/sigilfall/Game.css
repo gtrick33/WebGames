@@ -6260,6 +6260,13 @@ html.rb-touch-playing textarea {
   font-size: clamp(12px, 1.9cqw, max(15px, 1.15cqw));
   text-shadow: 0 1px 2px #000, 0 0 8px #000;
 }
+/* (a title worn, in its light: held off the hall by a shadow that follows its letters, which a text-shadow can't) */
+.cs-place .tfx:not(.tfx-plain) {
+  text-shadow: none;
+}
+.cs-place {
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.95)) drop-shadow(0 0 4px rgb(0 0 0 / 0.75));
+}
 .cs-class {
   font: 800 clamp(15px, 2.7cqw, max(23px, 1.8cqw)) / 1.1 Georgia, 'Times New Roman', serif;
   letter-spacing: 0.02em;
@@ -11983,6 +11990,12 @@ html.rb-touch-playing textarea {
 /* (the Ring's three formats side by side, each its own board) */
 .rb-rank-cols.is-three {
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+.rb-rank-staff {
+  display: inline-block;
+  margin-left: 5px;
+  vertical-align: -2px;
+  color: #a79fb8;
 }
 .rb-rank-board {
   padding: 10px 12px;

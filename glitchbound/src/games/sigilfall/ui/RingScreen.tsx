@@ -382,6 +382,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     // (what the climb has earned: the best of all three formats counts, so a reward is given once)
     const bestWas = bestRating();
     commit((now) => ({ ...now, standings: { ...now.standings, [f]: out.next } }));
+    // (the new standing goes to the rankings now, not only when the title screen is next seen)
+    void engine.reportRanks();
     return { before: was.rating, after: out.next.rating, bestBefore: was.best, bestAfter: out.next.best, rankUp: out.rankUp, streak: out.next.streak, rewards: rewardsBetween(bestWas, bestRating()) };
   };
 
