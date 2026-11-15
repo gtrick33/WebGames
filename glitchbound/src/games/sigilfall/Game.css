@@ -12563,13 +12563,15 @@ html.rb-touch-playing textarea {
     animation: none;
   }
 }
-/* every part of a screen named at once: a word pinned over each (under one at the top of the screen) */
-.is-tut-label::after {
-  content: attr(data-tut-label);
+/* every part of a screen named at once: a word pinned on the top edge of each, on one layer over the game */
+.rb-tut-labels {
   position: absolute;
-  left: 50%;
-  bottom: calc(100% + 7px);
+  inset: 0;
   z-index: 45;
+  pointer-events: none;
+}
+.rb-tut-label {
+  position: absolute;
   padding: 2px 8px 3px;
   border: 1.5px solid #ffd257;
   border-radius: 999px;
@@ -12577,15 +12579,14 @@ html.rb-touch-playing textarea {
   font: 700 11.5px/1.25 Georgia, 'Times New Roman', serif;
   letter-spacing: 0.01em;
   white-space: nowrap;
-  text-transform: none;
   background: #ffe39a;
   box-shadow: 0 3px 10px rgb(0 0 0 / 0.45);
-  translate: -50% 0;
-  pointer-events: none;
 }
-.is-tut-label[data-tut-below]::after {
-  top: calc(100% + 7px);
-  bottom: auto;
+@container (max-height: 430px) {
+  .rb-tut-label {
+    padding: 1px 6px 2px;
+    font-size: 10.5px;
+  }
 }
 
 /* how a class fights and how easy it is to learn, under its name in the lobby */

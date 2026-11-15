@@ -32,6 +32,8 @@ export type SetupTab = 'abilities' | 'talents' | 'super';
 export interface TutLabel {
   spot: string;
   text: string;
+  /** Pinned at the right of its element's top edge, where that is the emptier end (the left by default). */
+  right?: boolean;
 }
 
 export interface LobbyStep {
@@ -59,8 +61,8 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
     labels: [
       { spot: 'classes', text: 'Your class' },
       { spot: 'formats', text: 'Your fight: a rating each' },
-      { spot: 'rank', text: 'Your rank: titles and armor' },
-      { spot: 'arena', text: 'Arena: Any is fine' },
+      { spot: 'rank', text: 'Your rank: titles and armor', right: true },
+      { spot: 'arena', text: 'Arena: Any is fine', right: true },
       { spot: 'loadout', text: 'What you bring: tap to read' },
     ],
     page: 'play',
@@ -75,8 +77,8 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
     labels: [
       { spot: 'bar', text: 'Your five and your super' },
       { spot: 'combos', text: 'Combos: the first sets up the second' },
-      { spot: 'tabs', text: 'Talents: one a row · Super: one of two' },
-      { spot: 'kit', text: 'Twelve of your own, and the trinket' },
+      { spot: 'tabs', text: 'Talents: one a row · Super: one of two', right: true },
+      { spot: 'kit', text: 'Twelve of your own, and the trinket', right: true },
       { spot: 'sets', text: 'Three setups, saved as you go' },
     ],
     page: 'setup',
