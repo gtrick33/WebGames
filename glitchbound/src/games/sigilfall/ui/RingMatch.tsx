@@ -13,7 +13,7 @@ import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
 import type { Character, Face } from '../progress/character';
 import { iconPicture } from '../render/art/gameIcons';
-import { drawRing, RingFx, ringLooks, ringSpells, type RingAim } from '../render/ring';
+import { BAR_TOP, drawRing, headHeight, RingFx, ringLooks, ringSpells, type RingAim } from '../render/ring';
 import { RingStage, ringMapOf } from '../render3d/ring3d';
 import { heroDollUrl, type WornLooks } from '../render/sprites';
 import { RingHelp, SetupEditor, timing } from './RingSetup';
@@ -22,7 +22,8 @@ import { Stick } from './Stick';
 import { autoPoint as pointFor, isOut, plainWhy } from './ringAim';
 import { actionOf, keyName, readKeys, saveKeys, type RingKeys } from './ringKeys';
 import { KeysDialog } from './RingKeysDialog';
-import { NameReel } from './NameReel';
+import { TitleFx } from '../../../components/TitleFx';
+import { classEmblem } from './classEmblem';
 import { Coach, useSpot } from './RingCoach';
 
 /** `skill`: how sharp the computer plays (arena/ladder.ts skillAt); `mates`, in solo: the player's own side's, when not the same. */
@@ -125,7 +126,7 @@ function AuraIcons({ f }: { f: Fighter }) {
 /** How far along a cast is (a channel runs down). */
 const castShare = (c: { t: number; dur: number; channel: boolean }): number => Math.max(0, Math.min(1, c.channel ? 1 - c.t / c.dur : c.t / c.dur));
 
-function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Match; me: Fighter | null; doll: string; tag: string | null; onPick: () => void; flip?: boolean; title?: TitleShown | null }) {
+function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Match; me: Fighter | null; doll: string; tag: string | null; onPick: () => void; flip?: boolean; title?: { text: string } | null }) {
   const hold = f.auras.find((a) => a.cc);
   const c = f.cast;
   const ab = c ? ABILITIES[c.ab] : null;
@@ -143,12 +144,13 @@ function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Ma
       }}
       onClick={onPick}
       aria-label={`${f.name}${title ? `, ${title.text}` : ''}, ${CLASSES[f.cls].name}, ${Math.round(share * 100)}% health`}>
-      <span className="rb-ring-face">
+      {/* (their class's emblem: the class at a glance, where two of the dolls' faces could be taken for each other) */}
+      <span className="rb-ring-face is-emblem">
         <img src={doll} alt="" draggable={false} />
       </span>
       <span className="rb-ring-bars">
         <span className="rb-ring-name">
-          <NameReel name={f.id === me?.id ? 'You' : f.name} title={title} />
+          <b>{f.id === me?.id ? 'You' : f.name}</b>
           {tag && <em>{tag}</em>}
         </span>
         <span className={`rb-ring-bar${share < 0.3 ? ' is-low' : ''}`}>
@@ -226,7 +228,7 @@ function AimCard({ label, f, note, bad, doll, kind }: { label: string; f: Fighte
       <small>{label}</small>
       {f ? (
         <span className="rb-ring-aim-who">
-          <span className="rb-ring-face is-small" style={{ ['--c' as string]: CLASSES[f.cls].colors.accent }}>
+          <span className="rb-ring-face is-small is-emblem" style={{ ['--c' as string]: CLASSES[f.cls].colors.accent }}>
             <img src={doll} alt="" draggable={false} />
           </span>
           <span>
@@ -312,7 +314,11 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const [tip, setTip] = useState<Ability | null>(null);
   const errAt = useRef(0);
   const stick = useRef<MoveInput>({ mx: 0, my: 0 });
-  const dolls = useMemo(() => ringLooks(m, { face, body, wear, worn }, myId).map((l) => heroDollUrl(l.look, 'down', 2, l.held)), [m, face, body, myId, wear, worn]);
+  // the titles over the fighters' heads (the owner: "the titles in the banner that are rolling up and down are cut off
+  // ... i was thinking of adding the titles above the hp bar on the actual characters with the respective shader"):
+  // the player's own, and each other one's from the match's setup (a person's, or a computer rival's rank)
+  const titles = useMemo(() => m.fighters.map((f) => (f.pet ? null : f.id === myId ? (title ?? null) : (setup.fighters[f.id]?.title ?? null))), [m, myId, title, setup]);
+  const titleEls = useRef<(HTMLSpanElement | null)[]>([]);
 
   const me = m.fighters[myId] ?? null;
   const touch = engine.touchMode;
@@ -766,7 +772,27 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       }
       view.frame(m, looks, myId, dt, time, (q) => ringSpells(q, m, fx, myId, time, view.air, (f) => view.bodyAt(f)));
       placeAim();
-      drawRing(m, fx, myId, time, view, aim);
+      // each title over its fighter's bar, in its own light, where the bar is drawn this frame; what's on them goes up
+      // over it to make room
+      const raise: number[] = [];
+      for (let i = 0; i < titleEls.current.length; i++) {
+        const el = titleEls.current[i];
+        const f = m.fighters[i];
+        if (!el) continue;
+        const viewer = m.fighters[myId];
+        if (!f || f.dead || (viewer && m.unseen(f, viewer))) {
+          el.style.visibility = 'hidden';
+          continue;
+        }
+        const h = headHeight(f, time);
+        const a = view.stage.project(f.x, f.y, h);
+        const b = view.stage.project(f.x + 10, f.y, h);
+        const s = Math.max(0.2, (b.x - a.x) / 10);
+        el.style.visibility = 'visible';
+        el.style.transform = `translate(${a.x.toFixed(1)}px, ${(a.y - (BAR_TOP + 1.2) * s).toFixed(1)}px) translate(-50%, -100%)`;
+        raise[i] = (el.offsetHeight + 1) / s;
+      }
+      drawRing(m, fx, myId, time, view, aim, (f) => raise[f.id] ?? 0);
     };
     const frame = (now: number): void => {
       raf = requestAnimationFrame(frame);
@@ -913,7 +939,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
 
   const teamOf = (t: 0 | 1): Fighter[] => m.heroes.filter((f) => f.team === t);
   // (one of the raised dead wears its master's face on a card)
-  const dollOf = (f: Fighter): string => dolls[m.masterOf(f).id] ?? '';
+  const dollOf = (f: Fighter): string => classEmblem(m.masterOf(f).cls);
   const mine = me?.team ?? 0;
   const left = teamOf(mine);
   const right = teamOf(mine === 0 ? 1 : 0);
@@ -949,11 +975,27 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       <div className={`rb-ring${touch ? ' is-touch' : ''}`}>
         <div className="rb-ring-stage">
           <canvas ref={canvasRef} className="rb-ring-canvas" />
+          <div className="rb-ring-titles" aria-hidden="true">
+            {titles.map(
+              (t, i) =>
+                t?.text && (
+                  <span
+                    key={i}
+                    ref={(el) => {
+                      titleEls.current[i] = el;
+                    }}
+                    className="rb-ring-overhead"
+                  >
+                    <TitleFx fx={t.fx}>{t.text}</TitleFx>
+                  </span>
+                ),
+            )}
+          </div>
           <div className="rb-ring-top">
             {/* (with the nameplates put away their places stay, empty, so the clock keeps to the middle) */}
             <div className="rb-ring-team" onPointerDown={(e) => nearestPlate(e, left, target)} data-tut="plates">
               {plates && left.map((f) => (
-                <Frame key={f.id} f={f} m={m} me={me} doll={dolls[f.id]!} title={f.id === myId ? (title ?? null) : null} tag={helps && f.id === friendId && m.phase === 'fight' ? 'Helping' : null} onPick={() => target(f.id)} />
+                <Frame key={f.id} f={f} m={m} me={me} doll={classEmblem(f.cls)} title={f.id === myId ? (title ?? null) : null} tag={helps && f.id === friendId && m.phase === 'fight' ? 'Helping' : null} onPick={() => target(f.id)} />
               ))}
             </div>
             {/* the middle, between the nameplates: the clock, the match's buttons (out of the corner, where a phone's own
@@ -1069,7 +1111,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
             </div>
             <div className="rb-ring-team is-foes" onPointerDown={(e) => nearestPlate(e, right, target)} data-tut="foes">
               {plates && right.map((f) => (
-                <Frame key={f.id} flip f={f} m={m} me={me} doll={dolls[f.id]!} tag={f === foeAlive ? 'Target' : null} onPick={() => target(f.id)} />
+                <Frame key={f.id} flip f={f} m={m} me={me} doll={classEmblem(f.cls)} title={titles[f.id] ?? null} tag={f === foeAlive ? 'Target' : null} onPick={() => target(f.id)} />
               ))}
             </div>
           </div>

@@ -118,6 +118,11 @@ export interface FighterSetup {
   /** The room seat playing them (null or missing: the computer, or the local player if `human`). */
   seat?: number | null;
   human?: boolean;
+  /**
+   * The title they wear, shown over their head in its light (ui/RingMatch.tsx): a player's own, or for one of the
+   * computer's rivals the rank of its rating. The rules never read it.
+   */
+  title?: { text: string; fx: string; before?: boolean };
 }
 
 export interface MatchSetup {

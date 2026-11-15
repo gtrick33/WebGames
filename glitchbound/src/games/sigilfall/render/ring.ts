@@ -386,14 +386,26 @@ function ring(g: Ctx, x: number, y: number, r: number, color: string, width = 1.
   g.stroke();
 }
 
-/** What is on a fighter: the rings at their feet, what's afoot on them, their bar and their cast. */
-function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: number, seeable: boolean, view: RingView): void {
+/**
+ * How high over the ground a fighter's head is drawn, and their bar over it: one of the raised dead stands lower, and
+ * one caught up in a gale is lifted, bobbing. (The match screen sets a fighter's title over the same spot: RingMatch.)
+ */
+export function headHeight(f: Fighter, time: number): number {
   const gale = f.auras.some((a) => a.ab === 'l-gale' && a.cc === 'incap');
-  const lift = gale ? 10 + Math.sin(time * 6) * 2 : 0;
+  return (f.pet ? HEAD * 0.8 : HEAD) + (gale ? 10 + Math.sin(time * 6) * 2 : 0);
+}
+/** How far over a fighter's head the top of their bar is, in the ground's own units (headHeight's spot, drawn up). */
+export const BAR_TOP = 6;
+
+/**
+ * What is on a fighter: the rings at their feet, what's afoot on them, their bar and their cast. `raise`: how much
+ * higher, in the ground's units, the pictures of what's on them go, to leave room for a title over the bar.
+ */
+function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: number, seeable: boolean, view: RingView, raise = 0): void {
   if (f.dead) return;
   // what's on them that's a word: `head` is their head's height on the screen, drawn as if on their own spot (one of
   // the raised dead stands lower, and carries a smaller bar and no pictures)
-  view.up(f.x, f.y, (f.pet ? HEAD * 0.8 : HEAD) + lift);
+  view.up(f.x, f.y, headHeight(f, time));
   const head = f.y;
   for (const a of f.auras) {
     if (a.cc === 'fear') {
@@ -415,7 +427,7 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
   }
   // a bar over the head, in their team's color
   const barW = f.pet ? 16 : 26;
-  const by = head - 6;
+  const by = head - BAR_TOP;
   g.fillStyle = 'rgba(6,2,14,0.85)';
   g.beginPath();
   g.roundRect(f.x - barW / 2 - 0.7, by - 0.7, barW + 1.4, 3.8, 1.2);
@@ -442,7 +454,7 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
   const pip = 10.6;
   const gap = 1.4;
   let px = f.x - (shown.length * (pip + gap) - gap) / 2;
-  const py = by - pip - 2.6;
+  const py = by - pip - 2.6 - raise;
   g.textAlign = 'center';
   g.lineJoin = 'round';
   for (const a of shown) {
@@ -958,7 +970,7 @@ export interface RingAim {
   y: number;
 }
 
-export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number, view: RingStage, aim: RingAim | null = null): void {
+export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number, view: RingStage, aim: RingAim | null = null, raiseOf: (f: Fighter) => number = () => 0): void {
   const me = myId === null ? null : (m.fighters[myId] ?? null);
   let g = view.groundLayer();
   if (m.phase === 'fight' && m.zone < ZONE_START - 0.01) gloamGround(g, m, view, time);
@@ -1021,7 +1033,7 @@ export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number
     else if (f.id === me?.friend && f.id !== myId) ring(g, f.x, f.y, 13, '#7fe06a', 1.6);
   }
   g = view.upperLayer();
-  for (const f of m.fighters) if (!me || !m.unseen(f, me)) markFighter(g, m, f, myId, time, !me || f === me || m.sees(me, f), view);
+  for (const f of m.fighters) if (!me || !m.unseen(f, me)) markFighter(g, m, f, myId, time, !me || f === me || m.sees(me, f), view, raiseOf(f));
   g.textAlign = 'center';
   for (const p of fx.pops) {
     const u = p.t / 0.9;

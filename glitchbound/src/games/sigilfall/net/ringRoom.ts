@@ -31,6 +31,29 @@ export interface Pick {
    * `priest-0`, or `random`), when they are the first on it.
    */
   mates?: string[];
+  /** The title they wear, shown over their head to everyone in the match: its words and its light (catalog/titleFx.ts). */
+  title?: { text: string; fx: string; before?: boolean };
+}
+
+/**
+ * A title as a room keeps it: its words without control or invisible characters, folded and cut to 40, and the id of
+ * its light. (The game itself checks the light against its own list when it draws it: this stays free of that list.)
+ */
+function cleanRoomTitle(v: unknown): Pick['title'] | null {
+  if (!v || typeof v !== 'object') return null;
+  const t = v as Record<string, unknown>;
+  if (typeof t.text !== 'string' || typeof t.fx !== 'string' || !ID.test(t.fx)) return null;
+  const text = [...t.text]
+    .filter((ch) => {
+      const c = ch.codePointAt(0)!;
+      return c >= 0x20 && !(c >= 0x7f && c <= 0x9f) && !(c >= 0x200b && c <= 0x200f) && !(c >= 0x2028 && c <= 0x202e) && !(c >= 0x2066 && c <= 0x2069);
+    })
+    .join('')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 40)
+    .trim();
+  return text ? { text, fx: t.fx, ...(typeof t.before === 'boolean' ? { before: t.before } : {}) } : null;
 }
 
 export interface State extends RoomBase {
@@ -100,7 +123,9 @@ export function cleanPick(v: unknown): Pick | null {
   const step = p.step === 'dash' || p.step === 'charm' ? { step: p.step } : {};
   const ult = typeof p.ult === 'string' && ID.test(p.ult) ? { ult: p.ult } : {};
   const mates = Array.isArray(p.mates) && p.mates.length <= 2 && p.mates.every((b) => typeof b === 'string' && ID.test(b)) ? { mates: p.mates as string[] } : {};
-  return { team: p.team, cls: p.cls, bar: p.bar as string[], oath: p.oath, talents, ...step, ...ult, ...rating, ...mates };
+  const t = cleanRoomTitle(p.title);
+  const title = t ? { title: t } : {};
+  return { team: p.team, cls: p.cls, bar: p.bar as string[], oath: p.oath, talents, ...step, ...ult, ...rating, ...mates, ...title };
 }
 
 export function act(s: State, key: string, a: Action, now: number): string | null {
