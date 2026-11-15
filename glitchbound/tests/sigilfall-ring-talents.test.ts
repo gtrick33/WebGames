@@ -4,7 +4,7 @@
  * and each does what it says in a match: one test a talent, by class.
  */
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, DASH, OATHS, PRESETS, type Ability, type CcKind } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, DASH, PRESETS, type Ability, type CcKind } from '../src/games/sigilfall/arena/abilities';
 import { lookOf } from '../src/games/sigilfall/arena/look';
 import { ARM, NEAR, TALENT_BY_ID, TALENTS, type Doing, type Talent } from '../src/games/sigilfall/arena/talents';
 import { GATES, HERO_R, Match, ORB_HEAL, type Fighter, type MoveInput } from '../src/games/sigilfall/arena/sim';
@@ -65,8 +65,10 @@ describe('The Ring: talents are their own', () => {
     for (const t of Object.values(TALENT_BY_ID)) {
       const loose = t as Talent & Record<string, unknown>;
       for (const key of ['hp', 'dmg', 'heal', 'speed', 'tenacity', 'cool', 'regen', 'leech', 'charge', 'crit']) expect(loose[key], `${t.id} ${key}`).toBeUndefined();
-      // (and none says what an oath says)
-      for (const o of OATHS) expect(t.text.toLowerCase(), t.id).not.toBe(o.text.toLowerCase());
+      // (and none says what an oath said, when there were oaths: until 2026-11-15)
+      for (const said of ['+12% health', '+8% damage', '+15% healing', '+10% move speed', 'held 25% shorter', 'cooldowns 12% shorter']) expect(t.text.toLowerCase(), t.id).not.toBe(said);
+      // (nor of the Unbinding Charm, taken out with them)
+      expect(t.text, t.id).not.toMatch(/charm/i);
     }
   });
 
@@ -911,37 +913,5 @@ describe('The Ring talents: the Gloamknight', () => {
     expect(hit(m)).toBe(plain);
     wait(m, d.every + 0.1);
     expect(hit(m)).toBeCloseTo(plain * (1 - d.pct), -0.5);
-  });
-});
-
-describe('The Ring talents: what works through the Swift Step works through the Unbinding Charm too', () => {
-  it('Shed Skin, Stag Form, Wild Snare and Drag Below go off when the charm is used in the Swift Step’s place', () => {
-    const charm = (cls: ClassId, talents: string[], foe: [number, number] = [300, 125]): Match => {
-      const m = new Match({ seed: 5, map: 'sands', fighters: [{ team: 0, cls, name: cls, bar: PRESETS[cls][0]!.bar, talents, step: 'charm' }, { team: 1, cls: 'warrior', name: 'w', bar: ['w-hew'] }] });
-      m.step(GATES + 0.01, {});
-      Object.assign(m.fighters[0]!, { x: 200, y: 125, dirX: 1, dirY: 0 });
-      Object.assign(m.fighters[1]!, { x: foe[0], y: foe[1] });
-      return m;
-    };
-    // a druid's shed skin and stag form
-    const d = charm('druid', ['l-3c']);
-    const druid = d.fighters[0]!;
-    druid.hp = 600;
-    druid.auras.push({ ab: 'k-agony', kind: 'dot', src: 1, t: 6, dur: 6, harmful: true, magic: true, n: 1, next: 1 });
-    expect(d.press(0, 'charm')).toBeNull();
-    expect(druid.auras.some((a) => a.ab === 'k-agony')).toBe(false);
-    expect(druid.hp).toBeGreaterThan(600);
-    const s = charm('druid', ['l-2a']);
-    expect(s.press(0, 'charm')).toBeNull();
-    expect(s.fighters[0]!.auras.some((a) => a.kind === 'free') && s.fighters[0]!.auras.some((a) => a.kind === 'speed')).toBe(true);
-    // a ranger's snare where they stood
-    const r = charm('ranger', ['r-2b']);
-    expect(r.press(0, 'charm')).toBeNull();
-    expect(r.traps.some((t) => t.src === 0)).toBe(true);
-    // a Gloamknight's drag: the enemy in reach is pulled to them, whichever way they face
-    const g = charm('gloamknight', ['g-2a'], [150, 125]);
-    expect(g.press(0, 'charm')).toBeNull();
-    wait(g, 0.5);
-    expect(Math.hypot(g.fighters[1]!.x - 200, g.fighters[1]!.y - 125)).toBeLessThan(25);
   });
 });

@@ -1,4 +1,4 @@
-import { ABILITIES, barCombos, stepOf } from './abilities';
+import { ABILITIES, barCombos, DASH } from './abilities';
 import { CLOSE_FROM, RANGED, type Fighter, type Match, type MatchEvent } from './sim';
 
 /**
@@ -90,8 +90,7 @@ export function keepLog(log: MatchLog, m: Match, me: Fighter | null, h: number, 
     enemyCircles.delete(key);
     if (could && !me.dead && Math.hypot(me.x - e.x, me.y - e.y) <= e.r) log.circlesTaken++;
   }
-  const step = stepOf(me.step);
-  const ready = !me.dead && step.id === 'dash' && (me.cds[step.id] ?? 0) <= 0 && !m.held(me);
+  const ready = !me.dead && (me.cds[DASH.id] ?? 0) <= 0 && !m.held(me);
   for (const z of m.zones) if (z.team !== me.team) enemyCircles.set(circleKey(z.ab, z.x, z.y), ready && Math.hypot(me.x - z.x, me.y - z.y) <= z.r);
   if (me.dead || !(h > 0)) return;
   log.fought += h;

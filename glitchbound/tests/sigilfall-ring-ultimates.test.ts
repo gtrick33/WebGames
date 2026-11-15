@@ -56,7 +56,7 @@ describe('The Ring: every way to fight has its own super', () => {
   });
 
   it('a setup keeps its pick, a room passes it on, and the match gives that one and only that one', () => {
-    const kept = setsOf({ standings: {}, sets: { warrior: { active: 0, list: [{ bar: PRESETS.warrior[0]!.bar, oath: 'iron', talents: [], ult: 'w-super2' }] } } }, 'warrior');
+    const kept = setsOf({ standings: {}, sets: { warrior: { active: 0, list: [{ bar: PRESETS.warrior[0]!.bar, talents: [], ult: 'w-super2' }] } } }, 'warrior');
     expect(kept.list[0]!.ult).toBe('w-super2');
     // (a fresh setup starts from a ready-made one, with its super)
     expect(setsOf({ standings: {}, sets: {} }, 'warrior').list[1]!.ult).toBe(PRESETS.warrior[1]!.ult);

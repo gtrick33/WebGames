@@ -23,7 +23,7 @@ function run(m: Match, tut: TutorialRun, seconds: number, mine: MoveInput = { mx
 
 function tutorialMatch(cls: ClassId): { m: Match; tut: TutorialRun } {
   const p = PRESETS[cls][0]!;
-  const m = new Match(tutorialSetup({ team: 0, cls, name: 'You', bar: [...p.bar], talents: [...p.talents], ult: p.ult, oath: 'iron' }, 7));
+  const m = new Match(tutorialSetup({ team: 0, cls, name: 'You', bar: [...p.bar], talents: [...p.talents], ult: p.ult }, 7));
   return { m, tut: new TutorialRun(m, 0, 1) };
 }
 
@@ -48,16 +48,15 @@ describe('The Ring for newcomers: playstyles and how hard each class is', () => 
 
 describe('The Ring for newcomers: plain words', () => {
   it('says what holds you, how near to go, and what is in the way', () => {
-    const m = new Match({ seed: 1, map: 'sands', fighters: [{ team: 0, cls: 'mage', name: 'a', bar: PRESETS.mage[0]!.bar }, { team: 1, cls: 'warrior', name: 'b', bar: PRESETS.warrior[0]!.bar, step: 'charm' }] });
+    const m = new Match({ seed: 1, map: 'sands', fighters: [{ team: 0, cls: 'mage', name: 'a', bar: PRESETS.mage[0]!.bar }, { team: 1, cls: 'warrior', name: 'b', bar: PRESETS.warrior[0]!.bar }] });
     m.step(GATES + 0.01, {});
     const foe = m.fighters[1]!;
     foe.auras.push({ ab: 'm-chill', kind: 'cc', cc: 'stun', src: 0, t: 2, dur: 2, harmful: true, magic: true, n: 0 });
-    expect(plainWhy(m, foe, 'You can’t do that now', ABILITIES['w-hew'], 'press Space')).toBe('You’re stunned: press Space to break free');
-    foe.step = 'dash';
-    expect(plainWhy(m, foe, 'You can’t do that now', ABILITIES['w-hew'], 'press Space')).toBe('You’re stunned and can’t act yet');
-    expect(plainWhy(m, foe, 'Too far away', ABILITIES['w-hew'], '')).toMatch(/walk up/);
-    expect(plainWhy(m, foe, 'Too far away', ABILITIES['m-lash'], '')).toMatch(/get closer/);
-    expect(plainWhy(m, foe, 'Out of sight', undefined, '')).toMatch(/pillar/);
+    // (there is no charm to break free with since 2026-11-15: a hold is waited out)
+    expect(plainWhy(m, foe, 'You can’t do that now', ABILITIES['w-hew'])).toBe('You’re stunned and can’t act yet');
+    expect(plainWhy(m, foe, 'Too far away', ABILITIES['w-hew'])).toMatch(/walk up/);
+    expect(plainWhy(m, foe, 'Too far away', ABILITIES['m-lash'])).toMatch(/get closer/);
+    expect(plainWhy(m, foe, 'Out of sight', undefined)).toMatch(/pillar/);
   });
 });
 
@@ -126,8 +125,10 @@ describe('The Ring for newcomers: the tutorial', () => {
   it('walks the lobby from the classes to the setup page’s every tab', () => {
     const ids = LOBBY_STEPS.map((s) => s.id);
     expect(new Set(ids).size).toBe(ids.length);
-    for (const want of ['classes', 'formats', 'styles', 'kit', 'combos', 'talents', 'super', 'extras']) expect(ids).toContain(want);
-    expect(LOBBY_STEPS.filter((s) => s.page === 'setup').map((s) => s.tab ?? s.mode)).toEqual(expect.arrayContaining(['styles', 'abilities', 'talents', 'super', 'extras']));
+    for (const want of ['classes', 'formats', 'styles', 'kit', 'combos', 'talents', 'super']) expect(ids).toContain(want);
+    // (the extras, an oath and the charm, were taken out on 2026-11-15)
+    expect(ids).not.toContain('extras');
+    expect(LOBBY_STEPS.filter((s) => s.page === 'setup').map((s) => s.tab ?? s.mode)).toEqual(expect.arrayContaining(['styles', 'abilities', 'talents', 'super']));
     for (const s of LOBBY_STEPS) for (const cls of CLASS_IDS) expect(s.text(cls).length).toBeGreaterThan(20);
   });
 
@@ -135,7 +136,7 @@ describe('The Ring for newcomers: the tutorial', () => {
     const { m, tut } = tutorialMatch('warrior');
     expect(m.hold).toBe(true);
     expect(m.fighters[1]!.cls).toBe('mage');
-    expect(m.fighters[0]!.step).toBe('dash');
+    expect(m.extras(m.fighters[0]!)[0]!.id).toBe('dash');
     expect(tut.steps[0]).toBe('gates');
     expect(tut.steps.at(-1)).toBe('fight');
     expect(tut.steps).not.toContain('place');

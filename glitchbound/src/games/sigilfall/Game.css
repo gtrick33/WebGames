@@ -7564,6 +7564,11 @@ html.rb-touch-playing textarea {
   place-items: start center;
   padding: calc(8px + var(--sa-t, 0px)) calc(10px + var(--sa-r, 0px)) calc(8px + var(--sa-b, 0px)) calc(10px + var(--sa-l, 0px));
 }
+/* (a card only to read, opened from the Ring's main screen: over the game's screen, as the rules are, and not over the
+   whole page, whose side panel would stand over it) */
+.rb-ring-dialog-wrap.is-card.is-local {
+  position: absolute;
+}
 .rb-ring-dialog.rb-rs-card {
   justify-items: stretch;
   gap: 7px;
@@ -8202,9 +8207,6 @@ html.rb-touch-playing textarea {
   height: 17px;
   border-radius: 50%;
   image-rendering: pixelated;
-}
-.rb-rs-chip.is-oath {
-  color: #ffe9b8;
 }
 
 /* With friends */
@@ -9109,6 +9111,23 @@ html.rb-touch-playing textarea {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* the way they fight, in small letters after the name (arena/styles.ts playstyleOf): it takes no room of its own, and
+   the name gives way to it before the tag does (on a phone it goes under the mana instead: below) */
+.rb-ring-name .rb-ring-style {
+  flex: none;
+  margin-right: auto;
+  padding-left: 4px;
+  color: rgb(239 230 212 / 0.6);
+  font: 700 7.5px/13px system-ui, sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.is-flip .rb-ring-name .rb-ring-style {
+  margin-right: 0;
+  margin-left: auto;
+  padding-right: 4px;
+  padding-left: 0;
 }
 .rb-ring-name em {
   flex: none;
@@ -10159,6 +10178,22 @@ html.rb-touch-playing textarea {
     line-height: 11px;
     text-shadow: none;
   }
+  /* (the way they fight: the name's row has no room for it beside a name and a tag, so it lies over the cast's row,
+     under the mana, the way the name lies over the health; lighter, and shadowed like the name to read over a cast) */
+  .rb-ring.is-touch .rb-ring-name .rb-ring-style {
+    position: absolute;
+    top: 19px;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    color: rgb(255 255 255 / 0.8);
+    font-size: 6.5px;
+    line-height: 7px;
+  }
+  .rb-ring.is-touch .is-flip .rb-ring-name .rb-ring-style {
+    right: 0;
+    left: auto;
+  }
   .rb-ring.is-touch .rb-ring-title {
     font-size: 9px;
   }
@@ -10175,20 +10210,20 @@ html.rb-touch-playing textarea {
     text-align: left;
   }
   .rb-ring.is-touch .rb-ring-tail {
-    height: 4px;
+    height: 7px;
   }
   .rb-ring.is-touch .rb-ring-mana {
     height: 3px;
   }
   /* (a cast, a hold and out-of-sight say themselves by their color: there is no room for their words) */
   .rb-ring.is-touch .rb-ring-cast {
-    height: 4px;
+    height: 7px;
   }
   .rb-ring.is-touch .rb-ring-cast b,
   .rb-ring.is-touch .rb-ring-held,
   .rb-ring.is-touch .rb-ring-unseen {
     font-size: 0;
-    line-height: 4px;
+    line-height: 7px;
   }
   .rb-ring.is-touch .rb-ring-clock {
     padding: 0 7px 2px;
@@ -10237,6 +10272,10 @@ html.rb-touch-playing textarea {
   .rb-ring-under,
   .rb-ring-mana {
     display: none;
+  }
+  /* (with the mana put away, the cast's row is right under the health) */
+  .rb-ring.is-touch .rb-ring-name .rb-ring-style {
+    top: 15px;
   }
   .rb-ring-face {
     width: 18px;
@@ -12143,7 +12182,7 @@ html.rb-touch-playing textarea {
   gap: 8px;
   touch-action: pan-y;
 }
-/* (the kit is the setup: the Wardrobe, the bar, the talents and the oath in one box under the hero) */
+/* (the kit is the setup: the Wardrobe, the bar and the talents in one box under the hero) */
 .rb-ringvl .rb-vlobby-kit.rb-rp-setup {
   align-content: start;
 }

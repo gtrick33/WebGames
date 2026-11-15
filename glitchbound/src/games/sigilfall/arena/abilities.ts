@@ -79,9 +79,7 @@ export type Effect =
   /** Everything burning or rotting on the target comes off (so that a hold which damage breaks can hold). */
   | { k: 'undot' }
   /** Marked: their user's whole side deals them this much more damage for a while. */
-  | { k: 'mark'; pct: number; dur: number }
-  /** What its user's talents do with a Swift Step, without the step (the Unbinding Charm). */
-  | { k: 'stepTalents' };
+  | { k: 'mark'; pct: number; dur: number };
 
 /**
  * A combo: when the target carries something this hero put on them (`ab`, by ability) or is held a certain way (`cc`),
@@ -182,15 +180,10 @@ export const SLOTS = 5;
 /** Everyone's, besides their five: a quick step out from under what is about to fall, or out of reach. */
 export const DASH: Ability = a({ id: 'dash', cls: 'any', name: 'Swift Step', text: 'A quick step the way you’re going: out from under what is about to fall on you, or out of a blade’s reach.', icon: 'dodge_roll_arrow_on_teal', color: '#bff4ff', school: 'physical', role: 'mobility', aim: 'self', range: 0, cast: 0, cd: 5, mana: 0, free: true, effects: [{ k: 'dash', dist: 62 }] });
 
-/**
- * What can take the Swift Step's place (the owner: "swift step part should have another tab for that where you should
- * be able to replace it with a trinket that frees u from any stun with 30s cooldown"): a charm that breaks every hold.
+/*
+ * (An Unbinding Charm could take the Swift Step's place, and an oath ride beside the bar, until 2026-11-15, the owner:
+ * "remove oaths and the extras, leave only spells, talents and ults". Everyone carries the Swift Step.)
  */
-export const CHARM: Ability = a({ id: 'charm', cls: 'any', name: 'Unbinding Charm', text: 'Break free of every hold on you: stuns, fears, roots, dazes, silences and slows. Usable while held.', icon: 'broken_chain_links_snapping_on_grey', color: '#ffe39a', school: 'physical', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 30, mana: 0, free: true, anyState: true, quiet: true, effects: [{ k: 'token' }, { k: 'stepTalents' }] });
-
-/** The choices for the place beside the bar: the Swift Step (the default) or the charm. */
-export const STEPS: readonly Ability[] = [DASH, CHARM];
-export const stepOf = (id: string | undefined): Ability => STEPS.find((x) => x.id === id) ?? DASH;
 
 /** The sigil in the middle of the ground (not an ability anyone has: what it gives, for the pictures and the words). */
 export const SIGIL: Ability = a({ id: 'sigil', cls: 'any', name: 'Sigil of Might', text: 'Heals a fifth of your life, fills your super meter by a third and quickens you.', icon: 'radiant_star_burst_on_gold', color: '#ffe27a', school: 'holy', role: 'heal', aim: 'self', range: 0, cast: 0, cd: 0, mana: 0, effects: [{ k: 'speed', pct: 30, dur: 4 }] });
@@ -362,7 +355,7 @@ const KITS: Record<ClassId, Ability[]> = {
   ],
 };
 
-export const ABILITIES: Record<string, Ability> = Object.fromEntries([...Object.values(KITS).flat(), ...Object.values(SUPERS), ...Object.values(SUPERS2), DASH, CHARM, SIGIL].map((x) => [x.id, x]));
+export const ABILITIES: Record<string, Ability> = Object.fromEntries([...Object.values(KITS).flat(), ...Object.values(SUPERS), ...Object.values(SUPERS2), DASH, SIGIL].map((x) => [x.id, x]));
 export const kitOf = (cls: ClassId): Ability[] => KITS[cls];
 
 /**
@@ -481,30 +474,5 @@ export function combosOf(cls: ClassId, ab: Ability): AbilityCombos {
   };
 }
 
-/** One passive taken into the match, on top of the bar. */
-export interface Oath {
-  id: string;
-  name: string;
-  text: string;
-  icon: string;
-  hp?: number;
-  dmg?: number;
-  heal?: number;
-  speed?: number;
-  /** A share off how long anything holds you. */
-  tenacity?: number;
-  /** A share off every cooldown. */
-  cool?: number;
-}
-
-export const OATHS: Oath[] = [
-  { id: 'iron', name: 'Oath of Iron', text: '+12% health', icon: 'toughness_heart_mastery_on_red', hp: 0.12 },
-  { id: 'fury', name: 'Oath of Fury', text: '+8% damage', icon: 'strength_up_status_flexed_arm_on_red', dmg: 0.08 },
-  { id: 'life', name: 'Oath of Life', text: '+15% healing', icon: 'regeneration_status_green_leaf_on_green', heal: 0.15 },
-  { id: 'wind', name: 'Oath of Wind', text: '+10% move speed', icon: 'haste_status_winged_boot_on_teal', speed: 0.1 },
-  { id: 'will', name: 'Oath of Will', text: 'Held 25% shorter', icon: 'broken_chain_on_black', tenacity: 0.25 },
-  { id: 'hours', name: 'Oath of Hours', text: 'Cooldowns 12% shorter', icon: 'lightning_hourglass_on_violet', cool: 0.12 },
-];
-
 /** Every icon The Ring shows, for the icon build. */
-export const ringIcons = (): string[] => [DASH.icon, CHARM.icon, SIGIL.icon, ...Object.values(SUPERS).map((x) => x.icon), ...Object.values(SUPERS2).map((x) => x.icon), ...Object.values(KITS).flat().map((x) => x.icon), ...OATHS.map((o) => o.icon)];
+export const ringIcons = (): string[] => [DASH.icon, SIGIL.icon, ...Object.values(SUPERS).map((x) => x.icon), ...Object.values(SUPERS2).map((x) => x.icon), ...Object.values(KITS).flat().map((x) => x.icon)];

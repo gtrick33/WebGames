@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, DASH, kitOf, OATHS, PRESETS, SLOTS, superOf, SUPERS } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, DASH, kitOf, PRESETS, SLOTS, superOf, SUPERS } from '../src/games/sigilfall/arena/abilities';
 import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
 import { afterMatch, COMPS, drawOpponents, namedApart, NEW_STANDING, nextRank, rankOf, ratingChange, RANKS, SET_COUNT, setsOf, skillAt } from '../src/games/sigilfall/arena/ladder';
 import { ARENA_H, ARENA_W, ENTRY_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
@@ -405,11 +405,11 @@ describe('The Ring: the entries and the wait', () => {
   it('a set up can change until the gates lift, and not after', () => {
     const m = new Match({ seed: 1, map: 'sands', fighters: [fighter(0, 'warrior'), fighter(1, 'mage')] });
     const me = m.fighters[0]!;
-    const base = me.maxHp;
     const next = PRESETS.warrior[1]!;
-    expect(m.equip(0, { bar: next.bar, oath: 'iron', talents: ['w-3a'] })).toBe(true);
+    me.hp = 400;
+    expect(m.equip(0, { bar: next.bar, talents: ['w-3a'] })).toBe(true);
     expect(me.bar).toEqual(next.bar);
-    expect(me.maxHp).toBeGreaterThan(base);
+    expect(me.talents).toEqual(['w-3a']);
     expect(me.hp).toBe(me.maxHp);
     // nothing that isn't a full bar of their own
     expect(m.equip(0, { bar: ['m-lash'] })).toBe(false);
@@ -581,7 +581,6 @@ describe('The Ring: the kits', () => {
         for (const id of p.bar) expect(ABILITIES[id]?.cls, id).toBe(cls);
       }
     }
-    expect(OATHS.length).toBeGreaterThanOrEqual(5);
   });
 
   it('every class can kill with what it has, and three can heal for real', () => {
@@ -788,7 +787,7 @@ describe('The Ring: the ladder', () => {
 
 describe('The Ring: over a room', () => {
   const KEYS = ['aaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbb', 'cccccccccccccccccccc'];
-  const pick = (team: 0 | 1, cls: ClassId = 'warrior'): { team: 0 | 1; cls: string; bar: string[]; oath: string; talents: string[] } => ({ team, cls, bar: PRESETS[cls][0]!.bar, oath: 'iron', talents: PRESETS[cls][0]!.talents });
+  const pick = (team: 0 | 1, cls: ClassId = 'warrior'): { team: 0 | 1; cls: string; bar: string[]; talents: string[] } => ({ team, cls, bar: PRESETS[cls][0]!.bar, talents: PRESETS[cls][0]!.talents });
   const room = () => {
     const s = newRoom('ABCD', 0, 42);
     for (const [i, k] of KEYS.entries()) expect(join(s, k, `P${i}`, 0)).toBeNull();
@@ -862,7 +861,7 @@ describe('The Ring: over a room', () => {
     const s = room();
     act(s, KEYS[0]!, { t: 'setup', format: 3, map: 'forge' }, 1);
     act(s, KEYS[0]!, { t: 'pick', pick: pick(0, 'mage') }, 1);
-    act(s, KEYS[1]!, { t: 'pick', pick: { team: 1, cls: 'dragon', bar: ['nonsense'], oath: 'iron', talents: ['nonsense'] } }, 1);
+    act(s, KEYS[1]!, { t: 'pick', pick: { team: 1, cls: 'dragon', bar: ['nonsense'], talents: ['nonsense'] } }, 1);
     act(s, KEYS[0]!, { t: 'start' }, 1);
     const a = setupFromRoom(viewFor(s, KEYS[0]!)!);
     const b = setupFromRoom(viewFor(s, KEYS[1]!)!);

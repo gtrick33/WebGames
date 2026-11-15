@@ -228,7 +228,7 @@ describe('The Ring: what older games kept still fights', () => {
     for (const id of bar) expect(ABILITIES[id]?.cls).toBe('gloamknight');
     expect(fullBar('mage', undefined)).toEqual(PRESETS.mage[0]!.bar);
     // a setup saved with Blood Price in it comes back full; one its player is still filling is left as it is
-    const kept = setsOf({ standings: {}, sets: { gloamknight: { active: 0, list: [{ bar: ['g-cleave', 'g-price', 'g-reap', 'g-hand'], oath: 'iron', talents: ['g-1a', 'g-9z'] }, { bar: ['g-cleave'], oath: 'iron', talents: [] }] } } }, 'gloamknight');
+    const kept = setsOf({ standings: {}, sets: { gloamknight: { active: 0, list: [{ bar: ['g-cleave', 'g-price', 'g-reap', 'g-hand'], talents: ['g-1a', 'g-9z'] }, { bar: ['g-cleave'], talents: [] }] } } }, 'gloamknight');
     expect(kept.list[0]!.bar).toHaveLength(SLOTS);
     expect(kept.list[0]!.bar).not.toContain('g-price');
     expect(kept.list[0]!.bar.slice(0, 3)).toEqual(['g-cleave', 'g-reap', 'g-hand']);

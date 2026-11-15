@@ -22,7 +22,7 @@ import { CLOSE_FROM, RANGED, type FighterSetup, type Match, type MatchEvent, typ
  */
 
 /** The setup page's tabs (RingSetup.tsx). */
-export type SetupTab = 'abilities' | 'talents' | 'super' | 'extras';
+export type SetupTab = 'abilities' | 'talents' | 'super';
 
 export interface LobbyStep {
   id: string;
@@ -44,13 +44,12 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
   { id: 'formats', title: 'Choose your fight', text: () => '1v1, 2v2 or 3v3. Each has its own rating, starting at 1000: a win raises it and a loss lowers it. In 2v2 and 3v3 the computer fills your team, or your friends do.', spot: 'formats', page: 'play', at: 'bottom' },
   { id: 'rank', title: 'Climb the ranks', text: () => 'Your rank, and how far it is to the next. Every rank gives you a title and a suit of armor to keep. Rewards shows them all.', spot: 'rank', page: 'play', at: 'bottom' },
   { id: 'arena', title: 'Arenas', text: () => 'Each arena has its own pillars to hide behind. Any picks one for you, so you can leave it as it is.', spot: 'arena', page: 'play', at: 'bottom' },
-  { id: 'loadout', title: 'What you bring', text: () => 'Five abilities, then your Swift Step and your super (the round one). Under them, your talents and your oath. Let’s open your setup.', spot: 'loadout', page: 'play', at: 'top' },
+  { id: 'loadout', title: 'What you bring', text: () => 'Five abilities, then your Swift Step and your super (the round one): open any of them to read what it does and when to use it. Under them, your talents. Let’s open your setup.', spot: 'loadout', page: 'play', at: 'top' },
   { id: 'styles', title: 'Pick a playstyle', text: (cls) => `Each card is a ready-made ${CLASSES[cls].name} build. Pick the one that sounds like you: it fills your setup at once, ready to fight with as it is.`, spot: 'styles', page: 'setup', mode: 'styles', at: 'bottom' },
   { id: 'kit', title: 'Your abilities', text: () => 'Customize opens everything. Every class has twelve abilities and brings five. Click one to read what it does, when to use it and what it combines with, then equip it.', spot: 'kit', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
   { id: 'combos', title: 'Combos', text: () => 'These pairs work together: use the first, then the second, and the second hits much harder. Each different combo in a row builds Momentum.', spot: 'combos', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
   { id: 'talents', title: 'Talents', text: () => 'Pick one from each row. Talents change how your whole class fights, whatever is on your bar.', spot: 'panel', page: 'setup', mode: 'custom', tab: 'talents', at: 'top' },
   { id: 'super', title: 'Your super', text: () => 'A big ability that’s ready when its meter is full. The meter fills as you deal damage or heal. Each class has two to choose from.', spot: 'panel', page: 'setup', mode: 'custom', tab: 'super', at: 'top' },
-  { id: 'extras', title: 'Extras', text: () => 'The Swift Step dodges out of harm’s way; the Unbinding Charm breaks you free of a stun instead. Your oath is one small bonus for the whole match.', spot: 'panel', page: 'setup', mode: 'custom', tab: 'extras', at: 'top' },
   { id: 'sets', title: 'Saved as you go', text: () => 'Each class has three setups, saved as you change them. Now let’s try it all in a practice fight.', spot: 'sets', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
 ];
 
@@ -65,13 +64,10 @@ export const TUTORIAL_MAP = 'sands';
 /** Long enough to read the entry's words and press "ready". */
 export const TUTORIAL_GATES = 120;
 
-/**
- * The practice match: the player as they set themselves up, against the sparring partner. They carry the Swift Step
- * whatever they chose beside the bar: the lesson of the red circle is stepping out of it.
- */
+/** The practice match: the player as they set themselves up, against the sparring partner. */
 export function tutorialSetup(me: FighterSetup, seed: number): MatchSetup {
-  const spar: FighterSetup = { team: 1, cls: SPARRING_CLASS, name: 'Sparring Partner', bar: [...SPAR_PRESET.bar], talents: [...SPAR_PRESET.talents], ult: SPAR_PRESET.ult, oath: 'iron' };
-  return { seed, map: TUTORIAL_MAP, fighters: [{ ...me, team: 0, human: true, step: 'dash' }, spar], gates: TUTORIAL_GATES };
+  const spar: FighterSetup = { team: 1, cls: SPARRING_CLASS, name: 'Sparring Partner', bar: [...SPAR_PRESET.bar], talents: [...SPAR_PRESET.talents], ult: SPAR_PRESET.ult };
+  return { seed, map: TUTORIAL_MAP, fighters: [{ ...me, team: 0, human: true }, spar], gates: TUTORIAL_GATES };
 }
 
 export type MatchStepId = 'gates' | 'plates' | 'move' | 'target' | 'ability' | 'combo' | 'momentum' | 'circle' | 'place' | 'super' | 'sphere' | 'sigil' | 'pillar' | 'holds' | 'friends' | 'gloam' | 'fight';

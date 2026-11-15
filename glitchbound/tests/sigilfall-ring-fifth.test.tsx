@@ -85,7 +85,7 @@ describe('The Ring: five abilities on every bar', () => {
   it('a bar of four kept from before is filled up to five from the setup it is closest to; one being filled now is left be', () => {
     const hound = preset('warrior', 'Hound');
     const reaper = preset('warrior', 'Reaper');
-    const old = (bar: string[], n?: number) => setsOf({ standings: {}, sets: { warrior: { active: 0, list: [{ bar, oath: 'iron', talents: [] }], ...(n ? { n } : {}) } } }, 'warrior').list[0]!.bar;
+    const old = (bar: string[], n?: number) => setsOf({ standings: {}, sets: { warrior: { active: 0, list: [{ bar, talents: [] }], ...(n ? { n } : {}) } } }, 'warrior').list[0]!.bar;
     expect(old(hound.bar.slice(0, 4))).toEqual(hound.bar);
     expect(old(reaper.bar.slice(0, 4))).toEqual(reaper.bar);
     // a bar of one's own keeps its four, in their order, and gets one more of the class's own

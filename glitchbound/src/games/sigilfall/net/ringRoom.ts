@@ -18,10 +18,7 @@ export interface Pick {
   team: 0 | 1;
   cls: string;
   bar: string[];
-  oath: string;
   talents: string[];
-  /** What they carry beside the bar: 'dash' (the Swift Step) or 'charm' (arena/abilities.ts STEPS). */
-  step?: string;
   /** Which of their class's supers (the match checks it is one of theirs). */
   ult?: string;
   /** Their matchmaking rating in the room's format, when a search brought them (arena/queue.ts): what a win over them is worth. */
@@ -116,16 +113,16 @@ const ID = /^[a-z0-9-]{1,24}$/;
 export function cleanPick(v: unknown): Pick | null {
   if (!v || typeof v !== 'object') return null;
   const p = v as Record<string, unknown>;
-  if ((p.team !== 0 && p.team !== 1) || typeof p.cls !== 'string' || !ID.test(p.cls) || typeof p.oath !== 'string' || !ID.test(p.oath)) return null;
+  // (an oath and the Swift Step's place were chosen too until 2026-11-15: a game from before still sends them, unread)
+  if ((p.team !== 0 && p.team !== 1) || typeof p.cls !== 'string' || !ID.test(p.cls)) return null;
   if (!Array.isArray(p.bar) || p.bar.length > 6 || !p.bar.every((b) => typeof b === 'string' && ID.test(b))) return null;
   const talents = Array.isArray(p.talents) && p.talents.length <= 3 && p.talents.every((b) => typeof b === 'string' && ID.test(b)) ? (p.talents as string[]) : [];
   const rating = typeof p.rating === 'number' && Number.isFinite(p.rating) ? { rating: Math.max(0, Math.min(9999, Math.round(p.rating))) } : {};
-  const step = p.step === 'dash' || p.step === 'charm' ? { step: p.step } : {};
   const ult = typeof p.ult === 'string' && ID.test(p.ult) ? { ult: p.ult } : {};
   const mates = Array.isArray(p.mates) && p.mates.length <= 2 && p.mates.every((b) => typeof b === 'string' && ID.test(b)) ? { mates: p.mates as string[] } : {};
   const t = cleanRoomTitle(p.title);
   const title = t ? { title: t } : {};
-  return { team: p.team, cls: p.cls, bar: p.bar as string[], oath: p.oath, talents, ...step, ...ult, ...rating, ...mates, ...title };
+  return { team: p.team, cls: p.cls, bar: p.bar as string[], talents, ...ult, ...rating, ...mates, ...title };
 }
 
 export function act(s: State, key: string, a: Action, now: number): string | null {

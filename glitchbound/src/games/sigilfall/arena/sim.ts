@@ -1,5 +1,5 @@
 import type { ClassId } from '../data/types';
-import { ABILITIES, BODY, DASH, GCD, OATHS, SIGIL, SLOTS, stepOf, superOf, ultFor, ultOf, type Ability, type CcKind, type Effect } from './abilities';
+import { ABILITIES, BODY, DASH, GCD, SIGIL, SLOTS, superOf, ultFor, ultOf, type Ability, type CcKind, type Effect } from './abilities';
 import { ARENA_H, ARENA_W, ENTRY_GATES, MAPS, type Pillar } from './maps';
 import { ARM, cleanTalents, EXECUTE, NEAR, RALLY, TALENT_BY_ID, type Does, type Talent, type Tune } from './talents';
 
@@ -125,10 +125,7 @@ export interface FighterSetup {
   cls: ClassId;
   name: string;
   bar: string[];
-  oath?: string;
   talents?: string[];
-  /** What they carry beside the bar: the Swift Step (`dash`, the default) or the Unbinding Charm (`charm`). */
-  step?: string;
   /** Which of their class's two supers (abilities.ts ultsOf); without it, the one that goes with their bar. */
   ult?: string;
   /** The room seat playing them (null or missing: the computer, or the local player if `human`). */
@@ -257,14 +254,11 @@ export interface Fighter {
   queued: { ab: string; t: number; at?: { x: number; y: number } } | null;
   fearX: number;
   fearY: number;
-  oath: string | null;
   talents: string[];
-  /** What they carry beside the bar (abilities.ts STEPS): the Swift Step, or the charm that breaks every hold. */
-  step: string;
   /** Their super: one of their class's two. */
   ult: string;
   /**
-   * What the oath and talents make of them, as multipliers: damage, healing, speed, how long they are held, cooldowns,
+   * What their talents make of them, as multipliers: damage, healing, speed, how long they are held, cooldowns,
    * mana back, how long their own holds and slows last, damage taken, how fast their super fills, and the chance of a
    * critical hit.
    */
@@ -467,9 +461,13 @@ export function clearLine(pillars: Pillar[], ax: number, ay: number, bx: number,
   return true;
 }
 
-/** What an oath and talents add up to. */
-function built(cls: ClassId, oathId: string | undefined, talentIds: readonly string[] | undefined): Pick<Fighter, 'mods' | 'perks' | 'procs' | 'tune' | 'maxHp' | 'talents' | 'oath' | 'tal'> {
-  const oath = OATHS.find((o) => o.id === oathId);
+/**
+ * What a hero's talents add up to. (An oath beside them, a small bonus for the whole match, was taken out with the
+ * Unbinding Charm on 2026-11-15, the owner: "remove oaths and the extras, leave only spells, talents and ults". The
+ * balance measured in tests/sigilfall-ring-balance.test.ts was the computer's against itself, which never carried
+ * either.)
+ */
+function built(cls: ClassId, talentIds: readonly string[] | undefined): Pick<Fighter, 'mods' | 'perks' | 'procs' | 'tune' | 'maxHp' | 'talents' | 'tal'> {
   const list = cleanTalents(cls, talentIds);
   const sum = (key: 'guard' | 'hold' | 'exec'): number => list.reduce((n, x) => n + (x[key] ?? 0), 0);
   const one = <K extends 'slow' | 'stun' | 'snare'>(key: K): NonNullable<Talent[K]> | null => list.find((x) => x[key])?.[key] ?? null;
@@ -479,17 +477,16 @@ function built(cls: ClassId, oathId: string | undefined, talentIds: readonly str
   const does: Does = {};
   for (const x of list) if (x.does) Object.assign(does, { [x.does.k]: x.does });
   return {
-    oath: oath?.id ?? null,
     talents: list.map((x) => x.id),
     tune,
-    maxHp: Math.round(BODY[cls].hp * (1 + (oath?.hp ?? 0))),
+    maxHp: BODY[cls].hp,
     mods: {
       // (each class deals its own share, supers and all: CLASS_DMG)
-      dmg: (1 + (oath?.dmg ?? 0)) * CLASS_DMG[cls],
-      heal: 1 + (oath?.heal ?? 0),
-      speed: 1 + (oath?.speed ?? 0),
-      tenacity: 1 - Math.min(0.6, oath?.tenacity ?? 0),
-      cool: 1 - Math.min(0.5, oath?.cool ?? 0),
+      dmg: CLASS_DMG[cls],
+      heal: 1,
+      speed: 1,
+      tenacity: 1,
+      cool: 1,
       regen: 1,
       hold: 1 + sum('hold'),
       guard: 1 - Math.min(0.5, sum('guard')),
@@ -567,14 +564,13 @@ export class Match {
       const i = count[s.team]++;
       const spot = map.spawns[s.team]![i % map.spawns[s.team]!.length]!;
       const body = BODY[s.cls];
-      const made = built(s.cls, s.oath, s.talents);
+      const made = built(s.cls, s.talents);
       return {
         id,
         team: s.team,
         cls: s.cls,
         name: s.name,
         bar: s.bar.filter((b) => ABILITIES[b]?.cls === s.cls && !ABILITIES[b]!.super).slice(0, SLOTS),
-        step: stepOf(s.step).id,
         ult: ultOf(s.cls, s.ult ?? ultFor(s.cls, s.bar)).id,
         seat: s.seat ?? null,
         human: !!s.human,
@@ -639,7 +635,7 @@ export class Match {
 
   /** The abilities everyone has besides their bar: the Swift Step and their class's super. */
   extras(f: Fighter): Ability[] {
-    return [stepOf(f.step), ultOf(f.cls, f.ult)];
+    return [DASH, ultOf(f.cls, f.ult)];
   }
 
   /** Everything solid right now: the stone, and the gates until they lift. */
@@ -652,15 +648,14 @@ export class Match {
   }
 
   /** In the entry, a player can still change what they brought. */
-  equip(id: number, s: { bar: string[]; oath?: string; talents?: string[]; step?: string; ult?: string }): boolean {
+  equip(id: number, s: { bar: string[]; talents?: string[]; ult?: string }): boolean {
     const f = this.fighters[id];
     if (!f || this.phase !== 'gates') return false;
     const bar = s.bar.filter((b, i) => ABILITIES[b]?.cls === f.cls && !ABILITIES[b]!.super && s.bar.indexOf(b) === i).slice(0, SLOTS);
     if (bar.length < SLOTS) return false;
-    const made = built(f.cls, s.oath, s.talents);
+    const made = built(f.cls, s.talents);
     Object.assign(f, made);
     f.bar = bar;
-    f.step = stepOf(s.step).id;
     f.ult = ultOf(f.cls, s.ult ?? ultFor(f.cls, bar)).id;
     f.hp = made.maxHp;
     return true;
@@ -1215,9 +1210,6 @@ export class Match {
       case 'mark':
         this.addAura(t, { ...base, kind: 'mark', harmful: true, magic: false, dur: e.dur, n: e.pct / 100 });
         return;
-      case 'stepTalents':
-        this.swiftStep(f, 0, true);
-        return;
       case 'undot':
         t.auras = t.auras.filter((a) => a.kind !== 'dot');
         return;
@@ -1392,7 +1384,7 @@ export class Match {
    * Below), a leap to a friend (Guardian Leap), a blink (Fold Space). One that ends beside an enemy may knock them down
    * (Shoulder Check): that is seen when it ends (arrive).
    */
-  private swiftStep(f: Fighter, dist: number, charm = false): void {
+  private swiftStep(f: Fighter, dist: number): void {
     const does = f.perks.does;
     this.endCast(f);
     const say = (k: keyof Does): void => {
@@ -1445,7 +1437,7 @@ export class Match {
           const ox = o.x - f.x;
           const oy = o.y - f.y;
           const od = Math.hypot(ox, oy) || 1;
-          return !o.pet && !this.unseen(o, f) && od <= does.drag!.reach && (charm || (ox * ux + oy * uy) / od > 0.7) && this.sees(f, o) && !o.auras.some((a) => a.kind === 'immune');
+          return !o.pet && !this.unseen(o, f) && od <= does.drag!.reach && (ox * ux + oy * uy) / od > 0.7 && this.sees(f, o) && !o.auras.some((a) => a.kind === 'immune');
         })
         .sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y))[0];
       // (they come along to where the step ends: the step is still a step)
@@ -1471,8 +1463,7 @@ export class Match {
     if (does.fold) {
       f.auras = f.auras.filter((a) => a.kind !== 'slow' && a.cc !== 'root');
       f.dash = null;
-      // (the charm's blink is a short one: it has no step of its own to lengthen)
-      this.blinkTo(f, ux, uy, charm ? 40 : dist * does.fold.far);
+      this.blinkTo(f, ux, uy, dist * does.fold.far);
       return;
     }
     f.dash = { x: f.x + ux * dist, y: f.y + uy * dist, speed: 430, step: true };
@@ -1547,9 +1538,7 @@ export class Match {
       queued: null,
       fearX: 0,
       fearY: 0,
-      oath: null,
       talents: [],
-      step: DASH.id,
       ult: owner.ult,
       // (they hit with their master's share, and none of the rest of their talents)
       mods: { dmg: owner.mods.dmg, heal: 1, speed: THRALL.speed, tenacity: 1, cool: 1, regen: 1, hold: 1, guard: 1, charge: 0, crit: CRIT },

@@ -9,6 +9,7 @@ import { TutorialRun, type TutorialKeys } from '../arena/tutorial';
 import { lookOf } from '../arena/look';
 import { MAPS } from '../arena/maps';
 import { CLOSE_FROM, Match, MATCH_LIMIT, PACE, type Aura, type DrState, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
+import { playstyleOf } from '../arena/styles';
 import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
 import type { Character, Face } from '../progress/character';
@@ -180,8 +181,10 @@ export function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter
         <img src={doll} alt="" draggable={false} />
       </span>
       <span className="rb-ring-bars">
+        {/* (their name, then in small letters the way they fight: arena/styles.ts playstyleOf) */}
         <span className="rb-ring-name">
           <b>{f.id === me?.id ? 'You' : f.name}</b>
+          <small className="rb-ring-style">{playstyleOf(f.cls, f.bar)}</small>
           {tag && <em>{tag}</em>}
         </span>
         <span className={`rb-ring-bar${share < 0.3 ? ' is-low' : ''}`}>
@@ -351,7 +354,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const say = (why: string | null, ab?: Ability, note = false): void => {
     if (!why || why === 'Already casting' || why === 'Casting') return;
     if (why === 'Out of sight') log.current.outOfSight++;
-    setErr(note ? why : plainWhy(m, me, why, ab, touch ? 'tap the blue button' : `press ${keyName(keysRef.current.dash)}`));
+    setErr(note ? why : plainWhy(m, me, why, ab));
     setErrNote(note);
     errAt.current = performance.now();
   };
@@ -752,9 +755,9 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       role.listen((seat, d) => {
         const f = m.fighters.find((x) => x.seat === seat);
         if (!f || !d || typeof d !== 'object') return;
-        const q = d as { mx?: unknown; my?: unknown; p?: unknown; at?: unknown; tg?: unknown; eq?: { bar?: unknown; oath?: unknown; talents?: unknown; step?: unknown; ult?: unknown } };
+        const q = d as { mx?: unknown; my?: unknown; p?: unknown; at?: unknown; tg?: unknown; eq?: { bar?: unknown; talents?: unknown; ult?: unknown } };
         const eq = q.eq;
-        if (eq && Array.isArray(eq.bar) && eq.bar.length <= 12 && eq.bar.every((b) => typeof b === 'string')) m.equip(f.id, { bar: eq.bar as string[], oath: typeof eq.oath === 'string' ? eq.oath : undefined, talents: Array.isArray(eq.talents) ? (eq.talents.filter((b) => typeof b === 'string').slice(0, 3) as string[]) : [], step: typeof eq.step === 'string' ? eq.step : undefined, ult: typeof eq.ult === 'string' ? eq.ult : undefined });
+        if (eq && Array.isArray(eq.bar) && eq.bar.length <= 12 && eq.bar.every((b) => typeof b === 'string')) m.equip(f.id, { bar: eq.bar as string[], talents: Array.isArray(eq.talents) ? (eq.talents.filter((b) => typeof b === 'string').slice(0, 3) as string[]) : [], ult: typeof eq.ult === 'string' ? eq.ult : undefined });
         if (typeof q.mx === 'number' && typeof q.my === 'number' && Number.isFinite(q.mx) && Number.isFinite(q.my)) others[f.id] = { mx: Math.max(-1, Math.min(1, q.mx)), my: Math.max(-1, Math.min(1, q.my)) };
         // (press checks it's on their bar, and the rules, as for anyone)
         // (a placed ability comes with where: two plain numbers, which the rules bring into reach and sight)

@@ -13,7 +13,7 @@ import type { Format } from '../src/games/sigilfall/arena/ranks';
 import { act, cleanPick, join, leave, newRoom, summary, viewFor, type State } from '../src/games/sigilfall/net/ringRoom';
 
 const KEY = (i: number): string => String.fromCharCode(97 + i).repeat(20);
-const PICK = { cls: 'warrior', bar: ['w-strike', 'w-rend', 'w-charge', 'w-shout'], oath: 'iron', talents: [] };
+const PICK = { cls: 'warrior', bar: ['w-strike', 'w-rend', 'w-charge', 'w-shout'], talents: [] };
 
 /** A searcher: when they began, what they want, and what they have seen of the room. */
 interface Searcher {
