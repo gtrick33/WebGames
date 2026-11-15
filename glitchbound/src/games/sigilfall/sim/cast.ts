@@ -382,7 +382,10 @@ export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number,
       p.actT = 0.25;
       const [ring, shard] = NOVA_TINT[spec.look ?? ''] ?? NOVA_TINT[spec.dmgType] ?? NOVA_TINT.frost!;
       w.addFx({ kind: 'ring', x: p.x, y: p.y, life: 0.4, size: spec.area, color: ring });
-      w.vfx(`blast:${spec.dmgType}`, p.x, p.y, spec.area);
+      // (a halo, an eclipse, a stamp that cracks the ground...: NOVAS; the rest a burst of their element)
+      const nova = ownLook(NOVAS, spec);
+      if (nova) w.vfx(nova.vfx, p.x, p.y, spec.area, nova.life, angle);
+      else w.vfx(`blast:${spec.dmgType}`, p.x, p.y, spec.area);
       for (let i = 0; i < 14; i++) {
         const a = (TAU * i) / 14;
         w.addFx({ kind: 'shard', x: p.x + Math.cos(a) * 6, y: p.y + Math.sin(a) * 6, vx: Math.cos(a) * spec.area * 2.2, vy: Math.sin(a) * spec.area * 2.2, life: 0.35, size: 2, color: shard });
@@ -488,11 +491,15 @@ export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number,
       // aimed by hand: the enemy nearest the aimed line
       target ??= autoTarget(w, spec.range, angle);
       if (target) {
-        // (a priest's Smite comes down on them from above; anyone else's mark is a line drawn to them)
+        // (a priest's Smite comes down on them from above; anyone else's mark is a line drawn to them, in its element's
+        // color, and the great ones land their own way: MARKS)
         if (spec.look === 'smite') {
           w.addFx({ kind: 'zap', x: target.x, y: target.y - 70, x2: target.x, y2: target.y, life: 0.22, size: 2.2, color: spec.dmgType === 'shadow' ? '#b07aff' : '#fff2b0' });
           w.addFx({ kind: 'glow', x: target.x, y: target.y - 3, life: 0.3, size: 13, color: spec.dmgType === 'shadow' ? '#b07aff' : '#ffe9a0' });
-        } else w.addFx({ kind: 'zap', x: p.x, y: p.y, x2: target.x, y2: target.y, life: 0.2, size: 1, color: '#ffe066' });
+        } else w.addFx({ kind: 'zap', x: p.x, y: p.y, x2: target.x, y2: target.y, life: 0.2, size: 1, color: MARK_LINE[spec.dmgType] ?? '#ffe066' });
+        const mark = ownLook(MARKS, spec);
+        if (mark) w.vfx(mark.vfx, target.x, target.y, Math.max(12, target.r + 6), mark.life);
+        else if (spec.dmgType !== 'physical' && spec.onHit.some((e) => e.kind === 'status')) w.vfx(`debuff:${spec.dmgType}`, target.x, target.y);
         const d = hitEnemy(w, target, spec.damage, spec.dmgType, { spec, depth: 0, fromX: p.x, fromY: p.y });
         applyEffects(w, spec.onHit, { ...ctx, x: target.x, y: target.y, target, hitDmg: d, when: 'hit' });
         w.sfx(spec.look === 'smite' ? 'bolt' : 'mark');
@@ -569,19 +576,28 @@ function melee(w: World, spec: SkillSpec, angle: number): void {
   p.actBig = big;
   const list = w.enemies.filter((e) => !e.dead && e.state !== 'spawn' && inCone(e.x, e.y, p.x, p.y, angle, arc / 2 + 0.15, reach + e.r + p.r));
   // the blade's arc, white-hot, and behind it a wider trail in the hero's own color (a combo's last blow and a heavy one
-  // leave a bright ring of it too)
+  // leave a bright ring of it too). A blow with a look of its own (BLOWS) swings in its own colors, and what it leaves
+  // where it lands is its own: the ground cracked, a wound torn, light crossed, dusk bursting out
   const tint = CLASSES[w.hero.cls].colors;
-  w.addFx({ kind: 'slash', x: p.x, y: p.y, a: angle, a2: arc * 1.12, life: heavy ? 0.3 : 0.22, size: reach + 10, color: tint.accent, r2: 1 });
-  w.addFx({ kind: 'slash', x: p.x, y: p.y, a: angle, a2: arc, life: heavy ? 0.24 : 0.16, size: reach + 4, color: heavy ? '#ffe6b0' : big ? '#fff2c8' : '#ffffff', r2: big || heavy ? 1 : 0 });
-  if (big || heavy) w.addFx({ kind: 'ring', x: p.x + Math.cos(angle) * reach * 0.6, y: p.y + Math.sin(angle) * reach * 0.6, life: 0.3, size: reach * 0.9, color: tint.accent });
+  const own = ownLook(BLOWS, spec);
+  const trail = own?.trail ?? tint.accent;
+  w.addFx({ kind: 'slash', x: p.x, y: p.y, a: angle, a2: arc * 1.12, life: heavy ? 0.3 : 0.22, size: reach + 10, color: trail, r2: 1 });
+  w.addFx({ kind: 'slash', x: p.x, y: p.y, a: angle, a2: arc, life: heavy ? 0.24 : 0.16, size: reach + 4, color: own?.edge ?? (heavy ? '#ffe6b0' : big ? '#fff2c8' : '#ffffff'), r2: big || heavy ? 1 : 0 });
+  if (own?.claws) {
+    // three rows of claws: two more rakes just inside and outside the first
+    w.addFx({ kind: 'slash', x: p.x, y: p.y, a: angle + 0.08, a2: arc * 0.92, life: 0.2, size: reach - 3, color: own.edge ?? trail, r2: 0 });
+    w.addFx({ kind: 'slash', x: p.x, y: p.y, a: angle - 0.08, a2: arc * 0.92, life: 0.2, size: reach + 11, color: own.edge ?? trail, r2: 0 });
+  }
+  if (big || heavy) w.addFx({ kind: 'ring', x: p.x + Math.cos(angle) * reach * 0.6, y: p.y + Math.sin(angle) * reach * 0.6, life: 0.3, size: reach * 0.9, color: trail });
+  // the strike lands in front: impact effects happen there
+  const ix = p.x + Math.cos(angle) * reach * 0.8;
+  const iy = p.y + Math.sin(angle) * reach * 0.8;
+  if (own?.hit) w.vfx(own.hit, ix, iy, reach * (heavy ? 0.85 : 0.7), heavy ? 0.7 : 0.5, angle);
   w.sfx(heavy ? 'heavy' : big ? 'swingBig' : 'swing');
   hitAll(w, spec, list, p.x, p.y, mul);
   if (list.length && spec.gen > 0) gainResource(w, spec.gen);
   if (list.length && (heavy || big)) w.hitstop(heavy ? 0.06 : 0.035);
   if (heavy) w.shake(list.length ? 2.5 : 1);
-  // the strike lands in front: impact effects happen there
-  const ix = p.x + Math.cos(angle) * reach * 0.8;
-  const iy = p.y + Math.sin(angle) * reach * 0.8;
   if (spec.onImpact.length) applyEffects(w, spec.onImpact, { x: ix, y: iy, angle, spec, base: spec.damage * mul, type: spec.dmgType, depth: 0, hitDmg: 0, when: 'impact' });
   w.breakWalls(ix, iy, 10);
 }
@@ -608,11 +624,13 @@ function chain(w: World, spec: SkillSpec, angle: number, first: Enemy | null): v
   p.actKind = 'cast';
   p.actT = 0.22;
   p.actAngle = angle;
-  // (lightning cracks; a druid's lash of thorns and the like are their own color and make a bolt's sound)
+  // (lightning cracks; a druid's lash of thorns and the like are their own color and make a bolt's sound, and a lash of
+  // living thorns is drawn as one, not as lightning)
   const tint = spec.dmgType === 'nature' ? '#a8e86a' : spec.dmgType === 'shadow' ? '#b07aff' : spec.dmgType === 'holy' ? '#fff2b0' : spec.dmgType === 'fire' ? '#ffb070' : '#d8f2ff';
+  const sprite = spec.dmgType === 'nature' ? 'thorn' : undefined;
   w.sfx(spec.dmgType === 'lightning' ? 'zap' : 'bolt');
   if (!target) {
-    w.addFx({ kind: 'zap', x: p.x, y: p.y, x2: p.x + Math.cos(angle) * spec.range * 0.7, y2: p.y + Math.sin(angle) * spec.range * 0.7, life: 0.15, size: 1, color: tint });
+    w.addFx({ kind: 'zap', x: p.x, y: p.y, x2: p.x + Math.cos(angle) * spec.range * 0.7, y2: p.y + Math.sin(angle) * spec.range * 0.7, life: 0.15, size: 1, color: tint, sprite });
     return;
   }
   const jumps = spec.extra.jumps ?? 0;
@@ -624,7 +642,7 @@ function chain(w: World, spec: SkillSpec, angle: number, first: Enemy | null): v
   let mul = 1;
   for (let j = 0; j <= jumps && cur; j++) {
     hit.add(cur.id);
-    w.addFx({ kind: 'zap', x: from.x, y: from.y, x2: cur.x, y2: cur.y, life: 0.22, size: 1.4, color: tint });
+    w.addFx({ kind: 'zap', x: from.x, y: from.y, x2: cur.x, y2: cur.y, life: 0.22, size: 1.4, color: tint, sprite });
     const d = hitEnemy(w, cur, spec.damage * mul, spec.dmgType, { spec, depth: 0, fromX: from.x, fromY: from.y });
     applyEffects(w, spec.onHit, { x: cur.x, y: cur.y, angle, spec, base: spec.damage * mul, type: spec.dmgType, depth: 0, target: cur, hitDmg: d, when: 'hit' });
     from = cur;
@@ -663,8 +681,9 @@ function ground(w: World, spec: SkillSpec, angle: number, tx: number, ty: number
   }
   const strikes = spec.extra.strikes ?? 0;
   if (strikes > 0) {
-    // Tempest: bolts strike around the point
+    // Tempest: bolts strike around the point, out of a storm cloud gathered over it
     w.addFx({ kind: 'glow', x: tx, y: ty, life: 1.6, size: spec.area, color: '#5ad1ff' });
+    w.vfx('stormcloud:lightning', tx, ty, spec.area, 0.75 + strikes * 0.18);
     for (let i = 0; i < strikes; i++) {
       w.after(0.25 + i * 0.18, () => {
         const a = w.rand() * TAU;
@@ -672,6 +691,7 @@ function ground(w: World, spec: SkillSpec, angle: number, tx: number, ty: number
         const x = tx + Math.cos(a) * r;
         const y = ty + Math.sin(a) * r;
         w.addFx({ kind: 'beam', x, y, life: 0.25, size: 3, color: '#d8f2ff' });
+        w.vfx('thunder:lightning', x, y, 18, 0.5);
         w.fxBurst(x, y, '#bfe9ff', 6, 18);
         w.sfx('thunder');
         w.shake(1.2);
@@ -680,7 +700,9 @@ function ground(w: World, spec: SkillSpec, angle: number, tx: number, ty: number
     }
     return;
   }
-  // a meteor (and its extra meteors)
+  // a meteor (and its extra meteors); or whatever else comes down on a spot, each its own way (GROUND_LOOKS): the
+  // rules are the same for every one, a circle on the ground and the blow when it fills
+  const look = groundLook(spec);
   const impacts: { x: number; y: number; delay: number; mul: number }[] = [{ x: tx, y: ty, delay: spec.windup, mul: 1 }];
   for (let i = 0; i < (spec.extra.meteors ?? 0); i++) {
     const a = angle + Math.PI / 2 + (i * TAU) / Math.max(2, spec.extra.meteors ?? 0);
@@ -689,11 +711,11 @@ function ground(w: World, spec: SkillSpec, angle: number, tx: number, ty: number
   for (const im of impacts) {
     if (blocksAt(w.map, im.x, im.y)) continue;
     w.addTelegraph({ shape: 'circle', x: im.x, y: im.y, r: spec.area * (im.mul < 1 ? 0.8 : 1), r2: 0, angle: 0, len: 0, dur: im.delay, dmg: 0, knock: 0, tone: 'player', owner: -1, linger: 0 });
-    w.addFx({ kind: 'ember', x: im.x - 60, y: im.y - 140, vx: 60 / im.delay, vy: 140 / im.delay, life: im.delay, size: 6, color: '#ff7a3d', sprite: 'meteor' });
+    w.vfx(`${look.fall}:${look.tone}`, im.x, im.y, spec.area * (im.mul < 1 ? 0.8 : 1), Math.max(0.05, im.delay));
     w.after(im.delay, () => {
       const r = spec.area * (im.mul < 1 ? 0.8 : 1);
-      w.fxBurst(im.x, im.y, '#ff9a4d', 22, r);
-      w.addFx({ kind: 'ring', x: im.x, y: im.y, life: 0.4, size: r, color: '#ffcf6a' });
+      w.fxBurst(im.x, im.y, look.spark, 22, r);
+      w.vfx(`${look.land}:${look.tone}`, im.x, im.y, r, look.life);
       w.sfx('meteor');
       w.shake(4);
       w.hitstop(0.05);
@@ -748,6 +770,121 @@ export function updateTraps(w: World, dt: number): void {
 }
 
 const FIELD_LOOKS = new Set<string>(['fire', 'poison', 'frost', 'arrows', 'lightning', 'rift', 'shadow', 'holy', 'nature']);
+
+/**
+ * What comes down on a spot (render/effects.ts draws each by name): `fall` plays through the wind-up, `land` for `life`
+ * seconds from the blow, in the colors named by `tone`; `spark` is the color of what flies off it. `type`: the damage
+ * type it was made for (a talent that turns the skill to another element takes it back to that element's plain look).
+ */
+interface GroundLook {
+  fall: string;
+  land: string;
+  tone: string;
+  spark: string;
+  life: number;
+  type?: SkillSpec['dmgType'];
+}
+const GROUND_LOOKS: Record<string, GroundLook> = {
+  // a column of fire standing up out of the ground, the ground cracking and glowing under it first
+  flamestrike: { fall: 'pyre', land: 'pillar', tone: 'fire', spark: '#ff9a4d', life: 1.15, type: 'fire' },
+  // a burning rock out of the sky, and a crater
+  meteor: { fall: 'meteorfall', land: 'crater', tone: 'fire', spark: '#ff9a4d', life: 1.3, type: 'fire' },
+  // Absolute Zero's comet of ice
+  comet: { fall: 'cometfall', land: 'rimecrater', tone: 'frost', spark: '#bfeaff', life: 1.1 },
+  // the Brimstone Golem crashing down on a burning sigil
+  'summon-infernal': { fall: 'golemfall', land: 'golemland', tone: 'brimstone', spark: '#ff7a3a', life: 1.3, type: 'fire' },
+};
+
+/** What a ground skill without a field looks like coming down: its own look, or one from its damage type. */
+function groundLook(spec: SkillSpec): GroundLook {
+  const own = ownLook(GROUND_LOOKS, spec);
+  if (own) return own;
+  if (spec.dmgType === 'fire') return GROUND_LOOKS.meteor!;
+  return { fall: 'pyre', land: 'skyfall', tone: spec.dmgType, spark: '#ffffff', life: 0.8 };
+}
+
+/**
+ * A skill's own look from a table keyed by its id or by its look. One made for a damage type holds only while the skill
+ * is still of that type: a talent that turns it to another element (Dark Halo, Absolute Zero...) gives it that
+ * element's look, or takes it back to the plain look of the element.
+ */
+function ownLook<T extends { type?: SkillSpec['dmgType'] }>(table: Record<string, T>, spec: SkillSpec): T | undefined {
+  const fits = (o: T | undefined): o is T => !!o && (!o.type || o.type === spec.dmgType);
+  const byId = table[spec.id];
+  if (fits(byId)) return byId;
+  const byLook = spec.look ? table[spec.look] : undefined;
+  return fits(byLook) ? byLook : undefined;
+}
+
+/**
+ * A blow's own look: the colors of its trail and of its blade's edge, three rows of claws, and what it leaves where it
+ * lands (a spell effect, render/effects.ts). The rest swing in the hero's own colors.
+ */
+interface BlowLook {
+  trail: string;
+  edge?: string;
+  claws?: boolean;
+  hit?: string;
+  type?: SkillSpec['dmgType'];
+}
+const BLOWS: Record<string, BlowLook> = {
+  // the warrior: red-hot steel that cracks the ground; a wound torn open
+  'heavy-strike': { trail: '#e0502e', edge: '#fff0d8', hit: 'crush:steel', type: 'physical' },
+  'last-word': { trail: '#e0502e', edge: '#fff0d8', hit: 'crush:steel', type: 'physical' },
+  'mortal-strike': { trail: '#c8202a', edge: '#ffd8c8', hit: 'rend:blood', type: 'physical' },
+  bloodthirst: { trail: '#c8202a', hit: 'rend:blood', type: 'physical' },
+  // the paladin: blades of light crossed, a shield of it driven in
+  'templars-verdict': { trail: '#ffb630', edge: '#fff6d0', hit: 'verdict:dawn', type: 'holy' },
+  sentence: { trail: '#ffb630', edge: '#fff6d0', hit: 'verdict:dawn', type: 'holy' },
+  'shield-of-the-righteous': { trail: '#ffb630', edge: '#fff6d0', hit: 'bastion:dawn', type: 'holy' },
+  // the gloam knight: dusk bursting out of the wound; the ground sundered
+  'umbral-rend': { trail: '#7a4ad8', edge: '#d8c0ff', hit: 'umbral:gloam', type: 'shadow' },
+  'sundering-dark': { trail: '#7a4ad8', edge: '#d8c0ff', hit: 'sunder:gloam', type: 'shadow' },
+  // the druid's shapes: a lynx's jaws and claws, a bear's paw
+  'ferocious-bite': { trail: '#ff8a2a', edge: '#ffe0a0', hit: 'bite:cat', type: 'physical' },
+  rip: { trail: '#c8202a', edge: '#ffd0b0', claws: true, hit: 'rend:blood', type: 'physical' },
+  rake: { trail: '#ff8a2a', edge: '#ffe0a0', claws: true, type: 'physical' },
+  claw: { trail: '#ff8a2a', edge: '#ffe0a0', claws: true, type: 'physical' },
+  maul: { trail: '#a8743a', edge: '#f0d8a8', hit: 'crush:bear', type: 'physical' },
+};
+
+/**
+ * A nova's own look (render/effects.ts spells by name, and how long each plays); the rest burst in their damage type's
+ * colors.
+ */
+const NOVAS: Record<string, { vfx: string; life: number; type?: SkillSpec['dmgType'] }> = {
+  halo: { vfx: 'halo:holy', life: 0.85, type: 'holy' },
+  // the gloam knight's ultimate: an eclipse, and the dark coming up out of the ground under it
+  duskfall: { vfx: 'nightfall:gloam', life: 1.1, type: 'shadow' },
+  darkhalo: { vfx: 'eclipse:gloam', life: 0.95 },
+  thunder: { vfx: 'thunderstomp:lightning', life: 0.6 },
+  quake: { vfx: 'stomp:earth', life: 0.6 },
+  'avenging-wrath': { vfx: 'dawn:dawn', life: 1.1, type: 'holy' },
+  'divine-storm': { vfx: 'sweep:dawn', life: 0.45, type: 'holy' },
+  'frost-nova': { vfx: 'shatter:frost', life: 0.6, type: 'frost' },
+  'dread-toll': { vfx: 'toll:gloam', life: 0.9, type: 'shadow' },
+  thrash: { vfx: 'sweep:bear', life: 0.4, type: 'physical' },
+};
+
+/** A mark's own look where it lands (the rest: a line of their damage type's color drawn to them). */
+const MARKS: Record<string, { vfx: string; life: number; type?: SkillSpec['dmgType'] }> = {
+  smite: { vfx: 'smite:holy', life: 0.4, type: 'holy' },
+  'mind-blast': { vfx: 'psyblast:psy', life: 0.5, type: 'shadow' },
+  moonfire: { vfx: 'moonbeam:moon', life: 0.6, type: 'arcane' },
+  harvest: { vfx: 'reap:gloam', life: 0.45, type: 'shadow' },
+};
+
+/** A projectile's own burst where it stops (render/effects.ts spells by name); `through`: on each foe it goes through too. */
+const BURSTS: Record<string, { vfx: string; size: number; type?: SkillSpec['dmgType']; through?: boolean }> = {
+  fireball: { vfx: 'fireburst:fire', size: 20, type: 'fire' },
+  chaosbolt: { vfx: 'ruin:ruin', size: 24, type: 'fire', through: true },
+  holyfire: { vfx: 'hymn:holy', size: 16, type: 'holy' },
+  starsurge: { vfx: 'starburst:lunar', size: 20, type: 'arcane' },
+  starfire: { vfx: 'solar:solar', size: 20, type: 'arcane' },
+};
+
+/** The color of the line drawn to a marked enemy, by damage type. */
+const MARK_LINE: Partial<Record<SkillSpec['dmgType'], string>> = { holy: '#fff2b0', shadow: '#b07aff', arcane: '#d2a8ff', nature: '#a8e86a', fire: '#ffb070', frost: '#bdf1ff', poison: '#9be36b', lightning: '#d8f2ff' };
 
 /** A nova's ring and shards, by its look or damage type. */
 const NOVA_TINT: Record<string, [string, string]> = {
@@ -989,6 +1126,9 @@ export function updateProjectiles(w: World, dt: number): void {
         const angle = Math.atan2(pr.vy, pr.vx);
         if (pr.spec) applyEffects(w, pr.spec.onHit, { x: e.x, y: e.y, angle, spec: pr.spec, base: pr.dmg, type: pr.type, depth: pr.depth, target: e, hitDmg: d, proj: pr, when: 'hit' });
         if (pr.pierce > 0) {
+          // (a bolt that tears through them bursts on each one it goes through: Ruin Bolt)
+          const burst = pr.spec && pr.depth === 0 ? ownLook(BURSTS, pr.spec) : undefined;
+          if (burst?.through) w.vfx(burst.vfx, e.x, e.y, burst.size + pr.r * 1.5, 0.75, angle);
           pr.pierce -= 1;
           continue;
         }
@@ -1048,6 +1188,9 @@ function impact(w: World, pr: Projectile, e: Enemy | null): void {
   const y = e ? e.y : pr.y - Math.sin(angle) * 3;
   w.vfx(`impact:${pr.type}`, x, y);
   w.addFx({ kind: 'burst', x, y, life: 0.2, size: pr.r + 3, color: pr.type === 'fire' ? '#ffb04d' : pr.type === 'frost' ? '#bdf1ff' : pr.type === 'lightning' ? '#cdeeff' : pr.type === 'poison' ? '#9be36b' : pr.type === 'arcane' ? '#d2a8ff' : '#ffffff' });
+  // a big spell's own burst (a fireball going off, a star breaking...: BURSTS)
+  const burst = pr.spec && pr.depth === 0 ? ownLook(BURSTS, pr.spec) : undefined;
+  if (burst) w.vfx(burst.vfx, x, y, burst.size + pr.r * 1.5, 0.75, angle);
   if (pr.spec && pr.spec.onImpact.length) applyEffects(w, pr.spec.onImpact, { x, y, angle, spec: pr.spec, base: pr.dmg, type: pr.type, depth: pr.depth, target: e ?? undefined, hitDmg: 0, proj: pr, when: 'impact' });
 }
 

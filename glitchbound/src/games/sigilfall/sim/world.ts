@@ -1105,11 +1105,11 @@ export class World {
     this.fx.push({ vx: 0, vy: 0, t: 0, size: 2, color: '#fff', a: 0, a2: 0, r2: 0, x2: 0, y2: 0, ...f });
   }
   /**
-   * A drawn spell effect (`impact:fire`, `blast:frost`, `cast:holy`...: render/effects.ts). Only a
-   * picture: it touches nothing.
+   * A drawn spell effect (`impact:fire`, `blast:frost`, `cast:holy`, `pillar:fire`...: render/effects.ts). Only a
+   * picture: it touches nothing. `angle`: which way it was aimed, for the ones that care (a blow's swing).
    */
-  vfx(sprite: string, x: number, y: number, size = 0, life = 0.9): void {
-    this.addFx({ kind: 'glow', x, y, life, size, color: 'rgba(0,0,0,0)', sprite });
+  vfx(sprite: string, x: number, y: number, size = 0, life = 0.9, angle = 0): void {
+    this.addFx({ kind: 'glow', x, y, life, size, color: 'rgba(0,0,0,0)', sprite, a: angle });
   }
   fxBurst(x: number, y: number, color: string, n: number, radius = 12): void {
     for (let i = 0; i < n; i++) {

@@ -82,7 +82,37 @@ const FIELDS: Record<string, [number, string, string]> = {
   nature: [FIELD.nature, '#4aa83a', '#b8ff8a'],
 };
 
-/** How long a named spell effect plays, in seconds. */
+/**
+ * The colors of a class's own spells, beyond the damage types' (sim/cast.ts names them after the colon of a spell
+ * effect: `crush:steel`, `pillar:fire`, `golemfall:brimstone`...).
+ */
+const SPELL_TONES: Record<string, Tone> = {
+  // the warrior's blows: red-hot steel; a wound's blood
+  steel: { a: '#e0502e', b: '#ffe6c0' },
+  blood: { a: '#c8202a', b: '#ff8a70' },
+  // the paladin's gold of dawn
+  dawn: { a: '#ffb630', b: '#fff6d0' },
+  // the gloam knight's dusk: lavender over the dark
+  gloam: { a: '#7a4ad8', b: '#d8c0ff' },
+  // the druid's shapes: a lynx's claws, a bear's weight; the moon and the stars
+  cat: { a: '#ff8a2a', b: '#ffe0a0' },
+  bear: { a: '#a8743a', b: '#f0d8a8' },
+  lunar: { a: '#c06aff', b: '#ffe8ff' },
+  moon: { a: '#8a9aff', b: '#eef2ff' },
+  solar: { a: '#ff9a2a', b: '#fff2c0' },
+  // the warlock's brimstone and its ruin: fire gone to blood and violet
+  brimstone: { a: '#e0401a', b: '#ffb040' },
+  ruin: { a: '#d02a5a', b: '#ffc080' },
+  // the priest's shadow on the mind
+  psy: { a: '#8a3ae0', b: '#f0d0ff' },
+  // the earth itself
+  earth: { a: '#c08a4a', b: '#ffe0b0' },
+};
+
+/** A druid's Starfall on the ground: a ring of moonlit runes. */
+const STARFALL_FIELD: [number, string, string] = [FIELD.holy, '#a06aff', '#f0d8ff'];
+
+/** How long a named spell effect plays, in seconds (the rest play out over the life the rules gave them). */
 const LENGTHS: Record<string, number> = { impact: 0.36, blast: 0.62, cast: 0.6, buff: 0.85, heal: 0.9, shield: 0.7, summon: 0.95, teleport: 0.55, charge: 0.65, debuff: 0.6, shatter: 0.55, thunder: 0.5 };
 
 /** What a shot is made of, going by the color a foe's data gives it. */
@@ -150,7 +180,7 @@ export interface EffectsScene {
 }
 
 /** An effect by name, somewhere on its way through its life (`u`, 0 to 1): The Vigil's spells use them too. */
-export function spell(fx: Fx3D, name: string, tone: Tone, x: number, y: number, u: number, size: number, seed: number): void {
+export function spell(fx: Fx3D, name: string, tone: Tone, x: number, y: number, u: number, size: number, seed: number, angle = 0): void {
   const a = tone.a;
   const b = tone.b;
   switch (name) {
@@ -223,6 +253,426 @@ export function spell(fx: Fx3D, name: string, tone: Tone, x: number, y: number, 
       fx.put({ kind: FX.ring, x, y, flat: true, w: R * 2.2, a: b, t: u, seed });
       break;
     }
+    default:
+      bigSpell(fx, name, tone, x, y, u, size, seed, angle);
+      break;
+  }
+}
+
+/** How a world height shows on the screen against a length across it (the camera looks down at PITCH). */
+const COS_P = Math.cos(PITCH);
+
+/**
+ * Something coming down out of the sky onto (x, y), `u` of the way there (gathering speed as it falls): from `from`
+ * world pixels to the west and `high` up. Where it is now, and its heading as an angle on the screen.
+ */
+function fallen(x: number, u: number, from: number, high: number): { x: number; up: number; rot: number; k: number } {
+  const k = u * (0.55 + 0.45 * u);
+  return { x: x - from * (1 - k), up: high * (1 - k), rot: Math.atan2(-high * COS_P, from), k };
+}
+
+/** A ring of force racing out over the ground (or `up` over it), `r` across, `width` thick. */
+function shockRing(fx: Fx3D, x: number, y: number, r: number, width: number, a: string, alpha: number, seed: number, up = 0): void {
+  const out = r + width;
+  fx.put({ kind: FX.shock, x, y, up, flat: true, w: out * 2, a, alpha, p1: r / out, p2: width / out, seed });
+}
+
+/** Lumps of whatever was struck, flung out of (x, y) and falling back (`u`: 0 to 1 through their flight). */
+function rubble(fx: Fx3D, x: number, y: number, R: number, u: number, n: number, seed: number, a: string, b: string): void {
+  const k = Math.min(1, u * 1.5);
+  const alpha = clamp(1.7 - u * 1.8, 0, 1);
+  if (alpha <= 0) return;
+  for (let i = 0; i < n; i++) {
+    const ang = (i / n) * TAU + seed * 1.7;
+    const out = R * (0.3 + (0.9 + (i % 3) * 0.2) * k);
+    const hop = Math.sin(k * Math.PI) * (22 + (i % 3) * 10);
+    fx.put({ kind: FX.chip, x: x + Math.cos(ang) * out, y: y + Math.sin(ang) * out * 0.8, up: 3 + hop, w: 5 + (i % 3) * 2, rot: ang + u * 9, a: i % 2 ? a : b, alpha });
+  }
+}
+
+/** Dust or smoke going up from a blow: `n` puffs round (x, y), drifting out. */
+function dust(fx: Fx3D, x: number, y: number, R: number, u: number, n: number, seed: number, a: string, alpha: number): void {
+  for (let i = 0; i < n; i++) {
+    const ang = (i / n) * TAU + seed;
+    const out = R * (0.35 + 0.65 * u);
+    fx.put({ kind: FX.smoke, x: x + Math.cos(ang) * out, y: y + Math.sin(ang) * out * 0.7, up: 3 + u * 10, w: R * (0.55 + u * 0.6), a, alpha, t: u, seed: seed + i * 1.9 });
+  }
+}
+
+/**
+ * The great spells, each its own look: what falls out of the sky, what comes up out of the ground, the heavy blows and
+ * the ultimates (sim/cast.ts asks for them by name). `size`: its reach in world pixels; `angle`: which way it was aimed
+ * (a blow's swing), on the ground.
+ */
+function bigSpell(fx: Fx3D, name: string, tone: Tone, x: number, y: number, u: number, size: number, seed: number, angle: number): void {
+  const { a, b } = tone;
+  const R = Math.max(14, size);
+  const fade = clamp(1 - u, 0, 1);
+  switch (name) {
+    // Flame Pillar, gathering: the ground under it cracks and glows, flames lick up round its edge, taller as it comes
+    case 'pyre': {
+      const k = u * u;
+      fx.put({ kind: FX.glow, x, y, flat: true, w: R * 3.2, a, alpha: 0.2 + 0.55 * k });
+      fx.put({ kind: FX.crack, x, y, flat: true, w: R * 2.1, a, b, t: 1 - 0.8 * k, seed });
+      fx.put({ kind: FX.rune, x, y, flat: true, w: R * 2.15, a, b, t: 0.35 + 0.25 * u, seed });
+      for (let i = 0; i < 6; i++) {
+        const ang = (i / 6) * TAU + seed;
+        fx.put({ kind: FX.flame, x: x + Math.cos(ang) * R * 0.82, y: y + Math.sin(ang) * R * 0.82, base: true, w: 12 + 8 * k, h: 8 + 28 * k, a, b, seed: seed + i, alpha: 0.35 + 0.65 * u });
+      }
+      fx.put({ kind: FX.rain, x, y, base: true, w: R * 1.8, h: 40 + 50 * k, a: b, t: -1, seed, p1: 1 });
+      break;
+    }
+    // Flame Pillar, erupting: a column of fire standing up out of the ground, the ground split and burning at its foot
+    case 'pillar': {
+      const H = R * 2.8 + 28;
+      fx.put({ kind: FX.crack, x, y, flat: true, w: R * 2.4, a, b, t: u, seed });
+      fx.put({ kind: FX.glow, x, y, flat: true, w: R * 4.6, a, alpha: 0.75 * fade });
+      shockRing(fx, x, y, R * (0.5 + 0.9 * (1 - fade * fade)), 3 + 9 * fade, b, fade, seed);
+      for (let i = 0; i < 5; i++) {
+        const ang = (i / 5) * TAU + seed * 2;
+        const lick = Math.sin(Math.min(1, u * 2.5) * Math.PI * 0.5) * fade;
+        fx.put({ kind: FX.flame, x: x + Math.cos(ang) * R * 0.78, y: y + Math.sin(ang) * R * 0.78, base: true, w: 18, h: 16 + 30 * lick, a, b, seed: seed + i * 1.3, alpha: lick });
+      }
+      fx.put({ kind: FX.column, x, y, base: true, w: R * 1.9, h: H, a, b, t: u, seed });
+      fx.put({ kind: FX.column, x, y, base: true, w: R * 0.7, h: H * 0.9, a: '#ff8a2a', b, t: Math.min(1, u * 1.15), seed: seed + 3.7, alpha: 0.6 });
+      // tongues of flame breaking off its sides as it burns
+      for (let i = 0; i < 4; i++) {
+        const ph = (u * 2.2 + i * 0.27) % 1;
+        const side = i % 2 ? 1 : -1;
+        const tall = Math.max(0, 1 - Math.max(0, u - 0.45) * 1.8);
+        fx.put({ kind: FX.flame, x: x + side * R * (0.45 + ph * 0.2), y, up: H * (0.15 + ph * 0.6) * tall, base: true, w: 22, h: 34 * (1 - ph), rot: side * -0.35, a, b, seed: seed + i * 2.1, alpha: (1 - ph) * tall });
+      }
+      fx.put({ kind: FX.glow, x, y, up: H * 0.4, w: R * 5, a, alpha: 0.55 * fade });
+      fx.put({ kind: FX.rain, x, y, base: true, w: R * 1.6, h: H, a: b, t: u, seed, p1: 1 });
+      if (u > 0.35) fx.put({ kind: FX.smoke, x, y, up: H * 0.8 + u * 26, w: R * (1.8 + u), a: '#3a3036', alpha: 0.5, t: (u - 0.35) / 0.65, seed });
+      break;
+    }
+    // Meteor, falling: a burning rock out of the sky, its long tail behind it, its shadow closing on the spot
+    case 'meteorfall': {
+      const f = fallen(x, u, 80, 170);
+      fx.put({ kind: FX.mark, x, y, flat: true, w: R * (0.5 + 1.1 * f.k), a: '#000000', alpha: 0.4 + 0.5 * f.k });
+      fx.put({ kind: FX.glow, x, y, flat: true, w: R * 3.2, a, alpha: 0.5 * f.k });
+      for (let i = 1; i <= 3; i++) {
+        const s = fallen(x, Math.max(0, u - i * 0.07), 80, 170);
+        fx.put({ kind: FX.smoke, x: s.x, y, up: s.up + 4, w: 22 + i * 9, a: '#4a3a38', alpha: 0.42 * (1 - i * 0.22), t: 0.2 + i * 0.2, seed: seed + i });
+      }
+      fx.put({ kind: FX.glow, x: f.x, y, up: f.up, w: 92, a, alpha: 0.85 });
+      fx.put({ kind: FX.flame, x: f.x, y, up: f.up, base: true, w: 44, h: 104, rot: f.rot + Math.PI / 2, a, b, seed });
+      fx.put({ kind: FX.ball, x: f.x, y, up: f.up, w: 32, a: '#3a2620', b: '#ff8a3a' });
+      fx.put({ kind: FX.glow, x: f.x, y, up: f.up, w: 30, a: b, alpha: 0.6 });
+      break;
+    }
+    // Meteor, landed: a blast, the ground cratered and cracked with fire, rubble thrown out and a column of smoke
+    case 'crater': {
+      fx.put({ kind: FX.crack, x, y, flat: true, w: R * 2.7, a, b, t: u, seed });
+      fx.put({ kind: FX.glow, x, y, flat: true, w: R * 4.4, a, alpha: 0.8 * fade * fade });
+      shockRing(fx, x, y, R * (0.35 + 1.15 * (1 - fade * fade)), 4 + 12 * fade, b, fade, seed);
+      fx.put({ kind: FX.blast, x, y, up: R * 0.45, w: R * 3.3, a, b, t: Math.min(1, u * 1.5), seed });
+      fx.put({ kind: FX.impact, x, y, up: 14, w: R * 3.2, a, b, t: Math.min(1, u * 2.2), seed });
+      rubble(fx, x, y, R, u, 8, seed, '#4a3a30', '#6a5040');
+      if (u > 0.12) for (let i = 0; i < 2; i++) fx.put({ kind: FX.smoke, x: x + (i ? 7 : -7), y, up: R * 0.6 + u * 46 + i * 16, w: R * (1.3 + u * 1.3), a: i ? '#3a3034' : '#4a3e3c', alpha: 0.62, t: u, seed: seed + i * 2.3 });
+      break;
+    }
+    // a comet of ice (Absolute Zero): a long crystal falling, a cold trail of mist and glitter behind it
+    case 'cometfall': {
+      const f = fallen(x, u, 80, 170);
+      const len = 110;
+      const ux = 80 / Math.hypot(80, 170);
+      const uu = 170 / Math.hypot(80, 170);
+      fx.put({ kind: FX.mark, x, y, flat: true, w: R * (0.5 + 1.1 * f.k), a: '#9be7ff', alpha: 0.35 + 0.4 * f.k });
+      fx.put({ kind: FX.field, x, y, flat: true, w: R * 2 * f.k, a, b, t: 0.25 * f.k, seed, p1: FIELD.frost });
+      fx.put({ kind: FX.trail, x: f.x - (ux * len) / 2, y, up: f.up + (uu * len) / 2, w: len * (Math.hypot(80, 170 * COS_P) / Math.hypot(80, 170)), h: 26, rot: f.rot, a, b, seed });
+      fx.put({ kind: FX.glow, x: f.x, y, up: f.up, w: 80, a, alpha: 0.8 });
+      fx.put({ kind: FX.frost, x: f.x, y, up: f.up, w: 58, h: 22, rot: f.rot, a, b, seed });
+      fx.put({ kind: FX.rain, x: f.x, y, up: f.up - 20, base: true, w: 40, h: 60, a: b, t: -1, seed, p1: 1 });
+      break;
+    }
+    // the comet landed: the ground frozen over and cracked, shards of ice thrown out, a cold mist rolling off it
+    case 'rimecrater': {
+      fx.put({ kind: FX.field, x, y, flat: true, w: R * 2.4, a, b, t: 0.34 * fade + 0.1, seed, p1: FIELD.frost });
+      fx.put({ kind: FX.crack, x, y, flat: true, w: R * 2.6, a, b: '#ffffff', t: u, seed });
+      shockRing(fx, x, y, R * (0.35 + 1.15 * (1 - fade * fade)), 4 + 10 * fade, b, fade, seed);
+      fx.put({ kind: FX.impact, x, y, up: 14, w: R * 3.2, a, b, t: Math.min(1, u * 2.2), seed });
+      for (let i = 0; i < 10; i++) {
+        const ang = (i / 10) * TAU + seed;
+        const out = R * 1.2 * (1 - (1 - Math.min(1, u * 1.4)) ** 2);
+        fx.put({ kind: FX.frost, x: x + Math.cos(ang) * out, y: y + Math.sin(ang) * out, up: 8 + Math.sin(Math.min(1, u * 1.4) * Math.PI) * 18, w: 14, h: 6, rot: ang + u * 5, a, b, alpha: clamp(1.5 - u * 1.5, 0, 1), seed: seed + i });
+      }
+      dust(fx, x, y, R, u, 4, seed, '#d8f2ff', 0.45 * fade);
+      break;
+    }
+    // the Brimstone Golem called: a burning sigil opens on the ground, and a lump of smoking brimstone comes down on it
+    case 'golemfall': {
+      const f = fallen(x, u, 60, 180);
+      fx.put({ kind: FX.glow, x, y, flat: true, w: R * 3.4, a, alpha: 0.25 + 0.5 * f.k });
+      fx.put({ kind: FX.rune, x, y, flat: true, w: R * 2.5, a: '#a050e0', b, t: 0.4 + 0.15 * u, seed });
+      fx.put({ kind: FX.rune, x, y, flat: true, w: R * 1.6, a, b: '#ffd0a0', t: 0.45, seed: seed + 0.5 });
+      fx.put({ kind: FX.mark, x, y, flat: true, w: R * (0.5 + 1.0 * f.k), a: '#000000', alpha: 0.45 + 0.4 * f.k });
+      for (let i = 1; i <= 3; i++) {
+        const s = fallen(x, Math.max(0, u - i * 0.07), 60, 180);
+        fx.put({ kind: FX.smoke, x: s.x, y, up: s.up + 6, w: 26 + i * 11, a: '#24181c', alpha: 0.6 * (1 - i * 0.2), t: 0.2 + i * 0.2, seed: seed + i });
+      }
+      fx.put({ kind: FX.glow, x: f.x, y, up: f.up, w: 96, a: '#a050e0', alpha: 0.6 });
+      fx.put({ kind: FX.flame, x: f.x, y, up: f.up, base: true, w: 52, h: 110, rot: f.rot + Math.PI / 2, a, b, seed });
+      fx.put({ kind: FX.ball, x: f.x, y, up: f.up, w: 40, a: '#2a1c1e', b: '#ff5a2a' });
+      fx.put({ kind: FX.flame, x: f.x, y, up: f.up - 10, base: true, w: 34, h: 40, a: '#7a2ad0', b: '#ff7a3a', seed: seed + 2, alpha: 0.85 });
+      break;
+    }
+    // ...and lands: the ground split with brimstone fire, a dark blast, the sigil flaring, rubble and black smoke
+    case 'golemland': {
+      fx.put({ kind: FX.crack, x, y, flat: true, w: R * 2.8, a, b, t: u, seed });
+      fx.put({ kind: FX.rune, x, y, flat: true, w: R * (2.5 + u * 0.8), a: '#a050e0', b: '#ffd0a0', t: 0.45 + 0.55 * u, seed });
+      shockRing(fx, x, y, R * (0.35 + 1.2 * (1 - fade * fade)), 4 + 12 * fade, '#ff6a2a', fade, seed);
+      fx.put({ kind: FX.blast, x, y, up: R * 0.45, w: R * 3.2, a, b, t: Math.min(1, u * 1.5), seed });
+      fx.put({ kind: FX.impact, x, y, up: 14, w: R * 3.2, a: '#a050e0', b, t: Math.min(1, u * 2.2), seed });
+      rubble(fx, x, y, R, u, 8, seed, '#2a1c1e', '#4a2a24');
+      if (u > 0.12) for (let i = 0; i < 2; i++) fx.put({ kind: FX.smoke, x: x + (i ? 8 : -8), y, up: R * 0.6 + u * 40 + i * 16, w: R * (1.3 + u * 1.3), a: '#1e1418', alpha: 0.7, t: u, seed: seed + i * 2.3 });
+      break;
+    }
+    // something else from the sky: a shaft of its light and a burst where it lands
+    case 'skyfall':
+      fx.put({ kind: FX.shaft, x, y, base: true, w: R * 1.4, h: 190, a, t: u, seed });
+      fx.put({ kind: FX.blast, x, y, up: R * 0.4, w: R * 2.8, a, b, t: u, seed });
+      shockRing(fx, x, y, R * (0.4 + (1 - fade * fade)), 3 + 9 * fade, b, fade, seed);
+      break;
+    // Tempest: a storm cloud gathered over the spot, lightning crawling over the ground under it
+    case 'stormcloud': {
+      const on = Math.min(1, u * 6, (1 - u) * 5);
+      fx.put({ kind: FX.field, x, y, flat: true, w: R * 2, a, b, t: on * 0.34, seed, p1: FIELD.lightning });
+      for (let i = 0; i < 5; i++) {
+        const ang = (i / 5) * TAU + seed;
+        const r = i === 0 ? 0 : R * 0.7;
+        fx.put({ kind: FX.smoke, x: x + Math.cos(ang) * r, y: y + Math.sin(ang) * r * 0.6, up: 120 + (i % 2) * 10, w: R * 1.6, a: i % 2 ? '#2a3448' : '#384258', alpha: 0.75 * on, t: 0.3, seed: seed + i * 2.1 });
+      }
+      fx.put({ kind: FX.glow, x, y, up: 118, w: R * 3, a, alpha: on * (0.25 + 0.25 * Math.max(0, Math.sin(u * 47 + seed))) });
+      break;
+    }
+    // Fireball, landed: a churning ball of fire, tongues of flame thrown out and a ring along the ground
+    case 'fireburst': {
+      fx.put({ kind: FX.glow, x, y, flat: true, w: R * 4, a, alpha: 0.7 * fade });
+      shockRing(fx, x, y, R * (0.3 + 1.0 * (1 - fade * fade)), 3 + 7 * fade, b, fade, seed);
+      fx.put({ kind: FX.blast, x, y, up: 12, w: R * 3, a, b, t: Math.min(1, u * 1.2), seed });
+      for (let i = 0; i < 5; i++) {
+        const ang = (i / 5) * TAU + seed;
+        const out = R * (0.3 + 0.8 * Math.min(1, u * 2));
+        fx.put({ kind: FX.flame, x: x + Math.cos(ang) * out, y: y + Math.sin(ang) * out * 0.7, base: true, w: 16, h: 24 * fade, a, b, seed: seed + i, alpha: fade });
+      }
+      if (u > 0.25) fx.put({ kind: FX.smoke, x, y, up: 14 + u * 24, w: R * (1.4 + u), a: '#3a3036', alpha: 0.5, t: u, seed });
+      break;
+    }
+    // Ruin Bolt, landed: chaos fire tearing itself apart, cracking with arcs, a hole of dark at its heart
+    case 'ruin': {
+      fx.put({ kind: FX.glow, x, y, flat: true, w: R * 4, a, alpha: 0.7 * fade });
+      shockRing(fx, x, y, R * (0.3 + 1.1 * (1 - fade * fade)), 3 + 8 * fade, b, fade, seed);
+      fx.put({ kind: FX.blast, x, y, up: 12, w: R * 3.2, a, b, t: Math.min(1, u * 1.3), seed });
+      fx.put({ kind: FX.shadow, x, y, up: 12, w: R * 2.2 * (1 - u), a: '#c0306a', b: '#ffb070', seed });
+      for (let i = 0; i < 3; i++) fx.put({ kind: FX.bolt, x, y, up: 12, w: R * 3, h: 18, rot: seed * 3 + (i * TAU) / 3 + u * 2, a: b, seed: seed + i + Math.floor(u * 10), alpha: clamp(1.2 - u * 1.4, 0, 1) });
+      break;
+    }
+    // Searing Hymn, landed: a burst of holy flame going up off them, rays turning
+    case 'hymn':
+      fx.put({ kind: FX.glow, x, y, flat: true, w: R * 3.4, a, alpha: 0.6 * fade });
+      fx.put({ kind: FX.column, x, y, base: true, w: R * 1.2, h: R * 3.6 + 30, a, b, t: u, seed });
+      fx.put({ kind: FX.holy, x, y, up: 14, w: R * 3.4, a, b, seed, alpha: fade });
+      fx.put({ kind: FX.ring, x, y, flat: true, w: R * 2.6, a: b, t: u, seed });
+      break;
+    // Starbreak, landed: a star bursting, its points flung wide, motes of it scattering
+    case 'starburst': {
+      const k = Math.min(1, u * 2.2);
+      fx.put({ kind: FX.glow, x, y, flat: true, w: R * 3.6, a, alpha: 0.6 * fade });
+      fx.put({ kind: FX.spark, x, y, up: 14, w: R * (2.2 + 2.4 * k), a, t: u });
+      fx.put({ kind: FX.spark, x, y, up: 14, w: R * (1.4 + 1.6 * k), rot: Math.PI / 4, a: b, t: u });
+      fx.put({ kind: FX.ring, x, y, flat: true, w: R * 2.6, a, t: u, seed });
+      for (let i = 0; i < 6; i++) {
+        const ang = (i / 6) * TAU + seed;
+        const out = R * 1.3 * k;
+        fx.put({ kind: FX.spark, x: x + Math.cos(ang) * out, y: y + Math.sin(ang) * out * 0.7, up: 12 + Math.sin(k * Math.PI) * 10, w: 9, a: i % 2 ? b : a, t: u });
+      }
+      break;
+    }
+    // Starflame, landed: a little sun going off, its rays turning
+    case 'solar':
+      fx.put({ kind: FX.glow, x, y, flat: true, w: R * 3.6, a, alpha: 0.7 * fade });
+      shockRing(fx, x, y, R * (0.3 + (1 - fade * fade)), 3 + 7 * fade, b, fade, seed);
+      fx.put({ kind: FX.blast, x, y, up: 12, w: R * 2.8, a, b, t: Math.min(1, u * 1.3), seed });
+      fx.put({ kind: FX.holy, x, y, up: 14, w: R * 3.4, a, b, seed: seed + u * 2, alpha: fade });
+      break;
+    // a crushing blow: the ground cracked under it, a flash, dust thrown up and a ring of force
+    case 'crush':
+      fx.put({ kind: FX.crack, x, y, flat: true, w: R * 2, a, b, t: Math.min(1, u * 1.2), seed });
+      shockRing(fx, x, y, R * (0.25 + 0.85 * (1 - fade * fade)), 3 + 7 * fade, b, fade, seed);
+      fx.put({ kind: FX.impact, x, y, up: 10, w: R * 2.6, a, b, t: Math.min(1, u * 1.8), seed });
+      dust(fx, x, y, R, u, 4, seed, '#8a7a66', 0.45 * fade);
+      rubble(fx, x, y, R * 0.8, u, 5, seed, '#6a5a4a', '#8a7a64');
+      break;
+    // a wound torn open: a dark red gash, blood flung, a red ring
+    case 'rend': {
+      const g = Math.min(1, u * 3);
+      fx.put({ kind: FX.trail, x, y, up: 10, flat: true, w: R * 1.8 * g, h: 9 * fade + 2, rot: angle + Math.PI / 2 + 0.5, a, b, seed, alpha: fade });
+      fx.put({ kind: FX.impact, x, y, up: 10, w: R * 2.3, a, b, t: Math.min(1, u * 1.8), seed });
+      fx.put({ kind: FX.ring, x, y, flat: true, w: R * 2.2, a, t: u, seed });
+      for (let i = 0; i < 7; i++) {
+        const ang = angle + (i / 6 - 0.5) * 1.8;
+        const out = R * (0.2 + 1.0 * Math.min(1, u * 1.6));
+        fx.put({ kind: FX.chip, x: x + Math.cos(ang) * out, y: y + Math.sin(ang) * out * 0.8, up: 8 + Math.sin(Math.min(1, u * 1.6) * Math.PI) * 12, w: 3.5 + (i % 2) * 1.5, rot: ang, a: i % 3 ? a : '#5a0a14', alpha: clamp(1.5 - u * 1.6, 0, 1) });
+      }
+      break;
+    }
+    // a verdict of light: two blades of it crossed where the blow landed, a flare, and a shaft of light coming down
+    case 'verdict': {
+      const g = Math.min(1, u * 3.5);
+      for (let i = -1; i <= 1; i += 2) fx.put({ kind: FX.beam, x, y, up: 10, flat: true, w: R * 2 * g, h: 7 * fade + 2, rot: angle + (i * Math.PI) / 4, a, b, seed: seed + i, alpha: fade });
+      fx.put({ kind: FX.shaft, x, y, base: true, w: R * 1.1, h: 120, a, t: u, seed });
+      fx.put({ kind: FX.holy, x, y, up: 14, w: R * 3.2, a, b, seed, alpha: fade });
+      fx.put({ kind: FX.impact, x, y, up: 12, w: R * 2.6, a, b, t: Math.min(1, u * 1.8), seed });
+      shockRing(fx, x, y, R * (0.25 + 0.85 * (1 - fade * fade)), 3 + 6 * fade, b, fade, seed);
+      break;
+    }
+    // a shield driven into them: a flash of its face and a ring of light
+    case 'bastion':
+      fx.put({ kind: FX.bubble, x, y, up: 14, w: R * 1.8 * (0.6 + 0.4 * Math.min(1, u * 3)), a, t: u, seed });
+      fx.put({ kind: FX.impact, x, y, up: 12, w: R * 2.4, a, b, t: Math.min(1, u * 1.8), seed });
+      shockRing(fx, x, y, R * (0.25 + 0.8 * (1 - fade * fade)), 3 + 6 * fade, b, fade, seed);
+      break;
+    // jaws: two curved rows of teeth snapping shut on them, blood flung
+    case 'bite': {
+      const d = R * 0.5;
+      for (let i = -1; i <= 1; i += 2) {
+        const n = angle + (i * Math.PI) / 2;
+        fx.put({ kind: FX.slash, x: x + Math.cos(n) * d, y: y + Math.sin(n) * d, up: 11, flat: true, w: (d * 2) / 0.82, rot: n + Math.PI, a, b, t: Math.min(0.99, u * 1.4), p1: 2.4, p2: 1 });
+      }
+      fx.put({ kind: FX.impact, x, y, up: 10, w: R * 2, a, b, t: Math.min(1, u * 1.8), seed });
+      for (let i = 0; i < 6; i++) {
+        const ang = angle + (i / 5 - 0.5) * 2.2;
+        const out = R * (0.2 + 0.9 * Math.min(1, u * 1.6));
+        fx.put({ kind: FX.chip, x: x + Math.cos(ang) * out, y: y + Math.sin(ang) * out * 0.8, up: 8 + Math.sin(Math.min(1, u * 1.6) * Math.PI) * 12, w: 3.5, rot: ang, a: i % 2 ? '#c8202a' : '#7a0a14', alpha: clamp(1.5 - u * 1.6, 0, 1) });
+      }
+      break;
+    }
+    // a blow of shadow: the dark bursting out of the wound, wisps of it rising, a ring of pale violet
+    case 'umbral':
+      fx.put({ kind: FX.glow, x, y, flat: true, w: R * 3, a, alpha: 0.5 * fade });
+      fx.put({ kind: FX.impact, x, y, up: 12, w: R * 2.6, a, b, t: Math.min(1, u * 1.8), seed });
+      fx.put({ kind: FX.shadow, x, y, up: 13, w: R * (1.4 + 1.4 * Math.min(1, u * 2)), a, b, seed, alpha: clamp(1.4 - u * 1.4, 0, 1) });
+      shockRing(fx, x, y, R * (0.25 + 0.85 * (1 - fade * fade)), 3 + 7 * fade, a, fade, seed);
+      fx.put({ kind: FX.rain, x, y, base: true, w: R * 1.8, h: 56, a, t: u, seed, p1: 1 });
+      break;
+    // the ground sundered by shadow: a fissure of violet light, dark rising out of it
+    case 'sunder':
+      fx.put({ kind: FX.crack, x, y, flat: true, w: R * 2.6, a, b, t: u, seed });
+      shockRing(fx, x, y, R * (0.3 + 1.0 * (1 - fade * fade)), 4 + 9 * fade, b, fade, seed);
+      fx.put({ kind: FX.shadow, x, y, up: 12, w: R * (1.4 + 1.4 * Math.min(1, u * 2)), a, b, seed, alpha: fade });
+      fx.put({ kind: FX.column, x, y, base: true, w: R * 1.2, h: R * 2.6 + 20, a, b, t: Math.min(1, u * 1.1), seed });
+      fx.put({ kind: FX.impact, x, y, up: 12, w: R * 2.8, a: b, b: '#ffffff', t: Math.min(1, u * 1.8), seed });
+      dust(fx, x, y, R, u, 4, seed, '#2a2236', 0.6 * fade);
+      break;
+    // Halo: a ring of light going out from the priest at the height of a heart, burning gold, sparks riding it
+    case 'halo': {
+      const e = 1 - fade * fade;
+      const r = R * (0.15 + 0.9 * e);
+      fx.put({ kind: FX.shaft, x, y, base: true, w: 44, h: 150, a, t: u, seed });
+      fx.put({ kind: FX.holy, x, y, up: 18, w: 90 * fade + 30, a, b, seed, alpha: fade });
+      shockRing(fx, x, y, r, 6 + 10 * fade, a, fade, seed, 14);
+      shockRing(fx, x, y, r * 0.96, 3 + 4 * fade, b, fade * 0.8, seed + 1);
+      shockRing(fx, x, y, r * 1.02, 8 + 14 * fade, a, fade * 0.45, seed + 2);
+      for (let i = 0; i < 12; i++) {
+        const ang = (i / 12) * TAU + seed + u * 1.5;
+        fx.put({ kind: FX.spark, x: x + Math.cos(ang) * r, y: y + Math.sin(ang) * r, up: 15, w: 12, a: i % 2 ? b : a, t: u * 0.8 });
+      }
+      break;
+    }
+    // a dark halo: the light drawn into a hole of black, then a ring of pale shadow thrown out, wisps going up
+    case 'eclipse': {
+      const pull = Math.min(1, u * 3.5);
+      const e = Math.max(0, (u - 0.18) / 0.82);
+      fx.put({ kind: FX.shadow, x, y, flat: true, w: R * 1.3 * (1 - pull * 0.6) + R * 0.6 * e, a, b, seed, alpha: clamp(1.3 - u * 1.3, 0, 1) });
+      fx.put({ kind: FX.glow, x, y, flat: true, w: R * 3, a, alpha: 0.4 * fade });
+      if (e > 0) {
+        const r = R * (0.2 + 0.85 * (1 - (1 - e) * (1 - e)));
+        shockRing(fx, x, y, r, 5 + 12 * (1 - e), b, 1 - e, seed, 2);
+        shockRing(fx, x, y, r * 0.9, 3 + 5 * (1 - e), a, (1 - e) * 0.8, seed + 1, 12);
+      }
+      fx.put({ kind: FX.shadow, x, y, up: 46, w: 40 * (1 - u * 0.5), a, b, seed: seed + 1, alpha: fade });
+      fx.put({ kind: FX.glow, x, y, up: 46, w: 90, a: b, alpha: 0.45 * fade, behind: true });
+      fx.put({ kind: FX.rain, x, y, base: true, w: R * 1.8, h: 70, a: b, t: u, seed, p1: 1 });
+      break;
+    }
+    // Duskfall: the eclipse, and the ground under it splitting with the dark coming up out of it round the knight
+    case 'nightfall':
+      fx.put({ kind: FX.crack, x, y, flat: true, w: R * 1.9, a, b, t: u, seed });
+      bigSpell(fx, 'eclipse', tone, x, y, u, size, seed, angle);
+      for (let i = 0; i < 5; i++) {
+        const ang = (i / 5) * TAU + seed;
+        const out = R * (0.3 + 0.55 * Math.min(1, u * 1.6));
+        fx.put({ kind: FX.column, x: x + Math.cos(ang) * out, y: y + Math.sin(ang) * out * 0.8, base: true, w: 26, h: 70, a, b, t: Math.min(1, u * 1.2 + i * 0.03), seed: seed + i * 1.7 });
+      }
+      break;
+    // Dawn's Fury: a pillar of gold standing up over the paladin, sun rays thrown across the ground, a ring of light
+    case 'dawn': {
+      const e = 1 - fade * fade;
+      fx.put({ kind: FX.holy, x, y, flat: true, w: R * 3.2 * (0.5 + 0.5 * e), a, b, seed, alpha: fade });
+      shockRing(fx, x, y, R * (0.2 + 0.85 * e), 5 + 10 * fade, b, fade, seed);
+      fx.put({ kind: FX.column, x, y, base: true, w: 46, h: 190, a, b, t: u, seed });
+      fx.put({ kind: FX.shaft, x, y, base: true, w: 70, h: 200, a: b, t: u, seed });
+      fx.put({ kind: FX.glow, x, y, up: 40, w: 150, a, alpha: 0.5 * fade });
+      fx.put({ kind: FX.rain, x, y, base: true, w: R * 1.6, h: 90, a: b, t: u, seed, p1: 1 });
+      break;
+    }
+    // Radiant Sweep: blades of light turning all the way round
+    case 'sweep':
+      for (let i = 0; i < 2; i++) fx.put({ kind: FX.slash, x, y, up: 11, flat: true, w: (R * 2) / 0.82, rot: seed + i * Math.PI + u * 5, a, b, t: Math.min(0.99, u * 1.1), p1: 3.6, p2: 1 });
+      fx.put({ kind: FX.holy, x, y, up: 14, w: 60, a, b, seed, alpha: fade });
+      shockRing(fx, x, y, R * (0.3 + 0.75 * (1 - fade * fade)), 3 + 6 * fade, b, fade, seed);
+      break;
+    // a stamp that cracks the ground: dust and a ring of force thrown out (lightning crawling over it for a thunderclap)
+    case 'stomp':
+    case 'thunderstomp': {
+      fx.put({ kind: FX.crack, x, y, flat: true, w: R * 1.6, a, b, t: u, seed });
+      shockRing(fx, x, y, R * (0.2 + 0.85 * (1 - fade * fade)), 4 + 9 * fade, b, fade, seed);
+      dust(fx, x, y, R, u, 6, seed, '#8a7a66', 0.38 * fade);
+      if (name === 'thunderstomp') {
+        for (let i = 0; i < 5; i++) {
+          const ang = (i / 5) * TAU + seed;
+          const r = R * 0.5 * (0.5 + 0.5 * Math.min(1, u * 3));
+          fx.put({ kind: FX.bolt, x: x + Math.cos(ang) * r, y: y + Math.sin(ang) * r, up: 4, flat: true, w: R, h: 16, rot: ang, a, seed: seed + i + Math.floor(u * 12), alpha: clamp(1.3 - u * 1.5, 0, 1) });
+        }
+      }
+      break;
+    }
+    // a bell tolled in the dark: rings of shadow going out one after another
+    case 'toll':
+      for (let i = 0; i < 3; i++) {
+        const k = u * 1.5 - i * 0.25;
+        if (k <= 0 || k >= 1) continue;
+        shockRing(fx, x, y, R * (0.15 + 0.9 * k), 3 + 6 * (1 - k), i % 2 ? b : a, 1 - k, seed + i, 2);
+      }
+      fx.put({ kind: FX.shadow, x, y, up: 16, w: 36 * fade, a, b, seed, alpha: fade });
+      break;
+    // Smite: a narrow lance of light falling on them out of the sky
+    case 'smite':
+      fx.put({ kind: FX.shaft, x, y, base: true, w: 18, h: 130, a, t: Math.min(1, u * 1.4), seed });
+      fx.put({ kind: FX.impact, x, y, up: 10, w: R * 2.4, a, b, t: u, seed });
+      fx.put({ kind: FX.ring, x, y, flat: true, w: R * 2, a: b, t: u, seed });
+      break;
+    // Thought Lash: the mind crushed: shadow drawn into them and bursting out again
+    case 'psyblast':
+      fx.put({ kind: FX.gather, x, y, up: 14, w: R * 3 * fade, a, b, t: 1 - u, seed });
+      fx.put({ kind: FX.shadow, x, y, up: 14, w: R * 1.8 * (1 - Math.min(1, u * 2)) + 4, a, b, seed });
+      fx.put({ kind: FX.impact, x, y, up: 14, w: R * 2.8, a: b, b: '#ffffff', t: u, seed });
+      shockRing(fx, x, y, R * (0.3 + 0.8 * (1 - fade * fade)), 3 + 5 * fade, a, fade, seed, 12);
+      break;
+    // Moonburn: a beam of moonlight on them, a pale ring at their feet
+    case 'moonbeam':
+      fx.put({ kind: FX.shaft, x, y, base: true, w: 26, h: 160, a, t: u, seed });
+      fx.put({ kind: FX.glow, x, y, flat: true, w: R * 3, a: b, alpha: 0.7 * fade });
+      fx.put({ kind: FX.rune, x, y, flat: true, w: R * 2, a, b, t: 0.3 + 0.6 * u, seed });
+      break;
+    // Harvest: a reaping stroke of shadow across them
+    case 'reap':
+      fx.put({ kind: FX.slash, x, y, up: 16, w: (R * 2.4) / 0.82, rot: -0.6, a, b, t: Math.min(0.99, u * 1.2), p1: 2.6, p2: 1 });
+      fx.put({ kind: FX.impact, x, y, up: 14, w: R * 2.4, a, b, t: u, seed });
+      fx.put({ kind: FX.rain, x, y, base: true, w: R * 1.4, h: 46, a: b, t: u, seed, p1: 1 });
+      break;
     default:
       break;
   }
@@ -497,11 +947,19 @@ export class Effects {
 
   private field(f: World['fields'][number], sc: EffectsScene): void {
     const fx = sc.fx;
-    const [look, a, b] = FIELDS[f.look] ?? FIELDS.rift!;
+    // (a druid's Starfall is a ring of moonlit ground with stars falling on it, not the rift its rules borrow)
+    const starfall = !f.hostile && f.spec?.id === 'starfall' && f.type === 'arcane';
+    const [look, a, b] = starfall ? STARFALL_FIELD : (FIELDS[f.look] ?? FIELDS.rift!);
     const life = clamp(f.t / f.dur, 0, 1);
     const seed = f.id * 0.31;
     fx.put({ kind: FX.field, x: f.x, y: f.y, flat: true, w: f.r * 2, a, b, t: life, seed, p1: look, p2: f.hostile ? 1 : 0 });
     const fade = clamp(life * 3, 0, 1);
+    if (starfall) {
+      this.fallingStars(fx, f, sc.time, fade);
+      return;
+    }
+    // Rain of Fire: balls of fire coming down on the burning ground
+    if (!f.hostile && f.spec?.id === 'rain-of-fire' && f.look === 'fire') this.fireRain(fx, f, sc.time, fade);
     // what stands up out of it
     const n = clamp(Math.round(f.r / 11), 1, 7);
     switch (f.look) {
@@ -544,6 +1002,52 @@ export class Effects {
       default:
         break;
     }
+  }
+
+  /**
+   * Things coming down on a field out of the sky, `n` at a time, each landing on a new spot of it every time round:
+   * where each one is, handed to `draw` (`ph`: 0 high up to 1 landed).
+   */
+  private skyfall(f: World['fields'][number], time: number, n: number, speed: number, draw: (x: number, y: number, up: number, ph: number, i: number) => void): void {
+    for (let i = 0; i < n; i++) {
+      const at = time * speed + i / n + hash2(i, f.id, 21);
+      const ph = at % 1;
+      const round = Math.floor(at);
+      const ang = hash2(i, round, f.id) * TAU;
+      const r = Math.sqrt(hash2(i, round, f.id + 7)) * f.r * 0.8;
+      const fall = fallen(f.x + Math.cos(ang) * r, ph, 50, 190);
+      draw(fall.x, f.y + Math.sin(ang) * r, fall.up, ph, i);
+    }
+  }
+
+  /** A druid's Starfall: stars streaking down on the moonlit ring, each a flash where it lands. */
+  private fallingStars(fx: Fx3D, f: World['fields'][number], time: number, fade: number): void {
+    const rot = Math.atan2(-190 * COS_P, 50);
+    const sl = Math.hypot(50, 190 * COS_P) / Math.hypot(50, 190);
+    this.skyfall(f, time, 5, 1.4, (x, y, up, ph, i) => {
+      if (ph < 0.86) {
+        fx.put({ kind: FX.trail, x: x - 9, y, up: up + 34, w: 72 * sl, h: 9, rot, a: '#8a5ad8', b: '#f4e4ff', seed: i, alpha: fade });
+        fx.put({ kind: FX.spark, x, y, up, w: 16, rot: time * 5 + i, a: '#ffe8ff', t: 0.05, alpha: fade });
+      } else {
+        const u = (ph - 0.86) / 0.14;
+        fx.put({ kind: FX.impact, x, y, up: 6, w: 34, a: '#c06aff', b: '#ffe8ff', t: u, seed: i, alpha: fade });
+        fx.put({ kind: FX.ring, x, y, flat: true, w: 30, a: '#e0b0ff', t: u, seed: i, alpha: fade });
+      }
+    });
+  }
+
+  /** Rain of Fire: balls of fire coming down on the burning ground, each a splash of flame where it lands. */
+  private fireRain(fx: Fx3D, f: World['fields'][number], time: number, fade: number): void {
+    const rot = Math.atan2(-190 * COS_P, 50);
+    this.skyfall(f, time, 3, 1.1, (x, y, up, ph, i) => {
+      if (ph < 0.86) {
+        fx.put({ kind: FX.flame, x, y, up, base: true, w: 20, h: 46, rot: rot + Math.PI / 2, a: '#f4461f', b: '#ffc23a', seed: i * 1.7, alpha: fade });
+        fx.put({ kind: FX.orb, x, y, up, w: 14, a: '#ff5a1e', b: '#ffe07a', seed: i, alpha: fade });
+      } else {
+        const u = (ph - 0.86) / 0.14;
+        fx.put({ kind: FX.blast, x, y, up: 6, w: 40, a: '#ff5a1e', b: '#ffc23a', t: u, seed: i, alpha: fade });
+      }
+    });
   }
 
   private telegraph(t: Telegraph, fx: Fx3D): void {
@@ -1010,6 +1514,31 @@ export class Effects {
     fx.put({ kind: FX.flame, x: pr.x, y: pr.y, up, base: true, behind, w: r * 4.6, h: r * 3 + Math.min(speed * 0.14, r * 6), rot: screenAngle(pr.vx, pr.vy) + Math.PI / 2, a, b, seed: pr.id * 0.37 });
   }
 
+  /** Puffs of smoke left behind a shot, thinning as they fall back (three, each going round on the clock). */
+  private smokeTrail(fx: Fx3D, pr: Projectile, up: number, size: number, color: string, alpha: number, time: number): void {
+    const speed = Math.hypot(pr.vx, pr.vy);
+    if (speed < 1) return;
+    const back = Math.min(pr.age * speed, 60);
+    for (let i = 0; i < 3; i++) {
+      const ph = (time * 2.6 + i / 3 + pr.id * 0.13) % 1;
+      const d = Math.min(back, 8 + ph * 46);
+      fx.put({ kind: FX.smoke, x: pr.x - (pr.vx / speed) * d, y: pr.y - (pr.vy / speed) * d, up: up + ph * 6, w: size * (1.4 + ph * 2), a: color, alpha: alpha * (1 - ph), t: ph * 0.8, seed: pr.id * 0.37 + i });
+    }
+  }
+
+  /** Motes of light shed behind a shot, winking out. */
+  private glitter(fx: Fx3D, pr: Projectile, up: number, a: string, b: string, time: number, n: number): void {
+    const speed = Math.hypot(pr.vx, pr.vy);
+    if (speed < 1) return;
+    const back = Math.min(pr.age * speed, 50);
+    for (let i = 0; i < n; i++) {
+      const ph = (time * 3 + i / n + pr.id * 0.17) % 1;
+      const d = Math.min(back, 6 + ph * 40);
+      const side = (hash2(pr.id, i, Math.floor(time * 3 + i / n)) - 0.5) * 10;
+      fx.put({ kind: FX.spark, x: pr.x - (pr.vx / speed) * d - (pr.vy / speed) * side, y: pr.y - (pr.vy / speed) * d + (pr.vx / speed) * side, up: up + side * 0.4, w: 8 * (1 - ph * 0.5), a: i % 2 ? b : a, t: ph });
+    }
+  }
+
   /** A model in flight, pointing where it's going. */
   private thrown(sc: EffectsScene, id: string, pr: Projectile, up: number, k: number, tipX = 0, rot = Math.atan2(pr.vx, pr.vy)): void {
     sc.cast.thrown(id, pr.x, pr.y, up / TILE, rot, k, tipX);
@@ -1173,6 +1702,47 @@ export class Effects {
       default:
         break;
     }
+    // (a skill whose look is shared, or that has none, is told by its own id: a Starfall Lance flies as a lance of
+    // starlight, not as an arcane bolt; a Blast Arrow as a burning arrow, not as a ball of fire)
+    const id = pr.depth === 0 ? pr.spec?.id : undefined;
+    if (id === 'aimed-shot' && pr.type === 'physical') {
+      // Long Draw: the arrow and a long white streak of the air it tears, a glow round its head
+      this.tail(fx, pr, up, 11, '#ffffff', '#fff2c8', 0.3);
+      this.tail(fx, pr, up, 4, '#ffe8a0', '#ffffff', 0.5);
+      fx.put({ kind: FX.glow, x: pr.x, y: pr.y, up, w: 34, a: '#fff2c8', alpha: 0.7 });
+      this.thrown(sc, 'w_arrow_A', pr, up, 30 / TILE / 1.22);
+      return;
+    }
+    if (id === 'explosive-shot' && pr.type === 'fire') {
+      // Blast Arrow: an arrow with its head on fire, smoke and sparks streaming off it
+      this.tail(fx, pr, up, 5, '#ffb04d', '#ffe8a0', 0.14);
+      this.smokeTrail(fx, pr, up, 7, '#5a4a44', 0.35, sc.time);
+      this.fireTail(fx, pr, up, 2.4, '#ff5a1e', '#ffd24a');
+      fx.put({ kind: FX.glow, x: pr.x, y: pr.y, up, w: 30, a: '#ff7a2d', alpha: 0.7 });
+      this.thrown(sc, 'w_arrow_A', pr, up, 28 / TILE / 1.22);
+      return;
+    }
+    if (id === 'starfall-lance' && pr.type === 'arcane') {
+      // Starfall Lance: a long shaft of starlight, white at its heart, a star at its head and glitter left behind it
+      const speed = Math.hypot(pr.vx, pr.vy) || 1;
+      const len = Math.min(70, pr.age * speed);
+      fx.put({ kind: FX.beam, x: pr.x - (pr.vx / speed) * len * 0.5, y: pr.y - (pr.vy / speed) * len * 0.5, up, w: Math.max(8, len * shortened(pr.vx, pr.vy)), h: 12, rot, a: '#8a6aff', b: '#e8e0ff', seed });
+      this.tail(fx, pr, up, 16, '#6a4ad8', '#d8d0ff', 0.35);
+      fx.put({ kind: FX.glow, x: pr.x, y: pr.y, up, w: 50, a: '#a07aff', alpha: 0.75 });
+      fx.put({ kind: FX.spark, x: pr.x, y: pr.y, up, w: 30, rot: sc.time * 4, a: '#ffffff', t: 0.1 });
+      this.glitter(fx, pr, up, '#e8e0ff', '#a07aff', sc.time, 3);
+      return;
+    }
+    if (id === 'evenfall' && pr.type === 'shadow') {
+      // Evenfall: a blade of dusk thrown flat, a crescent of pale violet over the dark, turning nothing as it flies
+      const R = 15;
+      const ga = Math.atan2(pr.vy, pr.vx);
+      fx.put({ kind: FX.glow, x: pr.x, y: pr.y, flat: true, w: 70, a: '#7a4ad8', alpha: 0.4 });
+      fx.put({ kind: FX.slash, x: pr.x - Math.cos(ga) * R * 0.82, y: pr.y - Math.sin(ga) * R * 0.82, up: 9, flat: true, w: (R * 2) / 0.82 + 8, rot: ga, a: '#5a2aa8', t: 0.3, p1: 2.6, p2: 1 });
+      fx.put({ kind: FX.slash, x: pr.x - Math.cos(ga) * R * 0.82, y: pr.y - Math.sin(ga) * R * 0.82, up: 10, flat: true, w: (R * 2) / 0.82, rot: ga, a: '#d8c0ff', t: 0.3, p1: 2.2, p2: 0 });
+      this.tail(fx, pr, up - 3, 14, '#3a1a6a', '#b48cff', 0.18);
+      return;
+    }
     if (look === 'arrow' || look === 'piercing-arrow' || look === 'multishot' || (pr.type === 'physical' && look !== 'shard')) {
       const hot = look === 'piercing-arrow';
       this.tail(fx, pr, up, hot ? 8 : 5.5, hot ? '#ffd84d' : '#ffffff', hot ? '#fff6c8' : '#ffffff', hot ? 0.18 : 0.13);
@@ -1181,6 +1751,30 @@ export class Effects {
       return;
     }
     switch (look) {
+      case 'fireball': {
+        // Fireball: a big, heavy ball of fire, a great tongue of flame streaming back off it and smoke behind that,
+        // lighting the ground under it as it goes
+        const R = r * 1.3;
+        fx.put({ kind: FX.glow, x: pr.x, y: pr.y, flat: true, w: R * 10, a, alpha: 0.32 });
+        this.smokeTrail(fx, pr, up, R * 1.6, '#4a3a38', 0.45, sc.time);
+        this.fireTail(fx, pr, up, R * 1.6, a, b);
+        fx.put({ kind: FX.glow, x: pr.x, y: pr.y, up, w: R * 9, a, alpha: 0.65 });
+        fx.put({ kind: FX.orb, x: pr.x, y: pr.y, up, w: R * 5.4, a, b, seed });
+        fx.put({ kind: FX.flame, x: pr.x, y: pr.y, up: up - R * 1.2, base: true, w: R * 4, h: R * 4.2, a, b, seed: seed + 1.3, alpha: 0.8 });
+        return;
+      }
+      case 'arcane-bolt': {
+        // Arcane Bolt: a quick dart of violet, a thin bright streak behind it; the lance that every fourth is (bigger,
+        // through everything) trails a turning glint and a wider streak
+        const lance = pr.r > 4.4;
+        this.tail(fx, pr, up, r * (lance ? 2.6 : 1.6), a, b, lance ? 0.26 : 0.2);
+        fx.put({ kind: FX.orb, x: pr.x, y: pr.y, up, w: r * (lance ? 4.6 : 3.8), a, b, seed });
+        if (lance) {
+          fx.put({ kind: FX.glow, x: pr.x, y: pr.y, up, w: r * 9, a, alpha: 0.6 });
+          fx.put({ kind: FX.spark, x: pr.x, y: pr.y, up, w: r * 5, rot: sc.time * 6, a: b, t: 0.1 });
+        }
+        return;
+      }
       case 'shard':
       case 'needle':
         this.tail(fx, pr, up, r * 1.8, a, b, 0.1);
@@ -1194,9 +1788,21 @@ export class Effects {
         fx.put({ kind: FX.orb, x: pr.x, y: pr.y, up, w: r * 4.4, a, b, seed });
         return;
       case 'shadowbolt':
-      case 'chaosbolt':
+        // Shadow Bolt: a hole of dark with violet at its lip, wisps of it trailing
         this.tail(fx, pr, up, r * 2.8, a, b, 0.2);
+        this.smokeTrail(fx, pr, up, r * 1.4, '#2a1a3a', 0.5, sc.time);
         fx.put({ kind: FX.shadow, x: pr.x, y: pr.y, up, w: r * 5.2, a, b, seed });
+        return;
+      case 'chaosbolt':
+        // Ruin Bolt: a great, unstable ball of chaos fire, a dark heart in it and arcs cracking round it, a ragged tail
+        // of fire gone to blood behind it
+        fx.put({ kind: FX.glow, x: pr.x, y: pr.y, flat: true, w: r * 10, a, alpha: 0.3 });
+        this.smokeTrail(fx, pr, up, r * 1.5, '#2a1420', 0.55, sc.time);
+        this.fireTail(fx, pr, up, r * 1.5, '#7a1a4a', a);
+        fx.put({ kind: FX.glow, x: pr.x, y: pr.y, up, w: r * 9, a, alpha: 0.65 });
+        fx.put({ kind: FX.orb, x: pr.x, y: pr.y, up, w: r * 5.6, a, b, seed });
+        fx.put({ kind: FX.shadow, x: pr.x, y: pr.y, up, w: r * 2.8, a: '#ff4a7a', b, seed: seed + 2 });
+        fx.put({ kind: FX.bolt, x: pr.x, y: pr.y, up, w: r * 9, h: r * 6, rot: sc.time * 7 + seed, a: b, seed: Math.floor(sc.time * 16) + pr.id });
         return;
       case 'smite':
       case 'holy-shock':
@@ -1208,20 +1814,31 @@ export class Effects {
         fx.put({ kind: FX.orb, x: pr.x, y: pr.y, up, w: r * 5.4, a, b, seed });
         return;
       case 'holyfire':
+        // Searing Hymn: a flame of gold and white with rays of light turning behind it
+        fx.put({ kind: FX.holy, x: pr.x, y: pr.y, up, w: r * 8, a, b, seed, behind: true });
+        this.fireTail(fx, pr, up, r * 1.3, a, b);
+        fx.put({ kind: FX.orb, x: pr.x, y: pr.y, up, w: r * 4.4, a: '#ffc23a', b: '#ffffff', seed });
+        this.glitter(fx, pr, up, '#fff6c8', '#ffc23a', sc.time, 2);
+        return;
+      case 'starfire': {
+        // Starflame: a little sun, its corona turning, a star's four points flashing over it, a tail of flame
+        fx.put({ kind: FX.glow, x: pr.x, y: pr.y, flat: true, w: r * 9, a, alpha: 0.3 });
         this.fireTail(fx, pr, up, r * 1.2, a, b);
-        fx.put({ kind: FX.orb, x: pr.x, y: pr.y, up, w: r * 4.8, a, b, seed });
+        fx.put({ kind: FX.holy, x: pr.x, y: pr.y, up, w: r * 8, a, b, seed: seed + sc.time });
+        fx.put({ kind: FX.orb, x: pr.x, y: pr.y, up, w: r * 5, a, b, seed });
+        fx.put({ kind: FX.spark, x: pr.x, y: pr.y, up, w: r * 6, rot: sc.time * 2, a: b, t: 0.1 });
         return;
-      case 'starfire':
-      case 'starsurge':
-        this.tail(fx, pr, up, r * 2.4, a, b, 0.2);
-        fx.put({ kind: FX.orb, x: pr.x, y: pr.y, up, w: r * 4.8, a, b, seed });
-        fx.put({ kind: FX.spark, x: pr.x, y: pr.y - 1, up: up + r * 1.4, w: r * 3.4, a: b, t: 0.1 });
-        for (let i = 0; i < 2; i++) {
-          const ph = (sc.time * 3 + i * 0.5 + seed) % 1;
-          const speed = Math.hypot(pr.vx, pr.vy) || 1;
-          fx.put({ kind: FX.spark, x: pr.x - (pr.vx / speed) * (8 + ph * 16) + (i ? 4 : -4), y: pr.y - (pr.vy / speed) * (8 + ph * 16), up, w: 6, a, t: ph });
-        }
+      }
+      case 'starsurge': {
+        // Starbreak: a star of the night, four-pointed and turning fast, glitter streaming from it
+        this.tail(fx, pr, up, r * 2.6, a, b, 0.24);
+        fx.put({ kind: FX.glow, x: pr.x, y: pr.y, up, w: r * 8, a, alpha: 0.6 });
+        fx.put({ kind: FX.spark, x: pr.x, y: pr.y, up, w: r * 7, rot: sc.time * 7, a, t: 0.05 });
+        fx.put({ kind: FX.spark, x: pr.x, y: pr.y, up, w: r * 4.5, rot: sc.time * 7 + Math.PI / 4, a: b, t: 0.1 });
+        fx.put({ kind: FX.orb, x: pr.x, y: pr.y, up, w: r * 2.6, a, b, seed });
+        this.glitter(fx, pr, up, b, a, sc.time, 4);
         return;
+      }
       default:
         break;
     }
@@ -1261,8 +1878,9 @@ export class Effects {
     const k = f.t / f.life;
     if (f.sprite && f.sprite.includes(':')) {
       const [name, type] = f.sprite.split(':');
-      const len = LENGTHS[name ?? ''] ?? 0.5;
-      if (f.t < len) spell(fx, name!, toneOf(type ?? 'physical'), f.x, f.y, f.t / len, f.size, (f.x * 0.37 + f.y * 0.61) % 13);
+      // (the great spells play out over the life the rules gave them: a meteor's fall lasts as long as its wind-up)
+      const len = LENGTHS[name ?? ''] ?? f.life;
+      if (f.t < len) spell(fx, name!, SPELL_TONES[type ?? ''] ?? toneOf(type ?? 'physical'), f.x, f.y, f.t / len, f.size, (f.x * 0.37 + f.y * 0.61) % 13, f.a);
       return;
     }
     switch (f.kind) {
@@ -1312,6 +1930,18 @@ export class Effects {
       case 'zap': {
         const dx = f.x2 - f.x;
         const dy = f.y2 - f.y;
+        if (f.sprite === 'thorn') {
+          // a lash of living thorns: a green whip cracking out to them, leaves torn off where it lands
+          const len = Math.hypot(dx, dy) * shortened(dx, dy);
+          const lash = Math.min(1, k * 3);
+          fx.put({ kind: FX.beam, x: f.x + (dx * lash) / 2, y: f.y + (dy * lash) / 2, up: 12, w: Math.max(10, len * lash), h: 7, rot: screenAngle(dx, dy), a: '#2e7a2a', b: f.color, alpha: clamp(1.3 - k * 1.3, 0, 1), seed: f.x * 0.1 });
+          for (let i = 0; i < 3; i++) {
+            const ang = (i / 3) * TAU + f.x * 0.37;
+            const out = 4 + k * 16;
+            fx.put({ kind: FX.leaf, x: f.x2 + Math.cos(ang) * out, y: f.y2 + Math.sin(ang) * out * 0.7, up: 10 + Math.sin(k * Math.PI) * 9, w: 7, h: 4, rot: ang + k * 8, a: i % 2 ? '#7ac85a' : '#c8f07a', alpha: clamp(1.4 - k * 1.4, 0, 1) });
+          }
+          break;
+        }
         const seed = Math.floor(f.t * 24) + f.x * 0.1;
         fx.put({ kind: FX.bolt, x: (f.x + f.x2) / 2, y: (f.y + f.y2) / 2, up: 12, w: Math.max(14, Math.hypot(dx, dy) * shortened(dx, dy) * 1.12), h: 26, rot: screenAngle(dx, dy), a: f.color, alpha: clamp(1.25 - k, 0, 1), seed });
         break;
@@ -1363,12 +1993,12 @@ const LOOK_TONES: Record<string, Tone> = {
   comet: { a: '#4ab8ff', b: '#ffffff' },
   smite: { a: '#ffc23a', b: '#fffbe0' },
   'holy-shock': { a: '#ffd24a', b: '#ffffff' },
-  holyfire: { a: '#ff8a2d', b: '#fff2a0' },
+  holyfire: { a: '#ffb02e', b: '#fffbe0' },
   judgment: { a: '#ffc23a', b: '#fff6c8' },
   shield: { a: '#ffc23a', b: '#ffffff' },
   shadowbolt: { a: '#7a3ad8', b: '#e0c8ff' },
-  chaosbolt: { a: '#4ab82e', b: '#eaffa0' },
+  chaosbolt: { a: '#d02a5a', b: '#ffc080' },
   wrath: { a: '#5ac83a', b: '#f0ffe0' },
-  starfire: { a: '#a878ff', b: '#fff6d0' },
-  starsurge: { a: '#ff6ac8', b: '#ffffff' },
+  starfire: { a: '#ff9a2a', b: '#fff2c0' },
+  starsurge: { a: '#c06aff', b: '#ffe8ff' },
 };
