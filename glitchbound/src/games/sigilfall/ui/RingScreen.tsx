@@ -8,7 +8,7 @@ import { rewardsBetween } from '../arena/rewards';
 import { GATES_SOLO, type FighterSetup, type MatchSetup } from '../arena/sim';
 import { CLASS_EASE, CLASS_WAY, EASE_WORD } from '../arena/styles';
 import { LOBBY_STEPS, tutorialSetup } from '../arena/tutorial';
-import { Coach, useSpot } from './RingCoach';
+import { Coach, useLabels, useSpot } from './RingCoach';
 import { CLASS_IDS, CLASSES } from '../data/classes';
 import { useAccount } from '../../../platform/account';
 import { classOpen } from '../progress/paidClasses';
@@ -320,6 +320,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const putLearn = (fn: (l: NonNullable<RingSave['learn']>) => NonNullable<RingSave['learn']>): void => commit((now) => ({ ...now, learn: fn(now.learn ?? {}) }));
   const tutStep = tut === null ? null : (LOBBY_STEPS[tut] ?? null);
   useSpot(tutStep?.spot ?? null);
+  useLabels(tutStep?.labels);
   const goTut = (i: number): void => {
     const st = LOBBY_STEPS[i];
     if (!st) return;
@@ -875,7 +876,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
             at={tutStep.at}
             onBack={tut > 0 ? () => goTut(tut - 1) : undefined}
             onNext={tut < LOBBY_STEPS.length - 1 ? () => goTut(tut + 1) : startTutorialMatch}
-            nextLabel={tut < LOBBY_STEPS.length - 1 ? (tutStep.id === 'loadout' ? 'Open my setup' : 'Next') : 'Start the practice fight'}
+            nextLabel={tut < LOBBY_STEPS.length - 1 ? (tutStep.id === 'welcome' ? 'Open my setup' : 'Next') : 'Start the practice fight'}
             onSkip={() => setTut(null)}
           />
         )}

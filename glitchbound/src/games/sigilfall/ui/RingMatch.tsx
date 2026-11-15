@@ -25,7 +25,7 @@ import { actionOf, keyName, readKeys, saveKeys, type RingKeys } from './ringKeys
 import { KeysDialog } from './RingKeysDialog';
 import { TitleFx } from '../../../components/TitleFx';
 import { classEmblem } from './classEmblem';
-import { Coach, useSpot } from './RingCoach';
+import { Coach, useLabels, useSpot } from './RingCoach';
 
 /** `skill`: how sharp the computer plays (arena/ladder.ts skillAt); `mates`, in solo: the player's own side's, when not the same. */
 export type Role = { kind: 'solo'; skill: number; mates?: number } | { kind: 'host'; skill: number; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void } | { kind: 'client'; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void };
@@ -1024,6 +1024,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const tutKeys: TutorialKeys = { touch, ab: [ringKeys.ab1, ringKeys.ab2, ringKeys.ab3, ringKeys.ab4, ringKeys.ab5].map(keyName), dash: keyName(ringKeys.dash), super: keyName(ringKeys.super), nextFoe: keyName(ringKeys.nextFoe), nextFriend: keyName(ringKeys.nextFriend), closeIn: engine.settings.ringCloseIn };
   const tv = tut?.view(tutKeys) ?? null;
   useSpot(tv?.spot ?? null);
+  useLabels(tv?.labels);
   return (
     <ScreenGate label="Entering the Ring">
       <div className={`rb-ring${touch ? ' is-touch' : ''}${engine.settings.reducedMotion ? ' is-still' : ''}`}>
@@ -1056,7 +1057,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 edge took the taps meant for the top enemy's nameplate), a hint, and the tutorial's words, all as wide as
                 the room between the nameplates and no wider (the owner: "the tutorial is overlapping with the ui") */}
             <div className="rb-ring-mid">
-              <div className="rb-ring-clock">
+              <div className="rb-ring-clock" data-tut="clock">
                 <button type="button" className={`rb-ring-more${menuOpen ? ' is-on' : ''}`} aria-label="Match menu" aria-haspopup="menu" aria-expanded={menuOpen} title="Nameplates, keys, help, leave" onClick={() => setMenuOpen((o) => !o)}>
                   ⋯
                 </button>
@@ -1150,7 +1151,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   text={tv.text}
                   short={tv.short}
                   note={tv.note}
-                  small={tv.id === 'fight' && m.clock > CLOSE_FROM + 4}
+                  small={tv.id === 'fight' && (tut?.fightT ?? 0) > 6}
                   onNext={
                     tv.next
                       ? () => {

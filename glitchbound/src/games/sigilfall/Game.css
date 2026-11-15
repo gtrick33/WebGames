@@ -12427,6 +12427,14 @@ html.rb-touch-playing textarea {
 .rb-coach.is-top {
   top: calc(52px + var(--sa-t, 0px));
 }
+/* at the side, over the empty room under the arena's choice, so the labeled screen stays in view */
+.rb-coach.is-side {
+  left: auto;
+  right: 14px;
+  bottom: calc(64px + var(--sa-b, 0px));
+  width: min(340px, 44%);
+  translate: none;
+}
 /* in a match: in the middle column under the clock, between the nameplates and no wider than the room there */
 .rb-coach.is-inline {
   position: static;
@@ -12554,6 +12562,30 @@ html.rb-touch-playing textarea {
   .is-tut-spot {
     animation: none;
   }
+}
+/* every part of a screen named at once: a word pinned over each (under one at the top of the screen) */
+.is-tut-label::after {
+  content: attr(data-tut-label);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 7px);
+  z-index: 45;
+  padding: 2px 8px 3px;
+  border: 1.5px solid #ffd257;
+  border-radius: 999px;
+  color: #2a1a06;
+  font: 700 11.5px/1.25 Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  text-transform: none;
+  background: #ffe39a;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.45);
+  translate: -50% 0;
+  pointer-events: none;
+}
+.is-tut-label[data-tut-below]::after {
+  top: calc(100% + 7px);
+  bottom: auto;
 }
 
 /* how a class fights and how easy it is to learn, under its name in the lobby */

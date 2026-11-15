@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';
 import { hintNow, keepLog, lessonOf, newLog, type HintKeys } from '../src/games/sigilfall/arena/lessons';
 import { CLASS_EASE, CLASS_WAY, presetOfBar, STYLES, styleOf } from '../src/games/sigilfall/arena/styles';
-import { CLOSE_FROM, GATES, Match, type MoveInput } from '../src/games/sigilfall/arena/sim';
-import { LOBBY_STEPS, TutorialRun, tutorialSetup } from '../src/games/sigilfall/arena/tutorial';
+import { CLASS_DMG, CLOSE_FROM, GATES, Match, type MoveInput } from '../src/games/sigilfall/arena/sim';
+import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
+import { LOBBY_STEPS, SPAR_DMG, SPAR_DMG_LOW, TutorialRun, tutorialSetup } from '../src/games/sigilfall/arena/tutorial';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { plainWhy } from '../src/games/sigilfall/ui/ringAim';
@@ -125,14 +126,16 @@ describe('The Ring for newcomers: hints and lessons', () => {
 });
 
 describe('The Ring for newcomers: the tutorial', () => {
-  it('walks the lobby from the classes to the setup page’s every tab', () => {
+  it('shows the lobby in three cards, each screen with every part of it labeled at once', () => {
+    // (the owner, 2026-11-15: shorter, and "show everything initially, i dont want stage by stage unlocking")
     const ids = LOBBY_STEPS.map((s) => s.id);
-    expect(new Set(ids).size).toBe(ids.length);
-    for (const want of ['classes', 'formats', 'styles', 'kit', 'combos', 'talents', 'super']) expect(ids).toContain(want);
-    // (the extras, an oath and the charm, were taken out on 2026-11-15)
-    expect(ids).not.toContain('extras');
-    expect(LOBBY_STEPS.filter((s) => s.page === 'setup').map((s) => s.tab ?? s.mode)).toEqual(expect.arrayContaining(['styles', 'abilities', 'talents', 'super']));
+    expect(ids).toEqual(['welcome', 'styles', 'kit']);
+    const spots = LOBBY_STEPS.flatMap((s) => (s.labels ?? []).map((l) => l.spot));
+    for (const want of ['classes', 'formats', 'rank', 'arena', 'loadout', 'bar', 'combos', 'tabs', 'kit', 'sets']) expect(spots).toContain(want);
+    for (const s of LOBBY_STEPS) for (const l of s.labels ?? []) expect(l.text.length, l.spot).toBeLessThan(40);
+    expect(LOBBY_STEPS.filter((s) => s.page === 'setup').map((s) => s.tab ?? s.mode)).toEqual(['styles', 'abilities']);
     for (const s of LOBBY_STEPS) for (const cls of CLASS_IDS) expect(s.text(cls).length).toBeGreaterThan(20);
+    expect(LOBBY_STEPS.some((s) => /momentum|extras|oath/i.test(s.text('warrior')))).toBe(false);
   });
 
   it('is not rated, holds the clock, against a sparring mage', () => {
@@ -146,17 +149,26 @@ describe('The Ring for newcomers: the tutorial', () => {
     expect(tutorialMatch('mage').tut.steps).toContain('place');
   });
 
-  it('teaches one thing at a time, each done for real, from the entry to the last fight', () => {
+  it('shows the fight’s screen labeled at once, then teaches by hand only what is done by hand, then a real fight', () => {
     const { m, tut } = tutorialMatch('warrior');
     const me = m.fighters[0]!;
     const foe = m.fighters[1]!;
     const view = () => tut.view(TUT_KEYS);
+    expect(tut.steps).toEqual(['gates', 'screen', 'move', 'target', 'ability', 'combo', 'circle', 'super', 'fight']);
     expect(view().title).toBe('The entry');
     m.openSoon();
     run(m, tut, 3.2);
     expect(m.phase).toBe('fight');
-    expect(tut.id).toBe('plates');
+    // every part of the screen named together, and the arena's rules beside it
+    expect(tut.id).toBe('screen');
     expect(view().next).toBe(true);
+    expect(view().labels!.map((l) => l.spot)).toEqual(expect.arrayContaining(['plates', 'foes', 'clock', 'target', 'bar', 'super']));
+    expect(view().text).toMatch(/red circle/);
+    expect(view().text).toMatch(/spheres/);
+    expect(view().text).toMatch(/sigil/);
+    expect(view().text).toMatch(/Pillars/);
+    expect(view().text).toMatch(/Gloam/);
+    expect(view().text).not.toMatch(/Momentum/);
     tut.next();
 
     expect(tut.id).toBe('move');
@@ -181,11 +193,12 @@ describe('The Ring for newcomers: the tutorial', () => {
     expect(tut.id).toBe('combo');
     expect(view().text).toMatch(/Festering Gash.*Hew/);
     expect(m.press(0, 'w-gash')).toBeNull();
-    run(m, tut, 1);
-    expect(m.press(0, 'w-hew')).toBeNull();
-    run(m, tut, 0.5);
-    expect(tut.id).toBe('momentum');
-    tut.next();
+    run(m, tut, 0.3);
+    // (a Hurled Maul then a Festering Gash is the Reaper's other combo: that one may already have done it)
+    if (tut.id === 'combo') {
+      expect(m.press(0, 'w-hew')).toBeNull();
+      run(m, tut, 0.3);
+    }
 
     // the red circle: slowed while it falls, and passed by walking out of it
     expect(tut.id).toBe('circle');
@@ -202,48 +215,52 @@ describe('The Ring for newcomers: the tutorial', () => {
     expect(m.press(0, me.ult)).toBeNull();
     run(m, tut, 0.2);
 
-    expect(tut.id).toBe('sphere');
-    expect(me.hp).toBeLessThan(me.maxHp * 0.5);
-    const orb = m.orbs[0]!;
-    me.x = orb.x;
-    me.y = orb.y;
-    run(m, tut, 0.2);
-
-    expect(tut.id).toBe('sigil');
-    run(m, tut, STEP);
-    expect(m.sigil).not.toBeNull();
-    me.x = m.sigil!.x;
-    me.y = m.sigil!.y;
-    run(m, tut, 0.2);
-
-    expect(tut.id).toBe('pillar');
-    // somewhere the sparring partner can't see
-    hide: for (let x = 20; x < 480; x += 6) {
-      for (let y = 20; y < 300; y += 6) {
-        me.x = x;
-        me.y = y;
-        if (!m.sees(me, foe) && !m.sees(foe, me)) break hide;
-      }
-    }
-    run(m, tut, 0.6);
-    expect(tut.id).toBe('holds');
-    expect(m.clock).toBe(0);
-    // (its fire, cast to be watched)
-    run(m, tut, 1);
-    tut.next();
-    expect(tut.id).toBe('friends');
-    tut.next();
-
-    // (the clock stood still through every lesson, and is let go where the Gloam begins)
-    expect(tut.id).toBe('gloam');
-    expect(m.clock).toBeGreaterThanOrEqual(CLOSE_FROM - 1);
-    expect(m.hold).toBe(false);
-    tut.next();
+    // the clock stood still through every lesson, and the last fight starts it from the start
     expect(tut.id).toBe('fight');
+    expect(m.clock).toBeLessThan(1);
+    expect(m.hold).toBe(false);
     expect(tut.free).toBe(true);
     expect(me.hp).toBe(me.maxHp);
     expect(foe.hp).toBe(foe.maxHp);
+    run(m, tut, 2);
+    expect(m.clock).toBeGreaterThan(1.5);
+    expect(m.clock).toBeLessThan(CLOSE_FROM);
   });
+
+  it('the last fight is one a newcomer wins: the partner hits gently, and gentler while they are hurt', () => {
+    // (a newcomer here is the computer at its clumsiest on the player's side, against the partner at its clumsiest)
+    let won = 0;
+    let fought = 0;
+    for (const cls of CLASS_IDS) {
+      if (cls === 'gloamknight') continue;
+      for (let seed = 1; seed <= 5; seed++) {
+        const p = PRESETS[cls].find((x) => !x.bar.some((id) => ABILITIES[id]?.role === 'heal' && ABILITIES[id]?.aim === 'friend')) ?? PRESETS[cls][0]!;
+        const m = new Match(tutorialSetup({ team: 0, cls, name: 'You', bar: [...p.bar], talents: [...p.talents], ult: p.ult }, seed));
+        const tut = new TutorialRun(m, 0, 1);
+        m.openSoon();
+        while (tut.id !== 'fight') {
+          tut.i = tut.steps.indexOf('super');
+          (tut as unknown as { advance: () => void }).advance();
+        }
+        const brains = m.fighters.map((_, i) => newBrain(seed * 31 + i));
+        for (let i = 0; i < 30 * 200 && m.phase !== 'over'; i++) {
+          const moves: Record<number, MoveInput> = {};
+          for (const f of m.fighters) moves[f.id] = botThink(m, f, brains[f.id]!, 0, STEP);
+          m.step(STEP, moves);
+          tut.after(STEP);
+          m.events.length = 0;
+          if (m.phase === 'fight') {
+            // (eased off while the newcomer is under half)
+            const k = m.fighters[1]!.mods.dmg / CLASS_DMG.mage;
+            expect(k).toBeCloseTo(m.fighters[0]!.hp < m.fighters[0]!.maxHp * 0.5 ? SPAR_DMG_LOW : SPAR_DMG, 5);
+          }
+        }
+        fought++;
+        if (m.winner === 0) won++;
+      }
+    }
+    expect(won / fought).toBeGreaterThanOrEqual(0.8);
+  }, 120_000);
 
   it('says what to do in a line on every step done by doing it, the whole of it a press away', () => {
     for (const cls of ['warrior', 'mage', 'priest'] as const) {
