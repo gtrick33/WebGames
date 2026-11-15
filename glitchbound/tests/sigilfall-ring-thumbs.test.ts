@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { GATES, Match, type Fighter } from '../src/games/sigilfall/arena/sim';
 import { ARENA_H, ARENA_W } from '../src/games/sigilfall/arena/maps';
 import { TILE } from '../src/games/sigilfall/sim/map';
-import { RING_EDGE, RING_LOOK_Y, RING_TILT, ringFit, THUMBS_LEAN, THUMBS_LEAN_MAX, thumbsX } from '../src/games/sigilfall/render3d/ring3d';
+import { RING_EDGE, RING_LOOK_Y, RING_TILT, RING_ZOOM, ringFit, THUMBS_LEAN, THUMBS_LEAN_MAX, thumbsX } from '../src/games/sigilfall/render3d/ring3d';
 
 const ROOT = path.resolve(__dirname, '..');
 const read = (p: string): string => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -53,10 +53,12 @@ describe('The Ring on a phone: the fight in the open middle', () => {
 describe('The Ring’s camera: the whole height, panning only sideways', () => {
   // the owner, 2026-11-15: "zoom out the camera a bit so that the top edge and the bottom edge fit perfectly and canera
   // pans only sideways"
-  it('the ring’s height, edge to edge, fills the view’s height, on a phone and with a mouse', () => {
+  it('the ring’s height, edge to edge, fills the view’s height (7% closer), on a phone and with a mouse', () => {
+    expect(RING_ZOOM).toBe(1.07);
     for (const [w, h, dpr] of [[750, 342, 3], [844, 390, 3], [770, 560, 2], [1280, 720, 1]] as const) {
       const fit = ringFit(w, h, dpr);
-      expect(fit.tile * (ARENA_H / TILE + RING_EDGE)).toBeCloseTo(h * dpr * RING_TILT, 5);
+      // (then 7% closer: the owner, "zoom in the camera by 7% please")
+      expect(fit.tile * (ARENA_H / TILE + RING_EDGE)).toBeCloseTo(h * dpr * RING_TILT * RING_ZOOM, 5);
       // (wider than the view: it follows, across)
       expect(fit.follow).toBe(fit.tile * (ARENA_W / TILE + 2) > w * dpr * 1.02);
     }
