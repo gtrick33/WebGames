@@ -10,7 +10,7 @@ import { listed } from '../../../server/staff';
  *
  * The bests are the game's own and are sent as it has them (a save lives on the player's device), so they are
  * held to what the game can give: a board that exists, a whole number inside that board's range, a row that only
- * ever goes up. Banned players and staff are left off, as on the arcade's boards.
+ * ever goes up. Banned players are left off; studio and QA accounts are listed, marked as such.
  */
 
 /** Each family of boards and the most a score on it can be. `family:part` is a board of its own (a calling, a land). */
@@ -48,27 +48,31 @@ export interface RankRow {
   score: number;
   at: number;
   you: boolean;
+  /** A studio or QA account: listed like anyone, marked so (the owner: "show them but add an eye with a cross"). */
+  staff?: boolean;
 }
 
 export async function onRequestGet({ request, env }: Ctx): Promise<Response> {
   const b = boardOf(new URL(request.url).searchParams.get('board'));
   if (!b) return bad('unknown_board', 404);
   const me = await currentUser(env, request);
-  const res = await env.DB.prepare(`SELECT r.user_id, r.score, r.at, u.nickname FROM sigilfall_ranks r JOIN users u ON u.id = r.user_id WHERE r.board = ? AND r.score > 0 AND ${listed(env)} ORDER BY r.score DESC, r.at ASC LIMIT 50`)
+  // (every player but a banned one; a studio or QA account is listed too, and marked: server/staff.ts `listed` says which)
+  const res = await env.DB.prepare(`SELECT r.user_id, r.score, r.at, u.nickname, CASE WHEN ${listed(env)} THEN 0 ELSE 1 END AS staff FROM sigilfall_ranks r JOIN users u ON u.id = r.user_id WHERE r.board = ? AND r.score > 0 AND u.banned_at IS NULL ORDER BY r.score DESC, r.at ASC LIMIT 50`)
     .bind(b.board)
-    .all<{ user_id: string; score: number; at: number; nickname: string }>();
+    .all<{ user_id: string; score: number; at: number; nickname: string; staff: number }>();
   // equal scores share a rank (1, 2, 2, 4), as on the arcade's boards
   const rows: RankRow[] = [];
   res.results.forEach((r, i) => {
     const prev = rows[i - 1];
-    rows.push({ rank: prev?.score === r.score ? prev.rank : i + 1, nickname: r.nickname, score: r.score, at: r.at, you: r.user_id === me?.id });
+    rows.push({ rank: prev?.score === r.score ? prev.rank : i + 1, nickname: r.nickname, score: r.score, at: r.at, you: r.user_id === me?.id, ...(r.staff ? { staff: true } : {}) });
   });
   let mine: RankRow | null = null;
   if (me && !rows.some((r) => r.you)) {
     const own = await env.DB.prepare('SELECT score, at FROM sigilfall_ranks WHERE user_id = ? AND board = ? AND score > 0').bind(me.id, b.board).first<{ score: number; at: number }>();
     if (own) {
-      const ahead = await env.DB.prepare(`SELECT COUNT(*) AS n FROM sigilfall_ranks r JOIN users u ON u.id = r.user_id WHERE r.board = ? AND r.score > ? AND ${listed(env)}`).bind(b.board, own.score).first<{ n: number }>();
-      mine = { rank: (ahead?.n ?? 0) + 1, nickname: me.nickname, score: own.score, at: own.at, you: true };
+      const ahead = await env.DB.prepare(`SELECT COUNT(*) AS n FROM sigilfall_ranks r JOIN users u ON u.id = r.user_id WHERE r.board = ? AND r.score > ? AND u.banned_at IS NULL`).bind(b.board, own.score).first<{ n: number }>();
+      const staff = await env.DB.prepare(`SELECT 1 AS n FROM users u WHERE u.id = ? AND NOT (${listed(env)})`).bind(me.id).first<{ n: number }>();
+      mine = { rank: (ahead?.n ?? 0) + 1, nickname: me.nickname, score: own.score, at: own.at, you: true, ...(staff ? { staff: true } : {}) };
     }
   }
   return json({ board: b.board, rows, mine, signedIn: !!me }, 200, { 'cache-control': 'no-store' });

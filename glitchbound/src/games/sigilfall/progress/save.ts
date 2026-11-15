@@ -365,7 +365,9 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   const shopId = (v: unknown): v is string => typeof v === 'string' && SHOP_ID.test(v);
   if (shopId(o.shopMount)) c.shopMount = o.shopMount;
   // (the title worn: only the choice; whether it is earned is asked of the record each time)
-  if (typeof o.title === 'string' && /^[a-z0-9-]{0,24}$/.test(o.title)) c.title = o.title;
+  // (up to 64: a title the team gave is `given-` and the grant's 36-letter id, and was dropped at every load when this
+  // allowed 24, so it had to be put on again each time the game opened)
+  if (typeof o.title === 'string' && /^[a-z0-9-]{0,64}$/.test(o.title)) c.title = o.title;
   const shopWorn = obj(o.shopWorn) ?? {};
   for (const slot of ['head', 'chest'] as const) if (shopId(shopWorn[slot])) c.shopWorn = { ...c.shopWorn, [slot]: shopWorn[slot] };
   // mounts: earned ones are owned (the Millbrook Cob for anyone who has the old riding perk); the chosen one must be owned.

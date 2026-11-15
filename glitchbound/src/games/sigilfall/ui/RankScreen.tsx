@@ -14,6 +14,32 @@ interface Row {
   score: number;
   at: number;
   you: boolean;
+  /** A studio or QA account (functions/api/sigilfall/ranks.ts): listed, and marked with a crossed-out eye. */
+  staff?: boolean;
+}
+
+/** An eye struck through: the mark of a studio or QA account on a board. */
+const StaffEye = () => (
+  <svg className="rb-rank-staff" viewBox="0 0 24 24" width="14" height="14" role="img" aria-label="Staff account">
+    <title>Staff account</title>
+    <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" fill="none" stroke="currentColor" strokeWidth="2" />
+    <circle cx="12" cy="12" r="3" fill="currentColor" />
+    <path d="M4 20 20 4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+  </svg>
+);
+
+/** One place on a board. */
+function RankLine({ board, r, below }: { board: string; r: Row; below?: boolean }) {
+  return (
+    <li className={`${r.you ? 'is-you' : ''}${below ? ' is-below' : ''}`}>
+      <b className={`rb-rank-n${r.rank <= 3 && !below ? ` is-top${r.rank}` : ''}`}>{r.rank}</b>
+      <span className="rb-rank-name">
+        {r.nickname}
+        {r.staff && <StaffEye />}
+      </span>
+      <span className="rb-rank-score">{shown(board, r.score)}</span>
+    </li>
+  );
 }
 interface Board {
   board: string;
@@ -61,23 +87,13 @@ function BoardTable({ board, title, note }: { board: string; title: string; note
       {note && <p className="rb-small rb-dim">{note}</p>}
       {loading && <p className="rb-small rb-dim">Reading the roll…</p>}
       {!loading && state.failed && <p className="rb-small rb-dim">The rankings can’t be reached right now. Your own bests are safe on this device.</p>}
-      {data && data.rows.length === 0 && <p className="rb-small rb-dim">Nobody is on this board yet. It could be you.</p>}
-      {data && data.rows.length > 0 && (
+      {data && data.rows.length === 0 && !data.mine && <p className="rb-small rb-dim">Nobody is on this board yet. It could be you.</p>}
+      {data && (data.rows.length > 0 || data.mine) && (
         <ol className="rb-rank-list">
           {data.rows.map((r, i) => (
-            <li key={i} className={r.you ? 'is-you' : ''}>
-              <b className={`rb-rank-n${r.rank <= 3 ? ` is-top${r.rank}` : ''}`}>{r.rank}</b>
-              <span className="rb-rank-name">{r.nickname}</span>
-              <span className="rb-rank-score">{shown(board, r.score)}</span>
-            </li>
+            <RankLine key={i} board={board} r={r} />
           ))}
-          {data.mine && (
-            <li className="is-you is-below">
-              <b className="rb-rank-n">{data.mine.rank}</b>
-              <span className="rb-rank-name">{data.mine.nickname}</span>
-              <span className="rb-rank-score">{shown(board, data.mine.score)}</span>
-            </li>
-          )}
+          {data.mine && <RankLine board={board} r={data.mine} below={data.rows.length > 0} />}
         </ol>
       )}
       {data && !data.signedIn && <p className="rb-small rb-dim">Sign in to be listed: a guest’s bests stay on their device.</p>}
@@ -94,8 +110,21 @@ export function RankScreen({ engine, onBack }: { engine: SigilEngine; onBack: ()
   const [tab, setTab] = useState<Tab>('rift');
   const [cls, setCls] = useState('');
   const [land, setLand] = useState('');
-  // (what this account has done since it was last sent goes up before the boards are read)
-  useEffect(() => engine.reportRanks(), [engine]);
+  // (what this account has done since it was last sent goes up before the boards are read: they wait for it, three
+  // seconds at most, so a best just reached is on them the first time they open)
+  const [sent, setSent] = useState(false);
+  useEffect(() => {
+    let live = true;
+    const done = (): void => {
+      if (live) setSent(true);
+    };
+    const t = window.setTimeout(done, 3000);
+    void engine.reportRanks().finally(done);
+    return () => {
+      live = false;
+      window.clearTimeout(t);
+    };
+  }, [engine]);
   const t = TABS.find((x) => x.id === tab)!;
   return (
     <div className="rb-rift rb-ranks">
@@ -115,7 +144,8 @@ export function RankScreen({ engine, onBack }: { engine: SigilEngine; onBack: ()
       </div>
       <p className="rb-rift-lead">{t.blurb}</p>
       <div className={`rb-rank-cols${tab === 'ring' ? ' is-three' : ''}`}>
-        {tab === 'rift' && (
+        {!sent && <p className="rb-small rb-dim">Reading the roll…</p>}
+        {sent && tab === 'rift' && (
           <>
             <div>
               <label className="rb-rank-pick">
@@ -134,7 +164,7 @@ export function RankScreen({ engine, onBack }: { engine: SigilEngine; onBack: ()
             <BoardTable board="stone" title="Story heroes’ Riftstones" note="A level-60 hero of the story, in the gear they have won." />
           </>
         )}
-        {tab === 'vigil' && (
+        {sent && tab === 'vigil' && (
           <div>
             <label className="rb-rank-pick">
               <span>Land</span>
@@ -150,8 +180,8 @@ export function RankScreen({ engine, onBack }: { engine: SigilEngine; onBack: ()
             <BoardTable board={land ? `vigil:${land}` : 'vigil'} title={land ? `The Vigil: ${VIGIL_MAPS.find((m) => m.id === land)?.name ?? land}` : 'The Vigil'} />
           </div>
         )}
-        {tab === 'ring' && RING_BOARDS.map((b) => <BoardTable key={b.part} board={`ring:${b.part}`} title={b.name} />)}
-        {tab === 'level' && <BoardTable board="level" title="Highest heroes" />}
+        {sent && tab === 'ring' && RING_BOARDS.map((b) => <BoardTable key={b.part} board={`ring:${b.part}`} title={b.name} />)}
+        {sent && tab === 'level' && <BoardTable board="level" title="Highest heroes" />}
       </div>
     </div>
   );
