@@ -183,7 +183,6 @@ const FLOWERS = ['flower_redA', 'flower_yellowA', 'flower_purpleA'];
 
 /** A dungeon's way in that's a model of its own; the ones no model would do (a stair, a hole in a hill) are in doorways.ts. */
 const ENTRANCES: Record<string, { m: string; w: number; tint?: string }> = {
-  'tomb-of-the-sun-king': { m: 'arch_gate', w: 3, tint: '#f0d8a0' },
   'spire-of-the-rift': { m: 'arch', w: 3, tint: '#c0a0f0' },
   'vaelmoor-remembered': { m: 'arch', w: 3, tint: '#d8d8f0' },
 };
@@ -987,6 +986,8 @@ interface Cladding {
 /** How deep a facing piece is, in tiles, and how far it stands out of the wall it faces. */
 const CLAD_DEEP = 0.3;
 const CLAD_OUT = 0.07;
+/** How far short a run of facing stops of a corner where the wall's own side shows (Land3D.cladWalls `open`), in tiles. */
+export const CLAD_SHY = 0.012;
 const CLADDING: Partial<Record<string, Cladding>> = {
   // the old dead's crypts: cold blue-violet stone, niches for the dead, bars
   crypt: { tint: [0.84, 0.82, 1.06], cracked: 0.22, odd: 0.5, pieces: ['wall_arched', 'wall_pillar', 'wall_archedwindow_gated', 'wall_arched', 'wall_gated'] },
@@ -1692,6 +1693,14 @@ export class Land3D {
       const k = map.kind[ny * W + nx]!;
       return k !== K.Wall && k !== K.Illusion && k !== K.Cracked && k !== K.Door;
     };
+    /**
+     * Whether the block of wall a run ends against shows its own side there: the tile past the run's end is open floor,
+     * a wall cut down to a kerb, or past the map (buildBlocks draws that side). A run's end facing it lay in the same
+     * plane as that side, and the two flickered through each other down the wall's edges as the camera moved (the owner,
+     * in the Tomb of the Sun King, all steps and corners: "some of the walls (mostly the edges) in this particular
+     * dungeon flicker and jitter"). So the run stops CLAD_SHY short of it, and the wall's own side is what shows there.
+     */
+    const open = (x: number, y: number): boolean => x < 0 || y < 0 || x >= W || y >= H || !wall(x, y) || !!cut?.[y * W + x];
     const tint = clad.tint;
     // (a hair taller than the wall it faces: its cap lies over the wall's top, not in the same plane, where the two
     // would flicker through each other)
@@ -1702,19 +1711,20 @@ export class Land3D {
       if (!long || h > clad.odd) return hash2(a, b, 133) < clad.cracked ? 'wall_cracked' : (clad.plain && hash2(a, b, 139) < 0.5 ? clad.plain : 'wall');
       return clad.pieces[Math.floor(hash2(a, b, 137) * clad.pieces.length) % clad.pieces.length]!;
     };
-    const lay = (len: number, at: (u: number) => { x: number; z: number }, rot: number, seedA: number, seedB: number, sy = syFar): void => {
+    /** A run of pieces `len` tiles long, from `at(-len / 2)` to `at(len / 2)`, each end drawn in by as much as it's given. */
+    const lay = (len: number, at: (u: number) => { x: number; z: number }, rot: number, seedA: number, seedB: number, sy: number, inA: number, inB: number): void => {
+      const u0 = -len / 2 + inA;
+      const u1 = len / 2 - inB;
       if (len === 1) {
-        const p = at(0);
         // (the half piece runs from its own corner, not its middle)
-        const q = at(-0.5);
-        void p;
-        this.add({ m: 'wall_half', x: q.x, z: q.z, rot, sx: 0.5, sy, sz: CLAD_DEEP, r: tint[0], g: tint[1], b: tint[2], shadow: 0 });
+        const q = at(u0);
+        this.add({ m: 'wall_half', x: q.x, z: q.z, rot, sx: (u1 - u0) / 2, sy, sz: CLAD_DEEP, r: tint[0], g: tint[1], b: tint[2], shadow: 0 });
         return;
       }
       const n = Math.max(1, Math.round(len / 2.6));
-      const wide = len / n;
+      const wide = (u1 - u0) / n;
       for (let i = 0; i < n; i++) {
-        const p = at((i + 0.5) * wide - len / 2);
+        const p = at(u0 + (i + 0.5) * wide);
         // (a run's ends stay plain, where it meets its corners)
         const m = pick(seedA + i * 7, seedB, n >= 3 && i > 0 && i < n - 1 && i % 2 === 1);
         this.add({ m, x: p.x, z: p.z, rot, sx: wide / 4, sy, sz: CLAD_DEEP, r: tint[0], g: tint[1], b: tint[2], shadow: 0 });
@@ -1728,7 +1738,7 @@ export class Land3D {
         while (faces(x1 + 1, y, 0, 1)) x1++;
         const len = x1 - x + 1;
         const mid = x + len / 2;
-        lay(len, (u) => ({ x: mid + u, z: y + 1 - CLAD_DEEP / 2 + CLAD_OUT }), 0, x, y);
+        lay(len, (u) => ({ x: mid + u, z: y + 1 - CLAD_DEEP / 2 + CLAD_OUT }), 0, x, y, syFar, open(x - 1, y) ? CLAD_SHY : 0, open(x1 + 1, y) ? CLAD_SHY : 0);
       }
     }
     // the flanks: runs down a column, facing east or west
@@ -1741,9 +1751,12 @@ export class Land3D {
           const len = y1 - y + 1;
           const mid = y + len / 2;
           const fx = dx > 0 ? x + 1 - CLAD_DEEP / 2 + CLAD_OUT : x + CLAD_DEEP / 2 - CLAD_OUT;
+          // (its south end is at -len / 2 facing east, at +len / 2 facing west)
+          const south = open(x, y1 + 1) ? CLAD_SHY : 0;
+          const north = open(x, y - 1) ? CLAD_SHY : 0;
           // (turned a quarter: the piece's length runs down the wall, and its face is to the room)
           // (and a flank's cap a hair over the far wall's, where the two meet in a corner)
-          lay(len, (u) => ({ x: fx, z: mid - u * dx }), (dx * Math.PI) / 2, x + 500, y, syFar + 0.004);
+          lay(len, (u) => ({ x: fx, z: mid - u * dx }), (dx * Math.PI) / 2, x + 500, y, syFar + 0.004, dx > 0 ? south : north, dx > 0 ? north : south);
         }
       }
     }

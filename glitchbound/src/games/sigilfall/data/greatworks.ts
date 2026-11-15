@@ -221,9 +221,11 @@ export const GREAT: Record<string, GreatWork> = {
   },
 
   // The Sunscorch: "the sunken tomb where the Sun King keeps his sigil". Him on his throne over its door, the sand to his knees
+  // (his plinth's front is where its solid ground ends, on the door tile's north edge: a tile further out, it stood over
+  // the door and buried the doorway's arch in its face. The door itself is built against it: render3d/doorways.ts pylon)
   'sun-king-colossus': {
     parts: [
-      block(13, 3, 9, 0, -1, { y: -1, tint: shade(SAND_STONE, 0.86), shadow: 7, shadowD: 0.7 }),
+      block(13, 3, 7, 0, -1, { y: -1, tint: shade(SAND_STONE, 0.86), shadow: 7, shadowD: 0.7 }),
       figure('sk_king', 'sit', 20, 0, -1, { y: 1.8, tint: SAND_STONE }),
       thing('w_shield_round', 11, 0, -4.6, { y: 12, tint: GOLD, glow: '#ffd070', glowY: 5, glowSize: 50 }),
       thing('statue_obelisk', 12, -8.5, 1, { tint: SAND_STONE, shadow: 2 }),
