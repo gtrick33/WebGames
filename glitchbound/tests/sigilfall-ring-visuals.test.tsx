@@ -8,7 +8,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { PRESETS } from '../src/games/sigilfall/arena/abilities';
 import { GATES, Match, type FighterSetup, type MatchEvent } from '../src/games/sigilfall/arena/sim';
@@ -16,7 +15,6 @@ import type { ClassId } from '../src/games/sigilfall/data/types';
 import { comboWord, RingFx } from '../src/games/sigilfall/render/ring';
 import { hasKit, kitOf } from '../src/games/sigilfall/render3d/kits';
 import { THRALL_BLOWS, THRALL_RUN, THRALL_SPRITE, thrallPose } from '../src/games/sigilfall/render3d/thrall';
-import { NameReel } from '../src/games/sigilfall/ui/NameReel';
 
 const ROOT = path.resolve(__dirname, '..');
 const read = (p: string): string => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -82,41 +80,27 @@ describe('The Ring: no momentum pop-up', () => {
   });
 });
 
-describe('The Ring: a name with a title rolls on its nameplate like a slot machine reel', () => {
-  it('without a title, the name as it was', () => {
-    const { container } = render(<NameReel name="You" title={null} />);
-    expect(container.innerHTML).toBe('<b>You</b>');
+describe('The Ring: nameplates show the class; titles stand over the fighters', () => {
+  const match = read('src/games/sigilfall/ui/RingMatch.tsx');
+  it('every nameplate and the target card carry the class’s emblem, not a doll’s face (the owner: "hunter and priest look a lot alike")', () => {
+    expect(match).toMatch(/<Frame key=\{f\.id\} f=\{f\} m=\{m\} me=\{me\} doll=\{classEmblem\(f\.cls\)\}/);
+    expect(match).toMatch(/<Frame key=\{f\.id\} flip f=\{f\} m=\{m\} me=\{me\} doll=\{classEmblem\(f\.cls\)\}/);
+    expect(match).toContain('const dollOf = (f: Fighter): string => classEmblem(m.masterOf(f).cls);');
+    expect(match).toContain('className="rb-ring-face is-emblem"');
   });
 
-  it('with a title: the name, the title and the name again in one reel, the repeat hidden from a screen reader', () => {
-    const { container } = render(<NameReel name="You" title={{ text: 'Bladeward', fx: 'gleam', before: true }} />);
-    const reel = container.querySelector('.rb-ring-reel')!;
-    const rows = [...reel.querySelector('.rb-ring-reel-track')!.children];
-    expect(rows.map((r) => r.textContent)).toEqual(['You', 'Bladeward', 'You']);
-    expect(rows[1]!.classList.contains('rb-ring-title')).toBe(true);
-    expect(rows[1]!.querySelector('.tfx')).not.toBeNull();
-    expect(rows[2]!.getAttribute('aria-hidden')).toBe('true');
-    expect(rows[0]!.getAttribute('aria-hidden')).toBeNull();
+  it('a nameplate says the name whole, with no title rolling through it', () => {
+    expect(match).toContain("<b>{f.id === me?.id ? 'You' : f.name}</b>");
+    expect(match).not.toMatch(/NameReel/);
+    expect(CSS).not.toMatch(/rb-ring-reel/);
   });
 
-  it('it turns for ever, one row at a time, and only takes turns for those who asked for less motion', () => {
-    expect(rules('.rb-ring-reel-track').join('\n')).toMatch(/animation:\s*rb-ring-reel \S+ .* infinite/);
-    const roll = /@keyframes rb-ring-reel \{([\s\S]*?)\n\}/.exec(CSS)![1]!;
-    expect(roll).toMatch(/translateY\(-33\.333%\)/);
-    expect(roll).toMatch(/100% \{\s*transform: translateY\(-66\.667%\)/);
-    const still = /@keyframes rb-ring-reel-still \{([\s\S]*?)\n\}/.exec(CSS)![1]!;
-    expect(still).toMatch(/49\.99%/);
-    expect(still).not.toMatch(/-66/);
-    // (the site stops every animation for less motion: this one is kept going, with no motion in it)
-    const reduced = /@media \(prefers-reduced-motion: reduce\) \{\s*\.rb-ring-reel-track \{([^}]*)\}/.exec(CSS)![1]!;
-    expect(reduced).toMatch(/animation-name:\s*rb-ring-reel-still/);
-    expect(reduced).toMatch(/animation-iteration-count:\s*infinite !important/);
-    expect(reduced).toMatch(/animation-duration:\s*6s !important/);
-  });
-
-  it('the match screen uses it for every nameplate', () => {
-    const match = read('src/games/sigilfall/ui/RingMatch.tsx');
-    expect(match).toMatch(/<NameReel name=\{f\.id === me\?\.id \? 'You' : f\.name\} title=\{title\} \/>/);
+  it('a title stands over its fighter’s bar in its own light, the pictures of what is on them lifted over it', () => {
+    expect(match).toMatch(/<span[\s\S]{0,200}className="rb-ring-overhead"[\s\S]{0,80}<TitleFx fx=\{t\.fx\}>\{t\.text\}<\/TitleFx>/);
+    expect(match).toContain('drawRing(m, fx, myId, time, view, aim, (f) => raise[f.id] ?? 0);');
+    const ring = read('src/games/sigilfall/render/ring.ts');
+    expect(ring).toContain('const py = by - pip - 2.6 - raise;');
+    expect(rules('.rb-ring-overhead').join('\n')).toMatch(/white-space:\s*nowrap/);
   });
 });
 

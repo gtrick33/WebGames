@@ -31,8 +31,19 @@ import { ScreenGate } from './ScreenGate';
 import { Doll } from './Doll';
 import { classEmblem } from './classEmblem';
 import { bestFits, bestPreset, choiceFromWord, choicesFor, choiceWord, fillSide, healerSpec, honored, slotsFor, specOf, type MateChoice, type Spec } from '../arena/teammates';
+import { cleanTitle, isTitleFx } from '../../../catalog/titleFx';
+import { rankFx, type TitleShown } from '../progress/titles';
 
 const roomErrors: Record<string, string> = { full: 'That room is full.', in_run: 'That room is already in a match.' };
+
+/** A title from another player's game, as this one draws it: its words tidied, its light one this game has (else plain). */
+function shownTitle(t: RoomPick['title']): FighterSetup['title'] | undefined {
+  const text = cleanTitle(t?.text);
+  return text ? { text, fx: isTitleFx(t?.fx) ? t.fx : 'plain', before: t?.before ?? true } : undefined;
+}
+
+/** What a title is sent to a room as. */
+const pickTitle = (t: TitleShown | null): { title?: RoomPick['title'] } => (t ? { title: { text: t.text, fx: t.fx, before: t.before } } : {});
 
 /**
  * Both ends of a room build the same match from the room's own word. Empty places go to the computer: on a side with
@@ -48,7 +59,8 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
       // (a bar of six from a player whose game is from before bars held four keeps its first four; one with an ability
       // this game doesn't have, from a game older or newer, keeps the rest and is filled up from the class's own)
       const bar = fullBar(cls, s.pick!.bar);
-      fighters.push({ team, cls, name: s.name, bar, oath: s.pick!.oath, talents: s.pick!.talents, step: s.pick!.step, ult: s.pick!.ult, seat: s.n });
+      const title = shownTitle(s.pick!.title);
+      fighters.push({ team, cls, name: s.name, bar, oath: s.pick!.oath, talents: s.pick!.talents, step: s.pick!.step, ult: s.pick!.ult, seat: s.n, ...(title ? { title } : {}) });
     }
     const list = COMPS[v.format];
     const comp = list[(v.runSeed + team) % list.length]!;
@@ -329,11 +341,14 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     // the other side's rating lands either way of your matchmaking rating, up to 150 (what it pays and costs follows:
     // stakesOf), and how sharp the computer plays follows it; your own side's play to yours
     const rivalRating = rivalFor(standing, seed);
+    // (the other side wears the rank of its rating over their heads, as a player wears a title: "Pit Veteran")
+    const rivalRank = rankOf(rivalRating);
+    const rivals = rivalRank.at > 0 ? fighters.map((f) => ({ ...f, title: { text: rivalRank.name, fx: rankFx(rivalRank.at), before: true } })) : fighters;
     setResult(null);
     setPage('play');
     setRun((r) => r + 1);
     const next = {
-      setup: { seed, map: map === 'random' ? MAP_IDS[seed % MAP_IDS.length]! : map, fighters: namedApart([...team, ...fighters]), gates: GATES_SOLO },
+      setup: { seed, map: map === 'random' ? MAP_IDS[seed % MAP_IDS.length]! : map, fighters: namedApart([...team, ...rivals]), gates: GATES_SOLO },
       rival: comp,
       skill: skillAt(rivalRating),
       mates: mateSkill(mmrOf(standing)),
@@ -381,7 +396,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     seekRef.current?.stop();
     const ground = map === 'random' ? MAP_IDS[Math.floor(Math.random() * MAP_IDS.length)]! : map;
     seekRef.current = new Seek(
-      { format, map: ground, name: shownAs, pick: { cls: pick, bar, oath, talents, step, ult, rating: mmrOf(standing), mates: mates.map(choiceWord) } },
+      { format, map: ground, name: shownAs, pick: { cls: pick, bar, oath, talents, step, ult, rating: mmrOf(standing), mates: mates.map(choiceWord), ...pickTitle(myTitle) } },
       {
         onLook: setLook,
         onRun: (v, link) => {
@@ -439,7 +454,11 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   /* -------------------------------------------------- the room */
   const roomMates = view ? choicesFor(save.mates?.[view.format], view.format) : [];
   const roomWords = roomMates.map(choiceWord).join(' ');
-  const myPick = useMemo((): RoomPick => ({ team: view?.seats.find((s) => s.you)?.pick?.team ?? 0, cls: pick, bar, oath, talents, step, ult, ...(roomWords ? { mates: roomWords.split(' ') } : {}) }), [view, pick, bar, oath, talents, step, ult, roomWords]);
+  // (the title worn, sent to the room so everyone sees it over this player's head)
+  const tText = myTitle?.text ?? '';
+  const tFx = myTitle?.fx ?? 'plain';
+  const tBefore = myTitle?.before ?? true;
+  const myPick = useMemo((): RoomPick => ({ team: view?.seats.find((s) => s.you)?.pick?.team ?? 0, cls: pick, bar, oath, talents, step, ult, ...(roomWords ? { mates: roomWords.split(' ') } : {}), ...(tText ? { title: { text: tText, fx: tFx, before: tBefore } } : {}) }), [view, pick, bar, oath, talents, step, ult, roomWords, tText, tFx, tBefore]);
   const runSeen = useRef(0);
   const handlers = {
     onView: (v: RoomView) => {

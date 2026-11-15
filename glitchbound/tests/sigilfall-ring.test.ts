@@ -830,6 +830,23 @@ describe('The Ring: over a room', () => {
     expect(cleanPick(pick(0, 'mage'))).toBeTruthy();
   });
 
+  it('a pick carries the title worn, tidied, and drops one that is no title at all', () => {
+    const clean = cleanPick({ ...pick(0, 'mage'), title: { text: '  Pit\u200b  Veteran\u0007 ', fx: 'blood', before: true } });
+    expect(clean?.title).toEqual({ text: 'Pit Veteran', fx: 'blood', before: true });
+    expect(cleanPick({ ...pick(0, 'mage'), title: { text: 'x'.repeat(90), fx: 'gleam' } })?.title?.text).toHaveLength(40);
+    for (const bad of [{ text: '', fx: 'gleam' }, { text: 'Hi', fx: 'not a light!' }, { text: 7, fx: 'gleam' }, 'Bladeward']) expect(cleanPick({ ...pick(0, 'mage'), title: bad })?.title).toBeUndefined();
+  });
+
+  it('everyone in the match sees each player’s title over their head, in a light this game has', () => {
+    const s = room();
+    act(s, KEYS[0]!, { t: 'pick', pick: { ...pick(0, 'mage'), title: { text: 'Bladeward', fx: 'arcane', before: true } } }, 1);
+    act(s, KEYS[1]!, { t: 'pick', pick: { ...pick(1, 'warrior'), title: { text: 'the Kingslayer', fx: 'nonsense', before: false } } }, 1);
+    act(s, KEYS[0]!, { t: 'start' }, 1);
+    const { setup } = setupFromRoom(viewFor(s, KEYS[1]!)!);
+    expect(setup.fighters.find((f) => f.cls === 'mage' && f.seat !== undefined)?.title).toEqual({ text: 'Bladeward', fx: 'arcane', before: true });
+    expect(setup.fighters.find((f) => f.cls === 'warrior' && f.seat !== undefined)?.title).toEqual({ text: 'the Kingslayer', fx: 'plain', before: false });
+  });
+
   it('relay passes the fight on only during a match, and stores nothing', () => {
     const s = room();
     expect(relay(s, KEYS[0]!, { t: 'r', d: 1 })?.others).toBeUndefined();
