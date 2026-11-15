@@ -57,7 +57,7 @@ const REROUTE: Partial<Record<RegionId, Partial<Record<RegionId, { to: RegionId;
     vinecoil: null,
   },
   glimmerwood: {
-    grimward: { to: 'sunscorch', label: 'South: the Sunscorch' },
+    grimward: { to: 'sunscorch', label: 'East road: the Sunscorch' },
     blightwood: null,
   },
   'shattered-vale': {

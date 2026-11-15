@@ -153,8 +153,8 @@ export const MOUNTS: MountDef[] = [
   {
     id: 'sunhouse-courser',
     name: 'Sun-House Courser',
-    lore: 'The desert houses breed their coursers for heat and pride. The gold on the barding is real. So is the sand in it.',
-    from: 'Act III: the sun houses, once their oath is answered',
+    lore: 'The people of the Oasis of Ras breed these coursers to run in the desert heat. The gold on the barding is real.',
+    from: 'Act III: the Sunscorch, once the Sun King is laid to rest',
     source: { kind: 'quest', quest: 'the-sun-king' },
     body: 'horse',
     coat: '#8a5a2e',

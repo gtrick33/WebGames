@@ -117,7 +117,7 @@ export const BOSSES: Record<string, BossDef> = {
     ],
     first: { any: ['zephyr-boots'] },
     drops: { items: { mage: ['ember-staff', 'cinder-amulet'], warrior: ['cleaverfang', 'riposte-gauntlets'], ranger: ['splitwood-bow', 'viper-quiver'], any: ['zephyr-boots'] }, chance: [0.35, 0.5, 0.7] },
-    intro: 'A boar the size of a cart, with a rift glowing in its eyes.',
+    intro: 'A boar the size of a cart. The Host’s violet light burns in its eyes, and every beast in the Whisperwood follows it.',
   },
   /* ------------------------------------------------------------ the Chapel Crypt (sim/patterns/crypt.ts) */
   'coffin-matron': {
@@ -146,7 +146,7 @@ export const BOSSES: Record<string, BossDef> = {
       },
       {
         at: 0.5,
-        banner: 'The Matron wakes her children!',
+        banner: 'The Matron wakes the dead! More coffins open!',
         speed: 38,
         rest: [0.7, 1.1],
         enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['skeleton', 'skeleton'] } }, { id: 'crypt:coffins', w: 1, cd: 0, p: { n: 5, swaps: 5, swap: 0.75, wait: 9 } }],
@@ -161,7 +161,7 @@ export const BOSSES: Record<string, BossDef> = {
     ],
     first: { any: ['static-band'] },
     drops: { items: { any: ['static-band', 'thornmail', 'wardens-aegis'] }, chance: [0.25, 0.4, 0.6] },
-    intro: 'She tucks the dead in every night. Tonight she has room for one more.',
+    intro: 'The keeper of the crypt’s coffins. She hides in one and moves them around. Watch where she goes.',
   },
   ossric: {
     id: 'ossric',
@@ -188,7 +188,7 @@ export const BOSSES: Record<string, BossDef> = {
       },
       {
         at: 0.5,
-        banner: 'The Warden relights every grave!',
+        banner: 'The Warden relights his grave candles! Snuff them to break his shield!',
         speed: 42,
         rest: [0.6, 1],
         enter: [{ id: 'summon', w: 1, cd: 0, p: { enemies: ['skeleton', 'skeleton'] } }, { id: 'crypt:candles', w: 1, cd: 0, p: { n: 3, relight: 3 } }],
@@ -202,7 +202,7 @@ export const BOSSES: Record<string, BossDef> = {
     ],
     first: { any: ['wardens-aegis'] },
     drops: { items: { any: ['wardens-aegis', 'thornmail', 'static-band'], mage: ['twin-flame-circlet'], warrior: ['bulwark-of-dawn'], ranger: ['trappers-satchel'] }, chance: [0.3, 0.45, 0.65] },
-    intro: 'He has guarded this gate for three hundred years and sees no reason to stop.',
+    intro: 'The crypt’s guardian. He died three hundred years ago and still lets no one through this gate.',
   },
   morgrave: {
     id: 'morgrave',
@@ -228,7 +228,7 @@ export const BOSSES: Record<string, BossDef> = {
       },
       {
         at: 0.65,
-        banner: 'Grieflight floods the crypt!',
+        banner: 'Morgrave splits his soul! Break every shard!',
         speed: 34,
         rest: [0.6, 1.1],
         enter: [{ id: 'crypt:soul-split', w: 1, cd: 0, p: { n: 3, time: 12, heal: 0.1, rage: 1.12 } }],
@@ -242,7 +242,7 @@ export const BOSSES: Record<string, BossDef> = {
       },
       {
         at: 0.3,
-        banner: 'Reality crumbles! Stay inside the light!',
+        banner: 'The crypt is collapsing! Stay inside the light!',
         speed: 38,
         rest: [0.5, 0.9],
         enter: [{ id: 'crypt:soul-split', w: 1, cd: 0, p: { n: 4, time: 13, heal: 0.12, rage: 1.15 } }, { id: 'collapse', w: 1, cd: 0 }],
@@ -260,7 +260,7 @@ export const BOSSES: Record<string, BossDef> = {
       items: { mage: ['heart-of-the-inferno', 'stormcaller-rod'], warrior: ['quakehammer', 'whirling-greaves'], ranger: ['galeheart-bow', 'splitwood-bow'], any: ['riftwalker-mantle', 'crown-of-the-hollow-king'] },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'A scholar of the Ash Crown who came for the reliquary under the chapel. He has read every book about the Starlight Crown, and burned most of them.',
+    intro: 'The scholar who leads the raiders. He came to take the sigil hidden in the reliquary.',
   },
   /* ------------------------------------------------------------ Gallows Keep */
   hangman: {
@@ -308,7 +308,7 @@ export const BOSSES: Record<string, BossDef> = {
     ],
     first: { any: ['second-wind-ring'] },
     drops: { items: { any: ['second-wind-ring', 'thornmail', 'static-band', 'zephyr-boots'], warrior: ['sunder-band'], mage: ['piercing-catalyst'], ranger: ['ricochet-longbow'] }, chance: [0.3, 0.45, 0.65] },
-    intro: 'The gang’s executioner. He has never needed a second swing, but he brought a second axe.',
+    intro: 'The Gallows Gang’s executioner. He hangs the people of Millbrook who can’t pay the rope tax.',
   },
   gnasher: {
     id: 'gnasher',
@@ -349,7 +349,7 @@ export const BOSSES: Record<string, BossDef> = {
     ],
     first: { any: ['zephyr-boots'] },
     drops: { items: { any: ['zephyr-boots', 'thornmail', 'second-wind-ring'] }, chance: [0.3, 0.45, 0.65] },
-    intro: 'The gang feeds him what the Hangman leaves. He has gone hungry all week.',
+    intro: 'The Gallows Gang’s war-hound. It guards the kennels under Gallows Hill.',
   },
   varric: {
     id: 'varric',
@@ -413,7 +413,7 @@ export const BOSSES: Record<string, BossDef> = {
       items: { warrior: ['bloodthirst-blade', 'riposte-gauntlets'], mage: ['glacier-staff', 'tome-of-blinking'], ranger: ['ricochet-longbow', 'huntmasters-hood'], any: ['glitch-shard', 'amulet-of-echoes', 'riftwalker-mantle'] },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'He took the hill with two knives and a grin. He has kept it with the same.',
+    intro: 'The leader of the Gallows Gang. Someone pays him in grey coins to keep Millbrook hungry.',
   },
   /* ------------------------------------------------------------ the Smugglers' Grotto */
   'the-drowned': {

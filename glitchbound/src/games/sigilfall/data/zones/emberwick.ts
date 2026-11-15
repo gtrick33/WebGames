@@ -334,7 +334,7 @@ const built = plan().build();
 export const EMBERWICK: RegionDef = {
   id: 'emberwick',
   name: 'Emberwick',
-  subtitle: 'The Ember City',
+  subtitle: 'The Crown City',
   theme: 'village',
   kind: 'town',
   level: 1,

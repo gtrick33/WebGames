@@ -116,7 +116,7 @@ const foes: Record<string, EnemyDef> = {
     windup: 1,
     recover: 1,
     attackCd: 999,
-    blurb: 'Gold sand running out of the top. Something about it makes you want to break it.',
+    blurb: 'Vizier Khepset’s sand-glass. When its sand runs out, his wounds heal and you are pulled back to where you stood. Break it first.',
   },
   'ushabti-guardian': {
     id: 'ushabti-guardian',
@@ -276,7 +276,7 @@ const bosses: Record<string, BossDef> = {
     ],
     first: { any: ['static-band'] },
     drops: { items: { any: ['static-band', 'second-wind-ring', 'thornmail'] }, chance: [0.3, 0.45, 0.65] },
-    intro: 'He kept the king’s hours in life. In death he keeps the last one, and he turns it back whenever it goes badly.',
+    intro: 'The Sun King’s vizier, buried with him to serve him after death. When he turns his sand-glass, every wound you give him heals once the sand runs out. Break the glass before it does.',
   },
   'the-sand-warden': {
     id: 'the-sand-warden',
@@ -334,7 +334,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'The old kingdom set it at the king’s door with one order: let no one pass. It has stood there three hundred years, and the Host did not pass either. Then the king woke, and it let him out.',
+    intro: 'The old desert kingdom built it to guard the Sun King’s tomb. It attacks anyone who comes through the door. When the Host’s diggers broke in, it drove them out.',
   },
   'the-sun-king': {
     id: 'the-sun-king',
@@ -412,7 +412,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'He ruled the desert three hundred years ago, and was buried with the sun itself on his brow. He has woken angry, and the Host’s spells are not what keeps him standing. He was always this bright.',
+    intro: 'He ruled the desert three hundred years ago and was one of the seven wardens. He sealed himself in this tomb to guard the Sigil of the Sun. The Host’s digging woke him, and he thinks you are thieves.',
   },
 };
 

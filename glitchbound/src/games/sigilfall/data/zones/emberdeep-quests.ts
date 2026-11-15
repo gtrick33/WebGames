@@ -2,16 +2,14 @@ import type { NpcDef, QuestDef } from '../types';
 
 /**
  * Cinderhold's people and the quests of Emberdeep Caldera, on the Dead Kingdom's eastern rim (STORY_BIBLE.md
- * §3, Act V: the second of the three great dungeons). The dwarves of Cinderhold have kept the fire-ward on the
- * caldera's southern rim for a thousand years, and their old pact with Ashkar, lord of its fire, with it. Now
- * the Host has him chained on his own throne beneath the lake of fire, forging the Pale Crown: a crown of
- * ash-iron with seven empty points, the setting the seven Crown Sigils would be set in to relight the Ash
- * Crown as a Crown of Ash and Starlight. Freed, Ashkar breaks it and forges the halves into a band of
- * starlight that lets Elyra hold all seven without being burned away. The main chain runs from the Slave
- * Forges and the flamecallers through Dvalin's reading of the Host's runes and the Old Fire-Ward's ward-stone to the Throne's Gate, and down into the
- * Molten Throne for the Magma Warden and Ashkar himself. Brewer Asgerd wants her heat back from the magma
- * hounds, Runesmith Dvalin wants living embers from the fire-folk, and Ash-warden Ketla wants her brother
- * down off the Drake Roost, and Pyrebrand dead. Main chain first.
+ * §3, Act V). The dwarves of Cinderhold have watched the caldera from its southern rim for a thousand years,
+ * and kept faith with Ashkar, lord of its fire. Now the Host has him chained on his own throne beneath the lake
+ * of fire, forging the Pale Crown: a crown with seven settings, one for each Crown Sigil, and a place at its
+ * center for the living person who carries them (Elyra). The main chain runs from the Slave Forges through
+ * Dvalin's reading of the Host's mold (and the hammer he makes with Hroki's ward-stone) to the Throne's Gate,
+ * and down into the Molten Throne for the Magma Warden and Ashkar himself, who is freed and breaks the crown.
+ * Brewer Asgerd wants her heat back from the magma hounds, and Ash-warden Ketla wants her brother down off the
+ * Drake Roost, and Pyrebrand dead. Main chain first. Written to DIALOGUE_STYLE.md (plain, direct, no punchlines).
  */
 export const EMBERDEEP_QUESTS: QuestDef[] = [
   /* ---------------------------------------------------------- the way in */
@@ -19,7 +17,7 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     id: 'the-pale-crown',
     name: 'The Pale Crown',
     giver: 'candlewife-hesper',
-    text: 'Halvard’s last words were for Hollowmere, but his sword had something else to say. Under the Weeping Tree, Hesper found a forge-order pinned to its blade, taken off a Host courier Halvard cut down on the road east: wagons of pale ore bound for Emberdeep Caldera, in the Herald’s grey hand. “Seven points. Leave them empty. They will be filled.” A crown for the seven sigils: the setting the Ash Crown needs to be relit as a Crown of Ash and Starlight. Emberdeep is a ring of black mountains round a lake of fire, and the dwarves of Cinderhold have watched it from the southern rim for a thousand years. Take the east road out of the wood to Cinderhold and find Thane Hroki.',
+    text: 'Hesper found a Host order pinned to Halvard’s sword, written by the Pale Herald. It sends ore to Emberdeep, east of the wood, to forge a crown with seven empty settings, one for each sigil. Stop that crown before it is finished, then go to Hollowmere. Find Thane Hroki at Cinderhold, the dwarf fort on Emberdeep’s rim.',
     objective: { kind: 'talk', npc: 'thane-hroki', label: 'Talk to Thane Hroki in Cinderhold' },
     after: ['the-weeping-lord'],
     // the hand-off that sends the hero to emberdeep: it starts when the last chapter ends, not on arrival
@@ -32,19 +30,19 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     name: 'Forges on the Rim',
     auto: true,
     giver: 'thane-hroki',
-    text: 'For a month Hroki’s watchmen have counted the Host’s columns coming over the north rim, and every column drags chains. Now smoke rises from the old smelters on the west rim, north-west of Cinderhold, where the dwarves once worked the caldera’s iron and haven’t in a century. Hroki would like to know who is working them, and with what.',
-    objective: { kind: 'explore', spot: 'slave-forges', label: 'Find who is working the old smelters north-west of Cinderhold' },
+    text: 'For a month, Hroki’s watchmen have seen Host columns come over the north rim with chained dead behind them. The old smelters north-west of Cinderhold have been cold for a hundred years. Now smoke rises over them. Find out who is working them.',
+    objective: { kind: 'explore', spot: 'slave-forges', label: 'Search the Slave Forges north-west of Cinderhold' },
     after: ['the-pale-crown'],
     zone: 'emberdeep',
-    reward: { xp: 1800, gold: 600, text: 'On the smelters’ anvil you find a block of obsidian cut all over with Hollow runes. Hroki wants to know what it says.' },
+    reward: { xp: 1800, gold: 600, text: 'The Host has turned the smelters into slave forges, worked by its dead in chains. On the anvil you find a block of obsidian carved with Vaelmoor runes. Hroki can’t read them.' },
   },
   {
     id: 'break-the-chains',
     name: 'Break the Chains',
     auto: true,
     giver: 'thane-hroki',
-    text: 'The Slave Forges are worked by the dead: forge-slaves chained at the ankle, hauling buckets of slag from the lava flows to the anvils and back, without rest, because the dead don’t need any. Some of them wear Cinderhold’s colors under the soot. Hroki wants them laid down, all of them, and he will settle for six. At the Slave Forges north-west of town, and along the flows. Step back when they fall: the buckets spill.',
-    objective: { kind: 'kill', region: 'emberdeep', count: 6, enemies: ['legion-forgeslave'], label: 'Free the dead made to work the forges' },
+    text: 'The Host’s dead still work the Slave Forges in chains, and some of them wear Cinderhold’s colors. Hroki wants them laid to rest while Dvalin makes his hammer. Free six of them at the Slave Forges, north-west of town. Step back when one falls, because its bucket of slag spills.',
+    objective: { kind: 'kill', region: 'emberdeep', count: 6, enemies: ['legion-forgeslave'], label: 'Free forge-slaves at the Slave Forges' },
     after: ['dvalins-reading'],
     zone: 'emberdeep',
     level: 52,
@@ -55,7 +53,7 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     name: 'Dvalin’s Reading',
     auto: true,
     giver: 'thane-hroki',
-    text: 'Hroki can read a ledger, a map and a man’s face, but not Hollow runes. Runesmith Dvalin can read anything cut into stone, and will tell you so before you ask. Take the obsidian to his forge on the square in Cinderhold.',
+    text: 'Hroki can’t read Vaelmoor runes. Runesmith Dvalin can read anything carved in stone. Take the obsidian to his forge in Cinderhold.',
     objective: { kind: 'talk', npc: 'runesmith-dvalin', label: 'Bring the obsidian to Runesmith Dvalin' },
     after: ['forges-on-the-rim'],
     zone: 'emberdeep',
@@ -67,7 +65,7 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     name: 'The Throne’s Gate',
     auto: true,
     giver: 'thane-hroki',
-    text: 'Dvalin has set the ward-stone into the head of a hammer and sung over it all night. “Strike his chains with it,” he says, “and they’ll remember they were only iron.” The way down to Ashkar’s throne is the Throne’s Gate, in the north of the caldera at the edge of the lake of fire, and the Host guards it with everything it has left. Go north and find it.',
+    text: 'Dvalin set Hroki’s ward-stone into a hammer and worked on it all night. Strike Ashkar’s chains with it, and they will break. The way down to Ashkar is the Throne’s Gate, at the north edge of the caldera, and the Host guards it. Go north and find it.',
     objective: { kind: 'explore', spot: 'throne-gate', label: 'Find the Throne’s Gate in the north of the caldera' },
     after: ['break-the-chains'],
     zone: 'emberdeep',
@@ -79,7 +77,7 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     name: 'The Magma Warden',
     auto: true,
     giver: 'thane-hroki',
-    text: 'Below the Throne’s Gate the Host has set a keeper on Ashkar’s forges: the Magma Warden, a construct of bone-steel and molten stone that feeds the fires and keeps the slaves at the anvils. As long as it stands, nobody reaches the throne. Go down through the Throne’s Gate into the Molten Throne and break it.',
+    text: 'Below the Throne’s Gate, the Host has set a guardian on Ashkar’s forges: the Magma Warden, a giant of bone-steel and molten rock. Nobody gets past it to the throne. Go down through the Throne’s Gate into the Molten Throne and destroy it.',
     objective: { kind: 'boss', boss: 'magma-warden', label: 'Defeat the Magma Warden in the Molten Throne' },
     after: ['the-throne-gate'],
     zone: 'emberdeep',
@@ -91,8 +89,8 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     name: 'Ashkar the Bound',
     auto: true,
     giver: 'thane-hroki',
-    text: 'At the bottom of the Molten Throne, over a lake of fire, Ashkar sits chained to his own throne, hammering the Pale Crown on an anvil of his own flame and screaming as he works. He will not know you. He will not know anyone. Free him the only way he can be freed now: beat him down, strike his chains with Dvalin’s hammer, and break the Pale Crown on its anvil before the Herald can fill its seven points.',
-    objective: { kind: 'boss', boss: 'ashkar-the-bound', label: 'Free Ashkar the Bound and break the Pale Crown' },
+    text: 'At the bottom of the Molten Throne, Ashkar sits chained to his own throne, forging the Pale Crown. He is mad with pain and won’t know you. Beat him down, break his chains with Dvalin’s hammer, and smash the crown on its anvil.',
+    objective: { kind: 'boss', boss: 'ashkar-the-bound', label: 'Free Ashkar and break the Pale Crown' },
     after: ['the-magma-warden'],
     zone: 'emberdeep',
     level: 53,
@@ -100,7 +98,7 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
       xp: 7800,
       gold: 2200,
       item: 'the-unbound-flame',
-      text: 'Dvalin’s hammer rings on the chains, and the chains remember they were iron. Ashkar falls to one knee, and the Pale Crown cracks in two on his anvil. “Thank you,” the fire lord says, in a voice like a forge cooling. He takes the two halves in his bare hands and folds them together, hammering with his fist, until what lies on the anvil is a thin band of white metal that hums. “For the one who carries the star’s light,” he says. “It will hold the seven so they do not hold her. It will not give back what they have taken.” He gives you a coal from his own heart before the fire takes him home.',
+      text: 'Dvalin’s hammer breaks the chains, and the Pale Crown cracks in two on the anvil. Ashkar’s mind clears, and he thanks you. He gives you an ember from his own heart. Then he sinks back into the lake of fire, free.',
     },
   },
   /* -------------------------------------------------------- Asgerd's heat */
@@ -108,7 +106,7 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     id: 'hounds-in-the-runs',
     name: 'Hounds in the Runs',
     giver: 'brewer-asgerd',
-    text: 'Asgerd brews with the caldera’s own heat: clay pipes her grandmother laid run from the Magma Runs, the lava channels north of Cinderhold in the middle of the caldera, to her mash-tuns. Since Ashkar went mad, magma hounds have denned in the Runs, and they chew pipe. Her mash has gone cold twice this week, and she takes that personally. Ten fewer hounds, please.',
+    text: 'Brewer Asgerd heats her brewery with clay pipes that run from the Magma Runs, north of Cinderhold. Magma hounds have moved into the Runs, and they chew through her pipes. Kill ten of them.',
     objective: { kind: 'kill', region: 'emberdeep', count: 10, enemies: ['magma-hound'], label: 'Kill magma hounds in the Magma Runs' },
     after: ['the-pale-crown'],
     zone: 'emberdeep',
@@ -119,12 +117,12 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     id: 'ember-glands',
     name: 'Ember-Glands',
     giver: 'brewer-asgerd',
-    text: 'The pipes are past mending until the fire calms down, and Asgerd has a brewing to finish. A magma hound carries an ember-gland in its throat that burns for a month in a cold hearth, and five would see her through. Bring them from the hounds in the Magma Runs, north of Cinderhold. She will pay in gold and in the first flask.',
+    text: 'Asgerd’s pipes can’t be fixed until the caldera calms down. Until then, she can heat her vats with ember-glands, which burn for a month. Bring her five from the magma hounds in the Magma Runs.',
     objective: { kind: 'loot', region: 'emberdeep', item: 'Ember-Gland', from: ['magma-hound'], chance: 0.4, count: 5, label: 'Take Ember-Glands from magma hounds' },
     after: ['hounds-in-the-runs'],
     zone: 'emberdeep',
     level: 52,
-    reward: { xp: 1000, gold: 950, item: 'asgerds-warming-flask', text: 'Asgerd’s mash-tuns bubble again over five glowing glands, and the first flask of fire-ale off the new brew is yours. “Sip it,” she says. “Sip.”' },
+    reward: { xp: 1000, gold: 950, item: 'asgerds-warming-flask', text: 'Asgerd’s vats bubble again, and she gives you the first flask of fire-ale from the new brew.' },
   },
   /* --------------------------------------------------------- Dvalin's quench */
   /* --------------------------------------------------------- Ketla's drakes */
@@ -132,8 +130,8 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     id: 'the-drake-roost',
     name: 'The Drake Roost',
     giver: 'ashwarden-ketla',
-    text: 'Ash-warden Ketla counts the drakes over the caldera from Cinderhold’s tower, and lately the count is wrong: twice as many ash drakes as last spring, all of them coming from the Drake Roost on the far east rim. Her brother Ulf went to look a week ago and hasn’t come back, which she says is typical of him. Go east to the Drake Roost and see.',
-    objective: { kind: 'explore', spot: 'drake-roost', label: 'Look for Ulf at the Drake Roost on the far east rim' },
+    text: 'Ash-warden Ketla counts the drakes over the caldera from Cinderhold’s tower. There are twice as many as last spring, and they all come from the Drake Roost on the far east rim. Her brother Ulf went to look a week ago and hasn’t come back. Go east to the Roost and find him.',
+    objective: { kind: 'explore', spot: 'drake-roost', label: 'Look for Ulf at the Drake Roost in the east' },
     after: ['the-pale-crown'],
     zone: 'emberdeep',
     level: 52,
@@ -143,8 +141,8 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     id: 'ash-on-the-wind',
     name: 'Ash on the Wind',
     giver: 'ashwarden-ketla',
-    text: 'Ulf is alive, up a chimney of rock above the Roost with a broken leg and a great many opinions, and the drakes have him pinned there. Every time he puts his head out, something swoops. Thin out the ash drakes round the Drake Roost on the far east rim, so he can climb down before he runs out of opinions.',
-    objective: { kind: 'kill', region: 'emberdeep', count: 8, enemies: ['ash-drake'], label: 'Thin out the ash drakes round the Roost' },
+    text: 'Ulf is alive, stuck on a ledge above the Roost with a broken leg. The drakes dive at him whenever he moves. Kill eight ash drakes around the Drake Roost so he can climb down.',
+    objective: { kind: 'kill', region: 'emberdeep', count: 8, enemies: ['ash-drake'], label: 'Kill ash drakes around the Drake Roost' },
     after: ['the-drake-roost'],
     zone: 'emberdeep',
     level: 53,
@@ -154,12 +152,12 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     id: 'pyrebrand',
     name: 'Pyrebrand',
     giver: 'ashwarden-ketla',
-    text: 'The drakes have a mother. Pyrebrand, the great drake of the Roost, red as a forge’s heart, woke when Ashkar began to scream and has been laying ever since. Ulf says she breathes fire that sticks, rains burning stone, calls her brood down out of the smoke and takes to the air the moment you get close. Ketla says Ulf exaggerates. Kill Pyrebrand at the Drake Roost on the far east rim, and find out which of them is right.',
+    text: 'The drakes have a mother: Pyrebrand, the great red drake of the Roost. Ulf says she breathes fire that sticks, rains burning stone, calls her young, and flies off when you get close. Kill her at the Drake Roost on the far east rim.',
     objective: { kind: 'kill', region: 'emberdeep', count: 1, enemies: ['pyrebrand'], label: 'Kill Pyrebrand at the Drake Roost' },
     after: ['ash-on-the-wind'],
     zone: 'emberdeep',
     level: 53,
-    reward: { xp: 1250, gold: 1000, item: 'pyrebrand-scale', text: 'Ulf, it turns out, was right. He riveted the great drake’s scales onto a mail shirt with his leg in a splint and complains that you never thanked him for it. Ketla says that is the most he has ever said about anyone.' },
+    reward: { xp: 1250, gold: 1000, item: 'pyrebrand-scale', text: 'Ulf was right about everything. With his leg still in a splint, he rivets Pyrebrand’s scales onto a mail shirt for you.' },
   },
 ];
 
@@ -172,34 +170,38 @@ export const EMBERDEEP_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'the-pale-crown', state: 'active' },
-        lines: ['Hesper sent you? Then Halvard is at rest. Good. Nothing in my caldera is.', 'Hroki. Cinderhold has kept the fire-ward on this rim for a thousand years, and kept faith with the lord of the fire for as long. Now listen to him.', 'That screaming, under the lake. That is Ashkar. A month, now.'],
+        lines: [
+          'Hesper sent you? Then Halvard is at rest. Good.',
+          'I’m Hroki. Cinderhold has watched this caldera for a thousand years. Its fire lord, Ashkar, has always been our friend.',
+          'Hear that screaming under the lake? That’s Ashkar. The Host chained him a month ago.',
+        ],
       },
       {
         when: { quest: 'forges-on-the-rim', state: 'active' },
-        lines: ['The old smelters on the west rim, north-west of here. We left them a hundred years ago. There’s smoke over them now.', 'Every column the Host brought over the north rim was dragging chains. Go and see what’s on the end of them.'],
+        lines: ['The old smelters north-west of here have been cold for a hundred years. There’s smoke over them now.', 'The Host’s columns came over the north rim dragging chained dead. Find out what they’re doing at the smelters.'],
       },
       {
         when: { quest: 'break-the-chains', state: 'active' },
-        lines: ['The dead, hauling slag. Some in our colors. Some of those I knew.', 'Lay them down. Six, to begin with. And stand back when they fall: those buckets were full when they picked them up.'],
+        lines: ['The dead are hauling slag in chains. Some wear our colors. I knew some of them.', 'Lay six of them to rest. Stand back when they fall. Their buckets are full of slag.'],
       },
-      { when: { quest: 'dvalins-reading', state: 'active' }, lines: ['I can read a ledger and a liar, but not that. Dvalin can read anything cut in stone. Take it to his forge.', 'He’ll tell you he can read it before you’ve shown it him. Let him.'] },
+      { when: { quest: 'dvalins-reading', state: 'active' }, lines: ['I can’t read those runes. Dvalin can read anything carved in stone.', 'Take it to his forge here in Cinderhold.'] },
       {
         when: { quest: 'the-throne-gate', state: 'active' },
-        lines: ['Dvalin’s hammer. He sang over it all night; nobody in town slept, but it’s done.', 'The Throne’s Gate is north, at the edge of the lake. The Host will be standing in it. Find it, and count them for me.'],
+        lines: ['Dvalin finished the hammer. He worked on it all night.', 'The Throne’s Gate is at the north edge of the lake of fire. The Host will be guarding it.'],
       },
       {
         when: { quest: 'the-magma-warden', state: 'active' },
-        lines: ['Below the gate the Host has set a keeper on the forges. Bone-steel and molten stone, my scouts say. They said it from a long way off.', 'Break it, and the road to the throne is open.'],
+        lines: ['Below the gate, the Host has a guardian on the forges. My scouts say it’s made of bone-steel and molten rock.', 'Destroy it, and the way to Ashkar is open.'],
       },
       {
         when: { quest: 'ashkar-the-bound', state: 'active' },
-        lines: ['He won’t know you. He won’t know me. He’s been in pain too long to know anything.', 'Beat him down, strike the chains with Dvalin’s hammer, and smash that crown on its anvil. Then he can go home. It’s all any of us want.'],
+        lines: ['He won’t know you. He’s been in pain too long to know anyone.', 'Beat him down, break his chains with Dvalin’s hammer, and smash that crown. Then he can rest.'],
       },
       {
         when: { quest: 'ashkar-the-bound', state: 'done' },
-        lines: ['Listen. Nothing. For the first time in a month, the lake is only a lake.', 'Vaelor will have to hold his dead without a crown. Cinderhold owes you a debt, and dwarves pay their debts, slowly, with interest.'],
+        lines: ['Listen. The screaming has stopped. For the first time in a month, the lake is quiet.', 'Cinderhold owes you a debt. When you march on the Hallow King, our axes march with you.'],
       },
-      { lines: ['Cinderhold. A wall, a tower, a hundred dwarves and a fire we’ve watched for a thousand years.', 'Mind the lava. It doesn’t care who you are.'] },
+      { lines: ['This is Cinderhold. A wall, a tower, a hundred dwarves, and a fire we’ve watched for a thousand years.', 'Watch your step on the lava paths.'] },
     ],
   },
   'brewer-asgerd': {
@@ -212,15 +214,15 @@ export const EMBERDEEP_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'hounds-in-the-runs', state: 'active' },
-        lines: ['My grandmother laid pipes from the Magma Runs, north of town, to my mash-tuns. Best heat in the north. Free, too.', 'Now there are hounds in the Runs, and they chew pipe. My mash went cold twice this week. Twice! Ten fewer hounds, please.'],
+        lines: ['My grandmother laid pipes from the Magma Runs, north of town, to heat my brewery.', 'Now magma hounds live in the Runs, and they chew the pipes. My brew has gone cold twice this week. Kill ten of them, please.'],
       },
       {
         when: { quest: 'ember-glands', state: 'active' },
-        lines: ['The pipes are done for till the fire calms. But a hound’s ember-gland burns a month in a cold hearth.', 'Five would see my brewing through. Don’t squeeze them. They squirt.'],
+        lines: ['The pipes can’t be fixed until the caldera calms down. But a hound’s ember-gland burns for a month.', 'Bring me five, and my brewing can go on.'],
       },
-      { when: { quest: 'ember-glands', state: 'done' }, lines: ['Hear that? Bubbling. Best sound in the world, after the till.', 'The flask is yours. Sip it. I said sip.'] },
-      { when: { quest: 'ashkar-the-bound', state: 'done' }, lines: ['The lake’s gone quiet, and my pipes run warm again. I’ve named a brew after you. It’s very strong and slightly confused.'] },
-      { lines: ['The Hot Cask. Beds by the warm wall, potions on the shelf, and fire-ale for the brave.', 'Don’t drink the fire-ale near a candle. I’m only telling you once.'] },
+      { when: { quest: 'ember-glands', state: 'done' }, lines: ['Hear that bubbling? The brew is going again. The flask is yours.'] },
+      { when: { quest: 'ashkar-the-bound', state: 'done' }, lines: ['The lake is quiet, and my pipes run warm again. Thank you.'] },
+      { lines: ['This is the Hot Cask. Beds by the warm wall, potions on the shelf, and fire-ale for the brave.', 'Don’t drink the fire-ale near an open flame.'] },
     ],
   },
   'runesmith-dvalin': {
@@ -234,13 +236,14 @@ export const EMBERDEEP_NPCS: Record<string, NpcDef> = {
       {
         when: { quest: 'dvalins-reading', state: 'active' },
         lines: [
-          'I can read that. I can read anything cut in stone. Give it here.',
-          'Hollow runes. Not for the golems: these are the runes on Ashkar’s chains. Bone-steel from the Deepforge, cut so his pain never closes. Pain that never closes burns hot enough to forge a crown for the dead.',
-          'Chains like that, you don’t cut. You make them forget. For that I need the old ward-stone from the Fire-Ward on the east rim. Hroki keeps it, and I’ve sent for it.',
+          'Give it here. I can read anything carved in stone.',
+          'This is a mold for a crown. It has seven settings, one for each sigil.',
+          'There’s a place in the middle for the living person who carries the sigils. From what Hroki tells me, that’s your friend Elyra.',
+          'The Host has Ashkar chained under the lake, forging it. His chains can’t be cut. With Hroki’s old ward-stone, I can make a hammer that breaks them.',
         ],
       },
-      { when: { quest: 'the-throne-gate', state: 'active' }, lines: ['The hammer’s done. Strike his chains with it and they’ll remember they were only iron.', 'Don’t hit anything else with it. It’s a key, not a club. Mostly.'] },
-      { lines: ['Dvalin’s Runeforge. Blades, staves, bows and shields, and a rune on every one, whether you want it or not.', 'If it hums, that’s the rune. If it sings, bring it back.'] },
+      { when: { quest: 'the-throne-gate', state: 'active' }, lines: ['The hammer is done. Strike his chains with it, and they’ll break.', 'Don’t waste it on anything else. It’s made for those chains.'] },
+      { lines: ['This is Dvalin’s Runeforge. Blades, staves, bows and shields, every one with a rune on it.', 'If a blade hums, that’s the rune working.'] },
     ],
   },
   'ashwarden-ketla': {
@@ -251,19 +254,19 @@ export const EMBERDEEP_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'the-drake-roost', state: 'active' },
-        lines: ['I count drakes. Every morning, from the tower. The count is wrong: twice what it was in spring, all from the Drake Roost on the far east rim.', 'My brother Ulf went to look a week ago. He hasn’t come back. That’s typical of him. Go and see.'],
+        lines: ['I count the drakes from the tower every morning. There are twice as many as in spring, and they all come from the Drake Roost on the far east rim.', 'My brother Ulf went to look a week ago and hasn’t come back. Please find him.'],
       },
       {
         when: { quest: 'ash-on-the-wind', state: 'active' },
-        lines: ['Alive? Up a chimney with a broken leg? Talking? That’s Ulf.', 'The drakes have him pinned. Thin them out round the Roost so he can climb down. Before he talks himself hoarse.'],
+        lines: ['Ulf is alive? On a ledge with a broken leg? Thank goodness.', 'The drakes have him trapped. Kill enough of them around the Roost that he can climb down.'],
       },
       {
         when: { quest: 'pyrebrand', state: 'active' },
-        lines: ['Pyrebrand. Ulf says she breathes fire that sticks, rains stone, calls her brood and flies off when you get close.', 'Ulf exaggerates. Probably. Take a potion or two in case he doesn’t.'],
+        lines: ['Ulf says Pyrebrand breathes fire that sticks, rains stone, calls her young, and flies off when you get close.', 'He may be exaggerating. Take extra potions anyway.'],
       },
-      { when: { quest: 'pyrebrand', state: 'done' }, lines: ['He was right. He’ll never let me hear the end of it. The count’s coming down, though. I like a count that comes down.'] },
-      { when: { quest: 'the-throne-gate', state: 'active' }, lines: ['The Throne’s Gate is north, at the edge of the lake. From the tower I can see the Host’s torches round it. Lots of torches.'] },
-      { lines: ['Ash-warden Ketla. I watch the sky, the slopes and the lake, and I count what moves.', 'Something always moves.'] },
+      { when: { quest: 'pyrebrand', state: 'done' }, lines: ['Ulf was right. The drake count is going down. Thank you for bringing him home.'] },
+      { when: { quest: 'the-throne-gate', state: 'active' }, lines: ['From the tower I can see the Host’s torches around the Throne’s Gate. There are a lot of them.'] },
+      { lines: ['I’m Ketla, the ash-warden. I watch the sky, the slopes and the lake, and I count everything that moves.', 'If you see drakes gathering, tell me.'] },
     ],
   },
 };

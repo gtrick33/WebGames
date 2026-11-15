@@ -1,13 +1,15 @@
 import type { NpcDef, QuestDef } from '../types';
 
 /**
- * The Oasis of Ras and the quests of the Sunscorch Expanse (Act III, STORY_BIBLE.md §3, "The sun houses").
- * A thousand years ago the Sun King was buried somewhere out in the sands with the Sigil of the Sun, and
- * the oasis lords have sworn ever since that it stays there: a sigil in the light is a sigil someone can
- * take. The Regent needs it anyway, and the Host is already digging. Corvane's map sent the Host after it. The main chain follows the raiders' grey gold to the Fallen Obelisk, the Host's
- * dig, the raider chief Khamsin and the Sunken Gate, then down into the Tomb of the Sun King. Old Kasim
- * has scorpions in his well, Merchant Zahra has lost her sand-ship to the wurms, and Sandscribe Ibbi
- * wants to know who exactly is walking out of the old kingdom's graves. Main chain first.
+ * The Oasis of Ras and the quests of the Sunscorch Expanse: the start of Act III, "The Race for the Sigils"
+ * (STORY_BIBLE.md §3). The Host needs all seven sigils to free King Vaelor; Crane sold the Pale Herald the
+ * wardens' map, and the first place on it is the Sun King's tomb. The Sun King, one of the seven wardens, sealed
+ * himself in it with the Sigil of the Sun three hundred years ago, and the people of Ras have kept it shut ever
+ * since. The main chain follows the raiders' copies of the Fallen Obelisk's carving to the Host's dig, the raider
+ * chief Khamsin and the Sunken Gate, then down into the Tomb of the Sun King, where the sigil shows Elyra the
+ * plague ship coming into Vaelmoor. Old Kasim has scorpions in his well, Merchant Zahra has lost her sand-ship to
+ * the wurms, and Sandscribe Ibbi wants to know which of the old kingdom's dead have risen. Main chain first.
+ * Written to DIALOGUE_STYLE.md (plain, direct, no punchlines).
  */
 export const SUNSCORCH_QUESTS: QuestDef[] = [
   /* ---------------------------------------------------------- the way in */
@@ -15,11 +17,11 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     id: 'the-sun-kings-tomb',
     name: 'The Oasis of Ras',
     giver: 'regent-elowen',
-    text: 'The first place on the wardens’ map: the Sunscorch Expanse, where the Sigil of the Sun lies buried with the Sun King, a warden-king of the desert who had himself sealed in his tomb with it three hundred years ago. The sun houses have sworn it stays buried forever. The Host is already digging. Take the long road west out of the Crown City into the sands and find Oasis-keeper Sefu at the Oasis of Ras.',
+    text: 'The Host needs all seven sigils to free King Vaelor, the Hallow King. Crane sold the wardens’ map to Vaelor’s servant, the Pale Herald, and now the Host is racing you to the four places marked on it. Elyra carries one sigil, and Vosk took another north to Vaelor. The first place on the map is the Sun King’s tomb, in the Sunscorch. Take the west road from the Crown City and find Oasis-keeper Sefu at the Oasis of Ras.',
     objective: { kind: 'talk', npc: 'oasis-keeper-sefu', label: 'Talk to Oasis-keeper Sefu at the Oasis of Ras' },
     after: ['festival-the-champion'],
     level: 30,
-    reward: { xp: 850, gold: 260, text: 'Sefu meets you at the wells with a waterskin in one hand and a knife in the other, and puts away only the knife. Nyx is already haggling with the oasis smugglers, who turn out to owe her money. “Every road the Host pays for out here goes through people who owe me,” she says. “That makes them our roads.”' },
+    reward: { xp: 850, gold: 260, text: 'Sefu agrees to help you reach the Sun King’s tomb before the Host does. Nyx finds that the oasis smugglers owe her money. Instead of paying her, they will tell her which desert roads the Host is using.' },
   },
   /* ------------------------------------------------------- the Sun King */
   {
@@ -27,7 +29,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     name: 'The Sandscribe',
     auto: true,
     giver: 'oasis-keeper-sefu',
-    text: 'The raiders who prey on the oasis carry ash-gold now, and in every purse a scrap of linen inked with a sun and a line of the old kingdom’s script: somebody is paying them to find something. Sandscribe Ibbi reads the old script better than anyone alive, and will tell you so. She works in the shade by the wells.',
+    text: 'Desert raiders have been attacking the oasis, and the Host pays them in ash-gold. Each raider also carries a scrap of linen with old writing on it. Sandscribe Ibbi can read the old desert kingdom’s writing. Show her the scraps. She works in the shade by the wells.',
     objective: { kind: 'talk', npc: 'sandscribe-ibbi', label: 'Show the linen scraps to Sandscribe Ibbi' },
     after: ['the-sun-kings-tomb'],
     zone: 'sunscorch',
@@ -39,20 +41,20 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     name: 'The Fallen Obelisk',
     auto: true,
     giver: 'sandscribe-ibbi',
-    text: 'Ibbi knows the line: it is copied from the Fallen Obelisk, south-east of the oasis, where the old kings carved the way to the Sun King’s tomb as a riddle for the worthy. The Host is copying it for the unworthy. Go and read the obelisk before they have finished, and bring Ibbi the end of the riddle.',
-    objective: { kind: 'explore', spot: 'fallen-obelisk', label: 'Read the Fallen Obelisk' },
+    text: 'The scraps are copied from the Fallen Obelisk, a toppled stone south-east of the oasis. The old kings carved directions to the Sun King’s tomb on it. The raiders are copying the carving for the Host, and they are not finished yet. Go and read the whole carving first.',
+    objective: { kind: 'explore', spot: 'fallen-obelisk', label: 'Read the carving on the Fallen Obelisk' },
     after: ['the-sandscribe'],
     zone: 'sunscorch',
     level: 31,
-    reward: { xp: 1000, gold: 280, text: '“Where the sun first touches the sand, the King keeps his door.” The riddle points east.' },
+    reward: { xp: 1000, gold: 280, text: 'The carving says the Sun King’s tomb is in the far east of the sands. Its door faces the sunrise. From the obelisk you can see dust rising east of the oasis, where the Host is digging.' },
   },
   {
     id: 'the-hollow-dig',
     name: 'The Ashen Dig',
     auto: true,
     giver: 'oasis-keeper-sefu',
-    text: 'From the obelisk you could see the Host’s dust, east of the oasis: dead miners shovelling sand day and night, bonecallers keeping time, a golem hauling the spoil. They are digging toward the Sun King, and they are close. Break the Ashen Dig before it breaks through.',
-    objective: { kind: 'kill', region: 'sunscorch', count: 6, enemies: ['legion-miner', 'legion-bonecaller', 'bone-golem'], label: 'Break the Ashen Dig east of the oasis' },
+    text: 'The Host has set up a dig east of the oasis. Its dead miners shovel day and night, bonecallers drum to keep them working, and a bone golem hauls the sand away. They are digging toward the Sun King’s tomb. Break up the Ashen Dig before they get there.',
+    objective: { kind: 'kill', region: 'sunscorch', count: 6, enemies: ['legion-miner', 'legion-bonecaller', 'bone-golem'], label: 'Defeat the Host’s diggers at the Ashen Dig' },
     after: ['the-fallen-obelisk'],
     zone: 'sunscorch',
     level: 32,
@@ -62,20 +64,20 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     id: 'khamsin',
     name: 'Khamsin',
     giver: 'oasis-keeper-sefu',
-    text: 'The raiders guide the Host’s diggers through the deep desert, and their chief sold them the way: Khamsin, named for the wind that strips the paint off wagons. He keeps his camp at the Raiders’ Rest, north-east of the oasis, with the best of his riders and all of his gold. Sefu wants him gone, and the desert’s roads back.',
+    text: 'The raiders guide the Host’s diggers across the desert. Their chief, Khamsin, sold the Host the safe routes. He camps at the Raiders’ Rest, north-east of the oasis, with his best riders. Defeat him, and the Host loses its guides.',
     objective: { kind: 'kill', region: 'sunscorch', count: 1, enemies: ['khamsin'], label: 'Defeat Khamsin at the Raiders’ Rest' },
     after: ['the-hollow-dig'],
     zone: 'sunscorch',
     level: 33,
-    reward: { xp: 1700, gold: 450, item: { rarity: 'rare' }, text: 'Khamsin’s riders scatter into the dunes. In his tent you find the Host’s map of the deep desert, and the way east.' },
+    reward: { xp: 1700, gold: 450, item: { rarity: 'rare' }, text: 'Khamsin’s riders scatter into the dunes. The Host has no guides left in the desert, and the caravan roads are safer.' },
   },
   {
     id: 'the-sunken-gate',
     name: 'The Sunken Gate',
     auto: true,
     giver: 'oasis-keeper-sefu',
-    text: 'The riddle pointed east, where the sun first touches the sand: a door half buried in a dune, and the Host’s tunnel running down to it. Find the Sunken Gate. The Host got there first; see what it found.',
-    objective: { kind: 'explore', spot: 'sunken-gate', label: 'Find the Sunken Gate' },
+    text: 'The obelisk said the tomb’s door is in the far east of the sands. Before you broke up the dig, the Host’s tunnel had already reached it. Find the Sunken Gate and see what the Host found there.',
+    objective: { kind: 'explore', spot: 'sunken-gate', label: 'Find the Sunken Gate in the far east' },
     after: ['the-hollow-dig'],
     zone: 'sunscorch',
     level: 33,
@@ -86,7 +88,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     name: 'The Sand Warden',
     auto: true,
     giver: 'sandscribe-ibbi',
-    text: 'The Host broke the Sunken Gate open, and something inside broke the Host: the Sand Warden, made by the old kings to keep thieves out of the Sun King’s halls. It cannot tell a thief from a hero, and Ibbi doubts it would care. Go down into the Tomb of the Sun King, through the gate in the far east, and get past it.',
+    text: 'The Host broke the Sunken Gate open, but something inside drove it back out. Ibbi says it is the Sand Warden, a guardian the old kings built to keep robbers out of the tomb. It attacks anyone who enters. Go down into the Tomb of the Sun King and defeat it.',
     objective: { kind: 'boss', boss: 'the-sand-warden', label: 'Defeat the Sand Warden in the Tomb of the Sun King' },
     after: ['the-sunken-gate'],
     zone: 'sunscorch',
@@ -98,7 +100,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     name: 'The Sun King',
     auto: true,
     giver: 'oasis-keeper-sefu',
-    text: 'Beyond the Warden lies the Sun King’s burial hall, and the Sun King is not lying in it. The Host’s digging has woken him with the Sigil of the Sun in his hands. He was a great king once, and he does not mean to give up anything that is his. Sefu has made her choice: better in the Regent’s hands than the Hallow King’s. Take the sigil from him before the Host does.',
+    text: 'The Sun King was one of the seven wardens. Three hundred years ago he sealed himself in this tomb to guard the Sigil of the Sun. The Host’s digging has woken him, and he thinks everyone who comes in is a thief. Defeat him in his burial chamber and take the sigil before the Host can.',
     objective: { kind: 'boss', boss: 'the-sun-king', label: 'Defeat the Sun King and take the Sigil of the Sun' },
     after: ['the-sand-warden'],
     zone: 'sunscorch',
@@ -108,7 +110,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
       gold: 1100,
       item: 'oasis-heart',
       perk: 'sigil-sun',
-      text: 'You take the Sigil of the Sun from the Sun King’s hands, still warm as noon, and he lies down again at last. Elyra holds it and goes quiet: it showed her a ship coming into a harbor, she says, and a young man in blue waving it in. Then she asks what color Briarhollow’s orchard is in spring, because she can’t remember. When the Regent marches, Sefu says, the desert lancers will ride beside it.',
+      text: 'The Sun King lets go of the Sigil of the Sun and lies down to rest. When Elyra holds it, it shows her a ship bringing plague into Vaelmoor three hundred years ago. Afterward she can’t remember what color Briarhollow’s orchard is in spring. Sefu gives you the Oasis Heart and promises that the lancers of Ras will ride with the Regent.',
     },
   },
   /* ----------------------------------------------------- Kasim's scorpions */
@@ -116,8 +118,8 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     id: 'scorpions-in-the-well',
     name: 'Scorpions in the Well',
     giver: 'old-kasim',
-    text: 'Old Kasim keeps the Last Well, the inn on the oasis, and its deep well has scorpions in it. They come up the old shafts from Scorpion Hollow, south-west of the oasis, into the cellar, the kitchen and, once, his boot. Thin out the sand scorpions around the oasis.',
-    objective: { kind: 'kill', region: 'sunscorch', count: 10, enemies: ['sand-scorpion'], label: 'Kill sand scorpions' },
+    text: 'Old Kasim runs the Last Well, the inn at the oasis. Scorpions are climbing up his well through old shafts that lead to Scorpion Hollow, south-west of the oasis. Defeat the sand scorpions around the oasis to thin them out.',
+    objective: { kind: 'kill', region: 'sunscorch', count: 10, enemies: ['sand-scorpion'], label: 'Defeat sand scorpions' },
     after: ['the-sun-kings-tomb'],
     zone: 'sunscorch',
     reward: { xp: 850, gold: 260 },
@@ -126,7 +128,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     id: 'venom-for-the-still',
     name: 'Venom for the Still',
     giver: 'old-kasim',
-    text: 'Kasim brews an antivenom from scorpion venom, and every caravan out of Ras carries a flask. He also brews a spirit called Sting from the same venom, which sells better and which he does not recommend. Either way he needs six venom sacs, unburst, from the sand scorpions around Scorpion Hollow.',
+    text: 'Kasim brews antivenom from scorpion venom in his still. Every caravan that leaves Ras carries a flask of it. He needs six venom sacs, unburst, from the sand scorpions around Scorpion Hollow.',
     objective: { kind: 'loot', region: 'sunscorch', item: 'Venom Sac', from: ['sand-scorpion'], chance: 0.45, count: 6, label: 'Collect Venom Sacs from sand scorpions' },
     after: ['scorpions-in-the-well'],
     zone: 'sunscorch',
@@ -137,20 +139,20 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     id: 'the-dune-tyrant',
     name: 'The Dune Tyrant',
     giver: 'old-kasim',
-    text: 'The scorpions answer to the Dune Tyrant, a black scorpion as big as a cart that lairs in Scorpion Hollow, south-west of the oasis. Kasim’s grandfather fought it once. It is still there. His grandfather is not. Kasim would like the family to win one.',
+    text: 'The scorpions follow the Dune Tyrant, a black scorpion as big as a cart. It lives in Scorpion Hollow, south-west of the oasis. Kasim’s grandfather died trying to kill it. Kasim asks you to finish what his grandfather started.',
     objective: { kind: 'kill', region: 'sunscorch', count: 1, enemies: ['the-dune-tyrant'], label: 'Defeat the Dune Tyrant in Scorpion Hollow' },
     after: ['venom-for-the-still'],
     zone: 'sunscorch',
     level: 32,
-    reward: { xp: 1400, gold: 450, item: 'tyrant-carapace', text: 'Kasim has the Tyrant’s shell cut into a breastplate for you, and pours his grandfather a drink.' },
+    reward: { xp: 1400, gold: 450, item: 'tyrant-carapace', text: 'Kasim has the Tyrant’s shell made into a breastplate for you. Then he pours a drink at his grandfather’s grave.' },
   },
   /* -------------------------------------------------- Zahra's sand-ship */
   {
     id: 'the-sand-ship',
     name: 'The Sand-Ship',
     giver: 'merchant-zahra',
-    text: 'Merchant Zahra trades silk and silver from a sand-ship, a skiff on runners that sails the dunes on the wind. A week ago it ran aground north of the oasis with her crew, her cargo and her best hat aboard. The crew walked back. Go and see what is left of the rest.',
-    objective: { kind: 'explore', spot: 'sand-ship', label: 'Find Zahra’s Sand-Ship' },
+    text: 'Merchant Zahra sails the dunes in a sand-ship, a boat on runners pushed by the wind. A week ago it crashed north of the oasis with her silk aboard. Her crew walked back. Go and see what is left.',
+    objective: { kind: 'explore', spot: 'sand-ship', label: 'Find the Sand-Ship, north of the oasis' },
     after: ['the-sun-kings-tomb'],
     zone: 'sunscorch',
     level: 31,
@@ -160,7 +162,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     id: 'swallowed-silk',
     name: 'Swallowed Silk',
     giver: 'merchant-zahra',
-    text: 'The skiff did not run aground: the sand wurms broke its runners, and they swallowed the silk bales whole. Wurms can’t digest silk, which is good news for Zahra and bad news for the wurms. Cut her sunsilk back out of the wurms that hunt the sands north of the oasis.',
+    text: 'Sand wurms wrecked Zahra’s sand-ship and swallowed her bales of sunsilk whole. Wurms can’t digest silk, so it is still inside them. Cut the bolts out of the sand wurms north of the oasis.',
     objective: { kind: 'loot', region: 'sunscorch', item: 'Bolt of Sunsilk', from: ['sand-wurm'], chance: 0.45, count: 5, label: 'Recover Bolts of Sunsilk from sand wurms' },
     after: ['the-sand-ship'],
     zone: 'sunscorch',
@@ -171,19 +173,19 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     id: 'the-wurm-road',
     name: 'The Wurm Road',
     giver: 'merchant-zahra',
-    text: 'Zahra won’t put a skiff on the sand again while the wurms hunt the caravan roads. She would like them taught to keep their heads down. Kill sand wurms wherever they surface in the Sunscorch, and she’ll make it worth your while in silk.',
-    objective: { kind: 'kill', region: 'sunscorch', count: 8, enemies: ['sand-wurm'], label: 'Kill sand wurms' },
+    text: 'Zahra won’t sail again while sand wurms hunt the caravan roads. Defeat sand wurms anywhere in the Sunscorch, and she will pay you in silk.',
+    objective: { kind: 'kill', region: 'sunscorch', count: 8, enemies: ['sand-wurm'], label: 'Defeat sand wurms' },
     after: ['swallowed-silk'],
     zone: 'sunscorch',
     level: 32,
-    reward: { xp: 1300, gold: 420, item: 'sunsilk-wraps', text: 'Zahra has the cleanest of the swallowed silk made up for you.' },
+    reward: { xp: 1300, gold: 420, item: 'sunsilk-wraps', text: 'Zahra has the cleanest of the recovered silk made into wraps for you.' },
   },
   /* ------------------------------------------------- Ibbi's old kingdom */
   {
     id: 'scarab-seals',
     name: 'Scarab Seals',
     giver: 'sandscribe-ibbi',
-    text: 'Tomb scarabs eat the grave goods of the dead they nest in, gold and all, and never digest the gold. Each of the Sun King’s courtiers was buried with a seal bearing their name, so the scarabs are walking about with a list of who has woken. Ibbi wants six seals, from the scarabs in the sands east of the oasis.',
+    text: 'Tomb scarabs eat gold, and they can’t digest it. Each of the Sun King’s courtiers was buried with a gold seal bearing their name. Ibbi wants six of these seals, so she can learn which of the dead have risen. Take them from the tomb scarabs east of the oasis.',
     objective: { kind: 'loot', region: 'sunscorch', item: 'Sun Seal', from: ['tomb-scarab'], chance: 0.3, count: 6, label: 'Take Sun Seals from tomb scarabs' },
     after: ['the-hollow-dig'],
     zone: 'sunscorch',
@@ -194,12 +196,12 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     id: 'the-necropolis-of-ras',
     name: 'The Necropolis of Ras',
     giver: 'sandscribe-ibbi',
-    text: 'Every seal names someone buried in the Necropolis of Ras, the old kings’ burial ground in the far south-east, under the Temple of the Dawn. Ibbi has wanted to see that temple all her life, and has always had a good reason not to go. Go and see whether it still stands, and whether its dead are still in it.',
+    text: 'Every name on the seals belongs to someone buried in the Necropolis of Ras, the old kings’ burial ground in the far south-east. Ibbi has always wanted to see its Temple of the Dawn, but she has been too afraid to go. Go and see whether the temple still stands, and whether its dead have risen.',
     objective: { kind: 'explore', spot: 'necropolis', label: 'Reach the Necropolis of Ras' },
     after: ['scarab-seals'],
     zone: 'sunscorch',
     level: 33,
-    reward: { xp: 1150, gold: 420, item: 'sunscribe-seal', text: 'The temple stands, and its doors are open. Ibbi lends you the seal of the Sun King’s own scribe, for luck.' },
+    reward: { xp: 1150, gold: 420, item: 'sunscribe-seal', text: 'The temple still stands, and its doors are open. Ibbi gives you the seal of the Sun King’s own scribe to thank you.' },
   },
 ];
 
@@ -212,33 +214,33 @@ export const SUNSCORCH_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'the-sun-kings-tomb', state: 'active' },
-        lines: ['The Regent sent you? Then the dead men in the dunes are not my imagination. I hoped they were. I am old enough to be allowed some imagination.', 'Sit. Drink. Water first, always, in Ras. Then we talk about the Sun King.'],
+        lines: ['The Regent sent you? Good. The Host’s dead are digging in the sand east of my wells.', 'My people have kept the Sun King’s tomb shut for three hundred years. I would rather you reach it before the Host does.'],
       },
       {
         when: { quest: 'the-sandscribe', state: 'active' },
-        lines: ['An empty crown on every coin. And these scraps of linen, with a sun on each, and writing older than my wells.', 'Ibbi will read them. She works in the shade by the water. Bring her something old and she will forgive you anything.'],
+        lines: ['The raiders who attack my oasis carry ash-gold now, and scraps of linen with old writing on them.', 'Sandscribe Ibbi can read it. She works in the shade by the wells.'],
       },
       {
         when: { quest: 'the-hollow-dig', state: 'active' },
-        lines: ['A dig, east of here, where there was only sand last month. Dead men with shovels. I did not know the dead could shovel.', 'Break it. Whatever they are digging for, I would rather it stayed buried.'],
+        lines: ['The Host is digging east of here, where there was only sand last month.', 'Stop them before they reach the Sun King’s tomb.'],
       },
       {
         when: { quest: 'khamsin', state: 'active' },
-        lines: ['Khamsin. I knew his mother. She would be ashamed, and then she would ask how much he was paid.', 'He camps at the Raiders’ Rest, north-east of the oasis. Go carefully. His riders are fast, and he is faster.'],
+        lines: ['Khamsin leads the raiders. He sold the Host the safe routes across the desert.', 'He camps at the Raiders’ Rest, north-east of the oasis. His riders are fast. Be careful.'],
       },
       {
         when: { quest: 'the-sunken-gate', state: 'active' },
-        lines: ['East, then, where the sun first touches the sand. My grandmother said there was a door out there that nobody should knock on.', 'She also said that about my cousin’s house. She was right both times.'],
+        lines: ['The obelisk points to the far east of the sands. The Host’s tunnel went the same way.', 'Find the Sunken Gate and see how far the Host got.'],
       },
       {
         when: { quest: 'the-sun-king', state: 'active' },
-        lines: ['The Sun King gave Ras its wells, the stories say. He dug the first one with his own hands.', 'If he has risen, he will not be the man in the stories. Take the sigil anyway. Kindly, if he lets you.'],
+        lines: ['The stories say the Sun King dug the first well in Ras with his own hands.', 'If he has woken, he won’t know you. Take the sigil anyway. It can’t be left for the Host.'],
       },
       {
         when: { quest: 'the-sun-king', state: 'done' },
-        lines: ['The sigil is out of the sand, and the sand is quiet. Ras thanks you. I thank you. The goats thank you, I am told.', 'Keep the heart close. The water in it remembers where it came from.'],
+        lines: ['The sigil is safe, and the Host has nothing left to dig for here. Ras thanks you.', 'When the Regent marches, my lancers will ride with her.'],
       },
-      { lines: ['Welcome to the Oasis of Ras. Water first, always. Then shade. Then questions.', 'The sand looks empty. It is not. It never has been.'] },
+      { lines: ['Welcome to the Oasis of Ras. Drink before you go out on the sand.', 'Raiders and the Host are both out there. Don’t go far with an empty waterskin.'] },
     ],
   },
   'merchant-zahra': {
@@ -251,18 +253,18 @@ export const SUNSCORCH_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'the-sand-ship', state: 'active' },
-        lines: ['My sand-ship ran aground north of the oasis. My crew walked back. My silk did not, and neither did my hat.', 'Go and look, would you? I would go myself, but I am in mourning for the hat.'],
+        lines: ['My sand-ship crashed north of the oasis. My crew walked back, but my silk is still out there.', 'Please go and see what is left of it.'],
       },
       {
         when: { quest: 'swallowed-silk', state: 'active' },
-        lines: ['Wurms! They broke my runners and swallowed the bales whole. Silk does not agree with them, I am glad to say.', 'Five bolts. Cut them out. I will not ask how.'],
+        lines: ['Sand wurms wrecked my ship and swallowed the silk bales whole. They can’t digest silk.', 'Cut five bolts out of them and bring them to me.'],
       },
       {
         when: { quest: 'the-wurm-road', state: 'active' },
-        lines: ['No skiff of mine goes back on the sand while the wurms hunt the roads. Teach them to keep their heads down.', 'There is silk in it for you. Clean silk. Mostly.'],
+        lines: ['I won’t sail again while the wurms hunt the caravan roads.', 'Defeat eight of them, and I’ll pay you in silk.'],
       },
-      { when: { quest: 'the-wurm-road', state: 'done' }, lines: ['You wear that silk better than the wurm did. The wurm agreed, eventually.'] },
-      { lines: ['Zahra’s Bazaar: rings from the west, charms from the south, relics from places I will not name. Look with your eyes, buy with your purse.', 'Everything here is genuine. Some of it is genuinely old.'] },
+      { when: { quest: 'the-wurm-road', state: 'done' }, lines: ['The roads are safe enough to sail again. Thank you. That silk suits you.'] },
+      { lines: ['Welcome to Zahra’s Bazaar. I sell rings, charms and relics from all over the desert.', 'Take your time and look around.'] },
     ],
   },
   'sandscribe-ibbi': {
@@ -273,27 +275,27 @@ export const SUNSCORCH_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'the-sandscribe', state: 'active' },
-        lines: ['Give it here. Old script, copied badly. Very badly. Whoever wrote this held the brush like a spoon.', 'It says: “Where the sun first touches the sand…” and then nothing. They have not finished copying it. It is from the Fallen Obelisk, south-east of here. The old kings carved the way to the Sun King’s tomb on it, as a riddle.'],
+        lines: ['This is the old kingdom’s writing, copied badly by someone in a hurry.', 'It comes from the Fallen Obelisk, south-east of here. The old kings carved directions to the Sun King’s tomb on it.'],
       },
       {
         when: { quest: 'the-fallen-obelisk', state: 'active' },
-        lines: ['The Fallen Obelisk, south-east of the oasis. Read the end of the riddle before the Host does. Read it carefully.', 'And do not lean on it. It has fallen once already.'],
+        lines: ['The Fallen Obelisk is south-east of the oasis.', 'Read the whole carving before the raiders finish copying it for the Host.'],
       },
       {
         when: { quest: 'the-sand-warden', state: 'active' },
-        lines: ['The Sand Warden is in every text I have ever read, always in the same sentence: “and none passed it.”', 'Be the first. I would like to change the sentence.'],
+        lines: ['Every old book says that nobody has ever got past the Sand Warden.', 'It guards the way to the Sun King’s burial chamber. Be ready when you go in.'],
       },
       {
         when: { quest: 'scarab-seals', state: 'active' },
-        lines: ['Scarabs eat gold and never digest it. Disgusting creatures. Wonderful archivists.', 'Every courtier was buried with a seal. Bring me six and I will tell you who is out walking.'],
+        lines: ['Tomb scarabs eat gold and can’t digest it. Their bellies are full of the courtiers’ gold seals.', 'Each seal has a name on it. Bring me six, and I can tell you who has risen.'],
       },
       {
         when: { quest: 'the-necropolis-of-ras', state: 'active' },
-        lines: ['Every name on these seals was buried in the Necropolis of Ras, in the far south-east, under the Temple of the Dawn.', 'I have wanted to see that temple all my life. I have always had a good reason not to. Today’s reason is you.'],
+        lines: ['Every name on these seals belongs to someone buried in the Necropolis of Ras, in the far south-east.', 'I have wanted to see its Temple of the Dawn all my life, but I was too afraid to go. Please see if it still stands.'],
       },
-      { when: { quest: 'the-necropolis-of-ras', state: 'done' }, lines: ['It still stands! The Temple of the Dawn! And you went in! Tell me everything. Slowly. I am writing.'] },
-      { when: { quest: 'the-sun-king', state: 'done' }, lines: ['The Sun King, in his own tomb, with the sigil in his hands. Nobody will believe my book. I shall write it anyway.'] },
-      { lines: ['The old kingdom wrote everything down: its taxes, its kings, its recipes for date wine. Most of it is wonderful. The taxes are not.', 'If you find anything with writing on it, bring it to me before you sell it. Especially before you sell it.'] },
+      { when: { quest: 'the-necropolis-of-ras', state: 'done' }, lines: ['The Temple of the Dawn still stands! Thank you for going. Tell me everything you saw, and I’ll write it down.'] },
+      { when: { quest: 'the-sun-king', state: 'done' }, lines: ['You found the Sun King in his own tomb, with the sigil in his hands. I will write it all down.'] },
+      { lines: ['I study the old desert kingdom. It wrote down everything, from its kings’ names to its taxes.', 'If you find anything with writing on it, bring it to me before you sell it.'] },
     ],
   },
   'old-kasim': {
@@ -306,18 +308,18 @@ export const SUNSCORCH_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'scorpions-in-the-well', state: 'active' },
-        lines: ['Scorpions in my well. In my cellar. In my boot, on Tuesday. They come up the old shafts from Scorpion Hollow, south-west of here.', 'Ten, and they will get the message. Scorpions are not clever, but they can count to ten.'],
+        lines: ['Scorpions are coming up my well. They climb the old shafts from Scorpion Hollow, south-west of here.', 'Please defeat ten of them around the oasis. That should thin them out.'],
       },
       {
         when: { quest: 'venom-for-the-still', state: 'active' },
-        lines: ['Antivenom. Every caravan carries a flask of mine. It works, mostly, if you drink it fast.', 'I also brew Sting, from the same venom. Do not drink Sting fast. Six sacs, please, unburst.'],
+        lines: ['I make antivenom from scorpion venom. Every caravan that leaves Ras carries a flask.', 'Bring me six venom sacs from the scorpions around Scorpion Hollow. Try not to burst them.'],
       },
       {
         when: { quest: 'the-dune-tyrant', state: 'active' },
-        lines: ['The Dune Tyrant. Black as a burnt pot, big as a cart. My grandfather went into Scorpion Hollow with a spear to kill it.', 'It is still there. He is not. The family would like to win one.'],
+        lines: ['The scorpions follow the Dune Tyrant, a black scorpion as big as a cart. It lives in Scorpion Hollow.', 'My grandfather went in to kill it and never came back. Please finish what he started.'],
       },
-      { when: { quest: 'the-dune-tyrant', state: 'done' }, lines: ['The Tyrant is dead! I poured my grandfather a drink at his grave. Then I drank it. He would have wanted me to. He always did.'] },
-      { lines: ['The Last Well. Last water before the deep desert, last bed before the dunes, last potion before regret.', 'Shake out your boots before you put them on. Everyone learns that once.'] },
+      { when: { quest: 'the-dune-tyrant', state: 'done' }, lines: ['The Dune Tyrant is dead! I poured a drink at my grandfather’s grave tonight. Thank you.'] },
+      { lines: ['This is the Last Well, the last inn before the deep desert. Rest here before you go out.', 'Shake out your boots in the morning. Scorpions like to sleep in them.'] },
     ],
   },
 };
