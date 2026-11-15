@@ -73,9 +73,10 @@ describe('Sigilfall: every scene, as the camera sees it', () => {
         if (!st) continue;
         // the camera goes to a speaker only when they were out of the picture (the owner: "the camera keeps pointing at
         // something and then suddenly change dirextion to the tapking npcs, remove such redundant transitions")
-        const speaker = 'say' in st ? where(w, st.say) : null;
+        const sayer = 'say' in st ? st.say : null;
+        const speaker = sayer ? where(w, sayer) : null;
         const z = sc.zoom ?? TALK_ZOOM;
-        if (speaker && Math.hypot(cam.x - before.x, cam.y - before.y) > TILE && inSight(before, speaker, { side: 6.2 * z, up: 4 * z, down: 3.2 * z })) wrong.push(`${def.id} step ${sc.step}: the camera swings to ${st.say}, who was already in the picture`);
+        if (speaker && Math.hypot(cam.x - before.x, cam.y - before.y) > TILE && inSight(before, speaker, { side: 6.2 * z, up: 4 * z, down: 3.2 * z })) wrong.push(`${def.id} step ${sc.step}: the camera swings to ${sayer}, who was already in the picture`);
         // (a `follow` is a ride watched on purpose, for as long as it says)
         if ('move' in st && time - stepAt > 7) wrong.push(`${def.id} step ${sc.step}: ${st.move} takes over 7 s to walk to ${st.to}`);
         if (!('say' in st) || !sc.begun || said.has(sc.step) || time - stepAt < 0.4) continue;
