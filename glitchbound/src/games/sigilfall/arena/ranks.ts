@@ -52,6 +52,31 @@ export function topStanding(): Standing {
   }
 }
 
+/** Each format's board on the rankings (functions/api/sigilfall/ranks.ts): `ring:<part>`, and how it is named. */
+export const RING_BOARDS: readonly { format: Format; part: 'solo' | 'duo' | 'trio'; name: string }[] = [
+  { format: 1, part: 'solo', name: '1v1' },
+  { format: 2, part: 'duo', name: '2v2' },
+  { format: 3, part: 'trio', name: '3v3' },
+];
+
+/**
+ * The best rating reached in each format this device has fought in (a format with no match played is left out: its
+ * 1000 is where everyone starts, not a place on its board).
+ */
+export function bestByFormat(): Partial<Record<Format, number>> {
+  try {
+    const raw = JSON.parse(localStorage.getItem(RING_KEY) ?? 'null') as { standings?: Record<string, Standing> } | null;
+    const out: Partial<Record<Format, number>> = {};
+    for (const f of FORMATS) {
+      const s = raw?.standings?.[f];
+      if (s && typeof s.best === 'number' && Number.isFinite(s.best) && (s.wins ?? 0) + (s.losses ?? 0) > 0) out[f] = s.best;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 let best: number | null = null;
 
 /** The best rating this device has seen the player reach, in any format (kept until `forgetBest`: it is asked often). */

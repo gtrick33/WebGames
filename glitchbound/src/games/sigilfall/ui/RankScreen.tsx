@@ -3,6 +3,7 @@ import { GameMenuButton } from '../../../components/GameMenuButton';
 import { api } from '../../../platform/account';
 import { CLASS_IDS, CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
+import { RING_BOARDS } from '../arena/ranks';
 import { levelOf } from '../progress/ranks';
 import { clockText } from '../sim/world';
 import { VIGIL_MAPS } from '../vigil/kit';
@@ -25,7 +26,7 @@ type Tab = 'rift' | 'vigil' | 'ring' | 'level';
 const TABS: { id: Tab; name: string; blurb: string }[] = [
   { id: 'rift', name: 'The Rift', blurb: 'The highest Riftstone beaten in time.' },
   { id: 'vigil', name: 'The Vigil', blurb: 'The longest night held.' },
-  { id: 'ring', name: 'The Ring', blurb: 'The best arena rating reached.' },
+  { id: 'ring', name: 'The Ring', blurb: 'The best rating reached in each kind of fight: every format has its own rating, and its own board.' },
   { id: 'level', name: 'Heroes', blurb: 'The highest hero, and their Paragon level.' },
 ];
 
@@ -113,7 +114,7 @@ export function RankScreen({ engine, onBack }: { engine: SigilEngine; onBack: ()
         ))}
       </div>
       <p className="rb-rift-lead">{t.blurb}</p>
-      <div className="rb-rank-cols">
+      <div className={`rb-rank-cols${tab === 'ring' ? ' is-three' : ''}`}>
         {tab === 'rift' && (
           <>
             <div>
@@ -149,7 +150,7 @@ export function RankScreen({ engine, onBack }: { engine: SigilEngine; onBack: ()
             <BoardTable board={land ? `vigil:${land}` : 'vigil'} title={land ? `The Vigil: ${VIGIL_MAPS.find((m) => m.id === land)?.name ?? land}` : 'The Vigil'} />
           </div>
         )}
-        {tab === 'ring' && <BoardTable board="ring" title="The Ring" />}
+        {tab === 'ring' && RING_BOARDS.map((b) => <BoardTable key={b.part} board={`ring:${b.part}`} title={b.name} />)}
         {tab === 'level' && <BoardTable board="level" title="Highest heroes" />}
       </div>
     </div>
