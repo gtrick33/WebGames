@@ -5,7 +5,7 @@ import { SCENES } from '../src/games/sigilfall/data/scenes';
 import { applyPreset, PRESETS } from '../src/games/sigilfall/progress/presets';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { TILE } from '../src/games/sigilfall/sim/map';
-import { endScene, type SceneDef } from '../src/games/sigilfall/sim/scene';
+import { composeShot, endScene, inSight, TALK_ZOOM, type SceneDef } from '../src/games/sigilfall/sim/scene';
 import { holds } from '../src/games/sigilfall/sim/story';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { heroAtEvent, newWorld, readyHero } from './sigilfall-bot';
@@ -146,5 +146,26 @@ describe('Sigilfall: where the camera goes', () => {
       }
     }
     throw new Error('the scene never looked at the chapel');
+  });
+});
+
+describe('Sigilfall: a shot holds those about to speak', () => {
+  // the owner: "sometimes during quests, during the cinematics, the camera keeps pointing at something and then suddenly
+  // change dirextion to the tapking npcs, remove such redundant transitions please"
+  const place = { x: 2000, y: 2000 };
+  it('a shot of a place leans to take in whoever speaks next, as little as it must, the place still in it', () => {
+    const speaker = { x: place.x + 7 * TILE, y: place.y + TILE };
+    const shot = composeShot(place, [speaker])!;
+    expect(shot).not.toBeNull();
+    expect(shot.x).toBeGreaterThan(place.x);
+    for (const who of [place, speaker]) expect(inSight(shot, who, { side: 6.2 * TALK_ZOOM, up: 4 * TALK_ZOOM, down: 3.2 * TALK_ZOOM })).toBe(true);
+    // one already in the picture with it changes nothing
+    expect(composeShot(place, [{ x: place.x + TILE, y: place.y }])).toEqual(place);
+  });
+
+  it('one too far to share the picture leaves the shot on the place, and a shot with nobody to speak is the place', () => {
+    expect(composeShot(place, [{ x: place.x + 30 * TILE, y: place.y }])).toBeNull();
+    expect(composeShot(place, [{ x: place.x, y: place.y - 20 * TILE }])).toBeNull();
+    expect(composeShot(place, [])).toBeNull();
   });
 });

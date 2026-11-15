@@ -1,7 +1,8 @@
 /**
  * The story as it is watched. Every scene is played through and looked at the way the camera looks at it: whoever
  * speaks is in the picture (fifteen scenes used to have lines spoken from off the screen, one from sixty tiles
- * away), nobody of a memory stands in a wall, and nobody is waited on for a ten-second walk. And the titles a hero
+ * away), the camera doesn't swing over to someone who already was, nobody of a memory stands in a wall, and nobody is
+ * waited on for a ten-second walk. And the titles a hero
  * can carry for the rare things they did.
  */
 import { describe, expect, it } from 'vitest';
@@ -12,7 +13,7 @@ import { applyPreset, PRESETS } from '../src/games/sigilfall/progress/presets';
 import { allTitles, chooseTitle, earnedTitles, newTitles, RING_TITLES, setGivenTitles, titled, TITLES, wornTitle, wornTitleShown } from '../src/games/sigilfall/progress/titles';
 import { isTitleFx, TITLE_FX, titleFx } from '../src/catalog/titleFx';
 import { migrate, SAVE_VERSION } from '../src/games/sigilfall/progress/save';
-import { inSight } from '../src/games/sigilfall/sim/scene';
+import { inSight, TALK_ZOOM } from '../src/games/sigilfall/sim/scene';
 import { holds } from '../src/games/sigilfall/sim/story';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { TILE } from '../src/games/sigilfall/sim/map';
@@ -34,7 +35,7 @@ function atScene(id: string) {
 const where = (w: World, who: string): { x: number; y: number } | null => (who === 'hero' ? w.player : (w.npcs.find((x) => x.id === who) ?? w.pets.find((x) => !x.dead && x.def.id === who) ?? null));
 
 describe('Sigilfall: every scene, as the camera sees it', () => {
-  it('whoever speaks is in the picture, nobody stands in a wall, and no walk is waited on', { timeout: 600_000 }, () => {
+  it('whoever speaks is in the picture (and the camera stays put for one who is), nobody stands in a wall, and no walk is waited on', { timeout: 600_000 }, () => {
     const wrong: string[] = [];
     let lines = 0;
     for (const def of SCENES.filter((d) => d.when)) {
@@ -55,8 +56,10 @@ describe('Sigilfall: every scene, as the camera sees it', () => {
       let stepAt = 0;
       let last = -1;
       const said = new Set<number>();
+      let cam = { x: w.player.x, y: w.player.y };
       while (w.scene && time < 120) {
         w.input = emptyInput();
+        const before = cam;
         w.step(DT);
         time += DT;
         const sc = w.scene;
@@ -66,7 +69,13 @@ describe('Sigilfall: every scene, as the camera sees it', () => {
           stepAt = time;
         }
         const st = def.steps[sc.step];
+        cam = sc.focus ? { ...sc.focus } : { x: w.player.x, y: w.player.y };
         if (!st) continue;
+        // the camera goes to a speaker only when they were out of the picture (the owner: "the camera keeps pointing at
+        // something and then suddenly change dirextion to the tapking npcs, remove such redundant transitions")
+        const speaker = 'say' in st ? where(w, st.say) : null;
+        const z = sc.zoom ?? TALK_ZOOM;
+        if (speaker && Math.hypot(cam.x - before.x, cam.y - before.y) > TILE && inSight(before, speaker, { side: 6.2 * z, up: 4 * z, down: 3.2 * z })) wrong.push(`${def.id} step ${sc.step}: the camera swings to ${st.say}, who was already in the picture`);
         // (a `follow` is a ride watched on purpose, for as long as it says)
         if ('move' in st && time - stepAt > 7) wrong.push(`${def.id} step ${sc.step}: ${st.move} takes over 7 s to walk to ${st.to}`);
         if (!('say' in st) || !sc.begun || said.has(sc.step) || time - stepAt < 0.4) continue;

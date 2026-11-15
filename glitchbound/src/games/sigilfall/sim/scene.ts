@@ -191,6 +191,10 @@ export interface ScenePlay {
   spoke?: string;
   /** How near the camera stands, when a step has said so (else it draws in on whoever is speaking). */
   zoom?: number;
+  /** How far a shot stands off what it looks at (world px), to hold those about to speak in the picture with it (composeShot). */
+  lean?: { x: number; y: number };
+  /** How many times the camera has cut (jumped, not panned) to someone speaking a long way off: the render follows it. */
+  cuts?: number;
 }
 
 /** How black the scene's picture is now. */
@@ -266,16 +270,74 @@ const seenKey = (id: string): string => `scene:${id}`;
 
 /** What the camera shows round where it looks, in tiles: a little less than the screen, so a speaker is never at its very edge. */
 const SIGHT = { side: 6.2, up: 4, down: 3.2 };
-/**
- * The middle of the picture, where a speaker is: what a phone held upright still shows with the camera drawn in (its
- * view is six tiles across, not twelve).
- */
-const MIDDLE = { side: 2.3, up: 1.9, down: 1.6 };
 /** Whether someone is in the picture when the camera looks at `cam`. */
 export function inSight(cam: { x: number; y: number }, who: { x: number; y: number }, sight: { side: number; up: number; down: number } = SIGHT): boolean {
   const dx = (who.x - cam.x) / TILE;
   const dy = (who.y - cam.y) / TILE;
   return Math.abs(dx) <= sight.side && dy <= sight.down && dy >= -sight.up;
+}
+
+/** A speaker further than this from where the camera looks is cut to, not panned to (world px: past the picture's edge). */
+export const CUT_PAST = 8 * TILE;
+
+/** What the camera shows when it stands as near as this (a share of its usual distance; a scene draws in on talk). */
+const sightAt = (zoom: number): { side: number; up: number; down: number } => ({ side: SIGHT.side * zoom, up: SIGHT.up * zoom, down: SIGHT.down * zoom });
+
+/**
+ * Those who speak after a shot, before the scene moves the camera or anyone in it again: where they stand now (they
+ * will still be there when they speak).
+ */
+function speakersAhead(w: World, def: SceneDef, from: number): { x: number; y: number }[] {
+  const out: { x: number; y: number }[] = [];
+  for (let i = from + 1; i < def.steps.length; i++) {
+    const st = def.steps[i]!;
+    if ('look' in st || 'at' in st || 'follow' in st || 'move' in st || 'cut' in st || 'ghost' in st || 'vision' in st || 'fade' in st) break;
+    if (!('say' in st)) continue;
+    const at = where(w, st.say);
+    if (at) out.push(at);
+  }
+  return out;
+}
+
+/**
+ * How near the camera will stand while those lines are spoken: as near as it is now, or nearer if a step before them
+ * draws it in (a shot framed for a wide view lost its speakers off the edge once the scene came in close).
+ */
+function zoomAhead(s: ScenePlay, from: number): number {
+  let z = s.zoom ?? TALK_ZOOM;
+  let least = z;
+  for (let i = from + 1; i < s.def.steps.length; i++) {
+    const st = s.def.steps[i]!;
+    if ('look' in st || 'at' in st || 'follow' in st || 'move' in st || 'cut' in st || 'ghost' in st || 'vision' in st || 'fade' in st) break;
+    if ('zoom' in st) z = st.zoom === 'auto' ? TALK_ZOOM : ZOOMS[st.zoom];
+    if ('say' in st) least = Math.min(least, z);
+  }
+  return least;
+}
+
+/**
+ * Where a shot of `at` stands so that those about to speak are in the picture with it, as near the thing itself as
+ * that allows: the camera then stays where it is while they talk, instead of going to the place and swinging over to
+ * whoever speaks a moment later (the owner, 2026-11-15: "sometimes during quests, during the cinematics, the camera keeps
+ * pointing at something and then suddenly change dirextion to the tapking npcs, remove such redundant transitions"). It
+ * is framed for the camera drawn in on talk, a little inside the picture's edge. Null when they can't all be in one
+ * picture with it: the shot keeps to the thing, and the first of them who speaks out of the picture is gone to.
+ */
+export function composeShot(at: { x: number; y: number }, speakers: { x: number; y: number }[], zoom = TALK_ZOOM): { x: number; y: number } | null {
+  if (!speakers.length) return null;
+  const fit = sightAt(zoom * 0.85);
+  const pts = [at, ...speakers];
+  const minX = Math.min(...pts.map((p) => p.x));
+  const maxX = Math.max(...pts.map((p) => p.x));
+  const minY = Math.min(...pts.map((p) => p.y));
+  const maxY = Math.max(...pts.map((p) => p.y));
+  // (the middle may stand anywhere from which the leftmost and the rightmost are both in, and the topmost and the lowest)
+  const x0 = maxX - fit.side * TILE;
+  const x1 = minX + fit.side * TILE;
+  const y0 = maxY - fit.down * TILE;
+  const y1 = minY + fit.up * TILE;
+  if (x0 > x1 || y0 > y1) return null;
+  return { x: Math.max(x0, Math.min(x1, at.x)), y: Math.max(y0, Math.min(y1, at.y)) };
 }
 
 /** The middle of the nearest tile to (x, y) that can be stood on (the spot itself, when it can). */
@@ -488,11 +550,17 @@ export function updateScene(w: World, dt: number): void {
       const doing = s.acts[step.say];
       if (step.say !== 'hero' && !doing?.hold && !(doing && w.time - doing.at < 0.25)) s.acts[step.say] = { clip: /!["’”]?$/.test(step.line) ? GESTURES.point : GESTURES.speak, at: w.time, hold: false };
       s.spoke = step.say;
-      // the camera finds whoever speaks, if the scene has left them out of the middle of its picture: nobody talks
-      // from off the screen, on a phone's narrow one either. Two who are talking are framed together
+      // the camera finds whoever speaks, if the scene has left them out of its picture: nobody talks from off the
+      // screen. Two who are talking are framed together. Someone already in the picture is not gone to: the shot before
+      // them was framed to hold them (composeShot), and a camera that swings from one speaker to the next, or from the
+      // place being shown to whoever talks about it, was what the owner asked to have taken out
       const cam = s.focus ?? w.player;
-      if (who && !inSight(cam, who, MIDDLE)) {
+      if (who && !inSight(cam, who, sightAt(s.zoom ?? TALK_ZOOM))) {
         const two = to && dist(to.x, to.y, who.x, who.y) < 4.5 * TILE ? { x: who.x + (to.x - who.x) * 0.35, y: who.y + (to.y - who.y) * 0.35 } : { x: who.x, y: who.y };
+        const next = step.say === 'hero' ? { x: w.player.x, y: w.player.y } : two;
+        // (a long way off is cut to, as a film cuts from one face to another, not panned across the land in a hurry:
+        // the render jumps the camera, render/renderer.ts)
+        if (dist(cam.x, cam.y, next.x, next.y) > CUT_PAST) s.cuts = (s.cuts ?? 0) + 1;
         s.focus = step.say === 'hero' ? null : two;
       }
     }
@@ -518,10 +586,24 @@ export function updateScene(w: World, dt: number): void {
     done = true;
   } else if ('look' in step) {
     const at = where(w, step.look);
-    s.focus = step.look === 'hero' ? null : at;
+    // (a shot is framed once, as it begins, to hold those who speak next; it keeps that lean while what it looks at moves)
+    if (first) {
+      const ahead = speakersAhead(w, s.def, s.step);
+      const zoom = zoomAhead(s, s.step);
+      let shot = at ? composeShot(at, ahead, zoom) : null;
+      // (back to the hero, with someone out of that picture about to speak: the camera goes straight to them, not to the
+      // hero and then over to them a moment later)
+      if (!shot && at && step.look === 'hero' && ahead.length) shot = composeShot(ahead[0]!, ahead.slice(1), zoom) ?? ahead[0]!;
+      s.lean = shot && at && (shot.x !== at.x || shot.y !== at.y) ? { x: shot.x - at.x, y: shot.y - at.y } : undefined;
+    }
+    s.focus = at && s.lean ? { x: at.x + s.lean.x, y: at.y + s.lean.y } : step.look === 'hero' ? null : at;
     done = s.t >= 0.9;
   } else if ('at' in step) {
-    s.focus = step.at;
+    if (first) {
+      const shot = composeShot(step.at, speakersAhead(w, s.def, s.step), zoomAhead(s, s.step));
+      s.lean = shot && (shot.x !== step.at.x || shot.y !== step.at.y) ? { x: shot.x - step.at.x, y: shot.y - step.at.y } : undefined;
+    }
+    s.focus = s.lean ? { x: step.at.x + s.lean.x, y: step.at.y + s.lean.y } : step.at;
     done = s.t >= 1;
   } else if ('follow' in step) {
     const at = where(w, step.follow);
