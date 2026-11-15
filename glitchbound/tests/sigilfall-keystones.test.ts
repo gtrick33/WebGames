@@ -4,7 +4,7 @@
  * levels open (as in Diablo's rifts; nothing is lost by being late). Experience past 60 earns Paragon points.
  */
 import { describe, expect, it } from 'vitest';
-import { MAX_LEVEL } from '../src/games/sigilfall/data/classes';
+import { heroDamage, MAX_LEVEL } from '../src/games/sigilfall/data/classes';
 import { KEY_DEATH, KEY_LEVEL, KEY_MIN, keyAffixes, keyLoot, keyPar, keyScale, keyUpgrade, MAX_IL, weekAffixes, type KeyAffix } from '../src/games/sigilfall/data/keystones';
 import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
@@ -101,9 +101,10 @@ describe('sigilfall: Riftstone', () => {
     const b = hi.addEnemy('skeleton', 100, 100, KEY_LEVEL, { room: -1, pack: -1 });
     expect(b.maxHp / a.maxHp).toBeCloseTo(keyScale(8).hp / keyScale(1).hp, 2);
     expect(b.dmg / a.dmg).toBeCloseTo(keyScale(8).dmg / keyScale(1).dmg, 2);
-    // harder than the same dungeon on Mythic
+    // harder than the same dungeon on Mythic, in the measure its clock was set in: a Riftstone run matches its foes'
+    // health to the hero's halved blows (data/classes.ts HERO_DAMAGE, sim/world.ts ownMeasure), the campaign does not
     const mythic = newWorld('deepforge-halls', endgameHero(), 1, 2);
-    expect(a.maxHp).toBeGreaterThan(mythic.addEnemy('skeleton', 100, 100, KEY_LEVEL, { room: -1, pack: -1 }).maxHp);
+    expect(a.maxHp / heroDamage(60)).toBeGreaterThan(mythic.addEnemy('skeleton', 100, 100, KEY_LEVEL, { room: -1, pack: -1 }).maxHp);
     const fort = keyRun('deepforge-halls', 2, ['fortified']);
     expect(fort.addEnemy('skeleton', 100, 100, KEY_LEVEL, { room: -1, pack: -1 }).maxHp / (a.maxHp * (keyScale(2).hp / keyScale(1).hp))).toBeCloseTo(1.3, 1);
     const tyr = keyRun('deepforge-halls', 1, ['tyrannical']);

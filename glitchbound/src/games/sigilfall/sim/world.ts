@@ -888,13 +888,13 @@ export class World {
   }
 
   /**
-   * Heroic, Mythic and Riftstone runs, hard by choice, keep their own measure, as they do for `challenge` and `depth`:
-   * every hero hits half as hard as they did (HERO_DAMAGE), so everything in them has health to match, and their foes hit
-   * as they did. The harder blows are the campaign's. A Riftstone run's clock (data/keystones.ts KEY_PARS) was set against
-   * the old blows, and Riftstone stands above Mythic as it did.
+   * A Riftstone run keeps its own measure: its clock (data/keystones.ts KEY_PARS) was set against the old blows, so
+   * everything in it has health to match the hero's halved blows (HERO_DAMAGE), and its foes hit as they did. Heroic and
+   * Mythic are the campaign's dungeons made harder, so they take the campaign's harder blows with their own measure on
+   * top (TIERS): each stays harder than the one below in every way.
    */
   get ownMeasure(): boolean {
-    return !!this.keyRun || this.tier > 0;
+    return !!this.keyRun;
   }
 
   /** A boss's BOSS_DAMAGE at its level, in the campaign (ownMeasure). */

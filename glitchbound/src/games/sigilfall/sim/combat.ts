@@ -730,8 +730,8 @@ function guarded(w: World, source?: Enemy): void {
  * mage had 1360 health in gear bought with gold the road paid too much of: how hard a boss hits grows with its level,
  * so the better a hero's gear, the less any blow mattered. With a floor counted against the hero's own health, a blow
  * taken always costs something real, however they are dressed. Not a blow's weight above BLOW_MOST. A boss's
- * barrages, the ground it leaves and what it leaves burning carry none (sim/world.ts BOSS_DAMAGE), and Heroic, Mythic
- * and Riftstone keep their own measure (World.ownMeasure).
+ * barrages, the ground it leaves and what it leaves burning carry none (sim/world.ts BOSS_DAMAGE), and a Riftstone run
+ * keeps its own measure (World.ownMeasure).
  */
 export const BLOW_FLOOR = 0.25;
 export const BLOW_MOST = 0.6;

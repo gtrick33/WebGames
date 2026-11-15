@@ -302,7 +302,8 @@ What changed:
 | A boss's barrages, its rings of force, the ground it leaves, the burns and poisons it lays | — | as they were: raised with the rest, they were what the bot died to dozens of times over, a chip at a time |
 | The rank and file (MOB_DAMAGE) | ×1 | ×1.5 from level 14; those in a boss's room ×1 |
 | The blows they wind up for (`sim/ai.ts` SPIKE: a caster's circle, a brute's slam, a charger's rush, a swell about to burst) | ×1 | ×1.8 on top |
-| Heroic, Mythic and Riftstone | — | their own measure, as for `challenge` and `depth`: health to match the halved blows, the old damage (a Riftstone clock, KEY_PARS, was set against the old blows, and Riftstone stands above Mythic as it did) |
+| Heroic and Mythic | — | all of the above, with their own measure (TIERS) on top: each stays harder than the one below |
+| Riftstone | — | its own measure: health to match the halved blows, the old damage (its clock, KEY_PARS, was set against the old blows) |
 
 The same bot afterwards (14 dungeons × 8 classes, first seed): the biggest blow it took averages a third of its health
 (31 to 37% in the Tomb, the warrior and the paladin as much as the mage, where they took 9 to 14% before); its median

@@ -11,7 +11,8 @@
  *   and take at least a share of the hero's own health, however well they are dressed. Its barrages, the ground it
  *   leaves and the burns it lays wear a hero down as they did.
  * - The rank and file hit harder, and the blows they wind up for harder still; those in a boss's room don't.
- * - Heroic, Mythic and Riftstone keep their own measure: a Riftstone run's clock was set against the old blows.
+ * - A Riftstone run keeps its own measure (its clock was set against the old blows); Heroic and Mythic take the
+ *   campaign's harder blows with their own measure on top.
  * - What every dungeon asks of the play-bot is in the dungeon tests (HARD_DEATHS).
  */
 import { describe, expect, it } from 'vitest';
@@ -118,22 +119,22 @@ describe('Sigilfall: a harder game', () => {
     expect(w.fields[w.fields.length - 1]!.dmg).toBeCloseTo(100 / bossDamage(b.level));
   });
 
-  it('Heroic, Mythic and Riftstone keep their own measure: health to match the hero’s blows, and the old blows', () => {
+  it('a Riftstone run keeps its own measure (health to match the hero’s blows, the old blows); Heroic and Mythic take the campaign’s', () => {
     const hero = readyHero('warrior', 60, 'epic');
     const key = new World({ region: 'tomb-of-the-sun-king', tier: 2, mods: [], hero, settings: { ...DEFAULT_SETTINGS }, seed: 1, key: 3, affixes: [], handIns: false });
     const mythic = newWorld('tomb-of-the-sun-king', readyHero('warrior', 60, 'epic'), 1, 2);
-    const normal = newWorld('tomb-of-the-sun-king', readyHero('warrior', 60, 'epic'), 1, 0);
     expect(key.keyRun).not.toBeNull();
-    for (const w of [key, mythic]) {
-      expect(w.ownMeasure).toBe(true);
-      expect(w.bossBoost(60)).toBe(1);
-      const e = w.addEnemy('tomb-scarab', 0, 0, 60, { room: -1, pack: -1 });
-      const def = ENEMIES['tomb-scarab']!;
-      const mul = w as unknown as { hpMul(boss: boolean): number; dmgMul(boss: boolean): number };
-      expect(e.maxHp).toBe(Math.round(def.hp * enemyScale(60).hp * mul.hpMul(false) * heroDamage(60)));
-      expect(e.dmg).toBeCloseTo(def.dmg * enemyScale(60).dmg * mul.dmgMul(false));
-    }
-    expect(normal.ownMeasure).toBe(false);
-    expect(normal.bossBoost(60)).toBe(BOSS_DAMAGE);
+    expect(key.ownMeasure).toBe(true);
+    expect(key.bossBoost(60)).toBe(1);
+    const e = key.addEnemy('tomb-scarab', 0, 0, 60, { room: -1, pack: -1 });
+    const def = ENEMIES['tomb-scarab']!;
+    const mul = key as unknown as { hpMul(boss: boolean): number; dmgMul(boss: boolean): number };
+    expect(e.maxHp).toBe(Math.round(def.hp * enemyScale(60).hp * mul.hpMul(false) * heroDamage(60)));
+    expect(e.dmg).toBeCloseTo(def.dmg * enemyScale(60).dmg * mul.dmgMul(false));
+    expect(mythic.ownMeasure).toBe(false);
+    expect(mythic.bossBoost(60)).toBe(BOSS_DAMAGE);
+    const m = mythic.addEnemy('tomb-scarab', 0, 0, 60, { room: -1, pack: -1 });
+    const mm = mythic as unknown as { hpMul(boss: boolean): number; dmgMul(boss: boolean): number };
+    expect(m.dmg).toBeCloseTo(def.dmg * enemyScale(60).dmg * mm.dmgMul(false) * MOB_DAMAGE);
   });
 });
