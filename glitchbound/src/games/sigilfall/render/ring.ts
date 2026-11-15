@@ -105,9 +105,8 @@ interface Burst {
 }
 
 /**
- * A combo called out over whoever it landed on: its name alone. The rules add the momentum chain to it ("Gloomfire ×3"),
- * but the chain is no longer shown (the owner: "remove the momentum pop up if possible at all"); its sound still
- * rings higher for a long chain.
+ * A combo called out over whoever it landed on: its name alone (a host from before Momentum went may still add its
+ * chain, "Gloomfire ×3", which is not shown).
  */
 export const comboWord = (word: string): string => word.replace(/\s*×\d+$/, '');
 

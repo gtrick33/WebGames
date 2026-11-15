@@ -74,9 +74,9 @@ describe('The Ring: no momentum pop-up', () => {
     expect(words).toEqual(['Gloomfire!']);
   });
 
-  it('the rules still keep the chain (only the picture of it went)', () => {
+  it('the chain itself is gone from the rules too (the owner: "i dont like the momentum idea")', () => {
     const sim = read('src/games/sigilfall/arena/sim.ts');
-    expect(sim).toMatch(/export const MOMENTUM_MAX/);
+    expect(sim).not.toMatch(/export const MOMENTUM_/);
   });
 });
 

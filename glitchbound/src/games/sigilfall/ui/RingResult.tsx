@@ -168,10 +168,7 @@ function Row({ f, top, mine, doll, awards }: { f: Fighter; top: { dmg: number; h
         <i style={{ width: `${top.heal ? (f.score.heal / top.heal) * 100 : 0}%` }} />
         <b>{f.score.heal.toLocaleString('en-US')}</b>
       </span>
-      <span className="rb-rr-num is-combos" title={f.score.streak && f.score.streak > 1 ? `Best chain ×${f.score.streak}` : undefined}>
-        {f.score.combos ?? 0}
-        {f.score.streak && f.score.streak > 1 ? <small> ×{f.score.streak}</small> : null}
-      </span>
+      <span className="rb-rr-num is-combos">{f.score.combos ?? 0}</span>
       <span className="rb-rr-num">{Math.round(f.score.cc)}s</span>
       <span className="rb-rr-num">{f.score.kicks}</span>
     </div>
