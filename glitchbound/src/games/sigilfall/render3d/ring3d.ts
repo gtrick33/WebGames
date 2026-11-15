@@ -1,5 +1,5 @@
 import type * as THREE from 'three';
-import { ABILITIES } from '../arena/abilities';
+import { ABILITIES, type Ability } from '../arena/abilities';
 import { ARENA_H, ARENA_W, ENTRY_GATES, MAPS, type Pillar, type RingMap } from '../arena/maps';
 import type { Fighter, Match } from '../arena/sim';
 import { THEMES, type ThemeLook } from '../data/themes';
@@ -54,6 +54,33 @@ export interface RingView {
   still?: boolean;
 }
 
+/** How far the camera leans toward the fight on a phone, as a share of the way to the enemy, and at most (world px). */
+export const THUMBS_LEAN = 0.35;
+export const THUMBS_LEAN_MAX = { x: 64, y: 40 };
+/** And how far south of the hero it looks, so that they stand a little over the middle (world px). */
+export const THUMBS_LOWER = 8;
+/** An enemy ability's aim, for asking the rules whom the hero's harm goes to. */
+const AT_FOE = { aim: 'enemy' } as Ability;
+
+/**
+ * Where the camera looks on a phone, played with thumbs (the owner: "theyre lowkey covering the enemies and i can barely
+ * see whats happening on the right side of the screen"). Both thumbs' controls lie along the foot of the screen and the
+ * nameplates along its top, so the open ground is the middle band: the hero stands a little over the middle of it (the
+ * camera looks a little south of them, where with a mouse it looks a little north), and the camera leans a third of
+ * the way toward whom they fight (the enemy they chose, or the one their harm goes to), so that the other side stands
+ * in the open middle and not under the abilities in the corner.
+ */
+export function thumbsFrame(m: Match, me: Fighter): { x: number; y: number } {
+  let x = me.x;
+  let y = me.y + THUMBS_LOWER;
+  const foe = m.phase === 'fight' ? m.aimOf(me, AT_FOE) : null;
+  if (foe && foe !== me && !foe.dead) {
+    x += Math.max(-THUMBS_LEAN_MAX.x, Math.min(THUMBS_LEAN_MAX.x, (foe.x - me.x) * THUMBS_LEAN));
+    y += Math.max(-THUMBS_LEAN_MAX.y, Math.min(THUMBS_LEAN_MAX.y, (foe.y - me.y) * THUMBS_LEAN));
+  }
+  return { x, y };
+}
+
 export class RingStage implements RingView {
   readonly stage: Stage;
   private built = false;
@@ -71,6 +98,8 @@ export class RingStage implements RingView {
   private quakeT = 0;
   /** Off for those who asked for less motion. */
   still = false;
+  /** Played with thumbs on a phone: the fight framed in the clear middle of the screen, away from the controls. */
+  thumbs = false;
   private readonly gates: Stand[] = [];
   private k = 1;
   private cx = ARENA_W / 2;
@@ -173,8 +202,9 @@ export class RingStage implements RingView {
     if (this.follow && me && !watching) {
       const halfW = (st.spanX * TILE) * 0.95;
       const halfH = (st.spanZ * TILE) * 0.95;
-      cx = ARENA_W <= halfW * 2 ? ARENA_W / 2 : Math.max(halfW - 24, Math.min(ARENA_W - halfW + 24, me.x));
-      cy = ARENA_H <= halfH * 2 ? ARENA_H / 2 - 14 : Math.max(halfH - 60, Math.min(ARENA_H - halfH + 16, me.y - 14));
+      const at = this.thumbs ? thumbsFrame(m, me) : { x: me.x, y: me.y - 14 };
+      cx = ARENA_W <= halfW * 2 ? ARENA_W / 2 : Math.max(halfW - 24, Math.min(ARENA_W - halfW + 24, at.x));
+      cy = ARENA_H <= halfH * 2 ? ARENA_H / 2 - 14 : Math.max(halfH - 60, Math.min(ARENA_H - halfH + 16, at.y));
     }
     const ease = 1 - Math.exp(-dt * 5);
     this.cx += (cx - this.cx) * (dt > 0 ? ease : 1);

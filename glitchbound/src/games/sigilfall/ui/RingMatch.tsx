@@ -409,7 +409,10 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     tut?.onTarget(id);
     tick((x) => x + 1);
   };
-  /** The next enemy, as Tab chooses: a phone's ◎ button by the abilities, the easiest way there is to switch target. */
+  /**
+   * The next enemy, as Tab chooses: a phone's Next button under the enemies' nameplates, the easiest way there is to
+   * switch target.
+   */
   /** The enemy that lies the way a thumb slides from the ◎ button, as seen on the screen (set where the view is). */
   const towardFoe = useRef<(dx: number, dy: number) => Fighter | null>(() => null);
   /** The ◎ button's slide: where it began, and whether it has gone far enough to be a slide rather than a tap. */
@@ -821,6 +824,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         wasShown = m.phase;
         view.cheer(m.phase === 'fight' ? 0.7 : m.phase === 'over' ? 1 : 0);
       }
+      // (with thumbs on a phone, the camera frames the fight in the open middle, away from the controls: ring3d.ts)
+      view.thumbs = engine.touchMode;
       view.frame(m, looks, myId, dt, time, (q) => ringSpells(q, m, fx, myId, time, view.air, (f) => view.bodyAt(f)));
       placeAim();
       // each title over its fighter's bar, in its own light, where the bar is drawn this frame; what's on them goes up
@@ -1164,6 +1169,56 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               {plates && right.map((f) => (
                 <Frame key={f.id} flip f={f} m={m} me={me} doll={classEmblem(f.cls)} title={titles[f.id] ?? null} tag={f === foeAlive ? 'Target' : null} onPick={() => target(f.id)} />
               ))}
+              {/* on a phone, with two or more on the other side: a button to switch between them, under their nameplates
+                  where the choosing is done, away from the abilities (it was in the thumb cluster beside a spell: the owner,
+                  "the target button is also next to a spell") */}
+              {touch && right.length > 1 && (
+                <button
+                  type="button"
+                  className="rb-ring-cycle"
+                  disabled={right.filter((f) => !f.dead).length < 2}
+                  aria-label={`Switch target${foeAlive ? `, now ${foeAlive.name}` : ''}. Tap for the next enemy, or slide toward one`}
+                  // (a tap: the next enemy, as Tab. A slide: the enemy the way the thumb goes, chosen as it goes)
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    // (not the column's own press, which chooses whichever nameplate is nearest)
+                    e.stopPropagation();
+                    try {
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                    } catch {
+                      /* (no capture: the slide still works while the thumb stays on the button) */
+                    }
+                    slide.current = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+                  }}
+                  onPointerMove={(e) => {
+                    const sl = slide.current;
+                    if (!sl || sl.id !== e.pointerId) return;
+                    const dx = e.clientX - sl.x;
+                    const dy = e.clientY - sl.y;
+                    if (Math.hypot(dx, dy) < 14) return;
+                    sl.moved = true;
+                    const o = towardFoe.current(dx, dy);
+                    if (o && o.id !== me?.target) target(o.id);
+                  }}
+                  onPointerUp={(e) => {
+                    const sl = slide.current;
+                    slide.current = null;
+                    if (sl?.id === e.pointerId && !sl.moved) nextFoe();
+                  }}
+                  onPointerCancel={() => {
+                    slide.current = null;
+                  }}
+                  onContextMenu={(e) => e.preventDefault()}
+                >
+                  {/* a crosshair: what it is for, at a glance */}
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" />
+                    <path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                    <circle cx="12" cy="12" r="1.8" fill="currentColor" />
+                  </svg>
+                  <span>Next</span>
+                </button>
+              )}
             </div>
           </div>
           {/* (a fallen fighter has nothing to press: the stick and the abilities step aside and leave the whole ring to watch) */}
@@ -1176,51 +1231,6 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 }}
               />
               <div className="rb-cluster" data-tut="bar">
-                {/* (two or more on the other side: a button to switch between them, where the right thumb already is) */}
-                {right.length > 1 && (
-                  <button
-                    type="button"
-                    className="rb-sb rb-sb-target"
-                    disabled={right.filter((f) => !f.dead).length < 2}
-                    aria-label={`Switch target${foeAlive ? `, now ${foeAlive.name}` : ''}. Tap for the next enemy, or slide toward one`}
-                    // (a tap: the next enemy, as Tab. A slide: the enemy the way the thumb goes, chosen as it goes)
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      try {
-                        e.currentTarget.setPointerCapture(e.pointerId);
-                      } catch {
-                        /* (no capture: the slide still works while the thumb stays on the button) */
-                      }
-                      slide.current = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
-                    }}
-                    onPointerMove={(e) => {
-                      const sl = slide.current;
-                      if (!sl || sl.id !== e.pointerId) return;
-                      const dx = e.clientX - sl.x;
-                      const dy = e.clientY - sl.y;
-                      if (Math.hypot(dx, dy) < 14) return;
-                      sl.moved = true;
-                      const o = towardFoe.current(dx, dy);
-                      if (o && o.id !== me?.target) target(o.id);
-                    }}
-                    onPointerUp={(e) => {
-                      const sl = slide.current;
-                      slide.current = null;
-                      if (sl?.id === e.pointerId && !sl.moved) nextFoe();
-                    }}
-                    onPointerCancel={() => {
-                      slide.current = null;
-                    }}
-                    onContextMenu={(e) => e.preventDefault()}
-                  >
-                    {/* a crosshair: what it is for, at a glance */}
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" />
-                      <path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-                      <circle cx="12" cy="12" r="1.8" fill="currentColor" />
-                    </svg>
-                  </button>
-                )}
                 {bar.map((ab, i) => {
                   const cd = me?.cds[ab.id] ?? 0;
                   const gcd = !ab.free ? (me?.gcd ?? 0) : 0;

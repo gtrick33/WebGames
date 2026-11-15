@@ -10002,10 +10002,11 @@ html.rb-touch-playing textarea {
 }
 /* your own cast low on the screen, between the stick and the thumb cluster, under the fight rather than over it (the
    owner: "currently the cast bar is in the middle of the screen, you can add it a bit more to the bottom"): the stick
-   rests in the first 200 points from the left, the Ring cluster’s lowest buttons reach 224 in from the right */
+   rests in the first 200 points from the left, the Ring cluster’s lowest buttons (the Swift Step) reach 238 in from the
+   right */
 .rb-ring.is-touch .rb-ring-mycast {
   left: calc(206px + var(--sa-l, 0px));
-  right: calc(232px + var(--sa-r, 0px));
+  right: calc(244px + var(--sa-r, 0px));
   bottom: calc(10px + var(--sa-b, 0px));
   width: auto;
   max-width: 280px;
@@ -10056,23 +10057,43 @@ html.rb-touch-playing textarea {
   margin-top: -12px;
   padding-top: 12px;
 }
-/* the switch-target button: a white crosshair on a dark button with a red rim; tap for the next enemy, or slide toward one */
-.rb-ring-thumbs .rb-sb-target {
+/* the switch-target button, on a phone: under the enemies' nameplates, at their edge, where whom to fight is chosen,
+   and nowhere near an ability (ui/RingMatch.tsx). A white crosshair and "Next" on a dark pill with a red rim; tap for
+   the next enemy, or slide toward one */
+.rb-ring-cycle {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  gap: 3px;
+  height: 30px;
+  margin-top: 4px;
+  padding: 0 10px 0 6px;
+  border: 2px solid #ff5a6a;
+  border-radius: 15px;
   color: #fff;
-  border-color: #ff5a6a;
-  background: radial-gradient(circle at 50% 40%, #3a1218, #120609 75%);
+  font: 800 11px/1 system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: radial-gradient(circle at 30% 40%, #3a1218, #120609 80%);
+  box-shadow: 0 0 0 2px #1a1006, 0 2px 8px rgb(0 0 0 / 0.5);
   touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
-.rb-ring-thumbs .rb-sb-target svg {
-  width: 62%;
-  height: 62%;
+.rb-ring-cycle svg {
+  width: 18px;
+  height: 18px;
   filter: drop-shadow(0 1px 1px #000);
   pointer-events: none;
 }
-.rb-ring-thumbs .rb-sb-target:active {
-  border-color: #fff;
+.rb-ring-cycle span {
+  pointer-events: none;
 }
-.rb-ring-thumbs .rb-sb-target:disabled {
+.rb-ring-cycle:active {
+  border-color: #fff;
+  scale: 0.95;
+}
+.rb-ring-cycle:disabled {
   opacity: 0.35;
 }
 .rb-ring.is-touch .rb-ring-under {
@@ -12795,60 +12816,57 @@ html.rb-touch-playing textarea {
   }
 }
 
-/* ---- The Ring's thumbs, gathered closer than the campaign's (the owner: "takes too much space in mobile ... clustering
-   it up or making the icons smaller"): the attack in the corner, the three skills on one tight arc round it, and the
-   Swift Step, the super, the switch-target button and the fifth skill on an outer arc. About a third less of the
-   screen, before the short-screen scaling every cluster gets. (The fifth skill, 2026-11-15, came in at the top of the
-   outer arc, straight over the third, so that no button a thumb already knew moved.) ---- */
+/* ---- The Ring's thumbs on a phone (2026-11-15, the owner: "the buttons ... are lowkey covering the enemies and i can
+   barely see whats happening on the right side of the screen ... id like more organized more natural feeling to the
+   UI"). In two arcs round the attack in the corner, wider than they are tall, since a phone on its side has height to
+   spare least: the attack (the bar's first) in the corner; the bar's next three on a tight inner arc, left, between and
+   up, the ones pressed all the time; and on an outer arc from the foot of the screen up, the Swift Step, the super and
+   the bar's fifth. 236 by 172 points, where the cluster before took 222 by 224 (half a phone's height on its side), and
+   smaller again on a short screen. The switch-target button is under the enemies' nameplates now, and every button
+   here is a fighting one. ---- */
 .rb-ring-thumbs .rb-cluster {
-  width: 222px;
-  height: 224px;
+  width: 236px;
+  height: 172px;
 }
 .rb-ring-thumbs .rb-cluster .rb-sb-basic {
   right: 12px;
   bottom: 12px;
-  width: 74px;
-  height: 74px;
+  width: 66px;
+  height: 66px;
 }
 .rb-ring-thumbs .rb-cluster .rb-sb-s1 {
-  right: 111px;
-  bottom: 23px;
-  width: 52px;
-  height: 52px;
+  right: 105px;
+  bottom: 21px;
+  width: 48px;
+  height: 48px;
 }
 .rb-ring-thumbs .rb-cluster .rb-sb-s2 {
-  right: 85px;
-  bottom: 85px;
-  width: 52px;
-  height: 52px;
+  right: 80px;
+  bottom: 80px;
+  width: 48px;
+  height: 48px;
 }
 .rb-ring-thumbs .rb-cluster .rb-sb-s3 {
-  right: 23px;
-  bottom: 111px;
-  width: 52px;
-  height: 52px;
+  right: 21px;
+  bottom: 105px;
+  width: 48px;
+  height: 48px;
 }
 .rb-ring-thumbs .rb-cluster .rb-sb-dodge {
-  right: 172px;
-  bottom: 13px;
-  width: 46px;
-  height: 46px;
+  right: 188px;
+  bottom: 17px;
+  width: 44px;
+  height: 44px;
 }
 .rb-ring-thumbs .rb-cluster .rb-sb-ult {
-  right: 146px;
-  bottom: 104px;
-  width: 56px;
-  height: 56px;
-}
-.rb-ring-thumbs .rb-cluster .rb-sb-target {
-  right: 88px;
-  bottom: 158px;
-  width: 42px;
-  height: 42px;
-}
-.rb-ring-thumbs .rb-cluster .rb-sb-s4 {
-  right: 23px;
-  bottom: 169px;
+  right: 165px;
+  bottom: 78px;
   width: 52px;
   height: 52px;
+}
+.rb-ring-thumbs .rb-cluster .rb-sb-s4 {
+  right: 118px;
+  bottom: 125px;
+  width: 44px;
+  height: 44px;
 }

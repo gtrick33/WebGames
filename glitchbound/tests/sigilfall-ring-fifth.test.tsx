@@ -60,7 +60,10 @@ describe('The Ring: five abilities on every bar', () => {
     const box = rule('.rb-ring-thumbs .rb-cluster');
     const W = px(box, 'width');
     const H = px(box, 'height');
-    const buttons = ['basic', 's1', 's2', 's3', 's4', 'dodge', 'ult', 'target'].map((k) => {
+    // (wider than it is tall: a phone on its side has height to spare least, and the fight is on the right of it too)
+    expect(W).toBeGreaterThan(H);
+    expect(H).toBeLessThanOrEqual(176);
+    const buttons = ['basic', 's1', 's2', 's3', 's4', 'dodge', 'ult'].map((k) => {
       const r = rule(`.rb-ring-thumbs .rb-cluster .rb-sb-${k}`);
       const d = px(r, 'width');
       expect(px(r, 'height'), k).toBe(d);
