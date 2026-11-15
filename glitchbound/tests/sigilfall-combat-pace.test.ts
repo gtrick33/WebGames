@@ -201,12 +201,11 @@ describe('Sigilfall: the new talents', () => {
     }
   });
 
-  it('an instant proc really skips the cast bar: Flame Pillar, Ball Lightning, Ice Storm, Searing Hymn, Ruin Bolt and Rain of Fire', () => {
+  it('an instant proc really skips the cast bar: Flame Pillar, Ball Lightning, Ice Storm, Ruin Bolt and Rain of Fire', () => {
     const cases: [ClassId, 0 | 1 | 2, string, string][] = [
       ['mage', 0, 'flamestrike', 'pillar-of-embers'],
       ['mage', 1, 'ball-lightning', 'eye-of-the-storm'],
       ['mage', 2, 'blizzard', 'winters-grasp'],
-      ['priest', 1, 'holy-fire', 'swift-hymn'],
       ['warlock', 2, 'chaos-bolt', 'backlash'],
       ['warlock', 2, 'rain-of-fire', 'hail-of-brimstone'],
     ];

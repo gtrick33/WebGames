@@ -120,8 +120,7 @@ export const PRIEST: Kit = {
         cast: 'projectile',
         range: 160,
         cooldown: 10,
-        damage: 58,
-        castTime: 1,
+        damage: 52,
         dmgType: 'holy',
         speed: 190,
         radius: 4,
@@ -224,7 +223,7 @@ export const PRIEST: Kit = {
     T(1, 0, 1, 'spiritual-healing', 'Spiritual Healing', 3, 'heal', '+5% healing per rank.', [S('healing', 5)]),
     T(1, 0, 2, 'holy-reach', 'Far Blessing', 1, 'aoe', 'Radiant Burst covers 25% more area.', [K('holy-nova', { op: 'area', pct: 25 })]),
     T(1, 1, 0, 'improved-renew', 'Lasting Renew', 2, 'heal', 'Renew lasts 25% longer per rank.', [K('renew', { op: 'duration', pct: 25 })]),
-    T(1, 1, 1, 'swift-hymn', 'Swift Hymn', 2, 'holy', 'Smite has a 4% chance per rank to make your next Searing Hymn instant and ready at once (once every 6 s).', [P({ id: 'swift-hymn', on: 'hit', skill: 'smite', chance: 0.04, icd: 6, perRank: 'chance', effect: { kind: 'buff', buff: next('swift-hymn', 'Swift Hymn', '#fff2b0', 'holy-fire', 10, { instant: true, ready: true }) }, text: 'Smite can make Searing Hymn instant and ready.' })]),
+    T(1, 1, 1, 'swift-hymn', 'Swift Hymn', 2, 'holy', 'Smite has a 4% chance per rank to make your next Searing Hymn ready at once and 40% stronger (once every 6 s).', [P({ id: 'swift-hymn', on: 'hit', skill: 'smite', chance: 0.04, icd: 6, perRank: 'chance', effect: { kind: 'buff', buff: next('swift-hymn', 'Swift Hymn', '#fff2b0', 'holy-fire', 10, { ready: true, pct: 40 }) }, text: 'Smite can ready a stronger Searing Hymn.' })]),
     T(1, 1, 2, 'searing-light', 'Searing Light', 2, 'sun', 'Searing Hymn deals +10% damage per rank.', [dmg('holy-fire', 10)]),
     T(
       1,

@@ -17,8 +17,8 @@ import { newWorld, readyHero } from './sigilfall-bot';
  * The casters' cast bars (campaign only): their heaviest spells take a moment to cast, standing still, and hit
  * harder for it. Kept here: what each would deal going off at once (and the wind-up it had then), at today's
  * numbers. Since the combat rebalance (skills hit harder on longer cooldowns) each caster's signature spell of its
- * specialization has a cast bar too, the one its talents make instant now and then: Ball Lightning, Ice Storm and
- * Searing Hymn.
+ * specialization has a cast bar too, the one its talents make instant now and then: the Stormcaller's Ball Lightning
+ * and the Cryomancer's Ice Storm.
  */
 const BEFORE: Record<string, { damage: number; windup: number }> = {
   meteor: { damage: 146, windup: 0.75 },
@@ -31,7 +31,6 @@ const BEFORE: Record<string, { damage: number; windup: number }> = {
   starfall: { damage: 13, windup: 0 },
   'ball-lightning': { damage: 25, windup: 0 },
   blizzard: { damage: 12, windup: 0 },
-  'holy-fire': { damage: 40, windup: 0 },
 };
 
 /** Every cast-time spell in this world as it was before the cast bars: at once, at its old damage. */

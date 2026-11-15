@@ -338,8 +338,8 @@ describe('sigilfall character', () => {
     expect(learnTalent(c, 'combustion')).toBe(true);
     learnTalent(c, 'smolder');
     learnTalent(c, 'smolder');
-    learnTalent(c, 'pyroclasm');
-    learnTalent(c, 'pyroclasm');
+    learnTalent(c, 'pillar-of-embers');
+    learnTalent(c, 'pillar-of-embers');
     // row 2 is open now (10 points), but Wildfire still needs Ignition
     expect(cantLearn(c, 'wildfire')).toMatch(/Ignition/);
     expect(learnTalent(c, 'ignition')).toBe(true);
