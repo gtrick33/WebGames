@@ -61,6 +61,33 @@ export function inView(camX: number, camZ: number, spanX: number, spanZ: number,
   return z > camZ - spanZ * VIEW_FAR_REACH - VIEW_PAD.far && z < camZ + spanZ + VIEW_PAD.near && inViewX(camX, camZ, spanX, spanZ, x, z);
 }
 
+/**
+ * The ground a placed model can show over, in tiles: its own footprint, and further north by as much as its height
+ * leans up the picture (the camera looks down at PITCH, so a roof `h` tiles up is drawn where ground 0.84·h tiles
+ * further on would be). Its spot alone said too little for a big one: the Ember Keep, raised twice over its lot,
+ * stands with its spot eight tiles behind its gate, and its gate and middle went out of the picture and came back as
+ * the hero walked the forecourt while the door was still on the screen (the owner: "the gate keeps disappearing and
+ * reappearing").
+ */
+export function shownBox(mesh: Pick<MeshData, 'min' | 'max'>, p: Pick<Placed, 'x' | 'z' | 'y' | 'rot' | 'sx' | 'sy' | 'sz'>): { x0: number; x1: number; z0: number; z1: number } {
+  const lean = Math.max(0, mesh.max[1] * p.sy + p.y) / Math.tan(PITCH);
+  if (Math.abs(Math.sin(p.rot)) > 0.01 || Math.cos(p.rot) < 0) {
+    // (turned: as far as its farthest corner reaches, whichever way)
+    const r = Math.hypot(Math.max(-mesh.min[0], mesh.max[0]) * p.sx, Math.max(-mesh.min[2], mesh.max[2]) * p.sz);
+    return { x0: p.x - r, x1: p.x + r, z0: p.z - r - lean, z1: p.z + r };
+  }
+  return { x0: p.x + mesh.min[0] * p.sx, x1: p.x + mesh.max[0] * p.sx, z0: p.z + mesh.min[2] * p.sz - lean, z1: p.z + mesh.max[2] * p.sz };
+}
+
+/**
+ * Whether a model's spot alone keeps it standing for as long as it can show: the view keeps VIEW_PAD's margins round
+ * the picture, so one that shows further from its spot than those (a tile spare) is kept by its whole box instead
+ * (Land3D giants). Its front matters past the top of the picture, its height past the foot.
+ */
+export function keptBySpot(box: { x0: number; x1: number; z0: number; z1: number }, x: number, z: number): boolean {
+  return x - box.x0 < VIEW_PAD.side - 1 && box.x1 - x < VIEW_PAD.side - 1 && z - box.z0 < VIEW_PAD.near - 1 && box.z1 - z < VIEW_PAD.far - 1;
+}
+
 export interface LandPacks {
   /** The people's parts and weapons: a giant's sword is the same sword. */
   hero: Pack;
@@ -113,6 +140,8 @@ interface Placed {
 /** A great thing's piece, big enough that its middle going out of view doesn't mean it has. */
 interface Giant extends Placed {
   reach: number;
+  /** The ground it can show over (shownBox), where that is known: kept while it meets the view's. */
+  box?: { x0: number; x1: number; z0: number; z1: number };
 }
 
 /* ------------------------------------------------------------------ what grows where */
@@ -1548,13 +1577,8 @@ export class Land3D {
   }
 
   private add(p: Omit<Placed, 'r' | 'g' | 'b' | 'sway' | 'shadow' | 'y' | 'sz' | 'sy'> & Partial<Placed>): void {
-    if (!this.pack(p.m)) return;
-    const key = cellKey(Math.floor(p.z / CELL), Math.floor(p.x / CELL));
-    let list = this.cells.get(key);
-    if (!list) {
-      list = [];
-      this.cells.set(key, list);
-    }
+    const model = this.pack(p.m);
+    if (!model) return;
     const placedNow: Placed = { r: 1, g: 1, b: 1, sway: 0, shadow: 0, y: 0, sy: p.sx, sz: p.sx, ...p };
     // everything that stands on the ground throws a shadow sized to it, unless it was given its own: a crate, a cart, a
     // bush, a rock, a lamp post (not what lies flat: a rug, a tuft, a flower)
@@ -1568,6 +1592,19 @@ export class Land3D {
       placedNow.r *= 0.86;
       placedNow.g *= 0.84;
       placedNow.b *= 0.86;
+    }
+    // a model that shows further from its spot than the view's margins (a keep, a great hall, a dungeon's arch) is
+    // kept as long as any of it could show, as a great work's pieces are (shownBox)
+    const box = shownBox(model, placedNow);
+    if (!keptBySpot(box, placedNow.x, placedNow.z)) {
+      this.giants.push({ ...placedNow, reach: 0, box });
+      return;
+    }
+    const key = cellKey(Math.floor(p.z / CELL), Math.floor(p.x / CELL));
+    let list = this.cells.get(key);
+    if (!list) {
+      list = [];
+      this.cells.set(key, list);
     }
     list.push(placedNow);
   }
@@ -2248,7 +2285,8 @@ export class Land3D {
       }
     }
     for (const p of this.giants) {
-      if (p.x + p.reach < x0 || p.x - p.reach > x1 || p.z + p.reach < z0 || p.z - p.reach > z1) continue;
+      const b = p.box;
+      if (b ? b.x1 < x0 || b.x0 > x1 || b.z1 < z0 || b.z0 > z1 : p.x + p.reach < x0 || p.x - p.reach > x1 || p.z + p.reach < z0 || p.z - p.reach > z1) continue;
       let w = want.get(p.m);
       if (!w) {
         w = [];
