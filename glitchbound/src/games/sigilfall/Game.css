@@ -9023,13 +9023,37 @@ html.rb-touch-playing textarea {
   flex-direction: row-reverse;
   text-align: right;
 }
+/* whom you have chosen, the same colors as the marks under them and over their heads (render/ring.ts PICK_COLOR): the
+   friend you help in green, the enemy you harm in red, the plate lit from its edge and breathing a glow, so that it
+   is plain at a glance on a phone (the owner: "u need to know who uve targeted super easily") */
+@keyframes rb-ring-picked {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1.5px var(--pick), 0 0 8px 1px color-mix(in srgb, var(--pick) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 1.5px var(--pick), 0 0 18px 4px color-mix(in srgb, var(--pick) 70%, transparent);
+  }
+}
 .rb-ring-frame.is-on {
-  border-color: #ffe39a;
-  box-shadow: 0 0 0 1px #ffe39a, 0 0 12px rgb(255 227 154 / 0.35);
+  --pick: #6ee07a;
+  border-color: var(--pick);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pick) 26%, rgb(8 4 18 / 0.9)), rgb(8 4 18 / 0.86) 72%);
+  animation: rb-ring-picked 1.4s ease-in-out infinite;
 }
 .is-foes .rb-ring-frame.is-on {
-  border-color: #ff6a7a;
-  box-shadow: 0 0 0 1px #ff6a7a, 0 0 12px rgb(255 90 110 / 0.45);
+  --pick: #ff4a5a;
+  background: linear-gradient(270deg, color-mix(in srgb, var(--pick) 26%, rgb(8 4 18 / 0.9)), rgb(8 4 18 / 0.86) 72%);
+}
+.rb-ring.is-still .rb-ring-frame.is-on {
+  animation: none;
+  box-shadow: 0 0 0 1.5px var(--pick), 0 0 12px 2px color-mix(in srgb, var(--pick) 55%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-ring-frame.is-on {
+    animation: none;
+    box-shadow: 0 0 0 1.5px var(--pick), 0 0 12px 2px color-mix(in srgb, var(--pick) 55%, transparent);
+  }
 }
 .rb-ring-frame.is-dead {
   opacity: 0.45;
@@ -9090,16 +9114,16 @@ html.rb-touch-playing textarea {
   flex: none;
   padding: 0 4px;
   border-radius: 3px;
-  color: #2a1406;
+  color: #0c2a10;
   font: 700 8.5px/12px system-ui, sans-serif;
   font-style: normal;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  background: #ffe39a;
+  background: #6ee07a;
 }
 .is-foes .rb-ring-name em {
   color: #fff;
-  background: #d8404f;
+  background: #d8303f;
 }
 .rb-ring-bar,
 .rb-ring-cast {

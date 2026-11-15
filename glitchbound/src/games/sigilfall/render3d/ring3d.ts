@@ -50,6 +50,8 @@ export interface RingView {
   flat(x: number, y: number): void;
   /** Draws from here on in world pixels facing the camera, `h` world pixels over (x, y). */
   up(x: number, y: number, h?: number): void;
+  /** The player asked for less motion: what would turn or bob on the ground stands still. */
+  still?: boolean;
 }
 
 export class RingStage implements RingView {

@@ -1023,7 +1023,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   useSpot(tv?.spot ?? null);
   return (
     <ScreenGate label="Entering the Ring">
-      <div className={`rb-ring${touch ? ' is-touch' : ''}`}>
+      <div className={`rb-ring${touch ? ' is-touch' : ''}${engine.settings.reducedMotion ? ' is-still' : ''}`}>
         <div className="rb-ring-stage">
           <canvas ref={canvasRef} className="rb-ring-canvas" />
           <div className="rb-ring-titles" aria-hidden="true">
