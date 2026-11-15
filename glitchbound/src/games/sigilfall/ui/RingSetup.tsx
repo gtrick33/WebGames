@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { ABILITIES, barCombos, combosOf, DASH, kitOf, PRESETS, SLOTS, ultFor, ultOf, ultsOf, type Ability } from '../arena/abilities';
+import { ABILITIES, barCombos, combosOf, kitOf, TRINKET, PRESETS, SLOTS, ultFor, ultOf, ultsOf, type Ability } from '../arena/abilities';
 import { usesOf } from '../arena/advice';
 import type { ClassSets, RingSetup } from '../arena/ladder';
 import { RANGED } from '../arena/sim';
@@ -25,10 +25,10 @@ export function timing(ab: Ability): string {
 
 export const talentIcon = (t: Talent): string => iconPicture(t.icon ?? ABILITIES[Object.keys(t.tune ?? {})[0] ?? '']?.icon ?? '');
 
-/** The Swift Step: carried beside the bar by everyone, never on it. */
-const isStep = (ab: Ability): boolean => ab === DASH;
+/** The trinket: carried beside the bar by everyone, never on it. */
+const isTrinket = (ab: Ability): boolean => ab === TRINKET;
 
-/** The bar as it stands: five places, then what every hero has besides (the Swift Step, and their class's super). */
+/** The bar as it stands: five places, then what every hero has besides (the trinket, and their class's super). */
 export function BarRow({ bar, cls, ult, onPick, onHover }: { bar: string[]; cls: ClassId; ult?: string; onPick?: (ab: Ability) => void; onHover?: (ab: Ability) => void }) {
   return (
     <div className="rb-rs-slots">
@@ -40,7 +40,7 @@ export function BarRow({ bar, cls, ult, onPick, onHover }: { bar: string[]; cls:
           </button>
         );
       })}
-      {[DASH, ultOf(cls, ult ?? ultFor(cls, bar))].map((ab) => (
+      {[TRINKET, ultOf(cls, ult ?? ultFor(cls, bar))].map((ab) => (
         <button key={ab.id} type="button" className={`rb-rs-slot is-token${ab.super ? ' is-super' : ''}`} disabled={!onPick} title={`${ab.super ? 'Super' : ab.name}: ${ab.text}`} onClick={() => onPick?.(ab)} onMouseEnter={() => onHover?.(ab)}>
           <img src={iconPicture(ab.icon)} alt={ab.name} draggable={false} />
         </button>
@@ -68,14 +68,14 @@ export function SetupChips({ cls, setup }: { cls: ClassId; setup: RingSetup }) {
  * An ability read before it is taken (the owner: "whenever i click on spell, please add a pop up with info about it,
  * best uses, best combos and 2 buttons - equip or cancel"): what it does, when to press it, what it combines with
  * from this class's kit (and whether that is on the bar), and then the choice. On a full bar, Equip asks which of the
- * five it replaces. The Swift Step and the super are always carried: theirs only closes. Without the choice's handlers
+ * five it replaces. The trinket and the super are always carried: theirs only closes. Without the choice's handlers
  * it is only read, and only closes: the Ring's main screen opens it from the bar (the owner, 2026-11-15: "make the
  * abilities clickable ... so i can see what i have and how to use it").
  */
 export function AbilityCard({ ab, cls, bar, onEquip, onSwap, onRemove, onClose }: { ab: Ability; cls: ClassId; bar: string[]; onEquip?: () => void; onSwap?: (out: string) => void; onRemove?: () => void; onClose: () => void }) {
   const [swapping, setSwapping] = useState(false);
   const on = bar.includes(ab.id);
-  const carried = !!ab.super || isStep(ab) || !onEquip;
+  const carried = !!ab.super || isTrinket(ab) || !onEquip;
   const full = !on && bar.length >= SLOTS;
   const combos = combosOf(cls, ab);
   const held = (x: Ability): boolean => !!x.super || bar.includes(x.id);
@@ -94,7 +94,7 @@ export function AbilityCard({ ab, cls, bar, onEquip, onSwap, onRemove, onClose }
           <img src={iconPicture(ab.icon)} alt="" draggable={false} />
           <span>
             <strong>{ab.name}</strong>
-            <em>{ab.super ? 'Super' : isStep(ab) ? 'Movement' : ROLE_WORD[ab.role]}</em>
+            <em>{ab.super ? 'Super' : isTrinket(ab) ? 'Trinket' : ROLE_WORD[ab.role]}</em>
             <small>{ab.super ? 'Ready when your meter is full' : timing(ab)}</small>
           </span>
         </header>
@@ -489,7 +489,7 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
                 <b>Use your abilities.</b> {touch ? 'The buttons on the right.' : '1 to 5, or click them.'} They go to your target (the nearest enemy until you choose one). A button that glows lands a combo.
               </li>
               <li>
-                <b>Step out of red circles.</b> A red circle on the ground is an attack about to land. {touch ? 'Tap the blue button' : 'Press Space'} for your Swift Step and get out.
+                <b>Walk out of red circles.</b> A red circle on the ground is an attack about to land: get out of it before it does.
               </li>
               <li>
                 <b>Use your super.</b> When the round gold button is full, {touch ? 'tap it' : 'press Q'}.
@@ -546,8 +546,8 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
               <dd>1 to 5, or click them. They aim themselves at your target</dd>
               <dt>Placed abilities</dt>
               <dd>A comet, a volley, a pyre. With a mouse: press its key, then click where it should land (Esc puts the circle away; the key again drops it on your target). On a touch screen: tap to drop it on your target, or hold the button and push the circle where you want it</dd>
-              <dt>Swift Step</dt>
-              <dd>Space: a quick step the way you’re going, out from under what is about to land on you</dd>
+              <dt>Trinket</dt>
+              <dd>{touch ? 'The broken-chain button' : 'Space'}: breaks you out of every hold (stuns, fears, roots, dazes, silences, slows) and takes off every burn and bleed. Once every 45 seconds</dd>
               <dt>Super</dt>
               <dd>Q, once your meter is full: your class’s big one</dd>
               <dt>Choose an enemy</dt>

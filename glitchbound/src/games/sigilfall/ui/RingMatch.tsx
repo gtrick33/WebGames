@@ -53,7 +53,7 @@ const MAX_STEP = 1 / 45;
 /** A host speaks ten times a second: plenty for frames that coast between. */
 const SEND_EVERY = 0.1;
 /** The thumb cluster's places (Game.css .rb-ring-thumbs .rb-cluster): the bar's first in the corner, its other four
- * on one arc round it, then the Swift Step and the super outside it. */
+ * on one arc round it, then the trinket and the super outside it. */
 const TOUCH_SLOTS = ['basic', 's1', 's2', 's3', 's4', 'dodge', 'ult'] as const;
 
 const clock = (t: number): string => {
@@ -1301,7 +1301,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   Change my setup
                 </button>
               </span>
-              <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. The blue button steps aside; the gold one is your super, once it’s full. Step out of a red circle before it lands. A placed ability: tap it to drop it on your target, or hold it and push the circle where you want it.' : `${[ringKeys.up, ringKeys.left, ringKeys.down, ringKeys.right].map(keyName).join('')} to move · ${keyName(ringKeys.ab1)} to ${keyName(ringKeys.ab5)} for abilities · ${keyName(ringKeys.dash)} to step aside · ${keyName(ringKeys.super)} for your super · Step out of a red circle before it lands · A placed ability: press its key, then click where it should land`}</span>
+              <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. The broken-chain button frees you from any hold; the gold one is your super, once it’s full. Walk out of a red circle before it lands. A placed ability: tap it to drop it on your target, or hold it and push the circle where you want it.' : `${[ringKeys.up, ringKeys.left, ringKeys.down, ringKeys.right].map(keyName).join('')} to move · ${keyName(ringKeys.ab1)} to ${keyName(ringKeys.ab5)} for abilities · ${keyName(ringKeys.dash)} to break free · ${keyName(ringKeys.super)} for your super · Walk out of a red circle before it lands · A placed ability: press its key, then click where it should land`}</span>
             </div>
           )}
           {err && (
@@ -1350,7 +1350,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 const full = cd > gcd ? ab.cd : 1;
                 const sup = !!ab.super;
                 return (
-                  <button key={ab.id} data-tut={sup ? 'super' : i === SLOTS ? 'step' : undefined} className={`rb-ring-ab${isOut(m, me, ab) ? ' is-out' : ''}${ab.id === 'dash' ? ' is-step' : ''}${sup ? ` is-super${charge >= 1 ? ' is-full' : ''}` : ''}${held && ab.anyState ? ' is-ready' : ''}${comboOf(ab) ? ' is-combo' : ''}`} style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined} onPointerDown={(e) => aimApi.current.down(e, ab)} onPointerMove={(e) => aimApi.current.move(e)} onPointerUp={(e) => aimApi.current.up(e)} onPointerCancel={(e) => aimApi.current.cancel(e)} onMouseEnter={() => setTip(ab)} onMouseLeave={() => setTip(null)} aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}>
+                  <button key={ab.id} data-tut={sup ? 'super' : i === SLOTS ? 'step' : undefined} className={`rb-ring-ab${isOut(m, me, ab) ? ' is-out' : ''}${ab.id === 'trinket' ? ' is-token' : ''}${sup ? ` is-super${charge >= 1 ? ' is-full' : ''}` : ''}${held && ab.anyState ? ' is-ready' : ''}${comboOf(ab) ? ' is-combo' : ''}`} style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined} onPointerDown={(e) => aimApi.current.down(e, ab)} onPointerMove={(e) => aimApi.current.move(e)} onPointerUp={(e) => aimApi.current.up(e)} onPointerCancel={(e) => aimApi.current.cancel(e)} onMouseEnter={() => setTip(ab)} onMouseLeave={() => setTip(null)} aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}>
                     <img src={iconPicture(ab.icon)} alt="" draggable={false} />
                     {sup && charge < 1 && <i className="rb-ring-charge" />}
                     {wait > 0 && <i className="rb-ring-cool" style={{ ['--p' as string]: `${Math.min(1, wait / (full || 1)) * 100}%` }} />}

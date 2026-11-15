@@ -22,15 +22,15 @@ export function usesOf(ab: Ability, ranged: boolean): string[] {
     if (ab.aim === 'ground') say('You place it: put its circle on someone who is stunned, rooted or slowed, or where it catches two.');
     return out;
   }
-  if (ab.id === 'dash') {
-    say('Step out from under anything placed on you: a red circle on the ground means something is about to land there.');
-    say('It also gets you behind a pillar, where nobody can target you.');
+  if (ab.id === 'trinket') {
+    say('Keep it for the hold that would lose you the fight: a long stun or fear while you are low, or while their burst is coming.');
+    say('It also takes off every burn, bleed and curse ticking on you. It comes back slowly, so don’t spend it on a short daze.');
     return out;
   }
 
   if (ab.aim === 'ground') {
     say('You place it: with a mouse, press its key and click the ground; on a touch screen, tap for your target or hold and push the circle.');
-    say(ab.cast > 0 ? 'It lands where you aimed when the cast began, so cast it on someone who is stunned, rooted or busy casting.' : 'It hits everyone on its patch, and it takes a moment to land: a Swift Step gets them out, a slow or a hold keeps them in.');
+    say(ab.cast > 0 ? 'It lands where you aimed when the cast began, so cast it on someone who is stunned, rooted or busy casting.' : 'It hits everyone on its patch, and it takes a moment to land: a quick enemy can run out of it, a slow or a hold keeps them in.');
   }
   const stop = has('interrupt');
   if (stop) say(`Save it for the cast that matters, a heal or a long heavy spell. It cuts the cast off and locks that kind of magic for ${stop.lock} seconds.`);
@@ -73,7 +73,7 @@ export function usesOf(ab: Ability, ranged: boolean): string[] {
     say('Call them as the fight is joined: they go for whoever you have chosen, or the nearest enemy they can see.');
     say('They walk slower than a hero, and they can be held and cut down: fight beside them, and an enemy has two more to deal with.');
   }
-  if (has('blink') || has('leap') || has('dash')) say('Use it to get out of melee reach, or behind a pillar so they lose sight of you.');
+  if (has('blink') || has('leap')) say('Use it to get out of melee reach, or behind a pillar so they lose sight of you.');
   if (has('break') || has('free')) say('It gets you out of roots and slows: use it to escape, or to stay on a target who keeps you slowed.');
   if (has('speed') && !has('break')) say('Run faster to catch a target or to open a gap.');
   const wound = has('antiheal');

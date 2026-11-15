@@ -9882,11 +9882,7 @@ html.rb-touch-playing textarea {
   border-color: #fff;
   box-shadow: 0 0 10px #ffe39a;
 }
-/* the Swift Step, and the super with its meter filling round its rim: gold, and alight when full */
-.rb-ring-ab.is-step {
-  margin-left: 7px;
-  border-color: #7fe0ff;
-}
+/* the super with its meter filling round its rim: gold, and alight when full */
 .rb-ring-ab.is-super {
   width: clamp(44px, 8.6cqw, 62px);
   height: clamp(44px, 8.6cqw, 62px);

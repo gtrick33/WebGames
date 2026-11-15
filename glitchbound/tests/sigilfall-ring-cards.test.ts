@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, barCombos, combosOf, DASH, kitOf, SUPERS, ultsOf, type Ability } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, barCombos, combosOf, kitOf, TRINKET, SUPERS, ultsOf, type Ability } from '../src/games/sigilfall/arena/abilities';
 import { usesOf } from '../src/games/sigilfall/arena/advice';
 import { RANGED, type Aura } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
@@ -18,7 +18,7 @@ import { ARENA_H, ARENA_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/ma
 import { TILE } from '../src/games/sigilfall/sim/map';
 import * as THREE from 'three';
 
-const readable = (cls: (typeof CLASS_IDS)[number]): Ability[] => [...kitOf(cls), SUPERS[cls], DASH];
+const readable = (cls: (typeof CLASS_IDS)[number]): Ability[] => [...kitOf(cls), SUPERS[cls], TRINKET];
 
 describe('Sigilfall: an ability can be read before it is taken', () => {
   it('every ability says when to press it, in one to three whole sentences', () => {

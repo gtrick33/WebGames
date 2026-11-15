@@ -34,7 +34,8 @@ export const RING_ACTIONS: { id: RingAction; name: string; group: 'Move' | 'Abil
   { id: 'ab3', name: 'Ability 3', group: 'Abilities' },
   { id: 'ab4', name: 'Ability 4', group: 'Abilities' },
   { id: 'ab5', name: 'Ability 5', group: 'Abilities' },
-  { id: 'dash', name: 'Swift Step', group: 'Abilities' },
+  // (the trinket's: still `dash`, the Swift Step's id before it, so that keys already set keep working)
+  { id: 'dash', name: 'Trinket', group: 'Abilities' },
   { id: 'super', name: 'Super', group: 'Abilities' },
   { id: 'nextFoe', name: 'Next enemy', group: 'Targets' },
   { id: 'nextFriend', name: 'Next ally', group: 'Targets' },

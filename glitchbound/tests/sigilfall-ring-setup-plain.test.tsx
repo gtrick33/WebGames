@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fireEvent, render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, DASH, PRESETS } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, PRESETS, TRINKET } from '../src/games/sigilfall/arena/abilities';
 import { setsOf } from '../src/games/sigilfall/arena/ladder';
 import { Match } from '../src/games/sigilfall/arena/sim';
 import { playstyleOf } from '../src/games/sigilfall/arena/styles';
@@ -30,11 +30,11 @@ describe('The Ring’s setup: abilities, talents and a super, and nothing else',
     expect(getByText('← Playstyles')).toBeTruthy();
   });
 
-  it('beside the bar, everyone’s Swift Step and their super; under it, the talents alone', () => {
+  it('beside the bar, everyone’s trinket and their super; under it, the talents alone', () => {
     const p = PRESETS.warrior[0]!;
     const { container } = render(<BarRow bar={p.bar} cls="warrior" ult={p.ult} />);
     const titles = [...container.querySelectorAll('.rb-rs-slot.is-token')].map((b) => b.getAttribute('title'));
-    expect(titles[0]).toBe(`Swift Step: ${DASH.text}`);
+    expect(titles[0]).toBe(`Unbinding Trinket: ${TRINKET.text}`);
     expect(titles[1]).toMatch(/^Super: /);
     const chips = render(<SetupChips cls="warrior" setup={{ bar: p.bar, talents: p.talents }} />).container;
     expect(chips.querySelectorAll('.rb-rs-chip')).toHaveLength(3);

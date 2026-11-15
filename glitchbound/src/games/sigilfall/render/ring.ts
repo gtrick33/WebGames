@@ -196,8 +196,7 @@ export class RingFx {
         // (what it is made of, as it leaves the hand: your own a little louder than the rest)
         const vol = e.id === myId ? 0.7 : 0.4;
         const melee = ab.range > 0 && ab.range <= 40;
-        if (ab.id === 'dash') sound('dodge', vol);
-        else if (ab.super) sound(SUPER_SOUND[ab.school] ?? 'nova', 0.9);
+        if (ab.super) sound(SUPER_SOUND[ab.school] ?? 'nova', 0.9);
         else if (ab.role === 'heal' || ab.aim === 'friend') sound('buff', vol * 0.8);
         // (the ground torn open for the dead)
         else if (ab.role === 'summon') sound('rift', vol);
@@ -803,7 +802,7 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
       q.put({ kind: FX.spark, x: o.x + Math.sin(i * 2.1 + o.x) * 6, y: o.y, up: 8 + u * 22, w: 4 - u * 2.4, a: '#c8ffd4', t: 0.2, alpha: 1 - u });
     }
   }
-  // a Swift Step: a streak of light behind
+  // a leap or a rush: a streak of light behind
   for (const f of m.fighters) {
     if (!f.dash || f.dead || unseen(f)) continue;
     for (let i = 1; i <= 4; i++) {

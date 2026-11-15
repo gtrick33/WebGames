@@ -1,6 +1,6 @@
-import { ABILITIES, DASH, type Ability } from './abilities';
+import { ABILITIES, TRINKET, type Ability } from './abilities';
 import { ARENA_H, ARENA_W } from './maps';
-import { BASE_SPEED, HERO_R, RANGED, type Fighter, type Match, type MoveInput, type Zone } from './sim';
+import { HERO_R, RANGED, type Fighter, type Match, type MoveInput, type Zone } from './sim';
 import { armored, brace, chainHealer, focusBias, fumble, guard, holdSuper, knows, lapse, lateKick, nextLook, peel, SHARP_FROM } from './tactics';
 
 /**
@@ -86,6 +86,7 @@ export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: numb
   const hero = target.pet ? (enemies.find((e) => e.id === m.masterOf(target).id) ?? enemies[0]!) : target;
   f.target = hero.id;
 
+  breakFree(m, f, b, skill, enemies);
   // in the shroud: nothing that would bring them out of it but the blow it was taken for
   if (m.hidden(f) && !m.held(f)) {
     f.target = hero.id;
@@ -407,7 +408,7 @@ function unleash(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter
   if (!m.blocked(f, sup, target)) m.press(f.id, sup.id);
 }
 
-/** Something placed is about to land on them: which way out is nearest (and a Swift Step when walking won't do). */
+/** Something placed is about to land on them: which way out is nearest. */
 function dodge(m: Match, f: Fighter, b: Brain, skill: number): MoveInput | null {
   if (m.held(f) || m.rooted(f) || f.dash) return null;
   if (b.shots.size > 24) b.shots.clear();
@@ -434,14 +435,7 @@ function dodge(m: Match, f: Fighter, b: Brain, skill: number): MoveInput | null 
     best = { z, out, sx: d > 1 ? dx / len : f.dirX || 1, sy: d > 1 ? dy / len : f.dirY };
   }
   if (!best) return null;
-  const step = keepIn(m, f, best.sx, best.sy);
-  // further out than they can walk in the time left: a Swift Step, if it's ready (and not at the price of a cast nearly done)
-  if (best.out > BASE_SPEED * f.mods.speed * best.z.t * 0.9 && skill > 0.35 && !(f.cast && f.cast.dur - f.cast.t < 0.6) && !m.blocked(f, DASH)) {
-    f.dirX = step.mx;
-    f.dirY = step.my;
-    m.press(f.id, DASH.id);
-  }
-  return step;
+  return keepIn(m, f, best.sx, best.sy);
 }
 
 /** A way to step that doesn't run into the wall, stone or the Gloam: turned about if it would. */
@@ -466,6 +460,22 @@ function healSelf(m: Match, f: Fighter): void {
     f.friend = f.id;
     m.press(f.id, ab.id);
   }
+}
+
+/**
+ * The trinket (abilities.ts TRINKET): out of a hold that matters, or out from under burns that are eating them. A
+ * sharp hand keeps it for a long hold while in danger; a newcomer spends it on the first thing that holds them.
+ */
+function breakFree(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[]): void {
+  if (m.blocked(f, TRINKET)) return;
+  const hold = f.auras.find((a) => !!a.cc && a.harmful);
+  const danger = hpShare(f) < 0.6 || enemies.some((e) => e.target === f.id && Math.hypot(e.x - f.x, e.y - f.y) < 70);
+  if (hold && hold.t >= 1 - skill * 0.4 && (danger || skill < 0.4) && b.rand() < 0.25 + skill * 0.6) {
+    m.press(f.id, TRINKET.id);
+    return;
+  }
+  const dots = f.auras.filter((a) => a.kind === 'dot' && a.harmful).length;
+  if (dots >= 2 && hpShare(f) < 0.45 && b.rand() < 0.1 + skill * 0.3) m.press(f.id, TRINKET.id);
 }
 
 /* ------------------------------------------------------------------ the shroud */
@@ -545,11 +555,6 @@ function walk(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[],
     const mine = Math.hypot(sg.x - f.x, sg.y - f.y);
     const theirs = Math.min(...enemies.map((e) => Math.hypot(sg.x - e.x, sg.y - e.y)));
     if (mine < theirs + 20 || (hpShare(f) < 0.5 && mine < 160)) {
-      if (mine > 70 && skill > 0.5 && !m.blocked(f, DASH)) {
-        f.dirX = sg.x - f.x;
-        f.dirY = sg.y - f.y;
-        m.press(f.id, DASH.id);
-      }
       return steer(m, f, b, sg.x, sg.y);
     }
   }
@@ -589,12 +594,6 @@ function walk(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[],
   }
   if (melee) {
     const d = Math.hypot(target.x - f.x, target.y - f.y);
-    // a Swift Step closes the gap on someone running
-    if (d > 70 && d < 140 && skill > 0.45 && m.sees(f, target) && !m.blocked(f, DASH) && b.rand() < skill) {
-      f.dirX = target.x - f.x;
-      f.dirY = target.y - f.y;
-      m.press(f.id, DASH.id);
-    }
     // (a blade that cuts deeper from behind works round to their back once close)
     if (d < 40 && bar.some((a) => a.combo?.behind) && !m.behind(f, target) && !m.held(target)) {
       const back = backOf(target, 14);
@@ -607,11 +606,11 @@ function walk(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[],
     // stay in sight of the one who needs you, and away from what's on you
     const hurt = [...friends].sort((a, c) => hpShare(a) - hpShare(c))[0]!;
     if (hurt !== f && (!m.sees(f, hurt) || Math.hypot(hurt.x - f.x, hurt.y - f.y) > 150)) return peek(m, f, b, hurt);
-    if (nearD < 60 && hpShare(f) < 0.8 && !m.held(near) && !m.rooted(near)) return flee(m, f, b, near, skill);
+    if (nearD < 60 && hpShare(f) < 0.8 && !m.held(near) && !m.rooted(near)) return flee(m, f, b, near);
     return strafe(m, f, b, near, 120);
   }
   // a caster or an archer: in sight, at range, away from blades (unless the blade is held), and never standing still
-  if (nearD < 56 && !m.held(near) && !m.rooted(near)) return flee(m, f, b, near, skill);
+  if (nearD < 56 && !m.held(near) && !m.rooted(near)) return flee(m, f, b, near);
   if (!m.sees(f, target) || Math.hypot(target.x - f.x, target.y - f.y) > 165) return peek(m, f, b, target);
   return strafe(m, f, b, target, 125);
 }
@@ -661,13 +660,7 @@ function strafe(m: Match, f: Fighter, b: Brain, from: Fighter, want: number): Mo
   return step;
 }
 
-function flee(m: Match, f: Fighter, b: Brain, from: Fighter, skill = 0.5): MoveInput {
-  // a Swift Step out from under a blade
-  if (skill > 0.5 && !f.cast && Math.hypot(from.x - f.x, from.y - f.y) < 34 && !m.blocked(f, DASH) && b.rand() < skill * 0.5) {
-    f.dirX = f.x - from.x || 1;
-    f.dirY = f.y - from.y;
-    m.press(f.id, DASH.id);
-  }
+function flee(m: Match, f: Fighter, b: Brain, from: Fighter): MoveInput {
   // away, unless that's into a wall: then round along it
   const dx = f.x - from.x;
   const dy = f.y - from.y;

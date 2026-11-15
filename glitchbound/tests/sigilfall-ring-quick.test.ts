@@ -4,7 +4,7 @@
  * they are grey whenever the enemy [is out of] line of sight which is not correct behaviour".
  */
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, DASH, PRESETS, type Ability } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, PRESETS, type Ability } from '../src/games/sigilfall/arena/abilities';
 import { ARENA_H } from '../src/games/sigilfall/arena/maps';
 import { GATES, Match, type FighterSetup } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
@@ -13,7 +13,7 @@ import { DEFAULT_SETTINGS, validateSettings } from '../src/games/sigilfall/progr
 import { autoPoint, isOut } from '../src/games/sigilfall/ui/ringAim';
 
 const fighter = (team: 0 | 1, cls: ClassId, bar?: string[]): FighterSetup => ({ team, cls, name: cls, bar: bar ?? PRESETS[cls][0]!.bar });
-const EVERY: Ability[] = [...Object.values(ABILITIES), DASH];
+const EVERY: Ability[] = Object.values(ABILITIES);
 
 /** A match in its fight, the foe either in plain sight 70 off or straight behind the nearest stone. */
 function match(cls: ClassId, hidden: boolean): Match {

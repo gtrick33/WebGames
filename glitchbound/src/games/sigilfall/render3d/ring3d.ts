@@ -398,8 +398,8 @@ export class RingStage implements RingView {
   swing(id: number, abId: string, starting = false): void {
     const ab = ABILITIES[abId];
     const s = this.motions.get(id);
-    // (a Swift Step is its own streak, not a swing)
-    if (!s || !ab || starting || ab.id === 'dash') return;
+    // (the trinket is no swing)
+    if (!s || !ab || starting || ab.id === 'trinket') return;
     const has = (k: string): boolean => ab.effects.some((e) => e.k === k);
     const holds = (cc: string): boolean => ab.effects.some((e) => (e.k === 'cc' || e.k === 'trap') && e.cc === cc);
     const melee = ab.range > 0 && ab.range <= 40;

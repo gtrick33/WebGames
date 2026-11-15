@@ -1,5 +1,5 @@
 import type { ClassId } from '../data/types';
-import { ABILITIES, BODY, DASH, GCD, SIGIL, SLOTS, superOf, ultFor, ultOf, type Ability, type CcKind, type Effect } from './abilities';
+import { ABILITIES, BODY, GCD, SIGIL, SLOTS, TRINKET, superOf, ultFor, ultOf, type Ability, type CcKind, type Effect } from './abilities';
 import { ARENA_H, ARENA_W, ENTRY_GATES, MAPS, type Pillar } from './maps';
 import { ARM, cleanTalents, EXECUTE, NEAR, RALLY, TALENT_BY_ID, type Does, type Talent, type Tune } from './talents';
 
@@ -238,7 +238,7 @@ export interface Fighter {
    * put the last on them (its picture on their nameplate: a Toad Hex for a daze).
    */
   dr: Partial<Record<CcKind, DrState>>;
-  /** A rush, a throw or a step on its way: where to, how fast, and whether it is a Swift Step (a shoulder check looks for whom it ends beside). */
+  /** A rush, a throw or a step on its way: where to, how fast, and whether it is a Guardian Leap off the trinket (a shoulder check looks for whom it ends beside). */
   dash: { x: number; y: number; speed: number; step?: boolean } | null;
   queued: { ab: string; t: number; at?: { x: number; y: number } } | null;
   fearX: number;
@@ -297,7 +297,6 @@ export interface TalentState {
   hidden?: number;
   coverT?: number;
   wasHeld?: boolean;
-  back?: { x: number; y: number; until: number };
   /** Sun and moon: a heal is owed its share (`heal`), and a hit is (`hit`). */
   heal?: boolean;
   hit?: boolean;
@@ -618,9 +617,9 @@ export class Match {
     return this.phase === 'fight' && this.zoneAt(f.x, f.y) > 1;
   }
 
-  /** The abilities everyone has besides their bar: the Swift Step and their class's super. */
+  /** The abilities everyone has besides their bar: the trinket and their class's super. */
   extras(f: Fighter): Ability[] {
-    return [DASH, ultOf(f.cls, f.ult)];
+    return [TRINKET, ultOf(f.cls, f.ult)];
   }
 
   /** Everything solid right now: the stone, and the gates until they lift. */
@@ -758,7 +757,6 @@ export class Match {
     // (rousing the dead wants some standing, unless it calls them up first)
     if (ab.effects.some((e) => e.k === 'frenzy') && !ab.effects.some((e) => e.k === 'raise') && !this.fighters.some((o) => o.pet?.owner === f.id && !o.dead)) return 'None of your dead stand';
     // (a blink or a stag's leap goes even from roots)
-    if (ab.effects.some((e) => e.k === 'dash') && this.rooted(f) && !f.perks.does.fold && !f.perks.does.stag) return 'Rooted';
     if ((f.cds[ab.id] ?? 0) > 0) return 'Not ready yet';
     if (!ab.free && f.gcd > 0) return 'Not ready yet';
     if (ab.aim === 'ground' && at) {
@@ -855,8 +853,8 @@ export class Match {
     f.queued = null;
     // starting something else lets go of the last cast (a free ability goes off alongside it)
     if (!ab.free && f.cast) this.endCast(f);
-    // (out of the shroud with anything but a quiet step or a Swift Step: a cast at once, a blow as it lands)
-    const opens = this.hidden(f) && !ab.quiet && ab.id !== DASH.id;
+    // (out of the shroud with anything but a quiet one, the trinket among them: a cast at once, a blow as it lands)
+    const opens = this.hidden(f) && !ab.quiet;
     // (whatever brings them out of the shroud starts a fight: they don't slip back in at once)
     if (opens) f.fought = this.clock;
     if (ab.cast > 0 || ab.channel) {
@@ -1178,8 +1176,8 @@ export class Match {
         this.events.push({ k: 'word', id: t.id, word: 'Knocked back', bad: true });
         return;
       }
-      case 'dash':
-        this.swiftStep(f, e.dist);
+      case 'unbound':
+        this.unbound(f);
         return;
       case 'veil':
         this.veil(f, ab);
@@ -1362,18 +1360,18 @@ export class Match {
   }
 
   /**
-   * The Swift Step, and what a talent makes of it: a snare left behind (Wild Snare), what was taken lately given back
-   * (Rewind), a curse shed (Shed Skin), a stag's shape (Stag Form), the way back (Way Back), an enemy dragged along (Drag
-   * Below), a leap to a friend (Guardian Leap), a blink (Fold Space). One that ends beside an enemy may knock them down
-   * (Shoulder Check): that is seen when it ends (arrive).
+   * The trinket has broken them free (its hold and its burns are gone already: the token and undot before this), and
+   * what a talent makes of it: a snare left where they stand (Wild Snare), what was taken lately given back (Rewind), a
+   * curse shed (Shed Skin), a stag's shape (Stag Form), a ward of shadow (Shadow Ward), the nearest enemy dragged in
+   * (Drag Below), a leap to a friend (Guardian Leap), a blink (Fold Space), and the nearest enemy knocked down (Shoulder
+   * Check: when a leap lands, or at once). These were the Swift Step's until it was taken out (2026-11-15).
    */
-  private swiftStep(f: Fighter, dist: number): void {
+  private unbound(f: Fighter): void {
     const does = f.perks.does;
-    this.endCast(f);
     const say = (k: keyof Does): void => {
       this.events.push({ k: 'word', id: f.id, word: abOfDoing(f.cls, k).name });
     };
-    // (a Wild Snare is left where the step began: a trap of the ranger's own, that holds rather than dazes)
+    // (a Wild Snare is left where they stand: a trap of the ranger's own, that holds rather than dazes)
     const snare = f.perks.snare;
     if (snare && this.ready(f, 'snare')) {
       f.procs.snare = this.clock + snare.every;
@@ -1394,39 +1392,21 @@ export class Match {
     }
     if (does.stag) {
       const base = { ab: abOfDoing(f.cls, 'stag').id, src: f.id, harmful: false, magic: false, dur: does.stag.dur };
-      f.auras = f.auras.filter((a) => a.kind !== 'slow' && a.cc !== 'root');
       this.addAura(f, { ...base, kind: 'speed', n: does.stag.pct / 100 });
       this.addAura(f, { ...base, kind: 'free', n: 0 });
     }
-    if (does.back) {
-      const b = f.tal.back;
-      if (b && this.clock <= b.until) {
-        f.tal.back = undefined;
-        f.x = b.x;
-        f.y = b.y;
-        f.dash = null;
-        say('back');
-        return;
-      }
-      f.tal.back = { x: f.x, y: f.y, until: this.clock + does.back.within };
+    if (does.shadeward) {
+      this.addAura(f, { ab: abOfDoing(f.cls, 'shadeward').id, src: f.id, kind: 'absorb', harmful: false, magic: true, dur: does.shadeward.dur, n: Math.round(f.maxHp * does.shadeward.pct) });
+      say('shadeward');
     }
-    const d = Math.hypot(f.dirX, f.dirY) || 1;
-    const ux = f.dirX / d;
-    const uy = f.dirY / d;
     if (does.drag && this.ready(f, 'drag')) {
-      // (toward someone: the way the step goes, within reach and sight)
+      // (the nearest enemy within reach and sight, dragged to their side)
       const foe = this.enemiesOf(f)
-        .filter((o) => {
-          const ox = o.x - f.x;
-          const oy = o.y - f.y;
-          const od = Math.hypot(ox, oy) || 1;
-          return !o.pet && !this.unseen(o, f) && od <= does.drag!.reach && (ox * ux + oy * uy) / od > 0.7 && this.sees(f, o) && !o.auras.some((a) => a.kind === 'immune');
-        })
+        .filter((o) => !o.pet && !this.unseen(o, f) && Math.hypot(o.x - f.x, o.y - f.y) <= does.drag!.reach && this.sees(f, o) && !o.auras.some((a) => a.kind === 'immune'))
         .sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y))[0];
-      // (they come along to where the step ends: the step is still a step)
       if (foe) {
         f.procs.drag = this.clock + does.drag.every;
-        this.drag(foe, f.x + ux * dist, f.y + uy * dist, HERO_R * 2 + 2);
+        this.drag(foe, f.x, f.y, HERO_R * 2 + 2);
         this.addAura(foe, { ab: abOfDoing(f.cls, 'drag').id, src: f.id, kind: 'slow', harmful: true, magic: false, dur: does.drag.dur * foe.mods.tenacity, n: does.drag.pct / 100 });
         say('drag');
       }
@@ -1441,18 +1421,16 @@ export class Match {
         say('leap');
         return;
       }
-      dist *= does.leap.far;
     }
     if (does.fold) {
-      f.auras = f.auras.filter((a) => a.kind !== 'slow' && a.cc !== 'root');
+      const d = Math.hypot(f.dirX, f.dirY) || 1;
       f.dash = null;
-      this.blinkTo(f, ux, uy, dist * does.fold.far);
-      return;
+      this.blinkTo(f, f.dirX / d, f.dirY / d, does.fold.far);
     }
-    f.dash = { x: f.x + ux * dist, y: f.y + uy * dist, speed: 430, step: true };
+    this.arrive(f);
   }
 
-  /** A Swift Step has ended: a shoulder check knocks down whoever it ended near. */
+  /** The trinket's work is done where they stand (or a Guardian Leap has landed): a shoulder check knocks down whoever is near. */
   private arrive(f: Fighter): void {
     const check = f.perks.does.check;
     if (!check || !this.ready(f, 'check')) return;

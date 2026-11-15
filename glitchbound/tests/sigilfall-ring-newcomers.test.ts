@@ -52,7 +52,9 @@ describe('The Ring for newcomers: plain words', () => {
     m.step(GATES + 0.01, {});
     const foe = m.fighters[1]!;
     foe.auras.push({ ab: 'm-chill', kind: 'cc', cc: 'stun', src: 0, t: 2, dur: 2, harmful: true, magic: true, n: 0 });
-    // (there is no charm to break free with since 2026-11-15: a hold is waited out)
+    // (the trinket breaks it while it is ready, and says so; once spent, the hold is waited out)
+    expect(plainWhy(m, foe, 'You can’t do that now', ABILITIES['w-hew'])).toBe('You’re stunned: your trinket breaks you free');
+    foe.cds.trinket = 30;
     expect(plainWhy(m, foe, 'You can’t do that now', ABILITIES['w-hew'])).toBe('You’re stunned and can’t act yet');
     expect(plainWhy(m, foe, 'Too far away', ABILITIES['w-hew'])).toMatch(/walk up/);
     expect(plainWhy(m, foe, 'Too far away', ABILITIES['m-lash'])).toMatch(/get closer/);
@@ -69,12 +71,12 @@ describe('The Ring for newcomers: hints and lessons', () => {
     me.charge = 1;
     m.zones.push({ ab: 'm-super', src: 1, team: 1, x: me.x, y: me.y, r: 60, t: 0.8, dur: 0.8 });
     expect(hintNow(m, me, [], KEYS)?.id).toBe('circle');
-    expect(hintNow(m, me, [], KEYS)?.text).toMatch(/press Space/);
+    expect(hintNow(m, me, [], KEYS)?.text).toMatch(/Walk out of it/);
     expect(hintNow(m, me, ['circle'], KEYS)?.id).toBe('super');
     expect(hintNow(m, me, ['circle', 'super'], { ...KEYS, touch: true })).toBeNull();
   });
 
-  it('counts a circle that lands on you while your Swift Step was ready, and not one you left', () => {
+  it('counts a circle that lands on you while you were free to walk out, and not one you left', () => {
     const m = new Match({ seed: 3, map: 'sands', fighters: [{ team: 0, cls: 'warrior', name: 'a', bar: PRESETS.warrior[0]!.bar }, { team: 1, cls: 'mage', name: 'b', bar: PRESETS.mage[0]!.bar }] });
     m.step(GATES + 0.01, {});
     const me = m.fighters[0]!;
@@ -132,11 +134,11 @@ describe('The Ring for newcomers: the tutorial', () => {
     for (const s of LOBBY_STEPS) for (const cls of CLASS_IDS) expect(s.text(cls).length).toBeGreaterThan(20);
   });
 
-  it('is not rated, holds the clock, and keeps the player in the Swift Step against a sparring mage', () => {
+  it('is not rated, holds the clock, and keeps the player in the trinket against a sparring mage', () => {
     const { m, tut } = tutorialMatch('warrior');
     expect(m.hold).toBe(true);
     expect(m.fighters[1]!.cls).toBe('mage');
-    expect(m.extras(m.fighters[0]!)[0]!.id).toBe('dash');
+    expect(m.extras(m.fighters[0]!)[0]!.id).toBe('trinket');
     expect(tut.steps[0]).toBe('gates');
     expect(tut.steps.at(-1)).toBe('fight');
     expect(tut.steps).not.toContain('place');
@@ -185,14 +187,11 @@ describe('The Ring for newcomers: the tutorial', () => {
     expect(tut.id).toBe('momentum');
     tut.next();
 
-    // the red circle: slowed while it falls, and passed by stepping out of it
+    // the red circle: slowed while it falls, and passed by walking out of it
     expect(tut.id).toBe('circle');
     run(m, tut, 0.8);
     expect(m.zones.some((z) => z.team === 1)).toBe(true);
     expect(tut.pace()).toBeLessThan(1);
-    me.dirX = -1;
-    me.dirY = 0;
-    expect(m.press(0, 'dash')).toBeNull();
     run(m, tut, 1.2, { mx: -1, my: 0 });
     expect(view().note).toMatch(/dodged/);
 

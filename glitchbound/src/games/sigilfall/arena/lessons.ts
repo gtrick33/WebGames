@@ -1,4 +1,4 @@
-import { ABILITIES, barCombos, DASH } from './abilities';
+import { ABILITIES, barCombos } from './abilities';
 import { CLOSE_FROM, RANGED, type Fighter, type Match, type MatchEvent } from './sim';
 
 /**
@@ -11,12 +11,11 @@ import { CLOSE_FROM, RANGED, type Fighter, type Match, type MatchEvent } from '.
 /** The keys (or buttons) a hint names: a keyboard's, or a phone's buttons. */
 export interface HintKeys {
   touch: boolean;
-  /** The Swift Step's key, and the super's (as they read: "Space", "Q"). */
+  /** The trinket's key (its action is still called `dash`, so saved keys keep working), and the super's (as they read: "Space", "Q"). */
   dash: string;
   super: string;
 }
 
-const stepWord = (k: HintKeys): string => (k.touch ? 'tap the blue button' : `press ${k.dash}`);
 const superWord = (k: HintKeys): string => (k.touch ? 'tap the gold button' : `press ${k.super}`);
 
 export type HintId = 'circle' | 'combo' | 'super' | 'sphere' | 'sigil' | 'gloam';
@@ -36,7 +35,7 @@ export const underCircle = (m: Match, f: Fighter): boolean => m.zones.some((z) =
 export function hintNow(m: Match, me: Fighter | null, seen: readonly string[], keys: HintKeys): { id: HintId; text: string } | null {
   if (!me || me.dead || m.phase !== 'fight') return null;
   const fresh = (id: HintId): boolean => !seen.includes(id);
-  if (fresh('circle') && underCircle(m, me)) return { id: 'circle', text: `A red circle is under you: an attack is about to land there. Get out of it: ${stepWord(keys)} for your Swift Step.` };
+  if (fresh('circle') && underCircle(m, me)) return { id: 'circle', text: 'A red circle is under you: an attack is about to land there. Walk out of it before it lands.' };
   if (fresh('combo')) {
     const ready = me.bar.map((id) => ABILITIES[id]).find((ab) => ab && ab.aim !== 'near' && m.comboReady(me, ab, m.aimOf(me, ab)));
     if (ready) return { id: 'combo', text: `${ready.name} is glowing: it lands a combo right now and hits much harder. Use it!` };
@@ -54,7 +53,7 @@ export interface MatchLog {
   fought: number;
   /** Seconds they could have acted but stood too far from every enemy to reach them. */
   outOfReach: number;
-  /** The other side's circles that landed on them while their Swift Step was ready. */
+  /** The other side's circles that landed on them while they were free to walk out. */
   circlesTaken: number;
   /** Seconds their super sat full. */
   superIdle: number;
@@ -77,8 +76,8 @@ const circleKey = (ab: string, x: number, y: number): string => `${ab}@${Math.ro
 /**
  * Keeps a match's log: called each frame with the time that passed (in the match's own seconds) and the events not yet
  * read, before they are taken away. `enemyCircles` is the log's own memory of the other side's circles while they fall:
- * whether, the last frame before each lands, its target stood in it with their Swift Step ready (what it does as it
- * lands, a stun, is no excuse).
+ * whether, the last frame before each lands, its target stood in it free to move (what it does as it lands, a stun,
+ * is no excuse).
  */
 export function keepLog(log: MatchLog, m: Match, me: Fighter | null, h: number, enemyCircles: Map<string, boolean>, events: readonly MatchEvent[] = m.events): void {
   if (!me || m.phase !== 'fight') return;
@@ -90,7 +89,7 @@ export function keepLog(log: MatchLog, m: Match, me: Fighter | null, h: number, 
     enemyCircles.delete(key);
     if (could && !me.dead && Math.hypot(me.x - e.x, me.y - e.y) <= e.r) log.circlesTaken++;
   }
-  const ready = !me.dead && (me.cds[DASH.id] ?? 0) <= 0 && !m.held(me);
+  const ready = !me.dead && !m.held(me) && !m.rooted(me);
   for (const z of m.zones) if (z.team !== me.team) enemyCircles.set(circleKey(z.ab, z.x, z.y), ready && Math.hypot(me.x - z.x, me.y - z.y) <= z.r);
   if (me.dead || !(h > 0)) return;
   log.fought += h;
@@ -107,7 +106,7 @@ export function keepLog(log: MatchLog, m: Match, me: Fighter | null, h: number, 
  */
 export function lessonOf(log: MatchLog, me: Fighter, keys: HintKeys): string | null {
   const secs = (n: number): string => `${Math.round(n)} seconds`;
-  if (log.circlesTaken >= 2) return `${log.circlesTaken} red circles landed on you while your Swift Step was ready. When a red circle appears under you, ${stepWord(keys)} to step out before it lands.`;
+  if (log.circlesTaken >= 3) return `${log.circlesTaken} red circles landed on you. When a red circle appears under you, start walking out of it at once: the nearest edge is the quickest way out.`;
   if (log.outOfReach >= 10 && log.outOfReach >= log.fought * 0.3) {
     if (RANGED.has(me.cls)) return `You spent ${secs(log.outOfReach)} too far away for your spells. Stay within reach of your target.`;
     const rush = me.bar.map((id) => ABILITIES[id]).find((ab) => ab?.effects.some((e) => e.k === 'charge' || e.k === 'behind' || e.k === 'pull'));

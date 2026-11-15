@@ -3,7 +3,7 @@ import type { ClassId } from '../data/types';
 /**
  * The Ring: Sigilfall's arena. Its abilities are its own, apart from the campaign's: the numbers are flat and equal for
  * everyone so that a level 1 hero and a level 60 hero fight the same fight. Every class has twelve and takes five into
- * each match (plus the Swift Step and its super), so choosing them is half the game. (Four, until the owner asked for
+ * each match (plus the trinket and its super), so choosing them is half the game. (Four, until the owner asked for
  * "one more spell slot for each class and spec" on 2026-11-15.) Plain data with no imports but types: the icon build
  * reads it. The rules are the classic arena's; the names and the art are ours.
  */
@@ -58,7 +58,8 @@ export type Effect =
   /** Throws them this far back, away from whoever hit them, and cuts off what they were casting. */
   | { k: 'knock'; dist: number }
   /** A quick step this far the way you're going. */
-  | { k: 'dash'; dist: number }
+  /** The trinket's talents (arena/talents.ts): what each makes of breaking free. */
+  | { k: 'unbound' }
   /**
    * Raises `n` of the dead beside their master, to fight for them for `life` seconds: each with `hp` of its own and a
    * blow of `dmg` (before its master's share) every so often that slows by `slow`% for a moment (their master's
@@ -135,8 +136,8 @@ export interface Ability {
   zip?: boolean;
   /**
    * `ground`: how wide the patch is (its radius), and how long it takes to land once placed. A patch is at least as
-   * wide as a fighter walks in that time, so one placed on somebody lands on them unless they step (Swift Step) or
-   * are quickened out of it: what is placed by a tap does not miss someone who only walks.
+   * wide as a fighter walks in that time, so one placed on somebody lands on them unless they are quickened out of
+   * it: what is placed by a tap does not miss someone who only walks.
    */
   area?: number;
   fall?: number;
@@ -176,13 +177,13 @@ export const GCD = 0.75;
 export const SLOTS = 5;
 
 
-/** Everyone's, besides their five: a quick step out from under what is about to fall, or out of reach. */
-export const DASH: Ability = a({ id: 'dash', cls: 'any', name: 'Swift Step', text: 'A quick step the way you’re going: out from under what is about to fall on you, or out of a blade’s reach.', icon: 'dodge_roll_arrow_on_teal', color: '#bff4ff', school: 'physical', role: 'mobility', aim: 'self', range: 0, cast: 0, cd: 5, free: true, effects: [{ k: 'dash', dist: 62 }] });
-
-/*
- * (An Unbinding Charm could take the Swift Step's place, and an oath ride beside the bar, until 2026-11-15, the owner:
- * "remove oaths and the extras, leave only spells, talents and ults". Everyone carries the Swift Step.)
+/**
+ * Everyone's, besides their five: a trinket that breaks every hold on them and every damage over time, usable while
+ * held. It took the Swift Step's place for every class (2026-11-15, the owner: "remove swift step from all classes and
+ * add the same spell to all classes as well - trinket that frees the player from any crowd control effects and dots
+ * with 45s cooldown"); the talents that worked on the step work on it (arena/talents.ts).
  */
+export const TRINKET: Ability = a({ id: 'trinket', cls: 'any', name: 'Unbinding Trinket', text: 'Break free of every hold and every damage over time on you: stuns, fears, roots, dazes, silences, slows, burns, bleeds and curses. Usable while held.', icon: 'broken_chain_links_snapping_on_grey', color: '#ffe39a', school: 'physical', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 45, free: true, anyState: true, quiet: true, effects: [{ k: 'token' }, { k: 'undot' }, { k: 'unbound' }] });
 
 /** The sigil in the middle of the ground (not an ability anyone has: what it gives, for the pictures and the words). */
 export const SIGIL: Ability = a({ id: 'sigil', cls: 'any', name: 'Sigil of Might', text: 'Heals a fifth of your life, fills your super meter by a third and quickens you.', icon: 'radiant_star_burst_on_gold', color: '#ffe27a', school: 'holy', role: 'heal', aim: 'self', range: 0, cast: 0, cd: 0, effects: [{ k: 'speed', pct: 30, dur: 4 }] });
@@ -354,7 +355,7 @@ const KITS: Record<ClassId, Ability[]> = {
   ],
 };
 
-export const ABILITIES: Record<string, Ability> = Object.fromEntries([...Object.values(KITS).flat(), ...Object.values(SUPERS), ...Object.values(SUPERS2), DASH, SIGIL].map((x) => [x.id, x]));
+export const ABILITIES: Record<string, Ability> = Object.fromEntries([...Object.values(KITS).flat(), ...Object.values(SUPERS), ...Object.values(SUPERS2), TRINKET, SIGIL].map((x) => [x.id, x]));
 export const kitOf = (cls: ClassId): Ability[] => KITS[cls];
 
 /**
@@ -475,4 +476,4 @@ export function combosOf(cls: ClassId, ab: Ability): AbilityCombos {
 }
 
 /** Every icon The Ring shows, for the icon build. */
-export const ringIcons = (): string[] => [DASH.icon, SIGIL.icon, ...Object.values(SUPERS).map((x) => x.icon), ...Object.values(SUPERS2).map((x) => x.icon), ...Object.values(KITS).flat().map((x) => x.icon)];
+export const ringIcons = (): string[] => [TRINKET.icon, SIGIL.icon, ...Object.values(SUPERS).map((x) => x.icon), ...Object.values(SUPERS2).map((x) => x.icon), ...Object.values(KITS).flat().map((x) => x.icon)];
