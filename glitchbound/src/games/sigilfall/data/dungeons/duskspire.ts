@@ -745,7 +745,9 @@ const VAELOR: BossDef = {
       rest: [0.75, 1.1],
       enter: [
         { id: 'king:court', w: 1, cd: 0, p: { count: 8 } },
-        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.005 } },
+        // (the Hollowing drains about a third less than it did, 2026-11-15: the King's blows take a third of a hero's
+        // health now, PROGRESSION_BALANCE.md Part 6, and the race against both was not one a hero could win)
+        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.0035 } },
       ],
       patterns: [
         // a scythe of souls swinging from the wall behind his throne, back and forth
@@ -770,7 +772,7 @@ const VAELOR: BossDef = {
       rest: [0.5, 0.8],
       enter: [
         { id: 'roar', w: 1, cd: 0 },
-        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.008, cut: 0.3 } },
+        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.0055, cut: 0.2 } },
         { id: 'king:call', w: 1, cd: 0, p: { count: 3, speed: 46 } },
       ],
       patterns: [
@@ -816,7 +818,7 @@ const VAELOR: BossDef = {
       rest: [0.45, 0.7],
       enter: [
         { id: 'roar', w: 1, cd: 0 },
-        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.011, cut: 0.45 } },
+        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.0075, cut: 0.3 } },
         { id: 'king:summer', w: 1, cd: 0, p: { speed: 17, hunters: 4 } },
       ],
       patterns: [
@@ -839,7 +841,7 @@ const VAELOR: BossDef = {
       rest: [0.35, 0.6],
       enter: [
         { id: 'roar', w: 1, cd: 0 },
-        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.016, cut: 0.55 } },
+        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.011, cut: 0.4 } },
         { id: 'dusk:doom', w: 1, cd: 0, p: { time: 40 } },
       ],
       patterns: [

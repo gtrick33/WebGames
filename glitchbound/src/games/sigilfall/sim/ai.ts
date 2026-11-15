@@ -413,8 +413,8 @@ function victimOf(w: World, e: Enemy): Victim {
  * with huge damage spike").
  */
 export const SPIKE = 1.8;
-/** SPIKE at this foe's level, as far into the harder game as it is (data/classes.ts hardening); a Riftstone run keeps its own. */
-const spike = (w: World, e: Enemy): number => (w.keyRun ? 1 : 1 + (SPIKE - 1) * hardening(e.level));
+/** SPIKE at this foe's level, as far into the harder game as it is (data/classes.ts hardening); Heroic, Mythic and Riftstone keep their own. */
+const spike = (w: World, e: Enemy): number => (w.ownMeasure ? 1 : 1 + (SPIKE - 1) * hardening(e.level));
 
 /** An enemy's blow lands on whoever it was after. */
 function hurtVictim(w: World, v: Victim, dmg: number, o: Parameters<typeof hurtPlayer>[2]): void {

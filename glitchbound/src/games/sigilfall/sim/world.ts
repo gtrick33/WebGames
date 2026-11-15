@@ -311,6 +311,9 @@ export class World {
   encounters: EncounterState[] = [];
   /** The boss whose turn it is, while its patterns run (sim/ai.ts): what it shoots is a barrage, not a blow (spawnProjectile). */
   bossActing: Enemy | null = null;
+  /** The boss patterns whose blow has already taken its floor of the hero's health (sim/combat.ts BLOW_FLOOR), and a count to number them. */
+  floorPaid = new Set<number>();
+  private floorSerial = 0;
   delayed: { t: number; fn: () => void }[] = [];
   /** How far a boss fight has the room under water (0 dry, 1 flooded): the Drowned Priestess's flood, drawn as a sea-green wash. */
   flooded = 0;
@@ -884,17 +887,23 @@ export class World {
     return keyScale(k.key, k.heroLevel).dmg * (k.affixes.includes(boss ? 'tyrannical' : 'fortified') ? 1.15 : 1);
   }
 
-  /** A boss's BOSS_DAMAGE at its level: a Riftstone run keeps its own measure (its clocks were set against it). */
-  bossBoost(level: number): number {
-    return this.keyRun ? 1 : bossDamage(level);
+  /**
+   * Heroic, Mythic and Riftstone runs, hard by choice, keep their own measure, as they do for `challenge` and `depth`:
+   * every hero hits half as hard as they did (HERO_DAMAGE), so everything in them has health to match, and their foes hit
+   * as they did. The harder blows are the campaign's. A Riftstone run's clock (data/keystones.ts KEY_PARS) was set against
+   * the old blows, and Riftstone stands above Mythic as it did.
+   */
+  get ownMeasure(): boolean {
+    return !!this.keyRun || this.tier > 0;
   }
 
-  /**
-   * A Riftstone run keeps its own measure: every hero hits half as hard as they did (HERO_DAMAGE), so everything in the
-   * run has health to match, and its clocks (data/keystones.ts KEY_PARS, set against the old blows) still hold. Its foes
-   * hit as they did, too: the harder blows are the campaign's.
-   */
-  private keyHealth(): number {
+  /** A boss's BOSS_DAMAGE at its level, in the campaign (ownMeasure). */
+  bossBoost(level: number): number {
+    return this.ownMeasure ? 1 : bossDamage(level);
+  }
+
+  /** The health of everything in a run that keeps its own measure: to match the hero's blows (ownMeasure). */
+  private ownHealth(): number {
     return heroDamage(this.hero.level);
   }
 
@@ -919,7 +928,7 @@ export class World {
     // long against the hero's blows as the boss does: a fight's own clock, adds to kill before they reach the boss or a
     // ward to break in time, was set against the hero's old blows)
     const bossRoom = o.room >= 0 && !!this.encounters[o.room]?.def.boss;
-    const hp = Math.round(def.hp * sc.hp * this.hpMul(false) * ch.hp * deep.hp * (o.elite ? 3.2 : 1) * (wild ? WILD.hp : 1) * (this.keyRun ? this.keyHealth() : bossRoom ? bossHealth(level) : 1));
+    const hp = Math.round(def.hp * sc.hp * this.hpMul(false) * ch.hp * deep.hp * (o.elite ? 3.2 : 1) * (wild ? WILD.hp : 1) * (this.ownMeasure ? this.ownHealth() : bossRoom ? bossHealth(level) : 1));
     const e: Enemy = {
       id: this.nextId++,
       def,
@@ -931,7 +940,7 @@ export class World {
       r: def.radius * (def.scale ?? 1) * (o.elite ? 1.25 : 1),
       hp,
       maxHp: hp,
-      dmg: def.dmg * sc.dmg * this.dmgMul(false) * ch.dmg * deep.dmg * (o.elite ? 1.35 : 1) * (wild ? WILD.dmg : 1) * (bossRoom || this.keyRun ? 1 : mobDamage(level)),
+      dmg: def.dmg * sc.dmg * this.dmgMul(false) * ch.dmg * deep.dmg * (o.elite ? 1.35 : 1) * (wild ? WILD.dmg : 1) * (bossRoom || this.ownMeasure ? 1 : mobDamage(level)),
       speedMul: hasted * (elite.includes('frenzied') ? 1.35 : 1),
       atkMul: hasted * (elite.includes('frenzied') ? 1.4 : 1),
       shield: elite.includes('shielded') ? hp * 0.4 : 0,
@@ -990,7 +999,7 @@ export class World {
     const sc = enemyScale(level);
     const bch = this.keyRun || this.tier > 0 ? NO_CHALLENGE : challenge(level, true);
     const deep = this.keyRun || this.tier > 0 ? NO_CHALLENGE : depth(this.region);
-    const hp = Math.round(def.hp * sc.hp * this.hpMul(true) * bch.hp * deep.hp * (this.keyRun ? this.keyHealth() : bossHealth(level)));
+    const hp = Math.round(def.hp * sc.hp * this.hpMul(true) * bch.hp * deep.hp * (this.ownMeasure ? this.ownHealth() : bossHealth(level)));
     const e = this.addEnemy('skeleton', x, y, level, { room, pack: -1 });
     e.def = { ...ENEMIES.skeleton!, id: def.id, name: def.name, sprite: def.sprite, radius: def.radius, mass: 99, resist: {}, armor: 0, xp: def.xp, gold: def.gold, scale: 1 };
     e.r = def.radius;
@@ -1217,7 +1226,11 @@ export class World {
     // burn or poison it leaves on the hero wears them down as it did)
     const by = this.bossActing;
     if (by && t.status) t = { ...t, status: this.wearing(t.status) };
-    if (by && !this.keyRun && t.dmg > 0 && t.floor === undefined) t = { ...t, floor: blowFloor(t.dmg, by.dmg) };
+    if (by && !this.ownMeasure && t.dmg > 0 && t.floor === undefined) {
+      const pat = by.boss?.pattern;
+      if (pat) pat.data.floorOf ??= ++this.floorSerial;
+      t = { ...t, floor: blowFloor(t.dmg, by.dmg), ...(pat ? { floorOf: pat.data.floorOf } : {}) };
+    }
     const tg: Telegraph = { ...t, id: this.nextId++, t: 0, dead: false };
     this.telegraphs.push(tg);
     return tg;
@@ -1232,6 +1245,8 @@ export class World {
     return by && (st.status === 'burn' || st.status === 'poison' || st.status === 'bleed') ? { ...st, power: st.power / this.bossBoost(by.level) } : st;
   }
   spawnWave(x: number, y: number, speed: number, max: number, width: number, dmg: number): void {
+    // (a boss's ring of force is gone through with a well-timed dodge, not stepped out of: like a barrage, it hurts as it did)
+    if (this.bossActing) dmg /= this.bossBoost(this.bossActing.level);
     this.waves.push({ id: this.nextId++, x, y, r: 8, speed, max, width, dmg, hitPlayer: false, dead: false });
   }
   /** Clears enemy attacks in flight (phase changes, respawns). */
@@ -1746,7 +1761,15 @@ export class World {
         }
       if (t.tone !== 'player' && !t.remote && t.dmg > 0 && (t.kind ?? 'danger') === 'danger' && !p.dead && (t.t - dt < t.dur || t.linger > 0) && !t.dead) {
         if (inside(t, p.x, p.y, p.r)) {
-          if (hurtPlayer(this, t.dmg, { fromX: t.x, fromY: t.y, knock: t.knock, status: t.status, source: t.owner >= 0 ? this.enemyById(t.owner) : undefined, floor: t.floor ?? 0 })) t.dmg = 0;
+          // (a pattern's floor is paid once: the second swing of a double cleave lands at its own weight)
+          const paid = t.floorOf !== undefined && this.floorPaid.has(t.floorOf);
+          if (hurtPlayer(this, t.dmg, { fromX: t.x, fromY: t.y, knock: t.knock, status: t.status, source: t.owner >= 0 ? this.enemyById(t.owner) : undefined, floor: paid ? 0 : (t.floor ?? 0) })) {
+            if (t.floor && t.floorOf !== undefined) {
+              this.floorPaid.add(t.floorOf);
+              if (this.floorPaid.size > 64) this.floorPaid.delete(this.floorPaid.values().next().value!);
+            }
+            t.dmg = 0;
+          }
         }
         if (t.t - dt < t.dur) {
           if (t.shape === 'circle' || t.shape === 'donut' || t.shape === 'ring') this.fxBurst(t.x, t.y, t.tone === 'rift' ? '#ff3fd2' : '#ff6a4d', 10, t.r * 0.6);

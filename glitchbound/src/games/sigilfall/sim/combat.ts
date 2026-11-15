@@ -730,8 +730,8 @@ function guarded(w: World, source?: Enemy): void {
  * mage had 1360 health in gear bought with gold the road paid too much of: how hard a boss hits grows with its level,
  * so the better a hero's gear, the less any blow mattered. With a floor counted against the hero's own health, a blow
  * taken always costs something real, however they are dressed. Not a blow's weight above BLOW_MOST. A boss's
- * barrages, the ground it leaves and what it leaves burning carry none (sim/world.ts BOSS_DAMAGE), and a Riftstone run
- * keeps its own measure.
+ * barrages, the ground it leaves and what it leaves burning carry none (sim/world.ts BOSS_DAMAGE), and Heroic, Mythic
+ * and Riftstone keep their own measure (World.ownMeasure).
  */
 export const BLOW_FLOOR = 0.25;
 export const BLOW_MOST = 0.6;
@@ -750,7 +750,7 @@ export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: n
   const reduction = o.pierce ? 0 : armorReduction(stats.armor, o.source?.level ?? w.hero.level);
   // a boss's blow takes at least its floor of the hero's health (BLOW_FLOOR): a telegraph carries its own, a blow the
   // boss strikes itself is reckoned here
-  const floor = o.floor ?? (o.source?.boss && !o.pierce && !w.keyRun ? blowFloor(dmg, o.source.dmg) : 0);
+  const floor = o.floor ?? (o.source?.boss && !o.pierce && !w.ownMeasure ? blowFloor(dmg, o.source.dmg) : 0);
   let d = Math.max(dmg * (1 - reduction), p.maxHp * floor);
   const taken = d;
   if (o.source && hasStatus(o.source, 'weaken')) d *= 1 - statusPower(o.source, 'weaken') / 100;

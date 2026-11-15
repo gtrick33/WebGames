@@ -298,18 +298,22 @@ What changed:
 | Every hero's blows (`data/classes.ts` HERO_DAMAGE) | ×1 | ×0.5 from level 14 (×1 at level 4, growing between); every class and every kind of blow alike, so the classes and trees stand as they did. The ultimate is measured against it and fills as fast as it did. |
 | A boss's health, and everything in its room (`sim/world.ts` BOSS_HEALTH) | ×1 | ×0.5: its fight lasts as long as it did. A boss's own clock (leeches that drink, adds that come, a ward to break) was set against fights of that length. |
 | A boss's blows (BOSS_DAMAGE) | ×1 | ×1.5 by level 30 (×1 at level 4) |
-| The least a boss's blow takes (`sim/combat.ts` BLOW_FLOOR) | none | a quarter of the hero's health for each time over the boss's damage it hits (a cleave of 1.5: 37%; the Sun King's beam of 1.2: 30%), after armor, before walls and shields; never more than 60% |
-| A boss's barrages, the ground it leaves, the burns and poisons it lays | — | as they were: raised with the rest, they were what the bot died to dozens of times over, a chip at a time |
+| The least a boss's blow takes (`sim/combat.ts` BLOW_FLOOR) | none | a quarter of the hero's health for each time over the boss's damage it hits (a cleave of 1.5: 37%; the Sun King's beam of 1.2: 30%), after armor, before walls and shields; never more than 60%; paid once a pattern (the second swing of a double cleave lands at its own weight) |
+| A boss's barrages, its rings of force, the ground it leaves, the burns and poisons it lays | — | as they were: raised with the rest, they were what the bot died to dozens of times over, a chip at a time |
 | The rank and file (MOB_DAMAGE) | ×1 | ×1.5 from level 14; those in a boss's room ×1 |
 | The blows they wind up for (`sim/ai.ts` SPIKE: a caster's circle, a brute's slam, a charger's rush, a swell about to burst) | ×1 | ×1.8 on top |
-| Riftstone | — | its own measure: health to match the halved blows, the old damage (its clocks, KEY_PARS, were set against the old blows) |
+| Heroic, Mythic and Riftstone | — | their own measure, as for `challenge` and `depth`: health to match the halved blows, the old damage (a Riftstone clock, KEY_PARS, was set against the old blows, and Riftstone stands above Mythic as it did) |
 
 The same bot afterwards (14 dungeons × 8 classes, first seed): the biggest blow it took averages a third of its health
 (31 to 37% in the Tomb, the warrior and the paladin as much as the mage, where they took 9 to 14% before); its median
-lowest health is 28% (42%); runs that drank every potion went from 9 to 27. It clears every dungeon with every class
-inside the falls the dungeon tests allow, which are twelve now (six): its mage and druid fall in the last dungeons where
-a player would not (it walks out of its own long casts). Two dungeons only a Riftstone run reaches now (the Rotmother's
-Cistern and the Deepforge Halls) are still tested on Normal, in green gear.
+lowest health is 28% (42%); runs that drank every potion went from 9 to 27. Every class clears every dungeon inside
+the falls the dungeon tests allow, which are twelve now (six), and holds its own in the open lands inside four (two).
+Its mage and druid fall most, in the last dungeons, where a player would not: it walks out of its own long casts.
+
+Two more changes the bot needed, both a player's sense: in melee it steps out of ground that hurts (it stood in the Rot
+Mother's bile to the end, which a player never does; a caster keeps its distance anyway), and Vaelor's Hollowing drains
+about a third less (0.35 to 1.1% of the hero's health a second, from 0.5 to 1.6), as the attrition everywhere else stayed
+as it was: the bot's druid, casting Wrath the whole fight, could not outrun it with his blows at their new weight.
 
 First tries that didn't hold: boss damage ×2.6 with the fight twice as long (the bot fell 44 times to the Sun King; the
 early dungeons could not be cleared at all); ×2.2 with fights a fifth longer (the Rot Mother's leeches drank faster than

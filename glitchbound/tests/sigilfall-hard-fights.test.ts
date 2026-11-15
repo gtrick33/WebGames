@@ -11,7 +11,7 @@
  *   and take at least a share of the hero's own health, however well they are dressed. Its barrages, the ground it
  *   leaves and the burns it lays wear a hero down as they did.
  * - The rank and file hit harder, and the blows they wind up for harder still; those in a boss's room don't.
- * - A Riftstone run keeps its own measure: its clocks were set against the old blows.
+ * - Heroic, Mythic and Riftstone keep their own measure: a Riftstone run's clock was set against the old blows.
  * - What every dungeon asks of the play-bot is in the dungeon tests (HARD_DEATHS).
  */
 import { describe, expect, it } from 'vitest';
@@ -20,6 +20,7 @@ import { BLOW_FLOOR, blowFloor, heroPower, hitEnemy } from '../src/games/sigilfa
 import { BOSS_DAMAGE, BOSS_HEALTH, bossDamage, emptyInput, MOB_DAMAGE, World, type World as W } from '../src/games/sigilfall/sim/world';
 import { SPIKE } from '../src/games/sigilfall/sim/ai';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
+import { ENEMIES, enemyScale } from '../src/games/sigilfall/data/enemies';
 import { TILE } from '../src/games/sigilfall/sim/map';
 import { newWorld, readyHero } from './sigilfall-bot';
 
@@ -117,16 +118,22 @@ describe('Sigilfall: a harder game', () => {
     expect(w.fields[w.fields.length - 1]!.dmg).toBeCloseTo(100 / bossDamage(b.level));
   });
 
-  it('a Riftstone run keeps its own measure: health to match the hero’s blows, and the old blows', () => {
+  it('Heroic, Mythic and Riftstone keep their own measure: health to match the hero’s blows, and the old blows', () => {
     const hero = readyHero('warrior', 60, 'epic');
-    const w = new World({ region: 'tomb-of-the-sun-king', tier: 2, mods: [], hero, settings: { ...DEFAULT_SETTINGS }, seed: 1, key: 3, affixes: [], handIns: false });
-    expect(w.keyRun).not.toBeNull();
-    expect(w.bossBoost(60)).toBe(1);
-    const plain = newWorld('tomb-of-the-sun-king', readyHero('warrior', 60, 'epic'), 1, 2);
-    const a = w.addEnemy('tomb-scarab', 0, 0, 60, { room: -1, pack: -1 });
-    const b = plain.addEnemy('tomb-scarab', 0, 0, 60, { room: -1, pack: -1 });
-    // (the run's own might over Mythic's, from data/keystones.ts, and the hero's halved blows)
-    expect(a.maxHp / b.maxHp).toBeCloseTo((w as unknown as { hpMul(boss: boolean): number }).hpMul(false) / (plain as unknown as { hpMul(boss: boolean): number }).hpMul(false) * heroDamage(60), 2);
-    expect(a.dmg / b.dmg).toBeCloseTo((w as unknown as { dmgMul(boss: boolean): number }).dmgMul(false) / (plain as unknown as { dmgMul(boss: boolean): number }).dmgMul(false) / MOB_DAMAGE, 2);
+    const key = new World({ region: 'tomb-of-the-sun-king', tier: 2, mods: [], hero, settings: { ...DEFAULT_SETTINGS }, seed: 1, key: 3, affixes: [], handIns: false });
+    const mythic = newWorld('tomb-of-the-sun-king', readyHero('warrior', 60, 'epic'), 1, 2);
+    const normal = newWorld('tomb-of-the-sun-king', readyHero('warrior', 60, 'epic'), 1, 0);
+    expect(key.keyRun).not.toBeNull();
+    for (const w of [key, mythic]) {
+      expect(w.ownMeasure).toBe(true);
+      expect(w.bossBoost(60)).toBe(1);
+      const e = w.addEnemy('tomb-scarab', 0, 0, 60, { room: -1, pack: -1 });
+      const def = ENEMIES['tomb-scarab']!;
+      const mul = w as unknown as { hpMul(boss: boolean): number; dmgMul(boss: boolean): number };
+      expect(e.maxHp).toBe(Math.round(def.hp * enemyScale(60).hp * mul.hpMul(false) * heroDamage(60)));
+      expect(e.dmg).toBeCloseTo(def.dmg * enemyScale(60).dmg * mul.dmgMul(false));
+    }
+    expect(normal.ownMeasure).toBe(false);
+    expect(normal.bossBoost(60)).toBe(BOSS_DAMAGE);
   });
 });

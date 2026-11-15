@@ -1,7 +1,7 @@
 /**
  * A simple play-bot for Sigilfall's simulation: it walks to the nearest enemy along the map, keeps a
  * class-appropriate distance, fires everything that is ready, drinks potions, and steps out of (or
- * dodges) enemy telegraphs. It is not clever, which is the point: if it can clear a region and beat
+ * dodges) enemy telegraphs, and in melee out of the ground that hurts. It is not clever, which is the point: if it can clear a region and beat
  * its boss, a person can too.
  */
 import { BOSSES } from '../src/games/sigilfall/data/bosses';
@@ -186,9 +186,18 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
       // (of two at once, the one about to land: a player steps out of the blow that's coming, then the next)
       let danger: (typeof w.telegraphs)[number] | undefined;
       for (const t of w.telegraphs) if (t.tone !== 'player' && (t.kind ?? 'danger') === 'danger' && !t.dead && inside(t, p.x, p.y, p.r) && (!danger || t.dur - t.t < danger.dur - danger.t)) danger = t;
+      // and, in melee, out of ground that hurts (a pool of bile under the boss, a patch of fire), as a player would, rather
+      // than trade blows in it (a caster keeps its distance anyway, and walking breaks its casts)
+      const burning = danger || !isMelee() ? undefined : w.fields.find((fd) => fd.hostile && fd.dmg > 0 && fd.t > 0 && Math.hypot(p.x - fd.x, p.y - fd.y) < fd.r + p.r * 0.5);
       let mx = 0;
       let my = 0;
-      if (danger) {
+      if (burning) {
+        const ax = p.x - burning.x;
+        const ay = p.y - burning.y;
+        const l = Math.hypot(ax, ay) || 1;
+        mx = ax / l;
+        my = ay / l;
+      } else if (danger) {
         let ax = p.x - danger.x;
         let ay = p.y - danger.y;
         if (danger.shape === 'line' || danger.shape === 'cone') {
