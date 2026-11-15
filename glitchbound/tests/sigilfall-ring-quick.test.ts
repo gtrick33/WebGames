@@ -4,7 +4,7 @@
  * they are grey whenever the enemy [is out of] line of sight which is not correct behaviour".
  */
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, DASH, PRESETS, type Ability } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, PRESETS, type Ability } from '../src/games/sigilfall/arena/abilities';
 import { ARENA_H } from '../src/games/sigilfall/arena/maps';
 import { GATES, Match, type FighterSetup } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
@@ -13,7 +13,7 @@ import { DEFAULT_SETTINGS, validateSettings } from '../src/games/sigilfall/progr
 import { autoPoint, isOut } from '../src/games/sigilfall/ui/ringAim';
 
 const fighter = (team: 0 | 1, cls: ClassId, bar?: string[]): FighterSetup => ({ team, cls, name: cls, bar: bar ?? PRESETS[cls][0]!.bar });
-const EVERY: Ability[] = [...Object.values(ABILITIES), DASH];
+const EVERY: Ability[] = Object.values(ABILITIES);
 
 /** A match in its fight, the foe either in plain sight 70 off or straight behind the nearest stone. */
 function match(cls: ClassId, hidden: boolean): Match {
@@ -61,12 +61,12 @@ describe('the Ring: a placed spell and where its target stands', () => {
     expect(aimed).toBeGreaterThan(3);
   });
 
-  it('it is still greyed for what is its own: no mana, a silence', () => {
-    const ab = EVERY.find((a) => a.aim === 'ground' && !a.super && a.mana > 0)!;
+  it('it is still greyed for what is its own: a school locked by a kick', () => {
+    const ab = EVERY.find((a) => a.aim === 'ground' && !a.super && a.school !== 'physical')!;
     const m = match(ab.cls as ClassId, true);
     const me = m.fighters[0]!;
     expect(isOut(m, me, ab)).toBe(false);
-    me.mana = 0;
+    me.locks[ab.school] = 3;
     expect(isOut(m, me, ab)).toBe(true);
   });
 

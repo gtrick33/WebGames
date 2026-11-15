@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { ABILITIES, barCombos, combosOf, kitOf, OATHS, PRESETS, SLOTS, stepOf, STEPS, ultFor, ultOf, ultsOf, type Ability } from '../arena/abilities';
+import { ABILITIES, barCombos, combosOf, kitOf, TRINKET, PRESETS, SLOTS, ultFor, ultOf, ultsOf, type Ability } from '../arena/abilities';
 import { usesOf } from '../arena/advice';
 import type { ClassSets, RingSetup } from '../arena/ladder';
 import { RANGED } from '../arena/sim';
@@ -20,17 +20,14 @@ export function timing(ab: Ability): string {
   if (ab.aim === 'ground') bits.push('Placed');
   else if (ab.range > 40 && ab.aim !== 'near' && ab.aim !== 'self') bits.push('Ranged');
   if (ab.range > 0 && ab.range <= 40) bits.push('Melee');
-  if (ab.mana) bits.push(`${ab.mana} mana`);
   return bits.join(' · ');
 }
 
 export const talentIcon = (t: Talent): string => iconPicture(t.icon ?? ABILITIES[Object.keys(t.tune ?? {})[0] ?? '']?.icon ?? '');
 
-/** The Swift Step or the charm that takes its place: carried beside the bar, never on it. */
-const isStep = (ab: Ability): boolean => STEPS.includes(ab);
 
-/** The bar as it stands: four places, then what every hero has besides (the Swift Step or its charm, and their class's super). */
-export function BarRow({ bar, cls, step, ult, onPick, onHover }: { bar: string[]; cls: ClassId; step?: string; ult?: string; onPick?: (ab: Ability) => void; onHover?: (ab: Ability) => void }) {
+/** The bar as it stands: five places, then what every hero has besides (their class's super). */
+export function BarRow({ bar, cls, ult, onPick, onHover }: { bar: string[]; cls: ClassId; ult?: string; onPick?: (ab: Ability) => void; onHover?: (ab: Ability) => void }) {
   return (
     <div className="rb-rs-slots">
       {Array.from({ length: SLOTS }, (_, i) => {
@@ -41,7 +38,7 @@ export function BarRow({ bar, cls, step, ult, onPick, onHover }: { bar: string[]
           </button>
         );
       })}
-      {[stepOf(step), ultOf(cls, ult ?? ultFor(cls, bar))].map((ab) => (
+      {[ultOf(cls, ult ?? ultFor(cls, bar))].map((ab) => (
         <button key={ab.id} type="button" className={`rb-rs-slot is-token${ab.super ? ' is-super' : ''}`} disabled={!onPick} title={`${ab.super ? 'Super' : ab.name}: ${ab.text}`} onClick={() => onPick?.(ab)} onMouseEnter={() => onHover?.(ab)}>
           <img src={iconPicture(ab.icon)} alt={ab.name} draggable={false} />
         </button>
@@ -50,10 +47,9 @@ export function BarRow({ bar, cls, step, ult, onPick, onHover }: { bar: string[]
   );
 }
 
-/** A setup at a glance: its talents and oath, for the Play page. */
+/** A setup at a glance: its talents, for the Play page. */
 export function SetupChips({ cls, setup }: { cls: ClassId; setup: RingSetup }) {
   const talents = cleanTalents(cls, setup.talents);
-  const oath = OATHS.find((o) => o.id === setup.oath);
   return (
     <div className="rb-rs-chips">
       {talents.map((t) => (
@@ -62,12 +58,6 @@ export function SetupChips({ cls, setup }: { cls: ClassId; setup: RingSetup }) {
           {t.name}
         </span>
       ))}
-      {oath && (
-        <span className="rb-rs-chip is-oath" title={`${oath.name}: ${oath.text}`}>
-          <img src={iconPicture(oath.icon)} alt="" draggable={false} />
-          {oath.name}
-        </span>
-      )}
     </div>
   );
 }
@@ -76,12 +66,14 @@ export function SetupChips({ cls, setup }: { cls: ClassId; setup: RingSetup }) {
  * An ability read before it is taken (the owner: "whenever i click on spell, please add a pop up with info about it,
  * best uses, best combos and 2 buttons - equip or cancel"): what it does, when to press it, what it combines with
  * from this class's kit (and whether that is on the bar), and then the choice. On a full bar, Equip asks which of the
- * four it replaces. The Swift Step and the super are always carried: theirs only closes.
+ * five it replaces. The super is always carried: theirs only closes. Without the choice's handlers
+ * it is only read, and only closes: the Ring's main screen opens it from the bar (the owner, 2026-11-15: "make the
+ * abilities clickable ... so i can see what i have and how to use it").
  */
-function AbilityCard({ ab, cls, bar, onEquip, onSwap, onRemove, onClose }: { ab: Ability; cls: ClassId; bar: string[]; onEquip: () => void; onSwap: (out: string) => void; onRemove: () => void; onClose: () => void }) {
+export function AbilityCard({ ab, cls, bar, onEquip, onSwap, onRemove, onClose }: { ab: Ability; cls: ClassId; bar: string[]; onEquip?: () => void; onSwap?: (out: string) => void; onRemove?: () => void; onClose: () => void }) {
   const [swapping, setSwapping] = useState(false);
   const on = bar.includes(ab.id);
-  const carried = !!ab.super || isStep(ab);
+  const carried = !!ab.super || !onEquip;
   const full = !on && bar.length >= SLOTS;
   const combos = combosOf(cls, ab);
   const held = (x: Ability): boolean => !!x.super || bar.includes(x.id);
@@ -93,13 +85,14 @@ function AbilityCard({ ab, cls, bar, onEquip, onSwap, onRemove, onClose }: { ab:
     </span>
   );
   return (
-    <div className="rb-ring-dialog-wrap is-card" role="dialog" aria-modal="true" aria-label={ab.name} onClick={onClose}>
+    // (only read, from the Ring's main screen: over the game's own screen, as its rules are, not over the whole page)
+    <div className="rb-ring-dialog-wrap is-card is-local" role="dialog" aria-modal="true" aria-label={ab.name} onClick={onClose}>
       <div className="rb-ring-dialog rb-rs-card" onClick={(e) => e.stopPropagation()}>
         <header>
           <img src={iconPicture(ab.icon)} alt="" draggable={false} />
           <span>
             <strong>{ab.name}</strong>
-            <em>{ab.super ? 'Super' : isStep(ab) ? (ab.role === 'mobility' ? 'Movement' : 'Freedom') : ROLE_WORD[ab.role]}</em>
+            <em>{ab.super ? 'Super' : `${ROLE_WORD[ab.role]}${ab === TRINKET ? ' · any class' : ''}`}</em>
             <small>{ab.super ? 'Ready when your meter is full' : timing(ab)}</small>
           </span>
         </header>
@@ -137,7 +130,7 @@ function AbilityCard({ ab, cls, bar, onEquip, onSwap, onRemove, onClose }: { ab:
               {bar.map((id) => {
                 const x = ABILITIES[id];
                 return x ? (
-                  <button key={id} type="button" className="rb-btn is-small" onClick={() => onSwap(id)}>
+                  <button key={id} type="button" className="rb-btn is-small" onClick={() => onSwap?.(id)}>
                     <img src={iconPicture(x.icon)} alt="" draggable={false} />
                     {x.name}
                   </button>
@@ -229,8 +222,8 @@ export interface SetupGuide {
 }
 
 /**
- * Changing what a class brings: three saved setups, each a bar of four abilities, three talents, a super and the
- * extras (the Swift Step or its charm, and an oath). It opens on the playstyles, unless the setup in hand is one of the
+ * Changing what a class brings: three saved setups, each a bar of five abilities, three talents and a super (an oath
+ * and the Unbinding Charm beside them were taken out on 2026-11-15, the owner: "leave only spells, talents and ults"). It opens on the playstyles, unless the setup in hand is one of the
  * player's own making; Customize opens the rest, one thing at a time, on tabs, with what everything does written where
  * it can be read.
  */
@@ -297,10 +290,10 @@ export function SetupEditor({ cls, sets, onSets, guide }: { cls: ClassId; sets: 
           <p className="rb-rs-hint">Pick a playstyle to start from. Each is ready to fight with as it is.</p>
           <StyleCards cls={cls} setup={cur} onPick={usePreset} />
           <div className="rb-rs-barrow" data-tut="bar">
-            <BarRow bar={cur.bar} cls={cls} step={cur.step} ult={curUlt.id} onPick={open} />
+            <BarRow bar={cur.bar} cls={cls} ult={curUlt.id} onPick={open} />
           </div>
           <button className="rb-btn rb-rs-custom" onClick={() => setMode('custom')}>
-            Customize abilities, talents and more
+            Customize abilities, talents and super
           </button>
         </>
       )}
@@ -308,7 +301,7 @@ export function SetupEditor({ cls, sets, onSets, guide }: { cls: ClassId; sets: 
       {mode === 'custom' && (
         <>
           <div className="rb-rs-barrow" data-tut="bar">
-            <BarRow bar={cur.bar} cls={cls} step={cur.step} ult={curUlt.id} onPick={open} onHover={setInfo} />
+            <BarRow bar={cur.bar} cls={cls} ult={curUlt.id} onPick={open} onHover={setInfo} />
           </div>
           {/* what to press after what: the combos this bar can make, each as its two abilities in order */}
           <ul className="rb-rs-combos" aria-label="Combos in this setup" data-tut="combos">
@@ -335,15 +328,12 @@ export function SetupEditor({ cls, sets, onSets, guide }: { cls: ClassId; sets: 
             <button role="tab" aria-selected={tab === 'super'} className={tab === 'super' ? 'is-on' : ''} onClick={() => setTab('super')}>
               Super
             </button>
-            <button role="tab" aria-selected={tab === 'extras'} className={tab === 'extras' ? 'is-on' : ''} onClick={() => setTab('extras')}>
-              Extras
-            </button>
           </div>
 
           <div className="rb-rs-panel" role="tabpanel" data-tut="panel">
             {tab === 'abilities' && (
               <>
-                <p className="rb-rs-hint">Choose four to bring. Open an ability to read it, then equip it.</p>
+                <p className="rb-rs-hint">Choose five to bring. Open an ability to read it, then equip it.</p>
                 <div className="rb-rs-kit" data-tut="kit">
                   {kitOf(cls).map((ab) => {
                     const on = cur.bar.includes(ab.id);
@@ -408,45 +398,6 @@ export function SetupEditor({ cls, sets, onSets, guide }: { cls: ClassId; sets: 
                       </button>
                     );
                   })}
-                </div>
-              </>
-            )}
-            {tab === 'extras' && (
-              <>
-                <div className="rb-rs-row" role="radiogroup" aria-label="Beside your bar">
-                  <h4>Beside your bar</h4>
-                  <p className="rb-rs-hint">The Swift Step gets you out of the way; the charm breaks you free of a hold instead.</p>
-                  <div className="rb-rs-options is-oaths">
-                    {STEPS.map((x) => {
-                      const on = stepOf(cur.step) === x;
-                      return (
-                        <button key={x.id} role="radio" aria-checked={on} className={`rb-rs-option${on ? ' is-on' : ''}`} onClick={() => put({ ...cur, step: x.id })}>
-                          <img src={iconPicture(x.icon)} alt="" draggable={false} />
-                          <span>
-                            <strong>{x.name}</strong>
-                            <small>
-                              {x.text} {x.cd}s cooldown.
-                            </small>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="rb-rs-row" role="radiogroup" aria-label="Oath">
-                  <h4>Oath</h4>
-                  <p className="rb-rs-hint">One small bonus for the whole match.</p>
-                  <div className="rb-rs-options is-oaths">
-                    {OATHS.map((o) => (
-                      <button key={o.id} role="radio" aria-checked={o.id === cur.oath} className={`rb-rs-option${o.id === cur.oath ? ' is-on' : ''}`} onClick={() => put({ ...cur, oath: o.id })}>
-                        <img src={iconPicture(o.icon)} alt="" draggable={false} />
-                        <span>
-                          <strong>{o.name}</strong>
-                          <small>{o.text}</small>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </>
             )}
@@ -533,10 +484,10 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
                 <b>Move.</b> {touch ? 'Your left thumb, anywhere on the left side.' : 'W A S D or the arrow keys.'} You can use abilities while you move.
               </li>
               <li>
-                <b>Use your abilities.</b> {touch ? 'The buttons on the right.' : '1 to 4, or click them.'} They go to your target (the nearest enemy until you choose one). A button that glows lands a combo.
+                <b>Use your abilities.</b> {touch ? 'The buttons on the right.' : '1 to 5, or click them.'} They go to your target (the nearest enemy until you choose one). A button that glows lands a combo.
               </li>
               <li>
-                <b>Step out of red circles.</b> A red circle on the ground is an attack about to land. {touch ? 'Tap the blue button' : 'Press Space'} for your Swift Step and get out.
+                <b>Walk out of red circles.</b> A red circle on the ground is an attack about to land: get out of it before it does.
               </li>
               <li>
                 <b>Use your super.</b> When the round gold button is full, {touch ? 'tap it' : 'press Q'}.
@@ -590,15 +541,15 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
               <dt>Move</dt>
               <dd>WASD, the arrows, or drag on a touch screen</dd>
               <dt>Abilities</dt>
-              <dd>1 to 4, or click them. They aim themselves at your target</dd>
+              <dd>1 to 5, or click them. They aim themselves at your target</dd>
               <dt>Placed abilities</dt>
               <dd>A comet, a volley, a pyre. With a mouse: press its key, then click where it should land (Esc puts the circle away; the key again drops it on your target). On a touch screen: tap to drop it on your target, or hold the button and push the circle where you want it</dd>
-              <dt>Swift Step</dt>
-              <dd>Space: a quick step the way you’re going, out from under what is about to land on you</dd>
+              <dt>Trinket</dt>
+              <dd>An ability every class can take as one of its five: breaks you out of every hold (stuns, fears, roots, dazes, silences, slows) and takes off every burn and bleed. Once every 45 seconds</dd>
               <dt>Super</dt>
               <dd>Q, once your meter is full: your class’s big one</dd>
               <dt>Choose an enemy</dt>
-              <dd>Their nameplate on the right, the fighter themself, or Tab</dd>
+              <dd>Their nameplate on the right, the fighter themself, or Tab. On a touch screen against two or more, the ◎ button under their nameplates: tap for the next, or slide toward one</dd>
               <dt>Choose who to help</dt>
               <dd>Their nameplate on the left, the fighter themself, or F</dd>
               <dt>Match menu</dt>

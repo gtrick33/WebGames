@@ -5,7 +5,7 @@
  * obstacles and healing spheres".
  */
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, DASH, kitOf, PRESETS, SUPERS, type Ability } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, kitOf, PRESETS, SUPERS, type Ability } from '../src/games/sigilfall/arena/abilities';
 import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
 import { ARENA_H, ARENA_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
 import { BASE_SPEED, CLASS_DMG, GATES, HEAL_BY_SIZE, HERO_R, Match, ORB_EVERY, ORB_FIRST, ORB_HEAL, RANGED, type FighterSetup, type MatchEvent, type MoveInput } from '../src/games/sigilfall/arena/sim';
@@ -14,7 +14,7 @@ import type { ClassId } from '../src/games/sigilfall/data/types';
 
 const STEP = 1 / 30;
 const fighter = (team: 0 | 1, cls: ClassId, bar?: string[]): FighterSetup => ({ team, cls, name: cls, bar: bar ?? PRESETS[cls][0]!.bar });
-const EVERY: Ability[] = [...Object.values(ABILITIES), DASH];
+const EVERY: Ability[] = Object.values(ABILITIES);
 const PLACED = EVERY.filter((a) => a.aim === 'ground');
 
 /** A match with its gates open and everyone on open ground in front of the left entry: `foes` stand 70 off, a little apart. */
@@ -122,22 +122,15 @@ describe('The Ring: what is placed', () => {
     }
   });
 
-  it('once it is falling, walking does not get out from under it; a Swift Step does', () => {
+  it('once it is falling, walking does not get out from under it', () => {
     for (const ab of PLACED) {
       const cls = ab.cls as ClassId;
-      const fate = (how: 'walk' | 'step'): number => {
-        const m = open(cls, [ab.super ? kitOf(cls)[0]!.id : ab.id]);
-        const foe = m.fighters[1]!;
-        // (it is on the ground: only now can they know)
-        expect(place(m, ab), ab.id).toBeNull();
-        foe.dirX = 1;
-        foe.dirY = 0;
-        if (how === 'step') expect(m.press(1, DASH.id)).toBeNull();
-        run(m, ab.fall! + 0.2, { 1: { mx: 1, my: 0 } });
-        return foe.maxHp - foe.hp;
-      };
-      expect(fate('walk'), `${ab.id} walk`).toBeGreaterThan(0);
-      expect(fate('step'), `${ab.id} step`).toBe(0);
+      const m = open(cls, [ab.super ? kitOf(cls)[0]!.id : ab.id]);
+      const foe = m.fighters[1]!;
+      // (it is on the ground: only now can they know)
+      expect(place(m, ab), ab.id).toBeNull();
+      run(m, ab.fall! + 0.2, { 1: { mx: 1, my: 0 } });
+      expect(foe.maxHp - foe.hp, `${ab.id} walk`).toBeGreaterThan(0);
     }
   });
 

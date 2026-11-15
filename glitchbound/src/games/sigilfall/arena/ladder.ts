@@ -1,5 +1,5 @@
 import type { ClassId } from '../data/types';
-import { ABILITIES, fullBar, PRESETS, SLOTS } from './abilities';
+import { fullBar, PRESETS, SLOTS, takes } from './abilities';
 import { forgetBest, mmrOf, NEW_STANDING, rankOf, RING_KEY, type Format, type Standing } from './ranks';
 import type { FighterSetup } from './sim';
 import { clearLive, LEAVER_K, type LiveMatch } from './live';
@@ -184,19 +184,19 @@ export function drawOpponents(format: Format, seed: number): { comp: Comp; fight
   const comp = list[seed % list.length]!;
   return {
     comp,
-    fighters: comp.team.map((t, i) => ({ team: 1, cls: t.cls, name: nameFor(t.cls, seed + i), bar: PRESETS[t.cls][t.preset]!.bar, talents: PRESETS[t.cls][t.preset]!.talents, oath: ['iron', 'fury', 'will'][(seed + i) % 3] })),
+    fighters: comp.team.map((t, i) => ({ team: 1, cls: t.cls, name: nameFor(t.cls, seed + i), bar: PRESETS[t.cls][t.preset]!.bar, talents: PRESETS[t.cls][t.preset]!.talents })),
   };
 }
 
 /* ------------------------------------------------------------------ on this device */
 
-/** What a hero brings into a match. */
+/**
+ * What a hero brings into a match: their abilities, talents and super. (An oath and the Unbinding Charm were kept with
+ * these until 2026-11-15; a setup kept from then still has them written down, and they are left unread.)
+ */
 export interface RingSetup {
   bar: string[];
-  oath: string;
   talents: string[];
-  /** What it carries beside the bar: the Swift Step (`dash`, or nothing said) or the Unbinding Charm (`charm`). */
-  step?: string;
   /** Which of its class's two supers (abilities.ts ultsOf); nothing said: the one that goes with its bar (ultFor). */
   ult?: string;
 }
@@ -210,7 +210,15 @@ export interface ClassSets {
    * (platform/mergeRules.ts mergeRing).
    */
   at?: number;
+  /**
+   * How many abilities a bar held when these were kept (abilities.ts SLOTS); nothing said: four, as before bars held
+   * five. A bar that was full then is filled up to the new size when it is read; one still being filled is left be.
+   */
+  n?: number;
 }
+
+/** How many abilities a bar held before it was written down with the setups (ClassSets.n). */
+const OLD_SLOTS = 4;
 
 export const SET_COUNT = 3;
 
@@ -243,7 +251,7 @@ function learnOf(v: unknown): RingLearn | undefined {
 
 const presetSetup = (cls: ClassId, i: number): RingSetup => {
   const p = PRESETS[cls][i % PRESETS[cls].length]!;
-  return { bar: [...p.bar], oath: 'iron', talents: [...p.talents], ult: p.ult };
+  return { bar: [...p.bar], talents: [...p.talents], ult: p.ult };
 };
 
 /** A class's set ups: what the player has kept, or the ready-made ones to start from. */
@@ -251,12 +259,15 @@ export function setsOf(save: RingSave, cls: ClassId): ClassSets {
   const kept = save.sets[cls];
   const list = Array.from({ length: SET_COUNT }, (_, i) => {
     const k = kept?.list[i];
-    if (!(k && Array.isArray(k.bar) && Array.isArray(k.talents) && typeof k.oath === 'string')) return presetSetup(cls, i);
-    // (a setup kept from when a bar held six keeps its first four; one holding an ability since taken out of the game, or
-    // renamed, loses it and is filled up again, so that it is never left short. A bar its player is still filling is left
-    // as it is)
-    const own = k.bar.filter((id) => ABILITIES[id]?.cls === cls && !ABILITIES[id]!.super);
-    return { ...k, bar: own.length < k.bar.length ? fullBar(cls, own) : k.bar.slice(0, SLOTS) };
+    if (!(k && Array.isArray(k.bar) && Array.isArray(k.talents))) return presetSetup(cls, i);
+    // (a setup kept from when a bar held six keeps its first five; one holding an ability since taken out of the game, or
+    // renamed, loses it and is filled up again, so that it is never left short; one that was full when bars held fewer
+    // gets the rest from the ready-made bar it is closest to. A bar its player is still filling is left as it is)
+    const own = k.bar.filter((id) => takes(cls, id));
+    const was = typeof kept.n === 'number' ? kept.n : OLD_SLOTS;
+    const grown = was < SLOTS && own.length >= was;
+    // (only what a setup holds now: an oath or a charm written down from before is left behind)
+    return { bar: own.length < k.bar.length || grown ? fullBar(cls, own) : k.bar.slice(0, SLOTS), talents: k.talents, ...(typeof k.ult === 'string' ? { ult: k.ult } : {}) };
   });
   const active = kept && kept.active >= 0 && kept.active < SET_COUNT ? kept.active : 0;
   return { active, list };

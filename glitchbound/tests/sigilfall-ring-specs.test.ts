@@ -58,8 +58,10 @@ const nightblade = (foe: ClassId, foeBar: string[], at?: [number, number]): Matc
 describe('The Ring: the Gloamknight is a death knight or a blade in the dark', () => {
   it('two ready-made setups, the Bloodsworn and the Nightblade, out of twelve: no more of the dead, no more curses', () => {
     expect(PRESETS.gloamknight.map((p) => p.name)).toEqual(['Bloodsworn', 'Nightblade']);
+    // (his own twelve, and the trinket every class can take)
     const kit = kitOf('gloamknight').map((a) => a.id);
-    expect(kit).toHaveLength(12);
+    expect(kit).toHaveLength(13);
+    expect(kit.at(-1)).toBe('trinket');
     for (const id of ['g-veil', 'g-ambush', 'g-knife', 'g-walk', 'g-chain']) expect(kit).toContain(id);
     expect(kitOf('gloamknight').some((a) => a.role === 'summon' || a.effects.some((e) => e.k === 'dot'))).toBe(false);
     // the Nightblade's bar: a step to their back, an ambush out of it, a knife that cuts deeper there
@@ -291,7 +293,8 @@ describe('The Ring: the Gravecaller rouses her dead', () => {
     const dead = m.fighters.filter((f) => f.pet);
     expect(dead).toHaveLength(2);
     for (const d of dead) {
-      expect(d.auras.find((a) => a.kind === 'fury')?.n).toBeCloseTo(0.45, 5);
+      // (as strong as Grave Hunger says: 40% since tests/sigilfall-ring-balance.test.ts's measure of 2026-11-15, 45% before)
+      expect(d.auras.find((a) => a.kind === 'fury')?.n).toBeCloseTo((ABILITIES['k-frenzy']!.effects[0] as { pct: number }).pct / 100, 5);
       expect(d.auras.some((a) => a.kind === 'speed')).toBe(true);
     }
     expect(k.auras.some((a) => a.kind === 'fury')).toBe(false);

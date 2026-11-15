@@ -327,7 +327,7 @@ export function holdSuper(m: Match, f: Fighter, b: Brain, skill: number, enemies
   mind.full ??= m.clock;
   // (in a duel there's nobody else to wait for, and a heal for a friend is best not waited on; and sat on long enough)
   // (the super they carry: one of their class's two)
-  const sup = m.extras(f)[1]!;
+  const sup = m.extras(f)[0]!;
   if (enemies.length < 2 || sup.aim === 'friend' || m.clock - mind.full > 2 + skill * 3 || !knows(b, skill, 0.35, 0.85)) return false;
   if (armored(target)) return true;
   const healer = enemies.find((e) => healerLike(e) && e !== target);

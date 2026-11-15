@@ -1,2 +1,2 @@
 /** Written by scripts/sigilfall-icons.mjs: the atlas's hash, for cache-busting. */
-export const ICON_VERSION = '63f5731c90';
+export const ICON_VERSION = 'ba41b11442';

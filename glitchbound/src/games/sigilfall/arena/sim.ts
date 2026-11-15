@@ -1,5 +1,5 @@
 import type { ClassId } from '../data/types';
-import { ABILITIES, BODY, DASH, GCD, OATHS, SIGIL, SLOTS, stepOf, superOf, ultFor, ultOf, type Ability, type CcKind, type Effect } from './abilities';
+import { ABILITIES, BODY, GCD, SIGIL, SLOTS, takes, superOf, ultFor, ultOf, type Ability, type CcKind, type Effect } from './abilities';
 import { ARENA_H, ARENA_W, ENTRY_GATES, MAPS, type Pillar } from './maps';
 import { ARM, cleanTalents, EXECUTE, NEAR, RALLY, TALENT_BY_ID, type Does, type Talent, type Tune } from './talents';
 
@@ -19,8 +19,15 @@ export const GATES = 30;
 const GATES_READY = 3;
 export const MATCH_LIMIT = 150;
 /** How long crowd control's returns stay diminished after one wears off. */
-const DR_RESET = 18;
-const DR_STEPS = [1, 0.5, 0.25];
+export const DR_RESET = 18;
+export const DR_STEPS = [1, 0.5, 0.25];
+/** One kind of hold's diminishing returns on a fighter (Fighter.dr): how many, until when, and since when, and by what. */
+export interface DrState {
+  n: number;
+  until: number;
+  at?: number;
+  ab?: string;
+}
 /**
  * Hurt breaks a hold, as in the classic arena: a daze at once, a fear after this share of its target's health, a root
  * after this (the owner, 2026-11-14: "roots should break after some dmg has been done, similar to wows roots, same
@@ -92,7 +99,7 @@ export const GATES_SOLO = 15;
  */
 export const THRALL = { name: 'Ashbound', speed: 0.9, every: 1.25, reach: HERO_R * 2 + 4, charge: 0.5 } as const;
 /** An ashbound's blow: a claw, a blow like any other (Turn Aside and Oath of Shelter stop it). Not on anyone's bar. */
-const CLAW: Ability = { id: 'k-claw', cls: 'warlock', name: 'Grave Claw', text: '', icon: 'dark_crystal_skull_on_violet', color: '#9a6ae0', school: 'physical', role: 'damage', aim: 'enemy', range: THRALL.reach, cast: 0, cd: 0, mana: 0, effects: [] };
+const CLAW: Ability = { id: 'k-claw', cls: 'warlock', name: 'Grave Claw', text: '', icon: 'dark_crystal_skull_on_violet', color: '#9a6ae0', school: 'physical', role: 'damage', aim: 'enemy', range: THRALL.reach, cast: 0, cd: 0, effects: [] };
 
 /**
  * The shroud (Shroud of Dusk): how long it stays on if nothing breaks it (longer than any match), how much slower its
@@ -109,10 +116,7 @@ export interface FighterSetup {
   cls: ClassId;
   name: string;
   bar: string[];
-  oath?: string;
   talents?: string[];
-  /** What they carry beside the bar: the Swift Step (`dash`, the default) or the Unbinding Charm (`charm`). */
-  step?: string;
   /** Which of their class's two supers (abilities.ts ultsOf); without it, the one that goes with their bar. */
   ult?: string;
   /** The room seat playing them (null or missing: the computer, or the local player if `human`). */
@@ -220,8 +224,6 @@ export interface Fighter {
   walk: number;
   hp: number;
   maxHp: number;
-  mana: number;
-  maxMana: number;
   dead: boolean;
   /** Who they aim harm at, and who they aim help at (themselves if nobody). */
   target: number | null;
@@ -231,24 +233,25 @@ export interface Fighter {
   cast: Cast | null;
   auras: Aura[];
   locks: Partial<Record<string, number>>;
-  dr: Partial<Record<CcKind, { n: number; until: number }>>;
-  /** A rush, a throw or a step on its way: where to, how fast, and whether it is a Swift Step (a shoulder check looks for whom it ends beside). */
+  /**
+   * Diminishing returns, by kind of hold: how many have landed (DR_STEPS), until when they count, and the ability that
+   * put the last on them (its picture on their nameplate: a Toad Hex for a daze).
+   */
+  dr: Partial<Record<CcKind, DrState>>;
+  /** A rush, a throw or a step on its way: where to, how fast, and whether it is a Guardian Leap off the trinket (a shoulder check looks for whom it ends beside). */
   dash: { x: number; y: number; speed: number; step?: boolean } | null;
   queued: { ab: string; t: number; at?: { x: number; y: number } } | null;
   fearX: number;
   fearY: number;
-  oath: string | null;
   talents: string[];
-  /** What they carry beside the bar (abilities.ts STEPS): the Swift Step, or the charm that breaks every hold. */
-  step: string;
   /** Their super: one of their class's two. */
   ult: string;
   /**
-   * What the oath and talents make of them, as multipliers: damage, healing, speed, how long they are held, cooldowns,
-   * mana back, how long their own holds and slows last, damage taken, how fast their super fills, and the chance of a
+   * What their talents make of them, as multipliers: damage, healing, speed, how long they are held, cooldowns,
+   * how long their own holds and slows last, damage taken, how fast their super fills, and the chance of a
    * critical hit.
    */
-  mods: { dmg: number; heal: number; speed: number; tenacity: number; cool: number; regen: number; hold: number; guard: number; charge: number; crit: number };
+  mods: { dmg: number; heal: number; speed: number; tenacity: number; cool: number; hold: number; guard: number; charge: number; crit: number };
   /** What their talents do now and then (arena/talents.ts), when each can next (by kind), and what they keep count of. */
   perks: Perks;
   procs: Partial<Record<string, number>>;
@@ -294,7 +297,6 @@ export interface TalentState {
   hidden?: number;
   coverT?: number;
   wasHeld?: boolean;
-  back?: { x: number; y: number; until: number };
   /** Sun and moon: a heal is owed its share (`heal`), and a hit is (`hit`). */
   heal?: boolean;
   hit?: boolean;
@@ -447,9 +449,13 @@ export function clearLine(pillars: Pillar[], ax: number, ay: number, bx: number,
   return true;
 }
 
-/** What an oath and talents add up to. */
-function built(cls: ClassId, oathId: string | undefined, talentIds: readonly string[] | undefined): Pick<Fighter, 'mods' | 'perks' | 'procs' | 'tune' | 'maxHp' | 'talents' | 'oath' | 'tal'> {
-  const oath = OATHS.find((o) => o.id === oathId);
+/**
+ * What a hero's talents add up to. (An oath beside them, a small bonus for the whole match, was taken out with the
+ * Unbinding Charm on 2026-11-15, the owner: "remove oaths and the extras, leave only spells, talents and ults". The
+ * balance measured in tests/sigilfall-ring-balance.test.ts was the computer's against itself, which never carried
+ * either.)
+ */
+function built(cls: ClassId, talentIds: readonly string[] | undefined): Pick<Fighter, 'mods' | 'perks' | 'procs' | 'tune' | 'maxHp' | 'talents' | 'tal'> {
   const list = cleanTalents(cls, talentIds);
   const sum = (key: 'guard' | 'hold' | 'exec'): number => list.reduce((n, x) => n + (x[key] ?? 0), 0);
   const one = <K extends 'slow' | 'stun' | 'snare'>(key: K): NonNullable<Talent[K]> | null => list.find((x) => x[key])?.[key] ?? null;
@@ -459,18 +465,16 @@ function built(cls: ClassId, oathId: string | undefined, talentIds: readonly str
   const does: Does = {};
   for (const x of list) if (x.does) Object.assign(does, { [x.does.k]: x.does });
   return {
-    oath: oath?.id ?? null,
     talents: list.map((x) => x.id),
     tune,
-    maxHp: Math.round(BODY[cls].hp * (1 + (oath?.hp ?? 0))),
+    maxHp: BODY[cls].hp,
     mods: {
       // (each class deals its own share, supers and all: CLASS_DMG)
-      dmg: (1 + (oath?.dmg ?? 0)) * CLASS_DMG[cls],
-      heal: 1 + (oath?.heal ?? 0),
-      speed: 1 + (oath?.speed ?? 0),
-      tenacity: 1 - Math.min(0.6, oath?.tenacity ?? 0),
-      cool: 1 - Math.min(0.5, oath?.cool ?? 0),
-      regen: 1,
+      dmg: CLASS_DMG[cls],
+      heal: 1,
+      speed: 1,
+      tenacity: 1,
+      cool: 1,
       hold: 1 + sum('hold'),
       guard: 1 - Math.min(0.5, sum('guard')),
       charge: 1,
@@ -492,7 +496,7 @@ function talentAb(id: string): Ability {
   if (!ab) {
     const t = TALENT_BY_ID[id]!;
     const sup = superOf(t.cls);
-    ab = { id, cls: t.cls, name: t.name, text: t.text, icon: t.icon ?? sup.icon, color: sup.color, school: sup.school, role: 'damage', aim: 'enemy', range: 0, cast: 0, cd: 0, mana: 0, effects: [] };
+    ab = { id, cls: t.cls, name: t.name, text: t.text, icon: t.icon ?? sup.icon, color: sup.color, school: sup.school, role: 'damage', aim: 'enemy', range: 0, cast: 0, cd: 0, effects: [] };
     TALENT_ABS.set(id, ab);
   }
   return ab;
@@ -546,15 +550,13 @@ export class Match {
     this.fighters = setup.fighters.map((s, id) => {
       const i = count[s.team]++;
       const spot = map.spawns[s.team]![i % map.spawns[s.team]!.length]!;
-      const body = BODY[s.cls];
-      const made = built(s.cls, s.oath, s.talents);
+      const made = built(s.cls, s.talents);
       return {
         id,
         team: s.team,
         cls: s.cls,
         name: s.name,
-        bar: s.bar.filter((b) => ABILITIES[b]?.cls === s.cls && !ABILITIES[b]!.super).slice(0, SLOTS),
-        step: stepOf(s.step).id,
+        bar: s.bar.filter((b) => takes(s.cls, b)).slice(0, SLOTS),
         ult: ultOf(s.cls, s.ult ?? ultFor(s.cls, s.bar)).id,
         seat: s.seat ?? null,
         human: !!s.human,
@@ -567,8 +569,6 @@ export class Match {
         walk: 0,
         hp: made.maxHp,
         ...made,
-        mana: body.mana,
-        maxMana: body.mana,
         dead: false,
         target: null,
         friend: null,
@@ -617,9 +617,9 @@ export class Match {
     return this.phase === 'fight' && this.zoneAt(f.x, f.y) > 1;
   }
 
-  /** The abilities everyone has besides their bar: the Swift Step and their class's super. */
+  /** What everyone has besides their bar: their class's super (the Swift Step stood beside it until 2026-11-15). */
   extras(f: Fighter): Ability[] {
-    return [stepOf(f.step), ultOf(f.cls, f.ult)];
+    return [ultOf(f.cls, f.ult)];
   }
 
   /** Everything solid right now: the stone, and the gates until they lift. */
@@ -632,15 +632,14 @@ export class Match {
   }
 
   /** In the entry, a player can still change what they brought. */
-  equip(id: number, s: { bar: string[]; oath?: string; talents?: string[]; step?: string; ult?: string }): boolean {
+  equip(id: number, s: { bar: string[]; talents?: string[]; ult?: string }): boolean {
     const f = this.fighters[id];
     if (!f || this.phase !== 'gates') return false;
-    const bar = s.bar.filter((b, i) => ABILITIES[b]?.cls === f.cls && !ABILITIES[b]!.super && s.bar.indexOf(b) === i).slice(0, SLOTS);
+    const bar = s.bar.filter((b, i) => takes(f.cls, b) && s.bar.indexOf(b) === i).slice(0, SLOTS);
     if (bar.length < SLOTS) return false;
-    const made = built(f.cls, s.oath, s.talents);
+    const made = built(f.cls, s.talents);
     Object.assign(f, made);
     f.bar = bar;
-    f.step = stepOf(s.step).id;
     f.ult = ultOf(f.cls, s.ult ?? ultFor(f.cls, bar)).id;
     f.hp = made.maxHp;
     return true;
@@ -758,10 +757,8 @@ export class Match {
     // (rousing the dead wants some standing, unless it calls them up first)
     if (ab.effects.some((e) => e.k === 'frenzy') && !ab.effects.some((e) => e.k === 'raise') && !this.fighters.some((o) => o.pet?.owner === f.id && !o.dead)) return 'None of your dead stand';
     // (a blink or a stag's leap goes even from roots)
-    if (ab.effects.some((e) => e.k === 'dash') && this.rooted(f) && !f.perks.does.fold && !f.perks.does.stag) return 'Rooted';
     if ((f.cds[ab.id] ?? 0) > 0) return 'Not ready yet';
     if (!ab.free && f.gcd > 0) return 'Not ready yet';
-    if (ab.mana > f.mana) return 'Not enough mana';
     if (ab.aim === 'ground' && at) {
       // placed by hand: anywhere in reach that its user can see (it is brought back into reach if put past it)
       const p = this.reach(f, ab, at);
@@ -856,8 +853,8 @@ export class Match {
     f.queued = null;
     // starting something else lets go of the last cast (a free ability goes off alongside it)
     if (!ab.free && f.cast) this.endCast(f);
-    // (out of the shroud with anything but a quiet step or a Swift Step: a cast at once, a blow as it lands)
-    const opens = this.hidden(f) && !ab.quiet && ab.id !== DASH.id;
+    // (out of the shroud with anything but a quiet one, the trinket among them: a cast at once, a blow as it lands)
+    const opens = this.hidden(f) && !ab.quiet;
     // (whatever brings them out of the shroud starts a fight: they don't slip back in at once)
     if (opens) f.fought = this.clock;
     if (ab.cast > 0 || ab.channel) {
@@ -875,7 +872,6 @@ export class Match {
   }
 
   private spend(f: Fighter, ab: Ability): void {
-    f.mana = Math.max(0, f.mana - ab.mana);
     // (a blood price: every attack costs a little life, never the last of it)
     const price = f.perks.does.price;
     if (price && (ab.aim === 'enemy' || ab.aim === 'near' || ab.aim === 'ground')) {
@@ -1180,8 +1176,8 @@ export class Match {
         this.events.push({ k: 'word', id: t.id, word: 'Knocked back', bad: true });
         return;
       }
-      case 'dash':
-        this.swiftStep(f, e.dist);
+      case 'unbound':
+        this.unbound(f);
         return;
       case 'veil':
         this.veil(f, ab);
@@ -1194,9 +1190,6 @@ export class Match {
         return;
       case 'mark':
         this.addAura(t, { ...base, kind: 'mark', harmful: true, magic: false, dur: e.dur, n: e.pct / 100 });
-        return;
-      case 'stepTalents':
-        this.swiftStep(f, 0, true);
         return;
       case 'undot':
         t.auras = t.auras.filter((a) => a.kind !== 'dot');
@@ -1295,7 +1288,7 @@ export class Match {
     // (and his aura of resolve: shorter, near him)
     const resolve = this.near(t, 'resolve', 'friend');
     const lasts = dur * DR_STEPS[dr.n]! * t.mods.tenacity * (1 - (resolve?.d.pct ?? 0));
-    if (!ab.noDr) t.dr[cc] = { n: dr.n + 1, until: this.clock + lasts + DR_RESET };
+    if (!ab.noDr) t.dr[cc] = { n: dr.n + 1, until: this.clock + lasts + DR_RESET, at: this.clock, ab: ab.id };
     t.auras = t.auras.filter((a) => a.cc !== cc);
     this.addAura(t, { ab: ab.id, src: f.id, dur: lasts, magic: ab.school !== 'physical', n: 0, kind: 'cc', harmful: true, cc, took: 0, ...(cc === 'root' && ab.shatter ? { shatters: ab.shatter } : {}) });
     f.score.cc += lasts;
@@ -1367,18 +1360,18 @@ export class Match {
   }
 
   /**
-   * The Swift Step, and what a talent makes of it: a snare left behind (Wild Snare), what was taken lately given back
-   * (Rewind), a curse shed (Shed Skin), a stag's shape (Stag Form), the way back (Way Back), an enemy dragged along (Drag
-   * Below), a leap to a friend (Guardian Leap), a blink (Fold Space). One that ends beside an enemy may knock them down
-   * (Shoulder Check): that is seen when it ends (arrive).
+   * The trinket has broken them free (its hold and its burns are gone already: the token and undot before this), and
+   * what a talent makes of it: a snare left where they stand (Wild Snare), what was taken lately given back (Rewind), a
+   * curse shed (Shed Skin), a stag's shape (Stag Form), a ward of shadow (Shadow Ward), the nearest enemy dragged in
+   * (Drag Below), a leap to a friend (Guardian Leap), a blink (Fold Space), and the nearest enemy knocked down (Shoulder
+   * Check: when a leap lands, or at once). These were the Swift Step's until it was taken out (2026-11-15).
    */
-  private swiftStep(f: Fighter, dist: number, charm = false): void {
+  private unbound(f: Fighter): void {
     const does = f.perks.does;
-    this.endCast(f);
     const say = (k: keyof Does): void => {
       this.events.push({ k: 'word', id: f.id, word: abOfDoing(f.cls, k).name });
     };
-    // (a Wild Snare is left where the step began: a trap of the ranger's own, that holds rather than dazes)
+    // (a Wild Snare is left where they stand: a trap of the ranger's own, that holds rather than dazes)
     const snare = f.perks.snare;
     if (snare && this.ready(f, 'snare')) {
       f.procs.snare = this.clock + snare.every;
@@ -1399,39 +1392,21 @@ export class Match {
     }
     if (does.stag) {
       const base = { ab: abOfDoing(f.cls, 'stag').id, src: f.id, harmful: false, magic: false, dur: does.stag.dur };
-      f.auras = f.auras.filter((a) => a.kind !== 'slow' && a.cc !== 'root');
       this.addAura(f, { ...base, kind: 'speed', n: does.stag.pct / 100 });
       this.addAura(f, { ...base, kind: 'free', n: 0 });
     }
-    if (does.back) {
-      const b = f.tal.back;
-      if (b && this.clock <= b.until) {
-        f.tal.back = undefined;
-        f.x = b.x;
-        f.y = b.y;
-        f.dash = null;
-        say('back');
-        return;
-      }
-      f.tal.back = { x: f.x, y: f.y, until: this.clock + does.back.within };
+    if (does.shadeward) {
+      this.addAura(f, { ab: abOfDoing(f.cls, 'shadeward').id, src: f.id, kind: 'absorb', harmful: false, magic: true, dur: does.shadeward.dur, n: Math.round(f.maxHp * does.shadeward.pct) });
+      say('shadeward');
     }
-    const d = Math.hypot(f.dirX, f.dirY) || 1;
-    const ux = f.dirX / d;
-    const uy = f.dirY / d;
     if (does.drag && this.ready(f, 'drag')) {
-      // (toward someone: the way the step goes, within reach and sight)
+      // (the nearest enemy within reach and sight, dragged to their side)
       const foe = this.enemiesOf(f)
-        .filter((o) => {
-          const ox = o.x - f.x;
-          const oy = o.y - f.y;
-          const od = Math.hypot(ox, oy) || 1;
-          return !o.pet && !this.unseen(o, f) && od <= does.drag!.reach && (charm || (ox * ux + oy * uy) / od > 0.7) && this.sees(f, o) && !o.auras.some((a) => a.kind === 'immune');
-        })
+        .filter((o) => !o.pet && !this.unseen(o, f) && Math.hypot(o.x - f.x, o.y - f.y) <= does.drag!.reach && this.sees(f, o) && !o.auras.some((a) => a.kind === 'immune'))
         .sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y))[0];
-      // (they come along to where the step ends: the step is still a step)
       if (foe) {
         f.procs.drag = this.clock + does.drag.every;
-        this.drag(foe, f.x + ux * dist, f.y + uy * dist, HERO_R * 2 + 2);
+        this.drag(foe, f.x, f.y, HERO_R * 2 + 2);
         this.addAura(foe, { ab: abOfDoing(f.cls, 'drag').id, src: f.id, kind: 'slow', harmful: true, magic: false, dur: does.drag.dur * foe.mods.tenacity, n: does.drag.pct / 100 });
         say('drag');
       }
@@ -1446,19 +1421,16 @@ export class Match {
         say('leap');
         return;
       }
-      dist *= does.leap.far;
     }
     if (does.fold) {
-      f.auras = f.auras.filter((a) => a.kind !== 'slow' && a.cc !== 'root');
+      const d = Math.hypot(f.dirX, f.dirY) || 1;
       f.dash = null;
-      // (the charm's blink is a short one: it has no step of its own to lengthen)
-      this.blinkTo(f, ux, uy, charm ? 40 : dist * does.fold.far);
-      return;
+      this.blinkTo(f, f.dirX / d, f.dirY / d, does.fold.far);
     }
-    f.dash = { x: f.x + ux * dist, y: f.y + uy * dist, speed: 430, step: true };
+    this.arrive(f);
   }
 
-  /** A Swift Step has ended: a shoulder check knocks down whoever it ended near. */
+  /** The trinket's work is done where they stand (or a Guardian Leap has landed): a shoulder check knocks down whoever is near. */
   private arrive(f: Fighter): void {
     const check = f.perks.does.check;
     if (!check || !this.ready(f, 'check')) return;
@@ -1512,8 +1484,6 @@ export class Match {
       walk: 0,
       hp: p.hp,
       maxHp: p.hp,
-      mana: 0,
-      maxMana: 0,
       dead: false,
       target: null,
       friend: null,
@@ -1527,12 +1497,10 @@ export class Match {
       queued: null,
       fearX: 0,
       fearY: 0,
-      oath: null,
       talents: [],
-      step: DASH.id,
       ult: owner.ult,
       // (they hit with their master's share, and none of the rest of their talents)
-      mods: { dmg: owner.mods.dmg, heal: 1, speed: THRALL.speed, tenacity: 1, cool: 1, regen: 1, hold: 1, guard: 1, charge: 0, crit: CRIT },
+      mods: { dmg: owner.mods.dmg, heal: 1, speed: THRALL.speed, tenacity: 1, cool: 1, hold: 1, guard: 1, charge: 0, crit: CRIT },
       perks: NO_PERKS,
       procs: {},
       tal: {},
@@ -1684,7 +1652,7 @@ export class Match {
       if (direct && !t.dead) this.struck(t, src, ab);
     }
     const worth = n;
-    n = this.manaSkin(t, this.shoulder(t, n));
+    n = this.arcaneSkin(t, this.shoulder(t, n));
     for (const a of t.auras) {
       if (a.kind !== 'absorb' || n <= 0) continue;
       const soak = Math.min(a.n, n);
@@ -1720,7 +1688,7 @@ export class Match {
     return worth;
   }
 
-  /** What makes a striker's own hit land harder, by their talents: a grudge, full mana, a long shot, desperation, a blood price, the moon's turn. */
+  /** What makes a striker's own hit land harder, by their talents: a grudge, full health, a long shot, desperation, a blood price, the moon's turn. */
   private sharpen(src: Fighter, t: Fighter, ab?: Ability): number {
     const does = src.perks.does;
     let k = 1;
@@ -1730,7 +1698,7 @@ export class Match {
       src.tal.grudge = g;
       k *= 1 + does.grudge.step * g.n;
     }
-    if (does.brim && src.maxMana > 0 && src.mana >= src.maxMana * does.brim.over) k *= 1 + does.brim.pct;
+    if (does.brim && src.hp >= src.maxHp * does.brim.over) k *= 1 + does.brim.pct;
     if (does.far && ab && ab.range > ARM && Math.hypot(t.x - src.x, t.y - src.y) > ab.range / 2) k *= 1 + does.far.pct;
     if (does.desperate) k *= 1 + does.desperate.pct * (1 - src.hp / src.maxHp);
     if (does.price) k *= 1 + does.price.pct;
@@ -1770,14 +1738,11 @@ export class Match {
     return n;
   }
 
-  /** A mage's mana skin pays a share of it in mana while there is mana to spare: what is left for their health. */
-  private manaSkin(t: Fighter, n: number): number {
-    const skin = t.perks.does.manaskin;
-    const spare = t.mana - t.maxMana * (skin?.above ?? 0);
-    if (!skin || n <= 0 || spare <= 0) return n;
-    const part = Math.round(Math.min(n * skin.share, spare * skin.per));
-    t.mana = Math.max(0, t.mana - part / skin.per);
-    return n - part;
+  /** A mage's arcane skin turns a share of it aside while they stand over a share of their health: what is left for it. */
+  private arcaneSkin(t: Fighter, n: number): number {
+    const skin = t.perks.does.skin;
+    if (!skin || n <= 0 || t.hp < t.maxHp * skin.above) return n;
+    return n - Math.round(n * skin.share);
   }
 
   /** What the striker's talents make of damage dealt: a revenant's drink, light returned, a thirst, a soul's ward, wildfire, sun and moon, a verdict. */
@@ -1995,11 +1960,9 @@ export class Match {
         t.procs.vanish = this.clock + does.vanish.every;
         this.vanish(t, does.vanish.dist);
       }
-      if (does.pact && t.mana > 0 && this.ready(t, 'pact')) {
+      if (does.pact && this.ready(t, 'pact')) {
         t.procs.pact = this.clock + does.pact.every;
-        const m = t.mana;
-        t.mana = 0;
-        this.mend(t, m * does.pact.per, abOfDoing(t.cls, 'pact').name);
+        this.mend(t, Math.round(t.maxHp * does.pact.pct), abOfDoing(t.cls, 'pact').name);
       }
       if (does.oak && this.ready(t, 'oak')) {
         t.procs.oak = this.clock + does.oak.every;
@@ -2248,7 +2211,6 @@ export class Match {
       if (left <= 0) delete f.locks[k];
       else f.locks[k] = left;
     }
-    if (f.maxMana) f.mana = Math.min(f.maxMana, f.mana + dt * 1.5 * f.mods.regen);
     if (f.streakT > 0) {
       f.streakT -= dt;
       if (f.streakT <= 0) f.streak = 0;
@@ -2560,7 +2522,6 @@ export class Match {
         dy: Math.round(f.dirY * 100) / 100,
         hp: f.hp,
         mh: f.maxHp,
-        m: Math.round(f.mana),
         d: f.dead,
         tg: f.target,
         fr: f.friend,
@@ -2569,6 +2530,7 @@ export class Match {
         c: f.cast,
         a: f.auras,
         l: f.locks,
+        r: f.dr,
         sc: f.score,
         ch: Math.round(f.charge * 1000) / 1000,
         st: f.streak,
@@ -2626,7 +2588,6 @@ export class Match {
       }
       f.hp = n.hp;
       f.maxHp = n.mh;
-      f.mana = n.m;
       f.dead = n.d;
       f.target = n.tg;
       f.friend = n.fr;
@@ -2635,6 +2596,7 @@ export class Match {
       f.cast = n.c;
       f.auras = n.a;
       f.locks = n.l;
+      if (n.r) f.dr = n.r;
       f.score = n.sc;
       f.charge = n.ch ?? 0;
       f.streak = n.st ?? 0;
@@ -2691,7 +2653,8 @@ export interface Snapshot {
     dy: number;
     hp: number;
     mh: number;
-    m: number;
+    /** (mana, sent by a host from before there was none: unread) */
+    m?: number;
     d: boolean;
     tg: number | null;
     fr: number | null;
@@ -2700,6 +2663,8 @@ export interface Snapshot {
     c: Cast | null;
     a: Aura[];
     l: Partial<Record<string, number>>;
+    /** Diminishing returns (a host from before they were sent says nothing, and they stay as the player's copy has them). */
+    r?: Fighter['dr'];
     sc: Fighter['score'];
     ch?: number;
     st?: number;

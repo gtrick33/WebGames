@@ -84,7 +84,25 @@ export function styleOf(cls: ClassId, presetId: string): Style {
   return STYLES[cls][presetId] ?? { line: '', ease: CLASS_EASE[cls] };
 }
 
-/** Which ready-made build a bar is, whatever order its four are in: its index in PRESETS, or -1 for a bar of one's own. */
+/** Which ready-made build a bar is, whatever order its five are in: its index in PRESETS, or -1 for a bar of one's own. */
 export function presetOfBar(cls: ClassId, bar: readonly string[]): number {
   return PRESETS[cls].findIndex((p) => p.bar.length === bar.length && p.bar.every((id) => bar.includes(id)));
+}
+
+/**
+ * The playstyle a bar plays as: the ready-made build it shares the most abilities with (the first on a tie), by name.
+ * Each fighter's nameplate says it in small letters (the owner, 2026-11-15: "somewhere in nameplate add the playstyle
+ * of the class with tiny shrift"), so a Pyre is told from a Rime at a glance.
+ */
+export function playstyleOf(cls: ClassId, bar: readonly string[]): string {
+  let best = PRESETS[cls][0]!;
+  let most = -1;
+  for (const p of PRESETS[cls]) {
+    const n = p.bar.filter((id) => bar.includes(id)).length;
+    if (n > most) {
+      most = n;
+      best = p;
+    }
+  }
+  return best.name;
 }

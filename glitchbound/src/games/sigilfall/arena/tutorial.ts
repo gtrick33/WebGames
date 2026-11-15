@@ -22,7 +22,7 @@ import { CLOSE_FROM, RANGED, type FighterSetup, type Match, type MatchEvent, typ
  */
 
 /** The setup page's tabs (RingSetup.tsx). */
-export type SetupTab = 'abilities' | 'talents' | 'super' | 'extras';
+export type SetupTab = 'abilities' | 'talents' | 'super';
 
 export interface LobbyStep {
   id: string;
@@ -44,13 +44,12 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
   { id: 'formats', title: 'Choose your fight', text: () => '1v1, 2v2 or 3v3. Each has its own rating, starting at 1000: a win raises it and a loss lowers it. In 2v2 and 3v3 the computer fills your team, or your friends do.', spot: 'formats', page: 'play', at: 'bottom' },
   { id: 'rank', title: 'Climb the ranks', text: () => 'Your rank, and how far it is to the next. Every rank gives you a title and a suit of armor to keep. Rewards shows them all.', spot: 'rank', page: 'play', at: 'bottom' },
   { id: 'arena', title: 'Arenas', text: () => 'Each arena has its own pillars to hide behind. Any picks one for you, so you can leave it as it is.', spot: 'arena', page: 'play', at: 'bottom' },
-  { id: 'loadout', title: 'What you bring', text: () => 'Four abilities, then your Swift Step and your super (the round one). Under them, your talents and your oath. Let’s open your setup.', spot: 'loadout', page: 'play', at: 'top' },
+  { id: 'loadout', title: 'What you bring', text: () => 'Five abilities, then your super (the round one): open any of them to read what it does and when to use it. Under them, your talents. Let’s open your setup.', spot: 'loadout', page: 'play', at: 'top' },
   { id: 'styles', title: 'Pick a playstyle', text: (cls) => `Each card is a ready-made ${CLASSES[cls].name} build. Pick the one that sounds like you: it fills your setup at once, ready to fight with as it is.`, spot: 'styles', page: 'setup', mode: 'styles', at: 'bottom' },
-  { id: 'kit', title: 'Your abilities', text: () => 'Customize opens everything. Every class has twelve abilities and brings four. Click one to read what it does, when to use it and what it combines with, then equip it.', spot: 'kit', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
+  { id: 'kit', title: 'Your abilities', text: () => 'Customize opens everything. Every class has twelve abilities of its own, plus the Unbinding Trinket any class can take, and brings five. Click one to read what it does, when to use it and what it combines with, then equip it.', spot: 'kit', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
   { id: 'combos', title: 'Combos', text: () => 'These pairs work together: use the first, then the second, and the second hits much harder. Each different combo in a row builds Momentum.', spot: 'combos', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
   { id: 'talents', title: 'Talents', text: () => 'Pick one from each row. Talents change how your whole class fights, whatever is on your bar.', spot: 'panel', page: 'setup', mode: 'custom', tab: 'talents', at: 'top' },
   { id: 'super', title: 'Your super', text: () => 'A big ability that’s ready when its meter is full. The meter fills as you deal damage or heal. Each class has two to choose from.', spot: 'panel', page: 'setup', mode: 'custom', tab: 'super', at: 'top' },
-  { id: 'extras', title: 'Extras', text: () => 'The Swift Step dodges out of harm’s way; the Unbinding Charm breaks you free of a stun instead. Your oath is one small bonus for the whole match.', spot: 'panel', page: 'setup', mode: 'custom', tab: 'extras', at: 'top' },
   { id: 'sets', title: 'Saved as you go', text: () => 'Each class has three setups, saved as you change them. Now let’s try it all in a practice fight.', spot: 'sets', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
 ];
 
@@ -59,25 +58,24 @@ export const SPARRING_CLASS: ClassId = 'mage';
 const SPAR_PRESET = PRESETS.mage[0]!;
 /** Its circle and its cast, by id. */
 const SPAR_CIRCLE = 'm-super';
+/** How far from the player the circle's middle is put: they stand inside it, nearer one edge (world px). */
+export const CIRCLE_OFF = 38;
 const SPAR_CAST = 'm-lash';
 /** The arena it's taught in: open, with pillars to hide behind. */
 export const TUTORIAL_MAP = 'sands';
 /** Long enough to read the entry's words and press "ready". */
 export const TUTORIAL_GATES = 120;
 
-/**
- * The practice match: the player as they set themselves up, against the sparring partner. They carry the Swift Step
- * whatever they chose beside the bar: the lesson of the red circle is stepping out of it.
- */
+/** The practice match: the player as they set themselves up, against the sparring partner. */
 export function tutorialSetup(me: FighterSetup, seed: number): MatchSetup {
-  const spar: FighterSetup = { team: 1, cls: SPARRING_CLASS, name: 'Sparring Partner', bar: [...SPAR_PRESET.bar], talents: [...SPAR_PRESET.talents], ult: SPAR_PRESET.ult, oath: 'iron' };
-  return { seed, map: TUTORIAL_MAP, fighters: [{ ...me, team: 0, human: true, step: 'dash' }, spar], gates: TUTORIAL_GATES };
+  const spar: FighterSetup = { team: 1, cls: SPARRING_CLASS, name: 'Sparring Partner', bar: [...SPAR_PRESET.bar], talents: [...SPAR_PRESET.talents], ult: SPAR_PRESET.ult };
+  return { seed, map: TUTORIAL_MAP, fighters: [{ ...me, team: 0, human: true }, spar], gates: TUTORIAL_GATES };
 }
 
 export type MatchStepId = 'gates' | 'plates' | 'move' | 'target' | 'ability' | 'combo' | 'momentum' | 'circle' | 'place' | 'super' | 'sphere' | 'sigil' | 'pillar' | 'holds' | 'friends' | 'gloam' | 'fight';
 
 /** What a match step lights up on the screen. */
-export type MatchSpot = 'prep' | 'plates' | 'foes' | 'target' | 'bar' | 'step' | 'super' | null;
+export type MatchSpot = 'prep' | 'plates' | 'foes' | 'target' | 'bar' | 'super' | null;
 
 /** The keys the words name, as they read on this player's keyboard (or a phone's buttons). */
 export interface TutorialKeys {
@@ -110,7 +108,6 @@ export interface TutorialView {
 }
 
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }): number => Math.hypot(a.x - b.x, a.y - b.y);
-const cap = (s: string): string => `${s[0]!.toUpperCase()}${s.slice(1)}`;
 
 /** How near the sparring partner comes to the player in each step that has it come at all. */
 const APPROACH: Partial<Record<MatchStepId, number>> = { target: 170, ability: 90, combo: 90, circle: 120, place: 140, super: 90, holds: 150 };
@@ -269,10 +266,9 @@ export class TutorialRun {
       if (this.noteT <= 0) this.note = '';
     }
     if (!this.free && m.phase === 'fight') {
-      // (nobody falls while it teaches, and a caster never runs dry)
+      // (nobody falls while it teaches)
       foe.hp = Math.max(foe.hp, Math.round(foe.maxHp * 0.5));
       me.hp = Math.max(me.hp, Math.round(me.maxHp * 0.3));
-      me.mana = me.maxMana;
     }
     const mine = (k: string): boolean => m.events.some((e) => e.k === k && 'id' in e && e.id === this.myId);
     switch (this.id) {
@@ -347,7 +343,7 @@ export class TutorialRun {
         this.advance('It takes practice. You’ll get it.');
         return;
       }
-      this.say(`It hit you. Try again: ${this.keys?.touch ? 'tap the blue button' : `press ${this.keys?.dash ?? 'Space'}`} as soon as the circle appears.`);
+      this.say('It hit you. Try again: start walking out as soon as the circle appears.');
       this.wait = 1.6;
       return;
     }
@@ -355,12 +351,12 @@ export class TutorialRun {
     this.wait -= h;
     if (this.wait > 0) return;
     this.foe.charge = 1;
-    if (m.press(this.foeId, SPAR_CIRCLE, { x: me.x, y: me.y }) === null) this.circleUp = true;
+    // (a little toward the sparring partner, not on the player's middle: with no Swift Step since 2026-11-15, a circle is
+    // left by walking, and the near edge is in walking reach before it lands)
+    const away = Math.sign(this.foe.x - me.x) || 1;
+    if (m.press(this.foeId, SPAR_CIRCLE, { x: me.x + away * CIRCLE_OFF, y: me.y }) === null) this.circleUp = true;
     else this.wait = 0.3;
   }
-
-  /** The keys, as last asked for (the words of a retry use them). */
-  private keys: TutorialKeys | null = null;
 
   /** The combo this player's bar can make, if any: what sets it up, and what lands it. */
   private combo() {
@@ -370,7 +366,6 @@ export class TutorialRun {
 
   /** The words for the step as it stands. */
   view(keys: TutorialKeys): TutorialView {
-    this.keys = keys;
     const me = this.me;
     const t = keys.touch;
     const keyOf = (ab: Ability): string => {
@@ -380,22 +375,23 @@ export class TutorialRun {
     };
     const melee = !RANGED.has(me.cls);
     const sup = ultOf(me.cls, me.ult);
-    const stepKey = t ? 'the blue button' : keys.dash;
     const out = (title: string, text: string, spot: MatchSpot, short = ''): TutorialView => ({ id: this.id, n: this.i + 1, of: this.steps.length, title, text, short: this.readNow() ? '' : short, next: this.readNow(), spot, note: this.note });
     const press = (what: string): string => (t ? `Tap ${what}` : `Press ${what}`);
     switch (this.id) {
       case 'gates':
         return out('The entry', `Before every match you wait here behind the gates. You can still change your setup (Change my setup). When you’re ready, press I’m ready${t ? '' : ` or ${keys.dash}`}.`, 'prep');
       case 'plates':
-        return out('Who’s who', 'You’re on the left, your sparring partner on the right. The bars show health (and a caster’s mana); holds and casts show under the names and over every fighter’s head.', 'plates');
+        return out('Who’s who', 'You’re on the left, your sparring partner on the right. The bars show health; holds and casts show under the names and over every fighter’s head.', 'plates');
       case 'move':
         return out('Move', t ? 'Move with your left thumb: put it down anywhere on the left side and push.' : 'Move with W A S D or the arrow keys. You can use abilities while you move.', null, t ? 'Push with your left thumb to move.' : 'Move with W A S D or the arrow keys.');
       case 'target':
-        return out('Choose your enemy', `${t ? 'Tap your sparring partner, or their nameplate on the right.' : `Click your sparring partner, click their nameplate on the right, or press ${keys.nextFoe}.`} Your attacks go to whoever is your target.`, 'foes', t ? 'Tap your sparring partner or their nameplate.' : `Click them or their nameplate, or press ${keys.nextFoe}.`);
+        // (on a phone the ◎ button under the enemies' nameplates is there only with two or more of them: it is told of
+        // here, where choosing is learned, as no sparring match has it to point at)
+        return out('Choose your enemy', `${t ? 'Tap your sparring partner, or their nameplate on the right.' : `Click your sparring partner, click their nameplate on the right, or press ${keys.nextFoe}.`} Your attacks go to whoever is your target.${t ? ' Against two or more, a ◎ button comes up under their nameplates: tap it for the next enemy, or slide from it toward the one you want.' : ''}`, 'foes', t ? 'Tap your sparring partner or their nameplate.' : `Click them or their nameplate, or press ${keys.nextFoe}.`);
       case 'ability': {
         const first = ABILITIES[me.bar[0] ?? ''];
         const reach = melee ? (keys.closeIn ? ' You fight up close: press it from afar and you walk there by yourself.' : ' You fight up close, so walk right up to them first.') : ' You attack from range, so you can stay back.';
-        return out('Use your abilities', `${t ? 'Tap the ability buttons on the right.' : `Press 1 to 4 (or click the buttons).`} Try ${first ? `${first.name} (${keyOf(first)})` : 'one'} and another.${reach} The dark sweep over a button is its cooldown.`, 'bar', `${t ? 'Tap two of your ability buttons' : 'Use two abilities: press 1 to 4'}${melee && keys.closeIn ? '. You walk up by yourself.' : '.'}`);
+        return out('Use your abilities', `${t ? 'Tap the ability buttons on the right.' : `Press 1 to 5 (or click the buttons).`} Try ${first ? `${first.name} (${keyOf(first)})` : 'one'} and another.${reach} The dark sweep over a button is its cooldown.`, 'bar', `${t ? 'Tap two of your ability buttons' : 'Use two abilities: press 1 to 5'}${melee && keys.closeIn ? '. You walk up by yourself.' : '.'}`);
       }
       case 'combo': {
         const c = this.combo();
@@ -406,7 +402,7 @@ export class TutorialRun {
       case 'momentum':
         return out('Momentum', 'Land different combos one after another, each within 7 seconds of the last, to build Momentum up to ×4: harder combos and a faster super.', null);
       case 'circle':
-        return out('Step out of red circles', `Look out! A red circle means an attack is about to land there (it’s slowed down for now). ${cap(t ? 'tap' : 'press')} ${stepKey} for your Swift Step to get out before it lands.`, 'step', `Red circle! ${press(stepKey)} to step out of it before it lands.`);
+        return out('Walk out of red circles', 'Look out! A red circle means an attack is about to land there (it’s slowed down for now). Walk out of it before it lands: the nearest edge is the quickest way.', null, 'Red circle! Walk out of it before it lands.');
       case 'place': {
         const p = this.placed!;
         return out('Place an ability', `${p.name} lands on a patch of ground, like the comet did. ${t ? `Hold its button and push the circle where you want it, or just tap it to drop it on your target.` : `Press ${keyOf(p)}, then click where it should land. Press it twice to drop it on your target.`}`, 'bar', t ? `Hold ${p.name} and push its circle, or just tap it.` : `Press ${keyOf(p)}, then click where ${p.name} should land.`);
@@ -420,13 +416,13 @@ export class TutorialRun {
       case 'pillar':
         return out('Pillars block sight', 'Step behind a pillar so your sparring partner can’t see you. Nobody can aim at someone they can’t see, and a healer can’t reach a friend out of sight.', 'target', 'Hide behind a pillar so they can’t see you.');
       case 'holds':
-        return out('Casts and holds', 'Watch their nameplate: a bar fills while they cast, and an interrupt cuts it off. Stuns, fears, roots and the like hold a fighter for a moment, and each one in a row lasts half as long.', 'foes');
+        return out('Casts and holds', `Watch their nameplate: a bar fills while they cast, and an interrupt cuts it off. Stuns, fears, roots and the like hold a fighter for a moment, and each one in a row lasts half as long. The Unbinding Trinket, which every class can take as one of its five, breaks you out of any of them and takes off every burn and bleed, but it comes back only every 45 seconds: keep it for the hold that matters.`, 'foes');
       case 'friends':
-        return out('Teammates', `In 2v2 and 3v3 your teammates’ nameplates sit under yours. ${t ? 'Tap one' : `Click one or press ${keys.nextFriend}`} to choose who your heals go to.${t ? ' In a team fight, the ◎ button above your abilities switches between enemies.' : ''}`, 'plates');
+        return out('Teammates', `In 2v2 and 3v3 your teammates’ nameplates sit under yours. ${t ? 'Tap one' : `Click one or press ${keys.nextFriend}`} to choose who your heals go to.${t ? ' In a team fight, the ◎ button under the enemies’ nameplates switches between them.' : ''}`, 'plates');
       case 'gloam':
         return out('The Gloam', 'Forty seconds in, the Gloam closes in from the edges and burns whoever stands in it, and healing weakens as a match goes on. Stay near the middle.', null);
       case 'fight':
-        return out('Now, a real fight', 'Your sparring partner fights back now, gently. Use everything: combos, the Swift Step, your super, the spheres. Win it!', null, 'Win the fight! Use everything you’ve learned.');
+        return out('Now, a real fight', 'Your sparring partner fights back now, gently. Use everything: combos, your trinket, your super, the spheres. Win it!', null, 'Win the fight! Use everything you’ve learned.');
     }
   }
 }

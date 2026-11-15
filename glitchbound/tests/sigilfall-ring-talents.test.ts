@@ -4,7 +4,7 @@
  * and each does what it says in a match: one test a talent, by class.
  */
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, DASH, OATHS, PRESETS, type Ability, type CcKind } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, PRESETS, type Ability, type CcKind } from '../src/games/sigilfall/arena/abilities';
 import { lookOf } from '../src/games/sigilfall/arena/look';
 import { ARM, NEAR, TALENT_BY_ID, TALENTS, type Doing, type Talent } from '../src/games/sigilfall/arena/talents';
 import { GATES, HERO_R, Match, ORB_HEAL, type Fighter, type MoveInput } from '../src/games/sigilfall/arena/sim';
@@ -65,8 +65,10 @@ describe('The Ring: talents are their own', () => {
     for (const t of Object.values(TALENT_BY_ID)) {
       const loose = t as Talent & Record<string, unknown>;
       for (const key of ['hp', 'dmg', 'heal', 'speed', 'tenacity', 'cool', 'regen', 'leech', 'charge', 'crit']) expect(loose[key], `${t.id} ${key}`).toBeUndefined();
-      // (and none says what an oath says)
-      for (const o of OATHS) expect(t.text.toLowerCase(), t.id).not.toBe(o.text.toLowerCase());
+      // (and none says what an oath said, when there were oaths: until 2026-11-15)
+      for (const said of ['+12% health', '+8% damage', '+15% healing', '+10% move speed', 'held 25% shorter', 'cooldowns 12% shorter']) expect(t.text.toLowerCase(), t.id).not.toBe(said);
+      // (nor of the Unbinding Charm, taken out with them)
+      expect(t.text, t.id).not.toMatch(/charm/i);
     }
   });
 
@@ -129,19 +131,15 @@ describe('The Ring talents: the warrior', () => {
     }
   });
 
-  it('Shoulder Check: a Swift Step that ends beside an enemy stuns them, and not again for a while', () => {
-    const m = fight([{ team: 0, cls: 'warrior', talents: ['w-2c'], bar: ['w-hew'] }, { team: 1, cls: 'mage', at: [270, 125] }]);
-    const [w, mage] = m.fighters as [Fighter, Fighter];
-    w.dirX = 1;
-    w.dirY = 0;
-    expect(m.press(0, DASH.id)).toBeNull();
-    wait(m, 0.4);
+  it('Shoulder Check: the trinket stuns the nearest enemy beside them, and nobody farther off', () => {
+    const m = fight([{ team: 0, cls: 'warrior', talents: ['w-2c'], bar: ['w-hew', 'trinket'] }, { team: 1, cls: 'mage', at: [240, 125] }]);
+    const mage = m.fighters[1]!;
+    expect(m.press(0, 'trinket')).toBeNull();
     expect(m.held(mage)?.cc).toBe('stun');
-    wait(m, 5);
-    w.x = mage.x - 62 - doing('w-2c', 'check').reach / 2;
-    expect(m.press(0, DASH.id)).toBeNull();
-    wait(m, 0.4);
-    expect(m.held(mage)).toBeUndefined();
+    // (out of its reach: nothing)
+    const n = fight([{ team: 0, cls: 'warrior', talents: ['w-2c'], bar: ['w-hew', 'trinket'] }, { team: 1, cls: 'mage', at: [200 + doing('w-2c', 'check').reach + 20, 125] }]);
+    expect(n.press(0, 'trinket')).toBeNull();
+    expect(n.held(n.fighters[1]!)).toBeUndefined();
   });
 
   it('Scar Tissue: every blow taken hardens them a little, up to 10% less', () => {
@@ -184,11 +182,11 @@ describe('The Ring talents: the mage', () => {
     expect(foe.hp).toBeLessThan(hp);
   });
 
-  it('Brimming Power: spells hit harder while mana is high', () => {
+  it('Brimming Power: spells hit harder while health is high', () => {
     const m = fight([{ team: 0, cls: 'mage', talents: ['m-1b'] }, { team: 1, cls: 'warrior' }]);
     const [mage, foe] = m.fighters as [Fighter, Fighter];
     const full = inside(m).damage(mage, foe, 100, true, AB('m-burn'));
-    mage.mana = 30;
+    mage.hp = Math.round(mage.maxHp * 0.7);
     const low = inside(m).damage(mage, foe, 100, true, AB('m-burn'));
     expect(full).toBeCloseTo(low * 1.12, -0.5);
   });
@@ -203,22 +201,23 @@ describe('The Ring talents: the mage', () => {
     }
   });
 
-  it('Fold Space: the Swift Step is a blink, half again as far, even out of roots, and slower to come back', () => {
-    const m = fight([{ team: 0, cls: 'mage', talents: ['m-2b'] }, { team: 1, cls: 'druid' }]);
+  it('Fold Space: the trinket frees them and blinks them a short way the way they face', () => {
+    const m = fight([{ team: 0, cls: 'mage', talents: ['m-2b'], bar: ['trinket'] }, { team: 1, cls: 'druid' }]);
     const [mage, foe] = m.fighters as [Fighter, Fighter];
     inside(m).crowd(foe, AB('l-roots'), mage, 'root', 3);
     expect(m.rooted(mage)).toBe(true);
     mage.dirX = 1;
     mage.dirY = 0;
-    expect(m.press(0, DASH.id)).toBeNull();
+    expect(m.press(0, 'trinket')).toBeNull();
     // (at once: a blink, not a slide)
-    expect(mage.x).toBeCloseTo(200 + 62 * doing('m-2b', 'fold').far, 0);
+    expect(mage.x).toBeCloseTo(200 + doing('m-2b', 'fold').far, 0);
     expect(m.rooted(mage)).toBe(false);
-    expect(mage.cds[DASH.id]).toBeCloseTo(DASH.cd * TALENT_BY_ID['m-2b']!.tune!.dash!.cd!);
-    // without it, the roots hold
-    const n = fight([{ team: 0, cls: 'mage' }, { team: 1, cls: 'druid' }]);
+    // without it, freed where they stand
+    const n = fight([{ team: 0, cls: 'mage', bar: ['trinket'] }, { team: 1, cls: 'druid' }]);
     inside(n).crowd(n.fighters[1]!, AB('l-roots'), n.fighters[0]!, 'root', 3);
-    expect(n.press(0, DASH.id)).toBe('Rooted');
+    expect(n.press(0, 'trinket')).toBeNull();
+    expect(n.fighters[0]!.x).toBe(200);
+    expect(n.rooted(n.fighters[0]!)).toBe(false);
   });
 
   it('Third Chill: the third hit on one enemy in a few seconds freezes them to the ground', () => {
@@ -231,35 +230,36 @@ describe('The Ring talents: the mage', () => {
     expect(m.rooted(foe)).toBe(true);
   });
 
-  it('Mana Skin: while there is mana to spare, some of what they take is paid in mana', () => {
-    const taken = (talents: string[], mana: number): [number, number] => {
+  it('Arcane Skin: while their health is high, some of what they take is turned aside', () => {
+    const taken = (talents: string[], share: number): number => {
       const m = fight([{ team: 0, cls: 'mage', talents }, { team: 1, cls: 'warrior' }]);
       const mage = m.fighters[0]!;
-      mage.mana = mana;
+      mage.hp = Math.round(mage.maxHp * share);
+      const before = mage.hp;
       inside(m).damage(m.fighters[1]!, mage, 100, true, AB('w-hew'));
-      return [mage.maxHp - mage.hp, mage.mana];
+      return before - mage.hp;
     };
-    const d = doing('m-3a', 'manaskin');
-    const [plain] = taken([], 100);
-    const [skin, left] = taken(['m-3a'], 100);
-    expect(skin).toBeCloseTo(plain * (1 - d.share), -0.5);
-    expect(left).toBeLessThan(100);
-    // (never below its line: what mana there is left is for casting)
-    expect(taken(['m-3a'], 100 * d.above)[0]).toBe(plain);
+    const d = doing('m-3a', 'skin');
+    const plain = taken([], 1);
+    expect(taken(['m-3a'], 1)).toBeCloseTo(plain * (1 - d.share), -0.5);
+    // (not under its line)
+    expect(taken(['m-3a'], d.above - 0.05)).toBe(taken([], d.above - 0.05));
   });
 
-  it('Rewind: a Swift Step gives back half of what was taken in the last few seconds, once in a while', () => {
-    const m = fight([{ team: 0, cls: 'mage', talents: ['m-3b'] }, { team: 1, cls: 'warrior' }]);
+  it('Rewind: the trinket gives back half of what was taken in the last few seconds', () => {
+    const m = fight([{ team: 0, cls: 'mage', talents: ['m-3b'], bar: ['trinket'] }, { team: 1, cls: 'warrior' }]);
     const [mage, foe] = m.fighters as [Fighter, Fighter];
     inside(m).damage(foe, mage, 200, true, AB('w-hew'));
     const lost = mage.maxHp - mage.hp;
-    m.press(0, DASH.id);
+    m.press(0, 'trinket');
     expect(mage.maxHp - mage.hp).toBeCloseTo(lost / 2, -0.5);
-    wait(m, 5.1);
-    inside(m).damage(foe, mage, 200, true, AB('w-hew'));
-    const hp = mage.hp;
-    m.press(0, DASH.id);
-    expect(mage.hp).toBe(hp);
+    // (only what was taken lately)
+    const n = fight([{ team: 0, cls: 'mage', talents: ['m-3b'], bar: ['trinket'] }, { team: 1, cls: 'warrior' }]);
+    inside(n).damage(n.fighters[1]!, n.fighters[0]!, 200, true, AB('w-hew'));
+    wait(n, doing('m-3b', 'rewind').back + 0.5);
+    const hp = n.fighters[0]!.hp;
+    n.press(0, 'trinket');
+    expect(n.fighters[0]!.hp).toBe(hp);
   });
 
   it('Vanishing Point: falling low, they vanish away from the nearest enemy', () => {
@@ -398,19 +398,18 @@ describe('The Ring talents: the priest', () => {
     expect(friend.auras.find((a) => a.ab === 'p-1c')!.n).toBeCloseTo(friend.maxHp * doing('p-1c', 'overflow').cap, 0);
   });
 
-  it('Guardian Leap: the Swift Step goes farther, and to a chosen friend’s side', () => {
-    const m = fight([{ team: 0, cls: 'priest', talents: ['p-2a'] }, { team: 1, cls: 'warrior', at: [500, 200] }, { team: 0, cls: 'warrior', at: [340, 125] }]);
+  it('Guardian Leap: the trinket leaps them to a chosen friend’s side', () => {
+    const m = fight([{ team: 0, cls: 'priest', talents: ['p-2a'], bar: ['trinket'] }, { team: 1, cls: 'warrior', at: [500, 200] }, { team: 0, cls: 'warrior', at: [340, 125] }]);
     const [p, , friend] = m.fighters as [Fighter, Fighter, Fighter];
     p.friend = friend.id;
-    expect(m.press(0, DASH.id)).toBeNull();
+    expect(m.press(0, 'trinket')).toBeNull();
     wait(m, 0.5);
     expect(Math.hypot(p.x - friend.x, p.y - friend.y)).toBeLessThan(HERO_R * 3);
-    // with nobody chosen, a longer step the way they face
-    const n = fight([{ team: 0, cls: 'priest', talents: ['p-2a'] }, { team: 1, cls: 'warrior', at: [500, 200] }]);
-    Object.assign(n.fighters[0]!, { dirX: -1, dirY: 0 });
-    n.press(0, DASH.id);
+    // with nobody chosen, they stay where they are
+    const n = fight([{ team: 0, cls: 'priest', talents: ['p-2a'], bar: ['trinket'] }, { team: 1, cls: 'warrior', at: [500, 200] }]);
+    n.press(0, 'trinket');
     wait(n, 0.5);
-    expect(200 - n.fighters[0]!.x).toBeCloseTo(62 * doing('p-2a', 'leap').far, 0);
+    expect(n.fighters[0]!.x).toBe(200);
   });
 
   it('Sapping Word: who they hurt is healed less', () => {
@@ -623,15 +622,12 @@ describe('The Ring talents: the warlock', () => {
     expect(inside(m).damage(foe, k, 100, true, AB('w-hew'))).toBeCloseTo(before * (1 - doing('k-2a', 'enfeeble').pct / 100), -0.5);
   });
 
-  it('Way Back: the next Swift Step soon after one goes back to where it began', () => {
-    const m = fight([{ team: 0, cls: 'warlock', talents: ['k-2b'] }, { team: 1, cls: 'warrior', at: [600, 200] }]);
+  it('Shadow Ward: the trinket wards them for a share of their health', () => {
+    const m = fight([{ team: 0, cls: 'warlock', talents: ['k-2b'], bar: ['trinket'] }, { team: 1, cls: 'warrior', at: [600, 200] }]);
     const k = m.fighters[0]!;
-    Object.assign(k, { dirX: 1, dirY: 0 });
-    m.press(0, DASH.id);
-    wait(m, 5.1);
-    expect(k.x).toBeGreaterThan(250);
-    expect(m.press(0, DASH.id)).toBeNull();
-    expect([k.x, k.y]).toEqual([200, 125]);
+    expect(m.press(0, 'trinket')).toBeNull();
+    const d = doing('k-2b', 'shadeward');
+    expect(k.auras.find((a) => a.ab === 'k-2b')).toMatchObject({ kind: 'absorb', n: Math.round(k.maxHp * d.pct), dur: d.dur });
   });
 
   it('Mirror Curse: the first hold on them now and then goes back on whoever put it', () => {
@@ -643,13 +639,16 @@ describe('The Ring talents: the warlock', () => {
     expect(inside(m).crowd(foe, AB('w-hurl'), k, 'stun', 2)).toBe(true);
   });
 
-  it('Hollow Pact: falling low, their mana becomes health', () => {
+  it('Hollow Pact: falling low, they heal a quarter of their health, once in a while', () => {
     const m = fight([{ team: 0, cls: 'warlock', talents: ['k-3a'] }, { team: 1, cls: 'warrior' }]);
     const [k, foe] = m.fighters as [Fighter, Fighter];
     k.hp = Math.round(k.maxHp * 0.4);
     inside(m).damage(foe, k, 100, true, AB('w-hew'));
-    expect(k.mana).toBe(0);
     expect(k.hp).toBeGreaterThan(k.maxHp * 0.4);
+    // (and not again until its time is up)
+    k.hp = Math.round(k.maxHp * 0.4);
+    inside(m).damage(foe, k, 100, true, AB('w-hew'));
+    expect(k.hp).toBeLessThan(k.maxHp * 0.4);
   });
 
   it('Unholy Bargain: less hurt, less healed', () => {
@@ -712,11 +711,11 @@ describe('The Ring talents: the druid', () => {
     expect(m.fighters[1]!.auras.find((a) => a.ab === 'l-moon')?.dur).toBeCloseTo(10 * (1 + doing('l-1c', 'seasons').pct));
   });
 
-  it('Stag Form: the Swift Step makes them a stag, faster and free, even from roots', () => {
-    const m = fight([{ team: 0, cls: 'druid', talents: ['l-2a'] }, { team: 1, cls: 'druid' }]);
+  it('Stag Form: the trinket makes them a stag, faster and free', () => {
+    const m = fight([{ team: 0, cls: 'druid', talents: ['l-2a'], bar: ['trinket'] }, { team: 1, cls: 'druid' }]);
     const [d, foe] = m.fighters as [Fighter, Fighter];
     inside(m).crowd(foe, AB('l-roots'), d, 'root', 3);
-    expect(m.press(0, DASH.id)).toBeNull();
+    expect(m.press(0, 'trinket')).toBeNull();
     expect(m.rooted(d)).toBe(false);
     expect(has(d, 'l-2a', 'speed') && has(d, 'l-2a', 'free')).toBe(true);
   });
@@ -769,15 +768,14 @@ describe('The Ring talents: the druid', () => {
     expect(d.hp).toBe(hp + Math.round(d.maxHp * v.pct));
   });
 
-  it('Shed Skin: the Swift Step sheds a curse, and mends a little', () => {
-    const m = fight([{ team: 0, cls: 'druid', talents: ['l-3c'] }, { team: 1, cls: 'warlock', bar: ['k-agony'] }]);
+  it('Shed Skin: the trinket takes one more curse off, and mends a little', () => {
+    const m = fight([{ team: 0, cls: 'druid', talents: ['l-3c'], bar: ['trinket'] }, { team: 1, cls: 'warlock', bar: ['k-agony'] }]);
     const d = m.fighters[0]!;
-    expect(m.press(1, 'k-agony')).toBeNull();
-    expect(has(d, 'k-agony', 'dot')).toBe(true);
+    d.auras.push({ ab: 'p-2b', kind: 'antiheal', src: 1, t: 8, dur: 8, harmful: true, magic: true, n: 0.2 });
     d.hp = Math.round(d.maxHp / 2);
     const hp = d.hp;
-    m.press(0, DASH.id);
-    expect(has(d, 'k-agony')).toBe(false);
+    m.press(0, 'trinket');
+    expect(has(d, 'p-2b')).toBe(false);
     expect(d.hp).toBe(hp + Math.round(d.maxHp * doing('l-3c', 'shed').heal));
   });
 });
@@ -827,21 +825,19 @@ describe('The Ring talents: the Gloamknight', () => {
     expect(drank(['g-1c'])).toBeGreaterThan(plain * 1.5);
   });
 
-  it('Drag Below: a Swift Step toward an enemy in reach drags them along to where it ends, slowed', () => {
-    const m = fight([{ team: 0, cls: 'gloamknight', talents: ['g-2a'] }, { team: 1, cls: 'mage', at: [300, 125] }]);
+  it('Drag Below: the trinket drags the nearest enemy in reach to their side, slowed', () => {
+    const m = fight([{ team: 0, cls: 'gloamknight', talents: ['g-2a'], bar: ['trinket'] }, { team: 1, cls: 'mage', at: [300, 125] }]);
     const [g, mage] = m.fighters as [Fighter, Fighter];
-    Object.assign(g, { dirX: 1, dirY: 0 });
-    expect(m.press(0, DASH.id)).toBeNull();
+    expect(m.press(0, 'trinket')).toBeNull();
     wait(m, 0.5);
-    expect(g.x).toBeCloseTo(200 + 62, 0);
+    expect(g.x).toBe(200);
     expect(Math.abs(mage.x - g.x)).toBeLessThan(HERO_R * 3);
     expect(mage.auras.find((a) => a.ab === 'g-2a')).toMatchObject({ kind: 'slow', n: doing('g-2a', 'drag').pct / 100 });
-    // (a step away is only a step)
-    const n = fight([{ team: 0, cls: 'gloamknight', talents: ['g-2a'] }, { team: 1, cls: 'mage', at: [300, 125] }]);
-    Object.assign(n.fighters[0]!, { dirX: -1, dirY: 0 });
-    n.press(0, DASH.id);
+    // (out of reach: nobody)
+    const n = fight([{ team: 0, cls: 'gloamknight', talents: ['g-2a'], bar: ['trinket'] }, { team: 1, cls: 'mage', at: [200 + doing('g-2a', 'drag').reach + 30, 125] }]);
+    n.press(0, 'trinket');
     wait(n, 0.5);
-    expect(n.fighters[0]!.x).toBeLessThan(150);
+    expect(n.fighters[1]!.x).toBe(200 + doing('g-2a', 'drag').reach + 30);
   });
 
   it('Dusk Mantle: enemies close by move slower', () => {
@@ -911,37 +907,5 @@ describe('The Ring talents: the Gloamknight', () => {
     expect(hit(m)).toBe(plain);
     wait(m, d.every + 0.1);
     expect(hit(m)).toBeCloseTo(plain * (1 - d.pct), -0.5);
-  });
-});
-
-describe('The Ring talents: what works through the Swift Step works through the Unbinding Charm too', () => {
-  it('Shed Skin, Stag Form, Wild Snare and Drag Below go off when the charm is used in the Swift Step’s place', () => {
-    const charm = (cls: ClassId, talents: string[], foe: [number, number] = [300, 125]): Match => {
-      const m = new Match({ seed: 5, map: 'sands', fighters: [{ team: 0, cls, name: cls, bar: PRESETS[cls][0]!.bar, talents, step: 'charm' }, { team: 1, cls: 'warrior', name: 'w', bar: ['w-hew'] }] });
-      m.step(GATES + 0.01, {});
-      Object.assign(m.fighters[0]!, { x: 200, y: 125, dirX: 1, dirY: 0 });
-      Object.assign(m.fighters[1]!, { x: foe[0], y: foe[1] });
-      return m;
-    };
-    // a druid's shed skin and stag form
-    const d = charm('druid', ['l-3c']);
-    const druid = d.fighters[0]!;
-    druid.hp = 600;
-    druid.auras.push({ ab: 'k-agony', kind: 'dot', src: 1, t: 6, dur: 6, harmful: true, magic: true, n: 1, next: 1 });
-    expect(d.press(0, 'charm')).toBeNull();
-    expect(druid.auras.some((a) => a.ab === 'k-agony')).toBe(false);
-    expect(druid.hp).toBeGreaterThan(600);
-    const s = charm('druid', ['l-2a']);
-    expect(s.press(0, 'charm')).toBeNull();
-    expect(s.fighters[0]!.auras.some((a) => a.kind === 'free') && s.fighters[0]!.auras.some((a) => a.kind === 'speed')).toBe(true);
-    // a ranger's snare where they stood
-    const r = charm('ranger', ['r-2b']);
-    expect(r.press(0, 'charm')).toBeNull();
-    expect(r.traps.some((t) => t.src === 0)).toBe(true);
-    // a Gloamknight's drag: the enemy in reach is pulled to them, whichever way they face
-    const g = charm('gloamknight', ['g-2a'], [150, 125]);
-    expect(g.press(0, 'charm')).toBeNull();
-    wait(g, 0.5);
-    expect(Math.hypot(g.fighters[1]!.x - 200, g.fighters[1]!.y - 125)).toBeLessThan(25);
   });
 });

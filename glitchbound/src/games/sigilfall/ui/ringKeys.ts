@@ -12,6 +12,7 @@ export type RingAction =
   | 'ab2'
   | 'ab3'
   | 'ab4'
+  | 'ab5'
   | 'dash'
   | 'super'
   | 'nextFoe'
@@ -32,7 +33,10 @@ export const RING_ACTIONS: { id: RingAction; name: string; group: 'Move' | 'Abil
   { id: 'ab2', name: 'Ability 2', group: 'Abilities' },
   { id: 'ab3', name: 'Ability 3', group: 'Abilities' },
   { id: 'ab4', name: 'Ability 4', group: 'Abilities' },
-  { id: 'dash', name: 'Swift Step', group: 'Abilities' },
+  { id: 'ab5', name: 'Ability 5', group: 'Abilities' },
+  // (behind the gates, ready to fight: still `dash`, the Swift Step's id until 2026-11-15, so that keys already set keep
+  // working)
+  { id: 'dash', name: 'Ready (before a match)', group: 'Abilities' },
   { id: 'super', name: 'Super', group: 'Abilities' },
   { id: 'nextFoe', name: 'Next enemy', group: 'Targets' },
   { id: 'nextFriend', name: 'Next ally', group: 'Targets' },
@@ -55,6 +59,7 @@ export const DEFAULT_KEYS: RingKeys = {
   ab2: 'Digit2',
   ab3: 'Digit3',
   ab4: 'Digit4',
+  ab5: 'Digit5',
   dash: 'Space',
   super: 'KeyQ',
   nextFoe: 'Tab',

@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, DASH, kitOf, OATHS, PRESETS, SLOTS, superOf, SUPERS } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, kitOf, PRESETS, SLOTS, superOf, SUPERS } from '../src/games/sigilfall/arena/abilities';
 import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
 import { afterMatch, COMPS, drawOpponents, namedApart, NEW_STANDING, nextRank, rankOf, ratingChange, RANKS, SET_COUNT, setsOf, skillAt } from '../src/games/sigilfall/arena/ladder';
 import { ARENA_H, ARENA_W, ENTRY_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
@@ -59,7 +59,6 @@ describe('The Ring: the rules', () => {
     wait(m, 2);
     expect(me.cast).toBeNull();
     expect(foe.hp).toBe(foe.maxHp);
-    expect(me.mana).toBe(me.maxMana);
   });
 
   it('clearLine is right about the corners', () => {
@@ -224,7 +223,6 @@ describe('The Ring: the rules', () => {
     wait(m, 0.15);
     expect(m.held(foe)).toBeTruthy();
     expect(m.press(1, 'w-hew')).toBe('You can’t do that now');
-    expect(m.press(1, DASH.id)).toBe('You can’t do that now');
     expect(m.press(1, 'w-stand')).toBeNull();
     // (no Token any more: holds are short enough to wait out)
     expect(m.press(1, 'token')).toMatch(/don’t have/);
@@ -405,11 +403,11 @@ describe('The Ring: the entries and the wait', () => {
   it('a set up can change until the gates lift, and not after', () => {
     const m = new Match({ seed: 1, map: 'sands', fighters: [fighter(0, 'warrior'), fighter(1, 'mage')] });
     const me = m.fighters[0]!;
-    const base = me.maxHp;
     const next = PRESETS.warrior[1]!;
-    expect(m.equip(0, { bar: next.bar, oath: 'iron', talents: ['w-3a'] })).toBe(true);
+    me.hp = 400;
+    expect(m.equip(0, { bar: next.bar, talents: ['w-3a'] })).toBe(true);
     expect(me.bar).toEqual(next.bar);
-    expect(me.maxHp).toBeGreaterThan(base);
+    expect(me.talents).toEqual(['w-3a']);
     expect(me.hp).toBe(me.maxHp);
     // nothing that isn't a full bar of their own
     expect(m.equip(0, { bar: ['m-lash'] })).toBe(false);
@@ -443,10 +441,9 @@ describe('The Ring: talents and set ups', () => {
         // (the whole class's: what it sharpens is only ever what every hero of the class carries, whatever their bar)
         for (const id of Object.keys(t.tune ?? {})) {
           // (`super` is whichever of the class's two the hero carries)
-          expect([DASH.id, 'super'], `${t.id} sharpens ${id}`).toContain(id);
-          // the talent speaks of what it changes: the Swift Step by name, a super as "your super"
-          if (id === 'super') expect(t.text, t.id).toMatch(/your super/i);
-          else expect(t.text, t.id).toContain(ABILITIES[id]!.name);
+          expect(id, t.id).toBe('super');
+          // the talent speaks of what it changes: a super as "your super"
+          expect(t.text, t.id).toMatch(/your super/i);
         }
       }
       expect(new Set(TALENTS[cls].map((t) => t.name)).size).toBe(9);
@@ -458,7 +455,7 @@ describe('The Ring: talents and set ups', () => {
     expect(cleanTalents('warrior', undefined)).toEqual([]);
   });
 
-  it('a talent changes the numbers, whatever is on the bar: harder on the low, a slower Swift Step for a blink, longer holds', () => {
+  it('a talent changes the numbers, whatever is on the bar: harder on the low, longer holds', () => {
     const hit = (talents: string[], bar = ['w-hew'], low = false): number => {
       const m = new Match({ seed: 11, map: 'sands', fighters: [{ ...fighter(0, 'warrior', bar), talents }, fighter(1, 'paladin')] });
       m.step(GATES + 0.01, {});
@@ -479,11 +476,6 @@ describe('The Ring: talents and set ups', () => {
     expect(hit(['w-1b'], ['w-gash'], true)).toBeCloseTo(hit([], ['w-gash'], true) * (1 + exec), -0.5);
     expect(hit(['w-1b'])).toBe(hit([]));
 
-    // Fold Space: the Swift Step comes back a second slower, for being a blink
-    const m = new Match({ seed: 1, map: 'sands', fighters: [{ ...fighter(0, 'mage', ['m-lash', 'm-blink', 'm-snap', 'm-chill']), talents: ['m-2b'] }, fighter(1, 'warrior')] });
-    m.step(GATES + 0.01, {});
-    expect(m.press(0, DASH.id)).toBeNull();
-    expect(m.fighters[0]!.cds[DASH.id]).toBeCloseTo(DASH.cd * TALENT_BY_ID['m-2b']!.tune!.dash!.cd!);
 
     // holds put on them last longer, a hold of the bar's or the super's alike
     const held = (talents: string[]): number => {
@@ -523,14 +515,14 @@ describe('The Ring: talents and set ups', () => {
     s.press(0, 'w-hew');
     expect(s.held(foe)).toBeUndefined();
 
-    // Wild Snare: a step leaves a snare where it began
-    const r = new Match({ seed: 5, map: 'sands', fighters: [{ ...fighter(0, 'ranger', ['r-swift']), talents: ['r-2b'] }, fighter(1, 'warrior')] });
+    // Wild Snare: the trinket leaves a snare where they stand
+    const r = new Match({ seed: 5, map: 'sands', fighters: [{ ...fighter(0, 'ranger', ['r-swift', 'trinket']), talents: ['r-2b'] }, fighter(1, 'warrior')] });
     r.step(GATES + 0.01, {});
     const ranger = r.fighters[0]!;
     ranger.x = 200;
     ranger.y = 125;
     ranger.dirX = 1;
-    expect(r.press(0, DASH.id)).toBeNull();
+    expect(r.press(0, 'trinket')).toBeNull();
     expect(r.traps).toHaveLength(1);
     expect(r.traps[0]).toMatchObject({ x: 200, y: 125, cc: 'root' });
 
@@ -570,7 +562,9 @@ describe('The Ring: talents and set ups', () => {
 describe('The Ring: the kits', () => {
   it('every class has twelve to choose from, with a way to hit, a hold, an escape or defense, and its bars are real', () => {
     for (const cls of CLASS_IDS) {
-      const kit = kitOf(cls);
+      // (its own twelve; the trinket, every class's, besides)
+      expect(kitOf(cls).at(-1)!.id, cls).toBe('trinket');
+      const kit = kitOf(cls).filter((a) => a.cls === cls);
       expect(kit, cls).toHaveLength(12);
       const roles = new Set(kit.map((a) => a.role));
       for (const r of ['damage', 'cc', 'interrupt', 'defense'] as const) expect(roles.has(r), `${cls} has ${r}`).toBe(true);
@@ -581,7 +575,6 @@ describe('The Ring: the kits', () => {
         for (const id of p.bar) expect(ABILITIES[id]?.cls, id).toBe(cls);
       }
     }
-    expect(OATHS.length).toBeGreaterThanOrEqual(5);
   });
 
   it('every class can kill with what it has, and three can heal for real', () => {
@@ -598,7 +591,7 @@ describe('The Ring: the kits', () => {
   it('every ability’s icon is in the atlas', () => {
     const index = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/games/sigilfall/icons/icons.json'), 'utf8')) as { names: string[] };
     for (const a of Object.values(ABILITIES)) expect(index.names, a.id).toContain(a.icon);
-    expect(index.names).toContain(DASH.icon);
+    expect(index.names).toContain(ABILITIES.trinket!.icon);
   });
 
   it('a spell’s text matches its numbers', () => {
@@ -788,7 +781,7 @@ describe('The Ring: the ladder', () => {
 
 describe('The Ring: over a room', () => {
   const KEYS = ['aaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbb', 'cccccccccccccccccccc'];
-  const pick = (team: 0 | 1, cls: ClassId = 'warrior'): { team: 0 | 1; cls: string; bar: string[]; oath: string; talents: string[] } => ({ team, cls, bar: PRESETS[cls][0]!.bar, oath: 'iron', talents: PRESETS[cls][0]!.talents });
+  const pick = (team: 0 | 1, cls: ClassId = 'warrior'): { team: 0 | 1; cls: string; bar: string[]; talents: string[] } => ({ team, cls, bar: PRESETS[cls][0]!.bar, talents: PRESETS[cls][0]!.talents });
   const room = () => {
     const s = newRoom('ABCD', 0, 42);
     for (const [i, k] of KEYS.entries()) expect(join(s, k, `P${i}`, 0)).toBeNull();
@@ -862,7 +855,7 @@ describe('The Ring: over a room', () => {
     const s = room();
     act(s, KEYS[0]!, { t: 'setup', format: 3, map: 'forge' }, 1);
     act(s, KEYS[0]!, { t: 'pick', pick: pick(0, 'mage') }, 1);
-    act(s, KEYS[1]!, { t: 'pick', pick: { team: 1, cls: 'dragon', bar: ['nonsense'], oath: 'iron', talents: ['nonsense'] } }, 1);
+    act(s, KEYS[1]!, { t: 'pick', pick: { team: 1, cls: 'dragon', bar: ['nonsense'], talents: ['nonsense'] } }, 1);
     act(s, KEYS[0]!, { t: 'start' }, 1);
     const a = setupFromRoom(viewFor(s, KEYS[0]!)!);
     const b = setupFromRoom(viewFor(s, KEYS[1]!)!);
@@ -976,10 +969,10 @@ describe('The Ring: combos', () => {
 });
 
 describe('The Ring: a brawl', () => {
-  it('a cast shot follows its target and lands, whichever way they turn, step or hide', () => {
+  it('a cast shot follows its target and lands, whichever way they turn, break free or hide', () => {
     // (the owner: "the misses are a bit annoying ... let's make all the spells hit the target, without any misses")
     const shoot = (after: 'on' | 'turn' | 'step' | 'stone'): number => {
-      const m = duel('mage', ['m-lash'], 'warrior');
+      const m = duel('mage', ['m-lash'], 'warrior', ['w-hew', 'trinket']);
       const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
       const p = m.pillars[0]!;
       me.x = p.x - 70;
@@ -990,9 +983,7 @@ describe('The Ring: a brawl', () => {
       for (let i = 0; i < 60 && m.fighters[0]!.cast; i++) m.step(STEP, { 1: { mx: 0, my: 1 } });
       expect(m.bolts).toHaveLength(1);
       if (after === 'step') {
-        foe.dirX = 0;
-        foe.dirY = 1;
-        expect(m.press(1, DASH.id)).toBeNull();
+        expect(m.press(1, 'trinket')).toBeNull();
       }
       // (behind the pillar, out of the caster's sight, while it is in the air)
       if (after === 'stone') {
@@ -1036,20 +1027,21 @@ describe('The Ring: a brawl', () => {
     expect(seen).toContain('miss');
   });
 
-  it('a Swift Step is quick, on its own clock, off the global one, and not while rooted', () => {
-    const m = duel('warrior', ['w-hew'], 'mage');
+  it('the trinket breaks every hold and every burn, even while held, off the global clock, then waits 45 seconds', () => {
+    const m = duel('warrior', ['w-hew', 'trinket'], 'mage');
     const me = m.fighters[0]!;
-    me.dirX = -1;
-    me.dirY = 0;
-    const x = me.x;
-    m.press(0, 'w-hew');
-    expect(m.press(0, DASH.id)).toBeNull();
-    wait(m, 0.3);
-    expect(x - me.x).toBeGreaterThan(50);
-    expect(m.press(0, DASH.id)).toBe('Not ready yet');
-    wait(m, DASH.cd);
-    me.auras.push({ ab: 'm-ring', kind: 'cc', cc: 'root', src: 1, t: 2, dur: 2, harmful: true, magic: true, n: 0 });
-    expect(m.press(0, DASH.id)).toBe('Rooted');
+    me.auras.push({ ab: 'm-ring', kind: 'cc', cc: 'stun', src: 1, t: 3, dur: 3, harmful: true, magic: true, n: 0 });
+    me.auras.push({ ab: 'm-ring', kind: 'slow', src: 1, t: 3, dur: 3, harmful: true, magic: true, n: 0.5 });
+    me.auras.push({ ab: 'm-lash', kind: 'dot', src: 1, t: 5, dur: 6, harmful: true, magic: true, n: 30, next: 1 });
+    expect(m.held(me)).toBeTruthy();
+    expect(m.press(0, 'w-hew')).toBe('You can’t do that now');
+    expect(m.press(0, 'trinket')).toBeNull();
+    expect(me.auras.filter((a) => a.harmful)).toEqual([]);
+    expect(m.held(me)).toBeFalsy();
+    // (off the global clock: a blow at once)
+    expect(m.press(0, 'w-hew')).toBeNull();
+    expect(m.press(0, 'trinket')).toBe('Not ready yet');
+    expect(me.cds.trinket).toBe(45);
   });
 
   it('the super fills by fighting, waits for a full meter, empties when used, and isn’t refilled by its own blow', () => {

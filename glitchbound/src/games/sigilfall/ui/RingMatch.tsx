@@ -1,19 +1,20 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { TitleShown } from '../progress/titles';
 import { useGameMenu } from '../../../components/GameMenuButton';
-import { ABILITIES, SLOTS, type Ability } from '../arena/abilities';
+import { ABILITIES, SLOTS, type Ability, type CcKind } from '../arena/abilities';
 import { botThink, newBrain, steerTo } from '../arena/bot';
 import { LEAVER_K, type ClassSets } from '../arena/ladder';
 import { hintNow, keepLog, lessonOf, newLog, type HintKeys } from '../arena/lessons';
 import { TutorialRun, type TutorialKeys } from '../arena/tutorial';
 import { lookOf } from '../arena/look';
 import { MAPS } from '../arena/maps';
-import { CLOSE_FROM, Match, MATCH_LIMIT, PACE, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
+import { CLOSE_FROM, Match, MATCH_LIMIT, PACE, type Aura, type DrState, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
+import { playstyleOf } from '../arena/styles';
 import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
 import type { Character, Face } from '../progress/character';
 import { iconPicture } from '../render/art/gameIcons';
-import { BAR_TOP, drawRing, headHeight, RingFx, ringLooks, ringSpells, type RingAim } from '../render/ring';
+import { barTop, drawRing, headHeight, RingFx, ringLooks, ringSpells, type RingAim } from '../render/ring';
 import { RingStage, ringMapOf } from '../render3d/ring3d';
 import { heroDollUrl, type WornLooks } from '../render/sprites';
 import { RingHelp, SetupEditor, timing } from './RingSetup';
@@ -51,9 +52,9 @@ const STEP = 1 / 60;
 const MAX_STEP = 1 / 45;
 /** A host speaks ten times a second: plenty for frames that coast between. */
 const SEND_EVERY = 0.1;
-/** The campaign's thumb cluster: the same places, so a phone player's hands already know them (the four abilities,
- * then the Swift Step where the dodge is, and the super where the ultimate is). */
-const TOUCH_SLOTS = ['basic', 's1', 's2', 's3', 'dodge', 'ult'] as const;
+/** The thumb cluster's places (Game.css .rb-ring-thumbs .rb-cluster): the bar's first in the corner, its other four
+ * on one arc round it, then the super outside it. (A Swift Step had its own place, low on the left, until 2026-11-15.) */
+const TOUCH_SLOTS = ['basic', 's1', 's2', 's3', 's4', 'ult'] as const;
 
 const clock = (t: number): string => {
   const left = Math.max(0, MATCH_LIMIT - t);
@@ -62,6 +63,38 @@ const clock = (t: number): string => {
 
 const CC_WORD: Record<string, string> = { stun: 'Stunned', fear: 'Feared', incap: 'Dazed', root: 'Rooted', silence: 'Silenced' };
 const DR_MARK = ['', '½', '¼', '✕'];
+/** What the next hold of a kind does, by how many have landed: half as long, a quarter, or nothing at all. */
+const DR_NEXT = ['', 'the next lasts half as long', 'the next lasts a quarter as long', 'immune to the next'];
+/** Each kind of hold's picture, for diminishing returns from a host that didn't say what put them on. */
+const DR_ICON: Record<CcKind, string> = { stun: 'd-hammer', fear: 'w-shout', incap: 'm-toad', root: 'l-roots', silence: 'p-hush' };
+
+/**
+ * Diminishing returns, one round chip for each kind of hold that wears off faster on them now (the owner: "add
+ * diminishing return tracker on the enemies on the nameplates, should be small but visible - e.g mage's hex"): the
+ * picture of what put the last on them (a Toad Hex for a daze), rimmed yellow when the next lasts half as long, orange
+ * a quarter, red when they can't be held that way at all, with the rim running down until it is forgotten.
+ */
+function DrChips({ f, m }: { f: Fighter; m: Match }) {
+  const now = (Object.entries(f.dr) as [CcKind, DrState | undefined][]).filter((e): e is [CcKind, DrState] => !!e[1] && e[1].until > m.clock && e[1].n > 0);
+  if (!now.length) return null;
+  return (
+    <span className="rb-ring-drs">
+      {now.map(([k, d]) => {
+        const stage = Math.min(d.n, DR_MARK.length - 1);
+        const left = d.until - m.clock;
+        const share = d.at !== undefined && d.until > d.at ? Math.max(0, Math.min(1, left / (d.until - d.at))) : 1;
+        const shown = d.ab && lookOf(d.ab) ? d.ab : DR_ICON[k];
+        const look = lookOf(shown)!;
+        return (
+          <i key={k} className={`is-dr${stage}`} data-ab={shown} style={{ ['--left' as string]: share.toFixed(3) }} title={`${CC_WORD[k]} (${look.name}): ${DR_NEXT[stage]}, for ${Math.ceil(left)}s`}>
+            <img src={iconPicture(look.icon)} alt="" draggable={false} />
+            <em>{DR_MARK[stage]}</em>
+          </i>
+        );
+      })}
+    </span>
+  );
+}
 
 /** What an effect does to whoever carries it, in a word or two. */
 const auraWord = (a: Aura): string => {
@@ -126,14 +159,13 @@ function AuraIcons({ f }: { f: Fighter }) {
 /** How far along a cast is (a channel runs down). */
 const castShare = (c: { t: number; dur: number; channel: boolean }): number => Math.max(0, Math.min(1, c.channel ? 1 - c.t / c.dur : c.t / c.dur));
 
-function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Match; me: Fighter | null; doll: string; tag: string | null; onPick: () => void; flip?: boolean; title?: { text: string } | null }) {
+export function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Match; me: Fighter | null; doll: string; tag: string | null; onPick: () => void; flip?: boolean; title?: { text: string } | null }) {
   const hold = f.auras.find((a) => a.cc);
   const c = f.cast;
   const ab = c ? ABILITIES[c.ab] : null;
   // (one of the other side in the shroud: their place is kept, but nothing of how they are)
   const veiled = !!me && m.unseen(f, me) && !f.dead;
   const sees = !veiled && (!me || me === f || m.phase !== 'fight' || m.sees(me, f));
-  const dr = Object.entries(f.dr).filter(([, d]) => d && d.until > m.clock && d.n > 0);
   const share = f.hp / f.maxHp;
   return (
     <button className={`rb-ring-frame${flip ? ' is-flip' : ''}${tag ? ' is-on' : ''}${f.dead ? ' is-dead' : ''}${sees ? '' : ' is-unseen'}`} style={{ ['--c' as string]: CLASSES[f.cls].colors.accent }} 
@@ -149,20 +181,19 @@ function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Ma
         <img src={doll} alt="" draggable={false} />
       </span>
       <span className="rb-ring-bars">
+        {/* (their name, then in small letters the way they fight: arena/styles.ts playstyleOf) */}
         <span className="rb-ring-name">
           <b>{f.id === me?.id ? 'You' : f.name}</b>
+          <small className="rb-ring-style">{playstyleOf(f.cls, f.bar)}</small>
           {tag && <em>{tag}</em>}
         </span>
         <span className={`rb-ring-bar${share < 0.3 ? ' is-low' : ''}`}>
           <i style={{ width: `${share * 100}%` }} />
           <b>{f.dead ? 'Fallen' : veiled ? 'Hidden' : `${Math.round(share * 100)}%`}</b>
         </span>
+        {/* what they are casting (or what holds them) on the row under the health. (A mana row stood between them; the
+            Ring has no mana now: the owner, 2026-11-15, "remove the mana completely") */}
         <span className="rb-ring-tail">
-          {f.maxMana > 0 && (
-            <span className="rb-ring-mana">
-              <i style={{ width: `${(f.mana / f.maxMana) * 100}%` }} />
-            </span>
-          )}
           {c && ab ? (
             <span className="rb-ring-cast" style={{ ['--a' as string]: ab.color }}>
               <i data-cast={f.id} style={{ width: `${castShare(c) * 100}%` }} />
@@ -178,12 +209,7 @@ function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Ma
         </span>
         <span className="rb-ring-under">
           <AuraIcons f={f} />
-          {dr.map(([k, d]) => (
-            <small key={k} className="rb-ring-dr" title={`${CC_WORD[k]} wears off faster now`}>
-              {k[0]!.toUpperCase()}
-              {DR_MARK[d!.n]}
-            </small>
-          ))}
+          {!veiled && <DrChips f={f} m={m} />}
         </span>
       </span>
     </button>
@@ -325,7 +351,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const say = (why: string | null, ab?: Ability, note = false): void => {
     if (!why || why === 'Already casting' || why === 'Casting') return;
     if (why === 'Out of sight') log.current.outOfSight++;
-    setErr(note ? why : plainWhy(m, me, why, ab, touch ? 'tap the blue button' : `press ${keyName(keysRef.current.dash)}`));
+    setErr(note ? why : plainWhy(m, me, why, ab));
     setErrNote(note);
     errAt.current = performance.now();
   };
@@ -382,7 +408,10 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     tut?.onTarget(id);
     tick((x) => x + 1);
   };
-  /** The next enemy, as Tab chooses: a phone's ◎ button by the abilities, the easiest way there is to switch target. */
+  /**
+   * The next enemy, as Tab chooses: a phone's ◎ button under the enemies' nameplates, the easiest way there is to
+   * switch target.
+   */
   /** The enemy that lies the way a thumb slides from the ◎ button, as seen on the screen (set where the view is). */
   const towardFoe = useRef<(dx: number, dy: number) => Fighter | null>(() => null);
   /** The ◎ button's slide: where it began, and whether it has gone far enough to be a slide rather than a tap. */
@@ -458,7 +487,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     };
     const startAim = (ab: Ability, sx: number, sy: number, pid: number | null, point: boolean): void => {
       if (!me) return;
-      // (not ready, held, out of mana: said at once, with nothing to place)
+      // (not ready, held: said at once, with nothing to place)
       const why = m.blocked(me, ab, undefined, { x: me.x, y: me.y });
       if (why) {
         aim = null;
@@ -579,11 +608,10 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       const pals = me ? m.heroes.filter((f) => f.team === me.team && f.id !== me.id) : [];
       if (act && act !== 'up' && act !== 'down' && act !== 'left' && act !== 'right') e.preventDefault();
       if (n >= 0 && me?.bar[n]) keyPress(me.bar[n]!, e);
-      // (behind the gates, the step key says "ready")
+      // (behind the gates, the ready key says "ready")
       else if (act === 'dash' && m.phase === 'gates' && role.kind !== 'client') {
         if (m.gateAt - m.t > 5) ready();
-      } else if (act === 'dash' && me) press(m.extras(me)[0]!.id);
-      else if (act === 'super' && me) keyPress(m.extras(me)[1]!.id, e);
+      } else if (act === 'super' && me) keyPress(m.extras(me)[0]!.id, e);
       else if (act === 'nextFoe' && me) {
         const next = cycle(m.enemiesOf(me).filter((o) => !m.unseen(o, me)), me.target);
         if (next !== null) target(next);
@@ -723,9 +751,9 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       role.listen((seat, d) => {
         const f = m.fighters.find((x) => x.seat === seat);
         if (!f || !d || typeof d !== 'object') return;
-        const q = d as { mx?: unknown; my?: unknown; p?: unknown; at?: unknown; tg?: unknown; eq?: { bar?: unknown; oath?: unknown; talents?: unknown; step?: unknown; ult?: unknown } };
+        const q = d as { mx?: unknown; my?: unknown; p?: unknown; at?: unknown; tg?: unknown; eq?: { bar?: unknown; talents?: unknown; ult?: unknown } };
         const eq = q.eq;
-        if (eq && Array.isArray(eq.bar) && eq.bar.length <= 12 && eq.bar.every((b) => typeof b === 'string')) m.equip(f.id, { bar: eq.bar as string[], oath: typeof eq.oath === 'string' ? eq.oath : undefined, talents: Array.isArray(eq.talents) ? (eq.talents.filter((b) => typeof b === 'string').slice(0, 3) as string[]) : [], step: typeof eq.step === 'string' ? eq.step : undefined, ult: typeof eq.ult === 'string' ? eq.ult : undefined });
+        if (eq && Array.isArray(eq.bar) && eq.bar.length <= 12 && eq.bar.every((b) => typeof b === 'string')) m.equip(f.id, { bar: eq.bar as string[], talents: Array.isArray(eq.talents) ? (eq.talents.filter((b) => typeof b === 'string').slice(0, 3) as string[]) : [], ult: typeof eq.ult === 'string' ? eq.ult : undefined });
         if (typeof q.mx === 'number' && typeof q.my === 'number' && Number.isFinite(q.mx) && Number.isFinite(q.my)) others[f.id] = { mx: Math.max(-1, Math.min(1, q.mx)), my: Math.max(-1, Math.min(1, q.my)) };
         // (press checks it's on their bar, and the rules, as for anyone)
         // (a placed ability comes with where: two plain numbers, which the rules bring into reach and sight)
@@ -794,6 +822,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         wasShown = m.phase;
         view.cheer(m.phase === 'fight' ? 0.7 : m.phase === 'over' ? 1 : 0);
       }
+      // (with thumbs on a phone, the camera frames the fight in the open middle, away from the controls: ring3d.ts)
+      view.thumbs = engine.touchMode;
       view.frame(m, looks, myId, dt, time, (q) => ringSpells(q, m, fx, myId, time, view.air, (f) => view.bodyAt(f)));
       placeAim();
       // each title over its fighter's bar, in its own light, where the bar is drawn this frame; what's on them goes up
@@ -813,7 +843,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         const b = view.stage.project(f.x + 10, f.y, h);
         const s = Math.max(0.2, (b.x - a.x) / 10);
         el.style.visibility = 'visible';
-        el.style.transform = `translate(${a.x.toFixed(1)}px, ${(a.y - (BAR_TOP + 1.2) * s).toFixed(1)}px) translate(-50%, -100%)`;
+        el.style.transform = `translate(${a.x.toFixed(1)}px, ${(a.y - (barTop(f) + 1.2) * s).toFixed(1)}px) translate(-50%, -100%)`;
         raise[i] = (el.offsetHeight + 1) / s;
       }
       drawRing(m, fx, myId, time, view, aim, (f) => raise[f.id] ?? 0);
@@ -968,7 +998,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const left = teamOf(mine);
   const right = teamOf(mine === 0 ? 1 : 0);
   const bar = me ? [...me.bar.map((id) => ABILITIES[id]!), ...m.extras(me)] : [];
-  const keyOf = (i: number): string => keyName(i < SLOTS ? ringKeys[`ab${i + 1}` as 'ab1'] : i === SLOTS ? ringKeys.dash : ringKeys.super);
+  const keyOf = (i: number): string => keyName(i < SLOTS ? ringKeys[`ab${i + 1}` as 'ab1'] : ringKeys.super);
   const charge = me?.charge ?? 0;
   const gloamIn = Math.ceil(CLOSE_FROM - m.clock);
   const count = Math.ceil(m.gateAt - m.t);
@@ -991,12 +1021,12 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   };
   const foeNote = !foeAlive ? (m.phase === 'fight' ? `Click someone or press ${keyName(ringKeys.nextFoe)}. Nearest is used if you don’t.` : `Click someone or press ${keyName(ringKeys.nextFoe)}`) : !me || m.phase !== 'fight' ? `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}%` : !m.sees(me, foeAlive) ? 'Out of sight' : `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}% · ${Math.round(Math.hypot(foeAlive.x - me.x, foeAlive.y - me.y))} away`;
   const foeBad = !!foeAlive && !!me && m.phase === 'fight' && !m.sees(me, foeAlive);
-  const tutKeys: TutorialKeys = { touch, ab: [ringKeys.ab1, ringKeys.ab2, ringKeys.ab3, ringKeys.ab4].map(keyName), dash: keyName(ringKeys.dash), super: keyName(ringKeys.super), nextFoe: keyName(ringKeys.nextFoe), nextFriend: keyName(ringKeys.nextFriend), closeIn: engine.settings.ringCloseIn };
+  const tutKeys: TutorialKeys = { touch, ab: [ringKeys.ab1, ringKeys.ab2, ringKeys.ab3, ringKeys.ab4, ringKeys.ab5].map(keyName), dash: keyName(ringKeys.dash), super: keyName(ringKeys.super), nextFoe: keyName(ringKeys.nextFoe), nextFriend: keyName(ringKeys.nextFriend), closeIn: engine.settings.ringCloseIn };
   const tv = tut?.view(tutKeys) ?? null;
   useSpot(tv?.spot ?? null);
   return (
     <ScreenGate label="Entering the Ring">
-      <div className={`rb-ring${touch ? ' is-touch' : ''}`}>
+      <div className={`rb-ring${touch ? ' is-touch' : ''}${engine.settings.reducedMotion ? ' is-still' : ''}`}>
         <div className="rb-ring-stage">
           <canvas ref={canvasRef} className="rb-ring-canvas" />
           <div className="rb-ring-titles" aria-hidden="true">
@@ -1137,6 +1167,55 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               {plates && right.map((f) => (
                 <Frame key={f.id} flip f={f} m={m} me={me} doll={classEmblem(f.cls)} title={titles[f.id] ?? null} tag={f === foeAlive ? 'Target' : null} onPick={() => target(f.id)} />
               ))}
+              {/* on a phone, with two or more on the other side: a button to switch between them, under their nameplates
+                  where the choosing is done, away from the abilities (it was in the thumb cluster beside a spell: the owner,
+                  "the target button is also next to a spell") */}
+              {touch && right.length > 1 && (
+                <button
+                  type="button"
+                  className="rb-ring-cycle"
+                  disabled={right.filter((f) => !f.dead).length < 2}
+                  aria-label={`Switch target${foeAlive ? `, now ${foeAlive.name}` : ''}. Tap for the next enemy, or slide toward one`}
+                  // (a tap: the next enemy, as Tab. A slide: the enemy the way the thumb goes, chosen as it goes)
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    // (not the column's own press, which chooses whichever nameplate is nearest)
+                    e.stopPropagation();
+                    try {
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                    } catch {
+                      /* (no capture: the slide still works while the thumb stays on the button) */
+                    }
+                    slide.current = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+                  }}
+                  onPointerMove={(e) => {
+                    const sl = slide.current;
+                    if (!sl || sl.id !== e.pointerId) return;
+                    const dx = e.clientX - sl.x;
+                    const dy = e.clientY - sl.y;
+                    if (Math.hypot(dx, dy) < 14) return;
+                    sl.moved = true;
+                    const o = towardFoe.current(dx, dy);
+                    if (o && o.id !== me?.target) target(o.id);
+                  }}
+                  onPointerUp={(e) => {
+                    const sl = slide.current;
+                    slide.current = null;
+                    if (sl?.id === e.pointerId && !sl.moved) nextFoe();
+                  }}
+                  onPointerCancel={() => {
+                    slide.current = null;
+                  }}
+                  onContextMenu={(e) => e.preventDefault()}
+                >
+                  {/* a crosshair: what it is for, at a glance */}
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" />
+                    <path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                    <circle cx="12" cy="12" r="1.8" fill="currentColor" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
           {/* (a fallen fighter has nothing to press: the stick and the abilities step aside and leave the whole ring to watch) */}
@@ -1149,51 +1228,6 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 }}
               />
               <div className="rb-cluster" data-tut="bar">
-                {/* (two or more on the other side: a button to switch between them, where the right thumb already is) */}
-                {right.length > 1 && (
-                  <button
-                    type="button"
-                    className="rb-sb rb-sb-target"
-                    disabled={right.filter((f) => !f.dead).length < 2}
-                    aria-label={`Switch target${foeAlive ? `, now ${foeAlive.name}` : ''}. Tap for the next enemy, or slide toward one`}
-                    // (a tap: the next enemy, as Tab. A slide: the enemy the way the thumb goes, chosen as it goes)
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      try {
-                        e.currentTarget.setPointerCapture(e.pointerId);
-                      } catch {
-                        /* (no capture: the slide still works while the thumb stays on the button) */
-                      }
-                      slide.current = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
-                    }}
-                    onPointerMove={(e) => {
-                      const sl = slide.current;
-                      if (!sl || sl.id !== e.pointerId) return;
-                      const dx = e.clientX - sl.x;
-                      const dy = e.clientY - sl.y;
-                      if (Math.hypot(dx, dy) < 14) return;
-                      sl.moved = true;
-                      const o = towardFoe.current(dx, dy);
-                      if (o && o.id !== me?.target) target(o.id);
-                    }}
-                    onPointerUp={(e) => {
-                      const sl = slide.current;
-                      slide.current = null;
-                      if (sl?.id === e.pointerId && !sl.moved) nextFoe();
-                    }}
-                    onPointerCancel={() => {
-                      slide.current = null;
-                    }}
-                    onContextMenu={(e) => e.preventDefault()}
-                  >
-                    {/* a crosshair: what it is for, at a glance */}
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" />
-                      <path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-                      <circle cx="12" cy="12" r="1.8" fill="currentColor" />
-                    </svg>
-                  </button>
-                )}
                 {bar.map((ab, i) => {
                   const cd = me?.cds[ab.id] ?? 0;
                   const gcd = !ab.free ? (me?.gcd ?? 0) : 0;
@@ -1203,8 +1237,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   return (
                     <button
                       key={ab.id}
-                      data-tut={sup ? 'super' : i === SLOTS ? 'step' : undefined}
-                      className={`rb-sb rb-sb-${TOUCH_SLOTS[i]}${sup ? ` is-super${charge >= 1 ? ' is-ready' : ''}` : ''}${isOut(m, me, ab) ? ' is-nomana' : ''}${wait > 0 ? ' is-cooling' : ''}${held && ab.anyState ? ' is-free-now' : ''}${comboOf(ab) && wait <= 0 ? ' is-combo' : ''}`}
+                      data-tut={sup ? 'super' : undefined}
+                      className={`rb-sb rb-sb-${sup ? 'ult' : TOUCH_SLOTS[i]}${sup ? ` is-super${charge >= 1 ? ' is-ready' : ''}` : ''}${isOut(m, me, ab) ? ' is-nomana' : ''}${wait > 0 ? ' is-cooling' : ''}${held && ab.anyState ? ' is-free-now' : ''}${comboOf(ab) && wait <= 0 ? ' is-combo' : ''}`}
                       style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined}
                       aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}
                       onPointerDown={(e) => aimApi.current.down(e, ab)}
@@ -1266,7 +1300,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   Change my setup
                 </button>
               </span>
-              <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. The blue button steps aside; the gold one is your super, once it’s full. Step out of a red circle before it lands. A placed ability: tap it to drop it on your target, or hold it and push the circle where you want it.' : `${[ringKeys.up, ringKeys.left, ringKeys.down, ringKeys.right].map(keyName).join('')} to move · ${keyName(ringKeys.ab1)} to ${keyName(ringKeys.ab4)} for abilities · ${keyName(ringKeys.dash)} to step aside · ${keyName(ringKeys.super)} for your super · Step out of a red circle before it lands · A placed ability: press its key, then click where it should land`}</span>
+              <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. The gold button is your super, once it’s full. Walk out of a red circle before it lands. A placed ability: tap it to drop it on your target, or hold it and push the circle where you want it.' : `${[ringKeys.up, ringKeys.left, ringKeys.down, ringKeys.right].map(keyName).join('')} to move · ${keyName(ringKeys.ab1)} to ${keyName(ringKeys.ab5)} for abilities · ${keyName(ringKeys.super)} for your super · Walk out of a red circle before it lands · A placed ability: press its key, then click where it should land`}</span>
             </div>
           )}
           {err && (
@@ -1315,7 +1349,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 const full = cd > gcd ? ab.cd : 1;
                 const sup = !!ab.super;
                 return (
-                  <button key={ab.id} data-tut={sup ? 'super' : i === SLOTS ? 'step' : undefined} className={`rb-ring-ab${isOut(m, me, ab) ? ' is-out' : ''}${ab.id === 'dash' ? ' is-step' : ''}${sup ? ` is-super${charge >= 1 ? ' is-full' : ''}` : ''}${held && ab.anyState ? ' is-ready' : ''}${comboOf(ab) ? ' is-combo' : ''}`} style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined} onPointerDown={(e) => aimApi.current.down(e, ab)} onPointerMove={(e) => aimApi.current.move(e)} onPointerUp={(e) => aimApi.current.up(e)} onPointerCancel={(e) => aimApi.current.cancel(e)} onMouseEnter={() => setTip(ab)} onMouseLeave={() => setTip(null)} aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}>
+                  <button key={ab.id} data-tut={sup ? 'super' : undefined} className={`rb-ring-ab${isOut(m, me, ab) ? ' is-out' : ''}${ab.id === 'trinket' ? ' is-token' : ''}${sup ? ` is-super${charge >= 1 ? ' is-full' : ''}` : ''}${held && ab.anyState ? ' is-ready' : ''}${comboOf(ab) ? ' is-combo' : ''}`} style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined} onPointerDown={(e) => aimApi.current.down(e, ab)} onPointerMove={(e) => aimApi.current.move(e)} onPointerUp={(e) => aimApi.current.up(e)} onPointerCancel={(e) => aimApi.current.cancel(e)} onMouseEnter={() => setTip(ab)} onMouseLeave={() => setTip(null)} aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}>
                     <img src={iconPicture(ab.icon)} alt="" draggable={false} />
                     {sup && charge < 1 && <i className="rb-ring-charge" />}
                     {wait > 0 && <i className="rb-ring-cool" style={{ ['--p' as string]: `${Math.min(1, wait / (full || 1)) * 100}%` }} />}

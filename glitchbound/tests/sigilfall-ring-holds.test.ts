@@ -3,13 +3,13 @@
  * (later that day roots and fears break on hurt again: "roots should break after some dmg has been done, similar to
  * wows roots, same for fears", and "the frost roots should only apply for 1 rime spear except ult that applies for 2");
  * "swift step part should have another tab for that where you should be able to replace it with a trinket that frees
- * u from any stun with 30s cooldown"; the mage's Frost Snare and Hoar Grip "shouldnt break by dmg or get diminishing
+ * u from any stun with 30s cooldown" (taken out again with the oaths on 2026-11-15); the mage's Frost Snare and Hoar Grip "shouldnt break by dmg or get diminishing
  * returns, hex should clear all dots if used on a target"; and the Nightblade "should put u to stealth auto if u are not
  * damaged for 5s".
  */
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, CHARM, DASH, stepOf, type Ability } from '../src/games/sigilfall/arena/abilities';
-import { setsOf } from '../src/games/sigilfall/arena/ladder';
+import { ABILITIES, BODY, TRINKET, type Ability } from '../src/games/sigilfall/arena/abilities';
+import { setsOf, type RingSetup } from '../src/games/sigilfall/arena/ladder';
 import { GATES, Match, ROOT_BREAK, VEIL, type Fighter, type FighterSetup } from '../src/games/sigilfall/arena/sim';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { cleanPick } from '../src/games/sigilfall/net/ringRoom';
@@ -21,9 +21,9 @@ interface Inside {
 }
 const inside = (m: Match): Inside => m as unknown as Inside;
 
-function duel(a: ClassId, bar: string[], b: ClassId, foeBar: string[] = ['w-hew'], step?: string): Match {
-  const side = (cls: ClassId, team: 0 | 1, list: string[], st?: string): FighterSetup => ({ team, cls, name: cls, bar: list, talents: [], step: st });
-  const m = new Match({ seed: 6, map: 'sands', fighters: [side(a, 0, bar), side(b, 1, foeBar, step)] });
+function duel(a: ClassId, bar: string[], b: ClassId, foeBar: string[] = ['w-hew']): Match {
+  const side = (cls: ClassId, team: 0 | 1, list: string[]): FighterSetup => ({ team, cls, name: cls, bar: list, talents: [] });
+  const m = new Match({ seed: 6, map: 'sands', fighters: [side(a, 0, bar), side(b, 1, foeBar)] });
   m.step(GATES + 0.01, {});
   const [f, g] = m.fighters as [Fighter, Fighter];
   Object.assign(f, { x: 200, y: 125, dirX: 1, dirY: 0, target: 1 });
@@ -84,7 +84,6 @@ describe('The Ring: Rime Spear shatters the ice', () => {
     const [mage, w] = m.fighters as [Fighter, Fighter];
     mage.gcd = 0;
     mage.cds = {};
-    mage.mana = mage.maxMana;
     m.events.length = 0;
     expect(m.press(mage.id, 'm-spear')).toBeNull();
     let shatter = false;
@@ -152,35 +151,32 @@ describe('The Ring: Rime Spear shatters the ice', () => {
   });
 });
 
-describe('The Ring: the Unbinding Charm, in the Swift Step’s place', () => {
-  it('carried instead of the Swift Step, it breaks every hold, even while held, and is 30 seconds coming back', () => {
-    expect(stepOf('charm')).toBe(CHARM);
-    expect(stepOf(undefined)).toBe(DASH);
-    expect(stepOf('nonsense')).toBe(DASH);
-    expect(CHARM.cd).toBe(30);
-    const m = duel('mage', ['m-chill', 'm-ring'], 'warrior', ['w-hew'], 'charm');
-    const [mage, w] = m.fighters as [Fighter, Fighter];
-    expect(m.extras(w)[0]).toBe(CHARM);
-    expect(m.press(w.id, DASH.id)).toBe('You don’t have that');
-    m.press(mage.id, 'm-chill');
-    mage.gcd = 0;
-    m.press(mage.id, 'm-ring');
-    expect(w.auras.some((a) => a.cc === 'stun') && w.auras.some((a) => a.cc === 'root')).toBe(true);
-    expect(m.press(w.id, 'charm')).toBeNull();
-    expect(w.auras.some((a) => !!a.cc)).toBe(false);
-    expect(w.cds.charm).toBeCloseTo(30, 0);
-    // the Swift Step is still the default
-    expect(m.extras(mage)[0]).toBe(DASH);
+describe('The Ring: no charm and no oath beside the bar (2026-11-15: "remove oaths and the extras, leave only spells, talents and ults")', () => {
+  it('nothing beside the bar but the super; the trinket is in every class’s list, to be taken as one of the five', () => {
+    const m = duel('mage', ['m-chill', 'm-ring'], 'warrior');
+    for (const f of m.fighters) expect(m.extras(f).map((a) => a.super)).toEqual([true]);
+    expect(ABILITIES.dash).toBeUndefined();
+    expect(m.press(0, TRINKET.id)).toBe('You don’t have that');
+    const n = duel('mage', ['m-chill', TRINKET.id], 'warrior');
+    expect(n.fighters[0]!.bar).toContain(TRINKET.id);
+    expect(ABILITIES.charm).toBeUndefined();
+    // (and a hero is as their class is built, with no oath's bonus on top)
+    expect(m.fighters[0]!.maxHp).toBe(BODY.mage.hp);
+    expect(m.fighters[1]!.maxHp).toBe(BODY.warrior.hp);
   });
 
-  it('a setup keeps its choice, a room passes it on, and a player can change it in the entry', () => {
-    const kept = setsOf({ standings: {}, sets: { warrior: { active: 0, list: [{ bar: ['w-hew', 'w-gash', 'w-rush', 'w-hurl'], oath: 'iron', talents: [], step: 'charm' }] } } }, 'warrior');
-    expect(kept.list[0]!.step).toBe('charm');
-    expect(cleanPick({ team: 0, cls: 'warrior', bar: ['w-hew'], oath: 'iron', talents: [], step: 'charm' })?.step).toBe('charm');
-    expect(cleanPick({ team: 0, cls: 'warrior', bar: ['w-hew'], oath: 'iron', talents: [], step: 'teleport' })?.step).toBeUndefined();
-    const m = new Match({ seed: 1, map: 'sands', fighters: [{ team: 0, cls: 'warrior', name: 'a', bar: ['w-hew'] }, { team: 1, cls: 'mage', name: 'b', bar: ['m-lash'] }] });
-    expect(m.equip(0, { bar: ['w-hew', 'w-gash', 'w-rush', 'w-hurl'], step: 'charm' })).toBe(true);
-    expect(m.extras(m.fighters[0]!)[0]).toBe(CHARM);
+  it('a setup kept with an oath and the charm, and a pick from a game from before, are read without them', () => {
+    const old = { bar: ['w-hew', 'w-gash', 'w-rush', 'w-hurl'], oath: 'iron', talents: [], step: 'charm' } as unknown as RingSetup;
+    const kept = setsOf({ standings: {}, sets: { warrior: { active: 0, list: [old] } } }, 'warrior').list[0]!;
+    expect(kept).not.toHaveProperty('oath');
+    expect(kept).not.toHaveProperty('step');
+    expect(kept.bar).toHaveLength(5);
+    const pick = cleanPick({ team: 0, cls: 'warrior', bar: ['w-hew'], oath: 'iron', talents: [], step: 'charm' });
+    expect(pick).not.toBeNull();
+    expect(pick).not.toHaveProperty('oath');
+    expect(pick).not.toHaveProperty('step');
+    // (a pick with no oath at all is as good)
+    expect(cleanPick({ team: 0, cls: 'warrior', bar: ['w-hew'], talents: [] })).not.toBeNull();
   });
 });
 

@@ -196,8 +196,7 @@ export class RingFx {
         // (what it is made of, as it leaves the hand: your own a little louder than the rest)
         const vol = e.id === myId ? 0.7 : 0.4;
         const melee = ab.range > 0 && ab.range <= 40;
-        if (ab.id === 'dash') sound('dodge', vol);
-        else if (ab.super) sound(SUPER_SOUND[ab.school] ?? 'nova', 0.9);
+        if (ab.super) sound(SUPER_SOUND[ab.school] ?? 'nova', 0.9);
         else if (ab.role === 'heal' || ab.aim === 'friend') sound('buff', vol * 0.8);
         // (the ground torn open for the dead)
         else if (ab.role === 'summon') sound('rift', vol);
@@ -387,6 +386,130 @@ function ring(g: Ctx, x: number, y: number, r: number, color: string, width = 1.
 }
 
 /**
+ * Who the player has chosen (the owner: "can you make the highlight marker a bit more stylish and visible, u need to
+ * know who uve targeted super easily"): the enemy their harm goes to in red, the friend their help goes to in green,
+ * and, with no enemy chosen, the one their harm goes to all the same (the nearest) in a quieter red.
+ */
+export type Chosen = 'foe' | 'friend' | 'auto';
+export const PICK_COLOR: Record<Chosen, string> = { foe: '#ff4a5a', friend: '#6ee07a', auto: '#ff4a5a' };
+
+/** An enemy ability's aim, for asking the rules whom the player's harm goes to when they have chosen nobody. */
+const AT_FOE = { aim: 'enemy' } as Ability;
+
+/** Whom the player has chosen, by fighter: their target, their friend, or the enemy their harm goes to unchosen. */
+export function picksOf(m: Match, me: Fighter | null): Map<number, Chosen> {
+  const out = new Map<number, Chosen>();
+  if (!me || me.dead || m.phase === 'over') return out;
+  const foe = me.target === null ? null : (m.fighters[me.target] ?? null);
+  if (foe && !foe.dead && foe.team !== me.team && !m.unseen(foe, me)) out.set(foe.id, 'foe');
+  else if (m.phase === 'fight') {
+    const near = m.aimOf(me, AT_FOE);
+    if (near && near !== me && !near.dead) out.set(near.id, 'auto');
+  }
+  const pal = me.friend === null ? null : (m.fighters[me.friend] ?? null);
+  if (pal && pal !== me && !pal.dead && pal.team === me.team) out.set(pal.id, 'friend');
+  return out;
+}
+
+/** A color of the form #rrggbb at this opacity. */
+const tint = (hex: string, a: number): string => `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${a})`;
+
+/**
+ * The mark on the ground under whoever the player has chosen, in its flat frame (RingView.flat): a glow, four
+ * brackets turning round them, each over a dark edge so it reads on sand and on ice alike, and four arrowheads
+ * breathing in toward them. One the player's harm only falls to (`auto`) is quieter: no arrowheads, nothing turning.
+ */
+export function pickMark(g: Ctx, x: number, y: number, pick: Chosen, time: number, still = false): void {
+  const color = PICK_COLOR[pick];
+  const quiet = pick === 'auto';
+  const R = 15;
+  const glow = g.createRadialGradient(x, y, 2, x, y, R + 7);
+  glow.addColorStop(0, tint(color, quiet ? 0.16 : 0.4));
+  glow.addColorStop(1, tint(color, 0));
+  g.fillStyle = glow;
+  g.beginPath();
+  g.ellipse(x, y, R + 7, R + 7, 0, 0, Math.PI * 2);
+  g.fill();
+  const spin = still || quiet ? 0 : time * (pick === 'foe' ? 1.3 : -0.9);
+  g.lineCap = 'round';
+  for (let i = 0; i < 4; i++) {
+    const a0 = spin + (i * Math.PI) / 2 + 0.24;
+    const a1 = a0 + Math.PI / 2 - 0.48;
+    for (const [w, c] of [
+      [quiet ? 3 : 4.2, 'rgba(10,4,18,0.7)'],
+      [quiet ? 1.5 : 2.4, quiet ? tint(color, 0.7) : color],
+    ] as const) {
+      g.strokeStyle = c;
+      g.lineWidth = w;
+      g.beginPath();
+      g.ellipse(x, y, R, R, 0, a0, a1);
+      g.stroke();
+    }
+  }
+  g.lineCap = 'butt';
+  if (quiet) return;
+  // (long and narrow, so that each reads as pointing in at them and not as a corner)
+  const out = R + 8 + (still ? 0 : Math.sin(time * 5) * 1.3);
+  for (let i = 0; i < 4; i++) {
+    const a = (i * Math.PI) / 2 + Math.PI / 4 - spin * 0.5;
+    const cx = x + Math.cos(a) * out;
+    const cy = y + Math.sin(a) * out;
+    const nx = -Math.cos(a);
+    const ny = -Math.sin(a);
+    g.beginPath();
+    g.moveTo(cx + nx * 4.6, cy + ny * 4.6);
+    g.lineTo(cx - ny * 1.9, cy + nx * 1.9);
+    g.lineTo(cx + ny * 1.9, cy - nx * 1.9);
+    g.closePath();
+    g.fillStyle = color;
+    g.strokeStyle = 'rgba(10,4,18,0.75)';
+    g.lineWidth = 1;
+    g.stroke();
+    g.fill();
+  }
+}
+
+/**
+ * The arrow over the head of whoever the player has chosen, its tip at `tip` (facing the camera, RingView.up): bobbing,
+ * dark-edged with a light along one side; the friend's a little smaller; harm's unchosen target's an outline only.
+ */
+function pickArrow(g: Ctx, x: number, tip: number, pick: Chosen, time: number, still = false): void {
+  const color = PICK_COLOR[pick];
+  const k = pick === 'foe' ? 1 : 0.8;
+  const y = tip - (still || pick === 'auto' ? 0 : Math.abs(Math.sin(time * 4)) * 1.6);
+  const w = 4.2 * k;
+  const h = 5.4 * k;
+  g.beginPath();
+  g.moveTo(x, y);
+  g.lineTo(x - w, y - h);
+  g.lineTo(x - w * 0.35, y - h);
+  g.lineTo(x - w * 0.35, y - h - 2.4 * k);
+  g.lineTo(x + w * 0.35, y - h - 2.4 * k);
+  g.lineTo(x + w * 0.35, y - h);
+  g.lineTo(x + w, y - h);
+  g.closePath();
+  g.lineJoin = 'round';
+  g.strokeStyle = 'rgba(10,4,18,0.85)';
+  g.lineWidth = 1.3;
+  g.stroke();
+  if (pick === 'auto') {
+    g.strokeStyle = tint(color, 0.8);
+    g.lineWidth = 0.7;
+    g.stroke();
+    return;
+  }
+  g.fillStyle = color;
+  g.fill();
+  // (a light down its left edge)
+  g.strokeStyle = 'rgba(255,255,255,0.55)';
+  g.lineWidth = 0.6;
+  g.beginPath();
+  g.moveTo(x - w * 0.8, y - h + 0.5);
+  g.lineTo(x - 0.4, y - 0.9);
+  g.stroke();
+}
+
+/**
  * How high over the ground a fighter's head is drawn, and their bar over it: one of the raised dead stands lower, and
  * one caught up in a gale is lifted, bobbing. (The match screen sets a fighter's title over the same spot: RingMatch.)
  */
@@ -394,14 +517,52 @@ export function headHeight(f: Fighter, time: number): number {
   const gale = f.auras.some((a) => a.ab === 'l-gale' && a.cc === 'incap');
   return (f.pet ? HEAD * 0.8 : HEAD) + (gale ? 10 + Math.sin(time * 6) * 2 : 0);
 }
-/** How far over a fighter's head the top of their bar is, in the ground's own units (headHeight's spot, drawn up). */
-export const BAR_TOP = 6;
+/**
+ * The least a fighter's bar stands over their head, in the ground's own units (headHeight's spot, drawn up): where it
+ * stood for everyone before it made room under itself for a cast.
+ */
+const BAR_TOP_MIN = 6;
+/** The clear air left between the lowest of a fighter's bar and their head. */
+export const BAR_CLEAR = 1;
+const HP_H = 2.4;
+/** The cast under them, its name written in it, and the dark round it. */
+const CAST_H = 4.8;
+const CAST_W = 36;
+const CAST_PAD = 0.6;
+
+/** Whether a fighter can be seen casting: something on their bar has a cast or a channel (or a cast is under way). */
+export const castsAny = (f: Pick<Fighter, 'bar' | 'cast'>): boolean =>
+  !!f.cast ||
+  f.bar.some((id) => {
+    const ab = ABILITIES[id];
+    return !!ab && (ab.cast > 0 || !!ab.channel);
+  });
+
+/**
+ * Where each part of a fighter's overhead bar goes, down from the bar's top (`by`): the health, then the cast they are
+ * holding with its name written in it, under it and not over it; how tall the dark backing behind the health is; and
+ * how far down from `by` the lowest of it all comes (the cast's row is counted for whoever can cast at all, whether they
+ * are casting now or not). (There was a mana strip under the health; the Ring has no mana now.)
+ */
+export function barRows(f: Pick<Fighter, 'bar' | 'cast'>, by: number): { hp: number; cast: number; back: number; low: number } {
+  const back = 3.8;
+  const cast = by + back + 0.4;
+  return { hp: by, cast, back, low: castsAny(f) ? cast - by + CAST_H + CAST_PAD : back - 0.7 };
+}
+
+/**
+ * How far over a fighter's head the top of their bar stands: high enough that the lowest of it (their cast, for whoever
+ * casts) clears their head, so that nothing of it is ever drawn over them (the owner: "make sure the cast bar + hp/mana
+ * bar dont cover any part of the actual characters"). It is the same whether they are casting or not, so the bar never
+ * jumps when a cast begins. The title over the bar (RingMatch) stands on it too.
+ */
+export const barTop = (f: Pick<Fighter, 'bar' | 'cast'>): number => Math.max(BAR_TOP_MIN, barRows(f, 0).low + BAR_CLEAR);
 
 /**
  * What is on a fighter: the rings at their feet, what's afoot on them, their bar and their cast. `raise`: how much
  * higher, in the ground's units, the pictures of what's on them go, to leave room for a title over the bar.
  */
-function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: number, seeable: boolean, view: RingView, raise = 0): void {
+function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: number, seeable: boolean, view: RingView, raise = 0, pick: Chosen | null = null): void {
   if (f.dead) return;
   // what's on them that's a word: `head` is their head's height on the screen, drawn as if on their own spot (one of
   // the raised dead stands lower, and carries a smaller bar and no pictures)
@@ -427,15 +588,22 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
   }
   // a bar over the head, in their team's color
   const barW = f.pet ? 16 : 26;
-  const by = head - BAR_TOP;
+  const by = head - barTop(f);
+  const rows = barRows(f, by);
   g.fillStyle = 'rgba(6,2,14,0.85)';
   g.beginPath();
-  g.roundRect(f.x - barW / 2 - 0.7, by - 0.7, barW + 1.4, 3.8, 1.2);
+  g.roundRect(f.x - barW / 2 - 0.7, by - 0.7, barW + 1.4, rows.back, 1.2);
   g.fill();
+  // (whoever the player has chosen: their bar ringed in the same color as the mark under them)
+  if (pick && pick !== 'auto') {
+    g.strokeStyle = PICK_COLOR[pick];
+    g.lineWidth = 0.8;
+    g.stroke();
+  }
   const share = Math.max(0, f.hp / f.maxHp);
   g.fillStyle = f.team === m.fighters[myId ?? 0]?.team ? (share < 0.3 ? '#ff7a5a' : '#57d36a') : share < 0.3 ? '#ffb45c' : '#ff5a6a';
   g.beginPath();
-  g.roundRect(f.x - barW / 2, by, barW * share, 2.4, 1);
+  g.roundRect(f.x - barW / 2, rows.hp, barW * share, HP_H, 1);
   g.fill();
   // out of your sight: a small eye-shut mark over them
   if (!seeable) {
@@ -482,28 +650,40 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
     g.fillText(left, px + pip / 2, py + pip - 0.9);
     px += pip + gap;
   }
-  // the cast they're holding: a bar of its own under the life, with its name, so a cast to stop can be seen and read
+  // whoever the player has chosen: an arrow over all of it (the bar, a title, what's on them), pointing down at them
+  if (pick) pickArrow(g, f.x, (shown.length ? py - 0.7 : by - 1.2 - raise) - 1.2, pick, time, view.still);
+  // the cast they're holding: a bar of its own under the life, its name written in it, so a cast to stop can be seen
+  // and read, all of it over their head (the name was under the bar, across their face)
   const c = f.cast;
   if (c) {
     const ab = ABILITIES[c.ab];
     const k = Math.min(1, c.t / c.dur);
-    const cw = 34;
-    const cy = by + 3.6;
+    const cw = CAST_W;
+    const cy = rows.cast;
     g.fillStyle = 'rgba(6,2,14,0.88)';
     g.beginPath();
-    g.roundRect(f.x - cw / 2 - 0.6, cy - 0.6, cw + 1.2, 4.4, 1.2);
+    g.roundRect(f.x - cw / 2 - CAST_PAD, cy - CAST_PAD, cw + CAST_PAD * 2, CAST_H + CAST_PAD * 2, 1.2);
     g.fill();
     g.fillStyle = ab?.color ?? '#fff';
-    g.fillRect(f.x - cw / 2, cy, cw * (c.channel ? 1 - k : k), 3.2);
+    g.fillRect(f.x - cw / 2, cy, cw * (c.channel ? 1 - k : k), CAST_H);
     if (ab) {
-      g.font = '700 4.6px "Bricolage Grotesque Variable", system-ui, sans-serif';
+      // (a long name is set a little smaller rather than run out of its bar)
+      let size = 3.8;
+      g.font = `700 ${size}px "Bricolage Grotesque Variable", system-ui, sans-serif`;
+      const wide = g.measureText(ab.name).width;
+      if (wide > cw - 2) {
+        size *= (cw - 2) / wide;
+        g.font = `700 ${size.toFixed(2)}px "Bricolage Grotesque Variable", system-ui, sans-serif`;
+      }
       g.textAlign = 'center';
-      g.lineWidth = 1.2;
+      g.textBaseline = 'middle';
+      g.lineWidth = 1.1;
       g.lineJoin = 'round';
       g.strokeStyle = '#120a20';
-      g.strokeText(ab.name, f.x, cy + 9);
+      g.strokeText(ab.name, f.x, cy + CAST_H / 2 + 0.2);
       g.fillStyle = '#fff6e0';
-      g.fillText(ab.name, f.x, cy + 9);
+      g.fillText(ab.name, f.x, cy + CAST_H / 2 + 0.2);
+      g.textBaseline = 'alphabetic';
     }
   }
 }
@@ -622,7 +802,7 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
       q.put({ kind: FX.spark, x: o.x + Math.sin(i * 2.1 + o.x) * 6, y: o.y, up: 8 + u * 22, w: 4 - u * 2.4, a: '#c8ffd4', t: 0.2, alpha: 1 - u });
     }
   }
-  // a Swift Step: a streak of light behind
+  // a leap or a rush: a streak of light behind
   for (const f of m.fighters) {
     if (!f.dash || f.dead || unseen(f)) continue;
     for (let i = 1; i <= 4; i++) {
@@ -1024,16 +1204,18 @@ export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number
       drawReticle(g, p.x, p.y, ab.area ?? 40, ab.color, time, !ok);
     }
   }
+  // under each fighter: your own thin gold ring, and the marks of whom you have chosen (picksOf)
+  const picks = picksOf(m, me);
   for (const f of m.fighters) {
     // (the raised dead, once back in the ground, are nobody's to choose; one of the other side in the shroud is nobody's to see)
     if ((f.pet && f.dead) || (me && m.unseen(f, me))) continue;
     view.flat(f.x, f.y);
     if (f.id === myId) ring(g, f.x, f.y, 11, '#ffe39a', 1.4);
-    if (f.id === me?.target) ring(g, f.x, f.y, 13 + Math.sin(time * 5) * 0.8, '#ff5a6a', 1.8);
-    else if (f.id === me?.friend && f.id !== myId) ring(g, f.x, f.y, 13, '#7fe06a', 1.6);
+    const pick = picks.get(f.id);
+    if (pick && !f.dead) pickMark(g, f.x, f.y, pick, time, view.still);
   }
   g = view.upperLayer();
-  for (const f of m.fighters) if (!me || !m.unseen(f, me)) markFighter(g, m, f, myId, time, !me || f === me || m.sees(me, f), view, raiseOf(f));
+  for (const f of m.fighters) if (!me || !m.unseen(f, me)) markFighter(g, m, f, myId, time, !me || f === me || m.sees(me, f), view, raiseOf(f), picks.get(f.id) ?? null);
   g.textAlign = 'center';
   for (const p of fx.pops) {
     const u = p.t / 0.9;

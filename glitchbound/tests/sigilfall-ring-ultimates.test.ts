@@ -56,17 +56,17 @@ describe('The Ring: every way to fight has its own super', () => {
   });
 
   it('a setup keeps its pick, a room passes it on, and the match gives that one and only that one', () => {
-    const kept = setsOf({ standings: {}, sets: { warrior: { active: 0, list: [{ bar: PRESETS.warrior[0]!.bar, oath: 'iron', talents: [], ult: 'w-super2' }] } } }, 'warrior');
+    const kept = setsOf({ standings: {}, sets: { warrior: { active: 0, list: [{ bar: PRESETS.warrior[0]!.bar, talents: [], ult: 'w-super2' }] } } }, 'warrior');
     expect(kept.list[0]!.ult).toBe('w-super2');
     // (a fresh setup starts from a ready-made one, with its super)
     expect(setsOf({ standings: {}, sets: {} }, 'warrior').list[1]!.ult).toBe(PRESETS.warrior[1]!.ult);
     expect(cleanPick({ team: 0, cls: 'warrior', bar: ['w-hew'], oath: 'iron', talents: [], ult: 'w-super2' })?.ult).toBe('w-super2');
     const m = fight({ cls: 'warrior', ult: 'w-super2' }, [{ cls: 'mage', at: [300, 125] }]);
-    expect(m.extras(m.fighters[0]!)[1]!.id).toBe('w-super2');
+    expect(m.extras(m.fighters[0]!)[0]!.id).toBe('w-super2');
     expect(m.press(0, 'w-super')).toBe('You don’t have that');
     // another class's super is no pick at all: they get their own first
     const n = fight({ cls: 'warrior', ult: 'm-super' }, [{ cls: 'mage', at: [300, 125] }]);
-    expect(n.extras(n.fighters[0]!)[1]!.id).toBe('w-super');
+    expect(n.extras(n.fighters[0]!)[0]!.id).toBe('w-super');
     // and the combos a bar shows follow the super it carries
     expect(barCombos('warrior', PRESETS.warrior[0]!.bar, 'w-super2').every((c) => c.from.id !== 'w-super' && c.to.id !== 'w-super')).toBe(true);
   });
