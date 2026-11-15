@@ -114,6 +114,6 @@ describe('The Ring on a phone: every button in its place', () => {
     const arc = ['s1', 's2', 's3', 's4'].map(from);
     for (const d of arc) expect(d).toBeLessThan(95);
     expect(Math.max(...arc) - Math.min(...arc)).toBeLessThan(2);
-    for (const k of ['dodge', 'ult']) expect(from(k), k).toBeGreaterThan(130);
+    expect(from('ult'), 'ult').toBeGreaterThan(130);
   });
 });

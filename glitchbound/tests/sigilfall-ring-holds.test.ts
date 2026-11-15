@@ -152,9 +152,13 @@ describe('The Ring: Rime Spear shatters the ice', () => {
 });
 
 describe('The Ring: no charm and no oath beside the bar (2026-11-15: "remove oaths and the extras, leave only spells, talents and ults")', () => {
-  it('everyone carries the trinket, and nothing else beside the bar', () => {
+  it('nothing beside the bar but the super; the trinket is in every class’s list, to be taken as one of the five', () => {
     const m = duel('mage', ['m-chill', 'm-ring'], 'warrior');
-    for (const f of m.fighters) expect(m.extras(f)[0]).toBe(TRINKET);
+    for (const f of m.fighters) expect(m.extras(f).map((a) => a.super)).toEqual([true]);
+    expect(ABILITIES.dash).toBeUndefined();
+    expect(m.press(0, TRINKET.id)).toBe('You don’t have that');
+    const n = duel('mage', ['m-chill', TRINKET.id], 'warrior');
+    expect(n.fighters[0]!.bar).toContain(TRINKET.id);
     expect(ABILITIES.charm).toBeUndefined();
     // (and a hero is as their class is built, with no oath's bonus on top)
     expect(m.fighters[0]!.maxHp).toBe(BODY.mage.hp);

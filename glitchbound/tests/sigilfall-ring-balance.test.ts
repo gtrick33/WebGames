@@ -134,6 +134,14 @@
  * Power, 48 and 49; Gravecaller 54 with Hollow Pact, 53 and 54). Over the same 24 seeds and 3,000 teams, no setup's
  * mean moved more than two points (Trapper 48 -> 47, Gravecaller 55 -> 54, Rime 50 -> 51, Curse-speaker 54 -> 55,
  * Nightblade 51 -> 50, Hexer, Reaper and Oathkeeper unchanged), so no number was tuned for it.
+ *
+ * Then the Swift Step went (2026-11-15, the owner: "remove swift step from all classes and add the same spell to all
+ * classes as well - trinket ... with 45s cooldown", "add them in the spells list, dont replace the swift step", and "no
+ * need to run balancing script as this affects all classes"). The Unbinding Trinket is in every class's list, and no
+ * ready-made setup carries it. Without the step, the druid's duels (healers' left out) fell to 33% in
+ * tests/sigilfall-ring-aim.test.ts, under its floor of 35%, so Starlash is 6% stronger (79 -> 84) and nothing else
+ * changed. Measured once over the usual seeds, without it: Hound 73% and Trapper 72% of their duels, the Longbow 46 on
+ * the mean; worth a look once people have played it.
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';

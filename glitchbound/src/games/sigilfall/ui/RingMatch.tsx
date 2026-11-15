@@ -53,8 +53,8 @@ const MAX_STEP = 1 / 45;
 /** A host speaks ten times a second: plenty for frames that coast between. */
 const SEND_EVERY = 0.1;
 /** The thumb cluster's places (Game.css .rb-ring-thumbs .rb-cluster): the bar's first in the corner, its other four
- * on one arc round it, then the trinket and the super outside it. */
-const TOUCH_SLOTS = ['basic', 's1', 's2', 's3', 's4', 'dodge', 'ult'] as const;
+ * on one arc round it, then the super outside it. (A Swift Step had its own place, low on the left, until 2026-11-15.) */
+const TOUCH_SLOTS = ['basic', 's1', 's2', 's3', 's4', 'ult'] as const;
 
 const clock = (t: number): string => {
   const left = Math.max(0, MATCH_LIMIT - t);
@@ -608,11 +608,10 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       const pals = me ? m.heroes.filter((f) => f.team === me.team && f.id !== me.id) : [];
       if (act && act !== 'up' && act !== 'down' && act !== 'left' && act !== 'right') e.preventDefault();
       if (n >= 0 && me?.bar[n]) keyPress(me.bar[n]!, e);
-      // (behind the gates, the step key says "ready")
+      // (behind the gates, the ready key says "ready")
       else if (act === 'dash' && m.phase === 'gates' && role.kind !== 'client') {
         if (m.gateAt - m.t > 5) ready();
-      } else if (act === 'dash' && me) press(m.extras(me)[0]!.id);
-      else if (act === 'super' && me) keyPress(m.extras(me)[1]!.id, e);
+      } else if (act === 'super' && me) keyPress(m.extras(me)[0]!.id, e);
       else if (act === 'nextFoe' && me) {
         const next = cycle(m.enemiesOf(me).filter((o) => !m.unseen(o, me)), me.target);
         if (next !== null) target(next);
@@ -999,7 +998,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   const left = teamOf(mine);
   const right = teamOf(mine === 0 ? 1 : 0);
   const bar = me ? [...me.bar.map((id) => ABILITIES[id]!), ...m.extras(me)] : [];
-  const keyOf = (i: number): string => keyName(i < SLOTS ? ringKeys[`ab${i + 1}` as 'ab1'] : i === SLOTS ? ringKeys.dash : ringKeys.super);
+  const keyOf = (i: number): string => keyName(i < SLOTS ? ringKeys[`ab${i + 1}` as 'ab1'] : ringKeys.super);
   const charge = me?.charge ?? 0;
   const gloamIn = Math.ceil(CLOSE_FROM - m.clock);
   const count = Math.ceil(m.gateAt - m.t);
@@ -1238,8 +1237,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   return (
                     <button
                       key={ab.id}
-                      data-tut={sup ? 'super' : i === SLOTS ? 'step' : undefined}
-                      className={`rb-sb rb-sb-${TOUCH_SLOTS[i]}${sup ? ` is-super${charge >= 1 ? ' is-ready' : ''}` : ''}${isOut(m, me, ab) ? ' is-nomana' : ''}${wait > 0 ? ' is-cooling' : ''}${held && ab.anyState ? ' is-free-now' : ''}${comboOf(ab) && wait <= 0 ? ' is-combo' : ''}`}
+                      data-tut={sup ? 'super' : undefined}
+                      className={`rb-sb rb-sb-${sup ? 'ult' : TOUCH_SLOTS[i]}${sup ? ` is-super${charge >= 1 ? ' is-ready' : ''}` : ''}${isOut(m, me, ab) ? ' is-nomana' : ''}${wait > 0 ? ' is-cooling' : ''}${held && ab.anyState ? ' is-free-now' : ''}${comboOf(ab) && wait <= 0 ? ' is-combo' : ''}`}
                       style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined}
                       aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}
                       onPointerDown={(e) => aimApi.current.down(e, ab)}
@@ -1301,7 +1300,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   Change my setup
                 </button>
               </span>
-              <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. The broken-chain button frees you from any hold; the gold one is your super, once it’s full. Walk out of a red circle before it lands. A placed ability: tap it to drop it on your target, or hold it and push the circle where you want it.' : `${[ringKeys.up, ringKeys.left, ringKeys.down, ringKeys.right].map(keyName).join('')} to move · ${keyName(ringKeys.ab1)} to ${keyName(ringKeys.ab5)} for abilities · ${keyName(ringKeys.dash)} to break free · ${keyName(ringKeys.super)} for your super · Walk out of a red circle before it lands · A placed ability: press its key, then click where it should land`}</span>
+              <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. The gold button is your super, once it’s full. Walk out of a red circle before it lands. A placed ability: tap it to drop it on your target, or hold it and push the circle where you want it.' : `${[ringKeys.up, ringKeys.left, ringKeys.down, ringKeys.right].map(keyName).join('')} to move · ${keyName(ringKeys.ab1)} to ${keyName(ringKeys.ab5)} for abilities · ${keyName(ringKeys.super)} for your super · Walk out of a red circle before it lands · A placed ability: press its key, then click where it should land`}</span>
             </div>
           )}
           {err && (
@@ -1350,7 +1349,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 const full = cd > gcd ? ab.cd : 1;
                 const sup = !!ab.super;
                 return (
-                  <button key={ab.id} data-tut={sup ? 'super' : i === SLOTS ? 'step' : undefined} className={`rb-ring-ab${isOut(m, me, ab) ? ' is-out' : ''}${ab.id === 'trinket' ? ' is-token' : ''}${sup ? ` is-super${charge >= 1 ? ' is-full' : ''}` : ''}${held && ab.anyState ? ' is-ready' : ''}${comboOf(ab) ? ' is-combo' : ''}`} style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined} onPointerDown={(e) => aimApi.current.down(e, ab)} onPointerMove={(e) => aimApi.current.move(e)} onPointerUp={(e) => aimApi.current.up(e)} onPointerCancel={(e) => aimApi.current.cancel(e)} onMouseEnter={() => setTip(ab)} onMouseLeave={() => setTip(null)} aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}>
+                  <button key={ab.id} data-tut={sup ? 'super' : undefined} className={`rb-ring-ab${isOut(m, me, ab) ? ' is-out' : ''}${ab.id === 'trinket' ? ' is-token' : ''}${sup ? ` is-super${charge >= 1 ? ' is-full' : ''}` : ''}${held && ab.anyState ? ' is-ready' : ''}${comboOf(ab) ? ' is-combo' : ''}`} style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined} onPointerDown={(e) => aimApi.current.down(e, ab)} onPointerMove={(e) => aimApi.current.move(e)} onPointerUp={(e) => aimApi.current.up(e)} onPointerCancel={(e) => aimApi.current.cancel(e)} onMouseEnter={() => setTip(ab)} onMouseLeave={() => setTip(null)} aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}>
                     <img src={iconPicture(ab.icon)} alt="" draggable={false} />
                     {sup && charge < 1 && <i className="rb-ring-charge" />}
                     {wait > 0 && <i className="rb-ring-cool" style={{ ['--p' as string]: `${Math.min(1, wait / (full || 1)) * 100}%` }} />}

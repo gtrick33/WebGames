@@ -516,7 +516,7 @@ describe('The Ring: talents and set ups', () => {
     expect(s.held(foe)).toBeUndefined();
 
     // Wild Snare: the trinket leaves a snare where they stand
-    const r = new Match({ seed: 5, map: 'sands', fighters: [{ ...fighter(0, 'ranger', ['r-swift']), talents: ['r-2b'] }, fighter(1, 'warrior')] });
+    const r = new Match({ seed: 5, map: 'sands', fighters: [{ ...fighter(0, 'ranger', ['r-swift', 'trinket']), talents: ['r-2b'] }, fighter(1, 'warrior')] });
     r.step(GATES + 0.01, {});
     const ranger = r.fighters[0]!;
     ranger.x = 200;
@@ -562,7 +562,9 @@ describe('The Ring: talents and set ups', () => {
 describe('The Ring: the kits', () => {
   it('every class has twelve to choose from, with a way to hit, a hold, an escape or defense, and its bars are real', () => {
     for (const cls of CLASS_IDS) {
-      const kit = kitOf(cls);
+      // (its own twelve; the trinket, every class's, besides)
+      expect(kitOf(cls).at(-1)!.id, cls).toBe('trinket');
+      const kit = kitOf(cls).filter((a) => a.cls === cls);
       expect(kit, cls).toHaveLength(12);
       const roles = new Set(kit.map((a) => a.role));
       for (const r of ['damage', 'cc', 'interrupt', 'defense'] as const) expect(roles.has(r), `${cls} has ${r}`).toBe(true);
@@ -970,7 +972,7 @@ describe('The Ring: a brawl', () => {
   it('a cast shot follows its target and lands, whichever way they turn, break free or hide', () => {
     // (the owner: "the misses are a bit annoying ... let's make all the spells hit the target, without any misses")
     const shoot = (after: 'on' | 'turn' | 'step' | 'stone'): number => {
-      const m = duel('mage', ['m-lash'], 'warrior');
+      const m = duel('mage', ['m-lash'], 'warrior', ['w-hew', 'trinket']);
       const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
       const p = m.pillars[0]!;
       me.x = p.x - 70;
@@ -1026,7 +1028,7 @@ describe('The Ring: a brawl', () => {
   });
 
   it('the trinket breaks every hold and every burn, even while held, off the global clock, then waits 45 seconds', () => {
-    const m = duel('warrior', ['w-hew'], 'mage');
+    const m = duel('warrior', ['w-hew', 'trinket'], 'mage');
     const me = m.fighters[0]!;
     me.auras.push({ ab: 'm-ring', kind: 'cc', cc: 'stun', src: 1, t: 3, dur: 3, harmful: true, magic: true, n: 0 });
     me.auras.push({ ab: 'm-ring', kind: 'slow', src: 1, t: 3, dur: 3, harmful: true, magic: true, n: 0.5 });

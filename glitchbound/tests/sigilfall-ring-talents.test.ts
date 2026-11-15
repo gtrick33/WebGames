@@ -132,12 +132,12 @@ describe('The Ring talents: the warrior', () => {
   });
 
   it('Shoulder Check: the trinket stuns the nearest enemy beside them, and nobody farther off', () => {
-    const m = fight([{ team: 0, cls: 'warrior', talents: ['w-2c'], bar: ['w-hew'] }, { team: 1, cls: 'mage', at: [240, 125] }]);
+    const m = fight([{ team: 0, cls: 'warrior', talents: ['w-2c'], bar: ['w-hew', 'trinket'] }, { team: 1, cls: 'mage', at: [240, 125] }]);
     const mage = m.fighters[1]!;
     expect(m.press(0, 'trinket')).toBeNull();
     expect(m.held(mage)?.cc).toBe('stun');
     // (out of its reach: nothing)
-    const n = fight([{ team: 0, cls: 'warrior', talents: ['w-2c'], bar: ['w-hew'] }, { team: 1, cls: 'mage', at: [200 + doing('w-2c', 'check').reach + 20, 125] }]);
+    const n = fight([{ team: 0, cls: 'warrior', talents: ['w-2c'], bar: ['w-hew', 'trinket'] }, { team: 1, cls: 'mage', at: [200 + doing('w-2c', 'check').reach + 20, 125] }]);
     expect(n.press(0, 'trinket')).toBeNull();
     expect(n.held(n.fighters[1]!)).toBeUndefined();
   });
@@ -202,7 +202,7 @@ describe('The Ring talents: the mage', () => {
   });
 
   it('Fold Space: the trinket frees them and blinks them a short way the way they face', () => {
-    const m = fight([{ team: 0, cls: 'mage', talents: ['m-2b'] }, { team: 1, cls: 'druid' }]);
+    const m = fight([{ team: 0, cls: 'mage', talents: ['m-2b'], bar: ['trinket'] }, { team: 1, cls: 'druid' }]);
     const [mage, foe] = m.fighters as [Fighter, Fighter];
     inside(m).crowd(foe, AB('l-roots'), mage, 'root', 3);
     expect(m.rooted(mage)).toBe(true);
@@ -213,7 +213,7 @@ describe('The Ring talents: the mage', () => {
     expect(mage.x).toBeCloseTo(200 + doing('m-2b', 'fold').far, 0);
     expect(m.rooted(mage)).toBe(false);
     // without it, freed where they stand
-    const n = fight([{ team: 0, cls: 'mage' }, { team: 1, cls: 'druid' }]);
+    const n = fight([{ team: 0, cls: 'mage', bar: ['trinket'] }, { team: 1, cls: 'druid' }]);
     inside(n).crowd(n.fighters[1]!, AB('l-roots'), n.fighters[0]!, 'root', 3);
     expect(n.press(0, 'trinket')).toBeNull();
     expect(n.fighters[0]!.x).toBe(200);
@@ -247,14 +247,14 @@ describe('The Ring talents: the mage', () => {
   });
 
   it('Rewind: the trinket gives back half of what was taken in the last few seconds', () => {
-    const m = fight([{ team: 0, cls: 'mage', talents: ['m-3b'] }, { team: 1, cls: 'warrior' }]);
+    const m = fight([{ team: 0, cls: 'mage', talents: ['m-3b'], bar: ['trinket'] }, { team: 1, cls: 'warrior' }]);
     const [mage, foe] = m.fighters as [Fighter, Fighter];
     inside(m).damage(foe, mage, 200, true, AB('w-hew'));
     const lost = mage.maxHp - mage.hp;
     m.press(0, 'trinket');
     expect(mage.maxHp - mage.hp).toBeCloseTo(lost / 2, -0.5);
     // (only what was taken lately)
-    const n = fight([{ team: 0, cls: 'mage', talents: ['m-3b'] }, { team: 1, cls: 'warrior' }]);
+    const n = fight([{ team: 0, cls: 'mage', talents: ['m-3b'], bar: ['trinket'] }, { team: 1, cls: 'warrior' }]);
     inside(n).damage(n.fighters[1]!, n.fighters[0]!, 200, true, AB('w-hew'));
     wait(n, doing('m-3b', 'rewind').back + 0.5);
     const hp = n.fighters[0]!.hp;
@@ -399,14 +399,14 @@ describe('The Ring talents: the priest', () => {
   });
 
   it('Guardian Leap: the trinket leaps them to a chosen friend’s side', () => {
-    const m = fight([{ team: 0, cls: 'priest', talents: ['p-2a'] }, { team: 1, cls: 'warrior', at: [500, 200] }, { team: 0, cls: 'warrior', at: [340, 125] }]);
+    const m = fight([{ team: 0, cls: 'priest', talents: ['p-2a'], bar: ['trinket'] }, { team: 1, cls: 'warrior', at: [500, 200] }, { team: 0, cls: 'warrior', at: [340, 125] }]);
     const [p, , friend] = m.fighters as [Fighter, Fighter, Fighter];
     p.friend = friend.id;
     expect(m.press(0, 'trinket')).toBeNull();
     wait(m, 0.5);
     expect(Math.hypot(p.x - friend.x, p.y - friend.y)).toBeLessThan(HERO_R * 3);
     // with nobody chosen, they stay where they are
-    const n = fight([{ team: 0, cls: 'priest', talents: ['p-2a'] }, { team: 1, cls: 'warrior', at: [500, 200] }]);
+    const n = fight([{ team: 0, cls: 'priest', talents: ['p-2a'], bar: ['trinket'] }, { team: 1, cls: 'warrior', at: [500, 200] }]);
     n.press(0, 'trinket');
     wait(n, 0.5);
     expect(n.fighters[0]!.x).toBe(200);
@@ -623,7 +623,7 @@ describe('The Ring talents: the warlock', () => {
   });
 
   it('Shadow Ward: the trinket wards them for a share of their health', () => {
-    const m = fight([{ team: 0, cls: 'warlock', talents: ['k-2b'] }, { team: 1, cls: 'warrior', at: [600, 200] }]);
+    const m = fight([{ team: 0, cls: 'warlock', talents: ['k-2b'], bar: ['trinket'] }, { team: 1, cls: 'warrior', at: [600, 200] }]);
     const k = m.fighters[0]!;
     expect(m.press(0, 'trinket')).toBeNull();
     const d = doing('k-2b', 'shadeward');
@@ -712,7 +712,7 @@ describe('The Ring talents: the druid', () => {
   });
 
   it('Stag Form: the trinket makes them a stag, faster and free', () => {
-    const m = fight([{ team: 0, cls: 'druid', talents: ['l-2a'] }, { team: 1, cls: 'druid' }]);
+    const m = fight([{ team: 0, cls: 'druid', talents: ['l-2a'], bar: ['trinket'] }, { team: 1, cls: 'druid' }]);
     const [d, foe] = m.fighters as [Fighter, Fighter];
     inside(m).crowd(foe, AB('l-roots'), d, 'root', 3);
     expect(m.press(0, 'trinket')).toBeNull();
@@ -769,7 +769,7 @@ describe('The Ring talents: the druid', () => {
   });
 
   it('Shed Skin: the trinket takes one more curse off, and mends a little', () => {
-    const m = fight([{ team: 0, cls: 'druid', talents: ['l-3c'] }, { team: 1, cls: 'warlock', bar: ['k-agony'] }]);
+    const m = fight([{ team: 0, cls: 'druid', talents: ['l-3c'], bar: ['trinket'] }, { team: 1, cls: 'warlock', bar: ['k-agony'] }]);
     const d = m.fighters[0]!;
     d.auras.push({ ab: 'p-2b', kind: 'antiheal', src: 1, t: 8, dur: 8, harmful: true, magic: true, n: 0.2 });
     d.hp = Math.round(d.maxHp / 2);
@@ -826,7 +826,7 @@ describe('The Ring talents: the Gloamknight', () => {
   });
 
   it('Drag Below: the trinket drags the nearest enemy in reach to their side, slowed', () => {
-    const m = fight([{ team: 0, cls: 'gloamknight', talents: ['g-2a'] }, { team: 1, cls: 'mage', at: [300, 125] }]);
+    const m = fight([{ team: 0, cls: 'gloamknight', talents: ['g-2a'], bar: ['trinket'] }, { team: 1, cls: 'mage', at: [300, 125] }]);
     const [g, mage] = m.fighters as [Fighter, Fighter];
     expect(m.press(0, 'trinket')).toBeNull();
     wait(m, 0.5);
@@ -834,7 +834,7 @@ describe('The Ring talents: the Gloamknight', () => {
     expect(Math.abs(mage.x - g.x)).toBeLessThan(HERO_R * 3);
     expect(mage.auras.find((a) => a.ab === 'g-2a')).toMatchObject({ kind: 'slow', n: doing('g-2a', 'drag').pct / 100 });
     // (out of reach: nobody)
-    const n = fight([{ team: 0, cls: 'gloamknight', talents: ['g-2a'] }, { team: 1, cls: 'mage', at: [200 + doing('g-2a', 'drag').reach + 30, 125] }]);
+    const n = fight([{ team: 0, cls: 'gloamknight', talents: ['g-2a'], bar: ['trinket'] }, { team: 1, cls: 'mage', at: [200 + doing('g-2a', 'drag').reach + 30, 125] }]);
     n.press(0, 'trinket');
     wait(n, 0.5);
     expect(n.fighters[1]!.x).toBe(200 + doing('g-2a', 'drag').reach + 30);

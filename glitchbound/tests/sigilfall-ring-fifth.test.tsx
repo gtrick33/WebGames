@@ -53,14 +53,14 @@ describe('The Ring: five abilities on every bar', () => {
   });
 
   it('on a phone the fifth is a button of its own in the thumb cluster, clear of every other, and inside the cluster', () => {
-    expect(read('src/games/sigilfall/ui/RingMatch.tsx')).toContain("const TOUCH_SLOTS = ['basic', 's1', 's2', 's3', 's4', 'dodge', 'ult'] as const;");
+    expect(read('src/games/sigilfall/ui/RingMatch.tsx')).toContain("const TOUCH_SLOTS = ['basic', 's1', 's2', 's3', 's4', 'ult'] as const;");
     const box = rule('.rb-ring-thumbs .rb-cluster');
     const W = px(box, 'width');
     const H = px(box, 'height');
     // (wider than it is tall: a phone on its side has height to spare least, and the fight is on the right of it too)
     expect(W).toBeGreaterThan(H);
     expect(H).toBeLessThanOrEqual(176);
-    const buttons = ['basic', 's1', 's2', 's3', 's4', 'dodge', 'ult'].map((k) => {
+    const buttons = ['basic', 's1', 's2', 's3', 's4', 'ult'].map((k) => {
       const r = rule(`.rb-ring-thumbs .rb-cluster .rb-sb-${k}`);
       const d = px(r, 'width');
       expect(px(r, 'height'), k).toBe(d);

@@ -7564,8 +7564,8 @@ html.rb-touch-playing textarea {
   place-items: start center;
   padding: calc(8px + var(--sa-t, 0px)) calc(10px + var(--sa-r, 0px)) calc(8px + var(--sa-b, 0px)) calc(10px + var(--sa-l, 0px));
 }
-/* (a card only to read, opened from the Ring's main screen: over the game's screen, as the rules are, and not over the
-   whole page, whose side panel would stand over it) */
+/* (every ability's card: over the game's screen, as the rules are, and not over the whole page, whose side panel stood
+   over it) */
 .rb-ring-dialog-wrap.is-card.is-local {
   position: absolute;
 }

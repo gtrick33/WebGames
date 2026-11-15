@@ -44,9 +44,9 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
   { id: 'formats', title: 'Choose your fight', text: () => '1v1, 2v2 or 3v3. Each has its own rating, starting at 1000: a win raises it and a loss lowers it. In 2v2 and 3v3 the computer fills your team, or your friends do.', spot: 'formats', page: 'play', at: 'bottom' },
   { id: 'rank', title: 'Climb the ranks', text: () => 'Your rank, and how far it is to the next. Every rank gives you a title and a suit of armor to keep. Rewards shows them all.', spot: 'rank', page: 'play', at: 'bottom' },
   { id: 'arena', title: 'Arenas', text: () => 'Each arena has its own pillars to hide behind. Any picks one for you, so you can leave it as it is.', spot: 'arena', page: 'play', at: 'bottom' },
-  { id: 'loadout', title: 'What you bring', text: () => 'Five abilities, then your trinket and your super (the round one): open any of them to read what it does and when to use it. Under them, your talents. Let’s open your setup.', spot: 'loadout', page: 'play', at: 'top' },
+  { id: 'loadout', title: 'What you bring', text: () => 'Five abilities, then your super (the round one): open any of them to read what it does and when to use it. Under them, your talents. Let’s open your setup.', spot: 'loadout', page: 'play', at: 'top' },
   { id: 'styles', title: 'Pick a playstyle', text: (cls) => `Each card is a ready-made ${CLASSES[cls].name} build. Pick the one that sounds like you: it fills your setup at once, ready to fight with as it is.`, spot: 'styles', page: 'setup', mode: 'styles', at: 'bottom' },
-  { id: 'kit', title: 'Your abilities', text: () => 'Customize opens everything. Every class has twelve abilities and brings five. Click one to read what it does, when to use it and what it combines with, then equip it.', spot: 'kit', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
+  { id: 'kit', title: 'Your abilities', text: () => 'Customize opens everything. Every class has twelve abilities of its own, plus the Unbinding Trinket any class can take, and brings five. Click one to read what it does, when to use it and what it combines with, then equip it.', spot: 'kit', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
   { id: 'combos', title: 'Combos', text: () => 'These pairs work together: use the first, then the second, and the second hits much harder. Each different combo in a row builds Momentum.', spot: 'combos', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
   { id: 'talents', title: 'Talents', text: () => 'Pick one from each row. Talents change how your whole class fights, whatever is on your bar.', spot: 'panel', page: 'setup', mode: 'custom', tab: 'talents', at: 'top' },
   { id: 'super', title: 'Your super', text: () => 'A big ability that’s ready when its meter is full. The meter fills as you deal damage or heal. Each class has two to choose from.', spot: 'panel', page: 'setup', mode: 'custom', tab: 'super', at: 'top' },
@@ -75,7 +75,7 @@ export function tutorialSetup(me: FighterSetup, seed: number): MatchSetup {
 export type MatchStepId = 'gates' | 'plates' | 'move' | 'target' | 'ability' | 'combo' | 'momentum' | 'circle' | 'place' | 'super' | 'sphere' | 'sigil' | 'pillar' | 'holds' | 'friends' | 'gloam' | 'fight';
 
 /** What a match step lights up on the screen. */
-export type MatchSpot = 'prep' | 'plates' | 'foes' | 'target' | 'bar' | 'step' | 'super' | null;
+export type MatchSpot = 'prep' | 'plates' | 'foes' | 'target' | 'bar' | 'super' | null;
 
 /** The keys the words name, as they read on this player's keyboard (or a phone's buttons). */
 export interface TutorialKeys {
@@ -416,7 +416,7 @@ export class TutorialRun {
       case 'pillar':
         return out('Pillars block sight', 'Step behind a pillar so your sparring partner can’t see you. Nobody can aim at someone they can’t see, and a healer can’t reach a friend out of sight.', 'target', 'Hide behind a pillar so they can’t see you.');
       case 'holds':
-        return out('Casts and holds', `Watch their nameplate: a bar fills while they cast, and an interrupt cuts it off. Stuns, fears, roots and the like hold a fighter for a moment, and each one in a row lasts half as long. Your trinket (${t ? 'the broken-chain button' : keys.dash}) breaks you out of any of them and takes off every burn and bleed, but it comes back only every 45 seconds: keep it for the hold that matters.`, 'step');
+        return out('Casts and holds', `Watch their nameplate: a bar fills while they cast, and an interrupt cuts it off. Stuns, fears, roots and the like hold a fighter for a moment, and each one in a row lasts half as long. The Unbinding Trinket, which every class can take as one of its five, breaks you out of any of them and takes off every burn and bleed, but it comes back only every 45 seconds: keep it for the hold that matters.`, 'foes');
       case 'friends':
         return out('Teammates', `In 2v2 and 3v3 your teammates’ nameplates sit under yours. ${t ? 'Tap one' : `Click one or press ${keys.nextFriend}`} to choose who your heals go to.${t ? ' In a team fight, the ◎ button under the enemies’ nameplates switches between them.' : ''}`, 'plates');
       case 'gloam':

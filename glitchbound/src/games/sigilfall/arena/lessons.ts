@@ -11,7 +11,7 @@ import { CLOSE_FROM, RANGED, type Fighter, type Match, type MatchEvent } from '.
 /** The keys (or buttons) a hint names: a keyboard's, or a phone's buttons. */
 export interface HintKeys {
   touch: boolean;
-  /** The trinket's key (its action is still called `dash`, so saved keys keep working), and the super's (as they read: "Space", "Q"). */
+  /** The ready key (its action is still called `dash`, so saved keys keep working), and the super's (as they read: "Space", "Q"). */
   dash: string;
   super: string;
 }

@@ -44,8 +44,8 @@ export function plainWhy(m: Match, me: Fighter | null, why: string, ab: Ability 
   if (why === 'You can’t do that now' && me) {
     const hold = m.held(me);
     const word = hold?.cc ? HELD_WORD[hold.cc] : undefined;
-    // (the trinket breaks it, if it is ready: said, so that a newcomer learns it)
-    const free = me.cds[TRINKET.id] === undefined || me.cds[TRINKET.id]! <= 0;
+    // (the trinket breaks it, if they carry it and it is ready: said, so that a newcomer learns it)
+    const free = me.bar.includes(TRINKET.id) && (me.cds[TRINKET.id] ?? 0) <= 0;
     return `${word ? `You’re ${word}` : 'You’re held'}${free ? ': your trinket breaks you free' : ' and can’t act yet'}`;
   }
   if (why === 'Too far away') return ab && ab.range > 0 && ab.range <= 40 ? 'Too far: walk up to them' : 'Too far: get closer';

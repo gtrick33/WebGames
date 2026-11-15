@@ -3,7 +3,7 @@ import type { ClassId } from '../data/types';
 /**
  * The Ring: Sigilfall's arena. Its abilities are its own, apart from the campaign's: the numbers are flat and equal for
  * everyone so that a level 1 hero and a level 60 hero fight the same fight. Every class has twelve and takes five into
- * each match (plus the trinket and its super), so choosing them is half the game. (Four, until the owner asked for
+ * each match (plus its super), and every class can take the trinket as one of them, so choosing them is half the game. (Four, until the owner asked for
  * "one more spell slot for each class and spec" on 2026-11-15.) Plain data with no imports but types: the icon build
  * reads it. The rules are the classic arena's; the names and the art are ours.
  */
@@ -178,10 +178,11 @@ export const SLOTS = 5;
 
 
 /**
- * Everyone's, besides their five: a trinket that breaks every hold on them and every damage over time, usable while
- * held. It took the Swift Step's place for every class (2026-11-15, the owner: "remove swift step from all classes and
- * add the same spell to all classes as well - trinket that frees the player from any crowd control effects and dots
- * with 45s cooldown"); the talents that worked on the step work on it (arena/talents.ts).
+ * A trinket that breaks every hold on its bearer and every damage over time, usable while held: in every class's list,
+ * to be taken as one of the five like any other (2026-11-15, the owner: "remove swift step from all classes and add the
+ * same spell to all classes as well - trinket that frees the player from any crowd control effects and dots with 45s
+ * cooldown", then "add them in the spells list, dont replace the swift step"). There is no Swift Step: beside the bar
+ * is only the super. The talents that worked on the step work on the trinket, for whoever carries it (arena/talents.ts).
  */
 export const TRINKET: Ability = a({ id: 'trinket', cls: 'any', name: 'Unbinding Trinket', text: 'Break free of every hold and every damage over time on you: stuns, fears, roots, dazes, silences, slows, burns, bleeds and curses. Usable while held.', icon: 'broken_chain_links_snapping_on_grey', color: '#ffe39a', school: 'physical', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 45, free: true, anyState: true, quiet: true, effects: [{ k: 'token' }, { k: 'undot' }, { k: 'unbound' }] });
 
@@ -322,7 +323,7 @@ const KITS: Record<ClassId, Ability[]> = {
     a({ id: 'k-frenzy', cls: 'warlock', name: 'Grave Hunger', text: 'Your ashbound hunger: for 6 seconds they hit 40% harder and run a third faster. Only while some stand.', icon: 'skull_with_green_eyes_on_black', color: '#9ae85a', school: 'shadow', role: 'burst', aim: 'self', range: 0, cast: 0, cd: 16, free: true, effects: [{ k: 'frenzy', pct: 40, dur: 6 }] }),
   ],
   druid: [
-    a({ id: 'l-lash', cls: 'druid', name: 'Starlash', text: 'A bolt of cold starlight.', icon: 'moonfire_beam_on_navy', color: '#cfe0ff', school: 'nature', role: 'damage', aim: 'enemy', range: FAR, cast: 1, cd: 0, bolt: true, combo: { name: 'Eclipse', text: 'Against a target with your Moonburn on them: 50% harder.', ab: ['l-moon'], mult: 1.5 }, effects: [{ k: 'dmg', n: 79 }] }),
+    a({ id: 'l-lash', cls: 'druid', name: 'Starlash', text: 'A bolt of cold starlight.', icon: 'moonfire_beam_on_navy', color: '#cfe0ff', school: 'nature', role: 'damage', aim: 'enemy', range: FAR, cast: 1, cd: 0, bolt: true, combo: { name: 'Eclipse', text: 'Against a target with your Moonburn on them: 50% harder.', ab: ['l-moon'], mult: 1.5 }, effects: [{ k: 'dmg', n: 84 }] }),
     a({ id: 'l-regrow', cls: 'druid', name: 'Green Mending', text: 'A heal that keeps on healing: 93, and 74 more over 6 seconds.', icon: 'rejuvenate_leaf_drop_on_green', color: '#b8ffb8', school: 'nature', role: 'heal', aim: 'friend', range: FAR, cast: 0.9, cd: 0, effects: [{ k: 'heal', n: 93 }, { k: 'hot', n: 74, dur: 6 }] }),
     a({ id: 'l-rejuv', cls: 'druid', name: 'Budding', text: 'Heals 173 over 12 seconds, on the move.', icon: 'regeneration_status_green_leaf_on_green', color: '#a8e85a', school: 'nature', role: 'heal', aim: 'friend', range: FAR, cast: 0, cd: 0, effects: [{ k: 'hot', n: 173, dur: 12 }] }),
     a({ id: 'l-bloom', cls: 'druid', name: 'Quick Bloom', text: 'An instant heal in a tight spot.', icon: 'heart_with_green_gold_sparkles_on_gold', color: '#ffb8e8', school: 'nature', role: 'heal', aim: 'friend', range: FAR, cast: 0, cd: 8, combo: { name: 'Blossom', text: 'On a friend under your Budding: heals 60% more, and the Budding is used up.', ab: ['l-rejuv'], mult: 1.6, consume: true }, effects: [{ k: 'heal', n: 185 }] }),
@@ -356,7 +357,10 @@ const KITS: Record<ClassId, Ability[]> = {
 };
 
 export const ABILITIES: Record<string, Ability> = Object.fromEntries([...Object.values(KITS).flat(), ...Object.values(SUPERS), ...Object.values(SUPERS2), TRINKET, SIGIL].map((x) => [x.id, x]));
-export const kitOf = (cls: ClassId): Ability[] => KITS[cls];
+/** What a class can take into its five: its own twelve, and the trinket that every class can take. */
+export const kitOf = (cls: ClassId): Ability[] => [...KITS[cls], TRINKET];
+/** Can a hero of `cls` carry this on their bar: one of their own (not a super), or the trinket. */
+export const takes = (cls: ClassId, id: unknown): id is string => typeof id === 'string' && !!ABILITIES[id] && !ABILITIES[id]!.super && (ABILITIES[id]!.cls === cls || id === TRINKET.id);
 
 /**
  * How each class is built before anything is chosen. (The three who fight at arm's length carry about 5% more than
@@ -415,7 +419,7 @@ export function ultFor(cls: ClassId, bar: readonly string[]): string {
  * Hound's four get the Hound's Unbowed, not the Reaper's Skull Crack.)
  */
 export function fullBar(cls: ClassId, bar: readonly unknown[] | undefined): string[] {
-  const own = (id: unknown): id is string => typeof id === 'string' && ABILITIES[id]?.cls === cls && !ABILITIES[id]!.super;
+  const own = (id: unknown): id is string => takes(cls, id);
   const mine = Array.isArray(bar) ? bar : [];
   const share = (p: { bar: string[] }): number => p.bar.filter((id) => mine.includes(id)).length;
   const [first, second] = PRESETS[cls];

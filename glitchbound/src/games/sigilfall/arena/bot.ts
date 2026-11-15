@@ -371,7 +371,7 @@ function attack(m: Match, f: Fighter, b: Brain, skill: number, target: Fighter):
 
 /** The super, when it's full: on a kill, on a crowd, or to save a friend. */
 function unleash(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[], target: Fighter, friends: Fighter[]): void {
-  const sup = m.extras(f)[1]!;
+  const sup = m.extras(f)[0]!;
   if (f.charge < 1 || b.rand() > 0.35 + skill * 0.65) return;
   // (one that calls up the dead, or works on its user alone: once the fight is close)
   if (sup.aim === 'self') {
@@ -463,11 +463,11 @@ function healSelf(m: Match, f: Fighter): void {
 }
 
 /**
- * The trinket (abilities.ts TRINKET): out of a hold that matters, or out from under burns that are eating them. A
+ * The trinket, for whoever carries it (abilities.ts TRINKET): out of a hold that matters, or out from under burns that are eating them. A
  * sharp hand keeps it for a long hold while in danger; a newcomer spends it on the first thing that holds them.
  */
 function breakFree(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[]): void {
-  if (m.blocked(f, TRINKET)) return;
+  if (!f.bar.includes(TRINKET.id) || m.blocked(f, TRINKET)) return;
   const hold = f.auras.find((a) => !!a.cc && a.harmful);
   const danger = hpShare(f) < 0.6 || enemies.some((e) => e.target === f.id && Math.hypot(e.x - f.x, e.y - f.y) < 70);
   if (hold && hold.t >= 1 - skill * 0.4 && (danger || skill < 0.4) && b.rand() < 0.25 + skill * 0.6) {

@@ -96,7 +96,8 @@ describe('Sigilfall: what a fighter wears is drawn as its spell', () => {
 
   it('the Gloamknight’s pictures are his alone, and each ability has its own', () => {
     const index = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/games/sigilfall/icons/icons.json'), 'utf8')) as { names: string[] };
-    const his = [...kitOf('gloamknight'), SUPERS.gloamknight];
+    // (his own: the trinket is every class's)
+    const his = [...kitOf('gloamknight').filter((a) => a.cls === 'gloamknight'), SUPERS.gloamknight];
     expect(new Set(his.map((a) => a.icon)).size).toBe(his.length);
     const others = new Set(Object.values(ABILITIES).filter((a) => a.cls !== 'gloamknight').map((a) => a.icon));
     for (const a of his) {

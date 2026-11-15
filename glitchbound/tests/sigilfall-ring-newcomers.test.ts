@@ -51,8 +51,9 @@ describe('The Ring for newcomers: plain words', () => {
     const m = new Match({ seed: 1, map: 'sands', fighters: [{ team: 0, cls: 'mage', name: 'a', bar: PRESETS.mage[0]!.bar }, { team: 1, cls: 'warrior', name: 'b', bar: PRESETS.warrior[0]!.bar }] });
     m.step(GATES + 0.01, {});
     const foe = m.fighters[1]!;
+    foe.bar = [...foe.bar.slice(0, 4), 'trinket'];
     foe.auras.push({ ab: 'm-chill', kind: 'cc', cc: 'stun', src: 0, t: 2, dur: 2, harmful: true, magic: true, n: 0 });
-    // (the trinket breaks it while it is ready, and says so; once spent, the hold is waited out)
+    // (the trinket breaks it while it is on the bar and ready, and says so; once spent, the hold is waited out)
     expect(plainWhy(m, foe, 'You can’t do that now', ABILITIES['w-hew'])).toBe('You’re stunned: your trinket breaks you free');
     foe.cds.trinket = 30;
     expect(plainWhy(m, foe, 'You can’t do that now', ABILITIES['w-hew'])).toBe('You’re stunned and can’t act yet');
@@ -134,11 +135,10 @@ describe('The Ring for newcomers: the tutorial', () => {
     for (const s of LOBBY_STEPS) for (const cls of CLASS_IDS) expect(s.text(cls).length).toBeGreaterThan(20);
   });
 
-  it('is not rated, holds the clock, and keeps the player in the trinket against a sparring mage', () => {
+  it('is not rated, holds the clock, against a sparring mage', () => {
     const { m, tut } = tutorialMatch('warrior');
     expect(m.hold).toBe(true);
     expect(m.fighters[1]!.cls).toBe('mage');
-    expect(m.extras(m.fighters[0]!)[0]!.id).toBe('trinket');
     expect(tut.steps[0]).toBe('gates');
     expect(tut.steps.at(-1)).toBe('fight');
     expect(tut.steps).not.toContain('place');

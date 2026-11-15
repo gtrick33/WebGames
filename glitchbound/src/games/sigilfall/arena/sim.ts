@@ -1,5 +1,5 @@
 import type { ClassId } from '../data/types';
-import { ABILITIES, BODY, GCD, SIGIL, SLOTS, TRINKET, superOf, ultFor, ultOf, type Ability, type CcKind, type Effect } from './abilities';
+import { ABILITIES, BODY, GCD, SIGIL, SLOTS, takes, superOf, ultFor, ultOf, type Ability, type CcKind, type Effect } from './abilities';
 import { ARENA_H, ARENA_W, ENTRY_GATES, MAPS, type Pillar } from './maps';
 import { ARM, cleanTalents, EXECUTE, NEAR, RALLY, TALENT_BY_ID, type Does, type Talent, type Tune } from './talents';
 
@@ -556,7 +556,7 @@ export class Match {
         team: s.team,
         cls: s.cls,
         name: s.name,
-        bar: s.bar.filter((b) => ABILITIES[b]?.cls === s.cls && !ABILITIES[b]!.super).slice(0, SLOTS),
+        bar: s.bar.filter((b) => takes(s.cls, b)).slice(0, SLOTS),
         ult: ultOf(s.cls, s.ult ?? ultFor(s.cls, s.bar)).id,
         seat: s.seat ?? null,
         human: !!s.human,
@@ -617,9 +617,9 @@ export class Match {
     return this.phase === 'fight' && this.zoneAt(f.x, f.y) > 1;
   }
 
-  /** The abilities everyone has besides their bar: the trinket and their class's super. */
+  /** What everyone has besides their bar: their class's super (the Swift Step stood beside it until 2026-11-15). */
   extras(f: Fighter): Ability[] {
-    return [TRINKET, ultOf(f.cls, f.ult)];
+    return [ultOf(f.cls, f.ult)];
   }
 
   /** Everything solid right now: the stone, and the gates until they lift. */
@@ -635,7 +635,7 @@ export class Match {
   equip(id: number, s: { bar: string[]; talents?: string[]; ult?: string }): boolean {
     const f = this.fighters[id];
     if (!f || this.phase !== 'gates') return false;
-    const bar = s.bar.filter((b, i) => ABILITIES[b]?.cls === f.cls && !ABILITIES[b]!.super && s.bar.indexOf(b) === i).slice(0, SLOTS);
+    const bar = s.bar.filter((b, i) => takes(f.cls, b) && s.bar.indexOf(b) === i).slice(0, SLOTS);
     if (bar.length < SLOTS) return false;
     const made = built(f.cls, s.talents);
     Object.assign(f, made);

@@ -1,5 +1,5 @@
 import type { ClassId } from '../data/types';
-import { ABILITIES, fullBar, PRESETS, SLOTS } from './abilities';
+import { fullBar, PRESETS, SLOTS, takes } from './abilities';
 import { forgetBest, mmrOf, NEW_STANDING, rankOf, RING_KEY, type Format, type Standing } from './ranks';
 import type { FighterSetup } from './sim';
 import { clearLive, LEAVER_K, type LiveMatch } from './live';
@@ -263,7 +263,7 @@ export function setsOf(save: RingSave, cls: ClassId): ClassSets {
     // (a setup kept from when a bar held six keeps its first five; one holding an ability since taken out of the game, or
     // renamed, loses it and is filled up again, so that it is never left short; one that was full when bars held fewer
     // gets the rest from the ready-made bar it is closest to. A bar its player is still filling is left as it is)
-    const own = k.bar.filter((id) => ABILITIES[id]?.cls === cls && !ABILITIES[id]!.super);
+    const own = k.bar.filter((id) => takes(cls, id));
     const was = typeof kept.n === 'number' ? kept.n : OLD_SLOTS;
     const grown = was < SLOTS && own.length >= was;
     // (only what a setup holds now: an oath or a charm written down from before is left behind)

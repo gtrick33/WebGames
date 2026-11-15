@@ -25,10 +25,8 @@ export function timing(ab: Ability): string {
 
 export const talentIcon = (t: Talent): string => iconPicture(t.icon ?? ABILITIES[Object.keys(t.tune ?? {})[0] ?? '']?.icon ?? '');
 
-/** The trinket: carried beside the bar by everyone, never on it. */
-const isTrinket = (ab: Ability): boolean => ab === TRINKET;
 
-/** The bar as it stands: five places, then what every hero has besides (the trinket, and their class's super). */
+/** The bar as it stands: five places, then what every hero has besides (their class's super). */
 export function BarRow({ bar, cls, ult, onPick, onHover }: { bar: string[]; cls: ClassId; ult?: string; onPick?: (ab: Ability) => void; onHover?: (ab: Ability) => void }) {
   return (
     <div className="rb-rs-slots">
@@ -40,7 +38,7 @@ export function BarRow({ bar, cls, ult, onPick, onHover }: { bar: string[]; cls:
           </button>
         );
       })}
-      {[TRINKET, ultOf(cls, ult ?? ultFor(cls, bar))].map((ab) => (
+      {[ultOf(cls, ult ?? ultFor(cls, bar))].map((ab) => (
         <button key={ab.id} type="button" className={`rb-rs-slot is-token${ab.super ? ' is-super' : ''}`} disabled={!onPick} title={`${ab.super ? 'Super' : ab.name}: ${ab.text}`} onClick={() => onPick?.(ab)} onMouseEnter={() => onHover?.(ab)}>
           <img src={iconPicture(ab.icon)} alt={ab.name} draggable={false} />
         </button>
@@ -68,14 +66,14 @@ export function SetupChips({ cls, setup }: { cls: ClassId; setup: RingSetup }) {
  * An ability read before it is taken (the owner: "whenever i click on spell, please add a pop up with info about it,
  * best uses, best combos and 2 buttons - equip or cancel"): what it does, when to press it, what it combines with
  * from this class's kit (and whether that is on the bar), and then the choice. On a full bar, Equip asks which of the
- * five it replaces. The trinket and the super are always carried: theirs only closes. Without the choice's handlers
+ * five it replaces. The super is always carried: theirs only closes. Without the choice's handlers
  * it is only read, and only closes: the Ring's main screen opens it from the bar (the owner, 2026-11-15: "make the
  * abilities clickable ... so i can see what i have and how to use it").
  */
 export function AbilityCard({ ab, cls, bar, onEquip, onSwap, onRemove, onClose }: { ab: Ability; cls: ClassId; bar: string[]; onEquip?: () => void; onSwap?: (out: string) => void; onRemove?: () => void; onClose: () => void }) {
   const [swapping, setSwapping] = useState(false);
   const on = bar.includes(ab.id);
-  const carried = !!ab.super || isTrinket(ab) || !onEquip;
+  const carried = !!ab.super || !onEquip;
   const full = !on && bar.length >= SLOTS;
   const combos = combosOf(cls, ab);
   const held = (x: Ability): boolean => !!x.super || bar.includes(x.id);
@@ -88,13 +86,13 @@ export function AbilityCard({ ab, cls, bar, onEquip, onSwap, onRemove, onClose }
   );
   return (
     // (only read, from the Ring's main screen: over the game's own screen, as its rules are, not over the whole page)
-    <div className={`rb-ring-dialog-wrap is-card${onEquip ? '' : ' is-local'}`} role="dialog" aria-modal="true" aria-label={ab.name} onClick={onClose}>
+    <div className="rb-ring-dialog-wrap is-card is-local" role="dialog" aria-modal="true" aria-label={ab.name} onClick={onClose}>
       <div className="rb-ring-dialog rb-rs-card" onClick={(e) => e.stopPropagation()}>
         <header>
           <img src={iconPicture(ab.icon)} alt="" draggable={false} />
           <span>
             <strong>{ab.name}</strong>
-            <em>{ab.super ? 'Super' : isTrinket(ab) ? 'Trinket' : ROLE_WORD[ab.role]}</em>
+            <em>{ab.super ? 'Super' : `${ROLE_WORD[ab.role]}${ab === TRINKET ? ' · any class' : ''}`}</em>
             <small>{ab.super ? 'Ready when your meter is full' : timing(ab)}</small>
           </span>
         </header>
@@ -547,7 +545,7 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
               <dt>Placed abilities</dt>
               <dd>A comet, a volley, a pyre. With a mouse: press its key, then click where it should land (Esc puts the circle away; the key again drops it on your target). On a touch screen: tap to drop it on your target, or hold the button and push the circle where you want it</dd>
               <dt>Trinket</dt>
-              <dd>{touch ? 'The broken-chain button' : 'Space'}: breaks you out of every hold (stuns, fears, roots, dazes, silences, slows) and takes off every burn and bleed. Once every 45 seconds</dd>
+              <dd>An ability every class can take as one of its five: breaks you out of every hold (stuns, fears, roots, dazes, silences, slows) and takes off every burn and bleed. Once every 45 seconds</dd>
               <dt>Super</dt>
               <dd>Q, once your meter is full: your class’s big one</dd>
               <dt>Choose an enemy</dt>

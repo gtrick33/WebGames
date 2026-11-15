@@ -30,12 +30,13 @@ describe('The Ring’s setup: abilities, talents and a super, and nothing else',
     expect(getByText('← Playstyles')).toBeTruthy();
   });
 
-  it('beside the bar, everyone’s trinket and their super; under it, the talents alone', () => {
+  it('beside the bar, only the super; under it, the talents alone', () => {
     const p = PRESETS.warrior[0]!;
     const { container } = render(<BarRow bar={p.bar} cls="warrior" ult={p.ult} />);
     const titles = [...container.querySelectorAll('.rb-rs-slot.is-token')].map((b) => b.getAttribute('title'));
-    expect(titles[0]).toBe(`Unbinding Trinket: ${TRINKET.text}`);
-    expect(titles[1]).toMatch(/^Super: /);
+    expect(titles).toHaveLength(1);
+    expect(titles[0]).toMatch(/^Super: /);
+    expect(TRINKET.cls).toBe('any');
     const chips = render(<SetupChips cls="warrior" setup={{ bar: p.bar, talents: p.talents }} />).container;
     expect(chips.querySelectorAll('.rb-rs-chip')).toHaveLength(3);
     expect(chips.querySelector('.is-oath')).toBeNull();
