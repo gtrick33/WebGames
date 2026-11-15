@@ -19,8 +19,15 @@ export const GATES = 30;
 const GATES_READY = 3;
 export const MATCH_LIMIT = 150;
 /** How long crowd control's returns stay diminished after one wears off. */
-const DR_RESET = 18;
-const DR_STEPS = [1, 0.5, 0.25];
+export const DR_RESET = 18;
+export const DR_STEPS = [1, 0.5, 0.25];
+/** One kind of hold's diminishing returns on a fighter (Fighter.dr): how many, until when, and since when, and by what. */
+export interface DrState {
+  n: number;
+  until: number;
+  at?: number;
+  ab?: string;
+}
 /**
  * Hurt breaks a hold, as in the classic arena: a daze at once, a fear after this share of its target's health, a root
  * after this (the owner, 2026-11-14: "roots should break after some dmg has been done, similar to wows roots, same
@@ -240,7 +247,11 @@ export interface Fighter {
   cast: Cast | null;
   auras: Aura[];
   locks: Partial<Record<string, number>>;
-  dr: Partial<Record<CcKind, { n: number; until: number }>>;
+  /**
+   * Diminishing returns, by kind of hold: how many have landed (DR_STEPS), until when they count, and the ability that
+   * put the last on them (its picture on their nameplate: a Toad Hex for a daze).
+   */
+  dr: Partial<Record<CcKind, DrState>>;
   /** A rush, a throw or a step on its way: where to, how fast, and whether it is a Swift Step (a shoulder check looks for whom it ends beside). */
   dash: { x: number; y: number; speed: number; step?: boolean } | null;
   queued: { ab: string; t: number; at?: { x: number; y: number } } | null;
@@ -1304,7 +1315,7 @@ export class Match {
     // (and his aura of resolve: shorter, near him)
     const resolve = this.near(t, 'resolve', 'friend');
     const lasts = dur * DR_STEPS[dr.n]! * t.mods.tenacity * (1 - (resolve?.d.pct ?? 0));
-    if (!ab.noDr) t.dr[cc] = { n: dr.n + 1, until: this.clock + lasts + DR_RESET };
+    if (!ab.noDr) t.dr[cc] = { n: dr.n + 1, until: this.clock + lasts + DR_RESET, at: this.clock, ab: ab.id };
     t.auras = t.auras.filter((a) => a.cc !== cc);
     this.addAura(t, { ab: ab.id, src: f.id, dur: lasts, magic: ab.school !== 'physical', n: 0, kind: 'cc', harmful: true, cc, took: 0, ...(cc === 'root' && ab.shatter ? { shatters: ab.shatter } : {}) });
     f.score.cc += lasts;
@@ -2578,6 +2589,7 @@ export class Match {
         c: f.cast,
         a: f.auras,
         l: f.locks,
+        r: f.dr,
         sc: f.score,
         ch: Math.round(f.charge * 1000) / 1000,
         st: f.streak,
@@ -2644,6 +2656,7 @@ export class Match {
       f.cast = n.c;
       f.auras = n.a;
       f.locks = n.l;
+      if (n.r) f.dr = n.r;
       f.score = n.sc;
       f.charge = n.ch ?? 0;
       f.streak = n.st ?? 0;
@@ -2709,6 +2722,8 @@ export interface Snapshot {
     c: Cast | null;
     a: Aura[];
     l: Partial<Record<string, number>>;
+    /** Diminishing returns (a host from before they were sent says nothing, and they stay as the player's copy has them). */
+    r?: Fighter['dr'];
     sc: Fighter['score'];
     ch?: number;
     st?: number;

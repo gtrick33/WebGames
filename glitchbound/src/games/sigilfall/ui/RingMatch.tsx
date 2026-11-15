@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { TitleShown } from '../progress/titles';
 import { useGameMenu } from '../../../components/GameMenuButton';
-import { ABILITIES, SLOTS, type Ability } from '../arena/abilities';
+import { ABILITIES, SLOTS, type Ability, type CcKind } from '../arena/abilities';
 import { botThink, newBrain, steerTo } from '../arena/bot';
 import { LEAVER_K, type ClassSets } from '../arena/ladder';
 import { hintNow, keepLog, lessonOf, newLog, type HintKeys } from '../arena/lessons';
 import { TutorialRun, type TutorialKeys } from '../arena/tutorial';
 import { lookOf } from '../arena/look';
 import { MAPS } from '../arena/maps';
-import { CLOSE_FROM, Match, MATCH_LIMIT, PACE, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
+import { CLOSE_FROM, Match, MATCH_LIMIT, PACE, type Aura, type DrState, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
 import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
 import type { Character, Face } from '../progress/character';
 import { iconPicture } from '../render/art/gameIcons';
-import { BAR_TOP, drawRing, headHeight, RingFx, ringLooks, ringSpells, type RingAim } from '../render/ring';
+import { barTop, drawRing, headHeight, RingFx, ringLooks, ringSpells, type RingAim } from '../render/ring';
 import { RingStage, ringMapOf } from '../render3d/ring3d';
 import { heroDollUrl, type WornLooks } from '../render/sprites';
 import { RingHelp, SetupEditor, timing } from './RingSetup';
@@ -63,6 +63,38 @@ const clock = (t: number): string => {
 
 const CC_WORD: Record<string, string> = { stun: 'Stunned', fear: 'Feared', incap: 'Dazed', root: 'Rooted', silence: 'Silenced' };
 const DR_MARK = ['', '½', '¼', '✕'];
+/** What the next hold of a kind does, by how many have landed: half as long, a quarter, or nothing at all. */
+const DR_NEXT = ['', 'the next lasts half as long', 'the next lasts a quarter as long', 'immune to the next'];
+/** Each kind of hold's picture, for diminishing returns from a host that didn't say what put them on. */
+const DR_ICON: Record<CcKind, string> = { stun: 'd-hammer', fear: 'w-shout', incap: 'm-toad', root: 'l-roots', silence: 'p-hush' };
+
+/**
+ * Diminishing returns, one round chip for each kind of hold that wears off faster on them now (the owner: "add
+ * diminishing return tracker on the enemies on the nameplates, should be small but visible - e.g mage's hex"): the
+ * picture of what put the last on them (a Toad Hex for a daze), rimmed yellow when the next lasts half as long, orange
+ * a quarter, red when they can't be held that way at all, with the rim running down until it is forgotten.
+ */
+function DrChips({ f, m }: { f: Fighter; m: Match }) {
+  const now = (Object.entries(f.dr) as [CcKind, DrState | undefined][]).filter((e): e is [CcKind, DrState] => !!e[1] && e[1].until > m.clock && e[1].n > 0);
+  if (!now.length) return null;
+  return (
+    <span className="rb-ring-drs">
+      {now.map(([k, d]) => {
+        const stage = Math.min(d.n, DR_MARK.length - 1);
+        const left = d.until - m.clock;
+        const share = d.at !== undefined && d.until > d.at ? Math.max(0, Math.min(1, left / (d.until - d.at))) : 1;
+        const shown = d.ab && lookOf(d.ab) ? d.ab : DR_ICON[k];
+        const look = lookOf(shown)!;
+        return (
+          <i key={k} className={`is-dr${stage}`} data-ab={shown} style={{ ['--left' as string]: share.toFixed(3) }} title={`${CC_WORD[k]} (${look.name}): ${DR_NEXT[stage]}, for ${Math.ceil(left)}s`}>
+            <img src={iconPicture(look.icon)} alt="" draggable={false} />
+            <em>{DR_MARK[stage]}</em>
+          </i>
+        );
+      })}
+    </span>
+  );
+}
 
 /** What an effect does to whoever carries it, in a word or two. */
 const auraWord = (a: Aura): string => {
@@ -134,7 +166,6 @@ export function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter
   // (one of the other side in the shroud: their place is kept, but nothing of how they are)
   const veiled = !!me && m.unseen(f, me) && !f.dead;
   const sees = !veiled && (!me || me === f || m.phase !== 'fight' || m.sees(me, f));
-  const dr = Object.entries(f.dr).filter(([, d]) => d && d.until > m.clock && d.n > 0);
   const share = f.hp / f.maxHp;
   return (
     <button className={`rb-ring-frame${flip ? ' is-flip' : ''}${tag ? ' is-on' : ''}${f.dead ? ' is-dead' : ''}${sees ? '' : ' is-unseen'}`} style={{ ['--c' as string]: CLASSES[f.cls].colors.accent }} 
@@ -179,12 +210,7 @@ export function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter
         </span>
         <span className="rb-ring-under">
           <AuraIcons f={f} />
-          {dr.map(([k, d]) => (
-            <small key={k} className="rb-ring-dr" title={`${CC_WORD[k]} wears off faster now`}>
-              {k[0]!.toUpperCase()}
-              {DR_MARK[d!.n]}
-            </small>
-          ))}
+          {!veiled && <DrChips f={f} m={m} />}
         </span>
       </span>
     </button>
@@ -814,7 +840,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         const b = view.stage.project(f.x + 10, f.y, h);
         const s = Math.max(0.2, (b.x - a.x) / 10);
         el.style.visibility = 'visible';
-        el.style.transform = `translate(${a.x.toFixed(1)}px, ${(a.y - (BAR_TOP + 1.2) * s).toFixed(1)}px) translate(-50%, -100%)`;
+        el.style.transform = `translate(${a.x.toFixed(1)}px, ${(a.y - (barTop(f) + 1.2) * s).toFixed(1)}px) translate(-50%, -100%)`;
         raise[i] = (el.offsetHeight + 1) / s;
       }
       drawRing(m, fx, myId, time, view, aim, (f) => raise[f.id] ?? 0);

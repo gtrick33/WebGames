@@ -231,7 +231,10 @@ describe('The Ring: the mana shows, cast or no cast', () => {
     expect(c.cast).toBeGreaterThanOrEqual(c.mana! + MANA_H);
     // the dark behind the bar takes the mana in
     expect(by - 0.7 + c.back).toBeGreaterThanOrEqual(c.mana! + MANA_H);
-    // one without mana: the bar as it was
-    expect(barRows(warrior, by)).toEqual({ hp: by, mana: null, cast: by + 3.6, back: 3.8 });
+    // one with neither mana nor anything to cast: no mana under the health, and no room kept for a cast
+    const w = barRows(warrior, by);
+    expect(w.mana).toBeNull();
+    expect(w.back).toBe(3.8);
+    expect(w.low).toBeCloseTo(3.1, 5);
   });
 });
