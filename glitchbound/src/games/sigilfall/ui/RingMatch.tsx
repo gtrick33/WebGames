@@ -51,9 +51,8 @@ const STEP = 1 / 60;
 const MAX_STEP = 1 / 45;
 /** A host speaks ten times a second: plenty for frames that coast between. */
 const SEND_EVERY = 0.1;
-/** The campaign's thumb cluster: the same places, so a phone player's hands already know them (the five abilities,
- * the fifth where the campaign's fourth skill is, then the Swift Step where the dodge is, and the super where the
- * ultimate is). */
+/** The thumb cluster's places (Game.css .rb-ring-thumbs .rb-cluster): the bar's first in the corner, its other four
+ * on one arc round it, then the Swift Step and the super outside it. */
 const TOUCH_SLOTS = ['basic', 's1', 's2', 's3', 's4', 'dodge', 'ult'] as const;
 
 const clock = (t: number): string => {
@@ -410,7 +409,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     tick((x) => x + 1);
   };
   /**
-   * The next enemy, as Tab chooses: a phone's Next button under the enemies' nameplates, the easiest way there is to
+   * The next enemy, as Tab chooses: a phone's ◎ button under the enemies' nameplates, the easiest way there is to
    * switch target.
    */
   /** The enemy that lies the way a thumb slides from the ◎ button, as seen on the screen (set where the view is). */
@@ -1216,7 +1215,6 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                     <path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
                     <circle cx="12" cy="12" r="1.8" fill="currentColor" />
                   </svg>
-                  <span>Next</span>
                 </button>
               )}
             </div>

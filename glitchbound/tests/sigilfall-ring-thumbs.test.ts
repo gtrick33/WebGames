@@ -1,7 +1,9 @@
 /**
  * The Ring on a phone, after the owner's note of 2026-11-15: "can we please fix the buttons please, currently theyre
  * lowkey covering the enemies and i can barely see whats happening on the right side of the screen, the target button is
- * also next to a spell, id like more organized more natural feeling to the UI".
+ * also next to a spell, id like more organized more natural feeling to the UI", and then "can we make all 4 spells on
+ * the same row around the main spell and the only outer ones to be the ult and the step, also for the target, it could
+ * only be the icon, no need for the next text, just add it in the tutorial".
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -61,12 +63,26 @@ describe('The Ring on a phone: every button in its place', () => {
     expect(column).toContain('e.stopPropagation();');
     const cluster = MATCH.slice(MATCH.indexOf('<div className="rb-cluster" data-tut="bar">'));
     expect(cluster.slice(0, cluster.indexOf('</div>'))).not.toContain('rb-ring-cycle');
-    const pill = rule('.rb-ring-cycle');
-    expect(pill).toMatch(/justify-self:\s*end/);
-    expect(pill).toMatch(/height:\s*30px/);
+    // (its crosshair and nothing more: the tutorial and the rules say what it does)
+    const button = column.slice(column.indexOf('className="rb-ring-cycle"'), column.indexOf('</button>'));
+    expect(button).toContain('<svg');
+    expect(button).not.toMatch(/<span>|>Next</);
+    const round = rule('.rb-ring-cycle');
+    expect(round).toMatch(/justify-self:\s*end/);
+    expect(round).toMatch(/border-radius:\s*50%/);
+    expect(round).toMatch(/width:\s*36px/);
+    expect(round).toMatch(/height:\s*36px/);
   });
 
-  it('the cluster in two arcs round the attack: its next three close in, the step, the super and the fifth further out', () => {
+  it('the tutorial and the rules say what the ◎ button does, and where it is', () => {
+    const tutorial = read('src/games/sigilfall/arena/tutorial.ts');
+    expect(tutorial).toContain('a ◎ button comes up under their nameplates: tap it for the next enemy, or slide from it toward the one you want.');
+    expect(tutorial).toContain('the ◎ button under the enemies’ nameplates switches between them');
+    expect(tutorial).not.toContain('above your abilities');
+    expect(read('src/games/sigilfall/ui/RingSetup.tsx')).toContain('the ◎ button under their nameplates: tap for the next, or slide toward one');
+  });
+
+  it('the cluster round the attack: the bar’s other four on one arc close in, and only the step and the super outside it', () => {
     const at = (k: string) => {
       const r = rule(`.rb-ring-thumbs .rb-cluster .rb-sb-${k}`);
       const n = (p: string) => Number(new RegExp(`${p}:\\s*(\\d+)px`).exec(r)![1]);
@@ -74,7 +90,10 @@ describe('The Ring on a phone: every button in its place', () => {
     };
     const c = at('basic');
     const from = (k: string) => Math.hypot(at(k).x - c.x, at(k).y - c.y);
-    for (const k of ['s1', 's2', 's3']) expect(from(k), k).toBeLessThan(95);
-    for (const k of ['dodge', 'ult', 's4']) expect(from(k), k).toBeGreaterThan(130);
+    // (one arc: all four the same way from the attack, near enough to roll a thumb from one to the next)
+    const arc = ['s1', 's2', 's3', 's4'].map(from);
+    for (const d of arc) expect(d).toBeLessThan(95);
+    expect(Math.max(...arc) - Math.min(...arc)).toBeLessThan(2);
+    for (const k of ['dodge', 'ult']) expect(from(k), k).toBeGreaterThan(130);
   });
 });
