@@ -1111,6 +1111,8 @@ export class SigilEngine {
    * this device's next save would write its older copy of the others back over the account's).
    */
   takeArrivedSave(): void {
+    // (screens that keep a save of their own, the Ring's, read theirs again)
+    for (const fn of this.arrivedFns) fn();
     const loaded = loadSave();
     if (loaded.status === 'newer' || loaded.status === 'blocked') return;
     const next = loaded.save;
@@ -1124,6 +1126,19 @@ export class SigilEngine {
     for (const [cls, n] of Object.entries(this.save.rift)) next.rift[cls] = Math.max(next.rift[cls] ?? 1, n);
     this.save = next;
     this.bump();
+  }
+
+  private arrivedFns = new Set<() => void>();
+  /**
+   * Called whenever another device's copy of any of the game's saves arrives while the game is open (the Ring keeps
+   * its own: arena/ladder.ts), so a screen holding one in memory takes the merged copy in rather than writing its own
+   * older one back over it. Returns the function that stops it.
+   */
+  onArrived(fn: () => void): () => void {
+    this.arrivedFns.add(fn);
+    return () => {
+      this.arrivedFns.delete(fn);
+    };
   }
 
   /**

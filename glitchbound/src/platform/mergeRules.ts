@@ -151,6 +151,72 @@ const mergeNeonRush: MergeRule = (local, remote, ctx) => {
   return out;
 };
 
+/**
+ * Sigilfall's Ring (its save is `sigilfall.ring.v1`, apart from the game's own): what a player builds and where they
+ * stand, which the shared merge got wrong (the owner: "persistent builds, if i edit setup 123, they should remain
+ * updated in the database and be saved to my account"). It kept the larger setup number (choosing Setup 1 after
+ * Setup 3 went back to 3) and took a class's setups whole from this device even when the account's were newer, so
+ * an old copy on one device put back what had been changed on another; and it mixed a format's standing number by
+ * number (one copy's rating with the other's losses).
+ *
+ * - A class's setups (`sets[class]`) come whole from the copy changed last: each is stamped `at` when it changes.
+ * - A format's standing (`standings[format]`) comes whole from the copy that fought more matches in it (then the
+ *   copy changed last), keeping the best rating either reached: a rank once reached is kept.
+ * - The computer teammates chosen and the Ring armor worn follow the copy changed last; what the Ring has taught
+ *   (the tutorial offered or finished, the hints shown) is joined.
+ */
+const mergeRing: MergeRule = (local, remote, ctx) => {
+  const out = ctx.merge(local, remote);
+  if (!isObj(local) || !isObj(remote) || !isObj(out)) return out;
+  const later = <T>(l: T | undefined, r: T | undefined): T | undefined => (ctx.newer === 'local' ? (l ?? r) : (r ?? l));
+  // each class's setups: the copy changed last (by its stamp; this device's or the account's by which changed last)
+  if (isObj(local.sets) || isObj(remote.sets)) {
+    const ls = isObj(local.sets) ? local.sets : {};
+    const rs = isObj(remote.sets) ? remote.sets : {};
+    const sets: Obj = {};
+    for (const cls of new Set([...Object.keys(ls), ...Object.keys(rs)])) {
+      const l = ls[cls];
+      const r = rs[cls];
+      const lt = isObj(l) ? num(l.at) : -1;
+      const rt = isObj(r) ? num(r.at) : -1;
+      sets[cls] = lt !== rt ? (lt > rt ? l : r) : later(l, r);
+    }
+    out.sets = sets;
+  }
+  // each format's standing: whole, from the copy that fought more there; the best either reached is kept
+  if (isObj(local.standings) || isObj(remote.standings)) {
+    const ls = isObj(local.standings) ? local.standings : {};
+    const rs = isObj(remote.standings) ? remote.standings : {};
+    const standings: Obj = {};
+    const fought = (s: unknown): number => (isObj(s) ? num(s.wins) + num(s.losses) : -1);
+    for (const f of new Set([...Object.keys(ls), ...Object.keys(rs)])) {
+      const l = ls[f];
+      const r = rs[f];
+      const pick = fought(l) !== fought(r) ? (fought(l) > fought(r) ? l : r) : later(l, r);
+      standings[f] = isObj(pick) ? { ...pick, best: Math.max(isObj(l) ? num(l.best) : 0, isObj(r) ? num(r.best) : 0, num(pick.best)) } : pick;
+    }
+    out.standings = standings;
+  }
+  if (isObj(local.mates) || isObj(remote.mates)) {
+    const lm = isObj(local.mates) ? local.mates : {};
+    const rm = isObj(remote.mates) ? remote.mates : {};
+    out.mates = ctx.newer === 'local' ? { ...rm, ...lm } : { ...lm, ...rm };
+  }
+  if (local.plain !== undefined || remote.plain !== undefined) out.plain = later(local.plain, remote.plain);
+  if (isObj(local.learn) || isObj(remote.learn)) {
+    const ll = isObj(local.learn) ? local.learn : {};
+    const rl = isObj(remote.learn) ? remote.learn : {};
+    const hints = [...(isWords(ll.hints) ? ll.hints : []), ...(isWords(rl.hints) ? rl.hints : [])];
+    out.learn = { asked: ll.asked === true || rl.asked === true, done: ll.done === true || rl.done === true, hints: [...new Set(hints)] };
+  }
+  return out;
+};
+
+/** Rules for one save of a game that keeps more than one (by its storage key), ahead of the game's own rule. */
+export const KEY_RULES: Record<string, MergeRule> = {
+  'sigilfall.ring.v1': mergeRing,
+};
+
 export const MERGE_RULES: Record<string, MergeRule> = {
   'launch-control': mergeGarage,
   sigilfall: mergeSigilfall,

@@ -205,6 +205,11 @@ export interface RingSetup {
 export interface ClassSets {
   active: number;
   list: RingSetup[];
+  /**
+   * When they last changed (ms): two devices' copies of a class's setups are joined by it, the later whole
+   * (platform/mergeRules.ts mergeRing).
+   */
+  at?: number;
 }
 
 export const SET_COUNT = 3;
