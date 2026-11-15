@@ -2170,8 +2170,8 @@ html.rb-touch-playing textarea {
   position: absolute;
   right: calc(6px + var(--sa-r));
   bottom: calc(6px + var(--sa-b));
-  width: 280px;
-  height: 230px;
+  width: 220px;
+  height: 182px;
   pointer-events: none;
 }
 .is-lefty .rb-cluster {
@@ -2497,7 +2497,7 @@ html.rb-touch-playing textarea {
   position: absolute;
   left: auto;
   right: 14px;
-  bottom: 112px;
+  bottom: 94px;
   transform: none;
   width: max-content;
   max-width: 220px;
@@ -2507,17 +2507,17 @@ html.rb-touch-playing textarea {
   left: auto;
   right: 36px;
 }
-/* over the button it teaches: the attack, the first skill, the dodge (data from .rb-sb-* below) */
+/* over the button it teaches: the attack, the first skill, the dodge (data from the gathered .rb-cluster .rb-sb-*) */
 .rb-teach.is-touch.is-at-s1 {
-  right: 120px;
-  bottom: 84px;
+  right: 104px;
+  bottom: 82px;
 }
 .rb-teach.is-touch.is-at-s1::after {
   right: 24px;
 }
 .rb-teach.is-touch.is-at-dodge {
-  right: 206px;
-  bottom: 76px;
+  right: 164px;
+  bottom: 70px;
 }
 .rb-teach.is-touch.is-at-dodge::after {
   right: 22px;
@@ -11324,10 +11324,10 @@ html.rb-touch-playing textarea {
     inset 0 2px 0 rgb(255 255 255 / 0.28);
 }
 .rb-cluster .rb-sb-basic {
-  right: 14px;
-  bottom: 14px;
-  width: 86px;
-  height: 86px;
+  right: 12px;
+  bottom: 12px;
+  width: 74px;
+  height: 74px;
   border: 4px solid #c0281e;
   background: radial-gradient(circle at 50% 40%, #4a1010, #1a0606 75%);
   box-shadow:
@@ -11336,55 +11336,156 @@ html.rb-touch-playing textarea {
     0 0 16px rgb(192 40 30 / 0.45),
     inset 0 0 12px rgb(0 0 0 / 0.7);
 }
-/* the inner arc: three skills a quarter round the attack, from its left to its top (spaced so they never touch) */
+/* The thumbs gathered as the Ring's are (the owner: "UI should be clustered similar to the ring"): the attack in the
+   corner, the three skills on one tight arc round it (88 from the attack's middle), and the dodge, the fourth skill
+   and the ultimate on one outer arc (146 out). About 220 by 182 points, where the spread-out arcs took 280 by 264.
+   The potion and the mount stand apart from it (below). */
 .rb-cluster .rb-sb-s1 {
-  right: 140px;
-  bottom: 28px;
-  width: 58px;
-  height: 58px;
+  right: 111px;
+  bottom: 23px;
+  width: 52px;
+  height: 52px;
 }
 .rb-cluster .rb-sb-s2 {
-  right: 107px;
-  bottom: 107px;
-  width: 58px;
-  height: 58px;
+  right: 85px;
+  bottom: 85px;
+  width: 52px;
+  height: 52px;
 }
 .rb-cluster .rb-sb-s3 {
-  right: 28px;
-  bottom: 140px;
-  width: 58px;
-  height: 58px;
+  right: 23px;
+  bottom: 111px;
+  width: 52px;
+  height: 52px;
 }
-/* the outer arc: the dodge low by the thumb, then the fourth skill, the ultimate, the potion and the mount at the top */
 .rb-cluster .rb-sb-dodge {
-  right: 216px;
-  bottom: 30px;
-  width: 54px;
-  height: 54px;
+  right: 172px;
+  bottom: 16px;
+  width: 46px;
+  height: 46px;
 }
 .rb-cluster .rb-sb-s4 {
-  right: 200px;
-  bottom: 99px;
-  width: 58px;
-  height: 58px;
+  right: 161px;
+  bottom: 70px;
+  width: 52px;
+  height: 52px;
 }
 .rb-cluster .rb-sb-ult {
-  right: 155px;
-  bottom: 155px;
-  width: 66px;
-  height: 66px;
+  right: 126px;
+  bottom: 122px;
+  width: 56px;
+  height: 56px;
 }
-.rb-cluster .rb-sb-potion {
-  right: 103px;
-  bottom: 204px;
-  width: 50px;
-  height: 50px;
+/* The potion and the mount, apart from the skills, as they are something else (the owner: "separate potions and the
+   mount, as they are different, potion should be somewhere accessible, mount should be somewhere visible"). The
+   potion: at the foot of the screen just inside the skills, in the right thumb's reach with a gap a thumb doesn't
+   cross by mistake, and bigger than a skill (it is the button pressed in a panic). The mount: under the map, in the
+   corner the eye goes to for where it is, and out of the fight's way. Both in the cluster's gold rim. */
+.rb-potion-dock {
+  position: absolute;
+  right: calc(242px + var(--sa-r));
+  bottom: calc(14px + var(--sa-b));
+  width: 56px;
+  height: 56px;
+  pointer-events: none;
+  transform-origin: bottom right;
 }
-.rb-cluster .rb-sb-mount {
-  right: 36px;
-  bottom: 222px;
-  width: 42px;
-  height: 42px;
+.is-lefty .rb-potion-dock {
+  right: auto;
+  left: calc(242px + var(--sa-l));
+  transform-origin: bottom left;
+}
+.rb-potion-dock > .rb-sb-potion {
+  inset: 0;
+  width: 56px;
+  height: 56px;
+}
+.rb-potion-dock > .rb-sb-potion img {
+  width: 24px;
+  height: 31px;
+}
+.rb-ui.is-touch > .rb-sb-mount {
+  top: calc(124px + var(--sa-t));
+  right: calc(27px + var(--sa-r));
+  bottom: auto;
+  width: 46px;
+  height: 46px;
+}
+.rb-potion-dock > .rb-sb,
+.rb-ui.is-touch > .rb-sb-mount {
+  border: 2px solid #d6aa4a;
+  box-shadow:
+    0 0 0 2px #1a1006,
+    0 0 10px rgb(0 0 0 / 0.55),
+    inset 0 0 0 2px rgb(0 0 0 / 0.35),
+    inset 0 2px 0 rgb(255 255 255 / 0.28);
+}
+/* the pointer over the potion (low on health the first time): over it, its arrow down to it, the words reaching away
+   from the skills so that none of them is covered */
+.rb-teach.is-touch.is-at-potion {
+  right: 0;
+  bottom: calc(100% + 12px);
+  left: auto;
+}
+.rb-teach.is-touch.is-at-potion::after {
+  right: 21px;
+  left: auto;
+}
+.is-lefty .rb-teach.is-touch.is-at-potion {
+  right: auto;
+  left: 0;
+}
+.is-lefty .rb-teach.is-touch.is-at-potion::after {
+  right: auto;
+  left: 21px;
+}
+/* on a short phone the skills are drawn smaller (the cluster's scaling, above): the potion keeps beside them, a little
+   smaller too but never under 40 points; with no map on a very short one the mount takes its corner, under the menu */
+@container (max-height: 400px) {
+  .rb-potion-dock {
+    right: calc(209px + var(--sa-r));
+    transform: scale(0.9);
+  }
+  .is-lefty .rb-potion-dock {
+    right: auto;
+    left: calc(209px + var(--sa-l));
+  }
+}
+@container rb-stage (max-height: 340px) {
+  .rb-potion-dock {
+    right: calc(194px + var(--sa-r));
+    transform: scale(0.86);
+  }
+  .is-lefty .rb-potion-dock {
+    right: auto;
+    left: calc(194px + var(--sa-l));
+  }
+}
+@container rb-stage (max-height: 280px) {
+  .rb-potion-dock {
+    right: calc(161px + var(--sa-r));
+    transform: scale(0.8);
+  }
+  .is-lefty .rb-potion-dock {
+    right: auto;
+    left: calc(161px + var(--sa-l));
+  }
+  .rb-ui.is-touch > .rb-sb-mount {
+    top: calc(54px + var(--sa-t));
+    right: calc(10px + var(--sa-r));
+    width: 40px;
+    height: 40px;
+  }
+}
+@container rb-stage (max-height: 230px) {
+  .rb-potion-dock {
+    right: calc(139px + var(--sa-r));
+    transform: scale(0.72);
+  }
+  .is-lefty .rb-potion-dock {
+    right: auto;
+    left: calc(139px + var(--sa-l));
+  }
 }
 /* a place not filled yet: an empty ring, the level it opens at in it */
 .rb-cluster .rb-sb.is-locked {
@@ -11784,6 +11885,34 @@ html.rb-touch-playing textarea {
   .rb-ui.is-boss.is-mouse .rb-banner {
     top: 30%;
   }
+}
+/* A boss's shout as it changes (a phase's banner) on a phone: in the middle of the screen for its moment, wrapped to
+   two lines at most. At the foot of the screen it was wider than its strip and ran off to the right under the thumbs
+   (the owner, of King Hrodric's "The court of the barrow kings rises with its king!": "the text it gives on mobile ...
+   is offset and not visible, make it centered on the screen"). */
+.rb-ui.is-boss.is-touch .rb-announce {
+  top: 50%;
+  bottom: auto;
+  left: 50%;
+  width: min(70%, 520px);
+  max-width: none;
+  transform: translate(-50%, -50%);
+}
+.rb-ui.is-boss.is-touch .rb-announce > .rb-banner {
+  justify-content: center;
+  width: 100%;
+  padding: 8px 16px;
+  background: radial-gradient(ellipse closest-side, rgb(12 7 4 / 0.7), rgb(12 7 4 / 0.45) 60%, rgb(12 7 4 / 0));
+}
+.rb-ui.is-boss.is-touch .rb-announce > .rb-banner strong {
+  max-width: 100%;
+  overflow: visible;
+  font-size: clamp(17px, 3.6cqw, 24px);
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: clip;
+  text-wrap: balance;
+  white-space: normal;
 }
 
 /* ---- a Riftstone run's clock ----

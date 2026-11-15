@@ -8,7 +8,7 @@ import type { SlotKey } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { hasMount } from '../progress/wardrobe';
 import { skillIconUrl } from '../render/sprites';
-import { SUMMON_TIME } from '../sim/world';
+import { slotHaste, SUMMON_TIME } from '../sim/world';
 import { useFrame } from './GameScreen';
 import { uiIcon } from './uiIcons';
 
@@ -97,7 +97,7 @@ function Slot({ engine, slot, keyLabel }: { engine: SigilEngine; slot: SlotKey; 
     const empty = c.charges <= 0;
     const share = empty ? Math.max(0, c.t / Math.max(0.01, c.cd)) : 0;
     if (cd.current) cd.current.style.background = empty ? `conic-gradient(rgba(10,6,20,0.72) ${share * 100}%, transparent 0)` : 'transparent';
-    if (num.current) num.current.textContent = empty && c.t > 0.95 ? String(Math.ceil(c.t / (1 + world.build.stats.haste / 100))) : c.max > 1 ? String(c.charges) : '';
+    if (num.current) num.current.textContent = empty && c.t > 0.95 ? String(Math.ceil(c.t / slotHaste(slot, world.build.stats.haste))) : c.max > 1 ? String(c.charges) : '';
   });
   const opens = slotLevel(slot);
   const unlock = slot === 'ult' ? SKILLS[CLASSES[h.cls].ult]!.unlock : h.level < opens ? opens : 0;

@@ -118,7 +118,8 @@ export interface UiState {
    * A control being taught (the Prologue's first fight): its key on the bar pulses, with these words over
    * the bar, until the hero uses it (`shown` is when it began) or the time runs out.
    */
-  teach: { slot: SlotKey; text: string; shown: number; until: number } | null;
+  /** A control being taught: a skill's slot, or (on touch) the potion, with a pointer over its button. */
+  teach: { slot: SlotKey | 'potion'; text: string; shown: number; until: number } | null;
   /** A hint of the first-timer's tutorial on the screen (the game waits for it, as for a menu). */
   tip: { id: TipId; step: number; spell?: string } | null;
   /** The load went wrong in a way the player should know about. */
@@ -813,6 +814,12 @@ export class SigilEngine {
       const slot: SlotKey = id === 'attack' ? 'basic' : id === 'skill' ? 's1' : 'dodge';
       const now = performance.now();
       this.setUi({ teach: { slot, text: this.teachText(id), shown: now, until: now + 10_000 } });
+      return;
+    }
+    // low health on a phone: a pointer over the potion, which stands apart from the skills now (ui/Touch.tsx)
+    if (id === 'potion' && touch) {
+      const now = performance.now();
+      this.setUi({ teach: { slot: 'potion', text: 'Low health! Tap the potion to drink', shown: now, until: now + 8_000 } });
       return;
     }
     const text =
@@ -1629,6 +1636,8 @@ export class SigilEngine {
 
   drinkPotion(): void {
     this.world?.drinkPotion();
+    // (the pointer over the potion has done its work)
+    if (this.ui.teach?.slot === 'potion') this.setUi({ teach: null });
     this.bump();
   }
 

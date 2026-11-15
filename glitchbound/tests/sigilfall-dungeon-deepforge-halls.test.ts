@@ -81,12 +81,14 @@ describe('the Deepforge Halls', () => {
       if (p.hp < hp && w.telegraphs.length) hits++;
     }
     expect(hits).toBeGreaterThanOrEqual(4);
-    // two tiles off the channel: never touched
+    // two tiles off the channel: never touched by it (Grold's seeking embers fly on their own all the while, wherever
+    // the dice send them: they are taken out of the air, so that only the channel is being asked about)
     const { w: w2, b: b2 } = arena('forgemaster-grold');
     const q = w2.player;
     q.hp = q.maxHp = 1e6;
     run(b2.boss!, { id: 'forge:pour', p: { lanes: ['11R'], count: 1, open: 3, wind: 1 } });
     for (let k = 0; k < 60 * 4.2; k++) {
+      w2.projectiles = w2.projectiles.filter((x) => !x.hostile);
       w2.step(1 / 60);
       q.x = 30 * TILE;
       q.y = 13.5 * TILE;

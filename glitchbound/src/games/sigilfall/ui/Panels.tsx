@@ -46,7 +46,7 @@ import { PartyPanel } from './Party';
 import { GAME_VERSION } from '../data/version';
 import { StorePanel, useStoreOpen } from './Store';
 import { PRESETS } from '../progress/presets';
-import { clockText } from '../sim/world';
+import { clockText, skillHaste } from '../sim/world';
 import { PARA_STATS, PARAGON, paragonFree, paragonSpent, paragonXp } from '../progress/paragon';
 
 const TABS: { id: PanelId; label: string }[] = [
@@ -471,7 +471,7 @@ function specLine(engine: SigilEngine, spec: SkillSpec): string {
   if (cost) parts.push(cost);
   if (spec.extra.manaOnHit && res && w.player.maxMana > 0) parts.push(`+${Math.round((spec.extra.manaOnHit * w.player.maxMana) / 100)} ${res.name} per hit`);
   if (spec.castTime) parts.push(`${spec.castTime} s cast (stand still)`);
-  if (spec.cooldown > 0) parts.push(`${(spec.cooldown / (1 + st.haste / 100)).toFixed(1)} s cooldown${spec.charges > 1 ? `, ${spec.charges} charges` : ''}`);
+  if (spec.cooldown > 0) parts.push(`${(spec.cooldown / skillHaste(st.haste)).toFixed(1)} s cooldown${spec.charges > 1 ? `, ${spec.charges} charges` : ''}`);
   if (spec.cast === 'projectile' && spec.pierce > 0 && spec.pierce < 99) parts.push(`pierces ${spec.pierce}`);
   if (spec.pierce >= 99) parts.push('passes through all');
   if (spec.bounce > 0) parts.push(`bounces ${spec.bounce}`);

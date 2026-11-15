@@ -36,7 +36,7 @@ const BACKUP_KEY = 'glitchbound.sigilfall.bak';
 const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
 const OLD_SAVE_KEY = 'glitchbound.riftbound';
 const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
 /**
  * Hero places a save keeps. Every account plays three; the Gloamknight Pack opens two more (progress/paidClasses.ts
  * `heroSlots`), and a hero in one of those is kept, out of sight, if the pack is refunded.
@@ -570,6 +570,17 @@ export function migrate(raw: unknown): SaveFile | null {
       if (hero) keepPlace(hero);
     }
     o.v = 13;
+  }
+  // version 14: the combat rebalance (skills hit harder on longer cooldowns, a slower ultimate) and talents reworked
+  // into procs: every hero who had spent points gets one free respec to choose again (talents no longer there are
+  // dropped on load, their points back to spend)
+  if (o.v === 13) {
+    for (const h of Array.isArray(o.heroes) ? o.heroes : []) {
+      const hero = obj(h);
+      const talents = hero ? obj(hero.talents) : null;
+      if (hero && talents && Object.keys(talents).length) hero.freeRespec = true;
+    }
+    o.v = 14;
   }
   if (o.v !== SAVE_VERSION) return null;
   const heroes: (Character | null)[] = [];

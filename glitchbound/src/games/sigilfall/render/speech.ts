@@ -108,7 +108,7 @@ export function layoutSpeech(o: SpeechAsk): SpeechCard {
 }
 
 /** The pieces of the HUD a spoken line looks out for (ui/hudBoxes.ts measures them; a piece not on the screen is absent). */
-const TAKEN = ['quest', 'map', 'thumbs', 'potion'] as const;
+const TAKEN = ['quest', 'map', 'thumbs', 'potion', 'mount'] as const;
 
 /**
  * A line laid out as `layoutSpeech` does, then moved off the quest if it would be written across it. On a phone held

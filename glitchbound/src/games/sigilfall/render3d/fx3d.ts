@@ -50,6 +50,8 @@ export const FX = {
   rune: 35,
   flake: 36,
   spill: 37,
+  column: 38,
+  crack: 39,
 } as const;
 export type FxKind = (typeof FX)[keyof typeof FX];
 
@@ -692,6 +694,55 @@ const fragment = /* glsl */ `
     return vec4(c * a, a);
   }
 
+  // a column standing up out of the ground (a pillar of fire, of light, of shadow): a churning body nearly as wide as
+  // its quad, a hot heart up its middle, its sides eaten by the noise and its top frayed. t: it shoots up in the first
+  // fifth of its life, stands, then burns down thinner from the top and is gone
+  vec4 column(vec2 uv, float t, float seed) {
+    float y = (uv.y + 1.0) * 0.5;
+    float reach = mix(0.08, 1.0, smoothstep(0.0, 0.2, t)) - smoothstep(0.5, 1.0, t) * 0.55;
+    vec2 q = vec2(uv.x * 1.8 + seed, y * 2.6 - uTime * 2.4);
+    float warp = fbm(q * 0.9 + vec2(seed, -uTime * 0.5));
+    float n = fbm(q * 1.7 + warp * 1.2);
+    float wide = mix(0.92, 0.55, pow(y, 0.8)) * (1.0 - smoothstep(0.45, 1.0, t) * 0.45);
+    float across = abs(uv.x + (warp - 0.5) * 0.3 * y) / wide;
+    float body = smoothstep(1.0, 0.45, across + (n - 0.5) * 0.55);
+    float top = smoothstep(reach, reach - 0.3, y + (n - 0.5) * 0.25);
+    float foot = smoothstep(0.0, 0.05, y);
+    float core = exp(-across * across * 6.0);
+    float n2 = noise(q * 4.2 + warp * 2.0);
+    float i = clamp((body * (0.28 + n * 0.7 + (n2 - 0.5) * 0.34) + core * 0.22) * top * foot * (1.0 - smoothstep(0.7, 1.0, t)), 0.0, 1.0);
+    float a = smoothstep(0.04, 0.42, i);
+    vec3 c = mix(vA.rgb * 0.5, vA.rgb, smoothstep(0.08, 0.34, i));
+    c = mix(c, vB.rgb, smoothstep(0.4, 0.7, i));
+    c = mix(c, vec3(1.0, 0.97, 0.88), smoothstep(0.8, 1.0, i));
+    float glow = exp(-abs(uv.x) * 2.2) * top * foot * 0.3 * (1.0 - t);
+    return vec4(c * a + vA.rgb * glow * (1.0 - a), a * (0.88 - smoothstep(0.5, 1.0, i) * 0.4));
+  }
+
+  // the ground broken by a blow: jagged cracks running out from where it landed, lit from below by what struck it (fire,
+  // light, shadow), over a scorched patch. t: fresh at 0, cold and gone at 1
+  vec4 crack(vec2 uv, float t, float seed) {
+    float d = length(uv);
+    if (d > 1.0) return vec4(0.0);
+    float ang = atan(uv.y, uv.x);
+    float wob = (noise(vec2(d * 5.0, seed * 7.0)) - 0.5) * 0.8 + (noise(vec2(d * 13.0, seed * 3.0 + 4.0)) - 0.5) * 0.3;
+    // eight long cracks round, and a finer set between them
+    float s = ang * 1.2732 + seed * 3.1 + wob;
+    float len = 0.5 + 0.5 * hash(vec2(floor(s), seed));
+    float w = mix(0.045, 0.008, clamp(d / len, 0.0, 1.0));
+    float line = smoothstep(w, w * 0.25, abs(fract(s) - 0.5) * 0.7854 * d) * smoothstep(len, len * 0.8, d);
+    float s2 = ang * 2.5465 + seed * 5.3 + wob * 1.6 + 0.5;
+    float len2 = 0.25 + 0.4 * hash(vec2(floor(s2), seed + 3.0));
+    float line2 = smoothstep(0.012, 0.003, abs(fract(s2) - 0.5) * 0.3927 * d) * smoothstep(len2, len2 * 0.7, d) * 0.7;
+    float cracks = max(line, line2);
+    float cool = pow(1.0 - t, 1.6);
+    float pit = exp(-d * d * 14.0);
+    vec3 hot = mix(vA.rgb, vB.rgb, smoothstep(0.6, 0.0, d));
+    vec3 add = (hot * (cracks * 1.4 + pit * 0.9) + vec3(1.0) * pow(cracks, 3.0) * 0.4 * smoothstep(0.5, 0.0, d)) * cool;
+    float scorch = smoothstep(1.0, 0.25, d + (noise(uv * 6.0 + seed) - 0.5) * 0.3) * 0.5 * (1.0 - smoothstep(0.55, 1.0, t));
+    return vec4(vec3(0.05, 0.035, 0.03) * scorch + add, scorch + cracks * 0.3 * cool);
+  }
+
   // a magic circle underfoot: rings, a turning band of ticks, a star, coming up and going out
   vec4 rune(vec2 uv, float t, float seed) {
     float d = length(uv);
@@ -774,7 +825,9 @@ const fragment = /* glsl */ `
     else if (kind < 34.5) o = ironBall(vUv);
     else if (kind < 35.5) o = rune(vUv, t, seed);
     else if (kind < 36.5) o = flake(vUv, seed);
-    else o = spill(vUv, seed);
+    else if (kind < 37.5) o = spill(vUv, seed);
+    else if (kind < 38.5) o = column(vUv, t, seed);
+    else o = crack(vUv, t, seed);
     if (o.a <= 0.002 && dot(o.rgb, o.rgb) < 0.0001) discard;
     gl_FragColor = o * vA.a;
   }`;

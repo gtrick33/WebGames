@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { inView, PITCH, viewBox } from '../src/games/sigilfall/render3d/land';
+import { inView, keptBySpot, PITCH, shownBox, viewBox } from '../src/games/sigilfall/render3d/land';
 import { FIGHT_SPEED, MOUNT_SPEED, RIDE_SPEED, WALK_SPEED } from '../src/games/sigilfall/sim/world';
 import { DEFAULT_SETTINGS, validateSettings, ZOOM_MAX, ZOOM_MIN } from '../src/games/sigilfall/progress/save';
 import { viewBox as box } from '../src/games/sigilfall/render3d/land';
@@ -116,5 +116,44 @@ describe('Sigilfall: the camera\'s distance is the player\'s to set', () => {
     expect(read('ui/Panels.tsx')).toContain("slider('Camera distance', 'zoom', ZOOM_MIN, ZOOM_MAX");
     // (the land looks again when the picture's reach changes, not only when the hero has walked)
     expect(read('render3d/land.ts')).toContain('span === this.span');
+  });
+
+  // the Ember Keep: the castle model raised 2.1 times over its lot, its spot nine tiles behind its gate (the owner:
+  // "currently in emberwick, the gate keeps disappearing and reappearing")
+  const KEEP = { min: [-4, 0, -4.5] as [number, number, number], max: [4, 6, 4.5] as [number, number, number] };
+  const keep = { x: 52.5, z: 8.6, y: 0, rot: 0, sx: 2.1, sy: 2.1, sz: 2.1 };
+
+  it('a model that shows far from its own spot is kept by its whole box: the Ember Keep’s gate never blinks out', () => {
+    const b = shownBox(KEEP, keep);
+    expect(b.z1).toBeCloseTo(8.6 + 4.5 * 2.1);
+    // (its towers' worth of height leans up the picture, past its back wall)
+    expect(b.z0).toBeLessThan(8.6 - 4.5 * 2.1 - 6 * 2.1 * 0.8);
+    expect(keptBySpot(b, keep.x, keep.z)).toBe(false);
+    // walking the forecourt south: wherever the gate is in the picture, the keep is kept
+    const { spanX, spanZ } = corners(844 / 390, 13.5);
+    for (let camZ = 20; camZ < 40; camZ += 0.5) {
+      const v = viewBox(keep.x, camZ, spanX, spanZ);
+      const gateShows = b.z1 > v.z0;
+      const keptByBox = !(b.x1 < v.x0 || b.x0 > v.x1 || b.z1 < v.z0 || b.z0 > v.z1);
+      if (gateShows) expect(keptByBox, `camera at ${camZ}`).toBe(true);
+    }
+    // (kept by its spot, it went from the picture with its gate still in it)
+    const v = viewBox(keep.x, 30, spanX, spanZ);
+    expect(b.z1).toBeGreaterThan(v.z0);
+    expect(keep.z).toBeLessThan(v.z0);
+  });
+
+  it('small things are still kept by their spot: a crate, a lamp post, a tree', () => {
+    const crate = { min: [-0.4, 0, -0.4] as [number, number, number], max: [0.4, 0.8, 0.4] as [number, number, number] };
+    expect(keptBySpot(shownBox(crate, { x: 10, z: 10, y: 0, rot: 0.3, sx: 1, sy: 1, sz: 1 }), 10, 10)).toBe(true);
+    const tree = { min: [-0.5, 0, -0.5] as [number, number, number], max: [0.5, 1, 0.5] as [number, number, number] };
+    expect(keptBySpot(shownBox(tree, { x: 10, z: 10, y: 0, rot: 0, sx: 2, sy: 4, sz: 2 }), 10, 10)).toBe(true);
+  });
+
+  it('every model the land places goes through that test, buildings and arches with it', () => {
+    const src = readFileSync('src/games/sigilfall/render3d/land.ts', 'utf8');
+    const add = src.slice(src.indexOf('  private add('), src.indexOf('  /** Sized to'));
+    expect(add).toContain('keptBySpot(box, placedNow.x, placedNow.z)');
+    expect(add).toContain('this.giants.push');
   });
 });

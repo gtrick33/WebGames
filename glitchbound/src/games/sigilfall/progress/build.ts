@@ -159,6 +159,8 @@ export function scaleEffect(e: Effect, rank: number): Effect {
       if (x.buff.stats) for (const k of Object.keys(x.buff.stats) as StatKey[]) x.buff.stats[k] = (x.buff.stats[k] ?? 0) * rank;
       if (x.buff.dr) x.buff.dr = Math.min(70, x.buff.dr * rank);
       if (x.buff.hot) x.buff.hot *= rank;
+      // (a next cast made stronger: stronger again with every rank)
+      if (x.buff.empower?.pct) x.buff.empower = { ...x.buff.empower, pct: x.buff.empower.pct * rank };
       break;
     default:
       break;
@@ -430,7 +432,8 @@ export function heroProcs(mods: Entry[]): ProcDef[] {
     if (e.mod.t !== 'proc') continue;
     const p = e.mod.proc;
     if (out.some((x) => x.id === p.id)) continue;
-    out.push({ ...p, effect: scaleEffect(p.effect, e.rank) });
+    // (a chance that grows with the rank, "4% chance per rank", leaves what it does as it is)
+    out.push(p.perRank === 'chance' ? { ...p, chance: Math.min(1, p.chance * e.rank), effect: cloneEffect(p.effect) } : { ...p, effect: scaleEffect(p.effect, e.rank) });
   }
   return out;
 }

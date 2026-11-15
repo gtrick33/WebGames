@@ -88,15 +88,15 @@ describe('Sigilfall: progression', () => {
     expect(outlevelled(30, 27, 2)).toBeCloseTo(0.8);
   });
 
-  it('the ultimate takes 20 s a bar at level 3, 28 s at 30 and 32 s from 50', () => {
-    // (30% slower since the hardening pass: a held basic attack shouldn't bring the ultimate round in 20 s)
-    expect(ultFloor(3)).toBeCloseTo(26);
-    expect(ultFloor(30)).toBeCloseTo(36.4);
-    expect(ultFloor(50)).toBeCloseTo(41.6);
-    expect(ultFloor(60)).toBeCloseTo(41.6);
+  it('the ultimate takes 40 s a bar at level 3, 60 s at 30 and 70 s from 50', () => {
+    // (two thirds slower since the combat rebalance, the owner: "it seems the ultimate fills fast as heck")
+    expect(ultFloor(3)).toBeCloseTo(40);
+    expect(ultFloor(30)).toBeCloseTo(60);
+    expect(ultFloor(50)).toBeCloseTo(70);
+    expect(ultFloor(60)).toBeCloseTo(70);
   });
 
-  it('two minutes of hard fighting earn every class two to five ultimates', { timeout: 30_000 }, () => {
+  it('two minutes of hard fighting earn every class one to three ultimates', { timeout: 30_000 }, () => {
     const counts: Record<string, number> = {};
     for (const cls of CLASS_IDS) {
       const w = newWorld('whisperwood', readyHero(cls, 30));
@@ -120,8 +120,8 @@ describe('Sigilfall: progression', () => {
       counts[cls] = casts;
     }
     for (const [cls, casts] of Object.entries(counts)) {
-      expect(casts, `${cls}: ${JSON.stringify(counts)}`).toBeGreaterThanOrEqual(2);
-      expect(casts, `${cls}: ${JSON.stringify(counts)}`).toBeLessThanOrEqual(5);
+      expect(casts, `${cls}: ${JSON.stringify(counts)}`).toBeGreaterThanOrEqual(1);
+      expect(casts, `${cls}: ${JSON.stringify(counts)}`).toBeLessThanOrEqual(3);
     }
   });
 

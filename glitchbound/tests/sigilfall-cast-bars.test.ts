@@ -15,17 +15,22 @@ import { newWorld, readyHero } from './sigilfall-bot';
 
 /**
  * The casters' cast bars (campaign only): their heaviest spells take a moment to cast, standing still, and hit
- * harder for it. Before the cast bars every one of them went off at once, at the damage and wind-up kept here.
+ * harder for it. Kept here: what each would deal going off at once (and the wind-up it had then), at today's
+ * numbers. Since the combat rebalance (skills hit harder on longer cooldowns) each caster's signature spell of its
+ * specialization has a cast bar too, the one its talents make instant now and then: the Stormcaller's Ball Lightning
+ * and the Cryomancer's Ice Storm.
  */
 const BEFORE: Record<string, { damage: number; windup: number }> = {
-  meteor: { damage: 95, windup: 0.75 },
-  flamestrike: { damage: 34, windup: 0.55 },
-  'starfall-lance': { damage: 34, windup: 0 },
-  'summon-infernal': { damage: 60, windup: 0.6 },
-  'chaos-bolt': { damage: 60, windup: 0.4 },
-  'rain-of-fire': { damage: 7, windup: 0 },
-  halo: { damage: 75, windup: 0 },
-  starfall: { damage: 9, windup: 0 },
+  meteor: { damage: 146, windup: 0.75 },
+  flamestrike: { damage: 81, windup: 0.55 },
+  'starfall-lance': { damage: 85, windup: 0 },
+  'summon-infernal': { damage: 92, windup: 0.6 },
+  'chaos-bolt': { damage: 118, windup: 0.4 },
+  'rain-of-fire': { damage: 12, windup: 0 },
+  halo: { damage: 112, windup: 0 },
+  starfall: { damage: 13, windup: 0 },
+  'ball-lightning': { damage: 25, windup: 0 },
+  blizzard: { damage: 12, windup: 0 },
 };
 
 /** Every cast-time spell in this world as it was before the cast bars: at once, at its old damage. */
@@ -303,8 +308,10 @@ describe('Sigilfall cast bars', () => {
         const was = output(cls, spec, level, 180, true, 7) + output(cls, spec, level, 180, true, 3);
         const now = output(cls, spec, level, 180, false, 7) + output(cls, spec, level, 180, false, 3);
         expect(now / was, `${cls} at ${level}`).toBeGreaterThan(0.93);
-        // (a little over, for the warlock: its rot goes on working while a cast fills, and casting at once runs it dry sooner)
-        expect(now / was, `${cls} at ${level}`).toBeLessThan(1.12);
+        // (a little over, for the warlock: its rot goes on working while a cast fills, and casting at once runs it dry
+        // sooner; and the Doomcaller's two talents that make a cast instant, Backlash and Hail of Brimstone, save a
+        // whole cast bar each time only when there is one to save)
+        expect(now / was, `${cls} at ${level}`).toBeLessThan(cls === 'warlock' ? 1.22 : 1.12);
       }
     }
   }, 60_000);

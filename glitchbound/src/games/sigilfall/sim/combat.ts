@@ -45,6 +45,8 @@ export function gainResource(w: World, n: number, mana: 'points' | 'pct' = 'poin
 
 /** How far off an enemy is 'far' (world px: about four tiles and a half). */
 export const FAR = 118;
+/** How many hits worth a typical attack of the hero's level fill the ultimate's bar (the charge budget permitting). */
+export const ULT_HITS = 45;
 
 export const hasStatus = (e: { statuses: { id: StatusId }[] }, id: StatusId): boolean => e.statuses.some((s) => s.id === id);
 const statusPower = (e: Enemy, id: StatusId): number => e.statuses.reduce((m, s) => (s.id === id ? Math.max(m, s.power) : m), 0);
@@ -127,7 +129,7 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
   if (w.settings.numbers || crit) w.text(e.x + (w.rand() - 0.5) * 6, e.y - e.r - 6, String(shown), crit ? '#ffe14d' : o.isDot ? DOT_COLOR[type] : '#ffffff', crit);
   if (!o.isDot) w.sfx(o.blade ? (crit ? 'critBlade' : 'clash') : crit ? 'crit' : 'hit');
   hitJuice(w, e, type, crit, !!o.isDot);
-  // ultimate charge: hits worth a typical attack fill about 1/30th, but never faster than the charge budget
+  // ultimate charge: hits worth a typical attack fill about 1/45th (ULT_HITS), but never faster than the charge budget
   // allows (it refills over seconds), so a hero with great gear doesn't cast the ultimate every few hits.
   // Normalized at the hit (PROGRESSION_BALANCE.md Part 2, E): the first enemy a direct hit strikes in a
   // step counts in full and every further one a third; chained, split and proc hits 0.4; damage over time
@@ -137,7 +139,7 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
   const spread = o.depth === 0 && !o.isDot ? (w.ultHits++ === 0 ? 1 : 0.35) : 1;
   const rate = ownUlt ? 0 : (o.charge ?? (o.depth === 0 ? 1 : 0.4)) * spread * (CLASSES[w.hero.cls].ultRate ?? 1) * (1 + stats.ultCharge / 100);
   if (!e.dummy && w.player.ult < 100) {
-    const gain = Math.min((shown / (ref * 30)) * 100 * rate, w.player.ultBudget);
+    const gain = Math.min((shown / (ref * ULT_HITS)) * 100 * rate, w.player.ultBudget);
     w.player.ultBudget -= gain;
     w.player.ult = Math.min(100, w.player.ult + gain);
   }

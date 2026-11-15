@@ -12,7 +12,7 @@ import type { SigilEngine } from '../engine';
 import type { AimPreview } from '../render/renderer';
 import { hasMount } from '../progress/wardrobe';
 import { skillHasPicture, skillIconUrl } from '../render/sprites';
-import { SUMMON_TIME, type World } from '../sim/world';
+import { slotHaste, SUMMON_TIME, type World } from '../sim/world';
 import { useFrame } from './GameScreen';
 import { useHudBox } from './hudBoxes';
 import { uiIcon } from './uiIcons';
@@ -47,7 +47,7 @@ export function TouchControls({ engine }: { engine: SigilEngine }) {
       <Joystick engine={engine} />
       <div ref={cluster} className="rb-cluster">
         {/* the lesson sits over the button it teaches (inside the cluster: its size and side follow the cluster's) */}
-        {engine.ui.teach && !engine.ui.tip && (
+        {engine.ui.teach && engine.ui.teach.slot !== 'potion' && !engine.ui.tip && (
           <div className={`rb-teach is-touch is-at-${engine.ui.teach.slot}`} role="status">
             {engine.ui.teach.text}
           </div>
@@ -59,9 +59,13 @@ export function TouchControls({ engine }: { engine: SigilEngine }) {
         <SkillButton engine={engine} slot="s4" />
         <SkillButton engine={engine} slot="ult" />
         <SkillButton engine={engine} slot="dodge" />
-        <PotionButton engine={engine} />
-        <MountButton engine={engine} />
       </div>
+      {/* the potion and the mount stand apart from the skills, as they are something else (the owner: "separate potions
+          and the mount, as they are different, potion should be somewhere accessible, mount should be somewhere
+          visible"): the potion at the foot of the screen beside the skills, in the thumb's reach; the mount under the
+          map, where it is seen */}
+      <PotionButton engine={engine} />
+      <MountButton engine={engine} />
       <InteractButton engine={engine} />
     </>
   );
@@ -117,7 +121,7 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
     const empty = cd.charges <= 0;
     const share = empty ? Math.max(0, cd.t / Math.max(0.01, cd.cd)) : 0;
     if (cdRef.current) cdRef.current.style.background = empty ? `conic-gradient(rgba(10,6,20,0.72) ${share * 100}%, transparent 0)` : 'transparent';
-    if (numRef.current) numRef.current.textContent = empty && cd.t > 0.95 ? String(Math.ceil(cd.t / (1 + world.build.stats.haste / 100))) : '';
+    if (numRef.current) numRef.current.textContent = empty && cd.t > 0.95 ? String(Math.ceil(cd.t / slotHaste(slot, world.build.stats.haste))) : '';
     if (chRef.current) chRef.current.textContent = cd.max > 1 ? String(cd.charges) : '';
     b.classList.toggle('is-cooling', empty);
   });
@@ -228,33 +232,46 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
   );
 }
 
-/** A potion within thumb's reach (on touch it lives in the cluster, not the top bar). */
+/**
+ * A potion within the thumb's reach: at the foot of the screen, just inside the skills, a button of its own (on touch it
+ * lives here, not in the top bar). Low on health the first time, a pointer over it says to drink.
+ */
 function PotionButton({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
-  // (it stands above the rest of the cluster: the highest thing a spoken line beside the quest must clear)
   const el = useRef<HTMLButtonElement>(null);
   useHudBox(engine, 'potion', el);
   return (
-    <button
-      ref={el}
-      className="rb-sb rb-sb-potion"
-      aria-label={`Drink a potion (${h.potions} left)`}
-      disabled={h.potions <= 0}
-      onPointerDown={(e) => {
-        e.preventDefault();
-        engine.drinkPotion();
-      }}
-      onContextMenu={(e) => e.preventDefault()}
-    >
-      <img src={uiIcon('potion', 3)} alt="" draggable={false} />
-      <span className="rb-sb-charges">{h.potions}</span>
-    </button>
+    <div className="rb-potion-dock">
+      {engine.ui.teach?.slot === 'potion' && !engine.ui.tip && (
+        <div className="rb-teach is-touch is-at-potion" role="status">
+          {engine.ui.teach.text}
+        </div>
+      )}
+      <button
+        ref={el}
+        className={`rb-sb rb-sb-potion${engine.ui.teach?.slot === 'potion' ? ' is-teach' : ''}`}
+        aria-label={`Drink a potion (${h.potions} left)`}
+        disabled={h.potions <= 0}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          engine.drinkPotion();
+        }}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        <img src={uiIcon('potion', 3)} alt="" draggable={false} />
+        <span className="rb-sb-charges">{h.potions}</span>
+      </button>
+    </div>
   );
 }
 
-/** The mount: call it (the ring fills while it comes) or get down. Shown once riding is open and the hero owns one. */
+/**
+ * The mount: call it (the ring fills while it comes) or get down. Shown once riding is open and the hero owns one, under
+ * the map, where it is seen (the riding hint points at it there: progress/tips.ts).
+ */
 function MountButton({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLButtonElement>(null);
+  useHudBox(engine, 'mount', ref);
   useFrame(engine, (w) => {
     const b = ref.current;
     if (!b) return;

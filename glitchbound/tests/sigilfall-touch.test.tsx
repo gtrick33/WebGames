@@ -4,6 +4,8 @@ import type { SigilEngine } from '../src/games/sigilfall/engine';
 import { TouchState } from '../src/games/sigilfall/input/input';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
 import { TouchControls } from '../src/games/sigilfall/ui/Touch';
+import { MOUNT_DEFS } from '../src/games/sigilfall/data/mounts';
+import { FIRST_RIDE } from '../src/games/sigilfall/progress/wardrobe';
 import { newWorld, readyHero } from './sigilfall-bot';
 
 /**
@@ -114,5 +116,26 @@ describe('Sigilfall: touch controls with two thumbs', () => {
     finger(zone, 'pointerMove', 1, 160, 200);
     view.unmount();
     expect(touch.mx).toBe(0);
+  });
+
+  it('the potion and the mount stand apart from the skills, and low on health a pointer stands over the potion', () => {
+    const world = newWorld('whisperwood', readyHero('ranger', 24));
+    // (riding open, a mount owned)
+    world.hero.quests[FIRST_RIDE] = { state: 'done', n: 0 };
+    world.hero.mounts = [Object.keys(MOUNT_DEFS)[0]!];
+    const touch = new TouchState();
+    const engine = { settings: { ...DEFAULT_SETTINGS }, touch, hero: world.hero, world, frameHooks: new Set(), ui: { teach: { slot: 'potion', text: 'Low health! Tap the potion to drink', shown: 0, until: 1e12 }, tip: null }, touchMode: true, drinkPotion: () => undefined, toggleMount: () => undefined, interact: () => undefined } as unknown as SigilEngine;
+    const view = render(<TouchControls engine={engine} />);
+    const cluster = view.container.querySelector('.rb-cluster')!;
+    expect(cluster.querySelector('.rb-sb-basic')).toBeTruthy();
+    expect(cluster.querySelector('.rb-sb-potion')).toBeNull();
+    expect(cluster.querySelector('.rb-sb-mount')).toBeNull();
+    const potion = view.container.querySelector('.rb-potion-dock > .rb-sb-potion');
+    expect(potion?.classList.contains('is-teach')).toBe(true);
+    expect(view.container.querySelector('.rb-potion-dock > .rb-teach.is-at-potion')?.textContent).toBe('Low health! Tap the potion to drink');
+    // (the cluster's own lesson bubble is not drawn for it)
+    expect(cluster.querySelector('.rb-teach')).toBeNull();
+    const mount = view.container.querySelector('.rb-sb-mount');
+    expect(mount?.parentElement).toBe(cluster.parentElement);
   });
 });
