@@ -2170,8 +2170,8 @@ html.rb-touch-playing textarea {
   position: absolute;
   right: calc(6px + var(--sa-r));
   bottom: calc(6px + var(--sa-b));
-  width: 222px;
-  height: 218px;
+  width: 220px;
+  height: 182px;
   pointer-events: none;
 }
 .is-lefty .rb-cluster {
@@ -11337,9 +11337,9 @@ html.rb-touch-playing textarea {
     inset 0 0 12px rgb(0 0 0 / 0.7);
 }
 /* The thumbs gathered as the Ring's are (the owner: "UI should be clustered similar to the ring"): the attack in the
-   corner, the three skills on one tight arc round it (88 from the attack's middle), and the dodge, the fourth skill,
-   the ultimate, the potion and the mount on one outer arc (146 out), from beside the thumb round to over the attack.
-   About 222 by 218 points, where the spread-out arcs took 280 by 264, before the short-screen scaling. */
+   corner, the three skills on one tight arc round it (88 from the attack's middle), and the dodge, the fourth skill
+   and the ultimate on one outer arc (146 out). About 220 by 182 points, where the spread-out arcs took 280 by 264.
+   The potion and the mount stand apart from it (below). */
 .rb-cluster .rb-sb-s1 {
   right: 111px;
   bottom: 23px;
@@ -11376,18 +11376,116 @@ html.rb-touch-playing textarea {
   width: 56px;
   height: 56px;
 }
-/* (the potion stays 44 points or more even in a short phone's smaller cluster: it is the button pressed in a panic) */
-.rb-cluster .rb-sb-potion {
-  right: 81px;
-  bottom: 161px;
+/* The potion and the mount, apart from the skills, as they are something else (the owner: "separate potions and the
+   mount, as they are different, potion should be somewhere accessible, mount should be somewhere visible"). The
+   potion: at the foot of the screen just inside the skills, in the right thumb's reach with a gap a thumb doesn't
+   cross by mistake, and bigger than a skill (it is the button pressed in a panic). The mount: under the map, in the
+   corner the eye goes to for where it is, and out of the fight's way. Both in the cluster's gold rim. */
+.rb-potion-dock {
+  position: absolute;
+  right: calc(242px + var(--sa-r));
+  bottom: calc(14px + var(--sa-b));
+  width: 56px;
+  height: 56px;
+  pointer-events: none;
+  transform-origin: bottom right;
+}
+.is-lefty .rb-potion-dock {
+  right: auto;
+  left: calc(242px + var(--sa-l));
+  transform-origin: bottom left;
+}
+.rb-potion-dock > .rb-sb-potion {
+  inset: 0;
+  width: 56px;
+  height: 56px;
+}
+.rb-potion-dock > .rb-sb-potion img {
+  width: 24px;
+  height: 31px;
+}
+.rb-ui.is-touch > .rb-sb-mount {
+  top: calc(124px + var(--sa-t));
+  right: calc(27px + var(--sa-r));
+  bottom: auto;
   width: 46px;
   height: 46px;
 }
-.rb-cluster .rb-sb-mount {
-  right: 32px;
-  bottom: 175px;
-  width: 40px;
-  height: 40px;
+.rb-potion-dock > .rb-sb,
+.rb-ui.is-touch > .rb-sb-mount {
+  border: 2px solid #d6aa4a;
+  box-shadow:
+    0 0 0 2px #1a1006,
+    0 0 10px rgb(0 0 0 / 0.55),
+    inset 0 0 0 2px rgb(0 0 0 / 0.35),
+    inset 0 2px 0 rgb(255 255 255 / 0.28);
+}
+/* the pointer over the potion (low on health the first time): over it, its arrow down to it, the words reaching away
+   from the skills so that none of them is covered */
+.rb-teach.is-touch.is-at-potion {
+  right: 0;
+  bottom: calc(100% + 12px);
+  left: auto;
+}
+.rb-teach.is-touch.is-at-potion::after {
+  right: 21px;
+  left: auto;
+}
+.is-lefty .rb-teach.is-touch.is-at-potion {
+  right: auto;
+  left: 0;
+}
+.is-lefty .rb-teach.is-touch.is-at-potion::after {
+  right: auto;
+  left: 21px;
+}
+/* on a short phone the skills are drawn smaller (the cluster's scaling, above): the potion keeps beside them, a little
+   smaller too but never under 40 points; with no map on a very short one the mount takes its corner, under the menu */
+@container (max-height: 400px) {
+  .rb-potion-dock {
+    right: calc(209px + var(--sa-r));
+    transform: scale(0.9);
+  }
+  .is-lefty .rb-potion-dock {
+    right: auto;
+    left: calc(209px + var(--sa-l));
+  }
+}
+@container rb-stage (max-height: 340px) {
+  .rb-potion-dock {
+    right: calc(194px + var(--sa-r));
+    transform: scale(0.86);
+  }
+  .is-lefty .rb-potion-dock {
+    right: auto;
+    left: calc(194px + var(--sa-l));
+  }
+}
+@container rb-stage (max-height: 280px) {
+  .rb-potion-dock {
+    right: calc(161px + var(--sa-r));
+    transform: scale(0.8);
+  }
+  .is-lefty .rb-potion-dock {
+    right: auto;
+    left: calc(161px + var(--sa-l));
+  }
+  .rb-ui.is-touch > .rb-sb-mount {
+    top: calc(54px + var(--sa-t));
+    right: calc(10px + var(--sa-r));
+    width: 40px;
+    height: 40px;
+  }
+}
+@container rb-stage (max-height: 230px) {
+  .rb-potion-dock {
+    right: calc(139px + var(--sa-r));
+    transform: scale(0.72);
+  }
+  .is-lefty .rb-potion-dock {
+    right: auto;
+    left: calc(139px + var(--sa-l));
+  }
 }
 /* a place not filled yet: an empty ring, the level it opens at in it */
 .rb-cluster .rb-sb.is-locked {

@@ -10,7 +10,8 @@
  * - A class's big skills hit four to nine times harder than its basic attack, on cooldowns of seconds, not fractions of one.
  * - Every specialization has two new talents: a proc that makes a skill instant, ready, free or stronger, or a state
  *   that stacks; each of them fires on the simulation, and an instant one really skips the cast bar.
- * - The phone's thumbs are gathered as the Ring's; a boss's shout is in the middle of a phone's screen.
+ * - The phone's thumbs are gathered as the Ring's, the potion and the mount apart from them; a boss's shout is in the
+ *   middle of a phone's screen.
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -268,16 +269,31 @@ describe('Sigilfall: what changed for saves and screens', () => {
       const at = css.lastIndexOf(`\n${sel} {`);
       return at < 0 ? '' : css.slice(at, css.indexOf('}', at));
     };
-    expect(rule('.rb-cluster')).toContain('width: 222px');
+    const n = (r: string, k: string): number => Number(new RegExp(`${k}: (?:calc\\()?(\\d+)px`).exec(r)?.[1]);
+    expect(rule('.rb-cluster')).toContain('width: 220px');
+    expect(rule('.rb-cluster')).toContain('height: 182px');
     expect(rule('.rb-cluster .rb-sb-basic')).toContain('width: 74px');
     for (const s of ['s1', 's2', 's3', 's4']) expect(rule(`.rb-cluster .rb-sb-${s}`), s).toContain('width: 52px');
-    // (every button inside the cluster's box)
-    for (const s of ['basic', 's1', 's2', 's3', 's4', 'ult', 'dodge', 'potion', 'mount']) {
+    // (every skill inside the cluster's box)
+    for (const s of ['basic', 's1', 's2', 's3', 's4', 'ult', 'dodge']) {
       const r = rule(`.rb-cluster .rb-sb-${s}`);
-      const n = (k: string): number => Number(new RegExp(`${k}: (\\d+)px`).exec(r)?.[1]);
-      expect(n('right') + n('width'), s).toBeLessThanOrEqual(222);
-      expect(n('bottom') + n('height'), s).toBeLessThanOrEqual(218);
+      expect(n(r, 'right') + n(r, 'width'), s).toBeLessThanOrEqual(220);
+      expect(n(r, 'bottom') + n(r, 'height'), s).toBeLessThanOrEqual(182);
     }
+    // the potion and the mount apart from them (the owner: "potion should be somewhere accessible, mount should be
+    // somewhere visible"): the potion at the foot of the screen beside the skills, a thumb's gap from the dodge, and
+    // big; the mount under the map
+    expect(rule('.rb-cluster .rb-sb-potion')).toBe('');
+    expect(rule('.rb-cluster .rb-sb-mount')).toBe('');
+    const dock = rule('.rb-potion-dock');
+    expect(n(dock, 'right')).toBeGreaterThanOrEqual(6 + 220 + 12);
+    expect(n(dock, 'bottom')).toBeLessThanOrEqual(20);
+    expect(n(dock, 'width')).toBeGreaterThanOrEqual(52);
+    // (its place: the first rule for it; a later one gives it, with the potion, the cluster's rim)
+    const at = css.indexOf('\n.rb-ui.is-touch > .rb-sb-mount {');
+    const mount = css.slice(at, css.indexOf('}', at));
+    const map = rule('.is-touch .rb-minimap-hud');
+    expect(n(mount, 'top')).toBeGreaterThanOrEqual(n(map, 'top') + 84);
     const shout = rule('.rb-ui.is-boss.is-touch .rb-announce');
     expect(shout).toContain('top: 50%');
     expect(shout).toContain('left: 50%');
