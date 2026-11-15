@@ -383,6 +383,10 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     tick((x) => x + 1);
   };
   /** The next enemy, as Tab chooses: a phone's ◎ button by the abilities, the easiest way there is to switch target. */
+  /** The enemy that lies the way a thumb slides from the ◎ button, as seen on the screen (set where the view is). */
+  const towardFoe = useRef<(dx: number, dy: number) => Fighter | null>(() => null);
+  /** The ◎ button's slide: where it began, and whether it has gone far enough to be a slide rather than a tap. */
+  const slide = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null);
   const nextFoe = (): void => {
     if (!me) return;
     const list = m.enemiesOf(me).filter((o) => !o.pet && !m.unseen(o, me));
@@ -647,6 +651,26 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         }
       }
       if (best) target(best.id);
+    };
+    // the ◎ button's slide: the enemy on the screen nearest the way the thumb went, from the hero
+    towardFoe.current = (dx, dy) => {
+      if (!me) return null;
+      const from = view.stage.project(me.x, me.y, 16);
+      const len = Math.hypot(dx, dy) || 1;
+      let best: Fighter | null = null;
+      let bestCos = 0.35;
+      for (const o of m.enemiesOf(me)) {
+        if (o.pet || m.unseen(o, me)) continue;
+        const at = view.stage.project(o.x, o.y, 16);
+        const ox = at.x - from.x;
+        const oy = at.y - from.y;
+        const cos = (ox * dx + oy * dy) / ((Math.hypot(ox, oy) || 1) * len);
+        if (cos > bestCos) {
+          bestCos = cos;
+          best = o;
+        }
+      }
+      return best;
     };
     const host = canvas.parentElement!;
     host.addEventListener('pointerdown', pick, true);
@@ -1129,16 +1153,45 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 {right.length > 1 && (
                   <button
                     type="button"
-                    className="rb-sb rb-sb-s4 rb-sb-target"
+                    className="rb-sb rb-sb-target"
                     disabled={right.filter((f) => !f.dead).length < 2}
-                    aria-label={`Switch target${foeAlive ? `, now ${foeAlive.name}` : ''}`}
+                    aria-label={`Switch target${foeAlive ? `, now ${foeAlive.name}` : ''}. Tap for the next enemy, or slide toward one`}
+                    // (a tap: the next enemy, as Tab. A slide: the enemy the way the thumb goes, chosen as it goes)
                     onPointerDown={(e) => {
                       e.preventDefault();
-                      nextFoe();
+                      try {
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                      } catch {
+                        /* (no capture: the slide still works while the thumb stays on the button) */
+                      }
+                      slide.current = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+                    }}
+                    onPointerMove={(e) => {
+                      const sl = slide.current;
+                      if (!sl || sl.id !== e.pointerId) return;
+                      const dx = e.clientX - sl.x;
+                      const dy = e.clientY - sl.y;
+                      if (Math.hypot(dx, dy) < 14) return;
+                      sl.moved = true;
+                      const o = towardFoe.current(dx, dy);
+                      if (o && o.id !== me?.target) target(o.id);
+                    }}
+                    onPointerUp={(e) => {
+                      const sl = slide.current;
+                      slide.current = null;
+                      if (sl?.id === e.pointerId && !sl.moved) nextFoe();
+                    }}
+                    onPointerCancel={() => {
+                      slide.current = null;
                     }}
                     onContextMenu={(e) => e.preventDefault()}
                   >
-                    <span aria-hidden="true">◎</span>
+                    {/* a crosshair: what it is for, at a glance */}
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" />
+                      <path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                      <circle cx="12" cy="12" r="1.8" fill="currentColor" />
+                    </svg>
                   </button>
                 )}
                 {bar.map((ab, i) => {

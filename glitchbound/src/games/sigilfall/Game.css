@@ -9924,10 +9924,10 @@ html.rb-touch-playing textarea {
 }
 /* your own cast low on the screen, between the stick and the thumb cluster, under the fight rather than over it (the
    owner: "currently the cast bar is in the middle of the screen, you can add it a bit more to the bottom"): the stick
-   rests in the first 200 points from the left, the cluster's lowest buttons reach 276 in from the right */
+   rests in the first 200 points from the left, the Ring cluster’s lowest buttons reach 224 in from the right */
 .rb-ring.is-touch .rb-ring-mycast {
   left: calc(206px + var(--sa-l, 0px));
-  right: calc(286px + var(--sa-r, 0px));
+  right: calc(232px + var(--sa-r, 0px));
   bottom: calc(10px + var(--sa-b, 0px));
   width: auto;
   max-width: 280px;
@@ -9978,12 +9978,21 @@ html.rb-touch-playing textarea {
   margin-top: -12px;
   padding-top: 12px;
 }
-/* the switch-target button: the cluster's fifth place, unused in the Ring */
+/* the switch-target button: a white crosshair on a dark button with a red rim; tap for the next enemy, or slide toward one */
 .rb-ring-thumbs .rb-sb-target {
-  border-color: #ff9aa6;
   color: #fff;
-  font: 700 28px/1 system-ui, sans-serif;
-  background: radial-gradient(circle at 40% 28%, #ff8a96, #a8263a 72%);
+  border-color: #ff5a6a;
+  background: radial-gradient(circle at 50% 40%, #3a1218, #120609 75%);
+  touch-action: none;
+}
+.rb-ring-thumbs .rb-sb-target svg {
+  width: 62%;
+  height: 62%;
+  filter: drop-shadow(0 1px 1px #000);
+  pointer-events: none;
+}
+.rb-ring-thumbs .rb-sb-target:active {
+  border-color: #fff;
 }
 .rb-ring-thumbs .rb-sb-target:disabled {
   opacity: 0.35;
@@ -12558,4 +12567,55 @@ html.rb-touch-playing textarea {
   .rb-ring-overhead {
     font-size: 10.5px;
   }
+}
+
+/* ---- The Ring's thumbs, gathered closer than the campaign's (the owner: "takes too much space in mobile ... clustering
+   it up or making the icons smaller"): the attack in the corner, the three skills on one tight arc round it, and the
+   Swift Step, the super and the switch-target button on an outer arc. About a third less of the screen, before the
+   short-screen scaling every cluster gets. ---- */
+.rb-ring-thumbs .rb-cluster {
+  width: 222px;
+  height: 208px;
+}
+.rb-ring-thumbs .rb-cluster .rb-sb-basic {
+  right: 12px;
+  bottom: 12px;
+  width: 74px;
+  height: 74px;
+}
+.rb-ring-thumbs .rb-cluster .rb-sb-s1 {
+  right: 111px;
+  bottom: 23px;
+  width: 52px;
+  height: 52px;
+}
+.rb-ring-thumbs .rb-cluster .rb-sb-s2 {
+  right: 85px;
+  bottom: 85px;
+  width: 52px;
+  height: 52px;
+}
+.rb-ring-thumbs .rb-cluster .rb-sb-s3 {
+  right: 23px;
+  bottom: 111px;
+  width: 52px;
+  height: 52px;
+}
+.rb-ring-thumbs .rb-cluster .rb-sb-dodge {
+  right: 172px;
+  bottom: 13px;
+  width: 46px;
+  height: 46px;
+}
+.rb-ring-thumbs .rb-cluster .rb-sb-ult {
+  right: 146px;
+  bottom: 104px;
+  width: 56px;
+  height: 56px;
+}
+.rb-ring-thumbs .rb-cluster .rb-sb-target {
+  right: 88px;
+  bottom: 158px;
+  width: 42px;
+  height: 42px;
 }
