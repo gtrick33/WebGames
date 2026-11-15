@@ -283,6 +283,8 @@ export interface ProcDef {
   effect: Effect;
   /** Plain-language description shown on the item. */
   text: string;
+  /** On a talent of more than one rank, what each rank adds: its effect (the default), or its chance. */
+  perRank?: 'effect' | 'chance';
 }
 
 /**

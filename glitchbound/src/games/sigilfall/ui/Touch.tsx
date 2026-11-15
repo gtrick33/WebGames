@@ -12,7 +12,7 @@ import type { SigilEngine } from '../engine';
 import type { AimPreview } from '../render/renderer';
 import { hasMount } from '../progress/wardrobe';
 import { skillHasPicture, skillIconUrl } from '../render/sprites';
-import { SUMMON_TIME, type World } from '../sim/world';
+import { slotHaste, SUMMON_TIME, type World } from '../sim/world';
 import { useFrame } from './GameScreen';
 import { useHudBox } from './hudBoxes';
 import { uiIcon } from './uiIcons';
@@ -117,7 +117,7 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
     const empty = cd.charges <= 0;
     const share = empty ? Math.max(0, cd.t / Math.max(0.01, cd.cd)) : 0;
     if (cdRef.current) cdRef.current.style.background = empty ? `conic-gradient(rgba(10,6,20,0.72) ${share * 100}%, transparent 0)` : 'transparent';
-    if (numRef.current) numRef.current.textContent = empty && cd.t > 0.95 ? String(Math.ceil(cd.t / (1 + world.build.stats.haste / 100))) : '';
+    if (numRef.current) numRef.current.textContent = empty && cd.t > 0.95 ? String(Math.ceil(cd.t / slotHaste(slot, world.build.stats.haste))) : '';
     if (chRef.current) chRef.current.textContent = cd.max > 1 ? String(cd.charges) : '';
     b.classList.toggle('is-cooling', empty);
   });

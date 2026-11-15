@@ -223,9 +223,18 @@ dungeon module (`data/dungeons/<id>.ts`) holds its map, bosses, enemies and item
 boss of a dungeon's last boss room opens a portal home and a reward screen; loot still on the ground is collected
 for you when the fight is won or when you leave, so nothing is lost.
 
-**The ultimate** fills from damage dealt, measured against a typical attack of the hero's level. From the 20s on,
-gear and talents make hits much bigger than that, so a full bar can't come back faster than `ultFloor` (none to
-speak of in the teens, 4 s at 30, 6 s from 38): otherwise it would come every few hits.
+**The ultimate** fills from damage dealt, measured against a typical attack of the hero's level (a typical hit is
+1/45 of the bar). From the 20s on, gear and talents make hits much bigger than that, so a full bar can't come back
+faster than `ultFloor`: 40 s at level 3, 60 s at 30, 70 s from 50. Everything that charges it (hits, the trickle
+while fighting, procs) draws on that budget, and a lull banks at most a third of a bar (`ULT_BANK`), so the ultimate
+comes about once a minute in a long fight.
+
+**Skills and haste.** A skill hits many times harder than the basic attack, on a cooldown of seconds (Fireball: 78
+damage every 7 s, near nine Arcane Bolts' worth). Haste speeds a skill's cooldown by half of itself and never more than
+50% (`skillHaste` in `sim/world.ts`); the basic attack is sped by haste up to 60% (`BASIC_HASTE`), and the dodge by
+all of it, as before.
+Every specialization has talents that make a skill ready, free, stronger or (for a spell with a cast bar) instant now
+and then, so a fight has moments that aren't the same as the last.
 
 **Enemy strength by level.** Enemy health grows a fifth a level to 15, then follows the heroes, whose damage
 multiplies with specializations, talents and gear (`HP_CURVE` in `data/enemies.ts`: ×4 at 15, ×15 at 30, ×64 at

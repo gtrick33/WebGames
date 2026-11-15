@@ -47,7 +47,7 @@ describe('sigilfall mana', () => {
     const p = w.player;
     expect(p.maxMana).toBe(100);
     expect(p.mana).toBe(0);
-    // Heavy Strike needs 20
+    // Heavy Strike needs 30
     expect(w.build.bar.s1).toBe('heavy-strike');
     expect(tryCast(w, { slot: 's1', angle: 0, dist: null, assist: 0 })).toBe(false);
     w.enemies = [];
@@ -62,7 +62,7 @@ describe('sigilfall mana', () => {
     p.iframe = 0;
     hurtPlayer(w, p.maxHp * 0.2, {});
     expect(p.mana).toBeGreaterThan(11);
-    p.mana = 25;
+    p.mana = 35;
     expect(tryCast(w, { slot: 's1', angle: 0, dist: null, assist: 0 })).toBe(true);
     step(w, 0.5);
     expect(p.mana).toBeLessThanOrEqual(5);

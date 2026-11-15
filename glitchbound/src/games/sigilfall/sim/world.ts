@@ -140,18 +140,32 @@ const RESPAWN_WANTED = 20;
 /** Discovering a sight pays this share of a level. */
 const EXPLORE_XP = 0.03;
 /**
- * The quickest a full ultimate bar can come back, in seconds, by hero level. Hits charge the bar against a
- * typical attack of the hero's level, and from the 20s on gear and talents make hits far bigger than that:
- * without a floor the ultimate would come every couple of hits. Early on the floor is out of the way.
+ * The fewest seconds a full ultimate bar can take in sustained combat: 40 at level 3, 60 at 30, 70 from 50. Hits charge
+ * the bar against a typical attack of the hero's level, and from the 20s on gear and talents make hits far bigger than
+ * that: without a floor the ultimate would come every couple of hits. The charge budget refills at one bar per this
+ * many seconds, and everything that charges the bar (hits, the trickle in a fight, procs) draws on it. Two thirds
+ * slower than it was (the owner: "it seems the ultimate fills fast as heck"): at 36 s, with the trickle on top and 70%
+ * of a bar banked by any lull, it came round every half minute, and a pack seldom lasted longer than that.
  */
-/**
- * The fewest seconds a full ultimate bar can take in sustained combat (PROGRESSION_BALANCE.md Part 2, E):
- * 26 at level 3, 36 at 30, 42 from 50 (30% slower than the first balance pass). The charge budget refills at
- * one bar per this many seconds.
- */
-export const ultFloor = (level: number): number => 1.3 * (level <= 3 ? 20 : level <= 30 ? 20 + ((level - 3) * 8) / 27 : Math.min(32, 28 + ((level - 30) * 4) / 20));
+export const ultFloor = (level: number): number => (level <= 3 ? 40 : level <= 30 ? 40 + ((level - 3) * 20) / 27 : Math.min(70, 60 + ((level - 30) * 10) / 20));
 /** The most of a bar of ultimate charge (%) a lull banks for the next fight (the rest is earned at the usual pace). */
-export const ULT_BANK = 70;
+export const ULT_BANK = 35;
+/** Ultimate charge (% of a bar) a second of fighting brings by itself, out of the same budget. */
+export const ULT_TRICKLE = 0.5;
+/**
+ * How much faster a skill's cooldown runs with the hero's haste: half of it, and no more than 50% faster. Gear brings
+ * haste to 80% by level 30 and 160% at the top; counted in full it took a Fireball's three seconds down to under one,
+ * and a skill came round as often as the basic attack (the owner: "cooldowns are short and makes me feel like fireball
+ * for example is not that great and different than the basic attack"). The basic attack keeps its own rule (BASIC_HASTE),
+ * the dodge is sped by haste in full as it always was (every boss's dance was set against it: a level 60 mage on a
+ * slower dodge died eight to fourteen times to Vaelor where it had died none), and mana, focus and energy come back as
+ * fast as ever.
+ */
+export const SKILL_HASTE_SHARE = 0.5;
+export const SKILL_HASTE_MAX = 50;
+export const skillHaste = (haste: number): number => 1 + Math.min(SKILL_HASTE_MAX, Math.max(0, haste) * SKILL_HASTE_SHARE) / 100;
+/** How fast a slot's cooldown runs with this much haste (what the bars count down by). */
+export const slotHaste = (slot: string, haste: number): number => (slot === 'basic' ? 1 + Math.min(Math.max(0, haste), BASIC_HASTE) / 100 : slot === 'dodge' ? 1 + Math.max(0, haste) / 100 : skillHaste(haste));
 /** The most haste (%) speeds the basic attack. */
 export const BASIC_HASTE = 60;
 /**
@@ -1437,21 +1451,23 @@ export class World {
         p.mana = Math.max(0, p.mana - res.regen * dt);
       }
     }
-    // cooldowns recharge faster with haste; the basic attack only up to BASIC_HASTE (held down, it would
-    // otherwise turn into a stream of bolts)
-    const haste = 1 + stats.haste / 100;
-    const basicHaste = 1 + Math.min(stats.haste, BASIC_HASTE) / 100;
+    // cooldowns recharge faster with haste (slotHaste): skills by skillHaste, the basic attack only up to BASIC_HASTE
+    // (held down, it would otherwise turn into a stream of bolts), the dodge with all of it
     for (const slot of ACTION_SLOTS) {
       const cd = p.cds[slot];
       if (slot === 'ult' || cd.charges >= cd.max) continue;
-      cd.t -= dt * (slot === 'basic' ? basicHaste : haste);
+      cd.t -= dt * slotHaste(slot, stats.haste);
       if (cd.t <= 0) {
         cd.charges += 1;
         cd.t = cd.charges < cd.max ? cd.t + cd.cd : 0;
       }
     }
-    // a slow trickle of ultimate charge while fighting
-    if (p.calm < 3 && this.build.bar.ult) p.ult = Math.min(100, p.ult + dt * 0.8);
+    // a slow trickle of ultimate charge while fighting (out of the charge budget: it never beats the floor)
+    if (p.calm < 3 && this.build.bar.ult && p.ult < 100) {
+      const gain = Math.min(dt * ULT_TRICKLE, p.ultBudget);
+      p.ultBudget -= gain;
+      p.ult = Math.min(100, p.ult + gain);
+    }
     // aim: the mouse, or where you move (touch)
     const moving = Math.hypot(inp.mx, inp.my) > 0.15;
     if (inp.aim !== null) p.aim = inp.aim;

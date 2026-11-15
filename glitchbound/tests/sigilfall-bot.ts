@@ -16,6 +16,7 @@ import { SPEC_LEVEL, TALENTS } from '../src/games/sigilfall/data/talents';
 import { rng } from '../src/games/sigilfall/core/math';
 import { flowField, flowStep, lineOfSight, TILE } from '../src/games/sigilfall/sim/map';
 import { bossHidden } from '../src/games/sigilfall/sim/boss';
+import { empowerFull, empowerOf } from '../src/games/sigilfall/sim/combat';
 import type { Enemy, WorldEvent } from '../src/games/sigilfall/sim/types';
 import { emptyInput, inside, World } from '../src/games/sigilfall/sim/world';
 
@@ -178,7 +179,9 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
         if (goalPt) toTarget = flowField(w.map, Math.floor(goalPt.x / TILE), Math.floor(goalPt.y / TILE), 4000, toTarget);
       }
       // danger first: step out of anything about to land
-      const danger = w.telegraphs.find((t) => t.tone !== 'player' && (t.kind ?? 'danger') === 'danger' && !t.dead && inside(t, p.x, p.y, p.r));
+      // (of two at once, the one about to land: a player steps out of the blow that's coming, then the next)
+      let danger: (typeof w.telegraphs)[number] | undefined;
+      for (const t of w.telegraphs) if (t.tone !== 'player' && (t.kind ?? 'danger') === 'danger' && !t.dead && inside(t, p.x, p.y, p.r) && (!danger || t.dur - t.t < danger.dur - danger.t)) danger = t;
       let mx = 0;
       let my = 0;
       if (danger) {
@@ -291,7 +294,12 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
         };
         if (reach('basic')) f.holdBasic = { slot: 'basic', angle: a, dist: null, assist: 0 };
         // a spell with a cast time means standing still: not while badly hurt (a player would get clear first)
-        const castTime = (slot: SlotKey): number => w.build.skills[w.build.bar[slot] ?? '']?.spec.castTime ?? 0;
+        // (a spell a proc has made instant has no cast to stand through: a player casts it hurt or not)
+        const castTime = (slot: SlotKey): number => {
+          const id = w.build.bar[slot] ?? '';
+          const emp = empowerOf(w, id);
+          return emp?.def.empower?.instant && empowerFull(emp) ? 0 : (w.build.skills[id]?.spec.castTime ?? 0);
+        };
         const standOk = (slot: SlotKey): boolean => castTime(slot) <= 0 || p.hp > p.maxHp * 0.5;
         // the ultimate first: a skill that is always ready would otherwise keep it waiting
         if (p.ult >= 100 && d < 90 && standOk('ult')) f.casts.push({ slot: 'ult', angle: a, dist: null, assist: 0 });
