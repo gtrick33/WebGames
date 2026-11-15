@@ -42,11 +42,11 @@ describe('The Ring: your own cast bar sits low, under the fight', () => {
     expect(touch).toMatch(/bottom:\s*calc\(10px \+ var\(--sa-b, 0px\)\)/);
     expect(touch).not.toMatch(/top:\s*34%/);
     // clear of the stick at rest (its ring at most 28 + 2 × 84 points in from the left) and of the cluster's lowest
-    // buttons (the dodge, 216 + 54 in from the right, past its 6-point margin)
+    // buttons (the Ring's own, gathered closer: the dodge, 172 + 46 in from the right, past its 6-point margin)
     const left = Number(/left:\s*calc\((\d+)px/.exec(touch)![1]);
     const right = Number(/right:\s*calc\((\d+)px/.exec(touch)![1]);
     expect(left).toBeGreaterThanOrEqual(28 + 2 * 84);
-    expect(right).toBeGreaterThanOrEqual(6 + 216 + 54);
+    expect(right).toBeGreaterThanOrEqual(6 + 172 + 46);
   });
 
   it('with a mouse it stays just over the ability bar, as before', () => {
