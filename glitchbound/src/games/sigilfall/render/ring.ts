@@ -396,6 +396,21 @@ export function headHeight(f: Fighter, time: number): number {
 }
 /** How far over a fighter's head the top of their bar is, in the ground's own units (headHeight's spot, drawn up). */
 export const BAR_TOP = 6;
+/** The mana under the health in that bar, for whoever has mana: how tall, and the dark line between the two. */
+export const MANA_H = 1.2;
+const MANA_GAP = 0.5;
+const HP_H = 2.4;
+
+/**
+ * Where each part of a fighter's overhead bar goes, down from the bar's top (`by`): the health, then the mana for
+ * whoever casts with it, then the cast they are holding, each under the last and none over another; and how tall the
+ * dark backing behind the health and mana is.
+ */
+export function barRows(f: Pick<Fighter, 'maxMana'>, by: number): { hp: number; mana: number | null; cast: number; back: number } {
+  const mana = f.maxMana > 0 ? by + HP_H + MANA_GAP : null;
+  const extra = mana === null ? 0 : MANA_GAP + MANA_H;
+  return { hp: by, mana, cast: by + 3.6 + extra, back: 3.8 + extra };
+}
 
 /**
  * What is on a fighter: the rings at their feet, what's afoot on them, their bar and their cast. `raise`: how much
@@ -425,18 +440,24 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
       g.fillText('z', f.x + 5, head - 1 + Math.sin(time * 3) * 1.5);
     }
   }
-  // a bar over the head, in their team's color
+  // a bar over the head, in their team's color, and under it, for whoever casts with it, their mana in blue (the
+  // owner: "add mana bar to the hp bar thats above the character")
   const barW = f.pet ? 16 : 26;
   const by = head - BAR_TOP;
+  const rows = barRows(f, by);
   g.fillStyle = 'rgba(6,2,14,0.85)';
   g.beginPath();
-  g.roundRect(f.x - barW / 2 - 0.7, by - 0.7, barW + 1.4, 3.8, 1.2);
+  g.roundRect(f.x - barW / 2 - 0.7, by - 0.7, barW + 1.4, rows.back, 1.2);
   g.fill();
   const share = Math.max(0, f.hp / f.maxHp);
   g.fillStyle = f.team === m.fighters[myId ?? 0]?.team ? (share < 0.3 ? '#ff7a5a' : '#57d36a') : share < 0.3 ? '#ffb45c' : '#ff5a6a';
   g.beginPath();
-  g.roundRect(f.x - barW / 2, by, barW * share, 2.4, 1);
+  g.roundRect(f.x - barW / 2, rows.hp, barW * share, HP_H, 1);
   g.fill();
+  if (rows.mana !== null) {
+    g.fillStyle = '#5ab0ff';
+    g.fillRect(f.x - barW / 2, rows.mana, barW * Math.max(0, Math.min(1, f.mana / f.maxMana)), MANA_H);
+  }
   // out of your sight: a small eye-shut mark over them
   if (!seeable) {
     g.strokeStyle = '#a8a0b8';
@@ -488,7 +509,7 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
     const ab = ABILITIES[c.ab];
     const k = Math.min(1, c.t / c.dur);
     const cw = 34;
-    const cy = by + 3.6;
+    const cy = rows.cast;
     g.fillStyle = 'rgba(6,2,14,0.88)';
     g.beginPath();
     g.roundRect(f.x - cw / 2 - 0.6, cy - 0.6, cw + 1.2, 4.4, 1.2);

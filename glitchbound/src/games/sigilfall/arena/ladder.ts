@@ -210,7 +210,15 @@ export interface ClassSets {
    * (platform/mergeRules.ts mergeRing).
    */
   at?: number;
+  /**
+   * How many abilities a bar held when these were kept (abilities.ts SLOTS); nothing said: four, as before bars held
+   * five. A bar that was full then is filled up to the new size when it is read; one still being filled is left be.
+   */
+  n?: number;
 }
+
+/** How many abilities a bar held before it was written down with the setups (ClassSets.n). */
+const OLD_SLOTS = 4;
 
 export const SET_COUNT = 3;
 
@@ -252,11 +260,13 @@ export function setsOf(save: RingSave, cls: ClassId): ClassSets {
   const list = Array.from({ length: SET_COUNT }, (_, i) => {
     const k = kept?.list[i];
     if (!(k && Array.isArray(k.bar) && Array.isArray(k.talents) && typeof k.oath === 'string')) return presetSetup(cls, i);
-    // (a setup kept from when a bar held six keeps its first four; one holding an ability since taken out of the game, or
-    // renamed, loses it and is filled up again, so that it is never left short. A bar its player is still filling is left
-    // as it is)
+    // (a setup kept from when a bar held six keeps its first five; one holding an ability since taken out of the game, or
+    // renamed, loses it and is filled up again, so that it is never left short; one that was full when bars held fewer
+    // gets the rest from the ready-made bar it is closest to. A bar its player is still filling is left as it is)
     const own = k.bar.filter((id) => ABILITIES[id]?.cls === cls && !ABILITIES[id]!.super);
-    return { ...k, bar: own.length < k.bar.length ? fullBar(cls, own) : k.bar.slice(0, SLOTS) };
+    const was = typeof kept.n === 'number' ? kept.n : OLD_SLOTS;
+    const grown = was < SLOTS && own.length >= was;
+    return { ...k, bar: own.length < k.bar.length || grown ? fullBar(cls, own) : k.bar.slice(0, SLOTS) };
   });
   const active = kept && kept.active >= 0 && kept.active < SET_COUNT ? kept.active : 0;
   return { active, list };

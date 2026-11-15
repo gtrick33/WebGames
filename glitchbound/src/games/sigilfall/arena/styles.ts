@@ -84,7 +84,7 @@ export function styleOf(cls: ClassId, presetId: string): Style {
   return STYLES[cls][presetId] ?? { line: '', ease: CLASS_EASE[cls] };
 }
 
-/** Which ready-made build a bar is, whatever order its four are in: its index in PRESETS, or -1 for a bar of one's own. */
+/** Which ready-made build a bar is, whatever order its five are in: its index in PRESETS, or -1 for a bar of one's own. */
 export function presetOfBar(cls: ClassId, bar: readonly string[]): number {
   return PRESETS[cls].findIndex((p) => p.bar.length === bar.length && p.bar.every((id) => bar.includes(id)));
 }

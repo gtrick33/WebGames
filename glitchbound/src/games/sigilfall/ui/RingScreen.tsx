@@ -56,8 +56,9 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
     for (const s of on) {
       const known = CLASS_IDS.includes(s.pick!.cls as ClassId);
       const cls = (known ? s.pick!.cls : 'warrior') as ClassId;
-      // (a bar of six from a player whose game is from before bars held four keeps its first four; one with an ability
-      // this game doesn't have, from a game older or newer, keeps the rest and is filled up from the class's own)
+      // (a bar of six from a player whose game is from before bars held four keeps its first five, and one of four from
+      // before bars held five is filled up to five; one with an ability this game doesn't have, from a game older or
+      // newer, keeps the rest and is filled up from the class's own)
       const bar = fullBar(cls, s.pick!.bar);
       const title = shownTitle(s.pick!.title);
       fighters.push({ team, cls, name: s.name, bar, oath: s.pick!.oath, talents: s.pick!.talents, step: s.pick!.step, ult: s.pick!.ult, seat: s.n, ...(title ? { title } : {}) });
@@ -302,8 +303,9 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   // the computer's teammates for this format's empty places, kept with the standing (arena/teammates.ts)
   const mates = choicesFor(save.mates?.[format], format);
   const putMates = (list: MateChoice[]): void => commit((now) => ({ ...now, mates: { ...now.mates, [format]: list } }));
-  // (stamped, so that this device's change and another's are joined by which came last: platform/mergeRules.ts)
-  const putSets = (s: ClassSets): void => commit((now) => ({ ...now, sets: { ...now.sets, [pick]: { ...s, at: Date.now() } } }));
+  // (stamped, so that this device's change and another's are joined by which came last: platform/mergeRules.ts; and
+  // with how many abilities a bar holds now, so that a bar still being filled isn't taken for one kept from before)
+  const putSets = (s: ClassSets): void => commit((now) => ({ ...now, sets: { ...now.sets, [pick]: { ...s, at: Date.now(), n: SLOTS } } }));
   const openSetup = (from: Page): void => {
     setSetupFrom(from);
     setPage('setup');

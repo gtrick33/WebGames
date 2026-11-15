@@ -84,6 +84,47 @@
  * was cut, and the Pyre's and the Curse-speaker's own abilities given about 8%. After (1v1 / 2v2 / 3v3):
  *
  *   Pyre 56/46/44   Rime 58/44/47   Curse-speaker 53/49/51   Starseer 55/42/40   Gravecaller 60/38/39
+ *
+ * Then every bar took a fifth ability, mana came back at 5 a second where it had been 1.5, and Mana Skin was paid at 1
+ * mana for every 2 it takes where it had been 1 for every 6 (2026-11-15, the owner: "one more spell slot for each class
+ * and spec", "mana seems to be running out a bit too fast for certain casters like mages and healers", "test balancing
+ * changes and balance classes based on the new change"). At 1.5 the computer's Rime was out of mana a fifth of every
+ * fight and under a quarter of it for half, the Lifegiver dry an eighth, the Pyre, the Gravecaller and the Grovekeeper
+ * near a tenth; at 5 none of them is ever dry (the Gravecaller's Hollow Pact still empties it on purpose). With mana to
+ * spare, Mana Skin was worth far more than the rest of its row (a Pyre given it won 59%, 45% with its own Rewind; the
+ * Rime 56% with it, 50% with Rewind): at 1 for 2 it is back within three points of them. Brimming Power and Hollow Pact
+ * stayed within three of theirs.
+ *
+ * Each setup's fifth was measured against the class's other choices. A warlock's Spell Seal lifts whichever setup carries
+ * it about twelve points (it kicks the other side's healer); on the Hexer it took the class to 64% of its duels, on the
+ * Gravecaller it left them where they were, so the Gravecaller carries it and the Hexer drinks souls. Deep Mending on
+ * the Curse-speaker made it a healer to the team-making above and it lost most of its team fights; its duels, which the
+ * new kicks on every side had cut (the Starseer's Thornsnap: 71% of theirs won, then 21%), came back with a quicker
+ * Bright Rebuke instead. Then each setup's own numbers were tuned as before, over 24 seeds of every 1v1 and 3,000 random
+ * teams of each size, the same seeds before and after. Each setup, 1v1 / 2v2 / 3v3 and the mean, before -> after:
+ *
+ *   Reaper      48/50/61 53 -> 49/53/56 53   Festering Gash 6% weaker
+ *   Hound       69/52/48 56 -> 65/47/43 52   Rending Cut 13%, Hock Cut 12% weaker
+ *   Pyre        57/44/42 48 -> 55/47/45 49   Ember Lash's Kindling 25%, Flashburn 15%, Great Pyre 9% stronger (not
+ *                                            Ember Lash's own hit: a mage casting all the time stays under a sixth again)
+ *   Rime        58/45/46 50 -> 56/49/45 50
+ *   Longbow     55/45/46 49 -> 53/44/50 49   Long Draw and Adder's Kiss 4% stronger
+ *   Trapper     58/42/43 48 -> 57/45/41 48   Hobbling Shot 29%, Serpent Volley 37% stronger
+ *   Oathkeeper  15/61/62 46 -> 16/58/57 44
+ *   Zealot      64/44/47 52 -> 64/46/43 51   Oath Blow 3% weaker
+ *   Lifegiver   18/59/48 42 -> 28/59/53 47
+ *   Curse-sp.   49/47/56 51 -> 50/53/60 54   Word of Decay 14% stronger, Bright Rebuke cast 1 s -> 0.85 s
+ *   Hexer       65/44/40 50 -> 60/41/38 46   Wither and Barbed Curse 12%, Soul Drink 15% stronger
+ *   Gravecaller 63/43/40 49 -> 61/49/54 55   Gloom Bolt 26% weaker, Grave Hunger 45% -> 40%
+ *   Grovekeeper 14/58/56 43 -> 20/56/56 44   its heals 3% stronger
+ *   Starseer    54/41/43 46 -> 53/47/51 50   Starlash 5% weaker
+ *   Bloodsworn  64/42/42 49 -> 65/44/41 50   Gloam Cleave and Night Reaping 3-4% stronger
+ *   Nightblade  50/57/68 58 -> 48/44/60 51   Nightknife 11% weaker
+ *
+ * Classes, the same way (1v1 by tests/sigilfall-ring-aim.test.ts, healers' setups left out, then 2v2 / 3v3 here):
+ *
+ *   warrior 50/51/54 -> 53/50/50   mage    55/44/44 -> 46/48/45   ranger  48/44/45 -> 49/44/46   paladin     60/55/57 -> 61/54/52
+ *   priest  38/55/51 -> 39/57/55   warlock 57/43/40 -> 56/45/46   druid   41/53/52 -> 43/53/54   gloamknight 50/50/55 -> 53/44/50
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';

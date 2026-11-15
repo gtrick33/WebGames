@@ -51,9 +51,10 @@ const STEP = 1 / 60;
 const MAX_STEP = 1 / 45;
 /** A host speaks ten times a second: plenty for frames that coast between. */
 const SEND_EVERY = 0.1;
-/** The campaign's thumb cluster: the same places, so a phone player's hands already know them (the four abilities,
- * then the Swift Step where the dodge is, and the super where the ultimate is). */
-const TOUCH_SLOTS = ['basic', 's1', 's2', 's3', 'dodge', 'ult'] as const;
+/** The campaign's thumb cluster: the same places, so a phone player's hands already know them (the five abilities,
+ * the fifth where the campaign's fourth skill is, then the Swift Step where the dodge is, and the super where the
+ * ultimate is). */
+const TOUCH_SLOTS = ['basic', 's1', 's2', 's3', 's4', 'dodge', 'ult'] as const;
 
 const clock = (t: number): string => {
   const left = Math.max(0, MATCH_LIMIT - t);
@@ -126,7 +127,7 @@ function AuraIcons({ f }: { f: Fighter }) {
 /** How far along a cast is (a channel runs down). */
 const castShare = (c: { t: number; dur: number; channel: boolean }): number => Math.max(0, Math.min(1, c.channel ? 1 - c.t / c.dur : c.t / c.dur));
 
-function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Match; me: Fighter | null; doll: string; tag: string | null; onPick: () => void; flip?: boolean; title?: { text: string } | null }) {
+export function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Match; me: Fighter | null; doll: string; tag: string | null; onPick: () => void; flip?: boolean; title?: { text: string } | null }) {
   const hold = f.auras.find((a) => a.cc);
   const c = f.cast;
   const ab = c ? ABILITIES[c.ab] : null;
@@ -157,12 +158,12 @@ function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Ma
           <i style={{ width: `${share * 100}%` }} />
           <b>{f.dead ? 'Fallen' : veiled ? 'Hidden' : `${Math.round(share * 100)}%`}</b>
         </span>
+        {/* the mana on a row of its own, and what they are casting (or what holds them) on the row under it: a cast laid
+            over the mana hid it the whole time it was being cast (the owner: "casting on the nameplates covers the mana
+            bar and this shouldnt happen, casting could be below the mana bar"). The row is kept for those with no mana
+            too, so every nameplate is the same height */}
+        <span className={`rb-ring-mana${f.maxMana > 0 ? '' : ' is-none'}`}>{f.maxMana > 0 && <i style={{ width: `${(f.mana / f.maxMana) * 100}%` }} />}</span>
         <span className="rb-ring-tail">
-          {f.maxMana > 0 && (
-            <span className="rb-ring-mana">
-              <i style={{ width: `${(f.mana / f.maxMana) * 100}%` }} />
-            </span>
-          )}
           {c && ab ? (
             <span className="rb-ring-cast" style={{ ['--a' as string]: ab.color }}>
               <i data-cast={f.id} style={{ width: `${castShare(c) * 100}%` }} />
@@ -991,7 +992,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   };
   const foeNote = !foeAlive ? (m.phase === 'fight' ? `Click someone or press ${keyName(ringKeys.nextFoe)}. Nearest is used if you don’t.` : `Click someone or press ${keyName(ringKeys.nextFoe)}`) : !me || m.phase !== 'fight' ? `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}%` : !m.sees(me, foeAlive) ? 'Out of sight' : `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}% · ${Math.round(Math.hypot(foeAlive.x - me.x, foeAlive.y - me.y))} away`;
   const foeBad = !!foeAlive && !!me && m.phase === 'fight' && !m.sees(me, foeAlive);
-  const tutKeys: TutorialKeys = { touch, ab: [ringKeys.ab1, ringKeys.ab2, ringKeys.ab3, ringKeys.ab4].map(keyName), dash: keyName(ringKeys.dash), super: keyName(ringKeys.super), nextFoe: keyName(ringKeys.nextFoe), nextFriend: keyName(ringKeys.nextFriend), closeIn: engine.settings.ringCloseIn };
+  const tutKeys: TutorialKeys = { touch, ab: [ringKeys.ab1, ringKeys.ab2, ringKeys.ab3, ringKeys.ab4, ringKeys.ab5].map(keyName), dash: keyName(ringKeys.dash), super: keyName(ringKeys.super), nextFoe: keyName(ringKeys.nextFoe), nextFriend: keyName(ringKeys.nextFriend), closeIn: engine.settings.ringCloseIn };
   const tv = tut?.view(tutKeys) ?? null;
   useSpot(tv?.spot ?? null);
   return (
@@ -1266,7 +1267,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   Change my setup
                 </button>
               </span>
-              <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. The blue button steps aside; the gold one is your super, once it’s full. Step out of a red circle before it lands. A placed ability: tap it to drop it on your target, or hold it and push the circle where you want it.' : `${[ringKeys.up, ringKeys.left, ringKeys.down, ringKeys.right].map(keyName).join('')} to move · ${keyName(ringKeys.ab1)} to ${keyName(ringKeys.ab4)} for abilities · ${keyName(ringKeys.dash)} to step aside · ${keyName(ringKeys.super)} for your super · Step out of a red circle before it lands · A placed ability: press its key, then click where it should land`}</span>
+              <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. The blue button steps aside; the gold one is your super, once it’s full. Step out of a red circle before it lands. A placed ability: tap it to drop it on your target, or hold it and push the circle where you want it.' : `${[ringKeys.up, ringKeys.left, ringKeys.down, ringKeys.right].map(keyName).join('')} to move · ${keyName(ringKeys.ab1)} to ${keyName(ringKeys.ab5)} for abilities · ${keyName(ringKeys.dash)} to step aside · ${keyName(ringKeys.super)} for your super · Step out of a red circle before it lands · A placed ability: press its key, then click where it should land`}</span>
             </div>
           )}
           {err && (

@@ -45,6 +45,15 @@ export const ORB_FIRST = 12;
 export const ORB_EVERY = 24;
 export const ORB_HEAL = 0.14;
 const QUEUE = 0.35;
+/**
+ * Mana back each second, for those who cast with it (abilities.ts BODY: a hundred at most). It was 1.5: a caster or a
+ * healer casting their steady spell back to back ran short in 20 to 31 seconds, and the computer's Rime mage was dry
+ * a fifth of every fight (the owner, 2026-11-15: "mana seems to be running out a bit too fast for certain casters like
+ * mages and healers, maybe make mana not such issue as it is now"). At 5 the dearest of those spells, Green Mending,
+ * lasts a minute back to back, Ember Lash and Dawn's Touch half again as long, and the rest never run short; a fighter
+ * who moves and holds and kicks as a fight asks never does.
+ */
+export const MANA_REGEN = 5;
 /** Casting doesn't stop you, but it slows you to this. */
 export const CAST_SLOW = 0.55;
 /** Dampening: none for this long, then healing fades, to this share gone at DAMP_FULL. */
@@ -2248,7 +2257,7 @@ export class Match {
       if (left <= 0) delete f.locks[k];
       else f.locks[k] = left;
     }
-    if (f.maxMana) f.mana = Math.min(f.maxMana, f.mana + dt * 1.5 * f.mods.regen);
+    if (f.maxMana) f.mana = Math.min(f.maxMana, f.mana + dt * MANA_REGEN * f.mods.regen);
     if (f.streakT > 0) {
       f.streakT -= dt;
       if (f.streakT <= 0) f.streak = 0;

@@ -192,7 +192,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
       { name: 'Third Chill', text: 'Every third hit on the same enemy within 6 seconds freezes them to the ground for 1.2 seconds. Once every 20 seconds.', icon: 'frozen_status_snowflake_on_blue', does: { k: 'third', n: 3, within: 6, dur: 1.2, every: 20 } },
     ], 'm'),
     ...rowOf('mage', 2, [
-      { name: 'Mana Skin', text: 'While your mana is above 30%, 30% of the damage you take is paid from it instead, 1 mana for every 6.', icon: 'shield_status_bubble_on_blue', does: { k: 'manaskin', share: 0.3, per: 6, above: 0.3 } },
+      { name: 'Mana Skin', text: 'While your mana is above 30%, 30% of the damage you take is paid from it instead, 1 mana for every 2.', icon: 'shield_status_bubble_on_blue', does: { k: 'manaskin', share: 0.3, per: 2, above: 0.3 } },
       { name: 'Rewind', text: 'A Swift Step or your Unbinding Charm takes back half the damage you took in the 3 seconds before it. Once every 30 seconds.', icon: 'frozen_hourglass_on_navy', does: { k: 'rewind', back: 3, share: 0.5, every: 30 } },
       { name: 'Vanishing Point', text: 'Fall under 35% health and you vanish, to appear away from the nearest enemy, out of roots and slows. Once every 30 seconds.', icon: 'vanish_puff_of_smoke_on_violet', does: { k: 'vanish', dist: 100, every: 30 } },
     ], 'm'),

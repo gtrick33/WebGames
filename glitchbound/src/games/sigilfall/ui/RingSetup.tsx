@@ -29,7 +29,7 @@ export const talentIcon = (t: Talent): string => iconPicture(t.icon ?? ABILITIES
 /** The Swift Step or the charm that takes its place: carried beside the bar, never on it. */
 const isStep = (ab: Ability): boolean => STEPS.includes(ab);
 
-/** The bar as it stands: four places, then what every hero has besides (the Swift Step or its charm, and their class's super). */
+/** The bar as it stands: five places, then what every hero has besides (the Swift Step or its charm, and their class's super). */
 export function BarRow({ bar, cls, step, ult, onPick, onHover }: { bar: string[]; cls: ClassId; step?: string; ult?: string; onPick?: (ab: Ability) => void; onHover?: (ab: Ability) => void }) {
   return (
     <div className="rb-rs-slots">
@@ -76,7 +76,7 @@ export function SetupChips({ cls, setup }: { cls: ClassId; setup: RingSetup }) {
  * An ability read before it is taken (the owner: "whenever i click on spell, please add a pop up with info about it,
  * best uses, best combos and 2 buttons - equip or cancel"): what it does, when to press it, what it combines with
  * from this class's kit (and whether that is on the bar), and then the choice. On a full bar, Equip asks which of the
- * four it replaces. The Swift Step and the super are always carried: theirs only closes.
+ * five it replaces. The Swift Step and the super are always carried: theirs only closes.
  */
 function AbilityCard({ ab, cls, bar, onEquip, onSwap, onRemove, onClose }: { ab: Ability; cls: ClassId; bar: string[]; onEquip: () => void; onSwap: (out: string) => void; onRemove: () => void; onClose: () => void }) {
   const [swapping, setSwapping] = useState(false);
@@ -229,7 +229,7 @@ export interface SetupGuide {
 }
 
 /**
- * Changing what a class brings: three saved setups, each a bar of four abilities, three talents, a super and the
+ * Changing what a class brings: three saved setups, each a bar of five abilities, three talents, a super and the
  * extras (the Swift Step or its charm, and an oath). It opens on the playstyles, unless the setup in hand is one of the
  * player's own making; Customize opens the rest, one thing at a time, on tabs, with what everything does written where
  * it can be read.
@@ -343,7 +343,7 @@ export function SetupEditor({ cls, sets, onSets, guide }: { cls: ClassId; sets: 
           <div className="rb-rs-panel" role="tabpanel" data-tut="panel">
             {tab === 'abilities' && (
               <>
-                <p className="rb-rs-hint">Choose four to bring. Open an ability to read it, then equip it.</p>
+                <p className="rb-rs-hint">Choose five to bring. Open an ability to read it, then equip it.</p>
                 <div className="rb-rs-kit" data-tut="kit">
                   {kitOf(cls).map((ab) => {
                     const on = cur.bar.includes(ab.id);
@@ -533,7 +533,7 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
                 <b>Move.</b> {touch ? 'Your left thumb, anywhere on the left side.' : 'W A S D or the arrow keys.'} You can use abilities while you move.
               </li>
               <li>
-                <b>Use your abilities.</b> {touch ? 'The buttons on the right.' : '1 to 4, or click them.'} They go to your target (the nearest enemy until you choose one). A button that glows lands a combo.
+                <b>Use your abilities.</b> {touch ? 'The buttons on the right.' : '1 to 5, or click them.'} They go to your target (the nearest enemy until you choose one). A button that glows lands a combo.
               </li>
               <li>
                 <b>Step out of red circles.</b> A red circle on the ground is an attack about to land. {touch ? 'Tap the blue button' : 'Press Space'} for your Swift Step and get out.
@@ -590,7 +590,7 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
               <dt>Move</dt>
               <dd>WASD, the arrows, or drag on a touch screen</dd>
               <dt>Abilities</dt>
-              <dd>1 to 4, or click them. They aim themselves at your target</dd>
+              <dd>1 to 5, or click them. They aim themselves at your target</dd>
               <dt>Placed abilities</dt>
               <dd>A comet, a volley, a pyre. With a mouse: press its key, then click where it should land (Esc puts the circle away; the key again drops it on your target). On a touch screen: tap to drop it on your target, or hold the button and push the circle where you want it</dd>
               <dt>Swift Step</dt>

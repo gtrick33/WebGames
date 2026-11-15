@@ -179,7 +179,7 @@ describe('The Ring: the Unbinding Charm, in the Swift Step’s place', () => {
     expect(cleanPick({ team: 0, cls: 'warrior', bar: ['w-hew'], oath: 'iron', talents: [], step: 'charm' })?.step).toBe('charm');
     expect(cleanPick({ team: 0, cls: 'warrior', bar: ['w-hew'], oath: 'iron', talents: [], step: 'teleport' })?.step).toBeUndefined();
     const m = new Match({ seed: 1, map: 'sands', fighters: [{ team: 0, cls: 'warrior', name: 'a', bar: ['w-hew'] }, { team: 1, cls: 'mage', name: 'b', bar: ['m-lash'] }] });
-    expect(m.equip(0, { bar: ['w-hew', 'w-gash', 'w-rush', 'w-hurl'], step: 'charm' })).toBe(true);
+    expect(m.equip(0, { bar: ['w-hew', 'w-gash', 'w-rush', 'w-hurl', 'w-crack'], step: 'charm' })).toBe(true);
     expect(m.extras(m.fighters[0]!)[0]).toBe(CHARM);
   });
 });

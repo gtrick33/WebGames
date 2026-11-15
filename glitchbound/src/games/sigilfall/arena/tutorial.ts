@@ -44,9 +44,9 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
   { id: 'formats', title: 'Choose your fight', text: () => '1v1, 2v2 or 3v3. Each has its own rating, starting at 1000: a win raises it and a loss lowers it. In 2v2 and 3v3 the computer fills your team, or your friends do.', spot: 'formats', page: 'play', at: 'bottom' },
   { id: 'rank', title: 'Climb the ranks', text: () => 'Your rank, and how far it is to the next. Every rank gives you a title and a suit of armor to keep. Rewards shows them all.', spot: 'rank', page: 'play', at: 'bottom' },
   { id: 'arena', title: 'Arenas', text: () => 'Each arena has its own pillars to hide behind. Any picks one for you, so you can leave it as it is.', spot: 'arena', page: 'play', at: 'bottom' },
-  { id: 'loadout', title: 'What you bring', text: () => 'Four abilities, then your Swift Step and your super (the round one). Under them, your talents and your oath. Let’s open your setup.', spot: 'loadout', page: 'play', at: 'top' },
+  { id: 'loadout', title: 'What you bring', text: () => 'Five abilities, then your Swift Step and your super (the round one). Under them, your talents and your oath. Let’s open your setup.', spot: 'loadout', page: 'play', at: 'top' },
   { id: 'styles', title: 'Pick a playstyle', text: (cls) => `Each card is a ready-made ${CLASSES[cls].name} build. Pick the one that sounds like you: it fills your setup at once, ready to fight with as it is.`, spot: 'styles', page: 'setup', mode: 'styles', at: 'bottom' },
-  { id: 'kit', title: 'Your abilities', text: () => 'Customize opens everything. Every class has twelve abilities and brings four. Click one to read what it does, when to use it and what it combines with, then equip it.', spot: 'kit', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
+  { id: 'kit', title: 'Your abilities', text: () => 'Customize opens everything. Every class has twelve abilities and brings five. Click one to read what it does, when to use it and what it combines with, then equip it.', spot: 'kit', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
   { id: 'combos', title: 'Combos', text: () => 'These pairs work together: use the first, then the second, and the second hits much harder. Each different combo in a row builds Momentum.', spot: 'combos', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
   { id: 'talents', title: 'Talents', text: () => 'Pick one from each row. Talents change how your whole class fights, whatever is on your bar.', spot: 'panel', page: 'setup', mode: 'custom', tab: 'talents', at: 'top' },
   { id: 'super', title: 'Your super', text: () => 'A big ability that’s ready when its meter is full. The meter fills as you deal damage or heal. Each class has two to choose from.', spot: 'panel', page: 'setup', mode: 'custom', tab: 'super', at: 'top' },
@@ -395,7 +395,7 @@ export class TutorialRun {
       case 'ability': {
         const first = ABILITIES[me.bar[0] ?? ''];
         const reach = melee ? (keys.closeIn ? ' You fight up close: press it from afar and you walk there by yourself.' : ' You fight up close, so walk right up to them first.') : ' You attack from range, so you can stay back.';
-        return out('Use your abilities', `${t ? 'Tap the ability buttons on the right.' : `Press 1 to 4 (or click the buttons).`} Try ${first ? `${first.name} (${keyOf(first)})` : 'one'} and another.${reach} The dark sweep over a button is its cooldown.`, 'bar', `${t ? 'Tap two of your ability buttons' : 'Use two abilities: press 1 to 4'}${melee && keys.closeIn ? '. You walk up by yourself.' : '.'}`);
+        return out('Use your abilities', `${t ? 'Tap the ability buttons on the right.' : `Press 1 to 5 (or click the buttons).`} Try ${first ? `${first.name} (${keyOf(first)})` : 'one'} and another.${reach} The dark sweep over a button is its cooldown.`, 'bar', `${t ? 'Tap two of your ability buttons' : 'Use two abilities: press 1 to 5'}${melee && keys.closeIn ? '. You walk up by yourself.' : '.'}`);
       }
       case 'combo': {
         const c = this.combo();

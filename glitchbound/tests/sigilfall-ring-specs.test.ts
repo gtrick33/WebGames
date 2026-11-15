@@ -291,7 +291,8 @@ describe('The Ring: the Gravecaller rouses her dead', () => {
     const dead = m.fighters.filter((f) => f.pet);
     expect(dead).toHaveLength(2);
     for (const d of dead) {
-      expect(d.auras.find((a) => a.kind === 'fury')?.n).toBeCloseTo(0.45, 5);
+      // (as strong as Grave Hunger says: 40% since tests/sigilfall-ring-balance.test.ts's measure of 2026-11-15, 45% before)
+      expect(d.auras.find((a) => a.kind === 'fury')?.n).toBeCloseTo((ABILITIES['k-frenzy']!.effects[0] as { pct: number }).pct / 100, 5);
       expect(d.auras.some((a) => a.kind === 'speed')).toBe(true);
     }
     expect(k.auras.some((a) => a.kind === 'fury')).toBe(false);

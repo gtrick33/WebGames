@@ -9141,10 +9141,14 @@ html.rb-touch-playing textarea {
 .rb-ring-mana {
   position: relative;
   display: block;
-  height: 3px;
+  height: 4px;
   overflow: hidden;
   border-radius: 2px;
   background: #1a1030;
+}
+/* (no mana: the row is kept, empty, so the nameplate is as tall as the rest) */
+.rb-ring-mana.is-none {
+  visibility: hidden;
 }
 .rb-ring-mana i {
   position: absolute;
@@ -9171,7 +9175,7 @@ html.rb-touch-playing textarea {
   font: 700 9.5px/12px system-ui, sans-serif;
   background: #1a1030;
 }
-/* a row kept for them, whether they have mana or anything to say: a nameplate never moves under a thumb */
+/* a row kept for them, under the mana, whether they have anything to say or not: a nameplate never moves under a thumb */
 .rb-ring-tail {
   position: relative;
   display: block;
@@ -10000,9 +10004,9 @@ html.rb-touch-playing textarea {
 .rb-ring.is-touch .rb-ring-under {
   display: none;
 }
-/* A phone on its side: each frame one slim row, the name inside the health bar and the mana or the cast a line under
-   it. At two lines and a tail each, three of them a side took two fifths of the screen's height, over where the
-   fighters stand (the owner: "UI/Nameplates on phone take too much screen space"). */
+/* A phone on its side: each frame one slim row, the name inside the health bar, the mana a thin line under it and the
+   cast a line under that. At two lines and a tail each, three of them a side took two fifths of the screen's height,
+   over where the fighters stand (the owner: "UI/Nameplates on phone take too much screen space"). */
 @container (max-height: 430px) {
   .rb-ring.is-touch .rb-ring-team {
     flex-basis: 142px;
@@ -10063,20 +10067,20 @@ html.rb-touch-playing textarea {
     text-align: left;
   }
   .rb-ring.is-touch .rb-ring-tail {
-    height: 5px;
+    height: 4px;
   }
   .rb-ring.is-touch .rb-ring-mana {
-    height: 5px;
+    height: 3px;
   }
   /* (a cast, a hold and out-of-sight say themselves by their color: there is no room for their words) */
   .rb-ring.is-touch .rb-ring-cast {
-    height: 5px;
+    height: 4px;
   }
   .rb-ring.is-touch .rb-ring-cast b,
   .rb-ring.is-touch .rb-ring-held,
   .rb-ring.is-touch .rb-ring-unseen {
     font-size: 0;
-    line-height: 5px;
+    line-height: 4px;
   }
   .rb-ring.is-touch .rb-ring-clock {
     padding: 0 7px 2px;
@@ -12700,11 +12704,12 @@ html.rb-touch-playing textarea {
 
 /* ---- The Ring's thumbs, gathered closer than the campaign's (the owner: "takes too much space in mobile ... clustering
    it up or making the icons smaller"): the attack in the corner, the three skills on one tight arc round it, and the
-   Swift Step, the super and the switch-target button on an outer arc. About a third less of the screen, before the
-   short-screen scaling every cluster gets. ---- */
+   Swift Step, the super, the switch-target button and the fifth skill on an outer arc. About a third less of the
+   screen, before the short-screen scaling every cluster gets. (The fifth skill, 2026-11-15, came in at the top of the
+   outer arc, straight over the third, so that no button a thumb already knew moved.) ---- */
 .rb-ring-thumbs .rb-cluster {
   width: 222px;
-  height: 208px;
+  height: 224px;
 }
 .rb-ring-thumbs .rb-cluster .rb-sb-basic {
   right: 12px;
@@ -12747,4 +12752,10 @@ html.rb-touch-playing textarea {
   bottom: 158px;
   width: 42px;
   height: 42px;
+}
+.rb-ring-thumbs .rb-cluster .rb-sb-s4 {
+  right: 23px;
+  bottom: 169px;
+  width: 52px;
+  height: 52px;
 }
