@@ -1,6 +1,6 @@
 import { GAMES } from '../catalog/games';
 import { dayKey } from './dates';
-import { MERGE_RULES, type Side } from './mergeRules';
+import { KEY_RULES, MERGE_RULES, type Side } from './mergeRules';
 import { mergeSaves, sanitizeSave } from './save';
 import { ARCADE_SAVE_KEY, slugOfKey } from './syncKeys';
 
@@ -105,7 +105,7 @@ export function mergeSaveText(key: string, local: string, remote: string, today 
     return remote;
   }
   if (key === ARCADE_SAVE_KEY) return JSON.stringify(mergeSaves(sanitizeSave(a), sanitizeSave(b), GAMES, today));
-  const rule = MERGE_RULES[slugOfKey(key) ?? ''];
+  const rule = KEY_RULES[key] ?? MERGE_RULES[slugOfKey(key) ?? ''];
   if (rule) return JSON.stringify(rule(a, b, { newer, merge: (l, r, k) => mergeJson(l, r, k, newer) }));
   return JSON.stringify(mergeJson(a, b, '', newer));
 }

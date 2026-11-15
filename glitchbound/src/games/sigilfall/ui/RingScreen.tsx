@@ -210,6 +210,18 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     setSave(next);
     writeRing(next);
   };
+  // another device's copy came down while the Ring is open (cloud saves merged it into storage): take it in, so that
+  // this screen's next change doesn't write its older copy back over the account's
+  useEffect(
+    () =>
+      engine.onArrived(() => {
+        const fresh = readRing();
+        if (JSON.stringify(fresh) === JSON.stringify(latest.current)) return;
+        latest.current = fresh;
+        setSave(fresh);
+      }),
+    [engine],
+  );
   const [page, setPage] = useState<Page>('play');
   const [setupFrom, setSetupFrom] = useState<Page>('play');
   const [format, setFormat] = useState<Format>(1);
@@ -278,7 +290,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   // the computer's teammates for this format's empty places, kept with the standing (arena/teammates.ts)
   const mates = choicesFor(save.mates?.[format], format);
   const putMates = (list: MateChoice[]): void => commit((now) => ({ ...now, mates: { ...now.mates, [format]: list } }));
-  const putSets = (s: ClassSets): void => commit((now) => ({ ...now, sets: { ...now.sets, [pick]: s } }));
+  // (stamped, so that this device's change and another's are joined by which came last: platform/mergeRules.ts)
+  const putSets = (s: ClassSets): void => commit((now) => ({ ...now, sets: { ...now.sets, [pick]: { ...s, at: Date.now() } } }));
   const openSetup = (from: Page): void => {
     setSetupFrom(from);
     setPage('setup');
@@ -669,7 +682,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   }
 
   const title = page === 'setup' ? 'Your setup' : page === 'friends' ? 'With friends' : 'The Ring';
-  const sub = page === 'setup' ? `${CLASSES[pick].name}. Saved as you go.` : page === 'friends' ? 'A private room. Friendly matches don’t change your rating.' : 'Pick your hero and your fight. Use the stone.';
+  const sub = page === 'setup' ? `${CLASSES[pick].name}. ${me ? 'Saved to your account as you go.' : 'Saved on this device. Sign in to keep them on every device.'}` : page === 'friends' ? 'A private room. Friendly matches don’t change your rating.' : 'Pick your hero and your fight. Use the stone.';
   // (the Play page is laid out as the Vigil's lobby and the Rift Trials' are, in their styles (rb-vlobby): the classes,
   // the hero large on a dais with what they bring beside them, the fight to choose, and one gold button at the foot.
   // The owner: "make the ui selection in the ring similar to the vigil and riftstones, currently the character feels

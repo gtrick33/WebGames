@@ -102,6 +102,50 @@ describe('Sigilfall merge (SFS-01, SFS-10)', () => {
   });
 });
 
+describe('Sigilfall Ring merge (sigilfall.ring.v1)', () => {
+  const RING = 'sigilfall.ring.v1';
+  const set = (bar: string[]) => ({ bar, oath: 'iron', talents: [] as string[] });
+  type Ring = { sets: Record<string, { active: number; list: { bar: string[] }[]; at?: number }>; standings: Record<string, { rating: number; best: number; wins: number; losses: number }>; learn?: { asked: boolean; done: boolean; hints: string[] } };
+
+  it('syncs with the account', () => {
+    expect(isSyncedKey(RING)).toBe(true);
+  });
+
+  it('takes a class’s setups whole from the copy changed last, the setup in hand with them, never the larger number', () => {
+    const phone = { standings: {}, sets: { warrior: { active: 2, list: [set(['a']), set(['b']), set(['c'])], at: 1000 }, mage: { active: 1, list: [set(['m1']), set(['m2']), set(['m3'])], at: 5000 } } };
+    // the computer changed the warrior's later (back to Setup 1, a new bar), the phone the mage's
+    const desk = { standings: {}, sets: { warrior: { active: 0, list: [set(['x']), set(['b']), set(['c'])], at: 3000 }, mage: { active: 0, list: [set(['old']), set(['m2']), set(['m3'])], at: 2000 } } };
+    for (const newer of ['local', 'remote'] as const) {
+      const m = merge<Ring>(RING, phone, desk, newer);
+      expect(m.sets.warrior!.active).toBe(0);
+      expect(m.sets.warrior!.list[0]!.bar).toEqual(['x']);
+      expect(m.sets.mage!.active).toBe(1);
+      expect(m.sets.mage!.list[0]!.bar).toEqual(['m1']);
+    }
+  });
+
+  it('a setup kept before the stamps follows the copy changed last; a class only one copy has is kept', () => {
+    const a = { standings: {}, sets: { priest: { active: 1, list: [set(['p'])] } } };
+    const b = { standings: {}, sets: { priest: { active: 0, list: [set(['q'])] }, druid: { active: 2, list: [set(['d'])], at: 9 } } };
+    expect(merge<Ring>(RING, a, b, 'local').sets.priest!.list[0]!.bar).toEqual(['p']);
+    expect(merge<Ring>(RING, a, b, 'remote').sets.priest!.list[0]!.bar).toEqual(['q']);
+    expect(merge<Ring>(RING, a, b, 'local').sets.druid!.active).toBe(2);
+  });
+
+  it('takes a format’s standing whole from the copy that fought more, keeping the best either reached', () => {
+    const a = { sets: {}, standings: { 1: { rating: 1180, best: 1260, wins: 6, losses: 4 }, 2: { rating: 1050, best: 1050, wins: 1, losses: 0 } } };
+    const b = { sets: {}, standings: { 1: { rating: 1300, best: 1300, wins: 4, losses: 1 }, 2: { rating: 990, best: 1030, wins: 2, losses: 3 } } };
+    const m = merge<Ring>(RING, a, b, 'remote');
+    expect(m.standings[1]).toEqual({ rating: 1180, best: 1300, wins: 6, losses: 4 });
+    expect(m.standings[2]).toEqual({ rating: 990, best: 1050, wins: 2, losses: 3 });
+  });
+
+  it('joins what the Ring has taught', () => {
+    const m = merge<Ring>(RING, { sets: {}, standings: {}, learn: { asked: true, done: false, hints: ['circle'] } }, { sets: {}, standings: {}, learn: { asked: false, done: true, hints: ['super', 'circle'] } }, 'local');
+    expect(m.learn).toEqual({ asked: true, done: true, hints: ['circle', 'super'] });
+  });
+});
+
 describe('NEON RUSH merge (NR-02)', () => {
   it('syncs neonrush.save as the neon-rush game', () => {
     expect(isSyncedKey('neonrush.save')).toBe(true);
