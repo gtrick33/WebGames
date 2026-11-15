@@ -2,6 +2,7 @@ import { pickWeighted, randInt } from '../core/math';
 import { BASE_DEFS, BASES, CLASS_ELEMENTS, ITEM_DEFS, ITEMS, MINOR_MODS, RARE_SUFFIX, RARITY_MUL, RARITY_ROLLS, SLOT_STATS, STAT_ROLL, STAT_WORD } from '../data/items';
 import type { ClassId, Item, ItemDef, ItemIcon, Material, Mod, Rarity, SlotId, StatKey } from '../data/types';
 import { RARITIES } from '../data/types';
+import { GOLD_FIND } from '../data/vendors';
 
 /** Item helpers: what an item is, what it does, and how loot is rolled. Pure functions. */
 
@@ -111,8 +112,11 @@ export function itemScore(item: Item): number {
 
 /** A bought piece sells back for at most this share of what was paid for it. */
 export const RESALE = 0.25;
+/** What a piece of gear is worth: a vendor's price for one is four times this (progress/shop.ts gearPrice). */
+export const itemWorth = (item: Pick<Item, 'il' | 'r'>): number => Math.round((4 + item.il * 2) * [1, 1.6, 3, 6, 12][RARITIES.indexOf(item.r)]!);
+/** What a piece melts down or sells for: the road's share of its worth (GOLD_FIND), and never more than RESALE of what was paid for it. */
 export const salvageValue = (item: Pick<Item, 'il' | 'r' | 'paid'>): number => {
-  const value = Math.round((4 + item.il * 2) * [1, 1.6, 3, 6, 12][RARITIES.indexOf(item.r)]!);
+  const value = Math.max(1, Math.round(itemWorth(item) * GOLD_FIND));
   return item.paid === undefined ? value : Math.min(value, Math.round(item.paid * RESALE));
 };
 
@@ -208,4 +212,5 @@ export function rollLoot(cls: ClassId, il: number, source: LootSource, tier: num
 }
 
 /** Gold dropped by an enemy. */
-export const goldDrop = (range: [number, number], level: number, r: () => number): number => Math.round(randInt(r, range[0], range[1]) * (1 + 0.2 * (level - 1)));
+/** Coins from a foe or a chest of a level (the road's share, GOLD_FIND). */
+export const goldDrop = (range: [number, number], level: number, r: () => number): number => Math.round(randInt(r, range[0], range[1]) * (1 + 0.2 * (level - 1)) * GOLD_FIND);

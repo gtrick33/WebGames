@@ -96,7 +96,7 @@ const SILAS_VEY: BossDef = {
     },
     {
       at: 0.5,
-      banner: 'Silas empties the Chancellor’s strongbox onto the floor: “Every coin a blade. Let us see how much you can carry.”',
+      banner: 'Silas throws ash-gold across the floor! Pick up the coins, or he hires a blade with them.',
       speed: 58,
       rest: [0.45, 0.8],
       enter: [{ id: 'crown:scatter', w: 1, cd: 12, p: { coins: 14, spend: 6.5, per: 3 } }],
@@ -109,7 +109,7 @@ const SILAS_VEY: BossDef = {
   ],
   first: { any: ['glitch-shard'] },
   drops: { items: { any: ['glitch-shard', 'amulet-of-echoes', 'shroud-of-duskspire'] }, chance: [0.3, 0.5, 0.75] },
-  intro: 'The Herald’s spymaster in Aster for twenty years, and the last of his agents still breathing. He buys what he needs with the Chancellor’s ash-gold. He has never once paid with his own.',
+  intro: 'The Pale Herald’s spymaster in Aster for twenty years. He paid the city’s traitors with Crane’s ash-gold.',
 };
 
 const ROYAL_AUDITOR: BossDef = {
@@ -139,7 +139,7 @@ const ROYAL_AUDITOR: BossDef = {
     },
     {
       at: 0.5,
-      banner: 'The Auditor turns to a fresh page: “Interest is now due on the outstanding sum.”',
+      banner: 'The Auditor settles his accounts faster now! Stand inside the ward when he does.',
       speed: 40,
       rest: [0.5, 0.85],
       enter: [{ id: 'crown:settle', w: 1, cd: 10, p: { warn: 2.2, share: 0.45, cap: 0.45, rr: 32 } }],
@@ -153,7 +153,7 @@ const ROYAL_AUDITOR: BossDef = {
   ],
   first: { any: ['amulet-of-echoes'] },
   drops: { items: { any: ['amulet-of-echoes', 'glitch-shard', 'shroud-of-duskspire'] }, chance: [0.3, 0.5, 0.75] },
-  intro: 'He kept the old kings’ accounts for forty years, and died at his desk with the books balanced. Nobody told him to stop.',
+  intro: 'He kept the old kings’ accounts for forty years and died at his desk. Now he writes down every blow you strike.',
 };
 
 const MAELIS_CRANE: BossDef = {
@@ -180,7 +180,7 @@ const MAELIS_CRANE: BossDef = {
     },
     {
       at: 0.5,
-      banner: 'The ash-gold grows into him: it weighs nothing, and it is always cold',
+      banner: 'The ash-gold grows over Crane! He calls the Host’s assassins!',
       speed: 44,
       rest: [0.5, 0.9],
       enter: [{ id: 'roar', w: 1, cd: 0 }],
@@ -191,7 +191,7 @@ const MAELIS_CRANE: BossDef = {
   ],
   first: { any: ['vaelors-heartstone'] },
   drops: { items: { any: ['shroud-of-duskspire', 'hollowbrand-shard'] }, chance: [0.3, 0.5, 0.8] },
-  intro: 'The Regent’s oldest counsellor, in his good black coat, with grey coin grown over his hands like scales. He seems glad to see you. He was always glad to see people.',
+  intro: 'The Regent’s oldest counsellor, who sold Aster to the Pale Herald. The ash-gold has grown over his hands like scales.',
 };
 
 export const CROWN_CATACOMBS: DungeonModule = {

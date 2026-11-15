@@ -1,5 +1,5 @@
 import { TAU, clamp, dist2 } from '../core/math';
-import { CLASSES, levelPower } from '../data/classes';
+import { CLASSES, heroDamage, levelPower } from '../data/classes';
 import type { BuffDef, DmgType, Effect, ProcDef, SkillSpec, StatKey, Stats, StatusId } from '../data/types';
 import { typeBonus } from '../progress/build';
 import { bossHidden } from './boss';
@@ -19,6 +19,13 @@ import type { World } from './world';
 /** Damage over time and its type (a curse carries its own). */
 const STATUS_DMG: Partial<Record<StatusId, DmgType>> = { burn: 'fire', poison: 'poison', bleed: 'physical', curse: 'shadow' };
 const isDot = (id: StatusId): boolean => id in STATUS_DMG;
+
+/**
+ * What a blow of the hero's is multiplied by before the foe's armor, resistances and the moment (crits, marks): their
+ * level, their gear's power for its kind, and the share every hero's blows come to (heroDamage). Damage over time is
+ * sized from a finished hit and taken back to a base through the same, so it is never cut twice.
+ */
+export const heroPower = (w: World, type: DmgType, stats: Stats = effStats(w)): number => levelPower(w.hero.level) * typeBonus(stats, type) * heroDamage(w.hero.level);
 
 /** The hero's stats right now, with the conditional ones and buffs that apply. */
 export function effStats(w: World): Stats {
@@ -72,7 +79,7 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
     return 0;
   }
   const stats = effStats(w);
-  let mult = levelPower(w.hero.level) * typeBonus(stats, type);
+  let mult = heroPower(w, type, stats);
   const spec = o.spec;
   let bonus = 0;
   if (spec) {
@@ -134,7 +141,7 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
   // Normalized at the hit (PROGRESSION_BALANCE.md Part 2, E): the first enemy a direct hit strikes in a
   // step counts in full and every further one a third; chained, split and proc hits 0.4; damage over time
   // 0.25 (its own `charge`); the ultimate's own hits nothing
-  const ref = CLASSES[w.hero.cls].refDamage * levelPower(w.hero.level);
+  const ref = CLASSES[w.hero.cls].refDamage * levelPower(w.hero.level) * heroDamage(w.hero.level);
   const ownUlt = !!spec && spec.id === w.build.bar.ult;
   const spread = o.depth === 0 && !o.isDot ? (w.ultHits++ === 0 ? 1 : 0.35) : 1;
   const rate = ownUlt ? 0 : (o.charge ?? (o.depth === 0 ? 1 : 0.4)) * spread * (CLASSES[w.hero.cls].ultRate ?? 1) * (1 + stats.ultCharge / 100);
@@ -241,7 +248,7 @@ export function tickStatuses(w: World, e: Enemy, dt: number): void {
       if (s.tick <= 0) {
         s.tick += 0.5;
         // the per-second power was sized from a finished hit; take it back to a base for the multipliers
-        const per = (s.power * 0.5) / Math.max(0.01, levelPower(w.hero.level) * typeBonus(effStats(w), type));
+        const per = (s.power * 0.5) / Math.max(0.01, heroPower(w, type));
         hitEnemy(w, e, per, type, { depth: 1, isDot: true, charge: 0.25 });
         if (e.dead) return;
       }
@@ -456,7 +463,7 @@ export function applyEffect(w: World, e: Effect, c: EffectCtx): void {
       // everything it still had to deal, at once (its power was sized from a finished hit: back to a base, as a tick is)
       const type = lit[0]!.dtype ?? STATUS_DMG[e.status] ?? c.type;
       const left = lit.reduce((a, s) => a + leftOf(s), 0) * e.mul;
-      const base = left / Math.max(0.01, levelPower(w.hero.level) * typeBonus(effStats(w), type));
+      const base = left / Math.max(0.01, heroPower(w, type));
       t.statuses = t.statuses.filter((s) => !lit.includes(s) || renewed(s));
       for (const s of t.statuses) if (renewed(s)) delete s.was;
       w.vfx(`blast:${type}`, t.x, t.y, Math.max(18, (e.radius ?? t.r * 2)), 0.5);
@@ -715,7 +722,23 @@ function guarded(w: World, source?: Enemy): void {
   runProcs(w, 'block', { x: p.x, y: p.y, base: CLASSES[w.hero.cls].refDamage, type: 'shadow', depth: 1, hitDmg: 0, target: source && !source.dead ? source : undefined });
 }
 
-export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: number; knock?: number; status?: { status: StatusId; dur: number; power: number }; source?: Enemy; pierce?: boolean } = {}): boolean {
+/**
+ * The least a boss's blow takes, as a share of the hero's health for each time over the boss's own damage it hits
+ * (a cleave of 1.5 takes at least three eighths, the Sun King's beam of 1.2 three tenths), counted after armor and before walls,
+ * wards and shields, which still turn it. The owner, 2026-11-15: "the beam spell he did hurt me for around 10% of my
+ * health, we want every boss, every mob to feel challenging and intimidating with huge damage spike". Their level 34
+ * mage had 1360 health in gear bought with gold the road paid too much of: how hard a boss hits grows with its level,
+ * so the better a hero's gear, the less any blow mattered. With a floor counted against the hero's own health, a blow
+ * taken always costs something real, however they are dressed. Not a blow's weight above BLOW_MOST. A boss's
+ * barrages, the ground it leaves and what it leaves burning carry none (sim/world.ts BOSS_DAMAGE), and a Riftstone run
+ * keeps its own measure (World.ownMeasure).
+ */
+export const BLOW_FLOOR = 0.25;
+export const BLOW_MOST = 0.6;
+/** The floor for a blow of `dmg` from a boss that hits for `base` (0 when it is not a boss's blow). */
+export const blowFloor = (dmg: number, base: number): number => (base > 0 ? Math.min(BLOW_MOST, (BLOW_FLOOR * dmg) / base) : 0);
+
+export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: number; knock?: number; status?: { status: StatusId; dur: number; power: number }; source?: Enemy; pierce?: boolean; floor?: number } = {}): boolean {
   const p = w.player;
   if (p.dead || dmg <= 0) return false;
   if (p.iframe > 0) {
@@ -725,7 +748,11 @@ export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: n
   }
   const stats = effStats(w);
   const reduction = o.pierce ? 0 : armorReduction(stats.armor, o.source?.level ?? w.hero.level);
-  let d = dmg * (1 - reduction);
+  // a boss's blow takes at least its floor of the hero's health (BLOW_FLOOR): a telegraph carries its own, a blow the
+  // boss strikes itself is reckoned here
+  const floor = o.floor ?? (o.source?.boss && !o.pierce && !w.ownMeasure ? blowFloor(dmg, o.source.dmg) : 0);
+  let d = Math.max(dmg * (1 - reduction), p.maxHp * floor);
+  const taken = d;
   if (o.source && hasStatus(o.source, 'weaken')) d *= 1 - statusPower(o.source, 'weaken') / 100;
   // walls and wards: buffs that cut damage taken (at most 75% together)
   const dr = Math.min(75, p.buffs.reduce((a, b) => a + (b.def.dr ?? 0), 0));
@@ -742,7 +769,7 @@ export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: n
   p.calm = 0;
   // a hit knocks the hero out of the saddle (and stops a mount being called)
   if (p.riding || p.summon) w.dismount();
-  w.text(p.x, p.y - 18, `-${Math.round(dmg * (1 - reduction) * (1 - dr / 100))}`, '#ff5a5a', false);
+  w.text(p.x, p.y - 18, `-${Math.round(taken * (1 - dr / 100))}`, '#ff5a5a', false);
   // rage: being hit makes you angry (10% of your health in one blow is 6 Rage)
   if (w.build.resource?.kind === 'rage') gainResource(w, (d / p.maxHp) * 60 + 1);
   w.sfx('hurt');

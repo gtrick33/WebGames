@@ -4,7 +4,7 @@ import { ITEMS } from '../data/items';
 import type { Item, Rarity } from '../data/types';
 import { QM_ABOVE, QM_LEVEL, QM_PRICE, SHOPS, type ShopId } from '../data/vendors';
 import { addItem, bagFull, potionCap, type Character } from './character';
-import { makeItem, rollGear, salvageValue, usableBy } from './items';
+import { itemWorth, makeItem, rollGear, salvageValue, usableBy } from './items';
 
 /**
  * Vendors. Stock is rolled from the hero, their level and how many times shops have restocked (every
@@ -28,7 +28,7 @@ export const potionPrice = (level: number): number => 6 + level * 3;
 export const sellPrice = (item: Item): number => salvageValue(item);
 
 /** What a vendor asks for generated gear. */
-export const gearPrice = (item: Item): number => Math.max(12, Math.round(salvageValue(item) * 4));
+export const gearPrice = (item: Item): number => Math.max(12, Math.round(itemWorth(item) * 4));
 
 function seedOf(c: Character, shop: ShopId): number {
   const key = `${c.created}:${c.cls}:${shop}:${c.level}:${c.restock}`;

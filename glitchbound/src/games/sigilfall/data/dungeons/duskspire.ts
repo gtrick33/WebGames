@@ -617,7 +617,7 @@ const FOES: Record<string, EnemyDef> = {
     scale: 1.35,
     named: true,
     resist: { poison: 0.6, shadow: 0.4 },
-    blurb: 'The rider who burned Hearthstead and carried its sigil to his king. The Crown remembers him riding; it always will.',
+    blurb: 'The rider who attacked Hearthstead and carried its sigil to his king, as the Crown remembers him.',
   },
 };
 
@@ -652,7 +652,7 @@ const LADY_CENDRE: BossDef = {
     },
     {
       at: 0.5,
-      banner: 'Lady Cendre lifts her veil: “All of you. Rise, and never let him look away.”',
+      banner: 'Lady Cendre lifts her veil: “Rise, all of you! Keep them from the King!”',
       speed: 46,
       rest: [0.5, 0.85],
       enter: [
@@ -671,7 +671,7 @@ const LADY_CENDRE: BossDef = {
   ],
   first: { any: ['shroud-of-duskspire'] },
   drops: { items: { any: ['shroud-of-duskspire', 'amulet-of-echoes', 'oath-of-the-hollow-guard', 'glitch-shard'] }, chance: [0.3, 0.5, 0.75] },
-  intro: 'She has mourned the Hallow King’s dead in this hall for three hundred years. They still do what she asks of them.',
+  intro: 'A lady of Vaelor’s court. She has mourned the King’s dead in this hall for three hundred years, and they still obey her.',
 };
 
 const HOLLOW_GUARD: BossDef = {
@@ -701,7 +701,7 @@ const HOLLOW_GUARD: BossDef = {
     },
     {
       at: 0.5,
-      banner: 'Ser Maltheus stands his last watch',
+      banner: 'Ser Maltheus calls the rest of his guard to him!',
       speed: 46,
       rest: [0.55, 0.9],
       enter: [{ id: 'roar', w: 1, cd: 0 }, { id: 'dusk:oath', w: 1, cd: 0, p: { count: 3, shield: 0.12, regen: 0.003 } }],
@@ -716,7 +716,7 @@ const HOLLOW_GUARD: BossDef = {
   ],
   first: { any: ['oath-of-the-hollow-guard'] },
   drops: { items: { any: ['oath-of-the-hollow-guard', 'shroud-of-duskspire', 'amulet-of-echoes', 'glitch-shard'] }, chance: [0.35, 0.55, 0.8] },
-  intro: 'He held the gate of Duskspire against the Sigil-wardens for nine days, three hundred years ago. He is holding it still.',
+  intro: 'Captain of Vaelor’s guard. Three hundred years ago he held Duskspire against the Sigil-wardens for nine days, and he still guards it.',
 };
 
 /*
@@ -745,7 +745,9 @@ const VAELOR: BossDef = {
       rest: [0.75, 1.1],
       enter: [
         { id: 'king:court', w: 1, cd: 0, p: { count: 8 } },
-        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.005 } },
+        // (the Hollowing drains about a third less than it did, 2026-11-15: the King's blows take a third of a hero's
+        // health now, PROGRESSION_BALANCE.md Part 6, and the race against both was not one a hero could win)
+        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.0035 } },
       ],
       patterns: [
         // a scythe of souls swinging from the wall behind his throne, back and forth
@@ -765,12 +767,12 @@ const VAELOR: BossDef = {
     {
       // II. The Crown calls: he stands, takes up Hollowbrand, and the Crown reaches for Elyra's six
       at: 0.78,
-      banner: 'Vaelor rises: “Six. The girl carries six. The Crown would have them.”',
+      banner: 'Vaelor stands: “The girl carries six sigils. My crown will take them.”',
       speed: 48,
       rest: [0.5, 0.8],
       enter: [
         { id: 'roar', w: 1, cd: 0 },
-        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.008, cut: 0.3 } },
+        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.0055, cut: 0.2 } },
         { id: 'king:call', w: 1, cd: 0, p: { count: 3, speed: 46 } },
       ],
       patterns: [
@@ -788,7 +790,7 @@ const VAELOR: BossDef = {
     {
       // III. Memories made soldiers: the throne breaks, and the Crown remembers the hero's own fights
       at: 0.55,
-      banner: 'The throne breaks: “You brought them all this way. Let me give them back to you.”',
+      banner: 'The throne breaks, and the Crown raises the foes you defeated on your way here!',
       speed: 52,
       rest: [0.45, 0.75],
       enter: [
@@ -811,12 +813,12 @@ const VAELOR: BossDef = {
     {
       // IV. One summer's hour: his queen and children come up the hall to him; the summer's light is all that is safe
       at: 0.3,
-      banner: 'One summer’s hour: the hall remembers the day before the plague',
+      banner: 'One summer’s hour: Vaelor’s queen and children walk up the hall to him',
       speed: 52,
       rest: [0.45, 0.7],
       enter: [
         { id: 'roar', w: 1, cd: 0 },
-        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.011, cut: 0.45 } },
+        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.0075, cut: 0.3 } },
         { id: 'king:summer', w: 1, cd: 0, p: { speed: 17, hunters: 4 } },
       ],
       patterns: [
@@ -839,7 +841,7 @@ const VAELOR: BossDef = {
       rest: [0.35, 0.6],
       enter: [
         { id: 'roar', w: 1, cd: 0 },
-        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.016, cut: 0.55 } },
+        { id: 'dusk:hollowing', w: 1, cd: 0, p: { pct: 0.011, cut: 0.4 } },
         { id: 'dusk:doom', w: 1, cd: 0, p: { time: 40 } },
       ],
       patterns: [
@@ -858,7 +860,7 @@ const VAELOR: BossDef = {
     items: { any: ['vaelors-heartstone', 'hollowbrand-shard', 'shroud-of-duskspire', 'oath-of-the-hollow-guard'] },
     chance: [1, 1, 1],
   },
-  intro: 'He broke his half of the star to call his queen and children back from the plague, and it hollowed him out. He wears the Crown still, and in it the Sigil of Stone, the last of the seven: the first star of a crown that would make his summer last forever. Three hundred years in the cold have not made him kinder. They have made him patient.',
+  intro: 'Three hundred years ago, plague killed Vaelor’s queen and their two children. He broke his crown to bring them back, and it became the Ash Crown, which feeds on grief. The Sigil of Stone is set in it now. With all seven sigils, the Crown would raise his kingdom again and feed on Aster until Aster was dead.',
 };
 
 /* ------------------------------------------------------------ items */

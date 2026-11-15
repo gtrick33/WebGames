@@ -377,6 +377,133 @@ export function barrow(look: MoundLook): Build {
   return b;
 }
 
+/* ------------------------------------------------------------------ a tomb's pylon */
+
+export interface PylonLook {
+  /** Its sandstone, in the light and in shade, and the lighter stone of its arch and columns. */
+  stone: string;
+  shade: string;
+  trim: string;
+  /** The disc over the door. */
+  sun: string;
+}
+
+/**
+ * Where the pylon stands: its front a little proud of the face of the plinth behind it (the Sun King's, its front on the
+ * door tile's north edge, as the ground it can't be walked on is), and the dark of its doorway between the two.
+ */
+export const PYLON = { front: -0.42, dark: -0.47, half: 1.0, spring: 1.75, high: 4.0 };
+
+/**
+ * A sun king's tomb: a pylon of sandstone, wider at its foot than at its cornice, a round-arched doorway in it at the
+ * ground with the dark in it and the portcullis drawn up into the arch, its teeth showing; a column either side of the
+ * door and the sun's disc over it. The arch, the opening and the gate are one built thing, so they can't stand apart.
+ * It was the pack's arch with its gate, set into the face of the plinth the colossus sits on: the plinth stood a tile
+ * in front of it, so the arch showed only above the plinth's top, high up the wall, and its gate as a row of bars at the
+ * foot of a solid wall (the owner: "check the entrance of the tomb of the sun king dungeon ... this needs to be fixed").
+ */
+export function pylon(look: PylonLook): Build {
+  const b = new Build();
+  const m = b.m;
+  const stone = rgb(look.stone);
+  const shade = rgb(look.shade);
+  const trim = rgb(look.trim);
+  const sun = rgb(look.sun);
+  const black: C = [0.02, 0.016, 0.026];
+  const { front: zf, dark: zd, half, spring, high } = PYLON;
+  const zb = -1.5;
+  const crown = spring + half;
+  const n: V = [0, 0, 1];
+  // the pylon's outline: battered, wide at the foot and narrower under its cornice
+  const foot = 3.7;
+  const top = 3.2;
+  // its front round the doorway: a pier either side, and the stone over the arch in strips down to its curve
+  for (const s of [-1, 1] as const) facet(m, [s * foot, 0, zf], [s * half, 0, zf], [s * half, high, zf], [s * top, high, zf], n, mul(stone, 0.9), stone);
+  const N = 10;
+  const arch = (i: number, r: number): [number, number] => {
+    const t = Math.PI - (i / N) * Math.PI;
+    return [Math.cos(t) * r, spring + Math.sin(t) * r];
+  };
+  for (let i = 0; i < N; i++) {
+    const [x0, y0] = arch(i, half);
+    const [x1, y1] = arch(i + 1, half);
+    facet(m, [x0, y0, zf], [x1, y1, zf], [x1, high, zf], [x0, high, zf], n, stone);
+  }
+  // its battered ends, going back into the plinth
+  for (const s of [-1, 1] as const) {
+    const len = Math.hypot(high, foot - top);
+    facet(m, [s * foot, 0, zf], [s * foot, 0, zb], [s * top, high, zb], [s * top, high, zf], [(s * high) / len, (foot - top) / len, 0], mul(shade, 0.9), shade);
+  }
+  // the doorway: its jambs and the arch's underside going in, and the dark, darkest at the foot
+  for (const s of [-1, 1] as const) {
+    if (s < 0) b.faceE(zd, zf, -half, 0, spring, mul(shade, 0.5), mul(shade, 0.8));
+    else b.faceW(zd, zf, half, 0, spring, mul(shade, 0.5), mul(shade, 0.8));
+  }
+  for (let i = 0; i < N; i++) {
+    const [x0, y0] = arch(i, half);
+    const [x1, y1] = arch(i + 1, half);
+    facet(m, [x0, y0, zf], [x1, y1, zf], [x1, y1, zd], [x0, y0, zd], [-(x0 + x1) / 2, spring - (y0 + y1) / 2, 0], mul(shade, 0.7));
+  }
+  facet(m, [-half, 0, zd], [half, 0, zd], [half, spring, zd], [-half, spring, zd], n, black, mul(shade, 0.16));
+  for (let i = 0; i < N; i++) {
+    const [x0, y0] = arch(i, half);
+    const [x1, y1] = arch(i + 1, half);
+    facet(m, [0, spring, zd], [x0, y0, zd], [x1, y1, zd], [x1, y1, zd], n, mul(shade, 0.16), mul(shade, 0.12));
+  }
+  // (the threshold, in the doorway's shadow: the sand going dark toward the door, so the way in reads as going in)
+  m.quad([-half, 0.02, zf + 0.42], [half, 0.02, zf + 0.42], [half, 0.02, zd], [-half, 0.02, zd], [0, 1, 0], mul(shade, 0.62), mul(black, 1));
+  // the arch: a ring of lighter cut stone proud of the face, on jambs of the same down to the ground
+  const ring = 0.3;
+  const out = 0.08;
+  for (let i = 0; i < N; i++) {
+    const [x0, y0] = arch(i, half);
+    const [x1, y1] = arch(i + 1, half);
+    const [u0, v0] = arch(i, half + ring);
+    const [u1, v1] = arch(i + 1, half + ring);
+    facet(m, [x0, y0, zf + out], [u0, v0, zf + out], [u1, v1, zf + out], [x1, y1, zf + out], n, i % 2 ? mul(trim, 0.9) : trim);
+    // (its lip, out from the face, and its inside down to the face)
+    facet(m, [u0, v0, zf], [u1, v1, zf], [u1, v1, zf + out], [u0, v0, zf + out], [(u0 + u1) / 2, (v0 + v1) / 2 - spring, 0], mul(trim, 0.8));
+    facet(m, [x0, y0, zf], [x1, y1, zf], [x1, y1, zf + out], [x0, y0, zf + out], [-(x0 + x1) / 2, spring - (y0 + y1) / 2, 0], mul(trim, 0.7));
+  }
+  for (const s of [-1, 1] as const) b.box(s < 0 ? -half - ring : half, zf, s < 0 ? -half : half + ring, zf + out, 0, spring, trim, mul(trim, 0.78), trim);
+  // a keystone at its crown, and the sun's disc over it in gold
+  b.box(-0.17, zf, 0.17, zf + out + 0.03, crown - 0.04, crown + ring + 0.06, mul(trim, 1.06), mul(trim, 0.8), mul(trim, 1.1));
+  const disc = { y: crown + ring + 0.5, r: 0.3 };
+  for (let i = 0; i < 16; i++) {
+    const a0 = (i / 16) * Math.PI * 2;
+    const a1 = ((i + 1) / 16) * Math.PI * 2;
+    const z = zf + 0.04;
+    facet(m, [0, disc.y, z], [Math.cos(a0) * disc.r, disc.y + Math.sin(a0) * disc.r, z], [Math.cos(a1) * disc.r, disc.y + Math.sin(a1) * disc.r, z], [Math.cos(a1) * disc.r, disc.y + Math.sin(a1) * disc.r, z], n, mul(sun, 1.1), sun);
+  }
+  // the portcullis drawn up into the arch, in the doorway: iron bars from its curve down to their teeth, bands across
+  const iron: C = [0.17, 0.15, 0.16];
+  // (between the dark and the pylon's face, clear of both)
+  const gz = zd + 0.025;
+  for (let x = -half + 0.18; x <= half - 0.17; x += 0.33) {
+    const roof = spring + Math.sqrt(Math.max(0, half * half - x * x)) - 0.03;
+    b.post(x, gz, 0.021, 0.021, 1.22, roof, 4, iron, iron, 0, 0, Math.PI / 4);
+    b.post(x, gz, 0.024, 0.003, 1.04, 1.22, 4, iron, iron, 0, 0, Math.PI / 4);
+  }
+  for (const y of [1.42, 2.02]) {
+    const up = y + 0.07 - spring;
+    const w = up > 0 ? Math.sqrt(half * half - up * up) - 0.04 : half - 0.02;
+    b.faceS(-w, w, gz + 0.023, y, y + 0.07, mul(iron, 1.4), iron);
+  }
+  // a column either side of the door, half out of the face, a capital of the lighter stone on each
+  for (const s of [-1, 1] as const) {
+    const cx = s * 2.25;
+    const cz = zf + 0.12;
+    b.box(cx - 0.36, zf + 0.01, cx + 0.36, cz + 0.34, 0, 0.2, mul(trim, 0.86), mul(trim, 0.7), trim);
+    b.post(cx, cz, 0.26, 0.22, 0.2, 3.0, 10, mul(stone, 0.92), stone);
+    for (const y of [0.9, 1.9]) b.post(cx, cz, 0.275, 0.265, y, y + 0.08, 10, mul(trim, 0.8), trim);
+    b.box(cx - 0.38, zf + 0.01, cx + 0.38, cz + 0.36, 3.0, 3.26, mul(trim, 0.95), mul(trim, 0.74), trim);
+  }
+  // the cornice: a band, and the lip flaring out over it, its underside in shadow
+  b.box(-top - 0.12, zb, top + 0.12, zf + 0.12, high, high + 0.14, mul(trim, 0.92), mul(shade, 0.7), trim);
+  b.box(-top - 0.28, zb, top + 0.28, zf + 0.3, high + 0.14, high + 0.46, stone, mul(shade, 0.55), mul(stone, 0.86));
+  return b;
+}
+
 /** A hill with a hole in it, the hole framed in timber: somebody lives in there, and props the roof. */
 function timbered(b: Build, wide: number, high: number): Build {
   const wood = rgb('#6e5236');
@@ -447,6 +574,13 @@ export const DOORWAYS: Record<string, Doorway> = {
     build: (land) => withBowls(timbered(caveMouth({ wide: 3.0, high: 2.5, top: land.ground.grass[3], face: land.ground.grass[1], foot: '#4a3e2c', lip: '#7a6a4c', throat: '#1c1408', teeth: '#5a4c36', seed: 31 }), 3.0, 2.5), [[-2.3, 0.35], [2.3, 0.35]], 1.6),
     flames: [[-2.3, 0.76, 0.35, 0.58], [2.3, 0.76, 0.35, 0.58]],
     glow: { color: '#ffb466', x: 0, y: 0.6, z: -1.4, size: 22 },
+  },
+  // the Sun King's tomb: a pylon of the sandstone the colossus is cut from, set against the foot of the plinth he sits
+  // on, its fires burning in bowls before it
+  'tomb-of-the-sun-king': {
+    build: () => withBowls(pylon({ stone: '#d2b27c', shade: '#a8885a', trim: '#ead2a0', sun: '#ffd060' }), [[-3.15, 0.22], [3.15, 0.22]], 1.6),
+    flames: [[-3.15, 0.76, 0.22, 0.58], [3.15, 0.76, 0.22, 0.58]],
+    glow: { color: '#ffc870', x: 0, y: 1.0, z: -0.3, size: 18 },
   },
   // Highwall's sally port: a gatehouse of the fortress's own stone with a length of its wall either side, the way in
   // under its arch

@@ -334,7 +334,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'Bone-steel for a frame and the mountain’s own fire for a heart. The Host built it to keep Ashkar’s forges burning, and it has never once let them go out.',
+    intro: 'A guardian of bone-steel with molten rock for a heart. The Host built it to keep Ashkar’s forges burning.',
   },
   'ossa-the-founder': {
     id: 'ossa-the-founder',
@@ -364,7 +364,7 @@ const bosses: Record<string, BossDef> = {
       },
       {
         at: 0.5,
-        banner: 'Ossa tips the great crucible: “One of you is not enough. Let me pour you twice.”',
+        banner: 'Ossa tips the great crucible! Now she pours two molten copies of you. Keep moving to new ground!',
         speed: 40,
         rest: [0.5, 0.85],
         enter: [
@@ -396,7 +396,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.5, 0.7],
     },
-    intro: 'She poured the bone-steel for the Host’s every blade and every chain in Emberdeep. She looks at you the way a smith looks at ore.',
+    intro: 'She pours the bone-steel for every blade and chain the Host makes in Emberdeep, Ashkar’s chains among them.',
   },
   'ashkar-the-bound': {
     id: 'ashkar-the-bound',
@@ -430,7 +430,7 @@ const bosses: Record<string, BossDef> = {
       },
       {
         at: 0.7,
-        banner: 'Ashkar tears his chains out of the stone! He is loose, and he burns.',
+        banner: 'Ashkar tears his chains out of the stone! He’s loose!',
         speed: 46,
         rest: [0.5, 0.85],
         enter: [
@@ -452,7 +452,7 @@ const bosses: Record<string, BossDef> = {
       },
       {
         at: 0.45,
-        banner: 'The Pale Crown rises from the anvil and burns pale on Ashkar’s brow: the Host’s will drives him now. Break the Crown!',
+        banner: 'The Pale Crown rises onto Ashkar’s head and shields him! Break the Crown!',
         speed: 48,
         rest: [0.45, 0.8],
         // the Crown wards him and casts its pale fire until it is broken
@@ -467,7 +467,7 @@ const bosses: Record<string, BossDef> = {
       },
       {
         at: 0.2,
-        banner: 'Ashkar Unbound: “Burn with me, or set me free!” The lake of fire rises over the floor.',
+        banner: 'Ashkar burns hotter! The lake of fire is rising over the floor!',
         speed: 52,
         rest: [0.35, 0.65],
         enter: [
@@ -502,7 +502,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'The fire lord of Emberdeep, chained to his own throne and made to forge a crown for the Hallow King. A month of it has driven him mad with pain. He does not know you from his jailers. The only mercy left is to break what binds him.',
+    intro: 'The fire lord of Emberdeep, chained to his own throne and forced to forge the Pale Crown. A month of pain has driven him mad, and he won’t know you. Beat him down and break his chains.',
   },
 };
 

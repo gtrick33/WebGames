@@ -1,7 +1,7 @@
 /**
  * A simple play-bot for Sigilfall's simulation: it walks to the nearest enemy along the map, keeps a
  * class-appropriate distance, fires everything that is ready, drinks potions, and steps out of (or
- * dodges) enemy telegraphs. It is not clever, which is the point: if it can clear a region and beat
+ * dodges) enemy telegraphs, and in melee out of the ground that hurts. It is not clever, which is the point: if it can clear a region and beat
  * its boss, a person can too.
  */
 import { BOSSES } from '../src/games/sigilfall/data/bosses';
@@ -96,9 +96,13 @@ export function newWorld(region: RegionId, hero: Character, seed = 1, tier = 0, 
  */
 /**
  * How many falls a dungeon may cost and still count as cleared: the campaign is meant to be hard (sim/world.ts
- * challenge), and a player dies and goes again from the last checkpoint; what must hold is that it can be done.
+ * challenge), and a player dies and goes again from the last checkpoint; what must hold is that it can be done. Twelve
+ * since the owner asked for a game that is "hard af" (2026-11-15: "adjust your tests, we want a challenging game not a
+ * breezy one"): a boss's blow takes a third of a hero's health now, and this bot steps out of what it sees coming but
+ * plays a caster badly (it walks out of its own long casts), so its mage and druid fall in the last dungeons where a
+ * player would not. Before that change it cleared nearly every dungeon without a fall.
  */
-export const HARD_DEATHS = 6;
+export const HARD_DEATHS = 12;
 
 /**
  * The gear a player has on by a dungeon's level, on a hard campaign: what drops in the lands before it (blue past
@@ -182,9 +186,18 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
       // (of two at once, the one about to land: a player steps out of the blow that's coming, then the next)
       let danger: (typeof w.telegraphs)[number] | undefined;
       for (const t of w.telegraphs) if (t.tone !== 'player' && (t.kind ?? 'danger') === 'danger' && !t.dead && inside(t, p.x, p.y, p.r) && (!danger || t.dur - t.t < danger.dur - danger.t)) danger = t;
+      // and, in melee, out of ground that hurts (a pool of bile under the boss, a patch of fire), as a player would, rather
+      // than trade blows in it (a caster keeps its distance anyway, and walking breaks its casts)
+      const burning = danger || !isMelee() ? undefined : w.fields.find((fd) => fd.hostile && fd.dmg > 0 && fd.t > 0 && Math.hypot(p.x - fd.x, p.y - fd.y) < fd.r + p.r * 0.5);
       let mx = 0;
       let my = 0;
-      if (danger) {
+      if (burning) {
+        const ax = p.x - burning.x;
+        const ay = p.y - burning.y;
+        const l = Math.hypot(ax, ay) || 1;
+        mx = ax / l;
+        my = ay / l;
+      } else if (danger) {
         let ax = p.x - danger.x;
         let ay = p.y - danger.y;
         if (danger.shape === 'line' || danger.shape === 'cone') {

@@ -132,7 +132,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
       xp: 1850,
       gold: 600,
       item: 'vosk-greaves',
-      text: 'Gaius reads them twice. “Carry the stone north by the King’s Road to the King. The knight of the barrows will see you safely through the downs.” Below that, in a clerk’s neat handwriting: “The roads are paid for. Nobody will stop you.” Someone in the Crown City is paying the Host’s way. Dunmore gives you the greave Vosk left behind.',
+      text: 'Gaius reads them twice. “Carry the stone north by the King’s Road to the Hallow King. The knight of the barrows will see you safely through the downs.” Below that, in a clerk’s neat handwriting: “The roads are paid for. Nobody will stop you.” Someone in the Crown City is paying the Host’s way. Dunmore gives you the greave Vosk left behind.',
     },
   },
   {
@@ -283,7 +283,7 @@ export const AMBERFIELD_NPCS: Record<string, NpcDef> = {
       {
         when: { quest: 'orders-from-the-north', state: 'active' },
         lines: [
-          'These are Vosk’s orders: “Carry the stone north by the King’s Road to the King. The knight of the barrows will see you safely through the downs.”',
+          'These are Vosk’s orders: “Carry the stone north by the King’s Road to the Hallow King. The knight of the barrows will see you safely through the downs.”',
           'The barrows are the Ashen Barrows, north of the steppe. Whoever holds the King’s Road holds the way to the Crown City.',
         ],
       },

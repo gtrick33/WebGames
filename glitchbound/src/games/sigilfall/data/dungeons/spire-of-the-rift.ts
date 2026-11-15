@@ -325,7 +325,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'A construct of black glass older than the Spire, with a heart of grieflight crystal where its face should be. It was made to guard the stair, and the Herald taught it whom to let pass.',
+    intro: 'A guardian of black glass with a violet crystal for a heart. The Sigil-wardens made it to keep the Tear shut. The Herald turned it to his side.',
   },
   'ilvane-the-unmoored': {
     id: 'ilvane-the-unmoored',
@@ -388,7 +388,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.5, 0.7],
     },
-    intro: 'She charted the stars from this gallery for forty years. When the Herald opened the Veil above it, she looked up, and forgot which way was down.',
+    intro: 'She mapped the stars from this gallery for forty years. When the Herald tore the sky open above it, everything in the gallery began to float, and so did she.',
   },
   'herald-in-the-spire': {
     id: 'herald-in-the-spire',
@@ -416,7 +416,7 @@ const bosses: Record<string, BossDef> = {
       },
       {
         at: 0.7,
-        banner: '“You came all this way to find me? Then find me.” The Herald steps out of the world.',
+        banner: '“Then find me.” The Herald vanishes into the Tear!',
         speed: 44,
         rest: [0.5, 0.9],
         enter: [{ id: 'spire:echoes', w: 1, cd: 18, p: { count: 3, time: 9 } }],
@@ -431,7 +431,7 @@ const bosses: Record<string, BossDef> = {
       },
       {
         at: 0.4,
-        banner: 'The Herald strikes the floor with his staff, and the Crown begins to fall into the Tear!',
+        banner: 'The Herald strikes the floor, and the top of the Spire starts falling into the Tear!',
         speed: 44,
         rest: [0.45, 0.8],
         enter: [{ id: 'spire:sunder', w: 1, cd: 8, p: { count: 3, wind: 1.8, life: 7 } }],
@@ -445,7 +445,7 @@ const bosses: Record<string, BossDef> = {
       },
       {
         at: 0.15,
-        banner: '“If I fall, the Spire falls with me!” The Tear itself opens over the Crown.',
+        banner: '“If I fall, the Spire falls with me!” The Tear opens over the room!',
         speed: 48,
         rest: [0.35, 0.6],
         enter: [
@@ -475,7 +475,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'Vaelor’s voice: the gold behind every traitor, the name signed under every letter. He has fed the Tear from this spire since the old war, and he walks in and out of it like a man stepping through a door.',
+    intro: 'Aurel, Vaelor’s brother, who speaks for the Hallow King among the living. He pays the Host’s traitors in ash-gold and signs its letters. From this spire he keeps the Tear open.',
   },
 };
 

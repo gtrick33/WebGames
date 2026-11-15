@@ -289,7 +289,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'He held the Vault Door for his people a hundred years. Then the Pale Herald came with ash-gold, and he opened it.',
+    intro: 'Jarl of the frost giants. He kept a treaty with Frostgate for two hundred years. Then he took the Pale Herald’s ash-gold and opened the Vault Door for the Host.',
   },
   'hallvor-the-unthawed': {
     id: 'hallvor-the-unthawed',
@@ -356,7 +356,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.5, 0.7],
     },
-    intro: 'Ingrith the Unthawed’s shield-thane froze at her side rather than leave her. The Host’s bonecallers woke her, and she knows nothing now but the watch.',
+    intro: 'Jarl Ingrith’s bodyguard. She let the ice take her rather than leave Ingrith’s side. The Host’s bonecallers have woken her, and she attacks anyone who enters the crypt.',
   },
   'the-rime-wyrm': {
     id: 'the-rime-wyrm',
@@ -438,7 +438,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'The Sigil-wardens set it over the Sigil of Frost and bade it sleep until someone came to steal it. The Host woke it. It does not know them from you.',
+    intro: 'The wardens left this wyrm asleep to guard the Sigil of Frost. Hrimfang’s digging woke it, and now it attacks anything that moves.',
   },
 };
 

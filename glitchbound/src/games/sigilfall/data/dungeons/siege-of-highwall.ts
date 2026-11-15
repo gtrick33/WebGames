@@ -356,7 +356,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'Bone for a frame, iron for a hide, a ram for a head and a cauldron of pitch on its back. It walked here from the Host’s lines, and every gate in Highwall has broken on it so far.',
+    intro: 'A siege engine of bone and iron, with a ram for a head and a cauldron of burning pitch on its back. It has broken every gate in Highwall so far. The inner ward’s gate is the last one.',
   },
   'prior-vessant': {
     id: 'prior-vessant',
@@ -425,7 +425,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.5, 0.7],
     },
-    intro: 'He was a prior of the Wardens once, and buried Highwall’s dead in this chapel for thirty years. The Host taught him a new hymn, and now he sings them up again.',
+    intro: 'He buried Highwall’s dead in this chapel for thirty years. Now he serves the Host, and his hymns raise the dead he buried.',
   },
   'general-morvain': {
     id: 'general-morvain',
@@ -516,7 +516,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'A death knight who has taken more cities than he can name, and lost none. He reads a battle like a page, and he has read this one to its end.',
+    intro: 'The Hallow King’s general, a death knight who has never lost a siege. He has led the siege of Highwall all summer.',
   },
 };
 

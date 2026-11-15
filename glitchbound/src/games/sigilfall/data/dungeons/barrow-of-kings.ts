@@ -241,7 +241,7 @@ const bosses: Record<string, BossDef> = {
       },
       {
         at: 0.5,
-        banner: 'Gloomwing hungers for every flame!',
+        banner: 'Gloomwing goes for two lamps at once! Keep them lit!',
         speed: 46,
         rest: [0.55, 0.9],
         enter: [{ id: 'barrow:feast', w: 1, cd: 0, p: { count: 2, dark: 18, wind: 0.65 } }],
@@ -257,7 +257,7 @@ const bosses: Record<string, BossDef> = {
     ],
     first: { any: ['second-wind-ring'] },
     drops: { items: { any: ['second-wind-ring', 'static-band', 'thornmail'] }, chance: [0.3, 0.45, 0.65] },
-    intro: 'The barrow-wardens kept its lamps lit for a thousand years. Something has been eating the light.',
+    intro: 'A drake that eats lamplight. Where she puts out a lamp, the dark hurts you. Stand by a lamp to light it again.',
   },
   'king-hrodric': {
     id: 'king-hrodric',
@@ -285,7 +285,7 @@ const bosses: Record<string, BossDef> = {
       },
       {
         at: 0.5,
-        banner: 'The court of the barrow kings rises with its king!',
+        banner: 'Hrodric calls his court out of their graves!',
         speed: 40,
         rest: [0.6, 1],
         enter: [{ id: 'roar', w: 1, cd: 0 }, { id: 'summon', w: 1, cd: 0, p: { enemies: ['oathsworn-guard', 'oathsworn-guard', 'rime-archer', 'tomb-priest'] } }],
@@ -316,7 +316,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'He was buried with his sword across his knees and his court around him. Corvane has given him both back.',
+    intro: 'The first king buried on the downs, with his court around him. Corvane woke them all to guard his door.',
   },
   'sir-corvane': {
     id: 'sir-corvane',
@@ -347,7 +347,7 @@ const bosses: Record<string, BossDef> = {
       },
       {
         at: 0.65,
-        banner: 'The deathcharger falls! Corvane fights on foot, and the cold comes with him.',
+        banner: 'Corvane’s horse falls! He fights on foot now, and the cold around him hurts.',
         speed: 44,
         rest: [0.55, 0.9],
         enter: [{ id: 'barrow:dismount', w: 1, cd: 0, p: { sprite: 'sir-corvane-foot', radius: 10, aura: 42, mul: 0.16 } }, { id: 'summon', w: 1, cd: 0, p: { enemies: ['oathsworn-guard', 'crypt-stalker'] } }],
@@ -365,7 +365,7 @@ const bosses: Record<string, BossDef> = {
       },
       {
         at: 0.3,
-        banner: 'Corvane breaks his last oath, and moves like the dead never do!',
+        banner: 'Corvane is faster now, and he can step behind you! Keep moving!',
         speed: 58,
         rest: [0.35, 0.6],
         enter: [{ id: 'roar', w: 1, cd: 0 }, { id: 'barrow:aura', w: 1, cd: 0, p: { r: 52, mul: 0.2 } }, { id: 'barrow:doom', w: 1, cd: 0, p: { carry: 4.5, r: 48, fall: 0.85, mul: 1.6 } }],
@@ -395,7 +395,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'The best knight of the Ninefold Watch, ten years ago. He held the Watch a night and a day, and then he went into the Mound and knelt to the King.',
+    intro: 'He commanded the Ninefold Watch. When the help he was promised never came, he knelt to the Hallow King.',
   },
 };
 

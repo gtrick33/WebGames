@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { potionCap } from '../src/games/sigilfall/progress/character';
-import { potionPrice } from '../src/games/sigilfall/progress/shop';
+import { QUEST_DEFS } from '../src/games/sigilfall/data/quests';
+import { GOLD_FIND } from '../src/games/sigilfall/data/vendors';
+import { itemWorth, salvageValue } from '../src/games/sigilfall/progress/items';
+import { gearPrice, potionPrice } from '../src/games/sigilfall/progress/shop';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { newWorld, readyHero } from './sigilfall-bot';
 
@@ -67,7 +70,7 @@ describe('Sigilfall: gear from chests and bosses, coin and potions from the rest
     expect(got).toBeLessThan(32);
   });
 
-  it('a potion goes on the belt, or comes as its price in coin when the belt is full', () => {
+  it('a potion goes on the belt, or comes as the road’s share of its price in coin when the belt is full', () => {
     const w = world();
     const h = w.hero;
     h.potions = 0;
@@ -80,6 +83,34 @@ describe('Sigilfall: gear from chests and bosses, coin and potions from the rest
     w.drops.push({ id: 2, kind: 'potion', x: w.player.x, y: w.player.y, vx: 0, vy: 0, z: 0, vz: 0, amount: 1, t: 1, dead: false });
     w.collectAll();
     expect(h.potions).toBe(potionCap(h));
-    expect(h.gold).toBe(gold + potionPrice(h.level));
+    expect(h.gold).toBe(gold + Math.round(potionPrice(h.level) * GOLD_FIND));
+  });
+
+  // the owner (2026-11-15): "gold currently is meaningless, either drop way less, or adjust prices, i say drop less,
+  // ive got 50k gold and i have no idea what to use them for"
+  it('the road pays a quarter of the coin it did, and what things cost stays as it was', () => {
+    expect(GOLD_FIND).toBe(0.25);
+    // a piece melts down (or sells) for a quarter of its worth; a vendor still asks four times its worth
+    const piece = { il: 34, r: 'rare' as const };
+    expect(itemWorth(piece)).toBe(216);
+    expect(salvageValue(piece)).toBe(54);
+    expect(gearPrice({ ...piece, uid: 'x' } as Parameters<typeof gearPrice>[0])).toBe(864);
+    // quests pay a quarter of what they say (to the nearest 5), never nothing when they paid something
+    const q = QUEST_DEFS['the-sun-kings-tomb']!;
+    expect(q.reward.gold).toBe(65);
+    for (const d of Object.values(QUEST_DEFS)) if (d.reward.gold > 0) expect(d.reward.gold).toBeGreaterThanOrEqual(5);
+    // and a hundred foes of level 30 drop a few hundred coins, not thousands
+    const w = newWorld('whisperwood', readyHero('mage', 30), 3);
+    w.enemies = [];
+    let coin = 0;
+    for (let i = 0; i < 100; i++) {
+      const e = w.addEnemy('moss-slime', w.player.x + 300, w.player.y, 30, { room: -1, pack: 0 });
+      e.hp = 0;
+      e.dead = true;
+      w.onKill(e);
+    }
+    for (const d of w.drops) if (d.kind === 'gold') coin += d.amount;
+    expect(coin).toBeLessThan(900);
+    expect(coin).toBeGreaterThan(100);
   });
 });

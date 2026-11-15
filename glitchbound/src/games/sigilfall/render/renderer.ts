@@ -267,6 +267,8 @@ export class Renderer {
   /** The camera's lean toward the aim (and a boss), smoothed (see camera.ts). */
   private leanX = 0;
   private leanY = LIFT;
+  /** The scene's cuts the camera has made (sim/scene.ts ScenePlay.cuts). */
+  private sceneCuts = 0;
   /** The mouse on the view, -0.5 to 0.5 from its center on each axis (null: no mouse in use). */
   pointer: { x: number; y: number } | null = null;
   private shakeX = 0;
@@ -495,8 +497,17 @@ export class Renderer {
       ly = ly * 0.4 + (w.slowAt.y - p.y) * 0.6;
     }
     const rate = w.scene || talk ? 2.6 : 4;
-    this.leanX = damp(this.leanX, lx, rate, dt);
-    this.leanY = damp(this.leanY, ly, rate, dt);
+    // a scene that cuts to someone speaking a long way off jumps there, as a film cuts (sim/scene.ts CUT_PAST): a pan
+    // across the land in a hurry was the camera "suddenly changing direction" the owner asked to have taken out
+    const cuts = w.scene?.cuts ?? 0;
+    if (w.scene && cuts !== this.sceneCuts) {
+      this.leanX = lx;
+      this.leanY = ly;
+    } else {
+      this.leanX = damp(this.leanX, lx, rate, dt);
+      this.leanY = damp(this.leanY, ly, rate, dt);
+    }
+    this.sceneCuts = cuts;
     // a scene's camera draws in on whoever is speaking (or stands as near as a step says), and eases back out after
     if (st) {
       const speaking = !!w.scene && w.story.speech.some((sp) => sp.staged);

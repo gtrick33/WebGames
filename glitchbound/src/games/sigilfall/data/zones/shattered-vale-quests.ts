@@ -4,10 +4,10 @@ import type { EnemyDef, NpcDef, QuestDef, StoryEventDef } from '../types';
  * Shardwatch's people and the quests of the Shattered Vale (see WORLD.md). The Tear at the top of the
  * Vale bleeds grieflight, and things come through it. Magister Quell's scholars measure it and the
  * Regent's soldiers watch it; neither expected the voidcallers, living men paid in the Pale Herald's
- * ash-gold to sing it wider. The main chain runs from the Crystal Fields and the Breach Camp to the
- * Tear itself and the Tearborn, and ends with the Herald feeding the Tear from the Riftscar. Ennis wants
- * specimens, Hesk wants her husband's pick back from the wyrms, and Sergeant Dace wants his sentries.
- * Main chain first.
+ * ash-gold to sing it wider. The main chain runs from the Breach Camp and the Herald's letter (Nyx reads
+ * it first, and lies about it) to the Tear, where the Herald takes Elyra and her five sigils, then the
+ * Tearborn, and Fernstead's fall. Ennis wants specimens, Hesk wants her husband's pick back from the
+ * wyrms, and Sergeant Dace wants his sentries. Main chain first. Written to DIALOGUE_STYLE.md.
  */
 export const SHATTERED_VALE_QUESTS: QuestDef[] = [
   /* --------------------------------------------- postgame: what was under the Tear */
@@ -16,23 +16,23 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     name: 'What Was Under the Tear',
     giver: 'magister-quell',
     zone: 'shattered-vale',
-    text: 'The Tear is closing now that the Crown is broken, and as it closes it has let go of something it was holding at the very bottom: a man in a white coat, kneeling, with his face in his hands. Quell’s rods all point at him. Quell would like to know who he was before he lets the Tear close over him for good.',
+    text: 'With the Ash Crown unmade, the Tear is finally closing. As it closes, it has let go of something it held at the very bottom: a man in a white coat, kneeling, with his face in his hands. Quell’s brass rods all point at him. Go to the Tear and face him before it closes over him.',
     objective: { kind: 'kill', region: 'shattered-vale', count: 1, enemies: ['the-heralds-first-face'], label: 'Face the man at the bottom of the Tear' },
     after: ['epilogue-the-bell'],
     level: 60,
-    reward: { xp: 8000, gold: 3000, item: { rarity: 'legendary' }, text: 'He was Aurel, Vaelor’s younger brother, who opened the harbor against his brother’s quarantine, and watched the plague ship come in, and walked into the Tear the next winter so that he would never have to remember it. The Crown made a herald out of what was left. Quell lets the Tear close over him gently, and writes his name in the Watch’s book.' },
+    reward: { xp: 8000, gold: 3000, item: { rarity: 'legendary' }, text: 'The man is Aurel, King Vaelor’s brother, as he was before he became the Pale Herald. Three hundred years ago, he let the plague ship into Vaelmoor’s harbor. Quell lets the Tear close over him gently and writes his name in Shardwatch’s book.' },
   },
   /* ---------------------------------------------------------- the way in */
   {
     id: 'where-the-rift-bleeds',
     name: 'Shardwatch',
     giver: 'jarl-sigrun',
-    text: 'The last place on the wardens’ map: the Tear, a wound in the sky over the Shattered Vale, south of Rimeheld, that the Sigil of the Veil has kept shut for three hundred years. The scholars of Shardwatch have been writing to the Crown all year about the Tear opening, and things climbing out of it, and nobody answered: the Chancellor kept the letters. Take the south road out of Rimeheld and find Magister Quell at Shardwatch.',
-    offer: ['Four places on your map, and you have stood in three of them. The fourth is south of us, under a hole in the sky.', 'Go to Shardwatch, to Magister Quell. And watch your thief. She has stopped making jokes.'],
+    text: 'Elyra now carries four sigils. The last place on the wardens’ map is the Tear, a rip in the sky over the Shattered Vale, south of Rimeheld. The Sigil of the Veil has held it shut for three hundred years. Take the south road out of Rimeheld and find Magister Quell at Shardwatch.',
+    offer: ['The last place on your map is the Tear, in the Shattered Vale, south of here.', 'Magister Quell watches the Tear from Shardwatch. Go to him.', 'One more thing. A letter in grey ink came to my gate for Nyx. She read it and burned it. Keep an eye on her.'],
     objective: { kind: 'talk', npc: 'magister-quell', label: 'Talk to Magister Quell in Shardwatch' },
     after: ['the-vault-of-rime'],
     level: 35,
-    reward: { xp: 1000, gold: 280, text: 'Quell has been watching the Tear for eleven years. It has never been this wide, he says, and there are tracks in the glass round its lip. Grey ones.' },
+    reward: { xp: 1000, gold: 280, text: 'Quell has watched the Tear for eleven years, and it has never been this wide. Things have started climbing out of it.' },
   },
   /* ------------------------------------------------------------- the Tear */
   {
@@ -40,8 +40,8 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     name: 'The Breach Camp',
     auto: true,
     giver: 'magister-quell',
-    text: 'The shardlings aren’t hatching by themselves. Sergeant Dace’s sentries have seen torches at night east of camp, where the ground split into a breach that hums, and men in violet robes standing round it, singing. Scholars don’t sing, Quell says; not where anyone can hear. Go east and see who they are.',
-    objective: { kind: 'explore', spot: 'breach-camp', label: 'Find the singers’ camp east of Shardwatch' },
+    text: 'Sergeant Dace’s sentries have seen torches at night east of Shardwatch, around a crack in the ground that hums. Men in violet robes stand around it and sing. Nobody knows who they are. Go east to the Breach Camp and find out.',
+    objective: { kind: 'explore', spot: 'breach-camp', label: 'Go to the Breach Camp, east of Shardwatch' },
     after: ['where-the-rift-bleeds'],
     zone: 'shattered-vale',
     level: 36,
@@ -52,54 +52,54 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     name: 'The Herald’s Cipher',
     auto: true,
     giver: 'magister-quell',
-    text: 'At the singers’ camp east of Shardwatch, every dead voidcaller carried the Pale Herald’s ash-gold, and under the coins a letter in a cipher Quell can’t read. Scholar Ennis says he can, if somebody brings it to him and stops him talking about shardlings first. Take the letter to Ennis in Shardwatch.',
-    objective: { kind: 'talk', npc: 'scholar-ennis', label: 'Bring the cipher to Scholar Ennis' },
+    text: 'The singers at the Breach Camp were voidcallers: living men paid in the Pale Herald’s ash-gold. One of them carried a letter in a code Quell can’t read. Scholar Ennis says he can read it. Take the letter to Ennis in Shardwatch.',
+    objective: { kind: 'talk', npc: 'scholar-ennis', label: 'Bring the letter to Scholar Ennis in Shardwatch' },
     after: ['the-breach-camp'],
     zone: 'shattered-vale',
     level: 38,
-    reward: { xp: 1150, gold: 320, text: 'Ennis reads it aloud before anyone can stop him: “The thief will bring them up the Vale. Her brother for the iron.” Nobody looks at Nyx. Nyx looks at the floor.' },
+    reward: { xp: 1150, gold: 320, text: 'Nyx took the letter and read it before Ennis could. She says it only gives the singers their orders, and she keeps it. Her hands were shaking. Elyra wants to go up to the Tear now, before the Herald can reach the Veil sigil.' },
   },
   {
     id: 'the-tear',
     name: 'The Tear',
     auto: true,
     giver: 'magister-quell',
-    text: 'The Tear is north of Shardwatch, at the top of the Vale, where the light goes purple, and the Sigil of the Veil is somewhere in the glass round its lip, holding it shut. Elyra can feel it from the camp. Go up and take it before the Herald does.',
-    objective: { kind: 'explore', spot: 'the-tear', label: 'Go up to the Tear at the top of the Vale' },
+    text: 'The Tear is at the top of the Shattered Vale, north of Shardwatch. The Sigil of the Veil is in the glass around its edge, holding it shut. Go up with Elyra and take the sigil before the Herald does. Nyx has hardly said a word since she read the letter.',
+    objective: { kind: 'explore', spot: 'the-tear', label: 'Go to the Tear, north of Shardwatch' },
     after: ['the-heralds-cipher'],
     zone: 'shattered-vale',
     level: 39,
-    reward: { xp: 1300, gold: 340, item: { rarity: 'rare' }, text: 'Someone is already standing at the lip of the Tear, with his back to you: a tall man in white with nothing where his face should be. Elyra, Cael, Orren and Nyx have come up the Vale behind you. Nyx is very quiet.' },
+    reward: { xp: 1300, gold: 340, item: { rarity: 'rare' }, text: 'Elyra pulls the Sigil of the Veil out of the glass, and the Tear starts to open. A tall man in white with no face steps out of it: the Pale Herald, who speaks for King Vaelor. He knew you would be here. Behind you, Nyx won’t look at anyone.' },
   },
   {
     id: 'the-heralds-ambush',
     name: 'The Pale Herald',
     giver: 'magister-quell',
     auto: true,
-    text: 'The Pale Herald, Vaelor’s voice in the living world, waiting at the Tear as if he had been told exactly when you would come up the Vale. He had.',
-    objective: { kind: 'event', event: 'herald-ambush', label: 'Survive the Pale Herald at the Tear' },
+    text: 'The Pale Herald has come through the Tear for Elyra and the five sigils she carries. Someone told him exactly when you would be here. Protect Elyra.',
+    objective: { kind: 'event', event: 'herald-ambush', label: 'Protect Elyra from the Pale Herald at the Tear' },
     after: ['the-tear'],
     zone: 'shattered-vale',
     level: 40,
-    reward: { xp: 3000, gold: 600, text: 'You are beaten for the first time. When the grey clears, Elyra is gone, and every sigil she carried is gone with her, and so is Nyx. The Herald’s voice stays in the air a while: she sold him your road for her brother, and he has kept neither of his promises.' },
+    reward: { xp: 3000, gold: 600, text: 'You are beaten for the first time. When the grey light clears, the Herald has taken Elyra back through the Tear, with all five sigils. Nyx is gone too. She told him your road because he promised to free her brother, Wren. Before his voice fades, he says he is keeping Wren anyway.' },
   },
   {
     id: 'fall-of-fernstead',
     name: 'The Night Fernstead Fell',
     giver: 'maren',
     auto: true,
-    text: 'The news comes up the road from the hills behind you. The same night the Herald held you at the Tear, the Host came over the Brackenridge Hills and Fernstead burned: the first village you saved. Its people are on the road to Briarhollow with what they could carry. Go home and meet them.',
+    text: 'A rider from Briarhollow brings bad news. On the night the Herald took Elyra, the Host attacked the Brackenridge Hills and burned Fernstead, the first village you saved. Its people are walking to Briarhollow with what they could carry. Go home and meet them.',
     objective: { kind: 'event', event: 'fern-refugees', label: 'Meet Fernstead’s people at Briarhollow' },
     after: ['the-heart-of-the-tear'],
     zone: 'briarhollow',
     level: 40,
-    reward: { xp: 1200, gold: 300, text: 'Hollis counts them in at the gate, all of them, twice. Then she sits down on the step of the Elder’s hall and doesn’t get up for a long time.' },
+    reward: { xp: 1200, gold: 300, text: 'Warden Hollis counts her people in at Briarhollow’s gate. All of them made it. Then she sits down on the steps of the Elder’s hall and stays there a long time.' },
   },
   {
     id: 'the-heart-of-the-tear',
     name: 'The Heart of the Tear',
     giver: 'magister-quell',
-    text: 'Something stands in the Tear and holds it open with both hands: the Tearborn, a thing the Tear made out of everything that came through it. It has noticed you. Kill it at the Tear, at the top of the Vale north of Shardwatch, and the wound can begin to close.',
+    text: 'Without the Veil sigil, the Tear is wide open, and things are climbing out of it. A huge creature stands in the opening and holds it wide: the Tearborn. Kill it at the Tear, north of Shardwatch, so the Tear can start to close. Then you can go after Elyra.',
     objective: { kind: 'kill', region: 'shattered-vale', count: 1, enemies: ['the-tearborn'], label: 'Kill the Tearborn at the Tear' },
     after: ['the-heralds-ambush'],
     zone: 'shattered-vale',
@@ -108,7 +108,7 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
       xp: 5400,
       gold: 1200,
       item: 'tearborn-heart',
-      text: 'The Tearborn comes apart in a shower of glass, and the Tear shrinks to a crack with a breath behind it. Quell listens at it with his brass rods for a long time. Something on the other side is still feeding it, from somewhere far to the north past the Gates: the Pale Herald, holding the Tear open from the other end. Quell gives you the thing’s heart, and writes to the Regent.',
+      text: 'The Tearborn shatters, and the Tear shrinks to a crack. Quell listens at the crack with his brass rods. He says the Pale Herald is still holding it open from the far end, somewhere in the north. That is where he has taken Elyra. Quell gives you the Tearborn’s heart and writes to the Regent.',
     },
   },
   /* ------------------------------------------------------ Ennis's cabinet */
@@ -116,7 +116,7 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     id: 'living-glass',
     name: 'Living Glass',
     giver: 'scholar-ennis',
-    text: 'Scholar Ennis would like a live shardling. Failing that, the shard at a shardling’s heart, which goes on singing for a day after it dies, if it dies before it bursts. Kill them quickly anywhere on the Vale, in the Crystal Fields west of camp most of all, and bring Ennis six singing shards.',
+    text: 'Scholar Ennis studies grief shardlings, small creatures of living glass that crawl out of the Tear. The shard at a shardling’s heart keeps singing for a day after it dies. Ennis wants six of these singing shards. Shardlings are thickest in the Crystal Fields, west of Shardwatch.',
     objective: { kind: 'loot', region: 'shattered-vale', item: 'Singing Shard', from: ['rift-shardling'], chance: 0.4, count: 6, label: 'Take Singing Shards from shardlings' },
     after: ['where-the-rift-bleeds'],
     zone: 'shattered-vale',
@@ -127,7 +127,7 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     id: 'a-matter-of-anatomy',
     name: 'A Matter of Anatomy',
     giver: 'scholar-ennis',
-    text: 'The singing shards all sing the same note, and Ennis has a theory: shardlings aren’t animals but seeds, and the shard golems are what they grow into. To prove it he needs golems broken open. Six of them, wherever they lumber on the Vale. He will take notes from a safe distance, which he defines generously.',
+    text: 'Every singing shard sings the same note. Ennis thinks shardlings are seeds, and shard golems are what they grow into. To prove it, he needs six golems broken open. They roam all over the Shattered Vale.',
     objective: { kind: 'kill', region: 'shattered-vale', count: 6, enemies: ['shard-golem'], label: 'Break open shard golems' },
     after: ['living-glass'],
     zone: 'shattered-vale',
@@ -138,19 +138,19 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     id: 'the-glass-matron',
     name: 'The Glass Matron',
     giver: 'scholar-ennis',
-    text: 'Ennis was right, and wishes he weren’t: the seeds come from somewhere. In the middle of the Crystal Fields, west of camp, the biggest golem of all squats in a nest of shards and lays them by the clutch: the Glass Matron. Ennis would like her stopped, and a sliver of her for his cabinet.',
+    text: 'Ennis was right, and shardlings are seeds. They are laid by the Glass Matron, the biggest golem of all, in the middle of the Crystal Fields west of Shardwatch. Stop her, and bring Ennis a piece of her.',
     objective: { kind: 'kill', region: 'shattered-vale', count: 1, enemies: ['the-glass-matron'], label: 'Break the Glass Matron in the Crystal Fields' },
     after: ['a-matter-of-anatomy'],
     zone: 'shattered-vale',
     level: 37,
-    reward: { xp: 2300, gold: 500, item: 'matrons-heartglass', text: 'Ennis files most of the Matron in his cabinet, labelled in three colors of ink, and hangs a sliver of her heart on a chain for you.' },
+    reward: { xp: 2300, gold: 500, item: 'matrons-heartglass', text: 'Ennis keeps most of the Matron for his cabinet. He hangs a sliver of her heart on a chain for you.' },
   },
   /* -------------------------------------------------------- Hesk's husband */
   {
     id: 'the-big-one',
     name: 'The Big One',
     giver: 'shardwife-hesk',
-    text: 'Hesk’s husband Davin picked shards for the scholars for twenty years and swore every spring that he would find the big one, up at the Wyrm Spires in the far north-east of the Vale. Last spring he went. Hesk has kept his supper warm for a year, which she admits is long, even for her. Go up to the Wyrm Spires and find out what happened to him.',
+    text: 'Hesk’s husband, Davin, gathered shards for the scholars for twenty years. Every spring he swore he would find the biggest shard of all at the Wyrm Spires, in the far north-east of the Shattered Vale. Last spring he went, and he never came back. Go to the Wyrm Spires and find out what happened to him.',
     objective: { kind: 'explore', spot: 'wyrm-spires', label: 'Look for Davin at the Wyrm Spires' },
     after: ['where-the-rift-bleeds'],
     zone: 'shattered-vale',
@@ -161,8 +161,8 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     id: 'wyrms-in-the-spires',
     name: 'Wyrms in the Spires',
     giver: 'shardwife-hesk',
-    text: 'Davin’s pick is lying in a wyrm’s nest, and Davin isn’t anywhere. The rift-wyrms swim through the air round the Spires and carry off anything that glitters, and Davin glittered: he wore every shard he ever found. Thin out the wyrms in the far north-east of the Vale, so Hesk can bring his pick home.',
-    objective: { kind: 'kill', region: 'shattered-vale', count: 8, enemies: ['rift-wyrm'], label: 'Thin out the rift wyrms' },
+    text: 'Davin’s pick lies in a wyrm’s nest at the Wyrm Spires. Tear wyrms carry off anything that glitters, and Davin wore every shard he ever found. Defeat eight Tear wyrms so Hesk can bring his pick home.',
+    objective: { kind: 'kill', region: 'shattered-vale', count: 8, enemies: ['rift-wyrm'], label: 'Defeat Tear wyrms' },
     after: ['the-big-one'],
     zone: 'shattered-vale',
     level: 37,
@@ -172,20 +172,20 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     id: 'old-coil',
     name: 'Old Coil',
     giver: 'shardwife-hesk',
-    text: 'Under the tallest spire lies the biggest wyrm of all, older than Shardwatch, coiled round a hoard of crystal: Old Coil. It ate Davin, Hesk says, quite calmly. He always swore he would come home with the big one. Go to the Wyrm Spires in the far north-east and bring her the big one.',
+    text: 'Under the tallest spire sleeps the oldest wyrm of all, coiled around a hoard of crystal: Old Coil. Hesk is sure it ate Davin. He always swore he would come home with the biggest shard of all. Kill Old Coil at the Wyrm Spires and bring Hesk the biggest crystal from its hoard.',
     objective: { kind: 'kill', region: 'shattered-vale', count: 1, enemies: ['old-coil'], label: 'Kill Old Coil at the Wyrm Spires' },
     after: ['wyrms-in-the-spires'],
     zone: 'shattered-vale',
     level: 38,
-    reward: { xp: 2400, gold: 520, item: 'davins-lucky-pick', text: 'Hesk takes Old Coil’s biggest crystal for the mantelpiece, puts Davin’s supper out for the dog at last, and gives you his pick. “It never found him the big one. You did.”' },
+    reward: { xp: 2400, gold: 520, item: 'davins-lucky-pick', text: 'Hesk puts the biggest crystal from Old Coil’s hoard on her mantelpiece, for Davin. She gives you his pick.' },
   },
   /* -------------------------------------------------------- Dace's sentries */
   {
     id: 'stalkers-in-the-dark',
     name: 'Stalkers in the Dark',
     giver: 'sergeant-dace',
-    text: 'Sergeant Dace has lost four sentries this month and found none of them. The rift-stalkers do it: lean things of glass and shadow that flicker from place to place and come at a man from the side he isn’t watching. Dace wants ten of them dead, anywhere on the Vale, and his sentries standing back to back.',
-    objective: { kind: 'kill', region: 'shattered-vale', count: 10, enemies: ['rift-stalker'], label: 'Kill rift stalkers' },
+    text: 'Sergeant Dace has lost four sentries this month, with no trace of any of them. He blames the Tear stalkers: creatures of glass and shadow that blink from place to place and attack from behind. Kill ten of them anywhere in the Shattered Vale.',
+    objective: { kind: 'kill', region: 'shattered-vale', count: 10, enemies: ['rift-stalker'], label: 'Kill Tear stalkers' },
     after: ['where-the-rift-bleeds'],
     zone: 'shattered-vale',
     level: 36,
@@ -195,7 +195,7 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     id: 'the-vale-watch',
     name: 'The Old Watch',
     giver: 'sergeant-dace',
-    text: 'Before Shardwatch there was the Old Watch, a tower in the south-west of the Vale that the Regent’s soldiers held for a hundred years and left in a single night. Dace’s missing sentries were last seen walking toward it, and his scouts say something there flickers. Go and look at the Old Watch.',
+    text: 'Before Shardwatch, the Regent’s soldiers kept the Old Watch, a tower in the south-west of the Shattered Vale. They held it for a hundred years, then abandoned it in a single night. Dace’s missing sentries were last seen walking toward it. Go and search the Old Watch.',
     objective: { kind: 'explore', spot: 'vale-old-watch', label: 'Search the Old Watch in the south-west' },
     after: ['stalkers-in-the-dark'],
     zone: 'shattered-vale',
@@ -206,12 +206,12 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     id: 'the-flicker',
     name: 'The Flicker',
     giver: 'sergeant-dace',
-    text: 'Something has made the Old Watch its lair: the Flicker, oldest of the stalkers, so quick it seems to be in two places at once, and the badges of Dace’s sentries hang on the tower door. Kill it at the Old Watch in the south-west of the Vale, and bring the badges home.',
+    text: 'The oldest Tear stalker of all, the Flicker, has made the Old Watch its lair. It moves so fast it seems to be in two places at once. The badges of Dace’s four sentries hang on the tower door. Kill the Flicker at the Old Watch, in the south-west.',
     objective: { kind: 'kill', region: 'shattered-vale', count: 1, enemies: ['the-flicker'], label: 'Kill the Flicker at the Old Watch' },
     after: ['the-vale-watch'],
     zone: 'shattered-vale',
     level: 38,
-    reward: { xp: 2350, gold: 510, item: 'sentrys-oath', text: 'Dace rivets the four badges to the brow of a watch helm and hands it to you. “They watched. Now you watch.”' },
+    reward: { xp: 2350, gold: 510, item: 'sentrys-oath', text: 'Dace fixes the four sentries’ badges to a watch helm and gives it to you, so that someone still wears them.' },
   },
 ];
 
@@ -224,23 +224,23 @@ export const SHATTERED_VALE_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'where-the-rift-bleeds', state: 'active' },
-        lines: ['Rimeheld? Sigrun finally answered. I wrote to her and to the Crown, eleven letters each. Only she answered.', 'Quell. I measure the Tear, and the Tear has been measuring me back. You’ve come at an interesting time, which is a scholar’s way of saying a bad one.'],
+        lines: ['Sigrun sent you? Good. I wrote to the Crown eleven times this year, and nobody answered.', 'The Tear is wider than I have ever seen it, and things are climbing out of it.'],
       },
-      { when: { quest: 'the-breach-camp', state: 'active' }, lines: ['Torches east of camp at night, by the breach that hums. And singing.', 'Scholars don’t sing. Not where anyone can hear. Go and see who does.'] },
-      { when: { quest: 'the-heralds-cipher', state: 'active' }, lines: ['ash-gold. The empty crown. The Pale Herald’s coin, in my Vale.', 'The letter is in cipher. Ennis says he can read it. Take it to him, and don’t let him start on shardlings.'] },
+      { when: { quest: 'the-breach-camp', state: 'active' }, lines: ['My sentries see torches east of camp at night, around a crack in the ground that hums.', 'Men in violet robes stand there and sing. Go to the Breach Camp and find out who they are.'] },
+      { when: { quest: 'the-heralds-cipher', state: 'active' }, lines: ['The singers were paid in ash-gold, the Pale Herald’s coin.', 'Their letter is in a code I can’t read. Take it to Scholar Ennis.'] },
       {
         when: { quest: 'the-tear', state: 'active' },
-        lines: ['There. The ward is round your neck. If it cracks, come back at once. If it shatters, don’t bother; you won’t be the one coming back.', 'The Tear is north of camp, at the top of the Vale. Look in. Then look away. In that order.'],
+        lines: ['The Tear is north of camp, at the top of the Shattered Vale. The Veil sigil is in the glass at its edge.', 'When Elyra takes it, the Tear will open wider. Be ready for whatever comes through.'],
       },
       {
         when: { quest: 'the-heart-of-the-tear', state: 'active' },
-        lines: ['Something in the Tear is holding it open. Something made of everything that ever came through.', 'It throws the Tear at you and steps through the air when you close in. It will not expect you to keep coming. Keep coming.'],
+        lines: ['The Tearborn is holding the Tear open. It’s made of everything that ever came through.', 'It blinks away when you get close. Keep after it.'],
       },
       {
         when: { quest: 'the-heart-of-the-tear', state: 'done' },
-        lines: ['The Tear is a crack now. A crack I can live with. I have lived with worse; I’ve had students.', 'But it’s still being fed, from the north, from somewhere past the Gates. The Pale Herald is holding the door open from the other side. I have written to the Regent. Twelve letters. Numbered.'],
+        lines: ['The Tear is only a crack now. Shardwatch is safe for the moment.', 'The Herald is holding it open from the far end, somewhere in the north. That’s where he took Elyra.'],
       },
-      { lines: ['Shardwatch: twelve scholars, thirty soldiers and one tower, watching the Tear so the rest of the world doesn’t have to.', 'Mind the shards. The pretty ones bite.'] },
+      { lines: ['This is Shardwatch. Twelve scholars and thirty soldiers watch the Tear from here.', 'Don’t touch the glowing shards. They cut deep.'] },
     ],
   },
   'scholar-ennis': {
@@ -253,26 +253,22 @@ export const SHATTERED_VALE_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'the-heralds-cipher', state: 'active' },
-        lines: [
-          'A cipher! Oh, that’s lovely. Simple shift, a key word, very old-fashioned. Give me a moment. And don’t mention shardlings, I’ll only start.',
-          '“The thief will bring them up the Vale. Her brother for the iron.” Signed with an empty crown. Nyx told you it said nothing.',
-          'The other side. I don’t like that phrase. Nobody should.',
-        ],
+        lines: ['Nyx took the letter before I could read it. She says it’s only the singers’ orders.', 'I only saw grey ink, and the empty crown that’s stamped on the ash-gold. Then she put it in her coat.'],
       },
       {
         when: { quest: 'living-glass', state: 'active' },
-        lines: ['A live shardling would be ideal. Quell has forbidden it. Quell forbids everything interesting.', 'The shard at a dead one’s heart goes on singing for a day, if it died before it burst. Six, please. Quickly. They go flat.'],
+        lines: ['Quell won’t let me keep a live shardling, so I study dead ones.', 'The shard in a shardling’s heart keeps singing for a day after it dies. Bring me six, quickly.'],
       },
       {
         when: { quest: 'a-matter-of-anatomy', state: 'active' },
-        lines: ['Every shard sings the same note. My theory: shardlings are seeds, and the golems are what they grow into.', 'Break six golems open and I’ll prove it. I’ll be taking notes. From over there. Further. Yes.'],
+        lines: ['Every shard sings the same note. I think shardlings are seeds, and golems are what they grow into.', 'Break six golems open, and I can prove it.'],
       },
       {
         when: { quest: 'the-glass-matron', state: 'active' },
-        lines: ['I was right. I usually am, and it’s usually awful.', 'Seeds come from somewhere. The Glass Matron squats in the middle of the Crystal Fields, west of camp, and lays them. Stop her. Save me a piece.'],
+        lines: ['I was right. Shardlings are seeds, and the Glass Matron lays them.', 'She sits in the middle of the Crystal Fields, west of camp. Stop her, and save me a piece.'],
       },
-      { when: { quest: 'the-glass-matron', state: 'done' }, lines: ['The Matron is in my cabinet, in eleven drawers. Labelled. Wear the sliver; it sings when it’s cold.'] },
-      { lines: ['Ennis’s Cabinet. Charms, rings and curiosities, most of them from the Tear, all of them examined. Twice.', 'Touch anything that hums and you buy it. That’s not a rule; it’s a warning.'] },
+      { when: { quest: 'the-glass-matron', state: 'done' }, lines: ['The Matron fills eleven drawers of my cabinet. Thank you.', 'Wear that sliver of her heart. It hums when it’s cold.'] },
+      { lines: ['Welcome to Ennis’s Cabinet. Charms, rings and curios, most of them from the Tear.', 'I’ve studied everything here. It’s all safe to wear.'] },
     ],
   },
   'shardwife-hesk': {
@@ -285,15 +281,15 @@ export const SHATTERED_VALE_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'the-big-one', state: 'active' },
-        lines: ['A shardwife is what they call the one who stays home and counts the shards. Davin picked, I counted. Twenty years.', 'Every spring he said he’d find the big one at the Wyrm Spires, far north-east. Last spring he went. His supper’s still warm. I keep warming it. Go and see.'],
+        lines: ['My husband, Davin, gathered shards, and I counted them. We did that for twenty years.', 'Last spring he went to the Wyrm Spires, far north-east, to find the biggest shard of all. He never came back.', 'I still warm his supper every night. Please find out what happened to him.'],
       },
-      { when: { quest: 'wyrms-in-the-spires', state: 'active' }, lines: ['His pick, in a wyrm’s nest. And not him.', 'He wore every shard he ever found. Glittered like a chandelier. The wyrms like things that glitter. Thin them out for me.'] },
+      { when: { quest: 'wyrms-in-the-spires', state: 'active' }, lines: ['You found his pick in a wyrm’s nest, but not him.', 'He wore every shard he found, and wyrms take anything that glitters. Thin them out so I can bring his pick home.'] },
       {
         when: { quest: 'old-coil', state: 'active' },
-        lines: ['Old Coil. The biggest wyrm in the Spires, curled on its hoard. It ate Davin. I’m quite calm about it. I’ve had a year.', 'He always said he’d come home with the big one. Bring me the big one.'],
+        lines: ['Old Coil is the biggest wyrm in the Spires. It ate Davin. I’m sure of it.', 'He always said he’d come home with the biggest shard of all. Bring it home for him.'],
       },
-      { when: { quest: 'old-coil', state: 'done' }, lines: ['The big one’s on my mantelpiece. Davin would have loved it. He’d have tried to sell it, but he’d have loved it.', 'I gave his supper to the dog. It’s been a long time coming, for both of us.'] },
-      { lines: ['The Bent Spire. Beds, potions, and soup with nothing in it that glows. I check.', 'If a shard sings to you on the road, don’t sing back. It gets ideas.'] },
+      { when: { quest: 'old-coil', state: 'done' }, lines: ['The big crystal is on my mantelpiece. Davin would have loved it.', 'I’ve stopped warming his supper. It’s time.'] },
+      { lines: ['Welcome to the Bent Spire. We have beds, potions and hot soup.', 'Stay off the glass when you can. It cuts through boots.'] },
     ],
   },
   'sergeant-dace': {
@@ -304,18 +300,18 @@ export const SHATTERED_VALE_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'stalkers-in-the-dark', state: 'active' },
-        lines: ['Four sentries this month. Not killed. Gone. No blood, no boots, nothing.', 'Stalkers. They flicker from place to place and come from the side you’re not watching. Kill ten. My lads will stand back to back till you do.'],
+        lines: ['I’ve lost four sentries this month. No bodies, no blood, nothing.', 'Tear stalkers did it. They blink from place to place and hit you from behind. Kill ten of them.'],
       },
       {
         when: { quest: 'the-vale-watch', state: 'active' },
-        lines: ['The Old Watch, in the south-west. The Regent’s soldiers held it for a hundred years and left it in one night. Nobody wrote down why.', 'My missing lads were seen walking that way. Something there flickers. Go and look.'],
+        lines: ['The Old Watch is in the south-west. Our soldiers held it for a hundred years, then left it in one night. Nobody knows why.', 'My missing sentries were seen walking that way. Go and look.'],
       },
       {
         when: { quest: 'the-flicker', state: 'active' },
-        lines: ['Their badges on the tower door. All four. Hung up like a trophy.', 'The Flicker. It’s in two places at once, the scouts say. Kill the one that bleeds.'],
+        lines: ['All four of my sentries’ badges are hanging on the tower door.', 'The Flicker looks like it’s in two places at once, but only one of them is real. Hit that one.'],
       },
-      { when: { quest: 'the-flicker', state: 'done' }, lines: ['I’ve sent the badges home to their mothers. Well, I’ve riveted them to your helm. The mothers got letters.', 'Wear it with your eyes open. That’s all a sentry ever is.'] },
-      { lines: ['Sergeant Dace, the Regent’s Watch at Shardwatch. Thirty soldiers, one tower, and a hole in the world to keep an eye on.', 'Stay where the sentries can see you. If you can’t see a sentry, that’s your answer.'] },
+      { when: { quest: 'the-flicker', state: 'done' }, lines: ['I wrote to their families and told them the Flicker is dead.', 'Their badges are on your helm now. Wear it well.'] },
+      { lines: ['I’m Sergeant Dace. I command the Regent’s thirty soldiers here at Shardwatch.', 'Stay where my sentries can see you.'] },
     ],
   },
 };
@@ -334,17 +330,17 @@ export const SHATTERED_VALE_EVENTS: Record<string, StoryEventDef> = {
     taken: ['elyra'],
     banner: 'The Pale Herald',
     start: [
-      { who: 'orren', text: 'Something’s wrong. The light is wrong. He knew we were coming.' },
+      { who: 'orren', text: 'The Herald is here. He knew we were coming!' },
       { who: 'cael', text: 'Shields up! Everyone behind me!' },
     ],
     waves: [
-      { enemies: ['ashen-assassin', 'ashen-assassin', 'rift-stalker', 'voidcaller'], from: ['tear-n', 'tear-w'], barks: [{ who: 'nyx', text: 'He said he’d give me Wren. He said if I told him the road, he’d give me Wren.' }] },
-      { enemies: ['rift-stalker', 'rift-stalker', 'voidcaller', 'ashen-assassin', 'ashen-assassin'], from: ['tear-e', 'tear-n'], leave: ['nyx'], barks: [{ who: 'cael', text: 'Nyx? Where’s Nyx?' }, { who: 'elyra', text: 'She’s gone. She went into the grey. Oh — he can see the light in me. He can SEE it.' }] },
-      { enemies: ['the-pale-herald', 'ashen-assassin', 'rift-stalker', 'voidcaller', 'voidcaller'], from: ['tear-n', 'tear-w', 'tear-e'], barks: [{ who: 'the-pale-herald', text: 'Little light. You have been carrying something of my king’s. Come and give it back.' }, { who: 'orren', text: 'Don’t let him near her! Don’t let him near Elyra!' }] },
+      { enemies: ['ashen-assassin', 'ashen-assassin', 'rift-stalker', 'voidcaller'], from: ['tear-n', 'tear-w'], barks: [{ who: 'nyx', text: 'He promised me Wren! He said he’d free my brother if I told him our road!' }] },
+      { enemies: ['rift-stalker', 'rift-stalker', 'voidcaller', 'ashen-assassin', 'ashen-assassin'], from: ['tear-e', 'tear-n'], leave: ['nyx'], barks: [{ who: 'cael', text: 'Nyx? Where’s Nyx?' }, { who: 'elyra', text: 'She ran into the grey light. The Herald is coming for me. He wants the sigils!' }] },
+      { enemies: ['the-pale-herald', 'ashen-assassin', 'rift-stalker', 'voidcaller', 'voidcaller'], from: ['tear-n', 'tear-w', 'tear-e'], barks: [{ who: 'the-pale-herald', text: 'You carry five of my king’s sigils, girl. You will carry them to him.' }, { who: 'orren', text: 'Don’t let him near Elyra!' }] },
     ],
     end: [
       { who: 'cael', text: 'Elyra! ELYRA!' },
-      { who: 'orren', text: 'Gone. He took her into the Tear, and the grey closed behind them. Lord of the long road.' },
+      { who: 'orren', text: 'He took her through the Tear. She’s gone, and the sigils with her.' },
     ],
     retry: [{ who: 'cael', text: 'Get up. Get up! He hasn’t taken her yet!' }],
   },
@@ -356,9 +352,9 @@ export const SHATTERED_VALE_EVENTS: Record<string, StoryEventDef> = {
     radius: 18,
     arrive: { pets: ['refugee', 'refugee', 'fern-ranger', 'refugee', 'refugee'], from: 'briar-west', to: 'briar-fern-camp' },
     banner: 'Fernstead’s people',
-    start: [{ who: 'fern-ranger', text: 'Fernstead, all of it that’s left. Where do we go? Somebody tell us where to go.' }],
+    start: [{ who: 'fern-ranger', text: 'This is everyone from Fernstead. Where do we go?' }],
     waves: [],
-    end: [{ who: 'mara-venn', text: 'Here. You come here. You always come here. That’s what this place is for now.' }],
+    end: [{ who: 'mara-venn', text: 'You stay here, with us. Briarhollow takes in everyone who needs it.' }],
   },
 };
 
@@ -386,6 +382,6 @@ export const SHATTERED_VALE_STORY_FOES: Record<string, EnemyDef> = {
     keep: 90,
     named: true,
     scale: 1.4,
-    blurb: 'Vaelor’s voice in the living world: a tall man in white with nothing where his face should be. He buys traitors, carries orders, and took Elyra into the Tear. He cannot be beaten. Not yet.',
+    blurb: 'He speaks for King Vaelor in the living world. He is a tall man in white with no face, and he pays traitors in ash-gold. You cannot beat him here.',
   },
 };

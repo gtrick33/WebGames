@@ -31,7 +31,25 @@ follows these rules.
 | The Host rides under clan feathers, and the clans think it’s us. Of course they do. It’s clever. I hate clever. | The Host’s riders wear clan feathers when they attack. Now the clans and the refugees blame each other. |
 | Tell me what happened. Then tell me it won’t happen again. One of those I’ll believe. | It’s south-east of town. Find out what happened. |
 
+## Every land knows why the hero is there
+
+The owner again (2026-11-15): "dialogue is confusing as heck, i have no clue most of the time what they are saying,
+what the story is, whats the purpose ... i cant relate to the heroes mostly hecause i have no clue whats happening".
+So on top of the rules:
+
+10. **Every pop-up stands alone.** A player who skims one line on a phone knows who is talking, what they want, what
+    just happened and where to go next. Nothing leans on something said three hours ago.
+11. **Every land and act opens with the stakes.** The first quest or scene says, in a sentence or two, how many
+    sigils each side holds, what the Host wants with them and why this place matters.
+12. **Companions say what they feel and want.** Elyra, Mara, Nyx, Cael and Orren are people the player should care
+    about: they say plainly when they are scared, angry, guilty or glad, and why.
+13. **Short.** A scene line is at most about 120 letters; quest text two to four short sentences.
+
 ## Where it stands
 
-- Act I, the Amberfield (the Defense of Hearthstead): rewritten (`data/zones/amberfield-quests.ts`, its scenes).
-- Everything else: not yet.
+- Every land of the story rewritten to these rules (2026-11-15): the Prologue and Act I (Briarhollow, the
+  Whisperwood, Brackenridge, Thornvale, the Amberfield), Act II (the Ashen Barrows, Emberwick), Act III (the
+  Sunscorch, the Glimmerwood, Rimeheld, the Shattered Vale), Act IV (Highwall March, the Gloam story in the Riftscar),
+  Act V (the Weeping Woods, Emberdeep, Hollowmere), the Last March, Crownfall and the epilogue: quest text and
+  rewards, everyone's talk, fight barks, scenes, vision captions and the bosses' introductions.
+- Not rewritten: the retired lands (`data/retired.ts`), and item and enemy lore (flavor on a card, not dialogue).

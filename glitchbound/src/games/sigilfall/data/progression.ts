@@ -1,4 +1,5 @@
 import type { QuestDef, RegionDef, RegionId, StoryEventDef } from './types';
+import { GOLD_FIND } from './vendors';
 
 /**
  * Where XP comes from (PROGRESSION_BALANCE.md Part 2, A). The level curve stays; the sources are
@@ -89,14 +90,16 @@ export function questBand(q: QuestDef, defs: Record<string, QuestDef>, regions: 
 
 /**
  * Applies the rebalance to the quest table: main-story rewards scaled by their band, side rewards by
- * SIDE_XP, and each quest's XP level (for outlevelled) set to its band's floor + 2 unless it has its own.
+ * SIDE_XP, and each quest's XP level (for outlevelled) set to its band's floor + 2 unless it has its own; its gold
+ * is the road's share (GOLD_FIND).
  */
 export function balanceQuestXp(defs: Record<string, QuestDef>, regions: Record<string, RegionDef>, npcRegion: Record<string, RegionId>, events: Record<string, StoryEventDef>): void {
   const main = mainStory(defs);
   for (const q of Object.values(defs)) {
     const band = questBand(q, defs, regions, npcRegion, events);
     const k = main.has(q.id) ? (MAIN_XP[band] ?? 1) : SIDE_XP;
-    q.reward = { ...q.reward, xp: Math.max(10, Math.round((q.reward.xp * k) / 5) * 5) };
+    // (and its gold is the road's share of what it says, GOLD_FIND, data/vendors.ts)
+    q.reward = { ...q.reward, xp: Math.max(10, Math.round((q.reward.xp * k) / 5) * 5), gold: q.reward.gold > 0 ? Math.max(5, Math.round((q.reward.gold * GOLD_FIND) / 5) * 5) : 0 };
     q.xpLevel ??= q.level ?? (regions[band]?.levels[0] ?? 1) + 2;
   }
 }

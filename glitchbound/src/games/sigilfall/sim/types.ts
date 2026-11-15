@@ -373,6 +373,10 @@ export interface Telegraph {
   dur: number;
   dmg: number;
   status?: { status: StatusId; dur: number; power: number };
+  /** A boss's blow: the least share of the hero's health it takes when it lands (sim/combat.ts BLOW_FLOOR). */
+  floor?: number;
+  /** The boss's pattern it came from (a number of its own): the floor is paid once a pattern (World.floorPaid). */
+  floorOf?: number;
   knock: number;
   /** Visual: enemy attacks are red; the rift is magenta. */
   tone: 'enemy' | 'rift' | 'player';

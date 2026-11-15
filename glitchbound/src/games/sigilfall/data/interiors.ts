@@ -299,11 +299,11 @@ const NPCS: Record<string, NpcDef> = {
     shop: 'inn',
     shopName: 'The Bramble & Barrel',
     talk: [
-      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['Highwall held. Mum cried into the stew. Don’t tell her I told you.', 'Every cot in the back is somebody from a village that isn’t there anymore. Every one of them asked for you by name.'] },
-      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['Nobody plays Elyra’s song anymore. Wil tried. Halfway through, he just put the fiddle down.', 'Eat something. That’s not a question.'] },
-      { when: { quest: 'camp-riders', state: 'done' }, lines: ['Riders from Hearthstead drink like they fight: all at once and very loudly.', 'Four villages under one roof now. Mum says we should charge rent. She’s joking.'] },
-      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The roof held over the bar and nowhere else. So the bar is where everybody sleeps now.', 'Potions are on the shelf where the fire couldn’t get them. Help yourself, I’ll write it down.'] },
-      { lines: ['Ale, broth, a bed upstairs if you don’t mind the damp. Potions are Mum’s, but I sell them when she isn’t looking.', 'Shutters close at sunset. Haven’t heard the bell in three weeks, so I watch the sky instead.'] },
+      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['Highwall held! Mum cried when she heard.', 'Every cot in the back holds someone who lost their home to the Host. They all ask about you.'] },
+      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['Wil tried to play Elyra’s favorite song last night. He stopped halfway through.', 'Please eat something. You need it.'] },
+      { when: { quest: 'camp-riders', state: 'done' }, lines: ['Hearthstead’s riders drink here every night. They’re loud, but they pay.', 'Four villages share this roof now: Briarhollow, Fernstead, Millbrook and Hearthstead.'] },
+      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The roof only held over the bar, so everyone sleeps by the bar now.', 'The potions survived the fire. They’re on the shelf.'] },
+      { lines: ['Ale, broth and a bed upstairs. Mum’s potions are on the shelf.', 'We close the shutters at sunset. People have been going missing after dark.'] },
     ],
   },
   'fiddler-wil': {
@@ -312,12 +312,12 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Fiddler, plays for his supper',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'fern-retaken', state: 'done' }, lines: ['I’m writing a song about Fernstead taken back. It rhymes “Hollis” with “solace.” I am not proud.', 'They say Mara Venn smiled when the banner went up. Just once. Somebody should write that down.'] },
-      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['A faceless man in white at the Tear, they say, who walked out of a story nobody finished.', 'I knew a song about the Pale Herald once. My grandmother made me forget it.'] },
-      { when: { quest: 'festival-the-champion', state: 'done' }, lines: ['Champion of Aster! I have a verse about you already. Several. One of them is even true.', 'The Chancellor ran into the catacombs and nobody went after him. Says something about the catacombs. Says more about the Chancellor.'] },
-      { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['Riders on the King’s Road with grey shields and no faces. The road warden waves them through.', 'If the roads office closed the road, who opened it for them? That’s not in any song yet.'] },
-      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The bell under the chapel was older than the chapel, Haldor says. And something was buried with it that wasn’t a body.', 'Here’s a tune for people who pull children out of fires. It’s short. It ends well.'] },
-      { lines: ['Three weeks without the bell and nobody will say why. So I play louder.', 'People go missing on the Whisperwood road after dark. Not taken. Missing. Like they were never on it.'] },
+      { when: { quest: 'fern-retaken', state: 'done' }, lines: ['I’m writing a song about how we took Fernstead back.', 'They say Mara Venn smiled when Fernstead’s banner went up.'] },
+      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['They say a pale man in white took Elyra at the Tear. People call him the Pale Herald.', 'My grandmother knew an old song about the Pale Herald. She would never sing it for me.'] },
+      { when: { quest: 'festival-the-champion', state: 'done' }, lines: ['Champion of Aster! I’ve already written a verse about you.', 'They say the Chancellor ran into the catacombs under the Crown City, and nobody has found him.'] },
+      { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['Travelers say grey riders use the King’s Road at night, and the road wardens let them pass.', 'The roads office closed that road to everyone else. So who opened it for the Host?'] },
+      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Haldor says the crypt is older than the chapel. Something was hidden down there for three hundred years.', 'This tune is for you, for pulling those children out of the fire.'] },
+      { lines: ['The chapel bell hasn’t rung in three weeks. Haldor won’t ring it.', 'People have gone missing on the Whisperwood road after dark. Nobody has found a trace of them.'] },
     ],
   },
   'old-jory': {
@@ -326,9 +326,9 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Has had the same stool for forty years',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['My grandfather said the dead would come out of the north one day. He also said that about the weather.', 'This time he was right. Don’t tell him. He’s dead. You know what I mean.'] },
-      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Lost my stool in the fire. Hob made me a new one. It’s the wrong height. I love it.', 'The grey ones didn’t take anything. No gold, no grain. Just the warm out of the hearths.'] },
-      { lines: ['Forty years on this stool. I’ve seen three kings, two floods and one honest tax collector.', 'You’re not from here. Nobody comes here. Which means something brought you. Sit.'] },
+      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['My grandfather always said the dead would come out of the north one day.', 'Nobody believed him. He was right.'] },
+      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['I lost my stool in the fire. Hob made me a new one.', 'The grey raiders didn’t take gold or grain. Every hearth they passed went cold.'] },
+      { lines: ['I’ve sat on this stool for forty years.', 'You’re not from around here. Sit down and have a drink.'] },
     ],
   },
   'sister-anwen': {
@@ -337,10 +337,10 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Keeper of the Chapel of the Bell',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['Haldor climbs the tower every morning and puts his hand on the bell. He hasn’t rung it. He says it isn’t over yet.', 'He’s right. But he goes up anyway.'] },
-      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['A candle for every one of the taken. Elyra’s is the one by the door. I light it last, so it burns longest.', 'She sat on that pew as a girl and argued with the hymns. I miss the arguing.'] },
-      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The crypt is quiet now. Quiet the way a held breath is quiet.', 'The bell stopped because something below it woke, and it rang by itself the night they came for it: three times, and no one at the rope. When it rings for us, it will be because that something has been put back to sleep.'] },
-      { lines: ['The bell hasn’t rung in three weeks. The rope still swings at night, with nobody on it.', 'Sit if you need to. The pews are hard. That’s on purpose; you’re meant to stay awake in here.'] },
+      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['Haldor climbs the tower every morning and puts his hand on the bell. He says it isn’t over yet.', 'He’ll ring it when the war is over.'] },
+      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['I light a candle for everyone the Host has taken. Elyra’s is the one by the door.', 'She sat on that pew as a girl. I miss her.'] },
+      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Haldor stopped ringing the bell when his grandson went missing. Then, the night of the raid, it rang three times by itself.', 'I think the sigil under the chapel rang it, to warn us.'] },
+      { lines: ['The bell hasn’t rung in three weeks. Haldor won’t ring it until his grandson comes home.', 'Sit if you need to. It’s quiet in here.'] },
     ],
   },
   'ledger-rook': {
@@ -349,10 +349,10 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Keeps the camp’s ledger',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'camp-riders', state: 'done' }, lines: ['Four banners on the wall. Every one of them is a village that would be ash without you.', 'The Elder reads the ledger every night. She says it’s for the numbers. She skips the numbers.'] },
-      { when: { quest: 'camp-scouts', state: 'done' }, lines: ['Rangers on the watchfire, so a banner on the wall. Elder Maren says every village that comes gets one.', 'I have a column for what each one brings, and a column for what each one lost. The second is longer.'] },
-      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The Elder’s table is a war table now. I keep the ledger: beds, bread, arrows, names.', 'We are a camp of one village. The Elder says the others will come. She says it like she’s already counting them.'] },
-      { lines: ['The Elder’s hall. Mind the floor; it’s older than the kingdom and creaks in three places.', 'I write down the harvest, the births and the burials. Lately, the burials are the longest column.'] },
+      { when: { quest: 'camp-riders', state: 'done' }, lines: ['There are four banners on the wall now, one for each village in the camp.', 'Elder Maren reads the list of names every night.'] },
+      { when: { quest: 'camp-scouts', state: 'done' }, lines: ['Fernstead’s rangers keep our watchfire, so Fernstead’s banner hangs on the wall.', 'I write down what each village brings to the camp, and what it has lost.'] },
+      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The Elder’s table is a war table now. I keep the records of beds, bread, arrows and names.', 'Right now the camp is one village. The Elder says the others will join us.'] },
+      { lines: ['This is the Elder’s hall. I keep the village records.', 'Lately I write down more burials than births.'] },
     ],
   },
   'minstrel-corra': {
@@ -361,10 +361,10 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Minstrel of the Ember Hearth',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['“The night is long, the wall is high, and Highwall did not fall.” That’s the chorus. Everybody knows it already.', 'They’ll sing it for a hundred years. I’d like to be paid for at least ten.'] },
-      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['The city doesn’t want songs about the Tear. It wants songs about winning. I’ll wait until there’s one to write.'] },
-      { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['The Night of Knives. Lanterns in the square, blades in the crowd, and the Regent standing still while they came for her.', 'I watched her. She didn’t flinch. She looked at you, and she didn’t flinch.'] },
-      { lines: ['Nine strings: one for each banner of the Ninefold Watch. Two have gone quiet. I keep them tuned anyway.', 'Requests are a copper. Requests about the Chancellor are free, because I enjoy them.'] },
+      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['“The night is long, the wall is high, and Highwall did not fall.” That’s my new song.', 'The whole city is singing it already.'] },
+      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['Nobody wants to hear songs about the Tear. I won’t write another until we win something.'] },
+      { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['I was in the square on the Night of Knives. The knives came for the Regent, and she didn’t run.', 'She stood still and watched you fight for her.'] },
+      { lines: ['I sing the songs of the Ninefold Watch, the knights who guarded the downs.', 'Hardly anyone in the city remembers them now.'] },
     ],
   },
   'merchant-dace': {
@@ -373,9 +373,9 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Wool merchant, stuck in the city',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'city-the-cellar', state: 'done' }, lines: ['The roads office again! Closed the King’s Road for “repairs,” and the only thing repaired was the Chancellor’s purse.', 'You found the cellar? Then you know where my wool went. Under the city, with everything else he stole.'] },
-      { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['Forty bales of wool and no road to sell them on. The roads office says “maintenance.” For three months.', 'Grey riders use the road at night. I’ve seen them from my window. Funny kind of maintenance.'] },
-      { lines: ['Wool, linen, a bolt of dyed silk if you have the gold. I’d sell faster if the roads were open.'] },
+      { when: { quest: 'city-the-cellar', state: 'done' }, lines: ['So it was the Chancellor. He closed the King’s Road to us and kept it open for the Host.', 'My wool has been stuck in this city for three months because of him.'] },
+      { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['I have forty bales of wool and no road to sell them on. The roads office says the King’s Road is closed for repairs.', 'But I’ve seen grey riders use that road at night.'] },
+      { lines: ['Wool, linen, and dyed silk, if you have the gold. I’d sell more if the roads were open.'] },
     ],
   },
   'steward-aldous': {
@@ -384,10 +384,10 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Keeper of the Ember Keep',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['The court hasn’t met in this hall since the war began. The war council has met here every night.', 'Two gates still stand between us and the Dead Kingdom. The Regent sleeps in her chair by the map.'] },
-      { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['After the Night of Knives the court became a council of war. I took the tapestries down to make room for the map.', 'The Chancellor’s chair is still at the table. Nobody sits in it. Nobody will move it either.'] },
-      { when: { quest: 'city-the-cellar', state: 'done' }, lines: ['The Starfall Festival: lanterns in every window, and every lord in the kingdom pretending to like the others.', 'Mind the Chancellor’s people. They smile with their whole face and none of their eyes.'] },
-      { lines: ['The Great Hall of the Ember Keep. The king held court here, before he took to his bed.', 'Mind the rugs; they are older than you, and in better condition than me.'] },
+      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['The war council has met in this hall every night since Highwall held.', 'Two more gates stand between us and the Dead Kingdom. The Regent sleeps in her chair by the map.'] },
+      { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['After the Night of Knives, the court became a war council. I took the tapestries down to make room for the map.', 'The Chancellor’s chair is still at the table. Nobody sits in it.'] },
+      { when: { quest: 'city-the-cellar', state: 'done' }, lines: ['The Starfall Festival is tonight, and every lord in the kingdom is in the city.', 'Be careful. The Chancellor’s men are all over the keep.'] },
+      { lines: ['This is the Great Hall of the Ember Keep. The King held court here before he fell ill.'] },
     ],
   },
   'apprentice-kit': {
@@ -396,8 +396,8 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Brannoc’s apprentice',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['We haven’t made a plowshare since the Night of Knives. Spears, spears, shields, spears.', 'Brannoc says a smith in wartime works twice and sleeps half. He hasn’t slept since Tuesday.'] },
-      { lines: ['Pump the bellows, quench the blade, sweep the floor, pump the bellows. One day I’ll get to hit something.', 'Brannoc’s out front. In here’s just me and the fire. The fire is better company.'] },
+      { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['We haven’t made a plowshare since the Night of Knives. Only spears and shields.', 'Brannoc works all day and half the night.'] },
+      { lines: ['I pump the bellows, quench the blades and sweep the floor.', 'Brannoc is out front, if you want to buy something.'] },
     ],
   },
 };

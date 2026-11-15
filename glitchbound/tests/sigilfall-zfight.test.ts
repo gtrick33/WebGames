@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { DOORWAYS } from '../src/games/sigilfall/render3d/doorways';
 import { stoneGate, timberGate } from '../src/games/sigilfall/render3d/gateways';
 import { THEMES } from '../src/games/sigilfall/data/themes';
-import { fights, type Fight } from './sigilfall-zfight';
+import { REGIONS } from '../src/games/sigilfall/data/regions';
+import { parseRegion } from '../src/games/sigilfall/sim/map';
+import { CLAD_SHY, Land3D } from '../src/games/sigilfall/render3d/land';
+import { readPack } from './sigilfall-packs';
+import { fights, placedFights, type Fight } from './sigilfall-zfight';
 
 const LOOKS = Object.values(THEMES);
 
@@ -31,6 +35,25 @@ describe('Sigilfall: nothing built flickers', () => {
     const bad: Record<string, string> = {};
     for (const [id, d] of Object.entries(DOORWAYS)) {
       const f = fights(d.build(LOOKS[0]!).m);
+      if (f.length) bad[id] = `${f.length}: ${sum(f)}`;
+    }
+    expect(bad).toEqual({});
+  });
+
+  // the Tomb of the Sun King, all steps and corners (the owner: "some of the walls (mostly the edges) in this particular
+  // dungeon flicker and jitter, fix them, check every other dungeon as well"): a run of the facing pieces ended in the
+  // plane of the side the wall's own block shows at a corner, and the two flickered through each other down its edge
+  it('a built place’s walls: no facing piece ends in the plane of the wall’s own side', { timeout: 60_000 }, () => {
+    expect(CLAD_SHY).toBeGreaterThan(0.005);
+    const packs = { nature: readPack('nature'), town: readPack('town'), indoor: readPack('indoor'), hero: readPack('hero') };
+    const bad: Record<string, string> = {};
+    for (const id of ['tomb-of-the-sun-king', 'crypt', 'siege-of-highwall', 'rotmother-cistern', 'duskspire', 'spire-of-the-rift']) {
+      const region = REGIONS[id as keyof typeof REGIONS]!;
+      const map = parseRegion(region);
+      const land = new Land3D(map, region, packs, () => true);
+      land.update(map.w / 2, map.h / 2, map.w, map.h);
+      // (the walls and their facing, inside the map: a piece's end over a wall's side fought over half a square tile)
+      const f = placedFights(land.group, (x, z) => x > 0 && z > 0 && x < map.w && z < map.h, 0.05).filter((x) => x.at[1] > 0.15);
       if (f.length) bad[id] = `${f.length}: ${sum(f)}`;
     }
     expect(bad).toEqual({});
