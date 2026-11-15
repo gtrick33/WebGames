@@ -369,6 +369,8 @@ export class World {
   /** Where the place is under attack this frame, for its animals to run from (updateAmbient). */
   private readonly trouble: { x: number; y: number }[] = [];
   private readonly critterRand: () => number;
+  /** The weather's own dice: what falls through the air is only a picture, and never moves the fight's. */
+  private readonly weatherRand: () => number;
   /** The people of the place going about their day (sim/folk.ts): decoration, on their own random numbers. */
   folk: Folk[] = [];
   private folkRand: () => number = () => 0.5;
@@ -448,6 +450,7 @@ export class World {
     this.rand = rng(o.seed);
     this.folkSeed = o.seed;
     this.critterRand = rng(o.seed ^ 0x3c1d);
+    this.weatherRand = rng(o.seed ^ 0x5eed);
     this.build = buildHero(o.hero);
     this.flow = new Int16Array(this.map.w * this.map.h);
     this.encounters = this.region.encounters.map((def, index) => ({ def, index, state: 'idle', wave: 0, waveT: 0 }));
@@ -2545,48 +2548,50 @@ export class World {
       const p = this.player;
       if (dist(n.x, n.y, p.x, p.y) < 60) n.face = p.x < n.x ? -1 : 1;
     }
-    // the air of each land: falling leaves, seeds and petals, sea spray, snow, ash, spores, motes, embers, dust
+    // the air of each land: falling leaves, seeds and petals, sea spray, snow, ash, spores, motes, embers, dust. It rolls
+    // its own dice (weatherRand): drawn from the fight's, how many flakes the screen had room for (fewer with more spells
+    // going off, a third of them with reduced motion) changed every roll after it, and a fight played out differently
     const look = THEMES[this.region.theme];
     const p = this.player;
-    const pick = <T,>(l: readonly T[]): T => l[Math.floor(this.rand() * l.length)]!;
-    const sx = p.x + (this.rand() - 0.5) * 380;
-    const sy = p.y + (this.rand() - 0.5) * 230;
-    const a = this.rand() * TAU;
+    const pick = <T,>(l: readonly T[]): T => l[Math.floor(this.weatherRand() * l.length)]!;
+    const sx = p.x + (this.weatherRand() - 0.5) * 380;
+    const sy = p.y + (this.weatherRand() - 0.5) * 230;
+    const a = this.weatherRand() * TAU;
     // reduced motion: a third of the weather
-    if (this.settings.reducedMotion && this.rand() > 0.35) return;
+    if (this.settings.reducedMotion && this.weatherRand() > 0.35) return;
     switch (look.ambient) {
       case 'leaves':
-        if (this.rand() < dt * 2.2) this.addFx({ kind: 'leaf', x: sx, y: p.y - 130, vx: 12 + this.rand() * 10, vy: 18 + this.rand() * 10, life: 6, size: 1, color: pick([look.leaves[3], look.leaves[4], '#d8b44a']), a });
+        if (this.weatherRand() < dt * 2.2) this.addFx({ kind: 'leaf', x: sx, y: p.y - 130, vx: 12 + this.weatherRand() * 10, vy: 18 + this.weatherRand() * 10, life: 6, size: 1, color: pick([look.leaves[3], look.leaves[4], '#d8b44a']), a });
         break;
       case 'seeds':
-        if (this.rand() < dt * 1.6) this.addFx({ kind: 'leaf', x: p.x - 200 + this.rand() * 120, y: sy, vx: 22 + this.rand() * 14, vy: -3 + this.rand() * 6, life: 7, size: 1, color: pick(['#f2ead8', '#ffd84d', '#f2ead8']), a });
+        if (this.weatherRand() < dt * 1.6) this.addFx({ kind: 'leaf', x: p.x - 200 + this.weatherRand() * 120, y: sy, vx: 22 + this.weatherRand() * 14, vy: -3 + this.weatherRand() * 6, life: 7, size: 1, color: pick(['#f2ead8', '#ffd84d', '#f2ead8']), a });
         break;
       case 'spray':
-        if (this.rand() < dt * 2.4) this.addFx({ kind: 'leaf', x: p.x + 200 - this.rand() * 80, y: sy, vx: -40 - this.rand() * 25, vy: 4 + this.rand() * 4, life: 6, size: 1, color: pick(['#f0fbff', '#e8d4a0']), a });
+        if (this.weatherRand() < dt * 2.4) this.addFx({ kind: 'leaf', x: p.x + 200 - this.weatherRand() * 80, y: sy, vx: -40 - this.weatherRand() * 25, vy: 4 + this.weatherRand() * 4, life: 6, size: 1, color: pick(['#f0fbff', '#e8d4a0']), a });
         break;
       case 'snow':
         // flakes of every size: a few big near ones coming down faster, many small far ones drifting (never so many
         // that a fight's own effects are crowded out)
         for (let n = 0; n < 2 && this.fx.length < 260; n++) {
-          if (this.rand() >= dt * 13) continue;
-          const big = this.rand() < 0.2;
-          this.addFx({ kind: 'flake', x: p.x + (this.rand() - 0.5) * 420, y: p.y - 130 - this.rand() * 50, vx: -9 + this.rand() * 7, vy: (big ? 30 : 19) + this.rand() * 12, life: 7.5, size: big ? 1.7 + this.rand() * 0.9 : 0.6 + this.rand() * 0.6, color: pick(['#ffffff', '#f0f6ff', '#e2ecff']), a: this.rand() });
+          if (this.weatherRand() >= dt * 13) continue;
+          const big = this.weatherRand() < 0.2;
+          this.addFx({ kind: 'flake', x: p.x + (this.weatherRand() - 0.5) * 420, y: p.y - 130 - this.weatherRand() * 50, vx: -9 + this.weatherRand() * 7, vy: (big ? 30 : 19) + this.weatherRand() * 12, life: 7.5, size: big ? 1.7 + this.weatherRand() * 0.9 : 0.6 + this.weatherRand() * 0.6, color: pick(['#ffffff', '#f0f6ff', '#e2ecff']), a: this.weatherRand() });
         }
         break;
       case 'ash':
-        if (this.rand() < dt * 3) this.addFx({ kind: 'leaf', x: sx, y: p.y - 130, vx: 6 + this.rand() * 8, vy: 12 + this.rand() * 8, life: 9, size: 1, color: pick(['#8a8a8a', '#b8b0a8', '#5a5a5a']), a });
+        if (this.weatherRand() < dt * 3) this.addFx({ kind: 'leaf', x: sx, y: p.y - 130, vx: 6 + this.weatherRand() * 8, vy: 12 + this.weatherRand() * 8, life: 9, size: 1, color: pick(['#8a8a8a', '#b8b0a8', '#5a5a5a']), a });
         break;
       case 'spores':
-        if (this.rand() < dt * 2.5) this.addFx({ kind: 'leaf', x: sx, y: sy + 60, vx: -3 + this.rand() * 6, vy: -8 - this.rand() * 6, life: 6, size: 1, color: pick([look.ground.flowers[0], look.ground.flowers[1], look.ground.water.light]), a });
+        if (this.weatherRand() < dt * 2.5) this.addFx({ kind: 'leaf', x: sx, y: sy + 60, vx: -3 + this.weatherRand() * 6, vy: -8 - this.weatherRand() * 6, life: 6, size: 1, color: pick([look.ground.flowers[0], look.ground.flowers[1], look.ground.water.light]), a });
         break;
       case 'motes':
-        if (this.rand() < dt * 2) this.addFx({ kind: 'leaf', x: sx, y: sy, vx: -4 + this.rand() * 8, vy: -4 - this.rand() * 4, life: 5, size: 1, color: pick([look.ground.flowers[0], look.ground.flowers[1], look.ground.flowers[3]]), a });
+        if (this.weatherRand() < dt * 2) this.addFx({ kind: 'leaf', x: sx, y: sy, vx: -4 + this.weatherRand() * 8, vy: -4 - this.weatherRand() * 4, life: 5, size: 1, color: pick([look.ground.flowers[0], look.ground.flowers[1], look.ground.flowers[3]]), a });
         break;
       case 'embers':
-        if (this.rand() < dt * 4) this.addFx({ kind: 'leaf', x: sx, y: p.y + 120, vx: -6 + this.rand() * 12, vy: -26 - this.rand() * 20, life: 5, size: 1, color: pick(['#ff7a2a', '#ffcf5a', '#ff3f1e']), a });
+        if (this.weatherRand() < dt * 4) this.addFx({ kind: 'leaf', x: sx, y: p.y + 120, vx: -6 + this.weatherRand() * 12, vy: -26 - this.weatherRand() * 20, life: 5, size: 1, color: pick(['#ff7a2a', '#ffcf5a', '#ff3f1e']), a });
         break;
       case 'dust':
-        if (this.rand() < dt * 3) this.addFx({ kind: 'leaf', x: p.x - 200, y: sy, vx: 60 + this.rand() * 30, vy: -2 + this.rand() * 4, life: 6, size: 1, color: pick([look.ground.sand[3], look.ground.sand[1]]), a });
+        if (this.weatherRand() < dt * 3) this.addFx({ kind: 'leaf', x: p.x - 200, y: sy, vx: 60 + this.weatherRand() * 30, vy: -2 + this.weatherRand() * 4, life: 6, size: 1, color: pick([look.ground.sand[3], look.ground.sand[1]]), a });
         break;
       default:
         break;
