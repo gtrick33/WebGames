@@ -297,6 +297,12 @@ export class Renderer {
     // near a way out at an edge the view may still go a little past it, so the hero at a gate isn't standing under
     // the HUD: easing in as the hero nears it, so the camera never jumps
     const peek = this.edgePeek(w);
+    // ...but never past the land's south edge on a wide screen: the ground nearest the camera is drawn the biggest, and
+    // two tiles of what lies past that edge filled the bottom of the picture with bare grass under every south gate (the
+    // owner, at the Crown City's: "can we lock the camera before the vast green section comes visible, this also happens
+    // in other zones"). The hero at the gate stands a tile above the bottom of the picture, between the stick and the
+    // skills. Upright, the thumbs are below the hero, and the peek keeps them off it.
+    if (this.vw > this.vh * 1.2) peek.b = 0;
     const r = this.reach ?? { far: this.vh / 2, near: this.vh / 2 };
     const held = (c: number, lo: number, hi: number, size: number): number => (lo > hi ? size / 2 : clamp(c, lo, hi));
     // (to the sides it is held by its width where the hero stands, not at its top where it is widest: held by its

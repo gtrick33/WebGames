@@ -125,4 +125,10 @@ describe('Sigilfall: the camera is held inside the land', () => {
   it('and may pass an edge by two tiles at most, near a way out', () => {
     expect(renderer).toContain('const most = TILE * 2;');
   });
+
+  // the owner, at the Crown City's south gate: "can we lock the camera before the vast green section comes visible, this
+  // also happens in other zones"
+  it('but never the land’s south edge on a wide screen, where the ground past it is the nearest and drawn the biggest', () => {
+    expect(renderer).toContain('if (this.vw > this.vh * 1.2) peek.b = 0;');
+  });
 });
