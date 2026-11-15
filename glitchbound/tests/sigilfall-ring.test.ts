@@ -59,7 +59,6 @@ describe('The Ring: the rules', () => {
     wait(m, 2);
     expect(me.cast).toBeNull();
     expect(foe.hp).toBe(foe.maxHp);
-    expect(me.mana).toBe(me.maxMana);
   });
 
   it('clearLine is right about the corners', () => {

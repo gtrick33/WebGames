@@ -7,17 +7,14 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, fullBar, kitOf, PRESETS, SLOTS, type Ability } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, fullBar, PRESETS, SLOTS } from '../src/games/sigilfall/arena/abilities';
 import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
 import { setsOf } from '../src/games/sigilfall/arena/ladder';
 import { MAP_IDS } from '../src/games/sigilfall/arena/maps';
-import { GATES, MANA_REGEN, Match, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
+import { Match, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
-import { barRows, MANA_H } from '../src/games/sigilfall/render/ring';
-import { Frame } from '../src/games/sigilfall/ui/RingMatch';
 import { DEFAULT_KEYS, RING_ACTIONS } from '../src/games/sigilfall/ui/ringKeys';
 
 const STEP = 1 / 30;
@@ -126,118 +123,5 @@ describe('The Ring: five abilities on every bar', () => {
   }, 120_000);
 });
 
-describe('The Ring: mana is no longer what a fight is about', () => {
-  it('comes back at 5 a second (it was 1.5)', () => {
-    expect(MANA_REGEN).toBe(5);
-  });
-
-  /** How long a hero can cast `ab` back to back, from full, before there isn't the mana for it. */
-  function lasts(cls: ClassId, ab: Ability): number {
-    const m = new Match({ seed: 2, map: 'sands', fighters: [{ team: 0, cls, name: 'a', bar: [ab.id] }, { team: 1, cls: 'warrior', name: 'b', bar: ['w-hew'] }] });
-    m.step(GATES + 0.01, {});
-    const [me, foe] = m.fighters as [(typeof m.fighters)[0], (typeof m.fighters)[0]];
-    Object.assign(me, { x: 160, y: 125, dirX: 1, dirY: 0, target: 1, friend: 0, maxHp: 1e9, hp: 1e9 });
-    Object.assign(foe, { x: 230, y: 125, maxHp: 1e9, hp: 1e9 });
-    const start = m.t;
-    for (let i = 0; i < 30 * 150; i++) {
-      // (kept alive and in reach, whatever the closing ring does)
-      me.hp = foe.hp = 1e9;
-      Object.assign(me, { x: 160, y: 125 });
-      Object.assign(foe, { x: 230, y: 125 });
-      if (!me.cast && me.gcd <= 0 && !me.cds[ab.id] && m.press(0, ab.id) === 'Not enough mana') return m.t - start;
-      m.step(STEP, {});
-      m.events.length = 0;
-    }
-    return Infinity;
-  }
-
-  it('a caster or a healer casting their steady spell back to back, and nothing else, lasts most of a minute or more', () => {
-    // (at 1.5 a second these ran short in 20 to 31 seconds; at 5 the dearest, Green Mending, lasts a minute)
-    const steady = CLASS_IDS.flatMap((cls) => kitOf(cls).filter((a) => a.cd === 0 && a.mana > 0 && a.cast > 0 && (a.role === 'damage' || a.role === 'heal')).map((a) => [cls, a] as const));
-    expect(steady.map(([, a]) => a.id).sort()).toEqual(['d-flash', 'k-bolt', 'l-lash', 'l-regrow', 'm-lash', 'm-spear', 'p-mend', 'p-smite']);
-    for (const [cls, ab] of steady) expect(lasts(cls, ab), ab.name).toBeGreaterThan(50);
-  }, 60_000);
-
-  it('the computer’s casters and healers never stand there with nothing they can pay for', () => {
-    let dry = 0;
-    let time = 0;
-    const casters = CLASS_IDS.filter((c) => c !== 'warrior' && c !== 'ranger' && c !== 'gloamknight').flatMap((cls) => PRESETS[cls].map((p) => ({ cls, p })));
-    for (let g = 0; g < 16; g++) {
-      const side = (t: 0 | 1): FighterSetup[] =>
-        [0, 1, 2].map((k) => {
-          const s = casters[(g + k * 4 + t * 7) % casters.length]!;
-          // (Hollow Pact empties the mana on purpose: a warlock low on health trades it for life)
-          return { team: t, cls: s.cls, name: `${s.cls}${t}${k}`, bar: s.p.bar, talents: s.p.talents.filter((x) => x !== 'k-3a'), ult: s.p.ult };
-        });
-      const m = new Match({ seed: g + 5, map: MAP_IDS[g % MAP_IDS.length]!, fighters: [...side(0), ...side(1)] });
-      const brains = m.fighters.map((_, i) => newBrain(g * 13 + i));
-      const cheapest = m.fighters.map((f) => Math.min(...f.bar.map((id) => ABILITIES[id]!.mana).filter((x) => x > 0)));
-      for (let i = 0; i < 30 * 200 && m.phase !== 'over'; i++) {
-        const moves: Record<number, MoveInput> = {};
-        for (const f of m.fighters) moves[f.id] = botThink(m, f, brains[f.id]!, 0.9, STEP);
-        m.step(STEP, moves);
-        m.events.length = 0;
-        if (m.phase !== 'fight') continue;
-        m.fighters.slice(0, 6).forEach((f, k) => {
-          if (f.dead) return;
-          time += STEP;
-          if (f.mana < cheapest[k]!) dry += STEP;
-        });
-      }
-    }
-    expect(time).toBeGreaterThan(600);
-    expect(dry / time).toBeLessThan(0.005);
-  }, 60_000);
-});
-
-describe('The Ring: the mana shows, cast or no cast', () => {
-  /** A mage, half her mana gone, halfway through casting Ember Lash at a warrior. */
-  function casting(): { m: Match; mage: Match['fighters'][0]; warrior: Match['fighters'][0] } {
-    const m = new Match({ seed: 1, map: 'sands', fighters: [{ team: 0, cls: 'mage', name: 'Ilsa', bar: preset('mage', 'Pyre').bar }, { team: 1, cls: 'warrior', name: 'Brom', bar: preset('warrior', 'Reaper').bar }] });
-    const [mage, warrior] = m.fighters as [Match['fighters'][0], Match['fighters'][0]];
-    mage.mana = mage.maxMana / 2;
-    mage.cast = { ab: 'm-lash', target: 1, t: 0.4, dur: 0.8, channel: false, next: 0, pushed: 0 };
-    return { m, mage, warrior };
-  }
-
-  it('on a nameplate the mana has a row of its own, and the cast goes on the row under it, not over it', () => {
-    const { m, mage } = casting();
-    const { container } = render(<Frame f={mage} m={m} me={mage} doll="" tag={null} onPick={() => {}} />);
-    const mana = container.querySelector('.rb-ring-mana')!;
-    const tail = container.querySelector('.rb-ring-tail')!;
-    expect(mana).not.toBeNull();
-    expect(tail.contains(mana)).toBe(false);
-    expect(tail.querySelector('.rb-ring-cast')?.textContent).toBe('Ember Lash');
-    // the mana first, then the cast
-    expect(mana.compareDocumentPosition(tail) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect((mana.querySelector('i') as HTMLElement).style.width).toBe('50%');
-    // (the cast is laid over its own row only)
-    expect(rule('.rb-ring-tail > .rb-ring-cast,\n.rb-ring-tail > .rb-ring-held,\n.rb-ring-tail > .rb-ring-unseen')).toMatch(/position:\s*absolute/);
-  });
-
-  it('a nameplate without mana keeps the row, empty, so every nameplate is as tall as the rest', () => {
-    const { m, mage, warrior } = casting();
-    const { container } = render(<Frame f={warrior} m={m} me={mage} doll="" tag={null} onPick={() => {}} />);
-    const mana = container.querySelector('.rb-ring-mana')!;
-    expect(mana.classList.contains('is-none')).toBe(true);
-    expect(mana.querySelector('i')).toBeNull();
-    expect(rule('.rb-ring-mana.is-none')).toMatch(/visibility:\s*hidden/);
-  });
-
-  it('over a caster’s head: the health, the mana under it, the cast under that, none over another', () => {
-    const { mage, warrior } = casting();
-    const by = 100;
-    const c = barRows(mage, by);
-    expect(c.hp).toBe(by);
-    expect(c.mana).not.toBeNull();
-    expect(c.mana!).toBeGreaterThanOrEqual(c.hp + 2.4);
-    expect(c.cast).toBeGreaterThanOrEqual(c.mana! + MANA_H);
-    // the dark behind the bar takes the mana in
-    expect(by - 0.7 + c.back).toBeGreaterThanOrEqual(c.mana! + MANA_H);
-    // one with neither mana nor anything to cast: no mana under the health, and no room kept for a cast
-    const w = barRows(warrior, by);
-    expect(w.mana).toBeNull();
-    expect(w.back).toBe(3.8);
-    expect(w.low).toBeCloseTo(3.1, 5);
-  });
-});
+// (the mana that was here, how fast it came back and where it showed, is gone with the mana itself: the owner,
+// 2026-11-15, "remove the mana completely". tests/sigilfall-ring-nomana.test.tsx has what stands in its place.)

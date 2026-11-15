@@ -9,7 +9,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { GATES, Match, type Fighter } from '../src/games/sigilfall/arena/sim';
-import { THUMBS_LEAN, THUMBS_LEAN_MAX, THUMBS_LOWER, thumbsFrame } from '../src/games/sigilfall/render3d/ring3d';
+import { ARENA_H, ARENA_W } from '../src/games/sigilfall/arena/maps';
+import { TILE } from '../src/games/sigilfall/sim/map';
+import { RING_EDGE, RING_LOOK_Y, RING_TILT, ringFit, THUMBS_LEAN, THUMBS_LEAN_MAX, thumbsX } from '../src/games/sigilfall/render3d/ring3d';
 
 const ROOT = path.resolve(__dirname, '..');
 const read = (p: string): string => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -30,25 +32,43 @@ function duel(): { m: Match; me: Fighter; foe: Fighter } {
 }
 
 describe('The Ring on a phone: the fight in the open middle', () => {
-  it('the hero stands a little over the middle, and the camera leans a third of the way toward whom they fight', () => {
+  it('the camera leans a third of the way across toward whom they fight', () => {
     const { m, me, foe } = duel();
     // (behind the gates: nobody to lean toward)
     Object.assign(me, { x: 200, y: 150 });
     Object.assign(foe, { x: 290, y: 130 });
-    expect(thumbsFrame(m, me)).toEqual({ x: 200, y: 150 + THUMBS_LOWER });
+    expect(thumbsX(m, me)).toBe(200);
     m.step(GATES + 0.01, {});
     Object.assign(me, { x: 200, y: 150 });
     Object.assign(foe, { x: 290, y: 130 });
-    const at = thumbsFrame(m, me);
-    expect(at.x).toBeCloseTo(200 + 90 * THUMBS_LEAN, 5);
-    expect(at.y).toBeCloseTo(150 + THUMBS_LOWER - 20 * THUMBS_LEAN, 5);
+    expect(thumbsX(m, me)).toBeCloseTo(200 + 90 * THUMBS_LEAN, 5);
     // a long way off: no further than its reach, so the hero never leaves the picture
     Object.assign(foe, { x: 600, y: 400 });
-    const far = thumbsFrame(m, me);
-    expect(far.x).toBe(200 + THUMBS_LEAN_MAX.x);
-    expect(far.y).toBe(150 + THUMBS_LOWER + THUMBS_LEAN_MAX.y);
+    expect(thumbsX(m, me)).toBe(200 + THUMBS_LEAN_MAX);
     // (with a mouse the camera is as it was: only thumbs set it)
     expect(MATCH).toContain('view.thumbs = engine.touchMode;');
+  });
+});
+
+describe('The Ring’s camera: the whole height, panning only sideways', () => {
+  // the owner, 2026-11-15: "zoom out the camera a bit so that the top edge and the bottom edge fit perfectly and canera
+  // pans only sideways"
+  it('the ring’s height, edge to edge, fills the view’s height, on a phone and with a mouse', () => {
+    for (const [w, h, dpr] of [[750, 342, 3], [844, 390, 3], [770, 560, 2], [1280, 720, 1]] as const) {
+      const fit = ringFit(w, h, dpr);
+      expect(fit.tile * (ARENA_H / TILE + RING_EDGE)).toBeCloseTo(h * dpr * RING_TILT, 5);
+      // (wider than the view: it follows, across)
+      expect(fit.follow).toBe(fit.tile * (ARENA_W / TILE + 2) > w * dpr * 1.02);
+    }
+    // (a view squarer than the ring pans; a sideways phone takes in nearly all of it)
+    expect(ringFit(770, 560, 2).follow).toBe(true);
+  });
+
+  it('up and down the camera never moves: only across', () => {
+    const src = read('src/games/sigilfall/render3d/ring3d.ts');
+    expect(src).toContain('const cy = RING_LOOK_Y;');
+    expect(src).not.toMatch(/cy = .*me\.y/);
+    expect(RING_LOOK_Y).toBe(ARENA_H / 2 - 14);
   });
 });
 

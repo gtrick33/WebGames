@@ -61,12 +61,12 @@ describe('the Ring: a placed spell and where its target stands', () => {
     expect(aimed).toBeGreaterThan(3);
   });
 
-  it('it is still greyed for what is its own: no mana, a silence', () => {
-    const ab = EVERY.find((a) => a.aim === 'ground' && !a.super && a.mana > 0)!;
+  it('it is still greyed for what is its own: a school locked by a kick', () => {
+    const ab = EVERY.find((a) => a.aim === 'ground' && !a.super && a.school !== 'physical')!;
     const m = match(ab.cls as ClassId, true);
     const me = m.fighters[0]!;
     expect(isOut(m, me, ab)).toBe(false);
-    me.mana = 0;
+    me.locks[ab.school] = 3;
     expect(isOut(m, me, ab)).toBe(true);
   });
 

@@ -13,7 +13,7 @@ export function isOut(m: Match, me: Fighter | null, ab: Ability): boolean {
   // sight, which the owner called out: "targeted spells ... should be available to cast regardless of where the
   // targeted enemy is". So it is asked as a placing, at the user's own feet, which only its readiness can refuse.)
   const why = m.blocked(me, ab, undefined, ab.aim === 'ground' ? { x: me.x, y: me.y } : undefined);
-  return why === 'Out of sight' || why === 'Too far away' || why === 'Not enough mana' || why === 'Silenced' || (why?.endsWith('is locked') ?? false) || why === 'You can’t do that now' || why === 'Nobody to aim at';
+  return why === 'Out of sight' || why === 'Too far away' || why === 'Silenced' || (why?.endsWith('is locked') ?? false) || why === 'You can’t do that now' || why === 'Nobody to aim at';
 }
 
 /**

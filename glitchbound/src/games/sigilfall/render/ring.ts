@@ -525,9 +525,6 @@ export function headHeight(f: Fighter, time: number): number {
 const BAR_TOP_MIN = 6;
 /** The clear air left between the lowest of a fighter's bar and their head. */
 export const BAR_CLEAR = 1;
-/** The mana under the health in that bar, for whoever has mana: how tall, and the dark line between the two. */
-export const MANA_H = 1.2;
-const MANA_GAP = 0.5;
 const HP_H = 2.4;
 /** The cast under them, its name written in it, and the dark round it. */
 const CAST_H = 4.8;
@@ -543,16 +540,15 @@ export const castsAny = (f: Pick<Fighter, 'bar' | 'cast'>): boolean =>
   });
 
 /**
- * Where each part of a fighter's overhead bar goes, down from the bar's top (`by`): the health, then the mana for
- * whoever casts with it, then the cast they are holding with its name written in it, each under the last and none over
- * another; how tall the dark backing behind the health and mana is; and how far down from `by` the lowest of it all
- * comes (the cast's row is counted for whoever can cast at all, whether they are casting now or not).
+ * Where each part of a fighter's overhead bar goes, down from the bar's top (`by`): the health, then the cast they are
+ * holding with its name written in it, under it and not over it; how tall the dark backing behind the health is; and
+ * how far down from `by` the lowest of it all comes (the cast's row is counted for whoever can cast at all, whether they
+ * are casting now or not). (There was a mana strip under the health; the Ring has no mana now.)
  */
-export function barRows(f: Pick<Fighter, 'maxMana' | 'bar' | 'cast'>, by: number): { hp: number; mana: number | null; cast: number; back: number; low: number } {
-  const mana = f.maxMana > 0 ? by + HP_H + MANA_GAP : null;
-  const back = 3.8 + (mana === null ? 0 : MANA_GAP + MANA_H);
+export function barRows(f: Pick<Fighter, 'bar' | 'cast'>, by: number): { hp: number; cast: number; back: number; low: number } {
+  const back = 3.8;
   const cast = by + back + 0.4;
-  return { hp: by, mana, cast, back, low: castsAny(f) ? cast - by + CAST_H + CAST_PAD : back - 0.7 };
+  return { hp: by, cast, back, low: castsAny(f) ? cast - by + CAST_H + CAST_PAD : back - 0.7 };
 }
 
 /**
@@ -561,7 +557,7 @@ export function barRows(f: Pick<Fighter, 'maxMana' | 'bar' | 'cast'>, by: number
  * bar dont cover any part of the actual characters"). It is the same whether they are casting or not, so the bar never
  * jumps when a cast begins. The title over the bar (RingMatch) stands on it too.
  */
-export const barTop = (f: Pick<Fighter, 'maxMana' | 'bar' | 'cast'>): number => Math.max(BAR_TOP_MIN, barRows(f, 0).low + BAR_CLEAR);
+export const barTop = (f: Pick<Fighter, 'bar' | 'cast'>): number => Math.max(BAR_TOP_MIN, barRows(f, 0).low + BAR_CLEAR);
 
 /**
  * What is on a fighter: the rings at their feet, what's afoot on them, their bar and their cast. `raise`: how much
@@ -591,8 +587,7 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
       g.fillText('z', f.x + 5, head - 1 + Math.sin(time * 3) * 1.5);
     }
   }
-  // a bar over the head, in their team's color, and under it, for whoever casts with it, their mana in blue (the
-  // owner: "add mana bar to the hp bar thats above the character")
+  // a bar over the head, in their team's color
   const barW = f.pet ? 16 : 26;
   const by = head - barTop(f);
   const rows = barRows(f, by);
@@ -611,10 +606,6 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
   g.beginPath();
   g.roundRect(f.x - barW / 2, rows.hp, barW * share, HP_H, 1);
   g.fill();
-  if (rows.mana !== null) {
-    g.fillStyle = '#5ab0ff';
-    g.fillRect(f.x - barW / 2, rows.mana, barW * Math.max(0, Math.min(1, f.mana / f.maxMana)), MANA_H);
-  }
   // out of your sight: a small eye-shut mark over them
   if (!seeable) {
     g.strokeStyle = '#a8a0b8';

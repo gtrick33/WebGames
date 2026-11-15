@@ -20,7 +20,6 @@ export function timing(ab: Ability): string {
   if (ab.aim === 'ground') bits.push('Placed');
   else if (ab.range > 40 && ab.aim !== 'near' && ab.aim !== 'self') bits.push('Ranged');
   if (ab.range > 0 && ab.range <= 40) bits.push('Melee');
-  if (ab.mana) bits.push(`${ab.mana} mana`);
   return bits.join(' · ');
 }
 

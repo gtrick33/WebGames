@@ -186,11 +186,11 @@ describe('The Ring talents: the mage', () => {
     expect(foe.hp).toBeLessThan(hp);
   });
 
-  it('Brimming Power: spells hit harder while mana is high', () => {
+  it('Brimming Power: spells hit harder while health is high', () => {
     const m = fight([{ team: 0, cls: 'mage', talents: ['m-1b'] }, { team: 1, cls: 'warrior' }]);
     const [mage, foe] = m.fighters as [Fighter, Fighter];
     const full = inside(m).damage(mage, foe, 100, true, AB('m-burn'));
-    mage.mana = 30;
+    mage.hp = Math.round(mage.maxHp * 0.7);
     const low = inside(m).damage(mage, foe, 100, true, AB('m-burn'));
     expect(full).toBeCloseTo(low * 1.12, -0.5);
   });
@@ -233,21 +233,20 @@ describe('The Ring talents: the mage', () => {
     expect(m.rooted(foe)).toBe(true);
   });
 
-  it('Mana Skin: while there is mana to spare, some of what they take is paid in mana', () => {
-    const taken = (talents: string[], mana: number): [number, number] => {
+  it('Arcane Skin: while their health is high, some of what they take is turned aside', () => {
+    const taken = (talents: string[], share: number): number => {
       const m = fight([{ team: 0, cls: 'mage', talents }, { team: 1, cls: 'warrior' }]);
       const mage = m.fighters[0]!;
-      mage.mana = mana;
+      mage.hp = Math.round(mage.maxHp * share);
+      const before = mage.hp;
       inside(m).damage(m.fighters[1]!, mage, 100, true, AB('w-hew'));
-      return [mage.maxHp - mage.hp, mage.mana];
+      return before - mage.hp;
     };
-    const d = doing('m-3a', 'manaskin');
-    const [plain] = taken([], 100);
-    const [skin, left] = taken(['m-3a'], 100);
-    expect(skin).toBeCloseTo(plain * (1 - d.share), -0.5);
-    expect(left).toBeLessThan(100);
-    // (never below its line: what mana there is left is for casting)
-    expect(taken(['m-3a'], 100 * d.above)[0]).toBe(plain);
+    const d = doing('m-3a', 'skin');
+    const plain = taken([], 1);
+    expect(taken(['m-3a'], 1)).toBeCloseTo(plain * (1 - d.share), -0.5);
+    // (not under its line)
+    expect(taken(['m-3a'], d.above - 0.05)).toBe(taken([], d.above - 0.05));
   });
 
   it('Rewind: a Swift Step gives back half of what was taken in the last few seconds, once in a while', () => {
@@ -645,13 +644,16 @@ describe('The Ring talents: the warlock', () => {
     expect(inside(m).crowd(foe, AB('w-hurl'), k, 'stun', 2)).toBe(true);
   });
 
-  it('Hollow Pact: falling low, their mana becomes health', () => {
+  it('Hollow Pact: falling low, they heal a quarter of their health, once in a while', () => {
     const m = fight([{ team: 0, cls: 'warlock', talents: ['k-3a'] }, { team: 1, cls: 'warrior' }]);
     const [k, foe] = m.fighters as [Fighter, Fighter];
     k.hp = Math.round(k.maxHp * 0.4);
     inside(m).damage(foe, k, 100, true, AB('w-hew'));
-    expect(k.mana).toBe(0);
     expect(k.hp).toBeGreaterThan(k.maxHp * 0.4);
+    // (and not again until its time is up)
+    k.hp = Math.round(k.maxHp * 0.4);
+    inside(m).damage(foe, k, 100, true, AB('w-hew'));
+    expect(k.hp).toBeLessThan(k.maxHp * 0.4);
   });
 
   it('Unholy Bargain: less hurt, less healed', () => {

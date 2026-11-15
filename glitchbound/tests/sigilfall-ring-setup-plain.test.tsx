@@ -72,12 +72,10 @@ describe('The Ring’s nameplates: the way each fights, in small letters', () =>
     expect(rule).toMatch(/font: 700 7\.5px\/13px/);
     expect(rule).toMatch(/flex: none/);
     // (a phone's nameplate is too narrow for a name, a tag and the playstyle in one row: there the playstyle lies over
-    // the cast's row, under the mana, the way the name lies over the health; 19px = the health's 14, the mana's 3 and
-    // the two 1px gaps)
+    // the cast's row, under the health, the way the name lies over the health; 15px = the health's 14 and the 1px gap)
     const phone = /\n {2}\.rb-ring\.is-touch \.rb-ring-name \.rb-ring-style \{([^}]*)\}/.exec(css)![1]!;
-    expect(phone).toMatch(/position: absolute;\s*top: 19px;/);
+    expect(phone).toMatch(/position: absolute;\s*top: 15px;/);
     expect(css).toMatch(/\.rb-ring\.is-touch \.rb-ring-bar \{\s*height: 14px;/);
-    expect(css).toMatch(/\.rb-ring\.is-touch \.rb-ring-mana \{\s*height: 3px;/);
     expect(css).toMatch(/\.rb-ring\.is-touch \.rb-ring-tail \{\s*height: 7px;/);
   });
 });

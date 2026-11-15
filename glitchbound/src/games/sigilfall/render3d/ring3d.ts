@@ -56,30 +56,41 @@ export interface RingView {
 
 /** How far the camera leans toward the fight on a phone, as a share of the way to the enemy, and at most (world px). */
 export const THUMBS_LEAN = 0.35;
-export const THUMBS_LEAN_MAX = { x: 64, y: 40 };
-/** And how far south of the hero it looks, so that they stand a little over the middle (world px). */
-export const THUMBS_LOWER = 8;
+export const THUMBS_LEAN_MAX = 64;
 /** An enemy ability's aim, for asking the rules whom the hero's harm goes to. */
 const AT_FOE = { aim: 'enemy' } as Ability;
 
 /**
- * Where the camera looks on a phone, played with thumbs (the owner: "theyre lowkey covering the enemies and i can barely
- * see whats happening on the right side of the screen"). Both thumbs' controls lie along the foot of the screen and the
- * nameplates along its top, so the open ground is the middle band: the hero stands a little over the middle of it (the
- * camera looks a little south of them, where with a mouse it looks a little north), and the camera leans a third of
- * the way toward whom they fight (the enemy they chose, or the one their harm goes to), so that the other side stands
- * in the open middle and not under the abilities in the corner.
+ * Where across the ring the camera looks on a phone, played with thumbs (the owner: "theyre lowkey covering the enemies
+ * and i can barely see whats happening on the right side of the screen"): a third of the way from the hero toward whom
+ * they fight (the enemy they chose, or the one their harm goes to), so that the other side stands in the open middle
+ * and not under the abilities in the corner. Only across: the whole ring's height is always in the picture.
  */
-export function thumbsFrame(m: Match, me: Fighter): { x: number; y: number } {
-  let x = me.x;
-  let y = me.y + THUMBS_LOWER;
+export function thumbsX(m: Match, me: Fighter): number {
   const foe = m.phase === 'fight' ? m.aimOf(me, AT_FOE) : null;
-  if (foe && foe !== me && !foe.dead) {
-    x += Math.max(-THUMBS_LEAN_MAX.x, Math.min(THUMBS_LEAN_MAX.x, (foe.x - me.x) * THUMBS_LEAN));
-    y += Math.max(-THUMBS_LEAN_MAX.y, Math.min(THUMBS_LEAN_MAX.y, (foe.y - me.y) * THUMBS_LEAN));
-  }
-  return { x, y };
+  if (!foe || foe === me || foe.dead) return me.x;
+  return me.x + Math.max(-THUMBS_LEAN_MAX, Math.min(THUMBS_LEAN_MAX, (foe.x - me.x) * THUMBS_LEAN));
 }
+
+/** Where up and down the ring the camera always looks: a little north of the middle (what stands up there takes more of the screen than what lies south). */
+export const RING_LOOK_Y = ARENA_H / 2 - 14;
+
+/**
+ * How big a tile is drawn (device px) for a view of this size: the ring's whole height, its top edge and its bottom
+ * edge, fills the view's height exactly, and the camera pans only sideways (the owner, 2026-11-15: "zoom out the camera
+ * a bit so that the top edge and the bottom edge fit perfectly and canera pans only sideways"). `follow` when the ring
+ * is wider than the view; `back`, how far a fallen player's camera steps back to take in all of it.
+ */
+export function ringFit(cssW: number, cssH: number, dpr: number): { tile: number; follow: boolean; back: number } {
+  const allW = ARENA_W / TILE + 2;
+  const allH = ARENA_H / TILE + RING_EDGE;
+  const tall = ((cssH * dpr) / allH) * RING_TILT;
+  const whole = Math.min((cssW * dpr) / allW, tall);
+  return { tile: tall, follow: tall > whole * 1.02, back: Math.min(1.9, Math.max(1, tall / whole)) };
+}
+/** The tiles of wall over and under the floor that the height takes in, and how much the camera's lean shortens it. */
+export const RING_EDGE = 2;
+export const RING_TILT = 1.05;
 
 export class RingStage implements RingView {
   readonly stage: Stage;
@@ -136,15 +147,9 @@ export class RingStage implements RingView {
     this.canvas.style.width = `${this.cssW}px`;
     this.canvas.style.height = `${this.cssH}px`;
     this.g = this.canvas.getContext('2d')!;
-    // the whole ring, if the view can hold it at a size a fighter can be read at; closer in, following, if not
-    const allW = ARENA_W / TILE + 2;
-    const allH = ARENA_H / TILE + 2;
-    const whole = Math.min((this.cssW * dpr) / allW, ((this.cssH * dpr) / allH) * 1.05);
-    // (never fewer than about 24 tiles across, however small the window)
-    const readable = Math.min((34 / 16) * TILE * dpr, ((this.cssW * dpr) / 24 / 16) * TILE);
-    const tile = Math.max(whole, readable);
-    this.follow = tile > whole * 1.02;
-    this.back = Math.min(1.9, Math.max(1, tile / whole));
+    const { tile, follow, back } = ringFit(this.cssW, this.cssH, dpr);
+    this.follow = follow;
+    this.back = back;
     this.stage.setSize(this.cssW, this.cssH, dpr, tile);
   }
 
@@ -191,20 +196,18 @@ export class RingStage implements RingView {
     }
     const me = myId === null ? null : (m.fighters[myId] ?? null);
     let cx = ARENA_W / 2;
-    // (a little north of the middle: what stands up there takes more of the screen than what lies south)
-    let cy = ARENA_H / 2 - 14;
+    const cy = RING_LOOK_Y;
     // someone who has fallen while their side fights on watches the whole ring: the camera goes to its middle and steps
     // back until all of it is in the picture (the owner: "when i die but my partner is alive, the camera should center
     // and zone out a bit so i can look at everything")
     const watching = !!me && me.dead && m.phase === 'fight';
     const push = watching ? this.back : 1;
     st.push += (push - st.push) * (dt > 0 ? 1 - Math.exp(-dt * 2.4) : 1);
+    // (across only: up and down, the ring's whole height is in the picture already)
     if (this.follow && me && !watching) {
-      const halfW = (st.spanX * TILE) * 0.95;
-      const halfH = (st.spanZ * TILE) * 0.95;
-      const at = this.thumbs ? thumbsFrame(m, me) : { x: me.x, y: me.y - 14 };
-      cx = ARENA_W <= halfW * 2 ? ARENA_W / 2 : Math.max(halfW - 24, Math.min(ARENA_W - halfW + 24, at.x));
-      cy = ARENA_H <= halfH * 2 ? ARENA_H / 2 - 14 : Math.max(halfH - 60, Math.min(ARENA_H - halfH + 16, at.y));
+      const halfW = st.spanX * TILE * 0.95;
+      const at = this.thumbs ? thumbsX(m, me) : me.x;
+      cx = ARENA_W <= halfW * 2 ? ARENA_W / 2 : Math.max(halfW - 24, Math.min(ARENA_W - halfW + 24, at));
     }
     const ease = 1 - Math.exp(-dt * 5);
     this.cx += (cx - this.cx) * (dt > 0 ? ease : 1);

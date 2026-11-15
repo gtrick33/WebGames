@@ -125,6 +125,15 @@
  *
  *   warrior 50/51/54 -> 53/50/50   mage    55/44/44 -> 46/48/45   ranger  48/44/45 -> 49/44/46   paladin     60/55/57 -> 61/54/52
  *   priest  38/55/51 -> 39/57/55   warlock 57/43/40 -> 56/45/46   druid   41/53/52 -> 43/53/54   gloamknight 50/50/55 -> 53/44/50
+ *
+ * Then the mana went altogether (2026-11-15, the owner: "remove the mana completely"): nothing costs anything, and an
+ * ability waits only on its cooldown. At 5 a second nobody had been running dry, so little changed. The three talents
+ * that ran on it run on health: Brimming Power (spells 12% harder over 80% health), Arcane Skin in Mana Skin's place
+ * (20% less damage taken over half health) and Hollow Pact (a quarter of one's health back under 35%). Each is within
+ * three points of the rest of its row (Rime 52 with Arcane Skin, 49 and 50 with the others; Pyre 47 with Brimming
+ * Power, 48 and 49; Gravecaller 54 with Hollow Pact, 53 and 54). Over the same 24 seeds and 3,000 teams, no setup's
+ * mean moved more than two points (Trapper 48 -> 47, Gravecaller 55 -> 54, Rime 50 -> 51, Curse-speaker 54 -> 55,
+ * Nightblade 51 -> 50, Hexer, Reaper and Oathkeeper unchanged), so no number was tuned for it.
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';

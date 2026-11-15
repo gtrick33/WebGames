@@ -84,7 +84,6 @@ describe('The Ring: Rime Spear shatters the ice', () => {
     const [mage, w] = m.fighters as [Fighter, Fighter];
     mage.gcd = 0;
     mage.cds = {};
-    mage.mana = mage.maxMana;
     m.events.length = 0;
     expect(m.press(mage.id, 'm-spear')).toBeNull();
     let shatter = false;

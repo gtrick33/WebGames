@@ -191,11 +191,8 @@ export function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter
           <i style={{ width: `${share * 100}%` }} />
           <b>{f.dead ? 'Fallen' : veiled ? 'Hidden' : `${Math.round(share * 100)}%`}</b>
         </span>
-        {/* the mana on a row of its own, and what they are casting (or what holds them) on the row under it: a cast laid
-            over the mana hid it the whole time it was being cast (the owner: "casting on the nameplates covers the mana
-            bar and this shouldnt happen, casting could be below the mana bar"). The row is kept for those with no mana
-            too, so every nameplate is the same height */}
-        <span className={`rb-ring-mana${f.maxMana > 0 ? '' : ' is-none'}`}>{f.maxMana > 0 && <i style={{ width: `${(f.mana / f.maxMana) * 100}%` }} />}</span>
+        {/* what they are casting (or what holds them) on the row under the health. (A mana row stood between them; the
+            Ring has no mana now: the owner, 2026-11-15, "remove the mana completely") */}
         <span className="rb-ring-tail">
           {c && ab ? (
             <span className="rb-ring-cast" style={{ ['--a' as string]: ab.color }}>
@@ -490,7 +487,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     };
     const startAim = (ab: Ability, sx: number, sy: number, pid: number | null, point: boolean): void => {
       if (!me) return;
-      // (not ready, held, out of mana: said at once, with nothing to place)
+      // (not ready, held: said at once, with nothing to place)
       const why = m.blocked(me, ab, undefined, { x: me.x, y: me.y });
       if (why) {
         aim = null;

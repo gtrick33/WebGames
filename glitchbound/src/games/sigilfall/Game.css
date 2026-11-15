@@ -9113,7 +9113,7 @@ html.rb-touch-playing textarea {
   text-overflow: ellipsis;
 }
 /* the way they fight, in small letters after the name (arena/styles.ts playstyleOf): it takes no room of its own, and
-   the name gives way to it before the tag does (on a phone it goes under the mana instead: below) */
+   the name gives way to it before the tag does (on a phone it goes on the cast's row instead: below) */
 .rb-ring-name .rb-ring-style {
   flex: none;
   margin-right: auto;
@@ -9166,7 +9166,6 @@ html.rb-touch-playing textarea {
   background: linear-gradient(180deg, #ffb45c, #e0582a);
 }
 .is-flip .rb-ring-bar i,
-.is-flip .rb-ring-mana i,
 .is-flip .rb-ring-cast i {
   inset: 0 0 0 auto;
 }
@@ -9180,23 +9179,6 @@ html.rb-touch-playing textarea {
   text-align: center;
   text-shadow: 0 1px 1px #000;
   white-space: nowrap;
-}
-.rb-ring-mana {
-  position: relative;
-  display: block;
-  height: 4px;
-  overflow: hidden;
-  border-radius: 2px;
-  background: #1a1030;
-}
-/* (no mana: the row is kept, empty, so the nameplate is as tall as the rest) */
-.rb-ring-mana.is-none {
-  visibility: hidden;
-}
-.rb-ring-mana i {
-  position: absolute;
-  inset: 0 auto 0 0;
-  background: #5ab0ff;
 }
 .rb-ring-cast i {
   position: absolute;
@@ -9218,7 +9200,7 @@ html.rb-touch-playing textarea {
   font: 700 9.5px/12px system-ui, sans-serif;
   background: #1a1030;
 }
-/* a row kept for them, under the mana, whether they have anything to say or not: a nameplate never moves under a thumb */
+/* a row kept for them, under the health, whether they have anything to say or not: a nameplate never moves under a thumb */
 .rb-ring-tail {
   position: relative;
   display: block;
@@ -10131,8 +10113,8 @@ html.rb-touch-playing textarea {
 .rb-ring.is-touch .is-foes .rb-ring-drs {
   margin: 0;
 }
-/* A phone on its side: each frame one slim row, the name inside the health bar, the mana a thin line under it and the
-   cast a line under that. At two lines and a tail each, three of them a side took two fifths of the screen's height,
+/* A phone on its side: each frame one slim row, the name inside the health bar and the cast a line
+   under it. At two lines and a tail each, three of them a side took two fifths of the screen's height,
    over where the fighters stand (the owner: "UI/Nameplates on phone take too much screen space"). */
 @container (max-height: 430px) {
   .rb-ring.is-touch .rb-ring-team {
@@ -10179,10 +10161,10 @@ html.rb-touch-playing textarea {
     text-shadow: none;
   }
   /* (the way they fight: the name's row has no room for it beside a name and a tag, so it lies over the cast's row,
-     under the mana, the way the name lies over the health; lighter, and shadowed like the name to read over a cast) */
+     under the health, the way the name lies over the health; lighter, and shadowed like the name to read over a cast) */
   .rb-ring.is-touch .rb-ring-name .rb-ring-style {
     position: absolute;
-    top: 19px;
+    top: 15px;
     left: 0;
     margin: 0;
     padding: 0;
@@ -10211,9 +10193,6 @@ html.rb-touch-playing textarea {
   }
   .rb-ring.is-touch .rb-ring-tail {
     height: 7px;
-  }
-  .rb-ring.is-touch .rb-ring-mana {
-    height: 3px;
   }
   /* (a cast, a hold and out-of-sight say themselves by their color: there is no room for their words) */
   .rb-ring.is-touch .rb-ring-cast {
@@ -10269,13 +10248,8 @@ html.rb-touch-playing textarea {
   .rb-ring-team {
     flex-basis: 118px;
   }
-  .rb-ring-under,
-  .rb-ring-mana {
+  .rb-ring-under {
     display: none;
-  }
-  /* (with the mana put away, the cast's row is right under the health) */
-  .rb-ring.is-touch .rb-ring-name .rb-ring-style {
-    top: 15px;
   }
   .rb-ring-face {
     width: 18px;

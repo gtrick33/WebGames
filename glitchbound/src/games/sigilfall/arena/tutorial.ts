@@ -265,10 +265,9 @@ export class TutorialRun {
       if (this.noteT <= 0) this.note = '';
     }
     if (!this.free && m.phase === 'fight') {
-      // (nobody falls while it teaches, and a caster never runs dry)
+      // (nobody falls while it teaches)
       foe.hp = Math.max(foe.hp, Math.round(foe.maxHp * 0.5));
       me.hp = Math.max(me.hp, Math.round(me.maxHp * 0.3));
-      me.mana = me.maxMana;
     }
     const mine = (k: string): boolean => m.events.some((e) => e.k === k && 'id' in e && e.id === this.myId);
     switch (this.id) {
@@ -383,7 +382,7 @@ export class TutorialRun {
       case 'gates':
         return out('The entry', `Before every match you wait here behind the gates. You can still change your setup (Change my setup). When you’re ready, press I’m ready${t ? '' : ` or ${keys.dash}`}.`, 'prep');
       case 'plates':
-        return out('Who’s who', 'You’re on the left, your sparring partner on the right. The bars show health (and a caster’s mana); holds and casts show under the names and over every fighter’s head.', 'plates');
+        return out('Who’s who', 'You’re on the left, your sparring partner on the right. The bars show health; holds and casts show under the names and over every fighter’s head.', 'plates');
       case 'move':
         return out('Move', t ? 'Move with your left thumb: put it down anywhere on the left side and push.' : 'Move with W A S D or the arrow keys. You can use abilities while you move.', null, t ? 'Push with your left thumb to move.' : 'Move with W A S D or the arrow keys.');
       case 'target':

@@ -52,15 +52,6 @@ export const ORB_FIRST = 12;
 export const ORB_EVERY = 24;
 export const ORB_HEAL = 0.14;
 const QUEUE = 0.35;
-/**
- * Mana back each second, for those who cast with it (abilities.ts BODY: a hundred at most). It was 1.5: a caster or a
- * healer casting their steady spell back to back ran short in 20 to 31 seconds, and the computer's Rime mage was dry
- * a fifth of every fight (the owner, 2026-11-15: "mana seems to be running out a bit too fast for certain casters like
- * mages and healers, maybe make mana not such issue as it is now"). At 5 the dearest of those spells, Green Mending,
- * lasts a minute back to back, Ember Lash and Dawn's Touch half again as long, and the rest never run short; a fighter
- * who moves and holds and kicks as a fight asks never does.
- */
-export const MANA_REGEN = 5;
 /** Casting doesn't stop you, but it slows you to this. */
 export const CAST_SLOW = 0.55;
 /** Dampening: none for this long, then healing fades, to this share gone at DAMP_FULL. */
@@ -108,7 +99,7 @@ export const GATES_SOLO = 15;
  */
 export const THRALL = { name: 'Ashbound', speed: 0.9, every: 1.25, reach: HERO_R * 2 + 4, charge: 0.5 } as const;
 /** An ashbound's blow: a claw, a blow like any other (Turn Aside and Oath of Shelter stop it). Not on anyone's bar. */
-const CLAW: Ability = { id: 'k-claw', cls: 'warlock', name: 'Grave Claw', text: '', icon: 'dark_crystal_skull_on_violet', color: '#9a6ae0', school: 'physical', role: 'damage', aim: 'enemy', range: THRALL.reach, cast: 0, cd: 0, mana: 0, effects: [] };
+const CLAW: Ability = { id: 'k-claw', cls: 'warlock', name: 'Grave Claw', text: '', icon: 'dark_crystal_skull_on_violet', color: '#9a6ae0', school: 'physical', role: 'damage', aim: 'enemy', range: THRALL.reach, cast: 0, cd: 0, effects: [] };
 
 /**
  * The shroud (Shroud of Dusk): how long it stays on if nothing breaks it (longer than any match), how much slower its
@@ -233,8 +224,6 @@ export interface Fighter {
   walk: number;
   hp: number;
   maxHp: number;
-  mana: number;
-  maxMana: number;
   dead: boolean;
   /** Who they aim harm at, and who they aim help at (themselves if nobody). */
   target: number | null;
@@ -259,10 +248,10 @@ export interface Fighter {
   ult: string;
   /**
    * What their talents make of them, as multipliers: damage, healing, speed, how long they are held, cooldowns,
-   * mana back, how long their own holds and slows last, damage taken, how fast their super fills, and the chance of a
+   * how long their own holds and slows last, damage taken, how fast their super fills, and the chance of a
    * critical hit.
    */
-  mods: { dmg: number; heal: number; speed: number; tenacity: number; cool: number; regen: number; hold: number; guard: number; charge: number; crit: number };
+  mods: { dmg: number; heal: number; speed: number; tenacity: number; cool: number; hold: number; guard: number; charge: number; crit: number };
   /** What their talents do now and then (arena/talents.ts), when each can next (by kind), and what they keep count of. */
   perks: Perks;
   procs: Partial<Record<string, number>>;
@@ -487,7 +476,6 @@ function built(cls: ClassId, talentIds: readonly string[] | undefined): Pick<Fig
       speed: 1,
       tenacity: 1,
       cool: 1,
-      regen: 1,
       hold: 1 + sum('hold'),
       guard: 1 - Math.min(0.5, sum('guard')),
       charge: 1,
@@ -509,7 +497,7 @@ function talentAb(id: string): Ability {
   if (!ab) {
     const t = TALENT_BY_ID[id]!;
     const sup = superOf(t.cls);
-    ab = { id, cls: t.cls, name: t.name, text: t.text, icon: t.icon ?? sup.icon, color: sup.color, school: sup.school, role: 'damage', aim: 'enemy', range: 0, cast: 0, cd: 0, mana: 0, effects: [] };
+    ab = { id, cls: t.cls, name: t.name, text: t.text, icon: t.icon ?? sup.icon, color: sup.color, school: sup.school, role: 'damage', aim: 'enemy', range: 0, cast: 0, cd: 0, effects: [] };
     TALENT_ABS.set(id, ab);
   }
   return ab;
@@ -563,7 +551,6 @@ export class Match {
     this.fighters = setup.fighters.map((s, id) => {
       const i = count[s.team]++;
       const spot = map.spawns[s.team]![i % map.spawns[s.team]!.length]!;
-      const body = BODY[s.cls];
       const made = built(s.cls, s.talents);
       return {
         id,
@@ -583,8 +570,6 @@ export class Match {
         walk: 0,
         hp: made.maxHp,
         ...made,
-        mana: body.mana,
-        maxMana: body.mana,
         dead: false,
         target: null,
         friend: null,
@@ -776,7 +761,6 @@ export class Match {
     if (ab.effects.some((e) => e.k === 'dash') && this.rooted(f) && !f.perks.does.fold && !f.perks.does.stag) return 'Rooted';
     if ((f.cds[ab.id] ?? 0) > 0) return 'Not ready yet';
     if (!ab.free && f.gcd > 0) return 'Not ready yet';
-    if (ab.mana > f.mana) return 'Not enough mana';
     if (ab.aim === 'ground' && at) {
       // placed by hand: anywhere in reach that its user can see (it is brought back into reach if put past it)
       const p = this.reach(f, ab, at);
@@ -890,7 +874,6 @@ export class Match {
   }
 
   private spend(f: Fighter, ab: Ability): void {
-    f.mana = Math.max(0, f.mana - ab.mana);
     // (a blood price: every attack costs a little life, never the last of it)
     const price = f.perks.does.price;
     if (price && (ab.aim === 'enemy' || ab.aim === 'near' || ab.aim === 'ground')) {
@@ -1523,8 +1506,6 @@ export class Match {
       walk: 0,
       hp: p.hp,
       maxHp: p.hp,
-      mana: 0,
-      maxMana: 0,
       dead: false,
       target: null,
       friend: null,
@@ -1541,7 +1522,7 @@ export class Match {
       talents: [],
       ult: owner.ult,
       // (they hit with their master's share, and none of the rest of their talents)
-      mods: { dmg: owner.mods.dmg, heal: 1, speed: THRALL.speed, tenacity: 1, cool: 1, regen: 1, hold: 1, guard: 1, charge: 0, crit: CRIT },
+      mods: { dmg: owner.mods.dmg, heal: 1, speed: THRALL.speed, tenacity: 1, cool: 1, hold: 1, guard: 1, charge: 0, crit: CRIT },
       perks: NO_PERKS,
       procs: {},
       tal: {},
@@ -1693,7 +1674,7 @@ export class Match {
       if (direct && !t.dead) this.struck(t, src, ab);
     }
     const worth = n;
-    n = this.manaSkin(t, this.shoulder(t, n));
+    n = this.arcaneSkin(t, this.shoulder(t, n));
     for (const a of t.auras) {
       if (a.kind !== 'absorb' || n <= 0) continue;
       const soak = Math.min(a.n, n);
@@ -1729,7 +1710,7 @@ export class Match {
     return worth;
   }
 
-  /** What makes a striker's own hit land harder, by their talents: a grudge, full mana, a long shot, desperation, a blood price, the moon's turn. */
+  /** What makes a striker's own hit land harder, by their talents: a grudge, full health, a long shot, desperation, a blood price, the moon's turn. */
   private sharpen(src: Fighter, t: Fighter, ab?: Ability): number {
     const does = src.perks.does;
     let k = 1;
@@ -1739,7 +1720,7 @@ export class Match {
       src.tal.grudge = g;
       k *= 1 + does.grudge.step * g.n;
     }
-    if (does.brim && src.maxMana > 0 && src.mana >= src.maxMana * does.brim.over) k *= 1 + does.brim.pct;
+    if (does.brim && src.hp >= src.maxHp * does.brim.over) k *= 1 + does.brim.pct;
     if (does.far && ab && ab.range > ARM && Math.hypot(t.x - src.x, t.y - src.y) > ab.range / 2) k *= 1 + does.far.pct;
     if (does.desperate) k *= 1 + does.desperate.pct * (1 - src.hp / src.maxHp);
     if (does.price) k *= 1 + does.price.pct;
@@ -1779,14 +1760,11 @@ export class Match {
     return n;
   }
 
-  /** A mage's mana skin pays a share of it in mana while there is mana to spare: what is left for their health. */
-  private manaSkin(t: Fighter, n: number): number {
-    const skin = t.perks.does.manaskin;
-    const spare = t.mana - t.maxMana * (skin?.above ?? 0);
-    if (!skin || n <= 0 || spare <= 0) return n;
-    const part = Math.round(Math.min(n * skin.share, spare * skin.per));
-    t.mana = Math.max(0, t.mana - part / skin.per);
-    return n - part;
+  /** A mage's arcane skin turns a share of it aside while they stand over a share of their health: what is left for it. */
+  private arcaneSkin(t: Fighter, n: number): number {
+    const skin = t.perks.does.skin;
+    if (!skin || n <= 0 || t.hp < t.maxHp * skin.above) return n;
+    return n - Math.round(n * skin.share);
   }
 
   /** What the striker's talents make of damage dealt: a revenant's drink, light returned, a thirst, a soul's ward, wildfire, sun and moon, a verdict. */
@@ -2004,11 +1982,9 @@ export class Match {
         t.procs.vanish = this.clock + does.vanish.every;
         this.vanish(t, does.vanish.dist);
       }
-      if (does.pact && t.mana > 0 && this.ready(t, 'pact')) {
+      if (does.pact && this.ready(t, 'pact')) {
         t.procs.pact = this.clock + does.pact.every;
-        const m = t.mana;
-        t.mana = 0;
-        this.mend(t, m * does.pact.per, abOfDoing(t.cls, 'pact').name);
+        this.mend(t, Math.round(t.maxHp * does.pact.pct), abOfDoing(t.cls, 'pact').name);
       }
       if (does.oak && this.ready(t, 'oak')) {
         t.procs.oak = this.clock + does.oak.every;
@@ -2257,7 +2233,6 @@ export class Match {
       if (left <= 0) delete f.locks[k];
       else f.locks[k] = left;
     }
-    if (f.maxMana) f.mana = Math.min(f.maxMana, f.mana + dt * MANA_REGEN * f.mods.regen);
     if (f.streakT > 0) {
       f.streakT -= dt;
       if (f.streakT <= 0) f.streak = 0;
@@ -2569,7 +2544,6 @@ export class Match {
         dy: Math.round(f.dirY * 100) / 100,
         hp: f.hp,
         mh: f.maxHp,
-        m: Math.round(f.mana),
         d: f.dead,
         tg: f.target,
         fr: f.friend,
@@ -2636,7 +2610,6 @@ export class Match {
       }
       f.hp = n.hp;
       f.maxHp = n.mh;
-      f.mana = n.m;
       f.dead = n.d;
       f.target = n.tg;
       f.friend = n.fr;
@@ -2702,7 +2675,8 @@ export interface Snapshot {
     dy: number;
     hp: number;
     mh: number;
-    m: number;
+    /** (mana, sent by a host from before there was none: unread) */
+    m?: number;
     d: boolean;
     tg: number | null;
     fr: number | null;

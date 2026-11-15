@@ -59,7 +59,7 @@ export type Doing =
   | { k: 'brim'; over: number; pct: number }
   | { k: 'fold'; far: number }
   | { k: 'third'; n: number; within: number; dur: number; every: number }
-  | { k: 'manaskin'; share: number; per: number; above: number }
+  | { k: 'skin'; share: number; above: number }
   | { k: 'rewind'; back: number; share: number; every: number }
   | { k: 'vanish'; dist: number; every: number }
   // the ranger
@@ -94,7 +94,7 @@ export type Doing =
   | { k: 'enfeeble'; pct: number; dur: number }
   | { k: 'back'; within: number }
   | { k: 'mirror'; share: number; every: number }
-  | { k: 'pact'; per: number; every: number }
+  | { k: 'pact'; pct: number; every: number }
   | { k: 'bargain'; pct: number }
   | { k: 'soulward'; pct: number; max: number; dur: number; every: number }
   // the druid
@@ -183,7 +183,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
   mage: [
     ...rowOf('mage', 0, [
       { name: 'Wildfire', text: 'Your critical hits set them burning: 40% of the hit again over 4 seconds.', icon: 'fire_eye_on_red', does: { k: 'wildfire', share: 0.4, dur: 4 } },
-      { name: 'Brimming Power', text: 'While your mana is above 80%, your spells hit 12% harder.', icon: 'magic_up_status_star_arrow_up_on_violet', does: { k: 'brim', over: 0.8, pct: 0.12 } },
+      { name: 'Brimming Power', text: 'While your health is above 80%, your spells hit 12% harder.', icon: 'magic_up_status_star_arrow_up_on_violet', does: { k: 'brim', over: 0.8, pct: 0.12 } },
       { name: 'Spellscar', text: 'Everyone your super hits is left spellscarred: 72 more over 6 seconds. And you come out of it quickened, 25% faster for 4 seconds.', icon: 'lightning_hourglass_on_violet', tune: { super: { extra: [{ k: 'dot', n: 100, dur: 6 }], self: [{ k: 'speed', pct: 25, dur: 4 }] } } },
     ], 'm'),
     ...rowOf('mage', 1, [
@@ -192,7 +192,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
       { name: 'Third Chill', text: 'Every third hit on the same enemy within 6 seconds freezes them to the ground for 1.2 seconds. Once every 20 seconds.', icon: 'frozen_status_snowflake_on_blue', does: { k: 'third', n: 3, within: 6, dur: 1.2, every: 20 } },
     ], 'm'),
     ...rowOf('mage', 2, [
-      { name: 'Mana Skin', text: 'While your mana is above 30%, 30% of the damage you take is paid from it instead, 1 mana for every 2.', icon: 'shield_status_bubble_on_blue', does: { k: 'manaskin', share: 0.3, per: 2, above: 0.3 } },
+      { name: 'Arcane Skin', text: 'While your health is above 50%, you take 20% less damage.', icon: 'shield_status_bubble_on_blue', does: { k: 'skin', share: 0.2, above: 0.5 } },
       { name: 'Rewind', text: 'A Swift Step takes back half the damage you took in the 3 seconds before it. Once every 30 seconds.', icon: 'frozen_hourglass_on_navy', does: { k: 'rewind', back: 3, share: 0.5, every: 30 } },
       { name: 'Vanishing Point', text: 'Fall under 35% health and you vanish, to appear away from the nearest enemy, out of roots and slows. Once every 30 seconds.', icon: 'vanish_puff_of_smoke_on_violet', does: { k: 'vanish', dist: 100, every: 30 } },
     ], 'm'),
@@ -264,7 +264,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
       { name: 'Mirror Curse', text: 'Once every 20 seconds, the first hold put on you is turned back on whoever put it, for half as long.', icon: 'cursed_mirror_on_violet', does: { k: 'mirror', share: 0.5, every: 20 } },
     ], 'k'),
     ...rowOf('warlock', 2, [
-      { name: 'Hollow Pact', text: 'Fall under 35% health and all your mana becomes health, 3 for each. Once every 45 seconds.', icon: 'dark_heart_beating_on_black', does: { k: 'pact', per: 3, every: 45 } },
+      { name: 'Hollow Pact', text: 'Fall under 35% health and heal 25% of your health. Once every 45 seconds.', icon: 'dark_heart_beating_on_black', does: { k: 'pact', pct: 0.25, every: 45 } },
       { name: 'Unholy Bargain', text: 'Take 12% less damage, but all healing on you is 25% weaker.', icon: 'cursed_silver_coin_on_black', guard: 0.12, does: { k: 'bargain', pct: 0.25 } },
       { name: 'Soul Shield', text: 'Every 2 seconds that you deal damage, a hit or a burn, you are warded for 1% of your health, up to 4%, for 5 seconds.', icon: 'soul_orb_rising_on_violet', does: { k: 'soulward', pct: 0.01, max: 0.04, dur: 5, every: 2 } },
     ], 'k'),
