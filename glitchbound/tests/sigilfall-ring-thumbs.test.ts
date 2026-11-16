@@ -75,33 +75,40 @@ describe('The Ring’s camera: as before, a little farther out', () => {
 });
 
 describe('The Ring on a phone: every button in its place', () => {
-  it('the switch-target button is under the enemies’ nameplates, and nothing in the thumb cluster is anything but a fighting one', () => {
+  it('the switch-target button is over the top-right ability, out of the arc, and only a crosshair', () => {
+    // (the owner, 2026-11-16: "move the target button to be right above the spells on top of the normal righterst one,
+    // currently its below the nameplates")
     expect(MATCH).not.toContain('rb-sb-target');
     expect(CSS).not.toContain('rb-sb-target');
     const foes = MATCH.slice(MATCH.indexOf('<div className="rb-ring-team is-foes"'));
-    const column = foes.slice(0, foes.indexOf('{/* (a fallen fighter has nothing to press'));
-    expect(column).toContain('className="rb-ring-cycle"');
-    // (a press on it isn't taken for a press on the nearest nameplate, which the column does with its own)
-    expect(column).toContain('e.stopPropagation();');
+    expect(foes.slice(0, foes.indexOf('</div>'))).not.toContain('rb-ring-cycle');
     const cluster = MATCH.slice(MATCH.indexOf('<div className="rb-cluster" data-tut="bar">'));
-    expect(cluster.slice(0, cluster.indexOf('</div>'))).not.toContain('rb-ring-cycle');
+    expect(cluster.slice(0, cluster.indexOf('</button>'))).toContain('className="rb-ring-cycle"');
     // (its crosshair and nothing more: the tutorial and the rules say what it does)
-    const button = column.slice(column.indexOf('className="rb-ring-cycle"'), column.indexOf('</button>'));
+    const button = cluster.slice(cluster.indexOf('className="rb-ring-cycle"'), cluster.indexOf('</button>'));
     expect(button).toContain('<svg');
     expect(button).not.toMatch(/<span>|>Next</);
-    const round = rule('.rb-ring-cycle');
-    expect(round).toMatch(/justify-self:\s*end/);
-    expect(round).toMatch(/border-radius:\s*50%/);
-    expect(round).toMatch(/width:\s*36px/);
-    expect(round).toMatch(/height:\s*36px/);
+    expect(rule('.rb-ring-cycle')).toMatch(/border-radius:\s*50%/);
+    // over s4, the arc's top-right: its middle over that one's, clear of it, inside the screen's right edge
+    const px = (r: string, k: string): number => Number(new RegExp(`(?:^|[;\\s])${k}:\\s*(-?[\\d.]+)px`).exec(r)![1]);
+    const s4 = rule('.rb-ring-thumbs .rb-cluster .rb-sb-s4');
+    const t = rule('.rb-ring-thumbs .rb-cluster .rb-ring-cycle');
+    expect(px(t, 'right') + px(t, 'width') / 2).toBeCloseTo(px(s4, 'right') + px(s4, 'width') / 2, 0);
+    expect(px(t, 'bottom')).toBeGreaterThanOrEqual(px(s4, 'bottom') + px(s4, 'height') + 4);
   });
 
   it('the tutorial and the rules say what the ◎ button does, and where it is', () => {
     const tutorial = read('src/games/sigilfall/arena/tutorial.ts');
-    expect(tutorial).toContain('a ◎ button comes up under their nameplates: tap it for the next enemy, or slide from it toward the one you want.');
-    expect(tutorial).toContain('the ◎ button under the enemies’ nameplates switches between them');
-    expect(tutorial).not.toContain('above your abilities');
-    expect(read('src/games/sigilfall/ui/RingSetup.tsx')).toContain('the ◎ button under their nameplates: tap for the next, or slide toward one');
+    expect(tutorial).toContain('a ◎ button comes up over your top-right ability: tap it for the next enemy, or slide from it toward the one you want.');
+    expect(tutorial).toContain('the ◎ button over your top-right ability switches between them');
+    expect(tutorial).not.toContain('under their nameplates');
+    expect(read('src/games/sigilfall/ui/RingSetup.tsx')).toContain('the ◎ button over your top-right ability: tap for the next, or slide toward one');
+  });
+
+  it('the nameplates 5% smaller, each column from its own top corner', () => {
+    expect(rule('.rb-ring-team')).toMatch(/display: grid/);
+    expect(CSS).toMatch(/\.rb-ring-team \{\s*scale: 0\.95;\s*transform-origin: top left;/);
+    expect(CSS).toMatch(/\.rb-ring-team\.is-foes \{\s*transform-origin: top right;/);
   });
 
   it('the cluster round the attack: the bar’s other four on one arc close in, and only the step and the super outside it', () => {

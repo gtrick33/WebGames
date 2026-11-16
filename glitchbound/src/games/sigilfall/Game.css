@@ -8874,6 +8874,15 @@ html.rb-touch-playing textarea {
 .rb-ring-team.is-foes {
   margin-left: auto;
 }
+/* (5% smaller, each column from its own top corner: the owner, 2026-11-16, "u can also scale the nameplates with 5% as
+   well") */
+.rb-ring-team {
+  scale: 0.95;
+  transform-origin: top left;
+}
+.rb-ring-team.is-foes {
+  transform-origin: top right;
+}
 /* the middle, between the nameplates: the clock, the match's buttons, a hint and the tutorial's words, stacked and as
    wide as the room between the nameplates. Only what is in it takes a press: the rest of it is the ground. */
 .rb-ring-mid {
@@ -10069,9 +10078,10 @@ html.rb-touch-playing textarea {
   margin-top: -12px;
   padding-top: 12px;
 }
-/* the switch-target button, on a phone: under the enemies' nameplates, at their edge, where whom to fight is chosen,
-   and nowhere near an ability (ui/RingMatch.tsx). A white crosshair, and nothing else, on a round dark button with a
-   red rim (the tutorial says what it does); tap for the next enemy, or slide toward one */
+/* the switch-target button, on a phone: over the thumb cluster's top-right ability, out of the arc (ui/RingMatch.tsx;
+   it stood under the enemies' nameplates until the owner, 2026-11-16, asked for it "right above the spells on top of
+   the normal righterst one"). A white crosshair, and nothing else, on a round dark button with a red rim (the tutorial
+   says what it does); tap for the next enemy, or slide toward one */
 .rb-ring-cycle {
   display: grid;
   place-items: center;
@@ -13227,6 +13237,16 @@ html.rb-touch-playing textarea {
   bottom: 12px;
   width: 44px;
   height: 44px;
+}
+/* (over the top-right ability, s4, its middle over that one's, 8 points of the dark between them) */
+.rb-ring-thumbs .rb-cluster .rb-ring-cycle {
+  position: absolute;
+  right: 10px;
+  bottom: 162px;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  pointer-events: auto;
 }
 .rb-ring-thumbs .rb-cluster .rb-sb-ult {
   right: 135px;
