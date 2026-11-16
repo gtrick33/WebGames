@@ -77,6 +77,8 @@ export interface MatchFacts {
 export interface Challenge {
   id: string;
   text: string;
+  /** Its picture, from the game's icons. */
+  icon: string;
   goal: number;
   /** How much a match adds (for one that counts different things: the thing it counts). */
   add: (m: MatchFacts) => number | string | null;
@@ -87,24 +89,24 @@ export interface Challenge {
 export const HISTORY_MAX = 20;
 
 export const DAILY: readonly Challenge[] = [
-  { id: 'd-play', text: 'Play 3 rated matches', goal: 3, add: () => 1 },
-  { id: 'd-win', text: 'Win 2 rated matches', goal: 2, add: (m) => (m.won ? 1 : 0) },
-  { id: 'd-combos', text: 'Land 10 combos', goal: 10, add: (m) => m.combos },
-  { id: 'd-kicks', text: 'Interrupt 3 casts', goal: 3, add: (m) => m.kicks },
-  { id: 'd-supers', text: 'Unleash your super 3 times', goal: 3, add: (m) => m.supers },
-  { id: 'd-dmg', text: 'Deal 5,000 damage', goal: 5000, add: (m) => m.dmg },
-  { id: 'd-heal', text: 'Heal 3,000', goal: 3000, add: (m) => m.heal },
-  { id: 'd-team', text: 'Win a 2v2 or a 3v3', goal: 1, add: (m) => (m.won && m.format > 1 ? 1 : 0) },
-  { id: 'd-duel', text: 'Win a 1v1', goal: 1, add: (m) => (m.won && m.format === 1 ? 1 : 0) },
+  { id: 'd-play', icon: 'war_banner_on_a_pole_with_a_red_pattern_on_red', text: 'Play 3 rated matches', goal: 3, add: () => 1 },
+  { id: 'd-win', icon: 'radiant_crown_of_light_on_gold', text: 'Win 2 rated matches', goal: 2, add: (m) => (m.won ? 1 : 0) },
+  { id: 'd-combos', icon: 'chain_of_three_slash_marks_on_red', text: 'Land 10 combos', goal: 10, add: (m) => m.combos },
+  { id: 'd-kicks', icon: 'silenced_status_muted_bell_on_violet', text: 'Interrupt 3 casts', goal: 3, add: (m) => m.kicks },
+  { id: 'd-supers', icon: 'crit_up_status_star_burst_on_gold', text: 'Unleash your super 3 times', goal: 3, add: (m) => m.supers },
+  { id: 'd-dmg', icon: 'exploding_fire_burst_on_orange', text: 'Deal 5,000 damage', goal: 5000, add: (m) => m.dmg },
+  { id: 'd-heal', icon: 'healing_hand_with_green_gold_sparkles_on_gold', text: 'Heal 3,000', goal: 3000, add: (m) => m.heal },
+  { id: 'd-team', icon: 'bond_heart_link_on_teal', text: 'Win a 2v2 or a 3v3', goal: 1, add: (m) => (m.won && m.format > 1 ? 1 : 0) },
+  { id: 'd-duel', icon: 'crossed_sword_and_axe_on_red', text: 'Win a 1v1', goal: 1, add: (m) => (m.won && m.format === 1 ? 1 : 0) },
 ];
 
 export const WEEKLY: readonly Challenge[] = [
-  { id: 'w-wins', text: 'Win 10 rated matches', goal: 10, add: (m) => (m.won ? 1 : 0) },
-  { id: 'w-classes', text: 'Win with 3 different classes', goal: 3, add: (m) => (m.won ? m.cls : null), distinct: true },
-  { id: 'w-combos', text: 'Land 60 combos', goal: 60, add: (m) => m.combos },
-  { id: 'w-kicks', text: 'Interrupt 20 casts', goal: 20, add: (m) => m.kicks },
-  { id: 'w-formats', text: 'Play a 1v1, a 2v2 and a 3v3', goal: 3, add: (m) => String(m.format), distinct: true },
-  { id: 'w-dmg', text: 'Deal 40,000 damage', goal: 40000, add: (m) => m.dmg },
+  { id: 'w-wins', icon: 'radiant_crown_of_light_on_gold', text: 'Win 10 rated matches', goal: 10, add: (m) => (m.won ? 1 : 0) },
+  { id: 'w-classes', icon: 'chain_lightning_between_three_dots_on_violet', text: 'Win with 3 different classes', goal: 3, add: (m) => (m.won ? m.cls : null), distinct: true },
+  { id: 'w-combos', icon: 'chain_of_three_slash_marks_on_red', text: 'Land 60 combos', goal: 60, add: (m) => m.combos },
+  { id: 'w-kicks', icon: 'silenced_status_muted_bell_on_violet', text: 'Interrupt 20 casts', goal: 20, add: (m) => m.kicks },
+  { id: 'w-formats', icon: 'sword_with_three_stacked_chevrons_on_red', text: 'Play a 1v1, a 2v2 and a 3v3', goal: 3, add: (m) => String(m.format), distinct: true },
+  { id: 'w-dmg', icon: 'burning_sword_on_black', text: 'Deal 40,000 damage', goal: 40000, add: (m) => m.dmg },
 ];
 
 const DAY = 86_400_000;

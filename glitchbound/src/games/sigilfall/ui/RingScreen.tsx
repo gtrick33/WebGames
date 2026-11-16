@@ -35,6 +35,7 @@ import { cleanTitle, isTitleFx } from '../../../catalog/titleFx';
 import { rankFx, type TitleShown } from '../progress/titles';
 import { recordMatch, turnSeason } from '../arena/record';
 import { ProgressDialog, ProgressLink } from './RingProgress';
+import { ArenaChoice } from './RingArena';
 
 const roomErrors: Record<string, string> = { full: 'That room is full.', in_run: 'That room is already in a match.' };
 
@@ -849,33 +850,15 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
 
               {format > 1 && <MatesPicker format={format} cls={pick} bar={bar} mates={mates} onMates={putMates} />}
 
-              <div className="rb-rp-block" data-tut="arena">
-                <h3 className="rb-rp-arenahead">
-                  Arena
-                  <button className="rb-linkbtn" onClick={() => setMapsOpen((o) => !o)} aria-expanded={mapsOpen}>
-                    {mapsOpen ? 'Done' : 'Change'}
-                  </button>
-                </h3>
-                {!mapsOpen && <p className="rb-rp-mapnow">{map === 'random' ? 'Any: a different arena each time' : `${MAPS[map]?.name ?? ''} · ${MAPS[map]?.blurb ?? ''}`}</p>}
-                <div className="rb-rp-maps" role="radiogroup" aria-label="Arena" hidden={!mapsOpen}>
-                  <button role="radio" aria-checked={map === 'random'} className={`rb-rp-map${map === 'random' ? ' is-on' : ''}`} onClick={() => {
-                      setMap('random');
-                      setMapsOpen(false);
-                    }}>
-                    <strong>Any</strong>
-                    <small>A surprise</small>
-                  </button>
-                  {MAP_IDS.map((id) => (
-                    <button key={id} role="radio" aria-checked={map === id} title={MAPS[id]!.blurb} className={`rb-rp-map${map === id ? ' is-on' : ''}`} style={{ ['--c' as string]: MAPS[id]!.color }} onClick={() => {
-                        setMap(id);
-                        setMapsOpen(false);
-                      }}>
-                      <strong>{MAPS[id]!.name}</strong>
-                      <small>{MAPS[id]!.blurb}</small>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <ArenaChoice
+                map={map}
+                open={mapsOpen}
+                onOpen={setMapsOpen}
+                onPick={(id) => {
+                  setMap(id);
+                  setMapsOpen(false);
+                }}
+              />
 
               {seekNote && (
                 <p className="rb-rp-error" role="status">

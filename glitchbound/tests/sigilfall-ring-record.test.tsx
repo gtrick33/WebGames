@@ -4,6 +4,8 @@
  * challenges drawn from the date, counted from rated matches; class mastery and its titles; seasons that bring ratings
  * halfway back toward 1000 and keep the best ever; the last twenty matches; joined across devices; one link in the lobby.
  */
+import fs from 'node:fs';
+import path from 'node:path';
 import { fireEvent, render } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { RING_KEY, type Standing } from '../src/games/sigilfall/arena/ranks';
@@ -11,6 +13,8 @@ import { CHALLENGE_TITLES, DAILY, dailyOf, dayKey, HISTORY_MAX, MASTERY_TITLES, 
 import { mergeSaveText } from '../src/platform/cloudMerge';
 import { earnedRecordTitles, TITLES } from '../src/games/sigilfall/progress/titles';
 import { ProgressDialog, ProgressLink } from '../src/games/sigilfall/ui/RingProgress';
+import { ArenaChoice, ArenaPicture } from '../src/games/sigilfall/ui/RingArena';
+import { MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
 
 const NOW = Date.UTC(2026, 10, 18, 15, 0);
 const entry = (more: Partial<MatchEntry> = {}): MatchEntry => ({ at: NOW, format: 1, cls: 'warrior', won: true, draw: false, change: 30, rating: 1030, dmg: 2000, heal: 100, combos: 6, kicks: 1, ...more });
@@ -134,22 +138,50 @@ describe('The Ring’s record across devices', () => {
   });
 });
 
-describe('The Ring’s record on screen: one link in the lobby, the rest a press away', () => {
-  it('the link says how many of the challenges are done; the window has a tab for each part', () => {
+describe('The Ring’s record on screen: one strip in the lobby, the rest a press away', () => {
+  it('every challenge has a picture from the game’s icons', () => {
+    const names = (JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/games/sigilfall/icons/icons.json'), 'utf8')) as { names: string[] }).names;
+    for (const c of [...DAILY, ...WEEKLY]) expect(names, c.id).toContain(c.icon);
+  });
+
+  it('the arena: the one chosen as a card with its ground’s picture; the choice a picture card for each, Any first', () => {
+    let picked = '';
+    let opened: boolean | null = null;
+    const shut = render(<ArenaChoice map="frost" open={false} onOpen={(o) => (opened = o)} onPick={() => {}} />);
+    expect(shut.container.textContent).toMatch(/The Frozen Mere/);
+    expect(shut.container.querySelectorAll('svg.rb-ar-pic')).toHaveLength(1);
+    fireEvent.click(shut.getByRole('button'));
+    expect(opened).toBe(true);
+    shut.unmount();
+    const open = render(<ArenaChoice map="random" open onOpen={() => {}} onPick={(id) => (picked = id)} />);
+    const cards = open.getAllByRole('radio');
+    expect(cards.map((c) => c.textContent)).toEqual(['?Any arena', ...MAP_IDS.map((id) => MAPS[id]!.name)]);
+    expect(cards[0]!.getAttribute('aria-checked')).toBe('true');
+    // (each ground drawn with its stones)
+    for (const id of MAP_IDS) expect(render(<ArenaPicture id={id} />).container.querySelectorAll('rect').length).toBeGreaterThan(MAPS[id]!.pillars.length);
+    fireEvent.click(cards[2]!);
+    expect(picked).toBe(MAP_IDS[1]);
+  });
+
+  it('the strip says how many of the challenges are done; the window has a tab for each part, with its count', () => {
     const rec = recordMatch(undefined, entry({ at: Date.now() }), facts({ combos: 20, kicks: 5, supers: 5, dmg: 9000, heal: 4000 }), Date.now());
     const link = render(<ProgressLink record={rec} onOpen={() => {}} />);
-    expect(link.container.textContent).toMatch(/^Progress \d\/6 challenges$/);
+    // (a strip as the rewards' is: its name for a reader, today's three as pips, the next to do or "done", the way in)
+    expect(link.getByRole('button').getAttribute('aria-label')).toMatch(/^Progress \d\/6 challenges$/);
+    expect(link.container.querySelectorAll('.rb-pg-pips i')).toHaveLength(3);
+    expect(link.container.textContent).toMatch(/Today’s challenge|Today’s challenges done/);
+    expect(link.container.textContent).toMatch(/Progress$/);
     link.unmount();
     const ui = render(<ProgressDialog record={rec} onClose={() => {}} />);
-    expect(ui.getByRole('tab', { name: 'Challenges' }).getAttribute('aria-selected')).toBe('true');
+    expect(ui.getByRole('tab', { name: /^Challenges/ }).getAttribute('aria-selected')).toBe('true');
     expect(ui.container.textContent).toMatch(/Today/);
     expect(ui.container.textContent).toMatch(/This week/);
-    fireEvent.click(ui.getByRole('tab', { name: 'Mastery' }));
+    fireEvent.click(ui.getByRole('tab', { name: /^Mastery/ }));
     expect(ui.container.textContent).toMatch(/Warrior/);
     expect(ui.container.textContent).toMatch(/1\/15/);
-    fireEvent.click(ui.getByRole('tab', { name: 'Season' }));
+    fireEvent.click(ui.getByRole('tab', { name: /^Season/ }));
     expect(ui.container.textContent).toMatch(/Season \d+/);
-    fireEvent.click(ui.getByRole('tab', { name: 'History' }));
+    fireEvent.click(ui.getByRole('tab', { name: /^History/ }));
     expect(ui.container.textContent).toMatch(/Win/);
     expect(ui.container.textContent).toMatch(/\+30/);
   });

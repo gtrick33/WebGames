@@ -2,7 +2,7 @@ import { CLASSES } from '../data/classes';
 import type { ClassId } from '../data/types';
 import { ABILITIES, barCombos, PRESETS, ultOf, type Ability } from './abilities';
 import { steerTo } from './bot';
-import { CLASS_EASE, CLASS_WAY, EASE_WORD } from './styles';
+import { CLASS_EASE, EASE_WORD } from './styles';
 import { RANGED, type FighterSetup, type Match, type MatchEvent, type MatchSetup, type MoveInput } from './sim';
 
 /**
@@ -56,12 +56,13 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
   {
     id: 'welcome',
     title: 'Welcome to the Ring',
-    text: (cls) => `Short fights between heroes: one against one, two against two or three against three. Every part of this screen is labeled. Pick a class, pick a fight and find a match: that’s all it takes. ${CLASSES[cls].name}: ${CLASS_WAY[cls].toLowerCase()}, ${EASE_WORD[CLASS_EASE[cls]].toLowerCase()} to learn.${CLASS_EASE[cls] === 'easy' ? '' : ' The Warrior is an easy first pick.'}`,
+    text: (cls) => `Short fights, 1v1 to 3v3. Every part of this screen is labeled: pick a class, a fight, and go. ${CLASSES[cls].name}: ${EASE_WORD[CLASS_EASE[cls]].toLowerCase()} to learn.${CLASS_EASE[cls] === 'easy' ? '' : ' The Warrior is an easy first pick.'}`,
     spot: null,
     labels: [
       { spot: 'classes', text: 'Your class' },
       { spot: 'formats', text: 'Your fight: a rating each' },
       { spot: 'rank', text: 'Your rank: titles and armor', right: true },
+      { spot: 'progress', text: 'Daily challenges and more', right: true },
       { spot: 'arena', text: 'Arena: Any is fine', right: true },
       { spot: 'loadout', text: 'What you bring: tap to read' },
     ],
