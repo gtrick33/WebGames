@@ -168,8 +168,8 @@ export const SKILL_HASTE_MAX = 50;
 export const skillHaste = (haste: number): number => 1 + Math.min(SKILL_HASTE_MAX, Math.max(0, haste) * SKILL_HASTE_SHARE) / 100;
 /** How fast a slot's cooldown runs with this much haste (what the bars count down by). */
 export const slotHaste = (slot: string, haste: number): number => (slot === 'basic' ? 1 + Math.min(Math.max(0, haste), BASIC_HASTE) / 100 : slot === 'dodge' ? 1 + Math.max(0, haste) / 100 : skillHaste(haste));
-/** The most haste (%) speeds the basic attack. */
-export const BASIC_HASTE = 60;
+/** The most haste (%) speeds the basic attack: a quarter (it was 60, and gear made the bolts a machine gun). */
+export const BASIC_HASTE = 25;
 /**
  * How fast a hero goes on foot, in world pixels a second, before what their gear adds. Walking the land is a twelfth
  * slower than it was (the owner: "slow down the character a bit but keep mount speed the same"). In a fight a hero

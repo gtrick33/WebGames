@@ -19,7 +19,7 @@ import { CLASS_IDS, CLASSES, KITS } from '../src/games/sigilfall/data/classes';
 import { SKILLS } from '../src/games/sigilfall/data/skills';
 import { TALENTS } from '../src/games/sigilfall/data/talents';
 import type { ClassId, Effect, ProcDef, SkillOp } from '../src/games/sigilfall/data/types';
-import { buildHero } from '../src/games/sigilfall/progress/build';
+import { BASIC_MIN, buildHero } from '../src/games/sigilfall/progress/build';
 import { setSkill, type Character } from '../src/games/sigilfall/progress/character';
 import { migrate, SAVE_VERSION } from '../src/games/sigilfall/progress/save';
 import { tryCast } from '../src/games/sigilfall/sim/cast';
@@ -298,5 +298,29 @@ describe('Sigilfall: what changed for saves and screens', () => {
     expect(shout).toContain('left: 50%');
     expect(shout).toContain('translate(-50%, -50%)');
     expect(rule('.rb-ui.is-boss.is-touch .rb-announce > .rb-banner strong')).toContain('white-space: normal');
+  });
+});
+
+describe('Sigilfall: the basic attack has room to breathe, and the skills carry the fight', () => {
+  it('no class’s basic attack comes more than about 1.7 times a second, whatever its gear', () => {
+    for (const cls of CLASS_IDS) {
+      for (const level of [5, 30, 60]) {
+        const w = newWorld('whisperwood', readyHero(cls, level, level >= 52 ? 'epic' : level >= 28 ? 'rare' : 'uncommon'));
+        const spec = w.build.skills[w.build.bar.basic!]!.spec;
+        const perSecond = slotHaste('basic', w.build.stats.haste ?? 0) / spec.cooldown;
+        expect(perSecond, `${cls} at ${level}`).toBeLessThanOrEqual((1 + BASIC_HASTE / 100) / BASIC_MIN + 1e-6);
+      }
+    }
+  });
+
+  it('each basic hit lands harder for coming slower, and every damaging skill hits harder than its base', () => {
+    const w = newWorld('whisperwood', readyHero('mage', 30, 'common'));
+    const bolt = w.build.skills['arcane-bolt']!.spec;
+    const base = SKILLS['arcane-bolt']!.base;
+    expect(bolt.cooldown).toBeGreaterThanOrEqual(BASIC_MIN - 1e-9);
+    expect(bolt.damage / bolt.cooldown).toBeLessThan(base.damage / base.cooldown);
+    expect(bolt.damage).toBeGreaterThan(base.damage);
+    const fire = w.build.skills.fireball!.spec;
+    expect(fire.damage).toBeGreaterThan(SKILLS.fireball!.base.damage);
   });
 });

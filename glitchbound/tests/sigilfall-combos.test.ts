@@ -162,7 +162,8 @@ describe('Sigilfall: what combos are made of', () => {
     for (let i = 0; i < 3; i++) {
       expect(empowerOf(w, 'wrath'), `cast ${i}`).not.toBeNull();
       expect(tryCast(w, { slot: 'basic', angle: 0, dist: 0.5, assist: 0 })).toBe(true);
-      step(w, 0.6);
+      // (the basic attack's own pace: progress/build.ts paceBasics)
+      step(w, w.build.skills.wrath!.spec.cooldown + 0.1);
     }
     expect(empowerOf(w, 'wrath')).toBeNull();
   });

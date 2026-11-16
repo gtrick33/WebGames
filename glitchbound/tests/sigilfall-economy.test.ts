@@ -2,6 +2,7 @@ import { TILE } from '../src/games/sigilfall/sim/map';
 import { describe, expect, it } from 'vitest';
 import { CLASS_IDS, CLASSES } from '../src/games/sigilfall/data/classes';
 import { SKILLS } from '../src/games/sigilfall/data/skills';
+import { basicSlow } from '../src/games/sigilfall/progress/build';
 import { QM_LEVEL } from '../src/games/sigilfall/data/vendors';
 import { POTION_CAP } from '../src/games/sigilfall/progress/character';
 import { itemSlot } from '../src/games/sigilfall/progress/items';
@@ -55,9 +56,9 @@ describe('sigilfall mana', () => {
     e.hp = e.maxHp = 1e6;
     e.state = 'chase';
     p.aim = 0;
-    // a swing that connects gives rage
+    // a swing that connects gives rage: 6 a swing, more for each swing as it comes slower (progress/build.ts paceBasics)
     expect(tryCast(w, { slot: 'basic', angle: 0, dist: null, assist: 0 })).toBe(true);
-    expect(p.mana).toBe(6);
+    expect(p.mana).toBeCloseTo(6 * basicSlow(SKILLS.cleave!.base.cooldown));
     // so does taking a hit
     p.iframe = 0;
     hurtPlayer(w, p.maxHp * 0.2, {});

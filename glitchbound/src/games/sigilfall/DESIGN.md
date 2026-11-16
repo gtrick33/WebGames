@@ -231,8 +231,12 @@ comes about once a minute in a long fight.
 
 **Skills and haste.** A skill hits many times harder than the basic attack, on a cooldown of seconds (Fireball: 78
 damage every 7 s, near nine Arcane Bolts' worth). Haste speeds a skill's cooldown by half of itself and never more than
-50% (`skillHaste` in `sim/world.ts`); the basic attack is sped by haste up to 60% (`BASIC_HASTE`), and the dodge by
-all of it, as before.
+50% (`skillHaste` in `sim/world.ts`); the basic attack is sped by haste up to 25% (`BASIC_HASTE`), and the dodge by
+all of it, as before. The basic attack has room to breathe and the skills carry the fight (`paceBasics` in
+`progress/build.ts`): every basic attack, a shape's too, comes at least 1.3× slower and never more often than every
+0.75 s, so the quickest slow the most; each hit grows with that, keeping 85% of its damage a second; what a hit gives
+back (rage, mana, focus; not Zeal's whole points) grows with it; and every other damaging skill hits 1.25× harder. With
+the haste cap no basic attack comes more than about 1.7 times a second (a mage's Arcane Bolt came nearly four).
 Every specialization has talents that make a skill ready, free, stronger or (for a spell with a cast bar) instant now
 and then, so a fight has moments that aren't the same as the last.
 

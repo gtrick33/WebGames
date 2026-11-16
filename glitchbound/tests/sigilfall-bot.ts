@@ -140,6 +140,10 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
   let nowhere = { x: w.player.x, y: w.player.y, t: 0, foes: Infinity, x0: w.player.x, y0: w.player.y, len: 1.2 };
   let slideT = 0;
   let slide = 1;
+  // every third time it is stopped dead, it backs out the way it came instead of sliding: wedged into a corner of
+  // props the map's paths don't know, both sides are blocked and only backing out frees it, as a player would
+  let blocks = 0;
+  let backing = false;
   let foeHp = Infinity;
   // something being healed as fast as it's hurt: leave it a while and go for what else is there, as a player would
   let watching = { id: -1, hp: 0, t: 0 };
@@ -238,8 +242,8 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
           if (slideT > 0) {
             slideT -= DT;
             const ax = mx;
-            mx = -my * slide;
-            my = ax * slide;
+            mx = backing ? -mx : -my * slide;
+            my = backing ? -my : ax * slide;
           }
         } else if (!melee && d < keep * 0.6) {
           mx = (p.x - target.x) / d;
@@ -279,8 +283,8 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
         if (slideT > 0) {
           slideT -= DT;
           const ax = mx;
-          mx = -my * slide;
-          my = ax * slide;
+          mx = backing ? -mx : -my * slide;
+          my = backing ? -my : ax * slide;
         }
       }
       // a spell being cast: stand still for it, as a player would (unless something is about to land)
@@ -366,6 +370,7 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
       blockedT = 0;
       slideT = 0.6;
       slide = -slide;
+      backing = ++blocks % 3 === 0;
     }
     // going nowhere and hurting nothing, though not stopped dead: stepping to and fro at a gap in the undergrowth that
     // the way to a far foe runs through and a hero's shoulders don't fit (the check above, for a hero stopped still,
@@ -380,6 +385,7 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
       nowhere.t = res.time;
       slideT = nowhere.len;
       slide = -slide;
+      backing = false;
       nowhere.len = Math.min(5, nowhere.len * 1.6);
       if (target) {
         leftAlone.set(target.id, res.time + 6);

@@ -454,6 +454,37 @@ export function formSkills(c: Character, f: FormDef): [string, string] {
 }
 
 /**
+ * The basic attack has room to breathe, and the skills carry the fight (the owner: "my mage has a machine gun basic
+ * skill ... i can just spam this non stop, it needs to have a bit of breathing space, this counts for all classes,
+ * abilities should be more meaningful"). Every basic attack (each shape's too) comes at least BASIC_SLOW times slower
+ * and never more often than every BASIC_MIN seconds, so the quickest (a mage's bolt, a ranger's arrow) slow the most
+ * and the already slow (a priest's Smite) only a little. Each hit grows with that, so a basic attack keeps BASIC_KEEP of
+ * the damage a second it had; what a hit gives back (rage, mana, focus; not Zeal, whole points a strike) grows with it
+ * too. Every other skill that deals damage hits SKILL_WEIGHT times harder.
+ */
+export const BASIC_SLOW = 1.3;
+export const BASIC_MIN = 0.75;
+export const BASIC_KEEP = 0.85;
+export const SKILL_WEIGHT = 1.25;
+/** How much slower a basic attack of this cooldown comes now (and so how much harder each of its hits lands, before BASIC_KEEP). */
+export const basicSlow = (cooldown: number): number => Math.max(cooldown * BASIC_SLOW, BASIC_MIN) / Math.max(0.01, cooldown);
+function paceBasics(def: (typeof CLASSES)[keyof typeof CLASSES], skills: Record<string, ResolvedSkill>): void {
+  const basics = new Set([def.basic, ...(def.forms ?? []).map((f) => f.basic)]);
+  const dodges = new Set([def.dodge, ...(def.forms ?? []).map((f) => f.dodge)]);
+  const whole = def.resource?.kind === 'holy';
+  for (const [id, r] of Object.entries(skills)) {
+    const s = r.spec;
+    if (basics.has(id)) {
+      const k = basicSlow(s.cooldown);
+      s.cooldown *= k;
+      s.damage *= k * BASIC_KEEP;
+      if (!whole) s.gen *= k;
+      if (s.extra.manaOnHit) s.extra.manaOnHit *= k;
+    } else if (!dodges.has(id) && s.damage > 0) s.damage *= SKILL_WEIGHT;
+  }
+}
+
+/**
  * The whole build. In a druid shape (`formId`), the basic attack and dodge are the shape's, the slot
  * with the shape's skill keeps it (to change back) and the other two slots hold the shape's skills.
  */
@@ -480,6 +511,7 @@ export function buildHero(c: Character, formId: string | null = null): HeroBuild
   }
   const skills: Record<string, ResolvedSkill> = {};
   for (const id of classSkillIds(c)) if (SKILLS[id]) skills[id] = resolveSkill(c, id, mods);
+  paceBasics(def, skills);
   const res = def.resource ?? null;
   const maxMana = res ? Math.round(res.base + res.perLevel * (c.level - 1)) : 0;
   const base = heroStats(c, mods);
