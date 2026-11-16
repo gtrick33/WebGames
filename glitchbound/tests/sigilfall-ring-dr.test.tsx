@@ -102,7 +102,7 @@ describe('The Ring: diminishing returns on the nameplates', () => {
   });
 
   it('small but plain: the rim’s color says what the next does, and its share sits in the corner', () => {
-    expect(rule('.rb-ring-drs i')).toMatch(/width:\s*19px/);
+    expect(rule('.rb-ring-drs i')).toMatch(/width:\s*26px/);
     expect(rule('.rb-ring-drs i')).toMatch(/--dr:\s*#ffd257/);
     expect(rule('.rb-ring-drs i.is-dr2')).toMatch(/--dr:\s*#ff9a3d/);
     expect(rule('.rb-ring-drs i.is-dr3')).toMatch(/--dr:\s*#ff4a5a/);

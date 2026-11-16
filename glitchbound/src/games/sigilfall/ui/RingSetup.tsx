@@ -549,7 +549,7 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
               <dt>Super</dt>
               <dd>Q, once your meter is full: your class’s big one</dd>
               <dt>Choose an enemy</dt>
-              <dd>Their nameplate on the right, the fighter themself, or Tab. On a touch screen against two or more, the ◎ button under their nameplates: tap for the next, or slide toward one</dd>
+              <dd>Their nameplate on the right, the fighter themself, or Tab. On a touch screen against two or more, the ◎ button over your top-right ability: tap for the next, or slide toward one</dd>
               <dt>Choose who to help</dt>
               <dd>Their nameplate on the left, the fighter themself, or F</dd>
               <dt>Match menu</dt>

@@ -419,7 +419,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     tick((x) => x + 1);
   };
   /**
-   * The next enemy, as Tab chooses: a phone's ◎ button under the enemies' nameplates, the easiest way there is to
+   * The next enemy, as Tab chooses: a phone's ◎ button over the top-right ability, the easiest way there is to
    * switch target.
    */
   /** The enemy that lies the way a thumb slides from the ◎ button, as seen on the screen (set where the view is). */
@@ -1179,9 +1179,21 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               {plates && right.map((f) => (
                 <Frame key={f.id} flip f={f} m={m} me={me} doll={classEmblem(f.cls)} title={titles[f.id] ?? null} tag={f === foeAlive ? 'Target' : null} onPick={() => target(f.id)} />
               ))}
-              {/* on a phone, with two or more on the other side: a button to switch between them, under their nameplates
-                  where the choosing is done, away from the abilities (it was in the thumb cluster beside a spell: the owner,
-                  "the target button is also next to a spell") */}
+            </div>
+          </div>
+          {/* (a fallen fighter has nothing to press: the stick and the abilities step aside and leave the whole ring to watch) */}
+          {touch && !(me?.dead && m.phase === 'fight') && (
+            <div className="rb-ui rb-ring-thumbs">
+              <Stick
+                settings={engine.settings}
+                onMove={(mx, my) => {
+                  stick.current = { mx, my };
+                }}
+              />
+              <div className="rb-cluster" data-tut="bar">
+              {/* with two or more on the other side: a button to switch between them, over the top-right ability, out of the
+                  arc (the owner, 2026-11-16: "move the target button to be right above the spells on top of the normal
+                  righterst one, currently its below the nameplates"; before that it was beside a spell in the arc) */}
               {touch && right.length > 1 && (
                 <button
                   type="button"
@@ -1228,18 +1240,6 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   </svg>
                 </button>
               )}
-            </div>
-          </div>
-          {/* (a fallen fighter has nothing to press: the stick and the abilities step aside and leave the whole ring to watch) */}
-          {touch && !(me?.dead && m.phase === 'fight') && (
-            <div className="rb-ui rb-ring-thumbs">
-              <Stick
-                settings={engine.settings}
-                onMove={(mx, my) => {
-                  stick.current = { mx, my };
-                }}
-              />
-              <div className="rb-cluster" data-tut="bar">
                 {bar.map((ab, i) => {
                   const cd = me?.cds[ab.id] ?? 0;
                   const gcd = !ab.free ? (me?.gcd ?? 0) : 0;

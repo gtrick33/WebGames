@@ -6506,7 +6506,20 @@ html.rb-touch-playing textarea {
   position: absolute;
   inset: auto 0 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   justify-items: center;
+  text-align: center;
+}
+/* (every line held to the stand's width, and a long one wraps: a title kept to one line ("Primal Ashbringer") pushed the
+   block wider than its narrow column on a phone, and the hero's class, title and name were cut off at its sides (the
+   owner, 2026-11-16: "the title and the text below that, now its a scrollable window but it shouldnt be and should be
+   visible at all times")) */
+.rb-vlobby-name > * {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.rb-vlobby-name .tfx {
+  white-space: normal;
 }
 .rb-vlobby-name strong {
   color: #fff4d8;
@@ -8861,6 +8874,15 @@ html.rb-touch-playing textarea {
 .rb-ring-team.is-foes {
   margin-left: auto;
 }
+/* (5% smaller, each column from its own top corner: the owner, 2026-11-16, "u can also scale the nameplates with 5% as
+   well") */
+.rb-ring-team {
+  scale: 0.95;
+  transform-origin: top left;
+}
+.rb-ring-team.is-foes {
+  transform-origin: top right;
+}
 /* the middle, between the nameplates: the clock, the match's buttons, a hint and the tutorial's words, stacked and as
    wide as the room between the nameplates. Only what is in it takes a press: the rest of it is the ground. */
 .rb-ring-mid {
@@ -9308,10 +9330,11 @@ html.rb-touch-playing textarea {
 }
 /* Diminishing returns (ui/RingMatch.tsx DrChips): round where the effects on them are square, the picture of what put
    the last hold on them inside a rim the color of what the next does (yellow half, orange a quarter, red nothing),
-   the rim running down as it is forgotten, and the share in its corner */
+   the rim running down as it is forgotten, and the share in its corner. 26px across, with a thicker rim and a bigger
+   share (19px until the owner, 2026-11-16: "dr trackers is almost not visible right now, its too small") */
 .rb-ring-drs {
   display: flex;
-  gap: 2px;
+  gap: 3px;
   margin-inline-start: 3px;
 }
 .is-flip .rb-ring-drs {
@@ -9323,12 +9346,12 @@ html.rb-touch-playing textarea {
   position: relative;
   display: block;
   flex: none;
-  width: 19px;
-  height: 19px;
-  padding: 2px;
+  width: 26px;
+  height: 26px;
+  padding: 3px;
   border-radius: 50%;
-  background: conic-gradient(var(--dr) calc(var(--left, 1) * 360deg), rgb(255 255 255 / 0.14) 0);
-  box-shadow: 0 0 5px color-mix(in srgb, var(--dr) 55%, transparent);
+  background: conic-gradient(var(--dr) calc(var(--left, 1) * 360deg), rgb(255 255 255 / 0.18) 0);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.7), 0 0 7px color-mix(in srgb, var(--dr) 70%, transparent);
 }
 .rb-ring-drs i.is-dr2 {
   --dr: #ff9a3d;
@@ -9349,13 +9372,14 @@ html.rb-touch-playing textarea {
 }
 .rb-ring-drs em {
   position: absolute;
-  right: -3px;
-  bottom: -3px;
-  min-width: 10px;
-  padding: 0 1px;
-  border-radius: 5px;
+  right: -4px;
+  bottom: -4px;
+  min-width: 14px;
+  padding: 0 2px;
+  border-radius: 7px;
   color: #1a0a06;
-  font: 800 8px/10px system-ui, sans-serif;
+  font: 800 10.5px/14px system-ui, sans-serif;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.75);
   font-style: normal;
   text-align: center;
   background: var(--dr);
@@ -10054,9 +10078,10 @@ html.rb-touch-playing textarea {
   margin-top: -12px;
   padding-top: 12px;
 }
-/* the switch-target button, on a phone: under the enemies' nameplates, at their edge, where whom to fight is chosen,
-   and nowhere near an ability (ui/RingMatch.tsx). A white crosshair, and nothing else, on a round dark button with a
-   red rim (the tutorial says what it does); tap for the next enemy, or slide toward one */
+/* the switch-target button, on a phone: over the thumb cluster's top-right ability, out of the arc (ui/RingMatch.tsx;
+   it stood under the enemies' nameplates until the owner, 2026-11-16, asked for it "right above the spells on top of
+   the normal righterst one"). A white crosshair, and nothing else, on a round dark button with a red rim (the tutorial
+   says what it does); tap for the next enemy, or slide toward one */
 .rb-ring-cycle {
   display: grid;
   place-items: center;
@@ -12201,6 +12226,44 @@ html.rb-touch-playing textarea {
   .rb-ringvl .rb-vlobby-hero {
     grid-template-columns: 84px minmax(120px, 1fr) minmax(0, 1.3fr);
   }
+  /* (the hero over their name, never under it: the stand a column of two rows, the figure standing in the top one on
+     its dais, the class, the title and the name in the bottom one as tall as they need. Laid over the figure, a title
+     that wraps to a second line stood over its legs) */
+  .rb-ringvl .rb-vlobby-stage {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .rb-ringvl .rb-vlobby-doll {
+    position: relative;
+    grid-row: 1;
+    inset: auto;
+    align-self: end;
+    width: 100%;
+    height: calc(100% - 4px);
+    max-height: 300px;
+    aspect-ratio: auto;
+    margin: 0 0 4px;
+  }
+  /* (in the figure's row, at its feet, the figure over it) */
+  .rb-ringvl .rb-vlobby-dais {
+    position: relative;
+    grid-row: 1;
+    grid-column: 1;
+    align-self: end;
+    justify-self: center;
+    bottom: auto;
+    left: auto;
+    translate: none;
+    margin-bottom: -4px;
+  }
+  .rb-ringvl .rb-vlobby-doll {
+    grid-column: 1;
+  }
+  .rb-ringvl .rb-vlobby-name {
+    position: relative;
+    grid-row: 2;
+    inset: auto;
+  }
   .rb-ringvl .rb-vlobby-kit {
     align-content: start;
   }
@@ -13174,6 +13237,16 @@ html.rb-touch-playing textarea {
   bottom: 12px;
   width: 44px;
   height: 44px;
+}
+/* (over the top-right ability, s4, its middle over that one's, 8 points of the dark between them) */
+.rb-ring-thumbs .rb-cluster .rb-ring-cycle {
+  position: absolute;
+  right: 10px;
+  bottom: 162px;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  pointer-events: auto;
 }
 .rb-ring-thumbs .rb-cluster .rb-sb-ult {
   right: 135px;

@@ -416,9 +416,9 @@ export class TutorialRun {
       case 'move':
         return out('Move', t ? 'Move with your left thumb: put it down anywhere on the left side and push.' : 'Move with W A S D or the arrow keys. You can use abilities while you move.', null, t ? 'Push with your left thumb to move.' : 'Move with W A S D or the arrow keys.');
       case 'target':
-        // (on a phone the ◎ button under the enemies' nameplates is there only with two or more of them: it is told of
+        // (on a phone the ◎ button over the top-right ability is there only with two or more of them: it is told of
         // here, where choosing is learned, as no sparring match has it to point at)
-        return out('Choose your enemy', `${t ? 'Tap your sparring partner, or their nameplate on the right.' : `Click your sparring partner, click their nameplate on the right, or press ${keys.nextFoe}.`} Your attacks go to whoever is your target.${t ? ' Against two or more, a ◎ button comes up under their nameplates: tap it for the next enemy, or slide from it toward the one you want.' : ''}`, 'foes', t ? 'Tap your sparring partner or their nameplate.' : `Click them or their nameplate, or press ${keys.nextFoe}.`);
+        return out('Choose your enemy', `${t ? 'Tap your sparring partner, or their nameplate on the right.' : `Click your sparring partner, click their nameplate on the right, or press ${keys.nextFoe}.`} Your attacks go to whoever is your target.${t ? ' Against two or more, a ◎ button comes up over your top-right ability: tap it for the next enemy, or slide from it toward the one you want.' : ''}`, 'foes', t ? 'Tap your sparring partner or their nameplate.' : `Click them or their nameplate, or press ${keys.nextFoe}.`);
       case 'ability': {
         const first = ABILITIES[me.bar[0] ?? ''];
         const reach = melee ? (keys.closeIn ? ' You fight up close: press it from afar and you walk there by yourself.' : ' You fight up close, so walk right up to them first.') : ' You attack from range, so you can stay back.';
@@ -439,7 +439,7 @@ export class TutorialRun {
       case 'super':
         return out('Your super', `Your super meter fills as you fight; we filled it for you. ${t ? 'Tap the gold button' : `Press ${keys.super}`} to unleash ${sup.name}: ${sup.text}${sup.aim === 'ground' ? (t ? ' Hold the button and push to place it.' : ' Click where it should land.') : ''}`, 'super', `Your super is full. ${press(t ? 'the gold button' : keys.super)} to unleash ${sup.name}.`);
       case 'fight':
-        return out('Now, a real fight', `Your sparring partner fights back now, gently. Use everything: combos, your super, the spheres. In a team fight, your teammates’ nameplates sit under yours: ${t ? 'tap one' : `click one or press ${keys.nextFriend}`} to choose who your heals go to.${t ? ' In a team fight, the ◎ button under the enemies’ nameplates switches between them.' : ''} Win it!`, null, 'Win the fight! Use everything you’ve learned.');
+        return out('Now, a real fight', `Your sparring partner fights back now, gently. Use everything: combos, your super, the spheres. In a team fight, your teammates’ nameplates sit under yours: ${t ? 'tap one' : `click one or press ${keys.nextFriend}`} to choose who your heals go to.${t ? ' In a team fight, the ◎ button over your top-right ability switches between them.' : ''} Win it!`, null, 'Win the fight! Use everything you’ve learned.');
     }
   }
 }
