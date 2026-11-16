@@ -367,8 +367,9 @@ void seeThrough() {
   float s = dot(vW - uSee.xyz, dir);
   if (s <= 0.2) return;
   float d = length(vW - (uSee.xyz + dir * s));
-  float R = 1.05 + s * 0.11;
-  float k = smoothstep(R, R * 0.35, d) * smoothstep(0.2, 1.1, s) * 0.82;
+  // (wide enough for a fight round the hero, not only the hero: the canopy hid the foes at their feet)
+  float R = 1.6 + s * 0.15;
+  float k = smoothstep(R, R * 0.3, d) * smoothstep(0.2, 1.1, s) * 0.86;
   if (k <= 0.0) return;
   float dx = mod(gl_FragCoord.x, 4.0);
   float dy = mod(gl_FragCoord.y, 4.0);

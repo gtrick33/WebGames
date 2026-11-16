@@ -188,6 +188,9 @@ export interface EffectsScene {
   near(x: number, y: number, reach?: number): boolean;
 }
 
+/** Where the hero stands this frame (Effects.ground sets it): a blast round them is drawn lighter. Far off, by default. */
+const heroAt = { x: -1e9, y: -1e9 };
+
 /** An effect by name, somewhere on its way through its life (`u`, 0 to 1): The Vigil's spells use them too. */
 export function spell(fx: Fx3D, name: string, tone: Tone, x: number, y: number, u: number, size: number, seed: number, angle = 0): void {
   const a = tone.a;
@@ -201,10 +204,13 @@ export function spell(fx: Fx3D, name: string, tone: Tone, x: number, y: number, 
     }
     case 'blast': {
       const R = Math.max(16, size);
+      // (one going off round the hero, their own nova: lighter, and no smoke, so the hero is seen in the middle of it;
+      // a Rime Burst used to swallow them whole for half a second)
+      const own = Math.hypot(x - heroAt.x, y - heroAt.y) < 8;
       fx.put({ kind: FX.field, x, y, flat: true, w: R * 2, a: mixHex(colorOf(a), 0, 0.5), b: a, t: 0.34 * (1 - u), seed, p1: FIELD.fire });
-      fx.put({ kind: FX.blast, x, y, up: R * 0.42, w: R * 2.7, a, b, t: u, seed });
+      fx.put({ kind: FX.blast, x, y, up: R * 0.42, w: R * 2.7, a, b, t: u, seed, ...(own ? { alpha: 0.5 } : {}) });
       fx.put({ kind: FX.ring, x, y, flat: true, w: R * 2.3, a: b, t: u, seed });
-      if (u > 0.3) fx.put({ kind: FX.smoke, x, y, up: R * 0.5 + u * 14, w: R * (1.6 + u * 1.2), a: '#3a3440', alpha: 0.5, t: u, seed });
+      if (u > 0.3 && !own) fx.put({ kind: FX.smoke, x, y, up: R * 0.5 + u * 14, w: R * (1.6 + u * 1.2), a: '#3a3440', alpha: 0.5, t: u, seed });
       break;
     }
     case 'cast':
@@ -879,6 +885,8 @@ export class Effects {
   private ground(w: World, sc: EffectsScene): void {
     const fx = sc.fx;
     const p = w.player;
+    heroAt.x = p.x;
+    heroAt.y = p.y;
     // (by how far each reaches: a boss's great circle, cone or ring whose middle was just off the picture wasn't drawn
     // at all, and the half of it that lay across the room came and went as the hero stepped. The owner: "some of the
     // red projected spells of the boss get cut off on the side")

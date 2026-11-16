@@ -20,7 +20,11 @@ import { inView } from './land';
 import { shapeOf } from './mountLook';
 import { chained, moveOf, type Move } from './moves';
 import { strikeOf, type Strike } from './strike';
-import type { RigAnim } from './toon';
+import { LIGHT, type RigAnim } from './toon';
+import { dangerColor } from '../render/effects';
+
+/** How dark the land is now: a night come over it, or a room's own dim light (0 in daylight). */
+const dark = (): number => Math.max(LIGHT.uNight.value.w, LIGHT.uAmb.value.w * 0.8);
 
 /** A facing in the rules (an angle on the map) as a turn about the vertical. */
 export const turnOf = (a: number): number => Math.atan2(Math.cos(a), Math.sin(a));
@@ -618,6 +622,9 @@ export class WorldCast {
     const flash = e.flash > 0 ? 0.8 : dying ? (Math.floor(time * 16) % 2 ? 0.5 : 0) : windFlash;
     cast.shadow(x, y, e.r + 2);
     if (e.elite.length && !e.dead) cast.ring(x, y, e.r + 4, '#ffcf5a', 0.6 + Math.sin(time * 5) * 0.2);
+    // in the dark (night, a crypt) a foe that has seen the hero stands on a faint ring of the danger color: grey-blue foes
+    // on grey-blue flagstones were lost in the dark, and an outline of ink is no help against a dark floor
+    else if (!e.dead && e.aggro && !e.dummy && !e.boss && dark() > 0.3) cast.ring(x, y, e.r + 3, dangerColor(), 0.32 * Math.min(1, dark() * 1.4));
     cast.creature(sprite, x, y, anim.turn, h, clip, t, loop, { alpha, flash, rise, sx, sy, enemy: e.def.id, tint: frozen ? FROZEN : chilled ? CHILLED : undefined, ...(anim.from ? { from: anim.from } : {}) });
   }
 
