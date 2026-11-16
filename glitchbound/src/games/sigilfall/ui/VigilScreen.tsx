@@ -23,6 +23,7 @@ import { ScreenGate } from './ScreenGate';
 import { Stick } from './Stick';
 import { wearOf } from './wear';
 import { readBests, saveBest, VigilLobby } from './VigilLobby';
+import { addToCodex, markVigilTaught, saveClassBest, vigilTaught } from '../vigil/bests';
 
 const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 
@@ -268,8 +269,11 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
   const [best, setBest] = useState(() => readBests()[land.id] ?? 0);
   const [opened, setOpened] = useState<string | null>(null);
   const [landIn, setLandIn] = useState(false);
-  const [paused, setPaused] = useState(false);
+  // the first night on this device opens with how it is played, the night held until it is read
+  const [teach, setTeach] = useState(() => solo && !vigilTaught());
+  const [paused, setPaused] = useState(teach);
   const [quiet, setQuiet] = useState(false);
+  const [found, setFound] = useState<string[]>([]);
   const pausedRef = useRef(false);
   useEffect(() => {
     pausedRef.current = paused;
@@ -581,6 +585,10 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
           saveBest(land.id, longest);
           return longest;
         });
+        // kept with the class it was held with, and the evolutions found added to the codex
+        const mine = v.heroOf(meId) ?? v.me;
+        saveClassBest(land.id, mine.cls, v.t);
+        setFound(addToCodex(mine.evolved));
         tick((x) => x + 1);
       }
     };
@@ -737,7 +745,40 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
           </div>
         )}
 
-        {paused && !v?.over && !me?.cards && (
+        {teach && !v?.over && (
+          <div className="rb-vigil-modal rb-vigil-teach" role="dialog" aria-label="How the Vigil is played">
+            <h2>Keep the watch</h2>
+            <ul>
+              <li>
+                <b>Move</b> {engine.touchMode ? 'with the stick' : 'with WASD or the arrows'}, and keep moving: the Host comes from every side.
+              </li>
+              <li>
+                <b>Your spells fire by themselves</b> at whatever is near. You don’t aim.
+              </li>
+              <li>
+                <b>Each level, choose one card</b>{engine.touchMode ? '' : ' (1, 2 or 3)'}: a new spell, or a stronger one. Some spells evolve when you take the strength they name.
+              </li>
+              <li>
+                <b>Dash</b> {engine.touchMode ? 'with its button' : 'with Space'} through a gap. Holding {clock(UNLOCK_HOLD)} opens the next land.
+              </li>
+            </ul>
+            <div className="rb-vigil-actions">
+              <button
+                className="rb-btn is-gold"
+                autoFocus
+                onClick={() => {
+                  markVigilTaught();
+                  setTeach(false);
+                  setPaused(false);
+                }}
+              >
+                Begin the night
+              </button>
+            </div>
+          </div>
+        )}
+
+        {paused && !teach && !v?.over && !me?.cards && (
           <div className="rb-vigil-modal" role="dialog" aria-label="Paused">
             <h2>{solo ? 'The night waits' : 'The night goes on'}</h2>
             {!solo && <p className="rb-dim">{hosting ? 'Your game runs this night: if you leave, it ends for everyone.' : 'Your friends are still fighting, and your hero stands where they are.'}</p>}
@@ -777,6 +818,12 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
                 </span>
               </div>
               {opened && <p className="rb-vigil-opened">A new land opens: {opened}</p>}
+              {found.length > 0 && (
+                <p className="rb-vigil-opened">
+                  {found.length === 1 ? 'A new evolution for your codex: ' : 'New evolutions for your codex: '}
+                  {found.map((id) => SPELLS[id]?.evolve?.name ?? id).join(', ')}
+                </p>
+              )}
               <div className="rb-vend-builds">
                 {v.heroes.map((h) => (
                   <div key={h.id} className="rb-vend-build">
@@ -796,6 +843,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
                     onClick={() => {
                       setPaused(false);
                       setOpened(null);
+                      setFound([]);
                       setRun((r) => r + 1);
                     }}
                   >

@@ -5827,6 +5827,24 @@ html.rb-touch-playing textarea {
   background: rgb(5 3 13 / 0.72);
   text-align: center;
 }
+/* the first night's card: how the Vigil is played (ui/VigilScreen.tsx) */
+.rb-vigil-teach ul {
+  display: grid;
+  gap: 6px;
+  max-width: 520px;
+  margin: 4px 0 8px;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+.rb-vigil-teach li {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.06);
+}
+.rb-vigil-teach b {
+  color: #ffe39a;
+}
 .rb-vigil-modal h2 {
   margin: 0;
   color: #ffe39a;
@@ -6658,6 +6676,23 @@ html.rb-touch-playing textarea {
 }
 .rb-vlobby-lands .rb-rift-guide {
   margin-top: 6px;
+}
+/* the Vigil's lobby: this class's best beside a land's, and the evolutions this device has found (ui/VigilLobby.tsx) */
+.rb-vlobby-best small {
+  display: block;
+  font: 600 10px var(--mono, monospace);
+  color: #b9a98a;
+  text-align: right;
+}
+.rb-vlobby-spell.is-evolved {
+  box-shadow: 0 0 0 2px #ffd27a;
+}
+.rb-vlobby-evolve img.is-unknown {
+  filter: grayscale(1) brightness(0.55);
+}
+.rb-vlobby-codex {
+  margin: 2px 0 0;
+  text-align: center;
 }
 .rb-vlobby-about {
   display: grid;

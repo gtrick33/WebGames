@@ -8,6 +8,7 @@ import { REGIONS } from '../data/regions';
 import type { RegionDef } from '../data/types';
 import { CAMPAIGN_END, WARDENS } from '../data/wardens';
 import { SIGILS, type Character } from './character';
+import { longestNight, VIGIL_TITLES } from '../vigil/bests';
 
 /**
  * Titles: a few words a hero carries after their name, for something rare they did. Every one is earned by what the
@@ -111,6 +112,8 @@ export const TITLES: readonly TitleDef[] = [
   ...RING_TITLES.map((t): TitleDef => ({ id: t.id, name: t.name, fx: t.fx, before: true, how: `Reach ${t.rating} rating in The Ring.`, rare: t.rating >= 1700, earned: (_c, rating) => (rating ?? bestRating()) >= t.rating })),
   // the Ring's record (arena/record.ts): a class mastered, and challenges finished
   ...RING_RECORD_TITLES,
+  // the Vigil: a night held long enough, anywhere (this device's longest, vigil/bests.ts)
+  ...VIGIL_TITLES.map((t): TitleDef => ({ id: t.id, name: t.name, fx: t.secs >= 900 ? 'radiant' : t.secs >= 600 ? 'frost' : 'gleam', before: true, rare: t.secs >= 900, how: `Hold ${t.secs / 60} minutes in one night of The Vigil.`, earned: () => longestNight() >= t.secs })),
 ];
 
 const BY_ID: Record<string, TitleDef> = Object.fromEntries(TITLES.map((t) => [t.id, t]));

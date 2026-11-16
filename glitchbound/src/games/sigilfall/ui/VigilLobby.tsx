@@ -17,8 +17,9 @@ import type { Action as RoomAction, View as RoomView } from '../net/vigilRoom';
 import { newCharacter, type Face } from '../progress/character';
 import { iconPicture, iconsReady } from '../render/art/gameIcons';
 import { heldWeapon, heroDollUrl, heroLook, portraitUrl } from '../render/sprites';
-import { readBests } from '../vigil/bests';
-import { CLASS_BODY, mapOpen, partyScale, spellsOf, UNLOCK_HOLD, VIGIL_MAPS, type VigilMap } from '../vigil/kit';
+import { readBests, readClassBests, readCodex } from '../vigil/bests';
+import { EVOLVE_AT } from '../vigil/sim';
+import { CLASS_BODY, mapOpen, partyScale, spellsOf, STRENGTHS, UNLOCK_HOLD, VIGIL_MAPS, type VigilMap } from '../vigil/kit';
 import { ScreenGate } from './ScreenGate';
 
 export { readBests, saveBest } from '../vigil/bests';
@@ -200,6 +201,8 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
   // a class from the shop can be played here once it's bought (progress/paidClasses.ts)
   const [pick, setPick] = useState<ClassId>(classOpen(cls, me) ? cls : 'warrior');
   const bests = useMemo(() => readBests(), []);
+  const classBests = useMemo(() => readClassBests(), []);
+  const codex = useMemo(() => readCodex(), []);
   const [land, setLand] = useState<VigilMap>(() => {
     if (map) return map;
     // the furthest land open
@@ -231,6 +234,9 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pick, body, face, wear, plain, wearN]);
   const kit = spellsOf(pick);
+  // every evolution this class can reach, and which of them this device has seen
+  const evolutions = kit.filter((sp) => !!sp.evolve);
+  const foundHere = evolutions.filter((sp) => codex.has(sp.id)).length;
   const shown = kit[spell] ?? kit[0]!;
   const c = CLASSES[pick];
   const stats = CLASS_BODY[pick];
@@ -306,7 +312,7 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
             )}
             <div className="rb-vlobby-spells">
               {kit.map((s, i) => (
-                <button key={s.id} className={`rb-vlobby-spell${i === spell ? ' is-on' : ''}`} onClick={() => setSpell(i)} onMouseEnter={() => setSpell(i)} aria-label={s.name}>
+                <button key={s.id} className={`rb-vlobby-spell${i === spell ? ' is-on' : ''}${codex.has(s.id) ? ' is-evolved' : ''}`} onClick={() => setSpell(i)} onMouseEnter={() => setSpell(i)} aria-label={codex.has(s.id) ? `${s.name} (evolved before)` : s.name}>
                   <img src={iconPicture(s.icon)} alt="" draggable={false} />
                   {i === 0 && <em>First</em>}
                 </button>
@@ -317,13 +323,19 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
               {shown.text}
               {shown.evolve && (
                 <span className="rb-vlobby-evolve">
-                  <img src={iconPicture(shown.evolve.icon)} alt="" draggable={false} />
+                  <img src={iconPicture(shown.evolve.icon)} alt="" draggable={false} className={codex.has(shown.id) ? '' : 'is-unknown'} />
                   <span>
                     Evolves into <b>{shown.evolve.name}</b>. {shown.evolve.text}
+                    {!codex.has(shown.id) && ` Not found yet: it needs ${EVOLVE_AT} levels of ${STRENGTHS[shown.evolve.with]?.name ?? 'its strength'} with the spell at its top.`}
                   </span>
                 </span>
               )}
             </p>
+            {evolutions.length > 0 && (
+              <p className="rb-small rb-dim rb-vlobby-codex">
+                Codex: {foundHere} of {evolutions.length} {CLASSES[pick].name} evolutions found
+              </p>
+            )}
           </div>
         </section>
 
@@ -347,7 +359,14 @@ export function VigilLobby({ engine, face, body, cls, map, room, onBack, onBegin
                       </small>
                     )}
                   </span>
-                  {open && best > 0 && <b className="rb-vlobby-best">{clock(best)}</b>}
+                  {open && best > 0 && (
+                    <b className="rb-vlobby-best" title={`Your longest night here: ${clock(best)}; as the ${c.name}: ${clock(classBests[m.id]?.[pick] ?? 0)}`}>
+                      {clock(best)}
+                      <small>
+                        {c.name} {classBests[m.id]?.[pick] ? clock(classBests[m.id]![pick]!) : '–'}
+                      </small>
+                    </b>
+                  )}
                   {!open && (
                     <b className="rb-vlobby-lock" aria-hidden="true">
                       ⛓

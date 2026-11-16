@@ -680,3 +680,29 @@ describe('The Vigil', () => {
     });
   });
 });
+
+describe('Sigilfall Vigil: what a night leaves behind', () => {
+  it('keeps each class’s longest night per land, a codex of evolutions found, and titles at 5, 10 and 15 minutes', async () => {
+    const { readClassBests, saveClassBest, readCodex, addToCodex, saveBest, VIGIL_TITLES, vigilTaught, markVigilTaught } = await import('../src/games/sigilfall/vigil/bests');
+    const { TITLES } = await import('../src/games/sigilfall/progress/titles');
+    const { newCharacter } = await import('../src/games/sigilfall/progress/character');
+    localStorage.clear();
+    saveClassBest('whisperwood', 'mage', 80.6);
+    saveClassBest('whisperwood', 'mage', 40);
+    saveClassBest('whisperwood', 'warrior', 120);
+    expect(readClassBests().whisperwood).toEqual({ mage: 80, warrior: 120 });
+    expect(addToCodex(['ember-bolt'])).toEqual(['ember-bolt']);
+    expect(addToCodex(['ember-bolt', 'frost-ring'])).toEqual(['frost-ring']);
+    expect([...readCodex()].sort()).toEqual(['ember-bolt', 'frost-ring']);
+    expect(vigilTaught()).toBe(false);
+    markVigilTaught();
+    expect(vigilTaught()).toBe(true);
+    // the titles: earned by the longest night on this device, worn by any hero
+    const hero = newCharacter('mage', 'V', 'v', 0);
+    const titles = VIGIL_TITLES.map((t) => TITLES.find((x) => x.id === t.id)!);
+    expect(titles.every((t) => !t.earned(hero))).toBe(true);
+    saveBest('thornvale', 610);
+    expect(titles.map((t) => t.earned(hero))).toEqual([true, true, false]);
+    localStorage.clear();
+  });
+});
