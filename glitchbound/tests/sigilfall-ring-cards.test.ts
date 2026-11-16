@@ -1,6 +1,8 @@
 /**
  * An ability can be read (the owner: "whenever i click on spell, please add a pop up with info about it, best uses,
- * best combos"; it had "2 buttons - equip or cancel" until a playstyle's abilities became its own, 2026-11-16), what a
+ * best combos"; it had "2 buttons - equip or cancel" until a playstyle's abilities became its own, 2026-11-16, and
+ * lines of advice on when to press it until the owner the same day: "i really dislike the fact that ui is 90% texts
+ * ... remove the redundant text and make it similar to wow's description of the spells"), what a
  * fighter wears is shown as its spell's own
  * picture with the seconds left ("make the square with the spells icon image and add a 7s 6s timer on it"), the
  * Gloamknight has pictures of his own, and nothing set against a wall is bricked over ("the jittering of the pillar").
@@ -8,9 +10,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, barCombos, combosOf, kitOf, PRESETS, SUPERS, SUPERS2, type Ability } from '../src/games/sigilfall/arena/abilities';
-import { usesOf } from '../src/games/sigilfall/arena/advice';
-import { RANGED, type Aura } from '../src/games/sigilfall/arena/sim';
+import { ABILITIES, barCombos, combosOf, kitOf, PRESETS, SUPERS, SUPERS2 } from '../src/games/sigilfall/arena/abilities';
+import type { Aura } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import { overhead, OVERHEAD_MAX, worn } from '../src/games/sigilfall/render/ring';
 import { Build } from '../src/games/sigilfall/render3d/build';
@@ -19,50 +20,7 @@ import { ARENA_H, ARENA_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/ma
 import { TILE } from '../src/games/sigilfall/sim/map';
 import * as THREE from 'three';
 
-const readable = (cls: (typeof CLASS_IDS)[number]): Ability[] => [...kitOf(cls), SUPERS[cls], SUPERS2[cls]];
-
 describe('Sigilfall: an ability can be read', () => {
-  it('every ability says when to press it, in one to three whole sentences', () => {
-    let read = 0;
-    for (const cls of CLASS_IDS) {
-      for (const ab of readable(cls)) {
-        const tips = usesOf(ab, RANGED.has(cls));
-        read++;
-        expect(tips.length, ab.id).toBeGreaterThanOrEqual(1);
-        expect(tips.length, ab.id).toBeLessThanOrEqual(3);
-        expect(new Set(tips).size, ab.id).toBe(tips.length);
-        for (const tip of tips) {
-          expect(tip, ab.id).toMatch(/^[A-Z].*\.$/);
-          // (a card on the smallest phone: a tip is two or three lines of a half-width column, no more)
-          expect(tip.length, `${ab.id}: ${tip}`).toBeLessThanOrEqual(170);
-        }
-      }
-    }
-    expect(read).toBeGreaterThanOrEqual(CLASS_IDS.length * 8);
-  });
-
-  it('the advice keeps to what the ability does', () => {
-    const tipsOf = (id: string): string => usesOf(ABILITIES[id]!, RANGED.has(ABILITIES[id]!.cls as (typeof CLASS_IDS)[number])).join(' ');
-    // a stun is for the burst, and a hold is not to be used twice in a row
-    expect(tipsOf('g-hand')).toMatch(/Stun them/);
-    expect(tipsOf('g-hand')).toMatch(/half as long/);
-    // what costs health says so; what drinks life says so
-    for (const ab of Object.values(ABILITIES)) {
-      const tips = usesOf(ab, ab.cls !== 'any' && RANGED.has(ab.cls)).join(' ');
-      if (ab.super) continue;
-      if (ab.effects.some((e) => e.k === 'interrupt')) expect(tips, ab.id).toMatch(/cuts the cast off/);
-      if (ab.effects.some((e) => e.k === 'price')) expect(tips, ab.id).toMatch(/costs you health/);
-      // (nobody is told to hit what their own ability says must be left alone)
-      if (ab.effects.some((e) => e.k === 'cc' && e.cc === 'incap')) expect(tips, ab.id).not.toMatch(/hardest blows/);
-      // what a combo is made with says so first: points to build, points to spend
-      if (ab.spend) expect(tips, ab.id).toMatch(/spends every point/);
-      else if (ab.build) expect(tips, ab.id).toMatch(/builds a point/);
-      if (ab.field) expect(tips, ab.id).toMatch(/stays on the ground/);
-    }
-    // a super is kept, not spent on cooldown
-    for (const cls of CLASS_IDS) expect(usesOf(SUPERS[cls], RANGED.has(cls)).join(' '), cls).toMatch(/meter is full/);
-  });
-
   it('what a card says of combos agrees both ways, and with what a bar shows', () => {
     let pairs = 0;
     for (const cls of CLASS_IDS) {

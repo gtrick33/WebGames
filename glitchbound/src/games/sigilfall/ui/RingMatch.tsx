@@ -18,7 +18,7 @@ import { barTop, drawRing, headHeight, RingFx, ringLooks, ringSpells, type RingA
 import { RingStage, ringMapOf } from '../render3d/ring3d';
 import { heroDollUrl, type WornLooks } from '../render/sprites';
 import { BoonChips, BoonFlares, Pips } from './RingBoons';
-import { RingHelp, SetupEditor, timing } from './RingSetup';
+import { RingHelp, SetupEditor, SpellTip } from './RingSetup';
 import { ScreenGate } from './ScreenGate';
 import { Stick } from './Stick';
 import { autoPoint as pointFor, isOut, plainWhy } from './ringAim';
@@ -1363,28 +1363,9 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               <b>{castAb.name}</b>
             </div>
           )}
-          {tip && !touch && (
+          {tip && !touch && me && (
             <div className="rb-ring-tip" role="tooltip">
-              <strong>{tip.name}</strong>
-              <small>{timing(tip)}</small>
-              <p>{tip.text}</p>
-              {tip.combo && (
-                <p className="rb-rs-combo">
-                  <b>Combo · {tip.combo.name}:</b> {tip.combo.text}
-                </p>
-              )}
-              {/* (what the talents chosen make of it: the boons it gives and uses, the points it builds and spends) */}
-              {me &&
-                [...m.how(me, tip).gives, ...m.how(me, tip).uses]
-                  .map((x) => BOONS[x.boon])
-                  .filter((b, i, all): b is NonNullable<typeof b> => !!b && all.indexOf(b) === i)
-                  .map((b) => (
-                    <p key={b.id} className="rb-rs-combo">
-                      <b>{b.name}:</b> {b.text}
-                    </p>
-                  ))}
-              {me?.points && m.how(me, tip).build && <p className="rb-rs-combo">Builds {me.points.name}.</p>}
-              {me?.points && m.how(me, tip).spend && <p className="rb-rs-combo">Spends {me.points.name}: stronger for each.</p>}
+              <SpellTip ab={tip} cls={me.cls} bar={me.bar} talents={me.talents} />
             </div>
           )}
           {/* a boon that lights an ability up: its sign either side of the hero until it is used (ui/RingBoons.tsx) */}

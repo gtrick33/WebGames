@@ -55,8 +55,8 @@ describe('The Ring without mana: in the rules', () => {
     for (const t of all) expect(t.text, t.name).not.toMatch(/mana/i);
     const by = (name: string) => all.find((t) => t.name === name)!;
     // (Brimming Power, the third, went when the talents became each playstyle's own, 2026-11-16)
-    expect(by('Arcane Skin').text).toBe('While your health is above 50%, you take 20% less damage.');
-    expect(by('Hollow Pact').text).toBe('Fall under 35% health and heal 25% of your health. Once every 45 seconds.');
+    expect(by('Arcane Skin').text).toBe('Take 20% less damage while above 50% health.');
+    expect(by('Hollow Pact').text).toBe('Falling below 35% health heals you for 25% of your health. 45 sec cooldown.');
     expect(all.some((t) => t.name === 'Mana Skin')).toBe(false);
   });
 });

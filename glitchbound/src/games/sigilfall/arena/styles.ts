@@ -46,36 +46,36 @@ export interface Style {
 /** Each ready-made build as a playstyle (abilities.ts PRESETS), by the preset's id. */
 export const STYLES: Record<ClassId, Record<string, Style>> = {
   warrior: {
-    arms: { line: 'Charge in, open a bleeding wound, then hew at it.', ease: 'easy' },
-    pin: { line: 'Run them down, slow them, and bleed them dry.', ease: 'easy' },
+    arms: { line: 'Melee bruiser. Open a bleed, then hit it hard.', ease: 'easy' },
+    pin: { line: 'Melee chaser. Slow them and bleed them out.', ease: 'easy' },
   },
   mage: {
-    fire: { line: 'Set them alight from afar, then burst the fire.', ease: 'medium' },
-    frost: { line: 'Slow them, freeze them in place, then shatter the ice.', ease: 'medium' },
+    fire: { line: 'Ranged burst. Ignite, then detonate.', ease: 'medium' },
+    frost: { line: 'Ranged control. Slow, freeze, shatter.', ease: 'medium' },
   },
   ranger: {
-    sniper: { line: 'Shoot on the move; stun them with your hawk for the long shot.', ease: 'easy' },
-    trapper: { line: 'Slow them and trap them while your volleys rain down.', ease: 'medium' },
+    sniper: { line: 'Ranged marksman. Stun, then one heavy shot.', ease: 'easy' },
+    trapper: { line: 'Ranged control. Traps, slows and poison.', ease: 'medium' },
   },
   priest: {
-    healer: { line: 'Shield and heal your friends, with a blow between heals. Best with a team.', ease: 'medium' },
-    shadow: { line: 'Curse them, then gnaw at the curse.', ease: 'medium' },
+    healer: { line: 'Healer. Shields and steady heals.', ease: 'medium' },
+    shadow: { line: 'Ranged caster. Curses and silence.', ease: 'medium' },
   },
   paladin: {
-    holy: { line: 'Heal your friends, and pass a verdict on whoever your hammer stuns. Best with a team.', ease: 'easy' },
-    ret: { line: 'Stun them with your hammer, then bring the blade down.', ease: 'easy' },
+    holy: { line: 'Healer. Quick heals and a stun.', ease: 'easy' },
+    ret: { line: 'Melee burst. Stun, then strike.', ease: 'easy' },
   },
   warlock: {
-    curses: { line: 'Lay an agony on them with every dart, then make it bloom.', ease: 'medium' },
-    grave: { line: 'Raise the dead to fight beside you, and fire past them.', ease: 'medium' },
+    curses: { line: 'Ranged caster. Damage over time and drain.', ease: 'medium' },
+    grave: { line: 'Summoner. The dead fight for you.', ease: 'medium' },
   },
   druid: {
-    heal: { line: 'Keep everyone alive with healing that grows over time. Best with a team.', ease: 'medium' },
-    star: { line: 'Burn them with the moon, then rain starlight on the burn.', ease: 'medium' },
+    heal: { line: 'Healer. Healing over time and roots.', ease: 'medium' },
+    star: { line: 'Ranged caster. Burn, then starlight.', ease: 'medium' },
   },
   gloamknight: {
-    reaver: { line: 'Drag them to you and reap them up close.', ease: 'medium' },
-    shadow: { line: 'Hide, strike from behind, and spend your Nicks on one deep cut.', ease: 'hard' },
+    reaver: { line: 'Melee drain. Pull them in and reap.', ease: 'medium' },
+    shadow: { line: 'Stealth melee. Build Nicks, spend them on one cut.', ease: 'hard' },
   },
 };
 

@@ -1,28 +1,29 @@
-import { useState, type ReactNode } from 'react';
-import { ABILITIES, BOONS, combosOf, PRESETS, SLOTS, styleOfBar, ultOf, type Ability, type Playstyle, type Points } from '../arena/abilities';
-import { usesOf } from '../arena/advice';
+import { useState } from 'react';
+import { ABILITIES, barCombos, combosOf, PRESETS, SLOTS, styleOfBar, ultOf, type Ability, type BarCombo, type Points } from '../arena/abilities';
 import type { ClassSets, RingSetup } from '../arena/ladder';
-import { RANGED } from '../arena/sim';
 import { EASE_WORD, presetOfBar, styleOf } from '../arena/styles';
-import { cleanTalents, fullTalents, ROW_HINTS, ROW_NAMES, talentsFor, type Talent } from '../arena/talents';
+import { cleanTalents, fullTalents, ROW_NAMES, talentsFor, type Talent } from '../arena/talents';
 import type { ClassId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { iconPicture } from '../render/art/gameIcons';
 
-const ROLE_WORD: Record<string, string> = { damage: 'Damage', heal: 'Healing', cc: 'Crowd control', interrupt: 'Interrupt', defense: 'Defense', mobility: 'Movement', dispel: 'Dispel', burst: 'Burst', summon: 'Summon', stealth: 'Stealth' };
 /** An ability's place in its playstyle's four, by where it stands on the bar. */
-const SLOT_WORD = ['Basic', 'Combo', 'Utility', 'Hold'] as const;
+const SLOT_WORD = ['Basic', 'Combo', 'Utility', 'Control'] as const;
 
-export function timing(ab: Ability): string {
-  const bits: string[] = [];
-  if (ab.channel) bits.push(`Channel ${ab.channel}s`);
-  else bits.push(ab.cast ? `${ab.cast}s cast` : 'Instant');
-  if (ab.cd) bits.push(`${ab.cd}s cooldown`);
+/** How long an ability takes to use, and how it reaches: the left of a tooltip's second line. */
+export function castWord(ab: Ability): string {
+  const bits = [ab.channel ? 'Channeled' : ab.cast ? `${ab.cast} sec cast` : 'Instant'];
   if (ab.aim === 'ground') bits.push('Placed');
+  else if (ab.range > 0 && ab.range <= 40) bits.push('Melee');
   else if (ab.range > 40 && ab.aim !== 'near' && ab.aim !== 'self') bits.push('Ranged');
-  if (ab.range > 0 && ab.range <= 40) bits.push('Melee');
   return bits.join(' · ');
 }
+
+/** How long before it can be used again: the right of that line. A super has its meter instead. */
+export const cooldownWord = (ab: Ability): string => (ab.super ? 'Super' : ab.cd ? `${ab.cd} sec cooldown` : '');
+
+/** Both, in one line (the fight's own tooltip is narrow). */
+export const timing = (ab: Ability): string => [castWord(ab), cooldownWord(ab)].filter(Boolean).join(' · ');
 
 export const talentIcon = (t: Talent): string => iconPicture(t.icon ?? ABILITIES[Object.keys(t.tune ?? {})[0] ?? '']?.icon ?? '');
 
@@ -33,19 +34,19 @@ export const pointsOf = (cls: ClassId, setup: Pick<RingSetup, 'bar' | 'talents'>
 };
 
 /** The bar as it stands: its playstyle's four, then what every hero has besides (the playstyle's super). */
-export function BarRow({ bar, cls, ult, onPick, onHover }: { bar: string[]; cls: ClassId; ult?: string; onPick?: (ab: Ability) => void; onHover?: (ab: Ability) => void }) {
+export function BarRow({ bar, cls, ult, onPick, onHover, on }: { bar: string[]; cls: ClassId; ult?: string; onPick?: (ab: Ability) => void; onHover?: (ab: Ability) => void; on?: string }) {
   return (
     <div className="rb-rs-slots">
       {Array.from({ length: SLOTS }, (_, i) => {
         const ab = ABILITIES[bar[i] ?? ''];
         return (
-          <button key={i} type="button" className={`rb-rs-slot${ab ? '' : ' is-empty'}`} disabled={!ab || !onPick} onClick={() => ab && onPick?.(ab)} onMouseEnter={() => ab && onHover?.(ab)} title={ab ? `${ab.name}: ${ab.text}` : 'An empty place'} aria-label={ab ? ab.name : 'Empty place'}>
+          <button key={i} type="button" className={`rb-rs-slot${ab ? '' : ' is-empty'}${ab && ab.id === on ? ' is-read' : ''}`} disabled={!ab || !onPick} onClick={() => ab && onPick?.(ab)} onMouseEnter={() => ab && onHover?.(ab)} onFocus={() => ab && onHover?.(ab)} title={ab ? ab.name : 'An empty place'} aria-label={ab ? ab.name : 'An empty place'}>
             {ab ? <img src={iconPicture(ab.icon)} alt="" draggable={false} /> : <small>{i + 1}</small>}
           </button>
         );
       })}
       {[ultOf(cls, ult ?? styleOfBar(cls, bar).ult)].map((ab) => (
-        <button key={ab.id} type="button" className={`rb-rs-slot is-token${ab.super ? ' is-super' : ''}`} disabled={!onPick} title={`${ab.super ? 'Super' : ab.name}: ${ab.text}`} onClick={() => onPick?.(ab)} onMouseEnter={() => onHover?.(ab)}>
+        <button key={ab.id} type="button" className={`rb-rs-slot is-token${ab.super ? ' is-super' : ''}${ab.id === on ? ' is-read' : ''}`} disabled={!onPick} title={`${ab.super ? 'Super: ' : ''}${ab.name}`} onClick={() => onPick?.(ab)} onMouseEnter={() => onHover?.(ab)} onFocus={() => onHover?.(ab)}>
           <img src={iconPicture(ab.icon)} alt={ab.name} draggable={false} />
         </button>
       ))}
@@ -69,74 +70,98 @@ export function SetupChips({ cls, setup }: { cls: ClassId; setup: RingSetup }) {
 }
 
 /**
- * An ability read (the owner: "whenever i click on spell, please add a pop up with info about it, best uses, best
- * combos"): what it does, when to press it, what it makes with the rest of its playstyle, and what the talents chosen
- * make of it. A playstyle's abilities are fixed, so there is nothing to take or leave here: it only closes. Opened from
- * the setup page and from the bar on the Ring's main screen ("make the abilities clickable ... so i can see what i
- * have and how to use it").
+ * An ability's tooltip, read the same wherever it is opened (the setup page, the bar on the Ring's main screen, the
+ * bar in a fight): its name and place on the bar, how it is used and how soon again, what it does in a sentence or
+ * two, its combo, and what the talents chosen make of it. The owner, 2026-11-16: "i really dislike the fact that ui is
+ * 90% texts, summarize everything in clear terms, remove the redundant text and make it similar to wow's description
+ * of the spells". So nothing here says a thing twice, and advice on when to press it is left to the fight's own hints.
  */
-export function AbilityCard({ ab, cls, bar, talents, onClose }: { ab: Ability; cls: ClassId; bar: string[]; talents?: readonly string[]; onClose: () => void }) {
+export function SpellTip({ ab, cls, bar, talents }: { ab: Ability; cls: ClassId; bar: readonly string[]; talents?: readonly string[] }) {
   const style = styleOfBar(cls, bar);
-  const combos = combosOf(cls, ab, bar);
-  const slot = bar.indexOf(ab.id);
+  const slot = style.bar.indexOf(ab.id);
+  const combo = combosOf(cls, ab, bar).lands;
   // (the talents chosen that work on this ability, each in its own words)
   const mine = cleanTalents(cls, talents, style.id).filter((t) => t.tune && (ab.id in t.tune || (!!ab.super && 'super' in t.tune)));
-  const boons = [...(ab.gives ?? []), ...(ab.uses ?? [])].map((x) => BOONS[x.boon]).filter((b, i, all): b is NonNullable<typeof b> => !!b && all.indexOf(b) === i);
-  const partner = (x: Ability): ReactNode => (
-    <span key={x.id} className="rb-rs-partner is-held">
-      <img src={iconPicture(x.icon)} alt="" draggable={false} />
-      {x.name}
-      <small>{x.super ? 'your super' : 'on your bar'}</small>
-    </span>
+  return (
+    <div className="rb-stip" style={{ ['--a' as string]: ab.color }}>
+      <header>
+        <img src={iconPicture(ab.icon)} alt="" draggable={false} />
+        <span>
+          <strong>{ab.name}</strong>
+          <em>{ab.super ? 'Super' : slot >= 0 ? SLOT_WORD[slot] : ''}</em>
+        </span>
+      </header>
+      <p className="rb-stip-meta">
+        <span>{castWord(ab)}</span>
+        <span>{ab.super ? 'When your meter is full' : cooldownWord(ab)}</span>
+      </p>
+      <p className="rb-stip-text">{ab.text}</p>
+      {combo && combo.kind === 'combo' && (
+        <p className="rb-stip-combo">
+          <b>{combo.name}</b> {combo.text}
+        </p>
+      )}
+      {mine.map((t) => (
+        <p key={t.id} className="rb-stip-talent">
+          <b>{t.name}</b> {t.text}
+        </p>
+      ))}
+    </div>
   );
+}
+
+/** A talent's tooltip: its name, the row it is from, and what it does. */
+export function TalentTip({ t }: { t: Talent }) {
+  return (
+    <div className="rb-stip is-talent">
+      <header>
+        <img src={talentIcon(t)} alt="" draggable={false} />
+        <span>
+          <strong>{t.name}</strong>
+          <em>Talent · {ROW_NAMES[t.row]}</em>
+        </span>
+      </header>
+      <p className="rb-stip-text">{t.text}</p>
+    </div>
+  );
+}
+
+/** What two abilities of a bar make together, in a word for its chip: how much more, or what is built. */
+export function linkWord(c: BarCombo): string {
+  const k = c.kind === 'combo' ? c.to.combo?.mult : c.kind === 'boon' ? c.to.uses?.find((u) => c.from.gives?.some((g) => g.boon === u.boon))?.mult : undefined;
+  if (!k) return c.name;
+  return Number.isInteger(k) ? `×${k}` : `+${Math.round((k - 1) * 100)}%`;
+}
+
+/** A combo's tooltip: its name, the two abilities, and its one sentence. */
+function ComboTip({ c }: { c: BarCombo }) {
+  return (
+    <div className="rb-stip is-combo">
+      <header>
+        <img src={iconPicture(c.from.icon)} alt="" draggable={false} />
+        <span>
+          <strong>{c.name}</strong>
+          <em>
+            {c.from.name} › {c.to.name}
+          </em>
+        </span>
+      </header>
+      <p className="rb-stip-text">{c.text}</p>
+    </div>
+  );
+}
+
+/**
+ * An ability read in a window of its own, from the bar on the Ring's main screen (the owner: "make the abilities
+ * clickable of the presets so i can see what i have and how to use it"): its tooltip, and a way to close it. A
+ * playstyle's abilities are fixed, so there is nothing to take or leave here.
+ */
+export function AbilityCard({ ab, cls, bar, talents, onClose }: { ab: Ability; cls: ClassId; bar: string[]; talents?: readonly string[]; onClose: () => void }) {
   return (
     // (over the game's own screen, as its rules are, not over the whole page)
     <div className="rb-ring-dialog-wrap is-card is-local" role="dialog" aria-modal="true" aria-label={ab.name} onClick={onClose}>
       <div className="rb-ring-dialog rb-rs-card" onClick={(e) => e.stopPropagation()}>
-        <header>
-          <img src={iconPicture(ab.icon)} alt="" draggable={false} />
-          <span>
-            <strong>{ab.name}</strong>
-            <em>{ab.super ? 'Super' : `${slot >= 0 ? `${SLOT_WORD[slot]} · ` : ''}${ROLE_WORD[ab.role]}`}</em>
-            <small>{ab.super ? 'Ready when your meter is full' : timing(ab)}</small>
-          </span>
-        </header>
-        <p className="rb-rs-card-text">{ab.text}</p>
-        <div className="rb-rs-card-cols">
-          <section>
-            <h4>Best used</h4>
-            <ul>
-              {usesOf(ab, RANGED.has(cls)).map((u) => (
-                <li key={u}>{u}</li>
-              ))}
-            </ul>
-          </section>
-          <section>
-            <h4>Combos</h4>
-            {combos.lands && (
-              <p>
-                <b>{combos.lands.name}.</b> {combos.lands.text}
-                {combos.lands.after.length > 0 && <span className="rb-rs-partners">Set it up with {combos.lands.after.map(partner)}</span>}
-              </p>
-            )}
-            {combos.setsUp.map((c) => (
-              <p key={c.then.id}>
-                It sets up <b>{c.name}</b>.<span className="rb-rs-partners">Follow it with {partner(c.then)}</span>
-              </p>
-            ))}
-            {boons.map((b) => (
-              <p key={b.id}>
-                <b>{b.name}.</b> {b.text}
-              </p>
-            ))}
-            {mine.map((t) => (
-              <p key={t.id} className="rb-rs-card-talent">
-                <b>Talent · {t.name}.</b> {t.text}
-              </p>
-            ))}
-            {!combos.lands && combos.setsUp.length === 0 && boons.length === 0 && mine.length === 0 && <p className="rb-dim">It is not part of a combo. It does its own job.</p>}
-          </section>
-        </div>
+        <SpellTip ab={ab} cls={cls} bar={bar} talents={talents} />
         <footer>
           <button type="button" className="rb-btn is-gold" onClick={onClose} autoFocus>
             Close
@@ -148,7 +173,7 @@ export function AbilityCard({ ab, cls, bar, talents, onClose }: { ab: Ability; c
 }
 
 /**
- * The playstyles: a class's two ways to fight, each as a card with what it plays like in a line, how hard it is
+ * The playstyles: a class's two ways to fight, each as a card with its name, how hard it is, what it is in a few words
  * (arena/styles.ts) and its four abilities and super. Taking one is the whole of choosing abilities (the owner,
  * 2026-11-16: "fixed spells per playstyle, only talents need to be changed").
  */
@@ -183,35 +208,23 @@ function StyleCards({ cls, setup, onPick }: { cls: ClassId; setup: RingSetup; on
   );
 }
 
-/** How a playstyle's combo goes, in its own short lines, and the points the setup builds if it has any. */
-function HowItPlays({ style, points }: { style: Playstyle; points: Points | null }) {
-  return (
-    <ol className="rb-rs-how" aria-label="How its combo goes" data-tut="combos">
-      {style.how.map((line) => (
-        <li key={line}>{line}</li>
-      ))}
-      {points && (
-        <li className="is-points" style={{ ['--pt' as string]: points.color }}>
-          <b>{points.name}</b>: up to {points.max}, shown over your bar.
-        </li>
-      )}
-    </ol>
-  );
-}
-
 /** What the tutorial (arena/tutorial.ts) shows of the setup page: it is one page now, so nothing to turn. */
 export type SetupGuide = Record<string, never>;
 
+/** What the setup page's tooltip is showing: an ability, a talent, or a combo of the bar. */
+type Reading = { k: 'ability'; id: string } | { k: 'talent'; id: string } | { k: 'combo'; i: number };
+
 /**
- * Changing what a class brings: three saved setups, each a playstyle and three talents. One page: the playstyles, the
- * chosen one's abilities to read with how its combo goes, and its talents, one from each row. (Until 2026-11-16 the
- * five abilities and the super were chosen one by one, behind Customize and its tabs.)
+ * Changing what a class brings: three saved setups, each a playstyle and three talents. One page, made of pictures:
+ * the playstyles, the chosen one's abilities and the combos they make as icons, its talents as a small tree (three
+ * rows of three, one taken in each), and beside them one tooltip that reads whatever is pointed at or tapped. (It was
+ * rows of text until the owner, 2026-11-16: "i really dislike the fact that ui is 90% texts"; and until that day's
+ * makeover the five abilities and the super were chosen one by one, behind Customize and its tabs.)
  */
 export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSets; onSets: (s: ClassSets) => void; guide?: SetupGuide }) {
   const cur = sets.list[sets.active]!;
   const style = styleOfBar(cls, cur.bar);
-  /** The ability being read (AbilityCard). */
-  const [card, setCard] = useState<Ability | null>(null);
+  const [reading, setReading] = useState<Reading | null>(null);
   const put = (next: RingSetup): void => {
     const list = [...sets.list];
     list[sets.active] = next;
@@ -220,17 +233,28 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
   const chosen = cleanTalents(cls, cur.talents, style.id);
   /** One from each row, always: choosing another takes its row's place. */
   const pickTalent = (t: Talent): void => {
+    setReading({ k: 'talent', id: t.id });
+    if (chosen.some((x) => x.id === t.id)) return;
     put({ ...cur, talents: [...chosen.filter((x) => x.row !== t.row).map((x) => x.id), t.id] });
   };
   /** A playstyle taken: its four and its super, and the talents it comes with (those of the class's own row are kept). */
   const useStyle = (i: number): void => {
     const p = PRESETS[cls][i]!;
     if (p.id === style.id) return;
+    setReading(null);
     put({ bar: [...p.bar], talents: fullTalents(cls, p.id, cur.talents, p.talents), ult: p.ult });
   };
   const options = talentsFor(cls, style.id);
+  const ult = ultOf(cls, style.ult);
+  const combos = barCombos(cls, cur.bar, style.ult);
+  // what the tooltip reads: what was last pointed at, if this playstyle still has it; else its basic ability
+  const kit = [...style.bar.map((id) => ABILITIES[id]!), ult];
+  const readAb = reading?.k === 'ability' ? kit.find((a) => a.id === reading.id) : undefined;
+  const readTalent = reading?.k === 'talent' ? options.find((t) => t.id === reading.id) : undefined;
+  const readCombo = reading?.k === 'combo' ? combos[reading.i] : undefined;
+  const shownAb = readAb ?? (!readTalent && !readCombo ? kit[0]! : undefined);
   return (
-    <div className="rb-rs is-fixed">
+    <div className="rb-rs is-fixed is-tree">
       <div className="rb-rs-top">
         <div className="rb-rs-sets" role="tablist" aria-label="Saved setups" data-tut="sets">
           {sets.list.map((_, i) => (
@@ -241,43 +265,54 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
         </div>
       </div>
 
-      <p className="rb-rs-hint">Pick a playstyle. Its abilities are its own: what you choose is its talents.</p>
       <StyleCards cls={cls} setup={cur} onPick={useStyle} />
 
-      <div className="rb-rs-kitrow">
-        <div className="rb-rs-barrow" data-tut="bar">
-          <BarRow bar={cur.bar} cls={cls} ult={style.ult} onPick={setCard} />
-          <small className="rb-rs-barhint">Tap one to read it.</small>
-        </div>
-        <HowItPlays style={style} points={pointsOf(cls, cur)} />
-      </div>
-
-      <div className="rb-rs-panel" data-tut="talents">
-        {ROW_NAMES.map((name, row) => (
-          <div key={name} className="rb-rs-row" role="radiogroup" aria-label={name}>
-            <h4>
-              {name} <small>{ROW_HINTS[row]}</small>
-            </h4>
-            <div className="rb-rs-options">
-              {options
-                .filter((t) => t.row === row)
-                .map((t) => {
-                  const on = chosen.some((x) => x.id === t.id);
-                  return (
-                    <button key={t.id} role="radio" aria-checked={on} className={`rb-rs-option${on ? ' is-on' : ''}`} onClick={() => pickTalent(t)}>
-                      <img src={talentIcon(t)} alt="" draggable={false} />
-                      <span>
-                        <strong>{t.name}</strong>
-                        <small>{t.text}</small>
-                      </span>
-                    </button>
-                  );
-                })}
+      <div className="rb-rs-tree">
+        <div className="rb-rs-pick">
+          <div className="rb-rs-kitrow">
+            <div className="rb-rs-barrow" data-tut="bar">
+              <BarRow bar={cur.bar} cls={cls} ult={style.ult} on={shownAb?.id} onPick={(ab) => setReading({ k: 'ability', id: ab.id })} onHover={(ab) => setReading({ k: 'ability', id: ab.id })} />
+            </div>
+            {/* the combos the bar makes: what sets it up, what lands it, and how much more it does */}
+            <div className="rb-rs-links" data-tut="combos" aria-label="Combos">
+              {combos.map((c, i) => (
+                <button key={`${c.from.id}-${c.to.id}`} type="button" className={`rb-rs-link is-${c.kind}${readCombo === c ? ' is-read' : ''}`} onClick={() => setReading({ k: 'combo', i })} onMouseEnter={() => setReading({ k: 'combo', i })} onFocus={() => setReading({ k: 'combo', i })} aria-label={`${c.name}: ${c.from.name}, then ${c.to.name}`}>
+                  <img src={iconPicture(c.from.icon)} alt="" draggable={false} />
+                  <i aria-hidden="true">›</i>
+                  <img src={iconPicture(c.to.icon)} alt="" draggable={false} />
+                  <b>{linkWord(c)}</b>
+                </button>
+              ))}
             </div>
           </div>
-        ))}
+
+          <div className="rb-rs-talents" data-tut="talents">
+            {ROW_NAMES.map((name, row) => (
+              <div key={name} className="rb-rs-row" role="radiogroup" aria-label={name}>
+                <h4>{name}</h4>
+                <div className="rb-rs-nodes">
+                  {options
+                    .filter((t) => t.row === row)
+                    .map((t) => {
+                      const on = chosen.some((x) => x.id === t.id);
+                      return (
+                        <button key={t.id} role="radio" aria-checked={on} aria-label={t.name} className={`rb-rs-node${on ? ' is-on' : ''}${readTalent === t ? ' is-read' : ''}`} onClick={() => pickTalent(t)} onMouseEnter={() => setReading({ k: 'talent', id: t.id })} onFocus={() => setReading({ k: 'talent', id: t.id })}>
+                          <img src={talentIcon(t)} alt="" draggable={false} />
+                          <strong>{t.name}</strong>
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* one tooltip for the whole page: whatever was last pointed at or tapped */}
+        <aside className="rb-rs-read" aria-live="polite">
+          {readTalent ? <TalentTip t={readTalent} /> : readCombo ? <ComboTip c={readCombo} /> : <SpellTip ab={shownAb!} cls={cls} bar={cur.bar} talents={cur.talents} />}
+        </aside>
       </div>
-      {card && <AbilityCard key={card.id} ab={card} cls={cls} bar={cur.bar} talents={cur.talents} onClose={() => setCard(null)} />}
     </div>
   );
 }

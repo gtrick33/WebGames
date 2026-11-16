@@ -61,8 +61,6 @@ describe('Sigilfall: the Ring says what is going on', () => {
         }
         // (and every combo its abilities name can be set up by something else it has)
         for (const id of [...p.bar, p.ult]) if (ABILITIES[id]!.combo) expect(combos.map((c) => c.to.id), `${cls} ${p.name}: ${id}`).toContain(id);
-        // (how it goes is written down, a line or more)
-        expect(p.how.length, `${cls} ${p.name}`).toBeGreaterThanOrEqual(2);
       }
       // (nothing in a class's kit is left off both its playstyles)
       for (const a of kitOf(cls)) expect(PRESETS[cls].some((p) => p.bar.includes(a.id)), `${cls}: ${a.name}`).toBe(true);

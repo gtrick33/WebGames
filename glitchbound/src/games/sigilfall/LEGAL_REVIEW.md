@@ -106,6 +106,12 @@ and lands on the target. Rules of play aren't protected; names, text, art and si
 - **Icons:** only ones already in the built atlas (Nasha's Lumenfall pack, above); no new file was added, and the atlas
   was re-packed from itself with the icons the Ring no longer uses left out.
 
+- **Descriptions:** the owner asked for the abilities and talents to read like "wow's description of the spells". What
+  is taken is the manner (what it does and by how much, in a sentence or two; a line for how it is cast and how soon
+  again), and the layout of a name over a description in a framed box, which is how game tooltips in general are
+  made. Every sentence was written for this game from its own numbers; none is another game's tooltip, and the frame
+  and colors are the Ring's own gold on its own dark violet.
+
 The trinket, the Gloam and the choosing of abilities one by one are gone, so "Unbinding Trinket" no longer appears in
 the Ring.
 
