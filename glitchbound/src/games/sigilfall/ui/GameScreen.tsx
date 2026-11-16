@@ -513,11 +513,12 @@ const HERO_TALL = 28;
 const PROC_ENDING = 1.5;
 
 /**
- * A proc waiting on the hero (an instant Flame Pillar, a free Multishot, a specialization's combo): two crescents of
- * its color either side of the hero, where the eye already is, instead of a chip in the corner (the owner: "the
+ * A proc waiting on the hero (an instant Flame Pillar, a free Multishot, a specialization's combo): a glowing ring of
+ * its color all the way round the hero, where the eye already is, instead of a chip in the corner (the owner: "the
  * flame pillar instant proc on mages (and any other proc) is currently below the quest, make it so that its a visual
- * ... around the character"). A proc with charges lights one side a charge; one that builds in stacks glows fainter
- * until it is whole; a whole one pulses, and the last moments flicker.
+ * ... around the character", and then: "same thing just around it"). A proc of several casts lights both halves of the
+ * ring and its last cast one; one that builds in stacks glows fainter until it is whole; a whole one pulses, its shards
+ * turn round it, and the last moments flicker.
  */
 function ProcAura({ engine }: { engine: SigilEngine }) {
   const el = useRef<HTMLDivElement>(null);
@@ -552,25 +553,32 @@ function ProcAura({ engine }: { engine: SigilEngine }) {
     d.style.setProperty('--h', `${Math.round(tall)}px`);
     d.style.transform = `translate(${Math.round((foot.x + head.x) / 2)}px, ${Math.round((foot.y + head.y) / 2)}px)`;
   });
-  const wing = (side: 'l' | 'r') => (
-    <svg className={`rb-proc-wing is-${side}`} viewBox="0 0 40 100" aria-hidden="true">
-      <defs>
-        <linearGradient id={`${grad}-${side}`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="currentColor" stopOpacity="0.95" />
-          <stop offset="0.7" stopColor="currentColor" stopOpacity="0.35" />
-          <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {/* a crescent, and shards along its outer edge */}
-      <path fill={`url(#${grad}-${side})`} d="M35 2 C8 22 6 78 35 98 C21 80 19 20 35 2 Z" />
-      <path fill="currentColor" opacity="0.85" d="M15 21 L3 13 L11 30 Z M9 41 L-1 37 L8 51 Z M9 60 L-1 64 L9 70 Z M15 80 L5 90 L18 87 Z" />
-      <path fill="none" stroke="#fff" strokeOpacity="0.75" strokeWidth="1.4" strokeLinecap="round" d="M33 6 C12 25 11 75 33 94" />
-    </svg>
+  // a ring all the way round the hero: two halves of it (a proc of several casts lights both, its last cast one), the
+  // same glowing crescent on each, with shards along the outside turning slowly round
+  const half = (side: 'l' | 'r') => (
+    <g className={`rb-proc-half is-${side}`}>
+      <path fill={`url(#${grad}-glow)`} d={side === 'l' ? 'M50 3 A47 47 0 0 0 50 97 A35 35 0 0 1 50 15 A35 35 0 0 1 50 3 Z' : 'M50 3 A47 47 0 0 1 50 97 A35 35 0 0 0 50 15 A35 35 0 0 0 50 3 Z'} />
+      <path fill="none" stroke="#fff" strokeOpacity="0.9" strokeWidth="2" strokeLinecap="round" d={side === 'l' ? 'M50 6 A44 44 0 0 0 50 94' : 'M50 6 A44 44 0 0 1 50 94'} />
+    </g>
   );
   return (
     <div ref={el} className="rb-proc" hidden role="status">
-      {wing('l')}
-      {wing('r')}
+      <svg className="rb-proc-ring" viewBox="-6 -6 112 112" aria-hidden="true">
+        <defs>
+          <radialGradient id={`${grad}-glow`} cx="50" cy="50" r="46" gradientUnits="userSpaceOnUse">
+            <stop offset="0.72" stopColor="currentColor" stopOpacity="0.35" />
+            <stop offset="0.9" stopColor="currentColor" stopOpacity="1" />
+            <stop offset="1" stopColor="currentColor" stopOpacity="0.8" />
+          </radialGradient>
+        </defs>
+        {half('l')}
+        {half('r')}
+        <g className="rb-proc-shards">
+          {Array.from({ length: 10 }, (_, i) => (
+            <path key={i} className={i < 5 ? 'is-l' : 'is-r'} fill="currentColor" opacity="0.85" transform={`rotate(${180 + i * 36} 50 50)`} d="M50 -7 L45.5 4 L54.5 4 Z" />
+          ))}
+        </g>
+      </svg>
     </div>
   );
 }
