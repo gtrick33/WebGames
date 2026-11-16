@@ -494,7 +494,7 @@ describe('The Ring: talents and set ups', () => {
       // (two rows of three for each of its two playstyles, and the class's own row)
       expect(TALENTS[cls], cls).toHaveLength(15);
       for (const p of PRESETS[cls]) for (const row of [0, 1, 2]) expect(TALENTS[cls].filter((t) => t.row === row && (!t.spec || t.spec === p.id))).toHaveLength(3);
-      expect(ROW_NAMES).toEqual(['Combo', 'Tricks', 'Staying alive']);
+      expect(ROW_NAMES).toEqual(['Core', 'Utility', 'Defensive']);
       for (const t of TALENTS[cls]) {
         expect(t.tune || t.does || t.guard || t.hold || t.exec || t.rally, t.id).toBeTruthy();
         // what it changes by name, it names: the ability's own name is in its words

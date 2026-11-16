@@ -41,13 +41,13 @@ describe('The Ring’s setup: a playstyle and its talents, and nothing else', ()
     for (const l of links) expect(l.querySelectorAll('img')).toHaveLength(2);
     // a tree of talents: three rows of three, an icon and a name each, one taken in each, the first two the playstyle's own
     const rows = [...container.querySelectorAll('.rb-rs-row')];
-    expect(rows.map((r) => r.querySelector('h4')!.textContent)).toEqual(['Combo', 'Tricks', 'Staying alive']);
+    expect(rows.map((r) => r.querySelector('h4')!.textContent)).toEqual(['Core', 'Utility', 'Defensive']);
     for (const r of rows) {
       expect(r.querySelectorAll('.rb-rs-node')).toHaveLength(3);
       expect(r.querySelectorAll('.rb-rs-node.is-on')).toHaveLength(1);
       for (const n of r.querySelectorAll('.rb-rs-node')) expect(n.querySelector('img')).not.toBeNull();
     }
-    expect(rows[0]!.textContent).toBe('ComboCinderheartBanked EmbersWildfire');
+    expect(rows[0]!.textContent).toBe('CoreCinderheartBanked EmbersWildfire');
     // (the owner, 2026-11-16: "i really dislike the fact that ui is 90% texts": what a talent or an ability does is
     // written once, in the one tooltip, and never beside every icon)
     const words = [...ABILITIES['m-lash']!.text.split(' '), ...TALENT_BY_ID['m-fire-1b']!.text.split(' ')].filter((w) => w.length > 7);
@@ -68,7 +68,7 @@ describe('The Ring’s setup: a playstyle and its talents, and nothing else', ()
     expect(sets.list[0]!.talents).not.toContain('m-fire-1a');
     expect(sets.list[0]!.talents).toHaveLength(3);
     again();
-    expect(read()).toMatch(/^Banked EmbersTalent · Combo/);
+    expect(read()).toMatch(/^Banked EmbersTalent · Core/);
     expect(read()).toContain(TALENT_BY_ID['m-fire-1b']!.text);
     fireEvent.click(view.getByRole('radio', { name: 'Banked Embers' }));
     expect(sets.list[0]!.talents).toHaveLength(3);

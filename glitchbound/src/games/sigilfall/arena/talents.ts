@@ -6,10 +6,10 @@ import type { Build, Effect, Give, Points, Spend, Use } from './abilities';
  * owner, 2026-11-16: "fixed spells per playstyle, only talents need to be changed", "talents should be played around
  * the combos and make the spells more fun ... make talents very fun and defining").
  *
- * The first two rows are the playstyle's own. "Combo" is how its combo is made: one choice lights an ability up for a
- * single use now and then (a boon, drawn at the edges of the screen), one gives the playstyle points that its basic
- * ability builds and its hard one spends, and one is plain, for whoever would rather not count. "Tricks" is what its
- * utility and its hold do besides. The third row, "Staying alive", is the whole class's.
+ * The first two rows are the playstyle's own. "Core" is how its combo is made: one choice lights an ability up for a
+ * single use now and then (a boon, its sign drawn beside the hero), one gives the playstyle points that its basic
+ * ability builds and its hard one spends, and one is plain, for whoever would rather not count. "Utility" is what its
+ * utility and its hold do besides. The third row, "Defensive", is the whole class's.
  *
  * Before, all three rows were the whole class's and none could name an ability, since any ability might be left off
  * the bar (the owner then: "if you pick certain spells, the talent options are useless"). With the bar fixed, a
@@ -151,7 +151,8 @@ export interface Talent {
   rally?: { pct: number; every: number };
 }
 
-export const ROW_NAMES = ['Combo', 'Tricks', 'Staying alive'] as const;
+/** (They were "Combo", "Tricks" and "Staying alive" until the owner, 2026-11-16: "rename combo to core, tricks to utility" and the third to defensive.) */
+export const ROW_NAMES = ['Core', 'Utility', 'Defensive'] as const;
 /** What each row is for, in a line (the setup page says it over the row). */
 
 /** Under this share of their health a fighter counts as low: a Headsman's mark, and when a Second Wind, an oak or a pact comes. */
