@@ -101,3 +101,16 @@ describe('The Ring’s main screen: what you bring, each one to be read', () => 
     expect(closed).toBe(true);
   });
 });
+
+describe('The Ring’s main screen: the hero’s class, title and name always in sight', () => {
+  // the owner, 2026-11-16: "the title and the text below that, now its a scrollable window but it shouldnt be and should
+  // be visible at all times"
+  it('held to the stand’s width, a long title wraps, and on a phone the name stands under the figure, not over it', () => {
+    const css = read('src/games/sigilfall/Game.css');
+    expect(/\n\.rb-vlobby-name \{[^}]*grid-template-columns: minmax\(0, 1fr\);/.exec(css)).not.toBeNull();
+    expect(/\n\.rb-vlobby-name > \* \{[^}]*max-width: 100%;[^}]*overflow-wrap: anywhere;/.exec(css)).not.toBeNull();
+    expect(/\n\.rb-vlobby-name \.tfx \{[^}]*white-space: normal;/.exec(css)).not.toBeNull();
+    expect(/\.rb-ringvl \.rb-vlobby-stage \{[^}]*grid-template-rows: minmax\(0, 1fr\) auto;/.exec(css)).not.toBeNull();
+    expect(/\.rb-ringvl \.rb-vlobby-name \{[^}]*position: relative;[^}]*grid-row: 2;/.exec(css)).not.toBeNull();
+  });
+});
