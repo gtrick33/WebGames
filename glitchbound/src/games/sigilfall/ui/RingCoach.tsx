@@ -131,6 +131,10 @@ export function useLabels(labels: readonly { spot: string; text: string; right?:
         root.appendChild(layer);
         tags.clear();
       }
+      // (the words already placed this time round: no two lie on each other)
+      const placed: DOMRect[] = [];
+      const card = document.querySelector('.rb-coach')?.getBoundingClientRect();
+      const clear = (r: DOMRect): boolean => [...(card ? [card] : []), ...placed].every((o) => !(r.right > o.left && r.left < o.right && r.bottom > o.top && r.top < o.bottom));
       for (const { spot, text, right } of labels) {
         // (the one of its kind that is drawn: a bar at the desk and a phone's buttons are both marked)
         const el = [...document.querySelectorAll<HTMLElement>(`[data-tut="${spot}"]`)].find((e) => e.offsetWidth > 0 && root.contains(e));
@@ -152,14 +156,25 @@ export function useLabels(labels: readonly { spot: string; text: string; right?:
           tags.set(spot, tag);
         }
         tag.style.display = '';
-        // on its top edge at the left (or the right), or just inside it where the top of the game leaves no room above; never past the
-        // game's right edge
+        // on its top edge at the left (or the right), or just inside it where the top of the game leaves no room above;
+        // never past the game's right edge, and never across the tutorial's own card or another label: the other end
+        // then, or along its bottom edge, or off
         const w = tag.offsetWidth;
         const h = tag.offsetHeight;
-        const left = Math.max(4, Math.min(right ? at.x + at.w - w - 10 : at.x + 10, root.clientWidth - w - 4));
         const top = at.y - h * 0.6 < 2 ? at.y + 4 : at.y - h * 0.6;
-        tag.style.left = `${Math.round(left)}px`;
-        tag.style.top = `${Math.round(top)}px`;
+        const it = tag;
+        const fits = (left: number, y: number): boolean => {
+          it.style.left = `${Math.round(left)}px`;
+          it.style.top = `${Math.round(y)}px`;
+          const r = it.getBoundingClientRect();
+          if (!clear(r)) return false;
+          placed.push(r);
+          return true;
+        };
+        const clamp = (x: number): number => Math.max(4, Math.min(x, root.clientWidth - w - 4));
+        const ends = right ? [at.x + at.w - w - 10, at.x + 10] : [at.x + 10, at.x + at.w - w - 10];
+        const low = at.y + at.h - h * 0.4;
+        if (!ends.some((x) => fits(clamp(x), top)) && !ends.some((x) => fits(clamp(x), low))) tag.style.display = 'none';
       }
       for (const el of lit) {
         if (el.isConnected) continue;
