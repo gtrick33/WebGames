@@ -298,7 +298,8 @@ describe('The Ring talents: the ranger', () => {
       const m = fight([{ team: 0, cls: 'ranger', talents: ['r-1c'], ult }, { team: 1, cls: 'warrior', at: [300, 125] }]);
       m.fighters[0]!.charge = 1;
       expect(m.press(0, ult, { x: 300, y: 125 }), ult).toBeNull();
-      wait(m, 1);
+      // (Thicket of Snares falls in 1.1 s since its circle was made avoidable on foot)
+      wait(m, 1.2);
       expect(m.fighters[1]!.auras.find((a) => a.kind === 'mark' && a.src === 0)?.n, ult).toBeCloseTo(0.15, 5);
     }
   });

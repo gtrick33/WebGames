@@ -85,9 +85,16 @@ export function ringFit(cssW: number, cssH: number, dpr: number): { tile: number
   const allW = ARENA_W / TILE + 2;
   const allH = ARENA_H / TILE + RING_EDGE;
   const tall = ((cssH * dpr) / allH) * RING_TILT;
+  const tile = tall * RING_ZOOM;
   const whole = Math.min((cssW * dpr) / allW, tall);
-  return { tile: tall, follow: tall > whole * 1.02, back: Math.min(1.9, Math.max(1, tall / whole)) };
+  return { tile, follow: tile * allW > cssW * dpr * 1.02, back: Math.min(1.9, Math.max(1, tile / whole)) };
 }
+/**
+ * How much closer than the ring's whole height the camera sits (the owner: "zoom in the camera by 7% please"). What
+ * it gives up is half a tile of the wall over the floor and half under it: the floor itself, where anyone can stand,
+ * stays in the picture, and the camera still moves only across.
+ */
+export const RING_ZOOM = 1.07;
 /** The tiles of wall over and under the floor that the height takes in, and how much the camera's lean shortens it. */
 export const RING_EDGE = 2;
 export const RING_TILT = 1.05;

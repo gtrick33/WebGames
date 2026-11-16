@@ -318,7 +318,7 @@ export function SetupEditor({ cls, sets, onSets, guide }: { cls: ClassId; sets: 
             {combos.length === 0 && <li className="is-none">No combo on this bar yet. Take an ability together with the one that sets it up.</li>}
           </ul>
 
-          <div className="rb-rs-tabs" role="tablist" aria-label="What to change">
+          <div className="rb-rs-tabs" role="tablist" aria-label="What to change" data-tut="tabs">
             <button role="tab" aria-selected={tab === 'abilities'} className={tab === 'abilities' ? 'is-on' : ''} onClick={() => setTab('abilities')}>
               Abilities <b className={cur.bar.length === SLOTS ? 'is-full' : 'is-short'}>{cur.bar.length}/{SLOTS}</b>
             </button>
@@ -504,7 +504,7 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
             <summary>More rules</summary>
             <ul>
               <li>
-                <b>Combos and Momentum.</b> Many abilities hit much harder against a target you have set up (their cards say how). Each different combo in a row builds Momentum, up to ×4: your combos hit harder still and your super fills faster. Seven seconds without one and it’s gone.
+                <b>Combos.</b> Many abilities hit much harder against a target you have set up (their cards say how).
               </li>
               <li>
                 <b>Spells land. Circles can be left.</b> What is aimed at someone always hits them: quick ones at once, cast ones after a short flight. What is placed on the ground shows as a circle first, red when it is the other side’s.

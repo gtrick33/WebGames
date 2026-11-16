@@ -11,7 +11,7 @@ import { ABILITIES, barCombos, combosOf, kitOf, TRINKET, SUPERS, ultsOf, type Ab
 import { usesOf } from '../src/games/sigilfall/arena/advice';
 import { RANGED, type Aura } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
-import { worn } from '../src/games/sigilfall/render/ring';
+import { overhead, OVERHEAD_MAX, worn } from '../src/games/sigilfall/render/ring';
 import { Build } from '../src/games/sigilfall/render3d/build';
 import { ringMasonry } from '../src/games/sigilfall/render3d/ringDress';
 import { ARENA_H, ARENA_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
@@ -92,6 +92,17 @@ describe('Sigilfall: what a fighter wears is drawn as its spell', () => {
       ['k-agony', 3],
       ['g-mantle', 5],
     ]);
+  });
+
+  it('over the head: holds, whoever’s, then what the player put on them, three at most; the rest on the nameplate', () => {
+    const on = [aura('k-agony', 3, { src: 5 }), aura('k-wither', 6, { src: 0 }), aura('m-toad', 2, { src: 5, kind: 'cc', cc: 'incap' }), aura('r-hobble', 4, { src: 0, kind: 'slow' }), aura('w-bleed', 9, { src: 0 }), aura('p-renew', 8, { src: 7, harmful: false, kind: 'hot' })];
+    const shown = overhead({ auras: on }, 0);
+    expect(shown.length).toBe(OVERHEAD_MAX);
+    expect(shown[0]!.ab).toBe('m-toad');
+    expect(shown.slice(1).every((a) => a.src === 0)).toBe(true);
+    // (someone else's curse and someone else's heal: on the nameplate only)
+    expect(shown.some((a) => a.ab === 'k-agony' || a.ab === 'p-renew')).toBe(false);
+    expect(overhead({ auras: on }, null).map((a) => a.ab)).toEqual(['m-toad']);
   });
 
   it('the Gloamknight’s pictures are his alone, and each ability has its own', () => {

@@ -80,16 +80,6 @@ export const BURST_K = 1.25;
 export const CRIT_K = 1.7;
 /** Healing over its ability's number: a little under, so that a healer slows a kill rather than stopping it. */
 export const HEAL_K = 0.85;
-/**
- * Momentum: a combo landed within this long of the last one keeps a chain going, and a different combo from the last
- * one is its next link (the same one again holds the chain where it is). Each link past the first makes a combo's own
- * bonus this much bigger (up to MOMENTUM_MAX links), and each new link fills the super meter by MOMENTUM_CHARGE times
- * its place in the chain: a fighter who weaves their combos hits harder and gets their super sooner.
- */
-export const MOMENTUM_HOLD = 7;
-export const MOMENTUM_MAX = 4;
-export const MOMENTUM_STEP = 0.15;
-export const MOMENTUM_CHARGE = 0.04;
 /** The gates of a ladder match against the computer lift sooner: there is nobody to wait for. */
 export const GATES_SOLO = 15;
 /**
@@ -257,14 +247,10 @@ export interface Fighter {
   procs: Partial<Record<string, number>>;
   tal: TalentState;
   tune: Record<string, Tune>;
-  score: { dmg: number; heal: number; cc: number; kicks: number; combos?: number; supers?: number; streak?: number };
+  score: { dmg: number; heal: number; cc: number; kicks: number; combos?: number; supers?: number; best?: BestMoment };
   /** The super meter, 0 to 1. */
   charge: number;
-  /** Momentum: how many combos in a row (0 when the chain has gone cold), and how long the chain still holds. */
-  streak: number;
-  streakT: number;
   /** The last combo landed (the next link of a chain has to be a different one). */
-  lastCombo?: string;
   /** One of the raised dead, fighting for whoever raised them (not a hero: it has no bar, no seat and no say in who wins). */
   pet?: Pet;
   /** When they last hurt someone or were hurt, by the match's clock: a while after, they are out of the fight (the shroud's). */
@@ -272,6 +258,17 @@ export interface Fighter {
 }
 
 /** A talent's doings that aren't a plain number (arena/talents.ts), as one fighter has them. */
+/**
+ * A fighter's biggest moment of the match, for the result screen: the combo or super that did the most to one fighter
+ * in one landing (damage, or healing for one that heals), and what it was.
+ */
+export interface BestMoment {
+  ab: string;
+  n: number;
+  /** The combo's name, when it was one. */
+  combo?: string;
+}
+
 export interface Perks {
   exec: number;
   slow: { pct: number; dur: number } | null;
@@ -584,8 +581,6 @@ export class Match {
         fearY: 0,
         score: { dmg: 0, heal: 0, cc: 0, kicks: 0 },
         charge: 0,
-        streak: 0,
-        streakT: 0,
       };
     });
   }
@@ -965,31 +960,29 @@ export class Match {
     if (c && !t.dead) {
       if (this.comboReady(f, ab, t)) {
         combo = c;
-        // momentum: each combo in a row makes the next one's bonus bigger, and all of them feed the super
-        const going = f.streakT > 0 && f.streak > 0;
-        const link = !going || f.lastCombo !== c.name;
-        if (link) {
-          f.streak = Math.min(MOMENTUM_MAX, (going ? f.streak : 0) + 1);
-          f.charge = Math.min(1, f.charge + MOMENTUM_CHARGE * f.streak);
-        }
-        f.lastCombo = c.name;
-        f.streakT = MOMENTUM_HOLD;
-        boost = 1 + (c.mult - 1) * (1 + MOMENTUM_STEP * (f.streak - 1));
-        f.score.streak = Math.max(f.score.streak ?? 0, f.streak);
+        // (no Momentum: a combo hits as hard the tenth time in a row as the first. The owner: "i dont like the momentum
+        // idea, too much stuff on screen")
+        boost = c.mult;
         if (c.consume) t.auras = t.auras.filter((a) => !(!!c.ab?.includes(a.ab) && a.src === f.id));
         iced = this.shatter(f, c, t);
         f.score.combos = (f.score.combos ?? 0) + 1;
-        this.events.push({ k: 'word', id: t.id, word: f.streak > 1 ? `${c.name} ×${f.streak}` : c.name, combo: true });
+        this.events.push({ k: 'word', id: t.id, word: c.name, combo: true });
       }
     }
     // (the spear that shatters the ice isn't counted toward breaking it as well: its Shatters are its own limit)
     this.sparing = iced;
+    const hp0 = t.hp;
     for (const e of ab.effects) {
       if (t.dead && e.k !== 'heal') break;
       if (this.apply(f, ab, t, e, boost * scale) === 'stop') break;
     }
     this.sparing = null;
     if (combo?.extra) for (const e of combo.extra) if (!t.dead || e.k === 'heal') this.apply(f, ab, t, e);
+    // (a combo's or a super's landing, the hero's best of the match if it did the most yet)
+    if ((combo || ab.super) && !f.pet) {
+      const n = Math.round(Math.abs(t.hp - hp0));
+      if (n > (f.score.best?.n ?? 0)) f.score.best = { ab: ab.id, n, ...(combo ? { combo: combo.name } : {}) };
+    }
     const tune = this.tuneOf(f, ab);
     if (!tune) return;
     // what a talent adds to a super: more that it does, and others it reaches
@@ -1507,8 +1500,6 @@ export class Match {
       tune: {},
       score: { dmg: 0, heal: 0, cc: 0, kicks: 0 },
       charge: 0,
-      streak: 0,
-      streakT: 0,
       pet: { owner: owner.id, ab: p.ab, life: p.life, max: p.max, dmg: p.dmg, slow: p.slow, next: p.next, hits: p.hits },
     };
   }
@@ -2211,10 +2202,6 @@ export class Match {
       if (left <= 0) delete f.locks[k];
       else f.locks[k] = left;
     }
-    if (f.streakT > 0) {
-      f.streakT -= dt;
-      if (f.streakT <= 0) f.streak = 0;
-    }
     this.tickAuras(f, dt);
     if (f.dead) return;
     this.tickTalents(f, dt);
@@ -2533,8 +2520,6 @@ export class Match {
         r: f.dr,
         sc: f.score,
         ch: Math.round(f.charge * 1000) / 1000,
-        st: f.streak,
-        stt: Math.round(f.streakT * 10) / 10,
         ...(f.pet ? { pt: { o: f.pet.owner, a: f.pet.ab, l: Math.round(f.pet.life * 100) / 100, m: f.pet.max, dm: f.pet.dmg, s: f.pet.slow, n: Math.round(f.pet.next * 100) / 100, h: f.pet.hits, ...(f.pet.end !== undefined ? { e: f.pet.end } : {}) } } : {}),
       })),
       b: this.bolts,
@@ -2599,8 +2584,6 @@ export class Match {
       if (n.r) f.dr = n.r;
       f.score = n.sc;
       f.charge = n.ch ?? 0;
-      f.streak = n.st ?? 0;
-      f.streakT = n.stt ?? 0;
     });
   }
 
@@ -2625,7 +2608,6 @@ export class Match {
       f.gcd = Math.max(0, f.gcd - dt);
       for (const k of Object.keys(f.cds)) f.cds[k] = Math.max(0, (f.cds[k] ?? 0) - dt);
       for (const a of f.auras) a.t = Math.max(0, a.t - dt);
-      f.streakT = Math.max(0, f.streakT - dt);
       if (f.pet) f.pet.life = Math.max(0, f.pet.life - dt);
     }
     // shots fly on, and what was placed keeps falling
@@ -2667,6 +2649,7 @@ export interface Snapshot {
     r?: Fighter['dr'];
     sc: Fighter['score'];
     ch?: number;
+    /** Momentum's chain, from a host from before it went: left unread. */
     st?: number;
     stt?: number;
     /** One of the raised dead: whose (`o`), raised by what, life left and in all, its blow and slow, time to the next, blows struck, and when it fell. */

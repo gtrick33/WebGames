@@ -8,7 +8,7 @@ import { hintNow, keepLog, lessonOf, newLog, type HintKeys } from '../arena/less
 import { TutorialRun, type TutorialKeys } from '../arena/tutorial';
 import { lookOf } from '../arena/look';
 import { MAPS } from '../arena/maps';
-import { CLOSE_FROM, Match, MATCH_LIMIT, PACE, type Aura, type DrState, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
+import { CLOSE_FROM, HERO_R, Match, MATCH_LIMIT, PACE, type Aura, type DrState, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
 import { playstyleOf } from '../arena/styles';
 import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
@@ -25,7 +25,7 @@ import { actionOf, keyName, readKeys, saveKeys, type RingKeys } from './ringKeys
 import { KeysDialog } from './RingKeysDialog';
 import { TitleFx } from '../../../components/TitleFx';
 import { classEmblem } from './classEmblem';
-import { Coach, useSpot } from './RingCoach';
+import { Coach, useLabels, useSpot } from './RingCoach';
 
 /** `skill`: how sharp the computer plays (arena/ladder.ts skillAt); `mates`, in solo: the player's own side's, when not the same. */
 export type Role = { kind: 'solo'; skill: number; mates?: number } | { kind: 'host'; skill: number; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void } | { kind: 'client'; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void };
@@ -247,6 +247,16 @@ const PLATE_SLACK = 8;
  */
 const PLATE_SLACK_TOUCH = 16;
 
+/**
+ * Whether the target is in reach of the bar's first attack (its base spell), in a word: a distance in the ring's own
+ * units meant nothing to a player ("14 away" while standing on them).
+ */
+export function reachWord(me: Pick<Fighter, 'x' | 'y' | 'bar'>, foe: Pick<Fighter, 'x' | 'y'>): 'In reach' | 'Too far' {
+  const first = me.bar.map((id) => ABILITIES[id]).find((ab) => !!ab && ab.aim === 'enemy');
+  const range = first?.range ?? 0;
+  return Math.hypot(foe.x - me.x, foe.y - me.y) <= range + HERO_R ? 'In reach' : 'Too far';
+}
+
 /** Who an ability will land on, and whether it can right now. */
 function AimCard({ label, f, note, bad, doll, kind }: { label: string; f: Fighter | null; note: string; bad: boolean; doll: string; kind: 'foe' | 'friend' }) {
   return (
@@ -436,6 +446,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     const fx = new RingFx();
     const view = new RingStage(canvas, ringMapOf(m.map));
     view.still = !!engine.settings.reducedMotion;
+    fx.still = view.still;
     const fit = (): void => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       const host = canvas.parentElement!;
@@ -1019,11 +1030,12 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     if (ab.aim === 'near') return m.enemiesOf(me).some((o) => Math.hypot(o.x - me.x, o.y - me.y) <= ab.range && m.comboReady(me, ab, o)) ? ab.combo.name : null;
     return m.comboReady(me, ab, m.aimOf(me, ab))?.name ?? null;
   };
-  const foeNote = !foeAlive ? (m.phase === 'fight' ? `Click someone or press ${keyName(ringKeys.nextFoe)}. Nearest is used if you don’t.` : `Click someone or press ${keyName(ringKeys.nextFoe)}`) : !me || m.phase !== 'fight' ? `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}%` : !m.sees(me, foeAlive) ? 'Out of sight' : `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}% · ${Math.round(Math.hypot(foeAlive.x - me.x, foeAlive.y - me.y))} away`;
+  const foeNote = !foeAlive ? (m.phase === 'fight' ? `Click someone or press ${keyName(ringKeys.nextFoe)}. Nearest is used if you don’t.` : `Click someone or press ${keyName(ringKeys.nextFoe)}`) : !me || m.phase !== 'fight' ? `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}%` : !m.sees(me, foeAlive) ? 'Out of sight' : `${Math.round((foeAlive.hp / foeAlive.maxHp) * 100)}% · ${reachWord(me, foeAlive)}`;
   const foeBad = !!foeAlive && !!me && m.phase === 'fight' && !m.sees(me, foeAlive);
   const tutKeys: TutorialKeys = { touch, ab: [ringKeys.ab1, ringKeys.ab2, ringKeys.ab3, ringKeys.ab4, ringKeys.ab5].map(keyName), dash: keyName(ringKeys.dash), super: keyName(ringKeys.super), nextFoe: keyName(ringKeys.nextFoe), nextFriend: keyName(ringKeys.nextFriend), closeIn: engine.settings.ringCloseIn };
   const tv = tut?.view(tutKeys) ?? null;
   useSpot(tv?.spot ?? null);
+  useLabels(tv?.labels);
   return (
     <ScreenGate label="Entering the Ring">
       <div className={`rb-ring${touch ? ' is-touch' : ''}${engine.settings.reducedMotion ? ' is-still' : ''}`}>
@@ -1056,7 +1068,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 edge took the taps meant for the top enemy's nameplate), a hint, and the tutorial's words, all as wide as
                 the room between the nameplates and no wider (the owner: "the tutorial is overlapping with the ui") */}
             <div className="rb-ring-mid">
-              <div className="rb-ring-clock">
+              <div className="rb-ring-clock" data-tut="clock">
                 <button type="button" className={`rb-ring-more${menuOpen ? ' is-on' : ''}`} aria-label="Match menu" aria-haspopup="menu" aria-expanded={menuOpen} title="Nameplates, keys, help, leave" onClick={() => setMenuOpen((o) => !o)}>
                   ⋯
                 </button>
@@ -1150,7 +1162,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                   text={tv.text}
                   short={tv.short}
                   note={tv.note}
-                  small={tv.id === 'fight' && m.clock > CLOSE_FROM + 4}
+                  small={tv.id === 'fight' && (tut?.fightT ?? 0) > 6}
                   onNext={
                     tv.next
                       ? () => {

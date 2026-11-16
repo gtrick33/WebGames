@@ -1,6 +1,7 @@
 import { cleanTitle, isTitleFx, titleGoesAfter, type TitleFxId } from '../../../catalog/titleFx';
 import type { SigilTitleGrant } from '../../../platform/apiTypes';
 import { bestRating, RANKS } from '../arena/ranks';
+import { CHALLENGE_TITLES, MASTERY_TITLES, masteryWins, readRecord } from '../arena/record';
 import { MAX_LEVEL } from '../data/classes';
 import { QUESTS } from '../data/quests';
 import { REGIONS } from '../data/regions';
@@ -63,6 +64,24 @@ export const rankTitle = (r: { at: number; name: string }): TitleShown => ({ tex
 /** The Ring's ranks are titles too: each is earned at its rating and kept once reached (arena/ranks.ts; the first is where everyone starts). */
 export const RING_TITLES: readonly { rating: number; id: string; name: string; fx: TitleFxId }[] = RANKS.filter((r) => r.at > 0).map((r) => ({ rating: r.at, id: `ring-${r.at}`, name: r.name, fx: rankFx(r.at) }));
 
+/** Whether the Ring's record (this device's, arena/record.ts) has earned one of its titles. */
+function recordEarns(id: string): boolean {
+  const rec = readRecord();
+  const m = MASTERY_TITLES.find((t) => t.id === id);
+  if (m) return masteryWins(rec, m.cls) >= m.wins;
+  const c = CHALLENGE_TITLES.find((t) => t.id === id);
+  return !!c && (rec.finished ?? 0) >= c.finished;
+}
+
+/** What the Ring's record gives: each class's at 15 and 50 rated wins with it, and the challenges' at 10 and 50 finished. */
+export const RING_RECORD_TITLES: readonly TitleDef[] = [
+  ...MASTERY_TITLES.map((t): TitleDef => ({ id: t.id, name: t.name, fx: t.wins >= 50 ? 'gilded' : 'gleam', before: true, how: `Win ${t.wins} rated matches in The Ring with the ${t.name.split(' ')[0]}.`, rare: t.wins >= 50, earned: () => recordEarns(t.id) })),
+  ...CHALLENGE_TITLES.map((t): TitleDef => ({ id: t.id, name: t.name, fx: t.finished >= 50 ? 'storm' : 'tide', before: true, how: `Finish ${t.finished} of The Ring’s challenges.`, rare: t.finished >= 50, earned: () => recordEarns(t.id) })),
+];
+
+/** The Ring record's titles this device has earned (for a fighter in the Ring's plain clothes, who has no hero). */
+export const earnedRecordTitles = (): TitleDef[] => RING_RECORD_TITLES.filter((t) => recordEarns(t.id));
+
 export const TITLES: readonly TitleDef[] = [
   // the story
   { id: 'briarhollow', name: 'of Briarhollow', fx: 'verdant', how: 'Close the rift under the chapel.', earned: (c) => done(c, 'close-the-rift') },
@@ -86,6 +105,8 @@ export const TITLES: readonly TitleDef[] = [
   { id: 'exalted', name: 'the Exalted', fx: 'radiant', how: 'Reach Paragon 25.', rare: true, earned: (c) => c.para.l >= 25 },
   // the Ring (the best rating this device has seen the player reach)
   ...RING_TITLES.map((t): TitleDef => ({ id: t.id, name: t.name, fx: t.fx, before: true, how: `Reach ${t.rating} rating in The Ring.`, rare: t.rating >= 1700, earned: (_c, rating) => (rating ?? bestRating()) >= t.rating })),
+  // the Ring's record (arena/record.ts): a class mastered, and challenges finished
+  ...RING_RECORD_TITLES,
 ];
 
 const BY_ID: Record<string, TitleDef> = Object.fromEntries(TITLES.map((t) => [t.id, t]));

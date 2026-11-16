@@ -1,11 +1,14 @@
-/** The Ring's momentum (combos in a row), its quicker gates against the computer, and what its ranks give. */
+/** The Ring without Momentum, its quicker gates against the computer, and what its ranks give. */
+import fs from 'node:fs';
+import path from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';
 import { readRing, writeRing } from '../src/games/sigilfall/arena/ladder';
 import { bestRating, forgetBest, RANKS, RING_KEY } from '../src/games/sigilfall/arena/ranks';
 import { nextReward, ownedRingLooks, ownsRingLook, rewardsBetween, RING_LOOKS, RING_REWARDS, ringLookId } from '../src/games/sigilfall/arena/rewards';
-import { GATES, GATES_SOLO, Match, MOMENTUM_CHARGE, MOMENTUM_HOLD, MOMENTUM_MAX, type Aura, type FighterSetup } from '../src/games/sigilfall/arena/sim';
+import { GATES, GATES_SOLO, Match, type Aura, type FighterSetup } from '../src/games/sigilfall/arena/sim';
 import { SAMPLES } from '../src/games/sigilfall/audio/samples';
+import { bestOf } from '../src/games/sigilfall/ui/RingResult';
 import { SFX } from '../src/games/sigilfall/audio/sound';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
@@ -15,6 +18,8 @@ import { chooseTitle, earnedTitles, RING_TITLES, wornTitle } from '../src/games/
 import { hasLook, lookSource, wearLook, wornLooks } from '../src/games/sigilfall/progress/wardrobe';
 import { ringSchoolSounds } from '../src/games/sigilfall/render/ring';
 import { plainTitle, plainWorn, ringTitle } from '../src/games/sigilfall/ui/RingRewards';
+
+const read = (p: string): string => fs.readFileSync(path.join(path.resolve(__dirname, '..'), p), 'utf8');
 
 const STEP = 1 / 30;
 const fighter = (team: 0 | 1, cls: ClassId, bar?: string[]): FighterSetup => ({ team, cls, name: cls, bar: bar ?? PRESETS[cls][0]!.bar });
@@ -44,77 +49,58 @@ const rate = (best: number): void => {
   forgetBest();
 };
 
-describe('The Ring: momentum', () => {
-  it('a different combo is the next link of the chain; the same one again only holds it', () => {
-    const m = duel('warrior', ['w-hew', 'w-gash', 'w-hamstring', 'w-rush'], 'paladin');
-    const me = m.fighters[0]!;
-    mark(m, 'w-bleed');
-    m.press(0, 'w-hew');
-    wait(m, 0.1);
-    expect(me.streak).toBe(1);
-    const charge1 = me.charge;
-    // the same combo again: the chain holds where it is, and its clock starts over
-    wait(m, 1);
-    m.press(0, 'w-hew');
-    wait(m, 0.1);
-    expect(me.streak).toBe(1);
-    expect(me.streakT).toBeGreaterThan(MOMENTUM_HOLD - 0.3);
-    // a different one (Festering Gash on a stunned target: Executioner): the second link
-    m.fighters[1]!.auras.push({ ab: 'w-hurl', kind: 'cc', cc: 'stun', src: 0, t: 5, dur: 5, harmful: true, magic: false, n: 0 });
-    wait(m, 1);
-    m.events.length = 0;
-    m.press(0, 'w-gash');
-    wait(m, 0.1);
-    expect(me.streak).toBe(2);
-    expect(m.events.some((e) => e.k === 'word' && e.combo && e.word === 'Executioner ×2')).toBe(true);
-    // (a new link fills the super by its place in the chain, on top of what the blow itself gave)
-    expect(me.charge).toBeGreaterThan(charge1 + MOMENTUM_CHARGE * 2 - 1e-6);
-    expect(me.score.streak).toBe(2);
-  });
-
-  it('a link makes the combo land harder, and a chain left alone goes cold', () => {
-    const hit = (streak: number): number => {
+describe('The Ring: no Momentum (the owner: "i dont like the momentum idea, too much stuff on screen")', () => {
+  it('a combo hits as hard the third time in a row as the first, and adds nothing to the super of its own', () => {
+    const hit = (before: number): { dmg: number; charge: number } => {
       const m = duel('mage', ['m-burn'], 'warrior');
       const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
+      // (as if other combos had come just before this one)
+      for (let i = 0; i < before; i++) me.score.combos = (me.score.combos ?? 0) + 1;
       mark(m, 'm-lash');
-      // (as if two other combos had come before this one)
-      me.streak = streak;
-      me.streakT = streak ? 3 : 0;
-      me.lastCombo = 'Another';
       const hp = foe.hp;
-      // (no crits: the same roll for both)
       m.press(0, 'm-burn');
       wait(m, 0.6);
-      return hp - foe.hp;
+      return { dmg: hp - foe.hp, charge: me.charge };
     };
     const first = hit(0);
     const third = hit(2);
-    expect(third).toBeGreaterThan(first * 1.05);
-    expect(third).toBeLessThan(first * 1.6);
-
-    const m = duel('warrior', ['w-hew'], 'paladin');
-    mark(m, 'w-bleed');
-    m.press(0, 'w-hew');
-    wait(m, 0.1);
-    expect(m.fighters[0]!.streak).toBe(1);
-    wait(m, MOMENTUM_HOLD + 0.2);
-    expect(m.fighters[0]!.streak).toBe(0);
+    expect(third.dmg).toBe(first.dmg);
+    expect(third.charge).toBe(first.charge);
   });
 
-  it('never grows past its top, and travels in a snapshot', () => {
-    const m = duel('warrior', ['w-hew'], 'paladin');
-    const me = m.fighters[0]!;
-    me.streak = MOMENTUM_MAX;
-    me.streakT = 5;
-    me.lastCombo = 'Another';
+  it('a combo’s landing is kept as the hero’s best moment, the biggest of the match is the result screen’s', () => {
+    const m = duel('mage', ['m-burn'], 'warrior');
+    const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
+    expect(bestOf(m)).toBeNull();
+    mark(m, 'm-lash');
+    const hp = foe.hp;
+    m.press(0, 'm-burn');
+    wait(m, 0.6);
+    expect(me.score.best?.ab).toBe('m-burn');
+    expect(me.score.best?.combo).toBe(ABILITIES['m-burn']!.combo!.name);
+    expect(me.score.best!.n).toBeGreaterThan(0);
+    expect(me.score.best!.n).toBeLessThanOrEqual(hp - foe.hp);
+    foe.score.best = { ab: 'w-super', n: me.score.best!.n + 1 };
+    expect(bestOf(m)!.f).toBe(foe);
+    // (a player's copy has it too: it is in the score a host sends)
+    expect(JSON.stringify(m.snapshot())).toMatch(/"best":/);
+  });
+
+  it('is gone from the rules, from the words over a target and from a snapshot', () => {
+    const m = duel('warrior', ['w-hew', 'w-gash'], 'paladin');
     mark(m, 'w-bleed');
+    m.events.length = 0;
     m.press(0, 'w-hew');
     wait(m, 0.1);
-    expect(me.streak).toBe(MOMENTUM_MAX);
-    const copy = new Match({ seed: 5, map: 'sands', fighters: [fighter(0, 'warrior', ['w-hew']), fighter(1, 'paladin')] });
-    copy.restore(JSON.parse(JSON.stringify(m.snapshot())));
-    expect(copy.fighters[0]!.streak).toBe(MOMENTUM_MAX);
-    expect(copy.fighters[0]!.streakT).toBeGreaterThan(MOMENTUM_HOLD - 0.5);
+    m.fighters[1]!.auras.push({ ab: 'w-hurl', kind: 'cc', cc: 'stun', src: 0, t: 5, dur: 5, harmful: true, magic: false, n: 0 });
+    wait(m, 1);
+    m.press(0, 'w-gash');
+    wait(m, 0.1);
+    const words = m.events.filter((e) => e.k === 'word' && e.combo).map((e) => (e as { word: string }).word);
+    expect(words.every((w) => !/×/.test(w))).toBe(true);
+    expect('streak' in m.fighters[0]!).toBe(false);
+    expect(JSON.stringify(m.snapshot())).not.toMatch(/"stt?":/);
+    expect(read('src/games/sigilfall/arena/sim.ts')).not.toMatch(/MOMENTUM_/);
   });
 
   it('every class can chain: each has at least three different combos to weave', () => {

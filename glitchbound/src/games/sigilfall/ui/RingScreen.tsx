@@ -8,7 +8,7 @@ import { rewardsBetween } from '../arena/rewards';
 import { GATES_SOLO, type FighterSetup, type MatchSetup } from '../arena/sim';
 import { CLASS_EASE, CLASS_WAY, EASE_WORD } from '../arena/styles';
 import { LOBBY_STEPS, tutorialSetup } from '../arena/tutorial';
-import { Coach, useSpot } from './RingCoach';
+import { Coach, useLabels, useSpot } from './RingCoach';
 import { CLASS_IDS, CLASSES } from '../data/classes';
 import { useAccount } from '../../../platform/account';
 import { classOpen } from '../progress/paidClasses';
@@ -33,6 +33,8 @@ import { classEmblem } from './classEmblem';
 import { bestFits, bestPreset, choiceFromWord, choicesFor, choiceWord, fillSide, healerSpec, honored, slotsFor, specOf, type MateChoice, type Spec } from '../arena/teammates';
 import { cleanTitle, isTitleFx } from '../../../catalog/titleFx';
 import { rankFx, type TitleShown } from '../progress/titles';
+import { recordMatch, turnSeason } from '../arena/record';
+import { ProgressDialog, ProgressLink } from './RingProgress';
 
 const roomErrors: Record<string, string> = { full: 'That room is full.', in_run: 'That room is already in a match.' };
 
@@ -100,8 +102,10 @@ function ClassRow({ pick, onPick, lobby }: { pick: ClassId; onPick: (c: ClassId)
             <img src={classEmblem(c)} alt="" draggable={false} />
             <span>
               {CLASSES[c].name}
-              <small className={`rb-ringvl-tag is-${CLASS_EASE[c]}`}>{EASE_WORD[CLASS_EASE[c]]}</small>
+              {/* (one still to be bought says so where it can be seen, not only in a pointer's tooltip a phone never shows) */}
+              {classOpen(c, me) ? <small className={`rb-ringvl-tag is-${CLASS_EASE[c]}`}>{EASE_WORD[CLASS_EASE[c]]}</small> : <small className="rb-ringvl-tag is-shop">In the shop</small>}
             </span>
+            {!classOpen(c, me) && <Padlock />}
           </button>
         ))}
       </div>
@@ -122,9 +126,20 @@ function ClassRow({ pick, onPick, lobby }: { pick: ClassId; onPick: (c: ClassId)
           onClick={() => classOpen(c, me) && onPick(c)}
         >
           <img src={classEmblem(c)} alt="" draggable={false} />
+          {!classOpen(c, me) && <Padlock />}
         </button>
       ))}
     </div>
+  );
+}
+
+/** A small padlock over a class still to be bought. */
+function Padlock() {
+  return (
+    <svg className="rb-ring-padlock" viewBox="0 0 12 14" aria-hidden="true">
+      <path d="M3.2 6V4.2a2.8 2.8 0 0 1 5.6 0V6" fill="none" stroke="#ffd257" strokeWidth="1.6" />
+      <rect x="1.5" y="6" width="9" height="7" rx="1.4" fill="#ffd257" />
+    </svg>
   );
 }
 
@@ -247,6 +262,30 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const [tut, setTut] = useState<number | null>(null);
   const [tutFight, setTutFight] = useState<{ setup: MatchSetup } | null>(null);
   const [rewardsOpen, setRewardsOpen] = useState(false);
+  const [progressOpen, setProgressOpen] = useState(false);
+  // a season that turned since the player last came: its bests put by, each rating halfway back toward 1000
+  // (arena/record.ts turnSeason; a record that never saw a season starts in this one, with nothing changed)
+  useEffect(() => {
+    const t = turnSeason(latest.current.record, latest.current.standings, Date.now());
+    if (t.record !== latest.current.record || t.turned) commit((now) => ({ ...now, record: t.record, standings: t.standings }));
+    // (once, as the Ring opens)
+  }, []);
+  /** A match that ended (not the tutorial): into the history, and a rated one into the challenges, mastery and season. */
+  const keepMatch = (r: MatchResult, f: Format, rating: RatingOutcome | null, rival?: string): void => {
+    const me = r.match.fighters[r.myId];
+    if (!me) return;
+    const sc = me.score;
+    const now = Date.now();
+    commit((s) => ({
+      ...s,
+      record: recordMatch(
+        s.record,
+        { at: now, format: f, cls: me.cls, won: r.won, draw: r.draw, change: rating ? rating.after - rating.before : null, rating: rating ? rating.after : null, dmg: Math.round(sc.dmg), heal: Math.round(sc.heal), combos: sc.combos ?? 0, kicks: sc.kicks, ...(sc.best ? { best: sc.best } : {}), ...(rival ? { rival } : {}) },
+        { won: r.won, format: f, cls: me.cls, dmg: sc.dmg, heal: sc.heal, combos: sc.combos ?? 0, kicks: sc.kicks, supers: sc.supers ?? 0 },
+        now,
+      ),
+    }));
+  };
   const [looksOpen, setLooksOpen] = useState(false);
   const [fight, setFight] = useState<{ setup: MatchSetup; rival: Comp; skill: number; mates?: number; rivalRating: number; stakes: MatchStakes; format: Format; snap?: LiveMatch['snap'] } | null>(() => (resume ? { ...resume, stakes: resume.stakes } : null));
   // (`matched`: found by a search, not a room of friends: there is no room to go back to when it ends, and it is
@@ -320,6 +359,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const putLearn = (fn: (l: NonNullable<RingSave['learn']>) => NonNullable<RingSave['learn']>): void => commit((now) => ({ ...now, learn: fn(now.learn ?? {}) }));
   const tutStep = tut === null ? null : (LOBBY_STEPS[tut] ?? null);
   useSpot(tutStep?.spot ?? null);
+  useLabels(tutStep?.labels);
   const goTut = (i: number): void => {
     const st = LOBBY_STEPS[i];
     if (!st) return;
@@ -620,6 +660,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
           clearLive();
           const rating: RatingOutcome = r.draw ? { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: 0 } : settle(r.won);
           if (rating.rankUp) engine.sound.play('levelup');
+          keepMatch(r, fight.format, rating, fight.rival.name);
           setResult({ r, rating, rival: fight.rival.name, kind: 'solo' });
           setFight(null);
         }}
@@ -665,6 +706,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
             rating = r.draw ? { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: 0 } : settleFor(live.format, live.rivalRating, r.won, 1, live.ourRating);
             if (rating.rankUp) engine.sound.play('levelup');
           }
+          keepMatch(r, live?.format ?? (Math.max(1, Math.min(3, Math.ceil(roomFight.setup.fighters.length / 2))) as Format), rating, live?.rival.name);
           setResult({ r, rating, rival: live?.rival.name, kind: roomFight.matched ? 'matched' : 'room' });
           if (roomFight.matched) endSeek(roomFight.host);
           else if (roomFight.host) linkRef.current?.send({ t: 'end' });
@@ -803,6 +845,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
                 )}
               </div>
               <RewardStrip best={bestRating()} onOpen={() => setRewardsOpen(true)} />
+              <ProgressLink record={save.record ?? {}} onOpen={() => setProgressOpen(true)} />
 
               {format > 1 && <MatesPicker format={format} cls={pick} bar={bar} mates={mates} onMates={putMates} />}
 
@@ -875,7 +918,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
             at={tutStep.at}
             onBack={tut > 0 ? () => goTut(tut - 1) : undefined}
             onNext={tut < LOBBY_STEPS.length - 1 ? () => goTut(tut + 1) : startTutorialMatch}
-            nextLabel={tut < LOBBY_STEPS.length - 1 ? (tutStep.id === 'loadout' ? 'Open my setup' : 'Next') : 'Start the practice fight'}
+            nextLabel={tut < LOBBY_STEPS.length - 1 ? (tutStep.id === 'welcome' ? 'Open my setup' : 'Next') : 'Start the practice fight'}
             onSkip={() => setTut(null)}
           />
         )}
@@ -897,6 +940,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
           </div>
         )}
         {rewardsOpen && <RewardsDialog best={bestRating()} onClose={() => setRewardsOpen(false)} />}
+        {progressOpen && <ProgressDialog record={save.record ?? {}} onClose={() => setProgressOpen(false)} />}
         {looksOpen && <LooksDialog engine={engine} cls={pick} wear={wear} plain={save.plain} doll={doll} shown={<Titled name={wear ? wear.name : hero} title={myTitle} />} onPlain={(p) => commit((now) => ({ ...now, plain: p }))} onChange={() => setWearN((n) => n + 1)} onClose={() => setLooksOpen(false)} />}
       </div>
     </ScreenGate>

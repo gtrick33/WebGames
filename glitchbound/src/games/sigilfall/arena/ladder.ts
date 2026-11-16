@@ -3,6 +3,7 @@ import { fullBar, PRESETS, SLOTS, takes } from './abilities';
 import { forgetBest, mmrOf, NEW_STANDING, rankOf, RING_KEY, type Format, type Standing } from './ranks';
 import type { FighterSetup } from './sim';
 import { clearLive, LEAVER_K, type LiveMatch } from './live';
+import { recordOf, type RingRecord } from './record';
 export { clearLive, LEAVER_K, liveGoing, LIVE_WAIT, readLive, writeLive, type LiveMatch } from './live';
 
 export { FORMATS, mmrOf, NEW_STANDING, nextRank, rankOf, RANKS, type Format, type Standing } from './ranks';
@@ -234,6 +235,8 @@ export interface RingSave {
    * one-time hints already shown in a match (arena/lessons.ts).
    */
   learn?: RingLearn;
+  /** Challenges, class mastery, the season and the history (arena/record.ts). */
+  record?: RingRecord;
 }
 
 export interface RingLearn {
@@ -279,7 +282,8 @@ export function readRing(): RingSave {
     const plain = raw?.plain && typeof raw.plain === 'object' ? raw.plain : undefined;
     const mates = raw?.mates && typeof raw.mates === 'object' ? raw.mates : undefined;
     const learn = learnOf(raw?.learn);
-    return { standings: raw?.standings ?? {}, sets: raw?.sets ?? {}, ...(plain ? { plain } : {}), ...(mates ? { mates } : {}), ...(learn ? { learn } : {}) };
+    const record = recordOf(raw?.record);
+    return { standings: raw?.standings ?? {}, sets: raw?.sets ?? {}, ...(plain ? { plain } : {}), ...(mates ? { mates } : {}), ...(learn ? { learn } : {}), ...(record ? { record } : {}) };
   } catch {
     return { standings: {}, sets: {} };
   }

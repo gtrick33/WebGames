@@ -96,10 +96,11 @@ describe('The Ring: what each new super does', () => {
     expect(a.dr.root).toBeUndefined();
   });
 
-  it('Thicket of Snares and Voidburst land on a patch of ground; the void silences, halves healing and wraps the priest', () => {
+  it('Thicket of Snares and Voidburst land on a patch of ground; the void silences, cuts healing and wraps the priest', () => {
     const r = fight({ cls: 'ranger', ult: 'r-super2' }, [{ cls: 'warrior', at: [300, 125] }]);
     expect(r.press(0, 'r-super2', { x: 300, y: 125 })).toBeNull();
-    wait(r, 1);
+    // (it falls in 1.1 s, so that a fighter on the move can walk out of it)
+    wait(r, 1.2);
     const held = r.fighters[1]!;
     expect(held.auras.some((x) => x.cc === 'root') && held.auras.some((x) => x.kind === 'dot')).toBe(true);
     const p = fight({ cls: 'priest', ult: 'p-super2' }, [{ cls: 'mage', at: [300, 125] }]);

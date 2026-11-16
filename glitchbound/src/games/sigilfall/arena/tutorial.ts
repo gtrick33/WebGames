@@ -3,26 +3,38 @@ import type { ClassId } from '../data/types';
 import { ABILITIES, barCombos, PRESETS, ultOf, type Ability } from './abilities';
 import { steerTo } from './bot';
 import { CLASS_EASE, CLASS_WAY, EASE_WORD } from './styles';
-import { CLOSE_FROM, RANGED, type FighterSetup, type Match, type MatchEvent, type MatchSetup, type MoveInput } from './sim';
+import { RANGED, type FighterSetup, type Match, type MatchEvent, type MatchSetup, type MoveInput } from './sim';
 
 /**
  * The Ring's tutorial (the owner, 2026-11-14: "for the practice match, replace it with 'tutorial' where its not a ranked
  * match but rather an explanation for newcomers, make sure everything is shown during a tutorial match please, from
  * character selection, to customizing, to targeting, combos etc").
  *
- * Two halves. In the lobby (LOBBY_STEPS, shown by RingScreen) it walks through choosing a class, the formats, the
- * ranks, the arenas and the setup page: playstyles, abilities, combos, talents, the super and the extras. Then a match
- * against a sparring partner (TutorialRun, driven by RingMatch) teaches one thing at a time, each done for real before
- * the next: the entry, the nameplates, moving, choosing a target, abilities, a combo, Momentum, stepping out of a red
- * circle, placing an ability, the super, the healing spheres, the sigil, pillars, holds and casts, teammates and the
- * Gloam, and last a real fight against a gentle opponent. Nothing in it is rated.
+ * Short, and everything shown at once (the owner, 2026-11-15: a shorter tutorial, but "show everything initially, i
+ * dont want stage by stage unlocking new ui element tutorials"). Each screen it stops on has every part of it labeled
+ * together (`labels`: a word pinned to each element marked `data-tut`, RingCoach useLabels), and what can't be pointed
+ * at (what happens in the arena) is said on the same card. Then only what has to be done by hand is done by hand.
+ *
+ * In the lobby (LOBBY_STEPS, shown by RingScreen): the main screen, labeled; the playstyles; the setup page, labeled.
+ * Then a match against a sparring partner (TutorialRun, driven by RingMatch): the entry, the fight's screen labeled
+ * with the arena's rules beside it, then moving, choosing a target, abilities, a combo, walking out of a red circle,
+ * placing an ability (if the bar has one), the super, and last a real fight that a newcomer can win. Nothing in it is
+ * rated.
  *
  * While it teaches, the match's clock is held (Match.hold), the sparring partner only does what the lesson needs, and
- * neither side can fall. Kept apart from the screen so it can be tried on a bare match.
+ * neither side can fall. The last fight starts the clock from where it stood, at the start, as a match does.
  */
 
 /** The setup page's tabs (RingSetup.tsx). */
 export type SetupTab = 'abilities' | 'talents' | 'super';
+
+/** A word pinned to whatever on the screen is marked `data-tut="<spot>"`, all of a step's at once. */
+export interface TutLabel {
+  spot: string;
+  text: string;
+  /** Pinned at the right of its element's top edge, where that is the emptier end (the left by default). */
+  right?: boolean;
+}
 
 export interface LobbyStep {
   id: string;
@@ -30,27 +42,50 @@ export interface LobbyStep {
   text: (cls: ClassId) => string;
   /** What is lit while it's read (a `data-tut` mark on the page), if anything. */
   spot: string | null;
+  /** Every part of the page this step names, labeled together. */
+  labels?: readonly TutLabel[];
   page: 'play' | 'setup';
   /** On the setup page: the playstyle cards, or everything (and which tab). */
   mode?: 'styles' | 'custom';
   tab?: SetupTab;
   /** Where the words sit, so they don't cover what they talk about. */
-  at: 'top' | 'bottom';
+  at: 'top' | 'bottom' | 'side';
 }
 
 export const LOBBY_STEPS: readonly LobbyStep[] = [
-  { id: 'welcome', title: 'Welcome to the Ring', text: () => 'The Ring is short fights between heroes: one against one, two against two, or three against three. This tutorial shows you everything, then lets you practice on a sparring partner. Nothing in it changes your rating.', spot: null, page: 'play', at: 'bottom' },
-  { id: 'classes', title: 'Pick a class', text: (cls) => `Each class fights its own way: up close or from range, and some can heal. Click one to see it. ${CLASSES[cls].name}: ${CLASS_WAY[cls].toLowerCase()}, ${EASE_WORD[CLASS_EASE[cls]].toLowerCase()} to learn.${CLASS_EASE[cls] === 'easy' ? '' : ' The Warrior is an easy first pick.'}`, spot: 'classes', page: 'play', at: 'bottom' },
-  { id: 'formats', title: 'Choose your fight', text: () => '1v1, 2v2 or 3v3. Each has its own rating, starting at 1000: a win raises it and a loss lowers it. In 2v2 and 3v3 the computer fills your team, or your friends do.', spot: 'formats', page: 'play', at: 'bottom' },
-  { id: 'rank', title: 'Climb the ranks', text: () => 'Your rank, and how far it is to the next. Every rank gives you a title and a suit of armor to keep. Rewards shows them all.', spot: 'rank', page: 'play', at: 'bottom' },
-  { id: 'arena', title: 'Arenas', text: () => 'Each arena has its own pillars to hide behind. Any picks one for you, so you can leave it as it is.', spot: 'arena', page: 'play', at: 'bottom' },
-  { id: 'loadout', title: 'What you bring', text: () => 'Five abilities, then your super (the round one): open any of them to read what it does and when to use it. Under them, your talents. Let’s open your setup.', spot: 'loadout', page: 'play', at: 'top' },
+  {
+    id: 'welcome',
+    title: 'Welcome to the Ring',
+    text: (cls) => `Short fights between heroes: one against one, two against two or three against three. Every part of this screen is labeled. Pick a class, pick a fight and find a match: that’s all it takes. ${CLASSES[cls].name}: ${CLASS_WAY[cls].toLowerCase()}, ${EASE_WORD[CLASS_EASE[cls]].toLowerCase()} to learn.${CLASS_EASE[cls] === 'easy' ? '' : ' The Warrior is an easy first pick.'}`,
+    spot: null,
+    labels: [
+      { spot: 'classes', text: 'Your class' },
+      { spot: 'formats', text: 'Your fight: a rating each' },
+      { spot: 'rank', text: 'Your rank: titles and armor', right: true },
+      { spot: 'arena', text: 'Arena: Any is fine', right: true },
+      { spot: 'loadout', text: 'What you bring: tap to read' },
+    ],
+    page: 'play',
+    at: 'side',
+  },
   { id: 'styles', title: 'Pick a playstyle', text: (cls) => `Each card is a ready-made ${CLASSES[cls].name} build. Pick the one that sounds like you: it fills your setup at once, ready to fight with as it is.`, spot: 'styles', page: 'setup', mode: 'styles', at: 'bottom' },
-  { id: 'kit', title: 'Your abilities', text: () => 'Customize opens everything. Every class has twelve abilities of its own, plus the Unbinding Trinket any class can take, and brings five. Click one to read what it does, when to use it and what it combines with, then equip it.', spot: 'kit', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
-  { id: 'combos', title: 'Combos', text: () => 'These pairs work together: use the first, then the second, and the second hits much harder. Each different combo in a row builds Momentum.', spot: 'combos', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
-  { id: 'talents', title: 'Talents', text: () => 'Pick one from each row. Talents change how your whole class fights, whatever is on your bar.', spot: 'panel', page: 'setup', mode: 'custom', tab: 'talents', at: 'top' },
-  { id: 'super', title: 'Your super', text: () => 'A big ability that’s ready when its meter is full. The meter fills as you deal damage or heal. Each class has two to choose from.', spot: 'panel', page: 'setup', mode: 'custom', tab: 'super', at: 'top' },
-  { id: 'sets', title: 'Saved as you go', text: () => 'Each class has three setups, saved as you change them. Now let’s try it all in a practice fight.', spot: 'sets', page: 'setup', mode: 'custom', tab: 'abilities', at: 'bottom' },
+  {
+    id: 'kit',
+    title: 'Your setup',
+    text: () => 'Everything here is labeled. Click any ability to read what it does and what it combines with, then equip it. Talents and your super are the other tabs, and all of it is saved as you go. Now, a practice fight.',
+    spot: null,
+    labels: [
+      { spot: 'bar', text: 'Your five and your super' },
+      { spot: 'combos', text: 'Combos: the first sets up the second' },
+      { spot: 'tabs', text: 'Talents: one a row · Super: one of two', right: true },
+      { spot: 'kit', text: 'Twelve of your own, and the trinket', right: true },
+      { spot: 'sets', text: 'Three setups, saved as you go' },
+    ],
+    page: 'setup',
+    mode: 'custom',
+    tab: 'abilities',
+    at: 'bottom',
+  },
 ];
 
 /** The sparring partner: a mage, whose comet is the red circle to step out of and whose fire is the cast to watch. */
@@ -60,7 +95,6 @@ const SPAR_PRESET = PRESETS.mage[0]!;
 const SPAR_CIRCLE = 'm-super';
 /** How far from the player the circle's middle is put: they stand inside it, nearer one edge (world px). */
 export const CIRCLE_OFF = 38;
-const SPAR_CAST = 'm-lash';
 /** The arena it's taught in: open, with pillars to hide behind. */
 export const TUTORIAL_MAP = 'sands';
 /** Long enough to read the entry's words and press "ready". */
@@ -72,7 +106,7 @@ export function tutorialSetup(me: FighterSetup, seed: number): MatchSetup {
   return { seed, map: TUTORIAL_MAP, fighters: [{ ...me, team: 0, human: true }, spar], gates: TUTORIAL_GATES };
 }
 
-export type MatchStepId = 'gates' | 'plates' | 'move' | 'target' | 'ability' | 'combo' | 'momentum' | 'circle' | 'place' | 'super' | 'sphere' | 'sigil' | 'pillar' | 'holds' | 'friends' | 'gloam' | 'fight';
+export type MatchStepId = 'gates' | 'screen' | 'move' | 'target' | 'ability' | 'combo' | 'circle' | 'place' | 'super' | 'fight';
 
 /** What a match step lights up on the screen. */
 export type MatchSpot = 'prep' | 'plates' | 'foes' | 'target' | 'bar' | 'super' | null;
@@ -103,17 +137,33 @@ export interface TutorialView {
   /** It's read, then Next (otherwise it's done by doing it). */
   next: boolean;
   spot: MatchSpot;
+  /** Every part of the fight's screen, labeled together (the step that shows the screen). */
+  labels?: readonly TutLabel[];
   /** A word about how the last try went ("Well dodged!"). */
   note: string;
 }
 
+/** The fight's screen, every part of it named at once. */
+export const MATCH_LABELS: readonly TutLabel[] = [
+  { spot: 'plates', text: 'You' },
+  { spot: 'foes', text: 'Enemies: health, cast, holds' },
+  { spot: 'clock', text: 'Clock · the Gloam · healing' },
+  { spot: 'target', text: 'Your target' },
+  { spot: 'bar', text: 'Your abilities' },
+  { spot: 'super', text: 'Super: fills as you fight' },
+];
+
+/** How hard the sparring partner hits in the last fight, and when the player is under half health (it eases off). */
+export const SPAR_DMG = 0.5;
+export const SPAR_DMG_LOW = 0.3;
+
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }): number => Math.hypot(a.x - b.x, a.y - b.y);
 
 /** How near the sparring partner comes to the player in each step that has it come at all. */
-const APPROACH: Partial<Record<MatchStepId, number>> = { target: 170, ability: 90, combo: 90, circle: 120, place: 140, super: 90, holds: 150 };
+const APPROACH: Partial<Record<MatchStepId, number>> = { target: 170, ability: 90, combo: 90, circle: 120, place: 140, super: 90 };
 
 /** Steps read and then passed with Next; the rest are passed by doing them. */
-const READ: ReadonlySet<MatchStepId> = new Set(['plates', 'momentum', 'holds', 'friends', 'gloam']);
+const READ: ReadonlySet<MatchStepId> = new Set(['screen']);
 
 export class TutorialRun {
   readonly steps: MatchStepId[];
@@ -127,8 +177,11 @@ export class TutorialRun {
   private targeted = false;
   private uses = 0;
   private combos0 = 0;
-  private hiddenT = 0;
   private tries = 0;
+  /** How long the last fight has gone on. */
+  fightT = 0;
+  /** What the sparring partner's blows were worth before the last fight eased them. */
+  private baseDmg = 1;
   private circleUp = false;
   private wait = 0;
   /** The ability on the player's bar that is placed on the ground, if any (its own step). */
@@ -142,7 +195,7 @@ export class TutorialRun {
     m.hold = true;
     const me = m.fighters[myId]!;
     this.placed = me.bar.map((id) => ABILITIES[id]).find((ab): ab is Ability => !!ab && ab.aim === 'ground') ?? null;
-    this.steps = ['gates', 'plates', 'move', 'target', 'ability', 'combo', 'momentum', 'circle', ...(this.placed ? (['place'] as const) : []), 'super', 'sphere', 'sigil', 'pillar', 'holds', 'friends', 'gloam', 'fight'];
+    this.steps = ['gates', 'screen', 'move', 'target', 'ability', 'combo', 'circle', ...(this.placed ? (['place'] as const) : []), 'super', 'fight'];
     const foe = m.fighters[foeId];
     if (foe) foe.target = myId;
   }
@@ -164,8 +217,7 @@ export class TutorialRun {
 
   /**
    * Where the sparring partner walks while it is only helping: over to the player for the lessons done on it (so a
-   * newcomer isn't left crossing the whole ground), and within reach for what it does to them; never while they learn
-   * to hide behind a pillar, or go for a sphere or the sigil.
+   * newcomer isn't left crossing the whole ground), and within reach for what it does to them.
    */
   foeMove(): MoveInput {
     const me = this.me;
@@ -227,31 +279,21 @@ export class TutorialRun {
       case 'super':
         me.charge = 1;
         break;
-      case 'sphere':
-        me.hp = Math.round(me.maxHp * 0.45);
-        for (const o of m.orbs) o.at = Math.min(o.at, m.clock);
-        break;
-      case 'sigil':
-        m.sigilAt = m.clock;
-        break;
-      case 'pillar':
-        this.hiddenT = 0;
-        break;
-      case 'holds':
-        this.wait = 0.4;
-        break;
-      case 'gloam':
-        // (let go of the clock where the Gloam begins: it closes in while this is read, and on through the last fight)
-        m.hold = false;
-        m.clock = Math.max(m.clock, CLOSE_FROM - 1);
-        break;
       case 'fight':
+        // (a match of its own from here: the clock goes on from where it was held, the start, so the Gloam comes forty
+        // seconds in and healing weakens after, as in any match)
         this.free = true;
+        m.hold = false;
         me.hp = me.maxHp;
+        me.charge = 0;
         foe.hp = foe.maxHp;
+        foe.charge = 0;
         foe.cast = null;
-        // (a gentle opponent: it hits for a little over half)
-        foe.mods = { ...foe.mods, dmg: foe.mods.dmg * 0.6 };
+        this.fightT = 0;
+        // (a gentle opponent: it hits for half, and less again while the player is hurt, so that a newcomer's first
+        // fight is one they can win)
+        this.baseDmg = foe.mods.dmg;
+        foe.mods = { ...foe.mods, dmg: this.baseDmg * SPAR_DMG };
         break;
       default:
         break;
@@ -269,6 +311,10 @@ export class TutorialRun {
       // (nobody falls while it teaches)
       foe.hp = Math.max(foe.hp, Math.round(foe.maxHp * 0.5));
       me.hp = Math.max(me.hp, Math.round(me.maxHp * 0.3));
+    }
+    if (this.free && m.phase === 'fight') {
+      this.fightT += h;
+      foe.mods.dmg = this.baseDmg * (me.hp < me.maxHp * 0.5 ? SPAR_DMG_LOW : SPAR_DMG);
     }
     const mine = (k: string): boolean => m.events.some((e) => e.k === k && 'id' in e && e.id === this.myId);
     switch (this.id) {
@@ -300,28 +346,6 @@ export class TutorialRun {
       case 'super':
         if (mine('super')) this.advance('That’s your super.');
         else me.charge = 1;
-        break;
-      case 'sphere':
-        if (mine('orb')) this.advance('Healed.');
-        // (a healer who heals up first is hurt again: the lesson is the sphere)
-        else if (me.hp >= me.maxHp * 0.98) me.hp = Math.round(me.maxHp * 0.45);
-        break;
-      case 'sigil':
-        if (mine('sigil')) this.advance('Sigil taken.');
-        else if (!m.sigil && m.events.some((e) => e.k === 'sigil' && e.id === this.foeId)) m.sigilAt = m.clock;
-        break;
-      case 'pillar':
-        this.hiddenT = m.sees(me, foe) ? 0 : this.hiddenT + h;
-        if (this.hiddenT >= 0.4) this.advance('Hidden: they can’t aim at you now.');
-        break;
-      case 'holds':
-        // (a cast to watch on their nameplate: their fire, now and then)
-        this.wait -= h;
-        if (this.wait <= 0 && !foe.cast) {
-          foe.target = this.myId;
-          m.press(this.foeId, SPAR_CAST);
-          this.wait = 3;
-        }
         break;
       default:
         break;
@@ -380,8 +404,15 @@ export class TutorialRun {
     switch (this.id) {
       case 'gates':
         return out('The entry', `Before every match you wait here behind the gates. You can still change your setup (Change my setup). When you’re ready, press I’m ready${t ? '' : ` or ${keys.dash}`}.`, 'prep');
-      case 'plates':
-        return out('Who’s who', 'You’re on the left, your sparring partner on the right. The bars show health; holds and casts show under the names and over every fighter’s head.', 'plates');
+      case 'screen':
+        return {
+          ...out(
+            'Your screen',
+            'Every part of it is labeled. In the arena: a red circle is an attack about to land, so keep moving and walk out of it. Green spheres heal you. The sigil in the middle heals and fills a third of your super. Pillars block sight: nobody aims at what they can’t see. Stuns and roots get shorter each time in a row (the chips by the nameplates). From forty seconds the Gloam closes in from the edges, and healing weakens as a match goes on.',
+            null,
+          ),
+          labels: MATCH_LABELS,
+        };
       case 'move':
         return out('Move', t ? 'Move with your left thumb: put it down anywhere on the left side and push.' : 'Move with W A S D or the arrow keys. You can use abilities while you move.', null, t ? 'Push with your left thumb to move.' : 'Move with W A S D or the arrow keys.');
       case 'target':
@@ -399,8 +430,6 @@ export class TutorialRun {
         const friendly = c.from.aim === 'friend' || c.to.aim === 'friend' ? ' Here they go on you; in a team fight, on whoever you’re helping.' : '';
         return out('Land a combo', `${c.from.name} sets up ${c.to.name}. Use ${c.from.name} (${keyOf(c.from)}), then ${c.to.name} (${keyOf(c.to)}) for ${c.name}: it hits much harder. A button glows when its combo is ready.${friendly}`, 'bar', `Use ${c.from.name} (${keyOf(c.from)}), then ${c.to.name} (${keyOf(c.to)}): the second hits much harder.`);
       }
-      case 'momentum':
-        return out('Momentum', 'Land different combos one after another, each within 7 seconds of the last, to build Momentum up to ×4: harder combos and a faster super.', null);
       case 'circle':
         return out('Walk out of red circles', 'Look out! A red circle means an attack is about to land there (it’s slowed down for now). Walk out of it before it lands: the nearest edge is the quickest way.', null, 'Red circle! Walk out of it before it lands.');
       case 'place': {
@@ -409,20 +438,8 @@ export class TutorialRun {
       }
       case 'super':
         return out('Your super', `Your super meter fills as you fight; we filled it for you. ${t ? 'Tap the gold button' : `Press ${keys.super}`} to unleash ${sup.name}: ${sup.text}${sup.aim === 'ground' ? (t ? ' Hold the button and push to place it.' : ' Click where it should land.') : ''}`, 'super', `Your super is full. ${press(t ? 'the gold button' : keys.super)} to unleash ${sup.name}.`);
-      case 'sphere':
-        return out('Healing spheres', 'You’re hurt. Green healing spheres rise around the arena: walk into one to get some health back. It rises again a little later.', null, 'You’re hurt: walk into a green healing sphere.');
-      case 'sigil':
-        return out('The sigil', 'A sigil rose in the middle of the arena. Run over it: it heals you, fills a third of your super and speeds you up. Grab it before your enemy does.', null, 'Run over the sigil in the middle of the arena.');
-      case 'pillar':
-        return out('Pillars block sight', 'Step behind a pillar so your sparring partner can’t see you. Nobody can aim at someone they can’t see, and a healer can’t reach a friend out of sight.', 'target', 'Hide behind a pillar so they can’t see you.');
-      case 'holds':
-        return out('Casts and holds', `Watch their nameplate: a bar fills while they cast, and an interrupt cuts it off. Stuns, fears, roots and the like hold a fighter for a moment, and each one in a row lasts half as long. The Unbinding Trinket, which every class can take as one of its five, breaks you out of any of them and takes off every burn and bleed, but it comes back only every 45 seconds: keep it for the hold that matters.`, 'foes');
-      case 'friends':
-        return out('Teammates', `In 2v2 and 3v3 your teammates’ nameplates sit under yours. ${t ? 'Tap one' : `Click one or press ${keys.nextFriend}`} to choose who your heals go to.${t ? ' In a team fight, the ◎ button under the enemies’ nameplates switches between them.' : ''}`, 'plates');
-      case 'gloam':
-        return out('The Gloam', 'Forty seconds in, the Gloam closes in from the edges and burns whoever stands in it, and healing weakens as a match goes on. Stay near the middle.', null);
       case 'fight':
-        return out('Now, a real fight', 'Your sparring partner fights back now, gently. Use everything: combos, your trinket, your super, the spheres. Win it!', null, 'Win the fight! Use everything you’ve learned.');
+        return out('Now, a real fight', `Your sparring partner fights back now, gently. Use everything: combos, your super, the spheres. In a team fight, your teammates’ nameplates sit under yours: ${t ? 'tap one' : `click one or press ${keys.nextFriend}`} to choose who your heals go to.${t ? ' In a team fight, the ◎ button under the enemies’ nameplates switches between them.' : ''} Win it!`, null, 'Win the fight! Use everything you’ve learned.');
     }
   }
 }

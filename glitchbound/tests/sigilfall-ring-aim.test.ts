@@ -90,14 +90,18 @@ describe('The Ring: what is placed', () => {
     for (const ab of PLACED) {
       expect(ab.area, ab.id).toBeGreaterThan(20);
       expect(ab.fall, ab.id).toBeGreaterThan(0.2);
-      expect(ab.fall, ab.id).toBeLessThanOrEqual(1);
+      // (a patch that would have to shrink by more than a quarter to be walked out of falls slower instead: the owner,
+      // "if the radius change is bigger than 25% just slow down the projectile")
+      expect(ab.fall, ab.id).toBeLessThanOrEqual(1.1);
       // (the owner: "reduce cast time for targeted spells to max 1s for every class")
       expect(ab.cast, ab.id).toBeLessThanOrEqual(1);
       expect(ab.range, ab.id).toBeGreaterThan(100);
       expect(ab.bolt, ab.id).toBeFalsy();
       expect(ab.text, ab.id).toMatch(/patch of ground|where you choose/);
-      // a patch is wider than a fighter walks while it falls: placed on someone, it lands on them
-      expect(ab.area!, ab.id).toBeGreaterThanOrEqual(BASE_SPEED * ab.fall! * 1.1);
+      // (the owner: "shrink them so they are avoidable", for "0.0s reaction time": a fighter already on the move walks
+      // out of one placed on them before it lands; one who stands still is caught)
+      expect(ab.area!, ab.id).toBeLessThan(BASE_SPEED * ab.fall!);
+      expect(ab.area!, ab.id).toBeGreaterThan(BASE_SPEED * ab.fall! * 0.75);
     }
   });
 
@@ -122,15 +126,18 @@ describe('The Ring: what is placed', () => {
     }
   });
 
-  it('once it is falling, walking does not get out from under it', () => {
+  it('placed on someone on the move, it misses them if they keep walking; on someone standing, it lands', () => {
+    // (the owner: "it would be hard to land one right in the middle of a character that's constantly moving")
     for (const ab of PLACED) {
-      const cls = ab.cls as ClassId;
-      const m = open(cls, [ab.super ? kitOf(cls)[0]!.id : ab.id]);
-      const foe = m.fighters[1]!;
-      // (it is on the ground: only now can they know)
-      expect(place(m, ab), ab.id).toBeNull();
-      run(m, ab.fall! + 0.2, { 1: { mx: 1, my: 0 } });
-      expect(foe.maxHp - foe.hp, `${ab.id} walk`).toBeGreaterThan(0);
+      for (const walks of [true, false]) {
+        const cls = ab.cls as ClassId;
+        const m = open(cls, [ab.super ? kitOf(cls)[0]!.id : ab.id]);
+        const foe = m.fighters[1]!;
+        expect(place(m, ab), ab.id).toBeNull();
+        run(m, ab.fall! + 0.2, walks ? { 1: { mx: 1, my: 0 } } : {});
+        if (walks) expect(foe.hp, `${ab.id} walking`).toBe(foe.maxHp);
+        else expect(foe.maxHp - foe.hp, `${ab.id} standing`).toBeGreaterThan(0);
+      }
     }
   });
 

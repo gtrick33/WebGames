@@ -44,9 +44,9 @@ describe('The Ring’s setup: abilities, talents and a super, and nothing else',
 
   it('the tutorial no longer walks through extras, and says the bar can be opened and read', () => {
     expect(LOBBY_STEPS.map((s) => s.id)).not.toContain('extras');
-    const loadout = LOBBY_STEPS.find((s) => s.id === 'loadout')!.text('warrior');
-    expect(loadout).not.toMatch(/oath/i);
-    expect(loadout).toMatch(/open any of them to read what it does/);
+    for (const st of LOBBY_STEPS) expect(st.text('warrior')).not.toMatch(/oath/i);
+    // (the main screen's bar is labeled as something to open and read)
+    expect(LOBBY_STEPS.find((s) => s.id === 'welcome')!.labels!.find((l) => l.spot === 'loadout')!.text).toMatch(/tap to read/);
   });
 });
 

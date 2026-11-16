@@ -142,6 +142,26 @@
  * tests/sigilfall-ring-aim.test.ts, under its floor of 35%, so Starlash is 6% stronger (79 -> 84) and nothing else
  * changed. Measured once over the usual seeds, without it: Hound 73% and Trapper 72% of their duels, the Longbow 46 on
  * the mean; worth a look once people have played it.
+ *
+ * Then the red circles became avoidable by anyone already walking (2026-11-16, the owner: "shrink them so they are
+ * avoidable" for "0.0s reaction time", and "if the radius change is bigger than 25% just slow down the projectile"),
+ * and Momentum went ("i dont like the momentum idea"). What leaned on circles landing lost ground (Trapper 55 -> 43,
+ * Curse-speaker 54 -> 47, Pyre 52 -> 46 on the mean) and what chased them gained (Hound 56 -> 62); the priest's and
+ * the druid's duels fell to 32% and 33%. Over 24 seeds of every 1v1 and 3,000 teams of each size: Cinder Comet 240 ->
+ * 260, Great Pyre 310 -> 345, Flashburn 115 -> 121; Thornstorm 130 -> 165, Starlash 84 -> 97; Voidburst 150 -> 176
+ * (its healing cut 50% -> 40%: it carried the Curse-speaker's team fights), Bright Rebuke 58 -> 71, Word of Decay
+ * 151 -> 157; Thicket of Snares and Serpent Volley about 10-15% stronger; Wither and Barbed Curse 5% stronger; the
+ * Hound's Rending Cut 174 -> 146 and Hock Cut 22 -> 20; the Zealot's Oath Blow 32 -> 28 and Wave of Dawn 59 -> 62;
+ * Gloam Cleave 35 -> 34. Each setup, 1v1 / 2v2 / 3v3 and the mean, after:
+ *
+ *   Reaper      56/52/55 54   Hound     72/50/45 56   Pyre         51/48/45 48   Rime        54/45/45 48
+ *   Longbow     54/42/47 48   Trapper   58/45/46 50   Oathkeeper   16/57/61 45   Zealot      53/41/37 44
+ *   Lifegiver   25/58/49 44   Curse-sp. 51/60/62 58   Hexer        66/40/38 48   Gravecaller 57/51/54 54
+ *   Grovekeeper 23/56/56 45   Starseer  47/52/54 51   Bloodsworn   68/45/41 52   Nightblade  45/42/56 47
+ *
+ * Classes (1v1 healers' setups left out, then 2v2 / 3v3): warrior 61/51/50, mage 43/46/45, ranger 51/43/46, paladin
+ * 52/52/53, priest 41/59/54, warlock 58/46/46, druid 39/55/55, gloamknight 55/43/48. Worth a look once people have
+ * played it: the Curse-speaker in team fights, and the Zealot in 3v3.
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';
