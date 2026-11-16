@@ -292,9 +292,9 @@ describe('sigilfall character', () => {
     expect(learnedSkills(c)).toEqual(['heavy-strike']);
     levelTo(c, 6);
     expect(learnedSkills(c)).toHaveLength(4);
-    // the bar grows with the hero: Q from the start, E at 5, R at 10, the fourth at 15 (SLOT_LEVELS)
-    expect(c.skills.filter(Boolean)).toHaveLength(2);
-    expect(setSkill(c, 2, learnedSkills(c)[2]!)).toBe(false);
+    // the bar grows with the hero: Q from the start, E at 2, R at 6, the fourth at 12 (SLOT_LEVELS)
+    expect(c.skills.filter(Boolean)).toHaveLength(3);
+    expect(setSkill(c, 3, learnedSkills(c)[3]!)).toBe(false);
     expect(setSkill(c, 0, 'nope')).toBe(false);
     levelTo(c, 15);
     // four slots: the skills learned fill the bar by themselves

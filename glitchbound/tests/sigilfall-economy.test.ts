@@ -9,7 +9,7 @@ import { emptySave, loadSave, writeSave } from '../src/games/sigilfall/progress/
 import { buyItem, buyPotions, cantBuy, potionPrice, restock, stockFor } from '../src/games/sigilfall/progress/shop';
 import { hitEnemy, hurtPlayer } from '../src/games/sigilfall/sim/combat';
 import { tryCast } from '../src/games/sigilfall/sim/cast';
-import { emptyInput } from '../src/games/sigilfall/sim/world';
+import { emptyInput, RISE_POTIONS } from '../src/games/sigilfall/sim/world';
 import { newWorld, readyHero } from './sigilfall-bot';
 
 const step = (w: ReturnType<typeof newWorld>, seconds: number) => {
@@ -106,6 +106,19 @@ describe('sigilfall potions and shops', () => {
     expect(buyPotions(h, 1)).toBe(0);
   });
 
+  it('a fall in a story dungeon tops the flask up to two, and never takes any away', () => {
+    const w = newWorld('crypt', readyHero('mage', 6));
+    const h = w.hero;
+    h.potions = 0;
+    w.playerDies();
+    w.respawn();
+    expect(h.potions).toBe(RISE_POTIONS);
+    h.potions = 4;
+    w.playerDies();
+    w.respawn();
+    expect(h.potions).toBe(4);
+  });
+
   it('gear stock is stable until the hero levels or comes home, and bought pieces stay sold', () => {
     const h = readyHero('mage', 6);
     h.bag = [];
@@ -173,6 +186,18 @@ describe('sigilfall potions and shops', () => {
     expect(back.marks).toBe(7);
     expect(back.restock).toBe(3);
     expect(back.sold).toEqual(['vabc0']);
+  });
+
+  it('a hero saved before the skill slots opened sooner gets the slots that have opened since filled on load', () => {
+    const save = emptySave();
+    const h = readyHero('warrior', 7);
+    // as saved when the second slot opened at 5 and the third at 10: two skills on the bar, two empty
+    h.skills = [h.skills[0]!, h.skills[1]!, null, null];
+    save.heroes[0] = h;
+    writeSave(save);
+    const back = loadSave().save.heroes[0]!;
+    expect(back.skills.filter(Boolean)).toHaveLength(3);
+    expect(back.skills[3]).toBeNull();
   });
 });
 

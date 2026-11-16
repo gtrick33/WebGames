@@ -233,8 +233,15 @@ export function learnedSkills(c: Character): string[] {
 export const hasUltimate = (c: Character): boolean => (SKILLS[CLASSES[c.cls].ult]?.unlock ?? 99) <= c.level;
 
 /** New skills go into an empty slot by themselves, so a new player never has to visit a menu to use them. */
-/** The level each skill slot opens at (Q, E, R and the fourth): the bar grows with the hero, not all at once. */
-export const SLOT_LEVELS = [1, 5, 10, 15] as const;
+/**
+ * The level each skill slot opens at (Q, E, R and the fourth): the bar grows with the hero, not all at once. The second
+ * opens with the second skill (it was level 5: a new hero fought the night and the crypt with one skill, told at level 2
+ * that the new one "waits in your skills"), so the first choice of what to carry comes at level 4, with a third skill and
+ * two places for it.
+ */
+export const SLOT_LEVELS = [1, 2, 6, 12] as const;
+/** The levels the slots opened at before (a save from then gets the slots that have opened since filled on load). */
+export const OLD_SLOT_LEVELS = [1, 5, 10, 15] as const;
 export const slotOpen = (c: Character, slot: SkillIndex): boolean => c.level >= SLOT_LEVELS[slot];
 /** The level a bar slot opens at (0 for the ones always there). */
 export const slotLevel = (slot: string): number => ({ s1: SLOT_LEVELS[0], s2: SLOT_LEVELS[1], s3: SLOT_LEVELS[2], s4: SLOT_LEVELS[3] })[slot] ?? 0;

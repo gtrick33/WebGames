@@ -225,6 +225,9 @@ export const BOSS_HEALTH = HERO_DAMAGE;
  */
 export const bossDamage = (level: number): number => 1 + (BOSS_DAMAGE - 1) * Math.max(0, Math.min(1, (level - 4) / 26));
 export const mobDamage = (level: number): number => 1 + (MOB_DAMAGE - 1) * hardening(level);
+/** The potions a hero rises with, at least, in a story dungeon (World.respawn). */
+export const RISE_POTIONS = 2;
+
 export const bossHealth = (level: number): number => 1 - (1 - BOSS_HEALTH) * hardening(level);
 
 /**
@@ -2392,7 +2395,11 @@ export class World {
     this.emit({ t: 'death' });
   }
 
-  /** Back at the last checkpoint: the room you died in resets (potions don't come back: buy more). */
+  /**
+   * Back at the last checkpoint: the room you died in resets. Potions don't come back, but in a story dungeon a hero
+   * rises with at least two (RISE_POTIONS): one who spent them all on the boss used to try it again with none, and no
+   * vendor between. A Riftstone run keeps its own measure.
+   */
   respawn(): void {
     // with friends still fighting, the room stays as it is and the hero comes back into it
     if (this.coop) {
@@ -2422,9 +2429,15 @@ export class World {
       }
     }
     const p = this.newPlayer(this.checkpoint.x, this.checkpoint.y);
+    if (this.risesWithPotions()) this.hero.potions = Math.max(this.hero.potions, Math.min(RISE_POTIONS, potionCap(this.hero)));
     p.ult = 0;
     p.iframe = 1.5;
     this.emit({ t: 'hero' });
+  }
+
+  /** A fall here tops the flask up (respawn): a story dungeon, not a Riftstone run. */
+  risesWithPotions(): boolean {
+    return !this.coop && !this.keyRun && this.region.kind === 'dungeon';
   }
 
   /* ----------------------------------------------------------- rooms */

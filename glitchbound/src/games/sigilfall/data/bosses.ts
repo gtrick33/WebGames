@@ -125,7 +125,8 @@ export const BOSSES: Record<string, BossDef> = {
     name: 'The Coffin Matron',
     title: 'Mother of the Ossuary',
     sprite: 'coffin-matron',
-    hp: 850,
+    // (the first boss most heroes meet, at level 5 or 6 with two skills: it was 850, a fight of several minutes)
+    hp: 650,
     dmg: 14,
     radius: 9,
     xp: 300,
@@ -168,7 +169,8 @@ export const BOSSES: Record<string, BossDef> = {
     name: 'Warden Ossric',
     title: 'Keeper of the Crypt Gate',
     sprite: 'ossric',
-    hp: 1150,
+    // (it was 1150: over four minutes at level 6, and still above half)
+    hp: 850,
     dmg: 18,
     radius: 10,
     xp: 420,

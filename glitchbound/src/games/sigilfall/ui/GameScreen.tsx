@@ -21,7 +21,7 @@ import { paragonFree, paragonXp } from '../progress/paragon';
 import { itemMods, itemName, usableBy } from '../progress/items';
 import { TONES } from '../render/effects';
 import { rarityColor } from '../render/renderer';
-import { clockText, type World } from '../sim/world';
+import { clockText, RISE_POTIONS, type World } from '../sim/world';
 import { sceneDark } from '../sim/scene';
 import { fmt, ItemIcon, Portrait } from './common';
 import { hudBoxOf, useHudBox } from './hudBoxes';
@@ -1014,7 +1014,7 @@ function DeathScreen({ engine }: { engine: SigilEngine }) {
     <div className="rb-modal is-dark">
       <div className="rb-card rb-death" role="dialog" aria-modal="true" aria-label="You have fallen">
         <h2>You have fallen</h2>
-        <p className="rb-dim">{engine.coop ? 'Everything you found is safe. Your party fights on: rise beside them.' : 'Everything you found is safe. The room you fell in resets.'}</p>
+        <p className="rb-dim">{engine.coop ? 'Everything you found is safe. Your party fights on: rise beside them.' : w.risesWithPotions() && (engine.hero?.potions ?? 0) < RISE_POTIONS ? `Everything you found is safe. The room you fell in resets, and you rise with ${RISE_POTIONS} potions.` : 'Everything you found is safe. The room you fell in resets.'}</p>
         <button className="rb-btn is-gold is-big" onClick={() => engine.respawn()} autoFocus>
           Rise again
         </button>

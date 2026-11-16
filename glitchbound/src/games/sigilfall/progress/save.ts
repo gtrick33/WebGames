@@ -9,7 +9,7 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { ClassId, Item, PerkId, RegionId, SlotId, StatKey } from '../data/types';
 import { RARITIES, SLOTS } from '../data/types';
 import { STAT_ROLL } from '../data/items';
-import { autoSlotSkills, BAG_OVERFLOW, bagSize, learnedSkills, seatSpecSkill, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME, allItems, HELD_MAX } from './character';
+import { autoSlotSkills, OLD_SLOT_LEVELS, SLOT_LEVELS, BAG_OVERFLOW, bagSize, learnedSkills, seatSpecSkill, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME, allItems, HELD_MAX } from './character';
 import { itemClass, itemSlot, newUid } from './items';
 import { grantMounts, grantWarden, syncRift, learnLooks, LOOK_SLOTS, tidyWardrobe } from './wardrobe';
 import { MOUNT_DEFS } from '../data/mounts';
@@ -284,6 +284,8 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
     });
     // a three-slot save: the new slot takes a learned skill that wasn't on the bar, if there is one
     if (o.skills.length < 4) autoSlotSkills(c);
+    // slots that have opened sooner since it was saved (OLD_SLOT_LEVELS) come in empty: they take a skill too
+    else if (OLD_SLOT_LEVELS.some((old, i) => c.level < old && c.level >= SLOT_LEVELS[i]! && c.skills[i] === null)) autoSlotSkills(c);
   }
   // items: unique ids, worn ones in the right slot and wearable
   const seen = new Set<string>();

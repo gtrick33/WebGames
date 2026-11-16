@@ -272,7 +272,8 @@ describe('Sigilfall: a specialization’s ability is on the bar from the moment 
 
   it('puts right a hero saved with it in a slot that was not open', () => {
     const c = newCharacter('warrior', 'P', 'p', 0);
-    while (c.level < 12) addXp(c, xpToNext(c.level));
+    // (level 11: the fourth slot opens at 12)
+    while (c.level < 11) addXp(c, xpToNext(c.level));
     c.spec = 0;
     c.skills = ['heavy-strike', 'whirlwind', 'shield-bash', 'bloodthirst'];
     expect(seatSpecSkill(c)).toBe(true);
