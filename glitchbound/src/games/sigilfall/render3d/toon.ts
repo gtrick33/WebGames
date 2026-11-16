@@ -240,6 +240,8 @@ export const LIGHT = {
   uMid: { value: new THREE.Color(0.86, 0.84, 0.88) },
   uShade: { value: new THREE.Color(0.58, 0.56, 0.72) },
   uTime: { value: 0 },
+  /** The picture's size in its own pixels: what is thinned away is thinned in a pattern that goes with the figure (dither). */
+  uRes: { value: new THREE.Vector2(1, 1) },
   /**
    * Where the hero stands (xyz), for the pool of light round them in a dark place; w 1 where what stands between the
    * camera and them thins away to show them (the world), 0 where nothing does (a portrait, the hall).
@@ -439,11 +441,23 @@ vec3 finish(vec3 c) {
 }
 `;
 
+/**
+ * A figure thinned away (a hero in the shroud, a body sinking): a fine pattern of points left out. The pattern is laid
+ * from where the figure stands on the screen (vRoot), so it goes with them as they move. It was laid on the screen
+ * itself, and a figure walking through it shimmered, every point of them flickering on and off as it crossed (the
+ * owner: "no jiterring of effects on spells and characters (mostly thinking about the jittery rogue gloamknight while
+ * moving)": the Nightblade is in the shroud half the match).
+ */
+const ROOT_VERT = /* glsl */ `
+  vec4 rootAt = projectionMatrix * viewMatrix * modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+  vRoot = (rootAt.xy / max(rootAt.w, 0.0001) * 0.5 + 0.5) * uRes;`;
+
 function dither(): string {
   return /* glsl */ `
   if (vAlpha < 0.995) {
-    float dx = mod(gl_FragCoord.x, 4.0);
-    float dy = mod(gl_FragCoord.y, 4.0);
+    vec2 cell = floor(gl_FragCoord.xy - vRoot);
+    float dx = mod(cell.x, 4.0);
+    float dy = mod(cell.y, 4.0);
     float th = (mod(dx + dy * 2.0, 4.0) + mod(dx * 2.0 + dy, 2.0) * 0.5 + 0.25) / 4.5;
     if (vAlpha < th) discard;
   }`;
@@ -459,6 +473,8 @@ export function animMaterial(anim: RigAnim): THREE.ShaderMaterial {
     vertexShader: /* glsl */ `
       ${COMMON_VERT}
       ${SKIN_VERT}
+      uniform vec2 uRes;
+      varying vec2 vRoot;
       varying float vGlow;
       void main() {
         vGlow = step(dot(normal, normal), 0.0008);
@@ -471,10 +487,12 @@ export function animMaterial(anim: RigAnim): THREE.ShaderMaterial {
         vCol = aCol * iTint.rgb;
         vFlash = iTint.a;
         vAlpha = iAnim.w;
+        ${ROOT_VERT}
         gl_Position = projectionMatrix * viewMatrix * w;
       }`,
     fragmentShader: /* glsl */ `
       ${FRAG_COMMON}
+      varying vec2 vRoot;
       varying float vGlow;
       void main() {
         ${dither()}
@@ -541,6 +559,8 @@ export function inkMaterial(anim: RigAnim, width: number): THREE.ShaderMaterial 
     vertexShader: /* glsl */ `
       ${COMMON_VERT}
       ${SKIN_VERT}
+      uniform vec2 uRes;
+      varying vec2 vRoot;
       uniform float uInk;
       void main() {
         mat4 m = posed();
@@ -553,12 +573,14 @@ export function inkMaterial(anim: RigAnim, width: number): THREE.ShaderMaterial 
         vCol = vec3(0.0);
         vFlash = iTint.a;
         vAlpha = iAnim.w;
+        ${ROOT_VERT}
         gl_Position = projectionMatrix * viewMatrix * w;
         // (what glows has no ink round it: it's light, not a thing: past the far plane, so never drawn)
         if (dot(normal, normal) < 0.0008) gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
       }`,
     fragmentShader: /* glsl */ `
       ${FRAG_COMMON}
+      varying vec2 vRoot;
       void main() {
         ${dither()}
         vec3 c = mix(vec3(0.075, 0.05, 0.1), vec3(1.0, 0.95, 0.75), vFlash);

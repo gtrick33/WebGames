@@ -383,6 +383,11 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   };
   const press = (id: string, at?: { x: number; y: number }): void => {
     if (!me) return;
+    // (in the tutorial, what the lesson isn't about stays shut until its own step: arena/tutorial.ts allows)
+    if (tut && !tut.allows(id)) {
+      say(tut.shutWhy(), undefined, true);
+      return;
+    }
     chase.current = null;
     const ab = ABILITIES[id];
     if (role.kind === 'client') {
@@ -1281,7 +1286,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                     <button
                       key={ab.id}
                       data-tut={sup ? 'super' : undefined}
-                      className={`rb-sb rb-sb-${sup ? 'ult' : TOUCH_SLOTS[i]}${sup ? ` is-super${charge >= 1 ? ' is-ready' : ''}` : ''}${isOut(m, me, ab) ? ' is-nomana' : ''}${wait > 0 ? ' is-cooling' : ''}${held && ab.anyState ? ' is-free-now' : ''}${comboOf(ab) && wait <= 0 && (!sup || charge >= 1) ? ' is-combo' : ''}`}
+                      className={`rb-sb rb-sb-${sup ? 'ult' : TOUCH_SLOTS[i]}${sup ? ` is-super${charge >= 1 ? ' is-ready' : ''}` : ''}${isOut(m, me, ab) ? ' is-nomana' : ''}${wait > 0 ? ' is-cooling' : ''}${held && ab.anyState ? ' is-free-now' : ''}${comboOf(ab) && wait <= 0 && (!sup || charge >= 1) ? ' is-combo' : ''}${tut && !tut.allows(ab.id) ? ' is-tut-off' : ''}`}
                       style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined}
                       aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}
                       onPointerDown={(e) => aimApi.current.down(e, ab)}
@@ -1339,9 +1344,12 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                     I’m ready{touch ? '' : ` (${keyName(ringKeys.dash)})`}
                   </button>
                 )}
-                <button className={`rb-btn${role.kind === 'client' ? ' is-gold' : ''}`} onClick={() => setEditing(true)}>
-                  Change my setup
-                </button>
+                {/* (not in the tutorial: its lessons are for the setup it was begun with) */}
+                {!tut && (
+                  <button className={`rb-btn${role.kind === 'client' ? ' is-gold' : ''}`} onClick={() => setEditing(true)}>
+                    Change my setup
+                  </button>
+                )}
               </span>
               <span className="rb-ring-prep-keys">{touch ? 'Left thumb to move, right thumb for abilities. The gold button is your super, once it’s full. Walk out of a red circle before it lands. A placed ability: tap it to drop it on your target, or hold it and push the circle where you want it.' : `${[ringKeys.up, ringKeys.left, ringKeys.down, ringKeys.right].map(keyName).join('')} to move · ${keyName(ringKeys.ab1)} to ${keyName(ringKeys.ab4)} for abilities · ${keyName(ringKeys.super)} for your super · Walk out of a red circle before it lands · A placed ability: press its key, then click where it should land`}</span>
             </div>
@@ -1396,7 +1404,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 // (a super is lit only once it can be used)
                 const lit = !sup || charge >= 1 ? comboOf(ab) : null;
                 return (
-                  <button key={ab.id} data-tut={sup ? 'super' : undefined} className={`rb-ring-ab${isOut(m, me, ab) ? ' is-out' : ''}${sup ? ` is-super${charge >= 1 ? ' is-full' : ''}` : ''}${held && ab.anyState ? ' is-ready' : ''}${lit ? ' is-combo' : ''}`} style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined} onPointerDown={(e) => aimApi.current.down(e, ab)} onPointerMove={(e) => aimApi.current.move(e)} onPointerUp={(e) => aimApi.current.up(e)} onPointerCancel={(e) => aimApi.current.cancel(e)} onMouseEnter={() => setTip(ab)} onMouseLeave={() => setTip(null)} aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}>
+                  <button key={ab.id} data-tut={sup ? 'super' : undefined} className={`rb-ring-ab${isOut(m, me, ab) ? ' is-out' : ''}${sup ? ` is-super${charge >= 1 ? ' is-full' : ''}` : ''}${held && ab.anyState ? ' is-ready' : ''}${lit ? ' is-combo' : ''}${tut && !tut.allows(ab.id) ? ' is-tut-off' : ''}`} style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined} onPointerDown={(e) => aimApi.current.down(e, ab)} onPointerMove={(e) => aimApi.current.move(e)} onPointerUp={(e) => aimApi.current.up(e)} onPointerCancel={(e) => aimApi.current.cancel(e)} onMouseEnter={() => setTip(ab)} onMouseLeave={() => setTip(null)} aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}>
                     <img src={iconPicture(ab.icon)} alt="" draggable={false} />
                     {sup && charge < 1 && <i className="rb-ring-charge" />}
                     {wait > 0 && <i className="rb-ring-cool" style={{ ['--p' as string]: `${Math.min(1, wait / (full || 1)) * 100}%` }} />}

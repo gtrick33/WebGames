@@ -309,7 +309,7 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
         </div>
 
         {/* one tooltip for the whole page: whatever was last pointed at or tapped */}
-        <aside className="rb-rs-read" aria-live="polite">
+        <aside className="rb-rs-read" aria-live="polite" data-tut="read">
           {readTalent ? <TalentTip t={readTalent} /> : readCombo ? <ComboTip c={readCombo} /> : <SpellTip ab={shownAb!} cls={cls} bar={cur.bar} talents={cur.talents} />}
         </aside>
       </div>

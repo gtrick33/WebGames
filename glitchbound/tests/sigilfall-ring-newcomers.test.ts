@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';
 import { hintNow, keepLog, lessonOf, newLog, type HintKeys } from '../src/games/sigilfall/arena/lessons';
@@ -9,6 +11,7 @@ import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { plainWhy } from '../src/games/sigilfall/ui/ringAim';
 
+const read = (p: string): string => fs.readFileSync(path.resolve(__dirname, '..', p), 'utf8');
 const STEP = 1 / 30;
 const KEYS: HintKeys = { touch: false, dash: 'Space', super: 'Q' };
 const TUT_KEYS = { touch: false, ab: ['1', '2', '3', '4'], dash: 'Space', super: 'Q', nextFoe: 'Tab', nextFriend: 'F', closeIn: true };
@@ -141,6 +144,52 @@ describe('The Ring for newcomers: the tutorial', () => {
     expect(LOBBY_STEPS.find((s) => s.id === 'kit')!.text('mage')).toMatch(/talents/);
     for (const s of LOBBY_STEPS) for (const cls of CLASS_IDS) expect(s.text(cls).length).toBeGreaterThan(20);
     expect(LOBBY_STEPS.some((s) => /momentum|extras|oath/i.test(s.text('warrior')))).toBe(false);
+  });
+
+  // the owner, 2026-11-16: "during the tutorial, i suggest you block the buttons unless what the tutorial points you
+  // to press, i could open different tabs and the tutorial keeps the text and theres bugs"
+  it('while a lobby step is read, only the parts it is about can be used', () => {
+    const allow = Object.fromEntries(LOBBY_STEPS.map((s) => [s.id, [...s.allow]]));
+    // (a class and a fight on the main screen: not the setup, not friends, not the tutorial's own button again)
+    expect(allow.welcome).toEqual(['classes', 'formats']);
+    expect(allow.styles).toEqual(['styles']);
+    expect(allow.kit).toEqual(['styles', 'bar', 'combos', 'talents', 'sets']);
+    // every part allowed is a part of that step's own page, marked in it
+    const pages = { play: read('src/games/sigilfall/ui/RingScreen.tsx'), setup: read('src/games/sigilfall/ui/RingSetup.tsx') };
+    for (const s of LOBBY_STEPS) for (const spot of s.allow) expect(pages[s.page], `${s.id}: ${spot}`).toContain(`data-tut="${spot}"`);
+    // the lock is on for as long as a step is read, and a step is read only over its own page
+    const screen = pages.play;
+    expect(screen).toContain('useTutLock(!!tutStep, tutStep?.allow);');
+    expect(screen).toContain('const tutStep = tutAt && tutAt.page === page ? tutAt : null;');
+  });
+
+  it('in the practice match a step takes only the buttons it is about, and the setup can’t be changed', () => {
+    const { m, tut } = tutorialMatch('mage', 1);
+    const me = m.fighters[0]!;
+    const takes = (): boolean[] => [...me.bar, me.ult].map((id) => tut.allows(id));
+    const at = (id: string): void => {
+      tut.i = tut.steps.indexOf(id as (typeof tut.steps)[number]);
+      expect(tut.id).toBe(id);
+    };
+    for (const id of ['gates', 'screen', 'move', 'target']) {
+      at(id);
+      expect(takes(), id).toEqual([false, false, false, false, false]);
+    }
+    for (const id of ['ability', 'combo', 'circle', 'place']) {
+      at(id);
+      expect(takes(), id).toEqual([true, true, true, true, false]);
+    }
+    at('super');
+    expect(takes()).toEqual([false, false, false, false, true]);
+    expect(tut.shutWhy()).toMatch(/super/);
+    at('fight');
+    expect(takes()).toEqual([true, true, true, true, true]);
+    // the screen asks before every press, says why a shut one is shut, dims it, and offers no setup change
+    const match = read('src/games/sigilfall/ui/RingMatch.tsx');
+    expect(match).toMatch(/if \(tut && !tut\.allows\(id\)\) \{\s*say\(tut\.shutWhy\(\), undefined, true\);\s*return;/);
+    expect(match.match(/tut && !tut\.allows\(ab\.id\) \? ' is-tut-off' : ''/g)).toHaveLength(2);
+    expect(match).toMatch(/\{!tut && \(\s*<button[^>]*onClick=\{\(\) => setEditing\(true\)\}>\s*Change my setup/);
+    expect(tutorialMatch('warrior').tut.view(TUT_KEYS).text).not.toMatch(/\(Change my setup\)/);
   });
 
   it('is not rated, holds the clock, against a sparring mage', () => {

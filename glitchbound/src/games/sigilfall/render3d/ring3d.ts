@@ -106,7 +106,7 @@ export function ringFit(cssW: number, cssH: number, dpr: number): { tile: number
 export class RingStage implements RingView {
   readonly stage: Stage;
   private built = false;
-  private readonly motions = new Map<number, { m: Motion; turn: number; swing: number; clip: string; fresh: boolean; time: number; lunge: number; hurt: number; hard: boolean }>();
+  private readonly motions = new Map<number, { m: Motion; turn: number; swing: number; clip: string; fresh: boolean; time: number; lunge: number; hurt: number; hard: boolean; stand?: number }>();
   /**
    * Where each body was drawn this frame: the rules' spot, carried into a blow and back, rocked by a flinch. What is
    * worn on a fighter (the Gloamknight's gloam, a shield, a curse) is drawn here too, so it goes with the body rather
@@ -290,6 +290,11 @@ export class RingStage implements RingView {
       this.motions.set(f.id, s);
     }
     const moving = Math.hypot(f.vx, f.vy) > 1;
+    // (how planted they are, 0 running to 1 standing, eased: a blow's step and a flinch's rock are for a fighter who
+    // stands. On the run their own feet carry the blow, and a body thrown twelve forward and back under a camera that
+    // follows it, every blow, was the jitter of a Nightblade stabbing as they chased)
+    s.stand = (s.stand ?? 1) + ((moving ? 0 : 1) - (s.stand ?? 1)) * (1 - Math.exp(-dt * 10));
+    const stand = s.stand;
     const want = turnOf(Math.atan2(f.dirY, f.dirX));
     let d = (want - s.turn) % (Math.PI * 2);
     if (d > Math.PI) d -= Math.PI * 2;
@@ -303,7 +308,9 @@ export class RingStage implements RingView {
     const frozen = f.auras.some((a) => a.kind === 'immune' && a.still);
     if (f.dead) s.m.set('die', false);
     else if (f.cast) s.m.set(f.cast.channel ? 'channel' : 'cast');
-    else if (s.swing > 0) {
+    // (on the run a blow is the strike alone, then the legs again: its long recovery was a figure sliding along in a
+    // pose, blow after blow)
+    else if (s.swing > (moving && !s.fresh ? s.time * 0.5 : 0)) {
       // (from where the blow is in its clip, not the lift before it: strike.ts)
       s.m.set(s.clip, false, 0.06, s.fresh);
       if (s.fresh) s.m.t = strikeOf(cast.wardrobe?.medium, s.clip).from;
@@ -326,8 +333,8 @@ export class RingStage implements RingView {
     // a blow carries its maker into it and back: a step toward whoever it is for, out at the strike and home after.
     // And whoever is struck flashes white and is rocked a little where they stand
     const u = s.swing > 0 && s.time > 0 ? 1 - s.swing / s.time : 1;
-    const reach = s.lunge > 0 && !f.dead ? s.lunge * Math.sin(Math.PI * Math.min(1, u * 1.35)) : 0;
-    const rock = s.hurt > 0 && !f.dead ? Math.sin(s.hurt * 60) * (s.hard ? 1.6 : 0.9) * (s.hurt / 0.26) : 0;
+    const reach = s.lunge > 0 && !f.dead ? s.lunge * Math.sin(Math.PI * Math.min(1, u * 1.35)) * stand : 0;
+    const rock = s.hurt > 0 && !f.dead ? Math.sin(s.hurt * 60) * (s.hard ? 1.6 : 0.9) * (s.hurt / 0.26) * stand : 0;
     const flash = s.hurt > 0 && !f.dead ? Math.min(1, s.hurt / 0.26) * (s.hard ? 0.85 : 0.6) : 0;
     const bx = f.x + f.dirX * reach + rock;
     const by = f.y + f.dirY * reach;

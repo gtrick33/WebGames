@@ -12487,6 +12487,18 @@ html.rb-touch-playing textarea {
   }
 }
 /* every part of a screen named at once: a word pinned on the top edge of each, on one layer over the game */
+/* what a tutorial step isn't about: there, but shut, until its own step (RingCoach useTutLock; a fight's buttons by
+   arena/tutorial.ts allows) */
+.is-tut-off {
+  opacity: 0.38;
+  filter: saturate(0.4);
+  cursor: default;
+}
+.rb-coach .is-tut-off,
+.is-tut-spot .is-tut-off {
+  opacity: 1;
+  filter: none;
+}
 .rb-tut-labels {
   position: absolute;
   inset: 0;

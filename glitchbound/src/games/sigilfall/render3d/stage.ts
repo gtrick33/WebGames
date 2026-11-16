@@ -210,6 +210,8 @@ export class Stage {
     // and a step taken after the drawing left that frame with nothing on it, the land and everyone on it gone dark
     // for a blink under the HUD)
     this.pace();
+    // (what is thinned away is thinned in a pattern laid from the figure's own place in this picture: toon.ts dither)
+    this.gl.getDrawingBufferSize(LIGHT.uRes.value);
     this.groundGl.render(this.groundScene, this.camera);
     this.gl.render(this.scene, this.camera);
   }

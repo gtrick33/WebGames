@@ -78,6 +78,53 @@ export function useSpot(spot: string | null): void {
   }, [spot]);
 }
 
+/** What a person can press, tab to or type in. */
+const CONTROLS = 'button, a[href], input, select, textarea, summary, [role="radio"], [role="tab"], [role="button"], [tabindex]';
+
+/**
+ * While a tutorial step is read, only what it is about works (the owner: "block the buttons unless what the tutorial
+ * points you to press, i could open different tabs and the tutorial keeps the text and theres bugs"): every control of
+ * the game that is neither in the tutorial's own card nor inside one of the parts the step allows (`data-tut` marks)
+ * is made inert (it can't be clicked, tapped, tabbed to or typed in) and dimmed. Looked over again now and then, as
+ * the labels are, since a page may only just have been drawn. Undone when the step ends.
+ */
+export function useTutLock(on: boolean, allow: readonly string[] | null | undefined): void {
+  const key = on ? `on:${(allow ?? []).join(',')}` : '';
+  useEffect(() => {
+    if (!key) return;
+    const shut = new Set<HTMLElement>();
+    const open = (el: HTMLElement): boolean => !!el.closest('.rb-coach') || (allow ?? []).some((spot) => !!el.closest(`[data-tut="${spot}"]`));
+    const lock = (): void => {
+      const root = document.querySelector<HTMLElement>('.rb-coach')?.closest<HTMLElement>('.rb');
+      if (!root) return;
+      for (const el of root.querySelectorAll<HTMLElement>(CONTROLS)) {
+        if (open(el)) {
+          if (shut.delete(el)) {
+            el.inert = false;
+            el.classList.remove('is-tut-off');
+          }
+        } else if (!shut.has(el)) {
+          shut.add(el);
+          el.inert = true;
+          el.classList.add('is-tut-off');
+        }
+      }
+      for (const el of shut) if (!el.isConnected) shut.delete(el);
+    };
+    lock();
+    const id = window.setInterval(lock, 200);
+    return () => {
+      window.clearInterval(id);
+      for (const el of shut) {
+        el.inert = false;
+        el.classList.remove('is-tut-off');
+      }
+    };
+    // (the parts allowed, by name: a new list of the same names is the same lock)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+}
+
 /** Where an element sits inside `root`, in the page's own layout (unmoved by how the game's picture is scaled or turned). */
 function placeIn(el: HTMLElement, root: HTMLElement): { x: number; y: number; w: number; h: number } | null {
   let x = 0;

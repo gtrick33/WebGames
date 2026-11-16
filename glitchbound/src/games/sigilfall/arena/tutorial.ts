@@ -24,6 +24,13 @@ import { RANGED, type FighterSetup, type Match, type MatchEvent, type MatchSetup
  *
  * While it teaches, the match's clock is held (Match.hold), the sparring partner only does what the lesson needs, and
  * neither side can fall. The last fight starts the clock from where it stood, at the start, as a match does.
+ *
+ * And while it teaches, only what a step is about can be used (the owner, 2026-11-16: "during the tutorial, i suggest
+ * you block the buttons unless what the tutorial points you to press, i could open different tabs and the tutorial
+ * keeps the text and theres bugs"). In the lobby a step names the parts of the page that work while it is read
+ * (`allow`: RingCoach useTutLock makes everything else inert); in the match a step says which of the bar's buttons it
+ * takes (`TutorialRun.allows`), and the setup can't be changed from the gates. The tutorial's own Back, Next and Skip
+ * always work, and so does leaving.
  */
 
 /** A word pinned to whatever on the screen is marked `data-tut="<spot>"`, all of a step's at once. */
@@ -42,6 +49,8 @@ export interface LobbyStep {
   spot: string | null;
   /** Every part of the page this step names, labeled together. */
   labels?: readonly TutLabel[];
+  /** The parts of the page (their `data-tut` marks) that can be used while this step is read: nothing else can. */
+  allow: readonly string[];
   page: 'play' | 'setup';
   /** Where the words sit, so they don't cover what they talk about. */
   at: 'top' | 'bottom' | 'side';
@@ -59,23 +68,27 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
       { spot: 'rank', text: 'Your rank: titles and armor', right: true },
       { spot: 'progress', text: 'Daily challenges and more', right: true },
       { spot: 'arena', text: 'Arena: Any is fine', right: true },
-      { spot: 'loadout', text: 'What you bring: tap to read' },
+      { spot: 'loadout', text: 'What you bring' },
     ],
+    // (a class and a fight may be chosen; the way on is the tutorial's own Next)
+    allow: ['classes', 'formats'],
     page: 'play',
     at: 'side',
   },
-  { id: 'styles', title: 'Pick a playstyle', text: (cls) => `Each card is one of the two ways a ${CLASSES[cls].name} fights. Pick the one that sounds like you: its four abilities and its super are its own, ready to fight with as they are.`, spot: 'styles', page: 'setup', at: 'bottom' },
+  { id: 'styles', title: 'Pick a playstyle', text: (cls) => `Each card is one of the two ways a ${CLASSES[cls].name} fights. Pick the one that sounds like you: its four abilities and its super are its own, ready to fight with as they are.`, spot: 'styles', allow: ['styles'], page: 'setup', at: 'bottom' },
   {
     id: 'kit',
     title: 'Your setup',
-    text: () => 'Everything here is labeled. Tap any ability to read what it does and how it combines. What you choose is the talents: one from each row, and they change how your combo works. All of it is saved as you go. Now, a practice fight.',
+    text: () => 'Point at any icon, or tap it, and the box beside them says what it does. Your abilities are fixed. What you choose is the talents: one from each row, and they change how your combo works. All of it is saved as you go. Now, a practice fight.',
     spot: null,
     labels: [
-      { spot: 'bar', text: 'Your four and your super: tap to read' },
-      { spot: 'combos', text: 'How your combo goes', right: true },
-      { spot: 'talents', text: 'Talents: one a row, yours to choose' },
+      { spot: 'bar', text: 'Your four and your super' },
+      { spot: 'combos', text: 'Its combos', right: true },
+      { spot: 'talents', text: 'Talents: pick one a row' },
+      { spot: 'read', text: 'What it does', right: true },
       { spot: 'sets', text: 'Three setups, saved as you go' },
     ],
+    allow: ['styles', 'bar', 'combos', 'talents', 'sets'],
     page: 'setup',
     at: 'bottom',
   },
@@ -235,6 +248,37 @@ export class TutorialRun {
   /** Next, on a step that is read. */
   next(): void {
     if (this.readNow()) this.advance();
+  }
+
+  /**
+   * Whether the lesson takes this button now. What a step isn't about stays shut until its own step: no abilities
+   * while the screen is read or moving and choosing are learned, the four but not the super while abilities, a combo,
+   * the circle and placing are, the super alone on its step, and everything in the last fight.
+   */
+  allows(abId: string): boolean {
+    const ab = ABILITIES[abId];
+    const sup = !!ab?.super || abId === this.me.ult;
+    switch (this.id) {
+      case 'gates':
+      case 'screen':
+      case 'move':
+      case 'target':
+        return false;
+      case 'ability':
+      case 'combo':
+      case 'circle':
+      case 'place':
+        return !sup;
+      case 'super':
+        return sup;
+      default:
+        return true;
+    }
+  }
+
+  /** What a shut button says when it is pressed. */
+  shutWhy(): string {
+    return this.id === 'super' ? 'Your super first: the tutorial is showing it' : this.id === 'gates' ? 'Press I’m ready first' : 'Not yet: the tutorial gets to that next';
   }
 
   private say(note: string): void {
@@ -402,7 +446,7 @@ export class TutorialRun {
     const press = (what: string): string => (t ? `Tap ${what}` : `Press ${what}`);
     switch (this.id) {
       case 'gates':
-        return out('The entry', `Before every match you wait here behind the gates. You can still change your setup (Change my setup). When you’re ready, press I’m ready${t ? '' : ` or ${keys.dash}`}.`, 'prep');
+        return out('The entry', `Before every match you wait here behind the gates. In a real match you can still change your setup here. When you’re ready, press I’m ready${t ? '' : ` or ${keys.dash}`}.`, 'prep');
       case 'screen':
         return {
           ...out(

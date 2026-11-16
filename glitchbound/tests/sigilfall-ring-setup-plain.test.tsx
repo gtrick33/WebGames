@@ -16,6 +16,7 @@ import { TALENT_BY_ID } from '../src/games/sigilfall/arena/talents';
 import { LOBBY_STEPS } from '../src/games/sigilfall/arena/tutorial';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import { Frame } from '../src/games/sigilfall/ui/RingMatch';
+import { useTutLock } from '../src/games/sigilfall/ui/RingCoach';
 import { AbilityCard, BarRow, SetupChips, SetupEditor } from '../src/games/sigilfall/ui/RingSetup';
 
 const ROOT = path.resolve(__dirname, '..');
@@ -104,8 +105,45 @@ describe('The Ring’s setup: a playstyle and its talents, and nothing else', ()
   it('the tutorial no longer walks through extras, and says the bar can be opened and read', () => {
     expect(LOBBY_STEPS.map((s) => s.id)).not.toContain('extras');
     for (const st of LOBBY_STEPS) expect(st.text('warrior')).not.toMatch(/oath/i);
-    // (the main screen's bar is labeled as something to open and read)
-    expect(LOBBY_STEPS.find((s) => s.id === 'welcome')!.labels!.find((l) => l.spot === 'loadout')!.text).toMatch(/tap to read/);
+    // (the main screen's bar is labeled; what each icon does is read on the setup page, where its step says so)
+    expect(LOBBY_STEPS.find((s) => s.id === 'welcome')!.labels!.find((l) => l.spot === 'loadout')!.text).toBe('What you bring');
+    expect(LOBBY_STEPS.find((s) => s.id === 'kit')!.text('warrior')).toMatch(/Point at any icon, or tap it/);
+  });
+});
+
+describe('The Ring’s tutorial: only what a step is about answers', () => {
+  function Page({ on, allow }: { on: boolean; allow: string[] }) {
+    useTutLock(on, allow);
+    return (
+      <div className="rb">
+        <button id="back">Back</button>
+        <div data-tut="styles">
+          <button id="style">Rime</button>
+        </div>
+        <div data-tut="talents">
+          <button id="talent">Hoarfrost</button>
+        </div>
+        <input id="name" />
+        <aside className="rb-coach">
+          <button id="next">Next</button>
+        </aside>
+      </div>
+    );
+  }
+  it('everything else on the page is inert and dimmed, and comes back when the step ends', () => {
+    const view = render(<Page on allow={['styles']} />);
+    const el = (id: string): HTMLElement => view.container.querySelector<HTMLElement>(`#${id}`)!;
+    const shut = (id: string): boolean => el(id).inert === true && el(id).classList.contains('is-tut-off');
+    expect(['back', 'talent', 'name'].map(shut)).toEqual([true, true, true]);
+    expect(['style', 'next'].map(shut)).toEqual([false, false]);
+    // the next step allows other parts: what it allows opens, what it no longer does shuts
+    view.rerender(<Page on allow={['talents']} />);
+    expect(shut('talent')).toBe(false);
+    expect(shut('style')).toBe(true);
+    // and with the tutorial over, everything answers again
+    view.rerender(<Page on={false} allow={[]} />);
+    for (const id of ['back', 'style', 'talent', 'name', 'next']) expect(shut(id), id).toBe(false);
+    for (const id of ['back', 'style', 'talent', 'name', 'next']) expect(el(id).inert, id).toBeFalsy();
   });
 });
 

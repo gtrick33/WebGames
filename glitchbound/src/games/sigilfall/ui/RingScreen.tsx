@@ -9,7 +9,7 @@ import { rewardsBetween } from '../arena/rewards';
 import { GATES_SOLO, type FighterSetup, type MatchSetup } from '../arena/sim';
 import { CLASS_EASE, CLASS_WAY, EASE_WORD, playstyleOf } from '../arena/styles';
 import { LOBBY_STEPS, tutorialSetup } from '../arena/tutorial';
-import { Coach, useLabels, useSpot } from './RingCoach';
+import { Coach, useLabels, useSpot, useTutLock } from './RingCoach';
 import { CLASS_IDS, CLASSES } from '../data/classes';
 import { useAccount } from '../../../platform/account';
 import { classOpen } from '../progress/paidClasses';
@@ -364,15 +364,25 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   // (offered once, on a first visit: nobody who has fought here, or has been asked, is asked again)
   const firstVisit = !learn.asked && !learn.done && FORMATS.every((f) => standingOf(save, f).wins + standingOf(save, f).losses === 0);
   const putLearn = (fn: (l: NonNullable<RingSave['learn']>) => NonNullable<RingSave['learn']>): void => commit((now) => ({ ...now, learn: fn(now.learn ?? {}) }));
-  const tutStep = tut === null ? null : (LOBBY_STEPS[tut] ?? null);
+  // (a step is read only over its own page: should the page under it change all the same, it says nothing rather
+  // than talk about a page that is not there. It stood over the wrong page with the last step's words)
+  const tutAt = tut === null ? null : (LOBBY_STEPS[tut] ?? null);
+  const tutStep = tutAt && tutAt.page === page ? tutAt : null;
   useSpot(tutStep?.spot ?? null);
   useLabels(tutStep?.labels);
+  // (while a step is read, only what it is about can be used: nothing else on the page answers)
+  useTutLock(!!tutStep, tutStep?.allow);
   const goTut = (i: number): void => {
     const st = LOBBY_STEPS[i];
     if (!st) return;
-    setTut(i);
+    // (anything read or opened over the page is put away first: the step has the screen)
+    setReading(null);
+    setHelp(false);
+    setRewardsOpen(false);
+    setProgressOpen(false);
     if (st.page === 'setup' && page !== 'setup') openSetup('play');
     else if (st.page === 'play' && page !== 'play') setPage('play');
+    setTut(i);
   };
   const beginTutorial = (): void => {
     putLearn((l) => ({ ...l, asked: true }));
@@ -603,6 +613,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
 
   /* -------------------------------------------------- back, one level at a time */
   const back = (): void => {
+    // (going back is leaving the tutorial, if one is being read)
+    setTut(null);
     if (page === 'setup') setPage(setupFrom);
     else if (page === 'friends') {
       if (view) leaveRoom();
