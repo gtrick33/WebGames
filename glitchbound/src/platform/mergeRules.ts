@@ -209,8 +209,72 @@ const mergeRing: MergeRule = (local, remote, ctx) => {
     const hints = [...(isWords(ll.hints) ? ll.hints : []), ...(isWords(rl.hints) ? rl.hints : [])];
     out.learn = { asked: ll.asked === true || rl.asked === true, done: ll.done === true || rl.done === true, hints: [...new Set(hints)] };
   }
+  if (isObj(local.record) || isObj(remote.record)) out.record = mergeRingRecord(isObj(local.record) ? local.record : {}, isObj(remote.record) ? remote.record : {});
   return out;
 };
+
+/**
+ * The Ring's record (games/sigilfall/arena/record.ts), joined so that neither device's progress is lost: the history
+ * is both copies' matches, newest first, the last twenty; a class's mastery the copy with more matches with it; the
+ * day's and the week's challenges the later period's, or, the same period on both, the further along of each and every
+ * one done on either; the challenges finished, the greater; the season the later, or, the same, each format's best
+ * of the two and the seasons gone by from both.
+ */
+function mergeRingRecord(l: Obj, r: Obj): Obj {
+  const out: Obj = { ...r, ...l };
+  const lh = Array.isArray(l.history) ? l.history : [];
+  const rh = Array.isArray(r.history) ? r.history : [];
+  const byAt = new Map<number, unknown>();
+  for (const h of [...lh, ...rh]) if (isObj(h)) byAt.set(num(h.at), h);
+  out.history = [...byAt.entries()].sort((a, b) => b[0] - a[0]).slice(0, 20).map(([, h]) => h);
+  if (isObj(l.mastery) || isObj(r.mastery)) {
+    const lm = isObj(l.mastery) ? l.mastery : {};
+    const rm = isObj(r.mastery) ? r.mastery : {};
+    const mastery: Obj = {};
+    for (const cls of new Set([...Object.keys(lm), ...Object.keys(rm)])) {
+      const a = lm[cls];
+      const b = rm[cls];
+      mastery[cls] = (isObj(a) ? num(a.played) : -1) >= (isObj(b) ? num(b.played) : -1) ? a : b;
+    }
+    out.mastery = mastery;
+  }
+  for (const k of ['daily', 'weekly'] as const) {
+    const a = l[k];
+    const b = r[k];
+    if (!isObj(a) || !isObj(b)) {
+      out[k] = isObj(a) ? a : b;
+      continue;
+    }
+    const ak = typeof a.key === 'string' ? a.key : '';
+    const bk = typeof b.key === 'string' ? b.key : '';
+    if (ak !== bk) {
+      out[k] = ak > bk ? a : b;
+      continue;
+    }
+    const got: Obj = {};
+    const ag = isObj(a.got) ? a.got : {};
+    const bg = isObj(b.got) ? b.got : {};
+    for (const id of new Set([...Object.keys(ag), ...Object.keys(bg)])) got[id] = Math.max(num(ag[id]), num(bg[id]));
+    const words = (w: unknown): string[] => (isWords(w) ? w : []);
+    out[k] = { key: ak, got, done: [...new Set([...words(a.done), ...words(b.done)])], seen: [...new Set([...words(a.seen), ...words(b.seen)])] };
+  }
+  out.finished = Math.max(num(l.finished), num(r.finished));
+  const ls = l.season;
+  const rs = r.season;
+  if (isObj(ls) && isObj(rs)) {
+    if (num(ls.n) !== num(rs.n)) out.season = num(ls.n) > num(rs.n) ? ls : rs;
+    else {
+      const lb = isObj(ls.best) ? ls.best : {};
+      const rb = isObj(rs.best) ? rs.best : {};
+      const best: Obj = {};
+      for (const f of new Set([...Object.keys(lb), ...Object.keys(rb)])) best[f] = Math.max(num(lb[f]), num(rb[f]));
+      const past = new Map<number, unknown>();
+      for (const p of [...(Array.isArray(rs.past) ? rs.past : []), ...(Array.isArray(ls.past) ? ls.past : [])]) if (isObj(p)) past.set(num(p.n), p);
+      out.season = { n: num(ls.n), best, past: [...past.entries()].sort((a, b) => b[0] - a[0]).map(([, p]) => p) };
+    }
+  } else out.season = isObj(ls) ? ls : rs;
+  return out;
+}
 
 /** Rules for one save of a game that keeps more than one (by its storage key), ahead of the game's own rule. */
 export const KEY_RULES: Record<string, MergeRule> = {

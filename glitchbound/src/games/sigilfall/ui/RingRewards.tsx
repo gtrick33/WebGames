@@ -7,7 +7,7 @@ import type { Character } from '../progress/character';
 import { ownedShopLooks, ownsShopItem, shopLook } from '../progress/shopGoods';
 import type { ReactNode } from 'react';
 import { TitleFx } from '../../../components/TitleFx';
-import { allTitles, earnedTitles, RING_TITLES, titleName, titleShown, wornTitleShown, type TitleShown } from '../progress/titles';
+import { allTitles, earnedRecordTitles, earnedTitles, RING_TITLES, titleName, titleShown, wornTitleShown, type TitleShown } from '../progress/titles';
 import { BARE_LOOK, lookFits, lookOf, wornId, type Look, type LookSlot } from '../progress/wardrobe';
 import type { WornLooks } from '../render/sprites';
 
@@ -135,6 +135,7 @@ const plainTitles = (): { id: string; shown: TitleShown }[] => {
   const best = bestRating();
   return [
     ...RING_TITLES.filter((t) => best >= t.rating).map((t) => ({ id: t.id, shown: { text: t.name, fx: t.fx, before: true } })),
+    ...earnedRecordTitles().map((t) => ({ id: t.id, shown: { text: t.name, fx: t.fx, before: true } })),
     ...allTitles()
       .filter((t) => t.given)
       .map((t) => ({ id: t.id, shown: titleShown(t, { cls: 'warrior' }) })),

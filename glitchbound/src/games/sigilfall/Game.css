@@ -11202,8 +11202,8 @@ html.rb-touch-playing textarea {
 }
 .rb-ring-padlock {
   position: absolute;
-  top: 4px;
   right: 4px;
+  bottom: 4px;
   width: 11px;
   height: 13px;
   color: #ffd257;
@@ -12809,6 +12809,185 @@ html.rb-touch-playing textarea {
 }
 
 /* the result: one thing to try next time, and the tutorial's end */
+/* the Ring's record: one quiet link in the lobby, and a window of four tabs */
+.rb-pg-link {
+  justify-self: start;
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+.rb-pg-link small {
+  margin-left: 4px;
+  color: var(--rb-dim, #a79fb8);
+  font-size: 11.5px;
+}
+.rb-pg-dialog {
+  width: min(520px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 8px;
+  text-align: left;
+}
+.rb-pg-dialog h2 {
+  text-align: center;
+}
+.rb-pg-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+.rb-pg-tab {
+  padding: 5px 12px;
+  border: 1.5px solid rgb(255 210 87 / 0.35);
+  border-radius: 999px;
+  color: #d8cfbf;
+  font: 700 13px Georgia, 'Times New Roman', serif;
+  background: rgb(255 255 255 / 0.04);
+  cursor: pointer;
+}
+.rb-pg-tab.is-on {
+  border-color: #ffd257;
+  color: #2a1a06;
+  background: #ffd257;
+}
+.rb-pg-body {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding-right: 2px;
+}
+.rb-pg-block h3 {
+  margin: 0 0 4px;
+  color: #ffe39a;
+  font: 700 14px Georgia, 'Times New Roman', serif;
+}
+.rb-pg-block h3 small {
+  margin-left: 6px;
+  color: #a79fb8;
+  font: 600 11.5px Georgia, 'Times New Roman', serif;
+}
+.rb-pg-list,
+.rb-pg-mastery,
+.rb-pg-history {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rb-pg-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(60px, 120px) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  color: #e4dccd;
+  font-size: 13px;
+  background: rgb(255 255 255 / 0.04);
+}
+.rb-pg-list li:has(> :nth-child(2):last-child) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.rb-pg-list li em,
+.rb-pg-mastery li em,
+.rb-pg-history li em {
+  color: #c9a96a;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  text-align: right;
+}
+.rb-pg-list li.is-done {
+  color: #9be37f;
+}
+.rb-pg-list li.is-done em {
+  color: #9be37f;
+}
+.rb-pg-bar {
+  position: relative;
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.1);
+}
+.rb-pg-bar i,
+.rb-pg-bar.is-full {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #c9a96a, #ffd257);
+}
+.rb-pg-bar.is-full {
+  position: relative;
+  inset: auto;
+}
+.rb-pg-mastery li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) minmax(60px, 110px) 58px;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-left: 3px solid var(--c, #ffd257);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.04);
+}
+.rb-pg-mastery img {
+  width: 26px;
+  height: 26px;
+}
+.rb-pg-mastery b,
+.rb-pg-history b {
+  display: block;
+  color: #efe6d4;
+  font-size: 13px;
+}
+.rb-pg-mastery small,
+.rb-pg-history small {
+  display: block;
+  color: #a79fb8;
+  font-size: 11.5px;
+}
+.rb-pg-history li {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  color: #e4dccd;
+  font-size: 13px;
+  background: rgb(255 255 255 / 0.04);
+}
+.rb-pg-history li.is-win b {
+  color: #9be37f;
+}
+.rb-pg-history li.is-loss b {
+  color: #ff9ab0;
+}
+.rb-pg-note {
+  margin: 0;
+  color: #b9b0c8;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+@container (max-height: 430px) {
+  .rb-pg-dialog {
+    gap: 5px;
+    padding: 8px 12px;
+  }
+  .rb-pg-dialog h2 {
+    font-size: 17px;
+  }
+  .rb-pg-tab {
+    padding: 3px 10px;
+    font-size: 12px;
+  }
+}
+
 /* the match's best moment: one combo or super, whose and how much */
 .rb-rr-best {
   display: flex;
