@@ -8,6 +8,7 @@ import { bestRating, forgetBest, RANKS, RING_KEY } from '../src/games/sigilfall/
 import { nextReward, ownedRingLooks, ownsRingLook, rewardsBetween, RING_LOOKS, RING_REWARDS, ringLookId } from '../src/games/sigilfall/arena/rewards';
 import { GATES, GATES_SOLO, Match, type Aura, type FighterSetup } from '../src/games/sigilfall/arena/sim';
 import { SAMPLES } from '../src/games/sigilfall/audio/samples';
+import { bestOf } from '../src/games/sigilfall/ui/RingResult';
 import { SFX } from '../src/games/sigilfall/audio/sound';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
@@ -65,6 +66,24 @@ describe('The Ring: no Momentum (the owner: "i dont like the momentum idea, too 
     const third = hit(2);
     expect(third.dmg).toBe(first.dmg);
     expect(third.charge).toBe(first.charge);
+  });
+
+  it('a combo’s landing is kept as the hero’s best moment, the biggest of the match is the result screen’s', () => {
+    const m = duel('mage', ['m-burn'], 'warrior');
+    const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
+    expect(bestOf(m)).toBeNull();
+    mark(m, 'm-lash');
+    const hp = foe.hp;
+    m.press(0, 'm-burn');
+    wait(m, 0.6);
+    expect(me.score.best?.ab).toBe('m-burn');
+    expect(me.score.best?.combo).toBe(ABILITIES['m-burn']!.combo!.name);
+    expect(me.score.best!.n).toBeGreaterThan(0);
+    expect(me.score.best!.n).toBeLessThanOrEqual(hp - foe.hp);
+    foe.score.best = { ab: 'w-super', n: me.score.best!.n + 1 };
+    expect(bestOf(m)!.f).toBe(foe);
+    // (a player's copy has it too: it is in the score a host sends)
+    expect(JSON.stringify(m.snapshot())).toMatch(/"best":/);
   });
 
   it('is gone from the rules, from the words over a target and from a snapshot', () => {

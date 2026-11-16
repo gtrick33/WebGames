@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { nextRank, rankOf } from '../arena/ranks';
 import type { RingReward } from '../arena/rewards';
 import { RewardsEarned } from './RingRewards';
-import type { Fighter, Match } from '../arena/sim';
+import { ABILITIES } from '../arena/abilities';
+import type { BestMoment, Fighter, Match } from '../arena/sim';
 import { CLASSES } from '../data/classes';
 import { iconPicture } from '../render/art/gameIcons';
 
@@ -175,6 +176,36 @@ function Row({ f, top, mine, doll, awards }: { f: Fighter; top: { dmg: number; h
   );
 }
 
+/**
+ * The match's best moment: the combo or super that did the most in one landing, whose it was, and what (the plan the
+ * owner took up: "a best moment card on the result screen"). Nothing when nobody landed one.
+ */
+export function bestOf(match: Match): { f: Fighter; best: BestMoment } | null {
+  let out: { f: Fighter; best: BestMoment } | null = null;
+  for (const f of match.fighters) {
+    const best = f.score.best;
+    if (best && ABILITIES[best.ab] && best.n > 0 && (!out || best.n > out.best.n)) out = { f, best };
+  }
+  return out;
+}
+
+function BestCard({ match, myId }: { match: Match; myId: number }) {
+  const top = bestOf(match);
+  if (!top) return null;
+  const ab = ABILITIES[top.best.ab]!;
+  const heal = ab.role === 'heal' || ab.aim === 'friend' || ab.aim === 'self';
+  const who = top.f.id === myId ? 'You' : top.f.name;
+  return (
+    <p className={`rb-rr-best${top.f.id === myId ? ' is-mine' : ''}`}>
+      <img src={iconPicture(ab.icon)} alt="" draggable={false} />
+      <span>
+        <small>Best moment</small>
+        <b>{who}</b> · {top.best.combo ? `${top.best.combo} (${ab.name})` : ab.name}, {top.best.n.toLocaleString('en-US')} {heal ? 'healed' : 'damage'}
+      </span>
+    </p>
+  );
+}
+
 /** A match's end: who won, what it did to your standing, and who did what. */
 export function RingResult({ match, myId, won, draw, rating, rival, dolls, lesson, tutorial, againLabel, onAgain, onSetup, onExit }: { match: Match; myId: number; won: boolean; draw: boolean; rating: RatingOutcome | null; rival?: string; dolls: string[]; lesson?: string | null; tutorial?: boolean; againLabel: string; onAgain: () => void; onSetup: () => void; onExit: () => void }) {
   const kind = draw ? 'draw' : won ? 'win' : 'loss';
@@ -233,6 +264,7 @@ export function RingResult({ match, myId, won, draw, rating, rival, dolls, lesso
             </span>
           </section>
         )}
+        <BestCard match={match} myId={myId} />
         {lesson && (
           <p className="rb-rr-lesson">
             <b>Try this next time:</b> {lesson}

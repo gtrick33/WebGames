@@ -247,7 +247,7 @@ export interface Fighter {
   procs: Partial<Record<string, number>>;
   tal: TalentState;
   tune: Record<string, Tune>;
-  score: { dmg: number; heal: number; cc: number; kicks: number; combos?: number; supers?: number };
+  score: { dmg: number; heal: number; cc: number; kicks: number; combos?: number; supers?: number; best?: BestMoment };
   /** The super meter, 0 to 1. */
   charge: number;
   /** The last combo landed (the next link of a chain has to be a different one). */
@@ -258,6 +258,17 @@ export interface Fighter {
 }
 
 /** A talent's doings that aren't a plain number (arena/talents.ts), as one fighter has them. */
+/**
+ * A fighter's biggest moment of the match, for the result screen: the combo or super that did the most to one fighter
+ * in one landing (damage, or healing for one that heals), and what it was.
+ */
+export interface BestMoment {
+  ab: string;
+  n: number;
+  /** The combo's name, when it was one. */
+  combo?: string;
+}
+
 export interface Perks {
   exec: number;
   slow: { pct: number; dur: number } | null;
@@ -960,12 +971,18 @@ export class Match {
     }
     // (the spear that shatters the ice isn't counted toward breaking it as well: its Shatters are its own limit)
     this.sparing = iced;
+    const hp0 = t.hp;
     for (const e of ab.effects) {
       if (t.dead && e.k !== 'heal') break;
       if (this.apply(f, ab, t, e, boost * scale) === 'stop') break;
     }
     this.sparing = null;
     if (combo?.extra) for (const e of combo.extra) if (!t.dead || e.k === 'heal') this.apply(f, ab, t, e);
+    // (a combo's or a super's landing, the hero's best of the match if it did the most yet)
+    if ((combo || ab.super) && !f.pet) {
+      const n = Math.round(Math.abs(t.hp - hp0));
+      if (n > (f.score.best?.n ?? 0)) f.score.best = { ab: ab.id, n, ...(combo ? { combo: combo.name } : {}) };
+    }
     const tune = this.tuneOf(f, ab);
     if (!tune) return;
     // what a talent adds to a super: more that it does, and others it reaches

@@ -62,6 +62,28 @@ describe('The Ring: no momentum pop-up', () => {
     expect(CSS).not.toMatch(/rb-ring-momentum|rb-momentum-in/);
   });
 
+  it('a combo and a super throw sparks (none for less motion), with a short sound, and nothing moves the camera', () => {
+    const m = new Match({ seed: 1, map: 'sands', fighters: [fighter(0, 'mage'), fighter(1, 'warrior')] });
+    const heard: string[] = [];
+    const fx = new RingFx();
+    m.events.push({ k: 'word', id: 1, word: 'Kindled', combo: true });
+    fx.take(m, (id) => heard.push(id), 0);
+    expect(fx.sparks.length).toBe(14);
+    expect(heard).toContain('shard');
+    m.events = [{ k: 'super', id: 0, ab: 'm-super' }];
+    fx.take(m, (id) => heard.push(id), 0);
+    expect(fx.sparks.length).toBe(14 + 22);
+    // they fly out and are gone in well under a second
+    for (let i = 0; i < 30; i++) fx.age(1 / 30);
+    expect(fx.sparks.length).toBe(0);
+    const still = new RingFx();
+    still.still = true;
+    m.events = [{ k: 'word', id: 1, word: 'Kindled', combo: true }, { k: 'super', id: 0, ab: 'm-super' }];
+    still.take(m, () => {}, 0);
+    expect(still.sparks.length).toBe(0);
+    expect(read('src/games/sigilfall/render/ring.ts')).not.toMatch(/burstSparks[^\n]*quake/);
+  });
+
   it('numbers close together on one fighter are added into one; a critical hit stands on its own', () => {
     const m = new Match({ seed: 1, map: 'sands', fighters: [fighter(0, 'warlock'), fighter(1, 'warrior')] });
     const fx = new RingFx();

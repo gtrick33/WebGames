@@ -143,6 +143,14 @@ export class RingFx {
   arcs: { x: number; y: number; a: number; t: number; dur: number; color: string; edge?: string; arc: number; r: number; heavy: boolean }[] = [];
   /** Who last used each ability: when it lands, what it drinks goes back to them. */
   private readonly by = new Map<string, number>();
+  /**
+   * Sparks thrown out of a combo as it lands and out of whoever unleashes a super (the owner: "for the combo impact,
+   * just do particles and short sound, dont nudge camera and etc"): each flies out, rises a little, falls and fades.
+   * Only drawn on this screen, so nothing about the match changes for anyone. None for those who asked for less motion.
+   */
+  sparks: { x: number; y: number; vx: number; vy: number; up: number; vu: number; t: number; dur: number; color: string; w: number }[] = [];
+  /** Asked for less motion: no sparks. */
+  still = false;
   /** Life drunk: motes that leave whoever was struck and fly to whoever struck them. */
   drains: { x: number; y: number; to: number; t: number; dur: number; n: number }[] = [];
   /** A hand of shadow come up out of the ground under someone. */
@@ -192,8 +200,9 @@ export class RingFx {
         this.pops.push({ x: f.x, y: f.y - (e.combo ? 50 : 42) - above * 13, lift: wears(f) ? 12 : 0, t: 0, text: e.combo ? `${comboWord(e.word)}!` : e.word, color: e.combo ? '#ffd257' : e.bad ? '#ff9ab0' : '#e0d0ff', big: !!e.combo, word: true });
         if (e.combo) {
           this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.5, r: 26, color: '#ffd257', ring: true });
-          // (a chain's later links ring higher)
-          sound(/×[34]$/.test(e.word) ? 'epic' : 'shard', 0.7);
+          this.burstSparks(f.x, f.y, 14, ['#ffd257', '#fff2c0', '#ffb45c'], 1);
+          // (a short bright note of its own)
+          sound('shard', 0.7);
         } else if (e.word === 'Interrupted' || e.word === 'Reflected') sound('shieldBreak', 0.6);
       } else if (e.k === 'ab') {
         const ab = ABILITIES[e.ab];
@@ -313,7 +322,9 @@ export class RingFx {
         this.flashes.push({ x: f.x, y: f.y - 14, t: 0, dur: 0.45, r: 34, color: '#fff6d8', ring: false });
         this.pops.push({ x: f.x, y: f.y - 54, t: 0, text: ab.name, color: '#ffd257', big: true });
         this.supers.push({ id: f.id, t: 0 });
+        this.burstSparks(f.x, f.y, 22, [ab.color, '#fff6d8', ab.color], 1.35);
         sound('roar', 0.5);
+        sound('epic', 0.55);
       } else if (e.k === 'sigil') {
         this.flashes.push({ x: e.x, y: e.y, t: 0, dur: 0.6, r: e.id < 0 ? 22 : 34, color: '#ffe27a', ring: true });
         sound(e.id >= 0 ? 'pickupBig' : 'orb', e.id >= 0 ? 0.7 : 0.4);
@@ -385,7 +396,28 @@ export class RingFx {
     while (this.tolls.length > 9) this.tolls.shift();
   }
 
+  /** A ring of sparks thrown out from a spot, in these colors, `k` times as far and as many as a combo's. */
+  private burstSparks(x: number, y: number, n: number, colors: string[], k: number): void {
+    if (this.still) return;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + ((x * 13 + y * 7 + i * 37) % 10) * 0.06;
+      const v = (52 + ((i * 29) % 7) * 9) * k;
+      this.sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.7, up: 12, vu: 38 + ((i * 17) % 5) * 9, t: 0, dur: 0.42 + ((i * 11) % 4) * 0.06, color: colors[i % colors.length]!, w: (5.5 + (i % 3)) * (k > 1 ? 1.15 : 1) });
+    }
+    if (this.sparks.length > 120) this.sparks.splice(0, this.sparks.length - 120);
+  }
+
   age(dt: number): void {
+    for (const p of this.sparks) {
+      p.t += dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= 1 - Math.min(1, dt * 3.2);
+      p.vy *= 1 - Math.min(1, dt * 3.2);
+      p.up = Math.max(0, p.up + p.vu * dt);
+      p.vu -= 150 * dt;
+    }
+    this.sparks = this.sparks.filter((p) => p.t < p.dur);
     for (const f of this.flashes) f.t += dt;
     for (const d of this.drains) d.t += dt;
     this.drains = this.drains.filter((d) => d.t < d.dur);
@@ -887,6 +919,11 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
   for (const b of fx.bursts) landing(q, b);
   // (an arc may wait its turn: the second cut of a rend, the back half of a reaping)
   for (const a of fx.arcs) if (a.t >= 0) q.put({ kind: FX.slash, x: a.x, y: a.y, up: 13, flat: true, w: (a.r * 2) / 0.82, rot: a.a, a: a.color, b: a.edge, t: a.t / a.dur, p1: a.arc, p2: a.heavy ? 1 : 0 });
+  // a combo's and a super's sparks
+  for (const p of fx.sparks) {
+    const u = p.t / p.dur;
+    q.put({ kind: FX.spark, x: p.x, y: p.y, up: p.up, w: p.w * (1 - u * 0.5), a: p.color, t: 0.25, alpha: 1 - u * u, seed: p.w });
+  }
   // life drunk: motes that leave the one struck, swing wide and home on the one who struck
   for (const d of fx.drains) {
     const to = m.fighters[d.to];

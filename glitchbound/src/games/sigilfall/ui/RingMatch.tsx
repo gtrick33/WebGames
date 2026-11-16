@@ -446,6 +446,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     const fx = new RingFx();
     const view = new RingStage(canvas, ringMapOf(m.map));
     view.still = !!engine.settings.reducedMotion;
+    fx.still = view.still;
     const fit = (): void => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       const host = canvas.parentElement!;
