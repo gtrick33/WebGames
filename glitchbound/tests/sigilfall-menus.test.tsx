@@ -46,6 +46,18 @@ describe('a talent, opened', () => {
     expect(close).toHaveBeenCalledTimes(2);
   });
 
+  it('beside the tree (with a mouse) it is the same card in the pane, not a dialog over the tree', () => {
+    const hero = readyHero('mage', 20);
+    hero.talents = {};
+    const node = TALENTS.mage.find((n) => !cantLearn(hero, n.id))!;
+    const learn = vi.fn();
+    render(<TalentCard engine={{ hero, learn } as unknown as SigilEngine} node={node} onClose={() => undefined} inline />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const card = screen.getByRole('region', { name: node.name });
+    fireEvent.click(within(card).getByRole('button', { name: `Learn ${node.name}` }));
+    expect(learn).toHaveBeenCalledWith(node.id);
+  });
+
   it('one that can’t be learned yet says why, and has no button', () => {
     const hero = readyHero('mage', 20);
     hero.talents = {};

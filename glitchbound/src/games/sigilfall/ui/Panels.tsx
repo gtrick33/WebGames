@@ -553,7 +553,17 @@ function TalentsPanel({ engine }: { engine: SigilEngine }) {
   const cls = CLASSES[h.cls];
   const [sel, setSel] = useState<TalentNode | null>(null);
   const [tab, setTab] = useState<0 | 1 | 2>(h.spec ?? 0);
+  // a specialization just chosen (or changed): its tree is the one shown, not the tab that was open before it
+  const [seenSpec, setSeenSpec] = useState(h.spec);
+  if (seenSpec !== h.spec) {
+    setSeenSpec(h.spec);
+    setTab(h.spec ?? 0);
+    setSel(null);
+  }
   const [ask, setAsk] = useState<'reset' | 'spec' | null>(null);
+  // with a mouse a talent opens in the pane beside the tree (the tree stays in sight, and a rank is one click);
+  // on a touch screen it is a card over the tree, as there is no room beside it
+  const inline = !engine.touchMode;
   const free = freePoints(h);
   const cost = respecCost(h);
   if (h.spec === null || ask === 'spec') return <SpecChoice engine={engine} onDone={() => setAsk(null)} />;
@@ -630,6 +640,7 @@ function TalentsPanel({ engine }: { engine: SigilEngine }) {
           </div>
         </section>
         <div className="rb-talent-detail">
+              {inline && node && <TalentCard engine={engine} node={node} onClose={() => setSel(null)} inline />}
               <p className="rb-small">
                 <b style={{ color: cls.trees[h.spec].color }}>{cls.trees[h.spec].passive.name}</b> ({cls.trees[h.spec].name}): {cls.trees[h.spec].passive.text}
               </p>
@@ -643,7 +654,7 @@ function TalentsPanel({ engine }: { engine: SigilEngine }) {
               </p>
         </div>
       </div>
-      {node && <TalentCard engine={engine} node={node} onClose={() => setSel(null)} />}
+      {node && !inline && <TalentCard engine={engine} node={node} onClose={() => setSel(null)} />}
     </div>
   );
 }
@@ -655,7 +666,7 @@ function TalentsPanel({ engine }: { engine: SigilEngine }) {
  * information about them and 'learn' button instead of having to scroll down every time"). It stays up while ranks
  * are learned; a tap outside it, its cross or Escape puts it away.
  */
-export function TalentCard({ engine, node, onClose }: { engine: SigilEngine; node: TalentNode; onClose: () => void }) {
+export function TalentCard({ engine, node, onClose, inline }: { engine: SigilEngine; node: TalentNode; onClose: () => void; inline?: boolean }) {
   const h = engine.hero!;
   const cls = CLASSES[h.cls];
   const tree = cls.trees[node.tree];
@@ -675,9 +686,8 @@ export function TalentCard({ engine, node, onClose }: { engine: SigilEngine; nod
     window.addEventListener('keydown', key, true);
     return () => window.removeEventListener('keydown', key, true);
   }, [node.id, onClose]);
-  return (
-    <div className="rb-talent-pop-wrap" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="rb-talent-pop" role="dialog" aria-modal="true" aria-label={node.name} style={{ ['--tc' as string]: tree.color }}>
+  const card = (
+      <div className={`rb-talent-pop${inline ? ' is-inline' : ''}`} role={inline ? 'region' : 'dialog'} aria-modal={inline ? undefined : true} aria-label={node.name} style={{ ['--tc' as string]: tree.color }}>
         <header>
           <img src={talentIconUrl(h.cls, node, tree.color)} alt="" draggable={false} />
           <div>
@@ -701,6 +711,11 @@ export function TalentCard({ engine, node, onClose }: { engine: SigilEngine; nod
           </button>
         )}
       </div>
+  );
+  if (inline) return card;
+  return (
+    <div className="rb-talent-pop-wrap" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
+      {card}
     </div>
   );
 }

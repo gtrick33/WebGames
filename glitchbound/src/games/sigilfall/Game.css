@@ -3663,11 +3663,19 @@ html.rb-touch-playing textarea {
 .rb-node.is-ready img {
   filter: none;
 }
+/* one a point can go into now: lit, and the rest of the tree steps back (it read as a third of a panel of dim icons) */
 .rb-node.is-ready {
-  box-shadow: 0 0 0 2px var(--rb-gold);
+  border-color: #3a2a12;
+  background: color-mix(in srgb, var(--tc) 28%, #2c2140);
+  box-shadow:
+    0 0 0 2px var(--rb-gold),
+    0 0 12px 1px color-mix(in srgb, var(--rb-gold) 55%, transparent);
+}
+.rb-node.is-ready img {
+  filter: brightness(1.12) saturate(1.1);
 }
 .rb-node.is-closed {
-  opacity: 0.45;
+  opacity: 0.38;
 }
 .rb-node.is-sel {
   outline: 3px solid #ffffff;
@@ -3685,6 +3693,28 @@ html.rb-touch-playing textarea {
   border-radius: 5px;
   background: #120c08;
   font: 700 10px/13px var(--mono);
+}
+/* with a mouse the tree takes the panel's height, and a talent opens in the pane beside it */
+.rb-ui.is-mouse .rb-tree-grid {
+  grid-template-columns: 26px repeat(4, 52px);
+  grid-template-rows: repeat(7, 52px);
+  gap: 6px 14px;
+}
+.rb-ui.is-mouse .rb-node {
+  width: 52px;
+  height: 52px;
+}
+.rb-ui.is-mouse .rb-node img {
+  width: 42px;
+  height: 42px;
+}
+.rb-ui.is-mouse .rb-row-need {
+  font-size: 11px;
+}
+.rb-talent-pop.is-inline {
+  width: auto;
+  margin-bottom: 8px;
+  box-shadow: none;
 }
 .rb-talent-detail {
   min-height: 74px;
