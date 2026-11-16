@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { comboNow } from './comboMark';
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { procsNow } from './comboMark';
 import { bossPips, phaseTicks, sixWords, windingUp } from './bossbar';
 import { mechanicDue, mechanicShown } from '../progress/tips';
 import type { Callout } from '../sim/types';
@@ -145,7 +145,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
     <div className={`rb-ui${engine.touchMode ? ' is-touch' : ' is-mouse'}${engine.settings.lefty ? ' is-lefty' : ''}${engine.storyTalk() ? ' is-talk' : ''}${ui.card?.act ? ' is-act' : ''}${ui.boss ? ' is-boss' : ''}`}>
       <Hud engine={engine} />
       <CastBar engine={engine} />
-      <ComboChip engine={engine} />
+      <ProcAura engine={engine} />
       {ui.boss && <BossBar engine={engine} />}
       {engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}
       {!ui.dialogue && <Toasts engine={engine} />}
@@ -506,50 +506,70 @@ function BossBar({ engine }: { engine: SigilEngine }) {
  * already is: the spell's name over a bar that fills in its element's color. When the spell goes the bar
  * flashes full; when the cast is stopped it says so; either way it fades out.
  */
+/** How tall the hero stands, in world pixels, for the glow round them. */
+const HERO_TALL = 28;
+/** The last seconds of a proc: its glow flickers, as a warning that it is about to go. */
+const PROC_ENDING = 1.5;
+
 /**
- * The specialization's combo while it is going (data/types.ts SpecDef.combo): its name, a pip for each stack or cast,
- * and its time running down, in a chip over the hero's cast bar. Nothing shows when no combo is up.
+ * A proc waiting on the hero (an instant Flame Pillar, a free Multishot, a specialization's combo): two crescents of
+ * its color either side of the hero, where the eye already is, instead of a chip in the corner (the owner: "the
+ * flame pillar instant proc on mages (and any other proc) is currently below the quest, make it so that its a visual
+ * ... around the character"). A proc with charges lights one side a charge; one that builds in stacks glows fainter
+ * until it is whole; a whole one pulses, and the last moments flicker.
  */
-function ComboChip({ engine }: { engine: SigilEngine }) {
+function ProcAura({ engine }: { engine: SigilEngine }) {
   const el = useRef<HTMLDivElement>(null);
-  const name = useRef<HTMLElement>(null);
-  const pips = useRef<HTMLSpanElement>(null);
-  const fill = useRef<HTMLElement>(null);
   const said = useRef('');
+  const grad = useId().replace(/:/g, '');
   useFrame(engine, (w) => {
     const d = el.current;
     if (!d) return;
-    const c = comboNow(w);
-    d.hidden = !c;
-    if (!c) {
+    const c = procsNow(w)[0];
+    const p = w.player;
+    d.hidden = !c || p.dead || !!w.scene;
+    if (d.hidden || !c) {
       said.current = '';
       return;
     }
-    const key = `${c.name}|${c.n}|${c.of}`;
+    const key = `${c.id}|${c.n}|${c.of}|${c.full}`;
     if (key !== said.current) {
       said.current = key;
-      d.style.setProperty('--combo', c.color);
-      d.dataset.full = c.n >= c.of ? '1' : '0';
-      if (name.current) name.current.textContent = c.name;
-      if (pips.current) {
-        pips.current.replaceChildren(
-          ...Array.from({ length: c.of > 1 ? c.of : 0 }, (_, i) => {
-            const p = document.createElement('i');
-            p.dataset.on = i < c.n ? '1' : '0';
-            return p;
-          }),
-        );
-      }
+      d.style.setProperty('--proc', c.color);
+      d.style.setProperty('--fill', String(c.stacks ? Math.max(0.15, Math.min(1, c.n / Math.max(1, c.of))) : 1));
+      d.dataset.state = c.full ? 'full' : 'building';
+      // (a proc of several casts shows what it has left: both sides for two or more, one for the last)
+      d.dataset.sides = !c.stacks && c.of > 1 && c.n < 2 ? 'one' : 'both';
+      d.setAttribute('aria-label', c.stacks ? `${c.name}: ${c.n} of ${c.of}` : c.of > 1 ? `${c.name}: ${c.n} left` : c.name);
     }
-    if (fill.current) fill.current.style.width = `${c.left * 100}%`;
+    d.dataset.ending = c.full && c.secs < PROC_ENDING ? '1' : '0';
+    d.dataset.calm = engine.settings.reducedMotion ? '1' : '0';
+    // round the hero's body: from the feet to the top of the head, wherever the camera is and however near
+    const foot = engine.renderer.toScreenAt(p.x, p.y, 0);
+    const head = engine.renderer.toScreenAt(p.x, p.y, HERO_TALL);
+    const tall = Math.max(22, Math.min(160, foot.y - head.y));
+    d.style.setProperty('--h', `${Math.round(tall)}px`);
+    d.style.transform = `translate(${Math.round((foot.x + head.x) / 2)}px, ${Math.round((foot.y + head.y) / 2)}px)`;
   });
+  const wing = (side: 'l' | 'r') => (
+    <svg className={`rb-proc-wing is-${side}`} viewBox="0 0 40 100" aria-hidden="true">
+      <defs>
+        <linearGradient id={`${grad}-${side}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="currentColor" stopOpacity="0.95" />
+          <stop offset="0.7" stopColor="currentColor" stopOpacity="0.35" />
+          <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* a crescent, and shards along its outer edge */}
+      <path fill={`url(#${grad}-${side})`} d="M35 2 C8 22 6 78 35 98 C21 80 19 20 35 2 Z" />
+      <path fill="currentColor" opacity="0.85" d="M15 21 L3 13 L11 30 Z M9 41 L-1 37 L8 51 Z M9 60 L-1 64 L9 70 Z M15 80 L5 90 L18 87 Z" />
+      <path fill="none" stroke="#fff" strokeOpacity="0.75" strokeWidth="1.4" strokeLinecap="round" d="M33 6 C12 25 11 75 33 94" />
+    </svg>
+  );
   return (
-    <div ref={el} className="rb-combo" hidden role="status">
-      <b ref={name} />
-      <span ref={pips} className="rb-combo-pips" />
-      <i className="rb-combo-time">
-        <i ref={fill} />
-      </i>
+    <div ref={el} className="rb-proc" hidden role="status">
+      {wing('l')}
+      {wing('r')}
     </div>
   );
 }

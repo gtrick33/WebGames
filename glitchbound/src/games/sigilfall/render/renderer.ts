@@ -248,6 +248,11 @@ export class Renderer {
     return this.stage ? this.stage.project(x, y, 12) : { x: x - this.camX, y: y - this.camY };
   }
 
+  /** A point at a height over the ground (world pixels) to the screen: what stands on a spot, from its feet up. */
+  toScreenAt(x: number, y: number, h: number): { x: number; y: number } {
+    return this.stage ? this.stage.project(x, y, h) : { x: x - this.camX, y: y - this.camY - h };
+  }
+
   /**
    * On touch screens the hero stands left of the middle (right of it, left-handed), as many phone games
    * frame them: the thumb buttons and the menus on that side cover open ground instead of the fight.

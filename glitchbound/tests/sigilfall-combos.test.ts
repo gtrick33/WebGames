@@ -14,7 +14,7 @@ import { setSkill, type Character } from '../src/games/sigilfall/progress/charac
 import { castTimeOf, skillCost, tryCast } from '../src/games/sigilfall/sim/cast';
 import { addBuff, applyEffect, applyStatus, effStats, empowerFull, empowerOf, GUARD_BLOW, hurtPlayer, THORN_BLOW } from '../src/games/sigilfall/sim/combat';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
-import { comboNow } from '../src/games/sigilfall/ui/comboMark';
+import { procsNow } from '../src/games/sigilfall/ui/comboMark';
 import { newWorld, readyHero } from './sigilfall-bot';
 
 const step = (w: World, seconds: number): void => {
@@ -110,13 +110,14 @@ describe('Sigilfall: what combos are made of', () => {
     expect(w.player.cds.s1.charges).toBe(1);
     expect(skillCost(w, spec, 's1')).toBe(0);
     expect(empowerFull(empowerOf(w, 'heavy-strike')!)).toBe(true);
-    expect(comboNow(w)?.name).toBe('Test');
+    expect(procsNow(w)[0]?.name).toBe('Test');
+    expect(procsNow(w)[0]?.full).toBe(true);
     const before = e.hp;
     expect(cast(w)).toBe(true);
     step(w, 0.6);
     expect(empowerOf(w, 'heavy-strike')).toBeNull();
     expect(e.hp).toBeLessThan(before);
-    expect(comboNow(w)).toBeNull();
+    expect(procsNow(w)).toEqual([]);
   });
 
   it('a stronger cast hits harder than a plain one', () => {
@@ -166,13 +167,23 @@ describe('Sigilfall: what combos are made of', () => {
     expect(empowerOf(w, 'wrath')).toBeNull();
   });
 
+  it('every proc that waits on a cast shows round the hero, whole ones first, with the casts it has left', () => {
+    const w = heroWith('warrior', 'heavy-strike', 1);
+    // a proc that is not a specialization's combo (a Rift piece's): it is shown all the same
+    addBuff(w, { id: 'rift-test', name: 'Rift Test', dur: 6, color: '#7ac8ff', empower: { skill: 'heavy-strike', pct: 40, casts: 2 } });
+    addBuff(w, stack('b', 'Building', '#8af', 8, 5, { armor: 1 }));
+    const [first, second] = procsNow(w);
+    expect(first).toMatchObject({ name: 'Rift Test', n: 2, of: 2, full: true, stacks: false });
+    expect(second).toMatchObject({ name: 'Building', n: 1, of: 5, full: false, stacks: true });
+  });
+
   it('a state on the hero stacks to its limit and counts once a stack', () => {
     const w = heroWith('paladin', 'shield-of-the-righteous', 1);
     const armor = effStats(w).armor;
     const buff = stack('u', 'Test Unbroken', '#8af', 8, 5, { armor: 6 });
     for (let i = 0; i < 8; i++) addBuff(w, buff);
     expect(effStats(w).armor).toBe(armor + 30);
-    expect(comboNow(w)).toMatchObject({ n: 5, of: 5 });
+    expect(procsNow(w)[0]).toMatchObject({ n: 5, of: 5, full: true });
     step(w, 8.5);
     expect(effStats(w).armor).toBe(armor);
   });
