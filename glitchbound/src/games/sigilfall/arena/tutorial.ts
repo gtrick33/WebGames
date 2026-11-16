@@ -439,7 +439,7 @@ export class TutorialRun {
       case 'super':
         return out('Your super', `Your super meter fills as you fight; we filled it for you. ${t ? 'Tap the gold button' : `Press ${keys.super}`} to unleash ${sup.name}: ${sup.text}${sup.aim === 'ground' ? (t ? ' Hold the button and push to place it.' : ' Click where it should land.') : ''}`, 'super', `Your super is full. ${press(t ? 'the gold button' : keys.super)} to unleash ${sup.name}.`);
       case 'fight':
-        return out('Now, a real fight', `Your sparring partner fights back now, gently. Use everything: combos, your super, the spheres. In a team fight, your teammates’ nameplates sit under yours: ${t ? 'tap one' : `click one or press ${keys.nextFriend}`} to choose who your heals go to. Win it!`, null, 'Win the fight! Use everything you’ve learned.');
+        return out('Now, a real fight', `Your sparring partner fights back now, gently. Use everything: combos, your super, the spheres. In a team fight, your teammates’ nameplates sit under yours: ${t ? 'tap one' : `click one or press ${keys.nextFriend}`} to choose who your heals go to.${t ? ' In a team fight, the ◎ button under the enemies’ nameplates switches between them.' : ''} Win it!`, null, 'Win the fight! Use everything you’ve learned.');
     }
   }
 }
