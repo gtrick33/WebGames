@@ -12494,11 +12494,6 @@ html.rb-touch-playing textarea {
   filter: saturate(0.4);
   cursor: default;
 }
-.rb-coach .is-tut-off,
-.is-tut-spot .is-tut-off {
-  opacity: 1;
-  filter: none;
-}
 .rb-tut-labels {
   position: absolute;
   inset: 0;

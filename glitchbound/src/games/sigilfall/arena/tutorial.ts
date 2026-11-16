@@ -90,7 +90,8 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
     ],
     allow: ['styles', 'bar', 'combos', 'talents', 'sets'],
     page: 'setup',
-    at: 'bottom',
+    // (at the side, under the box that reads the icons: along the bottom it lay over the talents it asks to be chosen)
+    at: 'side',
   },
 ];
 
