@@ -57,7 +57,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     objective: { kind: 'kill', region: 'sunscorch', count: 6, enemies: ['legion-miner', 'legion-bonecaller', 'bone-golem'], label: 'Defeat the Host’s diggers at the Ashen Dig' },
     after: ['the-fallen-obelisk'],
     zone: 'sunscorch',
-    level: 32,
+    level: 31,
     reward: { xp: 1200, gold: 290 },
   },
   {
@@ -68,7 +68,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     objective: { kind: 'kill', region: 'sunscorch', count: 1, enemies: ['khamsin'], label: 'Defeat Khamsin at the Raiders’ Rest' },
     after: ['the-hollow-dig'],
     zone: 'sunscorch',
-    level: 33,
+    level: 31,
     reward: { xp: 1700, gold: 450, item: { rarity: 'rare' }, text: 'Khamsin’s riders scatter into the dunes. The Host has no guides left in the desert, and the caravan roads are safer.' },
   },
   {
@@ -80,7 +80,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     objective: { kind: 'explore', spot: 'sunken-gate', label: 'Find the Sunken Gate in the far east' },
     after: ['the-hollow-dig'],
     zone: 'sunscorch',
-    level: 33,
+    level: 32,
     reward: { xp: 1150, gold: 300 },
   },
   {
@@ -92,7 +92,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     objective: { kind: 'boss', boss: 'the-sand-warden', label: 'Defeat the Sand Warden in the Tomb of the Sun King' },
     after: ['the-sunken-gate'],
     zone: 'sunscorch',
-    level: 33,
+    level: 32,
     reward: { xp: 2200, gold: 400, item: { rarity: 'rare' } },
   },
   {
@@ -104,7 +104,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     objective: { kind: 'boss', boss: 'the-sun-king', label: 'Defeat the Sun King and take the Sigil of the Sun' },
     after: ['the-sand-warden'],
     zone: 'sunscorch',
-    level: 34,
+    level: 32,
     reward: {
       xp: 4250,
       gold: 1100,
@@ -143,7 +143,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     objective: { kind: 'kill', region: 'sunscorch', count: 1, enemies: ['the-dune-tyrant'], label: 'Defeat the Dune Tyrant in Scorpion Hollow' },
     after: ['venom-for-the-still'],
     zone: 'sunscorch',
-    level: 32,
+    level: 31,
     reward: { xp: 1400, gold: 450, item: 'tyrant-carapace', text: 'Kasim has the Tyrant’s shell made into a breastplate for you. Then he pours a drink at his grandfather’s grave.' },
   },
   /* -------------------------------------------------- Zahra's sand-ship */
@@ -189,7 +189,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     objective: { kind: 'loot', region: 'sunscorch', item: 'Sun Seal', from: ['tomb-scarab'], chance: 0.3, count: 6, label: 'Take Sun Seals from tomb scarabs' },
     after: ['the-hollow-dig'],
     zone: 'sunscorch',
-    level: 33,
+    level: 32,
     reward: { xp: 1000, gold: 300 },
   },
   {
@@ -200,7 +200,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     objective: { kind: 'explore', spot: 'necropolis', label: 'Reach the Necropolis of Ras' },
     after: ['scarab-seals'],
     zone: 'sunscorch',
-    level: 33,
+    level: 32,
     reward: { xp: 1150, gold: 420, item: 'sunscribe-seal', text: 'The temple still stands, and its doors are open. Ibbi gives you the seal of the Sun King’s own scribe to thank you.' },
   },
 ];

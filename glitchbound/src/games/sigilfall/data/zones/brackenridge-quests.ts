@@ -57,7 +57,7 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     objective: { kind: 'kill', region: 'brackenridge', count: 1, enemies: ['the-grey-lady'], label: 'Lay the Grey Lady to rest in the Old Barrows' },
     after: ['the-widows-song'],
     zone: 'brackenridge',
-    level: 8,
+    level: 7,
     reward: {
       xp: 450,
       gold: 120,

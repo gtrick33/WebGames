@@ -59,7 +59,7 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     objective: { kind: 'kill', region: 'glimmerwood', count: 1, enemies: ['prince-thistlemourn'], label: 'Defeat Prince Thistlemourn at the Thorn Court' },
     after: ['the-pale-pavilion'],
     zone: 'glimmerwood',
-    level: 36,
+    level: 34,
     reward: {
       xp: 4400,
       gold: 1050,
@@ -77,7 +77,7 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     objective: { kind: 'event', event: 'thorn-song', label: 'Protect Silvaine at the Thorn Court while she sings' },
     after: ['the-pale-pavilion'],
     zone: 'glimmerwood',
-    level: 36,
+    level: 34,
     reward: {
       xp: 4400,
       gold: 1050,
@@ -94,7 +94,7 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     objective: { kind: 'talk', npc: 'lady-silvaine', label: 'Talk to Lady Silvaine in Lumen Glade' },
     after: ['the-thorn-court', 'silvaines-song'],
     zone: 'glimmerwood',
-    level: 36,
+    level: 35,
     reward: { xp: 1600, gold: 400, perk: 'sigil-thorns', text: 'The clans agree. Their thorn archers and dryads will march when the Regent calls. Elyra now carries three sigils: Embers, Sun and Thorns. The next place on the wardens’ map is the Vault of Rime, in Rimeheld, west of the Glimmerwood.' },
   },
   /* ------------------------------------------------------ Silvaine's well */
@@ -185,7 +185,7 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     objective: { kind: 'kill', region: 'glimmerwood', count: 1, enemies: ['the-pale-hart'], label: 'Put the Pale Hart to rest in the Hart’s Dell' },
     after: ['the-harts-trail'],
     zone: 'glimmerwood',
-    level: 35,
+    level: 34,
     reward: { xp: 2300, gold: 540, item: 'harts-antler', text: 'Old Root gives you an antler the Hart shed at his pool long ago, before the blight. He says the Hart would want it carried by someone fast.' },
   },
 ];

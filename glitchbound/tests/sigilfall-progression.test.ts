@@ -6,7 +6,8 @@ import { QUESTS, QUEST_DEFS } from '../src/games/sigilfall/data/quests';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
 import type { QuestDef, RegionId } from '../src/games/sigilfall/data/types';
 import { ZONES } from '../src/games/sigilfall/data/zones';
-import { respecCost } from '../src/games/sigilfall/progress/character';
+import { addXp, levelGated, newCharacter, respecCost, startQuests, trackedQuest } from '../src/games/sigilfall/progress/character';
+import { meanwhile } from '../src/games/sigilfall/progress/waiting';
 import { migrate } from '../src/games/sigilfall/progress/save';
 import { ultFloor } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero } from './sigilfall-bot';
@@ -26,7 +27,7 @@ const floor = (r: RegionId): number => REGIONS[r]!.levels[0];
  * way to each (or what its objective asks), XP as the game pays it (rewards already rebalanced, falloff
  * for content the hero has out-grown). Returns the hero's level on first reaching each band.
  */
-function campaign(full: boolean): Record<string, number> {
+function campaign(full: boolean, stalls?: { quest: string; at: number; needs: number }[]): Record<string, number> {
   const main = mainStory(QUEST_DEFS);
   const list = QUESTS.filter((q) => full || main.has(q.id));
   const ids = new Set(list.map((q) => q.id));
@@ -47,6 +48,11 @@ function campaign(full: boolean): Record<string, number> {
     // what the hero is level for (a quest with a level waits for it, and nobody goes to a land far above
     // them while there is something nearer to do), lowest band first
     const fit = open.filter((q) => (!q.level || q.level <= level) && floor(band(q)) <= level + 1);
+    // nothing the hero is level for: they wait on the lowest gate (and the model takes it all the same)
+    if (!fit.length && stalls) {
+      const g = open.filter((x) => x.level && x.level > level).sort((a, b) => a.level! - b.level!)[0];
+      if (g) stalls.push({ quest: g.id, at: level + xp / xpToNext(level), needs: g.level! });
+    }
     const ready = (fit.length ? fit : open).sort((a, b) => floor(band(a)) - floor(band(b)) || (a.level ?? 0) - (b.level ?? 0));
     const q = ready[0];
     if (!q) break;
@@ -79,6 +85,14 @@ describe('Sigilfall: progression', () => {
       const [lo, hi] = REGIONS[b as RegionId]!.levels;
       expect(lv, `${b}: L${lv.toFixed(1)} for ${lo}-${hi}`).toBeLessThanOrEqual(hi);
     }
+  });
+
+  it('a hero who does everything never has to wait on a quest’s level with nothing else to do', () => {
+    // (the gates of the Barrows, the Sunscorch, the Glimmerwood and Rimeheld were up to two levels above what every
+    // quest there pays: the only way on was to hunt. A quarter of a level is a few packs on the way.)
+    const stalls: { quest: string; at: number; needs: number }[] = [];
+    campaign(true, stalls);
+    for (const s of stalls) expect(s.needs - s.at, `${s.quest} waits for ${s.needs} at L${s.at.toFixed(2)}`).toBeLessThanOrEqual(0.3);
   });
 
   it('side quests pay less than they used to; out-grown content pays less still', () => {
@@ -134,5 +148,34 @@ describe('Sigilfall: progression', () => {
     expect(respecCost(c)).toBe(400);
     const save = migrate({ v: 6, heroes: [{ cls: 'mage', level: 30, quests: {}, talents: { 'mage-a1': 1 } }], last: 0 })!;
     expect((save.heroes[0] as { freeRespec?: boolean }).freeRespec).toBe(true);
+  });
+});
+
+describe('Sigilfall: while the story waits for a level', () => {
+  it('the tracker suggests a side quest, never the first crypt again on Heroic', () => {
+    // a hero whose story waits on Hearthstead's riders: every main quest before it done, a side quest on offer
+    const c = newCharacter('mage', 'W', 'w', 0);
+    const main = mainStory(QUEST_DEFS);
+    const gate = QUEST_DEFS['hearth-the-riders-come']!;
+    const before = new Set<string>();
+    const walk = (id: string): void => {
+      if (before.has(id)) return;
+      before.add(id);
+      for (const a of QUEST_DEFS[id]?.after ?? []) walk(a);
+    };
+    for (const a of gate.after ?? []) walk(a);
+    for (const id of before) c.quests[id] = { state: 'done', n: 1 };
+    while (c.level < gate.level! - 1) addXp(c, xpToNext(c.level));
+    for (const id of Object.keys(REGIONS) as RegionId[]) if (!c.unlocked.includes(id)) c.unlocked.push(id);
+    c.quests['heroic'] = { state: 'active', n: 0 };
+    startQuests(c);
+    expect(levelGated(c).some((q) => main.has(q.id))).toBe(true);
+    const m = meanwhile(c);
+    expect(m, 'something to do').not.toBeNull();
+    expect(main.has(m!.q.id)).toBe(false);
+    expect(m!.q.id).not.toBe('heroic');
+    // taken, it is what the tracker follows, before the replay
+    c.quests[m!.q.id] = { state: 'active', n: 0 };
+    expect(trackedQuest(c)?.id).toBe(m!.q.id);
   });
 });

@@ -79,7 +79,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     objective: { kind: 'event', event: 'hearth-riders', label: 'Drive the riders out of Hearthstead’s square' },
     after: ['the-clan-stones'],
     zone: 'amberfield',
-    level: 20,
+    level: 19,
     reward: { xp: 900, gold: 220, text: 'The square is clear. Outside the wall, the Host is gathering again.' },
   },
   {
@@ -91,7 +91,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     objective: { kind: 'event', event: 'hearth-wall', label: 'Hold Hearthstead’s north gate' },
     after: ['hearth-the-riders-come'],
     zone: 'amberfield',
-    level: 21,
+    level: 20,
     reward: { xp: 1100, gold: 260, text: 'The gate held through three attacks. Then something big starts down the north road, and the riders cheer.' },
   },
   {

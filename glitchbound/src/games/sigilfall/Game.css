@@ -3852,6 +3852,15 @@ html.rb-touch-playing textarea {
 .rb-tracker.is-gated span {
   color: var(--rb-dim);
 }
+/* something to do while the story waits for a level (progress/waiting.ts) */
+.rb-tracker-wait {
+  font-style: normal;
+  font-size: 11.5px;
+  color: var(--rb-text);
+}
+.rb-tracker-wait b {
+  color: #8fd0ff;
+}
 .rb-done ul {
   margin: 6px 0 0;
   padding-left: 18px;

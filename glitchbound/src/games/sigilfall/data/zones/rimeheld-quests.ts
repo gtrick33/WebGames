@@ -67,7 +67,7 @@ export const RIMEHELD_QUESTS: QuestDef[] = [
     objective: { kind: 'boss', boss: 'jarl-hrimfang', label: 'Defeat Jarl Hrimfang in the Rimeheld Vault' },
     after: ['the-vault-door'],
     zone: 'rimeheld',
-    level: 37,
+    level: 36,
     reward: { xp: 3000, gold: 600, item: { rarity: 'rare' }, text: 'Hrimfang falls to his knees and gives up, and ash-gold spills out of his coat. Later, Sigrun spares his life and banishes him from the north. But deeper in the vault, something huge is waking up.' },
   },
   {
@@ -79,7 +79,7 @@ export const RIMEHELD_QUESTS: QuestDef[] = [
     objective: { kind: 'boss', boss: 'the-rime-wyrm', label: 'Defeat the Rime Wyrm at the bottom of the Rimeheld Vault' },
     after: ['the-traitor-jarl'],
     zone: 'rimeheld',
-    level: 38,
+    level: 37,
     reward: {
       xp: 5200,
       gold: 1150,

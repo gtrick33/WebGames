@@ -78,7 +78,7 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     objective: { kind: 'explore', spot: 'kings-mound', label: 'Find the Kings’ Mound, west of Lantern Hill' },
     after: ['cael-the-hostel'],
     zone: 'ashen-barrows',
-    level: 26,
+    level: 25,
     reward: { xp: 900, gold: 240 },
   },
   {
@@ -90,7 +90,7 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     objective: { kind: 'boss', boss: 'king-hrodric', label: 'Defeat King Hrodric in the Barrow of Kings' },
     after: ['the-kings-mound'],
     zone: 'ashen-barrows',
-    level: 27,
+    level: 25,
     reward: { xp: 1600, gold: 300, item: { rarity: 'rare' } },
   },
   {
@@ -102,7 +102,7 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     objective: { kind: 'boss', boss: 'sir-corvane', label: 'Defeat Sir Corvane in the Barrow of Kings' },
     after: ['the-barrow-king'],
     zone: 'ashen-barrows',
-    level: 28,
+    level: 26,
     reward: {
       xp: 3300,
       gold: 900,

@@ -670,9 +670,14 @@ export function trackedQuest(c: Character, here?: RegionId): QuestDef | undefine
   if (chosen && (questState(c, chosen.id) === 'active' || questState(c, chosen.id) === 'ready')) return chosen;
   const list = QUESTS.filter((q) => questState(c, q.id) === 'active' || questState(c, q.id) === 'ready');
   const main = list.filter((q) => isMainQuest(q.id));
+  // (a dungeon again on a harder tier comes last: it took the tracker while the story waited for a level)
+  const plain = list.filter((q) => !isReplay(q));
   const at = (l: QuestDef[]): QuestDef | undefined => (here ? l.find((q) => questRegion(q) === here) : undefined);
-  return at(main) ?? main[0] ?? at(list) ?? list[0];
+  return at(main) ?? main[0] ?? at(plain) ?? plain[0] ?? at(list) ?? list[0];
 }
+
+/** A quest that sends the hero through a dungeon they have done again, on a harder tier (Heroic Deeds). */
+export const isReplay = (q: QuestDef): boolean => q.objective.kind === 'clear' && q.objective.tier > 0;
 
 /** Follows a quest (null: back to following the story). */
 export function trackQuest(c: Character, id: string | null): void {

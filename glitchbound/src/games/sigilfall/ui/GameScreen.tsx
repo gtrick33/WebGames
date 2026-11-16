@@ -11,11 +11,12 @@ import { REGIONS, TIERS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import type { ResourceDef } from '../data/types';
 import type { SigilEngine } from '../engine';
-import { currentObjective, freePoints, HOME, levelGated, questProgress, questState, SLOT_LEVELS, trackedQuest } from '../progress/character';
+import { currentObjective, freePoints, HOME, isReplay, levelGated, questProgress, questState, SLOT_LEVELS, trackedQuest } from '../progress/character';
 import { SPEC_LEVEL } from '../data/talents';
 import { modLines } from '../progress/describe';
 import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
 import { questRewards } from '../progress/rewards';
+import { meanwhile } from '../progress/waiting';
 import { wornLooks } from '../progress/wardrobe';
 import { paragonFree, paragonXp } from '../progress/paragon';
 import { itemMods, itemName, usableBy } from '../progress/items';
@@ -705,11 +706,21 @@ function Tracker({ engine }: { engine: SigilEngine }) {
     const at = r?.hudBoxes.get('quest');
     el.classList.toggle('is-under-speech', !!r && !!at && r.speechBoxes.some((s) => boxesMeet(s, at, 2)));
   });
-  const q = trackedQuest(h, engine.world?.region.id);
+  const followed = trackedQuest(h, engine.world?.region.id);
   if (engine.ui.boss) return null;
   // the main story waiting for a level: said, so it never just stops (PROGRESSION_BALANCE.md G)
-  const storyOn = !!q && isMainQuest(q.id);
+  const storyOn = !!followed && isMainQuest(followed.id);
   const gate = storyOn ? undefined : levelGated(h).find((x) => isMainQuest(x.id));
+  // and something to do meanwhile, unless what is followed already is one
+  const wait = gate ? meanwhile(h, engine.world?.region.id) : null;
+  // (a dungeon again on a harder tier steps aside for it: it was all the tracker had to say while the story waited)
+  const q = followed && wait && isReplay(followed) && h.tracked !== followed.id ? undefined : followed;
+  const waitLine = wait && wait.q.id !== q?.id && (
+    <em className="rb-tracker-wait">
+      Meanwhile: <b>{wait.q.name}</b>
+      {wait.taken ? (wait.land ? ` in ${wait.land}` : '') : ` from ${wait.giver}${wait.land ? `, ${wait.land}` : ''}`}
+    </em>
+  );
   if (!q) {
     return gate ? (
       <div ref={setBox} className="rb-tracker is-main is-gated">
@@ -718,6 +729,7 @@ function Tracker({ engine }: { engine: SigilEngine }) {
           {gate.name}
         </strong>
         <span>Opens at level {gate.level}</span>
+        {waitLine}
       </div>
     ) : null;
   }
@@ -744,6 +756,7 @@ function Tracker({ engine }: { engine: SigilEngine }) {
         {!ready && pr.of > 1 ? ` ${pr.n}/${pr.of}` : ''}
       </span>
       {gate && <em className="rb-tracker-gate">Next story quest opens at level {gate.level}</em>}
+      {waitLine}
     </button>
   );
 }
