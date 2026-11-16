@@ -38,7 +38,7 @@ export const RIMEHELD = wildRegion(
     ],
     pois: [
       // the way down: the Host and Hrimfang's giants have broken the wardens' seal
-      { at: [0.2, 0.3], r: 11, kind: 'cave', level: 38, packs: [['frost-giant', 'legion-huscarl'], ['rime-wraith', 'legion-spearman', 'legion-huscarl']], entrance: { to: 'rimeheld-vault', label: 'The Rimeheld Vault', minLevel: 37 }, spot: { id: 'vault-door', name: 'The Vault Door' } },
+      { at: [0.2, 0.3], r: 11, kind: 'cave', level: 38, packs: [['frost-giant', 'legion-huscarl'], ['rime-wraith', 'legion-spearman', 'legion-huscarl']], entrance: { to: 'rimeheld-vault', label: 'The Rimeheld Vault', minLevel: 36 }, spot: { id: 'vault-door', name: 'The Vault Door' } },
       { at: [0.45, 0.75], r: 11, kind: 'den', level: 36, packs: [['ice-wolf', 'ice-wolf', 'ice-wolf'], ['ice-wolf', 'ice-wolf']], rare: 'old-whitefang', spot: { id: 'whitefang-den', name: 'Whitefang’s Den' } },
       { at: [0.5, 0.25], r: 10, kind: 'camp', level: 36, packs: [['frost-giant', 'legion-huscarl'], ['frost-giant', 'ice-wolf'], ['legion-spearman', 'legion-huscarl']], elite: true, spot: { id: 'giants-hearth', name: 'The Giants’ Hearth' }, chest: 'rare' },
       { at: [0.25, 0.65], r: 9, kind: 'ruin', level: 37, packs: [['rime-wraith', 'rime-wraith'], ['rime-wraith', 'legion-huscarl']], spot: { id: 'frozen-shrine', name: 'The Frozen Shrine' }, chest: 'common' },

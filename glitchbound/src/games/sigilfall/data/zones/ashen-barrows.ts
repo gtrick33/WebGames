@@ -71,7 +71,7 @@ export const ASHEN_BARROWS = wildRegion(
           ['wight-archer', 'wight-archer', 'barrow-wight'],
         ],
         elite: true,
-        entrance: { to: 'barrow-of-kings', label: 'The Barrow of Kings', minLevel: 27 },
+        entrance: { to: 'barrow-of-kings', label: 'The Barrow of Kings', minLevel: 25 },
         spot: { id: 'kings-mound', name: 'The Kings’ Mound' },
       },
       {

@@ -51,7 +51,7 @@ export const SUNSCORCH = wildRegion(
           ['sun-mummy', 'sun-mummy'],
           ['legion-bonecaller', 'legion-miner', 'legion-miner'],
         ],
-        entrance: { to: 'tomb-of-the-sun-king', label: 'The Tomb of the Sun King', minLevel: 33 },
+        entrance: { to: 'tomb-of-the-sun-king', label: 'The Tomb of the Sun King', minLevel: 32 },
         spot: { id: 'sunken-gate', name: 'The Sunken Gate' },
       },
       // the Host's dead miners digging for the tomb

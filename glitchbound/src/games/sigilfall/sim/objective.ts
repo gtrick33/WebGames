@@ -79,7 +79,13 @@ export function rankedQuests(w: World): QuestDef[] {
   const h = w.hero;
   const here = w.region.id;
   const active = [...activeQuests(h), ...readyQuests(h)];
-  const rank = (q: QuestDef): number => (q.id === h.tracked ? 8 : 0) + (isMainQuest(q.id) ? 4 : 0) + (questWhere(h, q) === here ? 1 : 0);
+  // inside the dungeon a quest sent the hero to clear, on the tier it wants, that quest leads: the arrow goes through
+  // the rooms, not back out to the story (a hero who walked into the Heroic crypt was pointed straight at the door)
+  const clearing = (q: QuestDef): boolean => {
+    const o = currentObjective(h, q);
+    return o.kind === 'clear' && o.region === here && o.tier === w.tier && questState(h, q.id) === 'active';
+  };
+  const rank = (q: QuestDef): number => (clearing(q) ? 16 : 0) + (q.id === h.tracked ? 8 : 0) + (isMainQuest(q.id) ? 4 : 0) + (questWhere(h, q) === here ? 1 : 0);
   return active.sort((a, b) => rank(b) - rank(a));
 }
 

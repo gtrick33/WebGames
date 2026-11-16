@@ -8,9 +8,12 @@ import type { QuestDef, RegionId } from '../src/games/sigilfall/data/types';
 import { ZONES } from '../src/games/sigilfall/data/zones';
 import { addXp, levelGated, newCharacter, respecCost, startQuests, trackedQuest } from '../src/games/sigilfall/progress/character';
 import { meanwhile } from '../src/games/sigilfall/progress/waiting';
+import { objectiveRegion, questSteps } from '../src/games/sigilfall/progress/handin';
+import { parseRegion } from '../src/games/sigilfall/sim/map';
 import { migrate } from '../src/games/sigilfall/progress/save';
 import { ultFloor } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero } from './sigilfall-bot';
+import { objectiveTarget } from '../src/games/sigilfall/sim/objective';
 
 /**
  * The progression rebalance (PROGRESSION_BALANCE.md Part 2): the campaign model for XP (a main-story-only
@@ -177,5 +180,45 @@ describe('Sigilfall: while the story waits for a level', () => {
     // taken, it is what the tracker follows, before the replay
     c.quests[m!.q.id] = { state: 'active', n: 0 };
     expect(trackedQuest(c)?.id).toBe(m!.q.id);
+  });
+});
+
+describe('Sigilfall: a quest never sends a hero to a door they can’t open', () => {
+  it('every land a quest sends a hero into lets them in at the quest’s level', () => {
+    // the least level of each way into a land (the roads and dungeon doors that say "Too dangerous before level N")
+    const door = new Map<string, number>();
+    for (const r of Object.values(REGIONS)) {
+      let m;
+      try {
+        m = parseRegion(r);
+      } catch {
+        continue;
+      }
+      for (const pm of m.markers) {
+        const k = pm.marker as { kind: string; to?: string; minLevel?: number };
+        if (k.kind === 'exit' && k.to && k.minLevel) door.set(k.to, Math.min(door.get(k.to) ?? Infinity, k.minLevel));
+      }
+    }
+    for (const q of QUESTS) {
+      if (!q.level) continue;
+      for (const o of questSteps(q)) {
+        const where = objectiveRegion(q, o);
+        const min = where ? door.get(where) : undefined;
+        if (min !== undefined) expect(min, `${q.id} opens at ${q.level}, but ${where} is shut before ${min}`).toBeLessThanOrEqual(q.level);
+      }
+    }
+  });
+});
+
+describe('Sigilfall: inside the dungeon a quest sent the hero to clear', () => {
+  it('the arrow leads through its rooms, not back out to the story', () => {
+    const h = readyHero('warrior', 30);
+    h.quests['heroic'] = { state: 'active', n: 0 };
+    // a story quest elsewhere, which would otherwise come first
+    const story = QUESTS.find((q) => mainStory(QUEST_DEFS).has(q.id) && q.objective.kind === 'talk')!;
+    h.quests[story.id] = { state: 'active', n: 0 };
+    h.tier = 1;
+    const w = newWorld('crypt', h, 1, 1);
+    expect(objectiveTarget(w)?.quest).toBe('heroic');
   });
 });
