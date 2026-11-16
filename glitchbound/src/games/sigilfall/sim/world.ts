@@ -100,6 +100,8 @@ export interface KeyRun {
   end: { time: number; up: number; marks: number; stone: number; best: boolean; forged?: string[] } | null;
   /** The hero's level when the run began: below SYNC_BELOW the stone meets them at their own strength. */
   heroLevel: number;
+  /** The clock is running: from the hero's first step or blow, not while the land loads and the run's card is read. */
+  going?: boolean;
 }
 
 interface EncounterState {
@@ -2275,7 +2277,12 @@ export class World {
   /** The clock runs (at full speed even while the hero is down), enemies rage, blood pools heal. */
   private updateKeyRun(rawDt: number, dt: number): void {
     const k = this.keyRun!;
-    if (!k.end) k.t += rawDt;
+    // (the clock waits for the hero to set off: a step, a blow, a skill, or a fight starting by itself)
+    if (!k.going) {
+      const i = this.input;
+      k.going = !!(i.mx || i.my || i.holdBasic || i.casts.length || this.encounters.some((e) => e.state !== 'idle') || this.coop);
+    }
+    if (!k.end && k.going) k.t += rawDt;
     if (k.affixes.includes('raging')) {
       for (const e of this.enemies) {
         if (e.dead || e.boss || e.dummy || this.raged.has(e) || e.hp > e.maxHp * 0.3) continue;

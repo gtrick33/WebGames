@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { SKILLS } from '../data/skills';
+import { TALENTS } from '../data/talents';
+import { buildHero } from '../progress/build';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { useAccount } from '../../../platform/account';
 import { BOSSES } from '../data/bosses';
@@ -13,6 +16,8 @@ import { iconsReady } from '../render/art/gameIcons';
 import { heldWeapon, heroDollUrl, heroLook, portraitUrl } from '../render/sprites';
 import { clockText } from '../sim/world';
 import { Doll } from './Doll';
+import { SkillIcon } from './common';
+import { RiftGuide } from './RiftGuide';
 import { classEmblem } from './classEmblem';
 import { ScreenGate } from './ScreenGate';
 
@@ -26,6 +31,27 @@ function lastPick(): { cls: ClassId; spec: 0 | 1 | 2 } {
     /* nothing kept */
   }
   return { cls: 'warrior', spec: 0 };
+}
+
+/** Whether this device has opened the Trials before (the guide is open the first time, folded after). */
+const SEEN_KEY = 'sigilfall.rift.seen';
+function firstVisit(): boolean {
+  try {
+    if (localStorage.getItem(SEEN_KEY)) return false;
+    localStorage.setItem(SEEN_KEY, '1');
+  } catch {
+    /* a browser that keeps nothing: the guide is open each time */
+  }
+  return true;
+}
+/** The dungeon chosen last, kept on this device. */
+const LAND_KEY = 'sigilfall.rift.land';
+function lastLand(): string | null {
+  try {
+    return localStorage.getItem(LAND_KEY);
+  } catch {
+    return null;
+  }
 }
 
 /** A dungeon's face on its card: its last boss. */
@@ -57,11 +83,31 @@ export function RiftScreen({ engine, onBack }: { engine: SigilEngine; onBack: ()
   const [stone, setStone] = useState(top);
   const at = Math.max(1, Math.min(top, stone));
   const pool = riftDungeons(top);
-  const [region, setRegion] = useState(pool[0]!.id);
+  // the one played last, or (the first time) not the Chapel Crypt every story hero has just come out of
+  const [region, setRegionState] = useState(() => {
+    const last = lastLand();
+    return pool.find((r) => r.id === last)?.id ?? (pool.find((r) => r.id !== 'crypt') ?? pool[0]!).id;
+  });
+  const setRegion = (id: RegionDef['id']): void => {
+    setRegionState(id);
+    try {
+      localStorage.setItem(LAND_KEY, id);
+    } catch {
+      /* nothing kept */
+    }
+  };
+  const [first] = useState(firstVisit);
   const picked = pool.find((r) => r.id === region) ?? pool[0]!;
   const c = CLASSES[pick.cls];
   const path = c.trees[pick.spec];
   const hero = useMemo(() => trialHero(pick.cls, pick.spec, top), [pick.cls, pick.spec, top]);
+  // what the champion carries: the bar they fight with, and the talents that change it most (the ones naming a skill)
+  const kit = useMemo(() => {
+    const b = buildHero(hero);
+    const bar = (['basic', 's1', 's2', 's3', 's4', 'ult'] as const).map((k) => b.bar[k]).filter((id): id is string => !!id && !!SKILLS[id]);
+    const keys = TALENTS[pick.cls].filter((n) => n.tree === pick.spec && (hero.talents[n.id] ?? 0) > 0 && n.mods.some((m) => m.t !== 'stat')).sort((a, b) => b.row - a.row).slice(0, 3);
+    return { bar, keys };
+  }, [hero, pick.cls, pick.spec]);
   const doll = useMemo(() => heroDollUrl(heroLook(pick.cls, hero.equip), 'down', 6, heldWeapon(pick.cls, hero.equip.weapon), pick.cls === 'warrior' || pick.cls === 'paladin'), [pick.cls, hero]);
   const next = ECHOES.find((e) => top < e.at);
   const sc = keyScale(at, MAX_LEVEL);
@@ -127,6 +173,24 @@ export function RiftScreen({ engine, onBack }: { engine: SigilEngine; onBack: ()
               <strong>{path.role}</strong>
               {path.blurb}
             </p>
+            <div className="rb-rlobby-build" aria-label="What this champion carries">
+              <span className="rb-rlobby-bar">
+                {kit.bar.map((id) => (
+                  <span key={id} title={`${SKILLS[id]!.name}: ${SKILLS[id]!.blurb}`}>
+                    <SkillIcon id={id} size={30} />
+                  </span>
+                ))}
+              </span>
+              {kit.keys.length > 0 && (
+                <ul className="rb-small">
+                  {kit.keys.map((n) => (
+                    <li key={n.id}>
+                      <b style={{ color: path.color }}>{n.name}</b> {n.text}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <div className="rb-key-row rb-rlobby-key">
               <button className="rb-btn is-small" aria-label="One level lower" disabled={at <= 1} onClick={() => setStone(at - 1)}>
                 −
@@ -157,6 +221,8 @@ export function RiftScreen({ engine, onBack }: { engine: SigilEngine; onBack: ()
               </button>
             );
           })}
+          {/* (open the first time the Trials are opened on this device, folded after) */}
+          <RiftGuide hero={hero} open={first} />
         </section>
 
         <footer className="rb-vlobby-foot">

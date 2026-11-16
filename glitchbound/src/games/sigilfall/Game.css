@@ -6631,6 +6631,34 @@ html.rb-touch-playing textarea {
   color: #1c0e08;
   background: #ffd257;
 }
+/* the Trials champion's kit, under its path (ui/RiftScreen.tsx): the bar they fight with and their key talents */
+.rb-rlobby-build {
+  display: grid;
+  gap: 6px;
+  margin: 6px 0;
+}
+.rb-rlobby-bar {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+.rb-rlobby-bar > span {
+  display: grid;
+  border: 2px solid var(--rb-ink);
+  border-radius: 7px;
+  background: #1c1428;
+}
+.rb-rlobby-build ul {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+.rb-vlobby-lands .rb-rift-guide {
+  margin-top: 6px;
+}
 .rb-vlobby-about {
   display: grid;
   gap: 2px;

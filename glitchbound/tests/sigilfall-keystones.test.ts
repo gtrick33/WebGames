@@ -17,7 +17,7 @@ import { addParagonXp, PARA_CAP, paragonFree, paragonXp, resetParagon, spendPara
 import { DEFAULT_SETTINGS, validateCharacter, validateItem } from '../src/games/sigilfall/progress/save';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
 import { TILE } from '../src/games/sigilfall/sim/map';
-import { World } from '../src/games/sigilfall/sim/world';
+import { emptyInput, World } from '../src/games/sigilfall/sim/world';
 import { newWorld, play, readyHero } from './sigilfall-bot';
 
 const DUNGEONS = (Object.keys(REGIONS) as RegionId[]).filter((id) => REGIONS[id].kind === 'dungeon' && !REGIONS[id].interior);
@@ -139,6 +139,17 @@ describe('sigilfall: Riftstone', () => {
     const w = keyRun('crypt', 3);
     w.playerDies();
     expect(w.keyRun!.deaths).toBe(1);
+  });
+
+  it('the clock waits for the hero to set off: not while the land loads and the run is read', () => {
+    const w = keyRun('crypt', 1);
+    for (let i = 0; i < 300; i++) w.step(1 / 60);
+    expect(w.keyRun!.t).toBe(0);
+    w.input = { ...emptyInput(), mx: 1 };
+    w.step(1 / 60);
+    w.input = emptyInput();
+    for (let i = 0; i < 59; i++) w.step(1 / 60);
+    expect(w.keyRun!.t).toBeCloseTo(1, 1);
   });
 
   it('the Riftstone comes from clearing Duskspire on Mythic; a hero who already had is given one on load', () => {
