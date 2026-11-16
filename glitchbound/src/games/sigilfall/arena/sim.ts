@@ -117,6 +117,8 @@ export interface FighterSetup {
    * computer's rivals the rank of its rating. The rules never read it.
    */
   title?: { text: string; fx: string; before?: boolean };
+  /** The nameplate frame they wear (arena/record.ts frameOf), drawn round their nameplate. The rules never read it. */
+  frame?: string;
 }
 
 export interface MatchSetup {

@@ -237,6 +237,8 @@ export interface RingSave {
   learn?: RingLearn;
   /** Challenges, class mastery, the season and the history (arena/record.ts). */
   record?: RingRecord;
+  /** The nameplate frame worn, one the season track gave (arena/record.ts frameOf). */
+  frame?: string;
 }
 
 export interface RingLearn {
@@ -283,7 +285,8 @@ export function readRing(): RingSave {
     const mates = raw?.mates && typeof raw.mates === 'object' ? raw.mates : undefined;
     const learn = learnOf(raw?.learn);
     const record = recordOf(raw?.record);
-    return { standings: raw?.standings ?? {}, sets: raw?.sets ?? {}, ...(plain ? { plain } : {}), ...(mates ? { mates } : {}), ...(learn ? { learn } : {}), ...(record ? { record } : {}) };
+    const frame = typeof raw?.frame === 'string' && /^[a-z0-9-]{1,24}$/.test(raw.frame) ? raw.frame : undefined;
+    return { standings: raw?.standings ?? {}, sets: raw?.sets ?? {}, ...(plain ? { plain } : {}), ...(mates ? { mates } : {}), ...(learn ? { learn } : {}), ...(record ? { record } : {}), ...(frame ? { frame } : {}) };
   } catch {
     return { standings: {}, sets: {} };
   }

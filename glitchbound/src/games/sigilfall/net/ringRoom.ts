@@ -30,6 +30,8 @@ export interface Pick {
   mates?: string[];
   /** The title they wear, shown over their head to everyone in the match: its words and its light (catalog/titleFx.ts). */
   title?: { text: string; fx: string; before?: boolean };
+  /** The nameplate frame they wear, by its id (the game checks it against its own list when it draws it). */
+  frame?: string;
 }
 
 /**
@@ -122,7 +124,8 @@ export function cleanPick(v: unknown): Pick | null {
   const mates = Array.isArray(p.mates) && p.mates.length <= 2 && p.mates.every((b) => typeof b === 'string' && ID.test(b)) ? { mates: p.mates as string[] } : {};
   const t = cleanRoomTitle(p.title);
   const title = t ? { title: t } : {};
-  return { team: p.team, cls: p.cls, bar: p.bar as string[], talents, ...ult, ...rating, ...mates, ...title };
+  const frame = typeof p.frame === 'string' && ID.test(p.frame) ? { frame: p.frame } : {};
+  return { team: p.team, cls: p.cls, bar: p.bar as string[], talents, ...ult, ...rating, ...mates, ...title, ...frame };
 }
 
 export function act(s: State, key: string, a: Action, now: number): string | null {

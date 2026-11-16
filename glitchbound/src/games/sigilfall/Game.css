@@ -9059,6 +9059,51 @@ html.rb-touch-playing textarea {
     box-shadow: 0 0 0 1.5px var(--pick), 0 0 18px 4px color-mix(in srgb, var(--pick) 70%, transparent);
   }
 }
+/* the frame chosen, as a small nameplate under its choice */
+.rb-rw-field > .rb-rw-frame {
+  grid-column: 2;
+  width: 120px;
+  height: 22px;
+}
+.rb-rw-frame {
+  flex: none;
+  width: 54px;
+  height: 18px;
+  border: 1.5px solid rgb(255 255 255 / 0.14);
+  border-radius: 5px;
+  background: rgb(8 4 18 / 0.86);
+}
+.rb-rw-frame.has-frame {
+  outline: 2px solid var(--f1);
+  outline-offset: 1px;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--f2) 60%, transparent);
+}
+/* a frame the season track gave: a ring of its color round the nameplate, with a corner gem; the pick's glow, when they
+   are chosen, still shows inside it */
+.rb-ring-frame.has-frame {
+  position: relative;
+  outline: 2px solid var(--f1);
+  outline-offset: 1px;
+  box-shadow: 0 0 9px color-mix(in srgb, var(--f2) 60%, transparent);
+}
+.rb-ring-frame.has-frame::after {
+  content: '';
+  position: absolute;
+  /* (at the corner toward the middle of the screen: the nameplates sit against its edges, which would cut it off) */
+  right: -5px;
+  bottom: -5px;
+  width: 8px;
+  height: 8px;
+  rotate: 45deg;
+  border: 1.5px solid #12091e;
+  border-radius: 2px;
+  background: linear-gradient(135deg, #fff, var(--f1) 45%, var(--f2));
+  pointer-events: none;
+}
+.rb-ring-frame.has-frame.is-flip::after {
+  right: auto;
+  left: -5px;
+}
 .rb-ring-frame.is-on {
   --pick: #6ee07a;
   border-color: var(--pick);
@@ -12872,164 +12917,353 @@ html.rb-touch-playing textarea {
 }
 
 /* the result: one thing to try next time, and the tutorial's end */
-/* the Ring's record: one quiet link in the lobby, and a window of four tabs */
-.rb-pg-link {
-  justify-self: start;
-  margin: 2px 0 0;
-  font-size: 13px;
+/* the Ring's record: a strip in the lobby made as the rewards' strip is, and a window of four tabs in the game's own
+   dress (gold on dark, the icons framed as abilities are, serif headings) */
+.rb-pg-strip {
+  margin-top: 4px;
+  background: linear-gradient(90deg, rgb(155 110 255 / 0.14), rgb(20 12 34 / 0.6));
+  border-color: rgb(200 170 255 / 0.3);
 }
-.rb-pg-link small {
-  margin-left: 4px;
-  color: var(--rb-dim, #a79fb8);
-  font-size: 11.5px;
+.rb-pg-strip:hover,
+.rb-pg-strip:focus-visible {
+  border-color: #d8c4ff;
 }
-.rb-pg-dialog {
-  width: min(520px, calc(100% - 24px));
-  max-height: calc(100% - 24px);
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
-  gap: 8px;
-  text-align: left;
+.rb-pg-seal {
+  position: relative;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  overflow: hidden;
+  border: 1.5px solid #c9a96a;
+  border-radius: 6px;
+  background: #120a1e;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.6), 0 2px 6px rgb(0 0 0 / 0.5);
 }
-.rb-pg-dialog h2 {
-  text-align: center;
+.rb-pg-seal img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
 }
-.rb-pg-tabs {
+.rb-pg-seal.is-big {
+  width: 42px;
+  height: 42px;
+  border-width: 2px;
+  border-color: #ffd257;
+  border-radius: 9px;
+}
+.rb-pg-pips {
   display: flex;
-  justify-content: center;
+  flex: none;
   gap: 4px;
 }
-.rb-pg-tab {
-  padding: 5px 12px;
-  border: 1.5px solid rgb(255 210 87 / 0.35);
-  border-radius: 999px;
-  color: #d8cfbf;
-  font: 700 13px Georgia, 'Times New Roman', serif;
-  background: rgb(255 255 255 / 0.04);
-  cursor: pointer;
+.rb-pg-pips i,
+.rb-pg-tiers i {
+  width: 10px;
+  height: 10px;
+  rotate: 45deg;
+  border: 1.5px solid #c8a8ff;
+  border-radius: 2px;
+  opacity: 0.6;
 }
-.rb-pg-tab.is-on {
+.rb-pg-pips i.is-on,
+.rb-pg-tiers i.is-on {
   border-color: #ffd257;
-  color: #2a1a06;
   background: #ffd257;
+  box-shadow: 0 0 7px #ffd257;
+  opacity: 1;
+}
+
+.rb-pg-dialog {
+  width: min(560px, calc(100% - 24px));
+  /* (one height for every tab, so the window doesn't jump as they change) */
+  /* (by the game's own height: a share of the wrap's would be of a grid row as tall as the window itself) */
+  height: min(540px, calc(100cqh - 24px));
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  justify-items: stretch;
+  gap: 8px;
+  border-color: #8a6a2e;
+  text-align: left;
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgb(255 210 87 / 0.1), transparent 60%),
+    linear-gradient(180deg, #1e1330, #0c0718);
+}
+.rb-pg-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.rb-pg-top h2 {
+  text-align: left;
+  line-height: 1.05;
+}
+.rb-pg-top small {
+  color: #c9b6e8;
+  font: 600 12px Georgia, 'Times New Roman', serif;
+}
+.rb-pg-tabs button {
+  flex: 1;
+  justify-content: center;
 }
 .rb-pg-body {
   min-height: 0;
   overflow-y: auto;
   display: grid;
   align-content: start;
-  gap: 10px;
-  padding-right: 2px;
+  gap: 12px;
+  padding: 2px 2px 2px 0;
+  scrollbar-width: thin;
 }
-.rb-pg-block h3 {
-  margin: 0 0 4px;
+.rb-pg-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
   color: #ffe39a;
-  font: 700 14px Georgia, 'Times New Roman', serif;
+  font: 700 15px Georgia, 'Times New Roman', serif;
 }
-.rb-pg-block h3 small {
-  margin-left: 6px;
-  color: #a79fb8;
-  font: 600 11.5px Georgia, 'Times New Roman', serif;
+.rb-pg-head i {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgb(255 210 87 / 0.55), transparent);
 }
-.rb-pg-list,
+.rb-pg-head small {
+  padding: 1px 8px;
+  border: 1px solid rgb(255 210 87 / 0.35);
+  border-radius: 999px;
+  color: #d8c89a;
+  font: 600 11px Georgia, 'Times New Roman', serif;
+  background: rgb(255 210 87 / 0.07);
+}
+.rb-pg-cards,
 .rb-pg-mastery,
 .rb-pg-history {
   display: grid;
-  gap: 4px;
+  gap: 5px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.rb-pg-list li {
+.rb-pg-card,
+.rb-pg-mastery li,
+.rb-pg-history li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(60px, 120px) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid rgb(255 227 154 / 0.16);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.02));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+.rb-pg-card:not(:has(.rb-pg-icon)) {
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding-left: 10px;
+}
+.rb-pg-icon {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid #6e5526;
+  border-radius: 8px;
+  background: #120a1e;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.5);
+}
+.rb-pg-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+  image-rendering: pixelated;
+}
+.rb-pg-icon.is-emblem {
+  border-color: color-mix(in srgb, var(--c, #ffd257) 70%, #000);
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--c, #ffd257) 30%, #120a1e), #120a1e);
+}
+.rb-pg-icon.is-emblem img {
+  padding: 3px;
+  image-rendering: auto;
+}
+.rb-pg-icon > b {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border: 1.5px solid #1c0e08;
+  border-radius: 50%;
+  color: #1c0e08;
+  font: 900 11px/1 system-ui, sans-serif;
+  background: #ffd257;
+}
+.rb-pg-what {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.rb-pg-what strong {
+  display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 8px;
-  border-radius: 8px;
-  color: #e4dccd;
-  font-size: 13px;
-  background: rgb(255 255 255 / 0.04);
+  overflow: hidden;
+  color: #f4ecd8;
+  font: 700 13.5px/1.2 Georgia, 'Times New Roman', serif;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
-.rb-pg-list li:has(> :nth-child(2):last-child) {
-  grid-template-columns: minmax(0, 1fr) auto;
+.rb-pg-what small {
+  overflow: hidden;
+  color: #a79fb8;
+  font-size: 11.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
-.rb-pg-list li em,
-.rb-pg-mastery li em,
-.rb-pg-history li em {
-  color: #c9a96a;
-  font-size: 12px;
+.rb-pg-card > em,
+.rb-pg-mastery li > em,
+.rb-pg-history li > em {
+  min-width: 46px;
+  color: #ffe39a;
+  font: 700 12.5px Georgia, 'Times New Roman', serif;
   font-style: normal;
-  font-weight: 700;
   text-align: right;
-}
-.rb-pg-list li.is-done {
-  color: #9be37f;
-}
-.rb-pg-list li.is-done em {
-  color: #9be37f;
 }
 .rb-pg-bar {
   position: relative;
   display: block;
-  height: 6px;
+  height: 7px;
   overflow: hidden;
+  border: 1px solid rgb(0 0 0 / 0.5);
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.1);
+  background: rgb(0 0 0 / 0.45);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.6);
 }
 .rb-pg-bar i,
-.rb-pg-bar.is-full {
+.rb-pg-bar.is-full::after {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: inherit;
-  background: linear-gradient(90deg, #c9a96a, #ffd257);
+  background: linear-gradient(180deg, #ffe7a8, #e8a834);
+  box-shadow: 0 0 6px rgb(255 210 87 / 0.6);
 }
-.rb-pg-bar.is-full {
-  position: relative;
-  inset: auto;
+.rb-pg-bar.is-full::after {
+  content: '';
+  right: 0;
 }
-.rb-pg-mastery li {
-  display: grid;
-  grid-template-columns: 26px minmax(0, 1fr) minmax(60px, 110px) 58px;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
-  border-left: 3px solid var(--c, #ffd257);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 0.04);
+.rb-pg-card.is-done {
+  border-color: rgb(255 210 87 / 0.6);
+  background: linear-gradient(90deg, rgb(255 210 87 / 0.16), rgb(255 210 87 / 0.03));
 }
-.rb-pg-mastery img {
-  width: 26px;
-  height: 26px;
+.rb-pg-card.is-done .rb-pg-icon {
+  border-color: #ffd257;
 }
-.rb-pg-mastery b,
-.rb-pg-history b {
-  display: block;
-  color: #efe6d4;
-  font-size: 13px;
-}
-.rb-pg-mastery small,
-.rb-pg-history small {
-  display: block;
-  color: #a79fb8;
-  font-size: 11.5px;
-}
-.rb-pg-history li {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  border-radius: 8px;
-  color: #e4dccd;
-  font-size: 13px;
-  background: rgb(255 255 255 / 0.04);
-}
-.rb-pg-history li.is-win b {
+.rb-pg-card.is-done > em {
   color: #9be37f;
 }
-.rb-pg-history li.is-loss b {
-  color: #ff9ab0;
+/* mastery: two columns of the classes, each in its own color */
+.rb-pg-mastery {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.rb-pg-mastery li {
+  border-left: 3px solid var(--c, #ffd257);
+}
+.rb-pg-mastery .rb-pg-bar i {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c, #ffd257) 60%, #fff), var(--c, #ffd257));
+  box-shadow: 0 0 6px color-mix(in srgb, var(--c, #ffd257) 60%, transparent);
+}
+.rb-pg-mastery li.is-tier {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c, #ffd257) 18%, transparent), rgb(255 255 255 / 0.02));
+}
+.rb-pg-tiers {
+  display: inline-flex;
+  gap: 5px;
+  margin-left: auto;
+}
+.rb-pg-tiers i {
+  width: 8px;
+  height: 8px;
+}
+/* the season: its number large, and the best of each format as a rank's own tile */
+.rb-pg-season {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgb(255 210 87 / 0.4);
+  border-radius: 12px;
+  text-align: center;
+  background: radial-gradient(90% 100% at 50% 0%, rgb(255 210 87 / 0.14), rgb(255 255 255 / 0.02));
+}
+.rb-pg-season > strong {
+  color: #ffe39a;
+  font: 700 22px Georgia, 'Times New Roman', serif;
+  text-shadow: 0 0 14px rgb(255 210 87 / 0.35);
+}
+.rb-pg-season > small {
+  color: #c9b6e8;
+  font: 600 12px Georgia, 'Times New Roman', serif;
+}
+.rb-pg-formats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  margin: 6px 0;
+}
+.rb-pg-format {
+  display: grid;
+  gap: 1px;
+  padding: 6px 4px;
+  border: 1.5px solid color-mix(in srgb, var(--r, #6e6480) 70%, transparent);
+  border-radius: 10px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--r, #6e6480) 22%, #120a1e), #120a1e);
+}
+.rb-pg-format small {
+  color: #b8afc8;
+  font: 700 11px Georgia, 'Times New Roman', serif;
+}
+.rb-pg-format b {
+  color: #fff4d8;
+  font: 700 20px Georgia, 'Times New Roman', serif;
+}
+.rb-pg-format em {
+  color: var(--r, #a79fb8);
+  font: 700 11px Georgia, 'Times New Roman', serif;
+  font-style: normal;
+}
+/* the history: each match with its class's emblem, a verdict and what it did to the rating */
+.rb-pg-history li {
+  border-left: 3px solid #6e6480;
+}
+.rb-pg-history li.is-win {
+  border-left-color: #6fd36a;
+}
+.rb-pg-history li.is-loss {
+  border-left-color: #e8606e;
+}
+.rb-pg-verdict {
+  padding: 0 6px;
+  border-radius: 5px;
+  color: #120a1e;
+  font: 800 10.5px/16px system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #a79fb8;
+}
+.rb-pg-verdict.is-win {
+  background: #8fe07a;
+}
+.rb-pg-verdict.is-loss {
+  background: #ff8a96;
+}
+.rb-pg-history li > em.is-up {
+  color: #8fe07a;
+}
+.rb-pg-history li > em.is-down {
+  color: #ff8a96;
 }
 .rb-pg-note {
   margin: 0;
@@ -13037,17 +13271,336 @@ html.rb-touch-playing textarea {
   font-size: 12.5px;
   line-height: 1.4;
 }
+.rb-pg-note b {
+  color: #ffe39a;
+}
+.rb-pg-empty {
+  padding: 22px 0;
+  text-align: center;
+}
 @container (max-height: 430px) {
   .rb-pg-dialog {
     gap: 5px;
     padding: 8px 12px;
   }
   .rb-pg-dialog h2 {
-    font-size: 17px;
+    font-size: 18px;
   }
-  .rb-pg-tab {
-    padding: 3px 10px;
+  .rb-pg-seal.is-big {
+    width: 32px;
+    height: 32px;
+  }
+  .rb-pg-tabs button {
+    min-height: 26px;
     font-size: 12px;
+  }
+  .rb-pg-icon {
+    width: 30px;
+    height: 30px;
+  }
+  .rb-pg-card,
+  .rb-pg-mastery li,
+  .rb-pg-history li {
+    padding: 4px 8px 4px 4px;
+  }
+}
+
+/* the season track: a road through ten tiers, a stone at each, and the rewards listed under it */
+.rb-pg-worth {
+  flex: none;
+  margin-left: auto;
+  padding: 0 6px;
+  border: 1px solid rgb(200 170 255 / 0.45);
+  border-radius: 999px;
+  color: #d8c4ff;
+  font: 700 10.5px/16px system-ui, sans-serif;
+  background: rgb(155 110 255 / 0.14);
+}
+.rb-pg-track {
+  gap: 6px;
+}
+.rb-pg-road {
+  position: relative;
+  width: calc(100% - 24px);
+  height: 10px;
+  margin: 14px 12px 12px;
+  border: 1px solid rgb(0 0 0 / 0.6);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.45);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.7);
+}
+.rb-pg-road > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #9b6eff, #ffd257);
+  box-shadow: 0 0 8px rgb(255 210 87 / 0.5);
+}
+.rb-pg-road > b {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  translate: -50% -50%;
+  rotate: 45deg;
+  border: 1.5px solid #6e5526;
+  border-radius: 4px;
+  color: #a79fb8;
+  font: 700 10px/1 Georgia, 'Times New Roman', serif;
+  background: #1a1028;
+}
+.rb-pg-road > b.is-on {
+  border-color: #ffd257;
+  color: #1c0e08;
+  background: radial-gradient(circle at 35% 30%, #ffe7a8, #e8a834);
+  box-shadow: 0 0 8px rgb(255 210 87 / 0.6);
+}
+/* (the number reads upright inside the turned stone) */
+.rb-pg-road > b::after {
+  content: attr(data-n);
+  rotate: -45deg;
+}
+.rb-pg-next {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  color: #e4dccd;
+  font-size: 13px;
+}
+.rb-pg-next b {
+  color: #ffe39a;
+}
+.rb-pg-reward {
+  flex: none;
+  width: 34px;
+  height: 14px;
+}
+.rb-pg-reward.is-title {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  overflow: hidden;
+  border: 1.5px solid #c9a96a;
+  border-radius: 5px;
+}
+.rb-pg-reward.is-title img {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.rb-pg-tiers-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+.rb-pg-tiers-list li {
+  display: grid;
+  grid-template-columns: 18px 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 8px;
+  color: #b8afc8;
+  font-size: 12px;
+  background: rgb(255 255 255 / 0.03);
+}
+.rb-pg-tiers-list li.is-on {
+  border-color: rgb(255 210 87 / 0.5);
+  color: #f4ecd8;
+  background: linear-gradient(90deg, rgb(255 210 87 / 0.14), rgb(255 210 87 / 0.02));
+}
+.rb-pg-tier-n {
+  color: #c9a96a;
+  font: 700 12px Georgia, 'Times New Roman', serif;
+  text-align: center;
+}
+.rb-pg-tier-what {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rb-pg-tiers-list em {
+  color: #a79fb8;
+  font: 700 11px Georgia, 'Times New Roman', serif;
+  font-style: normal;
+}
+.rb-pg-tiers-list li.is-on em {
+  color: #9be37f;
+}
+.rb-pg-season.is-bests > strong {
+  font-size: 16px;
+}
+@container (max-width: 520px) {
+  .rb-pg-tiers-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* the arena: the one chosen as a card with a picture of its ground, and the choice a card for each */
+.rb-ar {
+  margin-top: 6px;
+}
+.rb-ar-now {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 5px 10px 5px 5px;
+  border: 1px solid rgb(255 227 154 / 0.28);
+  border-radius: 9px;
+  color: #f4ecd8;
+  font: inherit;
+  text-align: left;
+  background: linear-gradient(90deg, rgb(255 210 87 / 0.08), rgb(20 12 34 / 0.6));
+  cursor: pointer;
+}
+.rb-ar-now:hover,
+.rb-ar-now:focus-visible {
+  border-color: #ffe39a;
+}
+.rb-ar-now > .rb-ar-pic {
+  flex: none;
+  width: 92px;
+}
+.rb-ar-what {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.2;
+}
+.rb-ar-what small {
+  color: #c9a96a;
+  font: 700 10px Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rb-ar-what b {
+  color: #fff4d8;
+  font: 700 13.5px Georgia, 'Times New Roman', serif;
+}
+.rb-ar-what em {
+  overflow: hidden;
+  color: #b8afc8;
+  font-size: 11px;
+  font-style: normal;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rb-ar-pic {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 700 / 328;
+  border-radius: 6px;
+  filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.55));
+}
+.rb-ar-any {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.rb-ar-any > .rb-ar-pic.is-fan {
+  position: absolute;
+  width: 74%;
+  inset: auto;
+}
+.rb-ar-any > .is-fan-0 {
+  rotate: -9deg;
+  translate: -14% 2%;
+}
+.rb-ar-any > .is-fan-1 {
+  translate: 0 -4%;
+}
+.rb-ar-any > .is-fan-2 {
+  rotate: 9deg;
+  translate: 14% 2%;
+}
+.rb-ar-any > b {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26%;
+  aspect-ratio: 1;
+  border: 2px solid #ffd257;
+  border-radius: 50%;
+  color: #1c0e08;
+  font: 700 clamp(11px, 2.4cqw, 18px) Georgia, 'Times New Roman', serif;
+  background: radial-gradient(circle at 50% 35%, #ffe7a8, #e8a834);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.6);
+}
+.rb-ar-open h3 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 5px;
+  color: #ffe39a;
+  font: 700 14px Georgia, 'Times New Roman', serif;
+}
+.rb-ar-open h3 .rb-linkbtn {
+  font: 600 12px Georgia, 'Times New Roman', serif;
+}
+.rb-ar-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.rb-ar-card {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  padding: 5px 5px 6px;
+  border: 1.5px solid color-mix(in srgb, var(--c, #c9a96a) 50%, transparent);
+  border-radius: 10px;
+  color: #efe6d4;
+  font: inherit;
+  text-align: left;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c, #c9a96a) 18%, #140c24), #0e091c);
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s;
+}
+.rb-ar-card:hover,
+.rb-ar-card:focus-visible {
+  border-color: #ffe39a;
+  transform: translateY(-1px);
+}
+.rb-ar-card.is-on {
+  border-color: #ffd257;
+  box-shadow: 0 0 0 1px #ffd257, 0 0 14px rgb(255 210 87 / 0.35);
+}
+.rb-ar-card strong {
+  padding: 0 2px;
+  text-align: center;
+  font: 700 12px/1.15 Georgia, 'Times New Roman', serif;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-ar-card {
+    transition: none;
+  }
+  .rb-ar-card:hover {
+    transform: none;
+  }
+}
+@container (max-height: 430px) {
+  .rb-ar-now > .rb-ar-pic {
+    width: 70px;
+  }
+  .rb-ar-cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .rb-ar-card strong {
+    font-size: 10.5px;
   }
 }
 
@@ -13085,6 +13638,43 @@ html.rb-touch-playing textarea {
   text-transform: uppercase;
 }
 .rb-rr-best b {
+  color: #ffe39a;
+}
+/* the season track moved: its points, and a reward when one came */
+.rb-rr-track {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1.5px solid rgb(200 170 255 / 0.35);
+  border-radius: 10px;
+  color: #efe6d4;
+  font-size: 13.5px;
+  text-align: left;
+  background: linear-gradient(90deg, rgb(155 110 255 / 0.16), rgb(20 14 30 / 0.6));
+}
+.rb-rr-track.is-reward {
+  border-color: rgb(255 210 87 / 0.8);
+  background: linear-gradient(90deg, rgb(255 210 87 / 0.2), rgb(40 28 10 / 0.6));
+  box-shadow: 0 0 14px rgb(255 210 87 / 0.25);
+}
+.rb-rr-track img {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid #c9a96a;
+  border-radius: 6px;
+  image-rendering: pixelated;
+}
+.rb-rr-track small {
+  display: block;
+  color: #c9b6e8;
+  font: 700 10.5px Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.rb-rr-track b {
   color: #ffe39a;
 }
 .rb-rr-lesson {

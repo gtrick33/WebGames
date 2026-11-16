@@ -15,6 +15,10 @@ import type { BestMoment } from './sim';
  *   climb again) and the best each format reached that season is kept; the best ever reached is never touched, and
  *   with it every rank's title and armor (arena/rewards.ts).
  * - History: the last twenty matches, rated or friendly.
+ * - The season's track (the owner, asked what the challenges give: "implement the first one", the season track):
+ *   each challenge finished is worth points (a day's 10, a week's 30), and the season's points climb ten tiers, each
+ *   with a reward kept for good: nameplate frames, and titles, the last of them that season's own. The points start
+ *   again with each season. All of it to be looked at, nothing that changes a fight.
  */
 
 /** One match as the history keeps it. */
@@ -48,8 +52,10 @@ export interface SeasonRecord {
   n: number;
   /** The best rating each format reached this season. */
   best: Partial<Record<string, number>>;
-  /** Seasons gone by, newest first: their number and the best each format reached. */
-  past: { n: number; best: Partial<Record<string, number>> }[];
+  /** The season track's points (TRACK_POINTS for each challenge finished this season). */
+  points?: number;
+  /** Seasons gone by, newest first: their number, the best each format reached and the track's points. */
+  past: { n: number; best: Partial<Record<string, number>>; points?: number }[];
 }
 
 export interface RingRecord {
@@ -60,6 +66,8 @@ export interface RingRecord {
   /** Challenges finished, ever. */
   finished?: number;
   season?: SeasonRecord;
+  /** What the season track has given, for good (`frame:gold`, `title:ring-contender`): TrackReward ids. */
+  earned?: string[];
 }
 
 /** What a match comes to, for the challenges. */
@@ -77,6 +85,8 @@ export interface MatchFacts {
 export interface Challenge {
   id: string;
   text: string;
+  /** Its picture, from the game's icons. */
+  icon: string;
   goal: number;
   /** How much a match adds (for one that counts different things: the thing it counts). */
   add: (m: MatchFacts) => number | string | null;
@@ -87,24 +97,24 @@ export interface Challenge {
 export const HISTORY_MAX = 20;
 
 export const DAILY: readonly Challenge[] = [
-  { id: 'd-play', text: 'Play 3 rated matches', goal: 3, add: () => 1 },
-  { id: 'd-win', text: 'Win 2 rated matches', goal: 2, add: (m) => (m.won ? 1 : 0) },
-  { id: 'd-combos', text: 'Land 10 combos', goal: 10, add: (m) => m.combos },
-  { id: 'd-kicks', text: 'Interrupt 3 casts', goal: 3, add: (m) => m.kicks },
-  { id: 'd-supers', text: 'Unleash your super 3 times', goal: 3, add: (m) => m.supers },
-  { id: 'd-dmg', text: 'Deal 5,000 damage', goal: 5000, add: (m) => m.dmg },
-  { id: 'd-heal', text: 'Heal 3,000', goal: 3000, add: (m) => m.heal },
-  { id: 'd-team', text: 'Win a 2v2 or a 3v3', goal: 1, add: (m) => (m.won && m.format > 1 ? 1 : 0) },
-  { id: 'd-duel', text: 'Win a 1v1', goal: 1, add: (m) => (m.won && m.format === 1 ? 1 : 0) },
+  { id: 'd-play', icon: 'war_banner_on_a_pole_with_a_red_pattern_on_red', text: 'Play 3 rated matches', goal: 3, add: () => 1 },
+  { id: 'd-win', icon: 'radiant_crown_of_light_on_gold', text: 'Win 2 rated matches', goal: 2, add: (m) => (m.won ? 1 : 0) },
+  { id: 'd-combos', icon: 'chain_of_three_slash_marks_on_red', text: 'Land 10 combos', goal: 10, add: (m) => m.combos },
+  { id: 'd-kicks', icon: 'silenced_status_muted_bell_on_violet', text: 'Interrupt 3 casts', goal: 3, add: (m) => m.kicks },
+  { id: 'd-supers', icon: 'crit_up_status_star_burst_on_gold', text: 'Unleash your super 3 times', goal: 3, add: (m) => m.supers },
+  { id: 'd-dmg', icon: 'exploding_fire_burst_on_orange', text: 'Deal 5,000 damage', goal: 5000, add: (m) => m.dmg },
+  { id: 'd-heal', icon: 'healing_hand_with_green_gold_sparkles_on_gold', text: 'Heal 3,000', goal: 3000, add: (m) => m.heal },
+  { id: 'd-team', icon: 'bond_heart_link_on_teal', text: 'Win a 2v2 or a 3v3', goal: 1, add: (m) => (m.won && m.format > 1 ? 1 : 0) },
+  { id: 'd-duel', icon: 'crossed_sword_and_axe_on_red', text: 'Win a 1v1', goal: 1, add: (m) => (m.won && m.format === 1 ? 1 : 0) },
 ];
 
 export const WEEKLY: readonly Challenge[] = [
-  { id: 'w-wins', text: 'Win 10 rated matches', goal: 10, add: (m) => (m.won ? 1 : 0) },
-  { id: 'w-classes', text: 'Win with 3 different classes', goal: 3, add: (m) => (m.won ? m.cls : null), distinct: true },
-  { id: 'w-combos', text: 'Land 60 combos', goal: 60, add: (m) => m.combos },
-  { id: 'w-kicks', text: 'Interrupt 20 casts', goal: 20, add: (m) => m.kicks },
-  { id: 'w-formats', text: 'Play a 1v1, a 2v2 and a 3v3', goal: 3, add: (m) => String(m.format), distinct: true },
-  { id: 'w-dmg', text: 'Deal 40,000 damage', goal: 40000, add: (m) => m.dmg },
+  { id: 'w-wins', icon: 'radiant_crown_of_light_on_gold', text: 'Win 10 rated matches', goal: 10, add: (m) => (m.won ? 1 : 0) },
+  { id: 'w-classes', icon: 'chain_lightning_between_three_dots_on_violet', text: 'Win with 3 different classes', goal: 3, add: (m) => (m.won ? m.cls : null), distinct: true },
+  { id: 'w-combos', icon: 'chain_of_three_slash_marks_on_red', text: 'Land 60 combos', goal: 60, add: (m) => m.combos },
+  { id: 'w-kicks', icon: 'silenced_status_muted_bell_on_violet', text: 'Interrupt 20 casts', goal: 20, add: (m) => m.kicks },
+  { id: 'w-formats', icon: 'sword_with_three_stacked_chevrons_on_red', text: 'Play a 1v1, a 2v2 and a 3v3', goal: 3, add: (m) => String(m.format), distinct: true },
+  { id: 'w-dmg', icon: 'burning_sword_on_black', text: 'Deal 40,000 damage', goal: 40000, add: (m) => m.dmg },
 ];
 
 const DAY = 86_400_000;
@@ -188,9 +198,14 @@ export function recordMatch(rec: RingRecord | undefined, e: MatchEntry, facts: M
   out.daily = d.run;
   out.weekly = w.run;
   out.finished = (rec?.finished ?? 0) + d.finished + w.finished;
-  const season = rollSeason(out.season, now);
+  const season = { ...rollSeason(out.season, now) };
   if (e.rating !== null) season.best = { ...season.best, [e.format]: Math.max(season.best[e.format] ?? 0, e.rating) };
+  season.points = (season.points ?? 0) + d.finished * TRACK_POINTS.daily + w.finished * TRACK_POINTS.weekly;
   out.season = season;
+  // (what the season's points have reached, given for good)
+  const earned = new Set(out.earned ?? []);
+  for (const t of trackOf(season.n)) if (season.points >= t.at) earned.add(t.reward.id);
+  if (earned.size) out.earned = [...earned];
   return out;
 }
 
@@ -199,7 +214,7 @@ function rollSeason(s: SeasonRecord | undefined, now: number): SeasonRecord {
   const n = seasonOf(now);
   if (!s) return { n, best: {}, past: [] };
   if (s.n >= n) return s;
-  return { n, best: {}, past: [{ n: s.n, best: s.best }, ...s.past].slice(0, 12) };
+  return { n, best: {}, points: 0, past: [{ n: s.n, best: s.best, ...(s.points ? { points: s.points } : {}) }, ...s.past].slice(0, 12) };
 }
 
 /** A rating brought halfway back toward where everyone starts, for a new season. */
@@ -218,6 +233,105 @@ export function turnSeason(rec: RingRecord | undefined, standings: Record<string
   for (const [f, s] of Object.entries(standings)) next[f] = { ...s, rating: seasonReset(s.rating), ...(typeof s.mmr === 'number' ? { mmr: seasonReset(s.mmr) } : {}), streak: 0 };
   return { record: { ...rec, season: rollSeason(rec.season, now) }, standings: next, turned: true };
 }
+
+/* ------------------------------------------------------------------ the season track */
+
+/** What a challenge finished is worth on the track. */
+export const TRACK_POINTS = { daily: 10, weekly: 30 } as const;
+
+/** A nameplate frame: drawn round a fighter's nameplate in the Ring, for everyone to see (Game.css .is-frame-<id>). */
+export interface NameFrame {
+  id: string;
+  name: string;
+  /** Its two colors, edge and glow. */
+  colors: [string, string];
+}
+
+const FRAMES: readonly NameFrame[] = [
+  { id: 'bronze', name: 'Bronze frame', colors: ['#c88a4a', '#7a4a1e'] },
+  { id: 'silver', name: 'Silver frame', colors: ['#e4ecf4', '#8a9aac'] },
+  { id: 'gold', name: 'Gold frame', colors: ['#ffd257', '#b8862a'] },
+  { id: 'ember', name: 'Ember frame', colors: ['#ff8a3a', '#c8341e'] },
+];
+
+/** Each season's own frame: its colors turn with the season, so no two seasons' look alike. */
+export const seasonFrame = (n: number): NameFrame => {
+  const h = (n * 67 + 260) % 360;
+  return { id: `season-${n}`, name: `Season ${n} frame`, colors: [`hsl(${h} 90% 72%)`, `hsl(${(h + 40) % 360} 80% 48%)`] };
+};
+
+/** A frame by its id (one of the four, or a season's), if it is one. */
+export function frameOf(id: string | null | undefined): NameFrame | null {
+  if (!id) return null;
+  const f = FRAMES.find((x) => x.id === id);
+  if (f) return f;
+  const m = /^season-(\d{1,3})$/.exec(id);
+  return m ? seasonFrame(Number(m[1])) : null;
+}
+
+/** The titles the track gives (as titles any hero can wear: progress/titles.ts), the season's own built from its number. */
+export const TRACK_TITLES: readonly { id: string; name: string; fx: string }[] = [
+  { id: 'ring-contender', name: 'Contender', fx: 'gleam' },
+  { id: 'ring-challenger', name: 'Challenger', fx: 'tide' },
+  { id: 'ring-ringtested', name: 'Ringtested', fx: 'ember' },
+  { id: 'ring-relentless', name: 'the Relentless', fx: 'storm' },
+];
+export const seasonTitle = (n: number): { id: string; name: string; fx: string } => ({ id: `ring-s${n}-champion`, name: `Season ${n} Champion`, fx: 'starfall' });
+/** How many seasons' own titles the title list knows ahead (four years of them). */
+export const SEASON_TITLES_AHEAD = 26;
+
+export type TrackReward = { kind: 'frame'; id: string; name: string } | { kind: 'title'; id: string; name: string };
+
+/** A season's ten tiers: the points each wants, and what it gives. */
+export function trackOf(n: number): { at: number; reward: TrackReward }[] {
+  const frame = (f: NameFrame): TrackReward => ({ kind: 'frame', id: `frame:${f.id}`, name: f.name });
+  const title = (t: { id: string; name: string }): TrackReward => ({ kind: 'title', id: `title:${t.id}`, name: `Title: ${t.name}` });
+  const fr = (id: string): NameFrame => FRAMES.find((f) => f.id === id)!;
+  const ti = (id: string) => TRACK_TITLES.find((t) => t.id === id)!;
+  return [
+    { at: 60, reward: frame(fr('bronze')) },
+    { at: 150, reward: title(ti('ring-contender')) },
+    { at: 260, reward: frame(fr('silver')) },
+    { at: 390, reward: title(ti('ring-challenger')) },
+    { at: 540, reward: frame(fr('gold')) },
+    { at: 710, reward: title(ti('ring-ringtested')) },
+    { at: 900, reward: frame(fr('ember')) },
+    { at: 1080, reward: title(ti('ring-relentless')) },
+    { at: 1280, reward: frame(seasonFrame(n)) },
+    { at: 1500, reward: title(seasonTitle(n)) },
+  ];
+}
+
+/** Where a season's points stand on its track: the tier reached (0 for none) and the next, if any. */
+export function trackPlace(points: number, n: number): { tier: number; next: { at: number; reward: TrackReward } | null; from: number } {
+  const t = trackOf(n);
+  const tier = t.filter((x) => points >= x.at).length;
+  return { tier, next: t[tier] ?? null, from: t[tier - 1]?.at ?? 0 };
+}
+
+/** What a match did to the season track: the points it added, where they stand, and the rewards it gave. */
+export interface TrackGain {
+  gained: number;
+  points: number;
+  tier: number;
+  rewards: TrackReward[];
+}
+
+/** The track before a match and after it, as the result screen tells it (null when it didn't move). */
+export function trackGain(was: RingRecord | undefined, now: RingRecord): TrackGain | null {
+  const n = now.season?.n ?? 1;
+  const before = was?.season?.n === n ? (was.season.points ?? 0) : 0;
+  const points = now.season?.points ?? 0;
+  if (points <= before) return null;
+  const had = new Set(was?.earned ?? []);
+  const rewards = trackOf(n)
+    .map((t) => t.reward)
+    .filter((r) => (now.earned ?? []).includes(r.id) && !had.has(r.id));
+  return { gained: points - before, points, tier: trackPlace(points, n).tier, rewards };
+}
+
+/** The frames the track has given this player. */
+export const framesOwned = (rec: RingRecord): NameFrame[] => (rec.earned ?? []).filter((id) => id.startsWith('frame:')).map((id) => frameOf(id.slice(6))).filter((f): f is NameFrame => !!f);
 
 /* ------------------------------------------------------------------ what it gives */
 
@@ -276,9 +390,10 @@ export function recordOf(v: unknown): RingRecord | undefined {
   if (d) out.daily = d;
   if (w) out.weekly = w;
   if (typeof o.finished === 'number') out.finished = num(o.finished);
+  if (Array.isArray(o.earned)) out.earned = o.earned.filter((x): x is string => typeof x === 'string' && /^(frame|title):[a-z0-9-]{1,32}$/.test(x)).slice(0, 200);
   if (o.season && typeof o.season === 'object') {
     const s = o.season as Record<string, unknown>;
-    if (typeof s.n === 'number') out.season = { n: s.n, best: s.best && typeof s.best === 'object' ? (s.best as SeasonRecord['best']) : {}, past: Array.isArray(s.past) ? (s.past as SeasonRecord['past']) : [] };
+    if (typeof s.n === 'number') out.season = { n: s.n, best: s.best && typeof s.best === 'object' ? (s.best as SeasonRecord['best']) : {}, ...(typeof s.points === 'number' ? { points: num(s.points) } : {}), past: Array.isArray(s.past) ? (s.past as SeasonRecord['past']) : [] };
   }
   return out;
 }
