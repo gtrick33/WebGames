@@ -269,7 +269,6 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     const t = turnSeason(latest.current.record, latest.current.standings, Date.now());
     if (t.record !== latest.current.record || t.turned) commit((now) => ({ ...now, record: t.record, standings: t.standings }));
     // (once, as the Ring opens)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   /** A match that ended (not the tutorial): into the history, and a rated one into the challenges, mastery and season. */
   const keepMatch = (r: MatchResult, f: Format, rating: RatingOutcome | null, rival?: string): void => {

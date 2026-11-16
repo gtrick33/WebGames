@@ -33,7 +33,8 @@ export function challengeCount(rec: RingRecord, now: number): { done: number; of
 
 /** The link on the main screen: one line, with how many of the challenges are done. */
 export function ProgressLink({ record, onOpen }: { record: RingRecord; onOpen: () => void }) {
-  const now = Date.now();
+  // (the time as the lobby was opened: the count is read again with each match the record keeps)
+  const [now] = useState(() => Date.now());
   const { done, of } = challengeCount(record, now);
   return (
     <button className="rb-linkbtn rb-pg-link" onClick={onOpen}>
@@ -75,7 +76,7 @@ function ChallengeList({ title, list, run, ends, now }: { title: string; list: C
 
 export function ProgressDialog({ record, onClose }: { record: RingRecord; onClose: () => void }) {
   const [tab, setTab] = useState<Tab>('challenges');
-  const now = Date.now();
+  const [now] = useState(() => Date.now());
   const daily = record.daily?.key === dayKey(now) ? record.daily : undefined;
   const weekly = record.weekly?.key === weekKey(now) ? record.weekly : undefined;
   const finished = record.finished ?? 0;
