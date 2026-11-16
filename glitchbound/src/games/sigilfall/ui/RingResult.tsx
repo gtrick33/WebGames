@@ -4,6 +4,7 @@ import type { RingReward } from '../arena/rewards';
 import { RewardsEarned } from './RingRewards';
 import { ABILITIES } from '../arena/abilities';
 import type { BestMoment, Fighter, Match } from '../arena/sim';
+import type { TrackGain } from '../arena/record';
 import { CLASSES } from '../data/classes';
 import { iconPicture } from '../render/art/gameIcons';
 
@@ -207,7 +208,7 @@ function BestCard({ match, myId }: { match: Match; myId: number }) {
 }
 
 /** A match's end: who won, what it did to your standing, and who did what. */
-export function RingResult({ match, myId, won, draw, rating, rival, dolls, lesson, tutorial, againLabel, onAgain, onSetup, onExit }: { match: Match; myId: number; won: boolean; draw: boolean; rating: RatingOutcome | null; rival?: string; dolls: string[]; lesson?: string | null; tutorial?: boolean; againLabel: string; onAgain: () => void; onSetup: () => void; onExit: () => void }) {
+export function RingResult({ match, myId, won, draw, rating, rival, dolls, lesson, track, tutorial, againLabel, onAgain, onSetup, onExit }: { match: Match; myId: number; won: boolean; draw: boolean; rating: RatingOutcome | null; rival?: string; dolls: string[]; lesson?: string | null; track?: TrackGain | null; tutorial?: boolean; againLabel: string; onAgain: () => void; onSetup: () => void; onExit: () => void }) {
   const kind = draw ? 'draw' : won ? 'win' : 'loss';
   // (ready for the keyboard, without scrolling the verdict off the top of a short screen)
   const again = useRef<HTMLButtonElement>(null);
@@ -265,6 +266,22 @@ export function RingResult({ match, myId, won, draw, rating, rival, dolls, lesso
           </section>
         )}
         <BestCard match={match} myId={myId} />
+        {/* what the challenges it finished did to the season track, and what the track gave */}
+        {track && (
+          <p className={`rb-rr-track${track.rewards.length ? ' is-reward' : ''}`}>
+            <img src={iconPicture('scholar_scroll_on_violet')} alt="" draggable={false} />
+            <span>
+              <small>Season track</small>
+              <b>+{track.gained}</b> · {track.points} points, tier {track.tier}
+              {track.rewards.length > 0 && (
+                <>
+                  {' '}
+                  · New: <b>{track.rewards.map((r) => r.name).join(', ')}</b>
+                </>
+              )}
+            </span>
+          </p>
+        )}
         {lesson && (
           <p className="rb-rr-lesson">
             <b>Try this next time:</b> {lesson}

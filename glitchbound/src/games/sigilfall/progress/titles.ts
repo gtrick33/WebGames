@@ -1,7 +1,7 @@
 import { cleanTitle, isTitleFx, titleGoesAfter, type TitleFxId } from '../../../catalog/titleFx';
 import type { SigilTitleGrant } from '../../../platform/apiTypes';
 import { bestRating, RANKS } from '../arena/ranks';
-import { CHALLENGE_TITLES, MASTERY_TITLES, masteryWins, readRecord } from '../arena/record';
+import { CHALLENGE_TITLES, MASTERY_TITLES, masteryWins, readRecord, SEASON_TITLES_AHEAD, seasonTitle, TRACK_TITLES } from '../arena/record';
 import { MAX_LEVEL } from '../data/classes';
 import { QUESTS } from '../data/quests';
 import { REGIONS } from '../data/regions';
@@ -70,13 +70,17 @@ function recordEarns(id: string): boolean {
   const m = MASTERY_TITLES.find((t) => t.id === id);
   if (m) return masteryWins(rec, m.cls) >= m.wins;
   const c = CHALLENGE_TITLES.find((t) => t.id === id);
-  return !!c && (rec.finished ?? 0) >= c.finished;
+  if (c) return (rec.finished ?? 0) >= c.finished;
+  // (the season track's: given once its tier is reached, and kept)
+  return (rec.earned ?? []).includes(`title:${id}`);
 }
 
 /** What the Ring's record gives: each class's at 15 and 50 rated wins with it, and the challenges' at 10 and 50 finished. */
 export const RING_RECORD_TITLES: readonly TitleDef[] = [
   ...MASTERY_TITLES.map((t): TitleDef => ({ id: t.id, name: t.name, fx: t.wins >= 50 ? 'gilded' : 'gleam', before: true, how: `Win ${t.wins} rated matches in The Ring with the ${t.name.split(' ')[0]}.`, rare: t.wins >= 50, earned: () => recordEarns(t.id) })),
   ...CHALLENGE_TITLES.map((t): TitleDef => ({ id: t.id, name: t.name, fx: t.finished >= 50 ? 'storm' : 'tide', before: true, how: `Finish ${t.finished} of The Ring’s challenges.`, rare: t.finished >= 50, earned: () => recordEarns(t.id) })),
+  ...TRACK_TITLES.map((t): TitleDef => ({ id: t.id, name: t.name, fx: t.fx as TitleFxId, how: 'Climb The Ring’s season track.', earned: () => recordEarns(t.id) })),
+  ...Array.from({ length: SEASON_TITLES_AHEAD }, (_, i) => seasonTitle(i + 1)).map((t, i): TitleDef => ({ id: t.id, name: t.name, fx: t.fx as TitleFxId, before: true, rare: true, how: `Reach the top of The Ring’s season ${i + 1} track.`, earned: () => recordEarns(t.id) })),
 ];
 
 /** The Ring record's titles this device has earned (for a fighter in the Ring's plain clothes, who has no hero). */

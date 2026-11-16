@@ -33,7 +33,7 @@ import { classEmblem } from './classEmblem';
 import { bestFits, bestPreset, choiceFromWord, choicesFor, choiceWord, fillSide, healerSpec, honored, slotsFor, specOf, type MateChoice, type Spec } from '../arena/teammates';
 import { cleanTitle, isTitleFx } from '../../../catalog/titleFx';
 import { rankFx, type TitleShown } from '../progress/titles';
-import { recordMatch, turnSeason } from '../arena/record';
+import { frameOf, framesOwned, recordMatch, trackGain, turnSeason, type TrackGain } from '../arena/record';
 import { ProgressDialog, ProgressLink } from './RingProgress';
 import { ArenaChoice } from './RingArena';
 
@@ -64,7 +64,8 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
       // newer, keeps the rest and is filled up from the class's own)
       const bar = fullBar(cls, s.pick!.bar);
       const title = shownTitle(s.pick!.title);
-      fighters.push({ team, cls, name: s.name, bar, talents: s.pick!.talents, ult: s.pick!.ult, seat: s.n, ...(title ? { title } : {}) });
+      const frame = frameOf(s.pick!.frame);
+      fighters.push({ team, cls, name: s.name, bar, talents: s.pick!.talents, ult: s.pick!.ult, seat: s.n, ...(title ? { title } : {}), ...(frame ? { frame: frame.id } : {}) });
     }
     const list = COMPS[v.format];
     const comp = list[(v.runSeed + team) % list.length]!;
@@ -272,20 +273,21 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     // (once, as the Ring opens)
   }, []);
   /** A match that ended (not the tutorial): into the history, and a rated one into the challenges, mastery and season. */
-  const keepMatch = (r: MatchResult, f: Format, rating: RatingOutcome | null, rival?: string): void => {
+  /** Returns what it did to the season track, for the result screen (nothing for a match that moved it none). */
+  const keepMatch = (r: MatchResult, f: Format, rating: RatingOutcome | null, rival?: string): TrackGain | null => {
     const me = r.match.fighters[r.myId];
-    if (!me) return;
+    if (!me) return null;
     const sc = me.score;
     const now = Date.now();
-    commit((s) => ({
-      ...s,
-      record: recordMatch(
-        s.record,
-        { at: now, format: f, cls: me.cls, won: r.won, draw: r.draw, change: rating ? rating.after - rating.before : null, rating: rating ? rating.after : null, dmg: Math.round(sc.dmg), heal: Math.round(sc.heal), combos: sc.combos ?? 0, kicks: sc.kicks, ...(sc.best ? { best: sc.best } : {}), ...(rival ? { rival } : {}) },
-        { won: r.won, format: f, cls: me.cls, dmg: sc.dmg, heal: sc.heal, combos: sc.combos ?? 0, kicks: sc.kicks, supers: sc.supers ?? 0 },
-        now,
-      ),
-    }));
+    const was = latest.current.record;
+    const next = recordMatch(
+      was,
+      { at: now, format: f, cls: me.cls, won: r.won, draw: r.draw, change: rating ? rating.after - rating.before : null, rating: rating ? rating.after : null, dmg: Math.round(sc.dmg), heal: Math.round(sc.heal), combos: sc.combos ?? 0, kicks: sc.kicks, ...(sc.best ? { best: sc.best } : {}), ...(rival ? { rival } : {}) },
+      { won: r.won, format: f, cls: me.cls, dmg: sc.dmg, heal: sc.heal, combos: sc.combos ?? 0, kicks: sc.kicks, supers: sc.supers ?? 0 },
+      now,
+    );
+    commit((s) => ({ ...s, record: next }));
+    return trackGain(was, next);
   };
   const [looksOpen, setLooksOpen] = useState(false);
   const [fight, setFight] = useState<{ setup: MatchSetup; rival: Comp; skill: number; mates?: number; rivalRating: number; stakes: MatchStakes; format: Format; snap?: LiveMatch['snap'] } | null>(() => (resume ? { ...resume, stakes: resume.stakes } : null));
@@ -293,7 +295,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   // rated, `live` being what is kept of it while it goes, as for a match against the computer's teams)
   const [roomFight, setRoomFight] = useState<{ setup: MatchSetup; mine: number; host: boolean; matched?: boolean; live?: LiveMatch } | null>(null);
   const [run, setRun] = useState(0);
-  const [result, setResult] = useState<{ r: MatchResult; rating: RatingOutcome | null; rival?: string; kind: 'solo' | 'matched' | 'room' | 'tutorial' } | null>(null);
+  const [result, setResult] = useState<{ r: MatchResult; rating: RatingOutcome | null; rival?: string; kind: 'solo' | 'matched' | 'room' | 'tutorial'; track?: TrackGain | null } | null>(null);
   // a search for other players (net/ringSeek.ts): what its waiting screen shows, and a word left by one that ended badly
   const [look, setLook] = useState<SeekLook | null>(null);
   const [seekNote, setSeekNote] = useState('');
@@ -326,6 +328,9 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   // (in plain clothes: the Ring armor and the Ring title chosen, kept with the standing)
   const worn = useMemo(() => (wear ? undefined : plainWorn(save.plain)), [wear, save.plain]);
   const myTitle = ringTitle(wear, save.plain);
+  // (the nameplate frame worn, while it is one the season track gave)
+  const myFrame = save.frame && framesOwned(save.record ?? {}).some((f) => f.id === save.frame) ? save.frame : null;
+  const frameOn = myFrame ? { frame: myFrame } : {};
   const doll = useMemo(() => {
     const plain = newCharacter(pick, 'Ring', 'ring');
     const w = wear;
@@ -377,7 +382,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   /** The practice match: as this class is set up now, against the sparring partner. Not rated, not kept as a live match. */
   const startTutorialMatch = (): void => {
     const seed = (Math.random() * 2 ** 31) >>> 0;
-    const me: FighterSetup = { team: 0, cls: pick, name: hero, bar: fullBar(pick, bar), talents, ult, human: true };
+    const me: FighterSetup = { team: 0, cls: pick, name: hero, bar: fullBar(pick, bar), talents, ult, human: true, ...frameOn };
     setTut(null);
     setResult(null);
     setPage('play');
@@ -395,7 +400,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     const seed = (Math.random() * 2 ** 31) >>> 0;
     const { comp, fighters } = drawOpponents(format, seed);
     const fill = fillSide(format, [specOf(pick, bar)], mates, seed);
-    const team: FighterSetup[] = [{ team: 0, cls: pick, name: hero, bar, talents, ult, human: true }, ...fill.map((x, i) => ({ team: 0 as const, cls: x.cls, name: nameFor(x.cls, seed + i + 11), bar: PRESETS[x.cls][x.preset]!.bar, talents: PRESETS[x.cls][x.preset]!.talents }))];
+    const team: FighterSetup[] = [{ team: 0, cls: pick, name: hero, bar, talents, ult, human: true, ...frameOn }, ...fill.map((x, i) => ({ team: 0 as const, cls: x.cls, name: nameFor(x.cls, seed + i + 11), bar: PRESETS[x.cls][x.preset]!.bar, talents: PRESETS[x.cls][x.preset]!.talents }))];
     // the other side's rating lands either way of your matchmaking rating, up to 150 (what it pays and costs follows:
     // stakesOf), and how sharp the computer plays follows it; your own side's play to yours
     const rivalRating = rivalFor(standing, seed);
@@ -456,7 +461,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     seekRef.current?.stop();
     const ground = map === 'random' ? MAP_IDS[Math.floor(Math.random() * MAP_IDS.length)]! : map;
     seekRef.current = new Seek(
-      { format, map: ground, name: shownAs, pick: { cls: pick, bar, talents, ult, rating: mmrOf(standing), mates: mates.map(choiceWord), ...pickTitle(myTitle) } },
+      { format, map: ground, name: shownAs, pick: { cls: pick, bar, talents, ult, rating: mmrOf(standing), mates: mates.map(choiceWord), ...pickTitle(myTitle), ...frameOn } },
       {
         onLook: setLook,
         onRun: (v, link) => {
@@ -518,7 +523,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const tText = myTitle?.text ?? '';
   const tFx = myTitle?.fx ?? 'plain';
   const tBefore = myTitle?.before ?? true;
-  const myPick = useMemo((): RoomPick => ({ team: view?.seats.find((s) => s.you)?.pick?.team ?? 0, cls: pick, bar, talents, ult, ...(roomWords ? { mates: roomWords.split(' ') } : {}), ...(tText ? { title: { text: tText, fx: tFx, before: tBefore } } : {}) }), [view, pick, bar, talents, ult, roomWords, tText, tFx, tBefore]);
+  const myPick = useMemo((): RoomPick => ({ team: view?.seats.find((s) => s.you)?.pick?.team ?? 0, cls: pick, bar, talents, ult, ...(roomWords ? { mates: roomWords.split(' ') } : {}), ...(tText ? { title: { text: tText, fx: tFx, before: tBefore } } : {}), ...(myFrame ? { frame: myFrame } : {}) }), [view, pick, bar, talents, ult, roomWords, tText, tFx, tBefore, myFrame]);
   const runSeen = useRef(0);
   const handlers = {
     onView: (v: RoomView) => {
@@ -661,8 +666,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
           clearLive();
           const rating: RatingOutcome = r.draw ? { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: 0 } : settle(r.won);
           if (rating.rankUp) engine.sound.play('levelup');
-          keepMatch(r, fight.format, rating, fight.rival.name);
-          setResult({ r, rating, rival: fight.rival.name, kind: 'solo' });
+          const track = keepMatch(r, fight.format, rating, fight.rival.name);
+          setResult({ r, rating, rival: fight.rival.name, kind: 'solo', track });
           setFight(null);
         }}
       />
@@ -707,8 +712,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
             rating = r.draw ? { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: 0 } : settleFor(live.format, live.rivalRating, r.won, 1, live.ourRating);
             if (rating.rankUp) engine.sound.play('levelup');
           }
-          keepMatch(r, live?.format ?? (Math.max(1, Math.min(3, Math.ceil(roomFight.setup.fighters.length / 2))) as Format), rating, live?.rival.name);
-          setResult({ r, rating, rival: live?.rival.name, kind: roomFight.matched ? 'matched' : 'room' });
+          const track = keepMatch(r, live?.format ?? (Math.max(1, Math.min(3, Math.ceil(roomFight.setup.fighters.length / 2))) as Format), rating, live?.rival.name);
+          setResult({ r, rating, rival: live?.rival.name, kind: roomFight.matched ? 'matched' : 'room', track });
           if (roomFight.matched) endSeek(roomFight.host);
           else if (roomFight.host) linkRef.current?.send({ t: 'end' });
           setRoomFight(null);
@@ -727,6 +732,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         rival={result.rival}
         dolls={result.r.dolls}
         lesson={result.r.lesson}
+        track={result.track ?? null}
         tutorial={result.kind === 'tutorial'}
         againLabel={result.kind === 'room' ? 'Back to the room' : result.kind === 'tutorial' ? 'Find a real match' : 'Fight again'}
         onAgain={() => {
@@ -924,7 +930,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         )}
         {rewardsOpen && <RewardsDialog best={bestRating()} onClose={() => setRewardsOpen(false)} />}
         {progressOpen && <ProgressDialog record={save.record ?? {}} onClose={() => setProgressOpen(false)} />}
-        {looksOpen && <LooksDialog engine={engine} cls={pick} wear={wear} plain={save.plain} doll={doll} shown={<Titled name={wear ? wear.name : hero} title={myTitle} />} onPlain={(p) => commit((now) => ({ ...now, plain: p }))} onChange={() => setWearN((n) => n + 1)} onClose={() => setLooksOpen(false)} />}
+        {looksOpen && <LooksDialog engine={engine} cls={pick} wear={wear} plain={save.plain} doll={doll} shown={<Titled name={wear ? wear.name : hero} title={myTitle} />} onPlain={(p) => commit((now) => ({ ...now, plain: p }))} onChange={() => setWearN((n) => n + 1)} onClose={() => setLooksOpen(false)} frames={framesOwned(save.record ?? {})} frame={myFrame} onFrame={(id) => commit((now) => ({ ...now, frame: id ?? undefined }))} />}
       </div>
     </ScreenGate>
   );

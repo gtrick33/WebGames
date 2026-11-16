@@ -10,6 +10,7 @@ import { TitleFx } from '../../../components/TitleFx';
 import { allTitles, earnedRecordTitles, earnedTitles, RING_TITLES, titleName, titleShown, wornTitleShown, type TitleShown } from '../progress/titles';
 import { BARE_LOOK, lookFits, lookOf, wornId, type Look, type LookSlot } from '../progress/wardrobe';
 import type { WornLooks } from '../render/sprites';
+import type { NameFrame } from '../arena/record';
 
 /**
  * What the Ring gives and how a fighter shows it: the ladder of rewards (a title and a suit of Ringforged armor at
@@ -165,7 +166,8 @@ function looksFor(h: Character, slot: LookSlot): Look[] {
  * Title and armor: for a worn campaign hero, their own title and Wardrobe (kept with the hero); in plain clothes, a
  * Ring title and Ring armor (kept with the Ring's standing).
  */
-export function LooksDialog({ engine, cls, wear, plain, doll, shown, onPlain, onChange, onClose }: { engine: SigilEngine; cls: ClassId; wear: Character | null; plain: Plain; doll: string; shown: ReactNode; onPlain: (p: NonNullable<Plain>) => void; onChange: () => void; onClose: () => void }) {
+export function LooksDialog({ engine, cls, wear, plain, doll, shown, onPlain, onChange, onClose, frames = [], frame = null, onFrame }: { engine: SigilEngine; cls: ClassId; wear: Character | null; plain: Plain; doll: string; shown: ReactNode; onPlain: (p: NonNullable<Plain>) => void; onChange: () => void; onClose: () => void; frames?: readonly NameFrame[]; frame?: string | null; onFrame?: (id: string | null) => void }) {
+  const framed = frames.find((f) => f.id === frame) ?? null;
   const titles = wear ? earnedTitles(wear).map((t) => ({ id: t.id, name: titleName(t, wear), shown: titleShown(t, wear) })) : plainTitles().map((t) => ({ id: t.id, name: t.shown.text, shown: t.shown }));
   const wornNow = wear ? wornTitleShown(wear) : null;
   const titleNow = wear ? (wear.title === '' ? '' : (titles.find((t) => t.name === wornNow?.text)?.id ?? '')) : plainTitle(plain) ? (plain?.title ?? '') : '';
@@ -228,6 +230,22 @@ export function LooksDialog({ engine, cls, wear, plain, doll, shown, onPlain, on
           );
         })}
         {!wear && !account.length && <p className="rb-rw-none">No armor yet. The first suit is the {RING_REWARDS[0]?.harness}, at {RING_REWARDS[0]?.at} rating.</p>}
+        {/* the nameplate frame: one the season track gave, round this fighter's nameplate in the Ring for everyone to see */}
+        {onFrame && (
+          <label className="rb-rw-field">
+            <span>Nameplate</span>
+            <select value={framed?.id ?? ''} onChange={(e) => onFrame(e.target.value || null)}>
+              <option value="">Plain</option>
+              {frames.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+            <span className={`rb-rw-frame${framed ? ' has-frame' : ''}`} style={framed ? { ['--f1' as string]: framed.colors[0], ['--f2' as string]: framed.colors[1] } : undefined} aria-hidden="true" />
+          </label>
+        )}
+        {onFrame && !frames.length && <p className="rb-rw-none">No frames yet. The season track gives the first, the Bronze frame, at 60 points.</p>}
         <div className="rb-vigil-actions">
           <button className="rb-btn is-gold" onClick={onClose} autoFocus>
             Done

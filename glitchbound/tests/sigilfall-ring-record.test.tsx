@@ -9,10 +9,11 @@ import path from 'node:path';
 import { fireEvent, render } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { RING_KEY, type Standing } from '../src/games/sigilfall/arena/ranks';
-import { CHALLENGE_TITLES, DAILY, dailyOf, dayKey, HISTORY_MAX, MASTERY_TITLES, recordMatch, seasonEnds, seasonOf, seasonReset, SEASON_LENGTH, SEASON_START, turnSeason, WEEKLY, weekKey, weeklyOf, type MatchEntry, type MatchFacts, type RingRecord } from '../src/games/sigilfall/arena/record';
+import { CHALLENGE_TITLES, DAILY, frameOf, framesOwned, trackGain, trackOf, trackPlace, TRACK_POINTS, dailyOf, dayKey, HISTORY_MAX, MASTERY_TITLES, recordMatch, seasonEnds, seasonOf, seasonReset, SEASON_LENGTH, SEASON_START, turnSeason, WEEKLY, weekKey, weeklyOf, type MatchEntry, type MatchFacts, type RingRecord } from '../src/games/sigilfall/arena/record';
 import { mergeSaveText } from '../src/platform/cloudMerge';
 import { earnedRecordTitles, TITLES } from '../src/games/sigilfall/progress/titles';
-import { ProgressDialog, ProgressLink } from '../src/games/sigilfall/ui/RingProgress';
+import { ProgressDialog, ProgressLink, SeasonTrack } from '../src/games/sigilfall/ui/RingProgress';
+import { cleanPick } from '../src/games/sigilfall/net/ringRoom';
 import { ArenaChoice, ArenaPicture } from '../src/games/sigilfall/ui/RingArena';
 import { MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
 
@@ -184,5 +185,81 @@ describe('The Ring’s record on screen: one strip in the lobby, the rest a pres
     fireEvent.click(ui.getByRole('tab', { name: /^History/ }));
     expect(ui.container.textContent).toMatch(/Win/);
     expect(ui.container.textContent).toMatch(/\+30/);
+  });
+});
+
+describe('The Ring’s season track (the owner: what the challenges give)', () => {
+  it('each challenge finished is worth points, a day’s 10 and a week’s 30, counted into the season', () => {
+    let rec: RingRecord | undefined;
+    // (a match that finishes every challenge it can: today's three and whatever of the week's it reaches)
+    rec = recordMatch(rec, entry({ at: NOW }), facts({ combos: 99, kicks: 99, supers: 99, dmg: 99999, heal: 99999, format: 2 }), NOW);
+    const d = rec.daily!.done.length;
+    const w = rec.weekly!.done.length;
+    expect(d).toBeGreaterThan(0);
+    expect(rec.season!.points).toBe(d * TRACK_POINTS.daily + w * TRACK_POINTS.weekly);
+    // (nothing more for a match that finishes nothing new)
+    const again = recordMatch(rec, entry({ at: NOW + 1 }), facts({ won: false, combos: 0, kicks: 0, supers: 0, dmg: 0, heal: 0 }), NOW + 1);
+    expect(again.season!.points).toBe(rec.season!.points);
+    expect(trackGain(rec, again)).toBeNull();
+  });
+
+  it('ten tiers, the rewards frames and titles, the last two the season’s own; reaching a tier gives it for good', () => {
+    const t = trackOf(3);
+    expect(t).toHaveLength(10);
+    expect(t.map((x) => x.at)).toEqual([...t.map((x) => x.at)].sort((a, b) => a - b));
+    expect(t.filter((x) => x.reward.kind === 'frame')).toHaveLength(5);
+    expect(t[8]!.reward.id).toBe('frame:season-3');
+    expect(t[9]!.reward.id).toBe('title:ring-s3-champion');
+    // (reachable: a player who finishes every day's challenges reaches the top, with weeks' to spare)
+    expect(t[9]!.at).toBeLessThanOrEqual(56 * 3 * TRACK_POINTS.daily);
+    const before: RingRecord = { season: { n: seasonOf(NOW), best: {}, points: 140, past: [] } };
+    const after = recordMatch(before, entry(), facts({ combos: 99, kicks: 99, supers: 99, dmg: 99999, heal: 99999 }), NOW);
+    expect(after.earned).toEqual(expect.arrayContaining(['frame:bronze', 'title:ring-contender']));
+    const gain = trackGain(before, after)!;
+    expect(gain.gained).toBe(after.season!.points! - 140);
+    expect(gain.rewards.map((r) => r.id)).toContain('title:ring-contender');
+    expect(trackPlace(after.season!.points!, seasonOf(NOW)).tier).toBe(gain.tier);
+  });
+
+  it('the points start again with a season; what they gave stays', () => {
+    const rec: RingRecord = { season: { n: 1, best: {}, points: 600, past: [] }, earned: ['frame:bronze', 'frame:gold'] };
+    const t = turnSeason(rec, {}, SEASON_START + SEASON_LENGTH + 1);
+    expect(t.record.season).toMatchObject({ n: 2, points: 0 });
+    expect(t.record.season!.past[0]).toMatchObject({ n: 1, points: 600 });
+    expect(t.record.earned).toEqual(['frame:bronze', 'frame:gold']);
+  });
+
+  it('frames: owned ones to wear, each season’s its own colors; the titles in the title list', () => {
+    expect(framesOwned({ earned: ['frame:silver', 'title:ring-contender', 'frame:season-2', 'frame:nonsense'] }).map((f) => f.id)).toEqual(['silver', 'season-2']);
+    expect(frameOf('season-2')!.colors).not.toEqual(frameOf('season-3')!.colors);
+    expect(frameOf('gold')!.name).toBe('Gold frame');
+    expect(frameOf('nope')).toBeNull();
+    for (const id of ['ring-contender', 'ring-challenger', 'ring-ringtested', 'ring-relentless', 'ring-s1-champion', 'ring-s12-champion']) expect(TITLES.some((x) => x.id === id), id).toBe(true);
+    localStorage.setItem(RING_KEY, JSON.stringify({ standings: {}, sets: {}, record: { earned: ['title:ring-contender'] } }));
+    expect(earnedRecordTitles().map((t) => t.id)).toEqual(['ring-contender']);
+  });
+
+  it('a frame goes into a room with the rest of a player’s choices, checked for shape', () => {
+    expect(cleanPick({ team: 0, cls: 'mage', bar: ['m-lash'], talents: [], frame: 'season-4' })!.frame).toBe('season-4');
+    expect(cleanPick({ team: 0, cls: 'mage', bar: ['m-lash'], talents: [], frame: '<b>gold</b>' })!.frame).toBeUndefined();
+  });
+
+  it('across devices: what either was given, and the greater points', () => {
+    const day = dayKey(NOW);
+    const local = { standings: {}, sets: {}, frame: 'gold', record: { earned: ['frame:bronze'], season: { n: 1, best: {}, points: 200, past: [] } } };
+    const remote = { standings: {}, sets: {}, record: { earned: ['title:ring-contender'], season: { n: 1, best: {}, points: 260, past: [] } } };
+    const out = JSON.parse(mergeSaveText(RING_KEY, JSON.stringify(local), JSON.stringify(remote), day, 'local')) as { frame?: string; record: RingRecord };
+    expect(out.record.earned!.sort()).toEqual(['frame:bronze', 'title:ring-contender']);
+    expect(out.record.season!.points).toBe(260);
+    expect(out.frame).toBe('gold');
+  });
+
+  it('the Season tab is the track: its points, ten stones, the next reward and the ten rewards', () => {
+    const ui = render(<SeasonTrack points={300} n={1} now={NOW} earned={['frame:bronze', 'title:ring-contender', 'frame:silver']} />);
+    expect(ui.container.textContent).toMatch(/300 points · tier 3 of 10/);
+    expect(ui.container.querySelectorAll('.rb-pg-road > b')).toHaveLength(10);
+    expect(ui.container.querySelectorAll('.rb-pg-road > b.is-on')).toHaveLength(3);
+    expect(ui.container.textContent).toMatch(/Next: Title: Challenger in 90 points/);
+    expect(ui.container.querySelectorAll('.rb-pg-tiers-list li.is-on')).toHaveLength(3);
   });
 });

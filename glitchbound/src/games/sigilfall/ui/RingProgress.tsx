@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ABILITIES } from '../arena/abilities';
 import { rankOf } from '../arena/ranks';
-import { CHALLENGE_TITLES, dailyOf, dayEnds, dayKey, MASTERY_STEPS, masteryWins, seasonEnds, seasonOf, weekEnds, weekKey, weeklyOf, type Challenge, type ChallengeRun, type RingRecord } from '../arena/record';
+import { CHALLENGE_TITLES, dailyOf, dayEnds, dayKey, frameOf, MASTERY_STEPS, masteryWins, seasonEnds, seasonOf, TRACK_POINTS, trackOf, trackPlace, weekEnds, weekKey, weeklyOf, type Challenge, type ChallengeRun, type RingRecord, type TrackReward } from '../arena/record';
 import { CLASSES, CLASS_IDS } from '../data/classes';
 import { classEmblem } from './classEmblem';
 import { iconPicture } from '../render/art/gameIcons';
@@ -60,7 +60,7 @@ export function ProgressLink({ record, onOpen }: { record: RingRecord; onOpen: (
           <>
             <b>{next.text}</b>
             <small>
-              Today’s challenge · {n(standOf(next, run).got)}/{n(next.goal)}
+              {n(standOf(next, run).got)}/{n(next.goal)} · +{TRACK_POINTS.daily} season points
             </small>
           </>
         ) : (
@@ -88,7 +88,7 @@ function Bar({ got, goal }: { got: number; goal: number }) {
   );
 }
 
-function ChallengeList({ title, list, run, ends, now }: { title: string; list: Challenge[]; run: ChallengeRun | undefined; ends: number; now: number }) {
+function ChallengeList({ title, list, run, ends, now, worth }: { title: string; list: Challenge[]; run: ChallengeRun | undefined; ends: number; now: number; worth: number }) {
   const all = list.filter((c) => standOf(c, run).done).length;
   return (
     <section className="rb-pg-block">
@@ -109,7 +109,10 @@ function ChallengeList({ title, list, run, ends, now }: { title: string; list: C
                 {done && <b aria-hidden="true">✓</b>}
               </span>
               <span className="rb-pg-what">
-                <strong>{c.text}</strong>
+                <strong>
+                  {c.text}
+                  <span className="rb-pg-worth">+{worth}</span>
+                </strong>
                 <Bar got={got} goal={c.goal} />
               </span>
               <em>{done ? 'Done' : `${n(got)}/${n(c.goal)}`}</em>
@@ -129,6 +132,68 @@ function Tiers({ wins }: { wins: number }) {
         <i key={s.wins} className={wins >= s.wins ? 'is-on' : ''} title={s.word} />
       ))}
     </span>
+  );
+}
+
+/** A reward's look on the track: a frame as a small nameplate in its colors, a title as a scroll mark. */
+function RewardMark({ reward }: { reward: TrackReward }) {
+  const fr = reward.kind === 'frame' ? frameOf(reward.id.slice(6)) : null;
+  return fr ? (
+    <span className="rb-rw-frame has-frame rb-pg-reward" style={{ ['--f1' as string]: fr.colors[0], ['--f2' as string]: fr.colors[1] }} aria-hidden="true" />
+  ) : (
+    <span className="rb-pg-reward is-title" aria-hidden="true">
+      <img src={iconPicture('scholar_scroll_on_violet')} alt="" draggable={false} />
+    </span>
+  );
+}
+
+/**
+ * The season's track (the owner chose it as what the challenges give): its points, a road through its ten tiers with a
+ * stone at each, the next reward and how far it is, and the ten rewards, each earned or still to come.
+ */
+export function SeasonTrack({ points, n: sn, now, earned }: { points: number; n: number; now: number; earned: readonly string[] }) {
+  const track = trackOf(sn);
+  const { tier, next } = trackPlace(points, sn);
+  const top = track[track.length - 1]!.at;
+  return (
+    <section className="rb-pg-season rb-pg-track">
+      <strong>Season {sn} track</strong>
+      <small>
+        {n(points)} points · tier {tier} of {track.length} · ends in {until(seasonEnds(sn), now)}
+      </small>
+      <div className="rb-pg-road" aria-hidden="true">
+        <i style={{ width: `${Math.min(100, (points / top) * 100)}%` }} />
+        {track.map((t, k) => (
+          <b key={t.at} className={points >= t.at ? 'is-on' : ''} data-n={k + 1} style={{ left: `${(t.at / top) * 100}%` }} />
+        ))}
+      </div>
+      {next ? (
+        <p className="rb-pg-next">
+          <RewardMark reward={next.reward} />
+          <span>
+            Next: <b>{next.reward.name}</b> in {n(next.at - points)} points
+          </span>
+        </p>
+      ) : (
+        <p className="rb-pg-next">Every reward this season is yours.</p>
+      )}
+      <ol className="rb-pg-tiers-list">
+        {track.map((t, k) => {
+          const has = earned.includes(t.reward.id) || points >= t.at;
+          return (
+            <li key={t.at} className={has ? 'is-on' : ''}>
+              <span className="rb-pg-tier-n">{k + 1}</span>
+              <RewardMark reward={t.reward} />
+              <span className="rb-pg-tier-what" title={t.reward.name}>{t.reward.name}</span>
+              <em>{has ? 'Earned' : `${n(t.at)} pts`}</em>
+            </li>
+          );
+        })}
+      </ol>
+      <p className="rb-pg-note">
+        A day’s challenge is worth {TRACK_POINTS.daily} points, a week’s {TRACK_POINTS.weekly}. Wear a frame on your nameplate from Title & armor.
+      </p>
+    </section>
   );
 }
 
@@ -170,10 +235,10 @@ export function ProgressDialog({ record, onClose }: { record: RingRecord; onClos
         <div className="rb-pg-body" role="tabpanel">
           {tab === 'challenges' && (
             <>
-              <ChallengeList title="Today" list={dailyOf(now)} run={daily} ends={dayEnds(now)} now={now} />
-              <ChallengeList title="This week" list={weeklyOf(now)} run={weekly} ends={weekEnds(now)} now={now} />
+              <ChallengeList title="Today" list={dailyOf(now)} run={daily} ends={dayEnds(now)} now={now} worth={TRACK_POINTS.daily} />
+              <ChallengeList title="This week" list={weeklyOf(now)} run={weekly} ends={weekEnds(now)} now={now} worth={TRACK_POINTS.weekly} />
               <p className="rb-pg-note">
-                Rated matches count.{nextTitle ? (
+                Rated matches count, and each challenge finished moves you up the <b>season track</b>.{nextTitle ? (
                   <>
                     {' '}
                     Finish <b>{nextTitle.finished - finished}</b> more for the title <b>{nextTitle.name}</b>.
@@ -216,9 +281,9 @@ export function ProgressDialog({ record, onClose }: { record: RingRecord; onClos
           )}
           {tab === 'season' && (
             <>
-              <section className="rb-pg-season">
-                <strong>Season {sn}</strong>
-                <small>Ends in {until(seasonEnds(sn), now)}</small>
+              <SeasonTrack points={season?.points ?? 0} n={sn} now={now} earned={record.earned ?? []} />
+              <section className="rb-pg-season is-bests">
+                <strong>Best this season</strong>
                 <div className="rb-pg-formats">
                   {(['1', '2', '3'] as const).map((f) => {
                     const best = season?.best[f];
@@ -234,7 +299,7 @@ export function ProgressDialog({ record, onClose }: { record: RingRecord; onClos
                     );
                   })}
                 </div>
-                <p className="rb-pg-note">When a season ends, every rating comes halfway back toward 1000 for a new climb. Your best ever, and every title and armor it earned, stay yours.</p>
+                <p className="rb-pg-note">When a season ends, every rating comes halfway back toward 1000 and the track starts again. Your best ever, and everything the track and your rank gave you, stay yours.</p>
               </section>
               {!!record.season?.past.length && (
                 <section className="rb-pg-block">

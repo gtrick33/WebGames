@@ -203,6 +203,7 @@ const mergeRing: MergeRule = (local, remote, ctx) => {
     out.mates = ctx.newer === 'local' ? { ...rm, ...lm } : { ...lm, ...rm };
   }
   if (local.plain !== undefined || remote.plain !== undefined) out.plain = later(local.plain, remote.plain);
+  if (local.frame !== undefined || remote.frame !== undefined) out.frame = later(local.frame, remote.frame);
   if (isObj(local.learn) || isObj(remote.learn)) {
     const ll = isObj(local.learn) ? local.learn : {};
     const rl = isObj(remote.learn) ? remote.learn : {};
@@ -218,7 +219,7 @@ const mergeRing: MergeRule = (local, remote, ctx) => {
  * is both copies' matches, newest first, the last twenty; a class's mastery the copy with more matches with it; the
  * day's and the week's challenges the later period's, or, the same period on both, the further along of each and every
  * one done on either; the challenges finished, the greater; the season the later, or, the same, each format's best
- * of the two and the seasons gone by from both.
+ * of the two, the greater of the track's points and the seasons gone by from both; what the track gave, on either.
  */
 function mergeRingRecord(l: Obj, r: Obj): Obj {
   const out: Obj = { ...r, ...l };
@@ -259,6 +260,10 @@ function mergeRingRecord(l: Obj, r: Obj): Obj {
     out[k] = { key: ak, got, done: [...new Set([...words(a.done), ...words(b.done)])], seen: [...new Set([...words(a.seen), ...words(b.seen)])] };
   }
   out.finished = Math.max(num(l.finished), num(r.finished));
+  // (what the season track gave, on either device, is kept)
+  const le = isWords(l.earned) ? l.earned : [];
+  const re = isWords(r.earned) ? r.earned : [];
+  if (le.length || re.length) out.earned = [...new Set([...le, ...re])];
   const ls = l.season;
   const rs = r.season;
   if (isObj(ls) && isObj(rs)) {
@@ -270,7 +275,7 @@ function mergeRingRecord(l: Obj, r: Obj): Obj {
       for (const f of new Set([...Object.keys(lb), ...Object.keys(rb)])) best[f] = Math.max(num(lb[f]), num(rb[f]));
       const past = new Map<number, unknown>();
       for (const p of [...(Array.isArray(rs.past) ? rs.past : []), ...(Array.isArray(ls.past) ? ls.past : [])]) if (isObj(p)) past.set(num(p.n), p);
-      out.season = { n: num(ls.n), best, past: [...past.entries()].sort((a, b) => b[0] - a[0]).map(([, p]) => p) };
+      out.season = { n: num(ls.n), best, points: Math.max(num(ls.points), num(rs.points)), past: [...past.entries()].sort((a, b) => b[0] - a[0]).map(([, p]) => p) };
     }
   } else out.season = isObj(ls) ? ls : rs;
   return out;

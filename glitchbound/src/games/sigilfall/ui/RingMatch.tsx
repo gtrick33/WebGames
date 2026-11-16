@@ -26,6 +26,7 @@ import { KeysDialog } from './RingKeysDialog';
 import { TitleFx } from '../../../components/TitleFx';
 import { classEmblem } from './classEmblem';
 import { Coach, useLabels, useSpot } from './RingCoach';
+import { frameOf } from '../arena/record';
 
 /** `skill`: how sharp the computer plays (arena/ladder.ts skillAt); `mates`, in solo: the player's own side's, when not the same. */
 export type Role = { kind: 'solo'; skill: number; mates?: number } | { kind: 'host'; skill: number; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void } | { kind: 'client'; send: (d: unknown) => void; listen: (fn: RingInbox | null) => void };
@@ -159,7 +160,9 @@ function AuraIcons({ f }: { f: Fighter }) {
 /** How far along a cast is (a channel runs down). */
 const castShare = (c: { t: number; dur: number; channel: boolean }): number => Math.max(0, Math.min(1, c.channel ? 1 - c.t / c.dur : c.t / c.dur));
 
-export function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter; m: Match; me: Fighter | null; doll: string; tag: string | null; onPick: () => void; flip?: boolean; title?: { text: string } | null }) {
+export function Frame({ f, m, me, doll, tag, onPick, flip, title, frame }: { f: Fighter; m: Match; me: Fighter | null; doll: string; tag: string | null; onPick: () => void; flip?: boolean; title?: { text: string } | null; frame?: string | null }) {
+  // (the frame they wear round their nameplate, one the season track gave: arena/record.ts)
+  const fr = frameOf(frame);
   const hold = f.auras.find((a) => a.cc);
   const c = f.cast;
   const ab = c ? ABILITIES[c.ab] : null;
@@ -168,7 +171,7 @@ export function Frame({ f, m, me, doll, tag, onPick, flip, title }: { f: Fighter
   const sees = !veiled && (!me || me === f || m.phase !== 'fight' || m.sees(me, f));
   const share = f.hp / f.maxHp;
   return (
-    <button className={`rb-ring-frame${flip ? ' is-flip' : ''}${tag ? ' is-on' : ''}${f.dead ? ' is-dead' : ''}${sees ? '' : ' is-unseen'}`} style={{ ['--c' as string]: CLASSES[f.cls].colors.accent }} 
+    <button className={`rb-ring-frame${flip ? ' is-flip' : ''}${tag ? ' is-on' : ''}${f.dead ? ' is-dead' : ''}${sees ? '' : ' is-unseen'}${fr ? ' has-frame' : ''}`} style={{ ['--c' as string]: CLASSES[f.cls].colors.accent, ...(fr ? { ['--f1' as string]: fr.colors[0], ['--f2' as string]: fr.colors[1] } : {}) }} 
       onPointerDown={(e) => {
         // (at the press, not on a tap: a phone sends no tap while the other thumb is on the stick)
         e.preventDefault();
@@ -1061,7 +1064,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
             {/* (with the nameplates put away their places stay, empty, so the clock keeps to the middle) */}
             <div className="rb-ring-team" onPointerDown={(e) => nearestPlate(e, left, target)} data-tut="plates">
               {plates && left.map((f) => (
-                <Frame key={f.id} f={f} m={m} me={me} doll={classEmblem(f.cls)} title={f.id === myId ? (title ?? null) : null} tag={helps && f.id === friendId && m.phase === 'fight' ? 'Helping' : null} onPick={() => target(f.id)} />
+                <Frame key={f.id} f={f} m={m} me={me} doll={classEmblem(f.cls)} title={f.id === myId ? (title ?? null) : null} frame={setup.fighters[f.id]?.frame ?? null} tag={helps && f.id === friendId && m.phase === 'fight' ? 'Helping' : null} onPick={() => target(f.id)} />
               ))}
             </div>
             {/* the middle, between the nameplates: the clock, the match's buttons (out of the corner, where a phone's own
@@ -1177,7 +1180,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
             </div>
             <div className="rb-ring-team is-foes" onPointerDown={(e) => nearestPlate(e, right, target)} data-tut="foes">
               {plates && right.map((f) => (
-                <Frame key={f.id} flip f={f} m={m} me={me} doll={classEmblem(f.cls)} title={titles[f.id] ?? null} tag={f === foeAlive ? 'Target' : null} onPick={() => target(f.id)} />
+                <Frame key={f.id} flip f={f} m={m} me={me} doll={classEmblem(f.cls)} title={titles[f.id] ?? null} frame={setup.fighters[f.id]?.frame ?? null} tag={f === foeAlive ? 'Target' : null} onPick={() => target(f.id)} />
               ))}
             </div>
           </div>
