@@ -76,6 +76,38 @@ The Ring's super talents (2026-11-14), which work on either super, are named War
 Wings, Blinding Dawn, Doom's Herald, Grove's Bloom and Eclipse Hunger. "Marked for Death" (a World of Warcraft rogue
 talent) and "Wild Growth" (a World of Warcraft druid spell) were the first drafts and were renamed before release.
 
+## The Ring's fixed playstyles, points and procs (2026-11-16)
+
+The owner asked for the Ring to play "very similar to wow mechanics" in places, and gave examples: a frost mage whose
+orb empowers the bolt and whose instant spell spends a proc ("similar ... to fingers of frost"), shards stacked per
+bolt and fired by the instant spell, a rogue who builds "combo points" and spends them on a finisher, and a super like
+"death from above". **Only the rules are copied**, as before: a resource built by one ability and spent by another for
+more the more there is; a chance on a hit to make the next cast of another ability instant or stronger, shown at the
+edges of the screen; a ground effect that drifts and ticks; a finisher that takes its user out of reach for a moment
+and lands on the target. Rules of play aren't protected; names, text, art and signature looks are, and none is taken:
+
+- **Abilities:** Frostfang (the game's own word: the Frostfang zone and its theme), Rimeglobe, Closing Cut, Night's Ruin,
+  Hammerfall, Dawnstride, Duskwalk, Gnawing Word, Blight Dart, Hex Bloom, Stinging Petals. Not "Ice Lance", "Frozen
+  Orb", "Eviscerate", "Death from Above", "Divine Steed", "Insect Swarm" or the like.
+- **Points:** Nicks (the Nightblade's own), and from talents Notches, Ire, Embers, Rimeshards, Tension, Quills,
+  Prayers, Verses, Oaths, Ardor, Rot, Tithes, Buds. Not "Combo Points", "Icicles", "Holy Power" or "Soul Shards".
+- **Procs ("boons"):** Red Mist, Blood Up, Cinderheart, Hoarfrost, Still Breath, Baited, Answered Prayer (already the
+  name of a talent in the game's own priest and paladin trees), Dire Portent, Kept Oath, Dawnfire, Gathering Dark, Grave
+  Chill, Verdant Surge, Falling Star, Hungering Edge, Second Dusk. Not "Fingers of Frost", "Hot Streak", "Brain
+  Freeze", "Nightfall", "Shooting Stars" or "Sudden Death". First drafts that turned out to be another game's names
+  were renamed before release: "Icicles" (Rimeshards), "Nightfall" (Gathering Dark), "Deadeye" (Still Breath),
+  "Conviction" (Ardor), "Dark Omen" (Dire Portent, since Warhammer: Dark Omen is a game's title), "Bleeding Edge"
+  (Bloodied Edge, also a game's title) and "Black Harvest" (Last Harvest).
+- **The look of a proc:** shapes drawn in code for this game (`ui/RingBoons.tsx`), one manner per class (a slash, a
+  flame, a shard of ice, a feather, a halo, a void, a sun, a hex mark, a skull, a leaf, a moon, a fang) in the class's
+  own colors. The idea of art at the screen's edges while a proc is up is a rule of interface; World of Warcraft's
+  spell-alert textures were not looked at or traced.
+- **Icons:** only ones already in the built atlas (Nasha's Lumenfall pack, above); no new file was added, and the atlas
+  was re-packed from itself with the icons the Ring no longer uses left out.
+
+The trinket, the Gloam and the choosing of abilities one by one are gone, so "Unbinding Trinket" no longer appears in
+the Ring.
+
 ## Fixed
 
 ### The licensed art packs and the public repository (was HIGH)

@@ -172,7 +172,8 @@ describe('The Ring: the Gravecaller calls the ashbound dead (the Gloamknight’s
 describe('The Ring: a mage casts quicker', () => {
   it('every mage cast is at least a quarter shorter than it was', () => {
     // (what they were before the owner's "mages cast time should definitely be reduced by at least 25%")
-    const was: Record<string, number> = { 'm-lash': 1.1, 'm-spear': 0.9, 'm-toad': 0.9, 'm-pyre': 1 };
+    // (Great Pyre, the fourth of them, went when a playstyle's abilities became its own, 2026-11-16)
+    const was: Record<string, number> = { 'm-lash': 1.1, 'm-spear': 0.9, 'm-toad': 0.9 };
     const casts = kitOf('mage').filter((a) => a.cast > 0);
     expect(casts.map((a) => a.id).sort()).toEqual(Object.keys(was).sort());
     for (const a of casts) expect(a.cast, a.id).toBeLessThanOrEqual(was[a.id]! * 0.75);
@@ -185,58 +186,63 @@ describe('The Ring: a mage casts quicker', () => {
 });
 
 describe('The Ring: a warrior holds less', () => {
-  it('no hold on the rush, a short stun and a short fear, longer between', () => {
-    const holds = kitOf('warrior').flatMap((a) => a.effects.filter((e): e is Extract<typeof e, { k: 'cc' }> => e.k === 'cc').map((e) => ({ id: a.id, cc: e.cc, dur: e.dur, cd: a.cd })));
-    expect(holds).toEqual([
-      { id: 'w-hurl', cc: 'stun', dur: 1, cd: 20 },
-      { id: 'w-shout', cc: 'fear', dur: 1.5, cd: 25 },
-    ]);
+  it('no hold on the rush, and one short stun to a playstyle, long between', () => {
+    // (the owner, 2026-11-13: "warriors have too much cc". Each playstyle has one hold now, as every playstyle does)
     expect(ABILITIES['w-rush']!.effects.some((e) => e.k === 'cc')).toBe(false);
-    // (seconds of holds a warrior's bar can put out in a minute: under 7, where the root, stun and fear it had came to
-    // 17, and to more again with the talents that shortened their cooldowns)
-    const perMinute = holds.reduce((n, h) => n + (h.dur * 60) / h.cd, 0);
-    expect(perMinute).toBeLessThan(7);
+    for (const p of PRESETS.warrior) {
+      const holds = p.bar.map((id) => ABILITIES[id]!).flatMap((a) => a.effects.filter((e): e is Extract<typeof e, { k: 'cc' }> => e.k === 'cc').map((e) => ({ id: a.id, cc: e.cc, dur: e.dur, cd: a.cd })));
+      expect(holds, p.name).toHaveLength(1);
+      expect(holds[0]!.cc).toBe('stun');
+      expect(holds[0]!.dur).toBeLessThanOrEqual(1.5);
+      // (seconds of holds its bar can put out in a minute: under 7, where the root, stun and fear a warrior had came to 17)
+      expect((holds[0]!.dur * 60) / holds[0]!.cd, p.name).toBeLessThan(7);
+    }
   });
 });
 
-describe('The Ring: talents are the whole class’s', () => {
-  it('a talent does the same whatever is on the bar', () => {
+describe('The Ring: talents are a playstyle’s own, and the third row the class’s', () => {
+  it('the class’s row does the same on either playstyle; a playstyle’s talent is not the other’s to take', () => {
     for (const cls of CLASS_IDS) {
       const [a, b] = PRESETS[cls];
       for (const t of TALENTS[cls]) {
-        const made = (bar: string[]): Fighter => new Match({ seed: 1, map: 'sands', fighters: [fighter(0, cls, bar, [t.id]), fighter(1, 'warrior')] }).fighters[0]!;
-        const x = made(a!.bar);
-        const y = made(b!.bar);
-        expect(x.mods, t.id).toEqual(y.mods);
-        expect(x.perks, t.id).toEqual(y.perks);
-        expect(x.tune, t.id).toEqual(y.tune);
-        // (and it does something)
-        const none = made(a!.bar.slice(0, 1));
-        const plain = new Match({ seed: 1, map: 'sands', fighters: [fighter(0, cls, a!.bar.slice(0, 1)), fighter(1, 'warrior')] }).fighters[0]!;
-        expect(JSON.stringify([none.mods, none.perks, none.tune, none.maxHp]), t.id).not.toBe(JSON.stringify([plain.mods, plain.perks, plain.tune, plain.maxHp]));
+        const own = PRESETS[cls].find((p) => p.id === (t.spec ?? a!.id))!;
+        const other = own === a ? b! : a!;
+        const x = new Match({ seed: 1, map: 'sands', fighters: [fighter(0, cls, own.bar), fighter(1, 'warrior')] });
+        x.equip(0, { bar: own.bar, talents: [t.id] });
+        expect(x.fighters[0]!.talents, t.id).toContain(t.id);
+        const y = new Match({ seed: 1, map: 'sands', fighters: [fighter(0, cls, other.bar), fighter(1, 'warrior')] });
+        y.equip(0, { bar: other.bar, talents: [t.id] });
+        // (the class's own: taken on both, and the same on both; a playstyle's own: not the other's)
+        expect(y.fighters[0]!.talents.includes(t.id), t.id).toBe(!t.spec);
+        if (!t.spec) {
+          expect(x.fighters[0]!.perks.does[t.does?.k ?? 'scar'], t.id).toEqual(y.fighters[0]!.perks.does[t.does?.k ?? 'scar']);
+          expect(x.fighters[0]!.mods.guard, t.id).toBe(y.fighters[0]!.mods.guard);
+        }
+        // (and it does something: a number of its class's, a doing, a change to an ability, or points)
+        expect(!!t.does || !!t.tune || !!t.guard || !!t.hold || !!t.exec || !!t.rally, t.id).toBe(true);
       }
     }
   });
 });
 
 describe('The Ring: what older games kept still fights', () => {
-  it('a bar with an ability taken out of the game, or another class’s, is filled up from the class’s own', () => {
+  it('a bar with an ability taken out of the game, or another class’s, is read as the playstyle nearest it', () => {
     const bar = fullBar('gloamknight', ['g-price', 'g-cleave', 'w-hew', 'g-cleave', 7, 'g-super']);
+    expect(bar).toEqual(PRESETS.gloamknight[0]!.bar);
     expect(bar).toHaveLength(SLOTS);
-    expect(bar[0]).toBe('g-cleave');
-    expect(new Set(bar).size).toBe(SLOTS);
     for (const id of bar) expect(ABILITIES[id]?.cls).toBe('gloamknight');
     expect(fullBar('mage', undefined)).toEqual(PRESETS.mage[0]!.bar);
-    // a setup saved with Blood Price in it comes back full; one its player is still filling is left as it is
-    const kept = setsOf({ standings: {}, sets: { gloamknight: { active: 0, list: [{ bar: ['g-cleave', 'g-price', 'g-reap', 'g-hand'], talents: ['g-1a', 'g-9z'] }, { bar: ['g-cleave'], talents: [] }] } } }, 'gloamknight');
-    expect(kept.list[0]!.bar).toHaveLength(SLOTS);
-    expect(kept.list[0]!.bar).not.toContain('g-price');
-    expect(kept.list[0]!.bar.slice(0, 3)).toEqual(['g-cleave', 'g-reap', 'g-hand']);
-    expect(kept.list[1]!.bar).toEqual(['g-cleave']);
-    // (and the match takes what is left of its talents)
-    const m = new Match({ seed: 1, map: 'sands', fighters: [{ ...fighter(0, 'gloamknight', kept.list[0]!.bar), talents: kept.list[0]!.talents }, fighter(1, 'warrior')] });
-    expect(m.fighters[0]!.talents).toEqual(['g-1a']);
-    expect(m.fighters[0]!.bar).toHaveLength(SLOTS);
+    expect(fullBar('gloamknight', ['g-veil', 'g-knife', 'g-walk'])).toEqual(PRESETS.gloamknight[1]!.bar);
+    // a setup saved with Blood Price in it, and one its player had only begun, both come back whole
+    const kept = setsOf({ standings: {}, sets: { gloamknight: { active: 0, list: [{ bar: ['g-cleave', 'g-price', 'g-reap', 'g-hand'], talents: ['g-1a', 'g-9z'] }, { bar: ['g-knife'], talents: [] }] } } }, 'gloamknight');
+    expect(kept.list[0]!.bar).toEqual(PRESETS.gloamknight[0]!.bar);
+    expect(kept.list[1]!.bar).toEqual(PRESETS.gloamknight[1]!.bar);
+    // (talents that are gone give way to the playstyle's own, in every row)
+    expect(kept.list[0]!.talents).toEqual(PRESETS.gloamknight[0]!.talents);
+    const m = new Match({ seed: 1, map: 'sands', fighters: [{ ...fighter(0, 'gloamknight', ['g-cleave', 'g-price']), talents: ['g-1a', 'g-3a'] }, fighter(1, 'warrior')] });
+    expect(m.fighters[0]!.bar).toEqual(PRESETS.gloamknight[0]!.bar);
+    // (the match itself takes only what is still a talent: the rest was filled in where the setup is kept)
+    expect(m.fighters[0]!.talents).toEqual(['g-3a']);
   });
 });
 

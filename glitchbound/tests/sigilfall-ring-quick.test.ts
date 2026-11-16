@@ -57,7 +57,8 @@ describe('the Ring: a placed spell and where its target stands', () => {
         }
       }
     }
-    expect(placed).toBeGreaterThanOrEqual(3);
+    // (the Rime's globe and the Trapper's volley; every other placed one is a super)
+    expect(placed).toBeGreaterThanOrEqual(2);
     expect(aimed).toBeGreaterThan(3);
   });
 

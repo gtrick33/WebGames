@@ -96,8 +96,9 @@ describe('The Ring: Random teammates', () => {
         if (!healerSpec(me)) roles.add(healerSpec(mate!));
       }
     }
-    // (both kinds of answer come up across the classes: a healer for some, another damage dealer for others)
-    expect(roles.size).toBe(2);
+    // (whichever pair wins more. On 2026-11-14's abilities both kinds of answer came up, a healer for most and another
+    // damage dealer for the Rime; on the fixed playstyles of 2026-11-16 a healer is every damage setup's best second)
+    expect(roles.has(true)).toBe(true);
   });
 
   it('the same seed gives the same team: every screen of a room agrees', () => {
@@ -160,8 +161,9 @@ describe('The Ring: chosen teammates', () => {
   });
 
   it('a changed setup counts as the ready-made one it is closest to', () => {
+    // (a bar kept from when abilities were chosen one by one: the playstyle it shares most with)
     expect(specOf('priest', ['p-mend', 'p-renew', 'p-smite', 'p-lance'])).toEqual({ cls: 'priest', preset: 0 });
-    expect(specOf('priest', ['p-smite', 'p-curse', 'p-wail', 'p-mend'])).toEqual({ cls: 'priest', preset: 1 });
+    expect(specOf('priest', ['p-gnaw', 'p-curse', 'p-hush', 'p-mend'])).toEqual({ cls: 'priest', preset: 1 });
     expect(specOf('warrior', PRESETS.warrior[1]!.bar)).toEqual({ cls: 'warrior', preset: 1 });
   });
 

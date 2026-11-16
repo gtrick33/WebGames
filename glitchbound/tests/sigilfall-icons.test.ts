@@ -8,6 +8,7 @@ import { talentIcon } from '../src/games/sigilfall/render/art/gameIcons';
 import { SKILL_ICON, TALENT_ICONS, VIGIL_ICON } from '../src/games/sigilfall/render/art/iconPicks';
 import { vigilIcons } from '../src/games/sigilfall/vigil/kit';
 import { ringIcons } from '../src/games/sigilfall/arena/abilities';
+import { DAILY, WEEKLY } from '../src/games/sigilfall/arena/record';
 import { talentIcons } from '../src/games/sigilfall/arena/talents';
 
 /**
@@ -42,7 +43,9 @@ describe('Sigilfall: skill and talent icons', () => {
   });
 
   it('the atlas holds what the picks name (rebuild it with scripts/sigilfall-icons.mjs), and the pack is credited', () => {
-    const picked = [...new Set([...Object.values(SKILL_ICON), ...Object.values(TALENT_ICONS).flat(), ...Object.values(VIGIL_ICON), ...vigilIcons(), ...ringIcons(), ...talentIcons()])].sort();
+    // (the Ring's challenges too: one of theirs was in the atlas only while an ability happened to show the same icon)
+    const challenges = [...DAILY, ...WEEKLY].map((c) => c.icon);
+    const picked = [...new Set([...Object.values(SKILL_ICON), ...Object.values(TALENT_ICONS).flat(), ...Object.values(VIGIL_ICON), ...vigilIcons(), ...ringIcons(), ...talentIcons(), ...challenges])].sort();
     expect(index.names).toEqual(picked);
     expect(credits).toContain('Nasha');
   });

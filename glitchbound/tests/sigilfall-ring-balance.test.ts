@@ -162,6 +162,38 @@
  * Classes (1v1 healers' setups left out, then 2v2 / 3v3): warrior 61/51/50, mage 43/46/45, ranger 51/43/46, paladin
  * 52/52/53, priest 41/59/54, warlock 58/46/46, druid 39/55/55, gloamknight 55/43/48. Worth a look once people have
  * played it: the Curse-speaker in team fights, and the Zealot in 3v3.
+ *
+ * Then the Ring was made over (2026-11-16, the owner: "fixed spells per playstyle, only talents need to be changed",
+ * "combos to be done with your basic spell or even ur ult", "remove the gloam and leave the damp only", "make the game
+ * balanced, and also keep the same pace"): each playstyle is four abilities of its own and a super, with points to
+ * build and spend and boons that light an ability up (arena/abilities.ts, arena/talents.ts). Before it, on the same
+ * measure (12 seeds of every 1v1, 1,000 teams of each size), a match took 54 s in 1v1 and 71 s in 2v2 and in 3v3.
+ *
+ * The new kits were first far apart (the Pyre won 75% over the three formats, the Curse-speaker 72%, the Zealot 31%,
+ * the Bloodsworn 36%), so each playstyle's own numbers were scaled round after round until its mean came to about
+ * half: the Pyre's to 0.58 of the first draft, the Curse-speaker's 0.65, the Hexer's 0.73, the Starseer's 0.70, the
+ * Trapper's 0.75, the Longbow's 0.79, the Reaper's 0.85, the Rime's 0.94, the Hound's 0.87, the Zealot's 1.18, the
+ * Bloodsworn's and the Nightblade's 1.06, and the three healers' heals 0.60 to 0.66. Then, since those rounds had left
+ * team fights a tenth shorter than before, every ability's damage came down 8%.
+ *
+ * With the Gloam gone a healer's duel never ended: shields and the healing spheres didn't fade as healing does, so a
+ * warded priest stood for the whole 150 seconds and a fighter walked from sphere to sphere. Now every shield, every
+ * sphere and the sigil's healing fade with the rest (the sigil's might and speed don't), and healing is gone 115
+ * seconds in (it stopped at three quarters while the Gloam was there to end a match). A healer alone also had too
+ * little to hurt with (they won 4-17% of their duels, 13-36% before the makeover): Bright Rebuke is half again as strong, the
+ * Grovekeeper has a blow of its own (Stinging Petals, half again as hard on the rooted) in place of the Starseer's
+ * Moonburn, and the computer's healer stops healing as healing fades and brings them down instead (arena/bot.ts).
+ *
+ * Each playstyle after, 1v1 / 2v2 / 3v3 and the mean; a match takes 56 s in 1v1, 69 s in 2v2 and 64 s in 3v3:
+ *
+ *   Reaper      39/41/58 46   Hound     66/48/43 53   Pyre         47/48/49 48   Rime        51/46/51 49
+ *   Longbow     47/48/51 48   Trapper   56/40/41 45   Oathkeeper   26/65/61 51   Zealot      49/45/40 45
+ *   Lifegiver   27/62/52 47   Curse-sp. 63/44/46 51   Hexer        57/43/47 49   Gravecaller 64/48/47 53
+ *   Grovekeeper 23/60/55 46   Starseer  69/43/42 51   Bloodsworn   61/42/47 50   Nightblade  55/49/56 53
+ *
+ * Worth a look once people have played it: who a playstyle meets still decides a duel between computers more than
+ * it should (the Rime wins nearly every duel with a blade and one in five with a caster, as it did before the
+ * makeover: 97% and 14% then), and the Oathkeeper in 2v2.
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';

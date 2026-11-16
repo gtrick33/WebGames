@@ -2,7 +2,7 @@
  * The Ring: when an ability's button is greyed, and where a placed one goes when it is sent without being placed by
  * hand. Kept apart from the screen (RingMatch.tsx) so both can be tried on a bare match.
  */
-import { TRINKET, type Ability } from '../arena/abilities';
+import { ABILITIES, type Ability } from '../arena/abilities';
 import type { Fighter, Match } from '../arena/sim';
 
 /** Why an ability can't go right now, if that's something to show on its button. */
@@ -13,7 +13,7 @@ export function isOut(m: Match, me: Fighter | null, ab: Ability): boolean {
   // sight, which the owner called out: "targeted spells ... should be available to cast regardless of where the
   // targeted enemy is". So it is asked as a placing, at the user's own feet, which only its readiness can refuse.)
   const why = m.blocked(me, ab, undefined, ab.aim === 'ground' ? { x: me.x, y: me.y } : undefined);
-  return why === 'Out of sight' || why === 'Too far away' || why === 'Silenced' || (why?.endsWith('is locked') ?? false) || why === 'You can’t do that now' || why === 'Nobody to aim at';
+  return why === 'Out of sight' || why === 'Too far away' || why === 'Silenced' || (why?.endsWith('is locked') ?? false) || why === 'You can’t do that now' || why === 'Nobody to aim at' || (why !== 'Not ready yet' && (why?.endsWith(' yet') ?? false));
 }
 
 /**
@@ -44,9 +44,9 @@ export function plainWhy(m: Match, me: Fighter | null, why: string, ab: Ability 
   if (why === 'You can’t do that now' && me) {
     const hold = m.held(me);
     const word = hold?.cc ? HELD_WORD[hold.cc] : undefined;
-    // (the trinket breaks it, if they carry it and it is ready: said, so that a newcomer learns it)
-    const free = me.bar.includes(TRINKET.id) && (me.cds[TRINKET.id] ?? 0) <= 0;
-    return `${word ? `You’re ${word}` : 'You’re held'}${free ? ': your trinket breaks you free' : ' and can’t act yet'}`;
+    // (what of theirs works while held, if it is ready: said, so that a newcomer learns it)
+    const free = me.bar.map((id) => ABILITIES[id]).find((x) => x?.anyState && (me.cds[x.id] ?? 0) <= 0 && !me.auras.some((au) => au.still || au.kind === 'aloft'));
+    return `${word ? `You’re ${word}` : 'You’re held'}${free ? `: ${free.name} still works` : ' and can’t act yet'}`;
   }
   if (why === 'Too far away') return ab && ab.range > 0 && ab.range <= 40 ? 'Too far: walk up to them' : 'Too far: get closer';
   if (why === 'Out of sight') return 'Out of sight: a pillar is in the way';

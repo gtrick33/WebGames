@@ -1,4 +1,4 @@
-import type { Ability, Effect } from './abilities';
+import { BOONS, type Ability, type Effect } from './abilities';
 
 /**
  * When to press an ability, in a sentence or two: what the setup screen says under "Best used" when a player opens
@@ -22,12 +22,13 @@ export function usesOf(ab: Ability, ranged: boolean): string[] {
     if (ab.aim === 'ground') say('You place it: put its circle on someone who is stunned, rooted or slowed, or where it catches two.');
     return out;
   }
-  if (ab.id === 'trinket') {
-    say('Keep it for the hold that would lose you the fight: a long stun or fear while you are low, or while their burst is coming.');
-    say('It also takes off every burn, bleed and curse ticking on you. It comes back slowly, so don’t spend it on a short daze.');
-    return out;
-  }
-
+  // what its combo is made with comes first: the points it builds or spends, the boon it gives or waits for
+  if (ab.spend) say(ab.spend.need ? 'It spends every point you hold, and each makes it far stronger: build them up first, and spend few only to finish someone.' : 'It spends every point you hold, and each makes it stronger: press it when you have plenty.');
+  else if (ab.build) say('It builds a point each time it lands. Keep landing it until you have plenty to spend.');
+  const lasting = ab.gives?.map((g) => BOONS[g.boon]).find((b) => b?.quiet);
+  if (lasting) say(`${lasting.text} Throw it first, then use the time.`);
+  if (ab.field) say('It stays on the ground and drifts on: throw it where they are going, and fight beside it.');
+  if (ab.dive) say('Nothing can touch you while you are up, so it also gets you out from under their hardest blow.');
   if (ab.aim === 'ground') {
     say('You place it: with a mouse, press its key and click the ground; on a touch screen, tap for your target or hold and push the circle.');
     say(ab.cast > 0 ? 'It lands where you aimed when the cast began, so cast it on someone who is stunned, rooted or busy casting.' : 'It hits everyone on its patch, and it takes a moment to land: a quick enemy can run out of it, a slow or a hold keeps them in.');
@@ -79,10 +80,7 @@ export function usesOf(ab: Ability, ranged: boolean): string[] {
   const wound = has('antiheal');
   if (wound) say(`It cuts their healing by ${wound.pct}% while it lasts. Keep it on whoever their healer is trying to save.`);
   const burn = has('dot');
-  if (burn) {
-    say('Put it on early and keep it on: it goes on hurting them while you move, hide or are held.');
-    if (has('backlash')) say('Whoever dispels it is silenced, so their healer has to choose between leaving it on and being shut up.');
-  }
+  if (burn) say('Put it on early and keep it on: it goes on hurting them while you move, hide or are held.');
   if (has('slow') && !hold) say(ranged ? 'A slowed melee fighter can’t reach you. Keep it on them and keep walking.' : 'A slowed enemy can’t get away from you. Keep it on your target.');
   if (has('hot')) say('Keep it on whoever is being hit: it heals while you are on the move.');
   if (has('heal') && !has('dmg')) {

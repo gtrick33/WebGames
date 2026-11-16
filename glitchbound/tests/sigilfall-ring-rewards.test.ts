@@ -103,10 +103,10 @@ describe('The Ring: no Momentum (the owner: "i dont like the momentum idea, too 
     expect(read('src/games/sigilfall/arena/sim.ts')).not.toMatch(/MOMENTUM_/);
   });
 
-  it('every class can chain: each has at least three different combos to weave', () => {
+  it('every class has combos to weave: each playstyle one of its own at least, by a different name', () => {
     for (const cls of CLASS_IDS) {
       const names = new Set(Object.values(ABILITIES).filter((a) => a.cls === cls && a.combo).map((a) => a.combo!.name));
-      expect(names.size, cls).toBeGreaterThanOrEqual(3);
+      expect(names.size, cls).toBeGreaterThanOrEqual(2);
     }
   });
 });

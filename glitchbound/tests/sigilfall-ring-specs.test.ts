@@ -56,18 +56,18 @@ const wait = (m: Match, seconds: number, seen?: MatchEvent[]): void => {
 const nightblade = (foe: ClassId, foeBar: string[], at?: [number, number]): Match => duel({ cls: 'gloamknight', bar: NIGHTBLADE.bar }, { cls: foe, bar: foeBar, at });
 
 describe('The Ring: the Gloamknight is a death knight or a blade in the dark', () => {
-  it('two ready-made setups, the Bloodsworn and the Nightblade, out of twelve: no more of the dead, no more curses', () => {
+  it('two playstyles, the Bloodsworn and the Nightblade, four abilities each: no more of the dead, no more curses', () => {
     expect(PRESETS.gloamknight.map((p) => p.name)).toEqual(['Bloodsworn', 'Nightblade']);
-    // (his own twelve, and the trinket every class can take)
     const kit = kitOf('gloamknight').map((a) => a.id);
-    expect(kit).toHaveLength(13);
-    expect(kit.at(-1)).toBe('trinket');
-    for (const id of ['g-veil', 'g-ambush', 'g-knife', 'g-walk', 'g-chain']) expect(kit).toContain(id);
+    expect(kit).toHaveLength(8);
+    for (const id of ['g-veil', 'g-ambush', 'g-knife', 'g-cut', 'g-chain']) expect(kit).toContain(id);
     expect(kitOf('gloamknight').some((a) => a.role === 'summon' || a.effects.some((e) => e.k === 'dot'))).toBe(false);
-    // the Nightblade's bar: a step to their back, an ambush out of it, a knife that cuts deeper there
-    expect(barCombos('gloamknight', NIGHTBLADE.bar).map((c) => [c.from.id, c.to.id])).toEqual([
-      ['g-walk', 'g-ambush'],
-      ['g-ambush', 'g-knife'],
+    // the Nightblade's bar: an ambush out of the shroud and a knife that cuts deeper after it, Nicks for the Closing Cut
+    // and for Night's Ruin
+    expect(barCombos('gloamknight', NIGHTBLADE.bar).map((c) => [c.from.id, c.to.id, c.kind])).toEqual([
+      ['g-ambush', 'g-knife', 'combo'],
+      ['g-knife', 'g-cut', 'points'],
+      ['g-knife', 'g-super2', 'points'],
     ]);
     // the dead are the warlock's: a Gravecaller beside the Hexer
     expect(PRESETS.warlock.map((p) => p.name)).toEqual(['Hexer', 'Gravecaller']);
@@ -116,11 +116,11 @@ describe('The Ring: the Gloamknight is a death knight or a blade in the dark', (
   });
 
   it('what the other side lands on them brings them out: a blow, and what falls on everyone near', () => {
-    const m = nightblade('warrior', ['w-hew', 'w-shout']);
+    const m = nightblade('priest', PRESETS.priest[0]!.bar);
     const [g, w] = m.fighters as [Fighter, Fighter];
     const seen: MatchEvent[] = [];
-    // (the warrior can't choose them, but a shout takes everyone near)
-    expect(m.press(w.id, 'w-shout')).toBeNull();
+    // (the priest can't choose them, but a wail takes everyone near)
+    expect(m.press(w.id, 'p-wail')).toBeNull();
     seen.push(...m.events);
     expect(m.hidden(g)).toBe(false);
     expect(seen.some((e) => e.k === 'word' && e.id === g.id && e.word === 'Revealed')).toBe(true);
@@ -132,7 +132,7 @@ describe('The Ring: the Gloamknight is a death knight or a blade in the dark', (
   });
 
   it('taken in a fight it sheds roots and slows, holds through a moment of hurt, and is long coming back; out of one it is back at once', () => {
-    const m = nightblade('warrior', ['w-hew', 'w-hamstring'], [222, 125]);
+    const m = nightblade('warrior', PRESETS.warrior[1]!.bar, [222, 125]);
     const [g, w] = m.fighters as [Fighter, Fighter];
     expect(m.press(g.id, 'g-knife')).toBeNull();
     expect(m.hidden(g)).toBe(false);
@@ -190,23 +190,71 @@ describe('The Ring: the Gloamknight is a death knight or a blade in the dark', (
     expect(h.hp).toBe(hp);
   });
 
-  it('Shade Walk: out of the dark at their back, still in the shroud, and the knife cuts deeper from there', () => {
-    const m = nightblade('warrior', ['w-hew'], [300, 125]);
+  it('Dusk Ambush steps out of the dark at their back from a little way off, and the knife cuts deeper from there', () => {
+    // (Shade Walk, the step to their back, was an ability of its own until a playstyle's abilities became its own,
+    // 2026-11-16: the ambush is the step now)
+    const m = nightblade('warrior', ['w-hew'], [260, 125]);
     const [g, w] = m.fighters as [Fighter, Fighter];
-    // (the warrior faces away, toward the east wall)
-    Object.assign(w, { dirX: 1, dirY: 0 });
-    expect(m.press(g.id, 'g-walk')).toBeNull();
-    expect(g.x).toBeLessThan(w.x);
-    expect(Math.hypot(g.x - w.x, g.y - w.y)).toBeLessThan(20);
-    expect(m.hidden(g)).toBe(true);
-    expect(m.behind(g, w)).toBe(true);
-    expect(w.auras.some((a) => a.ab === 'g-walk' && a.kind === 'slow')).toBe(true);
-    expect(m.comboReady(g, ABILITIES['g-ambush']!, w)?.name).toBe('Out of Nowhere');
-    expect(m.comboReady(g, ABILITIES['g-knife']!, w)?.name).toBe('Unseen Edge');
-    // face to face, the knife is only a knife
+    // (the warrior faces them, 60 off: out of a blade's reach, within the ambush's)
     Object.assign(w, { dirX: -1, dirY: 0 });
+    expect(m.blocked(g, ABILITIES['g-knife']!, w)).toBe('Too far away');
+    expect(m.press(g.id, 'g-ambush')).toBeNull();
+    expect(g.x).toBeGreaterThan(w.x);
+    expect(Math.hypot(g.x - w.x, g.y - w.y)).toBeLessThan(20);
+    expect(m.behind(g, w)).toBe(true);
+    expect(m.held(w)?.cc).toBe('stun');
+    expect(m.comboReady(g, ABILITIES['g-knife']!, w)?.name).toBe('Unseen Edge');
+    // face to face and free, the knife is only a knife
+    Object.assign(w, { dirX: 1, dirY: 0 });
     w.auras = [];
     expect(m.comboReady(g, ABILITIES['g-knife']!, w)).toBeNull();
+    // from farther off than that, it waits
+    const far = nightblade('warrior', ['w-hew'], [320, 125]);
+    expect(far.press(0, 'g-ambush')).toBe('Too far away');
+  });
+
+  it('Nicks: the ambush leaves two and each Nightknife one, up to five; Closing Cut needs one and spends them all', () => {
+    // (the owner, 2026-11-16: "nightknife basic spells - increases combo points ... eviscerate spell that consumes those
+    // combo points, the more the points the bigger the dmg")
+    const m = nightblade('warrior', ['w-hew']);
+    const [g, w] = m.fighters as [Fighter, Fighter];
+    w.hp = w.maxHp = 50000;
+    expect(g.points).toMatchObject({ name: 'Nicks', max: 5 });
+    expect(g.pts).toBe(0);
+    expect(m.press(g.id, 'g-cut')).toBe('No Nicks yet');
+    expect(m.press(g.id, 'g-ambush')).toBeNull();
+    expect(g.pts).toBe(2);
+    const knife = (): void => {
+      g.gcd = 0;
+      expect(m.press(g.id, 'g-knife')).toBeNull();
+    };
+    knife();
+    expect(g.pts).toBe(3);
+    for (let i = 0; i < 5; i++) knife();
+    expect(g.pts).toBe(5);
+    // lit when they are full, and not before
+    expect(m.lit(g, ABILITIES['g-cut']!, w)).toBe('5 Nicks');
+    // the cut: its own number at one Nick and 80% more for each (so five are worth 5 / 1.8 of one)
+    const cut = (nicks: number): number => {
+      w.auras = [];
+      g.gcd = 0;
+      g.pts = nicks;
+      const hp = w.hp;
+      expect(m.press(g.id, 'g-cut')).toBeNull();
+      expect(g.pts).toBe(0);
+      return hp - w.hp;
+    };
+    const one = cut(1);
+    expect(cut(5) / one).toBeCloseTo((1 + 0.8 * 5) / 1.8, 1);
+    expect(m.lit(g, ABILITIES['g-cut']!, w)).toBeNull();
+    // a cut that spends three or more is a combo landed, for the tally and the tutorial
+    const before = g.score.combos ?? 0;
+    cut(2);
+    expect(g.score.combos ?? 0).toBe(before);
+    cut(3);
+    expect(g.score.combos).toBe(before + 1);
+    // the Bloodsworn has none
+    expect(duel({ cls: 'gloamknight', bar: BLOODSWORN.bar }, { cls: 'warrior', bar: ['w-hew'] }).fighters[0]!.points).toBeNull();
   });
 
   it('Grave Chain: the death knight drags them in, cuts off what they were casting, and slows them', () => {

@@ -75,7 +75,7 @@ const barOf = (f: Fighter): { all: Ability[]; kicks: Ability[] } => {
 const bar = (f: Fighter): Ability[] => barOf(f).all;
 const hp = (f: Fighter): number => f.hp / f.maxHp;
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }): number => Math.hypot(a.x - b.x, a.y - b.y);
-const healerLike = (f: Fighter): boolean => f.bar.filter((b) => ABILITIES[b]?.role === 'heal' && ABILITIES[b]?.aim === 'friend').length >= 2;
+const healerLike = (f: Fighter): boolean => ABILITIES[f.bar[0] ?? '']?.role === 'heal' && ABILITIES[f.bar[0] ?? '']?.aim === 'friend';
 const ccOf = (a: Ability): CcKind | null => {
   const e = a.effects.find((x) => x.k === 'cc');
   return e && e.k === 'cc' ? e.cc : null;

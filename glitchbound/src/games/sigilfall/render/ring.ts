@@ -1,9 +1,9 @@
 import { drawReticle } from './reticle';
 import { drawIcon } from './art/gameIcons';
-import { ABILITIES, type Ability } from '../arena/abilities';
+import { ABILITIES, BOONS, type Ability } from '../arena/abilities';
 import { lookOf } from '../arena/look';
 import { ARENA_H, ARENA_W, MAPS } from '../arena/maps';
-import { HERO_R, ZONE_START, type Fighter, type Match } from '../arena/sim';
+import { HERO_R, type Fighter, type Match } from '../arena/sim';
 import type { RingAir } from '../render3d/ringDress';
 import { shot, TONES } from './effects';
 import { CLASSES } from '../data/classes';
@@ -328,6 +328,15 @@ export class RingFx {
       } else if (e.k === 'sigil') {
         this.flashes.push({ x: e.x, y: e.y, t: 0, dur: 0.6, r: e.id < 0 ? 22 : 34, color: '#ffe27a', ring: true });
         sound(e.id >= 0 ? 'pickupBig' : 'orb', e.id >= 0 ? 0.7 : 0.4);
+      } else if (e.k === 'boon') {
+        // a boon given: a ring of its light on whoever has it and a few sparks, so the other side can see it too; and
+        // for the one who has it, a bright note (the light at the edges of their screen is ui/RingBoons.tsx)
+        const f = m.fighters[e.id];
+        const def = BOONS[e.boon];
+        if (!f || !def || def.quiet) continue;
+        this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.45, r: 20, color: def.color, ring: true });
+        this.burstSparks(f.x, f.y, 8, [def.color, '#ffffff', def.color], 0.7);
+        if (e.id === myId) sound('talent', 0.55);
       }
     }
     m.events.length = 0;
@@ -791,7 +800,8 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
     }
   }
   // (nothing goes about on one of the other side in the shroud: they are not there to be seen)
-  const unseen = (f: Fighter): boolean => !!me && m.unseen(f, me);
+  // (one of the other side in the shroud; and anyone at all up in the dark before they come down)
+  const unseen = (f: Fighter): boolean => (!!me && m.unseen(f, me)) || m.aloft(f);
   for (const f of m.fighters) {
     if (unseen(f)) continue;
     const p = at(f);
@@ -896,19 +906,22 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
       q.put({ kind: FX.spark, x: s.x + Math.cos(ang) * 11, y: s.y + Math.sin(ang) * 5, up: 12 + bob + Math.sin(ang * 2) * 3, w: 4, a: '#fff6c8', t: 0.2, alpha: 0.9 });
     }
   }
-  // the Gloam: smoke along its edge, where it burns
-  const z = m.zone;
-  if (m.phase === 'fight' && z < ZONE_START - 0.01) {
-    const cx = ARENA_W / 2;
-    const cy = ARENA_H / 2;
-    for (let i = 0; i < 64; i++) {
-      const ang = (i / 64) * Math.PI * 2;
-      const x = cx + Math.cos(ang) * cx * z;
-      const y = cy + Math.sin(ang) * cy * z;
-      if (x < -10 || y < -10 || x > ARENA_W + 10 || y > ARENA_H + 10) continue;
-      const u = (time * 0.35 + i * 0.37) % 1;
-      q.put({ kind: FX.smoke, x, y, up: 4 + u * 26, w: 26 + u * 18, a: '#3a1460', alpha: 0.55 * Math.sin(u * Math.PI), t: 0.3, seed: i });
-      if (i % 3 === 0) q.put({ kind: FX.flame, x, y, up: -2, base: true, w: 10, h: 16 + Math.sin(time * 4 + i) * 4, a: '#7a3cff', b: '#d8a8ff', seed: i * 0.71 });
+  // what was left on the ground (a globe of rime drifting on): a ball of its own stuff over the middle of its patch,
+  // motes turning round it, and a mist to its edge, fading as its time runs out
+  for (const fd of m.fields) {
+    const ab = ABILITIES[fd.ab];
+    if (!ab) continue;
+    const el = SCHOOL_EL[ab.school] ?? 'arcane';
+    const tone = el === 'trail' ? { a: ab.color, b: '#ffffff' } : (TONES[el] ?? { a: ab.color, b: '#ffffff' });
+    const left = Math.min(1, fd.t / 0.6);
+    const bob = Math.sin(time * 3 + fd.x) * 2;
+    q.put({ kind: FX.glow, x: fd.x, y: fd.y, up: 4, w: fd.r * 2.1, a: tone.a, alpha: 0.3 * left });
+    q.put({ kind: FX.glow, x: fd.x, y: fd.y, up: 14 + bob, w: 30, a: tone.a, alpha: 0.75 * left });
+    q.put({ kind: FX.orb, x: fd.x, y: fd.y, up: 14 + bob, w: 12, a: tone.a, b: tone.b, t: 0.3, seed: time + fd.x, alpha: left });
+    for (let i = 0; i < 6; i++) {
+      const ang = time * 2.2 + (i / 6) * Math.PI * 2;
+      const rr = fd.r * (0.45 + 0.4 * ((i * 37) % 10) * 0.1);
+      q.put({ kind: FX.spark, x: fd.x + Math.cos(ang) * rr, y: fd.y + Math.sin(ang) * rr * 0.9, up: 6 + ((i * 13) % 7), w: 5, a: tone.b, t: 0.2, alpha: 0.8 * left });
     }
   }
   for (const f of fx.flashes) {
@@ -1223,7 +1236,23 @@ export interface RingAim {
 export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number, view: RingStage, aim: RingAim | null = null, raiseOf: (f: Fighter) => number = () => 0): void {
   const me = myId === null ? null : (m.fighters[myId] ?? null);
   let g = view.groundLayer();
-  if (m.phase === 'fight' && m.zone < ZONE_START - 0.01) gloamGround(g, m, view, time);
+  // what was left on the ground: its patch, ringed (red when it is the other side's, as a patch coming down is), the
+  // ring breathing so that it reads as something that stays
+  for (const fd of m.fields) {
+    const ab = ABILITIES[fd.ab];
+    const hostile = !!me && fd.team !== me.team;
+    const c = hostile ? '#ff4a5a' : (ab?.color ?? '#ffe39a');
+    const left = Math.min(1, fd.t / 0.6);
+    view.flat(fd.x, fd.y);
+    g.globalAlpha = (hostile ? 0.2 : 0.14) * left;
+    g.fillStyle = c;
+    g.beginPath();
+    g.ellipse(fd.x, fd.y, fd.r, fd.r, 0, 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = left;
+    ring(g, fd.x, fd.y, fd.r - 1 + Math.sin(time * 4) * 0.8, c, hostile ? 2.4 : 2);
+    g.globalAlpha = 1;
+  }
   // what is placed is seen before it lands: its patch on the ground, filling from the middle as it comes (red when it
   // is the other side's, so there is no doubt about which to step out of)
   for (const z of m.zones) {
@@ -1278,14 +1307,14 @@ export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number
   const picks = picksOf(m, me);
   for (const f of m.fighters) {
     // (the raised dead, once back in the ground, are nobody's to choose; one of the other side in the shroud is nobody's to see)
-    if ((f.pet && f.dead) || (me && m.unseen(f, me))) continue;
+    if ((f.pet && f.dead) || (me && m.unseen(f, me)) || m.aloft(f)) continue;
     view.flat(f.x, f.y);
     if (f.id === myId) ring(g, f.x, f.y, 11, '#ffe39a', 1.4);
     const pick = picks.get(f.id);
     if (pick && !f.dead) pickMark(g, f.x, f.y, pick, time, view.still);
   }
   g = view.upperLayer();
-  for (const f of m.fighters) if (!me || !m.unseen(f, me)) markFighter(g, m, f, myId, time, !me || f === me || m.sees(me, f), view, raiseOf(f), picks.get(f.id) ?? null);
+  for (const f of m.fighters) if ((!me || !m.unseen(f, me)) && !m.aloft(f)) markFighter(g, m, f, myId, time, !me || f === me || m.sees(me, f), view, raiseOf(f), picks.get(f.id) ?? null);
   g.textAlign = 'center';
   for (const p of fx.pops) {
     const u = p.t / 0.9;
@@ -1305,37 +1334,3 @@ export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number
 }
 
 export const classColor = (cls: Fighter['cls']): string => CLASSES[cls].colors.accent;
-
-/** The Gloam on the ground: everything outside the safe oval darkened, and its edge glowing. */
-function gloamGround(g: Ctx, m: Match, view: RingStage, time: number): void {
-  const z = m.zone;
-  const cx = ARENA_W / 2;
-  const cy = ARENA_H / 2;
-  const pts: { x: number; y: number }[] = [];
-  for (let i = 0; i < 96; i++) {
-    const a = (i / 96) * Math.PI * 2;
-    pts.push(view.spot(cx + Math.cos(a) * cx * z, cy + Math.sin(a) * cy * z));
-  }
-  const trace = (): void => {
-    g.moveTo(pts[0]!.x, pts[0]!.y);
-    for (const p of pts) g.lineTo(p.x, p.y);
-    g.closePath();
-  };
-  g.save();
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.beginPath();
-  g.rect(0, 0, g.canvas.width, g.canvas.height);
-  trace();
-  g.fillStyle = 'rgba(24,6,44,0.55)';
-  g.fill('evenodd');
-  g.beginPath();
-  trace();
-  const pulse = 0.65 + Math.sin(time * 4) * 0.2;
-  g.strokeStyle = `rgba(190,130,255,${pulse})`;
-  g.lineWidth = 5;
-  g.stroke();
-  g.strokeStyle = 'rgba(255,236,255,0.8)';
-  g.lineWidth = 1.5;
-  g.stroke();
-  g.restore();
-}

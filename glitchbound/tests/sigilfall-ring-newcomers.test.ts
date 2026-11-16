@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';
 import { hintNow, keepLog, lessonOf, newLog, type HintKeys } from '../src/games/sigilfall/arena/lessons';
 import { CLASS_EASE, CLASS_WAY, presetOfBar, STYLES, styleOf } from '../src/games/sigilfall/arena/styles';
-import { CLASS_DMG, CLOSE_FROM, GATES, Match, type MoveInput } from '../src/games/sigilfall/arena/sim';
+import { CLASS_DMG, DAMP_FROM, GATES, Match, type MoveInput } from '../src/games/sigilfall/arena/sim';
 import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
 import { LOBBY_STEPS, SPAR_DMG, SPAR_DMG_LOW, TutorialRun, tutorialSetup } from '../src/games/sigilfall/arena/tutorial';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
@@ -22,8 +22,8 @@ function run(m: Match, tut: TutorialRun, seconds: number, mine: MoveInput = { mx
   }
 }
 
-function tutorialMatch(cls: ClassId): { m: Match; tut: TutorialRun } {
-  const p = PRESETS[cls][0]!;
+function tutorialMatch(cls: ClassId, style = 0): { m: Match; tut: TutorialRun } {
+  const p = PRESETS[cls][style]!;
   const m = new Match(tutorialSetup({ team: 0, cls, name: 'You', bar: [...p.bar], talents: [...p.talents], ult: p.ult }, 7));
   return { m, tut: new TutorialRun(m, 0, 1) };
 }
@@ -40,10 +40,12 @@ describe('The Ring for newcomers: playstyles and how hard each class is', () => 
     }
   });
 
-  it('a bar is known as its playstyle whatever order its four are in, and a bar of your own is none', () => {
+  it('a bar is known as its playstyle whatever order its four are in; any other is read as the nearest', () => {
     const p = PRESETS.warrior[1]!;
     expect(presetOfBar('warrior', [...p.bar].reverse())).toBe(1);
-    expect(presetOfBar('warrior', ['w-hew', 'w-crack', 'w-stand', 'w-free'])).toBe(-1);
+    // (a bar kept from when abilities were chosen one by one: the playstyle it shares most with, the first on a tie)
+    expect(presetOfBar('warrior', ['w-hew', 'w-crack', 'w-stand', 'w-free'])).toBe(0);
+    expect(presetOfBar('warrior', ['w-bleed', 'w-crack', 'w-stand', 'w-free'])).toBe(1);
   });
 });
 
@@ -52,12 +54,14 @@ describe('The Ring for newcomers: plain words', () => {
     const m = new Match({ seed: 1, map: 'sands', fighters: [{ team: 0, cls: 'mage', name: 'a', bar: PRESETS.mage[0]!.bar }, { team: 1, cls: 'warrior', name: 'b', bar: PRESETS.warrior[0]!.bar }] });
     m.step(GATES + 0.01, {});
     const foe = m.fighters[1]!;
-    foe.bar = [...foe.bar.slice(0, 4), 'trinket'];
-    foe.auras.push({ ab: 'm-chill', kind: 'cc', cc: 'stun', src: 0, t: 2, dur: 2, harmful: true, magic: true, n: 0 });
-    // (the trinket breaks it while it is on the bar and ready, and says so; once spent, the hold is waited out)
-    expect(plainWhy(m, foe, 'You can’t do that now', ABILITIES['w-hew'])).toBe('You’re stunned: your trinket breaks you free');
-    foe.cds.trinket = 30;
+    foe.auras.push({ ab: 'd-hammer', kind: 'cc', cc: 'stun', src: 0, t: 2, dur: 2, harmful: true, magic: true, n: 0 });
+    // (a hold is waited out, unless something of theirs works while held and is ready: then it says which)
     expect(plainWhy(m, foe, 'You can’t do that now', ABILITIES['w-hew'])).toBe('You’re stunned and can’t act yet');
+    const me = m.fighters[0]!;
+    me.auras.push({ ab: 'd-hammer', kind: 'cc', cc: 'stun', src: 1, t: 2, dur: 2, harmful: true, magic: true, n: 0 });
+    expect(plainWhy(m, me, 'You can’t do that now', ABILITIES['m-lash'])).toBe('You’re stunned: Flicker still works');
+    me.cds['m-blink'] = 6;
+    expect(plainWhy(m, me, 'You can’t do that now', ABILITIES['m-lash'])).toBe('You’re stunned and can’t act yet');
     expect(plainWhy(m, foe, 'Too far away', ABILITIES['w-hew'])).toMatch(/walk up/);
     expect(plainWhy(m, foe, 'Too far away', ABILITIES['m-lash'])).toMatch(/get closer/);
     expect(plainWhy(m, foe, 'Out of sight', undefined)).toMatch(/pillar/);
@@ -116,7 +120,6 @@ describe('The Ring for newcomers: hints and lessons', () => {
     expect(lessonOf({ ...newLog(), fought: 60, circlesTaken: 3, outOfReach: 40 }, me, KEYS)).toMatch(/3 red circles/);
     expect(lessonOf({ ...newLog(), fought: 60, outOfReach: 40 }, me, KEYS)).toMatch(/up close.*Bull Rush/);
     expect(lessonOf({ ...newLog(), fought: 60, superIdle: 20 }, me, KEYS)).toMatch(/press Q/i);
-    expect(lessonOf({ ...newLog(), fought: 60, inGloam: 9 }, me, KEYS)).toMatch(/Gloam/);
     expect(lessonOf({ ...newLog(), fought: 60, hurtBySphere: 12 }, me, KEYS)).toMatch(/sphere/);
     expect(lessonOf({ ...newLog(), fought: 20 }, me, KEYS)).toMatch(/combo/);
     me.score.combos = 2;
@@ -131,9 +134,11 @@ describe('The Ring for newcomers: the tutorial', () => {
     const ids = LOBBY_STEPS.map((s) => s.id);
     expect(ids).toEqual(['welcome', 'styles', 'kit']);
     const spots = LOBBY_STEPS.flatMap((s) => (s.labels ?? []).map((l) => l.spot));
-    for (const want of ['classes', 'formats', 'rank', 'arena', 'loadout', 'bar', 'combos', 'tabs', 'kit', 'sets']) expect(spots).toContain(want);
+    for (const want of ['classes', 'formats', 'rank', 'arena', 'loadout', 'bar', 'combos', 'talents', 'sets']) expect(spots).toContain(want);
     for (const s of LOBBY_STEPS) for (const l of s.labels ?? []) expect(l.text.length, l.spot).toBeLessThan(40);
-    expect(LOBBY_STEPS.filter((s) => s.page === 'setup').map((s) => s.tab ?? s.mode)).toEqual(['styles', 'abilities']);
+    // (the setup page is one page: the playstyles, then the rest of it, labeled)
+    expect(LOBBY_STEPS.filter((s) => s.page === 'setup').map((s) => s.id)).toEqual(['styles', 'kit']);
+    expect(LOBBY_STEPS.find((s) => s.id === 'kit')!.text('mage')).toMatch(/talents/);
     for (const s of LOBBY_STEPS) for (const cls of CLASS_IDS) expect(s.text(cls).length).toBeGreaterThan(20);
     expect(LOBBY_STEPS.some((s) => /momentum|extras|oath/i.test(s.text('warrior')))).toBe(false);
   });
@@ -145,8 +150,9 @@ describe('The Ring for newcomers: the tutorial', () => {
     expect(tut.steps[0]).toBe('gates');
     expect(tut.steps.at(-1)).toBe('fight');
     expect(tut.steps).not.toContain('place');
-    // (a bar with a placed ability gets its own lesson in placing it)
-    expect(tutorialMatch('mage').tut.steps).toContain('place');
+    // (a playstyle with a placed ability, the Rime's globe, gets its own lesson in placing it)
+    expect(tutorialMatch('mage').tut.steps).not.toContain('place');
+    expect(tutorialMatch('mage', 1).tut.steps).toContain('place');
   });
 
   it('shows the fight’s screen labeled at once, then teaches by hand only what is done by hand, then a real fight', () => {
@@ -167,7 +173,8 @@ describe('The Ring for newcomers: the tutorial', () => {
     expect(view().text).toMatch(/spheres/);
     expect(view().text).toMatch(/sigil/);
     expect(view().text).toMatch(/Pillars/);
-    expect(view().text).toMatch(/Gloam/);
+    expect(view().text).toMatch(/Healing weakens/);
+    expect(view().text).not.toMatch(/Gloam/);
     expect(view().text).not.toMatch(/Momentum/);
     tut.next();
 
@@ -194,7 +201,7 @@ describe('The Ring for newcomers: the tutorial', () => {
     expect(view().text).toMatch(/Festering Gash.*Hew/);
     expect(m.press(0, 'w-gash')).toBeNull();
     run(m, tut, 0.3);
-    // (a Hurled Maul then a Festering Gash is the Reaper's other combo: that one may already have done it)
+    // (a Red Mist on the Gash, if a Hew brought one on, is a combo landed already)
     if (tut.id === 'combo') {
       expect(m.press(0, 'w-hew')).toBeNull();
       run(m, tut, 0.3);
@@ -224,7 +231,7 @@ describe('The Ring for newcomers: the tutorial', () => {
     expect(foe.hp).toBe(foe.maxHp);
     run(m, tut, 2);
     expect(m.clock).toBeGreaterThan(1.5);
-    expect(m.clock).toBeLessThan(CLOSE_FROM);
+    expect(m.clock).toBeLessThan(DAMP_FROM);
   });
 
   it('the last fight is one a newcomer wins: the partner hits gently, and gentler while they are hurt', () => {
@@ -234,7 +241,7 @@ describe('The Ring for newcomers: the tutorial', () => {
     for (const cls of CLASS_IDS) {
       if (cls === 'gloamknight') continue;
       for (let seed = 1; seed <= 5; seed++) {
-        const p = PRESETS[cls].find((x) => !x.bar.some((id) => ABILITIES[id]?.role === 'heal' && ABILITIES[id]?.aim === 'friend')) ?? PRESETS[cls][0]!;
+        const p = PRESETS[cls].find((x) => !x.healer) ?? PRESETS[cls][0]!;
         const m = new Match(tutorialSetup({ team: 0, cls, name: 'You', bar: [...p.bar], talents: [...p.talents], ult: p.ult }, seed));
         const tut = new TutorialRun(m, 0, 1);
         m.openSoon();

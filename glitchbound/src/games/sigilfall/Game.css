@@ -8939,22 +8939,6 @@ html.rb-touch-playing textarea {
   color: #ff9ab0;
   font-size: 9.5px;
 }
-/* the Gloam: a warning before it comes, and a pulse while it closes */
-.rb-ring-gloam {
-  color: #d8b0ff;
-  font-size: 9.5px;
-  font-weight: 700;
-}
-.rb-ring-gloam.is-on {
-  color: #f0d8ff;
-  text-shadow: 0 0 6px #9a4aff;
-  animation: rb-gloam 1.2s ease-in-out infinite;
-}
-@keyframes rb-gloam {
-  50% {
-    color: #c88aff;
-  }
-}
 /* the match's buttons, folded behind a small ⋯ hung beside the clock: out of the middle, and off the corner */
 .rb-ring-clock {
   position: relative;
@@ -13783,11 +13767,11 @@ html.rb-touch-playing textarea {
 /* ---- The Ring's thumbs on a phone (2026-11-15, the owner: "the buttons ... are lowkey covering the enemies and i can
    barely see whats happening on the right side of the screen ... id like more organized more natural feeling to the
    UI", and then "can we make all 4 spells on the same row around the main spell and the only outer ones to be the ult
-   and the step"). The attack (the bar's first) in the corner; the bar's other four on one arc round it, from the foot
-   of the screen to its edge, close enough to roll the thumb between; and outside that arc only the Swift Step, low on
-   the left, and the super, up on the diagonal. 224 by 166 points, where the cluster first took 222 by 224 (half a phone's
-   height on its side), and smaller again on a short screen. The switch-target button is under the enemies'
-   nameplates, and every button here is a fighting one. ---- */
+   and the step"). The basic ability (the bar's first) in the corner; the bar's other three on one arc round it, from
+   the foot of the screen to its edge, close enough to roll the thumb between; and outside that arc only the super, up
+   on the diagonal. (Four on the arc while a bar held five, until 2026-11-16: three are 50 points across where four
+   were 48, each the same 88 from the basic one's middle.) 224 by 166 points. The switch-target button is over the
+   top-right ability, and every other button here is a fighting one. ---- */
 .rb-ring-thumbs .rb-cluster {
   width: 224px;
   height: 166px;
@@ -13799,39 +13783,27 @@ html.rb-touch-playing textarea {
   height: 66px;
 }
 .rb-ring-thumbs .rb-cluster .rb-sb-s1 {
-  right: 106px;
-  bottom: 6px;
-  width: 48px;
-  height: 48px;
+  right: 107px;
+  bottom: 9px;
+  width: 50px;
+  height: 50px;
 }
 .rb-ring-thumbs .rb-cluster .rb-sb-s2 {
-  right: 98px;
-  bottom: 60px;
-  width: 48px;
-  height: 48px;
+  right: 82px;
+  bottom: 82px;
+  width: 50px;
+  height: 50px;
 }
 .rb-ring-thumbs .rb-cluster .rb-sb-s3 {
-  right: 60px;
-  bottom: 98px;
-  width: 48px;
-  height: 48px;
+  right: 9px;
+  bottom: 107px;
+  width: 50px;
+  height: 50px;
 }
-.rb-ring-thumbs .rb-cluster .rb-sb-s4 {
-  right: 6px;
-  bottom: 106px;
-  width: 48px;
-  height: 48px;
-}
-.rb-ring-thumbs .rb-cluster .rb-sb-dodge {
-  right: 175px;
-  bottom: 12px;
-  width: 44px;
-  height: 44px;
-}
-/* (over the top-right ability, s4, its middle over that one's, 8 points of the dark between them) */
+/* (over the top-right ability, s3, its middle over that one's, 5 points of the dark between them) */
 .rb-ring-thumbs .rb-cluster .rb-ring-cycle {
   position: absolute;
-  right: 10px;
+  right: 14px;
   bottom: 162px;
   width: 40px;
   height: 40px;
@@ -13839,8 +13811,264 @@ html.rb-touch-playing textarea {
   pointer-events: auto;
 }
 .rb-ring-thumbs .rb-cluster .rb-sb-ult {
-  right: 135px;
-  bottom: 109px;
+  right: 150px;
+  bottom: 70px;
   width: 54px;
   height: 54px;
+}
+
+/* ---- The Ring's combos on the player's own screen (2026-11-16, ui/RingBoons.tsx): the points held as pips over the
+   bar, the boons carried as chips beside them, and for a boon that lights an ability up, light at the edges of the
+   screen in its class's own manner (the owner: "instant procs should have similar to wows fingers of frost screen
+   visuals, make them unique for each class"). ---- */
+/* (over the bar's middle, above the line that says why a press was refused and the player's own cast, which sit just
+   over the bar: 56 points up) */
+.rb-ring-actions {
+  position: relative;
+}
+.rb-ring-combo-strip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 56px);
+  z-index: 4;
+  /* (as wide as what it holds: set from the bar's middle, it would otherwise be squeezed to half the bar) */
+  width: max-content;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  translate: -50% 0;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.rb-ring-pips {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px 3px 6px;
+  border-radius: 999px;
+  background: rgb(10 6 20 / 0.72);
+}
+.rb-ring-pips i {
+  width: 11px;
+  height: 11px;
+  border: 1.5px solid color-mix(in srgb, var(--pt, #fff) 55%, #000);
+  border-radius: 3px;
+  rotate: 45deg;
+  background: rgb(255 255 255 / 0.08);
+}
+.rb-ring-pips i.is-on {
+  border-color: #fff;
+  background: var(--pt, #fff);
+  box-shadow: 0 0 6px var(--pt, #fff);
+}
+.rb-ring-pips b {
+  margin-left: 4px;
+  color: color-mix(in srgb, var(--pt, #fff) 70%, #fff);
+  font: 700 10.5px/1 system-ui, sans-serif;
+  letter-spacing: 0.02em;
+}
+@keyframes rb-ring-pips-full {
+  50% {
+    box-shadow: 0 0 12px 2px var(--pt, #fff);
+  }
+}
+.rb-ring-pips.is-full {
+  box-shadow: 0 0 6px var(--pt, #fff);
+  animation: rb-ring-pips-full 0.9s ease-in-out infinite;
+}
+.rb-ring-boons {
+  display: inline-flex;
+  gap: 5px;
+}
+.rb-ring-boon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 4px 2px;
+  overflow: hidden;
+  border: 1.5px solid var(--bn, #ffd257);
+  border-radius: 8px;
+  color: #fff;
+  background: color-mix(in srgb, var(--bn, #ffd257) 26%, rgb(10 6 20 / 0.86));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--bn, #ffd257) 60%, transparent);
+}
+.rb-ring-boon.is-quiet {
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--bn, #ffd257) 60%, #000);
+}
+.rb-ring-boon img {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  image-rendering: pixelated;
+}
+.rb-ring-boon b {
+  font: 800 11px/1 system-ui, sans-serif;
+}
+/* (its time, running down along its foot) */
+.rb-ring-boon i {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: calc(var(--left, 1) * 100%);
+  height: 2px;
+  background: var(--bn, #ffd257);
+}
+/* on a phone the strip sits over the thumb cluster, clear of the switch-target button at its right */
+.rb-ring-thumbs .rb-cluster .rb-ring-combo-strip {
+  left: auto;
+  right: 60px;
+  bottom: 170px;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 4px;
+  translate: none;
+}
+.rb-ring-thumbs .rb-cluster .rb-ring-pips b {
+  display: none;
+}
+
+/* the light at the edges: a shape each side of the middle of the screen, bowed away from it, in the boon's own color */
+.rb-ring-flares {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+@keyframes rb-ring-flare-in {
+  0% {
+    opacity: 0;
+    scale: 1.5;
+  }
+  35% {
+    opacity: 1;
+    scale: 0.96;
+  }
+  100% {
+    opacity: 0.85;
+    scale: 1;
+  }
+}
+@keyframes rb-ring-flare {
+  0%,
+  100% {
+    opacity: 0.62;
+    filter: drop-shadow(0 0 10px currentColor) drop-shadow(0 0 2px #fff);
+  }
+  50% {
+    opacity: 0.95;
+    filter: drop-shadow(0 0 22px currentColor) drop-shadow(0 0 4px #fff);
+  }
+}
+.rb-ring-flare {
+  position: absolute;
+  top: 44%;
+  /* (by the fight's own box, which is not always the whole window: a quarter of its width either side of the middle) */
+  left: calc(50% - min(26cqw, 250px));
+  width: min(11cqw, 124px);
+  height: min(46cqh, 322px);
+  translate: -50% -50%;
+  fill: currentColor;
+  mix-blend-mode: screen;
+  transform-origin: 100% 50%;
+  animation: rb-ring-flare-in 0.32s ease-out, rb-ring-flare 1.1s ease-in-out 0.32s infinite;
+}
+.rb-ring-flare.is-right {
+  left: calc(50% + min(26cqw, 250px));
+  transform: scaleX(-1);
+}
+/* (a tongue of flame leans and a vine sways; shards and bones stand still but for the pulse) */
+.rb-ring-flare.is-flame,
+.rb-ring-flare.is-leaf,
+.rb-ring-flare.is-void {
+  animation: rb-ring-flare-in 0.32s ease-out, rb-ring-flare 0.8s ease-in-out 0.32s infinite;
+}
+/* (on a phone, nearer the middle: clear of the stick on one side and the thumb cluster on the other) */
+.rb-ring.is-touch .rb-ring-flare {
+  left: calc(50% - 20cqw);
+}
+.rb-ring.is-touch .rb-ring-flare.is-right {
+  left: calc(50% + 20cqw);
+}
+.rb-ring.is-still .rb-ring-flare {
+  animation: none;
+  opacity: 0.8;
+  filter: drop-shadow(0 0 12px currentColor);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-ring-flare,
+  .rb-ring-pips.is-full {
+    animation: none;
+  }
+  .rb-ring-flare {
+    opacity: 0.8;
+    filter: drop-shadow(0 0 12px currentColor);
+  }
+}
+.rb-ring-damp.is-gone {
+  color: #ff6a7a;
+  font-weight: 800;
+}
+
+/* ---- The Ring's setup page with fixed abilities (2026-11-16): the playstyles, the chosen one's abilities with how its
+   combo goes beside them, and its talents. One page that scrolls if it must. ---- */
+.rb-rs.is-fixed {
+  grid-template-rows: none;
+  align-content: start;
+  overflow-y: auto;
+}
+.rb-rs-kitrow {
+  display: grid;
+  grid-template-columns: minmax(230px, auto) minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: center;
+}
+.rb-rs-kitrow .rb-rs-barrow {
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.rb-rs-barhint {
+  color: #a79fb8;
+  font-size: 11px;
+}
+.rb-rs-how {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 6px 10px 6px 28px;
+  border-radius: 9px;
+  color: #e4dccd;
+  font-size: 12.5px;
+  line-height: 1.35;
+  background: rgb(0 0 0 / 0.26);
+}
+.rb-rs-how li::marker {
+  color: #ffd257;
+  font-weight: 800;
+}
+.rb-rs-how li.is-points {
+  list-style: none;
+  margin-left: -18px;
+  color: #cfc6dc;
+}
+.rb-rs-how li.is-points b {
+  color: var(--pt, #ffd257);
+}
+.rb-rs.is-fixed .rb-rs-row h4 small {
+  margin-left: 6px;
+  color: #a79fb8;
+  font: 400 11.5px system-ui, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.rb-rs-card-talent b {
+  color: #ffd257;
+}
+@container (max-width: 640px) {
+  .rb-rs-kitrow {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

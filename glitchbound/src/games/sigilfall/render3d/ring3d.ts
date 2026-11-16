@@ -245,7 +245,8 @@ export class RingStage implements RingView {
       const l = looks[f.id];
       if (!l) continue;
       // (one of the other side in the shroud is not there at all; one of your own is a shade of themself)
-      if (me && m.unseen(f, me) && !f.dead) continue;
+      // (nor is anyone who has gone up into the dark, until they come down)
+      if (((me && m.unseen(f, me)) || m.aloft(f)) && !f.dead) continue;
       this.fighter(f, l, dt, time, m.hidden(f) && !f.dead);
     }
     cast.end();
@@ -411,8 +412,7 @@ export class RingStage implements RingView {
   swing(id: number, abId: string, starting = false): void {
     const ab = ABILITIES[abId];
     const s = this.motions.get(id);
-    // (the trinket is no swing)
-    if (!s || !ab || starting || ab.id === 'trinket') return;
+    if (!s || !ab || starting) return;
     const has = (k: string): boolean => ab.effects.some((e) => e.k === k);
     const holds = (cc: string): boolean => ab.effects.some((e) => (e.k === 'cc' || e.k === 'trap') && e.cc === cc);
     const melee = ab.range > 0 && ab.range <= 40;

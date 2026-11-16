@@ -1,6 +1,6 @@
-import { ABILITIES, TRINKET, type Ability } from './abilities';
+import { ABILITIES, GCD, type Ability } from './abilities';
 import { ARENA_H, ARENA_W } from './maps';
-import { HERO_R, RANGED, type Fighter, type Match, type MoveInput, type Zone } from './sim';
+import { CRIT_K, HERO_R, RANGED, type Fighter, type Match, type MoveInput } from './sim';
 import { armored, brace, chainHealer, focusBias, fumble, guard, holdSuper, knows, lapse, lateKick, nextLook, peel, SHARP_FROM } from './tactics';
 
 /**
@@ -46,7 +46,8 @@ export function newBrain(seed: number): Brain {
 
 const HEALS = (f: Fighter): Ability[] => f.bar.map((b) => ABILITIES[b]!).filter((a) => a.role === 'heal' && a.aim === 'friend');
 
-export const isHealer = (f: Pick<Fighter, 'bar'>): boolean => f.bar.filter((b) => ABILITIES[b]?.role === 'heal' && ABILITIES[b]?.aim === 'friend').length >= 2;
+/** A healer's playstyle: its basic ability, the first on its bar, is a heal for a friend. */
+export const isHealer = (f: Pick<Fighter, 'bar'>): boolean => ABILITIES[f.bar[0] ?? '']?.role === 'heal' && ABILITIES[f.bar[0] ?? '']?.aim === 'friend';
 
 const hpShare = (f: Fighter): number => f.hp / f.maxHp;
 
@@ -86,7 +87,6 @@ export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: numb
   const hero = target.pet ? (enemies.find((e) => e.id === m.masterOf(target).id) ?? enemies[0]!) : target;
   f.target = hero.id;
 
-  breakFree(m, f, b, skill, enemies);
   // in the shroud: nothing that would bring them out of it but the blow it was taken for
   if (m.hidden(f) && !m.held(f)) {
     f.target = hero.id;
@@ -208,7 +208,9 @@ function mobilize(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighte
       if (blades && !m.blocked(f, ab)) m.press(f.id, id);
       continue;
     }
-    if (stuck && !m.blocked(f, ab)) m.press(f.id, id);
+    // (what quickens: to close in, for one who fights at arm's length; to get away, for one who doesn't)
+    const far = !RANGED.has(f.cls) && Math.hypot(target.x - f.x, target.y - f.y) > 70;
+    if ((stuck || (kinds.includes('speed') && (far || (RANGED.has(f.cls) && blades)))) && !m.blocked(f, ab)) m.press(f.id, id);
   }
 }
 
@@ -239,38 +241,37 @@ function kick(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[],
   }
 }
 
-function healFriends(m: Match, f: Fighter, _b: Brain, _skill: number, friends: Fighter[], enemies: Fighter[]): void {
+function healFriends(m: Match, f: Fighter, b: Brain, skill: number, friends: Fighter[], enemies: Fighter[]): void {
   const low = [...friends].sort((a, c) => hpShare(a) - hpShare(c))[0];
   if (!low) return;
   const share = hpShare(low);
   if (share > 0.92) return;
+  // healing that has faded buys little: the more of it is gone, the more of a healer's time goes into bringing them
+  // down first (and with none left, all of it)
+  const fade = m.dampening;
+  if (fade >= 1 || (fade > 0.5 && b.rand() < (fade - 0.5) * 1.6)) return;
   f.friend = low.id;
   const heals = HEALS(f);
-  // in danger, what's instant and big; otherwise the steady cast; a heal over time to keep up on the move
   const onMe = enemies.some((e) => e.target === f.id && Math.hypot(e.x - f.x, e.y - f.y) < 60);
   const pick = (want: (a: Ability) => boolean): Ability | undefined => heals.find((a) => want(a) && !m.blocked(f, a, low));
-  const hot = (a: Ability): boolean => a.effects.some((e) => e.k === 'hot') && a.cast === 0;
+  // a ward before the hurt lands (and it is what makes the mending under it stronger)
   const ward = f.bar.map((x) => ABILITIES[x]!).find((a) => a.effects.some((e) => e.k === 'absorb') && a.aim === 'friend' && !m.blocked(f, a, low));
-  if (share < 0.75 && ward && !low.auras.some((a) => a.ab === ward.id)) {
+  if (share < 0.8 && ward && !low.auras.some((a) => a.ab === ward.id)) {
     m.press(f.id, ward.id);
     return;
   }
-  const big = share < 0.3 ? pick((a) => a.cast === 0 && a.effects.some((e) => e.k === 'heal')) : undefined;
+  // in danger, what's instant and big; a heal that is lit (a boon, its combo, points to spend) as soon as it is worth it
+  const big = pick((a) => a.cd > 0 && m.castOf(f, a) === 0 && a.effects.some((e) => e.k === 'heal') && (share < (a.cd > 20 ? 0.3 : 0.55) || (share < 0.75 && !!m.lit(f, a, low))));
   if (big) {
     m.press(f.id, big.id);
     return;
   }
-  if (!low.auras.some((a) => a.kind === 'hot' && a.src === f.id)) {
-    const h = pick(hot);
-    if (h) {
-      m.press(f.id, h.id);
-      return;
-    }
-  }
-  if (!onMe || share < 0.5) {
-    const cast = pick((a) => a.cast > 0 && a.effects.some((e) => e.k === 'heal'));
-    if (cast) m.press(f.id, cast.id);
-  }
+  // a blow between heals while nobody is in danger: it is what a healer's combo is made with
+  const weave = f.bar.map((x) => ABILITIES[x]!).find((a) => a.aim === 'enemy' && a.role === 'damage' && a.cast === 0 && !m.blocked(f, a));
+  if (weave && share > 0.6 && b.rand() < 0.5 + skill * 0.4) return;
+  // the steady one: always when it costs no standing still, otherwise when nobody is on them or it can't wait
+  const basic = pick((a) => a.cd === 0 && a.effects.some((e) => e.k === 'heal'));
+  if (basic && (m.castOf(f, basic) === 0 || !onMe || share < 0.5)) m.press(f.id, basic.id);
 }
 
 function dispelFriends(m: Match, f: Fighter, b: Brain, skill: number, friends: Fighter[]): void {
@@ -334,39 +335,66 @@ function attack(m: Match, f: Fighter, b: Brain, skill: number, target: Fighter):
   if (rouse && !m.blocked(f, rouse) && m.fighters.some((o) => o.pet?.owner === f.id && !o.dead && o.target !== null && Math.hypot((m.fighters[o.target]?.x ?? 1e9) - o.x, (m.fighters[o.target]?.y ?? 1e9) - o.y) < 30)) m.press(f.id, rouse.id);
   // a blade at your throat: no time for anything slow
   const pressed = m.enemiesOf(f).some((e) => Math.hypot(e.x - f.x, e.y - f.y) < 50 && !m.held(e) && !m.rooted(e));
-  // chance to throw burst when they're low or they have no help (never on somebody's raised dead)
-  // (nor, for a sharp one, into immunity or a big ward)
-  const burst = target.pet || (skill >= SHARP_FROM && armored(target)) ? [] : near.filter((a) => a.role === 'burst');
-  for (const a of burst) {
-    if (a.aim === 'self' && a !== rouse && Math.hypot(target.x - f.x, target.y - f.y) < 60 && !m.blocked(f, a)) {
-      m.press(f.id, a.id);
-      return;
-    }
-    if (a.aim === 'near') {
-      if (Math.hypot(target.x - f.x, target.y - f.y) < a.range && !m.blocked(f, a)) {
-        m.press(f.id, a.id);
-        return;
-      }
-      continue;
-    }
-    // (a placed spell with a cast lands where they stood when it began: only on someone who is going nowhere)
-    if (a.aim === 'ground' && a.cast > 0 && !(m.held(target) || m.rooted(target) || (target.cast && !target.cast.channel && target.cast.dur - target.cast.t > 0.8))) continue;
-    if (atFoe(a) && !(a.cast > 0 && pressed) && !m.blocked(f, a, target)) {
-      m.press(f.id, a.id);
-      return;
+  // whatever is worth most right now: what is lit (a boon, a combo, points to spend) before what isn't
+  let best: Ability | null = null;
+  let most = 0;
+  for (const a of near) {
+    if (a.role === 'cc' || a.role === 'summon' || a.role === 'stealth' || a.role === 'mobility' || a.role === 'defense') continue;
+    if (!atFoe(a) && a.aim !== 'near') continue;
+    if (a.aim === 'near' ? Math.hypot(target.x - f.x, target.y - f.y) > a.range || !!m.blocked(f, a) : !!m.blocked(f, a, target)) continue;
+    const v = worthNow(m, f, a, target, skill, pressed);
+    if (v > most) {
+      most = v;
+      best = a;
     }
   }
-  // curses and poisons kept up, then the best hit on hand (casting slows you, so a blade close by wants instants)
-  const options = near.filter((a) => a.role === 'damage' && atFoe(a) && (!target.pet || a.effects.some((e) => e.k === 'dmg')));
-  const fresh = options.filter((a) => a.effects.some((e) => e.k === 'dmg') || !target.auras.some((x) => x.ab === a.id && x.t > 1));
-  const instant = fresh.filter((a) => a.cast === 0).sort((x, y) => worth(y) - worth(x));
-  const cast = fresh.filter((a) => a.cast > 0).sort((x, y) => worth(y) - worth(x));
-  const order = pressed && skill >= 0.25 ? instant : [...instant.filter((a) => a.effects.some((e) => e.k === 'dot')), ...cast, ...instant];
-  for (const a of order) {
-    if (m.blocked(f, a, target)) continue;
-    if (!m.press(f.id, a.id)) return;
-  }
+  if (best) m.press(f.id, best.id);
   void b;
+}
+
+/**
+ * What an ability is worth on this target right now, for each second it takes: its numbers, with whatever would make it
+ * land harder counted in (its combo ready on them, a boon it would use, the points it would spend), nothing for a burn
+ * that is on them already, and little for points spent too soon. The same things light its button for a player.
+ */
+function worthNow(m: Match, f: Fighter, a: Ability, target: Fighter, skill: number, pressed: boolean): number {
+  const how = m.how(f, a);
+  const burning = target.auras.some((x) => x.ab === a.id && x.kind === 'dot' && x.src === f.id && x.t > 1.5);
+  let v = 0;
+  for (const e of a.effects) {
+    if (e.k === 'dmg') v += e.n;
+    else if (e.k === 'dot' && !burning && !target.pet) v += e.n * 0.8;
+  }
+  if (a.field) v = v * (a.field.dur / a.field.tick) * 0.6;
+  if (a.channel) v *= a.channel / (a.tick ?? 1);
+  if (a.role === 'burst') v *= 1.25;
+  if (v <= 0) return 0;
+  const sharp = skill >= SHARP_FROM;
+  // (not into immunity or a big ward, for a sharp one, with anything that waits on a cooldown)
+  if (sharp && a.cd > 0 && !target.pet && armored(target)) return 0;
+  const combo = a.combo && m.comboReady(f, a, target) ? a.combo.mult : 1;
+  const use = m.boonFor(f, a);
+  v *= use?.asCombo && a.combo ? Math.max(combo, a.combo.mult) : combo;
+  if (use) v *= (use.mult ?? 1) * (use.crit ? CRIT_K : 1) * 1.4;
+  // (what gives a boon as it goes is worth the boon)
+  if (how.gives.some((g) => g.on === 'cast')) v += 40;
+  if (how.spend && f.points) {
+    // points are spent when there are plenty: all of them for a sharp hand, most for a dull one, any to finish someone
+    const want = sharp ? f.points.max : Math.max(2, f.points.max - 2);
+    const finishing = target.hp < target.maxHp * 0.2;
+    v *= 1 + how.spend.per * f.pts;
+    if (f.pts < want && !finishing && !use) v *= a.cd > 0 ? 0.6 : 0.15;
+  }
+  if (how.build && f.points && f.pts < f.points.max) v *= 1.1;
+  // (somebody's raised dead get nothing that waits long)
+  if (target.pet && a.cd > 6) return 0;
+  const time = Math.max(GCD, a.channel ?? m.castOf(f, a));
+  v /= time;
+  // casting slows you, so a blade close by wants instants
+  if (pressed && skill >= 0.25 && (a.channel || m.castOf(f, a) > 0)) v *= 0.5;
+  // (what is placed can be walked out of: best on someone going nowhere fast)
+  if (a.aim === 'ground' && !a.field && !(m.held(target) || m.rooted(target) || target.auras.some((x) => x.kind === 'slow' && x.n >= 0.3))) v *= 0.7;
+  return v;
 }
 
 /** The super, when it's full: on a kill, on a crowd, or to save a friend. */
@@ -405,14 +433,34 @@ function unleash(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter
     if (best) m.press(f.id, sup.id, { x: best.x, y: best.y });
     return;
   }
+  // (one that spends points: a sharp hand wants some to spend, unless it would finish them)
+  if (m.how(f, sup).spend && f.points && f.pts < 3 && skill >= SHARP_FROM && target.hp > target.maxHp * 0.3) return;
   if (!m.blocked(f, sup, target)) m.press(f.id, sup.id);
 }
 
-/** Something placed is about to land on them: which way out is nearest. */
+/** Something placed is about to land on them, or lies burning under them: which way out is nearest. */
 function dodge(m: Match, f: Fighter, b: Brain, skill: number): MoveInput | null {
   if (m.held(f) || m.rooted(f) || f.dash) return null;
   if (b.shots.size > 24) b.shots.clear();
-  let best: { z: Zone; out: number; sx: number; sy: number } | null = null;
+  let best: { out: number; sx: number; sy: number } | null = null;
+  // (what was left on the ground: out of it, for whoever has the wits; a dull one stands in it a while)
+  for (const z of m.fields) {
+    if (z.team === f.team) continue;
+    const dx = f.x - z.x;
+    const dy = f.y - z.y;
+    const d = Math.hypot(dx, dy);
+    if (d > z.r + 6 || z.dur - z.t < 0.9 - skill * 0.7) continue;
+    const key = `f${z.src}:${z.ab}:${Math.round(z.dur * 10)}`;
+    let will = b.shots.get(key);
+    if (will === undefined) {
+      will = b.rand() < 0.15 + skill * 0.8;
+      b.shots.set(key, will);
+    }
+    if (!will) continue;
+    const len = d || 1;
+    // (away from the way it drifts, if it is coming at them)
+    best = { out: z.r + 6 - d, sx: d > 1 ? dx / len : f.dirX || 1, sy: d > 1 ? dy / len : f.dirY };
+  }
   for (const z of m.zones) {
     if (z.team === f.team) continue;
     const dx = f.x - z.x;
@@ -432,25 +480,18 @@ function dodge(m: Match, f: Fighter, b: Brain, skill: number): MoveInput | null 
     if (best && out < best.out) continue;
     // straight out from its middle (from the dead middle, the way they were going)
     const len = d || 1;
-    best = { z, out, sx: d > 1 ? dx / len : f.dirX || 1, sy: d > 1 ? dy / len : f.dirY };
+    best = { out, sx: d > 1 ? dx / len : f.dirX || 1, sy: d > 1 ? dy / len : f.dirY };
   }
   if (!best) return null;
   return keepIn(m, f, best.sx, best.sy);
 }
 
-/** A way to step that doesn't run into the wall, stone or the Gloam: turned about if it would. */
+/** A way to step that doesn't run into the wall or stone: turned about if it would. */
 function keepIn(m: Match, f: Fighter, mx: number, my: number): MoveInput {
   const x = f.x + mx * 24;
   const y = f.y + my * 24;
-  const bad = x < HERO_R + 4 || y < HERO_R + 8 || x > ARENA_W - HERO_R - 4 || y > ARENA_H - HERO_R - 4 || m.zoneAt(x, y) > 0.98 || m.pillars.some((p) => x > p.x - HERO_R && x < p.x + p.w + HERO_R && y > p.y - HERO_R && y < p.y + p.h + HERO_R);
+  const bad = x < HERO_R + 4 || y < HERO_R + 8 || x > ARENA_W - HERO_R - 4 || y > ARENA_H - HERO_R - 4 || m.pillars.some((p) => x > p.x - HERO_R && x < p.x + p.w + HERO_R && y > p.y - HERO_R && y < p.y + p.h + HERO_R);
   return bad ? { mx: -mx, my: -my } : { mx, my };
-}
-
-function worth(a: Ability): number {
-  let n = 0;
-  for (const e of a.effects) if (e.k === 'dmg') n += e.n;
-  for (const e of a.effects) if (e.k === 'dot') n += e.n * 0.8;
-  return n;
 }
 
 function healSelf(m: Match, f: Fighter): void {
@@ -460,22 +501,6 @@ function healSelf(m: Match, f: Fighter): void {
     f.friend = f.id;
     m.press(f.id, ab.id);
   }
-}
-
-/**
- * The trinket, for whoever carries it (abilities.ts TRINKET): out of a hold that matters, or out from under burns that are eating them. A
- * sharp hand keeps it for a long hold while in danger; a newcomer spends it on the first thing that holds them.
- */
-function breakFree(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[]): void {
-  if (!f.bar.includes(TRINKET.id) || m.blocked(f, TRINKET)) return;
-  const hold = f.auras.find((a) => !!a.cc && a.harmful);
-  const danger = hpShare(f) < 0.6 || enemies.some((e) => e.target === f.id && Math.hypot(e.x - f.x, e.y - f.y) < 70);
-  if (hold && hold.t >= 1 - skill * 0.4 && (danger || skill < 0.4) && b.rand() < 0.25 + skill * 0.6) {
-    m.press(f.id, TRINKET.id);
-    return;
-  }
-  const dots = f.auras.filter((a) => a.kind === 'dot' && a.harmful).length;
-  if (dots >= 2 && hpShare(f) < 0.45 && b.rand() < 0.1 + skill * 0.3) m.press(f.id, TRINKET.id);
 }
 
 /* ------------------------------------------------------------------ the shroud */
@@ -502,7 +527,7 @@ function shroud(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[
 function prowl(m: Match, f: Fighter, b: Brain, skill: number, target: Fighter): void {
   const bar = f.bar.map((x) => ABILITIES[x]!);
   const d = Math.hypot(target.x - f.x, target.y - f.y);
-  const walk = bar.find((a) => a.quiet && a.effects.some((e) => e.k === 'behind'));
+  const walk = bar.find((a) => a.quiet && !a.super && a.effects.some((e) => e.k === 'behind'));
   if (walk && d > 44 && b.rand() < 0.4 + skill * 0.6 && !m.blocked(f, walk, target)) m.press(f.id, walk.id);
   const opener = bar.find((a) => a.veiled && !m.blocked(f, a, target)) ?? (bar.some((a) => a.veiled) ? undefined : bar.find((a) => atFoe(a) && a.role !== 'mobility' && !m.blocked(f, a, target)));
   // (a sharp one waits until it's at their back, unless it has been creeping a long while)
@@ -544,11 +569,6 @@ function walk(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[],
   const melee = bar.some((a) => a.aim === 'enemy' && a.range <= 40 && a.role === 'damage');
   const near = enemies.reduce((a, c) => (Math.hypot(c.x - f.x, c.y - f.y) < Math.hypot(a.x - f.x, a.y - f.y) ? c : a));
   const nearD = Math.hypot(near.x - f.x, near.y - f.y);
-  // out of the Gloam (and away from its edge) before anything else
-  if (m.zoneAt(f.x, f.y) > 0.9 && m.zone < 1.4) {
-    const s = m.sigilSpot();
-    return steer(m, f, b, s.x, s.y);
-  }
   // the sigil: worth a run when nobody's nearer to it, or when it's needed
   const sg = m.sigil;
   if (sg && b.rand() < 0.3 + skill * 0.7) {
@@ -558,12 +578,12 @@ function walk(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[],
       return steer(m, f, b, sg.x, sg.y);
     }
   }
-  // a healing sphere, when hurt and one is close and inside the Gloam's edge (a sharp one goes further for it)
+  // a healing sphere, when hurt and one is close (a sharp one goes further for it)
   if (hpShare(f) < 0.7 && b.rand() < 0.25 + skill * 0.75) {
     let orb: { x: number; y: number } | null = null;
     let od = 60 + skill * 70 + (hpShare(f) < 0.35 ? 60 : 0);
     for (const o of m.orbs) {
-      if (m.clock < o.at || m.zoneAt(o.x, o.y) > 0.95) continue;
+      if (m.clock < o.at) continue;
       const d = Math.hypot(o.x - f.x, o.y - f.y);
       if (d < od) {
         od = d;
@@ -626,7 +646,7 @@ function peek(m: Match, f: Fighter, b: Brain, t: Fighter): MoveInput {
       const a = (i / 12) * Math.PI * 2;
       const x = f.x + Math.cos(a) * reach;
       const y = f.y + Math.sin(a) * reach;
-      if (x < 20 || y < 16 || x > ARENA_W - 20 || y > ARENA_H - 16 || m.zoneAt(x, y) > 0.95) continue;
+      if (x < 20 || y < 16 || x > ARENA_W - 20 || y > ARENA_H - 16) continue;
       if (m.pillars.some((p) => x > p.x - HERO_R - 2 && x < p.x + p.w + HERO_R + 2 && y > p.y - HERO_R - 2 && y < p.y + p.h + HERO_R + 2)) continue;
       if (!m.sees({ x, y }, t)) continue;
       // nearer is better, and so is not too close to them
