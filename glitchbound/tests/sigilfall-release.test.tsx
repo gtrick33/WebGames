@@ -12,6 +12,7 @@ import { NO_MONEY } from '../src/catalog/settings';
 import { GLOAMKNIGHT_ITEM, PRODUCTS } from '../src/catalog/shop';
 import { GAME_VERSION } from '../src/games/sigilfall/data/version';
 import type { SigilEngine } from '../src/games/sigilfall/engine';
+import { defaultBinds } from '../src/games/sigilfall/input/binds';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
 import { playerDetail, SAVE_KEY } from '../server/sigilfallGm';
 import type { Env } from '../server/http';
@@ -23,7 +24,7 @@ afterEach(() => {
 });
 
 const engineOn = (touchMode: boolean): SigilEngine =>
-  ({ settings: { ...DEFAULT_SETTINGS }, setSettings: () => undefined, resetSettings: () => undefined, setTutorial: () => undefined, usePreset: () => undefined, canSave: true, hero: null, reviewTools: false, touchMode }) as unknown as SigilEngine;
+  ({ settings: { ...DEFAULT_SETTINGS }, setSettings: () => undefined, resetSettings: () => undefined, setTutorial: () => undefined, usePreset: () => undefined, binds: () => defaultBinds('f', 'c'), canSave: true, hero: null, reviewTools: false, touchMode }) as unknown as SigilEngine;
 
 describe('Settings', () => {
   it('names the version, and it is 1.0.0', async () => {
