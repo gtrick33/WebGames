@@ -52,6 +52,15 @@ export const TONES: Record<string, Tone> = {
 export const inView = (cx: number, cy: number, vw: number, vh: number, x: number, y: number, reach = 0): boolean => Math.abs(x - cx) < vw * 0.7 + reach && Math.abs(y - cy) < vh * 0.9 + reach;
 
 export const telegraphKind = (t: { kind?: TelegraphKind }): TelegraphKind => t.kind ?? 'danger';
+
+/** The colors a blow about to land can be drawn in (Settings.dangerTone): red, or magenta for red-green color blindness. */
+export const DANGER_TONES = { red: '#ff3b3b', magenta: '#ff2bd6' } as const;
+let danger: string = DANGER_TONES.red;
+/** What a blow about to land is drawn in, as the player chose it (engine.ts applySettings). */
+export const dangerColor = (): string => danger;
+export function setDangerTone(tone: keyof typeof DANGER_TONES): void {
+  danger = DANGER_TONES[tone] ?? DANGER_TONES.red;
+}
 /** The colors of the marks that aren't attacks: gold for safety, blue for a place to stand, grey for a plain warning. */
 export const KIND_COLOR: Record<Exclude<TelegraphKind, 'danger'>, string> = { safe: '#ffd24a', stand: '#4aa8ff', warn: '#b8b4c4' };
 const toneOf = (type: string): Tone => TONES[type] ?? TONES.physical!;
@@ -1054,7 +1063,7 @@ export class Effects {
     if (t.t >= t.dur && t.linger <= 0) return;
     const k = clamp(t.t / t.dur, 0, 1);
     const kind = telegraphKind(t);
-    const a = kind === 'danger' ? (t.tone === 'rift' ? '#ff3fd2' : t.tone === 'player' ? '#ffb04d' : '#ff3b3b') : KIND_COLOR[kind];
+    const a = kind === 'danger' ? (t.tone === 'rift' ? '#ff3fd2' : t.tone === 'player' ? '#ffb04d' : dangerColor()) : KIND_COLOR[kind];
     const lingering = t.t >= t.dur;
     if (kind !== 'danger') {
       this.quietTelegraph(t, kind, a, fx);
@@ -1116,7 +1125,7 @@ export class Effects {
 
   /** The wind-ups of ordinary foes, read from their state: arcs, slam circles, aim lines, charge lanes. */
   private windups(w: World, fx: Fx3D): void {
-    const red = '#ff3b3b';
+    const red = dangerColor();
     for (const e of w.enemies) {
       if (e.dead || e.state !== 'windup' || e.boss) continue;
       const k = clamp(1 - e.t / e.def.windup, 0, 1);
@@ -1579,7 +1588,7 @@ export class Effects {
     const seed = pr.id * 0.37;
     const dye = dyeOf(pr.color);
     // (where it really is: shots fly at chest height, and this is what you dodge)
-    fx.put({ kind: FX.mark, x: pr.x, y: pr.y, flat: true, w: r * 3.2 + 4, a: '#ff3b3b' });
+    fx.put({ kind: FX.mark, x: pr.x, y: pr.y, flat: true, w: r * 3.2 + 4, a: dangerColor() });
     switch (pr.look) {
       case 'enemyArrow':
         this.tail(fx, pr, up, 5, '#ffffff', '#ffd8c8', 0.12);

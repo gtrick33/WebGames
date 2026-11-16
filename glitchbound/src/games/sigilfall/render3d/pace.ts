@@ -43,9 +43,14 @@ export const TRIAL_FRAMES = 60;
 /** A step helped if the frames came at least this much faster for it. */
 export const TRIAL_GAIN = 0.92;
 
+/** The share of the full picture "Graphics: light" holds to, whatever the machine keeps up with. */
+export const QUALITY_LOW = 0.6;
+
 export class Pacer {
   /** Share of the full pixel ratio drawn with. */
   quality = 1;
+  /** The player's choice (Settings.graphics): auto steps with the pace; high holds the full picture; low holds QUALITY_LOW. */
+  mode: 'auto' | 'high' | 'low' = 'auto';
   /** The least `quality` may fall to (a phone's is higher: stage.ts). */
   floor = QUALITY_FLOOR;
   private avg = 1 / 60;
@@ -58,6 +63,13 @@ export class Pacer {
 
   /** One frame, `dt` seconds after the last. True when `quality` changed. */
   tick(dt: number): boolean {
+    if (this.mode !== 'auto') {
+      const want = this.mode === 'high' ? 1 : Math.max(this.floor, QUALITY_LOW);
+      if (this.quality === want) return false;
+      this.quality = want;
+      this.trial = null;
+      return true;
+    }
     if (!(dt > 0 && dt < 0.25)) return false;
     // (the pace over the last ten frames or so: one long frame is a hitch, not a slow machine)
     this.avg = this.avg * 0.9 + dt * 0.1;

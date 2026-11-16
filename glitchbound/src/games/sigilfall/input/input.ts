@@ -2,6 +2,7 @@ import type { SlotKey } from '../data/types';
 import type { AimPreview } from '../render/renderer';
 import type { CastRequest } from '../sim/cast';
 import type { InputFrame } from '../sim/world';
+import { codeMap, defaultBinds, type CampAction } from './binds';
 
 /**
  * Input adapters. Gameplay never reads the keyboard or the touch screen directly: each adapter fills
@@ -38,6 +39,8 @@ export class KeyboardMouse {
   lastUsed = 0;
   ultKey: UltKey = 'f';
   skill4Key: Skill4Key = 'c';
+  /** Which action each key is for (input/binds.ts; the engine sets it from Settings). */
+  byCode: Map<string, CampAction> = codeMap(defaultBinds('f', 'c'));
   onUi: ((k: UiKey) => void) | null = null;
   private target: HTMLElement;
   private off: (() => void)[] = [];
@@ -91,22 +94,14 @@ export class KeyboardMouse {
     if (down) {
       this.lastUsed = performance.now();
       if (!e.repeat) {
-        if (code === 'KeyQ') this.queued.push('s1');
-        else if (code === 'KeyE') this.queued.push('s2');
-        else if (code === 'KeyR') this.queued.push('s3');
-        else if (code === `Key${this.skill4Key.toUpperCase()}`) this.queued.push('s4');
-        else if (k === ' ') this.queued.push('dodge');
-        else if ((this.ultKey === 'f' && code === 'KeyF') || (this.ultKey === 't' && code === 'KeyT') || (this.ultKey === 'shift' && k === 'Shift')) this.queued.push('ult');
-        else if (code === 'Digit1' || code === 'KeyH') this.potion = true;
-        else if (code === 'KeyY') this.mount = true;
-        else if (code === 'KeyG' || k === 'Enter' || (this.ultKey !== 'f' && code === 'KeyF')) this.interact = true;
-        else if (k === 'Escape' || code === 'KeyP') this.onUi?.('pause');
-        else if (code === 'KeyI' || code === 'KeyB' || code === 'KeyC') this.onUi?.('hero');
-        else if (code === 'KeyK' || code === 'KeyN') this.onUi?.('talents');
-        else if (code === 'KeyJ' || code === 'KeyL') this.onUi?.('quests');
-        else if (code === 'KeyM') this.onUi?.('map');
-        else if (code === 'KeyU') this.onUi?.('skills');
-        else if (code === 'KeyO') this.onUi?.('party');
+        // (by the key's place on the keyboard: Settings › Keys, input/binds.ts; Shift has no code of its own on some keyboards)
+        const act = this.byCode.get(code) ?? (k === 'Shift' ? this.byCode.get('ShiftLeft') : k === 'Enter' ? this.byCode.get('Enter') : k === ' ' ? this.byCode.get('Space') : undefined);
+        if (act === 's1' || act === 's2' || act === 's3' || act === 's4' || act === 'dodge' || act === 'ult') this.queued.push(act);
+        else if (act === 'potion') this.potion = true;
+        else if (act === 'mount') this.mount = true;
+        else if (act === 'interact') this.interact = true;
+        else if (act === 'pause' || k === 'Escape') this.onUi?.('pause');
+        else if (act === 'hero' || act === 'talents' || act === 'quests' || act === 'map' || act === 'skills' || act === 'party') this.onUi?.(act);
       }
       this.keys.add(id);
     } else this.keys.delete(id);

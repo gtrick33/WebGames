@@ -418,7 +418,7 @@ const fragment = /* glsl */ `
     if (shape < 0.5) {
       inside = step(d, 1.0);
       at = d;
-      line = exp(-pow((d - 0.975) / 0.018, 2.0));
+      line = exp(-pow((d - 0.972) / 0.026, 2.0));
     } else if (shape < 1.5) {
       inside = step(d, 1.0) * step(p2, d);
       at = 1.0 - (d - p2) / max(0.01, 1.0 - p2);
@@ -434,9 +434,10 @@ const fragment = /* glsl */ `
       line = exp(-pow((abs(uv.y) - 0.94) / 0.05, 2.0));
     }
     if (inside <= 0.0) return vec4(0.0);
-    float a = 0.15;
+    // (a body of color, not only an edge: on a dark crypt floor or under a night sky an outline alone was lost)
+    float a = 0.22;
     float filled = step(at, k);
-    a += filled * 0.2;
+    a += filled * 0.26 + smoothstep(0.7, 1.0, k) * filled * 0.12;
     float head = exp(-pow((at - k) / 0.03, 2.0)) * (k < 0.995 ? 1.0 : 0.0);
     vec3 c = vA.rgb * a;
     c += mix(vA.rgb, vec3(1.0), 0.45) * (line * 0.85 + head * 0.9);

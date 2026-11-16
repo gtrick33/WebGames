@@ -176,6 +176,12 @@ export class Renderer {
    * is further out. What the land keeps standing follows it (render3d/land.ts viewBox goes by the picture's reach).
    */
   private zoom = 1;
+  private graphics: 'auto' | 'high' | 'low' = 'auto';
+  /** How the picture is drawn (Settings.graphics), now and for a 3D view made later. */
+  setGraphics(mode: 'auto' | 'high' | 'low'): void {
+    this.graphics = mode;
+    this.stage?.setGraphics(mode);
+  }
   private sized: [number, number, number, boolean] | null = null;
   setZoom(zoom: number): void {
     const z = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom));
@@ -217,6 +223,7 @@ export class Renderer {
     if (this.stage || this.stageFailed) return this.stage;
     try {
       this.stage = new Stage(this.canvas);
+      this.stage.setGraphics(this.graphics);
     } catch {
       this.stageFailed = true;
     }

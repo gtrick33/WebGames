@@ -37,7 +37,9 @@ import { RiftGuide } from './RiftGuide';
 import { ShopPanel } from './Shop';
 import { RING_LOOKS } from '../arena/rewards';
 import { MUSIC_CREDITS } from '../audio/tracks';
-import { allTitles, earnedTitles, titleName, titleShown, wornTitleShown } from '../progress/titles';
+import { allTitles, earnedTitles, RING_RECORD_TITLES, RING_TITLES, titleName, titleShown, wornTitleShown, type TitleDef } from '../progress/titles';
+import { seasonOf } from '../arena/record';
+import { actionLabel, CAMP_ACTIONS, RESERVED_CODES, type CampAction } from '../input/binds';
 import { TitleFx } from '../../../components/TitleFx';
 import { Titled } from './Titled';
 import { WARDENS } from '../data/wardens';
@@ -258,14 +260,34 @@ export function isUpgrade(cur: Item | undefined, it: Item): boolean {
   return itemScore(it) > itemScore(cur) + 5;
 }
 
-/** The hero's titles: the one worn (chosen here), and every one there is with how it is earned. */
+/** Where a title comes from, for the list's headings. */
+const TITLE_GROUPS = ['The story', 'The Rift', 'The Ring', 'The Vigil', 'Given to you'] as const;
+const RIFT_TITLE_IDS = new Set(['riftwalker', 'riftbreaker', 'last-memory', 'exalted']);
+const RING_TITLE_IDS = new Set([...RING_TITLES.map((t) => t.id), ...RING_RECORD_TITLES.map((t) => t.id)]);
+function titleGroup(t: TitleDef): (typeof TITLE_GROUPS)[number] {
+  if (t.given) return 'Given to you';
+  if (t.id.startsWith('vigil-')) return 'The Vigil';
+  if (RING_TITLE_IDS.has(t.id)) return 'The Ring';
+  if (RIFT_TITLE_IDS.has(t.id)) return 'The Rift';
+  return 'The story';
+}
+
+/**
+ * The hero's titles: the one worn (chosen here), and every one there is with how it is earned, under where it comes
+ * from. A season's champion title is listed once its season has begun (the list ran to "Season 26 Champion").
+ */
 function TitlePicker({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const rating = engine.ringRating();
   const mine = earnedTitles(h, rating);
   const worn = wornTitleShown(h, rating);
   const value = h.title === '' ? '' : (mine.find((t) => titleName(t, h) === worn?.text)?.id ?? '');
-  const all = allTitles();
+  // (the season when the page was opened: read once, not on every draw)
+  const [season] = useState(() => seasonOf(Date.now()));
+  const all = allTitles().filter((t) => {
+    const n = /^ring-s(\d+)-champion$/.exec(t.id);
+    return !n || Number(n[1]) <= season || mine.includes(t);
+  });
   return (
     <details className="rb-titles">
       <summary>
@@ -284,18 +306,29 @@ function TitlePicker({ engine }: { engine: SigilEngine }) {
           </select>
         </label>
       )}
-      <ul>
-        {all.map((t) => {
-          const has = mine.includes(t);
-          return (
-            <li key={t.id} className={has ? 'is-on' : ''}>
-              {/* (its light is shown on the ones earned: the rest are a promise) */}
-              <b className={t.rare ? 'rb-title-rare' : ''}>{has ? <TitleFx fx={titleShown(t, h).fx}>{titleName(t, h)}</TitleFx> : t.id === 'warden' ? WARDENS[h.cls].title : t.name}</b>
-              <span>{t.how}</span>
-            </li>
-          );
-        })}
-      </ul>
+      {TITLE_GROUPS.map((g) => {
+        const list = all.filter((t) => titleGroup(t) === g);
+        if (!list.length) return null;
+        return (
+          <section key={g} className="rb-titles-group">
+            <h4>
+              {g} <span className="rb-dim">{list.filter((t) => mine.includes(t)).length} of {list.length}</span>
+            </h4>
+            <ul>
+              {list.map((t) => {
+                const has = mine.includes(t);
+                return (
+                  <li key={t.id} className={has ? 'is-on' : ''}>
+                    {/* (its light is shown on the ones earned: the rest are a promise) */}
+                    <b className={t.rare ? 'rb-title-rare' : ''}>{has ? <TitleFx fx={titleShown(t, h).fx}>{titleName(t, h)}</TitleFx> : t.id === 'warden' ? WARDENS[h.cls].title : t.name}</b>
+                    <span>{t.how}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })}
     </details>
   );
 }
@@ -512,7 +545,8 @@ function SkillsPanel({ engine }: { engine: SigilEngine }) {
   const cls = CLASSES[h.cls];
   const [slot, setSlot] = useState<SkillIndex>(0);
   const learned = learnedSkills(h);
-  const keys = engine.touchMode ? ['Skill 1', 'Skill 2', 'Skill 3', 'Skill 4'] : ['Q', 'E', 'R', engine.settings.skill4Key.toUpperCase()];
+  const binds = engine.binds();
+  const keys = engine.touchMode ? ['Skill 1', 'Skill 2', 'Skill 3', 'Skill 4'] : (['s1', 's2', 's3', 's4'] as const).map((a) => actionLabel(binds, a));
   return (
     <div className="rb-skills">
       <section>
@@ -1364,6 +1398,51 @@ function Explored({ hero, region }: { hero: Character; region: RegionId }) {
 }
 
 /**
+ * Settings › Keys: every action with the key it answers to, a click to give it another (the next key pressed; Escape
+ * puts it back as it was), and a way back to the game's own keys. Walking (WASD, the arrows) and Escape aren't
+ * offered: input/binds.ts RESERVED_CODES.
+ */
+function KeysPicker({ engine }: { engine: SigilEngine }) {
+  const s = engine.settings;
+  const binds = engine.binds();
+  const [asking, setAsking] = useState<CampAction | null>(null);
+  useEffect(() => {
+    if (!asking) return;
+    const key = (e: KeyboardEvent): void => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.code === 'Escape' || !e.code) return setAsking(null);
+      if (RESERVED_CODES.has(e.code)) return;
+      const own: Partial<Record<CampAction, string>> = {};
+      for (const [a, c] of Object.entries(s.keys ?? {}) as [CampAction, string][]) if (c !== e.code) own[a] = c;
+      own[asking] = e.code;
+      engine.setSettings({ keys: own });
+      setAsking(null);
+    };
+    window.addEventListener('keydown', key, true);
+    return () => window.removeEventListener('keydown', key, true);
+  }, [asking, engine, s.keys]);
+  return (
+    <div className="rb-keys" role="group" aria-label="Keys">
+      <span className="rb-small rb-dim">WASD or the arrows walk, the mouse aims and the left button attacks. Click an action, then press its new key (Esc to keep the old one).</span>
+      <div className="rb-keys-list">
+        {CAMP_ACTIONS.map((a) => (
+          <button key={a.id} className={`rb-keys-row${asking === a.id ? ' is-asking' : ''}${s.keys?.[a.id] ? ' is-own' : ''}`} onClick={() => setAsking(asking === a.id ? null : a.id)} aria-label={`${a.name}: ${actionLabel(binds, a.id) || 'none'}. Click to change`}>
+            <span>{a.name}</span>
+            <kbd>{asking === a.id ? 'Press a key…' : actionLabel(binds, a.id) || (a.id === 'ult' && s.ultKey === 'rmb' ? 'Right mouse' : '—')}</kbd>
+          </button>
+        ))}
+      </div>
+      {Object.keys(s.keys ?? {}).length > 0 && (
+        <button className="rb-btn is-small is-ghost" onClick={() => engine.setSettings({ keys: {} })}>
+          Back to the game’s keys
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
  * A land's map: the one the hero is in, with them on it, or another picked on the world map, as far as the
  * hero has explored it (black where they haven't been: all black for a land they have never set foot in).
  * The wheel, a pinch or the buttons zoom; a drag moves it.
@@ -1608,7 +1687,7 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
                   </button>
                 ))}
               </div>
-              <span className="rb-small rb-dim">WASD move · mouse aim · left click attack · Q E R {s.skill4Key.toUpperCase()} skills · Space dodge · {s.ultKey === 'rmb' ? 'Right mouse' : s.ultKey === 'shift' ? 'Shift' : s.ultKey.toUpperCase()} ultimate · 1 potion · Y ride · {s.ultKey === 'f' ? 'G' : 'F'} or Enter talk/travel · I bag · K talents · U skills · J quests · M map · O play together · Esc pause</span>
+              <KeysPicker engine={engine} />
             </>
           )}
         </section>
@@ -1644,6 +1723,22 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
             <input type="checkbox" checked={s.reducedMotion} onChange={(e) => set({ reducedMotion: e.target.checked })} />
             <span>Reduced motion (no shake, calmer weather and effects)</span>
           </label>
+          <div className="rb-seg" role="radiogroup" aria-label="Graphics">
+            {(['auto', 'high', 'low'] as const).map((g) => (
+              <button key={g} role="radio" aria-checked={s.graphics === g} className={s.graphics === g ? 'is-on' : ''} onClick={() => set({ graphics: g })}>
+                Graphics: {g === 'auto' ? 'Auto' : g === 'high' ? 'Sharp' : 'Light'}
+              </button>
+            ))}
+          </div>
+          <span className="rb-small rb-dim">Auto draws fewer pixels when the machine can’t keep up. Sharp always draws the full picture; Light always draws a lighter one, for an older phone or laptop.</span>
+          <div className="rb-seg" role="radiogroup" aria-label="Color of danger marks">
+            {(['red', 'magenta'] as const).map((t) => (
+              <button key={t} role="radio" aria-checked={s.dangerTone === t} className={s.dangerTone === t ? 'is-on' : ''} onClick={() => set({ dangerTone: t })}>
+                Danger marks: {t === 'red' ? 'Red' : 'Magenta'}
+              </button>
+            ))}
+          </div>
+          <span className="rb-small rb-dim">The color of a blow about to land. Magenta is easier to tell from grass with red-green color blindness.</span>
           <label className="rb-check">
             <input type="checkbox" checked={s.ringPlates} onChange={(e) => set({ ringPlates: e.target.checked })} />
             <span>Nameplates in The Ring (the fighters’ names and bars along the top of a match)</span>
@@ -1779,7 +1874,7 @@ function WardrobePanel({ engine }: { engine: SigilEngine }) {
             const w = worn[s];
             return (
               <li key={s}>
-                <span className="rb-dim">{LOOK_LABEL[s]}</span> {w === 'bare' ? 'Bare' : w ? w.name : h.equip[s] ? `${itemName(h.equip[s]!)} (equipped)` : 'Nothing'}
+                <span className="rb-dim">{LOOK_LABEL[s]}</span> {w === 'bare' ? 'Bare' : w ? w.name : h.equip[s] ? `${itemName(h.equip[s]!)} (equipped)` : s === 'weapon' ? `${CLASSES[h.cls].name}’s plain ${heldWeapon(h.cls, undefined).kind}` : 'Nothing'}
               </li>
             );
           })}

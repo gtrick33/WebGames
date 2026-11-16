@@ -11,18 +11,20 @@ import { skillIconUrl } from '../render/sprites';
 import { slotHaste, SUMMON_TIME } from '../sim/world';
 import { useFrame } from './GameScreen';
 import { uiIcon } from './uiIcons';
+import { actionLabel } from '../input/binds';
 
 /** The desktop action bar: keys on every slot, cooldowns, the ultimate's charge, and the interact prompt. */
 export function DesktopBar({ engine }: { engine: SigilEngine }) {
-  const ult = engine.settings.ultKey;
+  // (the keys the player has chosen: Settings › Keys)
+  const binds = engine.binds();
   const slots: { slot: SlotKey; key: string }[] = [
     { slot: 'basic', key: 'LMB' },
-    { slot: 's1', key: 'Q' },
-    { slot: 's2', key: 'E' },
-    { slot: 's3', key: 'R' },
-    { slot: 's4', key: engine.settings.skill4Key.toUpperCase() },
-    { slot: 'ult', key: ult === 'rmb' ? 'RMB' : ult === 'shift' ? 'Shift' : ult.toUpperCase() },
-    { slot: 'dodge', key: 'Space' },
+    { slot: 's1', key: actionLabel(binds, 's1') },
+    { slot: 's2', key: actionLabel(binds, 's2') },
+    { slot: 's3', key: actionLabel(binds, 's3') },
+    { slot: 's4', key: actionLabel(binds, 's4') },
+    { slot: 'ult', key: actionLabel(binds, 'ult') || (engine.settings.ultKey === 'rmb' ? 'RMB' : '') },
+    { slot: 'dodge', key: actionLabel(binds, 'dodge') },
   ];
   const prompt = useRef<HTMLDivElement>(null);
   useFrame(engine, (w) => {
@@ -30,7 +32,7 @@ export function DesktopBar({ engine }: { engine: SigilEngine }) {
     if (!el) return;
     const it = w.interactable;
     el.hidden = !it;
-    if (it) el.textContent = `${ult === 'f' ? 'G' : 'F'} · ${it.kind === 'npc' ? 'Talk' : it.label}`;
+    if (it) el.textContent = `${actionLabel(binds, 'interact')} · ${it.kind === 'npc' ? 'Talk' : it.label}`;
   });
   // indoors is peaceful (sim/world.ts): the bar is put away, and nothing covers a room's door
   const indoors = !!engine.world?.region.interior;

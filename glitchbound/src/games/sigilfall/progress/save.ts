@@ -1,4 +1,5 @@
 import { CLASSES } from '../data/classes';
+import { CAMP_ACTIONS, RESERVED_CODES, type CampAction } from '../input/binds';
 import { HAIRS, SKINS, type Face } from './character';
 import { CLASS_IDS, MAX_LEVEL, xpToNext } from '../data/classes';
 import { BASE_DEFS, ITEM_DEFS, MINOR_MODS } from '../data/items';
@@ -78,9 +79,15 @@ export interface Settings {
   plates: boolean;
   /** Calmer screen: no shake, lighter weather (a new save starts from the device's own setting). */
   reducedMotion: boolean;
+  /** How the picture is drawn: as many pixels as the machine keeps up with (auto), always full, or always light. */
+  graphics: 'auto' | 'high' | 'low';
+  /** The color of a blow about to land: red, or magenta (told apart from grass with red-green color blindness). */
+  dangerTone: 'red' | 'magenta';
   ultKey: 'f' | 't' | 'shift' | 'rmb';
   /** The fourth skill's key (the slot added in blueprint V2.9). */
   skill4Key: 'c' | 'v' | 'z' | 'x';
+  /** Keys the player gave actions of their own (input/binds.ts), by the key's place on the keyboard. */
+  keys: Partial<Record<CampAction, string>>;
   /** Mirror the touch controls (skills on the left). */
   lefty: boolean;
   /** The rotate-your-phone hint was dismissed. */
@@ -111,8 +118,11 @@ export const DEFAULT_SETTINGS: Settings = {
   numbers: true,
   plates: true,
   reducedMotion: false,
+  graphics: 'auto',
+  dangerTone: 'red',
   ultKey: 'f',
   skill4Key: 'c',
+  keys: {},
   lefty: false,
   rotateSeen: false,
   tutorial: true,
@@ -174,14 +184,27 @@ export function validateSettings(v: unknown): Settings {
     numbers: bool(o.numbers, d.numbers),
     plates: bool(o.plates, d.plates),
     reducedMotion: bool(o.reducedMotion, d.reducedMotion),
+    graphics: o.graphics === 'high' || o.graphics === 'low' ? o.graphics : 'auto',
+    dangerTone: o.dangerTone === 'magenta' ? 'magenta' : 'red',
     ultKey: o.ultKey === 't' || o.ultKey === 'shift' || o.ultKey === 'rmb' ? o.ultKey : 'f',
     skill4Key: o.skill4Key === 'v' || o.skill4Key === 'z' || o.skill4Key === 'x' ? o.skill4Key : 'c',
+    keys: cleanKeys(o.keys),
     lefty: bool(o.lefty, d.lefty),
     tutorial: bool(o.tutorial, d.tutorial),
     ringPlates: bool(o.ringPlates, d.ringPlates),
     ringCloseIn: bool(o.ringCloseIn, d.ringCloseIn),
     rotateSeen: bool(o.rotateSeen, d.rotateSeen),
   };
+}
+
+/** Keys from a save: known actions, each with one plausible key code that isn't kept for walking or the menu. */
+function cleanKeys(v: unknown): Partial<Record<CampAction, string>> {
+  const o = obj(v);
+  const out: Partial<Record<CampAction, string>> = {};
+  if (!o) return out;
+  const known = new Set<string>(CAMP_ACTIONS.map((a) => a.id));
+  for (const [a, code] of Object.entries(o)) if (known.has(a) && typeof code === 'string' && /^[A-Za-z0-9]{1,24}$/.test(code) && !RESERVED_CODES.has(code)) out[a as CampAction] = code;
+  return out;
 }
 
 /** An item from a save, or null when it can't be trusted. Values are clamped to what the item level allows. */

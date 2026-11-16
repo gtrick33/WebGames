@@ -1967,6 +1967,11 @@ html.rb-touch-playing textarea {
   /* news is drawn above panels (a panel is a modal at 20), so nothing said while one is open is lost under it */
   z-index: 25;
 }
+/* words spoken across the news: it fades until they are said (ui/GameScreen.tsx Toasts) */
+.rb-toasts.is-under-speech {
+  opacity: 0.18;
+  transition: opacity 0.2s;
+}
 /* over a panel news never takes a click meant for the panel */
 .rb-ui:has(> .rb-modal) .rb-toast {
   pointer-events: none;
@@ -4437,6 +4442,20 @@ html.rb-touch-playing textarea {
   color: #fff4d8;
   font: inherit;
   background: rgb(20 12 36 / 0.9);
+}
+.rb-titles-group ul {
+  max-height: none;
+}
+.rb-titles[open] {
+  max-height: 340px;
+  overflow-y: auto;
+}
+.rb-titles-group h4 {
+  margin: 10px 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rb-gold);
 }
 .rb-titles ul {
   display: grid;
@@ -11231,6 +11250,28 @@ html.rb-touch-playing textarea {
   }
 }
 
+/* choosing a hero on a screen that isn't tall (a laptop, a phone on its side): the eight callings in one row of
+   smaller cards, so what the chosen one is and the Begin button are on the first screen, not a scroll below. Begin
+   only stays pinned once its own box is in view, so the classes must not fill the screen above it */
+@container (max-height: 800px) {
+  .rb-classes {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 6px;
+    max-width: 980px;
+    margin: 6px auto 8px;
+  }
+  .rb-class {
+    padding: 6px 4px 8px;
+    gap: 2px;
+  }
+  .rb-class-doll {
+    height: 76px;
+    margin: -10px 0 -8px;
+  }
+  .rb-class strong {
+    font-size: 14px;
+  }
+}
 /* choosing a hero on a short screen: smaller cards (what each class is reads below them), and Begin stays on screen */
 @container (max-height: 430px) {
   .rb-class > .rb-dim {
@@ -13965,4 +14006,43 @@ html.rb-touch-playing textarea {
   bottom: 109px;
   width: 54px;
   height: 54px;
+}
+
+/* Settings › Keys (ui/Panels.tsx KeysPicker): every action and its key, a click to change it */
+.rb-keys {
+  display: grid;
+  gap: 6px;
+}
+.rb-keys-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 4px 10px;
+}
+.rb-keys-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 7px;
+  background: rgb(0 0 0 / 0.22);
+  color: var(--rb-text);
+  font: 600 13px var(--font);
+  text-align: left;
+}
+.rb-keys-row kbd {
+  min-width: 34px;
+  padding: 1px 6px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 5px;
+  background: #120c08;
+  font: 700 12px var(--mono, monospace);
+  text-align: center;
+}
+.rb-keys-row.is-own kbd {
+  color: var(--rb-gold);
+}
+.rb-keys-row.is-asking {
+  box-shadow: 0 0 0 2px var(--rb-gold);
 }

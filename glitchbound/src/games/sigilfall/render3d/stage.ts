@@ -224,6 +224,11 @@ export class Stage {
     if (this.pacer.tick(dt)) this.applyQuality();
   }
 
+  /** The player's graphics choice (Settings.graphics): applied on the next frame. */
+  setGraphics(mode: 'auto' | 'high' | 'low'): void {
+    this.pacer.mode = mode;
+  }
+
   private applyQuality(): void {
     const d = Math.min(this.lastDpr, this.maxDpr) * this.pacer.quality;
     this.gl.setPixelRatio(d);

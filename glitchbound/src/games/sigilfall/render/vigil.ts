@@ -5,7 +5,7 @@ import { FIELD_ICONS, SPELLS, type Element } from '../vigil/kit';
 import type { Fx, Hero, Obstacle, Vigil } from '../vigil/sim';
 import { K, TILE, type TileMap } from '../sim/map';
 import { iconPicture } from './art/gameIcons';
-import { screenAngle, shortened, shot, spell, TONES, type Tone } from './effects';
+import { dangerColor, screenAngle, shortened, shot, spell, TONES, type Tone } from './effects';
 import type { LandLayer, LandView } from './renderer';
 import { heldWeapon, heroLook } from './sprites';
 import type { HeroLook } from './art/hero';
@@ -293,7 +293,7 @@ export class VigilPainter implements LandLayer {
       fx.put({ kind: FX.rain, x: p.x, y: p.y, base: true, w: r * 3.6, h: 34, a: color, t: -1, seed: p.y * 0.1 });
     }
     for (const s of v.foeShots) {
-      fx.put({ kind: FX.mark, x: s.x, y: s.y, flat: true, w: s.r * 3.2 + 3, a: '#ff3b3b' });
+      fx.put({ kind: FX.mark, x: s.x, y: s.y, flat: true, w: s.r * 3.2 + 3, a: dangerColor() });
       shot(fx, 'blood', s.x, s.y, s.vx, s.vy, 12, s.r, s.x * 0.05 + s.y * 0.03, FOE_SHOT);
     }
     for (const s of v.shots) this.shot(fx, cast, s);

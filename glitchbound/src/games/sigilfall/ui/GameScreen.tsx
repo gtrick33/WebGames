@@ -763,8 +763,19 @@ function Tracker({ engine }: { engine: SigilEngine }) {
 
 function Toasts({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
+  // someone speaking where the news is written (a shout from the left of the picture): the words win, and the news
+  // fades until they are said, as the quest does (it was written over Brother Orren's line at Lantern Hill)
+  const box = useRef<HTMLDivElement>(null);
+  useHudBox(engine, 'toasts', box);
+  useFrame(engine, () => {
+    const el = box.current;
+    if (!el) return;
+    const r = engine.renderer as SigilEngine['renderer'] | undefined;
+    const at = r?.hudBoxes.get('toasts');
+    el.classList.toggle('is-under-speech', !!r && !!at && r.speechBoxes.some((s) => boxesMeet(s, at, 2)));
+  });
   return (
-    <div className="rb-toasts" aria-live="polite">
+    <div ref={box} className="rb-toasts" aria-live="polite">
       {engine.ui.toasts.map((t) => {
         if (t.tone === 'loot' && t.item) {
           const item = t.item;

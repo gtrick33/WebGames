@@ -34,6 +34,8 @@ import { bestByFormat, bestRating, NEW_STANDING } from './arena/ranks';
 import type { ShopId } from './data/vendors';
 import { iconsReady } from './render/art/gameIcons';
 import { Renderer } from './render/renderer';
+import { setDangerTone } from './render/effects';
+import { actionLabel, codeMap, resolveBinds, type CampAction } from './input/binds';
 import { Sound, type MusicId } from './audio/sound';
 import type { Interactable } from './sim/types';
 import { emptyInput, World, type InputFrame } from './sim/world';
@@ -408,6 +410,7 @@ export class SigilEngine {
     this.kbm = new KeyboardMouse(input);
     this.kbm.ultKey = this.settings.ultKey;
     this.kbm.skill4Key = this.settings.skill4Key;
+    this.kbm.byCode = codeMap(this.binds());
     this.kbm.onUi = (k) => this.uiKey(k);
     this.last = performance.now();
     this.startGm();
@@ -834,7 +837,7 @@ export class SigilEngine {
           : id === 'ult'
             ? touch
               ? 'Ultimate unlocked! It charges as you deal damage: the big golden button.'
-              : `Ultimate unlocked! It charges as you deal damage: press ${this.settings.ultKey === 'rmb' ? 'the right mouse button' : this.settings.ultKey.toUpperCase()}.`
+              : `Ultimate unlocked! It charges as you deal damage: press ${actionLabel(this.binds(), 'ult') || 'the right mouse button'}.`
             : id === 'potion'
               ? touch
                 ? 'Low health! Tap the red potion.'
@@ -974,12 +977,21 @@ export class SigilEngine {
     this.sound.setVolumes({ master: s.master, music: s.music, sfx: s.sfx, muted: s.muted });
     this.renderer.reducedMotion = s.reducedMotion;
     this.renderer.plates = s.plates;
+    this.renderer.setGraphics(s.graphics);
+    setDangerTone(s.dangerTone);
     this.renderer.setZoom(s.zoom);
     if (this.kbm) {
       this.kbm.ultKey = s.ultKey;
       this.kbm.skill4Key = s.skill4Key;
+      this.kbm.byCode = codeMap(this.binds());
     }
     if (this.world) this.world.settings = s;
+  }
+
+  /** The keys each action answers to now (input/binds.ts): the defaults with the player's own on top. */
+  binds(): Record<CampAction, string[]> {
+    const s = this.settings;
+    return resolveBinds(s.ultKey, s.skill4Key, s.keys ?? {});
   }
 
   resetSettings(): void {
