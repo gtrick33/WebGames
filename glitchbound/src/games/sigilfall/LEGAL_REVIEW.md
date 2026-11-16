@@ -100,8 +100,9 @@ and lands on the target. Rules of play aren't protected; names, text, art and si
   (Bloodied Edge, also a game's title) and "Black Harvest" (Last Harvest).
 - **The look of a proc:** shapes drawn in code for this game (`ui/RingBoons.tsx`), one manner per class (a slash, a
   flame, a shard of ice, a feather, a halo, a void, a sun, a hex mark, a skull, a leaf, a moon, a fang) in the class's
-  own colors. The idea of art at the screen's edges while a proc is up is a rule of interface; World of Warcraft's
-  spell-alert textures were not looked at or traced.
+  own colors, outlined in black and standing either side of the player's own hero (not at the edges of the screen,
+  where they were first put). Showing a sign while a proc is up is a rule of interface; World of Warcraft's spell-alert
+  textures were not looked at or traced.
 - **Icons:** only ones already in the built atlas (Nasha's Lumenfall pack, above); no new file was added, and the atlas
   was re-packed from itself with the icons the Ring no longer uses left out.
 

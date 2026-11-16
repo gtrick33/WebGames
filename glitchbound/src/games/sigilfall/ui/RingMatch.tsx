@@ -362,6 +362,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
   // the player's own, and each other one's from the match's setup (a person's, or a computer rival's rank)
   const titles = useMemo(() => m.fighters.map((f) => (f.pet ? null : f.id === myId ? (title ?? null) : (setup.fighters[f.id]?.title ?? null))), [m, myId, title, setup]);
   const titleEls = useRef<(HTMLSpanElement | null)[]>([]);
+  /** The signs of the player's boons: a box moved to their hero each frame (ui/RingBoons.tsx). */
+  const flaresEl = useRef<HTMLDivElement | null>(null);
 
   const me = m.fighters[myId] ?? null;
   const touch = engine.touchMode;
@@ -863,6 +865,16 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         el.style.visibility = 'visible';
         el.style.transform = `translate(${a.x.toFixed(1)}px, ${(a.y - (barTop(f) + 1.2) * s).toFixed(1)}px) translate(-50%, -100%)`;
         raise[i] = (el.offsetHeight + 1) / s;
+      }
+      // the signs of the player's boons, about their own hero: at the middle of the body, in the ground's units
+      const flares = flaresEl.current;
+      const hero = m.fighters[myId];
+      if (flares && hero) {
+        const mid = headHeight(hero, time) * 0.55;
+        const a = view.stage.project(hero.x, hero.y, mid);
+        const b = view.stage.project(hero.x + 10, hero.y, mid);
+        flares.style.transform = `translate(${a.x.toFixed(1)}px, ${a.y.toFixed(1)}px) scale(${Math.max(0.2, (b.x - a.x) / 10).toFixed(3)})`;
+        flares.style.visibility = 'visible';
       }
       drawRing(m, fx, myId, time, view, aim, (f) => raise[f.id] ?? 0);
     };
@@ -1375,8 +1387,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
               {me?.points && m.how(me, tip).spend && <p className="rb-rs-combo">Spends {me.points.name}: stronger for each.</p>}
             </div>
           )}
-          {/* a boon that lights an ability up: light at the edges of the screen until it is used (ui/RingBoons.tsx) */}
-          {me && !me.dead && m.phase === 'fight' && <BoonFlares boons={me.boons} />}
+          {/* a boon that lights an ability up: its sign either side of the hero until it is used (ui/RingBoons.tsx) */}
+          {me && !me.dead && m.phase === 'fight' && <BoonFlares boons={me.boons} at={flaresEl} />}
           {m.phase === 'over' && (
             <div className="rb-ring-gates is-end">
               <b>{m.draw ? 'Draw' : m.winner === me?.team ? 'Victory' : 'Defeat'}</b>

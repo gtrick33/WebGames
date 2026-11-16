@@ -1,18 +1,22 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { BOONS, type BoonLook, type Points } from '../arena/abilities';
 import type { BoonOn } from '../arena/sim';
 import { iconPicture } from '../render/art/gameIcons';
 
 /**
  * What a fighter's combo is made of, on the player's own screen: the points they hold as pips over the bar, the boons
- * they carry as small chips beside them, and for a boon that lights an ability up for one use, light at the edges of
- * the screen in its class's own manner (the owner, 2026-11-16: "instant procs should have similar to wows fingers of
- * frost screen visuals, make them unique for each class"). Only drawn here: nothing about the match changes for it.
+ * they carry as small chips beside them, and for a boon that lights an ability up for one use, a sign in its class's own
+ * manner (the owner, 2026-11-16: "instant procs should have similar to wows fingers of frost screen visuals, make them
+ * unique for each class"). The signs stand either side of the player's own hero and go where the hero goes, each
+ * outlined in black (the owner, the same day, of signs that lit the edges of the whole screen: "visual cues for the
+ * spells shouldnt be on the whole acreen but rather around the character and have black outlines so they can be
+ * visible, for example the light green in the snowy arena is barely visible"). Only drawn here: nothing about the
+ * match changes for it.
  */
 
 /**
- * Each manner's shape, drawn for the left of the screen in a box 100 wide and 260 high, bowed away from the middle (the
- * right side is the same, turned about): a warrior's gashes, a tongue of flame, shards of ice, a feather, a halo's arc
+ * Each manner's shape, drawn for the hero's left in a box 100 wide and 260 high, bowed away from the hero (the right
+ * side is the same, turned about): a warrior's gashes, a tongue of flame, shards of ice, a feather, a halo's arc
  * with its rays, a crescent of the void with an eye in it, half a sun, a hexer's arc of runes, the bones of a hand, a
  * vine in leaf, a moon with its stars, a pair of fangs.
  */
@@ -119,14 +123,15 @@ const SHAPES: Record<BoonLook, ReactNode> = {
 const loud = (boons: readonly BoonOn[]): BoonOn[] => boons.filter((b) => BOONS[b.id] && !BOONS[b.id]!.quiet && b.n > 0);
 
 /**
- * Light at the edges of the screen while a boon waits to be used. One that can be held twice lights the left for the
- * first and the right for the second; any other lights both.
+ * The signs beside the hero while a boon waits to be used. One that can be held twice stands at the left for the first
+ * and at the right for the second; any other at both. `at` is the box the match screen moves to the hero each frame,
+ * sized in the ground's own units (RingMatch's paint): without it (a test, a still) the signs stand where they are put.
  */
-export function BoonFlares({ boons }: { boons: readonly BoonOn[] }) {
+export function BoonFlares({ boons, at }: { boons: readonly BoonOn[]; at?: Ref<HTMLDivElement> }) {
   const lit = loud(boons);
   if (!lit.length) return null;
   return (
-    <div className="rb-ring-flares" aria-hidden="true">
+    <div className="rb-ring-flares" aria-hidden="true" ref={at}>
       {lit.map((b) => {
         const def = BOONS[b.id]!;
         const sides = (def.max ?? 1) > 1 ? Math.min(2, b.n) : 2;

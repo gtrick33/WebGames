@@ -74,7 +74,35 @@ describe('The Ring: light at the edges of the screen while a boon waits', () => 
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{\s*\.rb-ring-flare,/);
     // on the fight's screen: over the ground, for the player's own fighter while they stand
     const match = read('src/games/sigilfall/ui/RingMatch.tsx');
-    expect(match).toContain("{me && !me.dead && m.phase === 'fight' && <BoonFlares boons={me.boons} />}");
+    expect(match).toContain("{me && !me.dead && m.phase === 'fight' && <BoonFlares boons={me.boons} at={flaresEl} />}");
+  });
+
+  // the owner, 2026-11-16: "visual cues for the spells shouldnt be on the whole acreen but rather around the character
+  // and have black outlines so they can be visible, for example the light green in the snowy arena is barely visible"
+  it('stands either side of the player’s own hero, not at the screen’s edges, and every shape is outlined in black', () => {
+    const css = read('src/games/sigilfall/Game.css');
+    // a point the match screen moves to the hero each frame, in the ground's own units; hidden until it is put there
+    const box = /\n\.rb-ring-flares \{([^}]*)\}/.exec(css)![1]!;
+    expect(box).toMatch(/width: 0;\s*height: 0;/);
+    expect(box).toMatch(/visibility: hidden;/);
+    expect(box).not.toMatch(/inset: 0/);
+    const match = read('src/games/sigilfall/ui/RingMatch.tsx');
+    expect(match).toMatch(/const a = view\.stage\.project\(hero\.x, hero\.y, mid\);/);
+    expect(match).toMatch(/flares\.style\.transform = `translate\(\$\{a\.x\.toFixed\(1\)\}px, \$\{a\.y\.toFixed\(1\)\}px\) scale\(/);
+    // a hero is about 30 high and 14 wide there: a sign close at each side, as tall as they are
+    const one = /\n\.rb-ring-flare \{([^}]*)\}/.exec(css)![1]!;
+    expect(one).toMatch(/left: -16px;\s*width: 12px;\s*height: 31px;/);
+    expect(/\n\.rb-ring-flare\.is-right \{([^}]*)\}/.exec(css)![1]).toMatch(/left: 16px;/);
+    expect(css).not.toMatch(/\.rb-ring-flare[^{]*\{[^}]*c(qw|qh)/);
+    // black under each shape's own color, and no blending that would lose a pale sign on a pale ground
+    const line = /\n\.rb-ring-flare :not\(\[fill\]\):not\(\[stroke\]\) \{([^}]*)\}/.exec(css)![1]!;
+    expect(line).toMatch(/stroke: #06070c;/);
+    expect(line).toMatch(/paint-order: stroke fill;/);
+    expect(one).not.toMatch(/mix-blend-mode/);
+    // the box is handed to the signs, so the screen can move it
+    const ref = { current: null as HTMLDivElement | null };
+    render(<BoonFlares boons={[on('surge')]} at={ref} />);
+    expect(ref.current?.className).toBe('rb-ring-flares');
   });
 });
 
