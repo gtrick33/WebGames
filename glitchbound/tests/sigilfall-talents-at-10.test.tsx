@@ -51,10 +51,12 @@ describe('Sigilfall: talents start at level 10', () => {
       view.unmount();
       return text;
     };
-    expect(say(2)).toBe('Level 2More health');
+    // (skill slots open at 2, 6 and 12: progress/character.ts SLOT_LEVELS)
+    expect(say(2)).toBe('Level 2New skill slot');
+    expect(say(3)).toBe('Level 3More health');
     expect(say(4, ['chain-lightning'])).toBe('Level 4New: Chain Lightning');
-    expect(say(5)).toBe('Level 5New skill slot');
-    expect(say(SPEC_LEVEL)).toBe('Level 10Talents open: choose your specialization · New skill slot');
+    expect(say(6)).toBe('Level 6New skill slot');
+    expect(say(SPEC_LEVEL)).toBe('Level 10Talents open: choose your specialization');
     expect(say(11)).toBe('Level 11+1 talent point');
     for (let level = 2; level < SPEC_LEVEL; level++) expect(say(level)).not.toMatch(/talent/i);
   });

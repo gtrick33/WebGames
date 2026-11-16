@@ -167,7 +167,7 @@ describe('sigilfall hints: they only pause the game', () => {
       world: { scene: null, keyRun: null, events: [], story: { talking: false, fighting: false }, build: { bar: { s1: CLASSES.mage.skills[0] }, resource: null } },
       save: { settings: { ...DEFAULT_SETTINGS, tutorial }, heroes: [h] },
       sound: { play: vi.fn(), setVolumes: vi.fn(), suspend: vi.fn() },
-      renderer: { waiting: false, reducedMotion: false, setZoom: () => {} },
+      renderer: { waiting: false, reducedMotion: false, setZoom: () => {}, setGraphics: () => {} },
       touch: { release: vi.fn() },
       coop: null,
       hidden: false,
