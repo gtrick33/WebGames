@@ -190,9 +190,8 @@ describe('The Ring’s record on screen: one strip in the lobby, the rest a pres
 
 describe('The Ring’s season track (the owner: what the challenges give)', () => {
   it('each challenge finished is worth points, a day’s 10 and a week’s 30, counted into the season', () => {
-    let rec: RingRecord | undefined;
     // (a match that finishes every challenge it can: today's three and whatever of the week's it reaches)
-    rec = recordMatch(rec, entry({ at: NOW }), facts({ combos: 99, kicks: 99, supers: 99, dmg: 99999, heal: 99999, format: 2 }), NOW);
+    const rec = recordMatch(undefined, entry({ at: NOW }), facts({ combos: 99, kicks: 99, supers: 99, dmg: 99999, heal: 99999, format: 2 }), NOW);
     const d = rec.daily!.done.length;
     const w = rec.weekly!.done.length;
     expect(d).toBeGreaterThan(0);
