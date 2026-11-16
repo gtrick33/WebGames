@@ -58,7 +58,7 @@ habit or two of speech, never from jokes, mottos or riddles (rules 3 to 5 still 
 | **Elyra** | how things feel, small homely magic, what she has lost | says what she feels and why; concrete, domestic pictures | “My wards kept wasps off the plums. Last night they held up a roof.” |
 | **Old Haldor** | the bell, the old days, signs | slow; starts from what he has seen for years | “Forty years I’ve rung that bell. It never rang by itself.” |
 | **Cael Varrow** | duty, the Watch, what he got wrong | formal; owns his mistakes in plain words | “The relief never came. I was the one who waited for it.” |
-| **Nyx** | exits, prices, her brother | quick and practical; her humor is about people, never the threat | “Two doors, one guard, and he’s asleep. Wren would love this.” |
+| **Nyx** | exits, prices, her brother | quick and practical; her humor is about people, never the threat | “There’s a back door, and the guard on it is asleep. We go now.” |
 | **Brother Orren** | the dead, the lamps, rules that hold | gentle; argues from what the Lantern priests kept | “We lit the dead home. We never woke them.” |
 
 When a scene has three people speak, each line should be one only that person would say.
@@ -70,6 +70,9 @@ When a scene has three people speak, each line should be one only that person wo
   Sunscorch, the Glimmerwood, Rimeheld, the Shattered Vale), Act IV (Highwall March, the Gloam story in the Riftscar),
   Act V (the Weeping Woods, Emberdeep, Hollowmere), the Last March, Crownfall and the epilogue: quest text and
   rewards, everyone's talk, fight barks, scenes, vision captions and the bosses' introductions.
-- A pass on voices (the table above) began with the Prologue's first dawn (2026-11-16): Elyra and Haldor's lines.
-  The rest of the cast's lines are to be checked against it, a land at a time.
+- Voices (the table above), 2026-11-16: every line of the recurring cast was read against it (about 340 scene and
+  talk lines). Most already sounded like their speaker. The changes went where a line could have been anyone's:
+  Nyx most of all (she spoke only in plain exposition; now she copies maps, pockets letters and watches the exits),
+  Orren speaking from his order's ways, Maren planning and counting heads, Mara wary of magic, and Elyra's dawn and
+  the Grey Lady's grief. Haldor and Cael were left as they were.
 - Not rewritten: the retired lands (`data/retired.ts`), and item and enemy lore (flavor on a card, not dialogue).

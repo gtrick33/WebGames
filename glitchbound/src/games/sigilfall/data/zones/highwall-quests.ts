@@ -282,7 +282,7 @@ export const HIGHWALL_NPCS: Record<string, NpcDef> = {
         ],
       },
       { when: { quest: 'gloam-the-lamp-road', state: 'active' }, lines: ['The road on the map starts north of the Shattered Vale. I’ll meet you at Lastlight.'] },
-      { lines: ['I’ll stay here until Highwall is safe. Then I’ll take you to the Gloam Gate.'] },
+      { lines: ['Mara’s guards watch me even while I eat. I understand why. When Highwall is safe, I’ll take you to the Gloam Gate.'] },
     ],
   },
   // Mara Venn, battlefield captain of the coalition (STORY_BIBLE.md §2), commanding the relief
