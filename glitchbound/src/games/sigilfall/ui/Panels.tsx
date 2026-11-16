@@ -3,7 +3,7 @@ import { CLASSES, heroDamage, levelPower, MAX_LEVEL, xpToNext } from '../data/cl
 import { ITEM_DEFS } from '../data/items';
 import { KEY_AFFIXES, KEY_DEATH, keyLevelFor, KEY_MIN, keyAffixes, keyLoot, keyParFor, keyScale, weekAffixes, weekOf } from '../data/keystones';
 import { NPCS, QUESTS } from '../data/quests';
-import { mapColors } from '../data/themes';
+import { mapColors, THEMES } from '../data/themes';
 import { REGION_IDS, REGIONS, RIFT_MODS, TIERS, type RiftMod } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENT_ROWS, TALENTS } from '../data/talents';
@@ -1253,6 +1253,23 @@ function WorldMap({ hero, here, sel, goal, counts, onSel }: { hero: Character; h
       <ZoomButtons pz={pz} max={WORLD_ZOOM} />
       <svg className="rb-world" viewBox={vb.join(' ')} role="group" aria-label="World map">
         <rect x={box.x0} y={box.y0} width={box.w} height={box.h} rx="3" className="rb-world-sea" />
+        {/* each land as a wash of its own ground's color behind its mark, blurred into the next (green wood, golden
+            steppe, snow, purple glass...), so the map reads as places and not a chart; unknown lands lie under fog */}
+        <defs>
+          <filter id="rb-world-wash" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.6" />
+          </filter>
+        </defs>
+        <g filter="url(#rb-world-wash)" className="rb-world-lands" aria-hidden="true">
+          {plan.ids.map((id) => {
+            const r = REGIONS[id];
+            const [x, y] = at(id);
+            const pal = mapColors(r.theme);
+            // (darkened, so the names written over it stay white on dark)
+            const fill = !known(id) ? '#151026' : shadeHex(r.kind === 'town' ? pal.cobble : r.kind === 'dungeon' ? pal.wall : pal.floor, -0.42);
+            return <circle key={id} cx={x} cy={y} r={r.kind === 'dungeon' ? 6 : 9} fill={fill} opacity={known(id) ? 0.9 : 0.7} />;
+          })}
+        </g>
         {plan.roads.map(([a, b]) => (
           <path key={`${a}-${b}`} d={branch(a, b)} className={`rb-world-road${known(a) && known(b) ? ' is-known' : ''}`} />
         ))}
@@ -1323,31 +1340,128 @@ function landMap(id: RegionId): TileMap {
   return m;
 }
 
-/** A land's ground, a pixel a tile, colored by what each tile is. */
+/** How many map pixels a tile is painted with (the map is drawn smooth or crisp at any zoom from these). */
+const MAP_PX = 4;
+
+/** A color a little lighter or darker (k: -1 to 1). */
+function shadeHex(hex: string, k: number): string {
+  const n = parseInt(hex.slice(1, 7), 16);
+  const ch = (v: number): number => Math.round(k >= 0 ? v + (255 - v) * k : v * (1 + k));
+  const r = ch((n >> 16) & 255);
+  const g = ch((n >> 8) & 255);
+  const b = ch(n & 255);
+  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
+}
+
+/** A steady noise from a tile's place, 0 to 1. */
+const grain = (x: number, y: number, n = 0): number => {
+  const v = Math.sin(x * 127.1 + y * 311.7 + n * 74.7) * 43758.5453;
+  return v - Math.floor(v);
+};
+
+/**
+ * A land's ground as the map shows it: painted, a few pixels a tile, from what each tile is. Grass and floors with a
+ * little grain; water with a pale shore line where it meets land; woods as round crowns, lit on top with a shadow
+ * below; roofs with a ridge and a dark eave; roads and cobbles with their edges. It used to be a flat block of color
+ * a tile, which read as a spreadsheet of a land rather than a place.
+ */
 const grounds = new WeakMap<TileMap, HTMLCanvasElement>();
 function groundOf(m: TileMap, theme: RegionDef['theme']): HTMLCanvasElement {
   const hit = grounds.get(m);
   if (hit) return hit;
+  const P = MAP_PX;
   const ground = document.createElement('canvas');
-  ground.width = m.w;
-  ground.height = m.h;
+  ground.width = m.w * P;
+  ground.height = m.h * P;
   const gg = ground.getContext('2d')!;
   const pal = mapColors(theme);
-  const color = (t: number): string => {
+  const at = (x: number, y: number): number => (x < 0 || y < 0 || x >= m.w || y >= m.h ? K.Wall : m.kind[y * m.w + x]!);
+  const isWater = (t: number): boolean => t === K.Water;
+  // (out of doors the land's edge and its thickets are wood too: they are walls to walk, and trees to see)
+  const outdoors = !THEMES[theme].indoor;
+  const isWood = (t: number): boolean => t === K.Tree || t === K.Bush || (outdoors && t === K.Wall);
+  const isHouse = (t: number): boolean => t === K.House || t === K.HouseAnchor;
+  const isRoad = (t: number): boolean => t === K.Path || t === K.Bridge || t === K.Cobble;
+  const base = (t: number): string => {
     if (t === K.Wall || t === K.Illusion) return pal.wall;
-    if (t === K.Water) return pal.water;
+    if (isWater(t)) return pal.water;
     if (t === K.Path || t === K.Bridge) return pal.path;
     if (t === K.Cobble) return pal.cobble;
     if (t === K.Sand) return pal.sand;
-    if (t === K.Tree || t === K.Bush) return pal.wall;
-    if (t === K.House || t === K.HouseAnchor) return pal.house;
+    if (isHouse(t)) return pal.house;
     if (t === K.Door) return '#8a6a3a';
     return pal.floor;
   };
-  for (let i = 0; i < m.w * m.h; i++) {
-    gg.fillStyle = color(m.kind[i]!);
-    gg.fillRect(i % m.w, Math.floor(i / m.w), 1, 1);
-  }
+  // 1: the ground under everything, grained (a wood's floor is the grass under its crowns)
+  for (let y = 0; y < m.h; y++)
+    for (let x = 0; x < m.w; x++) {
+      const t = at(x, y);
+      const under = isWood(t) ? K.Floor : t;
+      const g = grain(x, y);
+      gg.fillStyle = shadeHex(base(under), (g - 0.5) * (isWater(under) ? 0.06 : 0.12));
+      gg.fillRect(x * P, y * P, P, P);
+      // a road's edge, darker where it meets the grass
+      if (isRoad(t)) {
+        gg.fillStyle = shadeHex(base(t), -0.22);
+        if (!isRoad(at(x, y - 1))) gg.fillRect(x * P, y * P, P, 1);
+        if (!isRoad(at(x, y + 1))) gg.fillRect(x * P, y * P + P - 1, P, 1);
+        if (!isRoad(at(x - 1, y))) gg.fillRect(x * P, y * P, 1, P);
+        if (!isRoad(at(x + 1, y))) gg.fillRect(x * P + P - 1, y * P, 1, P);
+      }
+      // the shore: pale foam on the water where it meets land, and a darker band of deep water away from it
+      if (isWater(t)) {
+        const shore = !isWater(at(x, y - 1)) || !isWater(at(x, y + 1)) || !isWater(at(x - 1, y)) || !isWater(at(x + 1, y));
+        if (shore) {
+          gg.fillStyle = shadeHex(pal.water, 0.45);
+          if (!isWater(at(x, y - 1))) gg.fillRect(x * P, y * P, P, 1);
+          if (!isWater(at(x, y + 1))) gg.fillRect(x * P, y * P + P - 1, P, 1);
+          if (!isWater(at(x - 1, y))) gg.fillRect(x * P, y * P, 1, P);
+          if (!isWater(at(x + 1, y))) gg.fillRect(x * P + P - 1, y * P, 1, P);
+        } else if (g < 0.12) {
+          gg.fillStyle = shadeHex(pal.water, 0.25);
+          gg.fillRect(x * P + 1, y * P + 2, 2, 1);
+        }
+      }
+      // a wall's top lit, its foot in shadow
+      if (!outdoors && t === K.Wall && at(x, y + 1) !== K.Wall) {
+        gg.fillStyle = shadeHex(pal.wall, -0.35);
+        gg.fillRect(x * P, y * P + P - 1, P, 1);
+      }
+    }
+  // 2: woods as crowns: a shadow down and to the right, the crown, a lit edge up and to the left
+  const crown = pal.wall;
+  for (let y = 0; y < m.h; y++)
+    for (let x = 0; x < m.w; x++) {
+      const t = at(x, y);
+      if (!isWood(t)) continue;
+      const r = (t === K.Bush ? 0.38 : 0.66) * P + grain(x, y, 1) * 0.7;
+      const cx = x * P + P / 2 + (grain(x, y, 2) - 0.5) * 1.2;
+      const cy = y * P + P / 2 + (grain(x, y, 3) - 0.5) * 1.2;
+      gg.fillStyle = 'rgba(0,0,0,0.28)';
+      gg.beginPath();
+      gg.arc(cx + 0.8, cy + 1, r, 0, Math.PI * 2);
+      gg.fill();
+      gg.fillStyle = shadeHex(crown, (grain(x, y, 4) - 0.5) * 0.18);
+      gg.beginPath();
+      gg.arc(cx, cy, r, 0, Math.PI * 2);
+      gg.fill();
+      gg.fillStyle = shadeHex(crown, 0.28);
+      gg.beginPath();
+      gg.arc(cx - r * 0.3, cy - r * 0.32, r * 0.42, 0, Math.PI * 2);
+      gg.fill();
+    }
+  // 3: roofs: a ridge along the middle of each run of house, a dark eave at its foot
+  for (let y = 0; y < m.h; y++)
+    for (let x = 0; x < m.w; x++) {
+      if (!isHouse(at(x, y))) continue;
+      gg.fillStyle = shadeHex(pal.house, -0.32);
+      if (!isHouse(at(x, y + 1))) gg.fillRect(x * P, y * P + P - 1, P, 1);
+      if (!isHouse(at(x - 1, y))) gg.fillRect(x * P, y * P, 1, P);
+      if (!isHouse(at(x + 1, y))) gg.fillRect(x * P + P - 1, y * P, 1, P);
+      gg.fillStyle = shadeHex(pal.house, 0.22);
+      if (!isHouse(at(x, y - 1))) gg.fillRect(x * P, y * P, P, 1);
+      else if (isHouse(at(x, y + 1)) && !isHouse(at(x, y - 2))) gg.fillRect(x * P, y * P + 1, P, 1);
+    }
   grounds.set(m, ground);
   return ground;
 }
@@ -1475,7 +1589,8 @@ function LandMap({ engine, region }: { engine: SigilEngine; region: RegionId }) 
     const k = pz.scale * dpr;
     const ox = c.width / 2 - v.cx * k;
     const oy = c.height / 2 - v.cy * k;
-    g.imageSmoothingEnabled = false;
+    // (painted MAP_PX pixels a tile: crisp when zoomed in, smooth when the whole land is shown smaller than that)
+    g.imageSmoothingEnabled = k < MAP_PX;
     g.drawImage(groundOf(m, r.theme), ox, oy, m.w * k, m.h * k);
     if (!fog.all) {
       g.imageSmoothingEnabled = true;
