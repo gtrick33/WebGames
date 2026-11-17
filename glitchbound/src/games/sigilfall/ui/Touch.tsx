@@ -16,6 +16,7 @@ import { slotHaste, SUMMON_TIME, type World } from '../sim/world';
 import { useFrame } from './GameScreen';
 import { useHudBox } from './hudBoxes';
 import { uiIcon } from './uiIcons';
+import { hide, part, say } from './hudWrite';
 
 /**
  * Two-thumb touch controls. Left: the joystick (ui/Stick.tsx). Right: attack, four skills, the ultimate and dodge. Attack aims at the nearest enemy (no aim
@@ -109,9 +110,9 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
     const p = world.player;
     if (slot === 'ult') {
       const pct = p.ult;
-      b.style.setProperty('--fill', `${pct}%`);
+      b.style.setProperty('--fill', part(pct / 100));
       b.classList.toggle('is-ready', pct >= 100);
-      if (numRef.current) numRef.current.textContent = pct >= 100 ? '' : `${Math.floor(pct)}%`;
+      if (numRef.current) say(numRef.current, pct >= 100 ? '' : `${Math.floor(pct)}%`);
       return;
     }
     const spec = id ? world.build.skills[id]?.spec : undefined;
@@ -120,9 +121,9 @@ function SkillButton({ engine, slot }: { engine: SigilEngine; slot: SlotKey }) {
     const cd = p.cds[slot];
     const empty = cd.charges <= 0;
     const share = empty ? Math.max(0, cd.t / Math.max(0.01, cd.cd)) : 0;
-    if (cdRef.current) cdRef.current.style.background = empty ? `conic-gradient(rgba(10,6,20,0.72) ${share * 100}%, transparent 0)` : 'transparent';
-    if (numRef.current) numRef.current.textContent = empty && cd.t > 0.95 ? String(Math.ceil(cd.t / slotHaste(slot, world.build.stats.haste))) : '';
-    if (chRef.current) chRef.current.textContent = cd.max > 1 ? String(cd.charges) : '';
+    if (cdRef.current) cdRef.current.style.background = empty ? `conic-gradient(rgba(10,6,20,0.72) ${part(share)}, transparent 0)` : 'transparent';
+    if (numRef.current) say(numRef.current, empty && cd.t > 0.95 ? String(Math.ceil(cd.t / slotHaste(slot, world.build.stats.haste))) : '');
+    if (chRef.current) say(chRef.current, cd.max > 1 ? String(cd.charges) : '');
     b.classList.toggle('is-cooling', empty);
   });
 
@@ -307,9 +308,9 @@ function InteractButton({ engine }: { engine: SigilEngine }) {
     const b = ref.current;
     if (!b) return;
     const it = w.interactable;
-    b.hidden = !it;
+    hide(b, !it);
     if (!it) return;
-    if (text.current && text.current.textContent !== it.label) text.current.textContent = it.label;
+    say(text.current, it.label);
     // pinned over the hero's head, where the eye already is (a person or a door is usually beside them),
     // kept inside the view
     const p = w.player;

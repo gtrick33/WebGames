@@ -35,6 +35,7 @@ import { TipOverlay } from './Tips';
 import { TouchControls } from './Touch';
 import { uiIcon } from './uiIcons';
 import { mapIconUrl } from './mapIcons';
+import { hide, part, say } from './hudWrite';
 
 /** Registers a per-frame DOM update (no React render per frame). */
 /** A scene playing (sim/scene.ts): bars top and bottom over a clean picture (the HUD steps aside), and a way to skip it. */
@@ -60,7 +61,7 @@ function SceneBars({ engine }: { engine: SigilEngine }) {
       if (v && v.text !== told.current) {
         told.current = v.text;
         memory.current.style.setProperty('--tint', v.tint);
-        if (caption.current) caption.current.textContent = v.text;
+        say(caption.current, v.text);
       }
     }
     ref.current.classList.toggle('is-on', !!w.scene);
@@ -70,8 +71,8 @@ function SceneBars({ engine }: { engine: SigilEngine }) {
     const key = t ? `${t.text}|${t.sub ?? ''}` : '';
     if (title.current && key && key !== shown.current) {
       shown.current = key;
-      title.current.firstElementChild!.textContent = t!.text;
-      title.current.lastElementChild!.textContent = t!.sub ?? '';
+      say(title.current.firstElementChild!, t!.text);
+      say(title.current.lastElementChild!, t!.sub ?? '');
     }
     title.current?.classList.toggle('is-on', !!t);
   });
@@ -214,17 +215,17 @@ function Hud({ engine }: { engine: SigilEngine }) {
   const enc = useRef<HTMLDivElement>(null);
   useFrame(engine, (world) => {
     const p = world.player;
-    if (hp.current) hp.current.style.width = `${Math.max(0, (p.hp / p.maxHp) * 100)}%`;
-    if (mp.current && p.maxMana > 0) mp.current.style.width = `${Math.max(0, (p.mana / p.maxMana) * 100)}%`;
-    if (mpText.current && p.maxMana > 0) mpText.current.textContent = `${Math.floor(p.mana)}`;
+    if (hp.current) hp.current.style.width = part(p.hp / p.maxHp);
+    if (mp.current && p.maxMana > 0) mp.current.style.width = part(p.mana / p.maxMana);
+    if (mpText.current && p.maxMana > 0) say(mpText.current, `${Math.floor(p.mana)}`);
     if (pips.current) for (let i = 0; i < pips.current.children.length; i++) pips.current.children[i]!.classList.toggle('is-on', i < Math.floor(p.mana + 1e-6));
-    if (shield.current) shield.current.style.width = `${Math.min(100, (p.shield / p.maxHp) * 100)}%`;
-    if (hpText.current) hpText.current.textContent = `${Math.max(0, Math.ceil(p.hp))} / ${p.maxHp}`;
-    if (xp.current) xp.current.style.width = `${world.xpShare() * 100}%`;
+    if (shield.current) shield.current.style.width = part(p.shield / p.maxHp);
+    if (hpText.current) say(hpText.current, `${Math.max(0, Math.ceil(p.hp))} / ${p.maxHp}`);
+    if (xp.current) xp.current.style.width = part(world.xpShare());
     if (enc.current) {
       const a = world.activeEncounter();
-      enc.current.hidden = !a;
-      if (a) enc.current.textContent = `${a.title} · wave ${Math.max(1, a.wave)} of ${a.waves}`;
+      hide(enc.current, !a);
+      if (a) say(enc.current, `${a.title} · wave ${Math.max(1, a.wave)} of ${a.waves}`);
     }
   });
   const res = w.build.resource;
@@ -398,7 +399,7 @@ function BossBar({ engine }: { engine: SigilEngine }) {
     // a ward over the boss (Prior Vessant's will while he sings): its own bar, emptying as it is broken
     const sh = b && b.shield > 0 ? b.shield : 0;
     wardTop.current = sh > 0 ? Math.max(wardTop.current, sh) : 0;
-    if (ward.current) ward.current.hidden = sh <= 0;
+    if (ward.current) hide(ward.current, sh <= 0);
     if (wardFill.current && sh > 0) wardFill.current.style.width = `${(sh / wardTop.current) * 100}%`;
     // the Hallow King's crown: a point lit for each sigil it holds
     const c = crown.current;
@@ -406,14 +407,14 @@ function BossBar({ engine }: { engine: SigilEngine }) {
       const said = w.crown ? w.crown.join(',') : '';
       if (said !== crownSaid.current) {
         crownSaid.current = said;
-        c.hidden = !w.crown;
+        hide(c, !w.crown);
         for (const [i, el] of [...c.querySelectorAll('i')].entries()) el.dataset.on = w.crown?.includes(CROWN_POINTS[i]![0]) ? '1' : '0';
         c.title = w.crown ? `The Crown holds: ${w.crown.map((id) => `the Sigil of ${CROWN_POINTS.find((x) => x[0] === id)?.[1] ?? id}`).join(', ')}` : '';
       }
     }
     // what it is winding up, if that takes a second or more
     const wind = b ? windingUp(w) : null;
-    if (cast.current) cast.current.hidden = !wind;
+    if (cast.current) hide(cast.current, !wind);
     if (wind && castFill.current) castFill.current.style.width = `${wind.k * 100}%`;
     // its state, in words (rebuilt only when it changes)
     const list = b ? bossPips(b) : [];
@@ -424,7 +425,7 @@ function BossBar({ engine }: { engine: SigilEngine }) {
         ...list.map((p) => {
           const el = document.createElement('i');
           el.dataset.tone = p.tone;
-          el.textContent = p.label;
+          say(el, p.label);
           return el;
         }),
       );
@@ -432,15 +433,15 @@ function BossBar({ engine }: { engine: SigilEngine }) {
     // what it is doing, called out: a few words, a bar running down, and what to do about it the first time
     const s = w.shout;
     if (call.current && callSay.current && callFill.current && callHint.current) {
-      call.current.hidden = !s;
+      hide(call.current, !s);
       if (s) {
         if (s !== shoutSeen.current) {
           shoutSeen.current = s;
-          callSay.current.textContent = sixWords(s.text);
+          say(callSay.current, sixWords(s.text));
           call.current.style.setProperty('--call', s.color);
           const due = !!s.hint && mechanicDue(w.hero, engine.settings.tutorial, s.text);
-          callHint.current.hidden = !due;
-          callHint.current.textContent = due ? s.hint! : '';
+          hide(callHint.current, !due);
+          say(callHint.current, due ? s.hint! : '');
           if (due) mechanicShown(w.hero, s.text);
         }
         callFill.current.style.width = `${Math.max(0, 1 - s.t / s.dur) * 100}%`;
@@ -450,12 +451,12 @@ function BossBar({ engine }: { engine: SigilEngine }) {
     const o = w.order;
     const el = order.current;
     if (!el || !orderSay.current || !orderFill.current) return;
-    el.hidden = !o;
+    hide(el, !o);
     if (!o) return;
     const on = w.time >= o.from;
     el.dataset.kind = o.kind;
     el.dataset.on = on ? '1' : '0';
-    orderSay.current.textContent = ORDER_SAY[o.kind];
+    say(orderSay.current, ORDER_SAY[o.kind]);
     orderFill.current.style.width = `${on ? Math.max(0, (o.until - w.time) / (o.until - o.from)) * 100 : 100}%`;
   });
   const boss = engine.ui.boss!;
@@ -529,7 +530,7 @@ function ProcAura({ engine }: { engine: SigilEngine }) {
     if (!d) return;
     const c = procsNow(w)[0];
     const p = w.player;
-    d.hidden = !c || p.dead || !!w.scene;
+    hide(d, !c || p.dead || !!w.scene);
     if (d.hidden || !c) {
       said.current = '';
       return;
@@ -595,7 +596,7 @@ function CastBar({ engine }: { engine: SigilEngine }) {
     const c = p.casting;
     const end = w.castEnd;
     const ending = !c && !!end && w.time - end.at < 0.5 && shown.current !== '';
-    el.hidden = !c && !ending;
+    hide(el, !c && !ending);
     if (el.hidden) {
       shown.current = '';
       return;
@@ -603,7 +604,7 @@ function CastBar({ engine }: { engine: SigilEngine }) {
     if (c) {
       if (shown.current !== c.spec.id) {
         shown.current = c.spec.id;
-        name.current.textContent = SKILLS[c.spec.id]?.name ?? '';
+        say(name.current, SKILLS[c.spec.id]?.name ?? '');
         const tone = TONES[c.spec.dmgType] ?? TONES.arcane!;
         el.style.setProperty('--cast-a', tone.a);
         el.style.setProperty('--cast-b', tone.b);
@@ -616,7 +617,7 @@ function CastBar({ engine }: { engine: SigilEngine }) {
       else if (shown.current !== '-') {
         // (not a spell's id: casting the same spell again names it again)
         shown.current = '-';
-        name.current.textContent = 'Interrupted';
+        say(name.current, 'Interrupted');
       }
       el.style.opacity = `${Math.max(0, 1 - (w.time - end!.at) / 0.5)}`;
     }
@@ -656,18 +657,18 @@ function KeyClock({ engine }: { engine: SigilEngine }) {
       const up = keyUpgrade(t, run.par);
       const text = run.end ? (up > 0 ? `In time: +${up}` : 'Out of time') : up === 3 ? 'Racing for +3' : up === 2 ? 'Racing for +2' : up === 1 ? 'Racing for +1' : 'Out of time: finish for marks';
       if (pace.current.textContent !== text) {
-        pace.current.textContent = text;
+        say(pace.current, text);
         pace.current.className = `rb-keypace is-up${Math.max(0, up)}`;
       }
     }
     if (time.current) {
-      time.current.textContent = `${clockText(t)} / ${clockText(run.par)}`;
+      say(time.current, `${clockText(t)} / ${clockText(run.par)}`);
       time.current.classList.toggle('is-late', t > run.par);
     }
-    if (bar.current) bar.current.style.width = `${Math.min(100, (t / run.par) * 100)}%`;
+    if (bar.current) bar.current.style.width = part(t / run.par);
     if (rooms.current) {
       const done = world.encounters.filter((e) => e.state === 'cleared').length;
-      rooms.current.textContent = `Rooms ${done}/${world.encounters.length}${run.deaths ? ` · ${run.deaths} fall${run.deaths === 1 ? '' : 's'} (−${run.deaths * KEY_DEATH} s)` : ''}`;
+      say(rooms.current, `Rooms ${done}/${world.encounters.length}${run.deaths ? ` · ${run.deaths} fall${run.deaths === 1 ? '' : 's'} (−${run.deaths * KEY_DEATH} s)` : ''}`);
     }
   });
   return (

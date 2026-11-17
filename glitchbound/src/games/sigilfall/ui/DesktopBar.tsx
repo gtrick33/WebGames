@@ -11,6 +11,7 @@ import { skillIconUrl } from '../render/sprites';
 import { slotHaste, SUMMON_TIME } from '../sim/world';
 import { useFrame } from './GameScreen';
 import { uiIcon } from './uiIcons';
+import { hide, part, say } from './hudWrite';
 import { actionLabel } from '../input/binds';
 
 /** The desktop action bar: keys on every slot, cooldowns, the ultimate's charge, and the interact prompt. */
@@ -31,8 +32,8 @@ export function DesktopBar({ engine }: { engine: SigilEngine }) {
     const el = prompt.current;
     if (!el) return;
     const it = w.interactable;
-    el.hidden = !it;
-    if (it) el.textContent = `${actionLabel(binds, 'interact')} · ${it.kind === 'npc' ? 'Talk' : it.label}`;
+    hide(el, !it);
+    if (it) say(el, `${actionLabel(binds, 'interact')} · ${it.kind === 'npc' ? 'Talk' : it.label}`);
   });
   // indoors is peaceful (sim/world.ts): the bar is put away, and nothing covers a room's door
   const indoors = !!engine.world?.region.interior;
@@ -87,9 +88,9 @@ function Slot({ engine, slot, keyLabel }: { engine: SigilEngine; slot: SlotKey; 
     if (!b || !id) return;
     const p = world.player;
     if (slot === 'ult') {
-      b.style.setProperty('--fill', `${p.ult}%`);
+      b.style.setProperty('--fill', part(p.ult / 100));
       b.classList.toggle('is-ready', p.ult >= 100);
-      if (num.current) num.current.textContent = p.ult >= 100 ? '' : `${Math.floor(p.ult)}%`;
+      if (num.current) say(num.current, p.ult >= 100 ? '' : `${Math.floor(p.ult)}%`);
       return;
     }
     const spec = world.build.skills[id]?.spec;
@@ -98,8 +99,8 @@ function Slot({ engine, slot, keyLabel }: { engine: SigilEngine; slot: SlotKey; 
     const c = p.cds[slot];
     const empty = c.charges <= 0;
     const share = empty ? Math.max(0, c.t / Math.max(0.01, c.cd)) : 0;
-    if (cd.current) cd.current.style.background = empty ? `conic-gradient(rgba(10,6,20,0.72) ${share * 100}%, transparent 0)` : 'transparent';
-    if (num.current) num.current.textContent = empty && c.t > 0.95 ? String(Math.ceil(c.t / slotHaste(slot, world.build.stats.haste))) : c.max > 1 ? String(c.charges) : '';
+    if (cd.current) cd.current.style.background = empty ? `conic-gradient(rgba(10,6,20,0.72) ${part(share)}, transparent 0)` : 'transparent';
+    if (num.current) say(num.current, empty && c.t > 0.95 ? String(Math.ceil(c.t / slotHaste(slot, world.build.stats.haste))) : c.max > 1 ? String(c.charges) : '');
   });
   const opens = slotLevel(slot);
   const unlock = slot === 'ult' ? SKILLS[CLASSES[h.cls].ult]!.unlock : h.level < opens ? opens : 0;
