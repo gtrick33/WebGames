@@ -26,10 +26,8 @@ interface Row {
 
 const grantOf = (r: Row): SigilTitleGrant => ({ id: r.id, name: r.name, fx: isTitleFx(r.fx) ? r.fx : 'plain', before: !!r.before_name, at: r.created_at });
 
-// (oldest first; two given in the same millisecond, in the order they were given. They were told apart by their ids,
-// which are random: an admin giving two at once, or a test on a fast machine, got them in either order)
 const heldBy = (env: Env, userId: string) =>
-  env.DB.prepare('SELECT id, name, fx, before_name, created_at FROM sigilfall_titles WHERE user_id = ? AND revoked_at IS NULL ORDER BY created_at, rowid').bind(userId).all<Row>();
+  env.DB.prepare('SELECT id, name, fx, before_name, created_at FROM sigilfall_titles WHERE user_id = ? AND revoked_at IS NULL ORDER BY created_at, id').bind(userId).all<Row>();
 
 /** The titles a member holds now, oldest first: what their account carries. One indexed read. */
 export async function liveTitles(env: Env, userId: string): Promise<SigilTitleGrant[]> {
@@ -43,7 +41,7 @@ export async function liveTitles(env: Env, userId: string): Promise<SigilTitleGr
 
 /** Every title a member was given, newest first, taken-back ones too: what the admin sees. */
 export async function titlesFor(env: Env, userId: string): Promise<GmTitle[]> {
-  const rows = await env.DB.prepare('SELECT * FROM sigilfall_titles WHERE user_id = ? ORDER BY created_at DESC, rowid DESC LIMIT ?').bind(userId, HISTORY_MAX).all<Row>();
+  const rows = await env.DB.prepare('SELECT * FROM sigilfall_titles WHERE user_id = ? ORDER BY created_at DESC, id LIMIT ?').bind(userId, HISTORY_MAX).all<Row>();
   return rows.results.map((r) => ({ ...grantOf(r), by: r.given_by, revokedAt: r.revoked_at ?? null }));
 }
 

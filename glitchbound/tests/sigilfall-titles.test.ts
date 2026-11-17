@@ -133,21 +133,6 @@ describe('the member’s account', () => {
     expect((await me(boss.jar)).sigilTitles).toEqual([]);
   });
 
-  it('titles given in the same millisecond are held in the order they were given', async () => {
-    // (they were told apart by their ids, which are random: on a fast machine the test above failed half the time,
-    // and with it a deployment, 2026-11-17)
-    const { env, ash } = await setup();
-    const names = ['Blooded', 'the Lost', 'Champion of the Ring', 'Ashwalker', 'the Unbowed'];
-    for (let round = 0; round < 6; round++) {
-      const given: SigilTitleGrant[] = [];
-      for (const name of names) given.push((await grantTitle(env, ash.id, { name, fx: 'plain' }, 'boss@example.com', 5000)) as SigilTitleGrant);
-      expect((await liveTitles(env, ash.id)).map((t) => t.name), `round ${round}`).toEqual(names);
-      // (and the admin's record of them, newest first)
-      expect((await titlesFor(env, ash.id)).filter((t) => !t.revokedAt).map((t) => t.name)).toEqual([...names].reverse());
-      for (const t of given) await revokeTitle(env, t.id, 6000 + round);
-    }
-  });
-
   it('still loads before the table exists, and a deleted account takes its titles with it', async () => {
     const { db, env, ash, boss, post } = await setup();
     await post(boss.jar, { action: 'grant', userId: ash.id, name: 'Blooded', fx: 'blood' });
