@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
+import { Fragment, useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { ABILITIES, barCombos, combosOf, PRESETS, SLOTS, styleOfBar, ultOf, type Ability, type BarCombo, type Points } from '../arena/abilities';
 import type { ClassSets, RingSetup } from '../arena/ladder';
 import { EASE_WORD, presetOfBar, styleOf } from '../arena/styles';
@@ -34,19 +34,19 @@ export const pointsOf = (cls: ClassId, setup: Pick<RingSetup, 'bar' | 'talents'>
 };
 
 /** The bar as it stands: its playstyle's four, then what every hero has besides (the playstyle's super). */
-export function BarRow({ bar, cls, ult, onPick, onHover, onLeave, on }: { bar: string[]; cls: ClassId; ult?: string; onPick?: (ab: Ability, el: HTMLElement) => void; onHover?: (ab: Ability, el: HTMLElement) => void; onLeave?: () => void; on?: string }) {
+export function BarRow({ bar, cls, ult, onPick, onHover, onLeave, on, held }: { bar: string[]; cls: ClassId; ult?: string; onPick?: (ab: Ability, el: HTMLElement) => void; onHover?: (ab: Ability, el: HTMLElement) => void; onLeave?: () => void; on?: string; held?: string }) {
   return (
     <div className="rb-rs-slots">
       {Array.from({ length: SLOTS }, (_, i) => {
         const ab = ABILITIES[bar[i] ?? ''];
         return (
-          <button key={i} type="button" className={`rb-rs-slot${ab ? '' : ' is-empty'}${ab && ab.id === on ? ' is-read' : ''}`} disabled={!ab || !onPick} onClick={(e) => ab && onPick?.(ab, e.currentTarget)} onMouseEnter={(e) => ab && onHover?.(ab, e.currentTarget)} onFocus={(e) => ab && onHover?.(ab, e.currentTarget)} onMouseLeave={onLeave} onBlur={onLeave} title={ab ? ab.name : 'An empty place'} aria-label={ab ? ab.name : 'An empty place'}>
+          <button key={i} type="button" className={`rb-rs-slot${ab ? '' : ' is-empty'}${ab && ab.id === on ? ' is-read' : ''}${ab && ab.id === held ? ' rb-is-pressed' : ''}`} disabled={!ab || !onPick} onClick={(e) => ab && onPick?.(ab, e.currentTarget)} onMouseEnter={(e) => ab && onHover?.(ab, e.currentTarget)} onFocus={(e) => ab && onHover?.(ab, e.currentTarget)} onMouseLeave={onLeave} onBlur={onLeave} title={ab ? ab.name : 'An empty place'} aria-label={ab ? ab.name : 'An empty place'}>
             {ab ? <img src={iconPicture(ab.icon)} alt="" draggable={false} /> : <small>{i + 1}</small>}
           </button>
         );
       })}
       {[ultOf(cls, ult ?? styleOfBar(cls, bar).ult)].map((ab) => (
-        <button key={ab.id} type="button" className={`rb-rs-slot is-token${ab.super ? ' is-super' : ''}${ab.id === on ? ' is-read' : ''}`} disabled={!onPick} title={`${ab.super ? 'Super: ' : ''}${ab.name}`} onClick={(e) => onPick?.(ab, e.currentTarget)} onMouseEnter={(e) => onHover?.(ab, e.currentTarget)} onFocus={(e) => onHover?.(ab, e.currentTarget)} onMouseLeave={onLeave} onBlur={onLeave}>
+        <button key={ab.id} type="button" className={`rb-rs-slot is-token${ab.super ? ' is-super' : ''}${ab.id === on ? ' is-read' : ''}${ab.id === held ? ' rb-is-pressed' : ''}`} disabled={!onPick} title={`${ab.super ? 'Super: ' : ''}${ab.name}`} onClick={(e) => onPick?.(ab, e.currentTarget)} onMouseEnter={(e) => onHover?.(ab, e.currentTarget)} onFocus={(e) => onHover?.(ab, e.currentTarget)} onMouseLeave={onLeave} onBlur={onLeave}>
           <img src={iconPicture(ab.icon)} alt={ab.name} draggable={false} />
         </button>
       ))}
@@ -130,7 +130,8 @@ export function TalentTip({ t }: { t: Talent }) {
 export function linkWord(c: BarCombo): string {
   const k = c.kind === 'combo' ? c.to.combo?.mult : c.kind === 'boon' ? c.to.uses?.find((u) => c.from.gives?.some((g) => g.boon === u.boon))?.mult : undefined;
   if (!k) return c.name;
-  return Number.isInteger(k) ? `×${k}` : `+${Math.round((k - 1) * 100)}%`;
+  // (twice or more as a multiple, ×3.3; less as a share more, +70%)
+  return k >= 2 ? `×${k}` : `+${Math.round((k - 1) * 100)}%`;
 }
 
 /** A combo's tooltip: its name, the two abilities, and its one sentence. */
@@ -209,11 +210,11 @@ function StyleCards({ cls, setup, onPick }: { cls: ClassId; setup: RingSetup; on
 }
 
 /** How far down an element stands in one that holds it, in that one's own layout; null if it isn't laid out in it. */
-function offsetIn(el: HTMLElement, root: HTMLElement): number | null {
+function offsetIn(el: HTMLElement, root: HTMLElement, across = false): number | null {
   let y = 0;
   for (let n: HTMLElement | null = el; n !== root; n = n.offsetParent instanceof HTMLElement ? n.offsetParent : null) {
     if (!n || !root.contains(n)) return null;
-    y += n.offsetTop;
+    y += across ? n.offsetLeft : n.offsetTop;
   }
   return y;
 }
@@ -223,6 +224,7 @@ export type SetupGuide = Record<string, never>;
 
 /** What the setup page's tooltip is showing: an ability, a talent, or a combo of the bar. */
 type Reading = { k: 'ability'; id: string } | { k: 'talent'; id: string } | { k: 'combo'; i: number };
+const sameReading = (a: Reading, b: Reading): boolean => (a.k === 'combo' ? b.k === 'combo' && a.i === b.i : b.k === a.k && 'id' in b && a.id === b.id);
 
 /**
  * Changing what a class brings: three saved setups, each a playstyle and three talents. One page, made of pictures:
@@ -236,15 +238,24 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
   const style = styleOfBar(cls, cur.bar);
   const [reading, setReading] = useState<Reading | null>(null);
   /**
-   * Where the icon being read stands, when the editor is too narrow for the box that reads it to stand beside the
-   * icons (the Ring's main screen in a small window, a phone held upright): the box then comes up over or under that
-   * icon as a tooltip does, for as long as it is pointed at or until the next tap elsewhere, and covers nothing else
-   * (Game.css rb-build). Beside the icons it is always there, and this is not used.
+   * Where what is read is shown when the editor is too narrow for the box that reads it to stand beside the icons (the
+   * Ring's main screen in the game's own window, or on a phone: Game.css rb-build). Pressed or tapped, an icon opens it
+   * in a panel of its own under the row it is in, with a cross to close it, and the rows after it make way: nothing is
+   * covered (the owner, 2026-11-17: "selecting a talent covers the bottom or top row, they should be better displayed,
+   * maybe add an X to close"). Only pointed at with a mouse while no panel is open, it comes up over or under the icon
+   * as a tooltip does, for as long as it is pointed at. Beside the icons it is always there, and neither is used.
    */
+  const [open, setOpen] = useState<{ at: 'bar' | number; r: Reading } | null>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  // (the icon pressed, which the panel's point is under)
+  const held = useRef<HTMLElement | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const [tip, setTip] = useState<{ top?: number; bottom?: number } | null>(null);
+  // (whether the last press was a finger's: a finger points at nothing, and a tap brings a "pointing" of its own)
+  const touched = useRef(false);
   const lookAt = (r: Reading, el: HTMLElement): void => {
     setReading(r);
+    if (touched.current || open) return;
     const box = root.current;
     // (measured in the page's own layout, not on the screen: on a phone held upright the game is turned a quarter turn
     // into it, ui/turn.ts, and what is up the page is across the screen)
@@ -257,20 +268,33 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
     setTip(low ? { bottom: box.offsetHeight - y + 6 } : { top: y + el.offsetHeight + 6 });
   };
   const look = (r: Reading) => (e: SyntheticEvent<HTMLElement>): void => lookAt(r, e.currentTarget);
-  // (a pointer that leaves the icon puts it away; a finger has nothing to leave with, and a tap is followed by a leave
-  // of its own on some phones: what a tap brought up stays until the next tap anywhere but on another icon)
-  const touched = useRef(false);
-  const away = (): void => {
-    if (!touched.current) setTip(null);
+  const away = (): void => setTip(null);
+  /** Pressed: read in the panel under its row (the same one pressed again puts it away). */
+  const press = (r: Reading, at: 'bar' | number, el: HTMLElement): void => {
+    held.current = el;
+    setTip(null);
+    setReading(r);
+    setOpen(open && open.at === at && sameReading(open.r, r) ? null : { at, r });
   };
+  // (the panel comes into sight as it opens, if the row it is under stands at the column's foot: scrolled by the
+  // page's own layout, not the screen's, for the same reason as the tooltip's place)
   useEffect(() => {
-    if (!tip) return;
-    const off = (e: PointerEvent): void => {
-      if (!(e.target instanceof Element) || !e.target.closest('.rb-rs-node, .rb-rs-slot, .rb-rs-link')) setTip(null);
-    };
-    document.addEventListener('pointerdown', off, true);
-    return () => document.removeEventListener('pointerdown', off, true);
-  }, [tip]);
+    const el = panel.current;
+    const box = root.current;
+    const col = box?.offsetParent instanceof HTMLElement ? box.offsetParent : null;
+    const y = el && box ? offsetIn(el, box) : null;
+    if (!el || !box || y === null || !el.offsetHeight) return;
+    // its point under the middle of the icon pressed
+    const icon = held.current;
+    const x = icon ? offsetIn(icon, box, true) : null;
+    const left = offsetIn(el, box, true);
+    if (icon && x !== null && left !== null) el.style.setProperty('--at', `${Math.round(x - left + icon.offsetWidth / 2)}px`);
+    if (!col) return;
+    const top = box.offsetTop + y;
+    const bottom = top + el.offsetHeight;
+    const to = bottom > col.scrollTop + col.clientHeight ? Math.min(top - 8, bottom - col.clientHeight + 8) : top < col.scrollTop ? top - 8 : null;
+    if (to !== null) col.scrollTo?.({ top: Math.max(0, to), behavior: 'smooth' });
+  }, [open]);
   const put = (next: RingSetup): void => {
     const list = [...sets.list];
     list[sets.active] = next;
@@ -287,6 +311,7 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
     const p = PRESETS[cls][i]!;
     if (p.id === style.id) return;
     setReading(null);
+    setOpen(null);
     put({ bar: [...p.bar], talents: fullTalents(cls, p.id, cur.talents, p.talents), ult: p.ult });
   };
   const options = talentsFor(cls, style.id);
@@ -298,8 +323,27 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
   const readTalent = reading?.k === 'talent' ? options.find((t) => t.id === reading.id) : undefined;
   const readCombo = reading?.k === 'combo' ? combos[reading.i] : undefined;
   const shownAb = readAb ?? (!readTalent && !readCombo ? kit[0]! : undefined);
+  /** What reads one thing: a talent, a combo, or an ability (the playstyle's first, where it is none of them). */
+  const tell = (r: Reading | null) => {
+    const t = r?.k === 'talent' ? options.find((x) => x.id === r.id) : undefined;
+    const c = r?.k === 'combo' ? combos[r.i] : undefined;
+    const ab = r?.k === 'ability' ? kit.find((a) => a.id === r.id) : undefined;
+    return t ? <TalentTip t={t} /> : c ? <ComboTip c={c} /> : <SpellTip ab={ab ?? kit[0]!} cls={cls} bar={cur.bar} talents={cur.talents} />;
+  };
+  /** (the one whose panel is open is marked, whatever the mouse points at) */
+  const pressed = (r: Reading): string => (open && sameReading(open.r, r) ? ' rb-is-pressed' : '');
+  /** The panel under a row, where it is open: what was pressed, whatever the mouse points at after. */
+  const inline = (at: 'bar' | number) =>
+    open?.at === at && (
+      <div ref={panel} className="rb-rs-inline" role="region" aria-label="What it does">
+        {tell(open.r)}
+        <button type="button" className="rb-rs-inline-x" onClick={() => setOpen(null)} aria-label="Close" title="Close">
+          ✕
+        </button>
+      </div>
+    );
   return (
-    <div ref={root} onPointerDownCapture={(e) => (touched.current = e.pointerType !== 'mouse')} className={`rb-rs is-fixed is-tree${tip ? ' is-tip' : ''}`} style={tip ? { ['--tip-top' as string]: tip.top === undefined ? 'auto' : `${tip.top}px`, ['--tip-bottom' as string]: tip.bottom === undefined ? 'auto' : `${tip.bottom}px` } : undefined}>
+    <div ref={root} onPointerDownCapture={(e) => (touched.current = e.pointerType !== 'mouse')} className={`rb-rs is-fixed is-tree${tip ? ' is-tip' : ''}${open ? ' is-open' : ''}`} style={tip ? { ['--tip-top' as string]: tip.top === undefined ? 'auto' : `${tip.top}px`, ['--tip-bottom' as string]: tip.bottom === undefined ? 'auto' : `${tip.bottom}px` } : undefined}>
       {/* (three saved setups had tabs here until 2026-11-17, the owner: "you can remove the setups". A class keeps the one in hand.) */}
       <StyleCards cls={cls} setup={cur} onPick={useStyle} />
 
@@ -307,12 +351,12 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
         <div className="rb-rs-pick">
           <div className="rb-rs-kitrow">
             <div className="rb-rs-barrow" data-tut="bar">
-              <BarRow bar={cur.bar} cls={cls} ult={style.ult} on={shownAb?.id} onPick={(ab, el) => lookAt({ k: 'ability', id: ab.id }, el)} onHover={(ab, el) => lookAt({ k: 'ability', id: ab.id }, el)} onLeave={away} />
+              <BarRow bar={cur.bar} cls={cls} ult={style.ult} on={shownAb?.id} held={open?.r.k === 'ability' ? open.r.id : undefined} onPick={(ab, el) => press({ k: 'ability', id: ab.id }, 'bar', el)} onHover={(ab, el) => lookAt({ k: 'ability', id: ab.id }, el)} onLeave={away} />
             </div>
             {/* the combos the bar makes: what sets it up, what lands it, and how much more it does */}
             <div className="rb-rs-links" data-tut="combos" aria-label="Combos">
               {combos.map((c, i) => (
-                <button key={`${c.from.id}-${c.to.id}`} type="button" className={`rb-rs-link is-${c.kind}${readCombo === c ? ' is-read' : ''}`} onClick={look({ k: 'combo', i })} onMouseEnter={look({ k: 'combo', i })} onFocus={look({ k: 'combo', i })} onMouseLeave={away} onBlur={away} aria-label={`${c.name}: ${c.from.name}, then ${c.to.name}`}>
+                <button key={`${c.from.id}-${c.to.id}`} type="button" className={`rb-rs-link is-${c.kind}${readCombo === c ? ' is-read' : ''}${pressed({ k: 'combo', i })}`} onClick={(e) => press({ k: 'combo', i }, 'bar', e.currentTarget)} onMouseEnter={look({ k: 'combo', i })} onFocus={look({ k: 'combo', i })} onMouseLeave={away} onBlur={away} aria-label={`${c.name}: ${c.from.name}, then ${c.to.name}`}>
                   <img src={iconPicture(c.from.icon)} alt="" draggable={false} />
                   <i aria-hidden="true">›</i>
                   <img src={iconPicture(c.to.icon)} alt="" draggable={false} />
@@ -321,50 +365,54 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
               ))}
             </div>
           </div>
+          {inline('bar')}
 
           <div className="rb-rs-talents" data-tut="talents">
             {/* (a row only where the playstyle has one: the fourth, Venom, is the Nightblade's alone) */}
             {ROW_NAMES.map((name, row) => ({ name, row }))
               .filter(({ row }) => options.some((t) => t.row === row))
               .map(({ name, row }) => (
-              <div key={name} className="rb-rs-row" role="radiogroup" aria-label={name}>
-                <h4>{name}</h4>
-                <div className="rb-rs-nodes">
-                  {options
-                    .filter((t) => t.row === row)
-                    .map((t) => {
-                      const on = chosen.some((x) => x.id === t.id);
-                      return (
-                        <button
-                          key={t.id}
-                          role="radio"
-                          aria-checked={on}
-                          aria-label={t.name}
-                          className={`rb-rs-node${on ? ' is-on' : ''}${readTalent === t ? ' is-read' : ''}`}
-                          onClick={(e) => {
-                            look({ k: 'talent', id: t.id })(e);
-                            pickTalent(t);
-                          }}
-                          onMouseEnter={look({ k: 'talent', id: t.id })}
-                          onFocus={look({ k: 'talent', id: t.id })}
-                          onMouseLeave={away}
-                          onBlur={away}
-                        >
-                          <img src={talentIcon(t)} alt="" draggable={false} />
-                          <strong>{t.name}</strong>
-                        </button>
-                      );
-                    })}
-                </div>
-              </div>
-            ))}
+                <Fragment key={name}>
+                  <div className="rb-rs-row" role="radiogroup" aria-label={name}>
+                    <h4>{name}</h4>
+                    <div className="rb-rs-nodes">
+                      {options
+                        .filter((t) => t.row === row)
+                        .map((t) => {
+                          const on = chosen.some((x) => x.id === t.id);
+                          return (
+                            <button
+                              key={t.id}
+                              role="radio"
+                              aria-checked={on}
+                              aria-label={t.name}
+                              className={`rb-rs-node${on ? ' is-on' : ''}${readTalent === t ? ' is-read' : ''}${pressed({ k: 'talent', id: t.id })}`}
+                              onClick={(e) => {
+                                press({ k: 'talent', id: t.id }, row, e.currentTarget);
+                                pickTalent(t);
+                              }}
+                              onMouseEnter={look({ k: 'talent', id: t.id })}
+                              onFocus={look({ k: 'talent', id: t.id })}
+                              onMouseLeave={away}
+                              onBlur={away}
+                            >
+                              <img src={talentIcon(t)} alt="" draggable={false} />
+                              <strong>{t.name}</strong>
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                  {inline(row)}
+                </Fragment>
+              ))}
           </div>
         </div>
 
-        {/* one tooltip for the whole page: whatever was last pointed at or tapped (beside the icons; or, where they are
-            too narrow for that, by the one pointed at, while it is) */}
+        {/* one box for the whole page that reads whatever was last pointed at or pressed, beside the icons (where they are
+            too narrow for that, a tooltip by the one pointed at with a mouse; what is pressed, in its row's panel) */}
         <aside className="rb-rs-read" aria-live="polite" data-tut="read">
-          {readTalent ? <TalentTip t={readTalent} /> : readCombo ? <ComboTip c={readCombo} /> : <SpellTip ab={shownAb!} cls={cls} bar={cur.bar} talents={cur.talents} />}
+          {tell(reading)}
         </aside>
       </div>
     </div>

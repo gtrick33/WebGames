@@ -12,7 +12,7 @@ import { RING_KEY, type Standing } from '../src/games/sigilfall/arena/ranks';
 import { CHALLENGE_TITLES, DAILY, frameOf, framesOwned, trackGain, trackOf, trackPlace, TRACK_POINTS, dailyOf, dayKey, HISTORY_MAX, MASTERY_TITLES, recordMatch, seasonEnds, seasonOf, seasonReset, SEASON_LENGTH, SEASON_START, turnSeason, WEEKLY, weekKey, weeklyOf, type MatchEntry, type MatchFacts, type RingRecord } from '../src/games/sigilfall/arena/record';
 import { mergeSaveText } from '../src/platform/cloudMerge';
 import { earnedRecordTitles, TITLES } from '../src/games/sigilfall/progress/titles';
-import { ProgressDialog, ProgressLink, SeasonTrack } from '../src/games/sigilfall/ui/RingProgress';
+import { ProgressDialog, SeasonTrack } from '../src/games/sigilfall/ui/RingProgress';
 import { cleanPick } from '../src/games/sigilfall/net/ringRoom';
 import { ArenaChoice, ArenaPicture } from '../src/games/sigilfall/ui/RingArena';
 import { MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
@@ -139,24 +139,25 @@ describe('The Ring’s record across devices', () => {
   });
 });
 
-describe('The Ring’s record on screen: one strip in the lobby, the rest a press away', () => {
+describe('The Ring’s record on screen: a bar in the lobby’s head, the rest a press away', () => {
   it('every challenge has a picture from the game’s icons', () => {
     const names = (JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/games/sigilfall/icons/icons.json'), 'utf8')) as { names: string[] }).names;
     for (const c of [...DAILY, ...WEEKLY]) expect(names, c.id).toContain(c.icon);
   });
 
-  it('the arena: the one chosen as a card with its ground’s picture; the choice a picture card for each, Any first', () => {
+  it('the arena: a picture card for each, Any first, all in sight at once and the chosen one lit', () => {
     let picked = '';
-    let opened: boolean | null = null;
-    const shut = render(<ArenaChoice map="frost" open={false} onOpen={(o) => (opened = o)} onPick={() => {}} />);
-    expect(shut.container.textContent).toMatch(/The Frozen Mere/);
-    expect(shut.container.querySelectorAll('svg.rb-ar-pic')).toHaveLength(1);
-    fireEvent.click(shut.getByRole('button'));
-    expect(opened).toBe(true);
-    shut.unmount();
-    const open = render(<ArenaChoice map="random" open onOpen={() => {}} onPick={(id) => (picked = id)} />);
+    // (no card that has to be opened first: the owner, 2026-11-17, "make the pop up with the arena choosing easier to
+    // grasp, currently i have to scroll")
+    const frost = render(<ArenaChoice map="frost" onPick={() => {}} />);
+    expect(frost.getByRole('radio', { checked: true }).textContent).toMatch(/Frozen Mere/);
+    expect(frost.container.querySelectorAll('.rb-ar-card > .rb-ar-pic')).toHaveLength(MAP_IDS.length + 1);
+    frost.unmount();
+    const open = render(<ArenaChoice map="random" onPick={(id) => (picked = id)} />);
     const cards = open.getAllByRole('radio');
-    expect(cards.map((c) => c.textContent)).toEqual(['?Any arena', ...MAP_IDS.map((id) => MAPS[id]!.name)]);
+    // (names short enough for two to a row on a phone: "The" left off, the whole name kept for the card's tooltip)
+    expect(cards.map((c) => c.textContent)).toEqual(['?Any arena', ...MAP_IDS.map((id) => MAPS[id]!.name.replace(/^The /, ''))]);
+    expect(cards.slice(1).map((c) => c.getAttribute('title'))).toEqual(MAP_IDS.map((id) => MAPS[id]!.blurb));
     expect(cards[0]!.getAttribute('aria-checked')).toBe('true');
     // (each ground drawn with its stones)
     for (const id of MAP_IDS) expect(render(<ArenaPicture id={id} />).container.querySelectorAll('rect').length).toBeGreaterThan(MAPS[id]!.pillars.length);
@@ -164,18 +165,8 @@ describe('The Ring’s record on screen: one strip in the lobby, the rest a pres
     expect(picked).toBe(MAP_IDS[1]);
   });
 
-  it('the strip says how many of the challenges are done; the window has a tab for each part, with its count', () => {
+  it('the window has a tab for each part, with its count (the way in is the record bar in the main screen’s head)', () => {
     const rec = recordMatch(undefined, entry({ at: Date.now() }), facts({ combos: 20, kicks: 5, supers: 5, dmg: 9000, heal: 4000 }), Date.now());
-    const link = render(<ProgressLink record={rec} onOpen={() => {}} />);
-    // (a strip as the rewards' is: its name for a reader, today's three as pips, the next to do or "done", the way in)
-    expect(link.getByRole('button').getAttribute('aria-label')).toMatch(/^Progress \d\/6 challenges$/);
-    expect(link.container.querySelectorAll('.rb-pg-pips i')).toHaveLength(3);
-    // (which of the two depends on the day: its three challenges are drawn by the date, and one match finishes all
-    // three on some days and not on others. It asked for "Today’s challenge", which the strip says only when all are
-    // done, so it failed on every day that brought a challenge one match can't finish)
-    expect(link.container.textContent).toMatch(/\d\/\d+ · \+\d+ season points|Today’s challenges done/);
-    expect(link.container.textContent).toMatch(/Progress$/);
-    link.unmount();
     const ui = render(<ProgressDialog record={rec} onClose={() => {}} />);
     expect(ui.getByRole('tab', { name: /^Challenges/ }).getAttribute('aria-selected')).toBe('true');
     expect(ui.container.textContent).toMatch(/Today/);

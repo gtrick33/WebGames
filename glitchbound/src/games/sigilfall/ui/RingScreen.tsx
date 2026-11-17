@@ -25,7 +25,7 @@ import { RingMatch, type MatchHints, type MatchResult, type MatchStakes, type Ri
 import { RingResult, type RatingOutcome } from './RingResult';
 import { AbilityCard, BarRow, RingHelp, SetupEditor } from './RingSetup';
 import { wearOf, WearPicker } from './wear';
-import { LooksDialog, plainWorn, RewardsDialog, RewardStrip, ringTitle } from './RingRewards';
+import { LooksDialog, plainWorn, RewardsDialog, ringTitle } from './RingRewards';
 import { wornLooks } from '../progress/wardrobe';
 import { Titled } from './Titled';
 import { ScreenGate } from './ScreenGate';
@@ -35,7 +35,7 @@ import { bestFits, bestPreset, choiceFromWord, choicesFor, choiceWord, fillSide,
 import { cleanTitle, isTitleFx } from '../../../catalog/titleFx';
 import { rankFx, type TitleShown } from '../progress/titles';
 import { frameOf, framesOwned, recordMatch, trackGain, turnSeason, type TrackGain } from '../arena/record';
-import { ProgressDialog, ProgressLink, RecordBar, type ProgressTab } from './RingProgress';
+import { ProgressDialog, RecordBar, type ProgressTab } from './RingProgress';
 import { ArenaChoice } from './RingArena';
 
 const roomErrors: Record<string, string> = { full: 'That room is full.', in_run: 'That room is already in a match.' };
@@ -174,9 +174,10 @@ function MatesPicker({ format, cls, bar, mates, onMates }: { format: Format; cls
   const fits = bestFits(format, [me], shown);
   const set = (i: number, c: MateChoice): void => onMates(shown.map((x, j) => (j === i ? c : x)));
   const comps = COMPS[format].filter((c) => c.team.some((t) => t.cls === cls));
+  const hint = `${format === 3 ? 'Random brings one healer and one damage dealer, the pair that wins most beside your setup.' : 'Random brings the healer or damage dealer that wins most beside your setup.'} A friend who joins takes a place first.`;
   return (
     <div className="rb-rp-block">
-      <h3>Your {format === 2 ? 'teammate' : 'teammates'}</h3>
+      <h3 title={hint}>Your {format === 2 ? 'teammate' : 'teammates'}</h3>
       <div className="rb-rp-mates">
         {shown.map((x, i) => {
           const could = fits.map((t) => t[i]).filter((t): t is Spec => !!t);
@@ -225,9 +226,7 @@ function MatesPicker({ format, cls, bar, mates, onMates }: { format: Format; cls
           );
         })}
       </div>
-      <small className="rb-rp-matehint">
-        {format === 3 ? 'Random brings one healer and one damage dealer, the pair that wins most beside your setup.' : 'Random brings the healer or damage dealer that wins most beside your setup.'} A friend who joins takes a place first.
-      </small>
+      <small className="rb-rp-matehint">{hint}</small>
       {comps.length > 0 && (
         <div className="rb-rp-comps">
           <small>Teams that work:</small>
@@ -275,7 +274,6 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const { me } = useAccount();
   const [pick, setPick] = useState<ClassId>(cls && classOpen(cls, me) ? cls : 'warrior');
   const [map, setMap] = useState<string>('random');
-  const [mapsOpen, setMapsOpen] = useState(false);
   const [help, setHelp] = useState(false);
   // the tutorial (arena/tutorial.ts): its step over the lobby, if it's being taken, and its practice match
   const [tut, setTut] = useState<number | null>(null);
@@ -889,14 +887,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
             mates={mates}
             onMates={putMates}
             map={map}
-            mapsOpen={mapsOpen}
-            onMapsOpen={setMapsOpen}
-            onMap={(id) => {
-              setMap(id);
-              setMapsOpen(false);
-            }}
-            onRewards={() => setRewardsOpen(true)}
-            onProgress={() => setProgressOpen('challenges')}
+            onMap={setMap}
             note={barred ? BARRED_WHY : seekNote}
             ready={ready}
             barred={barred}
@@ -965,10 +956,13 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
 const listed = (names: string[]): string => (names.length < 2 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]!}`);
 
 /**
- * What kind of fight to find, in a layer over the main screen (opened from the fight shown at its foot): the format,
- * each with its own rating and rank, how far it is to the next rank, the rewards and the season's challenges, the
- * teammates the computer brings to a 2v2 or a 3v3, and the arena. Then the ways to play: find a match, a room with
- * friends, or the tutorial.
+ * What kind of fight to find, in a layer over the main screen (opened from the fight shown at its foot), all of it in
+ * sight at once with nothing to scroll (the owner, 2026-11-17: "make the pop up with the arena choosing easier to
+ * grasp, currently i have to scroll which is way too annoying, make better design"). On the left the fight: the
+ * format, each with its own rating and rank, how far it is to the next rank, and the teammates the computer brings to a
+ * 2v2 or a 3v3; on the right the arena, a picture of each ground to press. Then the ways to play along the foot: find a
+ * match, a room with friends, or the tutorial. (The rewards and the season's challenges are on the main screen itself,
+ * in its record: RingProgress RecordBar.)
  */
 function PlayLayer(props: {
   format: Format;
@@ -979,11 +973,7 @@ function PlayLayer(props: {
   mates: MateChoice[];
   onMates: (m: MateChoice[]) => void;
   map: string;
-  mapsOpen: boolean;
-  onMapsOpen: (open: boolean) => void;
   onMap: (id: string) => void;
-  onRewards: () => void;
-  onProgress: () => void;
   note: string;
   ready: boolean;
   barred: boolean;
@@ -1006,45 +996,45 @@ function PlayLayer(props: {
           </button>
         </header>
         <div className="rb-ringvl-playbody">
-          <div className="rb-rp-formats" role="radiogroup" aria-label="Format" data-tut="formats">
-            {FORMATS.map((f) => {
-              const st = standingOf(save, f);
-              const r = rankOf(st.best);
-              return (
-                <button key={f} role="radio" aria-checked={f === format} className={`rb-rp-format${f === format ? ' is-on' : ''}`} style={{ ['--r' as string]: r.color }} onClick={() => props.onFormat(f)}>
-                  <strong>
-                    {f}v{f}
-                  </strong>
-                  <b>{st.rating}</b>
-                  <small>{r.name}</small>
-                </button>
-              );
-            })}
-          </div>
-          <div className="rb-rp-rank" data-tut="rank">
-            <span>
-              <b>{rank.name}</b> · {standing.wins} wins, {standing.losses} losses
-              {standing.streak >= 2 ? ` · ${standing.streak} in a row` : ''}
-            </span>
-            {next && (
-              <span className="rb-rp-next">
-                <i style={{ width: `${Math.max(0, Math.min(100, ((standing.best - rank.at) / (next.at - rank.at)) * 100))}%` }} />
-                <small>
-                  {next.name} at {next.at}
-                </small>
+          <section className="rb-ringvl-playfight" aria-label="The fight">
+            <div className="rb-rp-formats" role="radiogroup" aria-label="Format" data-tut="formats">
+              {FORMATS.map((f) => {
+                const st = standingOf(save, f);
+                const r = rankOf(st.best);
+                return (
+                  <button key={f} role="radio" aria-checked={f === format} className={`rb-rp-format${f === format ? ' is-on' : ''}`} style={{ ['--r' as string]: r.color }} onClick={() => props.onFormat(f)}>
+                    <strong>
+                      {f}v{f}
+                    </strong>
+                    <b>{st.rating}</b>
+                    <small>{r.name}</small>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="rb-rp-rank" data-tut="rank">
+              <span>
+                <b>{rank.name}</b> · {standing.wins} wins, {standing.losses} losses
+                {standing.streak >= 2 ? ` · ${standing.streak} in a row` : ''}
               </span>
-            )}
-          </div>
-          <RewardStrip best={bestRating()} onOpen={props.onRewards} />
-          <ProgressLink record={save.record ?? {}} onOpen={props.onProgress} />
-          {format > 1 && <MatesPicker format={format} cls={props.pick} bar={bar} mates={props.mates} onMates={props.onMates} />}
-          <ArenaChoice map={props.map} open={props.mapsOpen} onOpen={props.onMapsOpen} onPick={props.onMap} />
-          {props.note && (
-            <p className="rb-rp-error" role="status">
-              {props.note}
-            </p>
-          )}
+              {next && (
+                <span className="rb-rp-next">
+                  <i style={{ width: `${Math.max(0, Math.min(100, ((standing.best - rank.at) / (next.at - rank.at)) * 100))}%` }} />
+                  <small>
+                    {next.name} at {next.at}
+                  </small>
+                </span>
+              )}
+            </div>
+            {format > 1 && <MatesPicker format={format} cls={props.pick} bar={bar} mates={props.mates} onMates={props.onMates} />}
+          </section>
+          <ArenaChoice map={props.map} onPick={props.onMap} />
         </div>
+        {props.note && (
+          <p className="rb-rp-error" role="status">
+            {props.note}
+          </p>
+        )}
         <footer className="rb-ringvl-playfoot">
           <button className={`rb-btn is-gold is-big${props.barred ? ' is-barred' : ''}`} onClick={props.onFind} aria-disabled={props.barred || undefined}>
             {!props.ready ? `Choose ${SLOTS - bar.length} more abilities` : props.barred ? 'No healers in 1v1' : `Find a ${format}v${format} match`}

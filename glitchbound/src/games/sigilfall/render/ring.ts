@@ -102,13 +102,15 @@ export const OVERHEAD_MAX = 3;
 /**
  * What of it stands over a fighter's head, where the fight is (the plan the owner took up: "over heads: only holds and
  * your own effects; everything else on the nameplates"): any hold on them, whoever's, then what the player put on them,
- * longest-held first, three at most. Nothing is hidden: every effect is still on the fighter's nameplate (RingMatch
- * Frame). With no player (a replay, a test), the holds alone.
+ * longest-held first, three at most. Over the player's own head and their allies' (`ours`), the other side's debuffs
+ * too, between the two (the owner, 2026-11-17: "add debuffs to yours and your allies health bars"). Nothing is hidden:
+ * every effect is still on the fighter's nameplate (RingMatch Frame). With no player (a replay, a test), the holds alone.
  */
-export function overhead(f: Pick<Fighter, 'auras'>, myId: number | null): Fighter['auras'] {
+export function overhead(f: Pick<Fighter, 'auras'>, myId: number | null, ours = false): Fighter['auras'] {
   const holds = worn(f).filter((a) => !!a.cc);
+  const harm = ours && myId !== null ? worn(f).filter((a) => !a.cc && a.harmful && a.src !== myId) : [];
   const mine = myId === null ? [] : worn(f).filter((a) => !a.cc && a.src === myId);
-  return [...holds.sort((a, b) => b.t - a.t), ...mine.sort((a, b) => b.t - a.t)].slice(0, OVERHEAD_MAX);
+  return [...holds.sort((a, b) => b.t - a.t), ...harm.sort((a, b) => b.t - a.t), ...mine.sort((a, b) => b.t - a.t)].slice(0, OVERHEAD_MAX);
 }
 
 /** What an ability sounds like as it leaves the hand, and as it lands, by its school. */
@@ -760,7 +762,8 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
   // off: the owner, "the debuffs are just squares and i dont understand anything from them ... make the square with
   // the spells icon image and add a 7s 6s timer on it".) Only the holds and the player's own, three at most: the rest
   // are on the nameplates (overhead).
-  const shown = f.pet ? [] : overhead(f, myId);
+  const viewer = myId === null ? null : (m.fighters[myId] ?? null);
+  const shown = f.pet ? [] : overhead(f, myId, !!viewer && viewer.team === f.team);
   const pip = 10.6;
   const gap = 1.4;
   let px = f.x - (shown.length * (pip + gap) - gap) / 2;

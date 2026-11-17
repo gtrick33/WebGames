@@ -84,7 +84,7 @@ describe('The Ring’s setup: a playstyle and its talents, and nothing else', ()
     expect(sets.list[0]!.talents).toEqual([PRESETS.mage[1]!.talents[0], PRESETS.mage[1]!.talents[1], kept]);
     again();
     expect(read()).toMatch(/^Rime SpearBasic/);
-    expect([...container.querySelectorAll('.rb-rs-link b')].map((x) => x.textContent)).toEqual(['×2', '×3']);
+    expect([...container.querySelectorAll('.rb-rs-link b')].map((x) => x.textContent)).toEqual(['×2', '×3.3']);
     // nothing here opens a window over the page
     fireEvent.click(container.querySelector('.rb-rs-barrow .rb-rs-slot')!);
     expect(container.querySelector('.rb-rs-card')).toBeNull();

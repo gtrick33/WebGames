@@ -50,8 +50,10 @@ export const HEAL_BY_SIZE: readonly number[] = [1, 1, 1, 1.45];
  * Only healers left standing, on both sides: sudden death. Healing is gone within `fade` seconds of it, and everything
  * hits `grow` harder for every second since (the owner, 2026-11-17: "in 2v2 if both dps die, the healers take ages to
  * kill each other"). A healer's own blows are few; without it two of them took half a minute, and up to a minute.
+ * (`grow` was 0.5 until the healers' own damage came down by two fifths, 2026-11-17: at 0.5 two healers left alone then
+ * took up to 40 sec again.)
  */
-export const SUDDEN = { fade: 3, grow: 0.5 } as const;
+export const SUDDEN = { fade: 3, grow: 0.85 } as const;
 /**
  * Nobody of either side in sight for this long (everyone left is in the shroud: two Nightblades): the shroud lifts
  * from all of them, and none of them slips back into it by themself for `rest` seconds. The owner, 2026-11-17: "1v1 if
@@ -63,6 +65,8 @@ export const ORB_FIRST = 12;
 export const ORB_EVERY = 24;
 export const ORB_HEAL = 0.14;
 const QUEUE = 0.35;
+/** Two presses of a basic ability this close together break off the channel under way (one press waits for its end). */
+export const DOUBLE_TAP = 0.4;
 /** Casting doesn't stop you, but it slows you to this. */
 export const CAST_SLOW = 0.55;
 /**
@@ -85,6 +89,8 @@ export const BURST_K = 1.25;
 export const CRIT_K = 1.7;
 /** Healing over its ability's number: a little under, so that a healer slows a kill rather than stopping it. */
 export const HEAL_K = 0.85;
+/** A cast no blow knocks back: a heal for a friend (the healers' Knit Wounds, Dawn's Touch and Green Mending). */
+export const steadyCast = (ab: Ability | undefined): boolean => !!ab && ab.role === 'heal' && ab.aim === 'friend';
 /** The gates of a ladder match against the computer lift sooner: there is nobody to wait for. */
 export const GATES_SOLO = 15;
 /**
@@ -257,7 +263,11 @@ export interface Fighter {
   locks: Partial<Record<string, number>>;
   /** A rush, a throw or a step on its way: where to, and how fast. */
   dash: { x: number; y: number; speed: number } | null;
-  queued: { ab: string; t: number; at?: { x: number; y: number } } | null;
+  /**
+   * A press waiting to go off: in the last moments of a cast or of the global cooldown, or a basic ability pressed during
+   * a channel (`hold`: it waits for the channel's end; `tap`: when it was pressed, for a second press to break it off).
+   */
+  queued: { ab: string; t: number; at?: { x: number; y: number }; hold?: boolean; tap?: number } | null;
   fearX: number;
   fearY: number;
   talents: string[];
@@ -984,6 +994,21 @@ export class Match {
     if (!f || !ab || (!f.bar.includes(abId) && !this.extras(f).includes(ab))) return 'You don’t have that';
     // (a point means something only to an ability that is placed)
     const at = ab.aim === 'ground' && point && Number.isFinite(point.x) && Number.isFinite(point.y) ? { x: point.x, y: point.y } : undefined;
+    // the basic ability pressed during a channel (Soul Drink): once, it waits for the channel's end and goes off then; a
+    // second press at once breaks the channel off for it. (Any press broke it off until players' word, 2026-11-17:
+    // "warlock drain is bugged i think, thinks its only healing on the first dot and stops": it stopped at the first
+    // press of Blight Dart. The owner: "blight dart should be queued if u press it once, if u press it twice fast cancel
+    // drink".)
+    const c = f.cast;
+    if (c?.channel && !ab.free && abId === f.bar[0] && c.ab !== abId) {
+      const q = f.queued;
+      if (!(q?.hold && q.ab === abId && q.tap !== undefined && this.clock - q.tap <= DOUBLE_TAP)) {
+        f.queued = { ab: abId, t: c.dur - c.t + QUEUE, at, hold: true, tap: this.clock };
+        return null;
+      }
+      this.endCast(f);
+      f.queued = null;
+    }
     const why = this.blocked(f, ab, undefined, at);
     if (!why) {
       this.begin(f, ab, at);
@@ -1953,8 +1978,10 @@ export class Match {
       t.auras.splice(i, 1);
       this.events.push({ k: 'word', id: t.id, word: 'Broke free' });
     }
-    // a blow knocks a cast back (twice at most; as far again and as often as they land, from a paladin's stern blows)
-    if (direct && t.cast && !t.cast.channel) {
+    // a blow knocks a cast back (twice at most; as far again and as often as they land, from a paladin's stern blows).
+    // A heal for a friend is not knocked back: it goes off in its own time however hard its healer is hit (players'
+    // word, 2026-11-17: "healers i think could use some help with the castable heals")
+    if (direct && t.cast && !t.cast.channel && !steadyCast(ABILITIES[t.cast.ab])) {
       const stern = src.perks.does.stern;
       if (stern) t.cast.t = Math.max(0, t.cast.t - stern.push);
       else if (t.cast.pushed < 2) {
@@ -2550,7 +2577,8 @@ export class Match {
       f.queued.t -= dt;
       const ab = ABILITIES[f.queued.ab];
       if (f.queued.t <= 0 || !ab) f.queued = null;
-      else if (f.gcd <= 0 && !this.blocked(f, ab, undefined, f.queued.at)) this.begin(f, ab, f.queued.at);
+      // (one waiting on a channel waits until it is over)
+      else if (!(f.queued.hold && f.cast?.channel) && f.gcd <= 0 && !this.blocked(f, ab, undefined, f.queued.at)) this.begin(f, ab, f.queued.at);
     }
   }
 

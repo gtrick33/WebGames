@@ -334,8 +334,14 @@ describe('The Ring: no class much above or below the rest', () => {
     // (0.35: the priest, at 37% before, came out at 35.7% once roots and fears broke on hurt again (2026-11-14), and a
     // point or so either way is how much these computer matches move with any change to the rules. Its damage raised
     // to 0.8 came out at 34.5%, its Wail of Dread half a second longer no different: the owner's call, not this test's)
+    // (the warrior is set by players' word over this measure: the owner, 2026-11-17, on feedback that warriors "have
+    // the best dps, most amount of cc, same mobility as everyone and are the tankiest spec": "i dont think ur balancing
+    // test is very relevant here as this is player feedback". At 42% here before, the computer plays him to 12% since,
+    // at 0.87 as at 0.82: what holds him back here is the rest, his health, holds, slows and charge.)
+    const BY_PLAYERS = new Set<ClassId>(['warrior']);
     for (const c of CLASS_IDS) {
       const share = (wins[c] ?? 0) / games[c]!;
+      if (BY_PLAYERS.has(c)) continue;
       expect(share, `${c} wins ${Math.round(share * 100)}% at ${CLASS_DMG[c]}`).toBeGreaterThan(0.35);
       expect(share, `${c} wins ${Math.round(share * 100)}% at ${CLASS_DMG[c]}`).toBeLessThan(0.64);
     }

@@ -125,8 +125,9 @@ describe('The Ring: Frostfang shatters the ice', () => {
       for (let i = 0; i < 30 && m.bolts.length; i++) m.step(STEP, {});
       return 50000 - w.hp;
     };
-    expect(ABILITIES['m-fang']!.combo!.mult).toBe(3);
-    expect(hit(true) / hit(false)).toBeCloseTo(3, 1);
+    // (3.3 since the owner, 2026-11-17: "increase frostfang dmg by 10% when shatter")
+    expect(ABILITIES['m-fang']!.combo!.mult).toBe(3.3);
+    expect(hit(true) / hit(false)).toBeCloseTo(3.3, 1);
     // (instant, on the move, and with no long wait between; seen crossing in a third of a second or so)
     expect(ABILITIES['m-fang']).toMatchObject({ cast: 0, bolt: true });
     expect(ABILITIES['m-fang']!.flight!.most).toBeLessThanOrEqual(0.45);

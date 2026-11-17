@@ -191,9 +191,9 @@ export const TALENTS: Record<ClassId, Talent[]> = {
         { name: 'Headsman', text: 'Deal 75% more damage to enemies below 35% health.', icon: 'death_mark_target_on_black', exec: 0.75 },
       ],
       [
-        { name: 'Thunderous Rush', text: 'Bull Rush also stuns for 0.8 sec.', icon: 'charging_bull_head_in_steel_on_red', tune: { 'w-rush': { extra: [{ k: 'cc', cc: 'stun', dur: 0.8 }] } } },
-        { name: 'Ricochet', text: 'Hurled Maul bounces to the nearest other enemy. Cooldown reduced by 25%.', icon: 'shield_bash_with_impact_rays_on_red', tune: { 'w-hurl': { bounce: true, cd: 0.75 } } },
-        { name: 'Warpath', text: 'Bull Rush cooldown reduced by 3 sec. It removes roots and slows, and for 3 sec afterward you move 30% faster and cannot be slowed or rooted.', icon: 'running_boot_with_speed_lines_on_red', tune: { 'w-rush': { cd: 0.7, self: [{ k: 'break' }, { k: 'free', dur: 3 }, { k: 'speed', pct: 30, dur: 3 }] } } },
+        { name: 'Thunderous Rush', text: 'Bull Rush also stuns for 0.5 sec.', icon: 'charging_bull_head_in_steel_on_red', tune: { 'w-rush': { extra: [{ k: 'cc', cc: 'stun', dur: 0.5 }] } } },
+        { name: 'Ricochet', text: 'Hurled Maul bounces to the nearest other enemy.', icon: 'shield_bash_with_impact_rays_on_red', tune: { 'w-hurl': { bounce: true } } },
+        { name: 'Warpath', text: 'Bull Rush cooldown reduced by 3 sec. It removes roots and slows, and for 3 sec afterward you move 30% faster and cannot be slowed or rooted.', icon: 'running_boot_with_speed_lines_on_red', tune: { 'w-rush': { cd: 12 / 15, self: [{ k: 'break' }, { k: 'free', dur: 3 }, { k: 'speed', pct: 30, dur: 3 }] } } },
       ],
     ]),
     ...styleRows('warrior', 'w', 'pin', [
@@ -203,15 +203,15 @@ export const TALENTS: Record<ClassId, Talent[]> = {
         { name: 'Grudge', text: 'Each consecutive hit on the same enemy deals 11% more damage, up to 55%. Switching targets resets it.', icon: 'crossed_sword_and_axe_on_red', does: { k: 'grudge', step: 0.11, max: 5 } },
       ],
       [
-        { name: 'Crippling Blows', text: 'Hock Cut slows by 60% for 4 sec.', icon: 'slowed_status_snail_on_teal', tune: { 'w-hamstring': { extra: [{ k: 'slow', pct: 60, dur: 4 }] } } },
+        { name: 'Crippling Blows', text: 'Hock Cut slows by 45% for 3 sec.', icon: 'slowed_status_snail_on_teal', tune: { 'w-hamstring': { extra: [{ k: 'slow', pct: 45, dur: 3 }] } } },
         { name: 'Bonebreaker', text: 'Skull Crack deals triple damage. Cooldown reduced by 25%.', icon: 'stunned_status_stars_on_yellow', tune: { 'w-crack': { power: 3, cd: 0.75 } } },
-        { name: 'Run Down', text: 'Bull Rush cooldown reduced by 4 sec. You move 30% faster for 3 sec afterward.', icon: 'burning_boot_with_speed_flames_on_red', tune: { 'w-rush': { cd: 0.6, self: [{ k: 'speed', pct: 30, dur: 3 }] } } },
+        { name: 'Run Down', text: 'Bull Rush cooldown reduced by 4 sec. You move 30% faster for 3 sec afterward.', icon: 'burning_boot_with_speed_flames_on_red', tune: { 'w-rush': { cd: 11 / 15, self: [{ k: 'speed', pct: 30, dur: 3 }] } } },
       ],
     ]),
     ...classRow('warrior', 'w', [
-      { name: 'Scar Tissue', text: 'Each hit you take reduces your damage taken by 2% for 6 sec, up to 10%.', icon: 'rock_armour_skin_on_brown', does: { k: 'scar', step: 0.02, max: 0.1, dur: 6 } },
+      { name: 'Scar Tissue', text: 'Each hit you take reduces your damage taken by 2% for 6 sec, up to 6%.', icon: 'rock_armour_skin_on_brown', does: { k: 'scar', step: 0.02, max: 0.06, dur: 6 } },
       { name: 'Break Loose', text: 'When crowd control on you ends, you move 50% faster for 3 sec.', icon: 'broken_chain_links_snapping_on_grey', does: { k: 'loose', pct: 50, dur: 3 } },
-      { name: 'Second Wind', text: 'Falling below 35% health heals you for 12% of your health. 45 sec cooldown.', icon: 'burning_heart_on_red', rally: { pct: 0.12, every: 45 } },
+      { name: 'Second Wind', text: 'Falling below 35% health heals you for 8% of your health. 45 sec cooldown.', icon: 'burning_heart_on_red', rally: { pct: 0.08, every: 45 } },
     ]),
   ],
   // glass that bends space: fire that spreads, frost that counts
@@ -231,7 +231,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('mage', 'm', 'frost', [
       [
         // (the owner: "orb could give you on screen effects ... where the ice lance like spell deals 3x dmg")
-        { name: 'Hoarfrost', text: 'Each tick of your Rimeglobe has a 35% chance to trigger Hoarfrost (stacks twice): your next Frostfang has no cooldown and deals triple damage, as if the target were rooted.', icon: 'frozen_status_snowflake_on_blue', tune: { 'm-globe': { gives: [{ boon: 'hoar', chance: 0.35, on: 'tick' }] }, 'm-fang': { uses: [{ boon: 'hoar', nocd: true, asCombo: true }] } } },
+        { name: 'Hoarfrost', text: 'Each tick of your Rimeglobe has a 35% chance to trigger Hoarfrost (stacks twice): your next Frostfang has no cooldown and deals 3.3 times the damage, as if the target were rooted.', icon: 'frozen_status_snowflake_on_blue', tune: { 'm-globe': { gives: [{ boon: 'hoar', chance: 0.35, on: 'tick' }] }, 'm-fang': { uses: [{ boon: 'hoar', nocd: true, asCombo: true }] } } },
         // (the owner: "have the icicles stacked every time u deal frost bolt and launching ice lance fires them")
         { name: 'Rimeshards', text: 'Rime Spear generates a Rimeshard, up to 5. Frostfang spends them to deal 30% more damage per Rimeshard.', icon: 'icicle_rain_on_navy', points: { name: 'Rimeshards', one: 'Rimeshard', max: 5, color: '#bfeaff' }, tune: { 'm-spear': { build: { n: 1 } }, 'm-fang': { spend: { per: 0.3 } } } },
         { name: 'Deep Winter', text: 'While your Rimeglobe is active, Rime Spear is instant.', icon: 'snow_storm_cloud_on_grey', tune: { 'm-spear': { uses: [{ boon: 'globe', instant: true, keep: true }] } } },

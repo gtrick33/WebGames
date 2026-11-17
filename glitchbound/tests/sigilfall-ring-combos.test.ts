@@ -408,7 +408,7 @@ describe('The Ring: boons, that light an ability up', () => {
     expect(words(m)).toContain('Shatter');
     expect(boon(me, 'hoar')).toBe(1);
     // ready at once: the second straight after the first
-    expect(strike(m, me, foe, 'm-fang') / plain).toBeCloseTo(3, 1);
+    expect(strike(m, me, foe, 'm-fang') / plain).toBeCloseTo(AB('m-fang').combo!.mult, 1);
     expect(boon(me, 'hoar')).toBe(0);
     expect(m.press(0, 'm-fang')).toBe('Not ready yet');
   });
@@ -679,7 +679,7 @@ describe('The Ring: what a talent makes of an ability, by name', () => {
     const c = duel('warrior', 'w-pin-2a');
     strike(c.m, c.me, c.foe, 'w-hamstring');
     const slow = c.foe.auras.find((x) => x.ab === 'w-hamstring' && x.kind === 'slow')!;
-    expect([slow.n, slow.dur]).toEqual([0.6, 4]);
+    expect([slow.n, slow.dur]).toEqual([0.45, 3]);
 
     const bone = (talent: string | null): number => {
       const x = duel('warrior', talent, 'warrior', 1);

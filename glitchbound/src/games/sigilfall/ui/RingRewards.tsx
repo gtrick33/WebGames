@@ -29,36 +29,6 @@ function Swatch({ r }: { r: RingReward }) {
   );
 }
 
-/** The ladder, as a strip of pips in the lobby: what is earned, and what the next one is. */
-export function RewardStrip({ best, onOpen }: { best: number; onOpen: () => void }) {
-  const next = RING_REWARDS.find((r) => r.at > best);
-  return (
-    <button className="rb-rw-strip" onClick={onOpen} aria-label="Ring rewards">
-      <span className="rb-rw-pips" aria-hidden="true">
-        {RING_REWARDS.map((r) => (
-          <i key={r.at} className={best >= r.at ? 'is-on' : ''} style={{ ['--r' as string]: r.color }} />
-        ))}
-      </span>
-      <span className="rb-rw-next">
-        {next ? (
-          <>
-            <b>Next reward at {next.at}</b>
-            <small>
-              The title {next.rank} and the {next.harness}
-            </small>
-          </>
-        ) : (
-          <>
-            <b>Every reward earned</b>
-            <small>The top of the ladder is yours</small>
-          </>
-        )}
-      </span>
-      <span className="rb-rw-more">Rewards</span>
-    </button>
-  );
-}
-
 /** Every reward, in full. */
 export function RewardsDialog({ best, onClose }: { best: number; onClose: () => void }) {
   return (
