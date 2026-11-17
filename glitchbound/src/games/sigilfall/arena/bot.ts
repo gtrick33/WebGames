@@ -217,6 +217,15 @@ function mobilize(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighte
       if (blades && !m.blocked(f, ab)) m.press(f.id, id);
       continue;
     }
+    if (kinds.includes('bound')) {
+      // (it goes the way they face: away from the nearest blade, then)
+      if (!blades || m.blocked(f, ab)) continue;
+      const near = enemies.reduce((a, c) => (Math.hypot(c.x - f.x, c.y - f.y) < Math.hypot(a.x - f.x, a.y - f.y) ? c : a));
+      f.dirX = f.x - near.x || 1;
+      f.dirY = f.y - near.y;
+      m.press(f.id, id);
+      return;
+    }
     // (what quickens: to close in, for one who fights at arm's length; to get away, for one who doesn't)
     const far = !RANGED.has(f.cls) && Math.hypot(target.x - f.x, target.y - f.y) > 70;
     if ((stuck || (kinds.includes('speed') && (far || (RANGED.has(f.cls) && blades)))) && !m.blocked(f, ab)) m.press(f.id, id);
@@ -309,7 +318,6 @@ function control(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter
     const breaks = kind === 'incap' || kind === 'fear';
     const on = breaks ? dps : kind === 'stun' ? (healer && hpShare(target) < 0.6 ? healer : target) : target;
     if (!on || on.auras.some((x) => x.kind === 'immune' || (x.cc && x.t > 0.6))) continue;
-    if ((on.dr[kind]?.n ?? 0) >= 2 && on.dr[kind]!.until > m.clock) continue;
     if (ab.aim === 'near') {
       if (Math.hypot(on.x - f.x, on.y - f.y) > ab.range) continue;
     } else if (m.blocked(f, ab, on)) continue;

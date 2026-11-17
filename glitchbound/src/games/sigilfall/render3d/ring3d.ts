@@ -5,6 +5,7 @@ import type { Fighter, Match } from '../arena/sim';
 import { THEMES, type ThemeLook } from '../data/themes';
 import type { ClassId } from '../data/types';
 import type { HeroLook } from '../render/art/hero';
+import { SHATTER_HOLD } from '../render/ringSigns';
 import { K, TILE, type TileMap } from '../sim/map';
 import { Motion, PERSON_H } from './cast';
 import { strikeOf } from './strike';
@@ -106,7 +107,7 @@ export function ringFit(cssW: number, cssH: number, dpr: number): { tile: number
 export class RingStage implements RingView {
   readonly stage: Stage;
   private built = false;
-  private readonly motions = new Map<number, { m: Motion; turn: number; swing: number; clip: string; fresh: boolean; time: number; lunge: number; hurt: number; hard: boolean; stand?: number }>();
+  private readonly motions = new Map<number, { m: Motion; turn: number; swing: number; clip: string; fresh: boolean; time: number; lunge: number; hurt: number; hard: boolean; stand?: number; stop?: number; ice?: number }>();
   /**
    * Where each body was drawn this frame: the rules' spot, carried into a blow and back, rocked by a flinch. What is
    * worn on a fighter (the Gloamknight's gloam, a shield, a curse) is drawn here too, so it goes with the body rather
@@ -315,6 +316,10 @@ export class RingStage implements RingView {
     const gale = f.auras.some((a) => a.ab === 'l-gale' && a.cc === 'incap');
     const stunned = f.auras.some((a) => a.cc === 'stun' || a.cc === 'incap');
     const frozen = f.auras.some((a) => a.kind === 'immune' && a.still);
+    // (a Shatter holds them still in the ice for a moment before it breaks, and leaves them pale with cold: shatter)
+    const stopped = (s.stop ?? 0) > 0;
+    s.stop = Math.max(0, (s.stop ?? 0) - dt);
+    s.ice = Math.max(0, (s.ice ?? 0) - dt);
     if (f.dead) s.m.set('die', false);
     else if (f.cast) s.m.set(f.cast.channel ? 'channel' : 'cast');
     // (on the run a blow is the strike alone, then the legs again: its long recovery was a figure sliding along in a
@@ -330,7 +335,7 @@ export class RingStage implements RingView {
     else if (s.hurt > 0.1 && !moving) s.m.set('hit', false, 0.05);
     else if (moving) s.m.set('run');
     else s.m.set('idle');
-    if (frozen) dt = 0;
+    if (frozen || stopped) dt = 0;
     s.m.advance(dt);
     if (!shade) cast.shadow(f.x, f.y, f.dead ? 10 : 8);
     if (hexed) {
@@ -343,12 +348,15 @@ export class RingStage implements RingView {
     // And whoever is struck flashes white and is rocked a little where they stand
     const u = s.swing > 0 && s.time > 0 ? 1 - s.swing / s.time : 1;
     const reach = s.lunge > 0 && !f.dead ? s.lunge * Math.sin(Math.PI * Math.min(1, u * 1.35)) * stand : 0;
-    const rock = s.hurt > 0 && !f.dead ? Math.sin(s.hurt * 60) * (s.hard ? 1.6 : 0.9) * (s.hurt / 0.26) * stand : 0;
+    // (and the flinch waits for the ice to break)
+    const rock = s.hurt > 0 && !f.dead && !stopped ? Math.sin(s.hurt * 60) * (s.hard ? 1.6 : 0.9) * (s.hurt / 0.26) * stand : 0;
     const flash = s.hurt > 0 && !f.dead ? Math.min(1, s.hurt / 0.26) * (s.hard ? 0.85 : 0.6) : 0;
     const bx = f.x + f.dirX * reach + rock;
     const by = f.y + f.dirY * reach;
     this.drawn.set(f.id, { x: bx, y: by });
-    cast.person(l.look, l.held, shieldOf(f.cls as ClassId), bx, by, s.turn, s.m, { lift, flash, alpha: f.dead ? 0.85 : shade ? 0.42 : 1, tint: frozen ? [0.75, 0.92, 1.25] : shade ? SHADE : undefined });
+    const ice = Math.min(1, (s.ice ?? 0) / 0.25);
+    const tint: readonly [number, number, number] | undefined = frozen ? [0.75, 0.92, 1.25] : ice > 0 ? [1 - ice * 0.25, 1 - ice * 0.08, 1 + ice * 0.3] : shade ? SHADE : undefined;
+    cast.person(l.look, l.held, shieldOf(f.cls as ClassId), bx, by, s.turn, s.m, { lift, flash: stopped ? Math.max(flash, 0.55) : flash, alpha: f.dead ? 0.85 : shade ? 0.42 : 1, tint });
   }
 
   /** Where a fighter's body was drawn this frame (their spot, if it hasn't been): for what goes about on them. */
@@ -476,6 +484,8 @@ export class RingStage implements RingView {
       // (blow after blow, the arm changes: a cut, then a slice back the other way)
       else [clip, time, lunge] = [s.clip === 'chop' ? 'slice' : 'chop', 0.52, 8];
     } else if (ab.school === 'physical' && ab.aim === 'enemy') [clip, time] = ['throw', 0.58];
+    // (a fang of ice is hurled at them, from the shoulder: it is seen leaving the hand)
+    else if (ab.flight && ab.aim === 'enemy') [clip, time] = ['throw', 0.5];
     else if (ab.aim === 'self') {
       if (has('guard') || has('absorb') || has('immune') || has('reflect')) [clip, time] = ['block', 0.65];
       else if (has('fury') || has('speed') || has('price')) [clip, time] = ['taunt', 0.65];
@@ -498,10 +508,27 @@ export class RingStage implements RingView {
     this.quakeT = 0.22;
   }
 
+  /**
+   * Frostfang's Shatter on a fighter (the owner, 2026-11-17: "casting the spell with shatter doesnt feel like im hitting
+   * anything, make it impactful"): they are held still in the ice for a tenth of a second, white with it, then flinch
+   * hard as it breaks, and stay pale with cold a moment longer. Not the camera: a combo is felt on whoever it lands on
+   * (the owner's word on combos: "just do particles and short sound, dont nudge camera").
+   */
+  shatter(id: number): void {
+    const s = this.motions.get(id);
+    if (!s) return;
+    s.stop = this.still ? 0 : SHATTER_HOLD;
+    s.ice = 0.5;
+    s.hurt = 0.26 + SHATTER_HOLD;
+    s.hard = true;
+  }
+
   /** A fighter is struck (a blow that took a real bite): they flash and flinch; harder for a heavy one. */
   hurt(id: number, hard: boolean): void {
     const s = this.motions.get(id);
     if (!s) return;
+    // (the blow of a Shatter is its own flinch, already under way: shatter)
+    if ((s.stop ?? 0) > 0) return;
     s.hurt = 0.26;
     s.hard = hard;
   }

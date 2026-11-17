@@ -1,5 +1,5 @@
 import type { ClassId } from '../data/types';
-import type { Build, Effect, Give, Points, Spend, Use } from './abilities';
+import { CLASS_DMG, type Build, type Effect, type Give, type Points, type Spend, type Use } from './abilities';
 
 /**
  * The Ring's talents: three rows, one choice from each, and the only thing a player changes about a playstyle (the
@@ -121,9 +121,13 @@ export type Doing =
   | { k: 'knell'; pct: number }
   | { k: 'revenant'; dur: number; live: number }
   | { k: 'thirst'; pct: number }
-  | { k: 'bones'; n: number; pct: number; every: number };
+  | { k: 'bones'; n: number; pct: number; every: number }
+  // the Nightblade's venoms, on its basic blade (one of the three)
+  | { k: 'mire'; pct: number; dur: number }
+  | { k: 'weep'; n: number; dur: number }
+  | { k: 'numb'; chance: number; dur: number; every: number };
 
-/** A fighter's doings, by kind (a fighter has one talent a row, so three at most). */
+/** A fighter's doings, by kind (a fighter has one talent a row, so four at most). */
 export type Does = { [K in Doing['k']]?: Extract<Doing, { k: K }> };
 
 export interface Talent {
@@ -131,7 +135,7 @@ export interface Talent {
   cls: ClassId;
   /** The playstyle it belongs to (abilities.ts PRESETS, by id); without one it is the whole class's. */
   spec?: string;
-  row: 0 | 1 | 2;
+  row: 0 | 1 | 2 | 3;
   name: string;
   text: string;
   /** Its own icon; without one it wears the ability it changes. */
@@ -149,10 +153,16 @@ export interface Talent {
   exec?: number;
   /** Falling under RALLY of your health heals `pct` of it at once, at most once every `every` seconds. */
   rally?: { pct: number; every: number };
+  /** The ability it works through, where no `tune` says so (a Nightblade's venom, on its Nightknife): read in that ability's own tooltip. */
+  via?: string;
 }
 
 /** (They were "Combo", "Tricks" and "Staying alive" until the owner, 2026-11-16: "rename combo to core, tricks to utility" and the third to defensive.) */
-export const ROW_NAMES = ['Core', 'Utility', 'Defensive'] as const;
+/**
+ * The fourth, Venom, is the Nightblade's alone: what its basic blade carries (the owner, 2026-11-17: "basic attack could
+ * have 3 diff poisons - slow down, bleed or random stun sometimes"). Every other playstyle has three rows.
+ */
+export const ROW_NAMES = ['Core', 'Utility', 'Defensive', 'Venom'] as const;
 /** What each row is for, in a line (the setup page says it over the row). */
 
 /** Under this share of their health a fighter counts as low: a Headsman's mark, and when a Second Wind, an oak or a pact comes. */
@@ -166,6 +176,8 @@ export const ARM = 40;
 type Row = Omit<Talent, 'cls' | 'row' | 'id' | 'spec'>[];
 /** A playstyle's own two rows: ids `<class letter>-<playstyle>-<row><a|b|c>`. */
 const styleRows = (cls: ClassId, prefix: string, spec: string, rows: [Row, Row]): Talent[] => rows.flatMap((list, row) => list.map((x, i) => ({ ...x, cls, spec, row: row as 0 | 1, id: `${prefix}-${spec}-${row + 1}${'abc'[i]}` })));
+/** A playstyle's fourth row, of its own (the Nightblade's venoms): ids `<class letter>-<playstyle>-4<a|b|c>`. */
+const fourthRow = (cls: ClassId, prefix: string, spec: string, list: Row): Talent[] => list.map((x, i) => ({ ...x, cls, spec, row: 3, id: `${prefix}-${spec}-4${'abc'[i]}` }));
 /** The class's own row, the third: ids `<class letter>-3<a|b|c>`, as they have always been. */
 const classRow = (cls: ClassId, prefix: string, list: Row): Talent[] => list.map((x, i) => ({ ...x, cls, row: 2, id: `${prefix}-3${'abc'[i]}` }));
 
@@ -317,7 +329,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('paladin', 'd', 'ret', [
       [
         { name: 'Mounting Ardor', text: 'Oath Blow generates Ardor, up to 4. Hammerfall spends it to deal 30% more damage per Ardor.', icon: 'massive_light_explosion_with_rays_on_gold', points: { name: 'Ardor', one: 'Ardor', max: 4, color: '#ffd84a' }, tune: { 'd-blow': { build: { n: 1 } }, 'd-fall': { spend: { per: 0.3 } } } },
-        { name: 'Dawnfire', text: 'Oath Blow has a 18% chance, and always on a critical hit, to trigger Dawnfire: your next Hammerfall has no cooldown and burns the target for 79 damage over 4 sec.', icon: 'burning_sun_disc_on_orange', tune: { 'd-blow': { gives: [{ boon: 'dawnfire', chance: 0.18, crit: true }] }, 'd-fall': { uses: [{ boon: 'dawnfire', nocd: true, extra: [{ k: 'dot', n: 90, dur: 4 }] }] } } },
+        { name: 'Dawnfire', text: 'Oath Blow has a 18% chance, and always on a critical hit, to trigger Dawnfire: your next Hammerfall has no cooldown and burns the target for 74 damage over 4 sec.', icon: 'burning_sun_disc_on_orange', tune: { 'd-blow': { gives: [{ boon: 'dawnfire', chance: 0.18, crit: true }] }, 'd-fall': { uses: [{ boon: 'dawnfire', nocd: true, extra: [{ k: 'dot', n: 90, dur: 4 }] }] } } },
         { name: 'Verdict of Light', text: 'Every third hit deals 35 extra damage and heals your most injured ally for 35.', icon: 'beam_of_light_from_the_sky_on_gold', does: { k: 'verdict', every: 3, n: 35 } },
       ],
       [
@@ -407,7 +419,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
       [
         { name: 'Iron Grip', text: 'Grave Chain also roots the target for 1.5 sec after the pull.', icon: 'burning_chain_link_on_black', tune: { 'g-chain': { extra: [{ k: 'cc', cc: 'root', dur: 1.5 }] } } },
         { name: 'Dusk Mantle', text: 'Enemies in melee range of you move 15% slower.', icon: 'shadow_veil_curtain_on_violet', does: { k: 'mantle', pct: 0.15 } },
-        { name: 'Crushing Hand', text: 'Grave Hand also deals 54 damage and reduces healing on the target by 30% for 6 sec.', icon: 'stone_smash_with_a_fist_on_grey', tune: { 'g-hand': { extra: [{ k: 'dmg', n: 60 }, { k: 'antiheal', pct: 30, dur: 6 }] } } },
+        { name: 'Crushing Hand', text: 'Grave Hand also deals 53 damage and reduces healing on the target by 30% for 6 sec.', icon: 'stone_smash_with_a_fist_on_grey', tune: { 'g-hand': { extra: [{ k: 'dmg', n: 60 }, { k: 'antiheal', pct: 30, dur: 6 }] } } },
       ],
     ]),
     ...styleRows('gloamknight', 'g', 'shadow', [
@@ -421,6 +433,14 @@ export const TALENTS: Record<ClassId, Talent[]> = {
         { name: 'Smoke Step', text: 'In combat, Shroud of Dusk has a 33% shorter cooldown, and you move 30% faster for 3 sec after using it.', icon: 'shadow_clone_of_two_figures_on_black', tune: { 'g-veil': { cd: 0.66, self: [{ k: 'speed', pct: 30, dur: 3 }] } } },
         { name: 'Death Knell', text: 'Nearby enemies below 35% health receive 40% less healing.', icon: 'skull_lantern_on_black', does: { k: 'knell', pct: 0.4 } },
       ],
+    ]),
+    // the Nightblade's venom: what its Nightknife carries, one of three (the owner, 2026-11-17, of the Nightblade that
+    // "cant hit anyone": "basic attack could have 3 diff poisons - slow down, bleed or random stun sometimes"). Its
+    // Nightknife slowed by 30% of itself until then; now the Mire Venom it comes with slows, or the other two do not.
+    ...fourthRow('gloamknight', 'g', 'shadow', [
+      { name: 'Mire Venom', text: 'Nightknife slows the target by 15% for 4 sec.', icon: 'slowed_status_snail_on_teal', via: 'g-knife', does: { k: 'mire', pct: 15, dur: 4 } },
+      { name: 'Weeping Venom', text: `Nightknife makes the target bleed for ${Math.round(30 * CLASS_DMG.gloamknight)} damage over 6 sec. Each Nightknife renews it.`, icon: 'poison_dagger_dripping_green_on_black', via: 'g-knife', does: { k: 'weep', n: 30, dur: 6 } },
+      { name: 'Numbing Venom', text: 'Nightknife has a 20% chance to stun the target for 1 sec. At most once every 8 sec.', icon: 'venom_fang_on_black', via: 'g-knife', does: { k: 'numb', chance: 0.2, dur: 1, every: 8 } },
     ]),
     ...classRow('gloamknight', 'g', [
       { name: 'Unquiet Grave', text: 'Once per match, a killing blow instead makes you a revenant for 5 sec: your damage heals you for its full amount and no one else can heal you. End above 25% health and you survive.', icon: 'ghost_face_screaming_on_teal', does: { k: 'revenant', dur: 5, live: 0.25 } },

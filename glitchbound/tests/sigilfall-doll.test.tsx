@@ -80,7 +80,7 @@ describe('Sigilfall: a hero’s picture on its spot', () => {
 
   it('the Ring’s Play page is laid out as the Vigil’s lobby, and keeps its hero on an upright phone', () => {
     const ring = readFileSync('src/games/sigilfall/ui/RingScreen.tsx', 'utf8');
-    for (const cls of ['rb-vlobby rb-ringvl', 'rb-vlobby-hero', 'rb-vlobby-classes', 'rb-vlobby-stage', 'rb-vlobby-dais', 'rb-vlobby-kit', 'rb-vlobby-lands', 'rb-vlobby-foot']) expect(ring, cls).toContain(cls);
+    for (const cls of ['rb-vlobby rb-ringvl', 'rb-vlobby-hero', 'rb-vlobby-classes', 'rb-vlobby-stage', 'rb-vlobby-dais', 'rb-vlobby-kit rb-ringvl-build', 'rb-vlobby-foot']) expect(ring, cls).toContain(cls);
     // (the old page hid the stand on a phone held upright: the hero was not there at all)
     expect(css).not.toMatch(/\.rb-ringvl \.rb-vlobby-stage \{[^}]*display: none/);
     expect(css).toMatch(/\.rb-ringvl \.rb-vlobby-stage \{\n {4}min-height: clamp\(/);

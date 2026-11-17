@@ -15,8 +15,8 @@ import { RANGED, type FighterSetup, type Match, type MatchEvent, type MatchSetup
  * together (`labels`: a word pinned to each element marked `data-tut`, RingCoach useLabels), and what can't be pointed
  * at (what happens in the arena) is said on the same card. Then only what has to be done by hand is done by hand.
  *
- * In the lobby (LOBBY_STEPS, shown by RingScreen): the main screen, labeled; the playstyles; the rest of the setup
- * page, labeled.
+ * In the lobby (LOBBY_STEPS, shown by RingScreen): the main screen, labeled: the class and its playstyles; the rest of
+ * the setup on it, labeled; and the layer where the fight to find is chosen, labeled.
  * Then a match against a sparring partner (TutorialRun, driven by RingMatch): the entry, the fight's screen labeled
  * with the arena's rules beside it, then moving, choosing a target, abilities, a combo, walking out of a red circle,
  * placing an ability (if the bar has one), the super, and last a real fight that a newcomer can win. Nothing in it is
@@ -51,7 +51,10 @@ export interface LobbyStep {
   labels?: readonly TutLabel[];
   /** The parts of the page (their `data-tut` marks) that can be used while this step is read: nothing else can. */
   allow: readonly string[];
-  page: 'play' | 'setup';
+  /** The lobby's main screen: everything about the hero is on it (2026-11-17), the room with friends is not taught. */
+  page: 'play';
+  /** A layer over it opened while the step is read: the fight to find (ui/RingScreen.tsx PlayLayer). */
+  layer?: 'play';
   /** Where the words sit, so they don't cover what they talk about. */
   at: 'top' | 'bottom' | 'side';
 }
@@ -60,26 +63,24 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
   {
     id: 'welcome',
     title: 'Welcome to the Ring',
-    text: (cls) => `Short fights, 1v1 to 3v3. Every part of this screen is labeled: pick a class, a fight, and go. ${CLASSES[cls].name}: ${EASE_WORD[CLASS_EASE[cls]].toLowerCase()} to learn.${CLASS_EASE[cls] === 'easy' ? '' : ' The Warrior is an easy first pick.'}`,
+    text: (cls) => `Short fights, 1v1 to 3v3. Everything about your hero is on this screen: pick a class, then one of its two playstyles. ${CLASSES[cls].name}: ${EASE_WORD[CLASS_EASE[cls]]}.${CLASS_EASE[cls] === 'easy' ? '' : ' The Warrior is an easy first pick.'}`,
     spot: null,
     labels: [
       { spot: 'classes', text: 'Your class' },
-      { spot: 'formats', text: 'Your fight: a rating each' },
-      { spot: 'rank', text: 'Your rank: titles and armor', right: true },
-      { spot: 'progress', text: 'Daily challenges and more', right: true },
-      { spot: 'arena', text: 'Arena: Any is fine', right: true },
-      { spot: 'loadout', text: 'What you bring' },
+      { spot: 'styles', text: 'Its two playstyles', right: true },
+      { spot: 'fight', text: 'Your fight' },
+      { spot: 'go', text: 'Find a match', right: true },
+      { spot: 'record', text: 'Challenges, season, history', right: true },
     ],
-    // (a class and a fight may be chosen; the way on is the tutorial's own Next)
-    allow: ['classes', 'formats'],
+    // (a class and a playstyle may be chosen; the way on is the tutorial's own Next)
+    allow: ['classes', 'styles'],
     page: 'play',
     at: 'side',
   },
-  { id: 'styles', title: 'Pick a playstyle', text: (cls) => `Each card is one of the two ways a ${CLASSES[cls].name} fights. Pick the one that sounds like you: its four abilities and its super are its own, ready to fight with as they are.`, spot: 'styles', allow: ['styles'], page: 'setup', at: 'bottom' },
   {
     id: 'kit',
     title: 'Your setup',
-    text: () => 'Point at any icon, or tap it, and the box beside them says what it does. Your abilities are fixed. What you choose is the talents: one from each row, and they change how your combo works. All of it is saved as you go. Now, a practice fight.',
+    text: () => 'Point at any icon, or tap it, to read what it does. Your abilities are fixed. What you choose is the talents: one from each row, and they change how your combo works. All of it is saved as you go.',
     spot: null,
     labels: [
       { spot: 'bar', text: 'Your four and your super' },
@@ -88,8 +89,24 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
       { spot: 'read', text: 'What it does', right: true },
     ],
     allow: ['styles', 'bar', 'combos', 'talents'],
-    page: 'setup',
+    page: 'play',
     // (at the side, under the box that reads the icons: along the bottom it lay over the talents it asks to be chosen)
+    at: 'side',
+  },
+  {
+    id: 'fight',
+    title: 'Your fight',
+    text: () => 'Press the fight at the foot of the screen to choose another. 1v1, 2v2 and 3v3 each have a rating of their own, and climbing one earns titles and armor. Any arena is fine. Now, a practice fight.',
+    spot: null,
+    labels: [
+      { spot: 'formats', text: 'A rating each' },
+      { spot: 'rank', text: 'Your rank: titles and armor', right: true },
+      { spot: 'progress', text: 'Daily challenges and more', right: true },
+      { spot: 'arena', text: 'Arena: Any is fine', right: true },
+    ],
+    allow: ['formats'],
+    page: 'play',
+    layer: 'play',
     at: 'side',
   },
 ];

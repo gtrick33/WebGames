@@ -8,7 +8,7 @@ export { CLASS_DMG };
 /**
  * The Ring's simulation: everything about a match but the drawing, so it can be tested, run by a bot at speed, and run
  * by a host for a room of players. A brawl: always on the move (casting only slows you), shots that fly where the
- * target is going and can be dodged with a step, short holds that wear off harder each time, a super filled by
+ * target is going and can be dodged with a step, short holds kept apart by their cooldowns, a super filled by
  * fighting, and a sigil in the middle worth running for. Line of sight still matters (pillars block shots and new
  * casts), and healing fades the longer a match goes, to nothing in the end, so that no match drags. (The Gloam, which
  * closed in from the edges from forty seconds and burned whoever stood in it, went on 2026-11-16, the owner: "remove
@@ -22,16 +22,6 @@ export const GATES = 30;
 /** Everyone's ready: this long and they lift. */
 const GATES_READY = 3;
 export const MATCH_LIMIT = 150;
-/** How long crowd control's returns stay diminished after one wears off. */
-export const DR_RESET = 18;
-export const DR_STEPS = [1, 0.5, 0.25];
-/** One kind of hold's diminishing returns on a fighter (Fighter.dr): how many, until when, and since when, and by what. */
-export interface DrState {
-  n: number;
-  until: number;
-  at?: number;
-  ab?: string;
-}
 /**
  * Hurt breaks a hold, as in the classic arena: a daze at once, a fear after this share of its target's health, a root
  * after this (the owner, 2026-11-14: "roots should break after some dmg has been done, similar to wows roots, same
@@ -44,6 +34,8 @@ export const ROOT_BREAK = 0.14;
  * make all the spells hit the target, without any misses"). It quickens as it goes, so nobody outruns one for long.
  */
 export const BOLT_SPEED = 300;
+/** How long a bolt thrown to be watched (Ability.flight) takes to cross this far. */
+export const flightTime = (ab: Pick<Ability, 'flight'>, dist: number): number => (ab.flight ? Math.max(ab.flight.least, Math.min(ab.flight.most, dist / ab.flight.per)) : 0);
 const BOLT_QUICKEN = 260;
 export const BOLT_R = 6;
 /**
@@ -263,11 +255,6 @@ export interface Fighter {
   cast: Cast | null;
   auras: Aura[];
   locks: Partial<Record<string, number>>;
-  /**
-   * Diminishing returns, by kind of hold: how many have landed (DR_STEPS), until when they count, and the ability that
-   * put the last on them (its picture on their nameplate: a Toad Hex for a daze).
-   */
-  dr: Partial<Record<CcKind, DrState>>;
   /** A rush, a throw or a step on its way: where to, and how fast. */
   dash: { x: number; y: number; speed: number } | null;
   queued: { ab: string; t: number; at?: { x: number; y: number } } | null;
@@ -390,6 +377,10 @@ export interface Bolt {
   vy: number;
   /** How long it has flown. */
   age: number;
+  /** A thrown one that is watched (Ability.flight): how long it takes to cross, and where it left the hand. */
+  dur?: number;
+  x0?: number;
+  y0?: number;
 }
 
 /** A placed ability on its way down: a patch of ground everyone can see, that lands on whoever of the other side is in it. */
@@ -720,7 +711,6 @@ export class Match {
         cast: null,
         auras: [],
         locks: {},
-        dr: {},
         dash: null,
         queued: null,
         fearX: 0,
@@ -1196,7 +1186,10 @@ export class Match {
       return;
     }
     if (ab.bolt && t !== f) {
-      this.bolts.push(this.aim(f, ab, t, p));
+      // (one thrown to be watched takes the combo ready as it leaves the hand: a root that wears off while it crosses
+      // doesn't take a Shatter back)
+      const sure = ab.flight && !p.combo && this.comboReady(f, ab, t) ? { ...p, combo: true } : p;
+      this.bolts.push(this.aim(f, ab, t, sure));
       return;
     }
     this.land(f, ab, t, false, 1, p);
@@ -1218,7 +1211,8 @@ export class Match {
   /** A shot leaves for its target. */
   private aim(f: Fighter, ab: Ability, t: Fighter, p?: Punch): Bolt {
     const d = Math.hypot(t.x - f.x, t.y - f.y) || 1;
-    return { ab: ab.id, src: f.id, tgt: t.id, x: f.x, y: f.y - 8, vx: ((t.x - f.x) / d) * BOLT_SPEED, vy: ((t.y - f.y) / d) * BOLT_SPEED, age: 0, ...(p ? { p } : {}) };
+    const timed = ab.flight ? { dur: flightTime(ab, d), x0: f.x, y0: f.y - 8 } : {};
+    return { ab: ab.id, src: f.id, tgt: t.id, x: f.x, y: f.y - 8, vx: ((t.x - f.x) / d) * BOLT_SPEED, vy: ((t.y - f.y) / d) * BOLT_SPEED, age: 0, ...timed, ...(p ? { p } : {}) };
   }
 
   /**
@@ -1278,6 +1272,8 @@ export class Match {
     }
     this.sparing = null;
     this.holdMore = 0;
+    // a Nightblade's venom, on whoever its basic blade lands on
+    if (!area && !t.dead && t !== f && ab.id === f.bar[0]) this.venom(f, t);
     if (combo?.extra) for (const e of combo.extra) if (!t.dead || e.k === 'heal') this.apply(f, ab, t, e);
     if (p.extra) for (const e of p.extra) if (!t.dead || e.k === 'heal') this.apply(f, ab, t, e, scale);
     this.forced = false;
@@ -1488,6 +1484,13 @@ export class Match {
         this.endCast(f);
         return;
       }
+      case 'bound': {
+        // always the way they face, which is the way they last moved (abilities.ts Effect bound)
+        const d = Math.hypot(f.dirX, f.dirY) || 1;
+        f.dash = { x: f.x + (f.dirX / d) * e.dist, y: f.y + (f.dirY / d) * e.dist, speed: 300 };
+        this.endCast(f);
+        return;
+      }
       case 'break':
         t.auras = t.auras.filter((a) => a.kind !== 'slow' && a.cc !== 'root');
         return;
@@ -1599,14 +1602,13 @@ export class Match {
     this.endCast(f);
   }
 
-  /** Crowd control, with its diminishing returns. False if it did nothing. */
+  /**
+   * Crowd control. False if it did nothing. Every hold lands for its whole length, however many have landed before it:
+   * there are no diminishing returns (the owner, 2026-11-17: "remove diminishing returns completely, since most cc are
+   * not spammable and have cds, if we have a spammable cc then give it a cd"). What keeps holds apart is each one's
+   * cooldown, and a new hold of a kind takes the place of one of that kind still running, never adds to it.
+   */
   private crowd(f: Fighter, ab: Ability, t: Fighter, cc: CcKind, dur: number): boolean {
-    // (a hold that never wears off with use is counted as a first one, and counts toward nothing)
-    const dr = !ab.noDr && t.dr[cc] && t.dr[cc]!.until > this.clock ? t.dr[cc]! : { n: 0, until: 0 };
-    if (dr.n >= DR_STEPS.length) {
-      this.events.push({ k: 'word', id: t.id, word: 'Immune' });
-      return false;
-    }
     // a warlock's mirror curse: the first hold now and then goes back on whoever put it, for less
     const mirror = t.perks.does.mirror;
     if (mirror && f !== t && f.team !== t.team && !f.dead && this.ready(t, 'mirror')) {
@@ -1624,8 +1626,7 @@ export class Match {
     if (cc === 'root' && this.freed(t)) return false;
     // (and his aura of resolve: shorter, near him)
     const resolve = this.near(t, 'resolve', 'friend');
-    const lasts = dur * DR_STEPS[dr.n]! * t.mods.tenacity * (1 - (resolve?.d.pct ?? 0));
-    if (!ab.noDr) t.dr[cc] = { n: dr.n + 1, until: this.clock + lasts + DR_RESET, at: this.clock, ab: ab.id };
+    const lasts = dur * t.mods.tenacity * (1 - (resolve?.d.pct ?? 0));
     t.auras = t.auras.filter((a) => a.cc !== cc);
     this.addAura(t, { ab: ab.id, src: f.id, dur: lasts, magic: ab.school !== 'physical' && !ab.sticky, n: 0, kind: 'cc', harmful: true, cc, took: 0, ...(cc === 'root' && ab.shatter ? { shatters: ab.shatter } : {}) });
     f.score.cc += lasts;
@@ -1748,7 +1749,6 @@ export class Match {
       cast: null,
       auras: [],
       locks: {},
-      dr: {},
       dash: null,
       queued: null,
       fearX: 0,
@@ -2050,6 +2050,25 @@ export class Match {
         const to = this.mostHurt(src);
         if (to) this.heal(src, to, does.verdict.n, false);
       }
+    }
+  }
+
+  /**
+   * The venom a Nightblade's Nightknife carries (talents.ts, the Venom row): a slow; a bleed renewed by each blade, its
+   * ticks going on as they were (begun again at every blow, quicker than its ticks, it would never bleed at all); or now
+   * and then a stun, never more often than its own cooldown allows.
+   */
+  private venom(f: Fighter, t: Fighter): void {
+    const { does } = f.perks;
+    if (does.mire) this.addAura(t, { ab: abOfDoing(f.cls, 'mire').id, src: f.id, kind: 'slow', harmful: true, magic: false, dur: does.mire.dur * t.mods.tenacity * f.mods.hold, n: does.mire.pct / 100 });
+    if (does.weep) {
+      const id = abOfDoing(f.cls, 'weep').id;
+      const was = t.auras.find((a) => a.ab === id && a.kind === 'dot' && a.src === f.id);
+      if (was) was.t = was.dur = does.weep.dur;
+      else this.addAura(t, { ab: id, src: f.id, kind: 'dot', harmful: true, magic: false, dur: does.weep.dur, n: does.weep.n / does.weep.dur, next: 1 });
+    }
+    if (does.numb && !t.pet && this.ready(f, 'numb') && this.rand() < does.numb.chance) {
+      if (this.crowd(f, abOfDoing(f.cls, 'numb'), t, 'stun', does.numb.dur * f.mods.hold)) f.procs.numb = this.clock + does.numb.every;
     }
   }
 
@@ -2744,6 +2763,25 @@ export class Match {
         continue;
       }
       b.age += dt;
+      if (b.dur !== undefined) {
+        // (one thrown to be watched crosses in its own time, wherever its target goes, and lands as it gets there)
+        const u = Math.min(1, b.age / b.dur);
+        const x0 = b.x0 ?? b.x;
+        const y0 = b.y0 ?? b.y;
+        const nx = x0 + (t.x - x0) * u;
+        const ny = y0 + (t.y - 8 - y0) * u;
+        if (dt > 0) {
+          b.vx = (nx - b.x) / dt;
+          b.vy = (ny - b.y) / dt;
+        }
+        b.x = nx;
+        b.y = ny;
+        if (u >= 1) {
+          this.bolts.splice(i, 1);
+          this.land(src, ABILITIES[b.ab]!, t, false, 1, b.p);
+        }
+        continue;
+      }
       const speed = BOLT_SPEED + BOLT_QUICKEN * b.age;
       const dx = t.x - b.x;
       const dy = t.y - 8 - b.y;
@@ -2937,7 +2975,6 @@ export class Match {
         c: f.cast,
         a: f.auras,
         l: f.locks,
-        r: f.dr,
         sc: f.score,
         ch: Math.round(f.charge * 1000) / 1000,
         ...(f.pts ? { ps: f.pts } : {}),
@@ -3007,7 +3044,6 @@ export class Match {
       f.cast = n.c;
       f.auras = n.a;
       f.locks = n.l;
-      if (n.r) f.dr = n.r;
       f.score = n.sc;
       f.charge = n.ch ?? 0;
       f.pts = n.ps ?? 0;
@@ -3043,6 +3079,7 @@ export class Match {
     for (const b of this.bolts) {
       b.x += b.vx * dt;
       b.y += b.vy * dt;
+      b.age += dt;
     }
     for (const z of this.zones) z.t = Math.max(0, z.t - dt);
     for (const fd of this.fields) {
@@ -3079,8 +3116,6 @@ export interface Snapshot {
     c: Cast | null;
     a: Aura[];
     l: Partial<Record<string, number>>;
-    /** Diminishing returns (a host from before they were sent says nothing, and they stay as the player's copy has them). */
-    r?: Fighter['dr'];
     sc: Fighter['score'];
     ch?: number;
     /** The points they hold, and the boons they carry (a host from before either says nothing: none). */

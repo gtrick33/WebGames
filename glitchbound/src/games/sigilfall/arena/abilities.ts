@@ -18,7 +18,10 @@ import type { ClassId } from '../data/types';
  */
 
 export type School = 'physical' | 'fire' | 'frost' | 'arcane' | 'holy' | 'shadow' | 'nature';
-/** Crowd control. Each kind wears off harder the more it is used: see DR in sim.ts. */
+/**
+ * Crowd control. Every hold lands for its whole length each time: there are no diminishing returns, and each hold has
+ * a cooldown long enough that no one player can keep anyone held most of the time (sim.ts crowd).
+ */
 export type CcKind = 'stun' | 'fear' | 'incap' | 'root' | 'silence';
 
 /**
@@ -59,6 +62,12 @@ export type Effect =
   | { k: 'blink'; dist: number }
   /** Spring back this far, away from the nearest enemy. */
   | { k: 'leap'; dist: number }
+  /**
+   * Bound this far forward, the way its user faces (the way they last moved), always: a ranger's Spring Away (the owner,
+   * 2026-11-17: "rangers leap should always be a dash forward, currently its a bit random"). It went away from the
+   * nearest enemy, which turned with whoever happened to be nearest.
+   */
+  | { k: 'bound'; dist: number }
   /** Roots and slows come off. */
   | { k: 'break' }
   /** All crowd control comes off. */
@@ -258,6 +267,14 @@ export interface Ability {
   /** Lands at once, and is drawn crossing to its target in a streak (an arrow, a thrown hammer). */
   zip?: boolean;
   /**
+   * A `bolt` thrown to be watched: it crosses in a set time, `per` world pixels a second but never sooner than `least`
+   * seconds nor later than `most`, and lands as it gets there (Frostfang: the owner, 2026-11-17, "idk if the dmg and the
+   * spell cast is desynced", as it was: what it did had landed long before the picture of it got there). Like any bolt
+   * it follows its target and nothing dodges it; and a combo ready as it leaves the hand lands with it, whatever wears
+   * off on the way.
+   */
+  flight?: { per: number; least: number; most: number };
+  /**
    * `ground`: how wide the patch is (its radius), and how long it takes to land once placed. A patch is at least as
    * wide as a fighter walks in that time, so one placed on somebody lands on them unless they are quickened out of
    * it: what is placed by a tap does not miss someone who only walks.
@@ -283,8 +300,6 @@ export interface Ability {
   veiled?: boolean;
   /** Doesn't bring its user out of the shroud. */
   quiet?: boolean;
-  /** Its holds don't wear off with use: no diminishing returns. */
-  noDr?: boolean;
   /**
    * Its root is ice that shatters: this many Shatters against it (Frostfang's combo, from anyone) and it breaks,
    * the last of them freeing the target (the owner: "the frost roots should only apply for 1 rime spear except ult
@@ -330,7 +345,7 @@ export const healerBar = (bar: readonly string[]): boolean => {
  * tests/sigilfall-ring-balance.test.ts). Kept here, with the numbers it scales, so that an ability's words are worked
  * from both and can't drift from what it does.
  */
-export const CLASS_DMG: Readonly<Record<ClassId, number>> = { warrior: 0.92, paladin: 0.88, gloamknight: 0.9, mage: 0.72, ranger: 0.78, warlock: 0.9, priest: 0.78, druid: 0.85 };
+export const CLASS_DMG: Readonly<Record<ClassId, number>> = { warrior: 0.92, paladin: 0.82, gloamknight: 0.88, mage: 0.72, ranger: 0.78, warlock: 0.9, priest: 0.78, druid: 0.85 };
 
 /** What a number of a class's lands as, for its ability's words. */
 const share = (cls: ClassId) => (n: number): number => Math.round(n * CLASS_DMG[cls]);
@@ -393,7 +408,7 @@ export const SUPERS: Record<ClassId, Ability> = {
   mage: a({ id: 'm-super', cls: 'mage', name: 'Cinder Comet', text: `Calls a comet down on a patch of ground after a short delay, dealing ${M(150)} damage to all enemies under it and stunning them for 1 sec.`, icon: 'meteor_falling_with_flames_on_orange', color: '#ff7a1e', school: 'fire', role: 'burst', aim: 'ground', range: FAR, cast: 0, cd: 0, free: true, super: true, area: 52, fall: 0.8, combo: { name: 'Conflagration', text: 'Deals 30% more damage to targets Kindled by your Ember Lash.', ab: ['m-lash'], mult: 1.3 }, effects: [{ k: 'dmg', n: 150 }, { k: 'cc', cc: 'stun', dur: 1 }] }),
   ranger: a({ id: 'r-super', cls: 'ranger', name: 'Skypierce Arrow', text: `Deals ${R(159)} damage and knocks the target back.`, icon: 'exploding_arrow_on_brown', color: '#d8ff9a', school: 'physical', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 0, free: true, bolt: true, super: true, combo: { name: 'Pinned Down', text: 'Deals 30% more damage to stunned targets.', cc: ['stun'], mult: 1.3 }, effects: [{ k: 'dmg', n: 159 }, { k: 'knock', dist: 60 }] }),
   priest: a({ id: 'p-super', cls: 'priest', name: 'Dawnward', text: 'Heals a friend for 199 and absorbs 200 damage on them for 10 sec.', icon: 'pair_of_white_wings_opening_on_gold', color: '#fff2b0', school: 'holy', role: 'heal', aim: 'friend', range: FAR, cast: 0, cd: 0, free: true, super: true, effects: [{ k: 'heal', n: 199 }, { k: 'absorb', n: 200, dur: 10 }] }),
-  paladin: a({ id: 'd-super', cls: 'paladin', name: 'Sunhammer', text: `Deals ${D(205)} damage and stuns the target for 1.5 sec.`, icon: 'sun_flare_on_orange', color: '#ffd84a', school: 'holy', role: 'burst', aim: 'enemy', range: MID, cast: 0, cd: 0, free: true, bolt: true, super: true, effects: [{ k: 'dmg', n: 205 }, { k: 'cc', cc: 'stun', dur: 1.5 }] }),
+  paladin: a({ id: 'd-super', cls: 'paladin', name: 'Sunhammer', text: `Deals ${D(205)} damage and stuns the target for 1 sec.`, icon: 'sun_flare_on_orange', color: '#ffd84a', school: 'holy', role: 'burst', aim: 'enemy', range: MID, cast: 0, cd: 0, free: true, bolt: true, super: true, effects: [{ k: 'dmg', n: 205 }, { k: 'cc', cc: 'stun', dur: 1 }] }),
   warlock: a({ id: 'k-super', cls: 'warlock', name: 'Riftmaw', text: `Tears a rift open where you choose, dealing ${K(67)} damage to all enemies on it and ${K(80)} more over 6 sec, and slowing them by 50%.`, icon: 'dark_portal_on_black', color: '#b06aff', school: 'shadow', role: 'burst', aim: 'ground', range: FAR, cast: 0, cd: 0, free: true, super: true, area: 52, fall: 0.8, effects: [{ k: 'dmg', n: 67 }, { k: 'dot', n: 80, dur: 6 }, { k: 'slow', pct: 50, dur: 4 }] }),
   druid: a({ id: 'l-super', cls: 'druid', name: 'Thornstorm', text: `Thorns erupt where you choose, dealing ${L(106)} damage to all enemies there and rooting them for 1.5 sec.`, icon: 'thorn_burst_on_dark_green', color: '#9be86a', school: 'nature', role: 'burst', aim: 'ground', range: FAR, cast: 0, cd: 0, free: true, super: true, area: 52, fall: 0.8, combo: { name: 'Moonlit Thorns', text: 'Deals 30% more damage to targets affected by your Moonburn.', ab: ['l-moon'], mult: 1.3 }, effects: [{ k: 'dmg', n: 106 }, { k: 'cc', cc: 'root', dur: 1.5 }] }),
   gloamknight: a({ id: 'g-super', cls: 'gloamknight', name: 'Eclipse Reaping', text: `Lunges at the target for ${G(205)} damage and heals you for 100.`, icon: 'eclipse_sun_on_black', color: '#c8a8ff', school: 'shadow', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 0, free: true, sticky: true, super: true, combo: { name: 'Last Harvest', text: 'Deals 30% more damage to stunned targets and targets slowed by your Grave Chain.', ab: ['g-chain'], cc: ['stun'], mult: 1.3 }, effects: [{ k: 'charge' }, { k: 'dmg', n: 205 }, { k: 'heal', n: 100 }] }),
@@ -407,7 +422,7 @@ export const SUPERS2: Record<ClassId, Ability> = {
   // the Hound: run them down and don't let go
   warrior: a({ id: 'w-super2', cls: 'warrior', name: 'Run Them Down', text: `Charges an enemy for ${W(64)} damage and ${W(96)} more over 6 sec, slowing them by 50% for 3 sec. For 4 sec you deal 15% more damage and cannot be slowed or rooted.`, icon: 'fire_wolf_head_on_black', color: '#ff6a4a', school: 'physical', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 0, free: true, sticky: true, super: true, self: [{ k: 'break' }, { k: 'free', dur: 4 }, { k: 'fury', pct: 15, dur: 4 }], effects: [{ k: 'charge' }, { k: 'dmg', n: 64 }, { k: 'dot', n: 96, dur: 6 }, { k: 'slow', pct: 50, dur: 3 }] }),
   // the Rime: the whole ring frozen round her, and her Frostfang shattering each of them
-  mage: a({ id: 'm-super2', cls: 'mage', name: 'Winter’s Grasp', text: `Deals ${M(66)} damage to all nearby enemies, roots them for 3 sec, then slows them by 50% for 6 sec. You gain a shield of 180 for 10 sec. Two Frostfangs shatter the root. Repeated use does not shorten it.`, icon: 'frost_crown_on_navy', color: '#bfeaff', school: 'frost', role: 'burst', aim: 'near', range: 76, cast: 0, cd: 0, free: true, super: true, noDr: true, shatter: 2, self: [{ k: 'absorb', n: 180, dur: 10 }], effects: [{ k: 'dmg', n: 66 }, { k: 'cc', cc: 'root', dur: 3 }, { k: 'slow', pct: 50, dur: 6 }] }),
+  mage: a({ id: 'm-super2', cls: 'mage', name: 'Winter’s Grasp', text: `Deals ${M(66)} damage to all nearby enemies, roots them for 3 sec, then slows them by 50% for 6 sec. You gain a shield of 180 for 10 sec. Two Frostfangs shatter the root.`, icon: 'frost_crown_on_navy', color: '#bfeaff', school: 'frost', role: 'burst', aim: 'near', range: 76, cast: 0, cd: 0, free: true, super: true, shatter: 2, self: [{ k: 'absorb', n: 180, dur: 10 }], effects: [{ k: 'dmg', n: 66 }, { k: 'cc', cc: 'root', dur: 3 }, { k: 'slow', pct: 50, dur: 6 }] }),
   // the Trapper: a whole patch of the ring made a snare
   ranger: a({ id: 'r-super2', cls: 'ranger', name: 'Thicket of Snares', text: `Covers a wide patch of ground in snares, dealing ${R(65)} damage to all enemies on it, rooting them for 2.5 sec and poisoning them for ${R(146)} more over 6 sec.`, icon: 'net_trap_on_green', color: '#9be86a', school: 'nature', role: 'burst', aim: 'ground', range: FAR, cast: 0, cd: 0, free: true, super: true, area: 72, fall: 1.1, effects: [{ k: 'dmg', n: 65 }, { k: 'cc', cc: 'root', dur: 2.5 }, { k: 'dot', n: 146, dur: 6 }] }),
   // the Curse-speaker: a word that empties the ground of sound and of healing
@@ -450,10 +465,10 @@ const KITS: Record<ClassId, Ability[]> = {
     a({ id: 'm-lash', cls: 'mage', name: 'Ember Lash', text: `Deals ${M(43)} damage and Kindles the target, burning for ${M(29)} more over 6 sec.`, icon: 'fire_comet_with_a_long_tail_on_navy', color: '#ff7a1e', school: 'fire', role: 'damage', aim: 'enemy', range: FAR, cast: 0.8, cd: 0, bolt: true, effects: [{ k: 'dmg', n: 43 }, { k: 'dot', n: 29, dur: 6 }] }),
     a({ id: 'm-burn', cls: 'mage', name: 'Flashburn', text: `Deals ${M(62)} damage. Usable while moving.`, icon: 'flame_circle_on_the_ground_on_dark_red', color: '#ff6a2a', school: 'fire', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 5, zip: true, combo: { name: 'Flashover', text: 'Deals 70% more damage to targets Kindled by your Ember Lash, consuming the Kindle.', ab: ['m-lash'], mult: 1.7, consume: true }, effects: [{ k: 'dmg', n: 62 }] }),
     a({ id: 'm-blink', cls: 'mage', name: 'Flicker', text: 'Teleports you forward and frees you from stuns, roots and slows. Usable while crowd controlled.', icon: 'three_small_fireballs_orbiting_on_red', color: '#c9b8ff', school: 'arcane', role: 'mobility', aim: 'self', range: 0, cast: 0, cd: 10, free: true, anyState: true, effects: [{ k: 'token' }, { k: 'blink', dist: 96 }] }),
-    a({ id: 'm-toad', cls: 'mage', name: 'Toad Hex', text: 'Turns the target into a toad for 3 sec and removes damage-over-time effects from them. Any damage breaks it.', icon: 'frog_jumping_on_teal', color: '#8bff6a', school: 'arcane', role: 'cc', aim: 'enemy', range: FAR, cast: 0.6, cd: 8, bolt: true, effects: [{ k: 'undot' }, { k: 'cc', cc: 'incap', dur: 3 }] }),
+    a({ id: 'm-toad', cls: 'mage', name: 'Toad Hex', text: 'Turns the target into a toad for 3 sec and removes damage-over-time effects from them. Any damage breaks it.', icon: 'frog_jumping_on_teal', color: '#8bff6a', school: 'arcane', role: 'cc', aim: 'enemy', range: FAR, cast: 0.6, cd: 12, bolt: true, effects: [{ k: 'undot' }, { k: 'cc', cc: 'incap', dur: 3 }] }),
     // the Rime: slowed, frozen, shattered
     a({ id: 'm-spear', cls: 'mage', name: 'Rime Spear', text: `Deals ${M(41)} damage and slows the target by 30% for 2.5 sec. Deals double damage while your Rimeglobe is active.`, icon: 'ice_spear_on_cyan', color: '#9fdcff', school: 'frost', role: 'damage', aim: 'enemy', range: FAR, cast: 0.6, cd: 0, bolt: true, uses: [{ boon: 'globe', mult: 2, keep: true }], effects: [{ k: 'dmg', n: 41 }, { k: 'slow', pct: 30, dur: 2.5 }] }),
-    a({ id: 'm-fang', cls: 'mage', name: 'Frostfang', text: `Deals ${M(29)} damage. Usable while moving.`, icon: 'ice_shard_flying_on_blue', color: '#bfeaff', school: 'frost', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 3, zip: true, combo: { name: 'Shatter', text: 'Deals triple damage to rooted or stunned targets. The second one to hit your Winter’s Grasp shatters it, freeing the target.', cc: ['root', 'stun'], mult: 3 }, effects: [{ k: 'dmg', n: 29 }] }),
+    a({ id: 'm-fang', cls: 'mage', name: 'Frostfang', text: `Deals ${M(29)} damage. Usable while moving.`, icon: 'ice_shard_flying_on_blue', color: '#bfeaff', school: 'frost', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 3, bolt: true, flight: { per: 320, least: 0.28, most: 0.42 }, combo: { name: 'Shatter', text: 'Deals triple damage to rooted or stunned targets. The second one to hit your Winter’s Grasp shatters it, freeing the target.', cc: ['root', 'stun'], mult: 3 }, effects: [{ k: 'dmg', n: 29 }] }),
     a({ id: 'm-globe', cls: 'mage', name: 'Rimeglobe', text: `Throws a globe of rime where you choose. For 6 sec it slowly follows the nearest enemy, dealing ${M(13)} damage each sec to enemies inside it and slowing them by 30%. While it is active, Rime Spear deals double damage.`, icon: 'ice_orb_in_a_palm_on_navy', color: '#9fdcff', school: 'frost', role: 'damage', aim: 'ground', range: MID, cast: 0, cd: 16, area: 41, fall: 0.3, field: { dur: 6, tick: 1, seek: 0.45 }, gives: [{ boon: 'globe', on: 'cast' }], effects: [{ k: 'dmg', n: 13 }, { k: 'slow', pct: 30, dur: 1.5 }] }),
     // (its id is the Frost Snare's, whose place it took on 2026-11-17, so that a kept setup still reads as the Rime's)
     a({ id: 'm-ring', cls: 'mage', name: 'Frostclasp', text: 'Stuns the target for 1.5 sec.', icon: 'ice_prison_cage_on_cyan', color: '#bfeaff', school: 'frost', role: 'cc', aim: 'enemy', range: FAR, cast: 0.6, cd: 18, bolt: true, effects: [{ k: 'cc', cc: 'stun', dur: 1.5 }] }),
@@ -462,7 +477,7 @@ const KITS: Record<ClassId, Ability[]> = {
     // the Longbow: stunned by the hawk, then the long shot
     a({ id: 'r-swift', cls: 'ranger', name: 'Swift Shot', text: `Deals ${R(26)} damage. Usable while moving.`, icon: 'arrow_shot_with_a_speed_trail_on_green', color: '#d8ffb0', school: 'physical', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 0, zip: true, effects: [{ k: 'dmg', n: 26 }] }),
     a({ id: 'r-aimed', cls: 'ranger', name: 'Long Draw', text: `Deals ${R(79)} damage and reduces healing on the target by 35% for 6 sec.`, icon: 'piercing_arrow_through_a_shield_on_green', color: '#f6f2c8', school: 'physical', role: 'burst', aim: 'enemy', range: FAR, cast: 1.1, cd: 8, sticky: true, bolt: true, combo: { name: 'Falconer', text: 'Deals 50% more damage to stunned targets.', cc: ['stun'], mult: 1.5 }, effects: [{ k: 'dmg', n: 79 }, { k: 'antiheal', pct: 35, dur: 6 }] }),
-    a({ id: 'r-leap', cls: 'ranger', name: 'Spring Away', text: 'Leaps away from the nearest enemy and removes roots and slows.', icon: 'haste_status_winged_boot_on_teal', color: '#d8ffb0', school: 'physical', role: 'mobility', aim: 'self', range: 0, cast: 0, cd: 9, free: true, effects: [{ k: 'break' }, { k: 'leap', dist: 92 }] }),
+    a({ id: 'r-leap', cls: 'ranger', name: 'Spring Away', text: 'Dashes you forward, the way you are facing, and removes roots and slows.', icon: 'haste_status_winged_boot_on_teal', color: '#d8ffb0', school: 'physical', role: 'mobility', aim: 'self', range: 0, cast: 0, cd: 9, free: true, effects: [{ k: 'break' }, { k: 'bound', dist: 92 }] }),
     a({ id: 'r-hawk', cls: 'ranger', name: 'Hawk’s Dive', text: 'Your hawk stuns the target for 1.5 sec. Usable while casting.', icon: 'hawk_companion_diving_on_teal', color: '#ffe39a', school: 'physical', role: 'cc', aim: 'enemy', range: FAR, cast: 0, cd: 17, free: true, zip: true, effects: [{ k: 'cc', cc: 'stun', dur: 1.5 }] }),
     // the Trapper: hobbled or caught, and the volley comes down
     a({ id: 'r-hobble', cls: 'ranger', name: 'Hobbling Shot', text: `Deals ${R(21)} damage and slows the target by 40% for 3 sec. Usable while moving.`, icon: 'slowed_status_snail_on_teal', color: '#e8e0a8', school: 'physical', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 0, zip: true, effects: [{ k: 'dmg', n: 21 }, { k: 'slow', pct: 40, dur: 3 }] }),
@@ -515,7 +530,7 @@ const KITS: Record<ClassId, Ability[]> = {
     // (the class's moon and its roots, on both)
     a({ id: 'l-petal', cls: 'druid', name: 'Stinging Petals', text: `Deals ${L(60)} damage and ${L(144)} more over 8 sec. Usable while moving.`, icon: 'petal_storm_on_teal', color: '#ffb8e8', school: 'nature', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 4, combo: { name: 'Snagged', text: 'Deals 50% more damage to rooted targets.', cc: ['root'], mult: 1.5 }, effects: [{ k: 'dmg', n: 60 }, { k: 'dot', n: 144, dur: 8 }] }),
     a({ id: 'l-moon', cls: 'druid', name: 'Moonburn', text: `Burns the target for ${L(156)} damage over 10 sec. Usable while moving.`, icon: 'moonfire_beam_on_navy', color: '#cfe0ff', school: 'nature', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 5, effects: [{ k: 'dot', n: 156, dur: 10 }] }),
-    a({ id: 'l-roots', cls: 'druid', name: 'Grasping Roots', text: 'Roots the target for 2.5 sec. Enough damage breaks it.', icon: 'rooted_status_vines_on_green', color: '#7ad65a', school: 'nature', role: 'cc', aim: 'enemy', range: FAR, cast: 0.8, cd: 6, effects: [{ k: 'cc', cc: 'root', dur: 2.5 }] }),
+    a({ id: 'l-roots', cls: 'druid', name: 'Grasping Roots', text: 'Roots the target for 2.5 sec. Enough damage breaks it.', icon: 'rooted_status_vines_on_green', color: '#7ad65a', school: 'nature', role: 'cc', aim: 'enemy', range: FAR, cast: 0.8, cd: 10, effects: [{ k: 'cc', cc: 'root', dur: 2.5 }] }),
     // the Starseer: the moon's burn, and starlight on it
     a({ id: 'l-lash', cls: 'druid', name: 'Starlash', text: `Deals ${L(52)} damage.`, icon: 'star_arrow_on_navy', color: '#cfe0ff', school: 'nature', role: 'damage', aim: 'enemy', range: FAR, cast: 0.9, cd: 0, bolt: true, combo: { name: 'Eclipse', text: 'Deals 40% more damage to targets affected by your Moonburn.', ab: ['l-moon'], mult: 1.4 }, effects: [{ k: 'dmg', n: 52 }] }),
     a({ id: 'l-bound', cls: 'druid', name: 'Stag’s Bound', text: 'Increases your movement speed by 60% for 4 sec and removes roots and slows.', icon: 'stag_head_with_antlers_on_green', color: '#c8ffb0', school: 'nature', role: 'mobility', aim: 'self', range: 0, cast: 0, cd: 13, free: true, effects: [{ k: 'break' }, { k: 'speed', pct: 60, dur: 4 }, { k: 'free', dur: 4 }] }),
@@ -529,10 +544,10 @@ const KITS: Record<ClassId, Ability[]> = {
     a({ id: 'g-hand', cls: 'gloamknight', name: 'Grave Hand', text: 'Stuns the target for 1.5 sec.', icon: 'shadow_hand_grabbing_on_violet', color: '#9a6ae0', school: 'shadow', role: 'cc', aim: 'enemy', range: MID, cast: 0, cd: 17, effects: [{ k: 'cc', cc: 'stun', dur: 1.5 }] }),
     // the Nightblade, a blade in the dark (the owner's friend: "typical dk and a shadow rogue"; and the owner,
     // 2026-11-16: "nightknife basic spells - increases combo points ... the more the points the bigger the dmg")
-    a({ id: 'g-knife', cls: 'gloamknight', name: 'Nightknife', text: `Deals ${G(30)} damage, slows the target by 30% for 2 sec and generates 1 Nick.`, icon: 'heart_pierced_by_a_dagger_on_black', color: '#d8c8ff', school: 'physical', role: 'damage', aim: 'enemy', range: MELEE, cast: 0, cd: 0, build: { n: 1 }, combo: { name: 'Unseen Edge', text: 'Deals 50% more damage from behind, or to targets stunned by your Dusk Ambush.', ab: ['g-ambush'], behind: true, mult: 1.5 }, effects: [{ k: 'dmg', n: 30 }, { k: 'slow', pct: 30, dur: 2 }] }),
+    a({ id: 'g-knife', cls: 'gloamknight', name: 'Nightknife', text: `Deals ${G(30)} damage, generates 1 Nick and carries your venom.`, icon: 'heart_pierced_by_a_dagger_on_black', color: '#d8c8ff', school: 'physical', role: 'damage', aim: 'enemy', range: MELEE, cast: 0, cd: 0, build: { n: 1 }, combo: { name: 'Unseen Edge', text: 'Deals 50% more damage from behind, or to targets stunned by your Dusk Ambush.', ab: ['g-ambush'], behind: true, mult: 1.5 }, effects: [{ k: 'dmg', n: 30 }] }),
     a({ id: 'g-cut', cls: 'gloamknight', name: 'Closing Cut', text: `Spends all your Nicks to deal ${G(24)} damage, increased by 80% per Nick. Requires at least 1 Nick.`, icon: 'shadow_claw_slash_on_black', color: '#b48cff', school: 'physical', role: 'burst', aim: 'enemy', range: MELEE, cast: 0, cd: 0, spend: { per: 0.8, need: 1 }, effects: [{ k: 'dmg', n: 24 }] }),
     a({ id: 'g-veil', cls: 'gloamknight', name: 'Shroud of Dusk', text: 'Stealth: enemies cannot see you until you attack or take damage, and you move a little slower. In combat it removes roots and slows, cannot be broken for 3 sec and has a 30 sec cooldown; out of combat, 3 sec. You start each match in stealth.', icon: 'vanish_puff_of_smoke_on_violet', color: '#8a6ac8', school: 'physical', role: 'stealth', aim: 'self', range: 0, cast: 0, cd: 30, free: true, quiet: true, effects: [{ k: 'break' }, { k: 'veil' }] }),
-    a({ id: 'g-ambush', cls: 'gloamknight', name: 'Dusk Ambush', text: `Requires stealth. Steps behind the target, dealing ${G(40)} damage, stunning for 2 sec and generating 2 Nicks.`, icon: 'blackout_eye_on_violet', color: '#b48cff', school: 'physical', role: 'cc', aim: 'enemy', range: SHORT, cast: 0, cd: 0, veiled: true, sticky: true, build: { n: 2 }, effects: [{ k: 'behind' }, { k: 'dmg', n: 40 }, { k: 'cc', cc: 'stun', dur: 2 }] }),
+    a({ id: 'g-ambush', cls: 'gloamknight', name: 'Dusk Ambush', text: `Requires stealth. Steps behind the target, dealing ${G(40)} damage, stunning for 2 sec and generating 2 Nicks.`, icon: 'blackout_eye_on_violet', color: '#b48cff', school: 'physical', role: 'cc', aim: 'enemy', range: SHORT, cast: 0, cd: 15, veiled: true, sticky: true, build: { n: 2 }, effects: [{ k: 'behind' }, { k: 'dmg', n: 40 }, { k: 'cc', cc: 'stun', dur: 2 }] }),
   ],
 };
 
@@ -606,7 +621,7 @@ export const PRESETS: Record<ClassId, Playstyle[]> = {
   ],
   gloamknight: [
     { id: 'reaver', name: 'Bloodsworn', bar: ['g-cleave', 'g-reap', 'g-chain', 'g-hand'], talents: ['g-reaver-1a', 'g-reaver-2b', 'g-3b'], ult: 'g-super' },
-    { id: 'shadow', name: 'Nightblade', points: { name: 'Nicks', one: 'Nick', max: 5, color: '#d8c8ff' }, bar: ['g-knife', 'g-cut', 'g-veil', 'g-ambush'], talents: ['g-shadow-1b', 'g-shadow-2a', 'g-3c'], ult: 'g-super2' },
+    { id: 'shadow', name: 'Nightblade', points: { name: 'Nicks', one: 'Nick', max: 5, color: '#d8c8ff' }, bar: ['g-knife', 'g-cut', 'g-veil', 'g-ambush'], talents: ['g-shadow-1b', 'g-shadow-2a', 'g-3c', 'g-shadow-4a'], ult: 'g-super2' },
   ],
 };
 

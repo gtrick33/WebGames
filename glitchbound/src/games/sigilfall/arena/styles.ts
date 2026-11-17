@@ -8,6 +8,7 @@ import { PRESETS, styleOfBar } from './abilities';
  */
 export type Ease = 'easy' | 'medium' | 'hard';
 
+/** Said in one word, in its own color wherever it is shown: Easy green, Medium yellow, Hard red (Game.css is-easy, is-medium, is-hard). */
 export const EASE_WORD: Record<Ease, string> = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
 
 /**
@@ -25,16 +26,19 @@ export const CLASS_EASE: Record<ClassId, Ease> = {
   gloamknight: 'hard',
 };
 
-/** How each class fights, in two words: whether it closes in or keeps away, and whether it heals. */
+/**
+ * How each class fights, in a word or two: melee or ranged, and whether it heals (the owner, 2026-11-17: "from range
+ * could be replaced with ranged, and the other type should be melee").
+ */
 export const CLASS_WAY: Record<ClassId, string> = {
-  warrior: 'Up close',
-  paladin: 'Up close, heals',
-  ranger: 'From range',
-  mage: 'From range',
-  priest: 'From range, heals',
-  druid: 'From range, heals',
-  warlock: 'From range',
-  gloamknight: 'Up close',
+  warrior: 'Melee',
+  paladin: 'Melee, heals',
+  ranger: 'Ranged',
+  mage: 'Ranged',
+  priest: 'Ranged, heals',
+  druid: 'Ranged, heals',
+  warlock: 'Ranged',
+  gloamknight: 'Melee',
 };
 
 export interface Style {

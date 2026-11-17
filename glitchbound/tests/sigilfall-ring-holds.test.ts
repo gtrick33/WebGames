@@ -51,23 +51,24 @@ describe('The Ring: holds that hold', () => {
     expect(m.held(w)?.cc).toBe('stun');
   });
 
-  it('the Rime’s hold is a stun from range now, a second and a half, and wears off with use like any other', () => {
+  it('the Rime’s hold is a stun from range now, a second and a half, and lands in full every time like any other', () => {
     // (the owner, 2026-11-17: "for the rime mage, you can replace the frost snare with a ranged stun for 1.5s or a
     // kick". The Frost Snare rooted everyone near and never wore off with use; Frostclasp is one target, from afar.)
     const ab = ABILITIES['m-ring']!;
     expect(ab).toMatchObject({ name: 'Frostclasp', aim: 'enemy', cast: 0.6 });
-    expect(ab.noDr).toBeUndefined();
     const m = duel('mage', PRESETS.mage[1]!.bar, 'warrior');
     const [mage, w] = m.fighters as [Fighter, Fighter];
     w.x = mage.x + 150;
     expect(m.press(mage.id, 'm-ring')).toBeNull();
     for (let i = 0; i < 60 && !w.auras.some((a) => a.cc === 'stun'); i++) m.step(STEP, {});
     expect(w.auras.find((a) => a.cc === 'stun')?.dur).toBe(1.5);
-    expect(w.dr.stun?.n).toBe(1);
-    // (and nothing else's holds are counted the less for them: a hawk's stun is a first one, and counted)
-    const hawk = duel('ranger', ['r-hawk'], 'warrior');
-    expect(hawk.press(0, 'r-hawk')).toBeNull();
-    expect(hawk.fighters[1]!.dr.stun?.n).toBe(1);
+    // (a second one, once it is ready again, lasts as long: there are no diminishing returns)
+    w.auras = [];
+    mage.cds = {};
+    mage.gcd = 0;
+    expect(m.press(mage.id, 'm-ring')).toBeNull();
+    for (let i = 0; i < 60 && !w.auras.some((a) => a.cc === 'stun'); i++) m.step(STEP, {});
+    expect(w.auras.find((a) => a.cc === 'stun')?.dur).toBe(1.5);
   });
 
   it('Toad Hex snuffs out everything burning or rotting on its target, so that the toad stays a toad', () => {
@@ -84,7 +85,7 @@ describe('The Ring: holds that hold', () => {
 });
 
 describe('The Ring: Frostfang shatters the ice', () => {
-  /** Looses a Frostfang, which lands at once: whether it was a Shatter, and whether the target is still rooted. */
+  /** Looses a Frostfang and waits for it to get there: whether it was a Shatter, and whether the target is still rooted. */
   const fang = (m: Match): { shatter: boolean; rooted: boolean } => {
     const [mage, w] = m.fighters as [Fighter, Fighter];
     mage.gcd = 0;
@@ -92,6 +93,11 @@ describe('The Ring: Frostfang shatters the ice', () => {
     m.events.length = 0;
     const hp = w.hp;
     expect(m.press(mage.id, 'm-fang')).toBeNull();
+    // (it is seen crossing, and lands as it gets there)
+    expect(w.hp).toBe(hp);
+    expect(m.bolts.map((b) => b.ab)).toEqual(['m-fang']);
+    for (let i = 0; i < 30 && m.bolts.length; i++) m.step(STEP, {});
+    expect(m.bolts).toHaveLength(0);
     const shatter = m.events.some((e) => e.k === 'word' && e.word === 'Shatter');
     m.events.length = 0;
     expect(w.hp).toBeLessThan(hp);
@@ -116,12 +122,14 @@ describe('The Ring: Frostfang shatters the ice', () => {
       w.hp = w.maxHp = 50000;
       if (frozen) w.auras.push({ ab: 'l-roots', kind: 'cc', cc: 'root', src: 1, t: 5, dur: 5, harmful: true, magic: true, n: 0, took: 0 });
       expect(m.press(mage.id, 'm-fang')).toBeNull();
+      for (let i = 0; i < 30 && m.bolts.length; i++) m.step(STEP, {});
       return 50000 - w.hp;
     };
     expect(ABILITIES['m-fang']!.combo!.mult).toBe(3);
     expect(hit(true) / hit(false)).toBeCloseTo(3, 1);
-    // (instant, on the move, and with no long wait between)
-    expect(ABILITIES['m-fang']).toMatchObject({ cast: 0, zip: true });
+    // (instant, on the move, and with no long wait between; seen crossing in a third of a second or so)
+    expect(ABILITIES['m-fang']).toMatchObject({ cast: 0, bolt: true });
+    expect(ABILITIES['m-fang']!.flight!.most).toBeLessThanOrEqual(0.45);
     expect(ABILITIES['m-fang']!.cd).toBeLessThanOrEqual(4);
   });
 

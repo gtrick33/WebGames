@@ -11,7 +11,7 @@ import { heroLook, heldWeapon, type WornLooks } from './sprites';
 import type { Held } from '../render3d/dress';
 import { FIELD, FX, type Fx3D } from '../render3d/fx3d';
 import { THRALL_EYES } from '../render3d/thrall';
-import { drawBoon, drawFade, drawFlight, drawGlobe, drawPoints, drawSign, flightTime, hasSign, signAlone, signTime, type Sign } from './ringSigns';
+import { drawBoon, drawFade, drawFlight, drawGlobe, drawPoints, drawShatter, drawSign, hasSign, SHATTER_T, signAlone, signTime, type Sign } from './ringSigns';
 import type { RingStage, RingView } from '../render3d/ring3d';
 import { newCharacter, type Character, type Face } from '../progress/character';
 import { wornLooks } from '../progress/wardrobe';
@@ -70,6 +70,8 @@ interface Pop {
   of?: number;
   kind?: string;
   n?: number;
+  /** A Shatter's: bigger, icy, thrown up hard and never added to another. */
+  punch?: boolean;
 }
 
 /**
@@ -113,8 +115,10 @@ export function overhead(f: Pick<Fighter, 'auras'>, myId: number | null): Fighte
 const LEAVES: Record<string, string> = { physical: 'swing', fire: 'fireball', frost: 'freeze', arcane: 'bolt', holy: 'holy', shadow: 'shadow', nature: 'nature' };
 const LANDS: Record<string, string> = { physical: 'clash', fire: 'explode', frost: 'freeze', arcane: 'zap', holy: 'holy', shadow: 'shadow', nature: 'nature' };
 const SUPER_SOUND: Record<string, string> = { physical: 'quake', fire: 'meteor', frost: 'freeze', arcane: 'thunder', holy: 'nova', shadow: 'rift', nature: 'thunder' };
+/** An ability with a sound of its own as it leaves the hand (Frostfang is thrown, with a whistle, not cast). */
+const LEAVES_OWN: Record<string, string> = { 'm-fang': 'spear' };
 /** Every sound those tables name (a test holds them to the sounds there are). */
-export const ringSchoolSounds = (): string[] => [...Object.values(LEAVES), ...Object.values(LANDS), ...Object.values(SUPER_SOUND)];
+export const ringSchoolSounds = (): string[] => [...Object.values(LEAVES), ...Object.values(LANDS), ...Object.values(SUPER_SOUND), ...Object.values(LEAVES_OWN), 'shatter'];
 
 /** What's on screen for a moment: kept here, out of the simulation. */
 /** A spell landing: a burst in its school's own manner, bigger for a burst ability. */
@@ -156,8 +160,8 @@ export class RingFx {
   drains: { x: number; y: number; to: number; t: number; dur: number; n: number }[] = [];
   /** A hand of shadow come up out of the ground under someone. */
   hands: { x: number; y: number; t: number; dur: number }[] = [];
-  /** Where each Gloamknight has just been: the dark they leave behind them as they go (by fighter, newest last). */
-  readonly wakes = new Map<number, { x: number; y: number; at: number }[]>();
+  /** Where each Gloamknight has just been: the dark they leave behind them as they go (by fighter: trailWake). */
+  readonly wakes = new Map<number, Wake>();
   /** A toll of dusk rolling out from someone: rings of dark, one after another. */
   tolls: { x: number; y: number; t: number; dur: number; r: number }[] = [];
   /** What lands at once but is thrown (an arrow, a hammer): a streak from the hand to whoever it hit. */
@@ -170,10 +174,12 @@ export class RingFx {
   signs: Sign[] = [];
   /** Someone faded from sight (a mage's vanishing point): the puff they left where they stood. */
   fades: { x: number; y: number; t: number; dur: number; seed: number }[] = [];
+  /** A Shatter going off on someone (render/ringSigns.ts drawShatter): on whom, the way the fang came, how far along. */
+  shatters: { on: number; x: number; y: number; a: number; t: number; dur: number; seed: number }[] = [];
   /** A chain thrown or a life being drunk: a line from one fighter to another, for as long as it lasts. */
   lines: { ab: string; from: number; to: number; t: number; dur: number }[] = [];
-  private sign(ab: string, k: Sign['k'], x: number, y: number, a: number, on?: number, r?: number, wait = 0): void {
-    this.signs.push({ ab, k, on, x, y, a, t: -wait, dur: signTime(ab, k), seed: ((x * 7 + y * 3 + this.signs.length * 1.7) % 6.28) + 0.1, r });
+  private sign(ab: string, k: Sign['k'], x: number, y: number, a: number, on?: number, r?: number): void {
+    this.signs.push({ ab, k, on, x, y, a, t: 0, dur: signTime(ab, k), seed: ((x * 7 + y * 3 + this.signs.length * 1.7) % 6.28) + 0.1, r });
     if (this.signs.length > 28) this.signs.shift();
   }
   private spread = 0;
@@ -181,6 +187,8 @@ export class RingFx {
   /** Takes the match's events. Returns what's worth a sound. */
   take(m: Match, sound: (id: string, vol?: number) => void, myId: number | null): void {
     const viewer = myId === null ? null : (m.fighters[myId] ?? null);
+    // (whoever a Shatter has just gone off on: the number that follows it is the Shatter's own)
+    const shattered = new Set<number>();
     for (const e of m.events) {
       // (what happens to one of the other side in the shroud is neither seen nor heard, but for their slipping into it)
       const who = 'id' in e ? m.fighters[e.id] : undefined;
@@ -193,7 +201,9 @@ export class RingFx {
           const n = Math.round(v);
           return e.kind === 'dmg' ? `${n}` : e.kind === 'heal' ? `+${n}` : `(${n})`;
         };
-        const near = e.crit ? undefined : this.pops.find((p) => p.of === f.id && p.kind === e.kind && p.t < MERGE_T && p.color !== '#ffd257');
+        const punch = e.kind === 'dmg' && shattered.has(f.id);
+        if (punch) shattered.delete(f.id);
+        const near = e.crit || punch ? undefined : this.pops.find((p) => p.of === f.id && p.kind === e.kind && p.t < MERGE_T && p.color !== '#ffd257' && !p.punch);
         if (near) {
           near.n = (near.n ?? 0) + e.n;
           near.text = say(near.n);
@@ -203,7 +213,8 @@ export class RingFx {
           const x = f.x + (this.spread - 2) * 7;
           // (over the effect pictures when they wear any, so a wound that ticks each second doesn't hide its own timer)
           const lift = wears(f) ? 16 : 0;
-          this.pops.push({ x, y: f.y - 30, lift, t: 0, text: say(e.n), color: e.kind === 'dmg' ? (e.crit ? '#ffd257' : '#fff6e0') : e.kind === 'heal' ? '#7fe06a' : '#9fdcff', big: e.crit || e.n > 120, of: f.id, kind: e.kind, n: e.n });
+          if (punch) this.pops.push({ x: f.x, y: f.y - 30, lift, t: 0, text: say(e.n), color: '#bff0ff', big: true, of: f.id, kind: e.kind, n: e.n, punch: true });
+          else this.pops.push({ x, y: f.y - 30, lift, t: 0, text: say(e.n), color: e.kind === 'dmg' ? (e.crit ? '#ffd257' : '#fff6e0') : e.kind === 'heal' ? '#7fe06a' : '#9fdcff', big: e.crit || e.n > 120, of: f.id, kind: e.kind, n: e.n });
         }
         if (e.kind === 'dmg' && e.id === myId) sound('hurt', e.crit ? 0.7 : 0.45);
       } else if (e.k === 'word') {
@@ -213,7 +224,21 @@ export class RingFx {
         // the other, never on top of each other)
         const above = this.pops.filter((p) => p.word && p.t < 0.5 && Math.abs(p.x - f.x) < 40 && Math.abs(p.y - f.y) < 110).length;
         this.pops.push({ x: f.x, y: f.y - (e.combo ? 50 : 42) - above * 13, lift: wears(f) ? 12 : 0, t: 0, text: e.combo ? `${comboWord(e.word)}!` : e.word, color: e.combo ? '#ffd257' : e.bad ? '#ff9ab0' : '#e0d0ff', big: !!e.combo, word: true });
-        if (e.combo) {
+        if (e.combo && e.word === 'Shatter') {
+          // Frostfang's Shatter: the ice they are held in breaks, and is heard breaking (render/ringSigns.ts drawShatter)
+          const from = this.by.get('m-fang');
+          const src = from === undefined ? undefined : m.fighters[from];
+          const a = src && src !== f ? Math.atan2(f.y - src.y, f.x - src.x) : Math.atan2(f.dirY, f.dirX) + Math.PI;
+          this.shatters.push({ on: f.id, x: f.x, y: f.y, a, t: 0, dur: SHATTER_T, seed: ((f.x * 0.37 + f.y * 0.11) % 6.28) + 0.2 });
+          // (in place of the plain bite it would have been: the one is the other, bigger, not both at once)
+          this.signs = this.signs.filter((s) => !(s.ab === 'm-fang' && s.k === 'land' && s.on === f.id && s.t === 0));
+          if (this.shatters.length > 6) this.shatters.shift();
+          this.burstSparks(f.x, f.y, 16, ['#e0f8ff', '#9fdcff', '#ffffff'], 1.3);
+          shattered.add(f.id);
+          const mine = src?.id === myId || f.id === myId;
+          sound('shatter', mine ? 0.85 : 0.55);
+          sound('shard', mine ? 0.6 : 0.4);
+        } else if (e.combo) {
           this.flashes.push({ x: f.x, y: f.y, t: 0, dur: 0.5, r: 26, color: '#ffd257', ring: true });
           this.burstSparks(f.x, f.y, 14, ['#ffd257', '#fff2c0', '#ffb45c'], 1);
           // (a short bright note of its own)
@@ -228,8 +253,8 @@ export class RingFx {
           const to = m.aimOf(f, ab);
           if (to && to !== f) {
             const d = Math.hypot(to.x - f.x, to.y - f.y);
-            // (most cross in a blink; one with a flight of its own to be watched takes its time and goes after its target)
-            this.zips.push({ x0: f.x, y0: f.y, x1: to.x, y1: to.y, t: 0, dur: flightTime(ab.id, d) ?? Math.max(0.07, Math.min(0.16, d / 1100)), ab: ab.id, to: to.id });
+            // (they cross in a blink, going after their target: one to be watched is a bolt, Ability.flight)
+            this.zips.push({ x0: f.x, y0: f.y, x1: to.x, y1: to.y, t: 0, dur: Math.max(0.07, Math.min(0.16, d / 1100)), ab: ab.id, to: to.id });
             if (this.zips.length > 12) this.zips.shift();
           }
         }
@@ -266,7 +291,7 @@ export class RingFx {
         else if (ab.role === 'summon') sound('rift', vol);
         else if (ab.aim === 'self') sound(ab.role === 'defense' ? 'shield' : ab.role === 'mobility' ? 'blink' : 'buff', vol);
         else if (ab.school === 'physical') sound(melee ? (ab.role === 'burst' ? 'swingBig' : 'swing') : ab.cls === 'ranger' ? 'bow' : 'swingBig', vol);
-        else sound(LEAVES[ab.school] ?? 'bolt', vol);
+        else sound(LEAVES_OWN[ab.id] ?? LEAVES[ab.school] ?? 'bolt', vol);
       } else if (e.k === 'land') {
         const ab = ABILITIES[e.ab];
         const f = m.fighters[e.id];
@@ -278,13 +303,11 @@ export class RingFx {
         // (and as it lands: steel for a blow, the school's own for a spell, a soft chime for a heal)
         const mine = e.id === myId;
         if (ab.role === 'heal' || ab.aim === 'friend') sound('heal', mine ? 0.6 : 0.35);
-        else if (ab.aim === 'enemy' || ab.aim === 'near' || ab.aim === 'ground') sound(ab.school === 'physical' ? (ab.role === 'burst' ? 'critBlade' : 'clash') : ab.role === 'burst' ? 'explode' : (LANDS[ab.school] ?? 'hit'), mine ? 0.75 : 0.5);
+        else if (ab.aim === 'enemy' || ab.aim === 'near' || ab.aim === 'ground') sound(ab.school === 'physical' ? (ab.role === 'burst' ? 'critBlade' : 'clash') : ab.role === 'burst' && ab.school !== 'frost' ? 'explode' : (LANDS[ab.school] ?? 'hit'), mine ? 0.75 : 0.5);
         // (its own look as it lands, in place of its school's burst; with it, for the few that keep both)
         const from0 = this.by.get(ab.id);
         const src = from0 === undefined ? undefined : m.fighters[from0];
-        // (what is still seen on its way lands its sign as it gets there)
-        const wait = src && src !== f ? (flightTime(ab.id, Math.hypot(f.x - src.x, f.y - src.y)) ?? 0) : 0;
-        if (hasSign(ab.id, 'land')) this.sign(ab.id, 'land', f.x, f.y, src && src !== f ? Math.atan2(f.y - src.y, f.x - src.x) : Math.atan2(f.dirY, f.dirX) + Math.PI, f.id, undefined, wait);
+        if (hasSign(ab.id, 'land')) this.sign(ab.id, 'land', f.x, f.y, src && src !== f ? Math.atan2(f.y - src.y, f.x - src.x) : Math.atan2(f.dirY, f.dirX) + Math.PI, f.id);
         if (!signAlone(ab.id)) this.bursts.push({ x: f.x, y: f.y, t: 0, dur: ab.role === 'burst' ? 0.75 : 0.55, school: ab.school, color: ab.color, big: ab.role === 'burst', heal: ab.role === 'heal' || ab.aim === 'friend', seed: (f.x * 7 + f.y * 3 + this.bursts.length) % 97 });
         if (this.bursts.length > 24) this.bursts.shift();
         // a blow that drinks: what it took streams back to whoever struck it
@@ -485,6 +508,8 @@ export class RingFx {
     this.lines = this.lines.filter((l) => l.t < l.dur);
     for (const f of this.fades) f.t += dt;
     this.fades = this.fades.filter((f) => f.t < f.dur);
+    for (const x of this.shatters) x.t += dt;
+    this.shatters = this.shatters.filter((x) => x.t < x.dur);
     for (const s of this.supers) s.t += dt;
     this.supers = this.supers.filter((s) => s.t < 0.8);
     this.bursts = this.bursts.filter((b) => b.t < b.dur);
@@ -808,6 +833,9 @@ function markFighter(g: Ctx, m: Match, f: Fighter, myId: number | null, time: nu
 /** How high a fighter's head stands, in world pixels. */
 const HEAD = 30;
 
+/** How far along its way a bolt thrown to be watched is drawn at `u` of its time: off the hand gently, then faster and faster. */
+export const flyEase = (u: number): number => 0.15 * u + 0.85 * u * u;
+
 /**
  * The spells in flight and what's afoot on the fighters: handed to the shaders before the frame is drawn. `at` is where
  * each body was drawn (RingStage.bodyAt): what goes about on a fighter is drawn there, with the body.
@@ -923,8 +951,21 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
     const el = SCHOOL_EL[ab?.school ?? ''] ?? 'arcane';
     const tone = el === 'trail' ? { a: c, b: '#ffffff' } : (TONES[el] ?? { a: c, b: '#ffffff' });
     const k = ab?.super ? 1.7 : 1;
+    const strong = !!b.p?.combo || (b.p?.k ?? 1) > 1.3;
+    if (b.dur !== undefined && b.x0 !== undefined && b.y0 !== undefined) {
+      // one thrown to be watched: from where it left the hand to where its target's body is drawn now, slow to come
+      // off the hand and quicker and quicker into them (flyEase), so that it lands as it is seen to
+      const to = m.fighters[b.tgt];
+      const end = to && !to.dead ? at(to) : { x: b.x, y: b.y + 8 };
+      const u = Math.min(1, b.age / b.dur);
+      const e = flyEase(u);
+      const dx = end.x - b.x0;
+      const dy = end.y - 8 - b.y0;
+      const d = Math.hypot(dx, dy) || 1;
+      if (drawFlight(q, b.ab, b.x0 + dx * e, b.y0 + dy * e, dx / d, dy / d, time, b.src * 1.7 + b.tgt, d * e, strong, u)) continue;
+    }
     // (in its own shape, if it has one: render/ringSigns.ts; a seed that stays with it, so nothing about it flickers)
-    if (drawFlight(q, b.ab, b.x, b.y, Math.cos(a), Math.sin(a), time, b.src * 1.7 + b.tgt, 0, (b.p?.k ?? 1) > 1.3)) continue;
+    if (drawFlight(q, b.ab, b.x, b.y, Math.cos(a), Math.sin(a), time, b.src * 1.7 + b.tgt, 0, strong)) continue;
     shot(q, el === 'trail' ? 'orb' : el, b.x, b.y, Math.cos(a) * 100, Math.sin(a) * 100, 14 * k, 3.4 * k, b.x * 0.03 + b.y * 0.05, tone);
   }
   // what is thrown and lands at once: seen crossing, all the same
@@ -1052,6 +1093,12 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
   }
   for (const b of fx.bursts) landing(q, b);
   for (const f of fx.fades) drawFade(q, f.x, f.y, f.t / f.dur, f.seed);
+  // (a Shatter goes with whoever it broke on, where their body is drawn)
+  for (const x of fx.shatters) {
+    const on = m.fighters[x.on];
+    const p = on && !on.dead ? at(on) : x;
+    drawShatter(q, p.x, p.y, Math.min(1, x.t / x.dur), x.a, x.seed);
+  }
   // each ability's own sign: on its user as it is used, on whoever it lands on (and going with them), on its patch
   for (const s of fx.signs) {
     const on = s.on === undefined ? undefined : m.fighters[s.on];
@@ -1116,19 +1163,13 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
     const p = at(f);
     q.put({ kind: FX.glow, x: p.x, y: p.y, up: 3, w: 34, a: '#7a3cff', alpha: 0.2 + Math.sin(time * 2.2 + f.id) * 0.05 });
     // their wake: a trail of soft dark where they have just been, long in a lunge and short at a walk. (Not a faded
-    // copy of the figure: a figure can only be thinned by a stipple here, and a stippled ghost reads as a fault.)
+    // copy of the figure: a figure can only be thinned by a stipple here, and a stippled ghost reads as a fault.) Laid
+    // along the way they went (the rules' spot: a blow's step forward and back is not a way gone), each puff its own
+    // for as long as it lasts: render/ring.ts trailWake
     let wake = fx.wakes.get(f.id);
-    if (!wake) fx.wakes.set(f.id, (wake = []));
-    const last = wake[wake.length - 1];
-    if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 5) wake.push({ x: p.x, y: p.y, at: time });
-    const keep = f.dash ? 0.5 : 0.32;
-    while (wake.length && (time - wake[0]!.at > keep || wake.length > 14)) wake.shift();
-    for (let i = 0; i < wake.length - 1; i++) {
-      const k = 1 - (time - wake[i]!.at) / keep;
-      if (k <= 0) continue;
-      q.put({ kind: FX.shadow, x: wake[i]!.x, y: wake[i]!.y, up: 9, w: 9 + k * 9, a: '#8a5cff', b: '#120a20', alpha: 0.7 * k, seed: i * 1.3 + f.id });
-      if (i % 2 === 0) q.put({ kind: FX.shadow, x: wake[i]!.x, y: wake[i]!.y, up: 20, w: 7 + k * 7, a: '#b48cff', b: '#120a20', alpha: 0.55 * k, seed: i * 2.1 + f.id });
-    }
+    if (!wake) fx.wakes.set(f.id, (wake = newWake(f.x, f.y)));
+    trailWake(wake, f.x, f.y, time, f.dash ? 0.5 : 0.32);
+    for (const b of wakeBlobs(wake, time)) q.put({ kind: FX.shadow, x: b.x, y: b.y, up: b.up, w: b.w, a: b.high ? '#b48cff' : '#8a5cff', b: '#120a20', alpha: b.alpha, seed: b.seed + f.id });
     for (let i = 0; i < 4; i++) {
       const u = (time * 0.55 + i / 4 + f.id * 0.31) % 1;
       const ang = i * 1.9 + f.id + time * 0.7;
@@ -1180,6 +1221,75 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
       q.put({ kind: FX.smoke, x: u * (ARENA_W + 80) - 40, y: ((i * 83) % ARENA_H) + Math.sin(time * 0.4 + i) * 7, up: 3, w: 40 + (i % 4) * 10, a: '#ffffff', alpha: 0.2 * Math.sin(u * Math.PI), t: 0.3, seed: i * 2.3 });
     }
   }
+}
+
+/** One puff of the dark a Gloamknight leaves behind: where, when, for how long, and which it is (`n`, for its shape). */
+export interface WakePuff {
+  x: number;
+  y: number;
+  at: number;
+  life: number;
+  n: number;
+}
+
+/** A Gloamknight's wake: its puffs, oldest first, how many it has laid, and where the last was laid from. */
+export interface Wake {
+  puffs: WakePuff[];
+  n: number;
+  x: number;
+  y: number;
+}
+
+/** How far apart a wake's puffs are laid (world pixels), how long one takes to come up, and a step too far to be walked. */
+export const WAKE_GAP = 5;
+export const WAKE_IN = 0.09;
+const WAKE_JUMP = 48;
+
+export const newWake = (x: number, y: number): Wake => ({ puffs: [], n: 0, x, y });
+
+/**
+ * Lays a wake's puffs along the way its Gloamknight has gone, one every WAKE_GAP of it, and lets go of those whose
+ * time is up. Each puff keeps its spot, its shape (`n`) and its own length of life from the moment it is laid to the
+ * moment it is gone. (They were counted by their place in the list: as the oldest went, every other puff took the
+ * shape of the one before it and the high dark ones hopped from puff to puff, a flicker about him on every step. The
+ * owner: "gloamknight nightblade spec - theres a jittering orbs around the character when theyre moving, fix it".)
+ * A step farther than anyone walks in a moment (out of the dark at someone's back) starts the wake again where they
+ * are, with nothing laid across the gap.
+ */
+export function trailWake(w: Wake, x: number, y: number, time: number, life: number): void {
+  const d = Math.hypot(x - w.x, y - w.y);
+  if (d > WAKE_JUMP) {
+    w.x = x;
+    w.y = y;
+  } else if (d >= WAKE_GAP) {
+    const ux = (x - w.x) / d;
+    const uy = (y - w.y) / d;
+    const steps = Math.floor(d / WAKE_GAP);
+    for (let i = 0; i < steps; i++) {
+      w.x += ux * WAKE_GAP;
+      w.y += uy * WAKE_GAP;
+      w.puffs.push({ x: w.x, y: w.y, at: time, life, n: w.n++ });
+    }
+  }
+  while (w.puffs.length && (time - w.puffs[0]!.at >= w.puffs[0]!.life || w.puffs.length > 18)) w.puffs.shift();
+}
+
+/**
+ * A wake's puffs as they are drawn now: each comes up over WAKE_IN (none appears whole in a frame), shrinks and fades
+ * over its life, and every other one, by its own count, has a smaller and paler one over it at head height.
+ */
+export function wakeBlobs(w: Wake, time: number): { x: number; y: number; up: number; w: number; alpha: number; seed: number; n: number; high: boolean }[] {
+  const out: ReturnType<typeof wakeBlobs> = [];
+  for (const p of w.puffs) {
+    const age = time - p.at;
+    const k = 1 - age / p.life;
+    if (k <= 0) continue;
+    const born = Math.max(0, Math.min(1, age / WAKE_IN));
+    const ease = born * born * (3 - 2 * born);
+    out.push({ x: p.x, y: p.y, up: 9, w: (9 + k * 9) * (0.6 + 0.4 * ease), alpha: 0.7 * k * ease, seed: p.n * 1.3, n: p.n, high: false });
+    if (p.n % 2 === 0) out.push({ x: p.x, y: p.y, up: 20, w: (7 + k * 7) * (0.6 + 0.4 * ease), alpha: 0.55 * k * ease, seed: p.n * 2.1, n: p.n, high: true });
+  }
+  return out;
 }
 
 /** A spell landing, in its school's manner. */
@@ -1446,7 +1556,8 @@ export function drawRing(m: Match, fx: RingFx, myId: number | null, time: number
   g.textAlign = 'center';
   for (const p of fx.pops) {
     const u = p.t / 0.9;
-    const size = (p.big ? 11 : 8) * (u < 0.15 ? 1 + (0.15 - u) * 2.4 : 1);
+    // (a Shatter's comes up larger, thrown out hard and settling back: the hit is felt in the number too)
+    const size = p.punch ? 13 * (u < 0.2 ? 1 + Math.sin((u / 0.2) * Math.PI) * 0.55 : 1) : (p.big ? 11 : 8) * (u < 0.15 ? 1 + (0.15 - u) * 2.4 : 1);
     view.up(p.x, p.y + 30, HEAD);
     g.font = `800 ${size}px "Bricolage Grotesque Variable", system-ui, sans-serif`;
     g.globalAlpha = Math.max(0, 1 - u * u);

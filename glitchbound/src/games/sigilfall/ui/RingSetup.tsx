@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { ABILITIES, barCombos, combosOf, PRESETS, SLOTS, styleOfBar, ultOf, type Ability, type BarCombo, type Points } from '../arena/abilities';
 import type { ClassSets, RingSetup } from '../arena/ladder';
 import { EASE_WORD, presetOfBar, styleOf } from '../arena/styles';
@@ -34,19 +34,19 @@ export const pointsOf = (cls: ClassId, setup: Pick<RingSetup, 'bar' | 'talents'>
 };
 
 /** The bar as it stands: its playstyle's four, then what every hero has besides (the playstyle's super). */
-export function BarRow({ bar, cls, ult, onPick, onHover, on }: { bar: string[]; cls: ClassId; ult?: string; onPick?: (ab: Ability) => void; onHover?: (ab: Ability) => void; on?: string }) {
+export function BarRow({ bar, cls, ult, onPick, onHover, onLeave, on }: { bar: string[]; cls: ClassId; ult?: string; onPick?: (ab: Ability, el: HTMLElement) => void; onHover?: (ab: Ability, el: HTMLElement) => void; onLeave?: () => void; on?: string }) {
   return (
     <div className="rb-rs-slots">
       {Array.from({ length: SLOTS }, (_, i) => {
         const ab = ABILITIES[bar[i] ?? ''];
         return (
-          <button key={i} type="button" className={`rb-rs-slot${ab ? '' : ' is-empty'}${ab && ab.id === on ? ' is-read' : ''}`} disabled={!ab || !onPick} onClick={() => ab && onPick?.(ab)} onMouseEnter={() => ab && onHover?.(ab)} onFocus={() => ab && onHover?.(ab)} title={ab ? ab.name : 'An empty place'} aria-label={ab ? ab.name : 'An empty place'}>
+          <button key={i} type="button" className={`rb-rs-slot${ab ? '' : ' is-empty'}${ab && ab.id === on ? ' is-read' : ''}`} disabled={!ab || !onPick} onClick={(e) => ab && onPick?.(ab, e.currentTarget)} onMouseEnter={(e) => ab && onHover?.(ab, e.currentTarget)} onFocus={(e) => ab && onHover?.(ab, e.currentTarget)} onMouseLeave={onLeave} onBlur={onLeave} title={ab ? ab.name : 'An empty place'} aria-label={ab ? ab.name : 'An empty place'}>
             {ab ? <img src={iconPicture(ab.icon)} alt="" draggable={false} /> : <small>{i + 1}</small>}
           </button>
         );
       })}
       {[ultOf(cls, ult ?? styleOfBar(cls, bar).ult)].map((ab) => (
-        <button key={ab.id} type="button" className={`rb-rs-slot is-token${ab.super ? ' is-super' : ''}${ab.id === on ? ' is-read' : ''}`} disabled={!onPick} title={`${ab.super ? 'Super: ' : ''}${ab.name}`} onClick={() => onPick?.(ab)} onMouseEnter={() => onHover?.(ab)} onFocus={() => onHover?.(ab)}>
+        <button key={ab.id} type="button" className={`rb-rs-slot is-token${ab.super ? ' is-super' : ''}${ab.id === on ? ' is-read' : ''}`} disabled={!onPick} title={`${ab.super ? 'Super: ' : ''}${ab.name}`} onClick={(e) => onPick?.(ab, e.currentTarget)} onMouseEnter={(e) => onHover?.(ab, e.currentTarget)} onFocus={(e) => onHover?.(ab, e.currentTarget)} onMouseLeave={onLeave} onBlur={onLeave}>
           <img src={iconPicture(ab.icon)} alt={ab.name} draggable={false} />
         </button>
       ))}
@@ -81,7 +81,7 @@ export function SpellTip({ ab, cls, bar, talents }: { ab: Ability; cls: ClassId;
   const slot = style.bar.indexOf(ab.id);
   const combo = combosOf(cls, ab, bar).lands;
   // (the talents chosen that work on this ability, each in its own words)
-  const mine = cleanTalents(cls, talents, style.id).filter((t) => t.tune && (ab.id in t.tune || (!!ab.super && 'super' in t.tune)));
+  const mine = cleanTalents(cls, talents, style.id).filter((t) => t.via === ab.id || (t.tune && (ab.id in t.tune || (!!ab.super && 'super' in t.tune))));
   return (
     <div className="rb-stip" style={{ ['--a' as string]: ab.color }}>
       <header>
@@ -208,6 +208,16 @@ function StyleCards({ cls, setup, onPick }: { cls: ClassId; setup: RingSetup; on
   );
 }
 
+/** How far down an element stands in one that holds it, in that one's own layout; null if it isn't laid out in it. */
+function offsetIn(el: HTMLElement, root: HTMLElement): number | null {
+  let y = 0;
+  for (let n: HTMLElement | null = el; n !== root; n = n.offsetParent instanceof HTMLElement ? n.offsetParent : null) {
+    if (!n || !root.contains(n)) return null;
+    y += n.offsetTop;
+  }
+  return y;
+}
+
 /** What the tutorial (arena/tutorial.ts) shows of the setup page: it is one page now, so nothing to turn. */
 export type SetupGuide = Record<string, never>;
 
@@ -225,6 +235,42 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
   const cur = sets.list[sets.active]!;
   const style = styleOfBar(cls, cur.bar);
   const [reading, setReading] = useState<Reading | null>(null);
+  /**
+   * Where the icon being read stands, when the editor is too narrow for the box that reads it to stand beside the
+   * icons (the Ring's main screen in a small window, a phone held upright): the box then comes up over or under that
+   * icon as a tooltip does, for as long as it is pointed at or until the next tap elsewhere, and covers nothing else
+   * (Game.css rb-build). Beside the icons it is always there, and this is not used.
+   */
+  const root = useRef<HTMLDivElement>(null);
+  const [tip, setTip] = useState<{ top?: number; bottom?: number } | null>(null);
+  const lookAt = (r: Reading, el: HTMLElement): void => {
+    setReading(r);
+    const box = root.current;
+    // (measured in the page's own layout, not on the screen: on a phone held upright the game is turned a quarter turn
+    // into it, ui/turn.ts, and what is up the page is across the screen)
+    const y = box ? offsetIn(el, box) : null;
+    if (!box || y === null) return;
+    // over the icon when it stands low in what can be seen of the column, under it otherwise
+    const col = box.offsetParent instanceof HTMLElement ? box.offsetParent : null;
+    const seen = col ? box.offsetTop + y - col.scrollTop : y;
+    const low = seen + el.offsetHeight / 2 > (col ? col.clientHeight : box.offsetHeight) * 0.55;
+    setTip(low ? { bottom: box.offsetHeight - y + 6 } : { top: y + el.offsetHeight + 6 });
+  };
+  const look = (r: Reading) => (e: SyntheticEvent<HTMLElement>): void => lookAt(r, e.currentTarget);
+  // (a pointer that leaves the icon puts it away; a finger has nothing to leave with, and a tap is followed by a leave
+  // of its own on some phones: what a tap brought up stays until the next tap anywhere but on another icon)
+  const touched = useRef(false);
+  const away = (): void => {
+    if (!touched.current) setTip(null);
+  };
+  useEffect(() => {
+    if (!tip) return;
+    const off = (e: PointerEvent): void => {
+      if (!(e.target instanceof Element) || !e.target.closest('.rb-rs-node, .rb-rs-slot, .rb-rs-link')) setTip(null);
+    };
+    document.addEventListener('pointerdown', off, true);
+    return () => document.removeEventListener('pointerdown', off, true);
+  }, [tip]);
   const put = (next: RingSetup): void => {
     const list = [...sets.list];
     list[sets.active] = next;
@@ -233,7 +279,6 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
   const chosen = cleanTalents(cls, cur.talents, style.id);
   /** One from each row, always: choosing another takes its row's place. */
   const pickTalent = (t: Talent): void => {
-    setReading({ k: 'talent', id: t.id });
     if (chosen.some((x) => x.id === t.id)) return;
     put({ ...cur, talents: [...chosen.filter((x) => x.row !== t.row).map((x) => x.id), t.id] });
   };
@@ -254,7 +299,7 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
   const readCombo = reading?.k === 'combo' ? combos[reading.i] : undefined;
   const shownAb = readAb ?? (!readTalent && !readCombo ? kit[0]! : undefined);
   return (
-    <div className="rb-rs is-fixed is-tree">
+    <div ref={root} onPointerDownCapture={(e) => (touched.current = e.pointerType !== 'mouse')} className={`rb-rs is-fixed is-tree${tip ? ' is-tip' : ''}`} style={tip ? { ['--tip-top' as string]: tip.top === undefined ? 'auto' : `${tip.top}px`, ['--tip-bottom' as string]: tip.bottom === undefined ? 'auto' : `${tip.bottom}px` } : undefined}>
       {/* (three saved setups had tabs here until 2026-11-17, the owner: "you can remove the setups". A class keeps the one in hand.) */}
       <StyleCards cls={cls} setup={cur} onPick={useStyle} />
 
@@ -262,12 +307,12 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
         <div className="rb-rs-pick">
           <div className="rb-rs-kitrow">
             <div className="rb-rs-barrow" data-tut="bar">
-              <BarRow bar={cur.bar} cls={cls} ult={style.ult} on={shownAb?.id} onPick={(ab) => setReading({ k: 'ability', id: ab.id })} onHover={(ab) => setReading({ k: 'ability', id: ab.id })} />
+              <BarRow bar={cur.bar} cls={cls} ult={style.ult} on={shownAb?.id} onPick={(ab, el) => lookAt({ k: 'ability', id: ab.id }, el)} onHover={(ab, el) => lookAt({ k: 'ability', id: ab.id }, el)} onLeave={away} />
             </div>
             {/* the combos the bar makes: what sets it up, what lands it, and how much more it does */}
             <div className="rb-rs-links" data-tut="combos" aria-label="Combos">
               {combos.map((c, i) => (
-                <button key={`${c.from.id}-${c.to.id}`} type="button" className={`rb-rs-link is-${c.kind}${readCombo === c ? ' is-read' : ''}`} onClick={() => setReading({ k: 'combo', i })} onMouseEnter={() => setReading({ k: 'combo', i })} onFocus={() => setReading({ k: 'combo', i })} aria-label={`${c.name}: ${c.from.name}, then ${c.to.name}`}>
+                <button key={`${c.from.id}-${c.to.id}`} type="button" className={`rb-rs-link is-${c.kind}${readCombo === c ? ' is-read' : ''}`} onClick={look({ k: 'combo', i })} onMouseEnter={look({ k: 'combo', i })} onFocus={look({ k: 'combo', i })} onMouseLeave={away} onBlur={away} aria-label={`${c.name}: ${c.from.name}, then ${c.to.name}`}>
                   <img src={iconPicture(c.from.icon)} alt="" draggable={false} />
                   <i aria-hidden="true">›</i>
                   <img src={iconPicture(c.to.icon)} alt="" draggable={false} />
@@ -278,7 +323,10 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
           </div>
 
           <div className="rb-rs-talents" data-tut="talents">
-            {ROW_NAMES.map((name, row) => (
+            {/* (a row only where the playstyle has one: the fourth, Venom, is the Nightblade's alone) */}
+            {ROW_NAMES.map((name, row) => ({ name, row }))
+              .filter(({ row }) => options.some((t) => t.row === row))
+              .map(({ name, row }) => (
               <div key={name} className="rb-rs-row" role="radiogroup" aria-label={name}>
                 <h4>{name}</h4>
                 <div className="rb-rs-nodes">
@@ -287,7 +335,21 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
                     .map((t) => {
                       const on = chosen.some((x) => x.id === t.id);
                       return (
-                        <button key={t.id} role="radio" aria-checked={on} aria-label={t.name} className={`rb-rs-node${on ? ' is-on' : ''}${readTalent === t ? ' is-read' : ''}`} onClick={() => pickTalent(t)} onMouseEnter={() => setReading({ k: 'talent', id: t.id })} onFocus={() => setReading({ k: 'talent', id: t.id })}>
+                        <button
+                          key={t.id}
+                          role="radio"
+                          aria-checked={on}
+                          aria-label={t.name}
+                          className={`rb-rs-node${on ? ' is-on' : ''}${readTalent === t ? ' is-read' : ''}`}
+                          onClick={(e) => {
+                            look({ k: 'talent', id: t.id })(e);
+                            pickTalent(t);
+                          }}
+                          onMouseEnter={look({ k: 'talent', id: t.id })}
+                          onFocus={look({ k: 'talent', id: t.id })}
+                          onMouseLeave={away}
+                          onBlur={away}
+                        >
                           <img src={talentIcon(t)} alt="" draggable={false} />
                           <strong>{t.name}</strong>
                         </button>
@@ -299,7 +361,8 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
           </div>
         </div>
 
-        {/* one tooltip for the whole page: whatever was last pointed at or tapped */}
+        {/* one tooltip for the whole page: whatever was last pointed at or tapped (beside the icons; or, where they are
+            too narrow for that, by the one pointed at, while it is) */}
         <aside className="rb-rs-read" aria-live="polite" data-tut="read">
           {readTalent ? <TalentTip t={readTalent} /> : readCombo ? <ComboTip c={readCombo} /> : <SpellTip ab={shownAb!} cls={cls} bar={cur.bar} talents={cur.talents} />}
         </aside>
@@ -369,7 +432,7 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
                 <b>Combos.</b> Every playstyle has one, made with its basic ability or its super: an ability hits much harder against a target you have set up, or spends points your basic ability built, or is lit by a boon for one use (light at the edges of the screen says you have one). Their cards say how, and so do your talents.
               </li>
               <li>
-                <b>Spells land. Circles can be left.</b> What is aimed at someone always hits them: quick ones at once, cast ones after a short flight. What is placed on the ground shows as a circle first, red when it is the other side’s.
+                <b>Spells land. Circles can be left.</b> What is aimed at someone always hits them: most quick ones at once, a thrown Frostfang and cast ones after a short flight. What is placed on the ground shows as a circle first, red when it is the other side’s.
               </li>
               <li>
                 <b>Healing spheres.</b> Green spheres rise around the ground. Walk into one when you are hurt and it gives back part of your health, then rises again a little later.
@@ -381,7 +444,7 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
                 <b>Pillars block sight.</b> Step behind one before a cast ends and it is lost, and a healer can’t reach who they can’t see.
               </li>
               <li>
-                <b>Casts, interrupts and holds.</b> Interrupt a cast to lock that school of magic for a few seconds. Stuns, fears, dazes, roots and silences are short and wear off faster each time; enough damage breaks a fear, a daze or a root.
+                <b>Casts, interrupts and holds.</b> Interrupt a cast to lock that school of magic for a few seconds. Stuns, fears, dazes, roots and silences are short, and each one has a cooldown; enough damage breaks a fear, a daze or a root.
               </li>
               <li>
                 <b>Healing fades.</b> From 35 seconds in, all healing and every shield gets weaker every second, until none is left: no match drags on. If only healers are left standing on both sides, it is sudden death: healing is gone at once and everything hits harder every second.

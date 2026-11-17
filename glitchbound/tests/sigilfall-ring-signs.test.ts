@@ -9,11 +9,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, BOONS, PRESETS, ultOf } from '../src/games/sigilfall/arena/abilities';
-import { GATES, Match, type Fighter, type FighterSetup } from '../src/games/sigilfall/arena/sim';
+import { flightTime, GATES, Match, type Fighter, type FighterSetup } from '../src/games/sigilfall/arena/sim';
 import { TALENTS } from '../src/games/sigilfall/arena/talents';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
-import { RingFx } from '../src/games/sigilfall/render/ring';
-import { drawBoon, drawFade, drawFlight, drawGlobe, drawPoints, drawSign, flightTime, hasFlight, hasSign, signAlone, signed, signTime, type Sign, type SignKind } from '../src/games/sigilfall/render/ringSigns';
+import { flyEase, RingFx } from '../src/games/sigilfall/render/ring';
+import { drawBoon, drawFade, drawFlight, drawGlobe, drawPoints, drawShatter, drawSign, hasFlight, hasSign, SHATTER_HOLD, SHATTER_T, signAlone, signed, signTime, type Sign, type SignKind } from '../src/games/sigilfall/render/ringSigns';
 import { FX, type Fx3D } from '../src/games/sigilfall/render3d/fx3d';
 
 const read = (p: string): string => fs.readFileSync(path.resolve(__dirname, '..', p), 'utf8');
@@ -142,10 +142,11 @@ describe('The Ring: every ability has a look of its own', () => {
     // (on a fighter it goes with them; a patch stays where it is)
     expect(fx.signs.map((s) => s.on)).toEqual([me.id, foe.id, foe.id, undefined]);
     expect(fx.signs[3]).toMatchObject({ x: 50, y: 60, r: 40 });
-    // a landing with a sign of its own is drawn in place of its school's burst (Frostfang keeps both, for Shatter)
+    // a landing with a sign of its own is drawn in place of its school's burst (Frostfang's bite too: its Shatter is
+    // drawn by itself, render/ringSigns.ts drawShatter)
     expect(signAlone('m-ring')).toBe(true);
-    expect(signAlone('m-fang')).toBe(false);
-    expect(fx.bursts).toHaveLength(1);
+    expect(signAlone('m-fang')).toBe(true);
+    expect(fx.bursts).toHaveLength(0);
     // and they run their time and are gone
     fx.age(0.5);
     expect(fx.signs.length).toBeGreaterThan(0);
@@ -237,7 +238,7 @@ describe('The Ring: what a mage throws is told apart in the air', () => {
     expect(strong.filter((x) => x.kind === FX.frost)).toHaveLength(2);
     expect(strong.some((x) => x.kind === FX.ring)).toBe(true);
     const ring = read('src/games/sigilfall/render/ring.ts');
-    expect(ring).toContain('(b.p?.k ?? 1) > 1.3)');
+    expect(ring).toContain('(b.p?.k ?? 1) > 1.3;');
   });
 
   it('nothing about a shot flickers: where its parts sit does not depend on where it is', () => {
@@ -287,30 +288,12 @@ describe('The Ring: what a mage throws is told apart in the air', () => {
   });
 });
 
-describe('The Ring: Frostfang is watched, not glimpsed', () => {
+describe('The Ring: Frostfang is watched, and lands as it is seen to', () => {
   // (the owner, 2026-11-17: "please add way better anims for frostfang, we need not such a fast bolt, make it fitting
-  // and animated")
-  it('it takes a third to half a second to cross, where the rest that land at once take a blink', () => {
-    expect(flightTime('m-fang', 30)).toBe(0.3);
-    expect(flightTime('m-fang', 120)).toBeCloseTo(0.4, 5);
-    expect(flightTime('m-fang', 400)).toBe(0.5);
-    expect(flightTime('m-burn', 120)).toBeUndefined();
-  });
-
-  it('its fangs form at the hand, swing wide of each other and close on the target', () => {
-    const at = (u: number): Quad[] => {
-      const s = sheet();
-      drawFlight(s.q, 'm-fang', 100, 100, 1, 0, 2, 1.3, 100 * u, false, u).valueOf();
-      return s.quads.filter((x) => x.kind === FX.frost);
-    };
-    const gap = (u: number): number => Math.abs(at(u)[0]!.y - at(u)[1]!.y);
-    expect(at(0.5)).toHaveLength(2);
-    expect(at(0.05)[0]!.w).toBeLessThan(at(0.5)[0]!.w);
-    expect(gap(0.5)).toBeGreaterThan(gap(0.1));
-    expect(gap(0.5)).toBeGreaterThan(gap(0.95) * 3);
-  });
-
-  it('the bite is seen when the fangs get there, and they follow whoever they were thrown at', () => {
+  // and animated"; and later that day, "frostfang animation looks bad imo, i want better animation for that, also idk if
+  // the dmg and the spell cast is desynced BUT, casting the spell with shatter doesnt feel like im hitting anything,
+  // make it impactful". It was desynced: what it did landed as it left the hand, its picture a third of a second later.)
+  const thrown = (): { m: Match; me: Fighter; foe: Fighter } => {
     const m = new Match({ seed: 3, map: 'sands', fighters: [{ team: 0, cls: 'mage', name: 'a', bar: PRESETS.mage[1]!.bar, talents: [] }, { team: 1, cls: 'warrior', name: 'b', bar: PRESETS.warrior[0]!.bar, talents: [] }] });
     m.step(GATES + 0.01, {});
     const [me, foe] = m.fighters as [Fighter, Fighter];
@@ -319,18 +302,140 @@ describe('The Ring: Frostfang is watched, not glimpsed', () => {
     foe.x = 220;
     foe.y = 120;
     me.target = foe.id;
+    foe.hp = foe.maxHp = 50000;
     m.events.length = 0;
+    return { m, me, foe };
+  };
+
+  it('it takes a third of a second or so to cross, however near or far, where the rest that land at once take a blink', () => {
+    const fang = ABILITIES['m-fang']!;
+    expect(flightTime(fang, 30)).toBe(fang.flight!.least);
+    expect(flightTime(fang, 120)).toBeCloseTo(120 / fang.flight!.per, 5);
+    expect(flightTime(fang, 400)).toBe(fang.flight!.most);
+    expect(fang.flight!.least).toBeGreaterThanOrEqual(0.25);
+    expect(fang.flight!.most).toBeLessThanOrEqual(0.45);
+    expect(flightTime(ABILITIES['m-burn']!, 120)).toBe(0);
+  });
+
+  it('nothing of it lands until the fang gets there: the hurt, the number, the bite and its sound all come together', () => {
+    const { m, me, foe } = thrown();
+    expect(m.press(me.id, 'm-fang')).toBeNull();
+    const fx = new RingFx();
+    const heard: string[] = [];
+    fx.take(m, (id) => void heard.push(id), me.id);
+    expect(foe.hp).toBe(50000);
+    expect(fx.pops).toHaveLength(0);
+    expect(fx.signs.some((s) => s.ab === 'm-fang' && s.k === 'land')).toBe(false);
+    // (thrown with a whistle, not the crunch of its landing)
+    expect(heard).toEqual(['spear']);
+    const dur = m.bolts[0]!.dur!;
+    expect(dur).toBeCloseTo(flightTime(ABILITIES['m-fang']!, 120), 5);
+    let t = 0;
+    while (m.bolts.length && t < 1) {
+      m.step(1 / 60, {});
+      t += 1 / 60;
+    }
+    expect(t).toBeCloseTo(dur, 1);
+    heard.length = 0;
+    fx.take(m, (id) => void heard.push(id), me.id);
+    expect(foe.hp).toBeLessThan(50000);
+    expect(fx.pops).toHaveLength(1);
+    expect(fx.signs.find((s) => s.ab === 'm-fang' && s.k === 'land')!.t).toBe(0);
+    // (ice breaking, not a ball of fire going off)
+    expect(heard).toContain('freeze');
+    expect(heard).not.toContain('explode');
+  });
+
+  it('it goes after whoever it was thrown at, and a root that wears off while it crosses doesn’t take its Shatter back', () => {
+    const { m, me, foe } = thrown();
+    foe.auras.push({ ab: 'l-roots', kind: 'cc', cc: 'root', src: 1, t: 0.05, dur: 2, harmful: true, magic: true, n: 0, took: 0 });
+    expect(m.press(me.id, 'm-fang')).toBeNull();
+    expect(m.bolts[0]!.p?.combo).toBe(true);
+    // (they walk off and the root runs out while it is on its way)
+    for (let i = 0; i < 40 && m.bolts.length; i++) m.step(1 / 60, { [foe.id]: { mx: 0, my: 1 } });
+    expect(foe.auras.some((a) => a.cc === 'root')).toBe(false);
+    expect(foe.y).toBeGreaterThan(121);
+    expect(m.events.some((e) => e.k === 'word' && e.word === 'Shatter')).toBe(true);
+  });
+
+  it('in the air: it forms at the hand, goes point first with splinters wound round it, quicker and quicker', () => {
+    const at = (u: number, strong = false): Quad[] => {
+      const s = sheet();
+      drawFlight(s.q, 'm-fang', 100, 100, 1, 0, 2, 1.3, 120 * flyEase(u), strong, u);
+      return s.quads;
+    };
+    const fangs = (u: number, strong = false): Quad[] => at(u, strong).filter((x) => x.kind === FX.frost);
+    // (a knot of cold at the hand first, and the fang grows out of it)
+    expect(at(0.05).some((x) => x.kind === FX.gather)).toBe(true);
+    expect(at(0.6).some((x) => x.kind === FX.gather)).toBe(false);
+    expect(fangs(0.05)[0]!.w).toBeLessThan(fangs(0.5)[0]!.w);
+    // (its point is turned off its root: a hooked tooth, not a straight spear)
+    const [root, tip] = fangs(0.5);
+    expect(Math.abs((tip!.rot ?? 0) - (root!.rot ?? 0))).toBeGreaterThan(0.2);
+    // (two splinters wind round it: where they are changes as it goes)
+    const ys = (u: number): number[] => fangs(u).slice(2).map((x) => Math.round(x.y));
+    expect(fangs(0.5)).toHaveLength(4);
+    expect(ys(0.4)).not.toEqual(ys(0.6));
+    // (slow off the hand, fast into them)
+    expect(flyEase(0.5)).toBeLessThan(0.35);
+    expect(flyEase(1) - flyEase(0.9)).toBeGreaterThan(2 * (flyEase(0.1) - flyEase(0)));
+    // one that will Shatter is bigger, and crackles
+    expect(fangs(0.5, true)[0]!.w).toBeGreaterThan(fangs(0.5)[0]!.w);
+    expect(at(0.5, true).some((x) => x.kind === FX.ring)).toBe(true);
+    expect(at(0.5).some((x) => x.kind === FX.ring)).toBe(false);
+    // (drawn where the rules have it and where its target's body is, from the hand on)
+    expect(read('src/games/sigilfall/render/ring.ts')).toContain('const end = to && !to.dead ? at(to) : { x: b.x, y: b.y + 8 };');
+  });
+
+  it('a Shatter: held in the ice, then it breaks, the shards thrown up and out and falling back, gone when its time is up', () => {
+    const at = (u: number): Quad[] => {
+      const s = sheet();
+      drawShatter(s.q, 100, 100, u, 0, 1.1);
+      return s.quads;
+    };
+    const hold = SHATTER_HOLD / SHATTER_T;
+    // (held: the ice over them, nothing thrown yet)
+    expect(at(hold * 0.5).some((x) => x.kind === FX.bubble)).toBe(true);
+    expect(at(hold * 0.5).some((x) => x.kind === FX.impact)).toBe(false);
+    // (it breaks: a flash, a ring of cold out over the ground, the ground cracked, shards out)
+    const broke = at(0.3);
+    for (const k of [FX.impact, FX.shock, FX.crack]) expect(broke.some((x) => x.kind === k), String(k)).toBe(true);
+    const shards = (u: number): Quad[] => at(u).filter((x) => x.kind === FX.frost);
+    expect(shards(0.3).length).toBeGreaterThanOrEqual(10);
+    const spread = (u: number): number => Math.max(...shards(u).map((x) => Math.hypot(x.x - 100, (x.y - 100) / 0.6)));
+    expect(spread(0.5)).toBeGreaterThan(spread(0.2));
+    // (they come back down: fewer in the air at the end than at the height of it)
+    expect(shards(0.98).length).toBeLessThan(shards(0.3).length);
+    for (const u of [0, 0.05, 0.2, 0.5, 0.8, 0.99]) {
+      const q = at(u);
+      expect(q.length).toBeLessThanOrEqual(60);
+      for (const x of q) for (const v of [x.x, x.y, x.w, x.up ?? 0, x.alpha ?? 1, x.t ?? 0, x.rot ?? 0]) expect(Number.isFinite(v)).toBe(true);
+    }
+    // (nothing so large it hides the fight)
+    for (const u of [0.15, 0.3, 0.6]) expect(Math.max(...at(u).map((x) => x.w))).toBeLessThanOrEqual(120);
+  });
+
+  it('a Shatter is felt: the burst on them, its own crunch, a number thrown up icy and big, and the body held a moment', () => {
+    const { m, me, foe } = thrown();
+    foe.auras.push({ ab: 'l-roots', kind: 'cc', cc: 'root', src: 1, t: 5, dur: 5, harmful: true, magic: true, n: 0, took: 0 });
     expect(m.press(me.id, 'm-fang')).toBeNull();
     const fx = new RingFx();
     fx.take(m, () => {}, me.id);
-    const zip = fx.zips.find((z) => z.ab === 'm-fang')!;
-    expect(zip).toMatchObject({ to: foe.id });
-    expect(zip.dur).toBeCloseTo(0.4, 5);
-    const bite = fx.signs.find((s) => s.ab === 'm-fang' && s.k === 'land')!;
-    expect(bite.t).toBeCloseTo(-0.4, 5);
-    fx.age(0.41);
-    expect(bite.t).toBeGreaterThan(0);
-    expect(read('src/games/sigilfall/render/ring.ts')).toContain('const end = aim && !aim.dead ? at(aim) : { x: z.x1, y: z.y1 };');
+    for (let i = 0; i < 40 && m.bolts.length; i++) m.step(1 / 60, {});
+    const heard: string[] = [];
+    fx.take(m, (id) => void heard.push(id), me.id);
+    expect(fx.shatters).toHaveLength(1);
+    expect(fx.shatters[0]).toMatchObject({ on: foe.id });
+    expect(heard).toContain('shatter');
+    const n = fx.pops.find((p) => !p.word)!;
+    expect(n).toMatchObject({ punch: true, big: true });
+    fx.age(SHATTER_T + 0.01);
+    expect(fx.shatters).toHaveLength(0);
+    // (the body is held still in the ice and flinches as it breaks; never the camera: render3d/ring3d.ts shatter)
+    const view = read('src/games/sigilfall/render3d/ring3d.ts');
+    expect(view).toMatch(/shatter\(id: number\): void \{[\s\S]{0,200}s\.stop = this\.still \? 0 : SHATTER_HOLD;/);
+    expect(view).not.toMatch(/shatter\(id: number\): void \{[^}]*this\.quake/);
+    expect(read('src/games/sigilfall/ui/RingMatch.tsx')).toContain("else if (e.k === 'word' && e.combo && e.word === 'Shatter') view.shatter(e.id);");
   });
 });
 

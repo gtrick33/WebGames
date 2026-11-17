@@ -132,24 +132,27 @@ describe('The Ring: a playstyle’s abilities are its own', () => {
 });
 
 describe('The Ring: talents are the playstyle’s to choose', () => {
-  it('three rows of three: two of the playstyle’s own, and the class’s', () => {
+  it('three rows of three: two of the playstyle’s own, and the class’s; and the Nightblade’s fourth, its venom', () => {
     for (const cls of CLASS_IDS) {
       for (const p of PRESETS[cls]) {
         const list = talentsFor(cls, p.id);
-        expect(list, `${cls} ${p.name}`).toHaveLength(9);
-        for (const row of [0, 1, 2] as const) {
+        // (the Nightblade alone has a fourth row: the venom its Nightknife carries, 2026-11-17)
+        const rows = cls === 'gloamknight' && p.id === 'shadow' ? ([0, 1, 2, 3] as const) : ([0, 1, 2] as const);
+        expect(list, `${cls} ${p.name}`).toHaveLength(rows.length * 3);
+        for (const row of rows) {
           const of = list.filter((t) => t.row === row);
           expect(of, `${p.name} row ${row}`).toHaveLength(3);
           for (const t of of) expect(t.spec, t.name).toBe(row === 2 ? undefined : p.id);
         }
         // what a talent changes by name is one of the playstyle's own abilities, or its super
-        for (const t of list) for (const id of Object.keys(t.tune ?? {})) expect([...p.bar, p.ult, 'super'], `${t.name} names ${id}`).toContain(id);
+        for (const t of list) for (const id of [...Object.keys(t.tune ?? {}), ...(t.via ? [t.via] : [])]) expect([...p.bar, p.ult, 'super'], `${t.name} names ${id}`).toContain(id);
         // the talents it comes with: one from each row, all its own to take
-        expect(cleanTalents(cls, p.talents, p.id).map((t) => t.row).sort()).toEqual([0, 1, 2]);
+        expect(cleanTalents(cls, p.talents, p.id).map((t) => t.row).sort()).toEqual([...rows]);
       }
-      expect(TALENTS[cls]).toHaveLength(15);
-      expect(new Set(TALENTS[cls].map((t) => t.id)).size).toBe(15);
-      expect(new Set(TALENTS[cls].map((t) => t.name)).size).toBe(15);
+      const n = cls === 'gloamknight' ? 18 : 15;
+      expect(TALENTS[cls]).toHaveLength(n);
+      expect(new Set(TALENTS[cls].map((t) => t.id)).size).toBe(n);
+      expect(new Set(TALENTS[cls].map((t) => t.name)).size).toBe(n);
     }
   });
 

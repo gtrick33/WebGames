@@ -13,7 +13,7 @@ import { RANGED, type Fighter, type Match } from './sim';
  *   and all but always at the top: the super kept for a moment that counts (`holdSuper`, from 0.35), interrupts kept for
  *   what is worth one and thrown late in the cast (`lateKick`), a swap onto a healer in trouble and off whoever is
  *   behind a wall of defensives (`focusBias`, `armored`), defensives kept for real danger and used even while stunned
- *   (`guard`, `brace`), holds on the healer timed with the kill and chained without walking into diminishing returns
+ *   (`guard`, `brace`), holds on the healer timed with the kill and chained one after another as each wears off
  *   (`chainHealer`), and holds on whoever is on a friend in trouble (`peel`);
  * - and all the way up, the next button is pressed sooner after the global cooldown comes up (`nextLook`).
  *
@@ -80,8 +80,6 @@ const ccOf = (a: Ability): CcKind | null => {
   const e = a.effects.find((x) => x.k === 'cc');
   return e && e.k === 'cc' ? e.cc : null;
 };
-/** How many times a kind of hold has already landed on them lately (each one after the first lasts half as long). */
-const drOn = (m: Match, o: Fighter, kind: CcKind): number => (o.dr[kind] && o.dr[kind]!.until > m.clock ? o.dr[kind]!.n : 0);
 const holdLeft = (o: Fighter): number => Math.max(0, ...o.auras.filter((a) => a.cc && a.cc !== 'root' && a.cc !== 'silence').map((a) => a.t));
 
 /** Under something that makes a burst wasted: immune, or behind a big guard or ward. */
@@ -260,12 +258,12 @@ export function brace(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fi
 
 /* ------------------------------------------------------------------ holds */
 
-/** A hold of theirs that could land on `on` now, not much shortened by diminishing returns (`dr`: how far down to go). */
-function holdFor(m: Match, f: Fighter, on: Fighter, kinds: CcKind[], dr: number): Ability | null {
+/** A hold of theirs of one of these kinds that could land on `on` now. */
+function holdFor(m: Match, f: Fighter, on: Fighter, kinds: CcKind[]): Ability | null {
   for (const ab of bar(f)) {
     if (ab.role !== 'cc' || ab.aim === 'self' || ab.aim === 'ground') continue;
     const kind = ccOf(ab);
-    if (!kind || !kinds.includes(kind) || drOn(m, on, kind) > dr) continue;
+    if (!kind || !kinds.includes(kind)) continue;
     if (ab.aim === 'near' ? dist(on, f) > ab.range : m.blocked(f, ab, on)) continue;
     if (ab.aim === 'near' && m.blocked(f, ab)) continue;
     return ab;
@@ -283,9 +281,8 @@ function holdOn(m: Match, f: Fighter, on: Fighter, ab: Ability): boolean {
 
 /**
  * The healer held while the kill is on: when the target is low, or held and hurt, the other side's healer gets a hold,
- * and as one wears off the next goes on (a kind that hasn't landed on them lately, or one that has once when the kill
- * is close), never into immunity, never on top of a hold still running, and nothing broken by damage on someone
- * burning. True if it held someone.
+ * and as one wears off the next goes on, never into immunity, never on top of a hold still running, and nothing broken
+ * by damage on someone burning. True if it held someone.
  */
 export function chainHealer(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter[], target: Fighter): boolean {
   const healer = enemies.find((e) => healerLike(e) && e !== target && !e.pet);
@@ -295,7 +292,7 @@ export function chainHealer(m: Match, f: Fighter, b: Brain, skill: number, enemi
   if (!kill || holdLeft(healer) > 0.35 || !knows(b, skill)) return false;
   // (a hold broken by damage only on someone nobody is hitting)
   const kinds: CcKind[] = healer.auras.some((a) => a.kind === 'dot') ? ['stun', 'silence'] : ['stun', 'incap', 'fear', 'silence'];
-  const ab = holdFor(m, f, healer, kinds, hp(target) < 0.3 ? 1 : 0);
+  const ab = holdFor(m, f, healer, kinds);
   return !!ab && holdOn(m, f, healer, ab);
 }
 
@@ -305,7 +302,7 @@ export function peel(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fig
     if (a === f || a.dead || hp(a) > 0.35) continue;
     const on = enemies.find((e) => !e.pet && e.target === a.id && dist(e, a) < 50 && !m.held(e) && !e.auras.some((x) => x.kind === 'immune'));
     if (!on || !knows(b, skill, 0.5)) continue;
-    const ab = holdFor(m, f, on, ['stun', 'root', 'fear', 'incap'], 1);
+    const ab = holdFor(m, f, on, ['stun', 'root', 'fear', 'incap']);
     if (ab && holdOn(m, f, on, ab)) return true;
   }
   return false;

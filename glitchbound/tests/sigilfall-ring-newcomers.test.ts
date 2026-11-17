@@ -133,15 +133,18 @@ describe('The Ring for newcomers: hints and lessons', () => {
 
 describe('The Ring for newcomers: the tutorial', () => {
   it('shows the lobby in three cards, each screen with every part of it labeled at once', () => {
-    // (the owner, 2026-11-15: shorter, and "show everything initially, i dont want stage by stage unlocking")
+    // (the owner, 2026-11-15: shorter, and "show everything initially, i dont want stage by stage unlocking"; and
+    // 2026-11-17 the setup is the main screen: the class and its playstyles, the rest of the setup, then the fight)
     const ids = LOBBY_STEPS.map((s) => s.id);
-    expect(ids).toEqual(['welcome', 'styles', 'kit']);
+    expect(ids).toEqual(['welcome', 'kit', 'fight']);
     const spots = LOBBY_STEPS.flatMap((s) => (s.labels ?? []).map((l) => l.spot));
-    for (const want of ['classes', 'formats', 'rank', 'arena', 'loadout', 'bar', 'combos', 'talents']) expect(spots).toContain(want);
+    for (const want of ['classes', 'styles', 'fight', 'go', 'formats', 'rank', 'arena', 'bar', 'combos', 'talents']) expect(spots).toContain(want);
     for (const s of LOBBY_STEPS) for (const l of s.labels ?? []) expect(l.text.length, l.spot).toBeLessThan(40);
-    // (the setup page is one page: the playstyles, then the rest of it, labeled)
-    expect(LOBBY_STEPS.filter((s) => s.page === 'setup').map((s) => s.id)).toEqual(['styles', 'kit']);
+    // (all of it on the main screen; the fight's step opens the layer where the fight is chosen)
+    expect(LOBBY_STEPS.every((s) => s.page === 'play')).toBe(true);
+    expect(LOBBY_STEPS.filter((s) => s.layer === 'play').map((s) => s.id)).toEqual(['fight']);
     expect(LOBBY_STEPS.find((s) => s.id === 'kit')!.text('mage')).toMatch(/talents/);
+    expect(LOBBY_STEPS.at(-1)!.text('mage')).toMatch(/practice fight/);
     for (const s of LOBBY_STEPS) for (const cls of CLASS_IDS) expect(s.text(cls).length).toBeGreaterThan(20);
     expect(LOBBY_STEPS.some((s) => /momentum|extras|oath/i.test(s.text('warrior')))).toBe(false);
   });
@@ -150,12 +153,13 @@ describe('The Ring for newcomers: the tutorial', () => {
   // to press, i could open different tabs and the tutorial keeps the text and theres bugs"
   it('while a lobby step is read, only the parts it is about can be used', () => {
     const allow = Object.fromEntries(LOBBY_STEPS.map((s) => [s.id, [...s.allow]]));
-    // (a class and a fight on the main screen: not the setup, not friends, not the tutorial's own button again)
-    expect(allow.welcome).toEqual(['classes', 'formats']);
-    expect(allow.styles).toEqual(['styles']);
+    // (a class and a playstyle on the main screen; the setup; a fight in its layer: not friends, not the tutorial's
+    // own button again)
+    expect(allow.welcome).toEqual(['classes', 'styles']);
     expect(allow.kit).toEqual(['styles', 'bar', 'combos', 'talents']);
-    // every part allowed is a part of that step's own page, marked in it
-    const pages = { play: read('src/games/sigilfall/ui/RingScreen.tsx'), setup: read('src/games/sigilfall/ui/RingSetup.tsx') };
+    expect(allow.fight).toEqual(['formats']);
+    // every part allowed is a part of the main screen, marked in it (the setup on it is ui/RingSetup.tsx's editor)
+    const pages = { play: read('src/games/sigilfall/ui/RingScreen.tsx') + read('src/games/sigilfall/ui/RingSetup.tsx') };
     for (const s of LOBBY_STEPS) for (const spot of s.allow) expect(pages[s.page], `${s.id}: ${spot}`).toContain(`data-tut="${spot}"`);
     // the lock is on for as long as a step is read, and a step is read only over its own page
     const screen = pages.play;

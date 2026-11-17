@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { TitleShown } from '../progress/titles';
 import { useGameMenu } from '../../../components/GameMenuButton';
-import { ABILITIES, BOONS, SLOTS, type Ability, type CcKind } from '../arena/abilities';
+import { ABILITIES, BOONS, SLOTS, type Ability } from '../arena/abilities';
 import { botThink, newBrain, steerTo } from '../arena/bot';
 import { LEAVER_K, type ClassSets } from '../arena/ladder';
 import { hintNow, keepLog, lessonOf, newLog, type HintKeys } from '../arena/lessons';
 import { TutorialRun, type TutorialKeys } from '../arena/tutorial';
 import { lookOf } from '../arena/look';
 import { MAPS } from '../arena/maps';
-import { HERO_R, Match, MATCH_LIMIT, PACE, type Aura, type DrState, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
+import { HERO_R, Match, MATCH_LIMIT, PACE, type Aura, type Fighter, type MatchSetup, type MoveInput, type Snapshot } from '../arena/sim';
 import { playstyleOf } from '../arena/styles';
 import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
@@ -65,40 +65,6 @@ const clock = (t: number): string => {
 };
 
 const CC_WORD: Record<string, string> = { stun: 'Stunned', fear: 'Feared', incap: 'Dazed', root: 'Rooted', silence: 'Silenced' };
-const DR_MARK = ['', '½', '¼', '✕'];
-/** What the next hold of a kind does, by how many have landed: half as long, a quarter, or nothing at all. */
-const DR_NEXT = ['', 'the next lasts half as long', 'the next lasts a quarter as long', 'immune to the next'];
-/** Each kind of hold's picture, for diminishing returns from a host that didn't say what put them on. */
-const DR_ICON: Record<CcKind, string> = { stun: 'd-hammer', fear: 'p-wail', incap: 'm-toad', root: 'l-roots', silence: 'p-hush' };
-
-/**
- * Diminishing returns, one round chip for each kind of hold that wears off faster on them now (the owner: "add
- * diminishing return tracker on the enemies on the nameplates, should be small but visible - e.g mage's hex"): the
- * picture of what put the last on them (a Toad Hex for a daze), rimmed yellow when the next lasts half as long, orange
- * a quarter, red when they can't be held that way at all, with the rim running down until it is forgotten.
- */
-function DrChips({ f, m }: { f: Fighter; m: Match }) {
-  const now = (Object.entries(f.dr) as [CcKind, DrState | undefined][]).filter((e): e is [CcKind, DrState] => !!e[1] && e[1].until > m.clock && e[1].n > 0);
-  if (!now.length) return null;
-  return (
-    <span className="rb-ring-drs">
-      {now.map(([k, d]) => {
-        const stage = Math.min(d.n, DR_MARK.length - 1);
-        const left = d.until - m.clock;
-        const share = d.at !== undefined && d.until > d.at ? Math.max(0, Math.min(1, left / (d.until - d.at))) : 1;
-        const shown = d.ab && lookOf(d.ab) ? d.ab : DR_ICON[k];
-        const look = lookOf(shown)!;
-        return (
-          <i key={k} className={`is-dr${stage}`} data-ab={shown} style={{ ['--left' as string]: share.toFixed(3) }} title={`${CC_WORD[k]} (${look.name}): ${DR_NEXT[stage]}, for ${Math.ceil(left)}s`}>
-            <img src={iconPicture(look.icon)} alt="" draggable={false} />
-            <em>{DR_MARK[stage]}</em>
-          </i>
-        );
-      })}
-    </span>
-  );
-}
-
 /** What an effect does to whoever carries it, in a word or two. */
 const auraWord = (a: Aura): string => {
   const pct = `${Math.round(a.n * 100)}%`;
@@ -216,7 +182,6 @@ export function Frame({ f, m, me, doll, tag, onPick, flip, title, frame }: { f: 
         </span>
         <span className="rb-ring-under">
           <AuraIcons f={f} />
-          {!veiled && <DrChips f={f} m={m} />}
         </span>
       </span>
     </button>
@@ -784,7 +749,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         if (!f || !d || typeof d !== 'object') return;
         const q = d as { mx?: unknown; my?: unknown; p?: unknown; at?: unknown; tg?: unknown; eq?: { bar?: unknown; talents?: unknown; ult?: unknown } };
         const eq = q.eq;
-        if (eq && Array.isArray(eq.bar) && eq.bar.length <= 12 && eq.bar.every((b) => typeof b === 'string')) m.equip(f.id, { bar: eq.bar as string[], talents: Array.isArray(eq.talents) ? (eq.talents.filter((b) => typeof b === 'string').slice(0, 3) as string[]) : [], ult: typeof eq.ult === 'string' ? eq.ult : undefined });
+        if (eq && Array.isArray(eq.bar) && eq.bar.length <= 12 && eq.bar.every((b) => typeof b === 'string')) m.equip(f.id, { bar: eq.bar as string[], talents: Array.isArray(eq.talents) ? (eq.talents.filter((b) => typeof b === 'string').slice(0, 4) as string[]) : [], ult: typeof eq.ult === 'string' ? eq.ult : undefined });
         if (typeof q.mx === 'number' && typeof q.my === 'number' && Number.isFinite(q.mx) && Number.isFinite(q.my)) others[f.id] = { mx: Math.max(-1, Math.min(1, q.mx)), my: Math.max(-1, Math.min(1, q.my)) };
         // (press checks it's on their bar, and the rules, as for anyone)
         // (a placed ability comes with where: two plain numbers, which the rules bring into reach and sight)
@@ -833,6 +798,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       for (let i = reacted; i < m.events.length; i++) {
         const e = m.events[i]!;
         if (e.k === 'ab') view.swing(e.id, e.ab, m.fighters[e.id]?.cast?.ab === e.ab);
+        // (Frostfang's Shatter: held still in the ice for a moment, then it breaks: ring3d.ts shatter)
+        else if (e.k === 'word' && e.combo && e.word === 'Shatter') view.shatter(e.id);
         // (a blow that took a real bite, not a curse's tick)
         else if (e.k === 'num' && e.kind === 'dmg' && e.n >= 26) {
           view.hurt(e.id, e.crit || e.n >= 110);

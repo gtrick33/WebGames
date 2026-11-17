@@ -952,7 +952,8 @@ describe('The Ring: a combo is taught as what it is', () => {
     expect(foe.auras.some((a) => a.cc === 'stun')).toBe(true);
     me.gcd = 0;
     expect(m.press(0, 'm-fang')).toBeNull();
-    run(m, tut, 0.1);
+    // (the fang is seen crossing, and the lesson is learnt as it lands)
+    run(m, tut, 0.5);
     expect(tut.id).toBe('circle');
   });
 

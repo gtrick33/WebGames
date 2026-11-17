@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ABILITIES } from '../arena/abilities';
 import { rankOf } from '../arena/ranks';
+import { RING_REWARDS } from '../arena/rewards';
 import { CHALLENGE_TITLES, dailyOf, dayEnds, dayKey, frameOf, MASTERY_STEPS, masteryWins, seasonEnds, seasonOf, TRACK_POINTS, trackOf, trackPlace, weekEnds, weekKey, weeklyOf, type Challenge, type ChallengeRun, type RingRecord, type TrackReward } from '../arena/record';
 import { CLASSES, CLASS_IDS } from '../data/classes';
 import { classEmblem } from './classEmblem';
@@ -12,7 +13,8 @@ import { iconPicture } from '../render/art/gameIcons';
  * the last matches, each on its own tab of one window.
  */
 
-type Tab = 'challenges' | 'mastery' | 'season' | 'history';
+export type ProgressTab = 'challenges' | 'mastery' | 'season' | 'history';
+type Tab = ProgressTab;
 
 /** How long until a time, in a few words ("5h 12m", "3 days"). */
 export function until(at: number, now: number): string {
@@ -197,8 +199,58 @@ export function SeasonTrack({ points, n: sn, now, earned }: { points: number; n:
   );
 }
 
-export function ProgressDialog({ record, onClose }: { record: RingRecord; onClose: () => void }) {
-  const [tab, setTab] = useState<Tab>('challenges');
+/**
+ * The record at a glance on the Ring's main screen, each part a way into its own page (the owner, 2026-11-17: "make sure
+ * the progress, challenges, history and etc are present in the main screen as well"): how many of today's and this
+ * week's challenges are done, how many classes are mastered, the season's points, the last few matches won and lost,
+ * and the next reward of the climb. The same window of the record opens on the page pressed (ProgressDialog `tab`), and
+ * the rewards their own; the layer where the fight is chosen keeps its strips of both as well.
+ */
+export function RecordBar({ record, best, onOpen, onRewards }: { record: RingRecord; best: number; onOpen: (tab: Tab) => void; onRewards: () => void }) {
+  const [now] = useState(() => Date.now());
+  const count = challengeCount(record, now);
+  const mastered = CLASS_IDS.filter((c) => masteryWins(record, c) >= MASTERY_STEPS[0]!.wins).length;
+  const sn = seasonOf(now);
+  const points = (record.season?.n === sn ? record.season.points : 0) ?? 0;
+  const last = (record.history ?? []).slice(0, 5);
+  const next = RING_REWARDS.find((r) => r.at > best);
+  const pill = (key: string, icon: string, name: string, value: ReactNode, onClick: () => void, said: string) => (
+    <button key={key} type="button" className={`rb-rec is-${key}`} onClick={onClick} aria-label={said} title={said}>
+      <img src={iconPicture(icon)} alt="" draggable={false} />
+      <span>
+        <b>{name}</b>
+        <small>{value}</small>
+      </span>
+    </button>
+  );
+  return (
+    <nav className="rb-ringvl-record" aria-label="Your record" data-tut="record">
+      {pill('challenges', 'scholar_scroll_on_violet', 'Challenges', `${count.done}/${count.of}`, () => onOpen('challenges'), `Challenges: ${count.done} of ${count.of} done`)}
+      {pill('mastery', 'radiant_crown_of_light_on_gold', 'Mastery', `${mastered}/${CLASS_IDS.length}`, () => onOpen('mastery'), `Mastery: ${mastered} of ${CLASS_IDS.length} classes`)}
+      {pill('season', 'war_banner_on_a_pole_with_a_red_pattern_on_red', `Season ${sn}`, `${n(points)} pts`, () => onOpen('season'), `Season ${sn}: ${points} points`)}
+      {pill(
+        'history',
+        'dark_tome_open_on_black',
+        'History',
+        last.length ? (
+          <span className="rb-rec-dots" aria-hidden="true">
+            {last.map((h) => (
+              <i key={h.at} className={h.draw ? 'is-draw' : h.won ? 'is-win' : 'is-loss'} />
+            ))}
+          </span>
+        ) : (
+          'No matches'
+        ),
+        () => onOpen('history'),
+        last.length ? `History: the last ${last.length} matches, ${last.filter((h) => h.won).length} won` : 'History: no matches yet',
+      )}
+      {pill('rewards', 'crit_up_status_star_burst_on_gold', 'Rewards', next ? `Next at ${next.at}` : 'All earned', onRewards, next ? `Rewards: the next, ${next.rank}, at ${next.at}` : 'Rewards: all earned')}
+    </nav>
+  );
+}
+
+export function ProgressDialog({ record, onClose, tab: first = 'challenges' }: { record: RingRecord; onClose: () => void; tab?: Tab }) {
+  const [tab, setTab] = useState<Tab>(first);
   const [now] = useState(() => Date.now());
   const daily = record.daily?.key === dayKey(now) ? record.daily : undefined;
   const weekly = record.weekly?.key === weekKey(now) ? record.weekly : undefined;

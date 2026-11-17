@@ -56,9 +56,11 @@ function run(m: Match, seconds: number, moves: Record<number, MoveInput> = {}): 
 }
 
 describe('The Ring: what is aimed at someone lands on them', () => {
-  it('only a spell with a cast, or a super, flies; everything quick lands at once', () => {
+  it('only a spell with a cast, a super, or a throw to be watched flies; everything else quick lands at once', () => {
     for (const ab of EVERY) {
-      if (ab.bolt) expect(ab.cast > 0 || !!ab.super, `${ab.id} flies`).toBe(true);
+      if (ab.bolt) expect(ab.cast > 0 || !!ab.super || !!ab.flight, `${ab.id} flies`).toBe(true);
+      // (a throw to be watched is quick all the same: under half a second, whatever the distance)
+      if (ab.flight) expect(ab.flight.most, ab.id).toBeLessThanOrEqual(0.5);
       if (ab.zip) {
         expect(ab.cast, ab.id).toBe(0);
         expect(ab.bolt, ab.id).toBeFalsy();
