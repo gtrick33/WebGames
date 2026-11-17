@@ -1383,8 +1383,10 @@ export class Match {
     }
     // (a paladin's hand of freedom shakes a slow off at once, now and then)
     if (a.kind === 'slow' && a.harmful && this.freed(t)) return { ...a, t: 0 };
-    // the same thing from the same hand refreshes rather than stacks
-    const same = t.auras.findIndex((o) => o.ab === a.ab && o.kind === a.kind && o.src === a.src);
+    // the same thing from the same hand refreshes rather than stacks. (Two holds of different kinds are not the same
+    // thing: a Nightblade's Dusk Ambush stuns, and with Throat Cut silences too, and the silence took the stun's place
+    // the moment it landed. The owner, 2026-11-17: "rogues still dont stun, the target keeps moving".)
+    const same = t.auras.findIndex((o) => o.ab === a.ab && o.kind === a.kind && o.cc === a.cc && o.src === a.src);
     if (same >= 0) t.auras.splice(same, 1);
     const aura: Aura = { ...a, t: a.dur };
     t.auras.push(aura);
@@ -1624,7 +1626,7 @@ export class Match {
     const lasts = dur * DR_STEPS[dr.n]! * t.mods.tenacity * (1 - (resolve?.d.pct ?? 0));
     if (!ab.noDr) t.dr[cc] = { n: dr.n + 1, until: this.clock + lasts + DR_RESET, at: this.clock, ab: ab.id };
     t.auras = t.auras.filter((a) => a.cc !== cc);
-    this.addAura(t, { ab: ab.id, src: f.id, dur: lasts, magic: ab.school !== 'physical', n: 0, kind: 'cc', harmful: true, cc, took: 0, ...(cc === 'root' && ab.shatter ? { shatters: ab.shatter } : {}) });
+    this.addAura(t, { ab: ab.id, src: f.id, dur: lasts, magic: ab.school !== 'physical' && !ab.sticky, n: 0, kind: 'cc', harmful: true, cc, took: 0, ...(cc === 'root' && ab.shatter ? { shatters: ab.shatter } : {}) });
     f.score.cc += lasts;
     t.dash = null;
     if (cc !== 'root' && t.cast) this.endCast(t);

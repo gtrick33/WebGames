@@ -254,6 +254,14 @@
  * 53%), on top of what they were given earlier in the day, and a duel without healers shows the Reaper (31%) and the
  * Longbow (36%) behind and the Rime (66%) ahead by more than the old column did. None of that was tuned here. The
  * pairs table Random reads was measured again (arena/teammates.ts); the threes were not.
+ *
+ * Then the Nightblade's stun, which had never held (2026-11-17, the owner: "rogues still dont stun, the target keeps
+ * moving ... increase atun from 1.5s to 2s make sure it actually stuns"). With its ready-made talents Dusk Ambush also
+ * silences, and the silence took the stun's place as both landed (tests/sigilfall-ring-held.test.ts): against every
+ * playstyle its stuns had lasted 0.03 to 0.16 of their 1.5 seconds. Both now stay on, and the stun is 2 seconds. That
+ * alone took the Nightblade from 55/53/57 to 59/59/59, so its own blows came down about 4% (Nightknife 28 for 29,
+ * Closing Cut 22 for 23, Dusk Ambush 38 for 40, Night's Ruin 102 for 107): 54/54/56 after, on the same measure. At 6%
+ * less it was 56/52/54. Nobody else moved by more than two points.
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';
