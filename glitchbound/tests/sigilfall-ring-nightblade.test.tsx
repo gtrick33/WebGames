@@ -7,6 +7,7 @@
  * other type should be melee, difficulty text should be one word only with its respective color".
  */
 import fs from 'node:fs';
+import { fireEvent, render } from '@testing-library/react';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';
@@ -14,6 +15,9 @@ import { fullTalents, ROW_NAMES, TALENT_BY_ID, talentsFor } from '../src/games/s
 import { CLASS_EASE, CLASS_WAY, EASE_WORD } from '../src/games/sigilfall/arena/styles';
 import { GATES, Match, type Fighter } from '../src/games/sigilfall/arena/sim';
 import { cleanPick } from '../src/games/sigilfall/net/ringRoom';
+import { LOBBY_STEPS } from '../src/games/sigilfall/arena/tutorial';
+import type { MatchEntry } from '../src/games/sigilfall/arena/record';
+import { ProgressDialog, RecordBar, type ProgressTab } from '../src/games/sigilfall/ui/RingProgress';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 
 const STEP = 1 / 30;
@@ -180,5 +184,38 @@ describe('The Ring’s lobby: melee or ranged, and how hard in one word and its 
     const main = screen.slice(screen.indexOf("{page === 'play' && ("), screen.indexOf('<footer className="rb-vlobby-foot rb-ringvl-go">'));
     expect(main).toContain('<WearPicker engine={engine} cls={pick}');
     expect(main).toContain('onClick={() => setLooksOpen(true)}');
+  });
+});
+
+describe('The Ring’s main screen: the record at a glance', () => {
+  // the owner, 2026-11-17: "make sure the progress, challenges, history and etc are present in the main screen as well"
+  const entry = (at: number, won: boolean, draw = false): MatchEntry => ({ at, format: 1, cls: 'warrior', won, draw, change: null, rating: null, dmg: 0, heal: 0, combos: 0, kicks: 0 });
+
+  it('challenges, mastery, the season, the last matches and the next reward, each opening its own page', () => {
+    const opened: ProgressTab[] = [];
+    let rewards = 0;
+    const record = { history: [entry(5, true), entry(4, false), entry(3, true), entry(2, false, true), entry(1, true), entry(0, true)] };
+    const { container } = render(<RecordBar record={record} best={1000} onOpen={(t) => opened.push(t)} onRewards={() => rewards++} />);
+    const pills = [...container.querySelectorAll<HTMLButtonElement>('.rb-ringvl-record .rb-rec')];
+    expect(pills.map((b) => b.className.replace('rb-rec is-', ''))).toEqual(['challenges', 'mastery', 'season', 'history', 'rewards']);
+    for (const b of pills) fireEvent.click(b);
+    expect(opened).toEqual(['challenges', 'mastery', 'season', 'history']);
+    expect(rewards).toBe(1);
+    // (the last five matches, newest first, as dots: won, lost, drawn)
+    expect([...container.querySelectorAll('.rb-rec-dots i')].map((i) => i.className)).toEqual(['is-win', 'is-loss', 'is-win', 'is-draw', 'is-win']);
+    expect(container.querySelector('.rb-rec.is-challenges small')!.textContent).toMatch(/^\d+\/\d+$/);
+    expect(container.querySelector('.rb-rec.is-rewards small')!.textContent).toMatch(/^Next at \d+$/);
+  });
+
+  it('it stands in the main screen’s head; the window of the record opens on the page pressed', () => {
+    const screen = read('src/games/sigilfall/ui/RingScreen.tsx');
+    const head = screen.slice(screen.indexOf("<header className={lobby ? 'rb-vlobby-head' : 'rb-rp-head'}>"), screen.indexOf('</header>'));
+    expect(head).toContain('{lobby && <RecordBar record={save.record ?? {}} best={bestRating()} onOpen={setProgressOpen} onRewards={() => setRewardsOpen(true)} />}');
+    expect(screen).toContain('<ProgressDialog record={save.record ?? {}} tab={progressOpen} onClose={() => setProgressOpen(false)} />');
+    const { container } = render(<ProgressDialog record={{ history: [entry(1, true)] }} tab="history" onClose={() => {}} />);
+    expect(container.querySelector('[role="tab"][aria-selected="true"]')!.textContent).toMatch(/^History/);
+    // (and the tutorial's first card names it)
+    expect(LOBBY_STEPS[0]!.labels!.some((l) => l.spot === 'record')).toBe(true);
+    expect(read('src/games/sigilfall/ui/RingProgress.tsx')).toContain('data-tut="record"');
   });
 });

@@ -70,6 +70,7 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
       { spot: 'styles', text: 'Its two playstyles', right: true },
       { spot: 'fight', text: 'Your fight' },
       { spot: 'go', text: 'Find a match', right: true },
+      { spot: 'record', text: 'Challenges, season, history', right: true },
     ],
     // (a class and a playstyle may be chosen; the way on is the tutorial's own Next)
     allow: ['classes', 'styles'],

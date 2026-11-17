@@ -12211,6 +12211,105 @@ html.rb-touch-playing textarea {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+/* the record at a glance in the main screen's head (ui/RingProgress.tsx RecordBar): challenges, mastery, the season,
+   the last matches and the next reward, each a way into its own page (the owner, 2026-11-17: "make sure the progress,
+   challenges, history and etc are present in the main screen as well") */
+.rb-ringvl-record {
+  display: flex;
+  flex: 0 1 auto;
+  gap: 5px;
+  min-width: 0;
+}
+.rb-rec {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 3px 10px 3px 4px;
+  border: 1.5px solid rgb(255 255 255 / 0.14);
+  border-radius: 10px;
+  color: #efe6d4;
+  text-align: left;
+  background: rgb(14 9 28 / 0.8);
+  cursor: pointer;
+  transition: border-color 0.12s, transform 0.12s;
+}
+.rb-rec img {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  image-rendering: pixelated;
+}
+.rb-rec > span {
+  display: grid;
+  min-width: 0;
+}
+.rb-rec b {
+  color: #ffe39a;
+  font: 700 11.5px/1.15 Georgia, 'Times New Roman', serif;
+  white-space: nowrap;
+}
+.rb-rec small {
+  overflow: hidden;
+  color: #e4dccd;
+  font: 700 11px/1.25 system-ui, sans-serif;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rb-rec:hover,
+.rb-rec:focus-visible {
+  border-color: #ffd257;
+  transform: translateY(-1px);
+}
+.rb-rec-dots {
+  display: inline-flex;
+  gap: 3px;
+  vertical-align: -1px;
+}
+.rb-rec-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8a8496;
+}
+.rb-rec-dots i.is-win {
+  background: #7ee36a;
+}
+.rb-rec-dots i.is-loss {
+  background: #ff5a5a;
+}
+/* (narrower: the head's line under the title gives way to the record, then each part keeps its picture and its count) */
+@container (max-width: 1180px) {
+  .rb-ringvl .rb-vlobby-head p {
+    display: none;
+  }
+}
+@container (max-width: 860px) {
+  .rb-ringvl-record {
+    gap: 3px;
+  }
+  .rb-rec {
+    gap: 4px;
+    padding: 2px 7px 2px 3px;
+  }
+  .rb-rec b {
+    display: none;
+  }
+  .rb-rec img {
+    width: 22px;
+    height: 22px;
+  }
+}
+@container (max-width: 520px) {
+  .rb-rec small {
+    display: none;
+  }
+  .rb-rec {
+    padding: 2px;
+  }
+}
+
 /* the foot: the fight chosen, always in sight, beside the gold button; pressed, the layer where it is chosen */
 .rb-ringvl .rb-vlobby-foot {
   align-items: stretch;

@@ -35,7 +35,7 @@ import { bestFits, bestPreset, choiceFromWord, choicesFor, choiceWord, fillSide,
 import { cleanTitle, isTitleFx } from '../../../catalog/titleFx';
 import { rankFx, type TitleShown } from '../progress/titles';
 import { frameOf, framesOwned, recordMatch, trackGain, turnSeason, type TrackGain } from '../arena/record';
-import { ProgressDialog, ProgressLink } from './RingProgress';
+import { ProgressDialog, ProgressLink, RecordBar, type ProgressTab } from './RingProgress';
 import { ArenaChoice } from './RingArena';
 
 const roomErrors: Record<string, string> = { full: 'That room is full.', in_run: 'That room is already in a match.' };
@@ -281,7 +281,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const [tut, setTut] = useState<number | null>(null);
   const [tutFight, setTutFight] = useState<{ setup: MatchSetup } | null>(null);
   const [rewardsOpen, setRewardsOpen] = useState(false);
-  const [progressOpen, setProgressOpen] = useState(false);
+  /** The record's window, open on one of its pages (the main screen's record bar opens each on its own). */
+  const [progressOpen, setProgressOpen] = useState<ProgressTab | false>(false);
   // a season that turned since the player last came: its bests put by, each rating halfway back toward 1000
   // (arena/record.ts turnSeason; a record that never saw a season starts in this one, with nothing changed)
   useEffect(() => {
@@ -810,6 +811,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
             <h2>{title}</h2>
             <p>{sub}</p>
           </div>
+          {/* (the record at a glance, each part a way into its page: challenges, mastery, the season, history, rewards) */}
+          {lobby && <RecordBar record={save.record ?? {}} best={bestRating()} onOpen={setProgressOpen} onRewards={() => setRewardsOpen(true)} />}
           {page !== 'play' && (
             <button className="rb-btn is-small rb-rp-back" onClick={back}>
               {view ? 'Leave room' : 'Back to the ladder'}
@@ -893,7 +896,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
               setMapsOpen(false);
             }}
             onRewards={() => setRewardsOpen(true)}
-            onProgress={() => setProgressOpen(true)}
+            onProgress={() => setProgressOpen('challenges')}
             note={barred ? BARRED_WHY : seekNote}
             ready={ready}
             barred={barred}
@@ -952,7 +955,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
           </div>
         )}
         {rewardsOpen && <RewardsDialog best={bestRating()} onClose={() => setRewardsOpen(false)} />}
-        {progressOpen && <ProgressDialog record={save.record ?? {}} onClose={() => setProgressOpen(false)} />}
+        {progressOpen && <ProgressDialog record={save.record ?? {}} tab={progressOpen} onClose={() => setProgressOpen(false)} />}
         {looksOpen && <LooksDialog engine={engine} cls={pick} wear={wear} plain={save.plain} doll={doll} shown={<Titled name={wear ? wear.name : hero} title={myTitle} />} onPlain={(p) => commit((now) => ({ ...now, plain: p }))} onChange={() => setWearN((n) => n + 1)} onClose={() => setLooksOpen(false)} frames={framesOwned(save.record ?? {})} frame={myFrame} onFrame={(id) => commit((now) => ({ ...now, frame: id ?? undefined }))} />}
       </div>
     </ScreenGate>
