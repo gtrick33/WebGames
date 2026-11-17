@@ -231,7 +231,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('mage', 'm', 'frost', [
       [
         // (the owner: "orb could give you on screen effects ... where the ice lance like spell deals 3x dmg")
-        { name: 'Hoarfrost', text: 'Each tick of your Rimeglobe has a 35% chance to trigger Hoarfrost (stacks twice): your next Frostfang has no cooldown and deals triple damage, as if the target were rooted.', icon: 'frozen_status_snowflake_on_blue', tune: { 'm-globe': { gives: [{ boon: 'hoar', chance: 0.35, on: 'tick' }] }, 'm-fang': { uses: [{ boon: 'hoar', nocd: true, asCombo: true }] } } },
+        { name: 'Hoarfrost', text: 'Each tick of your Rimeglobe has a 35% chance to trigger Hoarfrost (stacks twice): your next Frostfang has no cooldown and deals 3.3 times the damage, as if the target were rooted.', icon: 'frozen_status_snowflake_on_blue', tune: { 'm-globe': { gives: [{ boon: 'hoar', chance: 0.35, on: 'tick' }] }, 'm-fang': { uses: [{ boon: 'hoar', nocd: true, asCombo: true }] } } },
         // (the owner: "have the icicles stacked every time u deal frost bolt and launching ice lance fires them")
         { name: 'Rimeshards', text: 'Rime Spear generates a Rimeshard, up to 5. Frostfang spends them to deal 30% more damage per Rimeshard.', icon: 'icicle_rain_on_navy', points: { name: 'Rimeshards', one: 'Rimeshard', max: 5, color: '#bfeaff' }, tune: { 'm-spear': { build: { n: 1 } }, 'm-fang': { spend: { per: 0.3 } } } },
         { name: 'Deep Winter', text: 'While your Rimeglobe is active, Rime Spear is instant.', icon: 'snow_storm_cloud_on_grey', tune: { 'm-spear': { uses: [{ boon: 'globe', instant: true, keep: true }] } } },

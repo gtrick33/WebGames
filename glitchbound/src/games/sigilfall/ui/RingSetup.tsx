@@ -130,7 +130,8 @@ export function TalentTip({ t }: { t: Talent }) {
 export function linkWord(c: BarCombo): string {
   const k = c.kind === 'combo' ? c.to.combo?.mult : c.kind === 'boon' ? c.to.uses?.find((u) => c.from.gives?.some((g) => g.boon === u.boon))?.mult : undefined;
   if (!k) return c.name;
-  return Number.isInteger(k) ? `×${k}` : `+${Math.round((k - 1) * 100)}%`;
+  // (twice or more as a multiple, ×3.3; less as a share more, +70%)
+  return k >= 2 ? `×${k}` : `+${Math.round((k - 1) * 100)}%`;
 }
 
 /** A combo's tooltip: its name, the two abilities, and its one sentence. */

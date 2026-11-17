@@ -408,7 +408,7 @@ describe('The Ring: boons, that light an ability up', () => {
     expect(words(m)).toContain('Shatter');
     expect(boon(me, 'hoar')).toBe(1);
     // ready at once: the second straight after the first
-    expect(strike(m, me, foe, 'm-fang') / plain).toBeCloseTo(3, 1);
+    expect(strike(m, me, foe, 'm-fang') / plain).toBeCloseTo(AB('m-fang').combo!.mult, 1);
     expect(boon(me, 'hoar')).toBe(0);
     expect(m.press(0, 'm-fang')).toBe('Not ready yet');
   });
