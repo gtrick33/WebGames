@@ -830,7 +830,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
                 </div>
                 <div className="rb-rp-setup-head">
                   <h3>
-                    Setup {sets.active + 1} · {playstyleOf(pick, bar)}
+                    {playstyleOf(pick, bar)}
                   </h3>
                   <button className="rb-btn is-small" onClick={() => openSetup('play')}>
                     Change playstyle & talents

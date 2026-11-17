@@ -341,14 +341,26 @@ const LOOKS: Record<string, Look> = {
       b.spray(FX.flake, 5, 16, 6, RIME, { rise: 14 });
     },
   },
-  // Frostfang: one fang of ice driven down into them; on the frozen it is Shatter, and the school's own burst follows
+  // Frostfang: the bite. Two jaws of ice close on them from either side and meet; frost cracks out under them and
+  // splinters fly. On the frozen it is Shatter, and the school's own burst follows.
   'm-fang': {
     keep: true,
+    dur: { land: 0.6 },
     land: (b) => {
-      b.drop(FX.frost, 34, 9, ICE, RIME, 90);
-      if (b.u > 0.3) {
-        b.put({ kind: FX.frost, up: 14, w: 26 * (1 - (b.u - 0.3)), h: 8, rot: Math.PI / 2 - 0.25, a: ICE, b: RIME, alpha: b.fade });
-        b.ring(18, RIME);
+      const shut = Math.min(1, b.u * 4);
+      const gap = (1 - shut) * 16 + 2;
+      for (const side of [-1, 1]) {
+        const ang = b.a + (side * Math.PI) / 2;
+        for (let i = -1; i <= 1; i++) {
+          const along = i * 7;
+          b.put({ kind: FX.frost, dx: Math.cos(ang) * gap + Math.cos(b.a) * along, dy: Math.sin(ang) * gap * 0.6 + Math.sin(b.a) * along * 0.6, up: 15 + side * 5 * (1 - shut), w: 17 - Math.abs(i) * 4, h: 6, rot: Math.PI / 2 + side * 0.5, a: ICE, b: RIME, alpha: b.fade, seed: b.s.seed + i + side });
+        }
+      }
+      if (shut >= 1) {
+        b.put({ kind: FX.impact, up: 15, w: 30, a: RIME, b: '#ffffff', t: (b.u - 0.25) / 0.75, seed: b.s.seed });
+        b.ground(FIELD.frost, 15, ICE, RIME);
+        b.ring(22, RIME);
+        b.spray(FX.flake, 7, 22, 6, RIME, { rise: 16 });
       }
     },
   },
@@ -1040,7 +1052,7 @@ export function drawBoon(q: Fx3D, x: number, y: number, color: string, n: number
  * (ux, uy) is the way it flies, `flown` how far it has come (only known for what lands at once), `strong` whether a
  * boon or points made it hit harder (a Rime Spear thrown while the globe is out).
  */
-type Flight = (q: Fx3D, x: number, y: number, ux: number, uy: number, time: number, seed: number, flown: number, strong: boolean) => void;
+type Flight = (q: Fx3D, x: number, y: number, ux: number, uy: number, time: number, seed: number, flown: number, strong: boolean, u: number) => void;
 
 const FLIGHTS: Record<string, Flight> = {
   // Ember Lash: a whip of fire: a bright head and a tail of flames snaking behind it
@@ -1098,13 +1110,27 @@ const FLIGHTS: Record<string, Flight> = {
       q.put({ kind: FX.frost, x: x + Math.cos(ang) * 8, y: y + Math.sin(ang) * 4.5, up: 14, w: 10, h: 4, rot: ang, a: '#9fdcff', b: '#ffffff', seed: i });
     }
   },
-  // Frostfang: a pair of short fangs side by side, closing on them as they go
-  'm-fang': (q, x, y, ux, uy, _time, seed, flown) => {
+  // Frostfang: two fangs of ice that form at the hand, swing wide of each other, turn as they go and close on their
+  // target like jaws, each shedding frost behind it
+  'm-fang': (q, x, y, ux, uy, time, seed, flown, _strong, u) => {
+    const grow = Math.min(1, u * 5);
+    const wide = Math.sin(Math.min(1, u) * Math.PI) * 15 + (1 - u) * 2;
     const rot = screenAngle(ux, uy);
-    const gap = Math.max(1.5, 7 - flown * 0.05);
+    q.put({ kind: FX.glow, x, y, up: 14, w: 30 * grow, a: '#4ab8ff', alpha: 0.45 });
     for (const side of [-1, 1]) {
-      q.put({ kind: FX.frost, x: x - uy * gap * side, y: y + ux * gap * side, up: 14, w: 15 * shortened(ux, uy), h: 5, rot: rot + side * 0.32, a: '#bfeaff', b: '#ffffff', seed: seed + side });
-      q.put({ kind: FX.spark, x: x - uy * gap * side - ux * 9, y: y + ux * gap * side - uy * 9, up: 14, w: 4.5, a: '#ffffff', t: 0.2, alpha: 0.8 });
+      const fx = x - uy * wide * side;
+      const fy = y + ux * wide * side;
+      // (turned in toward each other more and more as they close)
+      const turn = side * (0.9 - u * 1.5);
+      q.put({ kind: FX.frost, x: fx, y: fy, up: 14 + Math.sin(u * Math.PI) * 6, w: 30 * grow * shortened(ux, uy), h: 10 * grow, rot: rot + turn, a: '#4ab8ff', b: '#ffffff', seed: seed + side });
+      for (let i = 1; i <= 4; i++) {
+        const back = i * 7;
+        if (back > flown) break;
+        const ub = Math.max(0, u - i * 0.07);
+        const wb = Math.sin(ub * Math.PI) * 15 + (1 - ub) * 2;
+        const ph = (time * 2 + i * 0.3) % 1;
+        q.put({ kind: i % 2 ? FX.flake : FX.spark, x: x - ux * back - uy * wb * side, y: y - uy * back + ux * wb * side, up: 14 - ph * 6, w: 6 - i, a: '#e0f8ff', t: 0.2, alpha: 0.9 - i * 0.18, seed: seed + i });
+      }
     }
   },
 };
@@ -1112,11 +1138,22 @@ const FLIGHTS: Record<string, Flight> = {
 export const hasFlight = (ab: string): boolean => !!FLIGHTS[ab];
 
 /** Draws a thrown ability on its way, in its own shape. False if it has none (it flies as its school does). */
-export function drawFlight(q: Fx3D, ab: string, x: number, y: number, ux: number, uy: number, time: number, seed: number, flown = 0, strong = false): boolean {
+export function drawFlight(q: Fx3D, ab: string, x: number, y: number, ux: number, uy: number, time: number, seed: number, flown = 0, strong = false, u = 0): boolean {
   const paint = FLIGHTS[ab];
   if (!paint) return false;
-  paint(q, x, y, ux, uy, time, seed, flown, strong);
+  paint(q, x, y, ux, uy, time, seed, flown, strong, u);
   return true;
+}
+
+/**
+ * How long a thrown ability that lands at once is seen on its way, for the few that are to be watched and not only
+ * glimpsed (the owner, 2026-11-17, of Frostfang: "we need not such a fast bolt, make it fitting and animated"). Only
+ * the picture takes this long: what it does has landed already. Undefined: it crosses in a blink, as the rest do.
+ */
+const SLOW: Record<string, { per: number; least: number; most: number }> = { 'm-fang': { per: 300, least: 0.3, most: 0.5 } };
+export function flightTime(ab: string, dist: number): number | undefined {
+  const s = SLOW[ab];
+  return s ? Math.max(s.least, Math.min(s.most, dist / s.per)) : undefined;
 }
 
 /**

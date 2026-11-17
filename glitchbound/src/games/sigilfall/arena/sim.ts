@@ -616,7 +616,8 @@ function built(cls: ClassId, bar: readonly unknown[] | undefined, talentIds: rea
       hold: 1 + sum('hold'),
       guard: 1 - Math.min(0.5, sum('guard')),
       charge: 1,
-      crit: CRIT,
+      // (a mage's wildfire: more of their hits are critical ones)
+      crit: CRIT + (does.wildfire?.crit ?? 0),
     },
     perks: { exec: sum('exec'), rally: rally?.rally ? { ...rally.rally, name: rally.name } : null, does },
     procs: {},
@@ -1705,7 +1706,7 @@ export class Match {
     const n = e.n + (this.tuneOf(f, ab)?.more ?? 0);
     for (let i = 0; i < n; i++) {
       const [x, y] = this.besideOf(f, i);
-      this.fighters.push(this.makePet(f, x, y, { ab: ab.id, hp: e.hp, dmg: e.dmg, slow: e.slow, life: e.life, max: e.life, next: 0.5, hits: 0 }));
+      this.fighters.push(this.makePet(f, x, y, { ab: ab.id, hp: e.hp, dmg: Math.round(e.dmg * (this.tuneOf(f, ab)?.power ?? 1)), slow: e.slow, life: e.life, max: e.life, next: 0.5, hits: 0 }));
     }
   }
 
@@ -1911,7 +1912,8 @@ export class Match {
     }
     // (a ranger's quarry: their whole side hits it harder; a paladin's wrath: all who stand near him)
     for (const a of t.auras) if (a.kind === 'mark' && this.fighters[a.src]?.team === by.team) n *= 1 + a.n;
-    const wrath = this.near(src, 'wrath', 'friend');
+    // (wherever on the ground they are: a healer stands well back from whoever they keep standing)
+    const wrath = this.near(src, 'wrath', 'friend', Infinity);
     if (wrath) n *= 1 + wrath.d.pct;
     for (const a of t.auras) if (a.kind === 'guard') n *= 1 - a.n;
     n = Math.round(n * t.mods.guard * this.toughness(t, direct, ab) * this.sudden);

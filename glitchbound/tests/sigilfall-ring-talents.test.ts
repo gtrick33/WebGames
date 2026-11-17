@@ -419,13 +419,17 @@ describe('The Ring talents: the paladin', () => {
     expect(m.events.some((e) => e.k === 'streak' && e.ab === 'd-ret-1c')).toBe(true);
   });
 
-  it('Aura of Wrath: friends near the paladin hit harder', () => {
+  it('Aura of Wrath: the paladin’s friends hit harder, wherever they stand', () => {
     const m = fight([{ team: 0, cls: 'paladin', talents: ['d-holy-1c'] }, { team: 1, cls: 'warrior' }, { team: 0, cls: 'warrior', at: [190, 140] }]);
     const [pal, foe, w] = m.fighters as [Fighter, Fighter, Fighter];
+    // (it reached only those near him until 2026-11-17: a healer stands well back, and it did nothing for anyone)
     const near = inside(m).damage(w, foe, 100, true, AB('w-hew'));
     pal.x = w.x - NEAR - 30;
     const far = inside(m).damage(w, foe, 100, true, AB('w-hew'));
-    expect(near).toBeCloseTo(far * (1 + doing('d-holy-1c', 'wrath').pct), -0.5);
+    expect(far).toBe(near);
+    pal.dead = true;
+    const alone = inside(m).damage(w, foe, 100, true, AB('w-hew'));
+    expect(near).toBeCloseTo(alone * (1 + doing('d-holy-1c', 'wrath').pct), -0.5);
   });
 
   it('Aura of Resolve: holds on friends near the paladin are shorter', () => {
@@ -668,8 +672,8 @@ describe('The Ring talents: the Gloamknight', () => {
     const plain = out([]);
     const held = out(['g-shadow-1c']);
     expect(held.speed / plain.speed).toBeCloseTo(1 / 0.85, 2);
-    expect(held.dealt / plain.dealt).toBeCloseTo(1.3, 1);
-    expect(doing('g-shadow-1c', 'shade').pct).toBe(0.3);
+    expect(held.dealt / plain.dealt).toBeCloseTo(2.5, 1);
+    expect(doing('g-shadow-1c', 'shade').pct).toBe(1.5);
   });
 
   it('Dusk Mantle: enemies close by move slower', () => {

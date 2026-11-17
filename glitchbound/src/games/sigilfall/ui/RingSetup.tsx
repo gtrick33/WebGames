@@ -255,16 +255,7 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
   const shownAb = readAb ?? (!readTalent && !readCombo ? kit[0]! : undefined);
   return (
     <div className="rb-rs is-fixed is-tree">
-      <div className="rb-rs-top">
-        <div className="rb-rs-sets" role="tablist" aria-label="Saved setups" data-tut="sets">
-          {sets.list.map((_, i) => (
-            <button key={i} role="tab" aria-selected={i === sets.active} className={`rb-rs-set${i === sets.active ? ' is-on' : ''}`} onClick={() => onSets({ ...sets, active: i })}>
-              Setup {i + 1}
-            </button>
-          ))}
-        </div>
-      </div>
-
+      {/* (three saved setups had tabs here until 2026-11-17, the owner: "you can remove the setups". A class keeps the one in hand.) */}
       <StyleCards cls={cls} setup={cur} onPick={useStyle} />
 
       <div className="rb-rs-tree">

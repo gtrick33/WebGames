@@ -315,3 +315,23 @@ describe('The Ring: a playstyle’s abilities are told apart at a glance', () =>
     }
   });
 });
+
+describe('The Ring: small things on the screen (the owner, 2026-11-17)', () => {
+  it('a button glows for its combo or its boon while it is still on cooldown, on a phone as with keys', () => {
+    // ("even if a spell is on cooldown let it glow if it has some specialized effect"; the touch buttons waited for the cooldown)
+    const match = read('src/games/sigilfall/ui/RingMatch.tsx');
+    expect(match).toContain("${comboOf(ab) && (!sup || charge >= 1) ? ' is-combo' : ''}");
+    expect(match).not.toMatch(/comboOf\(ab\) && wait <= 0/);
+    expect(match).toContain("const lit = !sup || charge >= 1 ? comboOf(ab) : null;");
+  });
+
+  it('the setup page has no tabs of saved setups, and its bar keeps to its own column', () => {
+    // ("you can remove the setups and check on phone how the tooltip covers the ult")
+    const setup = read('src/games/sigilfall/ui/RingSetup.tsx');
+    expect(setup).not.toContain('rb-rs-sets');
+    expect(setup).not.toMatch(/Setup \{i \+ 1\}/);
+    expect(read('src/games/sigilfall/ui/RingScreen.tsx')).not.toMatch(/Setup \{sets\.active \+ 1\}/);
+    const css = read('src/games/sigilfall/Game.css');
+    expect(css).toMatch(/\.rb-rs-kitrow \.rb-rs-barrow \{\s*flex: 0 1 auto;\s*min-width: 0;\s*max-width: 100%;/);
+  });
+});

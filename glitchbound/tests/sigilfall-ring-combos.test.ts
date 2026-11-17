@@ -175,7 +175,7 @@ describe('The Ring: points, built by one ability and spent by another', () => {
     expect(me.pts).toBe(4);
     foe.auras = [];
     const loosed = strike(m, me, foe, 'm-fang');
-    expect(loosed / plain).toBeCloseTo(1 + 0.4 * 4, 1);
+    expect(loosed / plain).toBeCloseTo(1 + 0.3 * 4, 1);
     expect(me.pts).toBe(0);
     // loosed with three or more, it is a combo landed
     expect(me.score.combos).toBe(1);
@@ -224,7 +224,7 @@ describe('The Ring: points, built by one ability and spent by another', () => {
     expect(m.press(0, 'd-judge')).toBeNull();
     const dealt = hp - foe.hp;
     const plain = AB('d-judge').effects.find((e) => e.k === 'dmg') as { n: number };
-    expect(dealt).toBeGreaterThan(plain.n * CLASS_DMG.paladin * (1 + 0.4 * 3));
+    expect(dealt).toBeGreaterThan(plain.n * CLASS_DMG.paladin * (1 + 0.3 * 3));
     expect(pal.pts).toBe(0);
     // (healed for what it dealt, as a heal is: a little under its number, more in no bigger fight than this)
     expect(friend.hp).toBeGreaterThan(300 + dealt * 0.7);
@@ -238,7 +238,7 @@ describe('The Ring: points, built by one ability and spent by another', () => {
     me.gcd = 0;
     expect(m.press(0, 'p-ward')).toBeNull();
     const ward = (AB('p-ward').effects.find((e) => e.k === 'absorb') as { n: number }).n;
-    expect(me.auras.find((a) => a.ab === 'p-ward' && a.kind === 'absorb')!.n).toBeCloseTo(ward * (1 + 0.4 * 3), 3);
+    expect(me.auras.find((a) => a.ab === 'p-ward' && a.kind === 'absorb')!.n).toBeCloseTo(ward * (1 + 0.2 * 3), 3);
     expect(me.pts).toBe(0);
   });
 });
@@ -538,8 +538,8 @@ describe('The Ring: boons, that light an ability up', () => {
     inside(g.m).grant(g.me, 'hunger');
     g.me.hp = 300;
     const dealt = strike(g.m, g.me, g.foe, 'g-reap');
-    // (half of what it dealt, and the little the reaping heals of itself)
-    expect(g.me.hp - 300).toBeGreaterThanOrEqual(Math.round(dealt * 0.5));
+    // (a fifth of what it dealt, and the little the reaping heals of itself)
+    expect(g.me.hp - 300).toBeGreaterThanOrEqual(Math.round(dealt * 0.2));
     expect(g.me.hp - 300).toBeLessThanOrEqual(Math.round(dealt * 0.5) + 20);
   });
 
@@ -559,7 +559,7 @@ describe('The Ring: boons, that light an ability up', () => {
     const dealt = strike(m, me, foe, 'g-knife');
     expect(dealt).toBeGreaterThan(plain * AB('g-knife').combo!.mult);
     expect(words(m)).toContain('Unseen Edge');
-    expect(me.pts).toBe(2);
+    expect(me.pts).toBe(3);
     expect(boon(me, 'dusk')).toBe(0);
   });
 
@@ -713,7 +713,8 @@ describe('The Ring: what a talent makes of an ability, by name', () => {
     expect(d.m.castOf(d.me, AB('m-spear'))).toBeGreaterThan(0);
     strike(d.m, d.me, d.foe, 'm-globe');
     wait(d.m, 0.4);
-    expect(d.m.fields[0]!.dur).toBeCloseTo(AB('m-globe').field!.dur * 1.5, 5);
+    // (it kept the globe half as long again until 2026-11-17: the instant spear alone was already the best of its row)
+    expect(d.m.fields[0]!.dur).toBeCloseTo(AB('m-globe').field!.dur, 5);
     // (while it is out: instant, still twice as hard, and the boon is kept)
     expect(d.m.castOf(d.me, AB('m-spear'))).toBe(0);
     const p = inside(d.m).arm(d.me, AB('m-spear'));
@@ -760,7 +761,7 @@ describe('The Ring: what a talent makes of an ability, by name', () => {
     wait(m, 1);
     const mine = pal.hp - 400;
     expect(mine).toBeGreaterThan(40);
-    expect((friend.hp - 400) / mine).toBeCloseTo(0.35, 1);
+    expect((friend.hp - 400) / mine).toBeCloseTo(0.8, 1);
 
     const n = fight([{ team: 0, cls: 'paladin', talents: ['d-ret-2b'] }, { team: 1, cls: 'mage', at: [260, 125] }, { team: 1, cls: 'ranger', at: [290, 140] }]);
     strike(n, n.fighters[0]!, n.fighters[1]!, 'd-hammer');
@@ -847,7 +848,7 @@ describe('The Ring: what a talent makes of an ability, by name', () => {
     const s = duel('druid', 'l-star-1b');
     const hits = [0, 1, 2, 3, 4].map(() => strike(s.m, s.me, s.foe, 'l-lash'));
     // (a blow of its own, at the druid's share: what its words say, and a blow's own edge over its number)
-    expect(hits[3]! - hits[0]!).toBe(Math.round(90 * CLASS_DMG.druid * HIT_K));
+    expect(hits[3]! - hits[0]!).toBe(Math.round(130 * CLASS_DMG.druid * HIT_K));
     expect(hits[4]).toBe(hits[0]);
     expect(words(s.m)).toContain('Fourth Star');
 

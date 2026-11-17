@@ -1292,7 +1292,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                     <button
                       key={ab.id}
                       data-tut={sup ? 'super' : undefined}
-                      className={`rb-sb rb-sb-${sup ? 'ult' : TOUCH_SLOTS[i]}${sup ? ` is-super${charge >= 1 ? ' is-ready' : ''}` : ''}${isOut(m, me, ab) ? ' is-nomana' : ''}${wait > 0 ? ' is-cooling' : ''}${held && ab.anyState ? ' is-free-now' : ''}${comboOf(ab) && wait <= 0 && (!sup || charge >= 1) ? ' is-combo' : ''}${tut && !tut.allows(ab.id) ? ' is-tut-off' : ''}`}
+                      className={`rb-sb rb-sb-${sup ? 'ult' : TOUCH_SLOTS[i]}${sup ? ` is-super${charge >= 1 ? ' is-ready' : ''}` : ''}${isOut(m, me, ab) ? ' is-nomana' : ''}${wait > 0 ? ' is-cooling' : ''}${held && ab.anyState ? ' is-free-now' : ''}${comboOf(ab) && (!sup || charge >= 1) ? ' is-combo' : ''}${tut && !tut.allows(ab.id) ? ' is-tut-off' : ''}`}
                       style={sup ? { ['--fill' as string]: `${Math.round(charge * 100)}%` } : undefined}
                       aria-label={sup ? `${ab.name} (super, ${Math.round(charge * 100)}% charged): ${ab.text}` : `${ab.name}: ${ab.text}`}
                       onPointerDown={(e) => aimApi.current.down(e, ab)}

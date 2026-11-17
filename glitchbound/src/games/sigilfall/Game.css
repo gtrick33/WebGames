@@ -14241,3 +14241,28 @@ html.rb-touch-playing textarea {
   filter: saturate(0.4);
   cursor: not-allowed;
 }
+
+/* The setup page's bar can never run under the tooltip beside it (the owner's phone, 2026-11-17: the super's picture
+   sat under the tooltip's edge). It is not as wide as it likes: it starts at the left of its own column, is no wider
+   than that column, and its pictures give way before it is. */
+.rb-rs-tree > .rb-rs-pick,
+.rb-rs-kitrow {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.rb-rs-kitrow .rb-rs-barrow {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  justify-content: flex-start;
+}
+.rb-rs-kitrow .rb-rs-slots {
+  width: auto;
+  max-width: 100%;
+  justify-content: flex-start;
+}
+.rb-rs-kitrow .rb-rs-slot {
+  flex: 0 1 44px;
+  width: 44px;
+}
