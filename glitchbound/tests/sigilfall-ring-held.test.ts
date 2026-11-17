@@ -7,12 +7,21 @@
  * Nightblade and feared by the priest beside him, they ran. And a root went onto someone who could not be rooted just
  * then (a paladin in his stride), was shown on them, and held nothing. The long numbers were a shield cast late in a
  * match: it fades as healing does, by a share, and what it left of a hit was that share's decimals.
+ *
+ * Neither was what the owner had seen. Later that day: "rogues still dont stun, the target keeps moving, wtf, make it
+ * non dispellable and make the target not move, increase atun from 1.5s to 2s make sure it actually stuns". The first
+ * tests here gave the Nightblade no talents. With its ready-made ones it carries Throat Cut ("Dusk Ambush also silences
+ * for 3 sec"), and the rules took a second hold from the same ability for the first one refreshed: the silence went on
+ * in the stun's place, in the same instant, every time. Between computers its stuns lasted 0.03 to 0.16 of their 1.5
+ * seconds against every playstyle. Two holds of different kinds now both stay on, Dusk Ambush stuns for 2 seconds, and
+ * nothing that dispels can take it off.
  */
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, PRESETS, type Ability, type CcKind } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, PRESETS, ultOf, type Ability, type CcKind } from '../src/games/sigilfall/arena/abilities';
 import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
 import { MAP_IDS } from '../src/games/sigilfall/arena/maps';
 import { DAMP_FROM, GATES, Match, type Fighter, type FighterSetup, type MatchEvent, type MoveInput } from '../src/games/sigilfall/arena/sim';
+import { TALENTS } from '../src/games/sigilfall/arena/talents';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { RingFx } from '../src/games/sigilfall/render/ring';
@@ -24,13 +33,15 @@ interface Inside {
   clock: number;
   damage(src: Fighter, t: Fighter, amount: number, direct: boolean, ab?: Ability): number;
   crowd(f: Fighter, ab: Ability, t: Fighter, cc: CcKind, dur: number): boolean;
+  dispel(f: Fighter, t: Fighter): void;
+  land(f: Fighter, ab: Ability, t: Fighter, area: boolean): void;
 }
 const inside = (m: Match): Inside => m as unknown as Inside;
 const AB = (id: string): Ability => ABILITIES[id]!;
 
 /** Two face to face with the gates open, no critical hits, the second with a great deal of health. */
-function duel(a: ClassId, b: ClassId, styles: [number, number] = [0, 0]): { m: Match; me: Fighter; foe: Fighter } {
-  const setup = (team: 0 | 1, cls: ClassId, p: number): FighterSetup => ({ team, cls, name: cls, bar: PRESETS[cls][p]!.bar, talents: [] });
+function duel(a: ClassId, b: ClassId, styles: [number, number] = [0, 0], talents: string[] = []): { m: Match; me: Fighter; foe: Fighter } {
+  const setup = (team: 0 | 1, cls: ClassId, p: number): FighterSetup => ({ team, cls, name: cls, bar: PRESETS[cls][p]!.bar, talents: team === 0 ? talents : [] });
   const m = new Match({ seed: 5, map: 'sands', fighters: [setup(0, a, styles[0]), setup(1, b, styles[1])] });
   m.step(GATES + 0.01, {});
   const [me, foe] = m.fighters as [Fighter, Fighter];
@@ -57,15 +68,98 @@ function walked(m: Match, foe: Fighter, seconds: number): number {
 }
 
 describe('The Ring: whoever is held stays where they are', () => {
-  it('a Nightblade’s Dusk Ambush stuns: its target does not take a step until it is over', () => {
+  it('a Nightblade’s Dusk Ambush stuns for two seconds: its target does not take a step until it is over', () => {
     const { m, me, foe } = duel('gloamknight', 'warrior', [1, 0]);
     expect(m.press(me.id, 'g-veil')).toBeNull();
     m.step(STEP, {});
     expect(m.press(me.id, 'g-ambush')).toBeNull();
-    expect(foe.auras.some((a) => a.cc === 'stun')).toBe(true);
-    expect(walked(m, foe, 1.4)).toBe(0);
+    expect(foe.auras.find((a) => a.cc === 'stun')?.dur).toBe(2);
+    expect(AB('g-ambush').text).toContain('stunning for 2 sec');
+    expect(walked(m, foe, 1.9)).toBe(0);
     // (and then they can)
     expect(walked(m, foe, 0.5)).toBeGreaterThan(5);
+  });
+
+  it('with Throat Cut, the Nightblade’s own ready-made talent, it stuns and silences: the silence does not take the stun’s place', () => {
+    // (it did, in the instant both landed: the stun was called out over the target, and they walked off)
+    const talents = PRESETS.gloamknight[1]!.talents;
+    expect(talents).toContain('g-shadow-2a');
+    const { m, me, foe } = duel('gloamknight', 'warrior', [1, 0], talents);
+    expect(m.press(me.id, 'g-veil')).toBeNull();
+    m.step(STEP, {});
+    m.events.length = 0;
+    expect(m.press(me.id, 'g-ambush')).toBeNull();
+    expect(m.events.filter((e) => e.k === 'word' && e.id === foe.id).map((e) => (e as { word: string }).word)).toEqual(expect.arrayContaining(['Stunned', 'Silenced']));
+    expect(foe.auras.filter((a) => a.cc).map((a) => [a.cc, a.dur])).toEqual([
+      ['stun', 2],
+      ['silence', 3],
+    ]);
+    expect(m.held(foe)?.cc).toBe('stun');
+    expect(walked(m, foe, 1.9)).toBe(0);
+    expect(m.held(foe)?.cc).toBe('stun');
+    // the stun runs its two seconds and the silence its three
+    expect(walked(m, foe, 0.5)).toBeGreaterThan(5);
+    expect(m.held(foe)).toBeUndefined();
+    expect(m.silenced(foe)).toBe(true);
+    walked(m, foe, 0.7);
+    expect(m.silenced(foe)).toBe(false);
+  });
+
+  it('nothing that dispels takes Dusk Ambush’s stun off', () => {
+    expect(AB('g-ambush').sticky).toBe(true);
+    const m = new Match({ seed: 5, map: 'sands', fighters: [
+      { team: 0, cls: 'gloamknight', name: 'a', bar: PRESETS.gloamknight[1]!.bar, talents: PRESETS.gloamknight[1]!.talents },
+      { team: 1, cls: 'warrior', name: 'b', bar: PRESETS.warrior[0]!.bar, talents: [] },
+      { team: 1, cls: 'priest', name: 'c', bar: PRESETS.priest[0]!.bar, talents: [] },
+    ] });
+    m.step(GATES + 0.01, {});
+    const [me, foe, healer] = m.fighters as [Fighter, Fighter, Fighter];
+    foe.hp = foe.maxHp = 50000;
+    inside(m).land(me, AB('g-ambush'), foe, false);
+    const stun = foe.auras.find((a) => a.cc === 'stun')!;
+    expect(stun.magic).toBe(false);
+    // (their healer tries: the silence, which is no blade's work... is physical too; there is nothing for a dispel to take)
+    inside(m).dispel(healer, foe);
+    expect(foe.auras.some((a) => a.cc === 'stun')).toBe(true);
+    // (and no ability or talent in the Ring dispels at all, as things stand)
+    for (const ab of Object.values(ABILITIES)) expect(ab.effects.some((e) => e.k === 'dispel'), ab.name).toBe(false);
+  });
+
+  it('used again soon it holds for less, as every hold does: two seconds, then one', () => {
+    const { m, me, foe } = duel('gloamknight', 'warrior', [1, 0]);
+    inside(m).land(me, AB('g-ambush'), foe, false);
+    expect(foe.auras.find((a) => a.cc === 'stun')?.dur).toBe(2);
+    walked(m, foe, 2.5);
+    inside(m).land(me, AB('g-ambush'), foe, false);
+    expect(foe.auras.find((a) => a.cc === 'stun')?.dur).toBe(1);
+  });
+
+  it('whatever an ability and a talent put on someone in one use is all on them: no hold takes another’s place', () => {
+    // every talent that adds a hold to an ability that already holds, tried by landing it
+    let tried = 0;
+    for (const cls of CLASS_IDS) {
+      for (const tal of TALENTS[cls]) {
+        for (const [id, tune] of Object.entries(tal.tune ?? {})) {
+          const ab = ABILITIES[id] ?? PRESETS[cls].map((p) => ultOf(cls, p.ult)).find((a) => a.id === id);
+          const own = (ab?.effects ?? []).filter((e) => e.k === 'cc').map((e) => (e as { cc: CcKind }).cc);
+          const more = (tune.extra ?? []).filter((e) => e.k === 'cc').map((e) => (e as { cc: CcKind }).cc);
+          if (!ab || !own.length || !more.length) continue;
+          tried++;
+          const style = PRESETS[cls].findIndex((p) => p.bar.includes(id) || p.ult === id);
+          const m = new Match({ seed: 5, map: 'sands', fighters: [
+            { team: 0, cls, name: 'a', bar: PRESETS[cls][Math.max(0, style)]!.bar, talents: [tal.id], ult: PRESETS[cls][Math.max(0, style)]!.ult },
+            { team: 1, cls: 'warrior', name: 'b', bar: PRESETS.warrior[0]!.bar, talents: [] },
+          ] });
+          m.step(GATES + 0.01, {});
+          const [me, foe] = m.fighters as [Fighter, Fighter];
+          foe.hp = foe.maxHp = 50000;
+          inside(m).land(me, ab, foe, false);
+          expect(foe.auras.filter((a) => a.cc).map((a) => a.cc).sort(), `${tal.name} on ${ab.name}`).toEqual([...new Set([...own, ...more])].sort());
+        }
+      }
+    }
+    // (Throat Cut on Dusk Ambush, at the least)
+    expect(tried).toBeGreaterThanOrEqual(1);
   });
 
   for (const cc of ['stun', 'incap', 'root'] as const) {

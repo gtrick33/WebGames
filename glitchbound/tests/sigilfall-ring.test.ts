@@ -197,10 +197,11 @@ describe('The Ring: the rules', () => {
     (m as unknown as Hurt).damage(m.fighters[0], foe, Math.ceil(foe.maxHp * FEAR_BREAK), false);
     expect(foe.auras.some((a) => a.cc === 'fear')).toBe(false);
 
-    // (Frost Snare's ice too: it breaks like any root)
+    // (Winter's Grasp's ice too: it breaks like any root)
     const r = duel('mage', ['m-ring'], 'warrior');
     const rooted = r.fighters[1]!;
-    r.press(0, 'm-ring');
+    r.fighters[0]!.charge = 1;
+    expect(r.press(0, 'm-super2')).toBeNull();
     (r as unknown as Hurt).damage(r.fighters[0], rooted, Math.floor(rooted.maxHp * ROOT_BREAK * 0.9), true);
     expect(rooted.auras.some((a) => a.cc === 'root')).toBe(true);
     (r as unknown as Hurt).damage(r.fighters[0], rooted, Math.ceil(rooted.maxHp * ROOT_BREAK), true);
@@ -234,7 +235,8 @@ describe('The Ring: the rules', () => {
     const n = duel('mage', ['m-ring'], 'warrior');
     const held = n.fighters[1]!;
     const at = held.x;
-    n.press(0, 'm-ring');
+    n.fighters[0]!.charge = 1;
+    expect(n.press(0, 'm-super2')).toBeNull();
     wait(n, 1, { 1: { mx: 1, my: 0 } });
     expect(held.x).toBe(at);
   });
@@ -557,7 +559,8 @@ describe('The Ring: talents and set ups', () => {
       n.fighters[1]!.x = 240;
       n.fighters[1]!.y = 125;
       n.press(0, 'm-ring');
-      return n.fighters[1]!.auras.find((x) => x.cc === 'root')!.t;
+      for (let i = 0; i < 60 && !n.fighters[1]!.auras.some((x) => x.cc === 'stun'); i++) n.step(1 / 30, {});
+      return n.fighters[1]!.auras.find((x) => x.cc === 'stun')!.dur;
     };
     expect(held(['m-frost-2a'])).toBeCloseTo(held([]) * (1 + TALENT_BY_ID['m-frost-2a']!.hold!), 5);
   });

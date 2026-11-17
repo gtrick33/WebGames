@@ -173,8 +173,9 @@ describe('The Ring: a mage casts quicker', () => {
   it('every mage cast is at least a quarter shorter than it was', () => {
     // (what they were before the owner's "mages cast time should definitely be reduced by at least 25%")
     // (Great Pyre, the fourth of them, went when a playstyle's abilities became its own, 2026-11-16)
+    // (Frostclasp, the Rime's stun of 2026-11-17, is new and has no cast from before to be shorter than)
     const was: Record<string, number> = { 'm-lash': 1.1, 'm-spear': 0.9, 'm-toad': 0.9 };
-    const casts = kitOf('mage').filter((a) => a.cast > 0);
+    const casts = kitOf('mage').filter((a) => a.cast > 0 && a.id !== 'm-ring');
     expect(casts.map((a) => a.id).sort()).toEqual(Object.keys(was).sort());
     for (const a of casts) expect(a.cast, a.id).toBeLessThanOrEqual(was[a.id]! * 0.75);
     // and none of them lands so much harder for it that a mage casting all the time deals more than a sixth again (a

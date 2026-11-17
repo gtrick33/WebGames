@@ -51,19 +51,19 @@ describe('The Ring: holds that hold', () => {
     expect(m.held(w)?.cc).toBe('stun');
   });
 
-  it('Frost Snare never wears off with use: the third lasts as long as the first', () => {
+  it('the Rime’s hold is a stun from range now, a second and a half, and wears off with use like any other', () => {
+    // (the owner, 2026-11-17: "for the rime mage, you can replace the frost snare with a ranged stun for 1.5s or a
+    // kick". The Frost Snare rooted everyone near and never wore off with use; Frostclasp is one target, from afar.)
+    const ab = ABILITIES['m-ring']!;
+    expect(ab).toMatchObject({ name: 'Frostclasp', aim: 'enemy', cast: 0.6 });
+    expect(ab.noDr).toBeUndefined();
     const m = duel('mage', PRESETS.mage[1]!.bar, 'warrior');
     const [mage, w] = m.fighters as [Fighter, Fighter];
-    const lengths: number[] = [];
-    for (let i = 0; i < 3; i++) {
-      mage.cds = {};
-      mage.gcd = 0;
-      w.auras = [];
-      expect(m.press(mage.id, 'm-ring')).toBeNull();
-      lengths.push(w.auras.find((a) => a.cc === 'root')!.dur);
-    }
-    expect(lengths[2]).toBeCloseTo(lengths[0]!, 5);
-    expect(w.dr.root).toBeUndefined();
+    w.x = mage.x + 150;
+    expect(m.press(mage.id, 'm-ring')).toBeNull();
+    for (let i = 0; i < 60 && !w.auras.some((a) => a.cc === 'stun'); i++) m.step(STEP, {});
+    expect(w.auras.find((a) => a.cc === 'stun')?.dur).toBe(1.5);
+    expect(w.dr.stun?.n).toBe(1);
     // (and nothing else's holds are counted the less for them: a hawk's stun is a first one, and counted)
     const hawk = duel('ranger', ['r-hawk'], 'warrior');
     expect(hawk.press(0, 'r-hawk')).toBeNull();
@@ -97,11 +97,14 @@ describe('The Ring: Frostfang shatters the ice', () => {
     expect(w.hp).toBeLessThan(hp);
     return { shatter, rooted: w.auras.some((a) => a.cc === 'root') };
   };
-  const snared = (): Match => {
+  /** Held by the Rime's Frostclasp: stunned. */
+  const clasped = (): Match => {
     const m = duel('mage', RIME, 'warrior');
     const [mage, w] = m.fighters as [Fighter, Fighter];
     w.hp = w.maxHp = 50000;
     expect(m.press(mage.id, 'm-ring')).toBeNull();
+    for (let i = 0; i < 60 && !w.auras.some((a) => a.cc === 'stun'); i++) m.step(STEP, {});
+    expect(w.auras.some((a) => a.cc === 'stun')).toBe(true);
     return m;
   };
 
@@ -122,9 +125,14 @@ describe('The Ring: Frostfang shatters the ice', () => {
     expect(ABILITIES['m-fang']!.cd).toBeLessThanOrEqual(4);
   });
 
-  it('Frost Snare’s ice: the first Frostfang shatters it and frees them, the next is a plain shard', () => {
-    const m = snared();
-    expect(fang(m)).toEqual({ shatter: true, rooted: false });
+  it('Frostclasp sets Frostfang up: every shard that lands while they are stunned is a Shatter, and the stun stays', () => {
+    const m = clasped();
+    const w = m.fighters[1]!;
+    expect(fang(m).shatter).toBe(true);
+    expect(w.auras.some((a) => a.cc === 'stun')).toBe(true);
+    expect(fang(m).shatter).toBe(true);
+    // (and once it has run out, a plain shard)
+    w.auras = w.auras.filter((a) => a.cc !== 'stun');
     expect(fang(m).shatter).toBe(false);
   });
 
@@ -154,8 +162,11 @@ describe('The Ring: Frostfang shatters the ice', () => {
   });
 
   it('a root that isn’t ice, or a stun with the ice, shatters without using it up', () => {
-    const m = snared();
+    const m = duel('mage', RIME, 'warrior');
     const [mage, w] = m.fighters as [Fighter, Fighter];
+    w.hp = w.maxHp = 50000;
+    mage.charge = 1;
+    expect(m.press(mage.id, 'm-super2')).toBeNull();
     w.auras.push({ ab: 'd-hammer', kind: 'cc', cc: 'stun', src: mage.id, t: 5, dur: 5, harmful: true, magic: true, n: 0, took: 0 });
     expect(fang(m)).toEqual({ shatter: true, rooted: true });
     const d = duel('mage', RIME, 'druid', ['l-roots']);

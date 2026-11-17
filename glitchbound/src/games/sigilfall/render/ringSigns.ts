@@ -362,16 +362,18 @@ const LOOKS: Record<string, Look> = {
       b.spray(FX.flake, 4, 12, 5, RIME, { rise: 10 });
     },
   },
-  // Frost Snare: the ground freezes out to its reach and a ring of ice stands up at its edge
+  // Frostclasp: ice closes on them where they stand: shards up round their feet, a block of it over them, and the ring of a stun
   'm-ring': {
-    dur: { cast: 0.8 },
+    dur: { land: 0.9 },
     cast: (b) => {
-      b.ground(FIELD.frost, 58 * Math.min(1, b.u * 4), ICE, RIME);
-      b.stand(10, 50 * Math.min(1, b.u * 4), 20, 6, ICE, RIME);
-      b.shock(62, RIME);
+      b.put({ kind: FX.gather, up: 18, w: 34, a: ICE, b: RIME, t: b.u, seed: b.s.seed });
+      b.ring(16, RIME);
     },
     land: (b) => {
-      b.stand(5, 9, 22, 6, ICE, RIME);
+      b.stand(7, 10, 26, 7, ICE, RIME);
+      b.put({ kind: FX.bubble, up: 16, w: 30, a: ICE, alpha: 0.8 * b.fade });
+      b.ground(FIELD.frost, 16, ICE, RIME);
+      b.shock(24, RIME);
     },
   },
   // Winter's Grasp: winter itself: a column of cold, the ground iced far out, a storm of flakes
@@ -1086,6 +1088,14 @@ const FLIGHTS: Record<string, Flight> = {
     for (let i = 1; i <= 3; i++) {
       const ph = (time * 3 + i * 0.37 + seed) % 1;
       q.put({ kind: FX.flake, x: x - ux * (10 + i * 9) - uy * (ph - 0.5) * 8, y: y - uy * (10 + i * 9) + ux * (ph - 0.5) * 8, up: 14 - ph * 8, w: 5, a: '#e0f8ff', alpha: 1 - ph, seed: seed + i });
+    }
+  },
+  // Frostclasp: a ring of ice thrown flat, turning as it goes, to close on them
+  'm-ring': (q, x, y, _ux, _uy, time, seed) => {
+    q.put({ kind: FX.ring, x, y, up: 14, w: 20, a: '#e0f8ff', t: 0.5, seed });
+    for (let i = 0; i < 4; i++) {
+      const ang = time * 12 + (i / 4) * Math.PI * 2 + seed;
+      q.put({ kind: FX.frost, x: x + Math.cos(ang) * 8, y: y + Math.sin(ang) * 4.5, up: 14, w: 10, h: 4, rot: ang, a: '#9fdcff', b: '#ffffff', seed: i });
     }
   },
   // Frostfang: a pair of short fangs side by side, closing on them as they go

@@ -135,7 +135,8 @@ describe('The Ring: what is placed', () => {
     expect(50000 - foe.hp).toBeGreaterThanOrEqual(first * 3 - 2);
     // it stays on whoever stands still under it
     expect(Math.hypot(m.fields[0]!.x - foe.x, m.fields[0]!.y - foe.y)).toBeLessThan(1);
-    // out of it, nothing lands until it has come after them: at a little under a walk, never faster
+    // out of it, nothing lands until it has come after them: at under half a walk (the owner, 2026-11-17: "make the orb
+    // follow the target with 50% less speed"; it was 0.9 of one), never faster
     foe.x = me.x;
     foe.y = me.y + 120;
     const out = foe.hp;
@@ -144,9 +145,9 @@ describe('The Ring: what is placed', () => {
     run(m, 0.5);
     expect(foe.hp).toBe(out);
     const closed = far - Math.hypot(m.fields[0]!.x - foe.x, m.fields[0]!.y - foe.y);
-    expect(closed).toBeGreaterThan(BASE_SPEED * 0.85 * 0.5);
+    expect(closed).toBeGreaterThan(BASE_SPEED * 0.4 * 0.5);
     expect(closed).toBeLessThanOrEqual(BASE_SPEED * ab.field!.seek! * 0.5 + 2.5);
-    expect(ab.field!.seek).toBeLessThan(1);
+    expect(ab.field!.seek).toBe(0.45);
     // and it is gone when its time is up
     run(m, 3.7);
     expect(m.fields).toHaveLength(0);
@@ -257,7 +258,7 @@ describe('The Ring: what is placed', () => {
     const gap = (): number => Math.hypot(rc.fields[0]!.x - rc.fighters[1]!.x, rc.fields[0]!.y - rc.fighters[1]!.y);
     const before = gap();
     rc.coast(0.5, null, null);
-    expect(gap()).toBeLessThan(before - 20);
+    expect(gap()).toBeLessThan(before - 10);
     const gc = new Match({ seed: 5, map: 'sands', fighters: [fighter(0, 'gloamknight', PRESETS.gloamknight[1]!.bar), fighter(1, 'warrior')] });
     gc.restore(JSON.parse(JSON.stringify(g.snapshot())) as ReturnType<Match['snapshot']>);
     expect(gc.fighters[0]!.pts).toBe(3);

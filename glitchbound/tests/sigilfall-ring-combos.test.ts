@@ -705,8 +705,8 @@ describe('The Ring: what a talent makes of an ability, by name', () => {
     const s = duel('mage', 'm-frost-2c');
     const x = s.me.x;
     expect(s.m.press(0, 'm-ring')).toBeNull();
-    expect(s.m.rooted(s.foe)).toBe(true);
-    wait(s.m, 0.5);
+    wait(s.m, 1.2);
+    expect(s.m.held(s.foe)?.cc).toBe('stun');
     expect(x - s.me.x).toBeGreaterThan(50);
 
     const d = duel('mage', 'm-frost-1c');
@@ -939,14 +939,16 @@ describe('The Ring: a combo is taught as what it is', () => {
     expect(tut.id).toBe('circle');
   });
 
-  it('the Rime’s: frozen with the snare, shattered with the fang, the partner brought near enough to be caught', () => {
+  it('the Rime’s: held with the clasp, shattered with the fang, the partner brought near enough to be caught', () => {
     const { m, tut } = lesson('mage', 1);
-    expect(tut.view(KEYS).text).toMatch(/Frost Snare sets up Frostfang/);
+    expect(tut.view(KEYS).text).toMatch(/Frostclasp sets up Frostfang/);
     const [me, foe] = m.fighters as [Fighter, Fighter];
     // (the partner walks in, from the far entry here, to where the snare reaches)
     run(m, tut, 10);
     expect(Math.hypot(foe.x - me.x, foe.y - me.y)).toBeLessThan(AB('m-ring').range);
     expect(m.press(0, 'm-ring')).toBeNull();
+    run(m, tut, 1);
+    expect(foe.auras.some((a) => a.cc === 'stun')).toBe(true);
     me.gcd = 0;
     expect(m.press(0, 'm-fang')).toBeNull();
     run(m, tut, 0.1);

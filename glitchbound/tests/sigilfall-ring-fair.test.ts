@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, healerBar, PRESETS, type Ability } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, healerBar, PRESETS, ultOf, type Ability } from '../src/games/sigilfall/arena/abilities';
 import { botThink, isHealer, newBrain } from '../src/games/sigilfall/arena/bot';
 import { BARRED_WHY, barredFrom, COMPS, drawOpponents, styleFor } from '../src/games/sigilfall/arena/ladder';
 import { MAP_IDS } from '../src/games/sigilfall/arena/maps';
@@ -301,5 +301,17 @@ describe('The Ring: healing in 2v2 is as written', () => {
     expect(duel).toBeGreaterThan(100);
     expect(pair).toBe(duel);
     expect(three / duel).toBeCloseTo(1.45, 1);
+  });
+});
+
+describe('The Ring: a playstyle’s abilities are told apart at a glance', () => {
+  // (the owner, 2026-11-17: "for the ranger, ult has the same icon as the long draw spell")
+  it('no two of a playstyle’s four and its super share a picture', () => {
+    for (const cls of CLASS_IDS) {
+      for (const p of PRESETS[cls]) {
+        const icons = [...p.bar.map((id) => ABILITIES[id]!), ultOf(cls, p.ult)].map((a) => a.icon);
+        expect(new Set(icons).size, `${p.name}: ${icons.join(', ')}`).toBe(icons.length);
+      }
+    }
   });
 });

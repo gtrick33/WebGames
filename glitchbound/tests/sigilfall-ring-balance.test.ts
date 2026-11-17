@@ -254,6 +254,29 @@
  * 53%), on top of what they were given earlier in the day, and a duel without healers shows the Reaper (31%) and the
  * Longbow (36%) behind and the Rime (66%) ahead by more than the old column did. None of that was tuned here. The
  * pairs table Random reads was measured again (arena/teammates.ts); the threes were not.
+ *
+ * Then the Nightblade's stun, which had never held (2026-11-17, the owner: "rogues still dont stun, the target keeps
+ * moving ... increase atun from 1.5s to 2s make sure it actually stuns"). With its ready-made talents Dusk Ambush also
+ * silences, and the silence took the stun's place as both landed (tests/sigilfall-ring-held.test.ts): against every
+ * playstyle its stuns had lasted 0.03 to 0.16 of their 1.5 seconds. Both now stay on, and the stun is 2 seconds. That
+ * alone took the Nightblade from 55/53/57 to 59/59/59, so its own blows came down about 4% (Nightknife 28 for 29,
+ * Closing Cut 22 for 23, Dusk Ambush 38 for 40, Night's Ruin 102 for 107): 54/54/56 after, on the same measure. At 6%
+ * less it was 56/52/54. Nobody else moved by more than two points.
+ *
+ * Then (2026-11-17, the owner): "for the rime mage, you can replace the frost snare with a ranged stun for 1.5s or a
+ * kick and make the orb follow the target with 50% less speed", "fire mage and nightblade gloamknight seem weak still".
+ * Frostclasp, a stun of 1.5 s from range, took the Frost Snare's place, and the globe goes at 0.45 of a walk (0.9). An
+ * instant Frostclasp took the Rime to 85/74/62: every Frostfang in a stun is a Shatter, and a caster can be stunned
+ * from across the ground. It was given a cast of 0.6 s and 18 s between uses, and the Rime's own blows came down by a
+ * quarter (Rime Spear 41 for 54, Frostfang 29 for 38, the globe 13 a second for 17, Winter's Grasp 66 for 86). The Pyre
+ * and the Nightblade were each first given 7%; the Pyre then won 64% of its 2v2s, and keeps about 3% (Ember Lash 43
+ * and 29, Flashburn 62, Cinder Comet 150). The Nightblade keeps its 7% (Nightknife 30, Closing Cut 24, Dusk Ambush 40,
+ * Night's Ruin 110). After, on the same measure; a match takes 54 s, 66 s and 64 s:
+ *
+ *   Pyre 60/58/53 57   Rime 59/48/51 53   Nightblade 63/59/59 60
+ *
+ * The owner finds the Pyre and the Nightblade weak where the computer finds them the strongest two: they were given
+ * what the measure would bear and no more. The Rime wins 87% of its duels with a blade and 37% with a caster.
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';
