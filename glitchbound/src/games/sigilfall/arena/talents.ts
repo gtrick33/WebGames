@@ -191,9 +191,9 @@ export const TALENTS: Record<ClassId, Talent[]> = {
         { name: 'Headsman', text: 'Deal 75% more damage to enemies below 35% health.', icon: 'death_mark_target_on_black', exec: 0.75 },
       ],
       [
-        { name: 'Thunderous Rush', text: 'Bull Rush also stuns for 0.8 sec.', icon: 'charging_bull_head_in_steel_on_red', tune: { 'w-rush': { extra: [{ k: 'cc', cc: 'stun', dur: 0.8 }] } } },
-        { name: 'Ricochet', text: 'Hurled Maul bounces to the nearest other enemy. Cooldown reduced by 25%.', icon: 'shield_bash_with_impact_rays_on_red', tune: { 'w-hurl': { bounce: true, cd: 0.75 } } },
-        { name: 'Warpath', text: 'Bull Rush cooldown reduced by 3 sec. It removes roots and slows, and for 3 sec afterward you move 30% faster and cannot be slowed or rooted.', icon: 'running_boot_with_speed_lines_on_red', tune: { 'w-rush': { cd: 0.7, self: [{ k: 'break' }, { k: 'free', dur: 3 }, { k: 'speed', pct: 30, dur: 3 }] } } },
+        { name: 'Thunderous Rush', text: 'Bull Rush also stuns for 0.5 sec.', icon: 'charging_bull_head_in_steel_on_red', tune: { 'w-rush': { extra: [{ k: 'cc', cc: 'stun', dur: 0.5 }] } } },
+        { name: 'Ricochet', text: 'Hurled Maul bounces to the nearest other enemy.', icon: 'shield_bash_with_impact_rays_on_red', tune: { 'w-hurl': { bounce: true } } },
+        { name: 'Warpath', text: 'Bull Rush cooldown reduced by 3 sec. It removes roots and slows, and for 3 sec afterward you move 30% faster and cannot be slowed or rooted.', icon: 'running_boot_with_speed_lines_on_red', tune: { 'w-rush': { cd: 12 / 15, self: [{ k: 'break' }, { k: 'free', dur: 3 }, { k: 'speed', pct: 30, dur: 3 }] } } },
       ],
     ]),
     ...styleRows('warrior', 'w', 'pin', [
@@ -203,15 +203,15 @@ export const TALENTS: Record<ClassId, Talent[]> = {
         { name: 'Grudge', text: 'Each consecutive hit on the same enemy deals 11% more damage, up to 55%. Switching targets resets it.', icon: 'crossed_sword_and_axe_on_red', does: { k: 'grudge', step: 0.11, max: 5 } },
       ],
       [
-        { name: 'Crippling Blows', text: 'Hock Cut slows by 60% for 4 sec.', icon: 'slowed_status_snail_on_teal', tune: { 'w-hamstring': { extra: [{ k: 'slow', pct: 60, dur: 4 }] } } },
+        { name: 'Crippling Blows', text: 'Hock Cut slows by 45% for 3 sec.', icon: 'slowed_status_snail_on_teal', tune: { 'w-hamstring': { extra: [{ k: 'slow', pct: 45, dur: 3 }] } } },
         { name: 'Bonebreaker', text: 'Skull Crack deals triple damage. Cooldown reduced by 25%.', icon: 'stunned_status_stars_on_yellow', tune: { 'w-crack': { power: 3, cd: 0.75 } } },
-        { name: 'Run Down', text: 'Bull Rush cooldown reduced by 4 sec. You move 30% faster for 3 sec afterward.', icon: 'burning_boot_with_speed_flames_on_red', tune: { 'w-rush': { cd: 0.6, self: [{ k: 'speed', pct: 30, dur: 3 }] } } },
+        { name: 'Run Down', text: 'Bull Rush cooldown reduced by 4 sec. You move 30% faster for 3 sec afterward.', icon: 'burning_boot_with_speed_flames_on_red', tune: { 'w-rush': { cd: 11 / 15, self: [{ k: 'speed', pct: 30, dur: 3 }] } } },
       ],
     ]),
     ...classRow('warrior', 'w', [
-      { name: 'Scar Tissue', text: 'Each hit you take reduces your damage taken by 2% for 6 sec, up to 10%.', icon: 'rock_armour_skin_on_brown', does: { k: 'scar', step: 0.02, max: 0.1, dur: 6 } },
+      { name: 'Scar Tissue', text: 'Each hit you take reduces your damage taken by 2% for 6 sec, up to 6%.', icon: 'rock_armour_skin_on_brown', does: { k: 'scar', step: 0.02, max: 0.06, dur: 6 } },
       { name: 'Break Loose', text: 'When crowd control on you ends, you move 50% faster for 3 sec.', icon: 'broken_chain_links_snapping_on_grey', does: { k: 'loose', pct: 50, dur: 3 } },
-      { name: 'Second Wind', text: 'Falling below 35% health heals you for 12% of your health. 45 sec cooldown.', icon: 'burning_heart_on_red', rally: { pct: 0.12, every: 45 } },
+      { name: 'Second Wind', text: 'Falling below 35% health heals you for 8% of your health. 45 sec cooldown.', icon: 'burning_heart_on_red', rally: { pct: 0.08, every: 45 } },
     ]),
   ],
   // glass that bends space: fire that spreads, frost that counts

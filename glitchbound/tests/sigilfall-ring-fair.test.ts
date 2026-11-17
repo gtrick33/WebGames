@@ -239,8 +239,8 @@ describe('The Ring: only healers left is sudden death', () => {
     wait(m, 4 - SUDDEN.fade - 0.1);
     const later = inside(m).damage(p, d, 100, true, ABILITIES['p-smite']);
     expect(m.sudden).toBeCloseTo(1 + SUDDEN.grow * 4, 1);
-    expect(later / first).toBeGreaterThan(2.8);
-    expect(later / first).toBeLessThan(3.2);
+    expect(later / first).toBeGreaterThan(m.sudden - 0.2);
+    expect(later / first).toBeLessThan(m.sudden + 0.2);
     // a player who joined a host's match is told when it began, and reckons the same
     const copy = open([of(0, 'priest', 0), of(0, 'warrior', 0, 1), of(1, 'druid', 0), of(1, 'mage', 0, 1)]);
     copy.restore(JSON.parse(JSON.stringify(m.snapshot())) as ReturnType<Match['snapshot']>);

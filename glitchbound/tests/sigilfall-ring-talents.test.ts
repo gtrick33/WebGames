@@ -129,7 +129,7 @@ describe('The Ring talents: the warrior', () => {
     expect(blow(b)).toBe(hits[0]);
   });
 
-  it('Scar Tissue: every blow taken hardens them a little, up to 10% less', () => {
+  it('Scar Tissue: every blow taken hardens them a little, up to 6% less', () => {
     const m = fight([{ team: 0, cls: 'warrior', talents: ['w-3a'] }, { team: 1, cls: 'warrior', bar: ['w-hew'] }]);
     const [w, foe] = m.fighters as [Fighter, Fighter];
     const blow = (): number => {
@@ -140,8 +140,9 @@ describe('The Ring talents: the warrior', () => {
     };
     const first = blow();
     for (let i = 0; i < 6; i++) blow();
-    expect(w.auras.find((a) => a.ab === 'w-3a')?.n).toBeCloseTo(0.1);
-    expect(blow()).toBeCloseTo(first * 0.9, -0.5);
+    // (10% until players' word on warriors, 2026-11-17: "the tankiest spec")
+    expect(w.auras.find((a) => a.ab === 'w-3a')?.n).toBeCloseTo(0.06);
+    expect(blow()).toBeCloseTo(first * 0.94, -0.5);
   });
 
   it('Break Loose: when a hold ends, they run faster', () => {

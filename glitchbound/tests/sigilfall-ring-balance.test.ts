@@ -363,7 +363,10 @@ describe('The Ring: no class far above or below the rest in team fights', () => 
   for (const size of [2, 3] as const) {
     it(`${size}v${size}: each class wins between 38% and 64% when the computer plays random teams`, () => {
       const got = shares(size, 900);
+      // (the warrior is set by players' word over this measure, the owner, 2026-11-17: "i dont think ur balancing test
+      // is very relevant here as this is player feedback". At 0.82 and 1240 health he comes out at 27% in 2v2 here.)
       for (const c of CLASS_IDS) {
+        if (c === 'warrior') continue;
         expect(got[c], `${c} ${Math.round(got[c]! * 100)}%`).toBeGreaterThan(0.38);
         expect(got[c], `${c} ${Math.round(got[c]! * 100)}%`).toBeLessThan(0.64);
       }

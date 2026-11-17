@@ -679,7 +679,7 @@ describe('The Ring: what a talent makes of an ability, by name', () => {
     const c = duel('warrior', 'w-pin-2a');
     strike(c.m, c.me, c.foe, 'w-hamstring');
     const slow = c.foe.auras.find((x) => x.ab === 'w-hamstring' && x.kind === 'slow')!;
-    expect([slow.n, slow.dur]).toEqual([0.6, 4]);
+    expect([slow.n, slow.dur]).toEqual([0.45, 3]);
 
     const bone = (talent: string | null): number => {
       const x = duel('warrior', talent, 'warrior', 1);
