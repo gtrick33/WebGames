@@ -118,7 +118,7 @@ export function cleanPick(v: unknown): Pick | null {
   // (an oath and the Swift Step's place were chosen too until 2026-11-15: a game from before still sends them, unread)
   if ((p.team !== 0 && p.team !== 1) || typeof p.cls !== 'string' || !ID.test(p.cls)) return null;
   if (!Array.isArray(p.bar) || p.bar.length > 6 || !p.bar.every((b) => typeof b === 'string' && ID.test(b))) return null;
-  const talents = Array.isArray(p.talents) && p.talents.length <= 3 && p.talents.every((b) => typeof b === 'string' && ID.test(b)) ? (p.talents as string[]) : [];
+  const talents = Array.isArray(p.talents) && p.talents.length <= 4 && p.talents.every((b) => typeof b === 'string' && ID.test(b)) ? (p.talents as string[]) : [];
   const rating = typeof p.rating === 'number' && Number.isFinite(p.rating) ? { rating: Math.max(0, Math.min(9999, Math.round(p.rating))) } : {};
   const ult = typeof p.ult === 'string' && ID.test(p.ult) ? { ult: p.ult } : {};
   const mates = Array.isArray(p.mates) && p.mates.length <= 2 && p.mates.every((b) => typeof b === 'string' && ID.test(b)) ? { mates: p.mates as string[] } : {};

@@ -1272,6 +1272,8 @@ export class Match {
     }
     this.sparing = null;
     this.holdMore = 0;
+    // a Nightblade's venom, on whoever its basic blade lands on
+    if (!area && !t.dead && t !== f && ab.id === f.bar[0]) this.venom(f, t);
     if (combo?.extra) for (const e of combo.extra) if (!t.dead || e.k === 'heal') this.apply(f, ab, t, e);
     if (p.extra) for (const e of p.extra) if (!t.dead || e.k === 'heal') this.apply(f, ab, t, e, scale);
     this.forced = false;
@@ -1479,6 +1481,13 @@ export class Match {
         const dy = near ? f.y - near.y : f.dirY;
         const d = Math.hypot(dx, dy) || 1;
         f.dash = { x: f.x + (dx / d) * e.dist, y: f.y + (dy / d) * e.dist, speed: 300 };
+        this.endCast(f);
+        return;
+      }
+      case 'bound': {
+        // always the way they face, which is the way they last moved (abilities.ts Effect bound)
+        const d = Math.hypot(f.dirX, f.dirY) || 1;
+        f.dash = { x: f.x + (f.dirX / d) * e.dist, y: f.y + (f.dirY / d) * e.dist, speed: 300 };
         this.endCast(f);
         return;
       }
@@ -2041,6 +2050,25 @@ export class Match {
         const to = this.mostHurt(src);
         if (to) this.heal(src, to, does.verdict.n, false);
       }
+    }
+  }
+
+  /**
+   * The venom a Nightblade's Nightknife carries (talents.ts, the Venom row): a slow; a bleed renewed by each blade, its
+   * ticks going on as they were (begun again at every blow, quicker than its ticks, it would never bleed at all); or now
+   * and then a stun, never more often than its own cooldown allows.
+   */
+  private venom(f: Fighter, t: Fighter): void {
+    const { does } = f.perks;
+    if (does.mire) this.addAura(t, { ab: abOfDoing(f.cls, 'mire').id, src: f.id, kind: 'slow', harmful: true, magic: false, dur: does.mire.dur * t.mods.tenacity * f.mods.hold, n: does.mire.pct / 100 });
+    if (does.weep) {
+      const id = abOfDoing(f.cls, 'weep').id;
+      const was = t.auras.find((a) => a.ab === id && a.kind === 'dot' && a.src === f.id);
+      if (was) was.t = was.dur = does.weep.dur;
+      else this.addAura(t, { ab: id, src: f.id, kind: 'dot', harmful: true, magic: false, dur: does.weep.dur, n: does.weep.n / does.weep.dur, next: 1 });
+    }
+    if (does.numb && !t.pet && this.ready(f, 'numb') && this.rand() < does.numb.chance) {
+      if (this.crowd(f, abOfDoing(f.cls, 'numb'), t, 'stun', does.numb.dur * f.mods.hold)) f.procs.numb = this.clock + does.numb.every;
     }
   }
 

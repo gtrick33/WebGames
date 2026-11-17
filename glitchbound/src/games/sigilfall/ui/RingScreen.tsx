@@ -111,7 +111,7 @@ function ClassRow({ pick, onPick, lobby }: { pick: ClassId; onPick: (c: ClassId)
     return (
       <div className="rb-vlobby-classes" role="radiogroup" aria-label="Class" data-tut="classes">
         {CLASS_IDS.map((c) => (
-          <button key={c} role="radio" aria-checked={c === pick} aria-disabled={!classOpen(c, me)} aria-label={`${CLASSES[c].name}: ${CLASS_WAY[c].toLowerCase()}, ${EASE_WORD[CLASS_EASE[c]].toLowerCase()} to learn`} title={classOpen(c, me) ? `${CLASSES[c].name}: ${CLASS_WAY[c].toLowerCase()}, ${EASE_WORD[CLASS_EASE[c]].toLowerCase()} to learn` : `${CLASSES[c].name}: unlock it in the shop`} className={`rb-vlobby-class${c === pick ? ' is-on' : ''}${classOpen(c, me) ? '' : ' is-locked'}`} style={{ ['--c' as string]: CLASSES[c].colors.accent }} onClick={() => classOpen(c, me) && onPick(c)}>
+          <button key={c} role="radio" aria-checked={c === pick} aria-disabled={!classOpen(c, me)} aria-label={`${CLASSES[c].name}: ${CLASS_WAY[c]}, ${EASE_WORD[CLASS_EASE[c]]}`} title={classOpen(c, me) ? `${CLASSES[c].name}: ${CLASS_WAY[c]}, ${EASE_WORD[CLASS_EASE[c]]}` : `${CLASSES[c].name}: unlock it in the shop`} className={`rb-vlobby-class${c === pick ? ' is-on' : ''}${classOpen(c, me) ? '' : ' is-locked'}`} style={{ ['--c' as string]: CLASSES[c].colors.accent }} onClick={() => classOpen(c, me) && onPick(c)}>
             <img src={classEmblem(c)} alt="" draggable={false} />
             <span>
               {CLASSES[c].name}
@@ -133,7 +133,7 @@ function ClassRow({ pick, onPick, lobby }: { pick: ClassId; onPick: (c: ClassId)
           aria-checked={c === pick}
           aria-disabled={!classOpen(c, me)}
           aria-label={CLASSES[c].name}
-          title={classOpen(c, me) ? `${CLASSES[c].name}: ${CLASS_WAY[c].toLowerCase()}, ${EASE_WORD[CLASS_EASE[c]].toLowerCase()} to learn` : `${CLASSES[c].name}: unlock it in the shop`}
+          title={classOpen(c, me) ? `${CLASSES[c].name}: ${CLASS_WAY[c]}, ${EASE_WORD[CLASS_EASE[c]]}` : `${CLASSES[c].name}: unlock it in the shop`}
           className={`rb-rp-class${c === pick ? ' is-on' : ''}${classOpen(c, me) ? '' : ' is-locked'}`}
           style={{ ['--c' as string]: CLASSES[c].colors.accent }}
           onClick={() => classOpen(c, me) && onPick(c)}
@@ -830,8 +830,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
                 <Doll key={pick} className="rb-vlobby-doll" src={doll} alt={CLASSES[pick].name} />
                 <div className="rb-vlobby-name">
                   <strong>{CLASSES[pick].name}</strong>
-                  <span className={`rb-ringvl-way is-${CLASS_EASE[pick]}`}>
-                    {CLASS_WAY[pick]} · {EASE_WORD[CLASS_EASE[pick]]} to learn
+                  <span className="rb-ringvl-way">
+                    {CLASS_WAY[pick]} · <b className={`rb-ease-word is-${CLASS_EASE[pick]}`}>{EASE_WORD[CLASS_EASE[pick]]}</b>
                   </span>
                   {/* (with no title worn, the rank reached in this format is shown before the name: "Unblooded Guitartrick") */}
                   <Titled className="rb-rp-whoname" name={wear ? wear.name : hero} title={myTitle} orRank={rank} />

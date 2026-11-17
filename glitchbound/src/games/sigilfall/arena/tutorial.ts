@@ -63,7 +63,7 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
   {
     id: 'welcome',
     title: 'Welcome to the Ring',
-    text: (cls) => `Short fights, 1v1 to 3v3. Everything about your hero is on this screen: pick a class, then one of its two playstyles. ${CLASSES[cls].name}: ${EASE_WORD[CLASS_EASE[cls]].toLowerCase()} to learn.${CLASS_EASE[cls] === 'easy' ? '' : ' The Warrior is an easy first pick.'}`,
+    text: (cls) => `Short fights, 1v1 to 3v3. Everything about your hero is on this screen: pick a class, then one of its two playstyles. ${CLASSES[cls].name}: ${EASE_WORD[CLASS_EASE[cls]]}.${CLASS_EASE[cls] === 'easy' ? '' : ' The Warrior is an easy first pick.'}`,
     spot: null,
     labels: [
       { spot: 'classes', text: 'Your class' },

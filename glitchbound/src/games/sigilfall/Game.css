@@ -12840,11 +12840,20 @@ html.rb-touch-playing textarea {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.rb-ringvl-tag.is-easy {
-  color: #9be37f;
+/* how hard a class or a playstyle is, in one word and its own color, wherever it is shown: Easy green, Medium yellow,
+   Hard red (the owner, 2026-11-17: "difficulty text should be one word only with its respective color easy - green,
+   medium yellow and hard red") */
+.rb-ringvl-tag.is-easy,
+.rb-ease-word.is-easy {
+  color: #7ee36a;
 }
-.rb-ringvl-tag.is-hard {
-  color: #ff9a8a;
+.rb-ringvl-tag.is-medium,
+.rb-ease-word.is-medium {
+  color: #ffd257;
+}
+.rb-ringvl-tag.is-hard,
+.rb-ease-word.is-hard {
+  color: #ff5a5a;
 }
 .rb-ease {
   padding: 1px 7px;
@@ -12856,23 +12865,21 @@ html.rb-touch-playing textarea {
   background: #ffd257;
 }
 .rb-ease.is-easy {
-  background: #9be37f;
+  background: #7ee36a;
 }
 .rb-ease.is-hard {
-  background: #ff9a8a;
+  color: #fff;
+  background: #e8424a;
 }
 
-/* the hero's class under their name: how it fights and how easy it is to learn */
+/* the hero's class under their name: how it fights, and how hard it is in its own color */
 .rb-ringvl-way {
   display: block;
   color: #cfc6dc;
   font: 600 11.5px system-ui, sans-serif;
 }
-.rb-ringvl-way.is-easy {
-  color: #9be37f;
-}
-.rb-ringvl-way.is-hard {
-  color: #ff9a8a;
+.rb-ease-word {
+  font-weight: 800;
 }
 
 /* the arena, folded to what is chosen */

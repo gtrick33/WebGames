@@ -81,7 +81,7 @@ export function SpellTip({ ab, cls, bar, talents }: { ab: Ability; cls: ClassId;
   const slot = style.bar.indexOf(ab.id);
   const combo = combosOf(cls, ab, bar).lands;
   // (the talents chosen that work on this ability, each in its own words)
-  const mine = cleanTalents(cls, talents, style.id).filter((t) => t.tune && (ab.id in t.tune || (!!ab.super && 'super' in t.tune)));
+  const mine = cleanTalents(cls, talents, style.id).filter((t) => t.via === ab.id || (t.tune && (ab.id in t.tune || (!!ab.super && 'super' in t.tune))));
   return (
     <div className="rb-stip" style={{ ['--a' as string]: ab.color }}>
       <header>
@@ -323,7 +323,10 @@ export function SetupEditor({ cls, sets, onSets }: { cls: ClassId; sets: ClassSe
           </div>
 
           <div className="rb-rs-talents" data-tut="talents">
-            {ROW_NAMES.map((name, row) => (
+            {/* (a row only where the playstyle has one: the fourth, Venom, is the Nightblade's alone) */}
+            {ROW_NAMES.map((name, row) => ({ name, row }))
+              .filter(({ row }) => options.some((t) => t.row === row))
+              .map(({ name, row }) => (
               <div key={name} className="rb-rs-row" role="radiogroup" aria-label={name}>
                 <h4>{name}</h4>
                 <div className="rb-rs-nodes">

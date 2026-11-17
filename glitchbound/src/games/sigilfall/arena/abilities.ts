@@ -62,6 +62,12 @@ export type Effect =
   | { k: 'blink'; dist: number }
   /** Spring back this far, away from the nearest enemy. */
   | { k: 'leap'; dist: number }
+  /**
+   * Bound this far forward, the way its user faces (the way they last moved), always: a ranger's Spring Away (the owner,
+   * 2026-11-17: "rangers leap should always be a dash forward, currently its a bit random"). It went away from the
+   * nearest enemy, which turned with whoever happened to be nearest.
+   */
+  | { k: 'bound'; dist: number }
   /** Roots and slows come off. */
   | { k: 'break' }
   /** All crowd control comes off. */
@@ -471,7 +477,7 @@ const KITS: Record<ClassId, Ability[]> = {
     // the Longbow: stunned by the hawk, then the long shot
     a({ id: 'r-swift', cls: 'ranger', name: 'Swift Shot', text: `Deals ${R(26)} damage. Usable while moving.`, icon: 'arrow_shot_with_a_speed_trail_on_green', color: '#d8ffb0', school: 'physical', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 0, zip: true, effects: [{ k: 'dmg', n: 26 }] }),
     a({ id: 'r-aimed', cls: 'ranger', name: 'Long Draw', text: `Deals ${R(79)} damage and reduces healing on the target by 35% for 6 sec.`, icon: 'piercing_arrow_through_a_shield_on_green', color: '#f6f2c8', school: 'physical', role: 'burst', aim: 'enemy', range: FAR, cast: 1.1, cd: 8, sticky: true, bolt: true, combo: { name: 'Falconer', text: 'Deals 50% more damage to stunned targets.', cc: ['stun'], mult: 1.5 }, effects: [{ k: 'dmg', n: 79 }, { k: 'antiheal', pct: 35, dur: 6 }] }),
-    a({ id: 'r-leap', cls: 'ranger', name: 'Spring Away', text: 'Leaps away from the nearest enemy and removes roots and slows.', icon: 'haste_status_winged_boot_on_teal', color: '#d8ffb0', school: 'physical', role: 'mobility', aim: 'self', range: 0, cast: 0, cd: 9, free: true, effects: [{ k: 'break' }, { k: 'leap', dist: 92 }] }),
+    a({ id: 'r-leap', cls: 'ranger', name: 'Spring Away', text: 'Dashes you forward, the way you are facing, and removes roots and slows.', icon: 'haste_status_winged_boot_on_teal', color: '#d8ffb0', school: 'physical', role: 'mobility', aim: 'self', range: 0, cast: 0, cd: 9, free: true, effects: [{ k: 'break' }, { k: 'bound', dist: 92 }] }),
     a({ id: 'r-hawk', cls: 'ranger', name: 'Hawk’s Dive', text: 'Your hawk stuns the target for 1.5 sec. Usable while casting.', icon: 'hawk_companion_diving_on_teal', color: '#ffe39a', school: 'physical', role: 'cc', aim: 'enemy', range: FAR, cast: 0, cd: 17, free: true, zip: true, effects: [{ k: 'cc', cc: 'stun', dur: 1.5 }] }),
     // the Trapper: hobbled or caught, and the volley comes down
     a({ id: 'r-hobble', cls: 'ranger', name: 'Hobbling Shot', text: `Deals ${R(21)} damage and slows the target by 40% for 3 sec. Usable while moving.`, icon: 'slowed_status_snail_on_teal', color: '#e8e0a8', school: 'physical', role: 'damage', aim: 'enemy', range: FAR, cast: 0, cd: 0, zip: true, effects: [{ k: 'dmg', n: 21 }, { k: 'slow', pct: 40, dur: 3 }] }),
@@ -538,7 +544,7 @@ const KITS: Record<ClassId, Ability[]> = {
     a({ id: 'g-hand', cls: 'gloamknight', name: 'Grave Hand', text: 'Stuns the target for 1.5 sec.', icon: 'shadow_hand_grabbing_on_violet', color: '#9a6ae0', school: 'shadow', role: 'cc', aim: 'enemy', range: MID, cast: 0, cd: 17, effects: [{ k: 'cc', cc: 'stun', dur: 1.5 }] }),
     // the Nightblade, a blade in the dark (the owner's friend: "typical dk and a shadow rogue"; and the owner,
     // 2026-11-16: "nightknife basic spells - increases combo points ... the more the points the bigger the dmg")
-    a({ id: 'g-knife', cls: 'gloamknight', name: 'Nightknife', text: `Deals ${G(30)} damage, slows the target by 30% for 2 sec and generates 1 Nick.`, icon: 'heart_pierced_by_a_dagger_on_black', color: '#d8c8ff', school: 'physical', role: 'damage', aim: 'enemy', range: MELEE, cast: 0, cd: 0, build: { n: 1 }, combo: { name: 'Unseen Edge', text: 'Deals 50% more damage from behind, or to targets stunned by your Dusk Ambush.', ab: ['g-ambush'], behind: true, mult: 1.5 }, effects: [{ k: 'dmg', n: 30 }, { k: 'slow', pct: 30, dur: 2 }] }),
+    a({ id: 'g-knife', cls: 'gloamknight', name: 'Nightknife', text: `Deals ${G(30)} damage, generates 1 Nick and carries your venom.`, icon: 'heart_pierced_by_a_dagger_on_black', color: '#d8c8ff', school: 'physical', role: 'damage', aim: 'enemy', range: MELEE, cast: 0, cd: 0, build: { n: 1 }, combo: { name: 'Unseen Edge', text: 'Deals 50% more damage from behind, or to targets stunned by your Dusk Ambush.', ab: ['g-ambush'], behind: true, mult: 1.5 }, effects: [{ k: 'dmg', n: 30 }] }),
     a({ id: 'g-cut', cls: 'gloamknight', name: 'Closing Cut', text: `Spends all your Nicks to deal ${G(24)} damage, increased by 80% per Nick. Requires at least 1 Nick.`, icon: 'shadow_claw_slash_on_black', color: '#b48cff', school: 'physical', role: 'burst', aim: 'enemy', range: MELEE, cast: 0, cd: 0, spend: { per: 0.8, need: 1 }, effects: [{ k: 'dmg', n: 24 }] }),
     a({ id: 'g-veil', cls: 'gloamknight', name: 'Shroud of Dusk', text: 'Stealth: enemies cannot see you until you attack or take damage, and you move a little slower. In combat it removes roots and slows, cannot be broken for 3 sec and has a 30 sec cooldown; out of combat, 3 sec. You start each match in stealth.', icon: 'vanish_puff_of_smoke_on_violet', color: '#8a6ac8', school: 'physical', role: 'stealth', aim: 'self', range: 0, cast: 0, cd: 30, free: true, quiet: true, effects: [{ k: 'break' }, { k: 'veil' }] }),
     a({ id: 'g-ambush', cls: 'gloamknight', name: 'Dusk Ambush', text: `Requires stealth. Steps behind the target, dealing ${G(40)} damage, stunning for 2 sec and generating 2 Nicks.`, icon: 'blackout_eye_on_violet', color: '#b48cff', school: 'physical', role: 'cc', aim: 'enemy', range: SHORT, cast: 0, cd: 15, veiled: true, sticky: true, build: { n: 2 }, effects: [{ k: 'behind' }, { k: 'dmg', n: 40 }, { k: 'cc', cc: 'stun', dur: 2 }] }),
@@ -615,7 +621,7 @@ export const PRESETS: Record<ClassId, Playstyle[]> = {
   ],
   gloamknight: [
     { id: 'reaver', name: 'Bloodsworn', bar: ['g-cleave', 'g-reap', 'g-chain', 'g-hand'], talents: ['g-reaver-1a', 'g-reaver-2b', 'g-3b'], ult: 'g-super' },
-    { id: 'shadow', name: 'Nightblade', points: { name: 'Nicks', one: 'Nick', max: 5, color: '#d8c8ff' }, bar: ['g-knife', 'g-cut', 'g-veil', 'g-ambush'], talents: ['g-shadow-1b', 'g-shadow-2a', 'g-3c'], ult: 'g-super2' },
+    { id: 'shadow', name: 'Nightblade', points: { name: 'Nicks', one: 'Nick', max: 5, color: '#d8c8ff' }, bar: ['g-knife', 'g-cut', 'g-veil', 'g-ambush'], talents: ['g-shadow-1b', 'g-shadow-2a', 'g-3c', 'g-shadow-4a'], ult: 'g-super2' },
   ],
 };
 

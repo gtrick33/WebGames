@@ -749,7 +749,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
         if (!f || !d || typeof d !== 'object') return;
         const q = d as { mx?: unknown; my?: unknown; p?: unknown; at?: unknown; tg?: unknown; eq?: { bar?: unknown; talents?: unknown; ult?: unknown } };
         const eq = q.eq;
-        if (eq && Array.isArray(eq.bar) && eq.bar.length <= 12 && eq.bar.every((b) => typeof b === 'string')) m.equip(f.id, { bar: eq.bar as string[], talents: Array.isArray(eq.talents) ? (eq.talents.filter((b) => typeof b === 'string').slice(0, 3) as string[]) : [], ult: typeof eq.ult === 'string' ? eq.ult : undefined });
+        if (eq && Array.isArray(eq.bar) && eq.bar.length <= 12 && eq.bar.every((b) => typeof b === 'string')) m.equip(f.id, { bar: eq.bar as string[], talents: Array.isArray(eq.talents) ? (eq.talents.filter((b) => typeof b === 'string').slice(0, 4) as string[]) : [], ult: typeof eq.ult === 'string' ? eq.ult : undefined });
         if (typeof q.mx === 'number' && typeof q.my === 'number' && Number.isFinite(q.mx) && Number.isFinite(q.my)) others[f.id] = { mx: Math.max(-1, Math.min(1, q.mx)), my: Math.max(-1, Math.min(1, q.my)) };
         // (press checks it's on their bar, and the rules, as for anyone)
         // (a placed ability comes with where: two plain numbers, which the rules bring into reach and sight)

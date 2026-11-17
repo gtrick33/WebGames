@@ -513,10 +513,11 @@ describe('The Ring: the entries and the wait', () => {
 describe('The Ring: talents and set ups', () => {
   it('every playstyle has three rows of three, each with something to choose between', () => {
     for (const cls of CLASS_IDS) {
-      // (two rows of three for each of its two playstyles, and the class's own row)
-      expect(TALENTS[cls], cls).toHaveLength(15);
+      // (two rows of three for each of its two playstyles, and the class's own row; and the Nightblade's venoms)
+      expect(TALENTS[cls], cls).toHaveLength(cls === 'gloamknight' ? 18 : 15);
       for (const p of PRESETS[cls]) for (const row of [0, 1, 2]) expect(TALENTS[cls].filter((t) => t.row === row && (!t.spec || t.spec === p.id))).toHaveLength(3);
-      expect(ROW_NAMES).toEqual(['Core', 'Utility', 'Defensive']);
+      expect(ROW_NAMES).toEqual(['Core', 'Utility', 'Defensive', 'Venom']);
+      expect(TALENTS[cls].filter((t) => t.row === 3).every((t) => t.cls === 'gloamknight' && t.spec === 'shadow')).toBe(true);
       for (const t of TALENTS[cls]) {
         expect(t.tune || t.does || t.guard || t.hold || t.exec || t.rally, t.id).toBeTruthy();
         // what it changes by name, it names: the ability's own name is in its words
@@ -538,7 +539,7 @@ describe('The Ring: talents and set ups', () => {
           expect(users.some((u) => u.boon === g.boon), `${t.id}: nothing uses ${g.boon}`).toBe(true);
         }
       }
-      expect(new Set(TALENTS[cls].map((t) => t.name)).size).toBe(15);
+      expect(new Set(TALENTS[cls].map((t) => t.name)).size).toBe(TALENTS[cls].length);
     }
   });
 
