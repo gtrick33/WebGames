@@ -35,6 +35,7 @@ import type { ShopId } from './data/vendors';
 import { iconsReady } from './render/art/gameIcons';
 import { Renderer } from './render/renderer';
 import { setDangerTone } from './render/effects';
+import { paceStride } from './render3d/pace';
 import { actionLabel, codeMap, resolveBinds, type CampAction } from './input/binds';
 import { Sound, type MusicId } from './audio/sound';
 import type { Interactable } from './sim/types';
@@ -406,6 +407,16 @@ export class SigilEngine {
     }
   }
 
+  /**
+   * The least time between two frames, in milliseconds (0: every frame the screen offers), for the world and for the
+   * modes that draw themselves (the Ring, the Vigil, the hall of heroes). A phone's screen may run at 90 or 120: the
+   * game looks no better for it, and the heat is real, so a touch screen is held to sixty. With the battery saver on
+   * (Settings.saver), any screen is held to thirty.
+   */
+  get frameGap(): number {
+    return this.settings.saver ? 1000 / 33 : this.touchMode ? 1000 / 66 : 0;
+  }
+
   attach(input: HTMLElement): void {
     this.kbm = new KeyboardMouse(input);
     this.kbm.ultKey = this.settings.ultKey;
@@ -419,8 +430,7 @@ export class SigilEngine {
     this.stopShop = watchSigilfallShop(() => this.syncShop());
     const loop = (t: number): void => {
       this.raf = requestAnimationFrame(loop);
-      // (a phone's screen may run at 120: the game looks no better for it, and the heat is real)
-      if (this.touchMode && t - this.last < 1000 / 66) return;
+      if (t - this.last < this.frameGap) return;
       this.frame(t);
     };
     this.raf = requestAnimationFrame(loop);
@@ -978,6 +988,8 @@ export class SigilEngine {
     this.renderer.reducedMotion = s.reducedMotion;
     this.renderer.plates = s.plates;
     this.renderer.setGraphics(s.graphics);
+    // (the battery saver's thirty frames a second are chosen, not a machine falling behind: render3d/pace.ts)
+    paceStride(s.saver ? 2 : 1);
     setDangerTone(s.dangerTone);
     this.renderer.setZoom(s.zoom);
     if (this.kbm) {

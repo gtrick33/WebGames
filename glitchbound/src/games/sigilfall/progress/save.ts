@@ -81,6 +81,11 @@ export interface Settings {
   reducedMotion: boolean;
   /** How the picture is drawn: as many pixels as the machine keeps up with (auto), always full, or always light. */
   graphics: 'auto' | 'high' | 'low';
+  /**
+   * Battery saver: thirty frames a second in place of sixty. Half the pictures drawn is close to half the work, on
+   * the game's side and the graphics card's: a phone runs cooler and its battery lasts longer. Off unless chosen.
+   */
+  saver: boolean;
   /** The color of a blow about to land: red, or magenta (told apart from grass with red-green color blindness). */
   dangerTone: 'red' | 'magenta';
   ultKey: 'f' | 't' | 'shift' | 'rmb';
@@ -119,6 +124,7 @@ export const DEFAULT_SETTINGS: Settings = {
   plates: true,
   reducedMotion: false,
   graphics: 'auto',
+  saver: false,
   dangerTone: 'red',
   ultKey: 'f',
   skill4Key: 'c',
@@ -185,6 +191,7 @@ export function validateSettings(v: unknown): Settings {
     plates: bool(o.plates, d.plates),
     reducedMotion: bool(o.reducedMotion, d.reducedMotion),
     graphics: o.graphics === 'high' || o.graphics === 'low' ? o.graphics : 'auto',
+    saver: bool(o.saver, d.saver),
     dangerTone: o.dangerTone === 'magenta' ? 'magenta' : 'red',
     ultKey: o.ultKey === 't' || o.ultKey === 'shift' || o.ultKey === 'rmb' ? o.ultKey : 'f',
     skill4Key: o.skill4Key === 'v' || o.skill4Key === 'z' || o.skill4Key === 'x' ? o.skill4Key : 'c',

@@ -6,6 +6,7 @@ import { loadWardrobe } from './dress';
 import { loadLand, PITCH, type Land3D, type LandPacks } from './land';
 import { LIGHT } from './toon';
 import { heldElsewhere, Pacer, QUALITY_FLOOR } from './pace';
+import { groundLost, paintGround } from './groundBake';
 
 /**
  * The 3D view, four layers deep under the player's touches:
@@ -102,6 +103,8 @@ export class Stage {
       r.toneMapping = THREE.NoToneMapping;
     }
     this.gl.setClearColor(0x000000, 0);
+    // (a drawing context taken back and returned comes back empty: the picture kept of the ground with it)
+    this.groundCanvas.addEventListener('webglcontextrestored', groundLost);
     this.groundGl.setClearColor(0x07050d, 1);
     this.cast = new Cast(this.groundScene);
     this.scene.add(this.cast.root);
@@ -212,6 +215,8 @@ export class Stage {
     this.pace();
     // (what is thinned away is thinned in a pattern laid from the figure's own place in this picture: toon.ts dither)
     this.gl.getDrawingBufferSize(LIGHT.uRes.value);
+    // (what has come into view is painted into the picture kept of the ground: render3d/groundBake.ts)
+    paintGround(this.groundScene, this.groundGl, this.camera);
     this.groundGl.render(this.groundScene, this.camera);
     this.gl.render(this.scene, this.camera);
   }

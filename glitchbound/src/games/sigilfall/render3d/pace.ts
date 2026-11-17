@@ -32,6 +32,19 @@ export function heldElsewhere(now = performance.now()): boolean {
   return now < quietUntil;
 }
 
+/**
+ * Frames held back on purpose aren't a slow machine either. The battery saver draws every other frame (Settings.saver;
+ * engine.frameGap): read as they come, thirty a second looked like a machine that couldn't keep up, and the picture
+ * was stepped down a notch for a trial every time it was switched on. The pace is read as if each frame the screen
+ * offered had been drawn: a machine that struggles at thirty still shows it, and still draws fewer pixels.
+ */
+let stride = 1;
+
+/** Every `n`th frame is drawn, by choice (1: all of them). */
+export function paceStride(n: number): void {
+  stride = Math.max(1, n);
+}
+
 /** Slower than this between frames (about fifty a second), kept up, and the picture is drawn with fewer pixels. */
 export const PACE_SLOW = 1 / 50;
 /** The least share of the full picture it is drawn with. */
@@ -71,6 +84,7 @@ export class Pacer {
       return true;
     }
     if (!(dt > 0 && dt < 0.25)) return false;
+    dt /= stride;
     // (the pace over the last ten frames or so: one long frame is a hitch, not a slow machine)
     this.avg = this.avg * 0.9 + dt * 0.1;
     if (this.trial) {

@@ -467,6 +467,8 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
         shown = true;
         setView(v);
       }
+      // (no faster than a touch screen is held to, nor than the battery saver asks: engine.frameGap)
+      if (now - last < engine.frameGap) return;
       const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
       last = now;
       const time = now / 1000;

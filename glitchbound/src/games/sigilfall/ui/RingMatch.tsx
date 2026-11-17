@@ -885,8 +885,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     };
     const frame = (now: number): void => {
       raf = requestAnimationFrame(frame);
-      // (a phone's screen may run at 120: the fight looks no better for it, and the heat slows it down)
-      if (engine.touchMode && now - last < 1000 / 66) return;
+      // (a phone's screen may run at 120: the fight looks no better for it, and the heat slows it down. engine.frameGap)
+      if (now - last < engine.frameGap) return;
       const dt = Math.max(0, Math.min(0.1, (now - last) / 1000));
       last = now;
       const mine = moveNow();
