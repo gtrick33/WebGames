@@ -112,8 +112,6 @@ describe('The Ring: what each new super does', () => {
     for (const t of [a, b]) expect(t.auras.some((x) => x.cc === 'root')).toBe(true);
     expect(mage.auras.some((x) => x.kind === 'absorb')).toBe(true);
     expect(m.comboReady(mage, ABILITIES['m-fang']!, a)?.name).toBe('Shatter');
-    // (it never wears off with use)
-    expect(a.dr.root).toBeUndefined();
   });
 
   it('Thicket of Snares and Voidburst land on a patch of ground; the void silences, cuts healing and wraps the priest', () => {

@@ -125,13 +125,15 @@ describe('The Ring: whoever is held stays where they are', () => {
     for (const ab of Object.values(ABILITIES)) expect(ab.effects.some((e) => e.k === 'dispel'), ab.name).toBe(false);
   });
 
-  it('used again soon it holds for less, as every hold does: two seconds, then one', () => {
+  it('used again it holds just as long, as every hold does (no diminishing returns): two seconds, then two', () => {
     const { m, me, foe } = duel('gloamknight', 'warrior', [1, 0]);
     inside(m).land(me, AB('g-ambush'), foe, false);
     expect(foe.auras.find((a) => a.cc === 'stun')?.dur).toBe(2);
     walked(m, foe, 2.5);
     inside(m).land(me, AB('g-ambush'), foe, false);
-    expect(foe.auras.find((a) => a.cc === 'stun')?.dur).toBe(1);
+    expect(foe.auras.find((a) => a.cc === 'stun')?.dur).toBe(2);
+    // (what keeps it from coming round again at once is its own cooldown now, not only the shroud)
+    expect(AB('g-ambush').cd).toBeGreaterThan(0);
   });
 
   it('whatever an ability and a talent put on someone in one use is all on them: no hold takes another’s place', () => {

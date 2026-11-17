@@ -74,6 +74,8 @@ export const SAMPLES: Readonly<Record<string, SampleDef>> = {
   meteor: { files: ['firebig2', 'boom'], gain: 0.6, rate: [0.78, 0.88] },
   nova: { files: ['chime1'], gain: 0.36, rate: [0.95, 1.05] },
   freeze: { files: ['frost', 'shatter2'], gain: 0.36, rate: [0.95, 1.1] },
+  // (ice that someone was held in, breaking: the Ring's Shatter. Lower and louder than a ward giving way)
+  shatter: { files: ['shatter1', 'shatter2'], gain: 0.6, rate: [0.7, 0.8] },
   zap: { files: ['zap1', 'zap2'], gain: 0.3, rate: [0.95, 1.15] },
   thunder: { files: ['thunder'], gain: 0.5, rate: [0.9, 1.05] },
   holy: { files: ['chime2'], gain: 0.34, rate: [1.05, 1.15] },

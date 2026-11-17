@@ -317,7 +317,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('paladin', 'd', 'ret', [
       [
         { name: 'Mounting Ardor', text: 'Oath Blow generates Ardor, up to 4. Hammerfall spends it to deal 30% more damage per Ardor.', icon: 'massive_light_explosion_with_rays_on_gold', points: { name: 'Ardor', one: 'Ardor', max: 4, color: '#ffd84a' }, tune: { 'd-blow': { build: { n: 1 } }, 'd-fall': { spend: { per: 0.3 } } } },
-        { name: 'Dawnfire', text: 'Oath Blow has a 18% chance, and always on a critical hit, to trigger Dawnfire: your next Hammerfall has no cooldown and burns the target for 79 damage over 4 sec.', icon: 'burning_sun_disc_on_orange', tune: { 'd-blow': { gives: [{ boon: 'dawnfire', chance: 0.18, crit: true }] }, 'd-fall': { uses: [{ boon: 'dawnfire', nocd: true, extra: [{ k: 'dot', n: 90, dur: 4 }] }] } } },
+        { name: 'Dawnfire', text: 'Oath Blow has a 18% chance, and always on a critical hit, to trigger Dawnfire: your next Hammerfall has no cooldown and burns the target for 74 damage over 4 sec.', icon: 'burning_sun_disc_on_orange', tune: { 'd-blow': { gives: [{ boon: 'dawnfire', chance: 0.18, crit: true }] }, 'd-fall': { uses: [{ boon: 'dawnfire', nocd: true, extra: [{ k: 'dot', n: 90, dur: 4 }] }] } } },
         { name: 'Verdict of Light', text: 'Every third hit deals 35 extra damage and heals your most injured ally for 35.', icon: 'beam_of_light_from_the_sky_on_gold', does: { k: 'verdict', every: 3, n: 35 } },
       ],
       [
@@ -407,7 +407,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
       [
         { name: 'Iron Grip', text: 'Grave Chain also roots the target for 1.5 sec after the pull.', icon: 'burning_chain_link_on_black', tune: { 'g-chain': { extra: [{ k: 'cc', cc: 'root', dur: 1.5 }] } } },
         { name: 'Dusk Mantle', text: 'Enemies in melee range of you move 15% slower.', icon: 'shadow_veil_curtain_on_violet', does: { k: 'mantle', pct: 0.15 } },
-        { name: 'Crushing Hand', text: 'Grave Hand also deals 54 damage and reduces healing on the target by 30% for 6 sec.', icon: 'stone_smash_with_a_fist_on_grey', tune: { 'g-hand': { extra: [{ k: 'dmg', n: 60 }, { k: 'antiheal', pct: 30, dur: 6 }] } } },
+        { name: 'Crushing Hand', text: 'Grave Hand also deals 53 damage and reduces healing on the target by 30% for 6 sec.', icon: 'stone_smash_with_a_fist_on_grey', tune: { 'g-hand': { extra: [{ k: 'dmg', n: 60 }, { k: 'antiheal', pct: 30, dur: 6 }] } } },
       ],
     ]),
     ...styleRows('gloamknight', 'g', 'shadow', [

@@ -309,7 +309,6 @@ function control(m: Match, f: Fighter, b: Brain, skill: number, enemies: Fighter
     const breaks = kind === 'incap' || kind === 'fear';
     const on = breaks ? dps : kind === 'stun' ? (healer && hpShare(target) < 0.6 ? healer : target) : target;
     if (!on || on.auras.some((x) => x.kind === 'immune' || (x.cc && x.t > 0.6))) continue;
-    if ((on.dr[kind]?.n ?? 0) >= 2 && on.dr[kind]!.until > m.clock) continue;
     if (ab.aim === 'near') {
       if (Math.hypot(on.x - f.x, on.y - f.y) > ab.range) continue;
     } else if (m.blocked(f, ab, on)) continue;

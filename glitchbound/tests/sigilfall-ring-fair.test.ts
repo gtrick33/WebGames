@@ -152,8 +152,10 @@ describe('The Ring: no healers in 1v1', () => {
     expect(screen.match(/if \(barred\) return;/g)).toHaveLength(2);
     expect(screen).toMatch(/const findMatch = \(\): void => \{[\s\S]{0,260}if \(barred\) return;/);
     expect(screen).toMatch(/const enter = \(\): void => \{[\s\S]{0,260}if \(barred\) return;/);
-    // (the reason is on the page for as long as it holds, and gone with another format or playstyle)
-    expect(screen).toContain('{(barred || seekNote) && (');
+    // (the reason is on the page for as long as it holds, and gone with another format or playstyle: under the gold
+    // button, or in the layer where the fight is chosen while that is open)
+    expect(screen).toContain('{(barred || seekNote) && !playOpen && (');
+    expect(screen).toContain('note={barred ? BARRED_WHY : seekNote}');
     expect(screen).toContain("barred ? 'No healers in 1v1' : `Find a ${format}v${format} match`");
     expect(screen).toContain('{barred ? BARRED_WHY : seekNote}');
     expect(BARRED_WHY).toBe('Healers can’t enter 1v1. Choose a damage playstyle, or play 2v2 or 3v3.');

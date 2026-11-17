@@ -166,7 +166,7 @@ describe('The Ring: the rules', () => {
     expect(m.fighters[0]!.score.kicks).toBe(1);
   });
 
-  it('crowd control wears off harder each time, then not at all, and the slate wipes clean with time', () => {
+  it('crowd control lands for its whole length every time: no diminishing returns, its cooldown keeps it apart (the owner, 2026-11-17)', () => {
     const m = duel('paladin', PRESETS.paladin[1]!.bar, 'warrior');
     const foe = m.fighters[1]!;
     const stun = (): number => {
@@ -176,13 +176,33 @@ describe('The Ring: the rules', () => {
       m.press(0, 'd-hammer');
       return foe.auras.find((a) => a.cc === 'stun')?.t ?? 0;
     };
-    // (holds are short in a brawl: a stun is a second and a half at most)
-    expect(stun()).toBeCloseTo(1.5);
-    expect(stun()).toBeCloseTo(0.75);
-    expect(stun()).toBeCloseTo(0.375);
-    expect(stun()).toBe(0);
-    wait(m, 20);
-    expect(stun()).toBeCloseTo(1.5);
+    // (holds are short in a brawl: a stun is a second and a half at most; and it is that long the fourth time too)
+    for (let i = 0; i < 4; i++) expect(stun()).toBeCloseTo(1.5);
+    // what keeps it from being kept up is its cooldown, not the target wearing it off
+    m.fighters[0]!.gcd = 0;
+    foe.auras = [];
+    expect(m.press(0, 'd-hammer')).toBe('Not ready yet');
+  });
+
+  it('no hold can be kept up most of the time by one player: each lasts well under half its own cooldown', () => {
+    for (const ab of Object.values(ABILITIES)) {
+      if (ab.super) continue;
+      for (const e of ab.effects) {
+        if (e.k !== 'cc' && e.k !== 'trap') continue;
+        expect(ab.cd, `${ab.name} has no cooldown`).toBeGreaterThan(0);
+        expect(e.dur / ab.cd, ab.name).toBeLessThanOrEqual(0.3);
+      }
+    }
+    // (talents that lengthen a hold or shorten its cooldown stay inside it too)
+    for (const t of Object.values(TALENT_BY_ID)) {
+      for (const [id, tune] of Object.entries(t.tune ?? {})) {
+        const ab = ABILITIES[id];
+        if (!ab || ab.super) continue;
+        const cd = ab.cd * (tune.cd ?? 1);
+        const holds = [...ab.effects, ...(tune.extra ?? [])].filter((e) => e.k === 'cc' || e.k === 'trap');
+        for (const e of holds) if (e.k === 'cc' || e.k === 'trap') expect(((e.dur * (tune.dur ?? 1)) / cd), `${t.name} on ${ab.name}`).toBeLessThanOrEqual(0.36);
+      }
+    }
   });
 
   it('hurt breaks a hold as in the classic arena: a daze at once, a fear past a tenth of their health, a root past 14%; a stun never (the owner: "roots should break after some dmg has been done, similar to wows roots, same for fears")', () => {

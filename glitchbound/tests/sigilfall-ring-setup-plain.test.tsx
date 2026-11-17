@@ -106,7 +106,7 @@ describe('The Ring’s setup: a playstyle and its talents, and nothing else', ()
     expect(LOBBY_STEPS.map((s) => s.id)).not.toContain('extras');
     for (const st of LOBBY_STEPS) expect(st.text('warrior')).not.toMatch(/oath/i);
     // (the main screen's bar is labeled; what each icon does is read on the setup page, where its step says so)
-    expect(LOBBY_STEPS.find((s) => s.id === 'welcome')!.labels!.find((l) => l.spot === 'loadout')!.text).toBe('What you bring');
+    expect(LOBBY_STEPS.find((s) => s.id === 'welcome')!.labels!.find((l) => l.spot === 'styles')!.text).toBe('Its two playstyles');
     expect(LOBBY_STEPS.find((s) => s.id === 'kit')!.text('warrior')).toMatch(/Point at any icon, or tap it/);
   });
 });
@@ -179,9 +179,13 @@ describe('The Ring’s nameplates: the way each fights, in small letters', () =>
 });
 
 describe('The Ring’s main screen: what you bring, each one to be read', () => {
-  it('the bar on the main screen and in a room of friends opens each ability', () => {
+  it('the main screen is the setup, every icon read where it is; a room of friends opens each ability in a window', () => {
     const screen = read('src/games/sigilfall/ui/RingScreen.tsx');
-    expect(screen).toContain('<BarRow bar={bar} cls={pick} ult={ult} onPick={setReading} />');
+    expect(screen).toContain('<SetupEditor key={pick} cls={pick} sets={sets} onSets={putSets} />');
+    // (no button to open it from the main screen any more: only a room of friends, which keeps its own page, opens the
+    // same editor in a window over it)
+    expect(screen.match(/Change playstyle & talents/g)).toHaveLength(1);
+    expect(screen).toContain("onSetup={() => setSetupOpen(true)}");
     expect(screen).toContain('<BarRow bar={bar} cls={pick} ult={myPick.ult} onPick={onRead} />');
     expect(screen).toContain('{reading && <AbilityCard key={reading.id} ab={reading} cls={pick} bar={bar} talents={talents} onClose={() => setReading(null)} />}');
   });

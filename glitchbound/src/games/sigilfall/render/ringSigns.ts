@@ -341,27 +341,25 @@ const LOOKS: Record<string, Look> = {
       b.spray(FX.flake, 5, 16, 6, RIME, { rise: 14 });
     },
   },
-  // Frostfang: the bite. Two jaws of ice close on them from either side and meet; frost cracks out under them and
-  // splinters fly. On the frozen it is Shatter, and the school's own burst follows.
+  // Frostfang: the bite. The fang drives in and spikes of ice burst out of them away from the throw, a knock of
+  // cold where it struck, the ground frosted in a star and splinters thrown on. (Its own look, not with the school's
+  // burst under it: a Shatter is bigger again, and drawn by drawShatter.)
   'm-fang': {
-    keep: true,
-    dur: { land: 0.6 },
+    dur: { land: 0.55 },
     land: (b) => {
-      const shut = Math.min(1, b.u * 4);
-      const gap = (1 - shut) * 16 + 2;
-      for (const side of [-1, 1]) {
-        const ang = b.a + (side * Math.PI) / 2;
-        for (let i = -1; i <= 1; i++) {
-          const along = i * 7;
-          b.put({ kind: FX.frost, dx: Math.cos(ang) * gap + Math.cos(b.a) * along, dy: Math.sin(ang) * gap * 0.6 + Math.sin(b.a) * along * 0.6, up: 15 + side * 5 * (1 - shut), w: 17 - Math.abs(i) * 4, h: 6, rot: Math.PI / 2 + side * 0.5, a: ICE, b: RIME, alpha: b.fade, seed: b.s.seed + i + side });
-        }
+      const out = Math.min(1, b.u * 5);
+      const pop = out * out * (3 - 2 * out);
+      b.put({ kind: FX.impact, up: 15, w: 34, a: ICE, b: '#ffffff', t: Math.min(1, b.u * 1.6), seed: b.s.seed });
+      // (the spikes: thrown out of the far side of them, along the way it came, fanned)
+      for (let i = 0; i < 5; i++) {
+        const turn = (i - 2) * 0.42;
+        const ang = b.a + turn;
+        const reach = (7 + (i % 2) * 3) * pop;
+        b.put({ kind: FX.frost, dx: Math.cos(ang) * reach, dy: Math.sin(ang) * reach * 0.6, up: 15 + (2 - Math.abs(i - 2)) * 2.5 - turn * 4, w: (20 - Math.abs(i - 2) * 4) * pop, h: 6, rot: -turn * 1.4, a: '#2a8ae8', b: '#f4fdff', alpha: b.fade, seed: b.s.seed + i });
       }
-      if (shut >= 1) {
-        b.put({ kind: FX.impact, up: 15, w: 30, a: RIME, b: '#ffffff', t: (b.u - 0.25) / 0.75, seed: b.s.seed });
-        b.ground(FIELD.frost, 15, ICE, RIME);
-        b.ring(22, RIME);
-        b.spray(FX.flake, 7, 22, 6, RIME, { rise: 16 });
-      }
+      b.ground(FIELD.frost, 14, ICE, RIME);
+      b.ring(20, RIME, 0.2);
+      b.spray(FX.flake, 6, 20, 5.5, RIME, { rise: 14, from: 0.3 });
     },
   },
   // Rimeglobe: thrown, it gathers cold as it goes
@@ -1110,28 +1108,49 @@ const FLIGHTS: Record<string, Flight> = {
       q.put({ kind: FX.frost, x: x + Math.cos(ang) * 8, y: y + Math.sin(ang) * 4.5, up: 14, w: 10, h: 4, rot: ang, a: '#9fdcff', b: '#ffffff', seed: i });
     }
   },
-  // Frostfang: two fangs of ice that form at the hand, swing wide of each other, turn as they go and close on their
-  // target like jaws, each shedding frost behind it
-  'm-fang': (q, x, y, ux, uy, time, seed, flown, _strong, u) => {
-    const grow = Math.min(1, u * 5);
-    const wide = Math.sin(Math.min(1, u) * Math.PI) * 15 + (1 - u) * 2;
+  // Frostfang: a hooked fang of ice. It forms at the hand out of a knot of cold, then goes point first, quicker and
+  // quicker, two splinters winding round it, a ribbon of frost and a shed of flakes behind it. One that will shatter
+  // (`strong`: its combo was ready as it left the hand, or a boon made it) is bigger and brighter, and crackles.
+  'm-fang': (q, x, y, ux, uy, time, seed, flown, strong, u) => {
+    const k = shortened(ux, uy);
     const rot = screenAngle(ux, uy);
-    q.put({ kind: FX.glow, x, y, up: 14, w: 30 * grow, a: '#4ab8ff', alpha: 0.45 });
-    for (const side of [-1, 1]) {
-      const fx = x - uy * wide * side;
-      const fy = y + ux * wide * side;
-      // (turned in toward each other more and more as they close)
-      const turn = side * (0.9 - u * 1.5);
-      q.put({ kind: FX.frost, x: fx, y: fy, up: 14 + Math.sin(u * Math.PI) * 6, w: 30 * grow * shortened(ux, uy), h: 10 * grow, rot: rot + turn, a: '#4ab8ff', b: '#ffffff', seed: seed + side });
-      for (let i = 1; i <= 4; i++) {
-        const back = i * 7;
-        if (back > flown) break;
-        const ub = Math.max(0, u - i * 0.07);
-        const wb = Math.sin(ub * Math.PI) * 15 + (1 - ub) * 2;
-        const ph = (time * 2 + i * 0.3) % 1;
-        q.put({ kind: i % 2 ? FX.flake : FX.spark, x: x - ux * back - uy * wb * side, y: y - uy * back + ux * wb * side, up: 14 - ph * 6, w: 6 - i, a: '#e0f8ff', t: 0.2, alpha: 0.9 - i * 0.18, seed: seed + i });
-      }
+    const big = strong ? 1.3 : 1;
+    const form = Math.min(1, u / 0.22);
+    const grow = form * form * (3 - 2 * form);
+    const up = 14 + Math.sin(u * Math.PI) * 5;
+    if (u < 0.3) q.put({ kind: FX.gather, x, y, up, w: 34 * big, a: '#9fdcff', b: '#ffffff', t: Math.min(1, u / 0.3), seed });
+    q.put({ kind: FX.glow, x, y, up, w: (28 + (strong ? 16 : 0)) * grow, a: '#4ab8ff', alpha: strong ? 0.75 : 0.55 });
+    // (the ribbon behind it, longer the farther and faster it has come)
+    const tail = Math.min(flown, 16 + 46 * u * u);
+    if (tail > 4) q.put({ kind: FX.trail, x: x - (ux * tail) / 2, y: y - (uy * tail) / 2, up, w: tail * k, h: (strong ? 10 : 7) * grow, rot, a: '#4ab8ff', b: '#e8fbff', seed });
+    // the fang: a thick root, then its point turned down off the line, a hooked tooth and not a spear. (A deep blue
+    // under its white face, so that it is seen on the snow of the Frozen Mere as well as on stone and sand)
+    const hook = Math.cos(rot) >= 0 ? -0.55 : 0.55;
+    q.put({ kind: FX.frost, x: x - ux * 6, y: y - uy * 6, up: up + 1, w: (21 * k + 5) * big * grow, h: 13 * big * grow, rot, a: '#1d63d6', b: '#f4fdff', seed });
+    q.put({ kind: FX.frost, x: x + ux * 7, y: y + uy * 7, up: up - 2.5 * grow, w: (15 * k + 4) * big * grow, h: 8.5 * big * grow, rot: rot + hook, a: '#2a8ae8', b: '#ffffff', seed: seed + 1 });
+    // a glint at its point
+    q.put({ kind: FX.spark, x: x + ux * 14, y: y + uy * 14, up: up - 4.5, w: (7 + Math.sin(time * 38 + seed) * 2) * grow, a: '#ffffff', t: 0.2 });
+    // two splinters winding round it, a turn every so far
+    for (let i = 0; i < 2; i++) {
+      const ph = flown * 0.32 + time * 6 + i * Math.PI + seed;
+      const r = 8 * grow;
+      const off = Math.cos(ph) * r;
+      q.put({ kind: FX.frost, x: x - ux * 9 - uy * off, y: y - uy * 9 + ux * off, up: up + Math.sin(ph) * r * 0.8, w: 11 * grow * k + 3, h: 4.5, rot, a: '#4ab8ff', b: '#ffffff', alpha: 0.65 + 0.35 * Math.sin(ph), seed: seed + 2 + i });
     }
+    // a breath of cold mist behind it, thinning
+    for (let i = 1; i <= 3; i++) {
+      const back = 10 + i * 9;
+      if (back > flown) break;
+      q.put({ kind: FX.smoke, x: x - ux * back, y: y - uy * back, up: up - i, w: 10 + i * 4, a: '#cfefff', alpha: 0.42 - i * 0.1, t: 0.3, seed: seed + i * 3 });
+    }
+    // flakes shed behind it
+    for (let i = 1; i <= 4; i++) {
+      const back = 8 + i * 8;
+      if (back > flown) break;
+      const ph = (time * 3 + i * 0.29 + seed) % 1;
+      q.put({ kind: FX.flake, x: x - ux * back - uy * (ph - 0.5) * 10, y: y - uy * back + ux * (ph - 0.5) * 10, up: up - ph * 9, w: 5, a: '#e0f8ff', alpha: (1 - ph) * 0.9, seed: seed + i });
+    }
+    if (strong) q.put({ kind: FX.ring, x, y, up, w: (21 + Math.sin(time * 31) * 2) * grow, a: '#e0f8ff', t: 0.5, alpha: 0.6, seed });
   },
 };
 
@@ -1143,17 +1162,6 @@ export function drawFlight(q: Fx3D, ab: string, x: number, y: number, ux: number
   if (!paint) return false;
   paint(q, x, y, ux, uy, time, seed, flown, strong, u);
   return true;
-}
-
-/**
- * How long a thrown ability that lands at once is seen on its way, for the few that are to be watched and not only
- * glimpsed (the owner, 2026-11-17, of Frostfang: "we need not such a fast bolt, make it fitting and animated"). Only
- * the picture takes this long: what it does has landed already. Undefined: it crosses in a blink, as the rest do.
- */
-const SLOW: Record<string, { per: number; least: number; most: number }> = { 'm-fang': { per: 300, least: 0.3, most: 0.5 } };
-export function flightTime(ab: string, dist: number): number | undefined {
-  const s = SLOW[ab];
-  return s ? Math.max(s.least, Math.min(s.most, dist / s.per)) : undefined;
 }
 
 /**
@@ -1186,6 +1194,63 @@ export function drawGlobe(q: Fx3D, x: number, y: number, r: number, vx: number, 
       const ang = i * 1.05 + time * 0.6;
       q.put({ kind: FX.flake, x: x + Math.cos(ang) * r * 0.7, y: y + Math.sin(ang) * r * 0.55, up: 4 + (1 - ph) * 22, w: 6, a: '#e0f8ff', alpha: Math.sin(ph * Math.PI) * left, seed: i });
     }
+  }
+}
+
+/** How long a Shatter is seen, in seconds, and how long its target is held still in the ice before it breaks. */
+export const SHATTER_T = 0.9;
+export const SHATTER_HOLD = 0.1;
+
+/**
+ * Frostfang's Shatter going off on someone (the owner, 2026-11-17: "casting the spell with shatter doesnt feel like im
+ * hitting anything, make it impactful"): for a moment they are ice from head to foot, then it breaks. A flash, a ring
+ * of cold racing out over the ground and the ground cracked white under them, and the ice they were in thrown out in
+ * shards that rise, spin and fall back, with flakes and glints after. `u` 0 to 1 over SHATTER_T, `a` the way the fang
+ * came (the shards go mostly on that way). Only drawn: what it did has landed.
+ */
+export function drawShatter(q: Fx3D, x: number, y: number, u: number, a: number, seed: number): void {
+  const hold = SHATTER_HOLD / SHATTER_T;
+  const fade = Math.max(0, 1 - u * u);
+  if (u < hold * 1.6) {
+    // held in the ice: a skin of it over them and spikes of it round them
+    const k = Math.min(1, u / (hold * 0.5));
+    q.put({ kind: FX.bubble, x, y, up: 15, w: 30 * k, a: '#bfeaff', alpha: 0.9 });
+    for (let i = 0; i < 6; i++) {
+      const ang = (i / 6) * Math.PI * 2 + seed;
+      q.put({ kind: FX.frost, x: x + Math.cos(ang) * 7, y: y + Math.sin(ang) * 4.2, up: 12 * k, w: 24 * k, h: 7, rot: Math.PI / 2 - Math.cos(ang) * 0.35, a: '#2a8ae8', b: '#f4fdff', seed: seed + i });
+    }
+  }
+  if (u < hold) return;
+  // it breaks
+  const v = (u - hold) / (1 - hold);
+  const out = 1 - (1 - v) * (1 - v);
+  if (v < 0.6) q.put({ kind: FX.impact, x, y, up: 15, w: 56, a: '#7fd4ff', b: '#ffffff', t: Math.min(1, v * 1.8), seed });
+  q.put({ kind: FX.glow, x, y, up: 15, w: 90 * (0.6 + 0.4 * out), a: '#4ab8ff', alpha: 0.7 * (1 - v) });
+  q.put({ kind: FX.shock, x, y, flat: true, w: 96 * out, a: '#9fdcff', t: v, alpha: 1 - v * v, seed });
+  q.put({ kind: FX.crack, x, y, flat: true, w: 76, a: '#9fdcff', b: '#0a1a2a', t: Math.min(1, v * 0.9), seed });
+  q.put({ kind: FX.field, x, y, flat: true, w: 46, a: '#7fd4ff', b: '#e0f8ff', t: 1, alpha: 0.7 * fade, seed, p1: FIELD.frost });
+  // the shards: out and up, spinning, and back down under their own weight
+  const s = v * SHATTER_T;
+  for (let i = 0; i < 14; i++) {
+    const h = ((i * 37 + Math.floor(seed * 10)) % 17) / 17;
+    const ang = a + (i / 14) * Math.PI * 2 + h * 0.4;
+    // (more of them go on the way the fang was going)
+    const speed = 64 + h * 58 + Math.max(0, Math.cos(ang - a)) * 40;
+    const lift = 46 + ((i * 11) % 7) * 9;
+    const up = 15 + lift * s - 210 * s * s;
+    if (up < 0) continue;
+    q.put({ kind: FX.frost, x: x + Math.cos(ang) * speed * s, y: y + Math.sin(ang) * speed * s * 0.6, up, w: (9 + (i % 3) * 3.5) * (1 - v * 0.35), h: 3.6 + (i % 2) * 1.4, rot: ang + s * (9 + (i % 4) * 4) * (i % 2 ? 1 : -1), a: i % 3 ? '#9fdcff' : '#2a8ae8', b: '#ffffff', alpha: Math.min(1, (1 - v) * 1.6), seed: seed + i });
+  }
+  for (let i = 0; i < 8; i++) {
+    const ang = i * 2.39 + seed;
+    const r = 10 + out * (18 + (i % 3) * 8);
+    q.put({ kind: FX.flake, x: x + Math.cos(ang) * r, y: y + Math.sin(ang) * r * 0.6, up: 8 + out * 20 - v * v * 14, w: 6, a: '#e0f8ff', alpha: fade, seed: seed + i });
+  }
+  // glints: quick, sharp, here and there in the burst
+  for (let i = 0; i < 5; i++) {
+    const g = (v * 3 + i * 0.37) % 1;
+    const ang = i * 1.7 + seed;
+    if (v < 0.75) q.put({ kind: FX.spark, x: x + Math.cos(ang) * (8 + i * 4) * out, y: y + Math.sin(ang) * (8 + i * 4) * out * 0.6, up: 14 + i * 3, w: 4 + Math.sin(g * Math.PI) * 8, a: '#ffffff', t: 0.2, alpha: Math.sin(g * Math.PI) });
   }
 }
 
