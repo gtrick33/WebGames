@@ -142,6 +142,7 @@ export class Cast {
   private readonly people = new Map<string, Crowd>();
   private readonly props = new Map<string, Stand>();
   private readonly colossi = new Map<string, Crowd>();
+  private readonly giants = new Set<Crowd>();
   private readonly mounts = new Map<string, { crowd: Crowd | null; model: MountModel | null; loading: boolean }>();
   private readonly used = new Set<Crowd | Stand>();
   private readonly shadowMesh: THREE.InstancedMesh;
@@ -153,6 +154,12 @@ export class Cast {
   private readonly scale = new THREE.Vector3();
   /** Where to look for still things (a chest, a potion). */
   packs: Pack[] = [];
+  /**
+   * How many of the picture's pixels one tile spans where the camera looks (render3d/stage.ts look), or 0 where
+   * nobody has said (a camera placed by hand: the hall of heroes): the figures are drawn with no more shape than
+   * that many pixels can show (render3d/crowd.ts THIN_PX).
+   */
+  px = 0;
 
   constructor(ground: THREE.Object3D) {
     const quad = new THREE.PlaneGeometry(1, 1);
@@ -191,7 +198,13 @@ export class Cast {
     for (const c of this.props.values()) empty(c);
     for (const c of this.colossi.values()) empty(c);
     for (const c of this.mounts.values()) if (c.crowd) empty(c.crowd);
-    for (const c of this.used) c.end();
+    // (a lighter model of one kind of figure may be made in a frame, no more: making it takes a few milliseconds)
+    const budget = { left: 1 };
+    for (const c of this.used) {
+      // (the great statues are their own size, and seen whole)
+      if (c instanceof Crowd && !this.giants.has(c)) c.end(this.px, budget);
+      else c.end();
+    }
     this.shadowMesh.count = this.shadowN;
     this.shadowMesh.instanceMatrix.needsUpdate = true;
     this.rings.count = this.ringN;
@@ -286,6 +299,7 @@ export class Cast {
     let crowd = this.colossi.get(c.kit);
     if (!crowd) {
       crowd = new Crowd(mesh, rig, this.root, 4, 0, true);
+      this.giants.add(crowd);
       this.colossi.set(c.kit, crowd);
     }
     const tall = Math.max(0.05, mesh.max[1] - mesh.min[1]);

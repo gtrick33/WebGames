@@ -23,6 +23,7 @@ import { ScreenGate } from './ScreenGate';
 import { Stick } from './Stick';
 import { wearOf } from './wear';
 import { readBests, saveBest, VigilLobby } from './VigilLobby';
+import { part, say } from './hudWrite';
 import { addToCodex, markVigilTaught, saveClassBest, vigilTaught } from '../vigil/bests';
 
 const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
@@ -329,6 +330,7 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
     openBattlefield(world.map);
     const renderer = new Renderer(base);
     renderer.landOnly = true;
+    renderer.setGraphics(engine.settings.graphics);
     renderer.keepObject = keepOnLand;
     renderer.setHeroWeapon(mine.cls, world);
     const map = world.map;
@@ -351,10 +353,13 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
     const landTimer = window.setTimeout(() => setLandIn(true), 3500);
     let raf = 0;
     let last = performance.now();
+    let phone = engine.touchMode;
     const fit = (): void => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
-      // (the hero in the very middle: the Host comes from everywhere)
-      renderer.resize(box.clientWidth, box.clientHeight, dpr, false);
+      phone = engine.touchMode;
+      // (the hero in the very middle: the Host comes from everywhere. The wide framing on every screen; on a phone,
+      // a phone's count of pixels all the same: it was drawn at the full two to the point, 38% more than the world)
+      renderer.resize(box.clientWidth, box.clientHeight, dpr, false, phone);
       renderer.snap(world);
     };
     fit();
@@ -469,6 +474,8 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
       }
       // (no faster than a touch screen is held to, nor than the battery saver asks: engine.frameGap)
       if (now - last < engine.frameGap) return;
+      // (a first touch after the watch began: a phone's picture from here on)
+      if (engine.touchMode !== phone) fit();
       const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
       last = now;
       const time = now / 1000;
@@ -525,27 +532,27 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
       /* -------------------------------------------------- the HUD */
       const max = v.maxHpOf(me);
       if (hurtRef.current) hurtRef.current.style.opacity = String(Math.max(me.struck * 0.75, me.hp / max < 0.25 ? 0.28 + Math.sin(now / 240) * 0.14 : 0));
-      if (flashRef.current) flashRef.current.style.opacity = String(v.levelFlash * 0.55);
+      if (flashRef.current) flashRef.current.style.opacity = String(Math.round(v.levelFlash * 55) / 100);
       const boss = v.foes.find((f) => f.boss);
       if (bossRef.current) {
         bossRef.current.style.display = boss ? 'grid' : 'none';
         if (boss) {
-          bossRef.current.querySelector('b')!.textContent = boss.boss;
-          bossRef.current.querySelector('i')!.style.width = `${Math.max(0, boss.hp / boss.maxHp) * 100}%`;
+          say(bossRef.current.querySelector('b'), boss.boss ?? '');
+          bossRef.current.querySelector('i')!.style.width = part(boss.hp / boss.maxHp);
         }
       }
-      if (hudT.current) hudT.current.textContent = clock(v.t);
-      if (hudK.current) hudK.current.textContent = String(v.kills);
-      if (hudL.current) hudL.current.textContent = String(v.level);
-      if (hudXp.current) hudXp.current.style.width = `${Math.min(100, (v.xp / v.xpNext) * 100)}%`;
-      if (hudHp.current) hudHp.current.style.width = `${Math.min(100, (Math.max(0, me.hp) / max) * 100)}%`;
+      say(hudT.current, clock(v.t));
+      say(hudK.current, String(v.kills));
+      say(hudL.current, String(v.level));
+      if (hudXp.current) hudXp.current.style.width = part(v.xp / v.xpNext);
+      if (hudHp.current) hudHp.current.style.width = part(me.hp / max);
       if (hudFz.current) {
         const on = me.frenzyT > 0;
         hudFz.current.classList.toggle('is-on', on);
-        hudFz.current.querySelector('i')!.style.width = `${(on ? me.frenzyT / 6 : me.frenzy) * 100}%`;
+        hudFz.current.querySelector('i')!.style.width = part(on ? me.frenzyT / 6 : me.frenzy);
       }
       if (hudDash.current) {
-        hudDash.current.style.setProperty('--cd', String(me.dashCd / v.dashEvery(me)));
+        hudDash.current.style.setProperty('--cd', String(Math.round((me.dashCd / v.dashEvery(me)) * 200) / 200));
         hudDash.current.classList.toggle('is-ready', me.dashCd <= 0);
       }
       if (hudParty.current) {
@@ -555,15 +562,15 @@ function VigilRun({ engine, land, party, meId, seed, hostName, role, onBack }: {
           const row = hudParty.current.children[i++] as HTMLElement | undefined;
           if (!row) continue;
           row.classList.toggle('is-down', h.down);
-          (row.querySelector('i') as HTMLElement).style.width = `${Math.min(100, (Math.max(0, h.hp) / v.maxHpOf(h)) * 100)}%`;
+          (row.querySelector('i') as HTMLElement).style.width = part(h.hp / v.maxHpOf(h));
         }
       }
       if (hudWait.current) {
         const waiting = !me.cards && v.choosing ? v.heroes.filter((h) => h.cards).map((h) => h.name) : [];
-        hudWait.current.textContent = waiting.length ? `Waiting for ${waiting.join(' and ')} to choose…` : me.down && !v.over ? 'You’re down. A friend can get you up.' : '';
+        say(hudWait.current, waiting.length ? `Waiting for ${waiting.join(' and ')} to choose…` : me.down && !v.over ? 'You’re down. A friend can get you up.' : '');
       }
-      if (hudCard.current) hudCard.current.style.width = `${(me.cardT / CARD_SECONDS) * 100}%`;
-      if (banner.current) banner.current.textContent = v.banner?.text ?? '';
+      if (hudCard.current) hudCard.current.style.width = part(me.cardT / CARD_SECONDS);
+      say(banner.current, v.banner?.text ?? '');
       if (me.cards !== cards) {
         cards = me.cards;
         picking = false;
