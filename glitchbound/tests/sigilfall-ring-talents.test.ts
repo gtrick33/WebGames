@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS, type Ability, type CcKind } from '../src/games/sigilfall/arena/abilities';
 import { lookOf } from '../src/games/sigilfall/arena/look';
 import { ARM, NEAR, TALENT_BY_ID, TALENTS, type Doing, type Talent } from '../src/games/sigilfall/arena/talents';
-import { GATES, Match, ORB_HEAL, type Fighter, type MoveInput } from '../src/games/sigilfall/arena/sim';
+import { BASE_SPEED, GATES, Match, ORB_HEAL, type Fighter, type MoveInput } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 
@@ -217,12 +217,42 @@ describe('The Ring talents: the mage', () => {
     expect(mage.hp).toBe(low - c);
   });
 
-  it('Vanishing Point: falling low, they vanish away from the nearest enemy', () => {
+  it('Vanishing Point: falling low, they fade from sight where they stand, and are not moved', () => {
+    // (the owner, 2026-11-17: "mage vanish deffensive talent feels weird as if im getting teleported randomly, refactor
+    // the whole talent or add an effect please". It threw them a hundred paces off; now it hides them and they walk.)
     const m = fight([{ team: 0, cls: 'mage', talents: ['m-3c'] }, { team: 1, cls: 'warrior' }]);
     const [mage, foe] = m.fighters as [Fighter, Fighter];
     mage.hp = Math.round(mage.maxHp * 0.4);
+    inside(m).crowd(foe, AB('m-ring'), mage, 'root', 3);
+    const [x, y] = [mage.x, mage.y];
+    m.events.length = 0;
     inside(m).damage(foe, mage, 100, true, AB('w-hew'));
-    expect(mage.x).toBeCloseTo(200 - 100, 0);
+    // where they were, out of the other side's sight, with nothing rooting or slowing them, and quicker
+    expect([mage.x, mage.y]).toEqual([x, y]);
+    expect(m.unseen(mage, foe)).toBe(true);
+    expect(m.rooted(mage)).toBe(false);
+    expect(foe.target).toBeNull();
+    expect(inside(m).speedOf(mage)).toBeCloseTo(BASE_SPEED * 1.3, 5);
+    // both sides are shown where it happened, and it is called by its name
+    expect(m.events.some((e) => e.k === 'fade' && e.id === mage.id && e.x === x && e.y === y)).toBe(true);
+    expect(m.events.some((e) => e.k === 'word' && e.word === 'Vanishing Point')).toBe(true);
+    // nothing that lands on them brings them back
+    inside(m).damage(foe, mage, 20, true, AB('w-hew'));
+    expect(m.unseen(mage, foe)).toBe(true);
+    // it lasts as long as its words say, and no longer
+    wait(m, 2.4);
+    expect(m.unseen(mage, foe)).toBe(true);
+    wait(m, 0.2);
+    expect(m.unseen(mage, foe)).toBe(false);
+    // their own ability ends it early (the next time: thirty seconds on)
+    const n = fight([{ team: 0, cls: 'mage', talents: ['m-3c'] }, { team: 1, cls: 'warrior' }]);
+    const [mage2, foe2] = n.fighters as [Fighter, Fighter];
+    mage2.hp = Math.round(mage2.maxHp * 0.4);
+    inside(n).damage(foe2, mage2, 100, true, AB('w-hew'));
+    expect(n.unseen(mage2, foe2)).toBe(true);
+    mage2.target = foe2.id;
+    expect(n.press(mage2.id, 'm-burn')).toBeNull();
+    expect(n.unseen(mage2, foe2)).toBe(false);
   });
 });
 

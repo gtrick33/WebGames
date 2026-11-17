@@ -108,8 +108,9 @@ describe('The Ring: what is placed', () => {
     }
   });
 
-  it('a globe left on the ground: it lands on whoever stands in it each second, drifts on the way it was thrown, and is gone in time', () => {
-    // (the owner, 2026-11-16: "ice orb (damages enemies and doubles your frostbolt dmg)")
+  it('a globe left on the ground: it lands on whoever stands in it each second, goes after the nearest enemy, and is gone in time', () => {
+    // (the owner, 2026-11-16: "ice orb (damages enemies and doubles your frostbolt dmg)"; 2026-11-17: "the orb should
+    // follow the closest target and keep hitting them otherwise its always a miss")
     const ab = ABILITIES['m-globe']!;
     expect(ab.field).toMatchObject({ dur: 6, tick: 1 });
     const m = open('mage', PRESETS.mage[1]!.bar);
@@ -130,20 +131,24 @@ describe('The Ring: what is placed', () => {
     const first = 50000 - foe.hp;
     expect(first).toBeGreaterThan(0);
     expect(foe.auras.some((a) => a.ab === 'm-globe' && a.kind === 'slow')).toBe(true);
-    const x0 = fd.x;
     run(m, 2);
     expect(50000 - foe.hp).toBeGreaterThanOrEqual(first * 3 - 2);
-    // it drifts on the way it was thrown (away from its thrower), slowly
-    expect(m.fields[0]!.x).toBeGreaterThan(x0 + 10);
-    expect(m.fields[0]!.x).toBeLessThan(x0 + 40);
-    // out of it, nothing more lands
+    // it stays on whoever stands still under it
+    expect(Math.hypot(m.fields[0]!.x - foe.x, m.fields[0]!.y - foe.y)).toBeLessThan(1);
+    // out of it, nothing lands until it has come after them: at a little under a walk, never faster
     foe.x = me.x;
     foe.y = me.y + 120;
     const out = foe.hp;
-    run(m, 2);
+    const far = Math.hypot(m.fields[0]!.x - foe.x, m.fields[0]!.y - foe.y);
+    expect(far).toBeGreaterThan(ab.area! + 40);
+    run(m, 0.5);
     expect(foe.hp).toBe(out);
+    const closed = far - Math.hypot(m.fields[0]!.x - foe.x, m.fields[0]!.y - foe.y);
+    expect(closed).toBeGreaterThan(BASE_SPEED * 0.85 * 0.5);
+    expect(closed).toBeLessThanOrEqual(BASE_SPEED * ab.field!.seek! * 0.5 + 2.5);
+    expect(ab.field!.seek).toBeLessThan(1);
     // and it is gone when its time is up
-    run(m, 2.2);
+    run(m, 3.7);
     expect(m.fields).toHaveLength(0);
     // while it is out its thrower carries its boon, and their Rime Spear hits twice as hard
     const n = open('mage', PRESETS.mage[1]!.bar);
@@ -245,9 +250,14 @@ describe('The Ring: what is placed', () => {
     rc.restore(JSON.parse(JSON.stringify(r.snapshot())) as ReturnType<Match['snapshot']>);
     expect(rc.fields).toEqual(r.fields);
     expect(rc.fighters[0]!.boons.map((b) => b.id)).toEqual(['globe']);
-    const x = rc.fields[0]!.x;
+    // (a globe on its way to someone keeps going between the host's words)
+    r.fighters[1]!.y += 90;
+    run(r, 0.1);
+    rc.restore(JSON.parse(JSON.stringify(r.snapshot())) as ReturnType<Match['snapshot']>);
+    const gap = (): number => Math.hypot(rc.fields[0]!.x - rc.fighters[1]!.x, rc.fields[0]!.y - rc.fighters[1]!.y);
+    const before = gap();
     rc.coast(0.5, null, null);
-    expect(rc.fields[0]!.x).toBeGreaterThan(x);
+    expect(gap()).toBeLessThan(before - 20);
     const gc = new Match({ seed: 5, map: 'sands', fighters: [fighter(0, 'gloamknight', PRESETS.gloamknight[1]!.bar), fighter(1, 'warrior')] });
     gc.restore(JSON.parse(JSON.stringify(g.snapshot())) as ReturnType<Match['snapshot']>);
     expect(gc.fighters[0]!.pts).toBe(3);

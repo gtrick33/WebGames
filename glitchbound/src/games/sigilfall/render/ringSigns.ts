@@ -1,4 +1,5 @@
 import { FIELD, FX, type Fx3D } from '../render3d/fx3d';
+import { screenAngle, shortened } from './effects';
 
 /**
  * Each ability's own look in the Ring (the owner, 2026-11-16: "go over every passive, every active spell and make sure
@@ -1023,5 +1024,141 @@ export function drawBoon(q: Fx3D, x: number, y: number, color: string, n: number
     const ph = (time * 0.9 + i / (3 + n) + seed * 0.17) % 1;
     const ang = i * 2.39 + seed;
     q.put({ kind: FX.spark, x: x + Math.cos(ang) * 10, y: y + Math.sin(ang) * 5.5, up: 3 + ph * 30, w: 6 * (1 - ph * 0.6), a: color, t: 0.2, alpha: 1 - ph });
+  }
+}
+
+/* ------------------------------------------------------------------ what is thrown, on its way */
+
+/**
+ * A thrown ability's own look in the air (the owner, 2026-11-17: "make the visual cue better for the different
+ * spells"). Until then everything of one school flew alike: a Rime Spear and a Frostfang were the same shard of frost,
+ * an Ember Lash and a Flashburn the same ball of fire, and nobody could tell which was coming. A mage's five are each
+ * their own shape now; anything not named here still flies as its school does (render/effects.ts shot).
+ *
+ * (ux, uy) is the way it flies, `flown` how far it has come (only known for what lands at once), `strong` whether a
+ * boon or points made it hit harder (a Rime Spear thrown while the globe is out).
+ */
+type Flight = (q: Fx3D, x: number, y: number, ux: number, uy: number, time: number, seed: number, flown: number, strong: boolean) => void;
+
+const FLIGHTS: Record<string, Flight> = {
+  // Ember Lash: a whip of fire: a bright head and a tail of flames snaking behind it
+  'm-lash': (q, x, y, ux, uy, time, seed) => {
+    for (let i = 4; i >= 1; i--) {
+      const back = i * 6.5;
+      const sway = Math.sin(time * 20 - i * 1.2 + seed) * (1 + i * 1.3);
+      q.put({ kind: FX.flame, x: x - ux * back - uy * sway, y: y - uy * back + ux * sway, up: 13, w: 13 - i * 2, h: 16 - i * 2.4, a: '#ff6a1e', b: '#ffd24a', seed: seed + i, alpha: 1 - i * 0.17 });
+    }
+    q.put({ kind: FX.glow, x, y, up: 14, w: 26, a: '#ff7a1e', alpha: 0.5 });
+    q.put({ kind: FX.orb, x, y, up: 14, w: 11, a: '#ffb040', b: '#fff6d0', seed });
+  },
+  // Flashburn: no ball at all: a white-hot line from the hand, there and gone, with a flare at its head
+  'm-burn': (q, x, y, ux, uy, _time, seed, flown) => {
+    const len = Math.min(Math.max(flown, 14), 84);
+    q.put({ kind: FX.beam, x: x - (ux * len) / 2, y: y - (uy * len) / 2, up: 14, w: len * shortened(ux, uy), h: 9, rot: screenAngle(ux, uy), a: '#ff5a1e', b: '#fff6d0', seed });
+    q.put({ kind: FX.beam, x: x - (ux * len) / 2, y: y - (uy * len) / 2, up: 14, w: len * shortened(ux, uy), h: 3.5, rot: screenAngle(ux, uy), a: '#fff6d0', b: '#ffffff', seed: seed + 1 });
+    q.put({ kind: FX.impact, x, y, up: 14, w: 24, a: '#ffd24a', b: '#ffffff', t: 0.25, seed });
+  },
+  // Toad Hex: a fat green bubble wobbling over, with two motes of the hex going round it
+  'm-toad': (q, x, y, _ux, _uy, time, seed) => {
+    const wob = Math.sin(time * 14 + seed) * 1.6;
+    q.put({ kind: FX.bubble, x, y, up: 14 + wob, w: 19 + wob, a: '#8ae85a', alpha: 0.95 });
+    q.put({ kind: FX.poison, x, y, up: 14 + wob, w: 10, a: '#5ab82e', b: '#d8ff8a', seed });
+    for (let i = 0; i < 2; i++) {
+      const ang = time * 9 + i * Math.PI + seed;
+      q.put({ kind: FX.spark, x: x + Math.cos(ang) * 10, y: y + Math.sin(ang) * 5, up: 14 + Math.sin(ang) * 5, w: 5, a: '#c8a0ff', t: 0.2 });
+    }
+  },
+  // Rime Spear: a long spear of ice, point first, shedding flakes; thrown while the globe is out it is two, in a halo of cold
+  'm-spear': (q, x, y, ux, uy, time, seed, _flown, strong) => {
+    const rot = screenAngle(ux, uy);
+    const k = shortened(ux, uy);
+    const spear = (ox: number, w: number, alpha: number): void => {
+      q.put({ kind: FX.frost, x: x - uy * ox - ux * w * 0.3, y: y + ux * ox - uy * w * 0.3, up: 14, w: w * k, h: 9, rot, a: '#2a8ae8', b: '#f0fbff', seed, alpha });
+    };
+    q.put({ kind: FX.trail, x: x - ux * 22, y: y - uy * 22, up: 14, w: 44 * k, h: strong ? 11 : 7, rot, a: '#4ab8ff', b: '#ffffff', seed });
+    q.put({ kind: FX.glow, x, y, up: 14, w: 20, a: '#4ab8ff', alpha: 0.55 });
+    if (strong) {
+      spear(5, 38, 1);
+      spear(-5, 38, 1);
+      q.put({ kind: FX.ring, x, y, up: 14, w: 26, a: '#e0f8ff', t: 0.5, alpha: 0.9, seed });
+      q.put({ kind: FX.glow, x, y, up: 14, w: 34, a: '#9fdcff', alpha: 0.6 });
+    } else spear(0, 38, 1);
+    for (let i = 1; i <= 3; i++) {
+      const ph = (time * 3 + i * 0.37 + seed) % 1;
+      q.put({ kind: FX.flake, x: x - ux * (10 + i * 9) - uy * (ph - 0.5) * 8, y: y - uy * (10 + i * 9) + ux * (ph - 0.5) * 8, up: 14 - ph * 8, w: 5, a: '#e0f8ff', alpha: 1 - ph, seed: seed + i });
+    }
+  },
+  // Frostfang: a pair of short fangs side by side, closing on them as they go
+  'm-fang': (q, x, y, ux, uy, _time, seed, flown) => {
+    const rot = screenAngle(ux, uy);
+    const gap = Math.max(1.5, 7 - flown * 0.05);
+    for (const side of [-1, 1]) {
+      q.put({ kind: FX.frost, x: x - uy * gap * side, y: y + ux * gap * side, up: 14, w: 15 * shortened(ux, uy), h: 5, rot: rot + side * 0.32, a: '#bfeaff', b: '#ffffff', seed: seed + side });
+      q.put({ kind: FX.spark, x: x - uy * gap * side - ux * 9, y: y + ux * gap * side - uy * 9, up: 14, w: 4.5, a: '#ffffff', t: 0.2, alpha: 0.8 });
+    }
+  },
+};
+
+export const hasFlight = (ab: string): boolean => !!FLIGHTS[ab];
+
+/** Draws a thrown ability on its way, in its own shape. False if it has none (it flies as its school does). */
+export function drawFlight(q: Fx3D, ab: string, x: number, y: number, ux: number, uy: number, time: number, seed: number, flown = 0, strong = false): boolean {
+  const paint = FLIGHTS[ab];
+  if (!paint) return false;
+  paint(q, x, y, ux, uy, time, seed, flown, strong);
+  return true;
+}
+
+/**
+ * A globe of rime out on the ground and hunting (Ability.field.seek): a ball of ice with shards wheeling round it, the
+ * ground iced out to exactly where it lands, a ring of cold thrown out each time it does, and flakes shed behind it as
+ * it goes after someone. `since` is how long ago it last landed (seconds), `left` fades it in its last moment.
+ */
+export function drawGlobe(q: Fx3D, x: number, y: number, r: number, vx: number, vy: number, since: number, left: number, time: number): void {
+  const bob = Math.sin(time * 3 + x * 0.1) * 2;
+  const up = 16 + bob;
+  q.put({ kind: FX.field, x, y, flat: true, w: r * 2, a: '#4ab8ff', b: '#e0f8ff', t: 1, alpha: 0.36 * left, seed: 3, p1: FIELD.frost });
+  q.put({ kind: FX.ring, x, y, flat: true, w: r * 2, a: '#e0f8ff', t: 0.5, alpha: 0.75 * left, seed: 1 });
+  // (each landing: a ring of cold out to its edge)
+  if (since < 0.45) q.put({ kind: FX.shock, x, y, flat: true, w: r * 2 * Math.min(1, since / 0.3), a: '#bfeaff', t: since / 0.45, alpha: left, seed: 2 });
+  q.put({ kind: FX.glow, x, y, up, w: 44, a: '#4ab8ff', alpha: 0.7 * left });
+  q.put({ kind: FX.orb, x, y, up, w: 17, a: '#4ab8ff', b: '#f0fbff', t: 0.3, seed: time * 0.5, alpha: left });
+  for (let i = 0; i < 5; i++) {
+    const ang = time * 3.4 + (i / 5) * Math.PI * 2;
+    q.put({ kind: FX.frost, x: x + Math.cos(ang) * 13, y: y + Math.sin(ang) * 7, up: up + Math.sin(ang * 2 + i) * 3, w: 13, h: 5, rot: ang + Math.PI / 2, a: '#9fdcff', b: '#ffffff', alpha: left, seed: i });
+  }
+  // (what it sheds behind it as it goes, and a drift of flakes over its patch when it hangs still)
+  const sp = Math.hypot(vx, vy);
+  for (let i = 0; i < 6; i++) {
+    const ph = (time * 1.3 + i / 6) % 1;
+    if (sp > 4) {
+      const back = 8 + ph * 34;
+      const side = Math.sin(i * 2.4) * 9;
+      q.put({ kind: FX.flake, x: x - (vx / sp) * back - (vy / sp) * side, y: y - (vy / sp) * back + (vx / sp) * side, up: up * (1 - ph), w: 6, a: '#e0f8ff', alpha: (1 - ph) * left, seed: i });
+    } else {
+      const ang = i * 1.05 + time * 0.6;
+      q.put({ kind: FX.flake, x: x + Math.cos(ang) * r * 0.7, y: y + Math.sin(ang) * r * 0.55, up: 4 + (1 - ph) * 22, w: 6, a: '#e0f8ff', alpha: Math.sin(ph * Math.PI) * left, seed: i });
+    }
+  }
+}
+
+/**
+ * Someone fades from sight where they stand (a mage's vanishing point): a circle that closes on the spot, a puff of
+ * violet smoke going up and out, and motes left hanging. Both sides see it: it says "gone from here", not where to.
+ */
+export function drawFade(q: Fx3D, x: number, y: number, u: number, seed: number): void {
+  const fade = Math.max(0, 1 - u * u);
+  q.put({ kind: FX.rune, x, y, flat: true, w: 46 * (1 - u * 0.7), a: '#a05aff', b: '#ffffff', t: u, seed });
+  q.put({ kind: FX.ring, x, y, flat: true, w: 54 * (0.3 + 0.7 * u), a: '#e0c8ff', t: u, alpha: fade, seed });
+  q.put({ kind: FX.gather, x, y, up: 16, w: 50, a: '#c8a0ff', b: '#ffffff', t: Math.min(1, u * 1.4), seed });
+  q.put({ kind: FX.glow, x, y, up: 16, w: 44, a: '#a05aff', alpha: 0.55 * fade });
+  for (let i = 0; i < 7; i++) {
+    const ang = (i / 7) * Math.PI * 2 + seed;
+    const out = 4 + u * 20;
+    q.put({ kind: FX.smoke, x: x + Math.cos(ang) * out, y: y + Math.sin(ang) * out * 0.6, up: 8 + u * 26 + (i % 3) * 5, w: 20 + u * 10, a: '#5a2a9a', alpha: fade * 0.9, t: u * 0.6, seed: seed + i });
+  }
+  for (let i = 0; i < 6; i++) {
+    const ang = i * 2.39 + seed;
+    q.put({ kind: FX.spark, x: x + Math.cos(ang) * 12, y: y + Math.sin(ang) * 7, up: 6 + u * 34 + i * 2, w: 5 * (1 - u * 0.5), a: '#e0c8ff', t: 0.2, alpha: fade });
   }
 }
