@@ -11,7 +11,7 @@ import { heroLook, heldWeapon, type WornLooks } from './sprites';
 import type { Held } from '../render3d/dress';
 import { FIELD, FX, type Fx3D } from '../render3d/fx3d';
 import { THRALL_EYES } from '../render3d/thrall';
-import { drawBoon, drawFade, drawFlight, drawGlobe, drawPoints, drawSign, hasSign, signAlone, signTime, type Sign } from './ringSigns';
+import { drawBoon, drawFade, drawFlight, drawGlobe, drawPoints, drawSign, flightTime, hasSign, signAlone, signTime, type Sign } from './ringSigns';
 import type { RingStage, RingView } from '../render3d/ring3d';
 import { newCharacter, type Character, type Face } from '../progress/character';
 import { wornLooks } from '../progress/wardrobe';
@@ -161,7 +161,7 @@ export class RingFx {
   /** A toll of dusk rolling out from someone: rings of dark, one after another. */
   tolls: { x: number; y: number; t: number; dur: number; r: number }[] = [];
   /** What lands at once but is thrown (an arrow, a hammer): a streak from the hand to whoever it hit. */
-  zips: { x0: number; y0: number; x1: number; y1: number; t: number; dur: number; ab: string }[] = [];
+  zips: { x0: number; y0: number; x1: number; y1: number; t: number; dur: number; ab: string; to?: number }[] = [];
   /** A placed ability that has just come down: its patch, lit. */
   falls: { x: number; y: number; r: number; t: number; dur: number; ab: string }[] = [];
   /** Who just let a super go: a column of light on them for a moment. */
@@ -172,8 +172,8 @@ export class RingFx {
   fades: { x: number; y: number; t: number; dur: number; seed: number }[] = [];
   /** A chain thrown or a life being drunk: a line from one fighter to another, for as long as it lasts. */
   lines: { ab: string; from: number; to: number; t: number; dur: number }[] = [];
-  private sign(ab: string, k: Sign['k'], x: number, y: number, a: number, on?: number, r?: number): void {
-    this.signs.push({ ab, k, on, x, y, a, t: 0, dur: signTime(ab, k), seed: ((x * 7 + y * 3 + this.signs.length * 1.7) % 6.28) + 0.1, r });
+  private sign(ab: string, k: Sign['k'], x: number, y: number, a: number, on?: number, r?: number, wait = 0): void {
+    this.signs.push({ ab, k, on, x, y, a, t: -wait, dur: signTime(ab, k), seed: ((x * 7 + y * 3 + this.signs.length * 1.7) % 6.28) + 0.1, r });
     if (this.signs.length > 28) this.signs.shift();
   }
   private spread = 0;
@@ -228,7 +228,8 @@ export class RingFx {
           const to = m.aimOf(f, ab);
           if (to && to !== f) {
             const d = Math.hypot(to.x - f.x, to.y - f.y);
-            this.zips.push({ x0: f.x, y0: f.y, x1: to.x, y1: to.y, t: 0, dur: Math.max(0.07, Math.min(0.16, d / 1100)), ab: ab.id });
+            // (most cross in a blink; one with a flight of its own to be watched takes its time and goes after its target)
+            this.zips.push({ x0: f.x, y0: f.y, x1: to.x, y1: to.y, t: 0, dur: flightTime(ab.id, d) ?? Math.max(0.07, Math.min(0.16, d / 1100)), ab: ab.id, to: to.id });
             if (this.zips.length > 12) this.zips.shift();
           }
         }
@@ -281,7 +282,9 @@ export class RingFx {
         // (its own look as it lands, in place of its school's burst; with it, for the few that keep both)
         const from0 = this.by.get(ab.id);
         const src = from0 === undefined ? undefined : m.fighters[from0];
-        if (hasSign(ab.id, 'land')) this.sign(ab.id, 'land', f.x, f.y, src && src !== f ? Math.atan2(f.y - src.y, f.x - src.x) : Math.atan2(f.dirY, f.dirX) + Math.PI, f.id);
+        // (what is still seen on its way lands its sign as it gets there)
+        const wait = src && src !== f ? (flightTime(ab.id, Math.hypot(f.x - src.x, f.y - src.y)) ?? 0) : 0;
+        if (hasSign(ab.id, 'land')) this.sign(ab.id, 'land', f.x, f.y, src && src !== f ? Math.atan2(f.y - src.y, f.x - src.x) : Math.atan2(f.dirY, f.dirX) + Math.PI, f.id, undefined, wait);
         if (!signAlone(ab.id)) this.bursts.push({ x: f.x, y: f.y, t: 0, dur: ab.role === 'burst' ? 0.75 : 0.55, school: ab.school, color: ab.color, big: ab.role === 'burst', heal: ab.role === 'heal' || ab.aim === 'friend', seed: (f.x * 7 + f.y * 3 + this.bursts.length) % 97 });
         if (this.bursts.length > 24) this.bursts.shift();
         // a blow that drinks: what it took streams back to whoever struck it
@@ -930,9 +933,12 @@ export function ringSpells(q: Fx3D, m: Match, fx: RingFx, myId: number | null, t
     const c = ab?.color ?? '#ffffff';
     const el = SCHOOL_EL[ab?.school ?? ''] ?? 'arcane';
     const tone = el === 'trail' ? { a: c, b: '#ffffff' } : (TONES[el] ?? { a: c, b: '#ffffff' });
-    const a = Math.atan2(z.y1 - z.y0, z.x1 - z.x0);
+    // (it goes to where they are now, not where they stood as it left the hand)
+    const aim = z.to === undefined ? undefined : m.fighters[z.to];
+    const end = aim && !aim.dead ? at(aim) : { x: z.x1, y: z.y1 };
+    const a = Math.atan2(end.y - z.y0, end.x - z.x0);
     const zu = Math.min(1, z.t / z.dur);
-    if (drawFlight(q, z.ab, z.x0 + (z.x1 - z.x0) * zu, z.y0 - 8 + (z.y1 - z.y0) * zu, Math.cos(a), Math.sin(a), time, z.x0 * 0.03, Math.hypot(z.x1 - z.x0, z.y1 - z.y0) * zu)) continue;
+    if (drawFlight(q, z.ab, z.x0 + (end.x - z.x0) * zu, z.y0 - 8 + (end.y - z.y0) * zu, Math.cos(a), Math.sin(a), time, z.x0 * 0.03, Math.hypot(end.x - z.x0, end.y - z.y0) * zu, false, zu)) continue;
     for (let i = 0; i < 3; i++) {
       const u = Math.min(1, Math.max(0, z.t / z.dur - i * 0.14));
       shot(q, el === 'trail' ? 'orb' : el, z.x0 + (z.x1 - z.x0) * u, z.y0 - 8 + (z.y1 - z.y0) * u, Math.cos(a) * 100, Math.sin(a) * 100, 13 - i * 3, 3.2 - i * 0.7, z.x0 * 0.03 + i, tone);

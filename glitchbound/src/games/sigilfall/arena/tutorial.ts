@@ -86,9 +86,8 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
       { spot: 'combos', text: 'Its combos', right: true },
       { spot: 'talents', text: 'Talents: pick one a row' },
       { spot: 'read', text: 'What it does', right: true },
-      { spot: 'sets', text: 'Three setups, saved as you go' },
     ],
-    allow: ['styles', 'bar', 'combos', 'talents', 'sets'],
+    allow: ['styles', 'bar', 'combos', 'talents'],
     page: 'setup',
     // (at the side, under the box that reads the icons: along the bottom it lay over the talents it asks to be chosen)
     at: 'side',

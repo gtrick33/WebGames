@@ -137,7 +137,7 @@ describe('The Ring for newcomers: the tutorial', () => {
     const ids = LOBBY_STEPS.map((s) => s.id);
     expect(ids).toEqual(['welcome', 'styles', 'kit']);
     const spots = LOBBY_STEPS.flatMap((s) => (s.labels ?? []).map((l) => l.spot));
-    for (const want of ['classes', 'formats', 'rank', 'arena', 'loadout', 'bar', 'combos', 'talents', 'sets']) expect(spots).toContain(want);
+    for (const want of ['classes', 'formats', 'rank', 'arena', 'loadout', 'bar', 'combos', 'talents']) expect(spots).toContain(want);
     for (const s of LOBBY_STEPS) for (const l of s.labels ?? []) expect(l.text.length, l.spot).toBeLessThan(40);
     // (the setup page is one page: the playstyles, then the rest of it, labeled)
     expect(LOBBY_STEPS.filter((s) => s.page === 'setup').map((s) => s.id)).toEqual(['styles', 'kit']);
@@ -153,7 +153,7 @@ describe('The Ring for newcomers: the tutorial', () => {
     // (a class and a fight on the main screen: not the setup, not friends, not the tutorial's own button again)
     expect(allow.welcome).toEqual(['classes', 'formats']);
     expect(allow.styles).toEqual(['styles']);
-    expect(allow.kit).toEqual(['styles', 'bar', 'combos', 'talents', 'sets']);
+    expect(allow.kit).toEqual(['styles', 'bar', 'combos', 'talents']);
     // every part allowed is a part of that step's own page, marked in it
     const pages = { play: read('src/games/sigilfall/ui/RingScreen.tsx'), setup: read('src/games/sigilfall/ui/RingSetup.tsx') };
     for (const s of LOBBY_STEPS) for (const spot of s.allow) expect(pages[s.page], `${s.id}: ${spot}`).toContain(`data-tut="${spot}"`);

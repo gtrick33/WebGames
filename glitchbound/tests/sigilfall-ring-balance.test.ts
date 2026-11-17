@@ -277,6 +277,35 @@
  *
  * The owner finds the Pyre and the Nightblade weak where the computer finds them the strongest two: they were given
  * what the measure would bear and no more. The Rime wins 87% of its duels with a blade and 37% with a caster.
+ *
+ * Then the core talents (2026-11-17, the owner: "the chosen ones for every class are the best, the other 2 should be
+ * just as good for every playstyle"). Each playstyle was played with each of its three core talents in turn, the rest
+ * its ready-made ones: every duel with another damage playstyle (8 seeds) and 160 random 2v2s, a healer's in the 2v2s
+ * alone. The mean of the two, in % won, before -> after (* the ready-made one):
+ *
+ *   Reaper        Red Mist* 44 -> 42   Butcher’s Tally 40 -> 43   Headsman 32 -> 38
+ *   Longbow       Still Breath* 40 -> 42   Full Draw 24 -> 41   Long Shot 19 -> 43
+ *   Lifegiver     Answered Prayer* 49 -> 53   Counted Prayers 69 -> 53   Brimming Grace 48 -> 53
+ *   Grovekeeper   Bud and Bloom* 44 -> 48   Verdant Surge 32 -> 46   Sun and Moon 31 -> 45
+ *   Hound         Mounting Ire* 54 -> 53   Blood Up 37 -> 56   Grudge 30 -> 52
+ *   Trapper       Baited* 57 -> 58   Quiver of Quills 75 -> 60   Quarry 66 -> 60
+ *   Curse-speaker Dire Portent* 43 -> 41   Litany 40 -> 38   Feast of Shadows 35 -> 43
+ *   Starseer      Falling Star* 58 -> 58   Fourth Star 52 -> 57   Wandering Light 50 -> 58
+ *   Pyre          Cinderheart* 63 -> 64   Banked Embers 50 -> 60   Wildfire 28 -> 60
+ *   Oathkeeper    Oathsworn* 48 -> 46   Shared Dawn 26 -> 46   Aura of Wrath 28 -> 47
+ *   Hexer         Ripening* 45 -> 45   Gathering Dark 33 -> 45   Pit Imp 27 -> 48
+ *   Bloodsworn    Blood Tithe* 49 -> 47   Hungering Edge 68 -> 52   Blood Price 38 -> 47
+ *   Rime          Hoarfrost* 56 -> 55   Rimeshards 67 -> 59   Deep Winter 71 -> 54
+ *   Zealot        Mounting Ardor* 46 -> 48   Dawnfire 54 -> 52   Verdict of Light 37 -> 52
+ *   Gravecaller   Grave Chill* 49 -> 48   Third Grave 26 -> 50   Ashburst 45 -> 44
+ *   Nightblade    Second Dusk 48 -> 53   Bloodied Edge* 58 -> 54   Night’s Embrace 44 -> 51
+ *
+ * The other two were brought to the ready-made one, up or down, by their own numbers (arena/talents.ts has them). Four
+ * needed more than a number: Wildfire also makes 15% more hits critical, Aura of Wrath reaches the whole side wherever
+ * it stands (a healer stands well back, and it did nothing), Third Grave's dead hit twice as hard and come sooner, and
+ * Deep Winter no longer keeps the globe longer. Two ready-made ones moved: Oathsworn 30% a point (40%), Mounting Ardor
+ * 30% (25%). Every playstyle after, on the usual measure: nobody moved by more than three points but the Oathkeeper in
+ * 2v2 (52%, 60% before).
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';

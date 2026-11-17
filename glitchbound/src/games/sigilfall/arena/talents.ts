@@ -71,7 +71,7 @@ export type Doing =
   | { k: 'scar'; step: number; max: number; dur: number }
   | { k: 'loose'; pct: number; dur: number }
   // the mage
-  | { k: 'wildfire'; share: number; dur: number }
+  | { k: 'wildfire'; share: number; dur: number; crit: number }
   | { k: 'third'; n: number; within: number; dur: number; every: number }
   | { k: 'skin'; share: number; above: number }
   | { k: 'rewind'; back: number; share: number; every: number }
@@ -175,8 +175,8 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('warrior', 'w', 'arms', [
       [
         { name: 'Red Mist', text: 'Hew has a 30% chance, and always on a critical hit, to trigger Red Mist: your next Festering Gash has no cooldown and deals 50% more damage.', icon: 'rage_status_red_eye_on_red', tune: { 'w-hew': { gives: [{ boon: 'mist', chance: 0.3, crit: true }] }, 'w-gash': { uses: [{ boon: 'mist', nocd: true, mult: 1.5 }] } } },
-        { name: 'Butcher’s Tally', text: 'Hew generates a Notch, up to 4. Festering Gash spends them to deal 20% more damage per Notch, bleed included.', icon: 'sword_with_three_stacked_chevrons_on_red', points: { name: 'Notches', one: 'Notch', max: 4, color: '#ff8a7a' }, tune: { 'w-hew': { build: { n: 1 } }, 'w-gash': { spend: { per: 0.2 } } } },
-        { name: 'Headsman', text: 'Deal 25% more damage to enemies below 35% health.', icon: 'death_mark_target_on_black', exec: 0.25 },
+        { name: 'Butcher’s Tally', text: 'Hew generates a Notch, up to 4. Festering Gash spends them to deal 25% more damage per Notch, bleed included.', icon: 'sword_with_three_stacked_chevrons_on_red', points: { name: 'Notches', one: 'Notch', max: 4, color: '#ff8a7a' }, tune: { 'w-hew': { build: { n: 1 } }, 'w-gash': { spend: { per: 0.25 } } } },
+        { name: 'Headsman', text: 'Deal 75% more damage to enemies below 35% health.', icon: 'death_mark_target_on_black', exec: 0.75 },
       ],
       [
         { name: 'Thunderous Rush', text: 'Bull Rush also stuns for 0.8 sec.', icon: 'charging_bull_head_in_steel_on_red', tune: { 'w-rush': { extra: [{ k: 'cc', cc: 'stun', dur: 0.8 }] } } },
@@ -187,8 +187,8 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('warrior', 'w', 'pin', [
       [
         { name: 'Mounting Ire', text: 'Hock Cut generates Ire, up to 5. Rending Cut spends it to deal 20% more damage per Ire, bleed included. Run Them Down fills your Ire.', icon: 'angry_status_steam_cloud_on_red', points: { name: 'Ire', one: 'Ire', max: 5, color: '#ff6a4a' }, tune: { 'w-hamstring': { build: { n: 1 } }, 'w-bleed': { spend: { per: 0.2 } }, 'w-super2': { build: { n: 5, on: 'cast' } } } },
-        { name: 'Blood Up', text: 'Each tick of your Rending Cut bleed has a 30% chance to trigger Blood Up (stacks twice): your next Hock Cut deals double damage.', icon: 'berserk_status_red_horned_mask_on_red', tune: { 'w-bleed': { gives: [{ boon: 'bloodup', chance: 0.3, on: 'tick' }] }, 'w-hamstring': { uses: [{ boon: 'bloodup', mult: 2 }] } } },
-        { name: 'Grudge', text: 'Each consecutive hit on the same enemy deals 3% more damage, up to 15%. Switching targets resets it.', icon: 'crossed_sword_and_axe_on_red', does: { k: 'grudge', step: 0.03, max: 5 } },
+        { name: 'Blood Up', text: 'Each tick of your Rending Cut bleed has a 50% chance to trigger Blood Up (stacks twice): your next Hock Cut deals triple damage.', icon: 'berserk_status_red_horned_mask_on_red', tune: { 'w-bleed': { gives: [{ boon: 'bloodup', chance: 0.5, on: 'tick' }] }, 'w-hamstring': { uses: [{ boon: 'bloodup', mult: 3 }] } } },
+        { name: 'Grudge', text: 'Each consecutive hit on the same enemy deals 11% more damage, up to 55%. Switching targets resets it.', icon: 'crossed_sword_and_axe_on_red', does: { k: 'grudge', step: 0.11, max: 5 } },
       ],
       [
         { name: 'Crippling Blows', text: 'Hock Cut slows by 60% for 4 sec.', icon: 'slowed_status_snail_on_teal', tune: { 'w-hamstring': { extra: [{ k: 'slow', pct: 60, dur: 4 }] } } },
@@ -207,8 +207,8 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('mage', 'm', 'fire', [
       [
         { name: 'Cinderheart', text: 'Ember Lash has a 30% chance, and always on a critical hit, to trigger Cinderheart: your next Flashburn has no cooldown and critically hits.', icon: 'fire_orb_in_an_open_palm_on_red', tune: { 'm-lash': { gives: [{ boon: 'cinder', chance: 0.3, crit: true }] }, 'm-burn': { uses: [{ boon: 'cinder', nocd: true, crit: true }] } } },
-        { name: 'Banked Embers', text: 'Ember Lash generates an Ember, up to 3. Flashburn spends them to deal 30% more damage per Ember.', icon: 'red_hot_coal_on_dark_red', points: { name: 'Embers', one: 'Ember', max: 3, color: '#ff8a2a' }, tune: { 'm-lash': { build: { n: 1 } }, 'm-burn': { spend: { per: 0.3 } } } },
-        { name: 'Wildfire', text: 'Your critical hits burn the target for 40% of the damage dealt, over 4 sec.', icon: 'fire_eye_on_red', does: { k: 'wildfire', share: 0.4, dur: 4 } },
+        { name: 'Banked Embers', text: 'Ember Lash generates an Ember, up to 3. Flashburn spends them to deal 38% more damage per Ember.', icon: 'red_hot_coal_on_dark_red', points: { name: 'Embers', one: 'Ember', max: 3, color: '#ff8a2a' }, tune: { 'm-lash': { build: { n: 1 } }, 'm-burn': { spend: { per: 0.38 } } } },
+        { name: 'Wildfire', text: 'You critically hit 15% more often, and your critical hits burn the target for 100% of the damage dealt, over 4 sec.', icon: 'fire_eye_on_red', does: { k: 'wildfire', share: 1, dur: 4, crit: 0.15 } },
       ],
       [
         { name: 'Blazing Trail', text: 'Flicker deals 50 damage to enemies near where you left and slows them by 40% for 2 sec.', icon: 'spiral_of_fire_on_orange', tune: { 'm-blink': { foes: [{ k: 'dmg', n: 70 }, { k: 'slow', pct: 40, dur: 2 }] } } },
@@ -221,8 +221,8 @@ export const TALENTS: Record<ClassId, Talent[]> = {
         // (the owner: "orb could give you on screen effects ... where the ice lance like spell deals 3x dmg")
         { name: 'Hoarfrost', text: 'Each tick of your Rimeglobe has a 35% chance to trigger Hoarfrost (stacks twice): your next Frostfang has no cooldown and deals triple damage, as if the target were rooted.', icon: 'frozen_status_snowflake_on_blue', tune: { 'm-globe': { gives: [{ boon: 'hoar', chance: 0.35, on: 'tick' }] }, 'm-fang': { uses: [{ boon: 'hoar', nocd: true, asCombo: true }] } } },
         // (the owner: "have the icicles stacked every time u deal frost bolt and launching ice lance fires them")
-        { name: 'Rimeshards', text: 'Rime Spear generates a Rimeshard, up to 5. Frostfang spends them to deal 40% more damage per Rimeshard.', icon: 'icicle_rain_on_navy', points: { name: 'Rimeshards', one: 'Rimeshard', max: 5, color: '#bfeaff' }, tune: { 'm-spear': { build: { n: 1 } }, 'm-fang': { spend: { per: 0.4 } } } },
-        { name: 'Deep Winter', text: 'Rimeglobe lasts 50% longer. While it is active, Rime Spear is instant.', icon: 'snow_storm_cloud_on_grey', tune: { 'm-globe': { linger: 1.5 }, 'm-spear': { uses: [{ boon: 'globe', instant: true, keep: true }] } } },
+        { name: 'Rimeshards', text: 'Rime Spear generates a Rimeshard, up to 5. Frostfang spends them to deal 30% more damage per Rimeshard.', icon: 'icicle_rain_on_navy', points: { name: 'Rimeshards', one: 'Rimeshard', max: 5, color: '#bfeaff' }, tune: { 'm-spear': { build: { n: 1 } }, 'm-fang': { spend: { per: 0.3 } } } },
+        { name: 'Deep Winter', text: 'While your Rimeglobe is active, Rime Spear is instant.', icon: 'snow_storm_cloud_on_grey', tune: { 'm-spear': { uses: [{ boon: 'globe', instant: true, keep: true }] } } },
       ],
       [
         { name: 'Long Winter', text: 'Your crowd control and slows last 25% longer, your super’s included.', icon: 'frozen_chain_on_navy', hold: 0.25 },
@@ -241,8 +241,8 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('ranger', 'r', 'sniper', [
       [
         { name: 'Still Breath', text: 'Every third Swift Shot triggers Still Breath: your next Long Draw is instant and has no cooldown.', icon: 'focus_status_calm_eye_on_teal', tune: { 'r-swift': { gives: [{ boon: 'breath', every: 3 }] }, 'r-aimed': { uses: [{ boon: 'breath', instant: true, nocd: true }] } } },
-        { name: 'Full Draw', text: 'Swift Shot generates Tension, up to 4. Long Draw spends it to deal 20% more damage per Tension.', icon: 'bow_mastery_crest_on_green', points: { name: 'Tension', one: 'Tension', max: 4, color: '#d8ff9a' }, tune: { 'r-swift': { build: { n: 1 } }, 'r-aimed': { spend: { per: 0.2 } } } },
-        { name: 'Long Shot', text: 'Deal 15% more damage to enemies farther away than half your range.', icon: 'long_range_arrow_with_a_scope_ring_on_teal', does: { k: 'far', pct: 0.15 } },
+        { name: 'Full Draw', text: 'Swift Shot generates Tension, up to 4. Long Draw spends it to deal 40% more damage per Tension.', icon: 'bow_mastery_crest_on_green', points: { name: 'Tension', one: 'Tension', max: 4, color: '#d8ff9a' }, tune: { 'r-swift': { build: { n: 1 } }, 'r-aimed': { spend: { per: 0.4 } } } },
+        { name: 'Long Shot', text: 'Deal 55% more damage to enemies farther away than half your range.', icon: 'long_range_arrow_with_a_scope_ring_on_teal', does: { k: 'far', pct: 0.55 } },
       ],
       [
         { name: 'Talon Rake', text: 'Hawk’s Dive also deals 47 damage over 6 sec. Cooldown reduced by 20%.', icon: 'eagle_eye_on_teal', tune: { 'r-hawk': { extra: [{ k: 'dot', n: 60, dur: 6 }], cd: 0.8 } } },
@@ -253,8 +253,8 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('ranger', 'r', 'trapper', [
       [
         { name: 'Baited', text: 'Catching an enemy in your Snapjaw Trap triggers Baited: your next Serpent Volley has no cooldown and deals 50% more damage.', icon: 'hunter_mark_claw_on_brown', tune: { 'r-trap': { gives: [{ boon: 'baited' }] }, 'r-wind': { uses: [{ boon: 'baited', nocd: true, mult: 1.5 }] } } },
-        { name: 'Quiver of Quills', text: 'Hobbling Shot generates a Quill, up to 5. Serpent Volley spends them to deal 12% more damage per Quill, poison included.', icon: 'quiver_full_of_arrows_on_green', points: { name: 'Quills', one: 'Quill', max: 5, color: '#9be86a' }, tune: { 'r-hobble': { build: { n: 1 } }, 'r-wind': { spend: { per: 0.12 } } } },
-        { name: 'Quarry', text: 'Your hits mark one enemy at a time. Your team deals 10% more damage to the marked enemy.', icon: 'marked_status_target_on_red', does: { k: 'quarry', pct: 0.1 } },
+        { name: 'Quiver of Quills', text: 'Hobbling Shot generates a Quill, up to 5. Serpent Volley spends them to deal 4% more damage per Quill, poison included.', icon: 'quiver_full_of_arrows_on_green', points: { name: 'Quills', one: 'Quill', max: 5, color: '#9be86a' }, tune: { 'r-hobble': { build: { n: 1 } }, 'r-wind': { spend: { per: 0.04 } } } },
+        { name: 'Quarry', text: 'Your hits mark one enemy at a time. Your team deals 6% more damage to the marked enemy.', icon: 'marked_status_target_on_red', does: { k: 'quarry', pct: 0.06 } },
       ],
       [
         { name: 'Wild Snare', text: 'Snapjaw Trap lasts 40% longer.', icon: 'snare_loop_on_green', tune: { 'r-trap': { dur: 1.4 } } },
@@ -273,7 +273,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('priest', 'p', 'healer', [
       [
         { name: 'Answered Prayer', text: 'Bright Rebuke triggers Answered Prayer (stacks twice): your next Knit Wounds is instant and heals 30% more.', icon: 'white_dove_with_spread_wings_on_gold', tune: { 'p-smite': { gives: [{ boon: 'answer' }] }, 'p-mend': { uses: [{ boon: 'answer', instant: true, mult: 1.3 }] } } },
-        { name: 'Counted Prayers', text: 'Knit Wounds generates a Prayer, up to 3. Ward of Faith spends them to absorb 40% more per Prayer.', icon: 'golden_bell_ringing_with_rings_on_gold', points: { name: 'Prayers', one: 'Prayer', max: 3, color: '#fff0a8' }, tune: { 'p-mend': { build: { n: 1 } }, 'p-ward': { spend: { per: 0.4 } } } },
+        { name: 'Counted Prayers', text: 'Knit Wounds generates a Prayer, up to 3. Ward of Faith spends them to absorb 20% more per Prayer.', icon: 'golden_bell_ringing_with_rings_on_gold', points: { name: 'Prayers', one: 'Prayer', max: 3, color: '#fff0a8' }, tune: { 'p-mend': { build: { n: 1 } }, 'p-ward': { spend: { per: 0.2 } } } },
         { name: 'Brimming Grace', text: 'Your overhealing becomes a shield on the target, up to 12% of their health, for 8 sec.', icon: 'golden_chalice_with_a_light_glow_on_gold', does: { k: 'overflow', cap: 0.12, dur: 8 } },
       ],
       [
@@ -286,7 +286,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
       [
         { name: 'Dire Portent', text: 'Each tick of your Word of Decay has a 20% chance to trigger Dire Portent (stacks twice): your next Gnawing Word is instant and deals 80% more damage.', icon: 'dark_eye_on_violet', tune: { 'p-curse': { gives: [{ boon: 'omen', chance: 0.2, on: 'tick' }] }, 'p-gnaw': { uses: [{ boon: 'omen', instant: true, mult: 1.8 }] } } },
         { name: 'Litany', text: 'Gnawing Word generates a Verse, up to 4. Word of Decay spends them to deal 25% more damage per Verse.', icon: 'dark_tome_open_on_black', points: { name: 'Verses', one: 'Verse', max: 4, color: '#b06aff' }, tune: { 'p-gnaw': { build: { n: 1 } }, 'p-curse': { spend: { per: 0.25 } } } },
-        { name: 'Feast of Shadows', text: '15% of the damage you deal heals your most injured ally, or you.', icon: 'life_drain_beam_on_violet', does: { k: 'returned', share: 0.15 } },
+        { name: 'Feast of Shadows', text: '25% of the damage you deal heals your most injured ally, or you.', icon: 'life_drain_beam_on_violet', does: { k: 'returned', share: 0.25 } },
       ],
       [
         { name: 'Sapping Word', text: 'Enemies you damage receive 12% less healing for 3 sec.', icon: 'anti_heal_status_broken_heart_on_black', does: { k: 'sap', pct: 12, dur: 3 } },
@@ -304,9 +304,9 @@ export const TALENTS: Record<ClassId, Talent[]> = {
   paladin: [
     ...styleRows('paladin', 'd', 'holy', [
       [
-        { name: 'Oathsworn', text: 'Dawn’s Touch generates an Oath, up to 3. Verdict spends them to deal 40% more damage per Oath, and heals your most injured ally for the damage dealt.', icon: 'sword_and_shield_crossed_on_gold', points: { name: 'Oaths', one: 'Oath', max: 3, color: '#ffe48a' }, tune: { 'd-flash': { build: { n: 1 } }, 'd-judge': { spend: { per: 0.4, mend: 1 } } } },
-        { name: 'Shared Dawn', text: 'Dawn’s Touch also heals every other ally for 35% of the amount.', icon: 'light_chain_binding_on_gold', tune: { 'd-flash': { spread: 0.35 } } },
-        { name: 'Aura of Wrath', text: 'You and nearby allies deal 6% more damage.', icon: 'golden_armoured_fist_with_a_light_burst_on_gold', does: { k: 'wrath', pct: 0.06 } },
+        { name: 'Oathsworn', text: 'Dawn’s Touch generates an Oath, up to 3. Verdict spends them to deal 30% more damage per Oath, and heals your most injured ally for the damage dealt.', icon: 'sword_and_shield_crossed_on_gold', points: { name: 'Oaths', one: 'Oath', max: 3, color: '#ffe48a' }, tune: { 'd-flash': { build: { n: 1 } }, 'd-judge': { spend: { per: 0.3, mend: 1 } } } },
+        { name: 'Shared Dawn', text: 'Dawn’s Touch heals 30% more, and also heals every other ally for 80% of the amount.', icon: 'light_chain_binding_on_gold', tune: { 'd-flash': { spread: 0.8, power: 1.3 } } },
+        { name: 'Aura of Wrath', text: 'You and your allies deal 12% more damage.', icon: 'golden_armoured_fist_with_a_light_burst_on_gold', does: { k: 'wrath', pct: 0.12 } },
       ],
       [
         { name: 'Aura of Resolve', text: 'Crowd control on you and nearby allies lasts 20% shorter.', icon: 'radiant_crown_of_light_on_gold', does: { k: 'resolve', pct: 0.2 } },
@@ -316,9 +316,9 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ]),
     ...styleRows('paladin', 'd', 'ret', [
       [
-        { name: 'Mounting Ardor', text: 'Oath Blow generates Ardor, up to 4. Hammerfall spends it to deal 25% more damage per Ardor.', icon: 'massive_light_explosion_with_rays_on_gold', points: { name: 'Ardor', one: 'Ardor', max: 4, color: '#ffd84a' }, tune: { 'd-blow': { build: { n: 1 } }, 'd-fall': { spend: { per: 0.25 } } } },
-        { name: 'Dawnfire', text: 'Oath Blow has a 25% chance, and always on a critical hit, to trigger Dawnfire: your next Hammerfall has no cooldown and burns the target for 79 damage over 4 sec.', icon: 'burning_sun_disc_on_orange', tune: { 'd-blow': { gives: [{ boon: 'dawnfire', chance: 0.25, crit: true }] }, 'd-fall': { uses: [{ boon: 'dawnfire', nocd: true, extra: [{ k: 'dot', n: 90, dur: 4 }] }] } } },
-        { name: 'Verdict of Light', text: 'Every fourth hit deals 25 extra damage and heals your most injured ally for 25.', icon: 'beam_of_light_from_the_sky_on_gold', does: { k: 'verdict', every: 4, n: 25 } },
+        { name: 'Mounting Ardor', text: 'Oath Blow generates Ardor, up to 4. Hammerfall spends it to deal 30% more damage per Ardor.', icon: 'massive_light_explosion_with_rays_on_gold', points: { name: 'Ardor', one: 'Ardor', max: 4, color: '#ffd84a' }, tune: { 'd-blow': { build: { n: 1 } }, 'd-fall': { spend: { per: 0.3 } } } },
+        { name: 'Dawnfire', text: 'Oath Blow has a 18% chance, and always on a critical hit, to trigger Dawnfire: your next Hammerfall has no cooldown and burns the target for 79 damage over 4 sec.', icon: 'burning_sun_disc_on_orange', tune: { 'd-blow': { gives: [{ boon: 'dawnfire', chance: 0.18, crit: true }] }, 'd-fall': { uses: [{ boon: 'dawnfire', nocd: true, extra: [{ k: 'dot', n: 90, dur: 4 }] }] } } },
+        { name: 'Verdict of Light', text: 'Every third hit deals 35 extra damage and heals your most injured ally for 35.', icon: 'beam_of_light_from_the_sky_on_gold', does: { k: 'verdict', every: 3, n: 35 } },
       ],
       [
         { name: 'Stern Blows', text: 'Your hits push back enemy casts three times as far, every time.', icon: 'golden_scales_of_justice_on_gold', does: { k: 'stern', push: 0.75 } },
@@ -337,8 +337,8 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('warlock', 'k', 'curses', [
       [
         { name: 'Ripening', text: 'Each tick of the Creeping Agony from your Blight Dart generates Rot, up to 5. Hex Bloom spends it to deal 20% more damage per Rot.', icon: 'plague_cloud_on_dark_green', points: { name: 'Rot', one: 'Rot', max: 5, color: '#9ae85a' }, tune: { 'k-dart': { build: { n: 1, on: 'tick' } }, 'k-bloom': { spend: { per: 0.2 } } } },
-        { name: 'Gathering Dark', text: 'Each tick of the Creeping Agony from your Blight Dart has a 20% chance to trigger Gathering Dark (stacks twice): your next Blight Dart is instant and deals double damage.', icon: 'dark_lotus_on_black', tune: { 'k-dart': { gives: [{ boon: 'gathering', chance: 0.2, on: 'tick' }], uses: [{ boon: 'gathering', instant: true, mult: 2 }] } } },
-        { name: 'Pit Imp', text: 'An imp on your shoulder attacks your target every 3 sec for 10 damage.', icon: 'shadow_imp_summon_on_black', does: { k: 'imp', n: 10, every: 3, range: 185 } },
+        { name: 'Gathering Dark', text: 'Each tick of the Creeping Agony from your Blight Dart has a 50% chance to trigger Gathering Dark (stacks twice): your next Blight Dart is instant and deals double damage.', icon: 'dark_lotus_on_black', tune: { 'k-dart': { gives: [{ boon: 'gathering', chance: 0.5, on: 'tick' }], uses: [{ boon: 'gathering', instant: true, mult: 2 }] } } },
+        { name: 'Pit Imp', text: 'An imp on your shoulder attacks your target every 2 sec for 36 damage.', icon: 'shadow_imp_summon_on_black', does: { k: 'imp', n: 36, every: 2, range: 185 } },
       ],
       [
         { name: 'Enfeeble', text: 'Enemies you damage deal 8% less damage for 3 sec.', icon: 'cursed_status_dark_cloud_on_violet', does: { k: 'enfeeble', pct: 8, dur: 3 } },
@@ -349,7 +349,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('warlock', 'k', 'grave', [
       [
         { name: 'Grave Chill', text: 'Each hit by an ashbound from your Call the Ashbound or Grave Legion has a 15% chance to trigger Grave Chill (stacks twice): your next Gloom Bolt is instant and deals 50% more damage.', icon: 'ghoul_claw_on_green', tune: { 'k-raise': { gives: [{ boon: 'chill', chance: 0.15, on: 'tick' }] }, 'k-super2': { gives: [{ boon: 'chill', chance: 0.15, on: 'tick' }] }, 'k-bolt': { uses: [{ boon: 'chill', instant: true, mult: 1.5 }] } } },
-        { name: 'Third Grave', text: 'Call the Ashbound summons a third ashbound.', icon: 'twin_summon_of_two_spirits_on_teal', tune: { 'k-raise': { more: 1 } } },
+        { name: 'Third Grave', text: 'Call the Ashbound summons a third ashbound, and they hit twice as hard. Cooldown reduced by 8 sec.', icon: 'twin_summon_of_two_spirits_on_teal', tune: { 'k-raise': { more: 1, cd: 0.7, power: 2 } } },
         { name: 'Ashburst', text: 'When one of your ashbound dies or expires, it explodes for 54 damage to nearby enemies.', icon: 'dark_crystal_skull_on_violet', does: { k: 'corpse', n: 60, reach: 46 } },
       ],
       [
@@ -369,8 +369,8 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('druid', 'l', 'heal', [
       [
         { name: 'Bud and Bloom', text: 'Green Mending generates a Bud, up to 3. Quick Bloom spends them to heal 30% more per Bud.', icon: 'healing_flower_on_green', points: { name: 'Buds', one: 'Bud', max: 3, color: '#9be86a' }, tune: { 'l-regrow': { build: { n: 1 } }, 'l-bloom': { spend: { per: 0.3 } } } },
-        { name: 'Verdant Surge', text: 'Each tick of your Stinging Petals has a 25% chance to trigger Verdant Surge: your next Green Mending is instant and heals 30% more.', icon: 'wild_growth_of_three_sprouts_on_green', tune: { 'l-petal': { gives: [{ boon: 'surge', chance: 0.25, on: 'tick' }] }, 'l-regrow': { uses: [{ boon: 'surge', instant: true, mult: 1.3 }] } } },
-        { name: 'Sun and Moon', text: 'Dealing damage increases your next heal by 25%. Healing increases your next damaging hit by 25%.', icon: 'eclipse_sun_on_black', does: { k: 'tides', pct: 0.25 } },
+        { name: 'Verdant Surge', text: 'Each tick of your Stinging Petals has a 50% chance to trigger Verdant Surge: your next Green Mending is instant and heals 50% more.', icon: 'wild_growth_of_three_sprouts_on_green', tune: { 'l-petal': { gives: [{ boon: 'surge', chance: 0.5, on: 'tick' }] }, 'l-regrow': { uses: [{ boon: 'surge', instant: true, mult: 1.5 }] } } },
+        { name: 'Sun and Moon', text: 'Dealing damage increases your next heal by 65%. Healing increases your next damaging hit by 65%.', icon: 'eclipse_sun_on_black', does: { k: 'tides', pct: 0.65 } },
       ],
       [
         { name: 'Bramble Hide', text: 'Melee attackers take 12 damage and are slowed by 20% for 2 sec.', icon: 'thorn_shield_on_dark_green', does: { k: 'bramble', n: 12, pct: 20, dur: 2 } },
@@ -381,8 +381,8 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('druid', 'l', 'star', [
       [
         { name: 'Falling Star', text: 'Each tick of your Moonburn has a 20% chance to trigger Falling Star (stacks twice): your next Starlash is instant and deals 60% more damage.', icon: 'star_summon_on_navy', tune: { 'l-moon': { gives: [{ boon: 'star', chance: 0.2, on: 'tick' }] }, 'l-lash': { uses: [{ boon: 'star', instant: true, mult: 1.6 }] } } },
-        { name: 'Fourth Star', text: 'Every fourth Starlash deals 77 extra damage.', icon: 'star_seed_on_navy', tune: { 'l-lash': { nth: { n: 4, extra: [{ k: 'dmg', n: 90 }], name: 'Fourth Star' } } } },
-        { name: 'Wandering Light', text: 'Starlash can be cast while moving, at full speed.', icon: 'moon_spirit_summon_on_navy', tune: { 'l-lash': { swift: true } } },
+        { name: 'Fourth Star', text: 'Every fourth Starlash deals 111 extra damage.', icon: 'star_seed_on_navy', tune: { 'l-lash': { nth: { n: 4, extra: [{ k: 'dmg', n: 130 }], name: 'Fourth Star' } } } },
+        { name: 'Wandering Light', text: 'Starlash can be cast while moving, at full speed, and deals 20% more damage.', icon: 'moon_spirit_summon_on_navy', tune: { 'l-lash': { swift: true, power: 1.2 } } },
       ],
       [
         { name: 'Deep Roots', text: 'Grasping Roots lasts 40% longer.', icon: 'entangle_vines_on_green', tune: { 'l-roots': { dur: 1.4 } } },
@@ -401,8 +401,8 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('gloamknight', 'g', 'reaver', [
       [
         { name: 'Blood Tithe', text: 'Gloam Cleave generates a Tithe, up to 5. Night Reaping spends them to deal 18% more damage and heal 18% more per Tithe.', icon: 'red_flame_aura_around_a_sword_on_black', points: { name: 'Tithes', one: 'Tithe', max: 5, color: '#e0508a' }, tune: { 'g-cleave': { build: { n: 1 } }, 'g-reap': { spend: { per: 0.18 } } } },
-        { name: 'Hungering Edge', text: 'Gloam Cleave has a 25% chance, and always on a critical hit, to trigger Hungering Edge: your next Night Reaping has no cooldown and heals you for half the damage it deals.', icon: 'lifesteal_status_heart_drop_on_red', tune: { 'g-cleave': { gives: [{ boon: 'hunger', chance: 0.25, crit: true }] }, 'g-reap': { uses: [{ boon: 'hunger', nocd: true, drink: 0.5 }] } } },
-        { name: 'Blood Price', text: 'Your attacks cost 1% of your health and deal 20% more damage.', icon: 'heart_pierced_by_a_dagger_on_black', does: { k: 'price', cost: 0.01, pct: 0.2 } },
+        { name: 'Hungering Edge', text: 'Gloam Cleave has a 10% chance, and always on a critical hit, to trigger Hungering Edge: your next Night Reaping has no cooldown and heals you for 20% of the damage it deals.', icon: 'lifesteal_status_heart_drop_on_red', tune: { 'g-cleave': { gives: [{ boon: 'hunger', chance: 0.1, crit: true }] }, 'g-reap': { uses: [{ boon: 'hunger', nocd: true, drink: 0.2 }] } } },
+        { name: 'Blood Price', text: 'Your attacks cost 1% of your health and deal 30% more damage.', icon: 'heart_pierced_by_a_dagger_on_black', does: { k: 'price', cost: 0.01, pct: 0.3 } },
       ],
       [
         { name: 'Iron Grip', text: 'Grave Chain also roots the target for 1.5 sec after the pull.', icon: 'burning_chain_link_on_black', tune: { 'g-chain': { extra: [{ k: 'cc', cc: 'root', dur: 1.5 }] } } },
@@ -412,9 +412,9 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ]),
     ...styleRows('gloamknight', 'g', 'shadow', [
       [
-        { name: 'Second Dusk', text: 'A Closing Cut that spends 5 Nicks triggers Second Dusk: your next Nightknife counts as striking from behind and generates 2 Nicks.', icon: 'crescent_moon_behind_clouds_on_navy', tune: { 'g-cut': { gives: [{ boon: 'dusk', full: true }] }, 'g-knife': { uses: [{ boon: 'dusk', asCombo: true, build: 1 }] } } },
+        { name: 'Second Dusk', text: 'A Closing Cut that spends 5 Nicks triggers Second Dusk: your next Nightknife counts as striking from behind and generates 3 Nicks.', icon: 'crescent_moon_behind_clouds_on_navy', tune: { 'g-cut': { gives: [{ boon: 'dusk', full: true }] }, 'g-knife': { uses: [{ boon: 'dusk', asCombo: true, build: 2 }] } } },
         { name: 'Bloodied Edge', text: 'Closing Cut also makes the target bleed for 18 damage over 6 sec, increased by 80% per Nick spent.', icon: 'damage_over_time_status_red_spark_on_red', tune: { 'g-cut': { extra: [{ k: 'dot', n: 20, dur: 6 }] } } },
-        { name: 'Night’s Embrace', text: 'You move at full speed in stealth, and your first attack from stealth deals 30% more damage.', icon: 'shadow_fox_mask_on_violet', does: { k: 'shade', pct: 0.3 } },
+        { name: 'Night’s Embrace', text: 'You move at full speed in stealth, and your first attack from stealth deals 150% more damage.', icon: 'shadow_fox_mask_on_violet', does: { k: 'shade', pct: 1.5 } },
       ],
       [
         { name: 'Throat Cut', text: 'Dusk Ambush also silences for 3 sec.', icon: 'hidden_blade_from_a_sleeve_on_violet', tune: { 'g-ambush': { extra: [{ k: 'cc', cc: 'silence', dur: 3 }] } } },

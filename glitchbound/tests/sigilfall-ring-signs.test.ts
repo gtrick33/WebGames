@@ -13,7 +13,7 @@ import { GATES, Match, type Fighter, type FighterSetup } from '../src/games/sigi
 import { TALENTS } from '../src/games/sigilfall/arena/talents';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import { RingFx } from '../src/games/sigilfall/render/ring';
-import { drawBoon, drawFade, drawFlight, drawGlobe, drawPoints, drawSign, hasFlight, hasSign, signAlone, signed, signTime, type Sign, type SignKind } from '../src/games/sigilfall/render/ringSigns';
+import { drawBoon, drawFade, drawFlight, drawGlobe, drawPoints, drawSign, flightTime, hasFlight, hasSign, signAlone, signed, signTime, type Sign, type SignKind } from '../src/games/sigilfall/render/ringSigns';
 import { FX, type Fx3D } from '../src/games/sigilfall/render3d/fx3d';
 
 const read = (p: string): string => fs.readFileSync(path.resolve(__dirname, '..', p), 'utf8');
@@ -203,7 +203,7 @@ describe('The Ring: what a mage throws is told apart in the air', () => {
   const THROWN = ['m-lash', 'm-burn', 'm-toad', 'm-spear', 'm-fang'];
   const flight = (ab: string, strong = false, time = 2): Quad[] => {
     const s = sheet();
-    expect(drawFlight(s.q, ab, 100, 100, 0.8, 0.6, time, 1.3, 40, strong), ab).toBe(true);
+    expect(drawFlight(s.q, ab, 100, 100, 0.8, 0.6, time, 1.3, 40, strong, 0.5), ab).toBe(true);
     return s.quads;
   };
   const shape = (quads: Quad[]): string => quads.map((x) => `${x.kind}:${x.a}:${Math.round(x.w)}`).join('|');
@@ -284,6 +284,53 @@ describe('The Ring: what a mage throws is told apart in the air', () => {
     expect([fx.fades[0]!.x, fx.fades[0]!.y]).toEqual([mage.x, mage.y]);
     fx.age(1);
     expect(fx.fades).toHaveLength(0);
+  });
+});
+
+describe('The Ring: Frostfang is watched, not glimpsed', () => {
+  // (the owner, 2026-11-17: "please add way better anims for frostfang, we need not such a fast bolt, make it fitting
+  // and animated")
+  it('it takes a third to half a second to cross, where the rest that land at once take a blink', () => {
+    expect(flightTime('m-fang', 30)).toBe(0.3);
+    expect(flightTime('m-fang', 120)).toBeCloseTo(0.4, 5);
+    expect(flightTime('m-fang', 400)).toBe(0.5);
+    expect(flightTime('m-burn', 120)).toBeUndefined();
+  });
+
+  it('its fangs form at the hand, swing wide of each other and close on the target', () => {
+    const at = (u: number): Quad[] => {
+      const s = sheet();
+      drawFlight(s.q, 'm-fang', 100, 100, 1, 0, 2, 1.3, 100 * u, false, u).valueOf();
+      return s.quads.filter((x) => x.kind === FX.frost);
+    };
+    const gap = (u: number): number => Math.abs(at(u)[0]!.y - at(u)[1]!.y);
+    expect(at(0.5)).toHaveLength(2);
+    expect(at(0.05)[0]!.w).toBeLessThan(at(0.5)[0]!.w);
+    expect(gap(0.5)).toBeGreaterThan(gap(0.1));
+    expect(gap(0.5)).toBeGreaterThan(gap(0.95) * 3);
+  });
+
+  it('the bite is seen when the fangs get there, and they follow whoever they were thrown at', () => {
+    const m = new Match({ seed: 3, map: 'sands', fighters: [{ team: 0, cls: 'mage', name: 'a', bar: PRESETS.mage[1]!.bar, talents: [] }, { team: 1, cls: 'warrior', name: 'b', bar: PRESETS.warrior[0]!.bar, talents: [] }] });
+    m.step(GATES + 0.01, {});
+    const [me, foe] = m.fighters as [Fighter, Fighter];
+    me.x = 100;
+    me.y = 120;
+    foe.x = 220;
+    foe.y = 120;
+    me.target = foe.id;
+    m.events.length = 0;
+    expect(m.press(me.id, 'm-fang')).toBeNull();
+    const fx = new RingFx();
+    fx.take(m, () => {}, me.id);
+    const zip = fx.zips.find((z) => z.ab === 'm-fang')!;
+    expect(zip).toMatchObject({ to: foe.id });
+    expect(zip.dur).toBeCloseTo(0.4, 5);
+    const bite = fx.signs.find((s) => s.ab === 'm-fang' && s.k === 'land')!;
+    expect(bite.t).toBeCloseTo(-0.4, 5);
+    fx.age(0.41);
+    expect(bite.t).toBeGreaterThan(0);
+    expect(read('src/games/sigilfall/render/ring.ts')).toContain('const end = aim && !aim.dead ? at(aim) : { x: z.x1, y: z.y1 };');
   });
 });
 
