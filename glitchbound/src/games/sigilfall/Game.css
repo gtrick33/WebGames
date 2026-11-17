@@ -14233,3 +14233,11 @@ html.rb-touch-playing textarea {
 .rb-keys-row.is-asking {
   box-shadow: 0 0 0 2px var(--rb-gold);
 }
+
+/* The Ring's lobby: a healer with 1v1 chosen has no match to find (arena/ladder.ts barredFrom). The button stays to be
+   pressed, since a press on a dead button says nothing, but it reads as shut. */
+.rb-btn.is-barred {
+  opacity: 0.55;
+  filter: saturate(0.4);
+  cursor: not-allowed;
+}

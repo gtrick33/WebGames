@@ -1,4 +1,4 @@
-import { ABILITIES, GCD, type Ability } from './abilities';
+import { ABILITIES, GCD, healerBar, type Ability } from './abilities';
 import { ARENA_H, ARENA_W } from './maps';
 import { CRIT_K, HERO_R, RANGED, type Fighter, type Match, type MoveInput } from './sim';
 import { armored, brace, chainHealer, focusBias, fumble, guard, holdSuper, knows, lapse, lateKick, nextLook, peel, SHARP_FROM } from './tactics';
@@ -47,7 +47,7 @@ export function newBrain(seed: number): Brain {
 const HEALS = (f: Fighter): Ability[] => f.bar.map((b) => ABILITIES[b]!).filter((a) => a.role === 'heal' && a.aim === 'friend');
 
 /** A healer's playstyle: its basic ability, the first on its bar, is a heal for a friend. */
-export const isHealer = (f: Pick<Fighter, 'bar'>): boolean => ABILITIES[f.bar[0] ?? '']?.role === 'heal' && ABILITIES[f.bar[0] ?? '']?.aim === 'friend';
+export const isHealer = (f: Pick<Fighter, 'bar'>): boolean => healerBar(f.bar);
 
 const hpShare = (f: Fighter): number => f.hp / f.maxHp;
 
@@ -87,8 +87,17 @@ export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: numb
   const hero = target.pet ? (enemies.find((e) => e.id === m.masterOf(target).id) ?? enemies[0]!) : target;
   f.target = hero.id;
 
+  // faded from sight with nothing to strike out of it (a mage's vanishing point): they use the breath it buys, walking
+  // as they would and pressing nothing until it is nearly over
+  const lurks = f.bar.some((id) => ABILITIES[id]?.veiled);
+  if (m.hidden(f) && !lurks && !m.held(f)) {
+    if ((f.auras.find((a) => a.kind === 'veil')?.t ?? 0) > 0.7) {
+      b.move = walk(m, f, b, skill, enemies, hero, friends, healer);
+      return b.move;
+    }
+  }
   // in the shroud: nothing that would bring them out of it but the blow it was taken for
-  if (m.hidden(f) && !m.held(f)) {
+  else if (m.hidden(f) && !m.held(f)) {
     f.target = hero.id;
     prowl(m, f, b, skill, hero);
     b.move = m.hidden(f) ? stalk(m, f, b, hero) : walk(m, f, b, skill, enemies, hero, friends, healer);
@@ -365,7 +374,7 @@ function worthNow(m: Match, f: Fighter, a: Ability, target: Fighter, skill: numb
     if (e.k === 'dmg') v += e.n;
     else if (e.k === 'dot' && !burning && !target.pet) v += e.n * 0.8;
   }
-  if (a.field) v = v * (a.field.dur / a.field.tick) * 0.6;
+  if (a.field) v = v * (a.field.dur / a.field.tick) * (a.field.seek ? 0.85 : 0.6);
   if (a.channel) v *= a.channel / (a.tick ?? 1);
   if (a.role === 'burst') v *= 1.25;
   if (v <= 0) return 0;
@@ -445,7 +454,8 @@ function dodge(m: Match, f: Fighter, b: Brain, skill: number): MoveInput | null 
   let best: { out: number; sx: number; sy: number } | null = null;
   // (what was left on the ground: out of it, for whoever has the wits; a dull one stands in it a while)
   for (const z of m.fields) {
-    if (z.team === f.team) continue;
+    // (nobody walks out of one that comes after them nearly as fast as they walk: it is fought through)
+    if (z.team === f.team || ABILITIES[z.ab]?.field?.seek) continue;
     const dx = f.x - z.x;
     const dy = f.y - z.y;
     const d = Math.hypot(dx, dy);

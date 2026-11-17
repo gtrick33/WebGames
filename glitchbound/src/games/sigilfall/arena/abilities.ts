@@ -211,12 +211,15 @@ export interface Spend {
 
 /**
  * What a placed ability leaves on the ground: a patch that stays `dur` seconds and lands the ability's effects on
- * everyone of the other side standing in it every `tick`, drifting on the way it was thrown at `drift` a second.
+ * everyone of the other side standing in it every `tick`. It drifts on the way it was thrown at `drift` a second, or
+ * goes after whoever of the other side is nearest it at `seek` of a walk (the owner, 2026-11-17: "the orb should follow
+ * the closest target and keep hitting them otherwise its always a miss").
  */
 export interface Field {
   dur: number;
   tick: number;
   drift?: number;
+  seek?: number;
 }
 
 /**
@@ -311,6 +314,16 @@ export const GCD = 0.75;
 export const SLOTS = 4;
 
 /**
+ * A healer's playstyle: its basic ability, the first on its bar, is a heal for a friend. (Said here, by what a bar
+ * holds, so that the rules, the computer players and the lobby all mean the same three: the Lifegiver, the Oathkeeper
+ * and the Grovekeeper.)
+ */
+export const healerBar = (bar: readonly string[]): boolean => {
+  const first = ABILITIES[bar[0] ?? ''];
+  return first?.role === 'heal' && first.aim === 'friend';
+};
+
+/**
  * The share of its abilities' numbers each class deals (their abilities' own words give what lands after this). Those
  * who fight from range deal less than those at arm's length; within that, each class is set so that none wins or loses
  * much more than half its matches when the computer plays every setup against every other (see the measures in
@@ -377,7 +390,7 @@ export const SIGIL: Ability = a({ id: 'sigil', cls: 'any', name: 'Sigil of Might
  */
 export const SUPERS: Record<ClassId, Ability> = {
   warrior: a({ id: 'w-super', cls: 'warrior', name: 'Quakebreaker', text: `Slams the ground for ${W(118)} damage to all nearby enemies, knocking them back and slowing them by 50% for 3 sec.`, icon: 'ground_slam_crack_with_flying_rocks_on_brown', color: '#ffb45c', school: 'physical', role: 'burst', aim: 'near', range: 66, cast: 0, cd: 0, free: true, super: true, combo: { name: 'Aftershock', text: 'Deals 30% more damage to targets bleeding from your Festering Gash.', ab: ['w-gash'], mult: 1.3 }, effects: [{ k: 'dmg', n: 118 }, { k: 'slow', pct: 50, dur: 3 }, { k: 'knock', dist: 70 }] }),
-  mage: a({ id: 'm-super', cls: 'mage', name: 'Cinder Comet', text: `Calls a comet down on a patch of ground after a short delay, dealing ${M(138)} damage to all enemies under it and stunning them for 1 sec.`, icon: 'meteor_falling_with_flames_on_orange', color: '#ff7a1e', school: 'fire', role: 'burst', aim: 'ground', range: FAR, cast: 0, cd: 0, free: true, super: true, area: 52, fall: 0.8, combo: { name: 'Conflagration', text: 'Deals 30% more damage to targets Kindled by your Ember Lash.', ab: ['m-lash'], mult: 1.3 }, effects: [{ k: 'dmg', n: 138 }, { k: 'cc', cc: 'stun', dur: 1 }] }),
+  mage: a({ id: 'm-super', cls: 'mage', name: 'Cinder Comet', text: `Calls a comet down on a patch of ground after a short delay, dealing ${M(146)} damage to all enemies under it and stunning them for 1 sec.`, icon: 'meteor_falling_with_flames_on_orange', color: '#ff7a1e', school: 'fire', role: 'burst', aim: 'ground', range: FAR, cast: 0, cd: 0, free: true, super: true, area: 52, fall: 0.8, combo: { name: 'Conflagration', text: 'Deals 30% more damage to targets Kindled by your Ember Lash.', ab: ['m-lash'], mult: 1.3 }, effects: [{ k: 'dmg', n: 146 }, { k: 'cc', cc: 'stun', dur: 1 }] }),
   ranger: a({ id: 'r-super', cls: 'ranger', name: 'Skypierce Arrow', text: `Deals ${R(159)} damage and knocks the target back.`, icon: 'piercing_arrow_through_a_shield_on_green', color: '#d8ff9a', school: 'physical', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 0, free: true, bolt: true, super: true, combo: { name: 'Pinned Down', text: 'Deals 30% more damage to stunned targets.', cc: ['stun'], mult: 1.3 }, effects: [{ k: 'dmg', n: 159 }, { k: 'knock', dist: 60 }] }),
   priest: a({ id: 'p-super', cls: 'priest', name: 'Dawnward', text: 'Heals a friend for 199 and absorbs 200 damage on them for 10 sec.', icon: 'pair_of_white_wings_opening_on_gold', color: '#fff2b0', school: 'holy', role: 'heal', aim: 'friend', range: FAR, cast: 0, cd: 0, free: true, super: true, effects: [{ k: 'heal', n: 199 }, { k: 'absorb', n: 200, dur: 10 }] }),
   paladin: a({ id: 'd-super', cls: 'paladin', name: 'Sunhammer', text: `Deals ${D(205)} damage and stuns the target for 1.5 sec.`, icon: 'hammer_of_light_with_golden_rays_on_gold', color: '#ffd84a', school: 'holy', role: 'burst', aim: 'enemy', range: MID, cast: 0, cd: 0, free: true, bolt: true, super: true, effects: [{ k: 'dmg', n: 205 }, { k: 'cc', cc: 'stun', dur: 1.5 }] }),
@@ -434,14 +447,14 @@ const KITS: Record<ClassId, Ability[]> = {
   ],
   mage: [
     // the Pyre: kindled, then burst into flame
-    a({ id: 'm-lash', cls: 'mage', name: 'Ember Lash', text: `Deals ${M(41)} damage and Kindles the target, burning for ${M(27)} more over 6 sec.`, icon: 'fire_comet_with_a_long_tail_on_navy', color: '#ff7a1e', school: 'fire', role: 'damage', aim: 'enemy', range: FAR, cast: 0.8, cd: 0, bolt: true, effects: [{ k: 'dmg', n: 41 }, { k: 'dot', n: 27, dur: 6 }] }),
-    a({ id: 'm-burn', cls: 'mage', name: 'Flashburn', text: `Deals ${M(58)} damage. Usable while moving.`, icon: 'flame_circle_on_the_ground_on_dark_red', color: '#ff6a2a', school: 'fire', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 5, zip: true, combo: { name: 'Flashover', text: 'Deals 60% more damage to targets Kindled by your Ember Lash, consuming the Kindle.', ab: ['m-lash'], mult: 1.6, consume: true }, effects: [{ k: 'dmg', n: 58 }] }),
+    a({ id: 'm-lash', cls: 'mage', name: 'Ember Lash', text: `Deals ${M(42)} damage and Kindles the target, burning for ${M(28)} more over 6 sec.`, icon: 'fire_comet_with_a_long_tail_on_navy', color: '#ff7a1e', school: 'fire', role: 'damage', aim: 'enemy', range: FAR, cast: 0.8, cd: 0, bolt: true, effects: [{ k: 'dmg', n: 42 }, { k: 'dot', n: 28, dur: 6 }] }),
+    a({ id: 'm-burn', cls: 'mage', name: 'Flashburn', text: `Deals ${M(60)} damage. Usable while moving.`, icon: 'flame_circle_on_the_ground_on_dark_red', color: '#ff6a2a', school: 'fire', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 5, zip: true, combo: { name: 'Flashover', text: 'Deals 70% more damage to targets Kindled by your Ember Lash, consuming the Kindle.', ab: ['m-lash'], mult: 1.7, consume: true }, effects: [{ k: 'dmg', n: 60 }] }),
     a({ id: 'm-blink', cls: 'mage', name: 'Flicker', text: 'Teleports you forward and frees you from stuns, roots and slows. Usable while crowd controlled.', icon: 'three_small_fireballs_orbiting_on_red', color: '#c9b8ff', school: 'arcane', role: 'mobility', aim: 'self', range: 0, cast: 0, cd: 10, free: true, anyState: true, effects: [{ k: 'token' }, { k: 'blink', dist: 96 }] }),
     a({ id: 'm-toad', cls: 'mage', name: 'Toad Hex', text: 'Turns the target into a toad for 3 sec and removes damage-over-time effects from them. Any damage breaks it.', icon: 'frog_jumping_on_teal', color: '#8bff6a', school: 'arcane', role: 'cc', aim: 'enemy', range: FAR, cast: 0.6, cd: 8, bolt: true, effects: [{ k: 'undot' }, { k: 'cc', cc: 'incap', dur: 3 }] }),
     // the Rime: slowed, frozen, shattered
     a({ id: 'm-spear', cls: 'mage', name: 'Rime Spear', text: `Deals ${M(54)} damage and slows the target by 30% for 2.5 sec. Deals double damage while your Rimeglobe is active.`, icon: 'ice_spear_on_cyan', color: '#9fdcff', school: 'frost', role: 'damage', aim: 'enemy', range: FAR, cast: 0.6, cd: 0, bolt: true, uses: [{ boon: 'globe', mult: 2, keep: true }], effects: [{ k: 'dmg', n: 54 }, { k: 'slow', pct: 30, dur: 2.5 }] }),
     a({ id: 'm-fang', cls: 'mage', name: 'Frostfang', text: `Deals ${M(38)} damage. Usable while moving.`, icon: 'ice_shard_flying_on_blue', color: '#bfeaff', school: 'frost', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 3, zip: true, combo: { name: 'Shatter', text: 'Deals triple damage to rooted or stunned targets. Shatters your Frost Snare on the first hit and your Winter’s Grasp on the second, freeing the target.', cc: ['root', 'stun'], mult: 3 }, effects: [{ k: 'dmg', n: 38 }] }),
-    a({ id: 'm-globe', cls: 'mage', name: 'Rimeglobe', text: `Throws a globe of rime where you choose. It drifts for 6 sec, dealing ${M(19)} damage each sec to nearby enemies and slowing them by 30%. While it is active, Rime Spear deals double damage.`, icon: 'ice_orb_in_a_palm_on_navy', color: '#9fdcff', school: 'frost', role: 'damage', aim: 'ground', range: MID, cast: 0, cd: 16, area: 34, fall: 0.3, field: { dur: 6, tick: 1, drift: 14 }, gives: [{ boon: 'globe', on: 'cast' }], effects: [{ k: 'dmg', n: 19 }, { k: 'slow', pct: 30, dur: 1.5 }] }),
+    a({ id: 'm-globe', cls: 'mage', name: 'Rimeglobe', text: `Throws a globe of rime where you choose. For 6 sec it follows the nearest enemy, dealing ${M(17)} damage each sec to enemies inside it and slowing them by 30%. While it is active, Rime Spear deals double damage.`, icon: 'ice_orb_in_a_palm_on_navy', color: '#9fdcff', school: 'frost', role: 'damage', aim: 'ground', range: MID, cast: 0, cd: 16, area: 41, fall: 0.3, field: { dur: 6, tick: 1, seek: 0.9 }, gives: [{ boon: 'globe', on: 'cast' }], effects: [{ k: 'dmg', n: 17 }, { k: 'slow', pct: 30, dur: 1.5 }] }),
     a({ id: 'm-ring', cls: 'mage', name: 'Frost Snare', text: `Deals ${M(12)} damage to all nearby enemies and roots them for 2 sec. Enough damage breaks the root, and one Frostfang shatters it. Repeated use does not shorten it.`, icon: 'frost_nova_ring_on_blue', color: '#bfeaff', school: 'frost', role: 'cc', aim: 'near', range: 58, cast: 0, cd: 14, noDr: true, shatter: 1, effects: [{ k: 'dmg', n: 12 }, { k: 'cc', cc: 'root', dur: 2 }] }),
   ],
   ranger: [
@@ -484,13 +497,13 @@ const KITS: Record<ClassId, Ability[]> = {
     // the Hexer: an agony laid with every dart, and bloomed
     a({ id: 'k-dart', cls: 'warlock', name: 'Blight Dart', text: `Deals ${K(23)} damage and applies Creeping Agony, dealing ${K(60)} more over 9 sec.`, icon: 'necrotic_beam_on_dark_green', color: '#9ae85a', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 0.7, cd: 0, bolt: true, effects: [{ k: 'dmg', n: 23 }, { k: 'dot', n: 60, dur: 9 }] }),
     a({ id: 'k-bloom', cls: 'warlock', name: 'Hex Bloom', text: `Deals ${K(47)} damage. Usable while moving.`, icon: 'dark_explosion_on_violet', color: '#c88aff', school: 'shadow', role: 'burst', aim: 'enemy', range: FAR, cast: 0, cd: 5, combo: { name: 'Full Bloom', text: 'Deals 70% more damage to targets affected by your Creeping Agony or Riftmaw.', ab: ['k-dart', 'k-super'], mult: 1.7 }, effects: [{ k: 'dmg', n: 47 }] }),
-    a({ id: 'k-drain', cls: 'warlock', name: 'Soul Drink', text: `Channeled for 3 sec. Every 0.5 sec it deals ${K(20)} damage and heals you for 30.`, icon: 'bound_spirit_chain_on_teal', color: '#c88aff', school: 'shadow', role: 'heal', aim: 'enemy', range: FAR, cast: 0, channel: 3, tick: 0.5, cd: 12, effects: [{ k: 'dmg', n: 20 }, { k: 'heal', n: 30 }] }),
+    a({ id: 'k-drain', cls: 'warlock', name: 'Soul Drink', text: `Channeled for 3 sec. Every 0.5 sec it deals ${K(20)} damage and heals you for 28.`, icon: 'bound_spirit_chain_on_teal', color: '#c88aff', school: 'shadow', role: 'heal', aim: 'enemy', range: FAR, cast: 0, channel: 3, tick: 0.5, cd: 12, effects: [{ k: 'dmg', n: 20 }, { k: 'heal', n: 28 }] }),
     // (the class's hold, on both)
-    a({ id: 'k-dread', cls: 'warlock', name: 'Dread Gaze', text: 'Fears the target for 1.5 sec. Enough damage breaks it.', icon: 'dark_star_on_black', color: '#a060ff', school: 'shadow', role: 'cc', aim: 'enemy', range: FAR, cast: 0.9, cd: 8, bolt: true, effects: [{ k: 'cc', cc: 'fear', dur: 1.5 }] }),
+    a({ id: 'k-dread', cls: 'warlock', name: 'Dread Gaze', text: 'Fears the target for 1.5 sec. Enough damage breaks it.', icon: 'dark_star_on_black', color: '#a060ff', school: 'shadow', role: 'cc', aim: 'enemy', range: FAR, cast: 0.9, cd: 10, bolt: true, effects: [{ k: 'cc', cc: 'fear', dur: 1.5 }] }),
     // the Gravecaller: the dead sent in, and the bolt after them
     // (the dead at her call. They were the Gloamknight's until he became a death knight and a blade in the dark, the
     // owner's friend: "leave summons for a necro warlock spec". What they are and how they fight is THRALL in sim.ts)
-    a({ id: 'k-bolt', cls: 'warlock', name: 'Gloom Bolt', text: `Deals ${K(49)} damage.`, icon: 'dark_meteor_on_violet', color: '#a060ff', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 1, cd: 0, bolt: true, combo: { name: 'Gloomfire', text: 'Deals 60% more damage to feared targets and targets your ashbound are attacking.', ab: ['k-raise', 'k-super2'], cc: ['fear'], mult: 1.6 }, effects: [{ k: 'dmg', n: 49 }] }),
+    a({ id: 'k-bolt', cls: 'warlock', name: 'Gloom Bolt', text: `Deals ${K(49)} damage.`, icon: 'dark_meteor_on_violet', color: '#a060ff', school: 'shadow', role: 'damage', aim: 'enemy', range: FAR, cast: 1, cd: 0, bolt: true, combo: { name: 'Gloomfire', text: 'Deals 50% more damage to feared targets and targets your ashbound are attacking.', ab: ['k-raise', 'k-super2'], cc: ['fear'], mult: 1.5 }, effects: [{ k: 'dmg', n: 49 }] }),
     a({ id: 'k-raise', cls: 'warlock', name: 'Call the Ashbound', text: `Summons 2 ashbound dead for 14 sec. They attack your target for ${K(9)} damage a hit and slow it by 10%. They can be killed.`, icon: 'raise_dead_grave_with_bones_on_dark_green', color: '#9ae85a', school: 'shadow', role: 'summon', aim: 'self', range: 0, cast: 0, cd: 26, effects: [{ k: 'raise', n: 2, hp: 170, dmg: 9, life: 14, slow: 10 }] }),
     a({ id: 'k-frenzy', cls: 'warlock', name: 'Grave Hunger', text: 'For 6 sec your ashbound deal 40% more damage and move 33% faster. Requires an ashbound.', icon: 'skull_with_green_eyes_on_black', color: '#9ae85a', school: 'shadow', role: 'damage', aim: 'self', range: 0, cast: 0, cd: 16, free: true, effects: [{ k: 'frenzy', pct: 40, dur: 6 }] }),
   ],

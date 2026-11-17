@@ -9,11 +9,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, BOONS, PRESETS, ultOf } from '../src/games/sigilfall/arena/abilities';
-import { GATES, Match, type FighterSetup } from '../src/games/sigilfall/arena/sim';
+import { GATES, Match, type Fighter, type FighterSetup } from '../src/games/sigilfall/arena/sim';
 import { TALENTS } from '../src/games/sigilfall/arena/talents';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import { RingFx } from '../src/games/sigilfall/render/ring';
-import { drawBoon, drawPoints, drawSign, hasSign, signAlone, signed, signTime, type Sign, type SignKind } from '../src/games/sigilfall/render/ringSigns';
+import { drawBoon, drawFade, drawFlight, drawGlobe, drawPoints, drawSign, hasFlight, hasSign, signAlone, signed, signTime, type Sign, type SignKind } from '../src/games/sigilfall/render/ringSigns';
 import { FX, type Fx3D } from '../src/games/sigilfall/render3d/fx3d';
 
 const read = (p: string): string => fs.readFileSync(path.resolve(__dirname, '..', p), 'utf8');
@@ -194,6 +194,96 @@ describe('The Ring: what a fighter carries of their combo is drawn on them', () 
     expect(ring).toMatch(/if \(!f\.cast\?\.channel \|\| f\.dead \|\| unseen\(f\)\) continue;/);
     expect(ring).toMatch(/if \(ab\.id === 'g-chain'\) \{[\s\S]{0,200}this\.lines\.push/);
     expect(ring).toMatch(/if \(!f\.dive\) continue;[\s\S]{0,900}kind: FX\.column[\s\S]{0,900}kind: FX\.shadow, x: p\.x, y: p\.y, up: 2, flat: true/);
+  });
+});
+
+describe('The Ring: what a mage throws is told apart in the air', () => {
+  // (the owner, 2026-11-17: "make the visual cue better for the different spells". A Rime Spear and a Frostfang flew as
+  // the same shard of frost, an Ember Lash and a Flashburn as the same ball of fire.)
+  const THROWN = ['m-lash', 'm-burn', 'm-toad', 'm-spear', 'm-fang'];
+  const flight = (ab: string, strong = false, time = 2): Quad[] => {
+    const s = sheet();
+    expect(drawFlight(s.q, ab, 100, 100, 0.8, 0.6, time, 1.3, 40, strong), ab).toBe(true);
+    return s.quads;
+  };
+  const shape = (quads: Quad[]): string => quads.map((x) => `${x.kind}:${x.a}:${Math.round(x.w)}`).join('|');
+
+  it('each of a mage’s thrown abilities has a shape of its own on the way', () => {
+    for (const p of PRESETS.mage) {
+      for (const id of p.bar) {
+        const ab = ABILITIES[id]!;
+        // (what flies to someone: a bolt, or what lands at once and is seen crossing)
+        if (ab.aim === 'enemy') expect(hasFlight(id), ab.name).toBe(true);
+      }
+    }
+    const shapes = THROWN.map((id) => shape(flight(id)));
+    expect(new Set(shapes).size).toBe(THROWN.length);
+    for (const id of THROWN) {
+      const quads = flight(id);
+      expect(quads.length, id).toBeGreaterThanOrEqual(3);
+      for (const x of quads) {
+        expect(Number.isFinite(x.x) && Number.isFinite(x.y) && Number.isFinite(x.w), id).toBe(true);
+        expect(x.w, id).toBeGreaterThan(0);
+      }
+    }
+    // (anything not named flies as its school does)
+    expect(drawFlight(sheet().q, 'k-dart', 100, 100, 1, 0, 2, 1)).toBe(false);
+  });
+
+  it('a Rime Spear thrown while the globe is out is seen to be the stronger one', () => {
+    const plain = flight('m-spear');
+    const strong = flight('m-spear', true);
+    expect(strong.length).toBeGreaterThan(plain.length);
+    expect(strong.filter((x) => x.kind === FX.frost)).toHaveLength(2);
+    expect(strong.some((x) => x.kind === FX.ring)).toBe(true);
+    const ring = read('src/games/sigilfall/render/ring.ts');
+    expect(ring).toContain('(b.p?.k ?? 1) > 1.3)');
+  });
+
+  it('nothing about a shot flickers: where its parts sit does not depend on where it is', () => {
+    // (a seed taken from its place changed every frame as it flew)
+    const ring = read('src/games/sigilfall/render/ring.ts');
+    expect(ring).toContain('drawFlight(q, b.ab, b.x, b.y, Math.cos(a), Math.sin(a), time, b.src * 1.7 + b.tgt,');
+  });
+
+  it('a globe of rime shows where it lands, when it lands, and that it is on its way to someone', () => {
+    const at = (vx: number, since: number): Quad[] => {
+      const s = sheet();
+      drawGlobe(s.q, 200, 120, 41, vx, 0, since, 1, 2);
+      return s.quads;
+    };
+    const still = at(0, 0.8);
+    // its reach on the ground, exactly as wide as it lands
+    expect(still.filter((x) => x.flat && x.w === 82).map((x) => x.kind).sort()).toEqual([FX.field, FX.ring].sort());
+    // a ring thrown out as it lands, and gone by the time it next does
+    expect(at(0, 0.1).some((x) => x.kind === FX.shock)).toBe(true);
+    expect(still.some((x) => x.kind === FX.shock)).toBe(false);
+    // going after someone, what it sheds lies behind it
+    const flakes = at(59, 0.8).filter((x) => x.kind === FX.flake);
+    expect(flakes.length).toBeGreaterThan(3);
+    for (const x of flakes) expect(x.x).toBeLessThan(200);
+    expect(read('src/games/sigilfall/render/ring.ts')).toMatch(/if \(ab\.field\?\.seek\) \{\s*drawGlobe\(/);
+  });
+
+  it('fading from sight leaves a puff where they stood, for both sides', () => {
+    const s = sheet();
+    drawFade(s.q, 150, 150, 0.3, 1);
+    expect(s.quads.length).toBeGreaterThan(8);
+    expect(s.quads.some((x) => x.kind === FX.smoke)).toBe(true);
+    for (const x of s.quads) expect(Number.isFinite(x.x) && Number.isFinite(x.y) && x.w > 0).toBe(true);
+    // the event is taken even by whoever can no longer see them, and the puff ages out
+    const m = new Match({ seed: 5, map: 'sands', fighters: [{ team: 0, cls: 'mage', name: 'a', bar: PRESETS.mage[0]!.bar, talents: ['m-3c'] }, { team: 1, cls: 'warrior', name: 'b', bar: PRESETS.warrior[0]!.bar, talents: [] }] });
+    m.step(GATES + 0.01, {});
+    const [mage, foe] = m.fighters as [Fighter, Fighter];
+    mage.hp = Math.round(mage.maxHp * 0.4);
+    (m as unknown as { damage(src: Fighter, t: Fighter, n: number, direct: boolean): number }).damage(foe, mage, 100, true);
+    expect(m.unseen(mage, foe)).toBe(true);
+    const fx = new RingFx();
+    fx.take(m, () => {}, foe.id);
+    expect(fx.fades).toHaveLength(1);
+    expect([fx.fades[0]!.x, fx.fades[0]!.y]).toEqual([mage.x, mage.y]);
+    fx.age(1);
+    expect(fx.fades).toHaveLength(0);
   });
 });
 

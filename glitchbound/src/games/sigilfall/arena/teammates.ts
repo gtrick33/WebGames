@@ -37,8 +37,13 @@ import type { Format } from './ranks';
  * 2.5 points from one set of 400 to another), and Random picks among them by the match's seed: the most balanced team
  * each time, not always the same face.
  *
- * The numbers are from 2026-11-16's abilities (the fixed playstyles). When the balance moves a lot they can be measured again: RING_SYNERGY=1
- * npx vitest run tests/sigilfall-ring-teammates.test.ts prints fresh tables in this file's form (it takes a while).
+ * TRIOS is from 2026-11-16's abilities (the fixed playstyles). PAIRS was measured again on 2026-11-17, when healing in
+ * 2v2 came down to what is written (sim.ts HEAL_BY_SIZE; the owner: "in 2v2 i feel like healers are way too strong, if
+ * i go as double dps i still need to have slight chance"): two damage setups together had won 32% of their matches
+ * against that field and now win 43%, a healer and a damage setup 63% and now 58%, so Random's best second in 2v2 is
+ * no longer always a healer (a Reaper's is the Rime). When the balance moves a lot they can be measured again:
+ * RING_SYNERGY=1 npx vitest run tests/sigilfall-ring-teammates.test.ts prints fresh tables in this file's form (it
+ * takes a while).
  */
 
 /** One of the ready-made setups: a class and which of its PRESETS. */
@@ -73,33 +78,33 @@ export function specOf(cls: ClassId, bar: readonly string[]): Spec {
 
 /** % of 2v2 matches each pair of ready-made setups won together (see the top of this file). */
 export const PAIRS: Record<string, number> = {
-  'warrior0+mage0': 40, 'warrior0+mage1': 38, 'warrior0+ranger0': 31, 'warrior0+ranger1': 37, 'warrior0+paladin0': 68,
-  'warrior0+paladin1': 35, 'warrior0+priest0': 65, 'warrior0+priest1': 33, 'warrior0+warlock0': 33,
-  'warrior0+warlock1': 39, 'warrior0+druid0': 62, 'warrior0+druid1': 33, 'warrior0+gloamknight0': 37,
-  'warrior0+gloamknight1': 49, 'warrior1+mage0': 34, 'warrior1+mage1': 28, 'warrior1+ranger0': 33,
-  'warrior1+ranger1': 28, 'warrior1+paladin0': 65, 'warrior1+paladin1': 26, 'warrior1+priest0': 66,
-  'warrior1+priest1': 33, 'warrior1+warlock0': 25, 'warrior1+warlock1': 33, 'warrior1+druid0': 65,
-  'warrior1+druid1': 28, 'warrior1+gloamknight0': 31, 'warrior1+gloamknight1': 21, 'mage0+ranger0': 44,
-  'mage0+ranger1': 35, 'mage0+paladin0': 71, 'mage0+paladin1': 25, 'mage0+priest0': 68, 'mage0+priest1': 34,
-  'mage0+warlock0': 25, 'mage0+warlock1': 33, 'mage0+druid0': 64, 'mage0+druid1': 31, 'mage0+gloamknight0': 30,
-  'mage0+gloamknight1': 39, 'mage1+ranger0': 40, 'mage1+ranger1': 36, 'mage1+paladin0': 57, 'mage1+paladin1': 31,
-  'mage1+priest0': 56, 'mage1+priest1': 41, 'mage1+warlock0': 25, 'mage1+warlock1': 27, 'mage1+druid0': 52,
-  'mage1+druid1': 30, 'mage1+gloamknight0': 28, 'mage1+gloamknight1': 38, 'ranger0+paladin0': 73,
-  'ranger0+paladin1': 25, 'ranger0+priest0': 70, 'ranger0+priest1': 34, 'ranger0+warlock0': 32,
-  'ranger0+warlock1': 30, 'ranger0+druid0': 65, 'ranger0+druid1': 38, 'ranger0+gloamknight0': 26,
-  'ranger0+gloamknight1': 36, 'ranger1+paladin0': 67, 'ranger1+paladin1': 27, 'ranger1+priest0': 59,
-  'ranger1+priest1': 38, 'ranger1+warlock0': 22, 'ranger1+warlock1': 25, 'ranger1+druid0': 61, 'ranger1+druid1': 25,
-  'ranger1+gloamknight0': 22, 'ranger1+gloamknight1': 36, 'paladin0+priest0': 38, 'paladin0+priest1': 69,
-  'paladin0+warlock0': 68, 'paladin0+warlock1': 68, 'paladin0+druid0': 41, 'paladin0+druid1': 71,
-  'paladin0+gloamknight0': 70, 'paladin0+gloamknight1': 70, 'paladin1+priest0': 50, 'paladin1+priest1': 25,
-  'paladin1+warlock0': 28, 'paladin1+warlock1': 35, 'paladin1+druid0': 47, 'paladin1+druid1': 28,
-  'paladin1+gloamknight0': 35, 'paladin1+gloamknight1': 30, 'priest0+warlock0': 54, 'priest0+warlock1': 59,
-  'priest0+druid0': 38, 'priest0+druid1': 62, 'priest0+gloamknight0': 60, 'priest0+gloamknight1': 63,
-  'priest1+warlock0': 22, 'priest1+warlock1': 25, 'priest1+druid0': 60, 'priest1+druid1': 28,
-  'priest1+gloamknight0': 28, 'priest1+gloamknight1': 29, 'warlock0+druid0': 54, 'warlock0+druid1': 27,
-  'warlock0+gloamknight0': 26, 'warlock0+gloamknight1': 34, 'warlock1+druid0': 62, 'warlock1+druid1': 44,
-  'warlock1+gloamknight0': 39, 'warlock1+gloamknight1': 32, 'druid0+gloamknight0': 56, 'druid0+gloamknight1': 63,
-  'druid1+gloamknight0': 30, 'druid1+gloamknight1': 35,
+  'warrior0+mage0': 54, 'warrior0+mage1': 63, 'warrior0+ranger0': 44, 'warrior0+ranger1': 49, 'warrior0+paladin0': 54,
+  'warrior0+paladin1': 45, 'warrior0+priest0': 59, 'warrior0+priest1': 41, 'warrior0+warlock0': 41,
+  'warrior0+warlock1': 49, 'warrior0+druid0': 54, 'warrior0+druid1': 46, 'warrior0+gloamknight0': 45,
+  'warrior0+gloamknight1': 58, 'warrior1+mage0': 49, 'warrior1+mage1': 47, 'warrior1+ranger0': 44,
+  'warrior1+ranger1': 39, 'warrior1+paladin0': 58, 'warrior1+paladin1': 40, 'warrior1+priest0': 65,
+  'warrior1+priest1': 46, 'warrior1+warlock0': 37, 'warrior1+warlock1': 44, 'warrior1+druid0': 51,
+  'warrior1+druid1': 44, 'warrior1+gloamknight0': 41, 'warrior1+gloamknight1': 39, 'mage0+ranger0': 60,
+  'mage0+ranger1': 57, 'mage0+paladin0': 77, 'mage0+paladin1': 38, 'mage0+priest0': 74, 'mage0+priest1': 47,
+  'mage0+warlock0': 43, 'mage0+warlock1': 49, 'mage0+druid0': 67, 'mage0+druid1': 54, 'mage0+gloamknight0': 41,
+  'mage0+gloamknight1': 53, 'mage1+ranger0': 63, 'mage1+ranger1': 50, 'mage1+paladin0': 67, 'mage1+paladin1': 48,
+  'mage1+priest0': 70, 'mage1+priest1': 55, 'mage1+warlock0': 44, 'mage1+warlock1': 48, 'mage1+druid0': 61,
+  'mage1+druid1': 51, 'mage1+gloamknight0': 43, 'mage1+gloamknight1': 53, 'ranger0+paladin0': 66,
+  'ranger0+paladin1': 36, 'ranger0+priest0': 64, 'ranger0+priest1': 41, 'ranger0+warlock0': 38, 'ranger0+warlock1': 40,
+  'ranger0+druid0': 56, 'ranger0+druid1': 46, 'ranger0+gloamknight0': 31, 'ranger0+gloamknight1': 49,
+  'ranger1+paladin0': 62, 'ranger1+paladin1': 38, 'ranger1+priest0': 60, 'ranger1+priest1': 44, 'ranger1+warlock0': 29,
+  'ranger1+warlock1': 28, 'ranger1+druid0': 54, 'ranger1+druid1': 30, 'ranger1+gloamknight0': 28,
+  'ranger1+gloamknight1': 47, 'paladin0+priest0': 36, 'paladin0+priest1': 69, 'paladin0+warlock0': 64,
+  'paladin0+warlock1': 58, 'paladin0+druid0': 33, 'paladin0+druid1': 65, 'paladin0+gloamknight0': 55,
+  'paladin0+gloamknight1': 57, 'paladin1+priest0': 47, 'paladin1+priest1': 31, 'paladin1+warlock0': 35,
+  'paladin1+warlock1': 44, 'paladin1+druid0': 38, 'paladin1+druid1': 41, 'paladin1+gloamknight0': 47,
+  'paladin1+gloamknight1': 42, 'priest0+warlock0': 50, 'priest0+warlock1': 51, 'priest0+druid0': 30,
+  'priest0+druid1': 58, 'priest0+gloamknight0': 51, 'priest0+gloamknight1': 54, 'priest1+warlock0': 24,
+  'priest1+warlock1': 36, 'priest1+druid0': 59, 'priest1+druid1': 40, 'priest1+gloamknight0': 22,
+  'priest1+gloamknight1': 38, 'warlock0+druid0': 43, 'warlock0+druid1': 39, 'warlock0+gloamknight0': 31,
+  'warlock0+gloamknight1': 43, 'warlock1+druid0': 44, 'warlock1+druid1': 55, 'warlock1+gloamknight0': 41,
+  'warlock1+gloamknight1': 42, 'druid0+gloamknight0': 43, 'druid0+gloamknight1': 48, 'druid1+gloamknight0': 39,
+  'druid1+gloamknight1': 50,
 };
 
 /** % of 3v3 matches each three won together, for every three with one or two healers. */

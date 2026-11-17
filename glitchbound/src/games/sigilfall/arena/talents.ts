@@ -75,7 +75,7 @@ export type Doing =
   | { k: 'third'; n: number; within: number; dur: number; every: number }
   | { k: 'skin'; share: number; above: number }
   | { k: 'rewind'; back: number; share: number; every: number }
-  | { k: 'vanish'; dist: number; every: number }
+  | { k: 'vanish'; dur: number; haste: number; every: number }
   // the ranger
   | { k: 'quarry'; pct: number }
   | { k: 'far'; pct: number }
@@ -233,7 +233,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...classRow('mage', 'm', [
       { name: 'Arcane Skin', text: 'Take 20% less damage while above 50% health.', icon: 'shield_status_bubble_on_blue', does: { k: 'skin', share: 0.2, above: 0.5 } },
       { name: 'Rewind', text: 'Falling below 35% health heals you for half the damage you took in the last 3 sec. 30 sec cooldown.', icon: 'frozen_hourglass_on_navy', does: { k: 'rewind', back: 3, share: 0.5, every: 30 } },
-      { name: 'Vanishing Point', text: 'Falling below 35% health teleports you away from the nearest enemy and removes roots and slows. 30 sec cooldown.', icon: 'vanish_puff_of_smoke_on_violet', does: { k: 'vanish', dist: 100, every: 30 } },
+      { name: 'Vanishing Point', text: 'Falling below 35% health, you vanish for 2.5 sec: enemies cannot see or target you, roots and slows are removed and you move 30% faster. Using an ability ends it. 30 sec cooldown.', icon: 'vanish_puff_of_smoke_on_violet', does: { k: 'vanish', dur: 2.5, haste: 0.3, every: 30 } },
     ]),
   ],
   // the kiter: a held breath, a baited trap, and healing where nobody can see

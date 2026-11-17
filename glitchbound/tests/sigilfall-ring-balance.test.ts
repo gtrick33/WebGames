@@ -194,6 +194,66 @@
  * Worth a look once people have played it: who a playstyle meets still decides a duel between computers more than
  * it should (the Rime wins nearly every duel with a blade and one in five with a caster, as it did before the
  * makeover: 97% and 14% then), and the Oathkeeper in 2v2.
+ *
+ * Then the owner played it (2026-11-17, a priest and a mage against a priest and a warlock): "warlocks seem insanely
+ * op, mages suck ... fire mage deals shit dmg now imo and it feels weak compared to warlock", "rime mage also feels
+ * weak, the orb should follow the closest target and keep hitting them otherwise its always a miss, increase the radius
+ * by 20%". Between computers the two mages had lost most duels with the three shadow casters (the Pyre won 17-33% of
+ * them, the Rime 17-25%) while holding their own in teams. What changed:
+ *
+ *   Rimeglobe       goes after the nearest enemy at 0.9 of a walk (it drifted 14 a second the way it was thrown), reaches
+ *                   41 (34), and lands 17 a second before the mage's share (19): it now lands every second it is out
+ *   Pyre            Ember Lash 42 and 28 over 6 s (41, 27), Flashburn 60 (58), Flashover +70% (+60%), Cinder Comet 146 (138)
+ *   Dread Gaze      every 10 s (8): both warlocks carry it
+ *   Soul Drink      gives back 28 a half second (30)
+ *   Gloomfire       +50% (+60%)
+ *
+ * The same measure after (12 seeds of every 1v1, 1,000 teams of each size); a match takes 56 s, 69 s and 62 s:
+ *
+ *   Reaper      39/45/57 47   Hound     68/49/43 53   Pyre         61/47/53 53   Rime        67/53/49 56
+ *   Longbow     43/50/52 49   Trapper   57/43/42 47   Oathkeeper   25/64/61 50   Zealot      50/44/36 43
+ *   Lifegiver   27/60/55 47   Curse-sp. 61/41/51 51   Hexer        53/37/45 45   Gravecaller 53/46/43 47
+ *   Grovekeeper 18/62/53 44   Starseer  63/41/43 49   Bloodsworn   59/42/48 50   Nightblade  55/48/57 53
+ *
+ * And the owner's own fight, a damage playstyle with a healer beside it against each of the other twelve with the same
+ * healer (a Lifegiver, then a Grovekeeper; ten seeds each), in % won and damage a second: the Pyre 69% and 55, the
+ * Rime 48% and 54, the Hexer 38% and 49, the Gravecaller 42% and 54. Before the change, on six seeds with a Lifegiver:
+ * the Pyre 58% and 48, the Rime 50% and 52, the Hexer 43% and 48, the Gravecaller 64% and 59. A Pyre given 12% in
+ * place of these 5 won 73% of those and led every table, so it was given no more. The duels: the Pyre now wins 33%, 67%
+ * and 42% against the Curse-speaker, the Hexer and the Gravecaller, the Rime 17%, 50% and 33%.
+ *
+ * Worth a look once people have played this: the spread is wider than it was (43-56, 45-53 before), with both mages in
+ * the upper half and the Hexer low in 2v2 (37%); the Zealot and the teammate tables (arena/teammates.ts) were not
+ * touched or measured again.
+ *
+ * The same day the owner asked for four more things: "1v1 if 2 rogue gloamknights fight theyre always invisible", "in
+ * 1v1 healers shouldnt be allowed", "in 2v2 if both dps die, the healers take ages to kill each other", and "in 2v2 i
+ * feel like healers are way too strong, if i go as double dps i still need to have slight chance". What they are is in
+ * tests/sigilfall-ring-fair.test.ts; what they measured, over 400 random 2v2s of each kind between computers:
+ *
+ *                                                    before              after
+ *   two damage dealers against a healer's side       win 17.5%           win 34%     (healing in 2v2: 1.3 -> 1 of what is written)
+ *   two healers left alone, until one falls          32 s (longest 63)   10 s (longest 14)   (sudden death)
+ *   a healer's side against a healer's side          104 s               93 s
+ *   two damage dealers against two                   37 s                37 s
+ *
+ * At 1.1 of what is written two damage dealers won 27%, at 0.95 they won 39%. And every playstyle again (12 seeds of
+ * every 1v1, 1,000 teams of each size, 60% of the 2v2 teams with a healer); a match takes 53 s, 66 s and 62 s:
+ *
+ *   Reaper      39/47/57 48   Hound     68/47/43 53   Pyre         61/57/53 57   Rime        67/59/49 58
+ *   Longbow     43/49/52 48   Trapper   57/44/42 48   Oathkeeper    -/59/61      Zealot      50/48/36 45
+ *   Lifegiver    -/52/55      Curse-sp. 61/40/51 51   Hexer        53/42/45 46   Gravecaller 53/48/43 48
+ *   Grovekeeper  -/49/53      Starseer  63/52/43 53   Bloodsworn   59/46/48 51   Nightblade  55/53/57 55
+ *
+ * (The healers' 2v2 before: 64, 60 and 62.) No healer fights a 1v1 any more, and the 1v1 column above still counts
+ * every damage playstyle's duels with the three of them, which they nearly always won. Among themselves the thirteen
+ * win: Reaper 31, Hound 60, Pyre 56, Rime 66, Longbow 36, Trapper 57, Zealot 51, Curse-speaker 52, Hexer 42,
+ * Gravecaller 46, Starseer 57, Bloodsworn 51, Nightblade 46.
+ *
+ * Worth a look: with less healing in 2v2 the two mages lead it between computers (57% and 59%; nobody else is over
+ * 53%), on top of what they were given earlier in the day, and a duel without healers shows the Reaper (31%) and the
+ * Longbow (36%) behind and the Rime (66%) ahead by more than the old column did. None of that was tuned here. The
+ * pairs table Random reads was measured again (arena/teammates.ts); the threes were not.
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';

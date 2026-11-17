@@ -1,5 +1,5 @@
 import type { ClassId } from '../data/types';
-import { ABILITIES, BODY, BOONS, CLASS_DMG, GCD, SIGIL, styleOfBar, superOf, ultOf, type Ability, type Build, type CcKind, type Effect, type Give, type Points, type Spend, type Use } from './abilities';
+import { ABILITIES, BODY, BOONS, CLASS_DMG, GCD, SIGIL, healerBar, styleOfBar, superOf, ultOf, type Ability, type Build, type CcKind, type Effect, type Give, type Points, type Spend, type Use } from './abilities';
 import { ARENA_H, ARENA_W, ENTRY_GATES, MAPS, type Pillar } from './maps';
 import { ARM, cleanTalents, EXECUTE, NEAR, RALLY, TALENT_BY_ID, type Does, type Tune } from './talents';
 
@@ -49,8 +49,23 @@ export const BOLT_R = 6;
 /**
  * Healing is this much stronger by how many fight on a side: there is more than one enemy's damage to answer. Raised
  * from 1.2 and 1.35 on the owner's "increase the healing a tad bit more for the healers in the 2v2/3v3" (2026-11-13).
+ * In 2v2 it is as written again (it was 1.3) since the owner's "in 2v2 i feel like healers are way too strong, if i go
+ * as double dps i still need to have slight chance" (2026-11-17): between computers two damage dealers beat a healer's
+ * side in 17% of their fights at 1.3, and in a third of them at 1.
  */
-export const HEAL_BY_SIZE: readonly number[] = [1, 1, 1.3, 1.45];
+export const HEAL_BY_SIZE: readonly number[] = [1, 1, 1, 1.45];
+/**
+ * Only healers left standing, on both sides: sudden death. Healing is gone within `fade` seconds of it, and everything
+ * hits `grow` harder for every second since (the owner, 2026-11-17: "in 2v2 if both dps die, the healers take ages to
+ * kill each other"). A healer's own blows are few; without it two of them took half a minute, and up to a minute.
+ */
+export const SUDDEN = { fade: 3, grow: 0.5 } as const;
+/**
+ * Nobody of either side in sight for this long (everyone left is in the shroud: two Nightblades): the shroud lifts
+ * from all of them, and none of them slips back into it by themself for `rest` seconds. The owner, 2026-11-17: "1v1 if
+ * 2 rogue gloamknights fight theyre always invisible".
+ */
+export const DARK = { after: 3, rest: 9 } as const;
 /** Healing spheres: the first rise at this, each comes back this long after it's taken, and gives this share of a life. */
 export const ORB_FIRST = 12;
 export const ORB_EVERY = 24;
@@ -462,7 +477,9 @@ export type MatchEvent =
   /** Something a talent throws crosses from one fighter to another (an imp's spit, a hammer leaping on): drawn as `ab` (an ability's or a talent's id). */
   | { k: 'streak'; id: number; to: number; ab: string }
   /** Someone is given a boon (abilities.ts BOONS). */
-  | { k: 'boon'; id: number; boon: string };
+  | { k: 'boon'; id: number; boon: string }
+  /** Someone fades from sight where they stand (a mage's vanishing point): both sides see where it happened. */
+  | { k: 'fade'; id: number; x: number; y: number; ab: string };
 
 export type Phase = 'gates' | 'fight' | 'over';
 
@@ -654,6 +671,10 @@ export class Match {
    * time. The Ring's tutorial (arena/tutorial.ts) holds it while it teaches, and lets it go for the last fight.
    */
   hold = false;
+  /** When sudden death began (SUDDEN): only healers were left on both sides. */
+  suddenAt: number | null = null;
+  /** How long nobody of either side has been in sight (DARK). */
+  private dark = 0;
   events: MatchEvent[] = [];
   private rand: () => number;
 
@@ -717,7 +738,15 @@ export class Match {
 
   /** A share of healing gone. Grows through the match, to all of it, so that healers can't hold forever. */
   get dampening(): number {
-    return Math.max(0, Math.min(1, (this.clock - DAMP_FROM) * DAMP_RATE));
+    const faded = (this.clock - DAMP_FROM) * DAMP_RATE;
+    // (sudden death: what is left of it goes in a few seconds)
+    const sudden = this.suddenAt === null ? 0 : (this.clock - this.suddenAt) / SUDDEN.fade;
+    return Math.max(0, Math.min(1, Math.max(faded, sudden)));
+  }
+
+  /** Sudden death (SUDDEN): how much harder everything hits by now, 1 when it isn't. */
+  get sudden(): number {
+    return this.suddenAt === null ? 1 : 1 + SUDDEN.grow * Math.max(0, this.clock - this.suddenAt);
   }
 
   /** What everyone has besides their bar: their playstyle's super. */
@@ -873,6 +902,10 @@ export class Match {
   }
   rooted(f: Fighter): boolean {
     return f.auras.some((a) => a.cc === 'root' || a.kind === 'oak') && !f.auras.some((a) => a.kind === 'free');
+  }
+  /** Held to the spot whatever else is on them: stunned, dazed, sealed, up in the dark or rooted. A fear can't walk them out of it. */
+  pinned(f: Fighter): boolean {
+    return f.auras.some((a) => a.cc === 'stun' || a.cc === 'incap' || a.still || a.kind === 'aloft') || this.rooted(f);
   }
   silenced(f: Fighter): boolean {
     return f.auras.some((a) => a.cc === 'silence');
@@ -1315,8 +1348,8 @@ export class Match {
    * Whoever was casting at them loses them, whoever had them chosen loses them, and what was flying at them goes
    * astray: they have gone where nobody can aim (into the shroud, up into the dark).
    */
-  private lose(f: Fighter): void {
-    this.endCast(f);
+  private lose(f: Fighter, casting = false): void {
+    if (!casting) this.endCast(f);
     for (const o of this.fighters) {
       if (o.team === f.team || o.dead) continue;
       if (o.target === f.id) o.target = null;
@@ -1392,7 +1425,8 @@ export class Match {
         return;
       case 'absorb':
         // (a shield fades as healing does, the longer the match goes: or a warded healer never falls)
-        if (this.dampening < 1) this.addAura(t, { ...base, kind: 'absorb', harmful: false, dur: e.dur, n: e.n * power * (1 - this.dampening) });
+        // (a whole number, however far it has faded: what it leaves of a hit is shown over their head)
+        if (this.dampening < 1) this.addAura(t, { ...base, kind: 'absorb', harmful: false, dur: e.dur, n: Math.max(1, Math.round(e.n * power * (1 - this.dampening))) });
         return;
       case 'guard':
         this.addAura(t, { ...base, kind: 'guard', harmful: false, dur: e.dur, n: e.pct / 100 });
@@ -1409,6 +1443,8 @@ export class Match {
         if (e.still) this.endCast(t);
         return;
       case 'free':
+        // (and what roots them now comes off, so nobody is seen walking in a root)
+        t.auras = t.auras.filter((a) => a.cc !== 'root');
         this.addAura(t, { ...base, kind: 'free', harmful: false, dur: e.dur });
         return;
       case 'reflect':
@@ -1574,6 +1610,11 @@ export class Match {
       t.procs.mirror = this.clock + mirror.every;
       this.events.push({ k: 'word', id: t.id, word: abOfDoing(t.cls, 'mirror').name });
       this.crowd(t, ab, f, cc, dur * mirror.share);
+      return false;
+    }
+    // whoever can't be rooted just now isn't: nothing is put on them to be walked through
+    if (cc === 'root' && t.auras.some((a) => a.kind === 'free')) {
+      this.events.push({ k: 'word', id: t.id, word: 'Immune' });
       return false;
     }
     // a paladin's hand of freedom: a root shaken off at once
@@ -1871,7 +1912,7 @@ export class Match {
     const wrath = this.near(src, 'wrath', 'friend');
     if (wrath) n *= 1 + wrath.d.pct;
     for (const a of t.auras) if (a.kind === 'guard') n *= 1 - a.n;
-    n = Math.round(n * t.mods.guard * this.toughness(t, direct, ab));
+    n = Math.round(n * t.mods.guard * this.toughness(t, direct, ab) * this.sudden);
     by.score.dmg += n;
     if (src !== t) {
       const k = src.pet || t.pet ? THRALL.charge : 1;
@@ -2050,7 +2091,8 @@ export class Match {
   /** A talent's aura that grows with each time (a scar, a soul's ward, an overflow of healing), up to its most, and starts its clock over. */
   private stack(t: Fighter, src: Fighter, id: string, kind: 'absorb' | 'guard', add: number, most: number, dur: number): void {
     const had = t.auras.find((a) => a.ab === id && a.kind === kind && a.src === src.id)?.n ?? 0;
-    this.addAura(t, { ab: id, src: src.id, kind, harmful: false, magic: false, dur, n: Math.min(most, had + add) });
+    const n = Math.min(most, had + add);
+    this.addAura(t, { ab: id, src: src.id, kind, harmful: false, magic: false, dur, n: kind === 'absorb' ? Math.round(n) : n });
   }
 
   /** Can this talent's doing (or this kind of thing it does now and then) go off yet? */
@@ -2188,7 +2230,7 @@ export class Match {
       }
       if (does.vanish && this.ready(t, 'vanish')) {
         t.procs.vanish = this.clock + does.vanish.every;
-        this.vanish(t, does.vanish.dist);
+        this.vanish(t, does.vanish.dur, does.vanish.haste);
       }
       if (does.pact && this.ready(t, 'pact')) {
         t.procs.pact = this.clock + does.pact.every;
@@ -2209,17 +2251,20 @@ export class Match {
   }
 
   /** Gone from where they stood, to appear away from the nearest enemy, free of roots and slows (Vanishing Point). */
-  private vanish(t: Fighter, dist: number): void {
-    const foe = this.enemiesOf(t)
-      .filter((o) => !o.pet)
-      .sort((a, b) => Math.hypot(a.x - t.x, a.y - t.y) - Math.hypot(b.x - t.x, b.y - t.y))[0];
-    const dx = foe ? t.x - foe.x : t.dirX;
-    const dy = foe ? t.y - foe.y : t.dirY;
-    const d = Math.hypot(dx, dy) || 1;
-    t.auras = t.auras.filter((a) => a.kind !== 'slow' && a.cc !== 'root');
-    t.dash = null;
-    this.blinkTo(t, dx / d, dy / d, dist);
-    this.events.push({ k: 'word', id: t.id, word: abOfDoing(t.cls, 'vanish').name });
+  /**
+   * A mage's vanishing point: gone from the other side's sight where they stand, for a moment. They are not moved (the
+   * owner, 2026-11-17: "feels weird as if im getting teleported randomly"): they walk where they like, faster, with
+   * nothing rooting or slowing them, and nothing that lands on them brings them back. Only their own attack does.
+   */
+  private vanish(t: Fighter, dur: number, haste: number): void {
+    const { id, name } = abOfDoing(t.cls, 'vanish');
+    t.auras = t.auras.filter((a) => a.kind !== 'slow' && a.cc !== 'root' && a.kind !== 'veil');
+    t.auras.push({ ab: id, kind: 'veil', src: t.id, t: dur, dur, harmful: false, magic: false, n: 0, keep: 0 });
+    this.addAura(t, { ab: id, src: t.id, kind: 'speed', harmful: false, magic: false, dur, n: haste });
+    // (what they were casting goes on; it is what they do next that shows them again)
+    this.lose(t, true);
+    this.events.push({ k: 'fade', id: t.id, x: t.x, y: t.y, ab: id });
+    this.events.push({ k: 'word', id: t.id, word: name });
   }
 
   private heal(src: Fighter, t: Fighter, amount: number, direct = true): void {
@@ -2366,6 +2411,39 @@ export class Match {
     this.tendSigil();
     this.tendOrbs();
     this.judge();
+    if (this.phase !== 'fight') return;
+    this.lastHealers();
+    this.liftDark(dt);
+  }
+
+  /** Sudden death begins the moment everyone still standing, on both sides, is a healer (SUDDEN). It doesn't end. */
+  private lastHealers(): void {
+    if (this.suddenAt !== null || this.hold) return;
+    const up = this.fighters.filter((f) => !f.dead && !f.pet);
+    if (!up.some((f) => f.team === 0) || !up.some((f) => f.team === 1) || !up.every((f) => healerBar(f.bar))) return;
+    this.suddenAt = this.clock;
+    // (said over each of them: the match screen says it too, and by how much, for as long as it lasts)
+    for (const f of up) this.events.push({ k: 'word', id: f.id, word: 'Sudden death', bad: true });
+  }
+
+  /**
+   * Everyone still standing is in the shroud, so nobody can find anybody: after a moment it lifts from all of them
+   * (DARK), and they are kept out of it a while, as if they had just fought.
+   */
+  private liftDark(dt: number): void {
+    const up = this.fighters.filter((f) => !f.dead && !f.pet);
+    if (!up.length || !up.every((f) => this.hidden(f))) {
+      this.dark = 0;
+      return;
+    }
+    this.dark += dt;
+    if (this.dark < DARK.after) return;
+    this.dark = 0;
+    for (const f of up) {
+      this.unveil(f);
+      f.fought = this.clock + DARK.rest - VEIL.calm;
+      this.events.push({ k: 'word', id: f.id, word: 'Revealed', bad: true });
+    }
   }
 
   /** The sigil rises in the middle now and then; the first to reach it takes it. */
@@ -2565,7 +2643,8 @@ export class Match {
       f.vy = 0;
       return;
     }
-    const fear = f.auras.some((a) => a.cc === 'fear');
+    // (a fear makes them run, but never out of a stun, a daze or a root: whoever is held stays where they are held)
+    const fear = f.auras.some((a) => a.cc === 'fear') && !this.pinned(f);
     if (fear) {
       // running blind: round pillars and along walls, turning now and then
       if (this.rand() < dt * 0.9) {
@@ -2644,6 +2723,8 @@ export class Match {
       }
       this.spend(f, ab);
       this.fire(f, ab, t, c.at);
+      // (a cast that was under way when they faded from sight brings them back as it goes off)
+      if (!ab.quiet) this.unveil(f);
     }
   }
 
@@ -2716,6 +2797,7 @@ export class Match {
         this.fields.splice(i, 1);
         continue;
       }
+      if (ab.field.seek) this.seek(fd, src, BASE_SPEED * ab.field.seek, dt);
       fd.x = Math.max(fd.r * 0.5, Math.min(ARENA_W - fd.r * 0.5, fd.x + fd.vx * dt));
       fd.y = Math.max(fd.r * 0.5, Math.min(ARENA_H - fd.r * 0.5, fd.y + fd.vy * dt));
       fd.next -= dt;
@@ -2728,6 +2810,36 @@ export class Match {
         this.ticked(src, ab);
       }
     }
+  }
+
+  /**
+   * A field that goes after someone (Ability.field.seek): it turns toward whoever of the other side is nearest it and
+   * can be seen (their raised dead only when nobody else can), at a little under a walk, over stone and all. It hangs
+   * where it is when there is nobody to go after, and stops on them once it has them.
+   */
+  private seek(fd: Field, src: Fighter, speed: number, dt: number): void {
+    let to: Fighter | null = null;
+    let best = Infinity;
+    for (const o of this.fighters) {
+      if (o.dead || o.team === fd.team || this.unseen(o, src)) continue;
+      const d = Math.hypot(o.x - fd.x, o.y - fd.y) + (o.pet ? 1e4 : 0);
+      if (d < best) {
+        best = d;
+        to = o;
+      }
+    }
+    if (!to) {
+      fd.vx = 0;
+      fd.vy = 0;
+      return;
+    }
+    const dx = to.x - fd.x;
+    const dy = to.y - fd.y;
+    const d = Math.hypot(dx, dy);
+    // (never past them: the last step is as long as what is left)
+    const v = d < 0.5 ? 0 : Math.min(speed, d / dt);
+    fd.vx = d ? (dx / d) * v : 0;
+    fd.vy = d ? (dy / d) * v : 0;
   }
 
   /** The healing spheres: whoever is hurt and walks into one takes it, and it rises again later. */
@@ -2835,6 +2947,7 @@ export class Match {
       o: this.orbs.map((o) => Math.round(o.at * 10) / 10),
       sg: this.sigil,
       sa: this.sigilAt,
+      ...(this.suddenAt !== null ? { sd: Math.round(this.suddenAt * 100) / 100 } : {}),
     };
   }
 
@@ -2855,6 +2968,7 @@ export class Match {
     });
     this.sigil = s.sg ?? null;
     this.sigilAt = s.sa ?? this.sigilAt;
+    this.suddenAt = s.sd ?? null;
     // the raised dead come and go with the host's word: raised here as they are there, and gone when they are
     // (always after the heroes, so no hero's place moves)
     while (this.fighters.length > s.f.length && this.fighters[this.fighters.length - 1]!.pet) this.fighters.pop();
@@ -2983,4 +3097,6 @@ export interface Snapshot {
   o?: number[];
   sg?: SigilStone | null;
   sa?: number;
+  /** When sudden death began (Match.suddenAt), once it has. */
+  sd?: number;
 }
