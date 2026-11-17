@@ -227,7 +227,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
       [
         { name: 'Long Winter', text: 'Your crowd control and slows last 25% longer, your super’s included.', icon: 'frozen_chain_on_navy', hold: 0.25 },
         { name: 'Third Chill', text: 'Every third hit on the same enemy within 6 sec roots them for 1.2 sec. 20 sec cooldown.', icon: 'frozen_heart_on_blue', does: { k: 'third', n: 3, within: 6, dur: 1.2, every: 20 } },
-        { name: 'Ice Step', text: 'Frost Snare also launches you backward, out of melee range.', icon: 'frost_aura_around_a_figure_on_blue', tune: { 'm-ring': { self: [{ k: 'leap', dist: 70 }] } } },
+        { name: 'Ice Step', text: 'Frostclasp also launches you backward, out of melee range.', icon: 'frost_aura_around_a_figure_on_blue', tune: { 'm-ring': { self: [{ k: 'leap', dist: 70 }] } } },
       ],
     ]),
     ...classRow('mage', 'm', [

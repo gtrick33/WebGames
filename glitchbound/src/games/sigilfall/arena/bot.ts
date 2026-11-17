@@ -454,8 +454,8 @@ function dodge(m: Match, f: Fighter, b: Brain, skill: number): MoveInput | null 
   let best: { out: number; sx: number; sy: number } | null = null;
   // (what was left on the ground: out of it, for whoever has the wits; a dull one stands in it a while)
   for (const z of m.fields) {
-    // (nobody walks out of one that comes after them nearly as fast as they walk: it is fought through)
-    if (z.team === f.team || ABILITIES[z.ab]?.field?.seek) continue;
+    // (nobody walks out of one that comes after them nearly as fast as they walk: it is fought through; a slow one is walked away from)
+    if (z.team === f.team || (ABILITIES[z.ab]?.field?.seek ?? 0) > 0.7) continue;
     const dx = f.x - z.x;
     const dy = f.y - z.y;
     const d = Math.hypot(dx, dy);
