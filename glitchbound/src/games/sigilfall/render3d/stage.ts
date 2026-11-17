@@ -6,6 +6,7 @@ import { loadWardrobe } from './dress';
 import { loadLand, PITCH, type Land3D, type LandPacks } from './land';
 import { LIGHT } from './toon';
 import { heldElsewhere, Pacer, QUALITY_FLOOR } from './pace';
+import { groundLost, paintGround } from './groundBake';
 
 /**
  * The 3D view, four layers deep under the player's touches:
@@ -32,6 +33,11 @@ const MAX_DPR_TOUCH = 1.7;
  * under a sharp HUD (a 3x iPhone at the old floor drew 0.77 of a pixel for every CSS pixel).
  */
 export const MIN_DPR_TOUCH = 1;
+/**
+ * How far off the ground at the foot of the picture is, against the ground at its middle: the camera looks down at
+ * PITCH and sees FOV / 2 either side of that, so the ray along the picture's lower edge meets the ground sooner.
+ */
+const NEAR_FOOT = Math.sin(PITCH) / Math.sin(PITCH + (FOV * Math.PI) / 360);
 
 function layer(className: string): HTMLCanvasElement {
   const c = document.createElement('canvas');
@@ -102,6 +108,8 @@ export class Stage {
       r.toneMapping = THREE.NoToneMapping;
     }
     this.gl.setClearColor(0x000000, 0);
+    // (a drawing context taken back and returned comes back empty: the picture kept of the ground with it)
+    this.groundCanvas.addEventListener('webglcontextrestored', groundLost);
     this.groundGl.setClearColor(0x07050d, 1);
     this.cast = new Cast(this.groundScene);
     this.scene.add(this.cast.root);
@@ -158,12 +166,27 @@ export class Stage {
     this.camera.lookAt(cx, 0, cz);
     this.camera.updateMatrixWorld(true);
     this.syncCamera();
+    // How many of the picture's pixels a tile spans across the view, where it is nearest: at the foot of the
+    // picture, the ground is 0.85 as far off as at its middle. The figures are drawn with no more shape than that
+    // many pixels can show (render3d/crowd.ts THIN_PX).
+    this.cast.px = this.gl.domElement.height / (2 * Math.tan((FOV * Math.PI) / 360) * d * NEAR_FOOT);
   }
 
-  /** Picks up a camera someone placed by hand (the hall). */
+  /** Picks up a camera someone placed by hand (the hall): there the figures are seen close, with all their shape. */
   syncCamera(): void {
     this.vp.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
     this.inv.copy(this.vp).invert();
+    this.cast.px = 0;
+  }
+
+  /**
+   * For leaving out what the picture can't show (render3d/crowd.ts Stand.show): the camera's view, and how much of
+   * the picture (−1 to 1 across and up) one tile can span where it is drawn largest. (A quarter over what the ground
+   * at the picture's foot is drawn at: what stands tall is nearer the camera than the ground under it.)
+   */
+  get view(): { vp: THREE.Matrix4; kx: number; ky: number } {
+    const px = Math.max(1, this.cast.px) * 1.25;
+    return { vp: this.vp, kx: px / (this.gl.domElement.width / 2), ky: px / (this.gl.domElement.height / 2) };
   }
 
   /** World pixels on the ground (lifted `h` world pixels) to CSS pixels on the screen. */
@@ -212,6 +235,8 @@ export class Stage {
     this.pace();
     // (what is thinned away is thinned in a pattern laid from the figure's own place in this picture: toon.ts dither)
     this.gl.getDrawingBufferSize(LIGHT.uRes.value);
+    // (what has come into view is painted into the picture kept of the ground: render3d/groundBake.ts)
+    paintGround(this.groundScene, this.groundGl, this.camera);
     this.groundGl.render(this.groundScene, this.camera);
     this.gl.render(this.scene, this.camera);
   }

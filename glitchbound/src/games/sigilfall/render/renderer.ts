@@ -182,7 +182,7 @@ export class Renderer {
     this.graphics = mode;
     this.stage?.setGraphics(mode);
   }
-  private sized: [number, number, number, boolean] | null = null;
+  private sized: [number, number, number, boolean, boolean] | null = null;
   setZoom(zoom: number): void {
     const z = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom));
     if (z === this.zoom) return;
@@ -190,8 +190,13 @@ export class Renderer {
     if (this.sized) this.resize(...this.sized);
   }
 
-  resize(cssW: number, cssH: number, dpr: number, touch: boolean): void {
-    this.sized = [cssW, cssH, dpr, touch];
+  /**
+   * `touch` frames the picture for thumbs (the hero bigger, less land round them). `phone` says the screen is a touch
+   * screen, whatever the framing: it draws a little under its full count of pixels (render3d/stage.ts MAX_DPR_TOUCH).
+   * The two go together in the world; the Vigil keeps the wide framing on a phone, and is still a phone.
+   */
+  resize(cssW: number, cssH: number, dpr: number, touch: boolean, phone = touch): void {
+    this.sized = [cssW, cssH, dpr, touch, phone];
     // (the picture's reach over the ground is measured again at its new size)
     this.reach = null;
     const devW = Math.max(1, Math.round(cssW * dpr));
@@ -216,7 +221,7 @@ export class Renderer {
     this.canvas.style.height = `${this.cssH}px`;
     this.canvas.style.transform = '';
     this.canvas.style.imageRendering = 'auto';
-    this.stageNow()?.setSize(this.cssW, this.cssH, dpr, total * TILE, touch);
+    this.stageNow()?.setSize(this.cssW, this.cssH, dpr, total * TILE, phone);
   }
 
   private stageNow(): Stage | null {

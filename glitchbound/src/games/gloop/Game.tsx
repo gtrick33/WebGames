@@ -351,12 +351,21 @@ function Gloop({ host, pauseKey, challenge }: { host: GameHost; pauseKey?: numbe
     let kept = sim.current?.t ?? 0;
     // Which quarter of the overflow clock last ticked, so each quarter ticks once.
     let ticked = 0;
+    // When the picture was last drawn.
+    let drawn = 0;
     const frame = (now: number): void => {
       const s = sim.current;
       const c = canvas.current;
       if (!s || !c) return;
       const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
       last = now;
+      // Paused (or the tab hidden), nothing moves: the same picture a few times a second is plenty, and a phone
+      // isn't kept warm drawing it sixty times under the pause card.
+      if ((paused || document.hidden) && now - drawn < 250) {
+        raf = requestAnimationFrame(frame);
+        return;
+      }
+      drawn = now;
       if (!paused && !document.hidden) {
         const held = keysHeld.current;
         if (held.left !== held.right) setAim(s, s.aim + (held.right ? 1 : -1) * 320 * dt);

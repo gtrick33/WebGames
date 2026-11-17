@@ -12,7 +12,7 @@ import { Stand } from './crowd';
 import type { Held } from './dress';
 import { hexRgb } from './kits';
 import type { Fx3D } from './fx3d';
-import { buildGround, Mesher, UNIT, type LandPacks } from './land';
+import { buildGround, disposeGround, Mesher, UNIT, type LandPacks } from './land';
 import { dressRing, type RingAir, type RingDress } from './ringDress';
 import { disposeFloor, floorOf } from './ringFloor';
 import { Stage } from './stage';
@@ -134,6 +134,7 @@ export class RingStage implements RingView {
   private back = 1;
   private dress: RingDress | null = null;
   private floor: THREE.Mesh | null = null;
+  private ground: THREE.Mesh | null = null;
   /** What burns, smokes and glints round the arena. */
   air: RingAir = { flames: [], smokes: [], glints: [], embers: [] };
 
@@ -149,7 +150,8 @@ export class RingStage implements RingView {
     return this.stage.ready;
   }
 
-  fit(w: number, h: number, dpr: number): void {
+  /** `phone`: a touch screen, which draws a little less than its full count of pixels (render3d/stage.ts MAX_DPR_TOUCH). */
+  fit(w: number, h: number, dpr: number, phone = false): void {
     this.cssW = Math.max(1, w);
     this.cssH = Math.max(1, h);
     this.k = Math.min(dpr, 2);
@@ -161,7 +163,7 @@ export class RingStage implements RingView {
     const { tile, follow, back } = ringFit(this.cssW, this.cssH, dpr);
     this.follow = follow;
     this.back = back;
-    this.stage.setSize(this.cssW, this.cssH, dpr, tile);
+    this.stage.setSize(this.cssW, this.cssH, dpr, tile, phone);
   }
 
   private build(packs: LandPacks): void {
@@ -172,8 +174,11 @@ export class RingStage implements RingView {
     const H = Math.ceil(ARENA_H / TILE);
     const tiles: Pick<TileMap, 'w' | 'h' | 'kind'> = { w: W, h: H, kind: new Uint8Array(W * H).fill(skin.kind) };
     this.floor = floorOf(this.map);
-    this.stage.groundScene.add(buildGround(tiles as TileMap, look), this.floor);
+    this.ground = buildGround(tiles as TileMap, look);
+    this.stage.groundScene.add(this.ground, this.floor);
     this.dress = dressRing(this.map, packs, this.stage.scene);
+    // (what stands round the ring is placed once: only what a picture can see of it is drawn. Stand.show)
+    for (const s of this.dress.stands) s.keep();
     this.air = this.dress.air;
     // the gates, whose bars rise when the match begins
     this.gates.push(new Stand(barMesh(), this.stage.scene, 2));
@@ -232,6 +237,10 @@ export class RingStage implements RingView {
     const jolt = this.quakeT > 0 ? this.quake * (this.quakeT / 0.22) : 0;
     if (this.quakeT <= 0) this.quake = 0;
     st.look((this.cx + (jolt ? Math.sin(time * 91) * jolt : 0)) * UNIT, (this.cy + (jolt ? Math.cos(time * 77) * jolt * 0.7 : 0)) * UNIT);
+    if (dress) {
+      const v = st.view;
+      for (const s of dress.stands) s.show(v.vp, v.kx, v.ky);
+    }
     const cast = st.cast;
     cast.begin();
     // what stands on the ring's floor throws its shadow too: every pillar and stone, as the fighters do
@@ -529,6 +538,7 @@ export class RingStage implements RingView {
     this.dress?.stands.forEach((s) => s.dispose());
     this.dress?.gearStand?.dispose();
     if (this.floor) disposeFloor(this.floor);
+    if (this.ground) disposeGround(this.ground);
     this.stage.dispose();
   }
 }

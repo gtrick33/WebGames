@@ -78,6 +78,8 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
     let last = performance.now();
     const frame = (now: number): void => {
       raf = requestAnimationFrame(frame);
+      // (the hall is a menu: no faster than a touch screen is held to, nor than the battery saver asks)
+      if (now - last < engine.frameGap) return;
       const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
       last = now;
       const live = liveRef.current;
@@ -89,7 +91,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
       ro.disconnect();
       hall.dispose();
     };
-  }, []);
+  }, [engine]);
 
   /* ------------------------------------------------- walking the ring */
   const go = useCallback(

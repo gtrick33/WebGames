@@ -321,6 +321,13 @@ html.game-focus.game-scroll body {
 html.game-focus.game-scroll #root :not(:has(.stage-immersive), .stage-immersive, .stage-immersive *) {
   display: none;
 }
+/* Everywhere else the page stays where it is, under the stage and out of sight. What moves on it by itself (a
+   live dot's pulse, a streak chip, the footer's shapes) would go on moving there, and a page with anything moving
+   on it is drawn again sixty times a second: under a game that is waiting for a move, that was the only thing
+   keeping a phone busy. So while a game has the screen, nothing outside the stage moves. */
+html.game-focus #root :not(:has(.stage), .stage, .stage *) {
+  animation-play-state: paused !important;
+}
 /* the handle for that swipe (iPhone Safari, while its bar is out): it lets the swipe through to the page */
 .stage-handle {
   position: absolute;

@@ -461,10 +461,16 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     const view = new RingStage(canvas, ringMapOf(m.map));
     view.still = !!engine.settings.reducedMotion;
     fx.still = view.still;
+    // (the picture is drawn as the world's is: the player's Graphics choice, and on a phone a little under its full
+    // count of pixels. The match was drawn at the full two to the point on every screen, 38% more of them than the
+    // world draws on a phone, on both of its layers)
+    view.stage.setGraphics(engine.settings.graphics);
+    let phone = engine.touchMode;
     const fit = (): void => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       const host = canvas.parentElement!;
-      view.fit(host.clientWidth, host.clientHeight, dpr);
+      phone = engine.touchMode;
+      view.fit(host.clientWidth, host.clientHeight, dpr, phone);
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -885,8 +891,10 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     };
     const frame = (now: number): void => {
       raf = requestAnimationFrame(frame);
-      // (a phone's screen may run at 120: the fight looks no better for it, and the heat slows it down)
-      if (engine.touchMode && now - last < 1000 / 66) return;
+      // (a phone's screen may run at 120: the fight looks no better for it, and the heat slows it down. engine.frameGap)
+      if (now - last < engine.frameGap) return;
+      // (a first touch after the match began: a phone's picture from here on)
+      if (engine.touchMode !== phone) fit();
       const dt = Math.max(0, Math.min(0.1, (now - last) / 1000));
       last = now;
       const mine = moveNow();
@@ -1021,7 +1029,11 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
       host.removeEventListener('contextmenu', noMenu);
       window.removeEventListener('keyup', up);
       window.removeEventListener('blur', blur);
-        if (role.kind !== 'solo') role.listen(null);
+      if (role.kind !== 'solo') role.listen(null);
+      // The match's 3D view goes with the match: its two drawing contexts and everything they hold. It was never let
+      // go: each match played left its whole stage behind, and a browser keeps only so many contexts before it takes
+      // the oldest away (the world's own, or the menus' portraits).
+      view.dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [m]);

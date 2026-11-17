@@ -1846,6 +1846,10 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
             ))}
           </div>
           <span className="rb-small rb-dim">Auto draws fewer pixels when the machine can’t keep up. Sharp always draws the full picture; Light always draws a lighter one, for an older phone or laptop.</span>
+          <label className="rb-check">
+            <input type="checkbox" checked={s.saver} onChange={(e) => set({ saver: e.target.checked })} />
+            <span>Battery saver (30 frames a second: a cooler phone and a longer battery, a little less smooth)</span>
+          </label>
           <div className="rb-seg" role="radiogroup" aria-label="Color of danger marks">
             {(['red', 'magenta'] as const).map((t) => (
               <button key={t} role="radio" aria-checked={s.dangerTone === t} className={s.dangerTone === t ? 'is-on' : ''} onClick={() => set({ dangerTone: t })}>

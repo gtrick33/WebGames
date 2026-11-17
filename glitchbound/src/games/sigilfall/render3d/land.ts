@@ -18,6 +18,7 @@ import { PROPS, type PropDef } from '../data/props';
 import { loadPack, type MeshData, type Pack } from './pack';
 import { fadingMaterial, LIGHT, shadowMaterial, staticMaterial } from './toon';
 import { Stand } from './crowd';
+import { GroundBake } from './groundBake';
 import { caveMouth, DOORWAYS } from './doorways';
 import { builtProp } from './propsBuilt';
 
@@ -425,7 +426,18 @@ const groundVert = /* glsl */ `
     gl_Position = projectionMatrix * viewMatrix * w;
   }`;
 
-const groundFrag = /* glsl */ `
+/**
+ * The ground is painted in three parts. `land` is what lies there: grass, paving, sand, a floor of stone, and the
+ * shade at the foot of walls. None of it moves, and it is by far the most work (every pattern in it is worked out
+ * from nothing, for every point of the picture). `moving` is what does move on it: water, and the glint of snow.
+ * `lit` is the light of the hour and the place: night, a room's fires, the dark.
+ *
+ * Drawn whole (groundFrag), the three are worked out for every point of the screen in every frame, which was most
+ * of what warmed a phone. So the land is painted once, into a picture of the ground near the camera that is kept
+ * (groundBakeFrag; render3d/groundBake.ts), and a frame only reads that picture and adds what moves and the light
+ * (groundFrameFrag). The parts are the same code in each, so the picture is the same.
+ */
+const groundHead = /* glsl */ `
   uniform sampler2D uMask;
   uniform vec2 uSize;
   uniform vec3 uA; uniform vec3 uB;
@@ -457,11 +469,23 @@ const groundFrag = /* glsl */ `
     f = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
   }
-  void main() {
-    vec2 p = vW.xz;
-    vec2 uv = p / uSize;
+  /** The colors settle a little toward gray and warm, as the whole ground does. */
+  vec3 settle(vec3 c) {
+    float lum = dot(c, vec3(0.3, 0.59, 0.11));
+    return mix(vec3(lum), c, 0.84) * vec3(0.99, 0.97, 0.91);
+  }
+  /** The ground is darker along the foot of what's built on it: a wall, a cliff, a column (the light doesn't get in there). */
+  float footLight(float ao) {
+    return 1.0 - smoothstep(0.02, 0.75, ao) * (uIndoor > 0.5 ? 0.5 : 0.3);
+  }`;
+
+const groundLand = /* glsl */ `
+  /**
+   * What lies there, before water and the light. a: on a land of snow (SNOW), how much of it is bare snow, where its
+   * crystals glint; on any other, the wobble of the ground's edges (0.5: none), which a bank of water wobbles by too.
+   */
+  vec4 land(vec2 p, vec2 uv) {
     vec4 m = texture2D(uMask, uv);
-    vec4 far = texture2D(uMask, uv + vec2(0.0, 0.35) / uSize);
     float n = noise(p * 0.55);
     float n2 = noise(p * 2.3);
     float wob = (n - 0.5) * 0.22 + (n2 - 0.5) * 0.1;
@@ -470,6 +494,7 @@ const groundFrag = /* glsl */ `
     vec2 rt = (floor(p) + 0.5) / uSize;
     vec4 ra = texture2D(uRoomA, rt);
     vec4 rb = texture2D(uRoomB, rt);
+    float bare = 0.0;
     if (uIndoor > 0.5 && ra.a > 0.05) {
       // a boss's chamber, floored in its own stone (data/dungeongen.ts ARENAS)
       vec3 A = ra.rgb;
@@ -558,12 +583,7 @@ const groundFrag = /* glsl */ `
       float lee = smoothstep(-0.25, -0.95, rip) * (0.55 + 0.45 * noise(p * 0.8 + 4.0));
       c *= 1.0 + crest * 0.055 - lee * 0.045;
       c = mix(c, c * vec3(0.9, 0.95, 1.06), lee * 0.5);
-      vec2 gl = p * 9.0;
-      vec2 gi = floor(gl);
-      float h = hash(gi);
-      float glint = step(0.982, h) * smoothstep(0.34, 0.0, length(fract(gl) - 0.5));
-      glint *= 0.45 + 0.55 * sin(uTime * 2.3 + h * 60.0);
-      c += vec3(0.85, 0.92, 1.0) * max(glint, 0.0) * 0.7;
+      bare = 1.0;
     } else {
       // grass in big soft blotches over a checker a player's eye can measure distance by
       c = mix(uA, uB, smoothstep(0.3, 0.7, n));
@@ -595,10 +615,12 @@ const groundFrag = /* glsl */ `
     float ph = hash(floor(pg) + 31.0);
     sc = mix(sc, sc * 0.72, step(0.95, ph) * smoothstep(0.22, 0.08, length(fract(pg) - 0.5)));
     c = mix(c, sc, sand);
+    bare *= 1.0 - sand;
     float path = smoothstep(0.46, 0.54, m.r + wob);
     vec3 pc = mix(uPathA, uPathB, n * 0.7 + n2 * 0.3);
     float pathShade = smoothstep(0.54, 0.46, m.r + wob + 0.1);
     c = mix(c, pc * (1.0 - pathShade * 0.14), path);
+    bare *= 1.0 - path;
     // paving: toward its edge it frays stone by stone into the ground around it (a few gone, earth between), with a
     // wide slow wander, so a square never ends on a ruled line
     float edgeV = m.a + wob * 1.1 + (noise(p * 0.32 + 3.0) - 0.5) * 0.34;
@@ -616,28 +638,9 @@ const groundFrag = /* glsl */ `
       // (an edge stone sits a little sunk and dark, worn into the ground)
       st *= mix(0.86, 1.0, smoothstep(0.3, 0.62, edgeV));
       c = mix(c, mix(st, uCobA * 0.72, line * 0.8), stone);
+      bare *= (1.0 - earth * 0.75) * (1.0 - stone);
     }
-    // water: dark in the middle, lighter at the bank, with foam where it meets the land
-    float w = smoothstep(0.47, 0.53, m.g + wob * 0.55);
-    if (w > 0.0) {
-      float deep = smoothstep(0.55, 0.98, m.g);
-      vec3 wc = mix(uMidW, uDeep, deep);
-      float t = uTime;
-      float r1 = sin(p.x * 2.2 + t * 1.1 + sin(p.y * 1.7 + t * 0.6) * 1.4);
-      float r2 = sin(p.y * 3.1 - t * 0.9 + sin(p.x * 2.4 - t * 0.5) * 1.1);
-      float glint = smoothstep(0.82, 0.98, r1 * 0.55 + r2 * 0.55);
-      wc = mix(wc, uLightW, glint * (uLava > 0.5 ? 0.85 : 0.55));
-      if (uLava > 0.5) wc += vec3(0.25, 0.08, 0.0) * (0.5 + 0.5 * sin(t * 1.5 + n * 9.0));
-      float foamLine = smoothstep(0.03, 0.0, abs(m.g + wob * 0.55 - 0.56 - sin(t * 1.3 + n * 7.0) * 0.012));
-      wc = mix(wc, uFoam, foamLine * 0.9);
-      c = mix(c, wc, w);
-    }
-    // what stands on a solid tile shades its foot
-    float foot = smoothstep(0.0, 0.9, far.g) * 0.0;
-    c *= 1.0 - foot;
-    float lum = dot(c, vec3(0.3, 0.59, 0.11));
-    c = mix(vec3(lum), c, 0.84) * vec3(0.99, 0.97, 0.91);
-    // the ground is darker along the foot of what's built on it: a wall, a cliff, a column (the light doesn't get in there)
+    c = settle(c);
     float ao = texture2D(uAo, uv).r;
     // a built place's floor is finished where it meets its walls: a course of stone set along them and round each
     // column's foot, a lighter line inside it (not on a boss's rough ground, nor in a cave)
@@ -647,7 +650,69 @@ const groundFrag = /* glsl */ `
       c = mix(c, c * 0.82, smoothstep(0.43, 0.5, ao) * 0.6);
       c = mix(c, c * 1.16 + 0.012, line * 0.4);
     }
-    c *= 1.0 - smoothstep(0.02, 0.75, ao) * (uIndoor > 0.5 ? 0.5 : 0.3);
+    c *= footLight(ao);
+  #ifdef SNOW
+    return vec4(c, bare);
+  #else
+    return vec4(c, clamp(wob * 2.5 + 0.5, 0.0, 1.0));
+  #endif
+  }`;
+
+const groundMoving = /* glsl */ `
+  /**
+   * What moves on the land: water (dark in the middle, lighter at the bank, with foam where it meets the land), and the
+   * few crystals of snow that catch the light. A land with no water (no WET) and no snow (no SNOW) has none of this
+   * in its shader at all, and on one that has, it is worked out only at the water and on the snow.
+   */
+  vec3 moving(vec4 g, vec2 p, vec2 uv) {
+    vec3 c = g.rgb;
+  #if defined(WET) || defined(SNOW)
+    float w = 0.0;
+  #ifdef WET
+    float mg = texture2D(uMask, uv).g;
+    // (water is where the mask is over 0.47, give or take the wobble of its bank: nowhere near it, nothing to do)
+    if (mg > 0.36) {
+    #ifdef SNOW
+      float n = noise(p * 0.55);
+      float wob = (n - 0.5) * 0.22 + (noise(p * 2.3) - 0.5) * 0.1;
+    #else
+      // (the wobble the land was painted with, kept beside its color)
+      float n = g.a;
+      float wob = (g.a - 0.5) * 0.4;
+    #endif
+      w = smoothstep(0.47, 0.53, mg + wob * 0.55);
+      if (w > 0.0) {
+        float deep = smoothstep(0.55, 0.98, mg);
+        vec3 wc = mix(uMidW, uDeep, deep);
+        float t = uTime;
+        float r1 = sin(p.x * 2.2 + t * 1.1 + sin(p.y * 1.7 + t * 0.6) * 1.4);
+        float r2 = sin(p.y * 3.1 - t * 0.9 + sin(p.x * 2.4 - t * 0.5) * 1.1);
+        float glint = smoothstep(0.82, 0.98, r1 * 0.55 + r2 * 0.55);
+        wc = mix(wc, uLightW, glint * (uLava > 0.5 ? 0.85 : 0.55));
+        if (uLava > 0.5) wc += vec3(0.25, 0.08, 0.0) * (0.5 + 0.5 * sin(t * 1.5 + n * 9.0));
+        float foamLine = smoothstep(0.03, 0.0, abs(mg + wob * 0.55 - 0.56 - sin(t * 1.3 + n * 7.0) * 0.012));
+        wc = mix(wc, uFoam, foamLine * 0.9);
+        c = mix(c, settle(wc) * footLight(textureLod(uAo, uv, 0.0).r), w);
+      }
+    }
+  #endif
+  #ifdef SNOW
+    if (g.a > 0.0) {
+      vec2 gl = p * 9.0;
+      vec2 gi = floor(gl);
+      float h = hash(gi);
+      float glint = step(0.982, h) * smoothstep(0.34, 0.0, length(fract(gl) - 0.5));
+      glint *= 0.45 + 0.55 * sin(uTime * 2.3 + h * 60.0);
+      c += settle(vec3(0.85, 0.92, 1.0) * max(glint, 0.0) * 0.7) * footLight(textureLod(uAo, uv, 0.0).r) * g.a * (1.0 - w);
+    }
+  #endif
+  #endif
+    return c;
+  }`;
+
+const groundLit = /* glsl */ `
+  /** The light of the hour and the place on it. */
+  vec3 lit(vec3 c) {
     c = mix(c, uGrade.rgb, uGrade.a);
     if (uAmb.a > 0.0) {
       // a room under a roof: its own dimness, each fire's pool in the fire's color, and the light the hero carries
@@ -686,7 +751,40 @@ const groundFrag = /* glsl */ `
       }
       c *= mix(1.0, 1.0 - uDark.x, k);
     }
-    gl_FragColor = vec4(c, 1.0);
+    return c;
+  }`;
+
+/** The whole of it for every point, every frame: what is drawn until the kept picture exists, and wherever it can't be made. */
+const groundFrag = /* glsl */ `
+  ${groundHead}
+  ${groundLand}
+  ${groundMoving}
+  ${groundLit}
+  void main() {
+    vec2 p = vW.xz;
+    vec2 uv = p / uSize;
+    gl_FragColor = vec4(lit(moving(land(p, uv), p, uv)), 1.0);
+  }`;
+
+/** The land alone, into the kept picture. */
+const groundBakeFrag = /* glsl */ `
+  ${groundHead}
+  ${groundLand}
+  void main() {
+    vec2 p = vW.xz;
+    gl_FragColor = land(p, p / uSize);
+  }`;
+
+/** A frame: the kept picture read back, with what moves and the light. */
+const groundFrameFrag = /* glsl */ `
+  ${groundHead}
+  uniform sampler2D uBake;
+  uniform vec2 uBakeScale;
+  ${groundMoving}
+  ${groundLit}
+  void main() {
+    vec2 p = vW.xz;
+    gl_FragColor = vec4(lit(moving(texture2D(uBake, p * uBakeScale), p, p / uSize)), 1.0);
   }`;
 
 const col3 = (hex: string): THREE.Vector3 => {
@@ -840,48 +938,70 @@ export function buildGround(map: TileMap, look: ThemeLook, floors: readonly (Flo
   tex.needsUpdate = true;
   const g = look.ground;
   const stone = look.stone;
-  const mat = new THREE.ShaderMaterial({
-    uniforms: {
-      uTime: LIGHT.uTime,
-      uGrade: LIGHT.uGrade,
-      uDark: LIGHT.uDark,
-      uSee: LIGHT.uSee,
-      uFlames: LIGHT.uFlames,
-      uNight: LIGHT.uNight,
-      uAmb: LIGHT.uAmb,
-      uFlameCol: LIGHT.uFlameCol,
-      uAo: { value: footShade(map) },
-      uTrim: { value: trim ? 1 : 0 },
-      uMask: { value: tex },
-      uSize: { value: new THREE.Vector2(W, H) },
-      uA: { value: col3(stone ? stone.slab[1] : g.grass[2]) },
-      uB: { value: col3(stone ? stone.slab[2] : g.grass[3]) },
-      uEdge: { value: col3(stone ? stone.mortar : g.grass[0]) },
-      uPathA: { value: col3(g.path[1]) },
-      uPathB: { value: col3(g.path[2]) },
-      uSandA: { value: col3(g.sand[2]) },
-      uSandB: { value: col3(g.sand[3]) },
-      uCobA: { value: col3(stone ? stone.slab[0] : g.path[0]) },
-      uCobB: { value: col3(stone ? stone.slab[3] : g.path[1]) },
-      uDeep: { value: col3(g.water.deep) },
-      uMidW: { value: col3(g.water.mid) },
-      uLightW: { value: col3(g.water.light) },
-      uFoam: { value: col3(g.water.foam) },
-      uIndoor: { value: look.indoor ? 1 : 0 },
-      uLava: { value: look.lava ? 1 : 0 },
-      uSnow: { value: look.snowy ? 1 : 0 },
-      uRoomA: { value: roomTex(roomA) },
-      uRoomB: { value: roomTex(roomB) },
-    },
+  // (what moves on this land, if anything does: its shaders are made with only that in them)
+  const defines: Record<string, string> = {};
+  for (let i = 1; i < mask.length; i += 4) if (mask[i]! > 90) defines.WET = '';
+  if (look.snowy && !look.indoor) defines.SNOW = '';
+  const uniforms: Record<string, THREE.IUniform> = {
+    uTime: LIGHT.uTime,
+    uGrade: LIGHT.uGrade,
+    uDark: LIGHT.uDark,
+    uSee: LIGHT.uSee,
+    uFlames: LIGHT.uFlames,
+    uNight: LIGHT.uNight,
+    uAmb: LIGHT.uAmb,
+    uFlameCol: LIGHT.uFlameCol,
+    uAo: { value: footShade(map) },
+    uTrim: { value: trim ? 1 : 0 },
+    uMask: { value: tex },
+    uSize: { value: new THREE.Vector2(W, H) },
+    uA: { value: col3(stone ? stone.slab[1] : g.grass[2]) },
+    uB: { value: col3(stone ? stone.slab[2] : g.grass[3]) },
+    uEdge: { value: col3(stone ? stone.mortar : g.grass[0]) },
+    uPathA: { value: col3(g.path[1]) },
+    uPathB: { value: col3(g.path[2]) },
+    uSandA: { value: col3(g.sand[2]) },
+    uSandB: { value: col3(g.sand[3]) },
+    uCobA: { value: col3(stone ? stone.slab[0] : g.path[0]) },
+    uCobB: { value: col3(stone ? stone.slab[3] : g.path[1]) },
+    uDeep: { value: col3(g.water.deep) },
+    uMidW: { value: col3(g.water.mid) },
+    uLightW: { value: col3(g.water.light) },
+    uFoam: { value: col3(g.water.foam) },
+    uIndoor: { value: look.indoor ? 1 : 0 },
+    uLava: { value: look.lava ? 1 : 0 },
+    uSnow: { value: look.snowy ? 1 : 0 },
+    uRoomA: { value: roomTex(roomA) },
+    uRoomB: { value: roomTex(roomB) },
+  };
+  const mat = new THREE.ShaderMaterial({ defines, uniforms, vertexShader: groundVert, fragmentShader: groundFrag });
+  // (read from the picture kept of it, once there is one: render3d/groundBake.ts)
+  const frame = new THREE.ShaderMaterial({
+    defines,
+    uniforms: { ...uniforms, uBake: { value: null }, uBakeScale: { value: new THREE.Vector2(1, 1) } },
     vertexShader: groundVert,
-    fragmentShader: groundFrag,
+    fragmentShader: groundFrameFrag,
   });
   const geo = new THREE.PlaneGeometry(W + 80, H + 80);
   geo.rotateX(-Math.PI / 2);
   geo.translate(W / 2, 0, H / 2);
   const mesh = new THREE.Mesh(geo, mat);
   mesh.frustumCulled = false;
+  mesh.userData.groundBake = new GroundBake(mesh, mat, groundBakeFrag, frame);
   return mesh;
+}
+
+/** Lets go of a ground `buildGround` made: its two materials, what they read, and the picture kept of it. */
+export function disposeGround(mesh: THREE.Mesh): void {
+  const bake = mesh.userData.groundBake as GroundBake | undefined;
+  if (!bake) return;
+  mesh.userData.groundBake = undefined;
+  const { whole, frame } = bake.materials;
+  for (const k of ['uMask', 'uAo', 'uRoomA', 'uRoomB']) (whole.uniforms[k]!.value as THREE.Texture).dispose();
+  whole.dispose();
+  frame.dispose();
+  bake.dispose();
+  mesh.geometry.dispose();
 }
 
 /* ------------------------------------------------------------------ blocks */
@@ -2397,10 +2517,7 @@ export class Land3D {
     this.doorStand.dispose();
     this.stockade.dispose();
     for (const s of this.columnStands.values()) s.dispose();
-    this.ground.geometry.dispose();
-    const mat = this.ground.material as THREE.ShaderMaterial;
-    (mat.uniforms.uMask!.value as THREE.Texture).dispose();
-    mat.dispose();
+    disposeGround(this.ground);
     this.blocks.geometry.dispose();
     (this.blocks as THREE.InstancedMesh).dispose();
     this.planks.geometry.dispose();

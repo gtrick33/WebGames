@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { hudScale } from '../src/games/sigilfall/render/camera';
-import { busyElsewhere, heldElsewhere, PACE_SLOW, Pacer, QUALITY_FLOOR, QUIET_MS } from '../src/games/sigilfall/render3d/pace';
+import { busyElsewhere, heldElsewhere, PACE_SLOW, Pacer, paceStride, QUALITY_FLOOR, QUIET_MS } from '../src/games/sigilfall/render3d/pace';
 
 describe('Sigilfall: the HUD grows with the screen', () => {
   it('is its own size up to a laptop, and bigger on a bigger monitor', () => {
@@ -62,6 +62,28 @@ describe('Sigilfall: the picture keeps to a smooth pace', () => {
     // one step is tried, seen not to help and taken back
     expect(lowest).toBeCloseTo(0.85);
     expect(p.quality).toBe(1);
+  });
+
+  it('the battery saver’s thirty frames a second are chosen: the picture is never stepped down for them', () => {
+    paceStride(2);
+    try {
+      const p = new Pacer();
+      let lowest = 1;
+      for (let i = 0; i < 3000; i++) {
+        p.tick(1 / 30);
+        lowest = Math.min(lowest, p.quality);
+      }
+      // (not even the one trial step a capped phone gets)
+      expect(lowest).toBe(1);
+      // a machine that can't keep even that pace still draws fewer pixels
+      run(p, 2000, (q) => (1 / 18) * q * q);
+      expect(p.quality).toBeLessThan(1);
+    } finally {
+      paceStride(1);
+    }
+    const engine = readFileSync('src/games/sigilfall/engine.ts', 'utf8');
+    expect(engine).toContain('paceStride(s.saver ? 2 : 1);');
+    expect(engine).toContain('return this.settings.saver ? 1000 / 33 : this.touchMode ? 1000 / 66 : 0;');
   });
 
   it('a cap that later gets much worse is stepped down from again', () => {
