@@ -144,12 +144,16 @@ export function Battle(props: BattleProps) {
     const ctx = cv.getContext('2d');
     if (!ctx) return;
     let dpr = Math.min(2, window.devicePixelRatio || 1);
+    // when the picture was last drawn (0: draw it on the next frame, whatever else)
+    let drawn = 0;
     const ro = new ResizeObserver(([entry]) => {
       const r = entry!.contentRect;
       dpr = Math.min(2, window.devicePixelRatio || 1);
       cv.width = Math.max(1, Math.round(r.width * dpr));
       cv.height = Math.max(1, Math.round(r.height * dpr));
       sceneBox.current?.resize(r.width, r.height);
+      // (a canvas given a new size is empty)
+      drawn = 0;
     });
     ro.observe(box);
     let raf = 0;
@@ -163,8 +167,13 @@ export function Battle(props: BattleProps) {
       const dt = Math.min(0.1, (t - last) / 1000);
       last = t;
       if (!s) return;
+      // Paused with no clock running, nothing in the battle moves: the same picture a few times a second is plenty,
+      // and a phone isn't kept warm drawing it sixty times under the pause sheet.
+      const still = propsRef.current.paused && !propsRef.current.clock;
+      if (still && t - drawn < 250) return;
+      drawn = t;
       try {
-        if (!(propsRef.current.paused && !propsRef.current.clock)) {
+        if (!still) {
           acc += dt;
           let n = 0;
           while (acc >= STEP && n < 12) {

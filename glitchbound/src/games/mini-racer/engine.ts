@@ -302,13 +302,17 @@ export class Engine {
   private frame = (now: number): void => {
     if (this.disposed) return;
     this.raf = requestAnimationFrame(this.frame);
+    // The race behind the menu is scenery: thirty frames a second of it is plenty, and half the drawing a phone
+    // does while someone reads the menu. (Its physics steps by the time gone by, so it drives the same.)
+    if (this.attractMode && this.last && now - this.last < 30) return;
     const dt = Math.min(0.1, Math.max(0, (now - (this.last || now)) / 1000));
     this.last = now;
     const sim = this.sim;
     if (!sim) return;
     // A paused race is a still picture: draw it once, then only again if the canvas was cleared.
     if (this.paused && this.pausedDrawn && !this.renderer.dirty) return;
-    this.adapt(now, dt);
+    // (the menu's slower frames say nothing about how fast the machine draws)
+    if (!this.attractMode) this.adapt(now, dt);
     if (!this.paused) {
       this.acc += dt;
       const steer = this.attractMode ? 0 : this.readSteer(dt);
