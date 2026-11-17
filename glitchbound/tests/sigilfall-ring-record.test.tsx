@@ -170,7 +170,10 @@ describe('The Ring’s record on screen: one strip in the lobby, the rest a pres
     // (a strip as the rewards' is: its name for a reader, today's three as pips, the next to do or "done", the way in)
     expect(link.getByRole('button').getAttribute('aria-label')).toMatch(/^Progress \d\/6 challenges$/);
     expect(link.container.querySelectorAll('.rb-pg-pips i')).toHaveLength(3);
-    expect(link.container.textContent).toMatch(/Today’s challenge|Today’s challenges done/);
+    // (which of the two depends on the day: its three challenges are drawn by the date, and one match finishes all
+    // three on some days and not on others. It asked for "Today’s challenge", which the strip says only when all are
+    // done, so it failed on every day that brought a challenge one match can't finish)
+    expect(link.container.textContent).toMatch(/\d\/\d+ · \+\d+ season points|Today’s challenges done/);
     expect(link.container.textContent).toMatch(/Progress$/);
     link.unmount();
     const ui = render(<ProgressDialog record={rec} onClose={() => {}} />);
