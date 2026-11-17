@@ -344,9 +344,10 @@ export const healerBar = (bar: readonly string[]): boolean => {
  * much more than half its matches when the computer plays every setup against every other (see the measures in
  * tests/sigilfall-ring-balance.test.ts). Kept here, with the numbers it scales, so that an ability's words are worked
  * from both and can't drift from what it does. (The warrior's came down from 0.92 by players' word, 2026-11-17: "they
- * have the best dps, most amount of cc, same mobility as everyone and are the tankiest spec".)
+ * have the best dps, most amount of cc, same mobility as everyone and are the tankiest spec"; to 0.82 first, then 0.87,
+ * the owner: "maybe bring dmg to 0.87".)
  */
-export const CLASS_DMG: Readonly<Record<ClassId, number>> = { warrior: 0.82, paladin: 0.82, gloamknight: 0.88, mage: 0.72, ranger: 0.78, warlock: 0.9, priest: 0.78, druid: 0.85 };
+export const CLASS_DMG: Readonly<Record<ClassId, number>> = { warrior: 0.87, paladin: 0.82, gloamknight: 0.88, mage: 0.72, ranger: 0.78, warlock: 0.9, priest: 0.78, druid: 0.85 };
 
 /** What a number of a class's lands as, for its ability's words. */
 const share = (cls: ClassId) => (n: number): number => Math.round(n * CLASS_DMG[cls]);

@@ -31,8 +31,8 @@ function duel(cls: ClassId, bar: string[], foe: ClassId = 'warrior', gap = 130):
 
 describe('The Ring’s warrior, brought down on every count', () => {
   it('less damage and less health, the least of those at arm’s length', () => {
-    expect(CLASS_DMG.warrior).toBe(0.82);
-    expect(CLASS_DMG.warrior).toBeLessThanOrEqual(CLASS_DMG.paladin);
+    // (0.92 before; 0.82 first, then 0.87: the owner, "maybe bring dmg to 0.87")
+    expect(CLASS_DMG.warrior).toBe(0.87);
     expect(CLASS_DMG.warrior).toBeLessThan(CLASS_DMG.gloamknight);
     expect(BODY.warrior.hp).toBe(1240);
     // (the most there was until now: it is behind the paladin, the druid and the ranger)

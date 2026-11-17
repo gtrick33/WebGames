@@ -78,8 +78,7 @@ describe('Sigilfall: the Ring says what is going on', () => {
       const list = CLASS_IDS.filter((c) => RANGED.has(c) === far);
       return list.reduce((n, c) => n + CLASS_DMG[c], 0) / list.length;
     };
-    // (by 0.05 or more until the warrior's share came down to 0.82 by players' word, 2026-11-17)
-    expect(mean(true)).toBeLessThan(mean(false));
+    expect(mean(true)).toBeLessThan(mean(false) - 0.05);
   });
 
   it('a live match runs a little under the clock', () => {
