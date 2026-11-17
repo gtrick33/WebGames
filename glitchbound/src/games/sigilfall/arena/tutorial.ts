@@ -1,6 +1,6 @@
 import { CLASSES } from '../data/classes';
 import type { ClassId } from '../data/types';
-import { ABILITIES, barCombos, PRESETS, ultOf, type Ability } from './abilities';
+import { ABILITIES, barCombos, PRESETS, ultOf, type Ability, type BarCombo } from './abilities';
 import { steerTo } from './bot';
 import { CLASS_EASE, EASE_WORD } from './styles';
 import { RANGED, type FighterSetup, type Match, type MatchEvent, type MatchSetup, type MoveInput } from './sim';
@@ -15,7 +15,8 @@ import { RANGED, type FighterSetup, type Match, type MatchEvent, type MatchSetup
  * together (`labels`: a word pinned to each element marked `data-tut`, RingCoach useLabels), and what can't be pointed
  * at (what happens in the arena) is said on the same card. Then only what has to be done by hand is done by hand.
  *
- * In the lobby (LOBBY_STEPS, shown by RingScreen): the main screen, labeled; the playstyles; the setup page, labeled.
+ * In the lobby (LOBBY_STEPS, shown by RingScreen): the main screen, labeled; the playstyles; the rest of the setup
+ * page, labeled.
  * Then a match against a sparring partner (TutorialRun, driven by RingMatch): the entry, the fight's screen labeled
  * with the arena's rules beside it, then moving, choosing a target, abilities, a combo, walking out of a red circle,
  * placing an ability (if the bar has one), the super, and last a real fight that a newcomer can win. Nothing in it is
@@ -23,10 +24,14 @@ import { RANGED, type FighterSetup, type Match, type MatchEvent, type MatchSetup
  *
  * While it teaches, the match's clock is held (Match.hold), the sparring partner only does what the lesson needs, and
  * neither side can fall. The last fight starts the clock from where it stood, at the start, as a match does.
+ *
+ * And while it teaches, only what a step is about can be used (the owner, 2026-11-16: "during the tutorial, i suggest
+ * you block the buttons unless what the tutorial points you to press, i could open different tabs and the tutorial
+ * keeps the text and theres bugs"). In the lobby a step names the parts of the page that work while it is read
+ * (`allow`: RingCoach useTutLock makes everything else inert); in the match a step says which of the bar's buttons it
+ * takes (`TutorialRun.allows`), and the setup can't be changed from the gates. The tutorial's own Back, Next and Skip
+ * always work, and so does leaving.
  */
-
-/** The setup page's tabs (RingSetup.tsx). */
-export type SetupTab = 'abilities' | 'talents' | 'super';
 
 /** A word pinned to whatever on the screen is marked `data-tut="<spot>"`, all of a step's at once. */
 export interface TutLabel {
@@ -44,10 +49,9 @@ export interface LobbyStep {
   spot: string | null;
   /** Every part of the page this step names, labeled together. */
   labels?: readonly TutLabel[];
+  /** The parts of the page (their `data-tut` marks) that can be used while this step is read: nothing else can. */
+  allow: readonly string[];
   page: 'play' | 'setup';
-  /** On the setup page: the playstyle cards, or everything (and which tab). */
-  mode?: 'styles' | 'custom';
-  tab?: SetupTab;
   /** Where the words sit, so they don't cover what they talk about. */
   at: 'top' | 'bottom' | 'side';
 }
@@ -64,28 +68,30 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
       { spot: 'rank', text: 'Your rank: titles and armor', right: true },
       { spot: 'progress', text: 'Daily challenges and more', right: true },
       { spot: 'arena', text: 'Arena: Any is fine', right: true },
-      { spot: 'loadout', text: 'What you bring: tap to read' },
+      { spot: 'loadout', text: 'What you bring' },
     ],
+    // (a class and a fight may be chosen; the way on is the tutorial's own Next)
+    allow: ['classes', 'formats'],
     page: 'play',
     at: 'side',
   },
-  { id: 'styles', title: 'Pick a playstyle', text: (cls) => `Each card is a ready-made ${CLASSES[cls].name} build. Pick the one that sounds like you: it fills your setup at once, ready to fight with as it is.`, spot: 'styles', page: 'setup', mode: 'styles', at: 'bottom' },
+  { id: 'styles', title: 'Pick a playstyle', text: (cls) => `Each card is one of the two ways a ${CLASSES[cls].name} fights. Pick the one that sounds like you: its four abilities and its super are its own, ready to fight with as they are.`, spot: 'styles', allow: ['styles'], page: 'setup', at: 'bottom' },
   {
     id: 'kit',
     title: 'Your setup',
-    text: () => 'Everything here is labeled. Click any ability to read what it does and what it combines with, then equip it. Talents and your super are the other tabs, and all of it is saved as you go. Now, a practice fight.',
+    text: () => 'Point at any icon, or tap it, and the box beside them says what it does. Your abilities are fixed. What you choose is the talents: one from each row, and they change how your combo works. All of it is saved as you go. Now, a practice fight.',
     spot: null,
     labels: [
-      { spot: 'bar', text: 'Your five and your super' },
-      { spot: 'combos', text: 'Combos: the first sets up the second' },
-      { spot: 'tabs', text: 'Talents: one a row · Super: one of two', right: true },
-      { spot: 'kit', text: 'Twelve of your own, and the trinket', right: true },
+      { spot: 'bar', text: 'Your four and your super' },
+      { spot: 'combos', text: 'Its combos', right: true },
+      { spot: 'talents', text: 'Talents: pick one a row' },
+      { spot: 'read', text: 'What it does', right: true },
       { spot: 'sets', text: 'Three setups, saved as you go' },
     ],
+    allow: ['styles', 'bar', 'combos', 'talents', 'sets'],
     page: 'setup',
-    mode: 'custom',
-    tab: 'abilities',
-    at: 'bottom',
+    // (at the side, under the box that reads the icons: along the bottom it lay over the talents it asks to be chosen)
+    at: 'side',
   },
 ];
 
@@ -148,7 +154,7 @@ export interface TutorialView {
 export const MATCH_LABELS: readonly TutLabel[] = [
   { spot: 'plates', text: 'You' },
   { spot: 'foes', text: 'Enemies: health, cast, holds' },
-  { spot: 'clock', text: 'Clock · the Gloam · healing' },
+  { spot: 'clock', text: 'Clock · healing fades' },
   { spot: 'target', text: 'Your target' },
   { spot: 'bar', text: 'Your abilities' },
   { spot: 'super', text: 'Super: fills as you fight' },
@@ -223,7 +229,9 @@ export class TutorialRun {
   foeMove(): MoveInput {
     const me = this.me;
     const foe = this.foe;
-    const near = APPROACH[this.id];
+    // (for a combo set up by what lands round its user, a snare of frost, near enough to be caught in it)
+    const from = this.id === 'combo' ? this.combo()?.from : undefined;
+    const near = from?.aim === 'near' ? Math.max(24, from.range - 16) : APPROACH[this.id];
     if (near !== undefined && (dist(me, foe) > near || !this.m.sees(foe, me))) return steerTo(this.m, foe, me.x, me.y);
     return { mx: 0, my: 0 };
   }
@@ -241,6 +249,37 @@ export class TutorialRun {
   /** Next, on a step that is read. */
   next(): void {
     if (this.readNow()) this.advance();
+  }
+
+  /**
+   * Whether the lesson takes this button now. What a step isn't about stays shut until its own step: no abilities
+   * while the screen is read or moving and choosing are learned, the four but not the super while abilities, a combo,
+   * the circle and placing are, the super alone on its step, and everything in the last fight.
+   */
+  allows(abId: string): boolean {
+    const ab = ABILITIES[abId];
+    const sup = !!ab?.super || abId === this.me.ult;
+    switch (this.id) {
+      case 'gates':
+      case 'screen':
+      case 'move':
+      case 'target':
+        return false;
+      case 'ability':
+      case 'combo':
+      case 'circle':
+      case 'place':
+        return !sup;
+      case 'super':
+        return sup;
+      default:
+        return true;
+    }
+  }
+
+  /** What a shut button says when it is pressed. */
+  shutWhy(): string {
+    return this.id === 'super' ? 'Your super first: the tutorial is showing it' : this.id === 'gates' ? 'Press I’m ready first' : 'Not yet: the tutorial gets to that next';
   }
 
   private say(note: string): void {
@@ -281,8 +320,8 @@ export class TutorialRun {
         me.charge = 1;
         break;
       case 'fight':
-        // (a match of its own from here: the clock goes on from where it was held, the start, so the Gloam comes forty
-        // seconds in and healing weakens after, as in any match)
+        // (a match of its own from here: the clock goes on from where it was held, the start, so healing weakens from
+        // thirty-five seconds in, as in any match)
         this.free = true;
         m.hold = false;
         me.hp = me.maxHp;
@@ -383,10 +422,14 @@ export class TutorialRun {
     else this.wait = 0.3;
   }
 
-  /** The combo this player's bar can make, if any: what sets it up, and what lands it. */
-  private combo() {
+  /**
+   * The combo this player's playstyle is taught: the points it builds and spends, if it has them; else the first ability
+   * that lands harder on a target another has set up; else whatever its abilities make together.
+   */
+  private combo(): BarCombo | null {
     const me = this.me;
-    return barCombos(me.cls, me.bar, me.ult)[0] ?? null;
+    const all = barCombos(me.cls, me.bar, me.ult).filter((c) => !c.from.veiled && !c.from.super && !c.to.super);
+    return all.find((c) => c.kind === 'points') ?? all.find((c) => c.kind === 'combo') ?? all[0] ?? null;
   }
 
   /** The words for the step as it stands. */
@@ -404,12 +447,12 @@ export class TutorialRun {
     const press = (what: string): string => (t ? `Tap ${what}` : `Press ${what}`);
     switch (this.id) {
       case 'gates':
-        return out('The entry', `Before every match you wait here behind the gates. You can still change your setup (Change my setup). When you’re ready, press I’m ready${t ? '' : ` or ${keys.dash}`}.`, 'prep');
+        return out('The entry', `Before every match you wait here behind the gates. In a real match you can still change your setup here. When you’re ready, press I’m ready${t ? '' : ` or ${keys.dash}`}.`, 'prep');
       case 'screen':
         return {
           ...out(
             'Your screen',
-            'Every part of it is labeled. In the arena: a red circle is an attack about to land, so keep moving and walk out of it. Green spheres heal you. The sigil in the middle heals and fills a third of your super. Pillars block sight: nobody aims at what they can’t see. Stuns and roots get shorter each time in a row (the chips by the nameplates). From forty seconds the Gloam closes in from the edges, and healing weakens as a match goes on.',
+            'Every part of it is labeled. In the arena: a red circle is an attack about to land, so keep moving and walk out of it. Green spheres heal you. The sigil in the middle heals and fills a third of your super. Pillars block sight: nobody aims at what they can’t see. Stuns and roots get shorter each time in a row (the chips by the nameplates). Healing weakens as a match goes on, until none is left.',
             null,
           ),
           labels: MATCH_LABELS,
@@ -423,11 +466,12 @@ export class TutorialRun {
       case 'ability': {
         const first = ABILITIES[me.bar[0] ?? ''];
         const reach = melee ? (keys.closeIn ? ' You fight up close: press it from afar and you walk there by yourself.' : ' You fight up close, so walk right up to them first.') : ' You attack from range, so you can stay back.';
-        return out('Use your abilities', `${t ? 'Tap the ability buttons on the right.' : `Press 1 to 5 (or click the buttons).`} Try ${first ? `${first.name} (${keyOf(first)})` : 'one'} and another.${reach} The dark sweep over a button is its cooldown.`, 'bar', `${t ? 'Tap two of your ability buttons' : 'Use two abilities: press 1 to 5'}${melee && keys.closeIn ? '. You walk up by yourself.' : '.'}`);
+        return out('Use your abilities', `${t ? 'Tap the ability buttons on the right.' : `Press 1 to 4 (or click the buttons).`} Try ${first ? `${first.name} (${keyOf(first)})` : 'one'} and another.${reach} The dark sweep over a button is its cooldown.`, 'bar', `${t ? 'Tap two of your ability buttons' : 'Use two abilities: press 1 to 4'}${melee && keys.closeIn ? '. You walk up by yourself.' : '.'}`);
       }
       case 'combo': {
         const c = this.combo();
-        if (!c) return out('Combos', 'Your bar has no combo yet. On the setup page, take an ability together with the one that sets it up.', 'bar');
+        if (!c) return out('Combos', 'A button glows when it is at its strongest. Your talents say how your combo is made.', 'bar');
+        if (c.kind === 'points') return out('Land a combo', `${c.from.name} builds ${c.name}, and ${c.to.name} spends them all: the more it spends, the harder it hits. Use ${c.from.name} (${keyOf(c.from)}) three times, then ${c.to.name} (${keyOf(c.to)}). The pips over your bar count them, and ${c.to.name} glows when they are full.`, 'bar', `Use ${c.from.name} (${keyOf(c.from)}) three times, then ${c.to.name} (${keyOf(c.to)}).`);
         const friendly = c.from.aim === 'friend' || c.to.aim === 'friend' ? ' Here they go on you; in a team fight, on whoever you’re helping.' : '';
         return out('Land a combo', `${c.from.name} sets up ${c.to.name}. Use ${c.from.name} (${keyOf(c.from)}), then ${c.to.name} (${keyOf(c.to)}) for ${c.name}: it hits much harder. A button glows when its combo is ready.${friendly}`, 'bar', `Use ${c.from.name} (${keyOf(c.from)}), then ${c.to.name} (${keyOf(c.to)}): the second hits much harder.`);
       }

@@ -1,6 +1,6 @@
 import type { ClassId } from '../data/types';
 import { CLASS_IDS } from '../data/classes';
-import { PRESETS } from './abilities';
+import { PRESETS, styleOfBar } from './abilities';
 import { isHealer } from './bot';
 import type { Format } from './ranks';
 
@@ -28,16 +28,16 @@ import type { Format } from './ranks';
  *
  * Random then takes the team that wins most with the player's own setup (a setup they changed counts as the
  * ready-made one it shares most abilities with, `specOf`), within the rules:
- * - 3v3: the player's teammates are always exactly one healer and one damage setup (a healer's setup: two or more of
- *   its abilities heal a friend, as arena/bot.ts `isHealer` says). A healing player so gets a second healer, and the
- *   numbers agree: their best three with another healer won 80-81%, with two damage setups 78-80%;
+ * - 3v3: the player's teammates are always exactly one healer and one damage setup (a healer's setup: its basic
+ *   ability heals a friend, as arena/bot.ts `isHealer` says). A healing player so gets a second healer, and the
+ *   numbers agree: their best three with another healer won 90-92%, with two damage setups 82-85%;
  * - 2v2: a healer or a damage setup, whichever pair wins more; a healing player is never given a second healer;
  * - a class chosen for another place, or played by a person on the side, is never taken again.
  * Teams within NEAR points of the best are as good as it, as far as 400 matches can tell (one pair's share moves about
  * 2.5 points from one set of 400 to another), and Random picks among them by the match's seed: the most balanced team
  * each time, not always the same face.
  *
- * The numbers are from 2026-11-14's abilities. When the balance moves a lot they can be measured again: RING_SYNERGY=1
+ * The numbers are from 2026-11-16's abilities (the fixed playstyles). When the balance moves a lot they can be measured again: RING_SYNERGY=1
  * npx vitest run tests/sigilfall-ring-teammates.test.ts prints fresh tables in this file's form (it takes a while).
  */
 
@@ -66,133 +66,115 @@ export const teamKey = (team: readonly Spec[]): string =>
     .map((s) => `${s.cls}${s.preset}`)
     .join('+');
 
-/** The ready-made setup a bar is closest to: the one it shares most abilities with, a healer's with a healer's. */
+/** The playstyle a bar is (abilities.ts styleOfBar: its own, or the one it shares most abilities with). */
 export function specOf(cls: ClassId, bar: readonly string[]): Spec {
-  const heals = isHealer({ bar: [...bar] });
-  let best = 0;
-  let score = -1;
-  PRESETS[cls].forEach((p, i) => {
-    const s = p.bar.filter((id) => bar.includes(id)).length * 2 + (isHealer(p) === heals ? 1 : 0);
-    if (s > score) {
-      score = s;
-      best = i;
-    }
-  });
-  return { cls, preset: best };
+  return { cls, preset: PRESETS[cls].indexOf(styleOfBar(cls, bar)) };
 }
 
 /** % of 2v2 matches each pair of ready-made setups won together (see the top of this file). */
 export const PAIRS: Record<string, number> = {
-  'warrior0+mage0': 43, 'warrior0+mage1': 54, 'warrior0+ranger0': 33, 'warrior0+ranger1': 42, 'warrior0+paladin0': 66,
-  'warrior0+paladin1': 45, 'warrior0+priest0': 74, 'warrior0+priest1': 53, 'warrior0+warlock0': 44,
-  'warrior0+warlock1': 51, 'warrior0+druid0': 68, 'warrior0+druid1': 47, 'warrior0+gloamknight0': 48,
-  'warrior0+gloamknight1': 42,
-  'warrior1+mage0': 41, 'warrior1+mage1': 42, 'warrior1+ranger0': 32, 'warrior1+ranger1': 34, 'warrior1+paladin0': 68,
-  'warrior1+paladin1': 35, 'warrior1+priest0': 79, 'warrior1+priest1': 45, 'warrior1+warlock0': 28,
-  'warrior1+warlock1': 38, 'warrior1+druid0': 66, 'warrior1+druid1': 37, 'warrior1+gloamknight0': 30,
-  'warrior1+gloamknight1': 38,
-  'mage0+ranger0': 36, 'mage0+ranger1': 42, 'mage0+paladin0': 52, 'mage0+paladin1': 35, 'mage0+priest0': 49,
-  'mage0+priest1': 34, 'mage0+warlock0': 42, 'mage0+warlock1': 42, 'mage0+druid0': 51, 'mage0+druid1': 33,
-  'mage0+gloamknight0': 34, 'mage0+gloamknight1': 44,
-  'mage1+ranger0': 41, 'mage1+ranger1': 41, 'mage1+paladin0': 46, 'mage1+paladin1': 33, 'mage1+priest0': 45,
-  'mage1+priest1': 54, 'mage1+warlock0': 32, 'mage1+warlock1': 50, 'mage1+druid0': 50, 'mage1+druid1': 43,
-  'mage1+gloamknight0': 34, 'mage1+gloamknight1': 44,
-  'ranger0+paladin0': 64, 'ranger0+paladin1': 32, 'ranger0+priest0': 58, 'ranger0+priest1': 43,
-  'ranger0+warlock0': 37, 'ranger0+warlock1': 41, 'ranger0+druid0': 66, 'ranger0+druid1': 25,
-  'ranger0+gloamknight0': 25, 'ranger0+gloamknight1': 35,
-  'ranger1+paladin0': 60, 'ranger1+paladin1': 29, 'ranger1+priest0': 58, 'ranger1+priest1': 30,
-  'ranger1+warlock0': 27, 'ranger1+warlock1': 30, 'ranger1+druid0': 66, 'ranger1+druid1': 20,
-  'ranger1+gloamknight0': 25, 'ranger1+gloamknight1': 38,
-  'paladin0+priest0': 27, 'paladin0+priest1': 56, 'paladin0+warlock0': 58, 'paladin0+warlock1': 66,
-  'paladin0+druid0': 49, 'paladin0+druid1': 59, 'paladin0+gloamknight0': 60, 'paladin0+gloamknight1': 63,
-  'paladin1+priest0': 68, 'paladin1+priest1': 50, 'paladin1+warlock0': 32, 'paladin1+warlock1': 38,
-  'paladin1+druid0': 60, 'paladin1+druid1': 35, 'paladin1+gloamknight0': 38, 'paladin1+gloamknight1': 37,
-  'priest0+warlock0': 59, 'priest0+warlock1': 60, 'priest0+druid0': 42, 'priest0+druid1': 52,
-  'priest0+gloamknight0': 60, 'priest0+gloamknight1': 65,
-  'priest1+warlock0': 50, 'priest1+warlock1': 50, 'priest1+druid0': 61, 'priest1+druid1': 48,
-  'priest1+gloamknight0': 52, 'priest1+gloamknight1': 44,
-  'warlock0+druid0': 57, 'warlock0+druid1': 24, 'warlock0+gloamknight0': 21, 'warlock0+gloamknight1': 40,
-  'warlock1+druid0': 68, 'warlock1+druid1': 39, 'warlock1+gloamknight0': 41, 'warlock1+gloamknight1': 48,
-  'druid0+gloamknight0': 54, 'druid0+gloamknight1': 65,
-  'druid1+gloamknight0': 31, 'druid1+gloamknight1': 37,
+  'warrior0+mage0': 40, 'warrior0+mage1': 38, 'warrior0+ranger0': 31, 'warrior0+ranger1': 37, 'warrior0+paladin0': 68,
+  'warrior0+paladin1': 35, 'warrior0+priest0': 65, 'warrior0+priest1': 33, 'warrior0+warlock0': 33,
+  'warrior0+warlock1': 39, 'warrior0+druid0': 62, 'warrior0+druid1': 33, 'warrior0+gloamknight0': 37,
+  'warrior0+gloamknight1': 49, 'warrior1+mage0': 34, 'warrior1+mage1': 28, 'warrior1+ranger0': 33,
+  'warrior1+ranger1': 28, 'warrior1+paladin0': 65, 'warrior1+paladin1': 26, 'warrior1+priest0': 66,
+  'warrior1+priest1': 33, 'warrior1+warlock0': 25, 'warrior1+warlock1': 33, 'warrior1+druid0': 65,
+  'warrior1+druid1': 28, 'warrior1+gloamknight0': 31, 'warrior1+gloamknight1': 21, 'mage0+ranger0': 44,
+  'mage0+ranger1': 35, 'mage0+paladin0': 71, 'mage0+paladin1': 25, 'mage0+priest0': 68, 'mage0+priest1': 34,
+  'mage0+warlock0': 25, 'mage0+warlock1': 33, 'mage0+druid0': 64, 'mage0+druid1': 31, 'mage0+gloamknight0': 30,
+  'mage0+gloamknight1': 39, 'mage1+ranger0': 40, 'mage1+ranger1': 36, 'mage1+paladin0': 57, 'mage1+paladin1': 31,
+  'mage1+priest0': 56, 'mage1+priest1': 41, 'mage1+warlock0': 25, 'mage1+warlock1': 27, 'mage1+druid0': 52,
+  'mage1+druid1': 30, 'mage1+gloamknight0': 28, 'mage1+gloamknight1': 38, 'ranger0+paladin0': 73,
+  'ranger0+paladin1': 25, 'ranger0+priest0': 70, 'ranger0+priest1': 34, 'ranger0+warlock0': 32,
+  'ranger0+warlock1': 30, 'ranger0+druid0': 65, 'ranger0+druid1': 38, 'ranger0+gloamknight0': 26,
+  'ranger0+gloamknight1': 36, 'ranger1+paladin0': 67, 'ranger1+paladin1': 27, 'ranger1+priest0': 59,
+  'ranger1+priest1': 38, 'ranger1+warlock0': 22, 'ranger1+warlock1': 25, 'ranger1+druid0': 61, 'ranger1+druid1': 25,
+  'ranger1+gloamknight0': 22, 'ranger1+gloamknight1': 36, 'paladin0+priest0': 38, 'paladin0+priest1': 69,
+  'paladin0+warlock0': 68, 'paladin0+warlock1': 68, 'paladin0+druid0': 41, 'paladin0+druid1': 71,
+  'paladin0+gloamknight0': 70, 'paladin0+gloamknight1': 70, 'paladin1+priest0': 50, 'paladin1+priest1': 25,
+  'paladin1+warlock0': 28, 'paladin1+warlock1': 35, 'paladin1+druid0': 47, 'paladin1+druid1': 28,
+  'paladin1+gloamknight0': 35, 'paladin1+gloamknight1': 30, 'priest0+warlock0': 54, 'priest0+warlock1': 59,
+  'priest0+druid0': 38, 'priest0+druid1': 62, 'priest0+gloamknight0': 60, 'priest0+gloamknight1': 63,
+  'priest1+warlock0': 22, 'priest1+warlock1': 25, 'priest1+druid0': 60, 'priest1+druid1': 28,
+  'priest1+gloamknight0': 28, 'priest1+gloamknight1': 29, 'warlock0+druid0': 54, 'warlock0+druid1': 27,
+  'warlock0+gloamknight0': 26, 'warlock0+gloamknight1': 34, 'warlock1+druid0': 62, 'warlock1+druid1': 44,
+  'warlock1+gloamknight0': 39, 'warlock1+gloamknight1': 32, 'druid0+gloamknight0': 56, 'druid0+gloamknight1': 63,
+  'druid1+gloamknight0': 30, 'druid1+gloamknight1': 35,
 };
 
 /** % of 3v3 matches each three won together, for every three with one or two healers. */
 export const TRIOS: Record<string, number> = {
-  'warrior0+mage0+paladin0': 72, 'warrior0+mage0+priest0': 73, 'warrior0+mage0+druid0': 67,
-  'warrior0+mage1+paladin0': 74, 'warrior0+mage1+priest0': 78, 'warrior0+mage1+druid0': 75,
-  'warrior0+ranger0+paladin0': 70, 'warrior0+ranger0+priest0': 74, 'warrior0+ranger0+druid0': 72,
-  'warrior0+ranger1+paladin0': 78, 'warrior0+ranger1+priest0': 76, 'warrior0+ranger1+druid0': 80,
-  'warrior0+paladin0+priest0': 79, 'warrior0+paladin0+priest1': 73, 'warrior0+paladin0+warlock0': 71,
-  'warrior0+paladin0+warlock1': 77, 'warrior0+paladin0+druid0': 81, 'warrior0+paladin0+druid1': 70,
-  'warrior0+paladin0+gloamknight0': 71, 'warrior0+paladin0+gloamknight1': 70, 'warrior0+paladin1+priest0': 79,
-  'warrior0+paladin1+druid0': 72, 'warrior0+priest0+warlock0': 76, 'warrior0+priest0+warlock1': 74,
-  'warrior0+priest0+druid0': 80, 'warrior0+priest0+druid1': 72, 'warrior0+priest0+gloamknight0': 73,
-  'warrior0+priest0+gloamknight1': 70, 'warrior0+priest1+druid0': 77, 'warrior0+warlock0+druid0': 71,
-  'warrior0+warlock1+druid0': 71, 'warrior0+druid0+gloamknight0': 72, 'warrior0+druid0+gloamknight1': 75,
-  'warrior1+mage0+paladin0': 63, 'warrior1+mage0+priest0': 67, 'warrior1+mage0+druid0': 56,
-  'warrior1+mage1+paladin0': 57, 'warrior1+mage1+priest0': 60, 'warrior1+mage1+druid0': 53,
-  'warrior1+ranger0+paladin0': 59, 'warrior1+ranger0+priest0': 68, 'warrior1+ranger0+druid0': 57,
-  'warrior1+ranger1+paladin0': 64, 'warrior1+ranger1+priest0': 68, 'warrior1+ranger1+druid0': 57,
-  'warrior1+paladin0+priest0': 78, 'warrior1+paladin0+priest1': 76, 'warrior1+paladin0+warlock0': 57,
-  'warrior1+paladin0+warlock1': 65, 'warrior1+paladin0+druid0': 74, 'warrior1+paladin0+druid1': 57,
-  'warrior1+paladin0+gloamknight0': 57, 'warrior1+paladin0+gloamknight1': 69, 'warrior1+paladin1+priest0': 66,
-  'warrior1+paladin1+druid0': 51, 'warrior1+priest0+warlock0': 59, 'warrior1+priest0+warlock1': 62,
-  'warrior1+priest0+druid0': 75, 'warrior1+priest0+druid1': 58, 'warrior1+priest0+gloamknight0': 67,
-  'warrior1+priest0+gloamknight1': 70, 'warrior1+priest1+druid0': 65, 'warrior1+warlock0+druid0': 51,
-  'warrior1+warlock1+druid0': 49, 'warrior1+druid0+gloamknight0': 53, 'warrior1+druid0+gloamknight1': 61,
-  'mage0+ranger0+paladin0': 44, 'mage0+ranger0+priest0': 44, 'mage0+ranger0+druid0': 41, 'mage0+ranger1+paladin0': 51,
-  'mage0+ranger1+priest0': 50, 'mage0+ranger1+druid0': 50, 'mage0+paladin0+priest0': 41, 'mage0+paladin0+priest1': 52,
-  'mage0+paladin0+warlock0': 42, 'mage0+paladin0+warlock1': 44, 'mage0+paladin0+druid0': 56,
-  'mage0+paladin0+druid1': 50, 'mage0+paladin0+gloamknight0': 46, 'mage0+paladin0+gloamknight1': 61,
-  'mage0+paladin1+priest0': 55, 'mage0+paladin1+druid0': 53, 'mage0+priest0+warlock0': 44,
-  'mage0+priest0+warlock1': 44, 'mage0+priest0+druid0': 45, 'mage0+priest0+druid1': 48,
-  'mage0+priest0+gloamknight0': 47, 'mage0+priest0+gloamknight1': 55, 'mage0+priest1+druid0': 45,
-  'mage0+warlock0+druid0': 45, 'mage0+warlock1+druid0': 40, 'mage0+druid0+gloamknight0': 45,
-  'mage0+druid0+gloamknight1': 59,
-  'mage1+ranger0+paladin0': 50, 'mage1+ranger0+priest0': 51, 'mage1+ranger0+druid0': 44, 'mage1+ranger1+paladin0': 52,
-  'mage1+ranger1+priest0': 48, 'mage1+ranger1+druid0': 54, 'mage1+paladin0+priest0': 36, 'mage1+paladin0+priest1': 50,
-  'mage1+paladin0+warlock0': 34, 'mage1+paladin0+warlock1': 46, 'mage1+paladin0+druid0': 45,
-  'mage1+paladin0+druid1': 40, 'mage1+paladin0+gloamknight0': 42, 'mage1+paladin0+gloamknight1': 69,
-  'mage1+paladin1+priest0': 58, 'mage1+paladin1+druid0': 46, 'mage1+priest0+warlock0': 36,
-  'mage1+priest0+warlock1': 47, 'mage1+priest0+druid0': 40, 'mage1+priest0+druid1': 47,
-  'mage1+priest0+gloamknight0': 48, 'mage1+priest0+gloamknight1': 68, 'mage1+priest1+druid0': 57,
-  'mage1+warlock0+druid0': 33, 'mage1+warlock1+druid0': 44, 'mage1+druid0+gloamknight0': 47,
-  'mage1+druid0+gloamknight1': 70,
-  'ranger0+paladin0+priest0': 49, 'ranger0+paladin0+priest1': 55, 'ranger0+paladin0+warlock0': 39,
-  'ranger0+paladin0+warlock1': 51, 'ranger0+paladin0+druid0': 57, 'ranger0+paladin0+druid1': 41,
-  'ranger0+paladin0+gloamknight0': 48, 'ranger0+paladin0+gloamknight1': 59, 'ranger0+paladin1+priest0': 63,
-  'ranger0+paladin1+druid0': 47, 'ranger0+priest0+warlock0': 48, 'ranger0+priest0+warlock1': 52,
-  'ranger0+priest0+druid0': 56, 'ranger0+priest0+druid1': 48, 'ranger0+priest0+gloamknight0': 48,
-  'ranger0+priest0+gloamknight1': 59, 'ranger0+priest1+druid0': 53, 'ranger0+warlock0+druid0': 43,
-  'ranger0+warlock1+druid0': 46, 'ranger0+druid0+gloamknight0': 44, 'ranger0+druid0+gloamknight1': 64,
-  'ranger1+paladin0+priest0': 49, 'ranger1+paladin0+priest1': 57, 'ranger1+paladin0+warlock0': 35,
-  'ranger1+paladin0+warlock1': 51, 'ranger1+paladin0+druid0': 56, 'ranger1+paladin0+druid1': 46,
-  'ranger1+paladin0+gloamknight0': 48, 'ranger1+paladin0+gloamknight1': 72, 'ranger1+paladin1+priest0': 59,
-  'ranger1+paladin1+druid0': 48, 'ranger1+priest0+warlock0': 45, 'ranger1+priest0+warlock1': 49,
-  'ranger1+priest0+druid0': 53, 'ranger1+priest0+druid1': 45, 'ranger1+priest0+gloamknight0': 49,
-  'ranger1+priest0+gloamknight1': 65, 'ranger1+priest1+druid0': 54, 'ranger1+warlock0+druid0': 39,
-  'ranger1+warlock1+druid0': 38, 'ranger1+druid0+gloamknight0': 47, 'ranger1+druid0+gloamknight1': 66,
-  'paladin0+priest0+warlock0': 46, 'paladin0+priest0+warlock1': 53, 'paladin0+priest0+druid1': 41,
-  'paladin0+priest0+gloamknight0': 48, 'paladin0+priest0+gloamknight1': 61, 'paladin0+priest1+warlock0': 44,
-  'paladin0+priest1+warlock1': 60, 'paladin0+priest1+druid0': 45, 'paladin0+priest1+druid1': 58,
-  'paladin0+priest1+gloamknight0': 64, 'paladin0+priest1+gloamknight1': 69, 'paladin0+warlock0+druid0': 52,
-  'paladin0+warlock0+druid1': 41, 'paladin0+warlock0+gloamknight0': 42, 'paladin0+warlock0+gloamknight1': 66,
-  'paladin0+warlock1+druid0': 52, 'paladin0+warlock1+druid1': 53, 'paladin0+warlock1+gloamknight0': 53,
-  'paladin0+warlock1+gloamknight1': 78, 'paladin0+druid0+gloamknight0': 56, 'paladin0+druid0+gloamknight1': 61,
-  'paladin0+druid1+gloamknight0': 48, 'paladin0+druid1+gloamknight1': 70,
-  'paladin1+priest0+warlock0': 62, 'paladin1+priest0+warlock1': 63, 'paladin1+priest0+druid0': 62,
-  'paladin1+priest0+druid1': 67, 'paladin1+priest0+gloamknight0': 67, 'paladin1+priest0+gloamknight1': 71,
-  'paladin1+priest1+druid0': 68, 'paladin1+warlock0+druid0': 46, 'paladin1+warlock1+druid0': 50,
-  'paladin1+druid0+gloamknight0': 58, 'paladin1+druid0+gloamknight1': 68,
-  'priest0+warlock0+druid0': 52, 'priest0+warlock0+druid1': 46, 'priest0+warlock0+gloamknight0': 45,
-  'priest0+warlock0+gloamknight1': 58, 'priest0+warlock1+druid0': 50, 'priest0+warlock1+druid1': 53,
-  'priest0+warlock1+gloamknight0': 52, 'priest0+warlock1+gloamknight1': 65, 'priest0+druid0+gloamknight0': 46,
-  'priest0+druid0+gloamknight1': 54, 'priest0+druid1+gloamknight0': 46, 'priest0+druid1+gloamknight1': 57,
-  'priest1+warlock0+druid0': 48, 'priest1+warlock1+druid0': 57, 'priest1+druid0+gloamknight0': 57,
-  'priest1+druid0+gloamknight1': 63,
-  'warlock0+druid0+gloamknight0': 37, 'warlock0+druid0+gloamknight1': 64,
-  'warlock1+druid0+gloamknight0': 42, 'warlock1+druid0+gloamknight1': 66,
+  'warrior0+mage0+paladin0': 84, 'warrior0+mage0+priest0': 81, 'warrior0+mage0+druid0': 81,
+  'warrior0+mage1+paladin0': 85, 'warrior0+mage1+priest0': 85, 'warrior0+mage1+druid0': 82,
+  'warrior0+ranger0+paladin0': 75, 'warrior0+ranger0+priest0': 74, 'warrior0+ranger0+druid0': 73,
+  'warrior0+ranger1+paladin0': 82, 'warrior0+ranger1+priest0': 76, 'warrior0+ranger1+druid0': 75,
+  'warrior0+paladin0+priest0': 88, 'warrior0+paladin0+priest1': 76, 'warrior0+paladin0+warlock0': 75,
+  'warrior0+paladin0+warlock1': 79, 'warrior0+paladin0+druid0': 92, 'warrior0+paladin0+druid1': 76,
+  'warrior0+paladin0+gloamknight0': 80, 'warrior0+paladin0+gloamknight1': 80, 'warrior0+paladin1+priest0': 54,
+  'warrior0+paladin1+druid0': 54, 'warrior0+priest0+warlock0': 68, 'warrior0+priest0+warlock1': 71,
+  'warrior0+priest0+druid0': 90, 'warrior0+priest0+druid1': 71, 'warrior0+priest0+gloamknight0': 76,
+  'warrior0+priest0+gloamknight1': 73, 'warrior0+priest1+druid0': 77, 'warrior0+warlock0+druid0': 70,
+  'warrior0+warlock1+druid0': 73, 'warrior0+druid0+gloamknight0': 75, 'warrior0+druid0+gloamknight1': 78,
+  'warrior1+mage0+paladin0': 70, 'warrior1+mage0+priest0': 66, 'warrior1+mage0+druid0': 73,
+  'warrior1+mage1+paladin0': 68, 'warrior1+mage1+priest0': 65, 'warrior1+mage1+druid0': 67,
+  'warrior1+ranger0+paladin0': 76, 'warrior1+ranger0+priest0': 73, 'warrior1+ranger0+druid0': 66,
+  'warrior1+ranger1+paladin0': 60, 'warrior1+ranger1+priest0': 55, 'warrior1+ranger1+druid0': 51,
+  'warrior1+paladin0+priest0': 86, 'warrior1+paladin0+priest1': 75, 'warrior1+paladin0+warlock0': 56,
+  'warrior1+paladin0+warlock1': 62, 'warrior1+paladin0+druid0': 83, 'warrior1+paladin0+druid1': 59,
+  'warrior1+paladin0+gloamknight0': 72, 'warrior1+paladin0+gloamknight1': 67, 'warrior1+paladin1+priest0': 43,
+  'warrior1+paladin1+druid0': 42, 'warrior1+priest0+warlock0': 51, 'warrior1+priest0+warlock1': 63,
+  'warrior1+priest0+druid0': 84, 'warrior1+priest0+druid1': 55, 'warrior1+priest0+gloamknight0': 66,
+  'warrior1+priest0+gloamknight1': 63, 'warrior1+priest1+druid0': 78, 'warrior1+warlock0+druid0': 57,
+  'warrior1+warlock1+druid0': 54, 'warrior1+druid0+gloamknight0': 62, 'warrior1+druid0+gloamknight1': 59,
+  'mage0+ranger0+paladin0': 74, 'mage0+ranger0+priest0': 70, 'mage0+ranger0+druid0': 66, 'mage0+ranger1+paladin0': 64,
+  'mage0+ranger1+priest0': 57, 'mage0+ranger1+druid0': 55, 'mage0+paladin0+priest0': 69, 'mage0+paladin0+priest1': 68,
+  'mage0+paladin0+warlock0': 60, 'mage0+paladin0+warlock1': 67, 'mage0+paladin0+druid0': 68,
+  'mage0+paladin0+druid1': 56, 'mage0+paladin0+gloamknight0': 61, 'mage0+paladin0+gloamknight1': 77,
+  'mage0+paladin1+priest0': 42, 'mage0+paladin1+druid0': 39, 'mage0+priest0+warlock0': 48,
+  'mage0+priest0+warlock1': 60, 'mage0+priest0+druid0': 67, 'mage0+priest0+druid1': 52,
+  'mage0+priest0+gloamknight0': 56, 'mage0+priest0+gloamknight1': 69, 'mage0+priest1+druid0': 77,
+  'mage0+warlock0+druid0': 53, 'mage0+warlock1+druid0': 55, 'mage0+druid0+gloamknight0': 56,
+  'mage0+druid0+gloamknight1': 68, 'mage1+ranger0+paladin0': 68, 'mage1+ranger0+priest0': 59,
+  'mage1+ranger0+druid0': 63, 'mage1+ranger1+paladin0': 51, 'mage1+ranger1+priest0': 44, 'mage1+ranger1+druid0': 51,
+  'mage1+paladin0+priest0': 51, 'mage1+paladin0+priest1': 66, 'mage1+paladin0+warlock0': 48,
+  'mage1+paladin0+warlock1': 54, 'mage1+paladin0+druid0': 53, 'mage1+paladin0+druid1': 51,
+  'mage1+paladin0+gloamknight0': 60, 'mage1+paladin0+gloamknight1': 70, 'mage1+paladin1+priest0': 45,
+  'mage1+paladin1+druid0': 42, 'mage1+priest0+warlock0': 42, 'mage1+priest0+warlock1': 47, 'mage1+priest0+druid0': 54,
+  'mage1+priest0+druid1': 48, 'mage1+priest0+gloamknight0': 59, 'mage1+priest0+gloamknight1': 67,
+  'mage1+priest1+druid0': 73, 'mage1+warlock0+druid0': 43, 'mage1+warlock1+druid0': 48,
+  'mage1+druid0+gloamknight0': 64, 'mage1+druid0+gloamknight1': 69, 'ranger0+paladin0+priest0': 76,
+  'ranger0+paladin0+priest1': 65, 'ranger0+paladin0+warlock0': 56, 'ranger0+paladin0+warlock1': 64,
+  'ranger0+paladin0+druid0': 68, 'ranger0+paladin0+druid1': 62, 'ranger0+paladin0+gloamknight0': 65,
+  'ranger0+paladin0+gloamknight1': 74, 'ranger0+paladin1+priest0': 47, 'ranger0+paladin1+druid0': 45,
+  'ranger0+priest0+warlock0': 53, 'ranger0+priest0+warlock1': 53, 'ranger0+priest0+druid0': 73,
+  'ranger0+priest0+druid1': 55, 'ranger0+priest0+gloamknight0': 60, 'ranger0+priest0+gloamknight1': 67,
+  'ranger0+priest1+druid0': 76, 'ranger0+warlock0+druid0': 56, 'ranger0+warlock1+druid0': 50,
+  'ranger0+druid0+gloamknight0': 57, 'ranger0+druid0+gloamknight1': 71, 'ranger1+paladin0+priest0': 61,
+  'ranger1+paladin0+priest1': 65, 'ranger1+paladin0+warlock0': 43, 'ranger1+paladin0+warlock1': 51,
+  'ranger1+paladin0+druid0': 57, 'ranger1+paladin0+druid1': 50, 'ranger1+paladin0+gloamknight0': 55,
+  'ranger1+paladin0+gloamknight1': 63, 'ranger1+paladin1+priest0': 37, 'ranger1+paladin1+druid0': 35,
+  'ranger1+priest0+warlock0': 39, 'ranger1+priest0+warlock1': 43, 'ranger1+priest0+druid0': 59,
+  'ranger1+priest0+druid1': 43, 'ranger1+priest0+gloamknight0': 51, 'ranger1+priest0+gloamknight1': 65,
+  'ranger1+priest1+druid0': 75, 'ranger1+warlock0+druid0': 45, 'ranger1+warlock1+druid0': 38,
+  'ranger1+druid0+gloamknight0': 54, 'ranger1+druid0+gloamknight1': 59, 'paladin0+priest0+warlock0': 52,
+  'paladin0+priest0+warlock1': 64, 'paladin0+priest0+druid1': 60, 'paladin0+priest0+gloamknight0': 69,
+  'paladin0+priest0+gloamknight1': 81, 'paladin0+priest1+warlock0': 65, 'paladin0+priest1+warlock1': 74,
+  'paladin0+priest1+druid0': 67, 'paladin0+priest1+druid1': 68, 'paladin0+priest1+gloamknight0': 71,
+  'paladin0+priest1+gloamknight1': 63, 'paladin0+warlock0+druid0': 53, 'paladin0+warlock0+druid1': 48,
+  'paladin0+warlock0+gloamknight0': 54, 'paladin0+warlock0+gloamknight1': 57, 'paladin0+warlock1+druid0': 61,
+  'paladin0+warlock1+druid1': 57, 'paladin0+warlock1+gloamknight0': 54, 'paladin0+warlock1+gloamknight1': 67,
+  'paladin0+druid0+gloamknight0': 63, 'paladin0+druid0+gloamknight1': 78, 'paladin0+druid1+gloamknight0': 55,
+  'paladin0+druid1+gloamknight1': 63, 'paladin1+priest0+warlock0': 47, 'paladin1+priest0+warlock1': 56,
+  'paladin1+priest0+druid0': 65, 'paladin1+priest0+druid1': 55, 'paladin1+priest0+gloamknight0': 55,
+  'paladin1+priest0+gloamknight1': 56, 'paladin1+priest1+druid0': 70, 'paladin1+warlock0+druid0': 61,
+  'paladin1+warlock1+druid0': 52, 'paladin1+druid0+gloamknight0': 62, 'paladin1+druid0+gloamknight1': 54,
+  'priest0+warlock0+druid0': 52, 'priest0+warlock0+druid1': 40, 'priest0+warlock0+gloamknight0': 47,
+  'priest0+warlock0+gloamknight1': 66, 'priest0+warlock1+druid0': 61, 'priest0+warlock1+druid1': 50,
+  'priest0+warlock1+gloamknight0': 55, 'priest0+warlock1+gloamknight1': 67, 'priest0+druid0+gloamknight0': 66,
+  'priest0+druid0+gloamknight1': 79, 'priest0+druid1+gloamknight0': 52, 'priest0+druid1+gloamknight1': 63,
+  'priest1+warlock0+druid0': 49, 'priest1+warlock1+druid0': 48, 'priest1+druid0+gloamknight0': 59,
+  'priest1+druid0+gloamknight1': 69, 'warlock0+druid0+gloamknight0': 46, 'warlock0+druid0+gloamknight1': 62,
+  'warlock1+druid0+gloamknight0': 48, 'warlock1+druid0+gloamknight1': 59,
 };
 
 /**

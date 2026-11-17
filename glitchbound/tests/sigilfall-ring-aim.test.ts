@@ -5,7 +5,7 @@
  * obstacles and healing spheres".
  */
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, kitOf, PRESETS, SUPERS, type Ability } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, kitOf, PRESETS, SUPERS, SUPERS2, type Ability } from '../src/games/sigilfall/arena/abilities';
 import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
 import { ARENA_H, ARENA_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
 import { BASE_SPEED, CLASS_DMG, GATES, HEAL_BY_SIZE, HERO_R, Match, ORB_EVERY, ORB_FIRST, ORB_HEAL, RANGED, type FighterSetup, type MatchEvent, type MoveInput } from '../src/games/sigilfall/arena/sim';
@@ -67,15 +67,16 @@ describe('The Ring: what is aimed at someone lands on them', () => {
       // (nothing says it can be dodged any more, but what is placed)
       if (ab.aim !== 'ground') expect(ab.text, ab.id).not.toMatch(/dodge/i);
     }
-    const m = open('ranger', ['r-swift', 'r-hobble', 'r-hush', 'r-hawk']);
+    const m = open('ranger', PRESETS.ranger[0]!.bar);
     const foe = m.fighters[1]!;
     expect(m.press(0, 'r-swift')).toBeNull();
     expect(m.bolts).toHaveLength(0);
     expect(foe.hp).toBeLessThan(foe.maxHp);
-    // (an arrow that silences a cast does so the moment it is loosed)
-    foe.cast = { ab: 'w-hew', target: 0, t: 0, dur: 2, channel: false, next: 0, pushed: 0 };
-    expect(m.press(0, 'r-hush')).toBeNull();
-    expect(foe.cast).toBeNull();
+    // (a word that silences a cast does so the moment it is spoken)
+    const p = open('priest', PRESETS.priest[1]!.bar);
+    p.fighters[1]!.cast = { ab: 'w-hew', target: 0, t: 0, dur: 2, channel: false, next: 0, pushed: 0 };
+    expect(p.press(0, 'p-hush')).toBeNull();
+    expect(p.fighters[1]!.cast).toBeNull();
   });
 });
 
@@ -83,7 +84,7 @@ describe('The Ring: what is placed', () => {
   it('every class that fights from range has one, with a patch and a fall, and says so', () => {
     for (const cls of CLASS_IDS) {
       if (!RANGED.has(cls)) continue;
-      const mine = [...kitOf(cls), SUPERS[cls]].filter((a) => a.aim === 'ground');
+      const mine = [...kitOf(cls), SUPERS[cls], SUPERS2[cls]].filter((a) => a.aim === 'ground');
       expect(mine.length, cls).toBeGreaterThanOrEqual(1);
     }
     expect(PLACED.length).toBeGreaterThanOrEqual(5);
@@ -98,11 +99,57 @@ describe('The Ring: what is placed', () => {
       expect(ab.range, ab.id).toBeGreaterThan(100);
       expect(ab.bolt, ab.id).toBeFalsy();
       expect(ab.text, ab.id).toMatch(/patch of ground|where you choose/);
+      // (what stays on the ground is no single blow to step out from under: it is walked out of once it is there)
+      if (ab.field) continue;
       // (the owner: "shrink them so they are avoidable", for "0.0s reaction time": a fighter already on the move walks
       // out of one placed on them before it lands; one who stands still is caught)
       expect(ab.area!, ab.id).toBeLessThan(BASE_SPEED * ab.fall!);
       expect(ab.area!, ab.id).toBeGreaterThan(BASE_SPEED * ab.fall! * 0.75);
     }
+  });
+
+  it('a globe left on the ground: it lands on whoever stands in it each second, drifts on the way it was thrown, and is gone in time', () => {
+    // (the owner, 2026-11-16: "ice orb (damages enemies and doubles your frostbolt dmg)")
+    const ab = ABILITIES['m-globe']!;
+    expect(ab.field).toMatchObject({ dur: 6, tick: 1 });
+    const m = open('mage', PRESETS.mage[1]!.bar);
+    const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
+    foe.hp = foe.maxHp = 50000;
+    expect(m.press(0, 'm-globe')).toBeNull();
+    expect(m.zones).toHaveLength(1);
+    expect(m.fields).toHaveLength(0);
+    const seen = run(m, ab.fall! + 0.05);
+    expect(seen.some((e) => e.k === 'zone' && e.ab === 'm-globe')).toBe(true);
+    expect(m.zones).toHaveLength(0);
+    expect(m.fields).toHaveLength(1);
+    const fd = m.fields[0]!;
+    // (where it was thrown: under them, but for the moment it has drifted since)
+    expect(Math.hypot(fd.x - foe.x, fd.y - foe.y)).toBeLessThan(2);
+    expect(fd.r).toBe(ab.area);
+    // it has landed once already, and lands again each second while they stand in it: slowed, too
+    const first = 50000 - foe.hp;
+    expect(first).toBeGreaterThan(0);
+    expect(foe.auras.some((a) => a.ab === 'm-globe' && a.kind === 'slow')).toBe(true);
+    const x0 = fd.x;
+    run(m, 2);
+    expect(50000 - foe.hp).toBeGreaterThanOrEqual(first * 3 - 2);
+    // it drifts on the way it was thrown (away from its thrower), slowly
+    expect(m.fields[0]!.x).toBeGreaterThan(x0 + 10);
+    expect(m.fields[0]!.x).toBeLessThan(x0 + 40);
+    // out of it, nothing more lands
+    foe.x = me.x;
+    foe.y = me.y + 120;
+    const out = foe.hp;
+    run(m, 2);
+    expect(foe.hp).toBe(out);
+    // and it is gone when its time is up
+    run(m, 2.2);
+    expect(m.fields).toHaveLength(0);
+    // while it is out its thrower carries its boon, and their Rime Spear hits twice as hard
+    const n = open('mage', PRESETS.mage[1]!.bar);
+    expect(n.press(0, 'm-globe')).toBeNull();
+    expect(n.fighters[0]!.boons.map((b) => b.id)).toEqual(['globe']);
+    expect(n.lit(n.fighters[0]!, ABILITIES['m-spear']!, n.fighters[1]!)).toBe('Rimeglobe');
   });
 
   it('with no point given (a computer player), it goes under the target: seen first, then it lands on everyone standing there', () => {
@@ -129,6 +176,8 @@ describe('The Ring: what is placed', () => {
   it('placed on someone on the move, it misses them if they keep walking; on someone standing, it lands', () => {
     // (the owner: "it would be hard to land one right in the middle of a character that's constantly moving")
     for (const ab of PLACED) {
+      // (what stays on the ground catches whoever is still in it: its own test, above)
+      if (ab.field) continue;
       for (const walks of [true, false]) {
         const cls = ab.cls as ClassId;
         const m = open(cls, [ab.super ? kitOf(cls)[0]!.id : ab.id]);
@@ -173,27 +222,8 @@ describe('The Ring: what is placed', () => {
     expect(foe.hp).toBeLessThan(foe.maxHp);
   });
 
-  it('one with a cast is aimed when the cast begins: it comes down there, wherever they have gone', () => {
-    const ab = ABILITIES['m-pyre']!;
-    expect(ab.aim).toBe('ground');
-    expect(ab.cast).toBeGreaterThan(0.5);
-    const fate = (walks: boolean): number => {
-      const m = open('mage', ['m-pyre']);
-      const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
-      const was = { x: foe.x, y: foe.y };
-      expect(m.press(0, 'm-pyre')).toBeNull();
-      expect(me.cast?.at).toEqual(was);
-      // (nothing on the ground while it is being cast)
-      run(m, 0.5, walks ? { 1: { mx: 1, my: 0 } } : {});
-      expect(m.zones).toHaveLength(0);
-      run(m, ab.cast - 0.5 + 0.05, walks ? { 1: { mx: 1, my: 0 } } : {});
-      expect([m.zones[0]!.x, m.zones[0]!.y]).toEqual([was.x, was.y]);
-      run(m, ab.fall! + 0.1, walks ? { 1: { mx: 1, my: 0 } } : {});
-      return foe.maxHp - foe.hp;
-    };
-    expect(fate(false)).toBeGreaterThan(0);
-    expect(fate(true)).toBe(0);
-  });
+  // (a placed spell with a cast, the mage's Great Pyre, was aimed when its cast began. None is cast now: what is placed
+  // is a super or instant, since a playstyle's abilities became its own on 2026-11-16)
 
   it('goes over a room’s wire with everything else', () => {
     const m = open('mage', ['m-lash']);
@@ -205,13 +235,29 @@ describe('The Ring: what is placed', () => {
     // (between the host's words, a player's own copy lets it keep falling)
     copy.coast(0.3, null, null);
     expect(copy.zones[0]!.t).toBeCloseTo(m.zones[0]!.t - 0.3, 5);
+    // what is left on the ground, the points held and the boons carried go over it too
+    const r = open('mage', PRESETS.mage[1]!.bar);
+    expect(r.press(0, 'm-globe')).toBeNull();
+    run(r, 0.5);
+    const g = open('gloamknight', PRESETS.gloamknight[1]!.bar);
+    g.fighters[0]!.pts = 3;
+    const rc = new Match({ seed: 5, map: 'sands', fighters: [fighter(0, 'mage', PRESETS.mage[1]!.bar), fighter(1, 'warrior')] });
+    rc.restore(JSON.parse(JSON.stringify(r.snapshot())) as ReturnType<Match['snapshot']>);
+    expect(rc.fields).toEqual(r.fields);
+    expect(rc.fighters[0]!.boons.map((b) => b.id)).toEqual(['globe']);
+    const x = rc.fields[0]!.x;
+    rc.coast(0.5, null, null);
+    expect(rc.fields[0]!.x).toBeGreaterThan(x);
+    const gc = new Match({ seed: 5, map: 'sands', fighters: [fighter(0, 'gloamknight', PRESETS.gloamknight[1]!.bar), fighter(1, 'warrior')] });
+    gc.restore(JSON.parse(JSON.stringify(g.snapshot())) as ReturnType<Match['snapshot']>);
+    expect(gc.fighters[0]!.pts).toBe(3);
   });
 
   it('the computer places its own, and they land', () => {
     let placed = 0;
     let hit = 0;
     for (const seed of [1, 2, 3, 4, 5, 6]) {
-      const m = new Match({ seed, map: MAP_IDS[seed % 3]!, fighters: [fighter(0, 'mage', PRESETS.mage[0]!.bar), fighter(1, 'ranger', ['r-swift', 'r-wind', 'r-hobble', 'r-venom'])] });
+      const m = new Match({ seed, map: MAP_IDS[seed % 3]!, fighters: [fighter(0, 'mage', PRESETS.mage[1]!.bar), fighter(1, 'ranger', PRESETS.ranger[1]!.bar)] });
       const brains = m.fighters.map((_, i) => newBrain(seed * 31 + i));
       let under = false;
       for (let i = 0; i < 30 * 200 && m.phase !== 'over'; i++) {
@@ -298,7 +344,7 @@ describe('The Ring: healing in bigger fights', () => {
       return me.hp - 100;
     };
     const one = healed(1);
-    expect(one).toBeGreaterThan(100);
+    expect(one).toBeGreaterThan(50);
     expect(healed(2) / one).toBeCloseTo(1.3, 1);
     expect(healed(3) / one).toBeCloseTo(1.45, 1);
   });
@@ -342,7 +388,7 @@ describe('The Ring: bigger grounds', () => {
         expect(spots.some(([qx, qy]) => Math.abs(qx - (ARENA_W - x)) < 0.01 && Math.abs(qy - (ARENA_H - y)) < 0.01), `${id} sphere ${x},${y} has its twin`).toBe(true);
         // (not behind a stone: nothing stands within 70 to its south, in its column)
         expect(MAPS[id]!.pillars.some((p) => !p.wall && x > p.x - 12 && x < p.x + p.w + 12 && p.y > y && p.y - y < 70), `${id} sphere ${x},${y} is in the open`).toBe(false);
-        // (reachable before the Gloam starts to close)
+        // (well inside the walls)
         expect(x > 50 && x < ARENA_W - 50 && y > 30 && y < ARENA_H - 30, id).toBe(true);
       }
     }

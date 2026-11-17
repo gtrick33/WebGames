@@ -1,5 +1,6 @@
 import type { ClassId } from '../data/types';
-import { fullBar, PRESETS, SLOTS, takes } from './abilities';
+import { PRESETS, styleOfBar } from './abilities';
+import { fullTalents } from './talents';
 import { forgetBest, mmrOf, NEW_STANDING, rankOf, RING_KEY, type Format, type Standing } from './ranks';
 import type { FighterSetup } from './sim';
 import { clearLive, LEAVER_K, type LiveMatch } from './live';
@@ -192,13 +193,15 @@ export function drawOpponents(format: Format, seed: number): { comp: Comp; fight
 /* ------------------------------------------------------------------ on this device */
 
 /**
- * What a hero brings into a match: their abilities, talents and super. (An oath and the Unbinding Charm were kept with
- * these until 2026-11-15; a setup kept from then still has them written down, and they are left unread.)
+ * What a hero brings into a match: a playstyle (its four abilities, as `bar`, and its super) and the talents chosen
+ * for it. (Until 2026-11-16 the five abilities and the super were chosen one by one; a setup kept from then is read as
+ * the playstyle its bar is nearest to, with that playstyle's own talents wherever the kept ones are gone. An oath and
+ * the Unbinding Charm were kept with these until 2026-11-15, and are left unread.)
  */
 export interface RingSetup {
   bar: string[];
   talents: string[];
-  /** Which of its class's two supers (abilities.ts ultsOf); nothing said: the one that goes with its bar (ultFor). */
+  /** Its playstyle's super (abilities.ts PRESETS); nothing said: the one that goes with its bar (ultFor). */
   ult?: string;
 }
 
@@ -211,15 +214,9 @@ export interface ClassSets {
    * (platform/mergeRules.ts mergeRing).
    */
   at?: number;
-  /**
-   * How many abilities a bar held when these were kept (abilities.ts SLOTS); nothing said: four, as before bars held
-   * five. A bar that was full then is filled up to the new size when it is read; one still being filled is left be.
-   */
+  /** How many abilities a bar held when these were kept, written down while that could differ: unread now. */
   n?: number;
 }
-
-/** How many abilities a bar held before it was written down with the setups (ClassSets.n). */
-const OLD_SLOTS = 4;
 
 export const SET_COUNT = 3;
 
@@ -265,14 +262,10 @@ export function setsOf(save: RingSave, cls: ClassId): ClassSets {
   const list = Array.from({ length: SET_COUNT }, (_, i) => {
     const k = kept?.list[i];
     if (!(k && Array.isArray(k.bar) && Array.isArray(k.talents))) return presetSetup(cls, i);
-    // (a setup kept from when a bar held six keeps its first five; one holding an ability since taken out of the game, or
-    // renamed, loses it and is filled up again, so that it is never left short; one that was full when bars held fewer
-    // gets the rest from the ready-made bar it is closest to. A bar its player is still filling is left as it is)
-    const own = k.bar.filter((id) => takes(cls, id));
-    const was = typeof kept.n === 'number' ? kept.n : OLD_SLOTS;
-    const grown = was < SLOTS && own.length >= was;
-    // (only what a setup holds now: an oath or a charm written down from before is left behind)
-    return { bar: own.length < k.bar.length || grown ? fullBar(cls, own) : k.bar.slice(0, SLOTS), talents: k.talents, ...(typeof k.ult === 'string' ? { ult: k.ult } : {}) };
+    // (the playstyle its bar is, or is nearest to, with that playstyle's own four and its super; the talents kept that
+    // are still its to choose, and its own in any row that leaves empty)
+    const style = styleOfBar(cls, k.bar);
+    return { bar: [...style.bar], talents: fullTalents(cls, style.id, k.talents.filter((t): t is string => typeof t === 'string'), style.talents), ult: style.ult };
   });
   const active = kept && kept.active >= 0 && kept.active < SET_COUNT ? kept.active : 0;
   return { active, list };

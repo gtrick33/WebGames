@@ -89,12 +89,14 @@ describe('The Ring on a phone: every button in its place', () => {
     expect(button).toContain('<svg');
     expect(button).not.toMatch(/<span>|>Next</);
     expect(rule('.rb-ring-cycle')).toMatch(/border-radius:\s*50%/);
-    // over s4, the arc's top-right: its middle over that one's, clear of it, inside the screen's right edge
+    // over s3, the arc's top-right (s4 while a bar held five): its middle over that one's, clear of it, inside the
+    // screen's right edge
     const px = (r: string, k: string): number => Number(new RegExp(`(?:^|[;\\s])${k}:\\s*(-?[\\d.]+)px`).exec(r)![1]);
-    const s4 = rule('.rb-ring-thumbs .rb-cluster .rb-sb-s4');
+    const top = rule('.rb-ring-thumbs .rb-cluster .rb-sb-s3');
     const t = rule('.rb-ring-thumbs .rb-cluster .rb-ring-cycle');
-    expect(px(t, 'right') + px(t, 'width') / 2).toBeCloseTo(px(s4, 'right') + px(s4, 'width') / 2, 0);
-    expect(px(t, 'bottom')).toBeGreaterThanOrEqual(px(s4, 'bottom') + px(s4, 'height') + 4);
+    expect(px(t, 'right') + px(t, 'width') / 2).toBeCloseTo(px(top, 'right') + px(top, 'width') / 2, 0);
+    expect(px(t, 'bottom')).toBeGreaterThanOrEqual(px(top, 'bottom') + px(top, 'height') + 4);
+    expect(CSS).not.toContain('.rb-ring-thumbs .rb-cluster .rb-sb-s4');
   });
 
   it('the tutorial and the rules say what the ◎ button does, and where it is', () => {
@@ -111,7 +113,7 @@ describe('The Ring on a phone: every button in its place', () => {
     expect(CSS).toMatch(/\.rb-ring-team\.is-foes \{\s*transform-origin: top right;/);
   });
 
-  it('the cluster round the attack: the bar’s other four on one arc close in, and only the step and the super outside it', () => {
+  it('the cluster round the basic ability: the bar’s other three on one arc close in, and only the super outside it', () => {
     const at = (k: string) => {
       const r = rule(`.rb-ring-thumbs .rb-cluster .rb-sb-${k}`);
       const n = (p: string) => Number(new RegExp(`${p}:\\s*(\\d+)px`).exec(r)![1]);
@@ -119,8 +121,8 @@ describe('The Ring on a phone: every button in its place', () => {
     };
     const c = at('basic');
     const from = (k: string) => Math.hypot(at(k).x - c.x, at(k).y - c.y);
-    // (one arc: all four the same way from the attack, near enough to roll a thumb from one to the next)
-    const arc = ['s1', 's2', 's3', 's4'].map(from);
+    // (one arc: all three the same way from the basic one, near enough to roll a thumb from one to the next)
+    const arc = ['s1', 's2', 's3'].map(from);
     for (const d of arc) expect(d).toBeLessThan(95);
     expect(Math.max(...arc) - Math.min(...arc)).toBeLessThan(2);
     expect(from('ult'), 'ult').toBeGreaterThan(130);

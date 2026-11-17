@@ -50,15 +50,14 @@ describe('The Ring without mana: in the rules', () => {
     expect(cast).toBeGreaterThan(60);
   });
 
-  it('no talent speaks of mana; the three that ran on it run on health', () => {
+  it('no talent speaks of mana; the two left of those that ran on it run on health', () => {
     const all = Object.values(TALENTS).flat();
     for (const t of all) expect(t.text, t.name).not.toMatch(/mana/i);
     const by = (name: string) => all.find((t) => t.name === name)!;
-    expect(by('Brimming Power').text).toBe('While your health is above 80%, your spells hit 12% harder.');
-    expect(by('Arcane Skin').text).toBe('While your health is above 50%, you take 20% less damage.');
-    expect(by('Hollow Pact').text).toBe('Fall under 35% health and heal 25% of your health. Once every 45 seconds.');
+    // (Brimming Power, the third, went when the talents became each playstyle's own, 2026-11-16)
+    expect(by('Arcane Skin').text).toBe('Take 20% less damage while above 50% health.');
+    expect(by('Hollow Pact').text).toBe('Falling below 35% health heals you for 25% of your health. 45 sec cooldown.');
     expect(all.some((t) => t.name === 'Mana Skin')).toBe(false);
-    expect(ABILITIES['m-shield']!.name).toBe('Arcane Veil');
   });
 });
 

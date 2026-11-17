@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
-import { fullBar, PRESETS, SLOTS, type Ability } from '../arena/abilities';
+import { fullBar, PRESETS, SLOTS, styleOfBar, type Ability } from '../arena/abilities';
+import { fullTalents } from '../arena/talents';
 import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, mateSkill, mmrOf, namedApart, nameFor, readRing, rivalFor, setsOf, skillAt, stakesOf, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave } from '../arena/ladder';
 import { MAP_IDS, MAPS } from '../arena/maps';
 import { bestRating, FORMATS, nextRank, rankOf, type Format } from '../arena/ranks';
 import { rewardsBetween } from '../arena/rewards';
 import { GATES_SOLO, type FighterSetup, type MatchSetup } from '../arena/sim';
-import { CLASS_EASE, CLASS_WAY, EASE_WORD } from '../arena/styles';
+import { CLASS_EASE, CLASS_WAY, EASE_WORD, playstyleOf } from '../arena/styles';
 import { LOBBY_STEPS, tutorialSetup } from '../arena/tutorial';
-import { Coach, useLabels, useSpot } from './RingCoach';
+import { Coach, useLabels, useSpot, useTutLock } from './RingCoach';
 import { CLASS_IDS, CLASSES } from '../data/classes';
 import { useAccount } from '../../../platform/account';
 import { classOpen } from '../progress/paidClasses';
@@ -59,13 +60,13 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
     for (const s of on) {
       const known = CLASS_IDS.includes(s.pick!.cls as ClassId);
       const cls = (known ? s.pick!.cls : 'warrior') as ClassId;
-      // (a bar of six from a player whose game is from before bars held four keeps its first five, and one of four from
-      // before bars held five is filled up to five; one with an ability this game doesn't have, from a game older or
-      // newer, keeps the rest and is filled up from the class's own)
-      const bar = fullBar(cls, s.pick!.bar);
+      // (whatever bar a player's game sent, from before a playstyle's abilities were its own or after, is read as the
+      // playstyle nearest it: its four, its super, and its own talents in any row where theirs are no longer talents)
+      const style = styleOfBar(cls, s.pick!.bar);
+      const bar = [...style.bar];
       const title = shownTitle(s.pick!.title);
       const frame = frameOf(s.pick!.frame);
-      fighters.push({ team, cls, name: s.name, bar, talents: s.pick!.talents, ult: s.pick!.ult, seat: s.n, ...(title ? { title } : {}), ...(frame ? { frame: frame.id } : {}) });
+      fighters.push({ team, cls, name: s.name, bar, talents: fullTalents(cls, style.id, s.pick!.talents, style.talents), ult: style.ult, seat: s.n, ...(title ? { title } : {}), ...(frame ? { frame: frame.id } : {}) });
     }
     const list = COMPS[v.format];
     const comp = list[(v.runSeed + team) % list.length]!;
@@ -363,15 +364,25 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   // (offered once, on a first visit: nobody who has fought here, or has been asked, is asked again)
   const firstVisit = !learn.asked && !learn.done && FORMATS.every((f) => standingOf(save, f).wins + standingOf(save, f).losses === 0);
   const putLearn = (fn: (l: NonNullable<RingSave['learn']>) => NonNullable<RingSave['learn']>): void => commit((now) => ({ ...now, learn: fn(now.learn ?? {}) }));
-  const tutStep = tut === null ? null : (LOBBY_STEPS[tut] ?? null);
+  // (a step is read only over its own page: should the page under it change all the same, it says nothing rather
+  // than talk about a page that is not there. It stood over the wrong page with the last step's words)
+  const tutAt = tut === null ? null : (LOBBY_STEPS[tut] ?? null);
+  const tutStep = tutAt && tutAt.page === page ? tutAt : null;
   useSpot(tutStep?.spot ?? null);
   useLabels(tutStep?.labels);
+  // (while a step is read, only what it is about can be used: nothing else on the page answers)
+  useTutLock(!!tutStep, tutStep?.allow);
   const goTut = (i: number): void => {
     const st = LOBBY_STEPS[i];
     if (!st) return;
-    setTut(i);
+    // (anything read or opened over the page is put away first: the step has the screen)
+    setReading(null);
+    setHelp(false);
+    setRewardsOpen(false);
+    setProgressOpen(false);
     if (st.page === 'setup' && page !== 'setup') openSetup('play');
     else if (st.page === 'play' && page !== 'play') setPage('play');
+    setTut(i);
   };
   const beginTutorial = (): void => {
     putLearn((l) => ({ ...l, asked: true }));
@@ -602,6 +613,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
 
   /* -------------------------------------------------- back, one level at a time */
   const back = (): void => {
+    // (going back is leaving the tutorial, if one is being read)
+    setTut(null);
     if (page === 'setup') setPage(setupFrom);
     else if (page === 'friends') {
       if (view) leaveRoom();
@@ -808,9 +821,11 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
                   </button>
                 </div>
                 <div className="rb-rp-setup-head">
-                  <h3>Setup {sets.active + 1}</h3>
+                  <h3>
+                    Setup {sets.active + 1} · {playstyleOf(pick, bar)}
+                  </h3>
                   <button className="rb-btn is-small" onClick={() => openSetup('play')}>
-                    Change abilities & talents
+                    Change playstyle & talents
                   </button>
                 </div>
                 {/* (each one opens to be read: what it does, when to press it, what it combines with) */}
@@ -889,7 +904,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
 
         {page === 'setup' && (
           <div className="rb-rp-setuppage">
-            <SetupEditor key={pick} cls={pick} sets={sets} onSets={putSets} guide={tutStep?.page === 'setup' ? { mode: tutStep.mode, tab: tutStep.tab } : undefined} />
+            <SetupEditor key={pick} cls={pick} sets={sets} onSets={putSets} />
           </div>
         )}
 
@@ -897,7 +912,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
 
         {look && <Seeking look={look} format={format} cls={pick} onCancel={() => endSeek()} />}
         {help && <RingHelp onClose={() => setHelp(false)} touch={engine.touchMode} engine={engine} onTutorial={beginTutorial} />}
-        {reading && <AbilityCard key={reading.id} ab={reading} cls={pick} bar={bar} onClose={() => setReading(null)} />}
+        {reading && <AbilityCard key={reading.id} ab={reading} cls={pick} bar={bar} talents={talents} onClose={() => setReading(null)} />}
         {tutStep && tut !== null && (
           <Coach
             n={tut + 1}
@@ -1031,7 +1046,7 @@ function FriendsPage({ view, state, err, ready, codeIn, setCodeIn, onOpen, onJoi
           <ClassRow pick={pick} onPick={onPick} />
           <BarRow bar={bar} cls={pick} ult={myPick.ult} onPick={onRead} />
           <button className="rb-btn is-small" onClick={onSetup}>
-            Change abilities & talents
+            Change playstyle & talents
           </button>
         </div>
       </section>

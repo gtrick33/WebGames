@@ -1,8 +1,8 @@
 /**
  * The Ring's supers, one for each way a class fights (the owner, 2026-11-14: "let's also add unique ultimates for each
  * loadout, currently every spec has the same ultimate, make every ultimate fun to use, very impactful and cool"). A
- * setup picks either of its class's two; each ready-made one comes with its own; a bar that never picked gets the one
- * of the ready-made setup it is closest to.
+ * playstyle's super is its own, as its four abilities are (2026-11-16: "1 base spell 1 ult 3 other spells", "fixed
+ * spells per playstyle"); until then a setup could pick either of its class's two.
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, barCombos, PRESETS, SUPERS, SUPERS2, ultFor, ultOf, ultsOf } from '../src/games/sigilfall/arena/abilities';
@@ -16,7 +16,8 @@ const STEP = 1 / 30;
 
 function fight(me: { cls: ClassId; ult?: string; bar?: string[] }, foes: { cls: ClassId; at: [number, number] }[], friends: { cls: ClassId; at: [number, number] }[] = []): Match {
   const list: FighterSetup[] = [
-    { team: 0, cls: me.cls, name: 'me', bar: me.bar ?? PRESETS[me.cls][0]!.bar, ult: me.ult },
+    // (the playstyle whose super is asked for, when no bar is)
+    { team: 0, cls: me.cls, name: 'me', bar: me.bar ?? (PRESETS[me.cls].find((p) => p.ult === me.ult) ?? PRESETS[me.cls][0]!).bar, ult: me.ult },
     ...friends.map((f, i) => ({ team: 0 as const, cls: f.cls, name: `f${i}`, bar: PRESETS[f.cls][0]!.bar })),
     ...foes.map((f, i) => ({ team: 1 as const, cls: f.cls, name: `e${i}`, bar: PRESETS[f.cls][0]!.bar })),
   ];
@@ -55,20 +56,39 @@ describe('The Ring: every way to fight has its own super', () => {
     expect(ultOf('mage', 'w-super')).toBe(SUPERS.mage);
   });
 
-  it('a setup keeps its pick, a room passes it on, and the match gives that one and only that one', () => {
+  it('a super is its playstyle’s: a setup, a room’s pick and the match all give that one and only that one', () => {
+    // (a setup kept from when either could be picked: the Reaper's bar with the Hound's super gets the Reaper's back)
     const kept = setsOf({ standings: {}, sets: { warrior: { active: 0, list: [{ bar: PRESETS.warrior[0]!.bar, talents: [], ult: 'w-super2' }] } } }, 'warrior');
-    expect(kept.list[0]!.ult).toBe('w-super2');
-    // (a fresh setup starts from a ready-made one, with its super)
+    expect(kept.list[0]!.ult).toBe('w-super');
     expect(setsOf({ standings: {}, sets: {} }, 'warrior').list[1]!.ult).toBe(PRESETS.warrior[1]!.ult);
+    // (a room still passes on whatever it was sent, checked for shape: the match reads the bar)
     expect(cleanPick({ team: 0, cls: 'warrior', bar: ['w-hew'], oath: 'iron', talents: [], ult: 'w-super2' })?.ult).toBe('w-super2');
-    const m = fight({ cls: 'warrior', ult: 'w-super2' }, [{ cls: 'mage', at: [300, 125] }]);
-    expect(m.extras(m.fighters[0]!)[0]!.id).toBe('w-super2');
-    expect(m.press(0, 'w-super')).toBe('You don’t have that');
-    // another class's super is no pick at all: they get their own first
-    const n = fight({ cls: 'warrior', ult: 'm-super' }, [{ cls: 'mage', at: [300, 125] }]);
+    const m = fight({ cls: 'warrior', bar: PRESETS.warrior[0]!.bar, ult: 'w-super2' }, [{ cls: 'mage', at: [300, 125] }]);
+    expect(m.extras(m.fighters[0]!)[0]!.id).toBe('w-super');
+    expect(m.press(0, 'w-super2')).toBe('You don’t have that');
+    const h = fight({ cls: 'warrior', ult: 'w-super2' }, [{ cls: 'mage', at: [300, 125] }]);
+    expect(h.fighters[0]!.bar).toEqual(PRESETS.warrior[1]!.bar);
+    expect(h.extras(h.fighters[0]!)[0]!.id).toBe('w-super2');
+    // another class's super is no pick at all
+    const n = fight({ cls: 'warrior', bar: PRESETS.warrior[0]!.bar, ult: 'm-super' }, [{ cls: 'mage', at: [300, 125] }]);
     expect(n.extras(n.fighters[0]!)[0]!.id).toBe('w-super');
-    // and the combos a bar shows follow the super it carries
-    expect(barCombos('warrior', PRESETS.warrior[0]!.bar, 'w-super2').every((c) => c.from.id !== 'w-super' && c.to.id !== 'w-super')).toBe(true);
+    // and the combos a bar shows are made with its own super
+    for (const cls of CLASS_IDS) for (const p of PRESETS[cls]) expect(barCombos(cls, p.bar).every((c) => !c.from.super || c.from.id === p.ult), p.name).toBe(true);
+    for (const cls of CLASS_IDS) for (const p of PRESETS[cls]) expect(barCombos(cls, p.bar).every((c) => !c.to.super || c.to.id === p.ult), p.name).toBe(true);
+  });
+
+  it('a super works with its playstyle’s combo: it lands harder on a target set up, sets one up, or spends what was built', () => {
+    // (the owner, 2026-11-16: "combos to be done with your basic spell or even ur ult")
+    const sets = (id: string): boolean => Object.values(ABILITIES).some((a) => !a.super && a.combo?.ab?.includes(id));
+    let n = 0;
+    for (const cls of CLASS_IDS) {
+      for (const p of PRESETS[cls]) {
+        const ult = ABILITIES[p.ult]!;
+        const holds = ult.effects.some((e) => e.k === 'cc' && p.bar.some((id) => ABILITIES[id]!.combo?.cc?.includes(e.cc)));
+        if (ult.combo || ult.spend || sets(ult.id) || holds) n++;
+      }
+    }
+    expect(n).toBeGreaterThanOrEqual(13);
   });
 });
 
@@ -85,13 +105,13 @@ describe('The Ring: what each new super does', () => {
     expect(Math.hypot(w.x - mage.x, w.y - mage.y)).toBeLessThan(25);
   });
 
-  it('Winter’s Grasp: everyone near frozen, a barrier of ice for the mage, and Rime Spear shatters each of them', () => {
+  it('Winter’s Grasp: everyone near frozen, a barrier of ice for the mage, and Frostfang shatters each of them', () => {
     const m = fight({ cls: 'mage', ult: 'm-super2' }, [{ cls: 'warrior', at: [240, 125] }, { cls: 'paladin', at: [230, 150] }]);
     const [mage, a, b] = m.fighters as [Fighter, Fighter, Fighter];
     expect(m.press(0, 'm-super2')).toBeNull();
     for (const t of [a, b]) expect(t.auras.some((x) => x.cc === 'root')).toBe(true);
     expect(mage.auras.some((x) => x.kind === 'absorb')).toBe(true);
-    expect(m.comboReady(mage, ABILITIES['m-spear']!, a)?.name).toBe('Shatter');
+    expect(m.comboReady(mage, ABILITIES['m-fang']!, a)?.name).toBe('Shatter');
     // (it never wears off with use)
     expect(a.dr.root).toBeUndefined();
   });
@@ -135,18 +155,43 @@ describe('The Ring: what each new super does', () => {
     expect(m.fighters.filter((f) => f.pet && !f.dead)).toHaveLength(3);
   });
 
-  it('Night’s Ruin: out of the dark at their back, a great blow, and back in the shroud', () => {
-    const m = fight({ cls: 'gloamknight', ult: 'g-super2', bar: PRESETS.gloamknight[1]!.bar }, [{ cls: 'warrior', at: [300, 125] }]);
-    const [g, w] = m.fighters as [Fighter, Fighter];
-    Object.assign(w, { dirX: 1, dirY: 0 });
-    g.auras = [];
-    g.fought = m.clock;
-    const hp = w.hp;
-    expect(m.press(0, 'g-super2')).toBeNull();
-    expect(w.hp).toBeLessThan(hp - 100);
+  it('Night’s Ruin: up into the dark where nothing reaches them, then down on them from above, and back in the shroud', () => {
+    // (the owner, 2026-11-16: "become untargetable for 1s then land from aboce on the enemy and dmg them highly based on
+    // the combo points")
+    const ruin = (nicks: number): { m: Match; g: Fighter; w: Fighter; dealt: number } => {
+      const m = fight({ cls: 'gloamknight', ult: 'g-super2' }, [{ cls: 'warrior', at: [300, 125] }]);
+      const [g, w] = m.fighters as [Fighter, Fighter];
+      Object.assign(w, { dirX: 1, dirY: 0, target: g.id });
+      g.auras = [];
+      g.fought = m.clock;
+      g.pts = nicks;
+      const hp = w.hp;
+      expect(m.press(0, 'g-super2')).toBeNull();
+      // up: nothing has landed, nobody can aim at them or hurt them, and they can do nothing
+      expect(w.hp).toBe(hp);
+      expect(m.aloft(g)).toBe(true);
+      expect(m.unseen(g, w)).toBe(true);
+      expect(w.target).toBeNull();
+      expect(m.blocked(w, ABILITIES['w-hew']!, g)).toBe('Out of sight');
+      expect(m.blocked(g, ABILITIES['g-knife']!, w)).toBe('You can’t do that now');
+      expect(g.pts).toBe(0);
+      wait(m, 0.5);
+      expect(w.hp).toBe(hp);
+      // (they walk off meanwhile: it comes down on them wherever they have gone)
+      w.x += 30;
+      wait(m, 0.6);
+      return { m, g, w, dealt: hp - w.hp };
+    };
+    const { m, g, w, dealt } = ruin(0);
+    expect(dealt).toBeGreaterThan(90);
+    expect(m.aloft(g)).toBe(false);
     expect(m.held(w)?.cc).toBe('stun');
+    expect(Math.hypot(g.x - w.x, g.y - w.y)).toBeLessThan(20);
     expect(m.behind(g, w)).toBe(true);
     expect(m.hidden(g)).toBe(true);
     expect(m.unseen(g, w)).toBe(true);
+    // a quarter more for every Nick held
+    expect(ABILITIES['g-super2']!.spend!.per).toBe(0.25);
+    expect(ruin(4).dealt / dealt).toBeCloseTo(2, 1);
   });
 });

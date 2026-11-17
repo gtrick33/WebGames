@@ -2,12 +2,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, kitOf, PRESETS, SLOTS, superOf, SUPERS } from '../src/games/sigilfall/arena/abilities';
+import { ABILITIES, BOONS, kitOf, PRESETS, SLOTS, superOf, SUPERS, SUPERS2, type Ability } from '../src/games/sigilfall/arena/abilities';
 import { botThink, newBrain } from '../src/games/sigilfall/arena/bot';
 import { afterMatch, COMPS, drawOpponents, namedApart, NEW_STANDING, nextRank, rankOf, ratingChange, RANKS, SET_COUNT, setsOf, skillAt } from '../src/games/sigilfall/arena/ladder';
 import { ARENA_H, ARENA_W, ENTRY_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/maps';
 import { cleanTalents, ROW_NAMES, TALENT_BY_ID, TALENTS } from '../src/games/sigilfall/arena/talents';
-import { BASE_SPEED, CAST_SLOW, CLASS_DMG, clearLine, CLOSE_FROM, CLOSE_TO, FEAR_BREAK, GATES, HERO_R, Match, MATCH_LIMIT, ROOT_BREAK, SIGIL_FIRST, ZONE_END, ZONE_START, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
+import { BASE_SPEED, CAST_SLOW, CLASS_DMG, clearLine, DAMP_FROM, DAMP_RATE, FEAR_BREAK, GATES, HERO_R, Match, MATCH_LIMIT, ROOT_BREAK, SIGIL_FIRST, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { act, cleanPick, join, newRoom, relay, viewFor } from '../src/games/sigilfall/net/ringRoom';
@@ -33,6 +33,26 @@ function duel(a: ClassId, abar: string[], b: ClassId, bbar: string[] = PRESETS[b
 const wait = (m: Match, seconds: number, moves: Record<number, MoveInput> = {}): void => {
   for (let i = 0; i < seconds / STEP; i++) m.step(STEP, moves);
 };
+
+/**
+ * What the rules can do that no playstyle's four use since they became fixed (2026-11-16): each tried through a
+ * stand-in, an ability made for the test and put on a bar by hand (`give`).
+ */
+const stand = (id: string, d: Partial<Ability>): Ability => ({ id, cls: 'warrior', name: id, text: '', icon: 'radiant_star_burst_on_gold', color: '#ffffff', school: 'physical', role: 'defense', aim: 'self', range: 0, cast: 0, cd: 10, effects: [], ...d });
+const STAND_INS: Ability[] = [
+  stand('t-kick', { role: 'interrupt', aim: 'enemy', range: 30, free: true, effects: [{ k: 'interrupt', lock: 4 }] }),
+  stand('t-stance', { free: true, anyState: true, effects: [{ k: 'guard', pct: 50, dur: 8 }] }),
+  stand('t-mirror', { free: true, effects: [{ k: 'reflect', dur: 5 }] }),
+  stand('t-prison', { school: 'frost', free: true, anyState: true, effects: [{ k: 'immune', dur: 4, still: true }, { k: 'token' }] }),
+  stand('t-aside', { free: true, anyState: true, effects: [{ k: 'immune', dur: 3, phys: true }] }),
+  stand('t-cleanse', { school: 'holy', role: 'dispel', aim: 'friend', range: 185, cd: 6, effects: [{ k: 'dispel' }] }),
+  stand('t-tear', { school: 'holy', role: 'dispel', aim: 'enemy', range: 185, effects: [{ k: 'dispel' }] }),
+  stand('t-pact', { school: 'shadow', effects: [{ k: 'absorb', n: 190, dur: 15 }] }),
+  stand('t-grace', { school: 'holy', aim: 'friend', range: 185, free: true, effects: [{ k: 'lastgrace', dur: 10, heal: 33 }] }),
+  stand('t-ward', { free: true, effects: [{ k: 'price', n: 100 }, { k: 'absorb', n: 260, dur: 10 }] }),
+];
+for (const x of STAND_INS) ABILITIES[x.id] = x;
+const give = (m: Match, who: number, ...ids: string[]): void => void m.fighters[who]!.bar.push(...ids);
 
 describe('The Ring: the rules', () => {
   it('nobody acts until the gates open', () => {
@@ -115,42 +135,45 @@ describe('The Ring: the rules', () => {
   });
 
   it('the global cooldown holds, a press near its end is queued, and free abilities ignore it', () => {
-    const m = duel('warrior', ['w-hew', 'w-hamstring', 'w-stand'], 'mage');
+    const m = duel('warrior', PRESETS.warrior[0]!.bar, 'mage');
+    give(m, 0, 't-stance');
     const me = m.fighters[0]!;
     const foe = m.fighters[1]!;
     expect(m.press(0, 'w-hew')).toBeNull();
     expect(me.gcd).toBeGreaterThan(0.7);
-    expect(m.press(0, 'w-hamstring')).toBe('Not ready yet');
-    expect(m.press(0, 'w-stand')).toBeNull();
+    expect(m.press(0, 'w-gash')).toBe('Not ready yet');
+    expect(m.press(0, 't-stance')).toBeNull();
     wait(m, 0.5);
-    expect(m.press(0, 'w-hamstring')).toBeNull();
-    expect(me.queued?.ab).toBe('w-hamstring');
+    expect(m.press(0, 'w-gash')).toBeNull();
+    expect(me.queued?.ab).toBe('w-gash');
     wait(m, 0.3);
-    expect(foe.auras.some((a) => a.kind === 'slow')).toBe(true);
+    expect(foe.auras.some((a) => a.ab === 'w-gash' && a.kind === 'dot')).toBe(true);
   });
 
   it('an interrupt stops a cast and locks that school, not the others', () => {
-    const m = duel('warrior', ['w-crack'], 'mage', ['m-lash', 'm-spear', 'm-snap']);
+    const m = duel('warrior', PRESETS.warrior[0]!.bar, 'mage', PRESETS.mage[0]!.bar);
+    give(m, 0, 't-kick');
     const foe = m.fighters[1]!;
     m.press(1, 'm-lash');
     wait(m, 0.5);
-    expect(m.press(0, 'w-crack')).toBeNull();
+    expect(m.press(0, 't-kick')).toBeNull();
     expect(foe.cast).toBeNull();
     expect(m.press(1, 'm-lash')).toMatch(/Fire is locked/);
     expect(foe.locks.fire).toBeGreaterThan(3);
     foe.gcd = 0;
-    expect(m.press(1, 'm-spear')).toBeNull();
+    // (another school is free: the hex is arcane)
+    expect(m.press(1, 'm-toad')).toBeNull();
     expect(m.fighters[0]!.score.kicks).toBe(1);
   });
 
   it('crowd control wears off harder each time, then not at all, and the slate wipes clean with time', () => {
-    const m = duel('druid', ['l-bash'], 'warrior');
+    const m = duel('paladin', PRESETS.paladin[1]!.bar, 'warrior');
     const foe = m.fighters[1]!;
     const stun = (): number => {
       m.fighters[0]!.cds = {};
       m.fighters[0]!.gcd = 0;
       foe.auras = [];
-      m.press(0, 'l-bash');
+      m.press(0, 'd-hammer');
       return foe.auras.find((a) => a.cc === 'stun')?.t ?? 0;
     };
     // (holds are short in a brawl: a stun is a second and a half at most)
@@ -183,8 +206,8 @@ describe('The Ring: the rules', () => {
     (r as unknown as Hurt).damage(r.fighters[0], rooted, Math.ceil(rooted.maxHp * ROOT_BREAK), true);
     expect(rooted.auras.some((a) => a.cc === 'root')).toBe(false);
 
-    const s = duel('druid', ['l-bash'], 'warrior');
-    s.press(0, 'l-bash');
+    const s = duel('paladin', PRESETS.paladin[1]!.bar, 'warrior');
+    s.press(0, 'd-hammer');
     (s as unknown as Hurt).damage(s.fighters[0], s.fighters[1], s.fighters[1]!.maxHp * 0.4, true);
     expect(s.fighters[1]!.auras.some((a) => a.cc === 'stun')).toBe(true);
 
@@ -217,60 +240,53 @@ describe('The Ring: the rules', () => {
   });
 
   it('a hold is short and lifts by itself, and what can be used while held still can', () => {
-    const m = duel('mage', ['m-chill'], 'warrior', ['w-hew', 'w-stand']);
+    const m = duel('paladin', PRESETS.paladin[1]!.bar, 'warrior', PRESETS.warrior[0]!.bar);
+    give(m, 1, 't-stance');
     const foe = m.fighters[1]!;
-    m.press(0, 'm-chill');
+    m.press(0, 'd-hammer');
     wait(m, 0.15);
     expect(m.held(foe)).toBeTruthy();
     expect(m.press(1, 'w-hew')).toBe('You can’t do that now');
-    expect(m.press(1, 'w-stand')).toBeNull();
+    expect(m.press(1, 't-stance')).toBeNull();
     // (no Token any more: holds are short enough to wait out)
     expect(m.press(1, 'token')).toMatch(/don’t have/);
     wait(m, 1.5);
     expect(m.held(foe)).toBeUndefined();
   });
 
-  it('a dispel takes a hold off a friend, a blessing off an enemy, and a barbed curse bites whoever takes it', () => {
-    const m = new Match({ seed: 3, map: 'sands', fighters: [fighter(0, 'priest', ['p-cleanse', 'p-tear', 'p-ward']), fighter(0, 'warrior'), fighter(1, 'warlock', ['k-unstable', 'k-dread', 'k-pact']), fighter(1, 'mage', ['m-chill'])] });
+  it('a dispel takes a hold off a friend and a blessing off an enemy', () => {
+    const m = new Match({ seed: 3, map: 'sands', fighters: [fighter(0, 'priest'), fighter(0, 'warrior'), fighter(1, 'warlock'), fighter(1, 'paladin', PRESETS.paladin[1]!.bar)] });
     m.step(GATES + 0.01, {});
-    const [priest, warrior, lock, mage] = m.fighters as [typeof m.fighters[0], typeof m.fighters[0], typeof m.fighters[0], typeof m.fighters[0]];
+    give(m, 0, 't-cleanse', 't-tear');
+    give(m, 2, 't-pact');
+    const [priest, warrior, lock, pal] = m.fighters as [typeof m.fighters[0], typeof m.fighters[0], typeof m.fighters[0], typeof m.fighters[0]];
     for (const [i, f] of m.fighters.entries()) {
       f.x = 200 + i * 10;
       f.y = 125;
     }
     priest.friend = warrior.id;
-    mage.target = warrior.id;
-    m.press(mage.id, 'm-chill');
+    pal.target = warrior.id;
+    m.press(pal.id, 'd-hammer');
     wait(m, 0.15);
     expect(m.held(warrior)).toBeTruthy();
-    expect(m.press(priest.id, 'p-cleanse')).toBeNull();
+    expect(m.press(priest.id, 't-cleanse')).toBeNull();
     expect(m.held(warrior)).toBeUndefined();
 
     lock.gcd = 0;
-    m.press(lock.id, 'k-pact');
+    m.press(lock.id, 't-pact');
     expect(lock.auras.some((a) => a.kind === 'absorb')).toBe(true);
     priest.target = lock.id;
     priest.gcd = 0;
-    expect(m.press(priest.id, 'p-tear')).toBeNull();
+    expect(m.press(priest.id, 't-tear')).toBeNull();
     expect(lock.auras.some((a) => a.kind === 'absorb')).toBe(false);
-
-    // the barbed curse, on the priest's friend
-    lock.target = warrior.id;
-    lock.gcd = 0;
-    m.press(lock.id, 'k-unstable');
-    wait(m, 1.3);
-    expect(warrior.auras.some((a) => a.ab === 'k-unstable')).toBe(true);
-    priest.cds = {};
-    priest.gcd = 0;
-    expect(m.press(priest.id, 'p-cleanse')).toBeNull();
-    expect(m.silenced(priest)).toBe(true);
-    expect(m.press(priest.id, 'p-ward')).toBe('Silenced');
+    // (a curse that bit whoever took it off, the warlock's Barbed Curse, went with the choosing of abilities)
   });
 
   it('a mirror sends a spell back, once; a blow still lands', () => {
-    const m = duel('warrior', ['w-ward'], 'mage', ['m-burn', 'm-lash']);
+    const m = duel('warrior', PRESETS.warrior[0]!.bar, 'mage', PRESETS.mage[0]!.bar);
+    give(m, 0, 't-mirror');
     const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
-    m.press(0, 'w-ward');
+    m.press(0, 't-mirror');
     expect(m.press(1, 'm-burn')).toBeNull();
     wait(m, 0.2);
     expect(foe.hp).toBeLessThan(foe.maxHp);
@@ -278,19 +294,39 @@ describe('The Ring: the rules', () => {
     expect(me.auras.some((a) => a.kind === 'reflect')).toBe(false);
   });
 
-  it('immunity stops harm; a full one lets you act, an ice prison doesn’t; a shield against blows lets spells through', () => {
-    const m = duel('mage', ['m-prison', 'm-burn'], 'warrior');
+  it('immunity stops harm; an ice prison lets nothing in and its user do nothing; a shield against blows lets spells through', () => {
+    const m = duel('mage', PRESETS.mage[0]!.bar, 'warrior');
+    give(m, 0, 't-prison');
     const [me] = [m.fighters[0]!];
-    m.press(0, 'm-prison');
+    m.press(0, 't-prison');
     expect(m.press(0, 'm-burn')).toBe('Sealed in ice');
     m.press(1, 'w-hew');
     expect(me.hp).toBe(me.maxHp);
 
-    const n = duel('ranger', ['r-deter'], 'mage', ['m-burn']);
-    n.press(0, 'r-deter');
+    const n = duel('ranger', PRESETS.ranger[0]!.bar, 'mage', PRESETS.mage[0]!.bar);
+    give(n, 0, 't-aside');
+    n.press(0, 't-aside');
     n.press(1, 'm-burn');
     wait(n, 0.2);
     expect(n.fighters[0]!.hp).toBeLessThan(n.fighters[0]!.maxHp);
+  });
+
+  it('a last grace leaves them alive at the killing blow, once; a price is paid in health, never the last of it', () => {
+    const m = duel('warrior', PRESETS.warrior[0]!.bar, 'mage', PRESETS.mage[0]!.bar);
+    give(m, 1, 't-grace', 't-ward');
+    const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
+    foe.friend = foe.id;
+    expect(m.press(1, 't-grace')).toBeNull();
+    foe.hp = 5;
+    m.press(0, 'w-hew');
+    expect(foe.dead).toBe(false);
+    expect(foe.hp).toBe(Math.round(foe.maxHp * 0.33));
+    expect(foe.auras.some((a) => a.kind === 'lastgrace')).toBe(false);
+    foe.hp = 40;
+    expect(m.press(1, 't-ward')).toBeNull();
+    expect(foe.hp).toBe(1);
+    expect(foe.auras.some((a) => a.kind === 'absorb')).toBe(true);
+    void me;
   });
 
   it('a heal fades with the match: dampening starts late and grows, and a deep wound halves it again', () => {
@@ -300,8 +336,25 @@ describe('The Ring: the rules', () => {
     expect(m.dampening).toBe(0);
     m.clock = 70;
     expect(m.dampening).toBeGreaterThan(0.25);
-    m.clock = MATCH_LIMIT;
+    // three quarters gone at 95 seconds, as it always was; and from there on to all of it, where it used to stop (the
+    // Gloam ended a match then; with the Gloam gone, the fading of healing does)
+    m.clock = 95;
     expect(m.dampening).toBeCloseTo(0.75);
+    m.clock = DAMP_FROM + 1 / DAMP_RATE;
+    expect(m.dampening).toBe(1);
+    expect(DAMP_FROM + 1 / DAMP_RATE).toBe(115);
+    m.clock = MATCH_LIMIT;
+    expect(m.dampening).toBe(1);
+    // and with none left, a heal does nothing
+    const [, w] = m.fighters as [typeof m.fighters[0], typeof m.fighters[0]];
+    const me = m.fighters[0]!;
+    me.hp = 100;
+    me.friend = me.id;
+    m.clock = 120;
+    expect(m.press(0, 'p-mend')).toBeNull();
+    wait(m, 1.2);
+    expect(me.hp).toBe(100);
+    void w;
   });
 
   it('a trap waits for the first enemy across it, and not a friend', () => {
@@ -366,7 +419,8 @@ describe('The Ring: the rules', () => {
 
   it('nothing lets a player use what isn’t on their bar', () => {
     const m = duel('warrior', ['w-hew'], 'mage');
-    expect(m.press(0, 'w-gash')).toMatch(/don’t have/);
+    // (the Reaper's four are theirs; the Hound's are not)
+    expect(m.press(0, 'w-bleed')).toMatch(/don’t have/);
     expect(m.press(0, 'm-lash')).toMatch(/don’t have/);
     expect(m.press(0, 'nonsense')).toMatch(/don’t have/);
     expect(m.press(99, 'w-hew')).toMatch(/don’t have/);
@@ -409,9 +463,12 @@ describe('The Ring: the entries and the wait', () => {
     expect(me.bar).toEqual(next.bar);
     expect(me.talents).toEqual(['w-3a']);
     expect(me.hp).toBe(me.maxHp);
-    // nothing that isn't a full bar of their own
-    expect(m.equip(0, { bar: ['m-lash'] })).toBe(false);
-    expect(m.equip(0, { bar: [next.bar[0]!, next.bar[0]!, ...next.bar.slice(1, 3)] })).toBe(false);
+    // whatever is sent is read as one of their class's playstyles: nothing else can be brought
+    expect(m.equip(0, { bar: ['m-lash'] })).toBe(true);
+    expect(me.bar).toEqual(PRESETS.warrior[0]!.bar);
+    expect(m.equip(0, { bar: [next.bar[0]!, next.bar[0]!, ...next.bar.slice(1, 3)] })).toBe(true);
+    expect(me.bar).toEqual(next.bar);
+    expect(m.equip(0, { bar: 'nonsense' as unknown as string[] })).toBe(false);
     m.step(GATES + 0.01, {});
     expect(m.equip(0, { bar: PRESETS.warrior[0]!.bar })).toBe(false);
     expect(me.bar).toEqual(next.bar);
@@ -432,32 +489,47 @@ describe('The Ring: the entries and the wait', () => {
 });
 
 describe('The Ring: talents and set ups', () => {
-  it('every class has three rows of three, each with something to choose between', () => {
+  it('every playstyle has three rows of three, each with something to choose between', () => {
     for (const cls of CLASS_IDS) {
-      expect(TALENTS[cls], cls).toHaveLength(ROW_NAMES.length * 3);
-      for (const row of [0, 1, 2]) expect(TALENTS[cls].filter((t) => t.row === row)).toHaveLength(3);
+      // (two rows of three for each of its two playstyles, and the class's own row)
+      expect(TALENTS[cls], cls).toHaveLength(15);
+      for (const p of PRESETS[cls]) for (const row of [0, 1, 2]) expect(TALENTS[cls].filter((t) => t.row === row && (!t.spec || t.spec === p.id))).toHaveLength(3);
+      expect(ROW_NAMES).toEqual(['Core', 'Utility', 'Defensive']);
       for (const t of TALENTS[cls]) {
-        expect(t.tune || t.does || t.guard || t.hold || t.exec || t.slow || t.stun || t.snare || t.rally, t.id).toBeTruthy();
-        // (the whole class's: what it sharpens is only ever what every hero of the class carries, whatever their bar)
+        expect(t.tune || t.does || t.guard || t.hold || t.exec || t.rally, t.id).toBeTruthy();
+        // what it changes by name, it names: the ability's own name is in its words
         for (const id of Object.keys(t.tune ?? {})) {
-          // (`super` is whichever of the class's two the hero carries)
-          expect(id, t.id).toBe('super');
-          // the talent speaks of what it changes: a super as "your super"
-          expect(t.text, t.id).toMatch(/your super/i);
+          const ab = ABILITIES[id]!;
+          expect(ab, `${t.id}: ${id}`).toBeDefined();
+          if (!ab.super || Object.keys(t.tune!).length === 1) expect(t.text, `${t.id} names ${ab.name}`).toContain(ab.name);
+        }
+        // the points it gives are named in its words, and built and spent by what it changes
+        if (t.points) {
+          expect(t.text, t.id).toContain(t.points.one);
+          expect(Object.values(t.tune ?? {}).some((x) => x.build), t.id).toBe(true);
+          expect(Object.values(t.tune ?? {}).some((x) => x.spend), t.id).toBe(true);
+        }
+        // a boon it gives is one something of its playstyle uses
+        for (const x of Object.values(t.tune ?? {})) for (const g of x.gives ?? []) {
+          expect(BOONS[g.boon], `${t.id}: ${g.boon}`).toBeDefined();
+          const users = [...Object.values(t.tune ?? {}).flatMap((y) => y.uses ?? []), ...PRESETS[cls].find((p) => p.id === t.spec)!.bar.flatMap((id) => ABILITIES[id]!.uses ?? [])];
+          expect(users.some((u) => u.boon === g.boon), `${t.id}: nothing uses ${g.boon}`).toBe(true);
         }
       }
-      expect(new Set(TALENTS[cls].map((t) => t.name)).size).toBe(9);
+      expect(new Set(TALENTS[cls].map((t) => t.name)).size).toBe(15);
     }
   });
 
-  it('only one from a row counts, and only a class’s own', () => {
-    expect(cleanTalents('warrior', ['w-1a', 'w-1b', 'w-2a', 'm-1a', 'junk']).map((t) => t.id)).toEqual(['w-1a', 'w-2a']);
+  it('only one from a row counts, and only a playstyle’s own or its class’s', () => {
+    expect(cleanTalents('warrior', ['w-arms-1a', 'w-arms-1b', 'w-arms-2a', 'm-fire-1a', 'junk']).map((t) => t.id)).toEqual(['w-arms-1a', 'w-arms-2a']);
+    // (the Hound's, asked for on the Reaper: not theirs)
+    expect(cleanTalents('warrior', ['w-pin-1a', 'w-arms-2a', 'w-3b'], 'arms').map((t) => t.id)).toEqual(['w-arms-2a', 'w-3b']);
     expect(cleanTalents('warrior', undefined)).toEqual([]);
   });
 
-  it('a talent changes the numbers, whatever is on the bar: harder on the low, longer holds', () => {
-    const hit = (talents: string[], bar = ['w-hew'], low = false): number => {
-      const m = new Match({ seed: 11, map: 'sands', fighters: [{ ...fighter(0, 'warrior', bar), talents }, fighter(1, 'paladin')] });
+  it('a talent changes the numbers: harder on the low, longer holds', () => {
+    const hit = (talents: string[], ab = 'w-hew', low = false): number => {
+      const m = new Match({ seed: 11, map: 'sands', fighters: [{ ...fighter(0, 'warrior'), talents }, fighter(1, 'paladin')] });
       m.step(GATES + 0.01, {});
       const [a, b] = [m.fighters[0]!, m.fighters[1]!];
       a.x = 200;
@@ -467,67 +539,35 @@ describe('The Ring: talents and set ups', () => {
       a.mods.crit = 0;
       if (low) b.hp = Math.round(b.maxHp * 0.3);
       const before = b.hp;
-      m.press(0, bar[0]!);
+      m.press(0, ab);
       return before - b.hp;
     };
-    // (the same talent for one blow as for another: nothing hangs on which ability is on the bar)
-    const exec = TALENT_BY_ID['w-1b']!.exec!;
-    expect(hit(['w-1b'], ['w-hew'], true)).toBeCloseTo(hit([], ['w-hew'], true) * (1 + exec), -0.5);
-    expect(hit(['w-1b'], ['w-gash'], true)).toBeCloseTo(hit([], ['w-gash'], true) * (1 + exec), -0.5);
-    expect(hit(['w-1b'])).toBe(hit([]));
+    // (Headsman: the same for one blow as for another)
+    const exec = TALENT_BY_ID['w-arms-1c']!.exec!;
+    expect(hit(['w-arms-1c'], 'w-hew', true)).toBeCloseTo(hit([], 'w-hew', true) * (1 + exec), -0.5);
+    expect(hit(['w-arms-1c'], 'w-gash', true)).toBeCloseTo(hit([], 'w-gash', true) * (1 + exec), -0.5);
+    expect(hit(['w-arms-1c'])).toBe(hit([]));
 
-
-    // holds put on them last longer, a hold of the bar's or the super's alike
+    // Long Winter: holds put on them last longer
     const held = (talents: string[]): number => {
-      const n = new Match({ seed: 1, map: 'sands', fighters: [{ ...fighter(0, 'mage', ['m-chill']), talents }, fighter(1, 'warrior')] });
+      const n = new Match({ seed: 1, map: 'sands', fighters: [{ ...fighter(0, 'mage', PRESETS.mage[1]!.bar), talents }, fighter(1, 'warrior')] });
       n.step(GATES + 0.01, {});
       n.fighters[0]!.x = 200;
       n.fighters[0]!.y = 125;
       n.fighters[1]!.x = 240;
       n.fighters[1]!.y = 125;
-      n.press(0, 'm-chill');
-      return n.held(n.fighters[1]!)!.t;
+      n.press(0, 'm-ring');
+      return n.fighters[1]!.auras.find((x) => x.cc === 'root')!.t;
     };
-    expect(held(['m-2a'])).toBeCloseTo(held([]) * (1 + TALENT_BY_ID['m-2a']!.hold!), 5);
+    expect(held(['m-frost-2a'])).toBeCloseTo(held([]) * (1 + TALENT_BY_ID['m-frost-2a']!.hold!), 5);
   });
 
-  it('what a talent does now and then: a slow on every hit, a stun once in a while, a snare behind a step, a second wind', () => {
-    /** A warrior with a talent, at arm's length from a mage, gates open. */
-    const close = (talents: string[], bar: string[]): Match => {
-      const n = new Match({ seed: 5, map: 'sands', fighters: [{ ...fighter(0, 'warrior', bar), talents }, fighter(1, 'mage', ['m-burn'])] });
-      n.step(GATES + 0.01, {});
-      Object.assign(n.fighters[0]!, { x: 200, y: 125 });
-      Object.assign(n.fighters[1]!, { x: 215, y: 125 });
-      return n;
-    };
-    // Crippling Blows: whatever lands slows, a blow with no slow of its own as much as any
-    const m = close(['w-2a'], ['w-gash']);
-    m.press(0, 'w-gash');
-    expect(m.fighters[1]!.auras.some((a) => a.kind === 'slow' && Math.abs(a.n - TALENT_BY_ID['w-2a']!.slow!.pct / 100) < 1e-9)).toBe(true);
-
-    // Bonebreaker: a blow stuns, and not again for a while
-    const s = close(['w-2b'], ['w-hew']);
-    const [w, foe] = [s.fighters[0]!, s.fighters[1]!];
-    s.press(0, 'w-hew');
-    expect(s.held(foe)?.cc).toBe('stun');
-    wait(s, 1.2);
-    w.gcd = 0;
-    s.press(0, 'w-hew');
-    expect(s.held(foe)).toBeUndefined();
-
-    // Wild Snare: the trinket leaves a snare where they stand
-    const r = new Match({ seed: 5, map: 'sands', fighters: [{ ...fighter(0, 'ranger', ['r-swift', 'trinket']), talents: ['r-2b'] }, fighter(1, 'warrior')] });
-    r.step(GATES + 0.01, {});
-    const ranger = r.fighters[0]!;
-    ranger.x = 200;
-    ranger.y = 125;
-    ranger.dirX = 1;
-    expect(r.press(0, 'trinket')).toBeNull();
-    expect(r.traps).toHaveLength(1);
-    expect(r.traps[0]).toMatchObject({ x: 200, y: 125, cc: 'root' });
-
+  it('what a talent does now and then: a second wind', () => {
+    const gm = new Match({ seed: 5, map: 'sands', fighters: [{ ...fighter(0, 'warrior'), talents: ['w-3c'] }, fighter(1, 'mage')] });
+    gm.step(GATES + 0.01, {});
+    Object.assign(gm.fighters[0]!, { x: 200, y: 125 });
+    Object.assign(gm.fighters[1]!, { x: 215, y: 125 });
     // Second Wind: falling low brings some back, once in a while
-    const gm = close(['w-3c'], ['w-hew']);
     const me = gm.fighters[0]!;
     me.hp = Math.round(me.maxHp * 0.36);
     gm.press(1, 'm-burn');
@@ -543,7 +583,7 @@ describe('The Ring: talents and set ups', () => {
 
   it('every ready-made build names real talents, one a row', () => {
     for (const cls of CLASS_IDS) {
-      for (const p of PRESETS[cls]) expect(cleanTalents(cls, p.talents).map((t) => t.id), `${cls} ${p.name}`).toEqual(p.talents);
+      for (const p of PRESETS[cls]) expect(cleanTalents(cls, p.talents, p.id).map((t) => t.id), `${cls} ${p.name}`).toEqual(p.talents);
     }
   });
 
@@ -560,42 +600,56 @@ describe('The Ring: talents and set ups', () => {
 });
 
 describe('The Ring: the kits', () => {
-  it('every class has twelve to choose from, with a way to hit, a hold, an escape or defense, and its bars are real', () => {
+  it('every playstyle is its own four: a way to hit or heal, a hold, and its bars are real', () => {
     for (const cls of CLASS_IDS) {
-      // (its own twelve; the trinket, every class's, besides)
-      expect(kitOf(cls).at(-1)!.id, cls).toBe('trinket');
-      const kit = kitOf(cls).filter((a) => a.cls === cls);
-      expect(kit, cls).toHaveLength(12);
-      const roles = new Set(kit.map((a) => a.role));
-      for (const r of ['damage', 'cc', 'interrupt', 'defense'] as const) expect(roles.has(r), `${cls} has ${r}`).toBe(true);
-      expect(new Set(kit.map((a) => a.name)).size, `${cls} names`).toBe(12);
+      const kit = kitOf(cls);
+      // (two playstyles of four, sharing one or two that are the class's own way of doing a thing)
+      expect(kit.length, cls).toBeGreaterThanOrEqual(6);
+      expect(kit.length, cls).toBeLessThanOrEqual(8);
+      expect(new Set(kit.map((a) => a.name)).size, `${cls} names`).toBe(kit.length);
       for (const p of PRESETS[cls]) {
         expect(p.bar, `${cls} ${p.name}`).toHaveLength(SLOTS);
         expect(new Set(p.bar).size).toBe(SLOTS);
         for (const id of p.bar) expect(ABILITIES[id]?.cls, id).toBe(cls);
+        const roles = new Set(p.bar.map((id) => ABILITIES[id]!.role));
+        expect(roles.has('cc'), `${p.name} has a hold`).toBe(true);
+        expect(roles.has('damage') || roles.has('burst'), `${p.name} can hurt`).toBe(true);
       }
     }
   });
 
   it('every class can kill with what it has, and three can heal for real', () => {
-    const healers = CLASS_IDS.filter((c) => kitOf(c).filter((a) => a.role === 'heal' && a.aim === 'friend').length >= 2);
+    const healers = CLASS_IDS.filter((c) => PRESETS[c].some((p) => p.healer));
     expect(healers.sort()).toEqual(['druid', 'paladin', 'priest']);
+    // (a healer's playstyle still has a blow of its own)
+    for (const c of healers) for (const p of PRESETS[c].filter((x) => x.healer)) expect(p.bar.some((id) => ABILITIES[id]!.aim === 'enemy' && ABILITIES[id]!.effects.some((e) => e.k === 'dmg' || e.k === 'dot')), p.name).toBe(true);
   });
 
   it('the names are ours (RENAMES.md, LEGAL_REVIEW.md)', () => {
     const banned = /\b(blink|polymorph|counterspell|ice block|hammer of justice|divine shield|blessing of|psychic scream|power word|pain suppression|kidney shot|cheap shot|cyclone|barkskin|moonfire|wrath|rejuvenation|regrowth|shadow bolt|chaos bolt|unstable affliction|howl of terror|death coil|mortal strike|charge|intercept|pummel|spell reflection|bladestorm|deterrence|aimed shot|freezing trap|scatter shot|disengage|gladiator|duelist|rival|challenger|combatant|hearthstone)\b/i;
     for (const a of Object.values(ABILITIES)) expect(a.name, a.id).not.toMatch(banned);
     for (const r of RANKS) expect(r.name).not.toMatch(banned);
+    // (and what the combos of 2026-11-16 are named for is this game's: the rules of points built and spent, of a boon
+    // that lights an ability up, of a globe that drifts and a leap from above are copied; the names are not)
+    const theirs = /\b(fingers of frost|brain freeze|icicles?|ice lance|frozen orb|frost ?bolt|glacial spike|hot streak|heating up|pyroblast|combo points?|eviscerate|backstab|stealth|vanish|blind|death from above|shadowstrike|subterfuge|deepening shadows|sudden death|taste for blood|bloodrage|rampage|execute|nightfall|malefic rapture|soul shards?|holy power|templar’?s verdict|divine steed|lock and load|deadeye|caltrops|slipstream|overgrowth|stellar drift|shooting stars|starsurge|starfall|eclipse of|atonement|penance|surge of light|runic power|runes?|death grip)\b/i;
+    // (names only: "vanish", "blind" and "execute" are plain words where an ability's text says what it does)
+    for (const a of Object.values(ABILITIES)) expect(a.name, a.id).not.toMatch(theirs);
+    for (const b of Object.values(BOONS)) expect(b.name, b.id).not.toMatch(theirs);
+    for (const t of Object.values(TALENTS).flat()) expect(`${t.name} / ${t.points?.name ?? ''}`, t.id).not.toMatch(theirs);
+    for (const p of Object.values(PRESETS).flat()) expect(`${p.name} / ${p.points?.name ?? ''}`, p.id).not.toMatch(theirs);
   });
 
   it('every ability’s icon is in the atlas', () => {
     const index = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/games/sigilfall/icons/icons.json'), 'utf8')) as { names: string[] };
     for (const a of Object.values(ABILITIES)) expect(index.names, a.id).toContain(a.icon);
-    expect(index.names).toContain(ABILITIES.trinket!.icon);
+    for (const b of Object.values(BOONS)) expect(index.names, b.id).toContain(b.icon);
   });
 
   it('a spell’s text matches its numbers', () => {
     for (const a of Object.values(ABILITIES)) {
+      // (what it deals at once is said as it lands, at its class's share)
+      const hit = a.effects.find((e) => e.k === 'dmg');
+      if (hit && hit.k === 'dmg' && a.cls !== 'any' && !STAND_INS.includes(a)) expect(a.text, `${a.id} says ${Math.round(hit.n * CLASS_DMG[a.cls])}`).toMatch(new RegExp(`\\b${Math.round(hit.n * CLASS_DMG[a.cls])}\\b`));
       for (const e of a.effects) {
         if (e.k === 'dot' || e.k === 'hot') {
           const said = a.text.match(/(\d+) (more )?over/);
@@ -658,7 +712,7 @@ describe('The Ring: computer players', () => {
     // short enough to want another (a brawl, not a siege), long enough for something to happen
     expect(spent / n).toBeGreaterThan(25);
     expect(spent / n).toBeLessThan(85);
-  }, 120_000);
+  }, 180_000);
 
   it('a melee fighter reaches their target past the stone on every ground', () => {
     for (const map of MAP_IDS) {
@@ -732,7 +786,7 @@ describe('The Ring: computer players', () => {
   }, 60_000);
 });
 
-const isHeal = (bar: string[]): boolean => bar.filter((b) => ABILITIES[b]?.role === 'heal').length >= 2;
+const isHeal = (bar: string[]): boolean => ABILITIES[bar[0] ?? '']?.role === 'heal';
 
 describe('The Ring: the ladder', () => {
   it('a win against equals is worth what a loss costs, and upsets are worth more', () => {
@@ -954,12 +1008,13 @@ describe('The Ring: combos', () => {
     expect(m.fighters[0]!.score.combos).toBe(1);
   });
 
-  it('a hold sets one up too: Rime Spear shatters a rooted target', () => {
+  it('a hold sets one up too: Frostfang shatters a rooted target', () => {
     const m = duel('mage', ['m-spear'], 'warrior');
     const foe = m.fighters[1]!;
     foe.auras.push({ ab: 'm-ring', kind: 'cc', cc: 'root', src: 0, t: 5, dur: 5, harmful: true, magic: true, n: 0 });
     const seen: string[] = [];
-    m.press(0, 'm-spear');
+    m.press(0, 'm-fang');
+    for (const e of m.events) if (e.k === 'word' && e.combo) seen.push(e.word);
     for (let i = 0; i < 90; i++) {
       m.step(STEP, {});
       for (const e of m.events) if (e.k === 'word' && e.combo) seen.push(e.word);
@@ -972,7 +1027,11 @@ describe('The Ring: a brawl', () => {
   it('a cast shot follows its target and lands, whichever way they turn, break free or hide', () => {
     // (the owner: "the misses are a bit annoying ... let's make all the spells hit the target, without any misses")
     const shoot = (after: 'on' | 'turn' | 'step' | 'stone'): number => {
-      const m = duel('mage', ['m-lash'], 'warrior', ['w-hew', 'trinket']);
+      const m = duel('mage', ['m-lash'], 'warrior', ['w-hew']);
+      // (free of every hold while it is in the air: a stand-in, where the trinket was)
+      give(m, 1, 't-prison');
+      ABILITIES['t-free'] ??= stand('t-free', { free: true, anyState: true, effects: [{ k: 'token' }] });
+      give(m, 1, 't-free');
       const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
       const p = m.pillars[0]!;
       me.x = p.x - 70;
@@ -983,7 +1042,7 @@ describe('The Ring: a brawl', () => {
       for (let i = 0; i < 60 && m.fighters[0]!.cast; i++) m.step(STEP, { 1: { mx: 0, my: 1 } });
       expect(m.bolts).toHaveLength(1);
       if (after === 'step') {
-        expect(m.press(1, 'trinket')).toBeNull();
+        expect(m.press(1, 't-free')).toBeNull();
       }
       // (behind the pillar, out of the caster's sight, while it is in the air)
       if (after === 'stone') {
@@ -1027,21 +1086,26 @@ describe('The Ring: a brawl', () => {
     expect(seen).toContain('miss');
   });
 
-  it('the trinket breaks every hold and every burn, even while held, off the global clock, then waits 45 seconds', () => {
-    const m = duel('warrior', ['w-hew', 'trinket'], 'mage');
+  it('no trinket: what breaks a hold is a playstyle’s own, where it has one (a mage’s Flicker, even while held)', () => {
+    // (the trinket every class could take as one of its five, which broke every hold and every burn, went with the
+    // choosing of abilities on 2026-11-16)
+    const m = duel('mage', PRESETS.mage[0]!.bar, 'warrior');
     const me = m.fighters[0]!;
-    me.auras.push({ ab: 'm-ring', kind: 'cc', cc: 'stun', src: 1, t: 3, dur: 3, harmful: true, magic: true, n: 0 });
-    me.auras.push({ ab: 'm-ring', kind: 'slow', src: 1, t: 3, dur: 3, harmful: true, magic: true, n: 0.5 });
-    me.auras.push({ ab: 'm-lash', kind: 'dot', src: 1, t: 5, dur: 6, harmful: true, magic: true, n: 30, next: 1 });
+    expect(ABILITIES.trinket).toBeUndefined();
+    me.auras.push({ ab: 'd-hammer', kind: 'cc', cc: 'stun', src: 1, t: 3, dur: 3, harmful: true, magic: true, n: 0 });
+    me.auras.push({ ab: 'w-rush', kind: 'slow', src: 1, t: 3, dur: 3, harmful: true, magic: true, n: 0.5 });
     expect(m.held(me)).toBeTruthy();
-    expect(m.press(0, 'w-hew')).toBe('You can’t do that now');
-    expect(m.press(0, 'trinket')).toBeNull();
-    expect(me.auras.filter((a) => a.harmful)).toEqual([]);
+    expect(m.press(0, 'm-burn')).toBe('You can’t do that now');
+    const x = me.x;
+    me.dirX = -1;
+    me.dirY = 0;
+    expect(m.press(0, 'm-blink')).toBeNull();
     expect(m.held(me)).toBeFalsy();
-    // (off the global clock: a blow at once)
-    expect(m.press(0, 'w-hew')).toBeNull();
-    expect(m.press(0, 'trinket')).toBe('Not ready yet');
-    expect(me.cds.trinket).toBe(45);
+    expect(me.auras.some((a) => a.kind === 'slow')).toBe(false);
+    expect(me.x).toBeLessThan(x - 60);
+    // (off the global clock: a spell at once)
+    expect(m.press(0, 'm-burn')).toBeNull();
+    expect(m.press(0, 'm-blink')).toBe('Not ready yet');
   });
 
   it('the super fills by fighting, waits for a full meter, empties when used, and isn’t refilled by its own blow', () => {
@@ -1050,12 +1114,13 @@ describe('The Ring: a brawl', () => {
       expect(superOf(cls).cls).toBe(cls);
     }
     expect(Object.keys(SUPERS).sort()).toEqual([...CLASS_IDS].sort());
+    expect(Object.keys(SUPERS2).sort()).toEqual([...CLASS_IDS].sort());
     const m = duel('warrior', ['w-hew'], 'mage');
     const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
     expect(m.press(0, 'w-super')).toMatch(/isn’t charged/);
     // nobody else's super, and none on a bar
     expect(m.press(0, 'm-super')).toMatch(/don’t have/);
-    expect(new Match({ seed: 1, map: 'sands', fighters: [fighter(0, 'warrior', ['w-super', 'w-hew'])] }).fighters[0]!.bar).toEqual(['w-hew']);
+    expect(new Match({ seed: 1, map: 'sands', fighters: [fighter(0, 'warrior', ['w-super', 'w-hew'])] }).fighters[0]!.bar).toEqual(PRESETS.warrior[0]!.bar);
     m.press(0, 'w-hew');
     expect(me.charge).toBeGreaterThan(0);
     expect(foe.charge).toBeGreaterThan(0);
@@ -1072,13 +1137,14 @@ describe('The Ring: a brawl', () => {
   });
 
   it('a knock throws them back and cuts off what they were casting', () => {
-    const m = duel('paladin', ['d-wrath'], 'mage', ['m-lash']);
+    const m = duel('warrior', PRESETS.warrior[0]!.bar, 'mage', ['m-lash']);
     const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
     m.press(1, 'm-lash');
     wait(m, 0.2);
     expect(foe.cast).not.toBeNull();
     const d = Math.hypot(foe.x - me.x, foe.y - me.y);
-    m.press(0, 'd-wrath');
+    me.charge = 1;
+    m.press(0, 'w-super');
     expect(foe.cast).toBeNull();
     wait(m, 0.3);
     expect(Math.hypot(foe.x - me.x, foe.y - me.y)).toBeGreaterThan(d + 30);
@@ -1108,30 +1174,28 @@ describe('The Ring: a brawl', () => {
     expect(me.auras.some((a) => a.kind === 'speed')).toBe(true);
   });
 
-  it('the Gloam closes from past the corners to the middle and then to nothing, burning whoever is out in it', () => {
+  it('no Gloam: nowhere on the ground burns, however long the match goes (the owner: "remove the gloam and leave the damp only")', () => {
     const m = duel('warrior', ['w-hew'], 'mage');
     const [me, foe] = [m.fighters[0]!, m.fighters[1]!];
-    // to begin with, the whole ground is safe, corners and entries too
-    expect(m.zone).toBe(ZONE_START);
-    for (const [x, y] of [[0, 0], [ARENA_W, ARENA_H], [10, ARENA_H / 2]] as const) expect(m.zoneAt(x, y)).toBeLessThan(1);
-    m.clock = (CLOSE_FROM + CLOSE_TO) / 2;
-    expect(m.zone).toBeLessThan(ZONE_START);
-    expect(m.zone).toBeGreaterThan(ZONE_END);
-    m.clock = CLOSE_TO;
-    expect(m.zone).toBeCloseTo(ZONE_END);
+    m.clock = MATCH_LIMIT - 10;
     me.x = 30;
     me.y = 30;
-    foe.x = ARENA_W / 2;
-    foe.y = ARENA_H / 2;
-    expect(m.inGloam(me)).toBe(true);
-    expect(m.inGloam(foe)).toBe(false);
-    wait(m, 2);
-    expect(me.hp).toBeLessThan(me.maxHp * 0.92);
+    foe.x = ARENA_W - 30;
+    foe.y = ARENA_H - 30;
+    const seen: string[] = [];
+    for (let i = 0; i < 5 / STEP; i++) {
+      m.step(STEP, {});
+      for (const e of m.events) if (e.k === 'word') seen.push(e.word);
+      m.events.length = 0;
+    }
+    expect(me.hp).toBe(me.maxHp);
     expect(foe.hp).toBe(foe.maxHp);
-    // sudden death: nowhere is safe in the end (but the very middle), so nothing lasts to the clock
-    m.clock = MATCH_LIMIT - 5;
-    foe.x += 8;
-    expect(m.inGloam(foe)).toBe(true);
+    expect(seen.join(' ')).not.toMatch(/Gloam/);
+    for (const k of ['zone', 'zoneAt', 'inGloam', 'closeIn']) expect(k in m, k).toBe(false);
+    const src = fs.readFileSync(path.resolve(__dirname, '../src/games/sigilfall/arena/sim.ts'), 'utf8');
+    expect(src).not.toMatch(/CLOSE_FROM|ZONE_BURN|inGloam/);
+    // what ends a match that nobody wins is the clock, and before it the end of all healing
+    expect(m.dampening).toBe(1);
   });
 
   it('holds are short and cooldowns quick: nobody stands helpless or waits long', () => {

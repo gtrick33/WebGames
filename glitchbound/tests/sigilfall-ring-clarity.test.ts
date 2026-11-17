@@ -3,7 +3,7 @@
  * them ... you could add a highlight on the spell, a glowing frame ... the preset setups should include the combos
  * ... make the combat a tiny bit slower, like 5-10% max"):
  * - the bar can ask, before a blow, whether its combo is set up, and the answer is the one the blow itself gets;
- * - every ready-made setup holds a combo, and the fighting ones two, each named with what sets it up;
+ * - every playstyle holds a combo made with its basic ability or its super, named with what sets it up;
  * - a live match runs a little under the clock, and the rules' own time is untouched.
  */
 import { describe, expect, it } from 'vitest';
@@ -37,28 +37,33 @@ describe('Sigilfall: the Ring says what is going on', () => {
     foe.dead = true;
     expect(m.comboReady(me, hew, foe)).toBeNull();
     // a hold sets up the ones that ask for it, whoever held them
-    const other = new Match(setup('warrior', 'ranger'));
-    const gash = ABILITIES['w-gash']!;
-    other.fighters[1]!.auras.push({ ab: 'r-hawk', kind: 'cc', cc: 'stun', src: 1, t: 2, dur: 2, harmful: true, magic: false, n: 0 });
-    expect(other.comboReady(other.fighters[0]!, gash, other.fighters[1]!)?.name).toBe(gash.combo!.name);
+    const other = new Match(setup('ranger', 'warrior'));
+    const draw = ABILITIES['r-aimed']!;
+    other.fighters[1]!.auras.push({ ab: 'd-hammer', kind: 'cc', cc: 'stun', src: 1, t: 2, dur: 2, harmful: true, magic: false, n: 0 });
+    expect(other.comboReady(other.fighters[0]!, draw, other.fighters[1]!)?.name).toBe(draw.combo!.name);
   });
 
-  it('every ready-made setup holds a combo with what sets it up, and the fighting ones two', () => {
+  it('every playstyle holds a combo with what sets it up, made with its basic ability or its super', () => {
+    // (the owner, 2026-11-16: "combos to be done with your basic spell or even ur ult")
     for (const cls of CLASS_IDS) {
       for (const p of PRESETS[cls]) {
-        const combos = barCombos(cls, p.bar);
-        const heals = p.bar.filter((id) => ABILITIES[id]!.role === 'heal').length >= 2;
-        expect(combos.length, `${cls} ${p.name}`).toBeGreaterThanOrEqual(heals ? 1 : 2);
+        const combos = barCombos(cls, p.bar, p.ult);
+        expect(combos.length, `${cls} ${p.name}`).toBeGreaterThanOrEqual(1);
+        const basic = p.bar[0]!;
+        expect(combos.some((c) => c.from.id === basic || c.to.id === basic || c.from.id === p.ult || c.to.id === p.ult), `${cls} ${p.name}: nothing made with its basic ability or its super`).toBe(true);
         for (const c of combos) {
-          expect(c.to.combo!.name).toBe(c.name);
+          if (c.kind === 'combo') expect(c.to.combo!.name).toBe(c.name);
           expect(c.from.id).not.toBe(c.to.id);
           expect(c.text.length).toBeGreaterThan(8);
+          // (both ends are the playstyle's own: its four or its super)
+          expect([...p.bar, p.ult]).toContain(c.from.id);
+          expect([...p.bar, p.ult]).toContain(c.to.id);
         }
+        // (and every combo its abilities name can be set up by something else it has)
+        for (const id of [...p.bar, p.ult]) if (ABILITIES[id]!.combo) expect(combos.map((c) => c.to.id), `${cls} ${p.name}: ${id}`).toContain(id);
       }
-      // (and every combo a class has can be set up by something in its own kit)
-      const kit = kitOf(cls).map((a) => a.id);
-      const all = barCombos(cls, kit).map((c) => c.to.id);
-      for (const a of kitOf(cls)) if (a.combo) expect(all, `${cls}: ${a.name}`).toContain(a.id);
+      // (nothing in a class's kit is left off both its playstyles)
+      for (const a of kitOf(cls)) expect(PRESETS[cls].some((p) => p.bar.includes(a.id)), `${cls}: ${a.name}`).toBe(true);
     }
   });
 

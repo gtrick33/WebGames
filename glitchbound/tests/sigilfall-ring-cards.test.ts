@@ -1,15 +1,17 @@
 /**
- * An ability can be read before it is taken (the owner: "whenever i click on spell, please add a pop up with info
- * about it, best uses, best combos and 2 buttons - equip or cancel"), what a fighter wears is shown as its spell's own
+ * An ability can be read (the owner: "whenever i click on spell, please add a pop up with info about it, best uses,
+ * best combos"; it had "2 buttons - equip or cancel" until a playstyle's abilities became its own, 2026-11-16, and
+ * lines of advice on when to press it until the owner the same day: "i really dislike the fact that ui is 90% texts
+ * ... remove the redundant text and make it similar to wow's description of the spells"), what a
+ * fighter wears is shown as its spell's own
  * picture with the seconds left ("make the square with the spells icon image and add a 7s 6s timer on it"), the
  * Gloamknight has pictures of his own, and nothing set against a wall is bricked over ("the jittering of the pillar").
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ABILITIES, barCombos, combosOf, kitOf, TRINKET, SUPERS, ultsOf, type Ability } from '../src/games/sigilfall/arena/abilities';
-import { usesOf } from '../src/games/sigilfall/arena/advice';
-import { RANGED, type Aura } from '../src/games/sigilfall/arena/sim';
+import { ABILITIES, barCombos, combosOf, kitOf, PRESETS, SUPERS, SUPERS2 } from '../src/games/sigilfall/arena/abilities';
+import type { Aura } from '../src/games/sigilfall/arena/sim';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import { overhead, OVERHEAD_MAX, worn } from '../src/games/sigilfall/render/ring';
 import { Build } from '../src/games/sigilfall/render3d/build';
@@ -18,67 +20,34 @@ import { ARENA_H, ARENA_W, MAP_IDS, MAPS } from '../src/games/sigilfall/arena/ma
 import { TILE } from '../src/games/sigilfall/sim/map';
 import * as THREE from 'three';
 
-const readable = (cls: (typeof CLASS_IDS)[number]): Ability[] => [...kitOf(cls), SUPERS[cls], TRINKET];
-
-describe('Sigilfall: an ability can be read before it is taken', () => {
-  it('every ability says when to press it, in one to three whole sentences', () => {
-    let read = 0;
-    for (const cls of CLASS_IDS) {
-      for (const ab of readable(cls)) {
-        const tips = usesOf(ab, RANGED.has(cls));
-        read++;
-        expect(tips.length, ab.id).toBeGreaterThanOrEqual(1);
-        expect(tips.length, ab.id).toBeLessThanOrEqual(3);
-        expect(new Set(tips).size, ab.id).toBe(tips.length);
-        for (const tip of tips) {
-          expect(tip, ab.id).toMatch(/^[A-Z].*\.$/);
-          // (a card on the smallest phone: a tip is two or three lines of a half-width column, no more)
-          expect(tip.length, `${ab.id}: ${tip}`).toBeLessThanOrEqual(170);
-        }
-      }
-    }
-    expect(read).toBeGreaterThanOrEqual(CLASS_IDS.length * 14);
-  });
-
-  it('the advice keeps to what the ability does', () => {
-    const tipsOf = (id: string): string => usesOf(ABILITIES[id]!, RANGED.has(ABILITIES[id]!.cls as (typeof CLASS_IDS)[number])).join(' ');
-    // a stun is for the burst, and a hold is not to be used twice in a row
-    expect(tipsOf('g-hand')).toMatch(/Stun them/);
-    expect(tipsOf('g-hand')).toMatch(/half as long/);
-    // what costs health says so; what drinks life says so
-    for (const ab of Object.values(ABILITIES)) {
-      const tips = usesOf(ab, ab.cls !== 'any' && RANGED.has(ab.cls)).join(' ');
-      if (ab.super) continue;
-      if (ab.effects.some((e) => e.k === 'interrupt')) expect(tips, ab.id).toMatch(/cuts the cast off/);
-      if (ab.effects.some((e) => e.k === 'price')) expect(tips, ab.id).toMatch(/costs you health/);
-      // (nobody is told to hit what their own ability says must be left alone)
-      if (ab.effects.some((e) => e.k === 'cc' && e.cc === 'incap')) expect(tips, ab.id).not.toMatch(/hardest blows/);
-    }
-    // a super is kept, not spent on cooldown
-    for (const cls of CLASS_IDS) expect(usesOf(SUPERS[cls], RANGED.has(cls)).join(' '), cls).toMatch(/meter is full/);
-  });
-
+describe('Sigilfall: an ability can be read', () => {
   it('what a card says of combos agrees both ways, and with what a bar shows', () => {
     let pairs = 0;
     for (const cls of CLASS_IDS) {
-      const all = [...kitOf(cls), ...ultsOf(cls)];
-      for (const ab of all) {
-        const c = combosOf(cls, ab);
-        expect(!!c.lands, ab.id).toBe(!!ab.combo);
-        for (const from of c.lands?.after ?? []) {
-          pairs++;
-          expect(all, `${from.id} is ${cls}'s own`).toContain(from);
-          expect(combosOf(cls, from).setsUp.map((s) => s.then), `${from.id} → ${ab.id}`).toContain(ab);
-          // (the same pair on a bar is the combo the setup screen lists under it)
-          const bar = [from, ab].filter((x) => !x.super).map((x) => x.id);
-          expect(barCombos(cls, bar, [from, ab].find((x) => x.super)?.id).some((b) => b.to === ab && b.name === c.lands!.name), `${from.id} + ${ab.id} on a bar`).toBe(true);
+      for (const p of PRESETS[cls]) {
+        // (a playstyle's own: its four and its super. What an ability shared by both makes is read within each)
+        const all = [...p.bar.map((id) => ABILITIES[id]!), ABILITIES[p.ult]!];
+        for (const ab of all) {
+          const c = combosOf(cls, ab, p.bar);
+          if (ab.combo) expect(c.lands, ab.id).not.toBeNull();
+          for (const from of c.lands?.after ?? []) {
+            pairs++;
+            expect(all, `${from.id} is the ${p.name}'s own`).toContain(from);
+            expect(combosOf(cls, from, p.bar).setsUp.map((s) => s.then), `${from.id} → ${ab.id}`).toContain(ab);
+          }
+          for (const s of c.setsUp) expect(combosOf(cls, s.then, p.bar).lands?.after, `${ab.id} → ${s.then.id}`).toContain(ab);
+          // (what lands on the bar is what the setup page lists for it)
+          if (c.lands?.after.length) expect(barCombos(cls, p.bar, p.ult).some((b) => b.to === ab && b.name === c.lands!.name), `${p.name}: ${ab.id} on its bar`).toBe(true);
         }
-        for (const s of c.setsUp) expect(combosOf(cls, s.then).lands?.after, `${ab.id} → ${s.then.id}`).toContain(ab);
+        // every playstyle has a combo to read about
+        expect(all.some((ab) => (combosOf(cls, ab, p.bar).lands?.after.length ?? 0) > 0), p.name).toBe(true);
       }
-      // every class has a combo to read about
-      expect(all.some((ab) => (combosOf(cls, ab).lands?.after.length ?? 0) > 0), cls).toBe(true);
     }
     expect(pairs).toBeGreaterThan(CLASS_IDS.length * 2);
+    // points and boons are combos too: the Nightblade's Nicks, the Rime's globe
+    expect(combosOf('gloamknight', ABILITIES['g-cut']!).lands).toMatchObject({ name: 'Nicks', kind: 'points' });
+    expect(combosOf('gloamknight', ABILITIES['g-cut']!).lands!.after.map((a) => a.id)).toEqual(['g-knife', 'g-ambush']);
+    expect(combosOf('mage', ABILITIES['m-spear']!).lands).toMatchObject({ name: 'Rimeglobe', kind: 'boon' });
   });
 });
 
@@ -86,29 +55,28 @@ describe('Sigilfall: what a fighter wears is drawn as its spell', () => {
   const aura = (ab: string, t: number, more: Partial<Aura> = {}): Aura => ({ ab, kind: 'dot', src: 0, t, dur: 9, harmful: true, magic: true, n: 1, ...more });
 
   it('one picture to an ability, with its longest part, and nothing for what never runs out', () => {
-    const shown = worn({ auras: [aura('k-wither', 4.2), aura('k-wither', 7.9, { kind: 'slow' }), aura('k-agony', 3), aura('g-mantle', 5, { harmful: false, kind: 'guard' }), aura('g-ward', 0), aura('g-veil', 990, { dur: 0, kind: 'veil', harmful: false }), aura('not-an-ability', 3)] });
+    const shown = worn({ auras: [aura('w-gash', 4.2), aura('w-gash', 7.9, { kind: 'antiheal' }), aura('k-dart', 3), aura('p-dusk', 5, { harmful: false, kind: 'guard' }), aura('p-ward', 0), aura('g-veil', 990, { dur: 0, kind: 'veil', harmful: false }), aura('not-an-ability', 3)] });
     expect(shown.map((a) => [a.ab, a.t])).toEqual([
-      ['k-wither', 7.9],
-      ['k-agony', 3],
-      ['g-mantle', 5],
+      ['w-gash', 7.9],
+      ['k-dart', 3],
+      ['p-dusk', 5],
     ]);
   });
 
   it('over the head: holds, whoever’s, then what the player put on them, three at most; the rest on the nameplate', () => {
-    const on = [aura('k-agony', 3, { src: 5 }), aura('k-wither', 6, { src: 0 }), aura('m-toad', 2, { src: 5, kind: 'cc', cc: 'incap' }), aura('r-hobble', 4, { src: 0, kind: 'slow' }), aura('w-bleed', 9, { src: 0 }), aura('p-renew', 8, { src: 7, harmful: false, kind: 'hot' })];
+    const on = [aura('k-dart', 3, { src: 5 }), aura('p-curse', 6, { src: 0 }), aura('m-toad', 2, { src: 5, kind: 'cc', cc: 'incap' }), aura('r-hobble', 4, { src: 0, kind: 'slow' }), aura('w-bleed', 9, { src: 0 }), aura('l-regrow', 8, { src: 7, harmful: false, kind: 'hot' })];
     const shown = overhead({ auras: on }, 0);
     expect(shown.length).toBe(OVERHEAD_MAX);
     expect(shown[0]!.ab).toBe('m-toad');
     expect(shown.slice(1).every((a) => a.src === 0)).toBe(true);
     // (someone else's curse and someone else's heal: on the nameplate only)
-    expect(shown.some((a) => a.ab === 'k-agony' || a.ab === 'p-renew')).toBe(false);
+    expect(shown.some((a) => a.ab === 'k-dart' || a.ab === 'l-regrow')).toBe(false);
     expect(overhead({ auras: on }, null).map((a) => a.ab)).toEqual(['m-toad']);
   });
 
   it('the Gloamknight’s pictures are his alone, and each ability has its own', () => {
     const index = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../public/games/sigilfall/icons/icons.json'), 'utf8')) as { names: string[] };
-    // (his own: the trinket is every class's)
-    const his = [...kitOf('gloamknight').filter((a) => a.cls === 'gloamknight'), SUPERS.gloamknight];
+    const his = [...kitOf('gloamknight'), SUPERS.gloamknight, SUPERS2.gloamknight];
     expect(new Set(his.map((a) => a.icon)).size).toBe(his.length);
     const others = new Set(Object.values(ABILITIES).filter((a) => a.cls !== 'gloamknight').map((a) => a.icon));
     for (const a of his) {
