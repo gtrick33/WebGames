@@ -1174,7 +1174,13 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                 ) : (
                   <span className="rb-ring-rating is-friendly">{tut ? 'Tutorial' : 'Friendly'}</span>
                 )}
-                {damp > 0 && <small className={`rb-ring-damp${damp >= 100 ? ' is-gone' : ''}`} title="Healing and shields fade the longer a match goes, until none is left">{damp >= 100 ? 'No healing' : `Healing weaker: −${damp}%`}</small>}
+                {m.suddenAt !== null ? (
+                  <small className="rb-ring-damp is-gone" title="Only healers are left: healing is gone and everything hits harder every second, until one side falls">
+                    Sudden death: {damp >= 100 ? 'no healing' : `healing −${damp}%`}, damage +{Math.round((m.sudden - 1) * 100)}%
+                  </small>
+                ) : (
+                  damp > 0 && <small className={`rb-ring-damp${damp >= 100 ? ' is-gone' : ''}`} title="Healing and shields fade the longer a match goes, until none is left">{damp >= 100 ? 'No healing' : `Healing weaker: −${damp}%`}</small>
+                )}
               </div>
               {hint && !err && (
                 <div className="rb-ring-hint" role="status">

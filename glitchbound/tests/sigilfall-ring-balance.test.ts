@@ -225,6 +225,35 @@
  * Worth a look once people have played this: the spread is wider than it was (43-56, 45-53 before), with both mages in
  * the upper half and the Hexer low in 2v2 (37%); the Zealot and the teammate tables (arena/teammates.ts) were not
  * touched or measured again.
+ *
+ * The same day the owner asked for four more things: "1v1 if 2 rogue gloamknights fight theyre always invisible", "in
+ * 1v1 healers shouldnt be allowed", "in 2v2 if both dps die, the healers take ages to kill each other", and "in 2v2 i
+ * feel like healers are way too strong, if i go as double dps i still need to have slight chance". What they are is in
+ * tests/sigilfall-ring-fair.test.ts; what they measured, over 400 random 2v2s of each kind between computers:
+ *
+ *                                                    before              after
+ *   two damage dealers against a healer's side       win 17.5%           win 34%     (healing in 2v2: 1.3 -> 1 of what is written)
+ *   two healers left alone, until one falls          32 s (longest 63)   10 s (longest 14)   (sudden death)
+ *   a healer's side against a healer's side          104 s               93 s
+ *   two damage dealers against two                   37 s                37 s
+ *
+ * At 1.1 of what is written two damage dealers won 27%, at 0.95 they won 39%. And every playstyle again (12 seeds of
+ * every 1v1, 1,000 teams of each size, 60% of the 2v2 teams with a healer); a match takes 53 s, 66 s and 62 s:
+ *
+ *   Reaper      39/47/57 48   Hound     68/47/43 53   Pyre         61/57/53 57   Rime        67/59/49 58
+ *   Longbow     43/49/52 48   Trapper   57/44/42 48   Oathkeeper    -/59/61      Zealot      50/48/36 45
+ *   Lifegiver    -/52/55      Curse-sp. 61/40/51 51   Hexer        53/42/45 46   Gravecaller 53/48/43 48
+ *   Grovekeeper  -/49/53      Starseer  63/52/43 53   Bloodsworn   59/46/48 51   Nightblade  55/53/57 55
+ *
+ * (The healers' 2v2 before: 64, 60 and 62.) No healer fights a 1v1 any more, and the 1v1 column above still counts
+ * every damage playstyle's duels with the three of them, which they nearly always won. Among themselves the thirteen
+ * win: Reaper 31, Hound 60, Pyre 56, Rime 66, Longbow 36, Trapper 57, Zealot 51, Curse-speaker 52, Hexer 42,
+ * Gravecaller 46, Starseer 57, Bloodsworn 51, Nightblade 46.
+ *
+ * Worth a look: with less healing in 2v2 the two mages lead it between computers (57% and 59%; nobody else is over
+ * 53%), on top of what they were given earlier in the day, and a duel without healers shows the Reaper (31%) and the
+ * Longbow (36%) behind and the Rime (66%) ahead by more than the old column did. None of that was tuned here. The
+ * pairs table Random reads was measured again (arena/teammates.ts); the threes were not.
  */
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, PRESETS } from '../src/games/sigilfall/arena/abilities';

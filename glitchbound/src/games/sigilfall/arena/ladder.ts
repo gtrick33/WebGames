@@ -1,5 +1,5 @@
 import type { ClassId } from '../data/types';
-import { PRESETS, styleOfBar } from './abilities';
+import { healerBar, PRESETS, styleOfBar, type Playstyle } from './abilities';
 import { fullTalents } from './talents';
 import { forgetBest, mmrOf, NEW_STANDING, rankOf, RING_KEY, type Format, type Standing } from './ranks';
 import type { FighterSetup } from './sim';
@@ -181,6 +181,23 @@ export function namedApart(fighters: FighterSetup[]): FighterSetup[] {
 }
 
 /** The team you are drawn against, set against your own. */
+/**
+ * A 1v1 is fought without healers (the owner, 2026-11-17: "in 1v1 healers shouldnt be allowed"): a healer's playstyle
+ * is for a team, and alone it only makes a duel long. True for a bar that can't enter this format.
+ */
+export const barredFrom = (format: Format, bar: readonly string[]): boolean => format === 1 && healerBar(bar);
+/** What to tell whoever tries. */
+export const BARRED_WHY = 'Healers can’t enter 1v1. Choose a damage playstyle, or play 2v2 or 3v3.';
+
+/**
+ * The playstyle a class takes into this format: its own, unless that is barred from it, then the class's other one.
+ * Only a room's host needs it, for a pick that came from a game that doesn't know the rule: this game never sends one.
+ */
+export function styleFor(format: Format, cls: ClassId, style: Playstyle): Playstyle {
+  if (!barredFrom(format, style.bar)) return style;
+  return PRESETS[cls].find((p) => !healerBar(p.bar)) ?? style;
+}
+
 export function drawOpponents(format: Format, seed: number): { comp: Comp; fighters: FighterSetup[] } {
   const list = COMPS[format];
   const comp = list[seed % list.length]!;

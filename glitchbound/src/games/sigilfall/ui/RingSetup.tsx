@@ -393,10 +393,13 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
                 <b>Casts, interrupts and holds.</b> Interrupt a cast to lock that school of magic for a few seconds. Stuns, fears, dazes, roots and silences are short and wear off faster each time; enough damage breaks a fear, a daze or a root.
               </li>
               <li>
-                <b>Healing fades.</b> From 35 seconds in, all healing and every shield gets weaker every second, until none is left: no match drags on.
+                <b>Healing fades.</b> From 35 seconds in, all healing and every shield gets weaker every second, until none is left: no match drags on. If only healers are left standing on both sides, it is sudden death: healing is gone at once and everything hits harder every second.
               </li>
               <li>
-                <b>Bigger fights heal more.</b> Healing is 30% stronger in 2v2 and 45% stronger in 3v3.
+                <b>Healers.</b> A healer’s playstyle is for teams: none can enter a 1v1. Healing is 45% stronger in 3v3.
+              </li>
+              <li>
+                <b>Stealth.</b> If everyone left standing is in stealth, nobody can find anybody: after 3 seconds it lifts from all of them, and stays off for a while.
               </li>
               <li>
                 <b>Finding a match.</b> The Ring looks for other players for ten seconds. If someone is looking for the same kind of fight, you meet them; if nobody is, you fight the computer’s teams. Both are for rating. Walk out once the gates have lifted and it is a leaver’s loss, half again a loss; against other players the match then ends for everyone else, and their rating stays as it was.

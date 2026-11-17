@@ -340,9 +340,11 @@ describe('The Ring: no class much above or below the rest', () => {
 });
 
 describe('The Ring: healing in bigger fights', () => {
-  // (the owner, 2026-11-13: "increase the healing a tad bit more for the healers in the 2v2/3v3"; it was 1.2 and 1.35)
-  it('is 30% stronger in 2v2 and 45% stronger in 3v3', () => {
-    expect(HEAL_BY_SIZE.slice(1)).toEqual([1, 1.3, 1.45]);
+  // (the owner, 2026-11-13: "increase the healing a tad bit more for the healers in the 2v2/3v3"; it was 1.2 and 1.35,
+  // then 1.3 and 1.45. And 2026-11-17: "in 2v2 i feel like healers are way too strong, if i go as double dps i still
+  // need to have slight chance": in 2v2 it is as written again. tests/sigilfall-ring-fair.test.ts has the rest.)
+  it('is as written in 2v2 and 45% stronger in 3v3', () => {
+    expect(HEAL_BY_SIZE.slice(1)).toEqual([1, 1, 1.45]);
     const healed = (size: number): number => {
       const side = (team: 0 | 1): FighterSetup[] => Array.from({ length: size }, () => fighter(team, 'druid', ['l-bloom', 'l-regrow', 'l-rejuv', 'l-moon']));
       const m = new Match({ seed: 9, map: 'sands', fighters: [...side(0), ...side(1)] });
@@ -355,7 +357,7 @@ describe('The Ring: healing in bigger fights', () => {
     };
     const one = healed(1);
     expect(one).toBeGreaterThan(50);
-    expect(healed(2) / one).toBeCloseTo(1.3, 1);
+    expect(healed(2)).toBe(one);
     expect(healed(3) / one).toBeCloseTo(1.45, 1);
   });
 });

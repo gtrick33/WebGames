@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { fullBar, PRESETS, SLOTS, styleOfBar, type Ability } from '../arena/abilities';
 import { fullTalents } from '../arena/talents';
-import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, mateSkill, mmrOf, namedApart, nameFor, readRing, rivalFor, setsOf, skillAt, stakesOf, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave } from '../arena/ladder';
+import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, mateSkill, mmrOf, namedApart, nameFor, readRing, rivalFor, setsOf, skillAt, stakesOf, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave, barredFrom, BARRED_WHY, styleFor } from '../arena/ladder';
 import { MAP_IDS, MAPS } from '../arena/maps';
 import { bestRating, FORMATS, nextRank, rankOf, type Format } from '../arena/ranks';
 import { rewardsBetween } from '../arena/rewards';
@@ -62,11 +62,13 @@ export function setupFromRoom(v: RoomView): { setup: MatchSetup; mine: number } 
       const cls = (known ? s.pick!.cls : 'warrior') as ClassId;
       // (whatever bar a player's game sent, from before a playstyle's abilities were its own or after, is read as the
       // playstyle nearest it: its four, its super, and its own talents in any row where theirs are no longer talents)
-      const style = styleOfBar(cls, s.pick!.bar);
+      // (and a healer's, in a 1v1, as their class's other one: this game never sends that, one from before may)
+      const sent = styleOfBar(cls, s.pick!.bar);
+      const style = styleFor(v.format, cls, sent);
       const bar = [...style.bar];
       const title = shownTitle(s.pick!.title);
       const frame = frameOf(s.pick!.frame);
-      fighters.push({ team, cls, name: s.name, bar, talents: fullTalents(cls, style.id, s.pick!.talents, style.talents), ult: style.ult, seat: s.n, ...(title ? { title } : {}), ...(frame ? { frame: frame.id } : {}) });
+      fighters.push({ team, cls, name: s.name, bar, talents: fullTalents(cls, style.id, style === sent ? s.pick!.talents : [], style.talents), ult: style.ult, seat: s.n, ...(title ? { title } : {}), ...(frame ? { frame: frame.id } : {}) });
     }
     const list = COMPS[v.format];
     const comp = list[(v.runSeed + team) % list.length]!;
@@ -347,6 +349,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   /** An ability of the setup being read, from its bar on the main screen (RingSetup AbilityCard, only to read). */
   const [reading, setReading] = useState<Ability | null>(null);
   const ready = bar.length === SLOTS;
+  /** A healer's playstyle with 1v1 chosen: no match to find (arena/ladder.ts barredFrom). */
+  const barred = barredFrom(format, bar);
   const choose = (c: ClassId): void => setPick(c);
   // the computer's teammates for this format's empty places, kept with the standing (arena/teammates.ts)
   const mates = choicesFor(save.mates?.[format], format);
@@ -408,6 +412,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
       openSetup('play');
       return;
     }
+    // (a healer with 1v1 chosen: nothing to find, and the page already says why)
+    if (barred) return;
     const seed = (Math.random() * 2 ** 31) >>> 0;
     const { comp, fighters } = drawOpponents(format, seed);
     const fill = fillSide(format, [specOf(pick, bar)], mates, seed);
@@ -466,6 +472,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
       openSetup('play');
       return;
     }
+    // (a healer with 1v1 chosen: nothing to find, and the page already says why)
+    if (barred) return;
     setResult(null);
     setPage('play');
     setSeekNote('');
@@ -881,16 +889,16 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
                 }}
               />
 
-              {seekNote && (
+              {(barred || seekNote) && (
                 <p className="rb-rp-error" role="status">
-                  {seekNote}
+                  {barred ? BARRED_WHY : seekNote}
                 </p>
               )}
             </section>
 
             <footer className="rb-vlobby-foot">
-              <button className="rb-btn is-gold is-big" onClick={findMatch}>
-                {ready ? `Find a ${format}v${format} match` : `Choose ${SLOTS - bar.length} more abilities`}
+              <button className={`rb-btn is-gold is-big${barred ? ' is-barred' : ''}`} onClick={findMatch} aria-disabled={barred || undefined}>
+                {!ready ? `Choose ${SLOTS - bar.length} more abilities` : barred ? 'No healers in 1v1' : `Find a ${format}v${format} match`}
               </button>
               <button className="rb-btn" onClick={() => setPage('friends')}>
                 With friends
@@ -1020,6 +1028,8 @@ function FriendsPage({ view, state, err, ready, codeIn, setCodeIn, onOpen, onJoi
     );
   }
   const host = view.host === view.you;
+  /** A 1v1 room with a healer seated: it can't start until they change, or the format does (arena/ladder.ts barredFrom). */
+  const healerIn = view.seats.some((s) => s.pick && barredFrom(view.format, s.pick.bar));
   const team = (t: 0 | 1): RoomView['seats'] => view.seats.filter((s) => s.pick?.team === t);
   const seated = !!view.seats.find((s) => s.you)?.pick;
   return (
@@ -1092,6 +1102,7 @@ function FriendsPage({ view, state, err, ready, codeIn, setCodeIn, onOpen, onJoi
                   <small>
                     {CLASSES[s.pick!.cls as ClassId]?.name}
                     {s.host ? ' · host' : ''}
+                    {barredFrom(view.format, s.pick!.bar) ? ' · a healer: not in 1v1' : ''}
                   </small>
                 </span>
               ))}
@@ -1111,13 +1122,18 @@ function FriendsPage({ view, state, err, ready, codeIn, setCodeIn, onOpen, onJoi
         </div>
         <div className="rb-rp-go">
           {host ? (
-            <button className="rb-btn is-gold is-big" disabled={!ready || !seated} onClick={() => send({ t: 'start' })}>
-              {ready ? 'Start the match' : `Choose ${SLOTS - bar.length} more abilities`}
+            <button className="rb-btn is-gold is-big" disabled={!ready || !seated || healerIn} onClick={() => send({ t: 'start' })}>
+              {!ready ? `Choose ${SLOTS - bar.length} more abilities` : healerIn ? 'No healers in 1v1' : 'Start the match'}
             </button>
           ) : (
             <span className="rb-rp-waiting">Waiting for the host to start</span>
           )}
         </div>
+        {healerIn && (
+          <p className="rb-rp-error" role="status">
+            {barredFrom(view.format, bar) ? BARRED_WHY : 'Healers can’t enter 1v1: someone seated has to change playstyle, or the host can choose 2v2 or 3v3.'}
+          </p>
+        )}
         {err && (
           <p className="rb-rp-error" role="alert">
             {err}

@@ -58,11 +58,11 @@ export const STYLES: Record<ClassId, Record<string, Style>> = {
     trapper: { line: 'Ranged control. Traps, slows and poison.', ease: 'medium' },
   },
   priest: {
-    healer: { line: 'Healer. Shields and steady heals.', ease: 'medium' },
+    healer: { line: 'Healer for 2v2 and 3v3. Shields and steady heals.', ease: 'medium' },
     shadow: { line: 'Ranged caster. Curses and silence.', ease: 'medium' },
   },
   paladin: {
-    holy: { line: 'Healer. Quick heals and a stun.', ease: 'easy' },
+    holy: { line: 'Healer for 2v2 and 3v3. Quick heals and a stun.', ease: 'easy' },
     ret: { line: 'Melee burst. Stun, then strike.', ease: 'easy' },
   },
   warlock: {
@@ -70,7 +70,7 @@ export const STYLES: Record<ClassId, Record<string, Style>> = {
     grave: { line: 'Summoner. The dead fight for you.', ease: 'medium' },
   },
   druid: {
-    heal: { line: 'Healer. Healing over time and roots.', ease: 'medium' },
+    heal: { line: 'Healer for 2v2 and 3v3. Healing over time and roots.', ease: 'medium' },
     star: { line: 'Ranged caster. Burn, then starlight.', ease: 'medium' },
   },
   gloamknight: {

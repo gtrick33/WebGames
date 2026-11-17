@@ -314,6 +314,16 @@ export const GCD = 0.75;
 export const SLOTS = 4;
 
 /**
+ * A healer's playstyle: its basic ability, the first on its bar, is a heal for a friend. (Said here, by what a bar
+ * holds, so that the rules, the computer players and the lobby all mean the same three: the Lifegiver, the Oathkeeper
+ * and the Grovekeeper.)
+ */
+export const healerBar = (bar: readonly string[]): boolean => {
+  const first = ABILITIES[bar[0] ?? ''];
+  return first?.role === 'heal' && first.aim === 'friend';
+};
+
+/**
  * The share of its abilities' numbers each class deals (their abilities' own words give what lands after this). Those
  * who fight from range deal less than those at arm's length; within that, each class is set so that none wins or loses
  * much more than half its matches when the computer plays every setup against every other (see the measures in

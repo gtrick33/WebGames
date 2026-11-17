@@ -1,4 +1,4 @@
-import { ABILITIES, GCD, type Ability } from './abilities';
+import { ABILITIES, GCD, healerBar, type Ability } from './abilities';
 import { ARENA_H, ARENA_W } from './maps';
 import { CRIT_K, HERO_R, RANGED, type Fighter, type Match, type MoveInput } from './sim';
 import { armored, brace, chainHealer, focusBias, fumble, guard, holdSuper, knows, lapse, lateKick, nextLook, peel, SHARP_FROM } from './tactics';
@@ -47,7 +47,7 @@ export function newBrain(seed: number): Brain {
 const HEALS = (f: Fighter): Ability[] => f.bar.map((b) => ABILITIES[b]!).filter((a) => a.role === 'heal' && a.aim === 'friend');
 
 /** A healer's playstyle: its basic ability, the first on its bar, is a heal for a friend. */
-export const isHealer = (f: Pick<Fighter, 'bar'>): boolean => ABILITIES[f.bar[0] ?? '']?.role === 'heal' && ABILITIES[f.bar[0] ?? '']?.aim === 'friend';
+export const isHealer = (f: Pick<Fighter, 'bar'>): boolean => healerBar(f.bar);
 
 const hpShare = (f: Fighter): number => f.hp / f.maxHp;
 

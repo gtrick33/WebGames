@@ -1,5 +1,5 @@
 import type { ClassId } from '../data/types';
-import { ABILITIES, BODY, BOONS, CLASS_DMG, GCD, SIGIL, styleOfBar, superOf, ultOf, type Ability, type Build, type CcKind, type Effect, type Give, type Points, type Spend, type Use } from './abilities';
+import { ABILITIES, BODY, BOONS, CLASS_DMG, GCD, SIGIL, healerBar, styleOfBar, superOf, ultOf, type Ability, type Build, type CcKind, type Effect, type Give, type Points, type Spend, type Use } from './abilities';
 import { ARENA_H, ARENA_W, ENTRY_GATES, MAPS, type Pillar } from './maps';
 import { ARM, cleanTalents, EXECUTE, NEAR, RALLY, TALENT_BY_ID, type Does, type Tune } from './talents';
 
@@ -49,8 +49,23 @@ export const BOLT_R = 6;
 /**
  * Healing is this much stronger by how many fight on a side: there is more than one enemy's damage to answer. Raised
  * from 1.2 and 1.35 on the owner's "increase the healing a tad bit more for the healers in the 2v2/3v3" (2026-11-13).
+ * In 2v2 it is as written again (it was 1.3) since the owner's "in 2v2 i feel like healers are way too strong, if i go
+ * as double dps i still need to have slight chance" (2026-11-17): between computers two damage dealers beat a healer's
+ * side in 17% of their fights at 1.3, and in a third of them at 1.
  */
-export const HEAL_BY_SIZE: readonly number[] = [1, 1, 1.3, 1.45];
+export const HEAL_BY_SIZE: readonly number[] = [1, 1, 1, 1.45];
+/**
+ * Only healers left standing, on both sides: sudden death. Healing is gone within `fade` seconds of it, and everything
+ * hits `grow` harder for every second since (the owner, 2026-11-17: "in 2v2 if both dps die, the healers take ages to
+ * kill each other"). A healer's own blows are few; without it two of them took half a minute, and up to a minute.
+ */
+export const SUDDEN = { fade: 3, grow: 0.5 } as const;
+/**
+ * Nobody of either side in sight for this long (everyone left is in the shroud: two Nightblades): the shroud lifts
+ * from all of them, and none of them slips back into it by themself for `rest` seconds. The owner, 2026-11-17: "1v1 if
+ * 2 rogue gloamknights fight theyre always invisible".
+ */
+export const DARK = { after: 3, rest: 9 } as const;
 /** Healing spheres: the first rise at this, each comes back this long after it's taken, and gives this share of a life. */
 export const ORB_FIRST = 12;
 export const ORB_EVERY = 24;
@@ -656,6 +671,10 @@ export class Match {
    * time. The Ring's tutorial (arena/tutorial.ts) holds it while it teaches, and lets it go for the last fight.
    */
   hold = false;
+  /** When sudden death began (SUDDEN): only healers were left on both sides. */
+  suddenAt: number | null = null;
+  /** How long nobody of either side has been in sight (DARK). */
+  private dark = 0;
   events: MatchEvent[] = [];
   private rand: () => number;
 
@@ -719,7 +738,15 @@ export class Match {
 
   /** A share of healing gone. Grows through the match, to all of it, so that healers can't hold forever. */
   get dampening(): number {
-    return Math.max(0, Math.min(1, (this.clock - DAMP_FROM) * DAMP_RATE));
+    const faded = (this.clock - DAMP_FROM) * DAMP_RATE;
+    // (sudden death: what is left of it goes in a few seconds)
+    const sudden = this.suddenAt === null ? 0 : (this.clock - this.suddenAt) / SUDDEN.fade;
+    return Math.max(0, Math.min(1, Math.max(faded, sudden)));
+  }
+
+  /** Sudden death (SUDDEN): how much harder everything hits by now, 1 when it isn't. */
+  get sudden(): number {
+    return this.suddenAt === null ? 1 : 1 + SUDDEN.grow * Math.max(0, this.clock - this.suddenAt);
   }
 
   /** What everyone has besides their bar: their playstyle's super. */
@@ -1885,7 +1912,7 @@ export class Match {
     const wrath = this.near(src, 'wrath', 'friend');
     if (wrath) n *= 1 + wrath.d.pct;
     for (const a of t.auras) if (a.kind === 'guard') n *= 1 - a.n;
-    n = Math.round(n * t.mods.guard * this.toughness(t, direct, ab));
+    n = Math.round(n * t.mods.guard * this.toughness(t, direct, ab) * this.sudden);
     by.score.dmg += n;
     if (src !== t) {
       const k = src.pet || t.pet ? THRALL.charge : 1;
@@ -2384,6 +2411,39 @@ export class Match {
     this.tendSigil();
     this.tendOrbs();
     this.judge();
+    if (this.phase !== 'fight') return;
+    this.lastHealers();
+    this.liftDark(dt);
+  }
+
+  /** Sudden death begins the moment everyone still standing, on both sides, is a healer (SUDDEN). It doesn't end. */
+  private lastHealers(): void {
+    if (this.suddenAt !== null || this.hold) return;
+    const up = this.fighters.filter((f) => !f.dead && !f.pet);
+    if (!up.some((f) => f.team === 0) || !up.some((f) => f.team === 1) || !up.every((f) => healerBar(f.bar))) return;
+    this.suddenAt = this.clock;
+    // (said over each of them: the match screen says it too, and by how much, for as long as it lasts)
+    for (const f of up) this.events.push({ k: 'word', id: f.id, word: 'Sudden death', bad: true });
+  }
+
+  /**
+   * Everyone still standing is in the shroud, so nobody can find anybody: after a moment it lifts from all of them
+   * (DARK), and they are kept out of it a while, as if they had just fought.
+   */
+  private liftDark(dt: number): void {
+    const up = this.fighters.filter((f) => !f.dead && !f.pet);
+    if (!up.length || !up.every((f) => this.hidden(f))) {
+      this.dark = 0;
+      return;
+    }
+    this.dark += dt;
+    if (this.dark < DARK.after) return;
+    this.dark = 0;
+    for (const f of up) {
+      this.unveil(f);
+      f.fought = this.clock + DARK.rest - VEIL.calm;
+      this.events.push({ k: 'word', id: f.id, word: 'Revealed', bad: true });
+    }
   }
 
   /** The sigil rises in the middle now and then; the first to reach it takes it. */
@@ -2887,6 +2947,7 @@ export class Match {
       o: this.orbs.map((o) => Math.round(o.at * 10) / 10),
       sg: this.sigil,
       sa: this.sigilAt,
+      ...(this.suddenAt !== null ? { sd: Math.round(this.suddenAt * 100) / 100 } : {}),
     };
   }
 
@@ -2907,6 +2968,7 @@ export class Match {
     });
     this.sigil = s.sg ?? null;
     this.sigilAt = s.sa ?? this.sigilAt;
+    this.suddenAt = s.sd ?? null;
     // the raised dead come and go with the host's word: raised here as they are there, and gone when they are
     // (always after the heroes, so no hero's place moves)
     while (this.fighters.length > s.f.length && this.fighters[this.fighters.length - 1]!.pet) this.fighters.pop();
@@ -3035,4 +3097,6 @@ export interface Snapshot {
   o?: number[];
   sg?: SigilStone | null;
   sa?: number;
+  /** When sudden death began (Match.suddenAt), once it has. */
+  sd?: number;
 }
