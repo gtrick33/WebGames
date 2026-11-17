@@ -100,8 +100,7 @@ export const LOBBY_STEPS: readonly LobbyStep[] = [
     spot: null,
     labels: [
       { spot: 'formats', text: 'A rating each' },
-      { spot: 'rank', text: 'Your rank: titles and armor', right: true },
-      { spot: 'progress', text: 'Daily challenges and more', right: true },
+      { spot: 'rank', text: 'Your rank: titles and armor' },
       { spot: 'arena', text: 'Arena: Any is fine', right: true },
     ],
     allow: ['formats'],

@@ -112,9 +112,11 @@ const auraWord = (a: Aura): string => {
   }
 };
 
-function AuraIcons({ f }: { f: Fighter }) {
-  // what holds them first, then what's left
-  const shown = [...f.auras].sort((a, b) => Number(!!b.cc) - Number(!!a.cc)).slice(0, 6);
+function AuraIcons({ f, ours = false }: { f: Fighter; ours?: boolean }) {
+  // what holds them first, then what's left; on the player's own side, what the other side put on them before what helps
+  // (the owner, 2026-11-17: "add debuffs to yours and your allies health bars")
+  const rank = (a: Aura): number => (a.cc ? 2 : ours && a.harmful ? 1 : 0);
+  const shown = [...f.auras].sort((a, b) => rank(b) - rank(a)).slice(0, 6);
   return (
     <span className="rb-ring-auras">
       {shown.map((a: Aura, i) => (
@@ -181,7 +183,7 @@ export function Frame({ f, m, me, doll, tag, onPick, flip, title, frame }: { f: 
           ) : null}
         </span>
         <span className="rb-ring-under">
-          <AuraIcons f={f} />
+          <AuraIcons f={f} ours={!!me && me.team === f.team} />
         </span>
       </span>
     </button>

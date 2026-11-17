@@ -63,42 +63,28 @@ function AnyPicture() {
   );
 }
 
-export function ArenaChoice({ map, open, onOpen, onPick }: { map: string; open: boolean; onOpen: (open: boolean) => void; onPick: (id: string) => void }) {
-  const chosen = MAPS[map];
+/**
+ * The arena, chosen with one press: a picture card for each ground, Any first, all of them in sight at once (the owner,
+ * 2026-11-17, of the layer it is chosen in: "make the pop up with the arena choosing easier to grasp, currently i have to
+ * scroll which is way too annoying". It was a card that opened into a list, under everything else in that layer).
+ */
+export function ArenaChoice({ map, onPick }: { map: string; onPick: (id: string) => void }) {
   return (
     <div className="rb-ar" data-tut="arena">
-      {!open ? (
-        <button className="rb-ar-now" onClick={() => onOpen(true)} aria-expanded={false} aria-label={`Arena: ${chosen ? chosen.name : 'Any'}. Change`}>
-          {chosen ? <ArenaPicture id={map} /> : <AnyPicture />}
-          <span className="rb-ar-what">
-            <small>Arena</small>
-            <b>{chosen ? chosen.name : 'Any arena'}</b>
-            <em>{chosen ? chosen.blurb : 'A different one each time.'}</em>
-          </span>
-          <span className="rb-rw-more">Change</span>
-        </button>
-      ) : (
-        <div className="rb-ar-open">
-          <h3>
-            Choose an arena
-            <button className="rb-linkbtn" onClick={() => onOpen(false)}>
-              Done
+      <h3>Arena</h3>
+      <div className="rb-ar-cards" role="radiogroup" aria-label="Arena">
+        {['random', ...MAP_IDS].map((id) => {
+          const m = MAPS[id];
+          const on = map === id || (id === 'random' && !MAPS[map]);
+          return (
+            // (the picture and the name: what each is like is said on hover)
+            <button key={id} role="radio" aria-checked={on} title={m ? m.blurb : 'A different arena every match.'} className={`rb-ar-card${on ? ' is-on' : ''}`} style={m ? { ['--c' as string]: m.color } : undefined} onClick={() => onPick(id)}>
+              {m ? <ArenaPicture id={id} /> : <AnyPicture />}
+              <strong>{m ? m.name.replace(/^The /, '') : 'Any arena'}</strong>
             </button>
-          </h3>
-          <div className="rb-ar-cards" role="radiogroup" aria-label="Arena">
-            {['random', ...MAP_IDS].map((id) => {
-              const m = MAPS[id];
-              return (
-                // (the picture and the name: what each is like is said on the card once it is chosen, and on hover)
-                <button key={id} role="radio" aria-checked={map === id} title={m ? m.blurb : 'A different arena every match.'} className={`rb-ar-card${map === id ? ' is-on' : ''}`} style={m ? { ['--c' as string]: m.color } : undefined} onClick={() => onPick(id)}>
-                  {m ? <ArenaPicture id={id} /> : <AnyPicture />}
-                  <strong>{m ? m.name : 'Any arena'}</strong>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }

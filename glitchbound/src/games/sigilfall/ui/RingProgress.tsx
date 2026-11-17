@@ -8,9 +8,9 @@ import { classEmblem } from './classEmblem';
 import { iconPicture } from '../render/art/gameIcons';
 
 /**
- * The Ring's record, behind one link on the main screen (the owner: "make sure the UI on the main menu is still clear
- * for newcomers and is not overloaded with info"): the day's and the week's challenges, class mastery, the season and
- * the last matches, each on its own tab of one window.
+ * The Ring's record: at a glance in the main screen's head (RecordBar: the owner, 2026-11-17, "make sure the progress,
+ * challenges, history and etc are present in the main screen as well"), and in full in one window, the day's and the
+ * week's challenges, class mastery, the season and the last matches each on its own tab.
  */
 
 export type ProgressTab = 'challenges' | 'mastery' | 'season' | 'history';
@@ -40,47 +40,6 @@ const standOf = (c: Challenge, run: ChallengeRun | undefined): { got: number; do
   return { done, got: done ? c.goal : Math.min(c.goal, run?.got[c.id] ?? 0) };
 };
 const n = (x: number): string => x.toLocaleString('en-US');
-
-/**
- * The strip on the main screen, made as the rewards' strip beside it is: today's three challenges as pips, the next one
- * to do and how far along it is, and the way into the rest. ("Progress 2/6 challenges" stays its name for a reader.)
- */
-export function ProgressLink({ record, onOpen }: { record: RingRecord; onOpen: () => void }) {
-  // (the time as the lobby was opened: the count is read again with each match the record keeps)
-  const [now] = useState(() => Date.now());
-  const { done, of } = challengeCount(record, now);
-  const run = record.daily?.key === dayKey(now) ? record.daily : undefined;
-  const today = dailyOf(now);
-  const next = today.find((c) => !standOf(c, run).done);
-  return (
-    <button className="rb-rw-strip rb-pg-strip" onClick={onOpen} aria-label={`Progress ${done}/${of} challenges`} data-tut="progress">
-      <span className="rb-pg-seal" aria-hidden="true">
-        <img src={iconPicture(next?.icon ?? 'scholar_scroll_on_violet')} alt="" draggable={false} />
-      </span>
-      <span className="rb-rw-next">
-        {next ? (
-          <>
-            <b>{next.text}</b>
-            <small>
-              {n(standOf(next, run).got)}/{n(next.goal)} · +{TRACK_POINTS.daily} season points
-            </small>
-          </>
-        ) : (
-          <>
-            <b>Today’s challenges done</b>
-            <small>New ones in {until(dayEnds(now), now)}</small>
-          </>
-        )}
-      </span>
-      <span className="rb-pg-pips" aria-hidden="true">
-        {today.map((c) => (
-          <i key={c.id} className={standOf(c, run).done ? 'is-on' : ''} />
-        ))}
-      </span>
-      <span className="rb-rw-more">Progress</span>
-    </button>
-  );
-}
 
 function Bar({ got, goal }: { got: number; goal: number }) {
   return (
