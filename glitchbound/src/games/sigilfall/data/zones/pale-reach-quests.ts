@@ -42,7 +42,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     after: ['ysanes-last-echo'],
     // the hand-off that sends the hero to pale-reach: it starts when the last chapter ends, not on arrival
     level: 56,
-    reward: { xp: 2000, gold: 700, text: 'Six of the seven sigils burn in Elyra now, and every friend you made on the road is at Mara’s fire: Cael, Nyx and Orren. The rest of the army is still coming up the Hollowmere road behind you. When it is in, Mara marches on Duskspire.' },
+    reward: { xp: 2000, gold: 700, text: 'Six of the seven sigils burn in Elyra now. Cael, Nyx and Orren are at Mara’s fire, and the rest of the army is still coming up the Hollowmere road behind you. When it is in, Mara marches on Duskspire.' },
   },
   {
     id: 'the-last-road',
@@ -54,7 +54,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     after: ['the-last-march'],
     zone: 'pale-reach',
     level: 56,
-    reward: { xp: 1800, gold: 600, text: 'All afternoon the banners came in out of the snow. Hollis’s rangers, Dunmore’s riders, Sefu’s lancers of Ras, Sigrun’s huscarls, the archers of the forest clans and the axemen of Cinderhold each came because you once came for them. Mara has an army now, and in the morning it marches on Duskspire.' },
+    reward: { xp: 1800, gold: 600, text: 'All afternoon the banners came in out of the snow, and Lastlight’s lamp-keepers lit the road for them. Hollis’s rangers, Dunmore’s riders, Sefu’s lancers of Ras, Sigrun’s huscarls, the archers of the forest clans and the axemen of Cinderhold each came because you once came for them. Mara has an army now, and in the morning it marches on Duskspire.' },
   },
   {
     id: 'march-vosk',
@@ -211,7 +211,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
       xp: 12000,
       gold: 3000,
       item: { rarity: 'legendary' },
-      text: 'Elyra lifts the seven sigils, and the Ash Crown comes apart into light. Everything it ate goes home: three hundred years of grief, and every soldier of the Ashen Host with it. Outside, the dead in the snow lie down. The summer fades, and the sun comes up over the Pale Reach. The war is over.',
+      text: 'Elyra lifts the seven sigils, and the Ash Crown comes apart into light. Everything it ate goes home, and every soldier of the Ashen Host goes with it. The summer fades, and the sun comes up over the Pale Reach. The war is over.',
     },
   },
   /* ---------------------------------------------------- Orren's cure */

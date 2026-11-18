@@ -154,7 +154,7 @@ export const SCENES: SceneDef[] = [
       { zoom: 'close' },
       { emote: 'herbwife-thessa', icon: 'dots' },
       { act: 'herbwife-thessa', does: 'take' },
-      { say: 'herbwife-thessa', line: 'The Herald took my Elyra. Her satchel is still on my table, packed for a three-day trip.' },
+      { say: 'herbwife-thessa', line: 'I unpacked her satchel tonight. Willow bark, clean linen, and a honey cake she never ate.' },
       { move: 'mara-venn', to: 'herbwife-thessa' },
       { act: 'mara-venn', does: 'give' },
       { say: 'mara-venn', line: 'She meant to come back, Thessa. We’ll bring her home. I promise.' },
