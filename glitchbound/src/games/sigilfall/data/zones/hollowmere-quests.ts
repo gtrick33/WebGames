@@ -114,7 +114,7 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
       xp: 4000,
       gold: 900,
       perk: 'sigil-tides',
-      text: 'You lift the Sigil of Tides from the altar where Bettany laid it. Far south at Lastlight, Elyra feels it wake and bond to her, across the whole of Vaelmoor. Ysane asks you to put out her lamp, and when you do, she is gone. Six sigils are Elyra’s now, and you carry the sixth until you can put it in her hand. The Hallow King holds the seventh, and Aster’s army is gathering for the Last March.',
+      text: 'You lift the Sigil of Tides from the altar where Bettany laid it. Far south at Lastlight, Elyra feels it wake and bond to her, across the whole of Vaelmoor. Ysane asks you to put out her lamp, and when you do, she is gone. The sixth sigil is Elyra’s now, though you carry it until you can put it in her hand. The Hallow King holds the seventh, and Aster’s army is gathering for the Last March.',
     },
   },
   /* -------------------------------------------------- Tobiah's daughter */

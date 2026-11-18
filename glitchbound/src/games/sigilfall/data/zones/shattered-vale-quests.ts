@@ -16,7 +16,7 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     name: 'What Was Under the Tear',
     giver: 'magister-quell',
     zone: 'shattered-vale',
-    text: 'With the Ash Crown unmade, the Tear is finally closing. As it closes, it has let go of something it held at the very bottom: a man in a white coat, kneeling, with his face in his hands. Quell’s brass rods all point at him, and the grieflight around him is growing. Go to the Tear and face him before it closes over him.',
+    text: 'With the Ash Crown unmade, the Tear is finally closing. As it closes, it has let go of something it held at the very bottom: a man in a harbor-master’s blue coat, kneeling, with his face in his hands. Quell’s brass rods all point at him, and the grieflight around him is growing. Go to the Tear and face him before it closes over him.',
     objective: { kind: 'kill', region: 'shattered-vale', count: 1, enemies: ['the-heralds-first-face'], label: 'Face the man at the bottom of the Tear' },
     // postgame (Act VI's thread): what Aurel wore under the Herald's white for three hundred years
     find: {

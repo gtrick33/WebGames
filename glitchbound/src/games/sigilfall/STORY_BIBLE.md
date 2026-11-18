@@ -208,7 +208,7 @@ sing.
 **Thornvale: Millbrook** (8–14) — farms, the mill bridge, and a gang paid in coin that weighs nothing.
 
 1. `south-road` **Millbrook** — Reeve Aldous; the bridge barricaded by the Gallows Gang, a cart turned back.
-2. `kettle-farm` **Ashes at Kettle Farm** — Tobin's farm burned by Red Caps; the gang's orders in the ashes.
+2. `kettle-farm` **Ashes at Kettle Farm** — the Kettles' farm burned by Red Caps; the gang's orders, in thieves' cant, on a dead Red Cap by the well.
 3. `thieves-cant` **Thieves' Cant** — the orders are in a cant nobody can read; Pim knows someone who can:
    **Nyx**. *Scene: Nyx on the inn's roof, reading by moonlight.* **"'Hunt the bell-chapels. Bring me the warm
    iron.' Signed with no name. Grey ink. You lot are in trouble."** First sign that the Host hunts the sigils.
@@ -224,7 +224,7 @@ sing.
 1. `the-broken-caravan` **Refugees on the Road** — a caravan burned in the grass; eight-year-old Marit and her
    wheelwright uncle Hale. *escort* them to Hearthstead.
 2. `riders-in-the-grass` **Riders in the Grass** — *ambush*: Ashen riders out of the grass; **Rider-Captain Vosk**
-   watches from a ridge and rides away. **"Count their walls, not their swords."**
+   watches from a ridge and rides away. Dunmore: **"He's counting our walls."**
 3. `the-clan-stones` **The Clan Stones** — the centaur clans' standing stones remember the star's fall; Marshal
    Dunmore admits Hearthstead's hall was built over a shrine **"older than the town."** The sigil under it wakes:
    Elyra feels it from a mile off.
@@ -232,7 +232,7 @@ sing.
    Dunmore's riders on screen; then `hearth-the-ram` **The Ram**: Elyra's light breaks it.
 5. `hearth-the-shrine` **The Empty Shrine** — in the smoke Vosk took the **Sigil of Stone** (the hearthstone itself) from the shrine by the well.
    *Scene: the empty niche, a vision fragment (two crowns forged) cut off as the sigil leaves.* Then
-   `orders-from-the-north` **Orders from the North**: Maren reads the courier's soaked letter aloud: the King's
+   `orders-from-the-north` **Orders from the North**: Old Gaius reads Vosk's bone-case orders in Vaelmoor's script (v4; Maren reads the courier's dried letter at the end of Thornvale): the King's
    courier was riding to warn the Crown City the sigils were being hunted, **and someone in the city has been hiding
    the letters.**
 
@@ -348,7 +348,7 @@ Herald's spire in the west, the lamps of Lastlight, and the Gloam Gate at the ro
 3. `wood-the-children` **Two Names in the Snow** — *event*: the echoes of **Lark and Edda** playing in the snow;
    the Host comes for them because Vaelor calls them. **"Papa says we're going home soon."**
 4. `the-weeping-tree` / `the-weeping-lord` **The Weeping Lord** — *boss*: Lord Halvard of the Wardens' Watch, who
-   would not kneel to the Ash Crown and has held the wood against his own king for three hundred years, losing to
+   Aster's warden-lord, who would not kneel to the Ash Crown and has held the wood against the Hallow King for three hundred years, losing to
    the violet at last. Laid to rest, he says the seven sigils must be raised together, and that Vaelor still goes
    to Hollowmere.
 

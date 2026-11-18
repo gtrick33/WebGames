@@ -153,7 +153,7 @@ export const SIGIL_LORE: Record<SigilId, SigilLore> = {
   'sigil-frost': {
     name: 'The Sigil of Frost',
     color: '#bfe8ff',
-    place: 'the Vault of Rime, under the ice of Rimeheld',
+    place: 'the Rimeheld Vault, under the ice of Rimeheld',
     warden: 'Jarl Ingrith the Unthawed, frozen beside it for three hundred years',
     vision: 'Eight wardens at the border. Seven ride away with the sigils. One stays behind.',
     price: 'Her own birthday.',

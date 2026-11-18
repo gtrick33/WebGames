@@ -132,7 +132,7 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
       body: [
         'Seven holy places in a ring around Aster, in the wardens’ old hand, each with a warden’s name beside it.',
         'Briarhollow, the crypt under the chapel. Hearthstead, the hearthstone by the well. Both are crossed out in grey ink.',
-        'The Sun King’s tomb, in the Sunscorch. The Thorn Court, in the Glimmerwood. The Vault of Rime, under the ice of Rimeheld. The Tear, in the Shattered Vale. All four are ringed in fresh grey ink.',
+        'The Sun King’s tomb, in the Sunscorch. The Thorn Court, in the Glimmerwood. The Rimeheld Vault, under the ice of Rimeheld. The Tear, in the Shattered Vale. All four are ringed in fresh grey ink.',
         'The seventh name was written in the bottom corner. Only the black edge of the burn is left.',
       ],
     },

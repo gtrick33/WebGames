@@ -375,7 +375,7 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Wool merchant, stuck in the city',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'city-the-cellar', state: 'done' }, lines: ['So it was the Chancellor. He closed the King’s Road to us and kept it open for the Host.', 'My wool has been stuck in this city for three months because of him.'] },
+      { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['So it was the Chancellor. He closed the King’s Road to us and kept it open for the Host.', 'My wool has been stuck in this city for three months because of him.'] },
       { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['I have forty bales of wool and no road to sell them on. The roads office says the King’s Road is closed for repairs.', 'But I’ve seen grey riders use that road at night.'] },
       { lines: ['Wool, linen, and dyed silk, if you have the gold. I’d sell more if the roads were open.'] },
     ],
