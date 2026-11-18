@@ -2492,6 +2492,9 @@ const LANDMARKS: Record<string, LandmarkSpec[]> = {
   'pale-reach': [{ prop: 'bone-arch', at: [0.24, 0.72], foot: 2 }],
 };
 
+/** A point on a land's edge (0-1 across, 0-1 down) from its side and how far along it. */
+const sideAt = (side: Side, along: number): [number, number] => (side === 'n' ? [along, 0] : side === 's' ? [along, 1] : side === 'w' ? [0, along] : [1, along]);
+
 /** A wild region whose map is generated the first time something looks at it. */
 export function wildRegion(base: Omit<RegionDef, 'kind' | 'map' | 'markers' | 'placed' | 'encounters' | 'level'>, given: ZoneSpec): RegionDef {
   // (a land the story still goes through has no road into a retired one: data/retired.ts)
@@ -2514,6 +2517,16 @@ export function wildRegion(base: Omit<RegionDef, 'kind' | 'map' | 'markers' | 'p
       spots: [...spec.pois.flatMap((p) => (p.spot ? [p.spot.id] : [])), ...(spec.story ?? []).flatMap((m) => (m.marker.kind === 'spot' ? [m.marker.id] : []))],
       // roads the story keeps shut until a quest is done
       needs: Object.fromEntries([...spec.exits, ...(spec.story ?? []).flatMap((m) => (m.marker.kind === 'exit' ? [m.marker] : []))].flatMap((e) => (e.needs ? [[e.to, e.needs]] : []))),
+      // where the roads leave it and the doors down are, for the world map (which way each land lies from here)
+      ways: [
+        ...spec.exits.map((e) => ({ to: e.to, at: sideAt(e.side, e.at), label: e.label })),
+        ...spec.pois.flatMap((p) => (p.entrance ? [{ to: p.entrance.to, at: p.at, label: p.entrance.label }] : [])),
+        // (a way the story opens, by the sight it is set beside)
+        ...(spec.story ?? []).flatMap((m) => {
+          const by = m.near === 'hub' ? spec.hubs[0]?.at : spec.pois.find((p) => p.spot?.id === m.near)?.at;
+          return m.marker.kind === 'exit' && by ? [{ to: m.marker.to, at: [by[0] + (m.dx ?? 0) / spec.w, by[1] + (m.dy ?? 0) / spec.h] as [number, number], label: m.marker.label }] : [];
+        }),
+      ],
     },
     get map() {
       return get().map;

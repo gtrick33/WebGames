@@ -44,11 +44,14 @@ export interface PanZoom {
   dragged: () => boolean;
 }
 
-/** `start` gives the view until the map is zoomed or moved (from the css px a unit at zoom 1). */
-export function usePanZoom(el: RefObject<HTMLElement | null>, w: number, h: number, maxK: number, start: (fit: number) => View): PanZoom {
+/**
+ * `start` gives the view until the map is zoomed or moved (from the css px a unit at zoom 1), and again each time
+ * `again` changes (the world map, shown a quest: it goes to it).
+ */
+export function usePanZoom(el: RefObject<HTMLElement | null>, w: number, h: number, maxK: number, start: (fit: number) => View, again = ''): PanZoom {
   const [size, setSize] = useState({ vw: 0, vh: 0 });
   // (a view kept for another map is not this one's)
-  const key = `${w}x${h}`;
+  const key = `${w}x${h}|${again}`;
   const [raw, setRaw] = useState<{ key: string; v: View } | null>(null);
   const fit = size.vw && size.vh ? Math.min(size.vw / w, size.vh / h) : 0;
 

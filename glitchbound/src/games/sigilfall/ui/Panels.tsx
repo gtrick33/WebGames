@@ -24,12 +24,12 @@ import { authoredLooks, BARE_LOOK, canRide, LOOK_SLOTS, lookFits, lookOf, lookSo
 import { ownedShopLooks, ownedShopMounts } from '../progress/shopGoods';
 import { armorReduction } from '../sim/combat';
 import { K, markerPos, parseRegion, TILE, type TileMap } from '../sim/map';
-import { objectiveTarget, objectiveTargets, questCounts } from '../sim/objective';
-import { npcRegion, regionLinks } from '../sim/routes';
+import { objectiveTarget, objectiveTargets, questCounts, questOnMap, type QuestOnMap } from '../sim/objective';
+import { headingWord, npcRegion, regionLinks, roadHeading } from '../sim/routes';
 import { Bar, fmt, Frame, ItemIcon, Portrait, RARITY_NAME, SkillIcon } from './common';
 import { drawMapIcon, mapIconUrl, type MapIcon } from './mapIcons';
 import { usePanZoom, type PanZoom } from './panZoom';
-import { nameLines, planWorld } from './worldLayout';
+import { nameLines, placeNames, planWorld, type WorldPlan } from './worldLayout';
 import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
 import { questRewards } from '../progress/rewards';
 import { FOG_CELL, fogSeen, loadFog, type Fog } from '../progress/fog';
@@ -1021,7 +1021,25 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
   const w = engine.world!;
   const atStone = !!w.interactable && w.interactable.kind === 'waystone';
   const canTravel = atStone || w.safe;
-  const [sel, setSel] = useState<RegionId>(w.region.id);
+  const plan = worldPlan(mapLands((id) => h.unlocked.includes(id)));
+  // the quest followed, and where the world map shows it: its land, or the nearest the hero has been to
+  const goal = trackedQuest(h, w.region.id);
+  const shown = goal ? questOnMap(h, goal, (id) => plan.cell.has(id), w.region.id) : undefined;
+  const showAt = shown ? (shown.from ?? shown.land) : undefined;
+  // opened for a quest (its "Map" in the log, the tracker), the map opens on its land
+  const [sel, setSel] = useState<RegionId>(() => (engine.mapQuestId && engine.mapQuestId === goal?.id && showAt ? showAt : w.region.id));
+  // and the world map goes to it then, and each time it is shown one after
+  const [shows, setShows] = useState(engine.mapQuestId ? 1 : 0);
+  const [followed, setFollowed] = useState(goal?.id);
+  const showQuest = (): void => {
+    if (showAt) setSel(showAt);
+    setShows(shows + 1);
+  };
+  if (goal?.id !== followed) {
+    // another quest followed (a tap on its mark on the land's map): the world map shows where that one is
+    setFollowed(goal?.id);
+    if (showAt) showQuest();
+  }
   const [tier, setTier] = useState(Math.min(h.tier, w.tier || h.tier, h.level >= MAX_LEVEL ? 2 : 1));
   const [mods, setMods] = useState<RiftMod[]>([]);
   // Riftstone: any level the Riftstone has opened (0: the tiers instead)
@@ -1038,10 +1056,17 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
   const pick = tiered && !useKey ? tier : 0;
   // this week's affixes (read once: the panel isn't open across a Monday)
   const [week] = useState(() => weekOf(Date.now()));
-  const goal = trackedQuest(h, w.region.id);
-  const goalAt = goal ? questRegion(goal) : undefined;
   const ready = goal && questState(h, goal.id) === 'ready';
   const giver = goal && ready ? turnInNpc(goal) : null;
+  // where it is, in words: in a land the hero knows, or past the nearest one they do, and which way
+  const where = (() => {
+    if (!shown || shown.land === w.region.id) return '';
+    const r = REGIONS[shown.land];
+    if (!shown.from) return ` · in ${r.name}`;
+    const way = `the way ${shown.heading ? headingWord(shown.heading) : 'on'}`;
+    const past = shown.from === w.region.id ? `from here, ${way}` : `past ${REGIONS[shown.from].name}, ${way}`;
+    return ` · ${r.kind === 'town' ? `in ${r.name}` : 'in land not explored yet'}: ${past}`;
+  })();
   return (
     <div className="rb-map">
       <section className="rb-map-left">
@@ -1052,13 +1077,19 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
               <strong>{goal.name}</strong>
               <span className="rb-small">
                 {ready ? `Return to ${giver ? NPCS[giver]?.name : 'them'}` : currentObjective(h, goal).label}
-                {/* (elsewhere: the map marks the way out toward it) */}
-                {goalAt && goalAt !== w.region.id ? ` · in ${REGIONS[goalAt].name}: the road there is marked` : ''}
+                {where}
               </span>
             </span>
-            <button className="rb-btn is-small" onClick={() => engine.openPanel('quests')}>
-              Quest log
-            </button>
+            <span className="rb-map-quest-acts">
+              {showAt && (
+                <button className="rb-btn is-small" onClick={showQuest} aria-label={`Show ${goal.name} on the world map`}>
+                  Show
+                </button>
+              )}
+              <button className="rb-btn is-small" onClick={() => engine.openPanel('quests')}>
+                Quest log
+              </button>
+            </span>
           </div>
         )}
         <span className="rb-kicker">
@@ -1074,7 +1105,7 @@ function MapPanel({ engine }: { engine: SigilEngine }) {
       </section>
       <section className="rb-map-right">
         <span className="rb-kicker">{canTravel ? 'The world · travel by waystone' : 'The world · travel from a waystone or a town'}</span>
-        <WorldMap hero={h} here={w.region.id} sel={sel} goal={goal ? questRegion(goal) : undefined} counts={questCounts(h)} onSel={setSel} />
+        <WorldMap hero={h} plan={plan} here={w.region.id} sel={sel} quest={shown} again={shows ? `${shows}` : ''} counts={questCounts(h)} onSel={setSel} />
         <div className={`rb-dest${open ? '' : ' is-locked'}${here ? ' is-here' : ''}`}>
           <div>
             <strong>
@@ -1196,8 +1227,8 @@ function KeyPicker({ heroLevel, region, stone, top, best, week, onPick }: { hero
 const KIND_COLOR: Record<RegionDef['kind'], string> = { town: '#ffcf5a', wild: '#6ad06a', dungeon: '#c58cff' };
 
 /*
- * The world map is a tree (ui/worldLayout.ts): the land the story starts in at the foot, each land a row above the
- * land its road comes from, the story's road straight up the middle and what branches off it to the sides.
+ * The world map (ui/worldLayout.ts): the lands on a grid, each where the roads say it lies from its neighbours (a
+ * land the hero reaches by the west road stands to the left, by the north road above), the roads as straight lines.
  */
 /** World-map units for its names (the map is drawn at least WORLD_PX screen pixels a unit, so they stay readable). */
 const NAME_SIZE = 3.1;
@@ -1205,10 +1236,13 @@ const LVL_SIZE = 2.7;
 const WORLD_PX = 2.9;
 /** How far in the world map zooms, from the whole world. */
 const WORLD_ZOOM = 4;
-/** Map units from one column of the tree to the next (a mark and its name beside it), and from a row to the next. */
-const COL = 36;
-const ROW = 12.5;
-/** Where the story starts: the foot of the tree. */
+/** Map units from one column of the grid to the next, and from one row to the next. */
+const COL = 34;
+const ROW = 26;
+/** How far from the middle of a land's mark its name starts, and how far round the mark nothing else is written. */
+const NAME_GAP = 5;
+const MARK_R = 4.2;
+/** Where the story starts: 0,0 on the grid. */
 const WORLD_ROOT: RegionId = 'briarhollow';
 
 /** The roads between the lands of the map (not into a land out of the story, nor through a door into a building). */
@@ -1219,49 +1253,120 @@ function mapLands(known: (id: RegionId) => boolean): RegionId[] {
   return REGION_IDS.filter((id) => joined.has(id) || (known(id) && REGIONS[id].kind !== 'town'));
 }
 
-/** The world at a glance: every land in the order the story reaches it, the roads on, what is still unknown. */
-function WorldMap({ hero, here, sel, goal, counts, onSel }: { hero: Character; here: RegionId; sel: RegionId; goal?: RegionId; counts: Map<RegionId, { work: number; offers: number }>; onSel: (r: RegionId) => void }) {
+/** The world laid out, once for each set of lands on it (the search takes a moment, and the map is opened often). */
+const worldPlans = new Map<string, WorldPlan<RegionId>>();
+function worldPlan(lands: RegionId[]): WorldPlan<RegionId> {
+  const key = lands.join('|');
+  let plan = worldPlans.get(key);
+  if (!plan) {
+    plan = planWorld(lands, mapLinks(), (id) => REGIONS[id].levels[0], WORLD_ROOT, { heading: roadHeading, cell: [COL, ROW] });
+    worldPlans.set(key, plan);
+  }
+  return plan;
+}
+
+/** A land's levels as the map writes them under its name. */
+const levelsText = (r: RegionDef): string => (r.levels[0] === r.levels[1] ? `level ${r.levels[0]}` : `levels ${r.levels[0]}-${r.levels[1]}`);
+/** About how wide a line of the map's bold letters is, in map units. */
+const textWidth = (s: string, size: number): number => s.length * size * 0.6 + 0.6;
+
+/**
+ * The world at a glance: every land where its roads say it lies, the roads between them, what is still unknown, and
+ * the quest the hero follows: its land ringed in gold, or, while the hero hasn't been there, the nearest land they
+ * have ringed, with an arrow on from it toward the "?" the quest is behind.
+ */
+function WorldMap({ hero, plan, here, sel, quest, again, counts, onSel }: { hero: Character; plan: WorldPlan<RegionId>; here: RegionId; sel: RegionId; quest?: QuestOnMap; again: string; counts: Map<RegionId, { work: number; offers: number }>; onSel: (r: RegionId) => void }) {
   const known = (id: RegionId): boolean => hero.unlocked.includes(id) || REGIONS[id].kind === 'town';
-  const lands = mapLands((id) => hero.unlocked.includes(id));
-  const landKey = lands.join('|');
-  const plan = useMemo(() => planWorld(landKey.split('|') as RegionId[], mapLinks(), (id) => REGIONS[id].levels[0], WORLD_ROOT), [landKey]);
   const at = (id: RegionId): [number, number] => {
     const [c, r] = plan.cell.get(id) ?? [0, 0];
-    return [c * COL, -r * ROW];
+    return [c * COL, r * ROW];
   };
-  // the box fits the tree, with room for the names beside the last column
+  /** Each known land's name: its lines, its levels, and the side of its mark they are written on. */
+  const knownKey = plan.ids.filter(known).join('|');
+  const names = useMemo(() => {
+    const shown = new Set(knownKey.split('|'));
+    const text = (id: RegionId): { lines: string[]; lvl: string | null } => {
+      const r = REGIONS[id];
+      return { lines: nameLines(r.name.replace(/^The /, '')), lvl: r.kind === 'town' ? null : levelsText(r) };
+    };
+    const sides = placeNames(
+      plan,
+      [COL, ROW],
+      (id) => {
+        if (!shown.has(id)) return null;
+        const { lines, lvl } = text(id);
+        return [Math.max(...lines.map((l) => textWidth(l, NAME_SIZE)), lvl ? textWidth(lvl, LVL_SIZE) : 0), lines.length * NAME_SIZE * 1.12 + (lvl ? LVL_SIZE * 1.15 : 0)];
+      },
+      NAME_GAP,
+      MARK_R,
+    );
+    return new Map([...sides].map(([id, s]) => [id, { ...s, ...text(id) }]));
+  }, [plan, knownKey]);
+  // the box fits the lands and their names
   const box = useMemo(() => {
-    const x0 = plan.cols[0] * COL - 9;
-    const y0 = -(plan.rows - 1) * ROW - 8;
-    return { x0, y0, w: plan.cols[1] * COL + 35 - x0, h: 8 - y0 };
-  }, [plan]);
-  // the map opens on the whole world where that is readable; on a small screen, on the hero's own part of it. The
-  // wheel, a pinch or the buttons zoom, a drag moves it
+    let [x0, y0, x1, y1] = [plan.cols[0] * COL - 9, plan.rows[0] * ROW - 9, plan.cols[1] * COL + 9, plan.rows[1] * ROW + 9];
+    for (const { box: b } of names.values()) [x0, y0, x1, y1] = [Math.min(x0, b[0] - 2), Math.min(y0, b[1] - 2), Math.max(x1, b[2] + 2), Math.max(y1, b[3] + 2)];
+    return { x0, y0, w: x1 - x0, h: y1 - y0 };
+  }, [plan, names]);
+  /** Where the map is looking first: the quest's land (and the land the hero would set out from for it), else the hero. */
+  const look = (): [number, number] => {
+    if (!quest || !again) return at(here);
+    const [x, y] = at(quest.land);
+    if (!quest.from) return [x, y];
+    const [fx, fy] = at(quest.from);
+    return [(x + fx) / 2, (y + fy) / 2];
+  };
+  // the map opens on the whole world where that is readable; on a small screen, on the hero's own part of it, or the
+  // quest's when it was opened for one (and again each time it is shown one). The wheel, a pinch or the buttons zoom,
+  // a drag moves it
   const view = useRef<HTMLDivElement>(null);
-  const pz = usePanZoom(view, box.w, box.h, WORLD_ZOOM, (fit) => {
-    const [x, y] = at(here);
-    return { k: Math.max(1, WORLD_PX / fit), cx: x + 12 - box.x0, cy: y - box.y0 };
-  });
+  const pz = usePanZoom(
+    view,
+    box.w,
+    box.h,
+    WORLD_ZOOM,
+    (fit) => {
+      const [x, y] = look();
+      return { k: Math.max(1, WORLD_PX / fit), cx: x - box.x0, cy: y - box.y0 };
+    },
+    again,
+  );
   const v = pz.view;
   const vb = v ? [box.x0 + v.cx - pz.vw / 2 / pz.scale, box.y0 + v.cy - pz.vh / 2 / pz.scale, pz.vw / pz.scale, pz.vh / pz.scale] : [box.x0, box.y0, box.w, box.h];
-  /** A branch: straight up the trunk, or up from its land, along under the next row and up into the land it leads to. */
-  const branch = (a: RegionId, b: RegionId): string => {
+  /** A road: a straight line from mark to mark. */
+  const road = (a: RegionId, b: RegionId): string => {
     const [x0, y0] = at(a);
     const [x1, y1] = at(b);
-    if (x0 === x1) return `M${x0} ${y0}V${y1}`;
-    const ym = y0 - ROW / 2;
-    const r = 1.8;
-    const d = Math.sign(x1 - x0);
-    return `M${x0} ${y0}V${ym}H${x1 - d * r}Q${x1} ${ym} ${x1} ${ym - r}V${y1}`;
+    return `M${x0} ${y0}L${x1} ${y1}`;
   };
   /** Another road from the picked land: a low arc from mark to mark. */
   const arc = (a: RegionId, b: RegionId): string => {
     const [x0, y0] = at(a);
     const [x1, y1] = at(b);
     const len = Math.hypot(x1 - x0, y1 - y0) || 1;
-    const bow = Math.min(7, len * 0.22);
+    const bow = Math.min(9, len * 0.22);
     return `M${x0} ${y0}Q${(x0 + x1) / 2 + ((y1 - y0) / len) * bow} ${(y0 + y1) / 2 - ((x1 - x0) / len) * bow} ${x1} ${y1}`;
   };
+  // the quest: the land ringed, and, while it is in a land the hero hasn't been to, an arrow from the land they would
+  // set out from along the roads there
+  const ringed = quest ? (quest.from ?? quest.land) : undefined;
+  const pointer = (() => {
+    if (!quest?.from) return null;
+    const pts = (quest.path ?? [quest.from, quest.land]).filter((id) => plan.cell.has(id)).map(at);
+    if (pts.length < 2) return null;
+    // from the edge of the one ring to the edge of the other, its head at the far end
+    const toward = (p: [number, number], q: [number, number], d: number): [number, number] => {
+      const len = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1;
+      return [p[0] + ((q[0] - p[0]) / len) * d, p[1] + ((q[1] - p[1]) / len) * d];
+    };
+    const [a, b] = [pts.at(-2)!, pts.at(-1)!];
+    const tip = toward(b, a, 7);
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    const [ux, uy] = [(b[0] - a[0]) / len, (b[1] - a[1]) / len];
+    const head = `M${tip[0]} ${tip[1]}L${tip[0] - ux * 3 - uy * 2} ${tip[1] - uy * 3 + ux * 2}L${tip[0] - ux * 3 + uy * 2} ${tip[1] - uy * 3 - ux * 2}Z`;
+    const line = [toward(pts[0]!, pts[1]!, 7.5), ...pts.slice(1, -1), toward(b, a, 9)].map(([x, y], i) => `${i ? 'L' : 'M'}${x} ${y}`).join('');
+    return { line, head };
+  })();
   return (
     <div
       className="rb-world-view"
@@ -1280,7 +1385,7 @@ function WorldMap({ hero, here, sel, goal, counts, onSel }: { hero: Character; h
             steppe, snow, purple glass...), so the map reads as places and not a chart; unknown lands lie under fog */}
         <defs>
           <filter id="rb-world-wash" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2.6" />
+            <feGaussianBlur stdDeviation="3.4" />
           </filter>
         </defs>
         <g filter="url(#rb-world-wash)" className="rb-world-lands" aria-hidden="true">
@@ -1290,41 +1395,55 @@ function WorldMap({ hero, here, sel, goal, counts, onSel }: { hero: Character; h
             const pal = mapColors(r.theme);
             // (darkened, so the names written over it stay white on dark)
             const fill = !known(id) ? '#151026' : shadeHex(r.kind === 'town' ? pal.cobble : r.kind === 'dungeon' ? pal.wall : pal.floor, -0.42);
-            return <circle key={id} cx={x} cy={y} r={r.kind === 'dungeon' ? 6 : 9} fill={fill} opacity={known(id) ? 0.9 : 0.7} />;
+            return <circle key={id} cx={x} cy={y} r={r.kind === 'dungeon' ? 8 : 12} fill={fill} opacity={known(id) ? 0.9 : 0.7} />;
           })}
         </g>
         {plan.roads.map(([a, b]) => (
-          <path key={`${a}-${b}`} d={branch(a, b)} className={`rb-world-road${known(a) && known(b) ? ' is-known' : ''}`} />
+          <path key={`${a}-${b}`} d={road(a, b)} className={`rb-world-road${known(a) && known(b) ? ' is-known' : ''}`} />
         ))}
-        {/* the picked land's other roads (a tree shows one way to each land; some have two) */}
+        {/* the picked land's other roads (the long way round, drawn only for it) */}
         {plan.ties
           .filter(([a, b]) => (a === sel || b === sel) && known(a) && known(b))
           .map(([a, b]) => (
             <path key={`${a}~${b}`} d={arc(a, b)} className="rb-world-tie" />
           ))}
+        {pointer && (
+          <g className="rb-world-pointer" aria-hidden="true">
+            <path d={pointer.line} className="rb-world-pointer-line" />
+            <path d={pointer.head} className="rb-world-pointer-head" />
+          </g>
+        )}
         {plan.ids.map((id) => {
           const r = REGIONS[id];
           const [x, y] = at(id);
           const k = known(id);
           const col = k ? KIND_COLOR[r.kind] : '#6a6480';
-          const lines = k ? nameLines(r.name.replace(/^The /, '')) : [];
-          const lvl = k && r.kind !== 'town';
-          // its name beside its mark, its lines (and its levels under them) about the mark's middle
+          const name = names.get(id);
+          const lines = name?.lines ?? [];
+          const lvl = name?.lvl ?? null;
+          // its name on the side of its mark it was given: its lines (and its levels under them) beside the mark's
+          // middle, or centred under or over it
           const tall = lines.length * NAME_SIZE * 1.12 + (lvl ? LVL_SIZE * 1.15 : 0);
-          const top = y - tall / 2 + NAME_SIZE * 0.86;
+          const side = name?.side ?? 'e';
+          const tx = side === 'e' ? x + NAME_GAP : side === 'w' ? x - NAME_GAP : x;
+          const top = (side === 's' ? y + NAME_GAP : side === 'n' ? y - NAME_GAP - tall : y - tall / 2) + NAME_SIZE * 0.86;
+          const anchor = side === 'e' ? 'start' : side === 'w' ? 'end' : 'middle';
+          const quested = id === ringed;
           return (
-            <g key={id} className={`rb-world-node${id === sel ? ' is-sel' : ''}`} onClick={() => onSel(id)} role="button" aria-label={k ? r.name : 'Unknown land'} tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSel(id)}>
+            <g key={id} className={`rb-world-node${id === sel ? ' is-sel' : ''}${quested ? ' is-quest' : ''}`} onClick={() => onSel(id)} role="button" aria-label={k ? r.name : 'Unknown land'} tabIndex={0} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSel(id)}>
+              {quested && <circle cx={x} cy={y} r="7" className="rb-world-focus" />}
+              {quest?.from && id === quest.land && <circle cx={x} cy={y} r="6" className="rb-world-beyond" />}
               {id === here && <circle cx={x} cy={y} r="5.2" className="rb-world-here" />}
               {/* a house, a tree, a gate; a grey "?" where the hero has not been */}
               <circle cx={x} cy={y} r="3.4" className="rb-world-mark" stroke={col} />
               <image href={mapIconUrl(k ? (r.kind === 'town' ? 'town' : r.kind === 'dungeon' ? 'dungeon' : 'wild') : 'unknown', 3)} x={x - 3} y={y - 3} width="6" height="6" className="rb-world-icon" />
-              {id === goal && (
+              {id === quest?.land && (
                 <text x={x - 3.4} y={y - 2.4} className="rb-world-goal">
                   !
                 </text>
               )}
               {/* how many quests have work here (a number), and quests to take here (a blue "!") */}
-              {(counts.get(id)?.work ?? 0) > (id === goal ? 1 : 0) && (
+              {(counts.get(id)?.work ?? 0) > (id === quest?.land ? 1 : 0) && (
                 <text x={x - 3.8} y={y + 4.6} className="rb-world-count">
                   {counts.get(id)!.work}
                 </text>
@@ -1335,13 +1454,13 @@ function WorldMap({ hero, here, sel, goal, counts, onSel }: { hero: Character; h
                 </text>
               )}
               {lines.map((line, i) => (
-                <text key={i} x={x + 5} y={top + i * NAME_SIZE * 1.12} className="rb-world-name">
+                <text key={i} x={tx} y={top + i * NAME_SIZE * 1.12} textAnchor={anchor} className="rb-world-name">
                   {line}
                 </text>
               ))}
               {lvl && (
-                <text x={x + 5} y={top + lines.length * NAME_SIZE * 1.12 - NAME_SIZE * 0.86 + LVL_SIZE} className="rb-world-lvl">
-                  {r.levels[0] === r.levels[1] ? `level ${r.levels[0]}` : `levels ${r.levels[0]}-${r.levels[1]}`}
+                <text x={tx} y={top + lines.length * NAME_SIZE * 1.12 - NAME_SIZE * 0.86 + LVL_SIZE} textAnchor={anchor} className="rb-world-lvl">
+                  {lvl}
                 </text>
               )}
             </g>
