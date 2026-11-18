@@ -191,7 +191,7 @@ const MAELIS_CRANE: BossDef = {
   ],
   first: { any: ['vaelors-heartstone'] },
   drops: { items: { any: ['shroud-of-duskspire', 'hollowbrand-shard'] }, chance: [0.3, 0.5, 0.8] },
-  intro: 'The Regent’s oldest counsellor, who sold Aster to the Pale Herald. The ash-gold has grown over his hands like scales.',
+  intro: 'The Regent’s oldest counsellor, who sold the wardens’ map to the Pale Herald. The ash-gold has grown over his hands like scales.',
 };
 
 export const CROWN_CATACOMBS: DungeonModule = {

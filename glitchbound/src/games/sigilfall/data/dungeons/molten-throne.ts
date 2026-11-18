@@ -334,7 +334,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'A guardian of bone-steel with molten rock for a heart. The Host built it to keep Ashkar’s forges burning.',
+    intro: 'A guardian of bone-steel with molten rock for a heart. The Host built it to keep Ashkar’s forges burning, and to stop anyone from reaching him.',
   },
   'ossa-the-founder': {
     id: 'ossa-the-founder',
@@ -502,7 +502,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'The fire lord of Emberdeep, chained to his own throne and forced to forge the Pale Crown. A month of pain has driven him mad, and he won’t know you. Beat him down and break his chains.',
+    intro: 'The fire lord of Emberdeep, chained to his own throne and forced to forge the Pale Crown, the crown the Host means to set Elyra in. A month of pain has driven him mad, and he won’t know you. Beat him down and break his chains.',
   },
 };
 

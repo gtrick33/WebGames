@@ -356,7 +356,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'A siege engine of bone and iron, with a ram for a head and a cauldron of burning pitch on its back. It has broken every gate in Highwall so far. The inner ward’s gate is the last one.',
+    intro: 'A siege engine of bone and iron, with a ram for a head and a cauldron of burning pitch on its back. It has broken every gate in Highwall but one. Behind the inner ward’s gate, the last of the garrison is waiting.',
   },
   'prior-vessant': {
     id: 'prior-vessant',
@@ -425,7 +425,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.5, 0.7],
     },
-    intro: 'He buried Highwall’s dead in this chapel for thirty years. Now he serves the Host, and his hymns raise the dead he buried.',
+    intro: 'He buried Highwall’s dead in this chapel for thirty years. When the siege began, the Pale Herald promised him his dead brother back. Now his hymns raise the soldiers he buried.',
   },
   'general-morvain': {
     id: 'general-morvain',
@@ -516,7 +516,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'The Hallow King’s general, a death knight who has never lost a siege. He has led the siege of Highwall all summer.',
+    intro: 'The Hallow King’s general, a death knight who has never lost a siege. Three hundred years ago he was a knight of Vaelmoor. All summer he has kept Highwall under siege, so that his king’s road into Aster will be open.',
   },
 };
 

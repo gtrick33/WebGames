@@ -66,7 +66,8 @@ export const TALES: Record<string, TalePage> = {
     told: [
       'At the Tear, Nyx sold your road to the Pale Herald for her brother’s life. The Herald took Elyra, and every sigil she carried, into the north.',
       'That same night the Host burned Fernstead. Briarhollow is full of people who have lost their homes.',
-      'Elyra is alive. The Herald needs her: the sigils answer to the one who bonded them. Between you and her stand the Three Gates the wardens built: Highwall, besieged, then the Gloam Gate where she is kept.',
+      'The Host now holds six of the seven sigils. Nobody knows where the last one lies.',
+      'Elyra is alive. The Herald needs her, because the sigils answer only to the one who bonded them. Two of the Three Gates the wardens built stand between you and her: Highwall, under siege, and beyond it the Gloam Gate, where she is kept.',
     ],
     now: 'Break the siege of Highwall and find the way to Elyra.',
   },
@@ -74,7 +75,7 @@ export const TALES: Record<string, TalePage> = {
     over: 'Act V',
     title: 'The Dead Kingdom',
     told: [
-      'Elyra is free, and five sigils are back in her keeping. Two gates have fallen. The road into Vaelmoor is open.',
+      'Elyra is free, and five sigils are back in her keeping. Highwall held, and the Gloam Gate is taken. The road into Vaelmoor is open.',
       'Beyond it lies the kingdom that died in a single night, three hundred years ago, and has been dying ever since. The snow there never melts. The candles there never go out.',
       'Somewhere in it is the last sigil Elyra can still win. The other is on the Hallow King’s brow.',
     ],

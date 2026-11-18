@@ -204,7 +204,7 @@ export const BOSSES: Record<string, BossDef> = {
     ],
     first: { any: ['wardens-aegis'] },
     drops: { items: { any: ['wardens-aegis', 'thornmail', 'static-band'], mage: ['twin-flame-circlet'], warrior: ['bulwark-of-dawn'], ranger: ['trappers-satchel'] }, chance: [0.3, 0.45, 0.65] },
-    intro: 'The crypt’s guardian. He died three hundred years ago and still lets no one through this gate.',
+    intro: 'The crypt’s guardian. He died at this gate three hundred years ago. The raiders’ grieflight has woken him, and he strikes at anyone who comes near.',
   },
   morgrave: {
     id: 'morgrave',
@@ -262,7 +262,7 @@ export const BOSSES: Record<string, BossDef> = {
       items: { mage: ['heart-of-the-inferno', 'stormcaller-rod'], warrior: ['quakehammer', 'whirling-greaves'], ranger: ['galeheart-bow', 'splitwood-bow'], any: ['riftwalker-mantle', 'crown-of-the-hollow-king'] },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'The scholar who leads the raiders. He came to take the sigil hidden in the reliquary.',
+    intro: 'A scholar thrown out of the Crown City’s college, who sold himself to the Host. He has reached the reliquary first, and he means to carry its sigil north.',
   },
   /* ------------------------------------------------------------ Gallows Keep */
   hangman: {
@@ -415,7 +415,7 @@ export const BOSSES: Record<string, BossDef> = {
       items: { warrior: ['bloodthirst-blade', 'riposte-gauntlets'], mage: ['glacier-staff', 'tome-of-blinking'], ranger: ['ricochet-longbow', 'huntmasters-hood'], any: ['glitch-shard', 'amulet-of-echoes', 'riftwalker-mantle'] },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'The leader of the Gallows Gang. Someone pays him in grey coins to keep Millbrook hungry.',
+    intro: 'The Bandit King of Gallows Hill. Someone pays him in grey coin to keep Millbrook hungry and to dig under the Vale’s chapels.',
   },
   /* ------------------------------------------------------------ the Smugglers' Grotto */
   'the-drowned': {
@@ -464,7 +464,7 @@ export const BOSSES: Record<string, BossDef> = {
     ],
     first: { any: ['menders-charm'] },
     drops: { items: { any: ['menders-charm', 'second-wind-ring', 'static-band', 'amulet-of-echoes'], mage: ['glacier-staff'], warrior: ['bulwark-of-dawn'], ranger: ['viper-quiver'] }, chance: [0.3, 0.45, 0.65] },
-    intro: 'The mirefins pray to her. The smugglers pay her. Nobody remembers what she was before the sea.',
+    intro: 'The mirefins pray to her, and the smugglers leave her offerings so she lets their boats pass. Nobody remembers who she was before the sea took her.',
   },
   clatterclaw: {
     id: 'clatterclaw',
@@ -505,7 +505,7 @@ export const BOSSES: Record<string, BossDef> = {
     ],
     first: { any: ['amulet-of-echoes'] },
     drops: { items: { any: ['amulet-of-echoes', 'thornmail', 'menders-charm'], warrior: ['bulwark-of-dawn'] }, chance: [0.3, 0.45, 0.65] },
-    intro: 'The smugglers built their powder store on her pools. She has been waiting for them to leave.',
+    intro: 'A shore crab the size of a cart. The smugglers built their powder store over her brine pools, and she wants them back.',
   },
   saltbeard: {
     id: 'saltbeard',
@@ -570,7 +570,7 @@ export const BOSSES: Record<string, BossDef> = {
       items: { warrior: ['quakehammer', 'whirling-greaves'], mage: ['stormcaller-rod', 'heart-of-the-inferno'], ranger: ['galeheart-bow', 'trappers-satchel'], any: ['amulet-of-echoes', 'crown-of-the-hollow-king', 'riftwalker-mantle', 'glitch-shard'] },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'Forty years a smuggler, twenty a captain, and he has never once paid a harbor fee.',
+    intro: 'The master of the Smugglers’ Grotto. He runs powder through these caves for whoever pays, and lately they pay in grey coin.',
   },
 };
 

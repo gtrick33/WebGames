@@ -14,8 +14,8 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     id: 'west-road',
     name: 'Fernstead’s Candles',
     giver: 'maren',
-    text: 'The Ashen Host will come back for the sigil inside Elyra, and Briarhollow needs scouts to see it coming. Fernstead’s rangers are the best scouts in the Vale, but their village is in trouble: its dead are climbing out of the old barrows. Take the west road into the Brackenridge Hills and find Warden Hollis in Fernstead.',
-    offer: ['The Host will come back for the sigil inside Elyra. We need scouts to see it coming.', 'Fernstead’s rangers watch the Brackenridge Hills, west of here. But a shepherd says their dead are climbing out of the barrows.', 'Go west and help Warden Hollis. If her rangers join us, they can watch our roads.'],
+    text: 'Elyra carries one sigil of seven, and the Host will come back for it. Briarhollow needs scouts to see it coming. Fernstead’s rangers are the best in the Vale, but their own dead are climbing out of the old barrows. Take the west road into the Brackenridge Hills and find Warden Hollis in Fernstead.',
+    offer: ['Elyra carries one sigil, and the Host holds none. It will come back for hers. We need scouts to see it coming.', 'Fernstead’s rangers watch the Brackenridge Hills, west of here. But a shepherd says their dead are climbing out of the barrows.', 'Go west and help Warden Hollis. If her rangers join us, they can watch our roads.'],
     objective: { kind: 'talk', npc: 'warden-hollis', label: 'Talk to Warden Hollis in Fernstead' },
     // the Vale after the north road is safe: dawn, then the Whisperwood and Grimtusk (the Prologue's own order)
     after: ['the-empty-tomb', 'alpha'],
@@ -35,7 +35,14 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     after: ['west-road'],
     zone: 'brackenridge',
     level: 6,
-    reward: { xp: 140, gold: 50, text: 'The dead go down easily. As the last one falls, you hear a woman singing somewhere among the barrows.' },
+    find: {
+      name: 'A Broken Grave-Seal',
+      kind: 'relic',
+      about: 'A piece of the stone that sealed the largest of the Old Barrows, cracked where the kobolds dug through. Under the old carving, a less steady hand has cut three more words. Mother Alsa at Fernstead’s inn knows every grave and every song in these hills.',
+      body: ['Here lies Ser Edric of Fernstead, who held the gate.', 'Wait for me.'],
+      step: 0,
+    },
+    reward: { xp: 140, gold: 50, text: 'The dead go down without a sound, like tired people lying down to sleep. Then, from the far side of the barrows, a woman begins to sing. It is a slow, sad song, and the grass over the graves shivers as she sings it.' },
   },
   {
     id: 'the-widows-song',
@@ -46,35 +53,56 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     objective: { kind: 'talk', npc: 'mother-alsa', label: 'Ask Mother Alsa about the grey woman’s song' },
     after: ['the-old-barrows'],
     zone: 'brackenridge',
-    reward: { xp: 120, gold: 40, text: 'The song is about Ser Edric of Fernstead, a Sigil-warden who died holding a gate in the north three hundred years ago. His widow sang it at his grave every night until she died. Now she is up and singing again.' },
+    reward: { xp: 120, gold: 40, text: 'The song is a lament for Ser Edric of Fernstead, the forgotten eighth warden, who held the Gloam Gate alone while the other seven rode away with the sigils. His widow sang it at his barrow every night until she died. Now she is up again, and the dead rise to hear her.' },
   },
   {
     id: 'lay-the-grey-lady',
     name: 'Lay the Grey Lady',
     giver: 'warden-hollis',
     auto: true,
-    text: 'The Grey Lady is Edric’s widow. Something is using her grief, and every time she sings, more dead rise. Elyra thinks the sigil’s light can break its hold on her. Find the Lady at the Old Barrows, south-west of Fernstead, and lay her to rest.',
+    text: 'The Grey Lady is Edric’s widow. Something is feeding on her grief, and every time she sings, more dead rise. Elyra thinks the sigil’s light can break its hold on her. Find the Lady at the Old Barrows, south-west of Fernstead, and lay her to rest.',
     objective: { kind: 'kill', region: 'brackenridge', count: 1, enemies: ['the-grey-lady'], label: 'Lay the Grey Lady to rest in the Old Barrows' },
     after: ['the-widows-song'],
     zone: 'brackenridge',
     level: 7,
+    find: {
+      name: 'The Grey Lady’s Locket',
+      kind: 'relic',
+      about: 'A tarnished silver locket, left in the grass at the Old Barrows where the Grey Lady faded. Inside is a lock of a man’s dark hair. The hill songs say the words on its back were the last Edric ever sent home.',
+      body: ['Till the last light. Then a little after.'],
+    },
     reward: {
       xp: 450,
       gold: 120,
       item: 'widows-locket',
-      text: 'As she fades, the Lady says her husband’s name. Then she says a voice from the north calls the dead, and they go to it. It promised her Edric back. Her locket stays behind in the grass.',
+      text: 'The Lady says Edric’s name once more, softly, as if he were only in the next room. Before she fades, she tells you a voice from the north promised to give him back to her, if she would only sing. Then she is gone, and the barrows are quiet.',
     },
   },
   {
     id: 'fern-retaken',
     name: 'Fernstead Again',
     giver: 'mara-venn',
-    text: 'The Host left a small force in Fernstead’s square, and Mara means to take the village back. Hollis’s rangers know every ditch in the Brackenridge Hills, and Dunmore has sent riders. Mara wants you at the front.',
+    text: 'The Host burned Fernstead the night the Herald took Elyra, and a small force of its soldiers still holds the village square. Mara means to take Fernstead back tonight, with Hollis’s rangers and the riders Dunmore sent. Ride west to Fernstead in the Brackenridge Hills and fight beside her.',
     objective: { kind: 'event', event: 'fern-retake', label: 'Take Fernstead back with Mara and Hollis’s rangers' },
     after: ['fall-of-fernstead'],
     zone: 'brackenridge',
     level: 40,
-    reward: { xp: 4200, gold: 900, item: { rarity: 'epic' }, text: 'Fernstead is free again, though it is burned and empty. Hollis walks every street before she lets anyone else in. Then she raises her rangers’ banner over the square.' },
+    // (paid in Fernstead, where it is won: Mara is there, the Regent's rider finds her there, and the road to Highwall
+    // starts there; handed in at Briarhollow, the scenes of Fernstead taken back never played)
+    turnIn: false,
+    find: {
+      name: 'The Regent’s Order',
+      kind: 'orders',
+      about: 'The Regent’s sealed order, brought to Fernstead by a rider while the fighting was still going on. Mara read it twice and handed it to you. Briarhollow’s village guard now commands the army sent to save Highwall.',
+      body: [
+        'To Mara Venn, of Briarhollow’s guard.',
+        'Highwall has been under siege since midsummer, and Lord-Commander Varn cannot break it. If Highwall falls, nothing stands between the Hallow King’s Host and Aster.',
+        'I give you command of the relief of Highwall. Varn and his soldiers will serve under you. Take every banner the Vale will send.',
+        'You held Briarhollow’s gate when no one else would. That is why I am asking you.',
+      ],
+      sign: 'Elowen, Regent of Aster',
+    },
+    reward: { xp: 4200, gold: 900, item: { rarity: 'epic' }, text: 'Fernstead is free, but it is burned and empty, and six of Hollis’s rangers died taking it back. Hollis walks every street before she lets anyone else in. Then she raises her rangers’ banner over the square.' },
   },
   {
     id: 'camp-scouts',
@@ -108,6 +136,11 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     after: ['russet-hides'],
     zone: 'brackenridge',
     level: 7,
+    find: {
+      name: 'Grandad Tanner’s Arrow',
+      kind: 'relic',
+      about: 'A snapped arrow lying in the boar wallow at Tusker Gully, its fletching dyed Tanner red. Pip’s grandad shot it into Old Rustback years ago. The tracks around it are fresh. The old boar still dens here.',
+    },
     reward: { xp: 80, gold: 35 },
   },
   {
@@ -131,6 +164,13 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     after: ['west-road'],
     zone: 'brackenridge',
     level: 6,
+    find: {
+      name: 'The Applebys’ Note',
+      kind: 'note',
+      about: 'Pinned to the press-house door at Appleby Orchard, left when the family fled to Fernstead. The last cider apples are still on the trees.',
+      body: ['Gone to Fernstead. Kobolds in the cellar.', 'Take what apples you need. Leave the old tree for the bees.'],
+      sign: 'Jem Appleby',
+    },
     reward: { xp: 65, gold: 30 },
   },
   {
@@ -143,7 +183,7 @@ export const BRACKENRIDGE_QUESTS: QuestDef[] = [
     after: ['lay-the-grey-lady'],
     zone: 'brackenridge',
     level: 8,
-    reward: { xp: 260, gold: 80, item: 'corn-dolly', text: 'The grey fades from the stones, and they are warm again. Hollis keeps her promise: six of her rangers leave for Briarhollow tonight.' },
+    reward: { xp: 260, gold: 80, item: 'corn-dolly', text: 'The candles burn down, and the grey goes out of the stones. That night Fernstead lights its window candles as it always has, and nothing comes up the hill toward them. The first village of the Vale is free of the Host’s hold.' },
   },
 ];
 
@@ -175,7 +215,8 @@ export const BRACKENRIDGE_NPCS: Record<string, NpcDef> = {
         when: { quest: 'lay-the-grey-lady', state: 'active' },
         lines: ['The Grey Lady was the widow of Ser Edric, a Sigil-warden. Something has woken her after three hundred years.', 'Every time she sings, more dead rise. Please, give her rest.'],
       },
-      { when: { quest: 'fern-retaken', state: 'done' }, lines: ['We’re home. Half the roofs are gone, but all of our people are here. We’ll rebuild.', 'You and Mara Venn took Fernstead back. We won’t forget it.'] },
+      { when: { quest: 'fern-retaken', state: 'done' }, lines: ['We’re home. Half the roofs are gone, and six of my rangers are buried by the Harvest Stones.', 'You and Mara Venn took Fernstead back. We won’t forget it.'] },
+      { when: { quest: 'fern-retaken', state: 'active' }, lines: ['My rangers are already on the west road. We go in with Mara at dusk.', 'The Host’s soldiers are sleeping in our houses. Not for one more night.'] },
       // (her people under canvas in Briarhollow's camp, from the Herald's ambush until Fernstead is taken back)
       { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['Fernstead is in the Host’s hands, and my people are sleeping in tents.', 'When Mara gives the word, my rangers will be ready to take it back.'] },
       { when: { quest: 'camp-scouts', state: 'active' }, lines: ['Six of my best rangers are on the road to Briarhollow. Tell Maren they’re hers for as long as she needs them.'] },
@@ -197,10 +238,10 @@ export const BRACKENRIDGE_NPCS: Record<string, NpcDef> = {
       {
         when: { quest: 'the-widows-song', state: 'active' },
         lines: [
-          'She sang it for her husband, Ser Edric of Fernstead. He was a Sigil-warden.',
-          'Three hundred years ago, he went north to hold a gate against an army of the dead. He died there.',
-          'They brought him home and buried him in the Old Barrows. She sang at his grave every night until she died.',
-          'Now she’s singing again, and the dead come when she calls.',
+          'That’s the Grey Lady’s song. She sang it for her husband, Ser Edric of Fernstead.',
+          'The songs say seven wardens hid the Starlight Crown. Fernstead always said there were eight, and the eighth was ours.',
+          'Edric stayed behind to hold the Gloam Gate while the other seven rode away. He held it alone until dusk, and he died there.',
+          'She brought him home to the Old Barrows and sang at his grave every night until she died. Now she’s singing again, and the dead come when she calls.',
         ],
       },
       {
@@ -211,7 +252,8 @@ export const BRACKENRIDGE_NPCS: Record<string, NpcDef> = {
         when: { quest: 'the-harvest-stones', state: 'active' },
         lines: ['The Harvest Stones are our shrine, north of the village. They’ve gone grey and cold, and the dead gather around them at night.', 'Light these candles at the stones, and keep the dead away until they burn down. Then the stones will be clean.', 'My gran did it that way, and it worked.'],
       },
-      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['We left Fernstead with only what we could carry. I still make soup for anyone who needs it.'] },
+      { when: { quest: 'fern-retaken', state: 'done' }, lines: ['The Host’s soldiers slept in my inn for a week. I’ve scrubbed every bed and burned their banners in the grate.', 'Sit by the fire before you go north, dear. It’s the first one we’ve lit since we came home.'] },
+      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['We left Fernstead with what we could carry. I carried my soup pot and the inn’s sign.', 'I still make soup for anyone who needs it. Sit down, dear.'] },
       { when: { quest: 'the-harvest-stones', state: 'done' }, lines: ['I could see the stones from the inn last night, gold in the candlelight. I cried.', 'Keep that corn dolly with you. It’s a harvest charm from these hills.'] },
       { when: { quest: 'lay-the-grey-lady', state: 'done' }, lines: ['Rest, Lady. Rest, Edric.', 'Take a potion before you go. You’ve earned it.'] },
       { lines: ['Welcome to the Bracken Hearth. Potions on the shelf, soup in the pot.', 'Rest between fights, dear. You heal quickly once nothing is hitting you. Potions are for when something is.'] },
@@ -237,6 +279,8 @@ export const BRACKENRIDGE_NPCS: Record<string, NpcDef> = {
         when: { quest: 'old-rustback', state: 'active' },
         lines: ['He’s still there? My grandad shot him years ago, and the arrow is still in him.', 'He charges farther than the young boars and turns faster. Bring him down, and I’ll make you a jerkin from his hide.'],
       },
+      { when: { quest: 'fern-retaken', state: 'done' }, lines: ['The tannery is ash, but the vats came through the fire. I can start again.', 'The first jerkin I make goes to whoever rides north with you.'] },
+      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['My tannery burned with everything in it. My grandad’s tools, too.', 'I’m sewing jerkins out of tent canvas now. They’re better than nothing.'] },
       { when: { quest: 'old-rustback', state: 'done' }, lines: ['The jerkin suits you. Its bristles hurt anything that hits you.'] },
       { lines: ['Leather armor and hides. Have a look.', 'I make armor from what the hills give me, and that’s mostly boars.'] },
     ],
@@ -276,7 +320,7 @@ export const BRACKENRIDGE_EVENTS: Record<string, StoryEventDef> = {
     allies: ['mara', 'fern-ranger', 'fern-ranger', 'hearth-rider', 'hearth-rider'],
     banner: 'Fernstead!',
     start: [
-      { who: 'mara', text: 'Fernstead is ours! Take it back!' },
+      { who: 'mara', text: 'Rangers on the left, riders on the right! Take back the square!' },
       { who: 'fern-ranger', text: 'For Fernstead! For the Warden!' },
     ],
     waves: [
@@ -284,7 +328,7 @@ export const BRACKENRIDGE_EVENTS: Record<string, StoryEventDef> = {
       { enemies: ['legion-soldier', 'legion-crossbowman', 'legion-crossbowman', 'ash-archer', 'ash-raider'], from: ['fern-w', 'fern-n'], barks: [{ who: 'mara', text: 'Shields on the left! Riders, take the lane!' }] },
       { enemies: ['legion-ensign', 'legion-soldier', 'legion-soldier', 'legion-soldier', 'legion-crossbowman', 'ash-raider'], from: ['fern-n', 'fern-e', 'fern-w'], barks: [{ who: 'fern-ranger', text: 'Their banner! Bring down their banner!' }] },
     ],
-    end: [{ who: 'mara', text: 'Fernstead is free. Tell Hollis her people can come home.' }],
+    end: [{ who: 'mara', text: 'Fernstead is free! Someone tell Hollis her people can come home.' }],
     retry: [{ who: 'mara', text: 'Back to the ridge! Regroup! We go again!' }],
   },
   'camp-scouts': {

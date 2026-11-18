@@ -1,4 +1,4 @@
-import { after, all, any, until } from '../cond';
+import { after, all, any, is, until } from '../cond';
 import { wildRegion } from '../zonegen';
 
 /**
@@ -69,7 +69,9 @@ export const PALE_REACH = wildRegion(
       { near: 'hub', dx: 5, dy: 3, marker: { kind: 'npc', npc: 'cael-at-the-reach' }, when: after('the-last-march') },
       // (a step from the armory's front, where the quartermaster stands now that the stall is a stall's size)
       { near: 'hub', dx: -2, dy: 5, marker: { kind: 'npc', npc: 'nyx-at-the-reach' }, when: after('the-last-march') },
-      { near: 'hub', dx: 1, dy: 5, marker: { kind: 'npc', npc: 'elyra-at-the-reach' }, when: after('the-last-march') },
+      // (Elyra is waiting at the fire when the hero comes up from Hollowmere with the Tides; she goes into Duskspire with
+      // them once the gate opens)
+      { near: 'hub', dx: 1, dy: 5, marker: { kind: 'npc', npc: 'elyra-at-the-reach' }, when: all(is('the-last-march', 'started'), until('the-duskspire-gate')) },
       { near: 'hub', dx: 0, dy: 3, marker: { kind: 'prop', prop: 'campfire' } },
       // (the middle one stood behind the hall, on the hall itself, and was moved onto its front steps: it stands before
       // them now)

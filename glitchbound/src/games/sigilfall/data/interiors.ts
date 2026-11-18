@@ -313,10 +313,10 @@ const NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'fern-retaken', state: 'done' }, lines: ['I’m writing a song about how we took Fernstead back.', 'They say Mara Venn smiled when Fernstead’s banner went up.'] },
-      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['They say a pale man in white took Elyra at the Tear. People call him the Pale Herald.', 'My grandmother knew an old song about the Pale Herald. She would never sing it for me.'] },
+      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['They say the Pale Herald himself took Elyra at the Tear. A man in white with no face, walking out of the grey.', 'I tried to write a song about it. I couldn’t finish it.'] },
       { when: { quest: 'festival-the-champion', state: 'done' }, lines: ['Champion of Aster! I’ve already written a verse about you.', 'They say the Chancellor ran into the catacombs under the Crown City, and nobody has found him.'] },
       { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['Travelers say grey riders use the King’s Road at night, and the road wardens let them pass.', 'The roads office closed that road to everyone else. So who opened it for the Host?'] },
-      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Haldor says the crypt is older than the chapel. Something was hidden down there for three hundred years.', 'This tune is for you, for pulling those children out of the fire.'] },
+      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Elder Maren told the whole village what lay under the chapel. A piece of the old Starlight Crown, and the Hallow King in the north wants it.', 'This tune is for you, for pulling those children out of the fire.'] },
       { lines: ['The chapel bell hasn’t rung in three weeks. Haldor won’t ring it.', 'People have gone missing on the Whisperwood road after dark. Nobody has found a trace of them.'] },
     ],
   },
@@ -349,6 +349,7 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Keeps the camp’s ledger',
     sprite: 'villager',
     talk: [
+      { when: { quest: 'the-last-march', state: 'started' }, lines: ['Everyone who could carry a spear has gone north with the banners. The Elder’s book has more than four hundred names in it.', 'I’ve started a second book, for the ones who don’t come back.'] },
       { when: { quest: 'camp-riders', state: 'done' }, lines: ['There are four banners on the wall now, one for each village in the camp.', 'Elder Maren reads the list of names every night.'] },
       { when: { quest: 'camp-scouts', state: 'done' }, lines: ['Fernstead’s rangers keep our watchfire, so Fernstead’s banner hangs on the wall.', 'I write down what each village brings to the camp, and what it has lost.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The Elder’s table is a war table now. I keep the records of beds, bread, arrows and names.', 'Right now the camp is one village. The Elder says the others will join us.'] },
@@ -364,6 +365,7 @@ const NPCS: Record<string, NpcDef> = {
       { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['“The night is long, the wall is high, and Highwall did not fall.” That’s my new song.', 'The whole city is singing it already.'] },
       { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['Nobody wants to hear songs about the Tear. I won’t write another until we win something.'] },
       { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['I was in the square on the Night of Knives. The knives came for the Regent, and she didn’t run.', 'She stood still and watched you fight for her.'] },
+      { when: { quest: 'sir-corvane', state: 'done' }, lines: ['A knight of the Ninefold Watch came in last night and asked for the song of the nine days.', 'Halfway through, he put his head down on the table. I sang it to the end for him.'] },
       { lines: ['I sing the songs of the Ninefold Watch, the knights who guarded the downs.', 'Hardly anyone in the city remembers them now.'] },
     ],
   },

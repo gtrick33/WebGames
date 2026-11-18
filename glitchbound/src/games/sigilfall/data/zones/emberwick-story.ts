@@ -6,10 +6,12 @@ import type { EnemyDef, NpcDef, QuestDef, StoryEventDef } from '../types';
  * paper will not bring down the Regent's oldest counsellor. The trail runs through the treasury (the relief's money,
  * paid out ten years ago), the roads office (which spent it on repairs nobody made, and closed the King's Road to
  * refugees this spring) and down into Crane's own cellar, where his hired knives wait. The ledgers there show ten
- * years of the Pale Herald's ash-gold, and the royal couriers' lost letters are with them. The Regent means to arrest
- * him at dawn, when the Starfall Festival is over; Crane strikes first, and his knives and the Host's assassins go
- * for her in the square. She lives, Crane runs into the catacombs under his house and leaves the wardens' map
- * behind, and the Regent names the hero her champion. Act III opens from her. Written to DIALOGUE_STYLE.md.
+ * years of the Pale Herald's ash-gold, and the royal couriers' lost letters are with them (Oskar Fell's among them:
+ * the Prologue's courier); Hesk carries it all to the keep. The Regent means to arrest him at dawn, when the Starfall
+ * Festival is over; Crane strikes first, and his knives and the Host's assassins go for her in the square. She lives,
+ * Crane runs into the catacombs under his house and leaves the wardens' map behind (four places ringed in his grey
+ * ink, two crossed out, the seventh burned off its corner), and the Regent names the hero her champion. Act III opens
+ * from her. Written to DIALOGUE_STYLE.md.
  */
 export const EMBERWICK_QUESTS: QuestDef[] = [
   /* --------------------------------------------- postgame: the Chancellor in the catacombs */
@@ -22,41 +24,68 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
     objective: { kind: 'boss', boss: 'maelis-crane', label: 'Find Maelis Crane in the catacombs' },
     after: ['epilogue-the-bell'],
     level: 60,
-    reward: { xp: 9000, gold: 4000, item: { rarity: 'legendary' }, text: 'Crane falls among his ash-gold, and the coins make no sound. “Every one of these was made from someone’s grief,” he says. “I knew that, and I took them anyway.” The Regent has the stair bricked up behind you. That night, for the first time in nine years, she sleeps until morning.' },
+    reward: { xp: 9000, gold: 4000, item: { rarity: 'legendary' }, text: 'Crane falls among his ash-gold, and the coins make no sound. “Every one of these was made from someone’s grief,” he says. “I knew that, and I took them anyway.” The Regent has the stair bricked up behind you. That night, for the first time since the Night of Knives, she sleeps until morning.' },
   },
   /* ------------------------------------------------------------ the traitor */
   {
     id: 'city-the-treasury',
     name: 'Follow the Money',
     giver: 'regent-elowen',
-    text: 'Crane says Corvane’s order is a forgery, and the Regent needs more proof before she can arrest him. Ten years ago the treasury paid for the Ninefold Watch’s relief, but the relief never marched. Ask Clerk Amsel at the Treasury, in the north-east of the city, where the money went.',
+    text: 'Crane calls Corvane’s order a forgery, and the Regent needs proof before she can arrest him. Ten years ago her treasury paid for the Watch’s relief, and the relief never marched. Clerk Amsel keeps the treasury ledgers at the Treasury, in the north-east of the city, east of the Sigil-wardens’ temple. Ask him where the money went.',
+    offer: [
+      'Maelis says the order is forged, and half my council will believe him. He has kept Aster’s books for thirty years.',
+      'Ten years ago my treasury paid for the Watch’s relief. That money went somewhere.',
+      'Clerk Amsel keeps the treasury ledgers, in the north-east of the city. Ask him quietly where it went.',
+    ],
     objective: { kind: 'talk', npc: 'clerk-amsel', label: 'Ask Clerk Amsel at the Treasury where the money went' },
     after: ['the-kings-design'],
     zone: 'emberwick',
     level: 28,
-    reward: { xp: 1200, gold: 260, text: 'The relief money was paid out in full. The same week, it was signed over to the roads office, for repairs on the King’s Road that were never made.' },
+    reward: { xp: 1200, gold: 260, text: 'The money for the Watch’s relief left the treasury in full, and the same week it went to the roads office under the Lord Chancellor’s seal. Nothing on the King’s Road was ever mended with it. The trail runs to the man who keeps the roads office.' },
   },
   {
     id: 'city-the-roads-office',
     name: 'Repairs Nobody Made',
     giver: 'clerk-amsel',
-    text: 'The roads office took the relief money and spent it on nothing. It is also the office that closed the King’s Road to refugees this spring. Roadwarden Hesk runs it, in the tavern quarter in the south-west of the city. Ask him for the old ledgers.',
+    text: 'The Watch’s relief money went to the roads office, for repairs nobody made. The same office closed the King’s Road to refugees this spring, on the Lord Chancellor’s seal. Roadwarden Hesk keeps it, in the Roads Office at the south end of the tavern quarter, in the south-west of the city. Ask him for his ledgers from that winter.',
     objective: { kind: 'talk', npc: 'roadwarden-hesk', label: 'Ask Roadwarden Hesk at the Roads Office for the ledgers' },
     after: ['city-the-treasury'],
     zone: 'emberwick',
     level: 28,
-    reward: { xp: 1200, gold: 260, text: 'Hesk is terrified. The Chancellor’s men took the old ledgers from his office the night you brought Corvane’s order to the Regent. They carried them to Crane’s house.' },
+    reward: { xp: 1200, gold: 260, text: 'Crane is covering his tracks. The night you brought Corvane’s order to the keep, his men emptied Hesk’s shelves into a handcart and wheeled ten years of ledgers to the Chancellor’s House. If those books still exist, they are in his cellar.' },
   },
   {
     id: 'city-the-cellar',
     name: 'The Chancellor’s Cellar',
     giver: 'roadwarden-hesk',
-    text: 'The ledgers are in Crane’s cellar, under his house just west of the main avenue. Crane is at the keep with the Regent tonight. Nyx can open the cellar door, and Cael expects a trap. Get the ledgers out.',
+    text: 'The ledgers are in the cellar of the Chancellor’s House, the tall slate house just west of the main avenue, below the Ember Keep. Crane dines at the keep with the Regent tonight, so his house is dark. Nyx can open the cellar door, and Cael expects a trap. Get the ledgers out and bring them back to Hesk, who knows his own office’s books.',
+    offer: [
+      'Crane dines at the keep with the Regent tonight. His house will be dark.',
+      'It’s the tall slate house west of the main avenue, below the keep. If the ledgers are anywhere, they’re in the cellar.',
+      'Bring them to me. I know my own stamp. I can show the Regent every repair that was never made.',
+    ],
+    find: {
+      name: 'Crane’s Ledger',
+      kind: 'page',
+      about: 'A page of Crane’s own ledger, found in his cellar beside Hesk’s stolen books, a chest of ash-gold and a sack of royal couriers’ letters that were never opened. Eight of the letters are Oskar Fell’s, the courier who died in Briarhollow’s gateway. The ninth, he carried himself.',
+      body: [
+        'Received of the Herald’s rider, at the Barrow Ford: three hundred, in ash.',
+        'Received by way of the roads office: the relief of the Ninefold Watch. Kept.',
+        'Paid to the wardens of the King’s Road, to look away when the grey riders pass. In ash.',
+        'Held back from the keep: the couriers’ letters from the north, forty-one. Burn them when the Herald says.',
+      ],
+      sign: 'M. C.',
+    },
     objective: { kind: 'event', event: 'city-cellar', label: 'Get the ledgers out of the Chancellor’s cellar' },
     after: ['city-the-roads-office'],
     zone: 'emberwick',
     level: 29,
-    reward: { xp: 1800, gold: 380, item: { rarity: 'rare' }, text: 'The ledgers show ten years of payments to Crane in ash-gold, the Pale Herald’s coin. Beside them is a sack of royal couriers’ letters that were never delivered. Crane let the Ninefold Watch die, kept the roads open for the Host, and hid every warning.' },
+    thanks: [
+      'That’s my stamp, on every page. Ninefold Bridge, the Barrow Ford, the Watch-house roof. None of it was ever built.',
+      'And these letters still have the couriers’ seals on them. Somebody stopped them at the gate. Ten years of warnings.',
+      'I’ll carry all of it up to the Regent myself, tonight. I should have done it ten years ago.',
+    ],
+    reward: { xp: 1800, gold: 380, item: { rarity: 'rare' }, text: 'Hesk climbs to the keep with the ledgers and the letters under his arm, and an hour later a guard brings back the Regent’s word. Crane will be arrested at dawn, when the Starfall Festival is over and the streets are empty. Until then he must not guess that anything has changed.' },
   },
   /* ---------------------------------------------------- the Starfall Festival */
   {
@@ -64,48 +93,66 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
     name: 'The Starfall Festival',
     giver: 'regent-elowen',
     auto: true,
-    text: 'The ledgers are proof enough. The Regent will have Crane arrested at dawn, when the festival is over and the streets are empty. Tonight Emberwick celebrates the Starfall, the night the star fell a thousand years ago, and the whole city is out. Walk the parade on the south avenue and keep your eyes open.',
+    text: 'Tonight Emberwick keeps the Starfall, a thousand years since the star fell, and the whole city is in the streets. The Regent will go down to light the star-lantern in the market square at midnight, as she does every year, so that Crane guesses nothing. Walk the Starfall Parade on the south avenue, near the south gate, and watch the crowd.',
+    find: {
+      name: 'A Paper Star',
+      kind: 'token',
+      about: 'A star folded out of paper, pushed into your hand by a small girl on her father’s shoulders at the Starfall Parade. Every child in the city writes a wish on one tonight, for the Regent to hang on the star-lantern.',
+      body: ['I wish Papa’s cough gets better, and our dog comes home, and nobody has to go north anymore.'],
+      sign: 'Lissa, seven',
+    },
     objective: { kind: 'explore', spot: 'festival-parade', label: 'Watch the Starfall Parade on the south avenue' },
     after: ['city-the-cellar'],
     zone: 'emberwick',
     level: 29,
-    reward: { xp: 700, gold: 160, text: 'There are drums, a paper star on poles, and children on their parents’ shoulders. Then the Regent comes down to the market square to light the star-lantern, and a dozen men in festival masks start pushing toward her.' },
+    reward: { xp: 700, gold: 160, text: 'Drums, a paper star on poles, children on their fathers’ shoulders. At midnight the Regent comes down to the market square to light the star-lantern. The masks Cael saw by the stalls start pushing through the crowd toward her, and one of them has a knife out.' },
   },
   {
     id: 'festival-the-knives',
     name: 'The Night of Knives',
     giver: 'regent-elowen',
     auto: true,
-    text: 'Crane has struck first. His hired knives, in festival masks, and the Host’s grey assassins are going for the Regent at the star-lantern in the market square. Nyx and Orren are with you, and Cael is holding the keep stair. Keep the Regent alive.',
+    text: 'Crane has struck first. His hired knives in festival masks, and the Host’s grey assassins with them, are going for the Regent at the star-lantern in the middle of the market square. Cael is holding the keep stair behind her, and Nyx and Orren are with you. Run north up the avenue to the square and keep her alive.',
     objective: { kind: 'event', event: 'festival-knives', label: 'Keep the Regent alive in the market square' },
     after: ['festival-the-lanterns'],
     zone: 'emberwick',
     level: 30,
-    reward: { xp: 2400, gold: 500, item: { rarity: 'rare' }, text: 'The last attacker falls. The Regent has a cut on her arm, and she is furious. Crane is not at the keep. A guard saw him running to his house.' },
+    reward: { xp: 2400, gold: 500, item: { rarity: 'rare' }, text: 'The last of them falls among the burning stalls. The Regent is cut across the arm, and alive. Crane never came down to the square. A guard saw him running for his own house before the first knife was drawn.' },
   },
   {
     id: 'festival-the-catacombs',
     name: 'Down Among the Dead',
     giver: 'regent-elowen',
     auto: true,
-    text: 'Crane ran to his house. Under his cellar is a hidden stair down into the catacombs beneath the old city. Go down and find out where he went.',
-    objective: { kind: 'explore', spot: 'crane-catacombs', label: 'Search the stair under Crane’s house' },
+    text: 'Crane ran from the square to the Chancellor’s House, west of the main avenue below the keep. In his cellar, behind a shelf, a stair nobody knew about goes down into the catacombs under the old city. Go down after him and find out where he went.',
+    find: {
+      name: 'The Wardens’ Map',
+      kind: 'map',
+      about: 'The Sigil-wardens’ own map of where they hid the seven sigils, left on Crane’s desk at the top of the catacomb stair. Crane marked each place in grey ink as he sold it to the Pale Herald. The bottom corner, where the seventh place was, was burned away long ago.',
+      body: [
+        'Seven holy places in a ring around Aster, in the wardens’ old hand, each with a warden’s name beside it.',
+        'Briarhollow, the crypt under the chapel. Hearthstead, the hearthstone by the well. Both are crossed out in grey ink.',
+        'The Sun King’s tomb, in the Sunscorch. The Thorn Court, in the Glimmerwood. The Vault of Rime, under the ice of Rimeheld. The Tear, in the Shattered Vale. All four are ringed in fresh grey ink.',
+        'The seventh name was written in the bottom corner. Only the black edge of the burn is left.',
+      ],
+    },
+    objective: { kind: 'explore', spot: 'crane-catacombs', label: 'Search the stair under the Chancellor’s House' },
     after: ['festival-the-knives'],
     zone: 'emberwick',
     level: 30,
-    reward: { xp: 800, gold: 200, text: 'Crane is gone behind a door at the bottom, barred from the other side. On his desk at the top of the stair, left in his hurry, is the Sigil-wardens’ map of where they hid the seven sigils. Four of the places are marked in fresh grey ink.' },
+    reward: { xp: 800, gold: 200, text: 'The stair ends at an iron door, barred from the far side, and the guards cannot break it. Crane is gone into the catacombs under the old city. He ran for his life and left the wardens’ map behind on his desk. The Regent must see it tonight.' },
   },
   {
     id: 'festival-the-champion',
     name: 'Champion of Aster',
     giver: 'regent-elowen',
     auto: true,
-    text: 'The city is locked down and Crane’s house is sealed. The wardens’ map is on the Regent’s table, with four places marked in grey ink where the Host will dig next. Go to the Regent at the Ember Keep.',
+    text: 'The city is locked down and the Chancellor’s House is sealed. The Regent has the wardens’ map spread on a table in the Ember Keep’s forecourt, at the head of the main avenue. Every place on it is one the Host already knows. Go to her.',
     objective: { kind: 'talk', npc: 'regent-elowen', label: 'Talk to Regent Elowen at the Ember Keep' },
     after: ['festival-the-catacombs'],
     zone: 'emberwick',
     level: 30,
-    reward: { xp: 2600, gold: 600, item: { rarity: 'epic' }, text: 'The Regent names you Champion of Aster and gives you the map. The four marked places are the Sun King’s tomb in the Sunscorch, the Thorn Court in the Glimmerwood, the Vault of Rime in Rimeheld, and the Tear in the Shattered Vale. The Sunscorch comes first, down the long road from the city’s west gate.' },
+    reward: { xp: 2600, gold: 600, item: { rarity: 'epic' }, text: 'The Regent names you Champion of Aster before her guards, with Crane’s empty chair behind her, and puts the wardens’ map in your hands. The Host has a head start on all four places. Every sigil you reach first is one the Hallow King will never hold. The first is the Sun King’s tomb in the Sunscorch, down the long road from the city’s west gate.' },
   },
 ];
 
@@ -117,6 +164,7 @@ export const EMBERWICK_NPCS: Record<string, NpcDef> = {
     sprite: 'elder',
     talk: [
       { when: { quest: 'city-the-treasury', state: 'active' }, lines: ['You’re going to the treasury? Clerk Amsel is old and forgets things. I wouldn’t trust his books.'] },
+      { when: { quest: 'city-the-roads-office', state: 'active' }, lines: ['The roads office? Hesk stamps whatever is put in front of him. A clerk’s mistake is not treason.'] },
       { when: { quest: 'city-the-cellar', state: 'active' }, lines: ['You’ve been asking questions all over the city. Be careful. The streets aren’t safe at night.'] },
       { when: { quest: 'city-the-cellar', state: 'done' }, lines: ['The festival is tonight. Stay close to the Regent. I will be close to her too.'] },
       { when: { quest: 'the-kings-design', state: 'done' }, lines: ['That order is a forgery. A dead traitor wrote it, and a drunk who ran from his post carried it here.', 'The Regent will see that, in time.'] },
@@ -132,13 +180,13 @@ export const EMBERWICK_NPCS: Record<string, NpcDef> = {
       {
         when: { quest: 'city-the-treasury', state: 'active' },
         lines: [
-          'Here it is. The relief for the Ninefold Watch, ten years ago, in the spring. It was paid in full.',
-          'That same week, the money was signed over to the roads office, for repairs on the King’s Road.',
-          'I walked the King’s Road that summer. Nothing had been repaired.',
-          'I thought it was strange, and I never said anything. I’m sorry.',
+          'The transfer went through the roads office, under the Lord Chancellor’s seal. Every order in that office does.',
+          'Roadwarden Hesk keeps it. If anyone knows where the money went after that, it’s in his ledgers.',
+          'I should have said something ten years ago. I was afraid for my post. I’m sorry.',
         ],
       },
-      { when: { quest: 'city-the-roads-office', state: 'active' }, lines: ['Roadwarden Hesk runs the roads office, in the tavern quarter. Be gentle with him. He signs whatever he’s given.'] },
+      { when: { quest: 'city-the-cellar', state: 'done' }, lines: ['Hesk walked past my window tonight with an armful of ledgers, heading for the keep. He looked ten years younger.'] },
+      { when: { quest: 'city-the-roads-office', state: 'active' }, lines: ['Roadwarden Hesk runs the roads office, at the south end of the tavern quarter. Be gentle with him. He signs whatever he’s given.'] },
       { lines: ['I keep the treasury ledgers, forty years of them. Every coin the Crown spends is written down here.'] },
     ],
   },
@@ -151,13 +199,14 @@ export const EMBERWICK_NPCS: Record<string, NpcDef> = {
       {
         when: { quest: 'city-the-roads-office', state: 'active' },
         lines: [
-          'The old ledgers are gone. The Chancellor’s men came for them the night you brought that order to the Regent.',
-          'They carried ten years of books out in a handcart, to his house. They’re in his cellar.',
+          'The ledgers from that winter? They’re gone, all of them. The Chancellor’s men came for them the night you brought that order to the keep.',
+          'They wheeled ten years of my books out in a handcart, to his house. They’ll be in his cellar.',
           'Please don’t tell him I told you.',
         ],
       },
-      { when: { quest: 'city-the-cellar', state: 'active' }, lines: ['Crane’s house is the tall one west of the main avenue, below the keep. His men use the cellar at night.', 'I never looked. I didn’t want to know.'] },
       { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['I’ve opened the King’s Road to the refugees again. I wrote the order myself this time.'] },
+      { when: { quest: 'city-the-cellar', state: 'done' }, lines: ['The Regent read every page while I stood there. Then she thanked me. Ten years, and she thanked me.'] },
+      { when: { quest: 'city-the-cellar', state: 'active' }, lines: ['Crane’s house is the tall slate one west of the main avenue, below the keep. His men use the cellar at night.', 'I never looked. I didn’t want to know.'] },
       { lines: ['This is the roads office. Tolls, repairs and travel permits.', 'The King’s Road is closed to refugees, by order of the Lord Chancellor.'] },
     ],
   },
@@ -175,14 +224,17 @@ export const EMBERWICK_EVENTS: Record<string, StoryEventDef> = {
     allies: ['cael', 'nyx'],
     banner: 'Ambush!',
     start: [
-      { who: 'nyx', text: 'The lock’s open. That was too easy.' },
+      { who: 'nyx', text: 'The cellar door isn’t even locked. Nobody leaves a door like that open by mistake.' },
       { who: 'cael', text: 'Get behind me! They were waiting for us!' },
     ],
     waves: [
       { enemies: ['hired-knife', 'hired-knife', 'hired-knife'], from: ['crane-door', 'crane-s'] },
       { enemies: ['hired-knife', 'hired-knife', 'ashen-assassin'], from: ['crane-w', 'crane-e'], barks: [{ who: 'cael', text: 'That grey one is from the Host! It doesn’t bleed. Watch your back!' }] },
     ],
-    end: [{ who: 'nyx', text: 'Here are the ledgers. And this chest is full of ash-gold. Crane has been taking the Host’s money for years.' }],
+    end: [
+      { who: 'nyx', text: 'Hesk’s ledgers, a chest of ash-gold, and a sack of letters with the King’s couriers’ seals. Nobody ever opened them.' },
+      { who: 'cael', text: 'Take it all to Hesk. He knows what his own stamp is worth.' },
+    ],
     retry: [{ who: 'cael', text: 'Get up. The ledgers are still down there.' }],
   },
   'festival-knives': {
@@ -196,15 +248,15 @@ export const EMBERWICK_EVENTS: Record<string, StoryEventDef> = {
     ward: { pet: 'regent', at: 'ember-dais', name: 'Regent Elowen' },
     banner: 'Assassins!',
     start: [
-      { who: 'orren', text: 'Those masked men are all heading for the Regent!' },
-      { who: 'nyx', text: 'Those are Gallows Gang boots. Crane hired what’s left of the gang!' },
+      { who: 'nyx', text: 'Gallows Gang boots under those masks! Crane hired what’s left of the gang, and he isn’t waiting for dawn!' },
+      { who: 'orren', text: 'Get between them and her! Keep them off the star-lantern!' },
     ],
     waves: [
       { enemies: ['hired-knife', 'hired-knife', 'hired-knife', 'bandit-archer'], from: ['ember-w', 'ember-e'] },
       { enemies: ['ashen-assassin', 'hired-knife', 'hired-knife', 'ashen-assassin'], from: ['ember-n', 'ember-s'], barks: [{ who: 'orren', text: 'The grey ones are the Host’s assassins! They vanish when you close in. Watch your back!' }] },
       { enemies: ['ashen-assassin', 'ashen-assassin', 'hired-knife', 'hired-knife', 'bandit-archer', 'hired-knife'], from: ['ember-w', 'ember-e', 'ember-n'], barks: [{ who: 'nyx', text: 'That’s the last of them! Keep her behind you!' }] },
     ],
-    end: [{ who: 'orren', text: 'She’s alive. But where is Crane?' }],
+    end: [{ who: 'nyx', text: 'She’s alive. And Crane isn’t here. He was meant to be at her side tonight.' }],
     retry: [{ who: 'orren', text: 'They reached her. Get up! Again, and keep them off her this time!' }],
   },
 };

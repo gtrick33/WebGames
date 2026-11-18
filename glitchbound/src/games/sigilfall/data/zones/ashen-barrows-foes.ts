@@ -248,7 +248,8 @@ export const ASHEN_BARROWS_ITEMS: ItemDef[] = [
   },
   {
     id: 'corvanes-broken-sigil',
-    name: 'Corvane’s Broken Sigil',
+    // (v4: "Sigil" now means only the seven pieces of the Crown; a Watch badge is a badge)
+    name: 'Corvane’s Broken Badge',
     slot: 'relic',
     rarity: 'epic',
     icon: 'relic',
