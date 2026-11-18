@@ -24,7 +24,7 @@ export const TALES: Record<string, TalePage> = {
     title: 'The Night the Bells Stopped',
     told: [
       'A thousand years ago a star fell between two sister kingdoms, Aster and Vaelmoor. It broke in two, and each kingdom forged its half into a crown. While those crowns were worn, the dead stayed dead.',
-      'Three hundred years ago, King Vaelor of Vaelmoor lost his queen and his two children to the plague. He broke his crown and drank its light to bring them back. They came back for one night. Then his kingdom died and rose again, grey and cold: the Ashen Host. Vaelor became the Hallow King.',
+      'Three hundred years ago, King Vaelor of Vaelmoor lost his queen and his two children to the plague. He broke his crown and drank its light to bring them back. They came back for one night. Then his kingdom died, and its people rose again, grey and cold, as the Ashen Host. Vaelor became the Hallow King.',
       'Seven wardens broke Aster’s crown into seven sigils, hid them far apart, and sealed the Hallow King in Duskspire, in the frozen north. For three hundred years nobody remembered where the sigils lay.',
       'Somebody has remembered. You come to Briarhollow, a village on the edge of the Vale, as its lamps are lit.',
     ],
@@ -77,7 +77,7 @@ export const TALES: Record<string, TalePage> = {
     told: [
       'Elyra is free, and five sigils are back in her keeping. Highwall held, and the Gloam Gate is taken. The road into Vaelmoor is open.',
       'Beyond it lies the kingdom that died in a single night, three hundred years ago, and has been dying ever since. The snow there never melts. The candles there never go out.',
-      'Somewhere in it is the last sigil Elyra can still win. The other is on the Hallow King’s brow.',
+      'Somewhere in it is the last sigil Elyra can still win. The seventh is on the Hallow King’s brow.',
     ],
     now: 'Cross Vaelmoor and find the last sigil before the Hallow King’s Host can stop you.',
   },
@@ -100,7 +100,7 @@ export const TALES: Record<string, TalePage> = {
   epilogue: {
     over: 'Epilogue',
     title: 'The Bell',
-    told: ['The Ash Crown is unmade. Everything it ate has gone home.', 'The camp at Briarhollow can go home too, those who still have homes. In the chapel tower, the old bell is waiting for someone to ring it.'],
+    told: ['The Ash Crown is unmade. Everything it ate has gone home.', 'The people of the camp at Briarhollow can go home too, if they still have homes. In the chapel tower, the old bell is waiting for someone to ring it.'],
     now: 'Go home to Briarhollow.',
   },
 };

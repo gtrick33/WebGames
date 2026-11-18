@@ -31,19 +31,19 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     // Act II opens once Act I is done: Hearthstead held, its riders in the camp
     after: ['camp-riders'],
     level: 22,
-    reward: { xp: 650, gold: 200, text: 'The grey riders who crossed the dark downs four nights ago were Vosk’s, and the Sigil of Stone went north with them. You are days behind. Someone on the downs is putting the lamps out to give the Host a dark road, and Ivo says the last Lantern priest has been waiting for someone to come and ask him why.' },
+    reward: { xp: 650, gold: 200, text: 'The grey riders who crossed the dark downs four nights ago were Vosk’s, and the Sigil of Stone went north with them. You are days behind. Someone on the downs is putting the lamps out to give the Host a dark road. Ivo says the last Lantern priest, at the top of the hill, will know why the dead are walking.' },
   },
   {
     id: 'orren-the-last-chapel',
     name: 'The Last Chapel',
     auto: true,
     giver: 'lamplighter-ivo',
-    text: 'Only one lamp on the downs has never gone out. It burns in Brother Orren’s chapel, at the top of Lantern Hill. Orren is the last priest of the Lantern order, which buried Aster’s kings for six hundred years. You know the Hallow King’s name. Ask Orren what the Host’s crown is, and what the Hallow King wants with the sigils.',
+    text: 'Only one lamp on the downs has never gone out. It burns in Brother Orren’s chapel, at the top of Lantern Hill. Orren is the last priest of the Lantern order, which buried Aster’s kings for six hundred years. You already know the Hallow King’s name from Morgrave’s journal. Ask Orren what crown the Hallow King wears, and what he wants with the sigils.',
     objective: { kind: 'talk', npc: 'brother-orren', label: 'Talk to Brother Orren at the top of Lantern Hill' },
     after: ['the-lanterns-dim'],
     zone: 'ashen-barrows',
     level: 23,
-    reward: { xp: 500, gold: 150, text: 'Now you know what the Hallow King is reaching for. With all seven sigils set in the Ash Crown, he could break out of Duskspire and raise his dead kingdom again out of Aster’s grief. The Host holds one sigil, and Elyra holds one. Orren takes down his oldest lamp and climbs to the top of the hill.' },
+    reward: { xp: 500, gold: 150, text: 'Now you know what the Hallow King is reaching for. With all seven sigils set in the Ash Crown, he could break out of Duskspire and raise his dead kingdom again out of Aster’s grief. The Host holds one sigil, and Elyra holds one. Orren takes down his oldest lamp and carries it out to the great lamp beside his chapel.' },
   },
 
   /* ----------------------------------------------------- the black rose */
@@ -100,7 +100,7 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     after: ['cael-the-hostel'],
     zone: 'ashen-barrows',
     level: 25,
-    reward: { xp: 900, gold: 240, text: 'The door of the Kings’ Mound stands open, and cold violet grieflight breathes out of it. Hoofprints ten years old go in through the door, and none come out. Cael reads the roll twice and puts it inside his coat, against his chest.' },
+    reward: { xp: 900, gold: 240, text: 'The door of the Kings’ Mound stands open, and cold violet grieflight breathes out of it. Old hoofprints, baked hard into the clay, go in through the door, and none come out. Cael reads the roll twice and puts it inside his coat, against his chest.' },
   },
   {
     id: 'the-barrow-king',
@@ -119,14 +119,14 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     name: 'Sir Corvane the Fallen',
     auto: true,
     giver: 'sister-maud',
-    text: 'Sir Corvane waits at the bottom of the Barrow of Kings, in the Chapel of Black Candles, past the Ossuary and the gallery where Gloomwing eats the lamps. He commanded the Ninefold Watch and taught Cael to hold a shield line. Now he is the Ashen Host’s first knight, the knight of the barrows who saw Vosk safely north. Defeat him.',
+    text: 'Sir Corvane waits at the bottom of the Barrow of Kings, in the Chapel of Black Candles, past the Ossuary and the gallery where Gloomwing, a drake that eats lamplight, hunts in the dark. He commanded the Ninefold Watch and taught Cael to hold a shield line. Now he is the Ashen Host’s first knight, the knight of the barrows who saw Vosk safely north. Defeat him.',
     find: {
       name: 'The Countermanded Order',
       kind: 'orders',
       about: 'The order that called off the relief of the Ninefold Watch, ten years ago this winter. A rider brought it to Corvane after Cael had gone south for help. Corvane kept it inside his armor for ten years and gave it to Cael as he died.',
       body: [
         'To Sir Corvane, Commander of the Ninefold Watch, at the Kings’ Downs.',
-        'The relief column marching to you is recalled to the Crown City. No other will be sent this winter.',
+        'The relief column marching to you is recalled to the Crown City. No other will be sent.',
         'Hold the downs with what you have.',
         'Given at the Ember Keep, in the King’s name, on the last day of winter.',
       ],
@@ -177,7 +177,7 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     id: 'hunt-headless-lord',
     name: 'The Headless Lord',
     giver: 'gravedigger-kell',
-    text: 'The hounds’ master is the Headless Lord. He rides around the Ninefold Barrows every night, south-east of Lantern Hill, looking for his head. Kell found the lord’s helm years ago and kept it. Put the Headless Lord down, and Kell will give you the helm.',
+    text: 'The hounds’ master is the Headless Lord, the Lord of the Downs named on the collar. He rides around the Ninefold Barrows every night, south-east of Lantern Hill, looking for his head. Kell found the lord’s helm years ago and kept it. Put the Headless Lord down, and Kell will give you the helm.',
     objective: { kind: 'kill', region: 'ashen-barrows', count: 1, enemies: ['the-headless-lord'], label: 'Defeat the Headless Lord at the Ninefold Barrows' },
     after: ['hounds-of-the-barrow'],
     zone: 'ashen-barrows',
@@ -199,7 +199,7 @@ export const ASHEN_BARROWS_NPCS: Record<string, NpcDef> = {
         lines: [
           'Maren sent you? Then come into the light, and stay in it while you’re on the downs.',
           'For three hundred years these lamps kept the barrow dead asleep in their mounds. My family has lit them for five generations.',
-          'Now the dead come up every night and put out one more lamp, each a little closer to the village.',
+          'It started at the far end of the downs a month ago. Every night the dark comes a little closer to the village.',
           'Four nights ago every lamp on the King’s Road was out. A column of grey riders went north through the dark without stopping.',
         ],
       },
@@ -225,7 +225,7 @@ export const ASHEN_BARROWS_NPCS: Record<string, NpcDef> = {
     shop: 'inn',
     shopName: 'The Wardens’ Rest',
     talk: [
-      { when: { quest: 'sir-corvane', state: 'done' }, lines: ['Cael told me what Corvane gave him. The city let the Watch die, and let the hill call Cael a coward for it.', 'When it’s done, bring him back here. We’ll cut the Watch’s names into the chapel wall, all nine.'] },
+      { when: { quest: 'sir-corvane', state: 'done' }, lines: ['Cael told me what Corvane gave him. The city let the Watch die, and let the hill call Cael a coward for it.', 'When this is over, bring him back here. We’ll cut the Watch’s names into the chapel wall, all nine.'] },
       { when: { quest: 'sir-corvane', state: 'active' }, lines: ['Corvane was a good knight once, and Cael’s teacher. Something down there made him break his oath.', 'End it, for his sake as much as ours.'] },
       { when: { quest: 'the-kings-mound', state: 'active' }, lines: ['The Kings’ Mound is at the far western end of the downs. Corvane went in ten years ago and never came out.', 'Cael has carried that for ten years. Stay close to him when you get there.'] },
       {
@@ -246,14 +246,14 @@ export const ASHEN_BARROWS_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'hunt-headless-lord', state: 'done' }, lines: ['The lord is in the ground at Houndsmound with his hounds around him. They can wait together now.', 'The helm suits you. Wear it well.'] },
       {
         when: { quest: 'hunt-headless-lord', state: 'active' },
-        lines: ['The hounds were digging for their master, the Headless Lord. He rides round the Ninefold Barrows at night, looking for his head.', 'I’ve kept his old helm in my shed for years. Put him to rest, and it’s yours.'],
+        lines: ['The hounds were digging for their master, the Headless Lord. He rides around the Ninefold Barrows at night, looking for his head.', 'I’ve kept his old helm in my shed for years. Put him to rest, and it’s yours.'],
       },
       { when: { quest: 'hounds-of-the-barrow', state: 'active' }, lines: ['They’re out, all of them. I can see it on your face.', 'Put down ten of them, and I can finally fill my graves for good.'] },
       {
         when: { quest: 'houndsmound', state: 'active' },
         lines: ['Every morning I fill in a grave. Every night something digs it up again.', 'The tracks go south-east, past the Ninefold Barrows, to Houndsmound.', 'The old kings buried their hounds there. Go and see if they’re still buried.'],
       },
-      { lines: ['I sell grave goods: weapons and armor buried with the old dead.', 'Their owners don’t need them anymore.'] },
+      { lines: ['I sell grave goods: weapons and armor buried with the old dead.', 'I only take them from graves the dead have already left.'] },
     ],
   },
   // the companions of Lantern Hill (STORY_BIBLE.md §3)
@@ -265,8 +265,8 @@ export const ASHEN_BARROWS_NPCS: Record<string, NpcDef> = {
     talk: [
       { when: { quest: 'festival-the-champion', state: 'done' }, lines: ['Four places on that map, and the Host is digging at every one of them.', 'I’ll walk to each of them with you. Somebody has to say the prayers over what we find.'] },
       { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['The grey ones in the square were the Host’s, sent by the Pale Herald. They died like smoke.', 'Crane let them into the city. A Lord Chancellor of Aster opened the door for the dead.'] },
-      { when: { quest: 'festival-the-lanterns', state: 'active' }, lines: ['Every child in the city has a paper star tonight. A whole city glad for one night. I’d forgotten what that looks like.', 'Keep your eyes on the crowd, all the same.'] },
-      { when: { quest: 'the-kings-design', state: 'done' }, lines: ['The Sigil-wardens’ temple still keeps a lamp lit for each of the seven. I’ll pray here while you follow the money.', 'If you need me, I’m at the temple, in the north-east of the city.'] },
+      { when: { quest: 'festival-the-lanterns', state: 'active' }, lines: ['Every child in the city has a paper star tonight, with a wish written on it.', 'Keep your eyes on the crowd, all the same.'] },
+      { when: { quest: 'the-kings-design', state: 'done' }, lines: ['The Sigil-wardens’ temple still keeps a lamp lit for each of the seven. I’ll pray here while you follow the money.', 'The Treasury is just east of this temple. Clerk Amsel keeps its ledgers.'] },
       { when: { quest: 'sir-corvane', state: 'done' }, lines: ['I said the prayers over Corvane. He went quietly, at the end.', 'Now let’s see the living answer for what was done to him.'] },
       { when: { quest: 'sir-corvane', state: 'active' }, lines: ['When Corvane falls, I’ll say the prayers for the dead over him.', 'Wherever you go after that, I’m coming with you.'] },
       { when: { quest: 'the-last-lamp', state: 'active' }, lines: ['Stand by the great lamp at the top of the hill, where I can see you.', 'Some of the dead will call out names. Don’t answer them. Just keep them off the lamp.'] },
@@ -293,7 +293,7 @@ export const ASHEN_BARROWS_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'festival-the-champion', state: 'done' }, lines: ['The Ninefold Watch is one knight now. He goes where you go.', 'Corvane held the downs nine days with what he had. I mean to do as well with that map.'] },
       { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['I held the keep stair. Nobody came up it. Crane sent them all into the square, at her.', 'He knew we were coming for him at dawn. Somebody in the keep told him, or he guessed.'] },
       { when: { quest: 'city-the-cellar', state: 'active' }, lines: ['Crane’s cellar. If I were Crane, I’d leave men in it, and I’d leave the door unlocked.', 'Let me go down the steps first. I’ll take the first blow on my shield.'] },
-      { when: { quest: 'the-kings-design', state: 'done' }, lines: ['Crane looked straight at me in the courtyard. He knows my face. He knows what I carried here.', 'Ten years he’s sat in that keep. Let’s find the rest of it.'] },
+      { when: { quest: 'the-kings-design', state: 'done' }, lines: ['Crane looked straight at me in the courtyard. He knows my face. He knows what I carried here.', 'Ten years he’s sat in that keep with the Watch on his hands. Let’s find the proof the Regent needs.'] },
       { when: { quest: 'the-kings-design', state: 'active' }, lines: ['Put the order in the Regent’s hand yourself. If I give it to her, Crane will say a deserter wrote it.', 'I’ll stand where he can see me. I want him to know the Watch has one knight left.'] },
       { when: { quest: 'sir-corvane', state: 'active' }, lines: ['Corvane taught me to fight in a shield line. If he’s down there, he’ll fight the same way.', 'Let me speak to him before the fight, if there’s anything of him left.'] },
       { when: { quest: 'the-kings-mound', state: 'active' }, lines: ['The Kings’ Mound. That’s where Corvane went after the Watch fell. I always knew, and I never went to look.', 'I’m coming with you. I know how he fights.'] },

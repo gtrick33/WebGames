@@ -860,7 +860,7 @@ const VAELOR: BossDef = {
     items: { any: ['vaelors-heartstone', 'hollowbrand-shard', 'shroud-of-duskspire', 'oath-of-the-hollow-guard'] },
     chance: [1, 1, 1],
   },
-  intro: 'King Vaelor of Vaelmoor. Plague took his queen and their two children, and he broke his crown to bring them back for one night. It became the Ash Crown, which feeds on grief, and the Sigil of Stone is set in it now. With all seven sigils it would raise his kingdom again out of Aster’s grief, until there was no Aster left.',
+  intro: 'King Vaelor of Vaelmoor. Plague took his queen and their two children. He broke his crown to bring them back, and they came back for one night. His crown became the Ash Crown, which feeds on grief, and the Sigil of Stone is set in it now. With all seven sigils, it would raise his kingdom again out of Aster’s grief, until nothing of Aster was left.',
 };
 
 /* ------------------------------------------------------------ items */

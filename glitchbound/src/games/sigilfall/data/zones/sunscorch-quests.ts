@@ -101,7 +101,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     after: ['the-hollow-dig'],
     zone: 'sunscorch',
     level: 32,
-    reward: { xp: 1150, gold: 300, text: 'The Sunken Gate stands broken open, and the Host’s tracks run away from it in a panic. Something in the tomb drove the diggers out. Ibbi warned you what guards the Sun King’s door.' },
+    reward: { xp: 1150, gold: 300, text: 'The Sunken Gate stands broken open, and the Host’s tracks run away from it in a panic. Something in the tomb drove the diggers out. Ibbi warned you about what guards the Sun King’s door.' },
   },
   {
     id: 'the-sand-warden',
@@ -120,7 +120,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     name: 'The Sun King',
     auto: true,
     giver: 'oasis-keeper-sefu',
-    text: 'The Sun King was one of the seven wardens. Three hundred years ago he sealed himself in this tomb with the Sigil of the Sun, to keep watch over it. The Host’s picks broke his rest, and he woke angry. Now he thinks everyone who comes in is a thief. Defeat him in his burial chamber and take the sigil before the Host can.',
+    text: 'The Sun King was one of the seven wardens. Three hundred years ago he sealed himself in his tomb with the Sigil of the Sun to guard it. The Host’s picks woke him, and now he thinks everyone who comes in is a thief. Defeat him in his burial chamber and take the sigil before the Host can.',
     objective: { kind: 'boss', boss: 'the-sun-king', label: 'Defeat the Sun King and take the Sigil of the Sun' },
     after: ['the-sand-warden'],
     zone: 'sunscorch',
@@ -164,14 +164,14 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     after: ['venom-for-the-still'],
     zone: 'sunscorch',
     level: 31,
-    reward: { xp: 1400, gold: 450, item: 'tyrant-carapace', text: 'Kasim has the Tyrant’s shell made into a breastplate for you. Then he pours a drink at his grandfather’s grave.' },
+    reward: { xp: 1400, gold: 450, item: 'tyrant-carapace', text: 'Kasim has the Tyrant’s shell made into a breastplate for you. Then he pours a drink at the stone he set up for his grandfather.' },
   },
   /* -------------------------------------------------- Zahra's sand-ship */
   {
     id: 'the-sand-ship',
     name: 'The Sand-Ship',
     giver: 'merchant-zahra',
-    text: 'Merchant Zahra sails the dunes in a sand-ship, a boat on runners pushed by the wind. A week ago it crashed north of the oasis with her silk aboard. Her crew walked back. Go and see what is left.',
+    text: 'Merchant Zahra sails the dunes in a sand-ship, a boat on runners pushed by the wind. A week ago it was wrecked north of the oasis with her silk aboard. Her crew walked back. Go and see what is left.',
     objective: { kind: 'explore', spot: 'sand-ship', label: 'Find the Sand-Ship, north of the oasis' },
     find: {
       name: 'The Sand-Ship’s Log',
@@ -212,7 +212,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     id: 'scarab-seals',
     name: 'Scarab Seals',
     giver: 'sandscribe-ibbi',
-    text: 'Tomb scarabs eat gold, and they can’t digest it. Each of the Sun King’s courtiers was buried with a gold seal bearing their name. Ibbi wants six of these seals, so she can learn which of the dead have risen. Take them from the tomb scarabs east of the oasis.',
+    text: 'Each of the Sun King’s courtiers was buried with a gold seal bearing their name. Tomb scarabs eat gold and can’t digest it, so many of the seals are now in their bellies. Ibbi wants six, so she can learn which of the dead have risen. Take them from the tomb scarabs east of the oasis.',
     objective: { kind: 'loot', region: 'sunscorch', item: 'Sun Seal', from: ['tomb-scarab'], chance: 0.3, count: 6, label: 'Take Sun Seals from tomb scarabs' },
     after: ['the-hollow-dig'],
     zone: 'sunscorch',
@@ -295,7 +295,7 @@ export const SUNSCORCH_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'the-sand-ship', state: 'active' },
-        lines: ['My sand-ship crashed north of the oasis. My crew walked back, but my silk is still out there.', 'Please go and see what is left of it.'],
+        lines: ['My sand-ship was wrecked north of the oasis. My crew walked back, but my silk is still out there.', 'Please go and see what is left of it.'],
       },
       {
         when: { quest: 'swallowed-silk', state: 'active' },
@@ -325,7 +325,7 @@ export const SUNSCORCH_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'the-sand-warden', state: 'active' },
-        lines: ['Every old book says that nobody has ever got past the Sand Warden.', 'It guards the way to the Sun King’s burial chamber. Be ready when you go in.'],
+        lines: ['Every old book says that nobody has ever gotten past the Sand Warden.', 'It guards the way to the Sun King’s burial chamber. Be ready when you go in.'],
       },
       {
         when: { quest: 'scarab-seals', state: 'active' },
@@ -360,7 +360,7 @@ export const SUNSCORCH_NPCS: Record<string, NpcDef> = {
         when: { quest: 'the-dune-tyrant', state: 'active' },
         lines: ['The scorpions follow the Dune Tyrant, a black scorpion as big as a cart. It lives in Scorpion Hollow.', 'My grandfather went in to kill it and never came back. Please finish what he started.'],
       },
-      { when: { quest: 'the-dune-tyrant', state: 'done' }, lines: ['The Dune Tyrant is dead! I poured a drink at my grandfather’s grave tonight. Thank you.'] },
+      { when: { quest: 'the-dune-tyrant', state: 'done' }, lines: ['The Dune Tyrant is dead! Tonight I poured a drink at my grandfather’s stone. Thank you.'] },
       { lines: ['This is the Last Well, the last inn before the deep desert. Rest here before you go out.', 'Shake out your boots in the morning. Scorpions like to sleep in them.'] },
     ],
   },

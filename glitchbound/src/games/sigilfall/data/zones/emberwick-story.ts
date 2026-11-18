@@ -20,7 +20,7 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
     name: 'Under His House',
     giver: 'regent-elowen',
     zone: 'emberwick',
-    text: 'The war is over, and Maelis Crane is still hiding somewhere under the city. The Regent has opened the stair under his house and the barred door at the bottom. She wants to know what he found down there that was worth betraying Aster. Go down the catacomb stair under his house.',
+    text: 'The war is over, and Maelis Crane is still hiding somewhere under the city. The Regent has opened the stair under his house and the barred door at the bottom. She wants to know what he found down there that was worth betraying Aster. Go down the stair, find Crane, and end it.',
     objective: { kind: 'boss', boss: 'maelis-crane', label: 'Find Maelis Crane in the catacombs' },
     after: ['epilogue-the-bell'],
     level: 60,
@@ -67,9 +67,9 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
     find: {
       name: 'Crane’s Ledger',
       kind: 'page',
-      about: 'A page of Crane’s own ledger, found in his cellar beside Hesk’s stolen books, a chest of ash-gold and a sack of royal couriers’ letters that were never opened. Eight of the letters are Oskar Fell’s, the courier who died in Briarhollow’s gateway. The ninth, he carried himself.',
+      about: 'A page of Crane’s own ledger, found in his cellar beside Hesk’s stolen books, a chest of ash-gold and a sack of royal couriers’ letters that were never opened. Eight of the letters are from Oskar Fell, the courier who died in Briarhollow’s gateway. He carried his ninth letter to Briarhollow himself.',
       body: [
-        'Received of the Herald’s rider, at the Barrow Ford: three hundred, in ash.',
+        'Received from the Herald’s rider, at the Barrow Ford: three hundred, in ash.',
         'Received by way of the roads office: the relief of the Ninefold Watch. Kept.',
         'Paid to the wardens of the King’s Road, to look away when the grey riders pass. In ash.',
         'Held back from the keep: the couriers’ letters from the north, forty-one. Burn them when the Herald says.',
@@ -93,7 +93,7 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
     name: 'The Starfall Festival',
     giver: 'regent-elowen',
     auto: true,
-    text: 'Tonight Emberwick keeps the Starfall, a thousand years since the star fell, and the whole city is in the streets. The Regent will go down to light the star-lantern in the market square at midnight, as she does every year, so that Crane guesses nothing. Walk the Starfall Parade on the south avenue, near the south gate, and watch the crowd.',
+    text: 'Tonight Emberwick keeps the Starfall, a thousand years since the star fell, and the whole city is in the streets. At midnight the Regent will light the star-lantern in the market square, as she does every year. If she stayed away, Crane would guess. Walk the Starfall Parade on the south avenue, near the south gate, and watch the crowd.',
     find: {
       name: 'A Paper Star',
       kind: 'token',
@@ -105,7 +105,7 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
     after: ['city-the-cellar'],
     zone: 'emberwick',
     level: 29,
-    reward: { xp: 700, gold: 160, text: 'Drums, a paper star on poles, children on their fathers’ shoulders. At midnight the Regent comes down to the market square to light the star-lantern. The masks Cael saw by the stalls start pushing through the crowd toward her, and one of them has a knife out.' },
+    reward: { xp: 700, gold: 160, text: 'Drums, a great paper star carried on poles, children on their fathers’ shoulders. At midnight the Regent comes down to the market square to light the star-lantern. The masks Cael saw by the stalls start pushing through the crowd toward her, and one of them has a knife out.' },
   },
   {
     id: 'festival-the-knives',
@@ -140,7 +140,7 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
     after: ['festival-the-knives'],
     zone: 'emberwick',
     level: 30,
-    reward: { xp: 800, gold: 200, text: 'The stair ends at an iron door, barred from the far side, and the guards cannot break it. Crane is gone into the catacombs under the old city. He ran for his life and left the wardens’ map behind on his desk. The Regent must see it tonight.' },
+    reward: { xp: 800, gold: 200, text: 'The stair ends at an iron door, barred from the far side, and the guards cannot break it. Crane is gone into the catacombs under the old city. He ran for his life and left the wardens’ map behind on his desk. The guards carry it up to the Regent.' },
   },
   {
     id: 'festival-the-champion',
@@ -180,7 +180,7 @@ export const EMBERWICK_NPCS: Record<string, NpcDef> = {
       {
         when: { quest: 'city-the-treasury', state: 'active' },
         lines: [
-          'The transfer went through the roads office, under the Lord Chancellor’s seal. Every order in that office does.',
+          'The relief money went to the roads office, under the Lord Chancellor’s seal. Every order in that office does.',
           'Roadwarden Hesk keeps it. If anyone knows where the money went after that, it’s in his ledgers.',
           'I should have said something ten years ago. I was afraid for my post. I’m sorry.',
         ],
@@ -233,7 +233,7 @@ export const EMBERWICK_EVENTS: Record<string, StoryEventDef> = {
     ],
     end: [
       { who: 'nyx', text: 'Hesk’s ledgers, a chest of ash-gold, and a sack of letters with the King’s couriers’ seals. Nobody ever opened them.' },
-      { who: 'cael', text: 'Take it all to Hesk. He knows what his own stamp is worth.' },
+      { who: 'cael', text: 'Take it all to Hesk. He can show which repairs were never made.' },
     ],
     retry: [{ who: 'cael', text: 'Get up. The ledgers are still down there.' }],
   },

@@ -58,7 +58,7 @@ export const THORNVALE_QUESTS: QuestDef[] = [
       body: ['To Harlan Blackglove.', 'Hunt the bell-chapels of the Vale, high and low, and dig under every one.', 'Bring the warm iron to the grey man at the crossroads. He pays in full.', 'Keep Millbrook’s mill shut until the snow.'],
       sign: 'No name. Stamped with an empty crown in grey wax.',
     },
-    reward: { xp: 240, gold: 60, text: 'The “warm iron” is a sigil, like the one that lay under Briarhollow’s bell. The Pale Herald is not only sending raiders. He is paying the Vale’s own thieves to dig. Nyx won’t take your silver. She wants to know who pays in grey.' },
+    reward: { xp: 240, gold: 60, text: 'The “warm iron” is a sigil, like the one that lay under Briarhollow’s chapel. The Pale Herald is not only sending raiders. He is paying the Vale’s own thieves to dig. Nyx won’t take your silver. She wants to know who pays in grey.' },
   },
   {
     id: 'the-bandit-king',
@@ -124,7 +124,7 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     after: ['wolf-pelts'],
     zone: 'thornvale',
     level: 11,
-    reward: { xp: 360, gold: 110, perk: 'flask', text: 'Tobin gives you his grandfather’s flask: you can carry one more potion.' },
+    reward: { xp: 360, gold: 110, perk: 'flask', text: 'Tobin gives you his grandfather’s old flask. With it, you can carry one more potion.' },
   },
   /* ------------------------------------------------------ Hanna's tonic */
   /* ------------------------------------------------------------ errands */
@@ -263,7 +263,7 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
           'I’m Nyx, Pim’s friend. Thieves’ cant on top, and a number code under it. The gang didn’t write this. Somebody sent it to them.',
           'These went to Harlan Blackglove. He runs the Gallows Gang from Gallows Keep, dug into Gallows Hill.',
           'My fee is two silver. Keep it. I want to know who pays in grey wax and grey coin.',
-          'I’ve been asking that since last winter. Men who paid in grey took someone of mine, and nobody will tell me where.',
+          'I’ve been asking that since last winter. Men who paid in grey took my little brother, and nobody will tell me where he is.',
         ],
       },
     ],

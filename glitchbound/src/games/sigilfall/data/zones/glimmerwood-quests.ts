@@ -113,7 +113,7 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     zone: 'glimmerwood',
     level: 35,
     // (the sigil is given at the Thorn Court now; the perk stays here too for saves from before, and is granted once)
-    reward: { xp: 1600, gold: 400, perk: 'sigil-thorns', text: 'The clans agree. Their thorn archers and dryads will march when the Regent calls. With the Sigil of Thorns safe in Elyra’s keeping, two places are left on the wardens’ map. The next is the Vault of Rime, under the ice of Rimeheld, west of the Glimmerwood.' },
+    reward: { xp: 1600, gold: 400, perk: 'sigil-thorns', text: 'The clans agree. Their thorn archers and dryads will march when the Regent calls. With the Sigil of Thorns safe in Elyra’s keeping, two places are left on the wardens’ map. The next is the Rimeheld Vault, under the ice of Rimeheld, west of the Glimmerwood.' },
   },
   /* ------------------------------------------------------ Silvaine's well */
   {
@@ -187,7 +187,7 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     id: 'bloomrot',
     name: 'Bloomrot',
     giver: 'old-root',
-    text: 'Old Root is a treant, a living tree, and his roots run under half the wood. Something is chewing on them. Blight-blooms have taken Bloomrot Hollow, south-east of Lumen Glade. They are walking flowers full of spores that burst when they die. Pull up eight of them.',
+    text: 'Old Root is a treant, a living tree, and his roots run under half the wood. The blight-blooms of Bloomrot Hollow, south-east of Lumen Glade, are chewing on them. Blight-blooms are walking flowers full of spores that burst when they die. Pull up eight of them.',
     objective: { kind: 'kill', region: 'glimmerwood', count: 8, enemies: ['blight-bloom'], label: 'Defeat blight-blooms' },
     after: ['the-fading-lights'],
     zone: 'glimmerwood',
@@ -256,7 +256,7 @@ export const GLIMMERWOOD_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'silvaines-song', state: 'taken' }, lines: ['My brother sleeps through the night now, for the first time since spring. He talks about our mother in his sleep.', 'You held the doors while I sang. Lumen Glade will not forget it.'] },
       {
         when: { quest: 'the-thorn-court', state: 'taken' },
-        lines: ['He knew me at the end. Thank you for that.', 'I can’t forgive you yet. I know why you did it.'],
+        lines: ['They tell me he said my name at the end. Thank you for that.', 'I know why you did it, but I can’t forgive you yet.'],
       },
       { lines: ['Welcome to Lumen Glade. The glowing mushrooms are our lamps. Please don’t step on them.', 'The whole wood looked like this once. I want it to again.'] },
     ],
@@ -342,7 +342,7 @@ export const GLIMMERWOOD_EVENTS: Record<string, StoryEventDef> = {
     ],
     waves: [
       { enemies: ['fey-knight', 'thornling', 'thornling', 'thorn-archer'], from: ['thorn-hall-n', 'thorn-hall-w'] },
-      { enemies: ['fey-knight', 'fey-knight', 'blighted-dryad', 'thorn-archer'], from: ['thorn-hall-e', 'thorn-hall-n'], barks: [{ who: 'silvaine-singing', text: 'She sang it on the porch when the moths came out. Please remember, Thistle.' }] },
+      { enemies: ['fey-knight', 'fey-knight', 'blighted-dryad', 'thorn-archer'], from: ['thorn-hall-e', 'thorn-hall-n'], barks: [{ who: 'silvaine-singing', text: 'She sang it by the river when the moths came out. Please remember, Thistle.' }] },
       { enemies: ['fey-knight', 'fey-knight', 'thorn-archer', 'thorn-archer', 'blighted-dryad', 'thornling'], from: ['thorn-hall-w', 'thorn-hall-e', 'thorn-hall-n'], barks: [{ who: 'orren', text: 'The thorns are falling out of his crown! Keep them off her!' }] },
     ],
     end: [{ who: 'silvaine-singing', text: 'Thistle? It’s you. You’re back.' }],

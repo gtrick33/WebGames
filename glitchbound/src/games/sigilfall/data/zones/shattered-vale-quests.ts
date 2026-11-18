@@ -22,12 +22,12 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     find: {
       name: 'Aurel’s Harbor Badge',
       kind: 'relic',
-      about: 'A harbor-master’s badge of tarnished brass, found in the snow where the man in white knelt at the bottom of the Tear. Aurel wore it under the Pale Herald’s coat for three hundred years. It is cold, like ash-gold, and weighs almost nothing.',
+      about: 'A harbor-master’s badge of tarnished brass, found where the man in white knelt at the bottom of the Tear. Aurel wore it under the Pale Herald’s coat for three hundred years. It is cold, like ash-gold, and weighs almost nothing.',
       body: ['AUREL OF VAELMOOR, MASTER OF THE HARBOR', 'No ship passes the chain without his word.'],
     },
     after: ['epilogue-the-bell'],
     level: 60,
-    reward: { xp: 8000, gold: 3000, item: { rarity: 'legendary' }, text: 'The man was what was left of Aurel at the Tear: his grief, too heavy to go home with the rest when the Crown was unmade. When it breaks, he lifts his face at last, and it is only a tired young harbor-master’s. Quell lets the Tear close over him gently and writes his name in Shardwatch’s book.' },
+    reward: { xp: 8000, gold: 3000, item: { rarity: 'legendary' }, text: 'The man was what was left of Aurel at the Tear. His grief was too heavy to go home with the rest when the Crown was unmade. When you break it, he lifts his face at last, and it is only the face of a tired young harbor-master. Quell lets the Tear close over him gently and writes his name in Shardwatch’s book.' },
   },
   /* ---------------------------------------------------------- the way in */
   {
@@ -125,12 +125,12 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     // (it starts at the Tear the moment the Herald is gone, and pays out there: no walk back to Shardwatch and up again)
     auto: true,
     turnIn: false,
-    text: 'The Herald is gone, and without the Veil sigil the Tear is wide open. A huge creature stands in the opening and holds it wide: the Tearborn, made of everything that ever came through. Kill it at the Tear so the Tear can start to close. Then you can go after Elyra.',
+    text: 'The Herald is gone, and without the Sigil of the Veil the Tear is wide open. A huge creature stands in the opening and holds it wide: the Tearborn, made of everything that ever came through. Kill it at the Tear so the Tear can start to close. Then you can go after Elyra.',
     objective: { kind: 'kill', region: 'shattered-vale', count: 1, enemies: ['the-tearborn'], label: 'Kill the Tearborn at the Tear' },
     find: {
       name: 'Maren’s Letter',
       kind: 'letter',
-      about: 'A runner from Shardwatch brought it up to the Tear as the Tearborn fell. Elder Maren wrote it the night Fernstead burned. It was the same night the Herald took Elyra.',
+      about: 'Elder Maren wrote it the night Fernstead burned. A runner from Shardwatch brought it up to the Tear as the Tearborn fell.',
       body: ['To the hero, and to Elyra,', 'The Host came over the Brackenridge Hills tonight and set Fernstead on fire. We can see the glow from the chapel tower.', 'Hollis got her people out on foot. They are walking here now, and I have sent every cart we have to meet them.', 'Come home if you can. Thessa is asking for Elyra.'],
       sign: 'Maren, for the camp at Briarhollow',
     },
@@ -160,7 +160,7 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     id: 'a-matter-of-anatomy',
     name: 'A Matter of Anatomy',
     giver: 'scholar-ennis',
-    text: 'Every singing shard sings the same note. Ennis thinks shardlings are seeds, and shard golems are what they grow into. To prove it, he needs six golems broken open. They roam all over the Shattered Vale.',
+    text: 'Every singing shard sings the same note as the shard golems. Ennis thinks shardlings are seeds, and shard golems are what they grow into. To prove it, he needs six golems broken open. They roam all over the Shattered Vale.',
     objective: { kind: 'kill', region: 'shattered-vale', count: 6, enemies: ['shard-golem'], label: 'Break open shard golems' },
     after: ['living-glass'],
     zone: 'shattered-vale',
@@ -212,7 +212,7 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     id: 'old-coil',
     name: 'Old Coil',
     giver: 'shardwife-hesk',
-    text: 'Under the tallest spire sleeps the oldest wyrm of all, coiled around a hoard of crystal: Old Coil. Hesk is sure it ate Davin. He always swore he would come home with the biggest shard of all. Kill Old Coil at the Wyrm Spires and bring Hesk the biggest crystal from its hoard.',
+    text: 'Under the tallest spire sleeps Old Coil, the oldest wyrm of all, coiled around a hoard of crystal. Hesk is sure it ate Davin. Kill Old Coil at the Wyrm Spires and bring Hesk the biggest crystal from its hoard, the one Davin went up for.',
     objective: { kind: 'kill', region: 'shattered-vale', count: 1, enemies: ['old-coil'], label: 'Kill Old Coil at the Wyrm Spires' },
     after: ['wyrms-in-the-spires'],
     zone: 'shattered-vale',
@@ -271,7 +271,7 @@ export const SHATTERED_VALE_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'where-the-rift-bleeds', state: 'active' },
-        lines: ['Sigrun sent you? Good. I wrote to the Crown eleven times this year, and nobody answered.', 'The Tear is wider than I have ever seen it, and things are climbing out of it.'],
+        lines: ['Sigrun sent you? Good. I have written to the Crown every month this year, and nobody answered.', 'The Tear is wider than I have ever seen it, and things are climbing out of it.'],
       },
       { when: { quest: 'the-breach-camp', state: 'active' }, lines: ['My sentries see torches east of camp at night, around a crack in the ground that hums.', 'Men in violet robes stand there and sing. Go to the Breach Camp and find out who they are.'] },
       { when: { quest: 'the-heralds-cipher', state: 'active' }, lines: ['The singers are voidcallers, living men who sing the Tear wider for the Herald’s ash-gold.', 'Silence them at the Breach Camp, east of here, before the Tear opens any further.'] },
@@ -308,7 +308,7 @@ export const SHATTERED_VALE_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'a-matter-of-anatomy', state: 'active' },
-        lines: ['Every shard sings the same note. I think shardlings are seeds, and golems are what they grow into.', 'Break six golems open, and I can prove it.'],
+        lines: ['Every shard sings the same note as the golems. I think shardlings are seeds, and golems are what they grow into.', 'Break six golems open, and I can prove it.'],
       },
       {
         when: { quest: 'the-glass-matron', state: 'active' },
@@ -387,7 +387,7 @@ export const SHATTERED_VALE_EVENTS: Record<string, StoryEventDef> = {
     waves: [
       { enemies: ['ashen-assassin', 'ashen-assassin', 'rift-stalker', 'voidcaller'], from: ['tear-n', 'tear-w'], barks: [{ who: 'nyx', text: 'He promised me Wren! He said he’d free my brother if I told him our road!' }, { who: 'cael', text: 'Nyx, what did you do? Fight now. Talk after!' }] },
       { enemies: ['rift-stalker', 'rift-stalker', 'voidcaller', 'ashen-assassin', 'ashen-assassin'], from: ['tear-e', 'tear-n'], leave: ['nyx'], barks: [{ who: 'cael', text: 'Nyx? Where’s Nyx?' }, { who: 'elyra', text: 'She ran into the grey light! She told him where we’d be!' }] },
-      { enemies: ['the-pale-herald', 'ashen-assassin', 'rift-stalker', 'voidcaller', 'voidcaller'], from: ['tear-n', 'tear-w', 'tear-e'], barks: [{ who: 'the-pale-herald', text: 'You carry five of my king’s sigils, girl. You will carry them to him.' }, { who: 'orren', text: 'Don’t let him near Elyra!' }, { who: 'cael', text: 'Hold the line! Keep him off her!' }] },
+      { enemies: ['the-pale-herald', 'ashen-assassin', 'rift-stalker', 'voidcaller', 'voidcaller'], from: ['tear-n', 'tear-w', 'tear-e'], barks: [{ who: 'the-pale-herald', text: 'Stand aside. It is only the girl I want.' }, { who: 'orren', text: 'Don’t let him near Elyra!' }, { who: 'cael', text: 'Hold the line! Keep him off her!' }] },
     ],
     end: [
       { who: 'cael', text: 'Elyra! ELYRA!' },
@@ -404,7 +404,7 @@ export const SHATTERED_VALE_EVENTS: Record<string, StoryEventDef> = {
     radius: 18,
     arrive: { pets: ['refugee', 'refugee', 'fern-ranger', 'refugee', 'refugee'], from: 'briar-west', to: 'briar-fern-camp' },
     banner: 'Fernstead’s people',
-    start: [{ who: 'fern-ranger', text: 'This is everyone who got out of Fernstead. Where do we go?' }],
+    start: [{ who: 'fern-ranger', text: 'These are the last of us from Fernstead. Where do we go?' }],
     waves: [],
     end: [{ who: 'mara-venn', text: 'You stay here, with us. Briarhollow takes in everyone who needs it.' }],
   },

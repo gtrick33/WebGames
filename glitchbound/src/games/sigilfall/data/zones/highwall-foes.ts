@@ -198,7 +198,7 @@ export const HIGHWALL_ITEMS: ItemDef[] = [
         },
       },
     ],
-    lore: 'Varn wore it on the walls for twenty years. He says the dent over the eye is from the siege of Highwall, the first one, and the second one, and a door.',
+    lore: 'Varn wore it on Highwall’s walls for twenty years, through two sieges. The dent over the eye is from the second.',
     minLevel: 43,
     special: true,
   },

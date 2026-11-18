@@ -20,12 +20,12 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     id: 'the-dead-lake',
     name: 'The Dead Lake',
     giver: 'thane-hroki',
-    text: 'The Pale Crown is broken, but the Hallow King will have another made, and he still needs Elyra and every sigil for it. The last sigil he doesn’t hold, the Sigil of Tides, lies under Hollowmere, at Queen Ysane’s grave. Take the west road out of Emberdeep to the lake. The Ferryman keeps a landing on its south shore.',
+    text: 'The Pale Crown is broken, but the Hallow King will have another made, and he still needs Elyra and every sigil for it. The last sigil still hidden, the Sigil of Tides, lies under Hollowmere, at Queen Ysane’s grave. Take the west road out of Emberdeep to the lake. The Ferryman keeps a landing on its south shore.',
     objective: { kind: 'talk', npc: 'the-ferryman', label: 'Find the Ferryman on Hollowmere’s south shore' },
     after: ['ashkar-the-bound'],
     // the hand-off that sends the hero to hollowmere: it starts when the last chapter ends, not on arrival
     level: 53,
-    reward: { xp: 2000, gold: 650, text: 'The Ferryman has rowed Hollowmere’s dead across the lake for longer than anyone remembers. All this month the Lich on the island has been pulling the drowned up off the bottom, more every night, as if he were searching for something down there. The Host is looking for the Sigil of Tides too.' },
+    reward: { xp: 2000, gold: 650, text: 'The Ferryman has rowed Hollowmere’s dead across the lake for longer than anyone remembers. The Lich on the island is dragging the lake for something, and it can only be the Sigil of Tides. The Host is looking for it too, and it has a month’s start on you.' },
   },
   /* ------------------------------------------------------- the shore */
   {
@@ -33,12 +33,12 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     name: 'The Restless Shore',
     auto: true,
     giver: 'the-ferryman',
-    text: 'The Ferryman rows the dead across Hollowmere so they can rest. They used to wait quietly on the shore for him. Now the drowned the Lich pulls up walk out of the lake every night and bang on the landing’s shutters. Put down six of them along the shore.',
+    text: 'The Ferryman rows the dead across Hollowmere so they can rest. They used to wait quietly on the shore for him. Now the Lich pulls the drowned up off the bottom, and every night they walk out of the lake and bang on the landing’s shutters. Put down six of them along the shore.',
     objective: { kind: 'kill', region: 'hollowmere', count: 6, enemies: ['drowned-dead'], label: 'Put down the drowned dead on the shore' },
     after: ['the-dead-lake'],
     zone: 'hollowmere',
     level: 53,
-    reward: { xp: 2200, gold: 680, text: 'The drowned lie still on the stones, and the Ferryman rows them across one by one. They thought they were going home. All evening Orren has stood at the water’s edge, listening to something out on the lake.' },
+    reward: { xp: 2200, gold: 680, text: 'The drowned lie still on the stones, and the Ferryman rows them across one by one. They were only trying to get home. All evening Orren has stood at the water’s edge, listening to something out on the lake.' },
   },
   /* ---------------------------------------------- the Lich's household */
   /* ---------------------------------------------------- Orren's own dead */
@@ -74,7 +74,7 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     after: ['orren-on-the-shore'],
     zone: 'hollowmere',
     level: 55,
-    reward: { xp: 2300, gold: 760, item: { rarity: 'rare' }, text: 'The causeway ends at the Necropolis doors. Its lamps went out three hundred years ago, and nobody has carried the dead this way since. Inside, someone is calling the drowned up out of the water.' },
+    reward: { xp: 2300, gold: 760, item: { rarity: 'rare' }, text: 'The causeway ends at the Necropolis doors. The causeway’s lamps went out three hundred years ago, and nobody has carried the dead this way since. Inside, someone is calling the drowned up out of the water.' },
   },
   {
     id: 'the-necropolis',
@@ -97,7 +97,7 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
       xp: 9200,
       gold: 2400,
       item: 'phylactery-of-hollowmere',
-      text: 'The Lich falls apart on his throne, and all over the island the dead lie down. Behind the throne, steps go down into the water to an old altar. It is the seventh holy place, the one the wardens tore off their map, and the Lich never found what it hides. A woman in a grey crown sits on its steps, very still. You take the black jar the Lich hid his death in.',
+      text: 'The Lich falls apart on his throne, and all over the island the dead lie down. You take the black jar that held his life. Behind the throne, steps go down into the water to an old altar, the holy place the wardens tore off their map. The Lich never found what it hides. A woman in a grey crown sits on its steps, very still.',
     },
   },
   {
@@ -191,7 +191,7 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
   },
   {
     id: 'old-customers',
-    name: 'Old Customers',
+    name: 'Faces Mott Buried',
     giver: 'digger-mott',
     text: 'Mott took a close look at the guards on the north road in their bone armor. He knows some of their faces, because he buried them himself. The Lich has sewn the landing’s own dead into his guard. Lay six necropolis guards to rest, on the roads north of the landing or on the island.',
     objective: { kind: 'kill', region: 'hollowmere', count: 6, enemies: ['necropolis-guard'], label: 'Lay necropolis guards to rest' },
@@ -261,7 +261,7 @@ export const HOLLOWMERE_NPCS: Record<string, NpcDef> = {
         lines: ['My lodgers went to call to their dead across the water, and something called back. Now they’re hiding in the reeds.', 'Lay those wraiths to rest so my lodgers can come home.'],
       },
       { when: { quest: 'the-answering-dead', state: 'done' }, lines: ['They’re asleep by the fire. I’ve told them no more calling across the water for a while.', 'Keep the shawl. I’ll knit myself another.'] },
-      { lines: ['This is the Landing Hostel. Beds, pie, potions, and a fire that has never gone out.', 'I came here from Candlewick thirty winters ago. Potions are on the shelf. Pay what’s marked.'] },
+      { lines: ['This is the Landing Hostel. Beds, pie, potions, and a fire that has never gone out.', 'I came here from Candlewick thirty winters ago. Pay what’s marked on the shelf.'] },
     ],
   },
   'pilgrim-tobiah': {
@@ -275,7 +275,7 @@ export const HOLLOWMERE_NPCS: Record<string, NpcDef> = {
       {
         when: { quest: 'a-pilgrims-errand', state: 'active' },
         lines: [
-          'My daughter Wenna drowned at Emberwick three winters ago. I came north through the Gloam Gate to find her.',
+          'My daughter Wenna drowned at Emberwick three winters ago. When the Gloam Gate opened, I came north to find her.',
           'They say this lake keeps every drowned soul who is still mourned. I have never stopped mourning her.',
           'People say she walks in Drowned Elsmere, north-west of here. I’m afraid to go. Will you look for me?',
         ],

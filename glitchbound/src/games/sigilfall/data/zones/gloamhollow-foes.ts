@@ -256,7 +256,7 @@ export const GLOAMHOLLOW_ITEMS: ItemDef[] = [
         },
       },
     ],
-    lore: 'Gale scraped the Host’s runes off it and the plate kept the shape of them anyway. It is very heavy, and very quiet, and it does not like the dark any more than you do.',
+    lore: 'Tinker Gale of Lastlight scraped the Host’s runes off it, but the plate kept their shape. It is very heavy, and it stays cold even by the fire.',
     minLevel: 46,
     special: true,
   },

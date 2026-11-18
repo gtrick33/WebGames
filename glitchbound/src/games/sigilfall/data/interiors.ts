@@ -299,11 +299,11 @@ const NPCS: Record<string, NpcDef> = {
     shop: 'inn',
     shopName: 'The Bramble & Barrel',
     talk: [
-      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['Highwall held! Mum cried when she heard.', 'Every cot in the back holds someone who lost their home to the Host. They all ask about you.'] },
+      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['Highwall held! Mom cried when she heard.', 'Every cot in the back holds someone who lost their home to the Host. They all ask about you.'] },
       { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['Wil tried to play Elyra’s favorite song last night. He stopped halfway through.', 'Please eat something. You need it.'] },
       { when: { quest: 'camp-riders', state: 'done' }, lines: ['Hearthstead’s riders drink here every night. They’re loud, but they pay.', 'Four villages share this roof now: Briarhollow, Fernstead, Millbrook and Hearthstead.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The roof only held over the bar, so everyone sleeps by the bar now.', 'The potions survived the fire. They’re on the shelf.'] },
-      { lines: ['Ale, broth and a bed upstairs. Mum’s potions are on the shelf.', 'We close the shutters at sunset. People have been going missing after dark.'] },
+      { lines: ['Ale, broth and a bed upstairs. Mom’s potions are on the shelf.', 'We close the shutters at sunset. People have been going missing after dark.'] },
     ],
   },
   'fiddler-wil': {
@@ -316,7 +316,7 @@ const NPCS: Record<string, NpcDef> = {
       { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['They say the Pale Herald himself took Elyra at the Tear. A man in white with no face, walking out of the grey.', 'I tried to write a song about it. I couldn’t finish it.'] },
       { when: { quest: 'festival-the-champion', state: 'done' }, lines: ['Champion of Aster! I’ve already written a verse about you.', 'They say the Chancellor ran into the catacombs under the Crown City, and nobody has found him.'] },
       { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['Travelers say grey riders use the King’s Road at night, and the road wardens let them pass.', 'The roads office closed that road to everyone else. So who opened it for the Host?'] },
-      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Elder Maren told the whole village what lay under the chapel. A piece of the old Starlight Crown, and the Hallow King in the north wants it.', 'This tune is for you, for pulling those children out of the fire.'] },
+      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Elder Maren told the whole village what lay under the chapel. It was a piece of the old Starlight Crown, and the Hallow King in the north wants it.', 'This tune is for you, for pulling those children out of the fire.'] },
       { lines: ['The chapel bell hasn’t rung in three weeks. Haldor won’t ring it.', 'People have gone missing on the Whisperwood road after dark. Nobody has found a trace of them.'] },
     ],
   },

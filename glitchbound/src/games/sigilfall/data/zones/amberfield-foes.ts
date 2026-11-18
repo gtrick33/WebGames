@@ -227,7 +227,7 @@ export const AMBERFIELD_ITEMS: ItemDef[] = [
       { stat: 'crit', base: 2, per: 0.3 },
     ],
     mods: [{ t: 'stat', stat: 'power', v: 12, when: 'lowHp' }],
-    lore: 'The lion decided Garrick wasn’t worth eating. It thought differently about you.',
+    lore: 'Goldmane’s mane, cured and sewn into a hood by Tess. The lion led the pride that took Garrick’s goats.',
     minLevel: 18,
     special: true,
   },

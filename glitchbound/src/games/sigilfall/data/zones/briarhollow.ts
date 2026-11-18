@@ -463,7 +463,7 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'fern-retaken', state: 'active' }, lines: ['The Host left soldiers in Fernstead’s square. They think they’ve already won. Let’s go and prove them wrong.'] },
       { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['The Pale Herald took Elyra from right beside you, and five sigils with her. Nyx led him to her.', 'I don’t trust magic. I trusted Elyra. Whatever it costs, we bring her home.'] },
       { when: { quest: 'festival-the-champion', state: 'done' }, lines: ['Crane sold the wardens’ map to the Pale Herald. Now the Host knows every place marked on it.', 'You’re taking Elyra to those four places. Bring her back to us. I mean it.'] },
-      { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['The Host has a sigil now, and Vosk is riding it north. Somebody in the Crown City paid for his road.', 'I’ll hold the camp. You find out who opened our roads to them.'] },
+      { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['The Host has a sigil now, and Vosk is carrying it north. Somebody in the Crown City paid for his road.', 'I’ll hold the camp. You find out who opened our roads to them.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['We buried three this morning, and the courier. Everyone we pulled out of the inn is alive.', 'Maren wants the other villages with us. I’ll come with you when you need me, and guard the gate when you don’t.'] },
       { lines: ['The gate stays shut after dark.', 'Stay inside the wall at night. The roads aren’t safe anymore.'] },
     ],
@@ -476,10 +476,10 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
     talk: [
       // the Epilogue (the sigils spent unmaking the Crown; the lullaby given back by the bell; the rest still gone)
       { when: { quest: 'epilogue-the-bell', state: 'active' }, lines: ['Haldor is going to ring the bell at last. I want to be standing there when he does.', 'My mother used to sing me to sleep with a song. I can still hum it. I still can’t find the words.'] },
-      { when: { quest: 'crownfall-break-it', state: 'taken' }, lines: ['The sigils are gone, and I’m a hedge-mage again. I keep milk fresh and wasps off the plums, and I sing my mother’s song while I work.', 'I sent Marit’s scarf home to Hearthstead with Dunmore’s riders. Somebody should get back what they lost.'] },
+      { when: { quest: 'crownfall-break-it', state: 'taken' }, lines: ['The sigils are gone, and I’m a hedge-mage again. I keep milk fresh and wasps off the plums, and I hum my mother’s song while I work.', 'I sent Marit’s scarf home to Hearthstead with Dunmore’s riders. Somebody should get back what they lost.'] },
       { when: { quest: 'crownfall-one-hour', state: 'taken' }, lines: ['There’s a stone by the chapel now with four names on it, from a kingdom nobody remembers. I go and sit beside it.', 'Forty-one people died at the gate in that hour. I wanted it for him anyway. I think about them every day.', 'I sent Marit’s scarf home to Hearthstead with Dunmore’s riders.'] },
       { when: { quest: 'briar-below', state: 'active' }, lines: ['There’s something under the chapel. I can feel it. It’s warm, like a fire in a cold house.', 'That’s what the raiders are after. We have to reach it before they do.'] },
-      { when: { quest: 'the-empty-tomb', state: 'active' }, lines: ['The sigil is inside me now. When I touched it, it sank into my hand and stayed there. It’s warm, all the time.', 'That man’s journal says there are six more, and a king in the north who wants them. Show it to Elder Maren.'] },
+      { when: { quest: 'the-empty-tomb', state: 'active' }, lines: ['The sigil is inside me now. When I touched it, it sank into my hand and stayed there. It’s warm, all the time.', 'Morgrave’s journal says there are six more sigils, and a king in the north who wants them. Show it to Elder Maren.'] },
       { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['I felt the Stone leave with Vosk. It’s like hearing someone walk away in the next room, and I can’t follow.', 'One sigil for us, one for them. I hate that they have one.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['When the sigil went into me, it took my mother’s lullaby. I can hum it, but I can’t remember the words.', 'If the other sigils take things too, I’ll lose more. I’m coming with you anyway. The Host can’t have them.'] },
       { when: { quest: 'close-the-rift', state: 'active' }, lines: ['Tonight I held up a burning roof over three children. I don’t know how I did it.'] },
@@ -514,9 +514,9 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'west-road', state: 'active' }, lines: ['Fernstead is west of here, in the Brackenridge Hills. Their dead are climbing out of the old barrows.', 'Find Warden Hollis and help her. If her rangers join us, we’ll see the Host coming.'] },
       { when: { quest: 'south-road', state: 'active' }, lines: ['Millbrook is south of here, in Thornvale. A gang called the Gallows Gang has taken its mill.', 'Find Reeve Aldous and help him free the mill. Then Millbrook can send its grain to us.'] },
       { when: { quest: 'hollow-gold', state: 'active' }, lines: ['The Herald is buying the Vale one person at a time. Morgrave. Harlan. Who else is taking his coin?', 'From now on I want to know where every coin in this camp came from.'] },
-      { when: { quest: 'the-regents-council', state: 'active' }, lines: ['Someone in the Crown City is stopping his letters. And someone told the Host where to dig. I think it’s the same person.', 'Until we know who, we ask the Crown City for nothing.', 'And there’s news from the east. Hearthstead’s marshal has written to us for help.'] },
+      { when: { quest: 'the-regents-council', state: 'active' }, lines: ['Someone in the Crown City is stopping Oskar’s letters. And someone told the Host where to dig. I think it’s the same person.', 'Until we know who, we ask the Crown City for nothing.', 'And there’s news from the east. Hearthstead’s marshal has written to us for help.'] },
       { when: { quest: 'refugees-on-the-road', state: 'active' }, lines: ['Hearthstead is out on the Amberfield. Take the east road out of Thornvale.', 'Dunmore writes that whole villages are walking in from the east, with the Host behind them. I want to know what it wants out there.'] },
-      { when: { quest: 'fall-of-fernstead', state: 'active' }, lines: ['Fernstead is burning. Its people are coming up the west road with whatever they could carry.', 'Go and meet them. Let them see a face they know.'] },
+      { when: { quest: 'fall-of-fernstead', state: 'active' }, lines: ['Fernstead has burned. Its people are coming up the west road with whatever they could carry.', 'Go and meet them. Let them see a face they know.'] },
       { when: { quest: 'fall-of-fernstead', state: 'done' }, lines: ['Fernstead burned the same night the Herald took Elyra. The Host chose that night on purpose.', 'Hollis’s people sleep under canvas by the infirmary. I’ve written every one of their names in the book.'] },
       { when: { quest: 'festival-the-champion', state: 'done' }, lines: ['Crane sold the wardens’ map. The Host knows every place on it, and it’s already digging.', 'Elyra goes with you. Thessa cried all night, and she never once asked her to stay.'] },
       { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['Rangers from Fernstead, grain from Millbrook, riders from Hearthstead. In the spring, Briarhollow stood alone.', 'Now the Host has a sigil, and someone in the Crown City paid for its road. Follow Vosk north, and find out who.'] },
@@ -544,7 +544,7 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'epilogue-the-bell', state: 'done' }, lines: ['When Haldor rang the bell, Elyra sang along. Every word of her mother’s lullaby came back to her.', 'The rest is still gone. She says she’ll learn my face again, one morning at a time.'] },
-      { when: { quest: 'gloam-out-of-the-cells', state: 'done' }, lines: ['Elyra is free. Mara writes that she doesn’t remember the night of the fire, or the night she met you. She trusts you all the same.', 'She won’t know my face when she comes home. One of the sigils took it. I’ll tell her my name, and she’ll know that.'] },
+      { when: { quest: 'gloam-out-of-the-cells', state: 'done' }, lines: ['Elyra is free. Mara writes that she doesn’t remember the night of the fire, when she first met you. She trusts you all the same.', 'She won’t know my face when she comes home. One of the sigils took it. I’ll tell her my name, and she’ll know that.'] },
       { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['I set out a cup for Elyra every morning. Then I remember she’s gone.', 'When you find her, tell her I’m waiting for her. Tell her that first.'] },
       { when: { quest: 'festival-the-champion', state: 'done' }, lines: ['Elyra goes with you to the places on that map. I made her promise to come home between them.', 'Every sigil takes something from her. Bring back as much of her as you can.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['My kitchen is the camp’s infirmary now. Mostly I treat burns.', 'That sigil is taking things from Elyra. Please bring her back to me safe.'] },
@@ -597,7 +597,7 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['You carried Wenna out over your shoulder! I saw! Do it again!'] },
-      { lines: ['Mum says don’t go past the fence. Pip went past the fence.'] },
+      { lines: ['Mom says don’t go past the fence. Pip went past the fence.'] },
     ],
   },
   'briar-oda': {
@@ -619,7 +619,7 @@ export const BRIARHOLLOW_NPCS: Record<string, NpcDef> = {
     talk: [
       { when: { quest: 'fern-retaken', state: 'done' }, lines: ['Fernstead is ours again. Half of us went home with Hollis. I stayed. Somebody has to watch this road.'] },
       { when: { quest: 'fall-of-fernstead', state: 'done' }, lines: ['Fernstead is gone. My mother’s house, the Harvest Stones, all of it.', 'I keep the watch anyway. It’s the only thing I’m good for now.'] },
-      { when: { quest: 'hearth-the-ram', state: 'done' }, lines: ['We sent two rangers to Hearthstead’s towers. Ansel didn’t come back.', 'Vosk’s riders went north with the sigil. We followed their tracks for a day. They never stopped to rest.'] },
+      { when: { quest: 'hearth-the-ram', state: 'done' }, lines: ['We sent two rangers to Hearthstead’s towers. Ansel didn’t come back.', 'Vosk’s riders went north after Hearthstead. We followed their tracks for a day. They never stopped to rest.'] },
       { when: { quest: 'the-regents-council', state: 'done' }, lines: ['We’ve seen grey riders on the Amberfield, east of here. There are more every night.', 'They’re gathering around Hearthstead.'] },
       { lines: ['Six of us came from Fernstead. We take turns watching the north road.', 'You laid the Grey Lady to rest. Keeping watch for Briarhollow is how we thank you.'] },
     ],
@@ -776,7 +776,7 @@ export const BRIARHOLLOW_EVENTS: Record<string, StoryEventDef> = {
       { enemies: ['ash-raider', 'ash-hound'], from: ['briar-west'] },
       { enemies: ['ash-raider', 'ash-archer', 'ash-raider'], from: ['briar-south', 'briar-north'], barks: [{ who: 'elyra', text: 'More of them! Keep the children behind you!' }] },
     ],
-    retry: [{ who: 'elyra', text: 'Up! The children are hiding, we try again!' }],
+    retry: [{ who: 'elyra', text: 'Up! The children are hiding. We try again!' }],
     end: [
       { who: 'elyra', text: 'All three. All three!' },
       { who: 'elyra', text: 'Into the chapel, all of you, and bar the door. More of them are coming.' },
@@ -824,7 +824,7 @@ export const BRIARHOLLOW_QUESTS: QuestDef[] = [
     auto: true,
     // the first moments speak for themselves: Mara's greeting, then the fight's own banner and lessons
     quiet: true,
-    text: 'You reach Briarhollow, a village on the edge of the Vale, as its lamps are lit. For three weeks its people have vanished on the roads after dark, and not one has been found. A single guard is still on watch at the north gate.',
+    text: 'You reach Briarhollow, a village on the edge of the Vale, as its lamps are lit. For three weeks its people have been vanishing on the roads after dark, and not one has been found. A single guard is still on watch at the north gate.',
     objective: { kind: 'talk', npc: 'mara-venn', label: 'Talk to the guard at the gate' },
     reward: { xp: 20, gold: 5 },
   },
@@ -864,10 +864,10 @@ export const BRIARHOLLOW_QUESTS: QuestDef[] = [
       name: 'The Courier’s Letter',
       kind: 'letter',
       about: 'The letter Oskar Fell, the King’s courier, pressed into your hand as he died in Briarhollow’s gateway. Rain and blood have soaked through it, and only a few words can still be read. Elder Maren may be able to dry it by the fire and read the rest.',
-      body: ['To Her Grace the Regent, at the Crown City…', '…this is the ninth time I write to you, and…', '…the bell-chapel at Briarhollow…', '…they are hunting…', '…for the love of Aster, answer me.'],
+      body: ['To Her Grace the Regent, at the Crown City…', '…this is the ninth time I have written to you, and…', '…the bell-chapel at Briarhollow…', '…they are hunting…', '…for the love of Aster, answer me.'],
       sign: 'Oskar Fell, King’s Courier',
     },
-    reward: { xp: 60, gold: 15, text: 'Oskar Fell dies in the gateway with his hand still on yours. He rode all this way to warn Briarhollow, and he came too late. Behind you, the inn’s roof catches fire.' },
+    reward: { xp: 60, gold: 15, text: 'The courier, Oskar Fell, dies in the gateway with his hand still on yours. He rode all this way to warn Briarhollow, and he came too late. Behind you, the inn’s roof catches fire.' },
   },
   {
     id: 'briar-the-inn',

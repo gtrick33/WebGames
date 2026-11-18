@@ -250,7 +250,7 @@ const foes: Record<string, EnemyDef> = {
     floats: true,
     burst: { radius: 30, pool: 0, color: RIFT, onDeath: true },
     resist: { poison: 0.6 },
-    blurb: 'A shape of the Pale Herald in glass and light, left behind as he steps between the worlds. It throws his spells but has none of his strength: it shatters at a touch, and bursts as it breaks. The Herald himself carries the Sigil of the Veil.',
+    blurb: 'A shape of the Pale Herald in glass and light, left behind as he steps between the worlds. It throws his spells but has none of his strength: it shatters at a touch, and bursts as it breaks. The Herald himself waits at the top of the Spire.',
   },
 };
 
@@ -691,7 +691,7 @@ export const SPIRE_OF_THE_RIFT: DungeonModule = {
       },
       { id: 'crown', floor: 'm', waves: [], boss: 'herald-in-the-spire', checkpoint: true, title: 'The Crown of the Spire' },
     ],
-    blurb: 'A tower of black glass that climbs through the Veil: the Sentinel on its stair, and at its crown the Pale Herald, who keeps the Sigil of the Veil.',
+    blurb: 'A tower of black glass that climbs through the Veil: the Sentinel on its stair, and at its crown the Pale Herald, holding the Tear open.',
   },
   bosses,
   foes,

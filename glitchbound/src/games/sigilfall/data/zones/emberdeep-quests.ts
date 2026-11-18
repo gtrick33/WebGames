@@ -17,12 +17,12 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     id: 'the-pale-crown',
     name: 'The Pale Crown',
     giver: 'candlewife-hesper',
-    text: 'The Pale Herald’s order on Halvard’s sword sends ore and slaves to Emberdeep, east of the wood, to forge a crown with seven empty settings, one for each sigil. Whatever the Host means to do with the sigils, it will do it with that crown, and the crown must not be finished. Take the east road out of the Weeping Woods and find Thane Hroki at Cinderhold, the dwarf fort on Emberdeep’s southern rim.',
+    text: 'The Pale Herald’s order on Halvard’s sword-belt sends ore and slaves to Emberdeep, east of the wood, to forge a crown with seven empty settings, one for each sigil. Whatever the Host means to do with the sigils, it will do it with that crown, and the crown must not be finished. Take the east road out of the Weeping Woods and find Thane Hroki at Cinderhold, the dwarf fort on Emberdeep’s southern rim.',
     objective: { kind: 'talk', npc: 'thane-hroki', label: 'Talk to Thane Hroki in Cinderhold' },
     after: ['the-weeping-lord'],
     // the hand-off that sends the hero to emberdeep: it starts when the last chapter ends, not on arrival
     level: 51,
-    reward: { xp: 1750, gold: 600, text: 'Hroki has watched the caldera for forty years, and his fathers watched it for a thousand. A month ago the Host came over the north rim and chained Ashkar, the fire lord who has always kept faith with Cinderhold. The screaming under the lake is his.' },
+    reward: { xp: 1750, gold: 600, text: 'Hroki has watched the caldera for forty years, and his fathers watched it for a thousand. His dwarves have kept faith with Ashkar all that time, and alone they can do nothing for him. Hroki puts Cinderhold’s forge, its tower and its watchmen at your service.' },
   },
   /* ------------------------------------------------------ the Pale Crown */
   {
@@ -39,7 +39,7 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     },
     after: ['the-pale-crown'],
     zone: 'emberdeep',
-    reward: { xp: 1800, gold: 600, text: 'The Host has made the smelters into slave forges, worked by its own dead in chains. The crown the Herald ordered is cast here, and taken down into the caldera to be finished. Its mold is the only thing on the anvil that tells what it is for, and only Dvalin can read it.' },
+    reward: { xp: 1800, gold: 600, text: 'The Host has made the smelters into slave forges, worked by its own dead in chains. The crown the Herald ordered is cast here, and taken down into the caldera to be finished. The crown’s mold was left on the anvil. The runes on it say what the crown is for, and only Dvalin can read them.' },
   },
   {
     id: 'break-the-chains',
@@ -70,7 +70,7 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     name: 'The Throne’s Gate',
     auto: true,
     giver: 'thane-hroki',
-    text: 'The way down to Ashkar is the Throne’s Gate, at the north edge of the lake of fire. Ketla has counted the Host’s torches around it from her tower, and there are many. Go north, find the Gate, and take Dvalin’s hammer down.',
+    text: 'The way down to Ashkar is the Throne’s Gate, at the north edge of the lake of fire. Ash-warden Ketla has counted the Host’s torches around it from Cinderhold’s tower, and there are many. Go north, find the Gate, and take Dvalin’s hammer down.',
     objective: { kind: 'explore', spot: 'throne-gate', label: 'Find the Throne’s Gate in the north of the caldera' },
     find: {
       name: 'The Overseer’s Tally',
@@ -101,7 +101,7 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     name: 'Ashkar the Bound',
     auto: true,
     giver: 'thane-hroki',
-    text: 'At the bottom of the Molten Throne, Ashkar sits chained to his own throne, forging the Pale Crown that the Host means to set Elyra in. He is mad with pain and won’t know you. Beat him down, break his chains with Dvalin’s hammer, and smash the crown on its anvil.',
+    text: 'At the bottom of the Molten Throne, Ashkar sits chained to his own throne, forging the Pale Crown that is meant to hold Elyra and the sigils. He is mad with pain and won’t know you. Beat him down, break his chains with Dvalin’s hammer, and smash the crown.',
     objective: { kind: 'boss', boss: 'ashkar-the-bound', label: 'Free Ashkar and break the Pale Crown' },
     after: ['the-magma-warden'],
     zone: 'emberdeep',
@@ -110,7 +110,7 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
       xp: 7800,
       gold: 2200,
       item: 'the-unbound-flame',
-      text: 'Dvalin’s hammer breaks the last chain, and the Pale Crown cracks in two on the anvil. Ashkar’s mind clears. He gives you a coal from his own heart and sinks back into the lake of fire, free. As the crown broke, a voice spoke out of the fire, soft and tired.',
+      text: 'Dvalin’s hammer breaks the last chain, and the Pale Crown lies cracked in two. Ashkar’s mind clears. He thanks you, gives you a coal from his own heart and sinks back into the lake of fire, free.',
     },
   },
   /* -------------------------------------------------------- Asgerd's heat */
@@ -243,7 +243,7 @@ export const EMBERDEEP_NPCS: Record<string, NpcDef> = {
     talk: [
       {
         when: { quest: 'hounds-in-the-runs', state: 'active' },
-        lines: ['My grandmother laid pipes from the Magma Runs, north of town, to heat my brewery.', 'Now magma hounds live in the Runs, and they chew the pipes. My brew has gone cold twice this week. Kill ten of them, please.'],
+        lines: ['My grandmother laid pipes from the Magma Runs, north of town, to heat the brewery.', 'Now magma hounds live in the Runs, and they chew the pipes. My brew has gone cold twice this week. Kill ten of them, please.'],
       },
       {
         when: { quest: 'ember-glands', state: 'active' },

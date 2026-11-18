@@ -73,7 +73,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
       ],
       sign: 'Elyra',
     },
-    reward: { xp: 520, gold: 160, text: 'Elyra turns west toward Hearthstead and goes white. Something warm has woken under the town, and the Host’s captain has been watching that town for days. Stormhoof, the clans’ war-chief, will not hear a word from strangers. Then a war-horn sounds from Hearthstead’s wall.' },
+    reward: { xp: 520, gold: 160, text: 'Elyra turns west toward Hearthstead, and her face goes pale. Something warm has woken under the town, and the Host’s captain has been watching that town for days. Stormhoof, the clans’ war-chief, will not hear a word from strangers. Then a war-horn sounds from Hearthstead’s wall.' },
   },
   {
     id: 'stormhoof',
@@ -162,7 +162,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
       xp: 1850,
       gold: 600,
       item: 'vosk-greaves',
-      text: 'Vosk is carrying the Sigil of Stone north through the Ashen Barrows, to lay it before the Hallow King. The last line of his orders was written in Aster’s own hand. Someone in Aster, with a clerk’s pen and the kingdom’s purse, is paying the Host’s way. Dunmore gives you the greave Vosk left behind.',
+      text: 'Vosk is carrying the Sigil of Stone north through the Ashen Barrows, to lay it before the Hallow King. The last line of his orders is not in Vaelmoor’s script but in Aster’s, in a neat clerk’s hand. Someone in Aster, with a clerk’s pen and the kingdom’s purse, is paying the Host’s way. Dunmore gives you the greave Vosk left behind.',
     },
   },
   {
@@ -175,7 +175,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     after: ['orders-from-the-north'],
     zone: 'briarhollow',
     level: 20,
-    reward: { xp: 500, gold: 150, text: 'Briarhollow has horses now, and riders who have beaten the Host. The camp holds four villages and one sigil. The Host holds one too, and it is riding north.' },
+    reward: { xp: 500, gold: 150, text: 'Briarhollow has horses now, and riders who have beaten the Host. Four villages stand together in the camp now, and Elyra holds one sigil. The Host holds one too, and Vosk is carrying it north.' },
   },
   /* ------------------------------------------------------ Tess's brother */
   {
@@ -192,7 +192,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
       kind: 'note',
       about: 'Nailed to the door of Ashby Farm. The farm is empty, the gate stands open, and lion tracks lead away west. Tess will know the hand.',
       body: ['GON TO GET THE GOTES BAK. DONT TELL TESS.'],
-      sign: 'WIL',
+      sign: 'G.',
     },
     reward: { xp: 420, gold: 150 },
   },
@@ -353,7 +353,7 @@ export const AMBERFIELD_NPCS: Record<string, NpcDef> = {
     title: 'Wheelwright, from the east',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'the-broken-caravan', state: 'active' }, lines: ['My sister Ada and her girl Marit were on that caravan. Ada wears a red scarf. Please find them.'] },
+      { when: { quest: 'the-broken-caravan', state: 'active' }, lines: ['My sister Ada and her girl Marit were on that caravan. Marit wears a red scarf. Please find them.'] },
       { when: { quest: 'the-broken-caravan', state: 'done' }, lines: ['You found Ada and Marit. Thank you. They’re resting in the wagon shed.'] },
       { lines: ['I made wheels in Ashford until the Host came over the hills.', 'Now I fix the camp’s carts, so people can leave if they have to.'] },
     ],
@@ -387,7 +387,7 @@ export const AMBERFIELD_EVENTS: Record<string, StoryEventDef> = {
     waves: [
       { enemies: ['ash-raider', 'ash-raider', 'legion-scout', 'ash-raider'], from: ['hearth-north', 'hearth-east'] },
       { enemies: ['legion-scout', 'grave-hound', 'grave-hound', 'ash-archer'], from: ['hearth-west', 'hearth-northwest'], barks: [{ who: 'mara', text: 'Hounds on the west road! Don’t let them get behind you!' }] },
-      { enemies: ['ash-raider', 'ash-raider', 'legion-scout', 'legion-scout', 'grave-hound'], from: ['hearth-north', 'hearth-east', 'hearth-west'], barks: [{ who: 'hearth-rider', text: 'I think that’s all of the ones that got in!' }] },
+      { enemies: ['ash-raider', 'ash-raider', 'legion-scout', 'legion-scout', 'grave-hound'], from: ['hearth-north', 'hearth-east', 'hearth-west'], barks: [{ who: 'hearth-rider', text: 'That’s the last of the ones who got in!' }] },
     ],
     end: [{ who: 'mara', text: 'They’re falling back to the road. They’ll attack the gate next. Get up on the wall!' }],
     retry: [{ who: 'mara', text: 'Get up! They’re still in the square!' }],

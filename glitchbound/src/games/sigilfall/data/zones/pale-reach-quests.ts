@@ -42,7 +42,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     after: ['ysanes-last-echo'],
     // the hand-off that sends the hero to pale-reach: it starts when the last chapter ends, not on arrival
     level: 56,
-    reward: { xp: 2000, gold: 700, text: 'Six of the seven sigils burn in Elyra now. Cael, Nyx and Orren are at Mara’s fire, and the rest of the army is still coming up the Hollowmere road behind you. When it is in, Mara marches on Duskspire.' },
+    reward: { xp: 2000, gold: 700, text: 'Elyra takes the Sigil of Tides from your hand, and six of the seven sigils burn in her now. Cael, Nyx and Orren are at Mara’s fire, and the rest of the army is still coming up the Hollowmere road behind you. When it is in, Mara marches on Duskspire.' },
   },
   {
     id: 'the-last-road',
@@ -66,7 +66,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     after: ['the-last-road'],
     zone: 'pale-reach',
     level: 58,
-    reward: { xp: 3600, gold: 1000, text: 'Vosk falls in the snow, and for a moment his eyes clear and he knows you. “I carried the stone north to my king,” he says. “I wrapped it in a child’s scarf. I’m sorry.” Then there is only ash, and his saddle lying in the snow.' },
+    reward: { xp: 3600, gold: 1000, text: 'Vosk falls in the snow, and for a moment his eyes clear and he knows you. “I carried the Stone north to my king,” he says. “I wrapped it in a child’s scarf. I’m sorry.” Then there is only ash, and his saddle lying in the snow.' },
   },
   {
     id: 'march-the-siege-mages',
@@ -166,12 +166,12 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     name: 'Crownfall: Vaelmoor Whole',
     giver: 'elyra-at-the-reach',
     auto: true,
-    text: 'When Vaelor fell, the Ash Crown tore free and rose through the roof of Duskspire, and the sky above the gate split open onto a summer day. Elyra has gone into that light after it, carrying all seven sigils. Go through the tear beside the Duskspire Gate and find her in the square of Vaelmoor Remembered.',
+    text: 'When Vaelor fell, the Ash Crown tore free and rose through the roof of Duskspire, and the sky above the tower split open onto a summer day. Elyra has gone into that light after it, carrying all seven sigils. Go through the tear in the sky beside the Duskspire Gate and find her in the square of Vaelmoor Remembered.',
     objective: { kind: 'talk', npc: 'elyra-in-the-memory', label: 'Find Elyra in the square of Vaelmoor Remembered' },
     after: ['the-hollow-king'],
     // the hand-off that sends the hero to vaelmoor-remembered: it starts when the last chapter ends, not on arrival
     level: 60,
-    reward: { xp: 3000, gold: 600, text: '“I can unmake the Crown now,” Elyra says. “Or I can hold it open one more hour first, so Vaelor’s wife and children can see him.” “But while the Crown stands, the Host stands too, and Mara is holding the gate against it. Every minute of that hour costs her soldiers.” “I can’t choose this. You choose.”' },
+    reward: { xp: 3000, gold: 600, text: '“I can unmake the Crown now,” Elyra says. “Or I can hold it open one more hour first, so Vaelor’s wife and children can see him. But while the Crown stands, the Host stands too, and Mara is holding the gate against it. Every minute of that hour costs her soldiers.” She looks at you. “I can’t choose this. You choose.”' },
   },
   {
     id: 'crownfall-one-hour',
@@ -345,10 +345,10 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'crownfall-the-ash-crown', state: 'done' }, lines: ['It’s over, and this time nobody was left waiting for help that didn’t come.', 'I’m going back to Lantern Hill, to the barrows where my Watch died. I want to tell them help came in the end.'] },
-      { when: { quest: 'march-the-breach', state: 'active' }, lines: ['You lead the charge through the breach. My riders and I will be right behind you.', 'Ten years ago my Watch died waiting for help that never came. Today I’ll be right there when you need me.'] },
+      { when: { quest: 'march-the-breach', state: 'active' }, lines: ['You lead the charge through the breach. My riders and I will be right behind you.', 'Ten years ago my Watch died waiting for help that never came. This time we are the help, and we won’t be late.'] },
       // the knights' chapel at Highwall laid back down
       { when: { quest: 'last-rites', state: 'done' }, lines: ['Ottis rang the chapel bell at Highwall for my riders who fell in the sortie. He wrote to tell me.', 'Corvane would have liked him. Corvane liked people who did things properly.'] },
-      { lines: ['Ten years ago I was told help wasn’t coming, and my Watch died waiting. Look at this camp. This time, help came.', 'Stay close in the fight, and shout if you’re hurt. Nobody gets left behind this time.'] },
+      { lines: ['My riders are fed and the horses are shod. We march when Mara gives the word.','Stay close in the fight, and shout if you’re hurt. Nobody gets left behind this time.'] },
     ],
   },
   'nyx-at-the-reach': {
@@ -359,7 +359,7 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     talk: [
       { when: { quest: 'crownfall-the-ash-crown', state: 'done' }, lines: ['It’s over. I’m going to Lastlight to see Wren.', 'Thank you for letting me come back after the Tear. I won’t forget it.'] },
       // the Herald unmasked at the gate: a harbor-master who let one ship in
-      { when: { quest: 'march-the-voice', state: 'done' }, lines: ['The Herald was a harbor-master who let one ship in, and spent three hundred years hurting people to undo it.', 'I sold you out once and told myself there was no other way. I know how that feels. I still can’t forgive him for Wren.'] },
+      { when: { quest: 'march-the-voice', state: 'done' }, lines: ['The Herald was a harbor-master who let one ship in, and spent three hundred years hurting people to undo it.', 'I sold you out once and told myself there was no other way. So I understand him a little. I still can’t forgive him for Wren.'] },
       // Widow Marrow's son laid to rest: the oil went up the causeway, and Wren carried it
       { when: { quest: 'the-drowned-mother', state: 'done' }, lines: ['Wren is keeping lamps at Lastlight. Widow Marrow taught him how. He writes to me every week.', 'He says he’s happy there. I’m starting to believe him.'] },
       { lines: ['Wren is safe at Lastlight. I don’t have to be afraid for him anymore.', 'I sold your road to the Herald once, to save my brother. I’m here to make up for it.', 'If there’s a lock in Duskspire, I’ll open it.'] },
@@ -408,7 +408,7 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'crownfall-one-hour', state: 'offered' }, lines: ['If you want Vaelor to have his hour, go and tell him. He’s at the edge of the square.', 'While I hold the Crown open, the Host keeps fighting at the gate. Mara’s soldiers will pay for every minute.', 'If you want it over now, tell me instead.'] },
       { when: { quest: 'crownfall-break-it', state: 'active' }, lines: ['All right. I’ll do it now.', 'I’m sorry, Vaelor.'] },
       { when: { quest: 'crownfall-the-ash-crown', state: 'active' }, lines: ['The Crown is over the palace garden, north of here. Everything it ever ate is inside it.', 'Walk up with me. I don’t want to do this alone.'] },
-      { when: { quest: 'crownfall-one-hour', state: 'taken' }, lines: ['He had his hour. The children climbed into his lap, and he laughed.', 'Mara’s soldiers paid for it at the gate. I asked for that hour, so I will carry them.'] },
+      { when: { quest: 'crownfall-one-hour', state: 'taken' }, lines: ['He had his hour. The children climbed into his lap, and he laughed.', 'Mara’s soldiers paid for it at the gate. I held the Crown open for that hour, so I will carry them with me.'] },
       { when: { quest: 'crownfall-break-it', state: 'taken' }, lines: ['It’s done. I keep seeing him reach for her.', 'Ysane asked him to let them go. They’re free now, even if he never got to say goodbye.'] },
       { lines: ['All seven sigils are quiet. I think they know it’s nearly over.'] },
     ],
@@ -637,6 +637,6 @@ export const PALE_REACH_EVENTS: Record<string, StoryEventDef> = {
       { enemies: ['pale-knight', 'pale-knight', 'pale-knight', 'frost-wraith', 'frost-wraith', 'soul-reaver'], from: ['breach-n', 'breach-w', 'breach-e'] },
     ],
     end: [{ who: 'mara', text: 'We’re through! The army is inside the wall!' }],
-    retry: [{ who: 'cael', text: 'Fall back and charge again! Get up, everyone!' }],
+    retry: [{ who: 'cael', text: 'Get up, everyone! Fall back and charge again!' }],
   },
 };

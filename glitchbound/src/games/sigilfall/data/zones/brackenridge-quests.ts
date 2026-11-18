@@ -213,7 +213,7 @@ export const BRACKENRIDGE_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'lay-the-grey-lady', state: 'active' },
-        lines: ['The Grey Lady was the widow of Ser Edric, a Sigil-warden. Something has woken her after three hundred years.', 'Every time she sings, more dead rise. Please, give her rest.'],
+        lines: ['The Grey Lady was the widow of Ser Edric, the eighth warden. Something has woken her after three hundred years.', 'Every time she sings, more dead rise. Please, give her rest.'],
       },
       { when: { quest: 'fern-retaken', state: 'done' }, lines: ['We’re home. Half the roofs are gone, and six of my rangers are buried by the Harvest Stones.', 'You and Mara Venn took Fernstead back. We won’t forget it.'] },
       { when: { quest: 'fern-retaken', state: 'active' }, lines: ['My rangers are already on the west road. We go in with Mara at dusk.', 'The Host’s soldiers are sleeping in our houses. Not for one more night.'] },
@@ -256,7 +256,7 @@ export const BRACKENRIDGE_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['We left Fernstead with what we could carry. I carried my soup pot and the inn’s sign.', 'I still make soup for anyone who needs it. Sit down, dear.'] },
       { when: { quest: 'the-harvest-stones', state: 'done' }, lines: ['I could see the stones from the inn last night, gold in the candlelight. I cried.', 'Keep that corn dolly with you. It’s a harvest charm from these hills.'] },
       { when: { quest: 'lay-the-grey-lady', state: 'done' }, lines: ['Rest, Lady. Rest, Edric.', 'Take a potion before you go. You’ve earned it.'] },
-      { lines: ['Welcome to the Bracken Hearth. Potions on the shelf, soup in the pot.', 'Rest between fights, dear. You heal quickly once nothing is hitting you. Potions are for when something is.'] },
+      { lines: ['Welcome to the Bracken Hearth. Potions on the shelf, soup in the pot.', 'Rest between fights, dear. You heal quickly once nothing is hitting you. Save the potions for the middle of a fight.'] },
     ],
   },
   'pip-tanner': {
@@ -328,7 +328,7 @@ export const BRACKENRIDGE_EVENTS: Record<string, StoryEventDef> = {
       { enemies: ['legion-soldier', 'legion-crossbowman', 'legion-crossbowman', 'ash-archer', 'ash-raider'], from: ['fern-w', 'fern-n'], barks: [{ who: 'mara', text: 'Shields on the left! Riders, take the lane!' }] },
       { enemies: ['legion-ensign', 'legion-soldier', 'legion-soldier', 'legion-soldier', 'legion-crossbowman', 'ash-raider'], from: ['fern-n', 'fern-e', 'fern-w'], barks: [{ who: 'fern-ranger', text: 'Their banner! Bring down their banner!' }] },
     ],
-    end: [{ who: 'mara', text: 'Fernstead is free! Someone tell Hollis her people can come home.' }],
+    end: [{ who: 'mara', text: 'Fernstead is free! Send a rider to the camp. Hollis’s people can come home.' }],
     retry: [{ who: 'mara', text: 'Back to the ridge! Regroup! We go again!' }],
   },
   'camp-scouts': {

@@ -55,7 +55,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     name: 'Lark’s Hollow',
     giver: 'orren-in-vaelmoor',
     auto: true,
-    text: 'Lark’s Hollow is the royal lodge where Queen Ysane, the Hallow King’s wife, took their children, Lark and Edda, the winter the plague came. Orren went as far as the trees and heard children playing inside. He won’t go in alone, so he is coming with you. Go to Lark’s Hollow, south-east of the Wardens’ Rest.',
+    text: 'Lark’s Hollow is the royal lodge where Queen Ysane, the Hallow King’s wife, took their children, Lark and Edda, the winter the plague came. Orren went as far as the trees around it and heard children playing in the snow. He won’t go in alone, so he is coming with you. Go to Lark’s Hollow, south-east of the Wardens’ Rest.',
     objective: { kind: 'explore', spot: 'larks-hollow', label: 'Go to Lark’s Hollow south-east of the Wardens’ Rest' },
     find: {
       name: 'A Letter to Papa',
@@ -90,7 +90,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     name: 'The Weeping Tree',
     auto: true,
     giver: 'candlewife-hesper',
-    text: 'Lord Halvard still holds out against the Hallow King’s call at the Weeping Tree, in the far north-west of the wood. If he gives in, every dead knight in the wood will follow him north to the Host. Orren has carried Chandler Miro’s candle from Candlewick, the one flame that stays lit near Halvard, and Hesper wrote out Halvard’s name for him. Take them to the Weeping Tree.',
+    text: 'Lord Halvard still holds out against the Hallow King’s call at the Weeping Tree, in the far north-west of the wood. If he gives in, every dead knight in the wood will follow him north to the Host. Orren is carrying Chandler Miro’s candle, the one flame that stays lit near Halvard, and the paper where Hesper wrote out Halvard’s name. Take them to the Weeping Tree.',
     objective: { kind: 'explore', spot: 'the-weeping-tree', label: 'Find the Weeping Tree in the far north-west' },
     find: {
       name: 'A Ribbon from the Weeping Tree',
@@ -102,7 +102,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     after: ['wood-the-children'],
     zone: 'weeping-woods',
     level: 50,
-    reward: { xp: 1900, gold: 580, text: 'Miro’s candle burns blue as you come under the willow. Halvard stands beneath it in grey plate, with frozen tears on his helm and violet in his eyes. He is still fighting the call, but only just. In Candlewick, someone has kept his wife’s candle lit for three hundred years.' },
+    reward: { xp: 1900, gold: 580, text: 'Miro’s candle burns blue as you come under the willow. Halvard stands beneath it in grey plate, with frozen tears on his helm and violet in his eyes. He is still fighting the call, but only just. In Candlewick, the candle his wife Hild lit for him has been kept burning for three hundred years.' },
   },
   {
     id: 'the-weeping-lord',
@@ -133,7 +133,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     id: 'the-hanging-oaks',
     name: 'The Hanging Oaks',
     giver: 'sexton-abel',
-    text: 'Sexton Abel has dug Candlewick’s graves for forty years. Thirty graves still wait for their dead: deserters Lord Halvard hanged from the oaks before his last battle. They are still on their ropes, and they attack anyone who comes near. Go to the Hanging Oaks, west of Candlewick, and see.',
+    text: 'Sexton Abel has dug Candlewick’s graves for forty years. Thirty graves still wait for their dead, the deserters Lord Halvard hanged from the oaks before his last battle. They are still on their ropes, and they attack anyone who comes near. Go to the Hanging Oaks, west of Candlewick, and see.',
     objective: { kind: 'explore', spot: 'the-hanging-oaks', label: 'Find the Hanging Oaks west of Candlewick' },
     // (pays out at the oaks: the cutting down starts there, with no walk back to Abel between)
     turnIn: false,
@@ -179,7 +179,7 @@ export const WEEPING_WOODS_QUESTS: QuestDef[] = [
     id: 'hounds-of-the-wolf-barrow',
     name: 'Hounds of the Barrow',
     giver: 'woodward-fenn',
-    text: 'The knights’ wolfhounds were buried with them in the Wolf Barrow, north of Candlewick, and they always stayed there. Now they hunt the roads in pairs, and Woodward Fenn’s own dog, Bramble, hasn’t come home. Put down eight grave wolves around the Wolf Barrow.',
+    text: 'The knights’ wolfhounds were buried with them in the Wolf Barrow, north of Candlewick, and for three hundred years they stayed there. Now they hunt the roads in pairs, and Woodward Fenn’s own dog, Bramble, hasn’t come home. Put down eight grave wolves around the Wolf Barrow.',
     objective: { kind: 'kill', region: 'weeping-woods', count: 8, enemies: ['grave-wolf'], label: 'Put down grave wolves' },
     // (pays out at the barrow, where Bramble is found: the old hound's quest goes on from there, no walk back to Fenn)
     turnIn: false,
@@ -250,7 +250,7 @@ export const WEEPING_WOODS_NPCS: Record<string, NpcDef> = {
       {
         when: { quest: 'the-candle-road', state: 'active' },
         lines: [
-          'Your priest says you came from Aster. Nobody from outside has come up the road in three hundred years.',
+          'Your priest says you came from Aster. Before him, nobody from outside had come up the road in three hundred years.',
           'I’m Hesper. I keep the candles, and the Roll, our book of the names of the dead.',
           'When I read a dead knight’s name by candlelight, he lies down and rests. Lately there are too many of them.',
         ],

@@ -77,7 +77,7 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     find: {
       name: 'Ser Edric’s Cairn-Stone',
       kind: 'relic',
-      about: 'A flat stone from the cairn beside the Gloam Gate, where Ser Edric fell three hundred years ago. His widow came north to carry him home, and before she left she cut his words into it. They are the words engraved on her locket, the one the Grey Lady left in the grass at Fernstead.',
+      about: 'A flat stone from the cairn beside the Gloam Gate, where Ser Edric fell three hundred years ago. His widow, the Grey Lady, came north to carry him home, and before she left she cut his words into it. The same words are engraved on her locket, which you found at Fernstead.',
       body: ['EDRIC OF FERNSTEAD', 'THE EIGHTH WARDEN', 'Till the last light. Then a little after.'],
     },
     reward: { xp: 1700, gold: 460, text: 'Behind the cairn, Nyx finds a drain that isn’t on the Herald’s map. It runs under the gatehouse to a stair and a locked iron door. Nyx knows the lock. Brennick made it, the old thief who taught her the trade.' },
@@ -128,7 +128,7 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
     name: 'The Second Gate',
     giver: 'lamp-keeper-brin',
     auto: true,
-    text: 'The Gloam Gate is taken, and the five sigils from its vault are in your pack. They are dark and cold, because they need the one who bonded them. Elyra is by Brin’s fire in Lastlight, with Nyx and Wren beside her. Take the sigils down to her.',
+    text: 'The Gloam Gate is taken, and the five sigils from its vault are in your pack. Only the one who bonded them can wake them again. Elyra is by Brin’s fire in Lastlight, with Nyx and Wren beside her. Take the sigils down to her.',
     objective: { kind: 'talk', npc: 'elyra-lastlight', label: 'Bring the sigils to Elyra by Lastlight’s fire' },
     after: ['the-gatewarden'],
     zone: 'riftscar',
@@ -138,7 +138,7 @@ export const GLOAMHOLLOW_QUESTS: QuestDef[] = [
       gold: 700,
       item: { rarity: 'epic' },
       perk: 'sigil-veil',
-      text: 'You put the five sigils in Elyra’s hands, and their light runs back into her. “Five,” she says. “The sixth is somewhere past the Gate, in the dead kingdom. I can feel it. Vosk carried the Stone north to his king.” Highwall holds, the Gloam Gate is taken, and the road into Vaelmoor is open.',
+      text: 'You put the five sigils in Elyra’s hands, and their light runs back into her. “Five,” she says. “Another is somewhere past the Gate, in the dead kingdom. I can feel it. The last is the Stone, and Vosk carried that north to his king.” Highwall holds, the Gloam Gate is taken, and the road into Vaelmoor is open.',
     },
   },
 
@@ -211,7 +211,7 @@ export const GLOAMHOLLOW_NPCS: Record<string, NpcDef> = {
       { when: { quest: 'gloam-the-lamp-road', state: 'active' }, lines: ['I’m Brin, the head lamp-keeper. You came up the road in the dark. Never do that out here.', 'You’re going to the Gloam Gate? Then you’ll need our lamps lit, and something has been putting them out.'] },
       { when: { quest: 'gloam-the-unlit-mile', state: 'active' }, lines: ['There’s a lamp every fifty paces from my door to the Gate. My grandmother lit them, and her grandmother before her.', 'The marsh-lights lean on them until they go out. Snuff out six, and I’ll relight the lamps behind you.'] },
       { when: { quest: 'gloam-nyx-confesses', state: 'active' }, lines: ['Nyx is sitting at the end of my jetty with her lamp out. A keeper only does that when someone has died.', 'Go and talk to her before you go up to the Gate.'] },
-      { when: { quest: 'gloam-the-gate', state: 'active' }, lines: ['There’s a cairn beside the gateway, older than this village. A warden of Aster fell there, holding the Gate alone.', 'My people kept a lamp lit on it for three hundred years, until the Host took the Gate.'] },
+      { when: { quest: 'gloam-the-gate', state: 'active' }, lines: ['There’s a cairn beside the gateway, as old as our lamps. A warden of Aster fell there, holding the Gate alone.', 'My people kept a lamp lit on it for three hundred years, until the Host took the Gate.'] },
       { when: { quest: 'the-gatewarden', state: 'active' }, lines: ['Elyra is asleep by my fire. Wren is eating everything in the house.', 'The Gatewarden still holds the Gate, and Elyra’s sigils are in the vault behind him. Go and defeat him.'] },
       { when: { quest: 'the-gloam-gate', state: 'active' }, lines: ['Elyra is awake. She’s weak, but she asked for you.', 'Take her what you found in the vault. She’s by the fire.'] },
       { when: { quest: 'the-gloam-gate', state: 'done' }, lines: ['The Gate is lit now. This morning I walked through it and saw the road north into Vaelmoor.', 'Brother Orren went through the Gate at dawn. He left word that he’ll wait for you at Candlewick.'] },
@@ -252,7 +252,7 @@ export const GLOAMHOLLOW_NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'gloam-the-lamp-road', state: 'active' }, lines: ['Talk to Brin. She runs the lamps, and nobody reaches the Gate without them.', 'When she hears what I did, she won’t like me. That’s fair.'] },
-      { when: { quest: 'gloam-the-unlit-mile', state: 'active' }, lines: ['Brin won’t let me near her lamps yet. I don’t blame her.', 'Go and put out those marsh-lights. I’ll keep watch on the road.'] },
+      { when: { quest: 'gloam-the-unlit-mile', state: 'active' }, lines: ['Brin gave me a lamp, but she watches me every time I carry it. I don’t blame her.', 'Go and put out those marsh-lights. I’ll keep watch on the road.'] },
       {
         when: { quest: 'gloam-nyx-confesses', state: 'active' },
         lines: [
