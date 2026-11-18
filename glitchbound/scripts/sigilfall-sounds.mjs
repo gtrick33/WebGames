@@ -226,6 +226,10 @@ const TRACKS = {
   cave: 'Crypto',
   boss: 'Five Armies',
   siege: 'Heroic Age',
+  // the Ring's arenas (src/games/sigilfall/audio/tracks.ts RING_MUSIC)
+  'ring-sands': 'Desert City',
+  'ring-frost': 'Ice Flow',
+  'ring-forge': 'Volatile Reaction',
 };
 
 function ffmpeg(args) {
@@ -280,7 +284,7 @@ for (const [name, title] of Object.entries(TRACKS)) {
   const text = ffmpeg(['-nostats', '-i', src, '-af', [...cut, 'ebur128=framelog=quiet'].join(','), '-f', 'null', '-']);
   const lufs = Number(/I:\s+(-?[\d.]+) LUFS/.exec(text)[1]);
   // (the battle pieces a little above the rest: they are meant to be felt)
-  const gain = MUSIC_LOUDNESS + (name === 'boss' || name === 'siege' ? 2 : 0) - lufs;
+  const gain = MUSIC_LOUDNESS + (name === 'boss' || name === 'siege' || name.startsWith('ring-') ? 2 : 0) - lufs;
   const chain = [...cut, `volume=${gain.toFixed(2)}dB`, 'alimiter=limit=0.89:level=disabled'];
   ffmpeg(['-y', '-loglevel', 'error', '-i', src, '-af', chain.join(','), '-ar', '44100', '-codec:a', 'libmp3lame', '-b:a', '80k', '-map_metadata', '-1', join(MUSIC_OUT, `${name}.mp3`)]);
   console.log(`${name}: ${title}, ${lufs} LUFS, ${gain.toFixed(1)} dB`);

@@ -139,6 +139,18 @@ export const SAMPLES: Readonly<Record<string, SampleDef>> = {
   close: { files: ['ui-close'], gain: 0.26, rate: [0.98, 1.03] },
 };
 
+/**
+ * The Ring's own sounds (the owner, 2026-11-18: "the sounds ... theyre currently kinda annoying, can we use more
+ * cartoony cool and warm sounding effects"): made for it by scripts/sigilfall-ring-sounds.mjs, the game's own work.
+ * Wooden bonks and marimba plinks, airy whooshes, puffy booms, glassy tinkles, a kalimba, a slide whistle and a sad
+ * trombone. The Ring asks for its sounds by their usual names; render/ring.ts `ringSound` turns each into its own here.
+ */
+const RING_GAIN: Record<string, number> = { hit: 0.26, clash: 0.26, swing: 0.24, hurt: 0.32, talent: 0.24, victory: 0.4, playerDie: 0.38, levelup: 0.42, checkpoint: 0.32 };
+const RING_RATE: Record<string, readonly [number, number]> = { victory: [1, 1], playerDie: [1, 1], levelup: [1, 1], checkpoint: [1, 1], holy: [1, 1], nova: [1, 1], heal: [1, 1], buff: [1, 1], nature: [1, 1] };
+export const RING_SOUNDS = ['swing', 'swingBig', 'spear', 'hit', 'clash', 'critBlade', 'hurt', 'bow', 'shield', 'shieldBreak', 'blink', 'buff', 'bolt', 'zap', 'fireball', 'explode', 'freeze', 'shatter', 'shard', 'thunder', 'holy', 'shadow', 'nature', 'heal', 'rift', 'quake', 'meteor', 'nova', 'die', 'slam', 'roar', 'epic', 'pickupBig', 'orb', 'talent', 'checkpoint', 'victory', 'playerDie', 'levelup'] as const;
+const RING: Record<string, SampleDef> = Object.fromEntries(RING_SOUNDS.map((id) => [`ring-${id}`, { files: [`ring-${id}`], gain: RING_GAIN[id] ?? 0.3, rate: RING_RATE[id] ?? [0.94, 1.08] }]));
+Object.assign(SAMPLES as Record<string, SampleDef>, RING);
+
 /** The air of a place (audio/ambience.ts says which is where): one loop each, fetched when first wanted. */
 export const AMBIENCE_FILES = ['cave', 'forest', 'day', 'wind', 'water'] as const;
 export type AmbienceId = (typeof AMBIENCE_FILES)[number];

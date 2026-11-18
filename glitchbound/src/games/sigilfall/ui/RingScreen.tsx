@@ -866,7 +866,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
     setFight(null);
     setRoomFight(null);
     settleRanked(ticket, r.draw ? 'draw' : r.won ? 'won' : 'lost', f, (rating) => {
-      if (rating.rankUp) engine.sound.play('levelup');
+      if (rating.rankUp) engine.sound.play('ring-levelup');
       const track = keepMatch(r, f, rating.pending ? null : rating, rival);
       setResult((now) => (now && now.r === r ? { ...now, rating, track } : now));
     });
@@ -948,7 +948,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
             return;
           }
           const rating: RatingOutcome = r.draw ? { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: 0 } : settle(r.won);
-          if (rating.rankUp) engine.sound.play('levelup');
+          if (rating.rankUp) engine.sound.play('ring-levelup');
           const track = keepMatch(r, fight.format, rating, fight.rival.name);
           setResult({ r, rating, rival: fight.rival.name, kind: 'solo', track });
           setFight(null);
@@ -1012,7 +1012,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
             const was = standingOf(latest.current, live.format);
             clearLive();
             rating = r.draw ? { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: 0 } : settleFor(live.format, live.rivalRating, r.won, 1, live.ourRating);
-            if (rating.rankUp) engine.sound.play('levelup');
+            if (rating.rankUp) engine.sound.play('ring-levelup');
           }
           const track = keepMatch(r, live?.format ?? (Math.max(1, Math.min(3, Math.ceil(roomFight.setup.fighters.length / 2))) as Format), rating, live?.rival.name);
           setResult({ r, rating, rival: live?.rival.name, kind: roomFight.matched ? 'matched' : 'room', track, party: roomFight.party });

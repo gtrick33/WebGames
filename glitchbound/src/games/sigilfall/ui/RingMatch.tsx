@@ -14,7 +14,8 @@ import { CLASSES } from '../data/classes';
 import type { SigilEngine } from '../engine';
 import type { Character, Face } from '../progress/character';
 import { iconPicture } from '../render/art/gameIcons';
-import { barTop, drawRing, headHeight, RingFx, ringLooks, ringSpells, type RingAim } from '../render/ring';
+import { barTop, drawRing, headHeight, RingFx, ringLooks, ringSound, ringSpells, type RingAim } from '../render/ring';
+import { RING_MUSIC } from '../audio/tracks';
 import { RingStage, ringMapOf } from '../render3d/ring3d';
 import { heroDollUrl, type WornLooks } from '../render/sprites';
 import { BoonChips, BoonFlares, Pips } from './RingBoons';
@@ -417,11 +418,13 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     target(list[(at + 1) % list.length]!.id);
   };
 
-  // the Ring's own music while a match is up (the title's comes back with the lobby)
+  // the arena's own music while a match is up (the title's comes back with the lobby): the owner, 2026-11-18, "the
+  // background music should also be per map" (audio/tracks.ts RING_MUSIC)
+  const theme = MAPS[m.map]?.theme ?? 'sands';
   useEffect(() => {
-    engine.setModeMusic('siege');
+    engine.setModeMusic(RING_MUSIC[theme]);
     return () => engine.setModeMusic(null);
-  }, [engine]);
+  }, [engine, theme]);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -787,7 +790,8 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
     let done = false;
     let raf = 0;
     let wasPhase = m.phase;
-    const sound = (id: string, vol?: number): void => engine.sound.play(id, vol);
+    // (the Ring's own sounds: render/ring.ts ringSound)
+    const sound = (id: string, vol?: number): void => engine.sound.play(ringSound(id), vol);
     let lastPaint = 0;
     let wasShown = m.phase;
     /**
