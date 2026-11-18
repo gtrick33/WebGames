@@ -96,11 +96,25 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
   const [resume, setResume] = useState<LiveMatch | null>(null);
   const [lost, setLost] = useState<number | null>(null);
   const forfeit = (l: LiveMatch): void => {
+    // (a ranked match: the server takes the leaver's loss; one played signed in that couldn't count: nothing)
+    if (l.ticket) {
+      void import('../net/ranked')
+        .then((m) => {
+          setLeft(null);
+          return m.forfeitRanked(l);
+        })
+        .then(setLost);
+      return;
+    }
     void import('../arena/ladder').then((m) => {
       setLeft(null);
-      setLost(m.forfeitLive(l));
+      if (l.unrated) {
+        m.clearLive();
+        setLost(0);
+      } else setLost(m.forfeitLive(l));
     });
   };
+
   useEffect(() => {
     // (too long gone: the match is lost, and the screen says so)
     if (left && !liveGoing(left)) forfeit(left);
@@ -113,7 +127,8 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
       </Suspense>
     );
   }
-  if (ring) {
+  // (a friend's invitation into their Ring party, taken here or in the world, opens the Ring, which joins it)
+  if (ring || engine.ringInvite) {
     return (
       <Suspense fallback={<LoadingScreen />}>
         <RingScreen
@@ -123,7 +138,9 @@ export function TitleScreen({ engine }: { engine: SigilEngine }) {
           cls={lastHero?.cls}
           name={lastHero?.name}
           resume={resume ?? undefined}
+          party={engine.ringInvite || undefined}
           onBack={() => {
+            engine.takeRingInvite();
             setResume(null);
             setRing(false);
           }}

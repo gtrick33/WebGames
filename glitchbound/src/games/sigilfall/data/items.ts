@@ -780,7 +780,7 @@ export const ITEMS: ItemDef[] = [
         },
       },
     ],
-    lore: 'Harlan never fought fair. Now neither do you.',
+    lore: 'Harlan Blackglove’s own coat. Millbrook gave it to you the day the Gallows Gang fell.',
     minLevel: 14,
     special: true,
   },

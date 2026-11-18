@@ -1,3 +1,4 @@
+import { RING_SOUNDS } from '../audio/samples';
 import { drawReticle } from './reticle';
 import { drawIcon } from './art/gameIcons';
 import { ABILITIES, BOONS, type Ability } from '../arena/abilities';
@@ -119,6 +120,12 @@ const LANDS: Record<string, string> = { physical: 'clash', fire: 'explode', fros
 const SUPER_SOUND: Record<string, string> = { physical: 'quake', fire: 'meteor', frost: 'freeze', arcane: 'thunder', holy: 'nova', shadow: 'rift', nature: 'thunder' };
 /** An ability with a sound of its own as it leaves the hand (Frostfang is thrown, with a whistle, not cast). */
 const LEAVES_OWN: Record<string, string> = { 'm-fang': 'spear' };
+/**
+ * The Ring's own sound for a sound asked for by its usual name (audio/samples.ts RING_SOUNDS): its warm, cartoony one
+ * where it has one, else the usual.
+ */
+export const ringSound = (id: string): string => ((RING_SOUNDS as readonly string[]).includes(id) ? `ring-${id}` : id);
+
 /** Every sound those tables name (a test holds them to the sounds there are). */
 export const ringSchoolSounds = (): string[] => [...Object.values(LEAVES), ...Object.values(LANDS), ...Object.values(SUPER_SOUND), ...Object.values(LEAVES_OWN), 'shatter'];
 

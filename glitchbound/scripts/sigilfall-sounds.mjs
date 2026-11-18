@@ -178,7 +178,9 @@ const FILES = {
   gong: ['@/100-CC0-SFX_0/gong_01.ogg'],
   // the moments: a level, a quest, a boss down, a fall
   jingle: ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Jingle_Achievement_00.wav'],
-  'win-short': ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Jingle_Win_00.wav', { to: 2 }],
+  // (the victory jingle's first phrase, for a quest done: it rings out instead of stopping dead at two seconds, which
+  // sounded like the game cutting its own sound off every time a quest was finished)
+  'win-short': ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Jingle_Win_00.wav', { to: 2, ring: 1.2 }],
   win: ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Jingle_Win_00.wav', { to: 5.5 }],
   lose: ['@/Fantasy_Sound_Library/Fantasy Sound Library/Wav/Jingle_Lose_00.wav', { to: 4 }],
   // the menus
@@ -226,6 +228,10 @@ const TRACKS = {
   cave: 'Crypto',
   boss: 'Five Armies',
   siege: 'Heroic Age',
+  // the Ring's arenas (src/games/sigilfall/audio/tracks.ts RING_MUSIC)
+  'ring-sands': 'Desert City',
+  'ring-frost': 'Ice Flow',
+  'ring-forge': 'Volatile Reaction',
 };
 
 function ffmpeg(args) {
@@ -240,6 +246,18 @@ function measure(src, chain) {
   return { mean: Number(/mean_volume: (-?[\d.]+)/.exec(text)[1]), peak: Number(/max_volume: (-?[\d.]+)/.exec(text)[1]) };
 }
 
+/**
+ * A sound cut at `to` seconds that rings out for `ring` more, as a held note does in a hall (a few echoes, fading),
+ * instead of stopping on the cut.
+ */
+export const ringOut = (to, ring) => [
+  `atrim=end=${to}`,
+  `apad=pad_dur=${ring}`,
+  'aecho=1.0:0.8:110|240|400|600|850:0.42|0.3|0.2|0.12|0.07',
+  `afade=t=out:st=${to}:d=${(ring - 0.1).toFixed(2)}`,
+  `atrim=end=${(to + ring - 0.1).toFixed(2)}`,
+];
+
 /** Where a sound comes from: the first pack, or ('@/') the folder of the others. */
 const from = (file) => (file.startsWith('@/') ? join(MORE, file.slice(2)) : join(PACK, file));
 
@@ -249,7 +267,8 @@ let total = 0;
 for (const [name, [file, o = {}]] of Object.entries(FILES)) {
   const src = from(file);
   const chain = ['aformat=channel_layouts=mono', 'aresample=44100', 'silenceremove=start_periods=1:start_threshold=-50dB'];
-  if (o.to) chain.push(`atrim=end=${o.to}`, `afade=t=out:st=${o.to - 0.06}:d=0.06`);
+  if (o.to && o.ring) chain.push(...ringOut(o.to, o.ring));
+  else if (o.to) chain.push(`atrim=end=${o.to}`, `afade=t=out:st=${o.to - 0.06}:d=0.06`);
   if (o.boost) chain.push(`volume=${o.boost}dB`, 'alimiter=limit=0.9');
   const { mean, peak } = measure(src, chain);
   // only ever down, toward the rest: nothing clips
@@ -280,7 +299,7 @@ for (const [name, title] of Object.entries(TRACKS)) {
   const text = ffmpeg(['-nostats', '-i', src, '-af', [...cut, 'ebur128=framelog=quiet'].join(','), '-f', 'null', '-']);
   const lufs = Number(/I:\s+(-?[\d.]+) LUFS/.exec(text)[1]);
   // (the battle pieces a little above the rest: they are meant to be felt)
-  const gain = MUSIC_LOUDNESS + (name === 'boss' || name === 'siege' ? 2 : 0) - lufs;
+  const gain = MUSIC_LOUDNESS + (name === 'boss' || name === 'siege' || name.startsWith('ring-') ? 2 : 0) - lufs;
   const chain = [...cut, `volume=${gain.toFixed(2)}dB`, 'alimiter=limit=0.89:level=disabled'];
   ffmpeg(['-y', '-loglevel', 'error', '-i', src, '-af', chain.join(','), '-ar', '44100', '-codec:a', 'libmp3lame', '-b:a', '80k', '-map_metadata', '-1', join(MUSIC_OUT, `${name}.mp3`)]);
   console.log(`${name}: ${title}, ${lufs} LUFS, ${gain.toFixed(1)} dB`);

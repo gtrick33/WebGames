@@ -334,7 +334,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'The old desert kingdom built it to guard the Sun King’s tomb. It attacks anyone who comes through the door. When the Host’s diggers broke in, it drove them out.',
+    intro: 'The old desert kingdom built it to guard the Sun King’s tomb. It attacks anyone who comes through the door. When the Host’s diggers broke in, it drove them back out into the sand.',
   },
   'the-sun-king': {
     id: 'the-sun-king',
@@ -412,7 +412,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'He ruled the desert three hundred years ago and was one of the seven wardens. He sealed himself in this tomb to guard the Sigil of the Sun. The Host’s digging woke him, and he thinks you are thieves.',
+    intro: 'He ruled the desert three hundred years ago and was one of the seven wardens. He sealed himself in this tomb to keep watch over the Sigil of the Sun. The Host’s picks broke his rest, and he woke angry. He thinks you are thieves.',
   },
 };
 

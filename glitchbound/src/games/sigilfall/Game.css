@@ -7380,14 +7380,15 @@ html.rb-touch-playing textarea {
   }
 }
 
-/* Dialogs over The Ring and the title: solid, so nothing behind them competes */
+/* Dialogs over The Ring and the title: solid, so nothing behind them competes. (Clear of a phone's notch, island and
+   rounded corners on every side: held sideways, the island stood over the left of the fight's layer and cut it off) */
 .rb-ring-dialog-wrap {
   position: absolute;
   inset: 0;
   z-index: 40;
   display: grid;
   place-items: center;
-  padding: 10px;
+  padding: calc(10px + var(--sa-t, 0px)) calc(10px + var(--sa-r, 0px)) calc(10px + var(--sa-b, 0px)) calc(10px + var(--sa-l, 0px));
   overflow-y: auto;
   background: rgb(4 2 12 / 0.8);
   touch-action: pan-y;
@@ -8631,6 +8632,14 @@ html.rb-touch-playing textarea {
   font-weight: 700;
   text-align: center;
 }
+/* (why the match counted less, or not at all, on the ranked ladder) */
+.rb-rr-note {
+  flex-basis: 100%;
+  margin: 0;
+  color: #ffd9a0;
+  font-size: 12px;
+  text-align: center;
+}
 .rb-rr-rankup {
   display: flex;
   align-items: center;
@@ -9389,6 +9398,13 @@ html.rb-touch-playing textarea {
 }
 .rb-ring-prep-rival b {
   color: #ff9a9a;
+}
+/* (why a ranked match counts less, or not at all: said before the gates lift) */
+.rb-ring-prep-note {
+  max-width: 46ch;
+  color: #ffd9a0;
+  font-size: 11.5px;
+  line-height: 1.3;
 }
 .rb-ring-prep-stakes {
   display: flex;
@@ -12475,7 +12491,7 @@ html.rb-touch-playing textarea {
   gap: 10px;
   width: min(860px, 100%);
   /* (held to the screen, not to its own wrap, whose height is its own: its middle scrolls and its foot stays in reach) */
-  max-height: calc(100cqh - 20px);
+  max-height: calc(100cqh - 20px - var(--sa-t, 0px) - var(--sa-b, 0px));
   padding: 12px 14px;
 }
 .rb-ringvl-playwrap {
@@ -12540,7 +12556,7 @@ html.rb-touch-playing textarea {
 .rb-ring-dialog.rb-ringvl-setupdialog {
   justify-items: stretch;
   width: min(900px, 100%);
-  max-height: calc(100cqh - 20px);
+  max-height: calc(100cqh - 20px - var(--sa-t, 0px) - var(--sa-b, 0px));
   overflow-y: auto;
   overscroll-behavior: contain;
   text-align: left;
@@ -12550,6 +12566,423 @@ html.rb-touch-playing textarea {
 }
 .rb-ringvl-setupdialog > .rb-btn {
   justify-self: center;
+}
+
+/* ---- the fight's layer (ui/RingPlay.tsx PlayLayer): a head with the ladder it counts on and the season; the fight on
+   the left (the formats, the rank card, your team with a place for each teammate, a friend's or the computer's); the
+   arena and how ranked is kept fair on the right; the ways to play along the foot. One page, nothing to scroll (the
+   owner, 2026-11-18: "redesign this screen ... keep the whole thing on one page preferably") ---- */
+.rb-ring-dialog.rb-fight {
+  width: min(920px, 100%);
+  gap: 8px;
+}
+.rb-fight-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+}
+.rb-fight-head h2 {
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-fight-badge {
+  padding: 2px 9px;
+  border-radius: 999px;
+  color: #1c0e08;
+  font: 800 10.5px/1.5 system-ui, sans-serif;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #ffe7a8, #e8a834);
+  box-shadow: 0 0 10px rgb(255 210 87 / 0.3);
+}
+.rb-fight-badge.is-guest,
+.rb-fight-badge.is-offline {
+  color: #e9e2f4;
+  background: #3a2d52;
+  box-shadow: none;
+}
+.rb-fight-season {
+  color: #a79fb8;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.rb-ringvl-playbody.rb-fight-body {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 14px;
+  /* (room for a format's lift and a place's tag at the top: the body scrolls, and clipped them) */
+  padding-top: 7px;
+}
+.rb-fight-left,
+.rb-fight-right {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.rb-rp-format.is-shut {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+.rb-rp-format.is-shut:hover {
+  transform: none;
+  border-color: rgb(255 255 255 / 0.13);
+}
+/* the rank card: the rating and its rank as a crest, how far to the next, and how it has gone */
+.rb-fight-rank {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px 12px;
+  padding: 7px 12px;
+  border: 1.5px solid color-mix(in srgb, var(--r) 55%, transparent);
+  border-radius: 12px;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--r) 20%, #160d26), #0e091c 72%);
+}
+.rb-fight-crest {
+  display: grid;
+  justify-items: center;
+  min-width: 78px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.3);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--r) 45%, transparent);
+}
+.rb-fight-crest b {
+  color: var(--r);
+  font: 700 22px/1.05 Georgia, 'Times New Roman', serif;
+}
+.rb-fight-crest small {
+  color: #efe6d4;
+  font: 700 11px/1.2 Georgia, 'Times New Roman', serif;
+  text-align: center;
+}
+.rb-fight-climb {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.rb-fight-bar {
+  position: relative;
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #120a20;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+.rb-fight-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--r) 55%, #fff 0%), var(--r));
+}
+.rb-fight-climb small {
+  overflow: hidden;
+  color: #cfc6dc;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-fight-climb .rb-fight-record {
+  color: #a79fb8;
+}
+.rb-fight-practice {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #b8afc8;
+  font-size: 11.5px;
+}
+/* your team: you, then a place for each teammate, a friend in the party or the computer, with a way to invite */
+.rb-fight-team {
+  display: grid;
+  gap: 5px;
+}
+.rb-fight-team h3 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  color: #ffe39a;
+  font: 700 13px Georgia, 'Times New Roman', serif;
+}
+.rb-fight-partyline {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: #cfc6dc;
+  font: 12px system-ui, sans-serif;
+}
+.rb-fight-partyline b {
+  color: #ffe39a;
+  letter-spacing: 0.08em;
+}
+.rb-fight-partyline .rb-linkbtn {
+  font-size: 12px;
+}
+.rb-fight-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 6px;
+}
+.rb-fight-slot {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 7px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 5px 7px;
+  border: 1.5px solid color-mix(in srgb, var(--c) 45%, transparent);
+  border-radius: 10px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 14%, #140c24), #0e091c);
+}
+.rb-fight-slot > img,
+.rb-fight-slot > .rb-rp-mate-any {
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid var(--c);
+  border-radius: 7px;
+  image-rendering: pixelated;
+}
+.rb-fight-slot > span {
+  min-width: 0;
+}
+.rb-fight-slot b {
+  display: block;
+  overflow: hidden;
+  color: #fff4d8;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-fight-slot small {
+  display: block;
+  overflow: hidden;
+  color: #b8afc8;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-fight-slot.is-you {
+  border-color: #ffd257;
+}
+.rb-fight-slot.is-friend::after {
+  content: 'Party';
+  position: absolute;
+  top: -7px;
+  right: 8px;
+  padding: 0 5px;
+  border-radius: 4px;
+  color: #10220c;
+  font: 800 9px/14px system-ui, sans-serif;
+  background: #7fe06a;
+}
+.rb-fight-slot.is-away {
+  opacity: 0.6;
+}
+.rb-fight-cpu {
+  display: grid;
+  gap: 3px;
+}
+.rb-ringvl .rb-fight-cpu select {
+  min-height: 24px;
+  padding: 1px 4px;
+  font-size: 11.5px;
+}
+.rb-fight-invite-btn {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 26px;
+  border: 1.5px dashed rgb(255 227 154 / 0.55);
+  border-radius: 8px;
+  color: #ffe39a;
+  font: 700 12px system-ui, sans-serif;
+  background: rgb(255 227 154 / 0.07);
+  cursor: pointer;
+}
+.rb-fight-invite-btn span {
+  font-size: 15px;
+  line-height: 1;
+}
+.rb-fight-invite-btn:hover,
+.rb-fight-invite-btn:focus-visible {
+  border-style: solid;
+  background: rgb(255 227 154 / 0.16);
+}
+.rb-fight-warn {
+  color: #ff9a7a;
+  font-size: 11.5px;
+}
+.rb-fight-solo {
+  margin: 0;
+  color: #b8afc8;
+  font-size: 12.5px;
+}
+/* how ranked is kept fair: a few lines over the layer, from its head */
+.rb-ring-dialog-wrap.rb-fight-fairwrap {
+  z-index: 45;
+  background: rgb(4 2 12 / 0.55);
+}
+.rb-ring-dialog.rb-fight-fair {
+  width: min(480px, 100%);
+  max-height: calc(100cqh - 20px - var(--sa-t, 0px) - var(--sa-b, 0px));
+  overflow-y: auto;
+}
+.rb-fight-fair ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 18px;
+  color: #cfc6dc;
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: left;
+}
+.rb-fight-season .rb-linkbtn {
+  color: #ffe39a;
+  font: inherit;
+}
+/* (a cpu's place says so, as a friend's says Party) */
+.rb-fight-slot.is-cpu::after {
+  content: 'Computer';
+  position: absolute;
+  top: -7px;
+  right: 8px;
+  padding: 0 5px;
+  border-radius: 4px;
+  color: #cfc6dc;
+  font: 800 9px/14px system-ui, sans-serif;
+  background: #2a1f40;
+}
+.rb-fight-foot .rb-btn.is-gold {
+  flex: 2.2 1 0;
+}
+/* inviting a friend: the friends list, the party's code, and joining a friend's by theirs */
+.rb-ring-dialog.rb-fight-invite {
+  justify-items: stretch;
+  width: min(460px, 100%);
+  max-height: calc(100cqh - 20px - var(--sa-t, 0px) - var(--sa-b, 0px));
+  overflow-y: auto;
+  text-align: left;
+}
+.rb-fight-invite h2 {
+  text-align: center;
+}
+.rb-fight-friends {
+  display: grid;
+  gap: 4px;
+  max-height: min(240px, 42cqh);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.rb-fight-friends li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.04);
+}
+.rb-fight-friends span {
+  display: grid;
+  min-width: 0;
+}
+.rb-fight-friends b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rb-fight-friends li.is-online b::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: #7fe06a;
+}
+.rb-fight-friends small {
+  color: #a79fb8;
+  font-size: 11px;
+}
+.rb-ring-dialog .rb-fight-code {
+  text-align: center;
+}
+.rb-fight-code b {
+  color: #ffe39a;
+  font-size: 16px;
+  letter-spacing: 0.12em;
+}
+.rb-fight-join {
+  display: flex;
+  gap: 6px;
+}
+.rb-fight-invite > .rb-btn {
+  justify-self: center;
+}
+/* (a phone on its side: everything a little tighter, the season and the teams that work wait for a taller screen) */
+@container (max-height: 430px) {
+  .rb-fight-head h2 {
+    font-size: 17px;
+  }
+  .rb-fight-rank {
+    padding: 4px 10px;
+  }
+  .rb-fight-crest {
+    min-width: 66px;
+    padding: 2px 6px;
+  }
+  .rb-fight-crest b {
+    font-size: 18px;
+  }
+  .rb-fight-slot {
+    min-height: 38px;
+    padding: 3px 6px;
+  }
+  .rb-fight-invite-btn {
+    min-height: 22px;
+  }
+  .rb-fight-comps {
+    display: none;
+  }
+  /* (the arena's pictures held to the height there is, so both rows stand in sight however wide the column is) */
+  .rb-fight .rb-ar-card > .rb-ar-pic {
+    --ph: min(66px, 16.5cqh);
+    justify-self: center;
+    width: min(100%, calc(var(--ph) * 2.134));
+    height: var(--ph);
+    aspect-ratio: auto;
+  }
+  .rb-fight-practice .rb-btn {
+    min-height: 26px;
+  }
+}
+@container (max-width: 600px) {
+  .rb-fight-head {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .rb-fight-season {
+    grid-row: 2;
+    grid-column: 1 / -1;
+  }
+  .rb-ringvl-playbody.rb-fight-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* a phone on its side: the classes a column of picture and name, the hero beside them, and the setup in the rest, in a
@@ -14581,4 +15014,697 @@ html.rb-touch-playing textarea {
 .rb-rs-kitrow .rb-rs-slot {
   flex: 0 1 44px;
   width: 44px;
+}
+
+/* ----------------------------------------------------------------------------------------------------------------
+   The story's pages (ui/StoryPages.tsx): the narrator between the acts, a thing found, what a quest came to, and the
+   Sigil Rite. Each holds the screen until it is put down: the world waits behind it. */
+.rb-story {
+  position: absolute;
+  inset: 0;
+  z-index: 24;
+  display: grid;
+  place-items: center;
+  padding: calc(10px + var(--sa-t)) calc(12px + var(--sa-r)) calc(10px + var(--sa-b)) calc(12px + var(--sa-l));
+  background: radial-gradient(ellipse at center, rgb(10 6 14 / 0.55), rgb(6 3 8 / 0.82));
+  pointer-events: auto;
+  animation: rb-fade 0.35s ease-out;
+}
+.rb-story .rb-btn {
+  justify-self: center;
+}
+.rb-story h2 {
+  margin: 0;
+}
+
+/* the narrator: a page of an old book, read by candlelight */
+.rb-story.is-tale {
+  background: radial-gradient(ellipse at 50% 40%, rgb(16 10 8 / 0.82), rgb(4 2 4 / 0.97));
+  animation-duration: 0.9s;
+}
+.rb-tale {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  width: min(640px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  padding: 8px 6px;
+  text-align: center;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.rb-tale-over {
+  color: var(--rb-gold);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  animation: rb-tale-in 1.2s ease both;
+}
+.rb-tale-title {
+  font-family: var(--rb-serif);
+  font-size: clamp(26px, 4.4vw, 44px);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  color: #f8efd8;
+  text-shadow: 0 2px 0 rgb(0 0 0 / 0.7), 0 0 24px rgb(233 196 106 / 0.18);
+  animation: rb-tale-in 1.4s 0.2s ease both;
+}
+.rb-tale-rule {
+  display: block;
+  width: min(360px, 60%);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--rb-gold), transparent);
+}
+.rb-tale-told {
+  display: grid;
+  gap: 10px;
+}
+.rb-tale-told p,
+.rb-tale-now {
+  margin: 0;
+  font-family: var(--rb-serif);
+  font-size: clamp(14px, 1.9vw, 17px);
+  line-height: 1.55;
+  color: #e8dcc2;
+  animation: rb-tale-in 1.3s calc(0.7s + var(--i, 0) * 0.9s) ease both;
+}
+.rb-tale-told p:first-child::first-letter {
+  float: left;
+  margin: 2px 6px 0 0;
+  font-size: 2.6em;
+  line-height: 0.9;
+  color: var(--rb-gold);
+}
+.rb-tale-told p {
+  text-align: left;
+}
+.rb-tale-now {
+  padding: 8px 12px;
+  border-top: 1px solid rgb(233 196 106 / 0.25);
+  border-bottom: 1px solid rgb(233 196 106 / 0.25);
+  color: #f8efd8;
+  font-style: italic;
+}
+.rb-tale-now b,
+.rb-deed-next b {
+  margin-right: 6px;
+  font-family: var(--font);
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--rb-gold);
+}
+.rb-tale-go {
+  animation: rb-tale-in 0.8s 1.2s ease both;
+}
+@keyframes rb-tale-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* a thing found: the find, and its words on old paper */
+.rb-find,
+.rb-deed {
+  display: grid;
+  gap: 10px;
+  width: min(520px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  padding: 16px 18px;
+  border: 3px solid var(--rb-ink);
+  border-radius: 10px;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgb(233 196 106 / 0.08), transparent 60%),
+    linear-gradient(180deg, #2e241a, #1a130d);
+  box-shadow:
+    inset 0 0 0 2px var(--rb-trim),
+    0 8px 0 rgb(0 0 0 / 0.35),
+    0 0 60px rgb(0 0 0 / 0.6);
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  animation: rb-find-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+@keyframes rb-find-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+}
+.rb-find-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.rb-find-icon {
+  flex: none;
+  width: 58px;
+  height: 58px;
+  padding: 5px;
+  border: 2px solid var(--rb-ink);
+  border-radius: 8px;
+  background: radial-gradient(circle, #3c2e22, #160f0a);
+  box-shadow: inset 0 0 0 1px var(--rb-trim), 0 0 18px rgb(233 196 106 / 0.25);
+}
+.rb-find-kind,
+.rb-deed-kind {
+  display: block;
+  color: var(--rb-gold);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.rb-find h2,
+.rb-deed h2 {
+  font-family: var(--rb-serif);
+  font-size: clamp(19px, 2.6vw, 24px);
+  line-height: 1.15;
+  color: #f8efd8;
+}
+.rb-find-quest {
+  font-size: 12px;
+  color: var(--rb-dim);
+}
+.rb-find-about,
+.rb-deed-text {
+  margin: 0;
+  line-height: 1.5;
+}
+.rb-find-paper {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px 12px;
+  border-radius: 3px;
+  background:
+    radial-gradient(140% 90% at 30% 20%, rgb(255 250 235 / 0.5), transparent 60%),
+    linear-gradient(175deg, #e9dcbc, #d5c39a);
+  box-shadow: inset 0 0 22px rgb(90 60 20 / 0.35), 0 3px 0 rgb(0 0 0 / 0.4);
+  color: #2e2214;
+  font-family: var(--rb-serif);
+  font-size: 15px;
+  font-style: italic;
+  line-height: 1.5;
+  transform: rotate(-0.4deg);
+}
+.rb-find-paper p {
+  margin: 0;
+}
+.rb-find-paper.is-orders,
+.rb-find-paper.is-map {
+  font-style: normal;
+  letter-spacing: 0.01em;
+}
+.rb-find-paper.is-relic,
+.rb-find-paper.is-token {
+  background: linear-gradient(175deg, #3a3040, #241c28);
+  color: #e8dcff;
+  box-shadow: inset 0 0 22px rgb(0 0 0 / 0.5), 0 3px 0 rgb(0 0 0 / 0.4);
+}
+.rb-find-sign {
+  justify-self: end;
+  font-weight: 700;
+}
+.rb-find-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.rb-find-foot .rb-btn {
+  margin-left: auto;
+}
+
+/* what a quest came to */
+.rb-deed {
+  justify-items: center;
+  text-align: center;
+}
+.rb-deed.is-main h2 {
+  color: #ffe6a8;
+}
+.rb-deed-text {
+  font-family: var(--rb-serif);
+  font-size: 16px;
+  color: #ece0c6;
+}
+.rb-deed .rb-qpage-rewards {
+  justify-content: center;
+}
+.rb-deed-next {
+  margin: 0;
+  font-size: 13px;
+  color: var(--rb-dim);
+}
+
+/* the Sigil Rite: the dark, the light rising out of it, the crown of seven */
+.rb-story.is-rite {
+  background: radial-gradient(ellipse at 50% 38%, color-mix(in srgb, var(--sigil) 22%, rgb(8 4 10)) 0%, rgb(4 2 6 / 0.97) 62%);
+  animation: rb-rite-dark 1.1s ease-out both;
+  overflow: hidden;
+}
+@keyframes rb-rite-dark {
+  0% {
+    background-color: #fff;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+}
+.rb-story.is-rite::before {
+  /* a white flash, the moment the sigil is bound */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 36%, #fff, color-mix(in srgb, var(--sigil) 60%, transparent) 30%, transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  animation: rb-rite-flash 1.6s ease-out;
+}
+.rb-story.is-rite.is-again::before {
+  animation: none;
+}
+@keyframes rb-rite-flash {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.rb-rite-rays {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  width: 180vmax;
+  height: 180vmax;
+  translate: -50% -50%;
+  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--sigil) 30%, transparent) 0deg 5deg, transparent 5deg 18deg);
+  mask-image: radial-gradient(circle, #000 0%, transparent 42%);
+  -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 42%);
+  opacity: 0.55;
+  pointer-events: none;
+  animation: rb-rite-turn 40s linear infinite, rb-fade 2s ease-out;
+}
+@keyframes rb-rite-turn {
+  to {
+    rotate: 360deg;
+  }
+}
+.rb-rite {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  width: min(560px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  text-align: center;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.rb-rite-over {
+  color: color-mix(in srgb, var(--sigil) 55%, #fff);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  animation: rb-tale-in 1s 0.5s ease both;
+}
+.rb-rite-emblem {
+  width: clamp(96px, 20vmin, 168px);
+  aspect-ratio: 1;
+  filter: drop-shadow(0 0 18px var(--sigil)) drop-shadow(0 0 46px color-mix(in srgb, var(--sigil) 60%, transparent));
+  animation: rb-rite-rise 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) both, rb-rite-glow 3.2s 1.6s ease-in-out infinite;
+}
+.rb-rite-emblem svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+@keyframes rb-rite-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.4) rotate(-40deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.12) rotate(4deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes rb-rite-glow {
+  50% {
+    filter: drop-shadow(0 0 26px var(--sigil)) drop-shadow(0 0 70px color-mix(in srgb, var(--sigil) 70%, transparent));
+    transform: scale(1.04);
+  }
+}
+.rb-rite-name {
+  font-family: var(--rb-serif);
+  font-size: clamp(26px, 4.6vw, 46px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.05;
+  color: #fff8e8;
+  text-transform: uppercase;
+  text-shadow: 0 0 22px var(--sigil), 0 3px 0 rgb(0 0 0 / 0.8);
+  animation: rb-rite-name 1.5s 0.9s ease both;
+}
+@keyframes rb-rite-name {
+  from {
+    opacity: 0;
+    letter-spacing: 0.4em;
+    filter: blur(6px);
+  }
+}
+.rb-rite-count {
+  font-family: var(--rb-serif);
+  font-size: clamp(15px, 2.2vw, 20px);
+  font-style: italic;
+  color: color-mix(in srgb, var(--sigil) 45%, #f3ead8);
+  animation: rb-tale-in 1s 1.5s ease both;
+}
+.rb-rite-crown {
+  display: flex;
+  gap: 10px;
+  margin: 4px 0 2px;
+  padding: 0;
+  list-style: none;
+  animation: rb-tale-in 1s 1.7s ease both;
+}
+.rb-rite-crown li,
+.rb-crown-gem {
+  width: 16px;
+  height: 16px;
+  rotate: 45deg;
+  border: 2px solid #4a3e52;
+  background: #160f1a;
+  box-shadow: inset 0 0 4px rgb(0 0 0 / 0.8);
+}
+.rb-rite-crown li.is-won,
+.rb-crown-gem.is-won {
+  border-color: #fff4d8;
+  background: radial-gradient(circle at 35% 35%, #fff, var(--gem) 55%, color-mix(in srgb, var(--gem) 50%, #000));
+  box-shadow: 0 0 10px var(--gem);
+}
+.rb-rite-crown li.is-new {
+  animation: rb-rite-gem 1.4s 2s ease-in-out 3;
+}
+@keyframes rb-rite-gem {
+  50% {
+    box-shadow: 0 0 26px 6px var(--gem);
+    scale: 1.35;
+  }
+}
+.rb-rite-lines {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 2px 0;
+  max-width: 500px;
+  text-align: left;
+  animation: rb-tale-in 1.2s 2s ease both;
+}
+.rb-rite-lines dt {
+  padding-top: 2px;
+  color: color-mix(in srgb, var(--sigil) 55%, #e9c46a);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.rb-rite-lines dd {
+  margin: 0;
+  color: #ece0c6;
+  line-height: 1.45;
+}
+.rb-rite-verse {
+  margin: 0;
+  font-family: var(--rb-serif);
+  font-style: italic;
+  color: color-mix(in srgb, var(--sigil) 35%, #f3ead8);
+  animation: rb-tale-in 1.2s 2.4s ease both;
+}
+.rb-rite-go {
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+.rb-rite-go.is-ready {
+  opacity: 1;
+}
+.rb-story.is-again .rb-rite-emblem,
+.rb-story.is-again .rb-rite-name {
+  animation-delay: 0s;
+}
+
+/* the crown under the hero's bars: the sigils held, at a glance */
+.rb-hud-crown {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  padding: 2px 7px 2px 6px;
+  border: 1px solid rgb(0 0 0 / 0.6);
+  border-radius: 999px;
+  background: rgb(18 12 8 / 0.7);
+  box-shadow: inset 0 0 0 1px rgb(168 130 58 / 0.45);
+  color: var(--rb-gold);
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: auto;
+}
+.rb-hud-crown .rb-crown-gem {
+  width: 8px;
+  height: 8px;
+  border-width: 1px;
+}
+.rb-hud-crown .rb-crown-gem.is-won {
+  box-shadow: 0 0 5px var(--gem);
+}
+.rb-hud-crown em {
+  margin-left: 2px;
+  font-style: normal;
+}
+
+/* the Journal: the tale so far, the crown, the things kept */
+.rb-journal {
+  display: grid;
+  gap: 12px;
+}
+.rb-journal-crown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rb-journal-sigil {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 9px 5px 7px;
+  border: 1px solid #0d0906;
+  border-radius: 6px;
+  background: #1c150f;
+  box-shadow: inset 0 0 0 1px rgb(168 130 58 / 0.35);
+  color: var(--rb-dim);
+  font-size: 12px;
+}
+.rb-journal-sigil.is-won {
+  color: var(--rb-text);
+  cursor: pointer;
+}
+.rb-journal-sigil .rb-crown-gem {
+  width: 10px;
+  height: 10px;
+}
+.rb-journal-tale summary,
+.rb-journal-keep {
+  cursor: pointer;
+}
+.rb-journal-tale p {
+  margin: 6px 0 0;
+  font-family: var(--rb-serif);
+  line-height: 1.5;
+  color: #e8dcc2;
+}
+.rb-journal-keeps {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rb-journal-keep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #0d0906;
+  border-radius: 6px;
+  background: #1c150f;
+  box-shadow: inset 0 0 0 1px rgb(168 130 58 / 0.3);
+  text-align: left;
+}
+.rb-journal-keep .rb-find-icon {
+  width: 34px;
+  height: 34px;
+  padding: 3px;
+}
+.rb-journal-keep span {
+  display: grid;
+  min-width: 0;
+}
+.rb-journal-keep small {
+  color: var(--rb-dim);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rb-story,
+  .rb-story *,
+  .rb-story::before {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+  }
+  .rb-rite-rays {
+    display: none;
+  }
+}
+.rb-quests-views {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+/* The story's pages fit the game's own box, however small it is embedded (sized by its height: cqh), and a page
+   taller than the box scrolls from its top instead of being cut off above it. */
+.rb-story {
+  display: flex;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.rb-story > .rb-tale,
+.rb-story > .rb-find,
+.rb-story > .rb-deed,
+.rb-story > .rb-rite {
+  margin: auto;
+}
+.rb-tale {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(4px, 1.4cqh, 10px);
+  max-height: 100%;
+  overflow: hidden;
+  padding: 4px 6px;
+}
+.rb-tale-title {
+  font-size: clamp(20px, 6.4cqh, 44px);
+}
+.rb-tale-told {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  gap: clamp(5px, 1.4cqh, 10px);
+  padding-right: 4px;
+}
+.rb-tale-told p,
+.rb-tale-now {
+  font-size: clamp(13px, 2.7cqh, 17px);
+  line-height: 1.5;
+}
+.rb-tale-go {
+  flex: none;
+}
+.rb-rite {
+  gap: clamp(3px, 1cqh, 8px);
+  max-height: none;
+  overflow: visible;
+}
+.rb-rite-emblem {
+  width: clamp(56px, 17cqh, 160px);
+}
+.rb-rite-name {
+  font-size: clamp(22px, 6.6cqh, 46px);
+}
+.rb-rite-count {
+  font-size: clamp(14px, 2.8cqh, 20px);
+}
+.rb-rite-lines {
+  gap: clamp(3px, 0.9cqh, 6px) 12px;
+  font-size: clamp(12px, 2.3cqh, 15px);
+}
+.rb-rite-lines dd {
+  line-height: 1.35;
+}
+@container (max-height: 640px) {
+  .rb-rite-verse {
+    display: none;
+  }
+  .rb-rite-crown {
+    margin: 0;
+  }
+  .rb-rite-crown li {
+    width: 13px;
+    height: 13px;
+  }
+}
+.rb-story.is-tale {
+  background: radial-gradient(ellipse at 50% 40%, rgb(16 10 8 / 0.92), rgb(4 2 4 / 0.99));
+}
+.rb-tale-told p,
+.rb-tale-now {
+  animation-delay: calc(0.5s + var(--i, 0) * 0.6s);
+}
+/* a phone on its side: the pages tighten so the whole of them, and the way on, fit without scrolling */
+@container (max-height: 460px) {
+  .rb-story {
+    padding-top: calc(6px + var(--sa-t));
+    padding-bottom: calc(6px + var(--sa-b));
+  }
+  .rb-tale-over,
+  .rb-rite-over {
+    font-size: 10px;
+  }
+  .rb-tale-title {
+    font-size: 21px;
+  }
+  .rb-tale-told p,
+  .rb-tale-now {
+    font-size: 13px;
+    line-height: 1.38;
+  }
+  .rb-tale-now {
+    padding: 4px 10px;
+  }
+  .rb-rite-emblem {
+    width: clamp(48px, 14cqh, 80px);
+  }
+  .rb-rite-name {
+    font-size: 22px;
+  }
+  .rb-rite-lines {
+    font-size: 12px;
+  }
+  .rb-rite-lines dd {
+    line-height: 1.25;
+  }
+  .rb-story .rb-btn {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
 }

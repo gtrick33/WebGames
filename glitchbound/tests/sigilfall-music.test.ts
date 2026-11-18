@@ -23,7 +23,7 @@ describe('Sigilfall music', () => {
     expect(note('C4')).toBe(60);
     expect(note('F#3')).toBe(54);
     expect(note('Bb2')).toBe(46);
-    for (const [id, d] of Object.entries(SONG_DEFS) as [SongId, (typeof SONG_DEFS)[SongId]][]) {
+    for (const [id, d] of Object.entries(SONG_DEFS) as [keyof typeof SONG_DEFS, (typeof SONG_DEFS)[keyof typeof SONG_DEFS]][]) {
       const s = SONGS[id];
       const steps = s.meter * 2;
       // every bar of the melody is a whole bar

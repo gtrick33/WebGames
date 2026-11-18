@@ -18,7 +18,7 @@ import type { ClassId, EliteAffix, Encounter, Item, Objective, QuestDef, RegionD
 import { ACTION_SLOTS, SKILL_SLOTS } from '../data/types';
 import type { Marker, RegionStateDef, StoryCond } from '../data/types';
 import { holds, regionState, StoryDirector } from './story';
-import { maybeStartScene, revealBoss, scenesPlayHere, updateScene, type ScenePlay } from './scene';
+import { maybeStartScene, revealBoss, sceneDue, scenesPlayHere, updateScene, type ScenePlay } from './scene';
 import { buildHero, type HeroBuild } from '../progress/build';
 import { fogOpen, fogShare, loadFog, revealFog, storeFog, type Fog } from '../progress/fog';
 import { turnInNpc } from '../progress/handin';
@@ -400,6 +400,13 @@ export class World {
   readonly handIns: boolean;
   /** Story beats for the main quests (WorldOptions.beats). */
   readonly beats: boolean;
+  /** Foes the story brings in are waiting for a scene due here to have played (refreshStoryState). */
+  private storyFoesWait = false;
+  /**
+   * The story's pages are waiting to be read (what just happened, a letter found, a sigil won: engine.ts): no scene
+   * starts until they have been, so the tale is told in its order.
+   */
+  holdScenes = false;
   /** The maps' fog of war here (progress/fog.ts), and the cells with ground under them. */
   fog!: Fog;
   private fogOpen!: Uint8Array;
@@ -650,7 +657,10 @@ export class World {
   refreshStoryState(): void {
     const s = regionState(this.region, this.storyHero);
     const key = this.shownMarkers();
-    if (s?.id === this.storyState?.id && key === this.shownKey) return;
+    // (foes the story brought in held back for a scene come in once it has played)
+    const waited = this.storyFoesWait && !sceneDue(this, undefined, true);
+    if (s?.id === this.storyState?.id && key === this.shownKey && !waited) return;
+    this.storyFoesWait = false;
     this.storyState = s;
     this.shownKey = key;
     this.stateVersion += 1;
@@ -680,8 +690,12 @@ export class World {
       if (m.kind === 'exit') this.exits.push({ ...pos, to: m.to, label: m.label, ...(m.minLevel ? { minLevel: m.minLevel } : {}), ...(m.needs ? { needs: m.needs } : {}), ...(m.door ? { door: true } : {}) });
       if (m.kind === 'fire' && s?.burning) this.addFire(pm, pos, m.size, m.delay);
       if (m.kind === 'wisp') this.wisps.push({ ...pos, color: m.color, size: m.size });
-      // a foe the story brings in now (Vosk at the head of the Host, once the Standard falls)
-      if (m.kind === 'pack' && !this.packed.has(pm)) this.addPack(pm, pos, true);
+      // a foe the story brings in now (Vosk at the head of the Host, once the Standard falls); not while a scene of
+      // the story is due here: it comes in once that has played (sceneDue)
+      if (m.kind === 'pack' && !this.packed.has(pm)) {
+        if (sceneDue(this, undefined, true)) this.storyFoesWait = true;
+        else this.addPack(pm, pos, true);
+      }
     }
     // who stays keeps their footing; who comes, comes in (a fade); who goes, goes out (sim/story.ts takes the
     // ones stepping out to fight)
@@ -1439,6 +1453,10 @@ export class World {
     else
       for (const e of this.enemies) {
         if (wild && !e.aggro && !e.dead && e.state === 'idle' && (Math.abs(e.x - px) > SLEEP_X || Math.abs(e.y - py) > SLEEP_Y) && !this.nearGhost(e.x, e.y)) continue;
+        // a scene holds the land still: a pack wandering into sight doesn't notice the hero and break it off mid-line
+        // (the owner: "sometimes the cinematics cut abruptly"). A foe already in a fight still is, and ends it; those
+        // the scene holds in its shot (a wave mustering, a boss in its den) are its own
+        if (this.scene && !e.aggro && !e.held && !e.dead) continue;
         updateEnemy(this, e, dt);
         awake.push(e);
       }
@@ -2866,7 +2884,9 @@ export class World {
       }
       if (r.perk && !h.perks.includes(r.perk)) {
         h.perks.push(r.perk);
-        this.emit({ t: 'toast', text: `${PERKS[r.perk].name}: ${PERKS[r.perk].text}`, tone: 'good' });
+        // a sigil of the Crown is the story's own moment (the Sigil Rite); the road's gifts are a line of news
+        if (r.perk.startsWith('sigil-')) this.emit({ t: 'sigil', id: r.perk });
+        else this.emit({ t: 'toast', text: `${PERKS[r.perk].name}: ${PERKS[r.perk].text}`, tone: 'good' });
         this.rebuild();
       }
       // a quest the hero has long out-grown pays less (data/progression.ts)

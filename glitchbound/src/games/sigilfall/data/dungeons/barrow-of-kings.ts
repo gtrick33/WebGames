@@ -316,7 +316,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'The first king buried on the downs, with his court around him. Corvane woke them all to guard his door.',
+    intro: 'The first king buried on the downs. Corvane woke him and his whole court to guard the stair down to the Chapel of Black Candles.',
   },
   'sir-corvane': {
     id: 'sir-corvane',
@@ -395,7 +395,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'He commanded the Ninefold Watch. When the help he was promised never came, he knelt to the Hallow King.',
+    intro: 'He held the downs nine days for a relief that was called off. Then he knelt to the Hallow King to get his dead knights back.',
   },
 };
 
@@ -515,7 +515,7 @@ const items: ItemDef[] = [
         },
       },
     ],
-    lore: 'A Sigil-warden’s mail, gone black at the edges. Corvane wore it to the Hallow King’s side and never took it off.',
+    lore: 'The mail of a knight of the Ninefold Watch, gone black at the edges. Corvane wore it to the Hallow King’s side and never took it off.',
     minLevel: 29,
     special: true,
   },
@@ -554,7 +554,7 @@ const items: ItemDef[] = [
         },
       },
     ],
-    lore: 'Corvane’s Sigil-warden badge, broken across the middle. It is cold enough to burn. Whatever oath it held, it holds you to it now.',
+    lore: 'Corvane’s badge of the Ninefold Watch, broken across the middle. It is cold enough to burn. Whatever oath it held, it holds you to it now.',
     minLevel: 29,
     special: true,
   },

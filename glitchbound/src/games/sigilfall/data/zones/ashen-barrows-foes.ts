@@ -214,7 +214,7 @@ export const ASHEN_BARROWS_ITEMS: ItemDef[] = [
       { stat: 'hp', base: 10, per: 2.8 },
     ],
     mods: [{ t: 'stat', stat: 'power', v: 14, when: 'lowHp' }],
-    lore: 'He looked for it for three hundred years. Kell had it in his shed the whole time.',
+    lore: 'The Headless Lord searched the downs for it every night. All those years, Kell kept it safe in his shed.',
     minLevel: 24,
     special: true,
   },
@@ -248,7 +248,8 @@ export const ASHEN_BARROWS_ITEMS: ItemDef[] = [
   },
   {
     id: 'corvanes-broken-sigil',
-    name: 'Corvane’s Broken Sigil',
+    // (v4: "Sigil" now means only the seven pieces of the Crown; a Watch badge is a badge)
+    name: 'Corvane’s Broken Badge',
     slot: 'relic',
     rarity: 'epic',
     icon: 'relic',
@@ -271,7 +272,7 @@ export const ASHEN_BARROWS_ITEMS: ItemDef[] = [
         },
       },
     ],
-    lore: 'A Ninefold Watch badge, snapped in two and worn ten years by the man who broke his oath.',
+    lore: 'A Ninefold Watch badge, worn for ten years by the man who broke his oath. It snapped in two when he fell.',
     minLevel: 28,
     special: true,
   },

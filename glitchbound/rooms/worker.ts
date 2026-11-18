@@ -18,6 +18,7 @@ import { engineFor, ENGINES, isGameId, QUICK, type GameId, type RoomState as Sta
 import * as lobbyList from './lobby';
 import { alarmTime, IDLE_MS, REPLACED, refusal, relayKeepAlive, SHARED_KEY } from './live';
 import { dropAway, type RoomBase } from '../src/party/rooms/seats';
+import { roster as ringRoster, type State as RingState } from '../src/games/sigilfall/net/ringRoom';
 
 interface Socket {
   send(message: string): void;
@@ -65,8 +66,35 @@ interface Listing {
   startAt: number | null;
   /** Which of its game's queues quick match opened it for (lobby.ts `kind`). */
   kind?: string;
+  /**
+   * A ranked room's door key (The Ring): while it waits for players, only those quick match sent here (who were told
+   * the key with the code) can take a new seat in it. A code passed around by hand doesn't open it.
+   */
+  door?: string;
+  /** In the queue because a party put it there (the Ring's `queue` action), not opened by quick match. */
+  queued?: boolean;
 }
 const NOT_LISTED: Listing = { listed: false, matched: false, startAt: null };
+
+/** Who a seat's player is, as the site told the room when they connected (functions/api/rooms/[code]/ws.ts). */
+interface Who {
+  uid: string;
+  net: string;
+}
+const cleanUid = (v: string | null): string => (v && /^[A-Za-z0-9_-]{1,64}$/.test(v) ? v : '');
+const cleanNet = (v: string | null): string => (v && /^[0-9a-f]{8,32}$/.test(v) ? v : '');
+/** The Ring's run as it began: its roster, with each seat's account and network (server/ring.ts reads it). */
+interface RingRun {
+  run: number;
+  seed: number;
+  format: number;
+  at: number;
+  ranked: boolean;
+  seats: { n: number; team: 0 | 1; uid: string; net: string; party: boolean }[];
+  /** When each seat last dropped out while the run went (gone from the room, or its connection lost), by seat. */
+  left: Record<string, number>;
+}
+const newDoor = (): string => [...crypto.getRandomValues(new Uint8Array(12))].map((b) => b.toString(16).padStart(2, '0')).join('');
 
 const ROOM_CODE = 'ABCDEFGHJKMNPQRSTUVWXYZ';
 const newCode = (): string => [...crypto.getRandomValues(new Uint8Array(5))].map((b) => ROOM_CODE[b % ROOM_CODE.length]).join('');
@@ -96,6 +124,53 @@ export class Room {
       this.loaded = true;
     }
     return this.state;
+  }
+
+  /** Each seat key's account and network (The Ring's ranked matches), kept as players connect. */
+  private ids: Record<string, Who> | null = null;
+  private async who(): Promise<Record<string, Who>> {
+    return (this.ids ??= (await this.ctx.storage.get<Record<string, Who>>('ids')) ?? {});
+  }
+
+  /**
+   * The Ring: a run that has just begun keeps its roster, accounts and networks with it, for the ranked ladder; and a
+   * room a party put in the ranked queue is listed for quick match while it waits (and only then), behind a door key.
+   */
+  private async syncRing(s: State, runBefore: number, now: number): Promise<void> {
+    if (s.game !== 'sigilfall-ring') return;
+    const r = s as unknown as RingState;
+    if (r.run !== runBefore && r.phase === 'run') {
+      const ids = await this.who();
+      const run: RingRun = {
+        run: r.run,
+        seed: r.runSeed,
+        format: r.format,
+        at: now,
+        ranked: this.listing.matched || !!r.ranked,
+        seats: ringRoster(r).map((x) => ({ n: x.n, team: x.team, uid: ids[x.key]?.uid ?? '', net: ids[x.key]?.net ?? '', party: x.party })),
+        left: {},
+      };
+      await this.ctx.storage.put('ringRun', run);
+    } else if (r.phase === 'run') {
+      // while it goes: who has dropped out of it, and when (the ranked ladder takes its leavers from this, not from
+      // anyone's word); a player back on their seat is taken off again
+      const run = await this.ctx.storage.get<RingRun>('ringRun');
+      if (run && run.run === r.run) {
+        const left = { ...(run.left ?? {}) };
+        for (const x of run.seats) {
+          const on = r.seats.some((y) => y.n === x.n && y.online);
+          if (on) delete left[x.n];
+          else left[x.n] ??= now;
+        }
+        if (JSON.stringify(left) !== JSON.stringify(run.left ?? {})) await this.ctx.storage.put('ringRun', { ...run, left });
+      }
+    }
+    // (a room quick match opened keeps its listing as it is: only a party's own room is put in and taken out)
+    if (this.listing.matched && !this.listing.queued) return;
+    const wanted = !!r.queue && r.phase === 'lobby';
+    if (wanted === !!this.listing.queued) return;
+    await this.setListing(wanted ? { listed: true, matched: true, startAt: null, kind: r.queue!.kind, door: newDoor(), queued: true } : NOT_LISTED);
+    if (!wanted) this.reported ||= 'listed';
   }
 
   /** The alarm this object last set (forgotten when it hibernates or the alarm fires; then it is set again). */
@@ -145,7 +220,10 @@ export class Room {
     const sum = engineFor(s).summary(s) as { code: string; phase: string; players: number; host: string; full: boolean; game?: string; max?: number };
     const game = (sum.game ?? 'crass-act') as GameId;
     // the room's real size (quick match fills QUICK.seats of it; engines without `max` seat exactly that)
-    const entry = !closed && this.listing.listed ? { code: sum.code, game, phase: sum.phase, players: sum.players, max: sum.max ?? QUICK[game].seats, host: sum.host, full: sum.full, matched: this.listing.matched, ...(this.listing.kind ? { kind: this.listing.kind } : {}) } : null;
+    // (a party in the Ring's queue says the rating it searches at, how many it is and since when, and its door key)
+    const q = this.listing.queued ? (s as unknown as RingState).queue : null;
+    const party = q ? { mmr: q.mmr, rated: Math.max(1, (s as unknown as RingState).party?.length ?? 1), since: q.since } : {};
+    const entry = !closed && this.listing.listed ? { code: sum.code, game, phase: sum.phase, players: sum.players, max: sum.max ?? QUICK[game].seats, host: sum.host, full: sum.full, matched: this.listing.matched, ...(this.listing.kind ? { kind: this.listing.kind } : {}), ...(this.listing.door ? { door: this.listing.door } : {}), ...party } : null;
     const sig = entry ? JSON.stringify(entry) : 'off';
     if (sig === this.reported) return;
     // A private room the lobby never heard of has nothing to take back.
@@ -188,9 +266,14 @@ export class Room {
       this.state = s;
       const matched = url.searchParams.get('matched') === '1';
       const kind = matched ? lobbyList.cleanKind(url.searchParams.get('kind')) : '';
-      await this.setListing({ listed: matched || url.searchParams.get('listed') === '1', matched, startAt: null, ...(kind ? { kind } : {}) });
+      const door = matched ? lobbyList.cleanDoor(url.searchParams.get('door')) : '';
+      await this.setListing({ listed: matched || url.searchParams.get('listed') === '1', matched, startAt: null, ...(kind ? { kind } : {}), ...(door ? { door } : {}) });
       await this.save(s);
       return json({ ...(engineFor(s).summary(s) as object), listed: this.listing.listed });
+    }
+    if (url.pathname === '/ring-run') {
+      const run = await this.ctx.storage.get<RingRun>('ringRun');
+      return run ? json(run) : json({ error: 'not_found' }, 404);
     }
     if (url.pathname === '/info') {
       const s = await this.load();
@@ -228,7 +311,20 @@ export class Room {
       this.ctx.acceptWebSocket(server, [key]);
       server.serializeAttachment({ key });
       const s = await this.load();
-      const err = s ? engineFor(s).join(s, key, url.searchParams.get('name') ?? '', now) : 'not_found';
+      // (who this player is, as the site said: kept for the Ring's ranked matches)
+      const uid = cleanUid(url.searchParams.get('uid'));
+      const net = cleanNet(url.searchParams.get('net'));
+      if (s?.game === 'sigilfall-ring') {
+        const ids = await this.who();
+        if (ids[key]?.uid !== uid || ids[key]?.net !== net) {
+          ids[key] = { uid, net };
+          await this.ctx.storage.put('ids', ids);
+        }
+      }
+      // (a ranked room waiting for players: a new seat only for whoever quick match sent here with its door key)
+      const seated = !!s?.seats?.some((x) => x.key === key);
+      const shut = !!s && s.game === 'sigilfall-ring' && !!this.listing.door && !seated && url.searchParams.get('door') !== this.listing.door;
+      const err = s ? (shut ? 'full' : engineFor(s).join(s, key, url.searchParams.get('name') ?? '', now)) : 'not_found';
       if (!s || err) {
         server.send(JSON.stringify(refusal(err)));
         server.close(4004, err ?? 'gone');
@@ -240,6 +336,7 @@ export class Room {
           } catch {
             /* already closing */
           }
+        await this.syncRing(s, (s as { run?: number }).run ?? 0, now);
         await this.save(s);
         this.broadcast(s);
       }
@@ -257,7 +354,7 @@ export class Room {
     lobbyList.prune(rooms, now);
     const store = (): Promise<void> => this.ctx.storage.put('lobby', rooms);
     const game = url.searchParams.get('game') ?? undefined;
-    if (url.pathname === '/lobby/list') return json({ rooms: lobbyList.list(rooms, now, game).map(({ claims: _c, at: _a, ...r }) => r) });
+    if (url.pathname === '/lobby/list') return json({ rooms: lobbyList.list(rooms, now, game).map(({ claims: _c, at: _a, door: _d, ...r }) => r) });
     if (request.method !== 'POST') return json({ error: 'not_found' }, 404);
     if (url.pathname === '/lobby/put') {
       const r = (await request.json().catch(() => null)) as lobbyList.Listed | null;
@@ -286,7 +383,7 @@ export class Room {
       const found = lobbyList.match(rooms, game, now, skip, kind, rating);
       if (found) {
         await store();
-        return json({ code: found.code, created: false, active: Math.max(1, active) });
+        return json({ code: found.code, created: false, active: Math.max(1, active), ...(found.door ? { door: found.door } : {}) });
       }
       // nobody else is around in this queue: the computer, at once, rather than ten seconds of an empty room
       if (url.searchParams.get('alone') === 'bots' && active === 0) return json({ code: null, created: false, active: 0 });
@@ -294,11 +391,13 @@ export class Room {
       for (let attempt = 0; attempt < 5; attempt++) {
         const code = newCode();
         if (rooms[code]) continue;
-        lobbyList.reserve(rooms, code, game, QUICK[game].seats, now, kind, rating);
-        const res = await this.env.ROOM.get(this.env.ROOM.idFromName(code)).fetch(`https://room/init?code=${code}&game=${game}&matched=1${kind ? `&kind=${kind}` : ''}`, { method: 'POST' });
+        // (a rated queue's room has a door key, given with its code to whoever quick match sends there)
+        const door = rating !== undefined ? newDoor() : '';
+        lobbyList.reserve(rooms, code, game, QUICK[game].seats, now, kind, rating, door);
+        const res = await this.env.ROOM.get(this.env.ROOM.idFromName(code)).fetch(`https://room/init?code=${code}&game=${game}&matched=1${kind ? `&kind=${kind}` : ''}${door ? `&door=${door}` : ''}`, { method: 'POST' });
         if (res.ok) {
           await store();
-          return json({ code, created: true, active });
+          return json({ code, created: true, active, ...(door ? { door } : {}) });
         }
         delete rooms[code];
         if (res.status !== 409) break;
@@ -359,8 +458,10 @@ export class Room {
       return;
     }
     engine.tick(s, now);
+    const runBefore = (s as { run?: number }).run ?? 0;
     const err = engine.act(s, key, action, now);
     if (err) ws.send(JSON.stringify({ t: 'error', message: err }));
+    await this.syncRing(s, runBefore, now);
     await this.save(s);
     this.broadcast(s);
   }
@@ -381,6 +482,7 @@ export class Room {
     const others = this.ctx.getWebSockets(key).filter((x) => x !== ws);
     if (others.length > 0) return;
     engineFor(s).leave(s, key, Date.now());
+    await this.syncRing(s, (s as { run?: number }).run ?? 0, Date.now());
     await this.save(s);
     this.broadcast(s);
   }

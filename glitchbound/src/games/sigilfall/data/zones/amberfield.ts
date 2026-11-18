@@ -72,7 +72,7 @@ export const AMBERFIELD = wildRegion(
       { at: [0.52, 0.14], r: 12, kind: 'camp', packs: [['legion-scout', 'legion-scout', 'grave-hound'], ['legion-scout', 'grave-hound', 'grave-hound'], ['legion-scout', 'legion-scout']], elite: true, chest: 'rare', spot: { id: 'legion-picket', name: 'The Ashen Picket' }, when: until('the-clan-stones') },
       // the pride's rocks
       { at: [0.12, 0.6], r: 10, kind: 'den', packs: [['plains-lion', 'plains-lion'], ['plains-lion']], rare: 'goldmane', spot: { id: 'lion-rocks', name: 'Lion Rocks' } },
-      // Wil Ashby's farm, out where nobody else would farm
+      // Garrick Ashby's farm, out where nobody else would farm
       { at: [0.26, 0.86], r: 9, kind: 'farm', packs: [['plains-lion', 'plains-lion'], ['hill-wolf', 'hill-wolf', 'hill-wolf']], spot: { id: 'ashby-farm', name: 'Ashby Farm' } },
       // the old graves of the Amber Lancers, dug open from below
       { at: [0.36, 0.3], r: 10, kind: 'ruin', packs: [['legion-scout', 'legion-scout'], ['grave-hound', 'grave-hound', 'legion-scout']], chest: 'rare', spot: { id: 'lancers-rest', name: 'Lancers’ Rest' } },

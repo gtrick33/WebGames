@@ -299,11 +299,11 @@ const NPCS: Record<string, NpcDef> = {
     shop: 'inn',
     shopName: 'The Bramble & Barrel',
     talk: [
-      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['Highwall held! Mum cried when she heard.', 'Every cot in the back holds someone who lost their home to the Host. They all ask about you.'] },
+      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['Highwall held! Mom cried when she heard.', 'Every cot in the back holds someone who lost their home to the Host. They all ask about you.'] },
       { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['Wil tried to play Elyra’s favorite song last night. He stopped halfway through.', 'Please eat something. You need it.'] },
       { when: { quest: 'camp-riders', state: 'done' }, lines: ['Hearthstead’s riders drink here every night. They’re loud, but they pay.', 'Four villages share this roof now: Briarhollow, Fernstead, Millbrook and Hearthstead.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The roof only held over the bar, so everyone sleeps by the bar now.', 'The potions survived the fire. They’re on the shelf.'] },
-      { lines: ['Ale, broth and a bed upstairs. Mum’s potions are on the shelf.', 'We close the shutters at sunset. People have been going missing after dark.'] },
+      { lines: ['Ale, broth and a bed upstairs. Mom’s potions are on the shelf.', 'We close the shutters at sunset. People have been going missing after dark.'] },
     ],
   },
   'fiddler-wil': {
@@ -313,10 +313,10 @@ const NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'fern-retaken', state: 'done' }, lines: ['I’m writing a song about how we took Fernstead back.', 'They say Mara Venn smiled when Fernstead’s banner went up.'] },
-      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['They say a pale man in white took Elyra at the Tear. People call him the Pale Herald.', 'My grandmother knew an old song about the Pale Herald. She would never sing it for me.'] },
+      { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['They say the Pale Herald himself took Elyra at the Tear. A man in white with no face, walking out of the grey.', 'I tried to write a song about it. I couldn’t finish it.'] },
       { when: { quest: 'festival-the-champion', state: 'done' }, lines: ['Champion of Aster! I’ve already written a verse about you.', 'They say the Chancellor ran into the catacombs under the Crown City, and nobody has found him.'] },
       { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['Travelers say grey riders use the King’s Road at night, and the road wardens let them pass.', 'The roads office closed that road to everyone else. So who opened it for the Host?'] },
-      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Haldor says the crypt is older than the chapel. Something was hidden down there for three hundred years.', 'This tune is for you, for pulling those children out of the fire.'] },
+      { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['Elder Maren told the whole village what lay under the chapel. It was a piece of the old Starlight Crown, and the Hallow King in the north wants it.', 'This tune is for you, for pulling those children out of the fire.'] },
       { lines: ['The chapel bell hasn’t rung in three weeks. Haldor won’t ring it.', 'People have gone missing on the Whisperwood road after dark. Nobody has found a trace of them.'] },
     ],
   },
@@ -349,6 +349,7 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Keeps the camp’s ledger',
     sprite: 'villager',
     talk: [
+      { when: { quest: 'the-last-march', state: 'started' }, lines: ['Everyone who could carry a spear has gone north with the banners. The Elder’s book has more than four hundred names in it.', 'I’ve started a second book, for the ones who don’t come back.'] },
       { when: { quest: 'camp-riders', state: 'done' }, lines: ['There are four banners on the wall now, one for each village in the camp.', 'Elder Maren reads the list of names every night.'] },
       { when: { quest: 'camp-scouts', state: 'done' }, lines: ['Fernstead’s rangers keep our watchfire, so Fernstead’s banner hangs on the wall.', 'I write down what each village brings to the camp, and what it has lost.'] },
       { when: { quest: 'the-empty-tomb', state: 'done' }, lines: ['The Elder’s table is a war table now. I keep the records of beds, bread, arrows and names.', 'Right now the camp is one village. The Elder says the others will join us.'] },
@@ -364,6 +365,7 @@ const NPCS: Record<string, NpcDef> = {
       { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['“The night is long, the wall is high, and Highwall did not fall.” That’s my new song.', 'The whole city is singing it already.'] },
       { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['Nobody wants to hear songs about the Tear. I won’t write another until we win something.'] },
       { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['I was in the square on the Night of Knives. The knives came for the Regent, and she didn’t run.', 'She stood still and watched you fight for her.'] },
+      { when: { quest: 'sir-corvane', state: 'done' }, lines: ['A knight of the Ninefold Watch came in last night and asked for the song of the nine days.', 'Halfway through, he put his head down on the table. I sang it to the end for him.'] },
       { lines: ['I sing the songs of the Ninefold Watch, the knights who guarded the downs.', 'Hardly anyone in the city remembers them now.'] },
     ],
   },
@@ -373,7 +375,7 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Wool merchant, stuck in the city',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'city-the-cellar', state: 'done' }, lines: ['So it was the Chancellor. He closed the King’s Road to us and kept it open for the Host.', 'My wool has been stuck in this city for three months because of him.'] },
+      { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['So it was the Chancellor. He closed the King’s Road to us and kept it open for the Host.', 'My wool has been stuck in this city for three months because of him.'] },
       { when: { quest: 'orders-from-the-north', state: 'done' }, lines: ['I have forty bales of wool and no road to sell them on. The roads office says the King’s Road is closed for repairs.', 'But I’ve seen grey riders use that road at night.'] },
       { lines: ['Wool, linen, and dyed silk, if you have the gold. I’d sell more if the roads were open.'] },
     ],
@@ -384,7 +386,8 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Keeper of the Ember Keep',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['The war council has met in this hall every night since Highwall held.', 'Two more gates stand between us and the Dead Kingdom. The Regent sleeps in her chair by the map.'] },
+      { when: { quest: 'the-gloam-gate', state: 'done' }, lines: ['The Regent slept in a bed last night, for the first time since Highwall. Elyra is free.', 'The map on the council table goes north now, past the Gloam Gate, into country nobody has drawn in three hundred years.'] },
+      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['The war council has met in this hall every night since Highwall held.', 'One gate is left between us and the Dead Kingdom: the Gloam Gate, where they keep Elyra. The Regent sleeps in her chair by the map.'] },
       { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['After the Night of Knives, the court became a war council. I took the tapestries down to make room for the map.', 'The Chancellor’s chair is still at the table. Nobody sits in it.'] },
       { when: { quest: 'city-the-cellar', state: 'done' }, lines: ['The Starfall Festival is tonight, and every lord in the kingdom is in the city.', 'Be careful. The Chancellor’s men are all over the keep.'] },
       { lines: ['This is the Great Hall of the Ember Keep. The King held court here before he fell ill.'] },

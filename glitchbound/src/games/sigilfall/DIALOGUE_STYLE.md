@@ -76,3 +76,29 @@ When a scene has three people speak, each line should be one only that person wo
   Orren speaking from his order's ways, Maren planning and counting heads, Mara wary of magic, and Elyra's dawn and
   the Grey Lady's grief. Haldor and Cael were left as they were.
 - Not rewritten: the retired lands (`data/retired.ts`), and item and enemy lore (flavor on a card, not dialogue).
+
+## v4: one tale, told darker (2026-11-18)
+
+The owner again: "sometimes i didnt understand what exactly the dialogue was ... quests are not really clear whats
+happening ... make the whole game as one unified experience where you know what the story is, what you're doing and
+how ... make sure the story is flowy, dark and similar to the wow/lotr one". Everything above still holds. On top of it:
+
+14. **The tale is always in view.** A player can name, at any moment, the enemy (the Hallow King, and the Pale Herald
+    who speaks for him), what he wants (the seven sigils, to open Duskspire and remake his dead kingdom out of Aster's
+    grief), how many sigils each side holds, and why the hero is where they are. The narrator's pages between the acts
+    (`data/chronicle.ts` TALES) and the Journal carry the big picture; quest text and scenes carry the step.
+15. **Every ending is seen.** A quest's `reward.text` is shown as a page when the quest pays out in the world (engine.ts
+    StoryPage `deed`), or after the giver's words when it is handed in. It says what happened and what it means, in two
+    to four sentences. It never repeats the next quest's text, and never repeats a keepsake's words.
+16. **Looking for something finds something.** A quest that sends the hero to look, search, scout or find out has a
+    `find` (data/types.ts Keepsake): the letter, order, page or relic found there, with its real words. The hero reads
+    what the characters read. When it must go to someone else (a code only Nyx can read), the find says so.
+17. **No ping-pong.** The next step is where the last one left the hero whenever the story allows. When the hero must
+    go back, the find or the ending says exactly who to go back to and why.
+18. **Dark, with weight.** This is a tale of grief and what it costs. The dead are sad, not monstrous. Victories cost
+    something; the camp counts its dead. Atmosphere comes from concrete things seen (cold hearths, a child's shoe in the
+    snow, candles in every window), never from adjectives piled up. Still short sentences, still plain words.
+19. **Scenes take their time.** A scene opens on the place, lets a big moment (a sigil waking, a gate breaking) breathe
+    with a `wait`, and puts the turn of the story on screen, never only in a fight's shout or a reward's line.
+20. **A sigil won is the Sigil Rite.** Its page (ui/StoryPages.tsx, from `SIGIL_LORE`) tells where it lay, what it
+    gives and what it took from Elyra. Lines around it agree with SIGIL_LORE.

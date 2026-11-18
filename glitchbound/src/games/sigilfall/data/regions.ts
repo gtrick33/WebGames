@@ -319,7 +319,7 @@ const HAND_LAID: Record<string, RegionDef> = {
       {
         id: 'chapel',
         floor: 'd',
-        title: 'The Tear Chapel',
+        title: 'The Lower Chapel',
         checkpoint: true,
         waves: [{ enemies: ['rift-acolyte', 'rift-acolyte', 'skeleton', 'skeleton'] }, { enemies: ['rift-acolyte', 'bone-hound', 'bone-hound', 'skeleton-archer'] }, { enemies: ['rift-acolyte', 'skeleton', 'skeleton'], elite: true }],
       },

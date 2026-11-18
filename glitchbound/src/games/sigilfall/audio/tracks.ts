@@ -1,4 +1,4 @@
-import type { SongId } from './songs';
+import type { RingSong, SongId } from './songs';
 
 /**
  * The soundtrack: which recorded piece each land plays (the files: public/games/sigilfall/music, built by
@@ -30,7 +30,8 @@ export type TrackId =
   | 'crypt'
   | 'cave'
   | 'boss'
-  | 'siege';
+  | 'siege'
+  | RingSong;
 
 export const TRACKS: Readonly<Partial<Record<SongId, TrackId>>> = {
   title: 'title',
@@ -82,7 +83,18 @@ export const TRACKS: Readonly<Partial<Record<SongId, TrackId>>> = {
   rootdeep: 'cave',
   molten: 'forge',
   tomb: 'tomb',
+  // the Ring's arenas, each its own
+  'ring-sands': 'ring-sands',
+  'ring-frost': 'ring-frost',
+  'ring-forge': 'ring-forge',
 };
+
+/**
+ * The Ring's music, by its arena's ground (the owner, 2026-11-18: "the background music should also be per map and
+ * should be very cool sounding and nice"): the Proving Sands warm and dusty ("Desert City"), the Frozen Mere cool and
+ * glassy ("Ice Flow"), the Cinder Forge driving and hot ("Volatile Reaction").
+ */
+export const RING_MUSIC: Readonly<Record<'sands' | 'frost' | 'forge', RingSong>> = { sands: 'ring-sands', frost: 'ring-frost', forge: 'ring-forge' };
 
 /**
  * How long the end of a piece overlaps its own beginning as it comes round again, in seconds. The pieces are whole
@@ -111,6 +123,9 @@ export const SEAM: Readonly<Record<TrackId, number>> = {
   cave: 3,
   boss: 2,
   siege: 2,
+  'ring-sands': 2,
+  'ring-frost': 3,
+  'ring-forge': 2,
 };
 
 /** The pieces by their own titles, as the credits name them (Settings; CREDITS_AND_LICENSES.md has the rest). */
@@ -137,4 +152,7 @@ export const MUSIC_CREDITS: readonly string[] = [
   'Crypto',
   'Five Armies',
   'Heroic Age',
+  'Desert City',
+  'Ice Flow',
+  'Volatile Reaction',
 ];

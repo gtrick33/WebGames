@@ -2,9 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { fullBar, PRESETS, SLOTS, styleOfBar, type Ability } from '../arena/abilities';
 import { fullTalents } from '../arena/talents';
-import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, mateSkill, mmrOf, namedApart, nameFor, readRing, rivalFor, setsOf, skillAt, stakesOf, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave, barredFrom, BARRED_WHY, styleFor } from '../arena/ladder';
+import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, mateSkill, mmrOf, namedApart, nameFor, readLive, readRing, rivalFor, setsOf, skillAt, stakesOf, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave, barredFrom, BARRED_WHY, styleFor } from '../arena/ladder';
 import { MAP_IDS, MAPS } from '../arena/maps';
-import { bestRating, FORMATS, nextRank, rankOf, type Format } from '../arena/ranks';
+import { bestRating, FORMATS, rankOf, seasonOf, type Format, type Standing } from '../arena/ranks';
+import { NOTE_WORDS, partyRating, peopleMatchId, type Report } from '../arena/ranked';
+import { rankedApi, rankedStanding, readRanked, reportAndSettle, sendReport, writeRanked, type RankedCopy, type ShownStanding } from '../net/ranked';
+import { friendsApi } from '../../../platform/friends';
+import { InviteDialog, PlayLayer, type Ladder, type PartyShown } from './RingPlay';
+import { InviteCards } from './Friends';
 import { rewardsBetween } from '../arena/rewards';
 import { GATES_SOLO, type FighterSetup, type MatchSetup } from '../arena/sim';
 import { CLASS_EASE, CLASS_WAY, EASE_WORD } from '../arena/styles';
@@ -16,7 +21,7 @@ import { classOpen } from '../progress/paidClasses';
 import type { ClassId } from '../data/types';
 import type { SigilEngine } from '../engine';
 import { Link, type LinkState } from '../net/link';
-import { Seek, type SeekLook } from '../net/ringSeek';
+import { Seek, type SeekHandlers, type SeekLook } from '../net/ringSeek';
 import { rivalsOf } from '../arena/queue';
 import type { Action as RoomAction, Pick as RoomPick, View as RoomView } from '../net/ringRoom';
 import { newCharacter, type Face } from '../progress/character';
@@ -31,12 +36,11 @@ import { Titled } from './Titled';
 import { ScreenGate } from './ScreenGate';
 import { Doll } from './Doll';
 import { classEmblem } from './classEmblem';
-import { bestFits, bestPreset, choiceFromWord, choicesFor, choiceWord, fillSide, healerSpec, honored, slotsFor, specOf, type MateChoice, type Spec } from '../arena/teammates';
+import { choiceFromWord, choicesFor, choiceWord, fillSide, slotsFor, specOf, type MateChoice, type Spec } from '../arena/teammates';
 import { cleanTitle, isTitleFx } from '../../../catalog/titleFx';
 import { rankFx, type TitleShown } from '../progress/titles';
 import { frameOf, framesOwned, recordMatch, trackGain, turnSeason, type TrackGain } from '../arena/record';
 import { ProgressDialog, RecordBar, type ProgressTab } from './RingProgress';
-import { ArenaChoice } from './RingArena';
 
 const roomErrors: Record<string, string> = { full: 'That room is full.', in_run: 'That room is already in a match.' };
 
@@ -163,89 +167,10 @@ const matesWord = (kept: unknown, format: Format): string =>
 const setupName = (s: Spec): string => `${CLASSES[s.cls].name} (${PRESETS[s.cls][s.preset]!.name})`;
 
 /**
- * The computer's teammates for a 2v2's or a 3v3's empty places: a class and one of its ready-made setups each, or
- * Random, the team that wins most beside the player's own setup (arena/teammates.ts). A friend who joins takes a place
- * first.
- */
-function MatesPicker({ format, cls, bar, mates, onMates }: { format: Format; cls: ClassId; bar: string[]; mates: MateChoice[]; onMates: (m: MateChoice[]) => void }) {
-  const shown = honored(cls, mates);
-  const me = specOf(cls, bar);
-  // what Random picks between, the places chosen kept where they are
-  const fits = bestFits(format, [me], shown);
-  const set = (i: number, c: MateChoice): void => onMates(shown.map((x, j) => (j === i ? c : x)));
-  const comps = COMPS[format].filter((c) => c.team.some((t) => t.cls === cls));
-  const hint = `${format === 3 ? 'Random brings one healer and one damage dealer, the pair that wins most beside your setup.' : 'Random brings the healer or damage dealer that wins most beside your setup.'} A friend who joins takes a place first.`;
-  return (
-    <div className="rb-rp-block">
-      <h3 title={hint}>Your {format === 2 ? 'teammate' : 'teammates'}</h3>
-      <div className="rb-rp-mates">
-        {shown.map((x, i) => {
-          const could = fits.map((t) => t[i]).filter((t): t is Spec => !!t);
-          const names = [...new Set(could.map(setupName))];
-          const heals = could.filter(healerSpec).length;
-          // (one team clearly best: it is named; several as good: what kind of teammate they all are)
-          const role = names.length === 1 ? names[0] : heals === could.length ? 'A healer' : heals === 0 ? 'Damage' : 'Healer or damage';
-          return (
-            <span key={i} className={`rb-rp-mate${x === 'random' ? ' is-any' : ''}`} style={{ ['--c' as string]: x === 'random' ? '#ffe39a' : CLASSES[x.cls].colors.accent }}>
-              {x === 'random' ? (
-                <i className="rb-rp-mate-any" aria-hidden="true">
-                  ?
-                </i>
-              ) : (
-                <img src={classEmblem(x.cls)} alt="" draggable={false} />
-              )}
-              <select
-                aria-label={`Teammate ${i + 1}`}
-                value={x === 'random' ? 'random' : x.cls}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  set(i, v === 'random' ? 'random' : { cls: v as ClassId, preset: bestPreset(me, v as ClassId) });
-                }}
-              >
-                <option value="random">Random</option>
-                {CLASS_IDS.filter((c) => c !== cls).map((c) => (
-                  <option key={c} value={c} disabled={shown.some((o, j) => j !== i && o !== 'random' && o.cls === c)}>
-                    {CLASSES[c].name}
-                  </option>
-                ))}
-              </select>
-              {x === 'random' ? (
-                <small className="rb-rp-mate-fit" title={`Best beside your ${PRESETS[cls][me.preset]!.name}: ${names.join(', ')}`}>
-                  {role}, best fit
-                </small>
-              ) : (
-                <select aria-label={`Teammate ${i + 1}'s build`} value={x.preset} onChange={(e) => set(i, { cls: x.cls, preset: Number(e.target.value) })}>
-                  {PRESETS[x.cls].map((p, n) => (
-                    <option key={p.id} value={n}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </span>
-          );
-        })}
-      </div>
-      <small className="rb-rp-matehint">{hint}</small>
-      {comps.length > 0 && (
-        <div className="rb-rp-comps">
-          <small>Teams that work:</small>
-          {comps.map((c) => (
-            <button key={c.name} title={c.blurb} className="rb-rs-build" onClick={() => onMates(c.team.filter((t) => t.cls !== cls).map((t) => ({ cls: t.cls, preset: t.preset })))}>
-              {c.name}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
  * The Ring, as three plain pages: Play (who, what kind of fight, go), Setup (what you bring), and With friends. A
  * match and its result lie beyond them, and every page has one way back.
  */
-export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { engine: SigilEngine; face?: Face; body?: 'm' | 'f'; cls?: ClassId; name?: string; onBack: () => void; resume?: LiveMatch }) {
+export function RingScreen({ engine, face, body, cls, name, onBack, resume, party: invitedTo }: { engine: SigilEngine; face?: Face; body?: 'm' | 'f'; cls?: ClassId; name?: string; onBack: () => void; resume?: LiveMatch; party?: string }) {
   const [save, setSave] = useState<RingSave>(readRing);
   const latest = useRef(save);
   const commit = (fn: (s: RingSave) => RingSave): void => {
@@ -268,10 +193,54 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   );
   const [page, setPage] = useState<Page>('play');
   /** The layer of what kind of fight to find, over the main screen; and the setup over a room with friends. */
-  const [playOpen, setPlayOpen] = useState(false);
+  const [playOpen, setPlayOpen] = useState(!!invitedTo);
   const [setupOpen, setSetupOpen] = useState(false);
   const [format, setFormat] = useState<Format>(1);
   const { me } = useAccount();
+
+  /* -------------------------------------------------- the ranked ladder */
+  // A signed-in player's standing is the server's (net/ranked.ts): asked for as the Ring opens, shown from this
+  // device's copy until it answers, and moved only by the server as matches are settled. A guest's is a practice
+  // rating kept on this device, as before.
+  const user = me?.id ?? null;
+  const [rk, setRk] = useState<RankedCopy | null>(() => readRanked(user));
+  const rkRef = useRef(rk);
+  const [ladderState, setLadderState] = useState<'loading' | 'ready' | 'offline'>('loading');
+  const putRanked = (season: number, standings: Partial<Record<string, ShownStanding>>): void => {
+    if (!user) return;
+    const was = rkRef.current?.user === user ? rkRef.current : null;
+    const next: RankedCopy = { user, at: Date.now(), season, standings: { ...was?.standings, ...standings } };
+    rkRef.current = next;
+    writeRanked(next);
+    setRk(next);
+  };
+  useEffect(() => {
+    if (!user) return;
+    let on = true;
+    rankedApi.me().then(
+      (r) => {
+        if (!on) return;
+        if (r.signedIn && r.standings) {
+          // (a copy of another account's, on this device, is no use)
+          if (rkRef.current?.user !== user) rkRef.current = null;
+          putRanked(r.season ?? seasonOf(Date.now()), r.standings);
+          setLadderState('ready');
+        } else setLadderState('offline');
+      },
+      () => on && setLadderState('offline'),
+    );
+    return () => {
+      on = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+  const ladder: Ladder = !user ? 'guest' : ladderState === 'ready' ? 'ranked' : ladderState === 'loading' ? 'loading' : 'offline';
+  /** A format's standing: the ranked ladder's (signed in), or the practice rating on this device. */
+  const standingIn = (f: Format): Standing => (user ? rankedStanding(rkRef.current?.user === user ? rkRef.current : null, f) : standingOf(latest.current, f));
+  const [seasonAtOpen] = useState(() => seasonOf(Date.now()));
+  const seasonNow = rk?.season ?? seasonAtOpen;
+  /** This account's copy of its ranked standings, if the copy is this account's. */
+  const rkMine = rk?.user === user ? rk : null;
   const [pick, setPick] = useState<ClassId>(cls && classOpen(cls, me) ? cls : 'warrior');
   const [map, setMap] = useState<string>('random');
   const [help, setHelp] = useState(false);
@@ -306,26 +275,41 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     return trackGain(was, next);
   };
   const [looksOpen, setLooksOpen] = useState(false);
-  const [fight, setFight] = useState<{ setup: MatchSetup; rival: Comp; skill: number; mates?: number; rivalRating: number; stakes: MatchStakes; format: Format; snap?: LiveMatch['snap'] } | null>(() => (resume ? { ...resume, stakes: resume.stakes } : null));
+  const [fight, setFight] = useState<{ setup: MatchSetup; rival: Comp; skill: number; mates?: number; rivalRating: number; stakes: MatchStakes; format: Format; snap?: LiveMatch['snap']; ticket?: string; unrated?: boolean } | null>(() => (resume ? { ...resume, stakes: resume.stakes } : null));
   // (`matched`: found by a search, not a room of friends: there is no room to go back to when it ends, and it is
   // rated, `live` being what is kept of it while it goes, as for a match against the computer's teams)
-  const [roomFight, setRoomFight] = useState<{ setup: MatchSetup; mine: number; host: boolean; matched?: boolean; live?: LiveMatch } | null>(null);
+  // (`party`: found by the party's own search, from its room: the room stays the party's when it ends)
+  const [roomFight, setRoomFight] = useState<{ setup: MatchSetup; mine: number; host: boolean; matched?: boolean; party?: boolean; live?: LiveMatch } | null>(null);
   const [run, setRun] = useState(0);
-  const [result, setResult] = useState<{ r: MatchResult; rating: RatingOutcome | null; rival?: string; kind: 'solo' | 'matched' | 'room' | 'tutorial'; track?: TrackGain | null } | null>(null);
+  const [result, setResult] = useState<{ r: MatchResult; rating: RatingOutcome | null; rival?: string; kind: 'solo' | 'matched' | 'room' | 'tutorial'; track?: TrackGain | null; party?: boolean; why?: string } | null>(null);
   // a search for other players (net/ringSeek.ts): what its waiting screen shows, and a word left by one that ended badly
   const [look, setLook] = useState<SeekLook | null>(null);
   const [seekNote, setSeekNote] = useState('');
   const seekRef = useRef<Seek | null>(null);
   const [view, setView] = useState<RoomView | null>(null);
-  const [linkState, setLinkState] = useState<LinkState | 'none'>('none');
+  const [linkState, setLinkState] = useState<LinkState | 'none'>(invitedTo ? 'connecting' : 'none');
   const [roomErr, setRoomErr] = useState('');
   const [codeIn, setCodeIn] = useState('');
   const linkRef = useRef<Link<RoomView, RoomAction> | null>(null);
   const inbox = useRef<RingInbox | null>(null);
+  /** The run of a room's match last begun here. */
+  const runSeen = useRef(0);
+  /**
+   * What the room the player is in is for: a custom game with friends (its own page, no rating) or a party that queues
+   * ranked as one team (the layer where the fight is chosen). Opened by a friend's invitation (`invitedTo`): straight
+   * into their party. The ref is what the room's handlers read (they are made once, with the room).
+   */
+  const [roomMode, setMode] = useState<'custom' | 'party' | null>(invitedTo ? 'party' : null);
+  const modeRef = useRef<'custom' | 'party' | null>(invitedTo ? 'party' : null);
+  const [partyCode, setPartyCode] = useState(invitedTo ?? '');
+  /** The party's room's latest view, handled with this render's state (set after every render). */
+  const partyRef = useRef<((v: RoomView) => void) | null>(null);
   useEffect(
     () => () => {
-      linkRef.current?.close();
       seekRef.current?.stop();
+      // (a party left with the Ring: its seat goes, so the others aren't left waiting for this player)
+      if (modeRef.current === 'party') linkRef.current?.send({ t: 'bye' });
+      linkRef.current?.close();
     },
     [],
   );
@@ -333,7 +317,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   const hero = name ?? 'You';
   // (what other people see: a player with no campaign hero goes by their arcade name, not as somebody else's "You")
   const shownAs = name ?? (engine.defaultName.trim() || 'You');
-  const standing = standingOf(save, format);
+  const standing = user ? rankedStanding(rkMine, format) : standingOf(save, format);
   const rank = rankOf(standing.best);
   // (a campaign hero of the class, worn: their gear, their Wardrobe and their title)
   const [wearN, setWearN] = useState(0);
@@ -418,7 +402,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
   /** One-time hints in a real match (arena/lessons.ts), unless the game's tutorial hints are off. */
   const hints: MatchHints | undefined = engine.settings.tutorial ? { seen: learn.hints ?? [], onSeen: (id) => putLearn((l) => ({ ...l, hints: [...new Set([...(l.hints ?? []), id])] })) } : undefined;
 
-  const enter = (): void => {
+  const enter = async (): Promise<void> => {
     // (a bar not yet whole: the main screen it is on says so)
     if (!ready) return;
     // (a healer with 1v1 chosen: nothing to find, and the page already says why)
@@ -428,8 +412,29 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     const fill = fillSide(format, [specOf(pick, bar)], mates, seed);
     const team: FighterSetup[] = [{ team: 0, cls: pick, name: hero, bar, talents, ult, human: true, ...frameOn }, ...fill.map((x, i) => ({ team: 0 as const, cls: x.cls, name: nameFor(x.cls, seed + i + 11), bar: PRESETS[x.cls][x.preset]!.bar, talents: PRESETS[x.cls][x.preset]!.talents }))];
     // the other side's rating lands either way of your matchmaking rating, up to 150 (what it pays and costs follows:
-    // stakesOf), and how sharp the computer plays follows it; your own side's play to yours
-    const rivalRating = rivalFor(standing, seed);
+    // stakesOf), and how sharp the computer plays follows it; your own side's play to yours. On the ranked ladder the
+    // server draws it, and writes the match down before the gates open (a ticket: arena/ranked.ts)
+    let rivalRating = rivalFor(standing, seed);
+    let wl = stakesOf(standing, rivalRating);
+    let ticket: string | undefined;
+    let note: string | undefined;
+    let unrated = false;
+    if (user) {
+      const t = await rankedApi.bots(format).catch(() => null);
+      if (t) {
+        ticket = t.match;
+        rivalRating = t.rival;
+        wl = t.stakes;
+        if (t.note) note = NOTE_WORDS[t.note];
+        putRanked(t.standing.season, { [format]: t.standing });
+      } else {
+        // (the ladder can't be reached: the match is played, and counts for nothing)
+        unrated = true;
+        wl = { win: 0, lose: 0 };
+        note = NOTE_WORDS.offline;
+      }
+    }
+    const st = standingIn(format);
     // (the other side wears the rank of its rating over their heads, as a player wears a title: "Pit Veteran")
     const rivalRank = rankOf(rivalRating);
     const rivals = rivalRank.at > 0 ? fighters.map((f) => ({ ...f, title: { text: rivalRank.name, fx: rankFx(rivalRank.at), before: true } })) : fighters;
@@ -440,10 +445,12 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
       setup: { seed, map: map === 'random' ? MAP_IDS[seed % MAP_IDS.length]! : map, fighters: namedApart([...team, ...rivals]), gates: GATES_SOLO },
       rival: comp,
       skill: skillAt(rivalRating),
-      mates: mateSkill(mmrOf(standing)),
+      mates: mateSkill(mmrOf(st)),
       rivalRating,
       format,
-      stakes: { format, rating: standing.rating, rank: rankOf(standing.best).name, color: rankOf(standing.best).color, ...stakesOf(standing, rivalRating), rival: comp.name, blurb: comp.blurb, rivalRating },
+      stakes: { format, rating: st.rating, rank: rankOf(st.best).name, color: rankOf(st.best).color, ...wl, rival: comp.name, blurb: comp.blurb, rivalRating, ...(note ? { note } : {}) },
+      ...(ticket ? { ticket } : {}),
+      ...(unrated ? { unrated } : {}),
     };
     // (kept as it goes: a player who leaves it while it's going can come back to it, or lose as a leaver)
     writeLive({ ...next, at: Date.now() });
@@ -463,18 +470,134 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     return { before: was.rating, after: out.next.rating, bestBefore: was.best, bestAfter: out.next.best, rankUp: out.rankUp, streak: out.next.streak, rewards: rewardsBetween(bestWas, bestRating()) };
   };
 
+  /**
+   * A match on the ranked ladder is over for this player: their report, and, once the ladder has settled it (a match
+   * against people waits for everyone's), what it did, handed to `done`. Still waiting after a while: `pending`, and the
+   * ladder settles it without them (it is asked again as the Ring next opens).
+   */
+  const settleRanked = (ticket: string, report: Report, f: Format, done: (o: RatingOutcome) => void): void => {
+    clearLive();
+    const wasBest = bestRating();
+    const was = standingIn(f);
+    const waiting: RatingOutcome = { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: was.streak, pending: true };
+    reportAndSettle(ticket, report).then(
+      (got) => {
+        if (!('settled' in got)) return done(waiting);
+        putRanked(got.standing.season, { [f]: got.standing });
+        void engine.reportRanks();
+        done({ before: got.standing.rating - got.change, after: got.standing.rating, bestBefore: was.best, bestAfter: got.standing.best, rankUp: got.rankUp ?? null, streak: got.standing.streak, rewards: rewardsBetween(wasBest, bestRating()), ...(got.note ? { note: NOTE_WORDS[got.note] } : {}) });
+      },
+      () => done(waiting),
+    );
+  };
+  /** A ranked match left: a leaver's loss once the gates have lifted (the ladder has the last word on who left). */
+  const leaveRanked = (ticket: string, f: Format, started: boolean): void => {
+    clearLive();
+    sendReport(ticket, started ? 'left' : 'void').then(
+      (got) => {
+        if ('settled' in got) putRanked(got.standing.season, { [f]: got.standing });
+      },
+      () => undefined,
+    );
+  };
+
   /** Out of a search, or of the match it found (`soon`: this end ran the match, and lets its last word arrive first). */
   const endSeek = (soon = false): void => {
     if (soon) seekRef.current?.stopSoon();
     else seekRef.current?.stop();
     seekRef.current = null;
-    linkRef.current = null;
+    // (a party's room is its own: it stays)
+    if (modeRef.current !== 'party') linkRef.current = null;
     setLook(null);
   };
 
   /**
+   * A match found by a search, or by the party's own (`party`), has begun: against people, rated as a match against
+   * the computer's teams is, against the other side's rating (the owner: "same logic as the leaver penalty"), kept
+   * while it goes so that walking out of it, or closing it, is a leaver's loss. Signed in, it is a match on the ranked
+   * ladder, by its room's roster (net/ranked.ts): what it stands for comes from the server a moment later.
+   */
+  const beginMatched = (v: RoomView, link: Link<RoomView, RoomAction>, party: boolean): void => {
+    const { setup: s, mine } = setupFromRoom(v);
+    runSeen.current = v.run;
+    if (mine < 0) {
+      if (!party) {
+        endSeek();
+        void enter();
+      }
+      return;
+    }
+    const st = standingIn(v.format);
+    const them = rivalsOf(v);
+    const rivalRating = them.rating ?? mmrOf(st);
+    // (each player's own matchmaking rating against the other side's mean: in a team far apart, the stronger one
+    // wins little and loses a lot, the weaker one the other way round)
+    const ourRating = mmrOf(st);
+    const rival = listed(them.names) || 'the other team';
+    const rk = rankOf(st.best);
+    const ticket = user ? peopleMatchId(v.code, v.run, v.runSeed) : undefined;
+    const live: LiveMatch = {
+      setup: s,
+      rival: { name: rival, blurb: '', team: [] },
+      skill: 0,
+      rivalRating,
+      ourRating,
+      format: v.format,
+      stakes: { format: v.format, rating: st.rating, rank: rk.name, color: rk.color, ...stakesOf(st, rivalRating, ourRating), rival, blurb: '', rivalRating },
+      at: Date.now(),
+      people: true,
+      ...(ticket ? { ticket } : {}),
+    };
+    writeLive(live);
+    linkRef.current = link;
+    setLook(null);
+    setResult(null);
+    setRun((r) => r + 1);
+    setRoomFight({ setup: s, mine, host: v.host === v.you, matched: true, party, live });
+    if (ticket)
+      rankedApi.people(v.code, v.run).then(
+        (p) => {
+          const next: LiveMatch = { ...live, rivalRating: p.rival, ourRating: p.ours, stakes: { ...live.stakes, win: p.stakes.win, lose: p.stakes.lose, rivalRating: p.rival, ...(p.note ? { note: NOTE_WORDS[p.note] } : {}) } };
+          if (readLive()?.ticket === ticket) writeLive(next);
+          setRoomFight((f) => (f?.live?.ticket === ticket ? { ...f, live: next } : f));
+        },
+        () => undefined,
+      );
+  };
+
+  /** What a search does with what it finds (for a party's search as for anyone's). */
+  const seekHandlers = (party: boolean): SeekHandlers => ({
+    onLook: setLook,
+    onRun: (v, link) => beginMatched(v, link, party),
+    onBots: () => {
+      seekRef.current = null;
+      setLook(null);
+      void enter();
+    },
+    onRelay: (n, d) => inbox.current?.(n, d),
+    onGone: () => {
+      seekRef.current = null;
+      // (someone else left: on the ranked ladder, the room's own record says who, and they take the loss)
+      const l = readLive();
+      if (l?.ticket) void rankedApi.report(l.ticket, 'void').catch(() => undefined);
+      clearLive();
+      if (party) {
+        if (linkRef.current?.view?.host === linkRef.current?.view?.you) linkRef.current?.send({ t: 'end' });
+      } else linkRef.current = null;
+      setRoomFight(null);
+      setSeekNote('That match ended because a player left it. Your rating is as it was, and the leaver takes the loss.');
+    },
+    onCancel: (why) => {
+      seekRef.current = null;
+      setLook(null);
+      if (why) setSeekNote(why);
+    },
+  });
+
+  /**
    * "Find a match": other players first, for ten seconds, then the computer's teams (the owner: "try to find existing
-   * players for a while and after 10 secs of loading screen, load bots if noone is queing").
+   * players for a while and after 10 secs of loading screen, load bots if noone is queing"). In a party, its leader
+   * puts the party's room in the queue instead, and the others wait with them.
    */
   const findMatch = (): void => {
     if (!ready) return;
@@ -482,75 +605,58 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     if (barred) return;
     setResult(null);
     setPage('play');
-    setPlayOpen(false);
     setSeekNote('');
     seekRef.current?.stop();
+    seekRef.current = null;
     const ground = map === 'random' ? MAP_IDS[Math.floor(Math.random() * MAP_IDS.length)]! : map;
-    seekRef.current = new Seek(
-      { format, map: ground, name: shownAs, pick: { cls: pick, bar, talents, ult, rating: mmrOf(standing), mates: mates.map(choiceWord), ...pickTitle(myTitle), ...frameOn } },
-      {
-        onLook: setLook,
-        onRun: (v, link) => {
-          const { setup: s, mine } = setupFromRoom(v);
-          if (mine < 0) {
-            endSeek();
-            enter();
-            return;
-          }
-          // rated as a match against the computer's teams is, against the other side's own rating (the owner: "same
-          // logic as the leaver penalty"): kept while it goes, so that walking out of it, or closing it, is a
-          // leaver's loss
-          const st = standingOf(latest.current, v.format);
-          const them = rivalsOf(v);
-          const rivalRating = them.rating ?? mmrOf(st);
-          // (2v2 and 3v3: worked from the two sides' means, as rated arenas do; 1v1: that is just your own. A search
-          // says the searcher's matchmaking rating, so these are matchmaking ratings)
-          const ourRating = them.ours ?? mmrOf(st);
-          const rival = listed(them.names) || 'the other team';
-          const rk = rankOf(st.best);
-          const live: LiveMatch = {
-            setup: s,
-            rival: { name: rival, blurb: '', team: [] },
-            skill: 0,
-            rivalRating,
-            ourRating,
-            format: v.format,
-            stakes: { format: v.format, rating: st.rating, rank: rk.name, color: rk.color, ...stakesOf(st, rivalRating, ourRating), rival, blurb: '', rivalRating },
-            at: Date.now(),
-            people: true,
-          };
-          writeLive(live);
-          linkRef.current = link;
-          setLook(null);
-          setRun((r) => r + 1);
-          setRoomFight({ setup: s, mine, host: v.host === v.you, matched: true, live });
-        },
-        onBots: () => {
-          seekRef.current = null;
-          setLook(null);
-          enter();
-        },
-        onRelay: (n, d) => inbox.current?.(n, d),
-        onGone: () => {
-          seekRef.current = null;
-          linkRef.current = null;
-          clearLive();
-          setRoomFight(null);
-          setSeekNote('That match ended because a player left it. Your rating is as it was.');
-        },
-      },
-    );
+    const myPickNow = { cls: pick, bar, talents, ult, rating: mmrOf(standing), mates: mates.map(choiceWord), ...pickTitle(myTitle), ...frameOn };
+    if (modeRef.current === 'party') {
+      const v = linkRef.current?.view;
+      // (only the leader starts the party's search; everyone else waits for it, the layer says so)
+      if (!v || v.host !== v.you || !linkRef.current) return;
+      const ratings = partySeats(v).map((x) => x.pick!.rating ?? mmrOf(standing));
+      // (however far apart: the party is matched at its median, and each player wins and loses by their own rating)
+      setPlayOpen(false);
+      seekRef.current = new Seek({ format: v.format, map: ground, name: shownAs, pick: myPickNow, party: linkRef.current, rating: partyRating(ratings) }, seekHandlers(true));
+      return;
+    }
+    setPlayOpen(false);
+    seekRef.current = new Seek({ format, map: ground, name: shownAs, pick: myPickNow }, seekHandlers(false));
   };
 
-  /* -------------------------------------------------- the room */
+  /* -------------------------------------------------- the room: a custom game, or a party */
+  /**
+   * What the room the player is in is for: a custom game with friends (its own page, no rating) or a party that queues
+   * ranked as one team (the layer where the fight is chosen).
+   */
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [asked, setAsked] = useState<Record<string, number>>({});
   const roomMates = view ? choicesFor(save.mates?.[view.format], view.format) : [];
   const roomWords = roomMates.map(choiceWord).join(' ');
   // (the title worn, sent to the room so everyone sees it over this player's head)
   const tText = myTitle?.text ?? '';
   const tFx = myTitle?.fx ?? 'plain';
   const tBefore = myTitle?.before ?? true;
-  const myPick = useMemo((): RoomPick => ({ team: view?.seats.find((s) => s.you)?.pick?.team ?? 0, cls: pick, bar, talents, ult, ...(roomWords ? { mates: roomWords.split(' ') } : {}), ...(tText ? { title: { text: tText, fx: tFx, before: tBefore } } : {}), ...(myFrame ? { frame: myFrame } : {}) }), [view, pick, bar, talents, ult, roomWords, tText, tFx, tBefore, myFrame]);
-  const runSeen = useRef(0);
+  // (in a party, the rating it searches at is worked from everyone's: arena/ranked.ts partyRating)
+  const partyMmr = roomMode === 'party' && view ? mmrOf(user ? rankedStanding(rkMine, view.format as Format) : standingOf(save, view.format as Format)) : null;
+  const myPick = useMemo((): RoomPick => ({ team: view?.seats.find((s) => s.you)?.pick?.team ?? 0, cls: pick, bar, talents, ult, ...(partyMmr !== null ? { rating: partyMmr } : {}), ...(roomWords ? { mates: roomWords.split(' ') } : {}), ...(tText ? { title: { text: tText, fx: tFx, before: tBefore } } : {}), ...(myFrame ? { frame: myFrame } : {}) }), [view, pick, bar, talents, ult, partyMmr, roomWords, tText, tFx, tBefore, myFrame]);
+  /** The party's room said something new (its handlers are made once: this is read through a ref, always the latest). */
+  const partyView = (v: RoomView): void => {
+    seekRef.current?.seen();
+    const leader = v.host === v.you;
+    if (v.phase === 'lobby') {
+      // (the party's format is its leader's; never 1v1)
+      if (leader && v.queued === null && v.format !== Math.max(2, format)) linkRef.current?.send({ t: 'setup', format: Math.max(2, format), map: v.map });
+      if (!leader && v.format !== format) setFormat(v.format as Format);
+      // the leader put the party in the queue: everyone else waits with them
+      if (!leader && v.queued !== null && !seekRef.current && v.seats.find((x) => x.you)?.pick && linkRef.current) {
+        seekRef.current = new Seek({ format: v.format, map: v.map, name: shownAs, pick: myPick, party: linkRef.current }, seekHandlers(true));
+      }
+      return;
+    }
+    // a match began that this end wasn't waiting for (it came back just as it did): in, all the same
+    if (v.run !== runSeen.current && !seekRef.current && linkRef.current && v.seats.find((x) => x.you)?.pick) beginMatched(v, linkRef.current, true);
+  };
   const handlers = {
     onView: (v: RoomView) => {
       // a code from another game's room: it can't be played here
@@ -559,10 +665,12 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         linkRef.current = null;
         setView(null);
         setLinkState('none');
+        setMode(null);
         setRoomErr('That code is for a different game’s room.');
         return;
       }
       setView(v);
+      if (modeRef.current === 'party') return partyRef.current?.(v);
       if (v.phase === 'lobby') {
         setRoomFight((f) => (f ? null : f));
       } else if (v.run !== runSeen.current) {
@@ -580,39 +688,114 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     onState: (s: LinkState, why?: string) => {
       setLinkState(s);
       if (s === 'gone') {
+        const was = modeRef.current;
         setView(null);
         setRoomFight(null);
-        setRoomErr(why ? (roomErrors[why] ?? why) : 'The room has closed.');
+        setMode(null);
         linkRef.current = null;
+        if (was === 'party') {
+          seekRef.current?.stop();
+          seekRef.current = null;
+          setLook(null);
+          setSeekNote(why ? (roomErrors[why] ?? why) : 'The party has closed.');
+        } else setRoomErr(why ? (roomErrors[why] ?? why) : 'The room has closed.');
       }
     },
-    onError: (msg: string) => setRoomErr(roomErrors[msg] ?? ''),
+    onError: (msg: string) => (modeRef.current === 'party' ? undefined : setRoomErr(roomErrors[msg] ?? '')),
   };
   const openRoom = async (): Promise<void> => {
+    if (modeRef.current === 'party') leaveRoom();
     setRoomErr('');
     setLinkState('connecting');
+    modeRef.current = 'custom';
+    setMode('custom');
     try {
       linkRef.current = await Link.create<RoomView, RoomAction>(shownAs, handlers, 'sigilfall-ring');
     } catch (e) {
       setLinkState('none');
+      setMode(null);
       setRoomErr(e instanceof Error ? e.message : 'Could not open a room.');
     }
   };
   const joinRoom = (): void => {
     const code = codeIn.trim().toUpperCase();
     if (!code) return;
+    if (modeRef.current === 'party') leaveRoom();
     setRoomErr('');
     setLinkState('connecting');
+    modeRef.current = 'custom';
+    setMode('custom');
     linkRef.current = new Link<RoomView, RoomAction>(code, shownAs, handlers);
   };
   const leaveRoom = (): void => {
+    if (modeRef.current === 'party') {
+      seekRef.current?.stop();
+      seekRef.current = null;
+      setLook(null);
+    }
     linkRef.current?.send({ t: 'bye' });
     linkRef.current?.close();
     linkRef.current = null;
     setView(null);
     setLinkState('none');
     setRoomFight(null);
+    modeRef.current = null;
+    setMode(null);
+    setPartyCode('');
   };
+
+  /** A party of this player's own, opened to invite a friend into (or the one they are in). Its code, or null. */
+  const openParty = async (): Promise<string | null> => {
+    if (modeRef.current === 'party' && linkRef.current) return linkRef.current.code;
+    if (linkRef.current) leaveRoom();
+    setSeekNote('');
+    modeRef.current = 'party';
+    setMode('party');
+    setLinkState('connecting');
+    // (a party is a team: 2v2, unless 3v3 was chosen)
+    if (format === 1) setFormat(2);
+    try {
+      linkRef.current = await Link.create<RoomView, RoomAction>(shownAs, handlers, 'sigilfall-ring');
+      setPartyCode(linkRef.current.code);
+      return linkRef.current.code;
+    } catch {
+      setMode(null);
+      setLinkState('none');
+      setSeekNote('A party couldn’t be opened right now. Try again in a moment.');
+      return null;
+    }
+  };
+  /** Joins a friend's party by its code: the invitation they sent, or the code they gave. */
+  const joinParty = (code: string): void => {
+    if (!/^[A-Z]{4,8}$/.test(code)) return;
+    if (linkRef.current) leaveRoom();
+    setSeekNote('');
+    modeRef.current = 'party';
+    setMode('party');
+    setPartyCode(code);
+    setLinkState('connecting');
+    setPage('play');
+    setInviteOpen(false);
+    setPlayOpen(true);
+    linkRef.current = new Link<RoomView, RoomAction>(code, shownAs, handlers);
+  };
+  /** Asks a friend into the party (opening one first): their invitation arrives wherever they are in Sigilfall. */
+  const inviteFriend = async (id: string): Promise<void> => {
+    setAsked((a) => ({ ...a, [id]: Date.now() }));
+    const code = await openParty();
+    const failed = (): void => {
+      setAsked(({ [id]: _gone, ...rest }) => rest);
+      setSeekNote('The invitation didn’t go out. Try again in a moment.');
+    };
+    if (!code) return failed();
+    await friendsApi.invite(id, 'sigilfall-ring', code).catch(failed);
+  };
+  /** A friend's invitation to team up, taken here in the Ring. */
+  const takeInvite = (id: number, code: string): void => {
+    engine.acceptInvite(id);
+    joinParty(code.toUpperCase());
+  };
+
   // our choices go to the room as they change (a player without a side takes the first one with room)
   const sentPick = useRef('');
   useEffect(() => {
@@ -626,18 +809,81 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     }
   }, [view, myPick, ready]);
 
+  /** The party as the layer shows it: everyone on its side, you first (in the queue: the party's own seats). */
+  const partyShown: PartyShown | null =
+    roomMode === 'party'
+      ? {
+          code: view?.code ?? partyCode,
+          leader: !view || view.host === view.you,
+          connecting: linkState === 'connecting' || !view,
+          members: view
+            ? partySeats(view)
+                .sort((a, b) => Number(b.you) - Number(a.you))
+                .map((x) => ({ n: x.n, name: x.name, cls: CLASS_IDS.includes(x.pick!.cls as ClassId) ? (x.pick!.cls as ClassId) : null, bar: x.pick!.bar, rating: x.pick!.rating ?? null, you: x.you, online: x.online }))
+            : [],
+        }
+      : null;
+  // (in a party the format is the room's: its leader's choice)
+  const fightFormat: Format = roomMode === 'party' && view ? (view.format as Format) : format;
+
+  /** In a party, someone other than its leader: the leader chooses the fight and starts the search. */
+  const follower = !!partyShown && !partyShown.leader;
+  /** The format chosen: in a party, its leader's, for the whole party (never 1v1: a party is a team). */
+  const chooseFormat = (f: Format): void => {
+    if (modeRef.current === 'party') {
+      const v = linkRef.current?.view;
+      if (f === 1 || !v || v.host !== v.you || v.queued !== null) return;
+      linkRef.current?.send({ t: 'setup', format: f, map: v.map });
+    }
+    setFormat(f);
+  };
+
   /* -------------------------------------------------- back, one level at a time */
   const back = (): void => {
     // (going back is leaving the tutorial, if one is being read)
     setTut(null);
     if (setupOpen) setSetupOpen(false);
+    else if (inviteOpen) setInviteOpen(false);
     else if (playOpen) setPlayOpen(false);
     else if (page === 'friends') {
       if (view) leaveRoom();
       setRoomErr('');
       setPage('play');
-    } else onBack();
+    } else {
+      // (leaving the Ring leaves the party)
+      if (modeRef.current === 'party') leaveRoom();
+      onBack();
+    }
   };
+
+  /**
+   * A ranked match is over: the result on screen at once, saying it is being checked, and what the ladder made of it
+   * (and the match into the history, the challenges and the season) as soon as it has settled it.
+   */
+  const endRanked = (r: MatchResult, ticket: string, f: Format, rival: string, kind: 'solo' | 'matched', party?: boolean): void => {
+    const was = standingIn(f);
+    setResult({ r, rating: { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: was.streak, pending: true }, rival, kind, track: null, party });
+    setFight(null);
+    setRoomFight(null);
+    settleRanked(ticket, r.draw ? 'draw' : r.won ? 'won' : 'lost', f, (rating) => {
+      if (rating.rankUp) engine.sound.play('ring-levelup');
+      const track = keepMatch(r, f, rating.pending ? null : rating, rival);
+      setResult((now) => (now && now.r === r ? { ...now, rating, track } : now));
+    });
+  };
+
+  useEffect(() => {
+    modeRef.current = roomMode;
+  }, [roomMode]);
+  useEffect(() => {
+    partyRef.current = partyView;
+  });
+  // the Ring opened by a friend's invitation, taken anywhere in the game: into their party (the layer is open on it)
+  useEffect(() => {
+    if (invitedTo && /^[A-Z]{4,8}$/.test(invitedTo)) linkRef.current = new Link<RoomView, RoomAction>(invitedTo, shownAs, handlers);
+    // (once, as the Ring opens)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (tutFight) {
     return (
@@ -686,15 +932,23 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         resume={fight.snap}
         onSnap={(snap) => writeLive({ ...fight, snap, at: Date.now() })}
         onLeave={(started) => {
-          if (started) settle(false, LEAVER_K);
+          if (fight.ticket) leaveRanked(fight.ticket, fight.format, started);
+          else if (started && !fight.unrated) settle(false, LEAVER_K);
           else clearLive();
           setFight(null);
         }}
         onDone={(r) => {
+          if (fight.ticket) return endRanked(r, fight.ticket, fight.format, fight.rival.name, 'solo');
           const was = standingOf(latest.current, fight.format);
           clearLive();
+          // (played signed in while the ladder couldn't be reached: kept in the history, and counted for nothing)
+          if (fight.unrated) {
+            setResult({ r, rating: null, rival: fight.rival.name, kind: 'solo', track: keepMatch(r, fight.format, null, fight.rival.name), why: NOTE_WORDS.offline });
+            setFight(null);
+            return;
+          }
           const rating: RatingOutcome = r.draw ? { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: 0 } : settle(r.won);
-          if (rating.rankUp) engine.sound.play('levelup');
+          if (rating.rankUp) engine.sound.play('ring-levelup');
           const track = keepMatch(r, fight.format, rating, fight.rival.name);
           setResult({ r, rating, rival: fight.rival.name, kind: 'solo', track });
           setFight(null);
@@ -727,24 +981,42 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         onSnap={live ? (snap) => writeLive({ ...live, snap, at: Date.now() }) : undefined}
         onLeave={(started) => {
           // (walking out of a match against people: a leaver's loss, and the match ends for the others)
-          if (live && started) settleFor(live.format, live.rivalRating, false, LEAVER_K, live.ourRating);
+          if (live?.ticket) leaveRanked(live.ticket, live.format, started);
+          else if (live && started) settleFor(live.format, live.rivalRating, false, LEAVER_K, live.ourRating);
           else if (live) clearLive();
-          if (roomFight.matched) endSeek();
+          // (out of a party's match is out of the party: the others see a player leave, and the room says who)
+          if (roomFight.party) leaveRoom();
+          else if (roomFight.matched) endSeek();
           else if (roomFight.host) linkRef.current?.send({ t: 'end' });
           setRoomFight(null);
         }}
         onDone={(r) => {
+          const after = (): void => {
+            if (roomFight.party) {
+              // (the party's room goes back to its lobby, the party still in it: a moment after, so that the last
+              // word reaches everyone before their match is over)
+              seekRef.current?.stop();
+              seekRef.current = null;
+              const link = linkRef.current;
+              if (roomFight.host) window.setTimeout(() => link?.send({ t: 'end' }), 4000);
+            } else if (roomFight.matched) endSeek(roomFight.host);
+            else if (roomFight.host) linkRef.current?.send({ t: 'end' });
+          };
+          if (live?.ticket) {
+            endRanked(r, live.ticket, live.format, live.rival.name, 'matched', roomFight.party);
+            after();
+            return;
+          }
           let rating: RatingOutcome | null = null;
           if (live) {
             const was = standingOf(latest.current, live.format);
             clearLive();
             rating = r.draw ? { before: was.rating, after: was.rating, bestBefore: was.best, bestAfter: was.best, rankUp: null, streak: 0 } : settleFor(live.format, live.rivalRating, r.won, 1, live.ourRating);
-            if (rating.rankUp) engine.sound.play('levelup');
+            if (rating.rankUp) engine.sound.play('ring-levelup');
           }
           const track = keepMatch(r, live?.format ?? (Math.max(1, Math.min(3, Math.ceil(roomFight.setup.fighters.length / 2))) as Format), rating, live?.rival.name);
-          setResult({ r, rating, rival: live?.rival.name, kind: roomFight.matched ? 'matched' : 'room', track });
-          if (roomFight.matched) endSeek(roomFight.host);
-          else if (roomFight.host) linkRef.current?.send({ t: 'end' });
+          setResult({ r, rating, rival: live?.rival.name, kind: roomFight.matched ? 'matched' : 'room', track, party: roomFight.party });
+          after();
           setRoomFight(null);
         }}
       />
@@ -763,13 +1035,17 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
         lesson={result.r.lesson}
         track={result.track ?? null}
         tutorial={result.kind === 'tutorial'}
-        againLabel={result.kind === 'room' ? 'Back to the room' : result.kind === 'tutorial' ? 'Find a real match' : 'Fight again'}
+        why={result.why}
+        againLabel={result.kind === 'room' ? 'Back to the room' : result.kind === 'tutorial' ? 'Find a real match' : result.party && !partyShown?.leader ? 'Back to the party' : 'Fight again'}
         onAgain={() => {
-          if (result.kind !== 'room') findMatch();
-          else {
+          if (result.kind === 'room') {
             setResult(null);
             setPage('friends');
-          }
+          } else if (result.party && !partyShown?.leader) {
+            // (the party's leader starts its next search: everyone else waits for it, with the fight's layer open)
+            setResult(null);
+            setPlayOpen(true);
+          } else findMatch();
         }}
         onSetup={() => {
           setResult(null);
@@ -788,8 +1064,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
     );
   }
 
-  const title = page === 'friends' ? 'With friends' : 'The Ring';
-  const sub = page === 'friends' ? 'A private room. Friendly matches don’t change your rating.' : `Your class, your playstyle, your talents. ${me ? 'Saved to your account as you go.' : 'Saved on this device. Sign in to keep it on every device.'}`;
+  const title = page === 'friends' ? 'Custom game' : 'The Ring';
+  const sub = page === 'friends' ? 'A private room for friends, on any sides. No rating changes hands here: for ranked as a team, invite friends from the fight’s window.' : `Your class, your playstyle, your talents. ${me ? 'Saved to your account as you go.' : 'Saved on this device. Sign in to keep it on every device.'}`;
   // (the main screen is laid out as the Vigil's lobby and the Rift Trials' are, in their styles (rb-vlobby): the
   // classes, the hero large on a dais, and beside them how the hero fights, the playstyles, the bar and the talents,
   // always in sight; at the foot the fight chosen and one gold button. The owner: "make the ui selection in the ring
@@ -853,18 +1129,18 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
 
             <footer className="rb-vlobby-foot rb-ringvl-go">
               {/* the fight chosen, always in sight; pressed, the layer where it is chosen (PlayLayer) */}
-              <button className="rb-ringvl-mode" onClick={() => setPlayOpen(true)} data-tut="fight" aria-haspopup="dialog" aria-label={`${format}v${format}, rating ${standing.rating}, ${rank.name}, ${arenaName}. Change the fight`}>
+              <button className="rb-ringvl-mode" onClick={() => setPlayOpen(true)} data-tut="fight" aria-haspopup="dialog" aria-label={`${ladder === 'guest' ? 'Practice' : 'Ranked'} ${fightFormat}v${fightFormat}, rating ${standing.rating}, ${rank.name}, ${arenaName}. Change the fight`}>
                 <b>
-                  {format}v{format}
+                  {fightFormat}v{fightFormat}
                 </b>
                 <span>
                   <em>{standing.rating}</em> {rank.name}
                 </span>
-                <small>{format > 1 ? `${matesWord(save.mates?.[format], format)} · ${arenaName}` : arenaName}</small>
+                <small>{partyShown ? `Party of ${Math.max(1, partyShown.members.length)} · ${arenaName}` : fightFormat > 1 ? `${matesWord(save.mates?.[fightFormat], fightFormat)} · ${arenaName}` : arenaName}</small>
                 <i aria-hidden="true">Change</i>
               </button>
-              <button className={`rb-btn is-gold is-big${barred ? ' is-barred' : ''}`} onClick={findMatch} aria-disabled={barred || undefined} data-tut="go">
-                {!ready ? `Choose ${SLOTS - bar.length} more abilities` : barred ? 'No healers in 1v1' : `Find a ${format}v${format} match`}
+              <button className={`rb-btn is-gold is-big${barred || follower ? ' is-barred' : ''}`} onClick={() => (follower ? setPlayOpen(true) : findMatch())} aria-disabled={barred || undefined} data-tut="go">
+                {!ready ? `Choose ${SLOTS - bar.length} more abilities` : barred ? 'No healers in 1v1' : follower ? 'Waiting for the party leader' : `Find a ${ladder === 'guest' ? '' : 'ranked '}${fightFormat}v${fightFormat} match`}
               </button>
             </footer>
             {(barred || seekNote) && !playOpen && (
@@ -879,9 +1155,11 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
 
         {playOpen && page === 'play' && (
           <PlayLayer
-            format={format}
-            onFormat={setFormat}
-            save={save}
+            format={fightFormat}
+            onFormat={chooseFormat}
+            standing={(f) => (user ? rankedStanding(rkMine, f) : standingOf(save, f))}
+            ladder={ladder}
+            season={seasonNow}
             pick={pick}
             bar={bar}
             mates={mates}
@@ -891,8 +1169,13 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
             note={barred ? BARRED_WHY : seekNote}
             ready={ready}
             barred={barred}
+            party={partyShown}
+            onInvite={() => setInviteOpen(true)}
+            onLeaveParty={leaveRoom}
             onFind={findMatch}
-            onFriends={() => {
+            onCustom={() => {
+              // (a custom game is a room of its own: out of the party first)
+              if (roomMode === 'party') leaveRoom();
               setPlayOpen(false);
               setPage('friends');
             }}
@@ -900,6 +1183,9 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
             onClose={() => setPlayOpen(false)}
           />
         )}
+        {inviteOpen && page === 'play' && <InviteDialog engine={engine} format={fightFormat} code={partyShown?.code || null} asked={asked} onInvite={(id) => void inviteFriend(id)} onJoin={joinParty} onClose={() => setInviteOpen(false)} />}
+        {/* (a friend's invitation to team up here is answered here, where the player is looking) */}
+        {page === 'play' && !look && <InviteCards engine={engine} only="sigilfall-ring" onTake={takeInvite} />}
         {setupOpen && (
           <div className="rb-ring-dialog-wrap rb-ringvl-setupwrap" role="dialog" aria-modal="true" aria-label="Your setup" onClick={() => setSetupOpen(false)}>
             <div className="rb-ring-dialog rb-ringvl-setupdialog" onClick={(e) => e.stopPropagation()}>
@@ -912,7 +1198,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
           </div>
         )}
 
-        {look && <Seeking look={look} format={format} cls={pick} onCancel={() => endSeek()} />}
+        {look && <Seeking look={look} format={fightFormat} cls={pick} member={follower} onCancel={() => (follower ? leaveRoom() : endSeek())} />}
         {help && <RingHelp onClose={() => setHelp(false)} touch={engine.touchMode} engine={engine} onTutorial={beginTutorial} />}
         {reading && <AbilityCard key={reading.id} ab={reading} cls={pick} bar={bar} talents={talents} onClose={() => setReading(null)} />}
         {tutStep && tut !== null && (
@@ -955,104 +1241,14 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume }: { 
 
 const listed = (names: string[]): string => (names.length < 2 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]!}`);
 
-/**
- * What kind of fight to find, in a layer over the main screen (opened from the fight shown at its foot), all of it in
- * sight at once with nothing to scroll (the owner, 2026-11-17: "make the pop up with the arena choosing easier to
- * grasp, currently i have to scroll which is way too annoying, make better design"). On the left the fight: the
- * format, each with its own rating and rank, how far it is to the next rank, and the teammates the computer brings to a
- * 2v2 or a 3v3; on the right the arena, a picture of each ground to press. Then the ways to play along the foot: find a
- * match, a room with friends, or the tutorial. (The rewards and the season's challenges are on the main screen itself,
- * in its record: RingProgress RecordBar.)
- */
-function PlayLayer(props: {
-  format: Format;
-  onFormat: (f: Format) => void;
-  save: RingSave;
-  pick: ClassId;
-  bar: string[];
-  mates: MateChoice[];
-  onMates: (m: MateChoice[]) => void;
-  map: string;
-  onMap: (id: string) => void;
-  note: string;
-  ready: boolean;
-  barred: boolean;
-  onFind: () => void;
-  onFriends: () => void;
-  onTutorial: () => void;
-  onClose: () => void;
-}) {
-  const { format, save, bar } = props;
-  const standing = standingOf(save, format);
-  const rank = rankOf(standing.best);
-  const next = nextRank(standing.best);
-  return (
-    <div className="rb-ring-dialog-wrap rb-ringvl-playwrap" role="dialog" aria-modal="true" aria-label="Choose your fight" onClick={props.onClose}>
-      <div className="rb-ring-dialog rb-ringvl-play" onClick={(e) => e.stopPropagation()} style={{ ['--r' as string]: rank.color }}>
-        <header className="rb-ringvl-playhead">
-          <h2>Choose your fight</h2>
-          <button className="rb-iconbtn" onClick={props.onClose} aria-label="Close" title="Close">
-            ✕
-          </button>
-        </header>
-        <div className="rb-ringvl-playbody">
-          <section className="rb-ringvl-playfight" aria-label="The fight">
-            <div className="rb-rp-formats" role="radiogroup" aria-label="Format" data-tut="formats">
-              {FORMATS.map((f) => {
-                const st = standingOf(save, f);
-                const r = rankOf(st.best);
-                return (
-                  <button key={f} role="radio" aria-checked={f === format} className={`rb-rp-format${f === format ? ' is-on' : ''}`} style={{ ['--r' as string]: r.color }} onClick={() => props.onFormat(f)}>
-                    <strong>
-                      {f}v{f}
-                    </strong>
-                    <b>{st.rating}</b>
-                    <small>{r.name}</small>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="rb-rp-rank" data-tut="rank">
-              <span>
-                <b>{rank.name}</b> · {standing.wins} wins, {standing.losses} losses
-                {standing.streak >= 2 ? ` · ${standing.streak} in a row` : ''}
-              </span>
-              {next && (
-                <span className="rb-rp-next">
-                  <i style={{ width: `${Math.max(0, Math.min(100, ((standing.best - rank.at) / (next.at - rank.at)) * 100))}%` }} />
-                  <small>
-                    {next.name} at {next.at}
-                  </small>
-                </span>
-              )}
-            </div>
-            {format > 1 && <MatesPicker format={format} cls={props.pick} bar={bar} mates={props.mates} onMates={props.onMates} />}
-          </section>
-          <ArenaChoice map={props.map} onPick={props.onMap} />
-        </div>
-        {props.note && (
-          <p className="rb-rp-error" role="status">
-            {props.note}
-          </p>
-        )}
-        <footer className="rb-ringvl-playfoot">
-          <button className={`rb-btn is-gold is-big${props.barred ? ' is-barred' : ''}`} onClick={props.onFind} aria-disabled={props.barred || undefined}>
-            {!props.ready ? `Choose ${SLOTS - bar.length} more abilities` : props.barred ? 'No healers in 1v1' : `Find a ${format}v${format} match`}
-          </button>
-          <button className="rb-btn" onClick={props.onFriends}>
-            With friends
-          </button>
-          <button className="rb-btn" onClick={props.onTutorial} data-tut="tutorial">
-            Tutorial
-          </button>
-        </footer>
-      </div>
-    </div>
-  );
+/** A party's seats in its room: while it is in the queue, those it went in with; before, everyone on the player's side. */
+function partySeats(v: RoomView): RoomView['seats'] {
+  const mine = v.seats.find((x) => x.you)?.pick?.team ?? 0;
+  return v.seats.filter((x) => x.pick && (v.queued !== null ? v.party.includes(x.n) : x.pick.team === mine));
 }
 
 /** The waiting screen of a search: who has turned up, how long is left, and a way out. */
-function Seeking({ look, format, cls, onCancel }: { look: SeekLook; format: Format; cls: ClassId; onCancel: () => void }) {
+function Seeking({ look, format, cls, member, onCancel }: { look: SeekLook; format: Format; cls: ClassId; member?: boolean; onCancel: () => void }) {
   const here = listed(look.others);
   const more = format * 2 - 1 - look.others.length;
   return (
@@ -1071,7 +1267,7 @@ function Seeking({ look, format, cls, onCancel }: { look: SeekLook; format: Form
         </p>
         {!look.full && (
           <button className="rb-btn" onClick={onCancel}>
-            Cancel
+            {member ? 'Leave the party' : 'Cancel'}
           </button>
         )}
       </div>

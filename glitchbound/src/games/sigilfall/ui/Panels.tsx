@@ -45,6 +45,7 @@ import { Titled } from './Titled';
 import { WARDENS } from '../data/wardens';
 import { compareWith, linesOnlyIn, statRows } from './compare';
 import { PartyPanel } from './Party';
+import { Journal } from './Journal';
 import { GAME_VERSION } from '../data/version';
 import { StorePanel, useStoreOpen } from './Store';
 import { PRESETS } from '../progress/presets';
@@ -820,7 +821,29 @@ function scaleMod(m: TalentNode['mods'][number], rank: number): TalentNode['mods
 
 /* -------------------------------------------------------------- quests */
 
+/** The Quests page: the quests under way, or the Journal (the tale so far, the crown, the things kept). */
 function QuestsPanel({ engine }: { engine: SigilEngine }) {
+  const [view, setView] = useState(engine.questsView);
+  const show = (v: 'quests' | 'journal'): void => {
+    engine.showQuestsView(v);
+    setView(v);
+  };
+  return (
+    <>
+      <div className="rb-seg rb-quests-views" role="tablist" aria-label="Quests or Journal">
+        <button role="tab" aria-selected={view === 'quests'} className={`rb-btn is-small${view === 'quests' ? ' is-gold' : ''}`} onClick={() => show('quests')}>
+          Quests
+        </button>
+        <button role="tab" aria-selected={view === 'journal'} className={`rb-btn is-small${view === 'journal' ? ' is-gold' : ''}`} onClick={() => show('journal')}>
+          Journal
+        </button>
+      </div>
+      {view === 'journal' ? <Journal engine={engine} /> : <QuestList engine={engine} />}
+    </>
+  );
+}
+
+function QuestList({ engine }: { engine: SigilEngine }) {
   const h = engine.hero!;
   const here = engine.world?.region.id;
   const active = QUESTS.filter((q) => questState(h, q.id) === 'active' || questState(h, q.id) === 'ready');

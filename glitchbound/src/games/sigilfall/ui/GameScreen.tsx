@@ -11,7 +11,8 @@ import { REGIONS, TIERS } from '../data/regions';
 import { SKILLS } from '../data/skills';
 import type { ResourceDef } from '../data/types';
 import type { SigilEngine } from '../engine';
-import { currentObjective, freePoints, HOME, isReplay, levelGated, questProgress, questState, SLOT_LEVELS, trackedQuest } from '../progress/character';
+import { currentObjective, freePoints, HOME, isReplay, levelGated, questProgress, questState, sigilCount, SLOT_LEVELS, trackedQuest } from '../progress/character';
+import { SIGIL_LORE, SIGIL_ORDER } from '../data/chronicle';
 import { SPEC_LEVEL } from '../data/talents';
 import { modLines } from '../progress/describe';
 import { isMainQuest, questSteps, turnInNpc } from '../progress/handin';
@@ -30,6 +31,7 @@ import { boxesMeet } from '../render/speech';
 import { DesktopBar } from './DesktopBar';
 import { InviteCards } from './Friends';
 import { Panels } from './Panels';
+import { StoryPages } from './StoryPages';
 import { Minimap } from './Minimap';
 import { TipOverlay } from './Tips';
 import { TouchControls } from './Touch';
@@ -39,6 +41,9 @@ import { hide, part, say } from './hudWrite';
 
 /** Registers a per-frame DOM update (no React render per frame). */
 /** A scene playing (sim/scene.ts): bars top and bottom over a clean picture (the HUD steps aside), and a way to skip it. */
+/** How long a scene's title stays up before it fades (ms). */
+const TITLE_HOLD_MS = 4200;
+
 function SceneBars({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLDivElement>(null);
   const title = useRef<HTMLDivElement>(null);
@@ -47,6 +52,7 @@ function SceneBars({ engine }: { engine: SigilEngine }) {
   const caption = useRef<HTMLElement>(null);
   const hint = useRef<HTMLSpanElement>(null);
   const shown = useRef('');
+  const titleAt = useRef(0);
   const told = useRef('');
   useFrame(engine, (w) => {
     if (!ref.current) return;
@@ -71,10 +77,12 @@ function SceneBars({ engine }: { engine: SigilEngine }) {
     const key = t ? `${t.text}|${t.sub ?? ''}` : '';
     if (title.current && key && key !== shown.current) {
       shown.current = key;
+      titleAt.current = performance.now();
       say(title.current.firstElementChild!, t!.text);
       say(title.current.lastElementChild!, t!.sub ?? '');
     }
-    title.current?.classList.toggle('is-on', !!t);
+    // (a title card, as a film has one: it comes up, is read, and goes, rather than sitting over the whole scene)
+    title.current?.classList.toggle('is-on', !!t && performance.now() - titleAt.current < TITLE_HOLD_MS);
   });
   return (
     <div className="rb-scene" ref={ref} aria-hidden={!engine.world?.scene}>
@@ -142,7 +150,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
   const w = engine.world;
   const h = engine.hero;
   if (!w || !h) return null;
-  const overlay = ui.panel || ui.dialogue || ui.travel || ui.pause || ui.death || ui.reward;
+  const overlay = ui.panel || ui.dialogue || ui.travel || ui.pause || ui.death || ui.reward || ui.story;
   return (
     <div className={`rb-ui${engine.touchMode ? ' is-touch' : ' is-mouse'}${engine.settings.lefty ? ' is-lefty' : ''}${engine.storyTalk() ? ' is-talk' : ''}${ui.card?.act ? ' is-act' : ''}${ui.boss ? ' is-boss' : ''}`}>
       <Hud engine={engine} />
@@ -150,7 +158,8 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
       <ProcAura engine={engine} />
       {ui.boss && <BossBar engine={engine} />}
       {engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}
-      {!ui.dialogue && <Toasts engine={engine} />}
+      {/* (not over a page of the story: the news waits for it, and comes after) */}
+      {!ui.dialogue && !ui.story && <Toasts engine={engine} />}
       {/* a friend asking the player into their party (ui/Friends.tsx): over everything, a menu too */}
       {!engine.world?.scene && <InviteCards engine={engine} />}
       {/* (on touch the announcements stack in a strip along the top, clear of the hero; on a mouse each keeps its place) */}
@@ -187,6 +196,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
       )}
       {/* (not across the death screen: a hint about the bag came up over "You fell", two texts in one place) */}
       {ui.tip && !ui.death && <TipOverlay engine={engine} />}
+      {ui.story && <StoryPages engine={engine} />}
       <RotateHint engine={engine} />
     </div>
   );
@@ -280,6 +290,7 @@ function Hud({ engine }: { engine: SigilEngine }) {
             {region.name}
             {w.keyRun ? <b className="rb-mplus"> · Riftstone +{w.keyRun.key}</b> : w.tier > 0 && <b style={{ color: TIERS[w.tier]!.color }}> · {TIERS[w.tier]!.name}</b>}
           </span>
+          <HudCrown engine={engine} />
         </div>
         {!engine.touchMode && (
           <button className="rb-potion" onClick={() => engine.drinkPotion()} disabled={h.potions <= 0} aria-label={`Drink a potion (${h.potions} left)`}>
@@ -312,6 +323,25 @@ function Hud({ engine }: { engine: SigilEngine }) {
       <Minimap engine={engine} />
       <div className="rb-encounter" ref={enc} hidden />
     </>
+  );
+}
+
+/**
+ * The sigils won, under the hero's bars: seven gems, lit as each is won (the owner: "gaining a sigil currently is
+ * unknown to me ... in my inventory tab (if i check at all) i see 4/7 sigils"). A tap opens the Journal.
+ */
+function HudCrown({ engine }: { engine: SigilEngine }) {
+  const h = engine.hero!;
+  const n = sigilCount(h);
+  if (!n || engine.world?.keyRun) return null;
+  const won = new Set(h.perks);
+  return (
+    <button className="rb-hud-crown" onClick={() => engine.openJournal()} aria-label={`Sigils of the Crown: ${n} of 7. Open the Journal`} title={`Sigils of the Crown: ${n} of 7`}>
+      {SIGIL_ORDER.map((id) => (
+        <i key={id} className={`rb-crown-gem${won.has(id) ? ' is-won' : ''}`} style={{ '--gem': SIGIL_LORE[id].color } as CSSProperties} />
+      ))}
+      <em>{n}/7</em>
+    </button>
   );
 }
 

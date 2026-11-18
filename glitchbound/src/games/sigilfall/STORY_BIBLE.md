@@ -1,4 +1,27 @@
-# Sigilfall — Story Bible: *The Crown of Ash and Starlight* (v3)
+# Sigilfall — Story Bible: *The Crown of Ash and Starlight* (v4)
+
+**v4 (2026-11-18): one tale, told darker, and every part of it seen.** The owner: the dialogue was still confusing,
+the cinematics cut off too fast (the Tear), exploring led nowhere and then back again, a sigil won went unnoticed ("i
+do a dungeon and suddenly in my inventory tab ... i see 4/7 sigils"), and the story should be "flowy, dark and similar
+to the wow/lotr one". v4 keeps the v3 canon below and changes how it is told:
+
+- **The narrator** (`data/chronicle.ts` TALES): each act opens on a page of the tale so far and what the hero sets out
+  to do; the Prologue's page tells the star, the two crowns, Vaelor's grief and the seven sigils before the first
+  word at the gate. The Journal (Quests → Journal) keeps every page, the crown of seven and every thing found.
+- **Every ending is seen**: a quest that pays out in the world shows its reward's words as a page (engine.ts
+  StoryPage `deed`), with what comes next. In v3 these were only ever an XP toast.
+- **Things found** (`find` on a quest, data/types.ts Keepsake): every quest that sends the hero to look somewhere
+  finds a letter, an order, a page or a relic there, shown with its words, and glinting on the ground until found.
+- **The Sigil Rite**: a sigil won takes the whole screen: where it lay, its light, the memory it holds and the memory
+  it took from Elyra (`SIGIL_LORE`), and the crown of seven filling up. The HUD shows the crown under the hero's bars.
+- **The enemy is named at the end of the Prologue**: Morgrave's journal names the Pale Herald, the Hallow King and the
+  seven sigils, and Maren tells the old story at dawn. Later acts deepen what the player already knows.
+- **The Veil's price** is the night of the raid on Briarhollow, the night Elyra met the hero (v3 had none).
+- **Scenes take their time** (longer lines and shots, the land holds still while one plays) and every turn of the
+  story is on the screen: Elyra taken at the Tear is a scene, not shouts in a fight.
+- **No ping-pong**: at the Breach Camp the cipher is taken from the voidcallers and read on the spot; the Tearborn is
+  fought where the Herald left you. See §4 for the lands as v4 plays them.
+
 
 This is the one canon. It replaces the old "Hollow King and the Rift" telling (WORLD.md now only keeps the geography)
 and the v2 outline. v3 tells the story through **fifteen lands** instead of twenty-seven, and stages **every step of
@@ -113,7 +136,7 @@ it saw (the player sees it with her: `vision` scenes).
 | **Sun** | the Tomb of the Sun King (Sunscorch) | the Sun King, a warden-king of the desert sealed in his tomb with it | the plague ship coming into Vaelmoor's harbor, and the man who let it in | the color of Briarhollow's orchard in spring |
 | **Thorns** | the Thorn Court (Glimmerwood) | the first Thistlemourn | Vaelor at his children's bedside, the night he broke his crown | Thessa's face (she knows the name) |
 | **Frost** | the Vault of Rime (Rimeheld) | Jarl Ingrith the Unthawed, frozen in the vault with it | the eight wardens at the border; seven ride away and one stays | her own birthday |
-| **Veil** | the Tear (the Shattered Vale) | Magister Orla, who sealed the Tear with it | Ser Edric holding the Gloam Gate alone at dusk | — (taken with her by the Herald; won back at the Gloam Gate) |
+| **Veil** | the Tear (the Shattered Vale) | Magister Orla, who sealed the Tear with it | Ser Edric holding the Gloam Gate alone at dusk | the night of the raid on Briarhollow, the night she met the hero (v4; taken with her by the Herald, won back at the Gloam Gate, where its Rite plays) |
 | **Tides** | the drowned altar of Hollowmere | Queen Ysane's own maid, Bettany, who stayed | Ysane, dying, asking Vaelor to let her go | the hero's name |
 
 **The last sigil is the King's.** Vosk carried the Sigil of Stone north and laid it at Vaelor's feet, and Vaelor set
@@ -185,7 +208,7 @@ sing.
 **Thornvale: Millbrook** (8–14) — farms, the mill bridge, and a gang paid in coin that weighs nothing.
 
 1. `south-road` **Millbrook** — Reeve Aldous; the bridge barricaded by the Gallows Gang, a cart turned back.
-2. `kettle-farm` **Ashes at Kettle Farm** — Tobin's farm burned by Red Caps; the gang's orders in the ashes.
+2. `kettle-farm` **Ashes at Kettle Farm** — the Kettles' farm burned by Red Caps; the gang's orders, in thieves' cant, on a dead Red Cap by the well.
 3. `thieves-cant` **Thieves' Cant** — the orders are in a cant nobody can read; Pim knows someone who can:
    **Nyx**. *Scene: Nyx on the inn's roof, reading by moonlight.* **"'Hunt the bell-chapels. Bring me the warm
    iron.' Signed with no name. Grey ink. You lot are in trouble."** First sign that the Host hunts the sigils.
@@ -201,7 +224,7 @@ sing.
 1. `the-broken-caravan` **Refugees on the Road** — a caravan burned in the grass; eight-year-old Marit and her
    wheelwright uncle Hale. *escort* them to Hearthstead.
 2. `riders-in-the-grass` **Riders in the Grass** — *ambush*: Ashen riders out of the grass; **Rider-Captain Vosk**
-   watches from a ridge and rides away. **"Count their walls, not their swords."**
+   watches from a ridge and rides away. Dunmore: **"He's counting our walls."**
 3. `the-clan-stones` **The Clan Stones** — the centaur clans' standing stones remember the star's fall; Marshal
    Dunmore admits Hearthstead's hall was built over a shrine **"older than the town."** The sigil under it wakes:
    Elyra feels it from a mile off.
@@ -209,7 +232,7 @@ sing.
    Dunmore's riders on screen; then `hearth-the-ram` **The Ram**: Elyra's light breaks it.
 5. `hearth-the-shrine` **The Empty Shrine** — in the smoke Vosk took the **Sigil of Stone** (the hearthstone itself) from the shrine by the well.
    *Scene: the empty niche, a vision fragment (two crowns forged) cut off as the sigil leaves.* Then
-   `orders-from-the-north` **Orders from the North**: Maren reads the courier's soaked letter aloud: the King's
+   `orders-from-the-north` **Orders from the North**: Old Gaius reads Vosk's bone-case orders in Vaelmoor's script (v4; Maren reads the courier's dried letter at the end of Thornvale): the King's
    courier was riding to warn the Crown City the sigils were being hunted, **and someone in the city has been hiding
    the letters.**
 
@@ -325,7 +348,7 @@ Herald's spire in the west, the lamps of Lastlight, and the Gloam Gate at the ro
 3. `wood-the-children` **Two Names in the Snow** — *event*: the echoes of **Lark and Edda** playing in the snow;
    the Host comes for them because Vaelor calls them. **"Papa says we're going home soon."**
 4. `the-weeping-tree` / `the-weeping-lord` **The Weeping Lord** — *boss*: Lord Halvard of the Wardens' Watch, who
-   would not kneel to the Ash Crown and has held the wood against his own king for three hundred years, losing to
+   Aster's warden-lord, who would not kneel to the Ash Crown and has held the wood against the Hallow King for three hundred years, losing to
    the violet at last. Laid to rest, he says the seven sigils must be raised together, and that Vaelor still goes
    to Hollowmere.
 
@@ -421,3 +444,92 @@ quests open on their boss, and every land's chain closes on one (`data/scenes-st
 - The hero has no lines; companions react to what the hero did.
 - American spelling for player-facing text; typographic apostrophes in text.
 - Our names only (LEGAL_REVIEW.md): the villain is the **Hallow King**, never anything like another game's knight.
+
+---
+
+## 8. v4: the things found, and the flow
+
+Every quest that sends the hero to look somewhere finds something there (`find`, data/types.ts Keepsake), shown with its
+words and kept in the Journal. The Tear alone has none: the Veil pulled from the glass is the ambush's opening shot.
+
+| Quest | Found | Kind | |
+| --- | --- | --- | --- |
+| `hidden-grove` | A Note in the Old Oak | note | side |
+| `close-the-rift` | Morgrave’s Journal | page | story |
+| `the-regents-council` | The Courier’s Letter, Dried | letter | story |
+| `the-seventh-sigil` | The Empty Scarf | relic | story |
+| `briar-the-seal` | The Courier’s Letter | letter | story |
+| `city-the-cellar` | Crane’s Ledger | page | story |
+| `festival-the-lanterns` | A Paper Star | token | story |
+| `festival-the-catacombs` | The Wardens’ Map | map | story |
+| `kettle-farm` | The Gang’s Orders | orders | story |
+| `thieves-cant` | The Orders, as Nyx Reads Them | orders | story |
+| `the-bandit-king` | A Coin of Ash-Gold | token | story |
+| `tobins-fields` | The Flock’s Bell | token | side |
+| `the-old-barrows` | A Broken Grave-Seal | relic | story |
+| `lay-the-grey-lady` | The Grey Lady’s Locket | relic | story |
+| `fern-retaken` | The Regent’s Order | orders | story |
+| `tusker-gully` | Grandad Tanner’s Arrow | relic | side |
+| `appleby-apples` | The Applebys’ Note | note | side |
+| `the-broken-caravan` | A Grey-Stained Clan Feather | token | story |
+| `the-clan-stones` | The Memory in the Oldest Stone | page | story |
+| `hearth-the-shrine` | Vosk’s Bone Case | relic | story |
+| `orders-from-the-north` | Vosk’s Orders | orders | story |
+| `ashby-farm` | Garrick’s Note | note | side |
+| `the-last-lamp` | A Black-Rose Shield-Boss | relic | story |
+| `the-kings-mound` | The Roll of the Ninefold Watch | page | story |
+| `sir-corvane` | The Countermanded Order | orders | story |
+| `houndsmound` | A Hound’s Collar | relic | side |
+| `the-sandscribe` | A Raider’s Linen Scrap | note | story |
+| `the-fallen-obelisk` | The Obelisk’s Carving | page | story |
+| `the-sunken-gate` | The Host’s Dig Orders | orders | story |
+| `the-sand-ship` | The Sand-Ship’s Log | note | side |
+| `the-necropolis-of-ras` | The Dawn Temple’s Prayer | page | side |
+| `the-withered-ring` | A Silent Reed-Pipe | relic | story |
+| `the-pale-pavilion` | The Herald’s Bargain | letter | story |
+| `the-moonwell` | A Blighted Thorn | relic | side |
+| `the-moth-glade` | A Grey Moth Wing | relic | side |
+| `the-harts-trail` | A Tuft of White Hair | relic | side |
+| `the-giants-hearth` | A Rune-Stone from the Vault Door | relic | story |
+| `the-vault-door` | Hrimfang’s Tally | note | story |
+| `thread-under-the-tear` | Aurel’s Harbor Badge | relic | side |
+| `the-breach-camp` | The Singers’ Hymn | page | story |
+| `the-heralds-cipher` | The Voidcallers’ Cipher | letter | story |
+| `the-heart-of-the-tear` | Maren’s Letter | letter | story |
+| `the-big-one` | Davin’s Last Tally | note | side |
+| `the-vale-watch` | A Sentry’s Last Note | note | side |
+| `gate-the-prison-map` | The Herald’s Prison Map | map | story |
+| `ashes-of-ashby` | A Child’s Drawing | page | story |
+| `the-breach` | General Morvain’s Siege Orders | orders | story |
+| `the-knights-chapel` | The Burial Hymn, Changed | page | side |
+| `gloam-nyx-confesses` | The Letter Nyx Kept | letter | story |
+| `gloam-the-gate` | Ser Edric’s Cairn-Stone | relic | story |
+| `the-black-pool` | Tam’s Lamp-Tag | token | side |
+| `the-wardens-rest` | Lord Halvard’s Oath | page | story |
+| `the-frozen-hamlet` | A Letter to Papa | letter | story |
+| `the-weeping-tree` | A Ribbon from the Weeping Tree | relic | story |
+| `the-weeping-lord` | The Herald’s Forge-Order | orders | story |
+| `the-hanging-oaks` | A Deserter’s Letter | letter | side |
+| `forges-on-the-rim` | A Mold of the Pale Crown | relic | story |
+| `the-throne-gate` | The Overseer’s Tally | note | story |
+| `the-drake-roost` | Ulf’s Slate | note | side |
+| `across-the-mere` | A Ferry Penny | token | story |
+| `the-necropolis` | Ysane’s Last Letter | letter | story |
+| `a-pilgrims-errand` | Notes on the Tower Steps | note | side |
+| `keepsakes-of-elsmere` | Wenna’s Locket | relic | side |
+| `the-duskspire-gate` | The Wardens’ Lock-Plate | page | story |
+| `old-wintersend` | The Notice on the Hall Door | note | side |
+| `a-hound-named-bran` | Bran’s Collar | token | side |
+
+Flow changes in v4 (each removes a walk back with nothing in it, or puts a turn of the story on the screen):
+
+- The Shattered Vale: the cipher is taken from the voidcallers at the Breach Camp and Nyx reads it there
+  (`the-heralds-cipher` is a hunt now); the Tearborn is fought where the Herald left you and pays out there.
+- The Tear: the Veil pulled out and the Herald stepping through are the ambush's own shots; Elyra taken is a scene
+  (`vale-elyra-taken`) that plays as the ambush ends, before the Tearborn rises (World.refreshStoryState holds back foes
+  the story brings in while a scene is due there) and before the page of what the ambush came to.
+- The Thorn Court: the Sigil of Thorns is won with the prince (either answer), so its Rite comes before its vision.
+- The Barrows: the countermanded order goes straight west to the Regent. Fernstead retaken pays out in Fernstead.
+  Highwall: Hollowbane is followed from Ashby's tracks. The Weeping Woods: Orren carries Miro's candle to the tree.
+  The Pale Reach: Vosk's saddlebag is searched where he fell.
+- Elyra's Veil price: the night of the raid on Briarhollow, the night she met the hero (`gloam-the-forgetting`).

@@ -45,12 +45,17 @@ describe('Sigilfall rankings: the server', () => {
     for (const no of ['', 'gold', 'ring:mage', 'ring:quad', 'ring:1v1', 'stone:warrior', 'trial:', 'trial:Mage', 'trial:a', "vigil:x'; DROP", 7, null]) expect(boardOf(no), String(no)).toBeNull();
   });
 
-  it('keeps each of the Ring’s formats on a board of its own', async () => {
-    await post('ana', [
+  it('keeps each of the Ring’s formats on a board of its own, written by the ranked ladder and never by a device', async () => {
+    // (a device's own word for its Ring rating is refused: the ladder the server keeps writes these, server/ring.ts)
+    const r = await post('ana', [
       { board: 'ring:solo', score: 1320 },
-      { board: 'ring:trio', score: 1180 },
+      { board: 'ring', score: 2400 },
     ]);
-    await post('ben', [{ board: 'ring:solo', score: 1410 }]);
+    expect(r.data.kept).toBe(0);
+    const put = (who: string, b: string, score: number) => db.sqlite.prepare("INSERT INTO sigilfall_ranks (user_id, board, score, at) SELECT id, ?, ?, 1 FROM users WHERE email = ?").run(b, score, `${who}@example.com`);
+    put('ana', 'ring:solo', 1320);
+    put('ana', 'ring:trio', 1180);
+    put('ben', 'ring:solo', 1410);
     expect((await board('ring:solo')).data.rows.map((r) => r.score)).toEqual([1410, 1320]);
     expect((await board('ring:duo')).data.rows).toEqual([]);
     expect((await board('ring:trio')).data.rows.map((r) => r.score)).toEqual([1180]);
@@ -73,11 +78,11 @@ describe('Sigilfall rankings: the server', () => {
   });
 
   it('a row only ever goes up', async () => {
-    await post('ana', [{ board: 'ring', score: 1400 }]);
-    await post('ana', [{ board: 'ring', score: 1200 }]);
-    expect((await board('ring')).data.rows[0]!.score).toBe(1400);
-    await post('ana', [{ board: 'ring', score: 1500 }]);
-    expect((await board('ring')).data.rows[0]!.score).toBe(1500);
+    await post('ana', [{ board: 'vigil', score: 1400 }]);
+    await post('ana', [{ board: 'vigil', score: 1200 }]);
+    expect((await board('vigil')).data.rows[0]!.score).toBe(1400);
+    await post('ana', [{ board: 'vigil', score: 1500 }]);
+    expect((await board('vigil')).data.rows[0]!.score).toBe(1500);
     expect((db.sqlite.prepare('SELECT COUNT(*) AS n FROM sigilfall_ranks').get() as { n: number }).n).toBe(1);
   });
 
@@ -132,10 +137,10 @@ describe('Sigilfall rankings: studio and QA accounts', () => {
       cookies[who] = s.cookie.split(';')[0]!;
     }
     const post = (who: string, entries: unknown) => postRanks({ request: new Request(`${ORIGIN}/api/sigilfall/ranks`, { method: 'POST', headers: { origin: ORIGIN, cookie: cookies[who]!, 'content-type': 'application/json' }, body: JSON.stringify({ entries }) }), env, params: {} });
-    const read = async (who: string) => (await (await getRanks({ request: new Request(`${ORIGIN}/api/sigilfall/ranks?board=ring:solo`, { headers: { origin: ORIGIN, cookie: cookies[who]! } }), env, params: {} })).json()) as Board;
-    await post('ana', [{ board: 'ring:solo', score: 1300 }]);
-    await post('ben', [{ board: 'ring:solo', score: 1200 }]);
-    await post('cy', [{ board: 'ring:solo', score: 1500 }]);
+    const read = async (who: string) => (await (await getRanks({ request: new Request(`${ORIGIN}/api/sigilfall/ranks?board=vigil`, { headers: { origin: ORIGIN, cookie: cookies[who]! } }), env, params: {} })).json()) as Board;
+    await post('ana', [{ board: 'vigil', score: 1300 }]);
+    await post('ben', [{ board: 'vigil', score: 1200 }]);
+    await post('cy', [{ board: 'vigil', score: 1500 }]);
     const seen = await read('ana');
     expect(seen.rows.map((r) => [r.score, !!r.staff])).toEqual([
       [1500, true],

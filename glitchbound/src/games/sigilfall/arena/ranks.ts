@@ -41,6 +41,16 @@ export const nextRank = (rating: number): (typeof RANKS)[number] | null => RANKS
 
 export const RING_KEY = 'sigilfall.ring.v1';
 
+const DAY = 86_400_000;
+/** The first season begins here (the day they were added), and each is eight weeks long (arena/record.ts). */
+export const SEASON_START = Date.UTC(2026, 10, 16);
+export const SEASON_LENGTH = 56 * DAY;
+/** Which season it is. */
+export const seasonOf = (now: number): number => Math.max(1, 1 + Math.floor((now - SEASON_START) / SEASON_LENGTH));
+export const seasonEnds = (n: number): number => SEASON_START + n * SEASON_LENGTH;
+/** A rating brought halfway back toward where everyone starts, for a new season. */
+export const seasonReset = (rating: number): number => Math.round(1000 + (rating - 1000) / 2);
+
 /** A player's best standing across the formats, for showing off on the title screen. */
 export function topStanding(): Standing {
   try {
@@ -79,15 +89,24 @@ export function bestByFormat(): Partial<Record<Format, number>> {
 
 let best: number | null = null;
 
-/** The best rating this device has seen the player reach, in any format (kept until `forgetBest`: it is asked often). */
+/** Where this device keeps its copy of a signed-in player's ranked standings, as the server last said them (net/ranked.ts). */
+export const RANKED_KEY = 'sigilfall.ring.ranked';
+
+/**
+ * The best rating this device has seen the player reach, in any format: on this device's own ladder, or on the ranked
+ * ladder the server keeps (kept until `forgetBest`: it is asked often). The Ring's rewards follow it.
+ */
 export function bestRating(): number {
   if (best === null) {
-    try {
-      const raw = JSON.parse(localStorage.getItem(RING_KEY) ?? 'null') as { standings?: Record<string, Standing> } | null;
-      best = Object.values(raw?.standings ?? {}).reduce((a, s) => (typeof s?.best === 'number' && s.best > a ? s.best : a), NEW_STANDING.best);
-    } catch {
-      best = NEW_STANDING.best;
-    }
+    const most = (key: string): number => {
+      try {
+        const raw = JSON.parse(localStorage.getItem(key) ?? 'null') as { standings?: Record<string, Standing> } | null;
+        return Object.values(raw?.standings ?? {}).reduce((a, s) => (typeof s?.best === 'number' && s.best > a ? s.best : a), NEW_STANDING.best);
+      } catch {
+        return NEW_STANDING.best;
+      }
+    };
+    best = Math.max(most(RING_KEY), most(RANKED_KEY));
   }
   return best;
 }

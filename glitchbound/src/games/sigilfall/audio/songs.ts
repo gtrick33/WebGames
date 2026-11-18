@@ -23,7 +23,9 @@ export type BassStyle = 'beat' | 'half' | 'oom' | 'walk' | 'pulse' | 'none';
 export type ArpStyle = 'up' | 'broken' | 'harp' | 'strum' | 'pah' | 'pulse' | 'none';
 export type Call = 'owl' | 'crow' | 'frog' | 'wolf' | 'drip' | 'gull' | 'bird' | 'cricket';
 
-export type SongId = MusicTrack | 'boss' | 'title';
+/** The Ring's arenas, each with a piece of its own (audio/tracks.ts RING_MUSIC). */
+export type RingSong = 'ring-sands' | 'ring-frost' | 'ring-forge';
+export type SongId = MusicTrack | 'boss' | 'title' | RingSong;
 
 interface SongDef {
   bpm: number;
@@ -137,7 +139,7 @@ export function parseSong(d: SongDef): Song {
   };
 }
 
-export const SONG_DEFS: Record<SongId, SongDef> = {
+export const SONG_DEFS: Record<Exclude<SongId, RingSong>, SongDef> = {
   /* ------------------------------------------------------------ the menus and the fights */
   title: {
     bpm: 84,
@@ -847,4 +849,6 @@ export const SONG_DEFS: Record<SongId, SongDef> = {
   },
 };
 
-export const SONGS = Object.fromEntries(Object.entries(SONG_DEFS).map(([id, d]) => [id, parseSong(d)])) as Record<SongId, Song>;
+const PARSED = Object.fromEntries(Object.entries(SONG_DEFS).map(([id, d]) => [id, parseSong(d)])) as Record<Exclude<SongId, RingSong>, Song>;
+/** (an arena whose recorded piece can't be had plays the siege's score, as the Ring did before it had its own) */
+export const SONGS: Record<SongId, Song> = { ...PARSED, 'ring-sands': PARSED.siege, 'ring-frost': PARSED.siege, 'ring-forge': PARSED.siege };

@@ -971,10 +971,30 @@ export type Objective =
 export type PerkId = 'mount' | 'satchel' | 'flask' | 'hearth' | SigilId;
 export type SigilId = 'sigil-embers' | 'sigil-tides' | 'sigil-stone' | 'sigil-sun' | 'sigil-frost' | 'sigil-thorns' | 'sigil-veil';
 
+/**
+ * Something the hero finds and keeps: a letter, an order, a page torn from a book, a relic. It comes up as a page of
+ * its own the moment it is found (the words on it as they are written), and stays in the Journal to be read again.
+ * A quest that sends the hero to look somewhere has one, so the hero always knows what they found and why it matters.
+ */
+export interface Keepsake {
+  name: string;
+  kind: 'letter' | 'note' | 'orders' | 'page' | 'map' | 'relic' | 'token';
+  /** What it is, where it was and why it matters, plainly: one to three short sentences. */
+  about: string;
+  /** The words on it (a letter, a note, a carving): each a paragraph, shown as written. */
+  body?: string[];
+  /** Who wrote it, under the words. */
+  sign?: string;
+  /** Which step of the quest finds it (0 is its objective); else it is found when the quest's work is done. */
+  step?: number;
+}
+
 export interface QuestDef {
   id: string;
   name: string;
   giver: string;
+  /** What the hero finds doing it (shown as it is found, kept in the Journal). */
+  find?: Keepsake;
   /** Comes and goes without a toast: a beat its own talk or banner already announces (the Prologue's first moments). */
   quiet?: boolean;
   /** Shown in the quest log. */

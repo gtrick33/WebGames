@@ -109,7 +109,7 @@ const SILAS_VEY: BossDef = {
   ],
   first: { any: ['glitch-shard'] },
   drops: { items: { any: ['glitch-shard', 'amulet-of-echoes', 'shroud-of-duskspire'] }, chance: [0.3, 0.5, 0.75] },
-  intro: 'The Pale Herald’s spymaster in Aster for twenty years. He paid the city’s traitors with Crane’s ash-gold.',
+  intro: 'The Pale Herald’s spymaster in Aster for twenty years. He paid Crane, and every other traitor in the city, in the Herald’s ash-gold.',
 };
 
 const ROYAL_AUDITOR: BossDef = {
@@ -191,7 +191,7 @@ const MAELIS_CRANE: BossDef = {
   ],
   first: { any: ['vaelors-heartstone'] },
   drops: { items: { any: ['shroud-of-duskspire', 'hollowbrand-shard'] }, chance: [0.3, 0.5, 0.8] },
-  intro: 'The Regent’s oldest counsellor, who sold Aster to the Pale Herald. The ash-gold has grown over his hands like scales.',
+  intro: 'The Regent’s oldest counselor, who sold the wardens’ map to the Pale Herald. The ash-gold has grown over his hands like scales.',
 };
 
 export const CROWN_CATACOMBS: DungeonModule = {

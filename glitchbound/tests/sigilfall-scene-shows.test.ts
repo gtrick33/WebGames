@@ -28,7 +28,8 @@ describe('a scene shows what it looks at', () => {
     expect(w.enemies.some((e) => e.def.id === 'grimtusk')).toBe(false);
     const beat = questBeat(w)!;
     expect(beat).toBeTruthy();
-    expect(beat.steps).toContainEqual({ look: 'grimtusk' });
+    // (his den is across the wood: the camera cuts there behind a fade rather than panning over the trees)
+    expect(beat.steps).toContainEqual(expect.objectContaining({ look: 'grimtusk' }));
   });
 
   it('a figure of the boss stands at its mark for the shot: held, no boss bar, and gone when the shot is', () => {

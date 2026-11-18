@@ -151,12 +151,13 @@ describe('The Ring: no healers in 1v1', () => {
     // neither a search for people nor a match with the computer starts
     expect(screen.match(/if \(barred\) return;/g)).toHaveLength(2);
     expect(screen).toMatch(/const findMatch = \(\): void => \{[\s\S]{0,260}if \(barred\) return;/);
-    expect(screen).toMatch(/const enter = \(\): void => \{[\s\S]{0,260}if \(barred\) return;/);
+    expect(screen).toMatch(/const enter = async \(\): Promise<void> => \{[\s\S]{0,260}if \(barred\) return;/);
     // (the reason is on the page for as long as it holds, and gone with another format or playstyle: under the gold
     // button, or in the layer where the fight is chosen while that is open)
     expect(screen).toContain('{(barred || seekNote) && !playOpen && (');
     expect(screen).toContain('note={barred ? BARRED_WHY : seekNote}');
-    expect(screen).toContain("barred ? 'No healers in 1v1' : `Find a ${format}v${format} match`");
+    expect(screen).toContain("barred ? 'No healers in 1v1' : follower ? 'Waiting for the party leader' : `Find a ${ladder === 'guest' ? '' : 'ranked '}${fightFormat}v${fightFormat} match`");
+    expect(read('src/games/sigilfall/ui/RingPlay.tsx')).toContain("props.barred ? 'No healers in 1v1'");
     expect(screen).toContain('{barred ? BARRED_WHY : seekNote}');
     expect(BARRED_WHY).toBe('Healers can’t enter 1v1. Choose a damage playstyle, or play 2v2 or 3v3.');
   });

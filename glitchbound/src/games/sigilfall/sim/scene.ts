@@ -84,8 +84,11 @@ export const TALK_ZOOM = 0.84;
 export type SceneStep =
   /** A line over someone's head (an NPC, a companion, 'hero'); the scene waits until it has been read. */
   | { say: string; line: string }
-  /** The camera goes to a named place, a person, a building by its name (to the middle of its picture) or 'hero'. */
-  | { look: string }
+  /**
+   * The camera goes to a named place, a person, a building by its name (to the middle of its picture) or 'hero';
+   * `jump`: it is there at once (behind a fade, as a film cuts), not glided to.
+   */
+  | { look: string; jump?: boolean }
   /** The camera goes to a spot (world px): where a quest leads, in a story beat. */
   | { at: { x: number; y: number } }
   /**
@@ -149,6 +152,11 @@ export interface SceneDef {
   opens?: { event: string; wave?: number };
   near?: string;
   r?: number;
+  /**
+   * The foes the story brings in here wait for this scene to have played (World.refreshStoryState): it must be seen
+   * before they rise (Elyra taken at the Tear, before the Tearborn comes through).
+   */
+  holdsFoes?: boolean;
   steps: SceneStep[];
 }
 
@@ -209,12 +217,15 @@ export const sceneDark = (s: ScenePlay | null): number => {
 const TINTS: Record<string, string> = { memory: '#c8a8ff', ember: '#ffb070', frost: '#a8e0ff', sun: '#ffd88a', grief: '#9a8ab8', blood: '#ff8a8a' };
 
 /** Letters a second a line is written out at. */
-export const TYPE_CPS = 46;
+export const TYPE_CPS = 40;
 /**
- * How long a line stays before the scene goes on by itself: time to read it at an easy pace, however long it is (the
- * old pace gave a 140-letter line six seconds). Whoever reads faster takes the next line with a tap.
+ * How long a line stays before the scene goes on by itself: time to read it slowly, and to look at who said it, however
+ * long it is (the old pace gave a 140-letter line six seconds, then nine and a half; the owner, 2026-11-18: "sometimes
+ * the cinematics cut abruptly and too fast"). Whoever reads faster takes the next line with a tap.
  */
-export const lineTime = (line: string): number => Math.min(9.5, Math.max(2.6, 1.3 + line.length * 0.055));
+export const lineTime = (line: string): number => Math.min(13, Math.max(3.4, 1.8 + line.length * 0.075));
+/** How long the camera holds a shot it has gone to before the scene goes on (s): long enough to see what it shows. */
+export const SHOT_HOLD = 1.35;
 /** Nobody in a scene turns their back on the camera: a heading is kept within this of facing it (radians). */
 const SHOWS_FACE = 1.75;
 /** The way from one spot to another as a heading someone can be turned to. */
@@ -223,7 +234,7 @@ export const heading = (from: { x: number; y: number }, to: { x: number; y: numb
 const IN_TALK = 7 * TILE;
 const WALK = 42;
 /** The longest a scene waits on someone walking to their mark, in seconds, before they pick up their feet. */
-const LONGEST_WALK = 4.5;
+const LONGEST_WALK = 6;
 /** How far from their mark someone out of the picture starts their walk in (world px: a little past the screen's edge). */
 const ENTERS_FROM = 8 * TILE;
 
@@ -375,9 +386,31 @@ export function scenesPlayHere(w: Pick<World, 'coop' | 'keyRun'>): boolean {
   return !w.coop || (w.coop.role === 'host' && !w.keyRun);
 }
 
+/**
+ * Is a scene of the story due right here (its moment has come, it hasn't been seen, and the hero is where it plays)?
+ * Foes the story brings in hold back while one that says so is (`holdsFoes`, World.refreshStoryState): at the Tear the
+ * Herald's leavings rose
+ * round the hero the moment the ambush ended and fell on them at once, so the scene of Elyra being taken could only
+ * play once the Tearborn was dead (the owner: "the cinematics cut abruptly and too fast, e.g. the tear quest").
+ */
+export function sceneDue(w: World, after?: string, holdingFoes = false): boolean {
+  if (!scenesPlayHere(w)) return false;
+  const h = w.hero;
+  // (`after`: only a scene of what came after that quest, its aftermath, not the next step's opening)
+  const mark = after ? JSON.stringify({ quest: after, is: 'done' }) : '';
+  return SCENES.some((def) => {
+    if (!def.when || def.region !== w.region.id || h.opened.includes(seenKey(def.id)) || !holds(h, def.when)) return false;
+    if (mark && !JSON.stringify(def.when).includes(mark)) return false;
+    if (holdingFoes && !def.holdsFoes) return false;
+    if (!def.near) return true;
+    const at = where(w, def.near);
+    return !!at && dist(at.x, at.y, w.player.x, w.player.y) <= (def.r ?? 90) * WORLD_K;
+  });
+}
+
 /** Starts a scene whose moment has come here, if none is playing and nothing is fighting nearby. */
 export function maybeStartScene(w: World): void {
-  if (w.scene || w.player.dead || w.story.fighting) return;
+  if (w.scene || w.player.dead || w.story.fighting || w.holdScenes) return;
   const h = w.hero;
   for (const def of SCENES) {
     if (!def.when || def.region !== w.region.id || h.opened.includes(seenKey(def.id)) || !holds(h, def.when)) continue;
@@ -436,7 +469,15 @@ export function questBeat(w: World): SceneDef | null {
     const o = currentObjective(h, q);
     if (o.kind === 'tutorial') continue;
     const t = questTarget(w, q, true);
-    const far = t && dist(t.x, t.y, w.player.x, w.player.y) > 5 * TILE;
+    // the camera goes out only to someone or something there to be seen (the person to talk to, the boss in its den,
+    // the place a story fight is held), and only as far as a glide carries it: a pan across the land to bare ground
+    // was a "meaningless camera swap to nothing" (the owner, 2026-11-18). Otherwise the beat is its title and its sound
+    const d = t ? dist(t.x, t.y, w.player.x, w.player.y) : 0;
+    const seen = o.kind === 'talk' ? w.npcs.some((n) => n.id === o.npc) : o.kind === 'boss' ? bossHere(w, o.boss) : o.kind === 'event';
+    const far = !!t && seen && d > 5 * TILE && d < BEAT_REACH;
+    // (the boss a hunt is for is worth seeing however far off its den is: not a pan across the land, though, but a cut
+    // there behind a fade, and back)
+    const across = !!t && o.kind === 'boss' && bossHere(w, o.boss) && d >= BEAT_REACH;
     const sound = o.kind === 'boss' ? 'roar' : o.kind === 'kill' || o.kind === 'event' ? 'warhorn' : 'checkpoint';
     const steps: SceneStep[] = [
       { title: q.name, sub: 'label' in o ? o.label : undefined },
@@ -445,14 +486,19 @@ export function questBeat(w: World): SceneDef | null {
       // (what the camera goes out to is there to be seen: a boss stands in its den for the shot, and a pack that
       // was cut down and hasn't come back yet comes back now. The owner: "it tried focusing on grimtusk but he wasnt
       // there ... make sure every time a cinematic focuses, it renders the enemies/boss it focuses on")
-      ...(far && t ? [o.kind === 'boss' && bossHere(w, o.boss) ? { look: o.boss } : { at: { x: t.x, y: t.y } }, { wait: 2.2 }] : [{ wait: 1.8 }]),
-      { look: 'hero' },
+      ...(far && t
+        ? [o.kind === 'boss' ? { look: o.boss } : o.kind === 'talk' ? { look: o.npc } : { at: { x: t.x, y: t.y } }, { wait: 2 }, { look: 'hero' }]
+        : across && o.kind === 'boss'
+          ? [{ fade: 'out' as const, secs: 0.6 }, { look: o.boss, jump: true }, { fade: 'in' as const, secs: 0.7 }, { wait: 1.8 }, { fade: 'out' as const, secs: 0.6 }, { look: 'hero', jump: true }, { fade: 'in' as const, secs: 0.7 }]
+          : [{ wait: 1.8 }]),
     ];
-    if (far && t && (o.kind === 'kill' || o.kind === 'loot')) w.callPacks(t.x, t.y);
     return { id, region: w.region.id, steps };
   }
   return null;
 }
+
+/** The furthest a quest's beat sends the camera to look (world px): past it, the beat stays on the hero. */
+const BEAT_REACH = 22 * TILE;
 
 const bossHere = (w: World, boss: string): boolean => w.map.markers.some((pm) => pm.marker.kind === 'boss' && pm.marker.boss === boss);
 
@@ -597,14 +643,16 @@ export function updateScene(w: World, dt: number): void {
       s.lean = shot && at && (shot.x !== at.x || shot.y !== at.y) ? { x: shot.x - at.x, y: shot.y - at.y } : undefined;
     }
     s.focus = at && s.lean ? { x: at.x + s.lean.x, y: at.y + s.lean.y } : step.look === 'hero' ? null : at;
-    done = s.t >= 0.9;
+    if (first && step.jump) s.cuts = (s.cuts ?? 0) + 1;
+    // (back to the hero is a return, not a shot: it needn't be held)
+    done = s.t >= (step.look === 'hero' ? 0.9 : SHOT_HOLD);
   } else if ('at' in step) {
     if (first) {
       const shot = composeShot(step.at, speakersAhead(w, s.def, s.step), zoomAhead(s, s.step));
       s.lean = shot && (shot.x !== step.at.x || shot.y !== step.at.y) ? { x: shot.x - step.at.x, y: shot.y - step.at.y } : undefined;
     }
     s.focus = s.lean ? { x: step.at.x + s.lean.x, y: step.at.y + s.lean.y } : step.at;
-    done = s.t >= 1;
+    done = s.t >= SHOT_HOLD;
   } else if ('follow' in step) {
     const at = where(w, step.follow);
     if (at) {
@@ -639,7 +687,8 @@ export function updateScene(w: World, dt: number): void {
           }
         }
         // (and whoever still has a long way to come hurries: nobody watches a ten-second walk)
-        s.pace = Math.min(WALK * 3, Math.max(step.run ? WALK * 2 : WALK, (dist(n.x, n.y, tx, ty) * 1.25) / LONGEST_WALK));
+        // (no faster than a brisk run: a person sliding across the picture at three times a walk read as a jerk)
+        s.pace = Math.min(WALK * 2.2, Math.max(step.run ? WALK * 2 : WALK, (dist(n.x, n.y, tx, ty) * 1.25) / LONGEST_WALK));
         // (a gesture held is let go of: nobody walks off kneeling)
         delete s.acts[step.move];
         delete s.turns[step.move];
@@ -685,7 +734,7 @@ export function updateScene(w: World, dt: number): void {
     s.title = { text: step.title, sub: step.sub };
     done = true;
   } else if ('fade' in step) {
-    const secs = step.secs ?? 0.8;
+    const secs = step.secs ?? 1;
     if (first) s.dark = { from: sceneDark(s), to: step.fade === 'out' ? 1 : 0, t: 0, secs };
     done = s.t >= secs;
   } else if ('vision' in step) {

@@ -70,7 +70,7 @@ describe('Sigilfall: scenes', () => {
     }
   });
 
-  it('every scene plays at its moment, with everyone it names there, and ends', { timeout: 60_000 }, () => {
+  it('every scene plays at its moment, with everyone it names there, and ends', { timeout: 180_000 }, () => {
     for (const def of SCENES.filter((d) => d.when)) {
       const w = newWorld(def.region, atScene(def.id));
       startAt(w, def.id);
@@ -90,7 +90,9 @@ describe('Sigilfall: scenes', () => {
         // (in a dungeon, which names no places, a vision stands round the hero)
         if ('fx' in s) expect(s.at === 'hero' || !!w.places[s.at] || w.spots.some((sp) => sp.id === s.at) || w.npcs.some((n) => n.id === s.at), `${def.id}: fx at ${s.at}`).toBe(true);
       }
-      run(w, 60);
+      // (left alone, without a tap to hurry it: lines are held long enough to be read slowly, so a long scene takes a
+      // couple of minutes; none for ever)
+      for (let t = 0; t < 150 && w.scene; t += 1) run(w, 1);
       expect(w.scene, def.id).toBeNull();
       expect(w.hero.opened).toContain(`scene:${def.id}`);
     }
