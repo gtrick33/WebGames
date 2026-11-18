@@ -1,6 +1,8 @@
 import { CLASSES, CLASS_IDS } from '../data/classes';
 import type { ClassId } from '../data/types';
-import { RING_KEY, type Format, type Standing } from './ranks';
+import { RING_KEY, seasonOf, seasonReset, type Format, type Standing } from './ranks';
+// (the seasons are counted in ranks.ts, where the server's ladder reads them too)
+export { SEASON_LENGTH, SEASON_START, seasonEnds, seasonOf, seasonReset } from './ranks';
 import type { BestMoment } from './sim';
 
 /**
@@ -118,9 +120,6 @@ export const WEEKLY: readonly Challenge[] = [
 ];
 
 const DAY = 86_400_000;
-/** The first season begins here (the day these were added), and each is eight weeks long. */
-export const SEASON_START = Date.UTC(2026, 10, 16);
-export const SEASON_LENGTH = 56 * DAY;
 
 /** A day's key: its date, by the world's clock (the same day for everyone). */
 export const dayKey = (now: number): string => new Date(now).toISOString().slice(0, 10);
@@ -134,9 +133,6 @@ export const weekKey = (now: number): string => {
 export const dayEnds = (now: number): number => Date.parse(`${dayKey(now)}T00:00:00Z`) + DAY;
 export const weekEnds = (now: number): number => Date.parse(`${weekKey(now)}T00:00:00Z`) + 7 * DAY;
 
-/** Which season it is. */
-export const seasonOf = (now: number): number => Math.max(1, 1 + Math.floor((now - SEASON_START) / SEASON_LENGTH));
-export const seasonEnds = (n: number): number => SEASON_START + n * SEASON_LENGTH;
 
 /** A string's own number, for drawing the same challenges for everyone from a date. */
 function hash(s: string): number {
@@ -217,8 +213,6 @@ function rollSeason(s: SeasonRecord | undefined, now: number): SeasonRecord {
   return { n, best: {}, points: 0, past: [{ n: s.n, best: s.best, ...(s.points ? { points: s.points } : {}) }, ...s.past].slice(0, 12) };
 }
 
-/** A rating brought halfway back toward where everyone starts, for a new season. */
-export const seasonReset = (rating: number): number => Math.round(1000 + (rating - 1000) / 2);
 
 /**
  * At the Ring's door: a season that has turned since the player last came puts its bests by and brings each format's

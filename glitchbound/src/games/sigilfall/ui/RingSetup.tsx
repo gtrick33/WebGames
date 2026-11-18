@@ -504,7 +504,13 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
                 <b>Stealth.</b> If everyone left standing is in stealth, nobody can find anybody: after 3 seconds it lifts from all of them, and stays off for a while.
               </li>
               <li>
-                <b>Finding a match.</b> The Ring looks for other players for ten seconds. If someone is looking for the same kind of fight, you meet them; if nobody is, you fight the computer’s teams. Both are for rating. Walk out once the gates have lifted and it is a leaver’s loss, half again a loss; against other players the match then ends for everyone else, and their rating stays as it was.
+                <b>Finding a match.</b> The Ring looks for other players near your rating for ten seconds. If someone is looking for the same kind of fight, you meet them; if nobody is, you fight the computer’s teams. Both are for rating. Walk out once the gates have lifted and it is a leaver’s loss, half again a loss; against other players the match then ends for everyone else, and their rating stays as it was.
+              </li>
+              <li>
+                <b>Ranked.</b> Signed in, your rating is kept by the server and shown on the rankings, and every player’s game has to agree on who won. Matches against a friend, someone on your network or your own other account don’t count, the same opponent counts for less after two matches in a day, and from 1900 only matches against people move your rating. Not signed in, you play for a practice rating kept on your device.
+              </li>
+              <li>
+                <b>Teams and custom games.</b> In 2v2 and 3v3, invite friends into your team from the fight’s window and queue ranked together, as long as your ratings are within 500 of each other. Custom game is a private room for friends on any sides: no rating changes hands there.
               </li>
               <li>
                 <b>Climb for rewards.</b> Every rank gives its title and a suit of Ringforged armor, for good. See them under Rewards in the lobby, and wear them from Title & armor.

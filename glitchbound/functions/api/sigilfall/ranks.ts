@@ -11,6 +11,9 @@ import { listed } from '../../../server/staff';
  * The bests are the game's own and are sent as it has them (a save lives on the player's device), so they are
  * held to what the game can give: a board that exists, a whole number inside that board's range, a row that only
  * ever goes up. Banned players are left off; studio and QA accounts are listed, marked as such.
+ *
+ * The Ring's boards are the exception: they come from the ranked ladder the server keeps (server/ring.ts), and a
+ * device can't write them here.
  */
 
 /** Each family of boards and the most a score on it can be. `family:part` is a board of its own (a calling, a land). */
@@ -90,6 +93,8 @@ export async function onRequestPost({ request, env }: Ctx): Promise<Response> {
     const o = e && typeof e === 'object' ? (e as { board?: unknown; score?: unknown }) : {};
     const b = boardOf(o.board);
     if (!b || typeof o.score !== 'number' || !Number.isFinite(o.score)) continue;
+    // (the Ring's boards are the server's ladder's own: server/ring.ts writes them as matches are settled)
+    if (b.board === 'ring' || b.board.startsWith('ring:')) continue;
     const score = Math.floor(o.score);
     if (score <= 0 || score > b.max) continue;
     writes.push(

@@ -5,7 +5,7 @@
  * notice anyone leaving the match: it ends there for everyone else.
  */
 import { ratedMatch } from '../../../platform/rooms';
-import { DROP_MS, leftBehind, SEEK_MS, seekFacts, seekStep } from '../arena/queue';
+import { DROP_MS, FOUND_MS, leftBehind, SEEK_MS, seekFacts, seekStep } from '../arena/queue';
 import type { Format } from '../arena/ranks';
 import { Link } from './link';
 import type { Action, Pick, View } from './ringRoom';
@@ -20,6 +20,8 @@ export interface SeekLook {
 }
 
 export interface SeekHandlers {
+  /** A party's search called off: by its leader (`why` empty), or because the room wouldn't take it into the queue. */
+  onCancel?(why?: string): void;
   onLook(look: SeekLook): void;
   /** The host said go: the room's word, as in a room of friends, and the connection the match talks over. */
   onRun(v: View, link: Link<View, Action>): void;
@@ -35,6 +37,13 @@ export interface SeekOptions {
   map: string;
   name: string;
   pick: Omit<Pick, 'team'>;
+  /**
+   * A party's own room, already joined (arena/queue.ts): the search waits in it instead of looking for one. Its leader
+   * puts it in the ranked queue at `rating` (arena/ranked.ts partyRating) and starts it; the others only wait for it.
+   * The room stays the party's when the search ends: it is never left.
+   */
+  party?: Link<View, Action>;
+  rating?: number;
 }
 
 /** A name for this device's searches (not the player's: only so the queue doesn't count their own last search as someone else). */
@@ -80,7 +89,18 @@ export class Seek {
   ) {
     this.timer = window.setInterval(() => this.tick(), 250);
     this.look([]);
-    void this.find();
+    if (o.party) {
+      this.link = o.party;
+      // (a party's last match is still in its room's word until its leader ends it: only a later one is this search's)
+      this.runBefore = o.party.view?.run ?? 0;
+      this.tick();
+    } else void this.find();
+  }
+  private runBefore = 0;
+
+  /** The party's room said something new (its owner passes it on: the room's handlers are its own). */
+  seen(): void {
+    if (this.o.party) this.view(this.o.party.code);
   }
 
   private async find(): Promise<void> {
@@ -90,16 +110,18 @@ export class Seek {
       if (this.state !== 'look') return;
       const code = found.code;
       if (code === null) return this.bots();
-      this.link = new Link<View, Action>(code, this.o.name, {
+      const handlers = {
         onView: () => this.view(code),
-        onRelay: (n, d) => this.h.onRelay(n, d),
-        onState: (s) => {
+        onRelay: (n: number, d: unknown) => this.h.onRelay(n, d),
+        onState: (s: string) => {
           if (s !== 'gone' || this.link?.code !== code) return;
           if (this.state === 'run') this.gone();
           // (full, or closed, before it began: another one)
           else if (this.state === 'look') this.next();
         },
-      });
+      };
+      // (with the room's door key: a ranked room takes nobody new without it while it waits)
+      this.link = new Link<View, Action>(code, this.o.name, handlers, found.door);
     } catch {
       // rooms can't be reached: there is nobody to find
       if (this.state === 'look') this.bots();
@@ -124,7 +146,38 @@ export class Seek {
       if (now - this.downSince >= DROP_MS) this.gone();
       return;
     }
+    // (a party's room goes back to its lobby as its match ends: that is the end of it, not someone leaving)
+    if (v.phase !== 'run' && this.o.party) return this.stop();
     if (v.phase !== 'run' || leftBehind(v, this.runSeats, this.away, now)) this.gone();
+  }
+
+  /** A party's search, in its own room: the leader queues it and starts it; the others wait for the leader. */
+  private partyTick(v: View, now: number, waited: number): void {
+    const host = v.host === v.you;
+    const f = seekFacts(v, this.o.format);
+    this.fullAt = f.full ? this.fullAt || now : 0;
+    this.look(f.others, f.full);
+    if (!host) {
+      // (the leader called it off: so does everyone else)
+      if (v.queued === null && waited >= RESEND_MS * 2) {
+        this.stop();
+        this.h.onCancel?.();
+      }
+      return;
+    }
+    if (v.format !== this.o.format && v.queued === null) return this.say({ t: 'setup', format: this.o.format, map: this.o.map }, now);
+    if (v.map !== this.o.map && v.queued === null) this.say({ t: 'setup', format: this.o.format, map: this.o.map }, now);
+    if (v.queued === null) {
+      // (a room with people on both sides is a custom game, and the queue won't take it)
+      if (waited >= 3_000) {
+        this.stop();
+        this.h.onCancel?.('Your party can’t queue as it is: everyone in it has to be on one side, no more than the format holds.');
+        return;
+      }
+      return this.say({ t: 'queue', on: true, rating: this.o.rating ?? this.o.pick.rating ?? 1000 }, now);
+    }
+    // both sides full of people: a moment to read who came, then the gates; the time up: the computer takes the rest
+    if ((f.full && now - this.fullAt >= FOUND_MS) || waited >= SEEK_MS) this.say({ t: 'start' }, now);
   }
 
   private tick(): void {
@@ -132,9 +185,13 @@ export class Seek {
     const now = Date.now();
     const waited = now - this.since;
     const v = this.link?.view ?? null;
+    if (this.o.party && v && v.game === 'sigilfall-ring' && v.phase === 'lobby') return this.partyTick(v, now, waited);
+    // (the party's last match, not ended yet: wait for its leader to end it)
+    if (this.o.party && v && v.phase === 'run' && v.run <= this.runBefore) return;
     if (!v || v.game !== 'sigilfall-ring') {
       this.look([]);
-      if (waited >= SEEK_MS) this.bots();
+      // (a party never goes off on its own to fight the computer: its leader starts its match, with or without people)
+      if (waited >= SEEK_MS && !this.o.party) this.bots();
       return;
     }
     if (v.phase === 'run') {
@@ -179,6 +236,8 @@ export class Seek {
 
   /** This room is no use: leave it and ask for another (a few times; after that the search waits its time out). */
   private next(): void {
+    // (a party's room is its own: it is never given up for another)
+    if (this.o.party) return this.stop();
     const was = this.link;
     this.link = null;
     this.fullAt = 0;
@@ -202,13 +261,18 @@ export class Seek {
     this.h.onGone();
   }
 
-  /** Ends it: out of the room, and nothing more is heard from this search. */
+  /** Ends it: out of the room (a party's own: out of the queue, and still in it), and nothing more is heard from it. */
   stop(): void {
     if (this.state === 'over') return;
+    const looking = this.state === 'look';
     this.state = 'over';
     window.clearInterval(this.timer);
     const was = this.link;
     this.link = null;
+    if (this.o.party) {
+      if (looking && was?.view && was.view.host === was.view.you && was.view.queued !== null) was.send({ t: 'queue', on: false });
+      return;
+    }
     was?.send({ t: 'bye' });
     was?.close();
   }
@@ -219,6 +283,7 @@ export class Seek {
    */
   stopSoon(ms = 3000): void {
     if (this.state === 'over') return;
+    if (this.o.party) return this.stop();
     this.state = 'over';
     window.clearInterval(this.timer);
     const was = this.link;

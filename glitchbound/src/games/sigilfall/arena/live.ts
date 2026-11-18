@@ -31,6 +31,13 @@ export interface LiveMatch {
   snap?: Snapshot;
   /** Fought against other players, found by a search: it runs on without whoever leaves, so there is no going back. */
   people?: boolean;
+  /**
+   * A signed-in player's match on the ranked ladder the server keeps (arena/ranked.ts): its id there, which the result
+   * is reported to. Without one, the match moves the rating kept on this device (a guest's practice rating).
+   */
+  ticket?: string;
+  /** Played signed in but not on the ladder (it couldn't be reached): it moves no rating at all. */
+  unrated?: boolean;
 }
 
 export function readLive(): LiveMatch | null {
