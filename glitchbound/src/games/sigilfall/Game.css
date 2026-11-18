@@ -3936,6 +3936,12 @@ html.rb-touch-playing textarea {
 .rb-map-quest.is-side strong {
   color: #9fd6ff;
 }
+.rb-map-quest > .rb-map-quest-acts {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 4px;
+}
 /* a land's map and the world's: zoomed by the wheel, a pinch or the buttons, moved by a drag (ui/panZoom.ts) */
 .rb-landmap {
   position: relative;
@@ -4103,6 +4109,44 @@ html.rb-touch-playing textarea {
   stroke: var(--rb-cyan);
   stroke-width: 0.8;
   animation: rb-pulse 1.6s ease-in-out infinite;
+}
+/* the quest the map is showing: its land ringed in gold; one not explored yet is ringed with a dashed line, and an
+   arrow runs to it along the roads from the nearest land the hero knows (ringed instead) */
+.rb-world-focus {
+  fill: none;
+  stroke: #ffcf5a;
+  stroke-width: 1.1;
+  filter: drop-shadow(0 0 1.2px #ffcf5a);
+  animation: rb-pulse 1.6s ease-in-out infinite;
+}
+.rb-world-node.is-quest > .rb-world-mark {
+  stroke: #ffcf5a;
+}
+.rb-world-beyond {
+  fill: none;
+  stroke: #ffcf5a;
+  stroke-width: 0.7;
+  stroke-dasharray: 1.4 1.1;
+}
+.rb-world-pointer {
+  pointer-events: none;
+}
+.rb-world-pointer-line {
+  fill: none;
+  stroke: #ffcf5a;
+  stroke-width: 1;
+  stroke-dasharray: 2.2 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: rb-march 0.9s linear infinite;
+}
+.rb-world-pointer-head {
+  fill: #ffcf5a;
+}
+@keyframes rb-march {
+  to {
+    stroke-dashoffset: -3.6;
+  }
 }
 .rb-world-q,
 .rb-world-goal {
@@ -4753,7 +4797,9 @@ html.rb-touch-playing textarea {
   .rb-interact,
   .rb-sb-ult.is-ready,
   .rb-rotate-phone,
-  .rb-world-here {
+  .rb-world-here,
+  .rb-world-focus,
+  .rb-world-pointer-line {
     animation: none;
   }
 }

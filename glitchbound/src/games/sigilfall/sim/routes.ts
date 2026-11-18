@@ -1,5 +1,5 @@
 import { REGION_IDS, REGIONS } from '../data/regions';
-import type { RegionDef, RegionId, StoryCond } from '../data/types';
+import type { Marker, RegionDef, RegionId, StoryCond } from '../data/types';
 import type { Character } from '../progress/character';
 import { holds as condHolds } from './story';
 
@@ -18,12 +18,23 @@ interface Links {
   stands: Map<string, { region: RegionId; when?: StoryCond }[]>;
   spot: Map<string, RegionId>;
   boss: Map<string, RegionId>;
+  /** Where each land's ways out are (0-1 across, 0-1 down), what their signs say, and whether each is a door. */
+  ways: Map<RegionId, Way[]>;
+}
+
+interface Way {
+  to: RegionId;
+  at: [number, number];
+  label: string;
+  door: boolean;
 }
 
 let links: Links | null = null;
+/** The roads both ways round (a road out of one region is a road into the other). */
+let both: Map<RegionId, Set<RegionId>> | null = null;
 
 function build(): Links {
-  const L: Links = { exits: new Map(), needs: new Map(), npc: new Map(), stands: new Map(), spot: new Map(), boss: new Map() };
+  const L: Links = { exits: new Map(), needs: new Map(), npc: new Map(), stands: new Map(), spot: new Map(), boss: new Map(), ways: new Map() };
   const stands = (npc: string, region: RegionId, when?: StoryCond): void => {
     const list = L.stands.get(npc) ?? [];
     list.push({ region, ...(when ? { when } : {}) });
@@ -60,8 +71,81 @@ function build(): Links {
       }
     }
     L.exits.set(id, [...new Set(out)]);
+    L.ways.set(id, waysOf(r));
   }
   return L;
+}
+
+/**
+ * A land's ways out, where they are on it: a generated land's from its spec (it is never generated for this); a
+ * built one's from its map, as long as the map is there without building anything.
+ */
+function waysOf(r: RegionDef): Way[] {
+  if (r.holds?.ways) return r.holds.ways.map((w) => ({ ...w, door: inside(w.at) }));
+  const map = Object.getOwnPropertyDescriptor(r, 'map')?.value as string[] | undefined;
+  if (!map?.length) return [];
+  const h = map.length;
+  const w = map[0]!.length;
+  const out: Way[] = [];
+  const add = (tx: number, ty: number, m: Marker): void => {
+    const at: [number, number] = [(tx + 0.5) / w, (ty + 0.5) / h];
+    if (m.kind === 'exit') out.push({ to: m.to, at, label: m.label, door: !!m.door || inside(at) });
+  };
+  for (const [ch, m] of Object.entries(r.markers)) {
+    if (m.kind !== 'exit') continue;
+    for (let y = 0; y < h; y++) for (let x = map[y]!.indexOf(ch); x >= 0; x = map[y]!.indexOf(ch, x + 1)) add(x, y, m);
+  }
+  const placed = Object.getOwnPropertyDescriptor(r, 'placed')?.value as RegionDef['placed'];
+  for (const p of placed ?? []) add(p.tx, p.ty, p.marker);
+  return out;
+}
+
+/** A way out well inside its land (a stair down, a cave's mouth), not a road off its edge (a built map has a border of wall). */
+const inside = ([x, y]: readonly [number, number]): boolean => Math.min(x, 1 - x, y, 1 - y) > 0.15;
+
+/** A compass word on a road's sign ("North road", "the long road south-east"), as a way to go: x east, y south. */
+export function signHeading(label: string): [number, number] | undefined {
+  const m = /\b(north|south|east|west)(?:[- ]?(east|west))?\b/i.exec(label);
+  if (!m) return undefined;
+  const v: Record<string, [number, number]> = { north: [0, -1], south: [0, 1], east: [1, 0], west: [-1, 0] };
+  const a = v[m[1]!.toLowerCase()]!;
+  const b: [number, number] = m[2] ? v[m[2].toLowerCase()]! : [0, 0];
+  return unit([a[0] + b[0], a[1] + b[1]]);
+}
+
+function unit([x, y]: readonly [number, number]): [number, number] | undefined {
+  const d = Math.hypot(x, y);
+  return d > 1e-6 ? [x / d, y / d] : undefined;
+}
+
+/**
+ * Which way the road from one land to another leaves it (x east, y south, a unit long): the side of the land it goes
+ * out by (a road's sign often says, and counts as much), or for a door into a dungeon, where the door stands in it.
+ */
+export function wayHeading(from: RegionId, to: RegionId): [number, number] | undefined {
+  const list = (get().ways.get(from) ?? []).filter((w) => w.to === to);
+  if (!list.length) return undefined;
+  const at: [number, number] = [list.reduce((s, w) => s + w.at[0], 0) / list.length, list.reduce((s, w) => s + w.at[1], 0) / list.length];
+  // (a road out leaves by the side it is nearest; a door is where it stands, from the land's middle)
+  const near = Math.min(at[0], 1 - at[0], at[1], 1 - at[1]);
+  const where: [number, number] | undefined = list[0]!.door ? unit([at[0] - 0.5, at[1] - 0.5]) : near === at[1] ? [0, -1] : near === 1 - at[1] ? [0, 1] : near === at[0] ? [-1, 0] : [1, 0];
+  const sign = signHeading(list[0]!.label);
+  // (where the two say opposite things, neither is to be trusted)
+  return unit([(where?.[0] ?? 0) + (sign?.[0] ?? 0), (where?.[1] ?? 0) + (sign?.[1] ?? 0)]);
+}
+
+/**
+ * Which way one land lies from another, as the hero finds it on the ground: the way the road leaves the first, and
+ * the way it comes into the second, together (a dungeon's way back out, always at its foot, says nothing). Where the
+ * two disagree, where the lands lie on the old world map settles it.
+ */
+export function roadHeading(a: RegionId, b: RegionId): [number, number] | undefined {
+  const fwd = REGIONS[a].kind === 'dungeon' ? undefined : wayHeading(a, b);
+  const back = REGIONS[b].kind === 'dungeon' ? undefined : wayHeading(b, a);
+  const [ax, ay] = REGIONS[a].at;
+  const [bx, by] = REGIONS[b].at;
+  const far = unit([bx - ax, by - ay]) ?? [0, 0];
+  return unit([(fwd?.[0] ?? 0) - (back?.[0] ?? 0) + 0.3 * far[0], (fwd?.[1] ?? 0) - (back?.[1] ?? 0) + 0.3 * far[1]]);
 }
 
 const get = (): Links => (links ??= build());
@@ -104,6 +188,45 @@ export function nextRegion(from: RegionId, to: RegionId, done?: (quest: string) 
   let step = to;
   while (prev.get(step) !== from) step = prev.get(step)!;
   return step;
+}
+
+/** How many roads from one region to every other it reaches, either way along each road (no story gates). */
+export function roadHops(from: RegionId): Map<RegionId, number> {
+  if (!both) {
+    both = new Map();
+    for (const [a, list] of get().exits) {
+      for (const b of list) {
+        for (const [x, y] of [[a, b], [b, a]] as const) {
+          if (!both.has(x)) both.set(x, new Set());
+          both.get(x)!.add(y);
+        }
+      }
+    }
+  }
+  const out = new Map<RegionId, number>([[from, 0]]);
+  const q: RegionId[] = [from];
+  while (q.length) {
+    const r = q.shift()!;
+    for (const n of both.get(r) ?? []) {
+      if (out.has(n)) continue;
+      out.set(n, out.get(r)! + 1);
+      q.push(n);
+    }
+  }
+  return out;
+}
+
+/** The regions nearest `from` by road that `ok` takes (all of those as near; none: empty). */
+export function nearestRegions(from: RegionId, ok: (id: RegionId) => boolean): RegionId[] {
+  const hops = [...roadHops(from)].filter(([id]) => ok(id));
+  const least = Math.min(...hops.map(([, n]) => n));
+  return hops.filter(([, n]) => n === least).map(([id]) => id);
+}
+
+/** A way to go in words ("north", "south-east"), from a heading (x east, y south). */
+export function headingWord([x, y]: readonly [number, number]): string {
+  const names = ['east', 'north-east', 'north', 'north-west', 'west', 'south-west', 'south', 'south-east'];
+  return names[(((Math.round(Math.atan2(-y, x) / (Math.PI / 4)) % 8) + 8) % 8)]!;
 }
 
 /** Every pair of regions joined by a way through, once each (for the world map). */

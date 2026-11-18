@@ -245,6 +245,8 @@ export class SigilEngine {
   private heroSig = '';
   private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number; keyEnd?: RunSummary['key'] } | null = null;
   private hidden = false;
+  /** The quest the map was last opened for (MapPanel picks its land when it opens: takeMapQuest). */
+  private mapQuest: string | null = null;
   /** The co-op party this hero is in, and the run it is fighting (null playing alone). */
   party: PartyState | null = null;
   /**
@@ -1495,19 +1497,25 @@ export class SigilEngine {
     this.bump();
   }
 
-  /** A quest on the map: followed by the arrow and the tracker, and the map opened where it is done. */
+  /** A quest on the map: followed by the arrow and the tracker, and the map opened on the land where it is done. */
   showOnMap(id: string): void {
     this.trackQuest(id);
-    this.openPanel('map');
+    this.openPanel('map', id);
+  }
+
+  /** The quest the open map was opened for (a click on it in the log or the tracker); opened any other way, none. */
+  get mapQuestId(): string | null {
+    return this.mapQuest;
   }
 
   /* -------------------------------------------------------------- panels */
 
-  openPanel(p: PanelId): void {
+  openPanel(p: PanelId, quest?: string): void {
     if (this.ui.screen !== 'game' || this.ui.death || this.ui.reward) return;
     this.kbm?.release();
     this.touch.release();
     this.sound.play('open');
+    this.mapQuest = quest ?? null;
     // Settings opened from the pause menu goes back to it when closed (the player paused on purpose)
     this.panelFromPause = p === 'settings' && this.ui.pause;
     this.setUi({ panel: p, pause: false, dialogue: null });

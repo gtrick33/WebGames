@@ -5,7 +5,7 @@ import type { QuestDef, RegionId } from '../data/types';
 import { activeQuests, currentObjective, questRegion, questState, readyQuests, HOME } from '../progress/character';
 import { isMainQuest, turnInNpc } from '../progress/handin';
 import { TILE } from './map';
-import { bossRegion, nextRegion, npcRegion, spotRegion } from './routes';
+import { bossRegion, nearestRegions, nextRegion, npcRegion, roadHops, spotRegion, wayHeading } from './routes';
 import type { World } from './world';
 
 /**
@@ -46,6 +46,46 @@ export function questWhere(h: World['hero'], q: QuestDef): RegionId | undefined 
   if (o.kind === 'explore') return spotRegion(o.spot) ?? questRegion(q);
   if (o.kind === 'event') return EVENTS[o.event]?.region ?? questRegion(q);
   return questRegion(q);
+}
+
+/** Where the world map shows a quest (questOnMap). */
+export interface QuestOnMap {
+  /** The land of the map its work is in (a building's floor is its town's; a person nowhere now, where they gave it). */
+  land: RegionId;
+  /** While the hero hasn't been to that land: the nearest one by road they have, to set out from. */
+  from?: RegionId;
+  /** From there: the way the road toward it leaves (x east, y south). */
+  heading?: [number, number];
+  /** And the lands on the way, from there to it (both ends too). */
+  path?: RegionId[];
+}
+
+/**
+ * Where the world map shows a quest: the land its work is in now, as the map has it; and, for a land the hero hasn't
+ * been to yet, the nearest land by road that they have (of two as near, the one nearer the hero), and which way out
+ * of it the road toward the quest goes.
+ */
+export function questOnMap(h: World['hero'], q: QuestDef, onMap: (id: RegionId) => boolean, here?: RegionId): QuestOnMap | undefined {
+  const where = questWhere(h, q) ?? questRegion(q) ?? npcRegion(q.giver, h) ?? npcRegion(q.giver);
+  if (!where) return undefined;
+  const land = onMap(where) ? where : nearestRegions(where, onMap)[0];
+  if (!land) return undefined;
+  if (h.unlocked.includes(land)) return { land };
+  const near = nearestRegions(land, (id) => onMap(id) && h.unlocked.includes(id));
+  const hops = here ? roadHops(here) : null;
+  const from = [...near].sort((a, b) => (hops?.get(a) ?? 99) - (hops?.get(b) ?? 99))[0];
+  if (!from) return { land };
+  // the walk there (by the roads the story has opened, if they go there; else by any)
+  const done = (id: string): boolean => questState(h, id) === 'done';
+  const path = [from];
+  for (let at = from, open = !!nextRegion(from, land, done); at !== land && path.length < 40; ) {
+    const step = nextRegion(at, land, open ? done : undefined);
+    if (!step) break;
+    path.push(step);
+    at = step;
+  }
+  const heading = path[1] ? wayHeading(from, path[1]) : undefined;
+  return { land, from, ...(heading ? { heading } : {}), ...(path.at(-1) === land ? { path } : {}) };
 }
 
 /** Per land: the active quests whose work is there, and the quests waiting to be taken from someone there. */
