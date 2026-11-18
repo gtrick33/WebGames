@@ -94,9 +94,11 @@ export const armored = (t: Fighter): boolean => t.auras.some((a) => (a.kind === 
  * on a beat of its own, and a beat that happened to fall just after the global cooldown left a duller player's hands
  * busier than a sharper one's: the ladder's middle rungs beat each other about half the time.
  */
-export function nextLook(f: Fighter, wait: number, skill: number): number {
+export function nextLook(f: Fighter, wait: number, skill: number, r = 0.5): number {
   const up = Math.max(f.gcd, f.cast && !f.cast.channel ? f.cast.dur - f.cast.t : 0);
-  return up > 0 ? Math.min(wait, up + 0.06 + (1 - skill) * 0.28) : wait;
+  // (a person's next press comes a varying moment after the button is back, never on the same frame every time: the
+  // owner, 2026-11-18, "make the movements and spell choices as human as possible")
+  return up > 0 ? Math.min(wait, up + 0.03 + r * 0.07 + (1 - skill) * 0.28) : wait;
 }
 
 /* ------------------------------------------------------------------ the new player */
