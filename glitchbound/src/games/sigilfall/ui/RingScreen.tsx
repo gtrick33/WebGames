@@ -866,7 +866,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
     setFight(null);
     setRoomFight(null);
     settleRanked(ticket, r.draw ? 'draw' : r.won ? 'won' : 'lost', f, (rating) => {
-      if (rating.rankUp) engine.sound.play('levelup');
+      if (rating.rankUp) engine.sound.play('ring-levelup');
       const track = keepMatch(r, f, rating.pending ? null : rating, rival);
       setResult((now) => (now && now.r === r ? { ...now, rating, track } : now));
     });
