@@ -21,7 +21,7 @@ import { ctx2d, rgba } from './pixel';
 import { heldWeapon, itemIconCanvas, heroLook, vendorSign } from './sprites';
 import type { HeroLook } from './art/hero';
 import { wornLooks } from '../progress/wardrobe';
-import { objectiveTarget } from '../sim/objective';
+import { objectiveTarget, objectiveTargets } from '../sim/objective';
 import { ZOOM_MAX, ZOOM_MIN } from '../progress/save';
 import { autoTarget, seekReach, tapAutoAims } from '../sim/cast';
 import { PERSON_H, type Cast } from '../render3d/cast';
@@ -941,6 +941,8 @@ export class Renderer {
     const s = st.project(target.x, target.y, PERSON_H);
     const m = 28;
     if (s.front !== false && s.x > m && s.x < W - m && s.y > m && s.y < H - m) {
+      // something to be found there (a letter, a relic: data/types.ts Keepsake) glints on the ground where it lies
+      if (this.findHere(w)) this.drawGlint(st.project(target.x, target.y, 3), time);
       this.label('▼', s.x, s.y + Math.sin(time * 5) * 3, 15, '#ffe066');
       return;
     }
@@ -970,6 +972,44 @@ export class Renderer {
     g.closePath();
     g.fill();
     g.globalAlpha = 1;
+  }
+
+  /** Is the place the hero is led to one where the quest finds something (and the hero is to look there now)? */
+  private findHere(w: World): boolean {
+    const mark = objectiveTargets(w)[0];
+    const q = mark && QUEST_DEFS[mark.quest];
+    if (!q?.find) return false;
+    const o = currentObjective(w.hero, q);
+    return o.kind === 'explore' && (q.find.step === undefined || q.find.step === (w.hero.quests[q.id]?.step ?? 0));
+  }
+
+  /** A thing lying on the ground to be found: a soft pulse of light and a four-pointed glint over it. */
+  private drawGlint(at: { x: number; y: number }, time: number): void {
+    const g = this.g;
+    const t = this.reducedMotion ? 0 : time;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 3.2);
+    g.save();
+    g.setTransform(this.k, 0, 0, this.k, 0, 0);
+    const glow = g.createRadialGradient(at.x, at.y, 0, at.x, at.y, 26);
+    glow.addColorStop(0, `rgba(255, 236, 170, ${0.55 + pulse * 0.3})`);
+    glow.addColorStop(1, 'rgba(255, 236, 170, 0)');
+    g.fillStyle = glow;
+    g.beginPath();
+    g.ellipse(at.x, at.y, 26, 14, 0, 0, Math.PI * 2);
+    g.fill();
+    const r = 7 + pulse * 4;
+    g.translate(at.x, at.y - 6);
+    g.rotate(t * 0.6);
+    g.fillStyle = '#fff6d8';
+    g.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4;
+      const len = i % 2 ? r * 0.32 : r;
+      g.lineTo(Math.cos(a) * len, Math.sin(a) * len);
+    }
+    g.closePath();
+    g.fill();
+    g.restore();
   }
 
   /** The touch aim preview: where the dragged skill will go (a placed spell's mark is render/reticle.ts). */

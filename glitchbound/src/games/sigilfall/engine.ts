@@ -11,19 +11,20 @@ import { account, api } from '../../platform/account';
 import { classOpen, heroSlots } from './progress/paidClasses';
 import { applyOrder, orderToast } from './progress/gm';
 import { announceGm } from './progress/gmArrival';
-import { isMainQuest, turnInNpc } from './progress/handin';
+import { isMainQuest, questSteps, turnInNpc } from './progress/handin';
 import { rewardSummary } from './progress/rewards';
 import { ACTS, type ActDef } from './data/acts';
+import { TALES } from './data/chronicle';
 import { CLASSES, MAX_LEVEL } from './data/classes';
 import { keyAffixes, weekOf } from './data/keystones';
 import { WARDENS } from './data/wardens';
 import { NPCS, QUEST_DEFS } from './data/quests';
 import { REGIONS, TIERS, type RiftMod } from './data/regions';
 import { SKILLS } from './data/skills';
-import type { ClassId, Item, RegionId, SkillIndex, SlotId, SlotKey } from './data/types';
+import type { ClassId, Item, RegionId, SigilId, SkillIndex, SlotId, SlotKey } from './data/types';
 import { KeyboardMouse, TouchState, type UiKey } from './input/input';
 import { holds } from './sim/story';
-import { abandonQuest, acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, type Body, type Face, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
+import { SIGILS, abandonQuest, acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, type Body, type Face, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
 import { canRide, chooseMount, FIRST_RIDE, grantMounts, grantWarden, hasMount, setShelfPoints, syncRift, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
 import { DEFAULT_SETTINGS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
@@ -57,6 +58,14 @@ import { SPEC_LEVEL } from './data/talents';
  * The game around the simulation: heroes and the save, travelling between regions, expeditions
  * (reported to the arcade), the frame loop, sound, and the UI state the React layer shows.
  */
+
+/**
+ * A page of the story, over the world (ui/StoryPages.tsx): the narrator's telling as an act begins, a letter or a relic
+ * found, the Sigil Rite, or what came of a quest done out in the world. The world waits while one is read, and no scene
+ * starts while one is waiting, so the tale is told in its order (the owner: "i do a dungeon and suddenly in my inventory
+ * tab i see 4/7 sigils"; and a quest's ending, written in its reward, was never shown when it paid out by itself).
+ */
+export type StoryPage = { kind: 'tale'; act: string } | { kind: 'find'; quest: string } | { kind: 'sigil'; sigil: SigilId } | { kind: 'deed'; quest: string };
 
 /** A quest page in a dialogue: one offered (Accept), one to hand in (Complete), one just paid (a talk quest). */
 export interface DialoguePage {
@@ -131,6 +140,8 @@ export interface UiState {
    * A title over the world: an act beginning, or a land seen for the first time (`id` is when it came up).
    */
   card: TitleCard | null;
+  /** A page of the story being read (StoryPage): the world waits for it. */
+  story: StoryPage | null;
 }
 
 export interface TitleCard {
@@ -239,6 +250,17 @@ export class SigilEngine {
   private greetIn = 0;
   /** Title cards waiting for their moment (no one talking, no scene, no panel open). */
   private cards: Omit<TitleCard, 'id'>[] = [];
+  /** Pages of the story waiting for their moment (StoryPage), in the order the tale tells them. */
+  private pages: StoryPage[] = [];
+  /** How long (s) the world has been calm enough for the next page, and how long the next page has waited at all. */
+  private pageCalm = 0;
+  private pageWait = 0;
+  /** The page up was opened from the Journal (closing it goes back there). */
+  private storyFromPanel = false;
+  /** Is the page up one read again from the Journal (not just found)? */
+  get rereading(): boolean {
+    return this.storyFromPanel;
+  }
   /** The expedition under way: where, on which tier, and the stone's level for a Riftstone run (else 0). */
   /** The expedition under way; `keyEnd`: the Riftstone it finished, kept when the hero walks out of its dungeon. */
   /** The hero as last stamped (heroSignature): persist() bumps `updated` only when it differs. */
@@ -307,6 +329,7 @@ export class SigilEngine {
       teach: null,
       tip: null,
       card: null,
+      story: null,
       notice:
         loaded.status === 'recovered'
           ? 'Your last save could not be read, so your previous save was restored.'
@@ -494,7 +517,7 @@ export class SigilEngine {
 
   isPaused(): boolean {
     const u = this.ui;
-    return u.screen !== 'game' || u.pause || !!u.panel || !!u.dialogue || !!u.travel || u.death || !!u.reward || !!u.tip || this.hidden;
+    return u.screen !== 'game' || u.pause || !!u.panel || !!u.dialogue || !!u.travel || u.death || !!u.reward || !!u.tip || !!u.story || this.hidden;
   }
 
   /* ------------------------------------------------------------ the frame */
@@ -561,7 +584,7 @@ export class SigilEngine {
       }
       if (this.hero) this.hero.stats.time += dt;
       // (the greeting waits for a title over the gate to have come and gone)
-      if (this.greetIn > 0 && !this.ui.card && !this.cards.length) {
+      if (this.greetIn > 0 && !this.ui.card && !this.cards.length && !this.ui.story && !this.pages.length) {
         this.greetIn -= dt;
         if (this.greetIn <= 0 && this.hero && questState(this.hero, 'briar-dusk') === 'active' && w.region.id === HOME) this.talk('mara-venn');
       }
@@ -585,6 +608,9 @@ export class SigilEngine {
       this.kbm?.fill(emptyInput(), this.toWorldFn, w.player.x, w.player.y);
     }
     this.handleEvents(w);
+    // the story's pages: none of its scenes begins while one is waiting, and the next comes up once the world is calm
+    w.holdScenes = this.pages.length > 0 || !!this.ui.story;
+    if (!this.ui.story && this.pages.length) this.turnPage(w, dt);
     this.renderer.aim = paused ? null : this.touch.aim;
     this.renderer.touchMode = this.touchMode;
     this.renderer.frameShift = this.touchMode ? (this.settings.lefty ? -FRAME_SHIFT : FRAME_SHIFT) : 0;
@@ -618,7 +644,7 @@ export class SigilEngine {
     }
     // what happens while someone is talking, or a scene plays (the HUD stepped aside), waits until they have
     // finished: a toast behind them is missed
-    if (this.ui.dialogue || w.scene) this.toastsHeld = true;
+    if (this.ui.dialogue || w.scene || this.ui.story) this.toastsHeld = true;
     else if (this.toastsHeld) {
       this.toastsHeld = false;
       this.setUi({ toasts: this.ui.toasts.map((x) => ({ ...x, until: t + toastTime(x.tone) })) });
@@ -683,7 +709,10 @@ export class SigilEngine {
         }
         case 'questDone': {
           const q = QUEST_DEFS[ev.quest];
-          if (q && this.hero && !q.quiet) this.toast(`Quest complete: ${q.name}`, 'quest', undefined, rewardSummary(this.hero, q) || q.reward.text);
+          if (q && this.hero) this.storyOf(q.id, 'done');
+          // (a quest whose ending is told on a page of its own has its name and its pay there)
+          const paged = this.pages.some((p) => p.kind === 'deed' && p.quest === ev.quest);
+          if (q && this.hero && !q.quiet && !paged) this.toast(`Quest complete: ${q.name}`, 'quest', undefined, rewardSummary(this.hero, q) || q.reward.text);
           this.sound.play('questDone');
           // the first horses: how to ride, once the mount is in (granted below, shown when the hero is free)
           if (ev.quest === FIRST_RIDE && this.queueTip('riding')) this.tipAfter = performance.now() + TIP_AFTER_REWARD;
@@ -691,12 +720,14 @@ export class SigilEngine {
         }
         case 'questStep': {
           const q = QUEST_DEFS[ev.quest];
+          if (q && this.hero) this.storyOf(q.id, 'step');
           if (q && this.hero) this.toast(`${q.name}: next`, 'quest', undefined, currentObjective(this.hero, q).label);
           this.sound.play('quest', 0.6);
           break;
         }
         case 'questReady': {
           const q = QUEST_DEFS[ev.quest];
+          if (q && this.hero) this.storyOf(q.id, 'ready');
           const who = q ? turnInNpc(q) : null;
           if (q && who) this.toast(`${q.name}: done`, 'quest', undefined, `Return to ${NPCS[who]?.name ?? 'them'}`);
           this.sound.play('questDone', 0.7);
@@ -725,6 +756,13 @@ export class SigilEngine {
         case 'bossDown':
           this.ui = { ...this.ui, boss: null, banner: { text: 'Victory!', sub: `${w.region.name}`, id: performance.now() } };
           changed = true;
+          break;
+        case 'sigil':
+          // the Sigil Rite comes before the page that tells what the quest came to
+          if ((SIGILS as string[]).includes(ev.id)) {
+            const deed = this.pages.findIndex((p) => p.kind === 'deed');
+            this.pages.splice(deed < 0 ? this.pages.length : deed, 0, { kind: 'sigil', sigil: ev.id as SigilId });
+          }
           break;
         case 'paragon':
           this.toast(`Paragon ${ev.level}`, 'good', undefined, 'A point to spend in the Hero panel');
@@ -871,7 +909,7 @@ export class SigilEngine {
     const h = this.hero;
     // (nor over a line said out of a fight: the first horses' hint came up over Mara's answer to the riders, and the
     // game paused, held her line and the quest's own toasts behind it. In a fight the lesson can't wait for the barks)
-    if (!h || this.ui.tip || this.coop || w.keyRun || w.scene || (w.story.talking && !w.story.fighting) || performance.now() < this.tipAfter || this.ui.card || this.isPaused() || this.renderer.waiting) return;
+    if (!h || this.ui.tip || this.coop || w.keyRun || w.scene || (w.story.talking && !w.story.fighting) || performance.now() < this.tipAfter || this.ui.card || this.pages.length || this.isPaused() || this.renderer.waiting) return;
     const next = this.tipQueue.shift();
     if (!next) return;
     // (turned off since it was asked for, or shown already)
@@ -1046,7 +1084,8 @@ export class SigilEngine {
     this.hero = trialHero(cls, spec, top);
     this.heroSig = heroSignature(this.hero);
     this.tipQueue = [];
-    this.ui = { ...this.ui, screen: 'game', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], teach: null };
+    this.pages = [];
+    this.ui = { ...this.ui, screen: 'game', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], teach: null, story: null };
     this.sound.unlock();
     if (!this.travel(region, 2, [], undefined, stone)) this.toTitle();
     this.bump();
@@ -1096,7 +1135,8 @@ export class SigilEngine {
     this.heroSig = heroSignature(h);
     this.save.last = slot;
     this.tipQueue = [];
-    this.ui = { ...this.ui, screen: 'game', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], teach: null };
+    this.pages = [];
+    this.ui = { ...this.ui, screen: 'game', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], teach: null, story: null };
     // back where they were when they last played (Character.at): the land, the town, a dungeon at its door. A place
     // that can't be gone to any more (a land the story left, a way lost) is Briarhollow, as it always was
     const at = h.at;
@@ -1207,7 +1247,8 @@ export class SigilEngine {
     this.trial = null;
     this.cards = [];
     this.tipQueue = [];
-    this.setUi({ screen: 'title', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], levelUp: null, banner: null, teach: null, card: null });
+    this.pages = [];
+    this.setUi({ screen: 'title', tip: null, panel: null, pause: false, dialogue: null, travel: null, death: false, reward: null, boss: null, toasts: [], levelUp: null, banner: null, teach: null, card: null, story: null });
     void this.reportRanks();
   }
 
@@ -1416,7 +1457,76 @@ export class SigilEngine {
   /** An act's title, once (it stands for the land's own title, if that hasn't come up yet). */
   private actBegins(act: ActDef): void {
     this.hero?.opened.push(`act:${act.id}`);
-    this.cards = [{ over: act.over, text: act.name, act: true }, ...this.cards.filter((c) => c.act)];
+    // the narrator tells where the tale stands (its page is the act's title); an act with no telling has its card
+    if (TALES[act.id]) this.pages.push({ kind: 'tale', act: act.id });
+    else this.cards = [{ over: act.over, text: act.name, act: true }, ...this.cards.filter((c) => c.act)];
+  }
+
+  /**
+   * The pages a quest's moment brings (StoryPage): what was found as its work was done (at the step that finds it, or
+   * when the work is done), and, for a quest done out in the world, what it came to. A quest handed in or paid in a
+   * talk tells its ending in the talk itself.
+   */
+  private storyOf(id: string, moment: 'step' | 'ready' | 'done'): void {
+    const h = this.hero;
+    const q = QUEST_DEFS[id];
+    if (!h || !q) return;
+    const find = q.find;
+    const kept = h.opened.includes(`kept:${id}`) || this.pages.some((p) => p.kind === 'find' && p.quest === id) || this.ui.story?.kind === 'find' && this.ui.story.quest === id;
+    if (find && !kept) {
+      const step = h.quests[id]?.step ?? 0;
+      const due = find.step !== undefined ? (moment === 'step' && step - 1 === find.step) || (moment !== 'step' && find.step >= questSteps(q).length - 1) : moment !== 'step';
+      if (due) this.pages.push({ kind: 'find', quest: id });
+    }
+    if (moment === 'done' && q.reward.text && !q.quiet && !this.ui.dialogue) this.pages.push({ kind: 'deed', quest: id });
+  }
+
+  /** The next page of the story comes up, once nothing else holds the screen and the world has been calm a breath. */
+  private turnPage(w: World, dt: number): void {
+    const u = this.ui;
+    if (u.dialogue || u.panel || u.travel || u.death || u.reward || u.tip || u.pause || w.scene || this.renderer.waiting || this.hidden) {
+      this.pageCalm = 0;
+      return;
+    }
+    const p = w.player;
+    const fight = w.enemies.some((e) => !e.dead && !e.dummy && e.aggro && Math.abs(e.x - p.x) < 420 && Math.abs(e.y - p.y) < 320);
+    const busy = p.dead || w.story.talking || w.story.fighting || fight;
+    this.pageWait += dt;
+    this.pageCalm = busy ? 0 : this.pageCalm + dt;
+    // a breath after the moment, once nobody is fighting or still saying their last words; or, that going on and on,
+    // the page comes anyway after a while (the world then stands still for it, as for a menu). In a party the world
+    // doesn't stop for a page: it waits for the fight to be over, however long
+    if (this.pageCalm < 0.6 && (this.pageWait < 8 || this.coop)) return;
+    const page = this.pages.shift()!;
+    this.pageCalm = 0;
+    this.pageWait = 0;
+    if (page.kind === 'find' && this.hero && !this.hero.opened.includes(`kept:${page.quest}`)) this.hero.opened.push(`kept:${page.quest}`);
+    this.kbm?.release();
+    this.touch.release();
+    this.sound.play(page.kind === 'sigil' ? 'bell-toll' : page.kind === 'find' ? 'pickupBig' : page.kind === 'tale' ? 'bell' : 'quest');
+    if (page.kind === 'sigil') this.sound.play('legendary', 0.8);
+    this.setUi({ story: page });
+  }
+
+  /** The page being read is put down; the next waits its own breath. */
+  closeStory(): void {
+    if (!this.ui.story) return;
+    this.pageCalm = 0.3;
+    this.pageWait = 0;
+    // (one read again from the Journal goes back to it)
+    const back = this.storyFromPanel;
+    this.storyFromPanel = false;
+    this.sound.play('close');
+    if (back) this.questsView = 'journal';
+    this.setUi(back ? { story: null, panel: 'quests' } : { story: null });
+    this.scheduleSave(300);
+  }
+
+  /** A page read again from the Journal (a letter kept, the tale so far, a sigil won). */
+  reread(page: StoryPage): void {
+    this.storyFromPanel = true;
+    this.sound.play('open');
+    this.setUi({ panel: null, story: page });
   }
 
   /** Is the dialogue open a part of the story (anyone's who isn't only trading, or a quest given or taken back)? */
@@ -1513,6 +1623,17 @@ export class SigilEngine {
     this.setUi({ panel: p, pause: false, dialogue: null });
   }
 
+  /** The Quests page opened on its Journal (the tale so far, the crown, the things kept), or on the quests. */
+  questsView: 'quests' | 'journal' = 'quests';
+  openJournal(): void {
+    this.questsView = 'journal';
+    this.openPanel('quests');
+  }
+  /** The page of the Quests panel last looked at (it opens there again). */
+  showQuestsView(v: 'quests' | 'journal'): void {
+    this.questsView = v;
+  }
+
   /** A vendor's shop. */
   openShop(shop: ShopId, npc?: string): void {
     if (this.ui.screen !== 'game' || this.ui.death || this.ui.reward) return;
@@ -1563,6 +1684,7 @@ export class SigilEngine {
 
   togglePause(): void {
     if (this.ui.screen !== 'game' || this.ui.tip) return;
+    if (this.ui.story) return this.closeStory();
     if (this.ui.panel) return this.closePanel();
     if (this.ui.dialogue) return this.closeDialogue();
     if (this.ui.travel) return this.cancelTravel();
@@ -1582,6 +1704,11 @@ export class SigilEngine {
     // a hint is answered on its own buttons (Esc puts it away); the keys for the menus wait
     if (this.ui.tip) {
       if (k === 'pause') this.endTip();
+      return;
+    }
+    // (a page of the story is put down with Esc too, as the page's own button does)
+    if (this.ui.story) {
+      if (k === 'pause') this.closeStory();
       return;
     }
     if (k === 'pause') return this.togglePause();

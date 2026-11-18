@@ -209,12 +209,15 @@ export const sceneDark = (s: ScenePlay | null): number => {
 const TINTS: Record<string, string> = { memory: '#c8a8ff', ember: '#ffb070', frost: '#a8e0ff', sun: '#ffd88a', grief: '#9a8ab8', blood: '#ff8a8a' };
 
 /** Letters a second a line is written out at. */
-export const TYPE_CPS = 46;
+export const TYPE_CPS = 40;
 /**
- * How long a line stays before the scene goes on by itself: time to read it at an easy pace, however long it is (the
- * old pace gave a 140-letter line six seconds). Whoever reads faster takes the next line with a tap.
+ * How long a line stays before the scene goes on by itself: time to read it slowly, and to look at who said it, however
+ * long it is (the old pace gave a 140-letter line six seconds, then nine and a half; the owner, 2026-11-18: "sometimes
+ * the cinematics cut abruptly and too fast"). Whoever reads faster takes the next line with a tap.
  */
-export const lineTime = (line: string): number => Math.min(9.5, Math.max(2.6, 1.3 + line.length * 0.055));
+export const lineTime = (line: string): number => Math.min(13, Math.max(3.4, 1.8 + line.length * 0.075));
+/** How long the camera holds a shot it has gone to before the scene goes on (s): long enough to see what it shows. */
+export const SHOT_HOLD = 1.35;
 /** Nobody in a scene turns their back on the camera: a heading is kept within this of facing it (radians). */
 const SHOWS_FACE = 1.75;
 /** The way from one spot to another as a heading someone can be turned to. */
@@ -377,7 +380,7 @@ export function scenesPlayHere(w: Pick<World, 'coop' | 'keyRun'>): boolean {
 
 /** Starts a scene whose moment has come here, if none is playing and nothing is fighting nearby. */
 export function maybeStartScene(w: World): void {
-  if (w.scene || w.player.dead || w.story.fighting) return;
+  if (w.scene || w.player.dead || w.story.fighting || w.holdScenes) return;
   const h = w.hero;
   for (const def of SCENES) {
     if (!def.when || def.region !== w.region.id || h.opened.includes(seenKey(def.id)) || !holds(h, def.when)) continue;
@@ -597,14 +600,15 @@ export function updateScene(w: World, dt: number): void {
       s.lean = shot && at && (shot.x !== at.x || shot.y !== at.y) ? { x: shot.x - at.x, y: shot.y - at.y } : undefined;
     }
     s.focus = at && s.lean ? { x: at.x + s.lean.x, y: at.y + s.lean.y } : step.look === 'hero' ? null : at;
-    done = s.t >= 0.9;
+    // (back to the hero is a return, not a shot: it needn't be held)
+    done = s.t >= (step.look === 'hero' ? 0.9 : SHOT_HOLD);
   } else if ('at' in step) {
     if (first) {
       const shot = composeShot(step.at, speakersAhead(w, s.def, s.step), zoomAhead(s, s.step));
       s.lean = shot && (shot.x !== step.at.x || shot.y !== step.at.y) ? { x: shot.x - step.at.x, y: shot.y - step.at.y } : undefined;
     }
     s.focus = s.lean ? { x: step.at.x + s.lean.x, y: step.at.y + s.lean.y } : step.at;
-    done = s.t >= 1;
+    done = s.t >= SHOT_HOLD;
   } else if ('follow' in step) {
     const at = where(w, step.follow);
     if (at) {
@@ -685,7 +689,7 @@ export function updateScene(w: World, dt: number): void {
     s.title = { text: step.title, sub: step.sub };
     done = true;
   } else if ('fade' in step) {
-    const secs = step.secs ?? 0.8;
+    const secs = step.secs ?? 1;
     if (first) s.dark = { from: sceneDark(s), to: step.fade === 'out' ? 1 : 0, t: 0, secs };
     done = s.t >= secs;
   } else if ('vision' in step) {

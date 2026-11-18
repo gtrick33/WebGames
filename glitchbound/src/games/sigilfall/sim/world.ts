@@ -400,6 +400,11 @@ export class World {
   readonly handIns: boolean;
   /** Story beats for the main quests (WorldOptions.beats). */
   readonly beats: boolean;
+  /**
+   * The story's pages are waiting to be read (what just happened, a letter found, a sigil won: engine.ts): no scene
+   * starts until they have been, so the tale is told in its order.
+   */
+  holdScenes = false;
   /** The maps' fog of war here (progress/fog.ts), and the cells with ground under them. */
   fog!: Fog;
   private fogOpen!: Uint8Array;
@@ -1439,6 +1444,10 @@ export class World {
     else
       for (const e of this.enemies) {
         if (wild && !e.aggro && !e.dead && e.state === 'idle' && (Math.abs(e.x - px) > SLEEP_X || Math.abs(e.y - py) > SLEEP_Y) && !this.nearGhost(e.x, e.y)) continue;
+        // a scene holds the land still: a pack wandering into sight doesn't notice the hero and break it off mid-line
+        // (the owner: "sometimes the cinematics cut abruptly"). A foe already in a fight still is, and ends it; those
+        // the scene holds in its shot (a wave mustering, a boss in its den) are its own
+        if (this.scene && !e.aggro && !e.held && !e.dead) continue;
         updateEnemy(this, e, dt);
         awake.push(e);
       }
@@ -2866,7 +2875,9 @@ export class World {
       }
       if (r.perk && !h.perks.includes(r.perk)) {
         h.perks.push(r.perk);
-        this.emit({ t: 'toast', text: `${PERKS[r.perk].name}: ${PERKS[r.perk].text}`, tone: 'good' });
+        // a sigil of the Crown is the story's own moment (the Sigil Rite); the road's gifts are a line of news
+        if (r.perk.startsWith('sigil-')) this.emit({ t: 'sigil', id: r.perk });
+        else this.emit({ t: 'toast', text: `${PERKS[r.perk].name}: ${PERKS[r.perk].text}`, tone: 'good' });
         this.rebuild();
       }
       // a quest the hero has long out-grown pays less (data/progression.ts)

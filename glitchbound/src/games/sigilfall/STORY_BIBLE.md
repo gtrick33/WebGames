@@ -1,4 +1,27 @@
-# Sigilfall — Story Bible: *The Crown of Ash and Starlight* (v3)
+# Sigilfall — Story Bible: *The Crown of Ash and Starlight* (v4)
+
+**v4 (2026-11-18): one tale, told darker, and every part of it seen.** The owner: the dialogue was still confusing,
+the cinematics cut off too fast (the Tear), exploring led nowhere and then back again, a sigil won went unnoticed ("i
+do a dungeon and suddenly in my inventory tab ... i see 4/7 sigils"), and the story should be "flowy, dark and similar
+to the wow/lotr one". v4 keeps the v3 canon below and changes how it is told:
+
+- **The narrator** (`data/chronicle.ts` TALES): each act opens on a page of the tale so far and what the hero sets out
+  to do; the Prologue's page tells the star, the two crowns, Vaelor's grief and the seven sigils before the first
+  word at the gate. The Journal (Quests → Journal) keeps every page, the crown of seven and every thing found.
+- **Every ending is seen**: a quest that pays out in the world shows its reward's words as a page (engine.ts
+  StoryPage `deed`), with what comes next. In v3 these were only ever an XP toast.
+- **Things found** (`find` on a quest, data/types.ts Keepsake): every quest that sends the hero to look somewhere
+  finds a letter, an order, a page or a relic there, shown with its words, and glinting on the ground until found.
+- **The Sigil Rite**: a sigil won takes the whole screen: where it lay, its light, the memory it holds and the memory
+  it took from Elyra (`SIGIL_LORE`), and the crown of seven filling up. The HUD shows the crown under the hero's bars.
+- **The enemy is named at the end of the Prologue**: Morgrave's journal names the Pale Herald, the Hallow King and the
+  seven sigils, and Maren tells the old story at dawn. Later acts deepen what the player already knows.
+- **The Veil's price** is the night of the raid on Briarhollow, the night Elyra met the hero (v3 had none).
+- **Scenes take their time** (longer lines and shots, the land holds still while one plays) and every turn of the
+  story is on the screen: Elyra taken at the Tear is a scene, not shouts in a fight.
+- **No ping-pong**: at the Breach Camp the cipher is taken from the voidcallers and read on the spot; the Tearborn is
+  fought where the Herald left you. See §4 for the lands as v4 plays them.
+
 
 This is the one canon. It replaces the old "Hollow King and the Rift" telling (WORLD.md now only keeps the geography)
 and the v2 outline. v3 tells the story through **fifteen lands** instead of twenty-seven, and stages **every step of
@@ -113,7 +136,7 @@ it saw (the player sees it with her: `vision` scenes).
 | **Sun** | the Tomb of the Sun King (Sunscorch) | the Sun King, a warden-king of the desert sealed in his tomb with it | the plague ship coming into Vaelmoor's harbor, and the man who let it in | the color of Briarhollow's orchard in spring |
 | **Thorns** | the Thorn Court (Glimmerwood) | the first Thistlemourn | Vaelor at his children's bedside, the night he broke his crown | Thessa's face (she knows the name) |
 | **Frost** | the Vault of Rime (Rimeheld) | Jarl Ingrith the Unthawed, frozen in the vault with it | the eight wardens at the border; seven ride away and one stays | her own birthday |
-| **Veil** | the Tear (the Shattered Vale) | Magister Orla, who sealed the Tear with it | Ser Edric holding the Gloam Gate alone at dusk | — (taken with her by the Herald; won back at the Gloam Gate) |
+| **Veil** | the Tear (the Shattered Vale) | Magister Orla, who sealed the Tear with it | Ser Edric holding the Gloam Gate alone at dusk | the night of the raid on Briarhollow, the night she met the hero (v4; taken with her by the Herald, won back at the Gloam Gate, where its Rite plays) |
 | **Tides** | the drowned altar of Hollowmere | Queen Ysane's own maid, Bettany, who stayed | Ysane, dying, asking Vaelor to let her go | the hero's name |
 
 **The last sigil is the King's.** Vosk carried the Sigil of Stone north and laid it at Vaelor's feet, and Vaelor set

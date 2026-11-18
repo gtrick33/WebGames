@@ -119,10 +119,11 @@ describe('Sigilfall: a scene is read at the reader’s pace', () => {
   it('left alone, every line stays long enough to be read, and none for ever', () => {
     for (const l of LINES) {
       const secs = lineTime(l.line);
-      // (written out, then read at no more than twenty letters a second: the old pace gave the longest lines six seconds)
-      expect(secs, l.line).toBeGreaterThanOrEqual(Math.min(9.5, l.line.length / 20));
-      expect(secs).toBeGreaterThanOrEqual(2.6);
-      expect(secs).toBeLessThanOrEqual(9.5);
+      // (written out, then read at no more than fourteen letters a second: the old pace gave the longest lines six
+      // seconds, and the owner still found the scenes too fast at twenty)
+      expect(secs, l.line).toBeGreaterThanOrEqual(Math.min(13, l.line.length / 14));
+      expect(secs).toBeGreaterThanOrEqual(3.4);
+      expect(secs).toBeLessThanOrEqual(13);
       expect(l.line.length / TYPE_CPS, l.line).toBeLessThan(secs - 1);
     }
     expect(LINES.length).toBeGreaterThan(300);
