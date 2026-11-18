@@ -1,6 +1,6 @@
 import type { D1PreparedStatement, Env } from './http';
 import { roomStub, validCode } from './rooms';
-import { botRival, factorOf, isFormat, leaversOf, MATCH_MAX_MS, MIN_BOT_WIN_MS, moveStanding, outcomeOf, PARTY_SPREAD, peopleMatchId, REPEAT_MS, seasonal, SETTLE_MS, shownStanding, stakesFor, teamRating, TICKET_MS, verdictOf, VOID_MS, type Fairness, type Note, type Outcome, type RankedStanding, type Report, type Seat } from '../src/games/sigilfall/arena/ranked';
+import { botRival, factorOf, isFormat, leaversOf, MATCH_MAX_MS, MIN_BOT_WIN_MS, moveStanding, outcomeOf, peopleMatchId, REPEAT_MS, seasonal, SETTLE_MS, shownStanding, stakesFor, teamRating, TICKET_MS, verdictOf, VOID_MS, type Fairness, type Note, type Outcome, type RankedStanding, type Report, type Seat } from '../src/games/sigilfall/arena/ranked';
 import { FORMATS, seasonOf, type Format, type Standing } from '../src/games/sigilfall/arena/ranks';
 import { LEAVER_K } from '../src/games/sigilfall/arena/live';
 
@@ -240,11 +240,9 @@ async function matchRows(env: Env, id: string): Promise<{ m: MatchRow; players: 
 /** What the server finds about who one player was matched against (arena/ranked.ts Fairness). */
 async function fairnessOf(env: Env, m: MatchRow, me: PlayerRow, players: PlayerRow[]): Promise<Fairness> {
   const them = players.filter((p) => p.team !== me.team);
-  const party = players.filter((p) => p.team === me.team && p.party);
   const out: Fairness = {
     dupe: m.note === 'dupe',
     network: !!me.net && them.some((p) => p.net === me.net),
-    spread: !!me.party && party.length > 1 && Math.max(...party.map((p) => p.mmr)) - Math.min(...party.map((p) => p.mmr)) > PARTY_SPREAD,
   };
   if (!them.length) return out;
   const marks = them.map(() => '?').join(', ');
@@ -310,10 +308,11 @@ async function settlePeople(env: Env, id: string, now: number, roster: RosterOf,
     const fair = await fairnessOf(env, m, p, players);
     const { factor, note: fairNote } = factorOf(fair);
     const them = players.filter((x) => x.team !== p.team);
-    const us = players.filter((x) => x.team === p.team);
     const bots = them.length === 0;
     const st = await standingIn(env, p.user_id, format, now);
-    const moved = moveStanding(st, o, bots ? m.rival : teamRating(them.map((x) => x.mmr)), teamRating(us.map((x) => x.mmr)), factor, bots);
+    // (each player by their own matchmaking rating against the other side's: in a team far apart, the stronger one
+    // wins little and loses a lot, the weaker one the other way round; WIN_CAP holds the most anyone wins)
+    const moved = moveStanding(st, o, bots ? m.rival : teamRating(them.map((x) => x.mmr)), p.mmr, factor, bots);
     const note = v.note ?? (o.kind === 'none' ? undefined : (fairNote ?? moved.note)) ?? (m.note === 'dupe' ? 'dupe' : undefined);
     writes.push(writePlayer(env, m.id, p.user_id, moved.change, note, guard));
     if (moved.next !== st) writes.push(writeStanding(env, p.user_id, format, moved.next, now, guard), ...writeBoards(env, p.user_id, format, moved.next.best, now, guard));
@@ -347,7 +346,7 @@ export async function openPeopleMatch(env: Env, user: string, code: string, run:
   const fair = await fairnessOf(env, rows.m, me, rows.players);
   const { factor, note } = factorOf(fair);
   const them = rows.players.filter((p) => p.team !== me.team);
-  const ours = teamRating(rows.players.filter((p) => p.team === me.team).map((p) => p.mmr));
+  const ours = me.mmr;
   const rival = them.length ? teamRating(them.map((p) => p.mmr)) : rows.m.rival;
   const st = await standingIn(env, user, format, now);
   const stakes = stakesFor(st, rival, ours, factor, !them.length);

@@ -5,7 +5,7 @@ import { fullTalents } from '../arena/talents';
 import { afterMatch, clearLive, COMPS, drawOpponents, LEAVER_K, mateSkill, mmrOf, namedApart, nameFor, readLive, readRing, rivalFor, setsOf, skillAt, stakesOf, standingOf, writeLive, writeRing, type ClassSets, type Comp, type LiveMatch, type RingSave, barredFrom, BARRED_WHY, styleFor } from '../arena/ladder';
 import { MAP_IDS, MAPS } from '../arena/maps';
 import { bestRating, FORMATS, rankOf, seasonOf, type Format, type Standing } from '../arena/ranks';
-import { NOTE_WORDS, partyApart, partyRating, peopleMatchId, type Report } from '../arena/ranked';
+import { NOTE_WORDS, partyRating, peopleMatchId, type Report } from '../arena/ranked';
 import { rankedApi, rankedStanding, readRanked, reportAndSettle, sendReport, writeRanked, type RankedCopy, type ShownStanding } from '../net/ranked';
 import { friendsApi } from '../../../platform/friends';
 import { InviteDialog, PlayLayer, type Ladder, type PartyShown } from './RingPlay';
@@ -530,9 +530,9 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
     const st = standingIn(v.format);
     const them = rivalsOf(v);
     const rivalRating = them.rating ?? mmrOf(st);
-    // (2v2 and 3v3: worked from the two sides' means, as rated arenas do; 1v1: that is just your own. A search says
-    // the searcher's matchmaking rating, so these are matchmaking ratings)
-    const ourRating = them.ours ?? mmrOf(st);
+    // (each player's own matchmaking rating against the other side's mean: in a team far apart, the stronger one
+    // wins little and loses a lot, the weaker one the other way round)
+    const ourRating = mmrOf(st);
     const rival = listed(them.names) || 'the other team';
     const rk = rankOf(st.best);
     const ticket = user ? peopleMatchId(v.code, v.run, v.runSeed) : undefined;
@@ -615,10 +615,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
       // (only the leader starts the party's search; everyone else waits for it, the layer says so)
       if (!v || v.host !== v.you || !linkRef.current) return;
       const ratings = partySeats(v).map((x) => x.pick!.rating ?? mmrOf(standing));
-      if (partyApart(ratings)) {
-        setSeekNote(NOTE_WORDS.spread);
-        return;
-      }
+      // (however far apart: the party is matched at its median, and each player wins and loses by their own rating)
       setPlayOpen(false);
       seekRef.current = new Seek({ format: v.format, map: ground, name: shownAs, pick: myPickNow, party: linkRef.current, rating: partyRating(ratings) }, seekHandlers(true));
       return;

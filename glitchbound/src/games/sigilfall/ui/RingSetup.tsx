@@ -510,7 +510,7 @@ export function RingHelp({ onClose, touch, engine, onTutorial }: { onClose: () =
                 <b>Ranked.</b> Signed in, your rating is kept by the server and shown on the rankings, and every player’s game has to agree on who won. Matches against a friend, someone on your network or your own other account don’t count, the same opponent counts for less after two matches in a day, and from 1900 only matches against people move your rating. Not signed in, you play for a practice rating kept on your device.
               </li>
               <li>
-                <b>Teams and custom games.</b> In 2v2 and 3v3, invite friends into your team from the fight’s window and queue ranked together, as long as your ratings are within 500 of each other. Custom game is a private room for friends on any sides: no rating changes hands there.
+                <b>Teams and custom games.</b> In 2v2 and 3v3, invite friends into your team from the fight’s window and queue ranked together, at any ratings: the party is matched at its middle rating, and each of you wins and loses by your own (the stronger player wins a little and loses a lot), never more than 40 in one match. Custom game is a private room for friends on any sides: no rating changes hands there.
               </li>
               <li>
                 <b>Climb for rewards.</b> Every rank gives its title and a suit of Ringforged armor, for good. See them under Rewards in the lobby, and wear them from Title & armor.

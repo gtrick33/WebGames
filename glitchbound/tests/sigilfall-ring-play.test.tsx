@@ -105,7 +105,7 @@ describe('The Ring: choosing a fight', () => {
     expect(screen.queryByRole('button', { name: 'Invite a friend' })).toBeNull();
   });
 
-  it('warns a party too far apart to count', () => {
+  it('a party far apart can queue all the same: no warning, the search is the leader’s to start', () => {
     const party: PartyShown = {
       code: 'PARTY',
       leader: true,
@@ -116,6 +116,7 @@ describe('The Ring: choosing a fight', () => {
       ],
     };
     layer({ party, format: 3 });
-    expect(screen.getByText(/more than 500 apart/)).toBeTruthy();
+    expect(screen.queryByText(/apart/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Find a ranked 3v3 match' }).getAttribute('aria-disabled')).toBeNull();
   });
 });

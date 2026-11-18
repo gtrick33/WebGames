@@ -4,7 +4,7 @@ import { useAccount } from '../../../platform/account';
 import { byPresence } from '../../../platform/friends';
 import { PRESETS, SLOTS } from '../arena/abilities';
 import { COMPS } from '../arena/ladder';
-import { BOT_CEILING, PARTY_SPREAD } from '../arena/ranked';
+import { BOT_CEILING, WIN_CAP } from '../arena/ranked';
 import { FORMATS, nextRank, rankOf, seasonEnds, type Format, type Standing } from '../arena/ranks';
 import { PLACEMENT } from '../arena/rating';
 import { bestFits, bestPreset, healerSpec, honored, slotsFor, specOf, type MateChoice, type Spec } from '../arena/teammates';
@@ -108,8 +108,6 @@ function TeamRow(props: { format: Format; cls: ClassId; bar: string[]; myRating:
   const set = (i: number, c: MateChoice): void => props.onMates(shown.map((x, j) => (j === i ? c : x)));
   const comps = COMPS[format].filter((c) => c.team.some((t) => t.cls === cls));
   const [copied, setCopied] = useState(false);
-  const ratings = [props.myRating, ...friends.map((f) => f.rating ?? props.myRating)];
-  const apart = ratings.length > 1 && Math.max(...ratings) - Math.min(...ratings) > PARTY_SPREAD;
   return (
     <div className="rb-fight-team">
       <h3>
@@ -206,10 +204,7 @@ function TeamRow(props: { format: Format; cls: ClassId; bar: string[]; myRating:
           );
         })}
       </div>
-      {apart ? (
-        <small className="rb-fight-warn">Your party’s ratings are more than {PARTY_SPREAD} apart: queue in a party closer to your rating, or alone.</small>
-      ) : (
-        !party &&
+      {!party &&
         comps.length > 0 && (
           <div className="rb-rp-comps rb-fight-comps">
             <small>Teams that work:</small>
@@ -219,8 +214,7 @@ function TeamRow(props: { format: Format; cls: ClassId; bar: string[]; myRating:
               </button>
             ))}
           </div>
-        )
-      )}
+        )}
     </div>
   );
 }
@@ -236,7 +230,7 @@ function FairPlay({ ladder, onClose }: { ladder: Ladder; onClose: () => void }) 
           <li>Matches against a friend, someone on your network, or your own other account don’t count.</li>
           <li>The same opponent counts for half after two matches in a day, and for nothing after four.</li>
           <li>Leaving a match costs a loss and a half: the room itself sees who left.</li>
-          <li>A party’s ratings have to be within {PARTY_SPREAD} of each other. From {BOT_CEILING}, only matches against people count.</li>
+          <li>A party of any ratings is matched at its middle one, and each of you wins and loses by your own: the stronger player wins a little and loses a lot, the weaker one the other way round. Nobody wins more than {WIN_CAP} in one match. From {BOT_CEILING}, only matches against people count.</li>
         </ul>
         <button className="rb-btn is-small is-gold" onClick={onClose} autoFocus>
           Got it
@@ -371,7 +365,7 @@ export function InviteDialog({ engine, format, code, asked, onInvite, onJoin, on
       <div className="rb-ring-dialog rb-fight-invite" onClick={(e) => e.stopPropagation()}>
         <h2>Invite a friend</h2>
         <p>
-          They join your team and you queue ranked {format === 1 ? '2v2 or 3v3' : `${format}v${format}`} together. Your ratings have to be within {PARTY_SPREAD} of each other to count.
+          They join your team and you queue ranked {format === 1 ? '2v2 or 3v3' : `${format}v${format}`} together. Any ratings: the party is matched at its middle one, and each of you wins and loses by your own.
         </p>
         {!me ? (
           <button className="rb-btn is-gold" onClick={() => openSignIn('Sign in to invite friends and play ranked together.')}>

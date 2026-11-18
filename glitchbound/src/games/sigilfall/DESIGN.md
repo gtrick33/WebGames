@@ -323,11 +323,12 @@ rating kept on their device, on no ranking.
   seat's account and a hash of its network by the site (never by the page) and keeps them, and notes when anyone
   drops out while it goes. Every player reports; the reports have to agree, or nothing changes. The leaver is whoever
   the room saw drop out before the end, whatever anyone said.
-- **Win trading**: nothing is won or lost against a friend, someone on the same network, your own other account, or
-  in a party more than 500 apart; the same opponent counts in full twice in 20 hours, at half twice more, then not at
+- **Win trading**: nothing is won or lost against a friend, someone on the same network or your own other account; the same opponent counts in full twice in 20 hours, at half twice more, then not at
   all. A ranked room waiting for players takes a new seat only from those quick match sent there (a door key).
 - **Parties**: friends invited from the fight's window sit on one side of a room, and its leader puts the room in the
-  queue at a rating above the party's mean (halfway to its best); strangers fill the rest. A room with people on both
+  queue at the party's median rating, however far apart they are; strangers fill the rest. Each player's win and loss
+  is worked from their own rating against the other side's (the stronger one wins little and loses a lot, the weaker
+  one the other way round), and no match raises a rating more than 40 (`WIN_CAP`). A room with people on both
   sides is a custom game, and can't queue.
 - The Ring's rankings come from the server's ladder only; the ladder started from 1000 for everyone when it began.
 

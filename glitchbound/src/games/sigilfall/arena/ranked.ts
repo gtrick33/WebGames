@@ -16,7 +16,7 @@
  *   against people move a rating at all.
  * - Win trading: rating from the same opponent counts less the more often you meet them in a day, and then not at
  *   all; nothing at all is won or lost against a friend, against someone on the same network, against your own
- *   account, or in a party whose ratings are too far apart to be a fair team.
+ *   account, or a party is matched at its median rating, and each player wins and loses by their own.
  *
  * Pure: these rules decide, the server reads and writes. The game shows the same words.
  */
@@ -52,18 +52,20 @@ export const BOT_CEILING = 1900;
 export const REPEAT_MS = 20 * 3_600_000;
 /** How much a match counts after `n` earlier meetings with the same opponent in REPEAT_MS: two in full, two at half. */
 export const repeatFactor = (n: number): number => (n < 2 ? 1 : n < 4 ? 0.5 : 0);
-/** A party's ratings in its format may be this far apart at most, for ranked. */
-export const PARTY_SPREAD = 500;
+/**
+ * The most one match can raise a rating (or a matchmaking rating) on the ladder, however lopsided it was and however
+ * new the player: a low-rated player carried by a strong friend gains a lot, never a fortune.
+ */
+export const WIN_CAP = 40;
 
 /** Why a match counted less than in full, or not at all. */
-export type Note = 'repeat' | 'friends' | 'network' | 'spread' | 'dupe' | 'ceiling' | 'disputed' | 'short' | 'guest' | 'offline';
+export type Note = 'repeat' | 'friends' | 'network' | 'dupe' | 'ceiling' | 'disputed' | 'short' | 'guest' | 'offline';
 
 /** What each note tells the player, on the result screen and before the match. */
 export const NOTE_WORDS: Record<Note, string> = {
   repeat: 'You’ve met the same opponent several times today. Rating from them counts for half after two matches, and for nothing after four.',
   friends: 'You were matched against a friend. Matches between friends don’t count for rating.',
   network: 'Players on the same network were on opposite sides. That match doesn’t count for rating.',
-  spread: `Your party’s ratings are more than ${PARTY_SPREAD} apart. Matches as that party don’t count for rating.`,
   dupe: 'The same account was on both sides. That match doesn’t count.',
   ceiling: `From ${BOT_CEILING}, only matches against people move your rating.`,
   disputed: 'The players’ games disagreed on who won, so nothing changed for anyone.',
@@ -89,17 +91,17 @@ export function seasonal(s: RankedStanding | null | undefined, season: number): 
 export const teamRating = (list: readonly number[]): number => (list.length ? Math.round(list.reduce((a, b) => a + b, 0) / list.length) : NEW_STANDING.rating);
 
 /**
- * What a party searches at: above its mean, halfway to its best (so that a strong player can't bring a weak friend
- * along to be matched among weak sides).
+ * What a party searches at, however far apart its players are: its median (the owner, 2026-11-18: "if the rating gap
+ * is huge a median mmr match should be found"). Each player's own rating then decides what the match is worth to
+ * them (moveStanding: `ours` is the player's own), so the stronger one stands to win little and lose a lot, and the
+ * weaker one the other way round; WIN_CAP holds the most anyone can win.
  */
 export function partyRating(list: readonly number[]): number {
   if (!list.length) return NEW_STANDING.rating;
-  const mean = list.reduce((a, b) => a + b, 0) / list.length;
-  return Math.round(mean + (Math.max(...list) - mean) / 2);
+  const sorted = [...list].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return Math.round(sorted.length % 2 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2);
 }
-
-/** Whether a party's ratings are too far apart to queue ranked together. */
-export const partyApart = (list: readonly number[]): boolean => list.length > 1 && Math.max(...list) - Math.min(...list) > PARTY_SPREAD;
 
 /** The computer's side's rating for a ticket: either way of the player's matchmaking rating, up to 150. `r` in [0, 1). */
 export const botRival = (mmr: number, r: number): number => Math.max(MMR_FLOOR, Math.round(mmr) + Math.floor(r * 301) - 150);
@@ -197,8 +199,6 @@ export interface Fairness {
   friends?: boolean;
   /** One of the other side played from the same network. */
   network?: boolean;
-  /** They came as a party whose ratings are too far apart. */
-  spread?: boolean;
   /** The most times they had met any one of the other side in REPEAT_MS before this match. */
   repeats?: number;
 }
@@ -208,7 +208,6 @@ export function factorOf(f: Fairness): { factor: number; note?: Note } {
   if (f.dupe) return { factor: 0, note: 'dupe' };
   if (f.friends) return { factor: 0, note: 'friends' };
   if (f.network) return { factor: 0, note: 'network' };
-  if (f.spread) return { factor: 0, note: 'spread' };
   const factor = repeatFactor(f.repeats ?? 0);
   return factor < 1 ? { factor, note: 'repeat' } : { factor };
 }
@@ -222,7 +221,8 @@ export interface Moved {
 }
 
 /**
- * A standing moved by one player's outcome: the elo rule (rating.ts afterMatch) against `theirs`, worked from `ours`,
+ * A standing moved by one player's outcome: the elo rule (rating.ts afterMatch) against `theirs`, worked from `ours`
+ * (the player's own matchmaking rating: in a team, each player's expectation is their own), never more than WIN_CAP up,
  * scaled by `factor` (a leaver's loss is never scaled down). `bots`: against the computer, where from BOT_CEILING
  * nothing moves and below it a win can't carry the rating past it.
  */
@@ -234,13 +234,13 @@ export function moveStanding(s: RankedStanding, o: Outcome, theirs: number, ours
   if (bots && s.rating >= BOT_CEILING) return { ...same, note: 'ceiling' };
   const won = o.kind === 'win';
   const out = afterMatch(s, theirs, won, o.k, ours);
-  let rating = Math.max(RATING_FLOOR, s.rating + Math.round((out.next.rating - s.rating) * f));
+  let rating = Math.max(RATING_FLOOR, s.rating + Math.min(WIN_CAP, Math.round((out.next.rating - s.rating) * f)));
   let note: Note | undefined;
   if (bots && won && rating > BOT_CEILING) {
     rating = BOT_CEILING;
     note = 'ceiling';
   }
-  const mmr = Math.max(MMR_FLOOR, s.mmr + Math.round(((out.next.mmr ?? s.mmr) - s.mmr) * f));
+  const mmr = Math.max(MMR_FLOOR, s.mmr + Math.min(WIN_CAP, Math.round(((out.next.mmr ?? s.mmr) - s.mmr) * f)));
   const best = Math.max(s.best, rating);
   const before = rankOf(s.best);
   const after = rankOf(best);
@@ -256,7 +256,7 @@ export function moveStanding(s: RankedStanding, o: Outcome, theirs: number, ours
 export function stakesFor(s: RankedStanding, theirs: number, ours: number, factor = 1, bots = false): { win: number; lose: number } {
   if (bots && s.rating >= BOT_CEILING) return { win: 0, lose: 0 };
   const st = stakesOf(s, theirs, ours);
-  const win = Math.round(st.win * factor);
+  const win = Math.min(WIN_CAP, Math.round(st.win * factor));
   return { win: bots ? Math.min(win, Math.max(0, BOT_CEILING - s.rating)) : win, lose: Math.round(st.lose * factor) };
 }
 

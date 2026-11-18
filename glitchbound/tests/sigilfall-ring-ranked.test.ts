@@ -12,7 +12,7 @@ import type { Ctx, Env } from '../server/http';
 import { openBotMatch, openPeopleMatch, readStandings, reportMatch, settleDue, type RingRoster, type RosterOf, type Settled } from '../server/ring';
 import { signIn } from '../server/signin';
 import { seekFacts } from '../src/games/sigilfall/arena/queue';
-import { BOT_CEILING, factorOf, leaversOf, MIN_BOT_WIN_MS, MIN_PEOPLE_MS, moveStanding, outcomeOf, partyApart, partyRating, peopleMatchId, repeatFactor, seasonal, SETTLE_MS, TICKET_MS, verdictOf, VOID_MS, type RankedStanding, type Seat } from '../src/games/sigilfall/arena/ranked';
+import { WIN_CAP, stakesFor, BOT_CEILING, factorOf, leaversOf, MIN_BOT_WIN_MS, MIN_PEOPLE_MS, moveStanding, outcomeOf, partyRating, peopleMatchId, repeatFactor, seasonal, SETTLE_MS, TICKET_MS, verdictOf, VOID_MS, type RankedStanding, type Seat } from '../src/games/sigilfall/arena/ranked';
 import { seasonOf, SEASON_LENGTH } from '../src/games/sigilfall/arena/ranks';
 import { act, join, newRoom, roster, viewFor, type Action, type State, type View } from '../src/games/sigilfall/net/ringRoom';
 import { Seek } from '../src/games/sigilfall/net/ringSeek';
@@ -64,7 +64,7 @@ describe('The Ring ranked: the rules', () => {
   });
 
   it('against win trading: friends, one network, one account on both sides, a lopsided party: nothing; the same opponent: less, then nothing', () => {
-    for (const f of [{ friends: true }, { network: true }, { dupe: true }, { spread: true }]) expect(factorOf(f).factor, JSON.stringify(f)).toBe(0);
+    for (const f of [{ friends: true }, { network: true }, { dupe: true }]) expect(factorOf(f).factor, JSON.stringify(f)).toBe(0);
     expect([0, 1, 2, 3, 4, 9].map(repeatFactor)).toEqual([1, 1, 0.5, 0.5, 0, 0]);
     expect(factorOf({ repeats: 2 })).toEqual({ factor: 0.5, note: 'repeat' });
     expect(factorOf({})).toEqual({ factor: 1 });
@@ -88,10 +88,25 @@ describe('The Ring ranked: the rules', () => {
     expect(moveStanding(st(BOT_CEILING), { kind: 'win', k: 1 }, BOT_CEILING, BOT_CEILING).change).toBeGreaterThan(0);
   });
 
-  it('a party searches above its mean, and can’t queue ranked more than 500 apart', () => {
-    expect(partyRating([1200, 1600])).toBe(1500);
-    expect(partyApart([1200, 1600])).toBe(false);
-    expect(partyApart([1100, 1700])).toBe(true);
+  it('a party of any ratings searches at its median', () => {
+    expect(partyRating([1200, 1600])).toBe(1400);
+    expect(partyRating([1000, 1500, 2400])).toBe(1500);
+    expect(partyRating([2100])).toBe(2100);
+  });
+
+  it('each player by their own rating: the stronger wins a little and loses a lot, the weaker the other way round; nobody wins more than the cap', () => {
+    const strong = { win: moveStanding(st(1900), { kind: 'win', k: 1 }, 1500, 1900).change, loss: moveStanding(st(1900), { kind: 'loss', k: 1 }, 1500, 1900).change };
+    const weak = { win: moveStanding(st(1100), { kind: 'win', k: 1 }, 1500, 1100).change, loss: moveStanding(st(1100), { kind: 'loss', k: 1 }, 1500, 1100).change };
+    expect(strong.win).toBeLessThan(5);
+    expect(-strong.loss).toBeGreaterThan(25);
+    expect(weak.win).toBeGreaterThan(25);
+    expect(-weak.loss).toBeLessThan(5);
+    // a newcomer, carried far above themselves: placement K and catching up, held to the cap, the rating and the hidden one
+    const fresh = { ...st(1000), wins: 0, losses: 0 };
+    const big = moveStanding(fresh, { kind: 'win', k: 1 }, 2200, 1000);
+    expect(big.change).toBe(WIN_CAP);
+    expect(big.next.mmr - fresh.mmr).toBeLessThanOrEqual(WIN_CAP);
+    expect(stakesFor(fresh, 2200, 1000).win).toBe(WIN_CAP);
   });
 
   it('a new season brings both ratings halfway back toward 1000, and keeps the best', () => {
@@ -275,16 +290,23 @@ describe('The Ring ranked: the ladder the server keeps', () => {
     expect(gains[4]).toBe(0);
   });
 
-  it('a party whose ratings are too far apart counts for nothing; the strangers in the match count as ever', async () => {
+  it('a party far apart still counts: matched at its median, each player winning and losing by their own rating', async () => {
     setStanding('ana', 2, 1900);
     setStanding('cy', 2, 1100);
+    setStanding('ben', 2, 1500);
+    setStanding('dee', 2, 1500);
     const r = room(2, [
       ['ana', 0, { party: true }],
       ['cy', 0, { party: true }],
       ['ben', 1],
       ['dee', 1],
     ]);
-    expect(await openPeopleMatch(env, ids.ana!, r.code, r.run, rosterOf, T0)).toMatchObject({ note: 'spread' });
+    const a = await openPeopleMatch(env, ids.ana!, r.code, r.run, rosterOf, T0);
+    const c = await openPeopleMatch(env, ids.cy!, r.code, r.run, rosterOf, T0);
+    if ('error' in a || 'error' in c) throw new Error('no match');
+    expect(a.note).toBeUndefined();
+    expect(a.stakes.win).toBeLessThan(a.stakes.lose);
+    expect(c.stakes.win).toBeGreaterThan(c.stakes.lose);
     for (const [who, rep] of [
       ['ana', 'won'],
       ['cy', 'won'],
@@ -292,8 +314,12 @@ describe('The Ring ranked: the ladder the server keeps', () => {
       ['dee', 'lost'],
     ] as const)
       await reportMatch(env, ids[who]!, r.id, rep, T0 + 90_000, rosterOf);
-    expect(await rating('ana', 2)).toBe(1900);
-    expect(await rating('ben', 2)).toBeLessThan(1000);
+    const ana = (await rating('ana', 2)) - 1900;
+    const cy = (await rating('cy', 2)) - 1100;
+    expect(ana).toBeGreaterThanOrEqual(0);
+    expect(ana).toBeLessThan(cy);
+    expect(cy).toBeLessThanOrEqual(WIN_CAP);
+    expect(await rating('ben', 2)).toBeLessThan(1500);
   });
 
   it('two settling at once change the ladder once', async () => {
