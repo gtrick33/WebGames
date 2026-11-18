@@ -38,7 +38,7 @@ describe('The Ring’s setup: a playstyle and its talents, and nothing else', ()
     // its four and its super as icons, and the combos they make as chips: what sets it up, what lands it, how much more
     expect(container.querySelectorAll('.rb-rs-barrow .rb-rs-slot')).toHaveLength(5);
     const links = [...container.querySelectorAll('.rb-rs-link')];
-    expect(links.map((l) => l.querySelector('b')!.textContent)).toEqual(['+70%', '+30%']);
+    expect(links.map((l) => l.querySelector('b')!.textContent)).toEqual(['×2.55', '+95%']);
     for (const l of links) expect(l.querySelectorAll('img')).toHaveLength(2);
     // a tree of talents: three rows of three, an icon and a name each, one taken in each, the first two the playstyle's own
     const rows = [...container.querySelectorAll('.rb-rs-row')];
@@ -60,7 +60,7 @@ describe('The Ring’s setup: a playstyle and its talents, and nothing else', ()
     // pointing at an ability reads it, with its combo; at a combo's chip, the combo
     fireEvent.mouseEnter(container.querySelectorAll('.rb-rs-barrow .rb-rs-slot')[1]!);
     expect(read()).toMatch(/^FlashburnComboInstant · Ranged5 sec cooldown/);
-    expect(container.querySelector('.rb-rs-read .rb-stip-combo')!.textContent).toMatch(/^Flashover Deals 70% more damage/);
+    expect(container.querySelector('.rb-rs-read .rb-stip-combo')!.textContent).toMatch(/^Flashover Deals 155% more damage/);
     fireEvent.click(links[0]!);
     expect(read()).toMatch(/^FlashoverEmber Lash › Flashburn/);
     // choosing another talent in a row takes that row's place and reads it; one is always chosen

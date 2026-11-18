@@ -393,7 +393,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('druid', 'l', 'star', [
       [
         { name: 'Falling Star', text: 'Each tick of your Moonburn has a 20% chance to trigger Falling Star (stacks twice): your next Starlash is instant and deals 60% more damage.', icon: 'star_summon_on_navy', tune: { 'l-moon': { gives: [{ boon: 'star', chance: 0.2, on: 'tick' }] }, 'l-lash': { uses: [{ boon: 'star', instant: true, mult: 1.6 }] } } },
-        { name: 'Fourth Star', text: 'Every fourth Starlash deals 111 extra damage.', icon: 'star_seed_on_navy', tune: { 'l-lash': { nth: { n: 4, extra: [{ k: 'dmg', n: 130 }], name: 'Fourth Star' } } } },
+        { name: 'Fourth Star', text: 'Every fourth Starlash deals 108 extra damage.', icon: 'star_seed_on_navy', tune: { 'l-lash': { nth: { n: 4, extra: [{ k: 'dmg', n: 130 }], name: 'Fourth Star' } } } },
         { name: 'Wandering Light', text: 'Starlash can be cast while moving, at full speed, and deals 20% more damage.', icon: 'moon_spirit_summon_on_navy', tune: { 'l-lash': { swift: true, power: 1.2 } } },
       ],
       [
