@@ -55,6 +55,18 @@ function cleanRoomTitle(v: unknown): Pick['title'] | null {
   return text ? { text, fx: t.fx, ...(typeof t.before === 'boolean' ? { before: t.before } : {}) } : null;
 }
 
+/**
+ * A party in the ranked queue (the owner, 2026-11-18: "in the partner section where you choose a partner, there should
+ * be option to invite a friend"): friends who sat down together on one side of a room put it in the queue of its
+ * format, at the rating they search at, and quick match sends players to fill it (rooms/worker.ts lists it while it
+ * waits). Taken off as the match begins.
+ */
+export interface Queue {
+  kind: string;
+  mmr: number;
+  since: number;
+}
+
 export interface State extends RoomBase {
   game: 'sigilfall-ring';
   phase: Phase;
@@ -63,6 +75,12 @@ export interface State extends RoomBase {
   picks: Record<string, Pick>;
   run: number;
   runSeed: number;
+  /** In the ranked queue, while it waits. */
+  queue?: Queue | null;
+  /** The party's seats: those seated when it went into the queue. They stay on their side, together. */
+  party?: number[];
+  /** The run that is going was found by the ranked queue. */
+  ranked?: boolean;
 }
 
 export interface View {
@@ -76,6 +94,10 @@ export interface View {
   seats: (SeatView & { pick: Pick | null })[];
   run: number;
   runSeed: number;
+  /** In the ranked queue: since when. */
+  queued: number | null;
+  /** The party's seats, while it is in the queue. */
+  party: number[];
 }
 
 export type Action =
@@ -85,6 +107,8 @@ export type Action =
   | { t: 'end' }
   | { t: 'bye' }
   | { t: 'kick'; n: number }
+  /** The host puts the party in the ranked queue, at the rating it searches at, or takes it out. */
+  | { t: 'queue'; on: boolean; rating?: number }
   | { t: 'r'; d: unknown };
 
 export function newRoom(code: string, now: number, seed: number): State {
@@ -137,6 +161,8 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       if (s.phase !== 'lobby') return 'not_lobby';
       const pick = cleanPick(a.pick);
       if (!pick) return 'bad_pick';
+      // (a party in the queue stays on its side, together)
+      if (s.queue && s.party?.includes(me.n) && s.picks[me.n] && s.picks[me.n]!.team !== pick.team) return 'queued';
       // a side can't hold more than the format seats
       const taken = s.seats.filter((x) => x.n !== me.n && s.picks[x.n]?.team === pick.team).length;
       if (taken >= s.format) return 'team_full';
@@ -145,6 +171,7 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
     }
     case 'setup': {
       if (!host || s.phase !== 'lobby') return 'not_host';
+      if (s.queue && a.format !== s.format) return 'queued';
       if ((a.format !== 1 && a.format !== 2 && a.format !== 3) || typeof a.map !== 'string' || !ID.test(a.map)) return 'bad_setup';
       s.format = a.format;
       s.map = a.map;
@@ -161,15 +188,41 @@ export function act(s: State, key: string, a: Action, now: number): string | nul
       s.phase = 'run';
       s.run++;
       s.runSeed = nextRandom(s);
+      // (a party's search ends as its match begins: the room leaves the queue, and the run is a ranked one)
+      s.ranked = !!s.queue;
+      s.queue = null;
       break;
+    case 'queue': {
+      if (!host || s.phase !== 'lobby') return 'not_host';
+      if (!a.on) {
+        s.queue = null;
+        s.party = [];
+        break;
+      }
+      // only a party can queue: everyone seated on one side, no more than the format holds. (A room of friends with
+      // both sides filled is a custom game: it never goes into the ranked queue.)
+      const seated = s.seats.filter((x) => s.picks[x.n]);
+      const teams = new Set(seated.map((x) => s.picks[x.n]!.team));
+      if (!s.picks[me.n] || teams.size !== 1 || seated.length > s.format) return 'not_a_party';
+      const r = typeof a.rating === 'number' && Number.isFinite(a.rating) ? Math.max(0, Math.min(9999, Math.round(a.rating))) : 1000;
+      s.queue = { kind: String(s.format), mmr: r, since: now };
+      s.party = seated.map((x) => x.n);
+      break;
+    }
     case 'end':
       if (!host || s.phase !== 'run') return 'not_host';
       s.phase = 'lobby';
+      s.ranked = false;
       break;
     case 'bye': {
       const gone = me.n;
       s.seats = s.seats.filter((x) => x.n !== gone);
       delete s.picks[gone];
+      // (a party that loses one of its own while it waits leaves the queue: the leader puts it back as it is now)
+      if (s.queue && s.party?.includes(gone)) {
+        s.queue = null;
+        s.party = [];
+      }
       if (s.host === gone) s.host = s.seats.find((x) => x.online)?.n ?? s.seats[0]?.n ?? s.host;
       if (s.phase === 'run' && !s.seats.some((x) => x.online)) s.phase = 'lobby';
       break;
@@ -209,7 +262,17 @@ export function viewFor(s: State, key: string): View | null {
     seats: seatViews(s, me).map((x) => ({ ...x, pick: s.picks[x.n] ?? null })),
     run: s.run,
     runSeed: s.runSeed,
+    queued: s.queue ? s.queue.since : null,
+    party: s.queue ? [...(s.party ?? [])] : [],
   };
+}
+
+/**
+ * Who is in the run that is going, as the room keeps it once it begins (rooms/worker.ts adds each seat's account and
+ * network, and the ranked ladder settles the match by it: server/ring.ts).
+ */
+export function roster(s: State): { n: number; key: string; team: 0 | 1; party: boolean }[] {
+  return s.seats.filter((x) => s.picks[x.n]).map((x) => ({ n: x.n, key: x.key, team: s.picks[x.n]!.team, party: !!s.party?.includes(x.n) }));
 }
 
 /** (`max`: what a search fills, both sides of its format; a room of friends still seats six) */

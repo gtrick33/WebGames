@@ -11,6 +11,11 @@
  * (rooms/lobby.ts `match`). When nobody else has searched that queue in the last few minutes there is nobody to wait
  * for, and the computer's teams come at once. What a match is worth is arena/ladder.ts `stakesOf`.
  *
+ * A party (friends who invited each other into a room and sat down on one side: the owner, 2026-11-18, "in the
+ * partner section where you choose a partner, there should be option to invite a friend") searches from its own room:
+ * its leader puts the room in the queue (net/ringRoom.ts `queue`), and quick match sends others to fill it. A party's
+ * seats never move; whoever joins evens the sides round them.
+ *
  * This file is the deciding, pure: what a searcher does next, given what the room shows. net/ringSeek.ts does it.
  */
 import type { View } from '../net/ringRoom';
@@ -63,7 +68,10 @@ export function seekFacts(v: View, format: Format): SeekFacts {
   const mine = me?.pick ? me.pick.team : null;
   const [a, b] = [count(0), count(1)];
   let side: 0 | 1 | null;
-  if (mine !== null) {
+  if (mine !== null && (v.party ?? []).includes(v.you)) {
+    // a party in the queue stays where it sat down, together: the others even the sides round it
+    side = mine;
+  } else if (mine !== null) {
     // seated: stay, unless this side has two more than the other and this is the last one to have sat down on it
     const here = mine === 0 ? a : b;
     const there = mine === 0 ? b : a;

@@ -35,6 +35,8 @@ export class Link<V = View, A = Action> {
     readonly code: string,
     private name: string,
     private readonly h: LinkHandlers<V>,
+    /** A ranked room's door key, from quick match (rooms/worker.ts): it lets a new seat be taken while it waits. */
+    private readonly door = '',
   ) {
     this.connect();
   }
@@ -46,7 +48,7 @@ export class Link<V = View, A = Action> {
 
   private connect(): void {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const ws = new WebSocket(`${proto}://${location.host}/api/rooms/${this.code}/ws?key=${encodeURIComponent(playerKey())}&name=${encodeURIComponent(this.name)}`);
+    const ws = new WebSocket(`${proto}://${location.host}/api/rooms/${this.code}/ws?key=${encodeURIComponent(playerKey())}&name=${encodeURIComponent(this.name)}${this.door ? `&door=${this.door}` : ''}`);
     this.ws = ws;
     ws.onopen = () => {
       this.tries = 0;

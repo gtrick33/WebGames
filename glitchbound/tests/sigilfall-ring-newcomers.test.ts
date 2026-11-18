@@ -158,8 +158,9 @@ describe('The Ring for newcomers: the tutorial', () => {
     expect(allow.welcome).toEqual(['classes', 'styles']);
     expect(allow.kit).toEqual(['styles', 'bar', 'combos', 'talents']);
     expect(allow.fight).toEqual(['formats']);
-    // every part allowed is a part of the main screen, marked in it (the setup on it is ui/RingSetup.tsx's editor)
-    const pages = { play: read('src/games/sigilfall/ui/RingScreen.tsx') + read('src/games/sigilfall/ui/RingSetup.tsx') };
+    // every part allowed is a part of the main screen, marked in it (the setup on it is ui/RingSetup.tsx's editor, the
+    // fight's layer over it ui/RingPlay.tsx)
+    const pages = { play: read('src/games/sigilfall/ui/RingScreen.tsx') + read('src/games/sigilfall/ui/RingSetup.tsx') + read('src/games/sigilfall/ui/RingPlay.tsx') };
     for (const s of LOBBY_STEPS) for (const spot of s.allow) expect(pages[s.page], `${s.id}: ${spot}`).toContain(`data-tut="${spot}"`);
     // the lock is on for as long as a step is read, and a step is read only over its own page
     const screen = pages.play;
