@@ -85,9 +85,10 @@ export interface RatedSearch {
  * Quick match: a public room of this game that is about to start and has a free seat (not one of `skip`,
  * the rooms this player already found full), else a new one held for whoever searches next. `kind`: which of the
  * game's queues, for a game with more than one. `rated`: see RatedSearch; then `code` is null when nobody else is
- * around and the searcher would rather fight the computer, and `active` is how many others searched lately.
+ * around and the searcher would rather fight the computer, and `active` is how many others searched lately. `door`: a
+ * ranked room's door key, to connect with (rooms/worker.ts).
  */
-export async function matchRoom(env: Env, game: RoomGame, skip: readonly string[] = [], kind = '', rated?: RatedSearch): Promise<{ code: string | null; created: boolean; active?: number } | null> {
+export async function matchRoom(env: Env, game: RoomGame, skip: readonly string[] = [], kind = '', rated?: RatedSearch): Promise<{ code: string | null; created: boolean; active?: number; door?: string } | null> {
   const codes = skip.filter(validCode).slice(0, 10).join(',');
   // (a game with several queues names the one it wants: The Ring's 1v1, 2v2 and 3v3)
   const queue = /^[a-z0-9-]{1,12}$/.test(kind) ? kind : '';
@@ -95,5 +96,5 @@ export async function matchRoom(env: Env, game: RoomGame, skip: readonly string[
   const res = await lobbyStub(env)
     ?.fetch(`https://room/lobby/match?game=${game}${codes ? `&skip=${codes}` : ''}${queue ? `&kind=${queue}` : ''}${extra}`, { method: 'POST' })
     .catch(() => null);
-  return res?.ok ? ((await res.json()) as { code: string | null; created: boolean; active?: number }) : null;
+  return res?.ok ? ((await res.json()) as { code: string | null; created: boolean; active?: number; door?: string }) : null;
 }

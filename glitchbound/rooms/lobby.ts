@@ -32,7 +32,12 @@ export interface Listed {
   mmr?: number;
   rated?: number;
   since?: number;
+  /** A ranked room's door key (rooms/worker.ts): handed with the code to whoever quick match sends there. */
+  door?: string;
 }
+
+/** A door key as rooms pass it: hex, or none. */
+export const cleanDoor = (v: unknown): string => (typeof v === 'string' && /^[0-9a-f]{16,32}$/.test(v) ? v : '');
 
 /** A queue's name within a game: short and plain, or none. */
 export const cleanKind = (v: unknown): string => (typeof v === 'string' && /^[a-z0-9-]{1,12}$/.test(v) ? v : '');
@@ -101,13 +106,16 @@ export function put(lobby: Lobby, r: Omit<Listed, 'claims'>, now: number): void 
     return;
   }
   const kind = cleanKind(r.kind) || before?.kind;
-  // (what quick match knows of a rated room's searchers stays: the room itself doesn't report it)
-  const rated = before && typeof before.mmr === 'number' ? { mmr: before.mmr, rated: before.rated ?? 1, since: before.since ?? before.at } : {};
+  // (what quick match knows of a rated room's searchers stays: the room itself doesn't report it. A party in the
+  // Ring's queue does, as it goes in: the rating it searches at, how many it is, and since when)
+  const said = typeof r.mmr === 'number' && Number.isFinite(r.mmr) ? { mmr: Math.round(r.mmr), rated: Math.max(1, Math.round(r.rated ?? 1)), since: typeof r.since === 'number' ? r.since : now } : {};
+  const rated = before && typeof before.mmr === 'number' ? { mmr: before.mmr, rated: before.rated ?? 1, since: before.since ?? before.at } : said;
+  const door = cleanDoor(r.door) || before?.door;
   // whoever has just sat down was on their way: their claim (the oldest) is met. Without this the one a new room was
   // opened for counted twice, as a player and as still coming, and a room for two looked full to the next searcher
   // for the twenty seconds a claim lasts.
   const arrived = before ? Math.max(0, r.players - before.players) : 0;
-  lobby[r.code] = { ...r, ...(kind ? { kind } : {}), ...rated, claims: before ? before.claims.slice(arrived).filter((t) => t > r.at - 1500 && now - t < CLAIM_MS) : [] };
+  lobby[r.code] = { ...r, ...(kind ? { kind } : {}), ...rated, ...(door ? { door } : {}), claims: before ? before.claims.slice(arrived).filter((t) => t > r.at - 1500 && now - t < CLAIM_MS) : [] };
 }
 
 export function drop(lobby: Lobby, code: string): void {
@@ -151,9 +159,9 @@ export function match(lobby: Lobby, game: string, now: number, skip: readonly st
 }
 
 /** A room quick match is opening, held for the searcher (and anyone searching right behind them). */
-export function reserve(lobby: Lobby, code: string, game: string, max: number, now: number, kind = '', rating?: number): Listed {
+export function reserve(lobby: Lobby, code: string, game: string, max: number, now: number, kind = '', rating?: number, door = ''): Listed {
   const mmr = typeof rating === 'number' && Number.isFinite(rating) ? { mmr: Math.round(rating), rated: 1, since: now } : {};
-  const r: Listed = { code, game, phase: 'lobby', players: 0, max, host: '', full: false, matched: true, at: now, claims: [now], ...(kind ? { kind } : {}), ...mmr };
+  const r: Listed = { code, game, phase: 'lobby', players: 0, max, host: '', full: false, matched: true, at: now, claims: [now], ...(kind ? { kind } : {}), ...mmr, ...(cleanDoor(door) ? { door } : {}) };
   lobby[code] = r;
   return r;
 }

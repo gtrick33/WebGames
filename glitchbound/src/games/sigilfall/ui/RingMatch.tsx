@@ -47,6 +47,8 @@ export interface MatchStakes {
   rival: string;
   blurb: string;
   rivalRating: number;
+  /** Why it counts less, or not at all, for the ranked ladder (arena/ranked.ts NOTE_WORDS), said before the gates lift. */
+  note?: string;
 }
 
 // (a step per frame on a 60 Hz screen: at 30 a second, everyone moved on every other frame and the fight looked choppy)
@@ -1316,6 +1318,7 @@ export function RingMatch({ engine, setup, myId, face, body, role, sets, stakes,
                     <em className="is-up">Win +{stakes.win}</em>
                     <em className="is-down">Lose −{stakes.lose}</em>
                   </span>
+                  {stakes.note && <span className="rb-ring-prep-note">{stakes.note}</span>}
                 </>
               ) : (
                 <span className="rb-ring-prep-rival">{tut ? 'A tutorial match against a sparring partner: your rating doesn’t change.' : 'A friendly match: no rating changes hands.'}</span>

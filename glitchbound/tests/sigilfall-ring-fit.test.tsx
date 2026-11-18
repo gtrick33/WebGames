@@ -84,13 +84,17 @@ describe('The Ring’s fight window: everything in sight at once', () => {
   const screen = read('src/games/sigilfall/ui/RingScreen.tsx');
 
   it('two columns, the formats, rank and partners in one, the arenas as pictures in the other; nothing to open first', () => {
-    const layer = screen.slice(screen.indexOf('function PlayLayer('));
+    // (the layer is ui/RingPlay.tsx's since the owner's notes of 2026-11-18; the main screen opens it)
+    expect(screen).toContain('<PlayLayer');
+    const play = read('src/games/sigilfall/ui/RingPlay.tsx');
+    const layer = play.slice(play.indexOf('export function PlayLayer('));
     const body = layer.slice(layer.indexOf('rb-ringvl-playbody'), layer.indexOf('rb-ringvl-playfoot'));
-    expect(body).toContain('<section className="rb-ringvl-playfight" aria-label="The fight">');
+    expect(body).toContain('<section className="rb-ringvl-playfight rb-fight-left" aria-label="The fight">');
     expect(body).toContain('<ArenaChoice map={props.map} onPick={props.onMap} />');
     expect(layer).not.toMatch(/mapsOpen|RewardStrip|ProgressLink/);
     expect(rule('.rb-ringvl-playbody')).toMatch(/grid-template-columns: minmax\(0, 1\.08fr\) minmax\(0, 1fr\)/);
-    expect(rule('.rb-ring-dialog.rb-ringvl-play')).toMatch(/max-height: calc\(100cqh - 20px\)/);
+    // (held to the screen less the phone's insets at the top and the foot)
+    expect(rule('.rb-ring-dialog.rb-ringvl-play')).toMatch(/max-height: calc\(100cqh - 20px - var\(--sa-t, 0px\) - var\(--sa-b, 0px\)\)/);
     // (a phone held upright: one column)
     const upright = css.slice(css.indexOf('@container (max-width: 600px)'));
     expect(upright.slice(0, 400)).toMatch(/\.rb-ringvl-playbody \{\s*grid-template-columns: minmax\(0, 1fr\)/);

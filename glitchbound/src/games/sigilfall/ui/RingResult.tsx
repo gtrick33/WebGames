@@ -18,6 +18,10 @@ export interface RatingOutcome {
   streak: number;
   /** What the climb has just earned (arena/rewards.ts). */
   rewards?: RingReward[];
+  /** The ranked ladder hasn't settled it yet: the other players' games are still to report it. */
+  pending?: boolean;
+  /** Why it counted less or not at all (arena/ranked.ts NOTE_WORDS). */
+  note?: string;
 }
 
 const clock = (t: number): string => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
@@ -208,7 +212,7 @@ function BestCard({ match, myId }: { match: Match; myId: number }) {
 }
 
 /** A match's end: who won, what it did to your standing, and who did what. */
-export function RingResult({ match, myId, won, draw, rating, rival, dolls, lesson, track, tutorial, againLabel, onAgain, onSetup, onExit }: { match: Match; myId: number; won: boolean; draw: boolean; rating: RatingOutcome | null; rival?: string; dolls: string[]; lesson?: string | null; track?: TrackGain | null; tutorial?: boolean; againLabel: string; onAgain: () => void; onSetup: () => void; onExit: () => void }) {
+export function RingResult({ match, myId, won, draw, rating, rival, dolls, lesson, track, tutorial, why, againLabel, onAgain, onSetup, onExit }: { match: Match; myId: number; won: boolean; draw: boolean; rating: RatingOutcome | null; rival?: string; dolls: string[]; lesson?: string | null; track?: TrackGain | null; tutorial?: boolean; why?: string; againLabel: string; onAgain: () => void; onSetup: () => void; onExit: () => void }) {
   const kind = draw ? 'draw' : won ? 'win' : 'loss';
   // (ready for the keyboard, without scrolling the verdict off the top of a short screen)
   const again = useRef<HTMLButtonElement>(null);
@@ -235,7 +239,15 @@ export function RingResult({ match, myId, won, draw, rating, rival, dolls, lesso
           <h2>{draw ? 'Draw' : won ? 'Victory' : 'Defeat'}</h2>
           <p>{line}</p>
         </header>
-        {rating ? (
+        {rating?.pending ? (
+          <section className="rb-rr-rating is-friendly is-pending" aria-label="Your rating" aria-busy="true">
+            <span className="rb-rr-number">
+              <small>Ranked</small>
+              <strong>Checking the result…</strong>
+            </span>
+            <p>Every player’s game reports the match, and the ladder settles it once they agree. Your rating updates here in a moment, or the next time you open the Ring.</p>
+          </section>
+        ) : rating ? (
           <section className="rb-rr-rating" aria-label="Your rating">
             {me && <img className="rb-rr-doll" src={dolls[myId]} alt="" draggable={false} />}
             <span className="rb-rr-number">
@@ -248,6 +260,7 @@ export function RingResult({ match, myId, won, draw, rating, rival, dolls, lesso
             </span>
             <RankClimb o={rating} />
             {rating.streak >= 2 && <span className="rb-rr-streak">{rating.streak} wins in a row</span>}
+            {rating.note && <p className="rb-rr-note">{rating.note}</p>}
           </section>
         ) : tutorial ? (
           <section className="rb-rr-rating is-friendly is-tutorial">
@@ -260,9 +273,10 @@ export function RingResult({ match, myId, won, draw, rating, rival, dolls, lesso
         ) : (
           <section className="rb-rr-rating is-friendly">
             <span className="rb-rr-number">
-              <small>A friendly match</small>
+              <small>{why ? 'Not rated' : 'A custom game'}</small>
               <strong>No rating changed</strong>
             </span>
+            {why && <p>{why}</p>}
           </section>
         )}
         <BestCard match={match} myId={myId} />

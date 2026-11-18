@@ -30,7 +30,7 @@ import { DEFAULT_SETTINGS, loadSave, writeSave, type LoadStatus, type SaveFile, 
 import { buyItem, buyPotions, restock } from './progress/shop';
 import { wager } from './progress/rift';
 import { chooseTitle, newTitles, setGivenTitles, titled, titleShown } from './progress/titles';
-import { bestByFormat, bestRating, NEW_STANDING } from './arena/ranks';
+import { bestRating } from './arena/ranks';
 import type { ShopId } from './data/vendors';
 import { iconsReady } from './render/art/gameIcons';
 import { Renderer } from './render/renderer';
@@ -264,6 +264,17 @@ export class SigilEngine {
   private partyRun = 0;
   /** An invite this page was opened with (?room=CODE): joined once a hero is chosen. */
   invite = typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('room')?.toUpperCase() ?? '') : '';
+  /**
+   * A friend's invitation into their Ring party, taken (or this page was opened with ?ring=CODE): the title screen opens
+   * the Ring, which joins it (ui/RingScreen.tsx) and takes it with `takeRingInvite`.
+   */
+  ringInvite = typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('ring')?.toUpperCase() ?? '') : '';
+  /** The Ring has joined the party it was invited into. */
+  takeRingInvite(): void {
+    if (!this.ringInvite) return;
+    this.ringInvite = '';
+    this.bump();
+  }
   /** Pause asked for by the arcade (left full screen, scrolled away). */
   private toWorldFn: (x: number, y: number) => { x: number; y: number } = (x, y) => ({ x, y });
   touchMode: boolean;
@@ -1178,8 +1189,8 @@ export class SigilEngine {
    */
   reportRanks(): Promise<void> {
     if (!account.get().me || typeof fetch !== 'function') return Promise.resolve();
-    const fought = bestRating() > NEW_STANDING.best ? bestRating() : 0;
-    const entries = rankEntries(this.save, readBests(), fought, bestByFormat());
+    // (the Ring's boards are written by the ranked ladder the server keeps, as matches are settled: server/ring.ts)
+    const entries = rankEntries(this.save, readBests(), 0);
     const sig = JSON.stringify(entries);
     if (!entries.length || sig === this.ranksSent) return this.ranksGoing;
     this.ranksSent = sig;
@@ -1826,7 +1837,13 @@ export class SigilEngine {
 
   private startSocial(): void {
     // (the game shows its own invitations: the site's bar leaves them to it while it is open)
-    this.stopClaim = claimInvites('sigilfall');
+    // (the Ring's parties too: an invitation to team up there is shown here, not by the site)
+    const a = claimInvites('sigilfall');
+    const b = claimInvites('sigilfall-ring');
+    this.stopClaim = () => {
+      a();
+      b();
+    };
     this.socialStart = window.setTimeout(() => void this.checkSocial(), SOCIAL_FIRST_MS);
     this.socialTimer = window.setInterval(() => void this.checkSocial(), SOCIAL_EVERY_MS);
   }
@@ -1847,7 +1864,7 @@ export class SigilEngine {
       return;
     }
     try {
-      const got = (await friendsApi.invites('sigilfall')).filter((i) => i.game === 'sigilfall' && !!i.code && !this.inviteDone.has(i.id));
+      const got = (await friendsApi.invites('sigilfall')).filter((i) => (i.game === 'sigilfall' || i.game === 'sigilfall-ring') && !!i.code && !this.inviteDone.has(i.id));
       const fresh = got.some((i) => !this.invites.some((x) => x.id === i.id));
       if (fresh || got.length !== this.invites.length) {
         this.invites = got;
@@ -1918,6 +1935,13 @@ export class SigilEngine {
     const inv = this.invites.find((i) => i.id === id);
     this.answerInvite(id);
     if (!inv?.code) return;
+    // a Ring party: to the Ring, by the title screen (a hero in the world is put away first, as going home is)
+    if (inv.game === 'sigilfall-ring') {
+      this.ringInvite = inv.code.toUpperCase();
+      if (this.hero && this.ui.screen === 'game') this.toTitle();
+      else this.bump();
+      return;
+    }
     if (this.hero && this.ui.screen === 'game') {
       this.joinParty(inv.code);
       this.openPanel('party');

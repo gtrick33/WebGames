@@ -61,12 +61,13 @@ export async function quickMatch(game: RoomGame, skip: readonly string[] = [], k
  * kept on the device, so that their own earlier searches aren't counted as someone else's. `active`: how many others
  * searched lately.
  */
-export async function ratedMatch(game: RoomGame, skip: readonly string[], kind: string, rating: number, who: string): Promise<{ code: string | null; created: boolean; active: number }> {
+export async function ratedMatch(game: RoomGame, skip: readonly string[], kind: string, rating: number, who: string): Promise<{ code: string | null; created: boolean; active: number; door: string }> {
   const res = await fetch('/api/rooms/match', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ game, skip, kind, rating, who, alone: 'bots' }) }).catch(() => null);
-  const data = (await res?.json().catch(() => ({}))) as { code?: string | null; created?: boolean; active?: number } | undefined;
+  const data = (await res?.json().catch(() => ({}))) as { code?: string | null; created?: boolean; active?: number; door?: string } | undefined;
   if (!res?.ok || !data || (typeof data.code !== 'string' && data.code !== null)) throw new Error('Matchmaking is not available right now. Try again in a minute.');
   if (data.code) track('room_match', { room: game, created: data.created ? 1 : 0 });
-  return { code: data.code, created: data.created === true, active: typeof data.active === 'number' ? data.active : 0 };
+  // (`door`: a ranked room's door key, without which it takes nobody new while it waits: rooms/worker.ts)
+  return { code: data.code, created: data.created === true, active: typeof data.active === 'number' ? data.active : 0, door: typeof data.door === 'string' && /^[0-9a-f]{16,32}$/.test(data.door) ? data.door : '' };
 }
 
 /** How the room is listed: public (in the room list), opened by quick match, and when a quick-match room starts by itself. */

@@ -308,6 +308,30 @@ version is never overwritten. Version 2 (three trees and specializations) gave e
 points back with no specialization chosen. The main key follows a signed-in player between devices through the arcade's
 cloud saves (up to 96 KB); the backup stays on the device.
 
+## The Ring's ranked ladder
+
+The owner, 2026-11-18: "i want to do appropriate matchmaking, ranking system so that players can enjoy a competitive
+environment ... make sure wintrading and exploiting is prohibited". A signed-in player's Ring rating in each format is
+kept by the server (`migrations/0026_sigilfall_ring_ranked.sql`, `server/ring.ts`, `functions/api/sigilfall/ring.ts`;
+the rules in `arena/ranked.ts`, the elo math in `arena/rating.ts`, shared by both ends). A guest plays for a practice
+rating kept on their device, on no ranking.
+
+- **Matches against the computer** are tickets the server writes before the gates open, with the computer's rating
+  drawn there. A win sooner than 25 s isn't believed, giving up after the gates is a leaver's loss (as is a ticket
+  never reported), and from 1900 only matches against people move a rating.
+- **Matches against people** are made from the room's own roster as the run began: the rooms worker is told each
+  seat's account and a hash of its network by the site (never by the page) and keeps them, and notes when anyone
+  drops out while it goes. Every player reports; the reports have to agree, or nothing changes. The leaver is whoever
+  the room saw drop out before the end, whatever anyone said.
+- **Win trading**: nothing is won or lost against a friend, someone on the same network or your own other account; the same opponent counts in full twice in 20 hours, at half twice more, then not at
+  all. A ranked room waiting for players takes a new seat only from those quick match sent there (a door key).
+- **Parties**: friends invited from the fight's window sit on one side of a room, and its leader puts the room in the
+  queue at the party's median rating, however far apart they are; strangers fill the rest. Each player's win and loss
+  is worked from their own rating against the other side's (the stronger one wins little and loses a lot, the weaker
+  one the other way round), and no match raises a rating more than 40 (`WIN_CAP`). A room with people on both
+  sides is a custom game, and can't queue.
+- The Ring's rankings come from the server's ladder only; the ladder started from 1000 for everyone when it began.
+
 ## Testing
 
 - `tests/sigilfall.test.ts`: content checks, map reachability, build rules (Ember Staff changes only Fireball,
@@ -331,6 +355,9 @@ cloud saves (up to 96 KB); the backup stays on the device.
   that every sprite and townsfolk look is drawn once (zone art tables are merged).
 - `tests/sigilfall-keystones.test.ts`: Riftstone (scaling, affixes, the clock with its falls, levels opening, every
   affix at work, saves) and Paragon (levels, points, caps, stats); a level-60 hero in Mythic gear beats +1.
+- `tests/sigilfall-ring-ranked.test.ts`: the ranked ladder's rules, the server keeping it (tickets, reports, leavers,
+  win trading, settling once), the rooms that tell it who played, and a party's search;
+  `tests/sigilfall-ring-play.test.tsx`: the fight's window.
 - `tests/sigilfall-ids.test.ts`: every quest and item id is used once, and no two zones or dungeons define the same
   enemy, boss or person (their tables are merged, so a repeated id would quietly replace another).
 

@@ -183,24 +183,28 @@ export function FriendsSection({ engine }: { engine: SigilEngine }) {
  * player is (the hero list, the world, a menu), never takes the controls, and stays until it is answered or the
  * invitation runs out.
  */
-export function InviteCards({ engine }: { engine: SigilEngine }) {
+export function InviteCards({ engine, only, onTake }: { engine: SigilEngine; only?: string; onTake?: (id: number, code: string) => void }) {
   // (a screen drawn over a stand-in for the engine, as some tests draw one, has nobody asking)
-  const waiting = (engine.invites as SigilEngine['invites'] | undefined) ?? [];
+  const waiting = ((engine.invites as SigilEngine['invites'] | undefined) ?? []).filter((i) => !only || i.game === only);
   const inv = waiting[0];
   if (!inv) return null;
   const more = waiting.length - 1;
   const inWorld = !!engine.hero && engine.ui.screen === 'game';
-  const leaving = inWorld && !!engine.party && (engine.party.view?.seats.length ?? 1) > 1;
+  // (a friend's Ring party: to team up for ranked, in the Ring)
+  const ring = inv.game === 'sigilfall-ring';
+  const leaving = !ring && inWorld && !!engine.party && (engine.party.view?.seats.length ?? 1) > 1;
+  const what = ring ? 'to team up in the Ring' : 'to their party';
   return (
-    <div className="rb-invite" role="alertdialog" aria-live="polite" aria-label={`${inv.from} invites you to their party`}>
+    <div className="rb-invite" role="alertdialog" aria-live="polite" aria-label={`${inv.from} invites you ${what}`}>
       <p>
-        <strong>{inv.from}</strong> invites you to their party
+        <strong>{inv.from}</strong> invites you {what}
         {more > 0 && <span className="rb-small rb-dim"> · {more} more</span>}
       </p>
       {leaving && <p className="rb-small rb-dim">Joining leaves the party you’re in.</p>}
-      {!inWorld && <p className="rb-small rb-dim">Choose a hero, or make one, and you’ll join them.</p>}
+      {ring && <p className="rb-small rb-dim">{only ? 'You’ll queue ranked together as one team.' : 'Joining takes you to the Ring, where you queue ranked as one team.'}</p>}
+      {!ring && !inWorld && <p className="rb-small rb-dim">Choose a hero, or make one, and you’ll join them.</p>}
       <div className="rb-invite-row">
-        <button className="rb-btn is-small is-gold" onClick={() => engine.acceptInvite(inv.id)}>
+        <button className="rb-btn is-small is-gold" onClick={() => (onTake && inv.code ? onTake(inv.id, inv.code) : engine.acceptInvite(inv.id))}>
           Join
         </button>
         <button className="rb-btn is-small is-ghost" onClick={() => engine.declineInvite(inv.id)}>
