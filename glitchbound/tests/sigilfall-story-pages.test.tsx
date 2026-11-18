@@ -23,11 +23,12 @@ vi.mock('../src/games/sigilfall/render/sprites', () => ({ skillIconUrl: () => ''
 vi.mock('../src/games/sigilfall/ui/uiIcons', () => ({ uiIcon: () => '' }));
 afterEach(cleanup);
 
-type Stub = SigilEngine & { pages: StoryPage[]; handleEvents(w: unknown): void; turnPage(w: unknown, dt: number): void };
+/** The engine as these tests reach into it (its page queue and its event handling are private). */
+type Stub = Pick<SigilEngine, 'ui' | 'hero' | 'world' | 'isPaused' | 'closeStory'> & { pages: StoryPage[]; handleEvents(w: unknown): void; turnPage(w: unknown, dt: number): void };
 
 /** An engine with just what the story's pages touch. */
 function engine(h: Character): Stub {
-  const e = Object.create(SigilEngine.prototype) as Stub & Record<string, unknown>;
+  const e = Object.create(SigilEngine.prototype) as Record<string, unknown>;
   const ui = {
     screen: 'game', createSlot: 0, panel: null, shop: null, pause: false, dialogue: null, travel: null, toasts: [], banner: null, death: false, reward: null, boss: null,
     levelUp: null, teach: null, tip: null, notice: '', card: null, story: null,
@@ -51,7 +52,7 @@ function engine(h: Character): Stub {
     version: 0,
     listeners: new Set(),
   });
-  return e;
+  return e as unknown as Stub;
 }
 
 const fire = (e: Stub, ...events: unknown[]): void => {
@@ -138,7 +139,10 @@ describe('Sigilfall: a thing found is shown, and kept', () => {
   });
 
   it('every story quest that sends the hero to look somewhere finds something there', () => {
-    const bare = QUESTS.filter((q) => isMainQuest(q.id) && questSteps(q).some((o) => o.kind === 'explore') && !q.find && !/^(briar-|crownfall-)/.test(q.id));
+    // (the Tear is reached as the ambush begins: what is found there, the Veil, is shown in the fight's opening shot, and
+    // a page then would stop the fight as it starts)
+    const shownInTheFight = new Set(['the-tear']);
+    const bare = QUESTS.filter((q) => isMainQuest(q.id) && questSteps(q).some((o) => o.kind === 'explore') && !q.find && !shownInTheFight.has(q.id) && !/^(briar-|crownfall-)/.test(q.id));
     expect(bare.map((q) => q.id)).toEqual([]);
   });
 

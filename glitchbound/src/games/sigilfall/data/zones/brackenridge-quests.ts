@@ -245,12 +245,12 @@ export const BRACKENRIDGE_NPCS: Record<string, NpcDef> = {
         ],
       },
       {
-        when: { quest: 'appleby-apples', state: 'active' },
-        lines: ['The Applebys fled their orchard when the kobolds came. It’s south-east of here.', 'Will you pick me a sack of cider apples? Watch out for the kobolds. They throw things.'],
-      },
-      {
         when: { quest: 'the-harvest-stones', state: 'active' },
         lines: ['The Harvest Stones are our shrine, north of the village. They’ve gone grey and cold, and the dead gather around them at night.', 'Light these candles at the stones, and keep the dead away until they burn down. Then the stones will be clean.', 'My gran did it that way, and it worked.'],
+      },
+      {
+        when: { quest: 'appleby-apples', state: 'active' },
+        lines: ['The Applebys fled their orchard when the kobolds came. It’s south-east of here.', 'Will you pick me a sack of cider apples? Watch out for the kobolds. They throw things.'],
       },
       { when: { quest: 'fern-retaken', state: 'done' }, lines: ['The Host’s soldiers slept in my inn for a week. I’ve scrubbed every bed and burned their banners in the grate.', 'Sit by the fire before you go north, dear. It’s the first one we’ve lit since we came home.'] },
       { when: { quest: 'the-heralds-ambush', state: 'done' }, lines: ['We left Fernstead with what we could carry. I carried my soup pot and the inn’s sign.', 'I still make soup for anyone who needs it. Sit down, dear.'] },

@@ -287,8 +287,6 @@ export const GLOAMHOLLOW_NPCS: Record<string, NpcDef> = {
           'Give them to me anyway. While they answer to me, the Herald can’t use them.',
         ],
       },
-      { when: { quest: 'the-seventh-sigil', state: 'active' }, lines: ['Vosk is dead, but you didn’t bring the Stone. I can feel it to the north, high up and cold.', 'It’s on the Hallow King’s brow. He has set it in his crown.'] },
-      { when: { quest: 'the-seventh-sigil', state: 'done' }, lines: ['I know your face, and I know you came for me in the dark. But I can’t find your name.', 'Don’t tell me yet. I want to find it myself.', 'The Stone is in the King’s crown. When it comes loose, I’ll be there to catch it.'] },
       { when: { quest: 'ysanes-last-echo', state: 'done' }, lines: ['The Sigil of Tides woke in your hand, and I felt it from here. It bonded to me across the whole of Vaelmoor.', 'It took your name. I know your face, and I trust it. Don’t tell me your name yet. I want to find it myself.', 'I’m coming north to Dawn’s Rest with the others. Bring me the sigil there.'] },
       { when: { quest: 'wood-the-children', state: 'done' }, lines: ['Orren wrote to me about the King’s children in the snow.', 'Their father sat up all winter between their beds. Then he broke his crown to bring them back.', 'If you find the Sigil of Tides, I’ll feel it wake, even from here. Every sigil I’ve bonded is tied to me.'] },
       // (after the Veil's rite: she knows the hero, and has lost the night they met)

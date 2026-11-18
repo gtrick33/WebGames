@@ -227,7 +227,7 @@ export const AMBERFIELD_ITEMS: ItemDef[] = [
       { stat: 'crit', base: 2, per: 0.3 },
     ],
     mods: [{ t: 'stat', stat: 'power', v: 12, when: 'lowHp' }],
-    lore: 'The lion decided Wil wasn’t worth eating. It thought differently about you.',
+    lore: 'The lion decided Garrick wasn’t worth eating. It thought differently about you.',
     minLevel: 18,
     special: true,
   },

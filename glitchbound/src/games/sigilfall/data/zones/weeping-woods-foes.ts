@@ -256,7 +256,7 @@ export const WEEPING_WOODS_ITEMS: ItemDef[] = [
         },
       },
     ],
-    lore: 'Lord Halvard’s oath, sworn three hundred years ago and engraved in a silver star. He held the wood with it. Hesper says it is yours to hold now, and does not say what.',
+    lore: 'Lord Halvard’s oath, sworn three hundred years ago and engraved in a silver star. He held the wood with it until the violet took him, and pressed it into your hand when he lay down at last.',
     minLevel: 50,
     special: true,
   },

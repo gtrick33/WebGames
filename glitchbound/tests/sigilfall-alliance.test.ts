@@ -117,6 +117,34 @@ describe('Sigilfall: the broken alliance (Act III)', () => {
     expect(newWorld('emberwick', after).npcs.some((n) => n.id === 'nyx')).toBe(false);
   });
 
+  it('the Tear: Elyra taken is a scene, played where the ambush ended, before the Tearborn rises out of the grey', () => {
+    const w = newWorld('shattered-vale', heroAt('the-heralds-ambush'));
+    goTo(w, 'tear-top');
+    run(w, 0.3);
+    for (let i = 0; i < 140 && questState(w.hero, 'the-heralds-ambush') === 'active'; i++) {
+      run(w, 1);
+      w.player.hp = w.player.maxHp;
+      smite(w, ['the-pale-herald', 'the-tearborn']);
+    }
+    expect(questState(w.hero, 'the-heralds-ambush')).toBe('done');
+    // (what the ambush left standing falls; the hero waits, and the scene comes, with nothing out of the Tear on them)
+    let played = false;
+    let tearborn = false;
+    for (let i = 0; i < 30 && !played; i++) {
+      run(w, 0.5);
+      w.player.hp = w.player.maxHp;
+      smite(w, ['the-tearborn']);
+      if (w.enemies.some((e) => e.def.id === 'the-tearborn' && !e.dead)) tearborn = true;
+      played = w.scene?.def.id === 'vale-elyra-taken';
+    }
+    expect(played).toBe(true);
+    expect(tearborn).toBe(false);
+    // and once it has been seen, what holds the Tear open comes through
+    while (w.scene) run(w, 1);
+    run(w, 1.2);
+    expect(w.enemies.some((e) => e.def.id === 'the-tearborn' && !e.dead)).toBe(true);
+  });
+
   it('Fernstead taken back with Mara: the fires go out and its people go home', () => {
     const c = heroAt('fern-retaken');
     const w = newWorld('brackenridge', c);

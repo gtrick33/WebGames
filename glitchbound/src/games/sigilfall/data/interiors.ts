@@ -386,7 +386,8 @@ const NPCS: Record<string, NpcDef> = {
     title: 'Keeper of the Ember Keep',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['The war council has met in this hall every night since Highwall held.', 'Two more gates stand between us and the Dead Kingdom. The Regent sleeps in her chair by the map.'] },
+      { when: { quest: 'the-gloam-gate', state: 'done' }, lines: ['The Regent slept in a bed last night, for the first time since Highwall. Elyra is free.', 'The map on the council table goes north now, past the Gloam Gate, into country nobody has drawn in three hundred years.'] },
+      { when: { quest: 'the-long-night-ends', state: 'done' }, lines: ['The war council has met in this hall every night since Highwall held.', 'One gate is left between us and the Dead Kingdom: the Gloam Gate, where they keep Elyra. The Regent sleeps in her chair by the map.'] },
       { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['After the Night of Knives, the court became a war council. I took the tapestries down to make room for the map.', 'The Chancellor’s chair is still at the table. Nobody sits in it.'] },
       { when: { quest: 'city-the-cellar', state: 'done' }, lines: ['The Starfall Festival is tonight, and every lord in the kingdom is in the city.', 'Be careful. The Chancellor’s men are all over the keep.'] },
       { lines: ['This is the Great Hall of the Ember Keep. The King held court here before he fell ill.'] },

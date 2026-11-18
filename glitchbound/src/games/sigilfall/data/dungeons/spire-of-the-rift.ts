@@ -475,7 +475,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'Aurel, Vaelor’s brother, who speaks for the Hallow King among the living. He pays the Host’s traitors in ash-gold and signs its letters. From this spire he keeps the Tear open.',
+    intro: 'The Pale Herald, who speaks for the Hallow King among the living: a tall shape in white with no face. He pays the Host’s traitors in ash-gold and signs its letters in grey ink. From this spire he keeps the Tear open.',
   },
 };
 

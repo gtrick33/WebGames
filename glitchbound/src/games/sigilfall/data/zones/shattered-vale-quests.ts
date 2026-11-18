@@ -71,7 +71,8 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
       name: 'The Voidcallers’ Cipher',
       kind: 'letter',
       about: 'Taken from the last voidcaller at the Breach Camp. It is written in grey ink, in a cipher nobody else can read, and sealed with the empty crown. Nyx snatched it out of your hand, read it, and went white.',
-      body: ['Vrnx tlw oefa mhzq yd. Qy wrqh ymxd fdz ewvp.', 'Hiaw rob zlut, Yneq kcl ova. Gtsb qy rxs.', 'Ojaq mhzq ofe yzx tlw jrdn.'],
+      // (the letter Nyx writes out in pencil at Lastlight, data/zones/gloamhollow-quests.ts, in its cipher)
+      body: ['Yvggyr guvrs.', 'Lbhe oebgure Jera vf nyvir. Ur nfxf sbe lbh ng avtug.', 'Gur jneqra-tvey jvyy pbzr gb gur Grne sbe gur Irvy. Oevat ure ol gur abegu cngu, nsgre qnex, naq gryy ab bar.', 'Qb guvf, naq Jera jnyxf serr gur fnzr avtug. Snvy zr, naq ur jnyxf va zl xvat’f Ubfg.'],
       sign: '(sealed with an empty crown)',
     },
     after: ['the-breach-camp'],

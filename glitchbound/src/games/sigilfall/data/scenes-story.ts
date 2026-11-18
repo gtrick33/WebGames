@@ -895,7 +895,7 @@ export const STORY_SCENES: SceneDef[] = [
       { say: 'elyra', line: 'The Sigil of Thorns. It’s cold, and it wants to show me something.' },
       { music: 'chapel' },
       { fade: 'out', secs: 0.9 },
-      { vision: 'That winter, the plague killed King Vaelor’s children, Lark and Edda. He sat between their beds all night.', tint: 'grief' },
+      { vision: 'That winter, the plague took King Vaelor’s children, Lark and Edda. He sat between their beds all winter.', tint: 'grief' },
       { ghost: 'vision-vaelor', as: 'vaelor-remembered', at: 'hero', dy: -2, face: 1 },
       { ghost: 'vision-lark', as: 'echo-of-the-children', at: 'hero', dx: -1.6, dy: -1 },
       { ghost: 'vision-edda', as: 'echo-of-the-children', at: 'hero', dx: 1.6, dy: -1 },
@@ -1146,6 +1146,8 @@ export const STORY_SCENES: SceneDef[] = [
     when: all(after('the-heralds-ambush'), until('fall-of-fernstead')),
     near: 'the-tear',
     r: 600,
+    // (the Tearborn and the Tear's things come through once this has been seen, not on top of it)
+    holdsFoes: true,
     steps: [
       { zoom: 'wide' },
       { look: 'the-tear' },
@@ -1928,11 +1930,11 @@ export const STORY_SCENES: SceneDef[] = [
     near: 'mourners-edge',
     r: 220,
     steps: [
-      { look: 'mourners-water' },
-      { wait: 1.6 },
+      // (on Orren kneeling in the reeds at the hero's side, the dark water going still behind him)
       { look: 'hero' },
       { act: 'orren', does: 'kneel', hold: true },
-      { wait: 1 },
+      { fx: 'water', at: 'mourners-water', color: '#6a8ab8', size: 30 },
+      { wait: 1.8 },
       { say: 'orren', line: 'Davin. Mother. I loved you. That is why I won’t come in.' },
       { wait: 1.6 },
       { say: 'cael', line: 'You held, Brother. I saw what it cost you.' },
@@ -2166,6 +2168,27 @@ export const STORY_SCENES: SceneDef[] = [
       { say: 'elyra', line: 'When the Crown tears a sigil out of me, strike it. It will fly back to me. Don’t let him have one.' },
       { say: 'orren', line: 'His queen asked him to let her go. I mean to tell him, even if he won’t listen.' },
       { say: 'nyx', line: 'His dead court kneels around the throne. They’ll stand when he calls them. Watch your back.' },
+    ],
+  },
+  {
+    // the King fallen, the Stone in Elyra's hands (its Rite just seen); the Crown tears itself off his brow and goes up
+    // through the roof into the light over the tower, and Elyra goes after it
+    id: 'dusk-the-crown-rises',
+    region: 'duskspire',
+    when: all(after('the-hollow-king'), until('crownfall-vaelmoor')),
+    steps: [
+      { fx: 'holy', at: 'hero', color: '#d8c8a0', size: 34 },
+      { sfx: 'bell' },
+      { shake: 2 },
+      { wait: 1.2 },
+      { say: 'elyra', line: 'The Stone is mine. It came loose into my hands the moment he fell.' },
+      { fx: 'shatter', at: 'hero', color: '#c8a8ff', size: 40 },
+      { sfx: 'shadow' },
+      { wait: 1.2 },
+      { say: 'nyx', line: 'The Crown! It tore itself off his head and went straight up through the roof!' },
+      { say: 'elyra', line: 'It isn’t finished. The sky over the tower is open, and it’s gone into the light. I’m going after it.' },
+      { say: 'cael', line: 'Then out through the gate, all of us. Mara is still holding it.' },
+      { look: 'hero' },
     ],
   },
   {

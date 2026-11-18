@@ -444,3 +444,92 @@ quests open on their boss, and every land's chain closes on one (`data/scenes-st
 - The hero has no lines; companions react to what the hero did.
 - American spelling for player-facing text; typographic apostrophes in text.
 - Our names only (LEGAL_REVIEW.md): the villain is the **Hallow King**, never anything like another game's knight.
+
+---
+
+## 8. v4: the things found, and the flow
+
+Every quest that sends the hero to look somewhere finds something there (`find`, data/types.ts Keepsake), shown with its
+words and kept in the Journal. The Tear alone has none: the Veil pulled from the glass is the ambush's opening shot.
+
+| Quest | Found | Kind | |
+| --- | --- | --- | --- |
+| `hidden-grove` | A Note in the Old Oak | note | side |
+| `close-the-rift` | Morgrave’s Journal | page | story |
+| `the-regents-council` | The Courier’s Letter, Dried | letter | story |
+| `the-seventh-sigil` | The Empty Scarf | relic | story |
+| `briar-the-seal` | The Courier’s Letter | letter | story |
+| `city-the-cellar` | Crane’s Ledger | page | story |
+| `festival-the-lanterns` | A Paper Star | token | story |
+| `festival-the-catacombs` | The Wardens’ Map | map | story |
+| `kettle-farm` | The Gang’s Orders | orders | story |
+| `thieves-cant` | The Orders, as Nyx Reads Them | orders | story |
+| `the-bandit-king` | A Coin of Ash-Gold | token | story |
+| `tobins-fields` | The Flock’s Bell | token | side |
+| `the-old-barrows` | A Broken Grave-Seal | relic | story |
+| `lay-the-grey-lady` | The Grey Lady’s Locket | relic | story |
+| `fern-retaken` | The Regent’s Order | orders | story |
+| `tusker-gully` | Grandad Tanner’s Arrow | relic | side |
+| `appleby-apples` | The Applebys’ Note | note | side |
+| `the-broken-caravan` | A Grey-Stained Clan Feather | token | story |
+| `the-clan-stones` | The Memory in the Oldest Stone | page | story |
+| `hearth-the-shrine` | Vosk’s Bone Case | relic | story |
+| `orders-from-the-north` | Vosk’s Orders | orders | story |
+| `ashby-farm` | Garrick’s Note | note | side |
+| `the-last-lamp` | A Black-Rose Shield-Boss | relic | story |
+| `the-kings-mound` | The Roll of the Ninefold Watch | page | story |
+| `sir-corvane` | The Countermanded Order | orders | story |
+| `houndsmound` | A Hound’s Collar | relic | side |
+| `the-sandscribe` | A Raider’s Linen Scrap | note | story |
+| `the-fallen-obelisk` | The Obelisk’s Carving | page | story |
+| `the-sunken-gate` | The Host’s Dig Orders | orders | story |
+| `the-sand-ship` | The Sand-Ship’s Log | note | side |
+| `the-necropolis-of-ras` | The Dawn Temple’s Prayer | page | side |
+| `the-withered-ring` | A Silent Reed-Pipe | relic | story |
+| `the-pale-pavilion` | The Herald’s Bargain | letter | story |
+| `the-moonwell` | A Blighted Thorn | relic | side |
+| `the-moth-glade` | A Grey Moth Wing | relic | side |
+| `the-harts-trail` | A Tuft of White Hair | relic | side |
+| `the-giants-hearth` | A Rune-Stone from the Vault Door | relic | story |
+| `the-vault-door` | Hrimfang’s Tally | note | story |
+| `thread-under-the-tear` | Aurel’s Harbor Badge | relic | side |
+| `the-breach-camp` | The Singers’ Hymn | page | story |
+| `the-heralds-cipher` | The Voidcallers’ Cipher | letter | story |
+| `the-heart-of-the-tear` | Maren’s Letter | letter | story |
+| `the-big-one` | Davin’s Last Tally | note | side |
+| `the-vale-watch` | A Sentry’s Last Note | note | side |
+| `gate-the-prison-map` | The Herald’s Prison Map | map | story |
+| `ashes-of-ashby` | A Child’s Drawing | page | story |
+| `the-breach` | General Morvain’s Siege Orders | orders | story |
+| `the-knights-chapel` | The Burial Hymn, Changed | page | side |
+| `gloam-nyx-confesses` | The Letter Nyx Kept | letter | story |
+| `gloam-the-gate` | Ser Edric’s Cairn-Stone | relic | story |
+| `the-black-pool` | Tam’s Lamp-Tag | token | side |
+| `the-wardens-rest` | Lord Halvard’s Oath | page | story |
+| `the-frozen-hamlet` | A Letter to Papa | letter | story |
+| `the-weeping-tree` | A Ribbon from the Weeping Tree | relic | story |
+| `the-weeping-lord` | The Herald’s Forge-Order | orders | story |
+| `the-hanging-oaks` | A Deserter’s Letter | letter | side |
+| `forges-on-the-rim` | A Mold of the Pale Crown | relic | story |
+| `the-throne-gate` | The Overseer’s Tally | note | story |
+| `the-drake-roost` | Ulf’s Slate | note | side |
+| `across-the-mere` | A Ferry Penny | token | story |
+| `the-necropolis` | Ysane’s Last Letter | letter | story |
+| `a-pilgrims-errand` | Notes on the Tower Steps | note | side |
+| `keepsakes-of-elsmere` | Wenna’s Locket | relic | side |
+| `the-duskspire-gate` | The Wardens’ Lock-Plate | page | story |
+| `old-wintersend` | The Notice on the Hall Door | note | side |
+| `a-hound-named-bran` | Bran’s Collar | token | side |
+
+Flow changes in v4 (each removes a walk back with nothing in it, or puts a turn of the story on the screen):
+
+- The Shattered Vale: the cipher is taken from the voidcallers at the Breach Camp and Nyx reads it there
+  (`the-heralds-cipher` is a hunt now); the Tearborn is fought where the Herald left you and pays out there.
+- The Tear: the Veil pulled out and the Herald stepping through are the ambush's own shots; Elyra taken is a scene
+  (`vale-elyra-taken`) that plays as the ambush ends, before the Tearborn rises (World.refreshStoryState holds back foes
+  the story brings in while a scene is due there) and before the page of what the ambush came to.
+- The Thorn Court: the Sigil of Thorns is won with the prince (either answer), so its Rite comes before its vision.
+- The Barrows: the countermanded order goes straight west to the Regent. Fernstead retaken pays out in Fernstead.
+  Highwall: Hollowbane is followed from Ashby's tracks. The Weeping Woods: Orren carries Miro's candle to the tree.
+  The Pale Reach: Vosk's saddlebag is searched where he fell.
+- Elyra's Veil price: the night of the raid on Briarhollow, the night she met the hero (`gloam-the-forgetting`).

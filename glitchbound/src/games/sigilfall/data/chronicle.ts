@@ -86,7 +86,7 @@ export const TALES: Record<string, TalePage> = {
     title: 'The Last March',
     told: [
       'Six sigils burn in Elyra now. The seventh, the Sigil of Stone that Vosk stole, is set in the Ash Crown on the Hallow King’s brow.',
-      'Everyone you helped is coming: rangers, riders, lancers, huscarls, archers of the forest clans. They gather on the snowfield below Duskspire.',
+      'Everyone you helped is coming: Fernstead’s rangers, Hearthstead’s riders, the lancers of Ras, Frostgate’s huscarls, the archers of the forest clans, Cinderhold’s axemen, and Lastlight’s lamp-keepers to light the road. They gather on the snowfield below Duskspire.',
       'There is one road left, and it ends at the Hallow King’s throne.',
     ],
     now: 'March on Duskspire with every banner you have won.',

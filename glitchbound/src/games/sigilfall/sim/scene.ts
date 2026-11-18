@@ -149,6 +149,11 @@ export interface SceneDef {
   opens?: { event: string; wave?: number };
   near?: string;
   r?: number;
+  /**
+   * The foes the story brings in here wait for this scene to have played (World.refreshStoryState): it must be seen
+   * before they rise (Elyra taken at the Tear, before the Tearborn comes through).
+   */
+  holdsFoes?: boolean;
   steps: SceneStep[];
 }
 
@@ -376,6 +381,28 @@ function openGround(w: World, x: number, y: number): { x: number; y: number } {
  */
 export function scenesPlayHere(w: Pick<World, 'coop' | 'keyRun'>): boolean {
   return !w.coop || (w.coop.role === 'host' && !w.keyRun);
+}
+
+/**
+ * Is a scene of the story due right here (its moment has come, it hasn't been seen, and the hero is where it plays)?
+ * Foes the story brings in hold back while one that says so is (`holdsFoes`, World.refreshStoryState): at the Tear the
+ * Herald's leavings rose
+ * round the hero the moment the ambush ended and fell on them at once, so the scene of Elyra being taken could only
+ * play once the Tearborn was dead (the owner: "the cinematics cut abruptly and too fast, e.g. the tear quest").
+ */
+export function sceneDue(w: World, after?: string, holdingFoes = false): boolean {
+  if (!scenesPlayHere(w)) return false;
+  const h = w.hero;
+  // (`after`: only a scene of what came after that quest, its aftermath, not the next step's opening)
+  const mark = after ? JSON.stringify({ quest: after, is: 'done' }) : '';
+  return SCENES.some((def) => {
+    if (!def.when || def.region !== w.region.id || h.opened.includes(seenKey(def.id)) || !holds(h, def.when)) return false;
+    if (mark && !JSON.stringify(def.when).includes(mark)) return false;
+    if (holdingFoes && !def.holdsFoes) return false;
+    if (!def.near) return true;
+    const at = where(w, def.near);
+    return !!at && dist(at.x, at.y, w.player.x, w.player.y) <= (def.r ?? 90) * WORLD_K;
+  });
 }
 
 /** Starts a scene whose moment has come here, if none is playing and nothing is fighting nearby. */

@@ -41,7 +41,7 @@ import { actionLabel, codeMap, resolveBinds, type CampAction } from './input/bin
 import { Sound, type MusicId } from './audio/sound';
 import type { Interactable } from './sim/types';
 import { emptyInput, World, type InputFrame } from './sim/world';
-import { advanceScene, endScene } from './sim/scene';
+import { advanceScene, endScene, sceneDue } from './sim/scene';
 import { applyPreset, PRESETS } from './progress/presets';
 import { claimInvites, friendsApi } from '../../platform/friends';
 import type { FriendInvite, FriendsView } from '../../platform/apiTypes';
@@ -608,9 +608,13 @@ export class SigilEngine {
       this.kbm?.fill(emptyInput(), this.toWorldFn, w.player.x, w.player.y);
     }
     this.handleEvents(w);
-    // the story's pages: none of its scenes begins while one is waiting, and the next comes up once the world is calm
-    w.holdScenes = this.pages.length > 0 || !!this.ui.story;
-    if (!this.ui.story && this.pages.length) this.turnPage(w, dt);
+    // the story's pages: none of its scenes begins while one is waiting, and the next comes up once the world is calm;
+    // but what a quest came to waits for the scene of its aftermath, if one is due here, to have been shown first (Elyra
+    // taken at the Tear is seen, then told)
+    const first = this.pages[0];
+    const aftermath = first?.kind === 'deed' && sceneDue(w, first.quest);
+    w.holdScenes = !!this.ui.story || (this.pages.length > 0 && !aftermath);
+    if (!this.ui.story && this.pages.length && !aftermath) this.turnPage(w, dt);
     this.renderer.aim = paused ? null : this.touch.aim;
     this.renderer.touchMode = this.touchMode;
     this.renderer.frameShift = this.touchMode ? (this.settings.lefty ? -FRAME_SHIFT : FRAME_SHIFT) : 0;
