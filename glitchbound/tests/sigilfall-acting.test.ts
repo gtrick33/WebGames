@@ -275,9 +275,9 @@ describe('Sigilfall: a spoken line on the screen', () => {
         const name = ghostName(st.ghost);
         expect(name.length, st.ghost).toBeGreaterThan(2);
         expect(name, st.ghost).not.toMatch(/^vision|-/i);
-        // (the same person remembered may keep their name: the queen, the king)
+        // (the same person remembered may keep their name: the queen, the king, and Elyra and Nyx at the Tear)
         const lender = NPCS[st.as]?.name;
-        if (lender && !['vision-vaelor', 'vision-ysane', 'vision-orla'].includes(st.ghost)) expect(name, `${st.ghost} as ${st.as}`).not.toBe(lender);
+        if (lender && !['vision-vaelor', 'vision-ysane', 'vision-orla', 'vision-elyra', 'vision-nyx'].includes(st.ghost)) expect(name, `${st.ghost} as ${st.as}`).not.toBe(lender);
       }
     }
     expect(figures).toBeGreaterThan(20);

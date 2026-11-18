@@ -380,6 +380,9 @@ export const SCENES: SceneDef[] = [
       { act: 'vaelor-remembered', does: 'kneel', hold: true },
       { say: 'vaelor-remembered', line: 'I am home. I am standing right here. Why can’t any of them see me?' },
       { zoom: 'auto' },
+      // (Orren keeps the promise he made at Hollowmere: Ysane's message, given to the King himself)
+      { say: 'orren', line: 'King Vaelor. At Hollowmere your queen asked us to tell you something. Let her go.' },
+      { say: 'vaelor-remembered', line: 'She told me herself, in my hall, at the end. I heard her. I am trying.' },
       { look: 'elyra-in-the-memory' },
       { say: 'elyra-in-the-memory', line: 'This is the Crown’s memory of his city. It’s all he wanted back, and he can’t even touch it.' },
       { look: 'hero' },
@@ -504,7 +507,6 @@ export const SCENES: SceneDef[] = [
       { say: 'the-pale-herald', line: 'The Veil kept this door shut for three hundred years. Thank you for opening it, girl.' },
       { say: 'the-pale-herald', line: 'Your thief sold me your road for her brother. She is gone. Nobody else is coming.' },
       { say: 'elyra', line: 'Stay back! You won’t have them. Not one!' },
-      { say: 'cael', line: 'Get behind me, Elyra. He doesn’t touch you while I’m standing.' },
       { say: 'the-pale-herald', line: 'You carry five of my king’s sigils, girl. You will carry them to him.' },
       { look: 'hero' },
     ],

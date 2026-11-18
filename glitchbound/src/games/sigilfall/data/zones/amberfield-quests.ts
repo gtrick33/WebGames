@@ -36,7 +36,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     find: {
       name: 'A Grey-Stained Clan Feather',
       kind: 'token',
-      about: 'A centaur war-feather found in the ashes of the Broken Caravan. Ada says the riders who burned the wagons wore feathers like it in their hair. But the clans dye their feathers red, and this one is grey to the quill and as cold as ash-gold.',
+      about: 'A centaur war-feather found in the ashes of the Broken Caravan, its tip dyed clan red. Ada says the riders who burned the wagons wore feathers like it. But this one has gone grey to the quill and is as cold as ash-gold, as if whoever wore it was dead.',
     },
     reward: { xp: 400, gold: 140, text: 'Eleven wagons burned. Under the last one standing you find Ada Corrin, sister of Hearthstead’s wheelwright Hale, with her daughter Marit, eight years old. They are the only two left alive. They walk back to Hearthstead with you, and Marit doesn’t let go of your hand.' },
   },

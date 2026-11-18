@@ -159,7 +159,7 @@ export const STORY_QUESTS: QuestDef[] = [
     name: 'The Empty Scarf',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'Vosk is ash, and his saddle lies in the snow at the King’s Host where he fell. He said he carried the stone north to his king in a child’s scarf. Search his saddlebag, and let Elyra feel what was in it.',
+    text: 'Vosk is ash, and his saddle lies in the snow at the King’s Host where he fell. Elyra rides with the army, and she can feel every sigil. Search his saddlebag, and let her feel what was in it.',
     // (v4: read where Vosk fell, with Elyra riding beside you, and on to the wall: no walk back to Dawn's Rest to show her)
     objective: { kind: 'explore', spot: 'the-kings-host', label: 'Search Vosk’s saddlebag at the King’s Host' },
     find: {

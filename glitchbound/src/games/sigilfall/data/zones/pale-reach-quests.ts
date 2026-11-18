@@ -5,16 +5,16 @@ import type { EnemyDef, NpcDef, QuestDef, StoryEventDef } from '../types';
  * Dawn's Rest's people and the quests of the Pale Reach: Act VI, the Last March (STORY_BIBLE.md §3). With six of
  * the seven sigils won, the coalition marches north out of Hollowmere onto the Hallow King's own land, and every
  * faction the hero helped comes with its own troops. Mara commands from Dawn's Rest, a ruined waystation at
- * the southern edge of the Reach. The main chain: the banners come in, the King's kennels and drake graves,
- * the Host in its ranks under the Pale Standard and Vosk at its head (the rider who took Hearthstead's
- * fragment, hollowed now), the siege mages held while they bring down Duskspire's outer wall, the breach,
- * and the Herald's voice in the gate (Aurel, who opens the seventh lock: Vosk carried the Sigil of Stone to his
- * king, and Vaelor wears it in the Ash Crown). Then Crownfall: the Ashen Guard and the Hallow King himself on his
+ * the southern edge of the Reach, where Elyra takes the Sigil of Tides from the hero. The main chain (v4): every
+ * banner comes in, each saying why it owes the hero; Vosk at the head of the Host on the army's flank, and his
+ * saddlebag read where he falls (the empty scarf: the Stone is on the King's brow); the siege mages held while they
+ * bring down Duskspire's outer wall; the breach; and the Herald broken in the gate, who is Aurel, the King's brother,
+ * and spends his last words on the seventh lock. Then Crownfall: the Ashen Guard and the Hallow King himself on his
  * throne of ice in Duskspire, the last fight; the Stone won back; the Crown's memory of Vaelmoor whole, Elyra's
- * choice, and the Crown unmade (the finale's quests are here too, since they are played from the Reach). Orren wants the Hollowing cured from old Wintersend,
- * Quartermaster Holt wants the pale knights' plate, and Outrider Maeve wants her hound back. Main chain first.
- * Written to DIALOGUE_STYLE.md (plain, direct, no punchlines): the finale says outright who the Herald and Vaelor
- * are, what the complete Crown would do, and what each answer to Elyra's choice costs.
+ * choice (an hour for Vaelor's family, paid for by Mara's soldiers at the gate while the Host still stands, or the
+ * Crown broken at once), and the Crown unmade (the finale's quests are here too, since they are played from the
+ * Reach). Orren wants the Hollowing cured from old Wintersend, Quartermaster Holt wants the pale knights' plate, and
+ * Outrider Maeve wants her hound back. Main chain first. Written to DIALOGUE_STYLE.md.
  */
 
 /** The factions that march with the hero, each only if the hero helped it (Act I–III). */
