@@ -83,8 +83,7 @@ export const STORY_SCENES: SceneDef[] = [
       { say: 'warden-hollis', line: 'You made it before dark. Good. Nobody travels the hill roads at night anymore.' },
       { emote: 'warden-hollis', icon: 'dots' },
       { say: 'warden-hollis', line: 'Every window has a candle for someone the barrows took. It’s an old custom, to guide them home.' },
-      { look: 'hero' },
-      { look: 'warden-hollis' },
+      { wait: 0.8 },
       { say: 'warden-hollis', line: 'But now the dead really are coming home. They climb out of the barrows and walk toward the lights.' },
     ],
   },
@@ -224,7 +223,6 @@ export const STORY_SCENES: SceneDef[] = [
     near: 'sefa',
     r: 200,
     steps: [
-      { look: 'mill-pond' },
       { look: 'sefa' },
       { say: 'sefa', line: 'Harlan is dead, but his fighters still hold the mill. They won’t give it up.' },
       { say: 'sefa', line: 'Millbrook’s lads are ready to fight. Will you lead us?' },
@@ -942,7 +940,6 @@ export const STORY_SCENES: SceneDef[] = [
     r: 320,
     steps: [
       { title: 'Rimeheld', sub: 'Frostgate' },
-      { look: 'jarl-sigrun' },
       { look: 'brewer-olav' },
       { say: 'brewer-olav', line: 'Visitors, in winter! Come in and sit by the fire. The ale is warm.' },
       { look: 'jarl-sigrun' },

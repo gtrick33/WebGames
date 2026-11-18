@@ -126,8 +126,7 @@ export const SCENES: SceneDef[] = [
     near: 'regent-elowen',
     r: 120,
     steps: [
-      { look: 'The Chancellor’s House' },
-      { wait: 0.6 },
+      // (on the Regent, turned toward his house: no glance at the house first and back)
       { look: 'regent-elowen' },
       // (to his door, not to the hero: she is not ready to look at anyone)
       { face: 'regent-elowen', to: 'The Chancellor’s House' },
@@ -573,7 +572,7 @@ export const SCENES: SceneDef[] = [
     id: 'briar-the-door',
     region: 'briarhollow',
     opens: { event: 'briar-door' },
-    steps: [{ look: 'chapel-door' }, { title: 'Hold the Chapel Door' }, { wait: 0.6 }, { look: 'foes' }, { sfx: 'roar' }, { shake: 3 }, { wait: 1.2 }, { look: 'hero' }],
+    steps: [{ look: 'chapel-door' }, { title: 'Hold the Chapel Door' }, { wait: 1.3 }, { look: 'foes' }, { sfx: 'roar' }, { shake: 3 }, { wait: 1.2 }, { look: 'hero' }],
   },
   {
     // Act I, the camp filling up: each village's people walking into Briarhollow, seen coming in, and then (a cut) where
@@ -656,7 +655,7 @@ export const SCENES: SceneDef[] = [
     id: 'hearth-the-wall',
     region: 'amberfield',
     opens: { event: 'hearth-wall' },
-    steps: [{ look: 'hearth-gate' }, { wait: 0.6 }, { look: 'foes' }, { sfx: 'warhorn' }, { shake: 3 }, { wait: 1.4 }, { look: 'hero' }],
+    steps: [{ look: 'hearth-gate' }, { wait: 1.3 }, { look: 'foes' }, { sfx: 'warhorn' }, { shake: 3 }, { wait: 1.4 }, { look: 'hero' }],
   },
   {
     // Act II begins on the road: the wagon of the sick setting out across the fen

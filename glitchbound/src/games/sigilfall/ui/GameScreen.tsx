@@ -41,6 +41,9 @@ import { hide, part, say } from './hudWrite';
 
 /** Registers a per-frame DOM update (no React render per frame). */
 /** A scene playing (sim/scene.ts): bars top and bottom over a clean picture (the HUD steps aside), and a way to skip it. */
+/** How long a scene's title stays up before it fades (ms). */
+const TITLE_HOLD_MS = 4200;
+
 function SceneBars({ engine }: { engine: SigilEngine }) {
   const ref = useRef<HTMLDivElement>(null);
   const title = useRef<HTMLDivElement>(null);
@@ -49,6 +52,7 @@ function SceneBars({ engine }: { engine: SigilEngine }) {
   const caption = useRef<HTMLElement>(null);
   const hint = useRef<HTMLSpanElement>(null);
   const shown = useRef('');
+  const titleAt = useRef(0);
   const told = useRef('');
   useFrame(engine, (w) => {
     if (!ref.current) return;
@@ -73,10 +77,12 @@ function SceneBars({ engine }: { engine: SigilEngine }) {
     const key = t ? `${t.text}|${t.sub ?? ''}` : '';
     if (title.current && key && key !== shown.current) {
       shown.current = key;
+      titleAt.current = performance.now();
       say(title.current.firstElementChild!, t!.text);
       say(title.current.lastElementChild!, t!.sub ?? '');
     }
-    title.current?.classList.toggle('is-on', !!t);
+    // (a title card, as a film has one: it comes up, is read, and goes, rather than sitting over the whole scene)
+    title.current?.classList.toggle('is-on', !!t && performance.now() - titleAt.current < TITLE_HOLD_MS);
   });
   return (
     <div className="rb-scene" ref={ref} aria-hidden={!engine.world?.scene}>
