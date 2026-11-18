@@ -5,16 +5,16 @@ import type { EnemyDef, NpcDef, QuestDef, StoryEventDef } from '../types';
  * Dawn's Rest's people and the quests of the Pale Reach: Act VI, the Last March (STORY_BIBLE.md §3). With six of
  * the seven sigils won, the coalition marches north out of Hollowmere onto the Hallow King's own land, and every
  * faction the hero helped comes with its own troops. Mara commands from Dawn's Rest, a ruined waystation at
- * the southern edge of the Reach. The main chain: the banners come in, the King's kennels and drake graves,
- * the Host in its ranks under the Pale Standard and Vosk at its head (the rider who took Hearthstead's
- * fragment, hollowed now), the siege mages held while they bring down Duskspire's outer wall, the breach,
- * and the Herald's voice in the gate (Aurel, who opens the seventh lock: Vosk carried the Sigil of Stone to his
- * king, and Vaelor wears it in the Ash Crown). Then Crownfall: the Ashen Guard and the Hallow King himself on his
+ * the southern edge of the Reach, where Elyra takes the Sigil of Tides from the hero. The main chain (v4): every
+ * banner comes in, each saying why it owes the hero; Vosk at the head of the Host on the army's flank, and his
+ * saddlebag read where he falls (the empty scarf: the Stone is on the King's brow); the siege mages held while they
+ * bring down Duskspire's outer wall; the breach; and the Herald broken in the gate, who is Aurel, the King's brother,
+ * and spends his last words on the seventh lock. Then Crownfall: the Ashen Guard and the Hallow King himself on his
  * throne of ice in Duskspire, the last fight; the Stone won back; the Crown's memory of Vaelmoor whole, Elyra's
- * choice, and the Crown unmade (the finale's quests are here too, since they are played from the Reach). Orren wants the Hollowing cured from old Wintersend,
- * Quartermaster Holt wants the pale knights' plate, and Outrider Maeve wants her hound back. Main chain first.
- * Written to DIALOGUE_STYLE.md (plain, direct, no punchlines): the finale says outright who the Herald and Vaelor
- * are, what the complete Crown would do, and what each answer to Elyra's choice costs.
+ * choice (an hour for Vaelor's family, paid for by Mara's soldiers at the gate while the Host still stands, or the
+ * Crown broken at once), and the Crown unmade (the finale's quests are here too, since they are played from the
+ * Reach). Orren wants the Hollowing cured from old Wintersend, Quartermaster Holt wants the pale knights' plate, and
+ * Outrider Maeve wants her hound back. Main chain first. Written to DIALOGUE_STYLE.md.
  */
 
 /** The factions that march with the hero, each only if the hero helped it (Act I–III). */
@@ -37,84 +37,97 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     name: 'The Last March',
     giver: 'orren-at-the-mere',
     auto: true,
-    text: 'You carry the Sigil of Tides, the sixth of seven. Vosk still has the seventh, the Sigil of Stone, which he stole from Hearthstead. The Regent has called every ally north to end the war at Duskspire, the Hallow King’s citadel in the Pale Reach. Take the north road out of Hollowmere and find Mara at Dawn’s Rest, the army’s camp.',
+    text: 'You carry Ysane’s Sigil of Tides, the sixth of seven. The seventh, the Sigil of Stone that Vosk stole from Hearthstead, is set in the Ash Crown on the Hallow King’s brow, in Duskspire. The Regent has called every ally north to take it from him. Take the north road out of Hollowmere into the Pale Reach, and find Mara and Elyra at Dawn’s Rest, the army’s camp.',
     objective: { kind: 'talk', npc: 'mara-at-the-reach', label: 'Talk to Mara at Dawn’s Rest in the Pale Reach' },
     after: ['ysanes-last-echo'],
     // the hand-off that sends the hero to pale-reach: it starts when the last chapter ends, not on arrival
     level: 56,
-    reward: { xp: 2000, gold: 700, text: 'Dawn’s Rest is a ruined waystation full of tents, and Mara commands the army here. Elyra has come up from Lastlight. She takes the Sigil of Tides from you, and now she carries six. Cael, Nyx and Orren are in camp too.' },
+    reward: { xp: 2000, gold: 700, text: 'Elyra takes the Sigil of Tides from your hand, and six of the seven sigils burn in her now. Cael, Nyx and Orren are at Mara’s fire, and the rest of the army is still coming up the Hollowmere road behind you. When it is in, Mara marches on Duskspire.' },
   },
   {
     id: 'the-last-road',
     name: 'Every Banner',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'The rest of the army is still marching up the road from Hollowmere. Highwall’s garrison comes first, then the allies you helped along the way. Mara wants you beside her at the edge of camp when they arrive.',
+    text: 'The army is coming up the road from Hollowmere. Highwall’s garrison marches first, and behind it comes everyone you have fought for since Briarhollow. Stand with Mara at the edge of Dawn’s Rest and see them in.',
     objective: { kind: 'event', event: 'reach-the-banners', label: 'Meet the army arriving at Dawn’s Rest' },
     after: ['the-last-march'],
     zone: 'pale-reach',
     level: 56,
-    reward: { xp: 1800, gold: 600, text: 'Banner after banner comes in out of the snow. Everyone you helped along the way has sent fighters. Mara has an army now.' },
+    reward: { xp: 1800, gold: 600, text: 'All afternoon the banners came in out of the snow, and Lastlight’s lamp-keepers lit the road for them. Hollis’s rangers, Dunmore’s riders, Sefu’s lancers of Ras, Sigrun’s huscarls, the archers of the forest clans and the axemen of Cinderhold each came because you once came for them. Mara has an army now, and in the morning it marches on Duskspire.' },
   },
   {
     id: 'march-vosk',
     name: 'The Rider at the Head of the Host',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'The Ashen Host has formed up in ranks north-west of Dawn’s Rest, with a rider at its head. It is Rider-Captain Vosk, the man who stole the Sigil of Stone from Hearthstead. The Ash Crown has hollowed him out, but he still leads the Host. Defeat him at the King’s Host and take back the sigil.',
+    text: 'The Ashen Host has drawn up in ranks at the King’s Host, north-west of Dawn’s Rest, on the army’s flank. Rider-Captain Vosk leads it, the man who stole the Sigil of Stone from Hearthstead and carried it north to his king. The Ash Crown has hollowed him out. Kill him, so the army can march on Duskspire without his riders at its back.',
     objective: { kind: 'kill', region: 'pale-reach', count: 1, enemies: ['vosk-the-hollowed'], label: 'Defeat Vosk at the King’s Host' },
     after: ['the-last-road'],
     zone: 'pale-reach',
     level: 58,
-    reward: { xp: 3600, gold: 1000, text: 'Vosk falls in the snow, and for a moment he knows you. “I took the stone to my king,” he says. “I’m sorry.” In his saddlebag is a child’s scarf, folded small. He carried the sigil in it. The scarf is empty.' },
+    reward: { xp: 3600, gold: 1000, text: 'Vosk falls in the snow, and for a moment his eyes clear and he knows you. “I carried the Stone north to my king,” he says. “I wrapped it in a child’s scarf. I’m sorry.” Then there is only ash, and his saddle lying in the snow.' },
   },
   {
     id: 'march-the-siege-mages',
     name: 'The Siege Mages',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'Duskspire’s outer wall stands north of Dawn’s Rest, and it has never been breached. Magister Quell’s siege mages from Shardwatch can bring it down, but their spell takes a long time. The Host will attack them as soon as they begin. Protect the mages on the field in front of the wall until the spell is done.',
+    text: 'Duskspire’s outer wall stands between the army and the Duskspire Gate, and it has never been breached. Magister Quell’s siege mages from Shardwatch can bring it down, but their spell is slow, and the Host will throw everything it has at them. Hold the field below the wall, north of Dawn’s Rest, until the spell is done.',
     objective: { kind: 'event', event: 'reach-the-mages', label: 'Protect the siege mages at Duskspire’s outer wall' },
     after: ['the-seventh-sigil'],
     zone: 'pale-reach',
     level: 58,
-    reward: { xp: 4000, gold: 1100, item: { rarity: 'epic' }, text: 'The mages finish their spell, and part of the outer wall collapses. The Host is already running to fill the gap.' },
+    reward: { xp: 4000, gold: 1100, item: { rarity: 'epic' }, text: 'The mages’ spell lands, and a stretch of the outer wall falls in on itself. Nobody has opened that wall since the wardens shut the Hallow King behind it. Through the dust, the Host is already running to fill the gap.' },
   },
   {
     id: 'march-the-breach',
     name: 'The Breach',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'The outer wall is down, and the Host is pouring into the gap to hold it. You lead the charge, and Cael and his riders follow right behind you. Fight through the breach and get the army inside the wall.',
+    text: 'The outer wall is down, and the Host is pouring into the gap to close it. Cael and his riders will charge right behind you. Fight through the breach and get the army inside the wall.',
     objective: { kind: 'event', event: 'reach-the-breach', label: 'Fight through the breach in Duskspire’s outer wall' },
     after: ['march-the-siege-mages'],
     zone: 'pale-reach',
     level: 58,
-    reward: { xp: 4000, gold: 1100, text: 'The army is inside Duskspire’s outer wall. No living soldier has stood here in three hundred years. Ahead, a shape of grey light waits in the Duskspire Gate.' },
+    reward: { xp: 4000, gold: 1100, text: 'The army is through. Living soldiers stand inside Duskspire’s outer wall for the first time in three hundred years. At the top of the slope, a shape of grey light waits in the Duskspire Gate.' },
   },
   {
     id: 'march-the-voice',
     name: 'The Voice in the Gate',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'The Pale Herald is waiting in the Duskspire Gate as a shape of grey light. For three hundred years he has spoken for Vaelor among the living, paid traitors in ash-gold and hunted the sigils. He took Elyra at the Tear, and he kept Nyx’s brother in a cell. Defeat him at the gate.',
+    text: 'The Pale Herald waits in the Duskspire Gate, a shape of grey light with no face. For three hundred years he has spoken for the Hallow King, paid traitors in ash-gold and hunted the sigils. He took Elyra at the Tear and kept Nyx’s brother in a cell. Break him at the gate.',
     objective: { kind: 'kill', region: 'pale-reach', count: 1, enemies: ['the-heralds-voice'], label: 'Defeat the Pale Herald at the Duskspire Gate' },
     after: ['march-the-breach'],
     zone: 'pale-reach',
     level: 59,
-    reward: { xp: 4200, gold: 1200, text: 'The grey light breaks apart, and a tired man’s voice is left. “My name is Aurel. I am Vaelor’s brother, and I let the plague ship into our harbor.” “I believed his crown could undo it. It can’t. It would only kill Aster the way it killed Vaelmoor.” “The gate’s seventh lock opens for the King’s own blood. I will open it for you.” Then the voice is gone.' },
+    // (his own words, and who he was, are staged at the gate right after: data/scenes-story.ts reach-aurel)
+    reward: { xp: 4200, gold: 1200, text: 'The Pale Herald’s grey light breaks apart at the Duskspire Gate. Under it, a man kneels in the snow. For the first time in three hundred years, he speaks in his own voice.' },
   },
   {
     id: 'the-duskspire-gate',
     name: 'The Duskspire Gate',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'The Duskspire Gate has seven locks, one for each sigil. Six will open for the six sigils Elyra carries. The seventh belongs to the Sigil of Stone, which is in Vaelor’s crown, but Aurel promised to open it. Go up to the gate with Elyra.',
+    text: 'The Duskspire Gate has seven locks, one for each sigil. Six will turn for the six sigils in Elyra. The seventh is the Stone’s, and the Stone is on the Hallow King’s brow. Go up to the gate with Elyra.',
     objective: { kind: 'explore', spot: 'duskspire-gate', label: 'Go up to the Duskspire Gate' },
+    // the wardens' words over the locks: how the gate opens, and the one way the seventh can open without the Stone
+    find: {
+      name: 'The Wardens’ Lock-Plate',
+      kind: 'page',
+      about: 'A bronze plate set over the seven locks of the Duskspire Gate, cut by the Sigil-wardens when they shut the Hallow King inside, three hundred years ago. It says how the gate can be opened.',
+      body: [
+        'Here the wardens of Aster shut away Vaelor, King of Vaelmoor, with his Ash Crown.',
+        'Seven locks for seven lights. Let no one open them who does not carry all seven.',
+        'The seventh opens also from within, to the King’s own blood. We pray that none of it is left.',
+      ],
+      sign: 'The Sigil-wardens of Aster',
+    },
     after: ['march-the-voice'],
     zone: 'pale-reach',
     level: 59,
-    reward: { xp: 2400, gold: 900, text: 'Six locks open for Elyra’s six sigils. Then the seventh turns by itself, from the inside, and ash falls out of the keyhole. Aurel kept his promise. Mara stays outside with the army to hold the gate behind you. Elyra, Cael, Nyx and Orren go in with you.' },
+    reward: { xp: 2400, gold: 900, text: 'The Duskspire Gate stands open. Mara holds it behind you with the army, so the way out stays yours. Elyra, Cael, Nyx and Orren go in with you, and the Hallow King is waiting at the top of his citadel.' },
   },
   /* ------------------------------------------------------------- Crownfall */
   {
@@ -122,19 +135,19 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     name: 'The Ashen Guard',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'Inside Duskspire, the way to the throne room runs over the Bone Bridge, through the Hall of Kneeling Dead, and into the court of the Ashen Guard. Ser Maltheus, captain of the King’s guard, has held that court for three hundred years. Defeat him to reach the Stair of Ash.',
+    text: 'Inside Duskspire, the way up runs over the Bone Bridge, through the Hall of Kneeling Dead where Lady Cendre keeps the King’s dead, and into the Court of the Ashen Guard. Ser Maltheus, captain of the King’s guard, has held that court for three hundred years. Defeat him to open the Stair of Ash to the throne.',
     objective: { kind: 'boss', boss: 'hollow-guard', label: 'Defeat Ser Maltheus in Duskspire’s court' },
     after: ['the-duskspire-gate'],
     zone: 'pale-reach',
     level: 59,
-    reward: { xp: 5000, gold: 1500, item: { rarity: 'epic' } },
+    reward: { xp: 5000, gold: 1500, item: { rarity: 'epic' }, text: 'Ser Maltheus goes down on one knee and stays there. “Nine days we held this court against the wardens,” he says. “Tell my king I held it.” The Stair of Ash is open, and the Hallow King is at the top of it.' },
   },
   {
     id: 'the-hollow-king',
     name: 'Crownfall: The Hallow King',
     giver: 'mara-at-the-reach',
     auto: true,
-    text: 'Vaelor, the Hallow King, waits at the top of the Stair of Ash with the Sigil of Stone set in his crown. During the fight, the Crown will pull Elyra’s sigils out of her and toward him. Strike each one to send it back to her. Defeat Vaelor and take back the Stone.',
+    text: 'Vaelor, the Hallow King, waits on his throne of ice at the top of the Stair of Ash, with the Sigil of Stone set in the Ash Crown on his brow. In the fight, the Crown will tear Elyra’s sigils out of her and pull them toward him. Strike each one back to her before it reaches him. Bring him down, and the Stone comes loose.',
     objective: { kind: 'boss', boss: 'vaelor', label: 'Defeat Vaelor, the Hallow King, in Duskspire’s throne room' },
     after: ['the-hollow-guard'],
     zone: 'pale-reach',
@@ -145,7 +158,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
       item: 'signet-of-the-vanguard',
       // the last sigil, won from the last who held it
       perk: 'sigil-stone',
-      text: 'Vaelor falls on the steps of his throne. The Sigil of Stone breaks loose from the Ash Crown, and Elyra catches it. She has all seven now. The Crown rises off Vaelor’s head and hangs in the air. Then the throne room fades, and the sky over Duskspire tears open onto a summer day.',
+      text: 'Vaelor falls on the steps of his throne, and the Sigil of Stone breaks loose from the Ash Crown into Elyra’s hands. Seven of seven, and the Stone took nothing from her. The Crown tears itself off the King’s brow and rises through the roof of Duskspire. Above the tower, the sky splits open onto a summer day.',
     },
   },
   {
@@ -153,43 +166,43 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     name: 'Crownfall: Vaelmoor Whole',
     giver: 'elyra-at-the-reach',
     auto: true,
-    text: 'Without the Stone, the Ash Crown has pulled Duskspire into its memory of Vaelmoor, the summer before the plague. A tear in the sky beside the Duskspire Gate leads into that memory. Elyra is going in ahead of you with all seven sigils to destroy the Crown. Go through the tear and find her in the town square.',
+    text: 'When Vaelor fell, the Ash Crown tore free and rose through the roof of Duskspire, and the sky above the tower split open onto a summer day. Elyra has gone into that light after it, carrying all seven sigils. Go through the tear in the sky beside the Duskspire Gate and find her in the square of Vaelmoor Remembered.',
     objective: { kind: 'talk', npc: 'elyra-in-the-memory', label: 'Find Elyra in the square of Vaelmoor Remembered' },
     after: ['the-hollow-king'],
     // the hand-off that sends the hero to vaelmoor-remembered: it starts when the last chapter ends, not on arrival
     level: 60,
-    reward: { xp: 3000, gold: 600, text: '“I can destroy the Crown now,” Elyra says. “Or I can give Vaelor one hour with his family first, and destroy it after.” “The hour will burn away the rest of what I remember of you. If I break it now, I think I get your name back.” “I want both. I can’t choose. You choose.”' },
+    reward: { xp: 3000, gold: 600, text: '“I can unmake the Crown now,” Elyra says. “Or I can hold it open one more hour first, so Vaelor’s wife and children can see him. But while the Crown stands, the Host stands too, and Mara is holding the gate against it. Every minute of that hour costs her soldiers.” She looks at you. “I can’t choose this. You choose.”' },
   },
   {
     id: 'crownfall-one-hour',
     name: 'One Hour',
     giver: 'vaelor-remembered',
     choice: 'crownfall',
-    text: 'Elyra will use the sigils’ light to give Vaelor one real hour with his queen and children, and then she will destroy the Crown. The hour will burn away the rest of Elyra’s memories of you. To choose this, go to Vaelor at the edge of the square and tell him.',
+    text: 'Elyra will hold the Crown open for one more hour, so Vaelor’s queen and children can see him at last. Until the Crown is unmade, the Host outside fights on, and Mara’s soldiers will die holding the gate for that hour. To choose the hour, go to Vaelor at the edge of the square and tell him.',
     objective: { kind: 'talk', npc: 'vaelor-remembered', label: 'Tell Vaelor he can have his hour' },
     after: ['crownfall-vaelmoor'],
     zone: 'vaelmoor-remembered',
     level: 60,
-    reward: { xp: 2000, gold: 300, text: 'For one hour, Vaelor sits by the fountain with Ysane, Lark and Edda, and they can see him. He answers every question the children ask. When the hour ends, he stands and bows to Elyra. “Thank you,” he says. “Now break it.”' },
+    reward: { xp: 2000, gold: 300, text: 'For one hour Vaelor sits on the fountain’s rim with Ysane, Lark and Edda, and they can see him. He answers every question the children ask. When the hour is over he kisses each of them and stands. “Thank you,” he tells Elyra. “Now let them go.”' },
   },
   {
     id: 'crownfall-break-it',
     name: 'Break It Now',
     giver: 'elyra-in-the-memory',
     choice: 'crownfall',
-    text: 'Elyra will destroy the Crown right away, and Vaelor will get no hour with his family. If she does it now, the sigils will give back some of what they took from her. To choose this, tell Elyra to break it.',
+    text: 'Elyra will unmake the Crown now, and Vaelor will get no hour with his family. The moment the Crown is gone, the Host outside falls with it, and the fighting at the gate ends. To choose this, tell Elyra to break it.',
     objective: { kind: 'talk', npc: 'elyra-in-the-memory', label: 'Tell Elyra to break the Crown now' },
     after: ['crownfall-vaelmoor'],
     zone: 'vaelmoor-remembered',
     level: 60,
-    reward: { xp: 2000, gold: 300, text: 'Elyra closes her hands around the sigils. Across the square, Vaelor fades away without seeing his family. Elyra opens her eyes and says your name, and it is right.' },
+    reward: { xp: 2000, gold: 300, text: 'Elyra closes her hands around the seven sigils. Across the square, Vaelor reaches for his wife, and she does not turn. Then he is gone. Elyra cries for him anyway.' },
   },
   {
     id: 'crownfall-the-ash-crown',
     name: 'Crownfall: The Crown Unmade',
     giver: 'elyra-in-the-memory',
     auto: true,
-    text: 'Only the Crown is left. It hangs in the air over the palace garden, north of the square. Walk up to it with Elyra, and stand with her while she destroys it.',
+    text: 'Only the Crown is left. It hangs over the palace garden, north of the square, with nothing holding it up but grief. Walk up under it and stand with Elyra while she unmakes it.',
     objective: { kind: 'explore', spot: 'memory-garden', label: 'Stand with Elyra under the Crown in the palace garden' },
     after: ['crownfall-one-hour', 'crownfall-break-it'],
     zone: 'vaelmoor-remembered',
@@ -198,7 +211,7 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
       xp: 12000,
       gold: 3000,
       item: { rarity: 'legendary' },
-      text: 'Elyra raises the seven sigils, and the Ash Crown breaks apart. Everything it took is set free, and the Ashen Host is gone. The dead of Vaelmoor can rest at last. The summer memory fades, and through it you can see the sun rising over the Pale Reach. Beside you, a portal opens back to the Reach. The war is over.',
+      text: 'Elyra lifts the seven sigils, and the Ash Crown comes apart into light. Everything it ate goes home, and every soldier of the Ashen Host goes with it. The summer fades, and the sun comes up over the Pale Reach. The war is over.',
     },
   },
   /* ---------------------------------------------------- Orren's cure */
@@ -206,34 +219,48 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     id: 'the-hollowing',
     name: 'The Hollowing',
     giver: 'orren-at-the-reach',
-    text: 'Orren has a tent full of soldiers he can’t heal. Soul-reavers struck them with a cold violet light, and now no medicine or prayer helps them. The camp calls it the Hollowing. Bring Orren four of the violet shards that soul-reavers carry, so he can find out what it is.',
+    text: 'Orren has a tent full of soldiers he can’t heal. Soul-reavers struck them with a cold violet light, and no medicine or prayer warms them again. The camp calls it the Hollowing. Bring Orren four of the violet shards that soul-reavers carry, so he can learn what it is.',
     objective: { kind: 'loot', region: 'pale-reach', item: 'Reaver’s Shard', from: ['soul-reaver'], chance: 0.35, count: 4, label: 'Take Reaver’s Shards from soul-reavers' },
     after: ['the-last-road'],
     zone: 'pale-reach',
     level: 57,
-    reward: { xp: 750, gold: 700 },
+    reward: { xp: 750, gold: 700, text: 'Orren holds a shard to his lamp, and it drinks the light. It is the Ash Crown’s grieflight. It takes the warmth a man remembers and keeps it. His old books name one cure, kept in a village the plague emptied.' },
   },
   {
     id: 'old-wintersend',
     name: 'Old Wintersend',
     giver: 'orren-at-the-reach',
-    text: 'Orren says the shards are pieces of the Ash Crown’s light. His old books name only one cure: a reliquary kept in Wintersend Hall, in the village of Old Wintersend, west of Dawn’s Rest. Nobody has been there since the plague winter, three hundred years ago. Go and see if the hall still stands.',
+    text: 'Orren’s books name one cure for the Hollowing: a reliquary kept in Wintersend Hall, in the village of Old Wintersend, west of Dawn’s Rest. Nobody has been there since the plague winter, three hundred years ago. Go and see if the hall still stands.',
     objective: { kind: 'explore', spot: 'frozen-village', label: 'Find Old Wintersend, west of Dawn’s Rest' },
+    // (pays out in the village: laying its watchers to rest starts there, with no walk back to Orren between)
+    turnIn: false,
+    find: {
+      name: 'The Notice on the Hall Door',
+      kind: 'note',
+      about: 'A notice nailed to the door of Wintersend Hall in the plague winter, three hundred years ago. The village swore to guard the reliquary inside until help came. It never came, and they are still guarding it.',
+      body: [
+        'Sickness in the hall. Do not come in unless you must.',
+        'The reliquary is kept by the altar for any who need it. Knock, and we will bring it to you.',
+        'We will keep watch over it until the King’s physicians come.',
+      ],
+      sign: 'Reeve Osric, for the people of Wintersend',
+    },
     after: ['the-hollowing'],
     zone: 'pale-reach',
     level: 58,
-    reward: { xp: 750, gold: 720 },
+    reward: { xp: 750, gold: 720, text: 'Wintersend Hall still stands, its door barred from the inside. Frost wraiths walk the lanes around it in the clothes of the people who lived here. They are still keeping the watch they swore.' },
   },
   {
     id: 'the-watchers-of-wintersend',
     name: 'The Watchers of Wintersend',
     giver: 'orren-at-the-reach',
-    text: 'Wintersend Hall still stands, and the reliquary is inside. The people of Wintersend are still there too, as frost wraiths guarding it. Orren asks you to lay them to rest before he takes it. Defeat eight frost wraiths at Old Wintersend, west of Dawn’s Rest, or anywhere on the Reach.',
+    text: 'The people of Old Wintersend swore to guard their hall’s reliquary until help came, and they are guarding it still, as frost wraiths. Lay eight of them to rest, as gently as you can. Then take the reliquary back to Orren at Dawn’s Rest.',
     objective: { kind: 'kill', region: 'pale-reach', count: 8, enemies: ['frost-wraith'], label: 'Lay frost wraiths to rest' },
     after: ['old-wintersend'],
     zone: 'pale-reach',
     level: 58,
-    reward: { xp: 1100, gold: 900, item: 'wintersend-reliquary', text: 'The reliquary is a small silver box with a warm stone inside. When Orren holds it to a sick soldier, the man’s hands stop shaking. Orren breaks the stone in two and gives you one half. He keeps the other half for his soldiers.' },
+    thanks: ['You brought it. And the people of Wintersend?', 'Then they can rest at last. Give it here. I have soldiers who haven’t stopped shaking in a week.'],
+    reward: { xp: 1100, gold: 900, item: 'wintersend-reliquary', text: 'The reliquary is a small silver box with a warm stone inside. When Orren holds it to a sick soldier, the man’s hands stop shaking. Orren breaks the stone in two and gives you one half. He keeps the other for his soldiers.' },
   },
   /* ------------------------------------------------- Quartermaster Holt's plate */
   {
@@ -265,21 +292,30 @@ export const PALE_REACH_QUESTS: QuestDef[] = [
     giver: 'outrider-maeve',
     text: 'Three days ago, Outrider Maeve’s hound Bran ran after the King’s hounds, and he hasn’t come back. They went toward the King’s Kennels, east of Dawn’s Rest. Maeve can’t leave her post. Go to the Kennels and look for Bran.',
     objective: { kind: 'explore', spot: 'hound-kennels', label: 'Look for Bran at the King’s Kennels' },
+    // (pays out at the kennels: the hunt for the hound that chased him starts there, with no walk back to Maeve between)
+    turnIn: false,
+    find: {
+      name: 'Bran’s Collar',
+      kind: 'token',
+      about: 'A dwarf-leather dog collar, chewed clean through, lying in the snow of the King’s Kennels. Beside it are paw prints as wide as a plate. There is no blood on it.',
+      body: ['BRAN. If found, send him back to Maeve of Highwall’s outriders.'],
+    },
     after: ['the-last-road'],
     zone: 'pale-reach',
     level: 57,
-    reward: { xp: 650, gold: 680 },
+    reward: { xp: 650, gold: 680, text: 'Bran is not in the Kennels, but his collar is, chewed through. The prints beside it belong to Gravejaw, the great hound that leads the King’s pack. Bran may still be out there, running from her.' },
   },
   {
     id: 'gravejaw',
     name: 'Gravejaw',
     giver: 'outrider-maeve',
-    text: 'Bran’s collar was lying in the Kennels, chewed through, next to paw prints as wide as a plate. They belong to Gravejaw, the giant hound that leads the King’s pack. Maeve wants her dead before she catches Bran. Kill Gravejaw at the King’s Kennels, east of Dawn’s Rest.',
+    text: 'Gravejaw, the great hound of the King’s pack, chewed through Bran’s collar and is hunting him across the Reach. While she lives, Bran can’t come home. Kill Gravejaw at the King’s Kennels, east of Dawn’s Rest, then tell Maeve.',
     objective: { kind: 'kill', region: 'pale-reach', count: 1, enemies: ['gravejaw'], label: 'Kill Gravejaw at the King’s Kennels' },
     after: ['a-hound-named-bran'],
     zone: 'pale-reach',
     level: 58,
-    reward: { xp: 1100, gold: 900, item: 'outriders-boots', text: 'That evening, Bran limps into Dawn’s Rest on his own, thin but unhurt. Maeve hugs him for a long time. She gives you her spare boots to thank you.' },
+    thanks: ['Gravejaw is dead? Then Bran has a chance to find his way home.', 'He always comes back. He just needs the road clear.'],
+    reward: { xp: 1100, gold: 900, item: 'outriders-boots', text: 'That evening, Bran limps into Dawn’s Rest on his own, thin but whole. Maeve holds him for a long time. She gives you her spare boots to thank you.' },
   },
 ];
 
@@ -291,13 +327,14 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     title: 'Captain of the Last March',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'the-last-march', state: 'active' }, lines: ['You made it. This is Dawn’s Rest, our last camp before Duskspire.', 'When this started, I guarded one gate in Briarhollow. Now I command the Regent’s army. I don’t want to lose any of them.'] },
-      { when: { quest: 'the-last-road', state: 'active' }, lines: ['The rest of the army is still coming up the road from Hollowmere. Stand with me at the edge of camp while they come in.'] },
-      { when: { quest: 'march-vosk', state: 'active' }, lines: ['Vosk is at the head of the Host, north-west of here. He stole Hearthstead’s sigil while I was fighting on its wall.', 'I’ve wanted him stopped since that night. Bring him down.'] },
-      { when: { quest: 'march-the-siege-mages', state: 'active' }, lines: ['The mages need time to bring the outer wall down. We stand around them and stop anything that comes for them.', 'It’s simple. Nothing gets through to the mages.'] },
-      { when: { quest: 'the-duskspire-gate', state: 'active' }, lines: ['I’m staying out here with the army to hold the gate behind you. If the Host takes it, you’ll have no way out.', 'Bring Elyra back out. Bring yourself back out too.'] },
-      // side arcs change what she says: Haldren's dead laid to rest at the Muster Hall
-      { when: { quest: 'crownfall-the-ash-crown', state: 'done' }, lines: ['It’s over. The Host is gone. I keep saying it, and it still doesn’t feel real.', 'I want to go home and fix Briarhollow’s gate. It sticks when it rains.'] },
+      // what the hour cost, or didn't (Elyra's choice in the Crown's memory)
+      { when: { quest: 'crownfall-one-hour', state: 'taken' }, lines: ['We held the gate for the King’s hour. Forty-one of ours fell in it. I wrote down every name.', 'Elyra says he needed that hour. I hope she’s right. I will never know.'] },
+      { when: { quest: 'crownfall-break-it', state: 'taken' }, lines: ['When the Crown broke, the Host fell down in the snow in front of our shields, all at once. Then it was quiet.', 'I want to go home and fix Briarhollow’s gate. It sticks when it rains.'] },
+      { when: { quest: 'crownfall-the-ash-crown', state: 'done' }, lines: ['It’s over. The Host is gone. I keep saying it, and it still doesn’t feel real.'] },
+      { when: { quest: 'the-last-march', state: 'active' }, lines: ['You made it. This is Dawn’s Rest, the last camp before Duskspire.', 'In the spring I guarded one gate in Briarhollow. Now the Regent has given me her army. I mean to bring as many of them home as I can.'] },
+      { when: { quest: 'the-last-road', state: 'active' }, lines: ['The rest of the army is a mile down the Hollowmere road. Stand with me at the edge of camp and see them in.'] },
+      { when: { quest: 'march-vosk', state: 'active' }, lines: ['The Host is drawn up at the King’s Host, north-west of here, on our flank. Vosk is at its head.', 'He took Hearthstead’s hearthstone while I was fighting on its wall. I’ve wanted him since that night. Bring him down.'] },
+      { when: { quest: 'march-the-siege-mages', state: 'active' }, lines: ['Quell’s mages need time to bring the outer wall down. We stand around them, and nothing gets through.', 'The field is north of here, below the wall. I’ll be there with the army.'] },
       { lines: ['Every banner in this camp belongs to people you helped. They came because of you.', 'Rest while you can. Duskspire is north of here.'] },
     ],
   },
@@ -307,11 +344,11 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     title: 'Captain of the Ninefold Watch',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'crownfall-the-ash-crown', state: 'done' }, lines: ['It’s over, and this time nobody was left behind.', 'I’m going back to Lantern Hill, to the barrows where my Watch died. I want to tell them it’s over.'] },
-      { when: { quest: 'march-the-breach', state: 'active' }, lines: ['You lead the charge through the breach. My riders and I will be right behind you.', 'Ten years ago my Watch died waiting for help that never came. Today I’ll be right there when you need me.'] },
+      { when: { quest: 'crownfall-the-ash-crown', state: 'done' }, lines: ['It’s over, and this time nobody was left waiting for help that didn’t come.', 'I’m going back to Lantern Hill, to the barrows where my Watch died. I want to tell them help came in the end.'] },
+      { when: { quest: 'march-the-breach', state: 'active' }, lines: ['You lead the charge through the breach. My riders and I will be right behind you.', 'Ten years ago my Watch died waiting for help that never came. This time we are the help, and we won’t be late.'] },
       // the knights' chapel at Highwall laid back down
       { when: { quest: 'last-rites', state: 'done' }, lines: ['Ottis rang the chapel bell at Highwall for my riders who fell in the sortie. He wrote to tell me.', 'Corvane would have liked him. Corvane liked people who did things properly.'] },
-      { lines: ['Ten years ago I was told help wasn’t coming, and my Watch died waiting. Look at this camp. This time, help came.', 'Stay close in the fight, and shout if you’re hurt. Nobody gets left behind this time.'] },
+      { lines: ['My riders are fed and the horses are shod. We march when Mara gives the word.','Stay close in the fight, and shout if you’re hurt. Nobody gets left behind this time.'] },
     ],
   },
   'nyx-at-the-reach': {
@@ -321,6 +358,8 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     sprite: 'villager',
     talk: [
       { when: { quest: 'crownfall-the-ash-crown', state: 'done' }, lines: ['It’s over. I’m going to Lastlight to see Wren.', 'Thank you for letting me come back after the Tear. I won’t forget it.'] },
+      // the Herald unmasked at the gate: a harbor-master who let one ship in
+      { when: { quest: 'march-the-voice', state: 'done' }, lines: ['The Herald was a harbor-master who let one ship in, and spent three hundred years hurting people to undo it.', 'I sold you out once and told myself there was no other way. So I understand him a little. I still can’t forgive him for Wren.'] },
       // Widow Marrow's son laid to rest: the oil went up the causeway, and Wren carried it
       { when: { quest: 'the-drowned-mother', state: 'done' }, lines: ['Wren is keeping lamps at Lastlight. Widow Marrow taught him how. He writes to me every week.', 'He says he’s happy there. I’m starting to believe him.'] },
       { lines: ['Wren is safe at Lastlight. I don’t have to be afraid for him anymore.', 'I sold your road to the Herald once, to save my brother. I’m here to make up for it.', 'If there’s a lock in Duskspire, I’ll open it.'] },
@@ -347,9 +386,9 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     title: 'Carrying six',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'crownfall-vaelmoor', state: 'active' }, lines: ['I’m going in through the tear beside the gate. The Crown is in there, and I have all seven now.', 'Meet me in the town square inside.'] },
-      { when: { quest: 'the-hollow-king', state: 'active' }, lines: ['The Sigil of Stone is up there, in the crown on Vaelor’s head. I can feel it.', 'When it comes loose, I’ll catch it. You just have to knock it loose.'] },
-      { lines: ['I carry six sigils now. They’ve gone very quiet, as if they’re waiting.', 'The Sigil of Tides took your name from me. Please don’t tell me. I want to find it myself.'] },
+      { when: { quest: 'the-seventh-sigil', state: 'done' }, lines: ['Marit’s scarf is in my satchel. When this is over, I’m sending it home to her.', 'In the fight, the Crown will try to tear my sigils out of me. Strike them back to me. Don’t let him have them.'] },
+      { when: { quest: 'the-last-march', state: 'active' }, lines: ['I felt the Tides coming closer all day. It’s the coldest of them. I can feel it in my fingers.', 'Mara is waiting for you. Go and tell her you’re here.'] },
+      { lines: ['Six sigils, and they’ve all gone quiet, as if they’re listening for something.', 'The Stone is up there in the King’s crown. I can feel it, like a cold hand on the back of my neck.'] },
     ],
   },
   /* ------------------------------------------- the Crown's memory of Vaelmoor (the finale) */
@@ -362,15 +401,15 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
       {
         when: { quest: 'crownfall-vaelmoor', state: 'active' },
         lines: [
-          'This is the Crown’s memory of Vaelmoor, the summer before the plague. This is what Vaelor wanted back.',
-          'I have all seven sigils now. I can destroy the Crown. But first I have to ask you something.',
+          'This is the Crown’s memory of Vaelmoor, the summer before the plague. It’s what Vaelor wanted back.',
+          'I hold all seven sigils. I can unmake the Crown now. But first I have to ask you something.',
         ],
       },
-      { when: { quest: 'crownfall-one-hour', state: 'offered' }, lines: ['If you want Vaelor to have his hour, go and tell him. He’s at the edge of the square.', 'The hour will burn away what I remember of you. I know. I can bear it, I think.', 'If you want it over now, tell me instead.'] },
-      { when: { quest: 'crownfall-break-it', state: 'active' }, lines: ['All right. I’ll break it now.'] },
-      { when: { quest: 'crownfall-the-ash-crown', state: 'active' }, lines: ['The Crown is over the palace garden, north of here. Everything it ever took is inside it.', 'Walk up with me. I don’t want to do this alone.'] },
-      { when: { quest: 'crownfall-break-it', state: 'taken' }, lines: ['I remember your name again. I keep saying it to myself so I won’t lose it.'] },
-      { when: { quest: 'crownfall-one-hour', state: 'taken' }, lines: ['I know I should know you. I can’t remember you at all now. I’m sorry.', 'But he had his hour with them. I’m glad.'] },
+      { when: { quest: 'crownfall-one-hour', state: 'offered' }, lines: ['If you want Vaelor to have his hour, go and tell him. He’s at the edge of the square.', 'While I hold the Crown open, the Host keeps fighting at the gate. Mara’s soldiers will pay for every minute.', 'If you want it over now, tell me instead.'] },
+      { when: { quest: 'crownfall-break-it', state: 'active' }, lines: ['All right. I’ll do it now.', 'I’m sorry, Vaelor.'] },
+      { when: { quest: 'crownfall-the-ash-crown', state: 'active' }, lines: ['The Crown is over the palace garden, north of here. Everything it ever ate is inside it.', 'Walk up with me. I don’t want to do this alone.'] },
+      { when: { quest: 'crownfall-one-hour', state: 'taken' }, lines: ['He had his hour. The children climbed into his lap, and he laughed.', 'Mara’s soldiers paid for it at the gate. I held the Crown open for that hour, so I will carry them with me.'] },
+      { when: { quest: 'crownfall-break-it', state: 'taken' }, lines: ['It’s done. I keep seeing him reach for her.', 'Ysane asked him to let them go. They’re free now, even if he never got to say goodbye.'] },
       { lines: ['All seven sigils are quiet. I think they know it’s nearly over.'] },
     ],
   },
@@ -380,8 +419,8 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     title: 'King of Vaelmoor, remembered',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'crownfall-one-hour', state: 'active' }, lines: ['Elyra says I may have one hour with my family. I have waited three hundred years for it.', 'I am ready. Please bring them to me.'] },
-      { when: { quest: 'crownfall-one-hour', state: 'taken' }, lines: ['Ysane says she waited for me, and that it was all right.', 'I am ready to let them go. Tell Elyra to break the Crown.'] },
+      { when: { quest: 'crownfall-one-hour', state: 'active' }, lines: ['Elyra says I may have one hour with them. I have waited three hundred years for it.', 'I know what it costs your friends at the gate. I will not waste a minute of it.'] },
+      { when: { quest: 'crownfall-one-hour', state: 'taken' }, lines: ['Ysane asked me to let her go, and I made her wait three hundred years.', 'I am ready now. Tell Elyra to unmake it.'] },
       { lines: ['I am Vaelor, King of Vaelmoor. This is my city, the summer before the plague.', 'My wife and children are right there, and they cannot see me.', 'I sat between their beds all winter, and it was not enough.'] },
     ],
   },
@@ -391,7 +430,7 @@ export const PALE_REACH_NPCS: Record<string, NpcDef> = {
     title: 'The summer before',
     sprite: 'villager',
     talk: [
-      { when: { quest: 'crownfall-one-hour', state: 'taken' }, lines: ['He came home to us at last. Thank you.', 'Let us go now. Please.'] },
+      { when: { quest: 'crownfall-one-hour', state: 'taken' }, lines: ['He came home to us at last. Thank you for the hour.', 'Let us go now. Please.'] },
       { lines: ['The market opens early today. Lark wants honey cake, and Edda wants everything.', 'Have you seen my husband? He’s always busy somewhere.'] },
     ],
   },
@@ -539,11 +578,22 @@ export const PALE_REACH_EVENTS: Record<string, StoryEventDef> = {
     kind: 'arrival',
     at: 'reach-camp',
     radius: 16,
-    arrive: { pets: ['highwall-soldier', 'highwall-soldier', 'highwall-soldier'], from: 'reach-road', to: 'reach-tents' },
+    // every people the main story won to the Regent's side walks in (each of these is on the road to the bell, so all
+    // of them come for every hero; the thorn knights, who come only if Silvaine sang her brother back, meet the army
+    // at the wall: FACTIONS)
+    arrive: { pets: ['highwall-soldier', 'highwall-soldier', 'fern-ranger', 'hearth-rider', 'sun-lancer', 'jarl-huscarl', 'clan-archer', 'kragholt-axe'], from: 'reach-road', to: 'reach-tents' },
     banner: 'Every banner',
-    start: [{ who: 'highwall-soldier', text: 'Highwall’s garrison, reporting to Captain Venn! There are more behind us!' }],
+    start: [
+      { who: 'highwall-soldier', text: 'Highwall’s garrison, reporting to Captain Venn! The whole road behind us is banners!' },
+      { who: 'fern-ranger', text: 'Fernstead’s rangers! You won our village back from the Host. Hollis sends every bow she has.' },
+      { who: 'hearth-rider', text: 'Hearthstead’s riders! You held our wall. Dunmore sends every horse that can still run.' },
+      { who: 'sun-lancer', text: 'The lancers of Ras! You went into the Sun King’s tomb for us. Sefu promised you our lances.' },
+      { who: 'jarl-huscarl', text: 'Jarl Sigrun’s huscarls, out of Frostgate! You brought our sledges home. We bring our axes.' },
+      { who: 'clan-archer', text: 'The forest clans of Lumen Glade! Lady Silvaine sends us with her blessing.' },
+      { who: 'kragholt-axe', text: 'Thane Hroki’s axes, out of Cinderhold! You took our dead out of the Host’s chains. Now point us at it.' },
+    ],
     waves: [],
-    end: [{ who: 'mara-at-the-reach', text: 'Look at them all. They came because of you.' }],
+    end: [{ who: 'mara-at-the-reach', text: 'Look at them all. Every one of them came because you went to them first.' }],
   },
   'reach-the-mages': {
     id: 'reach-the-mages',
@@ -587,6 +637,6 @@ export const PALE_REACH_EVENTS: Record<string, StoryEventDef> = {
       { enemies: ['pale-knight', 'pale-knight', 'pale-knight', 'frost-wraith', 'frost-wraith', 'soul-reaver'], from: ['breach-n', 'breach-w', 'breach-e'] },
     ],
     end: [{ who: 'mara', text: 'We’re through! The army is inside the wall!' }],
-    retry: [{ who: 'cael', text: 'Fall back and charge again! Get up, everyone!' }],
+    retry: [{ who: 'cael', text: 'Get up, everyone! Fall back and charge again!' }],
   },
 };

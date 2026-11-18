@@ -16,8 +16,8 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     id: 'south-road',
     name: 'The South Road',
     giver: 'maren',
-    text: 'Briarhollow’s camp is full, and it needs grain for the winter. Millbrook, south in Thornvale, grows the Vale’s grain. But a gang called the Gallows Gang has taken its mill, and no grain can leave. Take the south road and find Reeve Aldous in Millbrook.',
-    offer: ['Fernstead’s rangers are watching our roads now. Thank you.', 'Next we need food. The camp is full of people, and winter is coming.', 'Millbrook grows the Vale’s grain, but a gang has taken its mill. Take the south road and find Reeve Aldous.'],
+    text: 'The camp that guards Elyra and her sigil is growing, and it needs grain before winter. Millbrook, south in Thornvale, grows the Vale’s grain. But a gang called the Gallows Gang has taken its mill, and no grain can leave. Take the south road and find Reeve Aldous in Millbrook.',
+    offer: ['Fernstead’s rangers are watching our roads now. Thank you.', 'Next we need food. Sixty mouths in the camp, more every week, and winter is coming.', 'Millbrook grows the Vale’s grain, but a gang has taken its mill. Take the south road and find Reeve Aldous.'],
     objective: { kind: 'talk', npc: 'reeve-aldous', label: 'Talk to Reeve Aldous in Millbrook' },
     // Act I goes village by village: Fernstead first, then Millbrook
     after: ['camp-scouts'],
@@ -34,7 +34,13 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     objective: { kind: 'explore', spot: 'east-farm', label: 'Look around the Burnt Farm' },
     after: ['south-road'],
     zone: 'thornvale',
-    reward: { xp: 160, gold: 64, text: 'A dead gang member in a red cap lies by the well. In his coat are written orders in a secret code that nobody in Millbrook can read.' },
+    find: {
+      name: 'The Gang’s Orders',
+      kind: 'orders',
+      about: 'Folded papers from the coat of a dead Red Cap by the well at the Burnt Farm. They are written in thieves’ cant, with a code of numbers under it, and nobody in Millbrook can read them. Pim the peddler, by Millbrook’s well, has a friend named Nyx who can.',
+      body: ['Blackglove. Skelp the dinger-kens of the Vale, high and low, and grub under every one.', 'Tote the warm smit to the grey cove at the four-ways. He drops full.', 'Keep the grist-wheel dumb till the white falls.', '7 14 2 · 9 9 21 · 3 18 4 11'],
+    },
+    reward: { xp: 160, gold: 64, text: 'The Kettles got out alive, with nothing. One of the men who burned them out lies dead by the well, a Red Cap with a pitchfork wound in his side. Old Kettle fought back, and the gang left their own man where he fell.' },
   },
   {
     id: 'thieves-cant',
@@ -45,7 +51,14 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     objective: { kind: 'talk', npc: 'nyx', label: 'Have Nyx read the gang’s orders' },
     after: ['kettle-farm'],
     zone: 'thornvale',
-    reward: { xp: 240, gold: 60, text: 'The “warm iron” is a sigil, like the one hidden under Briarhollow’s chapel bell. Someone is paying the Gallows Gang to hunt for sigils. Nyx won’t take your silver. She wants to know who wrote the orders.' },
+    find: {
+      name: 'The Orders, as Nyx Reads Them',
+      kind: 'orders',
+      about: 'The Burnt Farm’s orders, as Nyx read them out by Millbrook’s well. The “warm iron” is a sigil. Someone is paying the Gallows Gang to dig under the Vale’s bell-chapels for one.',
+      body: ['To Harlan Blackglove.', 'Hunt the bell-chapels of the Vale, high and low, and dig under every one.', 'Bring the warm iron to the grey man at the crossroads. He pays in full.', 'Keep Millbrook’s mill shut until the snow.'],
+      sign: 'No name. Stamped with an empty crown in grey wax.',
+    },
+    reward: { xp: 240, gold: 60, text: 'The “warm iron” is a sigil, like the one that lay under Briarhollow’s chapel. The Pale Herald is not only sending raiders. He is paying the Vale’s own thieves to dig. Nyx won’t take your silver. She wants to know who pays in grey.' },
   },
   {
     id: 'the-bandit-king',
@@ -57,7 +70,12 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     after: ['thieves-cant'],
     zone: 'thornvale',
     level: 11,
-    reward: { xp: 900, gold: 320, item: 'blackhand-coat', perk: 'satchel', text: 'As he dies, Harlan says he was paid in gold that weighs nothing. Behind his throne is a strongbox full of cold grey coins. Millbrook thanks you with his coat and a satchel that holds six more items. Nyx picks up a coin and says she is coming with you to find out who pays in them.' },
+    find: {
+      name: 'A Coin of Ash-Gold',
+      kind: 'token',
+      about: 'One of the grey coins from the strongbox behind Harlan Blackglove’s throne in Gallows Keep. It weighs nothing and is always cold, like the coin the Pale Herald paid Morgrave with. One face is stamped with an empty crown. Elder Maren should see it.',
+    },
+    reward: { xp: 900, gold: 320, item: 'blackhand-coat', perk: 'satchel', text: 'As he dies, Harlan says the grey man at the crossroads paid him in gold that weighs nothing, and promised him the whole Vale. His strongbox is full of that cold grey coin. Millbrook thanks you with his coat and a satchel that holds six more items. Nyx pockets one coin and says she is coming with you to find out who makes them.' },
   },
   {
     id: 'mill-the-bridge',
@@ -69,7 +87,7 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     after: ['the-bandit-king'],
     zone: 'thornvale',
     level: 12,
-    reward: { xp: 600, gold: 180, text: 'The barricade burns all night. In the morning the mill wheel turns, and the first grain carts head north to Briarhollow.' },
+    reward: { xp: 600, gold: 180, text: 'The barricade burns all night, and two of Sefa’s lads are buried by the pond in the morning. Then the mill wheel turns for the first time since spring, and the first grain carts head north to Briarhollow.' },
   },
   /* ------------------------------------------------------- Tobin's farm */
   {
@@ -80,6 +98,11 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     objective: { kind: 'explore', spot: 'tobins-farm', label: 'Check on Tobin’s Farm' },
     after: ['south-road'],
     zone: 'thornvale',
+    find: {
+      name: 'The Flock’s Bell',
+      kind: 'token',
+      about: 'The bell from the lead ewe’s collar, found in the trampled grass at Tobin’s Farm with its strap bitten through. Nothing in the fold is left alive. The tracks are wolf, dozens of them, and they lead south into the hills.',
+    },
     reward: { xp: 130, gold: 60 },
   },
   {
@@ -101,7 +124,7 @@ export const THORNVALE_QUESTS: QuestDef[] = [
     after: ['wolf-pelts'],
     zone: 'thornvale',
     level: 11,
-    reward: { xp: 360, gold: 110, perk: 'flask', text: 'Tobin gives you his grandfather’s flask: you can carry one more potion.' },
+    reward: { xp: 360, gold: 110, perk: 'flask', text: 'Tobin gives you his grandfather’s old flask. With it, you can carry one more potion.' },
   },
   /* ------------------------------------------------------ Hanna's tonic */
   /* ------------------------------------------------------------ errands */
@@ -145,10 +168,10 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
       },
       {
         when: { quest: 'the-bandit-king', state: 'active' },
-        lines: ['Harlan Blackglove rules the gang from Gallows Keep. His executioner and his war-hound guard the way in.', 'Defeat him, and I’ll give you Millbrook’s finest satchel. It holds more than you’d think.'],
+        lines: ['Harlan Blackglove rules the gang from Gallows Keep. His executioner and his war-hound guard the way in.', 'Bring him down, and Millbrook will give you the best satchel in the Vale. It’s all we have left to give.'],
       },
       { when: { quest: 'mill-the-bridge', state: 'active' }, lines: ['Harlan’s strongbox was full of grey coins that weigh nothing. Somebody paid him to keep us hungry.', 'His fighters still hold the mill. Sefa has gathered the lads. Go with them and burn that barricade.'] },
-      { when: { quest: 'mill-the-bridge', state: 'done' }, lines: ['The mill is free, and Millbrook can sleep at night again.', 'Our grain is going north to Elder Maren’s camp. Show her those grey coins. She may know what they are.'] },
+      { when: { quest: 'mill-the-bridge', state: 'done' }, lines: ['The mill is free, and Millbrook can sleep at night again. We buried two of Sefa’s lads by the pond.', 'Our grain is going north to Elder Maren’s camp. Take her one of Harlan’s grey coins. Whoever paid him, she should know their money is in Millbrook.'] },
       { lines: ['Welcome to Millbrook. We grow the Vale’s grain.', 'Watch out for the Gallows Gang if you go out. They wear red caps.'] },
     ],
   },
@@ -215,7 +238,7 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
         lines: [
           'Let me see. It’s thieves’ cant, with a second code hidden under it. The gang didn’t make that up. Someone paid for it.',
           'My friend Nyx can read any code. She’s by the well, in the dark coat.',
-          'She’ll want paying. She always does.',
+          'She charges two silver a page. Have it ready.',
         ],
       },
       { when: { quest: 'the-bandit-king', state: 'done' }, lines: ['No more gang means no more tolls. I can lower my prices a little.'] },
@@ -230,11 +253,17 @@ export const THORNVALE_NPCS: Record<string, NpcDef> = {
     title: 'Reads everything, for a fee',
     sprite: 'villager',
     talk: [
+      // (in the Crown City, Act II)
+      { when: { quest: 'festival-the-champion', state: 'done' }, lines: ['I’ve copied the wardens’ map twice. One copy is sewn into my coat, in case.', 'The Host’s diggers keep prisoners to work for them. Maybe one of them has seen my brother.'] },
+      { when: { quest: 'festival-the-knives', state: 'done' }, lines: ['Gallows Gang boots under festival masks. Crane paid what was left of Harlan’s gang with the Herald’s coin.', 'Grey coin again. Every trail of it I’ve followed ends at the Pale Herald.'] },
+      { when: { quest: 'city-the-cellar', state: 'active' }, lines: ['Crane’s cellar door? I can open it. It’s what is waiting behind it that worries me.'] },
+      { when: { quest: 'the-kings-design', state: 'done' }, lines: ['I’ve been watching the Chancellor’s House. His men come and go by the cellar door after dark, carrying things.'] },
       {
         lines: [
-          'I’m Nyx, by the way. Pim’s friend.',
-          'These orders were sent to Harlan Blackglove. He leads the Gallows Gang from Gallows Keep.',
-          'My fee is two silver. Keep it. I want to know who’s paying them.',
+          'I’m Nyx, Pim’s friend. Thieves’ cant on top, and a number code under it. The gang didn’t write this. Somebody sent it to them.',
+          'These went to Harlan Blackglove. He runs the Gallows Gang from Gallows Keep, dug into Gallows Hill.',
+          'My fee is two silver. Keep it. I want to know who pays in grey wax and grey coin.',
+          'I’ve been asking that since last winter. Men who paid in grey took my little brother, and nobody will tell me where he is.',
         ],
       },
     ],

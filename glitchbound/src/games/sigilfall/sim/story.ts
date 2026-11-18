@@ -74,9 +74,9 @@ interface Running {
   won?: boolean;
 }
 
-const BARK_TIME = 2.8;
-/** How long a line stays over someone's head. */
-const barkTime = (b: Bark): number => BARK_TIME + b.text.length * 0.02;
+const BARK_TIME = 3.2;
+/** How long a line stays over someone's head: time to read it in the middle of a fight (it was a breath too short). */
+const barkTime = (b: Bark): number => BARK_TIME + b.text.length * 0.04;
 
 export class StoryDirector {
   private readonly w: World;

@@ -22,6 +22,7 @@ function allOpenedKeys(): string[] {
   for (const a of ACTS) keys.add(`act:${a.id}`);
   for (const h of ['equip', 'ult', 'potion', 'spec']) keys.add(`hint:${h}`);
   for (const s of SCENES) keys.add(`scene:${s.id}`);
+  for (const q of QUESTS) if (q.find) keys.add(`kept:${q.id}`);
   for (const b of Object.keys(BOSSES)) keys.add(`scene:boss-${b}`);
   for (const id of REGION_IDS) {
     const r = REGIONS[id];

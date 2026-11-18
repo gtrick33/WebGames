@@ -289,7 +289,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.3, 0.45, 0.65],
     },
-    intro: 'Jarl of the frost giants. He kept a treaty with Frostgate for two hundred years. Then he took the Pale Herald’s ash-gold and opened the Vault Door for the Host.',
+    intro: 'Jarl of the frost giants. He kept a treaty with Frostgate for two hundred years. Then he took the Pale Herald’s ash-gold, sold the Host Frostgate’s sledge roads, and opened the Vault Door to dig out the Sigil of Frost.',
   },
   'hallvor-the-unthawed': {
     id: 'hallvor-the-unthawed',
@@ -438,7 +438,7 @@ const bosses: Record<string, BossDef> = {
       },
       chance: [0.35, 0.6, 1],
     },
-    intro: 'The wardens left this wyrm asleep to guard the Sigil of Frost. Hrimfang’s digging woke it, and now it attacks anything that moves.',
+    intro: 'The wardens left this wyrm asleep to guard the Sigil of Frost and the warden frozen with it. Hrimfang’s digging woke it, and now it attacks anything that moves.',
   },
 };
 

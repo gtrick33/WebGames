@@ -31,6 +31,7 @@ function engineWith(h: Character): SigilEngine & Record<string, unknown> {
     party: null,
     invite: null,
     cards: [],
+    pages: [],
     tipQueue: [],
     ui: {},
     renderer: { snap: () => undefined },

@@ -172,6 +172,7 @@ describe('sigilfall hints: they only pause the game', () => {
       coop: null,
       hidden: false,
       tipQueue: [],
+      pages: [],
       tipAfter: 0,
       tipOpenedAt: 0,
       saveAt: 0,
@@ -239,6 +240,12 @@ describe('sigilfall hints: they only pause the game', () => {
     e.showTip(e.world);
     expect(e.ui.tip).toBeNull();
     story.talking = false;
+    // nor over the page that tells what the quest came to (engine.ts StoryPage): once it has been read, the hint comes
+    const pages = (e as unknown as { pages: { kind: string; quest?: string }[] }).pages;
+    expect(pages).toContainEqual({ kind: 'deed', quest: 'camp-riders' });
+    e.showTip(e.world);
+    expect(e.ui.tip).toBeNull();
+    pages.length = 0;
     e.showTip(e.world);
     expect(e.ui.tip?.id).toBe('riding');
     e.tipNext();

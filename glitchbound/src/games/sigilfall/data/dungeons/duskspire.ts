@@ -671,7 +671,7 @@ const LADY_CENDRE: BossDef = {
   ],
   first: { any: ['shroud-of-duskspire'] },
   drops: { items: { any: ['shroud-of-duskspire', 'amulet-of-echoes', 'oath-of-the-hollow-guard', 'glitch-shard'] }, chance: [0.3, 0.5, 0.75] },
-  intro: 'A lady of Vaelor’s court. She has mourned the King’s dead in this hall for three hundred years, and they still obey her.',
+  intro: 'A lady of Vaelor’s court. She has kept vigil over the King’s dead in this hall for three hundred years, and they still rise when she calls them.',
 };
 
 const HOLLOW_GUARD: BossDef = {
@@ -716,7 +716,7 @@ const HOLLOW_GUARD: BossDef = {
   ],
   first: { any: ['oath-of-the-hollow-guard'] },
   drops: { items: { any: ['oath-of-the-hollow-guard', 'shroud-of-duskspire', 'amulet-of-echoes', 'glitch-shard'] }, chance: [0.35, 0.55, 0.8] },
-  intro: 'Captain of Vaelor’s guard. Three hundred years ago he held Duskspire against the Sigil-wardens for nine days, and he still guards it.',
+  intro: 'Captain of Vaelor’s guard. Three hundred years ago he held this court against the Sigil-wardens for nine days. He has not left his post since.',
 };
 
 /*
@@ -790,7 +790,7 @@ const VAELOR: BossDef = {
     {
       // III. Memories made soldiers: the throne breaks, and the Crown remembers the hero's own fights
       at: 0.55,
-      banner: 'The throne breaks, and the Crown raises the foes you defeated on your way here!',
+      banner: 'The throne breaks! The Crown raises the foes you beat on your way here, made of ash!',
       speed: 52,
       rest: [0.45, 0.75],
       enter: [
@@ -813,7 +813,7 @@ const VAELOR: BossDef = {
     {
       // IV. One summer's hour: his queen and children come up the hall to him; the summer's light is all that is safe
       at: 0.3,
-      banner: 'One summer’s hour: Vaelor’s queen and children walk up the hall to him',
+      banner: 'One summer’s hour: his queen and children walk up the hall to him. Clear their way, and stay in the light!',
       speed: 52,
       rest: [0.45, 0.7],
       enter: [
@@ -836,7 +836,7 @@ const VAELOR: BossDef = {
     {
       // V. The Last King: everything at once, faster, and a doom that ends it if he still stands
       at: 0.08,
-      banner: 'The Last King',
+      banner: 'The Last King: bring him down before his doom falls!',
       speed: 58,
       rest: [0.35, 0.6],
       enter: [
@@ -860,7 +860,7 @@ const VAELOR: BossDef = {
     items: { any: ['vaelors-heartstone', 'hollowbrand-shard', 'shroud-of-duskspire', 'oath-of-the-hollow-guard'] },
     chance: [1, 1, 1],
   },
-  intro: 'Three hundred years ago, plague killed Vaelor’s queen and their two children. He broke his crown to bring them back, and it became the Ash Crown, which feeds on grief. The Sigil of Stone is set in it now. With all seven sigils, the Crown would raise his kingdom again and feed on Aster until Aster was dead.',
+  intro: 'King Vaelor of Vaelmoor. Plague took his queen and their two children. He broke his crown to bring them back, and they came back for one night. His crown became the Ash Crown, which feeds on grief, and the Sigil of Stone is set in it now. With all seven sigils, it would raise his kingdom again out of Aster’s grief, until nothing of Aster was left.',
 };
 
 /* ------------------------------------------------------------ items */

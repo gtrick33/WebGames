@@ -578,6 +578,8 @@ export type WorldEvent =
   | { t: 'levelup'; level: number }
   | { t: 'paragon'; level: number }
   | { t: 'questDone'; quest: string }
+  /** A sigil of the Crown won (the Sigil Rite comes up: ui/StoryPages.tsx). */
+  | { t: 'sigil'; id: string }
   | { t: 'questStep'; quest: string }
   | { t: 'questReady'; quest: string }
   | { t: 'questStart'; quest: string }

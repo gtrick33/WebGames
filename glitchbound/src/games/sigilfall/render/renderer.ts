@@ -21,7 +21,7 @@ import { ctx2d, rgba } from './pixel';
 import { heldWeapon, itemIconCanvas, heroLook, vendorSign } from './sprites';
 import type { HeroLook } from './art/hero';
 import { wornLooks } from '../progress/wardrobe';
-import { objectiveTarget } from '../sim/objective';
+import { objectiveTarget, objectiveTargets } from '../sim/objective';
 import { ZOOM_MAX, ZOOM_MIN } from '../progress/save';
 import { autoTarget, seekReach, tapAutoAims } from '../sim/cast';
 import { PERSON_H, type Cast } from '../render3d/cast';
@@ -102,6 +102,13 @@ export interface AimPreview {
   /** The spell's own color (its kind of harm), for the mark. */
   color?: string;
 }
+
+/** The scene camera's spring (rad/s): about a second and a half to glide from one shot to the next and settle. */
+const CINEMA_W = 3.2;
+/** How long (s) after a scene or a talk the camera keeps gliding, so the way back to the hero is as smooth. */
+const CINEMA_AFTER = 1.8;
+/** The spring the camera draws in and out on, while the story holds it (rad/s). */
+const PUSH_W = 2.6;
 
 export class Renderer {
   readonly canvas: HTMLCanvasElement;
@@ -284,6 +291,13 @@ export class Renderer {
   /** The camera's lean toward the aim (and a boss), smoothed (see camera.ts). */
   private leanX = 0;
   private leanY = LIFT;
+  /** How fast the camera's lean is moving (world px a second), for the spring a scene moves it on. */
+  private leanVX = 0;
+  private leanVY = 0;
+  /** How fast the camera is drawing in or out (share of its distance a second). */
+  private pushV = 0;
+  /** Seconds the camera stays on the scene's spring after the story lets go of it (the way back to the hero). */
+  private cinemaT = 0;
   /** The scene's cuts the camera has made (sim/scene.ts ScenePlay.cuts). */
   private sceneCuts = 0;
   /** The mouse on the view, -0.5 to 0.5 from its center on each axis (null: no mouse in use). */
@@ -295,6 +309,9 @@ export class Renderer {
   snap(w: World): void {
     this.leanX = 0;
     this.leanY = LIFT;
+    this.leanVX = 0;
+    this.leanVY = 0;
+    this.cinemaT = 0;
     this.placeCamera(w);
   }
 
@@ -519,23 +536,59 @@ export class Renderer {
       lx = lx * 0.4 + (w.slowAt.x - p.x) * 0.6;
       ly = ly * 0.4 + (w.slowAt.y - p.y) * 0.6;
     }
-    const rate = w.scene || talk ? 2.6 : 4;
     // a scene that cuts to someone speaking a long way off jumps there, as a film cuts (sim/scene.ts CUT_PAST): a pan
     // across the land in a hurry was the camera "suddenly changing direction" the owner asked to have taken out
     const cuts = w.scene?.cuts ?? 0;
+    // while the story holds the camera (a scene, a talk, and a moment after either, on the way back to the hero) it
+    // moves as a film camera does: it gathers speed, glides and settles (a spring), never setting off at full speed the
+    // instant it is told to look somewhere (the owner, 2026-11-18: "i don't want ... sudden movements")
+    const cinema = !!w.scene || !!talk;
+    if (cinema) this.cinemaT = CINEMA_AFTER;
+    else this.cinemaT = Math.max(0, this.cinemaT - dt);
     if (w.scene && cuts !== this.sceneCuts) {
       this.leanX = lx;
       this.leanY = ly;
+      this.leanVX = 0;
+      this.leanVY = 0;
+    } else if (this.cinemaT > 0 && !this.reducedMotion) {
+      // (a critically damped spring, stepped finely so a slow frame doesn't overshoot)
+      const steps = Math.max(1, Math.ceil(dt / (1 / 120)));
+      const h = dt / steps;
+      for (let i = 0; i < steps; i++) {
+        this.leanVX += (CINEMA_W * CINEMA_W * (lx - this.leanX) - 2 * CINEMA_W * this.leanVX) * h;
+        this.leanVY += (CINEMA_W * CINEMA_W * (ly - this.leanY) - 2 * CINEMA_W * this.leanVY) * h;
+        this.leanX += this.leanVX * h;
+        this.leanY += this.leanVY * h;
+      }
     } else {
+      const rate = cinema ? 2.6 : 4;
+      const x0 = this.leanX;
+      const y0 = this.leanY;
       this.leanX = damp(this.leanX, lx, rate, dt);
       this.leanY = damp(this.leanY, ly, rate, dt);
+      // (its pace carried over, so a spring that takes over later starts from how it was already moving)
+      this.leanVX = dt > 0 ? (this.leanX - x0) / dt : 0;
+      this.leanVY = dt > 0 ? (this.leanY - y0) / dt : 0;
     }
     this.sceneCuts = cuts;
     // a scene's camera draws in on whoever is speaking (or stands as near as a step says), and eases back out after
     if (st) {
       const speaking = !!w.scene && w.story.speech.some((sp) => sp.staged);
       const push = this.landOnly ? 1 : (w.scene?.zoom ?? (speaking ? TALK_ZOOM : 1));
-      st.push = this.reducedMotion ? push : damp(st.push, push, 2.2, dt);
+      // (drawn in and out on a spring as well, while the story holds the camera: no lurch as a line begins)
+      if (this.reducedMotion) st.push = push;
+      else if (this.cinemaT > 0) {
+        const steps = Math.max(1, Math.ceil(dt / (1 / 120)));
+        const h = dt / steps;
+        for (let i = 0; i < steps; i++) {
+          this.pushV += (PUSH_W * PUSH_W * (push - st.push) - 2 * PUSH_W * this.pushV) * h;
+          st.push += this.pushV * h;
+        }
+      } else {
+        const was = st.push;
+        st.push = damp(st.push, push, 2.2, dt);
+        this.pushV = dt > 0 ? (st.push - was) / dt : 0;
+      }
     }
     this.placeCamera(w);
     const shake = this.reducedMotion ? 0 : w.shakeAmt;
@@ -941,6 +994,8 @@ export class Renderer {
     const s = st.project(target.x, target.y, PERSON_H);
     const m = 28;
     if (s.front !== false && s.x > m && s.x < W - m && s.y > m && s.y < H - m) {
+      // something to be found there (a letter, a relic: data/types.ts Keepsake) glints on the ground where it lies
+      if (this.findHere(w)) this.drawGlint(st.project(target.x, target.y, 3), time);
       this.label('▼', s.x, s.y + Math.sin(time * 5) * 3, 15, '#ffe066');
       return;
     }
@@ -970,6 +1025,44 @@ export class Renderer {
     g.closePath();
     g.fill();
     g.globalAlpha = 1;
+  }
+
+  /** Is the place the hero is led to one where the quest finds something (and the hero is to look there now)? */
+  private findHere(w: World): boolean {
+    const mark = objectiveTargets(w)[0];
+    const q = mark && QUEST_DEFS[mark.quest];
+    if (!q?.find) return false;
+    const o = currentObjective(w.hero, q);
+    return o.kind === 'explore' && (q.find.step === undefined || q.find.step === (w.hero.quests[q.id]?.step ?? 0));
+  }
+
+  /** A thing lying on the ground to be found: a soft pulse of light and a four-pointed glint over it. */
+  private drawGlint(at: { x: number; y: number }, time: number): void {
+    const g = this.g;
+    const t = this.reducedMotion ? 0 : time;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 3.2);
+    g.save();
+    g.setTransform(this.k, 0, 0, this.k, 0, 0);
+    const glow = g.createRadialGradient(at.x, at.y, 0, at.x, at.y, 26);
+    glow.addColorStop(0, `rgba(255, 236, 170, ${0.55 + pulse * 0.3})`);
+    glow.addColorStop(1, 'rgba(255, 236, 170, 0)');
+    g.fillStyle = glow;
+    g.beginPath();
+    g.ellipse(at.x, at.y, 26, 14, 0, 0, Math.PI * 2);
+    g.fill();
+    const r = 7 + pulse * 4;
+    g.translate(at.x, at.y - 6);
+    g.rotate(t * 0.6);
+    g.fillStyle = '#fff6d8';
+    g.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4;
+      const len = i % 2 ? r * 0.32 : r;
+      g.lineTo(Math.cos(a) * len, Math.sin(a) * len);
+    }
+    g.closePath();
+    g.fill();
+    g.restore();
   }
 
   /** The touch aim preview: where the dragged skill will go (a placed spell's mark is render/reticle.ts). */
