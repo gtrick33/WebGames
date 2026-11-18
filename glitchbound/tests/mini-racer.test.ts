@@ -210,6 +210,8 @@ describe('daily track', () => {
     expect(todayKey(new Date(2026, 0, 5, 23, 30))).toBe('2026-01-05');
   });
 
+  // (forty tracks built and timed: about 5 s on a CI runner busy with the rest of the suite, which timed it out and
+  // stopped two deploys on 2026-11-18, so it has room of its own)
   it('always generates a valid, drivable track with a sensible gold time', () => {
     for (let d = 1; d <= 40; d++) {
       const day = `2026-${String(1 + (d % 12)).padStart(2, '0')}-${String(1 + (d % 28)).padStart(2, '0')}`;
@@ -219,7 +221,7 @@ describe('daily track', () => {
       expect(def.par, day).toBeGreaterThan(8000);
       expect(def.par, day).toBeLessThan(40000);
     }
-  });
+  }, 30_000);
 });
 
 describe('ghost', () => {
