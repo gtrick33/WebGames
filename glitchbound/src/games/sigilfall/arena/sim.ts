@@ -85,7 +85,7 @@ const SUPER_TAKEN = 2600;
 const CRIT = 0.1;
 /** Direct damage over its ability's number; a burst ability's over that; a critical hit's. */
 export const HIT_K = 1.12;
-export const BURST_K = 1.5;
+export const BURST_K = 1.35;
 export const CRIT_K = 1.7;
 /** Healing over its ability's number: a little under, so that a healer slows a kill rather than stopping it. */
 export const HEAL_K = 0.85;

@@ -227,8 +227,10 @@ describe('The Ring: whoever is held stays where they are', () => {
         m.step(STEP, moves);
         m.fighters.forEach((f, j) => {
           const b = before[j]!;
-          // (held before the step and after it, and not being thrown or pulled by someone: they are where they were)
-          if (!b.pinned || f.dead || !m.pinned(f) || m.aloft(f) || b.dash || f.dash) return;
+          // (held before the step and after it, and not being thrown or pulled by someone: they are where they were. Not a
+          // step in which the hold broke and a new one landed: between the two they were free, and may take a step)
+          const freed = m.events.some((e) => e.k === 'word' && e.id === f.id && e.word === 'Broke free');
+          if (!b.pinned || f.dead || !m.pinned(f) || m.aloft(f) || b.dash || f.dash || freed) return;
           for (const a of f.auras) if (a.cc) kinds.add(a.cc);
           expect(Math.hypot(f.x - b.x, f.y - b.y), `match ${g}, ${f.name} at ${m.clock.toFixed(1)}s`).toBeLessThan(0.001);
         });
