@@ -79,18 +79,31 @@ export const COMPS: Record<Format, Comp[]> = {
   ],
 };
 
-const NAMES: Record<ClassId, string[]> = {
-  warrior: ['Brannoch', 'Hild the Red', 'Torvald', 'Ysolde Ironhand'],
-  mage: ['Selvine', 'Orrin Vael', 'Ilsabet', 'Quill'],
-  ranger: ['Tamsin', 'Corvane', 'Wren Ashby', 'Odrik'],
-  priest: ['Sister Maud', 'Aurelis', 'Brother Tann', 'Ione'],
-  paladin: ['Ser Galen', 'Dame Oriel', 'Ser Hask', 'Maerwen'],
-  warlock: ['Nyx Morrow', 'Sorrel', 'Hask the Grey', 'Veska'],
-  druid: ['Eirlys', 'Old Fen', 'Bramble', 'Thessaly'],
-  gloamknight: ['Ser Aldane', 'Dame Vesper', 'Corwin Ashgrave', 'Sable'],
+/**
+ * What the computer's fighters are called: handles, as players pick them (the owner, 2026-11-18: "make the nicknames
+ * random please, to feel like real players"). Made up in the way handles are made (a word or two, a misspelling, a
+ * number, an underscore), none of them anybody's in particular. Any class can be any of them.
+ */
+export const BOT_NAMES: readonly string[] = [
+  'Vexmoor', 'kitsune_rx', 'DuskRyder', 'MaplePally', 'lowkeyfrost', 'Grimtooth88', 'NoxVale', 'ShiftyMango', 'Brannagh', 'toastedbagel',
+  'IronSkunk', 'zerkwolf', 'pyrebird_', 'Lunastrae', 'Quietstorm7', 'kaelthorn', 'MossyBoots', 'Nightjar92', 'frostbyte_', 'Hexley',
+  'SirNapsalot', 'voidwalkr', 'TacoPally', 'emberfox', 'OwlbearHugs', 'Snaccident', 'xKairo', 'Thornbek', 'saltyspud', 'GlimmerJack',
+  'Rhuno', 'blinkonly', 'NotAHealer', 'CritHappens', 'Wombat_Prime', 'Velkaris', 'dropthebeat', 'Zephiro', 'oatmilkmage', 'Grumbleback',
+  'Kestril', 'heyitsfinn', 'Mordrin_', 'StabbyMcStab', 'Ashfenn', 'mintyfresh44', 'Rookthegreat', 'PocketDruid', 'BoltCutter', 'Sablestar',
+  'Juniper_Ash', 'pancakebandit', 'Gorvath', 'tinylich', 'NeonKnight', 'quillnfeather', 'Drexxil', 'ChonkyBear', 'SkyeWarden', 'meadowlark',
+  'Tharnok', 'sneakysnek', 'BeanSprout', 'Valkyrie_9', 'iceplz', 'Krompus', 'Hollowpine', 'zzzap', 'Bramblejack', 'Cinderpaw',
+  'notmyfault', 'Ozwick', 'ToastyRogue', 'FenrisJr', 'pebbleface', 'Ruskin', 'MidnightOil', 'Gloomy_Gus', 'Starfall91', 'Ironclad_K',
+  'pixelpally', 'Wraithe', 'GoodLuckHaveFun', 'Morrow_', 'jellybeans', 'Corvexx', 'Tidewalker', 'okaygo', 'Sunderlin', 'Hamhock',
+  'Nyxie', 'Badgerbrew', 'Lockjaw', 'rollin_d20', 'Vesperine', 'Fumblewort', 'Scarecrowe', 'Dovetail', 'BRB_snacks', 'Cobaltine',
+  'Wispy', 'Gravelord_K', 'teapot_tom', 'Lanternjaw', 'Quasarr', 'mudpuddle', 'Sorrowind', 'Kipper', 'SpicyMeatball', 'Rennick',
+];
+const pick = (cls: ClassId, i: number): number => {
+  let h = (Math.imul(i >>> 0, 2654435761) ^ [...cls].reduce((a, c) => Math.imul(a ^ c.charCodeAt(0), 16777619), 2166136261)) >>> 0;
+  h ^= h >>> 15;
+  return Math.imul(h, 2246822519) >>> 0;
 };
 
-export const nameFor = (cls: ClassId, i: number): string => NAMES[cls][i % NAMES[cls].length]!;
+export const nameFor = (cls: ClassId, i: number): string => BOT_NAMES[pick(cls, i) % BOT_NAMES.length]!;
 
 /** Nobody in a match shares a name: a nameplate is how you tell who's who. People keep theirs, the bots give way. */
 export function namedApart(fighters: FighterSetup[]): FighterSetup[] {
@@ -99,7 +112,7 @@ export function namedApart(fighters: FighterSetup[]): FighterSetup[] {
   return fighters.map((f) => {
     if (isPerson(f)) return f;
     let name = f.name;
-    for (let i = 0; taken.has(name) && i < NAMES[f.cls].length; i++) name = nameFor(f.cls, i);
+    for (let i = 0; taken.has(name) && i < BOT_NAMES.length; i++) name = nameFor(f.cls, i);
     taken.add(name);
     return name === f.name ? f : { ...f, name };
   });

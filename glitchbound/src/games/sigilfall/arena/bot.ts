@@ -25,6 +25,12 @@ export interface Brain {
   turnAt: number;
   /** What is falling that it has already made up its mind about (to step out or not), by where and whose. */
   shots: Map<string, boolean>;
+  /** Where its feet are actually going: they follow its mind over a moment, as a person's thumb on a stick does. */
+  vel: MoveInput;
+  /** How long its feet still answer at once (a reflex: stepping out from under something). */
+  urgent: number;
+  /** The slow side-to-side of a walk that is never quite straight. */
+  sway: number;
 }
 
 export function newBrain(seed: number): Brain {
@@ -41,7 +47,39 @@ export function newBrain(seed: number): Brain {
     side: seed % 2 ? 1 : -1,
     turnAt: 0,
     shots: new Map(),
+    vel: { mx: 0, my: 0 },
+    urgent: 0,
+    sway: (seed % 628) / 100,
   };
+}
+
+/**
+ * Feet as a person's are: a computer player's mind changes its course several times a second, and its feet used to
+ * snap to each new course in a frame, which no thumb on a stick or finger on a key does. They follow it over about a
+ * tenth of a second now (a sharp player turns a little quicker), a walk drifts a little from side to side, and only a
+ * reflex (stepping out from under what is falling) answers at once, so the computer dodges as well as it did. The
+ * owner, 2026-11-18: "make the bots act a bit more like humans, smoother movements".
+ */
+export function smoothFeet(b: Brain, want: MoveInput, dt: number, skill: number): MoveInput {
+  const quick = b.urgent > 0;
+  b.urgent = Math.max(0, b.urgent - dt);
+  const tau = quick ? 0.035 : 0.14 - skill * 0.05;
+  const k = 1 - Math.exp(-Math.max(0, dt) / tau);
+  let tx = want.mx;
+  let ty = want.my;
+  const len = Math.hypot(tx, ty);
+  if (len > 0.5 && !quick) {
+    // (never quite straight: a slow drift across the way it is going)
+    b.sway += dt * 1.6;
+    const s = Math.sin(b.sway) * 0.14;
+    tx += (-want.my / len) * s;
+    ty += (want.mx / len) * s;
+  }
+  b.vel = { mx: b.vel.mx + (tx - b.vel.mx) * k, my: b.vel.my + (ty - b.vel.my) * k };
+  const v = Math.hypot(b.vel.mx, b.vel.my);
+  if (v > 1) b.vel = { mx: b.vel.mx / v, my: b.vel.my / v };
+  else if (v < 0.04 && len === 0) b.vel = { mx: 0, my: 0 };
+  return b.vel;
 }
 
 const HEALS = (f: Fighter): Ability[] => f.bar.map((b) => ABILITIES[b]!).filter((a) => a.role === 'heal' && a.aim === 'friend');
@@ -54,10 +92,20 @@ const hpShare = (f: Fighter): number => f.hp / f.maxHp;
 /** Aimed at an enemy: at the one, or placed on the ground under them. */
 const atFoe = (a: Ability): boolean => a.aim === 'enemy' || a.aim === 'ground';
 
-/** One more moment of a computer player's mind. It returns where it wants to walk. */
+/** One more moment of a computer player's mind. It returns where its feet go (smoothFeet: as a person's would). */
 export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: number): MoveInput {
   // (the raised dead have minds of their own, in the rules: Match.tickPet. Nobody gives them a brain)
-  if (f.dead || f.pet || m.phase !== 'fight') return { mx: 0, my: 0 };
+  if (f.pet || !b) return { mx: 0, my: 0 };
+  if (f.dead || m.phase !== 'fight') {
+    b.vel = { mx: 0, my: 0 };
+    return b.vel;
+  }
+  return smoothFeet(b, think(m, f, b, skill, dt), dt, skill);
+}
+
+/** What a computer player wants: where to walk, and (pressed through Match.press) what to use. */
+function think(m: Match, f: Fighter, b: Brain, skill: number, dt: number): MoveInput {
+  // (the raised dead have minds of their own, in the rules: Match.tickPet. Nobody gives them a brain)
   // a sharp player watches the cast bars all the time, and kicks late in the cast (tactics.ts)
   if (skill >= SHARP_FROM) lateKick(m, f, b, skill, dt);
   // a reflex, every frame: what is about to fall on them is stepped out from under
@@ -65,6 +113,7 @@ export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: numb
   if (away) {
     b.move = away;
     b.wait = Math.max(b.wait, 0.22);
+    b.urgent = 0.3;
     return away;
   }
   b.wait -= dt;
@@ -125,7 +174,7 @@ export function botThink(m: Match, f: Fighter, b: Brain, skill: number, dt: numb
   f.target = target.id;
   b.move = walk(m, f, b, skill, enemies, target, friends, healer);
   // (and looks back at the bar as the global cooldown comes up: tactics.ts)
-  b.wait = nextLook(f, b.wait, skill);
+  b.wait = nextLook(f, b.wait, skill, b.rand());
   return b.move;
 }
 
