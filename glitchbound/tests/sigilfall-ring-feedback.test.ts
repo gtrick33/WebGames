@@ -134,12 +134,12 @@ describe('The healers: help for their heals, and much less harm', () => {
 
   it('the heals they cast, 15% more', () => {
     const heal = (id: string) => AB(id).effects.filter((e) => e.k === 'heal' || e.k === 'hot').map((e) => (e as { n: number }).n);
-    expect(heal('p-mend')).toEqual([61]);
-    expect(heal('d-flash')).toEqual([62]);
-    expect(heal('l-regrow')).toEqual([58, 51]);
-    expect(AB('p-mend').text).toBe('Heals a friend for 61.');
-    expect(AB('d-flash').text).toBe('Heals a friend for 62.');
-    expect(AB('l-regrow').text).toBe('Heals a friend for 58 and 51 more over 6 sec.');
+    expect(heal('p-mend')).toEqual([59]);
+    expect(heal('d-flash')).toEqual([64]);
+    expect(heal('l-regrow')).toEqual([61, 54]);
+    expect(AB('p-mend').text).toBe('Heals a friend for 59.');
+    expect(AB('d-flash').text).toBe('Heals a friend for 64.');
+    expect(AB('l-regrow').text).toBe('Heals a friend for 61 and 54 more over 6 sec.');
   });
 
   it('no blow knocks a heal back while it is cast; a spell that harms is knocked back as before', () => {

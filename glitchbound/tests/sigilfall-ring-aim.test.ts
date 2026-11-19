@@ -303,12 +303,13 @@ describe('The Ring: no class much above or below the rest', () => {
     };
     const wins: Record<string, number> = {};
     const games: Record<string, number> = {};
-    for (const a of CLASS_IDS) {
-      for (const b of CLASS_IDS) {
+    const MEASURED = CLASS_IDS;
+    for (const a of MEASURED) {
+      for (const b of MEASURED) {
         if (a >= b) continue;
         for (const pa of setups(a)) {
           for (const pb of setups(b)) {
-            for (let seed = 1; seed <= 12; seed++) {
+            for (let seed = 1; seed <= 72; seed++) {
               const flip = seed % 2 === 1;
               const fa: FighterSetup = { team: flip ? 1 : 0, cls: a, name: a, bar: pa.bar, talents: pa.talents };
               const fb: FighterSetup = { team: flip ? 0 : 1, cls: b, name: b, bar: pb.bar, talents: pb.talents };
@@ -338,14 +339,15 @@ describe('The Ring: no class much above or below the rest', () => {
     // the best dps, most amount of cc, same mobility as everyone and are the tankiest spec": "i dont think ur balancing
     // test is very relevant here as this is player feedback". At 42% here before, the computer plays him to 12% since,
     // at 0.87 as at 0.82: what holds him back here is the rest, his health, holds, slows and charge.)
-    const BY_PLAYERS = new Set<ClassId>(['warrior']);
-    for (const c of CLASS_IDS) {
+    // (and since the owner's "can we tweak it so the balancing is between 46 and 54%" (2026-11-19), every class is held
+    // to 46-54%. The warrior, at 23% then, was left out at first; the owner: "bring him to 46ish". His setups' own
+    // damage went up a quarter or more (the Reaper's 1.26, the Hound's 1.3), the class's share staying 0.87.)
+    for (const c of MEASURED) {
       const share = (wins[c] ?? 0) / games[c]!;
-      if (BY_PLAYERS.has(c)) continue;
-      expect(share, `${c} wins ${Math.round(share * 100)}% at ${CLASS_DMG[c]}`).toBeGreaterThan(0.35);
-      expect(share, `${c} wins ${Math.round(share * 100)}% at ${CLASS_DMG[c]}`).toBeLessThan(0.64);
+      expect(share, `${c} wins ${(share * 100).toFixed(1)}% at ${CLASS_DMG[c]}`).toBeGreaterThan(0.46);
+      expect(share, `${c} wins ${(share * 100).toFixed(1)}% at ${CLASS_DMG[c]}`).toBeLessThan(0.54);
     }
-  }, 180_000);
+  }, 600_000);
 });
 
 describe('The Ring: healing in bigger fights', () => {

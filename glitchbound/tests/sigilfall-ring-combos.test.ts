@@ -238,7 +238,7 @@ describe('The Ring: points, built by one ability and spent by another', () => {
     me.gcd = 0;
     expect(m.press(0, 'p-ward')).toBeNull();
     const ward = (AB('p-ward').effects.find((e) => e.k === 'absorb') as { n: number }).n;
-    expect(me.auras.find((a) => a.ab === 'p-ward' && a.kind === 'absorb')!.n).toBeCloseTo(ward * (1 + 0.2 * 3), 3);
+    expect(me.auras.find((a) => a.ab === 'p-ward' && a.kind === 'absorb')!.n).toBe(Math.round(ward * (1 + 0.2 * 3)));
     expect(me.pts).toBe(0);
   });
 });

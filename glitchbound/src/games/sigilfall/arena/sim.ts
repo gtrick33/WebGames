@@ -47,6 +47,13 @@ export const BOLT_R = 6;
  */
 export const HEAL_BY_SIZE: readonly number[] = [1, 1, 1, 1.45];
 /**
+ * Each class's damage and healing in team fights, over its share in a duel (CLASS_DMG, which its abilities' words are
+ * worked from): 2v2 and 3v3. A class's playstyles carry it further in one format than another (a trapper's snares win a
+ * duel and do less among six), and one number can't set a class right in all three. The owner, 2026-11-19: "can we
+ * tweak it so the balancing is between 46 and 54%". Set by tests/sigilfall-ring-balance.test.ts.
+ */
+export const TEAM_K: Readonly<Partial<Record<ClassId, readonly [number, number]>>> = { mage: [0.895, 0.955], ranger: [1.005, 1.1], paladin: [1.02, 1], warlock: [1, 1.08], gloamknight: [1, 0.97], warrior: [0.985, 0.935] };
+/**
  * Only healers left standing, on both sides: sudden death. Healing is gone within `fade` seconds of it, and everything
  * hits `grow` harder for every second since (the owner, 2026-11-17: "in 2v2 if both dps die, the healers take ages to
  * kill each other"). A healer's own blows are few; without it two of them took half a minute, and up to a minute.
@@ -85,7 +92,7 @@ const SUPER_TAKEN = 2600;
 const CRIT = 0.1;
 /** Direct damage over its ability's number; a burst ability's over that; a critical hit's. */
 export const HIT_K = 1.12;
-export const BURST_K = 1.5;
+export const BURST_K = 1.35;
 export const CRIT_K = 1.7;
 /** Healing over its ability's number: a little under, so that a healer slows a kill rather than stopping it. */
 export const HEAL_K = 0.85;
@@ -697,6 +704,10 @@ export class Match {
       // talents sent, those that are its to take. A row left empty stays empty here: what is kept on a device, and what
       // comes over a room's wire, is filled up before it gets this far, ladder.ts setsOf and ui/RingScreen.tsx)
       const made = built(s.cls, s.bar, s.talents);
+      // (in a team fight, the class's own measure there: TEAM_K)
+      const team = size >= 2 ? (TEAM_K[s.cls]?.[Math.min(size, 3) - 2] ?? 1) : 1;
+      made.mods.dmg *= team;
+      made.mods.heal *= team;
       return {
         id,
         team: s.team,
