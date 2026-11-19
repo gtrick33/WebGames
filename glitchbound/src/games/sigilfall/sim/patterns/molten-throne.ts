@@ -3,7 +3,7 @@ import { hurtPlayer } from '../combat';
 import { castRay, circleHitsWall, moveCircle, TILE, tileAt } from '../map';
 import type { Enemy, Field } from '../types';
 import type { World } from '../world';
-import type { PatternFn } from './kit';
+import { bossBase, type PatternFn } from './kit';
 
 /**
  * Boss attacks of the Molten Throne: ids start with 'throne:'.
@@ -666,7 +666,7 @@ function tickCrown(w: World, e: Enemy, s: Fight, dt: number): void {
   c.face = a;
   if (b.shift > 0) return;
   // its ward on him
-  e.shield = Math.min(e.maxHp * s.ward.max, e.shield + e.maxHp * s.ward.rate * dt);
+  e.shield = Math.min(bossBase(e) * s.ward.max, e.shield + bossBase(e) * s.ward.rate * dt);
   s.zapT -= dt;
   if (s.zapT <= 0) {
     s.zapT = 0.5;

@@ -8,7 +8,7 @@ import { SPELLS } from '../src/games/sigilfall/vigil/kit';
 import { CoopSession } from '../src/games/sigilfall/net/coop';
 import { setSkill } from '../src/games/sigilfall/progress/character';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
-import { tryCast } from '../src/games/sigilfall/sim/cast';
+import { CAST_SLOW, tryCast } from '../src/games/sigilfall/sim/cast';
 import { hurtPlayer } from '../src/games/sigilfall/sim/combat';
 import { emptyInput, World, type InputFrame } from '../src/games/sigilfall/sim/world';
 import { newWorld, readyHero } from './sigilfall-bot';
@@ -181,24 +181,24 @@ describe('Sigilfall cast bars', () => {
     expect(w.fields.length).toBeGreaterThan(0);
   });
 
-  it('moving stops a cast, with nothing spent and no cooldown', () => {
+  it('moving doesn’t stop a cast: the hero walks on, slowed, and it goes off (as in the Ring)', () => {
     for (const [cls, skill] of [
       ['warlock', 'chaos-bolt'],
       ['priest', 'halo'],
     ] as const) {
-      const { w, p, e, slot } = caster(cls, skill);
+      const { w, p, slot } = caster(cls, skill);
       p.ult = 100;
-      const mana = p.mana;
       expect(press(w, slot), skill).toBe(true);
-      step(w, 0.5);
-      step(w, 0.1, { mx: 1 });
+      const x0 = p.x;
+      step(w, 0.3);
+      step(w, 0.3, { mx: 1 });
+      expect(p.casting, skill).not.toBeNull();
+      expect(p.x, skill).toBeGreaterThan(x0);
+      // (slowed to CAST_SLOW while it gathers)
+      expect(Math.abs(p.vx), skill).toBeLessThan(w.footPace() * CAST_SLOW * 1.6);
+      step(w, 2, { mx: 1 });
       expect(p.casting, skill).toBeNull();
-      expect(w.castEnd?.fired, skill).toBe(false);
-      step(w, 2);
-      expect(p.ult, skill).toBe(100);
-      expect(p.cds.s1.charges, skill).toBe(p.cds.s1.max);
-      expect(p.mana, skill).toBeGreaterThanOrEqual(mana);
-      expect(e.hp, skill).toBe(e.maxHp);
+      expect(w.castEnd?.fired, skill).toBe(true);
     }
   });
 

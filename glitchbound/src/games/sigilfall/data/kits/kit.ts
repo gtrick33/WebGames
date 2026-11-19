@@ -96,6 +96,20 @@ export function T(tree: 0 | 1 | 2, row: number, col: number, id: string, name: s
   return { id, name, tree, row, col, ranks, icon, text, mods, ...(requires ? { requires } : {}) };
 }
 
+/**
+ * One of a choice's three (TalentNode.pick): tree, row, column, the choice it belongs to ('core', 'arsenal', 'ult',
+ * 'capstone'), id, name, icon, text, mods. One rank; only one of the three is taken, and it can be swapped for free.
+ *
+ * Every tree is laid out the same way, seven rows of five, fifty-one points in all (full only at level 60; the
+ * capstones in the last row open at 30 points, level 40): rows 0, 2 and 4 hold five talents of ranks; rows 1, 3, 5 and
+ * 6 hold a choice of three (columns 0-2) and two talents of ranks (columns 3-4). The choices are the Ring's talent rows:
+ * row 1 (`core`) how the specialization's combo is made, row 3 (`arsenal`) what its other skills do for it, row 5
+ * (`ult`) what its ultimate does besides, row 6 (`capstone`) the capstone.
+ */
+export function C(tree: 0 | 1 | 2, row: number, col: number, pick: 'core' | 'arsenal' | 'ult' | 'capstone', id: string, name: string, icon: string, text: string, mods: Mod[]): TalentNode {
+  return { id, name, tree, row, col, ranks: 1, icon, text, mods, pick };
+}
+
 /* ------------------------------------------------------------- combos */
 
 /**

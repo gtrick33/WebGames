@@ -109,6 +109,8 @@ export type Effect =
   | { kind: 'buff'; buff: BuffDef }
   /** Gains `n` of the class's resource (rage, holy power; mana in % of the maximum). */
   | { kind: 'resource'; n: number }
+  /** Gains `n` of the specialization's points (PointsDef). */
+  | { kind: 'points'; n: number }
   /** Enemies within `radius` run away in fear for `dur` seconds (bosses are slowed instead). */
   | { kind: 'fear'; radius: number; dur: number }
   /** Calls `count` companions (PETS by id) for `dur` seconds (0 = until they fall). */
@@ -165,6 +167,43 @@ export interface Empower {
   ready?: boolean;
   /** How many casts it lasts (1 where not said). */
   casts?: number;
+  /**
+   * It isn't used up: every cast of the skill takes it for as long as the buff lasts (a spell that makes another stronger
+   * while it is out, the Ring's Rimeglobe). Only on a buff that doesn't stack.
+   */
+  keep?: boolean;
+}
+
+/**
+ * What a combo blow needs of its target (the Ring's combos, arena/abilities.ts Combo): a status on it, below 30% health
+ * (`lowHp`), or held (`held`: stunned, frozen, rooted or terrified).
+ */
+export type ComboCond = StatusId | 'lowHp' | 'held';
+
+/**
+ * A combo blow: a skill that lands far harder on a target another skill has set up (the owner, 2026-11-19: "make the
+ * spells and specs very similar to the ring's - combos, ults, casting while moving"). Its damage is multiplied by `mult`
+ * on a target that meets any of `vs`, its name goes up over the target, `extra` lands too, and with `consume` the
+ * statuses it needed come off.
+ */
+export interface ComboSpec {
+  name: string;
+  vs: ComboCond[];
+  mult: number;
+  consume?: boolean;
+  extra?: Effect[];
+}
+
+/**
+ * A specialization's points (the Ring's Points, arena/abilities.ts): built a few at a time by some skills (SkillSpec.build)
+ * and all spent by one (SkillSpec.spend), each making its blow that much stronger. Shown as pips under the health bar.
+ */
+export interface PointsDef {
+  /** What they are called, many and one. */
+  name: string;
+  one: string;
+  max: number;
+  color: string;
 }
 
 /**
@@ -191,8 +230,9 @@ export interface SkillSpec {
   windup: number;
   /**
    * Seconds of casting before the spell goes off (the campaign's cast bar; unset or 0: at once). The hero
-   * stands and gathers it; nothing is spent until it goes off, and moving, another skill, a dodge or a stun
-   * stops it. Only the campaign reads it (the Vigil and the Ring have kits of their own).
+   * gathers it on the move, slowed to CAST_SLOW (sim/cast.ts) unless the skill is `extra.swift`, as in the Ring;
+   * nothing is spent until it goes off, and another skill, a dodge or a stun stops it. Only the campaign reads it
+   * (the Vigil and the Ring have kits of their own).
    */
   castTime?: number;
   speed: number;
@@ -220,6 +260,12 @@ export interface SkillSpec {
   bonusVs: { status: StatusId | 'lowHp' | 'far'; pct: number }[];
   /** Extra damage when cast soon after a dodge. */
   afterDodge?: { window: number; pct: number };
+  /** A combo blow: far harder on a target set up for it (ComboSpec). */
+  combo?: ComboSpec;
+  /** Points of the specialization's (PointsDef) it builds when it lands (or is cast, if it deals no damage). */
+  build?: number;
+  /** It spends all its user's points: each makes it `per` stronger (0.2 = +20% a point). */
+  spend?: { per: number; need?: number };
   /** Skill-specific knobs: chain jumps and range, trap limit, echo waves, pull, mana per hit, etc. */
   extra: Record<string, number>;
   /**
@@ -267,7 +313,16 @@ export type SkillOp =
   /** More of the resource gained when used. */
   | { op: 'gen'; n: number }
   /** Costs `pct`% less of the resource. */
-  | { op: 'cost'; pct: number };
+  | { op: 'cost'; pct: number }
+  /**
+   * Makes it a combo blow (it takes `combo` whole: name, what it needs, multiplier), or changes the one it is: what it
+   * needs is added to, `consume` and `extra` are taken on, and `add` goes on its multiplier a rank (0.3: ×2 becomes ×2.3).
+   */
+  | { op: 'combo'; combo: Partial<ComboSpec>; add?: number }
+  /** It builds this many more of the specialization's points. */
+  | { op: 'build'; n: number }
+  /** It spends the specialization's points (SkillSpec.spend); `per` adds to what each is worth. */
+  | { op: 'spend'; per: number };
 
 /** A triggered effect with its own chance and internal cooldown. */
 export interface ProcDef {
@@ -401,6 +456,12 @@ export interface TalentNode {
   mods: Mod[];
   /** Another node that needs at least one point first. */
   requires?: string;
+  /**
+   * One of a choice (the Ring's talent rows: one choice from each): the nodes of a tree with the same `pick` are three ways
+   * of doing one thing, and only one of them is taken. It counts one point; another of them can be chosen instead at any
+   * time, for free (progress/character.ts swapPick).
+   */
+  pick?: string;
   /** Text with {r} for the rank's value where it changes. */
   text: string;
   icon: string;
@@ -425,6 +486,13 @@ export interface SpecDef {
    * another, charges built and spent, a status set off). Its mods are always on, as the passive's are.
    */
   combo?: { name: string; text: string; mods: Mod[] };
+  /**
+   * Its own ultimate (as each of the Ring's playstyles has its own super): it takes the class's place on the bar once the
+   * specialization is chosen. Without one the class's stays.
+   */
+  ult?: string;
+  /** Its points, if its skills build and spend any (PointsDef). */
+  points?: PointsDef;
   /** The ability belongs to a druid shape: it is used there, not put on the normal bar. */
   formOnly?: boolean;
 }

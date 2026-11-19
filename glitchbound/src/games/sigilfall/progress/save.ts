@@ -37,7 +37,7 @@ const BACKUP_KEY = 'glitchbound.sigilfall.bak';
 const CORRUPT_KEY = 'glitchbound.sigilfall.corrupt';
 const OLD_SAVE_KEY = 'glitchbound.riftbound';
 const OLD_BACKUP_KEY = 'glitchbound.riftbound.bak';
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 /**
  * Hero places a save keeps. Every account plays three; the Gloamknight Pack opens two more (progress/paidClasses.ts
  * `heroSlots`), and a hero in one of those is kept, out of sight, if the pack is refunded.
@@ -429,6 +429,8 @@ function talentsLegal(c: Character): boolean {
       const below = TALENTS[c.cls].filter((m) => m.tree === tree && m.row < n.row).reduce((a, m) => a + (c.talents[m.id] ?? 0), 0);
       if (below < n.row * ROW_COST) return false;
       if (n.requires && !(c.talents[n.requires] ?? 0)) return false;
+      // one of a choice's three (TalentNode.pick), never two
+      if (n.pick && nodes.some((m) => m !== n && m.pick === n.pick)) return false;
     }
   }
   return true;
@@ -613,6 +615,18 @@ export function migrate(raw: unknown): SaveFile | null {
       if (hero && talents && Object.keys(talents).length) hero.freeRespec = true;
     }
     o.v = 14;
+  }
+  // version 15: the campaign's combat made like the Ring's (combos, a specialization's own ultimate, casting on the move)
+  // and every talent tree made again, fifty-one points deep with choices in it: every hero's points come back to spend
+  if (o.v === 14) {
+    for (const h of Array.isArray(o.heroes) ? o.heroes : []) {
+      const hero = obj(h);
+      if (!hero) continue;
+      const talents = obj(hero.talents);
+      if (talents && Object.keys(talents).length) hero.freeRespec = true;
+      hero.talents = {};
+    }
+    o.v = 15;
   }
   if (o.v !== SAVE_VERSION) return null;
   const heroes: (Character | null)[] = [];

@@ -11,10 +11,10 @@ import { setOf } from '../data/riftgear';
 import type { Item, ItemDef, QuestDef, RegionDef, RegionId, SkillIndex, SkillSpec, SlotId, StatKey, TalentNode } from '../data/types';
 import { SLOTS } from '../data/types';
 import type { PanelId, SigilEngine } from '../engine';
-import { SLOT_LEVELS, slotOpen, bagSize, cantAbandon, cantEquip, cantLearn, cantSpec, currentObjective, freePoints, learnedSkills, levelGated, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
+import { SLOT_LEVELS, slotOpen, bagSize, cantAbandon, cantEquip, cantLearn, cantSpec, currentObjective, pickOptions, pickTaken, freePoints, learnedSkills, levelGated, pointsInTree, PERKS, questProgress, questRegion, questState, respecCost, SIGILS, specCost, talentPoints, trackedQuest, treeOpen, type Character, HOME } from '../progress/character';
 import { ZOOM_MAX, ZOOM_MIN } from '../progress/save';
-import { buildHero, typeBonus } from '../progress/build';
-import { DMG_NAME, fmtStat, modLines, STAT_LABEL, costText } from '../progress/describe';
+import { buildHero, heroUlt, typeBonus } from '../progress/build';
+import { comboVsText, DMG_NAME, fmtStat, modLines, STAT_LABEL, costText } from '../progress/describe';
 import { itemClass, itemMods, itemName, itemScore, itemSlot, salvageValue } from '../progress/items';
 import { npcMark, rarityColor } from '../render/renderer';
 import { heldWeapon, heroDollUrl, heroLook, itemIconUrl, mountPictureUrl, talentIconUrl, watchMountPictures } from '../render/sprites';
@@ -504,7 +504,10 @@ function specLine(engine: SigilEngine, spec: SkillSpec): string {
   const cost = costText(res, spec.cost, w.player.maxMana);
   if (cost) parts.push(cost);
   if (spec.extra.manaOnHit && res && w.player.maxMana > 0) parts.push(`+${Math.round((spec.extra.manaOnHit * w.player.maxMana) / 100)} ${res.name} per hit`);
-  if (spec.castTime) parts.push(`${spec.castTime} s cast (stand still)`);
+  if (spec.castTime) parts.push(`${spec.castTime} s cast${spec.extra.swift ? ' (at full pace)' : ' (on the move, slowed)'}`);
+  if (spec.combo) parts.push(`combo: ×${Math.round(spec.combo.mult * 100) / 100} on ${comboVsText(spec.combo.vs)}`);
+  if (spec.spend) parts.push(`spends ${w.build.points?.name ?? 'points'}: +${Math.round(spec.spend.per * 100)}% each`);
+  if (spec.build) parts.push(`builds ${spec.build} ${w.build.points?.name ?? (spec.build === 1 ? 'point' : 'points')}`);
   if (spec.cooldown > 0) parts.push(`${(spec.cooldown / skillHaste(st.haste)).toFixed(1)} s cooldown${spec.charges > 1 ? `, ${spec.charges} charges` : ''}`);
   if (spec.cast === 'projectile' && spec.pierce > 0 && spec.pierce < 99) parts.push(`pierces ${spec.pierce}`);
   if (spec.pierce >= 99) parts.push('passes through all');
@@ -574,7 +577,7 @@ function SkillsPanel({ engine }: { engine: SigilEngine }) {
       <section>
         <span className="rb-kicker">Always with you</span>
         <SkillCard engine={engine} id={cls.basic} slotLabel={engine.touchMode ? 'Attack' : 'Left mouse'} />
-        <SkillCard engine={engine} id={cls.ult} slotLabel="Ultimate" />
+        <SkillCard engine={engine} id={heroUlt(h)} slotLabel={h.spec !== null && cls.trees[h.spec].ult && h.level >= SPEC_LEVEL ? `Ultimate · ${cls.trees[h.spec].name}` : 'Ultimate'} />
         <SkillCard engine={engine} id={cls.dodge} slotLabel={engine.touchMode ? 'Dodge' : 'Space'} />
       </section>
     </div>
@@ -657,13 +660,14 @@ function TalentsPanel({ engine }: { engine: SigilEngine }) {
                 const rank = h.talents[n.id] ?? 0;
                 const why = cantLearn(h, n.id);
                 const rowOpen = open && pointsInTree(h, tab) >= n.row * ROW_COST && (!n.requires || (h.talents[n.requires] ?? 0) > 0);
+                const other = !rank && !!pickTaken(h, n);
                 return (
                   <button
                     key={n.id}
-                    className={`rb-node${rank ? ' is-taken' : ''}${!why ? ' is-ready' : ''}${!rowOpen ? ' is-closed' : ''}${node?.id === n.id ? ' is-sel' : ''}${n.row === TALENT_ROWS - 1 ? ' is-cap' : ''}${rank >= n.ranks ? ' is-full' : ''}`}
+                    className={`rb-node${rank ? ' is-taken' : ''}${!why ? ' is-ready' : ''}${!rowOpen ? ' is-closed' : ''}${node?.id === n.id ? ' is-sel' : ''}${n.row === TALENT_ROWS - 1 ? ' is-cap' : ''}${rank >= n.ranks ? ' is-full' : ''}${n.pick ? ' is-pick' : ''}${other ? ' is-other' : ''}`}
                     style={{ gridRow: n.row + 1, gridColumn: n.col + 2 }}
                     onClick={() => setSel(n)}
-                    aria-label={`${n.name}, rank ${rank} of ${n.ranks}`}
+                    aria-label={`${n.name}, rank ${rank} of ${n.ranks}${n.pick ? ', one of three' : ''}`}
                   >
                     <img src={talentIconUrl(h.cls, n, tree.color)} alt="" draggable={false} />
                     <span className="rb-node-rank">
@@ -685,7 +689,7 @@ function TalentsPanel({ engine }: { engine: SigilEngine }) {
                 </p>
               )}
               <p className="rb-dim rb-small">
-                Tap a talent to read it and learn it. Each row opens after {ROW_COST} more points in its tree; the last row is the tree’s capstone. Your specialization’s tree comes first: the other two open after {SPEC_FOCUS} points in it.
+                Tap a talent to read it and learn it. Each row opens after {ROW_COST} more points in its tree; the last row holds the capstones. The cut-cornered talents come in threes: take one of them, and switch to another whenever you like, for free. A tree is full at level {MAX_LEVEL}; your specialization’s comes first, and the other two open after {SPEC_FOCUS} points in it.
               </p>
         </div>
       </div>
@@ -708,6 +712,8 @@ export function TalentCard({ engine, node, onClose, inline }: { engine: SigilEng
   const rank = h.talents[node.id] ?? 0;
   const why = cantLearn(h, node.id);
   const now = rank > 0 ? modLines(node.mods.map((m) => scaleMod(m, rank))) : [];
+  const chosen = !rank ? pickTaken(h, node) : undefined;
+  const options = node.pick ? pickOptions(h.cls, node) : [];
   const learn = useRef<HTMLButtonElement>(null);
   const shut = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -736,9 +742,23 @@ export function TalentCard({ engine, node, onClose, inline }: { engine: SigilEng
             ×
           </button>
         </header>
+        {options.length > 1 && (
+          <p className="rb-small rb-pick-line">
+            One of three: {options.map((o, i) => (
+              <span key={o.id}>
+                {i ? ' · ' : ''}
+                {o.id === node.id ? <b>{o.name}</b> : o.name}
+              </span>
+            ))}
+          </p>
+        )}
         <p>{node.text}</p>
         {now.length > 0 && <p className="rb-gold rb-small">Now: {now.join(' ')}</p>}
-        {why ? (
+        {chosen ? (
+          <button ref={learn} className="rb-btn is-gold" onClick={() => engine.swapTalent(node.id)}>
+            Choose {node.name} instead of {chosen.name}
+          </button>
+        ) : why ? (
           <p className="rb-dim rb-small rb-talent-why">{why}</p>
         ) : (
           <button ref={learn} className="rb-btn is-gold" onClick={() => engine.learn(node.id)}>
@@ -765,14 +785,15 @@ function SpecChoice({ engine, onDone }: { engine: SigilEngine; onDone: () => voi
     <div className="rb-specs">
       <p className="rb-small">
         {early
-          ? `At level ${SPEC_LEVEL} you choose a specialization: its ability, its passive, and the talent tree your points go into first (one point a level from then on).`
+          ? `At level ${SPEC_LEVEL} you choose a specialization: its ability, its ultimate, its combo and passive, and the talent tree your points go into first (one point a level from then on).`
           : h.spec === null
-            ? 'Choose your specialization. It gives you its ability and its passive, and its talent tree is where your points go first. You can change it later at a cost.'
+            ? 'Choose your specialization. It gives you its ability, its own ultimate, its combo and its passive, and its talent tree is where your points go first. You can change it later at a cost.'
             : `Changing your specialization resets your talents${cost ? ` and costs ${cost} gold` : ''}.`}
       </p>
       <div className="rb-spec-cards">
         {cls.trees.map((t, i) => {
           const sk = SKILLS[t.skill];
+          const ult = SKILLS[t.ult ?? cls.ult];
           const why = cantSpec(h, i as 0 | 1 | 2);
           return (
             <section key={t.name} className={`rb-spec${h.spec === i ? ' is-on' : ''}`} style={{ ['--tc' as string]: t.color }}>
@@ -787,6 +808,15 @@ function SpecChoice({ engine, onDone }: { engine: SigilEngine; onDone: () => voi
                   <span>
                     <b>{sk.name}</b>
                     <span className="rb-small rb-dim">{sk.blurb}</span>
+                  </span>
+                </div>
+              )}
+              {ult && (
+                <div className="rb-spec-skill">
+                  <SkillIcon id={ult.id} size={36} />
+                  <span>
+                    <b>{ult.name} · ultimate</b>
+                    <span className="rb-small rb-dim">{ult.blurb}</span>
                   </span>
                 </div>
               )}

@@ -3,7 +3,7 @@ import { hurtPlayer } from '../combat';
 import { castRay, flowStep, K, moveCircle, TILE } from '../map';
 import type { Enemy, Field } from '../types';
 import type { World } from '../world';
-import type { PatternFn } from './kit';
+import { bossBase, bossClock, type PatternFn } from './kit';
 
 /**
  * Boss attacks of Duskspire: ids start with 'dusk:'. The Hollow Guard's oath, and Vaelor, the Hollow
@@ -373,7 +373,7 @@ export const DUSKSPIRE_PATTERNS: Record<string, PatternFn> = {
         const to = castRay(w.map, e.x, e.y, 8, a, 40);
         w.spawnAdd(id, to.x, to.y, e.room);
       }
-      s.oath = { max: e.maxHp * k.num('shield', 0.12), regen: e.maxHp * k.num('regen', 0.004), guards: id };
+      s.oath = { max: bossBase(e) * k.num('shield', 0.12), regen: bossBase(e) * k.num('regen', 0.004), guards: id };
       w.callout('THE OATH HOLDS', '#d8c8ff');
       w.sfx('summon', 0.6);
       k.pt.step = 1;
@@ -564,7 +564,7 @@ export const DUSKSPIRE_PATTERNS: Record<string, PatternFn> = {
     const s = fight(w, e);
     if (k.pt.step === 0) {
       if (!s.doom) {
-        s.doom = { at: w.time + k.num('time', 45), said: -1 };
+        s.doom = { at: w.time + bossClock(e, k.num('time', 45)), said: -1 };
         w.emit({ t: 'banner', text: 'The Last King', sub: 'Bring him down before his doom falls' });
         w.shake(6);
         w.sfx('roar');

@@ -4,7 +4,7 @@ import { castRay, circleHitsWall, moveCircle, TILE, tileAt } from '../map';
 import type { Enemy, Field } from '../types';
 import type { World } from '../world';
 import { exposed, removeThing, spawnThing } from './arena';
-import type { PatternFn, PatternKit } from './kit';
+import { bossBase, type PatternFn, type PatternKit } from './kit';
 
 /**
  * Boss attacks of the Siege of Highwall: ids start with 'siege:'.
@@ -250,7 +250,7 @@ function tickBanner(w: World, e: Enemy, s: Siege, dt: number): void {
       if (x === flag || x.dead || x.room !== e.room || x.state === 'spawn') continue;
       if (dist(x.x, x.y, flag.x, flag.y) > r) continue;
       if (x === e) {
-        x.shield = Math.min(x.maxHp * s.ward.boss, x.shield + x.maxHp * s.ward.rate * 0.5);
+        x.shield = Math.min(bossBase(x) * s.ward.boss, x.shield + bossBase(x) * s.ward.rate * 0.5);
       } else {
         x.shield = Math.max(x.shield, x.maxHp * s.ward.adds);
         if (!s.rallied.has(x)) {
@@ -1030,7 +1030,7 @@ const dirge: PatternFn = (w, e, _dt, k) => {
   const { pt } = k;
   const s = chapelOf(w, e);
   if (pt.step === 0) {
-    s.will = Math.round(e.maxHp * k.num('will', 0.06));
+    s.will = Math.round(bossBase(e) * k.num('will', 0.06));
     s.heal = k.num('heal', 0.03);
     e.shield = s.will;
     s.until = w.time + k.num('time', 5);

@@ -20,7 +20,7 @@ import { iconPicture } from '../render/art/gameIcons';
  * with its rays, a crescent of the void with an eye in it, half a sun, a hexer's arc of runes, the bones of a hand, a
  * vine in leaf, a moon with its stars, a pair of fangs.
  */
-const SHAPES: Record<BoonLook, ReactNode> = {
+export const SHAPES: Record<BoonLook, ReactNode> = {
   slash: (
     <>
       <path d="M78 14 C38 68 32 152 62 240 C46 160 54 82 78 14 Z" />

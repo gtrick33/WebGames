@@ -66,10 +66,13 @@ export const skillIcon = (id: string): string | undefined => SKILL_ICON[id];
 /* --------------------------------------------------------------- talents */
 
 const talentPicks = new Map<ClassId, Map<string, string>>();
+/** Every talent pool's icons, in order: what a tree falls back on once its own pools are used up. */
+const ALL_POOLS = [...new Set(Object.values(TALENT_ICONS).flat())];
 
 /**
  * A talent's icon: the next of its pool's icons not yet used in its tree (in the tree's order, row by row);
- * when a tree has used the pool up, the icon of the skill the talent changes; failing that, the pool's first.
+ * when a tree has used the pool up, the icon of the skill the talent changes; failing that, the first icon of any pool
+ * the tree hasn't shown.
  */
 export function talentIcon(cls: ClassId, node: TalentNode): string | undefined {
   let picks = talentPicks.get(cls);
@@ -83,7 +86,8 @@ export function talentIcon(cls: ClassId, node: TalentNode): string | undefined {
       for (const n of nodes) {
         const skills = n.mods.flatMap((m) => (m.t === 'skill' && m.skill !== '*' ? [SKILL_ICON[slot[m.skill] ?? m.skill]] : [])).filter((s): s is string => !!s);
         const options = [...(TALENT_ICONS[n.icon] ?? []), ...skills];
-        const pick = options.find((o) => !used.has(o)) ?? options[0];
+        // (a tree of thirty-five can use its pools up: then any pool's icon not shown in the tree yet)
+        const pick = options.find((o) => !used.has(o)) ?? ALL_POOLS.find((o) => !used.has(o)) ?? options[0];
         if (!pick) continue;
         used.add(pick);
         picks.set(n.id, pick);

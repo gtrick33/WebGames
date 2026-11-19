@@ -25,6 +25,10 @@ export const SKILL_ICON: Record<string, string> = {
   'mortal-strike': 'two_crossing_sword_slashes_in_white_on_red',
   earthsplitter: 'ground_slam_crack_with_flying_rocks_on_brown',
   sidestep: 'running_boot_with_speed_lines_on_red',
+  'sundering-throw': 'spinning_thrown_axe_with_motion_arcs_on_red',
+  'crippling-hew': 'sword_breaking_through_a_stone_wall_on_grey',
+  'red-tempest': 'berserker_face_mask_with_red_eyes_on_black',
+  'thousand-cuts': 'chain_of_three_slash_marks_on_red',
   // mage
   'gravity-well': 'storm_eye_spiral_on_violet',
   purge: 'flame_lotus_on_black',

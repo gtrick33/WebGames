@@ -2,7 +2,7 @@ import { dist, TAU } from '../../core/math';
 import type { Enemy } from '../types';
 import type { World } from '../world';
 import { exposed as expose, fighting, removeThing, ringSpots, roomBox, spawnThing, standing, up } from './arena';
-import type { PatternFn } from './kit';
+import { bossBase, type PatternFn } from './kit';
 
 /**
  * Boss attacks of the Chapel Crypt: ids start with 'crypt:'. The first dungeon, so each boss teaches one thing.
@@ -281,7 +281,7 @@ function tickCandles(w: World, e: Enemy, s: Crypt, dt: number): void {
   s.wardT -= dt;
   if (s.wardT <= 0) {
     s.wardT = 0.5;
-    e.shield = Math.min(e.maxHp * 0.06 * burning, e.shield + e.maxHp * 0.01 * burning * 0.5);
+    e.shield = Math.min(bossBase(e) * 0.06 * burning, e.shield + bossBase(e) * 0.01 * burning * 0.5);
   }
   // each one burns: a flicker of gold over its wicks, so it reads as something to put out
   s.glowT -= dt;
