@@ -5,9 +5,11 @@
  * made of it.
  */
 import { describe, expect, it } from 'vitest';
+import { GROUND, paintError, PAINTABLE } from '../src/games/sigilfall/data/ground';
 import { LAND_MAPS } from '../src/games/sigilfall/data/landmaps';
 import { REGION_IDS, REGIONS } from '../src/games/sigilfall/data/regions';
 import { generatedLand } from '../src/games/sigilfall/data/zonegen';
+import { TERRAIN } from '../src/games/sigilfall/sim/map';
 
 describe('Sigilfall: every land is a map file', () => {
   it('has a file for every live land the generator made, and for nothing else', () => {
@@ -44,3 +46,31 @@ describe('Sigilfall: every land is a map file', () => {
     }
   });
 });
+
+describe('Sigilfall: the editor paints a land’s ground, never its buildings', () => {
+  const land = ['#######', '#..h..#', '#.HhT.#', '#..j..#', '#######'];
+  const paint = (x: number, y: number, ch: string): string[] => land.map((r, i) => (i === y ? r.slice(0, x) + ch + r.slice(x + 1) : r));
+
+  it('paints only ground the land can stand on', () => {
+    for (const g of GROUND) expect(TERRAIN[g.ch], g.name).toBeDefined();
+    // (a building, a pillar or a door is the land's own)
+    for (const ch of ['h', 'H', 'j', 'D', 'Q', 'Z', '%']) expect(PAINTABLE.includes(ch), ch).toBe(false);
+  });
+
+  it('takes grass into road, a tree into water, and nothing at all', () => {
+    expect(paintError(land, paint(1, 1, '='))).toBeNull();
+    expect(paintError(land, paint(4, 2, '~'))).toBeNull();
+    expect(paintError(land, land)).toBeNull();
+  });
+
+  it('refuses a building, a pillar, an unknown letter and rows of another size', () => {
+    expect(paintError(land, paint(3, 1, '.'))).toMatch(/h can't become \./);
+    expect(paintError(land, paint(3, 3, '.'))).toMatch(/j can't become/);
+    expect(paintError(land, paint(1, 1, 'X'))).toMatch(/can't become X/);
+    expect(paintError(land, paint(1, 1, 'h'))).toMatch(/can't become h/);
+    expect(paintError(land, land.slice(1))).toBe('rows of another size');
+    expect(paintError(land, [...land.slice(0, -1), '######'])).toBe('rows of another size');
+    expect(paintError(land, 'not rows')).toBe('rows of another size');
+  });
+});
+
