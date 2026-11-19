@@ -55,6 +55,18 @@ export type QuestState = 'locked' | 'offered' | 'active' | 'ready' | 'done';
 /** Where every hero starts and returns: Briarhollow, the village of the Prologue and the resistance camp after it. */
 export const HOME = 'briarhollow' as const;
 
+/**
+ * How far into a dungeon a hero has come (World.dungeonMark): the rooms they cleared (by their ids), the packs they
+ * wiped (by their places on the map), where their last checkpoint stands, and the way home if it is open. Kept with
+ * Character.at, so a reload doesn't send them back to the dungeon's door.
+ */
+export interface DungeonMark {
+  rooms?: string[];
+  packs?: number[];
+  cp?: [number, number];
+  portal?: [number, number];
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -115,10 +127,12 @@ export interface Character {
    * Where the hero is: the land, town or dungeon they last walked into (its difficulty, and the land they came from,
    * so they stand at the same gate). Kept each time they travel, so a hero who quits or is cut off comes back there
    * and not at Briarhollow's gate (the owner: "in case we disconnect or quit and have to log in once again, the
-   * character should be in the respective zone"). A dungeon is come back to at its door: its rooms begin again.
-   * Not kept for a Riftstone run (its clock can't be picked up) nor a party's run (it is the party's, not the hero's).
+   * character should be in the respective zone"). A dungeon is come back to as it was left (POLISH_PLAN.md piece 3):
+   * the rooms cleared stay clear, the packs wiped stay gone, and the hero stands at the last checkpoint, with the way
+   * home open if its last boss is down (`DungeonMark`). Not kept for a Riftstone run (its clock can't be picked up)
+   * nor a party's run (it is the party's, not the hero's).
    */
-  at?: { region: RegionId; tier?: number; from?: RegionId };
+  at?: { region: RegionId; tier?: number; from?: RegionId } & DungeonMark;
   seen: Partial<Record<RegionId, string>>;
   /** Mounts owned for good, and the one the mount key summons. */
   mounts: string[];

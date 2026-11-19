@@ -10,7 +10,7 @@ import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS } from '../data/talents';
 import type { ClassId, Item, PerkId, RegionId, SlotId, StatKey } from '../data/types';
 import { RARITIES, SLOTS } from '../data/types';
 import { STAT_ROLL } from '../data/items';
-import { autoSlotSkills, OLD_SLOT_LEVELS, SLOT_LEVELS, BAG_OVERFLOW, bagSize, learnedSkills, seatSpecSkill, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, HOME, allItems, HELD_MAX } from './character';
+import { autoSlotSkills, OLD_SLOT_LEVELS, SLOT_LEVELS, BAG_OVERFLOW, bagSize, learnedSkills, seatSpecSkill, PERKS, pointsInTree, POTION_CAP, potionCap, START_POTIONS, startQuests, talentPoints, type Character, type DungeonMark, HOME, allItems, HELD_MAX } from './character';
 import { itemClass, itemSlot, newUid } from './items';
 import { grantMounts, grantWarden, syncRift, learnLooks, LOOK_SLOTS, tidyWardrobe } from './wardrobe';
 import { MOUNT_DEFS } from '../data/mounts';
@@ -373,7 +373,7 @@ export function validateCharacter(v: unknown, slot: number): Character | null {
   if (at && typeof at.region === 'string' && at.region in REGIONS && c.unlocked.includes(at.region as RegionId)) {
     const tier = int(at.tier, 0, 2, 0);
     const from = typeof at.from === 'string' && at.from in REGIONS ? (at.from as RegionId) : undefined;
-    c.at = { region: at.region as RegionId, ...(tier ? { tier } : {}), ...(from ? { from } : {}) };
+    c.at = { region: at.region as RegionId, ...(tier ? { tier } : {}), ...(from ? { from } : {}), ...dungeonMark(at) };
   }
   // quests of the zones the hero has been to start once those are known
   startQuests(c);
@@ -811,4 +811,27 @@ export function writeSave(save: SaveFile): boolean {
 /** Removes a hero for good. */
 export function deleteHero(save: SaveFile, slot: number): void {
   save.heroes[slot] = null;
+}
+
+/**
+ * How far into a dungeon a saved hero had come (progress/character.ts DungeonMark), checked field by field: room ids
+ * as the dungeons write them, pack numbers, and two places inside any map there is. Anything else is dropped, and the
+ * dungeon begins again at its door, as it did before the mark was kept.
+ */
+function dungeonMark(at: Record<string, unknown>): DungeonMark {
+  const out: DungeonMark = {};
+  if (Array.isArray(at.rooms)) {
+    const rooms = at.rooms.filter((r): r is string => typeof r === 'string' && /^[a-z0-9:_-]{1,40}$/.test(r)).slice(0, 64);
+    if (rooms.length) out.rooms = [...new Set(rooms)];
+  }
+  if (Array.isArray(at.packs)) {
+    const packs = at.packs.filter((n): n is number => Number.isInteger(n) && n >= 0 && n < 1000).slice(0, 400);
+    if (packs.length) out.packs = [...new Set(packs)];
+  }
+  const spot = (v: unknown): [number, number] | undefined => (Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= 1e5) ? [Math.round(v[0] as number), Math.round(v[1] as number)] : undefined);
+  const cp = spot(at.cp);
+  if (cp) out.cp = cp;
+  const portal = spot(at.portal);
+  if (portal) out.portal = portal;
+  return out;
 }
