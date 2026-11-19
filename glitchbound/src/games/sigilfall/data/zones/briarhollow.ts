@@ -838,7 +838,7 @@ export const BRIARHOLLOW_QUESTS: QuestDef[] = [
     objective: { kind: 'event', event: 'briar-raid', label: 'Drive the raiders out of the streets' },
     after: ['first-steps'],
     // the night is where a new hero is armed (the Whisperwood's spoils come after it now)
-    reward: { xp: 220, gold: 40, item: { rarity: 'uncommon' } },
+    reward: { xp: 220, gold: 40, item: { rarity: 'uncommon', name: 'Nightfall Watch' } },
   },
   {
     id: 'briar-the-rider',
@@ -878,7 +878,7 @@ export const BRIARHOLLOW_QUESTS: QuestDef[] = [
     text: 'The Bramble & Barrel inn is on fire with three children inside. Elyra, the herbwife’s apprentice, is holding up the roof with magic. Get the children out and take them to the stone chapel.',
     objective: { kind: 'event', event: 'briar-inn', label: 'Lead the children from the inn to the chapel' },
     after: ['briar-the-seal'],
-    reward: { xp: 240, gold: 40, item: { rarity: 'uncommon' } },
+    reward: { xp: 240, gold: 40, item: { rarity: 'uncommon', name: 'Ember of the Burning Inn' } },
   },
   {
     id: 'briar-hold-the-door',
@@ -889,7 +889,7 @@ export const BRIARHOLLOW_QUESTS: QuestDef[] = [
     text: 'The villagers are hiding in the chapel, and the raiders are coming for its door. Mara is holding the steps, and Elyra is shielding the door with a ward. Keep the raiders off them.',
     objective: { kind: 'event', event: 'briar-door', label: 'Hold the chapel door with Mara and Elyra' },
     after: ['briar-the-inn'],
-    reward: { xp: 300, gold: 60, item: { rarity: 'rare' } },
+    reward: { xp: 300, gold: 60, item: { rarity: 'rare', name: 'Promise of the Held Door' } },
   },
   {
     id: 'briar-below',

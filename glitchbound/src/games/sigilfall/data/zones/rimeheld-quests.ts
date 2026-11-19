@@ -81,7 +81,7 @@ export const RIMEHELD_QUESTS: QuestDef[] = [
     after: ['the-vault-door'],
     zone: 'rimeheld',
     level: 36,
-    reward: { xp: 3000, gold: 600, item: { rarity: 'rare' }, text: 'Hrimfang falls to his knees and gives up, and ash-gold spills out of his coat. Sigrun will spare his life and banish him from the north. But deeper in the vault, something huge has woken up, and the ice is groaning.' },
+    reward: { xp: 3000, gold: 600, item: { rarity: 'rare', name: 'Hrimfang’s Forfeit' }, text: 'Hrimfang falls to his knees and gives up, and ash-gold spills out of his coat. Sigrun will spare his life and banish him from the north. But deeper in the vault, something huge has woken up, and the ice is groaning.' },
   },
   {
     id: 'the-vault-of-rime',

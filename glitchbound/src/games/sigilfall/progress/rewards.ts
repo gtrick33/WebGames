@@ -24,7 +24,8 @@ export function questRewards(c: Character, q: QuestDef): RewardLine[] {
   else if (typeof r.item === 'string') {
     const def = ITEM_DEFS[r.item];
     if (def) out.push({ kind: 'item', text: def.name, rarity: def.rarity });
-  } else if (r.item) out.push({ kind: 'item', text: `${RARITY_WORD[r.item.rarity] ?? 'an'} item for your class`.replace(/^./, (s) => s.toUpperCase()), rarity: r.item.rarity });
+  } else if (r.item?.name) out.push({ kind: 'item', text: `${r.item.name}, ${RARITY_WORD[r.item.rarity] ?? 'an'} piece for your class`, rarity: r.item.rarity });
+  else if (r.item) out.push({ kind: 'item', text: `${RARITY_WORD[r.item.rarity] ?? 'an'} item for your class`.replace(/^./, (s) => s.toUpperCase()), rarity: r.item.rarity });
   if (r.perk) out.push({ kind: 'perk', text: `${PERKS[r.perk].name}: ${PERKS[r.perk].text}` });
   if (r.unlock) out.push({ kind: 'unlock', text: `The way to ${REGIONS[r.unlock].name}` });
   if (r.tier) out.push({ kind: 'tier', text: r.tier >= 2 ? 'Mythic difficulty' : 'Heroic difficulty' });

@@ -141,7 +141,7 @@ export const GLIMMERWOOD_QUESTS: QuestDef[] = [
     after: ['the-moonwell'],
     zone: 'glimmerwood',
     level: 33,
-    reward: { xp: 1300, gold: 300, item: { rarity: 'rare' }, text: 'The Moonwell shines a little brighter. Silvaine opens the court’s treasury to thank you.' },
+    reward: { xp: 1300, gold: 300, item: { rarity: 'rare', name: 'Silvaine’s Favor' }, text: 'The Moonwell shines a little brighter. Silvaine opens the court’s treasury to thank you.' },
   },
   /* --------------------------------------------------------- Pip's moths */
   {

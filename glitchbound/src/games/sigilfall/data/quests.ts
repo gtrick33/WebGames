@@ -26,7 +26,7 @@ export const QUESTS: QuestDef[] = [
     text: 'Grey soldiers are coming down the north road behind you, with no torches and no sound. Mara Venn is the only guard left at the gate. Fight beside her. Attack, use your skill, and dodge their arrows.',
     objective: { kind: 'event', event: 'briar-gate', label: 'Hold the north gate with Mara' },
     after: ['briar-dusk'],
-    reward: { xp: 70, gold: 25, item: { rarity: 'uncommon' } },
+    reward: { xp: 70, gold: 25, item: { rarity: 'uncommon', name: 'Oath of the Ash Gate' } },
   },
   {
     id: 'into-the-wood',
@@ -64,7 +64,7 @@ export const QUESTS: QuestDef[] = [
       body: ['Thessa, my love. If you are reading this, my hedge has let you through, so you are grown.', 'Pick the starwort at dawn, never at dusk. My own gran told me the warm thing under our chapel keeps this grove green in every season.', 'Keep the fire low, and keep it lit.'],
       sign: 'Gran',
     },
-    reward: { xp: 120, gold: 25, item: { rarity: 'rare' }, text: 'The hedge lets you through on the second try. Beyond it the grove is green, in a season when nothing else in the wood is, and starwort grows thick around an oak older than Briarhollow.' },
+    reward: { xp: 120, gold: 25, item: { rarity: 'rare', name: 'Grove-Warden’s Gift' }, text: 'The hedge lets you through on the second try. Beyond it the grove is green, in a season when nothing else in the wood is, and starwort grows thick around an oak older than Briarhollow.' },
   },
   {
     id: 'alpha',

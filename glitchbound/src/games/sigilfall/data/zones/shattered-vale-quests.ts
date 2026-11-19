@@ -92,7 +92,7 @@ export const SHATTERED_VALE_QUESTS: QuestDef[] = [
     level: 39,
     // (no page of its own: the fight at the Tear begins the moment the hero reaches it, and its opening shot
     // shows Elyra pulling the sigil out of the glass; data/scenes.ts tear-the-light-is-wrong)
-    reward: { xp: 1300, gold: 340, item: { rarity: 'rare' } },
+    reward: { xp: 1300, gold: 340, item: { rarity: 'rare', name: 'Tearborne' } },
   },
   {
     id: 'the-heralds-ambush',

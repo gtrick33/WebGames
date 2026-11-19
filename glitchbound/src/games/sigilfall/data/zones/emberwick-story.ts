@@ -85,7 +85,7 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
       'And these letters still have the couriers’ seals on them. Somebody stopped them at the gate. Ten years of warnings.',
       'I’ll carry all of it up to the Regent myself, tonight. I should have done it ten years ago.',
     ],
-    reward: { xp: 1800, gold: 380, item: { rarity: 'rare' }, text: 'Hesk climbs to the keep with the ledgers and the letters under his arm, and an hour later a guard brings back the Regent’s word. Crane will be arrested at dawn, when the Starfall Festival is over and the streets are empty. Until then he must not guess that anything has changed.' },
+    reward: { xp: 1800, gold: 380, item: { rarity: 'rare', name: 'Cellar-Ledger Seal' }, text: 'Hesk climbs to the keep with the ledgers and the letters under his arm, and an hour later a guard brings back the Regent’s word. Crane will be arrested at dawn, when the Starfall Festival is over and the streets are empty. Until then he must not guess that anything has changed.' },
   },
   /* ---------------------------------------------------- the Starfall Festival */
   {
@@ -117,7 +117,7 @@ export const EMBERWICK_QUESTS: QuestDef[] = [
     after: ['festival-the-lanterns'],
     zone: 'emberwick',
     level: 30,
-    reward: { xp: 2400, gold: 500, item: { rarity: 'rare' }, text: 'The last of them falls among the burning stalls. The Regent is cut across the arm, and alive. Crane never came down to the square. A guard saw him running for his own house before the first knife was drawn.' },
+    reward: { xp: 2400, gold: 500, item: { rarity: 'rare', name: 'Night of Knives' }, text: 'The last of them falls among the burning stalls. The Regent is cut across the arm, and alive. Crane never came down to the square. A guard saw him running for his own house before the first knife was drawn.' },
   },
   {
     id: 'festival-the-catacombs',

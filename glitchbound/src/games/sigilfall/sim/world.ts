@@ -1901,6 +1901,7 @@ export class World {
     this.dropAt('item', x, y, 1, item);
     if (item.r === 'legendary') this.sfx('legendary');
     else if (item.r === 'epic') this.sfx('epic');
+    else if (item.r === 'rare') this.sfx('rare');
   }
 
   /** A piece of gear; one the hero already carries (bag or worn) rolls again, twice at most. */
@@ -2918,6 +2919,8 @@ export class World {
         }
         else if (typeof r.item === 'string') item = makeItem(r.item, Math.max(ITEM_DEFS[r.item]?.minLevel ?? 1, h.level), this.rand);
         else item = rollLoot(h.cls as ClassId, Math.max(1, h.level), r.item.rarity === 'rare' ? 'chest-rare' : 'quest', 0, this.rand);
+        // a reward of the story with a name of its own takes it (a hand-made piece keeps its own: progress/items.ts itemName)
+        if (item && typeof r.item === 'object' && r.item.name && !ITEM_DEFS[item.base]) item.n = r.item.name;
         if (item) {
           // quest rewards go straight to the bag (over-full if need be, else they wait for room: never on the ground)
           const full = bagFull(h);

@@ -82,7 +82,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     after: ['the-hollow-dig'],
     zone: 'sunscorch',
     level: 31,
-    reward: { xp: 1700, gold: 450, item: { rarity: 'rare' }, text: 'Khamsin’s riders scatter into the dunes. The Host has no guides left in the desert, and the caravan roads are safer.' },
+    reward: { xp: 1700, gold: 450, item: { rarity: 'rare', name: 'Caravan’s Thanks' }, text: 'Khamsin’s riders scatter into the dunes. The Host has no guides left in the desert, and the caravan roads are safer.' },
   },
   {
     id: 'the-sunken-gate',
@@ -113,7 +113,7 @@ export const SUNSCORCH_QUESTS: QuestDef[] = [
     after: ['the-sunken-gate'],
     zone: 'sunscorch',
     level: 32,
-    reward: { xp: 2200, gold: 400, item: { rarity: 'rare' }, text: 'The Sand Warden falls apart into sand and old stone. Deeper in, the tomb is warm, and getting warmer. Something in the burial chamber is awake, and it is angry.' },
+    reward: { xp: 2200, gold: 400, item: { rarity: 'rare', name: 'Sand-Warden’s Core' }, text: 'The Sand Warden falls apart into sand and old stone. Deeper in, the tomb is warm, and getting warmer. Something in the burial chamber is awake, and it is angry.' },
   },
   {
     id: 'the-sun-king',

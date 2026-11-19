@@ -84,7 +84,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     after: ['the-clan-stones'],
     zone: 'amberfield',
     level: 19,
-    reward: { xp: 780, gold: 200, item: { rarity: 'rare' }, text: 'Stormhoof gets back up and looks at the stolen feathers for a long time. He promises the clans will stop blaming the refugees, and will hunt the riders who wear their feathers.' },
+    reward: { xp: 780, gold: 200, item: { rarity: 'rare', name: 'Stormhoof’s Promise' }, text: 'Stormhoof gets back up and looks at the stolen feathers for a long time. He promises the clans will stop blaming the refugees, and will hunt the riders who wear their feathers.' },
   },
   /* ------------------------------------------------- the Defense of Hearthstead */
   {
@@ -121,7 +121,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     after: ['hearth-hold-the-wall'],
     zone: 'amberfield',
     level: 21,
-    reward: { xp: 1500, gold: 320, item: { rarity: 'rare' }, text: 'Elyra’s light burns the ram to ash, and she falls to her knees with blood running from her nose. The riders break and scatter into the grass. Then Mara sees smoke rising by the well, inside the wall.' },
+    reward: { xp: 1500, gold: 320, item: { rarity: 'rare', name: 'Elyra’s First Light' }, text: 'Elyra’s light burns the ram to ash, and she falls to her knees with blood running from her nose. The riders break and scatter into the grass. Then Mara sees smoke rising by the well, inside the wall.' },
   },
   {
     id: 'hearth-the-shrine',
@@ -239,7 +239,7 @@ export const AMBERFIELD_QUESTS: QuestDef[] = [
     after: ['borrowed-arrows'],
     zone: 'amberfield',
     level: 18,
-    reward: { xp: 560, gold: 200, item: { rarity: 'rare' }, text: 'Wynn keeps the bow for herself and pays you from the town’s armory.' },
+    reward: { xp: 560, gold: 200, item: { rarity: 'rare', name: 'Wynn’s Trade' }, text: 'Wynn keeps the bow for herself and pays you from the town’s armory.' },
   },
 ];
 
