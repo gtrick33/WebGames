@@ -1,3 +1,4 @@
+import { fallOf } from '../data/falls';
 import { damp } from '../core/math';
 import { mountDef, riddenMount } from '../progress/wardrobe';
 import { NPCS } from '../data/quests';
@@ -522,11 +523,28 @@ export class WorldCast {
     let rise = 0;
     let sx = 1;
     let sy = 1;
+    let ghostLift = 0;
     if (e.dead) {
       clip = 'die';
       t = e.deathT;
       loop = false;
       alpha = Math.max(0, 1 - Math.max(0, e.deathT - 0.7) / 0.5);
+      // each kind goes down its own way (data/voices.ts fallOf; what it leaves is sim/combat.ts fallFx): a shade rises
+      // and thins away, a slime bursts flat, bones come apart quickly, a great one lies a while where it fell
+      const fall = e.boss || e.def.prop ? 'person' : fallOf(e.def);
+      if (fall === 'ghost') {
+        clip = 'idle';
+        t = time;
+        loop = true;
+        alpha = Math.max(0, 1 - e.deathT / 0.7);
+        ghostLift = e.deathT * 1.6;
+      } else if (fall === 'slime') {
+        const k = Math.min(1, e.deathT / 0.28);
+        sx = 1 + k * 0.7;
+        sy = Math.max(0.12, 1 - k * 0.88);
+        alpha = Math.max(0, 1 - Math.max(0, e.deathT - 0.2) / 0.3);
+      } else if (fall === 'bone') alpha = Math.max(0, 1 - Math.max(0, e.deathT - 0.45) / 0.35);
+      else if (fall === 'heavy') alpha = Math.max(0, 1 - Math.max(0, e.deathT - 1.1) / 0.6);
       if (alpha <= 0) return;
     } else {
       const atk = kit.atk ?? 'chop';
@@ -625,7 +643,7 @@ export class WorldCast {
     // in the dark (night, a crypt) a foe that has seen the hero stands on a faint ring of the danger color: grey-blue foes
     // on grey-blue flagstones were lost in the dark, and an outline of ink is no help against a dark floor
     else if (!e.dead && e.aggro && !e.dummy && !e.boss && dark() > 0.3) cast.ring(x, y, e.r + 3, dangerColor(), 0.32 * Math.min(1, dark() * 1.4));
-    cast.creature(sprite, x, y, anim.turn, h, clip, t, loop, { alpha, flash, rise, sx, sy, enemy: e.def.id, tint: frozen ? FROZEN : chilled ? CHILLED : undefined, ...(anim.from ? { from: anim.from } : {}) });
+    cast.creature(sprite, x, y, anim.turn, h, clip, t, loop, { alpha, flash, rise, sx, sy, enemy: e.def.id, tint: frozen ? FROZEN : chilled ? CHILLED : undefined, ...(ghostLift ? { lift: ghostLift } : {}), ...(anim.from ? { from: anim.from } : {}) });
   }
 
   /**
