@@ -7,6 +7,7 @@ import type { Body } from '../progress/character';
 import type { ClassId, Item, ItemIcon, Material, Rarity, SlotId, TalentNode } from '../data/types';
 import { itemIcon, itemMat, itemTint } from '../progress/items';
 import type { MountDef } from '../data/mounts';
+import type { World } from '../sim/world';
 import { MOUNT_FRAMES, paintMount, paintRiderLegs, RIDER_HIP } from './art/mount';
 import { HERO_H, HERO_W, paintHero, type ChestStyle, type FeetStyle, type HandStyle, type HeadStyle, type HeroLook, type LegStyle, type Piece } from './art/hero';
 import { NPCS } from '../data/quests';
@@ -633,6 +634,28 @@ export function npcSprite(id: string, frame = 0): Sprite {
 export const hasPersonLook = (id: string): boolean => !!NPC_LOOKS[id];
 /** A townsperson's look, for those drawn as a person. */
 export const npcLookOf = (id: string): HeroLook | null => NPC_LOOKS[id] ?? null;
+
+/** Whose face a scene's line shows beside it (POLISH_PLAN.md piece 12): the hero's, a person's look, or a creature's. */
+export type FaceSource = { kind: 'hero' } | { kind: 'npc' | 'creature'; id: string };
+
+/**
+ * The face for whoever says a scene's line. A townsperson is their own look, or the look a figure of a memory borrows.
+ * A companion is their look as a person: Mara walks with the hero as `mara`, but she is dressed as `mara-venn`. Anything
+ * else is a creature.
+ */
+export function faceSource(w: Pick<World, 'npcs' | 'pets' | 'enemies'>, who: string): FaceSource | null {
+  if (who === 'hero') return { kind: 'hero' };
+  const npc = w.npcs.find((n) => n.id === who);
+  if (npc) return { kind: 'npc', id: npc.ghost ?? npc.id };
+  const pet = w.pets.find((p) => !p.dead && p.def.id === who);
+  if (pet) {
+    if (pet.def.look && NPC_LOOKS[pet.def.look]) return { kind: 'npc', id: pet.def.look };
+    if (NPCS[pet.def.id]) return { kind: 'npc', id: pet.def.id };
+    return { kind: 'creature', id: pet.def.sprite };
+  }
+  const foe = w.enemies.find((e) => !e.dead && e.def.id === who);
+  return foe ? { kind: 'creature', id: foe.def.sprite } : null;
+}
 
 export function portraitUrl(kind: 'hero' | 'creature' | 'npc', id: string, scale = 4): string {
   if (kind === 'hero') return heroPortraitUrl(heroLook(id as ClassId), Math.max(1, Math.round(scale * 0.75)));

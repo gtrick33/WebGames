@@ -18,7 +18,7 @@ import { TILE } from '../sim/map';
 import type { Enemy, NpcActor, Pet } from '../sim/types';
 import type { World } from '../sim/world';
 import { ctx2d, rgba } from './pixel';
-import { heldWeapon, itemIconCanvas, heroLook, heroPortraitUrl, portraitUrl, vendorSign } from './sprites';
+import { faceSource, heldWeapon, itemIconCanvas, heroLook, heroPortraitUrl, portraitUrl, vendorSign } from './sprites';
 import type { HeroLook } from './art/hero';
 import { wornLooks } from '../progress/wardrobe';
 import { objectiveTarget, objectiveTargets } from '../sim/objective';
@@ -508,19 +508,11 @@ export class Renderer {
   private faceOf(w: World, who: string): HTMLImageElement | null {
     let url: string | null = null;
     try {
-      if (who === 'hero') {
+      const src = faceSource(w, who);
+      if (src?.kind === 'hero') {
         const h = w.hero;
         url = heroPortraitUrl(heroLook(h.cls, h.equip, wornLooks(h), h.body, h.face), 3);
-      } else {
-        const npc = w.npcs.find((n) => n.id === who);
-        const pet = w.pets.find((p) => !p.dead && p.def.id === who);
-        const foe = w.enemies.find((e) => !e.dead && e.def.id === who);
-        // (a figure of a memory wears the look of the one it borrows; a companion and a townsperson are people)
-        if (npc) url = portraitUrl('npc', npc.ghost ?? npc.id);
-        else if (pet && NPCS[pet.def.id]) url = portraitUrl('npc', pet.def.id);
-        else if (pet) url = portraitUrl('creature', pet.def.sprite);
-        else if (foe) url = portraitUrl('creature', foe.def.sprite);
-      }
+      } else if (src) url = portraitUrl(src.kind, src.id);
     } catch {
       url = null;
     }

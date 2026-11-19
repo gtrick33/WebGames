@@ -3,7 +3,9 @@
  * previewed from any of its steps (the review tools' scene previewer), the steps before it run through at once.
  */
 import { describe, expect, it } from 'vitest';
+import { PETS } from '../src/games/sigilfall/data/pets';
 import { SCENES } from '../src/games/sigilfall/data/scenes';
+import { faceSource, hasPersonLook } from '../src/games/sigilfall/render/sprites';
 import { layoutSpeech, type SpeechAsk } from '../src/games/sigilfall/render/speech';
 import { previewScene } from '../src/games/sigilfall/sim/scene';
 import { stepLabel } from '../src/games/sigilfall/ui/ScenePreviewer';
@@ -36,6 +38,20 @@ describe('Sigilfall: a scene’s line has its speaker’s face', () => {
     const card = layoutSpeech(ask({ face: 56, viewW: 260, headX: 130 }));
     expect(card.face).toBe(0);
     expect(card.lead).toBe(0);
+  });
+
+  it('shows a companion who speaks in a scene as the person they are dressed as', () => {
+    const companions = [...new Set(SCENES.flatMap((d) => d.steps.flatMap((st) => ('say' in st ? [st.say] : []))))].filter((id) => PETS[id]);
+    expect(companions).toEqual(expect.arrayContaining(['mara', 'elyra', 'nyx']));
+    for (const id of companions) {
+      const def = PETS[id]!;
+      const src = faceSource({ npcs: [], pets: [{ dead: false, def }], enemies: [] } as never, id);
+      expect(def.look && hasPersonLook(def.look), `${id} has a look as a person`).toBe(true);
+      expect(src, id).toEqual({ kind: 'npc', id: def.look });
+    }
+    // (Mara walks with the hero as `mara` and is dressed as `mara-venn`: her face was the old pixel figure before)
+    expect(faceSource({ npcs: [], pets: [{ dead: false, def: PETS.mara! }], enemies: [] } as never, 'mara')).toEqual({ kind: 'npc', id: 'mara-venn' });
+    expect(faceSource({ npcs: [], pets: [], enemies: [] } as never, 'hero')).toEqual({ kind: 'hero' });
   });
 });
 
