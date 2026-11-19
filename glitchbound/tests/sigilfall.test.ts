@@ -343,7 +343,7 @@ describe('sigilfall character', () => {
     learnTalent(c, 'fire-focus');
     learnTalent(c, 'fire-focus');
     expect(learnTalent(c, 'smolder')).toBe(true);
-    expect(cantLearn(c, 'combustion')).toMatch(/Needs 10 points/);
+    expect(cantLearn(c, 'inferno')).toMatch(/Needs 10 points/);
     // row 1 holds a choice of three: one is taken, the others wait to be switched to
     const [first, second] = TALENTS.mage.filter((n) => n.tree === 0 && n.pick === 'core');
     expect(learnTalent(c, first!.id)).toBe(true);

@@ -371,4 +371,5 @@ deals more than the bot and is quicker. What didn't hold: BOSS_LENGTH 2.6, 2.2, 
 fell twenty to thirty-eight times to the Rot Mother, the Runewarden and Sir Corvane, whose blows it steps out of badly).
 Those three hit a little lighter (Corvane's mounted charge and sweep 1.22 and 1.2 of a blow, from 1.4 and 1.35; the
 Runewarden 28 damage and 3,900 health, from 32 and 4,600, as the bot never breaks its binding; the Forgemaster's quake
-cracks 0.92 of a blow, from 1.1). The bot casts on the move now as a player does, and no longer stands still for a cast.
+cracks 0.92 of a blow, from 1.1, and his blows 32, from 36). The bot's mage, the frailest, was the last to
+clear the Deepforge Halls: the Pyromancer has Combustion in its first row now, and Flame Pillar hits for 100 (from 95). The bot casts on the move now as a player does, and no longer stands still for a cast.

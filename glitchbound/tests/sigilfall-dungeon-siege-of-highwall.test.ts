@@ -9,6 +9,7 @@
  * volley spares only the ground by his banner (or by him), and what the fights leave goes with them.
  */
 import { describe, expect, it } from 'vitest';
+import { bossBase } from '../src/games/sigilfall/sim/patterns/kit';
 import type { PatternUse } from '../src/games/sigilfall/data/bosses';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
@@ -94,7 +95,8 @@ describe('sigilfall: the Siege of Highwall', () => {
     order(b, 'siege:dirge', { time: 2, will: 0.06, heal: 0.03 });
     run(w, 0.3, hold);
     expect(chapelOfPrior(b)!.singing).toBe(true);
-    expect(b.shield).toBeCloseTo(b.maxHp * 0.06, -1);
+    // (a share of the health he had before his fight grew longer: sim/patterns/kit.ts bossBase)
+    expect(b.shield).toBeCloseTo(bossBase(b) * 0.06, -1);
     run(w, 2, hold);
     expect(chapelOfPrior(b)!.singing).toBe(false);
     expect(chapelOfPrior(b)!.corpses).toHaveLength(0);

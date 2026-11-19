@@ -244,3 +244,60 @@ Display names only: every id is unchanged, so saves keep working. See LEGAL_REVI
 | Bolstering | Grieving |
 | Sanguine | Festering |
 | Bursting | Splintering |
+
+## Campaign talents, in the talent trees' rebuild (2026-11-19)
+
+Display names only, ids unchanged (a save's talents are given back to spend anyway, save version 15). Each was a name
+from another game, or the same as another of Sigilfall's own (a skill, a passive, a Ring talent).
+
+| Class | Was | Now |
+| --- | --- | --- |
+| Warrior | Executioner | Headsman |
+| Mage | Wildfire | Brushfire |
+| Mage | Rain of Fire | Meteor Shower |
+| Mage | Deep Winter | Lasting Storm |
+| Mage | Winter’s Grasp | Winter’s Clutch |
+| Ranger | Rapid Fire | Quick Release |
+| Ranger | Precise Shots | Clean Fletching |
+| Ranger | Focus | Keen Eye |
+| Ranger | Bullseye | Dead Center |
+| Ranger | Marked for Death | Open Season |
+| Ranger | Entrapment | Wide Snares |
+| Ranger | Lock and Load | Rearm |
+| Ranger | Plaguebringer | Plague Carrier |
+| Ranger | Pathfinding | Trailwise |
+| Ranger | Thick Hide | Weathered Hide |
+| Ranger | Spirit Bond | Shared Breath |
+| Ranger | Kindred Spirits | Blood Kin |
+| Ranger | Wild Call | Howl on the Wind |
+| Ranger | Feeding Frenzy | Gorging Pack |
+| Ranger | Intimidation | Bared Teeth |
+| Paladin | Dawnlight | First Rays |
+| Paladin | Sanctuary | Blessed Vigor |
+| Priest | Grace | Gentle Mercy |
+| Priest | Answered Prayer | Hymn’s Echo |
+| Priest | Dark Hunger | Greedy Touch |
+| Druid | Moonglow | Silver Glow |
+| Druid | Dreamstate | Deep Dreaming |
+| Druid | Force of Nature | Wakened Grove |
+| Druid | Shooting Stars | Starscatter |
+| Druid | Eclipse | Gathered Sunlight |
+| Druid | Predatory Swiftness | Hunter’s Spring |
+| Druid | Shred | Tearing Claws |
+| Druid | Ravage | Ravaging Leap |
+| Druid | Blood in the Water | Scattered Blood |
+| Druid | Prowl | Lying in Wait |
+| Druid | Jagged Wounds | Ragged Wounds |
+| Druid | King of the Jungle | Thicket King |
+| Druid | Barkskin | Rough Bark |
+| Druid | Mangle | Heavy Paws |
+| Druid | Brambles | Briar Hide |
+| Druid | Tooth and Claw | Fang and Paw |
+| Druid | Gore | Goring Paw |
+| Druid | Survival of the Fittest | Hardy Stock |
+| Druid | Bristling Fur | Bristled Back |
+| Druid | Cyclone | Biting Gale |
+| Druid | Overgrowth | Lasting Tangle |
+| Druid | Full Bloom | Rich Bloom |
+| Gloamknight | Deep Cuts | Seam Seeker |
+| Gloamknight | Gathering Dark | Gloom-Steeped |

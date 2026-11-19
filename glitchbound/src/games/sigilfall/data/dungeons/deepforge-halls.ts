@@ -354,7 +354,8 @@ const BOSSES: Record<string, BossDef> = {
     title: 'Master of the Deepforge',
     sprite: 'forgemaster-grold',
     hp: 6550,
-    dmg: 36,
+    // (32, from 36, as his fight grew longer: sim/world.ts bossLength)
+    dmg: 32,
     radius: 10,
     xp: 1020,
     gold: [170, 250],
