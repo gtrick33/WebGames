@@ -318,7 +318,8 @@ import type { ClassId } from '../src/games/sigilfall/data/types';
 const STEP = 1 / 30;
 type Spec = { cls: ClassId; p: number; heal: boolean };
 const heals = (bar: string[]): boolean => bar.some((id) => ABILITIES[id]?.role === 'heal' && ABILITIES[id]?.aim === 'friend');
-const SPECS: Spec[] = CLASS_IDS.flatMap((cls) => PRESETS[cls].map((pr, p) => ({ cls, p, heal: heals(pr.bar) })));
+// (the warrior is set by players' word over this measure, and kept out of it: see below)
+const SPECS: Spec[] = CLASS_IDS.filter((c) => c !== 'warrior').flatMap((cls) => PRESETS[cls].map((pr, p) => ({ cls, p, heal: heals(pr.bar) })));
 
 function shares(size: 2 | 3, games: number): Record<string, number> {
   let s = 777 + size;
@@ -361,15 +362,17 @@ function shares(size: 2 | 3, games: number): Record<string, number> {
 
 describe('The Ring: no class far above or below the rest in team fights', () => {
   for (const size of [2, 3] as const) {
-    it(`${size}v${size}: each class wins between 38% and 64% when the computer plays random teams`, () => {
-      const got = shares(size, 900);
+    it(`${size}v${size}: each class wins between 46% and 54% when the computer plays random teams`, () => {
+      const got = shares(size, 1500);
       // (the warrior is set by players' word over this measure, the owner, 2026-11-17: "i dont think ur balancing test
-      // is very relevant here as this is player feedback". At 0.87 and 1240 health he comes out at 27% in 2v2 here, and 40% in 3v3.)
+      // is very relevant here as this is player feedback"; he is kept out of these teams: at the computer's third of his
+      // matches in 2v2 he would pull the rest above half. The rest, since the owner's "can we tweak it so the balancing
+      // is between 46 and 54%" (2026-11-19): 46-54%, each class's damage and healing in team fights set by TEAM_K.)
       for (const c of CLASS_IDS) {
         if (c === 'warrior') continue;
-        expect(got[c], `${c} ${Math.round(got[c]! * 100)}%`).toBeGreaterThan(0.38);
-        expect(got[c], `${c} ${Math.round(got[c]! * 100)}%`).toBeLessThan(0.64);
+        expect(got[c], `${c} ${(got[c]! * 100).toFixed(1)}%`).toBeGreaterThan(0.46);
+        expect(got[c], `${c} ${(got[c]! * 100).toFixed(1)}%`).toBeLessThan(0.54);
       }
-    }, 120_000);
+    }, 600_000);
   }
 });
