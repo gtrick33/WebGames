@@ -80,7 +80,10 @@ describe('Sigilfall: scenes', () => {
       const named = new Set(def.steps.flatMap((s) => ('say' in s ? [s.say] : 'move' in s ? [s.move] : 'emote' in s ? [s.emote] : [])).filter((who) => !ghosts.has(who)));
       // a villager of the place, the hero, or a companion of the story at their side
       for (const who of named) expect(w.npcs.some((n) => n.id === who) || w.pets.some((p) => !p.dead && p.def.id === who) || who === 'hero', `${def.id}: ${who}`).toBe(true);
-      for (const s of def.steps) if ('look' in s && s.look !== 'hero') expect(!!w.places[s.look] || w.spots.some((sp) => sp.id === s.look) || w.npcs.some((n) => n.id === s.look) || w.map.buildings.some((b) => b.name === s.look), `${def.id}: ${s.look}`).toBe(true);
+      // (or a boss of the land by its name, whose den is on its map: the camera goes to a figure of it standing there,
+      // sim/scene.ts where; a boss's arrival is staged so, POLISH_PLAN.md piece 12)
+      const den = (id: string): boolean => !!BOSSES[id] && w.map.markers.some((pm) => pm.marker.kind === 'boss' && pm.marker.boss === id);
+      for (const s of def.steps) if ('look' in s && s.look !== 'hero') expect(!!w.places[s.look] || w.spots.some((sp) => sp.id === s.look) || w.npcs.some((n) => n.id === s.look) || w.map.buildings.some((b) => b.name === s.look) || den(s.look), `${def.id}: ${s.look}`).toBe(true);
       // a ghost stands somewhere there, in the look of somebody real; an effect goes off somewhere there
       for (const s of def.steps) {
         if ('ghost' in s) {

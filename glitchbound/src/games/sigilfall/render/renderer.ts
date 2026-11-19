@@ -18,7 +18,7 @@ import { TILE } from '../sim/map';
 import type { Enemy, NpcActor, Pet } from '../sim/types';
 import type { World } from '../sim/world';
 import { ctx2d, rgba } from './pixel';
-import { heldWeapon, itemIconCanvas, heroLook, vendorSign } from './sprites';
+import { heldWeapon, itemIconCanvas, heroLook, heroPortraitUrl, portraitUrl, vendorSign } from './sprites';
 import type { HeroLook } from './art/hero';
 import { wornLooks } from '../progress/wardrobe';
 import { objectiveTarget, objectiveTargets } from '../sim/objective';
@@ -495,6 +495,43 @@ export class Renderer {
       g.fillStyle = '#7fd8ff';
       g.fillRect(x - wide / 2, y - h / 2 - 1, wide * clamp(shield, 0, 1), 2);
     }
+  }
+
+  /**
+   * The faces beside a scene's lines (POLISH_PLAN.md piece 12): each speaker's portrait, the same 3D head and
+   * shoulders the menus show (render/sprites.ts), as a picture the 2D layer draws. Kept by its address, which changes
+   * once the 3D picture takes over from the stand-in.
+   */
+  private readonly faces = new Map<string, HTMLImageElement>();
+
+  /** A speaker's portrait, once its picture has come in (null until then: the card keeps its place for it). */
+  private faceOf(w: World, who: string): HTMLImageElement | null {
+    let url: string | null = null;
+    try {
+      if (who === 'hero') {
+        const h = w.hero;
+        url = heroPortraitUrl(heroLook(h.cls, h.equip, wornLooks(h), h.body, h.face), 3);
+      } else {
+        const npc = w.npcs.find((n) => n.id === who);
+        const pet = w.pets.find((p) => !p.dead && p.def.id === who);
+        const foe = w.enemies.find((e) => !e.dead && e.def.id === who);
+        // (a figure of a memory wears the look of the one it borrows; a companion and a townsperson are people)
+        if (npc) url = portraitUrl('npc', npc.ghost ?? npc.id);
+        else if (pet && NPCS[pet.def.id]) url = portraitUrl('npc', pet.def.id);
+        else if (pet) url = portraitUrl('creature', pet.def.sprite);
+        else if (foe) url = portraitUrl('creature', foe.def.sprite);
+      }
+    } catch {
+      url = null;
+    }
+    if (!url || typeof Image === 'undefined') return null;
+    let img = this.faces.get(who);
+    if (!img || img.src !== url) {
+      img = new Image();
+      img.src = url;
+      this.faces.set(who, img);
+    }
+    return img.complete && img.naturalWidth > 0 ? img : null;
   }
 
   draw(w: World, dt: number, time: number): void {
@@ -1305,7 +1342,9 @@ export class Renderer {
       const behind = who.y > this.camY + this.vh * 1.5;
       const sane = Number.isFinite(head.x) && Number.isFinite(head.y);
       const minor = !s.staged && !!foe && !pet && !npc && s.who !== 'hero';
-      const ask: SpeechAsk = { text: s.text, name, headX: sane && !behind ? head.x : this.cssW / 2, headY: behind ? this.cssH * 2 : sane ? head.y : -this.cssH, viewW: this.cssW, viewH: this.cssH, top, bottom, left: sideL, right: sideR, measure, ...(s.staged ? { staged: true } : {}), ...(minor ? { minor: true } : {}), ...(sane && !behind && Number.isFinite(foot.y) && foot.y < this.cssH ? { footY: foot.y } : {}) };
+      // (a scene's line has the speaker's face beside it: POLISH_PLAN.md piece 12)
+      const face = s.staged ? Math.round(clamp(this.cssH * 0.085, 40, 60)) : 0;
+      const ask: SpeechAsk = { text: s.text, name, headX: sane && !behind ? head.x : this.cssW / 2, headY: behind ? this.cssH * 2 : sane ? head.y : -this.cssH, viewW: this.cssW, viewH: this.cssH, top, bottom, left: sideL, right: sideR, measure, ...(s.staged ? { staged: true } : {}), ...(minor ? { minor: true } : {}), ...(face ? { face } : {}), ...(sane && !behind && Number.isFinite(foot.y) && foot.y < this.cssH ? { footY: foot.y } : {}) };
       said.push({ s, name, accent, ask });
     }
     // every line placed together: none under the HUD, none over another, and in a fight none across it if there is
@@ -1345,10 +1384,31 @@ export class Renderer {
         g.fill();
       }
       g.globalAlpha = fade;
+      // the speaker's face, in a frame of their color (its place kept while the picture comes in)
+      if (card.face) {
+        const fx = card.x + card.padX * 0.75;
+        const fy = card.y + (card.h - card.face) / 2;
+        const r = Math.round(card.face * 0.18);
+        g.save();
+        g.beginPath();
+        g.roundRect(fx, fy, card.face, card.face, r);
+        g.fillStyle = 'rgba(255,255,255,0.06)';
+        g.fill();
+        g.clip();
+        const img = this.faceOf(w, s.who);
+        if (img) g.drawImage(img, fx, fy, card.face, card.face);
+        g.restore();
+        g.beginPath();
+        g.roundRect(fx, fy, card.face, card.face, r);
+        g.strokeStyle = rgba(accent, 0.75);
+        g.lineWidth = 1.5;
+        g.stroke();
+      }
+      const tx = card.x + card.padX + card.lead;
       if (name) {
         g.font = `800 ${card.nameFs}px ${FONT}`;
         g.fillStyle = accent;
-        g.fillText(name, card.x + card.padX, card.y + card.padY + card.nameFs * 0.86);
+        g.fillText(name, tx, card.nameY);
       }
       g.font = `600 ${card.fs}px ${FONT}`;
       g.fillStyle = '#f8f2e4';
@@ -1356,7 +1416,7 @@ export class Renderer {
       let left = s.staged ? Math.floor(s.t * TYPE_CPS) : Infinity;
       card.lines.forEach((l, j) => {
         if (left <= 0) return;
-        g.fillText(left >= l.length ? l : l.slice(0, left), card.x + card.padX, card.textY + j * card.lineH);
+        g.fillText(left >= l.length ? l : l.slice(0, left), tx, card.textY + j * card.lineH);
         left -= l.length + 1;
       });
       // all of it out: a small mark at its foot says the next line can be taken (a tap, a click, the talk key)
