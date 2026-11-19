@@ -110,6 +110,29 @@ const CINEMA_AFTER = 1.8;
 /** The spring the camera draws in and out on, while the story holds it (rad/s). */
 const PUSH_W = 2.6;
 
+/**
+ * The foes coming at the hero: how many there are within reach, and where they are on the whole (their middle). Null with
+ * none, in a scene, and on a hero who is down.
+ */
+export function threatOf(w: World): { n: number; x: number; y: number } | null {
+  const p = w.player;
+  if (w.scene || p.dead) return null;
+  let n = 0;
+  let x = 0;
+  let y = 0;
+  for (const e of w.enemies) {
+    if (e.dead || e.dummy || e.def.prop) continue;
+    if (e.state !== 'chase' && e.state !== 'windup' && e.state !== 'act' && e.state !== 'recover') continue;
+    if (Math.abs(e.x - p.x) > THREAT_REACH || Math.abs(e.y - p.y) > THREAT_REACH) continue;
+    n++;
+    x += e.x;
+    y += e.y;
+  }
+  return n ? { n, x: x / n, y: y / n } : null;
+}
+/** How far off a foe coming at the hero counts toward the fight the camera frames (world px: about eight tiles). */
+const THREAT_REACH = TILE * 8;
+
 export class Renderer {
   readonly canvas: HTMLCanvasElement;
   private g: CanvasRenderingContext2D;
@@ -302,6 +325,11 @@ export class Renderer {
   private sceneCuts = 0;
   /** The mouse on the view, -0.5 to 0.5 from its center on each axis (null: no mouse in use). */
   pointer: { x: number; y: number } | null = null;
+  /** How much of a fight is on round the hero, 0 to 1, eased (the camera's lean, its draw-back, the see-through's reach). */
+  private fightK = 0;
+  /** Where the foes coming at the hero are, from them, eased (the camera leans toward it). */
+  private threatX = 0;
+  private threatY = 0;
   private shakeX = 0;
   private shakeY = 0;
 
@@ -515,9 +543,23 @@ export class Renderer {
     const lead = p.dead ? 0 : LEAD;
     let { x: lx, y: ly } = leanTarget(this.touchMode ? null : this.pointer, p.aim, lead);
     const boss = w.boss();
+    // a fight (POLISH_PLAN.md piece 8): the camera leans toward the foes coming at the hero, a little more the more of
+    // them there are, and draws back a little on a big screen, so what comes is seen coming. A boss is leant to as
+    // before; with none, the pack is
+    const threat = boss && !boss.dead ? null : threatOf(w);
+    this.fightK = damp(this.fightK, threat ? Math.min(1, threat.n / 3) : boss && !boss.dead ? 1 : 0, 2.4, dt);
     if (boss && !boss.dead) {
       lx = lx * 0.8 + (boss.x - p.x) * 0.2;
       ly = ly * 0.8 + (boss.y - p.y) * 0.2;
+    } else if (threat) {
+      const k = 0.12 + Math.min(1, threat.n / 4) * 0.1;
+      this.threatX = damp(this.threatX, threat.x - p.x, 3, dt);
+      this.threatY = damp(this.threatY, threat.y - p.y, 3, dt);
+      lx = lx * (1 - k) + this.threatX * k;
+      ly = ly * (1 - k) + this.threatY * k;
+    } else {
+      this.threatX = damp(this.threatX, 0, 3, dt);
+      this.threatY = damp(this.threatY, 0, 3, dt);
     }
     // a scene looks where it says (a person, a place), easing there and back
     const focus = w.scene?.focus;
@@ -574,7 +616,9 @@ export class Renderer {
     // a scene's camera draws in on whoever is speaking (or stands as near as a step says), and eases back out after
     if (st) {
       const speaking = !!w.scene && w.story.speech.some((sp) => sp.staged);
-      const push = this.landOnly ? 1 : (w.scene?.zoom ?? (speaking ? TALK_ZOOM : 1));
+      // (and drawn back a little in a fight on a big screen: a phone's figures are small enough already)
+      const wide = !this.touchMode && this.cssW >= 900 ? 1 + 0.07 * this.fightK : 1;
+      const push = this.landOnly ? 1 : (w.scene?.zoom ?? (speaking ? TALK_ZOOM : wide));
       // (drawn in and out on a spring as well, while the story holds the camera: no lurch as a line begins)
       if (this.reducedMotion) st.push = push;
       else if (this.cinemaT > 0) {
@@ -603,7 +647,9 @@ export class Renderer {
       if (st.push >= 0.999) this.measureReach(st, cy);
       LIGHT.uTime.value = time;
       this.setMood(w, st, dt);
-      st.heroAt(p.x, p.y);
+      // (what stands between the camera and the hero thins away over a wider reach in a fight: the foes at their feet
+      // as well as the hero, toon.ts seeThrough)
+      st.heroAt(p.x, p.y, 1 + 0.9 * this.fightK);
       st.land?.update(cx / TILE, cy / TILE, st.spanX, st.spanZ);
       st.land?.lightFlames(cx / TILE, cy / TILE, time, this.burning(w));
       st.land?.updateDoors(dt);

@@ -215,9 +215,12 @@ export class Stage {
     return { x: (ax + (far.x - ax) * k) * TILE, y: (az + (far.z - az) * k) * TILE };
   }
 
-  /** Where the hero stands, for the pool of light round them in a dark place. */
-  heroAt(x: number, y: number): void {
-    LIGHT.uSee.value.set(x / TILE, 0.6, y / TILE, 1);
+  /**
+   * Where the hero stands, for the pool of light round them in a dark place and for what thins away in front of them;
+   * `reach` widens that (1 as it always was; more in a fight, so the foes about them are seen too).
+   */
+  heroAt(x: number, y: number, reach = 1): void {
+    LIGHT.uSee.value.set(x / TILE, 0.6, y / TILE, Math.max(1, reach));
   }
 
   /** Clears the ground's drawing layer for this frame and hands it over. */
