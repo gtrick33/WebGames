@@ -262,7 +262,9 @@ Mythic earns a Riftstone and opens Riftstone +1. Any dungeon can then be run at 
 (each fall costs 10 s): enemies at level 72 with ×4·1.08ᵏ health and ×2.1·1.05ᵏ damage, without end, and the week's
 affixes from +2 (Hardened or Crowned), +4 (Grieving, Festering, Cornered or Splintering), +7 (Volatile or Hasted)
 and +10 (both of the first). Beaten under 100/80/60% of the clock, the next one, two or three levels open; late,
-nothing is lost. Loot is made at item level 72 + the level (at most 100), so higher levels make better gear.
+nothing is lost. Loot is made at item level 72 + the level (at most 100), so higher levels make better gear. The
+clock keeps the world's time (`World.step`): a hit-stop or a boss's fall in slow motion costs it nothing; while the
+hero is down it runs at full speed.
 
 **Co-op** (`net/room.ts`, `net/coop.ts`, `net/link.ts`): a party of up to four level-60 heroes runs a Riftstone
 together, each on their own device. The party lives in a live room on the arcade's room server (a code and an
@@ -355,6 +357,8 @@ rating kept on their device, on no ranking.
   that every sprite and townsfolk look is drawn once (zone art tables are merged).
 - `tests/sigilfall-keystones.test.ts`: Riftstone (scaling, affixes, the clock with its falls, levels opening, every
   affix at work, saves) and Paragon (levels, points, caps, stats); a level-60 hero in Mythic gear beats +1.
+- `tests/sigilfall-rift-clock.test.ts`: the Riftstone clock keeps the world's time: a run with hit-stops in it ends
+  at the same time as the same run without them, a fall costs it in full, a boss's fall the same alone as in a party.
 - `tests/sigilfall-ring-ranked.test.ts`: the ranked ladder's rules, the server keeping it (tickets, reports, leavers,
   win trading, settling once), the rooms that tell it who played, and a party's search;
   `tests/sigilfall-ring-play.test.tsx`: the fight's window.
