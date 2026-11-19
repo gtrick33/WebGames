@@ -5,7 +5,7 @@ import { ENEMIES } from '../src/games/sigilfall/data/enemies';
 import { NPCS, QUEST_DEFS, QUESTS } from '../src/games/sigilfall/data/quests';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
 import type { ClassId, QuestDef } from '../src/games/sigilfall/data/types';
-import { generateZone } from '../src/games/sigilfall/data/zonegen';
+import { generatedLand, generateZone } from '../src/games/sigilfall/data/zonegen';
 import { bagSize, potionCap, startQuests, acceptQuests, offeredBy } from '../src/games/sigilfall/progress/character';
 import { validateCharacter } from '../src/games/sigilfall/progress/save';
 import { grantMounts } from '../src/games/sigilfall/progress/wardrobe';
@@ -46,10 +46,11 @@ afterEach(() => {
 
 describe('sigilfall zone generator', () => {
   it('makes the same zone from the same spec, with a town, its people, ways out and packs leveled by distance', () => {
-    const a = REGIONS.thornvale;
+    // (what the generator makes of Thornvale, not Thornvale's own map, which is a file worked by hand: data/landmaps.ts)
+    const a = { ...REGIONS.thornvale, ...generatedLand('thornvale')! };
     const m = parseRegion(a);
     // generated once and kept: asking again gives the same map
-    expect(REGIONS.thornvale.map).toBe(a.map);
+    expect(generatedLand('thornvale')!.map).toBe(a.map);
     const kinds = m.markers.map((x) => x.marker.kind);
     expect(kinds.filter((k) => k === 'waystone')).toHaveLength(1);
     for (const npc of ['reeve-aldous', 'hanna', 'tobin', 'sefa', 'pim']) expect(m.markers.some((x) => x.marker.kind === 'npc' && x.marker.npc === npc), npc).toBe(true);
