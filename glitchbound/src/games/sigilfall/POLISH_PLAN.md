@@ -50,8 +50,12 @@ Trials, which share code with the campaign, must keep working.
 5. **Hits.** A spark where a blow lands, a camera kick by the weapon's weight, a hit heard in layers (the swing, the
    blow, what it struck), damage numbers that tell a crit from a resisted hit from damage over time, knockback you see.
 6. **Animation.** Every enemy attack winds up, strikes and recovers where it can be read; each family dies its own way;
-   the hero's swings step into the blow, as in the Ring.
-7. **Spells in 3D.** What flies and what warns on the ground stands in the 3D world at its true depth.
+   the hero's swings step into the blow, as in the Ring. (Already so when the work began, and checked: the wind-ups
+   with their flash and lift, `render3d/worldCast.ts`, and the hero's lunge, `render3d/moves.ts`. What was missing was
+   the deaths.)
+7. **Spells in 3D.** What flies and what warns on the ground stands in the 3D world at its true depth. (Already so when
+   the work began, and checked: `render/effects.ts` hands every spell, shot, flame and warning to the shaders of
+   `render3d/fx3d.ts`; the old comment that said they were on the 2D layer is corrected.)
 8. **The camera.** It pulls out when a pack engages and leans toward threats, fades the roofs and walls between itself
    and the hero, and gives each boss an entrance.
 9. **Readability.** A rim of light on every figure, night lands brighter where it matters, elites marked.

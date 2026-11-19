@@ -29,7 +29,7 @@ for players, while admins still see both. It reports `start`/`end` to the arcade
 | `data/` | Content only, typed: a kit per class in `kits/` (its definition, skills as `SkillSpec`s, talents), pets, items, enemies, bosses, regions, quests and NPCs; a module per zone in `zones/` (its region, people, quests and enemies), dungeons in `dungeons/`, the zone generator (`zonegen.ts`), the city builder (`citygen.ts`) and every land's look (`themes.ts`) |
 | `progress/` | The hero (`character.ts`), items and loot, the build resolver (`build.ts`), item and modifier text (`describe.ts`), saves |
 | `sim/` | The world (`world.ts`), casting and projectiles, combat and statuses, companions (`pets.ts`), enemy AI, the boss framework, tile maps and collision |
-| `render/` | The 2D layer over the 3D world (`renderer.ts`, which also hosts the 3D stage): what the rules want read clearly (warnings on the ground, spells in flight, names, bars and numbers), speech, the minimap's marks; the hero's look (`art/hero.ts`), which the 3D models dress from; item icons (`sprites.ts`) |
+| `render/` | `renderer.ts` hosts the 3D stage and draws the 2D layer over it: names, bars and numbers, speech, markers and the minimap's marks. `effects.ts` hands every spell, shot, flame and warning on the ground to the 3D shaders (`render3d/fx3d.ts`). Also the hero's look (`art/hero.ts`), which the 3D models dress from, and item icons (`sprites.ts`) |
 | `render3d/` | The world in 3D (three.js): the land from the rules' own tile map (`land.ts`), everyone on it (`cast.ts`, `worldCast.ts`, `dress.ts`, `armorKit.ts`), what glows and burns (`fx3d.ts`), mounts, portraits, the Ring (`ring3d.ts`) and the Wardens' Sanctum (`hall.ts`) |
 | `arena/`, `vigil/`, `net/` | The Ring, The Vigil, and the live rooms of co-op, the Ring and the Vigil |
 | `audio/` | Sound effects (`samples.ts`), the soundtrack (`tracks.ts`), each land's air (`ambience.ts`), and a procedural score as a stand-in (`songs.ts`) |
@@ -159,8 +159,9 @@ hero is one draw call and a dye is a few bytes rewritten). The packs stay out of
   own (`moves.ts`).
 - **Creatures** (`kits.ts`, `repaint.ts`, `beast.ts`): every creature name has its model; a boss is its soldiers'
   model repainted part by part and fitted with what it wears.
-- **Effects**: fire, frost, water, shadow and the rest drawn by the graphics card in the world (`fx3d.ts`); the
-  warnings and spells in flight the rules want read clearly on the 2D layer over it (`render/effects.ts`).
+- **Effects**: every spell, shot, flame and warning on the ground is drawn by the graphics card in the world
+  (`render/effects.ts` says what each looks like and hands it to `fx3d.ts`), at its true depth: a wall hides what is
+  behind it. Only names, bars, numbers and speech are drawn on the 2D layer over the picture.
 - **Icons**: skills and talents from game-icons.net on tiles in the damage type's color
   (`scripts/sigilfall-icons.mjs`); items painted in code (`render/sprites.ts`).
 
