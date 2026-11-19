@@ -154,6 +154,8 @@ const FLINCH = 0.22;
 /** The least time between two flinches, and between two of a boss's blows. */
 const FLINCH_EVERY = 0.7;
 const BLOW_EVERY = 0.5;
+/** How long a fallen foe is drawn after it fell (seconds): the longest fall, a great one's, is over by then. */
+const FALL_KEPT = 1.8;
 const bossDazed = (e: Enemy): boolean => !!e.boss && (e.boss.dazed > 0 || e.boss.dying > 0 || e.boss.shift > 0);
 /** A druid's beast makes every blow with its one attack. */
 const BEAST_BLOW: Move = { clip: 'chop', rate: 1.2, lunge: 0.2 };
@@ -232,12 +234,31 @@ export class WorldCast {
     // (only those: a land's whole bestiary went to the card every frame wherever it stood, six to eleven thousand
     // triangles a creature and each drawn twice for its outline. Highwall March's 173 made 2.7 million triangles a
     // frame with none of them on the screen. A boss is always drawn: the camera leans to it from a long way off)
+    // a foe that falls is kept here once the rules let go of it (World keeps a dead foe 0.6 s), so its fall plays out:
+    // every fall had been cut short, the body gone at full strength before it had faded (POLISH_PLAN.md piece 6)
+    if (this.fallenFor !== w) {
+      this.fallen.clear();
+      this.fallenFor = w;
+    }
+    const here = new Set<number>();
     for (const e of w.enemies) {
+      here.add(e.id);
+      if (e.dead && !e.dummy && !this.fallen.has(e.id)) this.fallen.set(e.id, { e, at: time, from: e.deathT });
       if (!e.boss && !shown(e.x, e.y)) {
         this.foes.delete(e.id);
         continue;
       }
       this.syncFoe(cast, e, w, dt, time);
+    }
+    for (const [id, f] of this.fallen) {
+      if (here.has(id)) continue;
+      f.e.deathT = f.from + (time - f.at);
+      if (f.e.deathT > FALL_KEPT || !shown(f.e.x, f.e.y)) {
+        this.fallen.delete(id);
+        this.foes.delete(id);
+        continue;
+      }
+      this.syncFoe(cast, f.e, w, dt, time);
     }
     for (const n of w.npcs) this.syncNpc(cast, n, w, dt, time, Math.min(1, (w.time - (n.since ?? -Infinity)) / 0.8));
     for (const n of w.leftNpcs) {
@@ -447,6 +468,10 @@ export class WorldCast {
   private chainAt = -9;
   /** A druid's other shape: its own body, moving as the hero's does. */
   private readonly formMotion = new Motion();
+
+  /** Foes fallen and let go of by the rules, kept while their fall plays (FALL_KEPT), and the world they fell in. */
+  private readonly fallen = new Map<number, { e: Enemy; at: number; from: number }>();
+  private fallenFor: World | null = null;
 
   private syncFoe(cast: Cast, e: Enemy, w: World, dt: number, time: number): void {
     if (e.boss && bossHidden(e)) return;

@@ -2,6 +2,7 @@
  * Each kind of foe goes down its own way (POLISH_PLAN.md piece 6): bones fly apart, a shade rises and thins away, a
  * slime bursts, a shell cracks, a great one lands in dust. Before, every foe fell the same and faded.
  */
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ENEMIES } from '../src/games/sigilfall/data/enemies';
 import { fallOf } from '../src/games/sigilfall/data/falls';
@@ -48,5 +49,15 @@ describe('Sigilfall: how a foe goes down', () => {
       expect(w.fx.some((f) => f.kind === 'smoke')).toBe(true);
       expect(w.shakeAmt).toBeGreaterThan(0);
     }
+  });
+
+  it('is drawn until its fall is over, after the rules have let go of it (they keep a dead foe 0.6 s)', () => {
+    // (the renderer can't be made without a page: held by its text, and seen in the browser)
+    const src = readFileSync('src/games/sigilfall/render3d/worldCast.ts', 'utf8');
+    expect(src).toContain('const FALL_KEPT = 1.8;');
+    expect(src).toContain('if (e.dead && !e.dummy && !this.fallen.has(e.id)) this.fallen.set(e.id, { e, at: time, from: e.deathT });');
+    expect(src).toContain('f.e.deathT = f.from + (time - f.at);');
+    const world = readFileSync('src/games/sigilfall/sim/world.ts', 'utf8');
+    expect(world).toContain('this.enemies = this.enemies.filter((e) => !e.dead || e.deathT < 0.6);');
   });
 });
