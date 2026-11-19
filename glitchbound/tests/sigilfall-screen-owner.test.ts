@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { SCENES } from '../src/games/sigilfall/data/scenes';
 import { boxesMeet, placeSpeech, type SpeechAsk, type SpeechRoom, type ViewBox } from '../src/games/sigilfall/render/speech';
-import { keepInside, slideClear } from '../src/games/sigilfall/ui/layout';
+import { keepInside, slideClear, slideLimit } from '../src/games/sigilfall/ui/layout';
 
 // (about what the game's font measures: half an em a letter, a little more in bold)
 const measure = (text: string, px: number, weight: number): number => text.length * px * (weight >= 700 ? 0.56 : 0.5);
@@ -173,6 +173,27 @@ describe('Sigilfall: what comes and goes slides clear of what stays', () => {
   });
   it('gives up, and stays where it was meant to be, when nothing within reach is clear', () => {
     expect(slideClear({ x: 0, y: 0, w: 800, h: 40 }, [{ x: 0, y: 0, w: 800, h: 500 }], 300)).toBe(0);
+  });
+  it('never slides down onto the hero: where the hero stands under it, it stops above their head', () => {
+    // (the quest's card on a laptop: the quest is under where it would stand, and the hero below that)
+    const card = { x: 261, y: 62, w: 253, h: 150 };
+    const hero = { x: 315, y: 225, w: 40, h: 45 };
+    const limit = slideLimit(card, 520, hero);
+    expect(limit).toBe(hero.y - card.h - 6);
+    // nothing clear above the hero: it stays where it was meant to be, and the hero stays in sight
+    const dy = slideClear(card, [{ x: 435, y: 70, w: 200, h: 55 }], limit);
+    expect(dy).toBe(0);
+    // (with the hero to one side, the slide goes as far as it always did)
+    expect(slideLimit(card, 520, { ...hero, x: 600 })).toBe(520 * 0.55);
+    expect(slideLimit(card, 520, null)).toBe(520 * 0.55);
+  });
+  it('what an announcement can’t slide clear of without coming over the hero steps aside while it is up', () => {
+    // (the quest and the news: on a laptop a land's name stood over the quest, the hero being under where it would go)
+    const screen = readFileSync('src/games/sigilfall/ui/GameScreen.tsx', 'utf8');
+    expect(screen.match(/el\.classList\.toggle\('is-under-announce', !!r && !!at && r\.floatBoxes\.some\(\(b\) => boxesMeet\(b, at, 2\)\)\);/g)?.length).toBe(2);
+    const css = readFileSync('src/games/sigilfall/Game.css', 'utf8');
+    expect(css).toMatch(/\.rb-tracker\.is-under-speech,\n\.rb-tracker\.is-under-announce \{\n {2}opacity: 0;/);
+    expect(css).toMatch(/\.rb-toasts\.is-under-speech,\n\.rb-toasts\.is-under-announce \{\n {2}opacity: 0\.18;/);
   });
   it('keeps inside the picture side to side', () => {
     expect(keepInside({ x: -20, y: 0, w: 100, h: 10 }, 8, 760)).toBe(28);

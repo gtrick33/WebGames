@@ -2003,8 +2003,10 @@ html.rb-touch-playing textarea {
   /* news is drawn above panels (a panel is a modal at 20), so nothing said while one is open is lost under it */
   z-index: 25;
 }
-/* words spoken across the news: it fades until they are said (ui/GameScreen.tsx Toasts) */
-.rb-toasts.is-under-speech {
+/* words spoken across the news, or an announcement up over it: it fades until they are said, or it has gone
+   (ui/GameScreen.tsx Toasts) */
+.rb-toasts.is-under-speech,
+.rb-toasts.is-under-announce {
   opacity: 0.18;
   transition: opacity 0.2s;
 }
@@ -11370,7 +11372,8 @@ html.rb-touch-playing textarea {
 .rb-tracker {
   transition: opacity 0.15s;
 }
-.rb-tracker.is-under-speech {
+.rb-tracker.is-under-speech,
+.rb-tracker.is-under-announce {
   opacity: 0;
   pointer-events: none;
 }

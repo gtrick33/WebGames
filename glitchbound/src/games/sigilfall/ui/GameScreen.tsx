@@ -852,6 +852,9 @@ function Tracker({ engine }: { engine: SigilEngine }) {
     const r = engine.renderer as SigilEngine['renderer'] | undefined;
     const at = r?.hudBoxes.get('quest');
     el.classList.toggle('is-under-speech', !!r && !!at && r.speechBoxes.some((s) => boxesMeet(s, at, 2)));
+    // and an announcement that couldn't slide clear of it without coming down over the hero (ui/layout.ts slideLimit):
+    // for the few seconds it is up, the quest steps aside
+    el.classList.toggle('is-under-announce', !!r && !!at && r.floatBoxes.some((b) => boxesMeet(b, at, 2)));
   });
   const followed = trackedQuest(h, engine.world?.region.id);
   if (engine.ui.boss) return null;
@@ -922,6 +925,7 @@ function Toasts({ engine }: { engine: SigilEngine }) {
     const r = engine.renderer as SigilEngine['renderer'] | undefined;
     const at = r?.hudBoxes.get('toasts');
     el.classList.toggle('is-under-speech', !!r && !!at && r.speechBoxes.some((s) => boxesMeet(s, at, 2)));
+    el.classList.toggle('is-under-announce', !!r && !!at && r.floatBoxes.some((b) => boxesMeet(b, at, 2)));
   });
   return (
     <div ref={box} className="rb-toasts" aria-live="polite">

@@ -122,6 +122,14 @@ function measure(pieces) {
     // (every card on the picture: the renderer lists them as it lays them out, scenes' too where it can say)
     const cards = r.speechCards ?? r.speechBoxes ?? [];
     for (const s of cards) out.push({ id: 'speech', x: c.left + s.x * kx, y: c.top + s.y * ky, w: s.w * kx, h: s.h * ky, text: s.text ?? '' });
+    // the hero's own figure, feet to head (an announcement must never come down over it: ui/layout.ts slideLimit)
+    const p = e.world?.player;
+    if (p && r.landReady && c.width > 0) {
+      const feet = r.toScreenAt(p.x, p.y, 0);
+      const head = r.toScreenAt(p.x, p.y, 44);
+      const half = Math.max(10, (feet.y - head.y) * 0.35);
+      out.push({ id: 'figure', x: c.left + (feet.x - half) * kx, y: c.top + head.y * ky, w: half * 2 * kx, h: (feet.y - head.y) * ky, text: 'the hero' });
+    }
   }
   return out;
 }
@@ -166,6 +174,8 @@ function overlaps(boxes) {
       const a = boxes[i];
       const b = boxes[j];
       if (a.id === b.id && a.id !== 'speech') continue;
+      // (the hero's figure is the picture's own: only what comes and goes over it is a fault; words over a head are theirs)
+      if ((a.id === 'figure' || b.id === 'figure') && a.id !== 'announce' && b.id !== 'announce') continue;
       if (ALLOWED.has(`${a.id}|${b.id}`) || ALLOWED.has(`${b.id}|${a.id}`)) continue;
       const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
       const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);

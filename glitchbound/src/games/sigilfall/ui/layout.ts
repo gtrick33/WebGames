@@ -20,6 +20,31 @@ export const TOP_PIECES = ['hero', 'menu', 'map', 'quest', 'toasts', 'boss', 'ca
 /** How far down the picture a sliding piece may go, as a share of its height, before it gives up and stays put. */
 const SLIDE_LIMIT = 0.55;
 
+/** How tall the hero stands on the picture with their bar over them (world px): what slides down stops above it. */
+const FIGURE_H = 52;
+
+/**
+ * How far down a sliding box may go: the slide's own limit, and, where the hero stands under it, no further than
+ * above the hero's head. The middle of the picture is the fight: a quest's card that slid off the quest under it came
+ * down over the hero instead.
+ */
+export function slideLimit(box: ViewBox, viewH: number, figure: ViewBox | null, gap = 6): number {
+  const limit = viewH * SLIDE_LIMIT;
+  if (!figure || box.x >= figure.x + figure.w || box.x + box.w <= figure.x) return limit;
+  return Math.min(limit, figure.y - box.h - gap);
+}
+
+/** The hero's figure on the picture (the view's pixels), once there is a land for them to stand on. */
+function figureOf(engine: SigilEngine): ViewBox | null {
+  const r = engine.renderer as SigilEngine['renderer'] | undefined;
+  const w = engine.world;
+  if (!r || !w || !r.landReady) return null;
+  const feet = r.toScreenAt(w.player.x, w.player.y, 0);
+  const head = r.toScreenAt(w.player.x, w.player.y, FIGURE_H);
+  const half = Math.max(14, (feet.y - head.y) * 0.45);
+  return { x: feet.x - half, y: head.y, w: half * 2, h: feet.y - head.y };
+}
+
 /**
  * How far a box has to slide (down, or up with `dir` -1) to meet none of `taken`, a step at a time, never past
  * `limit` (a y for its top going down, for its bottom going up). 0 when it is clear where it stands, and 0 too when
@@ -109,14 +134,14 @@ function taken(engine: SigilEngine, ids: readonly string[], self: string): ViewB
 
 /**
  * Places an element that comes and goes (an announcement, the wave's count): down from where its CSS stands it until
- * none of `avoid` is under it, inside the picture. Placed when it appears, when the HUD's pieces move (`version`), and
- * when the window changes; never every frame.
+ * none of `avoid` is under it, inside the picture, and never down onto the hero (slideLimit). Placed when it appears,
+ * when the HUD's pieces move (`version`), and when the window changes; never every frame.
  */
 export function placeDown(engine: SigilEngine, el: HTMLElement, avoid: readonly string[], self = ''): void {
   const r = engine.renderer as SigilEngine['renderer'] | undefined;
   const box = natural(engine, el);
   if (!r || !box) return;
-  const dy = slideClear(box, taken(engine, avoid, self), r.viewH * SLIDE_LIMIT);
+  const dy = slideClear(box, taken(engine, avoid, self), slideLimit(box, r.viewH, figureOf(engine)));
   shift(engine, el, keepInside({ ...box, y: box.y + dy }, 8, r.viewW - 8), dy, self);
 }
 
