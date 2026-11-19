@@ -19,7 +19,7 @@ browser this cycle), **UNVERIFIED** (not checked, with the reason).
 | --- | --- | --- |
 | All eight classes clear the opening dungeons on every tier (bot) | VERIFIED | `sigilfall-sim`, `sigilfall-dungeon-*` |
 | Every zone's quests can be finished; no road to an unregistered region | VERIFIED | `sigilfall-quests-doable`, `sigilfall-ids` |
-| The whole campaign plays from a new save by the quest arrow, all 515 quests, no dead end | VERIFIED | `sigilfall-campaign` |
+| The whole campaign plays from a new save by the quest arrow, every quest (218 since the rewrite of 2026-11-18), no dead end | VERIFIED | `sigilfall-campaign` |
 | Fog of war on the maps, kept on the save; map icons | VERIFIED | `sigilfall-guidance`; seen in the browser |
 | UI at 1440 × 900, 1024 × 768, phones on their side and upright, full screen: no overlap, nothing over the stage | MANUALLY VERIFIED | SIGILFALL_QA.md, hardening pass |
 | Every act's story events played on the simulation, reload mid-event | VERIFIED | `sigilfall-vale`, `-road`, `-alliance`, `-gates`, `-rimeheld`, `-finale` |
