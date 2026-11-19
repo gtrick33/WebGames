@@ -1,4 +1,4 @@
-import { SAMPLES, sampleFiles, type AmbienceId, type SampleDef } from './samples';
+import { firstFiles, laterFiles, SAMPLES, type AmbienceId, type SampleDef } from './samples';
 import { Score } from './score';
 import { SONGS, type SongId } from './songs';
 import { SEAM, TRACKS, type TrackId } from './tracks';
@@ -201,12 +201,15 @@ export class Sound {
     this.volScale = 1;
   }
 
-  /** Brings the recordings in, a few at a time, behind everything else, most used first. One that fails is silent. */
+  /**
+   * Brings the recordings in, a few at a time, behind everything else, most used first: what a fight needs, then what
+   * comes after it (the footsteps). One that fails is silent.
+   */
   private fetchRecordings(): void {
     const c = this.ctx;
     if (!c || this.fetching) return;
     this.fetching = true;
-    const files = sampleFiles();
+    const files = [...firstFiles(), ...laterFiles()];
     let next = 0;
     const worker = async (): Promise<void> => {
       while (next < files.length && this.ctx === c) {

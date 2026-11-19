@@ -13,6 +13,11 @@ export interface SampleDef {
   files: readonly string[];
   gain: number;
   rate: readonly [number, number];
+  /**
+   * Fetched once the fight's own sounds are in: heard often, but not needed at the first blow (the footsteps). What
+   * the first blow needs stays a small download (tests/sigilfall-sound.test.ts).
+   */
+  later?: boolean;
 }
 
 const beasts = ['beast1', 'beast2', 'beast3', 'beast4', 'beast5', 'beast6', 'beast7'];
@@ -63,11 +68,11 @@ export const SAMPLES: Readonly<Record<string, SampleDef>> = {
   dash: { files: ['cloth-heavy'], gain: 0.32, rate: [0.95, 1.1] },
   dodge: { files: ['cloth'], gain: 0.32, rate: [1, 1.2] },
   // footsteps, by the ground underfoot (audio/steps.ts): quiet, under everything, never the same twice running
-  stepGrass: { files: ['step-grass1', 'step-grass2', 'step-grass3', 'step-grass4'], gain: 0.16, rate: [0.9, 1.1] },
-  stepStone: { files: ['step-stone1', 'step-stone2', 'step-stone3', 'step-stone4'], gain: 0.18, rate: [0.9, 1.08] },
-  stepWood: { files: ['step-wood1', 'step-wood2', 'step-wood3', 'step-wood4'], gain: 0.18, rate: [0.92, 1.08] },
-  stepSnow: { files: ['step-snow1', 'step-snow2', 'step-snow3', 'step-snow4'], gain: 0.17, rate: [0.92, 1.08] },
-  stepSand: { files: ['step-snow1', 'step-snow2', 'step-snow3', 'step-snow4'], gain: 0.16, rate: [1.25, 1.4] },
+  stepGrass: { files: ['step-grass1', 'step-grass2', 'step-grass3', 'step-grass4'], gain: 0.16, rate: [0.9, 1.1], later: true },
+  stepStone: { files: ['step-stone1', 'step-stone2', 'step-stone3', 'step-stone4'], gain: 0.18, rate: [0.9, 1.08], later: true },
+  stepWood: { files: ['step-wood1', 'step-wood2', 'step-wood3', 'step-wood4'], gain: 0.18, rate: [0.92, 1.08], later: true },
+  stepSnow: { files: ['step-snow1', 'step-snow2', 'step-snow3', 'step-snow4'], gain: 0.17, rate: [0.92, 1.08], later: true },
+  stepSand: { files: ['step-snow1', 'step-snow2', 'step-snow3', 'step-snow4'], gain: 0.16, rate: [1.25, 1.4], later: true },
   dismount: { files: ['cloth-heavy'], gain: 0.3, rate: [0.85, 0.95] },
   mount: { files: ['cloth-heavy'], gain: 0.3, rate: [1, 1.1] },
   whistle: { files: ['whoosh3'], gain: 0.25, rate: [1.5, 1.7] },
@@ -164,3 +169,10 @@ export type AmbienceId = (typeof AMBIENCE_FILES)[number];
 
 /** Every file the table names, most used first (they come in in this order). */
 export const sampleFiles = (): string[] => [...new Set(Object.values(SAMPLES).flatMap((s) => s.files))];
+
+/** What the fight needs, fetched first; and what comes after it (SampleDef.later), in that order. */
+export const firstFiles = (): string[] => [...new Set(Object.values(SAMPLES).flatMap((s) => (s.later ? [] : s.files)))];
+export const laterFiles = (): string[] => {
+  const first = new Set(firstFiles());
+  return sampleFiles().filter((f) => !first.has(f));
+};
