@@ -4,7 +4,7 @@
  * his ward) and Morgrave's soul-split (break every shard before his spell ends). Every class clears it with the bot.
  */
 import { describe, expect, it } from 'vitest';
-import type { PatternUse } from '../src/games/sigilfall/data/bosses';
+import { BOSSES, type PatternUse } from '../src/games/sigilfall/data/bosses';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
 import { hitEnemy } from '../src/games/sigilfall/sim/combat';
@@ -107,6 +107,21 @@ describe('sigilfall: the Chapel Crypt', () => {
     expect(b.boss!.dazed).toBeGreaterThan(2);
     expect(b.statuses.some((s) => s.id === 'mark')).toBe(true);
     expect(things(w, 'matron-coffin')).toHaveLength(0);
+  });
+
+  it('found in her coffin, the Matron is wounded a share of her health, whoever finds her', () => {
+    // (the first boss goes by the game she plays as well as by the blows: POLISH_PLAN.md piece 23)
+    for (const use of BOSSES['coffin-matron']!.phases.flatMap((ph) => [...(ph.enter ?? []), ...ph.patterns]))
+      if (use.id === 'crypt:coffins') expect(use.p?.found).toBe(0.08);
+    const { w, b, hold } = arena('coffin-matron');
+    order(b, 'crypt:coffins', { n: 3, swaps: 1, swap: 0.4, wait: 20, found: 0.08 });
+    run(w, 2, hold);
+    const right = things(w, 'matron-coffin')[b.boss!.pattern!.data.right!]!;
+    const before = b.hp;
+    strike(w, right);
+    run(w, 0.1, hold);
+    expect(b.boss!.dazed).toBeGreaterThan(2);
+    expect(before - b.hp).toBeCloseTo(b.maxHp * 0.08, 0);
   });
 
   it('wait too long and the Matron comes out screaming', () => {

@@ -75,6 +75,11 @@ export interface Settings {
   /** How far back the camera stands: 1 is the game's own view, more is further out (ZOOM_MIN to ZOOM_MAX). */
   zoom: number;
   numbers: boolean;
+  /**
+   * How hard the campaign is (POLISH_PLAN.md piece 23; sim/world.ts DIFFICULTY): Story for the story, Normal as made,
+   * Hard for a fight. Heroic, Mythic, the Riftstones and a party's runs keep their own measure whatever this says.
+   */
+  difficulty: 'story' | 'normal' | 'hard';
   /** Plates over heads: the hero's health and resource, and every foe's health, struck or not. */
   plates: boolean;
   /** Calmer screen: no shake, lighter weather (a new save starts from the device's own setting). */
@@ -121,6 +126,7 @@ export const DEFAULT_SETTINGS: Settings = {
   shake: true,
   zoom: 1,
   numbers: true,
+  difficulty: 'normal',
   plates: true,
   reducedMotion: false,
   graphics: 'auto',
@@ -188,6 +194,7 @@ export function validateSettings(v: unknown): Settings {
     shake: bool(o.shake, d.shake),
     zoom: num(o.zoom, ZOOM_MIN, ZOOM_MAX, d.zoom),
     numbers: bool(o.numbers, d.numbers),
+    difficulty: o.difficulty === 'story' || o.difficulty === 'hard' ? o.difficulty : 'normal',
     plates: bool(o.plates, d.plates),
     reducedMotion: bool(o.reducedMotion, d.reducedMotion),
     graphics: o.graphics === 'high' || o.graphics === 'low' ? o.graphics : 'auto',

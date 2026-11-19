@@ -265,7 +265,8 @@ export class SigilEngine {
   /** The expedition under way; `keyEnd`: the Riftstone it finished, kept when the hero walks out of its dungeon. */
   /** The hero as last stamped (heroSignature): persist() bumps `updated` only when it differs. */
   private heroSig = '';
-  private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number; keyEnd?: RunSummary['key'] } | null = null;
+  /** The run being played; `story` once any of it was played on Story difficulty (it then stays off the leaderboard). */
+  private run: { start: number; region: RegionId; tier: number; mods: RiftMod[]; key: number; keyEnd?: RunSummary['key']; story?: boolean } | null = null;
   private hidden = false;
   /** The quest the map was last opened for (MapPanel picks its land when it opens: takeMapQuest). */
   private mapQuest: string | null = null;
@@ -1032,6 +1033,8 @@ export class SigilEngine {
 
   setSettings(patch: Partial<Settings>): void {
     this.save.settings = { ...this.save.settings, ...patch };
+    // (a run any of which was played on Story stays off the leaderboard, whatever it ends on)
+    if (this.run && this.save.settings.difficulty === 'story') this.run.story = true;
     this.applySettings();
     this.scheduleSave(400);
     this.bump();
@@ -1370,7 +1373,7 @@ export class SigilEngine {
   }
 
   private startRun(region: RegionId, tier: number, mods: RiftMod[], key: number): void {
-    this.run = { start: performance.now(), region, tier, mods, key };
+    this.run = { start: performance.now(), region, tier, mods, key, ...(this.settings.difficulty === 'story' ? { story: true } : {}) };
     if (this.hero) this.hero.stats.runs += 1;
     this.host.report({ type: 'start' });
   }
@@ -1408,7 +1411,8 @@ export class SigilEngine {
     const score = Math.round(s.xp + s.gold * 2 + s.bosses * 250 + (s.key && s.key.up > 0 ? s.key.key * 1000 : 0));
     this.hero.stats.bestRun = Math.max(this.hero.stats.bestRun, score);
     // a review hero (jumped to a story beat) plays for looking, not for the leaderboard
-    if (!this.hero.review && !this.trial) this.host.report({ type: 'end', score, stats: { level: this.hero.level, kills: s.kills, bosses: s.bosses, ...(this.hero.para.l ? { paragon: this.hero.para.l } : {}), ...(s.key ? { mythicPlus: s.key.up > 0 ? s.key.key : 0 } : {}) } });
+    // (a review hero, a Trial's, and a run played on Story difficulty don't go on the leaderboard: Story's foes are softer)
+    if (!this.hero.review && !this.trial && !this.run.story && this.settings.difficulty !== 'story') this.host.report({ type: 'end', score, stats: { level: this.hero.level, kills: s.kills, bosses: s.bosses, ...(this.hero.para.l ? { paragon: this.hero.para.l } : {}), ...(s.key ? { mythicPlus: s.key.up > 0 ? s.key.key : 0 } : {}) } });
     // the vendors have new stock when you come back
     restock(this.hero);
     if (toast && (s.kills || s.items.length)) this.toast(`Expedition over: +${s.xp} XP, +${s.gold} gold`, 'good', undefined, `${s.kills} foes defeated${s.items.length ? ` · ${s.items.length} items` : ''}`);

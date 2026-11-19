@@ -826,7 +826,8 @@ export function hurtPlayer(w: World, dmg: number, o: { fromX?: number; fromY?: n
   const reduction = o.pierce ? 0 : armorReduction(stats.armor, o.source?.level ?? w.hero.level);
   // a boss's blow takes at least its floor of the hero's health (BLOW_FLOOR): a telegraph carries its own, a blow the
   // boss strikes itself is reckoned here
-  const floor = o.floor ?? (o.source?.boss && !o.pierce && !w.ownMeasure ? blowFloor(dmg, o.source.dmg) : 0);
+  // (and the difficulty chosen takes the floor with it: Story's bosses don't take a third of the hero at a blow)
+  const floor = (o.floor ?? (o.source?.boss && !o.pierce && !w.ownMeasure ? blowFloor(dmg, o.source.dmg) : 0)) * w.measure.dmg;
   let d = Math.max(dmg * (1 - reduction), p.maxHp * floor);
   const taken = d;
   if (o.source && hasStatus(o.source, 'weaken')) d *= 1 - statusPower(o.source, 'weaken') / 100;

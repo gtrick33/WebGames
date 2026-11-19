@@ -6,6 +6,7 @@ import type { Callout } from '../sim/types';
 import { GameMenuButton } from '../../../components/GameMenuButton';
 import { MAX_LEVEL, xpToNext } from '../data/classes';
 import { KEY_AFFIXES, KEY_DEATH, keyUpgrade } from '../data/keystones';
+import { BOSSES } from '../data/bosses';
 import { NPCS, QUEST_DEFS } from '../data/quests';
 import { REGIONS, TIERS } from '../data/regions';
 import { SKILLS } from '../data/skills';
@@ -26,6 +27,7 @@ import { itemMods, itemName, usableBy } from '../progress/items';
 import { TONES } from '../render/effects';
 import { rarityColor } from '../render/renderer';
 import { clockText, RISE_POTIONS, type World } from '../sim/world';
+import { bossInTheWay } from '../sim/objective';
 import { sceneDark } from '../sim/scene';
 import { fmt, ItemIcon, Portrait } from './common';
 import { hudBoxOf, useHudBox } from './hudBoxes';
@@ -846,6 +848,9 @@ function Tracker({ engine }: { engine: SigilEngine }) {
   const pr = questProgress(h, q);
   const ready = questState(h, q.id) === 'ready';
   const who = ready ? turnInNpc(q) : null;
+  const step = currentObjective(h, q);
+  // (a boss in the way to the one the quest names is the one to get past: the Coffin Matron, before Warden Ossric)
+  const inWay = !ready && engine.world ? bossInTheWay(engine.world, step) : null;
   const main = isMainQuest(q.id);
   const icon = mapIconUrl(ready ? (main ? 'handin' : 'handinSide') : main ? 'offer' : 'offerSide', 2);
   // on touch a tap folds it to its mark (the quest stays on the map), and a tap opens it again
@@ -862,8 +867,8 @@ function Tracker({ engine }: { engine: SigilEngine }) {
         {q.name}
       </strong>
       <span>
-        {ready ? `Return to ${who ? NPCS[who]?.name : 'them'}` : currentObjective(h, q).label}
-        {!ready && pr.of > 1 ? ` ${pr.n}/${pr.of}` : ''}
+        {ready ? `Return to ${who ? NPCS[who]?.name : 'them'}` : inWay ? `Get past ${(BOSSES[inWay]?.name ?? 'the guardian').replace(/^The /, 'the ')}` : step.label}
+        {!ready && !inWay && pr.of > 1 ? ` ${pr.n}/${pr.of}` : ''}
       </span>
       {gate && <em className="rb-tracker-gate">Next story quest opens at level {gate.level}</em>}
       {waitLine}

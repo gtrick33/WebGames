@@ -1,7 +1,7 @@
 import { dist, TAU } from '../../core/math';
 import type { Enemy } from '../types';
 import type { World } from '../world';
-import { exposed as expose, fighting, removeThing, ringSpots, roomBox, spawnThing, standing, up } from './arena';
+import { exposed as expose, fighting, removeThing, ringSpots, roomBox, spawnThing, standing, up, wound } from './arena';
 import { bossBase, type PatternFn } from './kit';
 
 /**
@@ -115,12 +115,16 @@ const coffins: PatternFn = (w, e, dt, k) => {
     return;
   }
   const right = list[pt.data.right!];
-  // the one she lies in twitches and breathes a little green light
+  // the one she lies in twitches and breathes a little green light, and is heard: a first-timer lost track of her
+  // (POLISH_PLAN.md piece 23; it was a small flash and a wisp)
   pt.data.twitch = (pt.data.twitch ?? 0) - dt;
   if (standing(w, right) && pt.data.twitch! <= 0) {
-    pt.data.twitch = 0.7;
-    right.flash = 0.08;
+    pt.data.twitch = 0.55;
+    right.flash = 0.18;
     w.addFx({ kind: 'ghost', x: right.x + (w.rand() - 0.5) * 6, y: right.y - 10, vx: 0, vy: -14, life: 0.8, size: 3, color: GREEN });
+    w.addFx({ kind: 'glow', x: right.x, y: right.y, life: 0.5, size: right.r * 1.8, color: GREEN });
+    pt.data.breaths = (pt.data.breaths ?? 0) + 1;
+    if (pt.data.breaths % 3 === 1) w.sfx('soul', 0.3);
   }
   // grave hands under the hero while she hides
   if (pt.t >= pt.data.grasp!) {
@@ -193,6 +197,9 @@ const coffins: PatternFn = (w, e, dt, k) => {
     pt.data.hide = 0;
     k.end();
     exposed(w, e, k.num('daze', 3.5), 'FOUND!');
+    // (and the fall out of it wounds her, a share of her health whoever the hero is: the grave found pays the same to a
+    // priest as to a warrior, so the fight goes by the game she plays and not only by the blows: POLISH_PLAN.md piece 23)
+    wound(w, e, k.num('found', 0), GREEN);
     return;
   }
   for (const [i, c] of list.entries()) {
