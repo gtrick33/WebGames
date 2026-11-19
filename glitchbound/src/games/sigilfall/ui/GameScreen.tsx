@@ -181,6 +181,8 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
       {!ui.dialogue && !ui.story && <Toasts engine={engine} />}
       {/* a friend asking the player into their party (ui/Friends.tsx): over everything, a menu too */}
       {!engine.world?.scene && <InviteCards engine={engine} />}
+      {/* a level gained is a moment, not a line of news: the picture's edge warms gold as it comes */}
+      {ui.levelUp && <i className="rb-levelglow" key={`glow:${ui.levelUp.id}`} aria-hidden="true" />}
       {/* (on touch the announcements stack in a strip along the top, clear of the hero; on a mouse each keeps its place) */}
       <Announce engine={engine}>
         {ui.banner && (
@@ -190,6 +192,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
           </div>
         )}
         {ui.levelUp && <LevelUpBanner engine={engine} />}
+        {ui.questCard && <QuestCard engine={engine} />}
         {ui.card && (
           <div className={`rb-tcard${ui.card.act ? ' is-act' : ''}`} key={`card:${ui.card.id}`} aria-live="polite">
             <div className="rb-tcard-text">
@@ -984,6 +987,41 @@ function Toasts({ engine }: { engine: SigilEngine }) {
   );
 }
 
+/**
+ * A quest finished, on one card (POLISH_PLAN.md piece 10): its name, what it paid, the items it gave as they are (a tap
+ * opens the bag), and the quest it opened. It stands with the announcements (ui/layout.ts places it clear of the HUD).
+ */
+export function QuestCard({ engine }: { engine: SigilEngine }) {
+  const c = engine.ui.questCard!;
+  const open = c.items.length > 0;
+  return (
+    <div className={`rb-qcard${open ? ' is-open' : ''}`} key={`qc:${c.id}`} aria-live="polite" onClick={open ? () => engine.openPanel('hero') : undefined} role={open ? 'button' : undefined}>
+      <span className="rb-qcard-over">Quest complete</span>
+      <strong>{c.name}</strong>
+      {c.lines.length > 0 && (
+        <span className="rb-qcard-pay">
+          {c.lines.map((l) => (
+            <b key={l.text} className={`is-${l.kind}`}>
+              {l.text}
+            </b>
+          ))}
+        </span>
+      )}
+      {c.items.map((it) => (
+        <span key={it.uid} className="rb-qcard-item" style={{ ['--rc' as string]: rarityColor(it.r) }}>
+          <ItemIcon item={it} size={30} />
+          <span>{itemName(it)}</span>
+        </span>
+      ))}
+      {c.next && (
+        <span className="rb-qcard-next">
+          Next: <b>{c.next}</b>
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function LevelUpBanner({ engine }: { engine: SigilEngine }) {
   const l = engine.ui.levelUp!;
   // talent points start with the specialization at level 10 (data/talents.ts): before that a level brings
@@ -995,6 +1033,7 @@ export function LevelUpBanner({ engine }: { engine: SigilEngine }) {
   ].filter(Boolean);
   return (
     <div className="rb-levelup" key={`lvl:${l.id}`} aria-live="polite">
+      <span className="rb-levelup-over">Level up</span>
       <strong>Level {l.level}</strong>
       <span>{gains.length ? gains.join(' · ') : 'More health'}</span>
     </div>

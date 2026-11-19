@@ -1323,9 +1323,11 @@ export class Renderer {
       this.speechCards.push({ x: card.x, y: card.y, w: card.w, h: card.h, text: s.text });
       const fade = clamp(Math.min(s.t / 0.15, (s.dur - s.t) / 0.3), 0, 1);
       g.globalAlpha = fade * 0.95;
-      g.fillStyle = 'rgba(22,16,36,0.93)';
-      g.strokeStyle = rgba(accent, 0.5);
-      g.lineWidth = 1;
+      // (in the HUD's own hand, POLISH_PLAN.md piece 10: its dark ink and a rim in the speaker's color, as the quest and
+      // the news are drawn; it was a violet of its own)
+      g.fillStyle = 'rgba(26,19,13,0.94)';
+      g.strokeStyle = rgba(accent, 0.6);
+      g.lineWidth = 1.5;
       g.beginPath();
       g.roundRect(card.x, card.y, card.w, card.h, Math.round(card.fs * 0.6));
       g.fill();
