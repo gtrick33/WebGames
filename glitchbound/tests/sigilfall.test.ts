@@ -76,19 +76,19 @@ describe('sigilfall content', () => {
         if (n.requires) expect(ids.has(n.requires), n.id).toBe(true);
         for (const m of n.mods) if (m.t === 'skill' && !['*', 'basic', 'dodge', 'ult'].includes(m.skill)) expect(SKILLS[m.skill]?.cls, `${n.id} → ${m.skill}`).toBe(cls);
       }
-      // three trees of seven rows, each ending in one capstone that 30 points below it can reach, with
-      // more ranks below it than that, so the way there is a choice
+      // three trees of seven rows of five, each ending in a choice of three capstones that 30 points below can reach,
+      // with more ranks below than that, so the way there is a choice (a choice of three counts one point)
       for (const tree of [0, 1, 2] as const) {
         const nodes = TALENTS[cls].filter((n) => n.tree === tree);
-        const caps = nodes.filter((n) => n.row === 6);
-        expect(caps, `${cls} tree ${tree}`).toHaveLength(1);
-        expect(caps[0]!.ranks).toBe(1);
-        expect(nodes.filter((n) => n.row < 6).reduce((a, n) => a + n.ranks, 0), `${cls} tree ${tree}`).toBeGreaterThanOrEqual(32);
+        const room = (list: typeof nodes): number => list.filter((n) => !n.pick).reduce((a, n) => a + n.ranks, 0) + new Set(list.flatMap((n) => (n.pick ? [n.pick] : []))).size;
+        const caps = nodes.filter((n) => n.row === 6 && n.pick);
+        expect(caps, `${cls} tree ${tree}`).toHaveLength(3);
+        for (const c of caps) expect(c.ranks).toBe(1);
+        expect(room(nodes.filter((n) => n.row < 6)), `${cls} tree ${tree}`).toBeGreaterThanOrEqual(32);
         for (const n of nodes) {
-          expect(n.row >= 0 && n.row <= 6 && n.col >= 0 && n.col <= 3, n.id).toBe(true);
-          const below = nodes.filter((m) => m.row < n.row).reduce((a, m) => a + m.ranks, 0);
-          expect(below, n.id).toBeGreaterThanOrEqual(n.row * ROW_COST);
-          if (n.requires) expect(nodes.find((m) => m.id === n.requires)!.row, n.id).toBeLessThan(n.row);
+          expect(n.row >= 0 && n.row <= 6 && n.col >= 0 && n.col <= 4, n.id).toBe(true);
+          expect(room(nodes.filter((m) => m.row < n.row)), n.id).toBeGreaterThanOrEqual(n.row * ROW_COST);
+          expect(n.requires, n.id).toBeUndefined();
           expect(modLines(n.mods).length, n.id).toBe(n.mods.length);
           for (const m of n.mods) {
             const e = m.t === 'proc' ? m.proc.effect : m.t === 'skill' && 'effect' in m.op ? m.op.effect : null;
@@ -319,7 +319,7 @@ describe('sigilfall character', () => {
     expect(new Set(c.skills).size).toBe(4);
   });
 
-  it('talents open at level 10 with a specialization; rows need points, some talents need others', () => {
+  it('talents open at level 10 with a specialization; rows need points, a choice takes one of three', () => {
     const c = hero('mage');
     levelTo(c, 9);
     expect(freePoints(c)).toBe(0);
@@ -337,20 +337,21 @@ describe('sigilfall character', () => {
     expect(buildHero(c).stats.fire).toBe(CLASSES.mage.base.fire + 10);
     // the other trees wait for 31 points in this one
     expect(cantLearn(c, 'conduction')).toMatch(new RegExp(`${SPEC_FOCUS} points in Pyromancer`));
-    expect(cantLearn(c, 'combustion')).toMatch(/Needs 5 points/);
+    expect(cantLearn(c, 'smolder')).toMatch(/Needs 5 points/);
     for (let i = 0; i < 3; i++) expect(learnTalent(c, 'kindling')).toBe(true);
     expect(learnTalent(c, 'kindling')).toBe(false); // full rank
     learnTalent(c, 'fire-focus');
     learnTalent(c, 'fire-focus');
-    expect(learnTalent(c, 'combustion')).toBe(true);
+    expect(learnTalent(c, 'smolder')).toBe(true);
+    expect(cantLearn(c, 'combustion')).toMatch(/Needs 10 points/);
+    // row 1 holds a choice of three: one is taken, the others wait to be switched to
+    const [first, second] = TALENTS.mage.filter((n) => n.tree === 0 && n.pick === 'core');
+    expect(learnTalent(c, first!.id)).toBe(true);
+    expect(cantLearn(c, second!.id)).toMatch(/You chose/);
+    expect(learnTalent(c, second!.id)).toBe(false);
     learnTalent(c, 'smolder');
-    learnTalent(c, 'smolder');
-    learnTalent(c, 'pillar-of-embers');
-    learnTalent(c, 'pillar-of-embers');
-    // row 2 is open now (10 points), but Wildfire still needs Ignition
-    expect(cantLearn(c, 'wildfire')).toMatch(/Ignition/);
-    expect(learnTalent(c, 'ignition')).toBe(true);
-    expect(learnTalent(c, 'wildfire')).toBe(false); // no points left
+    learnTalent(c, 'ignition');
+    for (const n of TALENTS.mage.filter((x) => x.tree === 0 && x.row <= 1)) while (learnTalent(c, n.id));
     expect(freePoints(c)).toBe(0);
     // resetting costs gold from level 20 (level × 10) and gives every point back
     expect(respecCost(c)).toBe(200);

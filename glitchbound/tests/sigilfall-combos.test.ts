@@ -409,7 +409,7 @@ describe('Sigilfall: the combos in play', () => {
     expect(empowerOf(w, 'umbral-rend')).not.toBeNull();
   });
 
-  it('Guardian: Shield Bash sets up a Heavy Strike', () => {
+  it('Guardian: Shield Bash makes Heavy Strike ready, and Heavy Strike lands its combo on the stunned', () => {
     const c: Character = readyHero('warrior', 50, 'uncommon', 7, 1);
     expect(setSkill(c, 0, 'shield-bash')).toBe(true);
     expect(setSkill(c, 1, 'heavy-strike')).toBe(true);
@@ -419,9 +419,19 @@ describe('Sigilfall: the combos in play', () => {
     w.enemies = [];
     w.player.mana = w.player.maxMana;
     target(w, 30);
-    expect(tryCast(w, { slot: 's1', angle: 0, dist: 0.5, assist: 0 })).toBe(true);
+    // Heavy Strike first, so it is waiting on its cooldown
+    expect(tryCast(w, { slot: 's2', angle: 0, dist: 0.5, assist: 0 })).toBe(true);
     step(w, 0.6);
-    expect(empowerOf(w, 'heavy-strike')).not.toBeNull();
+    expect(w.player.cds.s2.charges).toBe(0);
+    w.player.mana = w.player.maxMana;
+    expect(tryCast(w, { slot: 's1', angle: 0, dist: 0.5, assist: 0 })).toBe(true);
+    step(w, 0.4);
+    expect(w.player.cds.s2.charges).toBe(1);
+    const before = w.combos;
+    w.player.mana = w.player.maxMana;
+    expect(tryCast(w, { slot: 's2', angle: 0, dist: 0.5, assist: 0 })).toBe(true);
+    step(w, 0.5);
+    expect(w.combos).toBeGreaterThan(before);
   });
 
   it('Beastmaster: a kill calls a wolf', () => {

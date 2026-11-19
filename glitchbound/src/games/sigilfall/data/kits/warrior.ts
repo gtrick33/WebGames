@@ -208,7 +208,7 @@ export const WARRIOR: Kit = {
     // the choice: the ultimate
     C(0, 5, 0, 'ult', 'storm-of-blood', 'Storm of Blood', 'heal', 'Every cut of Red Tempest heals you for half a percent of your health.', [K('red-tempest', { op: 'onHit', effect: { kind: 'heal', pct: 0.5 } })]),
     C(0, 5, 1, 'ult', 'endless-tempest', 'Endless Tempest', 'clock', 'Red Tempest lasts 50% longer.', [K('red-tempest', { op: 'duration', pct: 50 })]),
-    C(0, 5, 2, 'ult', 'eye-of-the-storm', 'Eye of the Storm', 'rage', 'Red Tempest fills your Fury again as it begins: it spends what you had, and leaves you with all five.', [K('red-tempest', { op: 'onCast', effect: { kind: 'points', n: 5 } })]),
+    C(0, 5, 2, 'ult', 'storm-reborn', 'Storm Reborn', 'rage', 'Red Tempest fills your Fury again as it begins: it spends what you had, and leaves you with all five.', [K('red-tempest', { op: 'onCast', effect: { kind: 'points', n: 5 } })]),
     T(0, 5, 3, 'battle-trance', 'Running Start', 3, 'crit', 'Shoulder Barge hits 60% harder per rank, and every enemy it goes through gives 2 more Rage per rank.', [dmg('sidestep', 60), onHit('sidestep', { kind: 'resource', n: 2 })]),
     T(0, 5, 4, 'savage-lunge', 'Savage Lunge', 2, 'speed', 'Charge deals 20% more per rank and builds a point of Fury per rank.', [dmg('charge', 20), K('charge', { op: 'build', n: 1 })]),
     // the capstones

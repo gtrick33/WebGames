@@ -164,7 +164,9 @@ export function buffText(b: BuffDef): string {
   const m = b.empower;
   if (m) {
     const how = [m.pct ? `+${m.pct}% damage${b.max ? ' a stack' : ''}` : '', m.free ? 'free' : '', m.instant ? 'no cast time' : '', m.ready ? 'ready at once' : ''].filter(Boolean);
-    parts.push(`your next ${m.casts && m.casts > 1 ? `${m.casts} casts of ` : ''}${m.type ? `${DMG_NAME[m.type].toLowerCase()} skill` : (SKILLS[m.skill]?.name ?? m.skill)}: ${how.join(', ')}`);
+    const what = m.type ? `${DMG_NAME[m.type].toLowerCase()} skill` : (SKILLS[m.skill]?.name ?? m.skill);
+    // (one that lasts, not used up: every cast of it while it is up)
+    parts.push(m.keep ? `every ${what} while it lasts: ${how.join(', ')}` : `your next ${m.casts && m.casts > 1 ? `${m.casts} casts of ` : ''}${what}: ${how.join(', ')}`);
   }
   if (b.max && !m) parts.push(`stacks to ${b.max}`);
   return `${b.name} for ${secs(b.dur)}: ${parts.join(', ')}`;

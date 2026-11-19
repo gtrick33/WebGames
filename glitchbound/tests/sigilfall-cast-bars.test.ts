@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { MOUNT_DEFS } from '../src/games/sigilfall/data/mounts';
+import { CLASSES } from '../src/games/sigilfall/data/classes';
 import { SKILLS } from '../src/games/sigilfall/data/skills';
 import { SKILL_SLOTS, type ClassId, type SlotKey } from '../src/games/sigilfall/data/types';
 import { ABILITIES } from '../src/games/sigilfall/arena/abilities';
@@ -120,7 +121,10 @@ const step = (w: World, seconds: number, input?: Partial<InputFrame>): void => {
 
 /** A level 50 hero with `skill` in the first slot (or as the ultimate), an enemy in front, and nobody else about. */
 function caster(cls: ClassId, skill: string) {
-  const c = readyHero(cls, 50, 'rare', 7, cls === 'warlock' ? 2 : 0);
+  // (an ultimate is a specialization's own now: the hero is of the one that carries it)
+  const own = CLASSES[cls].trees.findIndex((t) => (t.ult ?? CLASSES[cls].ult) === skill);
+  const spec = (SKILLS[skill]!.kind === 'ultimate' && own >= 0 ? own : cls === 'warlock' ? 2 : 0) as 0 | 1 | 2;
+  const c = readyHero(cls, 50, 'rare', 7, spec);
   if (SKILLS[skill]!.kind === 'skill') expect(setSkill(c, 0, skill), skill).toBe(true);
   const w = newWorld('whisperwood', c);
   w.enemies = [];
