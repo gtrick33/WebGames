@@ -140,10 +140,11 @@ export const SAMPLES: Readonly<Record<string, SampleDef>> = {
 };
 
 /**
- * The Ring's own sounds (the owner, 2026-11-18: "the sounds ... theyre currently kinda annoying, can we use more
- * cartoony cool and warm sounding effects"): made for it by scripts/sigilfall-ring-sounds.mjs, the game's own work.
- * Wooden bonks and marimba plinks, airy whooshes, puffy booms, glassy tinkles, a kalimba, a slide whistle and a sad
- * trombone. The Ring asks for its sounds by their usual names; render/ring.ts `ringSound` turns each into its own here.
+ * The Ring's own sounds, made for it by scripts/sigilfall-ring-sounds.mjs, the game's own work. The owner, 2026-11-19,
+ * on the cartoony set before: "its like jungle bells ... make them similar to wow pls, frost mage feels like santa claus
+ * with bells". So a fantasy fight's weight: frost a cold hiss and crunching ice, fire a roar with embers in it, holy and
+ * healing a choir, shadow a growl, blows a thud with a crunch, steel a short scrape, a win brass over drums; no bells.
+ * The Ring asks for its sounds by their usual names; render/ring.ts `ringSound` turns each into its own here.
  */
 const RING_GAIN: Record<string, number> = { hit: 0.26, clash: 0.26, swing: 0.24, hurt: 0.32, talent: 0.24, victory: 0.4, playerDie: 0.38, levelup: 0.42, checkpoint: 0.32 };
 const RING_RATE: Record<string, readonly [number, number]> = { victory: [1, 1], playerDie: [1, 1], levelup: [1, 1], checkpoint: [1, 1], holy: [1, 1], nova: [1, 1], heal: [1, 1], buff: [1, 1], nature: [1, 1] };

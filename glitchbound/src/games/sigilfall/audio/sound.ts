@@ -13,7 +13,7 @@ import { SEAM, TRACKS, type TrackId } from './tracks';
 
 const AUDIO_BASE = '/games/sigilfall/audio/';
 /** Bump when the built files change, so a browser doesn't keep old ones. */
-const AUDIO_VERSION = '3';
+const AUDIO_VERSION = '4';
 /** How many recordings sound at once, at most (a phone has its limits, and past this nobody can tell). */
 const MAX_VOICES = 24;
 const MUSIC_BASE = '/games/sigilfall/music/';

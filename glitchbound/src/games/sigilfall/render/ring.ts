@@ -121,8 +121,8 @@ const SUPER_SOUND: Record<string, string> = { physical: 'quake', fire: 'meteor',
 /** An ability with a sound of its own as it leaves the hand (Frostfang is thrown, with a whistle, not cast). */
 const LEAVES_OWN: Record<string, string> = { 'm-fang': 'spear' };
 /**
- * The Ring's own sound for a sound asked for by its usual name (audio/samples.ts RING_SOUNDS): its warm, cartoony one
- * where it has one, else the usual.
+ * The Ring's own sound for a sound asked for by its usual name (audio/samples.ts RING_SOUNDS): its own where it has one,
+ * else the usual.
  */
 export const ringSound = (id: string): string => ((RING_SOUNDS as readonly string[]).includes(id) ? `ring-${id}` : id);
 
