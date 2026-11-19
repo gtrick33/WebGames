@@ -285,6 +285,8 @@ export interface Pet {
   born?: number;
   /** Seconds a companion stays down before getting back up (PetDef.rally). */
   downT?: number;
+  /** Walks with the hero on the road in this stretch of the story (sim/escort.ts), not only in a story fight. */
+  escort?: boolean;
   /** The skill whose cast called it: it leaves when that skill leaves the bar (World.dropLeftovers). */
   skill?: string;
 }
