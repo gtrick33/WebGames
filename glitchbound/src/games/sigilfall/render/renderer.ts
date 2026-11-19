@@ -1304,7 +1304,8 @@ export class Renderer {
       const foot = toScreen(who.x, who.y, 0);
       const behind = who.y > this.camY + this.vh * 1.5;
       const sane = Number.isFinite(head.x) && Number.isFinite(head.y);
-      const ask: SpeechAsk = { text: s.text, name, headX: sane && !behind ? head.x : this.cssW / 2, headY: behind ? this.cssH * 2 : sane ? head.y : -this.cssH, viewW: this.cssW, viewH: this.cssH, top, bottom, left: sideL, right: sideR, measure, ...(s.staged ? { staged: true } : {}), ...(sane && !behind && Number.isFinite(foot.y) && foot.y < this.cssH ? { footY: foot.y } : {}) };
+      const minor = !s.staged && !!foe && !pet && !npc && s.who !== 'hero';
+      const ask: SpeechAsk = { text: s.text, name, headX: sane && !behind ? head.x : this.cssW / 2, headY: behind ? this.cssH * 2 : sane ? head.y : -this.cssH, viewW: this.cssW, viewH: this.cssH, top, bottom, left: sideL, right: sideR, measure, ...(s.staged ? { staged: true } : {}), ...(minor ? { minor: true } : {}), ...(sane && !behind && Number.isFinite(foot.y) && foot.y < this.cssH ? { footY: foot.y } : {}) };
       said.push({ s, name, accent, ask });
     }
     // every line placed together: none under the HUD, none over another, and in a fight none across it if there is
@@ -1315,7 +1316,9 @@ export class Renderer {
       hud ? this.hudBoxes : null,
     );
     said.forEach(({ s, name, accent }, i) => {
-      const card = cards[i]!;
+      // (a foe's bark with no room left gives way: render/speech.ts placeSpeech)
+      const card = cards[i];
+      if (!card) return;
       if (hud) this.speechBoxes.push({ x: card.x, y: card.y, w: card.w, h: card.h });
       this.speechCards.push({ x: card.x, y: card.y, w: card.w, h: card.h, text: s.text });
       const fade = clamp(Math.min(s.t / 0.15, (s.dur - s.t) / 0.3), 0, 1);

@@ -86,6 +86,8 @@ export interface SpeechAsk {
   wide?: number;
   /** Smaller words, a last resort where the picture is crowded (placeSpeech). */
   small?: boolean;
+  /** A foe's bark: where no place is free it gives way (it isn't drawn) rather than lie over a line that matters. */
+  minor?: boolean;
 }
 
 export function layoutSpeech(o: SpeechAsk): SpeechCard {
@@ -257,13 +259,16 @@ function first(tries: Iterable<SpeechCard>, ok: (c: SpeechCard) => boolean): Spe
  * beside the quest (a phone on its side, where the quest reaches into the open middle), else the nearest spot round
  * the head that is clear, over it, beside it or under the feet, and last the lane along the bottom. In a fight a line
  * that isn't a scene's goes to the lane first, so the blows stay in sight. A place that would cover the fight is taken
- * only when no other is free; where nothing at all is free the line stays over the head, as it always was, and the
- * HUD piece under it fades until it is said (ui/GameScreen.tsx).
+ * only when no other is free; where nothing at all is free a foe's bark gives way (null: not drawn while there is no
+ * room for it), and any other line stays over the head, as it always was, and the HUD piece under it fades until it is
+ * said (ui/GameScreen.tsx). The lines that matter (a scene's, a companion's, a townsperson's, the hero's) are placed
+ * before the foes', so a crowd of barks never takes their room.
  */
-export function placeSpeech(asks: readonly SpeechAsk[], room: SpeechRoom, hudMap: ReadonlyMap<string, ViewBox> | null = null): SpeechCard[] {
-  const out: SpeechCard[] = new Array(asks.length);
+export function placeSpeech(asks: readonly SpeechAsk[], room: SpeechRoom, hudMap: ReadonlyMap<string, ViewBox> | null = null): (SpeechCard | null)[] {
+  const out: (SpeechCard | null)[] = new Array(asks.length);
   const placed: ViewBox[] = [];
-  const order = asks.map((_, i) => i).sort((i, j) => Number(!!asks[j]!.staged) - Number(!!asks[i]!.staged));
+  const rank = (o: SpeechAsk): number => (o.staged ? 0 : o.minor ? 2 : 1);
+  const order = asks.map((_, i) => i).sort((i, j) => rank(asks[i]!) - rank(asks[j]!));
   // the lane's spots, for every line that isn't a scene's: packed together, so in a fight they sit side by side
   const shouts = asks.map((o, i) => (room.lane && !o.staged ? i : -1)).filter((i) => i >= 0);
   const packed = room.lane ? packLane(shouts.map((i) => laneSized(asks[i]!, room.lane!)), room.lane) : [];
@@ -285,6 +290,10 @@ export function placeSpeech(asks: readonly SpeechAsk[], room: SpeechRoom, hudMap
     for (const shape of shapes) {
       if (pick) break;
       pick = first(candidates(shape, room, hudMap, spot), free);
+    }
+    if (!pick && o.minor) {
+      out[i] = null;
+      continue;
     }
     pick ??= over;
     placed.push(pick);

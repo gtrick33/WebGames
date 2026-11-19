@@ -70,13 +70,15 @@ describe('Sigilfall: words said on the picture', () => {
       const cards = placeSpeech(asks, room(s, false, null), new Map(Object.entries(s.hud)));
       cards.forEach((c, k) => {
         const where = `${s.id}: "${asks[k]!.text.slice(0, 30)}"`;
+        // (only a foe's bark ever gives way: these are the story's own lines)
+        if (!c) throw new Error(`${where} was left out`);
         // every word kept, and all of it on the screen, whatever else
         expect(c.lines.join(' '), where).toBe(asks[k]!.text.split(/\s+/).join(' '));
         expect(c.x, where).toBeGreaterThanOrEqual(0);
         expect(c.x + c.w, where).toBeLessThanOrEqual(s.view[0]);
         expect(c.y, where).toBeGreaterThanOrEqual(0);
         expect(c.y + c.h, where).toBeLessThanOrEqual(s.view[1]);
-        const covered = Object.values(s.hud).some((b) => boxesMeet(c, b, 2)) || cards.some((d, j) => j < k && boxesMeet(c, d, 2));
+        const covered = Object.values(s.hud).some((b) => boxesMeet(c, b, 2)) || cards.some((d, j) => j < k && !!d && boxesMeet(c, d, 2));
         if (!covered) clear++;
         all++;
       });
@@ -103,6 +105,20 @@ describe('Sigilfall: words said on the picture', () => {
     }
   });
 
+  it('a crowd of foes’ barks gives way where there is no room, never over a line that matters', () => {
+    for (const s of SCREENS) {
+      const [W, H] = s.view;
+      const action = { x: W * 0.38, y: H * 0.36, w: W * 0.24, h: H * 0.24 };
+      const story = ask(s, 'Rangers on the left, riders on the right! Take back the square!', 0.5, 0.5);
+      const barks = [0.2, 0.35, 0.5, 0.65, 0.8, 0.3, 0.7].map((hx, k) => ask(s, LINES[k * 7]!, hx, 0.3 + (k % 3) * 0.1, { minor: true }));
+      const cards = placeSpeech([...barks, story], room(s, true, action), new Map(Object.entries(s.hud)));
+      const drawn = cards.filter((c): c is NonNullable<typeof c> => !!c);
+      // the line that matters is always drawn, and placed before the barks: nothing lies over it
+      expect(cards[cards.length - 1], s.id).not.toBeNull();
+      for (let a = 0; a < drawn.length; a++) for (let b = a + 1; b < drawn.length; b++) expect(boxesMeet(drawn[a]!, drawn[b]!, 2), `${s.id}: ${a} over ${b}`).toBe(false);
+    }
+  });
+
   it('in a fight, goes to the lane along the bottom, off the fight', () => {
     for (const s of SCREENS) {
       const [W, H] = s.view;
@@ -110,6 +126,7 @@ describe('Sigilfall: words said on the picture', () => {
       const action = { x: W * 0.38, y: H * 0.36, w: W * 0.24, h: H * 0.24 };
       const cards = placeSpeech([ask(s, 'Archer! Dodge when it draws!', 0.5, 0.35), ask(s, 'Hold the line, all of you!', 0.45, 0.4)], room(s, true, action), new Map(Object.entries(s.hud)));
       for (const c of cards) {
+        if (!c) throw new Error('left out');
         expect(c.lane, s.id).toBe(true);
         expect(boxesMeet(c, action, 0), s.id).toBe(false);
         expect(c.tailX, s.id).toBeNull();

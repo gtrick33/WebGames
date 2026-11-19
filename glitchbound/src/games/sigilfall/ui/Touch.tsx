@@ -74,7 +74,18 @@ export function TouchControls({ engine }: { engine: SigilEngine }) {
 }
 
 function Joystick({ engine }: { engine: SigilEngine }) {
-  return <Stick settings={engine.settings} onMove={(x, y) => engine.touch.setMove(x, y)} />;
+  // (where the stick rests is a piece of the HUD: the words said on the picture keep clear of it, render/speech.ts)
+  const ring = useRef<HTMLDivElement | null>(null);
+  useHudBox(engine, 'stick', ring);
+  return (
+    <Stick
+      settings={engine.settings}
+      onMove={(x, y) => engine.touch.setMove(x, y)}
+      onBase={(el) => {
+        ring.current = el;
+      }}
+    />
+  );
 }
 
 /** What a skill's aim looks like on the ground while dragging. */

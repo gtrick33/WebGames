@@ -72,6 +72,8 @@ const PIECES = [
   ['prompt', '.rb-prompt'],
   ['teach', '.rb-teach'],
   ['thumb', '.rb-cluster .rb-sb, .rb-potion-dock, .rb-interact'],
+  // (where the stick rests: a thumb is on it, and words under it are lost)
+  ['stick', '.rb-joy'],
   ['party', '.rb-party-frames'],
   ['clock', '.rb-keybar'],
   ['invite', '.rb-invite'],
