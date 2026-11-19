@@ -303,8 +303,7 @@ describe('The Ring: no class much above or below the rest', () => {
     };
     const wins: Record<string, number> = {};
     const games: Record<string, number> = {};
-    // (the warrior is set by players' word over this measure, and kept out of it: see below)
-    const MEASURED = CLASS_IDS.filter((c) => c !== 'warrior');
+    const MEASURED = CLASS_IDS;
     for (const a of MEASURED) {
       for (const b of MEASURED) {
         if (a >= b) continue;
@@ -340,9 +339,9 @@ describe('The Ring: no class much above or below the rest', () => {
     // the best dps, most amount of cc, same mobility as everyone and are the tankiest spec": "i dont think ur balancing
     // test is very relevant here as this is player feedback". At 42% here before, the computer plays him to 12% since,
     // at 0.87 as at 0.82: what holds him back here is the rest, his health, holds, slows and charge.)
-    // (and since the owner's "can we tweak it so the balancing is between 46 and 54%" (2026-11-19), the other seven
-    // are held to 46-54% among themselves. With the warrior in, at the computer's 20-odd percent, the rest would have
-    // to average 54% between them, so he is out of their matches as well as their measure.)
+    // (and since the owner's "can we tweak it so the balancing is between 46 and 54%" (2026-11-19), every class is held
+    // to 46-54%. The warrior, at 23% then, was left out at first; the owner: "bring him to 46ish". His setups' own
+    // damage went up a quarter or more (the Reaper's 1.26, the Hound's 1.3), the class's share staying 0.87.)
     for (const c of MEASURED) {
       const share = (wins[c] ?? 0) / games[c]!;
       expect(share, `${c} wins ${(share * 100).toFixed(1)}% at ${CLASS_DMG[c]}`).toBeGreaterThan(0.46);

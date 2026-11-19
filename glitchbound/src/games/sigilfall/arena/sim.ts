@@ -52,7 +52,7 @@ export const HEAL_BY_SIZE: readonly number[] = [1, 1, 1, 1.45];
  * duel and do less among six), and one number can't set a class right in all three. The owner, 2026-11-19: "can we
  * tweak it so the balancing is between 46 and 54%". Set by tests/sigilfall-ring-balance.test.ts.
  */
-export const TEAM_K: Readonly<Partial<Record<ClassId, readonly [number, number]>>> = { mage: [0.925, 0.955], ranger: [1.02, 1.1], paladin: [1.02, 1], warlock: [1, 1.08], gloamknight: [1, 0.97] };
+export const TEAM_K: Readonly<Partial<Record<ClassId, readonly [number, number]>>> = { mage: [0.895, 0.955], ranger: [1.005, 1.1], paladin: [1.02, 1], warlock: [1, 1.08], gloamknight: [1, 0.97], warrior: [0.985, 0.935] };
 /**
  * Only healers left standing, on both sides: sudden death. Healing is gone within `fade` seconds of it, and everything
  * hits `grow` harder for every second since (the owner, 2026-11-17: "in 2v2 if both dps die, the healers take ages to
