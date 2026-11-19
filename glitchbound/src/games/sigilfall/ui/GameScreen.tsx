@@ -40,6 +40,7 @@ import { TouchControls } from './Touch';
 import { uiIcon } from './uiIcons';
 import { mapIconUrl } from './mapIcons';
 import { hide, part, say } from './hudWrite';
+import { placeDown, TOP_PIECES, usePlaced } from './layout';
 
 /** Registers a per-frame DOM update (no React render per frame). */
 /** A scene playing (sim/scene.ts): bars top and bottom over a clean picture (the HUD steps aside), and a way to skip it. */
@@ -130,13 +131,27 @@ export function useFrame(engine: SigilEngine, fn: (w: World) => void): void {
  */
 function Announce({ engine, children }: { engine: SigilEngine; children: ReactNode }) {
   const strip = useRef<HTMLDivElement>(null);
+  // each announcement (on touch, the strip they stack in) slides down off the HUD's fixed pieces: on a laptop a land's
+  // name came down across the quest and the news (POLISH_PLAN.md piece 2, ui/layout.ts)
+  usePlaced(
+    engine,
+    strip,
+    (el) => {
+      if (engine.touchMode) placeDown(engine, el, TOP_PIECES);
+      else for (const child of el.children) if (child instanceof HTMLElement) placeDown(engine, child.querySelector<HTMLElement>('.rb-tcard-text') ?? child, TOP_PIECES);
+    },
+    engine.touchMode,
+  );
   useFrame(engine, () => {
     const el = strip.current;
     const r = engine.renderer as SigilEngine['renderer'] | undefined;
     if (!el || !r) return;
+    // where they are, for the words said on the picture to keep clear of (render/speech.ts placeSpeech)
+    r.floatBoxes.length = 0;
     for (const child of el.children) {
       if (!(child instanceof HTMLElement)) continue;
-      const at = r.speechBoxes.length ? hudBoxOf(r.canvas, child, r.viewW, r.viewH) : null;
+      const at = hudBoxOf(r.canvas, child.querySelector<HTMLElement>('.rb-tcard-text') ?? child, r.viewW, r.viewH);
+      if (at) r.floatBoxes.push(at);
       child.classList.toggle('is-under-speech', !!at && r.speechBoxes.some((s) => boxesMeet(s, at, 4)));
     }
   });
@@ -226,6 +241,14 @@ function Hud({ engine }: { engine: SigilEngine }) {
   const mpText = useRef<HTMLElement>(null);
   const pips = useRef<HTMLSpanElement>(null);
   const enc = useRef<HTMLDivElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  useHudBox(engine, 'hero', frame);
+  useHudBox(engine, 'menu', menu);
+  useHudBox(engine, 'wave', enc);
+  // the wave's count slides down off what stands at the top (it lay across the potion on a laptop)
+  usePlaced(engine, enc, (el) => placeDown(engine, el, TOP_PIECES, 'wave'), null);
+  const encSaid = useRef('');
   useFrame(engine, (world) => {
     const p = world.player;
     if (hp.current) hp.current.style.width = part(p.hp / p.maxHp);
@@ -238,7 +261,12 @@ function Hud({ engine }: { engine: SigilEngine }) {
     if (enc.current) {
       const a = world.activeEncounter();
       hide(enc.current, !a);
-      if (a) say(enc.current, `${a.title} · wave ${Math.max(1, a.wave)} of ${a.waves}`);
+      const text = a ? `${a.title} · wave ${Math.max(1, a.wave)} of ${a.waves}` : '';
+      if (a) say(enc.current, text);
+      if (text !== encSaid.current) {
+        encSaid.current = text;
+        if (a) placeDown(engine, enc.current, TOP_PIECES, 'wave');
+      }
     }
   });
   const res = w.build.resource;
@@ -247,7 +275,7 @@ function Hud({ engine }: { engine: SigilEngine }) {
   const region = REGIONS[w.region.id];
   return (
     <>
-      <div className="rb-hud-hero">
+      <div className="rb-hud-hero" ref={frame}>
         <div className="rb-hud-face">
           <span className="rb-hud-pic">
             <Portrait kind="hero" id={h.cls} equip={h.equip} worn={wornLooks(h)} body={h.body} face={h.face} size={34} />
@@ -304,7 +332,7 @@ function Hud({ engine }: { engine: SigilEngine }) {
         )}
       </div>
       {w.coop && <PartyFrames engine={engine} />}
-      <div className="rb-hud-menu">
+      <div className="rb-hud-menu" ref={menu}>
         {/* in a party, how many are here; otherwise the way to start one or join a friend's (any level) */}
         {engine.party ? (
           <button className="rb-hudbtn rb-party-chip" onClick={() => engine.openPanel('party')} aria-label="Your party" title={engine.touchMode ? 'Your party' : 'Your party (O)'}>
@@ -351,6 +379,8 @@ function HudCrown({ engine }: { engine: SigilEngine }) {
 /** The party's other heroes: a name and a health bar each, under the hero's own. */
 function PartyFrames({ engine }: { engine: SigilEngine }) {
   const bars = useRef<(HTMLElement | null)[]>([]);
+  const list = useRef<HTMLUListElement>(null);
+  useHudBox(engine, 'party', list);
   useFrame(engine, (w) => {
     const list = w.coop?.ghosts ?? [];
     list.forEach((g, i) => {
@@ -360,7 +390,7 @@ function PartyFrames({ engine }: { engine: SigilEngine }) {
   });
   const ghosts = engine.world?.coop?.ghosts ?? [];
   return (
-    <ul className="rb-party-frames" aria-label="Your party">
+    <ul className="rb-party-frames" aria-label="Your party" ref={list}>
       {ghosts.map((g, i) => (
         <li key={g.n}>
           <span>{g.name}</span>
@@ -417,6 +447,8 @@ function BossBar({ engine }: { engine: SigilEngine }) {
   const pips = useRef<HTMLSpanElement>(null);
   const pipsSaid = useRef('');
   const call = useRef<HTMLSpanElement>(null);
+  const root = useRef<HTMLDivElement>(null);
+  useHudBox(engine, 'boss', root);
   const callSay = useRef<HTMLElement>(null);
   const callFill = useRef<HTMLElement>(null);
   const callHint = useRef<HTMLElement>(null);
@@ -496,7 +528,7 @@ function BossBar({ engine }: { engine: SigilEngine }) {
   const def = engine.world?.boss()?.boss?.def;
   const ticks = def ? phaseTicks(def) : [];
   return (
-    <div className="rb-bossbar" role="status">
+    <div className="rb-bossbar" role="status" ref={root}>
       <strong>{boss.name}</strong>
       <span className="rb-boss-title">{boss.title}</span>
       <span className="rb-boss-track">
@@ -745,6 +777,8 @@ function PointsPips({ engine }: { engine: SigilEngine }) {
 /** A Riftstone run's clock: time so far (falls included) against the dungeon's, the rooms done, the week's affixes. */
 function KeyClock({ engine }: { engine: SigilEngine }) {
   const k = engine.world!.keyRun!;
+  const root = useRef<HTMLDivElement>(null);
+  useHudBox(engine, 'quest', root);
   const time = useRef<HTMLElement>(null);
   const bar = useRef<HTMLElement>(null);
   const rooms = useRef<HTMLElement>(null);
@@ -773,7 +807,7 @@ function KeyClock({ engine }: { engine: SigilEngine }) {
     }
   });
   return (
-    <div className="rb-tracker rb-keyclock" role="timer" aria-label={`Riftstone +${k.key} clock`}>
+    <div className="rb-tracker rb-keyclock" role="timer" aria-label={`Riftstone +${k.key} clock`} ref={root}>
       <strong>Riftstone +{k.key}</strong>
       <b ref={time} className="rb-keytime" />
       <span className="rb-keybar">
@@ -809,6 +843,8 @@ function Tracker({ engine }: { engine: SigilEngine }) {
     box.current = el;
   };
   useHudBox(engine, 'quest', box);
+  // (below the minimap, never across it: on a tablet the quest's name came up under the map's rim)
+  usePlaced(engine, box, (el) => placeDown(engine, el, ['map', 'menu', 'hero'], 'quest'), engine.touchMode);
   useFrame(engine, () => {
     const el = box.current;
     if (!el) return;
@@ -877,6 +913,8 @@ function Toasts({ engine }: { engine: SigilEngine }) {
   // fades until they are said, as the quest does (it was written over Brother Orren's line at Lantern Hill)
   const box = useRef<HTMLDivElement>(null);
   useHudBox(engine, 'toasts', box);
+  // (under the top row and the quest, whatever the size of the screen)
+  usePlaced(engine, box, (el) => placeDown(engine, el, ['hero', 'menu', 'map', 'quest', 'wave', 'boss', 'party'], 'toasts'), engine.touchMode);
   useFrame(engine, () => {
     const el = box.current;
     if (!el) return;

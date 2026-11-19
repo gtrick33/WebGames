@@ -37,9 +37,7 @@ export function useHudBox(engine: SigilEngine, id: string, ref: RefObject<HTMLEl
     // (a HUD drawn with no picture under it, as the tests draw one, has nothing to tell)
     const r = engine.renderer as SigilEngine['renderer'] | undefined;
     if (!r) return;
-    const box = el ? hudBoxOf(r.canvas, el, r.viewW, r.viewH) : null;
-    if (box) r.hudBoxes.set(id, box);
-    else r.hudBoxes.delete(id);
+    r.setHudBox(id, el ? hudBoxOf(r.canvas, el, r.viewW, r.viewH) : null);
   };
   const measureRef = useRef(measure);
   useLayoutEffect(() => {
@@ -66,7 +64,7 @@ export function useHudBox(engine: SigilEngine, id: string, ref: RefObject<HTMLEl
       w.ro?.disconnect();
       w.ro = null;
       window.removeEventListener('resize', again);
-      (engine.renderer as SigilEngine['renderer'] | undefined)?.hudBoxes.delete(id);
+      (engine.renderer as SigilEngine['renderer'] | undefined)?.setHudBox(id, null);
     };
   }, [engine, id]);
 }

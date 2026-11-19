@@ -5,7 +5,7 @@ import { currentObjective } from '../progress/character';
 import { drawMapIcon, type MapIcon } from '../ui/mapIcons';
 import { isMainQuest, turnInNpc } from '../progress/handin';
 import { edgeArrowAngle, LEAD, leanTarget, LIFT } from './camera';
-import { layoutSpeechClear, type ViewBox } from './speech';
+import { placeSpeech, type SpeechAsk, type ViewBox } from './speech';
 import { ghostName, TALK_ZOOM, TYPE_CPS } from '../sim/scene';
 import { Effects, headOf, inView } from './effects';
 import { THEMES } from '../data/themes';
@@ -142,8 +142,37 @@ export class Renderer {
    * The picture's own words know what they would cover.
    */
   readonly hudBoxes = new Map<string, ViewBox>();
+  /** Who places something round the HUD's pieces (ui/layout.ts): told when one of them moves, at most once a frame. */
+  private readonly hudMoved = new Set<() => void>();
+  private hudMovedDue = false;
   /** The spoken lines drawn this frame, as boxes: the HUD steps out from under them (the quest fades while one is across it). */
   readonly speechBoxes: ViewBox[] = [];
+  /** Announcements on the screen now (ui/GameScreen.tsx Announce): the words said on the picture keep clear of them too. */
+  readonly floatBoxes: ViewBox[] = [];
+  /** Every card drawn this frame, a scene's too, with its words (scripts/sigilfall-overlap-check.mjs reads them). */
+  readonly speechCards: (ViewBox & { text: string })[] = [];
+
+  /** Says where a piece of the HUD is now (null: it is gone), and tells those placing round it if it moved. */
+  setHudBox(id: string, box: ViewBox | null): void {
+    const was = this.hudBoxes.get(id);
+    if (box) this.hudBoxes.set(id, box);
+    else this.hudBoxes.delete(id);
+    const moved = !box !== !was || (!!box && !!was && (Math.abs(box.x - was.x) > 1 || Math.abs(box.y - was.y) > 1 || Math.abs(box.w - was.w) > 1 || Math.abs(box.h - was.h) > 1));
+    if (!moved || this.hudMovedDue || !this.hudMoved.size) return;
+    this.hudMovedDue = true;
+    requestAnimationFrame(() => {
+      this.hudMovedDue = false;
+      for (const fn of this.hudMoved) fn();
+    });
+  }
+
+  /** Calls `fn` whenever a piece of the HUD moves; returns how to stop. */
+  onHudMoved(fn: () => void): () => void {
+    this.hudMoved.add(fn);
+    return () => {
+      this.hudMoved.delete(fn);
+    };
+  }
   aim: AimPreview | null = null;
   /** Touch controls: show the facing marker (where a tapped spell goes). */
   touchMode = false;
@@ -1233,6 +1262,7 @@ export class Renderer {
   private drawSpeech(w: World, time: number): void {
     this.drawEmotes(w);
     this.speechBoxes.length = 0;
+    this.speechCards.length = 0;
     const speech = w.story.speech;
     if (!speech.length) return;
     const g = this.g;
@@ -1254,6 +1284,8 @@ export class Renderer {
     const bottom = w.scene ? this.cssH * 0.09 + 4 : 76;
     const sideL = hud && this.touchMode ? this.cssW * 0.26 : 8;
     const sideR = hud && this.touchMode ? this.cssW * 0.39 : 8;
+    const toScreen = (x: number, y: number, h: number): { x: number; y: number } => (st ? st.project(x, y, h) : { x: ((x - this.camX) / this.vw) * this.cssW, y: ((y - h - this.camY) / this.vh) * this.cssH });
+    const said: { s: (typeof speech)[number]; name: string; accent: string; ask: SpeechAsk }[] = [];
     for (const s of speech) {
       const npc = w.npcs.find((n) => n.id === s.who);
       const pet = w.pets.find((p) => !p.dead && p.def.id === s.who);
@@ -1264,14 +1296,24 @@ export class Renderer {
       const accent = s.who === 'hero' ? '#9fd8ff' : foe && !pet && !npc ? '#ff9a8a' : '#ffcf5a';
       // where their head is on the screen; someone out of the picture (or behind the camera) can still shout: their
       // words are kept at the edge nearest them
-      const head = st ? st.project(who.x, who.y, PERSON_H + 9) : { x: ((who.x - this.camX) / this.vw) * this.cssW, y: ((who.y - PERSON_H - 9 - this.camY) / this.vh) * this.cssH };
+      const head = toScreen(who.x, who.y, PERSON_H + 9);
+      const foot = toScreen(who.x, who.y, 0);
       const behind = who.y > this.camY + this.vh * 1.5;
       const sane = Number.isFinite(head.x) && Number.isFinite(head.y);
-      const said = { text: s.text, name, headX: sane && !behind ? head.x : this.cssW / 2, headY: behind ? this.cssH * 2 : sane ? head.y : -this.cssH, viewW: this.cssW, viewH: this.cssH, top, bottom, measure };
-      // (on a phone the quest under the hero's bars reaches into the open middle: a line that would be written across
-      // it goes beside it when it fits there, render/speech.ts; where it doesn't, the HUD lets the quest fade)
-      const card = layoutSpeechClear({ ...said, left: sideL, right: sideR }, hud ? this.hudBoxes : null);
+      const ask: SpeechAsk = { text: s.text, name, headX: sane && !behind ? head.x : this.cssW / 2, headY: behind ? this.cssH * 2 : sane ? head.y : -this.cssH, viewW: this.cssW, viewH: this.cssH, top, bottom, left: sideL, right: sideR, measure, ...(s.staged ? { staged: true } : {}), ...(sane && !behind && Number.isFinite(foot.y) && foot.y < this.cssH ? { footY: foot.y } : {}) };
+      said.push({ s, name, accent, ask });
+    }
+    // every line placed together: none under the HUD, none over another, and in a fight none across it if there is
+    // room elsewhere (render/speech.ts placeSpeech; POLISH_PLAN.md piece 2)
+    const cards = placeSpeech(
+      said.map((x) => x.ask),
+      { hud: hud ? [...this.hudBoxes.values(), ...this.floatBoxes] : [], action: hud ? this.fightBox(w, toScreen) : null, lane: hud ? this.speechLane() : null, fight: hud && this.fighting(w) },
+      hud ? this.hudBoxes : null,
+    );
+    said.forEach(({ s, name, accent }, i) => {
+      const card = cards[i]!;
       if (hud) this.speechBoxes.push({ x: card.x, y: card.y, w: card.w, h: card.h });
+      this.speechCards.push({ x: card.x, y: card.y, w: card.w, h: card.h, text: s.text });
       const fade = clamp(Math.min(s.t / 0.15, (s.dur - s.t) / 0.3), 0, 1);
       g.globalAlpha = fade * 0.95;
       g.fillStyle = 'rgba(22,16,36,0.93)';
@@ -1283,9 +1325,15 @@ export class Renderer {
       g.stroke();
       if (card.tailX !== null) {
         g.beginPath();
-        g.moveTo(card.tailX - 6, card.y + card.h - 0.5);
-        g.lineTo(card.tailX, card.y + card.h + 7);
-        g.lineTo(card.tailX + 6, card.y + card.h - 0.5);
+        if (card.tailUp) {
+          g.moveTo(card.tailX - 6, card.y + 0.5);
+          g.lineTo(card.tailX, card.y - 7);
+          g.lineTo(card.tailX + 6, card.y + 0.5);
+        } else {
+          g.moveTo(card.tailX - 6, card.y + card.h - 0.5);
+          g.lineTo(card.tailX, card.y + card.h + 7);
+          g.lineTo(card.tailX + 6, card.y + card.h - 0.5);
+        }
         g.closePath();
         g.fill();
       }
@@ -1299,9 +1347,9 @@ export class Renderer {
       g.fillStyle = '#f8f2e4';
       // a scene's line is written out; anyone else's is simply said
       let left = s.staged ? Math.floor(s.t * TYPE_CPS) : Infinity;
-      card.lines.forEach((l, i) => {
+      card.lines.forEach((l, j) => {
         if (left <= 0) return;
-        g.fillText(left >= l.length ? l : l.slice(0, left), card.x + card.padX, card.textY + i * card.lineH);
+        g.fillText(left >= l.length ? l : l.slice(0, left), card.x + card.padX, card.textY + j * card.lineH);
         left -= l.length + 1;
       });
       // all of it out: a small mark at its foot says the next line can be taken (a tap, a click, the talk key)
@@ -1317,8 +1365,69 @@ export class Renderer {
         g.closePath();
         g.fill();
       }
-    }
+    });
     g.restore();
+  }
+
+  /** A fight is on: the hero struck or was struck a moment ago, or a foe near them is after them. */
+  private fighting(w: World): boolean {
+    const p = w.player;
+    if (p.calm < 4) return true;
+    return w.enemies.some((e) => !e.dead && !e.dummy && (e.state === 'chase' || e.state === 'windup' || e.state === 'act') && Math.hypot(e.x - p.x, e.y - p.y) < TILE * 8);
+  }
+
+  /**
+   * Where the fight is on the screen: the hero, and the foes after them close by. Words written across it would hide
+   * the blow they warn of (render/speech.ts placeSpeech keeps off it where it can). It reaches no further than a
+   * little round the hero, so a crowd far off doesn't take the whole picture.
+   */
+  private fightBox(w: World, toScreen: (x: number, y: number, h: number) => { x: number; y: number }): ViewBox | null {
+    const p = w.player;
+    const head = toScreen(p.x, p.y, PERSON_H + 9);
+    const foot = toScreen(p.x, p.y, 0);
+    if (![head.x, head.y, foot.x, foot.y].every(Number.isFinite)) return null;
+    let x0 = foot.x - 34;
+    let x1 = foot.x + 34;
+    let y0 = head.y - 8;
+    let y1 = foot.y + 10;
+    for (const e of w.enemies) {
+      if (e.dead || e.dummy || Math.hypot(e.x - p.x, e.y - p.y) > TILE * 5) continue;
+      if (e.state !== 'chase' && e.state !== 'windup' && e.state !== 'act' && e.state !== 'recover') continue;
+      const a = toScreen(e.x, e.y, PERSON_H);
+      const b = toScreen(e.x, e.y, 0);
+      if (![a.x, a.y, b.y].every(Number.isFinite)) continue;
+      x0 = Math.min(x0, b.x - 26);
+      x1 = Math.max(x1, b.x + 26);
+      y0 = Math.min(y0, a.y - 6);
+      y1 = Math.max(y1, b.y + 8);
+    }
+    const reach = Math.min(this.cssW, this.cssH) * 0.36;
+    x0 = Math.max(x0, foot.x - reach);
+    x1 = Math.min(x1, foot.x + reach);
+    y0 = Math.max(y0, head.y - reach);
+    y1 = Math.min(y1, foot.y + reach);
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  }
+
+  /**
+   * The subtitle lane: along the bottom of the picture over the skills on a desk, and between the stick and the
+   * buttons on a phone. Lines shouted in a fight go here, off the fight (render/speech.ts placeSpeech).
+   */
+  private speechLane(): { left: number; right: number; bottom: number } | null {
+    const W = this.cssW;
+    const H = this.cssH;
+    if (this.touchMode) {
+      const thumbs = this.hudBoxes.get('thumbs');
+      const left = W * 0.26;
+      const right = thumbs ? Math.min(W * 0.66, thumbs.x - 10) : W * 0.6;
+      return right - left > 120 ? { left, right, bottom: H - 10 } : null;
+    }
+    const bar = this.hudBoxes.get('bar');
+    const teach = this.hudBoxes.get('teach');
+    const prompt = this.hudBoxes.get('prompt');
+    const floor = Math.min(bar ? bar.y : H - 76, teach ? teach.y : H, prompt ? prompt.y : H) - 8;
+    const wide = Math.min(W - 32, 600);
+    return { left: (W - wide) / 2, right: (W + wide) / 2, bottom: floor };
   }
 
   /* -------------------------------------------------------------- light */

@@ -2118,7 +2118,7 @@ html.rb-touch-playing textarea {
   animation: rb-banner 2.6s ease-out forwards;
 }
 .rb-banner strong {
-  font-size: clamp(22px, 4.6vw, 42px);
+  font-size: clamp(22px, 4.6cqw, 42px);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--rb-gold);
@@ -2533,6 +2533,9 @@ html.rb-touch-playing textarea {
   bottom: calc(100% + 12px);
   left: 50%;
   transform: translateX(-50%);
+  /* as wide as its words need, up to its limit (ui/Lesson.tsx keeps it inside the picture): over the dodge key at the
+     bar's end it was squeezed into a column a word wide */
+  width: max-content;
   max-width: min(420px, 90cqw);
   padding: 7px 14px;
   border: 2px solid #ffd86b;
@@ -2550,7 +2553,8 @@ html.rb-touch-playing textarea {
   position: absolute;
   top: 100%;
   left: 50%;
-  margin-left: -7px;
+  /* (still over the key when the lesson has been moved to stay on the screen: ui/layout.ts placeLesson) */
+  margin-left: calc(-7px + var(--rb-arrow-dx, 0px));
   border: 7px solid transparent;
   border-top-color: #ffd86b;
 }
@@ -2566,7 +2570,8 @@ html.rb-touch-playing textarea {
 }
 .rb-teach.is-touch::after {
   left: auto;
-  right: 36px;
+  right: calc(36px - var(--rb-arrow-dx, 0px));
+  margin-left: 0;
 }
 /* over the button it teaches: the attack, the first skill, the dodge (data from the gathered .rb-cluster .rb-sb-*) */
 .rb-teach.is-touch.is-at-s1 {
@@ -3017,29 +3022,29 @@ html.rb-touch-playing textarea {
 }
 .rb-tcard-over {
   color: var(--rb-gold);
-  font-size: clamp(12px, 1.7vw, 16px);
+  font-size: clamp(12px, 1.7cqw, 16px);
   font-weight: 700;
   letter-spacing: 0.32em;
   text-transform: uppercase;
 }
 .rb-tcard-text strong {
   font-family: var(--rb-serif);
-  font-size: clamp(26px, 4.6vw, 52px);
+  font-size: clamp(26px, 4.6cqw, 52px);
   font-weight: 700;
   letter-spacing: 0.05em;
   line-height: 1.1;
 }
 .rb-tcard.is-act .rb-tcard-text strong {
-  font-size: clamp(30px, 5.6vw, 64px);
+  font-size: clamp(30px, 5.6cqw, 64px);
 }
 .rb-tcard-rule {
-  width: min(380px, 60vw);
+  width: min(380px, 60cqw);
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--rb-gold), transparent);
 }
 .rb-tcard-sub {
   font-family: var(--rb-serif);
-  font-size: clamp(13px, 1.8vw, 18px);
+  font-size: clamp(13px, 1.8cqw, 18px);
   font-style: italic;
   color: #d8c8a0;
 }
