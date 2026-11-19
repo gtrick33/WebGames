@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 /*
- * The Ring's own sound effects, made here from nothing (no pack, no license: the game's own work). The owner,
- * 2026-11-18: "the sounds ... theyre currently kinda annoying, can we use more cartoony cool and warm sounding
- * effects". So: wooden bonks and marimba plinks for blows, airy whooshes, bouncy thumps, puffy booms, glassy
- * tinkles for frost, a kalimba for healing, slide whistles and a sad trombone for falling, a marimba fanfare for a
- * win. Everything is rounded off (no hard digital edges), a little room is put round it, and the top is rolled off
- * so it sits warm under the music.
+ * The Ring's own sound effects, made here from nothing (no pack, no license: the game's own work).
+ *
+ * The owner, 2026-11-19, on the cartoony set before this one: "the current sounds are awful, its like jungle bells
+ * ... make them similar to wow pls, frost mage feels like santa claus with bells". So no bells, marimbas or kalimbas:
+ * the weight of a fantasy fight instead. Frost is a cold hiss and the crunch of ice, fire a roar with embers cracking
+ * in it, holy and healing a choir's swell, shadow a low growl drawn in, blows a thud with a crunch in it, steel a short
+ * scrape, a win a brass call over drums. Made in the manner of the genre, not copied from any game.
  *
  * Deterministic: the same files every run (a seeded random). Run by hand when a sound is changed:
- *   node scripts/sigilfall-ring-sounds.mjs
+ *   node scripts/sigilfall-ring-sounds.mjs [name ...]
  * It writes public/games/sigilfall/audio/ring-*.mp3 (mono, 64 kbps, as the other effects); the Ring plays them by
  * src/games/sigilfall/audio/samples.ts `ring-*` and render/ring.ts `ringSound`.
  */
@@ -20,8 +21,12 @@ import { join } from 'node:path';
 const SR = 44100;
 const OUT = 'public/games/sigilfall/audio';
 const FFMPEG = process.env.FFMPEG ?? 'ffmpeg';
-/** How loud each sound is at its peak before the table's gain (dBFS). */
-const PEAK = -3;
+/**
+ * How loud each sound is (dB, its loudest tenth of a second) before the table's gain: about where the set before sat,
+ * so the mix in a match stays as it was. Blows that come all the time a little under, a click well under.
+ */
+const LOUD = -10.5;
+const LOUD_OF = { hit: -12.5, clash: -12, swing: -12, hurt: -11.5, critBlade: -11, talent: -14, spear: -12 };
 
 /* ------------------------------------------------------------------ the instruments */
 
@@ -30,6 +35,7 @@ const rand = () => {
   seed = (seed * 1664525 + 1013904223) >>> 0;
   return seed / 2 ** 32;
 };
+const between = (a, b) => a + (b - a) * rand();
 const buf = (sec) => new Float64Array(Math.ceil(sec * SR));
 const note = (n) => 440 * 2 ** ((n - 69) / 12);
 /** Adds `src` into `dst` from `at` seconds, `g` loud. */
@@ -38,286 +44,324 @@ const mix = (dst, src, at = 0, g = 1) => {
   for (let i = 0; i < src.length && o + i < dst.length; i++) dst[o + i] += src[i] * g;
   return dst;
 };
+/** Sounds laid together, each [buffer, at, gain], in one buffer long enough for all. */
+const layer = (...parts) => {
+  const len = Math.max(...parts.map(([b, at = 0]) => b.length + Math.round(at * SR)));
+  const out = new Float64Array(len);
+  for (const [b, at = 0, g = 1] of parts) mix(out, b, at, g);
+  return out;
+};
 /** An attack and an exponential decay. */
 const env = (i, att, dec) => {
   const t = i / SR;
   return (t < att ? t / att : 1) * Math.exp(-Math.max(0, t - att) / dec);
 };
+/** A swell: rises over `peak` of the length (a curve), then dies away. */
+const swell = (u, peak) => (u < peak ? Math.sin((Math.PI / 2) * (u / peak)) ** 2 : Math.max(0, 1 - (u - peak) / (1 - peak)) ** 1.6);
 
-/** A sine whose pitch glides from f0 to f1 (exponentially), with an optional wobble. */
-function glide(sec, f0, f1, { att = 0.004, dec = sec / 3, vib = 0, vibRate = 7, harm = 0 } = {}) {
+/** A biquad (RBJ) run over `b`; `f` may be a function of where it is (0..1). */
+function biquad(b, type, f, q = 0.707) {
+  const out = new Float64Array(b.length);
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  let c = null;
+  const coef = (fr) => {
+    const w = (2 * Math.PI * Math.min(fr, SR * 0.45)) / SR;
+    const al = Math.sin(w) / (2 * q);
+    const cw = Math.cos(w);
+    const [b0, b1, b2] = type === 'lp' ? [(1 - cw) / 2, 1 - cw, (1 - cw) / 2] : type === 'hp' ? [(1 + cw) / 2, -(1 + cw), (1 + cw) / 2] : [al, 0, -al];
+    const a0 = 1 + al;
+    return [b0 / a0, b1 / a0, b2 / a0, (-2 * cw) / a0, (1 - al) / a0];
+  };
+  const fixed = typeof f === 'number';
+  if (fixed) c = coef(f);
+  for (let i = 0; i < b.length; i++) {
+    if (!fixed && i % 32 === 0) c = coef(f(i / b.length));
+    const x = b[i];
+    const y = c[0] * x + c[1] * x1 + c[2] * x2 - c[3] * y1 - c[4] * y2;
+    x2 = x1;
+    x1 = x;
+    y2 = y1;
+    y1 = y;
+    out[i] = y;
+  }
+  return out;
+}
+const white = (sec) => buf(sec).map(() => rand() * 2 - 1);
+const shape = (b, fn) => b.map((v, i) => v * fn(i / b.length, i));
+/** Soft saturation: weight and grit. */
+const drive = (b, k = 2) => b.map((v) => Math.tanh(v * k) / Math.tanh(k));
+
+/** Coloured noise: band-passed (or low/high) with a moving centre, under an envelope `fn(u)`. */
+function air(sec, type, f, q, fn) {
+  return shape(biquad(white(sec), type, f, q), fn);
+}
+
+/**
+ * Grains: many tiny bursts of noise, each rung through a narrow band at its own pitch and gone in a few ms. Dense and
+ * high, the crunch of ice; sparse and low, embers cracking; low and heavy, falling rubble. `rate`: per second.
+ */
+function grains(sec, rate, { lo = 2000, hi = 7000, dec = [0.003, 0.012], q = 6, fade = (u) => 1 - u, g = [0.4, 1] } = {}) {
+  const b = buf(sec + 0.05);
+  const n = Math.round(rate * sec);
+  for (let k = 0; k < n; k++) {
+    const at = rand() * sec;
+    const d = between(dec[0], dec[1]);
+    const len = Math.ceil(d * 6 * SR);
+    const burst = new Float64Array(len);
+    for (let i = 0; i < len; i++) burst[i] = (rand() * 2 - 1) * Math.exp(-i / (d * SR));
+    const f = lo * (hi / lo) ** rand();
+    const rung = biquad(burst, 'bp', f, q);
+    mix(b, rung, at, between(g[0], g[1]) * fade(at / sec) * Math.sqrt(q));
+  }
+  return b;
+}
+
+/** A boom: a falling sine (the weight), a body of low noise, and a little grit. */
+function boom(f0 = 120, f1 = 38, sec = 0.6, { body = 0.5, click = 0.25 } = {}) {
   const b = buf(sec);
   let ph = 0;
   for (let i = 0; i < b.length; i++) {
-    const u = i / b.length;
-    const f = f0 * (f1 / f0) ** u * (1 + vib * Math.sin((2 * Math.PI * vibRate * i) / SR));
+    const t = i / SR;
+    const f = f1 + (f0 - f1) * Math.exp(-t / (sec * 0.15));
     ph += (2 * Math.PI * f) / SR;
-    b[i] = (Math.sin(ph) + harm * Math.sin(2 * ph) + harm * 0.4 * Math.sin(3 * ph)) * env(i, att, dec);
+    b[i] = Math.sin(ph) * env(i, 0.002, sec / 3.2);
   }
-  return b;
+  const low = air(sec, 'lp', (u) => 900 * (1 - u) + 120, 0.8, (u) => Math.exp(-u * 6));
+  const knock = air(0.03, 'bp', 1800, 1.2, (u) => Math.exp(-u * 8));
+  return drive(layer([b], [low, 0, body], [knock, 0, click]), 1.8);
 }
 
-/** A marimba: a fundamental and its bar's bright overtones, which die first. Warm and woody. */
-function marimba(f, sec = 0.6, bright = 1) {
+/** A whoosh: noise through a band that rises and falls, swelling and dying away. */
+function whoosh(sec, lo, hi, { peak = 0.4, q = 1.2 } = {}) {
+  return air(sec, 'bp', (u) => lo + (hi - lo) * swell(u, peak), q, (u) => swell(u, peak));
+}
+
+/** Fire: a roar of low noise that breathes and flutters, with embers cracking in it. */
+function fire(sec, { lo = 300, hi = 1400, crackle = 40, peak = 0.3 } = {}) {
+  let flutter = 0;
+  const roar = shape(biquad(biquad(white(sec), 'lp', (u) => lo + (hi - lo) * swell(u, peak), 0.9), 'hp', 70), (u) => {
+    flutter += 0.02 * (rand() - 0.5);
+    flutter *= 0.995;
+    return swell(u, peak) * (1 + 6 * flutter);
+  });
+  return layer([roar, 0, 1.4], [grains(sec, crackle, { lo: 900, hi: 4500, dec: [0.0015, 0.005], q: 3, fade: (u) => swell(u, peak), g: [0.2, 1] }), 0, 0.5]);
+}
+
+/** Cold: a breath of high, thin hiss. */
+const frostHiss = (sec, peak = 0.3) => air(sec, 'bp', (u) => 5200 + 2200 * swell(u, peak), 1.4, (u) => swell(u, peak));
+
+/** Ice crunching and cracking: dense high grains over a low crack. */
+const crunch = (sec, rate, { lo = 1800, hi = 8000, fade = (u) => (1 - u) ** 2 } = {}) => grains(sec, rate, { lo, hi, dec: [0.0015, 0.006], q: 4, fade });
+
+/** Detuned sawtooths: the stuff of brass, choirs and growls. */
+function saws(sec, freqs, { detune = 0.006, vib = 0.004, glide = 1 } = {}) {
   const b = buf(sec);
+  const voices = freqs.flatMap((f) => [-1, 0, 1].map((d) => ({ f: f * (1 + d * detune), ph: rand() })));
   for (let i = 0; i < b.length; i++) {
-    const t = i / SR;
-    b[i] =
-      Math.sin(2 * Math.PI * f * t) * env(i, 0.002, sec / 3.2) +
-      0.35 * bright * Math.sin(2 * Math.PI * f * 3.99 * t) * env(i, 0.001, sec / 14) +
-      0.12 * bright * Math.sin(2 * Math.PI * f * 9.2 * t) * env(i, 0.001, sec / 40);
+    const u = i / b.length;
+    const v = 1 + vib * Math.sin((2 * Math.PI * 5.2 * i) / SR);
+    let s = 0;
+    for (const o of voices) {
+      o.ph = (o.ph + (o.f * v * glide ** u) / SR) % 1;
+      s += 2 * o.ph - 1;
+    }
+    b[i] = s / voices.length;
   }
   return b;
 }
 
-/** A kalimba: a plucked metal tine, round and gentle. */
-function kalimba(f, sec = 0.8) {
-  const b = buf(sec);
-  for (let i = 0; i < b.length; i++) {
-    const t = i / SR;
-    b[i] = Math.sin(2 * Math.PI * f * t) * env(i, 0.002, sec / 3) + 0.25 * Math.sin(2 * Math.PI * f * 5.4 * t) * env(i, 0.001, 0.03) + 0.08 * Math.sin(2 * Math.PI * f * 2 * t) * env(i, 0.002, sec / 5);
-  }
-  return b;
-}
-
-/** A soft bell: inharmonic partials, long and round. */
-function bell(f, sec = 1.4) {
-  const parts = [
-    [1, 1, 1],
-    [2.0, 0.5, 0.7],
-    [2.76, 0.35, 0.5],
-    [5.4, 0.15, 0.25],
+/** A choir on "ah": sawtooths through a voice's formants, swelling in and dying away. Holy and healing. */
+function choir(sec, notes, { peak = 0.35, bright = 1 } = {}) {
+  const src = saws(sec, notes.map(note), { detune: 0.008, vib: 0.006 });
+  const vowel = [
+    [760, 1, 7],
+    [1150, 0.6 * bright, 8],
+    [2600, 0.25 * bright, 10],
   ];
+  const voiced = layer(...vowel.map(([f, g, q]) => [biquad(src, 'bp', f, q), 0, g]));
+  return shape(voiced, (u) => swell(u, peak));
+}
+
+/** A shimmer: high, airy noise that rises like light gathering (no pitch, no bell). */
+const shimmer = (sec, { lo = 3000, hi = 9000, peak = 0.5 } = {}) => air(sec, 'bp', (u) => lo + (hi - lo) * u, 2.5, (u) => swell(u, peak));
+
+/** Brass: sawtooths through a lowpass that opens on the attack: horns. */
+function horn(sec, notes, { att = 0.05, open = 2400, closed = 700 } = {}) {
+  const src = saws(sec, notes.map(note), { detune: 0.004, vib: 0.005 });
+  const f = biquad(biquad(src, 'lp', (u) => closed + (open - closed) * Math.exp(-u * 3) * Math.min(1, (u * sec) / att), 0.9), 'lp', 3500, 0.7);
+  return shape(f, (u) => Math.min(1, (u * sec) / att) * (u > 0.8 ? (1 - u) / 0.2 : 1));
+}
+
+/** A growl: a low sawtooth, warbling, driven, and dark. Shadow and beasts. */
+function growl(sec, f0, f1, { peak = 0.5, cut = 900 } = {}) {
+  const src = saws(sec, [f0], { detune: 0.02, vib: 0.05, glide: f1 / f0 });
+  return shape(biquad(drive(src, 3), 'lp', cut, 1.4), (u) => swell(u, peak));
+}
+
+/** Steel on steel: a quick scrape and a short ring of a blade's few clangorous partials (gone in a blink: no bell). */
+function steel(sec = 0.22, base = 1700) {
   const b = buf(sec);
+  const parts = [1, 1.47, 2.09, 2.83, 3.71].map((m) => ({ f: base * m * between(0.97, 1.03), g: between(0.3, 0.7), d: between(0.008, 0.025) }));
   for (let i = 0; i < b.length; i++) {
     const t = i / SR;
     let v = 0;
-    for (const [m, g, d] of parts) v += g * Math.sin(2 * Math.PI * f * m * t) * env(i, 0.003, (sec / 3) * d);
-    b[i] = v;
+    for (const p of parts) v += p.g * Math.sin(2 * Math.PI * p.f * t) * Math.exp(-t / p.d);
+    b[i] = v / parts.length;
   }
-  return b;
+  return layer([b, 0, 0.6], [air(sec, 'bp', (u) => 5000 - 2500 * u, 1.2, (u) => Math.exp(-u * 12)), 0, 0.8]);
 }
 
-/** A plucked string (Karplus-Strong), warm: the loop's filter rolls it off fast. `bend`: how far it sags. */
-function pluck(f, sec = 0.6, { damp = 0.5, bend = 0 } = {}) {
+/** A plucked string (Karplus-Strong). */
+function pluck(f, sec = 0.4, damp = 0.4) {
   const b = buf(sec);
-  let n = Math.round(SR / f);
+  const n = Math.round(SR / f);
   const line = Array.from({ length: n }, () => rand() * 2 - 1);
-  let p = 0;
   for (let i = 0; i < b.length; i++) {
-    const a = line[p % n];
-    const c = line[(p + 1) % n];
-    const v = (a * (1 - damp) + c * damp) * 0.996;
-    line[p % n] = v;
+    const a = line[i % n];
+    line[i % n] = (a * (1 - damp) + line[(i + 1) % n] * damp) * 0.995;
     b[i] = a;
-    p++;
-    // (sagging: the loop grows a little longer, the new places filled from the old)
-    if (bend && i % 64 === 0) {
-      const m = Math.max(2, Math.round((SR / f) * (1 + bend * (i / b.length))));
-      while (line.length < m) line.push(line[line.length - 1]);
-      n = m;
-    }
   }
   return b;
 }
 
-/** Noise, shaped: a one-pole low-pass that glides from c0 to c1 (Hz), and a high-pass at `hp`. */
-function noise(sec, c0, c1, { att = 0.01, dec = sec / 3, hp = 80 } = {}) {
-  const b = buf(sec);
-  let lp = 0;
-  let lp2 = 0;
-  let hpState = 0;
-  let prev = 0;
-  const hpA = 1 / (1 + (2 * Math.PI * hp) / SR);
-  for (let i = 0; i < b.length; i++) {
-    const u = i / b.length;
-    const c = c0 * (c1 / c0) ** u;
-    const a = 1 - Math.exp((-2 * Math.PI * c) / SR);
-    lp += a * (rand() * 2 - 1 - lp);
-    lp2 += a * (lp - lp2);
-    hpState = hpA * (hpState + lp2 - prev);
-    prev = lp2;
-    b[i] = hpState * env(i, att, dec) * 3;
-  }
-  return b;
-}
-
-/** A whoosh: noise whose colour rises and falls, swelling and dying away. */
-function whoosh(sec, lo, hi, { peak = 0.4 } = {}) {
-  const b = buf(sec);
-  let lp = 0;
-  let lp2 = 0;
-  let s3 = 0;
-  let s4 = 0;
-  let s5 = 0;
-  for (let i = 0; i < b.length; i++) {
-    const u = i / b.length;
-    const shape = u < peak ? u / peak : (1 - u) / (1 - peak);
-    const c = lo + (hi - lo) * shape;
-    const a = 1 - Math.exp((-2 * Math.PI * c) / SR);
-    const a2 = 1 - Math.exp((-2 * Math.PI * c * 1.6) / SR);
-    lp += a * (rand() * 2 - 1 - lp);
-    lp2 += a * 0.25 * (lp - lp2);
-    // (the band's top rolled off steeply: air, not hiss)
-    s3 += a2 * (lp - lp2 - s3);
-    s4 += a2 * (s3 - s4);
-    s5 += a2 * (s4 - s5);
-    b[i] = s5 * Math.sin(Math.PI * Math.min(1, u)) ** 1.5 * 4;
-  }
-  return b;
-}
-
-/** A thump: a kick drum's sine, falling in pitch, with a soft knock on top. Bouncy, not harsh. */
-function thump(f0 = 160, f1 = 48, sec = 0.35) {
-  return mix(glide(sec, f0, f1, { att: 0.002, dec: sec / 3.5 }), noise(0.03, 2500, 800, { att: 0.001, dec: 0.008 }), 0, 0.25);
-}
-
-/** A woodblock "tok". */
-const tok = (f = 900, sec = 0.12) => mix(marimba(f, sec, 1.4), noise(0.02, 3000, 1200, { att: 0.0005, dec: 0.004 }), 0, 0.3);
-
-/** A sawtooth through a softening filter, with its pitch bending: brass, a cartoon trombone. */
-function brass(f0, f1, sec, { wah = 0, vib = 0.012 } = {}) {
-  const b = buf(sec);
-  let ph = 0;
-  let lp = 0;
-  for (let i = 0; i < b.length; i++) {
-    const u = i / b.length;
-    const f = f0 * (f1 / f0) ** u * (1 + vib * Math.sin((2 * Math.PI * 5.5 * i) / SR) * Math.min(1, u * 4));
-    ph = (ph + f / SR) % 1;
-    const saw = 2 * ph - 1;
-    const cut = 500 + 1600 * (wah ? 0.5 + 0.5 * Math.sin(Math.PI * Math.min(1, u * 1.2)) : 1) * (1 - 0.5 * u);
-    lp += (1 - Math.exp((-2 * Math.PI * cut) / SR)) * (saw - lp);
-    b[i] = lp * env(i, 0.03, sec / 1.5) * (u > 0.85 ? (1 - u) / 0.15 : 1);
-  }
-  return b;
-}
+/** A body struck: a thud, and the crunch of the blow in it. */
+const thud = (f0 = 150, sec = 0.25, crunchy = 0.5) =>
+  layer([boom(f0, 45, sec, { body: 0.7, click: 0.15 })], [grains(0.06, 900, { lo: 500, hi: 2600, dec: [0.002, 0.006], q: 2 }), 0.002, crunchy]);
 
 /* ------------------------------------------------------------------ the finishing */
 
-/** A small warm room: a few soft echoes, a little diffused. `wet`: how much of it. */
-function room(b, wet = 0.18, size = 1) {
-  const out = new Float64Array(b.length + Math.round(0.35 * size * SR));
+/**
+ * A hall around it: a smooth reverb (eight damped feedback delays and four all-passes, the classic way), dark, so a
+ * sound blooms instead of echoing. `wet`: how much of it; `size`: roughly how long it rings, in seconds.
+ */
+function hall(b, wet = 0.2, size = 0.8) {
+  const out = new Float64Array(b.length + Math.round(size * 1.2 * SR));
   out.set(b);
-  const taps = [0.031, 0.043, 0.059, 0.071, 0.097, 0.13, 0.17, 0.23].map((t) => t * size);
-  taps.forEach((t, k) => {
-    const g = wet * 0.8 ** k * (k % 2 ? -1 : 1);
-    mix(out, b, t, g);
-  });
-  // (smeared: a one-pole low-pass over the tail)
-  let lp = 0;
-  for (let i = b.length; i < out.length; i++) out[i] = lp += 0.35 * (out[i] - lp);
-  return out;
+  const input = biquad(biquad(out, 'lp', 4200, 0.7), 'hp', 150, 0.7);
+  const fb = Math.min(0.9, 0.62 + 0.2 * size);
+  const damp = 0.35;
+  const combs = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617].map((n) => ({ line: new Float64Array(n), p: 0, lp: 0 }));
+  const passes = [556, 441, 341, 225].map((n) => ({ line: new Float64Array(n), p: 0 }));
+  const wetBuf = new Float64Array(out.length);
+  for (let i = 0; i < out.length; i++) {
+    let acc = 0;
+    for (const c of combs) {
+      const y = c.line[c.p];
+      c.lp = y * (1 - damp) + c.lp * damp;
+      c.line[c.p] = input[i] * 0.03 + c.lp * fb;
+      c.p = (c.p + 1) % c.line.length;
+      acc += y;
+    }
+    for (const a of passes) {
+      const y = a.line[a.p];
+      a.line[a.p] = acc + y * 0.5;
+      a.p = (a.p + 1) % a.line.length;
+      acc = y - acc;
+    }
+    wetBuf[i] = acc;
+  }
+  return mix(out, wetBuf, 0, wet * 4);
 }
 
-/** Rolls the top off (warmth), takes any offset out, and eases the ends so nothing clicks. */
-function finish(b, { warm = 5200 } = {}) {
-  const a = 1 - Math.exp((-2 * Math.PI * warm) / SR);
-  let lp = 0;
-  let lp2 = 0;
-  let mean = 0;
-  for (let i = 0; i < b.length; i++) mean += b[i] / b.length;
-  const out = new Float64Array(b.length);
-  for (let i = 0; i < b.length; i++) {
-    lp += a * (b[i] - mean - lp);
-    out[i] = lp2 += a * (lp - lp2);
+const peakOf = (b) => b.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+
+/** The loudness of its loudest tenth of a second, in dB. */
+function loudness(b) {
+  const w = Math.round(0.1 * SR);
+  let best = 0;
+  for (let i = 0; i + w <= Math.max(w, b.length); i += Math.round(w / 10)) {
+    let e = 0;
+    for (let k = i; k < Math.min(b.length, i + w); k++) e += b[k] * b[k];
+    best = Math.max(best, e / w);
   }
-  // (silence trimmed off the end, then a short fade)
+  return 10 * Math.log10(best || 1e-12);
+}
+
+/** Takes any offset and the dull rumble under hearing out, eases the ends, and brings it to its loudness. */
+function finish(b, loud = LOUD) {
+  const out = biquad(biquad(b, 'hp', 32, 0.7), 'lp', 12000, 0.7);
   let end = out.length;
-  const floor = 0.0008 * Math.max(...out.map(Math.abs));
+  const floor = 0.0008 * peakOf(out);
   while (end > SR * 0.05 && Math.abs(out[end - 1]) < floor) end--;
   const cut = out.slice(0, end);
-  const fade = Math.min(cut.length, Math.round(0.02 * SR));
+  const fade = Math.min(cut.length, Math.round(0.03 * SR));
   for (let i = 0; i < fade; i++) cut[cut.length - 1 - i] *= i / fade;
   for (let i = 0; i < Math.min(cut.length, 32); i++) cut[i] *= i / 32;
-  const peak = Math.max(...cut.map(Math.abs)) || 1;
-  const g = 10 ** (PEAK / 20) / peak;
-  return cut.map((v) => Math.tanh(v * g * 1.1) / Math.tanh(1.1));
+  // (brought to its loudness; a peak that would go over is rounded off, not clipped)
+  const g = 10 ** ((loud - loudness(cut)) / 20);
+  return cut.map((v) => 0.98 * Math.tanh((v * g) / 0.98));
 }
 
 /* ------------------------------------------------------------------ the sounds */
 
-const C = (n) => note(n);
-/** A run of marimba notes, `gap` apart. */
-const run = (notes, gap, sec = 0.5, bright = 1) => {
-  const b = buf(gap * notes.length + sec);
-  notes.forEach((n, k) => mix(b, marimba(C(n), sec, bright), k * gap, 0.8));
-  return b;
-};
-const kal = (notes, gap, sec = 0.7) => {
-  const b = buf(gap * notes.length + sec);
-  notes.forEach((n, k) => mix(b, kalimba(C(n), sec), k * gap, 0.8));
-  return b;
-};
-const chord = (notes, sec, fn = bell) => {
-  const b = buf(sec);
-  notes.forEach((n) => mix(b, fn(C(n), sec), 0, 0.5));
-  return b;
-};
-const tinkle = (count, lo, hi, span, sec = 0.5) => {
-  const b = buf(span + sec);
-  for (let k = 0; k < count; k++) mix(b, bell(C(lo + Math.floor(rand() * (hi - lo))), sec), rand() * span, 0.4);
-  return b;
-};
-
 const SOUNDS = {
-  // blades and blows: airy swishes, and a cartoon bonk where they land
-  swing: () => room(whoosh(0.2, 300, 1600, { peak: 0.35 }), 0.12),
-  swingBig: () => room(mix(whoosh(0.32, 200, 1100, { peak: 0.4 }), glide(0.2, 220, 120, { dec: 0.06 }), 0.05, 0.25), 0.14),
-  spear: () => room(mix(whoosh(0.3, 500, 2200, { peak: 0.6 }), glide(0.28, 1300, 2300, { dec: 0.12, vib: 0.01 }), 0.02, 0.18), 0.14),
-  hit: () => room(mix(thump(220, 90, 0.18), tok(760, 0.1), 0, 0.6), 0.1),
-  clash: () => room(mix(tok(1100, 0.12), tok(1480, 0.1), 0.012, 0.6), 0.12),
-  critBlade: () => room(mix(mix(thump(260, 70, 0.3), tok(980, 0.14), 0, 0.8), run([88, 95], 0.04, 0.3, 1.2), 0.04, 0.5), 0.16),
-  hurt: () => room(mix(thump(180, 60, 0.26), glide(0.22, 330, 190, { dec: 0.08, harm: 0.4 }), 0.01, 0.35), 0.1),
-  bow: () => room(mix(pluck(C(50), 0.4, { damp: 0.35, bend: 0.25 }), whoosh(0.18, 700, 2200, { peak: 0.2 }), 0.03, 0.5), 0.12),
+  // blades and blows: the blade's rush through the air, a thud with a crunch where it lands, steel on steel
+  swing: () => hall(whoosh(0.22, 500, 3200, { peak: 0.45, q: 1.6 }), 0.1, 0.4),
+  swingBig: () => hall(layer([whoosh(0.36, 250, 1800, { peak: 0.5, q: 1.3 })], [whoosh(0.3, 900, 4200, { peak: 0.55, q: 2 }), 0.03, 0.35]), 0.14, 0.5),
+  spear: () => hall(layer([whoosh(0.32, 700, 3600, { peak: 0.65, q: 2.4 })], [frostHiss(0.32, 0.6), 0, 0.5], [crunch(0.2, 120), 0.12, 0.25]), 0.16, 0.6),
+  hit: () => hall(thud(160, 0.22, 0.6), 0.1, 0.4),
+  clash: () => hall(layer([steel(0.2, between(1500, 1900))], [thud(190, 0.12, 0.3), 0, 0.5]), 0.12, 0.5),
+  critBlade: () => hall(layer([thud(130, 0.35, 0.9)], [steel(0.22, 1300), 0.004, 0.6], [whoosh(0.18, 600, 2600, { peak: 0.2 }), 0, 0.4]), 0.16, 0.6),
+  hurt: () => hall(layer([thud(120, 0.3, 0.7)], [air(0.12, 'bp', 400, 1.5, (u) => Math.exp(-u * 5)), 0.01, 0.4]), 0.1, 0.4),
+  bow: () => hall(layer([pluck(note(40), 0.22, 0.25), 0, 0.6], [whoosh(0.2, 1200, 4500, { peak: 0.2, q: 2 }), 0.02, 0.7]), 0.12, 0.4),
   // shields and moving
-  shield: () => room(mix(glide(0.4, 300, 290, { dec: 0.14, vib: 0.03, vibRate: 11, harm: 0.5 }), tok(600, 0.1), 0, 0.5), 0.2),
-  shieldBreak: () => room(mix(glide(0.06, 900, 400, { dec: 0.02 }), glide(0.45, 520, 160, { dec: 0.15, vib: 0.05, vibRate: 13 }), 0.03, 0.8), 0.16),
-  blink: () => room(glide(0.16, 380, 1500, { dec: 0.06, harm: 0.3 }), 0.2),
-  buff: () => room(kal([79, 86], 0.08, 0.6), 0.22),
+  shield: () => hall(layer([shape(biquad(saws(0.6, [note(45), note(52)], { detune: 0.01 }), 'lp', (u) => 300 + 900 * swell(u, 0.25), 2), (u) => swell(u, 0.25))], [shimmer(0.5, { lo: 2500, hi: 6000, peak: 0.25 }), 0, 0.4]), 0.25, 0.8),
+  shieldBreak: () => hall(layer([crunch(0.35, 700, { lo: 1500, hi: 9000 })], [boom(160, 50, 0.3), 0, 0.6], [air(0.4, 'bp', (u) => 4000 - 3000 * u, 1.5, (u) => (1 - u) ** 2), 0, 0.4]), 0.2, 0.7),
+  blink: () => hall(layer([air(0.2, 'bp', (u) => 600 + 5000 * u ** 2, 2, (u) => u ** 1.5 * (u > 0.9 ? (1 - u) * 10 : 1))], [boom(220, 90, 0.12, { body: 0.2 }), 0.18, 0.4]), 0.22, 0.7),
+  buff: () => hall(layer([shimmer(0.6, { lo: 1500, hi: 6000, peak: 0.5 })], [choir(0.7, [67, 74, 79], { peak: 0.4, bright: 0.6 }), 0, 0.5]), 0.25, 0.9),
   // spells, by what they are made of
-  bolt: () => room(glide(0.22, 600, 1700, { dec: 0.08, vib: 0.02, vibRate: 30 }), 0.16),
-  zap: () => room(mix(glide(0.16, 1500, 500, { dec: 0.06, harm: 0.6 }), noise(0.1, 4000, 1500, { dec: 0.03 }), 0, 0.3), 0.14),
-  fireball: () => room(mix(mix(whoosh(0.4, 200, 1000, { peak: 0.3 }), noise(0.35, 1200, 400, { dec: 0.12 }), 0.02, 0.5), glide(0.3, 140, 80, { dec: 0.1 }), 0, 0.4), 0.16),
-  explode: () => room(mix(thump(140, 38, 0.6), noise(0.6, 1600, 200, { att: 0.004, dec: 0.15 }), 0, 0.75), 0.22, 1.2),
-  freeze: () => room(mix(tinkle(6, 88, 100, 0.12, 0.45), noise(0.16, 6000, 3000, { dec: 0.04, hp: 2000 }), 0, 0.3), 0.25),
-  shatter: () => room(mix(mix(tinkle(14, 84, 103, 0.28, 0.5), noise(0.22, 5000, 1500, { att: 0.001, dec: 0.05, hp: 900 }), 0, 0.6), thump(200, 70, 0.2), 0, 0.5), 0.26),
-  shard: () => room(bell(C(96), 0.5), 0.22),
-  thunder: () => room(mix(thump(110, 34, 0.9), noise(1.1, 700, 90, { att: 0.01, dec: 0.35 }), 0.02, 0.9), 0.24, 1.4),
-  holy: () => room(chord([72, 76, 79, 84], 1.1), 0.3, 1.3),
-  shadow: () => room(glide(0.55, 260, 70, { att: 0.03, dec: 0.2, vib: 0.06, vibRate: 6, harm: 0.5 }), 0.24),
-  nature: () => room(kal([67, 71, 74], 0.05, 0.7), 0.22),
-  heal: () => room(kal([72, 76, 79, 84], 0.07, 0.8), 0.28, 1.2),
-  rift: () => room(mix(whoosh(0.6, 150, 600, { peak: 0.5 }), glide(0.6, 300, 90, { att: 0.05, dec: 0.25, vib: 0.08, vibRate: 5 }), 0, 0.6), 0.26),
+  bolt: () => hall(layer([shape(biquad(saws(0.35, [note(50), note(57)], { detune: 0.02, glide: 1.5 }), 'bp', (u) => 400 + 2400 * u, 3), (u) => swell(u, 0.4))], [grains(0.3, 60, { lo: 3000, hi: 8000, dec: [0.001, 0.003], q: 3 }), 0, 0.3], [whoosh(0.3, 400, 2000, { peak: 0.6 }), 0, 0.5]), 0.2, 0.7),
+  zap: () => hall(layer([grains(0.18, 400, { lo: 2500, hi: 9000, dec: [0.0008, 0.003], q: 2 })], [shape(biquad(saws(0.15, [note(38)], { detune: 0.03 }), 'bp', 1800, 2), (u) => (1 - u) ** 2), 0, 0.5]), 0.16, 0.5),
+  fireball: () => hall(layer([fire(0.5, { lo: 250, hi: 1600, crackle: 50, peak: 0.25 })], [whoosh(0.45, 200, 1200, { peak: 0.3 }), 0, 0.6]), 0.18, 0.6),
+  explode: () => hall(layer([boom(110, 32, 0.8)], [fire(0.9, { lo: 300, hi: 2200, crackle: 90, peak: 0.06 }), 0, 0.8], [grains(0.6, 120, { lo: 300, hi: 2000, dec: [0.003, 0.01], q: 2 }), 0.04, 0.4]), 0.22, 1),
+  freeze: () => hall(layer([frostHiss(0.5, 0.25), 0, 0.7], [crunch(0.4, 650), 0.02, 0.9], [air(0.35, 'lp', 500, 0.7, (u) => swell(u, 0.15)), 0, 0.5]), 0.22, 0.8),
+  shatter: () => hall(layer([crunch(0.55, 1800, { lo: 1200, hi: 9500 })], [boom(140, 40, 0.45), 0, 0.8], [frostHiss(0.8, 0.05), 0.03, 0.5], [grains(0.5, 160, { lo: 2000, hi: 6000, dec: [0.004, 0.012], q: 8, fade: (u) => 1 - u }), 0.05, 0.4]), 0.24, 1),
+  shard: () => hall(layer([crunch(0.15, 500)], [frostHiss(0.2, 0.1), 0, 0.4]), 0.18, 0.5),
+  thunder: () => hall(layer([air(0.12, 'hp', 800, 0.7, (u) => Math.exp(-u * 8)), 0, 1], [boom(90, 30, 1.2, { body: 0.9 }), 0.02], [air(1.4, 'lp', (u) => 600 - 400 * u, 0.7, (u) => swell(u, 0.08)), 0.05, 0.9]), 0.24, 1.2),
+  holy: () => hall(layer([choir(1.1, [60, 64, 67, 72], { peak: 0.3 })], [shimmer(1, { lo: 3500, hi: 8000, peak: 0.3 }), 0, 0.15]), 0.3, 1.2),
+  shadow: () => hall(layer([growl(0.6, 55, 40, { peak: 0.55 })], [air(0.6, 'bp', (u) => 300 + 900 * swell(u, 0.7), 1.2, (u) => swell(u, 0.7)), 0, 0.7], [air(0.5, 'bp', 2500, 3, (u) => swell(u, 0.6)), 0, 0.2]), 0.26, 1),
+  nature: () => hall(layer([grains(0.5, 260, { lo: 600, hi: 3500, dec: [0.002, 0.008], q: 1.5, fade: (u) => swell(u, 0.4) }), 0, 0.6], [air(0.6, 'bp', (u) => 500 + 1200 * swell(u, 0.4), 0.8, (u) => swell(u, 0.4)), 0, 0.6], [choir(0.6, [62, 69], { peak: 0.4, bright: 0.4 }), 0, 0.25]), 0.22, 0.8),
+  heal: () => hall(layer([choir(0.9, [67, 71, 74, 79], { peak: 0.35, bright: 0.8 })], [shimmer(0.8, { lo: 2000, hi: 8000, peak: 0.6 }), 0, 0.2]), 0.3, 1.1),
+  rift: () => hall(layer([air(0.7, 'bp', (u) => 200 + 900 * swell(u, 0.75), 1.4, (u) => swell(u, 0.75))], [growl(0.7, 45, 30, { peak: 0.7, cut: 600 }), 0, 0.8], [boom(80, 28, 0.6), 0.5, 0.7]), 0.28, 1.2),
   // the big ones: supers
-  quake: () => room(mix(mix(thump(120, 36, 0.6), thump(110, 34, 0.6), 0.16, 0.9), noise(0.9, 400, 80, { dec: 0.3 }), 0, 0.7), 0.24, 1.4),
-  meteor: () => room(mix(glide(0.5, 1800, 400, { dec: 0.4, vib: 0.01 }), mix(thump(130, 34, 0.7), noise(0.7, 1400, 150, { dec: 0.2 }), 0, 0.8), 0.45, 1), 0.24, 1.3),
-  nova: () => room(mix(chord([60, 67, 72, 76, 79], 1.4), tinkle(8, 91, 103, 0.4, 0.5), 0.05, 0.4), 0.3, 1.4),
+  quake: () => hall(layer([boom(90, 28, 0.9, { body: 1 })], [boom(80, 26, 0.9, { body: 1 }), 0.15, 0.8], [grains(1, 200, { lo: 150, hi: 1200, dec: [0.004, 0.015], q: 1.5 }), 0, 0.7], [air(1.2, 'lp', 300, 0.7, (u) => swell(u, 0.1)), 0, 0.8]), 0.24, 1.3),
+  meteor: () => hall(layer([fire(0.55, { lo: 400, hi: 2600, crackle: 70, peak: 0.95 }), 0, 0.9], [whoosh(0.55, 300, 2500, { peak: 0.95 }), 0, 0.6], [boom(100, 28, 1, { body: 1 }), 0.52], [fire(0.9, { lo: 250, hi: 1600, crackle: 100, peak: 0.05 }), 0.52, 0.8]), 0.24, 1.3),
+  nova: () => hall(layer([choir(1.4, [55, 62, 67, 71, 74], { peak: 0.2 })], [shimmer(1.2, { lo: 3000, hi: 9500, peak: 0.15 }), 0, 0.5], [boom(120, 40, 0.6, { body: 0.4 }), 0.05, 0.5]), 0.3, 1.4),
   // falling, and the moments
-  die: () => room(mix(glide(0.55, 1200, 220, { att: 0.01, dec: 0.4, vib: 0.02, vibRate: 7 }), thump(150, 50, 0.3), 0.5, 0.9), 0.18),
-  slam: () => room(thump(130, 40, 0.5), 0.2, 1.2),
-  roar: () => room(mix(glide(0.6, 180, 520, { att: 0.12, dec: 0.4, harm: 0.6, vib: 0.02 }), whoosh(0.6, 200, 1000, { peak: 0.85 }), 0, 0.4), 0.2),
-  epic: () => room(run([79, 83, 86, 91, 95], 0.035, 0.45, 1.1), 0.24),
-  pickupBig: () => room(run([88, 95], 0.07, 0.4, 1.2), 0.18),
-  orb: () => room(glide(0.14, 400, 900, { dec: 0.05 }), 0.15),
-  talent: () => room(tok(1200, 0.08), 0.1),
-  checkpoint: () => room(mix(marimba(C(84), 0.7), marimba(C(91), 0.8), 0.12, 0.9), 0.25),
+  die: () => hall(layer([thud(110, 0.4, 0.8)], [grains(0.3, 90, { lo: 1500, hi: 5000, dec: [0.004, 0.02], q: 10 }), 0.06, 0.3], [air(0.5, 'bp', 350, 2, (u) => swell(u, 0.2)), 0, 0.3]), 0.2, 0.8),
+  slam: () => hall(layer([boom(100, 32, 0.6, { body: 0.9 })], [grains(0.4, 120, { lo: 200, hi: 1500, dec: [0.003, 0.012], q: 1.5 }), 0.01, 0.5]), 0.22, 1),
+  roar: () => hall(layer([growl(0.8, 70, 95, { peak: 0.3, cut: 1300 })], [air(0.8, 'bp', 700, 1.2, (u) => swell(u, 0.3)), 0, 0.5]), 0.24, 1),
+  epic: () => hall(layer([shimmer(0.7, { lo: 2000, hi: 9000, peak: 0.5 })], [choir(0.8, [72, 79], { peak: 0.4, bright: 0.7 }), 0, 0.4]), 0.26, 1),
+  pickupBig: () => hall(shimmer(0.5, { lo: 2500, hi: 9000, peak: 0.4 }), 0.22, 0.8),
+  orb: () => hall(layer([air(0.16, 'bp', (u) => 500 + 2500 * u, 2, (u) => swell(u, 0.5))], [boom(200, 120, 0.1, { body: 0.1 }), 0.1, 0.3]), 0.16, 0.5),
+  talent: () => hall(air(0.05, 'bp', 1400, 1.5, (u) => Math.exp(-u * 9)), 0.08, 0.3),
+  checkpoint: () => hall(layer([horn(0.7, [55, 62])], [shimmer(0.6, { peak: 0.3 }), 0, 0.3]), 0.26, 1),
   victory: () => {
-    const b = run([72, 76, 79], 0.11, 0.5, 1.1);
-    const end = buf(2);
-    mix(end, b);
-    mix(end, chord([60, 72, 76, 79, 84], 1.3, (f, s) => marimba(f, s, 0.8)), 0.36, 1);
-    mix(end, glide(1.2, C(48), C(48), { att: 0.01, dec: 0.5 }), 0.36, 0.5);
-    return room(end, 0.28, 1.3);
+    const b = buf(3);
+    mix(b, horn(0.28, [55, 62]), 0, 0.8);
+    mix(b, horn(0.28, [55, 62]), 0.3, 0.8);
+    mix(b, horn(1.9, [60, 64, 67, 72]), 0.6, 1);
+    mix(b, boom(90, 40, 0.5, { body: 0.6, click: 0.4 }), 0, 0.6);
+    mix(b, boom(90, 40, 0.5, { body: 0.6, click: 0.4 }), 0.3, 0.6);
+    mix(b, boom(80, 34, 1.2, { body: 0.8, click: 0.4 }), 0.6, 0.9);
+    mix(b, choir(2, [48, 60, 64, 67], { peak: 0.25, bright: 0.7 }), 0.6, 0.45);
+    return hall(b, 0.28, 1.6);
   },
   playerDie: () => {
-    const b = buf(2.2);
-    [63, 62, 61].forEach((n, k) => mix(b, brass(C(n), C(n), 0.34, { wah: 1 }), k * 0.38, 0.8));
-    mix(b, brass(C(60), C(56), 0.9, { wah: 1, vib: 0.03 }), 1.14, 0.9);
-    return room(b, 0.2);
+    const b = buf(2.6);
+    mix(b, boom(70, 26, 1.4, { body: 1, click: 0.2 }), 0, 0.9);
+    mix(b, horn(2.2, [45, 48, 52], { att: 0.4, open: 1300, closed: 400 }), 0.05, 0.8);
+    mix(b, choir(2.2, [57, 60, 64], { peak: 0.3, bright: 0.4 }), 0.1, 0.35);
+    return hall(b, 0.3, 1.8);
   },
   levelup: () => {
-    const b = run([72, 76, 79, 84, 88], 0.06, 0.5, 1.1);
-    return room(mix(buf(1.6), mix(b, chord([72, 79, 84], 1.1), 0.3, 0.8)), 0.28, 1.3);
+    const b = buf(2.4);
+    mix(b, horn(0.25, [60, 67]), 0, 0.7);
+    mix(b, horn(1.6, [65, 69, 72, 77]), 0.25, 0.9);
+    mix(b, shimmer(1.6, { lo: 2500, hi: 9500, peak: 0.25 }), 0.2, 0.5);
+    mix(b, choir(1.6, [53, 65, 69, 72], { peak: 0.25 }), 0.25, 0.4);
+    mix(b, boom(100, 40, 0.6, { body: 0.5, click: 0.3 }), 0.25, 0.6);
+    return hall(b, 0.28, 1.5);
   },
 };
 
@@ -351,7 +395,7 @@ for (const [name, make] of Object.entries(SOUNDS)) {
   if (only.length && !only.includes(name)) continue;
   seed = [...name].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 0x5eed);
   const src = join(tmp, `${name}.wav`);
-  writeFileSync(src, wav(finish(make())));
+  writeFileSync(src, wav(finish(make(), LOUD_OF[name] ?? LOUD)));
   const r = spawnSync(FFMPEG, ['-hide_banner', '-y', '-loglevel', 'error', '-i', src, '-codec:a', 'libmp3lame', '-b:a', '64k', '-map_metadata', '-1', join(OUT, `ring-${name}.mp3`)], { encoding: 'utf8' });
   if (r.status !== 0) throw new Error(r.stderr);
 }

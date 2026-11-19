@@ -1,7 +1,8 @@
 /**
  * The Ring's sound (the owner, 2026-11-18): "the sounds ... theyre currently kinda annoying, can we use more cartoony
  * cool and warm sounding effects please, the background music should also be per map and should be very cool
- * sounding and nice".
+ * sounding and nice". Then, 2026-11-19: "the current sounds are awful, its like jungle bells ... make them similar to
+ * wow pls, frost mage feels like santa claus with bells".
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -28,6 +29,13 @@ describe('The Ring sounds like itself', () => {
     // (the match plays them through ringSound; the lobby's rank-up is the Ring's too)
     expect(read('src/games/sigilfall/ui/RingMatch.tsx')).toContain('engine.sound.play(ringSound(id), vol)');
     expect(read('src/games/sigilfall/ui/RingScreen.tsx')).not.toMatch(/sound\.play\('levelup'\)/);
+  });
+
+  it('no bells: frost crunches and hisses, and nothing chimes', () => {
+    const script = read('scripts/sigilfall-ring-sounds.mjs');
+    expect(script).not.toMatch(/function (bell|marimba|kalimba|tinkle)\b|\b(bell|marimba|kalimba|tinkle|brass)\(/);
+    const sounds = script.slice(script.indexOf('const SOUNDS = {'));
+    for (const id of ['freeze', 'shatter', 'shard', 'spear']) expect(sounds).toMatch(new RegExp(`\\b${id}: \\(\\) => [^\\n]*(crunch|frostHiss)`));
   });
 
   it('the campaign keeps its own sounds', () => {
