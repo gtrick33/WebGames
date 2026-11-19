@@ -367,7 +367,9 @@ describe('The Ring: no class far above or below the rest in team fights', () => 
       // healing in team fights set by TEAM_K. The warrior, left out at first for the players' word of 2026-11-17, is in
       // since the owner's "bring him to 46ish" the same day: he was at a third of his 2v2s.)
       for (const c of CLASS_IDS) {
-        expect(got[c], `${c} ${(got[c]! * 100).toFixed(1)}%`).toBeGreaterThan(0.46);
+        // (the warrior below the rest by the owner's word, 2026-11-19: "lets nerve the warriors, nerf ult dmg by 25% and make
+        // the proc for the bleed spell more rare": players found him strong where the computer plays him weak)
+        expect(got[c], `${c} ${(got[c]! * 100).toFixed(1)}%`).toBeGreaterThan(c === 'warrior' ? 0.4 : 0.46);
         expect(got[c], `${c} ${(got[c]! * 100).toFixed(1)}%`).toBeLessThan(0.54);
       }
     }, 600_000);
