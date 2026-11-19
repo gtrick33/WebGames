@@ -2,7 +2,7 @@
  * Every land a map file (the owner's call of 2026-11-19: every land hand-built, POLISH_PLAN.md). The live lands the
  * generator made were frozen to data/maps/<land>.json; each loads from its file, and nothing about it is generated as
  * it loads. Until a land is worked by hand (its file says so: `"hand": true`), its file is exactly what the generator
- * made of it.
+ * made of it. Once it is, the generator's rules for where a wandering pack may stand still hold on it.
  */
 import { describe, expect, it } from 'vitest';
 import { GROUND, paintError, PAINTABLE } from '../src/games/sigilfall/data/ground';
@@ -44,6 +44,29 @@ describe('Sigilfall: every land is a map file', () => {
       expect(file.map, id).toEqual(made.map);
       expect(file.placed, id).toEqual(made.placed);
     }
+  });
+
+  it('keeps the generator’s rules for a wandering pack on a land worked by hand', () => {
+    // (zonegen wildPacks: never in a sight, which keeps its own packs and stays empty once a quest clears it, as a
+    // wandering pack would come back; nine tiles from a way out and from any other pack. And none at a town's doors.)
+    const broken: string[] = [];
+    for (const [id, file] of Object.entries(LAND_MAPS)) {
+      if (!file.hand) continue;
+      const houses: [number, number][] = [];
+      file.map.forEach((row, y) => [...row].forEach((ch, x) => (ch === 'h' || ch === 'H') && houses.push([x, y])));
+      for (const pm of file.placed) {
+        if (pm.marker.kind !== 'pack' || !pm.marker.roam) continue;
+        const at = `${id} (${pm.tx}, ${pm.ty})`;
+        const d = (x: number, y: number): number => Math.hypot(pm.tx - x, pm.ty - y);
+        for (const o of file.placed) {
+          if (o.marker.kind === 'spot' && d(o.tx, o.ty) < o.marker.r + 3) broken.push(`${at} in ${o.marker.name}`);
+          if (o.marker.kind === 'exit' && d(o.tx, o.ty) < 9) broken.push(`${at} by a way out`);
+          if (o !== pm && o.marker.kind === 'pack' && d(o.tx, o.ty) < 9) broken.push(`${at} by the pack at (${o.tx}, ${o.ty})`);
+        }
+        if (houses.some(([x, y]) => d(x, y) <= 8)) broken.push(`${at} at a town's doors`);
+      }
+    }
+    expect(broken).toEqual([]);
   });
 });
 
