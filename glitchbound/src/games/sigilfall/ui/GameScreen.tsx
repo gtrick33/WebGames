@@ -29,7 +29,7 @@ import { clockText, RISE_POTIONS, type World } from '../sim/world';
 import { sceneDark } from '../sim/scene';
 import { fmt, ItemIcon, Portrait } from './common';
 import { hudBoxOf, useHudBox } from './hudBoxes';
-import { boxesMeet } from '../render/speech';
+import { boxesMeet, type ViewBox } from '../render/speech';
 import { DesktopBar } from './DesktopBar';
 import { InviteCards } from './Friends';
 import { Panels } from './Panels';
@@ -147,13 +147,14 @@ function Announce({ engine, children }: { engine: SigilEngine; children: ReactNo
     const r = engine.renderer as SigilEngine['renderer'] | undefined;
     if (!el || !r) return;
     // where they are, for the words said on the picture to keep clear of (render/speech.ts placeSpeech)
-    r.floatBoxes.length = 0;
+    const boxes: ViewBox[] = [];
     for (const child of el.children) {
       if (!(child instanceof HTMLElement)) continue;
       const at = hudBoxOf(r.canvas, child.querySelector<HTMLElement>('.rb-tcard-text') ?? child, r.viewW, r.viewH);
-      if (at) r.floatBoxes.push(at);
+      if (at) boxes.push(at);
       child.classList.toggle('is-under-speech', !!at && r.speechBoxes.some((s) => boxesMeet(s, at, 4)));
     }
+    r.setFloatBoxes(boxes);
   });
   return (
     <div className="rb-announce" ref={strip}>

@@ -92,6 +92,8 @@ async function devServer() {
 
 /** Everything measured at one moment, in the page's pixels. */
 function measure(pieces) {
+  // (run in the page: its document and its styles)
+  const { document, getComputedStyle } = globalThis;
   const shown = (el) => {
     if (el.closest('[hidden]')) return false;
     for (let e = el; e && e !== document.body; e = e.parentElement) {

@@ -148,7 +148,11 @@ export class Renderer {
   /** The spoken lines drawn this frame, as boxes: the HUD steps out from under them (the quest fades while one is across it). */
   readonly speechBoxes: ViewBox[] = [];
   /** Announcements on the screen now (ui/GameScreen.tsx Announce): the words said on the picture keep clear of them too. */
-  readonly floatBoxes: ViewBox[] = [];
+  floatBoxes: readonly ViewBox[] = [];
+  /** Says where the announcements are this frame (ui/GameScreen.tsx Announce). */
+  setFloatBoxes(boxes: readonly ViewBox[]): void {
+    this.floatBoxes = boxes;
+  }
   /** Every card drawn this frame, a scene's too, with its words (scripts/sigilfall-overlap-check.mjs reads them). */
   readonly speechCards: (ViewBox & { text: string })[] = [];
 
