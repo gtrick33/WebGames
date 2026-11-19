@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { HAND_PLACED, handMarkers, validPlaced, type HandPlaced } from '../src/games/sigilfall/data/placed';
 import { propReach, propStandsUp } from '../src/games/sigilfall/data/props';
 import { REGIONS } from '../src/games/sigilfall/data/regions';
+import type { Marker } from '../src/games/sigilfall/data/types';
 import { K, parseRegion, TILE } from '../src/games/sigilfall/sim/map';
 import { newWorld, readyHero } from './sigilfall-bot';
 
@@ -118,8 +119,8 @@ describe('Sigilfall: the placement editor', () => {
           .sort();
       expect(storyOf(parseRegion(def!)), `${f}: a story marker moved`).toEqual(storyOf(bare));
       // nor stands in one: a cot low enough to be stepped over still mustn't lie inside the refugees' tent
-      const foot = (pm: { tx: number; ty: number; marker: { kind: string } }): { x: number; y: number; w: number; d: number } => {
-        const r = pm.marker.kind === 'prop' ? propReach((pm.marker as { prop: string }).prop) : null;
+      const foot = (pm: { tx: number; ty: number; marker: Marker }): { x: number; y: number; w: number; d: number } => {
+        const r = pm.marker.kind === 'prop' ? propReach(pm.marker.prop) : null;
         return { x: (pm.tx + 0.5) * TILE, y: (pm.ty + 0.5) * TILE, w: r?.w ?? TILE, d: r?.d ?? TILE };
       };
       const meet = (a: ReturnType<typeof foot>, b: ReturnType<typeof foot>): boolean => (a.w + b.w) / 2 - Math.abs(a.x - b.x) > 6 && (a.d + b.d) / 2 - Math.abs(a.y - b.y) > 6;
