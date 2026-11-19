@@ -813,7 +813,7 @@ html.rb-touch-playing textarea {
   stroke-width: 5;
   stroke-dasharray: 2 9 6 9;
   opacity: 0;
-  animation: rb-fade 1s ease-out 1.1s forwards;
+  animation: rb-show 1s ease-out 1.1s forwards;
 }
 .rb-sigil-star {
   stroke-width: 1.4;
@@ -825,14 +825,15 @@ html.rb-touch-playing textarea {
   fill: #ffcf5a;
   stroke: none;
   opacity: 0;
-  animation: rb-fade 0.8s ease-out 1.8s forwards;
+  animation: rb-show 0.8s ease-out 1.8s forwards;
 }
 @keyframes rb-draw {
   to {
     stroke-dashoffset: 0;
   }
 }
-@keyframes rb-fade {
+/* (a name of its own: as rb-fade it took the place of the fade-in every panel and menu opens with) */
+@keyframes rb-show {
   to {
     opacity: 1;
   }
@@ -6065,7 +6066,7 @@ html.rb-touch-playing textarea {
   gap: 5px;
   min-height: 150px;
   padding: 14px 10px 12px;
-  animation: rb-card-in 0.46s cubic-bezier(0.2, 1.25, 0.4, 1) calc(var(--i, 0) * 0.08s) both;
+  animation: rb-vigil-card-in 0.46s cubic-bezier(0.2, 1.25, 0.4, 1) calc(var(--i, 0) * 0.08s) both;
   border: 1px solid #6e5526;
   border-radius: 6px;
   background: linear-gradient(180deg, #2b2233, #15101f);
@@ -6076,7 +6077,8 @@ html.rb-touch-playing textarea {
   cursor: pointer;
   transition: transform 0.16s ease, border-color 0.16s ease;
 }
-@keyframes rb-card-in {
+/* (a name of its own: as rb-card-in it took the place of the land's title card's, which every land's title then played) */
+@keyframes rb-vigil-card-in {
   from {
     opacity: 0;
     transform: translateY(40px) rotateX(55deg) scale(0.84);

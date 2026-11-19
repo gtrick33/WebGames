@@ -3,6 +3,7 @@
  * shouts in a fight off the fight, and what comes and goes slid clear of what stays. The live game is checked at four
  * sizes by scripts/sigilfall-overlap-check.mjs; this holds the rules it rests on.
  */
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { SCENES } from '../src/games/sigilfall/data/scenes';
 import { boxesMeet, placeSpeech, type SpeechAsk, type SpeechRoom, type ViewBox } from '../src/games/sigilfall/render/speech';
@@ -160,5 +161,14 @@ describe('Sigilfall: what comes and goes slides clear of what stays', () => {
     expect(keepInside({ x: -20, y: 0, w: 100, h: 10 }, 8, 760)).toBe(28);
     expect(keepInside({ x: 700, y: 0, w: 100, h: 10 }, 8, 760)).toBe(-40);
     expect(keepInside({ x: 100, y: 0, w: 100, h: 10 }, 8, 760)).toBe(0);
+  });
+});
+
+describe('Sigilfall: every animation is the one it was written for', () => {
+  it('no two keyframes share a name (the later one silently takes the earlier one\'s place)', () => {
+    const css = readFileSync('src/games/sigilfall/Game.css', 'utf8');
+    const names = [...css.matchAll(/@keyframes\s+([\w-]+)/g)].map((m) => m[1]!);
+    const twice = names.filter((n, i) => names.indexOf(n) !== i);
+    expect(twice).toEqual([]);
   });
 });

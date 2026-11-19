@@ -40,13 +40,17 @@ export function useHudBox(engine: SigilEngine, id: string, ref: RefObject<HTMLEl
     r.setHudBox(id, el ? hudBoxOf(r.canvas, el, r.viewW, r.viewH) : null);
   };
   const measureRef = useRef(measure);
+  const measureLater = useRef((): void => measureRef.current()).current;
   useLayoutEffect(() => {
     measureRef.current = measure;
     const w = watch.current;
     if (w.el !== ref.current) {
       w.ro?.disconnect();
+      w.el?.removeEventListener('animationend', measureLater);
       w.el = ref.current;
       if (w.el && w.ro) w.ro.observe(w.el);
+      // (a piece that comes in moving is where it will stay once it has come: measured again then)
+      w.el?.addEventListener('animationend', measureLater);
     }
     measure();
   });

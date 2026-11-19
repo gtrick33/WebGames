@@ -155,9 +155,13 @@ export function usePlaced(engine: SigilEngine, ref: RefObject<HTMLElement | null
     const r = engine.renderer as SigilEngine['renderer'] | undefined;
     const off = r?.onHudMoved(again);
     window.addEventListener('resize', again);
+    // (what comes in moving is placed again once it has come: it was measured mid-way)
+    const el = ref.current;
+    el?.addEventListener('animationend', again);
     return () => {
       off?.();
       window.removeEventListener('resize', again);
+      el?.removeEventListener('animationend', again);
     };
   }, [engine, ref, key]);
 }
