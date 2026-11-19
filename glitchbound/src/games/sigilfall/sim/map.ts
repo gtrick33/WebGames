@@ -1,6 +1,7 @@
 import { hash2 } from '../core/math';
 import { MODEL_FOOT, modelOnLot, picBody, placeBuilding, yardProps, type PlacedPic } from '../data/buildingArt';
 import { FEET, propBody, propReach, propStandsUp, dressedFor, keepsApart, PROPS } from '../data/props';
+import { handMarkers } from '../data/placed';
 import { DRAWN } from '../data/propDrawn';
 import { THEMES } from '../data/themes';
 import type { Marker, PlacedMarkerDef, RegionDef, StoryCond } from '../data/types';
@@ -142,20 +143,30 @@ export interface MapBuilding {
  * No two things stand in each other (a lamp inside a watchtower, a tent in a tower's wall): what a generator set down
  * where something bigger already reaches moves aside onto the nearest clear ground, or isn't there. Only things that
  * stand at the same time: what the story brings later may take the place of what it took away.
+ *
+ * What was placed by hand (data/placed.ts, the placement editor) stands exactly where it was put, before anything
+ * else: what the generator set down in its way moves aside the same, and its dressing on the same tile goes.
  */
-function settled(placed: readonly PlacedMarkerDef[], w: number, h: number): PlacedMarkerDef[] {
+function settled(given: readonly PlacedMarkerDef[], w: number, h: number, hand: readonly PlacedMarkerDef[] = []): PlacedMarkerDef[] {
   // (a little overlap is only things standing close)
   const TOUCH = 12;
   const reachOf = (pm: PlacedMarkerDef): { w: number; d: number } | null => (pm.marker.kind === 'prop' && !pm.marker.through && propStandsUp(pm.marker.prop) ? propReach(pm.marker.prop) : null);
+  // (dressing on a hand-placed thing's own tile: a flowerbed under a barrel set down by hand)
+  const handAt = new Set(hand.map((pm) => pm.ty * w + pm.tx));
+  const placed = handAt.size ? given.filter((pm) => pm.when || pm.marker.kind !== 'prop' || !handAt.has(pm.ty * w + pm.tx)) : given;
   const standing = placed.filter((pm) => reachOf(pm));
-  if (!standing.length) return [...placed];
+  if (!standing.length) return [...placed, ...hand];
   const size = (pm: PlacedMarkerDef): number => {
     const r = reachOf(pm)!;
     return r.w * r.d;
   };
   const big = [...standing].sort((a, b) => size(b) - size(a));
-  const taken = new Set<number>(placed.map((pm) => pm.ty * w + pm.tx));
+  const taken = new Set<number>([...placed, ...hand].map((pm) => pm.ty * w + pm.tx));
   const fixed: { tx: number; ty: number; r: { w: number; d: number }; when: unknown }[] = [];
+  for (const pm of hand) {
+    const r = reachOf(pm);
+    if (r) fixed.push({ tx: pm.tx, ty: pm.ty, r, when: pm.when });
+  }
   // (where the story needs someone to stand is no place for a market stall)
   for (const pm of placed) {
     if (pm.marker.kind === 'place' || pm.marker.kind === 'spot') fixed.push({ tx: pm.tx, ty: pm.ty, r: { w: 30, d: 30 }, when: pm.when });
@@ -198,7 +209,7 @@ function settled(placed: readonly PlacedMarkerDef[], w: number, h: number): Plac
     if (m === null) continue;
     out.push(m ?? pm);
   }
-  return out;
+  return [...out, ...hand];
 }
 
 /**
@@ -248,7 +259,8 @@ function roadsOut(w: number, h: number, kind: Uint8Array, markers: { marker: Mar
   }
 }
 
-export function parseRegion(def: RegionDef): TileMap {
+/** A land's map: its tiles, what stands on them and its rooms. `hand` is what was placed in it by hand (data/placed.ts). */
+export function parseRegion(def: RegionDef, hand: readonly PlacedMarkerDef[] = handMarkers(def.id)): TileMap {
   const h = def.map.length;
   const w = def.map[0]!.length;
   const kind = new Uint8Array(w * h);
@@ -311,7 +323,7 @@ export function parseRegion(def: RegionDef): TileMap {
     for (const r of near) doors[r]!.push(i);
   }
   // markers a zone generator placed: they stand on the ground already there (sand, a road), or on grass
-  for (const pm of settled(def.placed ?? [], w, h)) {
+  for (const pm of settled(def.placed ?? [], w, h, hand)) {
     const { tx, ty, marker } = pm;
     if (tx < 0 || ty < 0 || tx >= w || ty >= h) continue;
     const i = ty * w + tx;

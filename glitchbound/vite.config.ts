@@ -2,7 +2,7 @@ import { defineConfig, type Plugin } from 'vitest/config';
 import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { execSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pageSpecs, renderPage, robots, sitemap } from './scripts/seo.ts';
@@ -108,6 +108,74 @@ function reviewShots(): Plugin {
   };
 }
 
+/** A land's file of hand-placed props (src/games/sigilfall/data/placed.ts). */
+const PLACED_FILE = /[\\/]data[\\/]placed[\\/][a-z0-9-]+\.json$/;
+
+/**
+ * Dev server only: Sigilfall's placement editor (src/games/sigilfall/ui/PlaceEditor.tsx, `?place` on the game's page)
+ * POSTs a land's hand-placed props here, and they are written to its data file, data/placed/<land>.json, one to a line
+ * and in the order of the land's rows, so a change reads as a change. A land with none left has no file.
+ */
+function placementEditor(): Plugin {
+  const entry = (p: unknown): string | null => {
+    if (!p || typeof p !== 'object') return null;
+    const o = p as Record<string, unknown>;
+    const tile = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < 1000;
+    if (!tile(o.tx) || !tile(o.ty) || typeof o.prop !== 'string' || !/^[a-z0-9-]+(:#[0-9a-f]{6})?$/.test(o.prop)) return null;
+    if (o.face !== undefined && o.face !== 'n' && o.face !== 'e' && o.face !== 'w') return null;
+    if (o.solid !== undefined && typeof o.solid !== 'boolean') return null;
+    return JSON.stringify({ tx: o.tx, ty: o.ty, prop: o.prop, ...(o.face ? { face: o.face } : {}), ...(o.solid ? { solid: true } : {}) });
+  };
+  return {
+    name: 'sigilfall-placement-editor',
+    apply: 'serve',
+    // (the editor holds the change already, so a land file written or taken away reloads nothing under it: only
+    // data/placed.ts, which looks for the files, takes it in, and the next page load reads it. Written again after it
+    // was taken away, the file was a module nothing imported any more, and the dev server reloaded the whole page)
+    hotUpdate: {
+      order: 'post',
+      handler({ file, modules }) {
+        if (!PLACED_FILE.test(file)) return;
+        return modules.filter((m) => !m.file || !PLACED_FILE.test(m.file));
+      },
+    },
+    configureServer(server) {
+      server.middlewares.use('/__sigilfall/placed', (req, res) => {
+        const land = new URL(req.url ?? '', 'http://x').searchParams.get('land') ?? '';
+        if (req.method !== 'POST' || !/^[a-z0-9-]+$/.test(land)) {
+          res.statusCode = 400;
+          res.end('bad request');
+          return;
+        }
+        const chunks: Buffer[] = [];
+        req.on('data', (c: Buffer) => chunks.push(c));
+        req.on('end', () => {
+          let list: unknown;
+          try {
+            list = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          } catch {
+            list = null;
+          }
+          const lines = Array.isArray(list) ? list.map(entry) : null;
+          if (!lines || lines.some((l) => l === null)) {
+            res.statusCode = 400;
+            res.end('bad list');
+            return;
+          }
+          const rows = (list as { tx: number; ty: number }[]).map((p, i) => ({ p, line: lines[i]! })).sort((a, b) => a.p.ty - b.p.ty || a.p.tx - b.p.tx);
+          const file = join(server.config.root, 'src/games/sigilfall/data/placed', `${land}.json`);
+          if (!rows.length) rmSync(file, { force: true });
+          else {
+            mkdirSync(dirname(file), { recursive: true });
+            writeFileSync(file, `[\n${rows.map((r) => `  ${r.line}`).join(',\n')}\n]\n`);
+          }
+          res.end('saved');
+        });
+      });
+    },
+  };
+}
+
 /** Test files that need a page to themselves (see `test.projects` below). */
 const ISOLATED = ['tests/ad-rules.test.tsx', 'tests/cloud-save.test.ts', 'tests/looks.test.tsx', 'tests/no-card-blink.test.ts', 'tests/party-room-name.test.tsx', 'tests/stage.test.tsx'];
 
@@ -134,7 +202,7 @@ export default defineConfig(({ mode }) => {
   return {
     base: '/',
     define: { __BUILD__: JSON.stringify(buildInfo()) },
-    plugins: [react(), seoPages(siteUrl, env.VITE_ADSENSE_CLIENT ?? ''), reviewShots()],
+    plugins: [react(), seoPages(siteUrl, env.VITE_ADSENSE_CLIENT ?? ''), reviewShots(), placementEditor()],
     // `npm run dev` proxies /api (and live-room sockets) to the Pages Functions (`npm run dev:api`,
     // port 8788). GB_API points it at another one, e.g. when several copies run side by side.
     server: {

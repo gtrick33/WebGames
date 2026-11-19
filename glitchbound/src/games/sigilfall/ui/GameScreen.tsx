@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { procsNow } from './comboMark';
 import { bossPips, phaseTicks, sixWords, windingUp } from './bossbar';
 import { mechanicDue, mechanicShown } from '../progress/tips';
@@ -109,6 +109,13 @@ function SceneBars({ engine }: { engine: SigilEngine }) {
   );
 }
 
+/**
+ * The placement editor (ui/PlaceEditor.tsx): only on the dev server, with `?place` in the address. A build has no
+ * trace of it (import.meta.env.DEV is false there, and the import goes with it).
+ */
+const PlaceEditor = import.meta.env.DEV ? lazy(() => import('./PlaceEditor')) : null;
+const placeAsked = (): boolean => !!PlaceEditor && typeof location !== 'undefined' && new URLSearchParams(location.search).has('place');
+
 export function useFrame(engine: SigilEngine, fn: (w: World) => void): void {
   const ref = useRef(fn);
   useEffect(() => {
@@ -201,6 +208,11 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
       {ui.tip && !ui.death && <TipOverlay engine={engine} />}
       {ui.story && <StoryPages engine={engine} />}
       <RotateHint engine={engine} />
+      {PlaceEditor && placeAsked() && (
+        <Suspense fallback={null}>
+          <PlaceEditor engine={engine} />
+        </Suspense>
+      )}
     </div>
   );
 }
