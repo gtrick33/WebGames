@@ -199,7 +199,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
     ...styleRows('warrior', 'w', 'pin', [
       [
         { name: 'Mounting Ire', text: 'Hock Cut generates Ire, up to 5. Rending Cut spends it to deal 20% more damage per Ire, bleed included. Run Them Down fills your Ire.', icon: 'angry_status_steam_cloud_on_red', points: { name: 'Ire', one: 'Ire', max: 5, color: '#ff6a4a' }, tune: { 'w-hamstring': { build: { n: 1 } }, 'w-bleed': { spend: { per: 0.2 } }, 'w-super2': { build: { n: 5, on: 'cast' } } } },
-        { name: 'Blood Up', text: 'Each tick of your Rending Cut bleed has a 50% chance to trigger Blood Up (stacks twice): your next Hock Cut deals triple damage.', icon: 'berserk_status_red_horned_mask_on_red', tune: { 'w-bleed': { gives: [{ boon: 'bloodup', chance: 0.5, on: 'tick' }] }, 'w-hamstring': { uses: [{ boon: 'bloodup', mult: 3 }] } } },
+        { name: 'Blood Up', text: 'Each tick of your Rending Cut bleed has a 25% chance to trigger Blood Up (stacks twice): your next Hock Cut deals triple damage.', icon: 'berserk_status_red_horned_mask_on_red', tune: { 'w-bleed': { gives: [{ boon: 'bloodup', chance: 0.25, on: 'tick' }] }, 'w-hamstring': { uses: [{ boon: 'bloodup', mult: 3 }] } } },
         { name: 'Grudge', text: 'Each consecutive hit on the same enemy deals 11% more damage, up to 55%. Switching targets resets it.', icon: 'crossed_sword_and_axe_on_red', does: { k: 'grudge', step: 0.11, max: 5 } },
       ],
       [
