@@ -79,4 +79,12 @@ describe('Sigilfall: a finished quest is one card', () => {
     expect(screenSrc).toContain('{ui.questCard && <QuestCard engine={engine} />}');
     expect(engineSrc).toMatch(/questCard && t - this\.ui\.questCard\.id > QUEST_CARD_MS/);
   });
+
+  it('stays at the top, the quest stepping aside under it, rather than sliding down off the quest toward the hero', () => {
+    // (it slid down off the quest and came over the hero for five seconds: the card says the quest done and the next,
+    // and the quest steps aside under any announcement, ui/GameScreen.tsx Tracker)
+    expect(screenSrc).toContain("child.classList.contains('rb-qcard') ? CARD_KEEPS_CLEAR : TOP_PIECES");
+    expect(screenSrc).toContain("const CARD_KEEPS_CLEAR = TOP_PIECES.filter((p) => p !== 'quest');");
+    expect(screenSrc).toContain("el.classList.toggle('is-under-announce', !!r && !!at && r.floatBoxes.some((b) => boxesMeet(b, at, 2)));");
+  });
 });

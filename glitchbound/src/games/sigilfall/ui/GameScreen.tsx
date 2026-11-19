@@ -125,6 +125,13 @@ export function useFrame(engine: SigilEngine, fn: (w: World) => void): void {
 }
 
 /**
+ * What a finished quest's card keeps clear of: not the quest, which steps aside while an announcement lies over it
+ * (Tracker). The card stays at the top, where it says the quest done and the next one, instead of sliding down off
+ * the quest toward the hero.
+ */
+const CARD_KEEPS_CLEAR = TOP_PIECES.filter((p) => p !== 'quest');
+
+/**
  * The announcements (a land's name, a banner, a level gained). Words someone is saying are written on the picture,
  * under the HUD: an announcement that lies across them steps aside until they are said (the owner: "the big land
  * title is drawn over Mara's speech bubble").
@@ -138,7 +145,7 @@ function Announce({ engine, children }: { engine: SigilEngine; children: ReactNo
     strip,
     (el) => {
       if (engine.touchMode) placeDown(engine, el, TOP_PIECES);
-      else for (const child of el.children) if (child instanceof HTMLElement) placeDown(engine, child.querySelector<HTMLElement>('.rb-tcard-text') ?? child, TOP_PIECES);
+      else for (const child of el.children) if (child instanceof HTMLElement) placeDown(engine, child.querySelector<HTMLElement>('.rb-tcard-text') ?? child, child.classList.contains('rb-qcard') ? CARD_KEEPS_CLEAR : TOP_PIECES);
     },
     engine.touchMode,
   );
