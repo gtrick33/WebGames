@@ -241,6 +241,13 @@ export interface Enemy {
   raiseT: number;
   hurtT: number;
   victimT: number;
+  /**
+   * The last blow that landed on it, for the eye only (render3d/worldCast.ts recoil): when (World.time), the way it
+   * was struck from (an angle, from the striker to it), and how hard against its health, 0 to 1.
+   */
+  hitT?: number;
+  hitA?: number;
+  hitK?: number;
 }
 
 /** A companion fighting for the hero. */
@@ -557,6 +564,8 @@ export interface FloatText {
   /** A damage number: the enemy it rose from and what it has added up to (World.damageNumber). */
   src?: number;
   sum?: number;
+  /** How large it is drawn against its usual size: a blow that takes a big share of a foe, or finishes it, is bigger. */
+  scale?: number;
 }
 
 /** Visual-only particles and flashes (never affect play). */
