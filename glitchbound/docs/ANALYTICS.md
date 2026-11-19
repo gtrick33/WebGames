@@ -32,8 +32,31 @@ dashboard (`/admin`) reads it. Nothing is sent to third parties unless you also 
 | `sign_in`, `subscribe` | Account / email list | `method` / `via` |
 | `game_error` | A game did not load | `game` |
 | `web_vitals` | The page is hidden after a load | `page` (route name), `device`, `lcp` and `inp` (ms), `cls` |
+| `game_fall` | A game's hero falls (Sigilfall) | `game`, `region`, `quest`, `level`, `boss` |
+| `game_stop` | A player leaves a game mid-play: the page is left or the game closed (Sigilfall, once a sitting) | `game`, `region`, `quest`, `level`, `minutes` |
 
 The last 100 events are also visible in the browser console as `__glitchbound.events`.
+
+## Sigilfall's playtest numbers
+
+`game_fall` and `game_stop` say where heroes fall and where players stop (src/games/sigilfall/progress/telemetry.ts).
+Their props are the game's own content only: the land, the quest being followed, the hero's level, the boss if one was
+up, the minutes played. No name, hero or save. A review hero (a preset, a scene preview) and a Rift Trial send nothing.
+To read them, in the D1 console:
+
+```sql
+-- where heroes fall most (the last 14 days)
+SELECT json_extract(props, '$.quest') AS quest, json_extract(props, '$.boss') AS boss, COUNT(*) AS falls,
+       COUNT(DISTINCT visitor) AS players
+FROM events WHERE name = 'game_fall' AND game = 'sigilfall' AND ts > (strftime('%s', 'now') - 14 * 86400) * 1000
+GROUP BY quest, boss ORDER BY falls DESC LIMIT 25;
+
+-- where players stop, and after how long
+SELECT json_extract(props, '$.quest') AS quest, COUNT(*) AS stops,
+       ROUND(AVG(json_extract(props, '$.minutes')), 1) AS avg_minutes
+FROM events WHERE name = 'game_stop' AND game = 'sigilfall' AND ts > (strftime('%s', 'now') - 14 * 86400) * 1000
+GROUP BY quest ORDER BY stops DESC LIMIT 25;
+```
 
 ## The admin dashboard shows
 

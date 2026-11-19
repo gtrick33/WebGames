@@ -33,7 +33,10 @@ export type AnalyticsEvent =
   | 'room_open'
   | 'room_join'
   | 'room_match'
-  | 'web_vitals';
+  | 'web_vitals'
+  // a game's playtest numbers: where its hero fell, and where a player stopped (Sigilfall: progress/telemetry.ts)
+  | 'game_fall'
+  | 'game_stop';
 
 export type Props = Record<string, string | number | boolean>;
 
