@@ -1,15 +1,17 @@
 import * as THREE from 'three';
 import type { MountDef } from '../data/mounts';
 import type { HeroLook } from '../render/art/hero';
-import { npcLookOf } from '../render/sprites';
+import { heroLook, npcLookOf } from '../render/sprites';
 import { Crowd } from './crowd';
-import { dressedOf, loadWardrobe, type Held, type Wardrobe } from './dress';
+import { carriedModel, dressedOf, loadWardrobe, type Held, type Wardrobe } from './dress';
 import { hexRgb, kitOf } from './kits';
 import { mountModel } from './mountKit';
 import { shapeOf } from './mountLook';
-import { loadPack, type MeshData, type Pack } from './pack';
+import { loadPack, toGeometry, type MeshData, type Pack } from './pack';
 import { busyElsewhere } from './pace';
-import { copyLight, daylight, putLight, rigAnimOf, type RigAnim } from './toon';
+import { copyLight, daylight, putLight, rigAnimOf, staticMaterial, type RigAnim } from './toon';
+import type { Item, ItemIcon, SlotId } from '../data/types';
+import { itemIcon, itemMat, itemTint } from '../progress/items';
 
 /**
  * Pictures of heroes for the menus: the same models as the game, posed and photographed once on a canvas of their
@@ -63,7 +65,7 @@ function ensure(): boolean {
  * empty picture that was kept for the rest of the visit: the Vigil's hero was missing from their stand (the owner:
  * "in the vigil, the character is missing completely"). The lights are put back as they were afterwards.
  */
-function photograph(w: number, h: number): string | null {
+function photograph(w: number, h: number, cam: THREE.Camera = camera): string | null {
   const r = renderer!;
   const gl = r.getContext();
   if (gl.isContextLost()) {
@@ -73,7 +75,7 @@ function photograph(w: number, h: number): string | null {
   const was = copyLight();
   daylight();
   try {
-    r.render(scene, camera);
+    r.render(scene, cam);
     // (anything drawn at all: a column down the middle and a row across it, where every subject stands)
     const down = new Uint8Array(4 * h);
     const across = new Uint8Array(4 * w);
@@ -322,4 +324,112 @@ export function shopLookPicture(look: HeroLook, bust: boolean, w: number, h: num
   if (!wardrobe || !ensure()) return null;
   const { mesh } = dressedOf(wardrobe, look, null, false);
   return framed(mesh, wardrobe.medium, wardrobe.medium.frame('idle', 0.3), turn ?? (bust ? 0.42 : 0.62), w, h, 0.022, bust ? 0.95 : -Infinity, turn !== undefined);
+}
+
+/* ------------------------------------------------------------------ gear */
+
+/**
+ * An item's picture, from the model the hero carries or wears (POLISH_PLAN.md piece 11): the icons were painted pixel
+ * art beside a world of low-poly models, and now they are the models themselves, in the same light. A weapon, a shield
+ * or a quiver is pictured alone, lying across the picture; what is worn on the body is pictured on a figure, close on
+ * where it is worn (a helm on a head, boots on feet). Null for what has no model (a ring, an amulet, a relic, a
+ * potion): the painted icon stays for those. Null too until the models are in (the screen gate brings them in).
+ */
+export function gearPicture(item: Item, size: number): string | null {
+  if (!wardrobe || !ensure()) return null;
+  const icon = itemIcon(item);
+  const kind = CARRIED[icon];
+  if (kind) {
+    const m = carriedModel(wardrobe, kind, { tint: itemTint(item), mat: itemMat(item), r: item.r });
+    return m ? shootThing(m, size, kind) : null;
+  }
+  const worn = WORN[icon];
+  return worn ? shootWorn(wardrobe, item, worn, size) : null;
+}
+
+/** What is carried, by its icon: the kind of model it is. */
+const CARRIED: Partial<Record<ItemIcon, string>> = { sword: 'sword', axe: 'axe', hammer: 'hammer', staff: 'staff', wand: 'wand', bow: 'bow', shield: 'shield', quiver: 'quiver' };
+
+/** What is worn, by its icon: where, and where the camera stands to see it there (x, y, z, then where it looks). */
+interface Worn {
+  slot: SlotId;
+  eye: readonly [number, number, number];
+  at: readonly [number, number, number];
+  turn: number;
+}
+const HEAD: Worn = { slot: 'head', eye: [0, 1.98, 2.5], at: [0, 1.8, 0], turn: 0.42 };
+const CHEST: Worn = { slot: 'chest', eye: [0, 1.3, 3.0], at: [0, 1.12, 0], turn: 0.36 };
+const WORN: Partial<Record<ItemIcon, Worn>> = {
+  helm: HEAD,
+  hood: HEAD,
+  cap: HEAD,
+  crown: HEAD,
+  robe: CHEST,
+  plate: CHEST,
+  jerkin: CHEST,
+  legs: { slot: 'legs', eye: [0, 0.62, 2.9], at: [0, 0.48, 0], turn: 0.36 },
+  gloves: { slot: 'hands', eye: [0, 1.05, 3.4], at: [0, 0.95, 0], turn: 0.2 },
+  boots: { slot: 'feet', eye: [0, 0.34, 2.1], at: [0, 0.12, 0], turn: 0.55 },
+};
+
+/** Whether an item of this icon is pictured from a model (else its painted icon stays). */
+export const hasGearModel = (icon: ItemIcon): boolean => !!CARRIED[icon] || !!WORN[icon];
+
+const flatCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 60);
+
+/** A thing on its own, lying across the picture, its business end up and to the right, turned a little to show its depth. */
+function shootThing(m: MeshData, size: number, kind: string): string | null {
+  const r = renderer!;
+  r.setPixelRatio(1);
+  r.setSize(size, size, false);
+  const geo = toGeometry(m);
+  geo.setAttribute('iTint', new THREE.InstancedBufferAttribute(new Float32Array([1, 1, 1, 0]), 4));
+  const thing = new THREE.InstancedMesh(geo, staticMaterial, 1);
+  const lean = kind === 'shield' || kind === 'quiver' ? 0.12 : -Math.PI / 4;
+  const pose = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0.18, kind === 'shield' ? 0.55 : 0.5, lean, 'XYZ'));
+  thing.setMatrixAt(0, pose);
+  thing.frustumCulled = false;
+  scene.add(thing);
+  // (framed on the model as it lies: its corners, turned)
+  const box = new THREE.Box3();
+  const v = new THREE.Vector3();
+  for (let i = 0; i < m.n; i++) box.expandByPoint(v.set(m.pos[i * 3]!, m.pos[i * 3 + 1]!, m.pos[i * 3 + 2]!).applyMatrix4(pose));
+  const c = box.getCenter(new THREE.Vector3());
+  const half = Math.max(box.max.x - box.min.x, box.max.y - box.min.y) * 0.56 || 1;
+  flatCam.left = c.x - half;
+  flatCam.right = c.x + half;
+  flatCam.top = c.y + half;
+  flatCam.bottom = c.y - half;
+  flatCam.position.set(c.x, c.y, c.z + 20);
+  flatCam.lookAt(c.x, c.y, c.z);
+  flatCam.updateProjectionMatrix();
+  try {
+    return photograph(size, size, flatCam);
+  } finally {
+    scene.remove(thing);
+    geo.dispose();
+    thing.dispose();
+  }
+}
+
+/** Something worn, on a figure wearing it and nothing else of note, close on where it is worn. */
+function shootWorn(w: Wardrobe, item: Item, worn: Worn, size: number): string | null {
+  const look = heroLook('warrior', { [worn.slot]: item });
+  const { mesh } = dressedOf(w, look, null, false);
+  const r = renderer!;
+  r.setPixelRatio(1);
+  r.setSize(size, size, false);
+  const crowd = new Crowd(mesh, w.medium, scene, 1, 0.022);
+  crowd.begin();
+  crowd.put(0, 0, 0, worn.turn, 1, 1, w.medium.frame('idle', 0.3));
+  crowd.end();
+  camera.aspect = 1;
+  camera.position.set(worn.eye[0], worn.eye[1], worn.eye[2]);
+  camera.lookAt(worn.at[0], worn.at[1], worn.at[2]);
+  camera.updateProjectionMatrix();
+  try {
+    return photograph(size, size);
+  } finally {
+    crowd.dispose();
+  }
 }

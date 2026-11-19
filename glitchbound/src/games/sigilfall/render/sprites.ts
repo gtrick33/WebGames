@@ -1,5 +1,5 @@
 import { FOE_LOOKS } from './art/foeLooks';
-import { bustPicture, creaturePicture, dollPicture, mountPicture, type DollView } from '../render3d/portrait';
+import { bustPicture, creaturePicture, dollPicture, gearPicture, hasGearModel, mountPicture, type DollView } from '../render3d/portrait';
 import { mountKey } from '../render3d/mountKit';
 import { HAIRS, SKINS, type Face } from '../progress/character';
 import { CLASSES } from '../data/classes';
@@ -457,6 +457,26 @@ export function itemIconCanvas(item: Item): Cnv {
   const icon = itemIcon(item);
   const tint = itemTint(item);
   return memo(`itemicon:${icon}:${tint}`, () => paint(ITEM_ICONS[icon] ?? ITEM_ICONS.relic!, { ...ITEM_ICON_PAL, t: tint, T: shade(tint, -0.4), l: shade(tint, 0.6) }), 1).c;
+}
+
+/**
+ * An item's icon for the menus (POLISH_PLAN.md piece 11): its own 3D model, in the world's light, where it has one
+ * (render3d/portrait.ts gearPicture); its painted icon where it hasn't (a ring, an amulet, a relic, a potion), or
+ * until the models are in. `smooth` says which: a picture is drawn smooth, pixel art crisp.
+ */
+export function itemPicture(item: Item): { url: string; smooth: boolean } {
+  const icon = itemIcon(item);
+  if (hasGearModel(icon)) {
+    const key = `gear:${icon}:${itemTint(item)}:${itemMat(item)}:${item.r}`;
+    const hit = iconCache.get(key);
+    if (hit) return { url: hit, smooth: true };
+    const shot = gearPicture(item, 96);
+    if (shot) {
+      iconCache.set(key, shot);
+      return { url: shot, smooth: true };
+    }
+  }
+  return { url: itemIconUrl(item, 4), smooth: false };
 }
 
 export function itemIconUrl(item: Item | { icon: ItemIcon; tint: string }, scale = 4): string {

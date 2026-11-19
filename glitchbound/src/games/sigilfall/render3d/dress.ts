@@ -133,6 +133,27 @@ export interface Held {
   tint?: string;
 }
 
+/**
+ * The model of a thing carried, as the hero carries it (POLISH_PLAN.md piece 11: an item's icon is drawn from it): a
+ * weapon by its kind and dye (the same pick as a hero holding it), a shield by its own look, a quiver in its color.
+ * Null for what is worn on the body (render3d/portrait.ts pictures that on a figure) and for what has no model.
+ */
+export function carriedModel(w: Wardrobe, kind: string, look: { tint: string; mat: string; r: string }): MeshData | null {
+  const tint = hexRgb(look.tint);
+  if (kind === 'shield') {
+    const m = w.hero.meshes[pickOf(SHIELDS, { style: 'shield', tint: look.tint, mat: look.mat, r: look.r })];
+    return m ? painted(m, { cloth: tint }) : null;
+  }
+  if (kind === 'quiver') {
+    const m = w.hero.meshes.w_quiver ?? w.hero.meshes.Ranger_Quiver;
+    return m ? painted(m, { cloth: tint }) : null;
+  }
+  const list = WEAPONS[kind];
+  if (!list) return null;
+  const m = w.hero.meshes[pickOf(list, { style: kind, tint: look.tint, mat: '', r: '' })];
+  return m ? painted(m, { cloth: tint }) : null;
+}
+
 /** What is in the hands. */
 function addHeld(w: Wardrobe, parts: MeshData[], look: HeroLook, held: Held | null, shield: boolean, _part: (id: string) => MeshData | null): void {
   const add = (m: MeshData | null): void => {

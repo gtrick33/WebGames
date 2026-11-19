@@ -2,7 +2,7 @@ import type { Face } from '../progress/character';
 import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import type { ClassId, Item, Rarity } from '../data/types';
 import type { Character } from '../progress/character';
-import { heroLook, heroPortraitUrl, itemIconUrl, portraitUrl, skillIconUrl, type WornLooks, hasPersonLook } from '../render/sprites';
+import { heroLook, heroPortraitUrl, itemPicture, portraitUrl, skillIconUrl, type WornLooks, hasPersonLook } from '../render/sprites';
 import { rarityColor } from '../render/renderer';
 
 /** Small shared pieces of the Sigilfall UI. */
@@ -12,10 +12,16 @@ export const RARITY_NAME: Record<Rarity, string> = { common: 'Common', uncommon:
 export function ItemIcon({ item, size = 44, label }: { item: Item; size?: number; label?: string }) {
   return (
     <span className={`rb-itemicon is-${item.r}`} style={{ width: size, height: size, ['--rc' as string]: rarityColor(item.r) }}>
-      <img src={itemIconUrl(item, 4)} alt={label ?? ''} width={size - 8} height={size - 8} draggable={false} />
+      <ItemPicture item={item} label={label} size={size - 8} />
       {item.fresh && <i className="rb-new" aria-label="New" />}
     </span>
   );
+}
+
+/** An item's picture: its own model where it has one, drawn smooth; its painted icon, crisp, where it hasn't. */
+function ItemPicture({ item, label, size }: { item: Item; label?: string; size: number }) {
+  const pic = itemPicture(item);
+  return <img className={pic.smooth ? 'is-smooth' : undefined} src={pic.url} alt={label ?? ''} width={size} height={size} draggable={false} />;
 }
 
 export function SkillIcon({ id, size = 40 }: { id: string; size?: number }) {
