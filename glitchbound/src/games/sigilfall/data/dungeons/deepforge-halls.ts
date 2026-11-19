@@ -251,8 +251,10 @@ const BOSSES: Record<string, BossDef> = {
     name: 'The Runewarden',
     title: 'Bound Guardian of the Deepforge',
     sprite: 'the-runewarden',
-    hp: 4600,
-    dmg: 32,
+    // (3900, from 4600, as its fight grew longer: sim/world.ts bossLength; bound, it turns most of a blow aside)
+    hp: 3900,
+    // (28, from 32, as its fight grew longer: sim/world.ts bossLength)
+    dmg: 28,
     radius: 13,
     xp: 900,
     gold: [140, 200],
@@ -365,7 +367,8 @@ const BOSSES: Record<string, BossDef> = {
           // the forge hammer, in a wide arc
           { id: 'cleave', w: 3, cd: 2.5, p: { r: 48, arc: 1, wind: 0.6, lunge: 22, mul: 1.5 } },
           // the hammer splits the floor: cracks run out along lines and burst one stone after another
-          { id: 'forge:quake', w: 3, cd: 4.5, p: { lines: 3, spread: 0.5, len: 190 } },
+          // (each crack 0.92 of a blow, from 1.1: his fight lasts longer now, sim/world.ts bossLength)
+          { id: 'forge:quake', w: 3, cd: 4.5, p: { lines: 3, spread: 0.5, len: 190, mul: 0.92 } },
           // molten bone-steel poured down a channel: it runs from the spout, stays, then cools
           { id: 'forge:pour', w: 2, cd: 7, p: { lanes: LANES, count: 1, open: 3 } },
           // forged blades thrown in loops that come back to his hand, crossing where you stand
@@ -385,7 +388,7 @@ const BOSSES: Record<string, BossDef> = {
           // the bellows blow the furnace’s heat across half the hall while he hammers cracks across the way out
           { id: 'forge:bellows', w: 3, cd: 9, p: { cracks: 3, len: 220 } },
           { id: 'forge:pour', w: 3, cd: 6, p: { lanes: LANES, count: 2, open: 3.5 } },
-          { id: 'forge:quake', w: 2, cd: 4.5, p: { lines: 4, spread: 0.45, len: 210 } },
+          { id: 'forge:quake', w: 2, cd: 4.5, p: { lines: 4, spread: 0.45, len: 210, mul: 0.92 } },
           { id: 'forge:blades', w: 2, cd: 5.5, p: { count: 3, spread: 3.1416 } },
           { id: 'cleave', w: 2, cd: 2.5, p: { r: 48, arc: 1, wind: 0.58, lunge: 22, mul: 1.5 } },
           { id: 'slamRings', w: 1, cd: 8 },
@@ -404,7 +407,7 @@ const BOSSES: Record<string, BossDef> = {
         ],
         patterns: [
           { id: 'forge:bellows', w: 3, cd: 9, p: { twice: 1, wind: 2.4, cracks: 3, len: 220 } },
-          { id: 'forge:quake', w: 3, cd: 4, p: { lines: 6, ring: 1, len: 210 } },
+          { id: 'forge:quake', w: 3, cd: 4, p: { lines: 6, ring: 1, len: 210, mul: 0.92 } },
           { id: 'forge:blades', w: 2, cd: 5, p: { count: 4, spread: 3.1416 } },
           // he strikes the floor like his anvil: rings of force roll out
           { id: 'slamRings', w: 2, cd: 6 },

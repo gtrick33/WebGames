@@ -164,8 +164,8 @@ export const WARRIOR: Kit = {
       'ultimate',
       10,
       'Red Tempest',
-      'Become a storm of steel for 3 seconds, cutting everything around you as you run, 25% faster. Spends all your Fury: 25% harder for each.',
-      spec({ id: 'red-tempest', cast: 'channel', aim: 'self', cooldown: 0, damage: 26, area: 44, duration: 3, tick: 0.2, knock: 30, spend: { per: 0.25 }, onCast: [{ kind: 'buff', buff: { id: 'red-tempest', name: 'Red Tempest', dur: 3, stats: { speed: 25 }, color: '#ff4f4f' } }], tags: ['melee', 'aoe', 'ultimate'] }),
+      'Become a storm of steel for 3 seconds, cutting everything around you as you run, 25% faster and taking 30% less damage. Spends all your Fury: 25% harder for each.',
+      spec({ id: 'red-tempest', cast: 'channel', aim: 'self', cooldown: 0, damage: 26, area: 44, duration: 3, tick: 0.2, knock: 30, spend: { per: 0.25 }, onCast: [{ kind: 'buff', buff: { id: 'red-tempest', name: 'Red Tempest', dur: 3, stats: { speed: 25 }, dr: 30, color: '#ff4f4f' } }], tags: ['melee', 'aoe', 'ultimate'] }),
     ),
     sk(
       'ultimate',
@@ -182,7 +182,7 @@ export const WARRIOR: Kit = {
     T(0, 0, 1, 'unbridled', 'Unchecked Wrath', 2, 'rage', 'Cleave gives 2 more Rage per rank.', [K('cleave', { op: 'gen', n: 2 })]),
     T(0, 0, 2, 'rampage', 'Rampage', 1, 'combo', 'Cleave’s third swing hits 50% harder and wider.', [K('cleave', { op: 'extra', key: 'comboMul', n: 0.5, label: 'third-swing damage' }), K('cleave', { op: 'extra', key: 'comboArc', n: 0.6, label: 'third-swing width' })]),
     T(0, 0, 3, 'reckless', 'Reckless', 2, 'heart', '+15% damage per rank while below half health.', [S('power', 15, 'lowHp')]),
-    T(0, 0, 4, 'hot-blood', 'Hot Blood', 3, 'rage', 'Cleave’s hits have a 5% chance per rank to build a point of Fury more.', [P({ id: 'hot-blood', on: 'hit', skill: 'cleave', chance: 0.05, icd: 0.8, perRank: 'chance', effect: { kind: 'points', n: 1 }, text: 'Cleave can build a point of Fury more.' })]),
+    T(0, 0, 4, 'thirst', 'Thirst', 3, 'heal', 'Blood Hunger deals +10% damage per rank.', [dmg('bloodthirst', 10)]),
     // the choice: how the Fury is made to pay
     C(0, 1, 0, 'core', 'blood-on-the-air', 'Blood on the Air', 'crit', 'A critical hit gives you the scent: Blood Hunger is ready at once, free and 50% stronger (once every 4 s).', [P({ id: 'blood-on-the-air', on: 'crit', chance: 1, icd: 4, effect: { kind: 'buff', buff: next('bloodscent', 'Blood on the Air', '#ff5a4a', 'bloodthirst', 8, { pct: 50, free: true, ready: true }) }, text: 'A critical hit readies Blood Hunger, free and 50% stronger.' })]),
     C(0, 1, 1, 'core', 'boiling-over', 'Boiling Over', 'rage', 'Every Cleave that lands builds two points of Fury, not one, and each point Blood Hunger spends is worth 5% more.', [K('cleave', { op: 'build', n: 1 }), K('bloodthirst', { op: 'spend', per: 0.05 })]),
@@ -190,7 +190,7 @@ export const WARRIOR: Kit = {
     T(0, 1, 3, 'red-mist', 'Red Mist', 3, 'rage', 'Cleave’s hits have a 2% chance per rank to send you into a Red Mist: your next Whirlwind is ready at once, costs nothing and spins 40% harder (once every 8 s).', [P({ id: 'red-mist', on: 'hit', skill: 'cleave', chance: 0.02, icd: 8, perRank: 'chance', effect: { kind: 'buff', buff: next('red-mist', 'Red Mist', '#ff3a3a', 'whirlwind', 10, { ready: true, free: true, pct: 40 }) }, text: 'Cleave can ready a free, stronger Whirlwind.' })]),
     T(0, 1, 4, 'butcher', 'Butcher', 1, 'heal', 'Heavy Strike heals you for 6% of your health when it kills.', [K('heavy-strike', { op: 'onKill', effect: { kind: 'heal', pct: 6 } })]),
     T(0, 2, 0, 'frenzy', 'Frenzy', 2, 'clock', 'Critical hits take 0.4 s per rank off your cooldowns (once every 1.5 s).', [P({ id: 'frenzy', on: 'crit', chance: 1, icd: 1.5, effect: { kind: 'cdr', s: 0.4 }, text: 'Critical hits shorten your cooldowns.' })]),
-    T(0, 2, 1, 'thirst', 'Thirst', 3, 'heal', 'Blood Hunger deals +10% damage per rank.', [dmg('bloodthirst', 10)]),
+    T(0, 2, 1, 'hot-blood', 'Hot Blood', 3, 'rage', 'Cleave’s hits have a 5% chance per rank to build a point of Fury more.', [P({ id: 'hot-blood', on: 'hit', skill: 'cleave', chance: 0.05, icd: 0.8, perRank: 'chance', effect: { kind: 'points', n: 1 }, text: 'Cleave can build a point of Fury more.' })]),
     T(0, 2, 2, 'execute', 'Execute', 1, 'skull', 'Heavy Strike deals +60% damage to enemies below 30% health.', [K('heavy-strike', { op: 'bonusVs', status: 'lowHp', pct: 60 })]),
     T(0, 2, 3, 'raging-blow', 'Furious Blow', 1, 'clock', 'Blood Hunger recharges 20% faster.', [cdr('bloodthirst', 20)]),
     T(0, 2, 4, 'blood-sense', 'Blood Sense', 3, 'skull', 'Blood Hunger and Red Tempest deal 8% more per rank to enemies below 30% health.', [K('bloodthirst', { op: 'bonusVs', status: 'lowHp', pct: 8 }), K('red-tempest', { op: 'bonusVs', status: 'lowHp', pct: 8 })]),

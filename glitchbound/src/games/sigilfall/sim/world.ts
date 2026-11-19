@@ -245,12 +245,15 @@ export const bossHealth = (level: number): number => 1 - (1 - BOSS_HEALTH) * har
  * player with the combos took less. A boss's own clocks that were set against the old length (a ward that grows, leeches
  * that drink, a doom that counts down) are measured against this (sim/patterns/kit.ts bossBase, bossClock).
  *
- * It grows with the story: the first boss a new hero meets lasts as it did, a level-15 dungeon's about 40% longer, and
- * every boss from level 40 BOSS_LENGTH times as long. Measured with the play-bot: at twice as long from the start it
- * cleared the late dungeons in a minute or two a boss, but fell twenty and thirty times to the Rot Mother, the Runewarden
- * and Sir Corvane, whose blows a hero still learning to step out of them takes over and over in a long fight.
+ * It grows with the story: the first boss a new hero meets lasts as it did, a level-15 dungeon's about a quarter longer,
+ * and every boss from level 40 BOSS_LENGTH times as long. Measured with the play-bot, every class through every story
+ * dungeon on three seeds as the tests play them: its median boss fight went from about 45 seconds to 70 (14 to 371, the
+ * healers' the longest), and every class clears every dungeon inside the falls allowed. At 2.2 times, and at twice as
+ * long from the start, it fell twenty and thirty times to the Rot Mother, the Runewarden and Sir Corvane, whose blows a
+ * hero still learning to step out of them takes over and over in a long fight; those three (and the Forgemaster's
+ * quake) hit a little lighter now, data/dungeons.
  */
-export const BOSS_LENGTH = 2.2;
+export const BOSS_LENGTH = 1.8;
 export const bossLength = (level: number): number => 1 + (BOSS_LENGTH - 1) * Math.max(0, Math.min(1, (level - 4) / 36));
 
 /**
@@ -1228,6 +1231,8 @@ export class World {
    * it always has. And no more than DAMAGE_NUMBERS of them at once: the oldest give way.
    */
   damageNumber(e: { id: number; x: number; y: number; r: number }, dmg: number, color: string, crit: boolean): void {
+    // (one draw a blow, as when every blow rose on its own: the fight's chances run as they did)
+    const jitter = (this.rand() - 0.5) * 6;
     if (!crit) {
       const o = this.texts.find((t) => t.src === e.id && !t.big && t.color === color && t.t < NUMBER_SUMS);
       if (o) {
@@ -1242,7 +1247,7 @@ export class World {
     const shown = this.texts.filter((t) => t.src !== undefined);
     if (shown.length >= DAMAGE_NUMBERS) this.texts.splice(this.texts.indexOf(shown[0]!), 1);
     if (this.texts.length > 60) this.texts.shift();
-    this.texts.push({ x: e.x + (this.rand() - 0.5) * 6, y: e.y - e.r - 6, text: String(dmg), color, t: 0, big: crit, vy: -26, src: e.id, sum: dmg });
+    this.texts.push({ x: e.x + jitter, y: e.y - e.r - 6, text: String(dmg), color, t: 0, big: crit, vy: -26, src: e.id, sum: dmg });
   }
   addFx(f: Partial<Fx> & Pick<Fx, 'kind' | 'x' | 'y' | 'life'>): void {
     if (this.fx.length > 420) return;

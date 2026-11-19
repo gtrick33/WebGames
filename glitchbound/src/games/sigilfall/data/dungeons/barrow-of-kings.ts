@@ -335,9 +335,11 @@ const bosses: Record<string, BossDef> = {
         rest: [0.6, 1],
         patterns: [
           // the spectral steed: rides you down along a lane, wheels and rides again, leaving frost in its tracks
-          { id: 'barrow:steed-charge', w: 3, cd: 6, p: { passes: 3, wind: 0.75, wind2: 0.55, speed: 300, len: 300, mul: 1.4, trail: 3.5, trailMul: 0.12 } },
+          // (its blows a little lighter than they were, 2026-11-19: the fight lasts longer now, sim/world.ts bossLength, and
+          // the mounted phase's three passes and sweeps were what a hero fell to over and over)
+          { id: 'barrow:steed-charge', w: 3, cd: 6, p: { passes: 3, wind: 0.75, wind2: 0.55, speed: 300, len: 300, mul: 1.22, trail: 3.5, trailMul: 0.12 } },
           // the runeblade from the saddle, in a wide sweep
-          { id: 'cleave', w: 3, cd: 3, p: { r: 52, arc: 1.05, wind: 0.6, lunge: 30, mul: 1.35 } },
+          { id: 'cleave', w: 3, cd: 3, p: { r: 52, arc: 1.05, wind: 0.6, lunge: 30, mul: 1.2 } },
           // spectral lances thrust from the barrow walls
           { id: 'spell:lances', w: 2, cd: 5, p: { color: '#a8c8ff', type: 'frost', count: 4, width: 14, mul: 1.05 } },
           // the barrow’s judgment, on the half of the hall the hero stands in
