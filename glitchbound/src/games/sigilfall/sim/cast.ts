@@ -2,7 +2,7 @@ import { angleDiff, dist, dist2, inCone, TAU } from '../core/math';
 import { CLASSES } from '../data/classes';
 import type { GroundSpec, SkillSpec, SlotKey, BuffDef } from '../data/types';
 import { bossHidden } from './boss';
-import { applyEffects, applyStatus, enemiesIn, gainResource, healPlayer, hitEnemy, hurtPlayer, playerStunned, runProcs, empowerFull, empowerOf, spendEmpower } from './combat';
+import { applyEffects, applyStatus, enemiesIn, gainPoints, gainResource, healPlayer, hitEnemy, hurtPlayer, playerStunned, runProcs, empowerFull, empowerOf, spendEmpower } from './combat';
 import { hurtPet } from './pets';
 import { blocksAt, castRay, lineOfSight, moveCircle } from './map';
 import type { Enemy, Projectile } from './types';
@@ -263,14 +263,25 @@ export function stopCasting(w: World): void {
 }
 
 /**
- * A cast on its way: it turns with the enemy it was aimed at, and goes off when full. Moving (`moving`, the
- * player's own input: a knock-back doesn't count), a stun or death stops it; being hurt does not.
+ * Casting doesn't stop the hero, as in the Ring (arena/sim.ts CAST_SLOW): they walk on while it gathers, slowed to this,
+ * or at full pace with a skill that is `extra.swift` (a talent's doing). It stopped a cast before (the owner, 2026-11-19:
+ * "make the spells and specs very similar to the ring's - combos, ults, casting while moving ... i want dynamic, fast
+ * paced combat").
  */
-export function updateCasting(w: World, dt: number, moving: boolean): void {
+export const CAST_SLOW = 0.55;
+
+/** How fast the hero walks while this cast gathers (1 when nothing is being cast). */
+export const castPace = (c: { spec: SkillSpec } | null): number => (!c ? 1 : c.spec.extra.swift ? 1 : CAST_SLOW);
+
+/**
+ * A cast on its way: it turns with the enemy it was aimed at, and goes off when full. `stop` (indoors, a scene), a stun
+ * or death stops it; walking and being hurt do not.
+ */
+export function updateCasting(w: World, dt: number, stop: boolean): void {
   const p = w.player;
   const c = p.casting;
   if (!c) return;
-  if (p.dead || moving || p.statuses.some((s) => BREAKS_CAST.has(s.id))) {
+  if (p.dead || stop || p.statuses.some((s) => BREAKS_CAST.has(s.id))) {
     stopCasting(w);
     return;
   }
@@ -331,13 +342,37 @@ export function updateWindup(w: World, dt: number): void {
   }
 }
 
+/** Seconds a cast that builds points has to land (a slow bolt, a trap) before what it would build is lost. */
+export const BUILD_LANDS = 2.5;
+
+/**
+ * A skill that spends the specialization's points (SkillSpec.spend) takes all of them: each makes it `per` stronger,
+ * said over the hero. With none it goes off as it is.
+ */
+function spendPoints(w: World, spec: SkillSpec): SkillSpec {
+  const p = w.player;
+  if (!spec.spend || p.points <= 0) return spec;
+  const n = p.points;
+  p.points = 0;
+  p.pointsAt = w.time;
+  const def = w.build.points;
+  if (def) w.text(p.x, p.y - 34, `${n} ${(n === 1 ? def.one : def.name).toUpperCase()}`, def.color, n >= def.max);
+  return { ...spec, damage: spec.damage * (1 + spec.spend.per * n) };
+}
+
 /** A mage's every-fourth bolt: how much harder, through how many more, how much bigger. */
 const LANCE = { damage: 1.6, pierce: 4, size: 1.7 };
 
 /** The skill happens. */
-export function execute(w: World, slot: SlotKey, spec: SkillSpec, angle: number, tx: number, ty: number, target: Enemy | null): void {
+export function execute(w: World, slot: SlotKey, plain: SkillSpec, angle: number, tx: number, ty: number, target: Enemy | null): void {
   const p = w.player;
   p.aim = angle;
+  const spec = spendPoints(w, plain);
+  // a skill that builds points builds them as it lands (sim/combat.ts hitEnemy); one that strikes nothing, as it is cast
+  if (spec.build) {
+    if (spec.damage > 0) p.pendingBuild = { skill: spec.id, n: spec.build, until: w.time + BUILD_LANDS };
+    else gainPoints(w, spec.build);
+  }
   // which skill this is, for whoever draws the body making it (render3d/moves.ts); the move the last one left is
   // over, and a skill with no move of its own (a dodge, a change of shape) leaves none
   p.actN++;

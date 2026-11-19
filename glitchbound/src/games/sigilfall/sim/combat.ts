@@ -1,6 +1,6 @@
 import { TAU, clamp, dist2 } from '../core/math';
 import { CLASSES, heroDamage, levelPower } from '../data/classes';
-import type { BuffDef, DmgType, Effect, ProcDef, SkillSpec, StatKey, Stats, StatusId } from '../data/types';
+import type { BuffDef, ComboCond, ComboSpec, DmgType, Effect, ProcDef, SkillSpec, StatKey, Stats, StatusId } from '../data/types';
 import { typeBonus } from '../progress/build';
 import { bossHidden } from './boss';
 import { moveCircle } from './map';
@@ -89,6 +89,9 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
     if (spec.afterDodge && w.time - w.player.lastDodge <= spec.afterDodge.window) bonus += spec.afterDodge.pct;
   }
   mult *= 1 + bonus / 100;
+  // a combo blow on a target set up for it (data/types.ts ComboSpec): the skill's own blows, not its burns
+  const combo = spec?.combo && !o.isDot && comboMet(e, spec.combo.vs, w.time) ? spec.combo : null;
+  if (combo) mult *= combo.mult;
   mult *= 1 + (statusPower(e, 'shock') + statusPower(e, 'mark') + statusPower(e, 'armorBreak')) / 100;
   let crit = false;
   if (!o.isDot && w.rand() * 100 < stats.crit) {
@@ -133,7 +136,7 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
     e.vx += Math.cos(a) * k;
     e.vy += Math.sin(a) * k;
   }
-  if (w.settings.numbers || crit) w.text(e.x + (w.rand() - 0.5) * 6, e.y - e.r - 6, String(shown), crit ? '#ffe14d' : o.isDot ? DOT_COLOR[type] : '#ffffff', crit);
+  if (w.settings.numbers || crit) w.damageNumber(e, shown, crit ? '#ffe14d' : o.isDot ? DOT_COLOR[type] : '#ffffff', crit);
   if (!o.isDot) w.sfx(o.blade ? (crit ? 'critBlade' : 'clash') : crit ? 'crit' : 'hit');
   hitJuice(w, e, type, crit, !!o.isDot);
   // ultimate charge: hits worth a typical attack fill about 1/45th (ULT_HITS), but never faster than the charge budget
@@ -152,12 +155,78 @@ export function hitEnemy(w: World, e: Enemy, base: number, type: DmgType, o: Hit
   }
   w.player.calm = 0;
   if (e.dummy) w.dummyHit(spec ?? null);
+  if (combo && spec) landCombo(w, e, spec, combo, shown, o.depth);
+  // a cast that builds points builds them as it lands (the first blow of it)
+  const pb = w.player.pendingBuild;
+  if (pb && spec && pb.skill === spec.id && !o.isDot && w.time <= pb.until) {
+    w.player.pendingBuild = null;
+    gainPoints(w, pb.n);
+  }
   if (o.depth === 0 && !o.isDot) {
     runProcs(w, 'hit', { x: e.x, y: e.y, target: e, base, type, depth: o.depth, hitDmg: shown, skill: spec?.id });
     if (crit) runProcs(w, 'crit', { x: e.x, y: e.y, target: e, base, type, depth: o.depth, hitDmg: shown, skill: spec?.id });
   }
   if (e.hp <= 0 && !e.dummy && !mirror) killEnemy(w, e, type, o.depth, spec ?? null);
   return shown;
+}
+
+/** Seconds a boss shrugs hard control off for, once a hold has worn off it. */
+export const CC_SHRUG = 6;
+/** Seconds a boss counts as held for a combo blow after a hold lands on it (it takes the hold as a short slow). */
+export const BOSS_HELD = 1.5;
+
+/** Statuses that hold an enemy where it is (a combo's `held`). */
+const HELD = new Set<StatusId>(['stun', 'freeze', 'root', 'fear']);
+
+/**
+ * Whether an enemy is set up for a combo blow that needs any of `vs` (data/types.ts ComboCond). A boss takes a hold as a
+ * heavy slow for a third of its time (applyStatus): it counts as held for BOSS_HELD seconds from it, long enough to answer.
+ */
+export function comboMet(e: Enemy, vs: readonly ComboCond[], now: number): boolean {
+  for (const v of vs) {
+    if (v === 'lowHp' ? e.hp < e.maxHp * 0.3 : v === 'held' ? e.statuses.some((s) => HELD.has(s.id)) || (e.heldUntil ?? 0) > now : hasStatus(e, v)) return true;
+  }
+  return false;
+}
+
+/** How long a combo's name stays off the screen once said, so that a blow through a pack calls it once. */
+const COMBO_SAID = 0.4;
+
+/**
+ * A combo blow has landed: its name over the target in its color (once for a cast, not for every enemy a sweep goes
+ * through), a ring and a sound, what it does besides, and with `consume` what it needed taken off.
+ */
+function landCombo(w: World, e: Enemy, spec: SkillSpec, combo: ComboSpec, dealt: number, depth: number): void {
+  const said = comboSaid.get(w);
+  if (!said || said.skill !== spec.id || w.time - said.at > COMBO_SAID) {
+    comboSaid.set(w, { skill: spec.id, at: w.time });
+    const color = DOT_COLOR[spec.dmgType] === '#ffffff' ? '#ffd27a' : DOT_COLOR[spec.dmgType];
+    w.text(e.x, e.y - e.r - 20, `${combo.name.toUpperCase()}!`, color, true);
+    w.addFx({ kind: 'ring', x: e.x, y: e.y, life: 0.45, size: e.r * 3 + 10, color });
+    w.sfx('reset', 0.8);
+    w.shake(2);
+    w.combos += 1;
+  }
+  if (combo.extra?.length && !e.dead) applyEffects(w, combo.extra, { x: e.x, y: e.y, angle: Math.atan2(e.y - w.player.y, e.x - w.player.x), spec: null, base: spec.damage, type: spec.dmgType, depth: depth + 1, target: e, hitDmg: dealt, when: 'hit' });
+  if (combo.consume) {
+    const gone = new Set(combo.vs.flatMap((v) => (v === 'held' ? [...HELD] : v === 'lowHp' ? [] : [v])));
+    e.statuses = e.statuses.filter((s) => !gone.has(s.id));
+  }
+}
+const comboSaid = new WeakMap<World, { skill: string; at: number }>();
+
+/** Points of the specialization's gained (data/types.ts PointsDef), up to what can be held; a full set glows. */
+export function gainPoints(w: World, n: number): void {
+  const def = w.build.points;
+  const p = w.player;
+  if (!def || n <= 0 || p.dead) return;
+  const was = p.points;
+  p.points = Math.min(def.max, p.points + n);
+  p.pointsAt = w.time;
+  if (p.points >= def.max && was < def.max) {
+    w.text(p.x, p.y - 34, `${def.max} ${def.name.toUpperCase()}`, def.color, true);
+    w.addFx({ kind: 'ring', x: p.x, y: p.y, life: 0.35, size: 22, color: def.color });
+  } else if (p.points > was) w.addFx({ kind: 'glow', x: p.x, y: p.y - 6, life: 0.25, size: 8, color: def.color });
 }
 
 /** Control and marks a co-op guest puts on the host's enemies go to the host (damage over time stays: its ticks are hits). */
@@ -205,7 +274,9 @@ export function applyStatus(w: World, e: Enemy, s: { status: StatusId; dur: numb
       id = 'chill';
       power = 0.5;
       dur /= 3;
-      e.ccImmuneUntil = w.time + dur + 6;
+      e.ccImmuneUntil = w.time + dur + CC_SHRUG;
+      // (it counts as held for a combo a moment longer than the slow lasts: BOSS_HELD)
+      e.heldUntil = w.time + Math.max(dur, BOSS_HELD);
       w.text(e.x, e.y - e.r - 10, 'SLOWED', '#9be7ff', false);
     } else if (e.elite.length) dur *= 0.5;
   }
@@ -493,6 +564,9 @@ export function applyEffect(w: World, e: Effect, c: EffectCtx): void {
     case 'resource':
       gainResource(w, e.n, 'pct');
       break;
+    case 'points':
+      gainPoints(w, e.n);
+      break;
     case 'fear':
       w.addFx({ kind: 'ring', x: c.x, y: c.y, life: 0.4, size: e.radius, color: '#a87aff' });
       for (const en of enemiesIn(w, c.x, c.y, e.radius)) applyStatus(w, en, { status: 'fear', dur: e.dur, power: 1 }, 0);
@@ -592,6 +666,8 @@ export function spendEmpower(w: World, skill: string): void {
   const p = w.player;
   const b = p.buffs.find((x) => waitsOn(w, x.def, skill));
   if (!b) return;
+  // (one that lasts for its time, not for a cast: every cast takes it)
+  if (b.def.empower?.keep && !b.def.max) return;
   b.n = b.def.max ? 0 : (b.n ?? 1) - 1;
   if (b.n <= 0) p.buffs = p.buffs.filter((x) => x !== b);
 }

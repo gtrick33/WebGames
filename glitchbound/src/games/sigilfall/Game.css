@@ -1830,6 +1830,41 @@ html.rb-touch-playing textarea {
 .rb-proc[hidden] {
   display: none;
 }
+/* the class's own sign either side of the hero once a proc is whole (the Ring's .rb-ring-flare, sized to the hero) */
+.rb-proc-sign {
+  position: absolute;
+  top: calc(var(--h, 44px) * -0.62);
+  left: calc(var(--h, 44px) * -1.32);
+  width: calc(var(--h, 44px) * 0.48);
+  height: calc(var(--h, 44px) * 1.24);
+  max-width: none;
+  overflow: visible;
+  fill: currentColor;
+  filter: drop-shadow(0 0 1.2px rgb(0 0 0 / 0.9));
+  transform-origin: 100% 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+.rb-proc-sign :not([fill]):not([stroke]) {
+  stroke: #06070c;
+  stroke-width: 13;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
+.rb-proc-sign.is-right {
+  left: calc(var(--h, 44px) * 0.84);
+  transform: scaleX(-1);
+}
+.rb-proc[data-state='full'] .rb-proc-sign {
+  opacity: 1;
+  animation: rb-ring-flare-in 0.32s ease-out, rb-ring-flare 1.1s ease-in-out 0.32s infinite;
+}
+.rb-proc[data-state='full'][data-sides='one'] .rb-proc-sign.is-right {
+  opacity: 0;
+}
+.rb-proc[data-calm='1'] .rb-proc-sign {
+  animation: none;
+}
 .rb-proc-ring {
   position: absolute;
   top: calc(var(--h, 44px) * -1.05);
@@ -1947,6 +1982,14 @@ html.rb-touch-playing textarea {
 }
 .rb-ui.is-touch .rb-castbar {
   width: 116px;
+}
+/* the specialization's points under the hero (the pips are the Ring's: .rb-ring-pips) */
+.rb-points {
+  position: absolute;
+  pointer-events: none;
+}
+.rb-points[hidden] {
+  display: none;
 }
 .rb-toasts {
   position: absolute;
@@ -2669,6 +2712,28 @@ html.rb-touch-playing textarea {
 }
 .rb-slot6.is-dodge {
   background: radial-gradient(circle at 40% 35%, #3a7aa0, #1e4a68 70%);
+}
+/* the bar in three groups (2026-11-19, "the ui is a bit overwhelming"): the five that fight, the ultimate a size bigger and
+   set apart, and the dodge (and the mount) smaller, beside it */
+.rb-bar6 {
+  align-items: center;
+}
+.rb-slot6.is-ult {
+  width: 62px;
+  height: 62px;
+  margin: 0 8px;
+}
+.rb-slot6.is-ult img {
+  width: 44px;
+  height: 44px;
+}
+.rb-slot6.is-dodge {
+  width: 44px;
+  height: 44px;
+}
+.rb-slot6.is-dodge img {
+  width: 30px;
+  height: 30px;
 }
 .rb-slot6 .rb-sb-lock {
   position: relative;
@@ -3576,10 +3641,10 @@ html.rb-touch-playing textarea {
 .rb-tree.is-locked .rb-tree-grid {
   opacity: 0.55;
 }
-/* seven rows of four, with the points each row needs down the left */
+/* seven rows of five, with the points each row needs down the left */
 .rb-tree-grid {
   display: grid;
-  grid-template-columns: 22px repeat(4, 44px);
+  grid-template-columns: 22px repeat(5, 44px);
   grid-template-rows: repeat(7, 46px);
   gap: 6px 10px;
   justify-content: center;
@@ -3681,6 +3746,28 @@ html.rb-touch-playing textarea {
 .rb-node.is-cap {
   border-radius: 50%;
 }
+/* one of a choice's three (TalentNode.pick): cut corners, and once one is taken the other two step back */
+.rb-node.is-pick {
+  border-radius: 4px 16px;
+}
+.rb-node.is-pick.is-cap {
+  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+}
+.rb-node.is-pick:not(.is-taken):not(.is-closed):not(.is-other) {
+  border-style: dashed;
+}
+.rb-node.is-other {
+  opacity: 0.45;
+}
+.rb-node.is-other img {
+  filter: grayscale(1) brightness(0.6);
+}
+.rb-pick-line {
+  margin: 0 0 6px;
+}
+.rb-pick-line b {
+  color: var(--tc);
+}
 .rb-node-rank {
   position: absolute;
   bottom: -8px;
@@ -3693,7 +3780,7 @@ html.rb-touch-playing textarea {
 }
 /* with a mouse the tree takes the panel's height, and a talent opens in the pane beside it */
 .rb-ui.is-mouse .rb-tree-grid {
-  grid-template-columns: 26px repeat(4, 52px);
+  grid-template-columns: 26px repeat(5, 52px);
   grid-template-rows: repeat(7, 52px);
   gap: 6px 14px;
 }

@@ -4,7 +4,7 @@ import type { Enemy } from '../types';
 import type { World } from '../world';
 import { hurtPlayer } from '../combat';
 import { exposed, ringSpots } from './arena';
-import type { PatternFn, PatternKit } from './kit';
+import { bossBase, type PatternFn, type PatternKit } from './kit';
 
 /**
  * Boss attacks of the Deepforge Halls: ids start with 'forge:'.
@@ -163,7 +163,7 @@ const harden: PatternFn = (w, e, dt, k) => {
   const pt = k.pt;
   const time = k.num('time', 9);
   if (pt.step === 0) {
-    e.shield = e.maxHp * k.num('shield', 0.12);
+    e.shield = bossBase(e) * k.num('shield', 0.12);
     pt.data.full = e.shield;
     pt.data.next = 1.4;
     e.def.sprite = 'slag-colossus-cooled';

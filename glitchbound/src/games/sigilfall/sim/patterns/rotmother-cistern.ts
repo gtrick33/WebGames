@@ -4,7 +4,7 @@ import { castRay, circleHitsWall, moveCircle, TILE, tileAt } from '../map';
 import type { Enemy, Field } from '../types';
 import type { World } from '../world';
 import { fighting, onFloor, removeThing, roomBox, spawnThing, up } from './arena';
-import type { PatternFn } from './kit';
+import { bossBase, type PatternFn } from './kit';
 
 /**
  * Boss attacks of the Rotmother's Cistern: ids start with 'rot:'. Brother Pustule's censer clouds,
@@ -570,7 +570,7 @@ function tickLeeches(w: World, e: Enemy, s: Cistern, dt: number): void {
   if (s.leechT <= 0) {
     s.leechT = 1;
     // they drink: the hero bleeds, and the brother drinks it
-    if (hurtPlayer(w, p.maxHp * 0.012 * s.leeches, { pierce: true })) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.002 * s.leeches);
+    if (hurtPlayer(w, p.maxHp * 0.012 * s.leeches, { pierce: true })) e.hp = Math.min(e.maxHp, e.hp + bossBase(e) * 0.002 * s.leeches);
   }
 }
 

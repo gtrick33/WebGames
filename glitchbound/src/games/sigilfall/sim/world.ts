@@ -34,7 +34,7 @@ import { separate, updateEnemy, updatePuppet } from './ai';
 import { refreshPets, summonPet, updatePets } from './pets';
 import { spawnFolk, updateFolk, type Folk } from './folk';
 import { herdOf, letOut, updateCritters, type Critter } from './critters';
-import { updateCasting, updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
+import { castPace, updateCasting, updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
 import { blowFloor, healPlayer, hurtPlayer, playerSlow, playerStunned, tickPlayerStatuses } from './combat';
 import { breakWall, circleHitsWall, flowField, K, markerPos, moveCircle, parseRegion, pushOut, setDoors, TILE, tileAt, type PlacedMarker, type TileMap } from './map';
 import type { Chest, CoopSide, Drop, Enemy, Field, FloatText, Fx, Ghost, Interactable, NpcActor, Pet, Player, Projectile, Telegraph, Trap, Wave, WorldEvent, Callout } from './types';
@@ -154,6 +154,11 @@ export const ultFloor = (level: number): number => (level <= 3 ? 40 : level <= 3
 export const ULT_BANK = 35;
 /** Ultimate charge (% of a bar) a second of fighting brings by itself, out of the same budget. */
 export const ULT_TRICKLE = 0.5;
+/** Seconds a damage number keeps adding the blows that follow on its enemy, and how many stand at once (World.damageNumber). */
+export const NUMBER_SUMS = 0.35;
+export const DAMAGE_NUMBERS = 18;
+/** Seconds out of a fight before the specialization's points start to fade (data/types.ts PointsDef). */
+export const POINTS_FADE = 6;
 /**
  * How much faster a skill's cooldown runs with the hero's haste: half of it, and no more than 50% faster. Gear brings
  * haste to 80% by level 30 and 160% at the top; counted in full it took a Fireball's three seconds down to under one,
@@ -231,6 +236,25 @@ export const mobDamage = (level: number): number => 1 + (MOB_DAMAGE - 1) * harde
 export const RISE_POTIONS = 2;
 
 export const bossHealth = (level: number): number => 1 - (1 - BOSS_HEALTH) * hardening(level);
+
+/**
+ * How many times as long a boss lasts as it did (its health, and only its: what comes into its room with it is as it
+ * was). The owner, 2026-11-19: "bosses currently die way too fast, their mechanics are irrelevant if they die in less
+ * than 30s make the fights way more difficult, i want players struggling a bit and feeling the satisfaction". The
+ * play-bot, a clumsy player, took 16 to 42 seconds over the Siege of Highwall's three and 30 to 60 over most others; a
+ * player with the combos took less. A boss's own clocks that were set against the old length (a ward that grows, leeches
+ * that drink, a doom that counts down) are measured against this (sim/patterns/kit.ts bossBase, bossClock).
+ *
+ * It grows with the story: the first boss a new hero meets lasts as it did, a level-15 dungeon's about a quarter longer,
+ * and every boss from level 40 BOSS_LENGTH times as long. Measured with the play-bot, every class through every story
+ * dungeon on three seeds as the tests play them: its median boss fight went from about 45 seconds to 70 (14 to 371, the
+ * healers' the longest), and every class clears every dungeon inside the falls allowed. At 2.2 times, and at twice as
+ * long from the start, it fell twenty and thirty times to the Rot Mother, the Runewarden and Sir Corvane, whose blows a
+ * hero still learning to step out of them takes over and over in a long fight; those three (and the Forgemaster's
+ * quake) hit a little lighter now, data/dungeons.
+ */
+export const BOSS_LENGTH = 1.8;
+export const bossLength = (level: number): number => 1 + (BOSS_LENGTH - 1) * Math.max(0, Math.min(1, (level - 4) / 36));
 
 /**
  * The campaign is meant to be hard: a fight can be lost, and done again from the last checkpoint. The first levels
@@ -379,8 +403,8 @@ export class World {
   interactable: Interactable | null = null;
   /** When "Not enough mana" was last said (it isn't repeated every frame). */
   noManaAt = -99;
-  /** When "Stand still to cast" was last said. */
-  castHintAt = -99;
+  /** Combo blows landed (sim/combat.ts landCombo), for the record and the tests. */
+  combos = 0;
   /** How the last cast ended, for the cast bar's last moment: when, and whether the spell went off. */
   castEnd: { at: number; fired: boolean } | null = null;
   private exitInside = -1;
@@ -582,6 +606,9 @@ export class World {
       ult: 0,
       // what a hero carries into a land (the engine passes on what was left from the last one)
       ultBudget: ULT_BANK,
+      points: 0,
+      pointsAt: 0,
+      pendingBuild: null,
       combo: 0,
       comboT: 0,
       lastDodge: -99,
@@ -1018,7 +1045,7 @@ export class World {
     const sc = enemyScale(level);
     const bch = this.keyRun || this.tier > 0 ? NO_CHALLENGE : challenge(level, true);
     const deep = this.keyRun || this.tier > 0 ? NO_CHALLENGE : depth(this.region);
-    const hp = Math.round(def.hp * sc.hp * this.hpMul(true) * bch.hp * deep.hp * (this.ownMeasure ? this.ownHealth() : bossHealth(level)));
+    const hp = Math.round(def.hp * sc.hp * this.hpMul(true) * bch.hp * deep.hp * (this.ownMeasure ? this.ownHealth() : bossHealth(level)) * bossLength(level));
     const e = this.addEnemy('skeleton', x, y, level, { room, pack: -1 });
     e.def = { ...ENEMIES.skeleton!, id: def.id, name: def.name, sprite: def.sprite, radius: def.radius, mass: 99, resist: {}, armor: 0, xp: def.xp, gold: def.gold, scale: 1 };
     e.r = def.radius;
@@ -1036,7 +1063,7 @@ export class World {
       cy = (room0.reduce((a, i) => a + Math.floor(i / this.map.w), 0) / room0.length + 0.5) * TILE;
     }
     // a boss may open with something (its first phase's `enter`)
-    e.boss = { def, phase: 0, rest: 1.4, pattern: null, cds: {}, queue: [...(def.phases[0]?.enter ?? [])], shift: 0, dazed: 0, dying: 0, cx, cy, collapse: 0, misc: {} };
+    e.boss = { def, phase: 0, long: bossLength(level), rest: 1.4, pattern: null, cds: {}, queue: [...(def.phases[0]?.enter ?? [])], shift: 0, dazed: 0, dying: 0, cx, cy, collapse: 0, misc: {} };
     this.bossId = e.id;
     return e;
   }
@@ -1196,6 +1223,31 @@ export class World {
     if (/[a-z]/i.test(text) && this.texts.some((o) => o.text === text && o.t < 1 && Math.abs(o.x - x) < 60 && Math.abs(o.y + o.vy * o.t - y) < 60)) return;
     if (this.texts.length > 60) this.texts.shift();
     this.texts.push({ x, y, text, color, t: 0, big, vy: -26 });
+  }
+  /**
+   * A hero's blow on an enemy, as a number over it. The blows that come quick on one enemy (a sweep's three cuts, a
+   * burn's ticks, a channel's) add up in one number that grows, not a column of them: in a fight with a pack the numbers
+   * stood in a cloud over it (the owner, 2026-11-19: "the ui is a bit overwhelming"). A critical hit stands on its own, as
+   * it always has. And no more than DAMAGE_NUMBERS of them at once: the oldest give way.
+   */
+  damageNumber(e: { id: number; x: number; y: number; r: number }, dmg: number, color: string, crit: boolean): void {
+    // (one draw a blow, as when every blow rose on its own: the fight's chances run as they did)
+    const jitter = (this.rand() - 0.5) * 6;
+    if (!crit) {
+      const o = this.texts.find((t) => t.src === e.id && !t.big && t.color === color && t.t < NUMBER_SUMS);
+      if (o) {
+        o.sum = (o.sum ?? 0) + dmg;
+        o.text = String(o.sum);
+        // (a growing number holds on a little longer, and rises from where the enemy is now)
+        o.t = Math.min(o.t, 0.12);
+        o.x = e.x;
+        return;
+      }
+    }
+    const shown = this.texts.filter((t) => t.src !== undefined);
+    if (shown.length >= DAMAGE_NUMBERS) this.texts.splice(this.texts.indexOf(shown[0]!), 1);
+    if (this.texts.length > 60) this.texts.shift();
+    this.texts.push({ x: e.x + jitter, y: e.y - e.r - 6, text: String(dmg), color, t: 0, big: crit, vy: -26, src: e.id, sum: dmg });
   }
   addFx(f: Partial<Fx> & Pick<Fx, 'kind' | 'x' | 'y' | 'life'>): void {
     if (this.fx.length > 420) return;
@@ -1631,12 +1683,13 @@ export class World {
       began = !!p.casting && p.casting !== was;
     }
     if (!peace && inp.holdBasic && p.cds.basic.charges > 0) tryCast(this, this.withMouse(inp.holdBasic));
-    // a cast needs the hero to stand: stepping away stops it (said once in a while, for whoever didn't know)
-    if (p.casting && moving && p.casting.t <= 0 && this.time - this.castHintAt > 6) {
-      this.castHintAt = this.time;
-      this.text(p.x, p.y - 20, 'Stand still to cast', '#c9c3e6', false);
+    // (a cast doesn't need the hero to stand: they walk on, slowed, while it gathers: sim/cast.ts CAST_SLOW)
+    updateCasting(this, dt, peace || !!this.scene);
+    // the specialization's points fade a while after a fight, one at a time
+    if (p.points > 0 && p.calm > POINTS_FADE && this.time - p.pointsAt > 1.5) {
+      p.points -= 1;
+      p.pointsAt = this.time;
     }
-    updateCasting(this, dt, moving || peace || !!this.scene);
     updateWindup(this, dt);
     updateChannel(this, dt);
     if (inp.potion) this.drinkPotion();
@@ -1648,6 +1701,7 @@ export class World {
       let speed = (p.riding ? RIDE_SPEED : this.footPace()) * (1 + stats.speed / 100) * playerSlow(this);
       if (p.channel) speed *= 0.8;
       if (p.windup) speed *= 0.35;
+      speed *= castPace(p.casting);
       if (stunned) speed = 0;
       const tx = inp.mx * speed;
       const ty = inp.my * speed;

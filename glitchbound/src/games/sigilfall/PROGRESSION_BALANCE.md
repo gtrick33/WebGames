@@ -325,3 +325,51 @@ Gold (`data/vendors.ts` GOLD_FIND): the road pays a quarter of what it did: coin
 of a piece of gear, quest gold, what a piece melts down or sells for, and a potion a full belt has no room for. What
 things cost is unchanged (a vendor's gear is four times a piece's worth, the quartermaster, potions, a respec), so a
 purchase is a choice again.
+
+## Part 7 — The Ring's way of fighting, and longer bosses (2026-11-19)
+
+The owner: "lets make major refurbishing of the campaign combat: we need it to be a bit more fun, currently it feels
+boring, the ui is a bit overwhelming ... lets make the spells and specs very similar to the ring's - combos, ults,
+casting while moving, however, give many more options for the talents ... talents should also be refactored, make
+enough options that a tree is filled completely only at lvl 60, however, last talent should be obtainable around the
+40lvl mark ... bosses currently die way too fast, their mechanics are irrelevant if they die in less than 30s make the
+fights way more difficult".
+
+**Combat** (`data/types.ts`, `sim/cast.ts`, `sim/combat.ts`):
+
+- A *combo blow* (`SkillSpec.combo`): a skill that lands 1.6 to 2.2 times as hard on a target another skill set up (a
+  burn, a bleed, a curse, broken armor, a mark, held), and says its name over it. Every specialization's combo is one,
+  or *points* (`SpecDef.points`: Fury, Sparks, Ferocity...) that some skills build as they land and one spends all at
+  once, 15 to 25% a point; some have both. A boss takes a hold as a short slow: it counts as held for 1.5 s.
+- Every specialization carries an *ultimate of its own* once chosen (`SpecDef.ult`), tied to its combo (×1.95 on what
+  the combo sets up, or spending its points); one of each class's three keeps the class's, which a hero carries before
+  level 10.
+- *Casting on the move*: a spell with a cast time gathers while the hero walks, slowed to 55% (`CAST_SLOW`), at full pace
+  with a talent that makes it swift. It stopped when the hero moved.
+- Two new skills in every class's pool (thirteen now), each feeding its combos.
+- A combo ready shows the class's own sign either side of the hero, as in the Ring; points show as pips under the hero.
+- Damage numbers on one enemy add up in one number for a third of a second, not a cloud of them; the bar is in three
+  groups (the five that fight, the ultimate bigger and apart, the dodge smaller).
+
+**Talents** (`data/talents.ts`, `data/kits/*`): every tree is seven rows of five, 51 points: a hero who puts every point
+in one tree fills it at level 60 and not before, and its last row, the capstones, opens at 30 points, which a hero
+spends the 31st of at level 40. Rows 1, 3, 5 and 6 are each a choice of three (the Ring's talent rows: how the combo is
+made; what the other skills do for it; what the ultimate does besides; the capstone), one taken, switched for free
+(`progress/character.ts swapPick`). The other two trees still open after 31 points. Saves from before get every point
+back (save version 15).
+
+**Bosses** (`sim/world.ts` BOSS_LENGTH, bossLength): a boss's health, and only a boss's, grows with the story, from as it
+was at level 4 to BOSS_LENGTH times from level 40. What a boss does at a rate (a ward that grows, a drain that heals it)
+or a ward to be broken in time is measured against its old health (`sim/patterns/kit.ts` bossBase); a doom that counts
+down is stretched with the fight (bossClock); what it gains once for a mechanic the hero let happen stays a share of its
+whole health, so a mistake costs more.
+
+Measured with the play-bot through every story dungeon, every class, three seeds as the tests play them, at the level
+the tests use: its median boss fight went from about 45 seconds to 70 (14 to 371; the healers' the longest, and Vaelor's
+the longest of all), every class clears every dungeon inside the twelve falls allowed. A player who lands the combos
+deals more than the bot and is quicker. What didn't hold: BOSS_LENGTH 2.6, 2.2, and twice as long from level 10 (the bot
+fell twenty to thirty-eight times to the Rot Mother, the Runewarden and Sir Corvane, whose blows it steps out of badly).
+Those three hit a little lighter (Corvane's mounted charge and sweep 1.22 and 1.2 of a blow, from 1.4 and 1.35; the
+Runewarden 28 damage and 3,900 health, from 32 and 4,600, as the bot never breaks its binding; the Forgemaster's quake
+cracks 0.92 of a blow, from 1.1, and his blows 32, from 36). The bot's mage, the frailest, was the last to
+clear the Deepforge Halls: the Pyromancer has Combustion in its first row now, and Flame Pillar hits for 100 (from 95). The bot casts on the move now as a player does, and no longer stands still for a cast.

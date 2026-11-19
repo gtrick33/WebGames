@@ -4,7 +4,7 @@ import { circleHitsWall, moveCircle } from '../map';
 import type { Enemy, Projectile, Telegraph } from '../types';
 import type { World } from '../world';
 import { onFloor, roomBox } from './arena';
-import type { PatternFn, PatternKit } from './kit';
+import { bossBase, type PatternFn, type PatternKit } from './kit';
 
 /**
  * Boss spells: ids start with 'spell:'. Every spell here is one boss's own (tests/sigilfall-boss-spells.test.ts keeps
@@ -891,7 +891,7 @@ const drain: PatternFn = (w, e, _dt, k) => {
       const a = Math.atan2(p.y - e.y, p.x - e.x);
       mark(w, e, k, { shape: 'line', x: e.x, y: e.y, r2: 12, angle: a, len: d + 12 }, 0.45, k.num('mul', 0.3));
       w.addFx({ kind: 'beam', x: p.x, y: p.y - 10, x2: e.x, y2: e.y - 16, life: 0.45, size: 2, color: color(k) });
-      e.hp = Math.min(e.maxHp, e.hp + e.maxHp * k.num('heal', 0.004));
+      e.hp = Math.min(e.maxHp, e.hp + bossBase(e) * k.num('heal', 0.004));
     }
   }
 };

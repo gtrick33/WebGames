@@ -2,7 +2,7 @@ import { CLASSES, MAX_LEVEL, xpToNext } from '../data/classes';
 import { QUESTS, QUEST_DEFS } from '../data/quests';
 import { SKILLS } from '../data/skills';
 import { ROW_COST, SPEC_FOCUS, SPEC_LEVEL, TALENTS, talentNode } from '../data/talents';
-import type { ClassId, Item, Objective, PerkId, QuestDef, RegionId, SigilId, SkillIndex, SlotId } from '../data/types';
+import type { ClassId, Item, Objective, PerkId, QuestDef, RegionId, SigilId, SkillIndex, SlotId, TalentNode } from '../data/types';
 import { itemClass, itemSlot, salvageValue } from './items';
 import { learnLooks, type LookSlot } from './wardrobe';
 import { isMainQuest, questSteps, turnInNpc } from './handin';
@@ -290,11 +290,36 @@ export function cantLearn(c: Character, id: string): string | null {
   const trees = CLASSES[c.cls].trees;
   if (c.spec === null) return c.level < SPEC_LEVEL ? `Talents open at level ${SPEC_LEVEL}, with your specialization.` : 'Choose a specialization first.';
   if (!treeOpen(c, node.tree)) return `Spend ${SPEC_FOCUS} points in ${trees[c.spec].name} first.`;
+  const chosen = pickTaken(c, node);
+  if (chosen) return `You chose ${chosen.name} here: one of the three. Choose this instead to switch, for free.`;
   if (freePoints(c) <= 0) return 'No talent points left. You get one every level.';
   const need = node.row * ROW_COST;
   if (pointsInTree(c, node.tree) < need) return `Needs ${need} points in ${trees[node.tree].name} first.`;
   if (node.requires && !(c.talents[node.requires] ?? 0)) return `Needs ${talentNode(c.cls, node.requires)?.name ?? 'another talent'} first.`;
   return null;
+}
+
+/** The other node of a node's choice (TalentNode.pick) that the hero has taken, if one is. */
+export function pickTaken(c: Character, node: TalentNode): TalentNode | undefined {
+  if (!node.pick) return undefined;
+  return TALENTS[c.cls].find((n) => n !== node && n.tree === node.tree && n.pick === node.pick && (c.talents[n.id] ?? 0) > 0);
+}
+
+/** The nodes of one choice in a tree (TalentNode.pick), in column order. */
+export const pickOptions = (cls: ClassId, node: TalentNode): TalentNode[] => (node.pick ? TALENTS[cls].filter((n) => n.tree === node.tree && n.pick === node.pick).sort((a, b) => a.col - b.col) : [node]);
+
+/**
+ * Takes another of a choice's three in place of the one taken (TalentNode.pick): the point moves, for free, as the
+ * Ring's talents change between matches. False when nothing of that choice is taken, or this one is.
+ */
+export function swapPick(c: Character, id: string): boolean {
+  const node = talentNode(c.cls, id);
+  if (!node || (c.talents[id] ?? 0) > 0) return false;
+  const was = pickTaken(c, node);
+  if (!was) return false;
+  delete c.talents[was.id];
+  c.talents[id] = 1;
+  return true;
 }
 
 /** What choosing a specialization costs now (the first choice is free; changing resets talents). */

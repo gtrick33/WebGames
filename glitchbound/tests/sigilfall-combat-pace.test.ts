@@ -150,11 +150,11 @@ describe('Sigilfall: the new talents', () => {
     const p = buildHero(c).procs.find((x) => x.id === 'pillar-of-embers')!;
     expect(p.chance).toBeCloseTo(0.06);
     expect(p.effect.kind === 'buff' && p.effect.buff.empower).toEqual({ skill: 'flamestrike', instant: true, ready: true });
-    // and a next cast made stronger, a rank at a time: Whirling Steel's 8% is 24% at three ranks
+    // and a next cast made stronger, a rank at a time: Whirling Steel's 10% is 20% at two ranks
     const w = readyHero('warrior', 60, 'rare', 7, 2);
     const ops = buildHero(w).skills['mortal-strike']!.spec.onCast;
     const buff = ops.find((e) => e.kind === 'buff' && e.buff.id === 'combo-whirling-steel');
-    expect(buff?.kind === 'buff' && buff.buff.empower?.pct).toBe(24);
+    expect(buff?.kind === 'buff' && buff.buff.empower?.pct).toBe(20);
   });
 
   it('each proc fires on the simulation when what it waits for happens', () => {
@@ -254,7 +254,8 @@ describe('Sigilfall: the new talents', () => {
 
 describe('Sigilfall: what changed for saves and screens', () => {
   it('a save from before the rework gives every hero who had spent points a free respec', () => {
-    expect(SAVE_VERSION).toBe(14);
+    // (and on from 14: the talent trees made again, every hero's points back to spend)
+    expect(SAVE_VERSION).toBe(15);
     const c = readyHero('mage', 30, 'rare', 7, 0);
     const fresh = readyHero('warrior', 5);
     const save = migrate(JSON.parse(JSON.stringify({ v: 13, heroes: [c, fresh], last: 0, settings: {}, saved: 0 })))!;

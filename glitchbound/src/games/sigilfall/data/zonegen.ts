@@ -504,6 +504,12 @@ const fbm = (x: number, y: number, seed: number): number => noise2(x, y, seed) *
  * place keeps its share of the map, so the land keeps its shape, only closer together.
  */
 export const ZONE_SCALE = 0.8;
+/** Bridges over one river stand at least this many tiles apart (a mark with one nearer needs no other). */
+const CROSSING_APART = 16;
+/** The longest deck a crossing is laid over, in tiles. */
+const MAX_DECK = 14;
+/** How far a crossing's road looks for a road to join, in steps over the land. */
+const ROAD_REACH = 60;
 
 export function generateZone(spec: ZoneSpec, theme: Theme | null = null): GeneratedZone {
   return new ZoneBuilder(spec, theme).build();
@@ -530,6 +536,8 @@ class ZoneBuilder {
   private readonly hubAt: [number, number][] = [];
   /** Every sight's clearing: its middle and how far it reaches. Nothing of a town's is planted in one. */
   private readonly sightAt: [number, number, number][] = [];
+  /** A river's course, tile by tile from where it comes in to where it goes out (empty without one). */
+  private readonly course: [number, number][] = [];
 
   constructor(
     private readonly spec: ZoneSpec,
@@ -569,6 +577,7 @@ class ZoneBuilder {
     marks.forEach(({ lm, at }) => this.clear(at[0], at[1], (lm.foot ?? 2) + 4));
     // roads reach the towns, the ways out and every sight (trails to the wilder ones)
     this.roads([...hubs, ...exits.map((e) => e.inner), ...pois]);
+    this.crossings();
     s.hubs.forEach((hb, i) => this.town(hubs[i]![0], hubs[i]![1], hb));
     s.pois.forEach((p, i) => this.sight(pois[i]![0], pois[i]![1], p));
     s.exits.forEach((e, i) => this.put(exits[i]!.edge[0], exits[i]!.edge[1], { kind: 'exit', to: e.to, label: e.label, ...(e.minLevel ? { minLevel: e.minLevel } : {}), ...(e.needs ? { needs: e.needs } : {}) }));
@@ -791,6 +800,7 @@ class ZoneBuilder {
           const y = Math.round(from[1] + ((to[1] - from[1]) * k) / steps);
           const width = 1.3 + noise2(x / 9, y / 9, seed) * 1.4;
           for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) if (Math.hypot(dx, dy) <= width) this.set(x + dx, y + dy, WATER);
+          this.course.push([x, y]);
         }
         last = to;
       }
@@ -906,12 +916,14 @@ class ZoneBuilder {
    * turns, here a Z (along the longer way, across, along again; a road stepping across the grid tile by tile
    * reads as a staircase). Out of a village the first run is long enough to be its street.
    */
-  private road(a: [number, number], b: [number, number]): void {
+  private road(a: [number, number], b: [number, number], fixed?: number): void {
     const [ax, ay] = a;
     const [bx, by] = b;
     const along = Math.abs(bx - ax) >= Math.abs(by - ay);
     const [a0, b0] = along ? [ax, bx] : [ay, by];
-    let bend = Math.round(a0 + (b0 - a0) * (0.35 + this.r() * 0.3));
+    // (a road laid after the tree of roads turns where it is told, and takes nothing from the land's draw: what comes
+    // after it, the wild packs, stands where it did)
+    let bend = Math.round(a0 + (b0 - a0) * (fixed ?? 0.35 + this.r() * 0.3));
     const span = Math.abs(b0 - a0);
     const hubA = this.hubAt.some(([hx, hy]) => hx === ax && hy === ay);
     const hubB = this.hubAt.some(([hx, hy]) => hx === bx && hy === by);
@@ -991,6 +1003,110 @@ class ZoneBuilder {
         }
       }
     }
+  }
+
+  /**
+   * A river is crossed in more than one place (2026-11-19, the owner: "some zones with rivers have a bridge only at one
+   * side of the map and that makes traversing literally nightmare, when you have a huge river, make at least 2-3 bridges
+   * to cross it"). The roads are a tree, and a tree crosses a river as few times as it can, most often once: Highwall,
+   * Glimmerwood and Amberfield each had one bridge, in their northern quarter, and the river ran unbroken to the far edge.
+   * Now a quarter, half and three quarters of the way along its course, wherever no bridge is near already, a bridge is
+   * laid straight over at the narrowest place close by, and a road runs from each end to the nearest road.
+   */
+  private crossings(): void {
+    if (this.spec.water?.kind !== 'river' || this.course.length < 30) return;
+    const n = this.course.length;
+    // (a long river gets three; a short one two)
+    const marks = n > 90 ? [0.25, 0.5, 0.75] : [1 / 3, 2 / 3];
+    for (const f of marks) {
+      const at = Math.round(f * (n - 1));
+      const [cx, cy] = this.course[at]!;
+      if (this.bridgeNear(cx, cy, CROSSING_APART)) continue;
+      // the narrowest place within a few tiles of the mark, where the water ends on both sides
+      let best: { x0: number; x1: number; y0: number; y1: number; len: number } | null = null;
+      for (let k = Math.max(0, at - 8); k <= Math.min(n - 1, at + 8); k++) {
+        const span = this.span(k);
+        if (span && (!best || span.len < best.len)) best = span;
+      }
+      if (!best || best.len > MAX_DECK) continue;
+      const a: [number, number] = [best.x0, best.y0];
+      const b: [number, number] = [best.x1, best.y1];
+      this.road(a, b, 0.5);
+      for (const end of [a, b]) {
+        const to = this.nearestRoad(end);
+        if (to) this.road(end, to, 0.5);
+      }
+    }
+  }
+
+  /** Whether a bridge tile lies within `r` tiles of a point. */
+  private bridgeNear(x: number, y: number, r: number): boolean {
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (dx * dx + dy * dy > r * r || !this.inside(x + dx, y + dy)) continue;
+        if (this.g[this.idx(x + dx, y + dy)] === BRIDGE) return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Straight across the river at a point of its course, the short way (across the way it runs there): the dry tiles two
+   * past each bank, and how many tiles that is. Null when it doesn't reach dry ground both sides.
+   */
+  private span(k: number): { x0: number; x1: number; y0: number; y1: number; len: number } | null {
+    const c = this.course;
+    const [px, py] = c[k]!;
+    const [ax, ay] = c[Math.max(0, k - 4)]!;
+    const [bx, by] = c[Math.min(c.length - 1, k + 4)]!;
+    // a river running north and south is crossed east to west, and the other way about
+    const [dx, dy] = Math.abs(by - ay) >= Math.abs(bx - ax) ? [1, 0] : [0, 1];
+    const dry = (sign: number): [number, number] | null => {
+      let x = px;
+      let y = py;
+      for (let i = 0; i < MAX_DECK; i++) {
+        if (!this.inside(x, y, 3)) return null;
+        if (this.g[this.idx(x, y)] !== WATER && this.g[this.idx(x, y)] !== BRIDGE) return [x + dx * sign * 2, y + dy * sign * 2];
+        x += dx * sign;
+        y += dy * sign;
+      }
+      return null;
+    };
+    const lo = dry(-1);
+    const hi = dry(1);
+    if (!lo || !hi || !this.inside(lo[0], lo[1], 3) || !this.inside(hi[0], hi[1], 3)) return null;
+    return { x0: lo[0], y0: lo[1], x1: hi[0], y1: hi[1], len: Math.abs(hi[0] - lo[0]) + Math.abs(hi[1] - lo[1]) };
+  }
+
+  /** The nearest road tile to a point on its own bank (a search over the land, not the water), within reach. */
+  private nearestRoad(from: [number, number]): [number, number] | null {
+    const seen = new Uint8Array(this.w * this.h);
+    const q: number[] = [this.idx(from[0], from[1])];
+    seen[q[0]!] = 1;
+    for (let h = 0; h < q.length; h++) {
+      const i = q[h]!;
+      const x = i % this.w;
+      const y = (i - x) / this.w;
+      if (Math.abs(x - from[0]) + Math.abs(y - from[1]) > ROAD_REACH) continue;
+      // (not the new bridge's own deck, two tiles out, but a road beyond it)
+      if (this.g[i] === PATH && Math.abs(x - from[0]) + Math.abs(y - from[1]) > 3) return [x, y];
+      for (const [ox, oy] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ] as const) {
+        const nx = x + ox;
+        const ny = y + oy;
+        if (!this.inside(nx, ny, 2)) continue;
+        const j = this.idx(nx, ny);
+        const t = this.g[j]!;
+        if (seen[j] || t === WATER || t === BRIDGE || t === HOUSE || t === HOUSE_ANCHOR) continue;
+        seen[j] = 1;
+        q.push(j);
+      }
+    }
+    return null;
   }
 
   /* ------------------------------------------------------------ towns, sights */

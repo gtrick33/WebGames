@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { MOUNT_DEFS } from '../src/games/sigilfall/data/mounts';
+import { CLASSES } from '../src/games/sigilfall/data/classes';
 import { SKILLS } from '../src/games/sigilfall/data/skills';
 import { SKILL_SLOTS, type ClassId, type SlotKey } from '../src/games/sigilfall/data/types';
 import { ABILITIES } from '../src/games/sigilfall/arena/abilities';
@@ -8,7 +9,7 @@ import { SPELLS } from '../src/games/sigilfall/vigil/kit';
 import { CoopSession } from '../src/games/sigilfall/net/coop';
 import { setSkill } from '../src/games/sigilfall/progress/character';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
-import { tryCast } from '../src/games/sigilfall/sim/cast';
+import { CAST_SLOW, tryCast } from '../src/games/sigilfall/sim/cast';
 import { hurtPlayer } from '../src/games/sigilfall/sim/combat';
 import { emptyInput, World, type InputFrame } from '../src/games/sigilfall/sim/world';
 import { newWorld, readyHero } from './sigilfall-bot';
@@ -120,7 +121,10 @@ const step = (w: World, seconds: number, input?: Partial<InputFrame>): void => {
 
 /** A level 50 hero with `skill` in the first slot (or as the ultimate), an enemy in front, and nobody else about. */
 function caster(cls: ClassId, skill: string) {
-  const c = readyHero(cls, 50, 'rare', 7, cls === 'warlock' ? 2 : 0);
+  // (an ultimate is a specialization's own now: the hero is of the one that carries it)
+  const own = CLASSES[cls].trees.findIndex((t) => (t.ult ?? CLASSES[cls].ult) === skill);
+  const spec = (SKILLS[skill]!.kind === 'ultimate' && own >= 0 ? own : cls === 'warlock' ? 2 : 0) as 0 | 1 | 2;
+  const c = readyHero(cls, 50, 'rare', 7, spec);
   if (SKILLS[skill]!.kind === 'skill') expect(setSkill(c, 0, skill), skill).toBe(true);
   const w = newWorld('whisperwood', c);
   w.enemies = [];
@@ -181,24 +185,24 @@ describe('Sigilfall cast bars', () => {
     expect(w.fields.length).toBeGreaterThan(0);
   });
 
-  it('moving stops a cast, with nothing spent and no cooldown', () => {
+  it('moving doesn’t stop a cast: the hero walks on, slowed, and it goes off (as in the Ring)', () => {
     for (const [cls, skill] of [
       ['warlock', 'chaos-bolt'],
       ['priest', 'halo'],
     ] as const) {
-      const { w, p, e, slot } = caster(cls, skill);
+      const { w, p, slot } = caster(cls, skill);
       p.ult = 100;
-      const mana = p.mana;
       expect(press(w, slot), skill).toBe(true);
-      step(w, 0.5);
-      step(w, 0.1, { mx: 1 });
+      const x0 = p.x;
+      step(w, 0.3);
+      step(w, 0.3, { mx: 1 });
+      expect(p.casting, skill).not.toBeNull();
+      expect(p.x, skill).toBeGreaterThan(x0);
+      // (slowed to CAST_SLOW while it gathers)
+      expect(Math.abs(p.vx), skill).toBeLessThan(w.footPace() * CAST_SLOW * 1.6);
+      step(w, 2, { mx: 1 });
       expect(p.casting, skill).toBeNull();
-      expect(w.castEnd?.fired, skill).toBe(false);
-      step(w, 2);
-      expect(p.ult, skill).toBe(100);
-      expect(p.cds.s1.charges, skill).toBe(p.cds.s1.max);
-      expect(p.mana, skill).toBeGreaterThanOrEqual(mana);
-      expect(e.hp, skill).toBe(e.maxHp);
+      expect(w.castEnd?.fired, skill).toBe(true);
     }
   });
 

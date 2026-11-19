@@ -9,7 +9,9 @@ import { KEY_AFFIXES, KEY_DEATH, keyUpgrade } from '../data/keystones';
 import { NPCS, QUEST_DEFS } from '../data/quests';
 import { REGIONS, TIERS } from '../data/regions';
 import { SKILLS } from '../data/skills';
-import type { ResourceDef } from '../data/types';
+import type { ClassId, ResourceDef } from '../data/types';
+import type { BoonLook } from '../arena/abilities';
+import { SHAPES } from './RingBoons';
 import type { SigilEngine } from '../engine';
 import { currentObjective, freePoints, HOME, isReplay, levelGated, questProgress, questState, sigilCount, SLOT_LEVELS, trackedQuest } from '../progress/character';
 import { SIGIL_LORE, SIGIL_ORDER } from '../data/chronicle';
@@ -155,6 +157,7 @@ export function GameScreen({ engine }: { engine: SigilEngine }) {
     <div className={`rb-ui${engine.touchMode ? ' is-touch' : ' is-mouse'}${engine.settings.lefty ? ' is-lefty' : ''}${engine.storyTalk() ? ' is-talk' : ''}${ui.card?.act ? ' is-act' : ''}${ui.boss ? ' is-boss' : ''}`}>
       <Hud engine={engine} />
       <CastBar engine={engine} />
+      <PointsPips engine={engine} />
       <ProcAura engine={engine} />
       {ui.boss && <BossBar engine={engine} />}
       {engine.world?.keyRun ? <KeyClock engine={engine} /> : <Tracker engine={engine} />}
@@ -551,10 +554,27 @@ const PROC_ENDING = 1.5;
  * ring and its last cast one; one that builds in stacks glows fainter until it is whole; a whole one pulses, its shards
  * turn round it, and the last moments flicker.
  */
+/**
+ * The sign each class's procs show either side of the hero once whole, in the Ring's manner (ui/RingBoons.tsx SHAPES:
+ * the owner wanted "screen visuals ... unique for each class" there), by specialization where a class has more than one.
+ */
+const PROC_LOOK: Record<ClassId, [BoonLook, BoonLook, BoonLook]> = {
+  warrior: ['slash', 'slash', 'slash'],
+  mage: ['flame', 'void', 'ice'],
+  ranger: ['feather', 'feather', 'fang'],
+  paladin: ['sun', 'halo', 'sun'],
+  priest: ['halo', 'sun', 'void'],
+  warlock: ['hex', 'skull', 'flame'],
+  druid: ['moon', 'fang', 'leaf'],
+  gloamknight: ['fang', 'skull', 'hex'],
+};
+
 function ProcAura({ engine }: { engine: SigilEngine }) {
   const el = useRef<HTMLDivElement>(null);
   const said = useRef('');
   const grad = useId().replace(/:/g, '');
+  const h = engine.hero;
+  const look = h ? PROC_LOOK[h.cls][h.spec ?? 0] : 'slash';
   useFrame(engine, (w) => {
     const d = el.current;
     if (!d) return;
@@ -594,6 +614,11 @@ function ProcAura({ engine }: { engine: SigilEngine }) {
   );
   return (
     <div ref={el} className="rb-proc" hidden role="status">
+      {[0, 1].map((side) => (
+        <svg key={side} className={`rb-proc-sign is-${look}${side ? ' is-right' : ''}`} viewBox="0 0 100 260" aria-hidden="true">
+          {SHAPES[look]}
+        </svg>
+      ))}
       <svg className="rb-proc-ring" viewBox="-6 -6 112 112" aria-hidden="true">
         <defs>
           <radialGradient id={`${grad}-glow`} cx="50" cy="50" r="46" gradientUnits="userSpaceOnUse">
@@ -666,6 +691,52 @@ function CastBar({ engine }: { engine: SigilEngine }) {
       <span className="rb-castbar-name" ref={name} />
       <span className="rb-castbar-track">
         <i ref={fill} />
+      </span>
+    </div>
+  );
+}
+
+/**
+ * The specialization's points (data/types.ts PointsDef) as the Ring shows them: pips that light one by one, all bright
+ * when no more can be held, under the hero's feet (below the cast bar), where the eyes are in a fight. Out of a fight
+ * with none held, they go.
+ */
+function PointsPips({ engine }: { engine: SigilEngine }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const shown = useRef(-1);
+  const def = engine.world?.build.points ?? null;
+  useFrame(engine, (w) => {
+    const el = ref.current;
+    const d = w.build.points;
+    if (!el || !d) return;
+    const p = w.player;
+    hide(el, p.dead || !!w.scene || (p.points <= 0 && p.calm > 3));
+    if (el.hidden) return;
+    if (shown.current !== p.points) {
+      shown.current = p.points;
+      const pips = el.firstElementChild;
+      if (pips) {
+        for (let i = 0; i < pips.children.length; i++) pips.children[i]!.classList.toggle('is-on', i < p.points);
+        pips.classList.toggle('is-full', p.points >= d.max);
+        pips.setAttribute('aria-label', `${p.points} of ${d.max} ${d.name}`);
+      }
+    }
+    const at = engine.renderer.toScreen(p.x, p.y);
+    const host = el.offsetParent as HTMLElement | null;
+    const bw = el.offsetWidth;
+    const maxX = (host?.clientWidth ?? 800) - bw - 8;
+    const maxY = (host?.clientHeight ?? 400) - el.offsetHeight - 8;
+    el.style.left = `${Math.round(Math.max(8, Math.min(maxX, at.x - bw / 2)))}px`;
+    el.style.top = `${Math.round(Math.max(8, Math.min(maxY, at.y + (p.casting ? 66 : 40))))}px`;
+  });
+  if (!def) return null;
+  return (
+    <div className="rb-points" ref={ref} hidden>
+      <span className="rb-ring-pips" style={{ ['--pt' as string]: def.color }} role="img" aria-label={`0 of ${def.max} ${def.name}`} title={`${def.name}: built by some of your skills, all spent by another`}>
+        {Array.from({ length: def.max }, (_, i) => (
+          <i key={i} />
+        ))}
+        <b>{def.name}</b>
       </span>
     </div>
   );

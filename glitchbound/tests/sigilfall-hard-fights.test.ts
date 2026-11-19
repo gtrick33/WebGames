@@ -18,7 +18,8 @@
 import { describe, expect, it } from 'vitest';
 import { CLASS_IDS, hardening, HERO_DAMAGE, heroDamage } from '../src/games/sigilfall/data/classes';
 import { BLOW_FLOOR, blowFloor, heroPower, hitEnemy } from '../src/games/sigilfall/sim/combat';
-import { BOSS_DAMAGE, BOSS_HEALTH, bossDamage, emptyInput, MOB_DAMAGE, World, type World as W } from '../src/games/sigilfall/sim/world';
+import { BOSS_DAMAGE, BOSS_HEALTH, BOSS_LENGTH, bossDamage, bossLength, emptyInput, MOB_DAMAGE, World, type World as W } from '../src/games/sigilfall/sim/world';
+import { bossBase, bossClock } from '../src/games/sigilfall/sim/patterns/kit';
 import { SPIKE } from '../src/games/sigilfall/sim/ai';
 import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
 import { ENEMIES, enemyScale } from '../src/games/sigilfall/data/enemies';
@@ -83,6 +84,23 @@ describe('Sigilfall: a harder game', () => {
     const out = w.addEnemy('tomb-scarab', b.x + 40, b.y, b.level, { room: -1, pack: -1 });
     expect(add.maxHp).toBe(Math.round(out.maxHp * BOSS_HEALTH));
     expect(add.dmg * MOB_DAMAGE).toBeCloseTo(out.dmg);
+  });
+
+  it('a boss lasts longer as the story goes, to BOSS_LENGTH times from level 40; what comes into its room does not (2026-11-19)', () => {
+    expect(BOSS_LENGTH).toBeGreaterThan(1.5);
+    expect(bossLength(3)).toBe(1);
+    expect(bossLength(4)).toBe(1);
+    expect(bossLength(22)).toBeGreaterThan(1.3);
+    expect(bossLength(40)).toBeCloseTo(BOSS_LENGTH);
+    expect(bossLength(60)).toBeCloseTo(BOSS_LENGTH);
+    for (let l = 5; l <= 60; l++) expect(bossLength(l)).toBeGreaterThanOrEqual(bossLength(l - 1));
+    const { w, b } = bossRoom(36);
+    expect(b.boss!.long).toBeCloseTo(bossLength(b.level));
+    // its clocks: a ward or a drain is measured against the health it had, a doom stretched with the fight
+    expect(bossBase(b) * b.boss!.long!).toBeCloseTo(b.maxHp);
+    expect(bossClock(b, 40)).toBeCloseTo(40 * b.boss!.long!);
+    const add = w.addEnemy('tomb-scarab', b.x + 40, b.y, b.level, { room: b.room, pack: -1, spawn: true });
+    expect(bossBase(add)).toBe(add.maxHp);
   });
 
   it('a boss’s blow takes at least its floor of the hero’s health, however much of it they have', () => {

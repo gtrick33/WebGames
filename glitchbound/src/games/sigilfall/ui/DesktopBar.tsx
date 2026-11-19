@@ -43,8 +43,9 @@ export function DesktopBar({ engine }: { engine: SigilEngine }) {
       {!indoors && (
         <div className="rb-bar6" role="toolbar" aria-label="Skills">
           {engine.ui.teach && !engine.ui.tip && (
-            // over the key it teaches (each slot 52 px and a 6 px gap, after the bar's 9 px of edge)
-            <div className="rb-teach" role="status" style={{ left: `${9 + Math.max(0, slots.findIndex((s) => s.slot === engine.ui.teach!.slot)) * 58 + 26}px` }}>
+            // over the key it teaches (each slot 52 px and a 6 px gap, after the bar's 9 px of edge; the ultimate is 10 px
+            // wider and 8 px apart each side, Game.css)
+            <div className="rb-teach" role="status" style={{ left: `${teachAt(slots.findIndex((s) => s.slot === engine.ui.teach!.slot))}px` }}>
               {engine.ui.teach.text}
             </div>
           )}
@@ -56,6 +57,13 @@ export function DesktopBar({ engine }: { engine: SigilEngine }) {
       )}
     </>
   );
+}
+
+/** Where the middle of the bar's `i`th slot is, from its left edge (Game.css: the ultimate, sixth, is bigger and set apart). */
+function teachAt(i: number): number {
+  const at = Math.max(0, i);
+  const ult = 5;
+  return 9 + at * 58 + 26 + (at === ult ? 13 : at > ult ? 26 - 4 : 0);
 }
 
 /** Ride or get down (Y), once riding is open and the hero owns a mount; it fills while the mount is called. */

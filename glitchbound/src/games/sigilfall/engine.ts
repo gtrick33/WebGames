@@ -24,7 +24,7 @@ import { SKILLS } from './data/skills';
 import type { ClassId, Item, RegionId, SigilId, SkillIndex, SlotId, SlotKey } from './data/types';
 import { KeyboardMouse, TouchState, type UiKey } from './input/input';
 import { holds } from './sim/story';
-import { SIGILS, abandonQuest, acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, type Body, type Face, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
+import { SIGILS, abandonQuest, acceptQuest, activeQuests, currentObjective, handInQuest, handInsFor, offeredBy, trackQuest, allItems, bagSize, HOME, chooseSpec, equip, learnedSkills, learnTalent, newCharacter, questState, respec, swapPick, type Body, type Face, salvage, setSkill, startQuests, unequip, type Character } from './progress/character';
 import { itemName } from './progress/items';
 import { canRide, chooseMount, FIRST_RIDE, grantMounts, grantWarden, hasMount, setShelfPoints, syncRift, learnLooks, wearLook, type LookSlot } from './progress/wardrobe';
 import { DEFAULT_SETTINGS, loadSave, writeSave, type LoadStatus, type SaveFile, type Settings } from './progress/save';
@@ -1782,6 +1782,13 @@ export class SigilEngine {
 
   learn(id: string): boolean {
     if (!this.hero || !learnTalent(this.hero, id)) return false;
+    this.changed('talent');
+    return true;
+  }
+
+  /** Takes another of a talent choice's three in place of the one taken (progress/character.ts swapPick). */
+  swapTalent(id: string): boolean {
+    if (!this.hero || !swapPick(this.hero, id)) return false;
     this.changed('talent');
     return true;
   }

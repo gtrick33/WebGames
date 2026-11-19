@@ -4,7 +4,7 @@ import { ITEM_DEFS } from '../data/items';
 import { SETS, type SetDef } from '../data/riftgear';
 import { SKILLS } from '../data/skills';
 import { SPEC_LEVEL, TALENTS } from '../data/talents';
-import type { Effect, FormDef, GroundSpec, Mod, ProcDef, Rarity, ResourceDef, SkillOp, SkillSpec, SlotKey, Stats, StatKey } from '../data/types';
+import type { Effect, FormDef, GroundSpec, Mod, PointsDef, ProcDef, Rarity, ResourceDef, SkillOp, SkillSpec, SlotKey, Stats, StatKey } from '../data/types';
 import { SKILL_SLOTS, SLOTS } from '../data/types';
 import { hasUltimate, SIGIL_BONUS, sigilCount, slotOpen, type Character } from './character';
 import { opText } from './describe';
@@ -60,6 +60,8 @@ export interface HeroBuild {
   bar: Record<SlotKey, string | null>;
   skills: Record<string, ResolvedSkill>;
   procs: ProcDef[];
+  /** The specialization's points (SpecDef.points), or null. */
+  points: PointsDef | null;
 }
 
 interface Entry {
@@ -106,7 +108,7 @@ function targets(skill: string, c: Character): (id: string) => boolean {
   if (skill === '*') return () => true;
   if (skill === 'basic') return (id) => id === def.basic || !!def.forms?.some((f) => f.basic === id);
   if (skill === 'dodge') return (id) => id === def.dodge || !!def.forms?.some((f) => f.dodge === id);
-  if (skill === 'ult') return (id) => id === def.ult;
+  if (skill === 'ult') return (id) => id === def.ult || def.trees.some((t) => t.ult === id);
   return (id) => id === skill;
 }
 
@@ -153,6 +155,7 @@ export function scaleEffect(e: Effect, rank: number): Effect {
       x.s *= rank;
       break;
     case 'resource':
+    case 'points':
       x.n *= rank;
       break;
     case 'buff':
@@ -231,6 +234,9 @@ export function mergeEffect(list: Effect[], e: Effect): void {
     case 'resource':
       if (e.kind === 'resource') list[i] = { ...a, n: a.n + e.n };
       break;
+    case 'points':
+      if (e.kind === 'points') list[i] = { ...a, n: a.n + e.n };
+      break;
     case 'fear':
       if (e.kind === 'fear') list[i] = { ...a, radius: Math.max(a.radius, e.radius), dur: Math.max(a.dur, e.dur) };
       break;
@@ -249,6 +255,9 @@ function mergeGround(a: GroundSpec | undefined, b: GroundSpec): GroundSpec {
 
 /* ------------------------------------------------------------- skills */
 
+/** A combo blow never lands more than this many times as hard. */
+export const COMBO_MOST = 4;
+
 const CAPS: Record<string, number> = { jumps: 8, maxTraps: 6, echo: 2, meteors: 4, strikes: 10, pull: 120, comboMul: 2, comboArc: 1.5 };
 
 /** Applies modifiers to a skill's base spec (exported for tests). */
@@ -262,6 +271,8 @@ export function applyOps(base: SkillSpec, ops: { op: SkillOp; rank: number }[]):
     trail: base.trail ? cloneGround(base.trail) : undefined,
     bonusVs: base.bonusVs.map((b) => ({ ...b })),
     afterDodge: base.afterDodge ? { ...base.afterDodge } : undefined,
+    combo: base.combo ? { ...base.combo, vs: [...base.combo.vs], extra: base.combo.extra?.map(cloneEffect) } : undefined,
+    spend: base.spend ? { ...base.spend } : undefined,
     extra: { ...base.extra },
     tags: [...base.tags],
   };
@@ -321,6 +332,28 @@ export function applyOps(base: SkillSpec, ops: { op: SkillOp; rank: number }[]):
         break;
       case 'cost':
         acc.cost += op.pct * rank;
+        break;
+      case 'combo': {
+        // a skill made a combo blow takes the op's whole combo; one already a combo is added to: what it needs, what it
+        // consumes and does besides, and `add` more on its multiplier a rank
+        const c = op.combo;
+        const cur = s.combo ?? { name: c.name ?? 'Combo', vs: [], mult: c.mult ?? 1.5 };
+        if (s.combo && c.mult !== undefined) cur.mult = Math.max(cur.mult, c.mult);
+        cur.mult = Math.min(COMBO_MOST, cur.mult + (op.add ?? 0) * rank);
+        for (const v of c.vs ?? []) if (!cur.vs.includes(v)) cur.vs.push(v);
+        if (c.consume) cur.consume = true;
+        if (c.extra) {
+          cur.extra ??= [];
+          for (const e of c.extra) mergeEffect(cur.extra, scaleEffect(e, rank));
+        }
+        s.combo = cur;
+        break;
+      }
+      case 'build':
+        s.build = (s.build ?? 0) + op.n * rank;
+        break;
+      case 'spend':
+        s.spend = { ...(s.spend ?? { per: 0 }), per: (s.spend?.per ?? 0) + op.per * rank };
         break;
     }
   }
@@ -385,6 +418,12 @@ function scaleOp(op: SkillOp, rank: number): SkillOp {
       return { ...op, n: op.n * rank };
     case 'cost':
       return { ...op, pct: op.pct * rank };
+    case 'combo':
+      return { ...op, add: (op.add ?? 0) * rank };
+    case 'build':
+      return { ...op, n: op.n * rank };
+    case 'spend':
+      return { ...op, per: op.per * rank };
     case 'onHit':
     case 'onImpact':
     case 'onKill':
@@ -441,7 +480,7 @@ export function heroProcs(mods: Entry[]): ProcDef[] {
 /** Every skill id a class can ever use (its pool, specializations, shapes, ultimate and dodge). */
 export function classSkillIds(c: Character): string[] {
   const def = CLASSES[c.cls];
-  const ids = [def.basic, ...def.skills, ...def.trees.map((t) => t.skill), def.ult, def.dodge];
+  const ids = [def.basic, ...def.skills, ...def.trees.map((t) => t.skill), def.ult, ...def.trees.flatMap((t) => (t.ult ? [t.ult] : [])), def.dodge];
   for (const f of def.forms ?? []) ids.push(f.basic, ...f.skills, f.dodge, ...(f.specSwap ? [f.specSwap.skill] : []));
   return [...new Set(ids)];
 }
@@ -499,7 +538,7 @@ export function buildHero(c: Character, formId: string | null = null): HeroBuild
     s2: slotOpen(c, 1) ? c.skills[1] : null,
     s3: slotOpen(c, 2) ? c.skills[2] : null,
     s4: slotOpen(c, 3) ? c.skills[3] : null,
-    ult: hasUltimate(c) ? def.ult : null,
+    ult: hasUltimate(c) ? heroUlt(c) : null,
     dodge: def.dodge,
   };
   if (form) {
@@ -521,7 +560,18 @@ export function buildHero(c: Character, formId: string | null = null): HeroBuild
     base.stats.speed = Math.min(50, base.stats.speed);
     if (form.hpPct) base.maxHp = Math.round(base.maxHp * (1 + form.hpPct / 100));
   }
-  return { ...base, resource: res, maxMana, form, bar, skills, procs: heroProcs(mods) };
+  const spec = c.spec !== null && c.level >= SPEC_LEVEL ? def.trees[c.spec] : null;
+  // (the points are shown and kept only while something on the bar builds them, or something gives them)
+  const procs = heroProcs(mods);
+  const builds = Object.values(bar).some((id) => !!id && (skills[id]?.spec.build ?? 0) > 0) || procs.some((p) => p.effect.kind === 'points');
+  return { ...base, resource: res, maxMana, form, bar, skills, procs, points: spec?.points && builds ? spec.points : null };
+}
+
+/** The ultimate a hero carries: their specialization's own once they have one (SpecDef.ult), else the class's. */
+export function heroUlt(c: Character): string {
+  const def = CLASSES[c.cls];
+  const spec = c.spec !== null && c.level >= SPEC_LEVEL ? def.trees[c.spec] : null;
+  return spec?.ult ?? def.ult;
 }
 
 /** Damage multiplier of a stat block for a damage type (power + that element). */

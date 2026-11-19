@@ -15,8 +15,8 @@ import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
 import { SPEC_LEVEL, TALENTS } from '../src/games/sigilfall/data/talents';
 import { rng } from '../src/games/sigilfall/core/math';
 import { flowField, flowStep, lineOfSight, TILE } from '../src/games/sigilfall/sim/map';
-import { bossHidden } from '../src/games/sigilfall/sim/boss';
 import { empowerFull, empowerOf } from '../src/games/sigilfall/sim/combat';
+import { bossHidden } from '../src/games/sigilfall/sim/boss';
 import type { Enemy, WorldEvent } from '../src/games/sigilfall/sim/types';
 import { emptyInput, inside, World } from '../src/games/sigilfall/sim/world';
 
@@ -310,16 +310,17 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
           return d < Math.max(60, spec.range * 0.9);
         };
         if (reach('basic')) f.holdBasic = { slot: 'basic', angle: a, dist: null, assist: 0 };
-        // a spell with a cast time means standing still: not while badly hurt (a player would get clear first)
-        // (a spell a proc has made instant has no cast to stand through: a player casts it hurt or not)
+        // a spell with a cast time is gathered on the move now, slowed, as in the Ring (sim/cast.ts CAST_SLOW): the bot no
+        // longer stands still for one, but it doesn't slow itself down for one while badly hurt either (a player gets
+        // clear first); a spell a proc has made instant has no cast to slow it, hurt or not
         const castTime = (slot: SlotKey): number => {
           const id = w.build.bar[slot] ?? '';
           const emp = empowerOf(w, id);
           return emp?.def.empower?.instant && empowerFull(emp) ? 0 : (w.build.skills[id]?.spec.castTime ?? 0);
         };
-        const standOk = (slot: SlotKey): boolean => castTime(slot) <= 0 || p.hp > p.maxHp * 0.5;
+        const castOk = (slot: SlotKey): boolean => castTime(slot) <= 0 || p.hp > p.maxHp * 0.5;
         // the ultimate first: a skill that is always ready would otherwise keep it waiting
-        if (p.ult >= 100 && d < 90 && standOk('ult')) f.casts.push({ slot: 'ult', angle: a, dist: null, assist: 0 });
+        if (p.ult >= 100 && d < 90 && castOk('ult')) f.casts.push({ slot: 'ult', angle: a, dist: null, assist: 0 });
         // the big skills first (the longest cooldown), as a player would: a quick one is always ready
         // again, and would otherwise keep the specialization's skill waiting; channels (which hold
         // everything else back while they last) only when nothing else is ready
@@ -327,12 +328,7 @@ export function play(w: World, o: { seconds: number; done: (w: World) => boolean
           const spec = w.build.skills[w.build.bar[slot] ?? '']?.spec;
           return !spec ? 0 : spec.cast === 'channel' || spec.cast === 'drain' ? -1 : spec.cooldown;
         };
-        for (const slot of [...SKILL_SLOTS].sort((x, y) => cd(y) - cd(x))) if (p.cds[slot].charges > 0 && reach(slot) && standOk(slot)) f.casts.push({ slot, angle: a, dist: null, assist: 0 });
-        // a spell with a cast time is cast standing: the bot stops for it (moving would stop the cast)
-        if (!danger && f.casts.some((c) => castTime(c.slot) > 0)) {
-          f.mx = 0;
-          f.my = 0;
-        }
+        for (const slot of [...SKILL_SLOTS].sort((x, y) => cd(y) - cd(x))) if (p.cds[slot].charges > 0 && reach(slot) && castOk(slot)) f.casts.push({ slot, angle: a, dist: null, assist: 0 });
       }
       // a boss's order to the hero (Hallvor's watch), read off the screen as a player would: told to hold, not a
       // step (no dodge, no dash, no blink); told to walk the round, never still (and no spell that needs standing)

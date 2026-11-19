@@ -5,6 +5,7 @@
  * in order, without getting stuck.
  */
 import { describe, expect, it } from 'vitest';
+import { bossBase } from '../src/games/sigilfall/sim/patterns/kit';
 import type { PatternUse } from '../src/games/sigilfall/data/bosses';
 import { BOSSES } from '../src/games/sigilfall/data/bosses';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
@@ -102,7 +103,8 @@ describe('the Deepforge Halls', () => {
     w.player.iframe = 99;
     run(b.boss!, { id: 'forge:harden', p: { shield: 0.1, time: 8 } });
     w.step(1 / 60);
-    expect(b.shield).toBeCloseTo(b.maxHp * 0.1);
+    // (a share of the health it had before its fights grew longer: sim/patterns/kit.ts bossBase)
+    expect(b.shield).toBeCloseTo(bossBase(b) * 0.1);
     expect(b.def.sprite).toBe('slag-colossus-cooled');
     // the crust takes the blows first
     const hp = b.hp;

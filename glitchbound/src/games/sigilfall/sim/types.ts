@@ -93,6 +93,11 @@ export interface Player {
   ult: number;
   /** How much ultimate charge hits may still add right now (refills over seconds: see ultFloor in world.ts). */
   ultBudget: number;
+  /** The specialization's points held (data/types.ts PointsDef), and when they last changed. */
+  points: number;
+  pointsAt: number;
+  /** A cast that builds points when it lands (SkillSpec.build): which skill, how many, and until when it may land. */
+  pendingBuild: { skill: string; n: number; until: number } | null;
   combo: number;
   comboT: number;
   lastDodge: number;
@@ -129,6 +134,8 @@ export type AiState = 'idle' | 'chase' | 'windup' | 'act' | 'recover' | 'spawn' 
 export interface BossState {
   def: BossDef;
   phase: number;
+  /** How many times as long it lasts as it did (sim/world.ts bossLength): its health grew by this. */
+  long?: number;
   /** Seconds of rest before the next pattern. */
   rest: number;
   pattern: { use: PatternUse; t: number; step: number; data: Record<string, number> } | null;
@@ -156,6 +163,8 @@ export interface Enemy {
   tauntUntil?: number;
   /** A boss shrugs off hard control until this time (after a partial stun, root or fear). */
   ccImmuneUntil?: number;
+  /** Until when a combo blow counts it as held (a boss takes a hold as a slow: sim/combat.ts BOSS_HELD). */
+  heldUntil?: number;
   /** A story event's raider: it hunts the hero wherever they go and never gives up and walks home. */
   hunts?: boolean;
   /** Seen coming in a scene's shot (a story fight's foes mustering, a boss met): it stands until the shot is over. */
@@ -545,6 +554,9 @@ export interface FloatText {
   t: number;
   big: boolean;
   vy: number;
+  /** A damage number: the enemy it rose from and what it has added up to (World.damageNumber). */
+  src?: number;
+  sum?: number;
 }
 
 /** Visual-only particles and flashes (never affect play). */

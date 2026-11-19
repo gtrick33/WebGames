@@ -76,19 +76,19 @@ describe('sigilfall content', () => {
         if (n.requires) expect(ids.has(n.requires), n.id).toBe(true);
         for (const m of n.mods) if (m.t === 'skill' && !['*', 'basic', 'dodge', 'ult'].includes(m.skill)) expect(SKILLS[m.skill]?.cls, `${n.id} → ${m.skill}`).toBe(cls);
       }
-      // three trees of seven rows, each ending in one capstone that 30 points below it can reach, with
-      // more ranks below it than that, so the way there is a choice
+      // three trees of seven rows of five, each ending in a choice of three capstones that 30 points below can reach,
+      // with more ranks below than that, so the way there is a choice (a choice of three counts one point)
       for (const tree of [0, 1, 2] as const) {
         const nodes = TALENTS[cls].filter((n) => n.tree === tree);
-        const caps = nodes.filter((n) => n.row === 6);
-        expect(caps, `${cls} tree ${tree}`).toHaveLength(1);
-        expect(caps[0]!.ranks).toBe(1);
-        expect(nodes.filter((n) => n.row < 6).reduce((a, n) => a + n.ranks, 0), `${cls} tree ${tree}`).toBeGreaterThanOrEqual(32);
+        const room = (list: typeof nodes): number => list.filter((n) => !n.pick).reduce((a, n) => a + n.ranks, 0) + new Set(list.flatMap((n) => (n.pick ? [n.pick] : []))).size;
+        const caps = nodes.filter((n) => n.row === 6 && n.pick);
+        expect(caps, `${cls} tree ${tree}`).toHaveLength(3);
+        for (const c of caps) expect(c.ranks).toBe(1);
+        expect(room(nodes.filter((n) => n.row < 6)), `${cls} tree ${tree}`).toBeGreaterThanOrEqual(32);
         for (const n of nodes) {
-          expect(n.row >= 0 && n.row <= 6 && n.col >= 0 && n.col <= 3, n.id).toBe(true);
-          const below = nodes.filter((m) => m.row < n.row).reduce((a, m) => a + m.ranks, 0);
-          expect(below, n.id).toBeGreaterThanOrEqual(n.row * ROW_COST);
-          if (n.requires) expect(nodes.find((m) => m.id === n.requires)!.row, n.id).toBeLessThan(n.row);
+          expect(n.row >= 0 && n.row <= 6 && n.col >= 0 && n.col <= 4, n.id).toBe(true);
+          expect(room(nodes.filter((m) => m.row < n.row)), n.id).toBeGreaterThanOrEqual(n.row * ROW_COST);
+          expect(n.requires, n.id).toBeUndefined();
           expect(modLines(n.mods).length, n.id).toBe(n.mods.length);
           for (const m of n.mods) {
             const e = m.t === 'proc' ? m.proc.effect : m.t === 'skill' && 'effect' in m.op ? m.op.effect : null;
@@ -103,26 +103,33 @@ describe('sigilfall content', () => {
     for (const m of MINOR_MODS) expect(SKILLS[m.skill]?.cls).toBe(m.cls);
   });
 
-  it('classes have their own kits: a basic, six skills, three specializations, an ultimate and a dodge', () => {
+  it('classes have their own kits: a basic, thirteen skills, three specializations each with its ultimate, and a dodge', () => {
     expect(CLS).toHaveLength(8);
     const seen = new Set<string>();
     for (const cls of CLS) {
       const d = CLASSES[cls];
       const forms = (d.forms ?? []).flatMap((f) => [f.basic, ...f.skills, f.dodge]);
-      const kit = [d.basic, ...d.skills, ...d.trees.map((t) => t.skill), d.ult, d.dodge, ...forms];
+      const ults = [d.ult, ...d.trees.flatMap((t) => (t.ult ? [t.ult] : []))];
+      const kit = [d.basic, ...d.skills, ...d.trees.map((t) => t.skill), ...ults, d.dodge, ...forms];
       for (const id of new Set(kit)) {
         expect(SKILLS[id]?.cls, id).toBe(cls);
         expect(seen.has(id), id).toBe(false);
         seen.add(id);
       }
-      // six skills, and five more for the second half of the campaign (PROGRESSION_BALANCE.md Part 2, B)
-      expect(d.skills).toHaveLength(11);
+      // six skills, five more for the second half of the campaign (PROGRESSION_BALANCE.md Part 2, B), and two for the
+      // combos (2026-11-19)
+      expect(d.skills).toHaveLength(13);
       expect(d.trees).toHaveLength(3);
-      expect(SKILLS[d.ult]!.kind).toBe('ultimate');
+      for (const u of ults) expect(SKILLS[u]!.kind, u).toBe('ultimate');
       expect(SKILLS[d.dodge]!.kind).toBe('dodge');
       // skills arrive over the levels; the specialization's at 10
       for (const t of d.trees) expect(SKILLS[t.skill]!.unlock).toBe(SPEC_LEVEL);
-      expect(d.skills.map((id) => SKILLS[id]!.unlock)).toEqual([1, 2, 4, 6, 14, 22, 9, 18, 28, 36, 46]);
+      const unlocks = d.skills.map((id) => SKILLS[id]!.unlock);
+      for (const at of [1, 2, 4, 6, 14, 22, 9, 18, 28, 36, 46]) expect(unlocks, `${cls} at ${at}`).toContain(at);
+      const added = unlocks.filter((u) => ![1, 2, 4, 6, 14, 22, 9, 18, 28, 36, 46].includes(u));
+      expect(added, cls).toHaveLength(2);
+      expect(new Set(added).size, cls).toBe(2);
+      for (const u of added) expect(u > SPEC_LEVEL && u < MAX_LEVEL, `${cls} ${u}`).toBe(true);
       for (const f of d.forms ?? []) expect(d.skills).toContain(f.skill);
       // every skill's text exists and every resource cost makes sense for the class
       for (const id of kit) {
@@ -312,7 +319,7 @@ describe('sigilfall character', () => {
     expect(new Set(c.skills).size).toBe(4);
   });
 
-  it('talents open at level 10 with a specialization; rows need points, some talents need others', () => {
+  it('talents open at level 10 with a specialization; rows need points, a choice takes one of three', () => {
     const c = hero('mage');
     levelTo(c, 9);
     expect(freePoints(c)).toBe(0);
@@ -330,20 +337,21 @@ describe('sigilfall character', () => {
     expect(buildHero(c).stats.fire).toBe(CLASSES.mage.base.fire + 10);
     // the other trees wait for 31 points in this one
     expect(cantLearn(c, 'conduction')).toMatch(new RegExp(`${SPEC_FOCUS} points in Pyromancer`));
-    expect(cantLearn(c, 'combustion')).toMatch(/Needs 5 points/);
+    expect(cantLearn(c, 'smolder')).toMatch(/Needs 5 points/);
     for (let i = 0; i < 3; i++) expect(learnTalent(c, 'kindling')).toBe(true);
     expect(learnTalent(c, 'kindling')).toBe(false); // full rank
     learnTalent(c, 'fire-focus');
     learnTalent(c, 'fire-focus');
-    expect(learnTalent(c, 'combustion')).toBe(true);
+    expect(learnTalent(c, 'smolder')).toBe(true);
+    expect(cantLearn(c, 'inferno')).toMatch(/Needs 10 points/);
+    // row 1 holds a choice of three: one is taken, the others wait to be switched to
+    const [first, second] = TALENTS.mage.filter((n) => n.tree === 0 && n.pick === 'core');
+    expect(learnTalent(c, first!.id)).toBe(true);
+    expect(cantLearn(c, second!.id)).toMatch(/You chose/);
+    expect(learnTalent(c, second!.id)).toBe(false);
     learnTalent(c, 'smolder');
-    learnTalent(c, 'smolder');
-    learnTalent(c, 'pillar-of-embers');
-    learnTalent(c, 'pillar-of-embers');
-    // row 2 is open now (10 points), but Wildfire still needs Ignition
-    expect(cantLearn(c, 'wildfire')).toMatch(/Ignition/);
-    expect(learnTalent(c, 'ignition')).toBe(true);
-    expect(learnTalent(c, 'wildfire')).toBe(false); // no points left
+    learnTalent(c, 'ignition');
+    for (const n of TALENTS.mage.filter((x) => x.tree === 0 && x.row <= 1)) while (learnTalent(c, n.id));
     expect(freePoints(c)).toBe(0);
     // resetting costs gold from level 20 (level × 10) and gives every point back
     expect(respecCost(c)).toBe(200);
@@ -365,21 +373,29 @@ describe('sigilfall character', () => {
     expect(cantSpec(c, 2)).toMatch(/your specialization/);
   });
 
-  it('51 points at the cap: 31 in the specialization, then the rest anywhere', () => {
+  it('51 points at the cap: a tree filled whole, or 31 in the specialization and the rest elsewhere', () => {
     const c = hero('warrior');
     levelTo(c, MAX_LEVEL);
     expect(freePoints(c)).toBe(51);
     chooseSpec(c, 1);
-    // fill Guardian row by row
+    // fill Guardian row by row (a choice: its first)
     for (let row = 0; row <= 6; row++) for (const n of TALENTS.warrior.filter((x) => x.tree === 1 && x.row === row)) while (learnTalent(c, n.id));
-    expect(pointsInTree(c, 1)).toBeGreaterThanOrEqual(SPEC_FOCUS);
-    expect(c.talents.avalanche).toBe(1);
-    // the other trees are open now, and the points left go there (not far enough for their capstones)
-    expect(cantLearn(c, 'bloodlust')).toBeNull();
-    for (const tree of [0, 2] as const) for (let row = 0; row <= 6; row++) for (const n of TALENTS.warrior.filter((x) => x.tree === tree && x.row === row)) while (learnTalent(c, n.id));
+    expect(pointsInTree(c, 1)).toBe(51);
     expect(freePoints(c)).toBe(0);
-    expect(c.talents.bloodstorm ?? 0).toBe(0);
-    expect(c.talents.bladestorm ?? 0).toBe(0);
+    expect(c.talents.avalanche).toBe(1);
+    expect(c.talents.unyielding).toBe(1);
+    // or 31 down Guardian, its capstone among them, and the other trees open with the rest (not far enough for theirs)
+    const d = hero('warrior');
+    levelTo(d, MAX_LEVEL);
+    chooseSpec(d, 1);
+    for (let row = 0; row <= 5 && pointsInTree(d, 1) < 30; row++) for (const n of TALENTS.warrior.filter((x) => x.tree === 1 && x.row === row)) while (pointsInTree(d, 1) < 30 && learnTalent(d, n.id));
+    expect(learnTalent(d, 'unyielding')).toBe(true);
+    expect(pointsInTree(d, 1)).toBe(SPEC_FOCUS);
+    expect(cantLearn(d, 'bloodlust')).toBeNull();
+    for (const tree of [0, 2] as const) for (let row = 0; row <= 6; row++) for (const n of TALENTS.warrior.filter((x) => x.tree === tree && x.row === row)) while (learnTalent(d, n.id));
+    expect(freePoints(d)).toBe(0);
+    expect(d.talents.bloodstorm ?? 0).toBe(0);
+    expect(d.talents.bladestorm ?? 0).toBe(0);
   });
 
   it('equipping and unequipping never duplicates or loses an item', () => {

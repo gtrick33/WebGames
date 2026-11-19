@@ -1,6 +1,6 @@
 import { PETS } from '../data/pets';
 import { SKILLS } from '../data/skills';
-import type { BuffDef, DmgType, Effect, GroundSpec, Mod, ProcDef, ResourceDef, SkillOp, StatKey, StatusId } from '../data/types';
+import type { BuffDef, ComboCond, DmgType, Effect, GroundSpec, Mod, ProcDef, ResourceDef, SkillOp, StatKey, StatusId } from '../data/types';
 
 /**
  * Plain-language text for stats, effects and modifiers, generated from the same data the simulation
@@ -135,6 +135,8 @@ export function effectText(e: Effect): string {
       return buffText(e.buff);
     case 'resource':
       return `gives ${e.n} ${e.n === 1 ? 'point' : 'points'} of your resource`;
+    case 'points':
+      return `gives ${e.n} of your specialization's ${e.n === 1 ? 'point' : 'points'}`;
     case 'fear':
       return `terrifies enemies around it for ${secs(e.dur)}`;
     case 'summon':
@@ -162,7 +164,9 @@ export function buffText(b: BuffDef): string {
   const m = b.empower;
   if (m) {
     const how = [m.pct ? `+${m.pct}% damage${b.max ? ' a stack' : ''}` : '', m.free ? 'free' : '', m.instant ? 'no cast time' : '', m.ready ? 'ready at once' : ''].filter(Boolean);
-    parts.push(`your next ${m.casts && m.casts > 1 ? `${m.casts} casts of ` : ''}${m.type ? `${DMG_NAME[m.type].toLowerCase()} skill` : (SKILLS[m.skill]?.name ?? m.skill)}: ${how.join(', ')}`);
+    const what = m.type ? `${DMG_NAME[m.type].toLowerCase()} skill` : (SKILLS[m.skill]?.name ?? m.skill);
+    // (one that lasts, not used up: every cast of it while it is up)
+    parts.push(m.keep ? `every ${what} while it lasts: ${how.join(', ')}` : `your next ${m.casts && m.casts > 1 ? `${m.casts} casts of ` : ''}${what}: ${how.join(', ')}`);
   }
   if (b.max && !m) parts.push(`stacks to ${b.max}`);
   return `${b.name} for ${secs(b.dur)}: ${parts.join(', ')}`;
@@ -217,7 +221,23 @@ export function opText(skill: string, op: SkillOp): string {
       return `${s} gives ${op.n} more of your resource.`;
     case 'cost':
       return `${s} costs ${op.pct}% less.`;
+    case 'combo': {
+      const vs = op.combo.vs?.length ? ` against ${comboVsText(op.combo.vs)}` : '';
+      if (op.add) return `${s}'s combo hits ${Math.round(op.add * 100)}% harder${vs ? ` and also lands${vs}` : ''}.`;
+      if (op.combo.mult) return `${s} is a combo: ×${op.combo.mult} damage${vs}${op.combo.consume ? ', consuming it' : ''}.`;
+      return `${s}'s combo also lands${vs}${op.combo.consume ? ', consuming it' : ''}.`;
+    }
+    case 'build':
+      return `${s} builds ${op.n} more ${op.n === 1 ? 'point' : 'points'}.`;
+    case 'spend':
+      return `${s} spends your points: +${Math.round(op.per * 100)}% damage for each.`;
   }
+}
+
+/** What a combo blow needs of its target, in words ("Bleeding or stunned enemies"). */
+export function comboVsText(vs: readonly ComboCond[]): string {
+  const words = vs.map((v) => (v === 'lowHp' ? 'enemies below 30% health' : v === 'held' ? 'stunned, frozen, rooted or feared enemies' : `${STATUS_NAME[v]} enemies`));
+  return words.length <= 1 ? (words[0] ?? 'enemies') : `${words.slice(0, -1).join(', ')} or ${words[words.length - 1]}`;
 }
 
 export const procText = (p: ProcDef): string => p.text;
