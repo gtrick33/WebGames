@@ -117,20 +117,6 @@ the Ring.
 
 ## Fixed
 
-### The licensed art packs and the public repository (was HIGH)
-
-- `gtrick33/WebGames` was public, with the raw packs in `glitchbound/assets/sigilfall/` since `82c38567`
-  (2026-10-26). Every license there forbids sharing the files.
-- It had no forks or stars when it was made **private** (2026-10-27).
-- The packs are **no longer tracked** (`7d69a154`, `.gitignore`). They stay on the owner's machine, where the
-  art scripts read them. Older commits still hold them, inside a private repository, which is not
-  redistribution.
-- If the repository is ever made public again, purge `assets/sigilfall/` from its history first. That
-  takes a force-push.
-- Cost of a private repository: GitHub's free plan gives 2,000 Actions minutes a month, and recent weeks
-  ran over 100 CI runs. Watch the usage (GitHub › Settings › Billing). If it runs out, CI pauses until the
-  next month unless minutes are bought.
-
 ### Names taken from World of Warcraft and other games (was HIGH and MEDIUM)
 
 Renamed in Sigilfall's data, text, tests and docs. Ids are unchanged, so saves keep working. The full old → new
@@ -187,24 +173,40 @@ table is RENAMES.md; highlights:
 
 ## Open, by risk
 
-1. **MEDIUM — Certainity's five packs.** Greenvale Meadows, Gloomvault Crypt, Mirefen Bog, Sylvanreach Grove
+1. **HIGH — the licensed art packs are public.** This was listed under Fixed from 2026-10-27, but on 2026-11-19
+   the repository was public and still tracked the packs.
+   - `gtrick33/WebGames` is **public**: GitHub's API said so on 2026-11-19 (no forks, no stars). This review
+     had recorded it as made private on 2026-10-27.
+   - The raw packs (13 packs, 13,467 files, 448 MB) were committed to `glitchbound/assets/sigilfall/` in
+     `82c38567` (2026-10-26). Every license there forbids sharing the files. `7d69a154` only added the folder
+     to `.gitignore`, which leaves tracked files tracked, so every commit kept them until they were
+     untracked on 2026-11-19.
+   - The packs stay on the owner's machine, where the art scripts read them. But every commit from
+     `82c38567` to the untracking still holds them, and a public repository serves them to anyone.
+   - Ending it is the owner's call, one of:
+     - make the repository **private** again (GitHub › Settings › General › Danger Zone). GitHub's free plan
+       gives 2,000 Actions minutes a month, and recent weeks ran over 100 CI runs. Watch the usage (GitHub ›
+       Settings › Billing). If it runs out, CI pauses until the next month unless minutes are bought;
+     - or purge `assets/sigilfall/` from the history: git filter-repo, then a force-push of every branch.
+       Old pull requests still point at the old commits after that; removing those takes GitHub Support.
+2. **MEDIUM — Certainity's five packs.** Greenvale Meadows, Gloomvault Crypt, Mirefen Bog, Sylvanreach Grove
    and Blossom Shrine ($1 each; the seller lists about 40 packs). There is no statement about AI and their
    look reads as AI-made.
    - The license grants commercial use. But nobody can own a copyright in AI-made pieces, a copied
      source would expose us, and some stores ask for AI disclosure.
    - Keep the receipts. Replacing them over time with verified packs or art drawn in code removes it.
-2. **LOW — the game's structure still echoes WoW's classes.** Game rules and mechanics aren't protected,
+3. **LOW — the game's structure still echoes WoW's classes.** Game rules and mechanics aren't protected,
    and every distinctive name is gone.
    - Normal / Heroic / Mythic and Paragon are ordinary words used by many games. They were kept.
-3. **LOW — the Launch Control supercar bodies** still resemble supercars in general. Without names,
+4. **LOW — the Launch Control supercar bodies** still resemble supercars in general. Without names,
    badges or grilles the risk is low. Swapping them for RG Poly's generic bodies would end it.
-4. **Brand names** (Sigilfall, GlitchBound, Riftstone, Quizbelief, Fussbox, Whatsit, Launch Control):
+5. **Brand names** (Sigilfall, GlitchBound, Riftstone, Quizbelief, Fussbox, Whatsit, Launch Control):
    - Web searches found no game or live trademark using them. The only Whatsit mark, from 1989, was
      abandoned in 1990.
    - Crosswire has a pending US application (98622801) by someone else; watch it.
    - Before spending on the brand, run a real search (USPTO, EUIPO, WIPO; classes 9 and 41) and
      consider registering GlitchBound.
-5. **Monetization:**
+6. **Monetization:**
    - **Ads:** before switching AdSense on, turn on Google's certified consent message for EU, UK and
      Swiss visitors (the privacy page already promises it).
    - **Selling anything** needs terms of sale, the EU withdrawal right for digital content, VAT (EU OSS)
