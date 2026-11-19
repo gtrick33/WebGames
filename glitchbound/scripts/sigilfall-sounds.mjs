@@ -11,7 +11,8 @@
  *   Sound Factory (CC BY 3.0).
  * - ~/Downloads/sigilfall-audio/music (or SIGILFALL_MUSIC): the soundtrack, by Kevin MacLeod (incompetech.com), CC BY 4.0.
  * - assets/sigilfall/cc0 (or SIGILFALL_CC0; paths below that start with '%/'): the CC0 packs added for the small-AAA
- *   pass (POLISH_PLAN.md), each in a folder of its own: Kenney's Impact Sounds and RPG Audio (kenney.nl).
+ *   pass (POLISH_PLAN.md), each in a folder of its own: Kenney's Impact Sounds (kenney.nl), and from opengameart.org the
+ *   RPG Male Adventurer voice clips (wolfwoot: oga-male/) and the RPG Voice Starter Pack (Cici Fyre: oga-female/).
  *
  * `--only <prefix>` builds just the sounds whose names start with it, into the folder as it is (nothing else is touched,
  * so a machine with only some of the packs can still add a sound): `node scripts/sigilfall-sounds.mjs --only step`.
@@ -45,7 +46,7 @@ const TARGET = -20;
 
 /**
  * What ships: its name, the file it comes from, and how it is cut (`to`: seconds kept) or lifted (`boost`: dB); `kbps` and
- * `ar` make a small one smaller (a footstep needs no more than 40 kbps).
+ * `ar` make a small one smaller (a footstep needs no more than 40 kbps, a voice's grunt 32 kbps at 22 kHz).
  */
 const FILES = {
   // the blade
@@ -217,6 +218,44 @@ const FILES = {
   'step-wood2': ['%/kenney-impact-sounds/Audio/footstep_wood_001.ogg', { kbps: 40 }],
   'step-wood3': ['%/kenney-impact-sounds/Audio/footstep_wood_002.ogg', { kbps: 40 }],
   'step-wood4': ['%/kenney-impact-sounds/Audio/footstep_wood_003.ogg', { kbps: 40 }],
+  // voices (src/games/sigilfall/audio/voice.ts): a hero's efforts, cries and shouts, a man's and a woman's, and two more
+  // women's for the companions. CC0: RPG Male Adventurer (wolfwoot), RPG Voice Starter Pack (Cici Fyre), opengameart.org
+  'vo-m-attack0': ['%/oga-male/RPG Male Adventurer/attack0.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-attack1': ['%/oga-male/RPG Male Adventurer/attack1.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-attack2': ['%/oga-male/RPG Male Adventurer/attack2.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-attack3': ['%/oga-male/RPG Male Adventurer/attack3.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-attack4': ['%/oga-male/RPG Male Adventurer/attack4.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-attack5': ['%/oga-male/RPG Male Adventurer/attack5.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-big0': ['%/oga-male/RPG Male Adventurer/attackbig0.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-big1': ['%/oga-male/RPG Male Adventurer/attackbig1.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-big2': ['%/oga-male/RPG Male Adventurer/attackbig2.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-big3': ['%/oga-male/RPG Male Adventurer/attackbig3.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-hurt0': ['%/oga-male/RPG Male Adventurer/hurt0.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-hurt1': ['%/oga-male/RPG Male Adventurer/hurt1.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-hurt2': ['%/oga-male/RPG Male Adventurer/hurt2.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-hurt3': ['%/oga-male/RPG Male Adventurer/hurt3.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-hurt4': ['%/oga-male/RPG Male Adventurer/hurt4.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-death0': ['%/oga-male/RPG Male Adventurer/death0.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-death1': ['%/oga-male/RPG Male Adventurer/death1.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-jump0': ['%/oga-male/RPG Male Adventurer/jump0.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-jump1': ['%/oga-male/RPG Male Adventurer/jump1.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-victory0': ['%/oga-male/RPG Male Adventurer/victory0.wav', { kbps: 32, ar: 22050 }],
+  'vo-m-victory1': ['%/oga-male/RPG Male Adventurer/victory1.wav', { kbps: 32, ar: 22050 }],
+  'vo-f1-attack1': ['%/oga-female/RPG Voice Starter Pack/Type 1/attack1.wav', { kbps: 32, ar: 22050 }],
+  'vo-f1-attack2': ['%/oga-female/RPG Voice Starter Pack/Type 1/attack2.wav', { kbps: 32, ar: 22050 }],
+  'vo-f1-attack3': ['%/oga-female/RPG Voice Starter Pack/Type 1/attack3.wav', { kbps: 32, ar: 22050 }],
+  'vo-f1-hurt1': ['%/oga-female/RPG Voice Starter Pack/Type 1/damaged1.wav', { kbps: 32, ar: 22050 }],
+  'vo-f1-hurt2': ['%/oga-female/RPG Voice Starter Pack/Type 1/damaged2.wav', { kbps: 32, ar: 22050 }],
+  'vo-f1-hurt3': ['%/oga-female/RPG Voice Starter Pack/Type 1/damaged3.wav', { kbps: 32, ar: 22050 }],
+  'vo-f1-jump1': ['%/oga-female/RPG Voice Starter Pack/Type 1/jump1.wav', { kbps: 32, ar: 22050 }],
+  'vo-f1-jump2': ['%/oga-female/RPG Voice Starter Pack/Type 1/jump2.wav', { kbps: 32, ar: 22050 }],
+  'vo-f1-jump3': ['%/oga-female/RPG Voice Starter Pack/Type 1/jump3.wav', { kbps: 32, ar: 22050 }],
+  'vo-f2-attack1': ['%/oga-female/RPG Voice Starter Pack/Type 2/attack1.wav', { kbps: 32, ar: 22050 }],
+  'vo-f2-attack2': ['%/oga-female/RPG Voice Starter Pack/Type 2/attack2.wav', { kbps: 32, ar: 22050 }],
+  'vo-f2-attack3': ['%/oga-female/RPG Voice Starter Pack/Type 2/attack3.wav', { kbps: 32, ar: 22050 }],
+  'vo-f3-attack1': ['%/oga-female/RPG Voice Starter Pack/Type 3/attack1.wav', { kbps: 32, ar: 22050 }],
+  'vo-f3-attack2': ['%/oga-female/RPG Voice Starter Pack/Type 3/attack2.wav', { kbps: 32, ar: 22050 }],
+  'vo-f3-attack3': ['%/oga-female/RPG Voice Starter Pack/Type 3/attack3.wav', { kbps: 32, ar: 22050 }],
   'step-snow1': ['%/kenney-impact-sounds/Audio/footstep_snow_000.ogg', { kbps: 40 }],
   'step-snow2': ['%/kenney-impact-sounds/Audio/footstep_snow_001.ogg', { kbps: 40 }],
   'step-snow3': ['%/kenney-impact-sounds/Audio/footstep_snow_002.ogg', { kbps: 40 }],

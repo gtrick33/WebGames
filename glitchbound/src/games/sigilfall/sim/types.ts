@@ -582,6 +582,8 @@ export interface Fx {
 /** What the world tells the engine and the UI after a step. */
 export type WorldEvent =
   | { t: 'sfx'; id: string; vol?: number }
+  /** Someone's voice (audio/voice.ts): the hero ('hero') or a companion, and what kind of sound. Only for the ear. */
+  | { t: 'voice'; who: string; kind: 'attack' | 'big' | 'hurt' | 'death' | 'jump' | 'victory' }
   | { t: 'shake'; amount: number }
   | { t: 'toast'; text: string; tone?: 'info' | 'good' | 'warn' | 'loot'; item?: Item }
   /** A scene began or ended (sim/scene.ts). */

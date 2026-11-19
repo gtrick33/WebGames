@@ -8,6 +8,12 @@ owner (and a lawyer, if one is asked). It is **not legal advice** and not a trad
 Footsteps from Kenney's **Impact Sounds** (CC0, kenney.nl, downloaded from the pack's own page). CC0 asks nothing, and
 the files ship only inside the game, as built MP3s; the pack stays in the ignored `assets/sigilfall/cc0/`.
 
+Voices from two OpenGameArt packs, each marked CC0 on its page (checked 2026-11-19): **RPG Male Adventurer** voice clips
+by wolfwoot, and the **RPG Voice Starter Pack** by Cici Fyre (cicifyre.itch.io). Wordless sounds only: efforts, cries,
+gasps, a victory shout; none of their spoken words (spell names) are used. Recorded people's voices: CC0 leaves no
+condition, but the voices are the performers' own, so they are used only as what they are (a hero's grunt), never to
+speak lines they didn't record. No synthetic voice is used anywhere (the owner, 2026-11-19).
+
 ## Icons changed (2026-11-03)
 
 The owner replaced the game-icons.net silhouettes with **Nasha's Lumenfall: Skill & Spell Icons Vol. 1**, bought on

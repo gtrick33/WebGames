@@ -37,6 +37,8 @@ source and the license, and say the work was changed.
 | Fantasy Sound Effects (Tinysized SFX); Fantasy Weapons and Apparel SFX Library | Vehicle, https://opengameart.org/users/vehicle | CC0 | Steel on steel, lightning, whooshes; arrows |
 | 10 Impact / Shield Blocks | StarNinjas, https://opengameart.org/users/starninjas | CC0 | A shield taking a blow |
 | Interface Sounds | Kenney, https://kenney.nl | CC0 | The menus: clicks, panels opening and closing, a choice made, a refusal |
+| Voice Clip Pack: RPG Male Adventurer (2026-11-19) | wolfwoot, https://opengameart.org/content/voice-clip-pack-male-adventurer-rpg | CC0 | A man's voice for a hero: efforts, cries, a fall, dodges, a victory; and, pitched lower, the shouts of the companions who are men (`vo-m-*`, src/games/sigilfall/audio/voice.ts) |
+| RPG Voice Starter Pack (2026-11-19) | Cici Fyre, https://opengameart.org/content/female-rpg-voice-starter-pack | CC0 | A woman's voice for a hero (Type 1: efforts, cries, dodges), and two more for the companions who are women (Types 2 and 3: their shouts) (`vo-f*`) |
 | Impact Sounds (2026-11-19) | Kenney, https://kenney.nl/assets/impact-sounds | CC0 | Footsteps on grass, stone, planks and snow (sand is the snow's, pitched up): `step-*`, built from `assets/sigilfall/cc0/` by `scripts/sigilfall-sounds.mjs --only step-` |
 | The Ring's sound effects (`ring-*`) | GlitchBound, made for the game by scripts/sigilfall-ring-sounds.mjs | The game's own | Every effect in a Ring match: blows, spells, falls, the win and the loss, a new rank |
 | Cure Magic | Someoneman, https://opengameart.org/users/someoneman | CC0 | Healing |

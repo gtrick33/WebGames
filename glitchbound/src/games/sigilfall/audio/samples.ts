@@ -14,8 +14,8 @@ export interface SampleDef {
   gain: number;
   rate: readonly [number, number];
   /**
-   * Fetched once the fight's own sounds are in: heard often, but not needed at the first blow (the footsteps). What
-   * the first blow needs stays a small download (tests/sigilfall-sound.test.ts).
+   * Fetched once the fight's own sounds are in: heard often, but not needed at the first blow (the footsteps, the
+   * voices). What the first blow needs stays a small download (tests/sigilfall-sound.test.ts).
    */
   later?: boolean;
 }
@@ -67,6 +67,22 @@ export const SAMPLES: Readonly<Record<string, SampleDef>> = {
   // on the move
   dash: { files: ['cloth-heavy'], gain: 0.32, rate: [0.95, 1.1] },
   dodge: { files: ['cloth'], gain: 0.32, rate: [1, 1.2] },
+  // voices (audio/voice.ts): the hero's efforts, cries and shouts, a man's and a woman's; the companions' shouts
+  voMAttack: { files: ['vo-m-attack0', 'vo-m-attack1', 'vo-m-attack2', 'vo-m-attack3', 'vo-m-attack4', 'vo-m-attack5'], gain: 0.42, rate: [0.96, 1.04], later: true },
+  voMBig: { files: ['vo-m-big0', 'vo-m-big1', 'vo-m-big2', 'vo-m-big3'], gain: 0.5, rate: [0.97, 1.03], later: true },
+  voMHurt: { files: ['vo-m-hurt0', 'vo-m-hurt1', 'vo-m-hurt2', 'vo-m-hurt3', 'vo-m-hurt4'], gain: 0.45, rate: [0.96, 1.04], later: true },
+  voMDeath: { files: ['vo-m-death0', 'vo-m-death1'], gain: 0.5, rate: [0.98, 1.02], later: true },
+  voMJump: { files: ['vo-m-jump0', 'vo-m-jump1'], gain: 0.34, rate: [0.96, 1.06], later: true },
+  voMVictory: { files: ['vo-m-victory0', 'vo-m-victory1'], gain: 0.5, rate: [0.98, 1.02], later: true },
+  voMShout: { files: ['vo-m-attack0', 'vo-m-attack1', 'vo-m-attack2', 'vo-m-attack3', 'vo-m-attack4', 'vo-m-attack5'], gain: 0.36, rate: [0.84, 0.9], later: true },
+  voF1Attack: { files: ['vo-f1-attack1', 'vo-f1-attack2', 'vo-f1-attack3'], gain: 0.42, rate: [0.97, 1.04], later: true },
+  voF1Big: { files: ['vo-f1-attack3', 'vo-f1-attack2'], gain: 0.52, rate: [0.94, 0.98], later: true },
+  voF1Hurt: { files: ['vo-f1-hurt1', 'vo-f1-hurt2', 'vo-f1-hurt3'], gain: 0.45, rate: [0.97, 1.04], later: true },
+  voF1Death: { files: ['vo-f1-hurt3'], gain: 0.5, rate: [0.84, 0.88], later: true },
+  voF1Jump: { files: ['vo-f1-jump1', 'vo-f1-jump2', 'vo-f1-jump3'], gain: 0.34, rate: [0.97, 1.05], later: true },
+  voF2Attack: { files: ['vo-f2-attack1', 'vo-f2-attack2', 'vo-f2-attack3'], gain: 0.36, rate: [0.96, 1.03], later: true },
+  voF3Attack: { files: ['vo-f3-attack1', 'vo-f3-attack2', 'vo-f3-attack3'], gain: 0.36, rate: [0.96, 1.03], later: true },
+  voF3Shout: { files: ['vo-f3-attack1', 'vo-f3-attack2', 'vo-f3-attack3'], gain: 0.34, rate: [1.1, 1.16], later: true },
   // footsteps, by the ground underfoot (audio/steps.ts): quiet, under everything, never the same twice running
   stepGrass: { files: ['step-grass1', 'step-grass2', 'step-grass3', 'step-grass4'], gain: 0.16, rate: [0.9, 1.1], later: true },
   stepStone: { files: ['step-stone1', 'step-stone2', 'step-stone3', 'step-stone4'], gain: 0.18, rate: [0.9, 1.08], later: true },

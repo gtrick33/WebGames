@@ -186,6 +186,7 @@ export function tryCast(w: World, req: CastRequest): boolean {
     p.casting = { slot: req.slot, spec, t: 0, total: time, angle: aim.angle, tx: aim.tx, ty: aim.ty, target: aim.target?.id ?? -1 };
     p.actAngle = aim.angle;
     w.sfx('windup', 0.7);
+    castVoice(w, req.slot, spec);
     return true;
   }
   pay(w, spec, req.slot, cost);
@@ -196,10 +197,24 @@ export function tryCast(w: World, req: CastRequest): boolean {
     p.actT = spec.windup + 0.2;
     p.actAngle = aim.angle;
     w.sfx('windup');
+    castVoice(w, req.slot, spec);
     return true;
   }
+  castVoice(w, req.slot, spec);
   execute(w, req.slot, spec, aim.angle, aim.tx, aim.ty, aim.target);
   return true;
+}
+
+/**
+ * The hero's voice as a cast goes in (audio/voice.ts): every ultimate, every other dodge, and every third of the skills
+ * that take a while to come back; never the basic attack (a breath at every swing wears on the ear). Counted, never
+ * left to chance, so the fight's own dice roll as they would without it.
+ */
+export function castVoice(w: World, slot: SlotKey, spec: SkillSpec): void {
+  if (slot === 'ult') w.emit({ t: 'voice', who: 'hero', kind: 'big' });
+  else if (slot === 'dodge') {
+    if (w.voiceDodges++ % 2 === 0) w.emit({ t: 'voice', who: 'hero', kind: 'jump' });
+  } else if (slot !== 'basic' && spec.cooldown >= 4 && w.voiceCasts++ % 3 === 0) w.emit({ t: 'voice', who: 'hero', kind: 'attack' });
 }
 
 /** A skill as a combo makes it: stronger a stack at a time, free, and with no cast time once the combo is whole. */
