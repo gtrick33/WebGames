@@ -633,6 +633,7 @@ export const RIMEHELD_VAULT: DungeonModule = {
         id: 'frozen-gate',
         floor: 'a',
         title: 'The Frozen Gate',
+        mechanic: { kind: 'vents' },
         waves: [
           { enemies: ['wight-knight', 'rime-archer', 'rime-hound', 'rime-hound'] },
           { enemies: ['giant-huscarl', 'rime-hound', 'rime-hound', 'rime-archer'] },
@@ -643,6 +644,7 @@ export const RIMEHELD_VAULT: DungeonModule = {
         id: 'ice-galleries',
         floor: 'c',
         title: 'The Ice Galleries',
+        mechanic: { kind: 'rockfall' },
         waves: [
           { enemies: ['icebound-warden', 'rime-elemental', 'rime-elemental'] },
           { enemies: ['rime-hound', 'rime-hound', 'rime-hound', 'rime-archer'] },
@@ -654,6 +656,7 @@ export const RIMEHELD_VAULT: DungeonModule = {
         floor: 'e',
         title: 'The Giants’ Camp',
         checkpoint: true,
+        mechanic: { kind: 'volley', look: 'spear' },
         waves: [
           { enemies: ['giant-huscarl', 'giant-hurler', 'rime-hound', 'rime-hound'] },
           { enemies: ['giant-hurler', 'giant-hurler', 'rime-hound', 'rime-hound'] },
@@ -665,6 +668,7 @@ export const RIMEHELD_VAULT: DungeonModule = {
         id: 'drowned-halls',
         floor: 'i',
         title: 'The Drowned Halls',
+        mechanic: { kind: 'blades', look: 'water' },
         waves: [
           { enemies: ['rime-elemental', 'rime-elemental', 'wight-knight', 'rime-archer'] },
           { enemies: ['icebound-warden', 'legion-bonecaller', 'rime-hound', 'rime-hound'] },
@@ -676,6 +680,7 @@ export const RIMEHELD_VAULT: DungeonModule = {
         id: 'hoard-bridge',
         floor: 'm',
         title: 'The Hoard Bridge',
+        mechanic: { kind: 'blades', look: 'chain' },
         waves: [
           { enemies: ['giant-hurler', 'giant-hurler', 'rime-hound', 'rime-hound'] },
           { enemies: ['rime-elemental', 'rime-elemental', 'rime-elemental', 'giant-huscarl'] },

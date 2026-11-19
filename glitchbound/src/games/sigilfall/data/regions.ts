@@ -321,6 +321,7 @@ const HAND_LAID: Record<string, RegionDef> = {
         floor: 'd',
         title: 'The Lower Chapel',
         checkpoint: true,
+        mechanic: { kind: 'rockfall' },
         waves: [{ enemies: ['rift-acolyte', 'rift-acolyte', 'skeleton', 'skeleton'] }, { enemies: ['rift-acolyte', 'bone-hound', 'bone-hound', 'skeleton-archer'] }, { enemies: ['rift-acolyte', 'skeleton', 'skeleton'], elite: true }],
       },
       { id: 'sanctum', floor: 'e', waves: [], boss: 'morgrave', checkpoint: true, title: 'The Sanctum' },

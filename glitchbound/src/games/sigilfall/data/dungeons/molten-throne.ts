@@ -686,6 +686,7 @@ export const MOLTEN_THRONE: DungeonModule = {
         id: 'ember-gate',
         floor: 'a',
         title: 'The Ember Gate',
+        mechanic: { kind: 'vents' },
         waves: [
           { enemies: ['legion-shieldbearer', 'legion-pyrebinder', 'legion-pyrebinder'] },
           { enemies: ['legion-overseer', 'chained-emberkin', 'chained-emberkin', 'legion-shieldbearer'] },
@@ -697,6 +698,7 @@ export const MOLTEN_THRONE: DungeonModule = {
         floor: 'c',
         title: 'The Slave Forges',
         checkpoint: true,
+        mechanic: { kind: 'rockfall' },
         waves: [
           { enemies: ['legion-overseer', 'legion-overseer', 'chained-emberkin', 'chained-emberkin'] },
           { enemies: ['legion-smith', 'legion-smith', 'magma-sentry'] },
@@ -708,6 +710,7 @@ export const MOLTEN_THRONE: DungeonModule = {
         id: 'chain-gallery',
         floor: 'g',
         title: 'The Chain Gallery',
+        mechanic: { kind: 'blades' },
         waves: [
           { enemies: ['death-knight-squire', 'death-knight-squire', 'legion-pyrebinder'] },
           { enemies: ['bone-steel-sentinel', 'legion-arbalester', 'legion-arbalester', 'chained-emberkin'] },
@@ -720,6 +723,7 @@ export const MOLTEN_THRONE: DungeonModule = {
         floor: 'l',
         title: 'The Ashen Court',
         checkpoint: true,
+        mechanic: { kind: 'volley' },
         waves: [
           { enemies: ['ashkar-cinderguard', 'ashkar-cinderguard', 'ashkar-cinderguard'] },
           { enemies: ['ashkar-cinderguard', 'magma-sentry', 'legion-pyrebinder', 'legion-pyrebinder'] },

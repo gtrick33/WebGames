@@ -918,6 +918,19 @@ export interface RegionStateDef {
 }
 
 /** A room that seals its doors and spawns waves when the player walks in (dungeons). */
+/**
+ * What a dungeon's room does while its fight is on, besides its foes (POLISH_PLAN.md piece 18): one to a room, warned
+ * on the ground before it lands as a boss's blows are (sim/rooms.ts).
+ * - `rockfall`: stones (icicles, slag, glass) come down about the hero.
+ * - `vents`: vents in the floor breathe in turns.
+ * - `blades`: something sweeps the room along a line, across it or down it.
+ * - `volley`: shots from the room's walls along lines to where the hero stands.
+ * - `rift`: the Rift opens under the hero's feet.
+ */
+export type RoomMechanic = 'rockfall' | 'vents' | 'blades' | 'volley' | 'rift';
+/** How a room's mechanic looks and what it leaves (when not the dungeon's own: sim/rooms.ts lookOf). */
+export type RoomLook = 'stone' | 'brick' | 'ice' | 'slag' | 'glass' | 'bough' | 'fire' | 'bile' | 'spore' | 'frost' | 'steam' | 'sand' | 'blade' | 'chain' | 'water' | 'bolt' | 'dart' | 'spear' | 'riftbolt' | 'rift';
+
 export interface Encounter {
   id: string;
   /** The map letter used for this room's floor. */
@@ -928,6 +941,8 @@ export interface Encounter {
   /** Respawn point after a defeat in or after this room. */
   checkpoint?: boolean;
   title?: string;
+  /** What the room does while its waves are fought (a boss's room has the boss's own). */
+  mechanic?: { kind: RoomMechanic; look?: RoomLook };
 }
 
 export interface RegionDef {

@@ -575,6 +575,7 @@ export const DEEPFORGE_HALLS: DungeonModule = {
         id: 'gatehouse',
         floor: 'a',
         title: 'The Gatehouse',
+        mechanic: { kind: 'volley' },
         waves: [
           { enemies: ['legion-smith', 'legion-smith', 'skeleton-archer', 'skeleton-archer'] },
           { enemies: ['bone-steel-sentinel', 'legion-smith', 'slag-imp', 'slag-imp'] },
@@ -585,6 +586,7 @@ export const DEEPFORGE_HALLS: DungeonModule = {
         id: 'galleries',
         floor: 'c',
         title: 'The Mine Galleries',
+        mechanic: { kind: 'rockfall' },
         waves: [
           { enemies: ['slag-imp', 'slag-imp', 'slag-imp', 'legion-smith'] },
           { enemies: ['furnace-warden', 'bone-hound', 'bone-hound', 'slag-imp'] },
@@ -596,6 +598,7 @@ export const DEEPFORGE_HALLS: DungeonModule = {
         floor: 'd',
         title: 'The Bone-Yards',
         checkpoint: true,
+        mechanic: { kind: 'blades' },
         waves: [
           { enemies: ['skeleton', 'skeleton', 'skeleton', 'furnace-warden'] },
           { enemies: ['bone-steel-sentinel', 'bone-hound', 'bone-hound', 'skeleton-archer'] },
@@ -607,6 +610,7 @@ export const DEEPFORGE_HALLS: DungeonModule = {
         id: 'pools',
         floor: 'g',
         title: 'The Quenching Pools',
+        mechanic: { kind: 'vents', look: 'steam' },
         waves: [
           { enemies: ['slag-imp', 'slag-imp', 'skeleton-archer', 'skeleton-archer'] },
           { enemies: ['bone-steel-sentinel', 'bone-steel-sentinel', 'legion-smith'] },

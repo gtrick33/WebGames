@@ -53,9 +53,9 @@ const MAP = [
   '##########aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa##########',
   '##########aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa##########',
   '#######################DDDD#######################',
-  '#######################....#######################',
-  '#######################..P.#######################',
-  '#######################....#######################',
+  '#######################....#.....#################',
+  '#######################..P.Z..S..#################',
+  '#######################....#.....#################',
   '##########################X#######################',
   '##################################################',
 ];
@@ -68,6 +68,8 @@ const markers: Record<string, Marker> = {
   O: { kind: 'boss', boss: 'silas-vey' },
   W: { kind: 'boss', boss: 'the-royal-auditor' },
   n: { kind: 'prop', prop: 'bones' },
+  // behind the cracked wall at the foot of the stair: what Crane's men hid on the way down (a blow opens it)
+  S: { kind: 'chest', id: 'cc-cache', tier: 'epic', once: true },
 };
 
 const SILAS_VEY: BossDef = {

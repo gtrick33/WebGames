@@ -1003,6 +1003,7 @@ export const DUSKSPIRE: DungeonModule = {
         id: 'bridge',
         floor: 'a',
         title: 'The Bone Bridge',
+        mechanic: { kind: 'blades' },
         waves: [
           { enemies: ['hollow-guardsman', 'kneeling-dead', 'kneeling-dead', 'skeleton-archer'] },
           { enemies: ['kneeling-dead', 'kneeling-dead', 'kneeling-dead', 'wailing-soul'] },
@@ -1016,6 +1017,7 @@ export const DUSKSPIRE: DungeonModule = {
         floor: 'e',
         title: 'The Stair of Ash',
         checkpoint: true,
+        mechanic: { kind: 'rockfall' },
         waves: [
           { enemies: ['hollow-ghoul', 'hollow-ghoul', 'hollow-ghoul', 'hollow-ghoul', 'wailing-soul'] },
           { enemies: ['hollow-guardsman', 'wailing-soul', 'wailing-soul', 'skeleton-archer'] },

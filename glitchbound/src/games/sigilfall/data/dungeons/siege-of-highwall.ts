@@ -690,6 +690,7 @@ export const SIEGE_OF_HIGHWALL: DungeonModule = {
         id: 'gatehouse',
         floor: 'a',
         title: 'The Gatehouse Yard',
+        mechanic: { kind: 'volley' },
         waves: [
           { enemies: ['legion-shieldbearer', 'legion-arbalester', 'carrion-ghoul', 'carrion-ghoul'] },
           { enemies: ['carrion-ghoul', 'carrion-ghoul', 'carrion-ghoul', 'grave-hound'] },
@@ -701,6 +702,7 @@ export const SIEGE_OF_HIGHWALL: DungeonModule = {
         floor: 'c',
         title: 'The Burning Market',
         checkpoint: true,
+        mechanic: { kind: 'vents' },
         waves: [
           { enemies: ['plague-ghoul', 'plague-ghoul', 'carrion-ghoul', 'carrion-ghoul'] },
           { enemies: ['legion-standard-bearer', 'legion-shieldbearer', 'legion-arbalester', 'legion-arbalester'] },
@@ -712,6 +714,7 @@ export const SIEGE_OF_HIGHWALL: DungeonModule = {
         id: 'barracks',
         floor: 'e',
         title: 'The Barracks',
+        mechanic: { kind: 'rockfall' },
         waves: [
           { enemies: ['legion-shieldbearer', 'legion-shieldbearer', 'legion-standard-bearer'] },
           { enemies: ['death-knight-squire', 'death-knight-squire', 'legion-arbalester'] },
@@ -724,6 +727,7 @@ export const SIEGE_OF_HIGHWALL: DungeonModule = {
         floor: 'l',
         title: 'The Inner Wall’s Stair',
         checkpoint: true,
+        mechanic: { kind: 'volley' },
         waves: [
           { enemies: ['legion-arbalester', 'legion-arbalester', 'legion-arbalester', 'legion-shieldbearer'] },
           { enemies: ['death-knight-squire', 'death-knight-squire', 'legion-standard-bearer', 'carrion-ghoul'] },
