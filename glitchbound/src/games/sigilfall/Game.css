@@ -12570,6 +12570,68 @@ html.rb-touch-playing textarea {
   margin: 0;
   text-align: center;
 }
+/* the party on the Ring's own screen: its code, who is in it, and ways to invite and leave (a line of its own over
+   the fight and the gold button) */
+.rb-ringvl .rb-vlobby-foot.has-party {
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 5px;
+}
+.rb-ringvl-party {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 3px 12px;
+  border: 1px solid rgba(255, 210, 120, 0.35);
+  border-radius: 10px;
+  background: rgba(20, 12, 30, 0.55);
+  font-size: 13px;
+  line-height: 1.35;
+}
+.rb-ringvl-party-title b {
+  color: #ffd27a;
+  letter-spacing: 0.08em;
+}
+.rb-ringvl-party-who {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.rb-ringvl-party-member {
+  font-weight: 600;
+}
+.rb-ringvl-party-member small,
+.rb-ringvl-party-who em {
+  opacity: 0.7;
+  font-weight: 400;
+}
+.rb-ringvl-party-member.is-away {
+  opacity: 0.5;
+}
+/* a phone: one short line (who is in it, by name; the classes and the waiting words give way) */
+@container (max-width: 560px) {
+  .rb-ringvl-party {
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 2px 8px;
+    font-size: 12px;
+  }
+}
+@container (max-width: 560px) or (max-height: 420px) {
+  .rb-ringvl-party-who {
+    flex-wrap: nowrap;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .rb-ringvl-party-member small,
+  .rb-ringvl-party-who em {
+    display: none;
+  }
+}
 /* the layer where the fight is chosen: its words at the top, what to choose in the middle (it scrolls if it must), and
    the ways to play at the foot, always in reach */
 .rb-ring-dialog.rb-ringvl-play {

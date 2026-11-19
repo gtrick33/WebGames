@@ -168,6 +168,16 @@ describe('an invitation, as it arrives', () => {
     render(<InviteCards engine={fakeEngine()} />);
     expect(screen.queryByRole('alertdialog')).toBeNull();
   });
+
+  it('in the Ring, an invitation into the party the player is already in (or from someone in it) is not shown', () => {
+    const ring = (id: number, from: string, code: string): FriendInvite => ({ id, game: 'sigilfall-ring', from, href: `/sigilfall?ring=${code}`, code });
+    const engine = fakeEngine({ invites: [ring(7, 'Mara', 'PARTY'), ring(8, 'Ann', 'OTHER')] });
+    render(<InviteCards engine={engine} only="sigilfall-ring" hide={(i) => i.code === 'PARTY' || i.from === 'Ann'} />);
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    cleanup();
+    render(<InviteCards engine={engine} only="sigilfall-ring" hide={(i) => i.code === 'PARTY'} />);
+    expect(screen.getByRole('alertdialog', { name: 'Ann invites you to team up in the Ring' })).toBeTruthy();
+  });
 });
 
 describe('the engine’s side of friends', () => {

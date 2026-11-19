@@ -183,9 +183,10 @@ export function FriendsSection({ engine }: { engine: SigilEngine }) {
  * player is (the hero list, the world, a menu), never takes the controls, and stays until it is answered or the
  * invitation runs out.
  */
-export function InviteCards({ engine, only, onTake }: { engine: SigilEngine; only?: string; onTake?: (id: number, code: string) => void }) {
+export function InviteCards({ engine, only, onTake, hide }: { engine: SigilEngine; only?: string; onTake?: (id: number, code: string) => void; hide?: (inv: SigilEngine['invites'][number]) => boolean }) {
   // (a screen drawn over a stand-in for the engine, as some tests draw one, has nobody asking)
-  const waiting = ((engine.invites as SigilEngine['invites'] | undefined) ?? []).filter((i) => !only || i.game === only);
+  // (`hide`: an invitation the player has no use for where they are: into the party they are in, from someone in it)
+  const waiting = ((engine.invites as SigilEngine['invites'] | undefined) ?? []).filter((i) => (!only || i.game === only) && !hide?.(i));
   const inv = waiting[0];
   if (!inv) return null;
   const more = waiting.length - 1;

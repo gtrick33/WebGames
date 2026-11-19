@@ -43,6 +43,25 @@ import { frameOf, framesOwned, recordMatch, trackGain, turnSeason, type TrackGai
 import { ProgressDialog, RecordBar, type ProgressTab } from './RingProgress';
 
 const roomErrors: Record<string, string> = { full: 'That room is full.', in_run: 'That room is already in a match.' };
+/** The same, for a party joined by a friend's invitation. */
+const partyErrors: Record<string, string> = { full: 'That party is full, or already looking for a match. Ask your friend to stop the search and invite you again.', in_run: 'That party is in a match right now. Join them when it ends.' };
+/** How long after inviting a friend the leader's Find waits for them, once, before going without them. */
+const INVITE_WAIT_MS = 90_000;
+/**
+ * The party's leader pressed Find: should it wait for a friend they asked a moment ago, who isn't here yet (`room`:
+ * the party has a place for them)? The first press says so; a second, within a while, goes without them.
+ */
+export function waitForFriend(asked: Record<string, number>, warned: { current: number }, room: boolean, now = Date.now()): boolean {
+  const pending = room && Object.values(asked).some((at) => now - at < INVITE_WAIT_MS);
+  if (pending && now - warned.current > 15_000) {
+    warned.current = now;
+    return true;
+  }
+  warned.current = 0;
+  return false;
+}
+/** One of the arenas, at random. */
+const anyMap = (): string => MAP_IDS[Math.floor(Math.random() * MAP_IDS.length)]!;
 
 /** A title from another player's game, as this one draws it: its words tidied, its light one this game has (else plain). */
 function shownTitle(t: RoomPick['title']): FighterSetup['title'] | undefined {
@@ -310,9 +329,12 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
       // (a party left with the Ring: its seat goes, so the others aren't left waiting for this player)
       if (modeRef.current === 'party') linkRef.current?.send({ t: 'bye' });
       linkRef.current?.close();
+      linkRef.current = null;
     },
     [],
   );
+  /** A friend's party was just joined: its first word says whether anyone is still in it. */
+  const joining = useRef(false);
 
   const hero = name ?? 'You';
   // (what other people see: a player with no campaign hero goes by their arcade name, not as somebody else's "You")
@@ -608,12 +630,17 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
     setSeekNote('');
     seekRef.current?.stop();
     seekRef.current = null;
-    const ground = map === 'random' ? MAP_IDS[Math.floor(Math.random() * MAP_IDS.length)]! : map;
+    const ground = map === 'random' ? anyMap() : map;
     const myPickNow = { cls: pick, bar, talents, ult, rating: mmrOf(standing), mates: mates.map(choiceWord), ...pickTitle(myTitle), ...frameOn };
     if (modeRef.current === 'party') {
       const v = linkRef.current?.view;
       // (only the leader starts the party's search; everyone else waits for it, the layer says so)
       if (!v || v.host !== v.you || !linkRef.current) return;
+      // (a friend asked a moment ago and not here yet: the first press waits for them, a second goes without them)
+      if (waitForFriend(asked, warnedAt, partySeats(v).length < v.format)) {
+        setSeekNote('Your friend hasn’t joined yet. Wait for them, or press Find again to go without them.');
+        return;
+      }
       const ratings = partySeats(v).map((x) => x.pick!.rating ?? mmrOf(standing));
       // (however far apart: the party is matched at its median, and each player wins and loses by their own rating)
       setPlayOpen(false);
@@ -631,6 +658,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
    */
   const [inviteOpen, setInviteOpen] = useState(false);
   const [asked, setAsked] = useState<Record<string, number>>({});
+  /** When the leader was told a friend they asked isn't here yet (a second press within a while goes without them). */
+  const warnedAt = useRef(0);
   const roomMates = view ? choicesFor(save.mates?.[view.format], view.format) : [];
   const roomWords = roomMates.map(choiceWord).join(' ');
   // (the title worn, sent to the room so everyone sees it over this player's head)
@@ -642,6 +671,15 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
   const myPick = useMemo((): RoomPick => ({ team: view?.seats.find((s) => s.you)?.pick?.team ?? 0, cls: pick, bar, talents, ult, ...(partyMmr !== null ? { rating: partyMmr } : {}), ...(roomWords ? { mates: roomWords.split(' ') } : {}), ...(tText ? { title: { text: tText, fx: tFx, before: tBefore } } : {}), ...(myFrame ? { frame: myFrame } : {}) }), [view, pick, bar, talents, ult, partyMmr, roomWords, tText, tFx, tBefore, myFrame]);
   /** The party's room said something new (its handlers are made once: this is read through a ref, always the latest). */
   const partyView = (v: RoomView): void => {
+    // (an invitation outlives its party: a friend who left it, or opened another, left nobody here to play with)
+    if (joining.current) {
+      joining.current = false;
+      if (!v.seats.some((x) => !x.you)) {
+        leaveRoom();
+        setSeekNote('That party has closed: nobody is in it any more. Ask your friend to invite you again.');
+        return;
+      }
+    }
     seekRef.current?.seen();
     const leader = v.host === v.you;
     if (v.phase === 'lobby') {
@@ -656,6 +694,47 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
     }
     // a match began that this end wasn't waiting for (it came back just as it did): in, all the same
     if (v.run !== runSeen.current && !seekRef.current && linkRef.current && v.seats.find((x) => x.you)?.pick) beginMatched(v, linkRef.current, true);
+  };
+  /**
+   * The room's handlers, for one connection. Only the connection the Ring is on now is listened to: one that was let go
+   * (a party left for a friend's, a room closed for a party) still says it closed a moment later, and that word must
+   * not take the new party down with it (it did: the player stayed seated in their friend's room, but their game had
+   * let go of it, so the friend's match began without them).
+   */
+  const linkHandlers = (): { h: typeof handlers; mine: (l: Link<RoomView, RoomAction>) => Link<RoomView, RoomAction> } => {
+    let me: Link<RoomView, RoomAction> | null = null;
+    const live = (): boolean => !!me && linkRef.current === me;
+    return {
+      h: {
+        onView: (v: RoomView) => {
+          if (live()) handlers.onView(v);
+        },
+        onRelay: (n: number, d: unknown) => {
+          if (live()) handlers.onRelay(n, d);
+        },
+        onState: (st: LinkState, why?: string) => {
+          if (live()) handlers.onState(st, why);
+        },
+        onError: (msg: string) => {
+          if (live()) handlers.onError(msg);
+        },
+      },
+      mine: (l) => (me = l),
+    };
+  };
+  /** Connects to a room by its code (a friend's party, a room of friends), as the connection the Ring is on. */
+  const connect = (code: string): Link<RoomView, RoomAction> => {
+    const b = linkHandlers();
+    const l = new Link<RoomView, RoomAction>(code, shownAs, b.h);
+    linkRef.current = b.mine(l);
+    return l;
+  };
+  /** Opens a new room of the Ring's and connects to it, as the connection the Ring is on. */
+  const create = async (): Promise<Link<RoomView, RoomAction>> => {
+    const b = linkHandlers();
+    const l = await Link.create<RoomView, RoomAction>(shownAs, b.h, 'sigilfall-ring');
+    linkRef.current = b.mine(l);
+    return l;
   };
   const handlers = {
     onView: (v: RoomView) => {
@@ -697,7 +776,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
           seekRef.current?.stop();
           seekRef.current = null;
           setLook(null);
-          setSeekNote(why ? (roomErrors[why] ?? why) : 'The party has closed.');
+          setSeekNote(why ? (partyErrors[why] ?? why) : 'The party has closed.');
         } else setRoomErr(why ? (roomErrors[why] ?? why) : 'The room has closed.');
       }
     },
@@ -710,7 +789,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
     modeRef.current = 'custom';
     setMode('custom');
     try {
-      linkRef.current = await Link.create<RoomView, RoomAction>(shownAs, handlers, 'sigilfall-ring');
+      await create();
     } catch (e) {
       setLinkState('none');
       setMode(null);
@@ -725,7 +804,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
     setLinkState('connecting');
     modeRef.current = 'custom';
     setMode('custom');
-    linkRef.current = new Link<RoomView, RoomAction>(code, shownAs, handlers);
+    connect(code);
   };
   const leaveRoom = (): void => {
     if (modeRef.current === 'party') {
@@ -742,6 +821,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
     modeRef.current = null;
     setMode(null);
     setPartyCode('');
+    // (a new party asks its friends anew)
+    setAsked({});
   };
 
   /** A party of this player's own, opened to invite a friend into (or the one they are in). Its code, or null. */
@@ -755,9 +836,9 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
     // (a party is a team: 2v2, unless 3v3 was chosen)
     if (format === 1) setFormat(2);
     try {
-      linkRef.current = await Link.create<RoomView, RoomAction>(shownAs, handlers, 'sigilfall-ring');
-      setPartyCode(linkRef.current.code);
-      return linkRef.current.code;
+      const l = await create();
+      setPartyCode(l.code);
+      return l.code;
     } catch {
       setMode(null);
       setLinkState('none');
@@ -777,7 +858,8 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
     setPage('play');
     setInviteOpen(false);
     setPlayOpen(true);
-    linkRef.current = new Link<RoomView, RoomAction>(code, shownAs, handlers);
+    joining.current = true;
+    connect(code);
   };
   /** Asks a friend into the party (opening one first): their invitation arrives wherever they are in Sigilfall. */
   const inviteFriend = async (id: string): Promise<void> => {
@@ -802,8 +884,10 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
     if (!view || view.phase !== 'lobby' || !ready || !linkRef.current) return;
     const seated = view.seats.find((s) => s.you)?.pick;
     const team = seated ? seated.team : view.seats.filter((s) => s.pick?.team === 0).length < view.format ? 0 : 1;
-    const say = JSON.stringify({ ...myPick, team });
-    if (say !== sentPick.current) {
+    // (said again in each room, and to each seat: a player who comes from another room with the same choices must
+    // still sit down in this one, or their party never sees them and its match begins without them)
+    const say = JSON.stringify({ room: view.code, seat: view.you, run: view.run, ...myPick, team });
+    if (say !== sentPick.current || !seated) {
       sentPick.current = say;
       linkRef.current.send({ t: 'pick', pick: { ...myPick, team } });
     }
@@ -823,6 +907,25 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
             : [],
         }
       : null;
+  // a friend joins or leaves the party: said on the Ring's own screen, wherever the player is looking
+  const memberNames = partyShown ? partyShown.members.filter((m) => !m.you).map((m) => m.name) : null;
+  const memberKey = memberNames ? memberNames.join('\n') : null;
+  const knownMembers = useRef<string[] | null>(null);
+  useEffect(() => {
+    const was = knownMembers.current;
+    const now = memberKey === null ? null : memberKey ? memberKey.split('\n') : [];
+    knownMembers.current = now;
+    if (!was || !now) return;
+    const came = now.filter((n) => !was.includes(n));
+    const went = was.filter((n) => !now.includes(n));
+    const say = came.length ? `${listed(came)} joined your party.` : went.length ? `${listed(went)} left your party.` : '';
+    if (!say) return;
+    if (came.length) engine.sound.play('ring-buff');
+    setSeekNote(say);
+    // (news for a moment, not a note that stays)
+    const t = window.setTimeout(() => setSeekNote((n) => (n === say ? '' : n)), 6000);
+    return () => window.clearTimeout(t);
+  }, [memberKey, engine]);
   // (in a party the format is the room's: its leader's choice)
   const fightFormat: Format = roomMode === 'party' && view ? (view.format as Format) : format;
 
@@ -880,7 +983,10 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
   });
   // the Ring opened by a friend's invitation, taken anywhere in the game: into their party (the layer is open on it)
   useEffect(() => {
-    if (invitedTo && /^[A-Z]{4,8}$/.test(invitedTo)) linkRef.current = new Link<RoomView, RoomAction>(invitedTo, shownAs, handlers);
+    if (invitedTo && /^[A-Z]{4,8}$/.test(invitedTo) && linkRef.current?.code !== invitedTo) {
+      joining.current = true;
+      connect(invitedTo);
+    }
     // (once, as the Ring opens)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1127,7 +1233,37 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
               </div>
             </section>
 
-            <footer className="rb-vlobby-foot rb-ringvl-go">
+            <footer className={`rb-vlobby-foot rb-ringvl-go${partyShown ? ' has-party' : ''}`}>
+              {/* the party, in sight on the Ring's own screen (not only in the layer where the fight is chosen) */}
+              {partyShown && (
+                <div className="rb-ringvl-party" role="group" aria-label="Your party">
+                  <span className="rb-ringvl-party-title">
+                    Party <b>{partyShown.code}</b>
+                  </span>
+                  <span className="rb-ringvl-party-who">
+                    {partyShown.connecting ? (
+                      <em>Connecting…</em>
+                    ) : (
+                      partyShown.members.map((m) => (
+                        <span key={m.n} className={`rb-ringvl-party-member${m.online ? '' : ' is-away'}`}>
+                          {m.you ? 'You' : m.name}
+                          {m.cls && <small> {CLASSES[m.cls].name}</small>}
+                          {!m.you && m.n === view?.host && <small> · leader</small>}
+                        </span>
+                      ))
+                    )}
+                    {!partyShown.connecting && partyShown.members.length < 2 && <em>Waiting for your friend to join…</em>}
+                  </span>
+                  {partyShown.leader && (
+                    <button className="rb-linkbtn" onClick={() => setInviteOpen(true)}>
+                      Invite
+                    </button>
+                  )}
+                  <button className="rb-linkbtn" onClick={leaveRoom}>
+                    Leave
+                  </button>
+                </div>
+              )}
               {/* the fight chosen, always in sight; pressed, the layer where it is chosen (PlayLayer) */}
               <button className="rb-ringvl-mode" onClick={() => setPlayOpen(true)} data-tut="fight" aria-haspopup="dialog" aria-label={`${ladder === 'guest' ? 'Practice' : 'Ranked'} ${fightFormat}v${fightFormat}, rating ${standing.rating}, ${rank.name}, ${arenaName}. Change the fight`}>
                 <b>
@@ -1185,7 +1321,7 @@ export function RingScreen({ engine, face, body, cls, name, onBack, resume, part
         )}
         {inviteOpen && page === 'play' && <InviteDialog engine={engine} format={fightFormat} code={partyShown?.code || null} asked={asked} onInvite={(id) => void inviteFriend(id)} onJoin={joinParty} onClose={() => setInviteOpen(false)} />}
         {/* (a friend's invitation to team up here is answered here, where the player is looking) */}
-        {page === 'play' && !look && <InviteCards engine={engine} only="sigilfall-ring" onTake={takeInvite} />}
+        {page === 'play' && !look && <InviteCards engine={engine} only="sigilfall-ring" onTake={takeInvite} hide={(inv) => inv.code?.toUpperCase() === partyShown?.code || !!memberNames?.includes(inv.from)} />}
         {setupOpen && (
           <div className="rb-ring-dialog-wrap rb-ringvl-setupwrap" role="dialog" aria-modal="true" aria-label="Your setup" onClick={() => setSetupOpen(false)}>
             <div className="rb-ring-dialog rb-ringvl-setupdialog" onClick={(e) => e.stopPropagation()}>
