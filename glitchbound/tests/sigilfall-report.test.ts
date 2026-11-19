@@ -1,15 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import { SigilEngine } from '../src/games/sigilfall/engine';
+import { DEFAULT_SETTINGS } from '../src/games/sigilfall/progress/save';
 import { readyHero } from './sigilfall-bot';
 
 vi.mock('../src/games/sigilfall/render/sprites', () => ({ skillIconUrl: () => '' }));
 vi.mock('../src/games/sigilfall/ui/uiIcons', () => ({ uiIcon: () => '' }));
 
 /** The engine's arcade report, driven without a canvas: the run, the hero and the world it reads. */
-function engineWith(run: Record<string, unknown>, world: Record<string, unknown> | null) {
+function engineWith(run: Record<string, unknown>, world: Record<string, unknown> | null, difficulty: 'story' | 'normal' | 'hard' = 'normal') {
   const reports: { type: string; score?: number; stats?: Record<string, number> }[] = [];
   const e = Object.create(SigilEngine.prototype) as Record<string, unknown>;
-  Object.assign(e, { run, hero: readyHero('warrior', 30, 'rare'), world, host: { report: (r: (typeof reports)[number]) => reports.push(r) } });
+  // (the settings the report reads: a run on Story difficulty goes on no leaderboard)
+  Object.assign(e, { run, hero: readyHero('warrior', 30, 'rare'), world, save: { settings: { ...DEFAULT_SETTINGS, difficulty } }, host: { report: (r: (typeof reports)[number]) => reports.push(r) } });
   const end = (): void => (e.endRun as (toast: boolean) => void).call(e, false);
   return { reports, end };
 }
@@ -17,6 +19,18 @@ function engineWith(run: Record<string, unknown>, world: Record<string, unknown>
 const stats = (xp = 0, kills = 0) => ({ xp, gold: 0, kills, bosses: 0, items: [] });
 
 describe('Sigilfall arcade report', () => {
+  it('a round played on Story difficulty goes on no leaderboard (its foes are softer); on Normal and Hard it does', () => {
+    const round = { start: performance.now() - 60_000, region: 'brackenridge', tier: 0, mods: [], key: 0 };
+    const story = engineWith(round, { run: stats(400, 12), region: { id: 'briarhollow' } }, 'story');
+    story.end();
+    expect(story.reports).toEqual([]);
+    for (const d of ['normal', 'hard'] as const) {
+      const r = engineWith({ ...round }, { run: stats(400, 12), region: { id: 'briarhollow' } }, d);
+      r.end();
+      expect(r.reports).toHaveLength(1);
+    }
+  });
+
   it('SFS-11: a short trip with nothing in it is not reported as a round', () => {
     const { reports, end } = engineWith({ start: performance.now() - 5000, region: 'brackenridge', tier: 0, mods: [], key: 0 }, { run: stats(), region: { id: 'briarhollow' } });
     end();
