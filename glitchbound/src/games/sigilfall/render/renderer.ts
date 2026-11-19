@@ -637,6 +637,7 @@ export class Renderer {
     g.clearRect(0, 0, this.canvas.width, this.canvas.height);
     g.setTransform(this.k, 0, 0, this.k, 0, 0);
     this.vignette(g, w);
+    this.haze(g, w);
     g.setTransform(1, 0, 0, 1, 0, 0);
 
     // ---- what's drawn on the ground for the player: on its own layer, under whatever stands
@@ -761,6 +762,29 @@ export class Renderer {
     grd.addColorStop(1, `rgba(${room.edge},${0.62 * k})`);
     g.fillStyle = grd;
     g.fillRect(0, 0, W, H);
+  }
+
+  /**
+   * The air of an open land (POLISH_PLAN.md piece 14): the far side of the picture, its top, a little lost in the land's
+   * own light (render/zoneLight.ts: a forest's green, a desert's gold, the rift's violet), so what is near stands out
+   * from what is far, as across a valley. At night the air is the moon's. A deep place has its dim edge instead.
+   */
+  private haze(g: CanvasRenderingContext2D, w: World): void {
+    if (w.region.kind === 'dungeon' || w.region.interior || w.region.dark || roomOf(w)) return;
+    const W = this.cssW;
+    const H = this.cssH;
+    const night = this.nightK;
+    const [r, gg, b] = hexRgb(zoneLight(w.region.id));
+    // (the land's light, paled toward the sky; the moon's blue as night comes)
+    const mix = (c: number, sky: number, moon: number): number => Math.round(255 * ((c * 0.55 + sky * 0.45) * (1 - night) + moon * night));
+    const col = `${mix(r, 0.92, 0.32)},${mix(gg, 0.95, 0.38)},${mix(b, 1, 0.6)}`;
+    const a = 0.17 * (1 - night) + 0.12 * night;
+    const grd = g.createLinearGradient(0, 0, 0, H * 0.34);
+    grd.addColorStop(0, `rgba(${col},${a})`);
+    grd.addColorStop(0.45, `rgba(${col},${a * 0.4})`);
+    grd.addColorStop(1, `rgba(${col},0)`);
+    g.fillStyle = grd;
+    g.fillRect(0, 0, W, H * 0.34);
   }
 
   private setMood(w: World, st: Stage, dt: number): void {

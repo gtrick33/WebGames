@@ -2017,7 +2017,7 @@ export function SettingsPanel({ engine, onClose }: { engine: SigilEngine; onClos
               </button>
             ))}
           </div>
-          <span className="rb-small rb-dim">Auto draws fewer pixels when the machine can’t keep up. Sharp always draws the full picture; Light always draws a lighter one, for an older phone or laptop.</span>
+          <span className="rb-small rb-dim">Auto draws fewer pixels when the machine can’t keep up, and lets fire and magic glow on a computer that keeps up with ease. Sharp always draws the full picture, with the glow, on any screen; Light always draws a lighter one, with no glow, for an older phone or laptop.</span>
           <label className="rb-check">
             <input type="checkbox" checked={s.saver} onChange={(e) => set({ saver: e.target.checked })} />
             <span>Battery saver (30 frames a second: a cooler phone and a longer battery, a little less smooth)</span>
