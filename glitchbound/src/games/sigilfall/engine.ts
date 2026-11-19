@@ -191,7 +191,7 @@ const GM_EVERY_MS = 60_000;
  * small request, and nothing while the tab is hidden.
  */
 const SOCIAL_FIRST_MS = 4_000;
-const SOCIAL_EVERY_MS = 20_000;
+const SOCIAL_EVERY_MS = 8_000;
 /** How long a friend's row says "Invited" after asking them. */
 export const ASKED_MS = 60_000;
 /** Why a friend's code didn't work, in the Friends page's own words (src/pages/FriendsPage.tsx). */
