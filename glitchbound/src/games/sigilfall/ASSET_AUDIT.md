@@ -1,7 +1,10 @@
 # Sigilfall — Asset Audit (Blueprint V2.9 §3, §3.8, §7)
 
 Source packs: `glitchbound/assets/sigilfall/` (never bundled). Runtime derivatives: `public/games/sigilfall/art/`,
-built by `scripts/sigilfall-art.mjs`, requested with `?v=<ART_VERSION>` and cached as immutable. Licenses were read
+built by `scripts/sigilfall-art.mjs`, requested with `?v=<ART_VERSION>` and cached as immutable, until 2026-11-19:
+the 2D world renderer they drew for was removed then, with them and their two scripts (POLISH_PLAN.md piece 4). The
+world is drawn in 3D from `public/games/sigilfall/3d/` (CREDITS_AND_LICENSES.md, 3D models). What follows is the record
+of the 2D art as it shipped. Licenses were read
 from the files shipped with each pack; terms are quoted in `CREDITS_AND_LICENSES.md`.
 
 ## Since 2026-10-28: one pack (the owner's decision)

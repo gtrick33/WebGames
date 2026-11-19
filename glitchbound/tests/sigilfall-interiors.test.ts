@@ -9,7 +9,6 @@ import { grantMounts } from '../src/games/sigilfall/progress/wardrobe';
 import { flowField, TILE } from '../src/games/sigilfall/sim/map';
 import { emptyInput, type World } from '../src/games/sigilfall/sim/world';
 import { TOWNSFOLK_LOOKS } from '../src/games/sigilfall/render/art/townsfolk';
-import { isFurniture } from '../src/games/sigilfall/render/art/furniture';
 import { newWorld, readyHero } from './sigilfall-bot';
 
 /**
@@ -63,12 +62,25 @@ describe('Sigilfall: interiors', () => {
     }
   });
 
+  /**
+   * The marks a room's plan gives the land to draw, with no model of their own (data/props.ts: "light and floor"). Only
+   * the dais is drawn in 3D (render3d/land.ts); the windows and their sunbeams, the great hall's floor and the chapel's
+   * bell rope were drawn by the old flat renderer alone, and await art of the 3D world's own.
+   */
+  const LAND_MARKS = new Set(['dais', 'window', 'sunbeam', 'hall-floor', 'bell-rope']);
+
+  it('the land’s own marks are exactly the model-less ones its table says it draws', () => {
+    for (const m of LAND_MARKS) expect(PROPS[m]?.m, m).toBe('');
+  });
+
   it('every piece of furniture named in a room has a picture', () => {
     for (const z of INTERIORS)
       for (const p of z.region.placed!) {
         if (p.marker.kind !== 'prop' || p.marker.prop === 'block') continue;
-        // (a picture in the old flat set, or a model of its own in the world's one table, which is what the game draws)
-        const known = ['crate', 'barrel', 'anvil', 'lamp', 'well', 'tent', 'campfire'].includes(p.marker.prop) || isFurniture(p.marker.prop) || !!PROPS[p.marker.prop.split(':')[0]!]?.m;
+        // (a model of its own in the world's one table, which is what the game draws; or one of the land's own few
+        // marks, LAND_MARKS. The old flat set that drew those marks is gone with the 2D renderer)
+        const name = p.marker.prop.split(':')[0]!;
+        const known = ['crate', 'barrel', 'anvil', 'lamp', 'well', 'tent', 'campfire'].includes(p.marker.prop) || !!PROPS[name]?.m || LAND_MARKS.has(name);
         expect(known, `${z.region.id}: ${p.marker.prop}`).toBe(true);
       }
   });

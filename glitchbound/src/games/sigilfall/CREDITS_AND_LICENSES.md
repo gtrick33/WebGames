@@ -1,8 +1,10 @@
 # Sigilfall — Credits and Licenses
 
-Art that ships in the game: the atlases in `public/games/sigilfall/art/`, built by `scripts/sigilfall-art.mjs` and
-`scripts/sigilfall-art-world.mjs` from the source packs in `assets/sigilfall/`. Checked against the atlases on
-2026-10-28, when the outdoor world became Royal Keep's alone (ASSET_AUDIT.md). Credit is optional under every
+Art that ships in the game: the 3D models in `public/games/sigilfall/3d/` and the skill and talent icons in
+`public/games/sigilfall/icons/` (below). The 2D atlases in `public/games/sigilfall/art/`, built by
+`scripts/sigilfall-art.mjs` and `scripts/sigilfall-art-world.mjs`, shipped until 2026-11-19, when the 2D world
+renderer they drew for was removed with them; the 3D world had already replaced it. They were last checked against
+the packs on 2026-10-28, when the outdoor world became Royal Keep's alone (ASSET_AUDIT.md). Credit is optional under every
 license below except game-icons.net's (CC BY 3.0, where it is a condition); it is given anyway, here and in the
 game's Settings panel ("Art credits").
 
@@ -51,6 +53,9 @@ So is the procedural score that stands in if a piece of music can't be loaded (`
 The soundtrack before 2026-11-11 (Orchestral and World Music Pack by Ragnar Random, CC0) no longer ships.
 
 ## 2D art
+
+Royal Keep, Royal Keep Seasons and Gloomvault Crypt no longer ship (since 2026-11-19, above): their rows stay as the
+record of what shipped, and Settings still credits them, as the game was made with them. game-icons.net's icons ship.
 
 | Art (atlases) | Author / source | Paid or free | Commercial use | Attribution | Terms that bind us |
 | --- | --- | --- | --- | --- | --- |

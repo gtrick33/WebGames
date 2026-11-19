@@ -33,7 +33,7 @@ a story beat.
 | Wardrobe looks never change stats; mounts: call, refusals, dismount on hit/action/event | `sigilfall-collection` |
 | Interiors: doors in and out, raid-night bars, everyone reachable, nobody rides indoors | `sigilfall-interiors` |
 | Scenes and review presets: everyone named is there, skip, once only, reload-safe | `sigilfall-scenes` |
-| Art integrity (every named piece exists), the ground painter, the hero's look | `sigilfall-art`, `sigilfall-ground`, `sigilfall-look` |
+| The hero's look | `sigilfall-look` |
 | Riftstone (scaling, the week's affixes, the clock, levels opening, nothing lost when late, the Riftstone's source) and Paragon (levels, points, caps, stats, saves) | `sigilfall-keystones` |
 
 ## Known issues

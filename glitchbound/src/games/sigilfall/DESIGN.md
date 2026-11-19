@@ -339,8 +339,6 @@ rating kept on their device, on no ranking.
 - `tests/sigilfall-sim.test.ts`: a bot (`tests/sigilfall-bot.ts`) plays every class through the Whisperwood and
   the crypt on all three tiers: no stuck spots, no broken numbers, every boss beaten.
 - `tests/sigilfall-section.test.tsx`: the tab, the address, and turning the section off.
-- `tests/sigilfall-ground.test.ts`: the ground painter makes no canvases (it runs on a worker), is deterministic,
-  paints in row pieces exactly as in one go, and puts things on the square on stone.
 - `tests/sigilfall-look.test.ts`: every armor piece changes the hero's look; dyes; the legs slot rolls, sells
   and saves; Scale2x.
 - `tests/sigilfall-economy.test.ts`: mana, rage, regeneration, potions, shops, aiming and dodge cooldowns.
