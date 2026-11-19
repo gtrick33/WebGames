@@ -62,6 +62,12 @@ export const SAMPLES: Readonly<Record<string, SampleDef>> = {
   // on the move
   dash: { files: ['cloth-heavy'], gain: 0.32, rate: [0.95, 1.1] },
   dodge: { files: ['cloth'], gain: 0.32, rate: [1, 1.2] },
+  // footsteps, by the ground underfoot (audio/steps.ts): quiet, under everything, never the same twice running
+  stepGrass: { files: ['step-grass1', 'step-grass2', 'step-grass3', 'step-grass4'], gain: 0.16, rate: [0.9, 1.1] },
+  stepStone: { files: ['step-stone1', 'step-stone2', 'step-stone3', 'step-stone4'], gain: 0.18, rate: [0.9, 1.08] },
+  stepWood: { files: ['step-wood1', 'step-wood2', 'step-wood3', 'step-wood4'], gain: 0.18, rate: [0.92, 1.08] },
+  stepSnow: { files: ['step-snow1', 'step-snow2', 'step-snow3', 'step-snow4'], gain: 0.17, rate: [0.92, 1.08] },
+  stepSand: { files: ['step-snow1', 'step-snow2', 'step-snow3', 'step-snow4'], gain: 0.16, rate: [1.25, 1.4] },
   dismount: { files: ['cloth-heavy'], gain: 0.3, rate: [0.85, 0.95] },
   mount: { files: ['cloth-heavy'], gain: 0.3, rate: [1, 1.1] },
   whistle: { files: ['whoosh3'], gain: 0.25, rate: [1.5, 1.7] },

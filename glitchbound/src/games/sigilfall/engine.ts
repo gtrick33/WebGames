@@ -39,6 +39,7 @@ import { setDangerTone } from './render/effects';
 import { paceStride } from './render3d/pace';
 import { actionLabel, codeMap, resolveBinds, type CampAction } from './input/binds';
 import { Sound, type MusicId } from './audio/sound';
+import { Steps } from './audio/steps';
 import type { Interactable } from './sim/types';
 import { emptyInput, World, type InputFrame } from './sim/world';
 import { advanceScene, endScene, sceneDue } from './sim/scene';
@@ -227,6 +228,8 @@ export class SigilEngine {
   world: World | null = null;
   readonly renderer: Renderer;
   readonly sound = new Sound();
+  /** The hero's footsteps, counted stride by stride (audio/steps.ts). */
+  private readonly steps = new Steps();
   readonly touch = new TouchState();
   kbm: KeyboardMouse | null = null;
   ui: UiState;
@@ -659,6 +662,9 @@ export class SigilEngine {
       this.autosaveAt = t + 20_000;
       if (!paused) this.persist();
     }
+    // the hero's feet on what they walk on (audio/steps.ts)
+    const foot = this.steps.step(w);
+    if (foot) this.sound.play(foot);
     // what happens while someone is talking, or a scene plays (the HUD stepped aside), waits until they have
     // finished: a toast behind them is missed
     if (this.ui.dialogue || w.scene || this.ui.story) this.toastsHeld = true;
