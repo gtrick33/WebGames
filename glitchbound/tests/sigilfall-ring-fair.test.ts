@@ -16,7 +16,7 @@ import { ABILITIES, healerBar, PRESETS, ultOf, type Ability } from '../src/games
 import { botThink, isHealer, newBrain } from '../src/games/sigilfall/arena/bot';
 import { BARRED_WHY, barredFrom, COMPS, drawOpponents, styleFor } from '../src/games/sigilfall/arena/ladder';
 import { MAP_IDS } from '../src/games/sigilfall/arena/maps';
-import { DARK, GATES, HEAL_BY_SIZE, Match, SUDDEN, VEIL, type Fighter, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
+import { DARK, GATES, HEAL_BY_SIZE, Match, SUDDEN, TEAM_K, VEIL, type Fighter, type FighterSetup, type MoveInput } from '../src/games/sigilfall/arena/sim';
 import { STYLES } from '../src/games/sigilfall/arena/styles';
 import { CLASS_IDS } from '../src/games/sigilfall/data/classes';
 import type { ClassId } from '../src/games/sigilfall/data/types';
@@ -302,7 +302,9 @@ describe('The Ring: healing in 2v2 is as written', () => {
     const pair = healed([of(0, 'priest', 0), of(0, 'mage', 0, 1), of(1, 'warrior', 0), of(1, 'ranger', 0, 1)]);
     const three = healed([of(0, 'priest', 0), of(0, 'mage', 0, 1), of(0, 'ranger', 0, 2), of(1, 'warrior', 0), of(1, 'ranger', 0, 1), of(1, 'mage', 0, 2)]);
     expect(duel).toBeGreaterThan(100);
-    expect(pair).toBe(duel);
+    // (the priest's own team share (TEAM_K, 2026-11-20: its healers' heals raised, a priest's side won too often in 2v2) is all that
+    // moves it)
+    expect(Math.abs(pair - duel * TEAM_K.priest![0])).toBeLessThanOrEqual(1);
     expect(three / duel).toBeCloseTo(1.45, 1);
   });
 });

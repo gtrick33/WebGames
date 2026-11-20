@@ -98,11 +98,11 @@ describe('The Ring: whoever is held stays where they are', () => {
     expect(m.held(foe)?.cc).toBe('stun');
     expect(walked(m, foe, 1.4)).toBe(0);
     expect(m.held(foe)?.cc).toBe('stun');
-    // the stun runs its two seconds and the silence its three
+    // the stun runs its second and a half and the silence its three
     expect(walked(m, foe, 0.5)).toBeGreaterThan(5);
     expect(m.held(foe)).toBeUndefined();
     expect(m.silenced(foe)).toBe(true);
-    walked(m, foe, 0.7);
+    walked(m, foe, 1.2);
     expect(m.silenced(foe)).toBe(false);
   });
 

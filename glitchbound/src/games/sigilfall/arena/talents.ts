@@ -362,7 +362,7 @@ export const TALENTS: Record<ClassId, Talent[]> = {
       [
         { name: 'Grave Chill', text: 'Each hit by an ashbound from your Call the Ashbound or Grave Legion has a 10% chance to trigger Grave Chill (stacks twice): your next Gloom Bolt is instant and deals 50% more damage.', icon: 'ghoul_claw_on_green', tune: { 'k-raise': { gives: [{ boon: 'chill', chance: 0.1, on: 'tick' }] }, 'k-super2': { gives: [{ boon: 'chill', chance: 0.1, on: 'tick' }] }, 'k-bolt': { uses: [{ boon: 'chill', instant: true, mult: 1.5 }] } } },
         { name: 'Third Grave', text: 'Call the Ashbound summons a third ashbound, and they hit twice as hard. Cooldown reduced by 8 sec.', icon: 'twin_summon_of_two_spirits_on_teal', tune: { 'k-raise': { more: 1, cd: 0.7, power: 2 } } },
-        { name: 'Ashburst', text: 'When one of your ashbound dies or expires, it explodes for 54 damage to nearby enemies.', icon: 'dark_crystal_skull_on_violet', does: { k: 'corpse', n: 60, reach: 46 } },
+        { name: 'Ashburst', text: 'When one of your ashbound dies or expires, it explodes for 52 damage to nearby enemies.', icon: 'dark_crystal_skull_on_violet', does: { k: 'corpse', n: 60, reach: 46 } },
       ],
       [
         { name: 'Mirror Curse', text: 'The first crowd control used on you is reflected at its caster for half the duration. 20 sec cooldown.', icon: 'cursed_mirror_on_violet', does: { k: 'mirror', share: 0.5, every: 20 } },

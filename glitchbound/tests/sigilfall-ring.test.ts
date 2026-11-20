@@ -780,16 +780,20 @@ describe('The Ring: computer players', () => {
   }, 120_000);
 
   it('a sharp opponent beats a dull one', () => {
+    // (both of the mage's playstyles, mirrored: with the healing spheres gone (2026-11-20) a sharp Rime no longer wins
+    // by reaching them first, and takes 7 of its 12 alone; a sharp Pyre takes 11)
     let sharp = 0;
-    for (let seed = 1; seed <= 12; seed++) {
-      const m = new Match({ seed, map: MAP_IDS[seed % 3]!, fighters: [fighter(0, 'mage', PRESETS.mage[1]!.bar), fighter(1, 'mage', PRESETS.mage[1]!.bar)] });
-      const brains = [newBrain(seed * 3), newBrain(seed * 5)];
-      for (let i = 0; i < 30 * 340 && m.phase !== 'over'; i++) {
-        m.step(STEP, { 0: botThink(m, m.fighters[0]!, brains[0]!, 0.95, STEP), 1: botThink(m, m.fighters[1]!, brains[1]!, 0.12, STEP) });
+    for (const style of [0, 1]) {
+      for (let seed = 1; seed <= 12; seed++) {
+        const m = new Match({ seed, map: MAP_IDS[seed % 3]!, fighters: [fighter(0, 'mage', PRESETS.mage[style]!.bar), fighter(1, 'mage', PRESETS.mage[style]!.bar)] });
+        const brains = [newBrain(seed * 3), newBrain(seed * 5)];
+        for (let i = 0; i < 30 * 340 && m.phase !== 'over'; i++) {
+          m.step(STEP, { 0: botThink(m, m.fighters[0]!, brains[0]!, 0.95, STEP), 1: botThink(m, m.fighters[1]!, brains[1]!, 0.12, STEP) });
+        }
+        if (m.winner === 0) sharp++;
       }
-      if (m.winner === 0) sharp++;
     }
-    expect(sharp).toBeGreaterThanOrEqual(8);
+    expect(sharp).toBeGreaterThanOrEqual(16);
   }, 60_000);
 
   it('three a side finish, and a frame of bots stays cheap', () => {
