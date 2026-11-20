@@ -74,7 +74,7 @@ export const HOLLOWMERE_QUESTS: QuestDef[] = [
     after: ['orren-on-the-shore'],
     zone: 'hollowmere',
     level: 55,
-    reward: { xp: 2300, gold: 760, item: { rarity: 'rare' }, text: 'The causeway ends at the Necropolis doors. The causeway’s lamps went out three hundred years ago, and nobody has carried the dead this way since. Inside, someone is calling the drowned up out of the water.' },
+    reward: { xp: 2300, gold: 760, item: { rarity: 'rare', name: 'Causeway Lamp' }, text: 'The causeway ends at the Necropolis doors. The causeway’s lamps went out three hundred years ago, and nobody has carried the dead this way since. Inside, someone is calling the drowned up out of the water.' },
   },
   {
     id: 'the-necropolis',

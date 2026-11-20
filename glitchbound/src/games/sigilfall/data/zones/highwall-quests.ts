@@ -117,7 +117,7 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     after: ['ashes-of-ashby'],
     zone: 'highwall',
     level: 42,
-    reward: { xp: 3000, gold: 700, item: { rarity: 'rare' }, text: 'Hollowbane falls in his trench, and the Host Lines break. Some of the dead who held it still wear Ashby’s aprons and boots. Brother Orren lights a lamp for each of them before you leave.' },
+    reward: { xp: 3000, gold: 700, item: { rarity: 'rare', name: 'Broken Lines' }, text: 'Hollowbane falls in his trench, and the Host Lines break. Some of the dead who held it still wear Ashby’s aprons and boots. Brother Orren lights a lamp for each of them before you leave.' },
   },
   {
     id: 'cael-the-sortie',
@@ -130,7 +130,7 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     after: ['captain-hollowbane'],
     zone: 'highwall',
     level: 42,
-    reward: { xp: 2800, gold: 600, item: { rarity: 'rare' }, text: 'The Host’s lines before the Breach break and run. Ten years ago Cael stood on the Ninefold Watch’s wall and waited for a relief that never came. Tonight he led one.' },
+    reward: { xp: 2800, gold: 600, item: { rarity: 'rare', name: 'Cael’s Sortie' }, text: 'The Host’s lines before the Breach break and run. Ten years ago Cael stood on the Ninefold Watch’s wall and waited for a relief that never came. Tonight he led one.' },
   },
 
   {
@@ -167,7 +167,7 @@ export const HIGHWALL_QUESTS: QuestDef[] = [
     after: ['the-breach'],
     zone: 'highwall',
     level: 42,
-    reward: { xp: 3400, gold: 800, item: { rarity: 'rare' }, text: 'The Siege-Breaker comes apart on the Muster Field, and the inner ward’s gate holds. On the walls above, the garrison sees the relief inside the city for the first time this summer. They start to bang their shields.' },
+    reward: { xp: 3400, gold: 800, item: { rarity: 'rare', name: 'Ruin of the Ram' }, text: 'The Siege-Breaker comes apart on the Muster Field, and the inner ward’s gate holds. On the walls above, the garrison sees the relief inside the city for the first time this summer. They start to bang their shields.' },
   },
   {
     id: 'general-morvain',

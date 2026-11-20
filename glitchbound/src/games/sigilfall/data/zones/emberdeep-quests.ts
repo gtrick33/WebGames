@@ -82,7 +82,7 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     after: ['break-the-chains'],
     zone: 'emberdeep',
     level: 52,
-    reward: { xp: 1900, gold: 650, item: { rarity: 'rare' }, text: 'The Throne’s Gate is a stair cut down into the black rock, with heat pouring up it. Ashkar’s screaming comes from the bottom. The crown is nearly done, and once the Herald carries it north to Duskspire, nobody will reach it.' },
+    reward: { xp: 1900, gold: 650, item: { rarity: 'rare', name: 'Throne-Stair Ember' }, text: 'The Throne’s Gate is a stair cut down into the black rock, with heat pouring up it. Ashkar’s screaming comes from the bottom. The crown is nearly done, and once the Herald carries it north to Duskspire, nobody will reach it.' },
   },
   {
     id: 'the-magma-warden',
@@ -94,7 +94,7 @@ export const EMBERDEEP_QUESTS: QuestDef[] = [
     after: ['the-throne-gate'],
     zone: 'emberdeep',
     level: 53,
-    reward: { xp: 3200, gold: 1100, item: { rarity: 'rare' }, text: 'The Magma Warden cracks apart, and its molten heart runs out across the crucible floor. The forges beyond it start to cool. Deeper down, past the Host’s foundry, Ashkar is still screaming.' },
+    reward: { xp: 3200, gold: 1100, item: { rarity: 'rare', name: 'Crucible Heart' }, text: 'The Magma Warden cracks apart, and its molten heart runs out across the crucible floor. The forges beyond it start to cool. Deeper down, past the Host’s foundry, Ashkar is still screaming.' },
   },
   {
     id: 'ashkar-the-bound',

@@ -1095,7 +1095,12 @@ export interface QuestDef {
    * and the story remembers which was taken).
    */
   choice?: string;
-  reward: { xp: number; gold: number; item?: string | { rarity: Rarity }; unlock?: RegionId; tier?: number; text?: string; perk?: PerkId; keystone?: number };
+  /**
+   * What it pays. An item is a hand-made one (by its id), the smith's epic for the class, or one rolled for the class at
+   * a rarity; a rolled one of the story can carry a name of its own (POLISH_PLAN.md piece 22: "Promise of the Held
+   * Door", not "a rare item"), shown on the quest's page and given to the piece.
+   */
+  reward: { xp: number; gold: number; item?: string | { rarity: Rarity; name?: string }; unlock?: RegionId; tier?: number; text?: string; perk?: PerkId; keystone?: number };
 }
 
 /* -------------------------------------------------------------------- npcs */

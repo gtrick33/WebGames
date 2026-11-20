@@ -106,7 +106,7 @@ export const STORY_QUESTS: QuestDef[] = [
     reward: {
       xp: 9000,
       gold: 800,
-      item: { rarity: 'rare' },
+      item: { rarity: 'rare', name: 'The Countermand' },
       text: 'The Regent reads the order twice, with Crane standing at her shoulder. He calls it a forgery, carried by a man who ran from his post. The order is in his handwriting, but she cannot arrest the Lord Chancellor of Aster on one old paper. She needs proof he cannot talk his way out of.',
     },
   },

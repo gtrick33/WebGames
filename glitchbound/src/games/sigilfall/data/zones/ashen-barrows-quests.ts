@@ -112,7 +112,7 @@ export const ASHEN_BARROWS_QUESTS: QuestDef[] = [
     after: ['the-kings-mound'],
     zone: 'ashen-barrows',
     level: 25,
-    reward: { xp: 1600, gold: 300, item: { rarity: 'rare' }, text: 'King Hrodric sinks back onto his throne, and his court lies down around him. Below the Court of the Kings a stair goes on down into the dark. From the bottom comes a voice, counting slowly, the way a knight counts before a charge.' },
+    reward: { xp: 1600, gold: 300, item: { rarity: 'rare', name: 'Hrodric’s Rest' }, text: 'King Hrodric sinks back onto his throne, and his court lies down around him. Below the Court of the Kings a stair goes on down into the dark. From the bottom comes a voice, counting slowly, the way a knight counts before a charge.' },
   },
   {
     id: 'sir-corvane',

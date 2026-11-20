@@ -138,6 +138,8 @@ export const SAMPLES: Readonly<Record<string, SampleDef>> = {
   pickup: { files: ['cloth', 'wood'], gain: 0.32, rate: [1.05, 1.2] },
   pickupBig: { files: ['gem2'], gain: 0.4, rate: [0.95, 1.05] },
   shard: { files: ['gem1', 'gem2'], gain: 0.4, rate: [1, 1.15] },
+  // what falls is heard by its rarity: a rare piece rings small and high, an epic fuller, a legendary deep (world.ts dropItem)
+  rare: { files: ['gem2'], gain: 0.3, rate: [1.18, 1.28] },
   epic: { files: ['gem3'], gain: 0.5, rate: [0.92, 1] },
   legendary: { files: ['gem3'], gain: 0.6, rate: [0.74, 0.8] },
   chest: { files: ['bag', 'wood'], gain: 0.5, rate: [0.85, 0.95] },

@@ -1322,11 +1322,15 @@ export class Effects {
       fx.put({ kind: FX.shaft, x: d.x, y: d.y, base: true, w: 16, h: 70, a: QUEST_GOLD, alpha: 0.85 * beat, seed: d.x * 0.1 });
       fx.put({ kind: FX.glow, x: d.x, y: d.y, flat: true, w: 40, a: QUEST_GOLD, alpha: 0.7 * beat });
     }
+    // a piece of gear on the ground stands in a beam of its rarity's color, taller and wider the rarer it is, and an epic or
+    // a legendary one breathes, so it is seen across a field and known before it is reached (POLISH_PLAN.md piece 22)
     for (const d of w.drops) {
       if (d.kind !== 'item' || !d.item || !sc.near(d.x, d.y)) continue;
       const color = BEAM[d.item.r] ?? '#ffffff';
-      fx.put({ kind: FX.shaft, x: d.x, y: d.y, base: true, w: 14, h: 58, a: color, alpha: 0.75, seed: d.x * 0.1 });
-      fx.put({ kind: FX.glow, x: d.x, y: d.y, flat: true, w: 30, a: color, alpha: 0.55 });
+      const tall = BEAM_TALL[d.item.r] ?? 0.8;
+      const beat = d.item.r === 'epic' || d.item.r === 'legendary' ? 0.85 + Math.sin(sc.time * 4 + d.x) * 0.15 : 1;
+      fx.put({ kind: FX.shaft, x: d.x, y: d.y, base: true, w: 10 + 6 * tall, h: 34 + 30 * tall, a: color, alpha: 0.75 * beat, seed: d.x * 0.1 });
+      fx.put({ kind: FX.glow, x: d.x, y: d.y, flat: true, w: 22 + 12 * tall, a: color, alpha: 0.55 * beat });
     }
   }
 
@@ -1994,6 +1998,8 @@ export class Effects {
 /** The light of a thing a quest asks for, where it lies. */
 const QUEST_GOLD = '#ffe066';
 const BEAM: Record<string, string> = { common: '#e8e4d8', uncommon: '#7fe06a', rare: '#6fb4ff', epic: '#c58bff', legendary: '#ffae42' };
+/** How tall a beam stands by rarity (0.8 was every beam's height before). */
+export const BEAM_TALL: Record<string, number> = { common: 0.35, uncommon: 0.6, rare: 0.8, epic: 1.2, legendary: 1.7 };
 
 /** A friendly look's own colors (the rest take their damage type's). */
 const LOOK_TONES: Record<string, Tone> = {
