@@ -1,6 +1,7 @@
 import { dressedFor, keepsApart } from './props';
 import { DOOR_BLOCKS, DOOR_GROUND, GREAT, GREAT_IN, withDoorGround, type GreatPlace } from './greatworks';
 import { isRetired, liveExits } from './retired';
+import { LAND_MAPS } from './landmaps';
 import { clamp, hash2, noise2, rng } from '../core/math';
 import { buildingRows, villageHouses } from './buildingArt';
 import { THEMES } from './themes';
@@ -2611,13 +2612,30 @@ const LANDMARKS: Record<string, LandmarkSpec[]> = {
 /** A point on a land's edge (0-1 across, 0-1 down) from its side and how far along it. */
 const sideAt = (side: Side, along: number): [number, number] => (side === 'n' ? [along, 0] : side === 's' ? [along, 1] : side === 'w' ? [0, along] : [1, along]);
 
-/** A wild region whose map is generated the first time something looks at it. */
+/**
+ * Each generated land as the generator makes it (its doors' ground walled), whatever its map file says now: the freeze
+ * reads it (scripts/sigilfall-freeze-lands.mjs), and a test holds the files not yet worked by hand to it.
+ */
+const MAKERS = new Map<string, () => GeneratedZone>();
+export const generatedLand = (id: string): GeneratedZone | null => MAKERS.get(id)?.() ?? null;
+
+/**
+ * A wild region. Its map is its file, data/maps/<land>.json (data/landmaps.ts: every live land was frozen to one, and
+ * is worked by hand from there); a land without one (a retired land, out of the story) is generated the first time
+ * something looks at it.
+ */
 export function wildRegion(base: Omit<RegionDef, 'kind' | 'map' | 'markers' | 'placed' | 'encounters' | 'level'>, given: ZoneSpec): RegionDef {
   // (a land the story still goes through has no road into a retired one: data/retired.ts)
   const spec: ZoneSpec = isRetired(base.id) ? given : { ...given, exits: liveExits(base.id, given.exits) };
   let made: GeneratedZone | null = null;
   let walled: GeneratedZone['placed'] | null = null;
   const get = (): GeneratedZone => (made ??= generateZone({ ...spec, landmarks: LANDMARKS[base.id] ?? [], great: [...(GREAT_IN[base.id] ?? []), ...(DOOR_GROUND[base.id] ?? [])] }, base.theme));
+  const walledOf = (): GeneratedZone['placed'] => {
+    const blocks = DOOR_BLOCKS[base.id];
+    return blocks ? (walled ??= withDoorGround(get().placed, blocks.to, blocks.rects)) : get().placed;
+  };
+  MAKERS.set(base.id, () => ({ map: get().map, placed: walledOf() }));
+  const file = LAND_MAPS[base.id];
   return {
     ...base,
     kind: 'wild',
@@ -2645,11 +2663,10 @@ export function wildRegion(base: Omit<RegionDef, 'kind' | 'map' | 'markers' | 'p
       ],
     },
     get map() {
-      return get().map;
+      return file?.map ?? get().map;
     },
     get placed() {
-      const blocks = DOOR_BLOCKS[base.id];
-      return blocks ? (walled ??= withDoorGround(get().placed, blocks.to, blocks.rects)) : get().placed;
+      return file?.placed ?? walledOf();
     },
   };
 }

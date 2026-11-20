@@ -6,6 +6,8 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSyn
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pageSpecs, renderPage, robots, sitemap } from './scripts/seo.ts';
+import { landMapText } from './scripts/sigilfall-landmap-file.ts';
+import { paintError } from './src/games/sigilfall/data/ground.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -108,13 +110,28 @@ function reviewShots(): Plugin {
   };
 }
 
-/** A land's file of hand-placed props (src/games/sigilfall/data/placed.ts). */
-const PLACED_FILE = /[\\/]data[\\/]placed[\\/][a-z0-9-]+\.json$/;
+/** A land's file the editor writes: its hand-placed props (data/placed.ts), or its map (data/landmaps.ts). */
+const EDITED_FILE = /[\\/]data[\\/](placed|maps)[\\/][a-z0-9-]+\.json$/;
+
+/**
+ * A land's map with ground painted on it by hand, checked against its file (src/games/sigilfall/data/ground.ts
+ * paintError): the text to write, or why not.
+ */
+function paintedMap(root: string, land: string, body: unknown): { text: string } | { error: string } {
+  const file = join(root, 'src/games/sigilfall/data/maps', `${land}.json`);
+  if (!existsSync(file)) return { error: `${land} has no map file` };
+  const now = JSON.parse(readFileSync(file, 'utf8')) as { map: string[]; placed: unknown[] };
+  const rows = (body as { rows?: unknown } | null)?.rows;
+  const error = paintError(now.map, rows);
+  // (painted, the land is worked by hand: the generator has no say in it any more)
+  return error ? { error } : { text: landMapText({ hand: true, map: rows as string[], placed: now.placed }) };
+}
 
 /**
  * Dev server only: Sigilfall's placement editor (src/games/sigilfall/ui/PlaceEditor.tsx, `?place` on the game's page)
  * POSTs a land's hand-placed props here, and they are written to its data file, data/placed/<land>.json, one to a line
- * and in the order of the land's rows, so a change reads as a change. A land with none left has no file.
+ * and in the order of the land's rows, so a change reads as a change. A land with none left has no file. Ground
+ * painted on a land is written to its map file, data/maps/<land>.json, its rows as they are now.
  */
 function placementEditor(): Plugin {
   const entry = (p: unknown): string | null => {
@@ -135,8 +152,8 @@ function placementEditor(): Plugin {
     hotUpdate: {
       order: 'post',
       handler({ file, modules }) {
-        if (!PLACED_FILE.test(file)) return;
-        return modules.filter((m) => !m.file || !PLACED_FILE.test(m.file));
+        if (!EDITED_FILE.test(file)) return;
+        return modules.filter((m) => !m.file || !EDITED_FILE.test(m.file));
       },
     },
     configureServer(server) {
@@ -169,6 +186,32 @@ function placementEditor(): Plugin {
             mkdirSync(dirname(file), { recursive: true });
             writeFileSync(file, `[\n${rows.map((r) => `  ${r.line}`).join(',\n')}\n]\n`);
           }
+          res.end('saved');
+        });
+      });
+      server.middlewares.use('/__sigilfall/landmap', (req, res) => {
+        const land = new URL(req.url ?? '', 'http://x').searchParams.get('land') ?? '';
+        if (req.method !== 'POST' || !/^[a-z0-9-]+$/.test(land)) {
+          res.statusCode = 400;
+          res.end('bad request');
+          return;
+        }
+        const chunks: Buffer[] = [];
+        req.on('data', (c: Buffer) => chunks.push(c));
+        req.on('end', () => {
+          let body: unknown = null;
+          try {
+            body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          } catch {
+            /* answered below */
+          }
+          const out = paintedMap(server.config.root, land, body);
+          if ('error' in out) {
+            res.statusCode = 400;
+            res.end(out.error);
+            return;
+          }
+          writeFileSync(join(server.config.root, 'src/games/sigilfall/data/maps', `${land}.json`), out.text);
           res.end('saved');
         });
       });
