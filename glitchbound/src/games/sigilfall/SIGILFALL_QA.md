@@ -21,7 +21,7 @@ a story beat.
 | --- | --- |
 | Save versions 1→9, field validation, the fog-of-war backfill, migrations of every act, Wardrobe and mount backfill | `sigilfall-world`, `sigilfall-story`, `sigilfall-vale`, `sigilfall-road`, `sigilfall-alliance`, `sigilfall-collection`, `sigilfall-progression` |
 | Quests can be finished (places, foes, people, bosses, prerequisites, givers who stand somewhere) | `sigilfall-quests-doable` |
-| The whole campaign from a new save by the quest arrow: all 515 quests, no quest the arrow can't point at, no chapter waiting in a land nothing leads to | `sigilfall-campaign` |
+| The whole campaign from a new save by the quest arrow: every quest (218 since the rewrite of 2026-11-18; 515 before), no quest the arrow can't point at, no chapter waiting in a land nothing leads to | `sigilfall-campaign` |
 | The quest arrow for story events, raiders who don't give up, bosses felled early, foes the story sends in, shut roads and two-way roads, fog of war | `sigilfall-guidance` |
 | One land per place id (the arrow and what counts would go to the other) | `sigilfall-ids` |
 | Region, dungeon and id integrity (no road to an unregistered region) | `sigilfall-ids`, `sigilfall-dungeons` |

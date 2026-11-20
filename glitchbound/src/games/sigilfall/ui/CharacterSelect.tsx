@@ -255,7 +255,7 @@ export function CharacterSelect({ engine, onRift, onVigil, onRing, onRanks, onSe
         ) : (
           <>
             <h2 className="cs-name">A place waits</h2>
-            <p className="cs-line">Eight callings, five acts, one Crown. Who will you be?</p>
+            <p className="cs-line">Eight callings, six acts, one Crown. Who will you be?</p>
           </>
         )}
         <ol className="cs-dots" aria-label={`Hero ${at + 1} of ${n}`}>

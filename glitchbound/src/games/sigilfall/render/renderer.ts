@@ -33,8 +33,9 @@ import { LIGHT } from '../render3d/toon';
 import { WorldCast } from '../render3d/worldCast';
 
 /**
- * Draws the world: the land and everyone on it in 3D (render3d/) on a canvas underneath, then this canvas on top
- * for what the rules want read clearly: warnings on the ground, spells in flight, names, bars and numbers.
+ * Draws the world: the land, everyone on it and every spell, shot and warning in 3D (render3d/, with render/effects.ts
+ * for what the spells look like) on a canvas underneath, then this canvas on top for what is read rather than seen:
+ * names, bars, numbers, speech and markers.
  */
 
 /** The part of the land in view, for whatever draws into it. */
