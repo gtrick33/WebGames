@@ -26,6 +26,8 @@ export interface SpeechCard {
   tailUp?: boolean;
   /** A subtitle in the lane along the bottom of the picture (placeSpeech), not a card over anyone. */
   lane?: boolean;
+  /** Where placeSpeech put it, against its speaker, to be asked for again next frame (SpeechAsk.keep). */
+  keep?: SpeechKeep;
   /**
    * What stands before the name and the words, from the card's padding: a portrait of the speaker (`face` a side) and
    * the gap after it, on a scene's line (POLISH_PLAN.md piece 12); 0 with none.
@@ -33,6 +35,12 @@ export interface SpeechCard {
   lead: number;
   face: number;
 }
+
+/**
+ * Where a line was put, against its speaker: in the lane, or in one of the card's shapes moved (dx, dy) off where it
+ * stands over their head (under their feet, `under`).
+ */
+export type SpeechKeep = { lane: true } | { lane?: false; shape: number; dx: number; dy: number; under: boolean };
 
 /** A box on the view, in its CSS pixels: a card, or a piece of the HUD the picture's words keep clear of. */
 export interface ViewBox {
@@ -97,6 +105,8 @@ export interface SpeechAsk {
   minor?: boolean;
   /** A portrait of the speaker beside their words, this many pixels a side (a scene's line: POLISH_PLAN.md piece 12). */
   face?: number;
+  /** Where this line was last frame (SpeechCard.keep): kept while it is still free, so the card doesn't jump about. */
+  keep?: SpeechKeep;
 }
 
 export function layoutSpeech(o: SpeechAsk): SpeechCard {
@@ -297,22 +307,51 @@ export function placeSpeech(asks: readonly SpeechAsk[], room: SpeechRoom, hudMap
     const over = layoutSpeech(o);
     // the card as it is first, then wider (fewer lines) and narrower (more) where it is crowded
     let pick: SpeechCard | undefined;
+    let shaped = 0;
     const shapes: SpeechAsk[] = [o, { ...o, wide: 1.6 }, { ...o, wide: 0.7 }, { ...o, small: true, wide: 1.4 }];
-    for (const shape of shapes) {
-      pick = first(candidates(shape, room, hudMap, spot), (c) => free(c) && calm(c));
-      if (pick) break;
+    // where it was a moment ago, while that is still free: a card that took the best place each frame afresh jumped
+    // from over a walking speaker's head to under their feet or down to the lane and back as they went, too fast to
+    // be read (the owner: "their bubbles keep switching from top to bottom screen with their movement and i cant read
+    // them"). It moves only when its place is taken, or would cover the fight with another free
+    const kept = keptCard(o, shapes, spot);
+    if (kept && free(kept) && calm(kept)) pick = kept;
+    for (let k = 0; k < shapes.length && !pick; k++) {
+      pick = first(candidates(shapes[k]!, room, hudMap, spot), (c) => free(c) && calm(c));
+      shaped = k;
     }
-    for (const shape of shapes) {
-      if (pick) break;
-      pick = first(candidates(shape, room, hudMap, spot), free);
+    if (!pick && kept && free(kept)) pick = kept;
+    for (let k = 0; k < shapes.length && !pick; k++) {
+      pick = first(candidates(shapes[k]!, room, hudMap, spot), free);
+      shaped = k;
     }
     if (!pick && o.minor) {
       out[i] = null;
       continue;
     }
     pick ??= over;
+    if (pick === kept && o.keep) pick = { ...pick, keep: o.keep };
+    else if (pick.lane) pick = { ...pick, keep: { lane: true } };
+    else {
+      const base = layoutSpeech(shapes[shaped]!);
+      pick = { ...pick, keep: { shape: shaped, dx: pick.x - base.x, dy: pick.y - base.y, under: !!pick.tailUp } };
+    }
     placed.push(pick);
     out[i] = pick;
   }
   return out;
+}
+
+/** The card where `o.keep` says it was, as its speaker stands now (the lane's spot for a subtitle), or none. */
+function keptCard(o: SpeechAsk, shapes: readonly SpeechAsk[], spot: SpeechCard | undefined): SpeechCard | undefined {
+  const k = o.keep;
+  if (!k) return undefined;
+  if (k.lane) return spot;
+  const shape = shapes[k.shape];
+  if (!shape) return undefined;
+  const over = layoutSpeech(shape);
+  const x = clamp(over.x + k.dx, 2, o.viewW - 2 - over.w);
+  const onHead = o.headX > x + 12 && o.headX < x + over.w - 12;
+  // (under the feet it stays under them, wherever they walk; over the head, it keeps its tail while it is still on them)
+  if (k.under) return o.footY === undefined ? undefined : moveCard(over, x, o.footY + 10, onHead ? o.headX : null, true);
+  return moveCard(over, x, over.y + k.dy, Math.abs(k.dy) < 1 && over.tailX !== null && onHead ? o.headX : null);
 }

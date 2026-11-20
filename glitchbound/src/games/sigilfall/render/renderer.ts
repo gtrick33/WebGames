@@ -5,7 +5,7 @@ import { currentObjective } from '../progress/character';
 import { drawMapIcon, type MapIcon } from '../ui/mapIcons';
 import { isMainQuest, turnInNpc } from '../progress/handin';
 import { edgeArrowAngle, LEAD, leanTarget, LIFT } from './camera';
-import { placeSpeech, type SpeechAsk, type ViewBox } from './speech';
+import { placeSpeech, type SpeechAsk, type SpeechKeep, type ViewBox } from './speech';
 import { ghostName, TALK_ZOOM, TYPE_CPS } from '../sim/scene';
 import { Effects, headOf, inView } from './effects';
 import { THEMES } from '../data/themes';
@@ -183,6 +183,8 @@ export class Renderer {
   }
   /** Every card drawn this frame, a scene's too, with its words (scripts/sigilfall-overlap-check.mjs reads them). */
   readonly speechCards: (ViewBox & { text: string })[] = [];
+  /** Where each line on the screen was put last frame, so it stays there while it is free (render/speech.ts SpeechKeep). */
+  private readonly speechKept = new WeakMap<object, SpeechKeep>();
 
   /** Says where a piece of the HUD is now (null: it is gone), and tells those placing round it if it moved. */
   setHudBox(id: string, box: ViewBox | null): void {
@@ -1466,6 +1468,8 @@ export class Renderer {
       // (a scene's line has the speaker's face beside it: POLISH_PLAN.md piece 12)
       const face = s.staged ? Math.round(clamp(this.cssH * 0.085, 40, 60)) : 0;
       const ask: SpeechAsk = { text: s.text, name, headX: sane && !behind ? head.x : this.cssW / 2, headY: behind ? this.cssH * 2 : sane ? head.y : -this.cssH, viewW: this.cssW, viewH: this.cssH, top, bottom, left: sideL, right: sideR, measure, ...(s.staged ? { staged: true } : {}), ...(minor ? { minor: true } : {}), ...(face ? { face } : {}), ...(sane && !behind && Number.isFinite(foot.y) && foot.y < this.cssH ? { footY: foot.y } : {}) };
+      const kept = this.speechKept.get(s);
+      if (kept) ask.keep = kept;
       said.push({ s, name, accent, ask });
     }
     // every line placed together: none under the HUD, none over another, and in a fight none across it if there is
@@ -1479,6 +1483,7 @@ export class Renderer {
       // (a foe's bark with no room left gives way: render/speech.ts placeSpeech)
       const card = cards[i];
       if (!card) return;
+      if (card.keep) this.speechKept.set(s, card.keep);
       if (hud) this.speechBoxes.push({ x: card.x, y: card.y, w: card.w, h: card.h });
       this.speechCards.push({ x: card.x, y: card.y, w: card.w, h: card.h, text: s.text });
       const fade = clamp(Math.min(s.t / 0.15, (s.dur - s.t) / 0.3), 0, 1);
