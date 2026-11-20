@@ -32,6 +32,7 @@ import { addParagonXp, paragonXp } from '../progress/paragon';
 import { deathSound } from '../data/voices';
 import { separate, updateEnemy, updatePuppet } from './ai';
 import { refreshPets, summonPet, updatePets } from './pets';
+import { updateEscort } from './escort';
 import { spawnFolk, updateFolk, type Folk } from './folk';
 import { herdOf, letOut, updateCritters, type Critter } from './critters';
 import { castPace, updateCasting, updateChannel, updateDash, updateFields, updateProjectiles, updateTraps, updateWindup, tryCast, type CastRequest } from './cast';
@@ -1518,6 +1519,8 @@ export class World {
         awake.push(e);
       }
     updatePets(this, dt);
+    // the companion of this stretch of the story at the hero's side, and what they say on a quiet road (sim/escort.ts)
+    updateEscort(this);
     separate(this, dt, awake);
     if (!this.puppet) this.updatePacks(dt);
     this.fogT -= dt;
