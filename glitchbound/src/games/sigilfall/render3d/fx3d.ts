@@ -119,8 +119,31 @@ const vertex = /* glsl */ `
     vP = iP;
   }`;
 
+/**
+ * What glows (render3d/bloom.ts: POLISH_PLAN.md piece 14), by kind, and how much of its light: an orb, a flame, a
+ * spark, a ring of light, holy light, a bolt, a rift, a glow, a shaft or a beam of light, an impact, a blast, magic
+ * gathering, a rune, a column; a burning, crackling, torn or holy ground a little (FIELD_GLOWS). Water, smoke, shadow,
+ * frost, poison, webs, the warnings and the rest cover what's under them, and never glow: a warning stays crisp.
+ */
+export const GLOWS: Partial<Record<keyof typeof FX, number>> = { orb: 1, flame: 1, spark: 1, ring: 1, holy: 1, bolt: 1, rift: 1, glow: 1, trail: 0.6, shaft: 1, impact: 1, blast: 1, gather: 1, beam: 1, rune: 1, column: 1 };
+export const FIELD_GLOWS: Partial<Record<keyof typeof FIELD, number>> = { fire: 0.6, lightning: 0.6, rift: 0.6, holy: 0.6 };
+
+/** GLOWS as the fragment shader reads it: a kind's share of light (a ground's by its look, the quad's p1). */
+const EMITS = /* glsl */ `float emits(float k, float look) {
+${(Object.entries(FX) as [keyof typeof FX, number][])
+  .sort((a, b) => a[1] - b[1])
+  .map(([name, n]) =>
+    name === 'field'
+      ? `    if (k < ${n}.5) {\n${(Object.entries(FIELD) as [keyof typeof FIELD, number][]).map(([f, m]) => `      if (look < ${m}.5) return ${(FIELD_GLOWS[f] ?? 0).toFixed(2)};`).join('\n')}\n      return 0.0;\n    }`
+      : `    if (k < ${n}.5) return ${(GLOWS[name] ?? 0).toFixed(2)};`,
+  )
+  .join('\n')}
+    return 0.0;
+  }`;
+
 const fragment = /* glsl */ `
   uniform float uTime;
+  uniform float uGlowPass;
   varying vec2 vUv;
   varying vec4 vA;
   varying vec4 vB;
@@ -763,10 +786,15 @@ const fragment = /* glsl */ `
     return vec4(c * k * fade, min(1.0, k) * 0.35 * fade);
   }
 
+  ${EMITS}
+
   void main() {
     float kind = vB.a;
     float t = vP.x;
     float seed = vP.y;
+    // (the glow pass draws only the lights: the rest is never worked out)
+    float lit = uGlowPass > 0.5 ? emits(kind, vP.z) : 1.0;
+    if (lit <= 0.0) discard;
     vec4 o;
     if (kind < 0.5) o = orb(vUv, seed);
     else if (kind < 1.5) o = water(vUv, seed, vP.z);
@@ -830,6 +858,10 @@ const fragment = /* glsl */ `
     else if (kind < 38.5) o = column(vUv, t, seed);
     else o = crack(vUv, t, seed);
     if (o.a <= 0.002 && dot(o.rgb, o.rgb) < 0.0001) discard;
+    if (uGlowPass > 0.5) {
+      gl_FragColor = vec4(o.rgb * vA.a * lit, 0.0);
+      return;
+    }
     gl_FragColor = o * vA.a;
   }`;
 
@@ -905,7 +937,7 @@ export class Fx3D {
     this.attrs = [attr('iPos', this.pos, 3), attr('iSize', this.size, 4), attr('iA', this.ca, 4), attr('iB', this.cb, 4), attr('iP', this.parm, 4)];
     this.geo.instanceCount = 0;
     const material = new THREE.ShaderMaterial({
-      uniforms: { uTime: LIGHT.uTime },
+      uniforms: { uTime: LIGHT.uTime, uGlowPass: { value: 0 } },
       vertexShader: vertex,
       fragmentShader: fragment,
       transparent: true,
@@ -925,6 +957,16 @@ export class Fx3D {
 
   begin(): void {
     this.n = 0;
+  }
+
+  /** Anything on the layer that gives light this frame (the glow is worth drawing). */
+  get lit(): boolean {
+    return this.n > 0;
+  }
+
+  /** The glow pass (render3d/bloom.ts): the lights alone, as light, while `on`. */
+  glowPass(on: boolean): void {
+    ((this.mesh.material as THREE.ShaderMaterial).uniforms.uGlowPass as { value: number }).value = on ? 1 : 0;
   }
 
   put(q: FxQuad): void {

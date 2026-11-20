@@ -7,6 +7,7 @@ import { loadLand, PITCH, type Land3D, type LandPacks } from './land';
 import { LIGHT } from './toon';
 import { heldElsewhere, Pacer, QUALITY_FLOOR } from './pace';
 import { groundLost, paintGround } from './groundBake';
+import { Bloom, glowWanted } from './bloom';
 
 /**
  * The 3D view, four layers deep under the player's touches:
@@ -85,6 +86,9 @@ export class Stage {
   private readonly pacer = new Pacer();
   private maxDpr = MAX_DPR;
   private lastDpr = 1;
+  /** The glow of fire and magic (render3d/bloom.ts), made the first time it is drawn. */
+  private bloom: Bloom | null = null;
+  private touch = false;
   private lastFrame = 0;
 
   constructor(overlay: HTMLCanvasElement) {
@@ -134,6 +138,7 @@ export class Stage {
     this.cssW = cssW;
     this.cssH = cssH;
     this.lastDpr = dpr;
+    this.touch = touch;
     this.maxDpr = touch ? MAX_DPR_TOUCH : MAX_DPR;
     const d = Math.min(dpr, this.maxDpr);
     const pacer = this.pacer;
@@ -242,6 +247,20 @@ export class Stage {
     paintGround(this.groundScene, this.groundGl, this.camera);
     this.groundGl.render(this.groundScene, this.camera);
     this.gl.render(this.scene, this.camera);
+    // fire and magic glow (POLISH_PLAN.md piece 14), where the machine has the room for it
+    if (this.glowOn && this.fx.lit) {
+      this.bloom ??= new Bloom();
+      this.bloom.render(this.gl, () => {
+        this.fx.glowPass(true);
+        this.gl.render(this.fx.mesh, this.camera);
+        this.fx.glowPass(false);
+      });
+    }
+  }
+
+  /** Whether fire and magic glow now (render3d/bloom.ts glowWanted). */
+  get glowOn(): boolean {
+    return glowWanted(this.pacer.mode, this.touch, this.pacer.quality);
   }
 
   /** A machine that can't keep up draws fewer pixels rather than stutter (render3d/pace.ts). */
@@ -269,6 +288,7 @@ export class Stage {
     this.land?.dispose();
     this.cast.dispose();
     this.fx.dispose();
+    this.bloom?.dispose();
     for (const r of [this.gl, this.groundGl]) {
       r.dispose();
       r.forceContextLoss();
